@@ -35,31 +35,31 @@ namespace eval Apol_Analysis_flowassert {
     variable last_pathname ""
     
     variable info_button_text \
-"Information flow in access control policy refers to the ability for
-information to flow from a process or object into another process or
+"Information flow in an access control policy refers to the ability for
+information to flow from one process or object into another process or
 object. This can be done directly or transitively through several
-intermediate types. When analyzing an access control policy the need
+intermediate types. When analyzing an access control policy, the need
 to see information flow from one type to another is very important and
-while direct flow is fairly obvious transitive flows are not.\n
-
-There are to be three type of assertions.  The first one is noflow,
-which asserts there is no flow between two different types.  The
-second is mustflow, which instead states that there must exist one.
-The third type is onlyflow, which says that there must be a flow, and
-that flow be through a particular intermediary type.  All three modes
-must allow for any number of source, destination, and exception types.
-Types may be limited by optional object classes; they may also be
-specified through attributes.  Finally, each assertion can have a
-minimum weight to limiting searches.\n
+while direct flow is fairly obvious, transitive flows are not.\n
 
 To facilitate automated validation and regression testing of policies
 the user creates a series of information flow assertions using a batch
-language that represents transitive flows.  A module for apol,
-\"Information Flow Assertion\", easily allows the user to generate and
-execute assertion statements.  Results from the analysis are presented
-in new window.  Assertions found to be correctly are labelled as
-\"Passed\"; invalid ones are hyperlinked to the line within
-policy.conf that caused the conflict."
+language that represents transitive flows. The \"Information Flow 
+Assertion\" analysis module for apol easily allows the user to generate 
+and execute assertion statements.  Results from the analysis are presented
+in a new window.  Assertions found to be correct are labeled as \"Passed\"; 
+invalid ones are hyperlinked to the line within policy.conf that caused 
+the conflict.\n
+
+Currently, there are three type of assertions. The first one is noflow,
+which asserts that there is no flow between two different types.  The
+second is mustflow, which instead states that there must exist one flow
+between two different types. The third type is onlyflow, which says that 
+there must be a flow AND that flow must be through specific intermediary 
+type(s). All three modes allow for any number of source, destination, 
+and exception types. Types may be specified through the use of attributes.
+Limiting types by object classes is disabled for this release; Finally, 
+each assertion can have a minimum weight to limiting searches."
 
     # Within the namespace command for the module, you must call
     # Apol_Analysis::register_analysis_modules, the first argument is
@@ -526,7 +526,7 @@ proc Apol_Analysis_flowassert::create_type_panel {type_panel type_name type_var}
     bind $objs_lb <<ListboxSelect>> [namespace code [list select_class $objs_lb $class_var $objs_lb ""]]
     
 #    pack [Separator $type_panel.strut1 -orient horizontal] \
-        -expand 1 -fill x -side top -pady 10
+# -expand 1 -fill x -side top -pady 10
 
     # add the include / exclude radio buttons
     set include_var assert_wiz_${type_name}_include
