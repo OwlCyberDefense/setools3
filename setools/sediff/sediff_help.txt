@@ -4,127 +4,110 @@ February 15, 2005
 selinux@tresys.com
 
 Overview:
---------- 
-This File contains basic help information for using the sediff gui, a
-tool to compare two Security Enhanced Linux (SE Linux) policies.
+========
+Sediff is a policy analysis tool that parses two given policy files and compares them showing a list of the differences. It can compare source and/or binary policies. It can also compare different versions of policy. For source policies, versions 12 and high of SELinux policies are supported. For binary policies, versions 15 and higher are supported.
 
-The tool does not need to be installed on an SE Linux system; it will
-work on any Linux machine. The tool parses two given policy files and 
-compares them showing a list of the differences.
+Limitations:
+===========
+Sediff currently compares only the following policy elements:
+	+ object classes and permissions
+	+ types and attributes
+	+ roles
+	+ users
+	+ booleans
+	+ type enforcement rules (allow, type_transitions, etc.)
+	+ role allow rules
+	
+Other elements will be added as the core libraries support them.
 
+What is a Semantic Diff?
+========================
+The challenge with comparing two policies is that a straightforward textual comparison is of little value. What one needs is the ability to determine semantically how to policies differ. For example, one could not simply grep for allow rules with a given type, and then compare them to a similar list from another policy. Many factors effect the semantic meaning of the rules. For example, multiple rules can allow differing sets of permissions. Attributes can allow permission to/from a type.
 
-Understanding a Policy Semantic DIFF: 
-------------------------------------
-In this section, we analyze the various aspects of a policy and discuss what a diff means. Where meaningful, we also discuss the differences between handling a policy source and a policy binary file.
+What sediff does, is analyze each policy semantically. In this way, it resolves any conflicts and determines whether there is a substantial differences. This approach also allows binary and source policies to be compared, as well as different versions of policies.
 
-Policy Components: 
-    The base policy components (i.e., the identifiers) are the easiest part of the policy on which to perform a diff.
+NOTE: The one semantic assumption sediff makes is that when an identifier (e.g., a type name) has the same string value in each policy, then it represents the same semantic meaning in both policy.
 
-    In the case of a source policy, we maintain line references back to the associated policy.conf (there are no line references for binary policy as there is no policy source file to reference). For binary policies, currently there are no attributes.
-
-Types:
-    Determining the difference between two lists of types might be easiest, as long as we keep our definition of difference simple. In this case, we would compare both list of types using a string compare, and identify any types not in both policies. We will not attempt to recognize any difference in semantic meaning of the type string identifier (not even sure that is possible!).
-
-Attributes:
-    Attributes are a little more difficult than types, yet
-still fairly simple. First we need to identify any attributes that
-are not present in both policies. Second we must determine whether
-the list of types for an attribute differ between policies.
-
-Classes and Permissions:
-    To date, difference in classes and permissions generally also mean a different policy version. However that coupling will likely change in the future as user-mode object servers are added.
-
-Objects: There are two issues to examine: 
-    1) whether the list of object classes are the same
-    2) whether the assignment of permissions are the same.
-
-Permissions & Common Permissions :
-    We determine whether the list of specific permission names is the same. Next we determine whether the list of common permissions are the same, and whether the assignment of permissions to common permission is also the same.
-
-Roles:  There are two issues with roles: 
-    1) whether the list of role names are the same
-    2) whether the assignment of types to each role are the same.
-
-Users: There are two issues with users: 
-    1) whether the list of user names are the same
-    2) whether the assignment of roles to each user are the same.
-
-Booleans: There are two issues with Booleans: 
-    1) whether the list of Boolean names is the same 
-    2) whether the default state is the same in each policy.
+Sediff commands:
+===============
+Sediff can be run from command line or as a GUI. For command line help, run "sediff --help". To start the GUI (the primary focus of this help file), either of the following commands will work:
+	sediff -X [policy1 policy2]
+	sediffx [policy1 policy2]
 
 
-AV and Type Rules: 
-    The TE rules are the most difficult aspect of diffing two policies.
+Understanding Sediff's Results: 
+==============================
+After differing two policies, the GUI shows the policy areas compared in the left hand frame. Besides each policy area is a number representing the total number of differences in that area. As a general rule, for each policy area, the righhand window shows the detailed results. 
 
-    In the case of binary policies, the rules are already condensed down to single source-target-class triples, with only one rule of a given rule type per triple (ignoring conditional policies for now). However, source policies are not so compact, and there may (and usually are) many rules that have many sources, targets, and object classes and many other rules that match these rules for some aspect. This is further complicated with the use of attributes. Indeed the simpler (but verbose) case of a binary policy is really just a simple case of the more general case represented by the source policy. Thus the first issue is a general solution for determining whether a given rule in policy_1 is semantically included in policy_2.
+NOTE: All differences are shown from the perspective of the first policy given (i.e., policy 1).  There are three types of differences shown:
 
-Role Allow Rules:
-    Role rules (role allow and transition) can be checked much in the same way as described above for TE rules.
+	+ Added (+): A policy component was added by policy 2 (in policy 2 but not policy 1)
+	+ Removed (-): A policy component was removed by policy 2 (in policy 1 but not policy 2)
+	+ Changed (*): A policy component was present in both policies, but somehow changed by policy 2.
+	
 
-Conditional Policy:
-    Conditional policies are a little more involved. First we must check for differences in conditional expressions. If an entire expression is missing within one policy or the other, then we need to identify the missing expression.
+Supported Policy Areas Differences:
+==================================
+Below is an explanation of the difference for each supported policy area:
 
-    Second, for expressions that are the same in both policies, we need to check the true and false lists in both expressions, and ensure that there are no changes in rule sets. This can be done in a manner similar as described for the AV rules above. Note, we can ignore the enabled stated in this analysis as that would be reflected by a change in default Boolean state.
+   Classes and Permissions:
+   -----------------------
+   This area examines three aspects of a policy: class definitions, common permission definitions, and permissions:
+   
+   	Classes:
+   	-------
+   	Classes can be added, removed, or changed. Changed means that the permissions associated with the classes have changed between the two policies.
+   	
+   	Common Permissions:
+   	-------------------
+   	Common permissions are compared much like classes. They can be added, removed or changed, where change means that the permissions associated with the common permission has changed.
+   	
+   	Permissions:
+   	-----------
+   	Permissions can either be added or removed, they cannot be changed.
 
+   Types:
+   -----
+   Types can be added, removed, or changed. Change means that the attributes associated with a type are different between the two policies. Attributes can be added or removed from a type.
 
+   Attributes:
+   -----------
+   Attributes are compared like types. They can be added, removed, or changed. Change means that the type associated with the attributes are different (types can be added or removed from the attribute).
 
-Startup:
---------
-Sediff accepts the following command line arguments:
-sediff -X [policy1 policy2]
-sediffx [policy1 policy2]
+   Roles:
+   -----
+   Roles can be added, removed, or changed. Change means that the types associated with a role are different between the two policies. Types can be added or removed from a role.
+   
+   Users: 
+   ------
+   Users can be added, removed, or changed. Changed means that the roles associated with a user are different between the two policies. Roles can be added or removed from a user.
+  
+   Booleans:
+   --------
+   Booleans can be added, removed, or changed. If you compare a version 15 or earlier policy with a version 16 or later policy. All the booleans will be added/removed (booleans came in version 16). Change means that the default value is different between the two policies.
 
-Loading Policies:
------------------
-Sediff will load policies from startup as shown in the startup section.
-You can also open policies by chooosing File->Open from the menu bar.
+   TE Rules: 
+   ---------
+   The TE rules areas covers the "meat" of a policy. This area includes AV rules (allow, audit_allow, and dont_audit) and Type rules (type_transitions and type_change). The rule comparison is truly semantic. All issues of redundancy and duplication, as well as indirect access through attributes are resolved. All rules are keyed by the "source-target-class" (STC) triple.  In addition, conditional rules are distinguished from non-conditional rules. Thus, for example, two rules with the same STC will not be compared if one is non-conditional and the other is conditional, or if both are conditional but conditioned on two different conditional expressions. For conditional rules, the conditional expression is compared to ensure that conditional rules are meaningfully compared. In the results pane, conditional rules are indicated by a "T" or "F" (representing the TRUE or FALSE list of a conditional expressions), as well as a rendering of its associated conditional expression.
+   
+   NOTE: For conditional rules, the default and current values of the booleans are ignored. Conditional expressions are compared as if the booleans are all the same.
+   
+   Rules can be added, removed, or changed. Added means the STC triple for that rule is not present in Policy 1, but is in Policy 2. Removed means the STC triple is present in Policy 1, but not in Policy 2. For AV rules, change means that the permissions for the rule are different between the policies. For Type rules, change means that the default type is different between the policies.
+   
+   When source policies are compared, hyper-linked line numbers are shown that take you to the source ".conf" file where the rule is defined. If there are more than one source rules that contribute to a STC triple for a given rule, then all source rules are linked.
 
-Menus:
-------
-The FILE menu allows you to open new policies, to reload the current
-open policies, and to quit the application.
+   RBAC Rules:
+   ----------
+   RBAC includes role allow and role_transition rules. Currently role_transition rules are not supported in sediff. Role allow rules can *************************** I'M CONFUSED BY THE TOOL. CERTAINLY WHAT WAS HERE BEFORE MAKES NO SENSE.
+   
+   Conditional Expressions:
+   -----------------------
+   While conditional expressions are compared when analyzing conditional TE rules as described above, sediff does not currently support comparing conditional expressions directly.
 
-The HELP menu opens this help dialog, and a dialog displaying the 
-current version of the sediff gui you are using.
-
-Differences Tab:
---------------
-    When two policies are loaded, the sediff gui displays a list of selections on the left hand side. Each of these selections represent a set of differences between the policies as explained earlier. The total number of differences in each of these sets in displayed in the status bar at the bottom of the main window.
-
-    Differences:
-    ------------
-        Difference Summary - The statistics of the difference between the policies.
-        Classes and Permisssions - The difference between classes, permissions, and common permissions in the policies.
-        Types - The difference between types in the policies.
-        Attributes - The difference between attributes in the policies.
-        Roles - The difference between roles in the policies.
-        Users - The difference between booleans in the policies.
-        Booleans - The difference between booleans in the policies.
-        TE Rules - The difference in the type enforcment rules in the policies.
-        RBAC Rules - The difference in the role allow rules in the policies.
-        Conditionals - This is not implemented in this version of the tool.
-
-    Difference Window:
-    ------------------
-        When you make a selection from the list the right hand side will be populated by the differences for that set. The differences are displayed in the following format:
-            Items added to Policy 1 in Policy 2 are in green, starting with a '+'.
-            Items removed from Policy 1 in Policy 2 are in red, starting with a '-'.
-            Changes of a major item from Policy 1 to Policy 2 are in blue, starting with a star '*' where the changes are represented using additions and subtractions.
-
-        When viewing differences in TE Rules the format of the line is:
-            [T|F]  [+|-|*] rule [ CONDITIONAL EXPRESSION] [ LINE NUMBER ] 
-            T|F: Used when the rule is inside of a TRUE/FALSE statement.
-            CONDITIONAL EXPRESSION: The conditional expression of the TRUE/FALSE statement
-	    LINE NUMBER: If the policy is a source policy, a link of the line number of that statement is shown in blue.
-    
-    Difference Key:
-    ---------------
-        The difference key is shown in the bottom left hand corner and explains what is displayed in the difference window.
 
 Policy Tabs:
-------------
-        Each policy has a tab on the main window labeled Policy #: followed by the source file name. Under each of these tabs are a policy statistics tab, and a source tab.
+===========
+        Each policy has a tab on the main window labeled Policy #: followed by the policy file name. Under each of these tabs are a policy statistics tab, and a source tab.
 
     Policy Statistics Tab:
     ----------------------
@@ -132,7 +115,5 @@ Policy Tabs:
     
     Source Tab:
     -----------
-        If the policy is a source policy, and not a binary policy this tab will display the source of that policy. When viewing the source of either policy the bottom right hand corner of the main window will display your current line number.
-
-In the bottom left hand corner of the difference tab is a key showing you
+        If the policy is a source policy, this tab displays the source of that policy. 
 
