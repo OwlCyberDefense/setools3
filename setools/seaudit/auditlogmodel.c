@@ -681,7 +681,7 @@ void seaudit_log_store_do_filter(SEAuditLogStore *store)
 		gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(store), sortId, store->order);
 	else 
 		gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(store), DATE_FIELD, GTK_SORT_ASCENDING);
-
+	log_filtered_signal_emit();
 	return;
 }
 
@@ -743,7 +743,10 @@ void seaudit_log_store_refresh(SEAuditLogStore *store, FILE *file)
 	g_assert(store->log != NULL);
 	g_assert(store != NULL);
 	g_assert(file != NULL);
-	parse_audit(file, store->log, FALSE);
-	seaudit_log_store_do_filter(store);
-	return;
+
+	if (file == NULL || store == NULL || store->log == NULL)
+		return;
+
+	if (parse_audit(file, store->log, FALSE) != PARSE_NO_PARSE)
+		seaudit_log_store_do_filter(store);
 }
