@@ -164,6 +164,8 @@ static int get_iad_buffer(GtkTextBuffer *txt, GtkTextIter *txt_iter,GString *str
 		mark = gtk_text_buffer_create_mark (txt,"added-mark",txt_iter,TRUE);
 	gtk_text_buffer_get_iter_at_mark(txt,txt_iter,mark);
 
+
+
 	/* create the tags so we can add color to our buffer */
 	table = gtk_text_buffer_get_tag_table(txt);
 	added_tag = gtk_text_tag_table_lookup(table, "added-tag");
@@ -469,6 +471,8 @@ static int get_iad_buffer(GtkTextBuffer *txt, GtkTextIter *txt_iter,GString *str
 		}
 
 	}
+	g_string_printf(string,"\n");
+	gtk_text_buffer_insert(txt,txt_iter,string->str,-1);
 
 	/* put the changed header on */
 	gtk_text_buffer_get_iter_at_mark(txt,txt_iter,mark);
@@ -541,12 +545,12 @@ static int get_iad_buffer(GtkTextBuffer *txt, GtkTextIter *txt_iter,GString *str
 
 	/* Put the Major header on */
 	gtk_text_buffer_get_iter_at_mark(txt,txt_iter,mark);
-	g_string_printf(string, "\n%s\n",descrp);
+	g_string_printf(string, "%s\n",descrp);
 	gtk_text_buffer_insert_with_tags_by_name(txt, txt_iter, string->str, 
 						 -1, "header-tag", NULL);
 
 
-	
+	gtk_text_buffer_delete_mark(txt,mark);
 	return 0;
 }
 
@@ -1188,7 +1192,7 @@ static void sediff_populate_buffer_hdrs()
 	GString *string = g_string_new("");
 	
 	/* permissions */
-	g_string_printf(string, "Permissions (%d Added, %d Removed)\n",sediff_app->summary.permissions.added,
+	g_string_printf(string, "Permissions (%d Added, %d Removed)\n\n",sediff_app->summary.permissions.added,
 			sediff_app->summary.permissions.removed);
 	sediff_add_hdr(sediff_app->classes_buffer,string);
 	/* commons */
@@ -1200,19 +1204,19 @@ static void sediff_populate_buffer_hdrs()
 			sediff_app->summary.classes.removed, sediff_app->summary.classes.changed);
 	sediff_add_hdr(sediff_app->classes_buffer,string);
 	/* types */
-	g_string_printf(string, "Types (%d Added, %d Removed, %d Changed)\n",sediff_app->summary.types.added,
+	g_string_printf(string, "Types (%d Added, %d Removed, %d Changed)\n\n",sediff_app->summary.types.added,
 			sediff_app->summary.types.removed, sediff_app->summary.types.changed);
 	sediff_add_hdr(sediff_app->types_buffer,string);
 	/* attributes */
-	g_string_printf(string, "Attributes (%d Added, %d Removed, %d Changed)\n",sediff_app->summary.attributes.added,
+	g_string_printf(string, "Attributes (%d Added, %d Removed, %d Changed)\n\n",sediff_app->summary.attributes.added,
 			sediff_app->summary.attributes.removed, sediff_app->summary.attributes.changed);
 	sediff_add_hdr(sediff_app->attribs_buffer,string);
 	/* users */
-	g_string_printf(string, "Users (%d Added, %d Removed, %d Changed)\n",sediff_app->summary.users.added,
+	g_string_printf(string, "Users (%d Added, %d Removed, %d Changed)\n\n",sediff_app->summary.users.added,
 			sediff_app->summary.users.removed, sediff_app->summary.users.changed);
 	sediff_add_hdr(sediff_app->users_buffer,string);
 	/* roles */
-	g_string_printf(string, "Roles (%d Added, %d Removed, %d Changed)\n",sediff_app->summary.roles.added,
+	g_string_printf(string, "Roles (%d Added, %d Removed, %d Changed)\n\n",sediff_app->summary.roles.added,
 			sediff_app->summary.roles.removed, sediff_app->summary.roles.changed);
 	sediff_add_hdr(sediff_app->roles_buffer,string);
 	/* booleans */
@@ -1220,7 +1224,7 @@ static void sediff_populate_buffer_hdrs()
 			sediff_app->summary.booleans.removed, sediff_app->summary.booleans.changed);
 	sediff_add_hdr(sediff_app->booleans_buffer,string);
 	/* rbac */
-	g_string_printf(string, "Role Allows (%d Added, %d Removed, %d Changed)\n",sediff_app->summary.rbac.added,
+	g_string_printf(string, "Role Allows (%d Added, %d Removed, %d Changed)\n\n",sediff_app->summary.rbac.added,
 			sediff_app->summary.rbac.removed, sediff_app->summary.rbac.changed);
 	sediff_add_hdr(sediff_app->rbac_buffer,string);
 	/* te rules */
@@ -1333,7 +1337,7 @@ static int txt_buffer_insert_classes_results(GtkTextBuffer *txt, GtkTextIter *tx
 	
 	g_return_val_if_fail(stuff_removed != NULL, -1);
 	g_return_val_if_fail(stuff_added != NULL, -1);
-	gtk_text_buffer_get_end_iter(txt, txt_iter);
+	//gtk_text_buffer_get_end_iter(txt, txt_iter);
 	rt = get_iad_buffer(txt,txt_iter,string, IDX_OBJ_CLASS, stuff_removed->classes, 
 			    stuff_added->classes, policy_old, policy_new,&sediff_app->summary.classes);
 	if (rt < 0){
@@ -1398,24 +1402,28 @@ static int txt_buffer_insert_perms_results(GtkTextBuffer *txt, GtkTextIter *txt_
 	header_removed_tag = gtk_text_tag_table_lookup(table, "header-removed-tag");
 	if(!header_removed_tag) {
 		header_removed_tag = gtk_text_buffer_create_tag (txt, "header-removed-tag",
-							 "foreground", "red",
-							 "weight", PANGO_WEIGHT_BOLD, NULL); 
+								 "family", "monospace",
+								 "foreground", "red",
+								 "weight", PANGO_WEIGHT_BOLD, NULL); 
 	}
 	header_added_tag = gtk_text_tag_table_lookup(table, "header-added-tag");
 	if(!header_added_tag) {
 		header_added_tag = gtk_text_buffer_create_tag (txt, "header-added-tag",
-							 "foreground", "dark green",
-							 "weight", PANGO_WEIGHT_BOLD, NULL); 
+							       "family", "monospace",
+							       "foreground", "dark green",
+							       "weight", PANGO_WEIGHT_BOLD, NULL); 
 	}
 	header_tag = gtk_text_tag_table_lookup(table, "header-tag");
 	if(!header_tag) {
 		header_tag = gtk_text_buffer_create_tag (txt, "header-tag",
+							 "family", "monospace",
 							 "weight", PANGO_WEIGHT_BOLD, 
 							 "underline", PANGO_UNDERLINE_SINGLE,NULL); 
 	}
 
-	g_string_printf(string,"\nPermissions\n");
+	g_string_printf(string,"Permissions\n");
 	gtk_text_buffer_insert_with_tags_by_name(txt,txt_iter,string->str,-1,"header-tag",NULL);
+
 
 	g_string_printf(string,"\tAdded Permissions: %d\n",stuff_added->num_perms);
 	gtk_text_buffer_insert_with_tags_by_name(txt,txt_iter,string->str,-1,"header-added-tag",NULL);
@@ -2117,11 +2125,11 @@ static void txt_view_populate_buffers(apol_diff_t *stuff_removed,
 
   
 	/* case OPT_CLASSES: */
-	gtk_text_buffer_get_end_iter(sediff_app->classes_buffer, &end);
+	gtk_text_buffer_get_start_iter(sediff_app->classes_buffer, &end);
 	rt = txt_buffer_insert_classes_results(sediff_app->classes_buffer, &end,
 					       string, stuff_removed, 
 					       stuff_added, policy_old, policy_new);
-	gtk_text_buffer_get_end_iter(sediff_app->classes_buffer, &end);
+	//gtk_text_buffer_get_end_iter(sediff_app->classes_buffer, &end);
 	rt = txt_buffer_insert_common_perms_results(sediff_app->classes_buffer, &end,
 						    string, stuff_removed, stuff_added, 
 						    policy_old, policy_new);
