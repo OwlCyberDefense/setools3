@@ -22,6 +22,44 @@
 #include <libapol/policy.h>
 #include <string.h>
 
+enum {
+	ITEMS_LIST_COLUMN, 
+	NUMBER_ITEMS_LIST_COLUMNS
+};
+
+enum items_list_types_t {
+	SEAUDIT_SRC_TYPES,
+	SEAUDIT_SRC_USERS,
+	SEAUDIT_SRC_ROLES,
+	SEAUDIT_TGT_TYPES,
+	SEAUDIT_TGT_USERS,
+	SEAUDIT_TGT_ROLES,
+	SEAUDIT_OBJECTS
+};
+
+enum select_values_source_t {
+	SEAUDIT_FROM_LOG,
+	SEAUDIT_FROM_POLICY,
+	SEAUDIT_FROM_UNION
+};
+
+typedef struct  seaudit_filter_list {
+	char **list;
+	int size;
+} seaudit_filter_list_t;
+
+struct filter_window;
+
+typedef struct filters_select_items {
+	GtkListStore *selected_items;
+	GtkListStore *unselected_items;
+	enum items_list_types_t items_list_type;
+        enum select_values_source_t items_source;
+	GtkWindow *window;
+	GladeXML *xml;
+	struct filter_window *parent;
+} filters_select_items_t;
+
 extern seaudit_t *seaudit_app;
 
 /******************************************************************
@@ -878,7 +916,8 @@ static void filter_window_set_title(filter_window_t *filter_window)
 static void filter_window_set_values(filter_window_t *filter_window)
 {
 	GtkWidget *widget;
-	
+	GtkTextBuffer *buffer;
+
 	filters_select_items_fill_entry(filter_window->src_types_items);
 	filters_select_items_fill_entry(filter_window->src_users_items);
 	filters_select_items_fill_entry(filter_window->src_roles_items);
@@ -914,11 +953,17 @@ static void filter_window_set_values(filter_window_t *filter_window)
 	widget = glade_xml_get_widget(filter_window->xml, "MatchEntry");
 	gtk_entry_set_text(GTK_ENTRY(widget), filter_window->match->str);
 
+	widget = glade_xml_get_widget(filter_window->xml, "NotesTextView");
+	buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(widget));
+	gtk_text_buffer_set_text(buffer, filter_window->notes->str, strlen(filter_window->notes->str));
+
 }
 
 static void filter_window_update_values(filter_window_t *filter_window)
 {
 	GtkWidget *widget;
+	GtkTextBuffer *buffer;
+	GtkTextIter start, end;
 	
 	/* First parse all selection enabled entry boxes, because the user may have typed in the value */
 	filters_select_items_parse_entry(filter_window->src_types_items);
@@ -954,6 +999,12 @@ static void filter_window_update_values(filter_window_t *filter_window)
 
 	widget = glade_xml_get_widget(filter_window->xml, "MatchEntry");
 	filter_window->match = g_string_assign(filter_window->match, gtk_entry_get_text(GTK_ENTRY(widget)));
+
+	widget = glade_xml_get_widget(filter_window->xml, "NotesTextView");
+	buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(widget));
+	gtk_text_buffer_get_start_iter(buffer, &start);
+	gtk_text_buffer_get_end_iter(buffer, &end);
+	filter_window->notes = g_string_assign(filter_window->notes, gtk_text_buffer_get_text(buffer, &start, &end, FALSE));
 		
 }
 
@@ -1140,6 +1191,9 @@ filter_window_t* filter_window_create(multifilter_window_t *parent, gint parent_
 {
 	filter_window_t *filter_window;
 	
+	if (!parent || !name)
+		return NULL;
+
 	filter_window = (filter_window_t *)malloc(sizeof(filter_window_t));
 	if (filter_window == NULL) {
 		fprintf(stderr, "Out of memory.");
@@ -1161,6 +1215,7 @@ filter_window_t* filter_window_create(multifilter_window_t *parent, gint parent_
 	filter_window->executable = g_string_new("");
 	filter_window->path = g_string_new("");
 	filter_window->match = g_string_new("All");
+	filter_window->notes = g_string_new("");
 	
 	filter_window->window = NULL;
 	filter_window->xml = NULL;
@@ -1196,7 +1251,13 @@ void filter_window_destroy(filter_window_t *filter_window)
 		g_string_free(filter_window->executable, TRUE);
 	if (filter_window->path)
 		g_string_free(filter_window->path, TRUE);
-		
+	if (filter_window->name)
+		g_string_free(filter_window->name, TRUE);
+	if (filter_window->match)
+		g_string_free(filter_window->match, TRUE);
+	if (filter_window->notes)
+		g_string_free(filter_window->notes, TRUE);
+	
 	if (filter_window->window != NULL)
 		gtk_widget_destroy(GTK_WIDGET(filter_window->window));
 	if (filter_window->xml != NULL)
@@ -1334,6 +1395,8 @@ seaudit_filter_t* filter_window_get_filter(filter_window_t *filter_window)
 	GtkTreeIter iter;
 	seaudit_filter_list_t *items_list = NULL;
 	GtkWidget *widget;
+	GtkTextBuffer *buffer;
+	GtkTextIter start, end;
 	char *text;
 	int int_val;
 
@@ -1475,5 +1538,90 @@ seaudit_filter_t* filter_window_get_filter(filter_window_t *filter_window)
 	else 
 		seaudit_filter_set_match(rt, SEAUDIT_FILTER_MATCH_ANY);
 
+	if (filter_window->window) {
+		widget = glade_xml_get_widget(filter_window->xml, "NameEntry");
+		text = (char*)gtk_entry_get_text(GTK_ENTRY(widget));
+	} else
+		text = filter_window->name->str;
+	if (strcmp(text, "") != 0)
+		seaudit_filter_set_name(rt, text);
+
+	if (filter_window->window) {
+		widget = glade_xml_get_widget(filter_window->xml, "NotesTextView");
+		buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(widget));
+		gtk_text_buffer_get_start_iter(buffer, &start);
+		gtk_text_buffer_get_end_iter(buffer, &end);
+		text = gtk_text_buffer_get_text(buffer, &start, &end, FALSE);
+	} else 
+		text = filter_window->notes->str;
+	if (strcmp(text, "") != 0)
+		seaudit_filter_set_desc(rt, text);
+
 	return rt;
+}
+
+void filter_window_set_values_from_filter(filter_window_t *filter_window, seaudit_filter_t *filter)
+{
+	const char **strs;
+	int num_strs, i;
+	char ports_str[16];
+	const int ports_str_len = 16;
+	
+	if (!filter_window || !filter)
+		return;
+	if (filter->match == SEAUDIT_FILTER_MATCH_ALL)
+		filter_window->match = g_string_assign(filter_window->match, "All");
+	else 
+		filter_window->match = g_string_assign(filter_window->match, "Any");
+
+	if (filter->desc)
+		filter_window->notes = g_string_assign(filter_window->notes, filter->desc);
+	if (filter->src_type_criteria) {
+		strs = src_type_criteria_get_strs(filter->src_type_criteria, &num_strs);
+		for (i = 0; i < num_strs; i++)
+			filters_select_items_add_selected_value(filter_window->src_types_items, strs[i]);
+	}
+	if (filter->tgt_type_criteria) {
+		strs = tgt_type_criteria_get_strs(filter->tgt_type_criteria, &num_strs);
+		for (i = 0; i < num_strs; i++)
+			filters_select_items_add_selected_value(filter_window->tgt_types_items, strs[i]);
+	}
+	if (filter->src_user_criteria) {
+		strs = src_user_criteria_get_strs(filter->src_user_criteria, &num_strs);
+		for (i = 0; i < num_strs; i++)
+			filters_select_items_add_selected_value(filter_window->src_users_items, strs[i]);
+	}
+	if (filter->tgt_user_criteria) {
+		strs = tgt_user_criteria_get_strs(filter->tgt_user_criteria, &num_strs);
+		for (i = 0; i < num_strs; i++)
+			filters_select_items_add_selected_value(filter_window->tgt_users_items, strs[i]);
+	}
+	if (filter->src_role_criteria) {
+		strs = src_role_criteria_get_strs(filter->src_role_criteria, &num_strs);
+		for (i = 0; i < num_strs; i++)
+			filters_select_items_add_selected_value(filter_window->src_roles_items, strs[i]);
+	}
+	if (filter->tgt_role_criteria) {
+		strs = tgt_role_criteria_get_strs(filter->tgt_role_criteria, &num_strs);
+		for (i = 0; i < num_strs; i++)
+			filters_select_items_add_selected_value(filter_window->tgt_roles_items, strs[i]);
+	}
+	if (filter->class_criteria) {
+		strs = class_criteria_get_strs(filter->class_criteria, &num_strs);
+		for (i = 0; i < num_strs; i++)
+			filters_select_items_add_selected_value(filter_window->obj_class_items, strs[i]);
+	}
+	if (filter->ports_criteria) {
+		snprintf(ports_str, ports_str_len, "%d", ports_criteria_get_val(filter->ports_criteria));
+		filter_window->port = g_string_assign(filter_window->port, ports_str);
+	} 
+	if (filter->ipaddr_criteria) 
+		filter_window->ip_address = g_string_assign(filter_window->ip_address, ipaddr_criteria_get_str(filter->ipaddr_criteria));
+	if (filter->netif_criteria)
+		filter_window->interface = g_string_assign(filter_window->interface, netif_criteria_get_str(filter->netif_criteria));
+	if (filter->path_criteria)
+		filter_window->path = g_string_assign(filter_window->path, path_criteria_get_str(filter->path_criteria));
+	if (filter->exe_criteria) 
+		filter_window->executable = g_string_assign(filter_window->executable, exe_criteria_get_str(filter->exe_criteria));
+
 }
