@@ -194,7 +194,6 @@ replcon_context_create(const char *context_str)
 		goto err;
 	}
 	
-	assert(tokens_orig != NULL);
         while (i < 3) {
         	if ((parts[i] = strsep(&tokens, ":")) == NULL) {
         		fprintf(stderr, "Invalid context format.\n");
@@ -313,6 +312,32 @@ get_security_context(const replcon_context_t *context)
 }
 
 /*
+ * replcon_print_valid_object_classes
+ *
+ * Prints out the valid object classes to specify for the search.
+ */
+void
+replcon_print_valid_object_classes()
+{
+	int i, num_objs_on_line = 0, obj_max = 8;
+	
+	assert(replcon_object_classes != NULL);
+	printf("   ");
+	for (i = 0; i < NUM_OBJECT_CLASSES; i++) {
+		num_objs_on_line++;
+		if (i == (NUM_OBJECT_CLASSES - 1))
+			printf("%s\n", replcon_object_classes[i]);
+		else if (num_objs_on_line == obj_max) {
+			printf("%s,\n", replcon_object_classes[i]);
+			printf("   ");
+		}
+		else 
+			printf("%s, ", replcon_object_classes[i]);
+		
+	}
+}
+
+/*
  * replcon_usage
  *
  * Prints out usage instructions for the program. If brief is set to 1 (true) only the
@@ -350,6 +375,9 @@ replcon_usage(const char *program_name, int brief)
 	printf("as follows - user_u:object_r:user_t.  replcon will automatically match a user,\n");
 	printf("role, or type that is not specified, with any other user, role, or type.\n");
 	printf("For example ::user_t specifies any context that has user_t as the type.\n\n");
+	printf("Valid OBJECT classes to specify include: \n");
+	replcon_print_valid_object_classes();
+	printf("\n");
 }
 
 /*
@@ -913,13 +941,13 @@ replcon_stat_file_replace_context(const char *filename)
 #ifndef FINDCON
 				if (nftw(mounts[i], replcon_file_context_replace, NFTW_DEPTH, NFTW_FLAGS)) {
 					fprintf(stderr,
-						"Error walking directory tree: %s\n", actual_path);
+						"Error walking directory tree: %s\n", mounts[i]);
 					return;
 				}
 #else
 				if (nftw(mounts[i], findcon, NFTW_DEPTH, NFTW_FLAGS)) {
 					fprintf(stderr,
-						"Error walking directory tree: %s\n", actual_path);
+						"Error walking directory tree: %s\n", mounts[i]);
 					return;
 				}
 #endif
