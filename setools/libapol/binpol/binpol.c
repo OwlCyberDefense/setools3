@@ -194,7 +194,7 @@ static int load_common_perm(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned in
 	size_t len, nel;
 	unsigned char *kbuf, *key;
 	__u32 *buf, val;
-	int rt, idx;
+	int rt, idx = -1;
 	bool_t keep = FALSE;
 	
 	INTERNAL_ASSERTION
@@ -249,8 +249,8 @@ static int load_class(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts
 {
 	size_t len, len2, nel, ncons, nexpr;
 	unsigned char *kbuf, *key, *cbuf;
-	__u32 *buf, expr_type, val, i, j, num_cp = 0, cp_val;
-	int rt, idx, idx2 = -1;		/* idx2 (common perm idx) must ne init'd to -1 for load_perms */
+	__u32 *buf, expr_type, val, i, j, num_cp = 0, cp_val = -1;
+	int rt, idx = -1, idx2 = -1;		/* idx2 (common perm idx) must ne init'd to -1 for load_perms */
 	bool_t keep = FALSE;
 	
 	INTERNAL_ASSERTION
@@ -389,7 +389,7 @@ static int load_role(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts,
 	__u32 *buf, val;
 	size_t len;
 	unsigned char *kbuf, *key;
-	int idx, rt; 
+	int idx = -1, rt; 
 	bool_t keep = FALSE;
 
 	INTERNAL_ASSERTION
@@ -513,7 +513,7 @@ static int load_user(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts,
 	size_t len;
 	unsigned char *kbuf, *key;
 	bool_t keep = FALSE;
-	user_item_t *u;
+	user_item_t *u = NULL;
 	int i, rt;
 	ebitmap_t e;
 
@@ -1030,7 +1030,7 @@ static int add_binary_avrule(avtab_datum_t *avdatum, avtab_key_t *avkey, ap_bmap
 	bool_t is_cond, enabled;
 		
 	assert(avdatum != NULL && avkey != NULL && bm != NULL && policy != NULL);
-
+	src = tgt = cls = dflt = rule_idx = -1;
 	is_cond = (r_list != NULL);
 	enabled = (is_cond ? binpol_enabled(avdatum->specified) : TRUE);
 
