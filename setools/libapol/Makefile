@@ -5,7 +5,7 @@ LIB-OBJ +=  avl-util.o policy-avl.o render.o analysis.o perm-map.o cond.o infofl
 LIB-OBJ +=  flowassert.o flowassert_scan.o flowassert_parse.o symtable.o
 LIB-OBJ +=  relabel_analysis.o
 LIB-OBJ +=  binpol/binpol.o binpol/bpmaps.o binpol/fbuf.o binpol/ebitmap.o
-LIB-OBJ +=  semantic/avhash.o semantic/avsemantics.o
+LIB-OBJ +=  semantic/avhash.o semantic/avsemantics.o relabel_analysis.o
 
 LIB-OBJ-TCL = apol_tcl.o
 
