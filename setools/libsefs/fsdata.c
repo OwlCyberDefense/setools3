@@ -585,6 +585,12 @@ int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char *filename)
 		pinfo = &(fsd->files[i]);
 	
 		/* Write the key */
+		items2 = fwrite(cpu_to_le64(&pinfo->key.inode), sizeof(uint64_t), 1, fp);
+		if (items2 != 1) {
+			fprintf(stderr, "2 error writing file %s\n", filename);
+			return -1;
+		}
+		
 		buf[0] = cpu_to_le32(pinfo->key.dev);
 		items2 = fwrite(buf, sizeof(uint32_t), 1, fp);
 		if (items2 != 1) {
@@ -592,27 +598,26 @@ int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char *filename)
 			return -1;
 		}
 		
-		items2 = fwrite(cpu_to_le64(&pinfo->key.inode), sizeof(uint64_t), 1, fp);
-		if (items2 != 1) {
-			fprintf(stderr, "2 error writing file %s\n", filename);
-			return -1;
-		}
-
-		
 		items = 0;
 		sbuf[items++] = cpu_to_le32(pinfo->context.user);
 		sbuf[items++] = cpu_to_le32(pinfo->context.role);
 		sbuf[items++] = cpu_to_le32(pinfo->context.type);
-		sbuf[items++] = cpu_to_le32(pinfo->obj_class);
-				
+
 		items2 = fwrite(sbuf, sizeof(int32_t), items, fp);
 		if (items2 != items) {
 			fprintf(stderr, "3 error writing file %s\n", filename);
 			return -1;
 		}
+
+		buf[0] = cpu_to_le32(pinfo->obj_class);
+		items2 = fwrite(buf, sizeof(uint32_t), 1, fp);
+		if (items2 != 1)
+			goto bad;
 		
-		if (pinfo->obj_class || LNK_FILE) {
+		if (pinfo->obj_class == LNK_FILE) {
 				/* write our symlink target */
+printf("con %s:%s\n", fsd->users[pinfo->context.user], fsd->types[pinfo->context.type]);
+printf("trying to write symlink with target %s\n", pinfo->symlink_target);
 				len = strlen(pinfo->symlink_target);
 				buf[0] = cpu_to_le32(len);
 				items = fwrite(buf, sizeof(uint32_t), 1, fp);
@@ -802,8 +807,10 @@ printf("got me a user! %s\n", fsd->users[i]);
 
 printf("number of files: %d\n", fsd->num_files);	
 	for(i = 0; i < fsd->num_files; i++) {
-		
+
 		pinfo = &(fsd->files[i]);
+
+printf("on inode: %d\n",i);
 
 		key = (inode_key_t *)malloc(sizeof(inode_key_t));
 		if (!key) {
@@ -814,29 +821,39 @@ printf("number of files: %d\n", fsd->num_files);
 		/* Read the key*/
 		items = fread(&(key->inode), sizeof(uint64_t), 1, fp);
 		if (items != 1) {
-			fprintf(stderr, "error reading file %s\n", filename);
+			fprintf(stderr, "1error reading file %s\n", filename);
 			return -1;
 		}
 		
 		items = fread(&(key->dev), sizeof(uint32_t), 1, fp);
 		if (items != 1) {
-			fprintf(stderr, "error reading file %s\n", filename);
+			fprintf(stderr, "2error reading file %s\n", filename);
 			return -1;
 		}
 		
 		/* Read the context */
-		items = fread(sbuf, sizeof(int32_t), 4, fp);
+		items = fread(sbuf, sizeof(int32_t), 3, fp);
 		if (items != 3) {
-			fprintf(stderr, "error reading file %s\n", filename);
+			fprintf(stderr, "3error reading file %s\n", filename);
 			return -1;
 		}		
-		
+
+		for (j = 0; j < 2; j++) 
+			sbuf[i]	= le32_to_cpu(sbuf[i]);
+			
 		pinfo->context.user = sbuf[0];
 		pinfo->context.role = sbuf[1];
 		pinfo->context.type = sbuf[2];
-		pinfo->obj_class = sbuf[4];
 
-		if (pinfo->obj_class || LNK_FILE) {
+		items = fread(buf, sizeof(uint32_t), 1, fp);
+		if (items != 1) {
+			fprintf(stderr, "4error reading file %s\n", filename);
+			return -1;
+		}		
+			
+		pinfo->obj_class = le32_to_cpu(buf[0]);
+
+		if (pinfo->obj_class == LNK_FILE) {
 				/* read the symlink target */
 				items = fread(buf, sizeof(uint32_t), 1, fp);
 				if (items != 1)
@@ -861,7 +878,7 @@ printf ("adding path %d to type %d\n",i,pinfo->context.type);
 		/* Read the pathname count */
 		items = fread(&(pinfo->num_links), sizeof(uint32_t), 1, fp);
 		if (items != 1) {
-			fprintf(stderr, "error reading file %s\n", filename);
+			fprintf(stderr, "4error reading file %s\n", filename);
 			return -1;
 		}
 
@@ -874,7 +891,7 @@ printf ("adding path %d to type %d\n",i,pinfo->context.type);
 		for (j = 0; j < pinfo->num_links; j++) {
 			items = fread(&len, sizeof(uint32_t), 1, fp);
 			if (items != 1) {
-				fprintf(stderr, "error reading file %s\n", filename);
+				fprintf(stderr, "5error reading file %s\n", filename);
 				return -1;
 			}
 			
@@ -887,9 +904,10 @@ printf ("adding path %d to type %d\n",i,pinfo->context.type);
 			
 			items = fread(pinfo->path_names[j], sizeof(char), len, fp);
 			if (items != len) {
-				fprintf(stderr, "error reading file %s\n", filename);
+				fprintf(stderr, "6error reading file %s\n", filename);
 				return -1;
 			}
+printf("adding path: %s\n", pinfo->path_names[j]);
 		}
 		
 	}
