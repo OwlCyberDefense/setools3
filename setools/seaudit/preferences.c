@@ -274,7 +274,7 @@ void free_seaudit_conf(seaudit_conf_t *conf_file)
 	return;
 }
 
-void update_column_visibility(top_filters_view_t *view, gpointer user_data)
+void update_column_visibility(seaudit_filtered_view_t *view, gpointer user_data)
 {
 	GList *columns;
 	GtkTreeViewColumn *col = NULL;
