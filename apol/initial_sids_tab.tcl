@@ -61,7 +61,6 @@ proc Apol_Initial_SIDS::set_Focus_to_Text {} {
 # ------------------------------------------------------------------------------
 proc Apol_Initial_SIDS::searchSIDs {} {
 	variable opts
-	variable resultsbox
 	
 	if {$Apol_Initial_SIDS::user_cb_value && $opts(user) == ""} {
 		tk_messageBox -icon error -type ok -title "Error" -message "You must provide a user."
@@ -81,10 +80,10 @@ proc Apol_Initial_SIDS::searchSIDs {} {
 		tk_messageBox -icon error -type ok -title "Error" -message "$err"
 		return -1
 	} else {
-		$resultsbox configure -state normal
-		$resultsbox delete 0.0 end
-		$resultsbox insert end $results
-		ApolTop::makeTextBoxReadOnly $resultsbox 
+		$Apol_Initial_SIDS::resultsbox configure -state normal
+		$Apol_Initial_SIDS::resultsbox delete 0.0 end
+		$Apol_Initial_SIDS::resultsbox insert end $results
+		ApolTop::makeTextBoxReadOnly $Apol_Initial_SIDS::resultsbox 
 	}
 
 	return 0
@@ -286,7 +285,7 @@ proc Apol_Initial_SIDS::create {nb} {
 	# Title frames
 	set sids_box 	 [TitleFrame $rpane.sids_box -text "Initial SIDs"]
 	set s_optionsbox [TitleFrame $spane.obox -text "Search Options"]
-	set resultsbox 	 [TitleFrame $spane.rbox -text "Search Results"]
+	set rslts_frame	 [TitleFrame $spane.rbox -text "Search Results"]
 	
 	# Placing layout
 	pack $topf -fill both -expand yes 
@@ -296,7 +295,7 @@ proc Apol_Initial_SIDS::create {nb} {
 	# Placing title frames
 	pack $s_optionsbox -padx 2 -fill both
 	pack $sids_box -padx 2 -side left -fill both -expand yes
-	pack $resultsbox -pady 2 -padx 2 -fill both -anchor n -side bottom -expand yes
+	pack $rslts_frame -pady 2 -padx 2 -fill both -anchor n -side bottom -expand yes
 	
 	# Roles listbox widget
 	set sw_r [ScrolledWindow [$sids_box getframe].sw -auto both]
@@ -345,7 +344,25 @@ proc Apol_Initial_SIDS::create {nb} {
 	# If bindtags is invoked with only one argument, then the current set of binding tags for window is 
 	# returned as a list.
 	bindtags $user_combo_box.e [linsert [bindtags $user_combo_box.e] 3 sid_user_Tag]
-	bind sid_user_Tag <KeyPress> {Apol_Initial_SIDS::_create_popup $Apol_Initial_SIDS::user_combo_box %W %K}
+	bind sid_user_Tag <KeyPress> {ApolTop::_create_popup $Apol_Initial_SIDS::user_combo_box %W %K}
+	
+	# ComboBox is not a simple widget, it is a mega-widget, and bindings for mega-widgets are non-trivial.
+	# If bindtags is invoked with only one argument, then the current set of binding tags for window is 
+	# returned as a list.
+	bindtags $role_combo_box.e [linsert [bindtags $role_combo_box.e] 3 sid_role_Tag]
+	bind sid_role_Tag <KeyPress> {ApolTop::_create_popup $Apol_Initial_SIDS::role_combo_box %W %K}
+	
+	# ComboBox is not a simple widget, it is a mega-widget, and bindings for mega-widgets are non-trivial.
+	# If bindtags is invoked with only one argument, then the current set of binding tags for window is 
+	# returned as a list.
+	bindtags $type_combo_box.e [linsert [bindtags $type_combo_box.e] 3 sid_type_Tag]
+	bind sid_type_Tag <KeyPress> {ApolTop::_create_popup $Apol_Initial_SIDS::type_combo_box %W %K}
+	
+	# ComboBox is not a simple widget, it is a mega-widget, and bindings for mega-widgets are non-trivial.
+	# If bindtags is invoked with only one argument, then the current set of binding tags for window is 
+	# returned as a list.
+	bindtags $attribute_combo_box.e [linsert [bindtags $attribute_combo_box.e] 3 sid_attrib_Tag]
+	bind sid_attrib_Tag <KeyPress> {ApolTop::_create_popup $Apol_Initial_SIDS::attribute_combo_box %W %K}
 	
 	set cb_user [checkbutton [$l_innerFrame getframe].cb_user \
 		-variable Apol_Initial_SIDS::user_cb_value -text "Search Using User" \
@@ -371,8 +388,8 @@ proc Apol_Initial_SIDS::create {nb} {
 	#button $rfm.print -text Print -width 6 -command {ApolTop::unimplemented}
 	
 	# Display results window
-	set sw_d [ScrolledWindow [$resultsbox getframe].sw -auto none]
-	set resultsbox [text [$sw_d getframe].resultsbox -bg white -wrap none -state disabled]
+	set sw_d [ScrolledWindow [$rslts_frame getframe].sw -auto none]
+	set resultsbox [text [$sw_d getframe].text -bg white -wrap none -state disabled]
 	$sw_d setwidget $resultsbox
 	
 	# Placing all widget items
