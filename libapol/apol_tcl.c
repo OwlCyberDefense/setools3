@@ -24,6 +24,7 @@
 #include "apol_tcl.h"
 #include "render.h"
 #include "analysis.h"
+#include "infoflow.h"
 #include "perm-map.h"
 #include "policy-query.h"
 
