@@ -6,13 +6,12 @@ MOD_DATE
 
 BUILDING AND INSTALLING NOTES AND WARNINGS
 
-If you are upgrading from a previous version of setools you must make 
-sure you remove /usr/local/selinux/bin from your path.  The setools 
-set is now installed to /usr/bin to match the rest of SE Linux.
+We have built and used this package on several distributions with and
+without SELinux (see TESTING INFORMATION in KNOWN-BUGS file). These
+directions should work well on most distributions, but you should be
+familiar with the documentation for the distribution you are using.
 
-We have built and used this package on Linux (see TESTING INFORMATION 
-in KNOWN-BUGS file) using several versions of SELinux.  The tar file 
-will create a directory with the following subdirectories:
+The directory structure of the Setools distribution is as follows:
 
 apol            The policy analysis tool
 awish           Our customized version of the Tk wish interpreter
@@ -26,52 +25,51 @@ secmds		The setools command line tools (seinfo, sesearch,
 sepct           The policy configuration/editing tool (sepcut)
 seuser          The user management tool and shell scripts
 packages	External packages required by setools
+
+Apol and the other tools are designed to specifically not address MLS
+policies. However, you can set the config option CONFIG_SECURITY_SELINUX_MLS
+in the Makefile to enable support for parsing MLS policy files. Even with
+this flag set during compile time, Setools still ignores all the MLS aspects
+of a policy, but should be able to parse such policies. We have conducted
+very little testing with MLS enabled.
 	
+REQUIREMENTS
 
-TCL/TK VERSION AND INSTALL: Before building you will need to ensure 
-that you have Tcl/Tk 8.3 or higher installed with BWidgets. 
-Generally, Red Hat Linux has appropriate versions of Tcl and Tk. 
-Usually the BWidgets package IS NOT installed by default. If you do 
-not have BWidgets installed it is available in the packages 
-subdirectory. It can be installed by going to the packages 
-subdirectory and typing "make install". If you have BWidgets installed 
-make certain that it is a compatible version. See BWIDGETS VERSIONS 
-below for more information.
+TCL/TK VERSION AND INSTALL: Before building you will need to ensure that you
+have Tcl/Tk 8.3 or higher installed with BWidgets. Generally, modern Linux
+distributions have appropriate versions of Tcl and Tk. Usually the BWidgets
+package IS NOT installed by default, however. If you do not have BWidgets
+installed it is available in the packages subdirectory of the Setools
+distribution. It can be installed by going to the packages subdirectory and
+typing "make install". If you have BWidgets installed make certain that it
+is a compatible version. See BWIDGETS VERSIONS below for more information.
 
-SECMDS BUILD REQUIREMENT: In order to successfully build and install 
-secmds onto your system you will need the libselinux-devel package 
-installed.  
+LIBSELINUX:In order to successfully build and install secmds
+onto your system you will need libselinux and the associated headers. A
+package may be available for your distribution - on Fedora Core it is called
+libselinux-devel.
 
-GTK RUNTIME AND BUILD REQUIREMENT: In order to successfully install 
-seaudit onto your system you will need libglade and GTK2.0 or above 
-installed.  It also requires the pkg-config program to be installed 
-before you can build.
+GTK: In order to successfully install seaudit onto your system you will need
+libglade and GTK2.0 or above installed. It also requires the pkg-config
+program to be installed before you can build.
 
-Given that you have Tcl/Tk with BWidgets installed, below are the 
-build instructions.  You can build and install portions of the package 
-including only those tools and libraries that do not require a GUI and 
-X support.  See "make help" for a list of all build targets.
+INSTALLATION
 
-NOTE: If you're using MLS aspects of a policy, apol and the other 
-tools are specifically not currently designed to address those 
-aspects. However, you may have success using apol with MLS-enabled 
-policies if you compile with the -DCONFIG_SECURITY_SELINUX_MLS flag in 
-the Makefile. We have conducted very little testing with MLS enabled. 
-Even with this flag set during compile time, apol still ignores all 
-the MLS aspects of a policy, but should be able to parse such 
-policies.
+These are the instructions for building and installing all of the Setools.
+You can also build and install portions of the package including only those
+tools and libraries that do not require a GUI and X support. See "make help"
+for more information or for a complete list of make targets.
 
 BUILDING AND INSTALL
 
-Short version: make all; su root; make install  
+Short version: make all; su root; make install; make install-policy  
 
 Long version follows:
 
-0. Review the ./setools/Makefile. When running 'make', the TCLVER, 
-TCL_INCLUDE and TCL_LIBINC variables should be set appropriately 
-for your installation of Tcl/Tk; however, if you wish to change 
-these variables, you may do so using the commented lines below 
-this section.
+0. Review the ./setools/Makefile. When running 'make', the TCLVER,
+TCL_INCLUDE and TCL_LIBINC variables should be automatically set
+appropriately for your installation of Tcl/Tk; however, if you need to
+it is possible to manually these variables in the Makefile.
    
 1. If you are installing seuser and have a version of SELinux based
 on an LSM kernel earlier than 2.4.19 (prior to August 2002 or so): 
@@ -97,15 +95,11 @@ type "make install" to build and install everything.  Type "make help"
 to see options to build individual pieces, for example to install just 
 seuser, sepcut, or apol.
 
-3. If you installed seuser or secmds, then you will need to type:
-	- "make install-seuser-policy": installs the seuser policy into  
-	  the selinux policy source directory and performs labeling of 
-	  seuser installed files.  
-	
-	- "make install-secmds-policy": installs the secmds policy into 
-	  the selinux policy source directory and performs labeling of 
-	  secmds installed files.  
-
+3. If you installed seuser or secmds and you are using the default policy
+distributed by the NSA or a similar policy (e.g. the "strict" policy
+distributed with Fedora Core 2), then you will need to type "make
+install-policy". This will install the policy for seuser and label the
+binaries and config files for seuser and the secmds.
 
 If this failed, you either are not using an SELinux machine, 
 the policy management patch isn't installed (see Step 1), or the 
