@@ -97,8 +97,6 @@ int sefs_filesystem_db_populate(sefs_filesystem_db_t *fsd,char *dir);
 int sefs_filesystem_db_search(sefs_filesystem_db_t *fsd,sefs_search_keys_t *search_keys);
 /* destroy the dynamically allocated return data from search */
 int sefs_search_keys_ret_destroy(sefs_search_ret_t *key);
-/* print the return data from a search */
-void sefs_search_keys_ret_print(sefs_search_ret_t *key);
 /* this will return all the known types in the context parameter */
 char **sefs_filesystem_db_get_known(sefs_filesystem_db_t *fsd,int *count,int request_type);
 
