@@ -1440,9 +1440,13 @@ proc ApolTop::helpDlg {title file_name} {
     wm deiconify $helpDlg
     
     $resultsbox delete 1.0 end
-    set f [open $helpfile]
-    $resultsbox insert end [read $f]
-    close $f
+    set rt [catch {set f [open $helpfile]} err]
+    if {$rt != 0} {
+    	$resultsbox insert end $err
+    } else {
+    	$resultsbox insert end [read $f]
+    	close $f
+    }
     $resultsbox configure -state disabled
    	 
     return
