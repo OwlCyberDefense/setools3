@@ -66,10 +66,10 @@ findcon.o: replcon.c
 
 findcon: findcon.o
 	$(CC) -o $@ findcon.o $(LINKFLAGS) $(LIBSELINUX)
-	
+
 seaudit-report.o: seaudit-report.c
 	$(CC) -c seaudit-report.c $(CFLAGS) $(LIBXML_FLAGS) $(INCLUDE)
-	
+
 seaudit-report: seaudit-report.o $(LIBAPOL) $(LIBSEAUDIT)
 	$(CC) $(INCLUDE) -o $@ seaudit-report.o $(LINKFLAGS) $(LIBSEAUDIT) $(LIBAPOL) $(LIBXML_LIBS) $(LIBS)
 
@@ -96,7 +96,7 @@ $(LIBSEFS):
 
 $(LIBSEUSER):
 	cd ../ ; $(MAKE) libseuser
-	
+
 $(LIBSEAUDIT):
 	cd ../ ; $(MAKE) libseaudit
 
