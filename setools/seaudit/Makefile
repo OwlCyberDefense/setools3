@@ -23,10 +23,10 @@ LOGWATCH_SERVICE = $(LOGWATCH_DIR)/conf/services
 LOGWATH_FILTER = $(LOGWATCH_DIR)/scripts/services
 
 ifeq ($(DEBUG), 1)
-SEAUDIT_LIBS	= ../libseaudit/libseaudit.a ../libapol/libapol.a 	
+SEAUDIT_LIBS	= ../libseaudit/libseaudit.a ../libapol/libapol.a $(LIBSELINUX)	
 else
 SEAUDIT_LIBS	= ../libseaudit/libseaudit.so.$(shell cat ../libseaudit/VERSION) \
-		  ../libapol/libapol.so.$(shell cat ../libapol/VERSION) $(LIBS)
+		  ../libapol/libapol.so.$(shell cat ../libapol/VERSION) $(LIBS) $(LIBSELINUX)
 endif
 
 all: seaudit seaudit-report

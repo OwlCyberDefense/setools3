@@ -4,7 +4,7 @@ LIBSEUSER-TCL	= ../libseuser/libseuser-tcl.a ../libseuser/libseuser.a
 AWISH_OBJ	= awish.o  $(LIBSEUSER-TCL) $(LIBAPOL-TCL)
 
 awish: $(AWISH_OBJ)
-	$(CC) $(TCL_LIBINC) -o $@ $(AWISH_OBJ) $(LINKFLAGS) $(TCL_LIBS)
+	$(CC) $(TCL_LIBINC) -o $@ $(AWISH_OBJ) $(LINKFLAGS) $(TCL_LIBS) $(LIBSELINUX)
 
 
 %.o:  %.c 
