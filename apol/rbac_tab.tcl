@@ -115,6 +115,7 @@ proc Apol_RBAC::open { } {
 	$Apol_RBAC::list_src configure -values $Apol_Roles::role_list
 	$Apol_RBAC::list_tgt configure -values $Apol_Types::typelist
         $Apol_RBAC::list_dflt_role configure -values $Apol_Roles::role_list
+        return 0
 }
 
 proc Apol_RBAC::close { } {
@@ -127,6 +128,11 @@ proc Apol_RBAC::close { } {
 	ApolTop::makeTextBoxReadOnly $Apol_RBAC::resultsbox 
 
 	return	
+}
+
+proc Apol_RBAC::free_call_back_procs { } {
+  
+	return 0
 }
 
 proc Apol_RBAC::init_options { } {
