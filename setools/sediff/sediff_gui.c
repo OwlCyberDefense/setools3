@@ -840,7 +840,6 @@ static void txt_view_raise_policy_tab_goto_line(unsigned long line, int whichvie
 
 	buffer = gtk_text_view_get_buffer(text_view);
 	g_assert(buffer);
-	g_warning("line is %lu\n",line);
 	gtk_text_buffer_get_start_iter(buffer, &iter);
 	gtk_text_iter_set_line(&iter, line);
 	gtk_text_view_scroll_to_iter(text_view, &iter, 0.0, TRUE, 0.0, 0.5);
