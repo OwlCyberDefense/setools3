@@ -25,8 +25,6 @@
   #define TIME_SIZE 64
 #endif
 
-#define SEAUDIT_GUI_VERSION_STRING "1.1"
-
 /* DEFAULT_POLICY and DEFAULT_LOG should be defined in the make environment */
 #ifndef DEFAULT_POLICY
 	#define DEFAULT_POLICY "/etc/security/selinux/src/policy.conf"
