@@ -1,5 +1,6 @@
 #include "policy.h"
 #include "policy-io.h"
+#include "binpol/binpol.h"
 #include "test.h"
 #include <stdio.h>
 
@@ -21,6 +22,7 @@ int main(int argc, char **argv)
 	
 	/* reading a binary policy */
 	TEST("load", open_policy("policy/binary_small.17", &policy) == 0);
+
 
 	free_policy(&policy);
 	return 0;	

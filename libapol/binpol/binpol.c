@@ -78,9 +78,10 @@ static int load_perm(ap_fbuf_t *fb, FILE *fp, __u32 *val, unsigned int opts, pol
 	size_t len;
 	__u32 *buf;
 	int idx;
-	bool_t keep;
+	bool_t keep = FALSE;
 	
-	keep = (opts & POLOPT_PERMS) == POLOPT_PERMS;
+	if (opts & POLOPT_PERMS)
+		keep = TRUE;
 	
 	buf = ap_read_fbuf(fb, sizeof(__u32)*2, fp); 
 	if(buf == NULL)	return fb->err;
@@ -123,14 +124,16 @@ static int load_perms(ap_fbuf_t *fb, FILE *fp, bool_t is_cp, __u32 cval, int cid
 			ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
 {
 	int i, idx, rt = 0;
-	bool_t keep;
+	bool_t keep = FALSE;
 	ap_permission_bmap_t *pmap;
 	__u32 val, num_cp = 0;
 	
 	if(nel == 0)
 		return 0;
 	
-	keep = (opts & POLOPT_PERMS) == POLOPT_PERMS;
+	if (opts & POLOPT_PERMS)
+		keep = TRUE;
+	
 	if(keep) {
 		if(is_cp) {
 			assert(cval <= bm->cp_num);
@@ -192,11 +195,12 @@ static int load_common_perm(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned in
 	unsigned char *kbuf, *key;
 	__u32 *buf, val;
 	int rt, idx;
-	bool_t keep;
+	bool_t keep = FALSE;
 	
 	INTERNAL_ASSERTION
 	
-	keep = (opts & POLOPT_PERMS) == POLOPT_PERMS;
+	if (opts & POLOPT_PERMS)
+		keep = TRUE;
 	
 	buf = ap_read_fbuf(fb, sizeof(__u32)*4, fp); 
 	if(buf == NULL)	return fb->err;
@@ -247,11 +251,12 @@ static int load_class(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts
 	unsigned char *kbuf, *key, *cbuf;
 	__u32 *buf, expr_type, val, i, j, num_cp = 0, cp_val;
 	int rt, idx, idx2 = -1;		/* idx2 (common perm idx) must ne init'd to -1 for load_perms */
-	bool_t keep;
+	bool_t keep = FALSE;
 	
 	INTERNAL_ASSERTION
 	
-	keep = (opts & POLOPT_CLASSES) == POLOPT_CLASSES;
+	if (opts & POLOPT_CLASSES)
+		keep = TRUE;
 	
 	buf = ap_read_fbuf(fb, sizeof(__u32)*6, fp); 
 	if(buf == NULL)	return fb->err;
@@ -385,11 +390,12 @@ static int load_role(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts,
 	size_t len;
 	unsigned char *kbuf, *key;
 	int idx, rt; 
-	bool_t keep;
+	bool_t keep = FALSE;
 
 	INTERNAL_ASSERTION
 
-	keep = (opts & POLOPT_ROLES) == POLOPT_ROLES;
+	if (opts & POLOPT_ROLES)
+		keep = TRUE;
 
 	buf = ap_read_fbuf(fb, sizeof(__u32)*2, fp); 
 	if(buf == NULL)	return fb->err;
@@ -444,11 +450,13 @@ static int load_type(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts,
 	size_t len;
 	unsigned char *kbuf, *key;
 	int idx = 0, rt;
-	bool_t keep, primary;
+	bool_t keep = FALSE, primary;
 	
 	INTERNAL_ASSERTION
 
-	keep = (opts & POLOPT_TYPES) == POLOPT_TYPES;
+	if (opts & POLOPT_TYPES) {
+		keep = TRUE;
+	}
 
 	buf = ap_read_fbuf(fb, sizeof(__u32)*3, fp); 
 	if(buf == NULL) return fb->err;
@@ -504,14 +512,15 @@ static int load_user(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts,
 	__u32 *buf, val;
 	size_t len;
 	unsigned char *kbuf, *key;
-	bool_t keep;
+	bool_t keep = FALSE;
 	user_item_t *u;
 	int i, rt;
 	ebitmap_t e;
 
 	INTERNAL_ASSERTION
 	
-	keep = (opts & POLOPT_USERS) == POLOPT_USERS;
+	if (opts & POLOPT_USERS)
+		keep = TRUE;
 
 	buf = ap_read_fbuf(fb, sizeof(__u32)*2, fp); 
 	/* buf[0] len of key (name) string
@@ -576,13 +585,15 @@ static int load_user(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts,
 static int load_bool(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
 {
 	__u32 len, *buf, val;
-	bool_t keep, state;
+	bool_t keep = FALSE, state;
 	unsigned char *key;
 	int idx;
 	
 	INTERNAL_ASSERTION
 	
-	keep = (opts & POLOPT_COND_BOOLS) == POLOPT_COND_BOOLS;
+	if (opts & POLOPT_COND_BOOLS)
+		keep = TRUE;
+	
 	buf = ap_read_fbuf(fb, sizeof(__u32)*3, fp); 
 	if(buf == NULL)	return fb->err;
 	/* buf[0] val (binary pol index)
@@ -622,11 +633,12 @@ static int load_role_trans(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int
 {
 	__u32 *buf, nel, rval, tval, new_rval, i;
 	int ridx, tidx, new_ridx;
-	bool_t keep;
+	bool_t keep = FALSE;
 	
 	INTERNAL_ASSERTION
 	
-	keep = (opts & POLOPT_ROLE_RULES) ==  POLOPT_ROLE_RULES;
+	if (opts & POLOPT_ROLE_RULES)
+		keep = TRUE;
 	
 	buf = ap_read_fbuf(fb, sizeof(__u32), fp);
 	if(buf == NULL) return fb->err;
@@ -731,11 +743,12 @@ static int load_role_allow(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int
 {
 	__u32 *buf, nel, rval, new_rval, i;
 	int ridx, new_ridx;
-	bool_t keep;
+	bool_t keep = FALSE;
 	
 	INTERNAL_ASSERTION
 	
-	keep = (opts & POLOPT_ROLE_RULES) == POLOPT_ROLE_RULES;
+	if (opts & POLOPT_ROLE_RULES)
+		keep = TRUE;
 	
 	buf = ap_read_fbuf(fb, sizeof(__u32), fp);
 	if(buf == NULL) return fb->err;
@@ -825,11 +838,12 @@ static int load_role_allow(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int
 
 static int load_initial_sids(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
 {
-	bool_t keep;
+	bool_t keep = FALSE;
 	
 	INTERNAL_ASSERTION
 	
-	keep = (opts & POLOPT_INITIAL_SIDS) == POLOPT_INITIAL_SIDS;
+	if (opts & POLOPT_INITIAL_SIDS)
+		keep = TRUE;
 	
 	/* TODO: Currently initial SIDs not supported for binary policies.  The reason is that
 	 * the binary policy does not store the symbolic name of initial sids, yet apol
@@ -1210,11 +1224,12 @@ static int load_avtab(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts
 	avtab_key_t avkey;
 	avtab_datum_t avdatum;
 	__u32 *buf, nel, i;
-	bool_t keep;
+	bool_t keep = FALSE;
 	
 	INTERNAL_ASSERTION
 
-	keep = (opts & POLOPT_TE_RULES);
+	if (opts & POLOPT_TE_RULES)
+		keep = TRUE;
 
 	buf = ap_read_fbuf(fb, sizeof(__u32), fp); 
 	if(buf == NULL) return fb->err;
@@ -1241,14 +1256,15 @@ static int load_avtab(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts
 static int load_cond_list(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
 {
 	__u32 *buf, nel, nel2, i, j, bool_val;
-	bool_t keep;
+	bool_t keep = FALSE;
 	int state, rt;
 	cond_rule_list_t *t_list = NULL, *f_list = NULL;
 	cond_expr_t *expr = NULL, *first, *last;
 	
 	INTERNAL_ASSERTION
 
-	keep = (opts & (POLOPT_COND_EXPR|POLOPT_COND_TE_RULES)) == (POLOPT_COND_EXPR|POLOPT_COND_TE_RULES);
+	if (opts & (POLOPT_COND_EXPR|POLOPT_COND_TE_RULES))
+		keep = TRUE;
 	
 	buf = ap_read_fbuf(fb, sizeof(__u32), fp); 
 	if(buf == NULL) return fb->err;	
@@ -1623,7 +1639,7 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 	}
 	
 	/* Process role types; so far we've only stored the ebitmaps */
-	if(((opts & POLOPT_TYPES) == POLOPT_TYPES ) &&  ((opts & POLOPT_ROLES) == POLOPT_ROLES)){
+	if((opts & POLOPT_TYPES) &&  (opts & POLOPT_ROLES)){
 		for(i = 0; i < bm->r_num; i++) {
 			role_idx = bm->r_map[i];
 			e = &(bm->r_emap[i]);
