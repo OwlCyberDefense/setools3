@@ -1,10 +1,12 @@
-CFLAGS = -Wall -g
-INCLUDE = -I..
-LIBS = ../../lib/libseaudit.a ../../lib/libapol.a
-OBJS = test.o
+CFLAGS 		= -Wall -g
+INCLUDE 	= -I..
+LIBXML_FLAGS   	= `pkg-config --cflags libxml-2.0`
+XML_LIBS       	= `pkg-config --libs libxml-2.0`
+LIBS 		= ../../libseaudit/libseaudit.a ../../libapol/libapol.a 
+OBJS 		= test.o
 
-test: $(LIBS) $(OBJS)
-	$(CC) $(CFLAGS) $(INCLUDE) -o $@ $(OBJS) $(LIBS)
+test-seaudit: $(LIBS) $(OBJS)
+	$(CC) $(CFLAGS) $(INCLUDE) -o $@ $(OBJS) $(LIBS) $(XML_LIBS)
 
 ../../lib/libseaudit.a:
 	cd ../../; $(MAKE) libseaudit
@@ -13,10 +15,9 @@ test: $(LIBS) $(OBJS)
 	cd ../../; $(MAKE) libapol
 
 %.o:  %.c 
-	$(CC) $(CFLAGS) $(INCLUDE) -c $<
+	$(CC) $(CFLAGS) $(LIBXML_FLAGS) $(INCLUDE) -c $<
 
 clean:
-	rm -f *~ *.o test
+	rm -f *~ *.o test-seaudit
 
-bare: 
-	clean
+bare: clean
