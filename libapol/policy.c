@@ -68,7 +68,7 @@ int _get_type_name_ptr(int idx, char **name, policy_t *policy)
 /**************/
 
 
-int init_policy( policy_t **p)
+int init_policy(policy_t **p)
 {
 	policy_t *policy;
 	assert(*p == NULL);
@@ -79,7 +79,7 @@ int init_policy( policy_t **p)
 	}
 	policy->version = POL_VER_UNKNOWN;
 	policy->opts = POLOPT_NONE;
-	policy->binary = FALSE;
+	policy->policy_type = POL_TYPE_SOURCE;
 
 	/* permissions */
 	policy->perms = (char **)malloc(sizeof(char*) * LIST_SZ);
