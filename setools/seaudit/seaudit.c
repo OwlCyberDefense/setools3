@@ -51,39 +51,6 @@ static void seaudit_policy_file_open_from_recent_menu(GtkWidget *widget, gpointe
 static void seaudit_log_file_open_from_recent_menu(GtkWidget *widget, gpointer user_data);
 static gboolean seaudit_real_time_update_log(gpointer callback_data);
 static void seaudit_exit_app(void);
-
-/* seaudit object */
-seaudit_t* seaudit_init(void)
-{
-	seaudit_t *seaudit;
-
-	seaudit = (seaudit_t*)malloc(sizeof(seaudit_t));
-	if (!seaudit) {
-		fprintf(stderr, "memory error\n");
-		return NULL;
-	}
-	memset(seaudit, 0, sizeof(seaudit_t));
-	/* we load user configuration first so the window can be set up
-	 * set up properly on create */
-	load_seaudit_conf_file(&(seaudit->seaudit_conf));
-	seaudit->window = seaudit_window_create(NULL, seaudit->seaudit_conf.column_visibility);
-	seaudit->policy_file = g_string_new("");
-	seaudit->audit_log_file = g_string_new("");
-	return seaudit;
-}
-
-void seaudit_destroy(seaudit_t *seaudit_app)
-{
-	if (seaudit_app->cur_policy)
-		close_policy(seaudit_app->cur_policy);
-	seaudit_callbacks_free();
-	if (seaudit_app->log_file_ptr)
-		fclose(seaudit_app->log_file_ptr);
-	free_seaudit_conf(&(seaudit_app->seaudit_conf));
-	g_string_free(seaudit_app->policy_file, TRUE);
-	g_string_free(seaudit_app->audit_log_file, TRUE);
-	free(seaudit_app);
-	seaudit_app = NULL;
 }
 
 int seaudit_open_policy(seaudit_t *seaudit, const char *filename)
@@ -525,6 +492,8 @@ void seaudit_on_realtime_toggled(GtkToggleButton *toggle, gpointer user_data)
 	active = gtk_toggle_button_get_active(toggle);
 	button = glade_xml_get_widget(seaudit_app->window->xml, "RealTimeToggleButton");
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), active);
+	set_real_time_log_toggle_button_state(active);
+	
 	/* set up a timeout function to update the log */
 	if (seaudit_app->timeout_key)
 		gtk_timeout_remove(seaudit_app->timeout_key);
