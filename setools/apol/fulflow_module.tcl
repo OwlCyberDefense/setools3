@@ -2515,7 +2515,7 @@ proc Apol_Analysis_fulflow::advanced_filters_create_dialog {} {
         set pw1   [PanedWindow [$objs_frame getframe].pw -side top]
         set pane  [$pw1 add]
         set search_pane [$pw1 add -weight 3]
-        set pw2   [PanedWindow $pane.pw -side left]
+        set pw2   [PanedWindow $pane.pw -side left -weights available]
         set class_pane 	[$pw2 add -weight 2]
         set classes_box [TitleFrame $class_pane.tbox -text "Object Classes:" -bd 0]
         set permissions_title_frame [TitleFrame $search_pane.rbox -text "Permissions:" -bd 0]
@@ -2547,12 +2547,10 @@ proc Apol_Analysis_fulflow::advanced_filters_create_dialog {} {
 	set bframe [frame [$classes_box getframe].bframe]
 	set b_incl_all_perms [Button $bframe.b_incl_all_perms -text "Include All Perms" \
 		-helptext "Select this to include all permissions for the selected object in the query." \
-		-padx 2 \
 		-command {Apol_Analysis_fulflow::advanced_filters_include_exclude_permissions \
 			include}]
 	set b_excl_all_perms [Button $bframe.b_excl_all_perms -text "Exclude All Perms" \
 		-helptext "Select this to exclude all permissions for the selected object from the query." \
-		-padx 2 \
 		-command {Apol_Analysis_fulflow::advanced_filters_include_exclude_permissions \
 			exclude}]
 		
@@ -2562,9 +2560,10 @@ proc Apol_Analysis_fulflow::advanced_filters_create_dialog {} {
         
         pack $pw2 -fill both -expand yes
         pack $pw1 -fill both -expand yes
+        pack $b_excl_all_perms -side right -anchor nw -pady 2 -expand yes -fill x
+        pack $b_incl_all_perms -side left -anchor nw -pady 2 -expand yes -fill x
         pack $bframe -side bottom -fill both -anchor sw -pady 2
         pack $permissions_title_frame -pady 2 -padx 2 -fill both -expand yes
-        pack $b_incl_all_perms $b_excl_all_perms -side left -anchor center -pady 2 -expand yes -fill x
         pack $threshhold_frame -fill x -anchor nw -side bottom -pady 2
         pack $cbutton_threshhold $spinbox_threshhold -side left -anchor nw 
 	pack $classes_box -padx 2 -side left -fill both -expand yes	   
