@@ -2318,11 +2318,48 @@ static int define_bool(void)
 	return 0;
 }
 
+/* search through the policy for a matching conditional expression
+ * returns -1 if non or found
+ * returns the index of the cond_expr_item_t if found.
+ */
+static int find_matching_cond_expr(cond_expr_t *expr, policy_t *policy)
+{
+	int i;
+	
+	for (i = 0; i < policy->num_cond_exprs; i++) {
+		if (cond_exprs_equal(expr, policy->cond_exprs[i].expr))
+			return i;
+	}
+	return -1;
+}
+
+static int cond_rule_add_helper(int **list, int *list_len, int *add, int add_len)
+{
+	int i;
+	
+	if (!add)
+		return 0;
+		
+	if (!*list) {
+		*list = add;
+		return 0;
+	}
+	
+	for (i = 0; i < add_len; i++) {
+		/* we probably don't need to do this checking, but it is better to be safe */
+		if (find_int_in_array(add[i], *list, *list_len) == -1) {
+			if (add_i_to_a(add[i], list_len, list) == -1)
+				return -1;
+		}
+	}
+
+	return 0;
+}
+
 static int define_conditional(cond_expr_t *expr, cond_rule_list_t *t_list, cond_rule_list_t *f_list)
 {
-	int rt;
+	int idx, rt;
 		
-	/* TODO: Currently an empty stub */	
 	rt = set_policy_version(POL_VER_COND, parse_policy);
 	if(rt != 0) {
 		yyerror("error setting policy version");
@@ -2337,10 +2374,55 @@ static int define_conditional(cond_expr_t *expr, cond_rule_list_t *t_list, cond_
 		return -1;
 	}
 	
-	if (add_cond_expr_item(expr, t_list, f_list, parse_policy) < 0) {
-		yyerror("Error adding conditional expression item to the policy");
-		return -1;
+	idx = find_matching_cond_expr(expr, parse_policy);
+	
+	/* found matching expressions - add the rules to this expression. */
+	if (idx != -1) {
+		cond_free_expr(expr);
+		cond_expr_item_t *cur = &parse_policy->cond_exprs[idx];
+		if (t_list) {
+			if (!cur->true_list) {
+				cur->true_list = t_list;
+			} else {
+				if (cond_rule_add_helper(&cur->true_list->av_access, &cur->true_list->num_av_access,
+					t_list->av_access, t_list->num_av_access) == -1)
+						return -1;
+				if (cond_rule_add_helper(&cur->true_list->av_audit, &cur->true_list->num_av_audit,
+					t_list->av_audit, t_list->num_av_audit) == -1)
+						return -1;
+				if (cond_rule_add_helper(&cur->true_list->te_trans, &cur->true_list->num_te_trans,
+					t_list->te_trans, t_list->num_te_trans) == -1)
+						return -1;
+				cond_free_rules_list(t_list);
+			}
+				
+		}
+		if (f_list) {
+			if (!cur->false_list) {
+				cur->false_list = f_list;
+			} else {
+				if (cond_rule_add_helper(&cur->false_list->av_access, &cur->false_list->num_av_access,
+					f_list->av_access, f_list->num_av_access) == -1)
+						return -1;
+				if (cond_rule_add_helper(&cur->false_list->av_audit, &cur->false_list->num_av_audit,
+					f_list->av_audit, f_list->num_av_audit) == -1)
+						return -1;
+				if (cond_rule_add_helper(&cur->false_list->te_trans, &cur->false_list->num_te_trans,
+					f_list->te_trans, f_list->num_te_trans) == -1)
+						return -1;
+				cond_free_rules_list(f_list);
+			}
+				
+		}
+	} else {
+		if (add_cond_expr_item(expr, t_list, f_list, parse_policy) < 0) {
+			yyerror("Error adding conditional expression item to the policy");
+			return -1;
+		}
 	}
+	
+	if (update_cond_expr_items(parse_policy) != 0)
+		return -1;
         
 	return 0;
 }
