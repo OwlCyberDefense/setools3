@@ -131,30 +131,32 @@ static int load_perms(ap_fbuf_t *fb, FILE *fp, bool_t is_cp, __u32 cval, int cid
 		return 0;
 	
 	keep = (opts & POLOPT_PERMS) == POLOPT_PERMS;
-	if(is_cp) {
-		assert(cval <= bm->cp_num);
-		assert(is_valid_common_perm_idx(cidx, policy));
-		pmap = &bm->cp_perm_map[cval-1];
-	} 
-	else { /* class */
-		assert(cval <= bm->cls_num);
-		assert(is_valid_obj_class_idx(cidx, policy));
-		pmap = &bm->cls_perm_map[cval-1];
-		if(cp_idx >= 0) {
-			assert(is_valid_common_perm_idx(cp_idx, policy));
-			num_cp = num_common_perm_perms(cp_idx, policy);
+	if(keep) {
+		if(is_cp) {
+			assert(cval <= bm->cp_num);
+			assert(is_valid_common_perm_idx(cidx, policy));
+			pmap = &bm->cp_perm_map[cval-1];
+		} 
+		else { /* class */
+			assert(cval <= bm->cls_num);
+			assert(is_valid_obj_class_idx(cidx, policy));
+			pmap = &bm->cls_perm_map[cval-1];
+			if(cp_idx >= 0) {
+				assert(is_valid_common_perm_idx(cp_idx, policy));
+				num_cp = num_common_perm_perms(cp_idx, policy);
+			}
 		}
+		assert(pmap != NULL);
+	
+		/* perm mapping space for classes is pre-allocated, if common perm we need to do here */
+		if(is_cp) {
+			pmap->map = (int *)malloc(sizeof(int) * (nel+num_cp));
+			if(pmap->map == NULL)
+				return -1;
+			pmap->num = nel;
+		}
+		assert(pmap->map != NULL); /* double check for class case */
 	}
-	assert(pmap != NULL);
-
-	/* perm mapping space for classes is pre-allocated, if common perm we need to do here */
-	if(is_cp) {
-		pmap->map = (int *)malloc(sizeof(int) * (nel+num_cp));
-		if(pmap->map == NULL)
-			return -1;
-		pmap->num = nel;
-	}
-	assert(pmap->map != NULL); /* double check for class case */
 
 	for (i = 0; i < nel; i++) {
 		idx = load_perm(fb, fp, &val, opts, policy);
@@ -371,7 +373,10 @@ static int load_class(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts
 			 return -3;
 	}
 	
-	return idx;
+	if(keep)
+		return idx;
+	else
+		return LOAD_SUCCESS_NO_SAVE;
 }
 
 static int load_role(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
@@ -379,7 +384,7 @@ static int load_role(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts,
 	__u32 *buf, val;
 	size_t len;
 	unsigned char *kbuf, *key;
-	int idx, rt;
+	int idx, rt; 
 	bool_t keep;
 
 	INTERNAL_ASSERTION
@@ -427,8 +432,10 @@ static int load_role(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts,
 	if(rt != 0)
 		return rt;
 
-		
-	return idx;
+	if(keep)
+		return idx;
+	else
+		return LOAD_SUCCESS_NO_SAVE;
 }
 
 static int load_type(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
@@ -486,7 +493,10 @@ static int load_type(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts,
 		}
 	}	
 
-	return 0;
+	if(keep)
+		return idx;
+	else
+		return LOAD_SUCCESS_NO_SAVE;
 }
 
 static int load_user(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
@@ -521,6 +531,7 @@ static int load_user(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts,
 		u = add_user(key, policy);
 		if(u == NULL) {
 			free(key);
+			assert(FALSE); /* debug aide */
 			return -4;
 		}
 		bm->u_map[val-1] = u;
@@ -529,12 +540,16 @@ static int load_user(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts,
 	/* process the user's roles  */
 	rt = ebitmap_read(fb, &e, fp);
 	if(rt != 0)
-		return rt;		
-	for(i = 0; i < e.highbit; i++) {
-		if(ebitmap_get_bit(&e, i)) {
-			rt = add_role_to_user(u, i, policy);
-			if(rt == -1) 
-				return -4;
+		return rt;
+	if(keep) {
+		for(i = 0; i < e.highbit; i++) {
+			if(ebitmap_get_bit(&e, i)) {
+				rt = add_role_to_user(u, i, policy);
+				if(rt == -1) {
+					assert(FALSE); /* debug aide */
+					return -4;
+				}
+			}
 		}
 	}
 	
@@ -551,7 +566,6 @@ static int load_user(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts,
 		}
 
 	}
-	
 	
 	return 0;
 }
@@ -595,7 +609,10 @@ static int load_bool(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts,
 		bm->bool_map[val-1] = idx;
 	}
 			 
-	return 0;
+	if(keep)
+		return idx;
+	else
+		return LOAD_SUCCESS_NO_SAVE;
 }
 
 static int load_role_trans(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
@@ -688,6 +705,7 @@ static int load_role_trans(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int
 			type->type = IDX_TYPE;
 			type->idx = tidx;
 			if(insert_ta_item(type, &(rule->tgt_types)) != 0) {
+				assert(FALSE); /* debug aide */
 				return -4;
 			}
 			
@@ -723,6 +741,8 @@ static int load_role_allow(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int
 	for (i = 0; i < nel; i++) {
 		buf = ap_read_fbuf(fb, sizeof(__u32)*2, fp);
 		if(buf == NULL) return fb->err;
+		if(!keep) 
+			continue;
 		rval = le32_to_cpu(buf[0]);
 		if(rval > bm->r_num) {
 			assert(FALSE);
@@ -1308,6 +1328,7 @@ static int load_cond_list(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int 
 				cond_free_rules_list(t_list);
 				cond_free_rules_list(f_list);
 				cond_free_expr(first);
+				assert(FALSE); /* debug aide */
 				return -4;
 			}
 		}
@@ -1533,27 +1554,27 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 			switch (i) {
 			case 0:		/* common permissions */
 				rt = load_common_perm(fb, fp, bm, opts, policy);
-				if(rt < 0) goto err_return;
+				if(rt < 0 && rt != LOAD_SUCCESS_NO_SAVE) goto err_return;
 				break;
 			case 1:		/* object classes */
 				rt = load_class(fb, fp, bm, opts, policy);
-				if(rt < 0) goto err_return;
+				if(rt < 0 && rt != LOAD_SUCCESS_NO_SAVE) goto err_return;
 				break;
 			case 2:		/* roles */
 				rt = load_role(fb, fp, bm, opts, policy);
-				if(rt < 0) goto err_return;
+				if(rt < 0 && rt != LOAD_SUCCESS_NO_SAVE) goto err_return;
 				break;
 			case 3:		/* types */
 				rt = load_type(fb, fp, bm, opts, policy);
-				if(rt < 0) goto err_return;
+				if(rt < 0 && rt != LOAD_SUCCESS_NO_SAVE) goto err_return;
 				break;
 			case 4:		/* users */
 				rt = load_user(fb, fp, bm, opts, policy);
-				if(rt < 0) goto err_return;
+				if(rt != 0) goto err_return;
 				break;
 			case 5:		/* conditional booleans */
 				rt = load_bool(fb, fp, bm, opts, policy);
-				if(rt < 0) goto err_return;
+				if(rt < 0 && rt != LOAD_SUCCESS_NO_SAVE) goto err_return;
 				break;
 #ifdef CONFIG_SECURITY_SELINUX_MLS
 			case 6:		/* MLS levels */
@@ -1583,24 +1604,30 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 		}
 		rt = add_alias(type_idx, a->name, policy);
 		if(rt == -1) {
+			assert(FALSE); /* debug aide */
 			return -4;
 		}
 	}
 	
 	/* Process role types; so far we've only stored the ebitmaps */
-	for(i = 0; i < bm->r_num; i++) {
-		role_idx = bm->r_map[i];
-		e = &(bm->r_emap[i]);
-		for(j = ebitmap_startbit(e); j < ebitmap_length(e); j++) {
-			if(ebitmap_get_bit(e, j)) {
-				type_idx = bm->t_map[j];
-				rt = add_type_to_role(type_idx, role_idx, policy);
-				if(rt == -1) 
-					return -4;
+	if(((opts & POLOPT_TYPES) == POLOPT_TYPES ) &&  ((opts & POLOPT_ROLES) == POLOPT_ROLES)){
+		for(i = 0; i < bm->r_num; i++) {
+			role_idx = bm->r_map[i];
+			e = &(bm->r_emap[i]);
+			for(j = ebitmap_startbit(e); j < ebitmap_length(e); j++) {
+				if(ebitmap_get_bit(e, j)) {
+					type_idx = bm->t_map[j];
+					rt = add_type_to_role(type_idx, role_idx, policy);
+					if(rt == -1) {
+						assert(FALSE); /* debug aide */
+						return -4;
+					}
+				}
 			}
 		}
 	}
 	
+	//if(
 
 	/* AV tables */
 	rt = load_avtab(fb, fp, bm, opts, NULL, policy);
