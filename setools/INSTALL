@@ -97,15 +97,11 @@ type "make install" to build and install everything.  Type "make help"
 to see options to build individual pieces, for example to install just 
 seuser, sepcut, or apol.
 
-3. If you installed seuser or secmds, then you will need to type:
-	- "make install-seuser-policy": installs the seuser policy into  
-	  the selinux policy source directory and performs labeling of 
-	  seuser installed files.  
-	
-	- "make install-secmds-policy": installs the secmds policy into 
-	  the selinux policy source directory and performs labeling of 
-	  secmds installed files.  
-
+3. If you installed seuser or secmds and you are using the default policy
+   distributed by the NSA or a similar policy (e.g. the "strict" policy distributed
+   with Fedora Core 2), then you will need to type:
+	- "make install-policy": installs policy for setools and labels
+	  the setools specific files appropriately.
 
 If this failed, you either are not using an SELinux machine, 
 the policy management patch isn't installed (see Step 1), or the 
