@@ -11,6 +11,7 @@
 #include "semantic/avsemantics.h"
 
 #define AP_RELABEL_MODE_NONE	0x00
+#define AP_RELABEL_NOT_HERE	-2
 
 /* relabeling permission names */
 #define AP_RELABEL_RELABELTO 	"relabelto"
@@ -147,7 +148,7 @@ static void ap_relabel_possible_start_destroy(ap_relabel_possible_start_t *pos)
 	ap_relabel_possible_start_init(pos);
 };
 
-/* find functions - return -1 on error, -2 on not found, index otherwise */
+/* find functions - return -1 on error, AP_RELABEL_NOT_HERE on not found, index otherwise */
 static int ap_relabel_find_target_in_results(int target_type, ap_relabel_result_t *res)
 {
 	int i;
@@ -156,7 +157,7 @@ static int ap_relabel_find_target_in_results(int target_type, ap_relabel_result_
 	for (i = 0; i < res->num_targets; i++)
 		if (res->targets[i].target_type == target_type)
 			return i;
-	return -2;
+	return AP_RELABEL_NOT_HERE;
 };
 
 static int ap_relabel_find_object_in_target(int object_class, ap_relabel_target_t *tgt)
@@ -167,7 +168,7 @@ static int ap_relabel_find_object_in_target(int object_class, ap_relabel_target_
 	for (i = 0; i < tgt->num_objects; i++)
 		if (tgt->objects[i].object_class == object_class)
 			return i;
-	return -2;
+	return AP_RELABEL_NOT_HERE;
 };
 
 static int ap_relabel_find_subject_in_object(int source_type, ap_relabel_object_t *obj)
@@ -178,7 +179,7 @@ static int ap_relabel_find_subject_in_object(int source_type, ap_relabel_object_
 	for (i = 0; i < obj->num_subjects; i++)
 		if (obj->subjects[i].source_type == source_type)
 			return i;
-	return -2;
+	return AP_RELABEL_NOT_HERE;
 };
 
 static int ap_relabel_find_rule_in_subject(int rule_index, ap_relabel_subject_t *subj)
@@ -189,7 +190,7 @@ static int ap_relabel_find_rule_in_subject(int rule_index, ap_relabel_subject_t 
 	for (i = 0; i < subj->num_rules; i++)
 		if (subj->rules[i].rule_index == rule_index)
 			return i;
-	return -2;
+	return AP_RELABEL_NOT_HERE;
 };
 
 /* add functions:
@@ -299,7 +300,7 @@ static int ap_relabel_add_start_to_subject(ap_relabel_possible_start_t *pos, ap_
 	int i, retv, where = -1;
 
 	for (i = 0; i < pos->num_rules; i++) {
-		if ((where = ap_relabel_find_rule_in_subject(pos->rules[i].rule_index, subj)) == -2) {
+		if ((where = ap_relabel_find_rule_in_subject(pos->rules[i].rule_index, subj)) == AP_RELABEL_NOT_HERE) {
 			retv = ap_relabel_add_rule_to_subject(pos->rules[i].rule_index, (pos->rules[i].direction | AP_RELABEL_DIR_START), subj);
 			if (retv == -1)
 				return -1;
@@ -318,25 +319,25 @@ static int ap_relabel_add_entry_to_result(int target_type, int object_class, int
 	int target_index = -1, object_index = -1, source_index = -1, rule_number = -1, retv;
 	
 	target_index = ap_relabel_find_target_in_results(target_type, res);
-	if (target_index == -2) 
+	if (target_index == AP_RELABEL_NOT_HERE) 
 		target_index = ap_relabel_add_target_to_result(target_type, res);
 	if (target_index == -1)
 		return -1;
 
 	object_index = ap_relabel_find_object_in_target(object_class, &(res->targets[target_index]));
-	if (object_index == -2)
+	if (object_index == AP_RELABEL_NOT_HERE)
 		object_index = ap_relabel_add_object_to_target(object_class, &(res->targets[target_index]));
 	if (object_index == -1)
 		return -1;
 
 	source_index = ap_relabel_find_subject_in_object(subject, &(res->targets[target_index].objects[object_index]));
-	if (source_index == -2)
+	if (source_index == AP_RELABEL_NOT_HERE)
 		source_index = ap_relabel_add_subject_to_object(subject, &(res->targets[target_index].objects[object_index]));
 	if (source_index == -1)
 		return -1;
 
 	rule_number = ap_relabel_find_rule_in_subject(rule_index, &(res->targets[target_index].objects[object_index].subjects[source_index]));
-	if (rule_number == -2)
+	if (rule_number == AP_RELABEL_NOT_HERE)
 		rule_number = ap_relabel_add_rule_to_subject(rule_index, direction, &(res->targets[target_index].objects[object_index].subjects[source_index]));
 	if (rule_number == -1)
 		return -1;
