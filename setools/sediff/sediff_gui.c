@@ -1575,6 +1575,7 @@ static int txt_buffer_insert_te_line(GtkTextBuffer *txt, GtkTextIter *iter,
 		free(rule);
 	}
        	gtk_text_buffer_insert(txt, iter, "\n", -1); 
+
 	return 0;
 	
 }
@@ -1602,7 +1603,6 @@ static int txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_ite
 	GtkTextTagTable *table;
 	char *name = NULL;
 	bool_t inverse,matched,polmatched;
-
 
 	snprintf(cond_on,TABSIZE,"D:\t");
 	snprintf(cond_off,TABSIZE,"E:\t");
@@ -1844,6 +1844,9 @@ static int txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_ite
 
 
 				/* now print the diffs */
+				/* at this point we know that both diffcur1 and diffcur2 have the same key so we don't need
+				   to check if diffcur1 is a type transition rule, we can just go with what diffcur2 is 
+				*/
 				if (diffcur2->key.rule_type <= RULE_MAX_AV) {
 					for (j = 0 ; j < diffcur2->num_data; j++) {
 						if (get_perm_name(diffcur2->data[j],&name,policy2) == 0) {
@@ -1873,7 +1876,7 @@ static int txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_ite
 							free(name);
 						}
 					}
-					if(diffcur1->num_data == 1) {
+					if(diffcur1) {
 						if (get_type_name(diffcur1->data[0],&name,policy1) == 0) {
 							g_string_printf(string,"%s%s- %s\n",fulltab,fulltab,name);
 							gtk_text_buffer_insert_with_tags_by_name(txt, &changed_iter, string->str, -1, "removed-tag", NULL);
@@ -2932,7 +2935,7 @@ gboolean sediff_load_dlg_show()
 						      sediff_app->window,
 						      GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_NO_SEPARATOR,
 				     NULL);
-		gtk_widget_set_usize(sediff_app->loading_dlg,200,100);
+		gtk_widget_set_usize(sediff_app->loading_dlg,300,100);
 		label = gtk_label_new ("Calculating difference - this may take a while");
 		gtk_container_add (GTK_CONTAINER (GTK_DIALOG(sediff_app->loading_dlg)->vbox),
 				   label);
