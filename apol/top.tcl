@@ -1686,7 +1686,7 @@ proc ApolTop::showPolicyStats {} {
 	append polstats "TE rules: [expr $stats(teallow) + $stats(neverallow) + 	\
 		$stats(auditallow) + $stats(auditdeny) + $stats(clone)  +  $stats(dontaudit) +	\
 		$stats(tetrans) + $stats(temember) + $stats(techange)]   "
-	append polstats "Roles: $stats(roles)   RBAC rules: [expr $stats(roleallow) + $stats(roletrans)]"
+	append polstats "Roles: $stats(roles)"
 	append polstats "   Users: $stats(users)"
 	return
 }
