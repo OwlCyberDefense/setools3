@@ -1379,6 +1379,9 @@ int Apol_GetPolicyVersionNumber(ClientData clientData, Tcl_Interp *interp, int a
 	case POL_VER_16:
 		Tcl_AppendResult(interp, "16", (char *) NULL);
 		break;
+	case POL_VER_17:
+		Tcl_AppendResult(interp, "17", (char *) NULL);
+		break;
 	default:
 		Tcl_AppendResult(interp, "0", (char *) NULL);
 		break;
