@@ -298,7 +298,7 @@ proc SEUser_SELinux_Users::ShowUserInfo  { username } {
 	variable allRoles_list	
 	
 	set no_login_context 0	
-	
+
 	set rt [catch { set currentRoles_list [seuser_UserRoles $username] } err]
 	if {$rt != 0} {	
 		tk_messageBox -icon error -type ok -title "Error" -message "$err" \
@@ -676,7 +676,7 @@ proc SEUser_SELinux_Users::SeLinuxUsers_Selection { path x y } {
 	$SEUser_SELinux_Users::listbox_sysUsers selection clear 0 end
 	$SEUser_SELinux_Users::listbox_availRoles selection clear 0 end
 	$SEUser_SELinux_Users::listbox_currentRoles selection clear 0 end
-	set user [$path get [$path nearest $y]]
+	set user [$path get [$path curselection ]]
 	SEUser_SELinux_Users::ShowUserInfo $user 
 	set SEUser_SELinux_Users::user_to_del $user
 	
@@ -704,7 +704,7 @@ proc SEUser_SELinux_Users::sysUsers_Selection { path x y } {
 	SEUser_Top::enable_tkListbox $SEUser_SELinux_Users::listbox_sysUsers
 	$SEUser_SELinux_Users::listbox_SeLinuxUsers selection clear 0 end
 	SEUser_SELinux_Users::ClearCurrUserInfo
-	set user [$path get [$path nearest $y]]
+	set user [$path get [$path curselection ]]
 	set SEUser_SELinux_Users::user_to_del $user
 		
 	$SEUser_SELinux_Users::r_add configure -state disabled
@@ -975,11 +975,12 @@ proc SEUser_SELinux_Users::createUsersFrame { mainframe } {
 	# List Boxes
 	set listbox_sysUsers   [listbox [$lf_inner_bot getframe].listbox_sysUsers -height 6 -width 20 \
 				-highlightthickness 0 \
-				-listvar SEUser_SELinux_Users::sysUsers_list -bg white] 
+				-listvar SEUser_SELinux_Users::sysUsers_list -bg white \
+				-selectmode single] 
 	set listbox_SeLinuxUsers [listbox [$rf_inner_bot getframe].listbox_SeLinuxUsers -height 6 \
 				  -width 20 -highlightthickness 0 \
 				  -listvar SEUser_SELinux_Users::selinuxUsers_list \
-				  -exportselection no -bg white]  
+				  -exportselection no -bg white -selectmode single]  
 	$lf_inner_bot setwidget $listbox_sysUsers				  
 	$rf_inner_bot setwidget $listbox_SeLinuxUsers
 	
