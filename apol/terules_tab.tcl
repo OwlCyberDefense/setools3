@@ -780,19 +780,11 @@ proc Apol_TE::delete_ResultsTab { pageID } {
 		# ::set_Widget_SearchOptions uses this flag
 		set tab_deleted_flag 1
 		
-		if { $prevPageIdx >= 0} { 
-			set raisedPage [$notebook_results raise [$notebook_results page $prevPageIdx]]
-		} else {
-			set raisedPage [$notebook_results raise [$notebook_results page 0]]
-		}
-		if {$raisedPage == $Apol_TE::emptyTabID} {
-			Apol_TE::reset_search_criteria
-			$Apol_TE::updateButton configure -state disabled
-		} else {
-			# Set the search option widgets according to the now raised results tab.
-			Apol_TE::set_Widget_SearchOptions $raisedPage
-			set tab_deleted_flag 0
-		}
+		# Raise the empty tab. Don't reset the criteria.
+		set raisedPage [$notebook_results raise [$notebook_results page 0]]
+		# The following line is disabled in this release to prevent reinitializing search criteria.
+		#Apol_TE::reset_search_criteria
+		$Apol_TE::updateButton configure -state disabled
 	}
      		
     	return 0
