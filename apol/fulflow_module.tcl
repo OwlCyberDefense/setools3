@@ -1029,6 +1029,13 @@ proc Apol_Analysis_fulflow::find_more_flows {src_node tgt_node} {
  	set src [$fulflow_tree itemcget $src_node -text]
 	wm protocol $find_flows_results_Dlg WM_DELETE_WINDOW "raise $find_flows_results_Dlg; focus $find_flows_results_Dlg"
 
+	set start_time [clock seconds]
+	set curr_flows_num 0
+	set find_flows_start 1
+	
+	# Current time - start time = elapsed time
+	$time_exp_lbl configure -text [Apol_Analysis_fulflow::convert_seconds [expr [clock seconds] - $start_time]]
+	update 
 	# The last query arguments were stored in the data for the root node
 	set rt [catch {apol_TransitiveFindPathsStart \
 		$src \
@@ -1040,7 +1047,7 @@ proc Apol_Analysis_fulflow::find_more_flows {src_node tgt_node} {
 		[lindex $src_data 6] \
 		[lindex $src_data 7] \
 		[lindex $src_data 8]} err]
-			
+	
 	if {$rt != 0} {
 		if {[winfo exists $find_flows_results_Dlg]} {
 			destroy $find_flows_results_Dlg
@@ -1048,9 +1055,7 @@ proc Apol_Analysis_fulflow::find_more_flows {src_node tgt_node} {
 		tk_messageBox -icon error -type ok -title "Error" -message "$err"
 		return -1
 	}
-	set start_time [clock seconds]
-	set curr_flows_num 0
-	set find_flows_start 1
+	
 	while {1} {
 		# Current time - start time = elapsed time
 		set elapsed_time [Apol_Analysis_fulflow::convert_seconds [expr [clock seconds] - $start_time]]
