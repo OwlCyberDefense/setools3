@@ -444,7 +444,7 @@ proc Sepct_Test::open_tmp_file {  } {
 #  	- calls make, displays results
 #	- 
 # 
-proc Sepct_Test::test_Policy { which } {
+proc Sepct_Test::test_Policy { which button } {
 	variable textbox_makeOutput
    	variable textbox_policyConf
    	variable MakeOutputTabName
@@ -468,13 +468,15 @@ proc Sepct_Test::test_Policy { which } {
 	if { $canceled == 0 } {
 		# Change to the given policy directory.
 		cd $Sepct::policyDir
-		set progressBar [ ProgressDlg .progress -parent . -title "Making policy..."  \
-                	-textvariable Sepct_Test::progressmsg -variable Sepct_Test::indicator -maximum 2]
-                	
-                # create a temp file channel with WRONLY access only!
+		
+		# create a temp file channel with WRONLY access only!
                 if { [catch {set of [ Sepct_Test::open_tmp_file ] } ] } {
                 	return -1
                 }
+                $button configure -state disabled
+		set progressBar [ ProgressDlg .progress -parent . -title "Making policy..."  \
+                	-textvariable Sepct_Test::progressmsg -variable Sepct_Test::indicator -maximum 6]
+                	
 		set Sepct_Test::indicator 0
 		switch $which {
 			test {
@@ -539,28 +541,41 @@ proc Sepct_Test::test_Policy { which } {
 				}
 			}
 			default {
-				 Sepct_Test::disableMods
+				$button configure -state normal
+				destroy $progressBar
+				Sepct_Test::disableMods
 				return -1
 			}		
 		}
-		
+		set Sepct_Test::indicator 2
 		# re-open output file for read, and delete when finised
 		set data ""
 		::close $of
-		set of [::open $tmpfilename "RDONLY"]
-		set data [::read $of]
+		set rt [catch {set of [::open $tmpfilename "RDONLY"]} err]
+		if {$rt != 0} {
+			destroy $progressBar
+			$button configure -state normal
+		}
+		set Sepct_Test::indicator 3
+		set rt [catch {set data [::read $of]} err]
+		if {$rt != 0} {
+			destroy $progressBar
+			$button configure -state normal
+		}
+		set Sepct_Test::indicator 4
 		::close $of
 		file delete $tmpfilename
-		set Sepct_Test::indicator 2
-		if { [winfo exists $progressBar] } {
-		    	destroy $progressBar
-		}
+		set Sepct_Test::indicator 5
+			
 		# display make results
 		$textbox_makeOutput delete 0.0 end
 		$textbox_makeOutput insert end $data
 		focus -force $textbox_makeOutput
 		$textbox_makeOutput mark set insert 0.0 
-		$textbox_makeOutput see 0.0		
+		$textbox_makeOutput see 0.0
+		set Sepct_Test::indicator 6		
+		destroy $progressBar
+		$button configure -state normal
 	}	
 	
 	focus $textbox_makeOutput
@@ -644,6 +659,7 @@ proc Sepct_Test::create { nb } {
 	variable b_reload
 	variable b_view_pc
 	variable b_relabel
+	
 	# Layout frames
 	set frame 	[$nb insert end $Sepct::test_tab -text "Test Policy"]
 	set rightf  [frame $frame.rightf -width 100 -height 200]
@@ -652,16 +668,26 @@ proc Sepct_Test::create { nb } {
 	pack $leftf -padx 2 -fill both -expand yes -anchor nw -side left
 	pack $rightf -padx 2 -pady 2 -fill y -anchor ne -side left -after $leftf
 	
-	set b_test    [Button $rightf.test  -text "Test Policy" -width 8 -command {Sepct_Test::test_Policy test} \
-		-helptype balloon -helptext "Test build policy.conf to check \nfor policy compile errors"]
-	set b_clean   [Button $rightf.clean  -text "Clean Policy" -width 8 -command {Sepct_Test::test_Policy clean}  \
-		-helptype balloon -helptext "Clean policy make directory\n(\"make clean\")"]
-	set b_install [Button $rightf.install -text "Install Policy" -width 8 -command {Sepct_Test::test_Policy install}  \
-		-helptype balloon -helptext "Build binary policy and install\nit, but don't load into running system"]
-	set b_reload  [Button $rightf.reload  -text "Load Policy" -width 8 -command {Sepct_Test::test_Policy load} \
-		-helptype balloon -helptext "Build binary policy and install\nand load it into running system"]
-	#set b_relabel [Button $rightf.relabel -text "Relabel Files" -width 8 -command {Sepct_Test::test_Policy relabel}  \
-	#	-helptype balloon -helptext "Relabel all files according to \ncurrently loaded policy"]
+	set b_test    [Button $rightf.test  -text "Test Policy" -width 8 \
+		-helptype balloon \
+		-helptext "Test build policy.conf to check \nfor policy compile errors"]
+	$b_test configure -command "Sepct_Test::test_Policy test $b_test"
+	set b_clean   [Button $rightf.clean  -text "Clean Policy" -width 8  \
+		-helptype balloon \
+		-helptext "Clean policy make directory\n(\"make clean\")"]
+	$b_clean configure -command "Sepct_Test::test_Policy clean $b_clean"
+	set b_install [Button $rightf.install -text "Install Policy" -width 8   \
+		-helptype balloon \
+		-helptext "Build binary policy and install\nit, but don't load into running system"]
+	$b_install configure -command "Sepct_Test::test_Policy install $b_install"
+	set b_reload  [Button $rightf.reload  -text "Load Policy" -width 8  \
+		-helptype balloon \
+		-helptext "Build binary policy and install\nand load it into running system"]
+	$b_reload configure -command "Sepct_Test::test_Policy load $b_reload"
+	#set b_relabel [Button $rightf.relabel -text "Relabel Files" -width 8 \
+	#	-helptype balloon \
+	#	-helptext "Relabel all files according to \ncurrently loaded policy"]
+	#$b_test configure -command "Sepct_Test::test_Policy relabel $b_relabel"
 	set b_view_pc [Button $rightf.view_pc -text "Open\npolicy.conf"  -width 8 -command \
 		{Sepct_Test::display_test_policy_conf; $Sepct_Test::notebook raise $Sepct_Test::PolicyConfTabName }  \
 		-helptype balloon -helptext "Load (reload) policy.conf file"]
