@@ -3,6 +3,9 @@
 
 /*
  * Author: mayerf@tresys.com and Karl MacMillan <kmacmillan@tresys.com>
+ *	
+ * Modified by: don.patterson@tresys.com
+ *		6-24-2003: Added functions for getting users|roles for a given type. 
  */
 
 /* policy.c
@@ -128,7 +131,7 @@ int init_policy(policy_t **p)
 	policy->num_types = 0;
 	
 	/* type aliases */
-	policy->aliases = (alias_item_t *)malloc(sizeof(type_item_t) * LIST_SZ);
+	policy->aliases = (alias_item_t *)malloc(sizeof(alias_item_t) * LIST_SZ);
 	if(policy->aliases == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
@@ -137,7 +140,7 @@ int init_policy(policy_t **p)
 	policy->num_aliases = 0;
 	
 	/* type attributes list */
-	policy->attribs = (attrib_item_t *)malloc(sizeof(attrib_item_t) * LIST_SZ);
+	policy->attribs = (name_a_t *)malloc(sizeof(name_a_t) * LIST_SZ);
 	if(policy->attribs == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
@@ -194,7 +197,7 @@ int init_policy(policy_t **p)
 	policy->clones = NULL;
 
 	/* role definitions */
-	policy->roles = (role_item_t *)malloc(sizeof(role_item_t) * LIST_SZ);
+	policy->roles = (name_a_t *)malloc(sizeof(name_a_t) * LIST_SZ);
 	if(policy->roles == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
@@ -221,8 +224,13 @@ int init_policy(policy_t **p)
 	policy->num_role_trans = 0;	
 	
 	/* users */
-	policy->users.head = NULL;
-	policy->users.tail = NULL;
+	policy->users = (name_a_t *)malloc(sizeof(name_a_t) * LIST_SZ);
+	if(policy->users == NULL) {
+		fprintf(stderr, "out of memory\n");
+		return -1;
+	}
+	policy->list_sz[POL_LIST_USERS] = LIST_SZ;
+	policy->num_users = 0;	
 	
 	
 	/* rule stats */
@@ -256,7 +264,6 @@ int init_policy(policy_t **p)
 /* set policy version, and display a warning message first time set 
  * -1 error
  */
-
 int set_policy_version(int ver, policy_t *policy)
 {
 	if(policy == NULL || ver <= 0 || ver > POL_VER_MAX)
@@ -282,7 +289,7 @@ static int free_name_list(name_item_t *list)
 	return 0;
 }
 
-static int free_ta_list(ta_item_t *list)
+int free_ta_list(ta_item_t *list)
 {
 	ta_item_t *ptr, *ptr2;
 	for(ptr = list; ptr != NULL; ptr = ptr2) {
@@ -308,18 +315,8 @@ static int free_av_list(av_item_t *list, int num)
 }
 
 
-/* does not free the generic data pointer; that's up to the user of the pointer*/
-int free_user(user_item_t *ptr)
-{
-	free(ptr->name);
-	free_ta_list(ptr->roles);
-	free(ptr->data);
-	free(ptr);
-	return 0;
-}
-
 /* frees attrib_item_t and those aliases to it */
-static int free_attrib_list(attrib_item_t *ptr, int num)
+static int free_name_a(name_a_t *ptr, int num)
 {
 	int i;
 	if(ptr == NULL) 
@@ -328,8 +325,8 @@ static int free_attrib_list(attrib_item_t *ptr, int num)
 	for(i = 0; i < num; i++) {
 		if(ptr[i].name != NULL)
 			free(ptr[i].name);
-		if(ptr[i].types != NULL)
-			free(ptr[i].types);
+		if(ptr[i].a != NULL)
+			free(ptr[i].a);
 	}
 	free(ptr);
 	return 0;
@@ -406,7 +403,7 @@ int free_policy(policy_t **p)
 	
 
 	/* type attributes list */
-	free_attrib_list(policy->attribs, policy->num_attribs);
+	free_name_a(policy->attribs, policy->num_attribs);
 	
 	/* conditional bools list */
 	if(policy->cond_bools != NULL) {
@@ -456,7 +453,7 @@ int free_policy(policy_t **p)
 	}
 
 	/* role lists */
-	free_attrib_list(policy->roles, policy->num_roles);
+	free_name_a(policy->roles, policy->num_roles);
 	
 	/* role allow rules */
 	if(policy->role_allow != NULL) {
@@ -477,15 +474,7 @@ int free_policy(policy_t **p)
 	}	
 	
 	/* users */
-	{
-		user_item_t *ptr, *ptr2;
-		for(ptr = policy->users.head; ptr != NULL; ptr = ptr2) {
-			ptr2 = ptr->next;
-			free(ptr->name);
-			free_ta_list(ptr->roles);
-			free(ptr);
-		}
-	}
+	free_name_a(policy->users, policy->num_users);
 	
 	/* perm map */
 	if(policy->pmap != NULL) {
@@ -500,6 +489,77 @@ int free_policy(policy_t **p)
 	return 0;
 }
 
+/***********************************************************
+ * General support functions for name_a_t (used by at least
+ * roles, users, and attributes
+ ***********************************************************/
+/*
+ * Returns idxs (a) in name_a struct (caller must free) and # idxs
+ */
+static int na_get_idxs(int nidx, name_a_t *na, int a_sz, int *num, int **idxs)
+{
+	int i, rt;
+
+	if (na== NULL || num == NULL || idxs == NULL)
+		return -1;
+	if (nidx >= a_sz)
+		return -1;
+	*num = 0;
+	*idxs = NULL;
+
+	for (i = 0; i < na[nidx].num; i++) {
+		rt = add_i_to_a(na[nidx].a[i], num, idxs);	
+		if (rt != 0)
+			goto bad;
+	}
+	return 0;
+bad:
+	if (*idxs != NULL)
+		free(*idxs);
+	return -1;
+}
+
+/* allocates space for name, release memory with free() */
+static int na_get_name(int nidx, name_a_t *na, int a_sz, char **name)
+{
+	if(name == NULL || na == NULL)
+		return -1;
+	if (nidx >= a_sz)
+		return -1;
+		
+	if((*name = (char *)malloc(strlen(na[nidx].name)+1)) == NULL) {
+		fprintf(stderr, "out of memory\n");
+		return -1;
+	}
+	strcpy(*name, na[nidx].name);
+	return 0;
+}
+
+static bool_t na_is_idx_in_a(int idx, name_a_t *na)
+{
+	int i;
+	if(na == NULL)
+		return FALSE;
+	
+	for(i = 0; i < na->num; i++) {
+		if(na->a[i] == idx)
+			return TRUE;
+	}
+	return FALSE;
+} 
+
+/* checks for idx already in a, and if so doesn't add it again */
+static int na_add_idx(int idx, name_a_t *na)
+{
+	if(na == NULL)
+		return -1;
+	if(na_is_idx_in_a(idx, na))
+		return 0; /* already in list */
+	return(add_i_to_a(idx, &na->num, &na->a));
+}
+
+/* END name_a_t support */
+/***********************************************************/
 
 /* Initial SIDs */
 int add_initial_sid(char *name, policy_t *policy)
@@ -528,7 +588,7 @@ int add_initial_sid2(char *name, __u32 sid, policy_t *policy)
 	return idx;
 }
 
-int add_initial_sid_context(int idx, security_context_t *scontext, policy_t *policy)
+int add_initial_sid_context(int idx, security_con_t *scontext, policy_t *policy)
 {
 	if(!is_valid_initial_sid_idx(idx, policy))
 		return -1;
@@ -564,9 +624,8 @@ int get_initial_sid_name(int idx, char **name, policy_t *policy)
  * ALL criteria is satisfied. */
 int search_initial_sids_context(int **isids, int *num_isids, const char *user, const char *role, const char *type, policy_t *policy)
 {
-	user_item_t *uidx = NULL;
 	/* initialize ridx and tidx so to avoid compile warnings when compiled with optimized flag */
-	int ridx = -1, tidx = -1, i;
+	int uidx = -1, ridx = -1, tidx = -1, i;
 	
 	if(policy == NULL || isids == NULL || num_isids == NULL) {
 		return -1;
@@ -597,8 +656,8 @@ int search_initial_sids_context(int **isids, int *num_isids, const char *user, c
 	} 
 	
 	if(user != NULL) {
-		get_user_by_name(user, &uidx, policy);
-		if(uidx == NULL) {
+		uidx = get_user_idx(user, policy);
+		if(uidx < 0) {
 			return 0;
 		}
 	} 
@@ -618,7 +677,7 @@ int search_initial_sids_context(int **isids, int *num_isids, const char *user, c
 		}
 		if (user != NULL) {
 			 /* Make sure this sid has a context and if so, compare the user field */
-			 if (!(policy->initial_sids[i].scontext != NULL && strcmp(uidx->name, policy->initial_sids[i].scontext->user->name) == 0)) {
+			 if (!(policy->initial_sids[i].scontext != NULL && uidx == policy->initial_sids[i].scontext->user)) {
 			 	continue;	
 			 }
 		}
@@ -744,8 +803,6 @@ int get_type_idxs_by_regex(int **types, int *num, regex_t *preg, bool_t include_
 	return 0;
 }
 
-
-
 int get_type_idx(const char *name, policy_t *policy)
 {
 	int rt, rt2;
@@ -763,7 +820,6 @@ int get_type_idx(const char *name, policy_t *policy)
 	}
 	return rt;		
 }
-
 
 
 /* allocates space for name, release memory with free() */
@@ -802,6 +858,7 @@ int get_type_attribs(int type, int *num_attribs, int **attribs, policy_t *policy
 		if (rt != 0)
 			goto bad;
 	}
+
 	return 0;
 bad:
 	if (*attribs != NULL)
@@ -810,51 +867,93 @@ bad:
 }
 
 /*
+ * get the users for a type.
+ * Returns user idxs in users and # of users found
+ * NOTE: Caller must free users!!
+ */
+int get_type_users(int type, int *num_users, int **users, policy_t *policy)
+{
+	int i, j, rt;
+	int *roles = NULL, num_roles = 0;
+	
+	if (policy == NULL || users == NULL || num_users == NULL)
+		return -1;
+	if (!is_valid_type_idx(type, policy))
+		return -1;
+	
+	*num_users = 0;
+	*users = NULL;
+	
+	/* Get types roles */
+	rt = get_type_roles(type, &num_roles, &roles, policy);
+	if (rt != 0) {
+		fprintf(stderr, "Unexpected error getting roles for type.\n");
+		return -1;
+	}
+	
+	for (i = 0; i < policy->num_users; i++) {
+		for (j = 0; j < num_roles; j++) {
+			if (does_user_have_role(i, roles[j], policy) &&
+			    find_int_in_array(i, *users, *num_users) < 0) {
+				rt = add_i_to_a(i, num_users, users);	
+				if (rt != 0) {
+					if (roles) free(roles);
+					return -1;
+				}
+			}
+		}
+	}
+	if (roles) free(roles);
+	
+	return 0;
+}
+
+/*
+ * get the roles for a type.
+ * Returns role idxs in roles and # of roles found
+ * NOTE: Caller must free roles!!
+ */
+int get_type_roles(int type, int *num_roles, int **roles, policy_t *policy)
+{
+	int i, rt;
+	
+	if (policy == NULL || roles == NULL || num_roles == NULL)
+		return -1;
+	if (!is_valid_type_idx(type, policy))
+		return -1;
+	
+	*num_roles = 0;
+	*roles = NULL;
+
+	for (i = 0; i < policy->num_roles; i++) {
+		if (find_int_in_array(type, policy->roles[i].a, policy->roles[i].num) >= 0) {
+			rt = add_i_to_a(i, num_roles, roles);	
+			if (rt != 0) {
+				return -1;
+			}
+		}
+	}
+
+	return 0;
+}
+
+/*
  * get the types for a attrib.
  * Returns type idxs in types (caller must free) and # of types in num_types
  */
 int get_attrib_types(int attrib, int *num_types, int **types, policy_t *policy)
 {
-	int i, rt;
-
-	if (policy == NULL || types == NULL)
+	if (policy == NULL )
 		return -1;
-	if (attrib >= policy->num_attribs)
-		return -1;
-	if (num_types == NULL)
-		return -1;
-	else
-		*num_types = 0;
-	*types = NULL;
-
-	for (i = 0; i < policy->attribs[attrib].num_types; i++) {
-		rt = add_i_to_a(policy->attribs[attrib].types[i], num_types, types);	
-		if (rt != 0)
-			goto bad;
-	}
-	return 0;
-bad:
-	if (*types != NULL)
-		free(*types);
-	return -1;
+	
+	return (na_get_idxs(attrib, policy->attribs, policy->num_attribs, num_types, types));
 }
 
 /* allocates space for name, release memory with free() */
 int get_attrib_name(int idx, char **name, policy_t *policy)
 {
-	if(name == NULL || policy == NULL)
-		return -1;
-		
-	if(!is_valid_attrib_idx(idx, policy))
-		return -1;
-	if((*name = (char *)malloc(strlen(policy->attribs[idx].name)+1)) == NULL) {
-		fprintf(stderr, "out of memory\n");
-		return -1;
-	}
-	strcpy(*name, policy->attribs[idx].name);
-	return 0;
+	return na_get_name(idx, policy->attribs, policy->num_attribs, name);
 }
-
 
 int get_attrib_idx(const char *name, policy_t *policy)
 {
@@ -899,14 +998,7 @@ int get_role_idx(const char *name, policy_t *policy)
 /* allocates space for name, release memory with free() */
 int get_role_name(int idx, char **name, policy_t *policy)
 {
-	if(policy == NULL || !is_valid_role_idx(idx, policy) || name == NULL)
-		return -1;
-	if((*name = (char *)malloc(strlen(policy->roles[idx].name)+1)) == NULL) {
-		fprintf(stderr, "out of memory\n");
-		return -1;
-	}
-	strcpy(*name, policy->roles[idx].name);
-	return 0;
+	return na_get_name(idx, policy->roles, policy->num_roles, name);
 }
 
 int get_role_types(int role, int *num_types, int **types, policy_t *policy)
@@ -923,8 +1015,8 @@ int get_role_types(int role, int *num_types, int **types, policy_t *policy)
 		*num_types = 0;
 	*types = NULL;
 
-	for (i = 0; i < policy->roles[role].num_types; i++) {
-		rt = add_i_to_a(policy->roles[role].types[i], num_types, types);	
+	for (i = 0; i < policy->roles[role].num; i++) {
+		rt = add_i_to_a(policy->roles[role].a[i], num_types, types);	
 		if (rt != 0)
 			goto bad;
 	}
@@ -935,94 +1027,81 @@ bad:
 	return -1;
 }
 
-/* user names; allocates memory  */
-int get_user_name(user_item_t *user, char **name)
+int get_user_roles(int user, int *num_roles, int **roles, policy_t *policy)
 {
-	if(user == NULL || name == NULL) {
+	int i, rt;
+
+	if (policy == NULL || roles == NULL || num_roles == NULL)
 		return -1;
-	}
-	if((*name = (char *)malloc(strlen(user->name)+1)) == NULL) {
-		fprintf(stderr, "out of memory\n");
+	if (!is_valid_role_idx(user, policy)) 
 		return -1;
+	*num_roles = 0;
+	*roles = NULL;
+
+	for (i = 0; i < policy->users[user].num; i++) {
+		rt = add_i_to_a(policy->users[user].a[i], num_roles, roles);	
+		if (rt != 0)
+			goto bad;
 	}
-	strcpy(*name, user->name);
 	return 0;
+bad:
+	if (*roles != NULL)
+		free(*roles);
+	return -1;
+}
+/* allocates space for name, release memory with free() */
+int get_user_name2(int idx, char **name, policy_t *policy)
+{
+	return na_get_name(idx, policy->users, policy->num_users, name);
+}
+
+
+/* check if user exists, and if so return its index */
+int get_user_idx(const char *name, policy_t *policy)
+{
+	int i;
+	if(name == NULL || policy == NULL)
+		return -1;
+	for(i = 0; i < policy->num_users; i++) {
+		if(strcmp(policy->users[i].name, name) == 0)
+			return i;
+	}
+	return -1;
 }
 
 /* check if user exists */
 bool_t does_user_exists(const char *name, policy_t *policy)
 {
-	user_item_t *ptr;
-	if(name == NULL || policy == NULL) {
-		return FALSE;
-	}
-	for(ptr = policy->users.head; ptr != NULL; ptr = ptr->next) {
-		if(strcmp(name, ptr->name) == 0) {
-			return TRUE;
-		}
-	}
-	return FALSE;
-}
-
-/* check if user exists, and if so return a pointer to its structure */
-int get_user_by_name(const char *name, user_item_t **user, policy_t *policy)
-{
-	user_item_t *ptr;
-	if(user == NULL || name == NULL || policy == NULL) {
-		return -1;
-	}
+	int idx;
 	
-	for(ptr = policy->users.head; ptr != NULL; ptr = ptr->next) {
-		if(strcmp(name, ptr->name) == 0) {
-			*user = ptr;
-			return 0;
-		}
-	}
-	return -1;	
-}
-
-
-/* this allow us to check whether a give role is in assigned to user */
-bool_t is_role_in_list(int role, ta_item_t *list)
-{
-	ta_item_t *ptr;
-	if(list == NULL)
+	idx = get_user_idx(name, policy);
+	if(idx >= 0)
+		return TRUE;
+	else
 		return FALSE;
-		
-	for(ptr = list; ptr != NULL; ptr = ptr->next) {
-		if(role == ptr->idx) {
-			return TRUE;
-		}
-	}
-	return FALSE;
 }
-bool_t does_user_have_role(user_item_t *user, int role, policy_t *policy)
+
+bool_t does_user_have_role(int user, int role, policy_t *policy)
 {
-	if(user == NULL || policy == NULL)
+	if(policy == NULL || !is_valid_user_idx(user, policy))
 		return FALSE;
-		
-	return(is_role_in_list(role, user->roles));
+	return na_is_idx_in_a(role, &policy->users[user]);
 }
 
 
-static int add_type_to_attrib(int type_idx, attrib_item_t *attrib)
+static int add_type_to_attrib(int type_idx, name_a_t *attrib)
 {
-	return(add_i_to_a(type_idx, &(attrib->num_types), &(attrib->types)));
+	return(add_i_to_a(type_idx, &(attrib->num), &(attrib->a)));
 }
 
 
 
 int add_type_to_role(int type_idx, int role_idx, policy_t *policy)
 {
-	role_item_t *role;
-	if(policy == NULL || !is_valid_type_idx(type_idx, policy) || !is_valid_role_idx(role_idx, policy))
+	if(policy == NULL || !is_valid_role_idx(role_idx, policy))
 		return -1;
 
-	if(does_role_use_type(role_idx, type_idx, policy))
-		return 0; 	/* type already added to role */
-
-	role = &(policy->roles[role_idx]);
-	return(add_i_to_a(type_idx, &(role->num_types), &(role->types)));
+	return(na_add_idx(type_idx, &policy->roles[role_idx]));
 }
 
 
@@ -1600,69 +1679,46 @@ int insert_ta_item(ta_item_t *newitem, ta_item_t **list)
 }
 
 
-/* add a user to user list */
-int append_user(user_item_t *newuser, user_list_t *list)
+int add_user(char *user, policy_t *policy)
 {
-	if(newuser == NULL || list == NULL)
-		return -1;
-	newuser->next = NULL;
-	
-	if(list->head == NULL) {
-		list->head = newuser;
-		list->tail = newuser;		
-	}
-	else {
-		list->tail->next = newuser;
-		list->tail = newuser;
-	}
-
-	return 0;
-}
-
-user_item_t *add_user(char *user, policy_t *policy)
-{
-	user_item_t *u;
-	
-	if(user == NULL || policy == NULL)
-		return NULL;
+	size_t sz;
+	name_a_t *new_user= NULL;
 		
-	u = (user_item_t *)malloc(sizeof(user_item_t));
-	if(u == NULL) {
-		fprintf(stderr, "out of memory");
-		return NULL;
+	if(user == NULL || policy == NULL)
+		return -1;
+		
+	/* make sure there is a room for another role in the array */
+	if(policy->list_sz[POL_LIST_USERS] <= policy->num_users) {
+		sz = policy->list_sz[POL_LIST_USERS] + LIST_SZ;
+		policy->users = (name_a_t *)realloc(policy->users, sizeof(name_a_t) * sz);
+		if(policy->users == NULL) {
+			fprintf(stderr, "out of memory\n");
+			return -1;
+		}
+		policy->list_sz[POL_LIST_USERS] = sz;
 	}
-	memset(u, 0, sizeof(user_item_t));
-	u->name = user;
-
-	if(append_user(u, &(policy->users)) != 0) {
-		free(u);
-		return NULL;
-	}
-
+	/* next user available */
+	new_user = &(policy->users[policy->num_users]);
+	new_user->name = user;	/* use the memory passed in */
+	new_user->num= 0; 
+	new_user->a = NULL;
 	(policy->rule_cnt[RULE_USER])++;	
-			
-	return u;
+	policy->num_users++;
+	return policy->num_users - 1;	
 }
 
-int add_role_to_user(user_item_t *user, int role_idx, policy_t *policy)
+
+int add_role_to_user(int role_idx, int user_idx, policy_t *policy)
 {
-	ta_item_t *newitem;
-
-	if(user == NULL || policy == NULL || !is_valid_role_idx(role_idx, policy))
+	if(policy == NULL || !is_valid_user_idx(user_idx, policy))
 		return -1;
 
-	newitem = (ta_item_t *)malloc(sizeof(ta_item_t));
-	if(newitem == NULL) {
-		fprintf(stderr, "out of memory");
-		return -1;
-	}
-	newitem->idx = role_idx;
-	newitem->type = IDX_ROLE;
-	return insert_ta_item(newitem, &(user->roles));
+	return(na_add_idx(role_idx, &policy->users[user_idx]));
 }
 
 
 /* add a name_item_t to the provided list */
+/* DEPRECATED */
 int add_name(char *name, name_item_t **list)
 {
 	name_item_t *newptr, *ptr;
@@ -1709,7 +1765,7 @@ av_item_t *add_new_av_rule(int rule_type, policy_t *policy)
 	
 	if (*num >= *sz) {
 		/* grow the dynamic array */
-		av_item_t *ptr;		
+		av_item_t * ptr;		
 		ptr = (av_item_t *)realloc(*rlist, (LIST_SZ + *sz) * sizeof(av_item_t));
 		if(ptr == NULL) {
 			fprintf(stderr,"out of memory\n");
@@ -1743,15 +1799,16 @@ tt_item_t *add_new_tt_rule(int rule_type, policy_t *policy)
 		sz = &(policy->list_sz[POL_LIST_TE_TRANS]);
 		num = &(policy->num_te_trans);
 		rlist = &(policy->te_trans);
-	} else
+	}
+	else
 		return NULL;
 	
 	if (*num >= *sz) {
 		/* grow the dynamic array */
-		tt_item_t *ptr;		
+		tt_item_t * ptr;		
 		ptr = (tt_item_t *)realloc(*rlist, (LIST_SZ + *sz) * sizeof(tt_item_t));
 		if(ptr == NULL) {
-			fprintf(stderr, "out of memory\n");
+			fprintf(stderr,"out of memory\n");
 			return NULL;
 		}
 		*rlist = ptr;
@@ -1795,34 +1852,6 @@ int add_clone_rule(int src, int tgt, unsigned long lineno, policy_t *policy)
 }
 
 
-
-/* PRESENTLY UNUSED AND NOT DEBUGGED*/
-#if 0
-static bool_t type_list_match_by_name(char * type, ta_item_t *list, policy_t *policy) 
-{
-	ta_item_t *ptr;
-	for(ptr = list; ptr != NULL; ptr = ptr->next) {
-		switch(ptr->type) {
-		case IDX_TYPE:
-			assert(ptr->idx < policy->num_types);
-			if(strcmp(type, policy->types[ptr->idx].name) == 0) 
-				return 1;
-			break;
-		case IDX_ATTRIB:
-			assert(ptr->idx < policy->num_attribs);
-			if(strcmp(type, policy->attribs[ptr->idx].name) == 0) 
-				return 1;		
-			break;
-		default:
-			fprintf(stderr, "invalid type for ta_item (%d)\n", ptr->type);
-			break;
-		}
-	}
-		
-	return 0;
-}
-#endif
-
 static int append_attrib_types_to_array(int attrib, int *array_len, int **array, policy_t *policy)
 {
 	int i;
@@ -1830,8 +1859,8 @@ static int append_attrib_types_to_array(int attrib, int *array_len, int **array,
 	if (attrib >= policy->num_attribs)
 		return -1;
 
-	for (i = 0; i < policy->attribs[attrib].num_types; i++) {
-		if (add_i_to_a(policy->attribs[attrib].types[i], array_len, array) == -1)
+	for (i = 0; i < policy->attribs[attrib].num; i++) {
+		if (add_i_to_a(policy->attribs[attrib].a[i], array_len, array) == -1)
 					return -1;
 	}
 	return 0;
@@ -1865,6 +1894,7 @@ err:
 		free(*subtracted_attribs);
 	return -1;
 }
+
 /* Checks not only for a direct match, but also indirect checks if user entered a type.
  * By indirect, we mean if type == IDX_TYPE, we see if the list contains either the type,
  * or one of the type's attributes. However, if type == IDX_ATTRIB (meaning the user 
@@ -2089,7 +2119,7 @@ bool_t does_clone_rule_use_type(int idx, int type, unsigned char whichlist, cln_
 int add_role(char *role, policy_t *policy)
 {
 	size_t sz;
-	role_item_t *new_role = NULL;
+	name_a_t *new_role = NULL;
 	
 	if(role == NULL || policy == NULL)
 		return -1;
@@ -2097,7 +2127,7 @@ int add_role(char *role, policy_t *policy)
 	/* make sure there is a room for another role in the array */
 	if(policy->list_sz[POL_LIST_ROLES] <= policy->num_roles) {
 		sz = policy->list_sz[POL_LIST_ROLES] + LIST_SZ;
-		policy->roles = (role_item_t *)realloc(policy->roles, sizeof(role_item_t) * sz);
+		policy->roles = (name_a_t *)realloc(policy->roles, sizeof(name_a_t) * sz);
 		if(policy->roles == NULL) {
 			fprintf(stderr, "out of memory\n");
 			return -1;
@@ -2108,8 +2138,8 @@ int add_role(char *role, policy_t *policy)
 	/* next role available */
 	new_role = &(policy->roles[policy->num_roles]);
 	new_role->name = role;	/* use the memory passed in */
-	new_role->num_types = 0;
-	new_role->types = NULL;
+	new_role->num= 0;
+	new_role->a = NULL;
 	policy->num_roles++;
 	return policy->num_roles - 1;
 }
@@ -2117,16 +2147,9 @@ int add_role(char *role, policy_t *policy)
 /* determine whether a role contains a given type (by idx) */
 bool_t does_role_use_type(int role, int type, policy_t *policy)
 {
-	int i;
-	if(policy == NULL || role < 0 || role >= policy->num_roles || 
-		type < 0 || type > policy->num_types) {
+	if(policy == NULL || !is_valid_role_idx(role, policy))
 		return FALSE;
-	}
-	for(i = 0; i < policy->roles[role].num_types; i++) {
-		if(policy->roles[role].types[i] == type)
-			return TRUE;
-	}
-	return FALSE;
+	return na_is_idx_in_a(type, &policy->roles[role]);
 }
 
 /* Determine whether a role allow includes the roles provided 
@@ -2273,6 +2296,7 @@ bool_t does_av_rule_use_perms(int rule_idx, int rule_type, int *perm_idxs, int n
 	int i;
 	av_item_t *rule;
 	ta_item_t *ptr;
+	ta_item_t *cptr;
 	
 	if(policy == NULL || !is_valid_av_rule_idx(rule_idx, rule_type, policy))
 		return FALSE;
@@ -2285,9 +2309,17 @@ bool_t does_av_rule_use_perms(int rule_idx, int rule_type, int *perm_idxs, int n
 	else {
 		rule = &(policy->av_audit[rule_idx]);
 	}
+
 	if(rule->flags & AVFLAG_PERM_STAR) {
-		return TRUE;
+		for (cptr = rule->classes; cptr != NULL; cptr = cptr->next) {
+			assert(cptr->type == IDX_OBJ_CLASS);
+			for(i = 0; i < num_perm_idxs; i++) {
+				if (is_valid_perm_for_obj_class(policy, cptr->idx, perm_idxs[i]))
+					return TRUE;
+			}
+		}
 	}
+
 	for(ptr = rule->perms; ptr != NULL ; ptr = ptr->next) {
 		assert(ptr->type == IDX_PERM);
 		for(i = 0; i < num_perm_idxs; i++) {
@@ -2295,6 +2327,7 @@ bool_t does_av_rule_use_perms(int rule_idx, int rule_type, int *perm_idxs, int n
 				return TRUE;
 		}
 	}
+
 	return FALSE;
 }
 
@@ -2528,8 +2561,8 @@ int extract_types_from_te_rule(int rule_idx, int rule_type, unsigned char whichl
 			
 			if (find_int_in_array(t->idx, subtracted_attribs, num_subtracted_attribs) != -1)
 				continue;
-			for (i = 0; i < policy->attribs[t->idx].num_types; i++) {
-				tidx = policy->attribs[t->idx].types[i];
+			for (i = 0; i < policy->attribs[t->idx].num; i++) {
+				tidx = policy->attribs[t->idx].a[i];
 				if(!b_types[t->idx] && (find_int_in_array(tidx, subtracted_types, num_subtracted_types) == -1)) {
 					if(add_i_to_a(tidx, num_types, types) != 0) {
 						ret = -1;
