@@ -114,11 +114,9 @@ void seaudit_update_status_bar(seaudit_t *seaudit)
 			case POL_VER_15:
 				ver_str = POL_VER_STRING_15;
 				break;
-		#ifdef CONFIG_SECURITY_SELINUX_CONDITIONAL_POLICY
 			case POL_VER_16:   /* conditional policy extensions */
 				ver_str = POL_VER_STRING_16;
 				break;
-		#endif
 			default:
 				ver_str = "Unknown";
 				break;
