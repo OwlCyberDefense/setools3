@@ -17,26 +17,33 @@
 
 #define AVCMSG " avc: "
 #define LOADMSG " security: "
+#define BOOLMSG " committed booleans "
 #define PARSE_NUM_FIELDS 35
 #define PARSE_MAX_MSG_LEN 256
 #define PARSE_PERM_START 7
 #define PARSE_AVC_MSG 1
 #define PARSE_LOAD_MSG 2
+#define PARSE_BOOL_MSG 3
 #define PARSE_NON_SELINUX -1
 #define PARSE_NUM_CONTEXT_FIELDS 3
 #define OLD_LOAD_HEADER_LEN 31
 #define PARSE_MSG_AFTER_HEADER 6
 #define PARSE_BINARY_POSITION 10
 #define PARSE_NOT_MATCH -1
-#define PARSE_LOAD_NEXT_LINE 5
-#define PARSE_LOAD_FALSE_POS 6
+#define PARSE_LOAD_NEXT_LINE 6
+#define PARSE_LOAD_FALSE_POS 7
 #define PARSE_AVC_AFTER_FOR 10
 #define PARSE_HOST_POSITION 3
+#define PARSE_BOOL_SECURITY_POSITION 5
+#define PARSE_BOOL_START_BOOLS 9
 
 static int is_selinux(char *line) 
 {
 	if (strstr(line, LOADMSG)) {
-		return PARSE_LOAD_MSG;
+	        if (strstr(line, BOOLMSG))
+	                return PARSE_BOOL_MSG;
+	        else
+		        return PARSE_LOAD_MSG;
 	} else if (strstr(line, AVCMSG))
 		return PARSE_AVC_MSG;
 	else 
@@ -659,6 +666,7 @@ static int create_load(char **tokens, msg_t **msg, FILE *audit_file, audit_log_t
 	int result;
 	bool_t found[5];
 
+
 	if (strcmp(tokens[5], "security:"))
 		return PARSE_INVALID_MSG_WARN;
 
@@ -782,6 +790,109 @@ static int create_load(char **tokens, msg_t **msg, FILE *audit_file, audit_log_t
 	}
 }
 
+static int get_bool(char *token, int *bool, bool_t *val, audit_log_t *log)
+{
+        int len;
+
+        len = strlen(token);
+
+        if (token[len - 1] == ','){
+                token[len - 1] = '\0';
+                len--;
+        }
+
+        if (token[len - 2] != ':')
+                return PARSE_INVALID_MSG_WARN;
+
+        if (token[len-1] == '0')
+                *val = FALSE;
+        else if (token[len-1] == '1')
+                *val = TRUE;
+        else
+                return PARSE_INVALID_MSG_WARN;
+
+        token[len - 2] = '\0';
+
+        if (audit_log_add_bool(log, token, bool) == -1)
+                return PARSE_MEMORY_ERROR;
+ 
+
+        return PARSE_SUCCESS;
+}
+
+static int create_boolean(char **tokens, msg_t **msg, audit_log_t *log)
+{
+        int result;
+	int i;
+	int num_bools = 0;
+	int *booleans = NULL;
+	bool_t *values = NULL;
+	int bool;
+	bool_t val;
+
+
+	if(strcmp(tokens[PARSE_BOOL_SECURITY_POSITION], "security:"))
+	        return PARSE_INVALID_MSG_WARN;
+	if(strcmp(tokens[PARSE_BOOL_SECURITY_POSITION + 1], "committed"))
+	        return PARSE_INVALID_MSG_WARN;
+	if(strcmp(tokens[PARSE_BOOL_SECURITY_POSITION + 2], "booleans"))
+	        return PARSE_INVALID_MSG_WARN;
+	if(strcmp(tokens[PARSE_BOOL_START_BOOLS - 1], "{"))
+	        return PARSE_INVALID_MSG_WARN;
+
+	result = insert_time(*(&tokens), *msg);
+	if (result != PARSE_SUCCESS) {
+		return result;
+	}
+
+	result = insert_hostname(log, *(&tokens), *msg);
+	if (result != PARSE_SUCCESS) {
+	        return result;
+	}
+
+
+	for (i = PARSE_BOOL_START_BOOLS ; i < PARSE_NUM_FIELDS && (strcmp(tokens[i], "}") != 0) ; i++) {
+		num_bools++;
+	}
+	if (i == PARSE_NUM_FIELDS){
+	  return PARSE_INVALID_MSG_WARN;
+	}
+
+	if (num_bools == 0){
+	        (*msg)->msg_data.boolean_msg->num_bools = 0;
+	        (*msg)->msg_data.boolean_msg->booleans = NULL;
+	        (*msg)->msg_data.boolean_msg->values = NULL;
+	  
+	         return PARSE_MALFORMED_MSG_WARN;
+	}
+
+	if ((booleans = (int*) malloc(num_bools * sizeof(int))) == NULL) {
+		return PARSE_MEMORY_ERROR;
+	}
+	if ((values = (bool_t*) malloc(num_bools * sizeof(bool_t))) == NULL) {
+	        free(booleans);
+		return PARSE_MEMORY_ERROR;
+	}
+
+
+	for (i = 0; i < num_bools; i++){
+		result = get_bool(tokens[i + PARSE_BOOL_START_BOOLS], &bool, &val, log);
+		if (result != PARSE_SUCCESS){
+		        free(booleans);
+		        free(values);
+		        return result;
+		}
+		booleans[num_bools - 1] = bool;
+		values[num_bools - 1] = val;
+	}
+
+	(*msg)->msg_data.boolean_msg->num_bools = num_bools;
+	(*msg)->msg_data.boolean_msg->booleans = booleans;
+	(*msg)->msg_data.boolean_msg->values = values;
+
+        return PARSE_SUCCESS;
+}
+
 static int get_tokens(char *line, int msgtype, audit_log_t *log, FILE *audit_file, msg_t **msg)
 {
 	char *tokens = NULL;
@@ -825,8 +936,29 @@ static int get_tokens(char *line, int msgtype, audit_log_t *log, FILE *audit_fil
 	}
 
 
-	if (msgtype == PARSE_AVC_MSG) {
-		*msg = avc_msg_create();
+	if (msgtype == PARSE_BOOL_MSG) {
+	        *msg = boolean_msg_create();
+	        result = create_boolean(fields, msg, log);
+		if (result == PARSE_INVALID_MSG_WARN || result == PARSE_MEMORY_ERROR) {
+			msg_destroy(*msg); 
+			*msg = NULL;
+			for (i = 0 ; i < PARSE_NUM_FIELDS ; i++) {
+				if (fields != NULL)
+					free(fields[i]);
+			}
+			return result;
+		} else {
+			if (audit_log_add_msg(log, *msg) == -1){
+				for (i = 0 ; i < PARSE_NUM_FIELDS ; i++) {
+					if (fields != NULL)
+						free(fields[i]);
+				}				
+				return PARSE_MEMORY_ERROR;
+			}       
+			*msg = NULL;
+	        }      
+	} else if (msgtype == PARSE_AVC_MSG) {
+       		*msg = avc_msg_create();
 		result = create_avc(fields, *msg, log);
 		if (result == PARSE_INVALID_MSG_WARN || result == PARSE_MEMORY_ERROR) {
 			msg_destroy(*msg); 
