@@ -94,7 +94,7 @@ typedef struct dta_query {
 	int num_end_types;
 	int *end_types; 		/* indices into policy->types */
 	int num_obj_options; 		/* number of permission options */
-	policy_query_obj_options_t *obj_options;
+	obj_perm_set_t *obj_options;
 } dta_query_t;
 
 /*
