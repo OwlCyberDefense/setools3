@@ -2739,7 +2739,7 @@ proc Apol_TE::create {nb} {
     #set printButton [button $bBbox.print -text "Print" -width 6 -command {ApolTop::unimplemented}]
 	             
     # Popup menu widget
-    set popupTab_Menu [menu .popupTab_Menu]
+    set popupTab_Menu [menu .popupTab_Menu  -tearoff 0]
     set tab_menu_callbacks [lappend tab_menu_callbacks {"Delete Tab" "Apol_TE::delete_ResultsTab"}]
     set tab_menu_callbacks [lappend tab_menu_callbacks {"Rename Tab" "Apol_TE::display_rename_tab_Dlg"}]
     		
