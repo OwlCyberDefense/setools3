@@ -1058,7 +1058,6 @@ static int define_typealias(void)
 			free(id);
 		return 0;
 	}
-	printf("in define_typealias\n");
 	
 	id = (char*)queue_remove(id_queue);
 	if (!id) {
