@@ -94,7 +94,7 @@ POLICYINSTALLDIRS = seuser
 # exports
 export CFLAGS CC YACC LEX LINKFLAGS BINDIR INSTALL_LIBDIR INSTALL_HELPDIR LIBS TCL_LIBINC TCL_LIBS MAKE 
 export SELINUX_DIR POLICY_INSTALL_DIR POLICY_SRC_DIR SRC_POLICY_DIR POLICY_SRC_FILE DEFAULT_LOG_FILE
-export TOPDIR SHARED_LIB_INSTALL_DIR STATIC_LIB_INSTALL_DIR SETOOLS_INCLUDE DEBUG LIBSELINUX
+export TOPDIR SHARED_LIB_INSTALL_DIR STATIC_LIB_INSTALL_DIR SETOOLS_INCLUDE DYNAMIC LIBSELINUX
 
 all:  all-libs apol awish seuser seuserx sepcut seaudit secmds
 
@@ -115,7 +115,7 @@ help:
 	@echo "   install-sepcut:    		build and install sepct (selinux not required)"
 	@echo "   install-seuser:    		build and install command line seuser (selinux required)"
 	@echo "   install-seuserx:   		build and install seuser and seuserx (selinux required)"
-	@echo "   install-secmds:    		build and install command line tools (selinux not required)"
+	@echo "   install-secmds:    		build and install command line tools (selinux required)"
 	@echo "   install-seaudit:   		build and install seaudit and seaudit-report (selinux not required)"
 	@echo ""
 	@echo "   install-dev:       		build and install headers and libraries"
