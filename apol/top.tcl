@@ -1747,9 +1747,9 @@ proc ApolTop::closePolicy {} {
 	$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
 	$ApolTop::mainframe setmenustate Disable_LoadQuery_Tag disabled
 	$ApolTop::mainframe setmenustate Disable_Summary disabled
-	# We make sure that the initial SIDs tab is re-enabled, b/c a binary policy may have been opened
-	# and this tab would have been disabled. 
+	# We make sure tabs that were disabled are re-enabled
 	$ApolTop::components_nb itemconfigure $ApolTop::initial_sids_tab -state normal
+	$ApolTop::notebook itemconfigure $ApolTop::policy_conf_tab -state normal
 	ApolTop::enable_disable_conditional_widgets 1
 	
 	return 0
@@ -1851,6 +1851,7 @@ proc ApolTop::set_initial_open_policy_state {} {
 	
 	if {$ApolTop::policy_type == $ApolTop::binary_policy_type} {
    		$ApolTop::components_nb itemconfigure $ApolTop::initial_sids_tab -state disabled
+   		$ApolTop::notebook itemconfigure $ApolTop::policy_conf_tab -state disabled
    	}   	
    	
 	ApolTop::set_Focus_to_Text [$ApolTop::notebook raise]  
