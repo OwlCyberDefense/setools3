@@ -875,28 +875,57 @@ static int get_boolean_diff(GtkTextBuffer *txt, GtkTextIter *txt_iter,
 /* raise the correct policy tab on the gui, and go to the line clicked by the user */
 static void txt_view_raise_policy_tab_goto_line(unsigned long line, int whichview)
 {
-	GtkNotebook *notebook;
+	GtkNotebook *main_notebook,*tab_notebook;
 	GtkTextBuffer *buffer;
-	GtkTextIter iter;
+	GtkTextIter iter,end_iter;
 	GtkTextView *text_view = NULL;
+	GtkTextTagTable *table = NULL;
+	GtkTextTag *highlight_tag;
 
-
-	notebook = GTK_NOTEBOOK(glade_xml_get_widget(sediff_app->window_xml, "main_notebook"));
-	g_assert(notebook);
+	main_notebook = GTK_NOTEBOOK(glade_xml_get_widget(sediff_app->window_xml, "main_notebook"));
+	g_assert(main_notebook);
 
 	if (whichview == 1) {
-		gtk_notebook_set_current_page(notebook, 1);
+		gtk_notebook_set_current_page(main_notebook, 1);
 		text_view = (GtkTextView *)(glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p1_text"));
+		tab_notebook = GTK_NOTEBOOK(glade_xml_get_widget(sediff_app->window_xml, "notebook1"));
+		g_assert(tab_notebook);
+		gtk_notebook_set_current_page(tab_notebook, 1);
 	}
 	else { 
-		gtk_notebook_set_current_page(notebook, 2);
+		gtk_notebook_set_current_page(main_notebook, 2);
 		text_view = (GtkTextView *)(glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p2_text"));
+		tab_notebook = GTK_NOTEBOOK(glade_xml_get_widget(sediff_app->window_xml, "notebook2"));
+		g_assert(tab_notebook);
+		gtk_notebook_set_current_page(tab_notebook, 1);
 	}
 
 	buffer = gtk_text_view_get_buffer(text_view);
 	g_assert(buffer);
+
+	table = gtk_text_buffer_get_tag_table(buffer);
+	highlight_tag = gtk_text_tag_table_lookup(table, "highlight-tag");
+	if(!highlight_tag) {
+		highlight_tag = gtk_text_buffer_create_tag (buffer, "highlight-tag",
+							 "family", "monospace",
+							 "style", PANGO_STYLE_ITALIC,
+							 "weight", PANGO_WEIGHT_BOLD, 
+							 NULL); 
+	}
+	/* set everything back to mono font */
+	gtk_text_buffer_get_start_iter(buffer, &iter);
+	gtk_text_buffer_get_end_iter(buffer,&end_iter);
+	gtk_text_buffer_remove_tag(buffer,highlight_tag,&iter,&end_iter);
+
 	gtk_text_buffer_get_start_iter(buffer, &iter);
 	gtk_text_iter_set_line(&iter, line);
+	gtk_text_buffer_get_start_iter(buffer, &end_iter);
+	gtk_text_iter_set_line(&end_iter, line);
+	while (!gtk_text_iter_ends_line(&end_iter))	
+		gtk_text_iter_forward_char(&end_iter);
+
+	gtk_text_buffer_apply_tag(buffer,highlight_tag,&iter,&end_iter);
+
 	gtk_text_view_scroll_to_iter(text_view, &iter, 0.0, TRUE, 0.0, 0.5);
 
 	gtk_text_iter_backward_line(&iter);
@@ -2526,9 +2555,22 @@ static int sediff_policy_file_textview_populate(const char *filename,GtkTextView
 	gsize length;
 	GError *error;
 	GString *string;
-	
+	GtkTextTag *mono_tag = NULL;
+	GtkTextTagTable *table = NULL;
+
 	/* grab the text buffer for our text view */
 	txt = gtk_text_view_get_buffer (GTK_TEXT_VIEW (textview));
+
+	table = gtk_text_buffer_get_tag_table(txt);
+	mono_tag = gtk_text_tag_table_lookup(table, "mono-tag");
+	if (!mono_tag) {
+		mono_tag = gtk_text_buffer_create_tag(txt, "mono-tag",
+						      "style", PANGO_STYLE_NORMAL,
+						      "weight", PANGO_WEIGHT_NORMAL, 
+						      "family", "monospace", 
+						      NULL);
+	}
+	
 
 	gtk_text_buffer_get_start_iter(txt, &start);
 	gtk_text_buffer_get_end_iter(txt, &end);
@@ -2545,12 +2587,12 @@ static int sediff_policy_file_textview_populate(const char *filename,GtkTextView
 			g_warning("Unable to read file %s\n",filename);
 			return -1;
 		}
-		gtk_text_buffer_insert (txt, &iter, contents, length);
+		gtk_text_buffer_insert_with_tags_by_name(txt, &iter, contents, length,"mono-tag",NULL);
 	}
 	else {
 		string = g_string_new("");
 		g_string_printf(string,"Policy File %s is a binary policy",filename);
-		gtk_text_buffer_insert(txt,&iter,string->str,-1);
+		gtk_text_buffer_insert_with_tags_by_name(txt,&iter,string->str,-1,"mono-tag",NULL);
 		g_string_free(string,TRUE);
 
 	}
@@ -2760,10 +2802,10 @@ static int sediff_diff_and_load_policies(const char *p1_file,const char *p2_file
 	GtkWidget *container = NULL;
 	SEDiffTreeViewStore *tree_store = NULL;
 	apol_diff_result_t *diff_results = NULL;
-
 	GtkTreeModel *tree_model;
 	GtkTreeSelection *sel;
 	GtkTreeIter iter;
+	GtkLabel *lbl_p1, *lbl_p2;
 
 	/* show our loading dialog while we load */
 	sediff_load_dlg_show();
@@ -2786,6 +2828,12 @@ static int sediff_diff_and_load_policies(const char *p1_file,const char *p2_file
 		return -1;
 	}
 
+	/* Update the Label widgets */
+	lbl_p1 = (GtkLabel*)glade_xml_get_widget(sediff_app->window_xml, "lbl_policy1");
+	lbl_p2 = (GtkLabel*)glade_xml_get_widget(sediff_app->window_xml, "lbl_policy2");
+	
+	gtk_label_set_text(lbl_p1, (const char*)p1_file);
+	gtk_label_set_text(lbl_p2, (const char*)p2_file);
 
 	/* create a new tree_store */
 	tree_store = sediff_tree_store_new();
