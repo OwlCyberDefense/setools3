@@ -181,6 +181,7 @@ static unsigned int insert_time(char **tokens, msg_t *msg, int *position, int nu
 {
 	char *time = NULL;
 	int i, length = 0;
+	extern int daylight;
 	
 	assert(tokens != NULL && msg != NULL && *position >= 0);
 	for (i = (*position); i < NUM_TIME_COMPONENTS; i++) {
@@ -210,6 +211,7 @@ static unsigned int insert_time(char **tokens, msg_t *msg, int *position, int nu
 		if ((msg->date_stamp = (struct tm*) malloc(sizeof(struct tm))) == NULL)
 			return PARSE_RET_MEMORY_ERROR;
 	}
+	msg->date_stamp->tm_isdst = (daylight==0 ? 0 : 1);
 
 	if (!strptime(time, "%b %d %T", msg->date_stamp)) {    
 		free(time); 
@@ -1217,8 +1219,15 @@ unsigned int parse_audit(FILE *syslog, audit_log_t *log)
 	char *line = NULL;
 	int is_sel = -1, selinux_msg = 0;
 	unsigned int ret = PARSE_RET_SUCCESS;
+	static bool_t tz_initialized = 0;
 	
 	assert(audit_file != NULL && log != NULL);       
+	
+	if (!tz_initialized) {
+		tzset();
+		tz_initialized = 1;	
+	}
+	
 	clearerr(audit_file);
 	if (feof(audit_file))
 		return PARSE_RET_EOF_ERROR;
