@@ -169,6 +169,7 @@ typedef struct iflow_path {
 	int start_type;
 	int end_type;
 	int num_iflows;
+	int length;
 	iflow_t *iflows;
 	struct iflow_path *next;
 } iflow_path_t;
@@ -180,38 +181,6 @@ typedef struct iflow_transitive {
 	iflow_path_t **paths; /* length is num_end_types */
 	int *num_paths; /* length is num_end_types */
 } iflow_transitive_t;
-
-typedef struct iflow_edge {
-	int num_rules;
-	int *rules;
-	int start_node; /* index into iflow_graph->nodes */
-	int end_node; /* index into iflow_graph->nodes */
-	int length;
-} iflow_edge_t;
-
-typedef struct iflow_node {
-	int type;
-	int node_type;
-	int obj_class;
-	int num_in_edges;
-	int *in_edges;
-	int num_out_edges;
-	int *out_edges;
-	unsigned char color;
-	int parent;
-	int distance;
-} iflow_node_t;
-
-typedef struct iflow_graph {
-	int num_nodes; /* the number of slots used in nodes */
-	iflow_node_t *nodes;
-	int *src_index;
-	int *tgt_index;
-	int num_edges;
-	iflow_edge_t *edges;
-	policy_t *policy;
-	iflow_query_t *query;
-} iflow_graph_t;
 
 /* exported prototypes */
 
@@ -227,14 +196,10 @@ int iflow_query_add_type(iflow_query_t *q, int type);
 void iflow_destroy(iflow_t *flow);
 void iflow_transitive_destroy(iflow_transitive_t *flow);
 
-iflow_graph_t *iflow_graph_create(policy_t* policy, iflow_query_t *q);
-void iflow_graph_destroy(iflow_graph_t *g);
-
 int iflow_direct_flows(policy_t *policy, iflow_query_t *q, int *num_answers,
 		       iflow_t **answers);
 
 iflow_transitive_t *iflow_transitive_flows(policy_t *policy, iflow_query_t *q);
-int iflow_all_paths(policy_t *policy, iflow_query_t *q, int end_type);
 
 void *iflow_find_paths_start(policy_t *policy, iflow_query_t *q);
 int iflow_find_paths_next(void *state);
