@@ -1142,7 +1142,7 @@ proc ApolTop::create { } {
 	    {command "&General Help" {all option} "Show help" {} -command {ApolTop::helpDlg "Help" "apol_help.txt"}}
 	    {command "&Domain Transition Analysis" {all option} "Show help" {} -command {ApolTop::helpDlg "Domain Transition Analysis Help" "dta_help.txt"}}
 	    {command "&Information Flow Analysis" {all option} "Show help" {} -command {ApolTop::helpDlg "Information Flow Analysis Help" "iflow_help.txt"}}
-	    #{command "&Types Relationship Analysis" {all option} "Show help" {} -command {ApolTop::helpDlg "Types Relationship Analysis Help" "types_relation_help.txt"}}
+	    {command "&Two Types Relationship Analysis" {all option} "Show help" {} -command {ApolTop::helpDlg "Two Types Relationship Analysis Help" "types_relation_help.txt"}}
 	    {separator}
 	    {command "&About" {all option} "Show about box" {} -command ApolTop::aboutBox}
 	}
