@@ -44,6 +44,14 @@ static struct option opts[] =
 	{NULL, 0, NULL, 0}
 };
 
+/* Actually executes the assertions, stored as a null-terminated
+ * buffer of newline separated strings.  Takes the results of
+ * executions, as a linked list of flow_assert_results_t, and
+ * determines what each represent (a success, failure, or some other
+ * error.)  Prints to standard out any errors/warnings, but only if
+ * 'quiet' is not true.  Returns -1 if execution itself failed (such
+ * as out of memory), 0 if all assertions correct, or otherwise a
+ * count of total number of warnings and errors. */
 static int do_assertions (char *assertion_contents) {
         int num_errors = 0;
         llist_t *results_list;
@@ -138,7 +146,7 @@ static int do_assertions (char *assertion_contents) {
         return num_errors;
 }
 
-
+/* Parse the command line and set all global options. */
 static void parse_command_line(int argc, char **argv)
 {
 	int optc;
@@ -199,7 +207,7 @@ static void parse_command_line(int argc, char **argv)
 
 static void print_version_info(void)
 {
-	printf("blah blah blah tool for Security Enhanced Linux.\n\n");
+	printf("Batch Information Flow Analysis Tool for Security Enhanced Linux.\n\n");
 	printf("   libapol version %s\n\n", libapol_get_version());
 	return;
 }
@@ -227,7 +235,8 @@ int main (int argc, char *argv []) {
         char *flowfile, *s;
         char buf [1024];
         size_t amount_read, flowfile_size;
-        int results;
+        int results, ret;
+        FILE *pfp;
     
         /* gather options */
         parse_command_line (argc, argv);
@@ -243,19 +252,15 @@ int main (int argc, char *argv []) {
         }
     
         /* open the permission map file and parse it */
-        {
-                int ret;
-                FILE *pfp;
-                if ((pfp = fopen (permission_map_file, "r")) == NULL) {
-                        (void) fprintf (stderr, "%s: Could not open permission map file %s.\n", argv [0], permission_map_file);
-                        exit (2);
-                }
-                ret = load_policy_perm_mappings (policy, pfp);
-                (void) fclose (pfp);
-                if (ret & PERMMAP_RET_ERROR) {
-                        (void) fprintf (stderr, "%s: Error while loading permission map file %s.\n", argv [0], permission_map_file);
-                        exit (2);
-                } 
+        if ((pfp = fopen (permission_map_file, "r")) == NULL) {
+                (void) fprintf (stderr, "%s: Could not open permission map file %s.\n", argv [0], permission_map_file);
+                exit (2);
+        }
+        ret = load_policy_perm_mappings (policy, pfp);
+        (void) fclose (pfp);
+        if (ret & PERMMAP_RET_ERROR) {
+                (void) fprintf (stderr, "%s: Error while loading permission map file %s.\n", argv [0], permission_map_file);
+                exit (2);
         }
         if (assert_file != NULL && (flowin = fopen (assert_file, "r")) == NULL) {
                 (void) fprintf (stderr, "%s: Could not open assertion file %s for reading.\n", argv [0], assert_file);
@@ -263,7 +268,10 @@ int main (int argc, char *argv []) {
         }
         /* read in contents of file */
         flowfile_size = 0;
-        flowfile = strdup ("");               /* ignore errors here */
+        if ((flowfile = strdup ("")) == NULL) {
+                (void) fprintf (stderr, "Out of memory!\n");
+                exit (2);
+        }
         while ((amount_read = fread (buf, 1, sizeof (buf), flowin)) > 0) {
                 if ((s = realloc (flowfile, flowfile_size + amount_read + 1)) == NULL) {
                         (void) fprintf (stderr, "error in realloc\n");
