@@ -25,7 +25,7 @@ install-libapol-shared: libseauditso
 
 install-libapol-static: libseaudit
 	install -m 644 libseaudit.a $(STATIC_LIB_INSTALL_DIR)
-	install -d 755 -d $(SETOOLS_INCLUDE)/libseaudit
+	install -m 755 -d $(SETOOLS_INCLUDE)/libseaudit
 	install -m 644 *.h $(SETOOLS_INCLUDE)/libseaudit
 
 install: install-libapol-shared install-libapol-static
