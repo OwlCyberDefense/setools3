@@ -1,6 +1,6 @@
 # various setools command line tools
 
-ifeq ($(DEBUG), 1)
+ifeq ($(DYNAMIC), 0)
 LIBAPOL		= ../libapol/libapol.a
 LIBSEFS		= ../libsefs/libsefs.a
 LIBSEUSER	= ../libseuser/libseuser.a
@@ -31,12 +31,16 @@ SHELL = /bin/sh
 
 all: $(SE_CMDS)
 
+# seinfo and sesearch are optionally linked to libselinux.  
+# The LIBSELINUX variable is set in the top-level Makefile. 
 seinfo: seinfo.o $(LIBAPOL)
 	$(CC) -o $@  seinfo.o $(LIBAPOL) $(LIBS) $(LINKFLAGS) $(LIBSELINUX)
 
 sesearch: sesearch.o $(LIBAPOL)
 	$(CC) -o $@ sesearch.o $(LIBAPOL) $(LIBS) $(LINKFLAGS) $(LIBSELINUX)
 
+# replcon, findcon, indexcon, and searchcon must always be linked to libselinux.  
+# We use the LIBSELINUXSO variable (defined above) to do this. 
 replcon.o: replcon.c 
 	$(CC) -c replcon.c $(CFLAGS) $(INCLUDE)
 
