@@ -40,7 +40,7 @@ findcon: findcon.o
 	$(CC) -o $@ findcon.o $(LINKFLAGS) $(LIBSELINUX)
 
 install: $(SE_CMDS)
-	install -m 755 $(SE_CMDS) $(BINDIR);
+	-install -m 755 $(SE_CMDS) $(BINDIR);
 
 %.o:  %.c
 	$(CC) $(CFLAGS) $(INCLUDE) -c $<
