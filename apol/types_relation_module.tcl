@@ -8,39 +8,40 @@
 #  Author: <don.patterson@tresys.com> 8-11-2004
 # -----------------------------------------------------------
 #
-# This module implements the types relationship analysis interface.
+# This module implements the two types relationship analysis interface.
 
 ##############################################################
 # ::Apol_Analysis_tra module namespace
 ##############################################################
 namespace eval Apol_Analysis_tra {
 	# GUI variables
-	variable descriptive_text "\n\nThe purpose of the types relationship analysis is to determine if \
-				there exists any relationship (or interactions) between typeA and typeB \
-				and exactly what makes up that relationship. You can control the analysis \
-				to search for any of the following:\n\n \
+	variable descriptive_text "\n\nThe purpose of the Two Types Relationship analysis is to determine if \
+				there exists any relationship (or interactions) between two types, namely TypeA and TypeB, \
+				and exactly what associations make up that relationship. This type of analysis may be useful in \
+				determining whether two policy types are completely isolated from each other or in determining \
+				the degree to which a particular type is unique to the other. You can control the \
+				analysis to search for any of the following associations between two types:\n\n \
 				  - the attribute(s) to which both types are assigned (common attribs) \n \
 		 	          - the role(s) which have access to both TypeA and TypeB (common roles) \n \
 		 	          - the users which have access to both TypeA and TypeB (common users) \n \
-		 	          - any direct information flows between TypeA and TypeB (DIF analysis) \n \
-		 	          - any transitive information flows between TypeA and TypeB (TIF analysis) \n \
-		 	          - any domain transitions from TypeA to TypeB or from TypeB to TypeA. (DTA analysis) \n \
+		 	          - any direct information flows between TypeA and TypeB \n \
+		 	          - any transitive information flows between TypeA and TypeB \n \
+		 	          - any domain transitions from TypeA to TypeB or from TypeB to TypeA. \n \
 		 	          - any additional type transition rules from TypeA to TypeB or from TypeB to TypeA,\
-		 	          excluding tt rules from the DTA analysis. (TE rules query) \n \
-		 	          - object types to which both types are granted access. (essentially, the intersection\
-		 	          of the TE rules queries) \n \
+		 	          excluding tt rules from the DTA analysis. \n \
+		 	          - object types to which both TypeA and TypeB are granted access. \n \
 		 	          - any process interactions between TypeA and TypeB (e.g., allow rules that allow TypeA\
-		 	          and TypeB to send signals to each other). (TE rules query) \n \
-		 	          - the additional types to which TypeA and TypeB have access. (TE rules query)\n\n\The results \
+		 	          and TypeB to send signals to each other). \n \
+		 	          - the additional types to which TypeA and TypeB have access. \n\n\The results \
 		 	          of the analysis may be optionally filtered by object classes and/or permissions, \
-		 	          and target types; however, this is only for the Domain Transition, Transitive Information Flow and \
+		 	          and target types; however, this feature is only available for the Domain Transition, Transitive Information Flow and \
 		 	          Direct Information Flow results.\n\n\This analysis may contain an overwhelming amount of information, \
 		 	          so the results are simplified by listing each aspect of the analysis as a separate element within the \
 		 	          listbox, thereby allowing the user to select any aspect of the analysis from the listbox and have \
 		 	          that specific information displayed within the results textbox, instead of all the information being \
 		 	          displayed at once. If desired, all results can be displayed at once as well by selecting the \
-		 	          listbox item labeled 'Show All of the Above'.\n\nFor additional help on \
-    				  this topic select \"Types Relationship Analysis\" from the help menu."
+		 	          listbox item labeled 'Show All of the Above'.\n\nFor additional information on \
+    				  this topic select \"Two Types Relationship Analysis\" from the help menu."
 	variable progressmsg		""
 	variable progress_indicator	-1
 					    	
@@ -56,8 +57,10 @@ namespace eval Apol_Analysis_tra {
 	variable comm_users_sel 	1
 	variable comm_access_sel 	0
 	variable unique_access_sel 	0
-	variable dta_sel		0
-	variable trans_flow_sel		0
+	variable dta_AB_sel		0
+	variable dta_BA_sel		0
+	variable trans_flow_AB_sel	0
+	variable trans_flow_BA_sel	0
 	variable dir_flow_sel		0
 	variable other_ttrules_sel	0
 	variable process_sel		0
@@ -93,7 +96,7 @@ namespace eval Apol_Analysis_tra {
 	variable types_tag		TYPE
 	variable disabled_rule_tag     	DISABLE_RULE
 	
-   	Apol_Analysis::register_analysis_modules "Apol_Analysis_tra" "Types Relationship"	
+   	Apol_Analysis::register_analysis_modules "Apol_Analysis_tra" "Two Types Relationship"	
 }
 
 # ------------------------------------------------------------------------------
@@ -328,8 +331,10 @@ proc Apol_Analysis_tra::do_analysis {results_frame} {
 	variable comm_users_sel 	
 	variable comm_access_sel 	
 	variable unique_access_sel 	
-	variable dta_sel		
-	variable trans_flow_sel		
+	variable dta_AB_sel		
+	variable dta_BA_sel
+	variable trans_flow_AB_sel		
+	variable trans_flow_BA_sel	
 	variable dir_flow_sel		
 	variable other_ttrules_sel	
 	variable process_sel		
@@ -353,12 +358,21 @@ proc Apol_Analysis_tra::do_analysis {results_frame} {
        			-message "TypeB cannot be empty!"
 	    	return -code error
        	}
+       	
+       	if {!$comm_attribs_sel && !$comm_roles_sel && !$comm_users_sel && !$comm_access_sel && \
+       	    !$unique_access_sel && !$dta_AB_sel && !$dta_BA_sel && !$trans_flow_AB_sel && \
+       	    !$trans_flow_BA_sel && !$dir_flow_sel && !$other_ttrules_sel && !$process_sel} {
+       		tk_messageBox -icon error -type ok -title "Error" \
+       			-message "You did not select any search items."
+	    	return -code error
+       	}
+       	
 	# Need procedure for getting TIF and DTA objects from the proper namespaces.
-	if {$dta_sel} {
+	if {$dta_AB_sel || $dta_BA_sel} {
 		set dta_object(x) "" 
 		Apol_Analysis_dta::forward_options_copy_object $forward_options_Dlg dta_object
 	}
-	if {$trans_flow_sel} {
+	if {$trans_flow_AB_sel || $trans_flow_BA_sel} {
 		set tif_object(x) "" 
 		Apol_Analysis_fulflow::advanced_filters_copy_object $transflow_options_Dlg tif_object
 	}
@@ -371,7 +385,8 @@ proc Apol_Analysis_tra::do_analysis {results_frame} {
 			-message "$err"
 		return -code error
 	}
-	if {[expr (!$map_loaded && ($trans_flow_sel || $dir_flow_sel))]} {
+	set do_trans [expr ($trans_flow_AB_sel || $trans_flow_BA_sel)]
+	if {[expr (!$map_loaded && ($do_trans || $dir_flow_sel))]} {
 	    set rt [catch {Apol_Perms_Map::load_default_perm_map} err]
 	    if { $rt != 0 } {
 		if {$rt == $Apol_Perms_Map::warning_return_val} {
@@ -390,7 +405,7 @@ proc Apol_Analysis_tra::do_analysis {results_frame} {
         set dta_filter_types 0
         set dta_types ""
 	set dta_objects_sel 0
-	if {$dta_sel} {	        		
+	if {$dta_AB_sel || $dta_BA_sel} {	        		
 		foreach class $dta_object($forward_options_Dlg,class_list) {
 			set perms ""
 			# Make sure to strip out just the class name, as this may be an excluded class.
@@ -433,7 +448,7 @@ proc Apol_Analysis_tra::do_analysis {results_frame} {
 	set tif_types ""
 	set tif_objects_sel "0"
 	set tif_filter_types "0"
-	if {$trans_flow_sel} {		
+	if {$trans_flow_AB_sel || $trans_flow_BA_sel} {		
 		foreach class $tif_object($transflow_options_Dlg,class_list) {
 			set perms ""
 			# Make sure to strip out just the class name, as this may be an  
@@ -504,8 +519,8 @@ proc Apol_Analysis_tra::do_analysis {results_frame} {
      		$comm_users_sel \
      		$comm_access_sel \
      		$unique_access_sel \
-		$dta_sel \
-		$trans_flow_sel \
+		[expr ($dta_AB_sel || $dta_BA_sel)] \
+		[expr ($trans_flow_AB_sel || $trans_flow_BA_sel)] \
 		$dir_flow_sel \
 		$other_ttrules_sel \
 		$process_sel \
@@ -573,14 +588,14 @@ proc Apol_Analysis_tra::display_all_results {tra_listbox tra_info_text} {
 				Apol_Analysis_tra::display_rules \
 					$tra_listbox \
 					$tra_info_text \
-					"Additional type transition rules" \
+					"Additional Type Transition Rules" \
 					[$tra_listbox itemcget $item -data]
 			}
 			process_rules {
 				Apol_Analysis_tra::display_rules \
 					$tra_listbox \
 					$tra_info_text \
-					"Process interactions" \
+					"Process Interactions" \
 					[$tra_listbox itemcget $item -data]
 			}
 			common_objects {
@@ -852,16 +867,12 @@ proc Apol_Analysis_tra::display_common_object_info {tra_listbox tra_info_text da
 	set i 0
         # Get # common objects
 	set num_comm_objs [lindex $data $i]
-	set start_idx [$tra_info_text index insert]
-	$tra_info_text insert end "$typeA "   
-	set end_idx [$tra_info_text index insert]
-	$tra_info_text tag add $Apol_Analysis_tra::title_type_tag $start_idx $end_idx
 	
 	set start_idx [$tra_info_text index insert]
 	$tra_info_text insert end "Common Object Types ($num_comm_objs):\n\n"   
 	set end_idx [$tra_info_text index insert]
 	$tra_info_text tag add $Apol_Analysis_tra::title_tag $start_idx $end_idx
-	
+		
 	# Get next element index
 	set curr_idx [expr $i + 1]
 	if {$num_comm_objs} { 
@@ -943,11 +954,12 @@ proc Apol_Analysis_tra::display_unique_object_info {tra_listbox tra_info_text da
         set i 0
         # Get # Unique objects
 	set num_unique_objs_A [lindex $data $i]
+	
 	set start_idx [$tra_info_text index insert]
-	$tra_info_text insert end "$typeA "   
+	$tra_info_text insert end "$typeB "   
 	set end_idx [$tra_info_text index insert]
 	$tra_info_text tag add $Apol_Analysis_tra::title_type_tag $start_idx $end_idx
-		
+				
 	set start_idx [$tra_info_text index insert]
 	$tra_info_text insert end "Unique Object Types ($num_unique_objs_A):\n\n" 
 	set end_idx [$tra_info_text index insert]
@@ -1133,45 +1145,6 @@ proc Apol_Analysis_tra::display_direct_flows {tra_listbox tra_info_text data} {
 					incr curIdx
 				}
 			} else {
-				# If it is not both then print only the out flows, or only the inflows
-				if { $flow_dir == "in" } {
-					# Print the output title
-					$tra_info_text insert end "Information flows into "
-					set endIdx [$tra_info_text index insert]
-					$tra_info_text tag add $Apol_Analysis_tra::title_tag $startIdx $endIdx
-					set startIdx [$tra_info_text index insert]
-					$tra_info_text insert end $start_type
-					set endIdx [$tra_info_text index insert]
-					$tra_info_text tag add $Apol_Analysis_tra::title_type_tag $startIdx $endIdx
-					set startIdx [$tra_info_text index insert]
-					$tra_info_text insert end " - from "
-					set endIdx [$tra_info_text index insert]
-					$tra_info_text tag add $Apol_Analysis_tra::title_tag $startIdx $endIdx
-					set startIdx [$tra_info_text index insert]
-					$tra_info_text insert end $cur_end_type
-					set endIdx [$tra_info_text index insert]
-					$tra_info_text tag add $Apol_Analysis_tra::title_type_tag $startIdx $endIdx
-					set startIdx $endIdx		
-					} elseif { $flow_dir == "out" } {
-					# Print the output title
-					$tra_info_text insert end "Information flows out of "
-					set endIdx [$tra_info_text index insert]
-					$tra_info_text tag add $Apol_Analysis_tra::title_tag $startIdx $endIdx
-					set startIdx [$tra_info_text index insert]
-					$tra_info_text insert end $start_type
-					set endIdx [$tra_info_text index insert]
-					$tra_info_text tag add $Apol_Analysis_tra::title_type_tag $startIdx $endIdx
-					set startIdx [$tra_info_text index insert]
-					$tra_info_text insert end " - to "
-					set endIdx [$tra_info_text index insert]
-					$tra_info_text tag add $Apol_Analysis_tra::title_tag $startIdx $endIdx
-					set startIdx [$tra_info_text index insert]
-					$tra_info_text insert end $cur_end_type
-					set endIdx [$tra_info_text index insert]
-					$tra_info_text tag add $Apol_Analysis_tra::title_type_tag $startIdx $endIdx
-					set startIdx $endIdx			
-				}
-				
 				$tra_info_text insert end "\n\nObject classes for "
 				set endIdx [$tra_info_text index insert]
 				$tra_info_text tag add $Apol_Analysis_tra::subtitle_tag $startIdx $endIdx
@@ -1274,7 +1247,7 @@ proc Apol_Analysis_tra::display_transitive_flows {tra_listbox tra_info_text data
 		set startIdx $endIdx 
 	} else {
 		set start_idx [$tra_info_text index insert]
-		$tra_info_text insert end "No transitive information flows"
+		$tra_info_text insert end "No transitive information flows from $start_type"
 		set end_idx [$tra_info_text index insert]
 		$tra_info_text tag add $Apol_Analysis_tra::title_tag $start_idx $end_idx
 	}
@@ -1406,9 +1379,14 @@ proc Apol_Analysis_tra::display_dta_info {tra_listbox tra_info_text data start_t
 		return 0
 	}
 	set idx 0
-	
+
 	# Get # of target types 
 	set num_target_types [lindex $data $idx]
+	if {![string is integer $num_target_types]} {
+		puts "Number of target types is not an integer: $num_target_types"
+		return
+	}
+			
 	if {$num_target_types} {
 		incr idx
 		set end_type [lindex $data $idx]
@@ -1438,7 +1416,7 @@ proc Apol_Analysis_tra::display_dta_info {tra_listbox tra_info_text data start_t
 		set end_idx [$tra_info_text index insert]
 		$tra_info_text tag add $Apol_Analysis_tra::title_tag $start_idx $end_idx
 	}
-	
+
 	#  are any target types then format and display the data				
 	for { set x 0 } { $x < $num_target_types } { incr x } { 
 		incr idx
@@ -1446,7 +1424,11 @@ proc Apol_Analysis_tra::display_dta_info {tra_listbox tra_info_text data start_t
 		$tra_info_text insert end "\n\n"
 		set start_idx [$tra_info_text index insert]
 		set num_pt [lindex $data $idx]
-		
+		if {![string is integer $num_pt]} {
+			puts "Number of process transition rules is not an integer: $num_pt"
+			return
+		}
+			
 		$tra_info_text insert end "Process Transition Rules:  "
 		set end_idx [$tra_info_text index insert]
 		$tra_info_text tag add $Apol_Analysis_tra::subtitle_tag $start_idx $end_idx
@@ -1454,7 +1436,7 @@ proc Apol_Analysis_tra::display_dta_info {tra_listbox tra_info_text data start_t
 		$tra_info_text insert end "$num_pt\n"
 		set end_idx [$tra_info_text index insert]
 		$tra_info_text tag add $Apol_Analysis_tra::counters_tag $start_idx $end_idx
-	
+
 		for { set i 0 } { $i < $num_pt } { incr i } {
 			incr idx
 			set rule [lindex $data $idx]
@@ -1489,7 +1471,12 @@ proc Apol_Analysis_tra::display_dta_info {tra_listbox tra_info_text data start_t
 		}
 		incr idx
 		# (# of file types)
-		set num_types [lindex $data $idx ]
+		set num_types [lindex $data $idx]
+		if {![string is integer $num_types]} {
+			puts "Number of file types is not an integer: $num_types"
+			return
+		}
+			
 		set start_idx $end_idx
 		$tra_info_text insert end "\nEntry Point File Types:  "
 		set end_idx [$tra_info_text index insert]
@@ -1509,6 +1496,10 @@ proc Apol_Analysis_tra::display_dta_info {tra_listbox tra_info_text data start_t
 			$tra_info_text tag add $Apol_Analysis_tra::types_tag $start_idx $end_idx
 			incr idx
 			set num_ep [lindex $data $idx]
+			if {![string is integer $num_ep]} {
+				puts "Number of entrypoint access rules is not an integer: $num_ep"
+				return
+			}
 			
 			set start_idx $end_idx
 			$tra_info_text insert end "\t\tFile Entrypoint Rules:  "
@@ -1518,13 +1509,13 @@ proc Apol_Analysis_tra::display_dta_info {tra_listbox tra_info_text data start_t
 			$tra_info_text insert end "$num_ep\n"
 			set end_idx [$tra_info_text index insert]
 			$tra_info_text tag add $Apol_Analysis_tra::counters_tag $start_idx $end_idx
-			
+		
 			for {set j 0} {$j < $num_ep} {incr j}  {
 				incr idx
 				set rule [lindex $data $idx]
 				incr idx
 				set lineno [lindex $data $idx]
-				
+
 				$tra_info_text insert end "\t\t"
 				set start_idx [$tra_info_text index insert]
 				
@@ -1553,6 +1544,10 @@ proc Apol_Analysis_tra::display_dta_info {tra_listbox tra_info_text data start_t
 			}
 			incr idx
 			set num_ex [lindex $data $idx]
+			if {![string is integer $num_ex]} {
+				puts "Number of execute access rules is not an integer: $num_ex"
+				return
+			}
 			
 			set start_idx $end_idx
 			$tra_info_text insert end "\n\t\tFile Execute Rules:  "
@@ -1595,46 +1590,49 @@ proc Apol_Analysis_tra::display_dta_info {tra_listbox tra_info_text data start_t
 					$tra_info_text insert end "\n"
 				}
 			}
-	
+		}
+		incr idx
+		set num_additional [lindex $data $idx]
+		if {![string is integer $num_additional]} {
+			puts "Number of additional access rules is not an integer: $num_additional"
+			return
+		}
+		
+		set start_idx $end_idx
+		$tra_info_text insert end "\nPrivileges for this target domain:  "
+		set end_idx [$tra_info_text index insert]
+		$tra_info_text tag add $Apol_Analysis_tra::subtitle_tag $start_idx $end_idx
+		set start_idx $end_idx
+		$tra_info_text insert end "$num_additional\n"
+		set end_idx [$tra_info_text index insert]
+		$tra_info_text tag add $Apol_Analysis_tra::counters_tag $start_idx $end_idx
+
+		for {set j 0 } { $j < $num_additional } { incr j }  {
 			incr idx
-			set num_additional [lindex $data $idx]
-			
-			set start_idx $end_idx
-			$tra_info_text insert end "\nPrivileges for this target domain:  "
+			set rule [lindex $data $idx]
+			incr idx
+			set lineno [lindex $data $idx]
+		
+			$tra_info_text insert end "\t"
+			set start_idx [$tra_info_text index insert]
+			$tra_info_text insert end "($lineno) "
 			set end_idx [$tra_info_text index insert]
-			$tra_info_text tag add $Apol_Analysis_tra::subtitle_tag $start_idx $end_idx
+			Apol_PolicyConf::insertHyperLink $tra_info_text "$start_idx wordstart + 1c" "$start_idx wordstart + [expr [string length $lineno] + 1]c"
 			set start_idx $end_idx
-			$tra_info_text insert end "$num_additional\n"
+			$tra_info_text insert end "$rule\n"
 			set end_idx [$tra_info_text index insert]
-			$tra_info_text tag add $Apol_Analysis_tra::counters_tag $start_idx $end_idx
+			$tra_info_text tag add $Apol_Analysis_tra::rules_tag $start_idx $end_idx
 			
-			for {set j 0 } { $j < $num_additional } { incr j }  {
-				incr idx
-				set rule [lindex $data $idx]
-				incr idx
-				set lineno [lindex $data $idx]
-				
-				$tra_info_text insert end "\t"
-				set start_idx [$tra_info_text index insert]
-				$tra_info_text insert end "($lineno) "
-				set end_idx [$tra_info_text index insert]
-				Apol_PolicyConf::insertHyperLink $tra_info_text "$start_idx wordstart + 1c" "$start_idx wordstart + [expr [string length $lineno] + 1]c"
-				set start_idx $end_idx
-				$tra_info_text insert end "$rule\n"
-				set end_idx [$tra_info_text index insert]
-				$tra_info_text tag add $Apol_Analysis_tra::rules_tag $start_idx $end_idx
-				
-				incr idx
-				# The next element should be the enabled boolean flag.
-				if {[lindex $data $idx] == 0} {
-					$tra_info_text insert end "   "
-					set startIdx [$tra_info_text index insert]
-					$tra_info_text insert end "\[Disabled\]\n"
-					set endIdx [$tra_info_text index insert]
-					$tra_info_text tag add $Apol_Analysis_tra::disabled_rule_tag $start_idx $end_idx
-				} else {
-					$tra_info_text insert end "\n"
-				}
+			incr idx
+			# The next element should be the enabled boolean flag.
+			if {[lindex $data $idx] == 0} {
+				$tra_info_text insert end "   "
+				set startIdx [$tra_info_text index insert]
+				$tra_info_text insert end "\[Disabled\]\n"
+				set endIdx [$tra_info_text index insert]
+				$tra_info_text tag add $Apol_Analysis_tra::disabled_rule_tag $start_idx $end_idx
+			} else {
+				$tra_info_text insert end "\n"
 			}
 		}
 	}
@@ -1652,8 +1650,10 @@ proc Apol_Analysis_tra::create_results_list_structure {tra_listbox results_list}
 	variable comm_users_sel 	
 	variable comm_access_sel 	
 	variable unique_access_sel 	
-	variable dta_sel		
-	variable trans_flow_sel		
+	variable dta_AB_sel
+	variable dta_BA_sel		
+	variable trans_flow_AB_sel		
+	variable trans_flow_BA_sel
 	variable dir_flow_sel		
 	variable other_ttrules_sel	
 	variable process_sel		
@@ -1814,7 +1814,7 @@ proc Apol_Analysis_tra::create_results_list_structure {tra_listbox results_list}
 	# Insert item into listbox 
 	if {$dir_flow_sel} {
 		$tra_listbox insert end dir_flows \
-			-text "Direct Information Flows" \
+			-text "Direct Flows Between A and B" \
 			-data [lrange $results_list $start_idx [expr $i - 1]] 
 	}
 	set start_idx $i
@@ -1830,9 +1830,9 @@ proc Apol_Analysis_tra::create_results_list_structure {tra_listbox results_list}
 	# This should be the index of the next item.
 	set i $currentIdx
 	# Insert item into listbox 
-	if {$trans_flow_sel} {
+	if {$trans_flow_AB_sel} {
 		$tra_listbox insert end trans_flows_A \
-			-text "Transitive Information Flows A->B" \
+			-text "Transitive Flows A->B" \
 			-data [lrange $results_list $start_idx [expr $i - 1]] 
 	}
 	set start_idx $i
@@ -1848,9 +1848,9 @@ proc Apol_Analysis_tra::create_results_list_structure {tra_listbox results_list}
 	# This should be the index of the next item.
 	set i $currentIdx
 	# Insert item into listbox
-	if {$trans_flow_sel} { 
+	if {$trans_flow_BA_sel} { 
 		$tra_listbox insert end trans_flows_B \
-			-text "Transitive Information Flows B->A" \
+			-text "Transitive Flows B->A" \
 			-data [lrange $results_list $start_idx [expr $i - 1]] 
 	}
 	
@@ -1868,7 +1868,7 @@ proc Apol_Analysis_tra::create_results_list_structure {tra_listbox results_list}
 	# This should be the index of the next item.
 	set i $currentIdx
 	# Insert item into listbox
-	if {$dta_sel} { 
+	if {$dta_AB_sel} { 
 		$tra_listbox insert end dta_analysis_A \
 			-text "Domain Transitions A->B" \
 			-data [lrange $results_list $start_idx [expr $i - 1]] 
@@ -1888,7 +1888,7 @@ proc Apol_Analysis_tra::create_results_list_structure {tra_listbox results_list}
 	# This should be the index of the next item.
 	set i $currentIdx
 	# Insert item into listbox 
-	if {$dta_sel} {
+	if {$dta_BA_sel} {
 		$tra_listbox insert end dta_analysis_B \
 			-text "Domain Transitions B->A" \
 			-data [lrange $results_list $start_idx [expr $i - 1]] 
@@ -2062,8 +2062,10 @@ proc Apol_Analysis_tra::parse_query_options_list {query_options curr_idx parentD
 	variable comm_users_sel 	
 	variable comm_access_sel 	
 	variable unique_access_sel 	
-	variable dta_sel		
-	variable trans_flow_sel		
+	variable dta_AB_sel		
+	variable dta_BA_sel
+	variable trans_flow_AB_sel		
+	variable trans_flow_BA_sel
 	variable dir_flow_sel		
 	variable other_ttrules_sel	
 	variable process_sel	
@@ -2135,13 +2137,21 @@ proc Apol_Analysis_tra::parse_query_options_list {query_options curr_idx parentD
 				incr i
 				set unique_access_sel [lindex $query_options $i]
 			}
-			"dta_sel" {
+			"dta_AB_sel" {
 				incr i
-				set dta_sel [lindex $query_options $i]
+				set dta_AB_sel [lindex $query_options $i]
 			}
-			"trans_flow_sel" {
+			"dta_BA_sel" {
 				incr i
-				set trans_flow_sel [lindex $query_options $i]
+				set dta_BA_sel [lindex $query_options $i]
+			}
+			"trans_flow_AB_sel" {
+				incr i
+				set trans_flow_AB_sel [lindex $query_options $i]
+			}
+			"trans_flow_BA_sel" {
+				incr i
+				set trans_flow_BA_sel [lindex $query_options $i]
 			}
 			"dir_flow_sel" {
 				incr i
@@ -2208,8 +2218,10 @@ proc Apol_Analysis_tra::load_query_options { file_channel parentDlg } {
 	variable comm_users_sel 	
 	variable comm_access_sel 	
 	variable unique_access_sel 	
-	variable dta_sel		
-	variable trans_flow_sel		
+	variable dta_AB_sel
+	variable dta_BA_sel
+	variable trans_flow_AB_sel
+	variable trans_flow_BA_sel		
 	variable dir_flow_sel		
 	variable other_ttrules_sel	
 	variable process_sel	
@@ -2270,8 +2282,10 @@ proc Apol_Analysis_tra::get_search_options_list {} {
 	variable comm_users_sel 	
 	variable comm_access_sel 	
 	variable unique_access_sel 	
-	variable dta_sel		
-	variable trans_flow_sel		
+	variable dta_AB_sel		
+	variable dta_BA_sel
+	variable trans_flow_AB_sel		
+	variable trans_flow_BA_sel
 	variable dir_flow_sel		
 	variable other_ttrules_sel	
 	variable process_sel	
@@ -2328,10 +2342,14 @@ proc Apol_Analysis_tra::get_search_options_list {} {
 		$comm_access_sel \
 		"unique_access_sel:" \
 		$unique_access_sel \
-		"dta_sel:" \
-		$dta_sel \
-		"trans_flow_sel:" \
-		$trans_flow_sel \
+		"dta_AB_sel:" \
+		$dta_AB_sel \
+		"dta_BA_sel:" \
+		$dta_BA_sel \
+		"trans_flow_AB_sel:" \
+		$trans_flow_AB_sel \
+		"trans_flow_BA_sel:" \
+		$trans_flow_BA_sel \
 		"dir_flow_sel:" \
 		$dir_flow_sel \
 		"other_ttrules_sel:" \
@@ -2461,8 +2479,10 @@ proc Apol_Analysis_tra::reset_variables { } {
         set Apol_Analysis_tra::comm_users_sel   1 
         set Apol_Analysis_tra::comm_access_sel    0
         set Apol_Analysis_tra::unique_access_sel  0
-        set Apol_Analysis_tra::dta_sel    	  0
-        set Apol_Analysis_tra::trans_flow_sel     0
+        set Apol_Analysis_tra::dta_AB_sel    	  0
+        set Apol_Analysis_tra::dta_BA_sel    	  0
+        set Apol_Analysis_tra::trans_flow_AB_sel     0
+        set Apol_Analysis_tra::trans_flow_BA_sel     0
         set Apol_Analysis_tra::dir_flow_sel       0
         set Apol_Analysis_tra::other_ttrules_sel  0
         set Apol_Analysis_tra::process_sel   	  0
@@ -2593,7 +2613,7 @@ proc Apol_Analysis_tra::create_resultsDisplay {results_frame} {
 	$tra_listbox bindText  <ButtonPress-1>        {Apol_Analysis_tra::listSelect \
 							$Apol_Analysis_tra::tra_listbox \
 							$Apol_Analysis_tra::tra_info_text}
-    	$tra_listbox bindText  <Double-ButtonPress-1> {Apol_Analysis_tra::listSelect 
+    	$tra_listbox bindText  <Double-ButtonPress-1> {Apol_Analysis_tra::listSelect \
     							$Apol_Analysis_tra::tra_listbox \
     							$Apol_Analysis_tra::tra_info_text}
     
@@ -2631,12 +2651,13 @@ proc Apol_Analysis_tra::create_options { options_frame } {
 	
 	set ckbttns_frame_1 [frame $ckbttns_f.ckbttns_frame_1]
         set ckbttns_frame_2 [frame $ckbttns_f.ckbttns_frame_2]
+        set ckbttns_frame_3 [frame $ckbttns_f.ckbttns_frame_3]
 	
 	# Labels 
 	set lbl_typeA [Label $type_frame_1.lbl_typeA -text "Type A:"]
 	set lbl_typeB [Label $type_frame_2.lbl_typeB -text "Type B:"]
 	set lbl_ckbttns [Label $ckbttns_f.lbl_ckbttns \
-		-text "Search for the following:"]
+		-text "Search for the following associations between the two types:"]
 	
 	# TypeA and TypeB comboboxes 
     	set combo_typeA [ComboBox $type_frame_1.combo_typeA \
@@ -2666,14 +2687,14 @@ proc Apol_Analysis_tra::create_options { options_frame } {
 	
 	# Checkbuttons for enabling disabling attribute comboboxes
 	set cb_attribA [checkbutton $attrib_frame_1.cb_attribA \
-		-text "Select type A using attrib:" \
+		-text "Select Type A using attrib:" \
 		-variable Apol_Analysis_tra::attribA_sel \
 		-offvalue 0 -onvalue 1]
 	$cb_attribA configure \
 		-command "Apol_Analysis_tra::config_attrib_comboBox_state \
 			$cb_attribA $combo_attribA $combo_typeA 1"
 	set cb_attribB [checkbutton $attrib_frame_2.cb_attribB \
-		-text "Select type B using attrib:" \
+		-text "Select Type B using attrib:" \
 		-variable Apol_Analysis_tra::attribB_sel \
 		-offvalue 0 -onvalue 1]
 	$cb_attribB configure \
@@ -2682,43 +2703,51 @@ proc Apol_Analysis_tra::create_options { options_frame } {
 		
 	# Query-related checkbuttons
         set comm_attribs_cb [checkbutton $ckbttns_frame_1.comm_attribs_cb \
-        	-text "Common attributes" \
+        	-text "Common Attributes" \
 		-variable Apol_Analysis_tra::comm_attribs_sel]
 
         set comm_roles_cb [checkbutton $ckbttns_frame_1.comm_roles_cb \
-        	-text "Common roles" \
+        	-text "Common Roles" \
 		-variable Apol_Analysis_tra::comm_roles_sel]
 
         set comm_users_cb [checkbutton $ckbttns_frame_1.comm_users_cb \
-        	-text "Common users" \
+        	-text "Common Users" \
 		-variable Apol_Analysis_tra::comm_users_sel]
 
-        set comm_access_cb [checkbutton $ckbttns_frame_1.comm_access_cb \
-        	-text "Common object access" \
+        set comm_access_cb [checkbutton $ckbttns_frame_2.comm_access_cb \
+        	-text "Common Object Type Access" \
 		-variable Apol_Analysis_tra::comm_access_sel]
 
-        set unique_access_cb [checkbutton $ckbttns_frame_1.unique_access_cb \
-        	-text "Unique object access" \
+        set unique_access_cb [checkbutton $ckbttns_frame_2.unique_access_cb \
+        	-text "Unique Object Type Access" \
 		-variable Apol_Analysis_tra::unique_access_sel]
 
-    	set dta_cb [checkbutton $ckbttns_frame_2.dta_cb \
-    		-text "Domain transitions (DT analysis)" \
-    		-variable Apol_Analysis_tra::dta_sel]
+    	set dta_AB_cb [checkbutton $ckbttns_frame_3.dta_AB_cb \
+    		-text "Domain Transitions A->B" \
+    		-variable Apol_Analysis_tra::dta_AB_sel]
+    		
+    	set dta_BA_cb [checkbutton $ckbttns_frame_3.dta_BA_cb \
+    		-text "Domain Transitions B->A" \
+    		-variable Apol_Analysis_tra::dta_BA_sel]
 		 
-	set trans_flow_cb [checkbutton $ckbttns_frame_2.trans_flow_cb \
-		-text "Transitive flows (TIF analysis)" \
-    		-variable Apol_Analysis_tra::trans_flow_sel]
+	set trans_flow_AB_cb [checkbutton $ckbttns_frame_2.trans_flow_AB_cb \
+		-text "Transitive Flows A->B" \
+    		-variable Apol_Analysis_tra::trans_flow_AB_sel]
+    		
+    	set trans_flow_BA_cb [checkbutton $ckbttns_frame_2.trans_flow_BA_cb \
+		-text "Transitive Flows B->A" \
+    		-variable Apol_Analysis_tra::trans_flow_BA_sel]
 		
 	set dir_flow_cb [checkbutton $ckbttns_frame_2.dir_flow_cb \
-		-text "Direct flows (DIF analysis)" \
+		-text "Direct Flows Between A and B" \
     		-variable Apol_Analysis_tra::dir_flow_sel]
 	
-	set other_ttrules_cb [checkbutton $ckbttns_frame_2.other_ttrules_cb \
-		-text "Additional type transition rules" \
+	set other_ttrules_cb [checkbutton $ckbttns_frame_1.other_ttrules_cb \
+		-text "Additional Type Transition Rules" \
     		-variable Apol_Analysis_tra::other_ttrules_sel]
 		
-	set process_cb [checkbutton $ckbttns_frame_2.process_cb \
-		-text "Process interactions" \
+	set process_cb [checkbutton $ckbttns_frame_1.process_cb \
+		-text "Process Interactions" \
     		-variable Apol_Analysis_tra::process_sel]
 	
 	set b_dta_adv [button $bot.b_dta_adv \
@@ -2735,25 +2764,24 @@ proc Apol_Analysis_tra::create_options { options_frame } {
 	pack $entry_frame -side left -anchor nw -fill both -padx 5 -expand yes
 	pack $bot_frame -side right -anchor nw -fill both -padx 5 -expand yes
         pack $top_frame -side left -anchor nw -fill both -padx 5 -expand yes
-        pack $bot -fill both -expand yes -side bottom
-        pack $top -fill both -expand yes -side top
-        pack $ckbttns_f -side bottom -anchor nw -fill both -expand yes
-        pack $types_f -side top -anchor nw -fill both -expand yes 
-        pack $comm_attribs_cb $comm_roles_cb $comm_users_cb $comm_access_cb $unique_access_cb \
+        pack $bot -fill both -side bottom
+        pack $top -fill x -side top -anchor nw
+        pack $ckbttns_f -side bottom -anchor nw -fill both -pady 8 -expand yes
+        pack $types_f -side top -anchor nw -fill both -expand yes -pady 4
+        pack $comm_attribs_cb $comm_roles_cb $comm_users_cb $other_ttrules_cb $process_cb \
 		-side top -anchor nw -padx 10
         pack $typeA_frame $typeB_frame -side left -anchor nw -fill x -expand yes
-        pack $b_dta_adv $b_transf_adv $b_directf_adv -side top -pady 2
-	pack $lbl_ckbttns -side top -anchor nw -pady 2
-	pack $ckbttns_frame_1 $ckbttns_frame_2 -side left -anchor nw -fill both -expand yes 
-	pack $dta_cb $trans_flow_cb $dir_flow_cb $other_ttrules_cb $process_cb \
-		-side top -anchor nw -padx 2
-	pack $attrib_frame_1 $attrib_frame_2 -side bottom -anchor nw -pady 2
+        pack $attrib_frame_1 $attrib_frame_2 -side bottom -anchor nw -pady 2
 	pack $type_frame_1 $type_frame_2 -side top -anchor nw
 	pack $lbl_typeA $lbl_typeB -side top -anchor nw -padx 2
 	pack $cb_attribA $cb_attribB -side top -anchor sw -padx 10
 	pack $combo_attribA $combo_attribB -side top -anchor sw -padx 10
-	pack $combo_typeA $combo_typeB -side left -anchor nw -fill x -expand yes -padx 5
-	
+	pack $combo_typeA $combo_typeB -side left -anchor nw -fill x -padx 5
+        pack $b_dta_adv $b_transf_adv $b_directf_adv -side top -pady 2
+	pack $lbl_ckbttns -side top -anchor nw -pady 2
+	pack $ckbttns_frame_1 $ckbttns_frame_2 $ckbttns_frame_3 -side left -anchor nw -fill both -expand yes 
+	pack $comm_access_cb $unique_access_cb $dir_flow_cb $trans_flow_AB_cb $trans_flow_BA_cb \
+		$dta_AB_cb $dta_BA_cb -side top -anchor nw -padx 2	
 	                   	
 	# Set binding for the embedded entrybox within the BWidget combobox
         bindtags $combo_typeA.e [linsert [bindtags $combo_typeA.e] 3 combo_typeA_Tag]
