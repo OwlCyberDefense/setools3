@@ -1284,7 +1284,7 @@ proc ApolTE::load_query_options {file_channel parentDlg} {
 	# Re-format the query options list into a string where all elements are seperated
 	# by a single space. Then split this string into a list using the space as the delimeter.	
 	set query_options [split [join $query_options " "]]
-	
+
 	# set search parameter options
         set opts(teallow)	[lindex $query_options 0]
 	set opts(neverallow)	[lindex $query_options 1]
@@ -1302,10 +1302,25 @@ proc ApolTE::load_query_options {file_channel parentDlg} {
         set opts(indirect_2)	[lindex $query_options 13]
         set opts(use_3rd_list)  [lindex $query_options 14]
 	set opts(indirect_3)	[lindex $query_options 15]
-	set opts(perm_union)	[lindex $query_options 18] 	
-	set opts(perm_select)	[lindex $query_options 19]
+	set opts(perm_union)	[lindex $query_options 16] 	
+	set opts(perm_select)	[lindex $query_options 17]
+	set src_list_type_1 	[lindex $query_options 18]
+	set src_list_type_2 	[lindex $query_options 19]
+	set tgt_list_type_1 	[lindex $query_options 20]
+	set tgt_list_type_2 	[lindex $query_options 21]
+	set allow_regex		[lindex $query_options 22]
+
+      	if {[lindex $query_options 23] != "\{\}"} {
+		set ta1	[string trim [lindex $query_options 23] "\{\}"]
+	}
+      	if {[lindex $query_options 24] != "\{\}"} {
+		set ta2	[string trim [lindex $query_options 24] "\{\}"]
+	}
+      	if {[lindex $query_options 25] != "\{\}"} {
+		set ta3	[string trim [lindex $query_options 25] "\{\}"]
+	}
 	
-	set i 20
+	set i 26
 	set invalid_perms ""
 	# Parse the list of permissions
 	if {[lindex $query_options $i] != "\{\}"} {
@@ -1404,43 +1419,9 @@ proc ApolTE::load_query_options {file_channel parentDlg} {
 		}
 	}
 	
-	# Now we're ready to parse the selected objects list
-      	incr i
-      	if {[lindex $query_options $i] != "\{\}"} {
-		set allow_regex	[string trim [lindex $query_options $i] "\{\}"]
-	}
-	incr i
-	if {[lindex $query_options $i] != "\{\}"} {
-		set src_list_type_1 [string trim [lindex $query_options $i] "\{\}"] 
-	}
-	incr i
-	if {[lindex $query_options $i] != "\{\}"} {
-		set src_list_type_2 [string trim [lindex $query_options $i] "\{\}"] 
-	}
-	incr i
-	if {[lindex $query_options $i] != "\{\}"} {
-		set tgt_list_type_1 [string trim [lindex $query_options $i] "\{\}"]
-	}
-	incr i
-	if {[lindex $query_options $i] != "\{\}"} {
-		set tgt_list_type_2 [string trim [lindex $query_options $i] "\{\}"]
-	}
-	
 	# Re-configure list items for type/attributes tab combo boxes
 	ApolTE::populate_ta_list 1
 	ApolTE::populate_ta_list 2
-	incr i
-      	if {[lindex $query_options $i] != "\{\}"} {
-		set ta1	[string trim [lindex $query_options $i] "\{\}"]
-	}
-	incr i
-      	if {[lindex $query_options $i] != "\{\}"} {
-		set ta2	[string trim [lindex $query_options $i] "\{\}"]
-	}
-	incr i
-      	if {[lindex $query_options $i] != "\{\}"} {
-		set ta3	[string trim [lindex $query_options $i] "\{\}"]
-	}
 	
 	# Reset Objects and Permissions selections 
 	ApolTE::resetObjsPerms_Selections $selObjectsList $selPermsList
@@ -1505,14 +1486,15 @@ proc ApolTE::save_query_options {file_channel query_file} {
 		$opts(indirect_3) \
 		$opts(perm_union) \
 		$opts(perm_select) \
-		$permslist \
-		$selObjectsList \
-		$selPermsList \
-		$allow_regex \
 		$src_list_type_1 \
 		$src_list_type_2 \
 		$tgt_list_type_1 \
-		$tgt_list_type_2 $ta1 $ta2 $ta3]
+		$tgt_list_type_2 \
+		$allow_regex \
+		$ta1 $ta2 $ta3 \
+		$permslist \
+		$selObjectsList \
+		$selPermsList]
 			
 	puts $file_channel "$options"
 	
