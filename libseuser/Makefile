@@ -8,11 +8,11 @@ CFLAGS      += -DLIBSEUSER_VERSION_STRING='"$(shell cat VERSION)"'
 CFLAGS      += -DSETFILES_PROG='"$(SETFILES_PROG)"'
 
 TARGET 	    = libseuser.so
-SONAME 	    = $(TARGET).1.2
+SONAME 	    = $(TARGET).1.3
 LIBSO	    = $(TARGET).$(shell cat VERSION)
 
 TARGETTCL   = libseuser-tcl.so
-SONAMETCL   = $(TARGETTCL).1.2
+SONAMETCL   = $(TARGETTCL).1.3
 LIBSOTCL    = $(TARGETTCL).$(shell cat VERSION)
 
 all: libseuser libseuser-tcl libseuserso libseuser-tclso
