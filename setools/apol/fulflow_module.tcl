@@ -2814,12 +2814,12 @@ proc Apol_Analysis_fulflow::advanced_filters_create_dialog {path_name title_txt}
 	bind ${bind_tag_id}_lbox_excl_Tag <<ListboxSelect>> "focus -force $f_opts($path_name,lbox_excl)"
 	
 	bind ${bind_tag_id}_lbox_incl_Tag <KeyPress> {ApolTop::tklistbox_select_on_key_callback \
-			$Apol_Analysis_fulflow::lbox_incl \
-			$Apol_Analysis_fulflow::filtered_incl_types \
+			$Apol_Analysis_fulflow::f_opts($path_name,lbox_incl) \
+			Apol_Analysis_fulflow::f_opts($path_name,filtered_incl_types) \
 			%K}
 	bind ${bind_tag_id}_lbox_excl_Tag <KeyPress> {ApolTop::tklistbox_select_on_key_callback \
-			$Apol_Analysis_fulflow::lbox_excl \
-			$Apol_Analysis_fulflow::filtered_excl_types \
+			$Apol_Analysis_fulflow::f_opts($path_name,lbox_excl) \
+			Apol_Analysis_fulflow::f_opts($path_name,filtered_excl_types) \
 			%K}
 			
         set include_bttn [Button $middle_f.include_bttn -text "<--" \
