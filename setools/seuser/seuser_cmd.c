@@ -36,7 +36,8 @@
 #define RENAME		3
 #define LOAD		4
 #define SHOW		5
-#define VERSION		6
+#define LABEL		6
+#define VERSION		7
 
 #define SEUSER_GUI_PROG	"seuserx"
 
@@ -178,6 +179,7 @@ void usage(bool_t brief)
 	fprintf(stdout, "  seuser delete [-N] username\n");
 	fprintf(stdout, "  seuser add | change [f] [-N] -R role1[,...] username\n");
 	fprintf(stdout, "  seuser rename [-f] [-N] oldname newname\n");
+	fprintf(stdout, "  seuser label username\n");
 	fprintf(stdout, "  seuser show users [username] | roles\n");
 	fprintf(stdout, "  seuser load\n");
 	fprintf(stdout, "  seuser version\n\n");
@@ -191,6 +193,7 @@ void usage(bool_t brief)
 		fprintf(stdout, "The add/change commands will add/change a user and the user's policy \n");
 		fprintf(stdout, "information.  You must provide role for change/add as such:\n");
 		fprintf(stdout, "     -R     authorized role(s)\n\n");
+		fprintf(stdout, "The label command will label home directory files for the specified user.\n");
 		fprintf(stdout, "The rename command will change the name of oldname to newname, leaving all\n");
 		fprintf(stdout, "other information the same.\n\n");
 		fprintf(stdout, "The show command will display users or roles currently defined in the policy.\n\n");
@@ -336,6 +339,9 @@ int main(int argc, char *argv[])
 	else if(strcmp("change", argv[1]) == 0) {
 		cmd = CHANGE;
 	}
+	else if(strcmp("label", argv[1]) == 0) {
+		cmd = LABEL;
+	}
 	else if(strcmp("show", argv[1]) == 0) {
 		cmd = SHOW;
 		if(argc < 3 )
@@ -426,7 +432,7 @@ int main(int argc, char *argv[])
 			}
 		}
 		else {
-			assert(cmd == ADD || cmd == CHANGE || cmd == DELETE || cmd == RENAME);
+			assert(cmd == ADD || cmd == CHANGE || cmd == DELETE || cmd == RENAME || cmd == LABEL);
 			if(i+1 != argc)
 				goto usage_err;
 			user = argv[i];
@@ -553,6 +559,15 @@ int main(int argc, char *argv[])
 		}
 		break;
 	}
+	case LABEL: 
+		/* We should only relabel after the policy has reloaded successfully. */
+		rt = seuser_label_home_dir(user, &db, policy, tmpmakeout);
+		if (rt != 0) {
+			fprintf(stderr, "Error relabeling users home directory files: %s", seuser_decode_labeling_err(rt));
+			break;
+		}
+		load = FALSE;
+		break;
 	default:
 		fprintf(stderr, "unexepected err!\n");
 		exit(1);
