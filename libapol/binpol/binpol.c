@@ -443,7 +443,7 @@ static int load_type(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts,
 	__u32 *buf, val;
 	size_t len;
 	unsigned char *kbuf, *key;
-	int idx, rt;
+	int idx = 0, rt;
 	bool_t keep, primary;
 	
 	INTERNAL_ASSERTION
@@ -1400,7 +1400,7 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 	__u32  *buf;
 	size_t len, nprim, nel;
 	unsigned int policy_ver, num_syms, i, j;
-	int rt, role_idx, type_idx;
+	int rt = 0, role_idx, type_idx;
 	ap_fbuf_t *fb;
 	ap_bmaps_t *bm = NULL;
 	ebitmap_t *e;
@@ -1579,7 +1579,7 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 				break;
 			case 3:		/* types */
 				rt = load_type(fb, fp, bm, opts, policy);
-				if(rt < 0 && rt != LOAD_SUCCESS_NO_SAVE) goto err_return;
+				if (rt < 0 && rt != LOAD_SUCCESS_NO_SAVE) goto err_return;
 				break;
 			case 4:		/* users */
 				rt = load_user(fb, fp, bm, opts, policy);
