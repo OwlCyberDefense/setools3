@@ -5,10 +5,20 @@ TCL-FILES	= seuser_head.tcl tmp.tcl
 TCL-STRIP-FILES = seuser_db.tcl seuser_top.tcl seuser_advanced.tcl seuser_user_info.tcl seuser_generic_users.tcl seuser_selinux_users.tcl seuser_tail.tcl
 SEUSER_HELP_FILE = seuser_help.txt
 SEUSER_CONF_FILE = seuser.conf
+
+ifeq ($(DEBUG), 1)
 LIBAPOL		= ../libapol/libapol.a
 LIBAPOL-TCL	= ../libapol/libapol-tcl.a
 LIBSEUSER	= ../libseuser/libseuser.a
 LIBSEUSER-TCL	= ../libseuser/libseuser-tcl.a
+else
+LIBAPOL		= ../libapol/libapol.so.$(shell cat ../libapol/VERSION)
+LIBAPOL-TCL	= ../libapol/libapol-tcl.so.$(shell cat ../libapol/VERSION)
+LIBSEUSER	= ../libseuser/libseuser.so.$(shell cat ../libseuser/VERSION)
+LIBSEUSER-TCL	= ../libseuser/libseuser-tcl.so.$(shell cat ../libseuser/VERSION)
+endif
+
+LIBSELINUX      = -lselinux
 CMD-OBJ		= seuser_cmd.o $(LIBSEUSER) $(LIBAPOL)
 GUI-OBJ		= seuser_gui.o $(LIBAPOL-TCL) $(LIBSEUSER-TCL) $(LIBSEUSER) $(LIBAPOL)
 SE_SHELL_SCRIPTS = seuseradd seuserdel seusermod
@@ -22,10 +32,10 @@ CFLAGS  	+= -DSEUSERCMD_VERSION_STRING='"$(shell cat CMD_VERSION)"'
 SHELL = /bin/sh
 
 seuser: $(CMD-OBJ) 
-	$(CC) -o $@ $(CMD-OBJ) $(LINKFLAGS) $(LIBS)
+	$(CC) -o $@ $(CMD-OBJ) $(LINKFLAGS) $(LIBS) 
 
 seuserx: $(GUI-OBJ) se_user.tcl
-	$(CC) $(GUI_CFLAGS) $(TCL_LIBINC) -o $@ $(GUI-OBJ) $(LINKFLAGS) $(TCL_LIBS)
+	$(CC) $(GUI_CFLAGS) $(TCL_LIBINC) -o $@ $(GUI-OBJ) $(LINKFLAGS) $(TCL_LIBS) 
 
 se_user.tcl: $(TCL-FILES)
 	cat $(TCL-FILES) | \
@@ -86,7 +96,7 @@ seuser-policy:
 	cat ../policy/seuser_template.fc | \
 	sed -e 's|SEUSER_BINDIR|$(BINDIR)|g' | \
 	sed -e 's|SEUSER_INSTALL_LIBDIR|$(INSTALL_LIBDIR)|g' > ../policy/seuser.fc 
-	
+
 	-@if [ -e $(POLICY_SRC_DIR)/Makefile -a -e ../policy/seuser.fc ]; then \
 		install -d $(TE_PROGS_DIR); \
 		install -d $(FC_PROGS_DIR); \
@@ -102,11 +112,11 @@ seuser-policy:
 		echo "	not found. type 'make install-src' from your policy directory, or"; \
 		echo "	consult your SELinux documentation."; \
 	fi
-	
+
 	-@if [ -e ../policy/seuser.fc ]; then \
 		rm -f ../policy/seuser.fc; \
 	fi
-	
+
 	-@if [ -e $(POLICY_SRC_DIR)/Makefile ]; then \
 		make -C $(POLICY_SRC_DIR)/ clean; \
 		make -C $(POLICY_SRC_DIR)/ load; \
@@ -116,20 +126,20 @@ install-gui-policy:
 	-@if [ -e $(BINDIR)/seuserx ]; then \
 		chcon system_u:object_r:seuser_exec_t $(BINDIR)/seuserx; \
 	fi
-	
+
 install-nogui-policy:	
 	-@if [ -e $(BINDIR)/seuser ]; then \
 		chcon system_u:object_r:seuser_exec_t $(BINDIR)/seuser; \
 	fi
-	
+
 	-@if [ -e $(BINDIR)/seuseradd ]; then \
 		chcon system_u:object_r:seuser_exec_t $(BINDIR)/seuseradd; \
 	fi
-	
+
 	-@if [ -e $(BINDIR)/seuserdel ]; then \
 		chcon system_u:object_r:seuser_exec_t $(BINDIR)/seuserdel; \
 	fi
-	
+
 	-@if [ -e $(BINDIR)/seusermod ]; then \
 		chcon system_u:object_r:seuser_exec_t $(BINDIR)/seusermod; \
 	fi
