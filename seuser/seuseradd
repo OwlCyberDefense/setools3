@@ -272,3 +272,6 @@ fi
 # if we were successful with everything we reach here and load the policy
 ${SEUSER} load 2> /dev/null
 
+if [ $RC -eq 0 ]; then
+	${SEUSER} label ${USERNAME}
+fi
