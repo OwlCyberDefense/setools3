@@ -1,8 +1,9 @@
 # libapol and lipapol-tcl
 
 LIB-OBJ	= policy.o policy-query.o policy-io.o queue.o util.o clone.o y.tab.o lex.yy.o
-LIB-OBJ +=  avl-util.o policy-avl.o render.o analysis.o perm-map.o cond.o infoflow.o
-LIB-OBJ +=  binpol/binpol.o binpol/bpmaps.o binpol/fbuf.o binpol/ebitmap.o relabel_analysis.o
+LIB-OBJ +=  avl-util.o policy-avl.o render.o analysis.o perm-map.o cond.o infoflow.o poldiff.o
+LIB-OBJ +=  binpol/binpol.o binpol/bpmaps.o binpol/fbuf.o binpol/ebitmap.o
+LIB-OBJ +=  semantic/avhash.o semantic/avsemantics.o
 
 LIB-OBJ-TCL = apol_tcl.o
 
@@ -19,14 +20,14 @@ CFLAGS  += -DAPOL_INSTALL_DIR='"$(INSTALL_LIBDIR)"'
 CFLAGS  += -DLIBAPOL_POLICY_INSTALL_DIR='"$(POLICY_INSTALL_DIR)"'
 CFLAGS  += -DLIBAPOL_SELINUX_DIR='"$(SELINUX_DIR)"'
 CFLAGS	+= -DLIBAPOL_DEFAULT_POLICY='"$(POLICY_SRC_FILE)"'
-CFLAGS  += -I. 
+CFLAGS  += -I.
 
 all: libapol libapol-tcl libapolso libapol-tclso
 
 libapol: libapol.a
 libapol-tcl: libapol-tcl.a
 libapolso: $(LIB-OBJ)
-	$(CC) $(LDFLAGS) -shared -o $(LIBSO) $(LIB-OBJ) -Wl,-soname,$(SONAME)  
+	$(CC) $(LDFLAGS) -shared -o $(LIBSO) $(LIB-OBJ) -Wl,-soname,$(SONAME) 
 
 libapol-tclso: $(LIB-OBJ-TCL)
 	$(CC) $(LDFLAGS) -shared -o $(LIBSOTCL) $(LIB-OBJ-TCL) -Wl,-soname,$(SONAMETCL) 
@@ -61,10 +62,10 @@ lex.yy.c: apolicy_scan.l
 	$(LEX) apolicy_scan.l
 
 clean:
-	rm -f $(LIB-OBJ) *.o  core y.tab.c y.tab.h lex.yy.c *~
+	rm -f $(LIB-OBJ) *.o core core.* y.tab.c y.tab.h lex.yy.c *~ 
 
 bare:
-	rm -f $(LIB-OBJ) *.o  core y.tab.c y.tab.h lex.yy.c *~ libapol.a libapol-tcl.a \
+	rm -f $(LIB-OBJ) *.o  core core.* y.tab.c y.tab.h lex.yy.c *~ libapol.a libapol-tcl.a \
 		$(LIBSO) $(LIBSOTCL)
 
 
