@@ -125,6 +125,10 @@ proc ApolTop::get_install_dir {} {
 	return $ApolTop::apol_install_dir
 }
 
+proc ApolTop::get_toplevel_dialog {} {
+	return $ApolTop::mainframe
+}
+
 ########################################################################
 # ::load_perm_map_fileDlg -- 
 #	- Called from Advanced menu
@@ -608,11 +612,13 @@ proc ApolTop::_create_popup { path entryBox key } {
 
 ######################################################################
 #  Command: ApolTop::tklistbox_select_on_key_callback
-#  Arguments: Takes a tk listbox widget, its' associated list, and 
+#  Arguments: Takes a tk listbox widget,
+#	      the variable name of the associated global list, and 
 #	      the key pressed. Handles lowercase and uppercase key
 #	      values.
-#
-proc ApolTop::tklistbox_select_on_key_callback { path list_items key } {     
+# NOTE: This proc expects the associated list to be globally defined. 
+proc ApolTop::tklistbox_select_on_key_callback { path list_items_1 key } {     
+	upvar #0 $list_items_1 list_items
 	if {$path == ""} {
 		tk_messageBox \
 			-icon error \
@@ -1092,6 +1098,7 @@ proc ApolTop::create { } {
 	    	{} -command "ApolTop::load_query_info" }
 	    {command "&Save query..." {Disable_SaveQuery_Tag} "Save query"  \
 	    	{} -command "ApolTop::save_query_info" }
+	    {separator}
 	    {command "&Policy Summary" {Disable_Summary} "Display summary statics" {} -command ApolTop::popupPolicyStats }
 	}
 	"&Advanced" all options 0 {
@@ -1103,6 +1110,8 @@ proc ApolTop::create { } {
 	    {command "&General Help" {all option} "Show help" {} -command {ApolTop::helpDlg "Help" "apol_help.txt"}}
 	    {command "&Domain Transition Analysis" {all option} "Show help" {} -command {ApolTop::helpDlg "Domain Transition Analysis Help" "dta_help.txt"}}
 	    {command "&Information Flow Analysis" {all option} "Show help" {} -command {ApolTop::helpDlg "Information Flow Analysis Help" "iflow_help.txt"}}
+	    {command "&Types Relationship Analysis" {all option} "Show help" {} -command {ApolTop::helpDlg "Types Relationship Analysis Help" "types_relation_help.txt"}}
+	    {separator}
 	    {command "&About" {all option} "Show about box" {} -command ApolTop::aboutBox}
 	}
 	}
