@@ -728,7 +728,7 @@ static int print_te_rule(avh_node_t *cur, policy_t *policy, const char *string,
 {
 	char *rule = NULL, *cond = NULL;
 	/* this is kludgy but trying to get speed */
-	char tbuf[APOL_STR_SZ*10];
+	char tbuf[APOL_STR_SZ+256];
 	
 	if (cur == NULL || policy == NULL) {
 		return -1; 
@@ -742,7 +742,7 @@ static int print_te_rule(avh_node_t *cur, policy_t *policy, const char *string,
 	if (rule == NULL) { 
 		return -1;
 	} 
-	sprintf(tbuf,"%s%s%s",cond == NULL ? " " : cond,string,rule);
+	snprintf(tbuf, APOL_STR_SZ+256,"%s%s%s",cond == NULL ? " " : cond,string,rule);
 	append_str(buf,sz,tbuf);
 	free(rule); 
 	if (cond != NULL) {
