@@ -1610,6 +1610,7 @@ av_item_t *add_new_av_rule(int rule_type, policy_t *policy)
 	/* initialize */
 	memset(newitem, 0, sizeof(av_item_t));
 	newitem->type = rule_type;
+	newitem->cond_expr = -1;
 	newitem->lineno = 0;
 	(policy->rule_cnt[rule_type])++;
 	
@@ -2645,9 +2646,31 @@ static int update_cond_expr_item(int idx, policy_t *policy)
 	return 0;
 }
 
+static void add_cond_expr_item_helper(int cond_expr, cond_rule_list_t *list, policy_t * policy)
+{
+	int i;
+	
+	if (!list)
+		return;
+	
+	for (i = 0; i < list->num_av_access; i++) {
+		policy->av_access[list->av_access[i]].cond_expr = cond_expr;	
+	}
+	
+	for (i = 0; i < list->num_av_audit; i++) {
+		policy->av_audit[list->av_audit[i]].cond_expr = cond_expr;	
+	}
+	
+	for (i = 0; i < list->num_te_trans; i++) {
+		policy->te_trans[list->te_trans[i]].cond_expr = cond_expr;	
+	}
+	
+}
+
 /*
  * Add a conditional expression to the policy. The expression cannot be null but the conditional
- * rule lists can.
+ * rule lists can. Also sets the cond_expr item for the rules to the index of the conditional
+ * expression.
  *
  * returns the index of the conditional expression on success.
  * returns -1 on error.
@@ -2675,7 +2698,9 @@ int add_cond_expr_item(cond_expr_t *expr, cond_rule_list_t *true_list, cond_rule
 	
 	policy->cond_exprs[idx].expr = expr;
 	policy->cond_exprs[idx].true_list = true_list;
+	add_cond_expr_item_helper(idx, true_list, policy);
 	policy->cond_exprs[idx].false_list = false_list;
+	add_cond_expr_item_helper(idx, false_list, policy);
 	
 	return idx;
 }
