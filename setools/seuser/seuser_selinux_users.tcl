@@ -391,7 +391,7 @@ proc SEUser_SELinux_Users::commit { } {
 	}
 	
 	# then write the db out to disk
-	set rt [catch [ seuser_Commit ] err ]
+	set rt [catch {seuser_Commit} err]
 	if {$rt != 0} {	
 		tk_messageBox -icon error -type ok -title "Error" -message "$err" \
 			-parent $SEUser_SELinux_Users::main_frame
