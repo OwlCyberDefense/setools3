@@ -57,9 +57,6 @@ SEAUDIT
    is because audit logs do not include a year so we assign the same 
    year to all dates.
 
-2. If an invalid policy.conf file is opened you will have to restart 
-   the tool.
-
 
 TESTING INFORMATION
 
