@@ -24,6 +24,8 @@ typedef struct seaudit_conf {
 	char *default_log_file;
   	bool_t column_visibility[NUM_FIELDS];
 	bool_t real_time_log;
+	char *default_seaudit_report_config_file;
+	char *default_seaudit_report_css_file;
 } seaudit_conf_t;
 
 int load_seaudit_conf_file(seaudit_conf_t *conf_file);

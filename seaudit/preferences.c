@@ -54,6 +54,25 @@ int set_seaudit_conf_default_log(seaudit_conf_t *conf, const char *filename)
 	return 0;
 }
 
+static int set_seaudit_conf_file_path(char **conf_variable, const char *filename)
+{
+	assert(conf_variable != NULL);
+	if (*conf_variable)
+		free(*conf_variable);
+
+	if (filename) {
+		*conf_variable = (char*)malloc(sizeof(char) * (1 + strlen(filename)));
+		if (*conf_variable == NULL) {
+			fprintf(stderr, "Out of memory.\n");	
+			return -1;
+		}
+		strcpy(*conf_variable, filename);
+	} else
+		*conf_variable = NULL;
+		
+	return 0;
+}
+
 int load_seaudit_conf_file(seaudit_conf_t *conf)
 {
   	FILE *file;
@@ -95,6 +114,21 @@ int load_seaudit_conf_file(seaudit_conf_t *conf)
 
 	if (value)
 		free(value);
+	
+	value = get_config_var("DEFAULT_REPORT_CONFIG_FILE", file);
+	if (set_seaudit_conf_file_path(&conf->default_seaudit_report_config_file, value) != 0) 
+		goto err;	
+
+	if (value)
+		free(value);
+		
+	value = get_config_var("DEFAULT_REPORT_CSS_FILE", file);
+	if (set_seaudit_conf_file_path(&conf->default_seaudit_report_css_file, value) != 0) 
+		goto err;	
+
+	if (value)
+		free(value);
+			
 	list = get_config_var_list("RECENT_LOG_FILES", file, &size);
 	if (list) {
 		for (i = 0; i < size; i++) {
@@ -269,6 +303,16 @@ int save_seaudit_conf_file(seaudit_conf_t *conf)
 		fprintf(file, " %s\n", conf->default_policy_file);
 	else 
 		fprintf(file, "\n");
+	fprintf(file, "DEFAULT_REPORT_CONFIG_FILE");
+	if (conf->default_seaudit_report_config_file)
+		fprintf(file, " %s\n", conf->default_seaudit_report_config_file);
+	else 
+		fprintf(file, "\n");
+	fprintf(file, "DEFAULT_REPORT_CSS_FILE");
+	if (conf->default_seaudit_report_css_file)
+		fprintf(file, " %s\n", conf->default_seaudit_report_css_file);
+	else 
+		fprintf(file, "\n");
 	fprintf(file, "RECENT_LOG_FILES");
 	value = config_var_list_to_string((const char**)conf->recent_log_files, conf->num_recent_log_files);
 	if (value) {
@@ -351,19 +395,33 @@ void on_prefer_window_ok_button_clicked(GtkWidget *widget, gpointer user_data)
 {
 	GtkWidget *prefer_window;
 	GladeXML *xml = (GladeXML*)user_data;
-	GtkEntry *log_entry, *pol_entry;
-
+	GtkEntry *log_entry, *pol_entry, *report_css, *report_config;
+	seaudit_conf_t *seaudit_conf = NULL;
+	
 	prefer_window = glade_xml_get_widget(xml, "PreferWindow");
 	g_assert(widget);
 	log_entry = GTK_ENTRY(glade_xml_get_widget(xml, "DefaultLogEntry"));
 	g_assert(log_entry);
 	pol_entry = GTK_ENTRY(glade_xml_get_widget(xml, "DefaultPolicyEntry"));
 	g_assert(pol_entry);
-	set_seaudit_conf_default_log(&(seaudit_app->seaudit_conf),
+	report_css = GTK_ENTRY(glade_xml_get_widget(xml, "report-css-entry"));
+	g_assert(report_css);
+	report_config = GTK_ENTRY(glade_xml_get_widget(xml, "report-config-entry"));
+	g_assert(report_config);
+	
+	seaudit_conf = &(seaudit_app->seaudit_conf);
+	set_seaudit_conf_default_log(seaudit_conf,
 				     gtk_entry_get_text(log_entry));
-	set_seaudit_conf_default_policy(&(seaudit_app->seaudit_conf),
+	set_seaudit_conf_default_policy(seaudit_conf,
 					gtk_entry_get_text(pol_entry));
-	save_seaudit_conf_file(&(seaudit_app->seaudit_conf));
+	
+	if (set_seaudit_conf_file_path(&(seaudit_conf->default_seaudit_report_config_file), 
+		gtk_entry_get_text(report_config)) != 0) 
+		return;
+	if (set_seaudit_conf_file_path(&(seaudit_conf->default_seaudit_report_css_file), 
+		gtk_entry_get_text(report_css)) != 0) 
+		return;
+	save_seaudit_conf_file(seaudit_conf);
 
 	/* set the updated visibility if needed */
 	if (!seaudit_app->column_visibility_changed)
@@ -373,53 +431,17 @@ void on_prefer_window_ok_button_clicked(GtkWidget *widget, gpointer user_data)
 	gtk_widget_destroy(prefer_window);
 }
 
-static void on_browse_log_button_clicked(GtkWidget *widget, gpointer user_data)
+static void display_browse_dialog_for_entry_box(GtkEntry *entry, const char *file_path, const char *title)
 {
-	GladeXML *xml = (GladeXML*)user_data;
-	GtkEntry *entry;
 	GtkWidget *file_selector;
 	gint response;
 	const gchar *filename;
 
-	entry = GTK_ENTRY(glade_xml_get_widget(xml, "DefaultLogEntry"));
 	g_assert(entry);
-	file_selector = gtk_file_selection_new("Select Default Log");
+	file_selector = gtk_file_selection_new(title);
 	gtk_file_selection_hide_fileop_buttons(GTK_FILE_SELECTION(file_selector));
-	if (seaudit_app->seaudit_conf.default_policy_file != NULL)
-		gtk_file_selection_complete(GTK_FILE_SELECTION(file_selector), gtk_entry_get_text(GTK_ENTRY(entry)));
-	g_signal_connect(GTK_OBJECT(file_selector), "response", 
-			 G_CALLBACK(get_dialog_response), &response);
-	while (1) {
-		gtk_dialog_run(GTK_DIALOG(file_selector));
-		if (response != GTK_RESPONSE_OK) {
-
-			gtk_widget_destroy(file_selector);
-			return;
-		}
-		filename = gtk_file_selection_get_filename(GTK_FILE_SELECTION(file_selector));
-		if (g_file_test(filename, G_FILE_TEST_EXISTS) && !g_file_test(filename, G_FILE_TEST_IS_DIR)) 
-			break;
-		if (g_file_test(filename, G_FILE_TEST_IS_DIR))
-			gtk_file_selection_complete(GTK_FILE_SELECTION(file_selector), filename);
-	}
-	gtk_entry_set_text(GTK_ENTRY(entry), filename);
-	gtk_widget_destroy(file_selector);
-}
-
-static void on_browse_policy_button_clicked(GtkWidget *widget, gpointer user_data)
-{
-	GladeXML *xml = (GladeXML*)user_data;
-	GtkEntry *entry;
-	GtkWidget *file_selector;
-	gint response;
-	const gchar *filename;
-
-	entry = GTK_ENTRY(glade_xml_get_widget(xml, "DefaultPolicyEntry"));
-	g_assert(entry);
-	file_selector = gtk_file_selection_new("Select Default Policy");
-	gtk_file_selection_hide_fileop_buttons(GTK_FILE_SELECTION(file_selector));
-	if (seaudit_app->seaudit_conf.default_policy_file != NULL)
-		gtk_file_selection_complete(GTK_FILE_SELECTION(file_selector), gtk_entry_get_text(GTK_ENTRY(entry)));
+	if (file_path != NULL)
+		gtk_file_selection_complete(GTK_FILE_SELECTION(file_selector), gtk_entry_get_text(entry));
 	g_signal_connect(GTK_OBJECT(file_selector), "response", 
 			 G_CALLBACK(get_dialog_response), &response);
 	while (1) {
@@ -434,8 +456,50 @@ static void on_browse_policy_button_clicked(GtkWidget *widget, gpointer user_dat
 		if (g_file_test(filename, G_FILE_TEST_IS_DIR))
 			gtk_file_selection_complete(GTK_FILE_SELECTION(file_selector), filename);
 	}
-	gtk_entry_set_text(GTK_ENTRY(entry), filename);
+	gtk_entry_set_text(entry, filename);
 	gtk_widget_destroy(file_selector);
+}
+
+static void on_browse_log_button_clicked(GtkWidget *widget, gpointer user_data)
+{
+	GladeXML *xml = (GladeXML*)user_data;
+	GtkEntry *entry;
+
+	entry = GTK_ENTRY(glade_xml_get_widget(xml, "DefaultLogEntry"));
+	display_browse_dialog_for_entry_box(entry, 
+		seaudit_app->seaudit_conf.default_log_file, "Select Default Log");
+}
+
+static void on_browse_policy_button_clicked(GtkWidget *widget, gpointer user_data)
+{
+	GladeXML *xml = (GladeXML*)user_data;
+	GtkEntry *entry;
+
+	entry = GTK_ENTRY(glade_xml_get_widget(xml, "DefaultPolicyEntry"));
+	display_browse_dialog_for_entry_box(entry, 
+		seaudit_app->seaudit_conf.default_policy_file, "Select Default Policy");
+}
+
+static void on_browse_report_css_button_clicked(GtkWidget *widget, gpointer user_data)
+{
+	GladeXML *xml = (GladeXML*)user_data;
+	GtkEntry *entry;
+
+	entry = GTK_ENTRY(glade_xml_get_widget(xml, "report-css-entry"));
+	display_browse_dialog_for_entry_box(entry, 
+		seaudit_app->seaudit_conf.default_seaudit_report_css_file, 
+		"Select HTML Report Style Sheet File");
+}
+
+static void on_browse_report_config_button_clicked(GtkWidget *widget, gpointer user_data)
+{
+	GladeXML *xml = (GladeXML*)user_data;
+	GtkEntry *entry;
+
+	entry = GTK_ENTRY(glade_xml_get_widget(xml, "report-config-entry"));
+	display_browse_dialog_for_entry_box(entry, 
+		seaudit_app->seaudit_conf.default_seaudit_report_config_file, 
+		"Select Report Configuration File");
 }
 
 static void on_preference_toggled(GtkToggleButton *toggle, gpointer user_data)
@@ -540,6 +604,16 @@ void on_preferences_activate(GtkWidget *widget, GdkEvent *event, gpointer callba
 	g_assert(entry);
 	if (seaudit_app->seaudit_conf.default_policy_file)
 		gtk_entry_set_text(entry, seaudit_app->seaudit_conf.default_policy_file);
+	
+	entry = GTK_ENTRY(glade_xml_get_widget(xml, "report-config-entry"));
+	g_assert(entry);
+	if (seaudit_app->seaudit_conf.default_seaudit_report_config_file)
+		gtk_entry_set_text(entry, seaudit_app->seaudit_conf.default_seaudit_report_config_file);
+		
+	entry = GTK_ENTRY(glade_xml_get_widget(xml, "report-css-entry"));
+	g_assert(entry);
+	if (seaudit_app->seaudit_conf.default_seaudit_report_css_file)
+		gtk_entry_set_text(entry, seaudit_app->seaudit_conf.default_seaudit_report_css_file);
 
 	button = glade_xml_get_widget(xml, "OkButton");
 	g_assert(button);
@@ -560,6 +634,20 @@ void on_preferences_activate(GtkWidget *widget, GdkEvent *event, gpointer callba
 	g_signal_connect (GTK_OBJECT (button),
 			  "clicked",
 			  G_CALLBACK (on_browse_policy_button_clicked),
+			  (gpointer) xml);
+		
+	button = glade_xml_get_widget(xml, "report-css-button");
+	g_assert(widget);
+	g_signal_connect (GTK_OBJECT (button),
+			  "clicked",
+			  G_CALLBACK (on_browse_report_css_button_clicked),
+			  (gpointer) xml);
+	
+	button = glade_xml_get_widget(xml, "report-config-button");
+	g_assert(widget);
+	g_signal_connect (GTK_OBJECT (button),
+			  "clicked",
+			  G_CALLBACK (on_browse_report_config_button_clicked),
 			  (gpointer) xml);
 
 	glade_xml_signal_connect(xml, "on_preference_toggled", G_CALLBACK(on_preference_toggled));
