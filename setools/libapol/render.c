@@ -1,4 +1,4 @@
- /* Copyright (C) 2003 Tresys Technology, LLC
+ /* Copyright (C) 2003-2004 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
 
 /* 
@@ -401,6 +401,62 @@ char *re_render_tt_rule(bool_t addlineno, int idx, policy_t *policy)
 
 }
 
+/* security contexts */
+char *re_render_security_context(const security_context_t *context,
+				 policy_t *policy
+				 )
+{
+	char *buf, *name;
+	int buf_sz;
+	if(policy == NULL )
+		return NULL;
+	
+	if(context != NULL && (!is_valid_type_idx(context->type, policy) || !is_valid_role_idx(context->role, policy) || 
+			context->user == NULL) )
+		return NULL;
+
+	/* initialize the buffer */
+	buf = NULL;
+	buf_sz = 0;
+
+	/* handle case where initial SID does not have a context */
+	if(context == NULL) {
+		if(append_str(&buf, &buf_sz, "<no context>") != 0) 
+			goto err_return;
+		return buf;
+	}
+
+	/* render context */
+	if(append_str(&buf, &buf_sz, context->user->name) != 0) 
+		goto err_return;
+	if(append_str(&buf, &buf_sz, ":") != 0) 
+		goto err_return;
+	if(get_role_name(context->role, &name, policy) != 0) 
+		goto err_return;
+	if(append_str(&buf, &buf_sz, name) != 0) 
+		goto err_return;
+	free(name);
+	if(append_str(&buf, &buf_sz, ":") != 0) 
+		goto err_return;
+	if(get_type_name(context->type, &name, policy) != 0) 
+		goto err_return;
+	if(append_str(&buf, &buf_sz, name) != 0) 
+		goto err_return;
+	free(name);	
+	
+	return buf;
+err_return:
+	if(buf != NULL) 
+		free(buf);
+	return NULL;	
+}
 
 
+char * re_render_initial_sid_security_context(int idx, policy_t *policy)
+{
+	if(policy == NULL || !is_valid_initial_sid_idx(idx, policy) ) {
+		return NULL;
+	}
+	return(re_render_security_context(policy->initial_sids[idx].scontext, policy));
+}
 
