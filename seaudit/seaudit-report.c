@@ -252,19 +252,19 @@ static int seaudit_report_search_dflt_stylesheet(seaudit_report_info_t *report_i
 }
 
 static int seaudit_report_load_audit_messages(seaudit_report_info_t *report_info) {
-	int i, rt;
+	int i;
+	unsigned int rt = 0;
 	FILE *tmp_file = NULL;
 	
 	report_info->log = audit_log_create();
 	/* If specified STDIN, then parse STDIN, otherwise we will parse each logfile */
 	/* Add a flag to parse_audit function in libseaudit to hold onto malformed strings. */
 	if (report_info->stdin) {
-		rt = parse_audit(stdin, report_info->log);
-		if (rt == PARSE_RET_MEMORY_ERROR) {
+		rt |= parse_audit(stdin, report_info->log);
+		if (rt & PARSE_RET_MEMORY_ERROR) {
 			fprintf(stderr, "Memory error while parsing the log!\n");
 				return -1;
-		}
-		else if (rt == PARSE_RET_NO_SELINUX_ERROR) {
+		} else if (rt & PARSE_RET_NO_SELINUX_ERROR) {
 			fprintf(stderr, "No SELinux messages found in log!\n");
 				return -1;
 		}
@@ -277,12 +277,12 @@ static int seaudit_report_load_audit_messages(seaudit_report_info_t *report_info
 				return -1;
 			}
 			
-			rt = parse_audit(tmp_file, report_info->log);
-			if (rt == PARSE_RET_MEMORY_ERROR) {
+			rt |= parse_audit(tmp_file, report_info->log);
+			if (rt & PARSE_RET_MEMORY_ERROR) {
 				fprintf(stderr, "Memory error while parsing the log!\n");
 				fclose(tmp_file);
 				return -1;
-			} else if (rt == PARSE_RET_NO_SELINUX_ERROR) {
+			} else if (rt & PARSE_RET_NO_SELINUX_ERROR) {
 				fprintf(stderr, "No SELinux messages found in log!\n");
 				fclose(tmp_file);
 				return -1;
