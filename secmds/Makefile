@@ -18,7 +18,8 @@ LIBSELINUXSO      = -lselinux
 
 INCLUDE		= -I.. -I../libapol -I../libsefs 
 
-SE_CMDS		= seinfo sesearch replcon findcon indexcon searchcon relabel-analysis-tool flowtool
+SE_CMDS		= seinfo sesearch relabel-analysis-tool flowtool
+SELINUX_TOOLS   = replcon findcon indexcon searchcon 
 
 CFLAGS  	+= -DSEINFO_VERSION_NUM='"$(shell cat SEINFO_VERSION)"'
 CFLAGS  	+= -DSESEARCH_VERSION_NUM='"$(shell cat SESEARCH_VERSION)"'
@@ -30,7 +31,11 @@ CFLAGS          += -DAPOL_DEFAULT_PERM_MAP="\"/usr/share/setools/apol_perm_mappi
 
 SHELL = /bin/sh
 
-all: $(SE_CMDS)
+ifeq ($(USE_LIBSEFS), 1)
+all: $(SE_CMDS) $(SELINUX_TOOLS)
+else
+all: $(SE_CMDS) 
+endif
 
 # seinfo and sesearch are optionally linked to libselinux.  
 # The LIBSELINUX variable is set in the top-level Makefile. 
