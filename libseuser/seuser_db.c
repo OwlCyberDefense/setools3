@@ -17,6 +17,10 @@
 #include <pwd.h>
 #include <sys/types.h>
 #include <unistd.h>
+#ifdef LIBSELINUX
+#include <selinux/selinux.h>
+#include <limits.h>
+#endif
 #include "seuser_db.h"
 
 /* apol lib */
@@ -43,6 +47,57 @@
  */
 #define POLICY_CONF_TARGET	"install"
 #define INSTALL_TARGET		"load"
+
+/********************************************************************
+ * Functions Decrepcated within libapol but still used by libseuser */
+
+/* does not free the generic data pointer; that's up to the user of the pointer*/
+int free_user(user_item_t *ptr)
+{
+	free(ptr->name);
+	free_ta_list(ptr->roles);
+	free(ptr->data);
+	free(ptr);
+	return 0;
+}
+
+/* user names; allocates memory  */
+int get_user_name(user_item_t *user, char **name)
+{
+	if(user == NULL || name == NULL) {
+		return -1;
+	}
+	if((*name = (char *)malloc(strlen(user->name)+1)) == NULL) {
+		fprintf(stderr, "out of memory\n");
+		return -1;
+	}
+	strcpy(*name, user->name);
+	return 0;
+}
+
+/* add a user to user list */
+int append_user(user_item_t *newuser, user_list_t *list)
+{
+	if(newuser == NULL || list == NULL)
+		return -1;
+	newuser->next = NULL;
+	
+	if(list->head == NULL) {
+		list->head = newuser;
+		list->tail = newuser;		
+	}
+	else {
+		list->tail->next = newuser;
+		list->tail = newuser;
+	}
+
+	return 0;
+}
+
+
+
+/* End libapol deprecated functions
+ *********************************************************************/
 
 
 /* frees conf info in db  */
@@ -105,46 +160,45 @@ const char* libseuser_get_version(void)
 
 const int seuser_copy_db_from_apol(user_db_t *db, policy_t *policy)
 {
-	user_item_t *user, *ptr;
-	ta_item_t *taptr;
-	int rt;
+	int rt, i, j, *roles, num_roles;
+	user_item_t *user;
 	
 	if(db == NULL || policy == NULL) {
 		return -1;
 	}
 	
 	db->users.tail = NULL;
-	if(get_first_user_ptr(policy) == NULL) {
+	if(num_users(policy) == 0) {
 		db->users.head = NULL;
 		db->num_users = 0;
 		return 0;
 	}
-	db->num_users = policy->rule_cnt[RULE_USER];
+	db->num_users = num_users(policy);
 	
-	for(ptr = get_first_user_ptr(policy); ptr != NULL; ptr = get_next_user_ptr(ptr)) {
+	for(i = 0; is_valid_user_idx(i, policy); i++) {
 		user = (user_item_t *)malloc(sizeof(user_item_t));
 		if(user == NULL) {
 			fprintf(stderr, "out of memory");
 			return -1;
 		}
-		memset(user, 0, sizeof(user_item_t));	
-			
-		user->name = (char *)malloc((strlen(ptr->name) + 1) * sizeof(char));
-		if(user->name == NULL) {
-			fprintf(stderr, "out of memory");
-			return -1;
-		}
-		strcpy(user->name, ptr->name);
+		memset(user, 0, sizeof(user_item_t));		
+		rt = get_user_name2(i, &user->name, policy);
+		if(rt < 0)
+			return rt;
 		
-		for(taptr = get_user_first_role_ptr(ptr); taptr != NULL; taptr = get_user_next_role_ptr(taptr)) {
+		rt = get_user_roles(i, &num_roles, &roles, policy);
+		if(rt < 0)
+			return rt;
+		
+		for(j = 0; j < num_roles; j++) {
 			ta_item_t *newta;
 			newta = (ta_item_t *) malloc(sizeof(ta_item_t));
 			if(newta == NULL) {
 				fprintf(stderr, "out of memory");
 				return -1;
 			}
-			newta->type = taptr->type;
-			newta->idx = taptr->idx;
+			newta->type = IDX_ROLE;
+			newta->idx = roles[j];
 			rt = insert_ta_item(newta, &(user->roles));
 			if(rt != 0) {
 				fprintf(stderr, "problem inserting role in user");
@@ -648,68 +702,13 @@ int seuser_write_user_file(user_db_t *db, policy_t *policy)
 }
 
 
-
-
-/* copies a given user record into a new structure 
- *  0  success
- *  1  no copy; user doesn't exist
- * -1  other error
- */
-
-int seuser_copy_user(const char *name, user_item_t **uitem, user_db_t *db)
-{
-	int rt;
-	user_item_t *ptr;
-	ta_item_t *taptr;
-	
-	if(name == NULL || uitem == NULL || db == NULL)
-		return -1;
-		
-	rt = seuser_get_user_by_name(name, &ptr, db);
-	if(rt != 0)
-		return 1 /* no such user */;
-	assert(ptr != NULL);
-		
-	*uitem = (user_item_t *)malloc(sizeof(user_item_t));
-	if(*uitem == NULL) {
-		fprintf(stderr, "out of memory");
-		return -1;
-	}
-	assert(ptr->name != NULL);
-	(*uitem)->name = (char *)malloc((strlen(ptr->name) + 1) * sizeof(char));
-	if((*uitem)->name == NULL) {
-		fprintf(stderr, "out of memory");
-		return -1;
-	}
-	strcpy((*uitem)->name, ptr->name);
-	
-	for(taptr = get_user_first_role_ptr(ptr); taptr != NULL; taptr = get_user_next_role_ptr(taptr)) {
-		ta_item_t *newta;
-		newta = (ta_item_t *) malloc(sizeof(ta_item_t));
-		if(newta == NULL) {
-			fprintf(stderr, "out of memory");
-			return -1;
-		}
-		memset(newta, 0, sizeof(ta_item_t));
-		newta->type = taptr->type;
-		newta->idx = taptr->idx;
-		rt = insert_ta_item(newta, &((*uitem)->roles));
-		if(rt != 0) {
-			fprintf(stderr, "problem inserting role in user");
-			return -1;
-		}
-	}
-	
-	return 0;	
-}
-
 #define	CONF_ERR_SUCCESS	"Success!"
 #define CONF_ERR_FIND_CONFIG	"Could not find seuser.conf file.\n"
 #define CONF_ERR_OPEN_CONFIG	"Could not open seuser.conf file.\n"
 #define CONF_ERR_FIND_POLICY	"You need to define the policy.conf parameter in your seuser.conf file.\n"
-#define CONF_ERR_OPEN_POLICY	"You do not have permission to read the policy.conf file.\n"
+#define CONF_ERR_OPEN_POLICY	"Error accessing the policy.conf file. See seuser.conf file.\n"
 #define CONF_ERR_OPEN_DIR	"You need to define the policy directory parameter in your seuser.conf file.\n"
-#define CONF_ERR_ACCESS_DIR	"You do not have permission to read the policy directory.\n"
+#define CONF_ERR_ACCESS_DIR	"Error accessing the policy directory. See seuser.conf file.\n"
 #define CONF_ERR_FIND_FCONTEXT	"You need to define the file_contexts parameter in your seuser.conf file.\n"
 #define CONF_ERR_FIND_USER	"You need to define the user file parameter in your seuser.conf file.\n"
 #define CONF_ERR_ERROR		"Error reading seuser.conf file.\n"
@@ -755,8 +754,10 @@ const char* seuser_decode_read_conf_err(int err)
  */
 int seuser_read_conf_info(user_db_t *db)
 {
+#ifndef LIBSELINUX
 	char *full_config = NULL;
 	FILE *fp;
+#endif
 	int rt;
 	
 	if(db == NULL)
@@ -764,7 +765,8 @@ int seuser_read_conf_info(user_db_t *db)
 	
 	if(db->conf_init)
 		return 0; /* already read */
-		
+
+#ifndef LIBSELINUX		
 	/* we need to find the conf file.  We use the same logic
 	 * as apol uses, and generally expect the config file for	
 	 * seuser to be stored with the apol stuff.  
@@ -789,7 +791,6 @@ int seuser_read_conf_info(user_db_t *db)
 	}	
 	free(full_config);
 	
-	
 	db->policy_conf = get_config_var("policy.conf", fp);
 	if(db->policy_conf == NULL) {
 		fclose(fp);
@@ -800,11 +801,29 @@ int seuser_read_conf_info(user_db_t *db)
 	rt = access(db->policy_conf, R_OK);
 	if(rt != 0) {
 		fclose(fp);
+		perror("access");
 		free_conf_info(db);
 		init_conf_info(db);
 		return 4;
      	}
-     			
+#else
+	if ((db->policy_conf = (char *)malloc(sizeof(char)*PATH_MAX)) == NULL) {
+		fprintf(stderr, "out of memory\n");
+		return GENERAL_ERROR;
+	}
+	snprintf(db->policy_conf, PATH_MAX - 1, "%s/src/policy/policy.conf", 
+		 selinux_policy_root());
+	rt = access(db->policy_conf, R_OK);
+	if(rt != 0) {
+		perror("access");
+		free_conf_info(db);
+		init_conf_info(db);
+		return 4;
+     	}
+#endif
+	
+
+#ifndef LIBSELINUX
 	db->policy_dir = get_config_var("policy_dir", fp);
 	if(db->policy_dir == NULL) {
 		fclose(fp);
@@ -815,20 +834,45 @@ int seuser_read_conf_info(user_db_t *db)
 	rt = access(db->policy_dir, R_OK);
 	if(rt != 0) {
 		fclose(fp);
+		perror("access");
 		free_conf_info(db);
 		init_conf_info(db);
 		return 6;
      	}  
-     	   	
-     	db->user_file = get_config_var("user_file", fp);
-     	if(db->user_file == NULL) {
+#else
+	if ((db->policy_dir = (char *)malloc(sizeof(char)*PATH_MAX)) == NULL) {
+		fprintf(stderr, "out of memory\n");
+		return GENERAL_ERROR;
+	}
+	snprintf(db->policy_dir, PATH_MAX - 1, "%s/src/policy", selinux_policy_root());
+	rt = access(db->policy_dir, R_OK);
+	if(rt != 0) {
+		perror("access");
+		free_conf_info(db);
+		init_conf_info(db);
+		return 6;
+     	}  
+#endif
+	
+
+#ifndef LIBSELINUX
+	db->user_file = get_config_var("user_file", fp);
+	if(db->user_file == NULL) {
      		fclose(fp);
 		free_conf_info(db);
 		init_conf_info(db);
 		return 7;
      	}
+#else
+	if ((db->user_file = (char *)malloc(sizeof(char)*PATH_MAX)) == NULL) {
+		fprintf(stderr, "out of memory\n");
+		return GENERAL_ERROR;
+	}
+	snprintf(db->user_file, PATH_MAX - 1, "%s/src/policy/users", selinux_policy_root());
+#endif    	   	
 	/* users file may not exist which is ok, so we won't check read access. */  
-		
+
+#ifndef LIBSELINUX
 	db->file_contexts_file = get_config_var("file_contexts_file", fp);
 	if(db->file_contexts_file == NULL) {
 		fclose(fp);
@@ -836,10 +880,13 @@ int seuser_read_conf_info(user_db_t *db)
 		init_conf_info(db);
 		return 8;
      	}
+     	fclose(fp);
+#else
+	db->file_contexts_file = strdup(selinux_file_context_path());
+#endif
      	/* file_contexts file may not exist which is ok, so we won't check read access. */  
-     	
-	db->conf_init = TRUE; 
-	fclose(fp);
+   
+	db->conf_init = TRUE; 	
 	return 0;
 }
 
