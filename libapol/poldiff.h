@@ -17,6 +17,7 @@
 
 typedef struct int_a_diff {
 	int	idx;
+	char    *str_id; /* this is the string id so we can sort them in the gui*/
 	int	numa; 	/* is NULL, then the entire component is not in the other policy. */
 	int	*a;	/* types (roles/attribs), roles (users), perms (class/common perm),
 			 * attribs (types)
@@ -74,6 +75,7 @@ typedef struct apol_diff_result {
 
 void apol_free_diff_result(bool_t close_pols, apol_diff_result_t *adr);
 apol_diff_result_t *apol_diff_policies(unsigned int opts, policy_t *p1, policy_t *p2);
+int make_p2_key(avh_key_t *p1key, avh_key_t *p2key, policy_t *p1, policy_t *p2);
 
 #endif /* _APOLICY_POLDIFF_H_ */
 
