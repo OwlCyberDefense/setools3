@@ -73,8 +73,8 @@ Index SELinux contexts on the filesystem\n\
 
 int main(int argc, char **argv, char **envp)
 {
-	char *outfilename = NULL, *dir = "/";
-	int optc = 0;
+	char *outfilename = NULL, *dir = "/", **mounts = NULL;
+	int optc = 0, num_mounts = 0, i;
 	sefs_filesystem_data_t fsdata;
 	
 	outfilename = argv[1];
@@ -103,22 +103,29 @@ int main(int argc, char **argv, char **envp)
 
 	if (sefs_filesystem_data_init(&fsdata) == -1) {
 		fprintf(stderr, "fsdata_init failed\n");
-		return(-1);
+		return -1;
 	}
-	if (sefs_scan_tree(dir) == -1) {
-		fprintf(stderr, "fsdata_scan_tree failed\n");
-		return(-1);
+	
+	if (find_mount_points(dir, mounts, &num_mounts, 0))
+		return -1;
+	
+	for (i = 0; i < num_mounts; i++ ){
+		if (sefs_scan_tree(mounts[i]) == -1) {
+			fprintf(stderr, "fsdata_scan_tree failed\n");
+			return -1;
+		}
 	}
 
 	printf("types: %d inodes: %d \n", fsdata.num_types, fsdata.num_files);
 
 	if (sefs_filesystem_data_save(&fsdata, outfilename) != 0) {
 		fprintf(stderr, "Error writing path database\n");
-		return(-1);
+		return -1;
 	}
 
+	free(mounts);
 
-	return(0);	
+	return 0;	
 }
 
 
