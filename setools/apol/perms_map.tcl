@@ -1520,20 +1520,6 @@ proc Apol_Perms_Map::indicate_undef_perm_classes {class_listbox } {
 }
 
 ########################################################################
-# ::reset_listbox_selection --
-# 	- 
-#
-proc Apol_Perms_Map::reset_listbox_selection { } {
-	variable selected_class_idx
-	variable class_listbox
-	
-	if {$selected_class_idx != "-1"} {
-		$class_listbox selection set [$class_listbox index $selected_class_idx]
-	}
-	return 0	
-}
-
-########################################################################
 # ::create --
 # 	- creates the permissions mappings dialog.
 #
@@ -1573,7 +1559,7 @@ proc Apol_Perms_Map::create { } {
         pack $topf -fill both -expand yes -padx 10 -pady 10
         set sw_class      [ScrolledWindow [$classes_box getframe].sw -auto none]
         set class_listbox [listbox [$sw_class getframe].lb -height 10 -width 20 -highlightthickness 0 \
-        	-bg white -selectmode single] 
+        	-bg white -selectmode single -exportselection 0] 
         	
         if {$undefined_perm_classes != ""} {
         	set rlbl_frame [frame [$results_box getframe].rlbl_frame]
@@ -1604,14 +1590,13 @@ proc Apol_Perms_Map::create { } {
         pack $botf -side left -expand yes -anchor center 
         
         wm protocol $perm_mappings_Dlg WM_DELETE_WINDOW "Apol_Perms_Map::close_Dlg"
-   	wm protocol $perm_mappings_Dlg WM_TAKE_FOCUS "Apol_Perms_Map::reset_listbox_selection"
    	
         # Configure top-level dialog specifications
         set width 650
 	set height 600
 	wm geom $perm_mappings_Dlg ${width}x${height}
 	wm deiconify $perm_mappings_Dlg
-	
+	focus $perm_mappings_Dlg
 	return 0
 }
 

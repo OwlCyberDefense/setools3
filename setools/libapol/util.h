@@ -107,7 +107,7 @@ int copy_int_array(int **dest, int *src, int len);
 
 bool_t is_name_in_list(const char *name, struct ta_item *list, struct policy *policy);
 unsigned char str_is_only_white_space(const char *str);
-int get_type_idxs_by_regex(int **types, int *num, regex_t *preg, struct policy *policy);
+int get_type_idxs_by_regex(int **types, int *num, regex_t *preg, bool_t include_self, struct policy *policy);
 char *get_config_var(const char *var, FILE *fp);
 char **get_config_var_list(const char *var, FILE *file, int *list_sz);
 char *config_var_list_to_string(const char **list, int size);

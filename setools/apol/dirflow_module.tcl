@@ -246,7 +246,7 @@ proc Apol_Analysis_dirflow::load_query_options { file_channel parentDlg } {
 	}
 	if {[lindex $query_options 9] != "\{\}"} {
 		set tmp [string trim [lindex $query_options 9] "\{\}"]
-		if {[lsearch -exact $ApolTypes::attriblist $tmp] != -1} {
+		if {[lsearch -exact $Apol_Types::attriblist $tmp] != -1} {
 	        	set Apol_Analysis_dirflow::display_attribute $tmp
 	        	set Apol_Analysis_dirflow::display_attrib_sel [lindex $query_options 6]   
 	        } else {
@@ -310,7 +310,7 @@ proc Apol_Analysis_dirflow::load_query_options { file_channel parentDlg } {
 	if {[lindex $query_options 7] != "\{\}"} {
 		set tmp [string trim [lindex $query_options 7] "\{\}"]
 		# Validate that the type exists in the loaded policy.
-     		if {[lsearch -exact $ApolTypes::typelist $tmp] != -1} {
+     		if {[lsearch -exact $Apol_Types::typelist $tmp] != -1} {
 			set Apol_Analysis_dirflow::start_type $tmp
 		} else {
      			tk_messageBox -icon warning -type ok -title "Warning" \
@@ -959,7 +959,7 @@ proc Apol_Analysis_dirflow::config_attrib_comboBox_state { } {
 		Apol_Analysis_dirflow::change_types_list
 	} else {
 		$combo_attribute configure -state disabled -entrybg  $ApolTop::default_bg_color
-		set attrib_typesList $ApolTypes::typelist
+		set attrib_typesList $Apol_Types::typelist
         	set idx [lsearch -exact $attrib_typesList "self"]
 		if {$idx != -1} {
 			set attrib_typesList [lreplace $attrib_typesList $idx $idx]
@@ -1122,7 +1122,7 @@ proc Apol_Analysis_dirflow::change_types_list { } {
 		}
 		$combo_start configure -values $attrib_typesList
         } else {
-        	set attrib_typesList $ApolTypes::typelist
+        	set attrib_typesList $Apol_Types::typelist
 		set idx [lsearch -exact $attrib_typesList "self"]
 		if {$idx != -1} {
 			set attrib_typesList [lreplace $attrib_typesList $idx $idx]
@@ -1170,13 +1170,13 @@ proc Apol_Analysis_dirflow::populate_ta_list { } {
         variable combo_attribute
         variable list_objs
 
-	set attrib_typesList $ApolTypes::typelist
+	set attrib_typesList $Apol_Types::typelist
 	set idx [lsearch -exact $attrib_typesList "self"]
 	if {$idx != -1} {
 		set attrib_typesList [lreplace $attrib_typesList $idx $idx]
 	}
 	$combo_start configure -values $attrib_typesList
-     	$combo_attribute configure -values $ApolTypes::attriblist
+     	$combo_attribute configure -values $Apol_Types::attriblist
         set len [llength $Apol_Class_Perms::class_list]
         for {set i 0} {$i < $len } {incr i} {
 	        set temp [lindex $Apol_Class_Perms::class_list $i]

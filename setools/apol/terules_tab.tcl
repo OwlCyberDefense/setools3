@@ -6,11 +6,11 @@
 
 
 ##############################################################
-# ::ApolTE
+# ::Apol_TE
 #  
 # The TE Rules page
 ##############################################################
-namespace eval ApolTE {
+namespace eval Apol_TE {
 # opts(opt), where opt =
 # teallow		type allow rules
 # neverallow		
@@ -141,7 +141,7 @@ namespace eval ApolTE {
 # ::goto_line
 #  	- goes to indicated line in text box
 # 
-proc ApolTE::goto_line { line_num } {
+proc Apol_TE::goto_line { line_num } {
 	variable notebook_results
 	
 	if { [$notebook_results pages] != "" } {
@@ -154,7 +154,7 @@ proc ApolTE::goto_line { line_num } {
 		}
 		set raisedPage 	[ $notebook_results raise ]
 		
-		ApolTop::goto_line $line_num $ApolTE::optionsArray($raisedPage,textbox)
+		ApolTop::goto_line $line_num $Apol_TE::optionsArray($raisedPage,textbox)
 	}
 	return 0
 }
@@ -163,20 +163,20 @@ proc ApolTE::goto_line { line_num } {
 # ::search
 #  	- Search text widget for a string
 # 
-proc ApolTE::search { str case_Insensitive regExpr srch_Direction } {
+proc Apol_TE::search { str case_Insensitive regExpr srch_Direction } {
 	variable notebook_results
 	
 	if { [$notebook_results pages] != "" } {
 		set raisedPage 	[ $notebook_results raise ]
-		ApolTop::textSearch $ApolTE::optionsArray($raisedPage,textbox) $str $case_Insensitive $regExpr $srch_Direction
+		ApolTop::textSearch $Apol_TE::optionsArray($raisedPage,textbox) $str $case_Insensitive $regExpr $srch_Direction
 	}
 	return 0
 }
 
 # ------------------------------------------------------------------------------
-#  Command ApolTE::searchTErules
+#  Command Apol_TE::searchTErules
 # ------------------------------------------------------------------------------
-proc ApolTE::searchTErules { whichButton } {
+proc Apol_TE::searchTErules { whichButton } {
 	variable opts
 	variable ta1
 	variable ta2
@@ -211,10 +211,10 @@ proc ApolTE::searchTErules { whichButton } {
 	}
 	
 	# Getting all selected objects. 
-	set selObjectsList [ApolTE::get_Selected_ListItems $objslistbox]
+	set selObjectsList [Apol_TE::get_Selected_ListItems $objslistbox]
 
 	# Getting all selected permissions
-	set selPermsList [ApolTE::get_Selected_ListItems $permslistbox]
+	set selPermsList [Apol_TE::get_Selected_ListItems $permslistbox]
 		
 	# Making the call to apol_GetTErules to search for rules with given options
 	ApolTop::setBusyCursor
@@ -234,21 +234,21 @@ proc ApolTE::searchTErules { whichButton } {
 	switch $whichButton {
 		newTab {
 			# Enable the update button.
-			$ApolTE::updateButton configure -state normal
+			$Apol_TE::updateButton configure -state normal
 			
 			# Create the new results tab and set optionsArray.
-			set raisedPage [ApolTE::create_New_ResultsTab $results]
-			ApolTE::set_OptionsArray $raisedPage $selObjectsList $selPermsList
+			set raisedPage [Apol_TE::create_New_ResultsTab $results]
+			Apol_TE::set_OptionsArray $raisedPage $selObjectsList $selPermsList
 		}
 		updateTab {
 			set raisedPage 	[ $notebook_results raise ]
-			$ApolTE::optionsArray($raisedPage,textbox) configure -state normal
+			$Apol_TE::optionsArray($raisedPage,textbox) configure -state normal
 			# Remove any custom tags.
-			Apol_PolicyConf::remove_HyperLink_tags $ApolTE::optionsArray($raisedPage,textbox)
-    			$ApolTE::optionsArray($raisedPage,textbox) delete 0.0 end
-			ApolTE::insertTERules $ApolTE::optionsArray($raisedPage,textbox) $results 
-    			ApolTop::makeTextBoxReadOnly $ApolTE::optionsArray($raisedPage,textbox)
-			ApolTE::set_OptionsArray $raisedPage $selObjectsList $selPermsList
+			Apol_PolicyConf::remove_HyperLink_tags $Apol_TE::optionsArray($raisedPage,textbox)
+    			$Apol_TE::optionsArray($raisedPage,textbox) delete 0.0 end
+			Apol_TE::insertTERules $Apol_TE::optionsArray($raisedPage,textbox) $results 
+    			ApolTop::makeTextBoxReadOnly $Apol_TE::optionsArray($raisedPage,textbox)
+			Apol_TE::set_OptionsArray $raisedPage $selObjectsList $selPermsList
 		}
 		default {
 			return -code error
@@ -261,11 +261,11 @@ proc ApolTE::searchTErules { whichButton } {
 }
 
 # ------------------------------------------------------------------------------
-#  Command ApolTE::insertTERules
+#  Command Apol_TE::insertTERules
 #	takes a results list (from apol_SearchTERules) and explodes it into
 #	a provided text box
 # ------------------------------------------------------------------------------
-proc ApolTE::insertTERules { tb results } {	
+proc Apol_TE::insertTERules { tb results } {	
 	# Determine number of rules returned (1/2 size of llength)
 	set num [expr { [llength $results] / 2 }]
 	$tb insert end "$num rules match the search criteria\n\n"
@@ -288,9 +288,9 @@ proc ApolTE::insertTERules { tb results } {
 }
 
 # ------------------------------------------------------------------------------
-#  Command ApolTE::set_OptionsArray
+#  Command Apol_TE::set_OptionsArray
 # ------------------------------------------------------------------------------
-proc ApolTE::set_OptionsArray { raisedPage selObjectsList selPermsList } {
+proc Apol_TE::set_OptionsArray { raisedPage selObjectsList selPermsList } {
 	variable optionsArray
 	variable opts
 	variable ta1
@@ -343,9 +343,9 @@ proc ApolTE::set_OptionsArray { raisedPage selObjectsList selPermsList } {
 }
 
 #----------------------------------------------------------------------------------
-# ApolTE::create_empty_resultsTab
+# Apol_TE::create_empty_resultsTab
 #----------------------------------------------------------------------------------
-proc ApolTE::create_empty_resultsTab { } {
+proc Apol_TE::create_empty_resultsTab { } {
         variable notebook_results
 	variable currTabCount
 	variable pageNums
@@ -362,22 +362,22 @@ proc ApolTE::create_empty_resultsTab { } {
     	incr pageNums
 
 	# Create tab and its' widgets
-	$notebook_results insert end $ApolTE::emptyTabID -text "Empty Tab"
+	$notebook_results insert end $Apol_TE::emptyTabID -text "Empty Tab"
     	    	
     	# Set the NoteBook size
     	$notebook_results compute_size
     				
     	# Raise the new tab
-    	set raisedPage 	[$notebook_results raise $ApolTE::emptyTabID]
+    	set raisedPage 	[$notebook_results raise $Apol_TE::emptyTabID]
 	
     	return 0
 
 }
 
 # ------------------------------------------------------------------------------
-#  Command ApolTE::create_New_ResultsTab
+#  Command Apol_TE::create_New_ResultsTab
 # ------------------------------------------------------------------------------
-proc ApolTE::create_New_ResultsTab { results } {
+proc Apol_TE::create_New_ResultsTab { results } {
 	variable notebook_results
 	variable currTabCount
 	variable pageNums
@@ -406,7 +406,7 @@ proc ApolTE::create_New_ResultsTab { results } {
     	# Raise the new tab; get its' pathname and then insert the results data into the resultsbox
     	set raisedPage 	[$notebook_results raise $tabName$pageNums]
 	$resultsbox delete 0.0 end
-	ApolTE::insertTERules $resultsbox $results
+	Apol_TE::insertTERules $resultsbox $results
 	ApolTop::makeTextBoxReadOnly $resultsbox 
 	# Hold a reference to the results tab text widget
 	set optionsArray($raisedPage,textbox) $resultsbox
@@ -415,16 +415,16 @@ proc ApolTE::create_New_ResultsTab { results } {
 }
 
 # ------------------------------------------------------------------------------
-#  Command ApolTE::delete_ResultsTab
+#  Command Apol_TE::delete_ResultsTab
 # ------------------------------------------------------------------------------
-proc ApolTE::delete_ResultsTab { pageID } {
+proc Apol_TE::delete_ResultsTab { pageID } {
 	variable notebook_results
 	variable currTabCount
 	variable tab_deleted_flag
 	variable optionsArray
 	
 	# Do not delete the emtpy tab!!
-	if { [$notebook_results index $ApolTE::emptyTabID] != [$notebook_results index $pageID]} {
+	if { [$notebook_results index $Apol_TE::emptyTabID] != [$notebook_results index $pageID]} {
 		# Get Previous page index
 		set prevPageIdx [expr [$notebook_results index $pageID] - 1]
 		# Remove tab and its' widgets; then decrement current tab counter 
@@ -439,12 +439,12 @@ proc ApolTE::delete_ResultsTab { pageID } {
 		} else {
 			set raisedPage [$notebook_results raise [$notebook_results page 0]]
 		}
-		if {$raisedPage == $ApolTE::emptyTabID} {
-			ApolTE::reset_search_criteria
-			$ApolTE::updateButton configure -state disabled
+		if {$raisedPage == $Apol_TE::emptyTabID} {
+			Apol_TE::reset_search_criteria
+			$Apol_TE::updateButton configure -state disabled
 		} else {
 			# Set the search option widgets according to the now raised results tab.
-			ApolTE::set_Widget_SearchOptions $raisedPage
+			Apol_TE::set_Widget_SearchOptions $raisedPage
 			set tab_deleted_flag 0
 		}
 	}
@@ -453,9 +453,9 @@ proc ApolTE::delete_ResultsTab { pageID } {
 }
 
 # ------------------------------------------------------------------------------
-#  Command ApolTE::resetObjsPerms_Selections
+#  Command Apol_TE::resetObjsPerms_Selections
 # ------------------------------------------------------------------------------
-proc ApolTE::resetObjsPerms_Selections { selObjectsList selPermsList } {
+proc Apol_TE::resetObjsPerms_Selections { selObjectsList selPermsList } {
 	variable objslistbox
     	variable permslistbox
 	
@@ -502,9 +502,9 @@ proc ApolTE::resetObjsPerms_Selections { selObjectsList selPermsList } {
 }
 
 # ------------------------------------------------------------------------------
-#  Command ApolTE::set_Indicator
+#  Command Apol_TE::set_Indicator
 # ------------------------------------------------------------------------------
-proc ApolTE::set_Indicator { pageID } {
+proc Apol_TE::set_Indicator { pageID } {
 	variable notebook_searchOpts     
 	variable opts 
 	variable objslistbox
@@ -514,29 +514,29 @@ proc ApolTE::set_Indicator { pageID } {
 	
 	if { $pageID == $cp_TabID } {
 		# Reset the tab text to the initial value and then get the raised tab.
-		$notebook_searchOpts itemconfigure $cp_TabID -text $ApolTE::m_obj_perms_tab
+		$notebook_searchOpts itemconfigure $cp_TabID -text $Apol_TE::m_obj_perms_tab
 		set objText 	[$notebook_searchOpts itemcget $cp_TabID -text]
 		# Getting all selected objects. 
-		set selObjectsList [ApolTE::get_Selected_ListItems $objslistbox]
+		set selObjectsList [Apol_TE::get_Selected_ListItems $objslistbox]
 
 		# Getting all selected permissions
-		set selPermsList [ApolTE::get_Selected_ListItems $permslistbox]
+		set selPermsList [Apol_TE::get_Selected_ListItems $permslistbox]
 		
 		if { $selObjectsList != "" || $selPermsList != "" } {
 			append objText " *"
 			$notebook_searchOpts itemconfigure $cp_TabID -text $objText 
 		} else {
-			$notebook_searchOpts itemconfigure $cp_TabID -text $ApolTE::m_obj_perms_tab
+			$notebook_searchOpts itemconfigure $cp_TabID -text $Apol_TE::m_obj_perms_tab
 		}
 	} else {
 		# Reset the tab text to the initial value and then get the raised tab.
-		$notebook_searchOpts itemconfigure $ta_TabID -text $ApolTE::m_ta_tab
+		$notebook_searchOpts itemconfigure $ta_TabID -text $Apol_TE::m_ta_tab
 		set taText  	[$notebook_searchOpts itemcget $ta_TabID -text]
 		if { $opts(use_1st_list) || $opts(use_2nd_list) || $opts(use_3rd_list) } {
 			append taText " *"
 			$notebook_searchOpts itemconfigure $ta_TabID -text $taText
 		} else {
-			$notebook_searchOpts itemconfigure $ta_TabID -text $ApolTE::m_ta_tab
+			$notebook_searchOpts itemconfigure $ta_TabID -text $Apol_TE::m_ta_tab
 		}
 	}
 	
@@ -549,9 +549,9 @@ proc ApolTE::set_Indicator { pageID } {
 }
 
 # ------------------------------------------------------------------------------
-#  Command ApolTE::set_Widget_SearchOptions
+#  Command Apol_TE::set_Widget_SearchOptions
 # ------------------------------------------------------------------------------
-proc ApolTE::set_Widget_SearchOptions { pageID } {
+proc Apol_TE::set_Widget_SearchOptions { pageID } {
 	variable opts
 	variable optionsArray
 	variable ta1
@@ -573,12 +573,12 @@ proc ApolTE::set_Widget_SearchOptions { pageID } {
 	if { $raised == $pageID && $tab_deleted_flag == 0 } {
 		return
 	}
-	if { $pageID == $ApolTE::emptyTabID } {
-		ApolTE::reset_search_criteria
-		$ApolTE::updateButton configure -state disabled
+	if { $pageID == $Apol_TE::emptyTabID } {
+		Apol_TE::reset_search_criteria
+		$Apol_TE::updateButton configure -state disabled
 		return
 	}
-	$ApolTE::updateButton configure -state normal
+	$Apol_TE::updateButton configure -state normal
 	    
         # reinitialize original options
         set opts(teallow)	$optionsArray($pageID,teallow)
@@ -609,35 +609,35 @@ proc ApolTE::set_Widget_SearchOptions { pageID } {
 	set tgt_list_type_2	$optionsArray($pageID,tgt_list_type_2) 
 			
 	# Re-configure list items for type/attributes tab combo boxes
-	ApolTE::populate_ta_list 1
-	ApolTE::populate_ta_list 2
+	Apol_TE::populate_ta_list 1
+	Apol_TE::populate_ta_list 2
 	set ta1			$optionsArray($pageID,ta1)
         set ta2			$optionsArray($pageID,ta2)
 	set ta3			$optionsArray($pageID,ta3)	
 	
 	# Reset Objects and Permissions selections 
-	ApolTE::resetObjsPerms_Selections $selObjectsList $selPermsList
+	Apol_TE::resetObjsPerms_Selections $selObjectsList $selPermsList
     		
 	# check enable/disable status
-        ApolTE::enable_listbox $ApolTE::source_list 1 $ApolTE::list_types_1 $ApolTE::list_attribs_1
-        ApolTE::enable_listbox $ApolTE::target_list 2 $ApolTE::list_types_2 $ApolTE::list_attribs_2
-        ApolTE::defaultType_Enable_Disable
-        ApolTE::change_tgt_dflt_state
+        Apol_TE::enable_listbox $Apol_TE::source_list 1 $Apol_TE::list_types_1 $Apol_TE::list_attribs_1
+        Apol_TE::enable_listbox $Apol_TE::target_list 2 $Apol_TE::list_types_2 $Apol_TE::list_attribs_2
+        Apol_TE::defaultType_Enable_Disable
+        Apol_TE::change_tgt_dflt_state
           
         # Check the search criteria for the Classes/Permissions and Types/Attributes tabs
         # and then set the indicator  accordingly.
-        ApolTE::set_Indicator [$ApolTE::notebook_searchOpts page 0]
-        ApolTE::set_Indicator [$ApolTE::notebook_searchOpts page 1]
+        Apol_TE::set_Indicator [$Apol_TE::notebook_searchOpts page 0]
+        Apol_TE::set_Indicator [$Apol_TE::notebook_searchOpts page 1]
 	
-	ApolTE::set_Focus_to_Text $pageID 
+	Apol_TE::set_Focus_to_Text $pageID 
 	              	
 	return 0	
 }
 
 # ------------------------------------------------------------------------------
-#  Command ApolTE::get_Selected_ListItems
+#  Command Apol_TE::get_Selected_ListItems
 # ------------------------------------------------------------------------------
-proc ApolTE::get_Selected_ListItems { listname } {
+proc Apol_TE::get_Selected_ListItems { listname } {
 	set indicesList [$listname curselection]
 	set length [llength $indicesList] 
 	
@@ -654,9 +654,9 @@ proc ApolTE::get_Selected_ListItems { listname } {
 }
 
 # ------------------------------------------------------------------------------
-#  Command ApolTE::open
+#  Command Apol_TE::open
 # ------------------------------------------------------------------------------
-proc ApolTE::open { } {
+proc Apol_TE::open { } {
 	variable objectslist
 	variable permslist
 	variable master_permlist
@@ -669,15 +669,15 @@ proc ApolTE::open { } {
 	variable objslistbox
 		
 	# Set the original state of the type/attribs buttons.		
-	set ta_state_Array($ApolTE::list_types_1)   $src_list_type_1
-	set ta_state_Array($ApolTE::list_attribs_1) $src_list_type_2
-	set ta_state_Array($ApolTE::list_types_2)   $tgt_list_type_1
-	set ta_state_Array($ApolTE::list_attribs_2) $tgt_list_type_2
+	set ta_state_Array($Apol_TE::list_types_1)   $src_list_type_1
+	set ta_state_Array($Apol_TE::list_attribs_1) $src_list_type_2
+	set ta_state_Array($Apol_TE::list_types_2)   $tgt_list_type_1
+	set ta_state_Array($Apol_TE::list_attribs_2) $tgt_list_type_2
 	
 	# Populate the type/attribs combo-boxes
-	ApolTE::populate_ta_list 1
-        ApolTE::populate_ta_list 2
-        $ApolTE::dflt_type_list configure -values $ApolTypes::typelist
+	Apol_TE::populate_ta_list 1
+        Apol_TE::populate_ta_list 2
+        $Apol_TE::dflt_type_list configure -values $Apol_Types::typelist
                 
         # Check whether "classes" are included in the current opened policy file
         if {$ApolTop::contents(classes) == 1} {
@@ -701,15 +701,15 @@ proc ApolTE::open { } {
 		set master_permlist [lsort $master_permlist]
 		set permslist $master_permlist
 	}
-	ApolTE::configure_perms
+	Apol_TE::configure_perms
 	
         return 0
 }
 	
 # ------------------------------------------------------------------------------
-#  Command ApolTE::close
+#  Command Apol_TE::close
 # ------------------------------------------------------------------------------
-proc ApolTE::close { } {
+proc Apol_TE::close { } {
 	variable opts
 	variable source_list
 	variable target_list
@@ -720,26 +720,26 @@ proc ApolTE::close { } {
 	variable results
 	variable ta_state_Array
 	        
-	ApolTE::reset_search_criteria
+	Apol_TE::reset_search_criteria
 	
         # Close all results tabs.
-        ApolTE::close_All_ResultsTabs
+        Apol_TE::close_All_ResultsTabs
         
         # Reset objects/permissions lists
-        set ApolTE::objectslist 	""
-	set ApolTE::permslist 		""
-	set ApolTE::master_permlist 	""
-	$ApolTE::permslistbox configure -bg $ApolTop::default_bg_color
-	$ApolTE::objslistbox configure -bg $ApolTop::default_bg_color
+        set Apol_TE::objectslist 	""
+	set Apol_TE::permslist 		""
+	set Apol_TE::master_permlist 	""
+	$Apol_TE::permslistbox configure -bg $ApolTop::default_bg_color
+	$Apol_TE::objslistbox configure -bg $ApolTop::default_bg_color
     	array unset ta_state_Array
      	
 	return 0
 }
 
 # ------------------------------------------------------------------------------
-#  Command ApolTE::reset_search_criteria
+#  Command Apol_TE::reset_search_criteria
 # ------------------------------------------------------------------------------
-proc ApolTE::reset_search_criteria { } {
+proc Apol_TE::reset_search_criteria { } {
 	variable source_list
 	variable target_list
 	variable list_types_1
@@ -749,24 +749,24 @@ proc ApolTE::reset_search_criteria { } {
 	variable objslistbox
     	variable permslistbox
     	
-	ApolTE::reinitialize_default_search_options
+	Apol_TE::reinitialize_default_search_options
 	
 	# check enable/disable status
-        ApolTE::enable_listbox $source_list 1 $list_types_1 $list_attribs_1
-        ApolTE::enable_listbox $target_list 2 $list_types_2 $list_attribs_2
-        ApolTE::defaultType_Enable_Disable
-        ApolTE::change_tgt_dflt_state
-    	$ApolTE::b_union configure -state disabled
-    	$ApolTE::b_intersection configure -state disabled
+        Apol_TE::enable_listbox $source_list 1 $list_types_1 $list_attribs_1
+        Apol_TE::enable_listbox $target_list 2 $list_types_2 $list_attribs_2
+        Apol_TE::defaultType_Enable_Disable
+        Apol_TE::change_tgt_dflt_state
+    	$Apol_TE::b_union configure -state disabled
+    	$Apol_TE::b_intersection configure -state disabled
         
         # Reset Classes/Permissions and Types/Attributes tabs text to the initial value.
-        set objText 	[$ApolTE::notebook_searchOpts itemcget $ApolTE::cp_TabID -text]
-        set taText  	[$ApolTE::notebook_searchOpts itemcget $ApolTE::ta_TabID -text]
-	if { $objText != $ApolTE::m_obj_perms_tab } {
-		$ApolTE::notebook_searchOpts itemconfigure $ApolTE::cp_TabID -text $ApolTE::m_obj_perms_tab
+        set objText 	[$Apol_TE::notebook_searchOpts itemcget $Apol_TE::cp_TabID -text]
+        set taText  	[$Apol_TE::notebook_searchOpts itemcget $Apol_TE::ta_TabID -text]
+	if { $objText != $Apol_TE::m_obj_perms_tab } {
+		$Apol_TE::notebook_searchOpts itemconfigure $Apol_TE::cp_TabID -text $Apol_TE::m_obj_perms_tab
 	}
-	if { $taText != $ApolTE::m_ta_tab } {
-		$ApolTE::notebook_searchOpts itemconfigure $ApolTE::ta_TabID -text $ApolTE::m_ta_tab
+	if { $taText != $Apol_TE::m_ta_tab } {
+		$Apol_TE::notebook_searchOpts itemconfigure $Apol_TE::ta_TabID -text $Apol_TE::m_ta_tab
 	}
 	
 	# Clear the selections in the listboxes.
@@ -777,9 +777,9 @@ proc ApolTE::reset_search_criteria { } {
 }
 
 # ------------------------------------------------------------------------------
-#  Command ApolTE::reinitialize_default_search_options
+#  Command Apol_TE::reinitialize_default_search_options
 # ------------------------------------------------------------------------------
-proc ApolTE::reinitialize_default_search_options { } {
+proc Apol_TE::reinitialize_default_search_options { } {
 	variable opts
 	variable ta1_opt
 	variable ta2_opt
@@ -807,26 +807,26 @@ proc ApolTE::reinitialize_default_search_options { } {
 	set opts(indirect_3)	0
 	set opts(perm_union)	union
 	set opts(perm_select)	selected
-	set ApolTE::allow_regex		1
-	set ApolTE::src_list_type_1	1
-	set ApolTE::src_list_type_2	0
-	set ApolTE::tgt_list_type_1	1
-	set ApolTE::tgt_list_type_2	0 
+	set Apol_TE::allow_regex		1
+	set Apol_TE::src_list_type_1	1
+	set Apol_TE::src_list_type_2	0
+	set Apol_TE::tgt_list_type_1	1
+	set Apol_TE::tgt_list_type_2	0 
 	set ta1_opt 	"types"
 	set ta2_opt 	"types"	
-	set ApolTE::ta1 ""
-	set ApolTE::ta2 ""
-        set ApolTE::ta3 ""
-	set ApolTE::selObjectsList  ""
-    	set ApolTE::selPermsList    ""
+	set Apol_TE::ta1 ""
+	set Apol_TE::ta2 ""
+        set Apol_TE::ta3 ""
+	set Apol_TE::selObjectsList  ""
+    	set Apol_TE::selPermsList    ""
     	
         return 0
 }
 
 # ------------------------------------------------------------------------------
-#  Command ApolTE::close_All_ResultsTabs
+#  Command Apol_TE::close_All_ResultsTabs
 # ------------------------------------------------------------------------------
-proc ApolTE::close_All_ResultsTabs { } {
+proc Apol_TE::close_All_ResultsTabs { } {
 	variable optionsArray
 	variable notebook_results
 	variable currTabCount
@@ -842,23 +842,23 @@ proc ApolTE::close_All_ResultsTabs { } {
         foreach tab $tabList {
 	    	$notebook_results delete $tab
 	} 
-	$notebook_results raise $ApolTE::emptyTabID
+	$notebook_results raise $Apol_TE::emptyTabID
 	# Disable the update button.
-	$ApolTE::updateButton configure -state disabled
+	$Apol_TE::updateButton configure -state disabled
 				
 	# Reset the result tab variables.
-	set ApolTE::pageNums 		0
-	set ApolTE::currTabCount	0
-	set ApolTE::pageID		""	
-	set ApolTE::results		""
+	set Apol_TE::pageNums 		0
+	set Apol_TE::currTabCount	0
+	set Apol_TE::pageID		""	
+	set Apol_TE::results		""
 			
         return 0
 }
 
 # ------------------------------------------------------------------------------
-#  Command ApolTE::populate_ta_list
+#  Command Apol_TE::populate_ta_list
 # ------------------------------------------------------------------------------
-proc ApolTE::populate_ta_list { list } {
+proc Apol_TE::populate_ta_list { list } {
         variable incl_indirect1
 	variable incl_indirect2
 	variable src_list_type_1
@@ -876,28 +876,28 @@ proc ApolTE::populate_ta_list { list } {
 		# to make sure that the user cannot DESELECT both checkbuttons. 
 		if { $src_list_type_1 == 1 && $src_list_type_2 == 1} {
 			set ta1_opt "both"
-			set ta_state_Array($ApolTE::list_types_1) 	1
-			set ta_state_Array($ApolTE::list_attribs_1) 	1
+			set ta_state_Array($Apol_TE::list_types_1) 	1
+			set ta_state_Array($Apol_TE::list_attribs_1) 	1
 		} elseif { $src_list_type_1 == 1 && $src_list_type_2 == 0 } {
 			set ta1_opt "types"
-			set ta_state_Array($ApolTE::list_types_1) 	1
-			set ta_state_Array($ApolTE::list_attribs_1) 	0
+			set ta_state_Array($Apol_TE::list_types_1) 	1
+			set ta_state_Array($Apol_TE::list_attribs_1) 	0
 		} elseif { $src_list_type_1 == 0 && $src_list_type_2 == 1 } {
 			set ta1_opt "attribs"
-			set ta_state_Array($ApolTE::list_types_1) 	0
-			set ta_state_Array($ApolTE::list_attribs_1) 	1
+			set ta_state_Array($Apol_TE::list_types_1) 	0
+			set ta_state_Array($Apol_TE::list_attribs_1) 	1
 		} elseif { $src_list_type_1 == 0 && $src_list_type_2 == 0} {
-			if { $ta_state_Array($ApolTE::list_types_1) == 1 } {
-				$ApolTE::list_types_1 invoke
-			} elseif { $ta_state_Array($ApolTE::list_attribs_1) == 1 } {
-				$ApolTE::list_attribs_1 invoke
+			if { $ta_state_Array($Apol_TE::list_types_1) == 1 } {
+				$Apol_TE::list_types_1 invoke
+			} elseif { $ta_state_Array($Apol_TE::list_attribs_1) == 1 } {
+				$Apol_TE::list_attribs_1 invoke
 			}
 		}
 		set which $ta1_opt
-		set uselist $ApolTE::source_list
-		set ta ApolTE::ta1
+		set uselist $Apol_TE::source_list
+		set ta Apol_TE::ta1
 	        set cBox $incl_indirect1
-	        set useStatus $ApolTE::opts(use_1st_list)
+	        set useStatus $Apol_TE::opts(use_1st_list)
 	} elseif { $list == 2 } {
 		# Make sure that either "Types" OR "Attribs", OR Both checkbuttons are selected
 		# and set the variable ta2_opt accordingly. ta_state_Array variable holds the 
@@ -905,33 +905,33 @@ proc ApolTE::populate_ta_list { list } {
 		# to make sure that the user cannot DESELECT both checkbuttons.
 		if { $tgt_list_type_1 == 1 && $tgt_list_type_2 == 1} {
 			set ta2_opt "both"
-			set ta_state_Array($ApolTE::list_types_2) 	1
-			set ta_state_Array($ApolTE::list_attribs_2) 	1
+			set ta_state_Array($Apol_TE::list_types_2) 	1
+			set ta_state_Array($Apol_TE::list_attribs_2) 	1
 		} elseif { $tgt_list_type_1 == 1 && $tgt_list_type_2 == 0 } {
 			set ta2_opt "types"
-			set ta_state_Array($ApolTE::list_types_2) 	1
-			set ta_state_Array($ApolTE::list_attribs_2) 	0
+			set ta_state_Array($Apol_TE::list_types_2) 	1
+			set ta_state_Array($Apol_TE::list_attribs_2) 	0
 		} elseif { $tgt_list_type_1 == 0 && $tgt_list_type_2 == 1 } {
 			set ta2_opt "attribs"
-			set ta_state_Array($ApolTE::list_types_2) 	0
-			set ta_state_Array($ApolTE::list_attribs_2) 	1
+			set ta_state_Array($Apol_TE::list_types_2) 	0
+			set ta_state_Array($Apol_TE::list_attribs_2) 	1
 		} elseif { $tgt_list_type_1 == 0 && $tgt_list_type_2 == 0} {
-			if { $ta_state_Array($ApolTE::list_types_2) == 1 } {
-				$ApolTE::list_types_2 invoke
-			} elseif { $ta_state_Array($ApolTE::list_attribs_2) == 1 } {
-				$ApolTE::list_attribs_2 invoke
+			if { $ta_state_Array($Apol_TE::list_types_2) == 1 } {
+				$Apol_TE::list_types_2 invoke
+			} elseif { $ta_state_Array($Apol_TE::list_attribs_2) == 1 } {
+				$Apol_TE::list_attribs_2 invoke
 			}
 		}
 		set which $ta2_opt
-		set uselist $ApolTE::target_list
-		set ta ApolTE::ta2
+		set uselist $Apol_TE::target_list
+		set ta Apol_TE::ta2
 	        set cBox $incl_indirect2
-	        set useStatus $ApolTE::opts(use_2nd_list)
+	        set useStatus $Apol_TE::opts(use_2nd_list)
 	} elseif { $list == 3 } {
 		set which $Apol_RBAC::opts(list_type)
 		set uselist $Apol_RBAC::list_tgt
-		set ta ApolTE::ta3
-	        set useStatus $ApolTE::opts(use_3rd_list)
+		set ta Apol_TE::ta3
+	        set useStatus $Apol_TE::opts(use_3rd_list)
 	} else {
 		return -code error
 	}
@@ -941,18 +941,18 @@ proc ApolTE::populate_ta_list { list } {
 		
 	switch $which {
 		types {
-			$uselist configure -values $ApolTypes::typelist
+			$uselist configure -values $Apol_Types::typelist
 			if { $useStatus } {
 		        	$cBox configure -state normal	    
 		        }
 		}
 		attribs {
-			$uselist configure -values $ApolTypes::attriblist
+			$uselist configure -values $Apol_Types::attriblist
 		        $cBox configure -state disabled
 		        $cBox deselect
 		}
 		both {
-			set bothlist [concat $ApolTypes::typelist $ApolTypes::attriblist]
+			set bothlist [concat $Apol_Types::typelist $Apol_Types::attriblist]
 			set bothlist [lsort -dictionary $bothlist]
 			$uselist configure -values $bothlist
 			$cBox configure -state disabled
@@ -971,9 +971,9 @@ proc ApolTE::populate_ta_list { list } {
 }
 
 # ------------------------------------------------------------------------------
-#  Command ApolTE::configure_perms
+#  Command Apol_TE::configure_perms
 # ------------------------------------------------------------------------------
-proc ApolTE::configure_perms { } {
+proc Apol_TE::configure_perms { } {
 	variable permslist
 	variable objslistbox
     	variable permslistbox
@@ -981,22 +981,22 @@ proc ApolTE::configure_perms { } {
 	
 	# First clear the selection in the permissions listbox and then get the selected items
 	# from the objects listbox.
-	$ApolTE::permslistbox selection clear 0 end
-	set objectsList [ApolTE::get_Selected_ListItems $objslistbox]
+	$Apol_TE::permslistbox selection clear 0 end
+	set objectsList [Apol_TE::get_Selected_ListItems $objslistbox]
 	
-	if { $ApolTE::opts(perm_select) == "all" } {
-		$ApolTE::b_union configure -state disabled
-    		$ApolTE::b_intersection configure -state disabled
+	if { $Apol_TE::opts(perm_select) == "all" } {
+		$Apol_TE::b_union configure -state disabled
+    		$Apol_TE::b_intersection configure -state disabled
 		set permslist $master_permlist
 		if {$permslist != ""} {
 			$permslistbox configure -bg white
 		}
-	} elseif { $ApolTE::opts(perm_select) == "selected" && $objectsList != ""} {
+	} elseif { $Apol_TE::opts(perm_select) == "selected" && $objectsList != ""} {
 		# If items from the objects list have been selected and the selected radio
 		# button is selected, enable and invoke union and intersect radio buttons.
-		$ApolTE::b_union configure -state normal
-    		$ApolTE::b_intersection configure -state normal
-    		if { $ApolTE::opts(perm_union) == "union"} {
+		$Apol_TE::b_union configure -state normal
+    		$Apol_TE::b_intersection configure -state normal
+    		if { $Apol_TE::opts(perm_union) == "union"} {
     			set rt [catch {set permslist [lsort [apol_GetPermsByClass $objectsList 1]]} err]
 			if {$rt != 0} {
 				tk_messageBox -icon error -type ok -title "Error" -message "$err"
@@ -1017,9 +1017,9 @@ proc ApolTE::configure_perms { } {
     		# So, clear permissions listbox items.
     		set permslist "" 
     		$permslistbox configure -bg  $ApolTop::default_bg_color
-    		if { $ApolTE::opts(perm_select) == "selected" } {
-    			$ApolTE::b_union configure -state disabled
-    			$ApolTE::b_intersection configure -state disabled
+    		if { $Apol_TE::opts(perm_select) == "selected" } {
+    			$Apol_TE::b_union configure -state disabled
+    			$Apol_TE::b_intersection configure -state disabled
     		}
     		return
     	}
@@ -1029,9 +1029,9 @@ proc ApolTE::configure_perms { } {
 }
 
 # ------------------------------------------------------------------------------
-#  Command ApolTE::enable_listbox
+#  Command Apol_TE::enable_listbox
 # ------------------------------------------------------------------------------
-proc ApolTE::enable_listbox { cBox list_number b1 b2 } {
+proc Apol_TE::enable_listbox { cBox list_number b1 b2 } {
     variable global_asSource 
     variable global_any
     variable incl_indirect1
@@ -1039,7 +1039,7 @@ proc ApolTE::enable_listbox { cBox list_number b1 b2 } {
     variable opts
 
     # Set/unset indicator on raised tab to indicate search critera has been selected/deselected.
-    ApolTE::set_Indicator [$ApolTE::notebook_searchOpts raise]
+    Apol_TE::set_Indicator [$Apol_TE::notebook_searchOpts raise]
 	    
     if { $list_number == 1 } {
 	set which list1
@@ -1050,27 +1050,27 @@ proc ApolTE::enable_listbox { cBox list_number b1 b2 } {
     }
     switch $which {
 	list1 {	    
-	    if { $ApolTE::opts(use_1st_list) } {
-		if { $ApolTE::opts(which_1) == "source"} {
+	    if { $Apol_TE::opts(use_1st_list) } {
+		if { $Apol_TE::opts(which_1) == "source"} {
 		    $cBox configure -state normal -entrybg white
 		    $b1 configure -state normal
 		    $b2 configure -state normal
-		    $ApolTE::global_asSource configure -state normal
-		    $ApolTE::global_any configure -state normal	
-		    $ApolTE::incl_indirect1 configure -state normal
+		    $Apol_TE::global_asSource configure -state normal
+		    $Apol_TE::global_any configure -state normal	
+		    $Apol_TE::incl_indirect1 configure -state normal
 		} else {
 		    $cBox configure -state normal -entrybg white
 		    $b1 configure -state normal
 		    $b2 configure -state normal
-		    $ApolTE::global_asSource configure -state normal
-		    $ApolTE::global_any configure -state normal	
-		    ApolTE::change_tgt_dflt_state
+		    $Apol_TE::global_asSource configure -state normal
+		    $Apol_TE::global_any configure -state normal	
+		    Apol_TE::change_tgt_dflt_state
 		}
-		if {$ApolTE::src_list_type_1 == 0 && $ApolTE::src_list_type_2 == 1} {
+		if {$Apol_TE::src_list_type_1 == 0 && $Apol_TE::src_list_type_2 == 1} {
 		    $incl_indirect1 configure -state disabled
 		    $incl_indirect1 deselect
 		}
-		if {$ApolTE::src_list_type_1 == 1 && $ApolTE::src_list_type_2 == 1} {
+		if {$Apol_TE::src_list_type_1 == 1 && $Apol_TE::src_list_type_2 == 1} {
 			$incl_indirect1 configure -state disabled
 		    	$incl_indirect1 deselect
 		}
@@ -1079,25 +1079,25 @@ proc ApolTE::enable_listbox { cBox list_number b1 b2 } {
 		selection clear -displayof $cBox
 		$b1 configure -state disabled
 		$b2 configure -state disabled
-		$ApolTE::global_asSource configure -state disabled
-		$ApolTE::global_any configure -state disabled
+		$Apol_TE::global_asSource configure -state disabled
+		$Apol_TE::global_any configure -state disabled
 		$incl_indirect1 configure -state disabled
 		$incl_indirect1 deselect
-		ApolTE::change_tgt_dflt_state
+		Apol_TE::change_tgt_dflt_state
 	    }
 	}
 	list2 {
-	    if { $ApolTE::opts(use_2nd_list) } {
+	    if { $Apol_TE::opts(use_2nd_list) } {
 		$cBox configure -state normal -entrybg white
 		$b1 configure -state normal
 		$b2 configure -state normal
-		$ApolTE::incl_indirect2 configure -state normal
+		$Apol_TE::incl_indirect2 configure -state normal
 		
-		if {$ApolTE::tgt_list_type_1 == 0 && $ApolTE::tgt_list_type_2 == 1} {
+		if {$Apol_TE::tgt_list_type_1 == 0 && $Apol_TE::tgt_list_type_2 == 1} {
 		    $incl_indirect2 configure -state disabled
 		    $incl_indirect2 deselect
 		}
-		if {$ApolTE::tgt_list_type_1 == 1 && $ApolTE::tgt_list_type_2 == 1} {
+		if {$Apol_TE::tgt_list_type_1 == 1 && $Apol_TE::tgt_list_type_2 == 1} {
 			$incl_indirect2 configure -state disabled
 		    	$incl_indirect2 deselect
 		}
@@ -1120,17 +1120,17 @@ proc ApolTE::enable_listbox { cBox list_number b1 b2 } {
 }
 
 # ------------------------------------------------------------------------------
-#  Command ApolTE::determine_CheckedRules
+#  Command Apol_TE::determine_CheckedRules
 # ------------------------------------------------------------------------------
-proc ApolTE::determine_CheckedRules { } {
+proc Apol_TE::determine_CheckedRules { } {
     # Any type rules are checked
-    set bool1 [expr ($ApolTE::opts(ttrans) == 1 ||  $ApolTE::opts(tmember) == 1 || $ApolTE::opts(tchange) == 1)]
+    set bool1 [expr ($Apol_TE::opts(ttrans) == 1 ||  $Apol_TE::opts(tmember) == 1 || $Apol_TE::opts(tchange) == 1)]
     # All type rules are checked 
-    set bool2 [expr ($ApolTE::opts(ttrans) == 1 &&  $ApolTE::opts(tmember) == 1 && $ApolTE::opts(tchange) == 1)]
+    set bool2 [expr ($Apol_TE::opts(ttrans) == 1 &&  $Apol_TE::opts(tmember) == 1 && $Apol_TE::opts(tchange) == 1)]
     # All other rules are NOT checked 
-    set bool3 [expr ($ApolTE::opts(teallow) == 0 && $ApolTE::opts(neverallow) == 0 && \
-			 $ApolTE::opts(auallow) == 0 && $ApolTE::opts(audeny) == 0 && \
-			 $ApolTE::opts(audont) == 0 && $ApolTE::opts(clone) == 0)]
+    set bool3 [expr ($Apol_TE::opts(teallow) == 0 && $Apol_TE::opts(neverallow) == 0 && \
+			 $Apol_TE::opts(auallow) == 0 && $Apol_TE::opts(audeny) == 0 && \
+			 $Apol_TE::opts(audont) == 0 && $Apol_TE::opts(clone) == 0)]
     # Logic: ONLY if ANY type rules are checked or ALL type rules are checked, enable default role checkbutton
     set bool [expr ( ($bool1 || $bool2) && $bool3 )]
     
@@ -1138,44 +1138,44 @@ proc ApolTE::determine_CheckedRules { } {
 }
 
 # ------------------------------------------------------------------------------
-#  Command ApolTE::defaultType_Enable_Disable
+#  Command Apol_TE::defaultType_Enable_Disable
 # ------------------------------------------------------------------------------
-proc ApolTE::defaultType_Enable_Disable { } {
+proc Apol_TE::defaultType_Enable_Disable { } {
     variable dflt_type_list
     variable use_3rd_list
     
     # Set/unset indicator on raised tab to indicate search critera has been selected/deselected.
-    ApolTE::set_Indicator [$ApolTE::notebook_searchOpts raise]
+    Apol_TE::set_Indicator [$Apol_TE::notebook_searchOpts raise]
     
-    if { $ApolTE::opts(use_3rd_list) } {
-	$ApolTE::dflt_type_list configure -state normal -entrybg white
+    if { $Apol_TE::opts(use_3rd_list) } {
+	$Apol_TE::dflt_type_list configure -state normal -entrybg white
     } else {
-	$ApolTE::dflt_type_list configure -state disabled  -entrybg  $ApolTop::default_bg_color
-	selection clear -displayof $ApolTE::dflt_type_list
+	$Apol_TE::dflt_type_list configure -state disabled  -entrybg  $ApolTop::default_bg_color
+	selection clear -displayof $Apol_TE::dflt_type_list
     }
     # Determine the checked rules
-    set bool [ApolTE::determine_CheckedRules]
+    set bool [Apol_TE::determine_CheckedRules]
     
     if { $bool } {
-	if { $ApolTE::opts(use_1st_list) && $ApolTE::opts(which_1) == "source"} {
-	    $ApolTE::use_3rd_list configure -state normal -text $ApolTE::m_use_dflt_type
-	} elseif { !$ApolTE::opts(use_1st_list) } {
-	    $ApolTE::use_3rd_list configure -state normal -text $ApolTE::m_use_dflt_type
+	if { $Apol_TE::opts(use_1st_list) && $Apol_TE::opts(which_1) == "source"} {
+	    $Apol_TE::use_3rd_list configure -state normal -text $Apol_TE::m_use_dflt_type
+	} elseif { !$Apol_TE::opts(use_1st_list) } {
+	    $Apol_TE::use_3rd_list configure -state normal -text $Apol_TE::m_use_dflt_type
 	}
     } else {
     	    # Disable default type section
-	    $ApolTE::dflt_type_list configure -state disabled -entrybg  $ApolTop::default_bg_color
-	    selection clear -displayof $ApolTE::dflt_type_list
-	    $ApolTE::use_3rd_list configure -state disabled -text $ApolTE::m_disable_dflt_type
-	    $ApolTE::use_3rd_list deselect
+	    $Apol_TE::dflt_type_list configure -state disabled -entrybg  $ApolTop::default_bg_color
+	    selection clear -displayof $Apol_TE::dflt_type_list
+	    $Apol_TE::use_3rd_list configure -state disabled -text $Apol_TE::m_disable_dflt_type
+	    $Apol_TE::use_3rd_list deselect
     }
     return 0
 }
 
 # ------------------------------------------------------------------------------
-#  Command ApolTE::change_tgt_dflt_state
+#  Command Apol_TE::change_tgt_dflt_state
 # ------------------------------------------------------------------------------	
-proc ApolTE::change_tgt_dflt_state { } {
+proc Apol_TE::change_tgt_dflt_state { } {
     variable source_list
     variable target_list
     variable dflt_type_list
@@ -1190,41 +1190,41 @@ proc ApolTE::change_tgt_dflt_state { } {
     variable global_any
     
     # Determine the checked rules
-    set bool [ApolTE::determine_CheckedRules]
+    set bool [Apol_TE::determine_CheckedRules]
     
-    if { $ApolTE::opts(use_1st_list) == 1 && $ApolTE::opts(which_1) == "either" } {
+    if { $Apol_TE::opts(use_1st_list) == 1 && $Apol_TE::opts(which_1) == "either" } {
     	# Disable default type section
-	$ApolTE::dflt_type_list configure -state disabled -entrybg  $ApolTop::default_bg_color
-	selection clear -displayof $ApolTE::dflt_type_list
-	$ApolTE::use_3rd_list configure -state disabled -text $ApolTE::m_disable_dflt_type
-	$ApolTE::use_3rd_list deselect
+	$Apol_TE::dflt_type_list configure -state disabled -entrybg  $ApolTop::default_bg_color
+	selection clear -displayof $Apol_TE::dflt_type_list
+	$Apol_TE::use_3rd_list configure -state disabled -text $Apol_TE::m_disable_dflt_type
+	$Apol_TE::use_3rd_list deselect
 	# Disable target type/attrib section
-	$ApolTE::target_list configure -state disabled -entrybg  $ApolTop::default_bg_color
-	selection clear -displayof $ApolTE::target_list
-	$ApolTE::use_2nd_list configure -state disabled -text $ApolTE::m_disable_tgt_ta
-	$ApolTE::use_2nd_list deselect
-	$ApolTE::incl_indirect2 configure -state disabled
-	$ApolTE::incl_indirect2 deselect
-	$ApolTE::list_types_2 configure -state disabled
-	$ApolTE::list_attribs_2 configure -state disabled
-    } elseif { $ApolTE::opts(use_1st_list) == 1 && $bool && $ApolTE::opts(which_1) == "source"} {
+	$Apol_TE::target_list configure -state disabled -entrybg  $ApolTop::default_bg_color
+	selection clear -displayof $Apol_TE::target_list
+	$Apol_TE::use_2nd_list configure -state disabled -text $Apol_TE::m_disable_tgt_ta
+	$Apol_TE::use_2nd_list deselect
+	$Apol_TE::incl_indirect2 configure -state disabled
+	$Apol_TE::incl_indirect2 deselect
+	$Apol_TE::list_types_2 configure -state disabled
+	$Apol_TE::list_attribs_2 configure -state disabled
+    } elseif { $Apol_TE::opts(use_1st_list) == 1 && $bool && $Apol_TE::opts(which_1) == "source"} {
 	# Logic: if use_1st_list is selected AND (ONLY if ANY type rules are checked or ALL type 
 	# rules are checked) AND source option is selected, enable default and target listboxes
-	$ApolTE::use_3rd_list configure -state normal -text $ApolTE::m_use_dflt_type
-	$ApolTE::use_2nd_list configure -state normal -text $ApolTE::m_use_tgt_ta
+	$Apol_TE::use_3rd_list configure -state normal -text $Apol_TE::m_use_dflt_type
+	$Apol_TE::use_2nd_list configure -state normal -text $Apol_TE::m_use_tgt_ta
     } else {
-	$ApolTE::use_2nd_list configure -state normal -text $ApolTE::m_use_tgt_ta
+	$Apol_TE::use_2nd_list configure -state normal -text $Apol_TE::m_use_tgt_ta
 	if { $bool } {
-	    $ApolTE::use_3rd_list configure -state normal -text $ApolTE::m_use_dflt_type
+	    $Apol_TE::use_3rd_list configure -state normal -text $Apol_TE::m_use_dflt_type
 	}
     }
     return 0
 }			     
 
 # ------------------------------------------------------------------------------
-#  Command ApolTE::reverseSelection
+#  Command Apol_TE::reverseSelection
 # ------------------------------------------------------------------------------
-proc ApolTE::reverseSelection {listname} {
+proc Apol_TE::reverseSelection {listname} {
 	# Returns a list of all the indices of the selected items in the listbox
 	set indicesList [$listname curselection]
 		
@@ -1252,9 +1252,9 @@ proc ApolTE::reverseSelection {listname} {
 }
 
 # ------------------------------------------------------------------------------
-#  Command ApolTE::load_query_options
+#  Command Apol_TE::load_query_options
 # ------------------------------------------------------------------------------
-proc ApolTE::load_query_options {file_channel parentDlg} {
+proc Apol_TE::load_query_options {file_channel parentDlg} {
 	# search parameter variables to save
         variable opts
 	variable ta1
@@ -1328,7 +1328,7 @@ proc ApolTE::load_query_options {file_channel parentDlg} {
 	        # If this is not a list of elements, then just get the single element
 	        if {[llength $split_list] == 1} {
 	        	# Validate that the permission exists in the loaded policy.
-     			if {[lsearch -exact $ApolTE::master_permlist [lindex $query_options $i]] != -1} {
+     			if {[lsearch -exact $Apol_TE::master_permlist [lindex $query_options $i]] != -1} {
 	        		set permslist [lappend permslist [lindex $query_options $i]]
 	        	} else {
 	        		set invalid_perms [lappend invalid_perms [lindex $query_options $i]]
@@ -1337,14 +1337,14 @@ proc ApolTE::load_query_options {file_channel parentDlg} {
 		        # An empty list element will be generated because the first character of string 
 		        # is in splitChars, so we ignore the first element of the split list.
 		        # Validate that the permission exists in the loaded policy.
-     			if {[lsearch -exact $ApolTE::master_permlist [lindex $split_list 1]] != -1} {
+     			if {[lsearch -exact $Apol_TE::master_permlist [lindex $split_list 1]] != -1} {
 		        	set permslist [lappend permslist [lindex $split_list 1]]
 		        } else {
 	        		set invalid_perms [lappend invalid_perms [lindex $split_list 1]]
 	        	}
 		        incr i
 		        while {[llength [split [lindex $query_options $i] "\}"]] == 1} {
-		        	if {[lsearch -exact $ApolTE::master_permlist [lindex $query_options $i]] != -1} {
+		        	if {[lsearch -exact $Apol_TE::master_permlist [lindex $query_options $i]] != -1} {
 		        		set permslist [lappend permslist [lindex $query_options $i]]
 		        	} else {
 		        		set invalid_perms [lappend invalid_perms [lindex $query_options $i]]
@@ -1354,7 +1354,7 @@ proc ApolTE::load_query_options {file_channel parentDlg} {
 		        # This is the end of the list, so grab the first element of the split list, since the last 
 		        # element of split list is an empty list element. See Previous comment.
 			set end_element [lindex [split [lindex $query_options $i] "\}"] 0]
-			if {[lsearch -exact $ApolTE::master_permlist $end_element] != -1} {
+			if {[lsearch -exact $Apol_TE::master_permlist $end_element] != -1} {
 				set permslist [lappend permslist $end_element]
 			} else {
 				set invalid_perms [lappend invalid_perms $end_element]
@@ -1419,33 +1419,33 @@ proc ApolTE::load_query_options {file_channel parentDlg} {
 	}
 	
 	# Re-configure list items for type/attributes tab combo boxes
-	ApolTE::populate_ta_list 1
-	ApolTE::populate_ta_list 2
+	Apol_TE::populate_ta_list 1
+	Apol_TE::populate_ta_list 2
 	
 	# Reset Objects and Permissions selections 
-	ApolTE::resetObjsPerms_Selections $selObjectsList $selPermsList
+	Apol_TE::resetObjsPerms_Selections $selObjectsList $selPermsList
     		
 	# check enable/disable status
-        ApolTE::enable_listbox $ApolTE::source_list 1 $ApolTE::list_types_1 $ApolTE::list_attribs_1
-        ApolTE::enable_listbox $ApolTE::target_list 2 $ApolTE::list_types_2 $ApolTE::list_attribs_2
-        ApolTE::defaultType_Enable_Disable
-        ApolTE::change_tgt_dflt_state
+        Apol_TE::enable_listbox $Apol_TE::source_list 1 $Apol_TE::list_types_1 $Apol_TE::list_attribs_1
+        Apol_TE::enable_listbox $Apol_TE::target_list 2 $Apol_TE::list_types_2 $Apol_TE::list_attribs_2
+        Apol_TE::defaultType_Enable_Disable
+        Apol_TE::change_tgt_dflt_state
           
         # Check the search criteria for the Classes/Permissions and Types/Attributes tabs
         # and then set the indicator  accordingly.
-        ApolTE::set_Indicator [$ApolTE::notebook_searchOpts page 0]
-        ApolTE::set_Indicator [$ApolTE::notebook_searchOpts page 1]
+        Apol_TE::set_Indicator [$Apol_TE::notebook_searchOpts page 0]
+        Apol_TE::set_Indicator [$Apol_TE::notebook_searchOpts page 1]
         
 	return 0
 } 
 
 # ------------------------------------------------------------------------------
-#  Command ApolTE::save_query_options
+#  Command Apol_TE::save_query_options
 #	- module_name - name of the analysis module
 #	- file_channel - file channel identifier of the query file to write to.
 #	- file_name - name of the query file
 # ------------------------------------------------------------------------------
-proc ApolTE::save_query_options {file_channel query_file} {
+proc Apol_TE::save_query_options {file_channel query_file} {
         # search parameter variables to save
         variable opts
 	variable ta1
@@ -1461,10 +1461,10 @@ proc ApolTE::save_query_options {file_channel query_file} {
 	variable tgt_list_type_2
 				
 	# Getting all selected objects. 
-	set selObjectsList [ApolTE::get_Selected_ListItems $objslistbox]
+	set selObjectsList [Apol_TE::get_Selected_ListItems $objslistbox]
 
 	# Getting all selected permissions
-	set selPermsList [ApolTE::get_Selected_ListItems $permslistbox]
+	set selPermsList [Apol_TE::get_Selected_ListItems $permslistbox]
 	
 	set options [list \
 		$opts(teallow) \
@@ -1501,49 +1501,49 @@ proc ApolTE::save_query_options {file_channel query_file} {
 } 
 
 # ----------------------------------------------------------------------------------------
-#  Command ApolTE::set_Focus_to_Text
+#  Command Apol_TE::set_Focus_to_Text
 #
 #  Description: 
 # ----------------------------------------------------------------------------------------
-proc ApolTE::set_Focus_to_Text { tab } {
+proc Apol_TE::set_Focus_to_Text { tab } {
 	variable notebook_results
 	
-	if {$tab == $ApolTE::emptyTabID} {
+	if {$tab == $Apol_TE::emptyTabID} {
 		return	
 	}
-	if {[array exists ApolTE::optionsArray] && [winfo exists $ApolTE::optionsArray($tab,textbox)] } {
-		focus $ApolTE::optionsArray($tab,textbox)
+	if {[array exists Apol_TE::optionsArray] && [winfo exists $Apol_TE::optionsArray($tab,textbox)] } {
+		focus $Apol_TE::optionsArray($tab,textbox)
 	}
 	
 	return 0
 }
 
 # ----------------------------------------------------------------------------------------
-#  Command ApolTE::enable_RegExpr
+#  Command Apol_TE::enable_RegExpr
 #
 #  Description: This function is called when the user selects/deselects the "Enable Regular
 #		Expressions" checkbutton. It is also called when the user modifies the value 
 #		of the ComboBox by selecting it in the listbox. 
 # ----------------------------------------------------------------------------------------
-proc ApolTE::enable_RegExpr { which } {
+proc Apol_TE::enable_RegExpr { which } {
 	variable allow_regex
 	variable source_list
     	variable target_list
     	variable dflt_type_list
     
 	# Check to see if the "Enable Regular Expressions" checkbutton is ON. If not, then return.
-	if { $ApolTE::allow_regex == 1 } {
+	if { $Apol_TE::allow_regex == 1 } {
 		# If the current value of the ComboBox does not already contain our initial
 		# regular expression string, then we need to prepend the string to the 
 		# current value. 
 		if { $which == 1 } {
-        		set ApolTE::ta1 	"^$ApolTE::ta1$"
+        		set Apol_TE::ta1 	"^$Apol_TE::ta1$"
         		set ta $source_list
 		} elseif { $which == 2 } {
-			set ApolTE::ta2 	"^$ApolTE::ta2$"
+			set Apol_TE::ta2 	"^$Apol_TE::ta2$"
 			set ta $target_list
 		} elseif { $which == 3 } {
-			set ApolTE::ta3		"^$ApolTE::ta3$"
+			set Apol_TE::ta3		"^$Apol_TE::ta3$"
 			set ta $dflt_type_list
 		} 
 		selection clear -displayof $ta
@@ -1555,10 +1555,12 @@ proc ApolTE::enable_RegExpr { which } {
 }
 
 # ------------------------------------------------------------------------------
-#  Command ApolTE::popupResultsTab_Menu
+#  Command Apol_TE::popupResultsTab_Menu
 # ------------------------------------------------------------------------------
-proc ApolTE::popupResultsTab_Menu { window x y popupMenu page } {
+proc Apol_TE::popupResultsTab_Menu { window x y popupMenu page } {
 	variable pageID
+	
+	set page [ApolTop::get_tabname $page]
 	set pageID $page
         # Getting global coordinates of the application window (of position 0, 0)
 	set gx [winfo rootx $window]	
@@ -1576,11 +1578,11 @@ proc ApolTE::popupResultsTab_Menu { window x y popupMenu page } {
 }
 
 # ----------------------------------------------------------------------------------------
-#  Command ApolTE::createObjsClassesTab
+#  Command Apol_TE::createObjsClassesTab
 #
-#  Description: This function is called by ApolTE::create.
+#  Description: This function is called by Apol_TE::create.
 # ----------------------------------------------------------------------------------------
-proc ApolTE::createObjsClassesTab {notebook_objects_tab} {
+proc Apol_TE::createObjsClassesTab {notebook_objects_tab} {
     variable opts
     variable objslistbox
     variable permslistbox
@@ -1614,50 +1616,50 @@ proc ApolTE::createObjsClassesTab {notebook_objects_tab} {
     # Define widgets for Object-Classes Section 
     set clearSelectButton [button [$fm_objs_frame getframe].clear -text "Clear" -width 6 \
     		      	-command { 
-    		      		$ApolTE::objslistbox selection clear 0 end
-    		      		ApolTE::configure_perms 
-    		      		ApolTE::set_Indicator [$ApolTE::notebook_searchOpts raise]}]
+    		      		$Apol_TE::objslistbox selection clear 0 end
+    		      		Apol_TE::configure_perms 
+    		      		Apol_TE::set_Indicator [$Apol_TE::notebook_searchOpts raise]}]
     set sw_objs       [ScrolledWindow [$fm_objs_frame getframe].sw -auto both]
     set objslistbox [listbox [$sw_objs getframe].lb -height 5 -width 20 -highlightthickness 0 \
-		      -listvar ApolTE::objectslist -selectmode multiple -exportselection 0] 
+		      -listvar Apol_TE::objectslist -selectmode multiple -exportselection 0] 
     $sw_objs setwidget $objslistbox
     
     # Set binding when selecting an item in the objects listbox to configure the permissions listbox items.
     bindtags $objslistbox [linsert [bindtags $objslistbox] 3 objects_list_Tag]
     bind objects_list_Tag <<ListboxSelect>> { 
-    		ApolTE::configure_perms
-    		ApolTE::set_Indicator [$ApolTE::notebook_searchOpts raise] } 
+    		Apol_TE::configure_perms
+    		Apol_TE::set_Indicator [$Apol_TE::notebook_searchOpts raise] } 
     
     # Define widgets for Permissions Section
     set b_allPerms [radiobutton $fm_perm_buttons.allPerms -text "Show all permissions" \
-    			-variable ApolTE::opts(perm_select) -value all \
-    			-command { ApolTE::configure_perms }]
+    			-variable Apol_TE::opts(perm_select) -value all \
+    			-command { Apol_TE::configure_perms }]
     set b_selObjsPerms [radiobutton $fm_perm_buttons.selObjsPerms -text "Only show permissions for\nselected object classes" \
-    			-justify left -variable ApolTE::opts(perm_select) -value selected \
-    			-command { ApolTE::configure_perms }] 
+    			-justify left -variable Apol_TE::opts(perm_select) -value selected \
+    			-command { Apol_TE::configure_perms }] 
     set b_union [radiobutton $fm_perm_buttons_bot.union -text "Union" \
-    			-variable ApolTE::opts(perm_union) -value union -state disabled \
-    			-command { ApolTE::configure_perms }]
+    			-variable Apol_TE::opts(perm_union) -value union -state disabled \
+    			-command { Apol_TE::configure_perms }]
     set b_intersection [radiobutton $fm_perm_buttons_bot.intersection -text "Intersection" \
-    			-variable ApolTE::opts(perm_union) -value intersection -state disabled \
-    			-command { ApolTE::configure_perms }]
+    			-variable Apol_TE::opts(perm_union) -value intersection -state disabled \
+    			-command { Apol_TE::configure_perms }]
     set sw_perms       [ScrolledWindow $fm_permissions_mid.sw -auto both]
     set permslistbox [listbox [$sw_perms getframe].lb -height 5 -width 20 -highlightthickness 0 \
-		      -listvar ApolTE::permslist -selectmode multiple -exportselection 0] 
+		      -listvar Apol_TE::permslist -selectmode multiple -exportselection 0] 
     $sw_perms setwidget $permslistbox
     
     # Set binding when selecting an item in the perms listbox to indicate search critera 
     # has been selected/deselected.
     bindtags $permslistbox [linsert [bindtags $permslistbox] 3 perms_list_Tag]
-    bind perms_list_Tag <<ListboxSelect>> { ApolTE::set_Indicator [$ApolTE::notebook_searchOpts raise] } 
+    bind perms_list_Tag <<ListboxSelect>> { Apol_TE::set_Indicator [$Apol_TE::notebook_searchOpts raise] } 
     
     # Define Clear and Reverse buttons for the permissions listbox	
     set b_clearReverse [button $fm_permissions_bot.clear -text "Clear" -width 6 -anchor center \
     		      	-command { 
-    		      		$ApolTE::permslistbox selection clear 0 end
-    		      		ApolTE::set_Indicator [$ApolTE::notebook_searchOpts raise] }]
+    		      		$Apol_TE::permslistbox selection clear 0 end
+    		      		Apol_TE::set_Indicator [$Apol_TE::notebook_searchOpts raise] }]
     set b_reverseSel [button $fm_permissions_bot.reverse -text "Reverse" -width 6 -anchor center \
-    		      	-command { ApolTE::reverseSelection $ApolTE::permslistbox }]
+    		      	-command { Apol_TE::reverseSelection $Apol_TE::permslistbox }]
     
     # Placing all widgets
     pack $sw_objs -fill both -expand yes
@@ -1672,11 +1674,11 @@ proc ApolTE::createObjsClassesTab {notebook_objects_tab} {
 }
 
 # ----------------------------------------------------------------------------------------
-#  Command ApolTE::createTypesAttribsTab
+#  Command Apol_TE::createTypesAttribsTab
 #
-#  Description: This function is called by ApolTE::create.
+#  Description: This function is called by Apol_TE::create.
 # ----------------------------------------------------------------------------------------
-proc ApolTE::createTypesAttribsTab {notebook_ta_tab} {
+proc Apol_TE::createTypesAttribsTab {notebook_ta_tab} {
     variable opts
     variable source_list
     variable target_list
@@ -1761,84 +1763,84 @@ proc ApolTE::createTypesAttribsTab {notebook_ta_tab} {
 
     # Widget items for Source Type/Attrib section          
     set source_list [ComboBox $fm_comboBox.cb -width 22 \
-    	-textvariable ApolTE::ta1 -helptext "Type or select a type or attribute" \
-    	-modifycmd {ApolTE::enable_RegExpr 1} ]  
+    	-textvariable Apol_TE::ta1 -helptext "Type or select a type or attribute" \
+    	-modifycmd {Apol_TE::enable_RegExpr 1} ]  
     	 
     # ComboBox is not a simple widget, it is a mega-widget, and bindings for mega-widgets are non-trivial.
     # If bindtags is invoked with only one argument, then the current set of binding tags for window is 
     # returned as a list. 
     bindtags $source_list.e [linsert [bindtags $source_list.e] 3 source_list_Tag]
-    bind source_list_Tag <KeyPress> { ApolTop::_create_popup $ApolTE::source_list %W %K }
+    bind source_list_Tag <KeyPress> { ApolTop::_create_popup $Apol_TE::source_list %W %K }
         
     # Radio buttons and check buttons for Source Type/Attrib section
     set list_types_1 [checkbutton $fm_ta_buttons.list_types_1 -text "Types" \
-    	-variable ApolTE::src_list_type_1 \
-    	-command "ApolTE::populate_ta_list 1"]
+    	-variable Apol_TE::src_list_type_1 \
+    	-command "Apol_TE::populate_ta_list 1"]
     set list_attribs_1 [checkbutton $fm_ta_buttons.list_attribs_1 -text "Attribs" \
-    	-variable ApolTE::src_list_type_2 \
-    	-command "ApolTE::populate_ta_list 1"]
-    set global_asSource [radiobutton $fm_src_radio_buttons.source_1 -text "As source" -variable ApolTE::opts(which_1) \
+    	-variable Apol_TE::src_list_type_2 \
+    	-command "Apol_TE::populate_ta_list 1"]
+    set global_asSource [radiobutton $fm_src_radio_buttons.source_1 -text "As source" -variable Apol_TE::opts(which_1) \
 			 -value source \
-			 -command "ApolTE::change_tgt_dflt_state"]
-    set global_any [radiobutton $fm_src_radio_buttons.any_1 -text "Any" -variable ApolTE::opts(which_1) \
+			 -command "Apol_TE::change_tgt_dflt_state"]
+    set global_any [radiobutton $fm_src_radio_buttons.any_1 -text "Any" -variable Apol_TE::opts(which_1) \
 			 -value either \
-		         -command "ApolTE::change_tgt_dflt_state"]
-    set use_1st_list [checkbutton $fm_top1.use_1st_list -text $ApolTE::m_use_src_ta \
-			 -variable ApolTE::opts(use_1st_list) \
-			 -command "ApolTE::enable_listbox $source_list 1 $list_types_1 $list_attribs_1" \
+		         -command "Apol_TE::change_tgt_dflt_state"]
+    set use_1st_list [checkbutton $fm_top1.use_1st_list -text $Apol_TE::m_use_src_ta \
+			 -variable Apol_TE::opts(use_1st_list) \
+			 -command "Apol_TE::enable_listbox $source_list 1 $list_types_1 $list_attribs_1" \
 		         -offvalue 0 \
 		         -onvalue  1 ]
-    set incl_indirect1 [checkbutton $fm_incl_cBox.incl_indirect -text $ApolTE::m_incl_indirect \
-			 -variable ApolTE::opts(indirect_1) \
+    set incl_indirect1 [checkbutton $fm_incl_cBox.incl_indirect -text $Apol_TE::m_incl_indirect \
+			 -variable Apol_TE::opts(indirect_1) \
 			 -onvalue 1 \
 			 -offvalue 0]
 	     
     # Widget items for Target Type/Attrib section
     set target_list [ComboBox $fm_comboBox2.cb -width 22 \
-    	-textvariable ApolTE::ta2 -helptext "Type or select a type or attribute" \
-    	-modifycmd {ApolTE::enable_RegExpr 2} ] 
+    	-textvariable Apol_TE::ta2 -helptext "Type or select a type or attribute" \
+    	-modifycmd {Apol_TE::enable_RegExpr 2} ] 
     	
     # ComboBox is not a simple widget, it is a mega-widget, and bindings for mega-widgets are non-trivial.
     # If bindtags is invoked with only one argument, then the current set of binding tags for window is 
     # returned as a list.
     bindtags $target_list.e [linsert [bindtags $target_list.e] 3 target_list_Tag]
-    bind target_list_Tag <KeyPress> { ApolTop::_create_popup $ApolTE::target_list %W %K }
+    bind target_list_Tag <KeyPress> { ApolTop::_create_popup $Apol_TE::target_list %W %K }
     
     # Radio buttons and check buttons for Target Type/Attrib section
     set list_types_2 [checkbutton $fm_ta_buttons2.list_types_2 -text "Types" \
-	-variable ApolTE::tgt_list_type_1 \
-    	-command "ApolTE::populate_ta_list 2" ]
+	-variable Apol_TE::tgt_list_type_1 \
+    	-command "Apol_TE::populate_ta_list 2" ]
     set list_attribs_2 [checkbutton $fm_ta_buttons2.list_attribs_2 -text "Attribs" \
-	-variable ApolTE::tgt_list_type_2 \
-	-command "ApolTE::populate_ta_list 2" ]
+	-variable Apol_TE::tgt_list_type_2 \
+	-command "Apol_TE::populate_ta_list 2" ]
 	
-    set use_2nd_list [checkbutton $fm_top2.use_2nd_list -text $ApolTE::m_disable_tgt_ta \
-	-variable ApolTE::opts(use_2nd_list) \
+    set use_2nd_list [checkbutton $fm_top2.use_2nd_list -text $Apol_TE::m_disable_tgt_ta \
+	-variable Apol_TE::opts(use_2nd_list) \
 	-offvalue 0 \
         -onvalue  1 \
-        -command "ApolTE::enable_listbox $target_list 2 $list_types_2 $list_attribs_2"]
-    set incl_indirect2 [checkbutton $fm_incl_cBox2.incl_indirect -text $ApolTE::m_incl_indirect \
-			    -variable ApolTE::opts(indirect_2) \
+        -command "Apol_TE::enable_listbox $target_list 2 $list_types_2 $list_attribs_2"]
+    set incl_indirect2 [checkbutton $fm_incl_cBox2.incl_indirect -text $Apol_TE::m_incl_indirect \
+			    -variable Apol_TE::opts(indirect_2) \
 			    -onvalue 1 \
 			    -offvalue 0]
     
     # Widget items for Default Type section
     set dflt_type_list [ComboBox $fm_comboBox3.cb -width 22 -helptext "Third type search parameter"  \
-    	-textvariable ApolTE::ta3 -helptext "Type or select a type" \
-    	-modifycmd {ApolTE::enable_RegExpr 3} ]
+    	-textvariable Apol_TE::ta3 -helptext "Type or select a type" \
+    	-modifycmd {Apol_TE::enable_RegExpr 3} ]
     	
     # ComboBox is not a simple widget, it is a mega-widget, and bindings for mega-widgets are non-trivial.
     # If bindtags is invoked with only one argument, then the current set of binding tags for window is 
     # returned as a list.
     bindtags $dflt_type_list.e [linsert [bindtags $dflt_type_list.e] 3 dflt_type_list_Tag]
-    bind dflt_type_list_Tag <KeyPress> { ApolTop::_create_popup $ApolTE::dflt_type_list %W %K }
+    bind dflt_type_list_Tag <KeyPress> { ApolTop::_create_popup $Apol_TE::dflt_type_list %W %K }
     
     # Radio buttons and check buttons for Default Type section
-    set use_3rd_list [checkbutton $fm_top3.use_3rd_list -text $ApolTE::m_disable_dflt_type \
-			     -variable ApolTE::opts(use_3rd_list) \
+    set use_3rd_list [checkbutton $fm_top3.use_3rd_list -text $Apol_TE::m_disable_dflt_type \
+			     -variable Apol_TE::opts(use_3rd_list) \
 			     -offvalue 0 \
 			     -onvalue  1 \
-			     -command "ApolTE::defaultType_Enable_Disable" ]
+			     -command "Apol_TE::defaultType_Enable_Disable" ]
 
     # Placing Source Type/Attrib widget items 
     pack $use_1st_list -side top -anchor nw 
@@ -1858,18 +1860,18 @@ proc ApolTE::createTypesAttribsTab {notebook_ta_tab} {
     pack $dflt_type_list -anchor w -fill x -expand yes
     
     # Check enable/disable status
-    ApolTE::enable_listbox $source_list 1 $list_types_1 $list_attribs_1
-    ApolTE::enable_listbox $target_list 2 $list_types_2 $list_attribs_2
-    ApolTE::defaultType_Enable_Disable
-    ApolTE::change_tgt_dflt_state
+    Apol_TE::enable_listbox $source_list 1 $list_types_1 $list_attribs_1
+    Apol_TE::enable_listbox $target_list 2 $list_types_2 $list_attribs_2
+    Apol_TE::defaultType_Enable_Disable
+    Apol_TE::change_tgt_dflt_state
     
     return 0
 }
 
 # ------------------------------------------------------------------------------
-#  Command ApolTE::create
+#  Command Apol_TE::create
 # ------------------------------------------------------------------------------
-proc ApolTE::create {nb} {
+proc Apol_TE::create {nb} {
     variable notebook_searchOpts
     variable teallow 
     variable neverallow 
@@ -1937,59 +1939,59 @@ proc ApolTE::create {nb} {
     set ttfm [frame $optsfm.ttfm]
 
     # First column of checkbuttons under rule selection subframe
-    set teallow [checkbutton $tefm.teallow -text "allow" -variable ApolTE::opts(teallow) \
-	    -command "ApolTE::defaultType_Enable_Disable"]
-    set neverallow [checkbutton $tefm.neverallow -text "neverallow" -variable ApolTE::opts(neverallow) \
-            -command "ApolTE::defaultType_Enable_Disable" ]
-    set auallow [checkbutton $tefm.auallow -text "auditallow" -variable ApolTE::opts(auallow) \
-            -command "ApolTE::defaultType_Enable_Disable" ]
-    set audeny [checkbutton $tefm.audeny -text "auditdeny" -variable ApolTE::opts(audeny) \
-            -command "ApolTE::defaultType_Enable_Disable" ]
-    set audont [checkbutton $tefm.audont -text "dontaudit"  -variable ApolTE::opts(audont) \
-    	    -command "ApolTE::defaultType_Enable_Disable" ]
+    set teallow [checkbutton $tefm.teallow -text "allow" -variable Apol_TE::opts(teallow) \
+	    -command "Apol_TE::defaultType_Enable_Disable"]
+    set neverallow [checkbutton $tefm.neverallow -text "neverallow" -variable Apol_TE::opts(neverallow) \
+            -command "Apol_TE::defaultType_Enable_Disable" ]
+    set auallow [checkbutton $tefm.auallow -text "auditallow" -variable Apol_TE::opts(auallow) \
+            -command "Apol_TE::defaultType_Enable_Disable" ]
+    set audeny [checkbutton $tefm.audeny -text "auditdeny" -variable Apol_TE::opts(audeny) \
+            -command "Apol_TE::defaultType_Enable_Disable" ]
+    set audont [checkbutton $tefm.audont -text "dontaudit"  -variable Apol_TE::opts(audont) \
+    	    -command "Apol_TE::defaultType_Enable_Disable" ]
     
     # Second column of checkbuttons under rule selection subframe
-    set ttrans [checkbutton $ttfm.ttrans -text "type_trans" -variable ApolTE::opts(ttrans) \
-	    -command "ApolTE::defaultType_Enable_Disable"]
-    set tmember [checkbutton $ttfm.tmember -text "type_member" -variable ApolTE::opts(tmember) \
-            -command "ApolTE::defaultType_Enable_Disable"]
-    set tchange [checkbutton $ttfm.tchange -text "type_change" -variable ApolTE::opts(tchange) \
-            -command "ApolTE::defaultType_Enable_Disable" ]
-    set clone [checkbutton $ttfm.clone -text "clone" -variable ApolTE::opts(clone) \
-            -command "ApolTE::defaultType_Enable_Disable" ]
+    set ttrans [checkbutton $ttfm.ttrans -text "type_trans" -variable Apol_TE::opts(ttrans) \
+	    -command "Apol_TE::defaultType_Enable_Disable"]
+    set tmember [checkbutton $ttfm.tmember -text "type_member" -variable Apol_TE::opts(tmember) \
+            -command "Apol_TE::defaultType_Enable_Disable"]
+    set tchange [checkbutton $ttfm.tchange -text "type_change" -variable Apol_TE::opts(tchange) \
+            -command "Apol_TE::defaultType_Enable_Disable" ]
+    set clone [checkbutton $ttfm.clone -text "clone" -variable Apol_TE::opts(clone) \
+            -command "Apol_TE::defaultType_Enable_Disable" ]
     
     # Checkbutton to Enable/Disable Regular Expressions option.
     set cb_RegExp [checkbutton [$pw1 getframe 0].cb_RegExp -text "Enable Regular Expressions" \
-    		-variable ApolTE::allow_regex]
+    		-variable Apol_TE::allow_regex]
             	    
     # NoteBook creation for search options subframe
     set notebook_searchOpts [NoteBook $frame_search.nb]
-    set notebook_ta_tab [$notebook_searchOpts insert end $ApolTE::ta_TabID -text $ApolTE::m_ta_tab]
-    set notebook_objects_tab [$notebook_searchOpts insert end $ApolTE::cp_TabID -text $ApolTE::m_obj_perms_tab]
-    ApolTE::createTypesAttribsTab $notebook_ta_tab
-    ApolTE::createObjsClassesTab $notebook_objects_tab
+    set notebook_ta_tab [$notebook_searchOpts insert end $Apol_TE::ta_TabID -text $Apol_TE::m_ta_tab]
+    set notebook_objects_tab [$notebook_searchOpts insert end $Apol_TE::cp_TabID -text $Apol_TE::m_obj_perms_tab]
+    Apol_TE::createTypesAttribsTab $notebook_ta_tab
+    Apol_TE::createObjsClassesTab $notebook_objects_tab
     
     # Action buttons
-    set newButton [button $bBox.new -text "New" -width 6 -command { ApolTE::searchTErules newTab }]
+    set newButton [button $bBox.new -text "New" -width 6 -command { Apol_TE::searchTErules newTab }]
     set updateButton [button $bBox.upDate -text "Update" -width 6 -state disabled \
-    		-command { ApolTE::searchTErules updateTab }]
+    		-command { Apol_TE::searchTErules updateTab }]
     #set printButton [button $bBbox.print -text "Print" -width 6 -command {ApolTop::unimplemented}]
 	             
     # Popup menu widget
     set popupTab_Menu [menu .popupTab_Menu]
     $popupTab_Menu add command -label "Delete Tab" \
-	-command { ApolTE::delete_ResultsTab $ApolTE::pageID }
+	-command { Apol_TE::delete_ResultsTab $Apol_TE::pageID }
 	
     # Notebook creation for results
     set notebook_results [NoteBook [$dbox getframe].nb_results]
-    $notebook_results bindtabs <Button-3> {ApolTE::popupResultsTab_Menu %W %x %y $ApolTE::popupTab_Menu} 
-    $notebook_results bindtabs <Button-1> {ApolTE::set_Widget_SearchOptions}
+    $notebook_results bindtabs <Button-3> {Apol_TE::popupResultsTab_Menu %W %x %y $Apol_TE::popupTab_Menu} 
+    $notebook_results bindtabs <Button-1> {Apol_TE::set_Widget_SearchOptions}
     
     # Add button bar at bottom of results section for closing tabs.
     set bFrame [frame [$dbox getframe].bFrame -relief sunken -bd 1]
     set bClose [button $bFrame.bClose -text "Close Tab" -command { 
-    		set raisedPage [$ApolTE::notebook_results raise]
-    		ApolTE::delete_ResultsTab $raisedPage }]
+    		set raisedPage [$Apol_TE::notebook_results raise]
+    		Apol_TE::delete_ResultsTab $raisedPage }]
     pack $bFrame -side bottom -anchor center -fill x -padx 4 -pady 1
     pack $bClose -side bottom -anchor center -fill x -padx 1 -pady 1
        
@@ -2007,8 +2009,8 @@ proc ApolTE::create {nb} {
     $notebook_searchOpts compute_size
     pack $notebook_searchOpts -fill both -expand yes -padx 4
     set raisedPage [$notebook_searchOpts raise [$notebook_searchOpts page 0]]
-    ApolTE::set_Indicator $raisedPage
-    ApolTE::create_empty_resultsTab
+    Apol_TE::set_Indicator $raisedPage
+    Apol_TE::create_empty_resultsTab
            
     # Placing the results notebook frame within the results section    
     pack $notebook_results -fill both -expand yes -padx 4

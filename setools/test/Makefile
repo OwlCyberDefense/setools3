@@ -1,10 +1,13 @@
 
+MAKE 		= make
+CC		= gcc
 LIBAPOL		= ../lib/libapol.a
+LIBS		= -lm -lfl
 OBJS		= test.o $(LIBAPOL)
 INCLUDES	= -I../libapol/
 CFLAGS		+= $(INCLUDES)
 
-all:	partial_load transitive_flow obj_perms perm_map_reload template reload subtract
+all:	partial_load transitive_flow obj_perms perm_map_reload template reload
 
 %.o:	%.c
 	$(CC) $(CFLAGS) -c $<
@@ -24,17 +27,14 @@ perm_map_reload: $(OBJS) perm_map_reload.o
 reload: $(OBJS) reload.o
 	$(CC) reload.o $(CFLAGS) $(OBJS) $(LIBS) -o reload
 
-subtract: $(OBJS) subtract.o
-	$(CC) subtract.o $(CFLAGS) $(OBJS) $(LIBS) -o subtract
-
 template: $(OBJS) template.o
 	$(CC) template.o $(CFLAGS) $(OBJS) $(LIBS) -o template
 
 $(LIBAPOL): 
-	cd .. ; $(MAKE) libapol
+	cd ../libapol/ ; $(MAKE) libapol
 
 clean:
-	rm -f partial_load transitive_flow template reload perm_map_reload obj_perms subtract *.o
+	rm -f partial_load transitive_flow template reload perm_map_reload obj_perms
 
 bare: clean
-	rm -f *~ core core.* a.out
+	rm -f *.o *~ core core.* a.out

@@ -249,7 +249,7 @@ proc Apol_Analysis::create_New_ResultsTab { } {
     	set results_frame [Apol_Analysis::create_results_frame $tab_frame]
     	# Here we use a flag variable to determine if this is the first tab created.
     	# If it is, then we can set the NoteBook size here, instead of repeatedly
-    	# computing the notebook size every time ApolTE::create_New_ResultsTab is called.
+    	# computing the notebook size every time Apol_TE::create_New_ResultsTab is called.
     	if { $Apol_Analysis::initTab == 0 } {	
     		$results_notebook compute_size
     		set Apol_Analysis::initTab 1
@@ -292,7 +292,7 @@ proc Apol_Analysis::create_empty_resultsTab { } {
     	set results_frame [Apol_Analysis::create_results_frame $tab_frame]
     	# Here we use a flag variable to determine if this is the first tab created.
     	# If it is, then we can set the NoteBook size here, instead of repeatedly
-    	# computing the notebook size every time ApolTE::create_New_ResultsTab is called.
+    	# computing the notebook size every time Apol_TE::create_New_ResultsTab is called.
     	if { $Apol_Analysis::initTab == 0 } {	
     		$results_notebook compute_size
     		set Apol_Analysis::initTab 1
@@ -774,6 +774,8 @@ proc Apol_Analysis::search { str case_Insensitive regExpr srch_Direction } {
 # ------------------------------------------------------------------------------
 proc Apol_Analysis::popupResultsTab_Menu { window x y popupMenu page } {
 	variable pageID
+	
+	set page [ApolTop::get_tabname $page]
 	set pageID $page
         # Getting global coordinates of the application window (of position 0, 0)
 	set gx [winfo rootx $window]	
