@@ -492,6 +492,7 @@ proc Apol_TE::insertTERules { tb results } {
 	variable show_enabled_rules
 	variable tag_enabled_rules
 	variable tag_disabled_rules
+	variable show_enabled_rules
 	
 	# Determine number of rules returned (1/4 size of llength). 
 	# This is because each rule returned consists of:
@@ -541,8 +542,13 @@ proc Apol_TE::insertTERules { tb results } {
 		$tb insert end "\n"
 	}
 	if {$num_cond} {
-		$tb insert 0.0 "$num rules match the search criteria\nNumber of enabled conditional rules:\
-		$num_enabled\nNumber of disabled conditional rules: $num_disabled\n\n"
+		if {!$show_enabled_rules} {
+			$tb insert 0.0 "Number of disabled conditional rules: $num_disabled\n\n"
+			$tb insert 0.0 "Number of enabled conditional rules: $num_enabled\n"
+		} else {
+			$tb insert 0.0 "Number of enabled conditional rules: $num_enabled\n\n"
+		}		
+		$tb insert 0.0 "$num rules match the search criteria\n"
 	} else {
 		$tb insert 0.0 "$num rules match the search criteria\n\n"
 	}
@@ -2223,7 +2229,7 @@ proc Apol_TE::createObjsClassesTab {notebook_objects_tab} {
     pack $sw_objs -fill both -expand yes
     pack $clearSelectButton -side bottom -pady 2
     pack $b_allPerms $b_selObjsPerms -side top -anchor nw -pady 2 -padx 2
-    pack $cb_perms_tilda -side left -anchor nw -fill x
+    #pack $cb_perms_tilda -side left -anchor nw -fill x
     pack $b_union -side top -anchor nw -padx 18
     pack $b_intersection -side top -anchor nw -padx 18
     pack $sw_perms -side bottom -fill both -expand yes 
@@ -2520,14 +2526,14 @@ proc Apol_TE::createTypesAttribsTab {notebook_ta_tab} {
     pack $dflt_type_list -anchor w -fill x -expand yes
    
     # Placing Target Type/Attrib widget items
-    pack $cb_tgt_tilda $cb_tgt_subtract -side left -anchor nw -fill x -expand yes
+    #pack $cb_tgt_tilda $cb_tgt_subtract -side left -anchor nw -fill x -expand yes
     pack $use_2nd_list -side top -anchor nw 
     pack $incl_indirect2 -side top -anchor w 
     pack $list_types_2  $list_attribs_2 -side left
     pack $target_list -anchor w -expand yes -fill x
         
     # Placing Source Type/Attrib widget items 
-    pack $cb_src_tilda $cb_src_subtract -side left -anchor nw -fill x -expand yes
+    #pack $cb_src_tilda $cb_src_subtract -side left -anchor nw -fill x -expand yes
     pack $use_1st_list -side top -anchor nw 
     pack $incl_indirect1 -side top -anchor w 
     pack $global_asSource $global_any -side left -anchor center 
@@ -2760,7 +2766,7 @@ proc Apol_TE::create {nb} {
     
     # Placing rule selection section widgets
     pack $cb_fm -side bottom -anchor nw
-    pack $cb_RegExp $cb_syntactic -side top -anchor nw 
+    pack $cb_RegExp -side top -anchor nw 
     pack $cb_show_enabled_rules $cb_tag_enabled_rules $cb_tag_disabled_rules -side top -anchor nw
     pack $teallow $neverallow $auallow $audont -anchor w 
     pack $ttrans $tchange -anchor w 
