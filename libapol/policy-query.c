@@ -262,7 +262,8 @@ static int match_te_rules_idx(int  idx,
                           bool_t do_indirect,
 			  bool_t only_enabled,
                           rules_bool_t *rules_b,
-                          policy_t *policy
+                          policy_t *policy,
+                          int searchflag
                            ) 		
 {
 	int i;
@@ -278,7 +279,7 @@ static int match_te_rules_idx(int  idx,
 				continue;
 			if (only_enabled && !policy->av_access[i].enabled)
 				continue;
-			ans = does_av_rule_use_type(idx, idx_type, whichlists, do_indirect, 
+			ans = does_av_rule_use_type(searchflag, idx, idx_type, whichlists, do_indirect, 
 					&(policy->av_access[i]), &(rules_b->ac_cnt), policy);
 			if (ans == -1)
 				return -1;
@@ -292,7 +293,7 @@ static int match_te_rules_idx(int  idx,
 			continue;
 		if (only_enabled && !policy->av_access[i].enabled)
 				continue;
-		ans = does_tt_rule_use_type(idx, idx_type, whichlists, do_indirect, 
+		ans = does_tt_rule_use_type(searchflag, idx, idx_type, whichlists, do_indirect, 
 				&(policy->te_trans[i]), &(rules_b->tt_cnt), policy);
 		if (ans == -1)
 			return -1;
@@ -316,7 +317,7 @@ static int match_te_rules_idx(int  idx,
 				continue;
 			if (only_enabled && !policy->av_access[i].enabled)
 				continue;
-			ans = does_av_rule_use_type(idx, idx_type, whichlists, do_indirect, 
+			ans = does_av_rule_use_type(searchflag, idx, idx_type, whichlists, do_indirect, 
 					&(policy->av_audit[i]), &(rules_b->au_cnt), policy);
 			if (ans == -1)
 				return -1;
@@ -338,7 +339,8 @@ static int match_te_rules_regex(regex_t *preg,
                           bool_t do_indirect,
 			  bool_t only_enabled, 
                           rules_bool_t *rules_b,
-                          policy_t *policy
+                          policy_t *policy,
+                          int searchflag
                            ) 		
 {
 	int i, idx_type, rt;
@@ -352,7 +354,7 @@ static int match_te_rules_regex(regex_t *preg,
 			rt = regexec(preg, name, 0, NULL, 0);
 			if(rt == 0) {
 				rt = match_te_rules_idx(i, idx_type, include_audit, whichlists, do_indirect,
-					only_enabled, rules_b, policy);
+					only_enabled, rules_b, policy, searchflag);
 				if(rt != 0)
 					return rt;
 			}
@@ -365,7 +367,7 @@ static int match_te_rules_regex(regex_t *preg,
 			rt = regexec(preg, name, 0, NULL, 0);
 			if(rt == 0) {
 				rt = match_te_rules_idx(i, idx_type, include_audit, whichlists, do_indirect,
-					only_enabled, rules_b, policy);
+					only_enabled, rules_b, policy, searchflag);
 				if(rt != 0)
 					return rt;
 			}
@@ -386,18 +388,19 @@ int match_te_rules(bool_t allow_regex,
                         bool_t do_indirect,
 			bool_t only_enabled, 
                         rules_bool_t *rules_b,
-                        policy_t *policy
+                        policy_t *policy,
+                        int searchflag
                         ) 		
 {
 	if(allow_regex) { 
 		if(!(ta_opt == IDX_TYPE || ta_opt == IDX_ATTRIB || ta_opt == IDX_BOTH))
 			return -1;
 		return match_te_rules_regex(preg, ta_opt, include_audit, whichlists, do_indirect,
-			only_enabled, rules_b, policy);
+			only_enabled, rules_b, policy, searchflag);
 	}
 	else {
 		return match_te_rules_idx(idx, idx_type, include_audit, whichlists, do_indirect,
-			only_enabled, rules_b, policy);
+			only_enabled, rules_b, policy, searchflag);
 	}
 }
 
@@ -413,7 +416,8 @@ int match_rbac_rules(int	idx,
                      bool_t	do_indirect,
                      bool_t	tgt_is_role,
                      rbac_bool_t *b,
-                     policy_t	*policy
+                     policy_t	*policy,
+                     int searchflag
                     )
 {
 	int i;
@@ -425,18 +429,18 @@ int match_rbac_rules(int	idx,
 	/* Note, DEFAULT_LIST is only used for role_transition rules */
 	if((whichlist & (SRC_LIST | TGT_LIST)) && !((whichlist & TGT_LIST) && !tgt_is_role) ) {
 		for(i = 0; i < policy->num_role_allow; i++) {
-			b->allow[i] = does_role_allow_use_role(idx, whichlist, do_indirect,  &(policy->role_allow[i]),
+			b->allow[i] = does_role_allow_use_role(searchflag, idx, whichlist, do_indirect,  &(policy->role_allow[i]),
 				&(b->a_cnt));
 		}
 	}
 	if(!((whichlist & TGT_LIST) && tgt_is_role) ) {
 		for(i = 0; i < policy->num_role_trans; i++) {
 			if(whichlist & (SRC_LIST | DEFAULT_LIST)) {
-				b->trans[i] = does_role_trans_use_role(idx, whichlist, do_indirect, 
+				b->trans[i] = does_role_trans_use_role(searchflag, idx, whichlist, do_indirect, 
 					&(policy->role_trans[i]), &(b->t_cnt));
 			}
 			if(!(b->trans[i]) && (whichlist & TGT_LIST) && !tgt_is_role) {
-				ans = does_role_trans_use_ta(idx, type, do_indirect, &(policy->role_trans[i]), 
+				ans = does_role_trans_use_ta(searchflag, idx, type, do_indirect, &(policy->role_trans[i]), 
 						&(b->t_cnt), policy);
 				if (ans == -1)
 					return -1;
@@ -624,7 +628,7 @@ int search_te_rules(teq_query_t *q, teq_results_t *r, policy_t *policy)
 	}
 
 	if(use_1) {
-		if(match_te_rules(q->use_regex, &(reg[0]), q->ta1.t_or_a, ta1, ta1_type, include_audit, SRC_LIST, q->ta1.indirect, q->only_enabled, &rules_src, policy) != 0) {
+		if(match_te_rules(q->use_regex, &(reg[0]), q->ta1.t_or_a, ta1, ta1_type, include_audit, SRC_LIST, q->ta1.indirect, q->only_enabled, &rules_src, policy, q->ta1.syntactic_search_flags) != 0) {
 			rt = -1;
 			goto err_return2;	
 		}
@@ -635,18 +639,18 @@ int search_te_rules(teq_query_t *q, teq_results_t *r, policy_t *policy)
 	
 	if(use_1 && q->any) { 
 		/* since "any", need to check target and default lists too */
-		if(match_te_rules(q->use_regex, &(reg[0]), q->ta1.t_or_a, ta1, ta1_type, include_audit, TGT_LIST, q->ta1.indirect, q->only_enabled, &rules_tgt, policy) != 0) {
+		if(match_te_rules(q->use_regex, &(reg[0]), q->ta1.t_or_a, ta1, ta1_type, include_audit, TGT_LIST, q->ta1.indirect, q->only_enabled, &rules_tgt, policy, q->ta1.syntactic_search_flags) != 0) {
 			rt = -1;
 			goto err_return2;	
 		}
-		if(match_te_rules(q->use_regex, &(reg[0]), IDX_TYPE, ta1, ta1_type, include_audit, DEFAULT_LIST, q->ta1.indirect, q->only_enabled, &rules_default, policy) != 0) {
+		if(match_te_rules(q->use_regex, &(reg[0]), IDX_TYPE, ta1, ta1_type, include_audit, DEFAULT_LIST, q->ta1.indirect, q->only_enabled, &rules_default, policy, q->ta1.syntactic_search_flags) != 0) {
 			rt = -1;
 			goto err_return2;	
 		}	
 	}
 	else {
 		if(use_2) {
-			if(match_te_rules(q->use_regex, &(reg[1]), q->ta2.t_or_a, ta2, ta2_type, include_audit, TGT_LIST, q->ta2.indirect, q->only_enabled, &rules_tgt, policy) != 0) {
+			if(match_te_rules(q->use_regex, &(reg[1]), q->ta2.t_or_a, ta2, ta2_type, include_audit, TGT_LIST, q->ta2.indirect, q->only_enabled, &rules_tgt, policy, q->ta2.syntactic_search_flags) != 0) {
 				rt = -1;
 				goto err_return2;	
 			}	
@@ -655,7 +659,7 @@ int search_te_rules(teq_query_t *q, teq_results_t *r, policy_t *policy)
 			all_true_rules_bool(&rules_tgt, policy);
 		}
 		if(use_3) {
-			if(match_te_rules(q->use_regex, &(reg[2]),IDX_TYPE, ta3, IDX_TYPE, include_audit, DEFAULT_LIST, q->ta3.indirect, q->only_enabled, &rules_default, policy) != 0) {
+			if(match_te_rules(q->use_regex, &(reg[2]),IDX_TYPE, ta3, IDX_TYPE, include_audit, DEFAULT_LIST, q->ta3.indirect, q->only_enabled, &rules_default, policy, q->ta3.syntactic_search_flags) != 0) {
 				rt = -1;
 				goto err_return2;	
 			}	
@@ -677,7 +681,7 @@ int search_te_rules(teq_query_t *q, teq_results_t *r, policy_t *policy)
 			  &&
 			   ( (q->num_classes < 1) || ((q->num_classes > 0) && does_av_rule_use_classes(i, 1, q->classes, q->num_classes, policy)) )
 			  &&
-			   ( (q->num_perms < 1) || ((q->num_perms > 0) && does_av_rule_use_perms(i, 1, q->perms, q->num_perms, policy)) )
+			   ( (q->num_perms < 1) || ((q->num_perms > 0) && does_av_rule_use_perms(0, i, 1, q->perms, q->num_perms, policy)) )
 			  )	{
 			  	if (q->only_enabled && !policy->av_access[i].enabled)
 					continue;
@@ -757,7 +761,7 @@ int search_te_rules(teq_query_t *q, teq_results_t *r, policy_t *policy)
 	  		   &&
 			    ( (q->num_classes < 1) || ((q->num_classes > 0) && does_av_rule_use_classes(i, 0, q->classes, q->num_classes, policy)) )
 			   &&
-			    ( (q->num_perms < 1) || ((q->num_perms > 0) && does_av_rule_use_perms(i, 0, q->perms, q->num_perms, policy)) )
+			    ( (q->num_perms < 1) || ((q->num_perms > 0) && does_av_rule_use_perms(0, i, 0, q->perms, q->num_perms, policy)) )
 			  )	{
 			  	if (q->only_enabled && !policy->av_audit[i].enabled)
 					continue;
