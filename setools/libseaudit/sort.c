@@ -82,7 +82,7 @@ int audit_log_view_sort(audit_log_view_t *view, int **new_order, int reverse)
 	sort_action_node_t *cur;
 	bool_t found;
 
-	if (!view->fltr_msgs || !view->sort_actions)
+	if (!view->fltr_msgs || !view->sort_actions || !view->my_log)
 		return -1;
 
 	if (view->num_fltr_msgs == 1) {
@@ -128,6 +128,7 @@ int audit_log_view_sort(audit_log_view_t *view, int **new_order, int reverse)
 
 	current_list = view->sort_actions;
 	reverse_sort = reverse;
+	audit_log = view->my_log; /* static */
 	qsort(sort_data, sort_len, sizeof(sort_data_t), &msg_compare);
 	for (i = 0; i < view->num_fltr_msgs; i++) {
 		view->fltr_msgs[i] = sort_data[i].msg_indx;
