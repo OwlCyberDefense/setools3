@@ -22,6 +22,7 @@
 #include <fnmatch.h>
 /* file tree walking commands */
 #define __USE_XOPEN_EXTENDED 1
+#define __USE_LARGEFILE64
 #include <ftw.h>
 #include <mntent.h>
 #include <policy.h>
@@ -73,7 +74,7 @@ const char * sefs_get_class_string( int flag_val)
  *
  * Determines the file's class, and returns it
  */
-int sefs_get_file_class(const struct stat *statptr)
+int sefs_get_file_class(const struct stat64 *statptr)
 {
 	assert(statptr != NULL);
 	if (S_ISREG(statptr->st_mode))
@@ -299,7 +300,7 @@ static int avl_add_user(void * user_data, const void *key, int idx)
 	return 0;
 }
 
-static int ftw_handler(const char *file, const struct stat *sb, int flag, struct FTW *s)
+static int ftw_handler(const char *file, const struct stat64 *sb, int flag, struct FTW *s)
 {
 	inode_key_t key;
 	int idx, rc = 0;
@@ -525,8 +526,8 @@ int sefs_filesystem_data_init(sefs_filesystem_data_t * fsd)
 
 int sefs_scan_tree(char * dir)
 {
-	int (*fn)(const char *file, const struct stat *sb, int flag, struct FTW *s) = ftw_handler;
-	if (nftw(dir, fn, NFTW_DEPTH, NFTW_FLAGS) == -1) {
+	int (*fn)(const char *file, const struct stat64 *sb, int flag, struct FTW *s) = ftw_handler;
+	if (nftw64(dir, fn, NFTW_DEPTH, NFTW_FLAGS) == -1) {
 		fprintf(stderr, "Error scanning tree rooted at %s\n", dir);
 		return -1;
 	}
