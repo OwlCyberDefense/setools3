@@ -129,7 +129,7 @@ static int find_type_in_p2(const char *name, name_item_t *aliases, policy_t *p2)
 static int add_i_to_inta(int i, int *num, int_a_diff_t **inta,char **str_id)
 {
 	int_a_diff_t *t;
-	int_a_diff_t *p,*q;
+	int_a_diff_t *p,*q = NULL;
 	if(num == NULL || inta == NULL)
 		return -1;
 		
