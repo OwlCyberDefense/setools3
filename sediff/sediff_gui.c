@@ -1722,7 +1722,7 @@ static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 				    	  policy_t *policy_old, policy_t *policy_new)
 {
 
-	g_string_printf(string,"This feature is will be available in the upcoming releases\n");
+	g_string_printf(string,"This feature will be available in the upcoming releases\n");
 	gtk_text_buffer_insert(txt,txt_iter,string->str,-1);
 
 	
