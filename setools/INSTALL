@@ -2,7 +2,7 @@ SELinux Tools (setools), version 1.4
 by Tresys Technology, LLC
 (selinux@tresys.com, www.tresys.com/selinux)
 
-May 17, 2004
+May 26, 2004
 
 BUILDING AND INSTALLING NOTES AND WARNINGS
 
@@ -93,13 +93,21 @@ on an LSM kernel earlier than 2.4.19 (prior to August 2002 or so):
 	"install-src" target that will do this for you.
 
 2. Build and install tools:  If you want to install all tools, just 
-type "make install" to build and install everything.  Type "make" to 
-see options to build individual pieces, for example to install just 
+type "make install" to build and install everything.  Type "make help" 
+to see options to build individual pieces, for example to install just 
 seuser, sepcut, or apol.
 
-NOTE: If you installed seuser ("make install" or "make install-
-seuser"), then the makefile also attempted to install the seuser 
-policy.  If this failed, you either are not using an SELinux machine, 
+3. If you installed seuser or secmds, then you will need to type:
+	- "make install-seuser-policy": installs the seuser policy into  
+	  the selinux policy source directory and performs labeling of 
+	  seuser installed files.  
+	
+	- "make install-secmds-policy": installs the secmds policy into 
+	  the selinux policy source directory and performs labeling of 
+	  secmds installed files.  
+
+
+If this failed, you either are not using an SELinux machine, 
 the policy management patch isn't installed (see Step 1), or the 
 policy source directory is not installed in the conventional location 
 (use make install-src in the policy source directory from the SELinux 
