@@ -280,6 +280,7 @@ proc Apol_Analysis_relabel::do_analysis {results_frame} {
 	}
 	# convert the object permissions list into Tcl lists
 	set objs_list ""
+	set subj_list ""
 	
 	# If the advanced options object doesn't exist, then create it.
 	if {![array exists widget_vars] || [array names widget_vars "$advanced_filter_Dlg,name"] == ""} {
@@ -287,21 +288,16 @@ proc Apol_Analysis_relabel::do_analysis {results_frame} {
 	} 
 		
 	foreach class $widget_vars($advanced_filter_Dlg,incl_class_list) {
-		set perms_list ""
-		set class_elements [array names widget_vars "$advanced_filter_Dlg,perm_status_array,$class,*"]
-		foreach element $class_elements {
-			set perm [lindex [split $element ","] 3]
-			set perms_list [lappend perms_list $perm]
-		}
-		if {$perms_list != ""} {
-			set objs_list [lappend objs_list [list $class $perms_list]]
-		}
+		lappend objs_list $class 
+	}
+	foreach subj $widget_vars($advanced_filter_Dlg,excl_subj_list) {
+		lappend subj_list $subj
 	}
 
 	if {$objs_list == ""} {
 		tk_messageBox -icon error -type ok \
 		    -title "Relabel Analysis Error" \
-		    -message "You cannot exclude all object classes and permissions in the filter!"
+		    -message "You cannot exclude all object classes in the filter!"
 		return -code error
 	}
 	
@@ -318,7 +314,7 @@ proc Apol_Analysis_relabel::do_analysis {results_frame} {
 	} 
 	
 	if [catch {apol_RelabelAnalysis $widget_vars(start_type) $mode $objs_list \
-		$widget_vars(endtype_sel) $widget_vars(end_type)} results] {
+		$subj_list $widget_vars(endtype_sel) $widget_vars(end_type)} results] {
 		tk_messageBox -icon error -type ok \
 		    -title "Relabel Analysis Error" -message $results
 		return -code error
@@ -678,13 +674,19 @@ proc Apol_Analysis_relabel::adv_options_initialize_objs_and_perm_filters {path_n
 		if {$idx1 == -1 && $idx2 == -1} {
 			continue
 		}
-		foreach perm $perms_list {
-			set widget_vars($path_name,perm_status_array,$class,$perm) include
-		}
+#		foreach perm $perms_list {
+#			set widget_vars($path_name,perm_status_array,$class,$perm) include
+#		}
 		set tmp_list [lappend tmp_list $class]
 	}
 	set Apol_Analysis_relabel::widget_vars($path_name,incl_class_list) $tmp_list
-	
+	set Apol_Analysis_relabel::widget_vars($path_name,excl_subj_list) ""
+	set Apol_Analysis_relabel::widget_vars($path_name,incl_subj_list) ""
+	foreach type_id $Apol_Types::typelist {
+		if {$type_id != "self"} {
+			lappend Apol_Analysis_relabel::widget_vars($path_name,incl_subj_list) $type_id
+		}
+	}
 	return 0
 }
 
@@ -700,6 +702,7 @@ proc Apol_Analysis_relabel::adv_options_create_object {path_name} {
 	set widget_vars($path_name,filter_vars_init) 1
 	# Initialize all object classes/permissions and related information to default values
 	Apol_Analysis_relabel::adv_options_initialize_objs_and_perm_filters $path_name
+
 }
 
 # ------------------------------------------------------------------------------
@@ -761,16 +764,8 @@ proc Apol_Analysis_relabel::adv_options_incl_excl_classes {path_name remove_list
 				# put in add list
 				set add_list [lappend add_list $class]
 				set add_list [lsort $add_list]
-			}
-			set rt [catch {set perms_list [apol_GetPermsByClass $class 1]} err]
-			if {$rt != 0} {
-				tk_messageBox -icon error -type ok -title "Error" -message "$err"
-				return -1
-			}
-			foreach perm $perms_list {
-				set widget_vars($path_name,perm_status_array,$class,$perm) $perm_value
-			}
-		}
+			} 
+		} 
 		$remove_lbox selection clear 0 end
 	}  
 	return 0	
@@ -817,6 +812,7 @@ proc Apol_Analysis_relabel::adv_options_create_dialog {path_name title_txt} {
    	# Main Titleframe
    	set label_frame [frame $topf.label_frame]
    	set objs_frame  [TitleFrame $topf.objs_frame -text "Filter by object classes:"]
+	set subj_frame  [TitleFrame $topf.subj_frame -text "Filter by subject type:"]
         
         set top_lbl [Label $label_frame.top_lbl -justify left -font $ApolTop::dialog_font \
         	-text "NOTE: The following list of object classes does not necessarily include all \
@@ -826,10 +822,18 @@ proc Apol_Analysis_relabel::adv_options_create_dialog {path_name title_txt} {
         set search_pane [frame [$objs_frame getframe].search_pane]
         set button_f [frame [$objs_frame getframe].button_f]
         set class_pane 	[frame [$objs_frame getframe].class_pane]
+	set subj_pane [frame [$subj_frame getframe].subj_pane]
+	set search_pane2 [frame [$subj_frame getframe].search_pane2]
+	set button_f2 [frame [$subj_frame getframe].button_f2]
+
         set incl_classes_box [TitleFrame $class_pane.tbox \
         	-text "Included Object Classes:" -bd 0]
         set excl_classes_box [TitleFrame $search_pane.rbox \
         	-text "Excluded Object Classes:" -bd 0]
+	set incl_subj_box [TitleFrame $subj_pane.tbox2 \
+		-text "Included Subject Types:" -bd 0]
+	set excl_subj_box [TitleFrame $search_pane2.rbox2 \
+		-text "Excluded Subject Types:" -bd 0]
         
         set sw_incl_class [ScrolledWindow [$incl_classes_box getframe].sw_incl_class -auto none]
         set widgets($path_name,class_incl_lb) [listbox [$sw_incl_class getframe].lb1 \
@@ -846,6 +850,22 @@ proc Apol_Analysis_relabel::adv_options_create_dialog {path_name title_txt} {
         	-listvar Apol_Analysis_relabel::widget_vars($path_name,excl_class_list) \
         	-exportselection 0]
 	$sw_excl_class setwidget $widgets($path_name,class_excl_lb)
+
+	set sw_incl_subj [ScrolledWindow [$incl_subj_box getframe].sw_incl_subj -auto none]
+	set widgets($path_name,subj_incl_lb) [listbox [$sw_incl_subj getframe].lb3 \
+		-height 10 -highlightthickness 0 \
+		-bg white -selectmode extended \
+		-listvar Apol_Analysis_relabel::widget_vars($path_name,incl_subj_list) \
+		-exportselection 0]
+	$sw_incl_subj setwidget $widgets($path_name,subj_incl_lb)
+
+	set sw_excl_subj [ScrolledWindow [$excl_subj_box getframe].sw_excl_subj -auto none]
+	set widgets($path_name,subj_excl_lb) [listbox [$sw_excl_subj getframe].lb4 \
+		-height 10 -highlightthickness 0 \
+		-bg white -selectmode extended \
+		-listvar Apol_Analysis_relabel::widget_vars($path_name,excl_subj_list) \
+		-exportselection 0]
+	$sw_excl_subj setwidget $widgets($path_name,subj_excl_lb)
 	
 	set b_incl_classes [Button $button_f.b_incl_classes -text "<--"  \
 		-helptext "Include the selected object classes in the results." \
@@ -865,13 +885,38 @@ proc Apol_Analysis_relabel::adv_options_create_dialog {path_name title_txt} {
 			$Apol_Analysis_relabel::widgets($path_name,class_incl_lb) \
 			$Apol_Analysis_relabel::widgets($path_name,class_excl_lb) \
 			exclude"]
+	set b_incl_subj [Button $button_f2.b_incl_subj -text "<--" \
+		-helptext "Include the selected subject type in the results." \
+		-command "Apol_Analysis_relabel::adv_options_incl_excl_classes \
+			$path_name \
+			Apol_Analysis_relabel::widget_vars($path_name,excl_subj_list) \
+			Apol_Analysis_relabel::widget_vars($path_name,incl_subj_list) \
+			$Apol_Analysis_relabel::widgets($path_name,subj_excl_lb) \
+			$Apol_Analysis_relabel::widgets($path_name,subj_incl_lb) \
+			include"]
+	set b_excl_subj [Button $button_f2.b_excl_subj -text "-->" \
+		-helptext "Exclude the selected subject type from the results." \
+		-command "Apol_Analysis_relabel::adv_options_incl_excl_classes \
+			$path_name \
+			Apol_Analysis_relabel::widget_vars($path_name,incl_subj_list)  \
+			Apol_Analysis_relabel::widget_vars($path_name,excl_subj_list) \
+			$Apol_Analysis_relabel::widgets($path_name,subj_incl_lb) \
+			$Apol_Analysis_relabel::widgets($path_name,subj_excl_lb) \
+			exclude"]
 	
         pack $b_excl_classes $b_incl_classes -side top -anchor nw -pady 2 -fill x
+	pack $b_excl_subj $b_incl_subj -side top -anchor nw -pady 2 -fill x
         pack $class_pane -fill both -expand yes -side left -anchor nw
+        pack $subj_pane -fill both -expand yes -side left -anchor nw
         pack $button_f -anchor center -fill x -expand yes -side left -pady 20
+	pack $button_f2 -anchor center -fill x -expand yes -side left -pady 20
         pack $sw_incl_class $sw_excl_class -fill both -expand yes -side left -anchor nw 
+        pack $sw_incl_subj $sw_excl_subj -fill both -expand yes -side left -anchor nw 
         pack $search_pane -fill both -expand yes -side left -anchor nw
+        pack $search_pane2 -fill both -expand yes -side left -anchor nw
         pack $incl_classes_box $excl_classes_box -side left -pady 2 -padx 2 -fill both -expand yes
+        pack $incl_subj_box $excl_subj_box -side left -pady 2 -padx 2 -fill both -expand yes
+        pack $subj_frame -side bottom -anchor nw -padx 5 -pady 2 -expand yes -fill both 	  
         pack $objs_frame -side bottom -anchor nw -padx 5 -pady 2 -expand yes -fill both 	  
         pack $label_frame -side top -anchor center
         pack $top_lbl -side left -anchor nw -fill x -pady 2 -padx 2
@@ -1078,7 +1123,7 @@ proc Apol_Analysis_relabel::display_mod_options { opts_frame } {
     pack $widgets(start_attrib_cb) -padx 15 -expand 0 -fill x
     pack $widgets(cb_endtype) -side top -anchor nw
     pack $widgets(entry_end) -anchor nw -fill x -expand yes 
-    #pack $widgets(b_adv_options) -anchor nw 
+    pack $widgets(b_adv_options) -anchor nw 
     pack $start_f -expand 0 -fill x
     pack $attrib_f -pady 20 -expand 0 -fill x
     pack $option_f -fill both -anchor nw -side left -padx 5 -expand 1
