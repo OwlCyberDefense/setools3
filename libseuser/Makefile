@@ -25,17 +25,17 @@ libseuser-tcl.a: $(LIB-OBJ-TCL)
 	 ar cr $@ $(LIB-OBJ-TCL)
 
 install-libseuser-shared: libseuserso
-	test -d $(SHARED_LIB_INSTALL_DIR) || install -m 755 -d $(SHARED_LIB_INSTALL_DIR)
 	install -m 755 $(LIBSO) $(SHARED_LIB_INSTALL_DIR)
 	cd $(SHARED_LIB_INSTALL_DIR) && ln -sf $(LIBSO) $(TARGET)
 	
 install-libseuser-static: libseuser
-	test -d $(STATIC_LIB_INSTALL_DIR) || install -m 755 -d $(STATIC_LIB_INSTALL_DIR)
 	install -m 644 libseuser.a $(STATIC_LIB_INSTALL_DIR)
-	test -d $(SETOOLS_INCLUDE)/libseuser || install -m 755 -d $(SETOOLS_INCLUDE)/libseuser
-	install -m 644 *.h $(SETOOLS_INCLUDE)/libseuser
+	install -m 644 *.h $(SETOOLS_INCLUDE)
 
 install: install-libseuser-shared install-libseuser-static
+
+install-policy:
+	chcon system_u:object_r:shlib_t $(SHARED_LIB_INSTALL_DIR)/$(LIBSO)
 	
 %.o:  %.c 
 	$(CC) $(CFLAGS) -c $<
