@@ -5,7 +5,7 @@
  */
 
 /*
- *  Authors: Terrence Mitchem <tmitchem@tresys.com>
+ *  Authors: Joshua Brindle <jbrindle@tresys.com>
  *	     Karl Macmillan <kmacmillan@tresys.com>
  *
  *  searchcon: a tool for searching SELinux filesystem databases
