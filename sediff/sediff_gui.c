@@ -2813,7 +2813,8 @@ void sediff_menu_on_open_clicked(GtkMenuItem *menuitem, gpointer user_data)
 
 		path = g_string_new(dir);
 		free(dir);
-
+		g_string_append_printf(path, "/%s", GLADEFILE);
+		
 		sediff_app->open_dlg_xml = glade_xml_new(path->str, OPEN_DIALOG_ID, NULL);
 		g_assert(sediff_app->open_dlg_xml != NULL);
 		sediff_app->open_dlg = GTK_WINDOW(glade_xml_get_widget(sediff_app->open_dlg_xml, OPEN_DIALOG_ID));
