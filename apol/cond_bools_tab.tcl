@@ -30,11 +30,13 @@ namespace eval Apol_Cond_Bools {
 	variable cond_bools_dflt_value_array
 	# other
 	variable enable_bool_combo_box	0
+	variable use_regEx 0
 	
 	# Global widgets
 	variable resultsbox
 	variable cond_bools_listbox
 	variable bool_combo_box
+	variable cb_RegExp
 }
 
 ###############################################################
@@ -46,6 +48,7 @@ proc Apol_Cond_Bools::cond_bool_search_bools {} {
 	variable cond_bools_dflt_value_array
 	variable cond_bools_list
 	variable resultsbox
+	variable use_regEx
 	
 	if {[ApolTop::is_policy_open]} {
 		set results ""
@@ -55,13 +58,12 @@ proc Apol_Cond_Bools::cond_bool_search_bools {} {
 			return -1
 		}
 				
-		if {$Apol_Cond_Bools::enable_bool_combo_box && $search_opts(boolean) != ""} {	
+		if {$Apol_Cond_Bools::enable_bool_combo_box && !$use_regEx} {	
 			# validate the boolean exists in the array
 			if {![Apol_Cond_Bools::cond_bool_is_valid_boolean $search_opts(boolean)]} {
 				tk_messageBox -icon error -type ok -title "Error" -message "Invalid boolean variable!"
 				return -1
 			}
-			
 			set results [append results "$search_opts(boolean)"]
 			if {$search_opts(default_state)} {
 				if {$cond_bools_dflt_value_array($search_opts(boolean))} {
@@ -80,7 +82,24 @@ proc Apol_Cond_Bools::cond_bool_search_bools {} {
 			set results [append results "\n"]
 		} else {
 			foreach bool $cond_bools_list {
-				set results [append results "$bool"]
+				if {$use_regEx} {
+					set rt [catch {set match [regexp $search_opts(boolean) $bool]} err]
+					if {$rt != 0} {
+						tk_messageBox \
+							-icon error \
+							-type ok \
+							-title "Error" \
+							-message $err
+						return -1
+					}
+					if {$match} {
+						set results [append results "$bool"]
+					} else {
+						continue
+					}
+				} else {
+					set results [append results "$bool"]
+				}
 				if {$search_opts(default_state)} {
 					if {$cond_bools_dflt_value_array($bool)} {
 						set results [append results "  Default State: True"]
@@ -111,14 +130,38 @@ proc Apol_Cond_Bools::cond_bool_search_bools {} {
 	return 0
 }
 
+# -----------------------------------------------------------------
+#  Command Apol_Cond_Bools::enable_RegExpr
+#
+#  Description: It is also called when the user modifies the value 
+#		of the ComboBox by selecting it in the listbox. 
+# -----------------------------------------------------------------
+proc Apol_Cond_Bools::enable_RegExpr { } {
+	variable bool_combo_box
+	
+	# Check to see if the "Enable Regular Expressions" checkbutton is ON. If not, then return.
+	if {$Apol_Cond_Bools::use_regEx} {
+        	set Apol_Cond_Bools::search_opts(boolean) "^$Apol_Cond_Bools::search_opts(boolean)$"
+		selection clear -displayof $bool_combo_box
+        }
+	focus -force .
+		    			
+   	return 0
+}
+
 ###############################################################
 #  ::cond_bool_is_valid_boolean
 #
 proc Apol_Cond_Bools::cond_bool_is_valid_boolean {boolean} {
 	variable cond_bools_value_array
 	
-	if {[array get cond_bools_value_array "$boolean*"] != ""} {
-		return 1
+	set items [array names cond_bools_value_array]
+	if {$items != ""} {
+		foreach item $items {
+			if {[string equal $boolean $item]} {
+				return 1
+			}
+		}
 	}
 	
 	return 0	
@@ -194,6 +237,16 @@ proc Apol_Cond_Bools::cond_bool_embed_buttons {widget bool_name} {
 } 
 
 ################################################################
+#  ::cond_bool_init_state
+#
+proc Apol_Cond_Bools::cond_bool_init_state { } {
+	Apol_Cond_Bools::cond_bool_change_comboBox_state \
+		$Apol_Cond_Bools::enable_bool_combo_box
+			
+	return 0
+}
+
+################################################################
 # ::cond_bool_remove_listbox_items
 #  	- Method for remove all embedded check buttons.
 # 
@@ -242,7 +295,6 @@ proc Apol_Cond_Bools::cond_bool_initialize_vars { } {
 	variable cond_bools_value_array
 	variable cond_bools_dflt_value_array
 	
-	set cond_bools_list [apol_GetNames cond_bools]
 	set rt [catch {set cond_bools_list [apol_GetNames cond_bools]} err]
 	if {$rt != 0} {
 		return -code error $err
@@ -259,6 +311,24 @@ proc Apol_Cond_Bools::cond_bool_initialize_vars { } {
 					 	 
 	return 0
 } 
+
+################################################################
+#  ::cond_bool_change_comboBox_state
+#
+proc Apol_Cond_Bools::cond_bool_change_comboBox_state {enable} {
+	variable cb_RegExp
+
+	ApolTop::change_comboBox_state \
+		$Apol_Cond_Bools::enable_bool_combo_box \
+		$Apol_Cond_Bools::bool_combo_box	
+	if {$enable} {
+		$cb_RegExp configure -state normal
+	} else {
+		$cb_RegExp configure -state disabled
+		$cb_RegExp deselect
+	}	
+	return 0
+}
 
 ################################################################
 # ::search
@@ -313,7 +383,8 @@ proc Apol_Cond_Bools::close { } {
 	Apol_Cond_Bools::cond_bool_reset_variables
 	
 	Apol_Cond_Bools::cond_bool_remove_listbox_items
-	ApolTop::change_comboBox_state $Apol_Cond_Bools::enable_bool_combo_box $Apol_Cond_Bools::bool_combo_box
+	Apol_Cond_Bools::cond_bool_change_comboBox_state \
+		$Apol_Cond_Bools::enable_bool_combo_box
 	$Apol_Cond_Bools::resultsbox configure -state normal
 	$Apol_Cond_Bools::resultsbox delete 0.0 end
 	ApolTop::makeTextBoxReadOnly $Apol_Cond_Bools::resultsbox 
@@ -336,6 +407,7 @@ proc Apol_Cond_Bools::create {nb} {
 	variable bool_combo_box
 	variable cond_bools_listbox 
 	variable resultsbox 
+	variable cb_RegExp
 	
 	# Layout frames
 	set frame [$nb insert end $ApolTop::cond_bools_tab -text "Booleans"]
@@ -347,9 +419,9 @@ proc Apol_Cond_Bools::create {nb} {
 	set rpane [$pw2 add -weight 3]
 	
 	# Title frames
-	set cond_bools_box 	 [TitleFrame $rpane.cond_bools_box -text "Booleans"]
-	set s_optionsbox [TitleFrame $spane.obox -text "Search Options"]
-	set rslts_frame	 [TitleFrame $spane.rbox -text "Search Results"]
+	set cond_bools_box [TitleFrame $rpane.cond_bools_box -text "Booleans"]
+	set s_optionsbox   [TitleFrame $spane.obox -text "Search Options"]
+	set rslts_frame	   [TitleFrame $spane.rbox -text "Search Results"]
 	
 	# Placing layout
 	pack $topf -fill both -expand yes 
@@ -388,16 +460,23 @@ proc Apol_Cond_Bools::create {nb} {
 		-variable Apol_Cond_Bools::search_opts(curr_state) \
 		-text "Show current state" \
 		-onvalue 1 -offvalue 0]
-    
+    		
 	set bool_combo_box [ComboBox [$l_innerFrame getframe].bool_combo_box \
 		-textvariable Apol_Cond_Bools::search_opts(boolean) \
 		-helptext "Type or select a boolean variable" \
-		-entrybg $ApolTop::default_bg_color]
+		-entrybg $ApolTop::default_bg_color \
+		-modifycmd {Apol_Cond_Bools::enable_RegExpr}]
 	set cb_enable_bool_combo_box [checkbutton [$l_innerFrame getframe].cb_enable_bool_combo_box \
 		-variable Apol_Cond_Bools::enable_bool_combo_box \
 		-onvalue 1 -offvalue 0 -text "Search using boolean variable" \
-		-command {ApolTop::change_comboBox_state $Apol_Cond_Bools::enable_bool_combo_box $Apol_Cond_Bools::bool_combo_box}]
-	
+		-command {Apol_Cond_Bools::cond_bool_change_comboBox_state \
+			$Apol_Cond_Bools::enable_bool_combo_box}]
+	# Checkbutton to Enable/Disable Regular Expressions option.
+    	set cb_RegExp [checkbutton [$l_innerFrame getframe].cb_RegExp \
+    		-text "Enable Regular Expressions" \
+    		-variable Apol_Cond_Bools::use_regEx \
+    		-onvalue 1 -offvalue 0]
+    		
 	# ComboBox is not a simple widget, it is a mega-widget, and bindings for mega-widgets are non-trivial.
 	# If bindtags is invoked with only one argument, then the current set of binding tags for window is 
 	# returned as a list.
@@ -420,9 +499,11 @@ proc Apol_Cond_Bools::create {nb} {
 	pack $l_innerFrame $c_innerFrame -side left -fill y -anchor nw -padx 4 -pady 4
 	
 	pack $cb_enable_bool_combo_box $bool_combo_box -side top -anchor nw -fill x
+	pack $cb_RegExp -side top -anchor nw 
 	pack $cb_bools_default_state $cb_bools_curr_state -side top -anchor nw 
 	pack $sw_r -fill both -expand yes
 	pack $sw_d -side left -expand yes -fill both 
+	Apol_Cond_Bools::cond_bool_init_state
 	
 	return $frame	
 }
