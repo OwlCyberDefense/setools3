@@ -28,6 +28,7 @@
 #include <fnmatch.h>
 #define _GNU_SOURCE
 #include <getopt.h>
+#include <regex.h>
 /* file tree walking commands */
 #define __USE_XOPEN_EXTENDED 1
 #include <ftw.h>
@@ -35,8 +36,9 @@
 /* AVL Tree Handling */
 #include <avl-util.h>
 #include <policy.h>
-
 #include <fsdata.h>
+/* libapol helpers */
+#include <util.h>
 
 /* LISTCON_VERSION_NUM should be defined in the make environment */
 #ifndef SEARCHCON_VERSION_NUM
@@ -52,6 +54,7 @@ static struct option const longopts[] =
   {"user", required_argument, NULL, 'u'},
   {"path", required_argument, NULL, 'p'},
   {"list", no_argument, NULL, 'l'},
+  {"regex", no_argument, NULL, 'r'},
   {"help", no_argument, NULL, 'h'},
   {"version", no_argument, NULL, 'v'},
   {NULL, 0, NULL, 0}
@@ -72,7 +75,7 @@ Print requested information about an SELinux policy.\n\
   -t type, --type=typename   		The name of the type to search for\n\
   -u user, --user=username   		The name of the user to search for\n\
   -p path, --path=pathname   		The path or path fragment to search for\n\
-  -l, --list				List types in thew snapshot\n\
+  -l, --list				List types in the snapshot\n\
 ", stdout);
 fputs("\n\
   -h, --help                 display this help and exit\n\
@@ -81,41 +84,65 @@ fputs("\n\
 	return;
 }
 
-
-int sefs_search_type(sefs_filesystem_data_t * fsd, char * tname)
+static void print_type_paths(sefs_typeinfo_t *typeinfo, sefs_fileinfo_t *paths, int print_context)
 {
-	int i = 0, j = 0, idx = 0;
-	sefs_typeinfo_t * typeinfo = NULL;
-	sefs_fileinfo_t * fileinfo = NULL;
-	char * pathname = NULL;
+	int i, j;
+        sefs_fileinfo_t * fileinfo = NULL;
+
+	for (i = 0; i <= typeinfo->numpaths; i++) {
+		fileinfo = &(paths[typeinfo->pathitems[i]]);
+
+		for (j = 0; j < fileinfo->numpaths; j++) {
+			printf("%s ", fileinfo->pathnames[j]);
+			if (print_context)
+				printf("\t\t%s", typeinfo->setypename);
+			printf("\n");
+		}
+	}	
+	return;
+}
+
+int sefs_search_type(sefs_filesystem_data_t * fsd, char *type, int use_regex)
+{
+	int i, num = 0, rc;
+	regex_t reg;
 
 	if (fsd == NULL) {
 		fprintf(stderr, "fsd is null\n");
 		return(-1);
 	}
 
-	if (tname == NULL) {
+	if (type == NULL) {
 		fprintf(stderr, "typename is null\n");
 		return(-1);
 	}
 
-	idx = avl_get_idx(tname, &(fsd->typetree));
+	if (use_regex) {
 
-	if (idx == -1)
-		return(0);
-
-	typeinfo = &(fsd->types[idx]);
-
-	for (i = 0; i <= typeinfo->numpaths; i++) {
-		fileinfo = &(fsd->paths[typeinfo->pathitems[i]]);
-		
-		for (j = 0; j < fileinfo->numpaths; j++) {
-			pathname = fileinfo->pathnames[j];
-			printf("%s\n", pathname);
+		rc = regcomp(&reg, type, REG_EXTENDED|REG_NOSUB);	
+		if (rc != 0) {
+			regfree(&reg);
+			return -1;
 		}
+	
+	        for (i = 0; i < fsd->numtypes; i++) {
+			if (regexec(&reg, fsd->types[i].setypename, 0, NULL, 0) == 0) {
+				print_type_paths(&fsd->types[i], fsd->paths, 1);
+				num++;
+			}
+		}
+		regfree(&reg);
+		if (num > 0)
+			return 1;
+		return 0;
+	} else {
+		rc = avl_get_idx(type, &(fsd->typetree));
+		if (rc<0)
+			return 0;
+		print_type_paths(&fsd->types[rc], fsd->paths, 0);
 	}
 
-	return(1);
+	return 1;
 }
 
 
@@ -167,10 +194,10 @@ int sefs_list_types(sefs_filesystem_data_t * fsd)
 int main(int argc, char **argv, char **envp)
 {
 	char *filename = NULL, *tname = NULL, *uname = NULL, *path = NULL;
-	int optc = 0, rc = 0, list = 0;
+	int optc = 0, rc = 0, list = 0, use_regex = 0;
 	sefs_filesystem_data_t fsdata;
 	
-	while ((optc = getopt_long (argc, argv, "f:t:u:p:lhv", longopts, NULL)) != -1)  {
+	while ((optc = getopt_long (argc, argv, "f:t:u:p:rlhv", longopts, NULL)) != -1)  {
 		switch (optc) {
 	  	case 'f': /* snapshot file */
 	  		filename = optarg;
@@ -187,6 +214,9 @@ int main(int argc, char **argv, char **envp)
 		case 'l': /* path */
 	  		list = 1;
 	  		break;
+		case 'r': /* regex */
+			use_regex = 1;
+			break;
 		case 'h': /* help */
 	  		usage(argv[0], 0);
 	  		exit(0);
@@ -252,7 +282,7 @@ int main(int argc, char **argv, char **envp)
 	}
 
 	if (tname != NULL) {
-		rc = sefs_search_type(&fsdata, tname);
+		rc = sefs_search_type(&fsdata, tname, use_regex);
 
 		switch(rc) {
 		case -1:
@@ -265,11 +295,7 @@ int main(int argc, char **argv, char **envp)
 			break;
 		}
 
-		return(0);
 	}
 
-
 	return(0);
-
-
 }
