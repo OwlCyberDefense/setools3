@@ -70,6 +70,7 @@ int init_teq_query(teq_query_t *q)
 	q->any = FALSE;
 	q->rule_select = 0x0;
 	q->use_regex = TRUE;
+	q->only_enabled = FALSE;
 	init_teq_search_type(&q->ta1);
 	init_teq_search_type(&q->ta2);
 	init_teq_search_type(&q->ta3);
@@ -133,7 +134,8 @@ static int match_te_rules_idx(int  idx,
                           int  idx_type,
                           bool_t  include_audit, 
                           unsigned char whichlists,	/* indicates src, target, and/or default lists */	
-                          bool_t do_indirect, 
+                          bool_t do_indirect,
+			  bool_t only_enabled,
                           rules_bool_t *rules_b,
                           policy_t *policy
                            ) 		
@@ -149,6 +151,8 @@ static int match_te_rules_idx(int  idx,
 		for(i = 0; i < policy->num_av_access; i++) {
 			if(rules_b->access[i])
 				continue;
+			if (only_enabled && !policy->av_access[i].enabled)
+				continue;
 			ans = does_av_rule_use_type(idx, idx_type, whichlists, do_indirect, 
 					&(policy->av_access[i]), &(rules_b->ac_cnt), policy);
 			if (ans == -1)
@@ -161,6 +165,8 @@ static int match_te_rules_idx(int  idx,
 	for(i = 0; i < policy->num_te_trans; i++) {
 		if (rules_b->ttrules[i])
 			continue;
+		if (only_enabled && !policy->av_access[i].enabled)
+				continue;
 		ans = does_tt_rule_use_type(idx, idx_type, whichlists, do_indirect, 
 				&(policy->te_trans[i]), &(rules_b->tt_cnt), policy);
 		if (ans == -1)
@@ -183,6 +189,8 @@ static int match_te_rules_idx(int  idx,
 		for(i = 0; i < policy->num_av_audit; i++) {
 			if (rules_b->audit[i])
 				continue;
+			if (only_enabled && !policy->av_access[i].enabled)
+				continue;
 			ans = does_av_rule_use_type(idx, idx_type, whichlists, do_indirect, 
 					&(policy->av_audit[i]), &(rules_b->au_cnt), policy);
 			if (ans == -1)
@@ -202,7 +210,8 @@ static int match_te_rules_regex(regex_t *preg,
 			  int ta_opt,
                           bool_t  include_audit, 
                           unsigned char whichlists,	/* indicates src, target, and/or default lists */	
-                          bool_t do_indirect, 
+                          bool_t do_indirect,
+			  bool_t only_enabled, 
                           rules_bool_t *rules_b,
                           policy_t *policy
                            ) 		
@@ -217,7 +226,8 @@ static int match_te_rules_regex(regex_t *preg,
 			_get_type_name_ptr(i, &name, policy);
 			rt = regexec(preg, name, 0, NULL, 0);
 			if(rt == 0) {
-				rt = match_te_rules_idx(i, idx_type, include_audit, whichlists, do_indirect, rules_b, policy);
+				rt = match_te_rules_idx(i, idx_type, include_audit, whichlists, do_indirect,
+					only_enabled, rules_b, policy);
 				if(rt != 0)
 					return rt;
 			}
@@ -229,7 +239,8 @@ static int match_te_rules_regex(regex_t *preg,
 			_get_attrib_name_ptr(i, &name, policy);
 			rt = regexec(preg, name, 0, NULL, 0);
 			if(rt == 0) {
-				rt = match_te_rules_idx(i, idx_type, include_audit, whichlists, do_indirect, rules_b, policy);
+				rt = match_te_rules_idx(i, idx_type, include_audit, whichlists, do_indirect,
+					only_enabled, rules_b, policy);
 				if(rt != 0)
 					return rt;
 			}
@@ -247,7 +258,8 @@ int match_te_rules(bool_t allow_regex,
                         int  idx_type,			/* ta idx type, for non-regex matches */
                         bool_t  include_audit, 
                         unsigned char whichlists,	/* indicates src, target, and/or default lists */	
-                        bool_t do_indirect, 
+                        bool_t do_indirect,
+			bool_t only_enabled, 
                         rules_bool_t *rules_b,
                         policy_t *policy
                         ) 		
@@ -255,10 +267,12 @@ int match_te_rules(bool_t allow_regex,
 	if(allow_regex) { 
 		if(!(ta_opt == IDX_TYPE || ta_opt == IDX_ATTRIB || ta_opt == IDX_BOTH))
 			return -1;
-		return match_te_rules_regex(preg, ta_opt, include_audit, whichlists, do_indirect, rules_b, policy);
+		return match_te_rules_regex(preg, ta_opt, include_audit, whichlists, do_indirect,
+			only_enabled, rules_b, policy);
 	}
 	else {
-		return match_te_rules_idx(idx, idx_type, include_audit, whichlists, do_indirect, rules_b, policy);
+		return match_te_rules_idx(idx, idx_type, include_audit, whichlists, do_indirect,
+			only_enabled, rules_b, policy);
 	}
 }
 
@@ -485,7 +499,7 @@ int search_te_rules(teq_query_t *q, teq_results_t *r, policy_t *policy)
 	}
 
 	if(use_1) {
-		if(match_te_rules(q->use_regex, &(reg[0]), q->ta1.t_or_a, ta1, ta1_type, include_audit, SRC_LIST, q->ta1.indirect, &rules_src, policy) != 0) {
+		if(match_te_rules(q->use_regex, &(reg[0]), q->ta1.t_or_a, ta1, ta1_type, include_audit, SRC_LIST, q->ta1.indirect, q->only_enabled, &rules_src, policy) != 0) {
 			rt = -1;
 			goto err_return2;	
 		}
@@ -496,18 +510,18 @@ int search_te_rules(teq_query_t *q, teq_results_t *r, policy_t *policy)
 	
 	if(use_1 && q->any) { 
 		/* since "any", need to check target and default lists too */
-		if(match_te_rules(q->use_regex, &(reg[0]), q->ta1.t_or_a, ta1, ta1_type, include_audit, TGT_LIST, q->ta1.indirect, &rules_tgt, policy) != 0) {
+		if(match_te_rules(q->use_regex, &(reg[0]), q->ta1.t_or_a, ta1, ta1_type, include_audit, TGT_LIST, q->ta1.indirect, q->only_enabled, &rules_tgt, policy) != 0) {
 			rt = -1;
 			goto err_return2;	
 		}
-		if(match_te_rules(q->use_regex, &(reg[0]), IDX_TYPE, ta1, ta1_type, include_audit, DEFAULT_LIST, q->ta1.indirect, &rules_default, policy) != 0) {
+		if(match_te_rules(q->use_regex, &(reg[0]), IDX_TYPE, ta1, ta1_type, include_audit, DEFAULT_LIST, q->ta1.indirect, q->only_enabled, &rules_default, policy) != 0) {
 			rt = -1;
 			goto err_return2;	
 		}	
 	}
 	else {
 		if(use_2) {
-			if(match_te_rules(q->use_regex, &(reg[1]), q->ta2.t_or_a, ta2, ta2_type, include_audit, TGT_LIST, q->ta2.indirect, &rules_tgt, policy) != 0) {
+			if(match_te_rules(q->use_regex, &(reg[1]), q->ta2.t_or_a, ta2, ta2_type, include_audit, TGT_LIST, q->ta2.indirect, q->only_enabled, &rules_tgt, policy) != 0) {
 				rt = -1;
 				goto err_return2;	
 			}	
@@ -516,7 +530,7 @@ int search_te_rules(teq_query_t *q, teq_results_t *r, policy_t *policy)
 			all_true_rules_bool(&rules_tgt, policy);
 		}
 		if(use_3) {
-			if(match_te_rules(q->use_regex, &(reg[2]),IDX_TYPE, ta3, IDX_TYPE, include_audit, DEFAULT_LIST, q->ta3.indirect, &rules_default, policy) != 0) {
+			if(match_te_rules(q->use_regex, &(reg[2]),IDX_TYPE, ta3, IDX_TYPE, include_audit, DEFAULT_LIST, q->ta3.indirect, q->only_enabled, &rules_default, policy) != 0) {
 				rt = -1;
 				goto err_return2;	
 			}	

@@ -45,6 +45,7 @@ static int display_policy_stats(policy_t *p)
 	printf("     Type Rules:         %d\n", p->num_te_trans);
 	printf("     Roles:              %d\n", p->num_roles);
 	printf("     Role Rules:         %d\n", p->num_role_allow + p->num_role_trans);
+	printf("     Booleans            %d\n", p->num_cond_bools);
 	return 0;
 }
 
@@ -418,6 +419,96 @@ int get_iflow_query(iflow_query_t *query, policy_t *policy)
 	return 0;
 }
 
+void test_print_bools(policy_t *policy)
+{
+        int i;
+        
+        for (i = 0; i < policy->num_cond_bools; i++) {
+                fprintf(outfile, "name: %s val: %d\n", policy->cond_bools[i].name, policy->cond_bools[i].val);
+        }
+
+}
+
+void test_print_expr(cond_expr_t *exp, policy_t *policy)
+{
+
+	cond_expr_t *cur;
+	for (cur = exp; cur != NULL; cur = cur->next) {
+		switch (cur->expr_type) {
+		case COND_BOOL:
+			printf("%s ", policy->cond_bools[cur->bool].name);
+			break;
+		case COND_NOT:
+			printf("! ");
+			break;
+		case COND_OR:
+			printf("|| ");
+			break;
+		case COND_AND:
+			printf("&& ");
+			break;
+		case COND_XOR:
+			printf("^ ");
+			break;
+		case COND_EQ:
+			printf("== ");
+			break;
+		case COND_NEQ:
+			printf("!= ");
+			break;
+		default:
+			printf("error!");
+			break;
+		}
+	}
+}
+
+void test_print_cond_list(cond_rule_list_t *list, policy_t *policy)
+{
+	int i;
+	
+	if (!list)
+		return;
+	
+	for (i = 0; i < list->num_av_access; i++) {
+		char *rule;
+		rule = re_render_av_rule(FALSE, list->av_access[i], FALSE, policy);
+		assert(rule);
+		fprintf(outfile, "\t%d %s\n", policy->av_access[list->av_access[i]].enabled, rule);
+		free(rule);
+	}
+	for (i = 0; i < list->num_av_audit; i++) {
+		char *rule;
+		rule = re_render_av_rule(FALSE, list->av_audit[i], TRUE, policy);
+		assert(rule);
+		fprintf(outfile, "\t%d %s\n", policy->av_audit[list->av_audit[i]].enabled, rule);
+		free(rule);
+	}
+	for (i = 0; i < list->num_te_trans; i++) {
+		char *rule;
+		rule = re_render_tt_rule(FALSE, list->te_trans[i], policy);
+		assert(rule);
+ 		fprintf(outfile, "\t%d %s\n", policy->te_trans[list->te_trans[i]].enabled, rule);
+		free(rule);
+	}
+}
+
+void test_print_cond_exprs(policy_t *policy)
+{
+        int i;
+        
+
+        
+        for (i = 0; i < policy->num_cond_exprs; i++) {
+// 	        fprintf(outfile, "\nconditional expression %d: [ ", policy->num_cond_exprs);
+                test_print_expr(policy->cond_exprs[i].expr, policy);
+		fprintf(outfile, "]\n");
+		fprintf(outfile, "TRUE list:\n");
+		test_print_cond_list(policy->cond_exprs[i].true_list, policy);
+		fprintf(outfile, "FALSE list:\n");
+		test_print_cond_list(policy->cond_exprs[i].false_list, policy);
+        }
+}
 
 
 int menu() {
@@ -429,6 +520,8 @@ int menu() {
 	printf("4)  test regex type name matching\n");
 	printf("5)  test transitive inflormation flows\n");
 	printf("6)  display initial SIDs and contexts\n");
+        printf("7)  display policy booleans and expressions\n");
+	printf("8)  set the value of a boolean\n");
 	printf("\n");
 	printf("r)  re-load policy with options\n");
 	printf("s)  display policy statics\n");
@@ -689,7 +782,7 @@ int main(int argc, char *argv[])
 				free(err);
 				break;
 			}
-			rt = get_type_idxs_by_regex(&types, &num, &reg, policy);
+			rt = get_type_idxs_by_regex(&types, &num, &reg, TRUE, policy);
 			regfree(&reg);
 			if(rt < 0) {
 				fprintf(stderr, "Error searching types\n");
@@ -829,6 +922,37 @@ int main(int argc, char *argv[])
 			printf("\n");
 			break;
 		}
+                case '7':
+                        test_print_bools(policy);
+                        test_print_cond_exprs(policy);
+                        break;
+		case '8':
+		{
+			int bool_idx;
+			bool_t bool_val;
+			printf("boolean name: ");
+			fgets(ans, sizeof(ans), stdin);
+			fix_string(ans, sizeof(ans));
+			bool_idx = get_cond_bool_idx(ans, policy);
+			if (bool_idx < 0) {
+				fprintf(stderr, "Invalid boolean name\n");
+				break;
+			}
+			printf("value (t or f): ");
+			fgets(ans, sizeof(ans), stdin);
+			if (ans[0] == 't')
+				bool_val = TRUE;
+			else if (ans[0] == 'f')
+				bool_val = FALSE;
+			else {
+				fprintf(stderr, "Invalid response\n");
+				break;
+			}
+			if (set_cond_bool_val(bool_idx, bool_val, policy) != 0)
+				fprintf(stderr, "Error setting boolean\n");
+				
+			break;
+		}
 		case 'f':
 			printf("\nFilename for output (<CR> for screen output): ");
 			fgets(OutfileName, sizeof(OutfileName), stdin);	
@@ -873,4 +997,3 @@ usage:
 	exit(1);
 
 }
-
