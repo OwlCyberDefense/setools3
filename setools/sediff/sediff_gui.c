@@ -912,7 +912,8 @@ static void txt_view_raise_policy_tab_goto_line(unsigned long line, int whichvie
 							 "weight", PANGO_WEIGHT_BOLD, 
 							 NULL); 
 	}
-	/* set everything back to mono font */
+
+       	/* set everything back to mono font */
 	gtk_text_buffer_get_start_iter(buffer, &iter);
 	gtk_text_buffer_get_end_iter(buffer,&end_iter);
 	gtk_text_buffer_remove_tag(buffer,highlight_tag,&iter,&end_iter);
@@ -960,7 +961,9 @@ static gboolean txt_view_on_policy1_link_event(GtkTextTag *tag, GObject *event_o
 		while (!gtk_text_iter_ends_word(end))
 			gtk_text_iter_forward_char(end);
 				
-		line = atoi(gtk_text_iter_get_slice(start, end));
+		/* the line # in policy starts with 1, in the buffer it 
+		   starts at 0 */
+		line = atoi(gtk_text_iter_get_slice(start, end)) - 1;
 
 		txt_view_raise_policy_tab_goto_line(line,1);
 		return TRUE;
@@ -994,7 +997,9 @@ static gboolean txt_view_on_policy2_link_event(GtkTextTag *tag, GObject *event_o
 		while (!gtk_text_iter_ends_word(end))
 			gtk_text_iter_forward_char(end);
 				
-		line = atoi(gtk_text_iter_get_slice(start, end));
+		/* the line # in policy starts with 1, in the buffer it 
+		   starts at 0 */
+		line = atoi(gtk_text_iter_get_slice(start, end)) - 1;
 
 		txt_view_raise_policy_tab_goto_line(line,2);
 		return TRUE;
