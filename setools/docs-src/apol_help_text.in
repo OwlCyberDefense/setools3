@@ -7,14 +7,15 @@ This file contains basic help information for using apol, version APOL_GUI_VERSI
 This version of apol allows you to:
 
 	+ examine, search, and relate policy components (types, type 
-	attributes, object classes, object permissions, roles, and 
-	users), and policy rules (type allow, neverallow, auditallow, 
-	dontaudit, type_transition, type_change); and 
+	attributes, object classes, object permissions, roles, users,
+	initials SIDs and booleans), and policy rules (type allow, 
+	neverallow, auditallow, dontaudit, type_transition, 
+	type_change); and 
 	
 	+ perform some simple automated analysis of policies which 
 	currently includes forward and reverse domain transition 
-	analyses, direct information flow analysis, and an experimental 
-	transitive (indirect) information flow analysis.
+	analyses, direct information flow analysis, and transitive 
+	(indirect) information flow analysis.
 
 New in this version are several new automated analyses (see Analysis 
 Tab below), to include forward and reverse domain transition analysis, 
@@ -24,7 +25,7 @@ analysis.
 Apol attempts to provide compatibility with the current and older 
 policy syntax to allow one to analyze current and old policies.  As of 
 this version, we believe the tools are compatible with all policy 
-versions from Version 11 to the current Version 15.
+versions from Version 11 to the current Version 16.
 
 See setools/ChangeLog-setools for a list of new features in this 
 release. See setools/KNOWN_BUGS for a list of current bugs.
@@ -118,6 +119,16 @@ components of an SELinux policy.
 
 	This tab allows you to search initial sids defined in the policy, 
 	as well as view the context for each initial sid.
+	
+	VI. BOOLEANS TAB
+
+	This tab allows you to search boolean variables defined in 
+	the policy, as well as view the current state and/or policy
+	default state of the variable. Additionally, you can change 
+	the state of the boolean variable to TRUE or FALSE from this
+	tab. Changing the state of a variable will only be applied 
+	in memory and will not change the state within the actual 
+	policy.conf file.
 
 
 3. POLICY RULES TAB 
@@ -152,7 +163,7 @@ a set of search criteria you select.
 		rules.  
 		
 		The drop down boxes allow you to select a type or 
-		attribute. If the Enable Regular Expression box is 
+		attribute. If the "Enable Regular Expression" box is 
 		checked, then you can enter a regular expression in any 
 		type/attrib box. With regular expressions enabled, if 
 		you use the drop down box to select a type/attrib, the 
@@ -169,6 +180,15 @@ a set of search criteria you select.
 		these fields.  This type/attrib must be a complete, 
 		valid type or attrib string.  The Default field can only 
 		be a type (not an attribute).
+		
+		If the "Only show enabled rules" checkbox is selected, 
+		your query results will include all rules that meet the 
+		search criteria, EXCLUDING any rules that have been 
+		disbled by a conditional expression. If the checkbox is 
+		not selected, then your query results will include all 
+		rules that meet the search criteria, INCLUDING those 
+		rules that have been disabled by a conditional 
+		expression.
 		
 		The "Include Indirect Match" checkbox alters the meaning 
 		of the search if a type is used in the given field (this 
@@ -235,6 +255,26 @@ a set of search criteria you select.
 	
 	As with TE Rules, the Source option can also be used in an "any" 
 	search.
+	
+	
+	III. CONDITIONAL RULES TAB:
+	
+	This tab allows you to search conditional expressions within the 
+	policy, as well as view the rules within these conditional 
+	expressions. Currently, you can only search for the following 
+	types of policy rules within conditional expressions:
+	
+		- Allow rules
+		- Audit rules
+		- Transition rules
+			
+	You can search conditional expressions for a specific boolean 
+	variable, as well as choose whether to use a regular expression. 
+	Additionally, you can choose whether you want to display the 
+	rules within conditional expressions. The current state of a  
+	rule is specified within the results (0 indicates that the 
+	rule is disabled; 1 indicates that the rule is enabled).
+	
 
 4. ANALYSIS TAB
 
@@ -330,24 +370,30 @@ analyses are:
 	number of flows to find in the search. 
 	
 	As with the DIF analysis, you can filter the results using end 
-	type regular expression. Additionally, the TIF analysis provides 
-	Advanced Filters for filtering results by object class permissions 
-	and/or types. Selecting an object class in the Advanced Filters	
-	dialog will display a list of permissions for that object class, 
-	whereby you can then choose to include or exclude certain 
-	permissions, as well as specify a weight for a permission(s). 
-	By default, all permissions for an object class are included in 
-	the query, unless you exlude a permission(s) by selecting its' 
-	'Exclude' radiobutton. Additionally, all permissions are given a
-	weight of 1 by default. Configuring all permissions for an object 
-	class to be excluded will exclude the object class itself from 
-	the query. When an object class becomes excluded, its' label will 
-	change to indicate that the object class is to be excluded from 
-	the analysis query. You can also filter the query results by 
-	including or excluding intermediate types. Comboboxes are 
-	provided for filtering these lists by attribute. The TIF analysis 
-	also includes a text widget for providing comments. 
-			
+	type regular expression. The TIF analysis also includes a text 
+	widget for providing comments. 
+	
+	Additionally, the TIF analysis provides the Advanced Filters 
+	dialog for filtering results by object class permissions and/or 
+	types. Selecting an object class in the Advanced Filters dialog 
+	will display a list of permissions for that object class, whereby 
+	you can then choose to include or exclude certain permissions. By 
+	default, all permissions for an object class are included in the 
+	query, unless you exlude a permission(s) by selecting its' 'Exclude' 
+	radiobutton. Configuring all permissions for an object class to be 
+	excluded will exclude the object class itself from the query. When 
+	an object class becomes excluded, its' label will change to indicate 
+	that the object class is to be excluded from the analysis query.
+	
+	Additionally, the Advanced Filters dialog displays the weight value 
+	of a permission, as specified in the loaded permission map (see the 
+	separate help file on information flow for more information about 
+	managing permission mappings). You can specify a weight threshold 
+	in order to exclude permissions from the results that have weights 
+	below a certain threshold. You can also filter the query results by 
+	including or excluding intermediate types. Comboboxes are provided 
+	for filtering these lists by attribute. 
+				
 	See the separate help file on information flow for more 
 	information about transitive information flow.	
 
