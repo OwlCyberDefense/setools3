@@ -62,20 +62,29 @@ proc Apol_Initial_SIDS::set_Focus_to_Text {} {
 proc Apol_Initial_SIDS::searchSIDs {} {
 	variable opts
 	
+	set user ""
+	set role ""
+	set type ""
 	if {$Apol_Initial_SIDS::user_cb_value && $opts(user) == ""} {
 		tk_messageBox -icon error -type ok -title "Error" -message "You must provide a user."
 		return -1
-	} 
+	} elseif {$Apol_Initial_SIDS::user_cb_value} {
+		set user $opts(user)
+	}
 	if {$Apol_Initial_SIDS::role_cb_value && $opts(role) == ""} {
 		tk_messageBox -icon error -type ok -title "Error" -message "You must provide a role."
 		return -1
-	} 
+	} elseif {$Apol_Initial_SIDS::role_cb_value} {
+		set role $opts(role)
+	}
 	if {$Apol_Initial_SIDS::type_cb_value && $opts(type) == ""} {
 		tk_messageBox -icon error -type ok -title "Error" -message "You must provide a type."
 		return -1
-	} 
+	} elseif {$Apol_Initial_SIDS::type_cb_value} {
+		set type $opts(type)
+	}
 	
-	set rt [catch {set results [apol_SearchInitialSIDs $opts(user) $opts(role) $opts(type)]} err]
+	set rt [catch {set results [apol_SearchInitialSIDs $user $role $type]} err]
 	if {$rt != 0} {	
 		tk_messageBox -icon error -type ok -title "Error" -message "$err"
 		return -1
