@@ -99,7 +99,7 @@ proc Apol_Analysis_relabel::do_analysis {results_frame} {
     set widget_vars(current_dtree) $dtree
     pack $dsw -expand 1 -fill both
 
-    set widget_vars(show) {0 t}
+    set widget_vars(show) {}
     set doptsf [frame $lf.doptsf]
     set show0_rb [radiobutton $doptsf.show0_rb -value {0 t} \
                       -variable Apol_Analysis_relabel::widget_vars(show) \
@@ -115,8 +115,8 @@ proc Apol_Analysis_relabel::do_analysis {results_frame} {
             $show1_rb configure -text "show rules" -value {1 r}
         }
         domain {
-            $show0_rb configure -text "show from domains"
-            $show1_rb configure -text "show to domains" -value {1 t}
+            $show0_rb configure -text "show from types"
+            $show1_rb configure -text "show to types" -value {1 t}
             set show2_rb [radiobutton $doptsf.show2_rb -value {2 r} \
                               -variable Apol_Analysis_relabel::widget_vars(show) \
                               -command [namespace code set_show_type] \
@@ -188,6 +188,10 @@ proc Apol_Analysis_relabel::open { } {
 # contents of the assertion file and replace it with the remainder
 # from $file_channel.
 proc Apol_Analysis_relabel::load_query_options {file_channel parentDlg} {
+    variable widget_vars
+    array set widget_vars [read $file_channel]
+    toggle_attributes 0
+    toggle_permissions
     return 0
 }
 
@@ -196,6 +200,9 @@ proc Apol_Analysis_relabel::load_query_options {file_channel parentDlg} {
 #	- file_channel - file channel identifier of the query file to write to.
 #	- file_name - name of the query file
 proc Apol_Analysis_relabel::save_query_options {module_name file_channel file_name} {
+    variable widget_vars
+    puts $file_channel $module_name
+    puts $file_channel [array get widget_vars]
     return 0
 }
 
@@ -213,7 +220,7 @@ proc Apol_Analysis_relabel::get_current_results_state { } {
 proc Apol_Analysis_relabel::set_display_to_results_state { query_options } {
     variable widget_vars
     array set widget_vars $query_options
-    toggle_attributes
+    toggle_attributes 0
     toggle_permissions
     set_show_type
 }
@@ -272,7 +279,7 @@ proc Apol_Analysis_relabel::display_mod_options { opts_frame } {
     set widgets(start_attrib_ch) \
         [checkbutton $attrib_f.start_attrib_ch -anchor w -width 36 \
              -variable Apol_Analysis_relabel::widget_vars(start_attrib_ch) \
-             -command [namespace code toggle_attributes]]
+             -command [namespace code [list toggle_attributes 1]]]
     set widgets(start_attrib_cb) [ComboBox $attrib_f.start_attrib_cb \
                 -editable 1 -entrybg white -width 16 \
                 -modifycmd [namespace code [list set_types_list ""]] \
@@ -340,7 +347,7 @@ proc Apol_Analysis_relabel::display_mod_options { opts_frame } {
     # set initial widget states
     set_mode_relabelto
     populate_lists 1
-    toggle_attributes
+    toggle_attributes 1
     toggle_permissions
 }
 
@@ -370,12 +377,14 @@ proc Apol_Analysis_relabel::set_mode_domain {} {
     $widgets(start_attrib_ch) configure -text "Select starting domain using attrib:"
 }
 
-proc Apol_Analysis_relabel::toggle_attributes {} {
+proc Apol_Analysis_relabel::toggle_attributes {clear_types_list} {
     variable widgets
     variable widget_vars
     if $widget_vars(start_attrib_ch) {
         $widgets(start_attrib_cb) configure -state normal
-        set_types_list ""
+        if $clear_types_list {
+            set_types_list ""
+        }
     } else {
         $widgets(start_attrib_cb) configure -state disabled
         $widgets(start_cb) configure -values $Apol_Types::typelist
@@ -559,6 +568,10 @@ proc Apol_Analysis_relabel::tree_select {widget node} {
     variable widget_vars
     if {$node == ""} {
         return
+    }
+    # auto select the first radio button if none selected
+    if {$widget_vars(show) == ""} {
+        set widget_vars(show) {0 t}
     }
     foreach {index type} $widget_vars(show) {}
     set data [lindex [$widget itemcget $node -data] $index]
