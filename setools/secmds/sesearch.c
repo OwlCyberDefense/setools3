@@ -213,7 +213,7 @@ int main (int argc, char **argv)
 	} else if(argc - optind < 1) {
 		rt = find_default_policy_file(search_opts, &policy_file);
 		if (rt != FIND_DEFAULT_SUCCESS) {
-			printf("Error while searching for default policy: %s\n", find_default_policy_file_strerr(rt));
+			printf("Default policy search failed: %s\n", find_default_policy_file_strerr(rt));
 			exit(1);
 		}
 	} else 
