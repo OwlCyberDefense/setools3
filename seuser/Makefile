@@ -145,9 +145,11 @@ install-nogui: seuser
 	install -m 755 $(SE_SHELL_SCRIPTS) $(BINDIR)
 	install -m 644 $(SEUSER_CONF_FILE) $(INSTALL_LIBDIR);
 
-install: install-nogui seuserx se_user.tcl
+install: seuser seuserx se_user.tcl
 	install -d $(BINDIR) 
+	install -m 755 seuser $(BINDIR)
 	install -m 755 seuserx $(BINDIR);
+	install -m 755 $(SE_SHELL_SCRIPTS) $(BINDIR)
 	install -m 644 se_user.tcl $(SEUSER_HELP_FILE) $(INSTALL_LIBDIR)
 	install -m 644 $(SEUSER_CONF_FILE) $(INSTALL_LIBDIR);
 
