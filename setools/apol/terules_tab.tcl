@@ -135,6 +135,8 @@ namespace eval Apol_TE {
 	variable m_incl_indirect       "Include Indirect Matches"
 	variable m_ta_tab	       "Types/Attributes"
 	variable m_obj_perms_tab       "Classes/Permissions" 
+	
+	variable disabled_rule_tag     DISABLE_RULE
 }
 
 ########################################################################
@@ -260,6 +262,23 @@ proc Apol_TE::searchTErules { whichButton } {
         return 0
 }
 
+# --------------------------------------
+#  Command Apol_TE::disable_te_rule {}
+# --------------------------------------
+proc Apol_TE::disable_te_rule {tb} {
+	$tb tag configure $Apol_TE::disabled_rule_tag -foreground gray 
+	return 0
+}
+
+# -----------------------------------------------------------
+#  Command Apol_TE::insert_disabled_rule_tag { tb start end}
+# 		- start and end are l.c line positions
+# -----------------------------------------------------------
+proc Apol_TE::insert_disabled_rule_tag { tb start end } {
+	$tb tag add $Apol_TE::disabled_rule_tag $start $end
+	return 0
+}
+
 # ------------------------------------------------------------------------------
 #  Command Apol_TE::insertTERules
 #	takes a results list (from apol_SearchTERules) and explodes it into
@@ -279,12 +298,24 @@ proc Apol_TE::insertTERules { tb results } {
 		$tb insert end "($lineno"
 		# NOTE: The character at index2 isn't tagged, so must add 1 to index2 argument.
 		Apol_PolicyConf::insertHyperLink $tb $line_num.1 $line_num.end
-		$tb insert end ") $rule\n"
+		$tb insert end ") "
+		set cur_line_pos [$tb index insert]
+		$tb insert end "$rule"
+		incr x
+		# The next element should be the enabled boolean flag.
+		if {[lindex $results $x] == 0} {
+			$tb insert end "   \[Disabled\]\n"
+			# NOTE: The character at index2 isn't tagged, so must add 1 to index2 argument.
+			Apol_TE::insert_disabled_rule_tag $tb $cur_line_pos $line_num.end
+		} else {
+			$tb insert end "\n"
+		}
 	}	
 	Apol_PolicyConf::configure_HyperLinks $tb
+	Apol_TE::disable_te_rule $tb
 	update idletasks
 	
-	return 
+	return 0
 }
 
 # ------------------------------------------------------------------------------

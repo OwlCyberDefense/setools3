@@ -57,6 +57,7 @@ namespace eval Apol_Analysis_dirflow {
 	variable rules_tag		RULES
 	variable counters_tag		COUNTERS
 	variable types_tag		TYPE
+	variable disabled_rule_tag     	DISABLE_RULE
 
     	# Return value to indicate that perm map loaded successfully, but there were warnings
 	variable warning_return_val	"-2"
@@ -161,7 +162,7 @@ proc Apol_Analysis_dirflow::do_analysis { results_frame } {
 		$selected_objects \
 		$Apol_Analysis_dirflow::endtype_sel \
 		$Apol_Analysis_dirflow::end_type]
-			
+
 	set dirflow_tree [Apol_Analysis_dirflow::create_resultsDisplay $results_frame]
 	set rt [catch {Apol_Analysis_dirflow::create_result_tree_structure $dirflow_tree $results $query_args} err]
 	if {$rt != 0} {
@@ -583,15 +584,11 @@ proc Apol_Analysis_dirflow::render_target_type_data {data dirflow_info_text dirf
 	    set startIdx $endIdx
 # Then process inflows   
  	    for {set i 0} {$i<$num_objs} {incr i} {
-		if { [lindex $data $curIdx] == "1" } {
+		if {[lindex $data $curIdx] == "1"} {
 		    incr curIdx
 		    $dirflow_info_text insert end "\n\t"
 		    # This should be the object name
 		    $dirflow_info_text insert end [lindex $data $curIdx]
-#		    $dirflow_info_text insert end " \["
-		    #incr curIdx
-#		    $dirflow_info_text insert end [lindex $data $curIdx]
-#		    $dirflow_info_text insert end "\]"
 		    set endIdx [$dirflow_info_text index insert]
 		    $dirflow_info_text tag add $Apol_Analysis_dirflow::subtitle_tag $startIdx $endIdx
 		    incr curIdx
@@ -613,6 +610,14 @@ proc Apol_Analysis_dirflow::render_target_type_data {data dirflow_info_text dirf
 			$dirflow_info_text insert end " $rule"
 			set endIdx [$dirflow_info_text index insert]
 			$dirflow_info_text tag add $Apol_Analysis_dirflow::rules_tag $startIdx $endIdx
+			
+			incr curIdx
+			# The next element should be the enabled boolean flag.
+			if {[lindex $data $curIdx] == 0} {
+				$dirflow_info_text tag add $Apol_Analysis_dirflow::disabled_rule_tag $startIdx $endIdx
+				$dirflow_info_text insert end "   \[Disabled\]"
+			} 
+			set startIdx [$dirflow_info_text index insert]
 		    }
 		} 
 		incr curIdx
@@ -677,10 +682,6 @@ proc Apol_Analysis_dirflow::render_target_type_data {data dirflow_info_text dirf
 		    $dirflow_info_text insert end "\n\t"
 		    # This should be the object name
 		    $dirflow_info_text insert end [lindex $data $curIdx]
-#		    $dirflow_info_text insert end " \["
-		    #incr curIdx
-#		    $dirflow_info_text insert end [lindex $data $curIdx]
-#		    $dirflow_info_text insert end "\]"
 		    set endIdx [$dirflow_info_text index insert]
 		    $dirflow_info_text tag add $Apol_Analysis_dirflow::subtitle_tag $startIdx $endIdx
 		    incr curIdx
@@ -702,6 +703,14 @@ proc Apol_Analysis_dirflow::render_target_type_data {data dirflow_info_text dirf
 			$dirflow_info_text insert end " $rule"
 			set endIdx [$dirflow_info_text index insert]
 			$dirflow_info_text tag add $Apol_Analysis_dirflow::rules_tag $startIdx $endIdx
+			
+			incr curIdx
+			# The next element should be the enabled boolean flag.
+			if {[lindex $data $curIdx] == 0} {
+				$dirflow_info_text tag add $Apol_Analysis_dirflow::disabled_rule_tag $startIdx $endIdx
+				$dirflow_info_text insert end "   \[Disabled\]"
+			}
+			set startIdx [$dirflow_info_text index insert]
 		    }
 		} 
 		incr curIdx
@@ -721,6 +730,8 @@ proc Apol_Analysis_dirflow::formatInfoText { tb } {
 	$tb tag configure $Apol_Analysis_dirflow::rules_tag -font $ApolTop::text_font
 	$tb tag configure $Apol_Analysis_dirflow::counters_tag -foreground blue -font {Helvetica 11 bold}
 	$tb tag configure $Apol_Analysis_dirflow::types_tag -font $ApolTop::text_font
+	$tb tag configure $Apol_Analysis_dirflow::disabled_rule_tag -foreground gray 
+	
 	# Configure hyperlinking to policy.conf file
 	Apol_PolicyConf::configure_HyperLinks $tb
 }
@@ -738,7 +749,6 @@ proc Apol_Analysis_dirflow::insert_src_type_node { dirflow_tree query_args} {
 }
 
 proc Apol_Analysis_dirflow::create_target_type_nodes { parent dirflow_tree results_list } {
-
         if { [file tail [$dirflow_tree parent $parent]] == [file tail $parent] } {
 		return 0
 	}
@@ -757,7 +767,7 @@ proc Apol_Analysis_dirflow::create_target_type_nodes { parent dirflow_tree resul
 			if {$nextIdx == -1} {
 				return -code error "Error parsing results"
 			}
-			
+
 			set target_node "${parent}/${target_name}/"
 			$dirflow_tree insert end $parent $target_node \
 				-text $target_name \
@@ -780,34 +790,38 @@ proc Apol_Analysis_dirflow::parseList_get_index_next_node { currentIdx results_l
         # Increment the index to get the number of object classes
         incr currentIdx
         set num_classes [lindex $results_list $currentIdx]
-        # Increment the index to get the next item in the list, which should be a flag indicating whether to use this object
+        # Increment the index to get the next item in the list, which  
+        # should be a flag indicating whether to use this object
         incr currentIdx
 
         if {$direction == "both"} {
 		# First read past all the in flows
-		for {set i 0} {$i<$num_classes} {incr i} {
+		for {set i 0} {$i < $num_classes} {incr i} {
 			# Check if we care about this particular object
 			if { [lindex $results_list $currentIdx] == "1" } {
 				# Skip the object class name in the list and go to the number of rules list item
 				incr currentIdx 2
 				set num_rules [lindex $results_list $currentIdx]
-				for {set j 0} {$j<$num_rules} {incr j} {
-					incr currentIdx 
-				}
+				# We multiply the number of rules by 2 because each rule consists of:
+				# 	1. rule string (includes line number)
+				#	2. enabled flag
+				incr currentIdx [expr $num_rules * 2]
 			} 
 			# Move to the next item in the results list
 			incr currentIdx
 		}
         } elseif {$direction == "in" || $direction == "out"} {
-		for {set i 0} {$i<$num_classes} {incr i} {
+		for {set i 0} {$i < $num_classes} {incr i} {
 			# Check if this particular object was included in our query
 			if { [lindex $results_list $currentIdx] == "1" } {
 				incr currentIdx 2
 				set num_rules [lindex $results_list $currentIdx]
-				for {set j 0} {$j<$num_rules} {incr j} {
-					incr currentIdx 
-				}
+				# We multiply the number of rules by 2 because each rule consists of:
+				# 	1. rule string (includes line number)
+				#	2. enabled flag
+				incr currentIdx [expr $num_rules * 2]
 			} 
+			# Move to the next item in the results list
 			incr currentIdx
 		}
         } else {
