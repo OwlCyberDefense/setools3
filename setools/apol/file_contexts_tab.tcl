@@ -48,7 +48,65 @@ namespace eval Apol_File_Contexts {
 	variable load_button
 	variable create_fc_dlg		.fc_db_create_Dlg
 	
+	variable info_button_text \
+{"Creating/Loading an Index File\n\n" \
+\
+{If the user has not loaded an index file, then all search items will be grayed out \
+and a red label indicating that an index file is not loaded is displayed at the top. \
+Buttons are presented for creating and loading an index file. Selecting the \
+'Load' button displays a file selection dialog from which you can choose a saved index \
+file to load. Selecting the 'Create and Load' button will display a dialog for you to specify \
+the save file and the directories from which to start the indexing. Here, you may add multiple \
+directories from which to index by using the 'Add' button or you may simply input a colon-delimited \
+list of directory path strings within the entrybox. Upon selecting the 'Create' button, an index \
+file will be created and then loaded into apol.} \
+\
+"\n\nSearching an Index File\n\n" \
+\
+{Searches on the index file can be done by specifying the user, type, object class, or path \
+search criteria to search for using the widgets provided. Drop down lists and entryboxes \
+are presented for specifying the search criteria, of which the drop down lists contain items from \
+the index file.  You can also use regular expressions, however, this option is not available for \
+the object class field.  Additionally, you may use the checkbuttons under the search options frame, \
+for indicating whether to include the object class and/or file context within the results. To \
+perform a search, click the 'OK' button. Once the search is finished, you should be presented with \
+a list of files that matched the criteria, along with their context and/or object type, if specified.}}
 }
+
+proc Apol_File_Contexts::display_analysis_info {} {
+	set info_Dlg .info_Dlg_fc
+	if { [winfo exists $info_Dlg] } {
+    		destroy $info_Dlg
+    	}
+	# Create the top-level dialog and subordinate widgets
+    	toplevel $info_Dlg 
+   	wm protocol $info_Dlg WM_DELETE_WINDOW "destroy $info_Dlg"
+    	wm withdraw $info_Dlg
+    	wm title $info_Dlg "Analysis Description"
+    	set topf  [frame $info_Dlg.topf]
+    	set botf  [frame $info_Dlg.botf]
+    	set sw [ScrolledWindow $topf.sw  -auto none]
+	set descrp_text [text $sw.descrp_text -height 5 -width 20 -font $ApolTop::text_font \
+		-bg white -wrap word]
+	$sw setwidget $descrp_text
+	set b_ok [button $botf.b_ok -text "OK" -width 6 -command "destroy $info_Dlg"]
+	pack $topf -side top -fill both -expand yes -padx 5 -pady 5
+	pack $botf -side bottom -anchor center 
+	pack $b_ok -side left -anchor center -pady 2
+	pack $sw -side top -anchor nw -expand yes -fill both 
+	set txt ""
+	foreach item $Apol_File_Contexts::info_button_text {
+		set txt [append txt $item]
+	}
+	$descrp_text insert 0.0 $txt
+	$descrp_text config -state disable
+	        
+        # Configure top-level dialog specifications
+        set width 600
+	set height 440
+	wm geom $info_Dlg ${width}x${height}
+	wm deiconify $info_Dlg
+} 
 
 ##############################################################
 # ::search
@@ -265,7 +323,7 @@ proc Apol_File_Contexts::search_fc_database { } {
 
 	$resultsbox configure -state normal
 	$resultsbox delete 0.0 end
-	set sz [llength $results]
+	set sz [expr [llength $results] / 3]
 	$resultsbox insert end "FILES FOUND ($sz):\n\n"
 	for {set i 0} {$i < $sz} {incr i} {
 		set path [lindex $results $i]
@@ -630,8 +688,7 @@ proc Apol_File_Contexts::create {nb} {
 		
 	set cb_regEx_user [checkbutton [$l_innerFrame getframe].cb_regEx_user \
 		-variable Apol_File_Contexts::opts(regEx_user) \
-		-text "Enable regular expressions" \
-		-onvalue 1 -offvalue 0]
+		-text "Enable regular expressions"]
 	set cb_regEx_type [checkbutton [$c_innerFrame getframe].cb_regEx_type \
 		-variable Apol_File_Contexts::opts(regEx_type) \
 		-text "Enable regular expressions" \
@@ -666,7 +723,8 @@ proc Apol_File_Contexts::create {nb} {
 	set load_button [button $db_buttons_f.load -text "Load" -width 8 \
 		-state normal \
 		-command {Apol_File_Contexts::load_fc_db}]
-	set help_button [button [$buttons_f getframe].help -text "Info" -width 6 -command {}]
+	set help_button [button [$buttons_f getframe].help -text "Info" -width 6 \
+		-command {Apol_File_Contexts::display_analysis_info}]
 	#button $rfm.print -text Print -width 6 -command {ApolTop::unimplemented}
 	
 	# Display results window
