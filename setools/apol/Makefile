@@ -46,16 +46,16 @@ tmp.tcl: $(TCL-STRIP-FILES)
 
 
 install: apol apol.tcl
-	-install -m 755 apol $(BINDIR)
-	-@if [ -n $(INSTALL_LIBDIR) ]; then \
+	install -m 755 apol $(BINDIR)
+	@if [ -n $(INSTALL_LIBDIR) ]; then \
 		for file in $(TCL-FILES); do \
 			if [ -f $(INSTALL_LIBDIR)/$$file ]; then \
 				mv $(INSTALL_LIBDIR)/$$file $(INSTALL_LIBDIR)/$$file.old; \
 			fi \
 		done \
 	fi
-	-install -m 644 apol.tcl $(APOL_HELP_FILES) $(APOL_PERM_MAPS) $(INSTALL_LIBDIR)
-	-cd $(INSTALL_LIBDIR); ln -sf $(APOL_DFLT_PMAP) apol_perm_mapping
+	install -m 644 apol.tcl $(APOL_HELP_FILES) $(APOL_PERM_MAPS) $(INSTALL_LIBDIR)
+	cd $(INSTALL_LIBDIR); ln -sf $(APOL_DFLT_PMAP) apol_perm_mapping
 
 clean:
 	rm -f *.o  core apol *~ apol.tcl tmp.tcl
