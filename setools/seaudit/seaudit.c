@@ -457,10 +457,6 @@ void on_seaudit_help_activate(GtkWidget *widget, GdkEvent *event, gpointer callb
  * when the user clicks on filter log call this */
 void on_edit_filter_activate(GtkWidget *widget, GdkEvent *event, gpointer callback_data)
 {
-	if (seaudit_app->cur_policy == NULL) {
-		message_display(seaudit_app->top_window, GTK_MESSAGE_ERROR, "There is no policy loaded");
-		return;
-	}
 	if (seaudit_app->log_store->log == NULL) {
 			message_display(seaudit_app->top_window, GTK_MESSAGE_ERROR, "There is no audit log loaded.");
 		return;
@@ -723,7 +719,6 @@ int seaudit_open_policy(seaudit_t *seaudit, const char *filename)
 						GTK_MESSAGE_WARNING,
 						GTK_BUTTONS_YES_NO,
 						"Opening a new policy will close all \"Query Policy\" windows\n"
-						"and may also change the current log filter.\n"
 						"Do you wish to continue anyway?");
 		g_signal_connect(G_OBJECT(dialog), "response", G_CALLBACK(get_dialog_response), &response);
 		gtk_dialog_run(GTK_DIALOG(dialog));
