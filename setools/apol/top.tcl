@@ -1927,7 +1927,7 @@ proc ApolTop::openPolicy {} {
 		{"Policy conf files"	{.conf}}
 		{"All files"		*}
     	}
-        catch [set file [tk_getOpenFile -filetypes $types -defaultextension .conf]]
+        catch [set file [tk_getOpenFile -filetypes $types]]
         
         if {$file != ""} {
 		ApolTop::openPolicyFile $file 1
