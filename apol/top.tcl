@@ -10,6 +10,7 @@
 # The top level GUI
 ##############################################################
 namespace eval ApolTop {
+	# All capital letters is the convention for variables defined via the Makefile.
 	variable bwidget_version	""
 	variable status 		""
 	variable polversion 		""
@@ -19,11 +20,14 @@ namespace eval ApolTop {
 	# The version number is defined as a magical string here. This is later configured in the make environment.
 	variable gui_ver 		APOL_GUI_VERSION 
 	variable copyright_date		"2001-2004"
+	# install_dir is a magical string to be defined via the makefile!
+	variable apol_install_dir	APOL_INSTALL_DIR
 	variable recent_files
 	variable num_recent_files 	0
 	variable most_recent_file 	-1
 	# The max # can be changed by the .apol file
 	variable max_recent_files 	5
+	# env array element HOME is an environment variable
 	variable dot_apol_file 		"[file join "$::env(HOME)" ".apol"]"
 	variable goto_line_num
 	# Default GUI settings
@@ -120,8 +124,12 @@ namespace eval ApolTop {
 
 }
 
-proc ApolTop::is_policy_open  { } {
+proc ApolTop::is_policy_open {} {
 	return $ApolTop::policy_is_open
+}
+
+proc ApolTop::get_install_dir {} {
+	return $ApolTop::apol_install_dir
 }
 
 ########################################################################
