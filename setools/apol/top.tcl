@@ -959,7 +959,7 @@ proc ApolTop::display_options_Dlg { } {
     	toplevel $options_Dialog
    	wm protocol $options_Dialog WM_DELETE_WINDOW "destroy $options_Dialog"
     	wm withdraw $options_Dialog
-    	wm title $options_Dialog "Tool Options"
+    	wm title $options_Dialog "Open Options"
     	
 	set open_opts_f [TitleFrame $options_Dialog.open_opts_f -text "Open policy options"]
 	set t_frame [frame [$open_opts_f getframe].t_frame]
@@ -1080,6 +1080,8 @@ proc ApolTop::create { } {
 	set descmenu {
 	"&File" {} file 0 {
 	    {command "&Open..." {} "Open a new policy"  {}  -command ApolTop::openPolicy}
+	    {command "Open O&ptions..." {} "Open options"  \
+	    	{} -command "ApolTop::display_options_Dlg" }
 	    {command "&Close" {} "Close an opened polocy"  {} -command ApolTop::closePolicy}
 	    {separator}
 	    {command "E&xit" {} "Exit policy analysis tool" {} -command ApolTop::apolExit}
@@ -1103,8 +1105,6 @@ proc ApolTop::create { } {
 	}
 	"&Advanced" all options 0 {
 	    {cascad "&Permission Mappings" {Perm_Map_Tag} pmap_menu 0 {}}
-	    {command "&Tool Options..." {} "Tool options"  \
-	    	{} -command "ApolTop::display_options_Dlg" }
         }
 	"&Help" {} helpmenu 0 {
 	    {command "&General Help" {all option} "Show help" {} -command {ApolTop::helpDlg "Help" "apol_help.txt"}}
