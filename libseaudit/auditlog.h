@@ -1,4 +1,4 @@
-/* Copyright (C) 2003 Tresys Technology, LLC
+/* Copyright (C) 2003-2004 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
 
 /* 
@@ -189,15 +189,6 @@ typedef struct audit_log {
 	int num_msgs;        /* the number of messages */
 	avl_tree_t trees[NUM_TREES];
 	strs_t symbols[NUM_TREES];
-	struct filter *filters; /* filters */
-	int *fltr_msgs;      /* filtered and sorted messages */
-	bool_t fltr_out;
-	bool_t fltr_and;
-	int fltr_msgs_types; /* the message types stored in the fltr_msgs array */
-	int num_fltr_msgs;   /* num of filtered and sorted messages */
-	int fltr_msgs_sz;    /* size of filtered messages array */
-	struct sort_action_node *sort_actions; /* sort functions */
-	struct sort_action_node *last_sort_action;
 } audit_log_t;
 
 audit_log_t* audit_log_create(void);
@@ -205,19 +196,14 @@ msg_t* avc_msg_create(void);
 msg_t* load_policy_msg_create(void);
 #define msg_get_avc_data(msg) msg->msg_data.avc_msg
 #define msg_get_load_policy_data(msg) msg->msg_data.load_policy_msg
-
 void audit_log_destroy(audit_log_t *tmp);
+void msg_print(msg_t *msg, FILE *file);
 void msg_destroy(msg_t *tmp);/* Free all memory associated with a message */
 int audit_log_add_msg (audit_log_t*, msg_t*);   /* add msg_t pointer to audit log database */
 int audit_log_add_str(audit_log_t *log, char *string, int *id, int which);
 int audit_log_get_str_idx(audit_log_t *log, const char *str, int which);
 const char* audit_log_get_str(audit_log_t *log, int idx, int which);
-int audit_log_add_filter(audit_log_t *log, struct filter *filter);
-void audit_log_purge_filters(audit_log_t *log);
-void audit_log_msgs_print(audit_log_t *log, FILE *file);     /* FIX: not complete.  used for debugging */
-void audit_log_fltr_msgs_print(audit_log_t *log, FILE *file);/* FIX: not complete.  used for debugging */
 
-int audit_log_do_filter(audit_log_t *log, bool_t details, int **deleted, int *num_deleted);
 enum avc_msg_class_t which_avc_msg_class(msg_t *msg);
 
 #define audit_log_add_type(log, str, id) audit_log_add_str(log, str, id, TYPE_TREE)
