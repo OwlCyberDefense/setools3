@@ -1,7 +1,7 @@
 CHANGE LOG, SE Linux TOOLS (setools)
 
 =======================================================
-March 12, 2004 Version 1.3
+April 13, 2004 Version 1.3
 
 Apol:
 	Added conditional policy support.
@@ -19,7 +19,10 @@ Libseaudit:
 Seuser:
 	Added home directory labeling command as command 
 	  line option.
-	
+	  
+Libseuser:
+	Updated to support home directory labeling.
+	  
 secmds:
 	New context swap tool (replcon).
 	New context search tool (findcon).
