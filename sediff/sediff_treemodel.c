@@ -11,20 +11,7 @@
 #include <stdlib.h>
 
 gchar **diff_labels = NULL;
-/*
-gchar *diff_labels[] = { "Difference Summary",
-			       "Classes &Perms", 
-			       "Types", 
-			       "Attributes",
-			       "Roles", 
-			       "Users", 
-			       "Booleans", 
-//			       "Initial SIDs", 
-			       "TE Rules",
-			       "RBAC Rules",
-			       "Conditionals",
-			       NULL };
-*/			      			       
+		      			       
 /* Local static functions */
 static void sediff_tree_view_store_init(SEDiffTreeViewStore *store);
 static void sediff_tree_view_store_class_init(SEDiffTreeViewStore *klass);
