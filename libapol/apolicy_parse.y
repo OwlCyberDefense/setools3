@@ -220,7 +220,6 @@ static rule_desc_t *define_cond_te_avtab(int rule_type);
 %token NOT AND OR XOR
 %token CTRUE CFALSE
 %token IDENTIFIER
-%token USER_IDENTIFIER
 %token NUMBER
 %token EQUALS
 %token NOTEQUAL
@@ -359,8 +358,8 @@ rbac_decl		: role_type_def
 			;
 			/* added July 2002; we make optional for backwards compatability */
 			/* added optional conditional language stuff */
-te_decl			: opt_attribute_def
-			| opt_cond_def
+te_decl			: attribute_def
+			| cond_def
 			| type_def
 			| typealias_def
                         | transition_def
@@ -368,19 +367,14 @@ te_decl			: opt_attribute_def
                         /* removed July 2002; remain for backward compatability */
 			| te_clone_def
 			;
-/* our addition Jul 2002, for to allow for no attribute_def for backwards compatablity */
-opt_attribute_def	: attribute_def
-			|
-			;
 /*  added July 2002 */
 attribute_def           : ATTRIBUTE identifier ';'
                         { if (define_attrib()) return -1;}
                         ;
                         
 /* support for conditional policy language extensions */
-opt_cond_def		: bool_def
+cond_def		: bool_def
 			| cond_stmt_def
-			|
 			;
 bool_def                : BOOL identifier bool_val ';'
                         {if (define_bool()) return -1;}
@@ -573,10 +567,10 @@ cexpr_prim		: U1 op U2
 			| T1 op T2
 			{ $$ = (int) define_cexpr(CEXPR_ATTR, CEXPR_TYPE, $2);
 			  if ($$ == 0) return -1; }
-			| U1 op { if (insert_separator(1)) return -1; } user_names_push
+			| U1 op { if (insert_separator(1)) return -1; } names_push
 			{ $$ = (int) define_cexpr(CEXPR_NAMES, CEXPR_USER, $2);
 			  if ($$ == 0) return -1; }
-			| U2 op { if (insert_separator(1)) return -1; } user_names_push
+			| U2 op { if (insert_separator(1)) return -1; } names_push
 			{ $$ = (int) define_cexpr(CEXPR_NAMES, CEXPR_USER | CEXPR_TARGET, $2);
 			  if ($$ == 0) return -1; }
 			| R1 op { if (insert_separator(1)) return -1; } names_push
@@ -628,7 +622,6 @@ users			: user_def
 			| users user_def
 			;
 user_id			: identifier
-			| user_identifier
 			;
 user_def		: USER user_id ROLES names opt_user_ranges ';'
 	                {if (define_user()) return -1;}
@@ -899,23 +892,6 @@ nested_id_element       : identifier | '-' { if (insert_id("-", 0)) return -1; }
 /* end add */
 identifier		: IDENTIFIER
 			{ if (insert_id(yytext,0)) return -1; }
-			;
-user_identifier		: USER_IDENTIFIER
-			{ if (insert_id(yytext,0)) return -1; }
-			;
-user_identifier_push	: USER_IDENTIFIER
-			{ if (insert_id(yytext, 1)) return -1; }
-			;
-user_identifier_list_push : user_identifier_push
-			| identifier_list_push user_identifier_push
-			| user_identifier_list_push identifier_push
-			| user_identifier_list_push user_identifier_push
-			;
-user_names_push		: names_push
-			| user_identifier_push
-			| '{' user_identifier_list_push '}'
-			| tilde_push user_identifier_push
-			| tilde_push '{' user_identifier_list_push '}'
 			;
 path     		: PATH
 			{ if (insert_id(yytext,0)) return -1; }
