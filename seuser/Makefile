@@ -11,15 +11,31 @@ LIBAPOL		= ../libapol/libapol.a
 LIBAPOL-TCL	= ../libapol/libapol-tcl.a
 LIBSEUSER	= ../libseuser/libseuser.a
 LIBSEUSER-TCL	= ../libseuser/libseuser-tcl.a
+ifeq ($(USE_LIBSEFS), 1)
+	LIBSEFS		= ../libsefs/libsefs.a
+else
+	LIBSEFS = 
+endif
 else
 LIBAPOL		= ../libapol/libapol.so.$(shell cat ../libapol/VERSION)
 LIBAPOL-TCL	= ../libapol/libapol-tcl.a
 LIBSEUSER	= ../libseuser/libseuser.so.$(shell cat ../libseuser/VERSION)
 LIBSEUSER-TCL	= ../libseuser/libseuser-tcl.a
+ifeq ($(USE_LIBSEFS), 1)
+	LIBSEFS		= ../libsefs/libsefs.so.$(shell cat ../libsefs/VERSION)
+else
+	LIBSEFS = 
+endif
+endif
+
+ifeq ($(USE_LIBSEFS), 1)
+	LIBSQLITE  = -lsqlite3
+else
+	LIBSQLITE  =
 endif
 
 CMD-OBJ		= seuser_cmd.o $(LIBSEUSER) $(LIBAPOL)
-GUI-OBJ		= seuser_gui.o $(LIBAPOL-TCL) $(LIBSEUSER-TCL) $(LIBSEUSER) $(LIBAPOL)
+GUI-OBJ		= seuser_gui.o $(LIBAPOL-TCL) $(LIBSEUSER-TCL) $(LIBSEUSER) $(LIBAPOL) $(LIBSEFS)
 SE_SHELL_SCRIPTS = seuseradd seuserdel seusermod
 
 TE_PROGS_DIR	= $(POLICY_SRC_DIR)/domains/program
@@ -33,7 +49,7 @@ seuser: $(CMD-OBJ)
 	$(CC) -o $@ $(CMD-OBJ) $(LINKFLAGS) $(LIBS) $(LIBSELINUX)
 
 seuserx: $(GUI-OBJ) se_user.tcl
-	$(CC) $(GUI_CFLAGS) $(TCL_LIBINC) -o $@ $(GUI-OBJ) $(LINKFLAGS) $(TCL_LIBS) $(LIBSELINUX) $(LIBS)
+	$(CC) $(GUI_CFLAGS) $(TCL_LIBINC) -o $@ $(GUI-OBJ) $(LINKFLAGS) $(TCL_LIBS) $(LIBSELINUX) $(LIBS) $(LIBSQLITE)
 
 se_user.tcl: $(TCL-FILES)
 	cat $(TCL-FILES) | \
