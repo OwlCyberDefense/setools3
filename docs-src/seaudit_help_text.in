@@ -12,7 +12,8 @@ with caution and report any bugs to selinux@tresys.com.
 
 The tool does not need to be installed on an SE Linux system; it will 
 work in any Linux machine.  The tool parses a given syslog and 
-extracts all load policy messages and AVC messages.
+extracts all load policy messages, AVC messages and change of boolean 
+messages from conditional policies.
 
 The tool has three main functions:
      1) Browse and sort SE Linux audit messages.
@@ -52,6 +53,7 @@ for several reasons:
     3) An AVC message wasn't labeled as denied or granted.
     4) A load policy message was not in the correct form, (i.e.,
        missing a line or a data field).
+    5) A boolean message did not contain a list of booleans.
 These messages will not be extracted from the SE Linux audit log.
 
 
