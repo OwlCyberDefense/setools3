@@ -47,7 +47,7 @@ replcon: replcon.o $(LIBSEFS) $(LIBAPOL)
 	$(CC) -o $@ replcon.o $(LINKFLAGS) $(LIBSELINUXSO) $(LIBSEFS) $(LIBAPOL) $(LIBS)
 
 indexcon.o: indexcon.c
-	$(CC) -c indexcon.c $(CFLAGS) $(INCLUDE) $(LIBSELINUX)
+	$(CC) -c indexcon.c $(CFLAGS) $(INCLUDE)
 
 indexcon: indexcon.o $(LIBAPOL) $(LIBSEFS)
 	$(CC) -static -o $@ indexcon.o $(LINKFLAGS) $(STATICSEFS) $(LIBSELINUXSO) $(STATICAPOL) $(LIBS)
