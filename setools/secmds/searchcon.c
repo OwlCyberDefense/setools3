@@ -51,6 +51,7 @@ static struct option const longopts[] =
   {"path", required_argument, NULL, 'p'},
   {"list", no_argument, NULL, 'l'},
   {"regex", no_argument, NULL, 'r'},
+  {"object", required_argument, NULL, 'o'},
   {"help", no_argument, NULL, 'h'},
   {"version", no_argument, NULL, 'v'},
   {NULL, 0, NULL, 0}
@@ -67,15 +68,21 @@ void usage(const char *program_name, int brief)
 	}
 	fputs("\n\
 Print requested information about an SELinux policy.\n\
-  -t type, --type=typename   		The name of the type to search for\n\
-  -u user, --user=username   		The name of the user to search for\n\
-  -p path, --path=pathname   		The path or path fragment to search for\n\
-  -l, --list				List types in the snapshot\n\
+  -t type, --type=typename   	   The name of the type to search for\n\
+  -u user, --user=username   	   The name of the user to search for\n\
+  -p path, --path=pathname   	   The path or path fragment to search for\n\
+  -o object, --object=class        The name of the object class to search for\n\
+  -r regex, --regex   		   Search using regular expressions\n\
+  -l, --list			   List types in the snapshot\n\
 ", stdout);
-fputs("\n\
-  -h, --help                 display this help and exit\n\
-  -v, --version              output version information and exit\n\
+	fputs("\n\
+  -h, --help                       Display this help and exit\n\
+  -v, --version                    Output version information and exit\n\
 ", stdout);
+	fputs("\n\
+Valid object classes include:\n\
+",stdout);
+	sefs_print_valid_object_classes();
 	return;
 }
 
@@ -99,7 +106,6 @@ static void print_type_paths(sefs_typeinfo_t *typeinfo, sefs_fileinfo_t *paths, 
 
 int sefs_search_type(sefs_filesystem_data_t * fsd, char *type, int use_regex)
 {
-	int i, num = 0, rc;
 	regex_t reg;
 
 	if (fsd == NULL) {
@@ -114,27 +120,12 @@ int sefs_search_type(sefs_filesystem_data_t * fsd, char *type, int use_regex)
 
 	if (use_regex) {
 
-		rc = regcomp(&reg, type, REG_EXTENDED|REG_NOSUB);	
-		if (rc != 0) {
-			regfree(&reg);
-			return -1;
-		}
-	
-	        for (i = 0; i < fsd->num_types; i++) {
-			if (regexec(&reg, fsd->types[i].name, 0, NULL, 0) == 0) {
-				print_type_paths(&fsd->types[i], fsd->files, 1);
-				num++;
-			}
-		}
-		regfree(&reg);
-		if (num > 0)
-			return 0;
-		return 1;
+	/* XXX */
+
 	} else {
-		rc = avl_get_idx(type, &(fsd->type_tree));
-		if (rc<0)
-			return 1;
-		print_type_paths(&fsd->types[rc], fsd->files, 0);
+
+	/* XXX */
+
 	}
 
 	return 0;
@@ -142,7 +133,6 @@ int sefs_search_type(sefs_filesystem_data_t * fsd, char *type, int use_regex)
 
 int sefs_search_path(sefs_filesystem_data_t * fsd, char * path, int use_regex)
 {
-	int i, j, rc, num = 0;
 	regex_t reg;
 
 	if (fsd == NULL)
@@ -156,77 +146,47 @@ int sefs_search_path(sefs_filesystem_data_t * fsd, char * path, int use_regex)
 		fprintf(stderr, "pathname is null\n");
 		return -1;
 	}
-/* \
-XXX JAM add code here
-\ */
 
 	if (use_regex)
 	{
-		rc = regcomp(&reg, path, REG_EXTENDED|REG_NOSUB);	
-		if (rc)
-		{
-			regfree(&reg);
-			return -1;
-		}
-		for (i=0; i < fsd->num_files; i++)
-		{
-			for (j=0; j < fsd->files[i].num_links ; j++);
-			{
-				if(fsd->files[i].path_names[j]) /* XXX delete line later*/
-				if(regexec(&reg, fsd->files[i].path_names[j], 0, NULL, 0) == 0)
-				{
-					printf("%s\t%s:%s:%s\n", fsd->files[i].path_names[j], 	fsd->users[fsd->files[i].context.user], fsd->files[i].context.role == OBJECT_R ? "object_r": "UNLABELED", fsd->types[fsd->files[i].context.type].name); /*working?*/
-					num++;
-				} 
 
-			}
-		}
-		return num?0:1;
+	/* XXX */
+
 	}
 	else /* not using regex */
 	{
+
+	/* XXX */
 
 	}
 
 	return 0;
 }
 
-/* \
-XXX end add code
-\ */
 
 int sefs_search_user(sefs_filesystem_data_t * fsd, char * uname)
 {
-	int i = 0, j = 0;
-	sefs_fileinfo_t * fileinfo = NULL;
-	const char * u = NULL;
-	char * pathname = NULL;
-	int match = 1;
-
-
 	if (fsd == NULL) {
 		fprintf(stderr, "fsd is null\n");
 		return -1;
 	}
 
-	for (i = 0; i < fsd->num_files; i++) {
-		fileinfo = &(fsd->files[i]);
-		u = fsd->users[fileinfo->context.user];
+	/* XXX */
 
-		if (u == NULL) continue;
-
-		if (strcmp(uname, u) == 0) {
-			match = 0;
-			for (j = 0; j < fileinfo->num_links; j++) {
-				pathname = fileinfo->path_names[j];
-				printf("%s\n", pathname);
-			}
-		}
-	}
-
-	return match;
+	return 0;
 }
 
+int sefs_search_object_class(sefs_filesystem_data_t * fsd, char* object)
+{
+	if(fsd == NULL) {
+		fprintf(stderr, "fsd is null\n");
+		return -1;
+	}
+
+	/* XXX */
+
+	return 0;
+}
 
 int sefs_list_types(sefs_filesystem_data_t * fsd)
 {
@@ -242,7 +202,7 @@ int sefs_list_types(sefs_filesystem_data_t * fsd)
 
 int main(int argc, char **argv, char **envp)
 {
-	char *filename = NULL, *tname = NULL, *uname = NULL, *path = NULL;
+	char *filename = NULL, *tname = NULL, *uname = NULL, *path = NULL, *object = NULL;
 	int optc = 0, rc = 0, list = 0, use_regex = 0;
 	sefs_filesystem_data_t fsdata;
 	
@@ -252,7 +212,7 @@ int main(int argc, char **argv, char **envp)
 		return -1;
 	}
 
-	while ((optc = getopt_long (argc, argv, "t:u:p:rlhv", longopts, NULL)) != -1)  {
+	while ((optc = getopt_long (argc, argv, "t:u:p:o:rlhv", longopts, NULL)) != -1)  {
 		switch (optc) {
 		case 't': /* type */
 	  		tname = optarg;
@@ -263,7 +223,10 @@ int main(int argc, char **argv, char **envp)
 		case 'p': /* path */
 	  		path = optarg;
 	  		break;
-		case 'l': /* path */
+		case 'o': /* object */
+			object = optarg;
+			break;
+		case 'l': /* list */
 	  		list = 1;
 	  		break;
 		case 'r': /* regex */
@@ -282,8 +245,8 @@ int main(int argc, char **argv, char **envp)
 	}
 
 
-	if ((tname == NULL) && (uname == NULL) && (path == NULL) && !list) {
-		fprintf(stderr, "\nYou must specify one of -t|-u|-p\n\n");
+	if ((tname == NULL) && (uname == NULL) && (path == NULL) && (object == NULL) && !list) {
+		fprintf(stderr, "\nYou must specify one of -t|-u|-p|-o\n\n");
 		usage(argv[0], 0);
 		return -1;
 	}
@@ -353,6 +316,25 @@ int main(int argc, char **argv, char **envp)
 			return -1;
 		case 1: 
 			fprintf(stderr, "path was not found\n");
+			return -1;
+		default:
+			break;
+		}
+	}
+
+	if (object != NULL) {
+		if(sefs_is_valid_object_class(object) == -1) {
+
+		}
+
+		rc = sefs_search_object_class(&fsdata, object);
+
+		switch(rc) {
+		case -1:
+			fprintf(stderr, "search_object_class() returned an error\n");
+			return -1;
+		case 1:
+			fprintf(stderr, "object class not found\n");
 			return -1;
 		default:
 			break;
