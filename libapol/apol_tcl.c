@@ -1318,11 +1318,9 @@ int Apol_GetPolicyVersionString(ClientData clientData, Tcl_Interp *interp, int a
 	case POL_VER_15:
 		Tcl_AppendResult(interp, POL_VER_STRING_15, (char *) NULL);
 		break;
-#ifdef CONFIG_SECURITY_SELINUX_CONDITIONAL_POLICY
 	case POL_VER_16:
 		Tcl_AppendResult(interp, POL_VER_STRING_16, (char *) NULL);
 		break;
-#endif
 	default:
 		Tcl_AppendResult(interp, "Unkown version", (char *) NULL);
 		break;
