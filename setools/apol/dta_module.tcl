@@ -43,6 +43,7 @@ namespace eval Apol_Analysis_dta {
 	variable rules_tag		RULES
 	variable counters_tag		COUNTERS
 	variable types_tag		TYPE
+	variable disabled_rule_tag     	DISABLE_RULE
 	
     	# Register ourselves
     	Apol_Analysis::register_analysis_modules "Apol_Analysis_dta" "Domain Transition"
@@ -349,7 +350,11 @@ proc Apol_Analysis_dta::do_analysis { results_frame } {
 		return -code error
 	} 
 	set dta_tree [Apol_Analysis_dta::create_resultsDisplay $results_frame $reverse]
-	Apol_Analysis_dta::create_result_tree_structure $dta_tree $results $reverse
+	set rt [catch {Apol_Analysis_dta::create_result_tree_structure $dta_tree $results $reverse} err]
+	if {$rt != 0} {	
+	        tk_messageBox -icon error -type ok -title "Error" -message "$err"
+		return -code error
+	} 
      	return 0
 } 
 
@@ -497,7 +502,10 @@ proc Apol_Analysis_dta::create_result_tree_structure { dta_tree results_list rev
 	set source_type [lindex $results_list 0]
 	set home_node [Apol_Analysis_dta::insert_src_type_node $source_type $dta_tree $reverse]
 	# Create target type children nodes.
-	Apol_Analysis_dta::create_target_type_nodes $home_node $dta_tree $results_list
+	set rt [catch {Apol_Analysis_dta::create_target_type_nodes $home_node $dta_tree $results_list} err]
+	if {$rt != 0} {	
+		return -code error $err
+	}
 	Apol_Analysis_dta::treeSelect $Apol_Analysis_dta::dta_tree $Apol_Analysis_dta::dta_info_text $home_node
 	
         return 0
@@ -521,8 +529,8 @@ proc Apol_Analysis_dta::create_target_type_nodes { parent dta_tree results_list 
 		for { set x 0 } { $x < $num_target_domains } { incr x } { 
 			set end_idx [Apol_Analysis_dta::get_target_type_data_end_idx $results_list $start_idx]
 			if {$end_idx == -1} {
-				# TODO: DO SOMETHING ERROR
-				# ERROR MSG: "Error parsing results"
+				# Print error 
+				return -code error "Error parsing results for type [lindex $results_list $start_idx].\n"
 			}
 			set target_name [lindex $results_list $start_idx]
 			set target_node "${parent}/${target_name}/"
@@ -548,9 +556,12 @@ proc Apol_Analysis_dta::do_child_analysis { dta_tree selected_node } {
 		set source_type [file tail $selected_node]
 		set rt [catch {set results [apol_DomainTransitionAnalysis $reverse $source_type]} err]
 	     	if {$rt != 0} {	
-			return -code error $err
+			tk_messageBox -icon error -type ok -title "Error" -message $err
 		} 
-		Apol_Analysis_dta::create_target_type_nodes $selected_node $dta_tree $results
+		set rt [catch {Apol_Analysis_dta::create_target_type_nodes $selected_node $dta_tree $results} err]
+		if {$rt != 0} {	
+			tk_messageBox -icon error -type ok -title "Error" -message $err
+		}
 	}
 	return 0
 }
@@ -563,11 +574,10 @@ proc Apol_Analysis_dta::do_child_analysis { dta_tree selected_node } {
 #  of the first element of the current child target type.
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_dta::get_target_type_data_end_idx { results_list idx } {
-	
 	# First see if this is the end of the list
 	if {$idx >= [llength $results_list]} {
-		# return an empty string indicating no more items in list
-		return -code error
+		# return -1 as error code
+		return -1
 	}
 	
 	# Determine length of sublist containing type's data
@@ -576,7 +586,11 @@ proc Apol_Analysis_dta::get_target_type_data_end_idx { results_list idx } {
 	set len 1
 	# account for the (pt rules)
 	set num_pt [lindex $results_list [expr $idx + $len]]
-	incr len [expr $num_pt * 2 ]
+	# We multiply the number of pt rules by three because each pt rule consists of:
+	# 	1. rule
+	#	2. line number
+	#	3. enabled flag
+	incr len [expr $num_pt * 3]
 	# (# of file types)
 	incr len
 	set num_types [lindex $results_list [expr $idx + $len]]
@@ -585,12 +599,20 @@ proc Apol_Analysis_dta::get_target_type_data_end_idx { results_list idx } {
 		incr len 2
 		# account for (ep rules)
 		set num_ep [lindex $results_list [expr $idx + $len]]
-		incr len [expr $num_ep * 2]
+		# We multiply the number of ep rules by three because each pt rule consists of:
+		# 	1. rule
+		#	2. line number
+		#	3. enabled flag
+		incr len [expr $num_ep * 3]
 		# (# ex rules)
 		incr len
 		# account for (ex rules)
 		set num_ex [lindex $results_list [expr $idx + $len]]
-		incr len [expr $num_ex * 2]
+		# We multiply the number of ex rules by three because each pt rule consists of:
+		# 	1. rule
+		#	2. line number
+		#	3. enabled flag
+		incr len [expr $num_ex * 3]
 	}
 	return [expr $len + $idx]
 }
@@ -670,9 +692,18 @@ proc Apol_Analysis_dta::render_target_type_data { data dta_info_text dta_tree no
 		set end_idx [$dta_info_text index insert]
 		Apol_PolicyConf::insertHyperLink $dta_info_text "$start_idx wordstart + 1c" "$start_idx wordstart + [expr [string length $lineno] + 1]c"
 		set start_idx $end_idx
-		$dta_info_text insert end "$rule\n"
+		$dta_info_text insert end "$rule"
 		set end_idx [$dta_info_text index insert]
 		$dta_info_text tag add $Apol_Analysis_dta::rules_tag $start_idx $end_idx
+		
+		incr idx
+		# The next element should be the enabled boolean flag.
+		if {[lindex $data $idx] == 0} {
+			$dta_info_text tag add $Apol_Analysis_dta::disabled_rule_tag $start_idx $end_idx
+			$dta_info_text insert end "   \[Disabled\]\n"
+		} else {
+			$dta_info_text insert end "\n"
+		}
 	}
 	# (# of file types)
 	set num_types [lindex $data $idx ]
@@ -719,6 +750,15 @@ proc Apol_Analysis_dta::render_target_type_data { data dta_info_text dta_tree no
 			$dta_info_text insert end "$rule\n"
 			set end_idx [$dta_info_text index insert]
 			$dta_info_text tag add $Apol_Analysis_dta::rules_tag $start_idx $end_idx
+			
+			incr idx
+			# The next element should be the enabled boolean flag.
+			if {[lindex $data $idx] == 0} {
+				$dta_info_text tag add $Apol_Analysis_dta::disabled_rule_tag $start_idx $end_idx
+				$dta_info_text insert end "   \[Disabled\]\n"
+			} else {
+				$dta_info_text insert end "\n"
+			}
 		}
 		set num_ex [lindex $data $idx]
 		incr idx
@@ -745,6 +785,15 @@ proc Apol_Analysis_dta::render_target_type_data { data dta_info_text dta_tree no
 			$dta_info_text insert end "$rule\n"
 			set end_idx [$dta_info_text index insert]
 			$dta_info_text tag add $Apol_Analysis_dta::rules_tag $start_idx $end_idx
+			
+			incr idx
+			# The next element should be the enabled boolean flag.
+			if {[lindex $data $idx] == 0} {
+				$dta_info_text tag add $Apol_Analysis_dta::disabled_rule_tag $start_idx $end_idx
+				$dta_info_text insert end "   \[Disabled\]\n"
+			} else {
+				$dta_info_text insert end "\n"
+			}
 		}
 
 		$dta_info_text insert end "\n"
@@ -763,6 +812,7 @@ proc Apol_Analysis_dta::formatInfoText { tb } {
 	$tb tag configure $Apol_Analysis_dta::rules_tag -font $ApolTop::text_font
 	$tb tag configure $Apol_Analysis_dta::counters_tag -foreground blue -font {Helvetica 11 bold}
 	$tb tag configure $Apol_Analysis_dta::types_tag -font $ApolTop::text_font
+	$tb tag configure $Apol_Analysis_dta::disabled_rule_tag -foreground gray 
 	
 	# Configure hyperlinking to policy.conf file
 	Apol_PolicyConf::configure_HyperLinks $tb
