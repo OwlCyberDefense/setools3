@@ -80,7 +80,7 @@ int cond_evaluate_expr(cond_expr_t *expr, policy_t *policy)
 			if (sp == (COND_EXPR_MAXDEPTH - 1))
 				return -1;
 			sp++;
-			s[sp] = policy->cond_bools[cur->bool].val;
+			s[sp] = policy->cond_bools[cur->bool].state;
 			break;
 		case COND_NOT:
 			if (sp < 0)

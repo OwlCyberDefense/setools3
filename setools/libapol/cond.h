@@ -28,8 +28,8 @@
 /* Conditional Booleans */
 typedef struct cond_bool {
 	char	*name;
-	bool_t	val;
-	bool_t  policy_val; /* the value from the policy */
+	bool_t  default_state; 	/* the state from the policy */
+	bool_t	state;		/* current state (can be varied; init'd to default_state) */
 } cond_bool_t;
 
 
@@ -54,7 +54,7 @@ typedef struct cond_rule_list {
 
 /* This is base conditional expression struct */
 typedef struct cond_expr_item {
-	bool_t cur_val;
+	bool_t cur_state;		/* the current logical result of the expression */
 	cond_expr_t *expr;
 	cond_rule_list_t *true_list;
 	cond_rule_list_t *false_list;

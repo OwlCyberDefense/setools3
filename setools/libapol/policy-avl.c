@@ -220,6 +220,7 @@ static int avl_add_initial_sid(void *user_data, const void *key, int idx)
 
 	assert(policy != NULL && isid_name != NULL);
 	policy->initial_sids[idx].name = isid_name;
+	policy->initial_sids[idx].sid = 0;
 	policy->initial_sids[idx].scontext = NULL;
 	(policy->num_initial_sids)++;
 	return 0;
@@ -255,7 +256,7 @@ static int avl_add_cond_bool(void *user_data, const void *key, int idx)
 	char *b = (char*)key;
 	
 	policy->cond_bools[idx].name = b;
-        policy->cond_bools[idx].val = FALSE;
+        policy->cond_bools[idx].state = FALSE;
 	(policy->num_cond_bools)++;
 	return 0;
 }
