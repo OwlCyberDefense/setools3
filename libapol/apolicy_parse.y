@@ -115,6 +115,7 @@ static int define_level(void);
 static int define_common_base(void);
 static int define_av_base(void);
 static int define_attrib(void);
+static int define_typealias(void);
 static int define_type(int alias);
 static int define_compute_type(int rule_type);
 static int define_te_clone(void);
@@ -154,6 +155,7 @@ static int define_cond_te_avtab();
 %token SID
 %token ROLE
 %token ROLES
+%token TYPEALIAS
 %token TYPE
 %token TYPES
 %token ALIAS
@@ -327,6 +329,7 @@ rbac_decl		: role_type_def
 te_decl			: opt_attribute_def
 			| opt_cond_def
 			| type_def
+			| typealias_def
                         | transition_def
                         | te_avtab_def
                         /* removed July 2002; remain for backward compatability */
@@ -450,6 +453,9 @@ type_def		: TYPE identifier alias_def opt_attr_list ';'
 	                | TYPE identifier opt_attr_list ';'
                         {if (define_type(0)) return -1;}
     			;
+typealias_def		: TYPEALIAS identifier alias_def ';'
+			{if (define_typealias()) return -1;}
+			;
 opt_attr_list           : ',' id_comma_list
 			| 
 			;
@@ -1041,6 +1047,48 @@ static int define_type(int alias)
 	return 0;
 }	
 
+static int define_typealias(void)
+{
+	char *id;
+	int idx, idx_type;
+	
+	if (pass == 2) {
+		while ((id = queue_remove(id_queue)))
+			free(id);
+		return 0;
+	}
+	printf("in define_typealias\n");
+	
+	id = (char*)queue_remove(id_queue);
+	if (!id) {
+		yyerror("type name required for typealias declaration");
+		return -1;
+	}
+	idx = get_type_or_attrib_idx(id, &idx_type, parse_policy);
+	if (idx < 0) {
+		sprintf(errormsg, "unknown type %s in typealias definitition.", id);
+		yyerror(errormsg);
+		return -1;
+	}
+	if (idx_type != IDX_TYPE) {
+		sprintf(errormsg, "%s is not a type. Illegal typealias definitition.", id);
+		yyerror(errormsg);
+		return -1;
+	}
+	while ((id = queue_remove(id_queue))) {
+		if(!is_valid_str_sz(id)) {
+			sprintf(errormsg, "string \"%s\" exceeds APOL_SZ_SIZE", id);
+			yyerror(errormsg);
+			return -1;
+		}
+		if(add_alias(idx, id, parse_policy) != 0) {
+			sprintf(errormsg, "failed add_alias for alias %s\n", id);
+			yyerror(errormsg);
+			return -1;			
+		}
+	}
+	return 0;
+}
 
 /* add a rule to the provided av rule list */
 static int add_avrule(int type, av_item_t **rlist, int *list_num) {
@@ -2736,4 +2784,3 @@ static int define_genfs_context(int has_type)
 {
 	return define_genfs_context_helper(queue_remove(id_queue), has_type);
 }
-
