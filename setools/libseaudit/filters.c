@@ -529,7 +529,9 @@ static bool_t src_user_filter_action(msg_t *msg, void *data, audit_log_t *log, b
 	}
 	d->dirty = FALSE;
 	for (i = 0; i < filter->num_users; i++) { 
-		if (filter->users[i] == msg->msg_data.avc_msg->src_user) 
+		if (filter->users[i] == -1)
+			continue;
+		if (filter->users[i] == msg->msg_data.avc_msg->src_user)
 			return TRUE; 
 	} 
 	return FALSE;
@@ -551,7 +553,10 @@ static bool_t tgt_user_filter_action(msg_t *msg, void *data, audit_log_t *log, b
 		for (i = 0; i < filter->num_users; i++)
 			filter->users[i] = audit_log_get_user_idx(log, filter->user_strs[i]);
 	}
+	d->dirty = FALSE;
 	for (i = 0; i < filter->num_users; i++) { 
+		if (filter->users[i] == -1)
+			continue;
 		if (filter->users[i] == msg->msg_data.avc_msg->tgt_user) 
 			return TRUE; 
 	} 
@@ -574,7 +579,10 @@ static bool_t src_role_filter_action(msg_t *msg, void *data, audit_log_t *log, b
 		for (i = 0; i < filter->num_roles; i++)
 			filter->roles[i] = audit_log_get_role_idx(log, filter->role_strs[i]);
 	}
+	d->dirty = FALSE;
 	for (i = 0; i < filter->num_roles; i++) { 
+		if (filter->roles[i] == -1)
+			continue;
 		if (filter->roles[i] == msg->msg_data.avc_msg->src_role) 
 			return TRUE; 
 	} 
@@ -597,7 +605,10 @@ static bool_t tgt_role_filter_action(msg_t *msg, void *data, audit_log_t *log, b
 		for (i = 0; i < filter->num_roles; i++)
 			filter->roles[i] = audit_log_get_role_idx(log, filter->role_strs[i]);
 	}
+	d->dirty = FALSE;
 	for (i = 0; i < filter->num_roles; i++) { 
+		if (filter->roles[i] == -1)
+			continue;
 		if (filter->roles[i] == msg->msg_data.avc_msg->tgt_role) 
 			return TRUE; 
 	} 
@@ -623,9 +634,10 @@ static bool_t src_type_filter_action(msg_t *msg, void *data, audit_log_t *log,  
 	}
 	d->dirty = FALSE;
 	for (i = 0; i < filter->num_types; i++) { 
-		if (filter->types[i] >= 0) /* if the type was in an audit message */
-			if (filter->types[i] == msg->msg_data.avc_msg->src_type)
-				return TRUE;
+		if (filter->types[i] == -1)
+			continue;
+		if (filter->types[i] == msg->msg_data.avc_msg->src_type)
+			return TRUE;
 	} 
 	return FALSE;
 }
@@ -648,9 +660,10 @@ static bool_t tgt_type_filter_action(msg_t *msg, void *data, audit_log_t *log, b
 	}
 	d->dirty = FALSE;
 	for (i = 0; i < filter->num_types; i++) { 
-		if (filter->types[i] >= 0)
-			if (filter->types[i] == msg->msg_data.avc_msg->tgt_type)
-				return TRUE;
+		if (filter->types[i] == -1)
+			continue;
+		if (filter->types[i] == msg->msg_data.avc_msg->tgt_type)
+			return TRUE;
 	} 
 	return FALSE;
 }
@@ -673,6 +686,8 @@ static bool_t class_filter_action(msg_t *msg, void *data, audit_log_t *log, bool
 	}
 	d->dirty = FALSE;
 	for (i = 0; i < filter->num_classes; i++) { 
+		if (filter->classes[i] == -1)
+			continue;
 		if (filter->classes[i] == msg->msg_data.avc_msg->obj_class) 
 			return TRUE; 
 	} 
@@ -681,7 +696,7 @@ static bool_t class_filter_action(msg_t *msg, void *data, audit_log_t *log, bool
 
 
 static bool_t perms_filter_action(msg_t *msg, void *data, audit_log_t *log, bool_t *err)
-{ /* TODO - implement perms_filter_action() */
+{ /* TO DO - implement perms_filter_action() */
 	*err = TRUE;
 	return FALSE; 
 } 
