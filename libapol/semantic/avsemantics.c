@@ -72,8 +72,8 @@ static bool_t avh_is_valid_cond_type_rule(avh_key_t *key, int cond_expr, bool_t 
 static int avh_load_avrules( void *r, int num, bool_t is_av, policy_t *p)
 {
 	int i, j, k, x, y, rt, start;
-	int num_src, num_tgt, num_src_tilda = 0, num_tgt_tilda = 0, num_cls, num_perm, pidx, *src_a, *tgt_a, *cls_a, *perm_a, dflt = -1, cond_expr = -1;
-	bool_t all_src, all_tgt, all_cls, all_perms = FALSE, is_cond, cond_list = FALSE, self = FALSE, src_tilda, tgt_tilda;
+	int num_src, num_tgt, num_src_tilda = 0, num_tgt_tilda = 0, num_cls, num_perm, num_perm_tilda = 0, pidx, *src_a, *tgt_a, *cls_a, *perm_a, dflt = -1, cond_expr = -1;
+	bool_t all_src, all_tgt, all_cls, all_perms = FALSE, is_cond, cond_list = FALSE, self = FALSE, src_tilda, tgt_tilda, perm_tilda = FALSE;
 	avh_key_t  key;
 	avh_node_t *node;
 	
@@ -95,6 +95,10 @@ static int avh_load_avrules( void *r, int num, bool_t is_av, policy_t *p)
 			
 			src_tilda = (((av_item_t *)r)[i].flags & AVFLAG_SRC_TILDA);
 			tgt_tilda = (((av_item_t *)r)[i].flags & AVFLAG_TGT_TILDA);
+			perm_tilda =(((av_item_t *)r)[i].flags & AVFLAG_PERM_TILDA);
+
+			assert(!(perm_tilda && (p->policy_type & POL_TYPE_BINARY)));
+
 			if(is_cond_rule(((av_item_t *)r)[i]) ) {
 				is_cond = TRUE;
 				cond_expr = ((av_item_t *)r)[i].cond_expr;
@@ -181,6 +185,8 @@ static int avh_load_avrules( void *r, int num, bool_t is_av, policy_t *p)
 				all_perms = TRUE;
 			else
 				all_perms = FALSE;
+			if (perm_tilda)
+				num_perm_tilda = num_perm;
 		}
 		else {
 			dflt = ((tt_item_t *)r)[i].dflt_type.idx;
@@ -281,15 +287,21 @@ static int avh_load_avrules( void *r, int num, bool_t is_av, policy_t *p)
 						}
 					}
 					if(is_av) {
-						if(all_perms) {
+						if(all_perms | perm_tilda) {
 							num_perm = get_num_perms_for_obj_class(key.cls, p);
-						}
+						} 
 						/* add our perm list */
 						for(y = 0; y < num_perm; y++) {
 							if(all_perms)
 								pidx = get_obj_class_nth_perm_idx(key.cls, y, p);
-							else
+							else if (perm_tilda) {
+								pidx = get_obj_class_nth_perm_idx(key.cls, y, p);
+
+								if(find_int_in_array(pidx, perm_a, num_perm_tilda) >= 0) 
+									continue;
+							} else 
 								pidx = perm_a[y];
+
 							assert(is_valid_perm_idx(pidx, p));
 	
 							rt = avh_add_datum(node, pidx);
