@@ -1,8 +1,8 @@
-/* Copyright (C) 2004 Tresys Technology, LLC
+/* Copyright (C) 2004-2005 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
 
 /* 
- * Author: jtang@tresys.com 
+ * Author: Jason Tang (jtang@tresys.com)
  */
  
 %{
@@ -27,7 +27,7 @@ unsigned long flowassert_lineno = 1;
 %array
 %option noyywrap
 
-identifier [A-Za-z][A-Za-z0-9_]*
+identifier [A-Za-z][A-Za-z0-9_.]*
 number [0-9]+
 
 %%
