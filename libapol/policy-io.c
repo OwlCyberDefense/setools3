@@ -429,7 +429,7 @@ static int read_policy(policy_t *policy)
 	}
 	
 	/* If we don't need anything from pass 2, just return and save the time */
-	if(!(policy->opts & PLOPT_PASS_2 )) {
+	if(!(policy->opts & PLOPT_PASS_2)) {
 		queue_destroy(id_queue);
 		return 0;
 	}
@@ -470,7 +470,9 @@ unsigned int validate_policy_options(unsigned int options)
 	/* always include the basic conditional pieces */
 	opts |= (POLOPT_COND_BOOLS|POLOPT_COND_EXPR);
 
-	/* NOTE: The order of these is important */	
+	/* NOTE: The order of these is important */
+	if(POLOPT_COND_TE_RULES)
+		opts |= POLOPT_TYPES|POLOPT_OBJECTS;	
 	if(POLOPT_TE_RULES & opts)
 		opts |= (POLOPT_OBJECTS|POLOPT_TYPES);
 	if(POLOPT_PERMS & opts)
