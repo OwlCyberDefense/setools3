@@ -2320,7 +2320,6 @@ static int define_bool(void)
 static int define_conditional(cond_expr_t *expr, cond_rule_list_t *t_list, cond_rule_list_t *f_list)
 {
 	int rt;
-	cond_expr_t *e;
 		
 	/* TODO: Currently an empty stub */	
 	rt = set_policy_version(POL_VER_COND, parse_policy);
@@ -2336,8 +2335,8 @@ static int define_conditional(cond_expr_t *expr, cond_rule_list_t *t_list, cond_
 		yyerror("Received invalid expression in define_conditional");
 		return -1;
 	}
-		
-	if (add_cond_expr_item(e, t_list, f_list, parse_policy) < 0) {
+	
+	if (add_cond_expr_item(expr, t_list, f_list, parse_policy) < 0) {
 		yyerror("Error adding conditional expression item to the policy");
 		return -1;
 	}
@@ -2359,8 +2358,9 @@ static cond_expr_t *define_cond_expr(__u32 expr_type, void *arg1, void *arg2)
 		return &dummy_cond_expr;
 	}
 	
-	if (!(parse_policy->opts & POLOPT_COND_BOOLS))
+	if (!(parse_policy->opts & POLOPT_COND_BOOLS)) {
 		return &dummy_cond_expr;
+	}
 	
 	/* create a new expression struct */
 	expr = malloc(sizeof(struct cond_expr));
@@ -2370,7 +2370,7 @@ static cond_expr_t *define_cond_expr(__u32 expr_type, void *arg1, void *arg2)
 	}
 	memset(expr, 0, sizeof(cond_expr_t));
 	expr->expr_type = expr_type;
-
+	
 	/* create the type asked for */
 	switch (expr_type) {
 	case COND_NOT:
