@@ -125,10 +125,10 @@ help:
 	@echo "   install-sepcut:    		build and install sepct (selinux not required)"
 	@echo "   install-seuser:    		build and install command line seuser (selinux required)"
 	@echo "   install-seuserx:   		build and install seuser and seuserx (selinux required)"
-	@echo "   install-secmds:    		build and install command line tools (selinux not required)"
+	@echo "   install-secmds:    		build and install command line tools (selinux required for some tools)"
 	@echo "   install-seaudit:   		build and install seaudit and seaudit-report (selinux not required)"
-	@echo "   install-sediff:   		build and install sediff command-line tool"
-	@echo "   install-sediffx:   		build and install sediff GUI tool"
+	@echo "   install-sediff:   		build and install sediff command-line tool (selinux not required)"
+	@echo "   install-sediffx:   		build and install sediff GUI tool (selinux not required)"
 	@echo ""
 	@echo "   install-dev:       		build and install headers and libraries"
 	@echo "   install-docs:      		install setools documentation"
@@ -232,12 +232,15 @@ install-secmds: $(INSTALL_LIBDIR) $(BINDIR)
 	cd secmds; $(MAKE) install
 	
 install-sediff: $(INSTALL_LIBDIR) $(BINDIR)
+	cd sediff; $(MAKE) install
+
+install-sediff-nogui: $(INSTALL_LIBDIR) $(BINDIR)
 	cd sediff; $(MAKE) install-nogui
 
 install-seaudit: $(INSTALL_LIBDIR) $(BINDIR)
 	 cd seaudit; $(MAKE) install
 
-install-nogui: $(INSTALL_LIBDIR) install-seuser install-secmds install-sediff
+install-nogui: $(INSTALL_LIBDIR) install-seuser install-secmds install-sediff-nogui
 
 install: $(BINDIR) $(SHARED_LIB_INSTALL_DIR) install-dev install-apol install-seuserx install-sepcut \
 	 install-awish install-secmds install-seaudit install-sediff install-docs
