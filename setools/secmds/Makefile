@@ -40,7 +40,11 @@ findcon: findcon.o
 
 install: $(SE_CMDS)
 	install -m 755 $(SE_CMDS) $(BINDIR);
-	chcon system_u:object_r:setfiles_exec_t $(BINDIR)/replcon
+	
+install-policy:
+	-@if [ -e $(BINDIR)/replcon ]; then \
+		chcon system_u:object_r:setfiles_exec_t $(BINDIR)/replcon; \
+	fi
 
 %.o:  %.c
 	$(CC) $(CFLAGS) $(INCLUDE) -c $<
