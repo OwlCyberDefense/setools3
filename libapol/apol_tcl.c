@@ -541,7 +541,7 @@ static int append_class_str(bool_t do_perms, bool_t do_cps, bool_t expand_cps, b
 				for(i = 0; i < policy->common_perms[cp_idx].num_perms; i++) {
 					assert(i < policy->num_perms);
 					Tcl_DStringAppend(buf, "          ", -1);
-					append_perm_str(0, 0, 1, i, buf, policy);
+					append_perm_str(0, 0, 1, policy->common_perms[cp_idx].perms[i], buf, policy);
 				}
 			}
 		}
@@ -5680,6 +5680,7 @@ int Apol_Search_FC_Index_DB(ClientData clientData, Tcl_Interp *interp, int argc,
 		search_keys.num_path = num_paths;
 		search_keys.path = paths;
 	}
+
 	rt = Tcl_GetInt(interp, argv[9], &search_keys.do_user_regEx);
 	if (rt == TCL_ERROR) {
 		Tcl_AppendResult(interp, "argv[9] apparently is not an integer", (char *) NULL);
@@ -6461,7 +6462,9 @@ int Apol_RelabelAnalysis (ClientData clientData, Tcl_Interp *interp,
 			}
 			regerror(rt, &reg, err, sz);
 			regfree(&reg);
-			Tcl_SetResult (interp, "Out of memory.", TCL_STATIC);
+			Tcl_Obj *tcl_err = Tcl_NewStringObj(err, -1);
+			assert(tcl_err);
+			Tcl_SetObjResult(interp, tcl_err);
 			free(err);
 			return TCL_ERROR;
 		}
