@@ -18,6 +18,9 @@ namespace eval ApolTop {
 	variable binary_policy_type	"binary"
 	variable source_policy_type	"source"
 	variable filename 		""
+	# The following is used with opening a policy for loading all or pieces of a policy. 
+	# The option defaults to 0 (or all portions of the policy).
+	variable policy_open_option	0
 	variable policyConf_lineno	""
 	variable polstats 		""
 	# The version number is defined as a magical string here. This is later configured in the make environment.
@@ -53,13 +56,15 @@ namespace eval ApolTop {
 	set searchDlg .searchDlg
 	variable goto_Dialog
 	set goto_Dialog .goto_Dialog
-	variable searchDlg_entryBox
-	variable gotoDlg_entryBox
+	variable options_Dialog
+	set options_Dialog .options_Dialog
 	
 	######################
 	# Other global widgets
 	variable mainframe
 	variable textbox_policyConf
+	variable searchDlg_entryBox
+	variable gotoDlg_entryBox
 	# Main top-level notebook widget
 	variable notebook
 	# Subordinate notebook widgets
@@ -950,6 +955,48 @@ proc ApolTop::call_tabs_goto_line_cmd { } {
 	return 0
 }
 
+ ##############################################################
+# ::display_options_Dlg
+#  	-  
+proc ApolTop::display_options_Dlg { } {
+	variable options_Dialog
+	global tcl_platform
+	
+	# create dialog
+    	if { [winfo exists $options_Dialog] } {
+    		raise $options_Dialog
+    		return 0
+    	}
+    	toplevel $options_Dialog
+   	wm protocol $options_Dialog WM_DELETE_WINDOW "destroy $options_Dialog"
+    	wm withdraw $options_Dialog
+    	wm title $options_Dialog "Tool Options"
+    	
+	set open_opts_f [TitleFrame $options_Dialog.open_opts_f -text "Open policy options"]
+	set lframe [frame [$open_opts_f getframe].lframe]
+	set rframe [frame [$open_opts_f getframe].rframe]
+
+	set cb_all [radiobutton $lframe.cb_all -text "All" -variable ApolTop::policy_open_option -value 0]
+	set cb_pass1 [radiobutton $lframe.cb_pass1 -text "Pass 1 policy only" -variable ApolTop::policy_open_option -value 1]
+	set cb_te_only [radiobutton $lframe.cb_te_only -text "TE policy only" -variable ApolTop::policy_open_option -value 2]
+	set cb_types_roles [radiobutton $rframe.cb_types_roles -text "Types and roles only" -variable ApolTop::policy_open_option -value 3]
+	set cb_classes_perms [radiobutton $rframe.cb_classes_perms -text "Classes and permissions only" -variable ApolTop::policy_open_option -value 4]
+	set cb_rbac [radiobutton $rframe.cb_rbac -text "RBAC policy only" -variable ApolTop::policy_open_option -value 5]
+	
+	set b_ok  [button $options_Dialog.b_ok -text "OK" -width 6 -command { destroy $ApolTop::options_Dialog }]
+	
+	pack $b_ok -side bottom -padx 5 -pady 5 -anchor center
+	pack $open_opts_f -side left -anchor nw -fill both -expand yes -padx 5 -pady 5
+	pack $lframe $rframe -side left -anchor nw -fill both -expand yes
+	pack $cb_all $cb_pass1 $cb_te_only $cb_types_roles $cb_classes_perms $cb_rbac -side top -anchor nw
+	
+	# Place a toplevel at a particular position
+    	#::tk::PlaceWindow $options_Dialog widget center
+	wm deiconify $options_Dialog
+	
+	return 0
+}
+
 ##############################################################
 # ::display_goto_line_Dlg
 #  	-  
@@ -1030,6 +1077,8 @@ proc ApolTop::create { } {
 	}
 	"&Advanced" all options 0 {
 	    {cascad "&Permission Mappings" {Perm_Map_Tag} pmap_menu 0 {}}
+	    {command "&Tool Options..." {} "Tool options"  \
+	    	{} -command "ApolTop::display_options_Dlg" }
         }
 	"&Help" {} helpmenu 0 {
 	    {command "&General Help" {all option} "Show help" {} -command {ApolTop::helpDlg "Help" "apol_help.txt"}}
@@ -1116,7 +1165,8 @@ proc ApolTop::writeInitFile { } {
 	variable title_font
 	variable dialog_font
 	variable general_font
-
+	variable policy_open_option
+	
 	set rt [catch {set f [open $dot_apol_file w+]} err]
 	if {$rt != 0} {
 		tk_messageBox -icon error -type ok -title "Error" \
@@ -1166,6 +1216,8 @@ proc ApolTop::writeInitFile { } {
         puts $f [winfo height .]
         puts $f "\[window_width\]"
         puts $f [winfo width .]
+        puts $f "\[policy_open_option\]"
+        puts $f $policy_open_option
 	close $f
 	return 0
 }
@@ -1183,7 +1235,8 @@ proc ApolTop::readInitFile { } {
 	variable temp_recent_files
 	variable top_height
         variable top_width
-
+	variable policy_open_option
+	
 	# if it doesn't exist, we'll create later
 	if {[file exists $dot_apol_file] == 0 } {
 		return
@@ -1273,6 +1326,16 @@ proc ApolTop::readInitFile { } {
 				}
 				set general_font $tline
 			}
+			"\[policy_open_option\]" {
+				gets $f line
+				set tline [string trim $line]
+				if {[eof $f] == 1 && $tline == ""} {
+					puts "EOF reached trying to read open policy option."
+					continue
+				}
+				set policy_open_option $tline
+			}
+		
 			# The form of [max_recent_file] is a single line that follows
 			# containing an integer with the max number of recent files to 
 			# keep.  The default is 5 if this is not specified.  A number larger
@@ -1777,6 +1840,7 @@ proc ApolTop::openPolicyFile {file recent_flag} {
 	variable policy_type
 	variable policy_is_open	
 	variable filename
+	variable policy_open_option
 	
 	ApolTop::closePolicy
 	
@@ -1809,13 +1873,13 @@ proc ApolTop::openPolicyFile {file recent_flag} {
 	set orig_Cursor [. cget -cursor] 
 	. configure -cursor watch
 	update idletasks
-	set rt [catch {apol_OpenPolicy $file}]
+	set rt [catch {apol_OpenPolicy $file $policy_open_option} err]
 	if {$rt == 0} {
 		#set filename [file tail $file]
 		set filename $file
 	} else {
 		tk_messageBox -icon error -type ok -title "Error with policy file" \
-			-message "The selected file does not appear to be a valid SE Linux Policy." 
+			-message "The selected file does not appear to be a valid SE Linux Policy.\n\n$err" 
 		. configure -cursor $orig_Cursor 
 		focus -force .
 		return -1
@@ -1879,6 +1943,7 @@ proc ApolTop::openPolicyFile {file recent_flag} {
 proc ApolTop::openPolicy {} {
 	variable filename 
 	variable polversion
+	
         set progressval 0
         set file ""
         set types {

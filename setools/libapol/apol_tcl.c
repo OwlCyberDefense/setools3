@@ -224,7 +224,6 @@ static iflow_query_t* set_transitive_query_args(Tcl_Interp *interp, char *argv[]
 		rt = Tcl_SplitList(interp, argv[7], &num_objs_options, &obj_class_perms);
 		if(rt != TCL_OK) {
 			Tcl_AppendResult(interp, "Error splitting TCL list.", (char *) NULL);
-			Tcl_Free((char *) obj_class_perms);
 			return NULL;
 		}
 		
@@ -257,7 +256,6 @@ static iflow_query_t* set_transitive_query_args(Tcl_Interp *interp, char *argv[]
 		rt = Tcl_SplitList(interp, argv[9], &num_inter_types, &inter_types);
 		if(rt != TCL_OK) {
 			Tcl_AppendResult(interp, "Error splitting TCL list.", (char *) NULL);
-			Tcl_Free((char *) inter_types);
 			return NULL;
 		}
 		
@@ -1234,14 +1232,25 @@ int Apol_GetDefault_PermMap(ClientData clientData, Tcl_Interp *interp, int argc,
 	return TCL_OK;		
 }
 
-/* open a policy.conf file */
+/* open a policy.conf file 
+ *	argv[1] - filename 
+ *      argv[2] - open option for loading all or pieces of a policy.  
+ *		  This option option may be one of the following:
+ *	 		0 - ALL of the policy
+ *			1 - Pass 1 policy only
+ *			2 - TE Policy only
+ *			3 - Types and roles only
+ *			4 - Classes and permissions only
+ *			5 - RRBAC policy
+ */
 int Apol_OpenPolicy(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
 {
 	char tbuf[APOL_STR_SZ+64];
-	int rt;
+	unsigned int opts;
+	int rt, option;
 	FILE* tmp;
 	
-	if(argc != 2) {
+	if(argc != 3) {
 		Tcl_AppendResult(interp, "wrong # of args", (char*)NULL);
 		return TCL_ERROR;
 	}
@@ -1249,16 +1258,51 @@ int Apol_OpenPolicy(ClientData clientData, Tcl_Interp *interp, int argc, char *a
 		Tcl_AppendResult(interp, "File name string too large", (char *) NULL);
 		return TCL_ERROR;
 	}
+	
+	/* Make sure the provided option is an integer. */
+	rt = Tcl_GetInt(interp, argv[2], &option);
+	if(rt == TCL_ERROR) {
+		Tcl_AppendResult(interp,"argv[2] apparently not an integer", (char *) NULL);
+		return TCL_ERROR;
+	}
+
+	/* Since argv[2] is a string ending with the terminating string char, 
+	 * we use the first character in our switch statement. */	
+	switch(argv[2][0]) {
+	case '0':
+		opts = POLOPT_ALL;
+		break;
+	case '1':
+		opts = PLOPT_PASS_1;
+		break;
+	case '2':
+		opts = POLOPT_TE_POLICY;
+		break;
+	case '3':
+		opts = (POLOPT_TYPES|POLOPT_ROLES);
+		break;
+	case '4':
+		opts = POLOPT_OBJECTS;
+		break;
+	case '5':
+		opts = POLOPT_RBAC;
+		break;
+	default:
+		Tcl_AppendResult(interp, "Invalid option:", argv[2], (char) NULL);
+		return TCL_ERROR;
+	}
+	opts = validate_policy_options(opts);
+
 	/* open_policy will actually open the file for reading - it is done here so that a
 	 * descriptive error message can be returned if the file cannot be read.
 	 */
 	if((tmp = fopen(argv[1], "r")) == NULL) {
-		Tcl_AppendResult(interp, "cannot open policy file ", argv[1], (char *) NULL);
+		Tcl_AppendResult(interp, "cannot open policy file for reading", argv[1], (char *) NULL);
 		return TCL_ERROR;
 	}	
 	fclose(tmp);
 	free_policy(&policy);
-	rt = open_policy(argv[1], &policy);
+	rt = open_partial_policy(argv[1], opts, &policy);
 	if(rt != 0) {
 		free_policy(&policy);
 		sprintf(tbuf, "open_policy error (%d)", rt);
@@ -1703,8 +1747,10 @@ int Apol_GetPermsByClass(ClientData clientData, Tcl_Interp * interp, int argc, c
 		return TCL_ERROR;
 	}
 	rt = Tcl_SplitList(interp, argv[1], &num_classes, &classes);
-	if(rt != TCL_OK)
-		return rt;
+	if(rt != TCL_OK) {
+		Tcl_AppendResult(interp,"Error splitting list.", (char *) NULL);
+		return TCL_ERROR;
+	}
 	if(num_classes < 1)  {
 		Tcl_AppendResult(interp, "No object classes were provided!", (char *) NULL);
 		return TCL_ERROR;
@@ -3699,7 +3745,6 @@ int Apol_DirectInformationFlowAnalysis(ClientData clientData, Tcl_Interp *interp
 		rt = Tcl_SplitList(interp, argv[4], &num_objs, &obj_classes);
 		if(rt != TCL_OK) {
 			Tcl_AppendResult(interp, "Error splitting TCL list.", (char *) NULL);
-			Tcl_Free((char *) obj_classes);
 			return TCL_ERROR;
 		}
 		
