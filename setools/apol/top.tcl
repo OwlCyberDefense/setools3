@@ -275,6 +275,10 @@ proc ApolTop::set_Focus_to_Text { tab } {
 			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
 			Apol_PolicyConf::set_Focus_to_Text
 		} \
+		$ApolTop::initial_sids_tab {
+			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
+			Apol_Initial_SIDS::set_Focus_to_Text
+		} \
 		default { 
 			return 
 		}
@@ -402,6 +406,97 @@ proc ApolTop::search {} {
     		}  
 	
 	return 0
+}
+
+# ------------------------------------------------------------------------------
+#  Command ApolTop::_getIndexValue
+# ------------------------------------------------------------------------------
+proc ApolTop::getIndexValue { path value } { 
+    set listValues [Widget::getMegawidgetOption $path -values]
+
+    return [lsearch -glob $listValues "$value*"]
+}
+
+# ------------------------------------------------------------------------------
+#  Command ApolTop::_mapliste
+# ------------------------------------------------------------------------------
+proc ApolTop::_mapliste { path } {
+    set listb $path.shell.listb
+    if { [Widget::cget $path -state] == "disabled" } {
+        return
+    }
+    if { [set cmd [Widget::getMegawidgetOption $path -postcommand]] != "" } {
+        uplevel \#0 $cmd
+    }
+    if { ![llength [Widget::getMegawidgetOption $path -values]] } {
+        return
+    }
+
+    ComboBox::_create_popup $path
+    ArrowButton::configure $path.a -relief sunken
+    update
+
+    $listb selection clear 0 end
+    BWidget::place $path.shell [winfo width $path] 0 below $path
+    wm deiconify $path.shell
+    raise $path.shell
+    BWidget::grab local $path
+
+    return $listb
+}
+
+# ------------------------------------------------------------------------------
+#  Command ApolTop::_create_popup
+# ------------------------------------------------------------------------------
+proc ApolTop::_create_popup { path entryBox key } { 
+    # Getting value from the entry subwidget of the combobox 
+    # and then checking its' length
+    set value  [Entry::cget $path.e -text]
+    set len [string length $value]
+    
+    # Key must be an alphanumeric ASCII character.  
+    if { [string is alpha $key] } {
+	    #ComboBox::_unmapliste $path
+	    set idx [ ApolTop::getIndexValue $path $value ]  
+	    
+	    if { $idx != -1 } {
+	    # Calling setSelection function to set the selection to the index value
+	    	ApolTop::setSelection $idx $path $entryBox $key
+	    }
+    } 
+    
+    if { $key == "Return" } {
+    	    # If the dropdown box visible, then we just select the value and unmap the list.
+    	    if {[winfo exists $path.shell.listb] && [winfo viewable $path.shell.listb]} {
+    	    	    set index [$path.shell.listb curselection]
+	    	    if { $index != -1 } {
+		        if { [ComboBox::setvalue $path @$index] } {
+			    set cmd [Widget::getMegawidgetOption $path -modifycmd]
+		            if { $cmd != "" } {
+		                uplevel \#0 $cmd
+		            }
+		        }
+		    }
+	    	ComboBox::_unmapliste $path
+	    	focus -force .
+	    }
+    }
+    
+    return 0
+}
+
+# ------------------------------------------------------------------------------
+#  Command ApolTop::setSelection
+# ------------------------------------------------------------------------------
+proc ApolTop::setSelection { idx path entryBox key } {
+    if {$idx != -1} {
+	set listb [ApolTop::_mapliste $path]
+	$listb selection set $idx
+	$listb activate $idx
+	$listb see $idx
+    } 
+    
+    return 0
 }
 
 ##############################################################

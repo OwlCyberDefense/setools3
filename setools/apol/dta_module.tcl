@@ -884,9 +884,9 @@ proc Apol_Analysis_dta::create_options { options_frame } {
 	# If bindtags is invoked with only one argument, then the current set of binding tags for window is 
 	# returned as a list. 
 	bindtags $combo_attribute.e [linsert [bindtags $combo_attribute.e] 3 attribs_list_Tag]
-	bind attribs_list_Tag <KeyPress> { Apol_Users::_create_popup $Apol_Analysis_dta::combo_attribute %W %K }
+	bind attribs_list_Tag <KeyPress> { ApolTop::_create_popup $Apol_Analysis_dta::combo_attribute %W %K }
 	bindtags $combo_domain.e [linsert [bindtags $combo_domain.e] 3 domains_list_Tag]
-	bind domains_list_Tag <KeyPress> { Apol_Users::_create_popup $Apol_Analysis_dta::combo_domain %W %K }
+	bind domains_list_Tag <KeyPress> { ApolTop::_create_popup $Apol_Analysis_dta::combo_domain %W %K }
 
 	return 0	
 }
