@@ -12,6 +12,10 @@ libapol:
 	  and binary).
 	Added a permission map for version 18 policies.
 	
+libseaudit:
+	Fix timezone related bug that resulted in incorrect
+	  dates displayed in seaudit.
+	
 =======================================================
 June 2, 2004, Version 1.4
 
