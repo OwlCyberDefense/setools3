@@ -35,22 +35,26 @@ namespace eval Apol_Analysis_fulflow {
 	
 	# Advanced filter variables
 	variable perm_status_array
-	variable incl_types ""
-	variable excl_types "" 
-	variable non_filtered_incl_types ""
-	variable non_filtered_excl_types ""
-	variable class_list ""
-	variable filter_vars_init    0
-	variable class_selected_idx  "-1"
-	variable num_perms_for_class 0
-	variable include_attribute_sel ""
-	variable exclude_attribute_sel ""
-	variable combo_incl
-	variable combo_excl
-	variable incl_attrib_sel	0
-	variable excl_attrib_sel	0
+ 	variable filtered_incl_types 	""
+ 	variable filtered_excl_types 	"" 
+ 	variable master_incl_types_list ""
+ 	variable master_excl_types_list ""
+ 	variable class_list 		""
+ 	variable filter_vars_init    	0
+ 	variable class_selected_idx  	-1
+ 	variable incl_attrib_combo_value 	""
+ 	variable excl_attrib_combo_value 	""
+	variable incl_attrib_cb_sel	0
+	variable excl_attrib_cb_sel	0
+	variable threshhold_cb_value	0
+	variable threshhold_value	1
+	# Advanced filter widget variables
+ 	variable combo_incl
+ 	variable combo_exc
 	variable class_listbox
 	variable perms_box
+	variable permissions_title_frame
+	variable spinbox_threshhold
 	
 	# Find more paths variables
 	variable time_limit_hr	"0"
@@ -87,12 +91,12 @@ namespace eval Apol_Analysis_fulflow {
 	variable find_flows_tag		FLOWS
 	variable disabled_rule_tag     	DISABLE_RULE
 	
-	variable progressmsg		""
 	variable abort_trans_analysis 	0
 	# Return value to indicate that perm map loaded successfully, but there were warnings
 	variable warning_return_val	"-2"
 	variable orig_cursor		""
 	variable select_fg_orig		""
+	variable excluded_tag		" (Excluded)"
 	
 	## Within the namespace command for the module, you must call Apol_Analysis::register_analysis_modules,
 	## the first argument is the namespace name of the module, and the second is the
@@ -109,8 +113,8 @@ namespace eval Apol_Analysis_fulflow {
 #  Command Apol_Analysis_fulflow::initialize
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_fulflow::initialize { } {  
-	variable incl_types
-	variable excl_types
+	variable filtered_incl_types
+	variable filtered_excl_types
 	
         Apol_Analysis_fulflow::reset_variables
      	if {[ApolTop::is_policy_open]} {
@@ -146,50 +150,49 @@ proc Apol_Analysis_fulflow::do_analysis { results_frame } {
 	variable start_type
         variable end_type
         variable endtype_sel
-        variable excl_types
+        variable filtered_excl_types
 	variable fulflow_tree
 	variable fulflow_info_text
         variable flow_direction
 	variable warning_return_val
 	variable perm_status_array
+      	variable spinbox_threshhold
+      	variable threshhold_cb_value
+      	variable threshhold_value
       	
         # if a permap is not loaded then load the default permap
         # if an error occurs on open, then skip analysis
-        set rt [catch {set map_loaded [Apol_Perms_Map::is_pmap_loaded]} err ]
-        if { $rt != 0 } {
-	    tk_messageBox -icon error -type ok -title "Error" -message "$err"
-	    return -code error
+        set rt [catch {Apol_Analysis_fulflow::load_default_perm_map} err]
+	if {$rt != 0} {	
+		return -1
 	}
-	if {!$map_loaded} {
-	    set rt [catch {Apol_Perms_Map::load_default_perm_map} err]
-	    if { $rt != 0 } {
-		if {$rt == $warning_return_val} {
-			tk_messageBox -icon warning -type ok -title "Warning" -message "$err"
-		} else {
-			tk_messageBox -icon error -type ok -title "Error" -message "$err"
-			return -code error		}
-	    }
-	}   
-	Apol_Analysis_fulflow::initialize_filter_vars
+	set rt [catch {Apol_Analysis_fulflow::advanced_filters_initialize_filter_vars} err]
+	if {$rt != 0} {
+		return -1
+	}	
+	
 	# Initialize local variables
 	set num_object_classes 0
 	set perm_options ""
 	set objects_sel "0"
 	set filter_types "0"
-
+		
 	foreach class $Apol_Analysis_fulflow::class_list {
 		set perms ""
 		# Make sure to strip out just the class name, as this may be an excluded class.
-		set idx [string first " (Excluded)" $class]		
-		if {$idx != -1} {
-			set class [string range $class 0 [expr $idx - 1]]
-			incr num_object_classes 
-			set perm_options [lappend perm_options $class]
-		} else {	
+		set idx [string first $Apol_Analysis_fulflow::excluded_tag $class]		
+		if {$idx == -1} {	
 			set class_elements [array names perm_status_array "$class,*"]
 			set class_added 0
 			foreach element $class_elements {
 				set perm [lindex [split $element ","] 1]
+				# If threshhold is enabled, the skip any permissions that fall below threshhold.
+				if {$threshhold_cb_value} {
+					if {[Apol_Perms_Map::get_weight_for_class_perm $class $perm] < $threshhold_value} {
+						# Skip this permisssion
+						continue
+					}
+				}
 				if {[string equal $perm_status_array($element) "include"]} {
 					if {$class_added == 0} {
 						incr num_object_classes 
@@ -199,17 +202,19 @@ proc Apol_Analysis_fulflow::do_analysis { results_frame } {
 					set perms [lappend perms $perm]
 				}
 			}
+			if {$perms != ""} {
+				set perm_options [lappend perm_options [llength $perms]]
+				foreach perm $perms {
+					set perm_options [lappend perm_options $perm]
+				}
+			}	
 		}
-		set perm_options [lappend perm_options [llength $perms]]
-		foreach perm $perms {
-			set perm_options [lappend perm_options $perm]
-		}	
 	}
 
 	if {$num_object_classes} {	
 		set objects_sel "1"
 	} 
-	if {$excl_types != ""} {   
+	if {$filtered_excl_types != ""} {   
 		set filter_types "1"
 	} 
 
@@ -219,7 +224,7 @@ proc Apol_Analysis_fulflow::do_analysis { results_frame } {
 		$objects_sel \
 		$num_object_classes \
 		$endtype_sel \
-		$end_type $perm_options $filter_types $excl_types]} err]
+		$end_type $perm_options $filter_types $filtered_excl_types]} err]
 	
 	if {$rt != 0} {	
 	        tk_messageBox -icon error -type ok -title "Error" -message "$err"
@@ -231,7 +236,7 @@ proc Apol_Analysis_fulflow::do_analysis { results_frame } {
 		$objects_sel \
 		$num_object_classes \
 		$endtype_sel \
-		$end_type $perm_options $filter_types $excl_types]
+		$end_type $perm_options $filter_types $filtered_excl_types]
 			
 	set fulflow_tree [Apol_Analysis_fulflow::create_resultsDisplay $results_frame]
 	set rt [catch {Apol_Analysis_fulflow::create_result_tree_structure $fulflow_tree $results $query_args} err]
@@ -257,11 +262,8 @@ proc Apol_Analysis_fulflow::close { } {
      	$Apol_Analysis_fulflow::combo_attribute configure -values ""
         set Apol_Analysis_fulflow::endtype_sel 0
         Apol_Analysis_fulflow::config_endtype_state
-        Apol_Analysis_fulflow::reset_filter_variables
-        set class_selected_idx  "-1"
-        if {[winfo exists $advanced_filter_Dlg]} {
-    		destroy $advanced_filter_Dlg
-    	}    
+        Apol_Analysis_fulflow::advanced_filters_reset_filter_variables
+        Apol_Analysis_fulflow::advanced_filters_destroy_dialog
      	return 0
 } 
 
@@ -272,8 +274,8 @@ proc Apol_Analysis_fulflow::close { } {
 proc Apol_Analysis_fulflow::open { } {   	
         variable in_button
         variable cb_attrib
-        variable incl_types
-	variable excl_types
+        variable filtered_incl_types
+	variable filtered_excl_types
 	
         Apol_Analysis_fulflow::populate_ta_list
         set in_button_sel 1
@@ -281,58 +283,18 @@ proc Apol_Analysis_fulflow::open { } {
         Apol_Analysis_fulflow::in_button_press
         Apol_Analysis_fulflow::config_attrib_comboBox_state	
         # Initialize items in the types listbox for the advanced filters dialogs
-        set excl_types $Apol_Types::typelist
-	set idx [lsearch -exact $excl_types "self"]
+        set filtered_excl_types $Apol_Types::typelist
+	set idx [lsearch -exact $filtered_excl_types "self"]
 	if {$idx != -1} {
-		set excl_types [lreplace $excl_types $idx $idx]
+		set filtered_excl_types [lreplace $filtered_excl_types $idx $idx]
 	}   
-	set excl_types [lsort $excl_types]
-        set incl_types ""
+	set filtered_excl_types [lsort $filtered_excl_types]
+        set filtered_incl_types ""
      	return 0
 } 
 
 # ------------------------------------------------------------------------------
-#  Command Apol_Analysis_fulflow::update_advanced_filters_dialog
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_fulflow::update_advanced_filters_dialog {} {
-	variable class_list
-	variable perm_status_array
-	variable class_listbox
-	
-	# If the advanced filters dialog is displayed, then we need to update its' state.
-	if {[winfo exists $Apol_Analysis_fulflow::advanced_filter_Dlg]} {
-		Apol_Analysis_fulflow::initialize_filter_widgets
-		raise $Apol_Analysis_fulflow::advanced_filter_Dlg
-		focus $Apol_Analysis_fulflow::advanced_filter_Dlg
-		
-		# Reset the selection in the listbox
-		if {$Apol_Analysis_fulflow::class_selected_idx != "-1"} {
-			$class_listbox selection set [$class_listbox index $Apol_Analysis_fulflow::class_selected_idx]
-		}
-	} else {
-		 foreach class $class_list {
-			set num_excluded 0
-			set class_perms [array names perm_status_array "$class,*"]
-			foreach element $class_perms {
-				if {[string equal $perm_status_array($element) "exclude"]} {
-					incr num_excluded
-				}
-			}
-			if {$num_excluded == [llength $class_perms]} {
-				set idx [lsearch -exact $class_list $class]
-				if {$idx != -1} {
-					set class_list [lreplace $class_list $idx $idx "$class (Excluded)"]
-				}
-			} 
-		}
-	}
-
-	return 0
-}
-
-# ------------------------------------------------------------------------------
 #  Command Apol_Analysis_fulflow::load_query_options
-#	- file_channel - file channel identifier for the opened query file.
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_fulflow::load_query_options { file_channel parentDlg } {
         variable endtype_sel         
@@ -348,8 +310,8 @@ proc Apol_Analysis_fulflow::load_query_options { file_channel parentDlg } {
 	variable perm_status_array
 	variable incl_types 
 	variable excl_types    
-	variable include_attribute_sel
-	variable exclude_attribute_sel
+	variable incl_attrib_combo_value
+	variable excl_attrib_combo_value
 	variable class_listbox
 	variable filter_vars_init
 	variable class_list
@@ -374,7 +336,7 @@ proc Apol_Analysis_fulflow::load_query_options { file_channel parentDlg } {
 	}
 	# Re-format the query options list into a string where all elements are seperated
 	# by a single space. Then split this string into a list using the space as the delimeter.	
-	set query_options [split [join $query_options " "]]
+	set query_options [split [join $query_options " "] " :"]
 	
         # Query options variables
         set endtype_sel [lindex $query_options 0]      
@@ -398,7 +360,7 @@ proc Apol_Analysis_fulflow::load_query_options { file_channel parentDlg } {
         set flow_direction [string trim [lindex $query_options 7] "\{\}"]
      	
      	# First initialize advanced filter variables
-     	Apol_Analysis_fulflow::initialize_objs_and_perm_filters
+     	Apol_Analysis_fulflow::advanced_filters_initialize_objs_and_perm_filters
      	set filter_vars_init 1
         set incl_types ""
 	set excl_types ""
@@ -540,15 +502,15 @@ proc Apol_Analysis_fulflow::load_query_options { file_channel parentDlg } {
      			}
      		}
 	}   
-	set Apol_Analysis_fulflow::non_filtered_incl_types $incl_types
-	set Apol_Analysis_fulflow::non_filtered_excl_types $excl_types 
+	set Apol_Analysis_fulflow::master_incl_types_list $incl_types
+	set Apol_Analysis_fulflow::master_excl_types_list $excl_types 
 			
       	# Update our counter variable to the next element in the query options list
       	incr i
       	if {[lindex $query_options $i] != "\{\}"} {
       		set tmp [string trim [lindex $query_options $i] "\{\}"]
       		if {[lsearch -exact $Apol_Types::attriblist $tmp] != -1} {
-        		set include_attribute_sel $tmp
+        		set incl_attrib_combo_value $tmp
         	} else {
      			tk_messageBox -icon warning -type ok -title "Warning" \
 				-message "The specified attribute $tmp does not exist in the currently \
@@ -560,7 +522,7 @@ proc Apol_Analysis_fulflow::load_query_options { file_channel parentDlg } {
         if {[lindex $query_options $i] != "\{\}"} {
         	set tmp [string trim [lindex $query_options $i] "\{\}"]
         	if {[lsearch -exact $Apol_Types::attriblist $tmp] != -1} {
-        		set exclude_attribute_sel $tmp
+        		set excl_attrib_combo_value $tmp
         	} else {
      			tk_messageBox -icon warning -type ok -title "Warning" \
 				-message "The specified attribute $tmp does not exist in the currently \
@@ -569,13 +531,35 @@ proc Apol_Analysis_fulflow::load_query_options { file_channel parentDlg } {
 		}
         }
         incr i
-        set Apol_Analysis_fulflow::incl_attrib_sel [lindex $query_options $i]
+        set Apol_Analysis_fulflow::incl_attrib_cb_sel [lindex $query_options $i]
         incr i
-        set Apol_Analysis_fulflow::excl_attrib_sel [lindex $query_options $i]
+        set Apol_Analysis_fulflow::excl_attrib_cb_sel [lindex $query_options $i]
+        
+        incr i
+        while {$i != [llength $query_options]} {
+        	# This means that there are more saved options to parse. As of apol version 1.3, all newly 
+        	# added options are name:value pairs. This will make this proc more readable and easier to
+        	# extend should we add additional query options in future releases.
+        	switch -exact -- [lindex $query_options $i] {
+        		"threshhold_cb_value" { 
+        			incr i
+				set Apol_Analysis_fulflow::threshhold_cb_value [lindex $query_options $i]
+			}
+			"threshhold_value" {
+				incr i
+				set Apol_Analysis_fulflow::threshhold_value [lindex $query_options $i]
+			}
+			default {
+				puts "Error: Unknown query option name encountered ([lindex $query_options $i])."
+				break
+			}
+        	}
+        	incr i
+        }
         
 	Apol_Analysis_fulflow::config_endtype_state
 	Apol_Analysis_fulflow::config_attrib_comboBox_state 
-	Apol_Analysis_fulflow::update_advanced_filters_dialog
+	Apol_Analysis_fulflow::advanced_filters_update_advanced_filters_dialog
 	
 	# We set the start type parameter here because Apol_Analysis_fulflow::config_attrib_comboBox_state
 	# clears the start type before changing the start types list.
@@ -615,16 +599,18 @@ proc Apol_Analysis_fulflow::save_query_options {module_name file_channel file_na
         variable entry_end
         # Advanced filters variables
 	variable perm_status_array
-	variable non_filtered_excl_types   
-	variable include_attribute_sel
-	variable exclude_attribute_sel
-	variable incl_attrib_sel
-	variable excl_attrib_sel
+	variable master_excl_types_list   
+	variable incl_attrib_combo_value
+	variable excl_attrib_combo_value
+	variable incl_attrib_cb_sel
+	variable excl_attrib_cb_sel
 	variable filter_vars_init
+	variable threshhold_cb_value
+	variable threshhold_value	
 	
 	# If the advanced filter vars have not been initialized then perform initialization
 	if {!$filter_vars_init} {
-		Apol_Analysis_fulflow::initialize_filter_vars 
+		Apol_Analysis_fulflow::advanced_filters_initialize_filter_vars 
 	}
 	set start_type [$combo_start cget -text]
 	set display_attribute [$combo_attribute cget -text]
@@ -640,9 +626,11 @@ proc Apol_Analysis_fulflow::save_query_options {module_name file_channel file_na
 		$display_attribute \
 		$flow_direction \
 		$class_perms_list \
-		$non_filtered_excl_types \
-		$include_attribute_sel $exclude_attribute_sel $incl_attrib_sel $excl_attrib_sel]
-		
+		$master_excl_types_list \
+		$incl_attrib_combo_value $excl_attrib_combo_value \
+		$incl_attrib_cb_sel $excl_attrib_cb_sel \
+		"threshhold_cb_value:$threshhold_cb_value" "threshhold_value:$threshhold_value"]
+	
 	puts $file_channel "$module_name"
 	# Dump the query comments text out to the file
 	set comments [string trim [$comment_text get 1.0 end]]
@@ -670,18 +658,18 @@ proc Apol_Analysis_fulflow::get_current_results_state { } {
         variable fulflow_info_text
         # Advanced filters variables
 	variable perm_status_array
-	variable incl_types 
-	variable excl_types   
-	variable non_filtered_incl_types 
-	variable non_filtered_excl_types 
-	variable include_attribute_sel
-	variable exclude_attribute_sel
+	variable filtered_incl_types 
+	variable filtered_excl_types   
+	variable master_incl_types_list 
+	variable master_excl_types_list 
+	variable incl_attrib_combo_value
+	variable excl_attrib_combo_value
 	variable filter_vars_init
 	variable comment_text
 	
 	# If the advanced filter vars have not been initialized then perform initialization
 	if {!$filter_vars_init} {
-		Apol_Analysis_fulflow::initialize_filter_vars 
+		Apol_Analysis_fulflow::advanced_filters_initialize_filter_vars 
 	}
 	set comments "[string trim [$comment_text get 1.0 end]]"
 	set class_perms_list [array get perm_status_array]
@@ -697,8 +685,8 @@ proc Apol_Analysis_fulflow::get_current_results_state { } {
 		$display_attribute \
 		$flow_direction \
 		$class_perms_list \
-		$incl_types $excl_types $non_filtered_incl_types $non_filtered_excl_types \
-		$include_attribute_sel $exclude_attribute_sel $comments]
+		$filtered_incl_types $filtered_excl_types $master_incl_types_list $master_excl_types_list \
+		$incl_attrib_combo_value $excl_attrib_combo_value $comments]
      	return $options
 } 
 
@@ -720,12 +708,12 @@ proc Apol_Analysis_fulflow::set_display_to_results_state { query_options } {
         variable end_type           
         variable display_attribute  
         variable flow_direction 
-	variable incl_types 
-	variable excl_types  
-	variable non_filtered_incl_types 
-	variable non_filtered_excl_types   
-	variable include_attribute_sel
-	variable exclude_attribute_sel
+	variable filtered_incl_types 
+	variable filtered_excl_types  
+	variable master_incl_types_list 
+	variable master_excl_types_list   
+	variable incl_attrib_combo_value
+	variable excl_attrib_combo_value
 	variable perm_status_array
 	variable filter_vars_init
 	variable comment_text
@@ -749,13 +737,13 @@ proc Apol_Analysis_fulflow::set_display_to_results_state { query_options } {
         	array unset perm_status_array
         }
       	array set perm_status_array [lindex $query_options 10]
-        set incl_types [lindex $query_options 11]
-        set excl_types [lindex $query_options 12]
-        set non_filtered_incl_types [lindex $query_options 13]
-        set non_filtered_excl_types [lindex $query_options 14]
+        set filtered_incl_types [lindex $query_options 11]
+        set filtered_excl_types [lindex $query_options 12]
+        set master_incl_types_list [lindex $query_options 13]
+        set master_excl_types_list [lindex $query_options 14]
 
-        set include_attribute_sel [lindex $query_options 15]
-        set exclude_attribute_sel [lindex $query_options 16]
+        set incl_attrib_combo_value [lindex $query_options 15]
+        set excl_attrib_combo_value [lindex $query_options 16]
         # Fill in the query comments text widget
         $comment_text delete 1.0 end
         $comment_text insert end [lindex $query_options 17]
@@ -767,7 +755,11 @@ proc Apol_Analysis_fulflow::set_display_to_results_state { query_options } {
     	set Apol_Analysis_fulflow::filter_vars_init 1
     	
 	if {[winfo exists $Apol_Analysis_fulflow::advanced_filter_Dlg]} {
-		Apol_Analysis_fulflow::initialize_filter_widgets
+		set rt [catch {Apol_Analysis_fulflow::advanced_filters_update_widgets_state} err]
+		if {$rt != 0} {
+			tk_messageBox -icon error -type ok -title "Error" -message "$err"
+			return -1
+		}
 		raise $Apol_Analysis_fulflow::advanced_filter_Dlg
 		focus $Apol_Analysis_fulflow::advanced_filter_Dlg
 	} else {
@@ -781,7 +773,7 @@ proc Apol_Analysis_fulflow::set_display_to_results_state { query_options } {
 				}
 			}
 			if {$num_excluded == [llength $class_perms]} {
-				set class_list [lappend class_list "$class (Excluded)"]
+				set class_list [lappend class_list "$class$Apol_Analysis_fulflow::excluded_tag"]
 			} else {
 				set class_list [lappend class_list $class]
 			}
@@ -1615,7 +1607,7 @@ proc Apol_Analysis_fulflow::create_resultsDisplay { results_frame } {
 
 	# tree window
 	set fulflow_tree  [Tree [$sw_tree getframe].fulflow_tree \
-	           -relief flat -borderwidth 0 -width 15 -highlightthickness 0 \
+	           -relief flat -borderwidth 0 -highlightthickness 0 \
 		   -redraw 0 -bg white -showlines 1 -padx 0 \
 		   -opencmd  {Apol_Analysis_fulflow::do_child_analysis $Apol_Analysis_fulflow::fulflow_tree}]
 	$sw_tree setwidget $fulflow_tree 
@@ -1655,31 +1647,6 @@ proc Apol_Analysis_fulflow::reset_variables { } {
         set Apol_Analysis_fulflow::display_attrib_sel   0
         set Apol_Analysis_fulflow::display_attribute    ""
 
-     	return 0
-} 
-
-# ------------------------------------------------------------------------------
-#  Command Apol_Analysis_fulflow::reset_filter_variables
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_fulflow::reset_filter_variables { } { 
-	variable perm_status_array
-	variable filter_vars_init  
-	variable class_selected_idx     
-	variable num_perms_for_class 
-	
-	array unset perm_status_array
-	set Apol_Analysis_fulflow::incl_types ""
-	set Apol_Analysis_fulflow::excl_types "" 
-	set Apol_Analysis_fulflow::non_filtered_incl_types ""
-	set Apol_Analysis_fulflow::non_filtered_excl_types "" 
-	set Apol_Analysis_fulflow::class_list ""
-	set Apol_Analysis_fulflow::include_attribute_sel ""
-	set Apol_Analysis_fulflow::exclude_attribute_sel ""
-	set Apol_Analysis_fulflow::incl_attrib_sel 0
-	set Apol_Analysis_fulflow::excl_attrib_sel 0
-	set filter_vars_init 0
-	set num_perms_for_class 0
-	
      	return 0
 } 
 
@@ -1821,8 +1788,8 @@ proc Apol_Analysis_fulflow::change_types_list { } {
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_fulflow::display_mod_options { opts_frame } {    
 	Apol_Analysis_fulflow::reset_variables
-	Apol_Analysis_fulflow::reset_filter_variables
-	Apol_Analysis_fulflow::update_advanced_filters_dialog  	
+	Apol_Analysis_fulflow::advanced_filters_reset_filter_variables
+	Apol_Analysis_fulflow::advanced_filters_update_advanced_filters_dialog  	
      	Apol_Analysis_fulflow::create_options $opts_frame
         Apol_Analysis_fulflow::populate_ta_list
  	
@@ -1860,9 +1827,101 @@ proc Apol_Analysis_fulflow::populate_ta_list { } {
         return 0
 }
 
+# ------------------------------------------------------------------------------
+#  Command Apol_Analysis_fulflow::load_default_perm_map
+# ------------------------------------------------------------------------------
+proc Apol_Analysis_fulflow::load_default_perm_map {} {
+	# if a permap is not loaded then load the default permap
+        set rt [catch {set map_loaded [Apol_Perms_Map::is_pmap_loaded]} err]
+        if { $rt != 0 } {
+		tk_messageBox -icon error -type ok -title "Error" -message "$err"
+		return -code error
+	}
+	if {!$map_loaded} {
+		set rt [catch {Apol_Perms_Map::load_default_perm_map} err]
+		if { $rt != 0 } {
+			if {$rt == $Apol_Analysis_fulflow::warning_return_val} {
+				tk_messageBox -icon warning -type ok -title "Warning" -message "$err"
+			} else {
+				tk_messageBox -icon error -type ok -title "Error" -message "$err"
+				return -code error		
+			}
+		}
+	}   
+	return 0
+}
 
 # ------------------------------------------------------------------------------
-#  Command Apol_Analysis_fulflow::include_types
+#  Command Apol_Analysis_fulflow::advanced_filters_reset_filter_variables
+# ------------------------------------------------------------------------------
+proc Apol_Analysis_fulflow::advanced_filters_reset_filter_variables { } { 
+	variable perm_status_array
+	variable filter_vars_init  
+	variable class_selected_idx  
+	
+	array unset perm_status_array
+ 	set Apol_Analysis_fulflow::filtered_incl_types ""
+ 	set Apol_Analysis_fulflow::filtered_excl_types "" 
+ 	set Apol_Analysis_fulflow::master_incl_types_list ""
+ 	set Apol_Analysis_fulflow::master_excl_types_list "" 
+	set Apol_Analysis_fulflow::class_list ""
+	set Apol_Analysis_fulflow::incl_attrib_combo_value ""
+	set Apol_Analysis_fulflow::excl_attrib_combo_value ""
+	set Apol_Analysis_fulflow::incl_attrib_cb_sel 0
+	set Apol_Analysis_fulflow::excl_attrib_cb_sel 0
+	set Apol_Analysis_fulflow::threshhold_cb_value 0
+	set Apol_Analysis_fulflow::threshhold_value 1
+	set filter_vars_init 0
+	set class_selected_idx -1
+	
+     	return 0
+} 
+
+# ------------------------------------------------------------------------------
+#  Command Apol_Analysis_fulflow::advanced_filters_update_advanced_filters_dialog
+# ------------------------------------------------------------------------------
+proc Apol_Analysis_fulflow::advanced_filters_update_advanced_filters_dialog {} {
+	variable class_list
+	variable perm_status_array
+	variable class_listbox
+	
+	# If the advanced filters dialog is displayed, then we need to update its' state.
+	if {[winfo exists $Apol_Analysis_fulflow::advanced_filter_Dlg]} {
+		set rt [catch {Apol_Analysis_fulflow::advanced_filters_update_widgets_state} err]
+		if {$rt != 0} {
+			tk_messageBox -icon error -type ok -title "Error" -message "$err"
+			return -1
+		}
+		raise $Apol_Analysis_fulflow::advanced_filter_Dlg
+		focus $Apol_Analysis_fulflow::advanced_filter_Dlg
+		
+		# Reset the selection in the listbox
+		if {$Apol_Analysis_fulflow::class_selected_idx != "-1"} {
+			$class_listbox selection set [$class_listbox index $Apol_Analysis_fulflow::class_selected_idx]
+		}
+	} else {
+		 foreach class $class_list {
+			set num_excluded 0
+			set class_perms [array names perm_status_array "$class,*"]
+			foreach element $class_perms {
+				if {[string equal $perm_status_array($element) "exclude"]} {
+					incr num_excluded
+				}
+			}
+			if {$num_excluded == [llength $class_perms]} {
+				set idx [lsearch -exact $class_list $class]
+				if {$idx != -1} {
+					set class_list [lreplace $class_list $idx $idx "$class$Apol_Analysis_fulflow::excluded_tag"]
+				}
+			} 
+		}
+	}
+
+	return 0
+}
+
+# ------------------------------------------------------------------------------
+#  Command Apol_Analysis_fulflow::advanced_filters_include_types
 #	- type_indexes - the indexes of selected types to include
 #	- remove_list - the list displayed inside the listbox from which the 
 #			type is being removed.
@@ -1871,9 +1930,9 @@ proc Apol_Analysis_fulflow::populate_ta_list { } {
 #	- remove_lbox - listbox widget from which the type is being removed.
 #	- add_lbox - listbox widget to which the type is being added.
 # ------------------------------------------------------------------------------
-proc Apol_Analysis_fulflow::include_types {type_indexes remove_list add_list remove_lbox add_lbox} {
-	variable non_filtered_incl_types
-	variable non_filtered_excl_types
+proc Apol_Analysis_fulflow::advanced_filters_include_types {type_indexes remove_list add_list remove_lbox add_lbox} {
+	variable master_incl_types_list
+	variable master_excl_types_list
 		
 	if {$type_indexes != ""} {
 		foreach idx $type_indexes {
@@ -1886,10 +1945,10 @@ proc Apol_Analysis_fulflow::include_types {type_indexes remove_list add_list rem
 				set add_list [lsort $add_list]
 			}
 			# Update the non-filtered list variables (i.e. types not filtered by attribute)
-			set non_filtered_incl_types [lappend non_filtered_incl_types $type]
-			set idx  [lsearch -exact $non_filtered_excl_types $type]
+			set master_incl_types_list [lappend master_incl_types_list $type]
+			set idx  [lsearch -exact $master_excl_types_list $type]
 			if {$idx != -1} {
-				set non_filtered_excl_types [lreplace $non_filtered_excl_types $idx $idx]
+				set master_excl_types_list [lreplace $master_excl_types_list $idx $idx]
 			}
 		    }
 		set [$remove_lbox cget -listvar] $remove_list
@@ -1900,7 +1959,7 @@ proc Apol_Analysis_fulflow::include_types {type_indexes remove_list add_list rem
 }
 
 # ------------------------------------------------------------------------------
-#  Command Apol_Analysis_fulflow::exclude_types
+#  Command Apol_Analysis_fulflow::advanced_filters_exclude_types
 #	- type_indexes - the indexes of selected types to include
 #	- remove_list - the list displayed inside the listbox from which the 
 #			type is being removed.
@@ -1909,9 +1968,9 @@ proc Apol_Analysis_fulflow::include_types {type_indexes remove_list add_list rem
 #	- remove_lbox - listbox widget from which the type is being removed.
 #	- add_lbox - listbox widget to which the type is being added.
 # ------------------------------------------------------------------------------
-proc Apol_Analysis_fulflow::exclude_types {type_indexes remove_list add_list remove_lbox add_lbox} {
-	variable non_filtered_incl_types
-	variable non_filtered_excl_types
+proc Apol_Analysis_fulflow::advanced_filters_exclude_types {type_indexes remove_list add_list remove_lbox add_lbox} {
+	variable master_incl_types_list
+	variable master_excl_types_list
 		
 	if {$type_indexes != ""} {
 		foreach idx $type_indexes {
@@ -1924,10 +1983,10 @@ proc Apol_Analysis_fulflow::exclude_types {type_indexes remove_list add_list rem
 				set add_list [lsort $add_list]
 			}
 			# Update the non-filtered list variables (i.e. types not filtered by attribute)
-			set non_filtered_excl_types [lappend non_filtered_excl_types $type]
-			set idx  [lsearch -exact $non_filtered_incl_types $type]
+			set master_excl_types_list [lappend master_excl_types_list $type]
+			set idx  [lsearch -exact $master_incl_types_list $type]
 			if {$idx != -1} {
-				set non_filtered_incl_types [lreplace $non_filtered_incl_types $idx $idx]
+				set master_incl_types_list [lreplace $master_incl_types_list $idx $idx]
 			}
 		    }
 		set [$remove_lbox cget -listvar] $remove_list
@@ -1938,33 +1997,33 @@ proc Apol_Analysis_fulflow::exclude_types {type_indexes remove_list add_list rem
 }
 
 # ------------------------------------------------------------------------------
-#  Command Apol_Analysis_fulflow::configure_adv_combo_state
+#  Command Apol_Analysis_fulflow::advanced_filters_configure_adv_combo_state
 # ------------------------------------------------------------------------------
-proc Apol_Analysis_fulflow::configure_adv_combo_state {cb_selected combo_box lbox which_list} {
-	variable non_filtered_incl_types
-	variable non_filtered_excl_types
+proc Apol_Analysis_fulflow::advanced_filters_configure_adv_combo_state {cb_selected combo_box lbox which_list} {
+	variable master_incl_types_list
+	variable master_excl_types_list
 	
 	if {$cb_selected} {
 		$combo_box configure -state normal -entrybg white
 		if {$which_list == "incl"} {
-			Apol_Analysis_fulflow::filter_types_using_attrib \
-				$Apol_Analysis_fulflow::include_attribute_sel \
+			Apol_Analysis_fulflow::advanced_filters_filter_types_using_attrib \
+				$Apol_Analysis_fulflow::incl_attrib_combo_value \
 				$lbox \
-				$Apol_Analysis_fulflow::non_filtered_incl_types
+				$Apol_Analysis_fulflow::master_incl_types_list
 		} else {
-			Apol_Analysis_fulflow::filter_types_using_attrib \
-				$Apol_Analysis_fulflow::exclude_attribute_sel \
+			Apol_Analysis_fulflow::advanced_filters_filter_types_using_attrib \
+				$Apol_Analysis_fulflow::excl_attrib_combo_value \
 				$lbox \
-				$Apol_Analysis_fulflow::non_filtered_excl_types
+				$Apol_Analysis_fulflow::master_excl_types_list
 		}
 	} else {
 		$combo_box configure -state disabled -entrybg  $ApolTop::default_bg_color
 		if {$which_list == "incl"} {
-			set [$lbox cget -listvar] [lsort $non_filtered_incl_types]
+			set [$lbox cget -listvar] [lsort $master_incl_types_list]
 		} elseif {$which_list == "excl"} {
-			set [$lbox cget -listvar] [lsort $non_filtered_excl_types]
+			set [$lbox cget -listvar] [lsort $master_excl_types_list]
 		} else {
-			tk_messageBox -icon error -type ok -title "Error" -message "Invalid paremeter ($which_list) to Apol_Analysis_fulflow::configure_adv_combo_state. Must be either 'incl' or 'excl'"
+			tk_messageBox -icon error -type ok -title "Error" -message "Invalid paremeter ($which_list) to Apol_Analysis_fulflow::advanced_filters_configure_adv_combo_state. Must be either 'incl' or 'excl'"
 	    		return -1
 		}
 	}
@@ -1973,11 +2032,11 @@ proc Apol_Analysis_fulflow::configure_adv_combo_state {cb_selected combo_box lbo
 }
 
 # ------------------------------------------------------------------------------
-#  Command Apol_Analysis_fulflow::filter_types_using_attrib
+#  Command Apol_Analysis_fulflow::advanced_filters_filter_types_using_attrib
 #	- attribute - the specified attribute
 #	- lbox - the listbox in which to perform the selection
 # ------------------------------------------------------------------------------
-proc Apol_Analysis_fulflow::filter_types_using_attrib {attribute lbox non_filtered_types} {	
+proc Apol_Analysis_fulflow::advanced_filters_filter_types_using_attrib {attribute lbox non_filtered_types} {	
 	if {$attribute != ""} {
 		$lbox delete 0 end
 		# Get a list of types for the specified attribute
@@ -2000,7 +2059,7 @@ proc Apol_Analysis_fulflow::filter_types_using_attrib {attribute lbox non_filter
 }
 
 # ------------------------------------------------------------------------------
-#  Command Apol_Analysis_fulflow::include_exclude_permissions
+#  Command Apol_Analysis_fulflow::advanced_filters_include_exclude_permissions
 #	- perms_box - the specified attribute
 #	- which - include or exclude
 #
@@ -2015,124 +2074,142 @@ proc Apol_Analysis_fulflow::filter_types_using_attrib {attribute lbox non_filter
 #	  argument MUST first search the class string for the sequence " (Excluded)"
 # 	  before processing the class name.
 # ------------------------------------------------------------------------------
-proc Apol_Analysis_fulflow::include_exclude_permissions {which} {	
+proc Apol_Analysis_fulflow::advanced_filters_include_exclude_permissions {which} {	
 	variable class_listbox	
+	variable perm_status_array
+ 	variable perms_box
 	variable select_fg_orig
+	variable class_selected_idx 
+	variable permissions_title_frame
 	
 	if {[ApolTop::is_policy_open]} {
 		if {[string equal $which "include"] == 0 && [string equal $which "exclude"] == 0} {
-			puts "Tcl error: wrong 'which' argument sent to Apol_Analysis_fulflow::include_exclude_permissions. Must be either 'include' or 'exclude'."	
+			puts "Tcl error: wrong 'which' argument sent to Apol_Analysis_fulflow::advanced_filters_include_exclude_permissions. Must be either 'include' or 'exclude'."	
 			return -1
 		}
-		set class_selected_idx [$class_listbox curselection]
-		if {$class_selected_idx != ""} {
-			set object_class [$class_listbox get $class_selected_idx]
-			set idx [string first " (Excluded)" $object_class]
-			if {$idx != -1} {
-				set object_class [string range $object_class 0 [expr $idx - 1]]
-			}
-			set rt [catch {set perms_list [apol_GetPermsByClass $object_class 1]} err]
-			if {$rt != 0} {
-				tk_messageBox -icon error -type ok -title "Error" -message "$err"
-				return -1
-			}
-			foreach perm $perms_list {
-				set Apol_Analysis_fulflow::perm_status_array($object_class,$perm) $which
-			}
-			if {$class_selected_idx != ""} {
-				set items [$class_listbox get 0 end]
+
+ 		foreach object_class_idx [$class_listbox curselection] {
+ 			set object_class [$class_listbox get $object_class_idx]
+ 			set idx [string first $Apol_Analysis_fulflow::excluded_tag $object_class]
+ 			if {$idx != -1} {
+ 				set object_class [string range $object_class 0 [expr $idx - 1]]
+ 			}
+ 			set rt [catch {set perms_list [apol_GetPermsByClass $object_class 1]} err]
+ 			if {$rt != 0} {
+ 				tk_messageBox -icon error -type ok -title "Error" -message "$err"
+ 				return -1
+ 			}
+ 			foreach perm $perms_list {
+ 				set perm_status_array($object_class,$perm) $which
+ 			}
+ 			if {$object_class_idx != ""} {
+ 				set items [$class_listbox get 0 end]
 				if {[string equal $which "exclude"]} {
-					$class_listbox itemconfigure $class_selected_idx -foreground gray
-					set [$class_listbox cget -listvar] [lreplace $items $class_selected_idx $class_selected_idx "$object_class (Excluded)"]
+					$class_listbox itemconfigure $object_class_idx -foreground gray
+					set [$class_listbox cget -listvar] [lreplace $items $object_class_idx $object_class_idx "$object_class (Excluded)"]
 				} else {
-					$class_listbox itemconfigure $class_selected_idx -foreground $select_fg_orig
-					set [$class_listbox cget -listvar] [lreplace $items $class_selected_idx $class_selected_idx "$object_class"]
+					$class_listbox itemconfigure $object_class_idx -foreground $select_fg_orig
+					set [$class_listbox cget -listvar] [lreplace $items $object_class_idx $object_class_idx "$object_class"]
 				}
-			}
-		}
+  			}
+  			if {$class_selected_idx  == $object_class_idx} {
+  				$permissions_title_frame configure -text "Permissions for [$class_listbox get $object_class_idx]:"
+  			}
+  		}
 	}
 	return 0	
 }
 
 # ------------------------------------------------------------------------------
-#  Command Apol_Analysis_fulflow::change_obj_state_on_perm_select
+#  Command Apol_Analysis_fulflow::advanced_filters_change_obj_state_on_perm_select
 #`	-  This proc also searches a class string for the sequence " (Excluded)"
 # 	   in order to process the class name only. 
 # ------------------------------------------------------------------------------
-proc Apol_Analysis_fulflow::change_obj_state_on_perm_select {} {
-	variable num_perms_for_class
+proc Apol_Analysis_fulflow::advanced_filters_change_obj_state_on_perm_select {} {
 	variable perm_status_array
 	variable class_listbox	
 	variable select_fg_orig
+	variable class_selected_idx 
 	
 	set num_excluded 0	
-	set class_selected_idx [$class_listbox curselection]
-	if {$class_selected_idx != ""} {
+	# There may be multiple selected items, but we need the object class that is currently displayed in
+	# the text box. We have this index stored in our global class_selected_idx variable.
+	if {$class_selected_idx != "-1"} {
 		set class_sel [$class_listbox get $class_selected_idx]
-		set idx [string first " (Excluded)" $class_sel]
+		set idx [string first $Apol_Analysis_fulflow::excluded_tag $class_sel]
 		if {$idx != -1} {
 			set class_sel [string range $class_sel 0 [expr $idx - 1]]
 		}
 		set class_elements [array get perm_status_array "$class_sel*"]
-	
-		for {set i 0} {$i < [llength $class_elements]} {incr i} {
-			incr i
-			if {[string equal [lindex $class_elements $i] "exclude"]} {
-				incr num_excluded	
+		if {$class_elements != ""} {
+			set num_perms_for_class [expr {[llength $class_elements] / 2}]
+			for {set i 0} {$i < [llength $class_elements]} {incr i} {
+				incr i
+				if {[string equal [lindex $class_elements $i] "exclude"]} {
+					incr num_excluded	
+				}
+			}
+			set items [$class_listbox get 0 end]
+			# If the total all permissions for the object have been excluded then inform the user. 
+			if {$num_excluded == $num_perms_for_class} {
+				$class_listbox itemconfigure $class_selected_idx -foreground gray
+				set [$class_listbox cget -listvar] [lreplace $items $class_selected_idx $class_selected_idx "$class_sel (Excluded)"]
+			} else {
+				$class_listbox itemconfigure $class_selected_idx -foreground $select_fg_orig
+				set [$class_listbox cget -listvar] [lreplace $items $class_selected_idx $class_selected_idx "$class_sel"]
 			}
 		}
-		set items [$class_listbox get 0 end]
-		# If the total all permissions for the object have been excluded then inform the user. 
-		if {$num_excluded == $num_perms_for_class} {
-			$class_listbox itemconfigure $class_selected_idx -foreground gray
-			set [$class_listbox cget -listvar] [lreplace $items $class_selected_idx $class_selected_idx "$class_sel (Excluded)"]
-		} else {
-			$class_listbox itemconfigure $class_selected_idx -foreground $select_fg_orig
-			set [$class_listbox cget -listvar] [lreplace $items $class_selected_idx $class_selected_idx "$class_sel"]
-		}
 	}
+	
 	return 0	
 }
 
 # ------------------------------------------------------------------------------
-# Command Apol_Analysis_fulflow::embed_perm_buttons 
+# Command Apol_Analysis_fulflow::advanced_filters_embed_perm_buttons 
 #	- Embeds include/exclude radiobuttons in the permissions textbox next to
 #	  each permission label.
 # ------------------------------------------------------------------------------
-proc Apol_Analysis_fulflow::embed_perm_buttons {list_b class perm} {
+proc Apol_Analysis_fulflow::advanced_filters_embed_perm_buttons {list_b class perm} {
  	# Frames
 	set frame [frame $list_b.f:$class:$perm -bd 0 -bg white]
 	set lbl_frame [frame $frame.lbl_frame:$class:$perm -width 20 -bd 1 -bg white]
 	set cb_frame [frame $frame.cb_frame:$class:$perm -width 10 -bd 0 -bg white]
+	
 	# Label
 	set lbl1 [label $lbl_frame.lbl1:$class:$perm -bg white -justify left -width 20  \
 			-anchor nw -text $perm] 
+	set lbl2 [label $lbl_frame.lbl2:$class:$perm -bg white -justify left -width 5 -text "--->"]
+	
 	# Radiobuttons. Here we are embedding selinux and mls permissions into the pathname 
 	# in order to make them unique radiobuttons.
 	set cb_include [radiobutton $cb_frame.cb_include:$class:$perm -bg white \
 		-value include -text "Include" \
 		-highlightthickness 0 \
 		-variable Apol_Analysis_fulflow::perm_status_array($class,$perm) \
-		-command {Apol_Analysis_fulflow::change_obj_state_on_perm_select}]	
+		-command {Apol_Analysis_fulflow::advanced_filters_change_obj_state_on_perm_select}]	
 	set cb_exclude [radiobutton $cb_frame.cb_exclude:$class:$perm -bg white \
 		-value exclude -text "Exclude" \
 		-highlightthickness 0 \
 		-variable Apol_Analysis_fulflow::perm_status_array($class,$perm) \
-		-command {Apol_Analysis_fulflow::change_obj_state_on_perm_select}]	
-				
+		-command {Apol_Analysis_fulflow::advanced_filters_change_obj_state_on_perm_select}]
+	set lbl_weight [Label $cb_frame.lbl_weight:$class:$perm -bg white \
+		-text "Perm map weight: [Apol_Perms_Map::get_weight_for_class_perm $class $perm]" \
+		-padx 10]
+	
 	# Placing widgets
-	pack $frame -side left -anchor nw -expand yes 
+	pack $frame -side left -anchor nw -expand yes -pady 10
 	pack $lbl_frame $cb_frame -side left -anchor nw -expand yes
-	pack $lbl1 -side left -anchor nw
-	pack $cb_include $cb_exclude -side left -anchor nw
+	pack $lbl1 $lbl2 -side left -anchor nw
+	pack $cb_include $cb_exclude $lbl_weight -side left -anchor nw
+	
 	# Return the pathname of the frame to embed.
  	return $frame
 }
 
 # ------------------------------------------------------------------------------
-# Command Apol_Analysis_fulflow::clear_perms_text 
+# Command Apol_Analysis_fulflow::advanced_filters_clear_perms_text 
 # ------------------------------------------------------------------------------
-proc Apol_Analysis_fulflow::clear_perms_text {} {
+proc Apol_Analysis_fulflow::advanced_filters_clear_perms_text {} {
 	variable perms_box
 	
 	# Enable the text widget. 
@@ -2153,7 +2230,7 @@ proc Apol_Analysis_fulflow::clear_perms_text {} {
 }
 
 # ------------------------------------------------------------------------------
-# Command Apol_Analysis_fulflow::display_permissions 
+# Command Apol_Analysis_fulflow::advanced_filters_display_permissions 
 # 	- Displays permissions for the selected object class in the permissions 
 #	  text box.
 #	- Takes the selected object class index as the only argument. 
@@ -2162,26 +2239,29 @@ proc Apol_Analysis_fulflow::clear_perms_text {} {
 # 	  is being used and does not provide a -text option for items in the 
 # 	  listbox.
 # ------------------------------------------------------------------------------
-proc Apol_Analysis_fulflow::display_permissions {class_idx} {
+proc Apol_Analysis_fulflow::advanced_filters_display_permissions {class_idx} {
 	variable perms_box
 	variable class_listbox
-	variable num_perms_for_class
 	variable perm_status_array
+ 	variable permissions_title_frame 
 	variable class_selected_idx
 	
-	if {[$class_listbox get 0 end] == ""} {
+	if {[$class_listbox get 0 end] == "" || [llength [$class_listbox curselection]] > 1} {
 		# Nothing in the listbox; return
 		return 0
 	}
+	
 	if {$class_idx == ""} {
-		tk_messageBox -icon error -type ok -title "Error" -message "Empty class name provided."
-		return -1
-	}
-
+		# Something was simply deselected.
+		return 0
+	} 
+	focus -force $class_listbox
 	set class_name [$Apol_Analysis_fulflow::class_listbox get $class_idx]
-	Apol_Analysis_fulflow::clear_perms_text
+	$permissions_title_frame configure -text "Permissions for $class_name:"
+	Apol_Analysis_fulflow::advanced_filters_clear_perms_text
+	update idletasks
 	# Make sure to strip out just the class name, as this may be an excluded class.
-	set idx [string first " (Excluded)" $class_name]
+	set idx [string first $Apol_Analysis_fulflow::excluded_tag $class_name]
 	if {$idx != -1} {
 		set class_name [string range $class_name 0 [expr $idx - 1]]
 	}
@@ -2192,7 +2272,8 @@ proc Apol_Analysis_fulflow::display_permissions {class_idx} {
 			-message "$err"
 		return -1
 	}
-	set num_perms_for_class [llength $perms_list]
+	set perms_list [lsort $perms_list]
+	
 	foreach perm $perms_list { 
 		# If this permission does not exist in our perm status array, this means
 		# that a saved query was loaded and the permission defined in the policy
@@ -2200,9 +2281,10 @@ proc Apol_Analysis_fulflow::display_permissions {class_idx} {
 		if {[array names perm_status_array "$class_name,$perm"] == ""} {
 			set perm_status_array($class_name,$perm) include
 		}
-		$perms_box window create end -window [Apol_Analysis_fulflow::embed_perm_buttons $perms_box $class_name $perm] 
+		$perms_box window create end -window [Apol_Analysis_fulflow::advanced_filters_embed_perm_buttons $perms_box $class_name $perm] 
 		$perms_box insert end "\n"
 	}
+
 	# Disable the text widget. 
 	$perms_box configure -state disabled
 	set class_selected_idx [$class_listbox curselection]
@@ -2210,10 +2292,11 @@ proc Apol_Analysis_fulflow::display_permissions {class_idx} {
 }
 
 # ------------------------------------------------------------------------------
-#  Command Apol_Analysis_fulflow::initialize_objs_and_perm_filters
+#  Command Apol_Analysis_fulflow::advanced_filters_initialize_objs_and_perm_filters
 # ------------------------------------------------------------------------------
-proc Apol_Analysis_fulflow::initialize_objs_and_perm_filters {} {
+proc Apol_Analysis_fulflow::advanced_filters_initialize_objs_and_perm_filters {} {
 	variable class_list
+	variable perm_status_array
 	
 	set class_list $Apol_Class_Perms::class_list
 	# Initialization for object classes section
@@ -2224,43 +2307,43 @@ proc Apol_Analysis_fulflow::initialize_objs_and_perm_filters {} {
 			return -1
 		}
 		foreach perm $perms_list {
-			set Apol_Analysis_fulflow::perm_status_array($class,$perm) include
+			set perm_status_array($class,$perm) include
 		}
 	}
 	return 0
 }
 
 # ------------------------------------------------------------------------------
-#  Command Apol_Analysis_fulflow::initialize_filter_vars
+#  Command Apol_Analysis_fulflow::advanced_filters_initialize_filter_vars
 # ------------------------------------------------------------------------------
-proc Apol_Analysis_fulflow::initialize_filter_vars {} {
-	variable incl_types
-	variable excl_types 
+proc Apol_Analysis_fulflow::advanced_filters_initialize_filter_vars {} {
+	variable filtered_incl_types
+	variable filtered_excl_types 
 	variable filter_vars_init
-	variable non_filtered_incl_types
-	variable non_filtered_excl_types
-	
+	variable master_incl_types_list
+ 	variable master_excl_types_list
+
 	if {$filter_vars_init == 0} {
-		Apol_Analysis_fulflow::initialize_objs_and_perm_filters
-		# Initialization for types section
-	        set excl_types $Apol_Types::typelist
-		set idx [lsearch -exact $excl_types "self"]
-		if {$idx != -1} {
-			set excl_types [lreplace $excl_types $idx $idx]
-		}   
-		set incl_types [lsort $excl_types]
-	        set excl_types ""
-		set non_filtered_incl_types $incl_types
-	        set non_filtered_excl_types $excl_types
-	        set filter_vars_init 1
+		Apol_Analysis_fulflow::advanced_filters_initialize_objs_and_perm_filters
+  		# Initialization for types section
+ 	        set filtered_excl_types $Apol_Types::typelist
+ 		set idx [lsearch -exact $filtered_excl_types "self"]
+  		if {$idx != -1} {
+ 			set filtered_excl_types [lreplace $filtered_excl_types $idx $idx]
+  		}   
+ 		set filtered_incl_types [lsort $filtered_excl_types]
+ 	        set filtered_excl_types ""
+ 		set master_incl_types_list $filtered_incl_types
+ 	        set master_excl_types_list $filtered_excl_types
+  	        set filter_vars_init 1
 	}
 	return 0
 }
 
 # ------------------------------------------------------------------------------
-#  Command Apol_Analysis_fulflow::initialize_filter_widgets
+#  Command Apol_Analysis_fulflow::advanced_filters_set_widgets_to_default_state
 # ------------------------------------------------------------------------------
-proc Apol_Analysis_fulflow::initialize_filter_widgets {} {
+proc Apol_Analysis_fulflow::advanced_filters_set_widgets_to_default_state {} {
 	variable combo_incl
 	variable combo_excl
 	variable perm_status_array
@@ -2268,11 +2351,10 @@ proc Apol_Analysis_fulflow::initialize_filter_widgets {} {
 	variable class_list 
 	variable select_fg_orig
 	
-	Apol_Analysis_fulflow::initialize_filter_vars		
 	$combo_incl configure -values $Apol_Types::attriblist
      	$combo_excl configure -values $Apol_Types::attriblist
-     	$combo_excl configure -text $Apol_Analysis_fulflow::exclude_attribute_sel
-	$combo_incl configure -text $Apol_Analysis_fulflow::include_attribute_sel	
+     	$combo_excl configure -text $Apol_Analysis_fulflow::excl_attrib_combo_value
+	$combo_incl configure -text $Apol_Analysis_fulflow::incl_attrib_combo_value	
 	
 	set select_fg_orig [$class_listbox cget -foreground]
 	
@@ -2280,7 +2362,7 @@ proc Apol_Analysis_fulflow::initialize_filter_widgets {} {
         set class_lbox_idx 0
         foreach class $class_list {
         	# Make sure to strip out just the class name, as this may be an excluded class.
-		set idx [string first " (Excluded)" $class]
+		set idx [string first $Apol_Analysis_fulflow::excluded_tag $class]
 		if {$idx != -1} {
 			set class [string range $class 0 [expr $idx - 1]]
 		}	
@@ -2300,24 +2382,43 @@ proc Apol_Analysis_fulflow::initialize_filter_widgets {} {
 		}
 		incr class_lbox_idx
 	}
-	Apol_Analysis_fulflow::configure_adv_combo_state \
-			$Apol_Analysis_fulflow::incl_attrib_sel \
+	Apol_Analysis_fulflow::advanced_filters_configure_adv_combo_state \
+			$Apol_Analysis_fulflow::incl_attrib_cb_sel \
 			$Apol_Analysis_fulflow::combo_incl \
 			$Apol_Analysis_fulflow::lbox_incl incl
-	Apol_Analysis_fulflow::configure_adv_combo_state \
-		$Apol_Analysis_fulflow::excl_attrib_sel \
+	Apol_Analysis_fulflow::advanced_filters_configure_adv_combo_state \
+		$Apol_Analysis_fulflow::excl_attrib_cb_sel \
 		$Apol_Analysis_fulflow::combo_excl \
 		$Apol_Analysis_fulflow::lbox_excl excl
-			
+
+	$Apol_Analysis_fulflow::spinbox_threshhold setvalue @$Apol_Analysis_fulflow::threshhold_value
+	Apol_Analysis_fulflow::advanced_filters_change_spinbox_state $Apol_Analysis_fulflow::spinbox_threshhold
+	
+	return 0
+}
+
+# ------------------------------------------------------------------------------
+#  Command Apol_Analysis_fulflow::advanced_filters_update_widgets_state
+# ------------------------------------------------------------------------------
+proc Apol_Analysis_fulflow::advanced_filters_update_widgets_state {} {	
+	set rt [catch {Apol_Analysis_fulflow::load_default_perm_map} err]
+	if {$rt != 0} {	
+		return -1
+	}
+	set rt [catch {Apol_Analysis_fulflow::advanced_filters_initialize_filter_vars} err]
+	if {$rt != 0} {
+		return -1
+	}	
+	Apol_Analysis_fulflow::advanced_filters_set_widgets_to_default_state
+				
 	return 0	
 }
 
 # ------------------------------------------------------------------------------
-#  Command Apol_Analysis_fulflow::close_advanced_filter_Dlg
+#  Command Apol_Analysis_fulflow::advanced_filters_destroy_dialog
 # ------------------------------------------------------------------------------
-proc Apol_Analysis_fulflow::close_advanced_filter_Dlg { } {
+proc Apol_Analysis_fulflow::advanced_filters_destroy_dialog { } {
 	variable advanced_filter_Dlg
-	variable perm_status_array
 	
 	set Apol_Analysis_fulflow::class_selected_idx "-1"
 	if { [winfo exists $advanced_filter_Dlg] } {
@@ -2327,9 +2428,35 @@ proc Apol_Analysis_fulflow::close_advanced_filter_Dlg { } {
 }
 
 # ------------------------------------------------------------------------------
-#  Command Apol_Analysis_fulflow::create_advanced_filter_options
+#  Command Apol_Analysis_fulflow::advanced_filters_change_spinbox_state
 # ------------------------------------------------------------------------------
-proc Apol_Analysis_fulflow::create_advanced_filter_options {} {
+proc Apol_Analysis_fulflow::advanced_filters_change_spinbox_state {spinbox} {
+	variable threshhold_cb_value
+
+	if {$threshhold_cb_value} {
+		$spinbox configure -state normal
+	} else {
+		$spinbox configure -state disabled
+	}
+	return 0
+}
+
+# ------------------------------------------------------------------------------
+#  Command Apol_Analysis_fulflow::advanced_filters_change_threshhold_value
+# ------------------------------------------------------------------------------
+proc Apol_Analysis_fulflow::advanced_filters_change_threshhold_value {} {
+	variable threshhold_value
+	variable spinbox_threshhold
+	
+	set threshhold_value [expr [$spinbox_threshhold getvalue] + 1]
+	
+	return 0
+}
+
+# ------------------------------------------------------------------------------
+#  Command Apol_Analysis_fulflow::advanced_filters_create_dialog
+# ------------------------------------------------------------------------------
+proc Apol_Analysis_fulflow::advanced_filters_create_dialog {} {
 	variable advanced_filter_Dlg
 	variable lbox_incl
 	variable lbox_excl
@@ -2338,11 +2465,23 @@ proc Apol_Analysis_fulflow::create_advanced_filter_options {} {
 	variable class_listbox
 	variable class_selected_idx
 	variable perms_box
+	variable permissions_title_frame
+	variable spinbox_threshhold
 	
 	if {[winfo exists $advanced_filter_Dlg]} {
-    		Apol_Analysis_fulflow::update_advanced_filters_dialog
+    		Apol_Analysis_fulflow::advanced_filters_update_advanced_filters_dialog
     		return 0
     	}
+    	
+    	set rt [catch {Apol_Analysis_fulflow::load_default_perm_map} err]
+	if {$rt != 0} {		
+		return -1
+	}
+
+	set rt [catch {Apol_Analysis_fulflow::advanced_filters_initialize_filter_vars} err]
+	if {$rt != 0} {
+		return -1
+	}	
     	# Create the top-level dialog and subordinate widgets
     	toplevel $advanced_filter_Dlg 
      	wm withdraw $advanced_filter_Dlg	
@@ -2368,41 +2507,58 @@ proc Apol_Analysis_fulflow::create_advanced_filter_options {} {
         set pw2   [PanedWindow $pane.pw -side left]
         set class_pane 	[$pw2 add -weight 2]
         set classes_box [TitleFrame $class_pane.tbox -text "Object Classes:" -bd 0]
-        set results_box [TitleFrame $search_pane.rbox -text "Permissions:" -bd 0]
+        set permissions_title_frame [TitleFrame $search_pane.rbox -text "Permissions:" -bd 0]
           
         set sw_class      [ScrolledWindow [$classes_box getframe].sw -auto none]
-        set class_listbox [listbox [$sw_class getframe].lb -height 10 -width 20 -highlightthickness 0 \
-        	-bg white -selectmode single -listvar Apol_Analysis_fulflow::class_list -exportselection 0]
+        set class_listbox [listbox [$sw_class getframe].lb -height 10 -highlightthickness 0 \
+        	-bg white -selectmode extended -listvar Apol_Analysis_fulflow::class_list -exportselection 0]
         $sw_class setwidget $class_listbox  
       
-	set sw_list [ScrolledWindow [$results_box getframe].sw_c -auto none]
-	set perms_box [text [$results_box getframe].perms_box \
+	set sw_list [ScrolledWindow [$permissions_title_frame getframe].sw_c -auto none]
+	set perms_box [text [$permissions_title_frame getframe].perms_box \
 		-cursor $ApolTop::prevCursor \
-		-bg white]
+		-bg white -font $ApolTop::text_font]
 	$sw_list setwidget $perms_box
 	
-	set bframe [frame [$results_box getframe].bframe]
-	set b_incl_all_perms [Button $bframe.b_incl_all_perms -text "Include All" \
+	set threshhold_frame [frame [$permissions_title_frame getframe].threshhold_frame]
+	set spinbox_threshhold [SpinBox $threshhold_frame.spinbox_threshhold -bg white \
+		-range [list 1 10 1] \
+  		-editable 0 -entrybg white -width 6 \
+  		-helptext "Specify a weight threshhold" \
+  		-modifycmd {Apol_Analysis_fulflow::advanced_filters_change_threshhold_value} ]
+  	set cbutton_threshhold [checkbutton $threshhold_frame.cbutton_threshhold \
+		-text "Exclude permissions that have weights below this threshold:" \
+		-variable Apol_Analysis_fulflow::threshhold_cb_value \
+		-offvalue 0 -onvalue 1 \
+		-command "Apol_Analysis_fulflow::advanced_filters_change_spinbox_state $spinbox_threshhold"]
+
+
+	set bframe [frame [$classes_box getframe].bframe]
+	set b_incl_all_perms [Button $bframe.b_incl_all_perms -text "Include All Perms" \
 		-helptext "Select this to include all permissions for the selected object in the query." \
-		-command {Apol_Analysis_fulflow::include_exclude_permissions \
+		-padx 2 \
+		-command {Apol_Analysis_fulflow::advanced_filters_include_exclude_permissions \
 			include}]
-	set b_excl_all_perms [Button $bframe.b_excl_all_perms -text "Exclude All" \
+	set b_excl_all_perms [Button $bframe.b_excl_all_perms -text "Exclude All Perms" \
 		-helptext "Select this to exclude all permissions for the selected object from the query." \
-		-command {Apol_Analysis_fulflow::include_exclude_permissions \
+		-padx 2 \
+		-command {Apol_Analysis_fulflow::advanced_filters_include_exclude_permissions \
 			exclude}]
 		
 	# Bindings
 	bindtags $class_listbox [linsert [bindtags $Apol_Analysis_fulflow::class_listbox] 3 object_list_Tag]  
-        bind object_list_Tag <<ListboxSelect>> {Apol_Analysis_fulflow::display_permissions [$Apol_Analysis_fulflow::class_listbox curselection]}
+        bind object_list_Tag <<ListboxSelect>> {Apol_Analysis_fulflow::advanced_filters_display_permissions [$Apol_Analysis_fulflow::class_listbox curselection]}
         
 	pack $classes_box -padx 2 -side left -fill both -expand yes
-        pack $results_box -pady 2 -padx 2 -fill both -expand yes
+        pack $permissions_title_frame -pady 2 -padx 2 -fill both -expand yes
         pack $pw1 -fill both -expand yes
         pack $pw2 -fill both -expand yes	
         pack $topf -fill both -expand yes -padx 10 -pady 10   
+        pack $threshhold_frame -fill x -anchor nw -side bottom -pady 2
+        pack $cbutton_threshhold $spinbox_threshhold -side left -anchor nw 
         pack $sw_class -fill both -expand yes -side top
-        pack $bframe -side bottom -fill both -anchor sw -expand yes
-        pack $b_incl_all_perms $b_excl_all_perms -side left -anchor center -pady 2
+        pack $bframe -side bottom -fill both -anchor sw -pady 2
+        pack $b_incl_all_perms $b_excl_all_perms -side left -anchor center -pady 2 -expand yes -fill x
 	pack $sw_list -fill both -expand yes -side top
         	
         # Widgets for types frame
@@ -2415,18 +2571,18 @@ proc Apol_Analysis_fulflow::create_advanced_filter_options {} {
         set buttons_excl_f [frame $b_excl_f.buttons_excl_f]
         
         set include_bttn [Button $middle_f.include_bttn -text "<--" \
-		-command {Apol_Analysis_fulflow::include_types \
+		-command {Apol_Analysis_fulflow::advanced_filters_include_types \
 			[$Apol_Analysis_fulflow::lbox_excl curselection] \
-			$Apol_Analysis_fulflow::excl_types \
-			$Apol_Analysis_fulflow::incl_types \
+			$Apol_Analysis_fulflow::filtered_excl_types \
+			$Apol_Analysis_fulflow::filtered_incl_types \
 			$Apol_Analysis_fulflow::lbox_excl \
 			$Apol_Analysis_fulflow::lbox_incl} \
 		-helptext "Include this type in the query" -width 8]
 	set exclude_bttn [Button $middle_f.exclude_bttn -text "-->" \
-		-command {Apol_Analysis_fulflow::exclude_types \
+		-command {Apol_Analysis_fulflow::advanced_filters_exclude_types \
 			[$Apol_Analysis_fulflow::lbox_incl curselection] \
-			$Apol_Analysis_fulflow::incl_types \
-			$Apol_Analysis_fulflow::excl_types \
+			$Apol_Analysis_fulflow::filtered_incl_types \
+			$Apol_Analysis_fulflow::filtered_excl_types \
 			$Apol_Analysis_fulflow::lbox_incl \
 			$Apol_Analysis_fulflow::lbox_excl} \
 		-helptext "Exclude this type from the query" -width 8]
@@ -2441,54 +2597,70 @@ proc Apol_Analysis_fulflow::create_advanced_filter_options {} {
 	
 	set cb_incl_attrib [checkbutton $b_incl_f.cb_incl_attrib \
 		-text "Filter included type(s) by attribute:" \
-		-variable Apol_Analysis_fulflow::incl_attrib_sel \
+		-variable Apol_Analysis_fulflow::incl_attrib_cb_sel \
 		-offvalue 0 -onvalue 1 \
-		-command {Apol_Analysis_fulflow::configure_adv_combo_state \
-			$Apol_Analysis_fulflow::incl_attrib_sel \
+		-command {Apol_Analysis_fulflow::advanced_filters_configure_adv_combo_state \
+			$Apol_Analysis_fulflow::incl_attrib_cb_sel \
 			$Apol_Analysis_fulflow::combo_incl \
 			$Apol_Analysis_fulflow::lbox_incl incl}]
 	set cb_excl_attrib [checkbutton [$exclude_f getframe].cb_excl_attrib \
 		-text "Filter excluded type(s) by attribute:" \
-		-variable Apol_Analysis_fulflow::excl_attrib_sel \
+		-variable Apol_Analysis_fulflow::excl_attrib_cb_sel \
 		-offvalue 0 -onvalue 1 \
-		-command {Apol_Analysis_fulflow::configure_adv_combo_state \
-			$Apol_Analysis_fulflow::excl_attrib_sel \
+		-command {Apol_Analysis_fulflow::advanced_filters_configure_adv_combo_state \
+			$Apol_Analysis_fulflow::excl_attrib_cb_sel \
 			$Apol_Analysis_fulflow::combo_excl \
 			$Apol_Analysis_fulflow::lbox_excl excl}]
 		
     	set combo_incl [ComboBox $b_incl_f.combo_incl \
 		-editable 0 \
 		-state disabled \
-    		-textvariable Apol_Analysis_fulflow::include_attribute_sel \
+    		-textvariable Apol_Analysis_fulflow::incl_attrib_combo_value \
 		-entrybg $ApolTop::default_bg_color \
-		-modifycmd {Apol_Analysis_fulflow::filter_types_using_attrib \
-				$Apol_Analysis_fulflow::include_attribute_sel \
-				$Apol_Analysis_fulflow::lbox_incl \
-				$Apol_Analysis_fulflow::non_filtered_incl_types}]  
-	set combo_excl [ComboBox [$exclude_f getframe].combo_excl \
+		-modifycmd {Apol_Analysis_fulflow::advanced_filters_filter_types_using_attrib \
+  				$Apol_Analysis_fulflow::incl_attrib_combo_value \
+  				$Apol_Analysis_fulflow::lbox_incl \
+ 				$Apol_Analysis_fulflow::master_incl_types_list}] 
+  	
+  	set combo_excl [ComboBox [$exclude_f getframe].combo_excl \
 		-editable 0 \
 		-state disabled \
-    		-textvariable Apol_Analysis_fulflow::exclude_attribute_sel \
+    		-textvariable Apol_Analysis_fulflow::excl_attrib_combo_value \
 		-entrybg $ApolTop::default_bg_color \
-		-modifycmd {Apol_Analysis_fulflow::filter_types_using_attrib \
-				$Apol_Analysis_fulflow::exclude_attribute_sel \
+		-modifycmd {Apol_Analysis_fulflow::advanced_filters_filter_types_using_attrib \
+				$Apol_Analysis_fulflow::excl_attrib_combo_value \
 				$Apol_Analysis_fulflow::lbox_excl \
-				$Apol_Analysis_fulflow::non_filtered_excl_types}] 
-
-	set sw_incl [ScrolledWindow [$include_f getframe].sw_incl]
-	set sw_excl [ScrolledWindow [$exclude_f getframe].sw_excl]	
-	set lbox_incl [listbox [$sw_incl getframe].lbox_incl -height 6 -width 20 \
-		-highlightthickness 0 -listvar Apol_Analysis_fulflow::incl_types \
+				$Apol_Analysis_fulflow::master_excl_types_list}] 
+				
+  	set sw_incl [ScrolledWindow [$include_f getframe].sw_incl]
+  	set sw_excl [ScrolledWindow [$exclude_f getframe].sw_excl]	
+	set lbox_incl [listbox [$sw_incl getframe].lbox_incl -height 6 \
+		-highlightthickness 0 -listvar Apol_Analysis_fulflow::filtered_incl_types \
 		-selectmode extended -bg white -exportselection 0]
-	set lbox_excl [listbox [$sw_excl getframe].lbox_excl -height 6 -width 20 \
-		-highlightthickness 0 -listvar Apol_Analysis_fulflow::excl_types \
+	set lbox_excl [listbox [$sw_excl getframe].lbox_excl -height 6 \
+		-highlightthickness 0 -listvar Apol_Analysis_fulflow::filtered_excl_types \
 		-selectmode extended -bg white -exportselection 0]
 	$sw_incl setwidget $lbox_incl
 	$sw_excl setwidget $lbox_excl
 	
+	bindtags $lbox_incl [linsert [bindtags $Apol_Analysis_fulflow::lbox_incl] 3 lbox_incl_Tag]
+	bindtags $lbox_excl [linsert [bindtags $Apol_Analysis_fulflow::lbox_excl] 3 lbox_excl_Tag]
+	
+	bind lbox_incl_Tag <<ListboxSelect>> "focus -force $lbox_incl"
+	bind lbox_excl_Tag <<ListboxSelect>> "focus -force $lbox_excl"
+	
+	bind lbox_incl_Tag <KeyPress> {ApolTop::tklistbox_select_on_key_callback \
+			$Apol_Analysis_fulflow::lbox_incl \
+			$Apol_Analysis_fulflow::filtered_incl_types \
+			%K}
+	bind lbox_excl_Tag <KeyPress> {ApolTop::tklistbox_select_on_key_callback \
+			$Apol_Analysis_fulflow::lbox_excl \
+			$Apol_Analysis_fulflow::filtered_excl_types \
+			%K}
+			    
 	# Create and pack close button for the dialog
   	set close_bttn [Button $close_frame.close_bttn -text "Close" -width 8 \
-		-command {Apol_Analysis_fulflow::close_advanced_filter_Dlg} ]
+		-command {Apol_Analysis_fulflow::advanced_filters_destroy_dialog} ]
 	pack $close_bttn -side left -anchor center
 					  	
 	# pack all subframes and widgets for the types frame
@@ -2511,7 +2683,7 @@ proc Apol_Analysis_fulflow::create_advanced_filter_options {} {
 	pack $middle_f -side left -anchor center -after $include_f -padx 5 -expand yes
 	pack $objs_frame $types_frame -side top -anchor nw -padx 5 -pady 2 -expand yes -fill both
 	
-	wm protocol $advanced_filter_Dlg WM_DELETE_WINDOW "Apol_Analysis_fulflow::close_advanced_filter_Dlg"
+	wm protocol $advanced_filter_Dlg WM_DELETE_WINDOW "Apol_Analysis_fulflow::advanced_filters_destroy_dialog"
     	
         # Configure top-level dialog specifications
         set width 780
@@ -2519,7 +2691,8 @@ proc Apol_Analysis_fulflow::create_advanced_filter_options {} {
 	wm geom $advanced_filter_Dlg ${width}x${height}
 	wm deiconify $advanced_filter_Dlg
 	focus $advanced_filter_Dlg
-	Apol_Analysis_fulflow::initialize_filter_widgets
+	
+	Apol_Analysis_fulflow::advanced_filters_set_widgets_to_default_state
 	return 0
 }
 
@@ -2586,7 +2759,7 @@ proc Apol_Analysis_fulflow::create_options { options_frame } {
     		-modifycmd { Apol_Analysis_fulflow::change_types_list}] 
 
 	set b_advanced_filters [button $advanced_f.b_advanced_filters -text "Advanced Filters" \
-		-command {Apol_Analysis_fulflow::create_advanced_filter_options}]
+		-command {Apol_Analysis_fulflow::advanced_filters_create_dialog}]
 
         set cb_endtype [checkbutton $endtype_frame.cb_endtype -text "Find end types using regular expression:" \
 		-variable Apol_Analysis_fulflow::endtype_sel \
@@ -2596,7 +2769,6 @@ proc Apol_Analysis_fulflow::create_options { options_frame } {
         set entry_end [Entry $endtype_frame.entry_end \
 		-helptext "You may enter a regular expression" \
 		-editable 1 \
-		-width 45 \
 		-textvariable Apol_Analysis_fulflow::end_type] 
 			
 	set sw_info [ScrolledWindow [$c_frame getframe].sw_info -auto none]
@@ -2621,7 +2793,7 @@ proc Apol_Analysis_fulflow::create_options { options_frame } {
         pack $combo_attribute -side top -anchor nw -padx 15 -fill x -expand yes
         pack $in_button $out_button -side left -anchor nw -expand yes -fill x
         pack $cb_endtype -side top -anchor nw -expand yes
-        pack $entry_end -side left -anchor nw -expand yes
+        pack $entry_end -side left -anchor nw -expand yes -fill x -padx 2
         pack $b_advanced_filters -side left -anchor nw -expand yes -pady 5
         pack $sw_info -side left -anchor nw -expand yes -fill both 
     	
