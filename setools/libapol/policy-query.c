@@ -665,3 +665,56 @@ err_return1:
 	if(use_3 && q->use_regex) {regfree(&(reg[2]));}
 	return rt;
 }
+
+/* Search the conditional expressions in the policy. This works like the functions above in that
+ * it takes an initialized array of booleans and only marks the indexes in the array true for
+ * the conditional expressions that match the boolean name (or regex). The array expr_b should
+ * be the same size as policy->num_cond_bool_exprs.
+ *
+ * RETURNS:
+ *	-1 on error
+ *	0 on success
+ */
+int search_conditional_expressions(char *bool, bool_t regex, bool_t *exprs_b, char **error_msg, policy_t *policy)
+{
+	int i, rt;
+	cond_expr_t *cur;
+	size_t sz;
+	regex_t reg;
+	
+	if (regex) {
+		rt = regcomp(&reg, bool, REG_EXTENDED | REG_NOSUB);
+		if (rt != 0) {
+			char *err;
+			sz = regerror(rt, &reg, NULL, 0);
+			if((err = (char *)malloc(++sz)) == NULL) {
+				fprintf(stderr, "out of memory");
+				return -1;
+			}
+			regerror(rt, &reg, err, sz);
+			*error_msg = err;	/* call will free */
+			regfree(&reg);
+			return -1;
+		}
+	}
+	
+	for (i = 0; i < policy->num_cond_exprs; i++) {
+		for (cur = policy->cond_exprs[i].expr; cur != NULL; cur = cur->next) {
+			if (cur->expr_type != COND_BOOL)
+				continue;
+			if (regex) {
+				rt = regexec(&reg, policy->cond_bools[cur->bool].name, 0, NULL, 0);
+				if (rt == 0)
+					exprs_b[i] = TRUE;
+			} else {
+				if (strcmp(bool, policy->cond_bools[cur->bool].name) == 0)
+					exprs_b[i] = TRUE;
+			}
+		}
+	}
+
+	if (regex)
+		regfree(&reg);
+	return 0;
+}
+
