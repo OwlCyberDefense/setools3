@@ -1,0 +1,41 @@
+SELinux Tools (setools), version RELEASE_VERSION
+by Tresys Technology, LLC
+(selinux@tresys.com, www.tresys.com/selinux)
+
+MOD_DATE
+
+INSTALLATION NOTES FOR RPM
+
+This release of setools includes support for the creation of rpm packages
+and installation from those packages. Dan Walsh <dwalsh@redhat.com>
+provided the initial version of these rpms. This support
+has only been tested on Red Hat 9.
+
+BWIDGETS
+
+BWidgets (which are required for setools - see INSTALL for more
+information) are not available as rpms from RedHat, so BWidgets rpms
+are included.
+
+RPM CREATION
+
+After untarring the release of setools both the setools and BWidgets
+rpms can be created by typing "make rpm" in the top level setools
+directory. The rpms will be created by default under
+/usr/src/redhat/RPMS and /usr/src/redhat/SRPMS (for the source
+rpms). You must have a full SELinux installation in order to compile
+these rpms.
+
+RPM INSTALLATION
+
+In order to install the setools rpm you must have the checkpolicy,
+policycoreutils, policy, and policy-sources rpms from the SELinux
+distributions installed. See the SELinux documentation for more
+information about creating these rpms. After installing the SELinux
+rpms the setools and BWidget rpms can be installed with the commands:
+
+rpm -ivh /usr/src/redhat/RPMS/noarch/BWidget*.rpm
+rpm -ivh /usr/src/redhat/RPMS/i386/setools-*.rpm
+
+
+
