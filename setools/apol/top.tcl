@@ -15,7 +15,8 @@ namespace eval ApolTop {
 	variable filename 		""
 	variable policyConf_lineno	""
 	variable polstats 		""
-	variable gui_ver 		"1.2" 
+	# The version number is defined as a magical string here. This is later configured in the make environment.
+	variable gui_ver 		APOL_GUI_VERSION 
 	variable copyright_date		"2001-2004"
 	variable recent_files
 	variable num_recent_files 	0
@@ -1722,16 +1723,18 @@ proc ApolTop::main {} {
 			interpreter."
 		exit
 	}
+
+	
 	wm withdraw .
 	wm title . "SE Linux Policy Analysis"
 	wm protocol . WM_DELETE_WINDOW "ApolTop::apolExit"
-
+	
 	# Read apols' default settings file, gather all font information, create the gui and then load recent files into the menu.
 	ApolTop::readInitFile
 	ApolTop::load_fonts
 	ApolTop::create
 	ApolTop::load_recent_files
-			
+				
 	#    # Configure the geometry for the window manager
 	#    set x  [winfo screenwidth .]
 	#    set y  [winfo screenheight .]
