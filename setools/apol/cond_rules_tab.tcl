@@ -10,7 +10,7 @@
 ##############################################################
 # ::Apol_Cond_Rules
 #  
-# The Conditional Rules tab namespace
+# The Conditional Booleans tab namespace
 ##############################################################
 namespace eval Apol_Cond_Rules {
 	# Search options
@@ -97,21 +97,6 @@ proc Apol_Cond_Rules::cond_rules_reset_variables { } {
 }
 
 ################################################################
-#  ::cond_rules_enable_comboBox
-#
-proc Apol_Cond_Rules::cond_rules_enable_comboBox {cb_value combo_box} {
-	selection clear -displayof $combo_box
-
-	if {$cb_value} {
-		$combo_box configure -state normal -entrybg white
-	} else {
-		$combo_box configure -state disabled -entrybg $ApolTop::default_bg_color
-	}
-	
-	return 0
-}
-
-################################################################
 # ::search
 #  	- Search text widget for a string
 # 
@@ -164,7 +149,7 @@ proc Apol_Cond_Rules::close { } {
 	Apol_Cond_Rules::cond_rules_reset_variables
 	
 	$Apol_Cond_Rules::bool_combo_box configure -values ""
-	Apol_Cond_Rules::cond_rules_enable_comboBox $Apol_Cond_Rules::enable_bool_combo_box $Apol_Cond_Rules::bool_combo_box
+	ApolTop::change_comboBox_state $Apol_Cond_Rules::enable_bool_combo_box $Apol_Cond_Rules::bool_combo_box
 	$Apol_Cond_Rules::resultsbox configure -state normal
 	$Apol_Cond_Rules::resultsbox delete 0.0 end
 	ApolTop::makeTextBoxReadOnly $Apol_Cond_Rules::resultsbox 
@@ -244,7 +229,7 @@ proc Apol_Cond_Rules::create {nb} {
 	set cb_enable_bool_combo_box [checkbutton [$l_innerFrame getframe].cb_enable_bool_combo_box \
 		-variable Apol_Cond_Rules::enable_bool_combo_box \
 		-onvalue 1 -offvalue 0 -text "Search using boolean variable" \
-		-command {Apol_Cond_Rules::cond_rules_enable_comboBox $Apol_Cond_Rules::enable_bool_combo_box $Apol_Cond_Rules::bool_combo_box}]
+		-command {ApolTop::change_comboBox_state $Apol_Cond_Rules::enable_bool_combo_box $Apol_Cond_Rules::bool_combo_box}]
 	set cb_show_rules [checkbutton [$c_innerFrame getframe].cb_show_rules \
 		-variable Apol_Cond_Rules::search_opts(show_rules) \
 		-onvalue 1 -offvalue 0 -text "Display rules within conditional expression(s)"]
