@@ -1525,7 +1525,7 @@ static int txt_buffer_insert_te_line(GtkTextBuffer *txt, GtkTextIter *iter,
 		g_strfreev(split_line_array); 
 	} 		
 
-	if (cur->flags & AVH_FLAG_COND) {
+	if (cur->flags & AVH_FLAG_COND && !is_binary_policy(policy)) {
 		if (get_cond_bool_name(cur->cond_expr,&rule,policy) < 0)
 			return -1;
 		g_string_printf(string," [ %s ]",rule);
@@ -1709,7 +1709,7 @@ static int txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_ite
 					/* now print the diffs */
 					if (diffcur1->key.rule_type <= RULE_MAX_AV) {
 						for (j = 0 ; j < diffcur1->num_data; j++) {
-							if (get_perm_name(cur->data[j],&name,policy1) == 0) {
+							if (get_perm_name(diffcur1->data[j],&name,policy1) == 0) {
 								g_string_printf(string,"%s%s- %s\n",fulltab,fulltab,name);
 								gtk_text_buffer_insert_with_tags_by_name(txt, &changed_iter, string->str, -1, "removed-tag", NULL);
 								free(name);
@@ -2688,8 +2688,10 @@ void sediff_open_dialog_on_p1browse_button_clicked(GtkButton *button, gpointer u
 {
 	GtkEntry *entry = NULL;
 	GString *filename= NULL;
+	GtkEntry *entry2 = NULL;
 	
 	entry = (GtkEntry *)glade_xml_get_widget(sediff_app->open_dlg_xml, "sediff_dialog_p1_entry");
+	entry2 = (GtkEntry *)glade_xml_get_widget(sediff_app->open_dlg_xml, "sediff_dialog_p2_entry");
 	g_assert(entry);
 	filename = get_filename_from_user("Open Policy", gtk_entry_get_text(entry));
 	if (filename){
@@ -2701,10 +2703,16 @@ void sediff_open_dialog_on_p2browse_button_clicked(GtkButton *button, gpointer u
 {
 	GtkEntry *entry = NULL;
 	GString *filename = NULL;
+	GtkEntry *entry1 = NULL;
 
 	entry = (GtkEntry*)glade_xml_get_widget(sediff_app->open_dlg_xml, "sediff_dialog_p2_entry");
+//	entry1 = (GtkEntry*)glade_xml_get_widget(sediff_app->open_dlg_xml, "sediff_dialog_p1_entry");
+
 	g_assert(entry);
-	filename = get_filename_from_user("Open Policy", gtk_entry_get_text(entry));
+//	if (gtk_entry_get_text(entry) == NULL && gtk_entry_get_text(entry1) != NULL)
+//		filename = get_filename_from_user("Open Policy", gtk_entry_get_text(entry1));
+//	else
+		filename = get_filename_from_user("Open Policy", gtk_entry_get_text(entry));
 	if (filename){
 		gtk_entry_set_text(entry, filename->str);
 	}
@@ -2877,6 +2885,8 @@ static int sediff_diff_and_load_policies(const char *p1_file,const char *p2_file
 	GtkTreeModel *tree_model;
 	GtkTreeSelection *sel;
 	GtkTreeIter iter;
+	gchar **labels = NULL;
+	GString *string = g_string_new("");
 
 	/* show our loading dialog while we load */
 	sediff_load_dlg_show();
@@ -2905,6 +2915,27 @@ static int sediff_diff_and_load_policies(const char *p1_file,const char *p2_file
 
 		return -1;
 	}
+
+	/* create the string to store in treeview */
+	g_string_printf(string,"Difference Summary|Classes & Perms %d|Types %d|Attributes %d|"
+			"Roles %d|Users %d|Booleans %d|TE Rules %d|RBAC Rules %d|Conditionals 0",
+			(sediff_app->summary.classes.added + sediff_app->summary.classes.removed + sediff_app->summary.classes.changed +
+			sediff_app->summary.permissions.added + sediff_app->summary.permissions.removed + sediff_app->summary.permissions.changed +
+			 sediff_app->summary.commons.added + sediff_app->summary.commons.removed + sediff_app->summary.commons.changed),
+			(sediff_app->summary.types.added + sediff_app->summary.types.removed + sediff_app->summary.types.changed),
+			(sediff_app->summary.attributes.added + sediff_app->summary.attributes.removed + sediff_app->summary.attributes.changed),
+			(sediff_app->summary.roles.added + sediff_app->summary.roles.removed + sediff_app->summary.roles.changed),
+			(sediff_app->summary.users.added + sediff_app->summary.users.removed + sediff_app->summary.users.changed),
+			(sediff_app->summary.booleans.added + sediff_app->summary.booleans.removed + sediff_app->summary.booleans.changed),	       
+			(sediff_app->summary.te_rules.added + sediff_app->summary.te_rules.removed + sediff_app->summary.te_rules.changed),	       
+			(sediff_app->summary.rbac.added + sediff_app->summary.rbac.removed + sediff_app->summary.rbac.changed));
+			
+  
+	labels = g_strsplit(string->str,"|",-1);
+	sediff_tree_store_set_labels(labels);
+
+	g_strfreev(labels);
+	g_string_free(string,TRUE);
 
 	/* create a new tree_store */
 	tree_store = sediff_tree_store_new();
