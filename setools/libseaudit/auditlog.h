@@ -17,7 +17,10 @@
 #include "../libapol/util.h"
 #include "../libapol/avl-util.h"
 
-#define LIBSEAUDIT_VERSION_STRING "1.1"
+/* The following should be defined in the make environment */
+#ifndef LIBSEAUDIT_VERSION_STRING
+	#define LIBSEAUDIT_VERSION_STRING "UNKNOWN"
+#endif
 
 /* 
  * msg_type_t defines the different types of audit messages this library will
