@@ -13,13 +13,28 @@
 # The Conditional Booleans tab namespace
 ##############################################################
 namespace eval Apol_Cond_Bools {
+	# Search options
+	# search_opts(opt), where opt =
+	# 	boolean - the name of the boolean
+	# 	show_rules - whether to display rules along 
+	#		     with conditional expression
+	variable search_opts 
+	set search_opts(boolean)		""
+	set search_opts(show_rules)		""
+	# list variables
+	variable cond_bools_list	""
+	# array variables
+	variable cond_bools_value_array
+	# other
+	variable enable_bool_combo_box	0
+	
+	# Global widgets
 	variable resultsbox
-	variable cond_bools_listbox 
-	variable cond_bools_list
-	variable cond_bools_value_array	
+	variable cond_bools_listbox
+	variable bool_combo_box
 }
 
-########################################################################
+###############################################################
 #  ::cond_bool_set_bool_value
 #
 proc Apol_Cond_Bools::cond_bool_set_bool_value {bool_name} {
@@ -33,14 +48,11 @@ proc Apol_Cond_Bools::cond_bool_set_bool_value {bool_name} {
 	return 0	
 } 
 
-########################################################################
+################################################################
 #  ::cond_bool_embed_buttons
 #
 proc Apol_Cond_Bools::cond_bool_embed_buttons {widget bool_name} {	
 	set rb_frame [frame $widget.rb_frame:$bool_name -bd 0 -bg white]
-	set lbl1 [label $rb_frame.lbl1:$bool_name \
-		-bg white -justify left -anchor nw -text "$bool_name"]
-	set lbl2 [label $rb_frame.lbl2:$bool_name -bg white -justify left -width 5 -text "--->"]
 	set rb_true  [radiobutton $rb_frame.rb_true:$bool_name -bg white \
 		-variable Apol_Cond_Bools::cond_bools_value_array($bool_name) \
 		-command "Apol_Cond_Bools::cond_bool_set_bool_value $bool_name" \
@@ -51,13 +63,12 @@ proc Apol_Cond_Bools::cond_bool_embed_buttons {widget bool_name} {
 		-value 0 -highlightthickness 0 -text "False"]
 	
 	pack $rb_frame -side left -anchor nw
-	pack $lbl1 $lbl2 -side left -anchor nw
 	pack $rb_true $rb_false -side left -anchor nw -padx 2
 			
 	return $rb_frame	
 } 
 
-###############################################################################
+################################################################
 # ::cond_bool_remove_listbox_items
 #  	- Method for remove all embedded check buttons.
 # 
@@ -75,7 +86,7 @@ proc Apol_Cond_Bools::cond_bool_remove_listbox_items { } {
 	return 0	
 }
 
-########################################################################
+################################################################
 #  ::cond_bool_insert_listbox_items
 #
 proc Apol_Cond_Bools::cond_bool_insert_listbox_items { } {
@@ -83,7 +94,7 @@ proc Apol_Cond_Bools::cond_bool_insert_listbox_items { } {
 	variable cond_bools_list
 	
 	foreach bool_name $cond_bools_list {
-		$cond_bools_listbox insert end $bool_name \
+		$cond_bools_listbox insert end $bool_name -text " - $bool_name" \
 		 	 -window [Apol_Cond_Bools::cond_bool_embed_buttons \
 		 	 	$Apol_Cond_Bools::cond_bools_listbox $bool_name]  
 		  
@@ -92,11 +103,12 @@ proc Apol_Cond_Bools::cond_bool_insert_listbox_items { } {
     	# Adjust the view so that no part of the canvas is off-screen to the left.
 	$cond_bools_listbox configure -redraw 1
     	$cond_bools_listbox.c xview moveto 0			 	 
-    		
+    	update idletasks
+    	$cond_bools_listbox configure -padx [winfo reqwidth [$cond_bools_listbox itemcget [$cond_bools_listbox items 0] -window]]	
 	return 0
 } 
 
-########################################################################
+################################################################
 #  ::cond_bool_initialize
 #
 proc Apol_Cond_Bools::cond_bool_initialize_vars { } {
@@ -120,7 +132,7 @@ proc Apol_Cond_Bools::cond_bool_initialize_vars { } {
 	return 0
 } 
 
-##############################################################
+################################################################
 # ::search
 #  	- Search text widget for a string
 # 
@@ -131,7 +143,7 @@ proc Apol_Cond_Bools::search { str case_Insensitive regExpr srch_Direction } {
 	return 0
 }
 
-########################################################################
+################################################################
 # ::goto_line
 #  	- goes to indicated line in text box
 # 
@@ -142,7 +154,7 @@ proc Apol_Cond_Bools::goto_line { line_num } {
 	return 0
 }
 
-########################################################################
+################################################################
 # ::set_Focus_to_Text
 # 
 proc Apol_Cond_Bools::set_Focus_to_Text {} {
@@ -150,7 +162,7 @@ proc Apol_Cond_Bools::set_Focus_to_Text {} {
 	return 0
 }
 
-########################################################################
+################################################################
 #  ::open
 #
 proc Apol_Cond_Bools::open { } {
@@ -158,17 +170,19 @@ proc Apol_Cond_Bools::open { } {
 	if {$rt != 0} {
 		return -code error $err
 	}
+	$Apol_Cond_Bools::bool_combo_box configure -values $Apol_Cond_Bools::cond_bools_list
 	Apol_Cond_Bools::cond_bool_insert_listbox_items			 	 
 	return 0
 } 
 
-########################################################################
+################################################################
 #  ::close
 #
-proc Apol_Cond_Bools::close { } {
-	Apol_Cond_Bools::cond_bool_remove_listbox_items
-	set cond_bools_list ""
+proc Apol_Cond_Bools::close { } {	
+	Apol_Cond_Bools::reset_variables
 	
+	Apol_Cond_Bools::cond_bool_remove_listbox_items
+	Apol_Initial_SIDS::enable_comboBox $Apol_Cond_Bools::enable_bool_combo_box $Apol_Cond_Bools::bool_combo_box
 	$Apol_Cond_Bools::resultsbox configure -state normal
 	$Apol_Cond_Bools::resultsbox delete 0.0 end
 	ApolTop::makeTextBoxReadOnly $Apol_Cond_Bools::resultsbox 
@@ -176,15 +190,53 @@ proc Apol_Cond_Bools::close { } {
 	return 0	
 }
 
+################################################################
+#  ::reset_variables
+#
+proc Apol_Cond_Bools::reset_variables { } {
+	variable search_opts 
+	variable cond_bools_list
+	variable enable_bool_combo_box	
+	variable bool_combo_box
+	variable cond_bools_value_array
+	
+	set search_opts(boolean)	""
+	set search_opts(show_rules)	""
+	set cond_bools_list 	""
+	set enable_bool_combo_box 0
+	array unset cond_bools_value_array 
+	
+	return 0	
+}
+
+################################################################
+#  ::free_call_back_procs
+#
 proc Apol_Cond_Bools::free_call_back_procs { } {
      
 	return 0
 }
 
-########################################################################
+################################################################
+#  ::enable_comboBox
+#
+proc Apol_Cond_Bools::enable_comboBox {cb_value combo_box} {
+	selection clear -displayof $combo_box
+
+	if {$cb_value} {
+		$combo_box configure -state normal -entrybg white
+	} else {
+		$combo_box configure -state disabled -entrybg $ApolTop::default_bg_color
+	}
+	
+	return 0
+}
+
+################################################################
 #  ::create
 #
 proc Apol_Cond_Bools::create {nb} {
+	variable bool_combo_box
 	variable cond_bools_listbox 
 	variable resultsbox 
 	
@@ -217,13 +269,28 @@ proc Apol_Cond_Bools::create {nb} {
 	set cond_bools_listbox [ListBox [$cond_bools_box getframe].cond_bools_listbox \
 	          -relief sunken -borderwidth 2 -bg white  \
 	          -selectmode none -deltay 25 \
-	          -width 20 -highlightthickness 0 \
+	          -width 25 -highlightthickness 0 \
 	          -redraw 0]
 	$sw_r setwidget $cond_bools_listbox 
 	    	
 	# Search options subframes
 	set ofm [$s_optionsbox getframe]
+	set l_innerFrame [LabelFrame $ofm.l_innerFrame]
+	set c_innerFrame [LabelFrame $ofm.c_innerFrame]
 	set buttons_f    [LabelFrame $ofm.buttons_f]
+	
+	set bool_combo_box [ComboBox [$l_innerFrame getframe].bool_combo_box \
+		-textvariable Apol_Cond_Bools::search_opts(boolean) \
+		-helptext "Type or select a boolean variable" \
+		-entrybg $ApolTop::default_bg_color]
+	set cb_enable_bool_combo_box [checkbutton [$l_innerFrame getframe].cb_enable_bool_combo_box \
+		-variable Apol_Cond_Bools::enable_bool_combo_box \
+		-onvalue 1 -offvalue 0 -text "Search using boolean variable" \
+		-command {Apol_Cond_Bools::enable_comboBox $Apol_Cond_Bools::enable_bool_combo_box $Apol_Cond_Bools::bool_combo_box}]
+	set cb_show_rules [checkbutton [$c_innerFrame getframe].cb_show_rules \
+		-variable Apol_Cond_Bools::search_opts(show_rules) \
+		-onvalue 1 -offvalue 0 -text "Display rules within conditional expression(s)"]
+		
 	# Action Buttons
 	set ok_button [button [$buttons_f getframe].ok -text OK -width 6 -command {ApolTop::unimplemented}]
 	#button $rfm.print -text Print -width 6 -command {ApolTop::unimplemented}
@@ -236,7 +303,10 @@ proc Apol_Cond_Bools::create {nb} {
 	# Placing all widget items
 	pack $ok_button -side top -anchor e -pady 5 -padx 5
 	pack $buttons_f -side right -expand yes -fill both -anchor nw -padx 4 -pady 4
+	pack $l_innerFrame $c_innerFrame -side left -fill y -anchor nw -padx 4 -pady 4
 	
+	pack $cb_enable_bool_combo_box $bool_combo_box -side top -anchor nw -fill x
+	pack $cb_show_rules -side left -anchor nw 
 	pack $sw_r -fill both -expand yes
 	pack $sw_d -side left -expand yes -fill both 
 	
