@@ -193,7 +193,8 @@ proc Apol_Analysis_relabel::create_widgets_to_display_results {results results_f
 		            	-text $domain -open 1 \
 		                -drawcross auto -data [lindex $datum 1]
 		        }
-			set from_items [$dtree nodes FROM_LIST]
+			set from_items [lsort -dictionary [$dtree nodes FROM_LIST]]
+			$dtree reorder FROM_LIST $from_items
 		        # To list
 		        foreach datum $to_list {
 		        	set domain [lindex $datum 0]
@@ -201,7 +202,8 @@ proc Apol_Analysis_relabel::create_widgets_to_display_results {results results_f
 					-text $domain -open 1 \
 					-drawcross auto -data [lindex $datum 1]
 		        }
-		        set to_items [$dtree nodes TO_LIST]
+		        set to_items [lsort -dictionary [$dtree nodes TO_LIST]]
+			$dtree reorder TO_LIST $to_items
 		        
 		        $dtree itemconfigure $Apol_Analysis_relabel::top_node \
 				-data [list [llength $from_items] [llength $to_items]]
