@@ -229,18 +229,6 @@ proc Apol_TE::enable_disable_conditional_widgets {enable} {
 	return 0
 }
 
-proc Apol_TE::enable_disable_regex_cbutton {enable} {
-	variable cb_RegExp
-    	
-	if {$enable} {
-		$cb_RegExp deselect
-		$cb_RegExp configure -state disabled
-	} else {
-		$cb_RegExp configure -state normal
-	}
-	return 0
-}
-
 proc Apol_TE::enable_disable_tag_disabled_rules_cb {} {
 	variable show_enabled_rules
     	variable cb_tag_disabled_rules
@@ -2325,7 +2313,6 @@ proc Apol_TE::enable_disable_syntactic_search_widgets {enable} {
 		$cb_perms_tilda configure -state disabled
 		Apol_TE::remove_star_from_permissions_list Apol_TE::permslist		
 	}
-	Apol_TE::enable_disable_regex_cbutton $enable
 	return 0	
 }
 
