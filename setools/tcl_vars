@@ -15,6 +15,7 @@
 
 global tcl_version
 global tcl_pkgPath
+global tcl_library
 global argv, argc
 
 proc search_libs {} {
