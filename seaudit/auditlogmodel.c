@@ -259,26 +259,27 @@ static void log_view_store_get_value(GtkTreeModel *tree_model, GtkTreeIter *iter
 	        if(AVC_MSG_FIELD == column) {
 	                set_utf8_return_value(value, "Boolean");
 	                return;
-		}else if (AVC_MISC_FIELD == column ){
+		} else if (AVC_MISC_FIELD == column ){
 			boolean_msg = store->log_view->my_log->msg_list[indx]->msg_data.boolean_msg;
-			g_assert(boolean_msg->num_bools > 0);
-			string = g_string_new(audit_log_get_bool(store->log_view->my_log, boolean_msg->booleans[0]));
-			if (!string)
-			        return;
-			g_string_append_printf(string, ":%d", boolean_msg->values[0]);
-			for (j = 1; j < boolean_msg->num_bools; j++) {
-			        cur_bool = audit_log_get_bool(store->log_view->my_log, boolean_msg->booleans[j]);
-				string = g_string_append(string, ",  ");
-				if (!string)
-				      return;
-				string = g_string_append(string, cur_bool);
+			if (boolean_msg->num_bools > 0) {
+				string = g_string_new(audit_log_get_bool(store->log_view->my_log, boolean_msg->booleans[0]));
 				if (!string)
 				        return;
-
-				g_string_append_printf(string, ":%d", boolean_msg->values[j]);
+				g_string_append_printf(string, ":%d", boolean_msg->values[0]);
+				for (j = 1; j < boolean_msg->num_bools; j++) {
+				        cur_bool = audit_log_get_bool(store->log_view->my_log, boolean_msg->booleans[j]);
+					string = g_string_append(string, ",  ");
+					if (!string)
+					      return;
+					string = g_string_append(string, cur_bool);
+					if (!string)
+					        return;
+	
+					g_string_append_printf(string, ":%d", boolean_msg->values[j]);
+				}
+				set_utf8_return_value(value, string->str);
+				g_string_free(string, TRUE);
 			}
-			set_utf8_return_value(value, string->str);
-			g_string_free(string, TRUE);
 		        return;
 		} else {
 		        set_utf8_return_value(value, "");
@@ -348,22 +349,22 @@ static void log_view_store_get_value(GtkTreeModel *tree_model, GtkTreeIter *iter
 		set_utf8_return_value(value, audit_log_get_obj(store->log_view->my_log, cur_msg->obj_class));
 		break;
 	case AVC_PERM_FIELD:
-		g_assert(cur_msg->num_perms > 0);
-		
-		string = g_string_new(audit_log_get_perm(store->log_view->my_log, cur_msg->perms[0]));
-		if (!string)
-			return;
-		for (j = 1; j < cur_msg->num_perms; j++) {
-			cur_perm = audit_log_get_perm(store->log_view->my_log, cur_msg->perms[j]);
-			string = g_string_append(string, ",");
+		if (cur_msg->num_perms > 0) {
+			string = g_string_new(audit_log_get_perm(store->log_view->my_log, cur_msg->perms[0]));
 			if (!string)
 				return;
-			string = g_string_append(string, cur_perm);
-			if (!string)
-				return;
+			for (j = 1; j < cur_msg->num_perms; j++) {
+				cur_perm = audit_log_get_perm(store->log_view->my_log, cur_msg->perms[j]);
+				string = g_string_append(string, ",");
+				if (!string)
+					return;
+				string = g_string_append(string, cur_perm);
+				if (!string)
+					return;
+			}
+			set_utf8_return_value(value, string->str);
+			g_string_free(string, TRUE);
 		}
-		set_utf8_return_value(value, string->str);
-		g_string_free(string, TRUE);
 		break;
 	case AVC_INODE_FIELD:
 		string = g_string_new("");

@@ -194,8 +194,12 @@ static int msg_field_compare(const msg_t *a, const msg_t *b)
 
 static int perm_compare(const msg_t *a, const msg_t *b)
 {
-	return strcmp(audit_log_get_perm(audit_log, msg_get_avc_data(a)->perms[0]), 
-		      audit_log_get_perm(audit_log, msg_get_avc_data(b)->perms[0]));
+	if (msg_get_avc_data(a)->num_perms > 0 && msg_get_avc_data(b)->num_perms > 0) {
+		return strcmp(audit_log_get_perm(audit_log, msg_get_avc_data(a)->perms[0]), 
+			      audit_log_get_perm(audit_log, msg_get_avc_data(b)->perms[0]));
+	}
+	/* If one of the messages does not contain permissions, then always return a NONMATCH value. */
+	return 1;
 }
 
 static int date_compare(const msg_t *a, const msg_t *b)
