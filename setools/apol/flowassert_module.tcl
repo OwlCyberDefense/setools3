@@ -18,8 +18,7 @@ namespace eval Apol_Analysis_flowassert {
     variable VERSION 1
 
     # internal representation of assertions (model)
-    variable asserts [list [list "\# Place your assertion statements here"] \
-                          [list noflow foo_t bar_t {} 1]]
+    variable asserts [list "\# Place your assertion statements here"]
 
     # widget variables (view)
     variable assertfile_t
@@ -206,7 +205,8 @@ proc Apol_Analysis_flowassert::do_analysis {results_frame} {
     if {$retval == -1} {
         tk_messageBox -icon error -type ok -title "Flow Assertion Error" \
             -message $assert_results
-    }        
+    }
+    $assertfile_t tag remove assert_file_sel_tag 1.0 end
     return $retval
 }
 
@@ -241,12 +241,11 @@ proc Apol_Analysis_flowassert::open { } {
 proc Apol_Analysis_flowassert::load_query_options {file_channel parentDlg} {
     variable VERSION
     variable asserts
-    variable assertfile_t
     if {[gets $file_channel] > $VERSION} {
         return -code error "The specified query version is not allowed."
     }
     set asserts [read $file_channel]
-    sync_asserts_to_text $asserts $assertfile_t
+    sync_asserts_to_text
     return 0
 }
 
@@ -279,7 +278,7 @@ proc Apol_Analysis_flowassert::set_display_to_results_state {query_options} {
     variable most_recent_results
     foreach {assertfile_t assertcontents} $query_options {}
     variable asserts $assertcontents
-    sync_asserts_to_text $asserts $assertfile_t
+    sync_asserts_to_text
     set most_recent_results $assertfile_t
 }
 
@@ -328,7 +327,7 @@ proc Apol_Analysis_flowassert::display_mod_options { opts_frame } {
     grid rowconfigure $opts_frame 1 -weight 0 -pad 20
     grid columnconfigure $opts_frame 0 -weight 1
     variable line_editing_buttons [list $bb1 2 3]
-    sync_asserts_to_text $asserts $assertfile_t
+    sync_asserts_to_text
 }
 
 
@@ -349,9 +348,6 @@ proc Apol_Analysis_flowassert::assertfile_click {widget x y} {
     set newline [lindex [split [$widget index @$x,$y] .] 0]
     set selection [lindex [$widget tag ranges assert_file_sel_tag] 0]
     set oldline [lindex [split [lindex $selection 0] .] 0]
-    puts "new = $newline, old = $oldline"
-    variable line_editing_buttons
-    set parent [lindex $line_editing_buttons 0]
     # remove old selection
     if {$oldline != ""} {
         $widget tag remove assert_file_sel_tag $oldline.0 [expr {$oldline + 1}].0
@@ -359,13 +355,23 @@ proc Apol_Analysis_flowassert::assertfile_click {widget x y} {
     if {$newline >= 1 && $newline <= [llength $asserts] && $newline != $oldline} {
         # add a selection
         $widget tag add assert_file_sel_tag $newline.0 [expr {$newline + 1}].0
-        foreach button [lrange $line_editing_buttons 1 end] {
-            $parent itemconfigure $button -state normal
-        }
+    }
+    enable_line_editing
+}
+
+# Enable/disable the line editing buttons (edit line and delete line),
+# but only if something is selected.
+proc Apol_Analysis_flowassert::enable_line_editing {} {
+    variable assertfile_t    
+    if {[$assertfile_t tag ranges assert_file_sel_tag] != ""} {
+        set newstate normal
     } else {
-        foreach button [lrange $line_editing_buttons 1 end] {
-            $parent itemconfigure $button -state disabled
-        }
+        set newstate disabled
+    }
+    variable line_editing_buttons
+    set parent [lindex $line_editing_buttons 0]
+    foreach button [lrange $line_editing_buttons 1 end] {
+        $parent itemconfigure $button -state $newstate
     }
 }
 
@@ -373,8 +379,7 @@ proc Apol_Analysis_flowassert::assertfile_click {widget x y} {
 # consequently clearing the file.
 proc Apol_Analysis_flowassert::clear_assert_file {} {
     variable asserts ""
-    variable assertfile_t
-    sync_asserts_to_text $asserts $assertfile_t
+    sync_asserts_to_text
 }
 
 # Prompts the user for a file name, then saves the contents of the
@@ -430,7 +435,7 @@ proc Apol_Analysis_flowassert::import_assert_file {} {
 # easily add assertions lines to the current file.  The wizard is a
 # non-modal dialog that presents all available types + attributes /
 # options.  It does not validate entries for syntactical correctness.
-proc Apol_Analysis_flowassert::create_assert_wizard_dlg {} {
+proc Apol_Analysis_flowassert::create_assert_wizard_dlg {{origline {}}} {
     variable assertfile_t
     variable assert_wizard_dlg
     
@@ -444,24 +449,23 @@ proc Apol_Analysis_flowassert::create_assert_wizard_dlg {} {
     variable assert_wiz_weight
 
     # create a modal dialog
-    set assert_wizard_dlg [toplevel .assertfile_wizard_dlg]
-    grab $assert_wizard_dlg
-    wm title $assert_wizard_dlg "Add Assertion Statements"
-    wm protocol $assert_wizard_dlg WM_DELETE_WINDOW [namespace code [list destroy_wizard_dlg $assert_wizard_dlg]]
-    wm transient $assert_wizard_dlg .
-
-    set f [frame $assert_wizard_dlg.f]
+    set assert_wizard_dlg [Dialog .assertfile_wizard_dlg -homogeneous 1 \
+                               -spacing 20 -anchor c -cancel 2 -modal global \
+                               -parent $assertfile_t -separator 0 \
+                               -side bottom -title "Add Assertion Statements"]
+    set f [$assert_wizard_dlg getframe]
+    set topf [frame $f.topf]
 
     variable assert_wiz_type_cbs ""
     variable assert_wiz_objclass_lbs ""
-    set start_tf [TitleFrame $f.start_tf -text "Starting Types"]
+    set start_tf [TitleFrame $topf.start_tf -text "Starting Types"]
     create_type_panel [$start_tf getframe] start assert_wiz_start_type
-    set end_tf [TitleFrame $f.end_tf -text "Ending Types"]
+    set end_tf [TitleFrame $topf.end_tf -text "Ending Types"]
     create_type_panel [$end_tf getframe] end assert_wiz_end_type
-    set via_tf [TitleFrame $f.via_tf -text "Exceptions Type"]
+    set via_tf [TitleFrame $topf.via_tf -text "Exceptions Type"]
     create_type_panel [$via_tf getframe] via assert_wiz_via_type
     
-    set f0 [frame $f.f0]
+    set f0 [frame $topf.f0]
     set mode_tf [TitleFrame $f0.tf -text "Assertion Mode"]
     set noflow_rb [radiobutton [$mode_tf getframe].noflow_rb \
                   -text "noflow" -value "noflow" \
@@ -485,39 +489,45 @@ proc Apol_Analysis_flowassert::create_assert_wizard_dlg {} {
     pack $weight_sb -expand 1 -fill both
     pack $mode_tf -expand 1 -fill both -pady 20
     pack $lf -expand 1 -fill x -pady 20
-    pack $f0 -expand 0 -side left -padx 10
-    pack $via_tf $end_tf $start_tf -expand 1 -fill both -padx 10 -side right
-    grid $f -sticky nsew
+    pack $f0 -expand 0 -fill none -side left -padx 10
+    pack $start_tf $end_tf $via_tf -expand 1 -fill both -side left
+    pack $topf -side top -expand 1 -fill both
     
-    set rule_e [LabelEntry $assert_wizard_dlg.rule_e -width 80 \
+    set rule_e [LabelEntry $f.rule_e -width 80 \
                    -font $ApolTop::text_font -entrybg white \
                     -label "Assertion Line: " \
                     -textvariable Apol_Analysis_flowassert::assert_wiz_line]
-    grid $rule_e -sticky ew -padx 10
+    pack $rule_e -side top -expand 0 -fill x -padx 20 -pady 20 -anchor center
 
-    set bb [ButtonBox $assert_wizard_dlg.bb -homogeneous 1 -spacing 30]
-    $bb add -text "Reset Line" \
-        -command [namespace code [list reset_wizard $via_tf]]
-    $bb add -text "Add Line" \
-        -command [namespace code add_line]
-    $bb add -text "Close" \
-        -command [list destroy $Apol_Analysis_flowassert::assert_wizard_dlg]
-    grid $bb -sticky {}
-
-    grid rowconfigure $assert_wizard_dlg 0 -weight 1 -pad 10
-    grid rowconfigure $assert_wizard_dlg 1 -weight 0 -pad 20
-    grid rowconfigure $assert_wizard_dlg 2 -weight 0 -pad 20
-    grid columnconfigure $assert_wizard_dlg 0 -weight 1 -pad 5
-
-    reset_wizard $via_tf
+    $assert_wizard_dlg add -text "Reset Line" \
+        -command [namespace code [list reset_wizard $via_tf $origline]]
+    if {$origline == ""} { 
+        $assert_wizard_dlg add -text "Add Line" \
+            -command [namespace code add_assertion]
+    } else {
+        $assert_wizard_dlg add -text "Edit Line" \
+            -command [namespace code add_assertion]
+    }
+    $assert_wizard_dlg add -text "Close"
     
-    wm deiconify $assert_wizard_dlg
+    populate_lists 1
+    reset_wizard $via_tf $origline
+
+    set result [$assert_wizard_dlg draw]
+    destroy $assert_wizard_dlg
+    if {$result == 1} {
+        # user clicked on add line
+        return 1
+    } else {
+        # user canceled dialog
+        return 0
+    }
 }
 
 # Creates an individual panel {starting, ending, via/exceptions} for
 # the assertion wizard.
 proc Apol_Analysis_flowassert::create_type_panel {type_panel type_name type_var} {
-    # add the type selection radiobutton + two ComboBoxes
+    # add the type selection radiobutton + ComboBox
     set type_star_rb [radiobutton $type_panel.star_cb -value "*" \
                           -text "Any Type" \
                           -variable Apol_Analysis_flowassert::assert_wiz_${type_name}_type_rb]
@@ -531,8 +541,8 @@ proc Apol_Analysis_flowassert::create_type_panel {type_panel type_name type_var}
     bindtags $type_names_cb.e [linsert [bindtags $type_names_cb.e] 3 ${type_name}_names_tags]
     bind ${type_name}_names_tags <KeyPress> [list ApolTop::_create_popup $type_names_cb %W %K]
     pack $type_names_l -expand 0 -side top
-    pack $type_names_cb -expand 1 -fill both -side top
-    pack $type_names_f -expand 1 -fill both -side top -pady 2
+    pack $type_names_cb -expand 0 -fill both -side top
+    pack $type_names_f -expand 0 -fill none -side top -pady 2
 
     # add bindings between these so that modifying one clears the other
     set bindcmd [namespace code [list set_type $type_star_rb $type_names_cb $type_var star ""]]
@@ -541,7 +551,7 @@ proc Apol_Analysis_flowassert::create_type_panel {type_panel type_name type_var}
     $type_names_cb configure -modifycmd $bindcmd -vcmd $bindcmd -validate key
 
     pack [Separator $type_panel.strut0 -orient horizontal] \
-        -expand 1 -fill x -side top -pady 10
+        -expand 0 -fill x -side top -pady 10
 
     # add the object selection listbox + Entry
     set class_var assert_wiz_${type_name}_class
@@ -549,18 +559,18 @@ proc Apol_Analysis_flowassert::create_type_panel {type_panel type_name type_var}
     set objs_sw [ScrolledWindow $type_panel.objs_sw -auto horizontal]
     set objs_lb [listbox [$objs_sw getframe].objs_lb -selectmode multiple \
                      -height 5 -highlightthickness 0 -exportselection 0 \
-                     -setgrid 1 -background white \
+                     -setgrid 0 -background white \
                      -listvariable Apol_Analysis_flowassert::assert_wizard_objclasses]
     $objs_sw setwidget $objs_lb
-#    pack $objs_sw -expand 1 -fill both
+#    pack $objs_sw -expand 0 -fill both
     set objs_e [Entry $type_panel.objs_e -background white -validate key \
                     -textvariable Apol_Analysis_flowassert::${class_var}]
     $objs_e configure -vcmd [namespace code [list select_class $objs_lb $class_var $objs_e %P]]
-#    pack $objs_e -expand 1 -fill x -pady 2
+#    pack $objs_e -expand 0 -fill x -pady 2
     bind $objs_lb <<ListboxSelect>> [namespace code [list select_class $objs_lb $class_var $objs_lb ""]]
     
 #    pack [Separator $type_panel.strut1 -orient horizontal] \
-# -expand 1 -fill x -side top -pady 10
+# -expand 0 -fill x -side top -pady 10
 
     # add the include / exclude radio buttons
     set include_var assert_wiz_${type_name}_include
@@ -573,7 +583,7 @@ proc Apol_Analysis_flowassert::create_type_panel {type_panel type_name type_var}
 #    pack $include_rb $exclude_rb -anchor w -side top
 
     # FIX ME: temporary patch for now for lack of object classes
-    pack [label $type_panel.nobj -text "Object classes are\ncurrently disabled." -bd 1 -relief sunken -padx 5 -pady 5] -pady 5
+    pack [label $type_panel.nobj -text "Object classes are\ncurrently disabled." -bd 1 -relief sunken -padx 5 -pady 5] -pady 5 -expand 0 -fill none
     
     pack [button $type_panel.add_b -text "Add" \
               -command [namespace code [list add_type $type_var $type_name $class_var $include_var]]] \
@@ -584,7 +594,6 @@ proc Apol_Analysis_flowassert::create_type_panel {type_panel type_name type_var}
     lappend assert_wiz_type_cbs $type_names_cb
     variable assert_wiz_objclass_lbs
     lappend assert_wiz_objclass_lbs $objs_lb
-    populate_lists 1
 }
 
 # Safely destroys a modal dialog.
@@ -770,39 +779,43 @@ proc Apol_Analysis_flowassert::add_type {type_var pos class_var include_var} {
     reset_type $pos
 }
 
-# Takes the current assertion line and appends to to the end of the
-# current assertion file.  Resets the type panels to their original
-# positions, but does not modify the current assertion mode nor
-# weight.
-proc Apol_Analysis_flowassert::add_line {} {
+# Takes the current assertion line and adds it to the current
+# assertion file.  Then closes the assertion dialog
+proc Apol_Analysis_flowassert::add_assertion {} {
     variable assertfile_t
     # add the line if and only if the widget is still visible (which
     # might not be the case if the user has clicked on a different
     # analysis module since this wizard was created)
     if [winfo exists $assertfile_t] {
         variable assert_wiz_line
-        variable assert_wiz_mode
-        variable assert_wiz_weight
-        # check if line has an empty list for its fourth element; if
-        # so don't copy it over
-        if {[lindex $assert_wiz_line 3] == {}} {
-            set assert_wiz_line "[lrange $assert_wiz_line 0 2] [lrange $assert_wiz_line 4 end]"
-        }
-        $assertfile_t insert end "$assert_wiz_line;\n"
-        foreach name {start end via} {
-            reset_type $name
-        }
-        set assert_wiz_line [list $assert_wiz_mode * * {} $assert_wiz_weight]
+        add_line $assert_wiz_line
+        variable assert_wizard_dlg
+        $assert_wizard_dlg enddialog 1
     }
 }
 
 # Resets all widgets in the assertion wizard to their original
 # positions.  Clears the assertion line.
-proc Apol_Analysis_flowassert::reset_wizard {via_tf} {
-    variable assert_wiz_mode "noflow"
-    variable assert_wiz_line [list noflow * * {} 1]
-    variable assert_wiz_weight 1
-    set_mode "noflow" $via_tf
+proc Apol_Analysis_flowassert::reset_wizard {via_tf origline} {
+    if {$origline == ""} {
+        set mode "noflow"
+        set start {}
+        set to {}
+        set via {}
+        set weight 1
+    } else {
+        foreach {mode start to via weight} $origline {}
+    }
+    if {$start == {}} {
+        set start "*"
+    }
+    if {$to == {}} {
+        set to "*"
+    }
+    variable assert_wiz_mode $mode
+    variable assert_wiz_line [list $mode $start $to $via $weight]
+    variable assert_wiz_weight $weight
+    set_mode $mode $via_tf
     foreach name {start end via} {
         reset_type $name
     }
@@ -830,54 +843,101 @@ proc Apol_Analysis_flowassert::highlight_assert_line {widget x y} {
     set line [eval $widget get [$widget tag prevrange assert_file_tag "@$x,$y + 1 char"]]
     foreach {foo linenum} [split $line] {}
     variable assertfile_t
-    $assertfile_t tag remove sel 1.0 end
-    $assertfile_t tag add sel $linenum.0 [expr {$linenum + 1}].0
+    $assertfile_t tag remove assert_file_sel_tag 1.0 end
+    $assertfile_t tag add assert_file_sel_tag $linenum.0 [expr {$linenum + 1}].0
     $assertfile_t see $linenum.0
 }
 
 # Given an assertion (either a comment or a 5-tuple) return a string
 # that represents the line.
 proc Apol_Analysis_flowassert::render_assertion {assertion} {
-    if {[llength $assertion] == 1} {
-        return [lindex $assertion 0]
+    if {[string index $assertion 0] == "\#"} {
+        return $assertion
     } else {
-        foreach {mode start end via weight} $assertion {}
+        foreach {mode start to via weight} $assertion {}
         if {$start == {}} {
             set start "*"
         }
-        if {$end == {}} {
-            set end "*"
+        if {$to == {}} {
+            set to "*"
         }
-        return "$mode $start $end $via $weight"
+        if {$via == {}} {
+            return [list $mode $start $to $weight]
+        } else {
+            return [list $mode $start $to $via $weight]
+        }
     }
 }
 
 # Resynchronize the assertions (model) to its view (assertfile_t text
 # field).
-proc Apol_Analysis_flowassert::sync_asserts_to_text {asserts text} {
-    $text configure -state normal
-    $text delete 1.0 end
+proc Apol_Analysis_flowassert::sync_asserts_to_text {} {
+    variable asserts
+    variable assertfile_t
+    $assertfile_t configure -state normal
+    $assertfile_t delete 1.0 end
     foreach line $asserts {
-        $text insert end "[render_assertion $line]\n"
+        $assertfile_t insert end "[render_assertion $line]\n"
     }
-    $text tag add assert_file_t_tag 1.0 end
-    $text configure -state disabled
-    variable line_editing_buttons
-    set parent [lindex $line_editing_buttons 0]
-    foreach button [lrange $line_editing_buttons 1 end] {
-        $parent itemconfigure $button -state disabled
-    }    
+    $assertfile_t tag add assert_file_t_tag 1.0 end
+    $assertfile_t configure -state disabled
+    enable_line_editing
 }
 
-
-proc Apol_Analysis_flowassert::add_comment_dlg {} {
-
+# Displays a dialog box to allow user to add a comment to the
+# assertion file.  Returns 1 if something was added, 0 otherwise.
+proc Apol_Analysis_flowassert::add_comment_dlg {{origcomment ""}} {
+    if [winfo exists .assertfile_comment_dlg] {
+        raise .assertfile_comment_dlg
+        return
+    }
+    variable assertfile_t
+    set d [Dialog .assertfile_comment_dlg -homogeneous 1 -spacing 10 \
+               -anchor e -cancel 1 -default 0 -modal global \
+               -parent $assertfile_t -separator 0 -side bottom \
+               -title "Add Comment"]
+    $d add -text "Okay"
+    $d add -text "Cancel"
+    set f [$d getframe]
+    set l [label $f.l -text "Comment: "]
+    set e [entry $f.e -width 80 -font $ApolTop::text_font -bg white]
+    $e insert end $origcomment
+    pack $l -side left
+    pack $e -side right -fill x -expand 0
+    if {[$d draw $e] == 0} {
+        # user either clicked on okay or hit the enter key
+        add_line "\# [$e get]"
+        destroy $d
+        return 1
+    }
+    destroy $d
+    return 0
 }
 
+# Edit the currently selected line.  If the line is a comment then pop
+# up the comment dialog, else pop up the assertion wizard.
 proc Apol_Analysis_flowassert::edit_line {} {
-
+    variable assertfile_t
+    set selection [lindex [$assertfile_t tag ranges assert_file_sel_tag] 0]
+    set oldline [lindex [split [lindex $selection 0] .] 0]
+    variable asserts
+    set line [lindex $asserts [expr {$oldline - 1}]]
+    if {[string index $line 0] == "\#"} {
+        set result [add_comment_dlg [string range $line 2 end]]
+    } else {
+        set result [create_assert_wizard_dlg $line]
+    }
+    if $result {
+        # delete the previous line and select the newly edited one
+        set asserts [lreplace $asserts $oldline $oldline]
+        sync_asserts_to_text
+        $assertfile_t tag add assert_file_sel_tag $oldline.0 [expr {$oldline + 1}].0
+        enable_line_editing
+    }
 }
 
+# Delete the currently selected line.  Re-render the text field and
+# select the next line.
 proc Apol_Analysis_flowassert::delete_line {} {
     variable assertfile_t
     set selection [lindex [$assertfile_t tag ranges assert_file_sel_tag] 0]
@@ -885,5 +945,31 @@ proc Apol_Analysis_flowassert::delete_line {} {
     incr oldline -1
     variable asserts
     set asserts [lreplace $asserts $oldline $oldline]
-    sync_asserts_to_text $asserts $assertfile_t
+    sync_asserts_to_text
+    # select the next line
+    incr oldline
+    $assertfile_t tag add assert_file_sel_tag $oldline.0 [expr {$oldline + 1}].0
+    enable_line_editing
+}
+
+# Adds a line (either comment or assertion) to the assertions list.
+# If a line is selected, add the new line prior to the selection.
+# Otherwise append it to the end.
+proc Apol_Analysis_flowassert::add_line {line} {
+    variable asserts
+    variable assertfile_t
+    set selection [lindex [$assertfile_t tag ranges assert_file_sel_tag] 0]
+    set oldline [lindex [split [lindex $selection 0] .] 0]
+    if {$oldline != ""} {
+        set asserts [linsert $asserts [expr {$oldline - 1}] $line]
+    } else {
+        lappend asserts $line
+    }
+    sync_asserts_to_text
+    if {$oldline != ""} {
+        # reselect the previous line
+        incr oldline
+        $assertfile_t tag add assert_file_sel_tag $oldline.0 [expr {$oldline + 1}].0
+    }
+    enable_line_editing
 }
