@@ -1,33 +1,122 @@
-/* 
+/*
  *  Copyright (C) 2003-2004 Tresys Technology, LLC
  *  see file 'COPYING' for use and warranty information
  *
  */
 
-/* 
- *  Author: Jeremy Stitz <jstitz@tresys.com> 
- *          Kevin Carr <kcarr@tresys.com>
+/*
+ *  Authors: Jeremy Stitz <jstitz@tresys.com>
+ *           Kevin Carr <kcarr@tresys.com>
+ *           James Athey <jathey@tresys.com>
  *
- *    Date: January 14, 2004 
- * 
  *  replcon: a tool for replacing file contexts in SE Linux
  */
 
-/* replcon definitions */
-#include "replcon.h"
-#include <string.h>
-#include <assert.h>
+/* SE Linux includes*/
+#include <selinux/selinux.h>
 #include <selinux/context.h>
+/* standard library includes */
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
+#include <assert.h>
+#include <errno.h>
+#include <limits.h>
+#include <fnmatch.h>
+/* command line parsing commands */
+#define _GNU_SOURCE
+#include <getopt.h>
+/* file tree walking commands */
+#define __USE_XOPEN_EXTENDED 1
+#include <ftw.h>
+#include <mntent.h>
 
-/* globals */ 
-extern replcon_info_t replcon_info;
-extern const char *replcon_object_classes[];
+/* REPLCON_VERSION_NUM should be defined in the make environment */
+#ifndef REPLCON_VERSION_NUM
+#define REPLCON_VERSION_NUM "UNKNOWN"
+#endif
 
-static struct option const longopts[] =
-{
+#define COPYRIGHT_INFO "Copyright (C) 2004 Tresys Technology, LLC"
+
+#define DEBUG 0
+#define NUM_OBJECT_CLASSES 8
+#define MAX_INPUT_SIZE 1024
+#define NFTW_FLAGS FTW_MOUNT | FTW_PHYS
+#define NFTW_DEPTH 1024
+
+#ifndef TRUE
+#define TRUE 1
+#endif
+
+#ifndef FALSE
+#define FALSE 0
+#endif
+
+#ifndef SUPPORTED_FILESYSTEMS
+#define SUPPORTED_FILESYSTEMS "ext2 ext3"
+#endif
+
+#ifndef UNLABELED
+#define UNLABELED "UNLABELED"
+#endif
+
+/* Data Structures */
+typedef enum replcon_classes {
+	NORM_FILE,
+	DIR,
+	LNK_FILE,
+	CHR_FILE,
+	BLK_FILE,
+	SOCK_FILE,
+	FIFO_FILE,
+	ALL_FILES
+} replcon_classes_t;
+
+const char *replcon_object_classes[] =
+    { "file", "dir", "lnk_file", "chr_file", "blk_file", "sock_file",
+"fifo_file", "all_files" };
+
+typedef struct replcon_context {
+	char *user;
+	char *role;
+	char *type;
+} replcon_context_t;
+
+typedef struct replcon_context_pair {
+	replcon_context_t old_context;
+	replcon_context_t new_context;
+} replcon_context_pair_t;
+
+typedef struct replcon_info {
+	unsigned char recursive;
+	unsigned char verbose;
+	unsigned char quiet;
+	unsigned char stdin;
+	unsigned char unlabeled;
+	replcon_classes_t *obj_classes;
+	int num_classes;
+#ifndef FINDCON
+	replcon_context_pair_t *pairs;
+	int num_pairs;
+#else
+	replcon_context_t *contexts;
+	int num_contexts;
+#endif
+	char **filenames;
+	int num_filenames;
+} replcon_info_t;
+
+/* globals */
+replcon_info_t replcon_info;
+const char *replcon_object_classes[];
+char **mounts;
+unsigned int num_mounts;
+
+static struct option const longopts[] = {
 	{"recursive", no_argument, NULL, 'r'},
 	{"object", required_argument, NULL, 'o'},
-	{"context", optional_argument, NULL, 'c'},
+	{"context", required_argument, NULL, 'c'},
 	{"stdin", no_argument, NULL, 's'},
 	{"quiet", no_argument, NULL, 'q'},
 	{"verbose", no_argument, NULL, 'V'},
@@ -36,39 +125,212 @@ static struct option const longopts[] =
 	{NULL, 0, NULL, 0}
 };
 
-void replcon_info_print_progress(replcon_info_t *info, char *normal_output, char *verbose_output)
+/*
+ * replcon_context_free
+ *
+ * Frees the contents of the specified replcon_context_t
+ */
+void
+replcon_context_free(replcon_context_t * context)
 {
-	if (info->quiet)
-		return;
-	if (info->verbose) {
-		printf(verbose_output);
-		return;
+	if (context->user != NULL) {
+		free(context->user);
+		context->user = NULL;
 	}
-	printf(normal_output);
+
+	if (context->role != NULL) {
+		free(context->role);
+		context->role = NULL;
+	}
+
+	if (context->type != NULL) {
+		free(context->type);
+		context->type = NULL;
+	}
 }
 
-/* 
+/*
+ * replcon_context_destroy
+ *
+ * Destroys the specified replcon_context_t
+ */
+void
+replcon_context_destroy(replcon_context_t * context)
+{
+	replcon_context_free(context);
+	free(context);
+}
+
+/*
+ * replcon_context_create
+ *
+ * Creates a new replcon_context_t object using the specified string
+ *
+ * Warning: does not check the format of the context string,
+ *          use replcon_is_valid_context_format to accomplish this
+ */
+replcon_context_t *
+replcon_context_create(const char *context_str)
+{
+	replcon_context_t *context = NULL;
+	char **parts;
+	char *tokens, *tokens_orig;
+	int i;
+
+	if (!context_str)
+		return NULL;
+
+	if ((context = malloc(sizeof (replcon_context_t))) == NULL)
+		goto err;
+
+	if ((parts = malloc(3 * sizeof(char*))) == NULL)
+		goto err;
+
+	if ((tokens_orig = tokens = strdup(context_str)) == NULL)
+		goto err;
+
+	parts[0] = strsep(&tokens, ":");
+	parts[1] = strsep(&tokens, ":");
+	parts[2] = tokens;
+
+	for (i = 0; i < 3; i++) {
+		if (parts[i] == NULL)
+			goto err;
+	}
+
+	context->user = strdup(parts[0]);
+	context->role = strdup(parts[1]);
+	context->type = strdup(parts[2]);
+
+	if ((context->user == NULL) ||
+	    (context->role == NULL) ||
+	    (context->type == NULL))
+		goto err;
+
+	free(tokens_orig);
+	free(parts);
+
+	return context;
+
+      err:
+	if (tokens_orig) free (tokens_orig);
+	if (parts) free (parts);
+	replcon_context_destroy(context);
+	fprintf(stderr, "Could not create file context from %s...\n", context_str);
+	return NULL;
+}
+
+/*
+ * replcon_context_user_set
+ *
+ * Sets the user member of a replcon_context_t object using the specified argument
+ */
+int replcon_context_user_set(replcon_context_t * context, const char *user)
+{
+	if (context->user != NULL) {
+		free(context->user);
+		context->user = NULL;
+	}
+
+	if ((context->user = strdup(user)) == NULL)
+		return -1;
+
+	return 0;
+}
+
+/*
+ * replcon_context_role_set
+ *
+ * Sets the role member of a replcon_context_t object using the specified argument
+ */
+int replcon_context_role_set(replcon_context_t * context, const char *role)
+{
+	if (context->role != NULL) {
+		free(context->role);
+		context->role = NULL;
+	}
+
+	if ((context->role = strdup(role)) == NULL)
+		return -1;
+
+	return 0;
+}
+
+/*
+ * replcon_context_type_set
+ *
+ * Sets the type member of a replcon_context_t object using the specified argument
+ */
+int replcon_context_type_set(replcon_context_t * context, const char *type)
+{
+	if (context->type != NULL) {
+		free(context->type);
+		context->type = NULL;
+	}
+
+	if ((context->type = strdup(type)) == NULL)
+		return -1;
+
+	return 0;
+}
+
+/*
+ * get_security_context
+ *
+ * Assembles a security_context_t from the information in the replcon context
+ */
+security_context_t
+get_security_context(const replcon_context_t * context)
+{
+	security_context_t sec_con;
+
+	if ((sec_con = malloc(strlen(context->user) +
+			      strlen(context->role) +
+			      strlen(context->type) +
+			      3)) == NULL)
+		return NULL;
+
+	strcpy(sec_con, (context->user));
+	strcat(sec_con, ":");
+	strcat(sec_con, (context->role));
+	strcat(sec_con, ":");
+	strcat(sec_con, (context->type));
+
+	return sec_con;
+}
+
+/*
  * replcon_usage
  *
- * Prints out usage instrcutions for the program. If brief is set to 1 (true) only the 
+ * Prints out usage instructions for the program. If brief is set to 1 (true) only the
  * syntax for program execution is displayed
  */
-void replcon_usage(const char *program_name, int brief)
+void
+replcon_usage(const char *program_name, int brief)
 {
-	printf("Usage: %s [OPTIONS] [-c OLD NEW] FILENAMES...\n", program_name);
-	if(brief) {
+#ifndef FINDCON
+	printf("Usage: %s [OPTIONS] -c OLD NEW FILENAMES\n", program_name);
+#else
+	printf("Usage: %s [OPTIONS] -c CONTEXT FILENAMES\n", program_name);
+#endif
+	if (brief) {
 		printf("\nTry %s --help for more help.\n\n", program_name);
 		return;
 	}
+#ifndef FINDCON
 	printf("\nFile context replacement tool for Security Enhanced Linux.\n");
-        printf("  -c,  --context=OLD NEW  Specify context to replace, see below.\n");
-        printf("  -o,  --object=OBJECT    Only replace context for the specific\n");
-	printf("                          object class.\n");
-        printf("  -r,  --recursive        Recurse through directories.\n");
-        printf("  -s,  --stdin            Read FILENAMES from standard input.\n");
- 	printf("  -q,  --quiet            Suppress progress output.\n");
-        printf("  -V,  --verbose          Display context info.\n");
- 	printf("  -v,  --version          Display version information and exit.\n");
+	printf("  -c,  --context=OLD NEW  Specify context to replace, see below.\n");
+	printf("  -o,  --object=OBJECT    Only replace context for the specified object class.\n");
+#else
+	printf("\nFile context search tool for Security Enhanced Linux.\n");
+	printf("  -c,  --context=CONTEXT  Specify context to search for, see below.\n");
+	printf("  -o,  --object=OBJECT    Restrict search to the specified object class.\n");
+#endif
+	printf("  -r,  --recursive        Recurse through directories.\n");
+	printf("  -s,  --stdin            Read FILENAMES from standard input.\n");
+	printf("  -q,  --quiet            Suppress progress output.\n");
+	printf("  -V,  --verbose          Display context info.\n");
+	printf("  -v,  --version          Display version information and exit.\n");
 	printf("  -h,  --help             Display this help and exit.\n");
 	printf("\n");
 	printf("A context may be specified as a colon separated list of user, role, and type\n");
@@ -81,137 +343,71 @@ void replcon_usage(const char *program_name, int brief)
  * replcon_info_init
  *
  * Sets the data members of info to initial values
- */ 
-void replcon_info_init(replcon_info_t *info)
+ */
+void replcon_info_init(replcon_info_t * info)
 {
 	info->recursive = 0;
-	info->quiet     = 0;
-	info->verbose   = 0;
-	info->stdin     = 0;
+	info->quiet = 0;
+	info->verbose = 0;
+	info->stdin = 0;
+	info->unlabeled = 0;
 	info->obj_classes = NULL;
-	info->pairs    = NULL;
-	info->locations   = NULL;
-	info->num_classes   = 0;
-	info->num_pairs  = 0;
-	info->num_locations = 0;
+#ifndef FINDCON
+	info->pairs = NULL;
+	info->num_pairs = 0;
+#else
+	info->contexts = NULL;
+	info->num_contexts = 0;
+#endif
+	info->filenames = NULL;
+	info->num_classes = 0;
+	info->num_filenames = 0;
 }
 
 /*
  * replcon_info_free
- * 
- * Frees all the allocated memory in info 
+ *
+ * Frees all the allocated memory in info
  */
-void replcon_info_free(replcon_info_t *info)
+void
+replcon_info_free(replcon_info_t * info)
 {
 	int i;
 
 	/* Free Object Classes */
-	if(info->obj_classes) {
+	if (info->obj_classes) {
 		free(info->obj_classes);
 		info->obj_classes = NULL;
 	}
+#ifndef FINDCON
 	/* Free context pairs */
 	if (info->pairs) {
-		for(i = 0; i < (info->num_pairs); i++) {
-			if(info->pairs[i].old_context) {
-				context_free(info->pairs[i].old_context);
-				info->pairs[i].old_context = NULL;
-			}
-			if(info->pairs[i].new_context) {
-				context_free(info->pairs[i].new_context);
-				info->pairs[i].new_context = NULL;
-			}
+		for (i = 0; i < (info->num_pairs); i++) {
+			replcon_context_free(&info->pairs[i].old_context);
+			replcon_context_free(&info->pairs[i].new_context);
 		}
 		free(info->pairs);
 		info->pairs = NULL;
 	}
+#else
+	/* Free contexts */
+	if (info->contexts) {
+		for (i = 0; i < (info->num_contexts); i++)
+			replcon_context_free(&info->contexts[i]);
+		free(info->contexts);
+		info->contexts = NULL;
+	}
+#endif
 	/* Free Locations */
-	if (info->locations) {
-		for(i = 0; i < info->num_locations; i++) {
-			if(info->locations[i]) {
-				free(info->locations[i]);
-				info->locations[i] = NULL;
+	if (info->filenames) {
+		for (i = 0; i < info->num_filenames; i++) {
+			if (info->filenames[i]) {
+				free(info->filenames[i]);
+				info->filenames[i] = NULL;
 			}
 		}
-		free(info->locations);
+		free(info->filenames);
 	}
-	return;
-}
-
-/*
- * replcon_info_add_object_class
- *
- * Adds class_id to the array of object types stored in replcon_info that will have their 
- * context changed upon program execution
- */
-bool_t replcon_info_add_object_class(replcon_info_t *info, const char *str)
-{
-	replcon_classes_t class_id;
-
-	class_id = replcon_is_valid_object_class(str);
-	/* Check the object class */
-	if(class_id == -1) {
-		fprintf(stderr, "Error: invalid object class \'%s\'\n", optarg);
-		return FALSE;
-	}
-
-	info->obj_classes = (replcon_classes_t*)realloc(info->obj_classes, sizeof(replcon_classes_t)*(info->num_classes+1));
-	if(!info->obj_classes)
-		return FALSE;
-	
-	info->obj_classes[info->num_classes] = class_id;
-	info->num_classes++;
-	return TRUE;
-}
-		
-/*
- * add_context_pair
- *
- * Adds the context pair, old and new, to the array of context pairs stored in replcon_info
- * that will be changed upon program execution
- */
-bool_t replcon_info_add_context_pair(replcon_info_t *info, const char *old, const char *new)
-{
-	info->pairs = (replcon_context_pair_t*)realloc(info->pairs, sizeof(replcon_context_pair_t)*(info->num_pairs+1));
-	if(!info->pairs)
-		return FALSE;
-	
-	/* Check the required context pairs */
-	if (!replcon_is_valid_context_format(old)) {
-		fprintf(stderr, "Error: \'%s\' is not a valid context format.\n", old);
-		return FALSE;
-	}
-
-	if (!replcon_is_valid_context_format(new)) {
-		fprintf(stderr, "Error: \'%s\' is not a valid context format.\n", new);
-		return FALSE;
-	}
-	info->pairs[info->num_pairs].old_context = context_new(old);
-	if (context_type_get(info->pairs[info->num_pairs].old_context) == NULL)
-		context_type_set(info->pairs[info->num_pairs].old_context, "");
-	info->pairs[info->num_pairs].new_context = context_new(new);
-	if (context_type_get(info->pairs[info->num_pairs].new_context) == NULL)
-		context_type_set(info->pairs[info->num_pairs].new_context, "");
-	info->num_pairs++;
-	return TRUE;
-}
-
-/*
- * add_location
- *
- * Adds loc to the array of file/directory locations stored in replcon_info that will
- * have contexts replaced
- */
-bool_t replcon_info_add_location(replcon_info_t *info, const char *loc)
-{
-	info->locations = realloc(info->locations, sizeof(char*)*(info->num_locations+1));
-	if (!info->locations) {
-		fprintf(stderr, "Error: Out of memory\n");
-		return FALSE;
-	}
-	info->locations[info->num_locations] = strdup(loc);
-	info->num_locations++;
-	return TRUE;
 }
 
 /*
@@ -219,18 +415,19 @@ bool_t replcon_info_add_location(replcon_info_t *info, const char *loc)
  *
  * Check if replcon_info has an object class
  */
-bool_t replcon_info_has_object_class(replcon_info_t *info, replcon_classes_t obj_class)
+int replcon_info_has_object_class(replcon_info_t * info, replcon_classes_t obj_class)
 {
 	int i;
-	
-	for(i = 0; i < info->num_classes; i++)
-		if(info->obj_classes[i] == obj_class || replcon_info.obj_classes[i] == ALL_FILES)
+
+	for (i = 0; i < info->num_classes; i++)
+		if (info->obj_classes[i] == obj_class
+		    || replcon_info.obj_classes[i] == ALL_FILES)
 			return TRUE;
 	return FALSE;
 }
 
 /*
- * repcon_is_valid_object_class
+ * replcon_is_valid_object_class
  *
  * Determines if class_name is a valid object class.  Return -1 if invalid
  * otherwise the index of the valid object class
@@ -239,123 +436,448 @@ int replcon_is_valid_object_class(const char *class_name)
 {
 	int i;
 
-	for(i = 0; i < NUM_OBJECT_CLASSES; i++)
-		if(strcmp(class_name, replcon_object_classes[i]) == 0)
+	for (i = 0; i < NUM_OBJECT_CLASSES; i++)
+		if (strcmp(class_name, replcon_object_classes[i]) == 0)
 			return i;
 	return -1;
 }
 
-
-/* 
+/*
  * replcon_is_valid_context_format
  *
  * Determines if context is a valid file context format
  */
-bool_t replcon_is_valid_context_format(const char *context_str)
+int replcon_is_valid_context_format(const char *context_str)
 {
-	context_t context;
+	int i, len, count = 0;
 
-	context = context_new(context_str);
-	if(!context)
+	if (context_str == NULL)
 		return FALSE;
 
-	context_free(context);
-	context = NULL;
-	return TRUE;
+	if (!strcasecmp("unlabeled", context_str))
+		return TRUE;
+
+	len = strlen(context_str);
+
+	for (i = 0; i < len; i++) {
+		if (context_str[i] == ':')
+			count++;
+	}
+
+	if (count == 2)
+		return TRUE;
+	else
+		return FALSE;
 }
 
-
 /*
- * replcon get_file_class
+ * replcon_get_file_class
  *
  * Determines the file's class, and returns it
  */
 int replcon_get_file_class(const struct stat *statptr)
 {
-	if(S_ISREG(statptr->st_mode))
+	if (S_ISREG(statptr->st_mode))
 		return NORM_FILE;
-	if(S_ISDIR(statptr->st_mode))
+	if (S_ISDIR(statptr->st_mode))
 		return DIR;
-	if(S_ISLNK(statptr->st_mode))
+	if (S_ISLNK(statptr->st_mode))
 		return LNK_FILE;
-	if(S_ISCHR(statptr->st_mode))
+	if (S_ISCHR(statptr->st_mode))
 		return CHR_FILE;
-	if(S_ISBLK(statptr->st_mode))
+	if (S_ISBLK(statptr->st_mode))
 		return BLK_FILE;
-	if(S_ISSOCK(statptr->st_mode))
+	if (S_ISSOCK(statptr->st_mode))
 		return SOCK_FILE;
-	if(S_ISFIFO(statptr->st_mode))
+	if (S_ISFIFO(statptr->st_mode))
 		return FIFO_FILE;
 	return ALL_FILES;
-}	
+}
 
+/*
+ * replcon_info_add_object_class
+ *
+ * Adds class_id to the array of object types stored in replcon_info that will have their
+ * context changed upon program execution
+ */
+int replcon_info_add_object_class(replcon_info_t * info, const char *str)
+{
+	replcon_classes_t class_id;
+
+	class_id = replcon_is_valid_object_class(str);
+
+	/* Check the object class */
+	if (class_id == -1) {
+		fprintf(stderr, "Error: invalid object class \'%s\'\n", optarg);
+		return -1;
+	}
+
+	info->obj_classes =
+	    (replcon_classes_t *) realloc(info->obj_classes,
+					  sizeof (replcon_classes_t) *
+					  (info->num_classes + 1));
+	if (!info->obj_classes)
+		return -1;
+
+	info->obj_classes[info->num_classes] = class_id;
+	info->num_classes++;
+
+	return 0;
+}
+
+#ifndef FINDCON
+/*
+ * replcon_info_add_context_pair
+ *
+ * Adds the context pair, old and new, to the array of context pairs stored in replcon_info
+ * that will be changed upon program execution
+ */
+int replcon_info_add_context_pair(replcon_info_t * info, const char *old, const char *new)
+{
+	replcon_context_t *context;
+
+	/* Check the context pairs for format before we do any memory mgmt */
+	if (!replcon_is_valid_context_format(old)) {
+		fprintf(stderr,
+			"Error: \'%s\' is not a valid context format.\n", old);
+		goto err;
+	}
+
+	if (!replcon_is_valid_context_format(new)) {
+		fprintf(stderr,
+			"Error: \'%s\' is not a valid context format.\n", new);
+		goto err;
+	}
+
+	info->pairs =
+	    (replcon_context_pair_t *) realloc(info->pairs,
+					       sizeof (replcon_context_pair_t) *
+					       (info->num_pairs + 1));
+	if (!info->pairs)
+		goto err;
+
+	if (!strcasecmp("unlabeled", old))
+		context = replcon_context_create("!:!:!");
+	else
+		context = replcon_context_create(old);
+	if (context != NULL)
+		info->pairs[info->num_pairs].old_context = (*context);
+	else {
+		fprintf(stderr, "Error: unable to add context \'%s\'.\n", old);
+		goto err;
+	}
+
+	/* we use free here, because calling replcon_context_destroy would
+	 * blow away the strings we just saved in info->pairs */
+	free(context);
+
+	if ((context = replcon_context_create(new)) != NULL)
+		info->pairs[info->num_pairs].new_context = (*context);
+	else {
+		fprintf(stderr, "Error: unable to add context \'%s\'.\n", new);
+		goto err;
+	}
+
+	info->num_pairs++;
+	/* we use free here, because calling replcon_context_destroy would
+	 * blow away the strings we just saved in info->pairs */
+	free(context);
+	return 0;
+
+	err:
+	if (context) free(context);
+	return -1;
+
+}
+#else
+/*
+ * replcon_info_add_context
+ *
+ * Adds the context to the array of contexts stored in replcon_info
+ * that will be sought upon program execution
+ */
+int replcon_info_add_context(replcon_info_t * info, const char *con)
+{
+	replcon_context_t *context;
+
+	/* Check the context for format before we do any memory mgmt */
+	if (!replcon_is_valid_context_format(con)) {
+		fprintf(stderr,
+			"Error: \'%s\' is not a valid context format.\n", con);
+		goto err;
+	}
+
+	if (!strcasecmp("unlabeled", con))
+		context = replcon_context_create("!:!:!");
+	else
+		context = replcon_context_create(con);
+	if (context) {
+		info->contexts =
+			(replcon_context_t *) realloc(info->contexts,
+						      sizeof (replcon_context_t) *
+						      (info->num_contexts + 1));
+		if (info->contexts == NULL) {
+			fprintf(stderr, "Error: Out of memory.\n");
+			goto err;
+		}
+		info->contexts[info->num_contexts] = (*context);
+		info->num_contexts++;
+	} else {
+		fprintf(stderr, "Error: unable to add context \'%s\'.\n", con);
+		goto err;
+	}
+
+	/* we use free here, because destroy would blow away the
+	 * strings we just saved in info->contexts */
+	free(context);
+	return 0;
+
+	err:
+	if (context) free(context);
+	return -1;
+}
+#endif
+
+/*
+ * replcon_info_add_filename
+ *
+ * Adds loc to the array of file/directory locations stored in replcon_info that will
+ * have contexts replaced
+ */
+int replcon_info_add_filename(replcon_info_t * info, const char *file)
+{
+	info->filenames =
+	    realloc(info->filenames,
+		    sizeof (char *) * (info->num_filenames + 1));
+	if (!info->filenames)
+		goto err;
+	if ((info->filenames[info->num_filenames] = strdup(file)) == NULL)
+		goto err;
+	info->num_filenames++;
+	return 0;
+
+	err:
+	fprintf(stderr, "Error: Out of memory\n");
+	return -1;
+
+}
 
 /*
  * replcon_context_equal
  *
- * return true if the contexts are the same, if any context field is empty (ie. no user field) then that field matches
- * example - ::user_t == x_u:y_r:user_t, 
+ * return true if the patterns match the fields in context
+ * if any context field is empty then that field matches
+ * example - ::user_t == x_u:y_r:user_t,
  * example - x_u:y_r:user_t != user_u:y_r:user_t
  */
-bool_t replcon_context_equal(context_t a, context_t b)
+unsigned char
+replcon_context_equal(const replcon_context_t *context, const replcon_context_t *patterns)
 {
-	bool_t user_match, role_match, type_match;
-	user_match = strcmp(context_user_get(a), context_user_get(b)) == 0 || strcmp(context_user_get(a), "") == 0 || strcmp(context_user_get(b), "") == 0;
-	role_match = strcmp(context_role_get(a), context_role_get(b)) == 0 || strcmp(context_role_get(a), "") == 0 || strcmp(context_role_get(b), "") == 0;
-	type_match = strcmp(context_type_get(a), context_type_get(b)) == 0 || strcmp(context_type_get(a), "") == 0 || strcmp(context_type_get(b), "") == 0;
-	return user_match && role_match && type_match;
+	unsigned char user_match, role_match, type_match;
+
+	user_match =
+	    ((fnmatch(patterns->user, context->user, 0) == 0) ||
+	     (strcmp(context->user, "") == 0) ||
+	     (strcmp(patterns->user, "") == 0));
+	role_match =
+	    ((fnmatch(patterns->role, context->role, 0) == 0) ||
+	     (strcmp(context->role, "") == 0) ||
+	     (strcmp(patterns->role, "") == 0));
+	type_match =
+	    ((fnmatch(patterns->type, context->type, 0) == 0) ||
+	     (strcmp(context->type, "") == 0) ||
+	     (strcmp(patterns->type, "") == 0));
+
+	return (user_match && role_match && type_match);
 }
-	
-/*  
- * change_context
+
+#ifndef FINDCON
+/*
+ * replcon_file_context_replace
  *
- * Change the context of the file, as long as it meets the specifications in replcon_info.
- * The caller must pass a valid filename and statptr.
- */ 
-int replcon_replace_file_context(const char *filename, const struct stat *statptr, int fileflags, struct FTW *pfwt)
+ * Change the context of the file, as long as it meets the specifications in replcon_info
+ *
+ * The caller must pass a valid filename and statptr
+ */
+int
+replcon_file_context_replace(const char *filename, const struct stat *statptr,
+			     int fileflags, struct FTW *pfwt)
 {
 	int file_class, i;
-	context_t tmp=NULL, tmp_new=NULL;
-	security_context_t old_con=NULL, new_con=NULL;
-	const size_t REPLCON_BUFF_SZ = 1024;
-	char normal_output[REPLCON_BUFF_SZ];
-	char verbose_output[REPLCON_BUFF_SZ];
-	
+	unsigned char match = FALSE;
+	replcon_context_t *replacement_con, *original_con, *new_con;
+	security_context_t old_file_con, new_file_con;
+	replcon_info_t *info;
+
+	info = &replcon_info;
+	file_class = replcon_get_file_class(statptr);
+	if (!replcon_info_has_object_class(info, file_class))
+		return 0;
+
+	if (lgetfilecon(filename, &old_file_con) <= 0) {
+		if (errno == ENODATA) {
+			if ((old_file_con = strdup("!:!:!")) == NULL)
+				goto err;
+		} else {
+			fprintf(stderr, "Unable to get file context for %s, skipping...\n", filename);
+			return 0;
+		}
+	}
+
+	if ((original_con = replcon_context_create(old_file_con)) == NULL)
+		goto err;
+
+	if ((replacement_con = replcon_context_create("::")) == NULL)
+		goto err;
+
+	for (i = 0; i < info->num_pairs; i++) {
+		if (replcon_context_equal(original_con, &(info->pairs[i].old_context))) {
+			match = TRUE;
+			new_con = &(info->pairs[i].new_context);
+			if (strcmp(new_con->user, "") != 0)
+				replcon_context_user_set(replacement_con, new_con->user);
+			if (strcmp(new_con->role, "") != 0)
+				replcon_context_role_set(replacement_con, new_con->role);
+			if (strcmp(new_con->type, "") != 0)
+				replcon_context_type_set(replacement_con, new_con->type);
+		}
+	}
+
+	if (match) {
+		/* If the new context was not spcified completely, fill in the blanks */
+		if (strcmp(replacement_con->user, "") == 0)
+			replcon_context_user_set(replacement_con, original_con->user);
+		if (strcmp(replacement_con->role, "") == 0)
+			replcon_context_role_set(replacement_con, original_con->role);
+		if (strcmp(replacement_con->type, "") == 0)
+			replcon_context_type_set(replacement_con, original_con->type);
+
+		new_file_con = get_security_context(replacement_con);
+
+		if (lsetfilecon(filename, new_file_con) != 0) {
+			fprintf(stderr, "Error setting context %s for file %s:\n", new_file_con, filename);
+			perror("  lsetfilecon");
+			goto err;
+		}
+
+		if (!info->quiet) {
+			if (info->verbose)
+				fprintf(stdout,
+					"Replaced context: %-40s\told context: [%s]\tnew context: [%s]\n",
+					filename, old_file_con, new_file_con);
+			else
+				fprintf(stdout, "Replaced context: %-40s\n", filename);
+		}
+		freecon(new_file_con);
+	}
+
+	replcon_context_destroy(original_con);
+	replcon_context_destroy(replacement_con);
+	freecon(old_file_con);
+	return 0;
+
+	err:
+	if (original_con) replcon_context_destroy(original_con);
+	if (replacement_con) replcon_context_destroy(replacement_con);
+	if (old_file_con) freecon(old_file_con);
+	if (new_file_con) freecon(new_file_con);
+	return -1;
+
+}
+
+#else
+/*
+ * findcon
+ *
+ * The caller must pass a valid filename and statptr
+ */
+int
+findcon(const char *filename, const struct stat *statptr,
+			     int fileflags, struct FTW *pfwt)
+{
+	int file_class, i;
+	replcon_context_t *original_con;
+	security_context_t file_con;
+
 	file_class = replcon_get_file_class(statptr);
 	if (!replcon_info_has_object_class(&replcon_info, file_class))
 		return 0;
 
-	for (i = 0; i < replcon_info.num_pairs; i++) {
-		if (lgetfilecon(filename, &old_con) <= 0) {
-			fprintf(stderr, "Warning: %s is not labeled.  File skipped.\n", filename);
+	if (lgetfilecon(filename, &file_con) <= 0) {
+		if (errno == ENODATA) {
+			if ((file_con = strdup("!:!:!")) == NULL)
+				goto err;
+		} else {
+			fprintf(stderr, "Unable to get file context for %s\n, skipping...", filename);
 			return 0;
 		}
-		tmp = context_new(old_con);
-		if (replcon_context_equal(replcon_info.pairs[i].old_context, tmp)) {
-			tmp_new = context_new(context_str(replcon_info.pairs[i].new_context));
-			if (context_type_get(tmp_new) == NULL)
-				context_type_set(tmp_new, "");
-			/* if the new context was not specified completely, fill in the blanks */
-			if (strcmp(context_user_get(tmp_new), "") == 0)
-				context_user_set(tmp_new, context_user_get(tmp));
-			if (strcmp(context_role_get(tmp_new), "") == 0)
-				context_role_set(tmp_new, context_role_get(tmp));
-			if (strcmp(context_type_get(tmp_new), "") == 0)
-				context_type_set(tmp_new, context_type_get(tmp));			
-			new_con = context_str(tmp_new);
-			if (lsetfilecon(filename, new_con) != 0) {
-				fprintf(stderr, "Warning: Unable to replace context for %s. Possibly invalid context [%s].\n", filename, new_con);
-			}
-			snprintf(normal_output, REPLCON_BUFF_SZ, "Replaced context: %s\n", filename);
-			snprintf(verbose_output, REPLCON_BUFF_SZ, "Replaced context: %s     old context: [%s]     new context: [%s]\n", 
-				 filename, old_con, new_con);
-			replcon_info_print_progress(&replcon_info, normal_output, verbose_output);	
-			context_free(tmp_new);
-		}
-		context_free(tmp);
-		freecon(old_con);
 	}
- 	return 0;
+
+	if ((original_con = replcon_context_create(file_con)) == NULL)
+		goto err;
+
+	for (i = 0; i < replcon_info.num_contexts; i++) {
+		if (replcon_context_equal
+		    (original_con, &(replcon_info.contexts[i]))) {
+			if (replcon_info.verbose)
+				fprintf(stdout, "%s\t%s\n", filename, file_con);
+			else
+				fprintf(stdout, "%s\n", filename);
+		}
+	}
+
+	replcon_context_destroy(original_con);
+	freecon(file_con);
+	return 0;
+
+	err:
+	if (original_con) replcon_context_destroy(original_con);
+	if (file_con) freecon(file_con);
+	return -1;
+
+}
+#endif
+
+/*
+ * replcon_stat_file_replace_context
+ *
+ */
+void
+replcon_stat_file_replace_context(const char *filename)
+{
+	struct stat file_status;
+	char actual_path[PATH_MAX+1];
+	char *ptr;
+	int i;
+
+	if (stat(filename, &file_status) != 0) {
+		fprintf(stderr,
+			"Warning: Can not stat \'%s\'.  Skipping this file.\n",
+			filename);
+		return;
+	}
+
+	if (replcon_info.recursive && (ptr = realpath(filename, actual_path)) != NULL) {
+#ifndef FINDCON
+		nftw(actual_path, replcon_file_context_replace, NFTW_DEPTH, NFTW_FLAGS);
+#else
+		nftw(actual_path, findcon, NFTW_DEPTH, NFTW_FLAGS);
+#endif
+		for(i = 0; i < num_mounts; i++) {
+			if (strstr(mounts[i], actual_path) == mounts[i])
+#ifndef FINDCON
+				nftw(mounts[i], replcon_file_context_replace, NFTW_DEPTH, NFTW_FLAGS);
+#else
+				nftw(mounts[i], findcon, NFTW_DEPTH, NFTW_FLAGS);
+#endif
+		}
+	} else {
+#ifndef FINDCON
+		replcon_file_context_replace(filename, &file_status, 0, NULL);
+#else
+		findcon(filename, &file_status, 0, NULL);
+#endif
+	}
 }
 
 /*
@@ -363,145 +885,196 @@ int replcon_replace_file_context(const char *filename, const struct stat *statpt
  *
  * Removes the new line character from stdin stream input strings
  */
-void remove_new_line_char(char *input)
+void
+remove_new_line_char(char *input)
 {
 	int i;
 
-	for(i = 0; i < strlen(input); i++) {
-		if(input[i] == '\n')
+	for (i = 0; i < strlen(input); i++) {
+		if (input[i] == '\n')
 			input[i] = '\0';
 	}
-	return;
 }
 
-void replcon_parse_command_line(int argc, char **argv)
+/*
+ * replcon_parse_command_line
+ *
+ * Function for parsing command line arguments
+ */
+void
+replcon_parse_command_line(int argc, char **argv)
 {
 	int optc, i;
 
-
 	/* get option arguments */
-	while ((optc = getopt_long (argc, argv, "o:c:rsVqvh", longopts, NULL)) != -1) {
+	while ((optc =
+		getopt_long(argc, argv, "o:c:rsVqvh", longopts, NULL)) != -1) {
 		switch (optc) {
-	        case 0:
-	  		break;
+		case 0:
+			break;
 		case 'o':
-			if (!replcon_info_add_object_class(&replcon_info, optarg)) {
-				fprintf(stderr, "Unable to add object class.\n");
-				exit(-1);
+			if (replcon_info_add_object_class
+			    (&replcon_info, optarg)) {
+				fprintf(stderr,
+					"Unable to add object class.\n");
+				goto err;
 			}
 			break;
-		case 'c':		
-			if (!replcon_info_add_context_pair(&replcon_info, optarg, argv[optind])) {
-				fprintf(stderr, "Unable to add context pair.\n");
-				replcon_info_free(&replcon_info);
-				exit(-1);
+		case 'c':
+#ifndef FINDCON
+			if (optind < argc) { // Two arguments required!
+				if (replcon_info_add_context_pair
+				    (&replcon_info, optarg, argv[optind++])) {
+					fprintf(stderr,
+						"Unable to add context pair.\n");
+					goto err;
+				}
+			} else {
+				fprintf(stderr, "Contexts must be specified in pairs.\n");
+				goto err;
 			}
-			optind++;
+#else
+			if (replcon_info_add_context(&replcon_info, optarg)) {
+				fprintf(stderr,
+					"Unable to add file context.\n");
+				goto err;
+			}
+#endif
 			break;
-		case 'r': /* recursive directory parsing */
-		        replcon_info.recursive = TRUE;
+		case 'r':	/* recursive directory parsing */
+			replcon_info.recursive = TRUE;
 			break;
-		case 's': /* read from standard in */
-		        replcon_info.stdin = TRUE;
-		        break;
+		case 's':	/* read from standard in */
+			replcon_info.stdin = TRUE;
+			break;
 		case 'q':
 			if (replcon_info.verbose) {
-				fprintf(stderr, "Error: Can not specify -q and -V\n");
-				goto bad;
+				fprintf(stderr,
+					"Error: Can not specify -q and -V\n");
+				goto err;
 			}
 			replcon_info.quiet = TRUE;
 			break;
-		case 'V': /* verbose program execution */
+		case 'V':	/* verbose program execution */
 			if (replcon_info.quiet) {
-				fprintf(stderr, "Error: Can not specify -q and -V\n");
-				goto bad;
+				fprintf(stderr,
+					"Error: Can not specify -q and -V\n");
+				goto err;
 			}
 			replcon_info.verbose = TRUE;
 			break;
-	  	case 'v': /* version */
-	  		printf("\n%s (%s)\n\n", COPYRIGHT_INFO, REPLCON_VERSION_NUM);
+		case 'v':	/* version */
+			printf("\n%s (%s)\n\n", COPYRIGHT_INFO,
+			       REPLCON_VERSION_NUM);
 			replcon_info_free(&replcon_info);
-	  		exit(0);
-	  	case 'h': /* help */
-	  		replcon_usage(argv[0], 0);
+			exit(0);
+		case 'h':	/* help */
+			replcon_usage(argv[0], 0);
 			replcon_info_free(&replcon_info);
-	  		exit(0);
-	  	default:  /* usage */
-	  		replcon_usage(argv[0], 1);
-			replcon_info_free(&replcon_info);
-	  		exit(-1);
+			exit(0);
+		default:	/* usage */
+			goto err;
 		}
 	}
 	/* If no object class was specified revert to the default of all files */
 	if (replcon_info.num_classes == 0) {
-		if (!replcon_info_add_object_class(&replcon_info, "all_files")) {
-			fprintf(stderr, "Unable to add oject class.\n");
-			goto bad;
+		if (replcon_info_add_object_class(&replcon_info, "all_files")) {
+			fprintf(stderr, "Unable to add default object class.\n");
+			goto err;
 		}
 	}
+
 	/* Make sure required arguments were supplied */
-	if (((!replcon_info.stdin) && ((argc - optind) < 3)) || ((replcon_info.stdin) && ((argc - optind) < 2))) {
+#ifndef FINDCON
+	if ((replcon_info.num_pairs == 0)
+#else
+	if ((replcon_info.num_contexts == 0)
+#endif
+	    || (((!replcon_info.stdin) && (argc == optind)))) {
 		fprintf(stderr, "Error: Missing required arguments.\n");
-		replcon_usage(argv[0], 1);
-		replcon_info_free(&replcon_info);
-		exit(-1);
+		goto err;
 	}
-	/* Add required context pair */
-	if (!replcon_info_add_context_pair(&replcon_info, argv[optind], argv[optind+1])) {
-		fprintf(stderr, "Unable to add context pair.\n");
-		replcon_info_free(&replcon_info);
-		exit(-1);
-	}
-	/* Add required Locations */
-	for (i = (argc - 1); i >=  (optind + 2); i--) {
-		if (!replcon_info_add_location(&replcon_info, argv[i])) {
-			fprintf(stderr, "Unable to add file or directory.\n");
-			goto bad;
-		}
-	}	  
+
 	/* Ensure that locations were not specified in addition to the standard in option */
-	if((replcon_info.num_locations > 0) && replcon_info.stdin) {
-		fprintf(stderr, "Warning: Command line filename(s) will be ignored. Reading from stdin.\n");
+	if ((replcon_info.num_filenames > 0) && replcon_info.stdin) {
+		fprintf(stderr,
+			"Warning: Command line filename(s) will be ignored. Reading from stdin.\n");
+	} else {
+	/* Add required filenames */
+		for (i = (argc - 1); i >= optind; i--) {
+			if (replcon_info_add_filename(&replcon_info, argv[i])) {
+				fprintf(stderr, "Unable to add file or directory.\n");
+				goto err;
+			}
+		}
 	}
 	return;
 
- bad:
+      err:
+	replcon_usage(argv[0], 1);
 	replcon_info_free(&replcon_info);
-	exit(-1);	
+	exit(-1);
 }
 
-void replcon_stat_file_replace_context(const char *filename)
-{
-	struct stat file_status;
-
-	if(stat(filename, &file_status) != 0) {
-		fprintf(stderr, "Warning: Can not stat \'%s\'.  Skipping this file.\n", filename);
-		return;
-	}
-	if (replcon_info.recursive)
-		nftw(filename, replcon_replace_file_context, NFTW_DEPTH, NFTW_FLAGS);
-	else 
-		replcon_replace_file_context(filename, &file_status, 0, NULL);
-
-}
-
-int main (int argc, char **argv)
+int
+main(int argc, char **argv)
 {
 	char stream_input[MAX_INPUT_SIZE];
-	int i;
+	int i, len=10;
+	FILE *mtab;
+	struct mntent *entry;
+	char *token, *fs, *fs_orig;
 
 	replcon_info_init(&replcon_info);
 	replcon_parse_command_line(argc, argv);
+	num_mounts = 0;
 
-	if(replcon_info.stdin)
+	if ((mtab = fopen("/etc/mtab", "r")) == NULL) {
+		fprintf(stderr, "Could not open /etc/mtab for reading.\n");
+		return 1;
+	}
+
+	if ((mounts = malloc(sizeof(char*) * len)) == NULL) {
+		fprintf(stderr, "Out of memory.\n");
+		return 1;
+	}
+
+	while ((entry = getmntent(mtab))) {
+#ifndef FINDCON
+		if (hasmntopt(entry, MNTOPT_RW) == NULL)
+			continue;
+#endif
+		if(num_mounts >= len) {
+			len *= 2;
+			mounts = realloc(mounts, sizeof(char*) * len);
+		}
+		fs_orig = fs = strdup(SUPPORTED_FILESYSTEMS);
+		while((token = strtok(fs, " \t")) != NULL) {
+			if (fs) fs = NULL; /* for subsequent strtok calls */
+			if(!strcmp(token, entry->mnt_type)) {
+				mounts[num_mounts++] = strdup(entry->mnt_dir);
+				break;
+			}
+		}
+		free(fs_orig);
+	}
+	fclose(mtab);
+
+	if (replcon_info.stdin) {
 		while (fgets(stream_input, (MAX_INPUT_SIZE - 1), stdin)) {
 			remove_new_line_char(stream_input);
 			replcon_stat_file_replace_context(stream_input);
 		}
-	else
-		for(i = 0; i < replcon_info.num_locations; i++)
-			replcon_stat_file_replace_context(replcon_info.locations[i]);
+	} else {
+		for (i = (replcon_info.num_filenames - 1); i >= 0; i--)
+			replcon_stat_file_replace_context(replcon_info.
+							  filenames[i]);
+	}
 
 	replcon_info_free(&replcon_info);
+	for (i = 0; i < num_mounts; i++)
+		free(mounts[i]);
+	free(mounts);
+
 	return 0;
 }
