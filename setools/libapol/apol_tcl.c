@@ -116,7 +116,7 @@ static char* find_perm_map_file(char *perm_map_fname)
 		fprintf(stderr, "out of memory");
 		return NULL;
 	}	
-	sprintf(script, "%s%s", APOL_INSTALL_DIR, perm_map_fname);
+	sprintf(script, "%s/%s", APOL_INSTALL_DIR, perm_map_fname);
 	rt = access(script, R_OK);
 	if(rt == 0) {
 		return script;	
