@@ -323,8 +323,8 @@ proc Apol_File_Contexts::search_fc_database { } {
 
 	$resultsbox configure -state normal
 	$resultsbox delete 0.0 end
-	set sz [expr [llength $results] / 3]
-	$resultsbox insert end "FILES FOUND ($sz):\n\n"
+	set sz [llength $results]
+	set num 0
 	for {set i 0} {$i < $sz} {incr i} {
 		set path [lindex $results $i]
 		incr i
@@ -335,7 +335,10 @@ proc Apol_File_Contexts::search_fc_database { } {
 		if {$show_ctxt} {$resultsbox insert end "$ctxt\t     "}
 		if {$show_class} {$resultsbox insert end "$class\t     "}
 		$resultsbox insert end "$path\n"
+		incr num
 	}
+	$resultsbox insert 1.0 "FILES FOUND ($num):\n\n"
+	
 	ApolTop::makeTextBoxReadOnly $resultsbox 
 	ApolTop::resetBusyCursor
 	return 0
