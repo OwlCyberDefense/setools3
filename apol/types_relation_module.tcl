@@ -2179,13 +2179,13 @@ proc Apol_Analysis_tra::parse_query_options_list {query_options curr_idx parentD
 			}	
 			"tif_options" {
 				incr i
-				set i [Apol_Analysis_fulflow::load_advanced_filters_object_query_options $query_options $i $transflow_options_Dlg $parentDlg]
+				set i [Apol_Analysis_fulflow::load_advanced_filters_options $query_options $i $transflow_options_Dlg $parentDlg]
 			}
 			"dta_options" {
 				incr i
 				if {[lindex $query_options $i]} { 
      					incr i
-					set i [Apol_Analysis_dta::load_dta_advanced_opts_object_query_options $query_options $i $forward_options_Dlg $parentDlg]
+					set i [Apol_Analysis_dta::load_dta_advanced_query_options $query_options $i $forward_options_Dlg $parentDlg]
 				}
 			}
 			"dif_options" {
