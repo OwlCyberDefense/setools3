@@ -42,7 +42,8 @@
 #define LOAD_POLICY_MSG_TYPES_FIELD   2
 #define LOAD_POLICY_MSG_CLASSES_FIELD 3
 #define LOAD_POLICY_MSG_RULES_FIELD   4
-#define LOAD_POLICY_MSG_NUM_POLICY_COMPONENTS 5  
+#define LOAD_POLICY_MSG_BOOLS_FIELD   5
+#define LOAD_POLICY_MSG_NUM_POLICY_COMPONENTS 6
 
 #define LOAD_POLICY_FALSE_POS	0x00000001
 #define LOAD_POLICY_NEXT_LINE 	0x00000002
@@ -924,6 +925,9 @@ static unsigned int load_policy_msg_get_policy_components(char **tokens, bool_t 
 	} else if ((*msg)->msg_data.load_policy_msg->types == 0 && strstr(tokens[position], "types")) {
 		found_bools[LOAD_POLICY_MSG_TYPES_FIELD] = TRUE;
 		(*msg)->msg_data.load_policy_msg->types = atoi(tokens[position - 1]); 
+	} else if ((*msg)->msg_data.load_policy_msg->bools == 0 && strstr(tokens[position], "bools")) {
+		found_bools[LOAD_POLICY_MSG_BOOLS_FIELD] = TRUE;
+		(*msg)->msg_data.load_policy_msg->bools = atoi(tokens[position - 1]); 
 	} 
 		
 	return ret;
@@ -1001,9 +1005,10 @@ static unsigned int load_policy_msg_insert_field_data(char **tokens, msg_t **msg
 		 * of the policy components. So, if we have grabbed these components, then we return SUCCESS flag. */
 		if (found[LOAD_POLICY_MSG_CLASSES_FIELD] && found[LOAD_POLICY_MSG_RULES_FIELD]){
 			/* Should have already parsed users, roles and types. If not, return INVALID flag. */
-			if ((*msg)->msg_data.load_policy_msg->users >= 0 && 
+			if (((*msg)->msg_data.load_policy_msg->users >= 0 && 
 			    (*msg)->msg_data.load_policy_msg->roles >= 0 &&
-			    (*msg)->msg_data.load_policy_msg->types >= 0)
+			    (*msg)->msg_data.load_policy_msg->types >= 0) ||
+			    (*msg)->msg_data.load_policy_msg->bools >= 0)
 				ret |= PARSE_RET_SUCCESS;
 			else
 				ret |= PARSE_RET_INVALID_MSG_WARN;
@@ -1202,6 +1207,11 @@ static unsigned int get_tokens(char *line, int msgtype, audit_log_t *log, FILE *
 				free_field_tokens(*(&fields), num_tokens);			
 				return PARSE_RET_MEMORY_ERROR;
 			}
+			if ((*msg)->msg_data.avc_msg->msg == AVC_DENIED) {
+				log->num_deny_msgs++;
+			} else { 
+				log->num_allow_msgs++;
+			}	
 			*msg = NULL;
 		}
 	} else if (msgtype == PARSE_LOAD_MSG) {
@@ -1222,6 +1232,7 @@ static unsigned int get_tokens(char *line, int msgtype, audit_log_t *log, FILE *
 				free_field_tokens(*(&fields), num_tokens);
 				return PARSE_RET_MEMORY_ERROR;
 			}
+			log->num_load_msgs++;
 			/* Reset pointer to message. */
 			*msg = NULL;
 		}
@@ -1239,7 +1250,8 @@ static unsigned int get_tokens(char *line, int msgtype, audit_log_t *log, FILE *
 			if (audit_log_add_msg(log, *msg) == -1){
 				free_field_tokens(*(&fields), num_tokens);				
 				return PARSE_RET_MEMORY_ERROR;
-			}       
+			}  
+			log->num_bool_msgs++;     
 			*msg = NULL;
 	        }      
 	 } else {
@@ -1273,7 +1285,7 @@ unsigned int parse_audit(FILE *syslog, audit_log_t *log)
 	if (get_line(audit_file, &line) & PARSE_RET_MEMORY_ERROR) {
 		return PARSE_RET_MEMORY_ERROR;
 	}
-		
+
 	while (line != NULL) {
 		if (trim_string(&line) != 0)
 			return PARSE_RET_MEMORY_ERROR;
@@ -1289,6 +1301,9 @@ unsigned int parse_audit(FILE *syslog, audit_log_t *log)
 				return PARSE_RET_MEMORY_ERROR;
 			} else if (ret == PARSE_RET_INVALID_MSG_WARN) {
 				ret = PARSE_RET_INVALID_MSG_WARN;
+				if (audit_log_add_malformed_msg(line, &log) != 0) {
+					return PARSE_RET_MEMORY_ERROR;	
+				}
 				selinux_msg++;
 			} else if (ret == PARSE_RET_SUCCESS) {
 				selinux_msg++;
@@ -1306,17 +1321,3 @@ unsigned int parse_audit(FILE *syslog, audit_log_t *log)
 		
 	return ret;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
