@@ -1,4 +1,4 @@
-/* Copyright (C) 2003 Tresys Technology, LLC
+/* Copyright (C) 2003-2005 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
 
 /*
@@ -1125,7 +1125,7 @@ void seaudit_on_about_seaudit_activate(GtkWidget *widget, GdkEvent *event, gpoin
 	
 	str = g_string_new("");
 	g_string_assign(str, "Audit Log Analysis Tool for Security \nEnhanced Linux");
-        g_string_append(str, "\n\nCopyright (c) 2003-2004\nTresys Technology, LLC\nwww.tresys.com/selinux");
+        g_string_append(str, "\n\nCopyright (c) 2003-2005\nTresys Technology, LLC\nwww.tresys.com/selinux");
 	g_string_append(str, "\n\nGUI version ");
 	g_string_append(str, SEAUDIT_GUI_VERSION_STRING);
 	g_string_append(str, "\nlibseaudit version ");
