@@ -15,7 +15,7 @@
 
 #include "relabel_analysis.h"
 
-#define RELABEL_ANALYSIS_TOOL_VERSION_INFO "v0.1"
+#define RELABEL_ANALYSIS_TOOL_VERSION_INFO "v1.0"
 
 static struct option const longopts[] = 
 {
@@ -44,7 +44,7 @@ void usage(const char *argv0, int long_version)
 "   to        list types to which starting type can be relabeled\n"
 "   from      list types from which starting type can be relabeled\n"
 "   both      list types as with both to and from mode\n"
-"   domain    list all types to and from which starting type can relabel\n\n"
+"   subject   list all types to and from which starting type can relabel\n\n"
 "Additional Options:\n"
 "   -p, --policy <policy file> specify the policy file to load\n"
 "   -f, --filter <filter file> specify a filter file to use\n"
@@ -358,7 +358,7 @@ int main (int argc, char** argv)
 			if(!strcmp(optarg, "to")) mode->mode = MODE_TO;
 			else if (!strcmp(optarg, "from")) mode->mode = MODE_FROM;
 			else if (!strcmp(optarg, "both")) mode->mode = MODE_BOTH;
-			else if (!strcmp(optarg, "domain")) mode->mode = MODE_DOM;
+			else if (!strcmp(optarg, "subject")) mode->mode = MODE_DOM;
 			break;
 		case 'p':
 			policy_filename = optarg;
@@ -399,8 +399,11 @@ int main (int argc, char** argv)
 	}
 
 	if (!policy_filename) {
-		printf("Enter policy file path:\n");
-		scanf("%s", dummy);
+		retv = find_default_policy_file(POL_TYPE_BINARY|POL_TYPE_SOURCE, &dummy);
+		if (!dummy || retv) {
+			fprintf(stderr, "error opening default policy\n");
+			return retv;
+		}
 		policy_filename = dummy;
 	}
 	
