@@ -793,7 +793,7 @@ static int apol_type_relabels_what(relabel_set_t *sets, int domain, relabel_set_
 
 static int apol_domain_relabel_types(relabel_set_t *sets, int domain, relabel_result_t *res, policy_t *policy, relabel_filter_t *filter)
 {
-	int retv, here, i, j, k, next, has_class;
+	int retv, here, i, j, k, next;
 	relabel_set_t *temp, *clone;
 
 	if (!sets || !policy) 
@@ -820,33 +820,26 @@ static int apol_domain_relabel_types(relabel_set_t *sets, int domain, relabel_re
 	for (i = 0; i < clone->num_to_types; i++) {
 		here = 1;
 		if (filter && filter->num_perm_sets > 0) {
-			has_class = 0; /* must include at least one of the specified object classes */ 
+			here = 0; /* must include at least one of the specified object classes */ 
 			for (j = 0; j < filter->num_perm_sets; j++) {
 				if (apol_does_type_obj_have_class(&(clone->to_types[i]), filter->perm_sets[j].obj_class)) {
-					has_class = 1;
+					here = 1;
 					if (filter->perm_sets[j].num_perms) { 
 						here = 0;
 						for (k = 0; k < filter->perm_sets[j].num_perms; k++) {
-							if( !apol_does_type_obj_have_perm(&(clone->to_types[i]), filter->perm_sets[j].obj_class, filter->perm_sets[j].perms[k]))
+							if( apol_does_type_obj_have_perm(&(clone->to_types[i]), filter->perm_sets[j].obj_class, filter->perm_sets[j].perms[k]))
 								here = 1; /* must include at least specified permissions */
 						}
 					}
 				}
 			}
-		} else {
-			has_class = 1; /* not filtering include all object classes*/
-		}
-		if (here && has_class) {
+		} 
+		if (here) {
 			++(temp->num_to_types);
-			if (temp->to_types) {
-				temp->to_types = (type_obj_t*) realloc(temp->to_types, temp->num_to_types * sizeof(type_obj_t));
-				if (!temp)
-					return -1;
-			} else {
-				temp->to_types = (type_obj_t*) malloc(1 * sizeof(type_obj_t));
-				if (!temp)
-					return -1;
-			}
+			temp->to_types = (type_obj_t*) realloc(temp->to_types, temp->num_to_types * sizeof(type_obj_t));
+			if (!temp->to_types)
+				return -1;
+
 			temp->to_types[next] = clone->to_types[i];
 			next++;
 		}
@@ -856,33 +849,26 @@ static int apol_domain_relabel_types(relabel_set_t *sets, int domain, relabel_re
 	for (i = 0; i < clone->num_from_types; i++) {
 		here = 1;
 		if (filter && filter->num_perm_sets > 0) {
-			has_class = 0;
+			here = 0;
 			for (j = 0; j < filter->num_perm_sets; j++) {
 				if (apol_does_type_obj_have_class(&(clone->from_types[i]), filter->perm_sets[j].obj_class)) {
-					has_class = 1;
+					here = 1;
 					if (filter->perm_sets[j].num_perms) {
 						here = 0;
 						for (k = 0; k < filter->perm_sets[j].num_perms; k++) {
-							if( !apol_does_type_obj_have_perm(&(clone->from_types[i]), filter->perm_sets[j].obj_class, filter->perm_sets[j].perms[k]))
+							if( apol_does_type_obj_have_perm(&(clone->from_types[i]), filter->perm_sets[j].obj_class, filter->perm_sets[j].perms[k]))
 								here = 1;
 						}
 					}
 				}
 			}
-		} else {
-			has_class = 1;
 		}
-		if (here && has_class) {
+ 		if (here) {
 			++(temp->num_from_types);
-			if (temp->from_types) {
-				temp->from_types = (type_obj_t*) realloc(temp->from_types, temp->num_from_types * sizeof(type_obj_t));
-				if (!temp)
-					return -1;
-			} else {
-				temp->from_types = (type_obj_t*) malloc(1 * sizeof(type_obj_t));
-				if (!temp)
-					return -1;
-			}
+			temp->from_types = (type_obj_t*) realloc(temp->from_types, temp->num_from_types * sizeof(type_obj_t));
+			if (!temp->from_types)
+				return -1;
+
 			temp->from_types[next] = clone->from_types[i];
 			next++;
 		}
@@ -891,12 +877,9 @@ static int apol_domain_relabel_types(relabel_set_t *sets, int domain, relabel_re
 	/* check rules */
 	here = 0;
 	for (i = 0; i < clone->num_to_rules; i++) {
-		for (j = 0; j < temp->num_to_types; j++) {
-			if (here) {
-				here = 0;
-				break;
-			}
-			if (does_av_rule_idx_use_type(clone->to_rules[i], RULE_TE_ALLOW, temp->to_types[j].type, IDX_TYPE, TGT_LIST, 1, policy)) {
+		here = 0;
+		for (j = 0; j < clone->num_to_types; j++) {
+			if (does_av_rule_idx_use_type(clone->to_rules[i], RULE_TE_ALLOW, clone->to_types[j].type, IDX_TYPE, TGT_LIST, 1, policy)) {
 				here = 1;
 			}
 			if (here) {
@@ -908,6 +891,7 @@ static int apol_domain_relabel_types(relabel_set_t *sets, int domain, relabel_re
 					if (retv)
 						return -1;
 				}
+				break;
 			}
 		}
 	}
@@ -1054,7 +1038,7 @@ static int apol_filter_rules_list(relabel_result_t *res, policy_t *policy, relab
 	int i, j, k, retv, temp_array_size = 0, here;
 	int *temp_array = NULL;
 
-	if (!res || !policy || !filter)
+	if (!res || !policy || !filter || filter->num_perm_sets < 1)
 		return -1;
 	if (!res->rules)
 		return -1;
@@ -1062,9 +1046,9 @@ static int apol_filter_rules_list(relabel_result_t *res, policy_t *policy, relab
 	for (i = 0; i < res->num_rules; i++) {
 		here = 0;
 		for (j = 0; j < filter->num_perm_sets; j++) {
-			if (does_av_rule_use_classes(res->rules[i], RULE_TE_ALLOW, &(filter->perm_sets[j].obj_class), 1, policy)) {
+			if (does_av_rule_use_classes(res->rules[i], 1, &(filter->perm_sets[j].obj_class), 1, policy)) {
 				for (k = 0; k < filter->perm_sets[j].num_perms; k++) {
-					if (does_av_rule_use_perms(res->rules[i], RULE_TE_ALLOW, &(filter->perm_sets[j].perms[k]), 1, policy)) {
+					if (does_av_rule_use_perms(res->rules[i], 1, &(filter->perm_sets[j].perms[k]), 1, policy)) {
 						here = 1;
 					}
 					if (here) 
