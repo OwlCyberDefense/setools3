@@ -261,8 +261,9 @@ a set of search criteria you select.
 	
 	This tab allows you to search conditional expressions within the 
 	policy, as well as view the rules within these conditional 
-	expressions. Currently, you can only search for the following 
-	types of policy rules within conditional expressions:
+	expressions. Please note that conditional expressions are displayed 
+	in Reverse Polish Notation. Currently, you can only search for the 
+	following types of policy rules within conditional expressions:
 	
 		- Allow rules
 		- Audit rules
@@ -271,10 +272,11 @@ a set of search criteria you select.
 	You can search conditional expressions for a specific boolean 
 	variable, as well as choose whether to use a regular expression. 
 	Additionally, you can choose whether you want to display the 
-	rules within conditional expressions. The current state of a  
-	rule is specified within the results (0 indicates that the 
-	rule is disabled; 1 indicates that the rule is enabled).
+	rules within conditional expressions. The current state of each  
+	rule is provided by means of a tag within the results:
 	
+		"[enabled]" - indicates the rule is enabled
+		"[disabled]" - indicates the rule is disabled	
 
 4. ANALYSIS TAB
 
