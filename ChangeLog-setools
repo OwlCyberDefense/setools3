@@ -7,6 +7,12 @@ Libapol:
 	Fixed parse error when using attributes in role
 	declarations.
 
+=======================================================
+February XX, 2004 Version 1.3
+
+Seaudit:
+	Added support for audit messages from changing booleans 
+	  in a conditional policy.
 
 ========================================================
 February 4, 2004 Version 1.2
