@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -I. -I../libapol/ -Wall
 LINKFLAGS = -lm -lselinux
 
-OBJS = relabel_analysis.o 
+OBJS =  
 LIBAPOL = ../libapol/libapol.a 
 
 most: $(OBJS) cmd-line-tool
