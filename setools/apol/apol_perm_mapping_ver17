@@ -27,7 +27,7 @@
 # Look to the examples below for further clarification.
 #
 # Number of object classes.
-30
+41
 
 class security 9
         compute_av     n	1
@@ -558,3 +558,104 @@ class passwd 4
               chfn     w	5
               chsh     w	5
             rootok     n	1
+
+class drawable 5
+            create     u        1
+           destroy     u	1
+              draw     u	1
+              copy     u	1
+           getattr     u	1
+
+class window 26
+          addchild     u	1 
+            create     u	1
+           destroy     u	1
+               map     u	1
+             unmap     u	1
+           chstack     u	1
+        chproplist     u	1
+            chprop     u	1
+          listprop     u	1
+           getattr     u	1
+           setattr     u	1         	 
+          setfocus     u	1          
+              move     u        1 
+       chselection     u        1  	
+          chparent     u        1  
+          ctrllife     u        1  
+         enumerate     u        1  
+       transparent     u        1  
+       mousemotion     u        1  
+    clientcomevent     u        1  
+        inputevent     u        1  
+         drawevent     u        1  
+ windowchangeevent     u        1  
+windowchangerequest    u       	1   
+ serverchangeevent     u        1  
+    extensionevent     u        1  
+
+class gc 4
+            create     u        1 
+              free     u        1  
+           getattr     u        1  
+           setattr     u        1  
+
+class font 4
+              load     u        1  
+              free     u        1  
+           getattr     u        1  
+               use     u        1  
+
+class colormap 9
+            create     u        1  
+              free     u        1  
+           install     u        1  
+         uninstall     u        1  
+              list     u        1  
+              read     u        1  
+             store     u        1  
+           getattr     u        1  
+           setattr     u        1  
+
+class property 4
+            create     u        1  
+              free     u        1  
+              read     u        1  
+             write     u        1  
+
+class cursor 5
+            create     u        1  
+       createglyph     u        1  
+              free     u        1  
+            assign     u        1  
+           setattr     u        1  
+
+class xclient 1
+              kill     u        1  
+
+class xinput 11
+            lookup     u        1  
+           getattr     u        1  
+           setattr     u        1  
+          setfocus     u        1  
+       warppointer     u        1  
+        activegrab     u        1  
+       passivegrab     u        1  
+            ungrab     u        1  
+              bell     u        1  
+       mousemotion     u        1  
+      relabelinput     u        1  
+
+class xserver 8
+       screensaver     u        1  
+       gethostlist     u        1  
+       sethostlist     u        1  
+       getfontpath     u        1  
+       setfontpath     u        1 
+           getattr     u        1  
+              grab     u        1  
+            ungrab     u        1  
+
+class xextension 2
+             query     u        1  
+               use     u        1  
