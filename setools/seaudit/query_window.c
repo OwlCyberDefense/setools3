@@ -408,7 +408,7 @@ static void query_window_populate_combo_boxes(GtkWidget *src_type_combo, GtkWidg
 {
 	GList *items = NULL;
 	int i;
-	
+
 	for (i = 0; i < seaudit_app->cur_policy->num_types; i++) {
 		items = g_list_append(items, seaudit_app->cur_policy->types[i].name);
 	}
@@ -446,6 +446,30 @@ static void populate_query_window_widgets(GladeXML *xml, int *tree_item_idx)
 	g_assert(seaudit_app->cur_policy);
 	view = seaudit_window_get_current_view(seaudit_app->window);
 	
+	src_type_combo = glade_xml_get_widget(xml, "src_combo");
+	g_assert(src_type_combo);
+	tgt_type_combo = glade_xml_get_widget(xml, "tgt_combo");
+	g_assert(tgt_type_combo);
+	obj_class_combo = glade_xml_get_widget(xml, "obj_combo");
+	g_assert(obj_class_combo);
+
+	gtk_combo_disable_activate(GTK_COMBO(src_type_combo));   
+	gtk_combo_disable_activate(GTK_COMBO(tgt_type_combo));   
+	gtk_combo_disable_activate(GTK_COMBO(obj_class_combo));   
+	
+	query_window_populate_combo_boxes(src_type_combo, tgt_type_combo, obj_class_combo);
+	
+	src_entry = glade_xml_get_widget(xml, "src_combo_entry");
+	g_assert(src_entry);	
+	tgt_entry = glade_xml_get_widget(xml, "tgt_combo_entry");
+	g_assert(tgt_entry);
+	obj_entry = glade_xml_get_widget(xml, "obj_combo_entry");
+	g_assert(obj_entry);	
+	
+	gtk_entry_set_text(GTK_ENTRY(src_entry), "");
+	gtk_entry_set_text(GTK_ENTRY(tgt_entry), "");
+	gtk_entry_set_text(GTK_ENTRY(obj_entry), "");
+	
 	if (tree_item_idx == NULL) {
 		sel = gtk_tree_view_get_selection(view->tree_view);
 		glist = gtk_tree_selection_get_selected_rows(sel, &model);
@@ -479,26 +503,6 @@ static void populate_query_window_widgets(GladeXML *xml, int *tree_item_idx)
 		avc_msg = msg->msg_data.avc_msg;
 	}
 	
-	src_type_combo = glade_xml_get_widget(xml, "src_combo");
-	g_assert(src_type_combo);
-	tgt_type_combo = glade_xml_get_widget(xml, "tgt_combo");
-	g_assert(tgt_type_combo);
-	obj_class_combo = glade_xml_get_widget(xml, "obj_combo");
-	g_assert(obj_class_combo);
-
-	gtk_combo_disable_activate(GTK_COMBO(src_type_combo));   
-	gtk_combo_disable_activate(GTK_COMBO(tgt_type_combo));   
-	gtk_combo_disable_activate(GTK_COMBO(obj_class_combo));   
-
-	query_window_populate_combo_boxes(src_type_combo, tgt_type_combo, obj_class_combo);
-
-	src_entry = glade_xml_get_widget(xml, "src_combo_entry");
-	g_assert(src_entry);	
-	tgt_entry = glade_xml_get_widget(xml, "tgt_combo_entry");
-	g_assert(tgt_entry);
-	obj_entry = glade_xml_get_widget(xml, "obj_combo_entry");
-	g_assert(obj_entry);	
-
 	if (selected) {
 		str = g_string_new("");
 		g_string_assign(str, audit_log_get_type(seaudit_app->cur_log, avc_msg->src_type));
@@ -517,11 +521,7 @@ static void populate_query_window_widgets(GladeXML *xml, int *tree_item_idx)
 			g_list_foreach(glist, (GFunc)gtk_tree_path_free, NULL);
 			g_list_free(glist);
 		}
-	} else { 
-		gtk_entry_set_text(GTK_ENTRY(src_entry), "");
-		gtk_entry_set_text(GTK_ENTRY(tgt_entry), "");
-		gtk_entry_set_text(GTK_ENTRY(obj_entry), "");
-	}
+	} 
 		
 	return;
 }
