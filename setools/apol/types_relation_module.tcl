@@ -15,11 +15,11 @@
 ##############################################################
 namespace eval Apol_Analysis_tra {
 	# GUI variables
-	variable descriptive_text "\n\nThe purpose of the Types Relationship Summary analysis is to summarize \
+	variable descriptive_text "The purpose of the Types Relationship Summary analysis is to summarize \
 				any associations between two types, namely TypeA and TypeB, and the elements \
 				in the policy that make up that relationship. This type of analysis may be useful in \
 				determining whether two policy types are completely isolated from each other or in determining \
-				the degree to which a particular type is unique to the other. You can control the \
+				the degree to which a particular type is unique to another. You can control the \
 				analysis to search for any of the following associations between two types:\n\n \
 				  - the attribute(s) to which both types are assigned (common attribs) \n \
 		 	          - the role(s) which have access to both TypeA and TypeB (common roles) \n \
