@@ -1,4 +1,4 @@
-/* Copyright (C) 2001-2003 Tresys Technology, LLC
+/* Copyright (C) 2001-2004 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
 
 /*
@@ -60,7 +60,6 @@ int init_policy( policy_t **p)
 		return -1;
 	}
 	policy->version = POL_VER_UNKNOWN;
-	policy->fresh_pol = TRUE;
 	policy->opts = POLOPT_NONE;
 
 	/* permissions */
@@ -79,6 +78,7 @@ int init_policy( policy_t **p)
 	}	
 	policy->list_sz[POL_LIST_COMMON_PERMS] = LIST_SZ;
 	policy->num_common_perms = 0;
+	
 	/* object classes */
 	policy->obj_classes = (obj_class_t *)malloc(sizeof(obj_class_t) * LIST_SZ);
 	if(policy->obj_classes == NULL) {
@@ -87,6 +87,15 @@ int init_policy( policy_t **p)
 	}	
 	policy->list_sz[POL_LIST_OBJ_CLASSES] = LIST_SZ;
 	policy->num_obj_classes = 0;
+	
+	/* initial SIDs */
+	policy->initial_sids = (initial_sid_t *)malloc(sizeof(initial_sid_t) * LIST_SZ);
+	if(policy->initial_sids == NULL) {
+		fprintf(stderr, "out of memory\n");
+		return -1;
+	}
+	policy->list_sz[POL_LIST_INITIAL_SIDS] = LIST_SZ;
+	policy->num_initial_sids = 0;
 	
 	/* types list */
 	policy->types = (type_item_t *)malloc(sizeof(type_item_t) * LIST_SZ);
@@ -206,7 +215,7 @@ int init_policy( policy_t **p)
 	if(init_avl_trees(policy) != 0) {
 		return -1;
 	}
-
+	
 	*p = policy;
 	return 0;
 }
@@ -264,6 +273,7 @@ static int free_av_list(av_item_t *list, int num)
 	}
 	return 0;
 }
+
 
 /* does not free the generic data pointer; that's up to the user of the pointer*/
 int free_user(user_item_t *ptr)
@@ -328,6 +338,18 @@ int free_policy(policy_t **p)
 		}
 		free(policy->obj_classes);
 	}
+
+	/* initial SIDs list */
+	if(policy->initial_sids != NULL) {
+		for(i = 0; i < policy->num_initial_sids; i++) {
+			if(policy->initial_sids[i].name != NULL) {
+				free(policy->initial_sids[i].name);
+				free(policy->initial_sids[i].scontext);
+			}
+		}
+		free(policy->initial_sids);
+	}
+
 
 	/* types list */
 	if(policy->types != NULL) {
@@ -445,6 +467,103 @@ int free_policy(policy_t **p)
 	*p = NULL;
 	return 0;
 }
+
+
+/* Initial SIDs */
+int add_initial_sid(char *name, policy_t *policy)
+{
+	int rt, idx;
+
+	if(name == NULL || policy == NULL)
+		return -1;
+	rt= avl_insert(&policy->tree[AVL_INITIAL_SIDS], name, &idx);
+	if(rt < 0)	/* error or already exists */
+		return rt;
+	return idx;
+}
+
+int add_initial_sid_context(int idx, security_context_t *scontext, policy_t *policy)
+{
+	if(!is_valid_initial_sid_idx(idx, policy))
+		return -1;
+	policy->initial_sids[idx].scontext = scontext;
+	return 0;
+}
+
+
+int get_initial_sid_idx(const char *name, policy_t *policy)
+{
+	if(name == NULL || policy == NULL)
+		return -1;
+
+	/* traverse the avl tree */
+	return avl_get_idx(name, &policy->tree[AVL_INITIAL_SIDS]);
+}
+
+/* allocates space for name, release memory with free() */
+int get_initial_sid_name(int idx, char **name, policy_t *policy)
+{
+	if(policy == NULL || !is_valid_initial_sid_idx(idx, policy) || name == NULL)
+		return -1;
+	if((*name = (char *)malloc(strlen(policy->initial_sids[idx].name)+1)) == NULL) {
+		fprintf(stderr, "out of memory\n");
+		return -1;
+	}
+	strcpy(*name, policy->initial_sids[idx].name);
+	return 0;
+}
+
+/* selected SID idxs returned in results (NULL means no matches)...caller must free
+ * For user, type, and role, use NULL to not use that criteria.  A match means that
+ * ALL criteria is satisfied. */
+int search_initial_sids_context(int **isids, int *num_isids, const char *user, const char *role, const char *type, policy_t *policy)
+{
+	user_item_t *uidx = NULL;
+	int ridx, tidx, i;
+	
+	if(policy == NULL || isids == NULL || num_isids == NULL)
+		return -1;
+	
+	/* For role and type idx, we use < 0 as an indicator that we don't care about these criteria.
+	 * So we can simply take the error return from the idx lookup functions.  For uidx, NULL
+	 * is used to indicate we don't care. */
+	 
+	/* NOTE: since a match must meet ALL criteria, if we fail to look up any of the criteria
+	 * in the policy (because they id does not exists), we will return immediately with a 
+	 * empty list of isids */
+	*num_isids = 0;
+	*isids = NULL;
+		
+	if(role != NULL) {
+		ridx = get_role_idx(role, policy);
+		if(ridx < 0)
+			return 0;
+	}
+	if(type != NULL) {
+		tidx = get_type_idx(type, policy);
+		if(tidx < 0)
+			return 0;
+	}
+	if(user != NULL) {
+		get_user_by_name(user, &uidx, policy);
+		if(uidx == NULL)
+			return 0;
+	}
+
+	for(i = 0; i < policy->num_initial_sids; i++) {
+		if((type == NULL || tidx == policy->initial_sids[i].scontext->type ) &&
+		   (role == NULL || ridx == policy->initial_sids[i].scontext->role ) &&
+		   (user == NULL || strcmp(uidx->name, policy->initial_sids[i].scontext->user->name) == 0)  ) {
+			if(add_i_to_a(i, num_isids, isids) < 0) {
+				free(isids);
+				return -1;
+			}
+		}
+		
+	}
+	return 0;
+}
+
 
 /*
  * Check that type is valid for this policy. If self_allowed is FALSE
@@ -797,12 +916,14 @@ static int add_type_to_attrib(int type_idx, attrib_item_t *attrib)
 
 
 
-int add_type_to_role(int type_idx, role_item_t *role)
+int add_type_to_role(int type_idx, int role_idx, policy_t *policy)
 {
-	if(role == NULL)
+	role_item_t *role;
+	if(policy == NULL || !is_valid_type_idx(type_idx, policy) || !is_valid_role_idx(role_idx, policy))
 		return -1;
-	else
-		return(add_type_to_attrib(type_idx, role));
+
+	role = &(policy->roles[role_idx]);
+	return(add_type_to_attrib(type_idx, role));
 }
 
 
@@ -1616,6 +1737,33 @@ bool_t does_clone_rule_use_type(int idx, int type, unsigned char whichlist, cln_
 }
 
 
+int add_role(char *role, policy_t *policy)
+{
+	size_t sz;
+	role_item_t *new_role = NULL;
+	
+	if(role == NULL || policy == NULL)
+		return -1;
+		
+	/* make sure there is a room for another role in the array */
+	if(policy->list_sz[POL_LIST_ROLES] <= policy->num_roles) {
+		sz = policy->list_sz[POL_LIST_ROLES] + LIST_SZ;
+		policy->roles = (role_item_t *)realloc(policy->roles, sizeof(role_item_t) * sz);
+		if(policy->roles == NULL) {
+			fprintf(stderr, "out of memory\n");
+			return -1;
+		}
+		policy->list_sz[POL_LIST_ROLES] = sz;
+	}
+	
+	/* next role available */
+	new_role = &(policy->roles[policy->num_roles]);
+	new_role->name = role;	/* use the memory passed in */
+	new_role->num_types = 0;
+	new_role->types = NULL;
+	policy->num_roles++;
+	return 0;
+}
 
 /* determine whether a role contains a given type (by idx) */
 bool_t does_role_use_type(int role, int type, policy_t *policy)
