@@ -57,6 +57,7 @@ static struct option const longopts[] =
   {NULL, 0, NULL, 0}
 };
 
+extern const char *sefs_object_classes[];
 
 void usage(const char *program_name, int brief)
 {
@@ -83,24 +84,6 @@ Print requested information about an SELinux policy.\n\
 Valid object classes include:\n\
 ",stdout);
 	sefs_print_valid_object_classes();
-	return;
-}
-
-static void print_type_paths(sefs_typeinfo_t *typeinfo, sefs_fileinfo_t *paths, int print_context)
-{
-	int i, j;
-        sefs_fileinfo_t * fileinfo = NULL;
-
-	for (i = 0; i <= typeinfo->num_inodes; i++) {
-		fileinfo = &(paths[typeinfo->index_list[i]]);
-
-		for (j = 0; j < fileinfo->num_links; j++) {
-			printf("%s ", fileinfo->path_names[j]);
-			if (print_context)
-				printf("\t\t%s", typeinfo->name);
-			printf("\n");
-		}
-	}	
 	return;
 }
 
@@ -159,8 +142,13 @@ int sefs_search_path(sefs_filesystem_data_t * fsd, char * path, uint32_t** list,
 {
 	int i, j, rc = 0;
 	regex_t reg;
-	uint32_t* new_list = NULL;
+	uint32_t** new_list = (uint32_t**)malloc(sizeof(uint32_t*));
 	uint32_t new_list_size = 0;
+	if (!new_list) {
+		fprintf(stderr, "out of memory\n");
+		return -1;
+	}
+	*new_list = NULL;
 
 	if (fsd == NULL)
 	{
@@ -174,18 +162,18 @@ int sefs_search_path(sefs_filesystem_data_t * fsd, char * path, uint32_t** list,
 		return -1;
 	}
 
-	if(list == NULL) {
+	if(*list == NULL) {
 		if (use_regex) {
 			rc = regcomp(&reg, path, REG_EXTENDED|REG_NOSUB);
 			if (rc != 0) {
 				regfree(&reg);
 				return -1;
 			}
-			for (i = 0; i < *list_size; i++) {
+			for (i = 0; i < fsd->num_files; i++) {
 				for (j = 0; j < fsd->files[i].num_links; j++) {
 					if(regexec(&reg, fsd->files[i].path_names[j],
 						 0, NULL, 0) == 0) {
-					rc = add_uint_to_a(i, new_list_size, new_list);
+					rc = add_uint_to_a(i, &new_list_size, new_list);
 						if ( rc == -1) {
 							fprintf(stderr, 
 								"error in search_path()\n");
@@ -196,10 +184,10 @@ int sefs_search_path(sefs_filesystem_data_t * fsd, char * path, uint32_t** list,
 			}
 	
 		} else {
-			for (i = 0; i < *list_size; i++) {
+			for (i = 0; i < fsd->num_files; i++) {
 				for(j=0; j < fsd->files[i].num_links; j++) {
 					if(strcmp(fsd->files[i].path_names[j], path)) {
-					rc = add_uint_to_a(i, new_list_size, new_list);
+					rc = add_uint_to_a(i, &new_list_size, new_list);
 						if ( rc == -1) {
 							fprintf(stderr, 
 								"error in search_path()\n");
@@ -220,7 +208,7 @@ int sefs_search_path(sefs_filesystem_data_t * fsd, char * path, uint32_t** list,
 				for (j = 0; j < fsd->files[(*list)[i]].num_links; j++) {
 					if(regexec(&reg, fsd->files[(*list)[i]].path_names[j],
 						 0, NULL, 0) == 0) {
-					rc = add_uint_to_a((*list)[i], new_list_size, new_list);
+					rc = add_uint_to_a((*list)[i], &new_list_size, new_list);
 						if ( rc == -1) {
 							fprintf(stderr, 
 								"error in search_path()\n");
@@ -234,7 +222,7 @@ int sefs_search_path(sefs_filesystem_data_t * fsd, char * path, uint32_t** list,
 			for (i = 0; i < *list_size; i++) {
 				for(j=0; j < fsd->files[(*list)[i]].num_links; j++) {
 					if(strcmp(fsd->files[(*list)[i]].path_names[j], path)) {
-					rc = add_uint_to_a((*list)[i], new_list_size, new_list);
+					rc = add_uint_to_a((*list)[i], &new_list_size, new_list);
 						if ( rc == -1) {
 							fprintf(stderr, 
 								"error in search_path()\n");
@@ -247,8 +235,7 @@ int sefs_search_path(sefs_filesystem_data_t * fsd, char * path, uint32_t** list,
 
 	}
 	
-	
-	*list = new_list;
+	*list = *new_list;
 	*list_size = new_list_size;
 	return 0;
 }
@@ -256,31 +243,107 @@ int sefs_search_path(sefs_filesystem_data_t * fsd, char * path, uint32_t** list,
 
 int sefs_search_user(sefs_filesystem_data_t * fsd, char * uname, uint32_t** list, uint32_t* list_size)
 {
+	int i, rc;
+	uint32_t** new_list = (uint32_t**)malloc(sizeof(uint32_t*));
+	uint32_t new_list_size = 0;
+
+	if (!new_list) {
+		fprintf(stderr, "out of memory\n");
+		return -1;
+	}
+	*new_list = NULL;
+
 	if (fsd == NULL) {
 		fprintf(stderr, "fsd is null\n");
 		return -1;
 	}
 
-	/* XXX */
+	if (*list == NULL) {
+		for (i = 0; i < fsd->num_files; i++) {
+			if (!strcmp(fsd->users[fsd->files[i].context.user], uname)) {
+				rc = add_uint_to_a(i, &new_list_size, new_list);
+				if (rc == -1) {
+					fprintf(stderr, "error in search_user()\n");
+					return -1;
+				}
+			}
+		}
+		
+	} else {
+		for (i = 0; i < *list_size; i++) {
+			if (!strcmp(fsd->users[fsd->files[(*list)[i]].context.user], uname)) {
+				rc = add_uint_to_a((*list)[i], &new_list_size, new_list);
+				if (rc == -1) {
+					fprintf(stderr, "error in search_user()\n");
+					return -1;
+				}
+			}
+		}
+	}
 
 	return 0;
 }
 
 int sefs_search_object_class(sefs_filesystem_data_t * fsd, int object, uint32_t** list, uint32_t* list_size)
 {
+	int i, rc;
+	uint32_t** new_list = (uint32_t**)malloc(sizeof(uint32_t*));
+	uint32_t new_list_size = 0;
+
+	if (!new_list) {
+		fprintf(stderr, "out of memory\n");
+		return -1;
+	}
+	*new_list = NULL;
+
 	if(fsd == NULL) {
 		fprintf(stderr, "fsd is null\n");
 		return -1;
 	}
 
-	/* XXX */
+	if(*list == NULL) {
+		for (i = 0; i < fsd->num_files; i++) {
+			if (object == fsd->files[i].obj_class) {
+				rc = add_uint_to_a(i, &new_list_size, new_list);
+				if (rc == -1) {
+					fprintf(stderr, "error in search_object()\n");
+					return -1;
+				}
+			}
+		}
+	} else {
+		for (i = 0; i < *list_size; i++) {
+			if (object == fsd->files[(*list)[i]].obj_class) {
+				rc = add_uint_to_a((*list)[i], &new_list_size, new_list);
+				if (rc == -1) {
+					fprintf(stderr, "error in search_object()\n");
+					return -1;
+				}
+			}
+		}
+	}
 
 	return 0;
 }
 
-void print_list (sefs_filesystem_data_t* fsd, uint32_t** list, uint32_t* list_size)
+void print_list (sefs_filesystem_data_t* fsd, uint32_t* list, uint32_t list_size)
 {
+	int i;
 
+	if (!fsd || !list || !list_size) {
+		fprintf(stderr, "invalid search results\n");
+		return;
+	}
+
+	for (i = 0; i < list_size; i++) {
+		printf("%s\t%s\t%s:%s:%s\n", 
+			fsd->files[list[i]].path_names[0],
+			sefs_object_classes[fsd->files[list[i]].obj_class],
+			fsd->users[fsd->files[list[i]].context.user],
+			fsd->files[list[i]].context.role == OBJECT_R ? "object_r": "UNLABLED",
+			fsd->types[fsd->files[list[i]].context.type].name
+		);
+	}	
 }
 
 int sefs_list_types(sefs_filesystem_data_t * fsd)
@@ -300,9 +363,9 @@ int main(int argc, char **argv, char **envp)
 	char *filename = NULL, *tname = NULL, *uname = NULL, *path = NULL, *object = NULL;
 	int optc = 0, rc = 0, list = 0, use_regex = 0;
 	sefs_filesystem_data_t fsdata;
-	uint32_t *index_list = NULL;
+	uint32_t* index_list = NULL;
 	uint32_t index_list_size = 0;
-	
+
         filename = argv[1];
 	if (filename == NULL) {
 		usage(argv[0], 0);
@@ -439,6 +502,8 @@ int main(int argc, char **argv, char **envp)
 			break;
 		}
 	}
+
+	print_list(&fsdata, index_list, index_list_size);
 
 	return 0;
 }
