@@ -14,7 +14,7 @@
 #define _GNU_SOURCE
 #include <getopt.h>
 
-/* LISTCON_VERSION_NUM should be defined in the make environment */
+/* SEARCHCON_VERSION_NUM should be defined in the make environment */
 #ifndef SEARCHCON_VERSION_NUM
 #define SEARCHCON_VERSION_NUM "UNKNOWN"
 #endif
