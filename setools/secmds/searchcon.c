@@ -107,7 +107,7 @@ int sefs_list_types(sefs_filesystem_db_t * fsd)
 int main(int argc, char **argv, char **envp)
 {
 	char *filename = NULL, *tname = NULL, *uname = NULL, *path = NULL, *object = NULL;
-	int optc = 0, rc = 0, list = 0, use_regex = 0;
+	int optc = 0, rc = 0, list = 0;
 	sefs_filesystem_db_t fsdata;
 	sefs_search_keys_t search_keys;
 	char **list_ret = NULL;
@@ -128,7 +128,9 @@ int main(int argc, char **argv, char **envp)
 	search_keys.num_path = 0;
 	search_keys.num_type = 0;
 	search_keys.num_object_class = 0;
-
+	search_keys.do_type_regEx = 0;
+	search_keys.do_user_regEx = 0;
+	search_keys.do_path_regEx = 0;
 
 	while ((optc = getopt_long (argc, argv, "t:u:p:o:rlhv", longopts, NULL)) != -1)  {
 		switch (optc) {
@@ -180,7 +182,9 @@ int main(int argc, char **argv, char **envp)
 	  		list = 1;
 	  		break;
 		case 'r': /* regex */
-			use_regex = 1;
+			search_keys.do_type_regEx = 1;
+			search_keys.do_user_regEx = 1;
+			search_keys.do_path_regEx = 1;
 			break;
 		case 'h': /* help */
 	  		usage(argv[0], 0);
@@ -216,7 +220,7 @@ int main(int argc, char **argv, char **envp)
 		} 
 	}
 	else {
-		sefs_filesystem_db_search(&fsdata,&search_keys,use_regex);
+		sefs_filesystem_db_search(&fsdata,&search_keys);
 		sefs_search_keys_ret_print(search_keys.search_ret);
 		sefs_search_keys_ret_destroy(search_keys.search_ret);
 	}
