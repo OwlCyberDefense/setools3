@@ -32,6 +32,9 @@
 #include <ftw.h>
 #include <mntent.h>
 
+#include <policy.h>
+#include <fsdata.h>
+
 /* REPLCON_VERSION_NUM should be defined in the make environment */
 #ifndef REPLCON_VERSION_NUM
 #define REPLCON_VERSION_NUM "UNKNOWN"
@@ -50,21 +53,6 @@
 #define NFTW_FLAGS FTW_MOUNT | FTW_PHYS
 #define NFTW_DEPTH 1024
 
-#ifndef TRUE
-#define TRUE 1
-#endif
-
-#ifndef FALSE
-#define FALSE 0
-#endif
-
-#ifndef SUPPORTED_FILESYSTEMS
-#define SUPPORTED_FILESYSTEMS "ext2 ext3"
-#endif
-
-#ifndef UNLABELED
-#define UNLABELED "UNLABELED"
-#endif
 
 /* Data Structures */
 typedef enum replcon_classes {
@@ -1149,7 +1137,7 @@ main(int argc, char **argv)
 				goto err;
 			}
 		}
-		fs_orig = fs = strdup(SUPPORTED_FILESYSTEMS);
+		fs_orig = fs = strdup(SEFS_XATTR_LABELED_FILESYSTEMS);
 		if (fs_orig == NULL) {
 			fprintf(stderr, "Out of memory.\n");
 			fclose(mtab);
