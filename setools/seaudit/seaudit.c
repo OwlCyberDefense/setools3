@@ -125,9 +125,6 @@ static void update_status_bar(void *user_data)
 			case POL_VER_16:   /* conditional policy extensions */
 				ver_str = POL_VER_STRING_16;
 				break;
-			case POL_VER_COND:
-				ver_str = POL_VER_STRING_16;
-				break;
 		#endif
 			default:
 				ver_str = "Unknown";
