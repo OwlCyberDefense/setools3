@@ -70,7 +70,7 @@ void seaudit_window_add_new_view(seaudit_window_t *window, audit_log_t *log, boo
 	seaudit_filtered_view_t *view;
 	GtkWidget *scrolled_window, *tree_view, *button, *label;
 	gint page_index;
-	GtkWidget *hbox;
+	GtkWidget *hbox, *image;
 
 	if (window == NULL)
 		return;
@@ -86,8 +86,10 @@ void seaudit_window_add_new_view(seaudit_window_t *window, audit_log_t *log, boo
 
 	view = seaudit_filtered_view_create(log, GTK_TREE_VIEW(tree_view), view_name);
 	hbox = gtk_hbox_new(FALSE, 5);
-	button = gtk_button_new_with_label("x");
-	g_object_set_data(G_OBJECT(button), "view", view);
+	button = gtk_button_new();
+	image = gtk_image_new_from_stock(GTK_STOCK_CLOSE, GTK_ICON_SIZE_MENU);
+	gtk_container_add(GTK_CONTAINER(button), image);
+	gtk_widget_set_size_request(image, 8, 8);
 	g_signal_connect(G_OBJECT(button), "pressed", G_CALLBACK(seaudit_window_close_view), window);
 	label = gtk_label_new(view_name);
 	gtk_box_pack_start(GTK_BOX(hbox), label, TRUE, TRUE, 5);
@@ -95,6 +97,7 @@ void seaudit_window_add_new_view(seaudit_window_t *window, audit_log_t *log, boo
 	gtk_notebook_append_page(window->notebook, GTK_WIDGET(scrolled_window), hbox);
 	gtk_widget_show(label);
 	gtk_widget_show(button);
+	gtk_widget_show(image);
 	gtk_widget_show(scrolled_window);
 	gtk_widget_show(tree_view);
 	page_index = gtk_notebook_get_n_pages(window->notebook)-1;
