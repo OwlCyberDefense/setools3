@@ -38,10 +38,13 @@
 
 #include <fsdata.h>
 
-/* LISTCON_VERSION_NUM should be defined in the make environment */
+/* INDEXCON_VERSION_NUM should be defined in the make environment */
 #ifndef INDEXCON_VERSION_NUM
 #define INDEXCON_VERSION_NUM "UNKNOWN"
 #endif
+
+/* Reasonable default filename */
+#define INDEX_FILE "conindex.db"
 
 #define COPYRIGHT_INFO "Copyright (C) 2004 Tresys Technology, LLC"
 
@@ -57,28 +60,25 @@ static struct option const longopts[] =
 
 void usage(const char *program_name, int brief)
 {
-	printf("%s (listcon ver. %s)\n\n", COPYRIGHT_INFO, INDEXCON_VERSION_NUM);
-	printf("Usage: %s [OPTIONS] [POLICY_FILE]\n", program_name);
+	printf("%s (indexcon ver. %s)\n\n", COPYRIGHT_INFO, INDEXCON_VERSION_NUM);
+	printf("Usage: %s [OPTIONS]\n", program_name);
 	if(brief) {
 		printf("\n   Try %s --help for more help.\n\n", program_name);
 		return;
 	}
-	fputs("\n\
-Print requested information about an SELinux policy.\n\
+	fprintf(stdout, "\n\
+Index SELinux contexts on the filesystem\n\
   -d directory, --directory=directory 	Start scanning at directory\n\
   -o filename, --outfile=filename   	Save the filesystem data in filename\n\
-", stdout);
-fputs("\n\
   -h, --help                 display this help and exit\n\
-  -v, --version              output version information and exit\n\
-", stdout);
+  -v, --version              output version information and exit\n");
 	return;
 }
 
 
 int main(int argc, char **argv, char **envp)
 {
-	char *outfilename = NULL, *dir = "/";
+	char *outfilename = INDEX_FILE, *dir = "/";
 	int optc = 0;
 	sefs_filesystem_data_t fsdata;
 	
@@ -100,12 +100,6 @@ int main(int argc, char **argv, char **envp)
 	  		usage(argv[0], 1);
 	  		exit(1);
 		}
-	}
-
-	if (outfilename == NULL) {
-		fprintf(stderr, "\n-o|--outfile is required\n\n");
-		usage(argv[0], 0);
-		return(-1);
 	}
 
 	if (sefs_filesystem_data_init(&fsdata) == -1) {
