@@ -172,11 +172,11 @@ static gboolean is_value_from_current_items_source(filters_select_items_t *filte
 	    filter_items_list->items_list_type == SEAUDIT_TGT_TYPES)
 		switch (filter_items_list->items_source) {
 		case SEAUDIT_FROM_LOG:
-			return (audit_log_get_type_idx(seaudit_app->log_store->log, item_str) != -1);
+			return (audit_log_get_type_idx(seaudit_app->cur_log, item_str) != -1);
 		case SEAUDIT_FROM_POLICY:
 			return (get_type_idx(item_str, seaudit_app->cur_policy) != -1);
 		case SEAUDIT_FROM_UNION:
-			if (audit_log_get_type_idx(seaudit_app->log_store->log, item_str) != -1)
+			if (audit_log_get_type_idx(seaudit_app->cur_log, item_str) != -1)
 				return TRUE;
 			if (get_type_idx(item_str, seaudit_app->cur_policy) != -1)
 				return TRUE;
@@ -189,11 +189,11 @@ static gboolean is_value_from_current_items_source(filters_select_items_t *filte
 	    filter_items_list->items_list_type == SEAUDIT_TGT_USERS)
 		switch (filter_items_list->items_source) {
 		case SEAUDIT_FROM_LOG:
-			return (audit_log_get_user_idx(seaudit_app->log_store->log, item_str) != -1);
+			return (audit_log_get_user_idx(seaudit_app->cur_log, item_str) != -1);
 		case SEAUDIT_FROM_POLICY:
 			return does_user_exists(item_str, seaudit_app->cur_policy);
 		case SEAUDIT_FROM_UNION:
-			if (audit_log_get_user_idx(seaudit_app->log_store->log, item_str) != -1)
+			if (audit_log_get_user_idx(seaudit_app->cur_log, item_str) != -1)
 				return TRUE;
 			if (does_user_exists(item_str, seaudit_app->cur_policy))
 				return TRUE;
@@ -206,11 +206,11 @@ static gboolean is_value_from_current_items_source(filters_select_items_t *filte
 	    filter_items_list->items_list_type == SEAUDIT_TGT_ROLES)
 		switch (filter_items_list->items_source) {
 		case SEAUDIT_FROM_LOG:
-			return (audit_log_get_role_idx(seaudit_app->log_store->log, item_str) != -1);
+			return (audit_log_get_role_idx(seaudit_app->cur_log, item_str) != -1);
 		case SEAUDIT_FROM_POLICY:
 			return (get_role_idx(item_str, seaudit_app->cur_policy) != -1);
 		case SEAUDIT_FROM_UNION:
-			if (audit_log_get_role_idx(seaudit_app->log_store->log, item_str) != -1)
+			if (audit_log_get_role_idx(seaudit_app->cur_log, item_str) != -1)
 				return TRUE;
 			if (get_role_idx(item_str, seaudit_app->cur_policy) != -1)
 				return TRUE;
@@ -221,11 +221,11 @@ static gboolean is_value_from_current_items_source(filters_select_items_t *filte
 	else if (filter_items_list->items_list_type == SEAUDIT_OBJECTS)
 		switch (filter_items_list->items_source) {
 		case SEAUDIT_FROM_LOG:
-			return (audit_log_get_obj_idx(seaudit_app->log_store->log, item_str) != -1);
+			return (audit_log_get_obj_idx(seaudit_app->cur_log, item_str) != -1);
 		case SEAUDIT_FROM_POLICY:
 			return (get_obj_class_idx(item_str, seaudit_app->cur_policy));
 		case SEAUDIT_FROM_UNION:
-			if (audit_log_get_obj_idx(seaudit_app->log_store->log, item_str) != -1)
+			if (audit_log_get_obj_idx(seaudit_app->cur_log, item_str) != -1)
 				return TRUE;
 			if (get_obj_class_idx(item_str, seaudit_app->cur_policy))
 				return TRUE;
@@ -262,7 +262,7 @@ static void filters_select_items_set_objects_list_stores_default_values(filters_
 
 	switch (filter_items_list->items_source) {
 	case SEAUDIT_FROM_LOG:
-		for (i = 0; (object = audit_log_get_obj(seaudit_app->log_store->log, i)) != NULL; i++)
+		for (i = 0; (object = audit_log_get_obj(seaudit_app->cur_log, i)) != NULL; i++)
 			if (g_utf8_validate(object, -1, NULL))
 				filters_select_items_add_unselected_value(filter_items_list,
 									  object);
@@ -275,7 +275,7 @@ static void filters_select_items_set_objects_list_stores_default_values(filters_
 		}
 		break;
 	case SEAUDIT_FROM_UNION:
-		for (i = 0; (object = audit_log_get_obj(seaudit_app->log_store->log, i)) != NULL; i++)
+		for (i = 0; (object = audit_log_get_obj(seaudit_app->cur_log, i)) != NULL; i++)
 			if (g_utf8_validate(object, -1, NULL))
 				filters_select_items_add_unselected_value(filter_items_list,
 									  object);
@@ -297,7 +297,7 @@ static void filters_select_items_set_roles_list_stores_default_values(filters_se
 
 	switch (filter_items_list->items_source) {
 	case SEAUDIT_FROM_LOG:
-		for (i = 0; (role = audit_log_get_role(seaudit_app->log_store->log, i)) != NULL; i++)
+		for (i = 0; (role = audit_log_get_role(seaudit_app->cur_log, i)) != NULL; i++)
 			if (g_utf8_validate(role, -1, NULL))
 				filters_select_items_add_unselected_value(filter_items_list,
 									  role);
@@ -308,7 +308,7 @@ static void filters_select_items_set_roles_list_stores_default_values(filters_se
 								  seaudit_app->cur_policy->roles[i].name);
 		break;
 	case SEAUDIT_FROM_UNION:
-		for (i = 0; (role = audit_log_get_role(seaudit_app->log_store->log, i)) != NULL; i++)
+		for (i = 0; (role = audit_log_get_role(seaudit_app->cur_log, i)) != NULL; i++)
 			if (g_utf8_validate(role, -1, NULL))
 				filters_select_items_add_unselected_value(filter_items_list,
 									  role);
@@ -330,7 +330,7 @@ static void filters_select_items_set_users_list_stores_default_values(filters_se
 
 	switch (filter_items_list->items_source) {
 	case SEAUDIT_FROM_LOG:
-		for (i = 0; (user = audit_log_get_user(seaudit_app->log_store->log, i)) != NULL; i++)
+		for (i = 0; (user = audit_log_get_user(seaudit_app->cur_log, i)) != NULL; i++)
 			if (g_utf8_validate(user, -1, NULL))
 				filters_select_items_add_unselected_value(filter_items_list,
 									  user);
@@ -343,7 +343,7 @@ static void filters_select_items_set_users_list_stores_default_values(filters_se
 		}
 		break;
 	case SEAUDIT_FROM_UNION:
-		for (i = 0; (user = audit_log_get_user(seaudit_app->log_store->log, i)) != NULL; i++)
+		for (i = 0; (user = audit_log_get_user(seaudit_app->cur_log, i)) != NULL; i++)
 			if (g_utf8_validate(user, -1, NULL))
 				filters_select_items_add_unselected_value(filter_items_list,
 									  user);
@@ -366,7 +366,7 @@ static void filters_select_items_set_types_list_stores_default_values(filters_se
 
 	switch (filter_items_list->items_source) {
 	case SEAUDIT_FROM_LOG:
-		for (i = 0; (type = audit_log_get_type(seaudit_app->log_store->log, i)) != NULL; i++)
+		for (i = 0; (type = audit_log_get_type(seaudit_app->cur_log, i)) != NULL; i++)
 			if (g_utf8_validate(type, -1, NULL))
 				filters_select_items_add_unselected_value(filter_items_list,
 									  type);
@@ -379,7 +379,7 @@ static void filters_select_items_set_types_list_stores_default_values(filters_se
 		}
 		break;
 	case SEAUDIT_FROM_UNION:
-		for (i = 0; (type = audit_log_get_type(seaudit_app->log_store->log, i)) != NULL; i++)
+		for (i = 0; (type = audit_log_get_type(seaudit_app->cur_log, i)) != NULL; i++)
 			if (g_utf8_validate(type, -1, NULL))
 				filters_select_items_add_unselected_value(filter_items_list,
 									  type);
@@ -1161,7 +1161,7 @@ static void filters_on_do_filter_button_clicked(GtkButton *button, filters_t *fi
 	GtkTreeModel *model;
 	GtkTreeIter iter;
 	GladeXML *xml;
-	SEAuditLogStore *store;
+	SEAuditLogViewStore *store;
 	seaudit_filter_list_t *items_list = NULL;
 	filter_t *filter;
 	char *text;
@@ -1174,24 +1174,24 @@ static void filters_on_do_filter_button_clicked(GtkButton *button, filters_t *fi
 	xml = filters->xml;
 	widget = glade_xml_get_widget(seaudit_app->top_window_xml, "LogListView");
  	model = gtk_tree_view_get_model(GTK_TREE_VIEW(widget));
-	store = (SEAuditLogStore*)model;
-	audit_log_purge_filters(store->log);
+	store = (SEAuditLogViewStore*)model;
+	audit_log_view_purge_filters(store->log_view);
 
 	/* Result message value */
 	widget = glade_xml_get_widget(xml, "ResultComboEntry");
 	text = (char*)gtk_entry_get_text(GTK_ENTRY(widget));
 	if (strcmp(text, "SHOW messages that match ALL criteria") == 0) {
-		seaudit_app->log_store->log->fltr_out = FALSE;
-		seaudit_app->log_store->log->fltr_and = TRUE;
+		seaudit_app->log_store->log_view->fltr_out = FALSE;
+		seaudit_app->log_store->log_view->fltr_and = TRUE;
 	} else if (strcmp(text, "SHOW messages that match ANY criteria") == 0) {
-		seaudit_app->log_store->log->fltr_out = FALSE;
-		seaudit_app->log_store->log->fltr_and = FALSE;
+		seaudit_app->log_store->log_view->fltr_out = FALSE;
+		seaudit_app->log_store->log_view->fltr_and = FALSE;
 	} else if (strcmp(text, "HIDE messages that match ALL criteria") == 0) {
-		seaudit_app->log_store->log->fltr_out = TRUE;
-		seaudit_app->log_store->log->fltr_and = TRUE;
+		seaudit_app->log_store->log_view->fltr_out = TRUE;
+		seaudit_app->log_store->log_view->fltr_and = TRUE;
 	} else if (strcmp(text, "HIDE messages that match ANY criteria") == 0) {
-		seaudit_app->log_store->log->fltr_out = TRUE;
-		seaudit_app->log_store->log->fltr_and = FALSE;
+		seaudit_app->log_store->log_view->fltr_out = TRUE;
+		seaudit_app->log_store->log_view->fltr_and = FALSE;
 	} else {
 		message_display(GTK_WINDOW(window), GTK_MESSAGE_ERROR, "Invalid results message combobox value.\n");
 		return;		
@@ -1205,7 +1205,7 @@ static void filters_on_do_filter_button_clicked(GtkButton *button, filters_t *fi
 			return;
 		filter = src_type_filter_create(items_list->list, items_list->size);
 		filters_seaudit_filter_list_free(items_list);
-		audit_log_add_filter(store->log, filter);	
+		audit_log_view_add_filter(store->log_view, filter);	
 	}
 
 	/* check for tgt type filter */
@@ -1216,7 +1216,7 @@ static void filters_on_do_filter_button_clicked(GtkButton *button, filters_t *fi
 			return;
 		filter = tgt_type_filter_create(items_list->list, items_list->size);
 		filters_seaudit_filter_list_free(items_list);
-		audit_log_add_filter(store->log, filter);
+		audit_log_view_add_filter(store->log_view, filter);
 	}
 	/* check for obj class filter */
 	filters_select_items_parse_entry(filters->obj_class_items);
@@ -1226,7 +1226,7 @@ static void filters_on_do_filter_button_clicked(GtkButton *button, filters_t *fi
 			return;
 		filter = class_filter_create(items_list->list, items_list->size);
 		filters_seaudit_filter_list_free(items_list);
-		audit_log_add_filter(store->log, filter);
+		audit_log_view_add_filter(store->log_view, filter);
 	}
 
 	/* check for src user filter */
@@ -1237,7 +1237,7 @@ static void filters_on_do_filter_button_clicked(GtkButton *button, filters_t *fi
 			return;
 		filter = src_user_filter_create(items_list->list, items_list->size);
 		filters_seaudit_filter_list_free(items_list);
-		audit_log_add_filter(store->log, filter);
+		audit_log_view_add_filter(store->log_view, filter);
 	}
 
 	/* check for src role filter */
@@ -1248,7 +1248,7 @@ static void filters_on_do_filter_button_clicked(GtkButton *button, filters_t *fi
 			return;
 		filter = src_role_filter_create(items_list->list, items_list->size);
 		filters_seaudit_filter_list_free(items_list);
-		audit_log_add_filter(store->log, filter);
+		audit_log_view_add_filter(store->log_view, filter);
 	}
 
 	/* check for tgt user filter */
@@ -1259,7 +1259,7 @@ static void filters_on_do_filter_button_clicked(GtkButton *button, filters_t *fi
 			return;
 		filter = tgt_user_filter_create(items_list->list, items_list->size);
 		filters_seaudit_filter_list_free(items_list);
-		audit_log_add_filter(store->log, filter);
+		audit_log_view_add_filter(store->log_view, filter);
 	}
 
 	/* check for tgt role filter */
@@ -1270,7 +1270,7 @@ static void filters_on_do_filter_button_clicked(GtkButton *button, filters_t *fi
 			return;
 		filter = tgt_role_filter_create(items_list->list, items_list->size);
 		filters_seaudit_filter_list_free(items_list);
-		audit_log_add_filter(store->log, filter);
+		audit_log_view_add_filter(store->log_view, filter);
 	}
 	
 	/* check for network address filter */
@@ -1278,7 +1278,7 @@ static void filters_on_do_filter_button_clicked(GtkButton *button, filters_t *fi
 	text = (char*)gtk_entry_get_text(GTK_ENTRY(widget));
 	if (strcmp(text, "") != 0) {
 		filter = ipaddr_filter_create(text);
-		audit_log_add_filter(store->log, filter);
+		audit_log_view_add_filter(store->log_view, filter);
 	}
 
 	/* check for network port filter */
@@ -1287,7 +1287,7 @@ static void filters_on_do_filter_button_clicked(GtkButton *button, filters_t *fi
 	if (strcmp(text, "") != 0) {
 		int_val = atoi(text);
 		filter = ports_filter_create(int_val);
-		audit_log_add_filter(store->log, filter);
+		audit_log_view_add_filter(store->log_view, filter);
 	}
 	
 	/* check for network interface filter */
@@ -1295,7 +1295,7 @@ static void filters_on_do_filter_button_clicked(GtkButton *button, filters_t *fi
 	text = (char*)gtk_entry_get_text(GTK_ENTRY(widget));
 	if (strcmp(text, "") != 0) {
 		filter = netif_filter_create(text);
-		audit_log_add_filter(store->log, filter);
+		audit_log_view_add_filter(store->log_view, filter);
 	}
 	
 	/* check for executable filter */
@@ -1303,7 +1303,7 @@ static void filters_on_do_filter_button_clicked(GtkButton *button, filters_t *fi
 	text = (char*)gtk_entry_get_text(GTK_ENTRY(widget));
 	if (strcmp(text, "") != 0) {
 		filter = exe_filter_create(text);
-		audit_log_add_filter(store->log, filter);
+		audit_log_view_add_filter(store->log_view, filter);
 	}
 	
 	/* check for path filter */
@@ -1311,13 +1311,13 @@ static void filters_on_do_filter_button_clicked(GtkButton *button, filters_t *fi
 	text = (char*)gtk_entry_get_text(GTK_ENTRY(widget));
 	if (strcmp(text, "") != 0) {
 		filter = path_filter_create(text);
-		audit_log_add_filter(store->log, filter);
+		audit_log_view_add_filter(store->log_view, filter);
 	}
 	
 	show_wait_cursor(window);
 
 	/* do the filter on the model */
- 	seaudit_log_store_do_filter(store);
+ 	seaudit_log_view_store_do_filter(store);
 	clear_wait_cursor(window);
 }
 
@@ -1405,7 +1405,7 @@ void filters_display(filters_t* filters)
 	GtkWidget *widget;
 	GtkTreeModel *model;
 	GtkWindow *window;
-	SEAuditLogStore *store;
+	SEAuditLogViewStore *store;
 	GString *path;
 	char *dir;
 
@@ -1466,9 +1466,9 @@ void filters_display(filters_t* filters)
 				      	
 	widget = glade_xml_get_widget(seaudit_app->top_window_xml, "LogListView");
  	model = gtk_tree_view_get_model(GTK_TREE_VIEW(widget));
-	store = (SEAuditLogStore*)model;
-	store->log->fltr_out = TRUE;
-	store->log->fltr_and = TRUE;
+	store = (SEAuditLogViewStore*)model;
+	store->log_view->fltr_out = TRUE;
+	store->log_view->fltr_and = TRUE;
 	
 	/* Restore previous values and selections for the filter dialog */
 	filters_set_values(filters);
