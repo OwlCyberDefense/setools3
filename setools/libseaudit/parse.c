@@ -1125,19 +1125,12 @@ static int free_field_tokens(char **fields, int num_tokens)
 static unsigned int get_tokens(char *line, int msgtype, audit_log_t *log, FILE *audit_file, msg_t **msg)
 {
 	char *tokens = NULL, *tmp = NULL, **fields = NULL;
-	int idx = 0, num_tokens = 0, length = 0;
+	int idx = 0, num_tokens = 0;
 	unsigned int ret = PARSE_RET_SUCCESS;
 	
-	assert(msg != NULL && log != NULL && audit_file != NULL);
+	assert(msg != NULL && log != NULL && audit_file != NULL);	
 	tokens = line;
-	length = strlen(tokens);
 	
-	/* Trim any trailing whitespace. */
-	while (!ispunct(tokens[length - 1]) && !isalnum(tokens[length - 1])){
-		tokens[length - 1] = '\0';
-		length -=1;
-	}
-
 	/* Tokenize line while ignoring any adjacent whitespace chars. */ 
         while ((tmp = strsep(&tokens, " ")) != NULL) {
 	       	if (strcmp(tmp, "") && !str_is_only_white_space(tmp)) {
@@ -1233,7 +1226,9 @@ unsigned int parse_audit(FILE *syslog, audit_log_t *log)
 	if (get_line(audit_file, &line) & PARSE_RET_MEMORY_ERROR) {
 		return PARSE_RET_MEMORY_ERROR;
 	}
-	
+	if (trim_string(&line) != 0)
+		return PARSE_RET_MEMORY_ERROR;
+		
 	while (line != NULL) {
      		is_sel = is_selinux(line);
 		if (is_sel != PARSE_NON_SELINUX) {
