@@ -892,8 +892,12 @@ int parse_audit(FILE *syslog, audit_log_t *log, bool_t do_filter)
 	int *results, num_results;
 
 	if (audit_file == NULL)
-		return PARSE_NO_SELINUX_ERROR;
+		return PARSE_NO_PARSE;
        
+	clearerr(audit_file);
+	if (feof(audit_file))
+		return PARSE_NO_PARSE;
+
 	if (get_line(audit_file, &line) == PARSE_MEMORY_ERROR) {
 		return PARSE_MEMORY_ERROR;
 	}
