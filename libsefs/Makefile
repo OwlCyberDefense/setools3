@@ -16,20 +16,22 @@ LIBSO  = $(TARGET).$(shell cat VERSION)
 
 CFLAGS		+= -I. -I../libapol 
 
-all: sqlite libsefs libsefsso 
+all: sqlite libsefs $(LIBSO)
+
+libsefsso: $(LIBSO)
 
 sqlite: nothing
 	cd sqlite; $(MAKE)
 
 libsefs: sqlite libsefs.a 
 
-libsefsso: $(LIB-OBJ)
-	$(CC) $(LDFLAGS) -shared -o $(LIBSO) $(LIB-OBJ) $(SQL-OBJ) -Wl,-soname,$(SONAME) 
+$(LIBSO): $(LIB-OBJ) $(SQL-OBJ)
+	$(CC) $(LDFLAGS) -shared -o $(LIBSO) $^ -Wl,-soname,$(SONAME) 
 
 libsefs.a:  $(LIB-OBJ) 
 	 ar cr $@ $(LIB-OBJ) $(SQL-OBJ)
 
-install-libsefs-shared: libsefsso
+install-libsefs-shared: $(LIBSO)
 	install -m 755 $(LIBSO) $(SHARED_LIB_INSTALL_DIR)
 	cd $(SHARED_LIB_INSTALL_DIR) && ln -sf $(LIBSO) $(SONAME) && ln -sf $(SONAME) $(TARGET)
 
@@ -37,12 +39,12 @@ install-libsefs-static: libsefs
 	install -m 644 libsefs.a $(STATIC_LIB_INSTALL_DIR)
 	install -m 755 -d $(SETOOLS_INCLUDE)/libsefs
 	install -m 644 *.h $(SETOOLS_INCLUDE)/libsefs
-	
+
 install: install-libsefs-shared install-libsefs-static
 
 install-policy:
 	chcon system_u:object_r:shlib_t $(SHARED_LIB_INSTALL_DIR)/$(LIBSO)
-	
+
 fsdata.o: fsdata.c
 	$(CC) $(CFLAGS) -c fsdata.c
 
@@ -53,8 +55,6 @@ fsdata.o: fsdata.c
 clean:
 	cd sqlite; $(MAKE) clean
 	rm -f *.o core *~
-
-
 
 bare: clean
 	rm -f *.o core *~ libsefs.a $(LIBSO) $(SONAME)
