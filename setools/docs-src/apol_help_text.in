@@ -234,35 +234,26 @@ This tab provides automated analysis capabilities.  The "Info" button
 provides a description for the selected analysis type. Current analyses 
 are:
 
-	I. FORWARD DOMAIN TRANSITION ANALYSIS
+	I. DOMAIN TRANSITION ANALYSIS
 
-	The Forward Domain Transition (FDT) analysis takes a starting 
-	SOURCE domain and presents a tree of all the resulting TARGET 
-	domains that can be transitioned into from that starting domain. 
-	The tree can be walked to follow the FDT tree as deep as you 
-	like. The only restriction is that a subtree will not expand if 
-	its parent is the same as the node. Each node in the FDT tree 
-	represents a TARGET domain to which the parent domain can 
-	directly transition.  
+		FORWARD: The Forward Domain Transition (FDT) analysis takes a 
+		starting SOURCE domain and presents a tree of all the resulting 
+		TARGET 	domains that can be transitioned into from that starting 
+		domain. The tree can be walked to follow the FDT tree as deep as 
+		you like. The only restriction is that a subtree will not expand 
+		if its parent is the same as the node. Each node in the FDT tree 
+		represents a TARGET domain to which the parent domain can 
+		directly transition.  
 	
-	Selecting a child node will show all the rules that permit the 
-	transition to occur.
-
-	See the separate help file for an overview of the criteria that 
-	constitute an allowed domain transition.
-	
-
-	II. REVERSE DOMAIN TRANSITION ANALYSIS
-
-	As its name implies, the Reverse Domain Transition (RDT) 
-	analysis is the reverse of the FDT analysis.  The RDT takes a 
-	starting TARGET domain and presents a tree of all the resulting 
-	SOURCE domains that can directly transition to that TARGET 
-	domain.  The tree can be walked to follow the RDT tree as deep as 
-	you like.  The only restriction is that a subtree will not 
-	expand if its parent is the same as the node. 	Each node in the 
-	RDT tree represents a SOURCE domain that can transition to its 
-	parent node.
+		REVERSE: As its name implies, the Reverse Domain Transition (RDT) 
+		analysis is the reverse of the FDT analysis.  The RDT takes a 
+		starting TARGET domain and presents a tree of all the resulting 
+		SOURCE domains that can directly transition to that TARGET 
+		domain.  The tree can be walked to follow the RDT tree as deep as 
+		you like.  The only restriction is that a subtree will not 
+		expand if its parent is the same as the node. Each node in the 
+		RDT tree represents a SOURCE domain that can transition to its 
+		parent node.
 
 	Selecting a child node will show all the rules that permit the 
 	transition to occur.
@@ -270,7 +261,7 @@ are:
 	See the separate help file for an overview of the criteria that 
 	constitute an allowed domain transition.
 	
-	III. DIRECT INFORMATION FLOW ANALYSIS
+	II. DIRECT INFORMATION FLOW ANALYSIS
 	
 	The Direct Information Flow (DIF) analysis takes a starting type 
 	and an information flow direction (IN, OUT, EITHER, or BOTH), 
@@ -299,7 +290,7 @@ are:
 	See the separate help file on information flow for more 
 	information about direct information flow.
 	
-	IV. TRANSITIVE INFORMATION FLOW ANALYSIS
+	III. TRANSITIVE INFORMATION FLOW ANALYSIS
 	
 	Whereas the DIF analysis identifies information flows that are 
 	directly allowed by one or more explicit rule, the Transitive 
