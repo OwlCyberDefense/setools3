@@ -473,21 +473,21 @@ void sefs_paths_compare(sqlite3_context *context, int argc, sqlite3_value **argv
 int sefs_get_class_int(const char *class)
 {
 	if (strcmp(class,"file") == 0) 
-		return NORM_FILE;
+		return SEFS_NORM_FILE;
 	else if (strcmp(class,"dir") == 0) 
-		return DIR;
+		return SEFS_DIR;
 	else if (strcmp(class,"lnk_file") == 0) 
-		return LNK_FILE;
+		return SEFS_LNK_FILE;
 	else if (strcmp(class,"chr_file") == 0) 
-		return CHR_FILE;
+		return SEFS_CHR_FILE;
 	else if (strcmp(class,"blk_file") == 0) 
-		return BLK_FILE;
+		return SEFS_BLK_FILE;
 	else if (strcmp(class,"sock_file") == 0) 
-		return SOCK_FILE;
+		return SEFS_SOCK_FILE;
 	else if (strcmp(class,"fifo_file") == 0) 
-		return FIFO_FILE;
+		return SEFS_FIFO_FILE;
 	else if (strcmp(class,"all_files") == 0) 
-		return ALL_FILES;
+		return SEFS_ALL_FILES;
 	else return -1;
 
 }
@@ -496,19 +496,19 @@ int sefs_get_class_int(const char *class)
 const char * sefs_get_class_string( int flag_val)
 {
 	switch (flag_val) {
-		case  NORM_FILE:
+		case  SEFS_NORM_FILE:
 			return sefs_object_classes[0];
-		case  DIR:
+		case  SEFS_DIR:
 			return sefs_object_classes[1];
-		case  LNK_FILE:
+		case  SEFS_LNK_FILE:
 			return sefs_object_classes[2];
-		case  CHR_FILE:
+		case  SEFS_CHR_FILE:
 			return sefs_object_classes[3];
-		case  BLK_FILE:
+		case  SEFS_BLK_FILE:
 			return sefs_object_classes[4];
-		case  SOCK_FILE:
+		case  SEFS_SOCK_FILE:
 			return sefs_object_classes[5];
-		case  FIFO_FILE:
+		case  SEFS_FIFO_FILE:
 			return sefs_object_classes[6];
 		default:
 			return sefs_object_classes[7];
@@ -525,20 +525,20 @@ int sefs_get_file_class(const struct stat64 *statptr)
 {
 	assert(statptr != NULL);
 	if (S_ISREG(statptr->st_mode))
-		return NORM_FILE;
+		return SEFS_NORM_FILE;
 	if (S_ISDIR(statptr->st_mode))
-		return DIR;
+		return SEFS_DIR;
 	if (S_ISLNK(statptr->st_mode))
-		return LNK_FILE;
+		return SEFS_LNK_FILE;
 	if (S_ISCHR(statptr->st_mode))
-		return CHR_FILE;
+		return SEFS_CHR_FILE;
 	if (S_ISBLK(statptr->st_mode))
-		return BLK_FILE;
+		return SEFS_BLK_FILE;
 	if (S_ISSOCK(statptr->st_mode))
-		return SOCK_FILE;
+		return SEFS_SOCK_FILE;
 	if (S_ISFIFO(statptr->st_mode))
-		return FIFO_FILE;
-	return ALL_FILES;
+		return SEFS_FIFO_FILE;
+	return SEFS_ALL_FILES;
 }
 
 int find_mount_points(char *dir, char ***mounts, int *num_mounts, int rw) 
@@ -759,35 +759,6 @@ int sefs_double_array_destroy(char **array,int size)
 	free(array);
 	return 0;
 }
-void sefs_double_array_print(char **array,int size)
-{
-	int i;
-	for (i=0;i<size;i++){
-		printf("%s\n",array[i]);
-	}
-
-}
-
-
-void sefs_search_keys_ret_print(sefs_search_ret_t *key) 
-{
-	sefs_search_ret_t *curr = NULL;
-
-	/* walk the linked list  */
-	curr = key;
-	while (curr) {
-		if (curr->context)
-			printf("%s\t",curr->context);
-		if (curr->object_class)
-			printf("%s\t",curr->object_class);
-		if (curr->path)
-			printf("%s",curr->path);
-		printf("\n");
-		curr = curr->next;
-	}
-}
-
-
 
 int sefs_search_keys_ret_destroy(sefs_search_ret_t *key) 
 {
@@ -1067,7 +1038,7 @@ int sefs_is_valid_object_class(const char *class_name)
 	int i;
 	
 	assert(class_name != NULL);
-	for (i = 0; i < NUM_OBJECT_CLASSES; i++)
+	for (i = 0; i < SEFS_NUM_OBJECT_CLASSES; i++)
 		if (strcmp(class_name, sefs_object_classes[i]) == 0)
 			return i;
 	return -1;
@@ -1087,11 +1058,11 @@ char **sefs_get_valid_object_classes(int *size)
 
 
 	/* malloc out the memory for the types */
-	if ((local_list = (char **)malloc(NUM_OBJECT_CLASSES * sizeof(char *))) == NULL) {
+	if ((local_list = (char **)malloc(SEFS_NUM_OBJECT_CLASSES * sizeof(char *))) == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return NULL;
 	}
-	for (i = 0; i < NUM_OBJECT_CLASSES; i++) {
+	for (i = 0; i < SEFS_NUM_OBJECT_CLASSES; i++) {
 		num_objs_on_line++;
 		if ((local_list[i] = (char *)malloc((strlen(sefs_object_classes[i])+1) * sizeof(char))) == NULL){
 			sefs_double_array_destroy(local_list,i);
@@ -1101,7 +1072,7 @@ char **sefs_get_valid_object_classes(int *size)
 		strncpy(local_list[i],sefs_object_classes[i],strlen(sefs_object_classes[i]));
 		local_list[i][strlen(sefs_object_classes[i])] = '\0';
 	}
-	*size = NUM_OBJECT_CLASSES;
+	*size = SEFS_NUM_OBJECT_CLASSES;
 	return local_list;
 }
 
@@ -1435,7 +1406,7 @@ int sefs_filesystem_db_save(sefs_filesystem_db_t *fsd, char *filename)
 		pinfo = &(fsdh->files[i]);
 
 
-		if (pinfo->obj_class == LNK_FILE && pinfo->symlink_target) {	    
+		if (pinfo->obj_class == SEFS_LNK_FILE && pinfo->symlink_target) {	    
 			sprintf(stmt,"insert into inodes (inode_id,user,type,obj_class,symlink_target,dev,ino"
 				") values (%d,%d,%d,%d,'%s',%u,%llu);",i,pinfo->context.user,
 				pinfo->context.type,pinfo->obj_class,
