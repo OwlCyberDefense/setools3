@@ -3025,6 +3025,39 @@ int Apol_Cond_Bool_SetBoolValue(ClientData clientData, Tcl_Interp *interp, int a
 }
 
 /* args ordering:
+ * argv[1]	bool name
+ */
+int Apol_Cond_Bool_GetBoolValue(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
+{
+	int bool_val;
+	char tbuf[64];	
+	
+	if(argc != 2) {
+		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
+		return TCL_ERROR;
+	}
+	if(policy == NULL) {
+		Tcl_AppendResult(interp,"No current policy file is opened!", (char *) NULL);
+		return TCL_ERROR;
+	}
+	if(!is_valid_str_sz(argv[1])) {
+		Tcl_AppendResult(interp, "Bool string is too large", (char *) NULL);
+		return TCL_ERROR;
+	}
+		
+	bool_val = get_cond_bool_val(argv[1], policy);
+	if (bool_val < 0) {
+		Tcl_AppendResult(interp, "Error getting conditional boolean value for ", argv[1], (char *) NULL);
+		return TCL_ERROR;
+	}
+	
+	sprintf(tbuf, "%d", bool_val);	
+	Tcl_AppendElement(interp, tbuf);
+	
+	return TCL_OK;
+}
+
+/* args ordering:
  * argv[1]	sid name
  */
 int Apol_GetInitialSIDInfo(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
@@ -4086,6 +4119,7 @@ int Apol_Init(Tcl_Interp *interp)
 	Tcl_CreateCommand(interp, "apol_SearchInitialSIDs", (Tcl_CmdProc *) Apol_SearchInitialSIDs, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_GetInitialSIDInfo", (Tcl_CmdProc *) Apol_GetInitialSIDInfo, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_Cond_Bool_SetBoolValue", (Tcl_CmdProc *) Apol_Cond_Bool_SetBoolValue, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+	Tcl_CreateCommand(interp, "apol_Cond_Bool_GetBoolValue", (Tcl_CmdProc *) Apol_Cond_Bool_GetBoolValue, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	
 	Tcl_PkgProvide(interp, "apol", (char*)libapol_get_version());
 
