@@ -1,6 +1,6 @@
 Audit Log Analysis Tool for Security Enhanced Linux
 seaudit, version 1.0
-January 06, 2004
+January 07, 2004
 selinux@tresys.com
 
 Overview:  
@@ -24,16 +24,15 @@ Log and Policy Files:
 --------------------
 Seaudit accepts the following command line arguments to open files at
 startup.  Zero, one, or both arguments will be accepted.
-	-l FILE, --log FILE	       open log file named FILE
-	-p FILE, --policy FILE	       open policy file named FILE
+	-l[FILE], --log[=FILE]	       open log file named FILE
+	-p[FILE], --policy[=FILE]      open policy file named FILE
 
 Seaudit does not require you to open a policy.conf file; in this case 
 you will not be able to use the query policy features of the tool. If 
 a policy.conf file is opened it must be syntactically correct (i.e., 
 it must not generate errors when run through checkpolicy).  If you 
 choose not to open a policy.conf file your functionality will be 
-limited. You will be unable to filter an audit log or query the 
-policy.  Only one policy.conf file and one audit log can be open at a 
+limited. Only one policy.conf file and one audit log can be open at a 
 time, so if you open another one of these files the current one will 
 be closed. If an invalid policy.conf file is opened the tool should be 
 restarted; this is a known bug.
@@ -78,14 +77,12 @@ you cannot sort on is the 'Other' column.  Only one level of sorting
 can be performed at this time.
 
 
-Refresh Log: 
+Real-time log: 
 ------------ 
-The 'Refresh Log' button allows you to refresh the audit log.  Any
-messages that have been logged after the tool was started, or the last
-refresh, are appended to the end of the list of log messages.  You can
-see the new messages by scrolling to the bottom of the list.  The new
-messages will follow any sorting or filtering rules you currently have
-in place.
+The 'Real-time log' button allows you to keep up to date with the current
+state of the system log.  Seaudit checks for new messages in the opened 
+log file in once every second.  If new messages are found they are applied
+according to the current filter and sorting.
 
 
 Query Policy:
@@ -123,20 +120,16 @@ Filter Log:
 The 'Filter Log' button opens a dialog box that allows you to filter
 messages in the audit log.  At the top of the dialog box is a dropdown
 menu that has four different ways to filter.  You may choose to either
-show (filter in) or hide (filter out) messages.  You can also choose
-to match all or any of the criteria.
+show or hide messages which match all or any of the criteria.
 
 The 'Context' tab allows you to enter values for part or all of the
 source and target context, as well as the object class.  Only exact
 matches are accepted, no regular expressions.  You can either enter
 the values manually with a comma between entries or click on the
 button (i.e., Types:) and get another dialog that has a list of all
-valid entries.  The list of entries is extracted from the opened
-policy.conf file.  Therefore, if you click on 'Types:' you will get a
-list of all valid types in the opened policy.  Also, when you you
-perform a filter all entries will be verifies against the opened
-policy.conf file and all invalid entries will be removed from the text
-box and ignored.
+valid entries.  This list can be populated by values from the log, the 
+policy, or the union of the log and policy, by selecting the appropriate
+radio button specification.
 
 The 'Other' tab allows you to filter by networking criteria and/or
 executable and path.  You can filter IP addresses by regular
