@@ -317,9 +317,13 @@ proc Apol_File_Contexts::display_create_db_dlg {} {
 			-initialdir "/"]
 		if {$dir_n != ""} {
 			set tmp [$Apol_File_Contexts::entry_dir get]
-			set new_str [append tmp ":$dir_n"]
-			$Apol_File_Contexts::entry_dir delete 0 end
-			$Apol_File_Contexts::entry_dir insert end $new_str
+			if {$tmp != "" && ![string is space $tmp]} {
+				set new_str [append tmp ":$dir_n"]
+				$Apol_File_Contexts::entry_dir delete 0 end
+				$Apol_File_Contexts::entry_dir insert end $new_str
+			} else {
+				$Apol_File_Contexts::entry_dir insert end $dir_n
+			}
 		}	
 	}]
 	set entry_fn 	[entry $f2.entry_fn -width 30 -bg white]
