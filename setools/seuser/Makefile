@@ -76,6 +76,10 @@ sys-install: seuser seuserx se_user.tcl
 #
 # NOTE The following targets assume selinux and the chcon utility
 seuser-policy:
+	cat ../policy/seuser_template.fc | \
+	sed -e 's|SEUSER_BINDIR|$(BINDIR)|g' | \
+	sed -e 's|SEUSER_INSTALL_LIBDIR|$(INSTALL_LIBDIR)|g' > ../policy/seuser.fc 
+	
 	@if [ -e $(POLICY_SRC_DIR)/policy/Makefile ]; then \
 		install -d $(TE_PROGS_DIR); \
 		install -d $(FC_PROGS_DIR); \
@@ -91,6 +95,7 @@ seuser-policy:
 		echo "	not found. type 'make install-src' from your policy directory, or"; \
 		echo "	consult your SELinux documentation."; \
 	fi
+	rm -f ../policy/seuser.fc;
 
 policy-install: seuser-policy
 	@if [ -e $(POLICY_SRC_DIR)/policy/Makefile ]; then \
