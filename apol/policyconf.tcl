@@ -129,24 +129,27 @@ proc Apol_PolicyConf::free_call_back_procs { } {
 proc Apol_PolicyConf::display_policy_conf { path } {
    	variable textbox_policyConf
    	variable mod_disabled
-   
+   	
    	set mod_disabled 0
    	$textbox_policyConf delete 0.0 end
-   	
-	# Make sure the "policy.conf" file exists and is readable by the user.
-	if { [file exists $path] } {
-		if { [file readable $path] } {
-			set file_channel [::open $path r]
-			set data [read $file_channel]
-			::close $file_channel
-	
-			$textbox_policyConf insert end $data 
+   	if {$ApolTop::policy_type == $ApolTop::binary_policy_type} {
+   		$textbox_policyConf insert end "<Binary policy is not available>"
+   	} else {
+		# Make sure the "policy.conf" file exists and is readable by the user.
+		if { [file exists $path] } {
+			if { [file readable $path] } {
+				set file_channel [::open $path r]
+				set data [read $file_channel]
+				::close $file_channel
+		
+				$textbox_policyConf insert end $data 
+			} else {
+				$textbox_policyConf insert end "<policy.conf file exists but is not readable>"
+			}
 		} else {
-			$textbox_policyConf insert end "<policy.conf file exists but is not readable>"
-		}
-	} else {
-		$textbox_policyConf insert end "<policy.conf file does not exist>"
-	} 
+			$textbox_policyConf insert end "<policy.conf file does not exist>"
+		} 
+	}
 	set mod_disabled 1
 	$textbox_policyConf see 0.0
 	$textbox_policyConf mark set insert 1.0

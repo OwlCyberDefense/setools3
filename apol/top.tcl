@@ -14,6 +14,9 @@ namespace eval ApolTop {
 	variable bwidget_version	""
 	variable status 		""
 	variable polversion 		""
+	variable policy_type		""
+	variable binary_policy_type	"binary"
+	variable source_policy_type	"source"
 	variable filename 		""
 	variable policyConf_lineno	""
 	variable polstats 		""
@@ -1074,8 +1077,8 @@ proc ApolTop::create { } {
 	Apol_Class_Perms::create $components_nb
 	Apol_Roles::create $components_nb
 	Apol_Users::create $components_nb
-	Apol_Initial_SIDS::create $components_nb
 	Apol_Cond_Bools::create $components_nb
+	Apol_Initial_SIDS::create $components_nb
 	
 	# Subtabs for the main policy rules tab
 	Apol_TE::create $rules_nb
@@ -1478,7 +1481,9 @@ proc ApolTop::resetBusyCursor {} {
 
 proc ApolTop::popupPolicyStats {} {
 	variable polversion
+	variable policy_type
 	variable contents
+	
 	set rt [catch {set pstats [apol_GetStats]}]
 	if {$rt != 0} {
 		tk_messageBox -icon error -type ok -title "Error" \
@@ -1518,7 +1523,8 @@ proc ApolTop::popupPolicyStats {} {
 	set labelf [frame $w.labelf]
 		
 	set left_text "\
-Policy Version:\n\n\
+Policy Version:\n\
+Policy Type:\n\n\
 Number of Classes and Permissions\n\
      \tObject Classes:\n\
      \tCommon Perms:\n\
@@ -1549,7 +1555,8 @@ Number of Booleans:\n\
      \tBools:\n"
      
      	set right_text "\
-$polversion\n\n\
+$polversion\n\
+$policy_type\n\n\
 \n\
 $classes\n\
 $common_perms\n\
@@ -1691,82 +1698,14 @@ proc ApolTop::closePolicy {} {
 	$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
 	$ApolTop::mainframe setmenustate Disable_LoadQuery_Tag disabled
 	$ApolTop::mainframe setmenustate Disable_Summary disabled
+	# We make sure that the initial SIDs tab is re-enabled, b/c a binary policy may have been opened
+	# and this tab would have been disabled. 
+	$ApolTop::components_nb itemconfigure $ApolTop::initial_sids_tab -state normal
+	
 	return 0
 }
 
-# Do the work to open a policy file:
-# file is file name, and recent_flag indicates whether to add this file to list of
-# recently opened files (set to 1 if you want to do this).  You would NOT set this
-# to 1 if a recently file is being opened with this proc
-proc ApolTop::openPolicyFile {file recent_flag} {
-	variable contents
-	variable polversion
-	variable policy_is_open	
-	variable filename
-	
-	ApolTop::closePolicy
-	
-	set file [file nativename $file]
-	if {![file exists $file]} {
-		tk_messageBox -icon error \
-		-type ok \
-		-title "File Does Not Exist" \
-		-message "File ($file) does not exist."
-		return -1
-	} 
-	if { ![file readable $file] } {
-		tk_messageBox -icon error \
-		-type ok \
-		-title "Permission Problem" \
-		-message \
-		"You do not have permission to read $file."
-		return -1
-	}
- 	if {[file isdirectory $file]} {
- 		tk_messageBox -icon error \
-		-type ok \
-		-title "File is Directory" \
-		-message \
-		"$file is a directory."
-		return -1
- 	}
- 
-	# Change the cursor
-	set orig_Cursor [. cget -cursor] 
-	. configure -cursor watch
-	update idletasks
-	set rt [catch {apol_OpenPolicy $file}]
-	if {$rt == 0} {
-		#set filename [file tail $file]
-		set filename $file
-	} else {
-		tk_messageBox -icon error -type ok -title "Error with policy file" \
-			-message "The selected file does not appear to be a valid SE Linux Policy." 
-		. configure -cursor $orig_Cursor 
-		focus -force .
-		return -1
-	}
-	set rt [catch {set polversion [apol_GetPolicyVersionString]}]
-	if {$rt != 0} {
-		tk_messageBox -icon error -type ok -title "Error" -message "apol_GetPolicyVersionString: $rt"
-		return 0
-	}
-	# Set the contents flags to indicate what the opened policy contains
-	set rt [catch {set con [apol_GetPolicyContents]} err]
-	if {$rt != 0} {
-		tk_messageBox -icon error -type ok -title "Error" -message "$err"
-		return 0
-	}
-	foreach item $con {
-		set rt [scan $item "%s %d" key val]
-		if {$rt != 2} {
-			tk_messageBox -icon error -type ok -title "Error" -message "openPolicy (getting contents): $rt"
-			return
-		}
-		set contents($key) $val
-	}
-	
-	ApolTop::showPolicyStats
+proc ApolTop::open_apol_modules {file} {
 	set rt [catch {Apol_Class_Perms::open} err]
 	if {$rt != 0} {
 		tk_messageBox -icon error -type ok -title "Error" -message "$err"
@@ -1822,6 +1761,93 @@ proc ApolTop::openPolicyFile {file recent_flag} {
 		tk_messageBox -icon error -type ok -title "Error" -message "$err"
 		return -1
 	}
+ 	return 0
+ }
+ 
+# Do the work to open a policy file:
+# file is file name, and recent_flag indicates whether to add this file to list of
+# recently opened files (set to 1 if you want to do this).  You would NOT set this
+# to 1 if a recently file is being opened with this proc
+proc ApolTop::openPolicyFile {file recent_flag} {
+	variable contents
+	variable polversion
+	variable policy_type
+	variable policy_is_open	
+	variable filename
+	
+	ApolTop::closePolicy
+	
+	set file [file nativename $file]
+	if {![file exists $file]} {
+		tk_messageBox -icon error \
+		-type ok \
+		-title "File Does Not Exist" \
+		-message "File ($file) does not exist."
+		return -1
+	} 
+	if { ![file readable $file] } {
+		tk_messageBox -icon error \
+		-type ok \
+		-title "Permission Problem" \
+		-message \
+		"You do not have permission to read $file."
+		return -1
+	}
+ 	if {[file isdirectory $file]} {
+ 		tk_messageBox -icon error \
+		-type ok \
+		-title "File is Directory" \
+		-message \
+		"$file is a directory."
+		return -1
+ 	}
+ 
+	# Change the cursor
+	set orig_Cursor [. cget -cursor] 
+	. configure -cursor watch
+	update idletasks
+	set rt [catch {apol_OpenPolicy $file}]
+	if {$rt == 0} {
+		#set filename [file tail $file]
+		set filename $file
+	} else {
+		tk_messageBox -icon error -type ok -title "Error with policy file" \
+			-message "The selected file does not appear to be a valid SE Linux Policy." 
+		. configure -cursor $orig_Cursor 
+		focus -force .
+		return -1
+	}
+	set rt [catch {set polversion [apol_GetPolicyVersionString]}]
+	if {$rt != 0} {
+		tk_messageBox -icon error -type ok -title "Error" -message "apol_GetPolicyVersionString: $rt"
+		return 0
+	}
+	set rt [catch {set policy_type [apol_GetPolicyType]}]
+	if {$rt != 0} {
+		tk_messageBox -icon error -type ok -title "Error" -message "apol_GetPolicyType: $rt"
+		return 0
+	}
+	set polversion [append polversion " \($policy_type)"]
+	# Set the contents flags to indicate what the opened policy contains
+	set rt [catch {set con [apol_GetPolicyContents]} err]
+	if {$rt != 0} {
+		tk_messageBox -icon error -type ok -title "Error" -message "$err"
+		return 0
+	}
+	foreach item $con {
+		set rt [scan $item "%s %d" key val]
+		if {$rt != 2} {
+			tk_messageBox -icon error -type ok -title "Error" -message "openPolicy (getting contents): $rt"
+			return
+		}
+		set contents($key) $val
+	}
+	
+	ApolTop::showPolicyStats
+	set rt [catch {ApolTop::open_apol_modules $file} err]
+ 	if {$rt != 0} {
+ 		return $rt	
+ 	}
 	set policy_is_open 1
 	
 	if {$recent_flag == 1} {
@@ -1837,6 +1863,12 @@ proc ApolTop::openPolicyFile {file recent_flag} {
 	$ApolTop::mainframe setmenustate Disable_Summary normal
 	$ApolTop::mainframe setmenustate Disable_SearchMenu_Tag normal	
 	ApolTop::configure_edit_pmap_menu_item 0
+	if {$ApolTop::policy_type == $ApolTop::binary_policy_type} {
+   		$ApolTop::components_nb itemconfigure $ApolTop::initial_sids_tab -state disabled
+   	} else {
+   		$ApolTop::components_nb itemconfigure $ApolTop::initial_sids_tab -state normal
+   	}
+
 	wm title . "SE Linux Policy Analysis - $file"
 	return 0
 }
