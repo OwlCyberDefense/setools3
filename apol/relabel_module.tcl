@@ -34,7 +34,6 @@ namespace eval Apol_Analysis_relabel {
 # initialization it must do that wasn't done in the initial namespace
 # eval command.
 proc Apol_Analysis_relabel::initialize { } {
-    catch {console show}
     return 0
 }
 
@@ -129,14 +128,14 @@ proc Apol_Analysis_relabel::display_mod_options { opts_frame } {
 
     set option_f [frame $opts_frame.option_f]
 
-    set widget_vars(mode) "relabelto"
+    set widget_vars(mode) "to"
     set mode_tf [TitleFrame $option_f.mode_tf -text "Mode"]
     set relabelto_rb [radiobutton [$mode_tf getframe].relabelto_rb \
-                          -text "relabelto" -value "relabelto" \
+                          -text "relabelto" -value "to" \
                           -variable Apol_Analysis_relabel::widget_vars(mode) \
                           -command [namespace code set_mode_relabelto]]
     set relabelfrom_rb [radiobutton [$mode_tf getframe].relabelfrom_rb \
-                            -text "relabelfrom" -value "relabelfrom" \
+                            -text "relabelfrom" -value "from" \
                             -variable Apol_Analysis_relabel::widget_vars(mode)\
                             -command [namespace code set_mode_relabelfrom]]
     set domain_rb [radiobutton [$mode_tf getframe].domain_rb \
@@ -148,18 +147,16 @@ proc Apol_Analysis_relabel::display_mod_options { opts_frame } {
     set req_tf [TitleFrame $option_f.req_tf -text "Required parameters"]
     set start_f [frame [$req_tf getframe].start_f]
     set attrib_f [frame [$req_tf getframe].attrib_frame]
-    set widgets(start_l) [label $start_f.start_l -text "Starting type:"]
+    set widgets(start_l) [label $start_f.start_l -anchor w]
     set widgets(start_cb) [ComboBox $start_f.start_cb -editable 1 \
                                -entrybg white -width 16 \
                                -textvariable Apol_Analysis_relabel::widget_vars(start_type)]
     bindtags $widgets(start_cb).e [linsert [bindtags $widgets(start_cb).e] 3 start_cb_tag]
     bind start_cb_tag <KeyPress> [list ApolTop::_create_popup $widgets(start_cb) %W %K]
-    pack $widgets(start_l) -side top -anchor nw -expand 0 -fill none
-    pack $widgets(start_cb) -side top -anchor nw -expand 0 -fill x
+    pack $widgets(start_l) $widgets(start_cb) -side top -expand 0 -fill x
 
     set widgets(start_attrib_ch) \
-        [checkbutton $attrib_f.start_attrib_ch \
-             -text "Select starting type using attrib:" \
+        [checkbutton $attrib_f.start_attrib_ch -anchor w -width 36 \
              -variable Apol_Analysis_relabel::widget_vars(start_attrib_ch) \
              -command [namespace code toggle_attributes]]
     set widgets(start_attrib_cb) [ComboBox $attrib_f.start_attrib_cb \
@@ -169,10 +166,10 @@ proc Apol_Analysis_relabel::display_mod_options { opts_frame } {
                 -textvariable Apol_Analysis_relabel::widget_vars(start_attrib)]
     bindtags $widgets(start_attrib_cb).e [linsert [bindtags $widgets(start_attrib_cb).e] 3 start_attrib_cb_tag]
     bind start_attrib_cb_tag <KeyPress> [list ApolTop::_create_popup $widgets(start_attrib_cb) %W %K]
-    pack $widgets(start_attrib_ch) -anchor nw -expand 0 -fill none
-    pack $widgets(start_attrib_cb) -anchor nw -padx 15 -expand 0 -fill x
-    pack $start_f -expand 0 -expand 0 -fill x
-    pack $attrib_f -expand 0 -pady 20 -expand 0 -fill x
+    pack $widgets(start_attrib_ch) -expand 0 -fill x
+    pack $widgets(start_attrib_cb) -padx 15 -expand 0 -fill x
+    pack $start_f -expand 0 -fill x
+    pack $attrib_f -pady 20 -expand 0 -fill x
     
     set opt_tf [TitleFrame $option_f.opt_tf -text "Optional result filters"]
     
@@ -304,10 +301,12 @@ proc Apol_Analysis_relabel::toggle_permissions {} {
     } else {
         set newstate "disabled"
     }
-    foreach w {objs_l objs_cb perms_l perms_cb opts_bb objs_lb} {
+    foreach w {objs_l objs_cb objs_lb} {
         $widgets($w) configure -state $newstate
     }
     $widgets(objs_lb) selection clear 0 end
+    $widgets(perms_l) configure -state disabled
+    $widgets(perms_cb) configure -state disabled
     select_perms ""
     select_perm_item
 }
@@ -334,14 +333,18 @@ proc Apol_Analysis_relabel::set_perms_list {obj_name} {
             foreach {name id} $perm {}
             lappend permissions $name
         }
-        set widget_vars(perm_list) [concat [lindex $perm_list 0] \
-                                        [lindex $perm_list 2]]
-        $widgets(perms_cb) configure -state normal -values [lsort -uniq $permissions]
+        set widget_vars(perm_list) [lsort -uniq \
+                                        [concat [lindex $perm_list 0] \
+                                             [lindex $perm_list 2]]]
+        set widget_vars(perm_list) [concat {{<any permission> -1}} \
+                                        $widget_vars(perm_list)]
+        set permissions [concat {{<any permission>}} [lsort -uniq $permissions]]
+        $widgets(perms_cb) configure -state normal -values $permissions
         $widgets(perms_l) configure -state normal
         set widget_vars(perms) {}
     } else {
-        $widgets(perms_cb) configure -values {} -state disabled
         $widgets(perms_l) configure -state disabled
+        $widgets(perms_cb) configure -values {} -state disabled
     }
     $widgets(opts_bb) itemconfigure 0 -state disabled    
     return 1
@@ -393,6 +396,7 @@ proc Apol_Analysis_relabel::add_permission {} {
     set widget_vars(perms) ""
     set widget_vars(objs) ""
     $widgets(opts_bb) itemconfigure 0 -state disabled
+    $widgets(opts_bb) itemconfigure 1 -state disabled
 }
 
 # Called when the user clicks on the 'Remove' button.  Delete the
