@@ -135,8 +135,7 @@ T1				{ return(T1); }
 t2 |
 T2				{ return(T2); }
 "/"({letter}|{digit}|_|"."|"-"|"/")*	{ return(PATH); }
-{letter}({letter}|{digit}|_)*	{ return(IDENTIFIER); }
-{letter}({letter}|{digit}|_|"."|"-")*	{ return(USER_IDENTIFIER); }
+{letter}({letter}|{digit}|_|".")*("*")?	{ return(IDENTIFIER); }
 {digit}{digit}*                 { return(NUMBER); }
 {hexval}{0,4}":"{hexval}{0,4}":"({hexval}|":"|".")*	{ return(IPV6_ADDR); }
 #[^\n]*                         { /* delete comments */ }
