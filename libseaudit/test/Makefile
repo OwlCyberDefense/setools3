@@ -2,16 +2,16 @@ CFLAGS 		= -Wall -g
 INCLUDE 	= -I..
 LIBXML_FLAGS   	= `pkg-config --cflags libxml-2.0`
 XML_LIBS       	= `pkg-config --libs libxml-2.0`
-LIBS 		= ../../libseaudit/libseaudit.a ../../libapol/libapol.a 
+LIBS 		= ../libseaudit.a ../../libapol/libapol.a 
 OBJS 		= test.o
 
 test-seaudit: $(LIBS) $(OBJS)
 	$(CC) $(CFLAGS) $(INCLUDE) -o $@ $(OBJS) $(LIBS) $(XML_LIBS)
 
-../../lib/libseaudit.a:
+../libseaudit.a:
 	cd ../../; $(MAKE) libseaudit
 
-../../lib/libapol.a:
+../../libapol/libapol.a:
 	cd ../../; $(MAKE) libapol
 
 %.o:  %.c 
