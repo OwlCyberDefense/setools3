@@ -156,6 +156,23 @@ void apol_free_relabel_filter_data(relabel_filter_t *fltr)
 	fltr->num_perm_sets = 0;
 }
 
+static int find_obj_in_array(obj_perm_set_t *perm_sets, int num_perm_sets, int obj_idx)
+{
+	int i;
+
+	if (!perm_sets) return -1;
+	if (obj_idx < 0) return -1;
+
+	for (i = 0; i < num_perm_sets; i++) {
+		if (perm_sets[i].obj_class == obj_idx) {
+			return i;
+		}
+	}
+
+	return NOTHERE;
+};
+
+
 /* where is type in list returns index in list for found or a number < 0 on error or not found*/
 /* only TOLIST and FROMLIST are valid */
 static int apol_where_is_type_in_list(relabel_set_t *set, int type, int list)
@@ -490,6 +507,50 @@ static int apol_fill_array_with_all(int **array, int content, policy_t *policy)
 	
 	return 0;
 };
+
+int apol_fill_filter_set (char *object_class, char *permission, relabel_filter_t *filter, policy_t *policy) {
+        int obj_idx, perm_idx, retv = NOTHERE;
+        
+        obj_idx = get_obj_class_idx(object_class, policy);
+        
+        if (*permission == '*')
+                perm_idx = -2;
+        else
+                perm_idx = get_perm_idx(permission, policy);
+        
+        if (!is_valid_obj_class_idx(obj_idx, policy) )
+                return -1;
+        if (perm_idx >= 0) {
+                if (!(is_valid_perm_idx(perm_idx, policy) && is_valid_perm_for_obj_class(policy, obj_idx, perm_idx)))
+                        return -1;
+        } else {
+                if (perm_idx != -2)
+                        return -1;
+        }
+        if (filter->perm_sets)
+                retv = find_obj_in_array(filter->perm_sets, filter->num_perm_sets, obj_idx);
+        if (retv == NOTHERE) {
+                retv = apol_add_class_to_obj_perm_set_list(&(filter->perm_sets), &(filter->num_perm_sets), obj_idx);
+                if (retv == -1)
+                        return -1;
+        } else if (retv < 0) {
+                return retv;
+        }
+        
+        if (perm_idx >= 0) {
+                retv = apol_add_perm_to_obj_perm_set_list(&(filter->perm_sets), &(filter->num_perm_sets), obj_idx, perm_idx);
+                if (retv == -1) 
+                        return -1;
+        } else {
+                retv = find_obj_in_array(filter->perm_sets, filter->num_perm_sets, obj_idx);
+                if (retv != NOTHERE && filter->perm_sets[retv].perms) {
+                        free(filter->perm_sets[retv].perms);
+                        filter->perm_sets[retv].perms = NULL;
+                }
+                filter->perm_sets[retv].num_perms = 0;
+        }
+        return 0;
+}
 
 int apol_do_relabel_analysis(relabel_set_t **sets, policy_t *policy) 
 {
