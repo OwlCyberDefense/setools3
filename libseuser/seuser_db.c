@@ -479,7 +479,7 @@ static int call_set_files_on_home_dir(const char *home_dir, user_db_t *db)
 	char setfiles_str[LINE_SZ];
 
 	assert(home_dir != NULL);	
-     	snprintf(setfiles_str, LINE_SZ, "%s %s %s", SETFILES_PROG, db->file_contexts_file, home_dir);
+     	snprintf(setfiles_str, sizeof(setfiles_str)-1, "%s %s %s", SETFILES_PROG, db->file_contexts_file, home_dir);
 	
      	return system(setfiles_str);	
 }
