@@ -1,4 +1,4 @@
-# Copyright (C) 2003 Tresys Technology, LLC
+# Copyright (C) 2003-2005 Tresys Technology, LLC
 # see file 'COPYING' for use and warranty information 
 
 # TCL/TK GUI for SE Linux policy analysis
