@@ -1,0 +1,5 @@
+#test comment
+file:write
+file:getattr
+#end of file here->
+
