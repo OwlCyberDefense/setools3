@@ -68,8 +68,8 @@ int main(int argc, char *argv[])
 				fprintf(stderr, "\n\n");
 				break;
 			}
-			result = Tcl_GetStringResult(interp);
-			rt = Tcl_SplitList(interp, result, &cnt, &vals);
+			result = (char*)Tcl_GetStringResult(interp);
+			rt = Tcl_SplitList(interp, result, &cnt, (const char***)(&vals));
 			if(rt != TCL_OK) {
 				Tcl_Free((char *) vals);
 				fprintf(stderr, Tcl_GetStringResult(interp));
@@ -90,8 +90,8 @@ int main(int argc, char *argv[])
 				fprintf(stderr, "\n\n");
 				break;
 			}
-			result = Tcl_GetStringResult(interp);
-			rt = Tcl_SplitList(interp, result, &cnt, &vals);
+			result = (char*)Tcl_GetStringResult(interp);
+			rt = Tcl_SplitList(interp, result, &cnt, (const char***)(&vals));
 			if(rt != TCL_OK) {
 				Tcl_Free((char *) vals);
 				fprintf(stderr, Tcl_GetStringResult(interp));
@@ -113,8 +113,8 @@ int main(int argc, char *argv[])
 				fprintf(stderr, "\n\n");
 				break;
 			}
-			result = Tcl_GetStringResult(interp);
-			rt = Tcl_SplitList(interp, result, &cnt, &vals);
+			result = (char*)Tcl_GetStringResult(interp);
+			rt = Tcl_SplitList(interp, result, &cnt, (const char***)(&vals));
 			if(rt != TCL_OK) {
 				Tcl_Free((char *) vals);
 				fprintf(stderr, Tcl_GetStringResult(interp));
