@@ -14,7 +14,7 @@ TCL-STRIP-FILES = types_tab.tcl terules_tab.tcl roles_tab.tcl rbac_tab.tcl \
 		  cond_rules_tab.tcl classes_perms_tab.tcl policyconf.tcl \
 		  perms_map.tcl analysis_tab.tcl $(ANALYSIS-MODULES) top.tcl
 
-ifeq ($(DEBUG), 1)
+ifeq ($(DYNAMIC), 0)
 LIBAPOL		= ../libapol/libapol-tcl.a ../libapol/libapol.a
 GUI-OBJ		= apol_gui.o $(LIBAPOL)
 else

@@ -5,14 +5,18 @@ TOPDIR		= $(shell pwd)
 MAKEFILE =  Makefile
 MAKE = make
 
-# If debug is zero, an optimized version that is dynamically
-# linked is created
+# If debug is zero, an optimized version is created
 DEBUG			= 0
+# Determine whether setools is linked dynamically with
+# internal libraries - the dynamic versions of the setools
+# libraries are always created and installed, this just determines
+# how the setools applications link.
+DYNAMIC 		= 0
 # This determines whether libapol and libseuser use libselinux
 # to find the default policies. Useful to create a verion of
 # apol that runs on non-selinux machines. Set this to 0 for
 # non-selinux machines
-USE_LIBSELINUX 	= 1
+USE_LIBSELINUX 		= 1
 
 LIBS		= -lfl -lm
 TCLVER		= $(shell env tclsh tcl_vars)
