@@ -886,7 +886,7 @@ proc ApolTop::create { } {
 	[$mainframe getmenu pmap_menu] insert 0 command -label "Load Default Perm Map" -command "ApolTop::load_default_perm_map_Dlg"
 	[$mainframe getmenu pmap_menu] insert 0 command -label "Load Perm Map from file..." -command "ApolTop::load_perm_map_fileDlg"
 	$mainframe addindicator -textvariable ApolTop::policyConf_lineno -width 14
-	$mainframe addindicator -textvariable ApolTop::polstats -width 88
+	$mainframe addindicator -textvariable ApolTop::polstats -width 95
 	$mainframe addindicator -textvariable ApolTop::polversion -width 19 
 	
 	# Disable menu items since a policy is not yet loaded.
@@ -1536,6 +1536,7 @@ proc ApolTop::showPolicyStats {} {
 		$stats(tetrans) + $stats(temember) + $stats(techange)]   "
 	append polstats "Roles: $stats(roles)   RBAC rules: [expr $stats(roleallow) + $stats(roletrans)]"
 	append polstats "   Users: $stats(users)"
+	append polstats "   Initial SIDs: $stats(sids)"
 	return
 }
 
