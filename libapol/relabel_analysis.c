@@ -873,7 +873,7 @@ static int apol_domain_relabel_types(relabel_set_t *sets, int domain, relabel_re
 	if (retv) 
 		return retv;
 
-	res->mode = MODE_DOM;
+	res->mode = BOTHLIST;
 	
 
 	/* do filtering */ 
@@ -890,8 +890,13 @@ static int apol_domain_relabel_types(relabel_set_t *sets, int domain, relabel_re
 						for (k = 0; k < filter->perm_sets[j].num_perms; k++) {
 							if( apol_does_type_obj_have_perm(&(clone->to_types[i]), filter->perm_sets[j].obj_class, filter->perm_sets[j].perms[k]))
 								here = 1; /* must include at least specified permissions */
+							if (here)
+								break;
 						}
 					}
+					if (here)
+						break;
+
 				}
 			}
 		} 
@@ -917,10 +922,14 @@ static int apol_domain_relabel_types(relabel_set_t *sets, int domain, relabel_re
 					if (filter->perm_sets[j].num_perms) {
 						here = 0;
 						for (k = 0; k < filter->perm_sets[j].num_perms; k++) {
-							if( apol_does_type_obj_have_perm(&(clone->from_types[i]), filter->perm_sets[j].obj_class, filter->perm_sets[j].perms[k]))
+							if ( apol_does_type_obj_have_perm(&(clone->from_types[i]), filter->perm_sets[j].obj_class, filter->perm_sets[j].perms[k]))
 								here = 1;
+							if (here)
+								break;
 						}
 					}
+					if (here)
+						break;
 				}
 			}
 		}
@@ -938,8 +947,8 @@ static int apol_domain_relabel_types(relabel_set_t *sets, int domain, relabel_re
 	/* check rules */
 	for (i = 0; i < clone->num_to_rules; i++) {
 		here = 0;
-		for (j = 0; j < clone->num_to_types; j++) {
-			if (does_av_rule_idx_use_type(clone->to_rules[i], RULE_TE_ALLOW, clone->to_types[j].type, IDX_TYPE, TGT_LIST, 1, policy)) {
+		for (j = 0; j < temp->num_to_types; j++) {
+			if (does_av_rule_idx_use_type(clone->to_rules[i], RULE_TE_ALLOW, temp->to_types[j].type, IDX_TYPE, TGT_LIST, 1, policy)) {
 				here = 1;
 			}
 			if (here) {
@@ -958,7 +967,7 @@ static int apol_domain_relabel_types(relabel_set_t *sets, int domain, relabel_re
 
 	for (i = 0; i < clone->num_from_rules; i++) {
 		here = 0;
-		for (j = 0; j < clone->num_from_types; j++) {
+		for (j = 0; j < temp->num_from_types; j++) {
 			if (does_av_rule_idx_use_type(clone->from_rules[i], RULE_TE_ALLOW, temp->from_types[j].type, IDX_TYPE, TGT_LIST, 1, policy)) {
 				here = 1;
 			}
@@ -976,6 +985,7 @@ static int apol_domain_relabel_types(relabel_set_t *sets, int domain, relabel_re
 		}
 	}
 
+/* XXX kill line */printf("at end of func: res->num_rules = %i\n", res->num_rules);
 	temp->domain_type_idx = clone->domain_type_idx;
 
 	res->set = temp;
@@ -1068,10 +1078,76 @@ static int apol_type_relabel(relabel_set_t *sets, int type, relabel_result_t *re
 
 static int apol_filter_rules_list(relabel_result_t *res, policy_t *policy, relabel_filter_t *filter)
 {
-	int i, retv;
-	
-	
-	
+	int i, j, retv, here, num_temp =0;
+	int *temp = NULL;
+
+	if (!res || !policy || !filter)
+		return -1;
+/* XXX kill line */printf("before filter: res->num_rules = %i\n", res->num_rules);
+	if (!res->num_rules)
+		return 0; /* nothing to filter */
+
+	if (res->mode == BOTHLIST) {
+		for (i = 0; i < res->set->num_to_types; i++) {
+			retv = add_i_to_a(res->set->to_types[i].type, &(res->num_types), &(res->types));
+			if (retv)
+				return -1;
+		}
+		for (i = 0; i < res->set->num_from_types; i++) {
+			retv = find_int_in_array(res->set->from_types[i].type, res->types, res->num_types);
+			if (retv == -1) {
+				retv = add_i_to_a(res->set->from_types[i].type, &(res->num_types), &(res->types));
+				if (retv)
+					return -1;
+			}
+		}
+/* XXX kill line */printf("skipping first pass\n");
+	}
+/*	for (i = 0; i < res->num_rules; i++) {
+		here = 0;
+		for (j = 0; j < res->num_types; j++) {
+			if (does_av_rule_idx_use_type(res->rules[i], RULE_TE_ALLOW, res->types[i], IDX_TYPE, TGT_LIST, 1, policy)) {
+				here = 1;
+			}
+			if (here)
+				break;
+		}
+		if (here){
+			retv = add_i_to_a(res->rules[i], &num_temp, &temp);
+			if (retv)
+				return -1;
+		}
+	}
+
+	free(res->rules);
+	res->rules = temp;
+	res->num_rules = num_temp;
+*/
+/* XXX kill line */printf("before second pass: res->num_rules = %i\n", res->num_rules);
+/* XXX kill line */printf("second pass info: numpermsets in filter %i\n", filter->num_perm_sets);
+	/* second pass needed to weed out rules made irrelevant by filter */
+	temp = NULL;
+	num_temp = 0;
+	for (i = 0; i < res->num_rules; i++) {
+		here = 0;
+		for (j = 0; j < filter->num_perm_sets; j++){
+			if (does_av_rule_use_classes(res->rules[i], 1, &(filter->perm_sets[j].obj_class), 1, policy))
+				here = 1;
+			if (here)
+				break;
+		}
+		if (here) {
+			retv = add_i_to_a(res->rules[i], &num_temp, &temp);
+			if (retv)
+				return -1;
+		}
+	}
+
+	free(res->rules);
+	res->rules = temp;
+	res->num_rules = num_temp;
+		
+/* XXX kill line */printf("after filter: res->num_rules = %i\n", res->num_rules);
 	return 0;
 }
 
