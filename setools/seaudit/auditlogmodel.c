@@ -225,7 +225,9 @@ static void log_view_store_get_value(GtkTreeModel *tree_model, GtkTreeIter *iter
 	int i, j, indx;
 	avc_msg_t *cur_msg;
 	load_policy_msg_t *policy_msg;
+	boolean_msg_t *boolean_msg;
 	const char *cur_perm;
+	const char *cur_bool;
 	GString *string;
 
 	store = (SEAuditLogViewStore*)tree_model;
@@ -253,7 +255,37 @@ static void log_view_store_get_value(GtkTreeModel *tree_model, GtkTreeIter *iter
 								store->log_view->my_log->msg_list[indx]->host));
 		return;
 	}
-	if (store->log_view->my_log->msg_list[indx]->msg_type == LOAD_POLICY_MSG) {
+	if (store->log_view->my_log->msg_list[indx]->msg_type == BOOLEAN_MSG) {
+	        if(AVC_MSG_FIELD == column) {
+	                set_utf8_return_value(value, "Boolean");
+	                return;
+		}else if (AVC_MISC_FIELD == column ){
+			boolean_msg = store->log_view->my_log->msg_list[indx]->msg_data.boolean_msg;
+			g_assert(boolean_msg->num_bools > 0);
+			string = g_string_new(audit_log_get_bool(store->log_view->my_log, boolean_msg->booleans[0]));
+			if (!string)
+			        return;
+			g_string_append_printf(string, ":%d", boolean_msg->values[0]);
+			for (j = 1; j < boolean_msg->num_bools; j++) {
+			        cur_bool = audit_log_get_bool(store->log_view->my_log, boolean_msg->booleans[j]);
+				string = g_string_append(string, ",  ");
+				if (!string)
+				      return;
+				string = g_string_append(string, cur_bool);
+				if (!string)
+				        return;
+
+				g_string_append_printf(string, ":%d", boolean_msg->values[0]);
+			}
+			set_utf8_return_value(value, string->str);
+			g_string_free(string, TRUE);
+		        return;
+		} else {
+		        set_utf8_return_value(value, "");
+		        return;
+		}
+	}
+	else if (store->log_view->my_log->msg_list[indx]->msg_type == LOAD_POLICY_MSG) {
 		if (AVC_MSG_FIELD == column) {
 			set_utf8_return_value(value, "Load");
 			return;
