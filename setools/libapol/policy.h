@@ -331,7 +331,7 @@ typedef struct alias_item {
 #define POL_VER_STRING_11	"v.11 -- v.12"
 #define POL_VER_STRING_15	"v.13 -- v.15"
 #ifdef CONFIG_SECURITY_SELINUX_CONDITIONAL_POLICY
-#define POL_VER_STRING_16	"v.16?-cond pol"
+#define POL_VER_STRING_16	"v.16"
 #endif
 
 /**************************************/
