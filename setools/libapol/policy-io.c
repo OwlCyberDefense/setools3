@@ -15,9 +15,34 @@
 #include "stdio.h"
 #include "queue.h"
 #include "binpol/binpol.h"
+#include "policy-io.h"
+#include <unistd.h>
+#include <assert.h>
 #ifdef APOL_PERFORM_TEST
 #include <time.h>
 #endif
+
+#ifndef LIBAPOL_POLICY_INSTALL_DIR
+	#define LIBAPOL_POLICY_INSTALL_DIR "/etc/security/selinux"
+#endif
+
+#ifndef LIBAPOL_SELINUX_DIR
+	#define LIBAPOL_SELINUX_DIR "/selinux"
+#endif
+
+/* Defines for find_default_policy_file() function. */
+#define GENERAL_ERROR	 		-1
+#define POLICY_FILE_DOES_NOT_EXIST 	-2
+#define POLICY_VER_FILE_DOES_NOT_EXIST	-3
+#define NOT_SELINUX_AWARE		-4
+#define READ_POLICY_VER_FILE_ERROR	-5
+
+/* Error TEXT definitions for decoding the above error definitions. */
+#define TEXT_POLICY_FILE_DOES_NOT_EXIST		"Policy file(s) does not exist.\n"
+#define TEXT_POLICY_VER_FILE_DOES_NOT_EXIST	"Selinux policy version file does not exist.\n"
+#define TEXT_NOT_SELINUX_AWARE			"This is not an selinux system.\n"
+#define TEXT_READ_POLICY_VER_FILE_ERROR		"Cannot read selinux policy version file.\n"
+#define TEXT_GENERAL_ERROR_TEXT			"Error in find_default_policy_file().\n"
 
 /* externs mostly with yacc parser */
 extern policy_t *parse_policy; /* parser using a global policy which we must set here */
@@ -28,6 +53,125 @@ extern int yyparse(void);
 extern void yyrestart(FILE *);
 extern unsigned int pass;
 extern int yydebug;
+
+/* returns an error string based on a return error from seuser_label_home_dir() */
+const char* decode_find_default_policy_file_err(int err)
+{
+	switch(err) {
+	case POLICY_FILE_DOES_NOT_EXIST:
+		return TEXT_POLICY_FILE_DOES_NOT_EXIST;
+	case POLICY_VER_FILE_DOES_NOT_EXIST:
+		return TEXT_POLICY_VER_FILE_DOES_NOT_EXIST;
+	case NOT_SELINUX_AWARE:
+		return TEXT_NOT_SELINUX_AWARE;
+	case READ_POLICY_VER_FILE_ERROR:
+		return TEXT_READ_POLICY_VER_FILE_ERROR;
+	default:
+		return TEXT_GENERAL_ERROR_TEXT;
+	}
+}
+
+static int search_binary_policy_file(char *policy_file_path)
+{
+	int rt, len;
+	char *version = NULL;
+	char policy_version_file[BUF_SZ], buf[BUF_SZ];
+	
+     	/* a. Check /selinux/policyvers for the currently loaded policy version */ 
+     	snprintf(policy_version_file, BUF_SZ-1, "%s/policyvers", LIBAPOL_SELINUX_DIR);
+	rt = access(policy_version_file, F_OK);
+	if (rt != 0) {
+		return POLICY_VER_FILE_DOES_NOT_EXIST;
+     	}
+     	
+     	/* b. Read in the loaded policy version number. */
+	rt = read_file_to_buffer(policy_version_file, &version, &len);
+	if (rt != 0) {
+		if (version)
+			free(version);
+		return READ_POLICY_VER_FILE_ERROR;
+	}
+	/* c. See if policy.VERSION exists in the policy install directory. */
+	snprintf(buf, sizeof(buf)-1, "%s/policy.%s", LIBAPOL_POLICY_INSTALL_DIR, version);
+	rt = access(buf, R_OK);
+	if (rt != 0) {
+		return POLICY_FILE_DOES_NOT_EXIST;
+     	}
+	free(version);
+	snprintf(policy_file_path, BUF_SZ-1, "%s", buf);
+	return 0;
+}
+
+static int search_policy_src_file(char *policy_file_path)
+{	
+	int rt;
+	
+	/* Check if the default policy source file exists. */
+	rt = access(LIBAPOL_DEFAULT_POLICY, F_OK);
+	if (rt != 0) {
+		return POLICY_FILE_DOES_NOT_EXIST;
+     	}
+	snprintf(policy_file_path, BUF_SZ-1, "%s", LIBAPOL_DEFAULT_POLICY);
+
+	return 0;
+}
+
+/* Find the installed policy file using our built-in search order. 
+ * This function returns a file path string. This function takes 
+ * 2 arguments: 
+ *
+ * 	1. a pointer to a buffer to store the policy file path
+ *	2. search option:
+ * 		a. SEARCH_BINARY - search binary policy file.
+ *		b. SEARCH_SOURCE - search for default policy source file.
+ *		c. SEARCH_BOTH - search for binary first and if this doesn't
+ *		   exist, search for the default policy source file defined in
+ *		   libapol.
+ */
+int find_default_policy_file(int search_opt, char *policy_file_path)
+{
+	int rt;
+	
+	assert(search_opt > 0 && search_opt <= 3 && policy_file_path != NULL);
+
+	/* 1. See if selinux-aware. */ 
+	rt = access(LIBAPOL_POLICY_INSTALL_DIR, F_OK);
+	if (rt != 0) {
+		return NOT_SELINUX_AWARE;
+     	}    
+
+        switch (search_opt) {
+     	case SEARCH_BINARY:
+	     	rt = search_binary_policy_file(policy_file_path);
+	     	if (rt != 0) {
+	     		return rt;
+	     	}
+		break;
+	case SEARCH_SOURCE:
+		rt = search_policy_src_file(policy_file_path);
+		if (rt != 0) {
+	     		return rt;
+	     	}
+		break;
+	case SEARCH_BOTH: 
+		/* Search for binary policy file FIRST. */
+		rt = search_binary_policy_file(policy_file_path);
+		if (rt != 0) {
+			if (rt == POLICY_FILE_DOES_NOT_EXIST || rt == POLICY_VER_FILE_DOES_NOT_EXIST) {
+		     		rt = search_policy_src_file(policy_file_path);
+				if (rt != 0) {
+			     		return rt;
+			     	}	
+			} else 
+				return rt;
+	     	} 
+		break;
+	default: 
+		fprintf(stderr, "Invalid search option provided to find_default_policy_file()\n");
+		return GENERAL_ERROR;
+	}
+	return 0;
+}
 
 int close_policy(policy_t *policy)
 {
@@ -127,7 +271,7 @@ int open_partial_policy(const char* filename, unsigned int options, policy_t **p
 	(*policy)->opts = opts;
 	yyin = fopen(filename, "r");
 	if (yyin == NULL) {
-		fprintf(stderr, "Could not open policy!\n");
+		fprintf(stderr, "Could not open policy %s!\n", filename);
 		return -1;
 	}
 	if(ap_is_file_binpol(yyin)) {
