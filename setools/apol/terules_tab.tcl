@@ -197,6 +197,7 @@ proc Apol_TE::search { str case_Insensitive regExpr srch_Direction } {
 }
 
 proc Apol_TE::enable_disable_conditional_widgets {enable} {
+	variable show_enabled_rules
 	variable cb_show_enabled_rules
 	variable cb_tag_enabled_rules
     	variable cb_tag_disabled_rules
@@ -209,8 +210,25 @@ proc Apol_TE::enable_disable_conditional_widgets {enable} {
 	} else {
 		$cb_show_enabled_rules configure -state normal
 		$cb_tag_enabled_rules configure -state normal
+		if {$show_enabled_rules} {
+			$cb_tag_disabled_rules configure -state disabled
+		} else {
+			$cb_tag_disabled_rules configure -state normal
+		}
+	}
+	return 0
+}
+
+proc Apol_TE::enable_disable_tag_disabled_rules_cb {} {
+	variable show_enabled_rules
+    	variable cb_tag_disabled_rules
+   		
+	if {$show_enabled_rules} {
+		$cb_tag_disabled_rules configure -state disabled
+	} else {
 		$cb_tag_disabled_rules configure -state normal
 	}
+	return 0
 }
 
 proc Apol_TE::on_configure_enabled_rule_tags_checkbutton {} {	
@@ -456,10 +474,13 @@ proc Apol_TE::insertTERules { tb results } {
 	# This is because each rule returned consists of:
 	#	1. rule
 	#	2. line number
-	#	3. enabled flag
-	set num [expr { [llength $results] / 3 }]
-	$tb insert 0.0 "$num rules match the search criteria\n\n"
-	
+	#	3. is_conditional rule flag
+	#	4. enabled flag
+	set num [expr { [llength $results] / 4 }]
+	set num_cond 	 0
+	set num_disabled 0
+	set num_enabled  0
+puts "\n\n$results"
 	for {set x 0} {$x < [llength $results]} {incr x} { 
 		set start_line_pos [$tb index insert]
 		set line_num [lindex [split $start_line_pos "."] 0]
@@ -485,12 +506,23 @@ proc Apol_TE::insertTERules { tb results } {
 	
 		# The next element should be the conditional and enabled boolean flags.
 		if {$is_conditional && !$enabled} {
+			incr num_cond
+			incr num_disabled
 			$tb tag add $Apol_TE::disabled_rule_tag $cur_line_pos $line_num.end
 		} elseif {$is_conditional && $enabled} {
+			incr num_cond
+			incr num_enabled
 			$tb tag add $Apol_TE::enabled_rule_tag $cur_line_pos $line_num.end
 		}
 		$tb insert end "\n"
-	}	
+	}
+	if {$num_cond} {
+		$tb insert 0.0 "$num rules match the search criteria\nNumber of enabled conditional rules:\
+		$num_enabled\nNumber of disabled conditional rules: $num_disabled\n\n"
+	} else {
+		$tb insert 0.0 "$num rules match the search criteria\n\n"
+	}
+	
 	Apol_PolicyConf::configure_HyperLinks $tb
 	
 	if {$tag_enabled_rules} {
@@ -957,7 +989,7 @@ proc Apol_TE::open { } {
 	variable cb_RegExp
 	variable ta_state_Array 
 	variable objslistbox
-		
+	
 	# Set the original state of the type/attribs buttons.		
 	set ta_state_Array($Apol_TE::list_types_1)   $src_list_type_1
 	set ta_state_Array($Apol_TE::list_attribs_1) $src_list_type_2
@@ -1009,7 +1041,7 @@ proc Apol_TE::close { } {
 	variable ta_state_Array
 	        
 	Apol_TE::reset_search_criteria
-	
+
         # Close all results tabs.
         Apol_TE::close_All_ResultsTabs
         # Reset objects/permissions lists
@@ -1018,6 +1050,7 @@ proc Apol_TE::close { } {
 	set Apol_TE::master_permlist 	""
 	$Apol_TE::permslistbox configure -bg $ApolTop::default_bg_color
 	$Apol_TE::objslistbox configure -bg $ApolTop::default_bg_color
+	
     	array unset ta_state_Array
      	
 	return 0
@@ -2273,12 +2306,13 @@ proc Apol_TE::create {nb} {
             -command "Apol_TE::defaultType_Enable_Disable" ]
     
     set cb_show_enabled_rules [checkbutton $enabled_fm.cb_show_enabled_rules -text "Only search for enabled rules" \
-    		-variable Apol_TE::show_enabled_rules -onvalue 1 -offvalue 0]
+    		-variable Apol_TE::show_enabled_rules -onvalue 1 -offvalue 0 \
+    		-command Apol_TE::enable_disable_tag_disabled_rules_cb]
     set cb_tag_enabled_rules [checkbutton $enabled_fm.cb_tag_enabled_rules -text "Mark enabled conditional rules" \
     		-variable Apol_TE::tag_enabled_rules -onvalue 1 -offvalue 0 \
     		-command Apol_TE::on_configure_enabled_rule_tags_checkbutton]
     set cb_tag_disabled_rules [checkbutton $enabled_fm.cb_tag_disabled_rules -text "Mark disabled conditional rules" \
-    		-variable Apol_TE::tag_disabled_rules -onvalue 1 -offvalue 0 \
+    		-variable Apol_TE::tag_disabled_rules -onvalue 1 -offvalue 0 -state disabled \
     		-command Apol_TE::on_configure_disabled_rule_tags_checkbutton]
     		
     set cb_fm [frame $enabled_fm.cb_fm]
