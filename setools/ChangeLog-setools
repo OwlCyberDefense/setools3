@@ -1,6 +1,6 @@
 CHANGE LOG, SE Linux TOOLS (setools)
 =======================================================
-May 19, 2004, Version 1.4
+June 2, 2004, Version 1.4
 
 setools:
 	Made policy installation and file labeling a separate
