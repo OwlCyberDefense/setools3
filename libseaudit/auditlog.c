@@ -564,12 +564,13 @@ static void sort_kept_messages(int *kept, int num_kept, filt_info_t *info)
 	return;
 }
 
+
 /*
  * this function will do a filter or a search depending on log->fltr_out */
 int audit_log_do_filter(audit_log_t *log, bool_t details, int **deleted, int *num_deleted) 
 {
-	int i, msg, *kept=NULL, num_kept=0, *added=NULL, num_added=0, *ptr=NULL, *delptr=NULL;
-	bool_t err, all_match, any_match, match; 
+	int i, j, msg, *kept=NULL, num_kept=0, *added=NULL, num_added=0, *ptr=NULL, *delptr=NULL;
+	bool_t err, all_match, any_match, match, found; 
 	filter_t *cur_fltr; 
 	filt_info_t *info;
 
@@ -578,22 +579,24 @@ int audit_log_do_filter(audit_log_t *log, bool_t details, int **deleted, int *nu
 	if (log->msg_list == NULL)
 		return -1;
 
-	/* by default put everything in */
+	/* by default append everything that is not already filtered */
 	if (log->filters == NULL) {
-		if (log->fltr_msgs)
-			free(log->fltr_msgs);
-		log->fltr_msgs = (int*)malloc(sizeof(int) * log->num_msgs);
-		if (!log->fltr_msgs)
-			return -1;
-		log->num_fltr_msgs = log->num_msgs;
-		log->fltr_msgs_sz = log->num_msgs;
-		for (i = 0; i < log->num_msgs; i++) {
-			log->fltr_msgs[i] = i;
+		log->fltr_msgs = (int*)realloc(log->fltr_msgs, sizeof(int) * log->num_msgs);
+		for(i = 0; i < log->num_msgs; i++) {
+			found = FALSE;
+			for (j = 0; j < log->num_fltr_msgs; j++)
+				if (log->fltr_msgs[j] == i)
+					found = TRUE;
+			if (!found) {
+				log->fltr_msgs[log->num_fltr_msgs] = i;
+				log->num_fltr_msgs++;
+			}
 		}
 		(*num_deleted) = 0;
 		(*deleted) = NULL;
 		return 0;
 	}
+
 	/* we need to keep these buffers around to keep track of 
 	 * deleted, added, and kept messages */
 	if (!num_deleted)
