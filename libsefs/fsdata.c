@@ -307,13 +307,13 @@ static int ftw_handler(const char *file, const struct stat *sb, int flag, struct
 		/* extract the context parts */
 		tmp = strtok(con, ":");
 		if (tmp) {
-			tmp2 = (char*)malloc(sizeof(char) * (strlen(tmp) + 1));
-			strncpy(tmp2, tmp, sizeof(char) * strlen(tmp));
-			tmp2[strlen(tmp)] = '\0';
 			rc = avl_get_idx(tmp, &fsdata->user_tree);
-			if(rc == -1)
+			if(rc == -1) {
+				tmp2 = (char*)malloc(sizeof(char) * (strlen(tmp) + 1));
+				strncpy(tmp2, tmp, sizeof(char) * strlen(tmp));
+				tmp2[strlen(tmp)] = '\0';			
 				avl_insert(&(fsdata->user_tree),tmp2, &rc);
-
+			}
 			pi->context.user=rc;
 		}
 		else {
@@ -337,11 +337,11 @@ static int ftw_handler(const char *file, const struct stat *sb, int flag, struct
 
 		tmp = strtok(NULL, ":");
 		if (tmp) {
-			tmp2 = (char*)malloc(sizeof(char) * (strlen(tmp) + 1));
-			strncpy(tmp2, tmp, sizeof(char) * strlen(tmp));
-			tmp2[strlen(tmp)] = '\0';
 			rc = avl_get_idx(tmp, &fsdata->type_tree);
 			if (rc == -1) {
+				tmp2 = (char*)malloc(sizeof(char) * (strlen(tmp) + 1));
+				strncpy(tmp2, tmp, sizeof(char) * strlen(tmp));
+				tmp2[strlen(tmp)] = '\0';
 				avl_insert(&(fsdata->type_tree), tmp2, &rc);
 			}
 			pi->context.type=(int32_t)rc;
