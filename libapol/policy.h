@@ -322,13 +322,17 @@ typedef struct alias_item {
 #define POL_VER_17		5
 #define	POL_VER_MAX		6
 
+/* Policy type macros */
+#define POL_TYPE_UNKNOWN 	0x00000000
+#define POL_TYPE_BINARY	 	0x00000001
+#define POL_TYPE_SOURCE 	0x00000002
 			 	 
 /**************************************/
 /* This is an actual policy data base */
 typedef struct policy {
 	int	version;		/* weak indicator of policy version, see comments above */
 	unsigned int opts;		/* indicates which parts of the policy are included in this policy */
-	bool_t	binary;			/* whether read from binary or .conf source file */
+	unsigned int policy_type;	/* policy type (binary or source) */
 	int	num_types;		/* array current ptr */
 	int	num_attribs;		/* " " */
 	int	num_av_access;		/* " " */
@@ -401,7 +405,7 @@ int free_policy(policy_t **policy_ptr);
 int set_policy_version(int ver, policy_t *policy);
 const char* get_policy_version_name(int policy_version);
 
-#define is_binary_policy(policy) (policy != NULL ? policy->binary : 0)
+#define is_binary_policy(policy) (policy != NULL ? (policy->policy_type & POL_TYPE_BINARY) : 0)
 #define is_valid_policy_version(version) (version >= POL_VER_UNKNOWN && version <= POL_VER_MAX)
 
 /* DB updates/additions/changes */
