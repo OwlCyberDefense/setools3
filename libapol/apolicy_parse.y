@@ -1215,14 +1215,12 @@ static int add_avrule(int type, av_item_t **rlist, int *list_num, bool_t enabled
 	/* object classes */
 	while ((id = queue_remove(id_queue))) {
 		if(strcmp(id, "*") == 0) {
-			item->flags |= AVFLAG_CLS_STAR;
-			free(id);
-			continue;
+			yyerror("'*' operator cannot be applied to object classes");
+			return -1;
 		}
 		if(strcmp(id, "~") == 0) {
-			item->flags |= AVFLAG_CLS_TILDA;
-			free(id);
-			continue;
+			yyerror("'~' operator cannot be applied to object classes");
+			return -1;
 		}
 		idx = get_obj_class_idx(id, parse_policy);
 		if(idx < 0) {
@@ -1452,14 +1450,13 @@ static int add_ttrule(int rule_type, bool_t enabled)
 	/* object classes */
 	while ((id = queue_remove(id_queue))) {
 		if(strcmp(id, "*") == 0) {
-			item->flags |= AVFLAG_CLS_STAR;
-			free(id);
-			continue;
+			yyerror("'*' operator cannot be applied to object classes");
+			return -1;
 		}
+
 		if(strcmp(id, "~") == 0) {
-			item->flags |= AVFLAG_CLS_TILDA;
-			free(id);
-			continue;
+			yyerror("'~' operator cannot be applied to object classes");
+			return -1;
 		}
 
 		idx = get_obj_class_idx(id, parse_policy);
