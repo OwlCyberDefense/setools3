@@ -69,6 +69,7 @@ SEDiffTreeViewStore *sediff_tree_store_new(void);
 int sediff_tree_store_iter_to_idx(SEDiffTreeViewStore *store, GtkTreeIter *iter);
 GType sediff_tree_view_store_get_type(void);
 int sediff_tree_store_populate(SEDiffTreeViewStore *store);
-
+gchar **sediff_tree_store_get_labels();
+void sediff_tree_store_set_labels(gchar **);
 #endif 
  
