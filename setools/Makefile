@@ -242,7 +242,7 @@ install-seaudit: $(INSTALL_LIBDIR) $(BINDIR)
 
 install-nogui: $(INSTALL_LIBDIR) install-seuser install-secmds install-sediff-nogui
 
-install: $(BINDIR) $(SHARED_LIB_INSTALL_DIR) install-dev install-apol install-seuserx install-sepcut \
+install: all $(BINDIR) $(SHARED_LIB_INSTALL_DIR) install-dev install-apol install-seuserx install-sepcut \
 	 install-awish install-secmds install-seaudit install-sediff install-docs
 
 $(SHARED_LIB_INSTALL_DIR):
