@@ -1101,8 +1101,7 @@ char **sefs_filesystem_db_get_known(sefs_filesystem_db_t *fsd,int *count_in,int 
 		/* first get the number  */
 		sqlite3_exec(db,count_stmt,sefs_count_callback,&list_size,&errmsg);
 		if (rc != SQLITE_OK) {
-			fprintf(stderr, "SQL error: %s\n", errmsg);
-			sqlite3_free(errmsg);
+			printf("unable to select because\n%s\n",errmsg);
 			return NULL;
 		}
 		/* malloc out the memory for the types */
@@ -1113,8 +1112,7 @@ char **sefs_filesystem_db_get_known(sefs_filesystem_db_t *fsd,int *count_in,int 
 		memset(list, 0, list_size * sizeof(char *));
 		rc = sqlite3_exec(db,select_stmt,sefs_search_types_callback,&count,&errmsg);
 		if (rc != SQLITE_OK) {
-			fprintf(stderr, "SQL error: %s\n", errmsg);
-			sqlite3_free(errmsg);
+			printf("unable to select because\n%s\n",errmsg);
 			return NULL;
 		}
 		*count_in = list_size;
@@ -1239,7 +1237,6 @@ int sefs_filesystem_db_search(sefs_filesystem_db_t *fsd,sefs_search_keys_t *sear
 	rc = sqlite3_exec(db,stmt,sefs_search_callback,0,&errmsg);
 	if (rc != SQLITE_OK) {
 		fprintf(stderr, "SQL error: %s\n", errmsg);
-		sqlite3_free(errmsg);
 		ret_val = -1;
 	}
 	else
@@ -1263,14 +1260,7 @@ int sefs_filesystem_db_populate(sefs_filesystem_db_t *fsd, char *dir)
 	int num_mounts=0;
 	int i;
 	sefs_filesystem_data_t *fsdh;
-	
-	assert(dir);
-	/* Make sure directory exists */
-	if (access(dir, R_OK) != 0) {
-		perror("Directory to index");
-		return -1;
-     	}
-     	
+
 	/* malloc out some memory for the fsdh */
 	if ((fsdh = (void *)malloc(1 * sizeof(sefs_filesystem_data_t))) == NULL) {
 		fprintf(stderr, "out of memory\n");
@@ -1346,7 +1336,7 @@ int sefs_filesystem_data_index(sefs_filesystem_data_t * fsd)
 	return 0;	
 }
 
-/* Caller must remember to free the database. */
+
 int sefs_filesystem_db_save(sefs_filesystem_db_t *fsd, char *filename)
 {
 	int i, j, rc = 0;
@@ -1367,7 +1357,7 @@ int sefs_filesystem_db_save(sefs_filesystem_db_t *fsd, char *filename)
 	
 	fp = fopen(filename, "w");
 	if (!fp) {
-		fprintf(stderr, "Error opening save file %s\n", filename);
+		fprintf(stderr, "Error opening file %s\n", filename);
 		return -1;
 	}
 	fclose(fp);
@@ -1384,7 +1374,6 @@ int sefs_filesystem_db_save(sefs_filesystem_db_t *fsd, char *filename)
 	rc = sqlite3_exec(db, DB_SCHEMA, NULL, 0, &errmsg);
 	if (rc != SQLITE_OK) {
 		fprintf(stderr, "SQL error while creating database(%d): %s\n",rc, errmsg);
-		sqlite3_free(errmsg);
 		sqlite3_close(db);
 		return -1;
 	}
@@ -1394,8 +1383,7 @@ int sefs_filesystem_db_save(sefs_filesystem_db_t *fsd, char *filename)
 	/* the data to the places it should be for our sqlite3 db */
 	sprintf(stmt,"BEGIN TRANSACTION");  
 	rc = sqlite3_exec(db,stmt,NULL,0,&errmsg);
-	if (rc != SQLITE_OK) 
-		goto bad;
+
 	for (i=0; i < fsdh->num_types; i++) {
 		sprintf(stmt,"insert into types (type_name,type_id) values "
 			"(\"%s\",%d);",fsdh->types[i].name,i);  
@@ -1450,8 +1438,7 @@ int sefs_filesystem_db_save(sefs_filesystem_db_t *fsd, char *filename)
 	}
 	sprintf(stmt,"END TRANSACTION");  
 	rc = sqlite3_exec(db,stmt,NULL,0,&errmsg);
-	if (rc != SQLITE_OK) 
-		goto bad;
+
  	gethostname(hostname,50);
 	time(&mytime);
 	sprintf(stmt,"insert into info (key,value) values ('dbversion',1);"
@@ -1459,11 +1446,14 @@ int sefs_filesystem_db_save(sefs_filesystem_db_t *fsd, char *filename)
 		"insert into info (key,value) values ('datetime','%s');"	
 		,hostname,ctime(&mytime));
 
+	
+	sefs_filesystem_db_close(fsd);
 	return 0;
 
 	bad:
+
 		fprintf(stderr, "SQL error\n\tStmt was :%s\nError was:\t%s\n",stmt, errmsg);
-		sqlite3_free(errmsg);
+		sefs_filesystem_db_close(fsd);
 		return -1;
 }
 
@@ -1491,33 +1481,21 @@ int sefs_filesystem_db_close(sefs_filesystem_db_t* fsd)
 int sefs_filesystem_db_load(sefs_filesystem_db_t* fsd, char *file)
 {
 	int rc;
-	unsigned char select_stmt[1000];
-	char *errmsg = NULL;
 	
 	assert(file);
+	
 	rc = access(file, R_OK);
 	if (rc != 0) {
-		perror("Load file");
+		perror("access");
 		return -1;
      	}
 	rc = sqlite3_open(file, &db);
-	if (rc) {
+	if ( rc ) {
 		fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
 		sqlite3_close(db);
 		return -1;
 	}
-	/* HACK!! Currently, a limitation of sqlite is that is 
-	 * doesn't check whether the file is a valid sqlite database, 
-	 * so it may have opened  a corrupt file, so we check this by
-	 * executing a simple query statment. */
-	sprintf(select_stmt,"SELECT type_name from types");
-	rc = sqlite3_exec(db, select_stmt, sefs_count_callback, &list_size, &errmsg);
-	if (rc == SQLITE_NOTADB) {
-		sqlite3_close(db);
-		fprintf(stderr, "Can't open database: %s\n", errmsg);
-		sqlite3_free(errmsg);
-		return -1;
-	} 		
+	
         fsd->dbh = (void *)&db;
 
 	return 0;
