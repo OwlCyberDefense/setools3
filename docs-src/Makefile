@@ -1,5 +1,5 @@
 # SE Tools Documentation makefile
-TOP-DOCS = INSTALL INSTALL-RPM KNOWN-BUGS README
+TOP-DOCS = INSTALL KNOWN-BUGS README
 
 
 docs: apol-doc sepcut-doc seuser-doc seaudit-doc top-docs
