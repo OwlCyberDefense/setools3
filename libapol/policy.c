@@ -1016,8 +1016,7 @@ int add_alias(int type_idx, char *alias, policy_t *policy)
 	if(add_name(alias, &(policy->types[type_idx].aliases)) != 0) {
 		return -1;			
 	}
-	/* and now the alias array; add_name also uses the memory for the name, so we need to be
-	 * careful on free */
+	/* and now the alias array; add_name also uses the memory for the name, so we need not free */
 	if(check_alias_array(policy) != 0) 
 		return -1;
 	
@@ -1498,6 +1497,7 @@ int insert_ta_item(ta_item_t *newitem, ta_item_t **list)
 	return 0;
 }
 
+
 /* add a user to user list */
 int append_user(user_item_t *newuser, user_list_t *list)
 {
@@ -1515,6 +1515,48 @@ int append_user(user_item_t *newuser, user_list_t *list)
 	}
 
 	return 0;
+}
+
+user_item_t *add_user(char *user, policy_t *policy)
+{
+	user_item_t *u;
+	
+	if(user == NULL || policy == NULL)
+		return NULL;
+		
+	u = (user_item_t *)malloc(sizeof(user_item_t));
+	if(u == NULL) {
+		fprintf(stderr, "out of memory");
+		return NULL;
+	}
+	memset(u, 0, sizeof(user_item_t));
+	u->name = user;
+
+	if(append_user(u, &(policy->users)) != 0) {
+		free(u);
+		return NULL;
+	}
+
+	(policy->rule_cnt[RULE_USER])++;	
+			
+	return u;
+}
+
+int add_role_to_user(user_item_t *user, int role_idx, policy_t *policy)
+{
+	ta_item_t *newitem;
+
+	if(user == NULL || policy == NULL || !is_valid_role_idx(role_idx, policy))
+		return -1;
+
+	newitem = (ta_item_t *)malloc(sizeof(ta_item_t));
+	if(newitem == NULL) {
+		fprintf(stderr, "out of memory");
+		return -1;
+	}
+	newitem->idx = role_idx;
+	newitem->type = IDX_ROLE;
+	return insert_ta_item(newitem, &(user->roles));
 }
 
 
