@@ -486,7 +486,7 @@ proc Apol_Analysis_tra::display_all_results {tra_listbox tra_info_text} {
 				Apol_Analysis_tra::display_rules \
 					$tra_listbox \
 					$tra_info_text \
-					"Process Interactions" \
+					"Direct Process Interactions" \
 					[$tra_listbox itemcget $item -data]
 			}
 			common_objects {
@@ -589,7 +589,7 @@ proc Apol_Analysis_tra::listSelect {tra_listbox tra_info_text selected_item} {
 			Apol_Analysis_tra::display_rules \
 				$tra_listbox \
 				$tra_info_text \
-				"Process interactions" \
+				"Direct Process interactions" \
 				[$tra_listbox itemcget $selected_item -data]
 		}
 		common_objects {
@@ -658,8 +658,8 @@ proc Apol_Analysis_tra::listSelect {tra_listbox tra_info_text selected_item} {
 # ::formatInfoText
 #
 proc Apol_Analysis_tra::formatInfoText { tb } {
-	$tb tag configure $Apol_Analysis_tra::title_tag -font {Helvetica 14 bold}
-	$tb tag configure $Apol_Analysis_tra::title_type_tag -foreground blue -font {Helvetica 14 bold}
+	$tb tag configure $Apol_Analysis_tra::title_tag -font {Helvetica 12 bold}
+	$tb tag configure $Apol_Analysis_tra::title_type_tag -foreground blue -font {Helvetica 12 bold}
 	$tb tag configure $Apol_Analysis_tra::subtitle_tag -font {Helvetica 11 bold}
 	$tb tag configure $Apol_Analysis_tra::rules_tag -font $ApolTop::text_font
 	$tb tag configure $Apol_Analysis_tra::counters_tag -foreground blue -font {Helvetica 11 bold}
@@ -1633,7 +1633,7 @@ proc Apol_Analysis_tra::create_results_list_structure {tra_listbox results_list}
 	# Insert item into listbox 
 	if {$process_sel} {
 		$tra_listbox insert end process_rules \
-			-text "Process Interactions" \
+			-text "Direct Process Interactions" \
 			-data [lrange $results_list $start_idx $i] 
 	}
 		
@@ -2472,7 +2472,7 @@ proc Apol_Analysis_tra::create_options { options_frame } {
     		-variable Apol_Analysis_tra::other_ttrules_sel]
 		
 	set process_cb [checkbutton $ckbttns_frame_2.process_cb \
-		-text "Process Interactions" \
+		-text "Direct Process Interactions" \
     		-variable Apol_Analysis_tra::process_sel]
 
         # pack all the widgets
