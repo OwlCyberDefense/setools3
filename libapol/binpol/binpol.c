@@ -1025,7 +1025,7 @@ static ta_item_t *decode_perm_mask(__u32 mask, int clsidx, __u32 cval, ap_bmaps_
 static int add_binary_avrule(avtab_datum_t *avdatum, avtab_key_t *avkey, ap_bmaps_t *bm, 
 			unsigned int opts, cond_rule_list_t *r_list, policy_t *policy)
 {
-	int src, tgt, cls, dflt, rule_idx; /* indicies from bmaps */
+	int src = 0, tgt = 0, cls = 0, dflt = 0, rule_idx = 0; /* indicies from bmaps */
 	ta_item_t *perms;
 	bool_t is_cond, enabled;
 		
