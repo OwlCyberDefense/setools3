@@ -20,10 +20,11 @@ sediffx: $(LIBAPOL) $(GUI-OBJS)
 	$(CC) $(GUI-OBJS) -o $@ $(LIBAPOL) $(LINKFLAGS) $(LIBSELINUX) $(LIBS) $(GTK_LIBS) 
 
 install-nogui: sediff 
-	install -m 755 sediff $(BINDIR);
+	install -m 755 sediff $(BINDIR)
 	
 install: all
-	install -m 755 sediff sediffx $(BINDIR);
+	install -m 755 sediff sediffx $(BINDIR)
+	install -m 644 sediff.glade $(INSTALL_LIBDIR)
 
 %.o:  %.c
 	$(CC) $(CFLAGS) $(GTK_CFLAGS) $(INCLUDE) -c $<
