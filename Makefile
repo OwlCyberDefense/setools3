@@ -18,9 +18,9 @@ CC		= gcc
 YACC		= bison -y
 LEX		= flex -olex.yy.c
 
-SHARED_LIB_INSTALL_DIR = /usr/lib
+SHARED_LIB_INSTALL_DIR = $(DESTDIR)/usr/lib
 STATIC_LIB_INSTALL_DIR = $(SHARED_LIB_INSTALL_DIR)
-SETOOLS_INCLUDE = $(INCLUDE_DIR)/setools
+SETOOLS_INCLUDE = $(DESTDIR)/$(INCLUDE_DIR)/setools
 
 # File location defaults; used in various places in code
 # Change these if you want different defaults
