@@ -253,6 +253,8 @@ int init_policy(policy_t **p)
 	/* permission maps */
 	policy->pmap = NULL;
 
+        (void) memset (&(policy->avh), 0, sizeof (avh_t));
+        
 	if(init_avl_trees(policy) != 0) {
 		return -1;
 	}
