@@ -117,7 +117,7 @@ ${SEUSER} load 2> /dev/null
 
 # delete user from system.
 if [ "${USERNAME}" != "user_u" ]; then
-    ${USERDEL} ${suserdelopts} ${USERNAME} 2> /dev/null
+    ${USERDEL} ${suserdelopts} ${USERNAME} 2>&1
     exit $?
 fi
 
