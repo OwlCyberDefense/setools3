@@ -85,6 +85,7 @@ help:
 	@echo "   install-seuserx: build and install seuser and seuserx (selinux required)"
 	@echo "   install-secmds:  build and install command line tools (selinux not required)"
 	@echo "   install-seaudit: build and install seaudit (selinux not required)"
+	@echo "   install-policy:  install target policies"
 	@echo " "
 	@echo "   all:             build everything, but don't install"
 	@echo "   all-nogui:       only build non-GUI tools and libraries"
@@ -201,6 +202,9 @@ install-seuserx: $(INSTALL_LIBDIR)
 # Non-GUI version only
 install-seuser: $(INSTALL_LIBDIR)
 	cd seuser; $(MAKE) install-nogui
+	
+install-policy: $(INSTALL_LIBDIR)
+	cd seuser; $(MAKE) install-policy
 
 install-sepcut: $(INSTALL_LIBDIR)
 	cd sepct; $(MAKE) install
