@@ -208,7 +208,6 @@ static void seaudit_window_close_view(GtkButton *button, seaudit_window_t *windo
 		curent_view = (seaudit_filtered_view_t*)item->data;
 		if (curent_view->notebook_index >= index)
 			curent_view->notebook_index--;
-		
 	}
 }
 
