@@ -25,6 +25,7 @@ typedef struct seaudit_filtered_view {
  * Public member functions
  */
 seaudit_filtered_view_t* seaudit_filtered_view_create(audit_log_t *log, GtkTreeView *tree_view);
+void seaudit_filtered_view_destroy(seaudit_filtered_view_t *view);
 void seaudit_filtered_view_set_log(seaudit_filtered_view_t *view, audit_log_t *log);
 void seaudit_filtered_view_display(seaudit_filtered_view_t* filters_view);
 void seaudit_filtered_view_set_notebook_index(seaudit_filtered_view_t *filters_view, gint index);
