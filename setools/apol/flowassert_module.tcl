@@ -448,11 +448,6 @@ proc Apol_Analysis_flowassert::create_assert_wizard_dlg {{origline {}}} {
     variable assertfile_t
     variable assert_wizard_dlg
     
-    if [winfo exists $assert_wizard_dlg] {
-        raise $assert_wizard_dlg
-        return
-    }
-
     variable wiz
     array unset wiz
     variable wiz_var
@@ -514,7 +509,7 @@ proc Apol_Analysis_flowassert::create_assert_wizard_dlg {{origline {}}} {
         $assert_wizard_dlg add -text "Add Line" \
             -command [namespace code add_assertion]
     } else {
-        $assert_wizard_dlg add -text "Edit Line" \
+        $assert_wizard_dlg add -text "Replace Line" \
             -command [namespace code add_assertion]
     }
     $assert_wizard_dlg add -text "Cancel"
@@ -584,10 +579,10 @@ proc Apol_Analysis_flowassert::create_type_panel {type_panel type_name} {
 
     # add the include / exclude radio buttons
     set include_rb [radiobutton $type_panel.include_rb -value "include" \
-                        -text "Include Type/Object" \
+                        -text "Include Type" \
                         -variable Apol_Analysis_flowassert::wiz_var($type_name,include)]
     set exclude_rb [radiobutton $type_panel.exclude_rb -value "exclude" \
-                        -text "Exclude Type/Object" \
+                        -text "Exclude Type" \
                         -variable Apol_Analysis_flowassert::wiz_var($type_name,include)]
     pack $include_rb $exclude_rb -anchor w -side top
 
@@ -802,6 +797,12 @@ proc Apol_Analysis_flowassert::select_id_item {id_lb type_name} {
         set type_id [lindex $wiz_var($type_name) [lindex $selected 0]]
         foreach {type class} [split $type_id ":"] {}
         set wiz_var($type_name,type) $type
+        if {[string index $type 0] == "-"} {
+            set wiz_var($type_name,include) "exclude"
+            set type [string range $type 1 end]
+        } else {
+            set wiz_var($type_name,include) "include"
+        }
         if {$type == "*"} {
             set wiz_var($type_name,type,name) ""
             set wiz_var($type_name,type,rb) "*"
