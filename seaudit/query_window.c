@@ -427,7 +427,7 @@ static void query_window_populate_combo_boxes(GtkWidget *src_type_combo, GtkWidg
 	return;
 }
 
-static void populate_query_window_widgets(GladeXML *xml)
+static void populate_query_window_widgets(GladeXML *xml, int *tree_item_idx)
 {
 	GtkTreeSelection *sel;
 	GtkTreeModel *model;
@@ -445,30 +445,38 @@ static void populate_query_window_widgets(GladeXML *xml)
 	
 	g_assert(seaudit_app->cur_policy);
 	view = seaudit_window_get_current_view(seaudit_app->window);
-	sel = gtk_tree_view_get_selection(view->tree_view);
-	glist = gtk_tree_selection_get_selected_rows(sel, &model);
-	if (glist) {
+	
+	if (tree_item_idx == NULL) {
+		sel = gtk_tree_view_get_selection(view->tree_view);
+		glist = gtk_tree_selection_get_selected_rows(sel, &model);
+		if (glist == NULL) {
+			return;
+		}
 		/* Only grab the top-most selected item */
 		item = glist;
 		path = item->data;
-		assert(path != NULL);
 		if (gtk_tree_model_get_iter(model, &iter, path) == 0) {
 			fprintf(stderr, "Could not get valid iterator for the selected path.\n");
-			g_list_foreach(glist, (GFunc) gtk_tree_path_free, NULL);
-			g_list_free (glist);
+			if (glist) {	
+				g_list_foreach(glist, (GFunc) gtk_tree_path_free, NULL);
+				g_list_free (glist);			
+			}
 			return;	
 		}
 		fltr_msg_idx = seaudit_log_view_store_iter_to_idx((SEAuditLogViewStore*)model, &iter);
-		msg_list_idx = view->store->log_view->fltr_msgs[fltr_msg_idx];
-		msg = seaudit_app->cur_log->msg_list[msg_list_idx];
-		if (msg->msg_type!=AVC_MSG) {
-			selected = FALSE;
-		} else {
-			g_assert(fltr_msg_idx >= 0);
-			avc_msg = msg->msg_data.avc_msg;
-		}
+	} else {
+		fltr_msg_idx = *tree_item_idx;	
 	}
-
+	
+	msg_list_idx = view->store->log_view->fltr_msgs[fltr_msg_idx];
+	msg = seaudit_app->cur_log->msg_list[msg_list_idx];
+	if (msg->msg_type!=AVC_MSG) {
+		selected = FALSE;
+	} else {
+		g_assert(fltr_msg_idx >= 0);
+		avc_msg = msg->msg_data.avc_msg;
+	}
+	
 	src_type_combo = glade_xml_get_widget(xml, "src_combo");
 	g_assert(src_type_combo);
 	tgt_type_combo = glade_xml_get_widget(xml, "tgt_combo");
@@ -489,7 +497,7 @@ static void populate_query_window_widgets(GladeXML *xml)
 	obj_entry = glade_xml_get_widget(xml, "obj_combo_entry");
 	g_assert(obj_entry);	
 
-	if (glist) {
+	if (fltr_msg_idx >= 0) {
 		str = g_string_new("");
 		g_string_assign(str, audit_log_get_type(seaudit_app->cur_log, avc_msg->src_type));
 		g_string_prepend(str, "^");
@@ -503,8 +511,10 @@ static void populate_query_window_widgets(GladeXML *xml)
 		g_string_free(str, TRUE);
 		
 		/* Free selected rows list */
-		g_list_foreach(glist, (GFunc)gtk_tree_path_free, NULL);
-		g_list_free(glist);
+		if (glist) {
+			g_list_foreach(glist, (GFunc)gtk_tree_path_free, NULL);
+			g_list_free(glist);
+		}
 	} else { 
 		gtk_entry_set_text(GTK_ENTRY(src_entry), "");
 		gtk_entry_set_text(GTK_ENTRY(tgt_entry), "");
@@ -561,7 +571,7 @@ void on_event_after(GtkWidget *widget, GdkEvent *event, gpointer user_data)
 	return;
 }
 
-int query_window_create(void)
+int query_window_create(int *tree_item_idx)
 {
 	GladeXML *xml;
 	GtkWidget *text, *button, *combo;
@@ -605,7 +615,7 @@ int query_window_create(void)
 
 	policy_load_callback_register(&on_new_policy_opened, window);
 	
-	populate_query_window_widgets(xml);
+	populate_query_window_widgets(xml, tree_item_idx);
 	
 	if (is_binary_policy(seaudit_app->cur_policy)) {
 		/* Remove the policy.conf tab if this is a binary policy. */

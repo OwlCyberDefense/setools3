@@ -989,7 +989,7 @@ void seaudit_on_LogFileOpen_activate(GtkWidget *widget, GdkEvent *event, gpointe
 }
 
 void
-seaudit_window_view_entire_message_in_textbox (void)
+seaudit_window_view_entire_message_in_textbox(int *tree_item_idx)
 {	
 	GtkWidget *view, *window, *scroll;
 	GtkTextBuffer *buffer;
@@ -1025,44 +1025,57 @@ seaudit_window_view_entire_message_in_textbox (void)
 	audit_log = log_view->my_log;
 	assert(audit_log != NULL);
 	
-	sel = gtk_tree_view_get_selection(seaudit_view->tree_view);
-	glist = gtk_tree_selection_get_selected_rows(sel, &model);
-	if (glist) {
+	if (tree_item_idx == NULL) {
+		sel = gtk_tree_view_get_selection(seaudit_view->tree_view);
+		glist = gtk_tree_selection_get_selected_rows(sel, &model);
+		if (glist == NULL) {
+			return;
+		}
 		/* Only grab the top-most selected item */
 		item = glist;
 		path = item->data;
-		assert(path != NULL);
 		if (gtk_tree_model_get_iter(model, &iter, path) == 0) {
 			fprintf(stderr, "Could not get valid iterator for the selected path.\n");
-			g_list_foreach(glist, (GFunc) gtk_tree_path_free, NULL);
-			g_list_free (glist);
+			if (glist) {	
+				g_list_foreach(glist, (GFunc) gtk_tree_path_free, NULL);
+				g_list_free (glist);			
+			}
 			return;	
 		}
 		fltr_msg_idx = seaudit_log_view_store_iter_to_idx((SEAuditLogViewStore*)model, &iter);
-		msg_list_idx = log_view->fltr_msgs[fltr_msg_idx];
-		message = audit_log->msg_list[msg_list_idx];
-		
-		message_header = (char*) malloc((TIME_SIZE + STR_SIZE) * sizeof(char));
-		if (message_header == NULL) {
-			fprintf(stderr, "memory error\n");
-			g_list_foreach(glist, (GFunc) gtk_tree_path_free, NULL);
-			g_list_free (glist);
-			return;
-		}
+	} else {
+		fltr_msg_idx = *tree_item_idx;	
+	}
 
-		generate_message_header(message_header, audit_log, message->date_stamp, message->host);
-		if (message->msg_type == AVC_MSG)
-			write_avc_message_to_gtk_text_buf(buffer, message->msg_data.avc_msg, message_header, audit_log);
-		else if (message->msg_type == LOAD_POLICY_MSG)
-			write_load_policy_message_to_gtk_text_buf(buffer, message->msg_data.load_policy_msg, message_header);
-		else if (message->msg_type == BOOLEAN_MSG)
-			write_boolean_message_to_gtk_text_buf(buffer, message->msg_data.boolean_msg, message_header, audit_log);
-		
-		if(message_header)
-			free(message_header);
+	msg_list_idx = log_view->fltr_msgs[fltr_msg_idx];
+	message = audit_log->msg_list[msg_list_idx];
+	
+	message_header = (char*) malloc((TIME_SIZE + STR_SIZE) * sizeof(char));
+	if (message_header == NULL) {
+		fprintf(stderr, "memory error\n");
+		if (glist) {	
+			g_list_foreach(glist, (GFunc) gtk_tree_path_free, NULL);
+			g_list_free (glist);			
+		}
+		return;
+	}
+
+	generate_message_header(message_header, audit_log, message->date_stamp, message->host);
+	if (message->msg_type == AVC_MSG)
+		write_avc_message_to_gtk_text_buf(buffer, message->msg_data.avc_msg, message_header, audit_log);
+	else if (message->msg_type == LOAD_POLICY_MSG)
+		write_load_policy_message_to_gtk_text_buf(buffer, message->msg_data.load_policy_msg, message_header);
+	else if (message->msg_type == BOOLEAN_MSG)
+		write_boolean_message_to_gtk_text_buf(buffer, message->msg_data.boolean_msg, message_header, audit_log);
+	
+	if(message_header)
+		free(message_header);
+	
+	if (glist) {	
 		g_list_foreach(glist, (GFunc) gtk_tree_path_free, NULL);
 		g_list_free (glist);			
 	}
+		
 	gtk_text_view_set_editable(GTK_TEXT_VIEW(view), FALSE);
         gtk_widget_show(view);
 	gtk_widget_show(scroll);
@@ -1071,7 +1084,7 @@ seaudit_window_view_entire_message_in_textbox (void)
 
 void seaudit_window_on_view_entire_msg_activated(GtkWidget *widget, GdkEvent *event, gpointer callback_data)
 {
-	seaudit_window_view_entire_message_in_textbox();
+	seaudit_window_view_entire_message_in_textbox(NULL);
 }
 
 void seaudit_on_ExportLog_activate(GtkWidget *widget, GdkEvent *event, gpointer callback_data)
@@ -1185,7 +1198,7 @@ void seaudit_on_filter_log_button_clicked(GtkWidget *widget, GdkEvent *event, gp
 
 void seaudit_on_top_window_query_button_clicked(GtkWidget *widget, GdkEvent *event, gpointer callback_data)
 {
-	query_window_create();
+	query_window_create(NULL);
 }
 
 
