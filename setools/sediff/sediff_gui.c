@@ -67,8 +67,8 @@ static void txt_view_populate_buffers(apol_diff_t *stuff_removed,
 
 static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy_option);
 static int sediff_diff_and_load_policies(const char *p1_file,const char *p2_file);
-static int sediff_populate_buffer_hdrs();
-static int sediff_update_status_bar();
+static void sediff_populate_buffer_hdrs();
+static void sediff_update_status_bar();
 static void sediff_rename_policy_tabs(const char *p1,const char *p2) ;
 
 
@@ -995,7 +995,7 @@ static int sediff_add_hdr(GtkTextBuffer *txt,GString *string)
 }
 
 
-static int sediff_populate_key_buffer()
+static void sediff_populate_key_buffer()
 {
 	GtkTextView *txt_view;
 	GtkTextBuffer *txt;
@@ -1052,7 +1052,7 @@ static int sediff_populate_key_buffer()
 }
 
 /* populate the status bar with summary info of our diff */
-static int sediff_update_status_bar()
+static void sediff_update_status_bar()
 {
 	GtkStatusbar *statusbar;
 	guint rt;
@@ -1078,11 +1078,10 @@ static int sediff_update_status_bar()
 			(sediff_app->summary.rbac.added + sediff_app->summary.rbac.removed + sediff_app->summary.rbac.changed));
 	gtk_statusbar_push(statusbar,rt,string->str);
 	g_string_free(string, TRUE);
-	return 0;
 
 }
 
-static int sediff_populate_buffer_hdrs()
+static void sediff_populate_buffer_hdrs()
 {
 	GString *string = g_string_new("");
 	
@@ -1126,9 +1125,6 @@ static int sediff_populate_buffer_hdrs()
 	g_string_printf(string, "TE Rules (%d Added, %d Removed, %d Changed)\n",sediff_app->summary.te_rules.added,
 			sediff_app->summary.te_rules.removed, sediff_app->summary.te_rules.changed);
 	sediff_add_hdr(sediff_app->te_buffer,string);
-
-
-	return 0;
 
 }
 
@@ -2401,7 +2397,7 @@ static int sediff_diff_and_load_policies(const char *p1_file,const char *p2_file
 	GtkWidget *container = NULL;
 	SEDiffTreeViewStore *tree_store = NULL;
 	apol_diff_result_t *diff_results = NULL;
-	GtkLabel *lbl_p1, *lbl_p2;
+
 	GtkTreeModel *tree_model;
 	GtkTreeSelection *sel;
 	GtkTreeIter iter;
@@ -2422,13 +2418,6 @@ static int sediff_diff_and_load_policies(const char *p1_file,const char *p2_file
 		return -1;
 	}
 
-	/* Update the Label widgets */
-	lbl_p1 = (GtkLabel*)glade_xml_get_widget(sediff_app->window_xml, "lbl_policy1");
-	lbl_p2 = (GtkLabel*)glade_xml_get_widget(sediff_app->window_xml, "lbl_policy2");
-	
-	gtk_label_set_text(lbl_p1, p1_file);
-	gtk_label_set_text(lbl_p2, p2_file);
-                                             
 	/* create a new tree_store */
 	tree_store = sediff_tree_store_new();
 	tree_store->diff_results = diff_results;
