@@ -472,7 +472,7 @@ proc ApolTop::load_query_info {} {
 	    			tk_messageBox -icon error -type ok -title "Error" \
 					-message "Invalid query ID."
 	    		}
-	    	
+	    	ApolTop::set_Focus_to_Text [$notebook raise]
 	    	::close $f
 	}
     	return 0  
