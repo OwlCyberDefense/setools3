@@ -201,8 +201,7 @@ proc Apol_Roles::change_types_list { } {
 	variable combo_types
 	variable attrib_sel
 	
-	if {$attrib_sel && $selected_attribute != ""} {
-		$combo_types configure -text ""		   
+	if {$attrib_sel && $selected_attribute != ""} {	   
 		set rt [catch {set attrib_typesList [apol_GetAttribTypesList $selected_attribute]} err]	
 		if {$rt != 0} {
 			tk_messageBox -icon error -type ok -title "Error" -message "$err"
@@ -222,6 +221,7 @@ proc Apol_Roles::change_types_list { } {
 		}
         	$combo_types configure -values $attrib_typesList
         }
+        selection clear -displayof $combo_types
      	return 0
 }
 
