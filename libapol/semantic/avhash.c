@@ -138,6 +138,89 @@ avh_node_t *avh_find_next_node(avh_node_t *node)
 	return NULL;
 }
 
+static avh_idx_t *avh_index_create(void)
+{
+	avh_idx_t *n;
+	
+	n = (avh_idx_t*)malloc(sizeof(avh_idx_t));
+	if (n == NULL) {
+		fprintf(stderr, "out of memory\n");
+		return NULL;
+	}
+	memset(n, 0, sizeof(avh_idx_t));
+	
+	return n;
+}
+
+avh_idx_t *avh_idx_find(avh_idx_t *idx, int data)
+{
+	avh_idx_t *cur, *active;
+	
+	active = NULL;
+	for (cur = idx; cur != NULL; cur = cur->next) {
+		if (cur->data == data) {
+			active = cur;
+			break;
+		}
+		if (cur->data > data) {
+			break;
+		}
+	}
+	
+	return active;
+}
+
+/* inserts node into index - does not check for uniqueness */
+static int avh_idx_insert(avh_idx_t **idx, avh_node_t *node, int data)
+{
+	avh_idx_t *cur, *active, *prev;
+	
+	prev = NULL;
+	active = NULL;
+	for (cur = *idx; cur != NULL; cur = cur->next) {
+		if (cur->data == data) {
+			active = cur;
+			break;
+		}
+		if (cur->data > data) {
+			break;
+		}
+		prev = cur;
+	}
+	
+	/* does not exist in index yet - create new index entry */
+	if (active == NULL) {
+		active = avh_index_create();
+		if (active == NULL) {
+			return -1;
+		}
+		active->data = data;
+		if (prev) {
+			/* insert into list */
+			active->next = prev->next;
+			prev->next = active;
+		} else {
+			if (*idx) {
+				/* insert at beginning when list exists */
+				active->next = *idx;
+			}
+			/* actual beginning insert - works with 0 or more current entries */
+			*idx = active;
+		}
+	}
+	
+	active->nodes = (avh_node_t**)realloc(active->nodes, sizeof(avh_node_t*) * (active->num_nodes + 1));
+	if (active->nodes == NULL) {
+		fprintf(stderr, "out of memory\n");
+		return -1;
+	}
+	
+	active->nodes[active->num_nodes] = node;
+	active->num_nodes++;
+	
+	return 0;
+}
+
 /* allows multple insertions of the same key; if you want to ensure uniqueness search first.
  * Returns a pointer to the newly insert node or NULL on error */
 avh_node_t *avh_insert(avh_t *avh, avh_key_t *key)
@@ -182,6 +265,15 @@ avh_node_t *avh_insert(avh_t *avh, avh_key_t *key)
 	new_node->key.cls = key->cls;
 	new_node->key.rule_type = key->rule_type;
 	
+	/* do the indexing */
+	if (avh_idx_insert(&avh->src_type_idx, new_node, key->src) != 0) {
+		return NULL;
+	}
+	
+	if (avh_idx_insert(&avh->tgt_type_idx, new_node, key->tgt) != 0) {
+		return NULL;
+	}
+	
 	if(prev != NULL) {
 		new_node->next = prev->next;
 		prev->next = new_node;
@@ -195,11 +287,10 @@ avh_node_t *avh_insert(avh_t *avh, avh_key_t *key)
 	return new_node;
 }
 
-
 int avh_new(avh_t *avh)
 {
 	int i;
-
+	
 	avh->tab = malloc(sizeof(avh_node_t *) * AVH_SIZE);
 	if (avh->tab == NULL) {
 		fprintf(stderr, "out of memory\n");
@@ -208,6 +299,9 @@ int avh_new(avh_t *avh)
 	for (i = 0; i < AVH_SIZE; i++)
 		avh->tab[i] = NULL;
 	avh->num = 0;
+	avh->src_type_idx = NULL;
+	avh->tgt_type_idx = NULL;
+	
 	return 0;
 }
 
@@ -219,7 +313,22 @@ static void avh_free_rules(avh_rule_t *r)
 		cur = tmp->next;
 		free(tmp);
 	}
-	return;
+	
+}
+
+void avh_idx_free(avh_idx_t *idx)
+{
+	if (idx == NULL)
+		return;
+		
+	avh_idx_t *cur, *next;
+	
+	for (cur = idx; cur != NULL; ) {
+		free(cur->nodes);
+		next = cur->next;
+		free(cur);
+		cur = next;
+	}
 }
 
 void avh_free(avh_t *avh)
@@ -246,7 +355,9 @@ void avh_free(avh_t *avh)
 	free(avh->tab);
 	avh->tab = NULL;
 	avh->num = 0;
-	return;
+	
+	avh_idx_free(avh->src_type_idx);
+	avh_idx_free(avh->tgt_type_idx);
 }
 
 int avh_eval(avh_t *avh, int *max, int *num_entries, int *num_buckets, int *num_used)

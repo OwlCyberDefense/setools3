@@ -52,9 +52,20 @@ typedef struct avh_node {
 	struct avh_node *next;
 } avh_node_t;
 
+/* Index into the hash table - used for finding nodes by
+ * partial key. */
+typedef struct avh_idx {
+	int		data; /* type or object class depending on usage - currently only type */
+	avh_node_t 	**nodes;
+	int 		num_nodes;
+	struct avh_idx *next;
+} avh_idx_t;
+
 typedef struct avh {
 	avh_node_t 	**tab;
-	int		num;	
+	int		num;
+	avh_idx_t 	*src_type_idx; /* the index is an ordered list */
+	avh_idx_t	*tgt_type_idx; /* the index is an ordered list */
 } avh_t;
 
 
@@ -69,6 +80,7 @@ int avh_add_rule(avh_node_t *node, int ridx, unsigned char hint);
 avh_node_t *avh_find_next_node(avh_node_t *node);
 avh_node_t *avh_insert(avh_t *avh, avh_key_t *key);
 int avh_eval(avh_t *avh, int *max, int *num_entries, int *num_buckets, int *num_used);
+avh_idx_t *avh_idx_find(avh_idx_t *idx, int data);
 
 #endif /* _APOLICY_AVHASH_H_ */
 
