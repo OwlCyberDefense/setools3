@@ -221,6 +221,10 @@ proc SEUser_db::add_user { user generic_flag roles useradd_args passwd overwrite
 				return -code error $err 
 			} 
 		}	
+		set rt [catch {seuser_LabelHomeDirectory $user} err]
+		if {$rt != 0 } {
+			return -code error $err 
+		}  
 		# else, this is an existing policy user and do not wish to overwrite, so do nothing.
 	}
 	return 0
