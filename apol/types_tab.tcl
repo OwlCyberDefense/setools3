@@ -116,12 +116,15 @@ proc Apol_Types::init_options { } {
     set opts(attribtypes)		0
     set opts(attribtypeattribs)	        0
     set opts(usesrchstr)		0
-
+    set opts(show_files)		0
+    set opts(incl_context)		0
+    set opts(incl_class)		0
+	
     Apol_Types::enable_disable_incl_attribs $a_typeattribs
     Apol_Types::enable_disable_checkbuttons $typeattribs $typealiases 1 
     Apol_Types::enable_disable_checkbuttons $a_typeattribs $a_types 2
     if {$ApolTop::libsefs == 1} {
-    	Apol_Types::enable_disable_checkbuttons $Apol_Types::fc_incl_class $Apol_Types::fc_incl_context 3
+    	#Apol_Types::enable_disable_checkbuttons $Apol_Types::fc_incl_class $Apol_Types::fc_incl_context 3
     }
     Apol_Types::_useSearch $sEntry 
     
@@ -469,7 +472,7 @@ proc Apol_Types::create {nb} {
     set fm_attribs_select [frame $ofm.ao -relief sunken -borderwidth 1]
     set fm_sString [frame $ofm.so -relief sunken -borderwidth 1]
     if {$ApolTop::libsefs == 1} {
-    	set fm_fc_files [frame $ofm.fm_fc_files -relief sunken -borderwidth 1]
+    	#set fm_fc_files [frame $ofm.fm_fc_files -relief sunken -borderwidth 1]
     }
     set okbox [frame $ofm.okbox]
     set fm_types_select [frame $ofm.to -relief sunken -borderwidth 1]
@@ -480,7 +483,7 @@ proc Apol_Types::create {nb} {
     pack $fm_types_select -side left -anchor n  -padx 5 -fill y
     pack $fm_attribs_select -side left -anchor nw -fill y -padx 5
     if {$ApolTop::libsefs == 1} {
-    	 pack $fm_fc_files -side left -anchor nw -fill y -padx 5
+    	 #pack $fm_fc_files -side left -anchor nw -fill y -padx 5
     }
     pack $fm_sString -side left -anchor n -fill both -expand yes -padx 5
     
@@ -511,13 +514,13 @@ proc Apol_Types::create {nb} {
 	-command "Apol_Types::enable_disable_checkbuttons $a_types $a_typeattribs 2"]
     
     if {$ApolTop::libsefs == 1} {
-	    set fc_incl_context [checkbutton $fm_fc_files.fc_incl_context -text "Include Context" \
-		-variable Apol_Types::opts(incl_context)]
-	    set fc_incl_class [checkbutton $fm_fc_files.fc_incl_class -text "Include Object Class" \
-		-variable Apol_Types::opts(incl_class)]	
-	    set fc_files_select [checkbutton $fm_fc_files.fc_files_select -text "Show Files" \
-		-variable Apol_Types::opts(show_files) \
-		-command "Apol_Types::enable_disable_checkbuttons $fc_incl_context $fc_incl_class 3"]
+#	    set fc_incl_context [checkbutton $fm_fc_files.fc_incl_context -text "Include Context" \
+#		-variable Apol_Types::opts(incl_context)]
+#	    set fc_incl_class [checkbutton $fm_fc_files.fc_incl_class -text "Include Object Class" \
+#		-variable Apol_Types::opts(incl_class)]	
+#	    set fc_files_select [checkbutton $fm_fc_files.fc_files_select -text "Show Files" \
+#		-variable Apol_Types::opts(show_files) \
+#		-command "Apol_Types::enable_disable_checkbuttons $fc_incl_context $fc_incl_class 3"]
     }
     
     # Search string section widgets
@@ -539,8 +542,8 @@ proc Apol_Types::create {nb} {
     pack $types_select $typeattribs $typealiases -anchor w  
     pack $attribs_select $a_types $a_typeattribs -anchor w  
     if {$ApolTop::libsefs == 1} {
-	    pack $fc_files_select -side top -anchor nw -expand yes -padx 2
-	    pack $fc_incl_context $fc_incl_class -side top -padx 6 -pady 2 -anchor nw -expand yes
+	    #pack $fc_files_select -side top -anchor nw -expand yes -padx 2
+	    #pack $fc_incl_context $fc_incl_class -side top -padx 6 -pady 2 -anchor nw -expand yes
     }
     pack $sString -side top -anchor nw
     pack $sEntry -expand yes -padx 5 -pady 5 -fill x 
