@@ -14,6 +14,7 @@
 #include "util.h"
 #include "stdio.h"
 #include "queue.h"
+#include "binpol/binpol.h"
 #ifdef APOL_PERFORM_TEST
 #include <time.h>
 #endif
@@ -97,6 +98,8 @@ unsigned int validate_policy_options(unsigned int options)
 		opts |= POLOPT_TYPES;
 	if(POLOPT_INITIAL_SIDS & opts)
 		opts |= (POLOPT_TYPES|POLOPT_ROLES|POLOPT_USERS);
+	if(POLOPT_OBJECTS & opts)
+		opts |= POLOPT_OBJECTS;
 	
 	return opts;
 }
@@ -127,25 +130,34 @@ int open_partial_policy(const char* filename, unsigned int options, policy_t **p
 		fprintf(stderr, "Could not open policy!\n");
 		return -1;
 	}
+	if(ap_is_file_binpol(yyin)) {
+		rt = ap_read_binpol_file(yyin, opts, *policy);
+		if(rt != 0) {
+			fclose(yyin);
+			return rt;
+		}
+	}
+	else {
 	
 #ifdef APOL_PERFORM_TEST
-/*  test policy load performance; it's an undocumented feature only in test builds */
-	{
-	clock_t start,  stop;
-	double time;
-	start = clock();	
-	rt = read_policy(*policy);
-	stop = clock();
-	time = ((double) (stop - start)) / CLOCKS_PER_SEC;
-	fprintf(stdout, "\nTime to load policy %s: %f\n\n", filename, time);
-	}
+	/*  test policy load performance; it's an undocumented feature only in test builds */
+		{
+		clock_t start,  stop;
+		double time;
+		start = clock();	
+		rt = read_policy(*policy);
+		stop = clock();
+		time = ((double) (stop - start)) / CLOCKS_PER_SEC;
+		fprintf(stdout, "\nTime to load policy %s: %f\n\n", filename, time);
+		}
 #else
-	rt = read_policy(*policy);
+		rt = read_policy(*policy);
 #endif
-	if(rt != 0) {
-		fprintf(stderr, "error reading policy\n");
-		fclose(yyin);
-		return -1;	
+		if(rt != 0) {
+			fprintf(stderr, "error reading policy\n");
+			fclose(yyin);
+			return -1;	
+		}
 	}
 	fclose(yyin);
 	return 0;
