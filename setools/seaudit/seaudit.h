@@ -26,11 +26,6 @@
   #define TIME_SIZE 64
 #endif
 
-/* DEFAULT_POLICY and DEFAULT_LOG should be defined in the make environment */
-#ifndef DEFAULT_POLICY
-	#define DEFAULT_POLICY "/etc/security/selinux/src/policy.conf"
-#endif
-
 #ifndef DEFAULT_LOG
 	#define DEFAULT_LOG "/var/log/messages"
 #endif
