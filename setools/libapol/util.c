@@ -788,7 +788,6 @@ char **get_config_var_list(const char *var, FILE *file, int *list_sz)
  * necessary.  Call must free the target string.  Make tgt == NULL if 
  * this is first use.
  */
-#define RE_STR_ALLOC_SZ	128
 int append_str(char **tgt, int *tgt_sz, const char *str)
 {
 	int str_len, tgt_len;
@@ -799,22 +798,18 @@ int append_str(char **tgt, int *tgt_sz, const char *str)
 	str_len++;
 	/* target is currently empty */
 	if(*tgt == NULL) {
-		if(str_len < RE_STR_ALLOC_SZ)
-			str_len = RE_STR_ALLOC_SZ;
 		*tgt = (char *)malloc(str_len);
 		*tgt_sz = str_len;
 		strcpy(*tgt, str);
 		return 0;
-	}
+	} else {
 	/* tgt has some memory */
-	tgt_len = strlen(*tgt);
-	if(!(*tgt_sz >= (str_len + tgt_len))) {
 		*tgt = (char *)realloc(*tgt, *tgt_sz + str_len);
 		if(*tgt == NULL) {
 			fprintf(stderr, "out of memory");
 			return -1;
 		}
-		*tgt_sz = str_len + tgt_len;
+		*tgt_sz += str_len;
 	}
 	strcat(*tgt, str);
 	return 0;	
