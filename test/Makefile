@@ -2,7 +2,7 @@
 MAKE 		= make
 CC		= gcc
 LIBAPOL		= ../libapol/libapol.a
-LIBS		= -lm -lfl
+LIBS		= -lm -lfl $(LIBSELINUX)
 OBJS		= test.o $(LIBAPOL)
 INCLUDES	= -I../libapol/
 CFLAGS		+= $(INCLUDES)
