@@ -20,9 +20,27 @@ namespace eval Apol_Analysis_dirflow {
      	variable combo_attribute
         variable combo_start
         variable list_objs
-    	variable info_button_text "\n\nThis analysis generates the results of a Direct Information Flow analysis beginning from the starting type selected.  The results of the analysis are presented in tree form with the root of the tree being the start point for the analysis.\n\nEach child node in the tree represents a type in the current policy for which there is a direct information flow to or from its parent node.  If 'in' was selected then the information flow is from the child to the parent.  If 'out' was selected then information flows from the parent to the child.\n\nThe results of the analysis may be optionally filtered by object class selection or an end type regular expression.\n\nNOTE: For any given generation, if the parent and the child are the same, you cannot open the child.  This avoids cyclic analyses.\n\nFor additional help on this topic select \"Information Flow Analysis\" from the help menu."
-        variable root_text \
-"\n\nThis tab provides the results of a Direct Information Flow analysis beginning from the starting type selected above.  The results of the analysis are presented in tree form with the root of the tree (this node) being the start point for the analysis.\n\nEach child node in the tree represents a type in the current policy for which there is a direct information flow to or from (depending on your selection above) its parent node.\n\nNOTE: For any given generation, if the parent and the child are the same, you cannot open the child.  This avoids cyclic analyses.\n\n"
+    	variable info_button_text "\n\nThis analysis generates the results of a Direct Information Flow \
+    				  analysis beginning from the starting type selected.  The results of \
+    				  the analysis are presented in tree form with the root of the tree being \
+    				  the start point for the analysis.\n\nEach child node in the tree represents \
+    				  a type in the current policy for which there is a direct information flow \
+    				  to or from its parent node.  If 'in' was selected then the information flow \
+    				  is from the child to the parent.  If 'out' was selected then information \
+    				  flows from the parent to the child.\n\nThe results of the analysis may be \
+    				  optionally filtered by object class selection or an end type regular \
+    				  expression.\n\nNOTE: For any given generation, if the parent and the child \
+    				  are the same, you cannot open the child.  This avoids cyclic analyses.\n\nFor \
+    				  additional help on this topic select \"Information Flow Analysis\" from the \
+    				  help menu."
+        variable root_text  "\n\nThis tab provides the results of a Direct Information Flow analysis beginning \
+        		    from the starting type selected above.  The results of the analysis are presented \
+        		    in tree form with the root of the tree (this node) being the start point for the \
+        		    analysis.\n\nEach child node in the tree represents a type in the current policy \
+        		    for which there is a direct information flow to or from (depending on your selection \
+        		    above) its parent node.\n\nNOTE: For any given generation, if the parent and the child \
+        		    are the same, you cannot open the child.  This avoids cyclic analyses.\n\n"
+        		    
         variable in_button
         variable out_button
         variable either_button
@@ -217,6 +235,7 @@ proc Apol_Analysis_dirflow::open { } {
 proc Apol_Analysis_dirflow::load_query_options { file_channel parentDlg } {
 	
 	set query_options ""
+	set query_options_tmp ""
         while {[eof $file_channel] != 1} {
 		gets $file_channel line
 		set tline [string trim $line]
@@ -224,15 +243,23 @@ proc Apol_Analysis_dirflow::load_query_options { file_channel parentDlg } {
 		if {$tline == "" || [string compare -length 1 $tline "#"] == 0} {
 			continue
 		}
-		set query_options [lappend query_options $tline]
+		set query_options_tmp [lappend query_options_tmp $tline]
 	}
-	if {$query_options == ""} {
+	if {$query_options_tmp == ""} {
 		return -code error "No query parameters were found."
 	}
 	# Re-format the query options list into a string where all elements are seperated
-	# by a single space. Then split this string into a list using the space as the delimeter.	
-	set query_options [split [join $query_options " "]]
-	
+	# by a single space. Then split this string into a list using space and colon characters
+	# as the delimeters.	
+	set query_options_tmp [split [join $query_options_tmp " "] " :"]
+	set indices [lsearch -all $query_options_tmp ""]
+	set length [llength $query_options_tmp]
+	for {set i 0} {$i < $length} {incr i} {
+		if {[lsearch -exact -integer $indices $i] == -1} {
+			set query_options [lappend query_options [lindex $query_options_tmp $i]]
+		}	
+	}
+		
         Apol_Analysis_dirflow::clear_all_button_press
         # Query option variables
         set Apol_Analysis_dirflow::endtype_sel [lindex $query_options 0]
@@ -294,13 +321,11 @@ proc Apol_Analysis_dirflow::load_query_options { file_channel parentDlg } {
         }
 	# Display a popup with a list of invalid objects
 	if {$invalid_objs != ""} {
+		puts "The following objects do not exist in the currently \
+			loaded policy and were ignored:\n\n"
 		foreach obj $invalid_objs {
-			set objs_str [append objs_str "$obj\n"]	
+			puts "$obj\n"
 		}
-		tk_messageBox -icon warning -type ok -title "Invalid Objects" \
-			-message "The following objects do not exist in the currently \
-			loaded policy and were ignored.\n\n$objs_str" \
-			-parent $parentDlg
 	}
 		        
 	Apol_Analysis_dirflow::config_endtype_state
@@ -1256,7 +1281,8 @@ proc Apol_Analysis_dirflow::create_options { options_frame } {
         set endtype_frame [frame $right.endtype_frame]
 
 	# Information Flow Entry frames
-	set lbl_start_type [Label $start_frame.lbl_start_type -text "Starting type:"]
+	set lbl_start_type [Label $start_frame.lbl_start_type \
+		-text "Starting type:"]
     	set combo_start [ComboBox $start_frame.combo_start \
     		-helptext "You must choose a starting type for information flow" \
 		-editable 1 \
@@ -1264,29 +1290,35 @@ proc Apol_Analysis_dirflow::create_options { options_frame } {
 		-entrybg white \
 		-exportselection 0]  
 
-        set lbl_flowtype [Label $flowtype_frame.lbl_flowtype -text "Flow direction:"]
+        set lbl_flowtype [Label $flowtype_frame.lbl_flowtype \
+        	-text "Flow direction:"]
 
-        set in_button [checkbutton $ckbttn_frame.in_button -text "In" \
+        set in_button [checkbutton $ckbttn_frame.in_button \
+        	-text "In" \
 		-variable Apol_Analysis_dirflow::in_button_sel \
 		-offvalue 0 -onvalue 1 \
 		-command { Apol_Analysis_dirflow::in_button_press }]
 
-        set out_button [checkbutton $ckbttn_frame.out_button -text "Out" \
+        set out_button [checkbutton $ckbttn_frame.out_button \
+        	-text "Out" \
 		-variable Apol_Analysis_dirflow::out_button_sel \
 		-offvalue 0 -onvalue 1 \
 		-command { Apol_Analysis_dirflow::out_button_press }]
 
-        set either_button [checkbutton $ckbttn_frame.either_button -text "Either" \
+        set either_button [checkbutton $ckbttn_frame.either_button \
+        	-text "Either" \
 		-variable Apol_Analysis_dirflow::either_button_sel \
 		-offvalue 0 -onvalue 1 \
 		-command { Apol_Analysis_dirflow::either_button_press }]
 
-        set both_button [checkbutton $ckbttn_frame.both_button -text "Both" \
+        set both_button [checkbutton $ckbttn_frame.both_button \
+        	-text "Both" \
 		-variable Apol_Analysis_dirflow::both_button_sel \
 		-offvalue 0 -onvalue 1 \
 		-command { Apol_Analysis_dirflow::both_button_press }]
 
-        set cb_attrib [checkbutton $attrib_frame.cb_attrib -text "Select starting type using attrib:" \
+        set cb_attrib [checkbutton $attrib_frame.cb_attrib \
+        	-text "Select starting type using attrib:" \
 		-variable Apol_Analysis_dirflow::display_attrib_sel \
 		-offvalue 0 -onvalue 1 \
 		-command { Apol_Analysis_dirflow::config_attrib_comboBox_state }]
@@ -1296,12 +1328,15 @@ proc Apol_Analysis_dirflow::create_options { options_frame } {
     		-modifycmd { Apol_Analysis_dirflow::change_types_list} \
 		-exportselection 0] 
 
-        set clear_all_bttn [button $bttns_frame.clear_all_bttn -text "Clear All" \
+        set clear_all_bttn [button $bttns_frame.clear_all_bttn \
+        	-text "Clear All" \
 		-command {Apol_Analysis_dirflow::clear_all_button_press} ]
-        set select_all_bttn [button $bttns_frame.select_all_bttn -text "Select All" \
+        set select_all_bttn [button $bttns_frame.select_all_bttn \
+        	-text "Select All" \
 		-command {Apol_Analysis_dirflow::select_all_button_press} ]
 
-        set cb_endtype [checkbutton $endtype_frame.cb_endtype -text "Find end types using regular expression:" \
+        set cb_endtype [checkbutton $endtype_frame.cb_endtype \
+        	-text "Find end types using regular expression:" \
 		-variable Apol_Analysis_dirflow::endtype_sel \
 		-offvalue 0 -onvalue 1 -justify left -wraplength 150 \
 		-command { Apol_Analysis_dirflow::config_endtype_state }]
@@ -1312,16 +1347,18 @@ proc Apol_Analysis_dirflow::create_options { options_frame } {
 		-textvariable Apol_Analysis_dirflow::end_type \
 		-exportselection 0] 
 
-        set cb_objects [checkbutton $objcl_frame.cb_objects -text "Filter results by object class:" \
+        set cb_objects [checkbutton $objcl_frame.cb_objects \
+        	-text "Filter results by object class:" \
 		-variable Apol_Analysis_dirflow::objects_sel \
 		-offvalue 0 -onvalue 1 \
 		-justify left \
 		-command {Apol_Analysis_dirflow::config_objects_list_state }]
 
         set sw_objs [ScrolledWindow $objcl_frame.sw_objs -auto both]
-        set list_objs [listbox [$sw_objs getframe].list_objs -height 7 -highlightthickness 0 \
-		      -selectmode multiple \
-		      -exportselection 0] 
+        set list_objs [listbox [$sw_objs getframe].list_objs -height 7 \
+        	-highlightthickness 0 \
+		-selectmode multiple \
+		-exportselection 0] 
         $sw_objs setwidget $list_objs
 
         # pack all the widgets
