@@ -58,7 +58,7 @@ CC_DEFINES	= -fPIC
 ifeq ($(DEBUG), 0)
 CFLAGS		= -Wall -O2 $(TCL_INCLUDE) $(CC_DEFINES)
 else
-CFLAGS		= -Wall -ggdb3 $(TCL_INCLUDE) $(CC_DEFINES)
+CFLAGS		= -Wall -g $(TCL_INCLUDE) $(CC_DEFINES)
 #CFLAGS		= -Wall -ansi -pedantic -g $(TCL_INCLUDE) $(CC_DEFINES)
 endif
 
@@ -282,7 +282,7 @@ install-libseuser-policy:
 
 install-libseaudit-policy:
 	cd libseaudit; $(MAKE) install-policy
-	
+
 install-libsefs-policy:
 	cd libsefs; $(MAKE) install-policy
 
@@ -313,7 +313,7 @@ test-apol: selinux_tool
 
 test-seuser: selinux_tool
 	cd libseuser/test; $(MAKE) $@
-	
+
 test-seaudit: selinux_tool
 	cd libseaudit/test; $(MAKE) $@
 
