@@ -1837,7 +1837,9 @@ int add_clone_rule(int src, int tgt, unsigned long lineno, policy_t *policy)
 		fprintf(stderr, "out of memory\n");
 		return -1;
 	}
-
+	/* initialize */
+	memset(newptr, 0, sizeof(cln_item_t));
+	
 	newptr->next = NULL;
 	newptr->src = src;
 	newptr->tgt = tgt;
@@ -2341,6 +2343,7 @@ int add_role(char *role, policy_t *policy)
 {
 	size_t sz;
 	name_a_t *new_role = NULL;
+	name_a_t *ptr = NULL;
 	
 	if(role == NULL || policy == NULL)
 		return -1;
@@ -2348,11 +2351,13 @@ int add_role(char *role, policy_t *policy)
 	/* make sure there is a room for another role in the array */
 	if(policy->list_sz[POL_LIST_ROLES] <= policy->num_roles) {
 		sz = policy->list_sz[POL_LIST_ROLES] + LIST_SZ;
-		policy->roles = (name_a_t *)realloc(policy->roles, sizeof(name_a_t) * sz);
-		if(policy->roles == NULL) {
+		ptr = (name_a_t *)realloc(policy->roles, sizeof(name_a_t) * sz);
+		if (ptr == NULL) {
 			fprintf(stderr, "out of memory\n");
 			return -1;
 		}
+		memset(&ptr[policy->num_roles], 0, sizeof(name_a_t) * LIST_SZ);
+		policy->roles = ptr;
 		policy->list_sz[POL_LIST_ROLES] = sz;
 	}
 	
@@ -3385,19 +3390,21 @@ static void add_cond_expr_item_helper(int cond_expr, cond_rule_list_t *list, pol
 int add_cond_expr_item(cond_expr_t *expr, cond_rule_list_t *true_list, cond_rule_list_t *false_list, policy_t *policy)
 {
 	int idx;
+	cond_expr_item_t *ptr = NULL;
 	
 	if (!policy || !expr)
 		return -1;
 		
 	if (policy->num_cond_exprs >= policy->list_sz[POL_LIST_COND_EXPRS]) {
-	
-		policy->cond_exprs = (cond_expr_item_t*)realloc(policy->cond_exprs,
+		ptr = (cond_expr_item_t*)realloc(policy->cond_exprs,
 					     (LIST_SZ + policy->list_sz[POL_LIST_COND_EXPRS])
 					     * sizeof(cond_expr_item_t));
-		if(policy->cond_exprs == NULL) {
+		if (ptr == NULL) {
 			fprintf(stderr, "out of memory\n");
 			return -1;
 		}
+		memset(&ptr[policy->num_cond_exprs], 0, LIST_SZ * sizeof(cond_expr_item_t));
+		policy->cond_exprs = ptr;
 		policy->list_sz[POL_LIST_INITIAL_SIDS] += LIST_SZ;
 	}
 	idx = policy->num_cond_exprs;
