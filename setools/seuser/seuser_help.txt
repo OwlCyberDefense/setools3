@@ -1,7 +1,7 @@
 
 SELinux User Manager Help File
 seuser, Version 0.5.4
-January 06, 2004
+January 12, 2004
 selinux@tresys.com
 ----------------------------------
 
