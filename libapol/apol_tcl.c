@@ -184,7 +184,7 @@ static int append_common_perm_str(bool_t do_perms, bool_t do_classes, bool_t new
  */
 static iflow_query_t* set_transitive_query_args(Tcl_Interp *interp, char *argv[])
 {
-	int num_objs, num_obj_perms, num_objs_options, obj, perm, total_num_perms;
+	int num_objs, num_obj_perms, num_objs_options, obj, perm;
 	int num_inter_types, type, *types = NULL;
 	int i, j, rt, num, cur, sz = 0;
 	char *start_type = NULL, *end_type = NULL;
@@ -301,7 +301,8 @@ static iflow_query_t* set_transitive_query_args(Tcl_Interp *interp, char *argv[]
 		assert(num_objs > 0);
 		cur = 0;
 		/* Set the object classes permission info */
-		/* Keep in mind that this is an encoded TCL list in the form "class1 num_perms perm1 ... permN ... classN num_perms perm1 ... permN" */
+		/* Keep in mind that this is an encoded TCL list in the form 
+		   "class1 num_perms perm1 ... permN ... classN num_perms perm1 ... permN" */
 		for (i = 0; i < num_objs; i++) {
 			obj = get_obj_class_idx(obj_class_perms[cur], policy);
 			if (obj < 0) {
@@ -310,18 +311,15 @@ static iflow_query_t* set_transitive_query_args(Tcl_Interp *interp, char *argv[]
 				iflow_query_destroy(iflow_query);
 				return NULL;
 			}
-			/* Increment to next element, which should be the number of permissions for the class */
+			/* Increment to next element, which should be the number of permissions to exclude for the class 
+			 * num_obj_perms = 0 means to exclude the entire class */
 			cur++;
 			rt = Tcl_GetInt(interp, obj_class_perms[cur], &num_obj_perms);
 			if(rt == TCL_ERROR) {
 				Tcl_AppendResult(interp, "Item in obj_class_perms list apparently is not an integer\n", (char *) NULL);
 				return NULL;
 			}
-			total_num_perms = get_num_perms_for_obj_class(obj, policy);
-			if (!total_num_perms) {
-				Tcl_AppendResult(interp, "Object class without any permissions!\n", (char *) NULL);
-				return NULL;
-			}
+			
 			/* If this there are no permissions given then exclude the entire object class. */
 			if (num_obj_perms == 0) {
 				if (iflow_query_add_obj_class(iflow_query, obj) == -1) {
@@ -336,7 +334,7 @@ static iflow_query_t* set_transitive_query_args(Tcl_Interp *interp, char *argv[]
 						fprintf(stderr, "Invalid object class permission\n");
 						continue;
 					}
-					if (iflow_query_add_obj_class_perm(iflow_query, obj, j) == -1) {
+					if (iflow_query_add_obj_class_perm(iflow_query, obj, perm) == -1) {
 						Tcl_AppendResult(interp, "error adding perm\n", (char *) NULL);
 						return NULL;
 					}
@@ -3848,7 +3846,7 @@ static int types_relation_append_results(types_relation_query_t *tr_query,
 static int types_relation_get_dta_options(dta_query_t *dta_query, Tcl_Interp *interp, char *argv[], policy_t *policy)
 {
 	int rt, num_objs, num_objs_options, num_end_types, i, j;
-	int total_num_perms, cur, type;
+	int cur, type;
 	int num_obj_perms, obj, perm;
 	CONST84 char **obj_class_perms, **end_types;
 	bool_t filter_obj_classes, filter_end_types;
@@ -3896,7 +3894,8 @@ static int types_relation_get_dta_options(dta_query_t *dta_query, Tcl_Interp *in
 		assert(num_objs > 0);
 		cur = 0;
 		/* Set the object classes permission info */
-		/* Keep in mind that this is an encoded TCL list in the form "class1 num_perms perm1 ... permN ... classN num_perms perm1 ... permN" */
+		/* Keep in mind that this is an encoded TCL list in the form 
+		 * "class1 num_perms perm1 ... permN ... classN num_perms perm1 ... permN" */
 		for (i = 0; i < num_objs; i++) {
 			obj = get_obj_class_idx(obj_class_perms[cur], policy);
 			if (obj < 0) {
@@ -3916,13 +3915,6 @@ static int types_relation_get_dta_options(dta_query_t *dta_query, Tcl_Interp *in
 				continue;	
 			}
 			
-			/* Get the total number of permissions for the class from the policy. */
-			total_num_perms = get_num_perms_for_obj_class(obj, policy);
-			if (!total_num_perms) {
-				Tcl_AppendResult(interp, "Object class without any permissions!\n", (char *) NULL);
-				return TCL_ERROR;
-			}
-			
 			for (j = 0; j < num_obj_perms; j++) {
 				cur++;
 				perm = get_perm_idx(obj_class_perms[cur], policy);
@@ -3930,7 +3922,7 @@ static int types_relation_get_dta_options(dta_query_t *dta_query, Tcl_Interp *in
 					fprintf(stderr, "Invalid object class permission\n");
 					continue;
 				}
-				if (dta_query_add_obj_class_perm(dta_query, obj, j) == -1) {
+				if (dta_query_add_obj_class_perm(dta_query, obj, perm) == -1) {
 					Tcl_AppendResult(interp, "error adding perm\n", (char *) NULL);
 					return TCL_ERROR;
 				}
@@ -4025,7 +4017,7 @@ static int types_relation_get_dirflow_options(iflow_query_t *direct_flow_query, 
  */
 static int types_relation_get_transflow_options(iflow_query_t *trans_flow_query, Tcl_Interp *interp, char *argv[], policy_t *policy)
 {
-	int num_objs, num_obj_perms, num_objs_options, obj, perm, total_num_perms;
+	int num_objs, num_obj_perms, num_objs_options, obj, perm;
 	int num_inter_types, type;
 	int i, j, rt, cur;
 	CONST84 char **obj_class_perms = NULL, **inter_types = NULL;
@@ -4094,11 +4086,7 @@ static int types_relation_get_transflow_options(iflow_query_t *trans_flow_query,
 				Tcl_AppendResult(interp, "Item in obj_class_perms list apparently is not an integer\n", (char *) NULL);
 				return TCL_ERROR;
 			}
-			total_num_perms = get_num_perms_for_obj_class(obj, policy);
-			if (!total_num_perms) {
-				Tcl_AppendResult(interp, "Object class without any permissions!\n", (char *) NULL);
-				return TCL_ERROR;
-			}
+	
 			/* If this there are no permissions given then exclude the entire object class. */
 			if (num_obj_perms == 0) {
 				if (iflow_query_add_obj_class(trans_flow_query, obj) == -1) {
@@ -4113,7 +4101,7 @@ static int types_relation_get_transflow_options(iflow_query_t *trans_flow_query,
 						fprintf(stderr, "Invalid object class permission\n");
 						continue;
 					}
-					if (iflow_query_add_obj_class_perm(trans_flow_query, obj, j) == -1) {
+					if (iflow_query_add_obj_class_perm(trans_flow_query, obj, perm) == -1) {
 						Tcl_AppendResult(interp, "error adding perm\n", (char *) NULL);
 						return TCL_ERROR;
 					}
@@ -4466,7 +4454,7 @@ int Apol_TypesRelationshipAnalysis(ClientData clientData, Tcl_Interp *interp, in
 int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
 {
 	int rt, num_objs, num_objs_options, num_end_types, i, j;
-	int total_num_perms, cur, type;
+	int cur, type;
 	int num_obj_perms, obj, perm;
 	CONST84 char **obj_class_perms, **end_types;
 	dta_query_t *dta_query = NULL;
@@ -4570,13 +4558,6 @@ int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *interp, int
 				continue;	
 			}
 			
-			/* Get the total number of permissions for the class from the policy. */
-			total_num_perms = get_num_perms_for_obj_class(obj, policy);
-			if (!total_num_perms) {
-				Tcl_AppendResult(interp, "Object class without any permissions!\n", (char *) NULL);
-				return TCL_ERROR;
-			}
-			
 			for (j = 0; j < num_obj_perms; j++) {
 				cur++;
 				perm = get_perm_idx(obj_class_perms[cur], policy);
@@ -4584,7 +4565,7 @@ int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *interp, int
 					fprintf(stderr, "Invalid object class permission\n");
 					continue;
 				}
-				if (dta_query_add_obj_class_perm(dta_query, obj, j) == -1) {
+				if (dta_query_add_obj_class_perm(dta_query, obj, perm) == -1) {
 					Tcl_AppendResult(interp, "error adding perm\n", (char *) NULL);
 					return TCL_ERROR;
 				}
@@ -4911,7 +4892,7 @@ int Apol_DirectInformationFlowAnalysis(ClientData clientData, Tcl_Interp *interp
  * argv[4] - number of object classes that are to be included in the query.
  * argv[5] - flag (boolean value) for indicating that filter on end type(s) is being provided 
  * argv[6] - ending type regular expression 
- * argv[7] - encoded list of object class/permissions to include in the query
+ * argv[7] - encoded list of object class/permissions to exclude in the query
  * argv[8] - flag (boolean value) for indicatinf whether or not to include intermediate types in the query.
  * argv[9] - TCL list of intermediate types
  *
@@ -4995,7 +4976,7 @@ int Apol_TransitiveFlowAnalysis(ClientData clientData, Tcl_Interp *interp, int a
  * argv[4] - number of object classes that are to be included in the query.
  * argv[5] - flag (boolean value) for indicating that filter on end type(s) is being provided 
  * argv[6] - ending type regular expression 
- * argv[7] - encoded list of object class/permissions to include in the query
+ * argv[7] - encoded list of object class/permissions to exclude in the query
  * argv[8] - flag (boolean value) for indicating whether or not to include intermediate types in the query.
  * argv[9] - TCL list of intermediate types
  */
