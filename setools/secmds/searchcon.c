@@ -49,7 +49,6 @@
 
 static struct option const longopts[] =
 {
-  {"filename", required_argument, NULL, 'f'},
   {"type", required_argument, NULL, 't'},
   {"user", required_argument, NULL, 'u'},
   {"path", required_argument, NULL, 'p'},
@@ -64,14 +63,13 @@ static struct option const longopts[] =
 void usage(const char *program_name, int brief)
 {
 	printf("%s (listcon ver. %s)\n\n", COPYRIGHT_INFO, SEARCHCON_VERSION_NUM);
-	printf("Usage: %s [OPTIONS]\n", program_name);
+	printf("Usage: %s <index file> [OPTIONS]\n", program_name);
 	if(brief) {
 		printf("\n   Try %s --help for more help.\n\n", program_name);
 		return;
 	}
 	fputs("\n\
 Print requested information about an SELinux policy.\n\
-  -f filename, --filename=filename 	The snapshot file to use\n\
   -t type, --type=typename   		The name of the type to search for\n\
   -u user, --user=username   		The name of the user to search for\n\
   -p path, --path=pathname   		The path or path fragment to search for\n\
@@ -199,9 +197,6 @@ int main(int argc, char **argv, char **envp)
 	
 	while ((optc = getopt_long (argc, argv, "f:t:u:p:rlhv", longopts, NULL)) != -1)  {
 		switch (optc) {
-	  	case 'f': /* snapshot file */
-	  		filename = optarg;
-	  		break;
 		case 't': /* type */
 	  		tname = optarg;
 	  		break;
@@ -228,13 +223,13 @@ int main(int argc, char **argv, char **envp)
 	  		exit(1);
 		}
 	}
-	
+
+        filename = argv[1];
 	if (filename == NULL) {
-		fprintf(stderr, "\n-f|--filename is required\n\n");
 		usage(argv[0], 0);
-		return(-1);
+		return -1;
 	}
-	
+
 	if ((tname == NULL) && (uname == NULL) && (path == NULL) && !list) {
 		fprintf(stderr, "\nYou must specify one of -t|-u|-p\n\n");
 		usage(argv[0], 0);
