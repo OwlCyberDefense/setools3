@@ -14,6 +14,7 @@
 #include <string.h>
 #include <libapol/util.h>
 #include <libxml/parser.h>
+#include <libxml/uri.h>
 
 static void dummy_free(void *foo) {  }
 
@@ -36,37 +37,205 @@ enum seaudit_filter_parser_state_t {
 };
 	       
 typedef struct seaudit_filter_parser_data {
+	seaudit_filter_t *filter;
 	enum seaudit_filter_parser_state_t state; /* parser state */
-	char *exe;        /* parser data .. */
-	char *path;
-	char *ipaddr;
-	char *netif;
-	char *name;
-	char *desc;
-	char **src_types;
-	int num_src_types;
-	char **tgt_types;
-	int num_tgt_types;
-	char **src_roles;
-	int num_src_roles;
-	char **tgt_roles;
-	int num_tgt_roles;
-	char **src_users;
-	int num_src_users;
-	char **tgt_users;
-	int num_tgt_users;
-	char **classes;
-	int num_classes;
-	int port;
-	enum seaudit_filter_match_t match;
+	char **strs;    /* parser data */
+	int num_strs;
 } seaudit_filter_parser_data_t;
 
-static void seaudit_filter_parser_data_free(seaudit_filter_parser_data_t *parse_data);
-static seaudit_filter_t* seaudit_filter_parser_data_get_filter(seaudit_filter_parser_data_t *parse_data);
-/* xml parser callbacks */
-static void characters(void *user_data, const xmlChar *ch, int len);
-static void startElement(void *user_data, const xmlChar *name, const xmlChar **attrs);
+static void seaudit_filter_parser_data_free(seaudit_filter_parser_data_t *data)
+{
+	int i;
 
+	if (data->strs) {
+		for (i = 0; i < data->num_strs; i++)
+			if (data->strs[i])
+				free(data->strs[i]);
+		free(data->strs);
+		data->strs = NULL;
+		data->num_strs = 0;
+	}
+}
+
+/* implementation of xml parser callback functions */
+static void my_parse_characters(void *user_data, const xmlChar *ch, int len)
+{
+	seaudit_filter_parser_data_t *data = (seaudit_filter_parser_data_t *)user_data;
+
+	if (strncmp(ch, "\n", len) == 0)
+		return;
+
+	switch(data->state) {
+	case PARSING_NONE:
+		break;
+	case PARSING_SRC_TYPES:
+	case PARSING_TGT_TYPES:
+	case PARSING_SRC_ROLES:
+	case PARSING_TGT_ROLES:
+	case PARSING_SRC_USERS:
+	case PARSING_TGT_USERS:
+	case PARSING_CLASSES:
+	case PARSING_EXE:
+	case PARSING_PATH:
+	case PARSING_NETIF:
+	case PARSING_IPADDR:
+	case PARSING_PORTS:
+	case PARSING_DESC:
+		data->strs = (char**)realloc(data->strs, sizeof(char*)*((data->num_strs)+2));
+		data->strs[data->num_strs] = xmlURIUnescapeString(ch, len, NULL);
+		data->strs[data->num_strs+1] = NULL;
+		data->num_strs++;
+		break;
+	}
+}
+
+static void my_parse_endElement(void *user_data, const xmlChar *name)
+{
+	seaudit_filter_parser_data_t *data = (seaudit_filter_parser_data_t *)user_data;
+
+	if (!data->strs)
+		return;
+
+	if (strcmp(name, "desc") == 0) {
+		if (data->strs[0])
+			seaudit_filter_set_desc(data->filter, data->strs[0]);
+		seaudit_filter_parser_data_free(data);
+		data->state = PARSING_NONE;
+		return;
+	}
+
+	if (strcmp(name, "criteria") == 0) {
+		switch (data->state) {
+		case PARSING_NONE:
+		case PARSING_DESC:
+			break;
+		case PARSING_SRC_TYPES:
+			data->filter->src_type_criteria = src_type_criteria_create(data->strs, data->num_strs);
+			seaudit_filter_parser_data_free(data);
+			data->state = PARSING_NONE;
+			break;
+		case PARSING_TGT_TYPES:
+			data->filter->tgt_type_criteria = tgt_type_criteria_create(data->strs, data->num_strs);
+			seaudit_filter_parser_data_free(data);		
+			data->state = PARSING_NONE;
+			break;
+		case PARSING_SRC_ROLES:
+			data->filter->src_role_criteria = src_role_criteria_create(data->strs, data->num_strs);
+			seaudit_filter_parser_data_free(data);
+			data->state = PARSING_NONE;
+			break;
+		case PARSING_TGT_ROLES:
+			data->filter->tgt_role_criteria = tgt_role_criteria_create(data->strs, data->num_strs);
+			seaudit_filter_parser_data_free(data);
+			data->state = PARSING_NONE;
+			break;
+		case PARSING_SRC_USERS:
+			data->filter->src_user_criteria = src_user_criteria_create(data->strs, data->num_strs);
+			seaudit_filter_parser_data_free(data);
+			data->state = PARSING_NONE;
+			break;
+		case PARSING_TGT_USERS:
+			data->filter->tgt_user_criteria = tgt_user_criteria_create(data->strs, data->num_strs);
+			seaudit_filter_parser_data_free(data);
+			data->state = PARSING_NONE;
+			break;
+		case PARSING_CLASSES:
+			data->filter->class_criteria = class_criteria_create(data->strs, data->num_strs);
+			seaudit_filter_parser_data_free(data);
+			data->state = PARSING_NONE;
+			break;
+		case PARSING_EXE:
+			if (data->strs[0])
+				data->filter->exe_criteria = exe_criteria_create(data->strs[0]);
+			seaudit_filter_parser_data_free(data);
+			data->state = PARSING_NONE;
+			break;
+		case PARSING_PATH:
+			if (data->strs[0])
+				data->filter->path_criteria = path_criteria_create(data->strs[0]);
+			seaudit_filter_parser_data_free(data);
+			data->state = PARSING_NONE;
+			break;
+		case PARSING_NETIF:
+			if (data->strs[0])
+				data->filter->netif_criteria = netif_criteria_create(data->strs[0]);
+			seaudit_filter_parser_data_free(data);
+			data->state = PARSING_NONE;
+			break;
+		case PARSING_IPADDR:
+			if (data->strs[0])
+				data->filter->ipaddr_criteria = ipaddr_criteria_create(data->strs[0]);
+			seaudit_filter_parser_data_free(data);
+			data->state = PARSING_NONE;
+			break;
+		case PARSING_PORTS:
+			if (data->strs[0])
+				data->filter->ports_criteria = ports_criteria_create(atoi(data->strs[0]));
+			seaudit_filter_parser_data_free(data);
+			data->state = PARSING_NONE;
+		}
+	}
+
+}
+
+static void my_parse_startElement(void *user_data, const xmlChar *name, const xmlChar **attrs)
+{
+	seaudit_filter_parser_data_t *data = (seaudit_filter_parser_data_t *)user_data;	
+	char *unescaped;
+
+        /* set state and process attributes.
+	 * attributes are passed in by name value pairs. */
+	if (strcmp(name, "filter") == 0) {
+		data->state = PARSING_NONE;
+		if (!attrs[0] || !attrs[1] || !attrs[2] || !attrs[3])
+			return;
+		if (strcmp(attrs[0], "name") == 0)
+			if (data->filter->name)
+				free(data->filter->name);
+		unescaped = xmlURIUnescapeString(attrs[1], -1, NULL);
+		data->filter->name = strdup(unescaped);
+		free(unescaped);
+		if (strcmp(attrs[2], "match") == 0) {
+			if (strcmp(attrs[3], "all") == 0)
+				data->filter->match = SEAUDIT_FILTER_MATCH_ALL;
+			else 
+				data->filter->match = SEAUDIT_FILTER_MATCH_ANY;
+		}
+
+	} else if (strcmp(name, "desc") == 0) {
+		data->state = PARSING_DESC;
+
+	} else if (strcmp(name, "criteria") == 0) {
+		if (!attrs[0] || !attrs[1] || strcmp(attrs[0], "type") != 0)
+			data->state = PARSING_NONE;
+		else if (strcmp(attrs[1], "src_type") == 0)
+			data->state = PARSING_SRC_TYPES;
+		else if (strcmp(attrs[1], "tgt_type") == 0)
+			data->state = PARSING_TGT_TYPES;
+		else if (strcmp(attrs[1], "src_user") == 0)
+			data->state = PARSING_SRC_USERS;
+		else if (strcmp(attrs[1], "tgt_user") == 0)
+			data->state = PARSING_TGT_USERS;
+		else if (strcmp(attrs[1], "src_role") == 0)
+			data->state = PARSING_SRC_ROLES;
+		else if (strcmp(attrs[1], "tgt_role") == 0)
+			data->state = PARSING_TGT_ROLES;
+		else if (strcmp(attrs[1], "obj_class") == 0)
+			data->state = PARSING_CLASSES;
+		else if (strcmp(attrs[1], "exe") == 0)
+			data->state = PARSING_EXE;
+		else if (strcmp(attrs[1], "path") == 0)
+			data->state = PARSING_PATH;
+		else if (strcmp(attrs[1], "netif") == 0)
+			data->state = PARSING_NETIF;
+		else if (strcmp(attrs[1], "ipaddr") == 0)
+			data->state = PARSING_IPADDR;
+		else if (strcmp(attrs[1], "port") == 0)
+			data->state = PARSING_PORTS;
+		else
+			data->state = PARSING_NONE;
+        }
+}
 
 seaudit_filter_t* seaudit_filter_create(void)
 {
@@ -203,6 +372,7 @@ int seaudit_filter_save_to_file(seaudit_filter_t *filter, const char *filename)
 {
 	FILE *file;
 	const char *XML_VER = "<?xml version=\"1.0\"?>\n";
+	char *escaped;
 
 	if (!filter || !filename)
 		return -1;
@@ -212,11 +382,16 @@ int seaudit_filter_save_to_file(seaudit_filter_t *filter, const char *filename)
 	fprintf(file, XML_VER);
 	fprintf(file, "<structure xmlns=\"http://www.tresys.com/setools/seaudit/%s/\">\n", 
 		LIBSEAUDIT_VERSION_STRING);
-	fprintf(file, "<filter name=\"%s\" match=\"%s\">\n", filter->name, 
+	escaped = xmlURIEscapeStr(filter->name, NULL);
+	fprintf(file, "<filter name=\"%s\" match=\"%s\">\n", escaped, 
 		filter->match == SEAUDIT_FILTER_MATCH_ALL? "all" : "any");
+	free(escaped);
 
-	if (filter->desc)
-		fprintf(file, "<desc>%s</desc>\n", filter->desc);
+	if (filter->desc) {
+		escaped = xmlURIEscapeStr(filter->desc, NULL);
+		fprintf(file, "<desc>%s</desc>\n", escaped);
+		free(escaped);
+	}
 
 	seaudit_criteria_print(filter->src_type_criteria, file);
 	seaudit_criteria_print(filter->tgt_type_criteria, file);
@@ -247,242 +422,17 @@ int seaudit_filter_load_from_file(seaudit_filter_t **filter, const char *filenam
 		return -1;
 
 	memset(&handler, 0, sizeof(xmlSAXHandler));
-	handler.startElement = startElement;
-	handler.characters = characters;
+	handler.startElement = my_parse_startElement;
+	handler.endElement = my_parse_endElement;
+	handler.characters = my_parse_characters;
 	memset(&parse_data, 0, sizeof(seaudit_filter_parser_data_t));
-	parse_data.port = -1;
+	parse_data.filter = seaudit_filter_create();
 	err = xmlSAXUserParseFile(&handler, &parse_data, filename);
-	if (err) {
-		seaudit_filter_parser_data_free(&parse_data);
-		return err;
-	}
-	*filter = seaudit_filter_parser_data_get_filter(&parse_data);
 	seaudit_filter_parser_data_free(&parse_data);
+	if (err)
+		return err;
+	*filter = parse_data.filter;
 	return 0;
 }
 
-static seaudit_filter_t* seaudit_filter_parser_data_get_filter(seaudit_filter_parser_data_t *parse_data)
-{
-	seaudit_filter_t *filter;
 
-	filter = seaudit_filter_create();
-	if (!filter)
-		return NULL;
-	seaudit_filter_set_match(filter, parse_data->match);
-	if (parse_data->name)
-		seaudit_filter_set_name(filter, parse_data->name);
-	if (parse_data->desc)
-		seaudit_filter_set_desc(filter, parse_data->desc);
-	if (parse_data->src_types)
-		filter->src_type_criteria = src_type_criteria_create(parse_data->src_types, parse_data->num_src_types);
-	if (parse_data->tgt_types)
-		filter->tgt_type_criteria = tgt_type_criteria_create(parse_data->tgt_types, parse_data->num_tgt_types);
-	if (parse_data->src_roles)
-		filter->src_role_criteria = src_role_criteria_create(parse_data->src_roles, parse_data->num_src_roles);
-	if (parse_data->tgt_roles)
-		filter->tgt_role_criteria = tgt_role_criteria_create(parse_data->tgt_roles, parse_data->num_tgt_roles);
-	if (parse_data->src_users)
-		filter->src_user_criteria = src_user_criteria_create(parse_data->src_users, parse_data->num_src_users);
-	if (parse_data->tgt_users)
-		filter->tgt_user_criteria = tgt_user_criteria_create(parse_data->tgt_users, parse_data->num_tgt_users);
-	if (parse_data->classes)
-		filter->class_criteria = class_criteria_create(parse_data->classes, parse_data->num_classes);
-	if (parse_data->exe)
-		filter->exe_criteria = exe_criteria_create(parse_data->exe);
-	if (parse_data->path)
-		filter->path_criteria = path_criteria_create(parse_data->path);
-	if (parse_data->netif)
-		filter->netif_criteria = netif_criteria_create(parse_data->netif);
-	if (parse_data->ipaddr)
-		filter->ipaddr_criteria = ipaddr_criteria_create(parse_data->ipaddr);
-	if (parse_data->port >= 0)
-		filter->ports_criteria = ports_criteria_create(parse_data->port);
-
-	return filter;
-}
-
-static void seaudit_filter_parser_data_free(seaudit_filter_parser_data_t *data)
-{
-	int i;
-
-	if (data->exe)
-		free(data->exe);
-	if (data->path)
-		free(data->path);
-	if (data->ipaddr)
-		free(data->ipaddr);
-	if (data->netif)
-		free(data->netif);
-	if (data->desc)
-		free(data->desc);
-	if (data->src_types) {
-		for (i = 0; i < data->num_src_types; i++)
-			if (data->src_types[i])
-				free(data->src_types[i]);
-		free(data->src_types);
-	}
-	if (data->tgt_types) {
-		for (i = 0; i < data->num_tgt_types; i++)
-			if (data->tgt_types[i])
-				free(data->tgt_types[i]);
-		free(data->tgt_types);
-	}
-	if (data->src_roles) {
-		for (i = 0; i < data->num_src_roles; i++) 
-			if (data->src_roles[i])
-				free(data->src_roles[i]);
-		free(data->src_roles);
-	}
-	if (data->tgt_roles) {
-		for (i = 0; i < data->num_tgt_roles; i++)
-			if (data->tgt_roles[i])
-				free(data->tgt_roles[i]);
-		free(data->tgt_roles);
-	}
-	if (data->src_users) {
-		for (i = 0; i < data->num_src_users; i++)
-			if (data->src_users[i])
-				free(data->src_users[i]);
-		free(data->src_users);
-	}
-	if (data->tgt_users) {
-		for (i = 0; i < data->num_tgt_users; i++)
-			if (data->tgt_users[i])
-				free(data->tgt_users[i]);
-		free(data->tgt_users);
-	}
-	if (data->classes) {
-		for (i = 0; i < data->num_classes; i++)
-			if (data->classes[i])
-				free(data->classes[i]);
-		free(data->classes);
-	}
-}
-
-/* implementation of xml parser callback functions */
-static void characters(void *user_data, const xmlChar *ch, int len)
-{
-	seaudit_filter_parser_data_t *data = (seaudit_filter_parser_data_t *)user_data;
-	char *tmpstr;
-
-	if (strncmp(ch, "\n", len) == 0)
-		return;
-
-	switch(data->state) {
-	case PARSING_NONE:
-		break;
-	case PARSING_SRC_TYPES:
-		data->src_types = (char**)realloc(data->src_types, sizeof(char*)*(data->num_src_types+1));
-		data->src_types[data->num_src_types] = strndup(ch, len);
-		data->num_src_types++;
-		break;
-	case PARSING_TGT_TYPES:
-		data->tgt_types = (char**)realloc(data->tgt_types, sizeof(char*)*(data->num_tgt_types+1));
-		data->tgt_types[data->num_tgt_types] = strndup(ch, len);
-		data->num_tgt_types++;
-		break;
-	case PARSING_SRC_ROLES:
-		data->src_roles = (char**)realloc(data->src_roles, sizeof(char*)*(data->num_src_roles+1));
-		data->src_roles[data->num_src_roles] = strndup(ch, len);
-		data->num_src_roles++;
-		break;
-	case PARSING_TGT_ROLES:
-		data->tgt_roles = (char**)realloc(data->tgt_roles, sizeof(char*)*(data->num_tgt_roles+1));
-		data->tgt_roles[data->num_tgt_roles] = strndup(ch, len);
-		data->num_tgt_roles++;
-		break;
-	case PARSING_SRC_USERS:
-		data->src_users = (char**)realloc(data->src_users, sizeof(char*)*(data->num_src_users+1));
-		data->src_users[data->num_src_users] = strndup(ch, len);
-		data->num_src_users++;
-		break;
-	case PARSING_TGT_USERS:
-		data->tgt_users = (char**)realloc(data->tgt_users, sizeof(char*)*(data->num_tgt_users+1));
-		data->tgt_users[data->num_tgt_users] = strndup(ch, len);
-		data->num_tgt_users++;
-		break;
-	case PARSING_CLASSES:
-		data->classes = (char**)realloc(data->classes, sizeof(char*)*(data->num_classes+1));
-		data->classes[data->num_classes] = strndup(ch, len);
-		data->num_classes++;
-		break;
-	case PARSING_EXE:
-		if (data->exe)
-			free(data->exe);
-		data->exe = strndup(ch, len);
-		break;
-	case PARSING_PATH:
-		if (data->path)
-			free(data->path);
-		data->path = strndup(ch, len);
-		break;
-	case PARSING_NETIF:
-		if (data->netif)
-			free(data->netif);
-		data->netif = strndup(ch, len);
-		break;
-	case PARSING_IPADDR:
-		if (data->ipaddr)
-			free(data->ipaddr);
-		data->ipaddr = strndup(ch, len);
-		break;
-	case PARSING_PORTS:
-		tmpstr = strndup(ch, len);
-		data->port = atoi(tmpstr);
-		free(tmpstr);
-		break;
-	case PARSING_DESC:
-		if (data->desc)
-			free(data->desc);
-		data->desc = strndup(ch, len);
-	}
-}
-
-static void startElement(void *user_data, const xmlChar *name, const xmlChar **attrs)
-{
-	seaudit_filter_parser_data_t *data = (seaudit_filter_parser_data_t *)user_data;	
-
-        /* set state and process attributes.
-	 * attributes are passed in by name value pairs. */
-	if (strcmp(name, "filter") == 0) {
-		if (!attrs[0] || !attrs[1] || !attrs[2] || !attrs[3]) {
-			data->state = PARSING_NONE;
-			return;
-		}
-		if (strcmp(attrs[0], "name") == 0)
-			data->name = strdup(attrs[1]);
-		if (strcmp(attrs[2], "match") == 0)
-			data->match = (strcmp(attrs[3], "all") == 0) ? SEAUDIT_FILTER_MATCH_ALL : SEAUDIT_FILTER_MATCH_ANY;
-	} else if (strcmp(name, "desc") == 0) {
-		data->state = PARSING_DESC;
-	} else if (strcmp(name, "criteria") == 0) {
-		if (!attrs[0] || !attrs[1] || strcmp(attrs[0], "type") != 0)
-			data->state = PARSING_NONE;
-		else if (strcmp(attrs[1], "src_type") == 0)
-			data->state = PARSING_SRC_TYPES;
-		else if (strcmp(attrs[1], "tgt_type") == 0)
-			data->state = PARSING_TGT_TYPES;
-		else if (strcmp(attrs[1], "src_user") == 0)
-			data->state = PARSING_SRC_USERS;
-		else if (strcmp(attrs[1], "tgt_user") == 0)
-			data->state = PARSING_TGT_USERS;
-		else if (strcmp(attrs[1], "src_role") == 0)
-			data->state = PARSING_SRC_ROLES;
-		else if (strcmp(attrs[1], "tgt_role") == 0)
-			data->state = PARSING_TGT_ROLES;
-		else if (strcmp(attrs[1], "obj_class") == 0)
-			data->state = PARSING_CLASSES;
-		else if (strcmp(attrs[1], "exe") == 0)
-			data->state = PARSING_EXE;
-		else if (strcmp(attrs[1], "path") == 0)
-			data->state = PARSING_PATH;
-		else if (strcmp(attrs[1], "netif") == 0)
-			data->state = PARSING_NETIF;
-		else if (strcmp(attrs[1], "ipaddr") == 0)
-			data->state = PARSING_IPADDR;
-		else if (strcmp(attrs[1], "port") == 0)
-			data->state = PARSING_PORTS;
-		else
-			data->state = PARSING_NONE;
-        }
-}
