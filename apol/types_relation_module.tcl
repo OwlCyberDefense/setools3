@@ -36,7 +36,7 @@ namespace eval Apol_Analysis_tra {
 				  are simplified by listing each aspect of the analysis as a separate child element \
 				  within a tree widget. This allows the user to select any aspect of the analysis \
 				  from the tree and have more specific results displayed within the \
-				  textbox. \n\nFor additional information on this topic select \"Types Relationship \
+				  textbox. \n\nFor detailed information on using this module select \"Types Relationship \
 				  Summary Analysis\" from the help menu."
 	variable progressmsg		""
 	variable progress_indicator	-1
@@ -354,12 +354,12 @@ proc Apol_Analysis_tra::do_analysis {results_frame} {
    
        	if {$typeA == ""} {
        		tk_messageBox -icon error -type ok -title "Error" \
-       			-message "TypeA cannot be empty!"
+       			-message "Type A cannot be empty!"
 	    	return -code error
        	}
        	if {$typeB == ""} {
        		tk_messageBox -icon error -type ok -title "Error" \
-       			-message "TypeB cannot be empty!"
+       			-message "Type B cannot be empty!"
 	    	return -code error
        	}
        	
@@ -522,14 +522,16 @@ proc Apol_Analysis_tra::listSelect {tra_listbox tra_info_text selected_item} {
 			set end_idx [$tra_info_text index insert]
 			$tra_info_text tag add $Apol_Analysis_tra::title_tag $start_idx $end_idx
 			
-			$tra_info_text insert end "Open the subtree for this item to see the list of \
-				common types that can be accessed. You may then select a type from the \
-				subtree to see the allow rules which provide the access."
+			if {[$tra_listbox itemcget $selected_item -data] > 0} {
+				$tra_info_text insert end "Open the subtree for this item to see the list of \
+					common types that can be accessed. You may then select a type from the \
+					subtree to see the allow rules which provide the access."
+			}
 		}
 		unique_objects {
 			$tra_info_text configure -wrap word
 			$tra_info_text insert end "Open the subtree for this item to access individual \
-				subtrees of types that can be accessed by either "
+				subtrees of types which can be accessed by either "
 			
 			set start_idx [$tra_info_text index insert]
 			$tra_info_text insert end "$typeA" 
@@ -569,9 +571,11 @@ proc Apol_Analysis_tra::listSelect {tra_listbox tra_info_text selected_item} {
 			set end_idx [$tra_info_text index insert]
 			$tra_info_text tag add $Apol_Analysis_tra::title_tag $start_idx $end_idx
 			
-			$tra_info_text insert end "Open the subtree for this item to see the list of types. \
-				You may then select a type from the subtree to see the allow rules which provide \
-				the access."
+			if {[$tra_listbox itemcget $selected_item -data] > 0} {
+				$tra_info_text insert end "Open the subtree for this item to see the list of types. \
+					You may then select a type from the subtree to see the allow rules which provide \
+					the access."
+			}
 		}
 		unique_objects:typeB {
 			$tra_info_text configure -wrap word
@@ -592,13 +596,14 @@ proc Apol_Analysis_tra::listSelect {tra_listbox tra_info_text selected_item} {
 			$tra_info_text tag add $Apol_Analysis_tra::title_type_tag $start_idx $end_idx
 			
 			set start_idx [$tra_info_text index insert]
-			$tra_info_text insert end "does not have access.\n\n"
+			$tra_info_text insert end " does not have access.\n\n"
 			set end_idx [$tra_info_text index insert]
 			$tra_info_text tag add $Apol_Analysis_tra::title_tag $start_idx $end_idx
-			
-			$tra_info_text insert end "Open the subtree for this item to see the list of types. \
-				You may then select a type from the subtree to see the allow rules which provide \
-				the access."
+			if {[$tra_listbox itemcget $selected_item -data] > 0} {
+				$tra_info_text insert end "Open the subtree for this item to see the list of types. \
+					You may then select a type from the subtree to see the allow rules which provide \
+					the access."
+			}
 		}
 		dir_flows {
 			Apol_Analysis_tra::display_direct_flows \
@@ -1818,7 +1823,9 @@ proc Apol_Analysis_tra::create_results_list_structure {tra_listbox results_list}
 	}						
 	
         $tra_listbox configure -redraw 1
-	        
+	Apol_Analysis_tra::listSelect $Apol_Analysis_tra::tra_listbox \
+				      $Apol_Analysis_tra::tra_info_text \
+				      [$tra_listbox nodes $parent 0]
         return 0
 }
 
@@ -2553,14 +2560,14 @@ proc Apol_Analysis_tra::create_options { options_frame } {
 	
 	# Checkbuttons for enabling disabling attribute comboboxes
 	set cb_attribA [checkbutton $attrib_frame_1.cb_attribA \
-		-text "Select Type A using attrib:" \
+		-text "Filter types to select using attrib:" \
 		-variable Apol_Analysis_tra::attribA_sel \
 		-offvalue 0 -onvalue 1]
 	$cb_attribA configure \
 		-command "Apol_Analysis_tra::config_attrib_comboBox_state \
 			$cb_attribA $combo_attribA $combo_typeA 1"
 	set cb_attribB [checkbutton $attrib_frame_2.cb_attribB \
-		-text "Select Type B using attrib:" \
+		-text "Filter types to select using attrib:" \
 		-variable Apol_Analysis_tra::attribB_sel \
 		-offvalue 0 -onvalue 1]
 	$cb_attribB configure \
@@ -2660,21 +2667,21 @@ proc Apol_Analysis_tra::create_options { options_frame } {
         pack $tab1_button1 $tab1_button2 $tab2_button1 $tab2_button2 -anchor nw -side left -fill both -expand yes -padx 2 -pady 2
         pack $lbl_typeA $lbl_typeB -side top -anchor nw -padx 2
 	pack $cb_attribA $cb_attribB -side top -anchor sw -padx 10
-	pack $combo_typeA $combo_typeB -side left -anchor nw -fill x -padx 5
-	pack $combo_attribA $combo_attribB -side top -anchor sw -padx 10
+	pack $combo_typeA $combo_typeB -side left -anchor nw -fill x -expand yes -padx 5
+	pack $combo_attribA $combo_attribB -side top -anchor sw -padx 10 -fill x -expand yes
         pack $notebook -side bottom -anchor nw -fill both -expand yes 
 	pack $entry_frame -side left -anchor nw -fill both -padx 5 -expand yes
         pack $top_frame -side left -anchor nw -fill both -padx 5 -expand yes
         pack $top -fill both -side top -anchor nw -expand yes
+        pack $types_f -side top -anchor nw -fill x -expand yes -pady 4
         pack $ckbttns_f -side bottom -anchor nw -fill both -pady 8 -expand yes
-        pack $types_f -side top -anchor nw -fill x -pady 4
         pack $comm_attribs_cb $comm_roles_cb $comm_users_cb $te_rules_cb $tt_rules_cb \
              $comm_access_cb $unique_access_cb -side top -anchor nw -padx 2
         pack $dir_flow_cb $trans_flow_AB_cb $trans_flow_BA_cb \
 	     $dta_AB_cb $dta_BA_cb -side top -anchor nw -padx 2	
-        pack $typeA_frame $typeB_frame -side left -anchor nw -fill x -expand yes
-        pack $type_frame_1 $type_frame_2 -side top -anchor nw
-        pack $attrib_frame_1 $attrib_frame_2 -side bottom -anchor nw -pady 2
+        pack $typeA_frame $typeB_frame -side left -anchor nw -expand yes
+        pack $type_frame_1 $type_frame_2 -side top -anchor nw -fill x -expand yes
+        pack $attrib_frame_1 $attrib_frame_2 -side bottom -anchor nw -fill x -expand yes -pady 2
 	pack $lbl_ckbttns -side top -anchor nw -pady 2
 	                   	
 	# Set binding for the embedded entrybox within the BWidget combobox
