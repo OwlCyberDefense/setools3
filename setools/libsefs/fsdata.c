@@ -1088,13 +1088,13 @@ char **sefs_filesystem_db_get_known(sefs_filesystem_db_t *fsd,int *count_in,int 
 
 	if (request_type == SEFS_TYPES) {
 		sprintf(count_stmt,"SELECT count(*) from types");
-		sprintf(select_stmt,"SELECT type_name from types");
+		sprintf(select_stmt,"SELECT type_name from types order by type_name");
 	} else if (request_type == SEFS_USERS) {
 		sprintf(count_stmt,"SELECT count(*) from users");
-		sprintf(select_stmt,"SELECT user_name from users");
+		sprintf(select_stmt,"SELECT user_name from users order by user_name");
 	} else if (request_type == SEFS_PATHS) {
 		sprintf(count_stmt,"SELECT count(*) from paths");
-		sprintf(select_stmt,"SELECT path from paths");
+		sprintf(select_stmt,"SELECT path from paths order by path");
 	} 
 	
 	if (request_type != SEFS_OBJECTCLASS) {
