@@ -1078,7 +1078,7 @@ static int add_binary_avrule(avtab_datum_t *avdatum, avtab_key_t *avkey, ap_bmap
 			rule_idx = insert_into_new_av_item(RULE_AUDITALLOW, src, tgt, cls, 
 					enabled, policy);
 			if(rule_idx < 0) return rule_idx;
-			if(avtab_allowed(avdatum)) {
+			if(avtab_auditallow(avdatum)) {
 				perms = decode_perm_mask(avtab_auditallow(avdatum), cls, avkey->target_class, bm, policy);
 				assert(perms != NULL);
 				policy->av_audit[rule_idx].perms = perms;
