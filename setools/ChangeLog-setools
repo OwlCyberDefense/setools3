@@ -1,5 +1,10 @@
 CHANGE LOG, SE Linux TOOLS (setools)
 =======================================================
+June 25, 2004, Version 1.4.1
+
+lipapol:
+	Added support for policy version 18.
+=======================================================
 June 2, 2004, Version 1.4
 
 setools:
