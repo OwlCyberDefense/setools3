@@ -800,7 +800,7 @@ proc Apol_Analysis_tra::display_common_object_info {tra_listbox tra_info_text no
 	$tra_info_text tag add $Apol_Analysis_tra::title_type_tag $startIdx $endIdx
 	
 	set startIdx [$tra_info_text index insert]
-	$tra_info_text insert end " access to " 
+	$tra_info_text insert end " accesses " 
 	set endIdx [$tra_info_text index insert]
 	$tra_info_text tag add $Apol_Analysis_tra::title_tag $startIdx $endIdx
 	
