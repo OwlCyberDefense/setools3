@@ -716,7 +716,7 @@ const char* seuser_decode_read_conf_err(int err)
  */
 int seuser_read_conf_info(user_db_t *db)
 {
-	char *full_config = NULL, *dir_tmp = NULL;
+	char *full_config = NULL;
 	FILE *fp;
 	int rt;
 	
