@@ -12,6 +12,9 @@ APOL_GUI_VERSION This version of apol allows you to:
 	neverallow, auditallow, dontaudit, type_transition, 
 	type_change); and 
 	
+	+ Create and query an on-disk database which contains SELinux 
+	context information about the filesystem.
+
 	+ perform some automated analysis of policies which 
 	currently includes forward and reverse domain transition 
 	analyses, direct information flow analysis, and transitive 
@@ -37,10 +40,7 @@ release. See setools/KNOWN_BUGS for a list of current bugs.
 The FILE menu allows you to open a source or binary policy file, provided   
 that this file can be successfully parsed using checkpolicy -d.  Only  
 one policy file can be open at a time, so if you open another file, 
-the current one will be closed. Additionally, you can choose to load
-only specific components of the policy into Apol using the Open Options 
-menu item (e.g. only the TE policy, which includes classes, permissions, 
-types, attributes and TE rules).  
+the current one will be closed.  
 
 The QUERY menu allows the user to save and/or load a query for a TE Rules
 search or for an analysis module listed on the Analysis tab. Saving a TE
@@ -68,6 +68,11 @@ in default mappings are based on the "mls" file distributed with the
 policy.  See the separate help file on information flow for more 
 information about permission mappings and their management. 
 
+Additionally, the ADVANCED menu allows you to choose whether to load only 
+specific components of the policy into Apol using the Open Options menu 
+item (e.g. only the TE policy, which includes classes, permissions, types, 
+attributes and TE rules). 
+
 2. POLICY COMPONENTS TAB
 
 These tabs allow you to examine, search, and relate the core 
@@ -76,9 +81,12 @@ components of an SELinux policy.
 	I. TYPES TAB:
 	
 	This tab lets you search through types and attributes.  You can
-	double click on any type or attribute in the list boxes to see 
-	full details for that type/attribute.  You can also use the 
-	search options and hit the OK button to perform a search.
+	double-click or right-click on any type or attribute in the list 
+	boxes to see full details for that type/attribute. Details may
+	include files labeled with a particular type or attribute, pro-
+	vided that a file index has been loaded (see File Contexts tab 
+	below). You can also use the search options and hit the OK button 
+	to perform a search.
 	
 	The Search box allows you to search for types and/or attributes
 	using a POSIX regular expression. 
@@ -246,31 +254,8 @@ a set of search criteria you select.
 	on the current search options.  Use the "Close Tab" bar at the 
 	bottom to destroy a results window. Also, the TE Rules tab allows
 	you to save/load search criteria to a file (see MENU section above).
-
-
-	II. RBAC RULES TAB:
 	
-	This tab allows you to search role-based access control rules. 
-	It is similar in nature to the TE Rules tab, but somewhat 
-	simpler.
-	
-	It allows you to search both role allow and transition rules, 
-	even though the role_transition rule has been deprecated (we see 
-	policies that still use this rule).
-	
-	The Default option is available only if transition is selected and
-	allow is deselected.  The Target option will change depending on 
-	which rule type is selected. If only allow is used, then you can 
-	select a target role.  If only transition is selected then you can 
-	select either a type or attribute. If both are selected, this option 
-	is not available.  All of this is to conform with the syntax of these 
-	two rules.
-	
-	As with TE Rules, the Source option can also be used in an "any" 
-	search.
-	
-	
-	III. CONDITIONAL EXPRESSIONS TAB:
+	II. CONDITIONAL EXPRESSIONS TAB:
 	
 	This tab allows you to search conditional expressions within the 
 	policy, as well as view the rules within these conditional 
@@ -292,7 +277,64 @@ a set of search criteria you select.
 		"[enabled]" - indicates the rule is enabled
 		"[disabled]" - indicates the rule is disabled	
 
-4. ANALYSIS TAB
+	III. RBAC RULES TAB:
+	
+	This tab allows you to search role-based access control rules. 
+	It is similar in nature to the TE Rules tab, but somewhat 
+	simpler.
+	
+	It allows you to search both role allow and transition rules, 
+	even though the role_transition rule has been deprecated (we see 
+	policies that still use this rule).
+	
+	The Default option is available only if transition is selected and
+	allow is deselected.  The Target option will change depending on 
+	which rule type is selected. If only allow is used, then you can 
+	select a target role.  If only transition is selected then you can 
+	select either a type or attribute. If both are selected, this option 
+	is not available.  All of this is to conform with the syntax of these 
+	two rules.
+	
+	As with TE Rules, the Source option can also be used in an "any" 
+	search.
+
+4. FILE CONTEXTS TAB
+
+This tab is only available if apol has been built with libselinux support. See
+the setools INSTALL file for further details on building apol with/without 
+libselinux support. The tab provides the following features:
+
+Creating/Loading an Index File
+
+An index file is an on-disk database which contains SELinux context information 
+about the filesystem. This includes SELinux users and types associated with file 
+paths and object classes. This tab provides the user with the option of creating
+an index file or loading an existing one. If the user has not loaded an index 
+file, then all search items will be grayed out and a red label indicating that 
+an index file is not loaded is displayed at the top. Buttons are presented for 
+creating and loading an index file. Selecting the 'Load' button displays a file 
+selection dialog from which you can choose a saved index file to load. Selecting 
+the 'Create and Load' button will display a dialog for you to specify the save 
+file and the directory from which to start the indexing. Here, you may add multiple 
+directories from which to index by using the 'Add' button or you may simply input 
+a colon-delimited  list of directory path strings within the entrybox. Upon 
+selecting the 'Create' button, an index file will be created and then loaded into 
+apol.
+
+Searching an Index File
+
+Searches on the index file can be done by specifying the user, type, object class, 
+or path search criteria to search for using the widgets provided. Drop down lists 
+and entryboxes are presented for specifying the search criteria, of which the drop 
+down lists contain items from the index file. You can also use regular expressions, 
+however, this option is not available for the object class field.  Additionally, 
+you may use the checkbuttons under the search options frame, for indicating whether 
+to include the object class and/or file context within the results. To perform a 
+search, click the 'OK' button. Once the search is finished, you should be presented 
+with a list of files that matched the criteria, along with their context and/or 
+object type, if specified.
+
+5. ANALYSIS TAB
 
 This tab provides automated analysis capabilities.  The "Info" button provides 
 a description for the selected analysis type. Also, this tab allows you to 
@@ -451,8 +493,16 @@ analyses are:
 	See the separate help file on information flow for more 
 	information about transitive information flow.	
 
+	IV. DIRECT FILE RELABEL ANALYSIS
+	
+	See the separate help file on direct file relabel analysis. This can 
+	be accessed from the help menu in apol.
+	
+	V. TYPES RELATIONSHIP SUMMARY ANALYSIS
 
-
+	See the separate help file on types relationship summary analysis. 
+	This can be accessed from the help menu in apol.
+	
 5. POLICY.CONF TAB
 
 This tab provides a convenient display of the raw policy.conf source 
@@ -463,3 +513,4 @@ Otherwise, this tab will be disabled and hyperlinks to this tab will
 not be provided.
 
 																																																																																                                                                                                                                                                                                                                                                                                                                                 
+                                                                                                                                                                                                                           
