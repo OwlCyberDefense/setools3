@@ -1330,8 +1330,33 @@ proc Apol_Analysis_dta::get_current_results_state { } {
 	variable display_direction
 	variable dta_tree
 	variable dta_info_text
+	# Advanced foward options DTA variables
+	variable perm_status_array
+	variable filtered_incl_types 
+	variable filtered_excl_types   
+	variable master_incl_types_list 
+	variable master_excl_types_list 
+	variable incl_attrib_combo_value
+	variable excl_attrib_combo_value
+	variable filter_vars_init
+	
+	# If the advanced vars have not been initialized then perform initialization
+	if {!$filter_vars_init} {
+		Apol_Analysis_dta::forward_options_initialize_vars
+	}
+	set class_perms_list [array get perm_status_array]
 		     	
-     	set options [list $dta_tree $dta_info_text $display_type $display_attribute $display_attrib_sel $display_direction]
+     	set options [list \
+     		$dta_tree \
+     		$dta_info_text \
+     		$display_type \
+     		$display_attribute \
+     		$display_attrib_sel \
+     		$display_direction \
+     		$class_perms_list \
+		$filtered_incl_types $filtered_excl_types \
+		$master_incl_types_list $master_excl_types_list \
+		$incl_attrib_combo_value $excl_attrib_combo_value]
      	return $options
 } 
 
@@ -1345,16 +1370,39 @@ proc Apol_Analysis_dta::set_display_to_results_state { query_options } {
 	variable direction_state
 	variable dta_tree
 	variable dta_info_text
-		    
+	# Advanced forward DTA options
+	variable filtered_incl_types 
+	variable filtered_excl_types  
+	variable master_incl_types_list 
+	variable master_excl_types_list   
+	variable incl_attrib_combo_value
+	variable excl_attrib_combo_value
+	variable perm_status_array
+	variable filter_vars_init
+	variable class_list
+			    
 	# widget variables
-	set dta_tree [lindex $query_options 0]
-     	set dta_info_text [lindex $query_options 1]
+	set dta_tree 			[lindex $query_options 0]
+     	set dta_info_text 		[lindex $query_options 1]
      	# query options variables
-     	set type_state [lindex $query_options 2]
-     	set attribute_state  [lindex $query_options 3]
-     	set attrib_selected_state [lindex $query_options 4]
-     	set direction_state [lindex $query_options 5]
+     	set type_state 			[lindex $query_options 2]
+     	set attribute_state  		[lindex $query_options 3]
+     	set attrib_selected_state 	[lindex $query_options 4]
+     	set direction_state 		[lindex $query_options 5]
      	
+     	# Here we need to handle the data used by the advanced foward DTA options dialog.
+        if {[array exists perm_status_array]} {
+        	array unset perm_status_array
+        }
+      	array set perm_status_array 	[lindex $query_options 6]
+        set filtered_incl_types 	[lindex $query_options 7]
+        set filtered_excl_types 	[lindex $query_options 8]
+        set master_incl_types_list 	[lindex $query_options 9]
+        set master_excl_types_list 	[lindex $query_options 10]
+        set incl_attrib_combo_value 	[lindex $query_options 11]
+        set excl_attrib_combo_value 	[lindex $query_options 12]
+        set Apol_Analysis_dta::filter_vars_init 1
+        
 	# After updating any display variables, must configure widgets accordingly
 	Apol_Analysis_dta::update_display_variables 
 	Apol_Analysis_dta::config_domain_label
@@ -1365,6 +1413,33 @@ proc Apol_Analysis_dta::set_display_to_results_state { query_options } {
 		Apol_Analysis_dta::change_types_list  	
 		set Apol_Analysis_dta::display_type $type_state
 	}
+	
+	if {[winfo exists $Apol_Analysis_dta::forward_options_Dlg]} {
+		set rt [catch {Apol_Analysis_dta::forward_options_update_widgets_state} err]
+		if {$rt != 0} {
+			tk_messageBox -icon error -type ok -title "Error" -message "$err"
+			return -1
+		}
+		raise $Apol_Analysis_dta::forward_options_Dlg
+		focus $Apol_Analysis_dta::forward_options_Dlg
+	} else {
+		set class_list ""
+		foreach class $Apol_Class_Perms::class_list {
+			set num_excluded 0
+			set class_perms [array names perm_status_array "$class,*"]
+			foreach element $class_perms {
+				if {[string equal $perm_status_array($element) "exclude"]} {
+					incr num_excluded
+				}
+			}
+			if {$num_excluded == [llength $class_perms]} {
+				set class_list [lappend class_list "$class$Apol_Analysis_dta::excluded_tag"]
+			} else {
+				set class_list [lappend class_list $class]
+			}
+		}
+	}
+	
      	return 0
 } 
 
