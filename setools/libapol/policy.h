@@ -450,6 +450,9 @@ int get_obj_class_nth_perm_idx(int cls_idx, int n, policy_t *policy);
 #define is_valid_common_perm_idx(idx, policy) (idx >= 0 && idx < policy->num_common_perms)
 #define num_common_perm_perms(idx, policy) (is_valid_common_perm_idx(idx, policy) ? \
 	policy->common_perms[idx].num_perms : -1)
+#define num_perms(policy) (policy != NULL ? policy->num_perms : -1)
+#define num_common_perms(policy) (policy != NULL ? policy->num_common_perms : -1)
+
 
 bool_t is_valid_perm_for_obj_class(policy_t *policy, int class, int perm);
 int get_common_perm_name(int idx, char **name, policy_t *policy);
@@ -475,7 +478,7 @@ int search_initial_sids_context(int **isids, int *num_isids, const char *user, c
 
 /* Types and attributes */
 #define num_types(policy) (policy != NULL ? policy->num_types : -1)
-#define num_attribs(policy) (policy->num_attribs)
+#define num_attribs(policy) (policy != NULL ? policy->num_attribs : -1)
 #define is_valid_attrib_idx(idx, policy) (policy != NULL && (idx >= 0 && idx < policy->num_attribs))
 #define is_valid_type_idx(idx, policy) (policy != NULL && (idx >= 0 && idx < policy->num_types))
 bool_t is_valid_type(policy_t *policy, int type, bool_t self_allowed);
@@ -497,8 +500,11 @@ int get_type_attribs(int type, int *num_attribs, int **attribs, policy_t *policy
 int get_attrib_types(int attrib, int *num_types, int **types, policy_t *policy);
 
 /* conditional policy */
-#define is_valid_cond_bool_idx(idx, policy) (idx >= 0 && idx < policy->num_cond_bools)
-int get_cond_bool_idx(char *name, policy_t *policy);
+#define is_valid_cond_bool_idx(idx, policy) (policy != NULL ? (idx >= 0 && idx < policy->num_cond_bools) : 0)
+#define num_cond_bools(policy) (policy != NULL ? policy->num_cond_bools : -1)
+#define num_cond_exprs(policy) (policy != NULL ? policy->num_cond_exprs : -1)
+#define get_cond_bool_default_state(idx, policy) (is_valid_cond_bool_idx(idx, policy) ? policy->cond_bools[idx].default_state : 0)
+int get_cond_bool_idx(const char *name, policy_t *policy);
 int set_cond_bool_val(int bool, bool_t state, policy_t *policy);
 int get_cond_bool_val(char *name, policy_t *policy);
 int get_cond_bool_name(int idx, char **name, policy_t *policy);
@@ -525,7 +531,7 @@ bool_t does_user_have_role(user_item_t *user, int role, policy_t *policy);
 /* roles */
 #define is_valid_role_idx(idx, policy) (policy != NULL && (idx >= 0 && idx < policy->num_roles))
 #define num_roles(policy) (policy != NULL ? policy->num_roles : -1)
-#define get_role_types(role, num_types, types, policy) get_attrib_types(role, num_types, types, policy)
+int get_role_types(int role, int *num_types, int **types, policy_t *policy);
 
 int add_role(char *role, policy_t *policy);
 int get_role_name(int idx, char **name, policy_t *policy);
