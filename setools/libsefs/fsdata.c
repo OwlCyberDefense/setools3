@@ -333,6 +333,7 @@ static int ftw_handler(const char *file, const struct stat *sb, int flag, struct
 			else if (errno == EACCES)
 			{
 				fprintf(stderr, "Access denied to link at %s\n", file);
+				errno = 0;
 			}
 			else
 			{
