@@ -416,9 +416,10 @@ static void log_view_store_get_value(GtkTreeModel *tree_model, GtkTreeIter *iter
 			g_string_append_printf(string, "key=%d ", cur_msg->key);
 		if (cur_msg->is_capability)
 			g_string_append_printf(string, "capability=%d ", cur_msg->capability);	
-		g_string_append_printf(string, "timestamp=%lu.%03lu ", cur_msg->tm_stmp_sec, cur_msg->tm_stmp_nano);
-		g_string_append_printf(string, "serial=%u ", cur_msg->serial);
-		
+		if (!(cur_msg->tm_stmp_sec == 0 && cur_msg->tm_stmp_nano == 0 && cur_msg->serial == 0)) {
+			g_string_append_printf(string, "timestamp=%lu.%03lu ", cur_msg->tm_stmp_sec, cur_msg->tm_stmp_nano);
+			g_string_append_printf(string, "serial=%u ", cur_msg->serial);
+		}
 		set_utf8_return_value(value, string->str);
 		g_string_free(string, TRUE);
 	};
