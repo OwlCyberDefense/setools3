@@ -295,9 +295,9 @@ static void log_view_store_get_value(GtkTreeModel *tree_model, GtkTreeIter *iter
 		if (AVC_MISC_FIELD == column) {
 			string = g_string_new("");
 			policy_msg = store->log_view->my_log->msg_list[indx]->msg_data.load_policy_msg;
-			g_string_printf(string, "users=%d roles=%d types=%d classes=%d rules=%d",
+			g_string_printf(string, "users=%d roles=%d types=%d bools=%d classes=%d rules=%d",
 					policy_msg->users, policy_msg->roles, policy_msg->types,
-					policy_msg->classes, policy_msg->rules);
+					policy_msg->bools, policy_msg->classes, policy_msg->rules);
 			set_utf8_return_value(value, string->str);
 			g_string_free(string, TRUE);
 			return;
