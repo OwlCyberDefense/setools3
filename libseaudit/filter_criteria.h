@@ -20,7 +20,7 @@
 
 struct seaudit_criteria;
 /* callback type for printing criteria */
-typedef void (*seaudit_criteria_print_t)(struct seaudit_criteria *criteria, FILE *stream);
+typedef void (*seaudit_criteria_print_t)(struct seaudit_criteria *criteria, FILE *stream, int tabs);
 /* callback type for criteria */
 typedef bool_t(*seaudit_criteria_action_t)(msg_t *msg, struct seaudit_criteria *criteria, audit_log_t *log); 
 /* callback type for criteria cleanup */
@@ -67,7 +67,7 @@ const char *glob_criteria_get_str(seaudit_criteria_t *criteria);
 
 const char *netif_criteria_get_str(seaudit_criteria_t *criteria);
 int ports_criteria_get_val(seaudit_criteria_t *criteria);
-void seaudit_criteria_print(seaudit_criteria_t *criteria, FILE *stream);
+void seaudit_criteria_print(seaudit_criteria_t *criteria, FILE *stream, int tabs);
 
 /* destroy a criteria */
 void seaudit_criteria_destroy(seaudit_criteria_t *ftr);
