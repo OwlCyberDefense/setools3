@@ -1,9 +1,9 @@
 SELinux Policy Analysis Tool Help File
-apol, version 1.1
-December 18, 2003
+apol, version 1.2
+January 2, 2004
 selinux@tresys.com
 
-This file contains basic help information for using apol, version 1.1 
+This file contains basic help information for using apol, version 1.2 
 This version of apol allows you to:
 
 	+ examine, search, and relate policy components (types, type 
