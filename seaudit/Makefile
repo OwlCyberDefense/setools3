@@ -3,7 +3,7 @@ INCLUDE           = -I.. -I../libseaudit
 GTK_CFLAGS        = `pkg-config --cflags libglade-2.0`
 GTK_LIBS          = `pkg-config --libs libglade-2.0`
 SEAUDIT_LIBS      = ../lib/libseaudit.a ../lib/libapol.a $(LIBS)
-GLADE_FILES       = customize_filter_window.glade filter_window.glade prefer_window.glade query_window.glade seaudit.glade
+GLADE_FILES       = customize_filter_window.glade filter_window.glade prefer_window.glade query_window.glade multifilter_window.glade seaudit.glade
 CFLAGS	          += -DDEFAULT_POLICY='"$(POLICY_SRC_FILE)"'
 CFLAGS	          += -DDEFAULT_LOG='"$(DEFAULT_LOG_FILE)"' 
 CFLAGS            += -DINSTALL_LIBDIR='"$(INSTALL_LIBDIR)"'
