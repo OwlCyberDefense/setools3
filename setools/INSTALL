@@ -1,8 +1,8 @@
-SELinux Tools (setools), version 1.3
+SELinux Tools (setools), version 1.4
 by Tresys Technology, LLC
 (selinux@tresys.com, www.tresys.com/selinux)
 
-April 15, 2004
+May 17, 2004
 
 BUILDING AND INSTALLING NOTES AND WARNINGS
 
@@ -10,9 +10,9 @@ If you are upgrading from a previous version of setools you must make
 sure you remove /usr/local/selinux/bin from your path.  The setools 
 set is now installed to /usr/bin to match the rest of SE Linux.
 
-We have built and used this package on Linux (Red Hat 7.x and Red Hat 
-9.x) using several versions of SELinux.  The tar file will create a 
-directory with the following subdirectories:
+We have built and used this package on Linux (see TESTING INFORMATION 
+in KNOWN-BUGS file) using several versions of SELinux.  The tar file 
+will create a directory with the following subdirectories:
 
 apol            The policy analysis tool
 awish           Our customized version of the Tk wish interpreter
@@ -21,13 +21,14 @@ libapol         The main policy (policy.conf) analysis library
 libseaudit	The seaudit support library 
 libseuser       The seuser support library	
 seaudit 	The audit log analysis tool (seaudit)
-secmds		The setools command line tools (seinfo and sesearch)
+secmds		The setools command line tools (seinfo, sesearch, 
+		findcon, replcon)
 sepct           The policy configuration/editing tool (sepcut)
 seuser          The user management tool and shell scripts
 packages	External packages required by setools
 	
 
-TCL/TK VERSION AND INSTALL :Before building you will need to ensure 
+TCL/TK VERSION AND INSTALL: Before building you will need to ensure 
 that you have Tcl/Tk 8.3 or higher installed with BWidgets. 
 Generally, Red Hat Linux has appropriate versions of Tcl and Tk. 
 Usually the BWidgets package IS NOT installed by default. If you do 
