@@ -72,6 +72,7 @@ seaudit_filtered_view_t* seaudit_window_add_new_view(seaudit_window_t *window, a
 	gint page_index;
 	GtkWidget *hbox, *image;
 	char tab_title[24];
+	GtkTreeSelection  *selection;
 
 	if (window == NULL)
 		return NULL;
@@ -81,10 +82,15 @@ seaudit_filtered_view_t* seaudit_window_add_new_view(seaudit_window_t *window, a
 	show_wait_cursor(GTK_WIDGET(window->window));
 	scrolled_window = gtk_scrolled_window_new(NULL, NULL);
 	tree_view = gtk_tree_view_new();
+	
+	/* Set selection mode for tree view to multiple selection. */
+	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(tree_view));
+	gtk_tree_selection_set_mode(selection, GTK_SELECTION_MULTIPLE);
+	
 	g_signal_connect(G_OBJECT(tree_view), "row_activated", G_CALLBACK(seaudit_window_on_log_row_activated), NULL);
 	gtk_container_add(GTK_CONTAINER(scrolled_window), tree_view);
 	seaudit_window_create_list(GTK_TREE_VIEW(tree_view), column_visibility);
-
+	                  
 	if (view_name == NULL) {
 		window->num_untitled_views++;
 		snprintf(tab_title, 24, "Untitled %d", window->num_untitled_views);
@@ -112,6 +118,7 @@ seaudit_filtered_view_t* seaudit_window_add_new_view(seaudit_window_t *window, a
 	seaudit_filtered_view_set_notebook_index(view, page_index);
 	window->views = g_list_append(window->views, view);
 	gtk_notebook_set_current_page(window->notebook, page_index);
+		
 	clear_wait_cursor(GTK_WIDGET(window->window));
 	return view;
 }
