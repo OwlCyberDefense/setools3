@@ -21,18 +21,12 @@ ifeq ($(USE_LIBSEFS), 1)
 	endif
 endif
 
-ifeq ($(USE_LIBSEFS), 1)
-LIBSQLITE	= -lsqlite3
-else
-LIBSQLITE	=
-endif
-
 AWISH_OBJ	= awish.o $(LIBSEUSER-TCL) $(LIBAPOL-TCL) $(LIBSEFS)
 
 # awish is optionally linked to libselinux. The LIBSELINUX variable is 
 # set in the top-level Makefile.
 awish: $(AWISH_OBJ)
-	$(CC) $(TCL_LIBINC) -o $@ $(AWISH_OBJ) $(LINKFLAGS) $(TCL_LIBS) $(LIBSELINUX) $(LIBSQLITE) 
+	$(CC) $(TCL_LIBINC) -o $@ $(AWISH_OBJ) $(LINKFLAGS) $(TCL_LIBS) $(LIBSELINUX)
 
 %.o:  %.c 
 	$(CC) $(CFLAGS) -c $<
