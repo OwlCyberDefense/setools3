@@ -445,11 +445,13 @@ int determine_domain_trans(bool_t reverse, char *start_domain, domain_trans_anal
 	 	- reverse DT analysis - contain start_type in the TARGET field
 	  (keep this around; we use it later when down-selecting candidate entry point file types in step 3.c) */
 	if(reverse) {
-		if(match_te_rules(0, NULL, 0, start_idx, IDX_TYPE, 0, TGT_LIST, 1, &b_start, policy) != 0)
+		if(match_te_rules(FALSE, NULL, 0, start_idx, IDX_TYPE, FALSE, TGT_LIST, TRUE, TRUE,
+			&b_start, policy) != 0)
 			goto err_return;
 	} 
 	else {
-		if(match_te_rules(0, NULL, 0, start_idx, IDX_TYPE, 0, SRC_LIST, 1, &b_start, policy) != 0)
+		if(match_te_rules(FALSE, NULL, 0, start_idx, IDX_TYPE, FALSE, SRC_LIST, TRUE, TRUE,
+			&b_start, policy) != 0)
 			goto err_return;	
 	}
 	
@@ -510,7 +512,8 @@ int determine_domain_trans(bool_t reverse, char *start_domain, domain_trans_anal
 		 * 	- forward DT analysis - then filter out rules that provide file execute access.
 		 * 	- reverse DT analysis - then filter our rules that provide file entrypoint access.
 		 */
-		if(match_te_rules(0, NULL, 0, t_ptr->trans_type, IDX_TYPE, 0, SRC_LIST, 1, &b_trans, policy) != 0)
+		if(match_te_rules(FALSE, NULL, 0, t_ptr->trans_type, IDX_TYPE, FALSE, SRC_LIST, TRUE,
+			TRUE, &b_trans, policy) != 0)
 			goto err_return;
 		
 		/* 3.b Filter out rules that allow the current trans_type ...
@@ -532,7 +535,8 @@ int determine_domain_trans(bool_t reverse, char *start_domain, domain_trans_anal
 		 * retrieve all rules with start_idx in the SOURCE field. */						
 		if(reverse) {
 			all_false_rules_bool(&b_start, policy);
-			if(match_te_rules(0, NULL, 0, start_idx, IDX_TYPE, 0, SRC_LIST, 1, &b_start, policy) != 0)
+			if(match_te_rules(FALSE, NULL, 0, start_idx, IDX_TYPE, FALSE, SRC_LIST, TRUE,
+				TRUE, &b_start, policy) != 0)
 				goto err_return;
 		} 
 				
@@ -1373,6 +1377,8 @@ iflow_graph_t *iflow_graph_create(policy_t* policy, iflow_query_t *q)
 
 		rule = &policy->av_access[i];
 		if (rule->type != RULE_TE_ALLOW)
+			continue;
+		if (!rule->enabled)
 			continue;
 		
 		/* get the object classes for this rule */
