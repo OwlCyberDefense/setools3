@@ -318,7 +318,7 @@ proc Apol_TE::insertTERules { tb results } {
 		}
 	}	
 	Apol_PolicyConf::configure_HyperLinks $tb
-	Apol_TE::disable_te_rule $tb
+	#Apol_TE::disable_te_rule $tb
 	update idletasks
 	
 	return 0
@@ -1929,6 +1929,7 @@ proc Apol_TE::create {nb} {
     # dbox - holds display window widgets
     # bBox - holds action buttons widgets
     set tbox [TitleFrame [$pw1 getframe 0].tbox -text "Rule Selection"]
+    set other_opts_box [TitleFrame [$pw1 getframe 0].other_opts_box -text "Options"]
     set obox [frame [$pw1 getframe 1].obox]
     set dbox [TitleFrame $bottomf.dbox -text "Type Enforcement Rules Display"]
     
@@ -1948,7 +1949,7 @@ proc Apol_TE::create {nb} {
     # Placing major subframes
     pack $bBox -side right -anchor ne -fill both -expand yes -padx 5
     pack $obox -side right -anchor w -fill both -padx 5 -expand yes
-    pack $tbox -side top -anchor nw -fill both -padx 5 -expand yes
+    pack $tbox $other_opts_box -side top -anchor nw -fill both -padx 5 -expand yes
     pack $dbox -side left -fill both -expand yes -anchor e -padx 5 -pady 5
                
     # Rule types section subframes
@@ -1956,7 +1957,7 @@ proc Apol_TE::create {nb} {
     set optsfm [frame $fm_rules.optsfm]
     set tefm [frame $optsfm.tefm]
     set ttfm [frame $optsfm.ttfm]
-    set enabled_fm [frame $fm_rules.enabled_fm]
+    set enabled_fm [frame [$other_opts_box getframe].enabled_fm]
     
     # First column of checkbuttons under rule selection subframe
     set teallow [checkbutton $tefm.teallow -text "allow" -variable Apol_TE::opts(teallow) \
@@ -1983,7 +1984,7 @@ proc Apol_TE::create {nb} {
     set cb_show_enabled_rules [checkbutton $enabled_fm.cb_show_enabled_rules -text "Only show enabled rules" \
     		-variable Apol_TE::show_enabled_rules -onvalue 1 -offvalue 0]
     		
-    set cb_fm [frame [$pw1 getframe 0].cb_fm]
+    set cb_fm [frame $enabled_fm.cb_fm]
     # Checkbutton to Enable/Disable Regular Expressions option.
     set cb_RegExp [checkbutton $cb_fm.cb_RegExp -text "Enable Regular Expressions" \
     		-variable Apol_TE::allow_regex -onvalue 1 -offvalue 0]
@@ -2026,8 +2027,8 @@ proc Apol_TE::create {nb} {
     pack $teallow $neverallow $auallow $audeny $audont -anchor w 
     pack $ttrans $tmember $tchange $clone -anchor w 
     pack $tefm $ttfm -side left -anchor nw 
-    pack $enabled_fm -side top -pady 6 -anchor nw
-    pack $cb_fm -side bottom -anchor center -padx 4
+    pack $enabled_fm -side top -pady 6 -anchor nw -fill both 
+    pack $cb_fm -side bottom -anchor nw
     pack $cb_RegExp -side top -anchor nw 
     pack $cb_show_enabled_rules -side top -anchor nw
     pack $optsfm -side top -fill x -expand yes -anchor nw
