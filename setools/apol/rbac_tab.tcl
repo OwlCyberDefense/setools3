@@ -69,6 +69,16 @@ proc Apol_RBAC::search { str case_Insensitive regExpr srch_Direction } {
 	return 0
 }
 
+# ----------------------------------------------------------------------------------------
+#  Command Apol_RBAC::set_Focus_to_Text
+#
+#  Description: 
+# ----------------------------------------------------------------------------------------
+proc Apol_RBAC::set_Focus_to_Text {} {
+	focus $Apol_RBAC::resultsbox
+	return 0
+}
+
 proc Apol_RBAC::searchRoles {} {
 	variable opts
 	variable resultsbox

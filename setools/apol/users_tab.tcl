@@ -37,6 +37,16 @@ proc Apol_Users::search { str case_Insensitive regExpr srch_Direction } {
 	return 0
 }
 
+# ----------------------------------------------------------------------------------------
+#  Command Apol_Users::set_Focus_to_Text
+#
+#  Description: 
+# ----------------------------------------------------------------------------------------
+proc Apol_Users::set_Focus_to_Text {} {
+	focus $Apol_Users::resultsbox
+	return 0
+}
+
 # ------------------------------------------------------------------------------
 #  Command Apol_Users::searchUsers
 # ------------------------------------------------------------------------------
