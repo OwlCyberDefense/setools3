@@ -1,14 +1,47 @@
 CHANGE LOG, SE Linux TOOLS (setools)
 =======================================================
-????? ??, 2004, Version 1.5
+October 27, 2004, Version 1.5
 
+apol: 
+	Advanced options added to forward domain
+	 transition analysis module for performing 
+	 more granular searching of transitions to 
+	 domains using specified classes, permissions 
+	 and target types.
+	Minor bug fixes and improvements.
+	
 libapol: 
-	Fixed to handle new libapol user structs
+	Fixed to handle new libapol user structs.
+	Enhanced forward domain transition analysis to
+	  perform more granular searching using specified
+	  classes, permissions and target types.
+	Minor bug fixes.
 		
 libseuser: 
-	General clean up of the policy components
-	Fixed handling of users to be consistent with rest
+	General clean up of the policy components.
+	Fixed handling of users to be consistent with rest.
+	
+seaudit:
+	New tool (seaudit-report) for generating customized
+	 reports on SE Linux audit messages using saved 
+	 seaudit view files. This tool is highly configurable
+	 and can effectively integrate with the LogWatch 
+	 application for automating SE Linux audit log reporting. 
+	Added feature for exporting audit messages to a 
+	  file, as well as viewing all components of an audit 
+	  message within a text view.
+	
+libseaudit:
+	Updated library to store audit header information, such as
+	 the system call timestamp and serial number.
+	Fixed parse errors for new logs.  
 
+secmds:
+	New tool (indexcon) for creating a snapshot of security 
+	 contexts for SE Linux filesystem entities.
+	New tool (searchcon) for searching the SE Linux filesystem 
+	 database that was created using indexcon.
+	
 =======================================================
 July 7, 2004, Version 1.4.1
 
