@@ -34,7 +34,7 @@ namespace eval Apol_Analysis_tra {
 		 	          - any domain transitions from TypeA to TypeB or vice versa. \n \
 		 	          \n\n\This analysis may contain an overwhelming amount of information, so the results \
 				  are simplified by listing each aspect of the analysis as a separate child element \
-				  within a tree widget. This allows the user to select any aspect of the analysis \
+				  within a tree. This allows the user to select any aspect of the analysis \
 				  from the tree and have more specific results displayed within the \
 				  textbox. \n\nFor detailed information on using this module select \"Types Relationship \
 				  Summary Analysis\" from the help menu."
