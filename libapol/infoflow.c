@@ -713,6 +713,7 @@ iflow_graph_t *iflow_graph_create(policy_t* policy, iflow_query_t *q)
 	unsigned char map;
 	iflow_graph_t* g;
 	bool_t perm_error = FALSE;
+        int max_len = PERMMAP_MAX_WEIGHT - q->min_weight + 1;
 
 	assert(policy && q);
 
@@ -834,14 +835,16 @@ iflow_graph_t *iflow_graph_create(policy_t* policy, iflow_query_t *q)
 					continue;
 				}
 				if (map & PERMMAP_READ) {
-					found_read = TRUE;
-					if (len < read_len)
+                                        if (len < read_len && len <= max_len) {
+                                                found_read = TRUE;
 						read_len = len;
+                                        }
 				}
 				if (map & PERMMAP_WRITE) {
-					found_write = TRUE;
-					if (len < write_len)
+					if (len < write_len && len <= max_len) {
+                                                found_write = TRUE;
 						write_len = len;
+                                        }
 				}
 			}
 			if (all_perms)
@@ -1863,5 +1866,3 @@ void iflow_find_paths_abort(void *state)
 	free(s);
 	iflow_transitive_destroy(s->a);
 }
-
-
