@@ -60,6 +60,27 @@
 		  </child>
 
 		  <child>
+		    <widget class="GtkImageMenuItem" id="reload1">
+		      <property name="visible">True</property>
+		      <property name="label" translatable="yes">_Reload</property>
+		      <property name="use_underline">True</property>
+		      <signal name="activate" handler="sediff_menu_on_reload_clicked" last_modification_time="Fri, 04 Feb 2005 17:15:24 GMT"/>
+
+		      <child internal-child="image">
+			<widget class="GtkImage" id="image2">
+			  <property name="visible">True</property>
+			  <property name="stock">gtk-refresh</property>
+			  <property name="icon_size">1</property>
+			  <property name="xalign">0.5</property>
+			  <property name="yalign">0.5</property>
+			  <property name="xpad">0</property>
+			  <property name="ypad">0</property>
+			</widget>
+		      </child>
+		    </widget>
+		  </child>
+
+		  <child>
 		    <widget class="GtkImageMenuItem" id="Exit">
 		      <property name="visible">True</property>
 		      <property name="label">gtk-quit</property>
@@ -307,7 +328,7 @@
 			  <property name="window_placement">GTK_CORNER_TOP_LEFT</property>
 
 			  <child>
-			    <widget class="GtkTextView" id="sediff_main_p1_text">
+			    <widget class="GtkTextView" id="sediff_main_p1_stats_text">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="editable">True</property>
@@ -335,7 +356,7 @@
 		      <child>
 			<widget class="GtkLabel" id="label13">
 			  <property name="visible">True</property>
-			  <property name="label" translatable="yes">Configuration File</property>
+			  <property name="label" translatable="yes">Policy Statistics</property>
 			  <property name="use_underline">False</property>
 			  <property name="use_markup">False</property>
 			  <property name="justify">GTK_JUSTIFY_LEFT</property>
@@ -361,7 +382,7 @@
 			  <property name="window_placement">GTK_CORNER_TOP_LEFT</property>
 
 			  <child>
-			    <widget class="GtkTextView" id="sediff_main_p1_stats_text">
+			    <widget class="GtkTextView" id="sediff_main_p1_text">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="editable">True</property>
@@ -389,7 +410,7 @@
 		      <child>
 			<widget class="GtkLabel" id="label14">
 			  <property name="visible">True</property>
-			  <property name="label" translatable="yes">Statistics</property>
+			  <property name="label" translatable="yes">Source</property>
 			  <property name="use_underline">False</property>
 			  <property name="use_markup">False</property>
 			  <property name="justify">GTK_JUSTIFY_LEFT</property>
@@ -468,7 +489,7 @@
 			  <property name="window_placement">GTK_CORNER_TOP_LEFT</property>
 
 			  <child>
-			    <widget class="GtkTextView" id="sediff_main_p2_text">
+			    <widget class="GtkTextView" id="sediff_main_p2_stats_text">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="editable">True</property>
@@ -496,7 +517,7 @@
 		      <child>
 			<widget class="GtkLabel" id="label15">
 			  <property name="visible">True</property>
-			  <property name="label" translatable="yes">Configuration File</property>
+			  <property name="label" translatable="yes">Policy Statistics</property>
 			  <property name="use_underline">False</property>
 			  <property name="use_markup">False</property>
 			  <property name="justify">GTK_JUSTIFY_LEFT</property>
@@ -522,7 +543,7 @@
 			  <property name="window_placement">GTK_CORNER_TOP_LEFT</property>
 
 			  <child>
-			    <widget class="GtkTextView" id="sediff_main_p2_stats_text">
+			    <widget class="GtkTextView" id="sediff_main_p2_text">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="editable">True</property>
@@ -550,7 +571,7 @@
 		      <child>
 			<widget class="GtkLabel" id="label16">
 			  <property name="visible">True</property>
-			  <property name="label" translatable="yes">Statistics</property>
+			  <property name="label" translatable="yes">Source</property>
 			  <property name="use_underline">False</property>
 			  <property name="use_markup">False</property>
 			  <property name="justify">GTK_JUSTIFY_LEFT</property>
@@ -838,74 +859,49 @@
   </child>
 </widget>
 
-<widget class="GtkDialog" id="sediff_loading_dialog">
+<widget class="GtkWindow" id="sediff_loading">
   <property name="visible">True</property>
-  <property name="title" translatable="yes">dialog1</property>
+  <property name="title" translatable="yes">Loading</property>
   <property name="type">GTK_WINDOW_TOPLEVEL</property>
   <property name="window_position">GTK_WIN_POS_NONE</property>
-  <property name="modal">True</property>
-  <property name="resizable">False</property>
-  <property name="destroy_with_parent">True</property>
+  <property name="modal">False</property>
+  <property name="resizable">True</property>
+  <property name="destroy_with_parent">False</property>
   <property name="decorated">True</property>
   <property name="skip_taskbar_hint">False</property>
   <property name="skip_pager_hint">False</property>
-  <property name="type_hint">GDK_WINDOW_TYPE_HINT_DIALOG</property>
+  <property name="type_hint">GDK_WINDOW_TYPE_HINT_NORMAL</property>
   <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
-  <property name="has_separator">False</property>
 
-  <child internal-child="vbox">
-    <widget class="GtkVBox" id="dialog-vbox2">
+  <child>
+    <widget class="GtkScrolledWindow" id="scrolledwindow17">
       <property name="visible">True</property>
-      <property name="homogeneous">False</property>
-      <property name="spacing">0</property>
-
-      <child internal-child="action_area">
-	<widget class="GtkHButtonBox" id="dialog-action_area2">
-	  <property name="visible">True</property>
-	  <property name="layout_style">GTK_BUTTONBOX_END</property>
-	</widget>
-	<packing>
-	  <property name="padding">0</property>
-	  <property name="expand">False</property>
-	  <property name="fill">True</property>
-	  <property name="pack_type">GTK_PACK_END</property>
-	</packing>
-      </child>
+      <property name="can_focus">True</property>
+      <property name="hscrollbar_policy">GTK_POLICY_NEVER</property>
+      <property name="vscrollbar_policy">GTK_POLICY_NEVER</property>
+      <property name="shadow_type">GTK_SHADOW_NONE</property>
+      <property name="window_placement">GTK_CORNER_TOP_LEFT</property>
 
       <child>
-	<widget class="GtkScrolledWindow" id="scrolledwindow16">
+	<widget class="GtkTextView" id="textview2">
+	  <property name="width_request">254</property>
+	  <property name="height_request">137</property>
 	  <property name="visible">True</property>
 	  <property name="can_focus">True</property>
-	  <property name="hscrollbar_policy">GTK_POLICY_NEVER</property>
-	  <property name="vscrollbar_policy">GTK_POLICY_NEVER</property>
-	  <property name="shadow_type">GTK_SHADOW_NONE</property>
-	  <property name="window_placement">GTK_CORNER_TOP_LEFT</property>
-
-	  <child>
-	    <widget class="GtkTextView" id="textview1">
-	      <property name="visible">True</property>
-	      <property name="can_focus">True</property>
-	      <property name="editable">False</property>
-	      <property name="overwrite">False</property>
-	      <property name="accepts_tab">True</property>
-	      <property name="justification">GTK_JUSTIFY_LEFT</property>
-	      <property name="wrap_mode">GTK_WRAP_NONE</property>
-	      <property name="cursor_visible">True</property>
-	      <property name="pixels_above_lines">0</property>
-	      <property name="pixels_below_lines">0</property>
-	      <property name="pixels_inside_wrap">0</property>
-	      <property name="left_margin">0</property>
-	      <property name="right_margin">0</property>
-	      <property name="indent">0</property>
-	      <property name="text" translatable="yes">Loading....</property>
-	    </widget>
-	  </child>
+	  <property name="editable">False</property>
+	  <property name="overwrite">False</property>
+	  <property name="accepts_tab">True</property>
+	  <property name="justification">GTK_JUSTIFY_CENTER</property>
+	  <property name="wrap_mode">GTK_WRAP_NONE</property>
+	  <property name="cursor_visible">False</property>
+	  <property name="pixels_above_lines">58</property>
+	  <property name="pixels_below_lines">0</property>
+	  <property name="pixels_inside_wrap">0</property>
+	  <property name="left_margin">0</property>
+	  <property name="right_margin">0</property>
+	  <property name="indent">0</property>
+	  <property name="text" translatable="yes">Loading Difference....</property>
 	</widget>
-	<packing>
-	  <property name="padding">0</property>
-	  <property name="expand">True</property>
-	  <property name="fill">True</property>
-	</packing>
       </child>
     </widget>
   </child>
