@@ -54,6 +54,7 @@ int Apol_GetInitialSIDInfo(ClientData clientData, Tcl_Interp *interp, int argc, 
 int Apol_Cond_Bool_SetBoolValue(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[]);
 int Apol_Cond_Bool_GetBoolValue(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[]);
 int Apol_TypesRelationshipAnalysis(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[]);
+int Apol_FlowAssertExecute (ClientData clientData, Tcl_Interp *interp, int objc, Tcl_Obj * CONST objv[]);
 
 #endif /*_APOLICY_TCL_H_*/
 
