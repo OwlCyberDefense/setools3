@@ -1090,20 +1090,6 @@ proc Sepct_Customize::createNoteBook { tabsBox } {
 	return 0
 }
 
-####################################################################
-# ::change_tab_state
-#
-#	Called to enable or disable customize tab
-#
-proc Sepct_Customize::change_tab_state { nb cmd } {
-	if {$cmd == "disable" } {
-		$nb itemconfigure  $Sepct::customize_tab -state disabled
-	} else {
-		$nb itemconfigure  $Sepct::customize_tab -state normal
-	}
-	return
-}
-
 ###################################################################
 # ::create
 #  	- Creates all major widgets and frames.
