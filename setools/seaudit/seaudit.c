@@ -749,7 +749,7 @@ int seaudit_open_policy(seaudit_t *seaudit, const char *filename)
 		msg = g_string_new("Error opening file: File is a directory!\n");
 		message_display(seaudit->top_window, GTK_MESSAGE_ERROR, msg->str);
 		g_string_free(msg, TRUE);
-		gdk_window_set_cursor(GTK_WIDGET(seaudit_app->top_window)->window, NULL);
+		clear_wait_cursor(GTK_WIDGET(seaudit_app->top_window));
 		return -1;
 	}
 	
@@ -769,7 +769,7 @@ int seaudit_open_policy(seaudit_t *seaudit, const char *filename)
 		g_string_append(msg, strerror(errno));
 		message_display(seaudit->top_window, GTK_MESSAGE_ERROR, msg->str);
 		g_string_free(msg, TRUE);
-		gdk_window_set_cursor(GTK_WIDGET(seaudit_app->top_window)->window, NULL);
+		clear_wait_cursor(GTK_WIDGET(seaudit_app->top_window));
 		return -1;
 	} else 
 		fclose(file);
@@ -782,11 +782,8 @@ int seaudit_open_policy(seaudit_t *seaudit, const char *filename)
 			close_policy(tmp_policy);
 		msg = g_string_new("");
 		g_string_append(msg, "The specified file does not appear to be a valid\nSE Linux Policy\n\n");
-		g_string_append(msg, "WARNING: This program has a bug which will cause it to\n");
-		g_string_append(msg, "work improperly once an invalid policy was opened.\n");
-		g_string_append(msg, "Therefore, you SHOULD EXIT NOW and RESTART seaudit.");
 		message_display(seaudit->top_window, GTK_MESSAGE_ERROR, msg->str);
-		gdk_window_set_cursor(GTK_WIDGET(seaudit_app->top_window)->window, NULL);
+		clear_wait_cursor(GTK_WIDGET(seaudit_app->top_window));
 		return -1;
 	}
 	if (seaudit->cur_policy)
@@ -799,9 +796,7 @@ int seaudit_open_policy(seaudit_t *seaudit, const char *filename)
 	add_path_to_recent_policy_files(filename, &(seaudit_app->seaudit_conf));
 	set_recent_policys_submenu(&(seaudit_app->seaudit_conf));
 	save_seaudit_conf_file(&(seaudit_app->seaudit_conf));
-
 	clear_wait_cursor(GTK_WIDGET(seaudit_app->top_window));
-
 	return 0;
 }
 
