@@ -24,23 +24,20 @@ namespace eval Apol_Analysis_tra {
 				  - the attribute(s) to which both types are assigned (common attribs) \n \
 		 	          - the role(s) which have access to both TypeA and TypeB (common roles) \n \
 		 	          - the users which have access to both TypeA and TypeB (common users) \n \
+		 	          - all type transition rules from TypeA to TypeB or from TypeB to TypeA. \n \
+		 	          - any process interactions between TypeA and TypeB (e.g., allow rules that allow TypeA \
+		 	          and TypeB to send signals to each other). \n \
+		 	          - object types to which both TypeA and TypeB are granted access. \n \
+		 	          - the additional types to which TypeA and TypeB have access. \n \
 		 	          - any direct information flows between TypeA and TypeB \n \
 		 	          - any transitive information flows between TypeA and TypeB \n \
 		 	          - any domain transitions from TypeA to TypeB or from TypeB to TypeA. \n \
-		 	          - any additional type transition rules from TypeA to TypeB or from TypeB to TypeA,\
-		 	          excluding tt rules from the DTA analysis. \n \
-		 	          - object types to which both TypeA and TypeB are granted access. \n \
-		 	          - any process interactions between TypeA and TypeB (e.g., allow rules that allow TypeA\
-		 	          and TypeB to send signals to each other). \n \
-		 	          - the additional types to which TypeA and TypeB have access. \n\n\The results \
-		 	          of the analysis may be optionally filtered by object classes and/or permissions, \
-		 	          and target types; however, this feature is only available for the Domain Transition, Transitive Information Flow and \
-		 	          Direct Information Flow results.\n\n\This analysis may contain an overwhelming amount of information, \
-		 	          so the results are simplified by listing each aspect of the analysis as a separate element within the \
-		 	          listbox, thereby allowing the user to select any aspect of the analysis from the listbox and have \
-		 	          that specific information displayed within the results textbox, instead of all the information being \
-		 	          displayed at once. If desired, all results can be displayed at once as well by selecting the \
-		 	          listbox item labeled 'Show All of the Above'.\n\nFor additional information on \
+		 	          \n\n\This analysis may contain an overwhelming amount of information, so the results \
+				  are simplified by listing each aspect of the analysis as a separate element \
+				  within the listbox. This allows the user to select any aspect of the analysis \
+				  from the listbox and have that specific information displayed within the results \
+				  textbox. If desired, all results can be displayed at once by selecting the listbox \
+				  item labeled 'Show All Results'.\n\nFor additional information on \
     				  this topic select \"Two Types Relationship Analysis\" from the help menu."
 	variable progressmsg		""
 	variable progress_indicator	-1
@@ -77,7 +74,7 @@ namespace eval Apol_Analysis_tra {
 	variable progressDlg
 	set progressDlg .progress
 	
-	# Advanced options dialogs
+	# Advanced options dialogs/variables - Not used in this release
 	variable forward_options_Dlg
 	set forward_options_Dlg .forward_options_Dlg_tra
 	variable transflow_options_Dlg
@@ -338,10 +335,8 @@ proc Apol_Analysis_tra::do_analysis {results_frame} {
 	variable dir_flow_sel		
 	variable other_ttrules_sel	
 	variable process_sel		
-	variable forward_options_Dlg
-	variable transflow_options_Dlg
 	variable excluded_dirflow_objs
-
+	
 	if {![ApolTop::is_policy_open]} {
 		tk_messageBox -icon error -type ok -title "Error" \
 			-message "No current policy file is opened!"
@@ -367,16 +362,6 @@ proc Apol_Analysis_tra::do_analysis {results_frame} {
 	    	return -code error
        	}
        	
-	# Need procedure for getting TIF and DTA objects from the proper namespaces.
-	if {$dta_AB_sel || $dta_BA_sel} {
-		set dta_object(x) "" 
-		Apol_Analysis_dta::forward_options_copy_object $forward_options_Dlg dta_object
-	}
-	if {$trans_flow_AB_sel || $trans_flow_BA_sel} {
-		set tif_object(x) "" 
-		Apol_Analysis_fulflow::advanced_filters_copy_object $transflow_options_Dlg tif_object
-	}
-	
 	# if a permap is not loaded then load the default permap
         # if an error occurs on open, then skip analysis
         set rt [catch {set map_loaded [Apol_Perms_Map::is_pmap_loaded]} err]
@@ -398,118 +383,24 @@ proc Apol_Analysis_tra::do_analysis {results_frame} {
 	    }
 	}
 	
-	# Initialize dta variables
+	# Initialize dta variables - These options are here for setting advanced options for DTA analysis.
         set dta_reverse 0
 	set dta_num_object_classes 0
 	set dta_perm_options ""
         set dta_filter_types 0
         set dta_types ""
 	set dta_objects_sel 0
-	if {$dta_AB_sel || $dta_BA_sel} {	        		
-		foreach class $dta_object($forward_options_Dlg,class_list) {
-			set perms ""
-			# Make sure to strip out just the class name, as this may be an excluded class.
-			set idx [string first $Apol_Analysis_dta::excluded_tag $class]
-			if {$idx == -1} {
-				set class_elements [array names dta_object "$forward_options_Dlg,perm_status_array,$class,*"]
-				set class_added 0
-				foreach element $class_elements {
-					set perm [lindex [split $element ","] 3]
-					if {[string equal $dta_object($element) "include"]} {
-						if {$class_added == 0} {
-							incr dta_num_object_classes 
-							set dta_perm_options [lappend dta_perm_options $class]
-							set class_added 1
-						}	
-						set perms [lappend perms $perm]
-					}
-				}
-				if {$perms != ""} {
-					set dta_perm_options [lappend dta_perm_options [llength $perms]]
-					foreach perm $perms {
-						set dta_perm_options [lappend dta_perm_options $perm]
-					}
-				}	
-			}
-		}
-		set dta_types $dta_object($forward_options_Dlg,filtered_incl_types)
 		
-		if {$dta_num_object_classes} {	
-			set dta_objects_sel 1
-		} 
-		if {$dta_types != ""} {   
-			set dta_filter_types 1
-		} 
-	}
-	
-	# Initialize transitive flow variables
+	# Initialize transitive flow variables - These options are here for setting advanced options for DTA analysis.
 	set tif_num_object_classes 0
 	set tif_perm_options ""
 	set tif_types ""
-	set tif_objects_sel "0"
-	set tif_filter_types "0"
-	if {$trans_flow_AB_sel || $trans_flow_BA_sel} {		
-		foreach class $tif_object($transflow_options_Dlg,class_list) {
-			set perms ""
-			# Make sure to strip out just the class name, as this may be an  
-			# excluded class, which has the " (Excluded)" tag appended to its' name.
-			set idx [string first $Apol_Analysis_fulflow::excluded_tag $class]
+	set tif_objects_sel 0
+	set tif_filter_types 0
 	
-			if {$idx == -1} {
-				set class_elements [array names tif_object "$transflow_options_Dlg,perm_status_array,$class,*"]
-				set exclude_perm_added 0
-				foreach element $class_elements {
-					set perm [lindex [split $element ","] 3]
-					# These are manually set to be included, so skip.
-					if {![string equal $tif_object($element) "exclude"] &&
-					    !$tif_object($transflow_options_Dlg,threshhold_cb_value)} {
-						continue	
-					} elseif {![string equal $tif_object($element) "exclude"] &&
-					    $tif_object($transflow_options_Dlg,threshhold_cb_value)} {
-						# If threshhold is enabled, then skip any permissions that are >=  
-						# to the threshhold since these are to be included in the results.
-						if {[Apol_Perms_Map::get_weight_for_class_perm $class $perm] >= \
-							$tif_object($transflow_options_Dlg,threshhold_value)} {
-							# Skip this permisssion
-							continue
-						}
-					}				
-					# If we get to this point, then the permission was either manually excluded,
-					# excluded because it's weight falls below the threshhold value, or both.
-					if {$exclude_perm_added == 0} {
-						incr tif_num_object_classes 
-						set tif_perm_options [lappend tif_perm_options $class]
-						set exclude_perm_added 1
-					}	
-					set perms [lappend perms $perm]
-				}
-				if {$perms != ""} {
-					set tif_perm_options [lappend tif_perm_options [llength $perms]]
-					foreach perm $perms {
-						set tif_perm_options [lappend tif_perm_options $perm]
-					}
-				}	
-			} else {
-				set class [string range $class 0 [expr $idx - 1]]
-				set tif_perm_options [lappend tif_perm_options $class]	
-				set tif_perm_options [lappend tif_perm_options 0]	
-				incr tif_num_object_classes 
-			}
-		}
-		set tif_types $tif_object($transflow_options_Dlg,filtered_excl_types)
-		
-		if {$tif_num_object_classes} {	
-			set tif_objects_sel "1"
-		} 
-		if {$tif_object($transflow_options_Dlg,filtered_excl_types) != ""} {   
-			set tif_filter_types "1"
-		} 
-	}
+	# Initialize direct flow variables - These options are here for setting advanced options for DTA analysis.
 	set filter_dirflow_objs 0
-	if {$excluded_dirflow_objs != ""} {
-		set filter_dirflow_objs 1
-	}
-
+	
 	Apol_Analysis_tra::display_progressDlg			
 	set rt [catch {set results [apol_TypesRelationshipAnalysis \
 		$typeA \
@@ -567,7 +458,7 @@ proc Apol_Analysis_tra::display_all_results {tra_listbox tra_info_text} {
 				Apol_Analysis_tra::display_common_attribs \
 					$tra_listbox \
 					$tra_info_text \
-					"Common Attribs" \
+					"Common Attributes" \
 					[$tra_listbox itemcget $item -data] 
 			}
 			common_roles {
@@ -588,7 +479,7 @@ proc Apol_Analysis_tra::display_all_results {tra_listbox tra_info_text} {
 				Apol_Analysis_tra::display_rules \
 					$tra_listbox \
 					$tra_info_text \
-					"Additional Type Transition Rules" \
+					"Type Transition Rules" \
 					[$tra_listbox itemcget $item -data]
 			}
 			process_rules {
@@ -670,7 +561,7 @@ proc Apol_Analysis_tra::listSelect {tra_listbox tra_info_text selected_item} {
 			Apol_Analysis_tra::display_common_attribs \
 				$tra_listbox \
 				$tra_info_text \
-				"Common Attribs" \
+				"Common Attributes" \
 				[$tra_listbox itemcget $selected_item -data]
 		}
 		common_roles {
@@ -691,7 +582,7 @@ proc Apol_Analysis_tra::listSelect {tra_listbox tra_info_text selected_item} {
 			Apol_Analysis_tra::display_rules \
 				$tra_listbox \
 				$tra_info_text \
-				"Additional type transition rules" \
+				"Type transition rules" \
 				[$tra_listbox itemcget $selected_item -data]
 		}
 		process_rules {
@@ -965,7 +856,7 @@ proc Apol_Analysis_tra::display_unique_object_info {tra_listbox tra_info_text da
 	set num_unique_objs_A [lindex $data $i]
 	
 	set start_idx [$tra_info_text index insert]
-	$tra_info_text insert end "$typeB "   
+	$tra_info_text insert end "$typeA "   
 	set end_idx [$tra_info_text index insert]
 	$tra_info_text tag add $Apol_Analysis_tra::title_type_tag $start_idx $end_idx
 				
@@ -1727,7 +1618,7 @@ proc Apol_Analysis_tra::create_results_list_structure {tra_listbox results_list}
 	# Insert item into listbox 
 	if {$other_ttrules_sel} {
 		$tra_listbox insert end tt_rules \
-			-text "Additional Type Transition Rules" \
+			-text "Type Transition Rules" \
 			-data [lrange $results_list $start_idx $i] 
 	}
 	
@@ -1770,7 +1661,7 @@ proc Apol_Analysis_tra::create_results_list_structure {tra_listbox results_list}
 	# Insert item into listbox 
 	if {$comm_access_sel} {
 		$tra_listbox insert end common_objects \
-			-text "Common Object Type Access" \
+			-text "Shared access to resources" \
 			-data [lrange $results_list $start_idx $i] 
 	}
 	# Get # uniqe objects
@@ -1802,7 +1693,7 @@ proc Apol_Analysis_tra::create_results_list_structure {tra_listbox results_list}
 	# Insert item into listbox
 	if {$unique_access_sel} { 
 		$tra_listbox insert end unique_objects \
-			-text "Unique Object Type Access" \
+			-text "Special access to resources" \
 			-data [lrange $results_list $start_idx $i] 
 	}
 	# Parse dirflow data 
@@ -1903,7 +1794,7 @@ proc Apol_Analysis_tra::create_results_list_structure {tra_listbox results_list}
 			-data [lrange $results_list $start_idx [expr $i - 1]] 
 	}						
 	# Insert final item into listbox (i.e. display ALL info item 
-	$tra_listbox insert end all -text "Show All of the Above"
+	$tra_listbox insert end all -text "Summary Report"
 	
         $tra_listbox configure -redraw 1
 	        
@@ -1915,9 +1806,6 @@ proc Apol_Analysis_tra::create_results_list_structure {tra_listbox results_list}
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_tra::close { } {   
 	Apol_Analysis_tra::reset_variables
-	Apol_Analysis_fulflow::advanced_filters_destroy_dialog $Apol_Analysis_tra::transflow_options_Dlg
-	Apol_Analysis_fulflow::advanced_filters_destroy_object $Apol_Analysis_tra::transflow_options_Dlg
-     	return 0
 } 
 
 # ------------------------------------------------------------------------------
@@ -1937,31 +1825,15 @@ proc Apol_Analysis_tra::open { } {
 	Apol_Analysis_tra::initialize_widgets_state
 	Apol_Analysis_tra::change_types_list $combo_typeA $combo_attribA 1
 	Apol_Analysis_tra::change_types_list $combo_typeB $combo_attribB 1
-	 
-	# Initialize object lists. The excluded objects list should have been reset 
-	# be empty, if the close function was called.
-	set Apol_Analysis_tra::included_dirflow_objs $Apol_Class_Perms::class_list
-	set Apol_Analysis_tra::excluded_dirflow_objs ""
-	
-     	return 0
 } 
 
 # ------------------------------------------------------------------------------
 #  Command Apol_Analysis_tra::display_mod_options
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_tra::display_mod_options { opts_frame } {    
-	Apol_Analysis_tra::reset_variables 
-	Apol_Analysis_dta::forward_options_refresh_dialog \
-		$Apol_Analysis_tra::forward_options_Dlg		
-	Apol_Analysis_fulflow::advanced_filters_refresh_dialog \
-		$Apol_Analysis_tra::transflow_options_Dlg	
+	Apol_Analysis_tra::reset_variables
      	Apol_Analysis_tra::create_options $opts_frame
-     	
      	Apol_Analysis_tra::populate_ta_list
-     	# Initialize object lists. The excluded objects list should have been reset 
-	# be empty, if the close function was called.
-	set Apol_Analysis_tra::included_dirflow_objs $Apol_Class_Perms::class_list
-	set Apol_Analysis_tra::excluded_dirflow_objs ""
 
      	return 0
 } 
@@ -1979,81 +1851,6 @@ proc Apol_Analysis_tra::get_analysis_info {} {
 proc Apol_Analysis_tra::get_results_raised_tab {} {
      	return $Apol_Analysis_tra::tra_info_text
 } 
-
-# ------------------------------------------------------------------------------
-#  Command Apol_Analysis_tra::load_dif_opts_query_options
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_tra::load_dif_opts_query_options {query_options curr_idx path_name parentDlg} {
-	variable excluded_dirflow_objs
-	variable included_dirflow_objs
-	
-      	set invalid_objs ""
-      	set i $curr_idx
-      	# ignore an empty list, which is indicated by '{}'
-        if {[lindex $query_options $i] != "\{\}"} {
-        	# we have to pretend to parse a list here since this is a string and not a TCL list.
-        	# First, filter out the open bracket
-	        set split_list [split [lindex $query_options $i] "\{"]
-	        if {[llength $split_list] == 1} {
-	        	# Validate that the object exists in the loaded policy.
-     			if {[lsearch -exact $Apol_Class_Perms::class_list [lindex $query_options $i]] != -1} {
-	        		set excluded_dirflow_objs [lindex $query_options $i]
-	        	} else {
-	        		set invalid_objs [lappend invalid_objs [lindex $query_options $i]]
-	     		} 
-		} else {
-		        # An empty list element will be generated because the first character '{' of string 
-		        # is in splitChars, so we ignore the first element of the split list.
-		        # Validate that the object exists in the loaded policy.
-     			if {[lsearch -exact $Apol_Class_Perms::class_list [lindex $split_list 1]] != -1} {
-		        	set excluded_dirflow_objs [lappend excluded_dirflow_objs [lindex $split_list 1]]
-		        } else {
-	     			set invalid_objs [lappend invalid_objs [lindex $split_list 1]]
-	     		} 
-		        # Update our counter variable to the next element in the query options list
-		        set i [expr $i + 1]
-		        # Loop through the query list, trying to split each element by a close bracket, in order to see
-		        # if this is the last element of the permission status list. If the '}' delimter is found in the
-		        # element, then the length of the list returned by the TCL split command is greater than 1. At
-		        # this point, we then break out of the while loop and then parse this last element of the query 
-		        # options list.
-		        while {[llength [split [lindex $query_options $i] "\}"]] == 1} {
-		        	# Validate that the object exists in the loaded policy.
-     				if {[lsearch -exact $Apol_Class_Perms::class_list [lindex $query_options $i]] != -1} {
-		        		set excluded_dirflow_objs [lappend excluded_dirflow_objs [lindex $query_options $i]]
-		        	} else {
-		     			set invalid_objs [lappend invalid_objs [lindex $query_options $i]]
-		     		} 
-		        	# Increment to the next element in the query options list
-		        	incr i
-		        }
-		        # This is the end of the list, so grab the first element of the split list, since the last 
-		        # element of split list is an empty list element because the last char of the element is a '}'.
-		        set end_element [lindex [split [lindex $query_options $i] "\}"] 0]
-		        # Validate that the object exists in the loaded policy.
-     			if {[lsearch -exact $Apol_Class_Perms::class_list $end_element] != -1} {
-		        	set excluded_dirflow_objs [lappend excluded_dirflow_objs $end_element]
-		        } else {
-	     			set invalid_objs [lappend invalid_objs $end_element]
-	     		}
-		}
-      	}
-      	# Display a popup with a list of invalid objects
-	if {$invalid_objs != ""} {
-		puts "The following objects do not exist in the currently \
-			loaded policy and were ignored:\n\n"
-		foreach obj $invalid_objs {
-			puts "$obj\n"
-		}
-	} 
-	foreach obj $Apol_Class_Perms::class_list {
-		set idx [lsearch -exact $excluded_dirflow_objs $obj]
-		if {$idx == -1} {
-			set included_dirflow_objs [lappend included_dirflow_objs $obj]
-		}
-	}   
-	return $i
-}
 
 # ------------------------------------------------------------------------------
 #  Command Apol_Analysis_tra::parse_query_options
@@ -2079,9 +1876,6 @@ proc Apol_Analysis_tra::parse_query_options_list {query_options curr_idx parentD
 	variable other_ttrules_sel	
 	variable process_sel	
 	# Global widget identifiers	  
-	variable forward_options_Dlg
-	variable transflow_options_Dlg
-	variable dirflow_options_Dlg
 	variable combo_typeA
      	variable combo_typeB
         variable combo_attribA
@@ -2174,21 +1968,6 @@ proc Apol_Analysis_tra::parse_query_options_list {query_options curr_idx parentD
 				incr i
 				set process_sel [lindex $query_options $i]
 			}	
-			"tif_options" {
-				incr i
-				set i [Apol_Analysis_fulflow::load_advanced_filters_options $query_options $i $transflow_options_Dlg $parentDlg]
-			}
-			"dta_options" {
-				incr i
-				if {[lindex $query_options $i]} { 
-     					incr i
-					set i [Apol_Analysis_dta::load_dta_advanced_query_options $query_options $i $forward_options_Dlg $parentDlg]
-				}
-			}
-			"dif_options" {
-				incr i
-				set i [Apol_Analysis_tra::load_dif_opts_query_options $query_options $i $dirflow_options_Dlg $parentDlg]
-			}	
 			default {
 				puts "Error: Unknown query option name encountered ([lindex $query_options $i])."
 			}
@@ -2202,12 +1981,7 @@ proc Apol_Analysis_tra::parse_query_options_list {query_options curr_idx parentD
 		$cb_attribB $combo_attribB $combo_typeB 0
 	Apol_Analysis_tra::change_types_list $combo_typeA $combo_attribA 0
 	Apol_Analysis_tra::change_types_list $combo_typeB $combo_attribB 0
-	Apol_Analysis_fulflow::advanced_filters_update_dialog $transflow_options_Dlg
-	Apol_Analysis_dta::forward_options_update_dialog $forward_options_Dlg
-	if {[winfo exists $dirflow_options_Dlg]} {
-		raise $dirflow_options_Dlg
-		focus -force $dirflow_options_Dlg
-	}
+	
 	return $i
 } 
 
@@ -2234,10 +2008,7 @@ proc Apol_Analysis_tra::load_query_options { file_channel parentDlg } {
 	variable dir_flow_sel		
 	variable other_ttrules_sel	
 	variable process_sel	
-	# Global widget identifiers	  
-	variable forward_options_Dlg
-	variable transflow_options_Dlg
-	variable dirflow_options_Dlg
+	# Global widget identifiers	 
 	variable combo_typeA
      	variable combo_typeB
         variable combo_attribA
@@ -2298,36 +2069,7 @@ proc Apol_Analysis_tra::get_search_options_list {} {
 	variable dir_flow_sel		
 	variable other_ttrules_sel	
 	variable process_sel	
-	# Global dialog identifiers	
-	variable forward_options_Dlg
-	variable transflow_options_Dlg
-	variable excluded_dirflow_objs
-	   	
-     	# Copy advanced options objects
-	array set dta_object ""
-	array set tif_object ""
-	Apol_Analysis_dta::forward_options_copy_object $forward_options_Dlg dta_object
-	Apol_Analysis_fulflow::advanced_filters_copy_object $transflow_options_Dlg tif_object
-	
-	set class_perms_list_tmp [array get tif_object "$transflow_options_Dlg,perm_status_array,*"]
-	set class_perms_list_tif ""
-	set len [llength $class_perms_list_tmp]
-	set idx [string length "$transflow_options_Dlg,perm_status_array,"]
-	for {set i 0} {$i < $len} {incr i} {
-		set str [string range [lindex $class_perms_list_tmp $i] $idx end]
-		incr i
-		set class_perms_list_tif [lappend class_perms_list_tif $str [lindex $class_perms_list_tmp $i]]
-	}
-	set class_perms_list_tmp [array get dta_object "$forward_options_Dlg,perm_status_array,*"]
-	set class_perms_list_dta ""
-	set len [llength $class_perms_list_tmp]
-	set idx [string length "$forward_options_Dlg,perm_status_array,"]
-	for {set i 0} {$i < $len} {incr i} {
-		set str [string range [lindex $class_perms_list_tmp $i] $idx end]
-		incr i
-		set class_perms_list_dta [lappend class_perms_list_dta $str [lindex $class_perms_list_tmp $i]]
-	}
-	
+	   
 	set options [list \
 		"typeA:" \
 		$typeA \
@@ -2364,28 +2106,7 @@ proc Apol_Analysis_tra::get_search_options_list {} {
 		"other_ttrules_sel:" \
 		$other_ttrules_sel \
 		"process_sel:" \
-		$process_sel \
-		"tif_options:" \
-		$class_perms_list_tif \
-		$tif_object($transflow_options_Dlg,master_excl_types_list) \
-		$tif_object($transflow_options_Dlg,incl_attrib_combo_value) \
-		$tif_object($transflow_options_Dlg,excl_attrib_combo_value) \
-		$tif_object($transflow_options_Dlg,incl_attrib_cb_sel) \
-		$tif_object($transflow_options_Dlg,excl_attrib_cb_sel) \
-		"threshhold_cb_value:" \
-		$tif_object($transflow_options_Dlg,threshhold_cb_value) \
-		"threshhold_value:" \
-		$tif_object($transflow_options_Dlg,threshhold_value) \
-		"dta_options:" \
-		1 \
-		$class_perms_list_dta \
-		$dta_object($forward_options_Dlg,master_excl_types_list) \
-		$dta_object($forward_options_Dlg,incl_attrib_combo_value) \
-		$dta_object($forward_options_Dlg,excl_attrib_combo_value) \
-		$dta_object($forward_options_Dlg,incl_attrib_cb_sel) \
-		$dta_object($forward_options_Dlg,excl_attrib_cb_sel) \
-		"dif_options:" \
-		$excluded_dirflow_objs]
+		$process_sel]
 		
 	return $options
 }
@@ -2495,8 +2216,6 @@ proc Apol_Analysis_tra::reset_variables { } {
         set Apol_Analysis_tra::dir_flow_sel       0
         set Apol_Analysis_tra::other_ttrules_sel  0
         set Apol_Analysis_tra::process_sel   	  0
-	set Apol_Analysis_tra::included_dirflow_objs	""
-	set Apol_Analysis_tra::excluded_dirflow_objs	""
 	
      	return 0
 } 
@@ -2643,10 +2362,7 @@ proc Apol_Analysis_tra::create_options { options_frame } {
 	set entry_frame [frame $options_frame.entry_frame]
         set top_frame [TitleFrame $entry_frame.left_frame \
         	-text "Required parameters"]
-        set bot_frame [TitleFrame $entry_frame.right_frame \
-        	-text "Advanced options"]
         set top  [$top_frame getframe]
-        set bot  [$bot_frame getframe]
 	
 	set types_f   [frame $top.types_f]
 	set ckbttns_f [frame $top.ckbttns_f]
@@ -2724,11 +2440,11 @@ proc Apol_Analysis_tra::create_options { options_frame } {
 		-variable Apol_Analysis_tra::comm_users_sel]
 
         set comm_access_cb [checkbutton $ckbttns_frame_2.comm_access_cb \
-        	-text "Common Object Type Access" \
+        	-text "Shared access to resources" \
 		-variable Apol_Analysis_tra::comm_access_sel]
 
         set unique_access_cb [checkbutton $ckbttns_frame_2.unique_access_cb \
-        	-text "Unique Object Type Access" \
+        	-text "Special access to resources" \
 		-variable Apol_Analysis_tra::unique_access_sel]
 
     	set dta_AB_cb [checkbutton $ckbttns_frame_3.dta_AB_cb \
@@ -2739,11 +2455,11 @@ proc Apol_Analysis_tra::create_options { options_frame } {
     		-text "Domain Transitions B->A" \
     		-variable Apol_Analysis_tra::dta_BA_sel]
 		 
-	set trans_flow_AB_cb [checkbutton $ckbttns_frame_2.trans_flow_AB_cb \
+	set trans_flow_AB_cb [checkbutton $ckbttns_frame_3.trans_flow_AB_cb \
 		-text "Transitive Flows A->B" \
     		-variable Apol_Analysis_tra::trans_flow_AB_sel]
     		
-    	set trans_flow_BA_cb [checkbutton $ckbttns_frame_2.trans_flow_BA_cb \
+    	set trans_flow_BA_cb [checkbutton $ckbttns_frame_3.trans_flow_BA_cb \
 		-text "Transitive Flows B->A" \
     		-variable Apol_Analysis_tra::trans_flow_BA_sel]
 		
@@ -2752,32 +2468,20 @@ proc Apol_Analysis_tra::create_options { options_frame } {
     		-variable Apol_Analysis_tra::dir_flow_sel]
 	
 	set other_ttrules_cb [checkbutton $ckbttns_frame_1.other_ttrules_cb \
-		-text "Additional Type Transition Rules" \
+		-text "Type Transition Rules" \
     		-variable Apol_Analysis_tra::other_ttrules_sel]
 		
-	set process_cb [checkbutton $ckbttns_frame_1.process_cb \
+	set process_cb [checkbutton $ckbttns_frame_2.process_cb \
 		-text "Process Interactions" \
     		-variable Apol_Analysis_tra::process_sel]
-	
-	set b_dta_adv [button $bot.b_dta_adv \
-		-text "Domain Transition options" -width 20 \
-		-command Apol_Analysis_tra::display_dta_options]
-	set b_transf_adv [button $bot.b_transf_adv \
-		-text "Transitive Flow options" -width 20 \
-		-command Apol_Analysis_tra::display_tif_options]
-	set b_directf_adv [button $bot.b_directf_adv \
-		-text "Direct Flow options" -width 20 \
-		-command Apol_Analysis_tra::display_dif_options]
-	
+
         # pack all the widgets
 	pack $entry_frame -side left -anchor nw -fill both -padx 5 -expand yes
-	pack $bot_frame -side right -anchor nw -fill both -padx 5 -expand yes
         pack $top_frame -side left -anchor nw -fill both -padx 5 -expand yes
-        pack $bot -fill both -side bottom
         pack $top -fill x -side top -anchor nw
         pack $ckbttns_f -side bottom -anchor nw -fill both -pady 8 -expand yes
         pack $types_f -side top -anchor nw -fill both -expand yes -pady 4
-        pack $comm_attribs_cb $comm_roles_cb $comm_users_cb $other_ttrules_cb $process_cb \
+        pack $comm_attribs_cb $comm_roles_cb $comm_users_cb $other_ttrules_cb \
 		-side top -anchor nw -padx 10
         pack $typeA_frame $typeB_frame -side left -anchor nw -fill x -expand yes
         pack $attrib_frame_1 $attrib_frame_2 -side bottom -anchor nw -pady 2
@@ -2786,10 +2490,9 @@ proc Apol_Analysis_tra::create_options { options_frame } {
 	pack $cb_attribA $cb_attribB -side top -anchor sw -padx 10
 	pack $combo_attribA $combo_attribB -side top -anchor sw -padx 10
 	pack $combo_typeA $combo_typeB -side left -anchor nw -fill x -padx 5
-        pack $b_dta_adv $b_transf_adv $b_directf_adv -side top -pady 2
 	pack $lbl_ckbttns -side top -anchor nw -pady 2
 	pack $ckbttns_frame_1 $ckbttns_frame_2 $ckbttns_frame_3 -side left -anchor nw -fill both -expand yes 
-	pack $comm_access_cb $unique_access_cb $dir_flow_cb $trans_flow_AB_cb $trans_flow_BA_cb \
+	pack $process_cb $comm_access_cb $unique_access_cb $dir_flow_cb $trans_flow_AB_cb $trans_flow_BA_cb \
 		$dta_AB_cb $dta_BA_cb -side top -anchor nw -padx 2	
 	                   	
 	# Set binding for the embedded entrybox within the BWidget combobox
