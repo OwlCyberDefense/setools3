@@ -956,29 +956,59 @@ proc ApolTop::display_options_Dlg { } {
     	wm title $options_Dialog "Tool Options"
     	
 	set open_opts_f [TitleFrame $options_Dialog.open_opts_f -text "Open policy options"]
-	set lframe [frame [$open_opts_f getframe].lframe]
-	set rframe [frame [$open_opts_f getframe].rframe]
-
+	set t_frame [frame [$open_opts_f getframe].t_frame]
+	set b_frame [frame [$open_opts_f getframe].b_frame]
+	set lframe [frame $b_frame.lframe]
+	set rframe [frame $b_frame.rframe]
+	
+	set lb_textInfo [label $t_frame.lb_textInfo -justify left \
+		-text "\
+		The following are policy options used for opening \
+		a policy to control which parts of the policy are \
+		loaded.\n"]
 	set cb_all [radiobutton $lframe.cb_all -text "All" \
-		-variable ApolTop::policy_open_option -value 0]
-	set cb_pass1 [radiobutton $lframe.cb_pass1 -text "User, role, type, and boolean identifiers" \
-		-variable ApolTop::policy_open_option -value 1 -justify left]
-	set cb_te_only [radiobutton $lframe.cb_te_only -text "TE rules and type identifiers" \
-		-variable ApolTop::policy_open_option -value 2]
-	set cb_types_roles [radiobutton $rframe.cb_types_roles -text "Type and role identifiers" \
-		-variable ApolTop::policy_open_option -value 3]
-	set cb_classes_perms [radiobutton $rframe.cb_classes_perms -text "Classes and permissions only" \
-		-variable ApolTop::policy_open_option -value 4]
-	set cb_rbac [radiobutton $rframe.cb_rbac -text "Role-based rules and role identifiers" \
-		-variable ApolTop::policy_open_option -value 5]
+		-variable ApolTop::policy_open_option -value 0 \
+		-justify left]
+	set cb_users [radiobutton $lframe.cb_users -text "Users" \
+		-variable ApolTop::policy_open_option -value 1 \
+		-justify left]
+	set cb_roles [radiobutton $lframe.cb_roles -text "Roles" \
+		-variable ApolTop::policy_open_option -value 2 \
+		-justify left]
+	set cb_ta [radiobutton $lframe.cb_ta -text "Types and attributes" \
+		-variable ApolTop::policy_open_option -value 3 \
+		-justify left]
+	set cb_bools [radiobutton $lframe.cb_bools -text "Booleans" \
+		-variable ApolTop::policy_open_option -value 4 \
+		-justify left]
+	set cb_classes_perms [radiobutton $rframe.cb_classes_perms  \
+		-text "Classes and permissions only" \
+		-variable ApolTop::policy_open_option -value 5 \
+		-justify left]
+	set cb_rbac [radiobutton $rframe.cb_rbac -text "RBAC policy (includes roles and role rules)" \
+		-variable ApolTop::policy_open_option -value 6 \
+		-justify left]
+	set cb_te [radiobutton $rframe.cb_te -text "TE policy (includes classes, permissions, types, \n\
+		attributes and TE rules)" \
+		-variable ApolTop::policy_open_option -value 7 \
+		-justify left]
+	set cb_cond [radiobutton $rframe.cb_cond -text "Conditionals (includes conditional bools,\nconditional \
+		expressions and conditional \nTE rules)" \
+		-variable ApolTop::policy_open_option -value 8 \
+		-justify left]
+	set cb_sids [radiobutton $rframe.cb_sids -text "Initial SIDs" \
+		-variable ApolTop::policy_open_option -value 9 \
+		-justify left]
 	
 	set b_ok  [button $options_Dialog.b_ok -text "OK" -width 6 -command { destroy $ApolTop::options_Dialog }]
 	
 	pack $b_ok -side bottom -padx 5 -pady 5 -anchor center
 	pack $open_opts_f -side left -anchor nw -fill both -expand yes -padx 5 -pady 5
+	pack $t_frame $b_frame -side top -anchor nw -fill both 
 	pack $lframe $rframe -side left -anchor nw -fill both -expand yes
-	pack $cb_all $cb_pass1 $cb_te_only $cb_types_roles $cb_classes_perms $cb_rbac -side top -anchor nw
-	
+	pack $cb_all $cb_users $cb_roles $cb_ta $cb_classes_perms -side top -anchor nw -expand yes
+	pack $cb_bools $cb_cond $cb_sids $cb_rbac $cb_te -side top -anchor nw -expand yes
+	pack $lb_textInfo -side top -anchor nw -fill x
 	# Place a toplevel at a particular position
     	#::tk::PlaceWindow $options_Dialog widget center
 	wm deiconify $options_Dialog
