@@ -157,6 +157,44 @@ proc Apol_Types::popupTypeInfo {which ta} {
 	return 0
 }
 
+proc Apol_Types::popup_files_from_fc_database {which ta} {
+	ApolTop::setBusyCursor
+	set rt [catch {set results [Apol_File_Contexts::get_fc_files_for_ta $which $ta]} err]
+	if {$rt != 0} {
+		tk_messageBox -icon error -type ok -title "Error" \
+			-message "$err. \n\nIf you need to load an index file, go to the File Context tab."
+		ApolTop::resetBusyCursor
+		return -1
+	}
+
+	set w .ta_fcbox
+	set rt [catch {destroy $w} err]
+	if {$rt != 0} {
+		tk_messageBox -icon error -type ok -title "Error" -message "$err"
+		ApolTop::resetBusyCursor
+		return -1
+	}
+	toplevel $w 
+	wm title $w "$ta"
+	wm protocol $w WM_DELETE_WINDOW "destroy $w"
+    	wm withdraw $w
+    	
+	set sf [ScrolledWindow $w.sf  -scrollbar both -auto both]
+	set f [text [$sf getframe].f -font {helvetica 10} -wrap none -width 35 -height 10]
+	$sf setwidget $f
+     	set b1 [button $w.close -text Close -command "catch {destroy $w}" -width 10]
+     	pack $b1 -side bottom -anchor s -padx 5 -pady 5 
+	pack $sf -fill both -expand yes
+	foreach path $results {
+     		$f insert end "$path\n"
+     	}
+ 	wm geometry $w +50+50
+ 	wm deiconify $w
+ 	$f configure -state disabled
+ 	ApolTop::resetBusyCursor
+	return 0
+}
+
 ##############################################################
 # ::search
 #  	- Search text widget for a string
@@ -276,7 +314,6 @@ proc Apol_Types::create {nb} {
     set pw2   [PanedWindow $pane.pw -side left]
     set tpane [$pw2 add -weight 3]
     set apane [$pw2 add ]
-    global tcl_platform
 
     # Major subframes
     set tbox [TitleFrame $tpane.tbox -text "Types"]
@@ -308,8 +345,10 @@ proc Apol_Types::create {nb} {
     # Popup menu widget
     menu .popupMenu_types
     set types_menu_callbacks [lappend types_menu_callbacks {"Display Type Info" "Apol_Types::popupTypeInfo type"}]
+    set types_menu_callbacks [lappend types_menu_callbacks {"Display Files Labeled With This Type" "Apol_Types::popup_files_from_fc_database type"}]
     menu .popupMenu_attribs
     set attribs_menu_callbacks [lappend attribs_menu_callbacks {"Display Attribute Info" "Apol_Types::popupTypeInfo attrib"}]
+    set attribs_menu_callbacks [lappend attribs_menu_callbacks {"Display Files Labeled With Types For This Attribute" "Apol_Types::popup_files_from_fc_database attrib"}]
     
     # Binding events to the both listboxes
     bindtags $tlistbox [linsert [bindtags $tlistbox] 3 tlist_Tag]  
