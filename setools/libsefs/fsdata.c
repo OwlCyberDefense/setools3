@@ -33,6 +33,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+
+
 #define NFTW_FLAGS FTW_MOUNT | FTW_PHYS
 #define NFTW_DEPTH 1024
 
@@ -91,6 +93,60 @@ int add_uint_to_a(uint32_t i, uint32_t *cnt, uint32_t **a)
         return 0;
 }
 
+int find_mount_points(char *dir, char **mounts, int *num_mounts, int rw) 
+{
+	FILE *mtab = NULL;
+	int len = 10;
+	struct mntent *entry;
+	char *token, *fs, *fs_orig = NULL;
+	
+	if ((mtab = fopen("/etc/mtab", "r")) == NULL) {
+		fprintf(stderr, "Could not open /etc/mtab for reading.\n");
+		return -1;
+	}
+
+	if ((mounts = malloc(sizeof(char*) * len)) == NULL) {
+		fprintf(stderr, "Out of memory.\n");
+		return -1;
+	}
+	
+	while ((entry = getmntent(mtab))) {
+
+		if (rw)
+			if (hasmntopt(entry, MNTOPT_RW) == NULL)
+				continue;
+
+		if(*num_mounts >= len) {
+			len *= 2;
+			mounts = realloc(mounts, sizeof(char*) * len);
+			if (mounts == NULL) {
+				fprintf(stderr, "Out of memory.\n");
+				fclose(mtab);
+				return -1;
+			}
+		}
+		fs_orig = fs = strdup(SEFS_XATTR_LABELED_FILESYSTEMS);
+		if (fs_orig == NULL) {
+			fprintf(stderr, "Out of memory.\n");
+			fclose(mtab);
+			return -1;
+		}
+		while((token = strtok(fs, " \t")) != NULL) {
+			if (fs) fs = NULL; /* for subsequent strtok calls */
+			if(!strcmp(token, entry->mnt_type)) {
+				if ((mounts[(*num_mounts)++] = strdup(entry->mnt_dir)) == NULL) {
+					fprintf(stderr, "Out of memory.\n");
+					fclose(mtab);
+					return -1;
+				}
+				break;
+			}
+		}
+		free(fs_orig);
+	}
+	fclose(mtab);
+	return 0;
+}
 
 static int avl_grow_path_array(void *user_data, int sz)
 {
@@ -619,15 +675,20 @@ int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char *filename)
 		
 		if (pinfo->obj_class == LNK_FILE) {
 				/* write our symlink target */
-				len = strlen(pinfo->symlink_target);
+				if (pinfo->symlink_target)
+					len = strlen(pinfo->symlink_target);
+				else
+					len = 0;
 				buf[0] = cpu_to_le32(len);
 				items = fwrite(buf, sizeof(uint32_t), 1, fp);
 				if (items != 1)
 					goto bad;
 					
-				items = fwrite(pinfo->symlink_target, sizeof(char), len, fp);
-				if (items != len)
-					goto bad;
+				if (len > 0) {
+					items = fwrite(pinfo->symlink_target, sizeof(char), len, fp);
+					if (items != len)
+						goto bad;
+				}
 					
 		}
 		
