@@ -172,7 +172,7 @@ static unsigned int load_perm_map_for_object(int obj_idx, int num_perms, classes
 		skip = FALSE;
 	} 
 	i = 0;
-	while((fgetpos(fp, &fpos) == 0) &&fgets(line, LINE_SZ, fp) != NULL) {
+	while((fgetpos(fp, &fpos) == 0) && fgets(line, LINE_SZ, fp) != NULL) {
 		if(line[0] == '#' || str_is_only_white_space(line))
 			continue;
 		if(sscanf(line, "%s %c %d", perm, &mapid, &perm_weight) != 3) {
