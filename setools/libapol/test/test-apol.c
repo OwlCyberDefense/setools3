@@ -428,10 +428,10 @@ static int get_type_relation_options(types_relation_query_t **tr_query, policy_t
 	printf("\t     3)  Domain transitions\n");
 	printf("\t     4)  Direct flows\n");
 	printf("\t     5)  Transitive flows\n");
-	printf("\t     6)  Additional type transitions\n");
-	printf("\t     7)  Common object type access\n");
+	printf("\t     6)  All type transitions\n");
+	printf("\t     7)  Shared access to types\n");
 	printf("\t     8)  Process interactions\n");
-	printf("\t     9)  Unique access\n");
+	printf("\t     9)  Special access to types\n");
 	printf("\tPress \'o\' to see options\n\n");
 	while (1) {
 		printf("\tEnter option (\'s\' to start analysis):  ");
@@ -681,37 +681,6 @@ int test_print_trans_dom(trans_domain_t *t, policy_t *policy)
 	return 0;
 }
 
-int test_disaply_perm_map(classes_perm_map_t *map, policy_t *p)
-{
-	int i, j;
-	class_perm_map_t *cls;
-	fprintf(outfile, "\nNumber of classes: %d (mapped?: %s)\n\n", map->num_classes, (map->mapped ? "yes" : "no"));
-	for(i = 0; i < map->num_classes; i++) {
-		cls = &map->maps[i];
-		fprintf(outfile, "\nclass %s %d\n", p->obj_classes[cls->cls_idx].name, cls->num_perms);
-		for(j = 0; j < cls->num_perms; j++) {
-			fprintf(outfile, "%18s     ", p->perms[cls->perm_maps[j].perm_idx]);
-			if((cls->perm_maps[j].map & PERMMAP_BOTH) == PERMMAP_BOTH) {
-				fprintf(outfile, "b\n");
-			} 
-			else {
-				switch(cls->perm_maps[j].map & (PERMMAP_READ|PERMMAP_WRITE|PERMMAP_NONE|PERMMAP_UNMAPPED)) {
-				case PERMMAP_READ: 	fprintf(outfile, "r\n");
-							break;
-				case PERMMAP_WRITE: 	fprintf(outfile, "w\n");
-							break;	
-				case PERMMAP_NONE: 	fprintf(outfile, "n\n");
-							break;
-				case PERMMAP_UNMAPPED: 	fprintf(outfile, "u\n");
-							break;	
-				default:		fprintf(outfile, "?\n");
-				} 
-			} 
-		} 
-	} 
-	return 0;
-}
-
 int test_print_direct_flow_analysis(policy_t *policy, int num_answers, iflow_t *answers)
 {
 	int i, j, k;
@@ -954,8 +923,6 @@ static int test_print_type_relation_results(types_relation_query_t *tr_query,
 			}
 			fprintf(outfile, "%s\n", name);
 			
-			snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->typeA_access_pool->type_rules[type_idx]->num_rules);
-			Tcl_AppendElement(interp, tbuf);
 			for (j = 0; j < tr_results->typeA_access_pool->type_rules[type_idx]->num_rules; j++) {
 				rule_idx = tr_results->typeA_access_pool->type_rules[type_idx]->rules[j];
 				rule = re_render_av_rule(1, rule_idx, 0, policy);
@@ -1314,7 +1281,7 @@ int main(int argc, char *argv[])
 		{
 			domain_trans_analysis_t *dta = NULL;
 			dta_query_t *dta_query = NULL;
-			char *start_domain = NULL, buff[1024];
+			char *start_domain = NULL, buf[1024];
 			llist_node_t *x = NULL;
 			int obj, type, i, j, num_perms, *perms = NULL;
 			
