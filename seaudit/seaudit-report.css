@@ -43,7 +43,7 @@ body
 {
 	font-size: 82%;
 	color:#000000;
-	background-color:#e1e1e1;
+	background-color:white;
 	margin:0px;
 }
 
@@ -67,8 +67,8 @@ h2.standard_section_title
 	font-size:100%;
 	padding-top:0px;
 	padding-bottom:1px;
-	padding-left:4px;
-	color:#900B09;
+	padding-left:0px;
+	color:black;
 	background-color:transparent;
 }
 
@@ -79,8 +79,8 @@ h2.custom_section_title
 	font-size:100%;
 	padding-top:0px;
 	padding-bottom:1px;
-	padding-left:4px;
-	color:#900B09;
+	padding-left:0px;
+	color:black;
 	background-color:transparent;
 }
 
@@ -92,7 +92,7 @@ background-color:transparent;
 
 b.message_count
 {
-color: #FF0000;
+color: #000000;
 background-color:transparent;
 }
 
@@ -116,7 +116,7 @@ background-color:transparent;
 
 font.message_date
 {
-color: #000000;
+color: black;
 background-color:transparent;
 position:relative
 }
@@ -133,22 +133,42 @@ color: #000000;
 background-color:transparent;
 }
 
-font.avc_type
+font.avc_deny
 {
-color: purple;
+color:red;
+background-color:transparent;
+}
+
+font.avc_grant
+{
+color:green;
+background-color:transparent;
+}
+
+font.exe
+{
+color: #000000;
+background-color:transparent;
+}
+
+font.path
+{
+color: blue;
 background-color:transparent;
 }
 
 font.src_context
 {
-color: #000080;
+color:black;
 background-color:transparent;
+font-weight: bold
 }
 
 font.tgt_context
 {
-color: #FF0000;
+color:black;
 background-color:transparent;
+font-weight: bold
 }
 
 font.obj_class
