@@ -25,6 +25,23 @@
 #include <stdlib.h>
 #include <assert.h>
 
+/* The following is a private global array of constant strings. */
+const char *policy_version_strings[] = { "Unkown version", 
+			 	 	 "prior to v. 11", 
+			 	 	 "v.11 -- v.12", 
+			 	 	 "v.13 -- v.15", 
+			 	 	 "v.16" };
+			 	 
+/* get a policy version string from the global array of constant strings. 
+ * We use the defined policy version numbers as indices into this array.*/
+const char* policy_version_strings_get_str(int policy_version)
+{
+	if (!is_valid_policy_version(policy_version)) 
+		return policy_version_strings[POL_VER_UNKNOWN];
+	else 
+		return policy_version_strings[policy_version];
+}
+		 	 
 /**************/
 /* these are INTERNAL functions only; allow direct access to type/attrib name string
  * stored within the policy db.  These functions shouldn't be exported as a caller
