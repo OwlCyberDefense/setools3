@@ -113,60 +113,64 @@ proc Apol_Cond_Rules::cond_rules_search {} {
 					 $search_opts(incl_teaudit) || \
 					 $search_opts(incl_ttrans))]
 		set len [llength $results]
-		set counter 0
-		# List should look like {expr1 num_av_rules avrule1_lineno avrule1_string avrule1_status num_audit_rules ... }
-		for {set list_idx 0} {$list_idx < $len} {incr list_idx} {
-			set cond_expr [lindex $results $list_idx]
-			$resultsbox insert end "\nconditional expression $counter: \[ $cond_expr \]\n\n"
-			
-			if {$rule_selected} {
-				$resultsbox insert end "TRUE list:\n"
+		if {$len > 0} {
+			set counter 0
+			# List should look like {expr1 num_av_rules avrule1_lineno avrule1_string avrule1_status num_audit_rules ... }
+			for {set list_idx 0} {$list_idx < $len} {incr list_idx} {
+				set cond_expr [lindex $results $list_idx]
+				$resultsbox insert end "\nconditional expression $counter: \[ $cond_expr \]\n\n"
+				
+				if {$rule_selected} {
+					$resultsbox insert end "TRUE list:\n"
+				}
+				incr list_idx
+				set num_av_access [lindex $results $list_idx]
+				
+				if {$search_opts(incl_teallow)} {
+					Apol_Cond_Rules::cond_rules_render_rules \
+						$resultsbox $results $num_av_access list_idx
+				}
+				incr list_idx
+				set num_av_audit [lindex $results $list_idx]
+				if {$search_opts(incl_teaudit)} {
+					Apol_Cond_Rules::cond_rules_render_rules \
+						$resultsbox $results $num_av_audit list_idx
+				}
+				incr list_idx
+				set num_ttrans [lindex $results $list_idx]
+				if {$search_opts(incl_ttrans)} {
+					Apol_Cond_Rules::cond_rules_render_rules \
+						$resultsbox $results $num_ttrans list_idx
+				}
+				
+				if {$rule_selected} {
+					$resultsbox insert end "\n\nFALSE list:\n"
+				}
+				incr list_idx
+				set num_av_access [lindex $results $list_idx]
+				if {$search_opts(incl_teallow)} {
+					Apol_Cond_Rules::cond_rules_render_rules \
+						$resultsbox $results $num_av_access list_idx
+				}
+				incr list_idx
+				set num_av_audit [lindex $results $list_idx]
+				if {$search_opts(incl_teaudit)} {
+					Apol_Cond_Rules::cond_rules_render_rules \
+						$resultsbox $results $num_av_audit list_idx
+				}
+				incr list_idx
+				set num_ttrans [lindex $results $list_idx]
+				if {$search_opts(incl_ttrans)} {
+					Apol_Cond_Rules::cond_rules_render_rules \
+						$resultsbox $results $num_ttrans list_idx
+				}
+				$resultsbox insert end "\n"	
+				incr counter	
 			}
-			incr list_idx
-			set num_av_access [lindex $results $list_idx]
-			
-			if {$search_opts(incl_teallow)} {
-				Apol_Cond_Rules::cond_rules_render_rules \
-					$resultsbox $results $num_av_access list_idx
-			}
-			incr list_idx
-			set num_av_audit [lindex $results $list_idx]
-			if {$search_opts(incl_teaudit)} {
-				Apol_Cond_Rules::cond_rules_render_rules \
-					$resultsbox $results $num_av_audit list_idx
-			}
-			incr list_idx
-			set num_ttrans [lindex $results $list_idx]
-			if {$search_opts(incl_ttrans)} {
-				Apol_Cond_Rules::cond_rules_render_rules \
-					$resultsbox $results $num_ttrans list_idx
-			}
-			
-			if {$rule_selected} {
-				$resultsbox insert end "\n\nFALSE list:\n"
-			}
-			incr list_idx
-			set num_av_access [lindex $results $list_idx]
-			if {$search_opts(incl_teallow)} {
-				Apol_Cond_Rules::cond_rules_render_rules \
-					$resultsbox $results $num_av_access list_idx
-			}
-			incr list_idx
-			set num_av_audit [lindex $results $list_idx]
-			if {$search_opts(incl_teaudit)} {
-				Apol_Cond_Rules::cond_rules_render_rules \
-					$resultsbox $results $num_av_audit list_idx
-			}
-			incr list_idx
-			set num_ttrans [lindex $results $list_idx]
-			if {$search_opts(incl_ttrans)} {
-				Apol_Cond_Rules::cond_rules_render_rules \
-					$resultsbox $results $num_ttrans list_idx
-			}
-			$resultsbox insert end "\n"	
-			incr counter	
+			Apol_PolicyConf::configure_HyperLinks $resultsbox
+		} else {
+			$resultsbox insert end "\nNo conditional expressions found."
 		}
-		Apol_PolicyConf::configure_HyperLinks $resultsbox
 		ApolTop::makeTextBoxReadOnly $resultsbox 
 	}
 
