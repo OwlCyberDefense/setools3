@@ -1,18 +1,33 @@
 CHANGE LOG, SE Linux TOOLS (setools)
 
+=======================================================
+March 4, 2004 Version 1.3
+
+Apol:
+	Added conditional policy support (static).
+	Added permission weighting for information flows.
+
+Seaudit:
+	Added support for audit messages from changing  
+	  booleans in a conditional policy.
+	Added multiple filters/views. 
+	Added support for saving logs.
+	
+Seuser:
+	Added home directory labeling command as command 
+	  line option.
+	
+secmds:
+	New context swap tool (replcon).
+	New context search tool (findcon).
+
+	  
 ========================================================
 February 6, 2004 Version 1.2.1
 
 Libapol:
 	Fixed parse error when using attributes in role
 	declarations.
-
-=======================================================
-February XX, 2004 Version 1.3
-
-Seaudit:
-	Added support for audit messages from changing booleans 
-	  in a conditional policy.
 
 ========================================================
 February 4, 2004 Version 1.2
