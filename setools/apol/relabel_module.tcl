@@ -1386,49 +1386,61 @@ proc Apol_Analysis_relabel::tree_select {widget node} {
 		lappend title_type_tags $start_index $end_index
 		append line " can be relabeled:\n\n"
 		foreach datum $data {
-			foreach {direction subject rule_proof} $datum { 				
-				set start_index [string length $line]
-				if {$widget_vars(to_mode) && $widget_vars(from_mode)} {
-					if {$direction == "both"} {
-						append line "to and from "
-					} elseif {$direction == "to"} {
-						append line "to "
-					} else {
-						append line "from "
+			foreach layer $datum {
+				foreach {obj obj_info} $layer {
+					set start_index [string length $line]
+					append line "$obj:\n"
+					set end_index [string length $line]
+					lappend subtitle_type_tags $start_index $end_index
+					foreach thing $obj_info {
+						foreach {direction subject rule_proof} $thing { 				
+							set start_index [string length $line]
+							if {$widget_vars(to_mode) && $widget_vars(from_mode)} {
+								if {$direction == "both"} {
+									append line "    to and from "
+								} elseif {$direction == "to"} {
+									append line "    to "
+								} else {
+									append line "    from "
+								}
+							} elseif {$widget_vars(to_mode)} {
+								append line "    to "
+							} else {
+								append line "    from "
+							}
+							set end_index [string length $line]
+							lappend subtitle_type_tags $start_index $end_index
+						
+							set start_index [string length $line]
+							append line "$node "
+							set end_index [string length $line]
+							lappend type_tags $start_index $end_index
+						
+							append line "by "
+						
+							set start_index [string length $line]
+							append line "$subject\n"
+							set end_index [string length $line]
+							lappend type_tags $start_index $end_index
+					
+							foreach rule_set $rule_proof {
+								foreach {rule_num rule} $rule_set {
+									append line "        "
+									if {![ApolTop::is_binary_policy]} {
+										append line "("
+										set start_index [expr {[string length $line]}]
+										append line "$rule_num"
+										set end_index [string length $line]
+										append line ") "
+										lappend policy_tags_list $start_index $end_index
+									}
+									append line "$rule\n"
+								}
+							}
+							append line "\n"
+						}
 					}
-				} elseif {$widget_vars(to_mode)} {
-					append line "to "
-				} else {
-					append line "from "
 				}
-				set end_index [string length $line]
-				lappend subtitle_type_tags $start_index $end_index
-				
-				set start_index [string length $line]
-				append line "$node "
-				set end_index [string length $line]
-				lappend type_tags $start_index $end_index
-				
-				append line "by "
-				
-				set start_index [string length $line]
-				append line "$subject\n"
-				set end_index [string length $line]
-				lappend type_tags $start_index $end_index
-				
-				foreach {rule_num rule} $rule_proof {
-					append line "    "
-					if {![ApolTop::is_binary_policy]} {
-						append line "("
-						set start_index [expr {[string length $line]}]
-						append line "$rule_num"
-						set end_index [string length $line]
-						append line ") "
-						lappend policy_tags_list $start_index $end_index
-					}
-					append line "$rule\n"
-				}
-				append line "\n"
 			}
 		}
 	}
