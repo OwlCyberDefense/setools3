@@ -451,8 +451,9 @@ proc Apol_Class_Perms::create {nb} {
         # Search string section widgets
         set sEntry [Entry $fm_sString.entry -textvariable Apol_Class_Perms::srchstr -width 40 \
     		    -helptext "Enter a regular expression"]
-        set sString [checkbutton $fm_sString.cb -variable Apol_Class_Perms::opts(usesrchstr) -text "RegEx Search" \
-    		     -command "Apol_Class_Perms::useSearch $sEntry"] 
+        set sString [checkbutton $fm_sString.cb -variable Apol_Class_Perms::opts(usesrchstr) \
+        		-text "Search using regular expression" \
+    		   	-command "Apol_Class_Perms::useSearch $sEntry"] 
     
         # Action buttons
         button $okbox.ok -text OK -width 6 -command { Apol_Class_Perms::search_Class_Perms }
