@@ -1,6 +1,6 @@
 AN OVERVIEW OF DOMAIN TRANSITION ANALYSIS
-apol, version 1.3
-April 15, 2004
+apol, version 1.4
+May 17, 2004
 selinux@tresys.com
 
 A key feature of Type Enforcement (TE) security is the ability to 
@@ -37,9 +37,12 @@ FORWARD VS. REVERSE DOMAIN TRANSITION ANALYSIS
 
 Apol allows you to perform both forward and reverse domain transition 
 analysis.  A forward analysis allows you to select a SOURCE type and 
-determine all the TARGET types to which the source may transition.  A 
-reverse analysis is the opposite; you select a TARGET type and determine 
-all the SOURCE types that may transition to the target type.
+determine all the TARGET types to which the source may transition. 
+You may also select object classes, permissions, and object types to 
+find transitions to domains that have specific privileges or that have
+access to a particular object type(s).A reverse analysis is the opposite; 
+you select a TARGET type and determine all the SOURCE types that may 
+transition to the target type.
 
 In each case, apol creates a tree structure to show the result.  You can 
 drill down the tree to follow any given transition path.
