@@ -19,27 +19,39 @@ static void on_browse_policy_button_clicked(GtkWidget *widget, gpointer user_dat
 static void on_browse_log_button_clicked(GtkWidget *widget, gpointer user_data);
 
 
-void set_seaudit_conf_default_policy(seaudit_conf_t *conf, const char *filename)
+int set_seaudit_conf_default_policy(seaudit_conf_t *conf, const char *filename)
 {
 	if (conf->default_policy_file)
 		free(conf->default_policy_file);
 	if (filename) {
 		conf->default_policy_file = (char*)malloc(sizeof(char) * (1 + strlen(filename)));
+		if (conf->default_policy_file == NULL) {
+			fprintf(stderr, "Out of memory.\n");	
+			return -1;
+		}
 		strcpy(conf->default_policy_file, filename);
 	} else 
 		conf->default_policy_file = NULL;
+		
+	return 0;
 }
 
-void set_seaudit_conf_default_log(seaudit_conf_t *conf, const char *filename)
+int set_seaudit_conf_default_log(seaudit_conf_t *conf, const char *filename)
 {
 	if (conf->default_log_file)
 		free(conf->default_log_file);
 
 	if (filename) {
 		conf->default_log_file = (char*)malloc(sizeof(char) * (1 + strlen(filename)));
+		if (conf->default_log_file == NULL) {
+			fprintf(stderr, "Out of memory.\n");	
+			return -1;
+		}
 		strcpy(conf->default_log_file, filename);
 	} else
 		conf->default_log_file = NULL;
+		
+	return 0;
 }
 
 int load_seaudit_conf_file(seaudit_conf_t *conf)
@@ -72,21 +84,26 @@ int load_seaudit_conf_file(seaudit_conf_t *conf)
 	if (!file)
 		return -1; 
 	value = get_config_var("DEFAULT_LOG_FILE", file);
-	set_seaudit_conf_default_log(conf, value);
+	if (set_seaudit_conf_default_log(conf, value) != 0) 
+		goto err;	
+
 	if (value)
 		free(value);
 	value = get_config_var("DEFAULT_POLICY_FILE", file);
-	set_seaudit_conf_default_policy(conf, value);
+	if (set_seaudit_conf_default_policy(conf, value) != 0) 
+		goto err;	
+
 	if (value)
 		free(value);
 	list = get_config_var_list("RECENT_LOG_FILES", file, &size);
 	if (list) {
 		for (i = 0; i < size; i++) {
 			if (add_path_to_recent_log_files(list[i], conf) != 0) {
+				/* Free the remaining paths that exist in the list */
 				for (j = i; j < size; j++)
 					free(list[j]);
 				free(list);
-				return -1;
+				goto err;
 			}
 			free(list[i]);
 		}
@@ -98,10 +115,11 @@ int load_seaudit_conf_file(seaudit_conf_t *conf)
 	if (list) {
 		for (i = 0; i < size; i++) {
 			if (add_path_to_recent_policy_files(list[i], conf) != 0) {
+				/* Free the remaining paths that exist in the list */
 				for (j = i; j < size; j++)
 					free(list[j]);
 				free(list);
-				return -1;
+				goto err;
 			}
 			free(list[i]);
 		}
@@ -130,7 +148,11 @@ int load_seaudit_conf_file(seaudit_conf_t *conf)
 		free(value);
 	}
 	fclose(file);
+
 	return 0;
+err:
+	free_seaudit_conf(conf);
+	return -1;
 }
 
 int add_path_to_recent_log_files(const char *path, seaudit_conf_t *conf_file)
@@ -151,7 +173,7 @@ int add_path_to_recent_log_files(const char *path, seaudit_conf_t *conf_file)
 		conf_file->recent_log_files[conf_file->num_recent_log_files - 1] = 
 			(char *)malloc(sizeof(char)*(strlen(path) + 1));
 		if (conf_file->recent_log_files[conf_file->num_recent_log_files - 1] == NULL) {
-			fprintf(stderr, "Out of memory\n");
+			fprintf(stderr, "Out of memory.\n");
 			return -1;
 		}
 		strcpy(conf_file->recent_log_files[conf_file->num_recent_log_files - 1], path);
@@ -167,7 +189,7 @@ int add_path_to_recent_log_files(const char *path, seaudit_conf_t *conf_file)
 		conf_file->recent_log_files[conf_file->num_recent_log_files - 1] = 
 			(char *)malloc(sizeof(char)*(strlen(path) + 1));
 		if (conf_file->recent_log_files[conf_file->num_recent_log_files - 1] == NULL) {
-			fprintf(stderr, "Out of memory\n");
+			fprintf(stderr, "Out of memory.\n");
 			return -1;
 		}
 		strcpy(conf_file->recent_log_files[conf_file->num_recent_log_files - 1], path);	
@@ -191,7 +213,7 @@ int add_path_to_recent_policy_files(const char *path, seaudit_conf_t *conf_file)
 		for (i = 1; i < conf_file->num_recent_policy_files; i++)
 			conf_file->recent_policy_files[i - 1] = conf_file->recent_policy_files[i];
 		if (conf_file->recent_policy_files[conf_file->num_recent_policy_files - 1] == NULL) {
-			fprintf(stderr, "Out of memory\n");
+			fprintf(stderr, "Out of memory.\n");
 			return -1;
 		}
 		strcpy(conf_file->recent_policy_files[conf_file->num_recent_policy_files - 1], path);
@@ -207,7 +229,7 @@ int add_path_to_recent_policy_files(const char *path, seaudit_conf_t *conf_file)
 		conf_file->recent_policy_files[conf_file->num_recent_policy_files - 1] = 
 			(char *)malloc(sizeof(char)*(strlen(path) + 1));
 		if (conf_file->recent_policy_files[conf_file->num_recent_policy_files - 1] == NULL) {
-			fprintf(stderr, "Out of memory\n");
+			fprintf(stderr, "Out of memory.\n");
 			return -1;
 		}
 		strcpy(conf_file->recent_policy_files[conf_file->num_recent_policy_files - 1], path);	
