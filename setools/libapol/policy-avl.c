@@ -1,4 +1,4 @@
-/* Copyright (C) 2002 Tresys Technology, LLC
+/* Copyright (C) 2002-2004 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
 
 /*
@@ -15,6 +15,29 @@
 #include <stdlib.h>
 #include <assert.h>
 #include "avl-util.h"
+
+
+
+static int grow_initial_sid_array(void *user_data, int sz)
+{
+	initial_sid_t * ptr;
+	policy_t *policy = (policy_t*)user_data;
+	assert(policy != NULL);
+
+	if (sz > policy->list_sz[POL_LIST_INITIAL_SIDS]) {
+	
+		ptr = (initial_sid_t *)realloc(policy->initial_sids,
+					     (LIST_SZ + policy->list_sz[POL_LIST_INITIAL_SIDS])
+					     * sizeof(initial_sid_t));
+		if(ptr == NULL) {
+			fprintf(stderr, "out of memory\n");
+			return -1;
+		}
+		policy->initial_sids = ptr;
+		policy->list_sz[POL_LIST_INITIAL_SIDS] += LIST_SZ;
+	}
+	return 0;
+}
 
 static int grow_type_array(void *user_data, int sz)
 {
@@ -128,6 +151,13 @@ static int perm_compare(void *user_data, const void *key, int idx)
 	return strcmp((char*)key, policy->perms[idx]);
 }
 
+static int initial_sid_compare( void *user_data, const void *key, int idx)
+{
+	policy_t *policy = (policy_t*)user_data;
+	assert(!(key == NULL || policy == NULL || !is_valid_initial_sid_idx(idx, policy)));
+	return strcmp((char*)key, policy->initial_sids[idx].name);
+}
+
 static int avl_add_attrib(void *user_data, const void *key, int idx)
 {
 	policy_t *policy = (policy_t*)user_data;
@@ -156,6 +186,18 @@ static int avl_add_type(void *user_data, const void *key, int idx)
 	policy->types[idx].aliases = NULL;	
 	policy->types[idx].attribs = NULL;
 	(policy->num_types)++;
+	return 0;
+}
+
+static int avl_add_initial_sid(void *user_data, const void *key, int idx)
+{
+	policy_t *policy = (policy_t*)user_data;
+	char *isid_name = (char*)key;
+
+	assert(policy != NULL && isid_name != NULL);
+	policy->initial_sids[idx].name = isid_name;
+	policy->initial_sids[idx].scontext = NULL;
+	(policy->num_initial_sids)++;
 	return 0;
 }
 
@@ -196,7 +238,8 @@ int init_avl_trees(policy_t *policy)
 		return -1;
 	if (avl_init(&policy->tree[AVL_PERMS], policy, perm_compare, grow_perm_array, avl_add_perm))
 		return -1;
-
+	if (avl_init(&policy->tree[AVL_INITIAL_SIDS], policy, initial_sid_compare, grow_initial_sid_array, avl_add_initial_sid))
+		return -1;
 
 	return 0;
 }

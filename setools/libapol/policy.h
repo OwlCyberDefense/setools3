@@ -1,4 +1,4 @@
-/* Copyright (C) 2001-2003 Tresys Technology, LLC
+/* Copyright (C) 2001-2004 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
 
 /* 
@@ -53,7 +53,8 @@
 #define POLOPT_COND_EXPR	0x00004000	/* conditional expression definitions */
 #define POLOPT_COND_TE_RULES	0x00008000	/* conditional TE rules */
 #endif
-#define POLOPT_OTHER		0x00010000	/* Everything else not covered above. */
+#define POLOPT_INITIAL_SIDS	0x00010000	/* initial SIDs and their context */
+#define POLOPT_OTHER		0x10000000	/* Everything else not covered above. */
 
 #define POLOPT_OBJECTS		(POLOPT_CLASSES|POLOPT_PERMS)
 #define POLOPT_AV_RULES		(POLOPT_TE_ALLOW|POLOPT_TE_NEVERALLOW|POLOPT_TE_AUDITALLOW|POLOPT_TE_DONTAUDIT)
@@ -64,9 +65,9 @@
 #ifdef CONFIG_SECURITY_SELINUX_CONDITIONAL_POLICY
 #define POLOPT_UNCOND_TE_RULES	(POLOPT_TE_RULES)
 #define POLOPT_COND_POLICY	(POLOPT_COND_BOOLS|POLOPT_COND_EXPR|POLOPT_COND_TE_RULES)
-#define POLOPT_ALL		(POLOPT_OBJECTS|POLOPT_TE_POLICY|POLOPT_RBAC|POLOPT_USERS|POLOPT_COND_POLICY|POLOPT_OTHER)
+#define POLOPT_ALL		(POLOPT_INITIAL_SIDS|POLOPT_OBJECTS|POLOPT_TE_POLICY|POLOPT_RBAC|POLOPT_USERS|POLOPT_COND_POLICY|POLOPT_OTHER)
 #else
-#define POLOPT_ALL		(POLOPT_OBJECTS|POLOPT_TE_POLICY|POLOPT_RBAC|POLOPT_USERS|POLOPT_OTHER)
+#define POLOPT_ALL		(POLOPT_INITIAL_SIDS|POLOPT_OBJECTS|POLOPT_TE_POLICY|POLOPT_RBAC|POLOPT_USERS|POLOPT_OTHER)
 #endif
 /* The following define which pass of the parser the components are collected.  We
  * don't include all the options (like POLOPT_OTHER), but rather only those that 
@@ -97,6 +98,8 @@ typedef struct name_item {
 	struct name_item	*next;
 } name_item_t;
 
+
+
 /* IDs for ta_item */
 #define IDX_INVALID		0
 #define IDX_TYPE		1
@@ -116,11 +119,12 @@ typedef struct ta_item {
 } ta_item_t;
 
 /* AVL tree list type ids */
-#define	AVL_TYPES	0	/* the type array */
-#define AVL_ATTRIBS	1	/* the attrib array */
-#define AVL_CLASSES	2	/* object classes */
-#define AVL_PERMS	3	/* permissions */
-#define	AVL_NUM_TREES	4	/* # of avl trees supported */
+#define	AVL_TYPES		0	/* the type array */
+#define AVL_ATTRIBS		1	/* the attrib array */
+#define AVL_CLASSES		2	/* object classes */
+#define AVL_PERMS		3	/* permissions */
+#define AVL_INITIAL_SIDS	4	/* initial SID contexts */
+#define	AVL_NUM_TREES		5	/* # of avl trees supported */
 
 /* type decalaration */
 typedef struct type_item {
@@ -159,6 +163,28 @@ typedef struct obj_class {
 	int	*u_perms;
 } obj_class_t;
 
+
+/* user statements; linked list */
+typedef struct user_item {
+	char			*name;
+	ta_item_t		*roles;
+	struct user_item	*next;
+	void 			*data;	/* generic pointer used by libseuser; ignored in apol */
+} user_item_t;
+
+typedef struct user_list {
+	user_item_t	*head;
+	user_item_t	*tail;
+} user_list_t;
+
+
+typedef struct security_context {
+	user_item_t	*user;	/* Note, unfortunately we don't have idx's for users. 
+				 * Never free user from this structure; this is just a
+				 * pointer to the real user record */
+	int		role;
+	int		type;
+} security_context_t;
 
 /* IDs of rules */
 #define RULE_TE_ALLOW		0 	/*AV rule */
@@ -240,18 +266,13 @@ typedef struct cln_item {
 } cln_item_t;
 
 
-/* user statements; linked list */
-typedef struct user_item {
-	char			*name;
-	ta_item_t		*roles;
-	struct user_item	*next;
-	void 			*data;	/* generic pointer used by libseuser; ignored in apol */
-} user_item_t;
-typedef struct user_list {
-	user_item_t	*head;
-	user_item_t	*tail;
-} user_list_t;
 
+
+/* initial SIDs and their context */
+typedef struct initial_sid {
+	char			*name;
+	security_context_t 	*scontext;
+} initial_sid_t;
 
 /* type alias array
  * TODO: see comments in add_alias() in policy.c */
@@ -273,12 +294,13 @@ typedef struct alias_item {
 #define POL_LIST_COMMON_PERMS	9
 #define POL_LIST_OBJ_CLASSES	10
 #define POL_LIST_ALIAS		11
+#define POL_LIST_INITIAL_SIDS	12
 #ifdef CONFIG_SECURITY_SELINUX_CONDITIONAL_POLICY
-#define POL_LIST_COND_BOOLS	12
-#define POL_LIST_COND_EXPRS	13
-#define POL_NUM_LISTS		14
+#define POL_LIST_COND_BOOLS	13
+#define POL_LIST_COND_EXPRS	14
+#define POL_NUM_LISTS		15
 #else
-#define POL_NUM_LISTS		12
+#define POL_NUM_LISTS		13
 #endif
 
 /* These are our weak indicators of which version of policy we're using.
@@ -317,7 +339,6 @@ typedef struct alias_item {
 typedef struct policy {
 	int	version;		/* weak indicator of policy version, see comments above */
 	unsigned int opts;		/* indicates which parts of the policy are included in this policy */
-	bool_t	fresh_pol;		/* indicates whether policy is newly initialized */
 	int	num_types;		/* array current ptr */
 	int	num_attribs;		/* " " */
 	int	num_av_access;		/* " " */
@@ -334,6 +355,7 @@ typedef struct policy {
 	int	num_common_perms;
 	int	num_obj_classes;
 	int	num_aliases;
+	int	num_initial_sids;
 	int 	rule_cnt[RULE_MAX];	/* statics on # of various rules */
 	int	list_sz[POL_NUM_LISTS]; /* keep track of dynamic array sizes */
 
@@ -353,6 +375,8 @@ typedef struct policy {
 	av_item_t	*av_audit;	/* audit and notify rules (ARRAY)*/
 	tt_item_t	*te_trans;	/* type transition|member|change rules (ARRAY)*/
 	cln_item_t	*clones;	/* clone rules (LLIST) */
+/* Misc. Policy */
+	initial_sid_t	*initial_sids;	/* initial SIDs and their context (ARRAY) */
 #ifdef CONFIG_SECURITY_SELINUX_CONDITIONAL_POLICY
 /* Conditional Policy */
 	cond_bool_t	*cond_bools;	/* conditional policy booleans (ARRAY) */
@@ -361,8 +385,11 @@ typedef struct policy {
 /* Role-based access control rules */
 	role_item_t	*roles;		/* roles (ARRAY)*/
 	role_allow_t	*role_allow;	/* role allow rules (ARRAY) */
-	rt_item_t	*role_trans;	/* role transition rules *ARRAY) */
+	rt_item_t	*role_trans;	/* role transition rules (ARRAY) */
 /* User rules */
+/* TODO: We probably need to re-work user into an ARRAY like most of the other lists to allow 
+ *	 for growth in the number of users and make everything consistent.  Unfortunately, we
+ *	 already have a large investment in code that uses the linked list!! */
 	user_list_t	users;		/* users (LLIST) */
 /* Permissions map (which is used for information flow analysis) */
 	struct classes_perm_map *pmap;	/* see perm-map.h */
@@ -398,7 +425,7 @@ int append_user(user_item_t *newuser, user_list_t *list);
 int add_name(char *name, name_item_t **list);
 int add_clone_rule(int src, int tgt,  unsigned long lineno, policy_t *policy);
 int add_attrib(bool_t with_type, int type_idx, policy_t *policy, char *attrib);
-int add_type_to_role(int type_idx, role_item_t *role);
+int add_type_to_role(int type_idx, int role_idx, policy_t *policy);
 int add_class(char *classname, policy_t *policy);
 int add_perm_to_class(int cls_idx, int p_idx, policy_t *policy);
 int add_common_perm(char *name, policy_t *policy);
@@ -426,6 +453,7 @@ int get_obj_class_perms(int obj_class, int *num_perms, int **perms, policy_t *po
 /* Permissions */
 #define is_valid_perm_idx(idx, policy) (policy != NULL  && (idx >= 0 && idx < policy->num_perms))
 #define is_valid_common_perm_idx(idx, policy) (idx >= 0 && idx < policy->num_common_perms)
+bool_t is_valid_perm_for_obj_class(policy_t *policy, int class, int perm);
 
 int get_common_perm_name(int idx, char **name, policy_t *policy);
 int get_common_perm_perm_name(int cp_idx, int *p_idx, char **name, policy_t *policy);
@@ -437,6 +465,15 @@ bool_t does_class_use_perm(int cls_idx, int perm_idx, policy_t *policy);
 int get_perm_list_by_classes(bool_t union_flag, int num_classes, const char **classes, int *num_perms, int **perms, policy_t *policy);
 bool_t does_class_indirectly_use_perm(int cls_idx, int perm_idx, policy_t *policy);
 
+
+/* Initial SIDs */
+#define is_valid_initial_sid_idx(idx, policy) (policy != NULL && (idx >= 0 && idx < policy->num_initial_sids))
+#define num_initial_sids(policy) (policy != NULL ? policy->num_initial_sids : -1)
+int add_initial_sid(char *name, policy_t *policy);
+int get_initial_sid_idx(const char *name, policy_t *policy);
+int add_initial_sid_context(int idx, security_context_t *scontext, policy_t *policy);
+int get_initial_sid_name(int idx, char **name, policy_t *policy);
+int search_initial_sids_context(int **isids, int *num_isids, const char *user, const char *role, const char *type, policy_t *policy);
 
 /* Types and attributes */
 #define num_types(policy) (policy != NULL ? policy->num_types : -1)
@@ -472,7 +509,6 @@ int get_attrib_types(int attrib, int *num_types, int **types, policy_t *policy);
 
 int free_user(user_item_t *ptr);
 int get_user_name(user_item_t *user, char **name);
-int get_user_idx(const char *name, policy_t *policy);
 bool_t does_user_exists(const char *name, policy_t *policy);
 int get_user_by_name(const char *name, user_item_t **user, policy_t *policy);
 bool_t does_user_have_role(user_item_t *user, int role, policy_t *policy);
@@ -483,6 +519,7 @@ bool_t does_user_have_role(user_item_t *user, int role, policy_t *policy);
 #define num_roles(policy) (policy != NULL ? policy->num_roles : -1)
 #define get_role_types(role, num_types, types, policy) get_attrib_types(role, num_types, types, policy)
 
+int add_role(char *role, policy_t *policy);
 int get_role_name(int idx, char **name, policy_t *policy);
 int get_role_idx(const char *name, policy_t *policy);
 bool_t does_role_use_type(int role, int type, policy_t *policy);
@@ -511,31 +548,6 @@ bool_t does_role_trans_use_role(int idx, unsigned char whichlist, bool_t do_indi
 bool_t does_role_allow_use_role(int src, unsigned char whichlist,  bool_t do_indirect, role_allow_t *rule, int *cnt);
 bool_t does_role_trans_use_ta(int idx, int type, bool_t do_indirect, rt_item_t *rule, int *cnt, policy_t *policy);
 
-int get_obj_class_name(int idx, char **name, policy_t *policy);
-int get_obj_class_idx(const char *name, policy_t *policy);
-int get_num_perms_for_obj_class(int clss_idx, policy_t *policy);
-int get_common_perm_name(int idx, char **name, policy_t *policy);
-int get_common_perm_perm_name(int cp_idx, int *p_idx, char **name, policy_t *policy);
-int get_obj_class_common_perm_idx(int cls_idx,  policy_t *policy);
-int get_obj_class_perm_idx(int cls_idx, int idx, policy_t *policy);
-int get_perm_name(int idx, char **name, policy_t *policy);
-int get_perm_idx(const char *name, policy_t *policy);
-int add_class(char *classname, policy_t *policy);
-int get_common_perm_idx(const char *name, policy_t *policy);
-int add_perm_to_class(int cls_idx, int p_idx, policy_t *policy);
-int add_common_perm(char *name, policy_t *policy);
-int add_perm_to_common(int comm_perm_idx, int perm_idx, policy_t *policy);
-bool_t does_av_rule_use_classes(int rule_idx, int rule_type, int *cls_idxs, int num_cls_idxs, policy_t *policy);
-bool_t does_av_rule_use_perms(int rule_idx, int rule_type, int *perm_idxs, int num_perm_idxs, policy_t *policy);
-bool_t does_tt_rule_use_classes(int rule_idx, int *cls_idxs, int num_cls_idxs, policy_t *policy);
-int add_perm(char *perm, policy_t *policy);
-int get_obj_class_perms(int obj_class, int *num_perms, int **perms, policy_t *policy);
-int get_perm_list_by_classes(bool_t union_flag, int num_classes, const char **classes, int *num_perms, int **perms, policy_t *policy);
-bool_t does_common_perm_use_perm(int cp_idx, int perm_idx, policy_t *policy);
-bool_t does_class_use_perm(int cls_idx, int perm_idx, policy_t *policy);
-bool_t does_class_indirectly_use_perm(int cls_idx, int perm_idx, policy_t *policy);
-bool_t is_valid_perm_for_obj_class(policy_t *policy, int class, int perm);
-int get_rule_lineno(int rule_idx, int rule_type, policy_t *policy);
 
 /* misc */
 
