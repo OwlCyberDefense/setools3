@@ -1,5 +1,9 @@
-/* Copyright (C) 2003-2005 Tresys Technology, LLC
+/* Copyright (C) 2004-2005 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
+
+/* 
+ * Author: Jeremy A. Mowery jmowery@tresys.com
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -41,8 +45,8 @@ void usage(const char *argv0, int long_version)
 "   -s, --start <start type>   starting type for analysis\n"
 "   -m, --mode  <mode string>  mode of analysis\n\n"
 "Mode Strings:\n"
-"   to        list types to which starting type can be relabeled\n"
-"   from      list types from which starting type can be relabeled\n"
+"   to        list types which can be relabeled to starting type\n"
+"   from      list types which can be relabeled from starting type\n"
 "   both      list types as with both to and from mode\n"
 "   subject   list all types to and from which starting type can relabel\n\n"
 "Additional Options:\n"
@@ -219,12 +223,12 @@ void print_relabel_result(relabel_set_t *sets, relabel_result_t *res, relabel_fi
 			fprintf(stderr, "out of memory\n");
 			return;
 		}
-		if (res->mode->mode == MODE_TO) {
+		if (res->mode->mode == MODE_FROM) {
 			list = TOLIST;
-			fprintf(out, "Type %s can be relabeled to:\n", str2);
-		} else if (res->mode->mode == MODE_FROM) {
+			fprintf(out, "The following types can be relabeled from %s:\n", str2);
+		} else if (res->mode->mode == MODE_TO) {
 			list = FROMLIST;
-			fprintf(out, "Type %s can be relabled from:\n", str2);
+			fprintf(out, "The following types can be relabeled to %s:\n", str2);
 		} else if (res->mode->mode == MODE_BOTH) {
 			list = BOTHLIST;
 			fprintf(out, "Type %s can be relabeled to/from:\n", str2);
