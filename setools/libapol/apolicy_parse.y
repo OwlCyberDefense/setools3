@@ -2430,8 +2430,6 @@ static cond_expr_t *define_cond_expr(__u32 expr_type, void *arg1, void *arg2)
 		
 		bool_var = get_cond_bool_idx(id, parse_policy);
 		
-		printf("got bool %d for string %s\n", bool_var, id);
-		
 		if (bool_var < 0) {
 			sprintf(errormsg, "unknown boolean %s in conditional expression", id);
 			yyerror(errormsg);
