@@ -38,6 +38,56 @@
 
 static sefs_filesystem_data_t *fsdata = NULL;
 
+/*
+ * sefs_get_file_class
+ *
+ * Determines the file's class, and returns it
+ */
+int sefs_get_file_class(const struct stat *statptr)
+{
+	assert(statptr != NULL);
+	if (S_ISREG(statptr->st_mode))
+		return NORM_FILE;
+	if (S_ISDIR(statptr->st_mode))
+		return DIR;
+	if (S_ISLNK(statptr->st_mode))
+		return LNK_FILE;
+	if (S_ISCHR(statptr->st_mode))
+		return CHR_FILE;
+	if (S_ISBLK(statptr->st_mode))
+		return BLK_FILE;
+	if (S_ISSOCK(statptr->st_mode))
+		return SOCK_FILE;
+	if (S_ISFIFO(statptr->st_mode))
+		return FIFO_FILE;
+	return ALL_FILES;
+}
+
+int add_uint_to_a(uint32_t i, uint32_t *cnt, uint32_t **a)
+{
+        if(cnt == NULL || a == NULL)
+                return -1;
+
+        /* FIX: This is not very elegant! We use an array that we
+         * grow as new int are added to an array.  But rather than be smart
+         * about it, for now we realloc() the array each time a new int is added! */
+printf("adding %d, at %d to %p\n",i,*cnt, *a);
+        if(*a != NULL) {
+                *a = (uint32_t *) realloc(*a, (*cnt + 1) * sizeof(uint32_t));
+        } else /* empty list */ {
+                *cnt = 0;
+                *a = (uint32_t *) malloc(sizeof(uint32_t));
+        }
+        if(*a == NULL) {
+                fprintf(stderr, "out of memory\n");
+                return -1;
+        }
+        (*a)[*cnt] = i;
+        (*cnt)++;
+        return 0;
+}
+
+
 static int avl_grow_path_array(void *user_data, int sz)
 {
 	sefs_fileinfo_t * ptr;
@@ -227,16 +277,19 @@ static int ftw_handler(const char *file, const struct stat *sb, int flag, struct
 		tmp = strtok(NULL, ":");
 		if (tmp) {
 			rc = avl_get_idx(tmp, &fsdata->type_tree);
-			if (rc != -1)
-				pi->context.type=rc;
-			else 
-			{
+			if (rc == -1) {
 				avl_insert(&(fsdata->type_tree), tmp, &rc);
-				pi->context.type=rc;
+printf("type %s didn't exist, inserted at %d\n", tmp, rc);
 			}
+			pi->context.type=(int32_t)rc;
+			if (add_uint_to_a((uint32_t)idx, &fsdata->types[rc].num_inodes, &fsdata->types[rc].index_list)) {
+				return -1;
+			}
+			
 		}
 		else
 			pi->context.type = XATTR_UNLABELED;
+
 		
 	} else {
 		pi = &(fsdata->files[idx]);
@@ -454,27 +507,87 @@ int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char *filename)
 	/* File magic number and version */
 	buf[items++] = cpu_to_le32(INDEX_DB_MAGIC);
 	buf[items++] = cpu_to_le32(INDEX_DB_VERSION);
-	/* number of dev/inodes */
-	buf[items++] = cpu_to_le32(fsd->num_files);
+	
+	/* number of types */
+	buf[items++] = cpu_to_le32(fsd->num_types);
 	
 	rc = fwrite(buf, sizeof(uint32_t), items, fp);
-	if (!rc) 
-		goto bad:
+	if (rc != items) 
+		goto bad;
+	
+
+	for(i=0; i < fsd->num_types; i++) {
+		/* write length of type */
+		len = strlen(fsd->types[i].name);
+		buf[0] = cpu_to_le32(len);
+		rc = fwrite(buf, sizeof(uint32_t), 1, fp);
+		if (rc != 1)
+			goto bad;
+
+		/* write the type */
+		rc = fwrite(fsd->types[i].name, sizeof(char), len, fp);
+		if (rc != len)
+			goto bad;
+
+		/* write number of inodes */
+		len = fsd->types[i].num_inodes;
+		buf[0] = cpu_to_le32(len);
+		rc = fwrite(buf, sizeof(uint32_t), 1, fp);
+		if (rc != 1)
+			goto bad;
+
+		/* write list of inode indexes */
+		for (j = 0; j < len; j++) {
+			buf[0] = cpu_to_le32(fsd->types[i].index_list[j]);
+			rc = fwrite(buf, sizeof(uint32_t), 1, fp);
+			if (rc != 1)
+				goto bad;
+
+		}
+
+	}
+
+	buf[0] = cpu_to_le32(fsd->num_users);
+	rc = fwrite(buf, sizeof(uint32_t), 1, fp);
+	if (rc != 1)
+		goto bad;
+
+	for (i=0; i < fsd->num_users; i++) {
+		/* write the length of the user */
+		len = strlen(fsd->users[i]);
+		buf[0] = cpu_to_le32(len);
+		rc = fwrite(buf, sizeof(uint32_t), 1, fp);
+		if (rc != 1)
+			goto bad;
+
+		/* write the user */
+		rc = fwrite(fsd->users[i], sizeof(char), len, fp);
+		if (rc != len)
+			goto bad;
+
+	}
+
+	/* number of dev/inodes */
+	buf[0] = cpu_to_le32(fsd->num_files);
+	rc = fwrite(buf, sizeof(uint32_t), 1, fp);
+	if (rc != 1)
+		goto bad;
 			
 	for(i=0; i<fsd->num_files; i++) {
 
 		pinfo = &(fsd->files[i]);
 	
 		/* Write the key */
-		items2 = fwrite(cpu_to_le32(&pinfo->key.dev), sizeof(uint32_t), 1, fp);
-		if (!items2 != 1) {
-			fprintf(stderr, "error writing file %s\n", filename);
+		buf[0] = cpu_to_le32(pinfo->key.dev);
+		items2 = fwrite(buf, sizeof(uint32_t), 1, fp);
+		if (items2 != 1) {
+			fprintf(stderr, "1 error writing file %s\n", filename);
 			return -1;
 		}
-
+		
 		items2 = fwrite(cpu_to_le64(&pinfo->key.inode), sizeof(uint64_t), 1, fp);
 		if (items2 != 1) {
-			fprintf(stderr, "error writing file %s\n", filename);
+			fprintf(stderr, "2 error writing file %s\n", filename);
 			return -1;
 		}
 		
@@ -485,31 +598,32 @@ int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char *filename)
 		
 		items2 = fwrite(sbuf, sizeof(int32_t), items, fp);
 		if (items2 != items) {
-			fprintf(stderr, "error writing file %s\n", filename);
+			fprintf(stderr, "3 error writing file %s\n", filename);
 			return -1;
 		}
 		
 		/* Write the number of pathnames */
-		len = cpu_to_le32(pinfo->num_links);
-		items2 = fwrite(&len, sizeof(uint32_t), 1, fp);
+		buf[0] = cpu_to_le32(pinfo->num_links);
+		items2 = fwrite(buf, sizeof(uint32_t), 1, fp);
 		if (items2 != 1) {
-			fprintf(stderr, "error writing file %s\n", filename);
+			fprintf(stderr, "4 error writing file %s\n", filename);
 			return -1;
 		}
 		
 		for (j = 0; j < pinfo->num_links;  j++) {
 			/* Write the pathname length */
-			len = strlen(pinfo->path_names[i]);
-			items2 = fwrite(&(cpu_to_le32(len)), sizeof(uint32_t), 1, fp);
+			len = strlen(pinfo->path_names[j]);
+			buf[0] = cpu_to_le32(len);
+			items2 = fwrite(buf, sizeof(uint32_t), 1, fp);
 			if (items2 != 1) {
-				fprintf(stderr, "error writing file %s\n", filename);
+				fprintf(stderr, "5 error writing file %s\n", filename);
 				return -1;
 			}
 			
 			/* Write the pathname */
-			items2 = fwrite(pinfo->path_names[i], sizeof(char), len, fp);
+			items2 = fwrite(pinfo->path_names[j], sizeof(char), len, fp);
 			if (items2 != len) {
-				fprintf(stderr, "error writing file %s\n", filename);
+				fprintf(stderr, "6 error writing file %s\n", filename);
 				return -1;
 			}
 		}
@@ -640,27 +754,3 @@ int sefs_filesystem_data_load(sefs_filesystem_data_t* fsd, char *filename)
 	return 1;
 }
 
-/*
- * sefs_get_file_class
- *
- * Determines the file's class, and returns it
- */
-int sefs_get_file_class(const struct stat *statptr)
-{
-	assert(statptr != NULL);
-	if (S_ISREG(statptr->st_mode))
-		return NORM_FILE;
-	if (S_ISDIR(statptr->st_mode))
-		return DIR;
-	if (S_ISLNK(statptr->st_mode))
-		return LNK_FILE;
-	if (S_ISCHR(statptr->st_mode))
-		return CHR_FILE;
-	if (S_ISBLK(statptr->st_mode))
-		return BLK_FILE;
-	if (S_ISSOCK(statptr->st_mode))
-		return SOCK_FILE;
-	if (S_ISFIFO(statptr->st_mode))
-		return FIFO_FILE;
-	return ALL_FILES;
-}
