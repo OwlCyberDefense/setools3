@@ -45,8 +45,10 @@ namespace eval Apol_Analysis_relabel {
 	variable excluded_tag		" (Excluded)"	
 
 	# defined tag names for output 
+	variable title_tag		TITLE
 	variable title_type_tag		TITLE_TYPE
 	variable subtitle_tag		SUBTITLES
+	variable type_tag		TYPE
 	
 	# Tree nodes
 	variable top_node		TOP_NODE
@@ -1183,8 +1185,10 @@ proc Apol_Analysis_relabel::populate_lists {} {
 # ::formatInfoText
 #
 proc Apol_Analysis_relabel::formatInfoText { tb } {
-	$tb tag configure $Apol_Analysis_relabel::title_type_tag -foreground blue -font {Helvetica 12 bold}
+	$tb tag configure $Apol_Analysis_relabel::title_tag -font {Helvetica 14 bold}
+	$tb tag configure $Apol_Analysis_relabel::title_type_tag -foreground blue -font {Helvetica 14 bold}
 	$tb tag configure $Apol_Analysis_relabel::subtitle_tag -font {Helvetica 11 bold}
+	$tb tag configure $Apol_Analysis_relabel::type_tag -foreground blue -font {Helvetica 12 bold}
 }
 
 # Update the File Relabeling Results display with whatever the user
@@ -1199,17 +1203,43 @@ proc Apol_Analysis_relabel::tree_select {widget node} {
 	$widget_vars(current_rtext) configure -state normal
 	$widget_vars(current_rtext) delete 1.0 end
 	
+	set title_tags ""
 	set subtitle_type_tags ""
 	set title_type_tags ""
 	set policy_tags_list ""
+	set type_tags ""
 	set line ""
 	set start_index 0
 	
 	if {$node == $Apol_Analysis_relabel::top_node} {
+		$widget_vars(current_rtext) configure -wrap word
+		set start_index [string length $line]
+		append line "Direct File Relabel Analysis: "
+		if {$widget_vars(mode) == "object"} {
+			if {$widget_vars(to_mode) && $widget_vars(from_mode)} {
+				append line "Starting/Ending Type: "
+			} elseif {$widget_vars(to_mode) && !$widget_vars(from_mode)} {
+				append line "Starting Type: "
+			} elseif {!$widget_vars(to_mode) && $widget_vars(from_mode)} {
+				append line "Ending Type: "
+			} else {
+				puts "Direction must be to, from, or both for object mode."
+				return
+			}
+		} else {
+			append line "Subject: "
+		}
+		set end_index [string length $line]
+		lappend title_tags $start_index $end_index
+		set start_index [string length $line]
+		append line "$widget_vars(start_type)"
+		set end_index [string length $line]
+		lappend title_type_tags $start_index $end_index
+		append line "\n\n"
 		set start_index [string length $line]
 		append line "$widget_vars(start_type) "
 		set end_index [string length $line]
-		lappend title_type_tags $start_index $end_index
+		lappend type_tags $start_index $end_index
 		
 		if {$widget_vars(mode) == "object"} {
 			append line "can be relabeled "
@@ -1227,7 +1257,7 @@ proc Apol_Analysis_relabel::tree_select {widget node} {
 			append line "$data "
 			set end_index [string length $line]
 			lappend subtitle_type_tags $start_index $end_index
-			append line "types. Open the subtree of this item to view the list of types."
+			append line "types.\n\n"
 		} else {
 			append line "can relabel "
 			set start_index [string length $line]
@@ -1240,9 +1270,36 @@ proc Apol_Analysis_relabel::tree_select {widget node} {
 			append line "from [lindex $data 0] "
 			set end_index [string length $line]
 			lappend subtitle_type_tags $start_index $end_index
-			append line "type(s). Open the subtree of this item to view the lists of To/From types."
+			append line "type(s).\n\n"
+		}
+		append line "This tab provides the results of a Direct File Relabel Analysis "
+		if {$widget_vars(mode) == "object"} {
+			append line "beginning with the "
+			if {$widget_vars(to_mode) && $widget_vars(from_mode)} {
+				append line "starting/ending type above. "
+			} elseif {$widget_vars(to_mode) && !$widget_vars(from_mode)} {
+				append line "starting type above. "
+			} elseif {!$widget_vars(to_mode) && $widget_vars(from_mode)} {
+				append line "ending type above. "
+			} else {
+				puts "Direction must be to, from, or both for object mode."
+				return
+			}
+		} else {
+			append line "for the subject above. "
+		}
+		append line "The results of the analysis are presented in tree form with the "
+		append line "root of the tree (this node) being the starting point for the analysis.\n\n"
+		if {$widget_vars(mode) == "object"} {
+			append line "Each child node in the tree represents a type in the current "
+			append line "policy to/from which relabeling is allowed "
+			append line "(depending on you selection above)."
+		} else {
+			append line "Each child node in the To and From subtrees represents a type "
+			append line "in th current policy which the chosen subject can relabel. "
 		}
 	} elseif {$widget_vars(mode) == "subject"} {
+		$widget_vars(current_rtext) configure -wrap none
 		append line "$widget_vars(start_type)"
 		set end_index [string length $line]
 		lappend title_type_tags $start_index $end_index
@@ -1275,7 +1332,7 @@ proc Apol_Analysis_relabel::tree_select {widget node} {
 			set start_index [string length $line]
 			append line " $node_str"
 			set end_index [string length $line]
-			lappend title_type_tags $start_index $end_index
+			lappend type_tags $start_index $end_index
 			append line "\n\n"
 			
 			foreach item $data {
@@ -1292,6 +1349,7 @@ proc Apol_Analysis_relabel::tree_select {widget node} {
 		}
 		append line "\n"
 	} else {	
+		$widget_vars(current_rtext) configure -wrap none
 		set start_index [string length $line]
 		append line "$widget_vars(start_type)"
 		set end_index [string length $line]
@@ -1319,14 +1377,14 @@ proc Apol_Analysis_relabel::tree_select {widget node} {
 				set start_index [string length $line]
 				append line "$node "
 				set end_index [string length $line]
-				lappend title_type_tags $start_index $end_index
+				lappend type_tags $start_index $end_index
 				
 				append line "by "
 				
 				set start_index [string length $line]
 				append line "$subject\n"
 				set end_index [string length $line]
-				lappend title_type_tags $start_index $end_index
+				lappend type_tags $start_index $end_index
 				
 				foreach {rule_num rule} $rule_proof {
 					append line "    "
@@ -1350,6 +1408,14 @@ proc Apol_Analysis_relabel::tree_select {widget node} {
 			Apol_PolicyConf::insertHyperLink $widget_vars(current_rtext) \
 				"1.0 + $start_index c" "1.0 + $end_index c"
 		}
+	}
+	foreach {start_index end_index} $title_tags {
+		$widget_vars(current_rtext) tag add $Apol_Analysis_relabel::title_tag \
+			"1.0 + $start_index c" "1.0 + $end_index c"
+	}
+	foreach {start_index end_index} $type_tags {
+		$widget_vars(current_rtext) tag add $Apol_Analysis_relabel::type_tag \
+			"1.0 + $start_index c" "1.0 + $end_index c"
 	}
 	foreach {start_index end_index} $subtitle_type_tags {
 		$widget_vars(current_rtext) tag add $Apol_Analysis_relabel::subtitle_tag \
