@@ -36,6 +36,9 @@ domain_auto_trans(sysadm_t, seuser_exec_t, seuser_t)
 # the tmp_t type
 file_type_auto_trans(seuser_t, tmp_t, seuser_tmp_t)
 
+# Permission to use shared libraries
+uses_shlib(seuser_t)
+
 # Grant the new domain permissions to many common operations
 # FIX: Should be more resticted than this.
 #every_domain(seuser_t)
@@ -137,20 +140,20 @@ allow seuser_t policy_config_t:dir { search getattr } ;
 allow seuser_t policy_config_t:file stat_file_perms;
 
 
-#ifdef(`xserver.te', `
+ifdef(`xserver.te', `
 ############################################################
 # Xserver section - To support our GUI interface, 
 ############################################################
 # Permission to create files in /tmp/.X11-Unix
-#allow seuser_t sysadm_xserver_tmp_t:dir { search } ;
-#allow seuser_t sysadm_xserver_tmp_t:sock_file { write } ;
-#allow seuser_t user_xserver_tmp_t:dir { search } ;
-#allow seuser_t user_xserver_tmp_t:sock_file { write } ;
+allow seuser_t sysadm_xserver_tmp_t:dir { search } ;
+allow seuser_t sysadm_xserver_tmp_t:sock_file { write } ;
+allow seuser_t user_xserver_tmp_t:dir { search } ;
+allow seuser_t user_xserver_tmp_t:sock_file { write } ;
 
 # Permission to establish a Unix stream connection to X server
-#can_unix_connect(seuser_t, user_xserver_t)
-#can_unix_connect(seuser_t, sysadm_xserver_t)
-#')
+can_unix_connect(seuser_t, user_xserver_t)
+can_unix_connect(seuser_t, sysadm_xserver_t)
+')
 ifdef(`xdm.te', `
 can_unix_connect(seuser_t, xdm_xserver_t)
 ')
