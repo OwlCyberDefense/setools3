@@ -550,6 +550,10 @@ static void seaudit_log_store_set_sort_column_id(GtkTreeSortable *sortable,
 		if (audit_log_append_sort(store->log, date_sort_action_create()))
 			return;
 		break;
+	case HOST_FIELD:
+		if (audit_log_append_sort(store->log, host_sort_action_create()))
+			return;
+		break;
 	case AVC_MSG_FIELD:
 	  	if (audit_log_append_sort(store->log, msg_sort_action_create()))
 			return;
