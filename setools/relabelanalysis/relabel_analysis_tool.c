@@ -76,77 +76,83 @@ int find_obj_in_array(obj_perm_set_t *perm_sets, int num_perm_sets, int obj_idx)
 
 int apol_fill_filter_sets(FILE *infile, relabel_filter_t *filter, policy_t *policy)
 {
-	char *str = NULL, *temp = NULL;
-	int i, q, obj_idx, perm_idx, retv = 0;
+        char str [300], *object, *perm, *s;
+        int obj_idx, perm_idx, retv = 0;
 
-	if (!infile){ 
-		fprintf(stderr, "bad filter file\n");
-		return -1;
-	}
+        if (!infile){
+                fprintf(stderr, "bad filter file\n");
+                return -1;
+        }
 
-	if (!filter || !policy){
-		fprintf(stderr, "bad parameter\n");
-		return -1;
-	}
+        if (!filter || !policy){
+                fprintf(stderr, "bad parameter\n");
+                return -1;
+        }
 
-	if (!( str = (char*)calloc(300, sizeof(char)) )){
-		fprintf(stderr, "out of memory\n");
-		return -1;
-	}
+        while (!feof(infile)){
+                bzero(str, sizeof (str));
+                fgets(str, sizeof (str), infile);
 
-	while (!feof(infile)){
-		bzero(str, 300);
-		fgets(str, 300, infile);
+                /* trim starting whitespace */
+                for (object = str; isspace (*object); object++)
+                        ;
+                if (*object == '\0' || *object == '#')
+                        continue;
 
-		if (!str) continue;
-		if (str[0] == '#') continue;
+                /* find actual permission */
+                if ((perm = strchr (object, ':')) == NULL) {
+                        fprintf(stderr, "invalid line format \n");
+                        return -1;
+                }
+                *perm = '\0';
+                perm++;
+                while (isspace (*perm)) {
+                        perm++;
+                }
 
-		for (i =0; i < strlen(str); i++)
-			if(isspace(str[i])) str[i] = '\0';
+                /* trim trailing whitespace for both variables */
+                for (s = object; *s != '\0'; s++) {
+                        if (isspace (*(s + 1))) {
+                                *(s + 1) = '\0';
+                        }
+                }
+                for (s = perm; *s != '\0'; s++) {
+                        if (isspace (*(s + 1))) {
+                                *(s + 1) = '\0';
+                        }
+                }
 
-		q = strlen(str); 
 
-		if (!q) continue;
+                /* double check that something remains for both object
+                 * and permission */
+                if (strlen (object) == 0 || strlen (perm) == 0) {
+                        fprintf(stderr,"BAKA!\n");
+                        return -42;
+                }
+                obj_idx = get_obj_class_idx(object, policy);
+                if (*perm == '*')
+                        perm_idx = -2;
+                else
+                        perm_idx = get_perm_idx(perm, policy);
 
-		temp = strstr(str, ":");
-		if (!temp){
-			fprintf(stderr, "invalid line format \n");
-			return -1;
-		}
-		if (strlen(temp) > 0){
-			temp[0] = '\0';
-			temp++;
-		}
-		if ( q - 1 != strlen(str) + strlen(temp)){
-			fprintf(stderr,"BAKA!\n");
-			return -42;
-		}
-
-		obj_idx = get_obj_class_idx(str, policy);
-		if (temp[0] == '*')
-			perm_idx = -2;
-		else
-			perm_idx = get_perm_idx(temp, policy);
-
-		if (!is_valid_obj_class_idx(obj_idx, policy) ) 
-			return -1;
-		if (perm_idx >= 0) {
-			if (!(is_valid_perm_idx(perm_idx, policy) && is_valid_perm_for_obj_class(policy, obj_idx, perm_idx)))
-				return -1;
-		} else {
-			if (perm_idx != -2)
-				return -1;
-		}
-
-		if (filter->perm_sets)
-			retv = find_obj_in_array(filter->perm_sets, filter->num_perm_sets, obj_idx);
-		if (retv == NOTHERE) {
-			retv = apol_add_class_to_obj_perm_set_list(&(filter->perm_sets), &(filter->num_perm_sets), obj_idx);
-			if (retv == -1) 
-				return -1;
-		} else if (retv < 0) {
-			return retv;
-		}
+                if (!is_valid_obj_class_idx(obj_idx, policy) )
+                        return -1;
+                if (perm_idx >= 0) {
+                        if (!(is_valid_perm_idx(perm_idx, policy) && is_valid_perm_for_obj_class(policy, obj_idx, perm_idx)))
+                                return -1;
+                } else {
+                        if (perm_idx != -2)
+                                return -1;
+                }
+                if (filter->perm_sets)
+                        retv = find_obj_in_array(filter->perm_sets, filter->num_perm_sets, obj_idx);
+                if (retv == NOTHERE) {
+                        retv = apol_add_class_to_obj_perm_set_list(&(filter->perm_sets), &(filter->num_perm_sets), obj_idx);
+                        if (retv == -1)
+                                return -1;
+                } else if (retv < 0) {
+                        return retv;
+                }
 		
 		if (perm_idx >= 0) {
 			retv = apol_add_perm_to_obj_perm_set_list(&(filter->perm_sets), &(filter->num_perm_sets), obj_idx, perm_idx);
@@ -268,8 +274,9 @@ void print_relabel_result(relabel_result_t *res, int start_type, policy_t *polic
 	}
 
 	/* print rules */
-	if (res->num_rules)
-		fprintf(out, "\nResults generated by the following rules:\n");
+	fprintf(out, "\nResults generated by the following %i rules:\n", res->num_rules);
+	if (!res->num_rules)
+		fprintf(out, "  <none> \n");
 	for (i = 0; i < res->num_rules; i++) {
 		if (str) {
 			free(str);
