@@ -371,7 +371,7 @@ proc Apol_Cond_Bools::create {nb} {
 	$sw_r setwidget $cond_bools_listbox 
 	
 	set button_defaults [button [$cond_bools_box getframe].button_defaults \
-		-text "Set to policy defaults" \
+		-text "Reset to policy defaults" \
 		-command {Apol_Cond_Bools::cond_bool_set_bool_values_to_policy_defaults}]
 	    	
 	# Search options subframes
@@ -405,7 +405,7 @@ proc Apol_Cond_Bools::create {nb} {
 	bind bool_vars_combo_box_Tag <KeyPress> { ApolTop::_create_popup $Apol_Cond_Bools::bool_combo_box %W %K }
 			
 	# Action Buttons
-	set ok_button [button [$buttons_f getframe].ok -text OK -width 6 -command {Apol_Cond_Bools::cond_bool_search_bools}]
+	set ok_button [button [$buttons_f getframe].ok -text "Search for Booleans" -width 15 -command {Apol_Cond_Bools::cond_bool_search_bools}]
 	#button $rfm.print -text Print -width 6 -command {ApolTop::unimplemented}
 	
 	# Display results window
