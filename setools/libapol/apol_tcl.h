@@ -51,6 +51,7 @@ int Apol_GetPolicyVersionString(ClientData clientData, Tcl_Interp *interp, int a
 int Apol_GetPolicyVersionNumber(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[]);
 int Apol_SearchInitialSIDs(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[]);
 int Apol_GetInitialSIDInfo(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[]);
+int Apol_Cond_Bool_SetBoolValue(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[]);
 
 #endif /*_APOLICY_TCL_H_*/
 
