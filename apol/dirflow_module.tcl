@@ -866,7 +866,7 @@ proc Apol_Analysis_dirflow::parseList_get_index_next_node { currentIdx results_l
 			incr currentIdx
 		}
         } else {
-        	puts "Invalid flow direction encountered while parsing results."
+        	puts "Invalid flow direction ($direction) encountered while parsing results."
         	return -1
         }
 
