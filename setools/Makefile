@@ -11,7 +11,7 @@ TCL_INCLUDE	= -I$(shell echo $(shell env tclsh tcl_vars pkgPath) | sed -e "s/lib
 #TCL_INCLUDE	= -I/usr/include
 #TCL_LIBINC	= -L/usr/lib
 TCL_LIBS	= -ltk$(TCLVER) -ltcl$(TCLVER) -ldl $(LIBS)
-INCLUDE_DIR	= /usr/include
+INCLUDE_DIR	= $(DESTDIR)/usr/include
 
 LINKFLAGS	= 
 CC		= gcc 
