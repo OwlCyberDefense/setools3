@@ -43,7 +43,6 @@ static void seaudit_print_version_info(void);
 static void seaudit_print_usage_info(const char *program_name, bool_t brief);
 static void seaudit_parse_command_line(int argc, char **argv, GString **policy_filename, GString **log_filename);
 static void seaudit_update_title_bar(void *user_data);
-static void seaudit_update_status_bar(void *user_data);
 static void seaudit_set_recent_logs_submenu(seaudit_conf_t *conf_file);
 static void seaudit_set_recent_policys_submenu(seaudit_conf_t *conf_file);
 static void seaudit_policy_file_open_from_recent_menu(GtkWidget *widget, gpointer user_data);
@@ -83,6 +82,78 @@ void seaudit_destroy(seaudit_t *seaudit_app)
 	g_string_free(seaudit_app->audit_log_file, TRUE);
 	free(seaudit_app);
 	seaudit_app = NULL;
+}
+
+void seaudit_update_status_bar(seaudit_t *seaudit)
+{	
+	char str[STR_SIZE];
+	char *ver_str = NULL;
+	int num_log_msgs, num_filtered_log_msgs;
+	char old_time[TIME_SIZE], recent_time[TIME_SIZE];
+	seaudit_filtered_view_t *view;
+
+	if (!seaudit || !seaudit->window || !seaudit->window->xml)
+		return;
+
+	GtkLabel *v_status_bar = (GtkLabel *) glade_xml_get_widget(seaudit->window->xml, "PolicyVersionLabel");
+	GtkLabel *l_status_bar = (GtkLabel *) glade_xml_get_widget(seaudit->window->xml, "LogNumLabel");
+	GtkLabel *d_status_bar = (GtkLabel *) glade_xml_get_widget(seaudit->window->xml, "LogDateLabel");
+
+	if (seaudit->cur_policy == NULL) {
+		ver_str = "Policy Version: No policy";
+		gtk_label_set_text(v_status_bar, ver_str);
+	} else {
+		switch (seaudit->cur_policy->version) 
+		{
+			case POL_VER_PRE_11:
+				ver_str = POL_VER_STRING_PRE_11;
+				break;
+			case POL_VER_11: /* same as POL_VER_12 */
+				ver_str = POL_VER_STRING_11;
+				break;
+			case POL_VER_15:
+				ver_str = POL_VER_STRING_15;
+				break;
+		#ifdef CONFIG_SECURITY_SELINUX_CONDITIONAL_POLICY
+			case POL_VER_16:   /* conditional policy extensions */
+				ver_str = POL_VER_STRING_16;
+				break;
+		#endif
+			default:
+				ver_str = "Unknown";
+				break;
+		}
+		snprintf(str, STR_SIZE, "Policy Version: %s", ver_str);
+		gtk_label_set_text(v_status_bar, str);
+	}
+
+	if (seaudit->cur_log == NULL) {
+		snprintf(str, STR_SIZE, "Log Messages: No log");
+		gtk_label_set_text(l_status_bar, str);
+		snprintf(str, STR_SIZE, "Dates: No log");
+		gtk_label_set_text(d_status_bar, str);
+	} else {
+		view = seaudit_window_get_current_view(seaudit->window);
+		if (view)
+			num_filtered_log_msgs = view->store->log_view->num_fltr_msgs;
+		else 
+			num_filtered_log_msgs = 0;
+
+		num_log_msgs = seaudit->cur_log->num_msgs;
+		snprintf(str, STR_SIZE, "Log Messages: %d/%d", num_filtered_log_msgs, num_log_msgs);
+		gtk_label_set_text(l_status_bar, str);
+		if (num_log_msgs > 0) {
+			strftime(old_time, TIME_SIZE, "%b %d %H:%M:%S" , 
+				 seaudit->cur_log->msg_list[0]->date_stamp);
+			strftime(recent_time, TIME_SIZE, "%b %d %H:%M:%S", 
+				 seaudit->cur_log->msg_list[num_log_msgs-1]->date_stamp);
+			snprintf(str, STR_SIZE, "Dates: %s - %s", old_time, recent_time);
+			gtk_label_set_text(d_status_bar, str);
+		} else {
+			snprintf(str, STR_SIZE, "Dates: No messages");
+			gtk_label_set_text(d_status_bar, str);
+		}
+	}
 }
 
 int seaudit_open_policy(seaudit_t *seaudit, const char *filename)
@@ -308,14 +379,14 @@ int main(int argc, char **argv)
 		if (seaudit_app->seaudit_conf.default_policy_file)
 			filenames.policy_filename = g_string_new(seaudit_app->seaudit_conf.default_policy_file);
 
-	seaudit_update_status_bar(NULL);
+	seaudit_update_status_bar(seaudit_app);
 	seaudit_update_title_bar(NULL);
 	
-	policy_load_callback_register(&seaudit_update_status_bar, NULL);
-	log_load_callback_register(&seaudit_update_status_bar, NULL);
+	policy_load_callback_register((seaudit_callback_t)&seaudit_update_status_bar, seaudit_app);
+	log_load_callback_register((seaudit_callback_t)&seaudit_update_status_bar, seaudit_app);
 	policy_load_callback_register(&seaudit_update_title_bar, NULL);
 	log_load_callback_register(&seaudit_update_title_bar, NULL);
-	log_filtered_callback_register(&seaudit_update_status_bar, NULL);
+	log_filtered_callback_register((seaudit_callback_t)&seaudit_update_status_bar, seaudit_app);
 	/* finish loading later */
 	g_idle_add(&delayed_main, &filenames);
 
@@ -410,11 +481,6 @@ void seaudit_on_FileQuit_activate(GtkWidget *widget, gpointer user_data)
 {
 	seaudit_exit_app();
 	return;
-}
-
-void seaudit_TopNotebook_switch_page(GtkNotebook *notebook, gint arg1, gpointer user_data)
-{
-	seaudit_update_status_bar(NULL);
 }
 
 /*
@@ -756,73 +822,4 @@ static void seaudit_update_title_bar(void *user_data)
 	}
 	snprintf(str, STR_SIZE, "seAudit - %s %s", log_str, policy_str);	
 	gtk_window_set_title(seaudit_app->window->window, (gchar*) str);
-}
-
-static void seaudit_update_status_bar(void *user_data)
-{	
-	char str[STR_SIZE];
-	char *ver_str = NULL;
-	int num_log_msgs, num_filtered_log_msgs;
-	char old_time[TIME_SIZE], recent_time[TIME_SIZE];
-	seaudit_filtered_view_t *view;
-
-	GtkLabel *v_status_bar = (GtkLabel *) glade_xml_get_widget(seaudit_app->window->xml, "PolicyVersionLabel");
-	GtkLabel *l_status_bar = (GtkLabel *) glade_xml_get_widget(seaudit_app->window->xml, "LogNumLabel");
-	GtkLabel *d_status_bar = (GtkLabel *) glade_xml_get_widget(seaudit_app->window->xml, "LogDateLabel");
-			
-	if (seaudit_app->cur_policy == NULL) {
-		ver_str = "Policy Version: No policy";
-		gtk_label_set_text(v_status_bar, ver_str);
-	} else {
-		switch (seaudit_app->cur_policy->version) 
-		{
-			case POL_VER_PRE_11:
-				ver_str = POL_VER_STRING_PRE_11;
-				break;
-			case POL_VER_11: /* same as POL_VER_12 */
-				ver_str = POL_VER_STRING_11;
-				break;
-			case POL_VER_15:
-				ver_str = POL_VER_STRING_15;
-				break;
-		#ifdef CONFIG_SECURITY_SELINUX_CONDITIONAL_POLICY
-			case POL_VER_16:   /* conditional policy extensions */
-				ver_str = POL_VER_STRING_16;
-				break;
-		#endif
-			default:
-				ver_str = "Unknown";
-				break;
-		}
-		snprintf(str, STR_SIZE, "Policy Version: %s", ver_str);
-		gtk_label_set_text(v_status_bar, str);
-	}
-
-	if (seaudit_app->cur_log == NULL) {
-		snprintf(str, STR_SIZE, "Log Messages: No log");
-		gtk_label_set_text(l_status_bar, str);
-		snprintf(str, STR_SIZE, "Dates: No log");
-		gtk_label_set_text(d_status_bar, str);
-	} else {
-		view = seaudit_window_get_current_view(seaudit_app->window);
-		if (view)
-			num_filtered_log_msgs = view->store->log_view->num_fltr_msgs;
-		else 
-			num_filtered_log_msgs = 0;
-
-		num_log_msgs = seaudit_app->cur_log->num_msgs;
-		snprintf(str, STR_SIZE, "Log Messages: %d/%d", num_filtered_log_msgs, num_log_msgs);
-		gtk_label_set_text(l_status_bar, str);
-		if (num_log_msgs > 0) {
-			strftime(old_time, TIME_SIZE, "%b %d %H:%M:%S" , 
-				 seaudit_app->cur_log->msg_list[0]->date_stamp);
-			strftime(recent_time, TIME_SIZE, "%b %d %H:%M:%S", 
-				 seaudit_app->cur_log->msg_list[num_log_msgs-1]->date_stamp);
-			snprintf(str, STR_SIZE, "Dates: %s - %s", old_time, recent_time);
-			gtk_label_set_text(d_status_bar, str);
-		} else {
-			snprintf(str, STR_SIZE, "Dates: No messages");
-			gtk_label_set_text(d_status_bar, str);
-		}
-	}
 }
