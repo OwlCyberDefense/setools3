@@ -1,6 +1,6 @@
 SE Linux Policy Customization and Editing Tool Help File
-sepcut, version 0.3.4
-January 12, 2004
+sepcut, version 0.3.5
+January 28, 2004
 selinux@tresys.com
 
 
@@ -9,7 +9,7 @@ Overview
 
 This file contains basic help information for using sepcut, a policy 
 customization, browsing, editing, and testing tool for Security 
-Enhanced Linux.  This is version 0.3.4 of the tool, i.e., the very first 
+Enhanced Linux.  This is version 0.3.5 of the tool, i.e., the very first 
 generation.  Sepcut is a basic editor and early generation 
 customization tool....use with caution.
 
@@ -199,10 +199,6 @@ displayed.
 Known bugs
 ----------
 
-1. Unfortunately if you have a file name that is an integer, the tool
-will fail on the policy directory!  It's because of a simple way we
-manage file data and modification data...something we'll have to fix
-next time!
 
 
                       
