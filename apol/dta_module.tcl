@@ -57,6 +57,9 @@ namespace eval Apol_Analysis_dta {
     	# Register ourselves
     	Apol_Analysis::register_analysis_modules "Apol_Analysis_dta" "Domain Transition"
     	
+    	# Provided to tkwait to prevent multiple clicks on an object in the Advanced Search options dialog.
+    	variable rendering_finished	0
+    	
     	variable descriptive_text	"\n\nA forward domain transition analysis will determine all (target) \
     		domains to which a given (source) domain may transition.  For a forward domain \
     		transition to be allowed, three forms of access must be granted:\n\n\ \
@@ -433,6 +436,7 @@ proc Apol_Analysis_dta::forward_options_change_obj_state_on_perm_select {path_na
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_dta::forward_options_embed_perm_buttons {list_b class perm path_name} {
 	variable f_opts
+	variable rendering_finished
 	
  	# Frames
 	set frame [frame $list_b.f:$class:$perm -bd 0 -bg white]
@@ -465,6 +469,7 @@ proc Apol_Analysis_dta::forward_options_embed_perm_buttons {list_b class perm pa
 	pack $lbl1 $lbl2 -side left -anchor nw
 	pack $cb_include $cb_exclude -side left -anchor nw
 	
+	set rendering_finished 1
 	# Return the pathname of the frame to embed.
  	return $frame
 }
@@ -508,7 +513,7 @@ proc Apol_Analysis_dta::forward_options_clear_perms_text {path_name} {
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_dta::forward_options_display_permissions {path_name} {
 	variable f_opts
-	
+		
 	if {[$f_opts($path_name,class_listbox) get 0 end] == "" || \
 	    [llength [$f_opts($path_name,class_listbox) curselection]] > 1} {
 		# Nothing in the listbox; return
@@ -550,10 +555,13 @@ proc Apol_Analysis_dta::forward_options_display_permissions {path_name} {
 			$f_opts($path_name,perms_box) $class_name $perm $path_name] 
 		$f_opts($path_name,perms_box) insert end "\n"
 	}
-
+	tkwait variable Apol_Analysis_dta::rendering_finished
+	set rendering_finished 0
+	update idletasks
 	# Disable the text widget. 
 	$f_opts($path_name,perms_box) configure -state disabled
 	set f_opts($path_name,class_selected_idx) $class_idx
+	
 	return 0
 }
 
@@ -879,7 +887,7 @@ proc Apol_Analysis_dta::forward_options_create_dialog {path_name title_txt} {
 		[linsert [bindtags $Apol_Analysis_dta::f_opts($path_name,class_listbox)] 3 ${bind_tag_id}_dta_object_list_Tag]  
         bind ${bind_tag_id}_dta_object_list_Tag <<ListboxSelect>> "Apol_Analysis_dta::forward_options_display_permissions \
         						$path_name"
-        
+           
 	pack $classes_box -padx 2 -side left -fill both -expand yes
         pack $f_opts($path_name,permissions_title_frame) -pady 2 -padx 2 -fill both -expand yes
         pack $pw1 -fill both -expand yes
