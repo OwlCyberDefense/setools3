@@ -2587,7 +2587,11 @@ proc Apol_TE::enable_disable_permissions_section {enable} {
 		$b_reverseSel configure -state disabled
 	} else {
 		if {[Apol_TE::get_Selected_ListItems $objslistbox] == ""} {
-			ApolTop::disable_tkListbox $permslistbox
+			if {$Apol_TE::opts(perm_select) == "all"} {
+				ApolTop::enable_tkListbox $permslistbox
+			} else {
+				ApolTop::disable_tkListbox $permslistbox
+			}
 			$b_union configure -state disabled
 			$b_intersection configure -state disabled
 			$cb_perms_tilda configure -state disabled
