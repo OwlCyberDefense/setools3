@@ -48,17 +48,12 @@
 #define COPYRIGHT_INFO "Copyright (C) 2004 Tresys Technology, LLC"
 
 #define DEBUG 0
-#define NUM_OBJECT_CLASSES 8
 #define MAX_INPUT_SIZE 1024
 #define NFTW_FLAGS FTW_MOUNT | FTW_PHYS
 #define NFTW_DEPTH 1024
 
 
 /* Data Structures */
-
-const char *replcon_object_classes[] =
-    { "file", "dir", "lnk_file", "chr_file", "blk_file", "sock_file",
-"fifo_file", "all_files" };
 
 typedef struct replcon_context {
 	char *user;
@@ -294,31 +289,7 @@ get_security_context(const replcon_context_t *context)
 	return sec_con;
 }
 
-/*
- * replcon_print_valid_object_classes
- *
- * Prints out the valid object classes to specify for the search.
- */
-void
-replcon_print_valid_object_classes()
-{
-	int i, num_objs_on_line = 0, obj_max = 8;
-	
-	assert(replcon_object_classes != NULL);
-	printf("   ");
-	for (i = 0; i < NUM_OBJECT_CLASSES; i++) {
-		num_objs_on_line++;
-		if (i == (NUM_OBJECT_CLASSES - 1))
-			printf("%s\n", replcon_object_classes[i]);
-		else if (num_objs_on_line == obj_max) {
-			printf("%s,\n", replcon_object_classes[i]);
-			printf("   ");
-		}
-		else 
-			printf("%s, ", replcon_object_classes[i]);
-		
-	}
-}
+
 
 /*
  * replcon_usage
@@ -364,7 +335,7 @@ replcon_usage(const char *program_name, int brief)
 	printf("to find or replace files that have no label.\n\n");
 	
 	printf("Valid OBJECT classes to specify include: \n");
-	replcon_print_valid_object_classes();
+	sefs_print_valid_object_classes();
 	printf("\n");
 }
 
@@ -458,22 +429,6 @@ int replcon_info_has_object_class(replcon_info_t *info, sefs_classes_t obj_class
 	return FALSE;
 }
 
-/*
- * replcon_is_valid_object_class
- *
- * Determines if class_name is a valid object class.  Return -1 if invalid
- * otherwise the index of the valid object class
- */
-int replcon_is_valid_object_class(const char *class_name)
-{
-	int i;
-	
-	assert(class_name != NULL);
-	for (i = 0; i < NUM_OBJECT_CLASSES; i++)
-		if (strcmp(class_name, replcon_object_classes[i]) == 0)
-			return i;
-	return -1;
-}
 
 /*
  * replcon_is_valid_context_format
@@ -501,30 +456,6 @@ int replcon_is_valid_context_format(const char *context_str)
 		return FALSE;
 }
 
-/*
- * sefs_get_file_class
- *
- * Determines the file's class, and returns it
- */
-int sefs_get_file_class(const struct stat *statptr)
-{
-	assert(statptr != NULL);
-	if (S_ISREG(statptr->st_mode))
-		return NORM_FILE;
-	if (S_ISDIR(statptr->st_mode))
-		return DIR;
-	if (S_ISLNK(statptr->st_mode))
-		return LNK_FILE;
-	if (S_ISCHR(statptr->st_mode))
-		return CHR_FILE;
-	if (S_ISBLK(statptr->st_mode))
-		return BLK_FILE;
-	if (S_ISSOCK(statptr->st_mode))
-		return SOCK_FILE;
-	if (S_ISFIFO(statptr->st_mode))
-		return FIFO_FILE;
-	return ALL_FILES;
-}
 
 /*
  * replcon_info_add_object_class
@@ -537,7 +468,7 @@ int replcon_info_add_object_class(replcon_info_t *info, const char *str)
 	sefs_classes_t class_id;
 
 	assert(info != NULL);
-	class_id = replcon_is_valid_object_class(str);
+	class_id = sefs_is_valid_object_class(str);
 
 	/* Check the object class */
 	if (class_id == -1) {
