@@ -198,19 +198,9 @@ proc Apol_Analysis_fulflow::do_analysis { results_frame } {
 			foreach element $class_elements {
 				set perm [lindex [split $element ","] 3]
 				# These are manually set to be included, so skip.
-				if {![string equal $f_opts($element) "exclude"] && 
-				    !$f_opts($advanced_filter_Dlg,threshhold_cb_value)} {
+				if {![string equal $f_opts($element) "exclude"]} {
 					continue
-				} elseif {![string equal $f_opts($element) "exclude"] && 
-				    $f_opts($advanced_filter_Dlg,threshhold_cb_value)} {
-					# If threshhold is enabled, then skip any permissions that are >=  
-					# to the threshhold since these are to be included in the results.
-					if {[Apol_Perms_Map::get_weight_for_class_perm $class $perm] >= \
-						$f_opts($advanced_filter_Dlg,threshhold_value)} {
-						# Skip this permisssion
-						continue
-					}
-				}
+				} 
 				# If we get to this point, then the permission was either manually excluded,
 				# excluded because it's weight falls below the threshhold value, or both.
 				if {$exclude_perm_added == 0} {
@@ -254,7 +244,9 @@ proc Apol_Analysis_fulflow::do_analysis { results_frame } {
 		$end_type \
 		$perm_options \
 		$filter_types \
-		$f_opts($advanced_filter_Dlg,filtered_excl_types)]} err]
+		$f_opts($advanced_filter_Dlg,filtered_excl_types) \
+		$f_opts($advanced_filter_Dlg,threshhold_cb_value) \
+		$f_opts($advanced_filter_Dlg,threshhold_value)]} err]
 	
 	if {$rt != 0} {	
 		Apol_Analysis_fulflow::destroy_progressDlg
@@ -270,7 +262,9 @@ proc Apol_Analysis_fulflow::do_analysis { results_frame } {
 		$end_type \
 		$perm_options \
 		$filter_types \
-		$f_opts($advanced_filter_Dlg,filtered_excl_types)]
+		$f_opts($advanced_filter_Dlg,filtered_excl_types) \
+		$f_opts($advanced_filter_Dlg,threshhold_cb_value) \
+		$f_opts($advanced_filter_Dlg,threshhold_value)]
 			
 	set fulflow_tree [Apol_Analysis_fulflow::create_resultsDisplay $results_frame]
 	set rt [catch {Apol_Analysis_fulflow::create_result_tree_structure $fulflow_tree $results $query_args} err]
@@ -1126,7 +1120,9 @@ proc Apol_Analysis_fulflow::find_more_flows {src_node tgt_node} {
 		"^[$fulflow_tree itemcget $tgt_node -text]$" \
 		[lindex $src_data 6] \
 		[lindex $src_data 7] \
-		[lindex $src_data 8]} err]
+		[lindex $src_data 8] \
+		[lindex $src_data 9] \
+		[lindex $src_data 10]} err]
 	
 	if {$rt != 0} {
 		if {[winfo exists $find_flows_results_Dlg]} {
@@ -1676,7 +1672,9 @@ proc Apol_Analysis_fulflow::do_child_analysis { fulflow_tree selected_node } {
 			[lindex $query_args 5] \
 			[lindex $query_args 6] \
 			[lindex $query_args 7] \
-			[lindex $query_args 8]]} err]
+			[lindex $query_args 8] \
+			[lindex $query_args 9] \
+			[lindex $query_args 10]]} err]
 			
 		if {$rt != 0} {	
 			Apol_Analysis_fulflow::destroy_progressDlg
