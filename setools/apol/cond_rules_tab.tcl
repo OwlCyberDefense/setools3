@@ -63,13 +63,7 @@ proc Apol_Cond_Rules::cond_rules_search {} {
 	} else {
 		set bool_name ""
 	}
-	if {!$search_opts(incl_teallow) && !$search_opts(incl_teaudit) && !$search_opts(incl_ttrans)} {
-		$resultsbox configure -state normal
-		$resultsbox delete 0.0 end
-		ApolTop::makeTextBoxReadOnly $resultsbox 
-		return 0
-	}
-						
+							
 	set rt [catch {set results [apol_SearchConditionalRules \
 		$bool_name \
 		$search_opts(allow_regex) \
