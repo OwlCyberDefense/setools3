@@ -21,8 +21,13 @@
 #include <unistd.h>
 
 #define STRING_LENGTH_MAX 255
-#define VERSION_INFO "Copyright (C) 2003 Tresys Technology, LLC (Version 1.1.1)"
 
+/* The following should be defined in the make environment */
+#ifndef SEUSERCMD_VERSION_STRING
+	#define SEUSERCMD_VERSION_STRING "UNKNOWN"
+#endif
+
+#define COPYRIGHT_INFO "Copyright (C) 2002-2004 Tresys Technology, LLC"
 
 /* command line commands */
 #define ADD		0
@@ -311,7 +316,7 @@ int main(int argc, char *argv[])
 	}
 	/* command line */
 	if(strcmp("version", argv[1]) == 0) {
-		fprintf(stdout, "\n%s\n\n", VERSION_INFO);
+		fprintf(stdout, "\n%s (%s)\n\n", COPYRIGHT_INFO, SEUSERCMD_VERSION_STRING);
 		exit(0);
 	}
 
