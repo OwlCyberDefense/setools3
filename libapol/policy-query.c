@@ -764,7 +764,7 @@ err_return1:
  *	-1 on error
  *	0 on success
  */
-int search_conditional_expressions(char *bool, bool_t regex, bool_t *exprs_b, char **error_msg, policy_t *policy)
+int search_conditional_expressions(bool_t use_bool, char *bool, bool_t regex, bool_t *exprs_b, char **error_msg, policy_t *policy)
 {
 	int i, rt;
 	cond_expr_t *cur;
@@ -791,13 +791,15 @@ int search_conditional_expressions(char *bool, bool_t regex, bool_t *exprs_b, ch
 		for (cur = policy->cond_exprs[i].expr; cur != NULL; cur = cur->next) {
 			if (cur->expr_type != COND_BOOL)
 				continue;
-			if (regex) {
+			if (use_bool && regex) {
 				rt = regexec(&reg, policy->cond_bools[cur->bool].name, 0, NULL, 0);
 				if (rt == 0)
 					exprs_b[i] = TRUE;
-			} else {
+			} else if (use_bool) {
 				if (strcmp(bool, policy->cond_bools[cur->bool].name) == 0)
 					exprs_b[i] = TRUE;
+			} else {
+				exprs_b[i] = TRUE;
 			}
 		}
 	}
