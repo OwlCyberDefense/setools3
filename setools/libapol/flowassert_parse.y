@@ -349,6 +349,8 @@ static bool_t remove_type_or_attr (char *name) {
    type(s).  If the object class name is unknown then returns
    FALSE. */
 static bool_t append_object (char *objname) {
+        /* FIX ME - for now, completely disable object classes
+         * because infoquery.c does not return all possible paths
         int obj_id = get_obj_class_idx (objname, current_policy);
         llist_node_t *node;
         if (obj_id == -1) {
@@ -362,6 +364,8 @@ static bool_t append_object (char *objname) {
                 }
         }
         return TRUE;
+        */
+        return FALSE;
 }
 
 
