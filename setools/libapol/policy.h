@@ -131,19 +131,12 @@ typedef struct type_item {
 } type_item_t;
 
 /* attributes and their associated types */
-typedef struct attrib_item {
+typedef struct name_a {
 	char	*name; 
-	int	num_types;
-	int	*types;  /* dynamic array of type indicies*/
-} attrib_item_t;
+	int	num;
+	int	*a;  /* dynamic array of type indicies*/
+} name_a_t;
 
-/* NOTE: the role declaration structure looks identical to the  attrib
- * delcation structure.  So rather than rebuild functions that do the 
- * same thing, we will use attrib_item_t also for role declations. */
- 
-/* FIX: At some point for code clarity, should make the attrib/role
- * functions have more generic names...very low priority! */
-typedef attrib_item_t role_item_t;
 
 typedef struct common_perm {
 	char	*name;
@@ -160,27 +153,19 @@ typedef struct obj_class {
 } obj_class_t;
 
 
-/* user statements; linked list */
-typedef struct user_item {
-	char			*name;
-	ta_item_t		*roles;
-	struct user_item	*next;
-	void 			*data;	/* generic pointer used by libseuser; ignored in apol */
-} user_item_t;
-
-typedef struct user_list {
-	user_item_t	*head;
-	user_item_t	*tail;
-} user_list_t;
-
-
 typedef struct security_context {
-	user_item_t	*user;	/* Note, unfortunately we don't have idx's for users. 
-				 * Never free user from this structure; this is just a
-				 * pointer to the real user record */
+	int		user;	
 	int		role;
 	int		type;
-} security_context_t;
+} security_con_t;
+
+
+typedef struct security_strcon {
+	char *user;
+	char *role;
+	char *type;
+} security_strcon_t;
+
 
 /* IDs of rules */
 #define RULE_TE_ALLOW		0 	/*AV rule */
@@ -226,7 +211,7 @@ typedef struct av_item {
  	ta_item_t	*tgt_types;	/* the object types/attribs */
 	ta_item_t	*classes;
 	ta_item_t	*perms;
-} av_item_t; 	
+} av_item_t;
 
 /* structure for a type transition (member, change) rule */
 typedef struct tt_item {
@@ -273,7 +258,7 @@ typedef struct cln_item {
 typedef struct initial_sid {
 	char			*name;
 	__u32			sid;
-	security_context_t 	*scontext;
+	security_con_t 	*scontext;
 } initial_sid_t;
 
 /* type alias array
@@ -299,7 +284,8 @@ typedef struct alias_item {
 #define POL_LIST_INITIAL_SIDS	12
 #define POL_LIST_COND_BOOLS	13
 #define POL_LIST_COND_EXPRS	14
-#define POL_NUM_LISTS		15
+#define POL_LIST_USERS		15
+#define POL_NUM_LISTS		16
 
 /* These are our weak indicators of which version of policy we're using.
  * The syntax and semantics of a policy are in great flux, and many changes
@@ -343,6 +329,7 @@ typedef struct policy {
 	int	num_cond_exprs;		/* " " */
 	int	num_roles;		/* " " */
 	int	num_role_allow;		/* " " */
+	int	num_users;		/* " " */
 	int	num_role_trans;		/* " " */
 	int 	num_perms;		/* " " */
 	int	num_common_perms;
@@ -363,7 +350,7 @@ typedef struct policy {
 /* Type Enforcement Rules */
 	type_item_t 	*types;    	/* defined types and their attribs (ARRAY)*/
 	alias_item_t	*aliases;	/* separate index into type aliases (ARRAY) */
-	attrib_item_t 	*attribs;	/* defined attribs and their types (ARRAY)*/
+	name_a_t 	*attribs;	/* defined attribs and their types (ARRAY)*/
 	av_item_t	*av_access;	/* allow and neverallow rules; we expect lots of these (ARRAY)*/
 	av_item_t	*av_audit;	/* audit and notify rules (ARRAY)*/
 	tt_item_t	*te_trans;	/* type transition|member|change rules (ARRAY)*/
@@ -374,14 +361,11 @@ typedef struct policy {
 	cond_bool_t	*cond_bools;	/* conditional policy booleans (ARRAY) */
 	cond_expr_item_t *cond_exprs;	/* conditional expressions (ARRAY) */
 /* Role-based access control rules */
-	role_item_t	*roles;		/* roles (ARRAY)*/
+	name_a_t	*roles;		/* roles (ARRAY)*/
 	role_allow_t	*role_allow;	/* role allow rules (ARRAY) */
 	rt_item_t	*role_trans;	/* role transition rules (ARRAY) */
 /* User rules */
-/* TODO: We probably need to re-work user into an ARRAY like most of the other lists to allow 
- *	 for growth in the number of users and make everything consistent.  Unfortunately, we
- *	 already have a large investment in code that uses the linked list!! */
-	user_list_t	users;		/* users (LLIST) */
+	name_a_t	*users;		/* users (ARRAY) */
 /* Permissions map (which is used for information flow analysis) */
 	struct classes_perm_map *pmap;	/* see perm-map.h */
 } policy_t;
@@ -416,7 +400,6 @@ int add_type(char *type, policy_t *policy);
 int add_alias(int type_idx, char *alias, policy_t *policy);
 int add_attrib_to_type(int type_idx, char *token, policy_t *policy);
 int insert_ta_item(ta_item_t *newitem, ta_item_t **list);
-int append_user(user_item_t *newuser, user_list_t *list);
 int add_name(char *name, name_item_t **list);
 int add_clone_rule(int src, int tgt,  unsigned long lineno, policy_t *policy);
 int add_attrib(bool_t with_type, int type_idx, policy_t *policy, char *attrib);
@@ -476,7 +459,7 @@ bool_t does_class_indirectly_use_perm(int cls_idx, int perm_idx, policy_t *polic
 int add_initial_sid(char *name, policy_t *policy);
 int add_initial_sid2(char *name, __u32 sid, policy_t *policy);
 int get_initial_sid_idx(const char *name, policy_t *policy);
-int add_initial_sid_context(int idx, security_context_t *scontext, policy_t *policy);
+int add_initial_sid_context(int idx, security_con_t *scontext, policy_t *policy);
 int get_initial_sid_name(int idx, char **name, policy_t *policy);
 int search_initial_sids_context(int **isids, int *num_isids, const char *user, const char *role, const char *type, policy_t *policy);
 
@@ -501,6 +484,8 @@ int get_type_or_attrib_idx(const char *name, int *idx_type, policy_t *policy);
 int get_type_name(int idx, char **name, policy_t *policy);
 int get_attrib_name(int idx, char **name, policy_t *policy);
 int get_type_attribs(int type, int *num_attribs, int **attribs, policy_t *policy);
+int get_type_users(int type, int *num_users, int **users, policy_t *policy);
+int get_type_roles(int type, int *num_roles, int **roles, policy_t *policy);
 int get_attrib_types(int attrib, int *num_types, int **types, policy_t *policy);
 
 /* conditional policy */
@@ -516,21 +501,16 @@ int update_cond_expr_items(policy_t *policy);
 int set_cond_bool_vals_to_default(policy_t *policy);
 
 /* users */
-#define get_first_user_ptr(policy) ((policy != NULL) ? policy->users.head : NULL)
-#define get_next_user_ptr(user) ((user != NULL) ? user->next : NULL)
-#define get_user_name_ptr(user) ((user != NULL) ? user->name : NULL)
-#define get_user_first_role_ptr(user) ((user != NULL) ? user->roles : NULL)
-#define get_user_next_role_ptr(role) ((role != NULL) ? role->next : NULL)
 #define num_users(policy) (policy != NULL ? policy->rule_cnt[RULE_USER] : -1)
+#define is_valid_user_idx(idx, policy) (policy != NULL && (idx >= 0 && idx < policy->num_users))
 
-user_item_t *add_user(char *user, policy_t *policy);
-int add_role_to_user(user_item_t *user, int role_idx, policy_t *policy);
-int free_user(user_item_t *ptr);
-int get_user_name(user_item_t *user, char **name);
+int add_role_to_user(int role_idx, int user_idx, policy_t *policy);
+int add_user(char *user, policy_t *policy);
+bool_t does_user_have_role(int user, int role, policy_t *policy);
 bool_t does_user_exists(const char *name, policy_t *policy);
-int get_user_by_name(const char *name, user_item_t **user, policy_t *policy);
-bool_t does_user_have_role(user_item_t *user, int role, policy_t *policy);
-
+int get_user_idx(const char *name, policy_t *policy);
+int get_user_name2(int idx, char **name, policy_t *policy);
+int get_user_roles(int user, int *num_roles, int **roles, policy_t *policy);
 
 /* roles */
 #define is_valid_role_idx(idx, policy) (policy != NULL && (idx >= 0 && idx < policy->num_roles))
@@ -541,8 +521,6 @@ int add_role(char *role, policy_t *policy);
 int get_role_name(int idx, char **name, policy_t *policy);
 int get_role_idx(const char *name, policy_t *policy);
 bool_t does_role_use_type(int role, int type, policy_t *policy);
-bool_t is_role_in_list(int role, ta_item_t *list);
-
 
 /* TE rules */
 /* if rule_type == 1, then access rules, otherwise audit rules */
@@ -573,10 +551,11 @@ bool_t does_clone_rule_use_type(int idx, int type, unsigned char whichlist, cln_
 	int *cnt, policy_t *policy);
 int get_rule_lineno(int rule_idx, int rule_type, policy_t *policy);
 int get_ta_item_name(ta_item_t *ta, char **name, policy_t *policy);
+int free_ta_list(ta_item_t *list);
 
 /**************/
 /* these are INTERNAL functions only; allow direct access to type/attrib name string
- * stored within the policy db.  They are expoerted only for use by other internal
+ * stored within the policy db.  They are exported only for use by other internal
  * policy db modules.
  *
  * THE CALLER SHOULD NOT FREE OR OTHERWISE MODIFY THE RETURNED STRING!!!!
