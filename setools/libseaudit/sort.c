@@ -176,18 +176,20 @@ int msg_compare(const void *a, const void *b)
 
 static int msg_field_compare(const msg_t *a, const msg_t *b)
 {
+  /* if message types in auditlog.h are in alpha order then this function doesn't need to change*/
+
 	if (a->msg_type < b->msg_type)
-		return -1; /* a=avc msg, b=load policy msg */
+		return -1; /* a=avc msg, b=load policy msg OR a=bool, b=avc|load*/
 	if (a->msg_type == b->msg_type) {
 		if (a->msg_type != AVC_MSG)
-			return 0;  /* a = b */
+			return 0;  /* a = b and not AVC*/
 		if (a->msg_data.avc_msg->msg < b->msg_data.avc_msg->msg)
 			return -1; /* a=denied, b=granted */
 		if (a->msg_data.avc_msg->msg > b->msg_data.avc_msg->msg)
 			return 1;  /* a=granted, b=denied */
-		return 0; /* a = b */
+		return 0; /* a->msg = b->msg*/
 	}
-	return 1; /* a=load policy msg, b=avc msg */
+	return 1; /* a=load policy msg, b=avc|bool  msg OR a=avc, b=boolean */
 }
 
 static int perm_compare(const msg_t *a, const msg_t *b)
@@ -471,7 +473,7 @@ sort_action_node_t *msg_sort_action_create(void)
 		fprintf(stderr, "Out of memory!\n");
 		return NULL;
 	}
-	node->msg_types = AVC_MSG | LOAD_POLICY_MSG;
+	node->msg_types = AVC_MSG | LOAD_POLICY_MSG | BOOLEAN_MSG;
 	node->sort = &msg_field_compare;
 	return node;	
 }
@@ -483,7 +485,7 @@ sort_action_node_t *host_sort_action_create(void)
 		fprintf(stderr, "Out of memory!\n");
 		return NULL;
 	}
-	node->msg_types = AVC_MSG | LOAD_POLICY_MSG;
+	node->msg_types = AVC_MSG | LOAD_POLICY_MSG | BOOLEAN_MSG;
 	node->sort = &host_field_compare;
 	return node;	
 }
@@ -507,7 +509,7 @@ sort_action_node_t *date_sort_action_create(void)
 		fprintf(stderr, "Out of memory!\n");
 		return NULL;
 	}
-	node->msg_types = AVC_MSG | LOAD_POLICY_MSG;
+	node->msg_types = AVC_MSG | LOAD_POLICY_MSG | BOOLEAN_MSG;
 	node->sort = &date_compare;
 	return node;
 }
