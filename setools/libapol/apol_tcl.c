@@ -6087,8 +6087,8 @@ int Apol_FlowAssertExecute (ClientData clientData, Tcl_Interp *interp,
 }
 
 static int apol_relabel_fromto_results_append_subject_info(ap_relabel_result_t *results, int source_type, 
-							int tgt_idx, policy_t *policy, 
-							Tcl_Obj *subjects_list)
+							int tgt_idx, unsigned char direction, 
+							policy_t *policy, Tcl_Obj *subjects_list)
 {
         int i, j, k, rule_idx;
         Tcl_Obj *subject_list[3];
@@ -6096,11 +6096,10 @@ static int apol_relabel_fromto_results_append_subject_info(ap_relabel_result_t *
 	char *str;
 	int *rules = NULL;
 	int num_rules = 0;
-	unsigned char direction = 0;
 	
 	assert(results != NULL && policy != NULL && subjects_list != NULL);
 	/* set subject_list[0] to direction of tgt */
-	direction = (results->targets[tgt_idx].direction & (~AP_RELABEL_DIR_START));
+	direction &= (~AP_RELABEL_DIR_START);
 	if (direction == AP_RELABEL_DIR_TO) {
 		subject_list[0] = Tcl_NewStringObj("to", -1);
 	} else if (direction == AP_RELABEL_DIR_FROM) {
@@ -6180,13 +6179,14 @@ static Tcl_Obj *apol_relabel_fromto_results(ap_relabel_result_t *results, int st
 						int *filter_types, int num_filter_types) 
 {
         Tcl_Obj *results_list_obj = Tcl_NewListObj (0, NULL);
-        int i, j, k;
+        int i, j, k, where;
         Tcl_Obj *end_types_list[2];	/* Holds the end type string, (to|from|both) and a list of subject info */
         Tcl_Obj *end_type_elem;
 	char *str;
 	unsigned char direction;
 	int *src_list = NULL;
 	int src_list_sz = 0;
+	unsigned char *dir_list = NULL;
 	       
         assert(results != NULL);
     
@@ -6218,23 +6218,30 @@ static Tcl_Obj *apol_relabel_fromto_results(ap_relabel_result_t *results, int st
                 end_types_list[1] = Tcl_NewListObj(0, NULL);   /* List of subjects */
                 for (j = 0; j < results->targets[i].num_objects; j++) {
 			for (k = 0; k < results->targets[i].objects[j].num_subjects; k++) {
-				if (find_int_in_array(results->targets[i].objects[j].subjects[k].source_type,
-							src_list, src_list_sz) == -1) {
+				if ((where = find_int_in_array(results->targets[i].objects[j].subjects[k].source_type,
+							src_list, src_list_sz)) == -1) {
 					if (add_i_to_a(results->targets[i].objects[j].subjects[k].source_type,
 							&src_list_sz, &src_list) == -1) {
 						return NULL;
 					}
+					if (!(dir_list = (unsigned char*)realloc(dir_list, src_list_sz * sizeof(unsigned char))))
+						return NULL;
+					where = src_list_sz - 1;
+					dir_list[where] = AP_RELABEL_DIR_NONE;
 				}
+				dir_list[where] |= results->targets[i].objects[j].subjects[k].direction;
 			}
 		}
 		for (j = 0; j < src_list_sz; j++) {
 			if (apol_relabel_fromto_results_append_subject_info(results, src_list[j], i,
-					policy, end_types_list[1]) < 0) {
+					dir_list[j], policy, end_types_list[1]) < 0) {
 				return NULL;
 			}
 		}
 		free(src_list);
 		src_list = NULL;
+		free(dir_list);
+		dir_list = NULL;
 		src_list_sz = 0;
 
                 end_type_elem = Tcl_NewListObj (2, end_types_list);
