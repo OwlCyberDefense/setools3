@@ -24,6 +24,7 @@
 #define __USE_XOPEN_EXTENDED 1
 #include <ftw.h>
 #include <mntent.h>
+#include <policy.h>
 
 #include "fsdata.h"
 
@@ -68,7 +69,7 @@ static int avl_path_compare(void *user_data, const void *key, int idx)
 	}
 	
 	memcpy(tmp, &(fsdata->files[idx].key.inode), sizeof(ino_t));
-	memcpy(tmp + sizeof(ino_t), &(fsdata->files[idx].key.device), sizeof(dev_t));
+	memcpy(tmp + sizeof(ino_t), &(fsdata->files[idx].key.dev), sizeof(dev_t));
 
 	rc = memcmp((char*)key, (char *)tmp, sizeof(ino_t) + sizeof(dev_t));
 	free(tmp);
@@ -178,7 +179,7 @@ static int ftw_handler(const char *file, const struct stat *sb, int flag, struct
 	char *tmp = NULL;
 		
 	key.inode = sb->st_ino;
-	key.device = sb->st_dev;
+	key.dev = sb->st_dev;
 	
 	idx = avl_get_idx(&key, &(fsdata->file_tree));
 	
@@ -231,7 +232,7 @@ static int ftw_handler(const char *file, const struct stat *sb, int flag, struct
 		else
 			pi->context.type = XATTR_UNLABELED;
 		
-	} else {
+	} else 
 		pi = &(fsdata->files[idx]);
 	
 
@@ -267,8 +268,8 @@ static int ftw_handler(const char *file, const struct stat *sb, int flag, struct
 		else */
 	
 	return 0;
-}
 
+}
 
 static int sefs_init_pathtree(sefs_filesystem_data_t * fsd)
 {
@@ -426,12 +427,13 @@ int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char *filename)
 {
 	int i, j, rc = 0;
 	FILE *fp;
-	uint32_t buf[32], len;
+	uint32_t buf[3], len;
+	int32_t sbuf[3];
 	size_t items2, items = 0;
 	sefs_fileinfo_t * pinfo = NULL;
 
 	fp = fopen(filename, "w");
-	if (!fp)
+	if (!fp) {
 		fprintf(stderr, "Error opening file %s\n", filename);
 		return -1;
 	}
@@ -440,36 +442,37 @@ int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char *filename)
 	buf[items++] = cpu_to_le32(INDEX_DB_MAGIC);
 	buf[items++] = cpu_to_le32(INDEX_DB_VERSION);
 	/* number of dev/inodes */
-	buf[items++] = cpu_to_le32(&fsd->num_files);
+	buf[items++] = cpu_to_le32(fsd->num_files);
 	
-	items = fwrite(buf, sizeof(uint32_t), items, fp) {
+	rc = fwrite(buf, sizeof(uint32_t), items, fp);
+	if (!rc) {
 		fprintf(stderr, "error writing file %s\n", filename);
 		return -1;
 	}
 	
-	for (i = 0; i < fsd->num_files; i++) {
+	for(i=0; i<fsd->num_files; i++) {
 
 		pinfo = &(fsd->files[i]);
 	
 		/* Write the key */
-		items2 = fwrite(cpu_to_le32(pinfo->key.dev), sizeof(uint32_t), 1, fp);
+		items2 = fwrite(cpu_to_le32(&pinfo->key.dev), sizeof(uint32_t), 1, fp);
 		if (!items2 != 1) {
 			fprintf(stderr, "error writing file %s\n", filename);
 			return -1;
 		}
 
-		items2 = fwrite(cpu_to_le64(pinfo->key.inode), sizeof(uint64_t), 1, fp);
+		items2 = fwrite(cpu_to_le64(&pinfo->key.inode), sizeof(uint64_t), 1, fp);
 		if (items2 != 1) {
 			fprintf(stderr, "error writing file %s\n", filename);
 			return -1;
 		}
 		
 		items = 0;
-		buf[items++] = cpu_to_le32(pinfo->context.user);
-		buf[items++] = cpu_to_le32(pinfo->context.role);
-		buf[items++] = cpu_to_le32(pinfo->context.type);
+		sbuf[items++] = cpu_to_le32(pinfo->context.user);
+		sbuf[items++] = cpu_to_le32(pinfo->context.role);
+		sbuf[items++] = cpu_to_le32(pinfo->context.type);
 		
-		items2 = fwrite(buf, sizeof(uint32_t), items, fp);
+		items2 = fwrite(sbuf, sizeof(int32_t), items, fp);
 		if (items2 != items) {
 			fprintf(stderr, "error writing file %s\n", filename);
 			return -1;
@@ -508,73 +511,85 @@ int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char *filename)
 
 int sefs_filesystem_data_load(sefs_filesystem_data_t* fsd, char *filename)
 {
-	int rc = 0, loop = 0, fd = -1, i = 0;
+	int i, j,rc;
 	unsigned int len = 0;
 	int keysize = sizeof(dev_t) + sizeof(ino_t);
 	inode_key_t *key = NULL;
 	sefs_fileinfo_t * pinfo = NULL;
-	sec_con_t con = NULL;
+	security_con_t * con = NULL;
+	FILE *fp;
+	size_t items;
+	uint32_t *buf;
+	int32_t *sbuf;
 	
-	if ((fd = open(filename, O_RDONLY)) == -1) {
+	fp = fopen(filename, "r");
+	if (!fp) {
 		fprintf(stderr, "Error opening file %s\n", filename);
 		return -1;
 	}
-
-	if ((rc = read(fd, &(fsd->num_files), sizeof(unsigned int))) != sizeof(unsigned int)) {
+	
+	items = fread(buf, sizeof(uint32_t), 3, fp);
+	if (items != 3) {
 		fprintf(stderr, "error reading file %s\n", filename);
 		return -1;
 	}
+
+	if (buf[0] != INDEX_DB_MAGIC) {
+			fprintf(stderr, "invalid file type\n");
+			return -1;
+	}			
+
+	if (buf[1] != INDEX_DB_VERSION) {
+			fprintf(stderr, "unknown file version\n");
+			return -1;
+	}
 	
-	if ((pinfo = (sefs_fileinfo_t *)malloc(fsd->num_files * sizeof(sefs_fileinfo_t))) == NULL) {
+	fsd->num_files = buf[2];
+	
+	pinfo = (sefs_fileinfo_t *) malloc(fsd->num_files * sizeof(sefs_fileinfo_t));
+	if (!pinfo) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
 	}
 	
 	fsd->files = pinfo;
 	
-	if ((key = (inode_key_t *)malloc(sizeof(inode_key_t)) == NULL)) {
-		fprintf(stderr, "Out of memory\n");
-		return -1;
-	}
-	
-	for(loop = 0; loop < fsd->num_files; loop++) {
-		pinfo = &(fsd->files[loop]);
+	for(i = 0; i < fsd->num_files; i++) {
 		
-		/* Read the key*/
-		if ((rc = read(fd, key, sizeof(inode_key_t))) != sizeof(inode_key_t)) {
-			fprintf(stderr, "error reading file %s\n", filename);
-			return -1;
-		}
-		
-		memcpy(&(pinfo->key), key,  sizeof(inode_key_t));
-		
-		/* Read the context length */
-		if ((rc = read(fd, &len, sizeof(unsigned int))) != sizeof(unsigned int)) {
-			fprintf(stderr, "error reading file %s\n", filename);
-			return -1;
-		}
-		
-		if ((con = (security_context_t)malloc((len + 1) * sizeof(char))) == NULL) {
+		pinfo = &(fsd->files[i]);
+
+		if ((key = (inode_key_t *)malloc(sizeof(inode_key_t)) == NULL)) {
 			fprintf(stderr, "Out of memory\n");
 			return -1;
 		}
 		
-		bzero(con, len + 1);
-		
-		/* Read the context */
-		if ((rc = read(fd, con, len)) != len) {
+		/* Read the key*/
+		items = fread(key->inode, sizeof(uint64_t), 1, fp);
+		if (items != 1) {
 			fprintf(stderr, "error reading file %s\n", filename);
 			return -1;
 		}
 		
-		if ((pinfo->context = context_new((char *)con)) == NULL) {
-			fprintf(stderr, "error creating context");
+		items = fread(key->dev, sizeof(uint32_t), 1, fp);
+		if (items != 1) {
+			fprintf(stderr, "error reading file %s\n", filename);
 			return -1;
 		}
 		
+		/* Read the context */
+		items = fread(sbuf, sizeof(int32_t), 3, fp);
+		if (items != 3) {
+			fprintf(stderr, "error reading file %s\n", filename);
+			return -1;
+		}		
+		
+		pinfo->context.user = sbuf[0];
+		pinfo->context.role = sbuf[1];
+		pinfo->context.role = sbuf[2];
+				
 		/* Read the pathname count */
-		len = sizeof(unsigned int);
-		if ((rc = read(fd, &(pinfo->num_links), len)) != len) {
+		items = fread(&(pinfo->num_links), sizeof(uint32_t), 1, fp);
+		if (items != 1) {
 			fprintf(stderr, "error reading file %s\n", filename);
 			return -1;
 		}
@@ -584,20 +599,22 @@ int sefs_filesystem_data_load(sefs_filesystem_data_t* fsd, char *filename)
 			return -1;
 		}
 		
-		for (i = 0; i < pinfo->num_links; i++) {
-			if ((rc = read(fd, &len, sizeof(unsigned int))) != sizeof(unsigned int)) {
+		for (j = 0; j < pinfo->num_links; j++) {
+			items = fread(&len, sizeof(uint32_t), 1, fp);
+			if (items != 1) {
 				fprintf(stderr, "error reading file %s\n", filename);
 				return -1;
 			}
 			
-			if ((pinfo->path_names[i] = (char *)malloc((len + 1) * sizeof(char))) == NULL) {
+			if ((pinfo->path_names[j] = (char *)malloc((len + 1) * sizeof(char))) == NULL) {
 				fprintf(stderr, "Out of memory\n");
 				return -1;
 			}
 			
-			bzero(pinfo->path_names[i], len + 1);
+			bzero(pinfo->path_names[j], len + 1);
 			
-			if ((rc = read(fd, pinfo->path_names[i], len)) != len) {
+			items = fread(pinfo->path_names[j], sizeof(char), len, fp);
+			if (items != len) {
 				fprintf(stderr, "error reading file %s\n", filename);
 				return -1;
 			}
@@ -605,7 +622,7 @@ int sefs_filesystem_data_load(sefs_filesystem_data_t* fsd, char *filename)
 		
 	}
 	
-	close(fd);
+	fclose(fp);
 	return 1;
 }
 
