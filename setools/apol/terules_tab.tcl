@@ -21,8 +21,6 @@ namespace eval ApolTE {
 # ttrans		type trans
 # tmember		type member
 # tchange		type change
-# list_type_1	        whether source list is type/attrib/both
-# list_type_2	        whether target list is type/attrib/both
 # use_1st_list		whether to use 1st typ/attrib arg
 # use_2nd_list		whether to use 2nd typ/attrib arg
 # use_3rd_list		whether to use 3rd type
@@ -45,8 +43,6 @@ namespace eval ApolTE {
 	set opts(tmember)		0
 	set opts(tchange)		0
 	set opts(audont)        	0
-	set opts(list_type_1)   	types
-	set opts(list_type_2)		types
 	set opts(use_1st_list)		0
 	set opts(use_2nd_list)		0
 	set opts(use_3rd_list)  	0
@@ -85,10 +81,8 @@ namespace eval ApolTE {
 	variable incl_indirect2
 	variable list_types_1 
 	variable list_attribs_1 
-	variable list_both_1
 	variable list_types_2  
 	variable list_attribs_2 
-	variable list_both_2
 	variable src_list_type_1	1
 	variable src_list_type_2	0
 	variable tgt_list_type_1	1
@@ -336,8 +330,6 @@ proc ApolTE::set_OptionsArray { raisedPage selObjectsList selPermsList } {
 	set optionsArray($raisedPage,ta3) 		$ta3
 	set optionsArray($raisedPage,selObjectsList) 	$selObjectsList
 	set optionsArray($raisedPage,selPermsList) 	$selPermsList
-	set optionsArray($raisedPage,list_type_1) 	$opts(list_type_1)
-	set optionsArray($raisedPage,list_type_2) 	$opts(list_type_2)
 	set optionsArray($raisedPage,ta1) 		$ta1
 	set optionsArray($raisedPage,ta2) 		$ta2
 	set optionsArray($raisedPage,ta3) 		$ta3
@@ -599,8 +591,6 @@ proc ApolTE::set_Widget_SearchOptions { pageID } {
         set opts(indirect_2)	$optionsArray($pageID,indirect_2)
         set opts(use_3rd_list)  $optionsArray($pageID,use_3rd_list)
 	set opts(indirect_3)	$optionsArray($pageID,indirect_3)
-	set opts(list_type_1)   $optionsArray($pageID,list_type_1) 	
-	set opts(list_type_2)	$optionsArray($pageID,list_type_2) 
 	set opts(perm_union)	$optionsArray($pageID,perm_union) 	
 	set opts(perm_select)	$optionsArray($pageID,perm_select) 	
 	set permslist		$optionsArray($pageID,permslist) 	
@@ -611,7 +601,7 @@ proc ApolTE::set_Widget_SearchOptions { pageID } {
 	set src_list_type_2	$optionsArray($pageID,src_list_type_2) 
 	set tgt_list_type_1	$optionsArray($pageID,tgt_list_type_1) 
 	set tgt_list_type_2	$optionsArray($pageID,tgt_list_type_2) 
-		
+			
 	# Re-configure list items for type/attributes tab combo boxes
 	ApolTE::populate_ta_list 1
 	ApolTE::populate_ta_list 2
@@ -623,8 +613,8 @@ proc ApolTE::set_Widget_SearchOptions { pageID } {
 	ApolTE::resetObjsPerms_Selections $selObjectsList $selPermsList
     		
 	# check enable/disable status
-        ApolTE::enable_listbox $ApolTE::source_list 1 $ApolTE::list_types_1 $ApolTE::list_attribs_1 $ApolTE::list_both_1
-        ApolTE::enable_listbox $ApolTE::target_list 2 $ApolTE::list_types_2 $ApolTE::list_attribs_2 $ApolTE::list_both_2
+        ApolTE::enable_listbox $ApolTE::source_list 1 $ApolTE::list_types_1 $ApolTE::list_attribs_1
+        ApolTE::enable_listbox $ApolTE::target_list 2 $ApolTE::list_types_2 $ApolTE::list_attribs_2
         ApolTE::defaultType_Enable_Disable
         ApolTE::change_tgt_dflt_state
           
@@ -719,10 +709,8 @@ proc ApolTE::close { } {
 	variable target_list
 	variable list_types_1
 	variable list_attribs_1
-	variable list_both_1
 	variable list_types_2  
 	variable list_attribs_2 
-	variable list_both_2
 	variable results
 	variable ta_state_Array
 	        
@@ -750,18 +738,16 @@ proc ApolTE::reset_search_criteria { } {
 	variable target_list
 	variable list_types_1
 	variable list_attribs_1
-	variable list_both_1
 	variable list_types_2  
 	variable list_attribs_2 
-	variable list_both_2
 	variable objslistbox
     	variable permslistbox
     	
 	ApolTE::reinitialize_default_search_options
 	
 	# check enable/disable status
-        ApolTE::enable_listbox $source_list 1 $list_types_1 $list_attribs_1 $list_both_1
-        ApolTE::enable_listbox $target_list 2 $list_types_2 $list_attribs_2 $list_both_2
+        ApolTE::enable_listbox $source_list 1 $list_types_1 $list_attribs_1
+        ApolTE::enable_listbox $target_list 2 $list_types_2 $list_attribs_2
         ApolTE::defaultType_Enable_Disable
         ApolTE::change_tgt_dflt_state
     	$ApolTE::b_union configure -state disabled
@@ -793,10 +779,8 @@ proc ApolTE::reinitialize_default_search_options { } {
 	variable ta2_opt
 	variable source_list
 	variable target_list
-	variable lisable list_both_1
 	variable list_types_2  
 	variable list_attribs_2 
-	variable list_both_2
 		
 	# reinitialize default options
         set opts(teallow)	1
@@ -808,8 +792,6 @@ proc ApolTE::reinitialize_default_search_options { } {
 	set opts(tmember)	0
 	set opts(tchange)	0
 	set opts(audont)        0
-	set opts(list_type_1)	types
-	set opts(list_type_2)	types
 	set opts(use_1st_list)	0
         set opts(use_2nd_list)	0
         set opts(use_3rd_list)  0
@@ -961,7 +943,7 @@ proc ApolTE::populate_ta_list { list } {
 		}
 		attribs {
 			$uselist configure -values $ApolTypes::attriblist
-		        $cBox configure -state disabled		        
+		        $cBox configure -state disabled
 		        $cBox deselect
 		}
 		both {
@@ -979,7 +961,7 @@ proc ApolTE::populate_ta_list { list } {
 			$cBox configure -state normal
 		}
 	}
-			
+	
 	return 0
 }
 
@@ -1044,7 +1026,7 @@ proc ApolTE::configure_perms { } {
 # ------------------------------------------------------------------------------
 #  Command ApolTE::enable_listbox
 # ------------------------------------------------------------------------------
-proc ApolTE::enable_listbox { cBox list_number b1 b2 b3 } {
+proc ApolTE::enable_listbox { cBox list_number b1 b2 } {
     variable global_asSource 
     variable global_any
     variable incl_indirect1
@@ -1068,24 +1050,22 @@ proc ApolTE::enable_listbox { cBox list_number b1 b2 b3 } {
 		    $cBox configure -state normal -entrybg white
 		    $b1 configure -state normal
 		    $b2 configure -state normal
-		    $b3 configure -state normal
 		    $ApolTE::global_asSource configure -state normal
 		    $ApolTE::global_any configure -state normal	
 		    $ApolTE::incl_indirect1 configure -state normal
 		} else {
-		    $cBox configure -state normal -entrybg  $ApolTop::default_bg_color
+		    $cBox configure -state normal -entrybg white
 		    $b1 configure -state normal
 		    $b2 configure -state normal
-		    $b3 configure -state normal
 		    $ApolTE::global_asSource configure -state normal
 		    $ApolTE::global_any configure -state normal	
 		    ApolTE::change_tgt_dflt_state
 		}
-		if { $ApolTE::opts(list_type_1) == "attribs"} {
+		if {$ApolTE::src_list_type_1 == 0 && $ApolTE::src_list_type_2 == 1} {
 		    $incl_indirect1 configure -state disabled
 		    $incl_indirect1 deselect
 		}
-		if { $ApolTE::src_list_type_1 == 1 && $ApolTE::src_list_type_2 == 1} {
+		if {$ApolTE::src_list_type_1 == 1 && $ApolTE::src_list_type_2 == 1} {
 			$incl_indirect1 configure -state disabled
 		    	$incl_indirect1 deselect
 		}
@@ -1094,7 +1074,6 @@ proc ApolTE::enable_listbox { cBox list_number b1 b2 b3 } {
 		selection clear -displayof $cBox
 		$b1 configure -state disabled
 		$b2 configure -state disabled
-		$b3 configure -state disabled
 		$ApolTE::global_asSource configure -state disabled
 		$ApolTE::global_any configure -state disabled
 		$incl_indirect1 configure -state disabled
@@ -1107,14 +1086,13 @@ proc ApolTE::enable_listbox { cBox list_number b1 b2 b3 } {
 		$cBox configure -state normal -entrybg white
 		$b1 configure -state normal
 		$b2 configure -state normal
-		$b3 configure -state normal
 		$ApolTE::incl_indirect2 configure -state normal
 		
-		if { $ApolTE::opts(list_type_2) == "attribs"} {
+		if {$ApolTE::tgt_list_type_1 == 0 && $ApolTE::tgt_list_type_2 == 1} {
 		    $incl_indirect2 configure -state disabled
 		    $incl_indirect2 deselect
 		}
-		if { $ApolTE::tgt_list_type_1 == 1 && $ApolTE::tgt_list_type_2 == 1} {
+		if {$ApolTE::tgt_list_type_1 == 1 && $ApolTE::tgt_list_type_2 == 1} {
 			$incl_indirect2 configure -state disabled
 		    	$incl_indirect2 deselect
 		}
@@ -1123,7 +1101,6 @@ proc ApolTE::enable_listbox { cBox list_number b1 b2 b3 } {
 		selection clear -displayof $cBox
 		$b1 configure -state disabled
 		$b2 configure -state disabled
-		$b3 configure -state disabled
 		$incl_indirect2 configure -state disabled
 		$incl_indirect2 deselect
 	    }
@@ -1202,10 +1179,8 @@ proc ApolTE::change_tgt_dflt_state { } {
     variable use_3rd_list
     variable list_types_1 
     variable list_attribs_1 
-    variable list_both_1
     variable list_types_2  
     variable list_attribs_2 
-    variable list_both_2
     variable global_asSource 
     variable global_any
     
@@ -1227,7 +1202,6 @@ proc ApolTE::change_tgt_dflt_state { } {
 	$ApolTE::incl_indirect2 deselect
 	$ApolTE::list_types_2 configure -state disabled
 	$ApolTE::list_attribs_2 configure -state disabled
-	$ApolTE::list_both_2 configure -state disabled
     } elseif { $ApolTE::opts(use_1st_list) == 1 && $bool && $ApolTE::opts(which_1) == "source"} {
 	# Logic: if use_1st_list is selected AND (ONLY if ANY type rules are checked or ALL type 
 	# rules are checked) AND source option is selected, enable default and target listboxes
@@ -1322,8 +1296,6 @@ proc ApolTE::load_query_options {file_channel parentDlg} {
         set opts(indirect_2)	[lindex $query_options 13]
         set opts(use_3rd_list)  [lindex $query_options 14]
 	set opts(indirect_3)	[lindex $query_options 15]
-	set opts(list_type_1)   [lindex $query_options 16] 	
-	set opts(list_type_2)	[lindex $query_options 17] 
 	set opts(perm_union)	[lindex $query_options 18] 	
 	set opts(perm_select)	[lindex $query_options 19]
 	
@@ -1468,8 +1440,8 @@ proc ApolTE::load_query_options {file_channel parentDlg} {
 	ApolTE::resetObjsPerms_Selections $selObjectsList $selPermsList
     		
 	# check enable/disable status
-        ApolTE::enable_listbox $ApolTE::source_list 1 $ApolTE::list_types_1 $ApolTE::list_attribs_1 $ApolTE::list_both_1
-        ApolTE::enable_listbox $ApolTE::target_list 2 $ApolTE::list_types_2 $ApolTE::list_attribs_2 $ApolTE::list_both_2
+        ApolTE::enable_listbox $ApolTE::source_list 1 $ApolTE::list_types_1 $ApolTE::list_attribs_1
+        ApolTE::enable_listbox $ApolTE::target_list 2 $ApolTE::list_types_2 $ApolTE::list_attribs_2
         ApolTE::defaultType_Enable_Disable
         ApolTE::change_tgt_dflt_state
           
@@ -1525,8 +1497,6 @@ proc ApolTE::save_query_options {file_channel query_file} {
 	        $opts(indirect_2) \
 	        $opts(use_3rd_list) \
 		$opts(indirect_3) \
-		$opts(list_type_1) \
-		$opts(list_type_2) \
 		$opts(perm_union) \
 		$opts(perm_select) \
 		$permslist \
@@ -1731,10 +1701,8 @@ proc ApolTE::createTypesAttribsTab {notebook_ta_tab} {
     variable incl_indirect2
     variable list_types_1 
     variable list_attribs_1 
-    variable list_both_1
     variable list_types_2  
     variable list_attribs_2 
-    variable list_both_2
     variable global_asSource 
     variable global_any
     
@@ -1822,9 +1790,6 @@ proc ApolTE::createTypesAttribsTab {notebook_ta_tab} {
     set list_attribs_1 [checkbutton $fm_ta_buttons.list_attribs_1 -text "Attribs" \
     	-variable ApolTE::src_list_type_2 \
     	-command "ApolTE::populate_ta_list 1"]
-    set list_both_1 [radiobutton $fm_ta_buttons.list_both_1 -text "Both" \
-    	-variable ApolTE::opts(list_type_1) -value both \
-    	-command "ApolTE::populate_ta_list 1"]
     set global_asSource [radiobutton $fm_src_radio_buttons.source_1 -text "As source" -variable ApolTE::opts(which_1) \
 			 -value source \
 			 -command "ApolTE::change_tgt_dflt_state"]
@@ -1833,7 +1798,7 @@ proc ApolTE::createTypesAttribsTab {notebook_ta_tab} {
 		         -command "ApolTE::change_tgt_dflt_state"]
     set use_1st_list [checkbutton $fm_top1.use_1st_list -text $ApolTE::m_use_src_ta \
 			 -variable ApolTE::opts(use_1st_list) \
-			 -command "ApolTE::enable_listbox $source_list 1 $list_types_1 $list_attribs_1 $list_both_1" \
+			 -command "ApolTE::enable_listbox $source_list 1 $list_types_1 $list_attribs_1" \
 		         -offvalue 0 \
 		         -onvalue  1 ]
     set incl_indirect1 [checkbutton $fm_incl_cBox.incl_indirect -text $ApolTE::m_incl_indirect \
@@ -1859,16 +1824,12 @@ proc ApolTE::createTypesAttribsTab {notebook_ta_tab} {
     set list_attribs_2 [checkbutton $fm_ta_buttons2.list_attribs_2 -text "Attribs" \
 	-variable ApolTE::tgt_list_type_2 \
 	-command "ApolTE::populate_ta_list 2" ]
-
-    set list_both_2 [radiobutton $fm_top2.list_both_2 -text "Both" \
-        -variable ApolTE::opts(list_type_2) \
-	-value both \
-    	-command "ApolTE::populate_ta_list 2" ]
+	
     set use_2nd_list [checkbutton $fm_top2.use_2nd_list -text $ApolTE::m_disable_tgt_ta \
 	-variable ApolTE::opts(use_2nd_list) \
 	-offvalue 0 \
         -onvalue  1 \
-        -command "ApolTE::enable_listbox $target_list 2 $list_types_2 $list_attribs_2 $list_both_2"]
+        -command "ApolTE::enable_listbox $target_list 2 $list_types_2 $list_attribs_2"]
     set incl_indirect2 [checkbutton $fm_incl_cBox2.incl_indirect -text $ApolTE::m_incl_indirect \
 			    -variable ApolTE::opts(indirect_2) \
 			    -onvalue 1 \
@@ -1910,8 +1871,8 @@ proc ApolTE::createTypesAttribsTab {notebook_ta_tab} {
     pack $dflt_type_list -anchor w -fill x -expand yes
     
     # Check enable/disable status
-    ApolTE::enable_listbox $source_list 1 $list_types_1 $list_attribs_1 $list_both_1
-    ApolTE::enable_listbox $target_list 2 $list_types_2 $list_attribs_2 $list_both_2
+    ApolTE::enable_listbox $source_list 1 $list_types_1 $list_attribs_1
+    ApolTE::enable_listbox $target_list 2 $list_types_2 $list_attribs_2
     ApolTE::defaultType_Enable_Disable
     ApolTE::change_tgt_dflt_state
     
