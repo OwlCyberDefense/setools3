@@ -100,8 +100,9 @@ static int avh_load_avrules( void *r, int num, bool_t is_av, policy_t *p)
 				cond_expr = ((av_item_t *)r)[i].cond_expr;
 				cond_list = ((av_item_t *)r)[i].cond_list;
 			}
-			else
+			else {
 				is_cond = FALSE;
+			}
 		}
 		else {
 			src_tilda = (((tt_item_t *)r)[i].flags & AVFLAG_SRC_TILDA);
@@ -111,8 +112,9 @@ static int avh_load_avrules( void *r, int num, bool_t is_av, policy_t *p)
 				cond_expr = ((tt_item_t *)r)[i].cond_expr;
 				cond_list = ((tt_item_t *)r)[i].cond_list;
 			}
-			else 
+			else {
 				is_cond = FALSE;
+			}
 		}
 				
 		src_a = tgt_a = cls_a = perm_a = NULL;
@@ -244,9 +246,7 @@ static int avh_load_avrules( void *r, int num, bool_t is_av, policy_t *p)
 					}
 					
 					/* at this point, we have a complete key */
-					for(node = avh_find_first_node(&p->avh, &key); 
-					  		node != NULL;
-					  		node = avh_find_next_node(node) )  {
+					for(node = avh_find_first_node(&p->avh, &key); node != NULL; node = avh_find_next_node(node) ) {
 						if(node->flags & AVH_FLAG_COND) {
 							if(!is_cond)
 								continue;
