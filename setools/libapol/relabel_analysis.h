@@ -58,7 +58,9 @@ typedef struct ap_relabel_result {
 } ap_relabel_result_t;
 
 /* query function */
-int ap_relabel_query(int start_type, unsigned char mode, unsigned char direction, ap_relabel_result_t *res, policy_t *policy);
+int ap_relabel_query(int start_type, unsigned char mode, unsigned char direction, 
+	int *excluded_types, int num_excluded_types, int *class_filter, int class_filter_sz, 
+	ap_relabel_result_t *res, policy_t *policy);
 
 /* clean-up function */
 void ap_relabel_result_destroy(ap_relabel_result_t *res);
