@@ -504,7 +504,7 @@ class unix_dgram_socket 22
             setopt     w	1
 
 class sem 9
-         unix_read     r	10
+         unix_read     r	3
          associate     n	1
             create     w	1
            destroy     w	1
@@ -512,7 +512,7 @@ class sem 9
               read     r	10
            setattr     w	1
              write     w	10
-        unix_write     w	10
+        unix_write     w	3
 
 class msg 2
            receive     r	10
@@ -525,8 +525,8 @@ class msgq 10
              write     w	10
               read     r	10
            getattr     r	1
-        unix_write     w	10
-         unix_read     r	10
+        unix_write     w	3
+         unix_read     r	3
          associate     n	1
            setattr     w	1
 
@@ -535,8 +535,8 @@ class shm 10
              write     w	10
               read     r	10
            getattr     r	1
-        unix_write     w	10
-         unix_read     r	10
+        unix_write     w	3
+         unix_read     r	3
               lock     w	1
          associate     n	1
            setattr     w	1
@@ -545,12 +545,12 @@ class shm 10
 class ipc 9
              write     w	10
            destroy     w	1
-        unix_write     w	10
+        unix_write     w	3
            getattr     r	1
             create     w	1
               read     r	10
            setattr     w	1
-         unix_read     r	10
+         unix_read     r	3
          associate     n	1
 
 class passwd 4
