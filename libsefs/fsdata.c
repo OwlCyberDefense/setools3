@@ -85,6 +85,11 @@ static int avl_add_path(void *user_data, const void *key, int idx)
 	assert(fsdata != NULL && ikey != NULL);
 
 	fsdata->files[idx].key = *ikey;
+	fsdata->files[idx].path_names = (char**)malloc(sizeof(char*) * 1);
+	if(!(fsdata->files[idx].path_names)){
+		fprintf(stderr, "out of memory\n");
+		return -1;
+	}
 	(fsdata->num_files)++;
 	return 0;
 }
@@ -177,6 +182,7 @@ static int ftw_handler(const char *file, const struct stat *sb, int flag, struct
 	sefs_fileinfo_t * pi = NULL;
 	char *con = NULL;
 	char *tmp = NULL;
+	char** ptr = NULL;
 		
 	key.inode = sb->st_ino;
 	key.dev = sb->st_dev;
@@ -232,17 +238,25 @@ static int ftw_handler(const char *file, const struct stat *sb, int flag, struct
 		else
 			pi->context.type = XATTR_UNLABELED;
 		
-	} else 
+	} else {
 		pi = &(fsdata->files[idx]);
+	}
 	
 
 	pi->obj_class = sefs_get_file_class(sb);
-		
-	if ((pi->path_names[pi->num_links] = (char *)malloc(strlen(file) + 1)) == NULL) {
+
+	ptr = (char**)realloc(pi->path_names, (pi->num_links + 1) * sizeof(char*)); 
+	if (!ptr) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
 	}
-
+	pi->path_names = ptr;
+	
+	if ((pi->path_names[pi->num_links] = (char *)malloc((strlen(file) + 1) * sizeof(char))) == NULL) {
+		fprintf(stderr, "out of memory\n");
+		return -1;
+	}
+	bzero(pi->path_names[pi->num_links], (strlen(file) + 1) * sizeof(char));
 	strncpy(pi->path_names[pi->num_links], file, strlen(file));
 	(pi->num_links)++;
 
@@ -371,7 +385,6 @@ int sefs_filesystem_data_init(sefs_filesystem_data_t * fsd)
 int sefs_scan_tree(char * dir)
 {
 	int (*fn)(const char *file, const struct stat *sb, int flag, struct FTW *s) = ftw_handler;
-
 	if (nftw(dir, fn, NFTW_DEPTH, NFTW_FLAGS) == -1) {
 		fprintf(stderr, "Error scanning tree rooted at %s\n", dir);
 		return -1;
@@ -478,7 +491,7 @@ int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char *filename)
 		
 		/* Write the number of pathnames */
 		len = cpu_to_le32(pinfo->num_links);
-		items2 = fwrite(len, sizeof(uint32_t), 1, fp);
+		items2 = fwrite(&len, sizeof(uint32_t), 1, fp);
 		if (items2 != 1) {
 			fprintf(stderr, "error writing file %s\n", filename);
 			return -1;
@@ -487,7 +500,7 @@ int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char *filename)
 		for (j = 0; j < pinfo->num_links;  j++) {
 			/* Write the pathname length */
 			len = strlen(pinfo->path_names[i]);
-			items2 = fwrite(cpu_to_le32(len), sizeof(uint32_t), 1, fp);
+			items2 = fwrite(&(cpu_to_le32(len)), sizeof(uint32_t), 1, fp);
 			if (items2 != 1) {
 				fprintf(stderr, "error writing file %s\n", filename);
 				return -1;
@@ -514,12 +527,10 @@ int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char *filename)
 
 int sefs_filesystem_data_load(sefs_filesystem_data_t* fsd, char *filename)
 {
-	int i, j,rc;
+	int i, j;
 	unsigned int len = 0;
-	int keysize = sizeof(dev_t) + sizeof(ino_t);
 	inode_key_t *key = NULL;
 	sefs_fileinfo_t * pinfo = NULL;
-	security_con_t * con = NULL;
 	FILE *fp;
 	size_t items;
 	uint32_t *buf;
@@ -567,13 +578,13 @@ int sefs_filesystem_data_load(sefs_filesystem_data_t* fsd, char *filename)
 		}
 		
 		/* Read the key*/
-		items = fread(key->inode, sizeof(uint64_t), 1, fp);
+		items = fread(&(key->inode), sizeof(uint64_t), 1, fp);
 		if (items != 1) {
 			fprintf(stderr, "error reading file %s\n", filename);
 			return -1;
 		}
 		
-		items = fread(key->dev, sizeof(uint32_t), 1, fp);
+		items = fread(&(key->dev), sizeof(uint32_t), 1, fp);
 		if (items != 1) {
 			fprintf(stderr, "error reading file %s\n", filename);
 			return -1;
