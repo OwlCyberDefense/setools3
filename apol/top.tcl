@@ -2178,4 +2178,3 @@ proc ApolTop::main {} {
 #######################################################
 # Start script here
 ApolTop::main
-wm geom . [wm geom .]
