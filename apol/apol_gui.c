@@ -99,7 +99,7 @@ void print_version_info(void)
 	printf("Policy Analysis tool for Security Enhanced Linux.\n\n");
 	/* printf("   GUI version \n"); 
 	 * TODO: can we export a TCL variable to C for GUI version?? */
-	printf("   libapol version %s\n\n", VERSION_STRING);
+	printf("   libapol version %s\n\n", LIBAPOL_VERSION_STRING);
 	return;
 }
 
