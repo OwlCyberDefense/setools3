@@ -1,6 +1,6 @@
 SELinux Policy Analysis Tool Help File
 apol, version 1.2
-January 12, 2004
+January 28, 2004
 selinux@tresys.com
 
 This file contains basic help information for using apol, version 1.2 
@@ -113,6 +113,11 @@ components of an SELinux policy.
 
 	This tab allows you to search users defined in the policy, and 
 	view the roles allowed for that user.
+	
+	V. INITIAL SIDS TAB
+
+	This tab allows you to search initial sids defined in the policy, 
+	as well as view the context for each initial sid.
 
 
 3. POLICY RULES TAB 
