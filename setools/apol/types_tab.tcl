@@ -185,7 +185,7 @@ proc Apol_Types::popupTypeInfo {which ta} {
 
 	toplevel $w 
 	wm title $w "$ta"
-	wm protocol $w WM_DELETE_WINDOW "destroy $w"
+	wm protocol $w WM_DELETE_WINDOW " "
     	wm withdraw $w
     	
     	set top_f [frame $w.top_f]
@@ -254,7 +254,7 @@ proc Apol_Types::popupTypeInfo {which ta} {
  		
  	wm geometry $w 400x400
  	wm deiconify $w
- 	
+ 	wm protocol $w WM_DELETE_WINDOW "destroy $w"
 	return 0
 }
 

@@ -888,7 +888,8 @@ proc Apol_Analysis_dta::forward_options_create_dialog {path_name title_txt} {
     	toplevel $f_opts($path_name,name)
      	wm withdraw $f_opts($path_name,name)	
     	wm title $f_opts($path_name,name) $title_txt
-   	   	
+   	wm protocol $f_opts($path_name,name) WM_DELETE_WINDOW " "
+			
    	set close_frame [frame $f_opts($path_name,name).close_frame -relief sunken -bd 1]
    	set topf  [frame $f_opts($path_name,name).topf]
         set pw1 [PanedWindow $topf.pw1 -side left -weights available]
@@ -1090,9 +1091,6 @@ proc Apol_Analysis_dta::forward_options_create_dialog {path_name title_txt} {
 	pack $include_f $exclude_f -side left -anchor nw -fill both -expand yes
 	pack $middle_f -side left -anchor center -after $include_f -padx 5 -expand yes
 	pack $objs_frame $types_frame -side top -anchor nw -padx 5 -pady 2 -expand yes -fill both
-	
-	wm protocol $f_opts($path_name,name) WM_DELETE_WINDOW \
-		"Apol_Analysis_dta::forward_options_destroy_dialog $path_name"
     	
         # Configure top-level dialog specifications
 	set width 780
@@ -1102,6 +1100,8 @@ proc Apol_Analysis_dta::forward_options_create_dialog {path_name title_txt} {
 	focus $f_opts($path_name,name)
 
 	Apol_Analysis_dta::forward_options_set_widgets_to_default_state $path_name
+	wm protocol $f_opts($path_name,name) WM_DELETE_WINDOW \
+		"Apol_Analysis_dta::forward_options_destroy_dialog $path_name"
 	return 0
 }
 
