@@ -837,7 +837,7 @@ static int append_all_ta_using_regex(regex_t *preg, const char *regexp, bool_t d
 		for (i = 0; i < policy->num_types; i++) {
 			rt = regexec(preg, policy->types[i].name, 0, NULL, 0);
 			if(rt == 0) {
-				rt = append_type_str(type_attribs, use_aliases, 0, i, policy, buf);
+				rt = append_type_str(type_attribs, use_aliases,1, i, policy, buf);
 				if(rt != 0) {
 					return -1;
 				}
