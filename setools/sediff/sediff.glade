@@ -336,6 +336,8 @@
 	  <child>
 	    <widget class="GtkLabel" id="label7">
 	      <property name="visible">True</property>
+	      <property name="can_default">True</property>
+	      <property name="has_default">True</property>
 	      <property name="label" translatable="yes">Differences</property>
 	      <property name="use_underline">False</property>
 	      <property name="use_markup">False</property>
@@ -390,9 +392,7 @@
 			      <property name="visible">True</property>
 			      <property name="can_default">True</property>
 			      <property name="has_default">True</property>
-			      <property name="can_focus">True</property>
-			      <property name="has_focus">True</property>
-			      <property name="editable">True</property>
+			      <property name="editable">False</property>
 			      <property name="overwrite">False</property>
 			      <property name="accepts_tab">True</property>
 			      <property name="justification">GTK_JUSTIFY_LEFT</property>
@@ -448,7 +448,7 @@
 			    <widget class="GtkTextView" id="sediff_main_p1_text">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
-			      <property name="editable">True</property>
+			      <property name="editable">False</property>
 			      <property name="overwrite">False</property>
 			      <property name="accepts_tab">True</property>
 			      <property name="justification">GTK_JUSTIFY_LEFT</property>
@@ -556,7 +556,7 @@
 			    <widget class="GtkTextView" id="sediff_main_p2_stats_text">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
-			      <property name="editable">True</property>
+			      <property name="editable">False</property>
 			      <property name="overwrite">False</property>
 			      <property name="accepts_tab">True</property>
 			      <property name="justification">GTK_JUSTIFY_LEFT</property>
@@ -583,8 +583,6 @@
 			  <property name="visible">True</property>
 			  <property name="can_default">True</property>
 			  <property name="has_default">True</property>
-			  <property name="can_focus">True</property>
-			  <property name="has_focus">True</property>
 			  <property name="label" translatable="yes">Policy Statistics</property>
 			  <property name="use_underline">False</property>
 			  <property name="use_markup">False</property>
@@ -614,7 +612,7 @@
 			    <widget class="GtkTextView" id="sediff_main_p2_text">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
-			      <property name="editable">True</property>
+			      <property name="editable">False</property>
 			      <property name="overwrite">False</property>
 			      <property name="accepts_tab">True</property>
 			      <property name="justification">GTK_JUSTIFY_LEFT</property>
@@ -788,7 +786,7 @@
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="focus_on_click">True</property>
 	      <property name="response_id">-6</property>
-	      <signal name="clicked" handler="sediff_open_dialog_on_cancel_button_clicked" last_modification_time="Thu, 06 Jan 2005 19:39:21 GMT"/>
+              <signal name="clicked" handler="sediff_open_dialog_on_cancel_button_clicked" last_modification_time="Thu, 06 Jan 2005 19:39:21 GMT"/>
 	    </widget>
 	  </child>
 
@@ -801,7 +799,6 @@
 	      <property name="focus_on_click">True</property>
 	      <property name="response_id">-10</property>
 	      <signal name="clicked" handler="sediff_open_dialog_on_diff_button_clicked" last_modification_time="Thu, 06 Jan 2005 19:39:28 GMT"/>
-
 	      <child>
 		<widget class="GtkAlignment" id="alignment1">
 		  <property name="visible">True</property>
