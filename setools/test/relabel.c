@@ -10,7 +10,7 @@
 
 int main(int argc, char **argv)
 {
-	int retv, sysadm_home_t_idx, sysadm_t_idx, pol_num_types;
+	int i, sysadm_home_t_idx, sysadm_t_idx, retv = 0, user_home_t_idx;
 	policy_t *policy;
 	char *str;
 	relabel_mode_t *mode = NULL;
@@ -53,10 +53,64 @@ int main(int argc, char **argv)
 	mode->filter = 0;
 	mode->transitive = 0;
 	
-	/* run the query */
-	TEST("querying sysadm_home_t relabelto", !apol_query_relabel_analysis(sets, sysadm_home_t_idx, res, policy, mode, NULL));
-	printf("found %i\n", res->num_types);
-	TEST(" whether the correct number of types were found", res->num_types == 170);
+	printf("\nRunning Queries\n\n");
 
-	return 0;
+	/* run the query */
+	TEST("querying sysadm_home_t mode=to", !apol_query_relabel_analysis(sets, sysadm_home_t_idx, res, policy, mode, NULL));
+	TEST("whether the correct number of types (170) were found", res->num_types == 170);
+
+	mode->mode = MODE_FROM;
+	TEST("querying sysadm_home_t mode=from", !apol_query_relabel_analysis(sets, sysadm_home_t_idx, res, policy, mode, NULL));
+	TEST("whether the correct number of types (170) were found", res->num_types == 170);
+
+	mode->mode = MODE_BOTH;
+	TEST("querying sysadm_home_t mode=both", !apol_query_relabel_analysis(sets, sysadm_home_t_idx, res, policy, mode, NULL));
+	TEST("whether the correct number of types (170) were found", res->num_types == 170);
+
+	mode->mode = MODE_DOM;
+	TEST("querying sysadm_t mode=subject", !apol_query_relabel_analysis(sets, sysadm_t_idx, res, policy, mode, NULL));
+	TEST("whether the correct number of types (170) were found", res->set->num_types == 170);
+
+	/* build filter */
+	filter->perm_sets = (obj_perm_set_t*)calloc(1, sizeof(obj_perm_set_t));
+	if (!filter->perm_sets) {
+		fprintf(stderr, "O.o.M.\n");
+		retv = -1;
+		goto endoftest;
+	}
+	filter->perm_sets[0].obj_class = get_obj_class_idx("file", policy);
+	filter->num_perm_sets = 1;
+	filter->perm_sets[0].perms = (int*)calloc(1, sizeof(int));
+	if (!filter->perm_sets[0].perms) {
+		fprintf(stderr, "O.o.M.\n");
+		retv = -1;
+		goto endoftest;
+	}
+	filter->perm_sets[0].perms[0] = get_perm_idx("write", policy);
+	filter->perm_sets[0].num_perms = 1;
+
+	user_home_t_idx = get_type_idx("user_home_t", policy);
+
+	mode->mode = MODE_TO;
+	mode->filter = 1;
+	TEST("querying user_home_t mode=to filter=file:write", !apol_query_relabel_analysis(sets, user_home_t_idx, res, policy, mode, filter));
+	TEST("whether the correct number of types (144) were found", res->num_types == 144);
+
+	mode->mode = MODE_DOM;
+	mode->filter = 0;
+	TEST("querying user_home_t mode=subject", !apol_query_relabel_analysis(sets, user_home_t_idx, res, policy, mode, NULL));
+	TEST("whether the correct number of types (none) were found", res->set->num_types == 0);
+	
+
+endoftest:
+	apol_free_relabel_result_data(res);
+	free(res);
+	for (i = 0; i < policy->num_types; i++) {
+		apol_free_relabel_set_data(&(sets[i]));
+	}
+	free(sets);
+	apol_free_relabel_filter_data(filter);
+	free(filter);
+	free(mode);
+	return retv;
 }
