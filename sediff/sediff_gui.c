@@ -436,7 +436,7 @@ static int get_iad_buffer(GtkTextBuffer *txt, GtkTextIter *txt_iter,GString *str
 					g_string_printf(string, "\t\t* %s (%d Added %s)\n", name, t->numa, adescrp);
 					gtk_text_buffer_insert_with_tags_by_name(txt, txt_iter, string->str, 
 										 -1, "changed-tag", NULL);
-					rt = print_iad_element(txt,txt_iter,string,removed_tag,t,p_new,TRUE,adescrp,get_a_name);
+					rt = print_iad_element(txt,txt_iter,string,added_tag,t,p_new,TRUE,adescrp,get_a_name);
 					if (rt < 0)
 						return -1;
 
@@ -630,36 +630,42 @@ static apol_diff_result_t *diff_policies(const char *p1_file, const char *p2_fil
 	unsigned int opts = POLOPT_ALL;
 	int rt;
 	GdkCursor *cursor = NULL;
-
+	GString *string = g_string_new("");
 	
 
 	/* attempt to open the policies */
 	if (fn_is_binpol(p1_file) && fn_binpol_ver(p1_file) < 15) {
-		g_warning("Policy 1:  Binary policies are only supported for version 15 or higher.\n");
+		g_string_printf(string,"Policy 1:  Binary policies are only supported for version 15 or higher.");
+		message_display(sediff_app->window,GTK_MESSAGE_ERROR,string->str);
 		goto err;
 	}
-
 	if (fn_is_binpol(p2_file) && fn_binpol_ver(p2_file) < 15 ) {
-		g_warning("Policy 2:  Binary policies are only supported for version 15 or higer.\n");
+		g_string_printf(string,"Policy 2:  Binary policies are only supported for version 15 or higer.");
+		message_display(sediff_app->window,GTK_MESSAGE_ERROR,string->str);
 		goto err;
 	}	
-	rt = open_partial_policy(p1_file, opts, &p1);
 
+	rt = open_partial_policy(p1_file, opts, &p1);
 	if (rt != 0) {
-		g_warning("Problem opening first policy file: %s\n", p1_file);
+		g_string_printf(string,"Problem opening first policy file: %s",p1_file);
+		message_display(sediff_app->window,GTK_MESSAGE_ERROR,string->str);
 		goto err;
 	}
 	if (get_policy_version_id(p1) < POL_VER_12) {
-		g_warning("Policy 1:  Unsupport version: Supported versions are Source (12 and higher), Binary (15 and higher).\n");
+		g_string_printf(string,"Policy 1:  Unsupport version: Supported versions are Source (12 and higher), Binary (15 and higher).");
+		message_display(sediff_app->window,GTK_MESSAGE_ERROR,string->str);
 		goto err;
 	}
+
 	rt = open_partial_policy(p2_file, opts, &p2);
 	if (rt != 0) {
-		g_warning("Problem opening second policy file: %s\n", p2_file);
+		g_string_printf(string,"Problem opening second policy file: %s",p2_file);
+		message_display(sediff_app->window,GTK_MESSAGE_ERROR,string->str);
 		goto err;
 	}
-	if (get_policy_version_id(p1) < POL_VER_12 ) {
-		g_warning("Policy 1:  Unsupport version: Supported versions are Source (12 and higher), Binary (15 and higher).\n");
+	if (get_policy_version_id(p2) < POL_VER_12 ) {
+		g_string_printf(string,"Policy 2:  Unsupport version: Supported versions are Source (12 and higher), Binary (15 and higher).");
+		message_display(sediff_app->window,GTK_MESSAGE_ERROR,string->str);
 		goto err;
 	}
 
@@ -667,7 +673,8 @@ static apol_diff_result_t *diff_policies(const char *p1_file, const char *p2_fil
 	diff = apol_diff_policies(opts, p1, p2);
 
 	if (diff == NULL) {
-		g_warning("Error differentiating policies\n");
+		g_string_printf(string,"Error differentiating policies");
+		message_display(sediff_app->window,GTK_MESSAGE_ERROR,string->str);
 		goto err;
 	}
 
@@ -686,6 +693,8 @@ static apol_diff_result_t *diff_policies(const char *p1_file, const char *p2_fil
 
 	/* rename the policy tabs */
 	sediff_rename_policy_tabs(p1_file,p2_file);
+
+	g_string_free(string,TRUE);
 	
 	return diff;
 err:
@@ -694,7 +703,7 @@ err:
 	gdk_window_set_cursor(GTK_WIDGET(sediff_app->window)->window, cursor);
 	gdk_cursor_unref(cursor);
 	gdk_flush();
-
+	g_string_free(string,TRUE);
 	if (p1)
 		close_policy(p1);
 	if (p2)
@@ -2842,6 +2851,9 @@ static int sediff_diff_and_load_policies(const char *p1_file,const char *p2_file
 	/* diff the two policies */
 	diff_results = diff_policies(p1_file, p2_file);
 	if (!diff_results) {
+		/* get rid of the loading dialog on error */
+		sediff_load_dlg_destroy();
+
 		return -1;
 	}
 
