@@ -105,7 +105,6 @@ void multifilter_window_display(multifilter_window_t *window)
 	gtk_tree_view_append_column(window->treeview, column);
 	gtk_tree_view_column_set_clickable (column, FALSE);
 	gtk_tree_view_column_set_resizable(column, FALSE);
-	gtk_tree_view_column_set_sort_column_id(column, 0);
 	gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_GROW_ONLY);
 	gtk_tree_view_column_set_visible(column, TRUE);
 	gtk_tree_view_set_model(window->treeview, GTK_TREE_MODEL(window->liststore));
