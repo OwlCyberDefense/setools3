@@ -22,7 +22,22 @@
 # 	The seaudit-report tool will insert the <style> tag you define 
 #	within the head section of the generated HTML report.
 #
-# See the default (internal) style sheet format below:
+# The following is a list of defined HTML tags and their class selectors
+# that can be used:
+# 	
+# HTML Tag		Class Selector(s)
+# -------- 		-----------------
+# <h1>			report_title
+#
+# <h2>			standard_section_title, custom_section_title
+#
+# <font>		message_count_label, stats_label, message_date,
+#			host_name, syscall_timestamp, avc_type,
+#			src_context, tgt_context, obj_class
+#
+# <b>			report_date, message_count, stats_count
+#
+# See the default (internal) style sheet format below for an example.s
 
 body
 {
@@ -41,5 +56,103 @@ h1.report_title
 	padding-bottom:1px;
 	padding-left:4px;
 	color:#ffffff;
+	text-align:left;
 	background-color:#808080;
+}
+
+h2.standard_section_title
+{
+	margin-top:0px;
+	margin-bottom:5px;
+	font-size:100%;
+	padding-top:0px;
+	padding-bottom:1px;
+	padding-left:4px;
+	color:#900B09;
+	background-color:transparent;
+}
+
+h2.custom_section_title
+{
+	margin-top:0px;
+	margin-bottom:5px;
+	font-size:100%;
+	padding-top:0px;
+	padding-bottom:1px;
+	padding-left:4px;
+	color:#900B09;
+	background-color:transparent;
+}
+
+font.message_count_label
+{
+color: #000000;
+background-color:transparent;
+}
+
+b.message_count
+{
+color: #FF0000;
+background-color:transparent;
+}
+
+font.stats_label
+{
+color: #000000;
+background-color:transparent;
+}
+
+b.stats_count
+{
+color: #000000;
+background-color:transparent;
+}
+
+b.report_date
+{
+color: #000000;
+background-color:transparent;
+}
+
+font.message_date
+{
+color: #000000;
+background-color:transparent;
+position:relative
+}
+
+font.host_name
+{
+color: #000000;
+background-color:transparent;
+}
+
+font.syscall_timestamp
+{
+color: #000000;
+background-color:transparent;
+}
+
+font.avc_type
+{
+color: purple;
+background-color:transparent;
+}
+
+font.src_context
+{
+color: #000080;
+background-color:transparent;
+}
+
+font.tgt_context
+{
+color: #FF0000;
+background-color:transparent;
+}
+
+font.obj_class
+{
+color: #000000;
+background-color:transparent;
 }
