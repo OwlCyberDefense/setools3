@@ -247,7 +247,7 @@ static int make_p2_cond_expr(int idx1, policy_t *p1, cond_expr_t **expr2, policy
 }
 
 
-static bool_t does_cond_match(avh_node_t *n1, policy_t *p1, avh_node_t *n2, policy_t *p2, bool_t *inverse)
+bool_t does_cond_match(avh_node_t *n1, policy_t *p1, avh_node_t *n2, policy_t *p2, bool_t *inverse)
 {
 	int rt;
 	cond_expr_t *expr2;
