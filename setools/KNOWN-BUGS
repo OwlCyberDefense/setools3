@@ -1,8 +1,8 @@
-SELinux Tools (setools), version 1.5.1
+SELinux Tools (setools), version 1.6
 by Tresys Technology, LLC
 (selinux@tresys.com, www.tresys.com/selinux)
 
-November 04, 2004
+February 09, 2005
 
 
 CURRENT BUGS AND ISSUES
@@ -22,7 +22,7 @@ APOL
    
 3. Double clicking on listbox items may not display popup windows in 
    certain window managers, such as Gnome or Ximian. For example, 
-   double- clicking an attribute in the [policy components]/types tab 
+   double-clicking an attribute in the [policy components]/types tab 
    does not display the types for that attribute. You must right-
    click on the item in order to display popup windows. This is a 
    Tcl/Tk bug and has been submitted to 
@@ -30,12 +30,14 @@ APOL
    
 4. The use of some fonts may cause widgets in the GUI to be obscured. 
    If you experience this problem, you may edit the fonts in the 
-   .apol file in your home directory.
+   .apol file in your home directory. Apol may also obscure widgets  
+   from the screen on resolutions less than 1024x768.
    
 5. Apol will correctly load policies with aliases, but the alias 
    names will be lost (the root type name is used instead). 
    Therefore, aliases are not displayed and queries cannot use them 
    as parameters.
+  
 
 SEPCUT
 
@@ -61,9 +63,9 @@ SEAUDIT
 
 TESTING INFORMATION
 
-Operating Systems: Red Hat Linux 7.2/9.0/Fedora Core 1/Fedora Core 2
+Operating Systems: Red Hat Linux 7.2/9.0/Fedora Core 1, 2 and 3 versions
 SELinux versions: 2.4, 2.6
-SELinux Policy versions: 12, 15, 16, and 17 (with and without MLS support)
+SELinux Policy versions: 12, 15, 16, 17 and 18 (with and without MLS support)
 TCL/TK versions: 8.3, 8.4
 BWidget versions: 1.4, 1.6, 1.7
 Desktops: Gnome, KDE, Ximiam Gnome, fvwm 
