@@ -115,7 +115,7 @@ policy-install: seuser-policy
 	fi 
 
 install-nogui: seuser policy-install
-	install -d $(BINDIR); 
+	install -d $(BINDIR)
 	-@if [ -e $(POLICY_SRC_DIR)/policy/Makefile ]; then \
 		install -m 755 -Z system_u:object_r:seuser_exec_t seuser $(BINDIR); \
 		install -m 644 -Z system_u:object_r:seuser_conf_t $(SEUSER_CONF_FILE) $(INSTALL_LIBDIR); \
@@ -126,7 +126,7 @@ install-nogui: seuser policy-install
 	install -m 755 $(SE_SHELL_SCRIPTS) $(BINDIR)
 
 install: install-nogui seuserx se_user.tcl
-	install -d $(BINDIR); 
+	install -d $(BINDIR) 
 	-@if [ -e /etc/security/selinux/src/policy/policy.conf ]; then \
 		install -m 755 -Z system_u:object_r:seuser_exec_t seuserx $(BINDIR); \
 	else \
