@@ -25,11 +25,12 @@ proc search_libs {} {
 	
 	# Check the parent dir of the package path directory for tcl.
 	set pkgPath_include_dir "[file dirname $tcl_pkgPath]/include"
+	
 	if {[file exists $pkgPath_include_dir] && [file isdirectory $pkgPath_include_dir] && \
 	    [file exists "$pkgPath_include_dir/tcl.h"] && [file readable "$pkgPath_include_dir/tcl.h"] && \
 	    [file exists "$pkgPath_include_dir/tk.h"] && [file readable "$pkgPath_include_dir/tk.h"]} {
 		set ret_dir $pkgPath_include_dir
-	} else if {[file exists $shared_lib_conf_file] && [file readable $shared_lib_conf_file]} {
+	} elseif {[file exists $shared_lib_conf_file] && [file readable $shared_lib_conf_file]} {
 		# If we can read the shared lib config file (/etc/ld.so.conf) then parse this file next.
 		set rt [catch {set f [open $shared_lib_conf_file]} err]
 		if {$rt != 0} {
