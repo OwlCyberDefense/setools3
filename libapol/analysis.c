@@ -1368,7 +1368,7 @@ static int types_relation_find_trans_flows(types_relation_query_t *tra_query,
 
 static int types_relation_search_te_rules(teq_query_t *query, 
 					  teq_results_t *results, 
-			   		  char *ta1, char *ta2,
+			   		  char *ta1, char *ta2, char *ta3,
 			   		  policy_t *policy) 
 {
 	int rt;
@@ -1390,6 +1390,14 @@ static int types_relation_search_te_rules(teq_query_t *query,
 			return -1;
 		}
 		strcpy((*query).ta2.ta, ta2);	/* The ta2 string */ 
+	}
+	if (ta3 != NULL) {
+		(*query).ta3.ta = (char *)malloc((strlen(ta3) + 1) * sizeof(char));
+		if ((*query).ta3.ta == NULL) {
+			fprintf(stderr, "out of memory");
+			return -1;
+		}
+		strcpy((*query).ta3.ta, ta3);	/* The ta3 string */ 
 	}
 	/* search rules */
 	rt = search_te_rules(query, results, policy);
@@ -1443,9 +1451,11 @@ static int types_relation_find_type_trans_rules(types_relation_query_t *tra_quer
 	query.only_enabled = 1;
 	query.ta1.indirect = 1;
 	query.ta2.indirect = 1;
+	query.ta3.indirect = 0;
 	query.any = FALSE;
 	query.ta1.t_or_a = IDX_TYPE;
 	query.ta2.t_or_a = IDX_TYPE;
+	query.ta3.t_or_a = IDX_TYPE;
 	
 	/* search using all classes */
 	query.num_classes = policy->num_obj_classes;
@@ -1458,19 +1468,10 @@ static int types_relation_find_type_trans_rules(types_relation_query_t *tra_quer
 		query.classes[i] = i;
 	}
 	
-	/* search using all perms */
-	query.num_perms = policy->num_perms;
-	query.perms = (int *)malloc(sizeof(int)*query.num_perms);
-	if(query.perms == NULL) {
-		fprintf(stderr, "out of memory");
-		goto err;
-	}
-	for(i = 0; i < query.num_perms; i++) {
-		query.perms[i] = i;
-	}
-	/* First, query with type_A as the source type and type_B as the target type */				
+	/* First, query with type_A as the source type and type_B as the target type or default type */				
 	rt = types_relation_search_te_rules(&query, &results, 
-					    tra_query->type_name_A, 
+					    tra_query->type_name_A,
+					    tra_query->type_name_B, 
 					    tra_query->type_name_B, 
 					    policy);
 	if (rt != 0) {
@@ -1492,11 +1493,13 @@ static int types_relation_find_type_trans_rules(types_relation_query_t *tra_quer
 	}
 	/* Free intermediate results, since we have copied the rule indices */
 	free_teq_results_contents(&results);
-	/* Flip the query to have type_B as the source type and type_A as the target type */
+	/* Flip the query to have type_B as the source type and type_A as the target type or default type */
 	if (query.ta1.ta != NULL) free(query.ta1.ta);
 	if (query.ta2.ta != NULL) free(query.ta2.ta);
+	if (query.ta3.ta != NULL) free(query.ta3.ta);
 	rt = types_relation_search_te_rules(&query, &results, 
-					    tra_query->type_name_B, 
+					    tra_query->type_name_B,
+					    tra_query->type_name_A,
 					    tra_query->type_name_A, 
 					    policy);
 	if (rt != 0) {
@@ -1574,6 +1577,7 @@ static int types_relation_find_process_interactions(types_relation_query_t *tra_
 	rt = types_relation_search_te_rules(&query, &results, 
 					    tra_query->type_name_A, 
 					    tra_query->type_name_B, 
+					    NULL,
 					    policy);
 	if (rt != 0) {
 		fprintf(stderr, "Problem searching TE rules");
@@ -1597,6 +1601,7 @@ static int types_relation_find_process_interactions(types_relation_query_t *tra_
 	rt = types_relation_search_te_rules(&query, &results, 
 					    tra_query->type_name_B, 
 					    tra_query->type_name_A, 
+					    NULL,
 					    policy);
 	if (rt != 0) {
 		fprintf(stderr, "Problem searching TE rules");
