@@ -2164,8 +2164,8 @@ proc Apol_Analysis_fulflow::advanced_filters_include_exclude_permissions {which}
 			puts "Tcl error: wrong 'which' argument sent to Apol_Analysis_fulflow::advanced_filters_include_exclude_permissions. Must be either 'include' or 'exclude'."	
 			return -1
 		}
-
- 		foreach object_class_idx [$class_listbox curselection] {
+		set objs [$class_listbox curselection]
+ 		foreach object_class_idx $objs {
  			set object_class [$class_listbox get $object_class_idx]
  			set idx [string first $Apol_Analysis_fulflow::excluded_tag $object_class]
  			if {$idx != -1} {
@@ -2366,7 +2366,7 @@ proc Apol_Analysis_fulflow::advanced_filters_display_permissions {class_idx} {
 
 	# Disable the text widget. 
 	$perms_box configure -state disabled
-	set class_selected_idx [$class_listbox curselection]
+	set class_selected_idx $class_idx
 	return 0
 }
 
@@ -2592,7 +2592,7 @@ proc Apol_Analysis_fulflow::advanced_filters_create_dialog {} {
         set class_listbox [listbox [$sw_class getframe].lb -height 10 -highlightthickness 0 \
         	-bg white -selectmode extended -listvar Apol_Analysis_fulflow::class_list -exportselection 0]
         $sw_class setwidget $class_listbox  
-      
+      	     	
 	set sw_list [ScrolledWindow [$permissions_title_frame getframe].sw_c -auto none]
 	set perms_box [text [$permissions_title_frame getframe].perms_box \
 		-cursor $ApolTop::prevCursor \
@@ -2623,8 +2623,9 @@ proc Apol_Analysis_fulflow::advanced_filters_create_dialog {} {
 			exclude}]
 		
 	# Bindings
-	bindtags $class_listbox [linsert [bindtags $Apol_Analysis_fulflow::class_listbox] 3 object_list_Tag]  
-        bind object_list_Tag <<ListboxSelect>> {Apol_Analysis_fulflow::advanced_filters_display_permissions [$Apol_Analysis_fulflow::class_listbox curselection]}
+	bindtags $class_listbox [linsert [bindtags $Apol_Analysis_fulflow::class_listbox] 3 fulflow_object_list_Tag]  
+        bind fulflow_object_list_Tag <<ListboxSelect>> {Apol_Analysis_fulflow::advanced_filters_display_permissions \
+        	[$Apol_Analysis_fulflow::class_listbox curselection]}
         
         pack $cbutton_threshhold $spinbox_threshhold -side left -anchor nw -padx 2
         pack $threshhold_frame -fill x -anchor nw -side bottom -pady 2
