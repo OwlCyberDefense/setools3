@@ -1162,7 +1162,7 @@ proc Apol_Analysis_fulflow::insert_more_flows_header {fulflow_info_text fulflow_
         set flow_direction [lindex $query_args 1]
 	if {$flow_direction == "in"} {
 		set startIdx [$fulflow_info_text index insert]
-		$fulflow_info_text insert end "More Flows to "
+		$fulflow_info_text insert end "More Information Flows to "
 		set endIdx [$fulflow_info_text index insert]
 	    	$fulflow_info_text tag add $Apol_Analysis_fulflow::title_tag $startIdx $endIdx
 	    	set startIdx [$fulflow_info_text index insert]
@@ -1209,12 +1209,28 @@ proc Apol_Analysis_fulflow::insert_more_flows_header {fulflow_info_text fulflow_
 	
 	# Insert time/flows limit strings
 	set startIdx [$fulflow_info_text index insert]
-	$fulflow_info_text insert end "\n\nTime: $elapsed_time out of $time_limit_str\n"
-	$fulflow_info_text insert end "Flows: found $curr_flows_num out of $flow_limit_num"
+	$fulflow_info_text insert end "\n\nTime: $elapsed_time out of $time_limit_str"
 	set endIdx [$fulflow_info_text index insert]
 	$fulflow_info_text tag add $Apol_Analysis_fulflow::subtitle_tag $startIdx $endIdx
-	$fulflow_info_text configure -state disabled
-		
+	
+	set startIdx [$fulflow_info_text index insert]
+	$fulflow_info_text insert end "\n\nApol found the following number of information flows: "
+	set endIdx [$fulflow_info_text index insert]
+	$fulflow_info_text tag add $Apol_Analysis_fulflow::subtitle_tag $startIdx $endIdx
+        set startIdx $endIdx
+        $fulflow_info_text insert end  "$curr_flows_num" 
+        set endIdx [$fulflow_info_text index insert]
+        $fulflow_info_text tag add $Apol_Analysis_fulflow::counters_tag $startIdx $endIdx
+        set startIdx $endIdx
+        $fulflow_info_text insert end " out of "
+        set endIdx [$fulflow_info_text index insert]
+        $fulflow_info_text tag add $Apol_Analysis_fulflow::subtitle_tag $startIdx $endIdx
+        set startIdx $endIdx
+        $fulflow_info_text insert end "$flow_limit_num"
+        set endIdx [$fulflow_info_text index insert]
+        $fulflow_info_text tag add $Apol_Analysis_fulflow::counters_tag $startIdx $endIdx		
+        $fulflow_info_text configure -state disabled
+        
 	return 0
 }
 
@@ -1288,6 +1304,19 @@ proc Apol_Analysis_fulflow::insert_transitive_flows_header {fulflow_info_text fu
 	set endIdx [$fulflow_info_text index insert]
 	$fulflow_info_text tag add $Apol_Analysis_fulflow::find_flows_tag $startIdx $endIdx
 	$fulflow_info_text insert end ")"
+	
+	# Index 1 will be the number of paths 
+        set currentIdx 1 
+	set startIdx [$fulflow_info_text index insert]
+	$fulflow_info_text insert end "\n\nApol found the following number of information flows: "
+	set endIdx [$fulflow_info_text index insert]
+	$fulflow_info_text tag add $Apol_Analysis_fulflow::subtitle_tag $startIdx $endIdx
+        set startIdx $endIdx
+	set num_paths [lindex $data $currentIdx]
+	$fulflow_info_text insert end $num_paths
+        set endIdx [$fulflow_info_text index insert]
+        $fulflow_info_text tag add $Apol_Analysis_fulflow::counters_tag $startIdx $endIdx
+        
 	$fulflow_info_text configure -state disabled
 	return 0
 }
@@ -1309,18 +1338,10 @@ proc Apol_Analysis_fulflow::render_information_flows {fulflow_info_text fulflow_
 	}
 	
 	# Index 1 will be the number of paths 
-        set currentIdx 1 
-	set startIdx [$fulflow_info_text index insert]
-	$fulflow_info_text insert end "\n\nApol found the following number of information flows: "
-	set endIdx [$fulflow_info_text index insert]
-	$fulflow_info_text tag add $Apol_Analysis_fulflow::subtitle_tag $startIdx $endIdx
-        set startIdx $endIdx
-	set num_paths [lindex $data $currentIdx]
-	$fulflow_info_text insert end $num_paths
-        set endIdx [$fulflow_info_text index insert]
-        $fulflow_info_text tag add $Apol_Analysis_fulflow::counters_tag $startIdx $endIdx
+        set currentIdx 1
+        set num_paths [lindex $data $currentIdx]		
 	for {set i 0} {$i<$num_paths} {incr i} {
-	    set startIdx $endIdx
+	    set startIdx [$fulflow_info_text index insert]
 	    $fulflow_info_text insert end "\n\nFlow"
 	    set endIdx [$fulflow_info_text index insert]
 	    $fulflow_info_text tag add $Apol_Analysis_fulflow::subtitle_tag $startIdx $endIdx
@@ -1332,9 +1353,9 @@ proc Apol_Analysis_fulflow::render_information_flows {fulflow_info_text fulflow_
 	    $fulflow_info_text insert end "requires " 
 	    set endIdx [$fulflow_info_text index insert]
 	    $fulflow_info_text tag add $Apol_Analysis_fulflow::subtitle_tag $startIdx $endIdx
-	    set startIdx $endIdx
-	    # Increment to the number of flows
-	    incr currentIdx 
+	    set startIdx $endIdx 
+	    # Increment to the number of flows 
+	    incr currentIdx
 	    set num_flows [lindex $data $currentIdx]
 	    $fulflow_info_text insert end $num_flows
 	    set endIdx [$fulflow_info_text index insert]
