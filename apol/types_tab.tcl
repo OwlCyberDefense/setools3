@@ -120,7 +120,9 @@ proc Apol_Types::init_options { } {
     Apol_Types::enable_disable_incl_attribs $a_typeattribs
     Apol_Types::enable_disable_checkbuttons $typeattribs $typealiases 1 
     Apol_Types::enable_disable_checkbuttons $a_typeattribs $a_types 2
-    Apol_Types::enable_disable_checkbuttons $Apol_Types::fc_incl_class $Apol_Types::fc_incl_context 3
+    if {$ApolTop::libsefs == 1} {
+    	Apol_Types::enable_disable_checkbuttons $Apol_Types::fc_incl_class $Apol_Types::fc_incl_context 3
+    }
     Apol_Types::_useSearch $sEntry 
     
     return 0
@@ -161,17 +163,18 @@ proc Apol_Types::popupTypeInfo {which ta} {
 		ApolTop::resetBusyCursor
 		return -1
 	}
-	if {[Apol_File_Contexts::is_db_loaded]} {
-		set rt [catch {set info_fc [Apol_File_Contexts::get_fc_files_for_ta $which $ta]} err]
-		if {$rt != 0} {
-			tk_messageBox -icon error -type ok -title "Error" \
-				-message "$err. \n\nIf you need to load an index file, go to the File Context tab."
-			ApolTop::resetBusyCursor
-			return -1
-		}
-		set index_file_loaded 1
-	} 
-
+	if {$ApolTop::libsefs == 1} {
+		if {[Apol_File_Contexts::is_db_loaded]} {
+			set rt [catch {set info_fc [Apol_File_Contexts::get_fc_files_for_ta $which $ta]} err]
+			if {$rt != 0} {
+				tk_messageBox -icon error -type ok -title "Error" \
+					-message "$err. \n\nIf you need to load an index file, go to the File Context tab."
+				ApolTop::resetBusyCursor
+				return -1
+			}
+			set index_file_loaded 1
+		} 
+	}
 	ApolTop::resetBusyCursor
 	set w .ta_infobox
 	set rt [catch {destroy $w} err]
@@ -190,7 +193,9 @@ proc Apol_Types::popupTypeInfo {which ta} {
     	set notebook [NoteBook $top_f.nb]
     	
     	set ta_info_tab [$notebook insert end ta_info_tab]
-	set fc_info_tab [$notebook insert end fc_info_tab -text "Files"]
+    	if {$ApolTop::libsefs == 1} {
+		set fc_info_tab [$notebook insert end fc_info_tab -text "Files"]
+	}
 	
 	if {$which == "type"} {
 		$notebook itemconfigure ta_info_tab -text "Attributes"
@@ -201,38 +206,43 @@ proc Apol_Types::popupTypeInfo {which ta} {
 	set f_ta [text [$s_ta getframe].f -font {helvetica 10} -wrap none -width 35 -height 10 -bg white]
 	$s_ta setwidget $f_ta
 	
-	set s_fc [ScrolledWindow [$notebook getframe fc_info_tab].s_fc  -scrollbar both -auto both]
-	set f_fc [text [$s_fc getframe].f -font {helvetica 10} -wrap none -width 35 -height 10 -bg white]
-	$s_fc setwidget $f_fc
+	if {$ApolTop::libsefs == 1} {
+		set s_fc [ScrolledWindow [$notebook getframe fc_info_tab].s_fc  -scrollbar both -auto both]
+		set f_fc [text [$s_fc getframe].f -font {helvetica 10} -wrap none -width 35 -height 10 -bg white]
+		$s_fc setwidget $f_fc
+	}
 	
      	set b_close [Button $bot_f.b_close -text "Close" -command "catch {destroy $w}" -width 10]
      	
      	pack $top_f -side top -anchor nw -fill both -expand yes
      	pack $bot_f -side bottom -anchor sw -fill x
      	pack $b_close -side bottom -anchor center -fill x -expand yes -padx 2 -pady 2
-	pack $s_ta $s_fc -fill both -expand yes
+	pack $s_ta -fill both -expand yes
 	$notebook compute_size
 	pack $notebook -fill both -expand yes -padx 4 -pady 4
 	$notebook raise [$notebook page 0]
+	$f_ta insert 0.0 $info_ta
+	$f_ta configure -state disabled 
 	
-     	$f_ta insert 0.0 $info_ta
-     	if {$index_file_loaded} {
-	     	if {$info_fc != ""} {
-	     		set num [llength $info_fc]
-	     		$f_fc insert end "Number of files: $num\n\n"
-	     		foreach item $info_fc {
-			     	foreach {ctxt class path} $item {}
-			     	$f_fc insert end "$ctxt\t     $class\t     $path\n"
+	if {$ApolTop::libsefs == 1} {
+		pack $s_fc -fill both -expand yes
+	     	if {$index_file_loaded} {
+		     	if {$info_fc != ""} {
+		     		set num [llength $info_fc]
+		     		$f_fc insert end "Number of files: $num\n\n"
+		     		foreach item $info_fc {
+				     	foreach {ctxt class path} $item {}
+				     	$f_fc insert end "$ctxt\t     $class\t     $path\n"
+				}
+			} else {
+				$f_fc insert end "No files found."
 			}
 		} else {
-			$f_fc insert end "No files found."
+			$f_fc insert 0.0 "No index file is loaded. If you would like to load an index file, go to the File Context tab."
 		}
-	} else {
-		$f_fc insert 0.0 "No index file is loaded. If you would like to load an index file, go to the File Context tab."
+		$f_fc configure -state disabled
 	}
- 	$f_ta configure -state disabled
- 	$f_fc configure -state disabled
- 	
+ 		
  	wm geometry $w 400x400
  	wm deiconify $w
  	
@@ -289,7 +299,7 @@ proc Apol_Types::searchTypes {} {
 		$opts(typealiases) $opts(usesrchstr) $srchstr \
 		$opts(show_files) $opts(incl_context) $opts(incl_class)]} err]	
 	if {$rt != 0} {	
-		Apol_File_Contexts::destroy_progressDlg
+		Apol_Types::destroy_progressDlg
 		tk_messageBox -icon error -type ok -title "Error" \
 			-message "$err \n\nNote:If you need to load an index file, go to the File Context tab."
 		return 
@@ -299,7 +309,7 @@ proc Apol_Types::searchTypes {} {
 	    $Apol_Types::resultsbox insert end $results
 	    ApolTop::makeTextBoxReadOnly $Apol_Types::resultsbox
         }
-        Apol_File_Contexts::destroy_progressDlg
+        Apol_Types::destroy_progressDlg
 	return 0
 }
 
@@ -449,7 +459,9 @@ proc Apol_Types::create {nb} {
     set ofm [$obox getframe]
     set fm_attribs_select [frame $ofm.ao -relief sunken -borderwidth 1]
     set fm_sString [frame $ofm.so -relief sunken -borderwidth 1]
-    set fm_fc_files [frame $ofm.fm_fc_files -relief sunken -borderwidth 1]
+    if {$ApolTop::libsefs == 1} {
+    	set fm_fc_files [frame $ofm.fm_fc_files -relief sunken -borderwidth 1]
+    }
     set okbox [frame $ofm.okbox]
     set fm_types_select [frame $ofm.to -relief sunken -borderwidth 1]
         
@@ -457,7 +469,10 @@ proc Apol_Types::create {nb} {
     pack $t_button $a_button -side bottom -fill x -anchor sw -padx 2 -pady 2
     pack $okbox -side right -anchor n -fill both -expand yes -padx 5
     pack $fm_types_select -side left -anchor n  -padx 5 -fill y
-    pack $fm_attribs_select $fm_fc_files -side left -anchor nw -fill y -padx 5
+    pack $fm_attribs_select -side left -anchor nw -fill y -padx 5
+    if {$ApolTop::libsefs == 1} {
+    	 pack $fm_fc_files -side left -anchor nw -fill y -padx 5
+    }
     pack $fm_sString -side left -anchor n -fill both -expand yes -padx 5
     
     # Placing types and attributes listboxes frame
@@ -486,13 +501,15 @@ proc Apol_Types::create {nb} {
 	-variable Apol_Types::opts(attribs) \
 	-command "Apol_Types::enable_disable_checkbuttons $a_types $a_typeattribs 2"]
     
-    set fc_incl_context [checkbutton $fm_fc_files.fc_incl_context -text "Include Context" \
-	-variable Apol_Types::opts(incl_context)]
-    set fc_incl_class [checkbutton $fm_fc_files.fc_incl_class -text "Include Object Class" \
-	-variable Apol_Types::opts(incl_class)]	
-    set fc_files_select [checkbutton $fm_fc_files.fc_files_select -text "Show Files" \
-	-variable Apol_Types::opts(show_files) \
-	-command "Apol_Types::enable_disable_checkbuttons $fc_incl_context $fc_incl_class 3"]
+    if {$ApolTop::libsefs == 1} {
+	    set fc_incl_context [checkbutton $fm_fc_files.fc_incl_context -text "Include Context" \
+		-variable Apol_Types::opts(incl_context)]
+	    set fc_incl_class [checkbutton $fm_fc_files.fc_incl_class -text "Include Object Class" \
+		-variable Apol_Types::opts(incl_class)]	
+	    set fc_files_select [checkbutton $fm_fc_files.fc_files_select -text "Show Files" \
+		-variable Apol_Types::opts(show_files) \
+		-command "Apol_Types::enable_disable_checkbuttons $fc_incl_context $fc_incl_class 3"]
+    }
     
     # Search string section widgets
     set sEntry [Entry $fm_sString.entry -textvariable Apol_Types::srchstr -width 40 \
@@ -512,8 +529,10 @@ proc Apol_Types::create {nb} {
     # Placing search options section widgets
     pack $types_select $typeattribs $typealiases -anchor w  
     pack $attribs_select $a_types $a_typeattribs -anchor w  
-    pack $fc_files_select -side top -anchor nw -expand yes -padx 2
-    pack $fc_incl_context $fc_incl_class -side top -padx 6 -pady 2 -anchor nw -expand yes
+    if {$ApolTop::libsefs == 1} {
+	    pack $fc_files_select -side top -anchor nw -expand yes -padx 2
+	    pack $fc_incl_context $fc_incl_class -side top -padx 6 -pady 2 -anchor nw -expand yes
+    }
     pack $sString -side top -anchor nw
     pack $sEntry -expand yes -padx 5 -pady 5 -fill x 
     pack $okbox.ok -side top -padx 5 -pady 5 -anchor se 
