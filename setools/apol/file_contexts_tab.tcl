@@ -221,6 +221,9 @@ proc Apol_File_Contexts::initialize { } {
 	ApolTop::change_comboBox_state $Apol_File_Contexts::class_cb_value $Apol_File_Contexts::objclass_combo_box
 	$entry_path delete 0 end
 	Apol_File_Contexts::configure_file_path_entry_widget $Apol_File_Contexts::path_cb_value
+	$Apol_File_Contexts::resultsbox configure -state normal
+	$Apol_File_Contexts::resultsbox delete 0.0 end
+	ApolTop::makeTextBoxReadOnly $Apol_File_Contexts::resultsbox 
 }
 
 # ------------------------------------------------------------------------------
@@ -370,10 +373,16 @@ proc Apol_File_Contexts::display_create_db_dlg {} {
     	set lbl_dir 	[Label $f1.lbl_dir -justify left -text "Directory to index:"]
 	set entry_dir 	[entry $f2.entry_path -width 30 -bg white]
 	set browse_dir 	[button $f3.button1 -text "Browse" -width 8 -command {
+		set txt [$Apol_File_Contexts::entry_dir get]
+		if {[string is space $txt]} {
+			set txt "/"
+		} elseif {![file isdirectory $txt]} {
+			set txt [file dirname $txt]
+		} 
 		set dir_n [tk_chooseDirectory \
 			-title "Select Directory to Index..." \
 			-parent $ApolTop::mainframe \
-			-initialdir "/"]
+			-initialdir $txt]
 		if {$dir_n != ""} {
 			$Apol_File_Contexts::entry_dir delete 0 end
 			$Apol_File_Contexts::entry_dir insert end $dir_n
@@ -381,9 +390,22 @@ proc Apol_File_Contexts::display_create_db_dlg {} {
 	}]
 	set entry_fn 	[entry $f2.entry_fn -width 30 -bg white]
 	set browse_fn 	[button $f3.button2 -text "Browse" -width 8 -command {
+		set txt [$Apol_File_Contexts::entry_fn get]
+		if {[string is space $txt]} {
+			set dir_name "/"
+			set init_file "/"
+		} elseif {![file isdirectory $txt]} {
+			set dir_name [file dirname $txt]
+			set init_file $txt
+		} else {
+			set dir_name $txt
+			set init_file ""
+		}
 		set file_n [tk_getSaveFile \
 			-title "Select File to Save..." \
-			-parent $ApolTop::mainframe]
+			-parent $ApolTop::mainframe \
+			-initialdir $dir_name \
+			-initialfile $init_file]
 		if {$file_n != ""} {
 			$Apol_File_Contexts::entry_fn delete 0 end
 			$Apol_File_Contexts::entry_fn insert end $file_n		
@@ -491,7 +513,7 @@ proc Apol_File_Contexts::load_fc_db { } {
 		set rt [catch {apol_Load_FC_Index_File $db_file} err]
 		if {$rt != 0} {
 			tk_messageBox -icon error -type ok -title "Error" -message \
-				"Error loading file context database: $err.\nSee stderr for more information."
+				"Error loading file context database: $err\nSee stderr for more information."
 			return -1
 		} 
 		Apol_File_Contexts::initialize
