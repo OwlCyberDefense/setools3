@@ -6,15 +6,14 @@
  * Date : January 22, 2004
  *
  */
+#ifndef SEAUDIT_SEAUDIT_WINDOW_H
+#define SEAUDIT_SEAUDIT_WINDOW_H
 
 #include <gtk/gtk.h>
 #include <glade/glade.h>
 #include <libapol/util.h>
 #include "auditlog.h"
 #include "filtered_view.h"
-
-#ifndef SEAUDIT_SEAUDIT_WINDOW_H
-#define SEAUDIT_SEAUDIT_WINDOW_H
 
 typedef struct seaudit_window {
 	GtkWindow *window;
