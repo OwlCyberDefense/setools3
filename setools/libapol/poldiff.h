@@ -76,6 +76,7 @@ typedef struct apol_diff_result {
 void apol_free_diff_result(bool_t close_pols, apol_diff_result_t *adr);
 apol_diff_result_t *apol_diff_policies(unsigned int opts, policy_t *p1, policy_t *p2);
 int make_p2_key(avh_key_t *p1key, avh_key_t *p2key, policy_t *p1, policy_t *p2);
+bool_t does_cond_match(avh_node_t *n1, policy_t *p1, avh_node_t *n2, policy_t *p2, bool_t *inverse);
 
 #endif /* _APOLICY_POLDIFF_H_ */
 
