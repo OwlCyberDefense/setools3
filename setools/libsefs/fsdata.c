@@ -456,7 +456,6 @@ void sefs_users_compare(sqlite3_context *context, int argc, sqlite3_value **argv
 		text = sqlite3_value_text(argv[0]);
 		/* if we aren't using regular expressions just match them up */
 		if (regexec (&users_re,text, 1, &pm, 0) == 0){
-			fprintf(stderr,"found match with %s\n",text);
 			retVal = 1;
 		}
 	}
