@@ -554,6 +554,8 @@ int search_te_rules(teq_query_t *q, teq_results_t *r, policy_t *policy)
 			  &&
 			   ( (q->num_perms < 1) || ((q->num_perms > 0) && does_av_rule_use_perms(i, 1, q->perms, q->num_perms, policy)) )
 			  )	{
+			  	if (q->only_enabled && !policy->av_access[i].enabled)
+					continue;
 				/* Have a matching AV rule */
 				/* first the rule idx */
 				if(add_i_to_a(i, &r->num_av_access, &r->av_access) != 0) {
@@ -602,6 +604,8 @@ int search_te_rules(teq_query_t *q, teq_results_t *r, policy_t *policy)
 	  		   &&
 			   ( (q->num_classes < 1) || ((q->num_classes > 0) && does_tt_rule_use_classes(i, q->classes, q->num_classes, policy)) )
 			  ) {
+			  	if (q->only_enabled && !policy->te_trans[i].enabled)
+					continue;
 				/* first the rule idx */
 				if(add_i_to_a(i, &r->num_type_rules, &r->type_rules) != 0) {
 					rt = -1;
@@ -630,6 +634,8 @@ int search_te_rules(teq_query_t *q, teq_results_t *r, policy_t *policy)
 			   &&
 			    ( (q->num_perms < 1) || ((q->num_perms > 0) && does_av_rule_use_perms(i, 0, q->perms, q->num_perms, policy)) )
 			  )	{
+			  	if (q->only_enabled && !policy->av_audit[i].enabled)
+					continue;
 				/* first the rule idx */
 				if(add_i_to_a(i, &r->num_av_audit, &r->av_audit) != 0) {
 					rt = -1;
