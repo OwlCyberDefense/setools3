@@ -764,10 +764,10 @@ proc ApolTop::create { } {
 	    {command "&Goto Line...           (C-g)" {Disable_SearchMenu_Tag} "Goto Line"  \
 	    	{} -command ApolTop::display_goto_line_Dlg }
 	}
-	"&Analysis" {} analysis 0 {
-	    {command "&Load analysis query..." {Disable_LoadQuery_Tag} "Load analysis query"  \
+	"&Query" {} query 0 {
+	    {command "&Load query..." {Disable_LoadQuery_Tag} "Load query"  \
 	    	{} -command "ApolTop::load_query_info" }
-	    {command "&Save analysis query..." {Disable_SaveQuery_Tag} "Save analysis query"  \
+	    {command "&Save query..." {Disable_SaveQuery_Tag} "Save query"  \
 	    	{} -command "ApolTop::save_query_info" }
 	    {command "&Policy Summary" {Disable_Summary} "Display summary statics" {} -command ApolTop::popupPolicyStats }
 	}
