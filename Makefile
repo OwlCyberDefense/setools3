@@ -33,8 +33,8 @@ DEFAULT_LOG_FILE = /var/log/messages
 #
 CC_DEFINES	= 
 
-CFLAGS		= -Wall -O2 $(TCL_INCLUDE) $(CC_DEFINES)
-#CFLAGS		= -Wall -g $(TCL_INCLUDE) $(CC_DEFINES)
+#CFLAGS		= -Wall -O2 $(TCL_INCLUDE) $(CC_DEFINES)
+CFLAGS		= -Wall -g $(TCL_INCLUDE) $(CC_DEFINES)
 #CFLAGS		= -Wall -ansi -pedantic -g $(TCL_INCLUDE) $(CC_DEFINES)
 
 # Install directories
