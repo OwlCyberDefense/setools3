@@ -197,11 +197,11 @@ proc Apol_File_Contexts::get_fc_files_for_ta {which ta} {
 		}
 		set types_list $attrib_typesList
 	}
-	set rt [catch {set results [apol_Search_FC_Index_DB 0 1 $types_list 0 "" 0 "" 0 ""]} err]
+	set rt [catch {set results [apol_Search_FC_Index_DB 1 $types_list 0 "" 0 "" 0 "" 0 0 0]} err]
 	if {$rt != 0} {	
 		return -code error $err
 	} 
-	
+
 	set return_list ""
 	set sz [llength $results]
 	for {set i 0} {$i < $sz} {incr i} {
