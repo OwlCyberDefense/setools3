@@ -37,6 +37,7 @@ typedef struct sediff_app {
 	GtkWindow *window;		/* the main window */
 	GtkWindow *open_dlg;
 	GtkWidget *loading_dlg;
+	GtkWidget *dummy_view;
 	GladeXML *window_xml;
 	GladeXML *open_dlg_xml;
 	GtkWidget *tree_view;	
@@ -56,6 +57,8 @@ typedef struct sediff_app {
 	GtkTextBuffer *conditionals_buffer;
 	GString *p1_filename;
 	GString *p2_filename;
+	policy_t *policy1;
+	policy_t *policy2;
 	sediff_summary_t summary;
 } sediff_app_t;
 
