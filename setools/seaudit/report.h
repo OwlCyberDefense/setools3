@@ -26,6 +26,7 @@
 typedef struct seaudit_report {
 	bool_t stdin;
 	bool_t html;
+	bool_t use_stylesheet;
 	bool_t malformed;
 	char *configPath;
 	char *outFile;

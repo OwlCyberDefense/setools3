@@ -318,7 +318,7 @@ static int seaudit_report_import_html_stylesheet(seaudit_report_t *seaudit_repor
 	FILE *fp;
 	
 	assert(outfile != NULL);	
-	if (seaudit_report->stylesheet_file != NULL) {
+	if (seaudit_report->use_stylesheet && seaudit_report->stylesheet_file != NULL) {
 		fprintf(outfile, "<style type=\"text/css\">\n");
 		fp = fopen(seaudit_report->stylesheet_file, "r");
 		if (fp == NULL) {
