@@ -3,7 +3,7 @@ TOP-DOCS = INSTALL KNOWN-BUGS README
 INSTALL_DOCS = KNOWN-BUGS README apol/*.txt sepct/sepcut_help.txt \
 	       seuser/seuser_help.txt seaudit/seaudit_help.txt
 
-docs: apol-doc sepcut-doc seuser-doc seaudit-doc top-docs
+docs: apol-doc sepcut-doc seuser-doc seaudit-doc top-docs sediff-doc
 
 top-docs:
 	for file in $(TOP-DOCS); do \
