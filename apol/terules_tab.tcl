@@ -206,6 +206,20 @@ proc Apol_TE::search { str case_Insensitive regExpr srch_Direction } {
 	return 0
 }
 
+# ------------------------------------------------------------------------------
+#  Command Apol_TE::select_all_options
+# ------------------------------------------------------------------------------
+proc Apol_TE::select_all_options { } {
+	variable opts
+	set opts(teallow)	1
+	set opts(neverallow)	1
+	set opts(auallow)	1
+	set opts(audont)        1
+	set opts(ttrans)	1
+	set opts(tchange)	1
+	Apol_TE::on_rule_selection
+}
+
 proc Apol_TE::enable_disable_conditional_widgets {enable} {
 	variable show_enabled_rules
 	variable cb_show_enabled_rules
@@ -2373,15 +2387,15 @@ proc Apol_TE::createTypesAttribsTab {notebook_ta_tab} {
     set fm_comboBox [frame $fm_inner_ta.fm_inner_bottom -relief flat -borderwidth 1]
 
     pack $fm_src -side left -anchor nw -padx 2 -fill both -expand yes
-    pack $fm_top1 -side top -anchor w -fill x
-    pack $fm_bottom1 -side bottom -fill y -expand yes
+    pack $fm_top1 -side top -anchor w -fill both 
+    pack $fm_bottom1 -side bottom -fill both -expand yes
     pack $fm_inner -padx 5 -fill x
-    pack $fm_incl_cBox -fill x
+    pack $fm_incl_cBox -anchor nw
     pack $fm_src_radio_buttons -anchor center
-    pack $fm_inner_ta -pady 5
-    pack $fm_syntactic_1 -anchor nw -side bottom -fill x -expand yes
+    pack $fm_inner_ta -pady 5 -fill x -expand yes
+    pack $fm_syntactic_1 -anchor nw -side bottom  
     pack $fm_ta_buttons -side top -padx 5 
-    pack $fm_comboBox -side bottom -padx 5 -pady 5
+    pack $fm_comboBox -side bottom -padx 5 -pady 5 -fill x 
 
     # Search options section subframes used to group the widget items under the Target Type/Attrib section
     set fm_tgt [frame $notebook_ta_tab.ta2 -relief flat -borderwidth 1]
@@ -2397,15 +2411,15 @@ proc Apol_TE::createTypesAttribsTab {notebook_ta_tab} {
     set fm_comboBox2 [frame $fm_inner_ta2.fm_inner_bottom -relief flat -borderwidth 1]
 
     pack $fm_tgt -side left -anchor nw -padx 2 -fill both -expand yes
-    pack $fm_top2 -side top -fill x  
-    pack $fm_bottom2 -side bottom -fill y -expand yes
+    pack $fm_top2 -side top -anchor w -fill both  
+    pack $fm_bottom2 -side bottom -fill both -expand yes
     pack $fm_inner2 -padx 5 -fill x 
     pack $fm_incl_cBox2 -fill x -ipady 10.5
-    pack $fm_src_radio_buttons2 -anchor center -expand yes
-    pack $fm_inner_ta2 -pady 5 -anchor s -side top -expand yes
-    pack $fm_syntactic_2 -anchor nw -side bottom -fill x -expand yes
+    pack $fm_src_radio_buttons2 -anchor center 
+    pack $fm_inner_ta2 -pady 5 -anchor s -side top -fill x -expand yes
+    pack $fm_syntactic_2 -anchor nw -side bottom -fill x 
     pack $fm_ta_buttons2 -side top -padx 5 
-    pack $fm_comboBox2 -side bottom -padx 5 -pady 5
+    pack $fm_comboBox2 -side bottom -padx 5 -pady 5 -fill x 
 
     # Search options section subframes used to group the widget items under the Default Type section
     set fm_dflt [frame $notebook_ta_tab.ta3 -relief flat -borderwidth 1]
@@ -2421,15 +2435,15 @@ proc Apol_TE::createTypesAttribsTab {notebook_ta_tab} {
     set fm_comboBox3 [frame $fm_inner_ta3.fm_inner_bottom -relief flat -borderwidth 1]
 
     pack $fm_dflt -side left -anchor nw -padx 2 -fill both -expand yes
-    pack $fm_top3 -side top -fill x
-    pack $fm_bottom3 -side bottom -fill y -expand yes
+    pack $fm_top3 -side top -anchor w -fill both 
+    pack $fm_bottom3 -side bottom -fill both -expand yes
     pack $fm_inner3 -padx 5 -fill x 
     pack $fm_incl_cBox3 -fill x -ipady 10.5
-    pack $fm_src_radio_buttons3 -anchor center -expand yes -ipady 10.5
-    pack $fm_inner_ta3 -pady 5 -anchor s -side top -expand yes
-    pack $fm_syntactic_3 -anchor nw -side bottom -fill x -expand yes
+    pack $fm_src_radio_buttons3 -anchor center -ipady 10.5
+    pack $fm_inner_ta3 -pady 5 -anchor s -side top -fill x -expand yes
+    pack $fm_syntactic_3 -anchor nw -side bottom -fill x 
     pack $fm_ta_buttons3 -side top -padx 5 -ipady 10
-    pack $fm_comboBox3 -side bottom -padx 5 -pady 5 -expand yes -fill x
+    pack $fm_comboBox3 -side bottom -padx 5 -pady 5 -fill x
 
     # Widget items for Source Type/Attrib section          
     set source_list [ComboBox $fm_comboBox.cb \
@@ -2695,7 +2709,7 @@ proc Apol_TE::create {nb} {
     set bBox [frame $frame_search.bBox]
     
     # Placing major subframes
-    pack $bBox -side right -anchor ne -fill both -expand yes -padx 5
+    pack $bBox -side right -anchor ne -fill y -padx 5
     pack $obox -side right -anchor w -fill both -padx 5 -expand yes
     pack $other_opts_box -side bottom -anchor nw -fill both -padx 5 -expand yes
     pack $tbox -side top -anchor nw -fill both -padx 5 -expand yes
@@ -2706,6 +2720,7 @@ proc Apol_TE::create {nb} {
     set optsfm [frame $fm_rules.optsfm]
     set tefm [frame $optsfm.tefm]
     set ttfm [frame $optsfm.ttfm]
+    set buttonsfm [frame $optsfm.buttonsfm]
     set enabled_fm [frame [$other_opts_box getframe].enabled_fm]
     # Add button bar at bottom of results section for closing tabs.
     set bFrame [frame [$dbox getframe].bFrame -relief sunken -bd 1]
@@ -2731,6 +2746,9 @@ proc Apol_TE::create {nb} {
             -command "Apol_TE::on_rule_selection" ]
     set clone [checkbutton $ttfm.clone -text "clone" -variable Apol_TE::opts(clone) \
             -command "Apol_TE::on_rule_selection" ]
+            
+    set selectAll [Button $buttonsfm.selectAll -text "Select All"  \
+            -command {Apol_TE::select_all_options}]
     
     set cb_show_enabled_rules [checkbutton $enabled_fm.cb_show_enabled_rules -text "Only search for enabled rules" \
     		-variable Apol_TE::show_enabled_rules -onvalue 1 -offvalue 0 \
@@ -2789,7 +2807,8 @@ proc Apol_TE::create {nb} {
     pack $cb_show_enabled_rules $cb_tag_enabled_rules $cb_tag_disabled_rules -side top -anchor nw
     pack $teallow $neverallow $auallow $audont -anchor w 
     pack $ttrans $tchange -anchor w 
-    pack $tefm $ttfm -side left -anchor nw 
+    pack $selectAll -fill x -side left -anchor nw
+    pack $tefm $ttfm $buttonsfm -side left -anchor nw 
     pack $enabled_fm -side top -pady 6 -anchor nw -fill both 
     pack $optsfm -side top -fill x -expand yes -anchor nw
     
