@@ -14,6 +14,8 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <time.h>
+#include <pwd.h>
+#include <sys/types.h>
 #include <unistd.h>
 #include "seuser_db.h"
 
@@ -23,6 +25,7 @@
 
 /* assumed defines */
 #define MAKEFILE		"Makefile"
+
 /* With the Aug 2002 policy mgt patch, we use intall rather than
  * policy.conf as our "refresh" target.  This will make policy.conf
  * and install the changes to both intalled policy forms (policy.conf)
@@ -30,6 +33,13 @@
  */
 #define POLICY_CONF_TARGET	"install"
 #define INSTALL_TARGET		"load"
+
+static int free_conf_info (user_db_t *db);
+static int init_conf_info(user_db_t *db);
+static int call_make(const char *target, const char *output, const char * policy_dir);
+static int call_set_files_on_home_dir(const char *home_dir, user_db_t *db, const char *output_file);
+static int seuser_call_make_file_contexts(user_db_t *db, const char *output_file);
+static int seuser_get_user_home_dir(const char *user, char *home_dir);
 
 /* frees conf info in db  */
 static int free_conf_info (user_db_t *db)
@@ -39,6 +49,7 @@ static int free_conf_info (user_db_t *db)
 	if(db->policy_conf != NULL) free(db->policy_conf);
 	if(db->user_file != NULL) free(db->user_file);
 	if(db->policy_dir != NULL ) free(db->policy_dir); 
+	if(db->file_contexts_dir != NULL ) free(db->file_contexts_dir); 
 	if(db->config_dir != NULL) free(db->config_dir);
 	return 0;
 }
@@ -49,6 +60,7 @@ static int init_conf_info(user_db_t *db)
 	db->user_file = NULL;
 	db->policy_dir = NULL;
 	db->config_dir = NULL;
+	db->file_contexts_dir = NULL; 
 	db->conf_init = FALSE;
 	return 0;
 }
@@ -398,6 +410,130 @@ int seuser_add_change_user(bool_t new_user, const char *user,  char ** roles, in
 	return rt;
 }
 
+/* Function name: seuser_get_user_home_dir 
+ */
+static int seuser_get_user_home_dir(const char *user, char *home_dir)
+{
+	struct passwd *line = NULL;
+	
+	assert(user != NULL);	
+	while ((line = getpwent()) != NULL) {
+     		if (strncmp(line->pw_name, user, LINE_SZ) == 0) {
+			snprintf(home_dir, LINE_SZ, "%s", line->pw_dir);
+			break;
+     		}
+   	}   		
+   	endpwent();
+   	
+     	return 0;
+}
+
+/* Function name: seuser_call_make_file_contexts 
+ * Description: Re-makes the file_contexts/file_contexts file.
+ */
+static int seuser_call_make_file_contexts(user_db_t *db, const char *output_file)
+{
+	int rt; 
+	
+	/* Call make file_contexts/file_contexts to re-make the file_contexts file. */
+	rt = call_make(FILE_CONTEXTS_TARGET, output_file, db->policy_dir);	
+     	if(rt != 0) {
+     		return -1;
+     	} 
+     	return 0;
+}
+
+/* Function name: call_set_files_on_home_dir 
+ */
+static int call_set_files_on_home_dir(const char *home_dir, user_db_t *db, const char *output_file)
+{
+	char setfiles_str[LINE_SZ], fc_file_path[LINE_SZ];
+	int rt, end_idx;
+
+	assert(home_dir != NULL);
+	assert(output_file != NULL);
+	/* Make sure the last character has the ending '/' for a directory pathname */
+	end_idx = strlen(db->file_contexts_dir) - 1;
+	if (db->file_contexts_dir[end_idx] == '/') {		
+		snprintf(fc_file_path, LINE_SZ, "%s%s", db->file_contexts_dir, FC_FILE);
+	} else {		
+		snprintf(fc_file_path, LINE_SZ, "%s/%s", db->file_contexts_dir, FC_FILE);	
+	}
+	assert(fc_file_path != NULL);	
+  
+     	snprintf(setfiles_str, LINE_SZ, "%s %s %s > %s 2>&1", SETFILES_PROG, fc_file_path, home_dir, output_file);
+	
+     	rt = system(setfiles_str);	
+     	if(rt != 0) {
+     		fprintf(stderr, "Error: setfiles string: %s.\n", setfiles_str);
+     		return -1;
+     	} 
+	return 0;
+}
+
+/* return code definitions for seuser_label_home_dir(). */
+#define LIBSEUSER_LABEL_ERR_GENERAL		-1
+#define LIBSEUSER_LABEL_ERR_INVALID_USER	-2
+#define LIBSEUSER_LABEL_ERR_NO_HOME_DIR		-3
+
+/* Error TEXT definitions for decoding the above error definitions. */
+#define LIBSEUSER_LABEL_ERR_INVALID_USER_TEXT	"User is not defined in the policy.\n"
+#define LIBSEUSER_LABEL_ERR_NO_HOME_DIR_TEXT	"Home directory does not exist.\n"
+#define LIBSEUSER_LABEL_ERR_GENERAL_TEXT	"Error labeling user home directory.\n"
+
+/* returns an error string based on a return error from seuser_label_home_dir() */
+const char* seuser_decode_labeling_err(int err)
+{
+	switch(err) {
+	case LIBSEUSER_LABEL_ERR_INVALID_USER:
+		return LIBSEUSER_LABEL_ERR_INVALID_USER_TEXT;
+	case LIBSEUSER_LABEL_ERR_NO_HOME_DIR:
+		return LIBSEUSER_LABEL_ERR_NO_HOME_DIR_TEXT;
+	default:
+		return LIBSEUSER_LABEL_ERR_GENERAL_TEXT;
+	}
+}
+
+/* Function name: seuser_label_home_dir 
+ * Description: Labels the specified users home directory files with appropriate security contexts
+ *		from the selinux policys' file_contexts file. This function is to be called after 
+ *		the policy has reloaded successfully.
+ *		
+ * Arguments: 	user - username of home dir to label 	
+ */
+int seuser_label_home_dir(const char *user, user_db_t *db, policy_t *policy, const char *output_file)
+{
+	char home_dir[LINE_SZ];
+	int rt;
+	
+	if(!seuser_does_user_exist(user, db)) {
+		return LIBSEUSER_LABEL_ERR_INVALID_USER;
+	}
+		
+     	/* remake the file_contexts file */
+     	rt = seuser_call_make_file_contexts(db, output_file);
+     	if(rt != 0) {
+     		return -1;
+     	}
+     		
+	/* Get the users home directory */
+	rt = seuser_get_user_home_dir(user, home_dir);
+	if (rt != 0) {
+		fprintf(stderr, "Users home directory (%s) does not exist.\n", home_dir);
+		return LIBSEUSER_LABEL_ERR_NO_HOME_DIR;
+	}
+	
+	/* Given the home directory and specs file path as arguments, call setfiles 
+	 * to label the users home directory files appropriately. */
+	rt = call_set_files_on_home_dir(home_dir, db, output_file);	
+     	if(rt != 0) {
+     		/* error relabeling home dir files. */ 
+     		return -1;
+     	}  
+			
+	return 0;
+}
+
 /* write out the users file
  */
 int seuser_write_user_file(user_db_t *db, policy_t *policy)
@@ -517,14 +653,16 @@ int seuser_copy_user(const char *name, user_item_t **uitem, user_db_t *db)
 }
 
 #define	CONF_ERR_SUCCESS	"Success"
-#define CONF_ERR_FIND_CONFIG	"Could not find seuser config file"
-#define CONF_ERR_OPEN_CONFIG	"Could not open seuser config file"
-#define CONF_ERR_FIND_POLICY	"Could not find policy.config file"
-#define CONF_ERR_OPEN_POLICY	"Could not open policy.config file"
-#define CONF_ERR_OPEN_DIR	"Could not find policy directory"
-#define CONF_ERR_ACCESS_DIR	"Could not access policy directory"
-#define CONF_ERR_FIND_USER	"Could not find user file"
-#define CONF_ERR_ERROR		"Error reading conf file"
+#define CONF_ERR_FIND_CONFIG	"Could not find seuser config file\n"
+#define CONF_ERR_OPEN_CONFIG	"Could not open seuser config file\n"
+#define CONF_ERR_FIND_POLICY	"Could not find policy.config file\n"
+#define CONF_ERR_OPEN_POLICY	"Could not open policy.config file\n"
+#define CONF_ERR_OPEN_DIR	"Could not find policy directory\n"
+#define CONF_ERR_ACCESS_DIR	"Could not access policy directory\n"
+#define CONF_ERR_OPEN_FCONTEXT	"Could not access file_contexts directory\n"
+#define CONF_ERR_FIND_FCONTEXT	"Could not find file_contexts directory\n"
+#define CONF_ERR_FIND_USER	"Could not find user file\n"
+#define CONF_ERR_ERROR		"Error reading conf file\n"
 /* returns an error string based on a return error from seuser_read_conf_info() */
 const char* seuser_decode_read_conf_err(int err)
 {
@@ -545,6 +683,10 @@ const char* seuser_decode_read_conf_err(int err)
 		return CONF_ERR_ACCESS_DIR;
 	case 7:
 		return CONF_ERR_FIND_USER;
+	case 8:
+		return CONF_ERR_FIND_FCONTEXT;
+	case 9:
+		return CONF_ERR_OPEN_FCONTEXT;
 	default:
 		return CONF_ERR_ERROR;
 	}
@@ -639,6 +781,21 @@ int seuser_read_conf_info(user_db_t *db)
      	}
 	/* users file may not exist which is ok, so we won't check read access */  
 	
+	db->file_contexts_dir = get_config_var("file_contexts_dir", fp);
+	if(rt != 0) {
+		fclose(fp);
+		free_conf_info(db);
+		init_conf_info(db);
+		return 8;
+     	}
+	rt = access(db->file_contexts_dir, R_OK);
+	if(rt != 0) {
+		fclose(fp);
+		free_conf_info(db);
+		init_conf_info(db);
+		return 9;
+     	}  
+     	
 	db->conf_init = TRUE; 
 	fclose(fp);
 	return 0;
