@@ -25,7 +25,7 @@ sesearch: sesearch.o $(LIBAPOL)
 
 
 install: $(SE_CMDS)
-	install -m 755 $(SE_CMDS) $(BINDIR);
+	-install -m 755 $(SE_CMDS) $(BINDIR);
 
 %.o:  %.c 
 	$(CC) $(CFLAGS) $(INCLUDE) -c $<
