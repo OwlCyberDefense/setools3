@@ -38,8 +38,9 @@ enum seaudit_filter_parser_state_t {
 	       
 typedef struct seaudit_filter_parser_data {
 	seaudit_filter_t *filter;
-	enum seaudit_filter_parser_state_t state; /* parser state */
-	char **strs;    /* parser data */
+	enum seaudit_filter_parser_state_t state;
+	bool_t parsing_item;
+	char **strs; /* parser data */
 	int num_strs;
 } seaudit_filter_parser_data_t;
 
@@ -62,9 +63,6 @@ static void my_parse_characters(void *user_data, const xmlChar *ch, int len)
 {
 	seaudit_filter_parser_data_t *data = (seaudit_filter_parser_data_t *)user_data;
 
-	if (strncmp(ch, "\n", len) == 0)
-		return;
-
 	switch(data->state) {
 	case PARSING_NONE:
 		break;
@@ -80,6 +78,8 @@ static void my_parse_characters(void *user_data, const xmlChar *ch, int len)
 	case PARSING_NETIF:
 	case PARSING_IPADDR:
 	case PARSING_PORTS:
+		if (!data->parsing_item)
+			break;
 	case PARSING_DESC:
 		data->strs = (char**)realloc(data->strs, sizeof(char*)*((data->num_strs)+2));
 		data->strs[data->num_strs] = xmlURIUnescapeString(ch, len, NULL);
@@ -104,10 +104,15 @@ static void my_parse_endElement(void *user_data, const xmlChar *name)
 		return;
 	}
 
+	if (strcmp(name, "item") == 0) {
+		data->parsing_item = FALSE;
+		return;
+	}
+
 	if (strcmp(name, "criteria") == 0) {
 		switch (data->state) {
 		case PARSING_NONE:
-		case PARSING_DESC:
+		case PARSING_DESC: /* should never get here */
 			break;
 		case PARSING_SRC_TYPES:
 			data->filter->src_type_criteria = src_type_criteria_create(data->strs, data->num_strs);
@@ -234,7 +239,10 @@ static void my_parse_startElement(void *user_data, const xmlChar *name, const xm
 			data->state = PARSING_PORTS;
 		else
 			data->state = PARSING_NONE;
-        }
+
+        } else if (strcmp(name, "item") == 0) {
+		data->parsing_item = TRUE;
+	}
 }
 
 seaudit_filter_t* seaudit_filter_create(void)
@@ -383,30 +391,30 @@ int seaudit_filter_save_to_file(seaudit_filter_t *filter, const char *filename)
 	fprintf(file, "<structure xmlns=\"http://www.tresys.com/setools/seaudit/%s/\">\n", 
 		LIBSEAUDIT_VERSION_STRING);
 	escaped = xmlURIEscapeStr(filter->name, NULL);
-	fprintf(file, "<filter name=\"%s\" match=\"%s\">\n", escaped, 
+	fprintf(file, "\t<filter name=\"%s\" match=\"%s\">\n", escaped, 
 		filter->match == SEAUDIT_FILTER_MATCH_ALL? "all" : "any");
 	free(escaped);
 
 	if (filter->desc) {
 		escaped = xmlURIEscapeStr(filter->desc, NULL);
-		fprintf(file, "<desc>%s</desc>\n", escaped);
+		fprintf(file, "\t\t<desc>%s</desc>\n", escaped);
 		free(escaped);
 	}
 
-	seaudit_criteria_print(filter->src_type_criteria, file);
-	seaudit_criteria_print(filter->tgt_type_criteria, file);
-	seaudit_criteria_print(filter->src_user_criteria, file);
-	seaudit_criteria_print(filter->tgt_user_criteria, file);
-	seaudit_criteria_print(filter->src_role_criteria, file);
-	seaudit_criteria_print(filter->tgt_role_criteria, file);
-	seaudit_criteria_print(filter->class_criteria, file);
-	seaudit_criteria_print(filter->exe_criteria, file);
-	seaudit_criteria_print(filter->path_criteria, file);
-	seaudit_criteria_print(filter->netif_criteria, file);
-	seaudit_criteria_print(filter->ipaddr_criteria, file);
-	seaudit_criteria_print(filter->ports_criteria, file);
+	seaudit_criteria_print(filter->src_type_criteria, file, 2);
+	seaudit_criteria_print(filter->tgt_type_criteria, file, 2);
+	seaudit_criteria_print(filter->src_user_criteria, file, 2);
+	seaudit_criteria_print(filter->tgt_user_criteria, file, 2);
+	seaudit_criteria_print(filter->src_role_criteria, file, 2);
+	seaudit_criteria_print(filter->tgt_role_criteria, file, 2);
+	seaudit_criteria_print(filter->class_criteria, file, 2);
+	seaudit_criteria_print(filter->exe_criteria, file, 2);
+	seaudit_criteria_print(filter->path_criteria, file, 2);
+	seaudit_criteria_print(filter->netif_criteria, file, 2);
+	seaudit_criteria_print(filter->ipaddr_criteria, file, 2);
+	seaudit_criteria_print(filter->ports_criteria, file, 2);
 
-	fprintf(file, "</filter>\n</structure>\n");
+	fprintf(file, "\t</filter>\n</structure>\n");
 	fclose(file);	
 	return 0;
 

@@ -102,18 +102,27 @@ static bool_t netif_criteria_action(msg_t *msg, seaudit_criteria_t *criteria, au
 	return strcmp(netif_criteria->netif, msg->msg_data.avc_msg->netif) == 0 ? TRUE : FALSE;
 }
 
-static void netif_criteria_print(seaudit_criteria_t *criteria, FILE *stream)
+static void netif_criteria_print(seaudit_criteria_t *criteria, FILE *stream, int tabs)
 {
 	netif_criteria_t *netif_criteria;
 	xmlChar *escaped;
+	int i;
 
 	if (criteria == NULL || criteria->data == NULL || stream == NULL)
 		return;
 
 	netif_criteria = (netif_criteria_t*)criteria->data;
+	if (tabs < 0) 
+		tabs = 0;
+	for (i = 0; i < tabs; i++)
+		fprintf(stream, "\t");
 	escaped = xmlURIEscapeStr(netif_criteria->netif, NULL);
 	fprintf(stream, "<criteria type=\"netif\">\n");
+	for (i = 0; i < tabs+1; i++)
+		fprintf(stream, "\t");
 	fprintf(stream, "<item>%s</item>\n", escaped);
+	for (i = 0; i < tabs; i++)
+		fprintf(stream, "\t");
 	fprintf(stream, "</criteria>\n");
 	free(escaped);
 }
@@ -139,16 +148,25 @@ static bool_t ports_criteria_action(msg_t *msg, seaudit_criteria_t *criteria, au
 	return FALSE;
 }
 
-static void ports_criteria_print(seaudit_criteria_t *criteria, FILE *stream)
+static void ports_criteria_print(seaudit_criteria_t *criteria, FILE *stream, int tabs)
 {
 	ports_criteria_t *ports_criteria;
+	int i;
 
 	if (criteria == NULL || criteria->data == NULL || stream == NULL)
 		return;
 
+	if (tabs < 0)
+		tabs = 0;
 	ports_criteria = (ports_criteria_t*)criteria->data;
+	for (i = 0; i < tabs; i++)
+		fprintf(stream, "\t");
 	fprintf(stream, "<criteria type=\"port\">\n");
+	for (i = 0; i < tabs+1; i++)
+		fprintf(stream, "\t");
 	fprintf(stream, "<item>%d</item>\n", ports_criteria->val);
+	for (i = 0; i < tabs; i++)
+		fprintf(stream, "\t");
 	fprintf(stream, "</criteria>\n");
 }
 
@@ -177,18 +195,27 @@ static bool_t ipaddr_criteria_action(msg_t *msg, seaudit_criteria_t *criteria, a
 	return FALSE;
 }
 
-static void ipaddr_criteria_print(seaudit_criteria_t *criteria, FILE *stream)
+static void ipaddr_criteria_print(seaudit_criteria_t *criteria, FILE *stream, int tabs)
 {
 	ipaddr_criteria_t *ipaddr_criteria;
 	xmlChar *escaped;
+	int i;
 
 	if (criteria == NULL || criteria->data == NULL || stream == NULL)
 		return;
 
+	if (tabs < 0)
+		tabs = 0;
 	ipaddr_criteria = (ipaddr_criteria_t*)criteria->data;
 	escaped = xmlURIEscapeStr(ipaddr_criteria->globex, NULL);
+	for (i = 0; i < tabs; i++)
+		fprintf(stream, "\t");
 	fprintf(stream, "<criteria type=\"ipaddr\">\n");
+	for (i = 0; i < tabs+1; i++)
+		fprintf(stream, "\t");
 	fprintf(stream, "<item>%s</item>\n", escaped);
+	for (i = 0; i < tabs; i++)
+		fprintf(stream, "\t");
 	fprintf(stream, "</criteria>\n");
 	free(escaped);
 }
@@ -208,18 +235,25 @@ static bool_t exe_criteria_action(msg_t *msg, seaudit_criteria_t *criteria, audi
 	return FALSE;
 } 
 
-static void exe_criteria_print(seaudit_criteria_t *criteria, FILE *stream)
+static void exe_criteria_print(seaudit_criteria_t *criteria, FILE *stream, int tabs)
 {
 	exe_criteria_t *exe_criteria;
 	xmlChar *escaped;
+	int i;
 
 	if (criteria == NULL || criteria->data == NULL || stream == NULL)
 		return;
 
 	exe_criteria = (exe_criteria_t*)criteria->data;
 	escaped = xmlURIEscapeStr(exe_criteria->globex, NULL);
+	for (i = 0; i < tabs; i++)
+		fprintf(stream, "\t");
 	fprintf(stream, "<criteria type=\"exe\">\n");
+	for (i = 0; i < tabs+1; i++)
+		fprintf(stream, "\t");
 	fprintf(stream, "<item>%s</item>\n", escaped);
+	for (i = 0; i < tabs; i++)
+		fprintf(stream, "\t");
 	fprintf(stream, "</criteria>\n");
 	free(escaped);
 }
@@ -239,18 +273,25 @@ static bool_t path_criteria_action(msg_t *msg, seaudit_criteria_t *criteria, aud
 	return FALSE;
 } 
 
-static void path_criteria_print(seaudit_criteria_t *criteria, FILE *stream)
+static void path_criteria_print(seaudit_criteria_t *criteria, FILE *stream, int tabs)
 {
 	path_criteria_t *path_criteria;
 	xmlChar *escaped;
+	int i;
 
 	if (criteria == NULL || criteria->data == NULL || stream == NULL)
 		return;
 
 	path_criteria = (path_criteria_t*)criteria->data;
 	escaped = xmlURIEscapeStr(path_criteria->globex, NULL);
+	for (i = 0; i < tabs; i++)
+		fprintf(stream, "\t");
 	fprintf(stream, "<criteria type=\"path\">\n");
+	for (i = 0; i < tabs+1; i++)
+		fprintf(stream, "\t");
 	fprintf(stream, "<item>%s</item>\n", escaped);
+	for (i = 0; i < tabs; i++)
+		fprintf(stream, "\t");
 	fprintf(stream, "</criteria>\n");
 	free(escaped);
 }
@@ -283,30 +324,37 @@ static bool_t src_user_criteria_action(msg_t *msg, seaudit_criteria_t *criteria,
 	return FALSE;
 }
 
-static void strs_criteria_print(strs_criteria_t *strs_criteria, FILE *stream)
+static void strs_criteria_print(strs_criteria_t *strs_criteria, FILE *stream, int tabs)
 {
-	int i;
+	int i, j;
 	xmlChar *escaped;
 
 	if (!strs_criteria)
 		return;
 	for (i = 0; i < strs_criteria->num_strs; i++) {
 		escaped = xmlURIEscapeStr(strs_criteria->strs[i], NULL);
+		for (j = 0; j < tabs; j++)
+			fprintf(stream, "\t");
 		fprintf(stream, "<item>%s</item>\n", escaped);
 		free(escaped);
 	}
 }
 
-static void src_user_criteria_print(seaudit_criteria_t *criteria, FILE *stream)
+static void src_user_criteria_print(seaudit_criteria_t *criteria, FILE *stream, int tabs)
 {
 	user_criteria_t *user_criteria;
+	int i;
 
 	if (criteria == NULL || criteria->data == NULL || stream == NULL)
 		return;
 
 	user_criteria = (user_criteria_t*)criteria->data;
+	for (i = 0; i < tabs; i++)
+		fprintf(stream, "\t");
 	fprintf(stream, "<criteria type=\"src_user\">\n");
-	strs_criteria_print(user_criteria, stream);
+	strs_criteria_print(user_criteria, stream, tabs+1);
+	for (i = 0; i < tabs; i++)
+		fprintf(stream, "\t");
 	fprintf(stream, "</criteria>\n");
 }
 
@@ -338,16 +386,21 @@ static bool_t tgt_user_criteria_action(msg_t *msg, seaudit_criteria_t *criteria,
 	return FALSE;
 }
 
-static void tgt_user_criteria_print(seaudit_criteria_t *criteria, FILE *stream)
+static void tgt_user_criteria_print(seaudit_criteria_t *criteria, FILE *stream, int tabs)
 {
 	user_criteria_t *user_criteria;
+	int i;
 
 	if (criteria == NULL || criteria->data == NULL || stream == NULL)
 		return;
 
 	user_criteria = (user_criteria_t*)criteria->data;
+	for (i = 0; i < tabs; i++)
+		fprintf(stream, "\t");
 	fprintf(stream, "<criteria type=\"tgt_user\">\n");
-	strs_criteria_print(user_criteria, stream);
+	strs_criteria_print(user_criteria, stream, tabs+1);
+	for (i = 0; i < tabs; i++)
+		fprintf(stream, "\t");
 	fprintf(stream, "</criteria>\n");
 }
 
@@ -379,16 +432,21 @@ static bool_t src_role_criteria_action(msg_t *msg, seaudit_criteria_t *criteria,
 	return FALSE;
 }
 
-static void src_role_criteria_print(seaudit_criteria_t *criteria, FILE *stream)
+static void src_role_criteria_print(seaudit_criteria_t *criteria, FILE *stream, int tabs)
 {
 	role_criteria_t *role_criteria;
+	int i;
 
 	if (criteria == NULL || criteria->data == NULL || stream == NULL)
 		return;
 
 	role_criteria = (role_criteria_t*)criteria->data;
+	for (i = 0; i < tabs; i++)
+		fprintf(stream, "\t");
 	fprintf(stream, "<criteria type=\"src_role\">\n");
-	strs_criteria_print(role_criteria, stream);
+	strs_criteria_print(role_criteria, stream, tabs+1);
+	for (i = 0; i < tabs; i++)
+		fprintf(stream, "\t");
 	fprintf(stream, "</criteria>\n");
 }
 
@@ -420,16 +478,21 @@ static bool_t tgt_role_criteria_action(msg_t *msg, seaudit_criteria_t *criteria,
 	return FALSE;
 }
 
-static void tgt_role_criteria_print(seaudit_criteria_t *criteria, FILE *stream)
+static void tgt_role_criteria_print(seaudit_criteria_t *criteria, FILE *stream, int tabs)
 {
 	role_criteria_t *role_criteria;
+	int i;
 
 	if (criteria == NULL || criteria->data == NULL || stream == NULL)
 		return;
 
 	role_criteria = (role_criteria_t*)criteria->data;
+	for (i = 0; i < tabs; i++)
+		fprintf(stream, "\t");
 	fprintf(stream, "<criteria type=\"tgt_role\">\n");
-	strs_criteria_print(role_criteria, stream);
+	strs_criteria_print(role_criteria, stream, tabs+1);
+	for (i = 0; i < tabs; i++)
+		fprintf(stream, "\t");
 	fprintf(stream, "</criteria>\n");
 }
 
@@ -461,16 +524,21 @@ static bool_t src_type_criteria_action(msg_t *msg, seaudit_criteria_t *criteria,
 	return FALSE;
 }
 
-static void src_type_criteria_print(seaudit_criteria_t *criteria, FILE *stream)
+static void src_type_criteria_print(seaudit_criteria_t *criteria, FILE *stream, int tabs)
 {
 	type_criteria_t *type_criteria;
+	int i;
 
 	if (criteria == NULL || criteria->data == NULL || stream == NULL)
 		return;
 
 	type_criteria = (type_criteria_t*)criteria->data;
+	for (i = 0; i < tabs; i++)
+		fprintf(stream, "\t");
 	fprintf(stream, "<criteria type=\"src_type\">\n");
-	strs_criteria_print(type_criteria, stream);
+	strs_criteria_print(type_criteria, stream, tabs+1);
+	for (i = 0; i < tabs; i++)
+		fprintf(stream, "\t");
 	fprintf(stream, "</criteria>\n");
 }
 
@@ -502,16 +570,21 @@ static bool_t tgt_type_criteria_action(msg_t *msg, seaudit_criteria_t *criteria,
 	return FALSE;
 }
 
-static void tgt_type_criteria_print(seaudit_criteria_t *criteria, FILE *stream)
+static void tgt_type_criteria_print(seaudit_criteria_t *criteria, FILE *stream, int tabs)
 {
 	type_criteria_t *type_criteria;
+	int i;
 
 	if (criteria == NULL || criteria->data == NULL || stream == NULL)
 		return;
 
 	type_criteria = (type_criteria_t*)criteria->data;
+	for (i = 0; i < tabs; i++)
+		fprintf(stream, "\t");
 	fprintf(stream, "<criteria type=\"tgt_type\">\n");
-	strs_criteria_print(type_criteria, stream);
+	strs_criteria_print(type_criteria, stream, tabs+1);
+	for (i = 0; i < tabs; i++)
+		fprintf(stream, "\t");
 	fprintf(stream, "</criteria>\n");
 }
 
@@ -543,16 +616,21 @@ static bool_t class_criteria_action(msg_t *msg, seaudit_criteria_t *criteria, au
 	return FALSE;	
 } 
 
-static void class_criteria_print(seaudit_criteria_t *criteria, FILE *stream)
+static void class_criteria_print(seaudit_criteria_t *criteria, FILE *stream, int tabs)
 {
 	class_criteria_t *class_criteria;
+	int i;
 
 	if (criteria == NULL || criteria->data == NULL || stream == NULL)
 		return;
 
 	class_criteria = (class_criteria_t*)criteria->data;
+	for (i = 0; i < tabs; i++)
+		fprintf(stream, "\t");
 	fprintf(stream, "<criteria type=\"obj_class\">\n");
-	strs_criteria_print(class_criteria, stream);
+	strs_criteria_print(class_criteria, stream, tabs+1);
+	for (i = 0; i < tabs; i++)
+		fprintf(stream, "\t");
 	fprintf(stream, "</criteria>\n");
 }
 
@@ -582,12 +660,12 @@ void seaudit_criteria_destroy(seaudit_criteria_t *ftr)
 }
 
 
-void seaudit_criteria_print(seaudit_criteria_t *criteria, FILE *stream)
+void seaudit_criteria_print(seaudit_criteria_t *criteria, FILE *stream, int tabs)
 {
 	if (!criteria || !stream)
 		return;
 	if (criteria->print)
-		criteria->print(criteria, stream);
+		criteria->print(criteria, stream, tabs);
 
 }
 
