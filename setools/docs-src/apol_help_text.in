@@ -17,7 +17,7 @@ APOL_GUI_VERSION This version of apol allows you to:
 	analyses, direct information flow analysis, and transitive 
 	(indirect) information flow analysis.
 
-New in this version is support for binary policies. This allows you to 
+This version also supports binary policies. This allows you to 
 load either a binary or source policy and use all of the features of 
 Apol as appropriate. Some features are incompatible with binary policies 
 (notably attributes, initial SIDs and the policy.conf display), so those 
