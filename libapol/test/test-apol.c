@@ -22,6 +22,7 @@
 #include "../render.h"
 #include "../perm-map.h"
 #include "../policy-io.h"
+#include "../policy-query.h"
 
 FILE *outfile;
 char *policy_file = NULL;
@@ -522,6 +523,7 @@ int menu() {
 	printf("6)  display initial SIDs and contexts\n");
         printf("7)  display policy booleans and expressions\n");
 	printf("8)  set the value of a boolean\n");
+	printf("9)  search for conditional expressions\n");
 	printf("\n");
 	printf("r)  re-load policy with options\n");
 	printf("s)  display policy statics\n");
@@ -948,9 +950,60 @@ int main(int argc, char *argv[])
 				fprintf(stderr, "Invalid response\n");
 				break;
 			}
-			if (set_cond_bool_val(bool_idx, bool_val, policy) != 0)
+			if (set_cond_bool_val(bool_idx, bool_val, policy) != 0) {
 				fprintf(stderr, "Error setting boolean\n");
+				break;
+			}
+			if (update_cond_expr_items(policy) != 0)
+				fprintf(stderr, "Error updating conditional expressions\n");
 				
+			break;
+		}
+		case '9':
+		{
+			bool_t regex, *exprs_b;
+			char *error_msg;
+			int i;
+			
+			printf("use regex [y|N]: ");
+			fgets(ans, sizeof(ans), stdin);
+			fix_string(ans, sizeof(ans));
+			if (ans[0] == 'y')
+				regex = TRUE;
+			else
+				regex = FALSE;
+			
+			printf("boolean name: ");
+			fgets(ans, sizeof(ans), stdin);
+			fix_string(ans, sizeof(ans));
+			
+			exprs_b = (bool_t*)malloc(sizeof(bool_t) * policy->num_cond_exprs);
+			if (!exprs_b) {
+				fprintf(stderr, "Memory error\n");
+				break;
+			}
+			memset(exprs_b, FALSE, sizeof(bool_t) * policy->num_cond_exprs);
+			
+			if (search_conditional_expressions(ans, regex, exprs_b, &error_msg, policy) != 0) {
+				fprintf(stderr, "Error searching conditional expressions: %s\n", error_msg);
+				free(error_msg);
+				break;
+			}
+			
+			fprintf(outfile, "Found the following expressions:\n");
+			for (i = 0; i < policy->num_cond_exprs; i++) {
+				if (exprs_b[i]) {
+					fprintf(outfile, "\nconditional expression %d: [ ", i);
+					test_print_expr(policy->cond_exprs[i].expr, policy);
+					fprintf(outfile, "]\n");
+					fprintf(outfile, "TRUE list:\n");
+					test_print_cond_list(policy->cond_exprs[i].true_list, policy);
+					fprintf(outfile, "FALSE list:\n");
+					test_print_cond_list(policy->cond_exprs[i].false_list, policy);
+				}
+			}
+			free(exprs_b);
+			
 			break;
 		}
 		case 'f':
