@@ -15,7 +15,7 @@ namespace eval ApolTop {
 	variable filename 		""
 	variable policyConf_lineno	""
 	variable polstats 		""
-	variable gui_ver 		"1.1.1-WORKING" 
+	variable gui_ver 		"1.2" 
 	variable copyright_date		"2001-2004"
 	variable recent_files
 	variable num_recent_files 	0
