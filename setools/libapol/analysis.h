@@ -177,8 +177,8 @@ typedef struct types_relation_results {
 	int *other_tt_rules_results;
 	int num_process_inter_rules;
 	int *process_inter_results;
-	types_relation_type_access_pool_t typeA_access_pool;
-	types_relation_type_access_pool_t typeB_access_pool;
+	types_relation_type_access_pool_t *typeA_access_pool;
+	types_relation_type_access_pool_t *typeB_access_pool;
 	types_relation_obj_access_t *common_obj_types_results;
 	types_relation_obj_access_t *unique_obj_types_results;
 } types_relation_results_t;
