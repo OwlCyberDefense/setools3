@@ -234,6 +234,7 @@ proc Apol_TE::enable_disable_tag_disabled_rules_cb {} {
     	variable cb_tag_disabled_rules
    		
 	if {$show_enabled_rules} {
+		$cb_tag_disabled_rules deselect
 		$cb_tag_disabled_rules configure -state disabled
 	} else {
 		$cb_tag_disabled_rules configure -state normal
@@ -530,7 +531,7 @@ proc Apol_TE::insertTERules { tb results } {
 		set end_line_pos [$tb index insert]
 		
 		# The next element should be the conditional and enabled boolean flags.
-		if {$is_conditional >= 0} {
+		if {$is_conditional} {
 			incr num_cond
 			if {!$enabled} {
 				incr num_disabled
