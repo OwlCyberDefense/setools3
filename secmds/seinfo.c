@@ -62,7 +62,9 @@ Print requested information about an SELinux policy.\n\
   -a[NAME], --attribs[=NAME] print a list of type attributes\n\
   -r[NAME], --roles[=NAME]   print a list of roles\n\
   -u[NAME], --users[=NAME]   print a list of users\n\
-  -i[NAME], --initialsid[=NAME] print a list of initial SIDs\n\
+  -i[NAME], --initialsid[=NAME] print a list of initial SIDs\
+ ", stdout);
+	fputs("\n\
   -A, --all                  print all of the above\n\
   -x, --expand               show additional info for -ctaruiA\n\
   -s, --stats                print useful policy statics\n\
