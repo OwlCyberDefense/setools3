@@ -422,9 +422,8 @@ cond_expr_prim          : identifier
                         { $$ = define_cond_expr(COND_BOOL, NULL, NULL);
 			  if ($$ == NULL) return -1; }
                         ;
-cond_pol_list           : cond_rule_def
-                        { $$ = define_cond_pol_list((cond_rule_list_t*)NULL, (rule_desc_t*)$1);
-			  if ($$ == 0) return -1; }
+cond_pol_list           : /* empty */
+                        { $$ = (cond_rule_list_t*)NULL; }
                         | cond_pol_list cond_rule_def 
                         { $$ = define_cond_pol_list((cond_rule_list_t*)$1, (rule_desc_t*)$2);
 			  if ($$ == 0) return -1; }
