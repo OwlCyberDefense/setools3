@@ -1668,7 +1668,7 @@ av_item_t *add_new_av_rule(int rule_type, policy_t *policy)
 	
 	if (*num >= *sz) {
 		/* grow the dynamic array */
-		av_item_t * ptr;		
+		av_item_t *ptr;		
 		ptr = (av_item_t *)realloc(*rlist, (LIST_SZ + *sz) * sizeof(av_item_t));
 		if(ptr == NULL) {
 			fprintf(stderr,"out of memory\n");
@@ -1702,16 +1702,15 @@ tt_item_t *add_new_tt_rule(int rule_type, policy_t *policy)
 		sz = &(policy->list_sz[POL_LIST_TE_TRANS]);
 		num = &(policy->num_te_trans);
 		rlist = &(policy->te_trans);
-	}
-	else
+	} else
 		return NULL;
 	
 	if (*num >= *sz) {
 		/* grow the dynamic array */
-		tt_item_t * ptr;		
+		tt_item_t *ptr;		
 		ptr = (tt_item_t *)realloc(*rlist, (LIST_SZ + *sz) * sizeof(tt_item_t));
 		if(ptr == NULL) {
-			fprintf(stderr,"out of memory\n");
+			fprintf(stderr, "out of memory\n");
 			return NULL;
 		}
 		*rlist = ptr;
