@@ -418,7 +418,7 @@ static int apol_add_domain_to_result(relabel_result_t *res, int domain, int *typ
 				return -1;
 			if (res->domains) {
 				res->domains = (int**)realloc(res->domains, res->num_types * sizeof(int*));
-				if (!res->doamins)
+				if (!res->domains)
 					return -1;
 				res->domains[res->num_types - 1] = NULL;
 			} else {
@@ -428,7 +428,7 @@ static int apol_add_domain_to_result(relabel_result_t *res, int domain, int *typ
 			}
 			where = res->num_types - 1;
 		}
-		retv = add_i_to_a(domain, $(res->num_domains[where]), &(res->domains[where]));
+		retv = add_i_to_a(domain, &(res->num_domains[where]), &(res->domains[where]));
 		if (retv) 
 			return -1;
 		
