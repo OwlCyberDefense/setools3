@@ -237,6 +237,7 @@ int sefs_search_path(sefs_filesystem_data_t * fsd, char * path, uint32_t** list,
 
 	}
 	
+	free(*list);
 	*list = *new_list;
 	*list_size = new_list_size;
 	return !(*list_size);
@@ -283,6 +284,7 @@ int sefs_search_user(sefs_filesystem_data_t * fsd, char * uname, uint32_t** list
 		}
 	}
 
+	free(*list);
 	*list = *new_list;
 	*list_size = new_list_size;
 	return !(*list_size);
@@ -327,6 +329,7 @@ int sefs_search_object_class(sefs_filesystem_data_t * fsd, int object, uint32_t*
 		}
 	}
 
+	free(*list);
 	*list = *new_list;
 	*list_size = new_list_size;	
 	return !(*list_size);
