@@ -84,11 +84,13 @@ int main(int argc, char **argv, char **envp)
 	}
 	
 	if (sefs_filesystem_db_populate(&fsdata,dir) == -1) {
-		fprintf(stderr, "fsdata_init failed\n");
+		fprintf(stderr, "Error populating database.\n");
 		return -1;
 	}
 	if (sefs_filesystem_db_save(&fsdata, outfilename) != 0) {
-		fprintf(stderr, "Error writing path database\n");
+		/* Make sure the database is closed and memory freed. */
+		sefs_filesystem_db_close(&fsdata);
+		fprintf(stderr, "Error creating index file.\n");
 		return -1;
 	}
 	sefs_filesystem_db_close(&fsdata);
