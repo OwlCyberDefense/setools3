@@ -45,7 +45,7 @@ install: install-libapol-shared install-libapol-static
 ../lib:
 	mkdir -p $@
 clean:
-	rm -f *.o seaudit *~ core*
+	rm -f *.o seaudit *~ core* $(LOBJS)
 
 bare: clean
 	rm -f ../lib/libseaudit.a ../lib/$(LIBSO)
