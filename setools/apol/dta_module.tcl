@@ -2082,7 +2082,7 @@ proc Apol_Analysis_dta::do_child_analysis { dta_tree selected_node } {
 			[lindex $query_args 4] \
 			[lindex $query_args 5] \
 			[lindex $query_args 6] \
-			[lindex $query_args 7]} err]
+			[lindex $query_args 7]]} err]
 			
 	     	if {$rt != 0} {	
 			tk_messageBox -icon error -type ok -title "Error" -message $err
