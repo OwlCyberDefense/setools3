@@ -320,6 +320,7 @@ typedef struct alias_item {
 #define	POL_VER_16		4	/* conditional policy extensions */
 #define POL_VER_COND		4	/* same */
 #define POL_VER_17		5
+#define POL_VER_18		6
 #define	POL_VER_MAX		6
 
 /* Policy type macros */
@@ -456,7 +457,6 @@ int get_obj_class_nth_perm_idx(int cls_idx, int n, policy_t *policy);
 	policy->common_perms[idx].num_perms : -1)
 #define num_perms(policy) (policy != NULL ? policy->num_perms : -1)
 #define num_common_perms(policy) (policy != NULL ? policy->num_common_perms : -1)
-
 
 bool_t is_valid_perm_for_obj_class(policy_t *policy, int class, int perm);
 int get_common_perm_name(int idx, char **name, policy_t *policy);

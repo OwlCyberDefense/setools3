@@ -329,6 +329,8 @@ int close_policy(policy_t *policy)
 
 static int read_policy(policy_t *policy)
 {
+	int rt;
+	
 	policy->policy_type = POL_TYPE_SOURCE;
 	/*yydebug = 1; */
 	parse_policy = policy; /* setting the parser's global parse policy */
@@ -368,6 +370,18 @@ static int read_policy(policy_t *policy)
 	}
 		
 	queue_destroy(id_queue);
+	/* Kludge; now check for policy version 18 but special permission defined (i.e., if
+	 * nlmsg_write or nlmsg_write are defined as permissions, than the version is at least
+	 * 18.  No where else do we check for version 18 in source policies! */
+	#define OPEN_PERM_CHECK_18 "nlmsg_write"
+	rt = get_perm_idx(OPEN_PERM_CHECK_18, policy);
+	if(rt >= 0) { /* permission does exists; at least a version 18 policy */
+		rt = set_policy_version(POL_VER_18, policy);
+		if(rt < 0) {
+			fprintf(stderr, "error setting policy version to version 18.\n");
+			return -1;
+		}
+	}
 	return 0;		
 }
 
