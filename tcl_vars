@@ -6,7 +6,7 @@
 # 		used by Tcl/Tk. Used by the setools top-level
 #		makefile. Current variables extracted are:
 #
-#			$tcl_version, $tcl_pkgPath
+#			$tcl_version
 #
 # Copyright (C) 2004 Tresys Technology, LLC
 # see file 'COPYING' for use and warranty information 
