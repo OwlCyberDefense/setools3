@@ -371,7 +371,7 @@ static int apol_add_perm_to_set_member(relabel_set_t *set, int type_idx, int obj
 
 static int apol_add_domain_to_result(relabel_result_t *res, int domain, int *types, int num_types)
 {
-	int i, retv, where;
+	int i, retv, where, loc;
 
 	if (!res || !types) 
 		return -1;
@@ -405,10 +405,12 @@ static int apol_add_domain_to_result(relabel_result_t *res, int domain, int *typ
 			}
 			where = res->num_types - 1;
 		}
-		retv = add_i_to_a(domain, &(res->num_subjects[where]), &(res->subjects[where]));
-		if (retv) 
-			return -1;
-		
+		loc = find_int_in_array(domain, res->subjects[where], res->num_subjects[where]);
+		if (loc == -1) {
+			retv = add_i_to_a(domain, &(res->num_subjects[where]), &(res->subjects[where]));
+			if (retv) 
+				return -1;
+		}
 	}
 
 	return 0;
