@@ -59,7 +59,7 @@ namespace eval Apol_Analysis_fulflow {
 	
 	# Advanced filter dialog widget
 	variable advanced_filter_Dlg
-	set advanced_filter_Dlg .advanced_filter_Dlg
+	set advanced_filter_Dlg .apol_fulflow_advanced_filter_Dlg
 	
 	# Find more paths variables
 	variable time_limit_hr	"0"
