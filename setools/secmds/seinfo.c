@@ -27,7 +27,7 @@
 
 #define COPYRIGHT_INFO "Copyright (C) 2003-2004 Tresys Technology, LLC"
 
-char policy_file[BUF_SZ];
+char *policy_file = NULL;
 
 static struct option const longopts[] =
 {
@@ -38,7 +38,7 @@ static struct option const longopts[] =
   {"users", optional_argument, NULL, 'u'},
   {"booleans", optional_argument, NULL, 'b'},
   {"initialsids", optional_argument, NULL, 'i'},
-  {"defaultto", required_argument, NULL, 'd'},
+  {"policytype", required_argument, NULL, '0'},
   {"stats", no_argument, NULL, 's'},
   {"all", no_argument, NULL, 'A'},
   {"expand", no_argument, NULL, 'x'},
@@ -68,21 +68,23 @@ Print requested information about an SELinux policy.\n\
   -x, --expand               show additional info for -ctarbuiA\n\
   -s, --stats                print useful policy statics\n\
 ", stdout);
-fputs("\n\  
-  -d[POLICYTYPE], --defaultto[=POLICYTYPE] \n\
+fputs("\n\
+  --policytype[=POLICYTYPE]\n\
   			     default to policy type (POLICYTYPE=source|binary)\n\
   -h, --help                 display this help and exit\n\
   -v, --version              output version information and exit\n\
 ", stdout);
-  	fputs("\n\
+fputs("\n\
 For -ctarui, if NAME is provided, then only show info for NAME.\n\
  Specifying a name is most useful when used with the -x option.\n\
  If no option is provided, display useful policy statics (-s).\n\n\
-for -d, if no POLICY_FILE is provided, seinfo will attempt to use the \n\
-specified system default policy type. Without the -d option, if no \n\
-POLICY_FILE is provided, seinfo will attempt to use the installed \n\
-binary policy and if this cannot be found, it will attempt to \n\
-use the default source policy:\n\
+For --policytype, if no POLICY_FILE is provided, seinfo will attempt \n\
+to use the specified system default policy type. Without the --policytype \n\
+option, if no POLICY_FILE is provided, seinfo will attempt to use the \n\
+installed binary policy version as specified in /selinux/policy_vers \n\
+and if this cannot be found, it will resort to the highest binary policy \n\
+version it can find in the policy install directory. If all fails, seinfo \n\
+attempts to use the default source policy:\n\
 ", stdout);
 	printf("      %s\n\n", LIBAPOL_DEFAULT_POLICY);
 
@@ -461,11 +463,11 @@ int main (int argc, char **argv)
 	unsigned int open_opts = 0;
 	policy_t *policy;
 	char *class_name, *type_name, *attrib_name, *role_name, *user_name, *isid_name, *bool_name;
-	bool_t try_binary = FALSE, try_source = FALSE;
+	unsigned int search_opts = 0;
 	
 	class_name = type_name = attrib_name = role_name = user_name = isid_name = bool_name = NULL;
 	classes = types = attribs = roles = users = all = expand = stats = isids = bools = 0;
-	while ((optc = getopt_long (argc, argv, "c::t::a::r::u::b::i::d:sAxhv", longopts, NULL)) != -1)  {
+	while ((optc = getopt_long (argc, argv, "c::t::a::r::u::b::i::d:sAxhv0:", longopts, NULL)) != -1)  {
 		switch (optc) {
 		case 0:
 	  		break;
@@ -511,12 +513,12 @@ int main (int argc, char **argv)
 	  		if(optarg != 0)
 	  			isid_name = optarg;
 	  		break;
-	  	case 'd': /* default to policy type */
+	  	case '0': /* default to policy type */
 	  		if(optarg != 0) {
 	 			if (strcasecmp("source", optarg) == 0) 
-	  				try_source = TRUE;
+	  				search_opts |= POL_TYPE_SOURCE;
 	  			else if (strcasecmp("binary", optarg) == 0) 
-	  				try_binary = TRUE;
+	  				search_opts |= POL_TYPE_BINARY;
 	  		}
 	  		break;
 	  	case 'A': /* all */
@@ -547,24 +549,20 @@ int main (int argc, char **argv)
 		open_opts |= POLOPT_ALL;
 		stats = 1;
 	}
-		
+	if (!search_opts)
+		search_opts = (POL_TYPE_SOURCE | POL_TYPE_BINARY);
+				
 	if (argc - optind > 1) {
 		usage(argv[0], 1);
 		exit(1);
 	} else if (argc - optind < 1) {
-		if (try_binary) {
-			rt = find_default_policy_file(SEARCH_BINARY, policy_file);
-		} else if (try_source) {
-			rt = find_default_policy_file(SEARCH_SOURCE, policy_file);
-		} else {
-			rt = find_default_policy_file(SEARCH_BOTH, policy_file);
-		}
+		rt = find_default_policy_file(search_opts, &policy_file);
 		if (rt != 0) {
-			printf("Error while searching for default policy: %s\n", decode_find_default_policy_file_err(rt));
+			printf("Error while searching for default policy: %s\n", find_default_policy_file_strerr(rt));
 			exit(1);
 		}
 	} else
-		snprintf(policy_file, sizeof(policy_file)-1, "%s", argv[optind]);
+		policy_file = argv[optind];
 
 	/* attempt to open the policy */
 	rt = open_partial_policy(policy_file, open_opts, &policy);
