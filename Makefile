@@ -198,6 +198,10 @@ rpm: bare
 # Make all setools documentation
 docs:
 	cd docs-src; make docs
+
+# Remove all generated setools documentation 
+remove-docs:
+	cd docs-src; make remove-docs
 	
 # test targets
 tests: test-seuser test-apol
