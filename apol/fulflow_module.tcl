@@ -179,11 +179,13 @@ proc Apol_Analysis_fulflow::do_analysis { results_frame } {
 		
 	foreach class $Apol_Analysis_fulflow::class_list {
 		set perms ""
-		# Make sure to strip out just the class name, as this may be an excluded class.
-		set idx [string first $Apol_Analysis_fulflow::excluded_tag $class]		
+		# Make sure to strip out just the class name, as this may be an  
+		# excluded class, which has the "Excluded" tag appended to its' name.
+		set idx   [string first $Apol_Analysis_fulflow::excluded_tag $class]
+		set class [string range $class 0 [expr $idx - 1]]		
 		if {$idx == -1} {	
 			set class_elements [array names perm_status_array "$class,*"]
-			set class_added 0
+			set exclude_perm_added 0
 			foreach element $class_elements {
 				set perm [lindex [split $element ","] 1]
 				# If threshhold is enabled, the skip any permissions that fall below threshhold.
@@ -193,11 +195,11 @@ proc Apol_Analysis_fulflow::do_analysis { results_frame } {
 						continue
 					}
 				}
-				if {[string equal $perm_status_array($element) "include"]} {
-					if {$class_added == 0} {
+				if {[string equal $perm_status_array($element) "exclude"]} {
+					if {$exclude_perm_added == 0} {
 						incr num_object_classes 
 						set perm_options [lappend perm_options $class]
-						set class_added 1
+						set exclude_perm_added 1
 					}	
 					set perms [lappend perms $perm]
 				}
@@ -208,6 +210,10 @@ proc Apol_Analysis_fulflow::do_analysis { results_frame } {
 					set perm_options [lappend perm_options $perm]
 				}
 			}	
+		} else {
+			set perm_options [lappend perm_options $class]	
+			set perm_options [lappend perm_options 0]	
+			incr num_object_classes 
 		}
 	}
 

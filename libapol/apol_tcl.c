@@ -172,7 +172,7 @@ static int append_common_perm_str(bool_t do_perms, bool_t do_classes, bool_t new
  * argv[4] - number of object classes that are to be included in the query.
  * argv[5] - flag (boolean value) for indicating that filter on end type(s) is being provided 
  * argv[6] - ending type regular expression 
- * argv[7] - encoded list of object class/permissions to include in the query
+ * argv[7] - encoded list of object class/permissions to exclude in the query
  * argv[8] - flag (boolean value) for indicating whether or not to include intermediate types in the query.
  * argv[9] - TCL list of intermediate types
  *
@@ -181,15 +181,16 @@ static int append_common_perm_str(bool_t do_perms, bool_t do_classes, bool_t new
  */
 static iflow_query_t* set_transitive_query_args(Tcl_Interp *interp, char *argv[])
 {
-	int num_objs, num_obj_perms, num_objs_options, num_inter_types, obj, type, perm, *types;
+	int num_objs, num_obj_perms, num_objs_options, obj, perm, total_num_perms;
+	int num_inter_types, type, *types = NULL;
 	int i, j, rt, num, cur, sz = 0;
 	char *start_type = NULL, *end_type = NULL;
 	char *err, *name;
-	CONST84 char **obj_class_perms, **inter_types;
 	char tbuf[64];
+	CONST84 char **obj_class_perms, **inter_types;
 	bool_t filter_obj_classes, filter_end_types, filter_inter_types;
 	regex_t reg;
-	iflow_query_t* iflow_query = NULL;
+	iflow_query_t *iflow_query = NULL;
 	
 	if(policy == NULL) {
 		Tcl_AppendResult(interp,"No current policy file is opened!", (char *) NULL);
@@ -294,7 +295,6 @@ static iflow_query_t* set_transitive_query_args(Tcl_Interp *interp, char *argv[]
 	}
 		
 	if(filter_obj_classes && obj_class_perms != NULL) {
-		int total_num_perms;
 		assert(num_objs > 0);
 		cur = 0;
 		/* Set the object classes permission info */
@@ -312,33 +312,20 @@ static iflow_query_t* set_transitive_query_args(Tcl_Interp *interp, char *argv[]
 			rt = Tcl_GetInt(interp, obj_class_perms[cur], &num_obj_perms);
 			if(rt == TCL_ERROR) {
 				Tcl_AppendResult(interp, "Item in obj_class_perms list apparently is not an integer\n", (char *) NULL);
-				Tcl_Free((char *) obj_class_perms);
-				iflow_query_destroy(iflow_query);
 				return NULL;
 			}
 			total_num_perms = get_num_perms_for_obj_class(obj, policy);
 			if (!total_num_perms) {
 				Tcl_AppendResult(interp, "Object class without any permissions!\n", (char *) NULL);
-				Tcl_Free((char *) obj_class_perms);
-				iflow_query_destroy(iflow_query);
 				return NULL;
 			}
-
+			/* If this there are no permissions given then exclude the entire object class. */
 			if (num_obj_perms == 0) {
-				Tcl_AppendResult(interp, "Permissions must be provided for a class.\n", (char *) NULL);
-				Tcl_Free((char *) obj_class_perms);
-				iflow_query_destroy(iflow_query);
-				return NULL;
-			} else {
-				bool_t *perms_used = (bool_t*)malloc(sizeof(bool_t) * policy->num_perms);
-				if (!perms_used) {
-					Tcl_AppendResult(interp, "Memory error\n", (char *) NULL);
-					Tcl_Free((char *) obj_class_perms);
-					iflow_query_destroy(iflow_query);
+				if (analysis_query_add_obj_class(&iflow_query->obj_options, &iflow_query->num_obj_options, obj) == -1) {
+					Tcl_AppendResult(interp, "error adding obj\n", (char *) NULL);
 					return NULL;
 				}
-				memset(perms_used, FALSE, sizeof(bool_t) * policy->num_perms);
-
+			} else {
 				for (j = 0; j < num_obj_perms; j++) {
 					cur++;
 					perm = get_perm_idx(obj_class_perms[cur], policy);
@@ -346,21 +333,11 @@ static iflow_query_t* set_transitive_query_args(Tcl_Interp *interp, char *argv[]
 						fprintf(stderr, "Invalid object class permission\n");
 						continue;
 					}
-					perms_used[perm] = TRUE;
-				}
-				for (j = 0; j < policy->num_perms; j++) {
-					if (perms_used[j] || !is_valid_perm_for_obj_class(policy, obj, j)) {
-						continue;
-					}
 					if (analysis_query_add_obj_class_perm(&iflow_query->obj_options, &iflow_query->num_obj_options, obj, j) == -1) {
 						Tcl_AppendResult(interp, "error adding perm\n", (char *) NULL);
-						Tcl_Free((char *) obj_class_perms);
-						free(perms_used);
-						iflow_query_destroy(iflow_query);
 						return NULL;
 					}
 				}
-				free(perms_used);
 			} 
 			cur++;
 		}
