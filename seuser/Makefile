@@ -6,7 +6,7 @@ TCL-STRIP-FILES = seuser_db.tcl seuser_top.tcl seuser_advanced.tcl seuser_user_i
 SEUSER_HELP_FILE = seuser_help.txt
 SEUSER_CONF_FILE = seuser.conf
 
-ifeq ($(DEBUG), 1)
+ifeq ($(DYNAMIC), 0)
 LIBAPOL		= ../libapol/libapol.a
 LIBAPOL-TCL	= ../libapol/libapol-tcl.a
 LIBSEUSER	= ../libseuser/libseuser.a
@@ -18,14 +18,12 @@ LIBSEUSER	= ../libseuser/libseuser.so.$(shell cat ../libseuser/VERSION)
 LIBSEUSER-TCL	= ../libseuser/libseuser-tcl.a
 endif
 
-LIBSELINUX      = -lselinux
 CMD-OBJ		= seuser_cmd.o $(LIBSEUSER) $(LIBAPOL)
 GUI-OBJ		= seuser_gui.o $(LIBAPOL-TCL) $(LIBSEUSER-TCL) $(LIBSEUSER) $(LIBAPOL)
 SE_SHELL_SCRIPTS = seuseradd seuserdel seusermod
 
 TE_PROGS_DIR	= $(POLICY_SRC_DIR)/domains/program
 FC_PROGS_DIR	= $(POLICY_SRC_DIR)/file_contexts/program
-#POLICY_FULL_SRC = $(POLICY_SRC_DIR) 
 GUI_CFLAGS  	+= -DSTARTUP_SCRIPT='"$(SEUSER_STARTUP_SCRIPT)"'
 CFLAGS  	+= -DSEUSERCMD_VERSION_STRING='"$(shell cat CMD_VERSION)"'
 
