@@ -1,5 +1,9 @@
-/* Copyright (C) 2003-2005 Tresys Technology, LLC
+/* Copyright (C) 2004-2005 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
+
+/* 
+ * Author: Jeremy A. Mowery jmowery@tresys.com
+ */
 
 #include <policy.h>
 #include <policy-io.h>
