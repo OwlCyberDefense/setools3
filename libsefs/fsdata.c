@@ -445,11 +445,9 @@ int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char *filename)
 	buf[items++] = cpu_to_le32(fsd->num_files);
 	
 	rc = fwrite(buf, sizeof(uint32_t), items, fp);
-	if (!rc) {
-		fprintf(stderr, "error writing file %s\n", filename);
-		return -1;
-	}
-	
+	if (!rc) 
+		goto bad:
+			
 	for(i=0; i<fsd->num_files; i++) {
 
 		pinfo = &(fsd->files[i]);
@@ -504,8 +502,13 @@ int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char *filename)
 		}
 		
 	}
+
 	fclose(fp);
 	return 0;
+
+	bad:
+		fclose(fp);
+		return -1;
 }
 
 
