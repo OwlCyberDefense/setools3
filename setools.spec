@@ -1,10 +1,10 @@
 Summary: SELinux tools for managing policy
 Name: setools
-Version: 1.1
+Version: 1.2
 Release: 1
 License: GPL
 Group: System Environment/Base
-Source: http://www.tresys.com/Downloads/selinux-tools/setools-1.1.tgz
+Source: http://www.tresys.com/Downloads/selinux-tools/setools-1.2.tgz
 Prefix: %{_prefix}
 BuildRoot: %{_tmppath}/%{name}-buildroot
 BuildRequires: perl, tcl, policycoreutils

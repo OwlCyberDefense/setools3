@@ -108,8 +108,8 @@ proc Apol_Initial_SIDS::open { } {
 	set sids_list [lsort $sids_list]
 	$Apol_Initial_SIDS::user_combo_box configure -values $Apol_Users::users_list
 	$Apol_Initial_SIDS::role_combo_box configure -values $Apol_Roles::role_list
-	$Apol_Initial_SIDS::type_combo_box configure -values $ApolTypes::typelist
-	$Apol_Initial_SIDS::attribute_combo_box configure -values $ApolTypes::attriblist
+	$Apol_Initial_SIDS::type_combo_box configure -values $Apol_Types::typelist
+	$Apol_Initial_SIDS::attribute_combo_box configure -values $Apol_Types::attriblist
 	
 	Apol_Initial_SIDS::enable_comboBox $Apol_Initial_SIDS::user_cb_value $Apol_Initial_SIDS::user_combo_box
 	Apol_Initial_SIDS::enable_comboBox $Apol_Initial_SIDS::role_cb_value $Apol_Initial_SIDS::role_combo_box
@@ -248,7 +248,7 @@ proc Apol_Initial_SIDS::change_types_list { } {
 		}
 		$type_combo_box configure -values $attrib_typesList
         } else {
-        	set attrib_typesList $ApolTypes::typelist
+        	set attrib_typesList $Apol_Types::typelist
 		set idx [lsearch -exact $attrib_typesList "self"]
 		if {$idx != -1} {
 			set attrib_typesList [lreplace $attrib_typesList $idx $idx]

@@ -113,7 +113,7 @@ proc Apol_RBAC::open { } {
 	variable opts
 	
 	$Apol_RBAC::list_src configure -values $Apol_Roles::role_list
-	$Apol_RBAC::list_tgt configure -values $ApolTypes::typelist
+	$Apol_RBAC::list_tgt configure -values $Apol_Types::typelist
         $Apol_RBAC::list_dflt_role configure -values $Apol_Roles::role_list
 }
 
@@ -373,13 +373,13 @@ proc Apol_RBAC::populate_listbox { cBox } {
 	$cBox configure -text ""		
 	switch $Apol_RBAC::opts(list_type) {
 		types {
-			$cBox configure -values $ApolTypes::typelist
+			$cBox configure -values $Apol_Types::typelist
 		}
 		attribs {
-			$cBox configure -values $ApolTypes::attriblist
+			$cBox configure -values $Apol_Types::attriblist
 		}
 		both {
-			set bothlist [concat $ApolTypes::typelist $ApolTypes::attriblist]
+			set bothlist [concat $Apol_Types::typelist $Apol_Types::attriblist]
 			set bothlist [lsort -dictionary $bothlist]
 			$cBox configure -values $bothlist
 		}

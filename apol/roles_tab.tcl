@@ -39,8 +39,8 @@ proc Apol_Roles::open { } {
         set role_list [apol_GetNames roles]
 	set role_list [lsort $role_list]
 	Apol_Roles::enable_type_list
-        $Apol_Roles::combo_types configure -values $ApolTypes::typelist
-        $Apol_Roles::combo_attribute configure -values $ApolTypes::attriblist
+        $Apol_Roles::combo_types configure -values $Apol_Types::typelist
+        $Apol_Roles::combo_attribute configure -values $Apol_Types::attriblist
         return
 }
 
@@ -214,7 +214,7 @@ proc Apol_Roles::change_types_list { } {
 		}
 		$combo_types configure -values $attrib_typesList
         } else {
-        	set attrib_typesList $ApolTypes::typelist
+        	set attrib_typesList $Apol_Types::typelist
 		set idx [lsearch -exact $attrib_typesList "self"]
 		if {$idx != -1} {
 			set attrib_typesList [lreplace $attrib_typesList $idx $idx]
