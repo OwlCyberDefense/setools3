@@ -1170,8 +1170,8 @@ proc ApolTop::create { } {
 	}
 	"&Advanced" all options 0 {
 	    {cascad "&Permission Mappings" {Perm_Map_Tag} pmap_menu 0 {}}
-	    {command "Open O&ptions..." {} "Open options"  \
-	    	{} -command "ApolTop::display_options_Dlg" }
+	    #{command "Open O&ptions..." {} "Open options"  \
+	    #	{} -command "ApolTop::display_options_Dlg" }
 	    #{cascad "&File Context Indexing" {FC_Index_Tag} fc_index_menu 0 {}}
         }
 	"&Help" {} helpmenu 0 {

@@ -173,7 +173,7 @@ proc Apol_File_Contexts::populate_combo_boxes {} {
 			-message "Error getting object classes from file context database: $err.\n"
 		return
 	} 
-	$objclass_combo_box configure -values $classes
+	$objclass_combo_box configure -values [lsort $classes]
 	
 	return 0
 }

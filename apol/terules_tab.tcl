@@ -186,8 +186,9 @@ proc Apol_TE::goto_line { line_num } {
 			return 0
 		}
 		set raisedPage 	[ $notebook_results raise ]
-		
-		ApolTop::goto_line $line_num $Apol_TE::optionsArray($raisedPage,textbox)
+		if {$raisedPage != $Apol_TE::emptyTabID} {
+			ApolTop::goto_line $line_num $Apol_TE::optionsArray($raisedPage,textbox)
+		}
 	}
 	return 0
 }
@@ -201,7 +202,9 @@ proc Apol_TE::search { str case_Insensitive regExpr srch_Direction } {
 	
 	if { [$notebook_results pages] != "" } {
 		set raisedPage 	[ $notebook_results raise ]
-		ApolTop::textSearch $Apol_TE::optionsArray($raisedPage,textbox) $str $case_Insensitive $regExpr $srch_Direction
+		if {$raisedPage != $Apol_TE::emptyTabID} {
+			ApolTop::textSearch $Apol_TE::optionsArray($raisedPage,textbox) $str $case_Insensitive $regExpr $srch_Direction
+		}
 	}
 	return 0
 }
