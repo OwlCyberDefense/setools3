@@ -1,6 +1,6 @@
 CC = gcc
-CFLAGS = -I. -I../../libapol/ -Wall
-LIBAPOL = ../../libapol/libapol.a
+CFLAGS = -I. -I../../../libapol/ -Wall
+LIBAPOL = ../../../libapol/libapol.a
 LINKFLAGS = -lm -lselinux -lfl
 
 OBJS = relabel_analysis_test.o
