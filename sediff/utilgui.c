@@ -63,6 +63,7 @@ GString* get_filename_from_user(const char *title, const gchar *startfilename)
 	GString *filename;
 
 	file_selector = gtk_file_selection_new(title);
+	gtk_file_selection_hide_fileop_buttons (GTK_FILE_SELECTION(file_selector));
 	if (startfilename)
 		gtk_file_selection_set_filename(GTK_FILE_SELECTION(file_selector), startfilename);
 
