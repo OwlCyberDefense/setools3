@@ -424,7 +424,6 @@ static void query_window_populate_combo_boxes(GtkWidget *src_type_combo, GtkWidg
 
 static void populate_query_window_widgets(GladeXML *xml)
 {
-	GtkTreeView *tree;
 	GtkTreeSelection *sel;
 	GtkTreeModel *model;
 	GtkTreeIter iter;
@@ -435,16 +434,15 @@ static void populate_query_window_widgets(GladeXML *xml)
 	msg_t *msg = NULL;
 	avc_msg_t *avc_msg = NULL;
 	int fltr_msg_idx, msg_list_idx;
+	top_filters_view_t *view;
 
 	g_assert(seaudit_app->cur_policy);
-	tree = GTK_TREE_VIEW(glade_xml_get_widget(seaudit_app->top_window_xml,
-						  "LogListView"));
-	model = gtk_tree_view_get_model(tree);
-	sel = gtk_tree_view_get_selection(tree);
+	view = seaudit_window_get_current_view(seaudit_app->window);
+	sel = gtk_tree_view_get_selection(view->tree_view);
 	selected = gtk_tree_selection_get_selected(sel, &model, &iter);
 	if (selected) {
 		fltr_msg_idx = seaudit_log_view_store_iter_to_idx((SEAuditLogViewStore*)model, &iter);
-		msg_list_idx = seaudit_app->log_store->log_view->fltr_msgs[fltr_msg_idx];
+		msg_list_idx = view->store->log_view->fltr_msgs[fltr_msg_idx];
 		msg = seaudit_app->cur_log->msg_list[msg_list_idx];
 		if (msg->msg_type!=AVC_MSG) {
 			selected = FALSE;
@@ -545,7 +543,7 @@ int query_window_create(void)
 	char *dir;
 
 	if (!seaudit_app->cur_policy) {
-		message_display(seaudit_app->top_window, GTK_MESSAGE_ERROR, "You must load a policy first.\n");
+		message_display(seaudit_app->window->window, GTK_MESSAGE_ERROR, "You must load a policy first.\n");
 		return -1;
 	}	
 
