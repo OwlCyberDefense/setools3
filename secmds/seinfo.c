@@ -16,6 +16,7 @@
 /* other */
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 #define _GNU_SOURCE
 #include <getopt.h>
 
@@ -25,12 +26,8 @@
 #endif
 
 #define COPYRIGHT_INFO "Copyright (C) 2003-2004 Tresys Technology, LLC"
-/* DEFAULT_POLICY should be defined in the make environment */
-#ifndef DEFAULT_POLICY
-	#define DEFAULT_POLICY "/etc/security/selinux/src/policy.conf"
-#endif
 
-char *policy_file;
+char policy_file[BUF_SZ];
 
 static struct option const longopts[] =
 {
@@ -41,6 +38,7 @@ static struct option const longopts[] =
   {"users", optional_argument, NULL, 'u'},
   {"booleans", optional_argument, NULL, 'b'},
   {"initialsids", optional_argument, NULL, 'i'},
+  {"defaultto", required_argument, NULL, 'd'},
   {"stats", no_argument, NULL, 's'},
   {"all", no_argument, NULL, 'A'},
   {"expand", no_argument, NULL, 'x'},
@@ -65,22 +63,28 @@ Print requested information about an SELinux policy.\n\
   -r[NAME], --roles[=NAME]   print a list of roles\n\
   -u[NAME], --users[=NAME]   print a list of users\n\
   -b[NAME], --boolean[=NAME] print a lits of conditional boolens\n\
-  -i[NAME], --initialsid[=NAME] print a list of initial SIDs\
- ", stdout);
-	fputs("\n\
+  -i[NAME], --initialsid[=NAME] print a list of initial SIDs\n\
   -A, --all                  print all of the above\n\
   -x, --expand               show additional info for -ctarbuiA\n\
   -s, --stats                print useful policy statics\n\
+", stdout);
+fputs("\n\  
+  -d[POLICYTYPE], --defaultto[=POLICYTYPE] \n\
+  			     default to policy type (POLICYTYPE=source|binary)\n\
   -h, --help                 display this help and exit\n\
   -v, --version              output version information and exit\n\
 ", stdout);
   	fputs("\n\
 For -ctarui, if NAME is provided, then only show info for NAME.\n\
-Specifying a name is most useful when used with the -x option.\n\
-If no option is provided, display useful policy statics (-s).\n\n\
-If no POLICY_FILE is provided, the default policy will be used:\n\
+ Specifying a name is most useful when used with the -x option.\n\
+ If no option is provided, display useful policy statics (-s).\n\n\
+for -d, if no POLICY_FILE is provided, seinfo will attempt to use the \n\
+specified system default policy type. Without the -d option, if no \n\
+POLICY_FILE is provided, seinfo will attempt to use the installed \n\
+binary policy and if this cannot be found, it will attempt to \n\
+use the default source policy:\n\
 ", stdout);
-	printf("      %s\n\n", DEFAULT_POLICY);
+	printf("      %s\n\n", LIBAPOL_DEFAULT_POLICY);
 
 	return;
 }
@@ -88,7 +92,15 @@ If no POLICY_FILE is provided, the default policy will be used:\n\
 
 int print_stats(FILE *fp, policy_t *policy)
 {
+	assert(policy != NULL);
 	fprintf(fp, "\nStatistics for policy file: %s\n", policy_file);
+	fprintf(fp, "Policy Version: %s\n", get_policy_version_name(policy->version));
+	if(is_binary_policy(policy))
+		fprintf(fp, "Policy Type: binary\n");
+	else
+		fprintf(fp, "Policy Type: source\n");
+	fprintf(fp, "\n");
+
 	fprintf(fp, "   Classes:      %7d    Permissions:  %7d\n", num_obj_classes(policy), num_perms(policy));
 	/* subtract 1 from types to remove the pseudo type "self" if non-binary policy */
 	fprintf(fp, "   Types:        %7d    Attributes:   %7d\n", (is_binary_policy(policy) ? num_types(policy)-1 : num_types(policy)),
@@ -449,10 +461,11 @@ int main (int argc, char **argv)
 	unsigned int open_opts = 0;
 	policy_t *policy;
 	char *class_name, *type_name, *attrib_name, *role_name, *user_name, *isid_name, *bool_name;
+	bool_t try_binary = FALSE, try_source = FALSE;
 	
 	class_name = type_name = attrib_name = role_name = user_name = isid_name = bool_name = NULL;
 	classes = types = attribs = roles = users = all = expand = stats = isids = bools = 0;
-	while ((optc = getopt_long (argc, argv, "c::t::a::r::u::b::i::sAxhv", longopts, NULL)) != -1)  {
+	while ((optc = getopt_long (argc, argv, "c::t::a::r::u::b::i::d:sAxhv", longopts, NULL)) != -1)  {
 		switch (optc) {
 		case 0:
 	  		break;
@@ -498,6 +511,14 @@ int main (int argc, char **argv)
 	  		if(optarg != 0)
 	  			isid_name = optarg;
 	  		break;
+	  	case 'd': /* default to policy type */
+	  		if(optarg != 0) {
+	 			if (strcasecmp("source", optarg) == 0) 
+	  				try_source = TRUE;
+	  			else if (strcasecmp("binary", optarg) == 0) 
+	  				try_binary = TRUE;
+	  		}
+	  		break;
 	  	case 'A': /* all */
 	  		all = 1;
 	  		open_opts = POLOPT_ALL;
@@ -530,11 +551,20 @@ int main (int argc, char **argv)
 	if (argc - optind > 1) {
 		usage(argv[0], 1);
 		exit(1);
-	}
-	else if(argc - optind < 1) 
-		policy_file = DEFAULT_POLICY;
-	else
-		policy_file = argv[optind];
+	} else if (argc - optind < 1) {
+		if (try_binary) {
+			rt = find_default_policy_file(SEARCH_BINARY, policy_file);
+		} else if (try_source) {
+			rt = find_default_policy_file(SEARCH_SOURCE, policy_file);
+		} else {
+			rt = find_default_policy_file(SEARCH_BOTH, policy_file);
+		}
+		if (rt != 0) {
+			printf("Error while searching for default policy: %s\n", decode_find_default_policy_file_err(rt));
+			exit(1);
+		}
+	} else
+		snprintf(policy_file, sizeof(policy_file)-1, "%s", argv[optind]);
 
 	/* attempt to open the policy */
 	rt = open_partial_policy(policy_file, open_opts, &policy);
