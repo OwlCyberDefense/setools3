@@ -32,7 +32,6 @@ typedef struct sefs_fileinfo {
 	unsigned int		pathlistsize;
 	context_t 		context;
 	char **			pathnames;
-	char *			link_context;
 } sefs_fileinfo_t;
 
 
@@ -45,10 +44,10 @@ typedef struct sefs_typeinfo {
 	
 
 typedef struct sefs_filesystem_data {
-	int 			numpaths;
-	int 			numtypes;
-	int			pathlistsize;
-	int			typelistsize;
+	unsigned int 		numpaths;
+	unsigned int 		numtypes;
+	unsigned int		pathlistsize;
+	unsigned int		typelistsize;
 	sefs_fileinfo_t *	paths;
 	sefs_typeinfo_t *	types;
 	avl_tree_t		pathtree;
