@@ -265,7 +265,7 @@ fi
 
 # Only reload policy and perform labeling if role(s) were successfully
 # added to the policy.
-if [ $ROLES -eq 1 -a $ROLES_RC -eq 0 ]; then
+if [ $ROLES -eq 1 ]; then
 	# if we were successful with everything we reach here and load the policy
 	${SEUSER} load 2> /dev/null
 	
