@@ -14,8 +14,9 @@
 # ::Sepct (top-level namespace)
 ##############################################################
 namespace eval Sepct {
-	variable gui_ver		"0.3.4"
-	variable copyright_date		"2002-2003"
+	# The version number is defined as a magical string here. This is later configured in the make environment.
+	variable gui_ver		SEPCUT_GUI_VERSION
+	variable copyright_date		"2002-2004"
 	variable helpFilename		""
 	# Global variable to hold name of root directory
 	variable policyDir		""	

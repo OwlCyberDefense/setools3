@@ -25,12 +25,13 @@ seuserx: $(GUI-OBJ) se_user.tcl
 	$(CC) $(TCL_LIBINC) -o $@ $(GUI-OBJ) $(LINKFLAGS) $(TCL_LIBS)
 
 se_user.tcl: $(TCL-FILES)
-	cat $(TCL-FILES) > $@
+	cat $(TCL-FILES) | \
+	sed -e 's/SEUSER_GUI_VERSION/$(shell cat VERSION)/g' > $@ 
 
 tmp.tcl: $(TCL-STRIP-FILES)
 	cat $(TCL-STRIP-FILES) > $@
 	# compact it by removing comments and empty lines
-	@perl -p -i -e 's/^\s*(\#[^!]*){0,1}$$//s' $@
+	@perl -p -i -e 's/^\s*(\#[^!]*){0,1}$$//s' $@ 
 
 %.o:  %.c 
 	$(CC) $(CFLAGS) -c $<

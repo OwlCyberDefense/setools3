@@ -15,7 +15,10 @@
 
 #include "../libapol/policy.h"
 
-#define SEUSER_VERSION_STRING "1.0"
+/* The following should be defined in the make environment */
+#ifndef SEUSER_VERSION_STRING
+	#define SEUSER_VERSION_STRING "UNKNOWN"
+#endif
 /* NOTE: As of version 1.0, we completely remove all support for the older
  * default_context and cron_context; which greatly simplified the code.
  * Also structure lib so that it no longer requires the TCL interface
