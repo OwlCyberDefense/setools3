@@ -42,17 +42,6 @@ int audit_log_field_strs_get_index(const char *str)
 	return -1;
 }
 
-static void audit_log_purge_fltr_msgs(audit_log_t *log)
-{
-	if (log->fltr_msgs) {
-		free(log->fltr_msgs);
-		log->fltr_msgs = NULL;
-		log->num_fltr_msgs = 0;
-		log->fltr_msgs_sz = 0;
-	}
-	return;
-}
-
 const char* libseaudit_get_version(void)
 {
 	return LIBSEAUDIT_VERSION_STRING;
@@ -223,11 +212,6 @@ audit_log_t* audit_log_create(void)
 		goto bad;
 	memset(new->msg_list, 0, sizeof(msg_t*) * ARRAY_SZ);
 	new->msg_list_sz = ARRAY_SZ;
-	new->filters = NULL;
-	new->fltr_msgs = NULL;
-
-	new->num_fltr_msgs = 0;
-	new->fltr_msgs_sz = 0;
 	
 	if (audit_log_str_init(new, TYPE_TREE))
 		goto bad;
@@ -353,13 +337,11 @@ msg_t* load_policy_msg_create(void)
 void audit_log_destroy(audit_log_t *tmp)
 {
 	int i, j;
-	filter_t *cur, *next;
 	if (tmp == NULL)
 		return;
 
 	for (i = 0; i < NUM_TREES; i++) {
 		if (tmp->symbols[i].strs) {
-			
 			for (j = 0; j < tmp->symbols[i].num_strs; j++) {
 				if (tmp->symbols[i].strs[j] != NULL)
 					free(tmp->symbols[i].strs[j]);
@@ -368,23 +350,11 @@ void audit_log_destroy(audit_log_t *tmp)
 		}
 		avl_free(&tmp->trees[i]);
 	}
-	if (tmp->filters) {
-		cur = tmp->filters;
-		while (cur) {
-			next = cur->next;
-			if (next)
-				next->prev = NULL;
-			filter_destroy(cur);
-			cur = next;
-		}
-	}
 	for (i = 0; i < tmp->num_msgs; i++) {
 		if (tmp->msg_list[i] == NULL)
 			break;
 		msg_destroy(tmp->msg_list[i]);
 	}
-	if (tmp->fltr_msgs)
-		free(tmp->fltr_msgs);
 	if (tmp->msg_list)
 		free(tmp->msg_list);
 	free(tmp);
@@ -508,252 +478,6 @@ int audit_log_add_msg(audit_log_t *log, msg_t *msg)
 	return 0;
 }
 
-/*
- * add a filter to the audit log list of active filters */
-int audit_log_add_filter(audit_log_t *log, filter_t *filter)
-{
-	if (log == NULL || filter == NULL)
-		return -1;
-	if (log->filters == NULL) {
-		filter->next = NULL;
-		filter->prev = NULL;
-		log->filters = filter;
-		return 0;
-	}
-	filter->next = log->filters;
-	filter->prev = NULL;
-	log->filters->prev = filter;
-	log->filters = filter;
-	return 0;
-}
-
-/*
- * remove all the filters from the audit log. */
-void audit_log_purge_filters(audit_log_t *log)
-{
-	filter_t *cur, *next;
-
-	if (log->filters) {
-		cur = log->filters;
-		while (cur) {
-			next = cur->next;
-			if (next)
-				next->prev = NULL;
-			filter_destroy(cur);
-			cur = next;
-		}
-		log->filters = NULL;
-	}	
-	return;
-}
-
-static void sort_kept_messages(int *kept, int num_kept, filt_info_t *info)
-{
-	int i, j, msg_a, msg_b, tmp;
-	for (j = 0; j < num_kept; j++) {
-		for (i = 0; i < num_kept-1-j; i++) {
-			msg_a = kept[i];
-			msg_b = kept[i+1];
-			if (info[msg_a].orig_indx > info[msg_b].orig_indx) {
-				tmp = kept[i];
-				kept[i] = kept[i+1];
-				kept[i+1] = tmp;
-			}
-		}
-	}
-	return;
-}
-
-
-/*
- * this function will do a filter or a search depending on log->fltr_out */
-int audit_log_do_filter(audit_log_t *log, bool_t details, int **deleted, int *num_deleted) 
-{
-	int i, j, msg, *kept=NULL, num_kept=0, *added=NULL, num_added=0, *ptr=NULL, *delptr=NULL;
-	bool_t err, all_match, any_match, match, found; 
-	filter_t *cur_fltr; 
-	filt_info_t *info;
-
-	if (log == NULL)
-		return -1;
-	if (log->msg_list == NULL)
-		return -1;
-
-	/* by default append everything that is not already filtered */
-	if (log->filters == NULL) {
-		log->fltr_msgs = (int*)realloc(log->fltr_msgs, sizeof(int) * log->num_msgs);
-		for(i = 0; i < log->num_msgs; i++) {
-			found = FALSE;
-			for (j = 0; j < log->num_fltr_msgs; j++)
-				if (log->fltr_msgs[j] == i)
-					found = TRUE;
-			if (!found) {
-				log->fltr_msgs[log->num_fltr_msgs] = i;
-				log->num_fltr_msgs++;
-			}
-		}
-		(*num_deleted) = 0;
-		(*deleted) = NULL;
-		return 0;
-	}
-
-	/* we need to keep these buffers around to keep track of 
-	 * deleted, added, and kept messages */
-	if (!num_deleted)
-		return -1;
-	delptr = (int*)malloc(sizeof(int) * log->num_msgs);
-	*num_deleted = 0;
-	if (!delptr) {
-		return -1;
-	}
-	*deleted = delptr;
-	kept = (int*)malloc(sizeof(int) * log->num_fltr_msgs);
-	if (!kept) {
-		free(delptr);
-		return -1;
-	}
-	added = (int*)malloc(sizeof(int) * log->num_msgs);
-	if (!added) {
-		free(delptr);
-		free(kept);
-		return -1;
-	}
-	info = (filt_info_t*)malloc(sizeof(filt_info_t)*log->num_msgs );
-	if (!info) {
-		free(delptr);
-		free(kept);
-		free(added);
-		return -1;
-	}
-	memset(info, 0, sizeof(filt_info_t) * log->num_msgs);
-	for (i = 0; i < log->num_fltr_msgs; i++) {
-		msg = log->fltr_msgs[i];
-		info[msg].orig_indx = i;
-		info[msg].filtered = TRUE;
-	}
-
-	audit_log_purge_fltr_msgs(log);
-
-       	for (cur_fltr = log->filters; cur_fltr != NULL; cur_fltr = cur_fltr->next)
-		cur_fltr->dirty = TRUE;
-
-
-	if (log->fltr_and) { /* match all filters */
-		
-		for (i = 0; i < log->num_msgs; i++) {
-			all_match = TRUE;
-			any_match = FALSE;
-			for (cur_fltr = log->filters; cur_fltr != NULL && all_match; cur_fltr = cur_fltr->next) {
-				if (cur_fltr->filter_act) {
-					if (!(cur_fltr->msg_types & log->msg_list[i]->msg_type))
-						match = FALSE;
-					else
-						match = cur_fltr->filter_act(log->msg_list[i], cur_fltr, log, &err);
-					all_match = all_match && match;
-				}
-			}			
-			if (log->fltr_out) { /* Filter out messages */
-				if (all_match) {
-					if (info[i].filtered == TRUE) {
-						delptr[*num_deleted] = info[i].orig_indx;
-						(*num_deleted)++;
-					} 	
-				} else {
-					if (info[i].filtered == TRUE) {
-						kept[num_kept] = i;
-						num_kept++;
-					} else {
-						added[num_added] = i;
-						num_added++;
-					}
-				}
-			} else {             /* Filter in messages */
-				if (all_match) {
-					if (info[i].filtered == TRUE) {
-						kept[num_kept] = i;
-						num_kept++;
-					} else {
-						added[num_added] = i;
-						num_added++;
-					}
-				} else {
-					if (info[i].filtered == TRUE) {
-						delptr[*num_deleted] = info[i].orig_indx;
-						(*num_deleted)++;
-					} 
-				}
-			}
-		}
-		
-	} else { /* match any filter */
-		
-		for (i = 0; i < log->num_msgs; i++) {
-			all_match = TRUE;
-			any_match = FALSE;
-			for (cur_fltr = log->filters; cur_fltr != NULL; cur_fltr = cur_fltr->next) {
-				if (cur_fltr->filter_act) {
-					if (!(cur_fltr->msg_types & log->msg_list[i]->msg_type))
-						match = FALSE;
-					else
-						match = cur_fltr->filter_act(log->msg_list[i], cur_fltr, log, &err);
-					any_match = any_match || match;
-				}
-			}
-			if (log->fltr_out) { /* Filter out messages */
-				if (any_match) {
-					if (info[i].filtered == TRUE) {
-						delptr[*num_deleted] = info[i].orig_indx;
-						(*num_deleted)++;
-					} 	
-				} else {
-					if (info[i].filtered == TRUE) {
-						kept[num_kept] = i;
-						num_kept++;
-					} else {
-						added[num_added] = i;
-						num_added++;
-					}
-				}
-			} else {            /* Filter in messages*/
-				if (any_match) {
-					if (info[i].filtered == TRUE) {
-						kept[num_kept] = i;
-						num_kept++;
-					} else {
-						added[num_added] = i;
-						num_added++;
-					}
-				} else {
-					if (info[i].filtered == TRUE) {
-						delptr[*num_deleted] = info[i].orig_indx;
-						(*num_deleted)++;
-					} 
-				}
-			}
-		} /* end for loop */
-	}
-	
-	sort_kept_messages(kept, num_kept, info);
-	free(info);
-
-	/* merge kept and added to form fltr_msgs */
-        ptr = (int*)malloc(sizeof(int) * ( (num_added) + num_kept));
-	if (!ptr) {
-		free(delptr);
-		free(kept);
-		free(added);
-		return -1;
-	}	
-	log->fltr_msgs = ptr;
-	log->num_fltr_msgs = num_kept + num_added;
-	memcpy(log->fltr_msgs, kept, sizeof(int) * num_kept);
-	memcpy(&log->fltr_msgs[num_kept], added, sizeof(int) * (num_added));
-	free(added);
-	free(kept);
-
-	return 0;
-}
-
 enum avc_msg_class_t which_avc_msg_class(msg_t *msg)
 {
 	avc_msg_t *avc_msg = msg->msg_data.avc_msg;
@@ -770,6 +494,7 @@ enum avc_msg_class_t which_avc_msg_class(msg_t *msg)
 	return AVC_AUDIT_DATA_NO_VALUE;
 }
 
+#if 0
 static void avc_msg_print(msg_t *msg, FILE *file)
 {
 	avc_msg_t *d = msg->msg_data.avc_msg;
@@ -801,26 +526,9 @@ static void avc_msg_print(msg_t *msg, FILE *file)
 	if (d->saddr)
 		fprintf(file,"saddr=%s ", msg->msg_data.avc_msg->saddr);
 }
+#endif
 
-
-void audit_log_msgs_print(audit_log_t *log, FILE *file)
+void msg_print(msg_t *msg, FILE *file)
 {
-	int i;
-	fprintf(file, "\n*Printing all AVC messages in the log..*\n");
-	for (i = 0; i < log->num_msgs; i++) {
-		fprintf(file, "\n");
-		avc_msg_print(log->msg_list[i], file);
-	}
-}
-
-void audit_log_fltr_msgs_print(audit_log_t *log, FILE *file)
-{
-	int i, indx;
-
-	fprintf(file, "\n*Printing all filtered AVC messages in the log..*\n");
-	for (i = 0; i < log->num_fltr_msgs; i++) {
-		fprintf(file, "\n");
-		indx = log->fltr_msgs[i];
-		avc_msg_print(log->msg_list[indx], file);
-	}
+	printf("msg_printf() - not implemented.\n");
 }
