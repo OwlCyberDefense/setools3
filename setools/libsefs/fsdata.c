@@ -37,7 +37,6 @@
 
 static sefs_filesystem_data_t *fsdata = NULL;
 
-
 static int avl_grow_path_array(void *user_data, int sz)
 {
 	sefs_fileinfo_t * ptr;
@@ -130,13 +129,51 @@ static int avl_add_type(void *user_data, const void *key, int idx)
 	return 0;
 }
 
+static int avl_grow_user_array(void * user_data, int sz)
+{
+	char** ptr;
+	fsdata = (sefs_filesystem_data_t *)user_data;
+
+	assert(fsdata != NULL);
+
+	if(sz > fsdata->num_users) 
+	{
+		if(!( ptr = (char**)realloc(fsdata->users, sz * sizeof(char*)) ))
+		{
+			fprintf(stderr, "out of memory\n");
+			return -1;
+		}
+		fsdata->users = ptr;
+	}
+
+	return 0;
+}
+
+static int avl_user_compare(void * user_data, const void *key, int idx)
+{
+	fsdata = (sefs_filesystem_data_t *)user_data;
+
+	return strcmp((char*)key, fsdata->users[idx]);
+}
+
+static int avl_add_user(void * user_data, const void *key, int idx)
+{
+	fsdata = (sefs_filesystem_data_t *)user_data;
+	char * user = (char*)key;
+
+	assert(fsdata != NULL && user != NULL);
+
+	fsdata->users[idx] = user;
+	(fsdata->num_users)++;
+
+	return 0;
+}
 
 static int ftw_handler(const char *file, const struct stat *sb, int flag, struct FTW *s)
 {
 	inode_key_t key;
 	int idx, rc = 0;
 	sefs_fileinfo_t * pi = NULL;
-	char ** ptr = NULL; /*?*/
 	char *con = NULL;
 	char *tmp = NULL;
 		
@@ -158,22 +195,41 @@ static int ftw_handler(const char *file, const struct stat *sb, int flag, struct
 		/* extract the context parts */
 		tmp = strtok(con, ":");
 		if (tmp) {
-			/* FIXME heh, need to do something with user */
-			pi->context.user=0;
+			rc = avl_get_idx(tmp, &fsdata->user_tree);
+			if(rc != -1)
+				pi->context.user=rc;
+			else 
+			{
+				avl_insert(&(fsdata->user_tree),tmp, &rc);
+				pi->context.user=rc;
+			}
 		}
+		else
+			pi->context.user = XATTR_UNLABELED;
+
 		tmp = strtok(NULL, ":");
 		if (tmp) {
-			/* FIXME, do something with role */
-			pi->context.role=0;
+			if(strncmp(tmp, "object_r", 8) == 0)
+				pi->context.role = OBJECT_R;
+			else
+				pi->context.role = XATTR_UNLABELED;
 		}
+		else
+			pi->context.role = XATTR_UNLABELED;
+
 		tmp = strtok(NULL, ":");
 		if (tmp) {
 			rc = avl_get_idx(tmp, &fsdata->type_tree);
-			if (rc)
+			if (rc != -1)
 				pi->context.type=rc;
 			else 
-				pi->context.type=0;
+			{
+				avl_insert(&(fsdata->type_tree), tmp, &rc);
+				pi->context.type=rc;
+			}
 		}
+		else
+			pi->context.type = XATTR_UNLABELED;
 		
 	} else {
 		pi = &(fsdata->files[idx]);
@@ -255,6 +311,26 @@ static int sefs_init_typetree(sefs_filesystem_data_t * fsd)
 	return 0;
 }
 
+static int sefs_init_usertree(sefs_filesystem_data_t * fsd) 
+{
+	if(!( fsd->users = (char**)malloc(sizeof(char*) * 1) )) 
+	{
+		fprintf(stderr, "out of memory\n");
+		return -1;
+	}
+
+	memset(fsd->users, 0, sizeof(char*) * 1);
+
+	fsd->num_users = 0;
+
+	avl_init( &(fsd->user_tree),
+		(void*)fsd,
+		avl_user_compare,
+		avl_grow_user_array,
+		avl_add_user);
+
+	return 0;
+}
 
 int sefs_filesystem_data_init(sefs_filesystem_data_t * fsd)
 {
@@ -266,8 +342,10 @@ int sefs_filesystem_data_init(sefs_filesystem_data_t * fsd)
 	fsdata = fsd;
 	fsd->num_files = 0;
 	fsd->num_types = 0;
+	fsd->num_users = 0;
 	fsd->files = NULL;
 	fsd->types = NULL;
+	fsd->users = NULL;
 	
 	if (sefs_init_pathtree(fsd) == -1) {
 		fprintf(stderr, "fsdata_init_paths() failed\n");
@@ -279,6 +357,12 @@ int sefs_filesystem_data_init(sefs_filesystem_data_t * fsd)
 		return -1;
 	}
 	
+	if (sefs_init_usertree(fsd) == -1)
+	{
+		fprintf(stderr, "fsdata_init_users() failed\n");
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -302,20 +386,22 @@ int sefs_filesystem_data_index(sefs_filesystem_data_t * fsd) {
 	sefs_typeinfo_t * ti = NULL;
 
 	for(loop = 0; loop < fsd->num_files; loop++) {
-		unsigned int * ptr; /*?*/
-		
+				
 		pi = &(fsd->files[loop]);
-		idx = avl_get_idx(context_type_get(pi->context), &(fsd->type_tree));
-		
+
+		/* index type */
+		idx = avl_get_idx(fsd->types[pi->context.type].name, &(fsd->type_tree));
 		if (idx == -1) {
-			if ((rc = avl_insert(&(fsd->type_tree), (char *)context_type_get(pi->context), &idx)) == -1) {
+			if ((rc = avl_insert(&(fsd->type_tree), 
+				fsd->types[pi->context.type].name, &idx)) == -1) 
+			{
 				fprintf(stderr, "avl error\n");
 				return -1;
 			}
 
 			ti = &(fsd->types[idx]);
 
-			if ((ti->index_list = (int *)malloc(1 * sizeof(uint32_t))) == NULL) {
+			if ((ti->index_list = (uint32_t *)malloc(1 * sizeof(uint32_t))) == NULL) {
 				fprintf(stderr, "out of memory\n");
 				return -1;
 			}
@@ -329,10 +415,10 @@ int sefs_filesystem_data_index(sefs_filesystem_data_t * fsd) {
 		
 			ti->index_list[ti->num_inodes] = loop;
 		}
-		
+
 	}
 
-	return 1;	
+	return 0;	
 }
 
 
