@@ -87,13 +87,13 @@ static void print_type_paths(sefs_typeinfo_t *typeinfo, sefs_fileinfo_t *paths, 
 	int i, j;
         sefs_fileinfo_t * fileinfo = NULL;
 
-	for (i = 0; i <= typeinfo->numpaths; i++) {
-		fileinfo = &(paths[typeinfo->pathitems[i]]);
+	for (i = 0; i <= typeinfo->num_inodes; i++) {
+		fileinfo = &(paths[typeinfo->index_list[i]]);
 
-		for (j = 0; j < fileinfo->numpaths; j++) {
-			printf("%s ", fileinfo->pathnames[j]);
+		for (j = 0; j < fileinfo->num_links; j++) {
+			printf("%s ", fileinfo->path_names[j]);
 			if (print_context)
-				printf("\t\t%s", typeinfo->setypename);
+				printf("\t\t%s", typeinfo->name);
 			printf("\n");
 		}
 	}	
