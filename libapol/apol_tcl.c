@@ -2000,7 +2000,14 @@ static void apol_cond_rules_append_cond_list(cond_rule_list_t *list, bool_t incl
 		for (i = 0; i < list->num_av_access; i++) {
 			rule = re_render_av_rule(FALSE, list->av_access[i], FALSE, policy);
 			assert(rule);
-			snprintf(tbuf, sizeof(tbuf)-1, "\t%d %s\n", policy->av_access[list->av_access[i]].enabled, rule);
+			if (policy->av_access[list->av_access[i]].enabled)
+				snprintf(tbuf, sizeof(tbuf)-1, "\t[enabled] ");
+			else 
+				snprintf(tbuf, sizeof(tbuf)-1, "\t[disabled] ");
+			Tcl_DStringAppend(buf, tbuf, -1);
+
+				
+			snprintf(tbuf, sizeof(tbuf)-1, "%s\n", rule);
 			Tcl_DStringAppend(buf, tbuf, -1);
 			free(rule);
 		}
@@ -2009,7 +2016,13 @@ static void apol_cond_rules_append_cond_list(cond_rule_list_t *list, bool_t incl
 		for (i = 0; i < list->num_av_audit; i++) {
 			rule = re_render_av_rule(FALSE, list->av_audit[i], TRUE, policy);
 			assert(rule);
-			snprintf(tbuf, sizeof(tbuf)-1, "\t%d %s\n", policy->av_audit[list->av_audit[i]].enabled, rule);
+			if (policy->av_audit[list->av_audit[i]].enabled)
+				snprintf(tbuf, sizeof(tbuf)-1, "\t[enabled] ");
+			else 
+				snprintf(tbuf, sizeof(tbuf)-1, "\t[disabled] ");
+			Tcl_DStringAppend(buf, tbuf, -1);
+			
+			snprintf(tbuf, sizeof(tbuf)-1, "%s\n", rule);
 			Tcl_DStringAppend(buf, tbuf, -1);
 			free(rule);
 		}
@@ -2018,7 +2031,13 @@ static void apol_cond_rules_append_cond_list(cond_rule_list_t *list, bool_t incl
 		for (i = 0; i < list->num_te_trans; i++) {
 			rule = re_render_tt_rule(FALSE, list->te_trans[i], policy);
 			assert(rule);
-			snprintf(tbuf, sizeof(tbuf)-1, "\t%d %s\n", policy->te_trans[list->te_trans[i]].enabled, rule);
+			if (policy->te_trans[list->te_trans[i]].enabled)
+				snprintf(tbuf, sizeof(tbuf)-1, "\t[enabled] ");
+			else 
+				snprintf(tbuf, sizeof(tbuf)-1, "\t[disabled] ");
+			Tcl_DStringAppend(buf, tbuf, -1);
+			
+			snprintf(tbuf, sizeof(tbuf)-1, "%s\n", rule);
 			Tcl_DStringAppend(buf, tbuf, -1);
 			free(rule);
 		}
@@ -2129,7 +2148,7 @@ int Apol_SearchConditionalRules(ClientData clientData, Tcl_Interp *interp, int a
 	}
 			
 	Tcl_DStringInit(buf);
-	snprintf(tbuf, sizeof(tbuf)-1, "Found the following expressions:\n");
+	snprintf(tbuf, sizeof(tbuf)-1, "Found the following expressions in Reverse Polish Notation:\n");
 	Tcl_DStringAppend(buf, tbuf, -1);
 		
 	for (i = 0; i < policy->num_cond_exprs; i++) {
