@@ -51,12 +51,15 @@ proc Apol_Cond_Rules::cond_rules_search {} {
 	variable resultsbox
 	variable enable_bool_combo_box
 	
-	if {$enable_bool_combo_box} {
+	if {$enable_bool_combo_box && $search_opts(boolean) == ""} {
+		tk_messageBox -icon error -type ok -title "Error" -message "No boolean variable provided!"
+		return -1
+	} elseif {$enable_bool_combo_box && $search_opts(boolean) != ""} {
 		set bool_name $search_opts(boolean)
 	} else {
 		set bool_name ""
 	}
-			
+					
 	set rt [catch {set results [apol_SearchConditionalRules \
 		$bool_name \
 		$search_opts(allow_regex) \
