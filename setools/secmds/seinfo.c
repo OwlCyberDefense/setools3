@@ -19,7 +19,12 @@
 #define _GNU_SOURCE
 #include <getopt.h>
 
-#define VERSION_INFO "Copyright (C) 2003 Tresys Technology, LLC (Version 1.0)"
+/* The following should be defined in the make environment */
+#ifndef SECMDS_VERSION_NUM
+	#define SECMDS_VERSION_NUM "UNKNOWN"
+#endif
+
+#define COPYRIGHT_INFO "Copyright (C) 2003-2004 Tresys Technology, LLC"
 /* DEFAULT_POLICY should be defined in the make environment */
 #ifndef DEFAULT_POLICY
 	#define DEFAULT_POLICY "/etc/security/selinux/src/policy.conf"
@@ -405,7 +410,7 @@ int main (int argc, char **argv)
 	  		usage(argv[0], 0);
 	  		exit(0);
 	  	case 'v': /* version */
-	  		printf("\n%s\n\n", VERSION_INFO);
+	  		printf("\n%s (%s)\n\n", COPYRIGHT_INFO, SECMDS_VERSION_NUM);
 	  		exit(0);
 	  	default:
 	  		usage(argv[0], 1);
