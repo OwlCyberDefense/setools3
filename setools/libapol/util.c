@@ -622,18 +622,24 @@ char *get_config_var(const char *var, FILE *fp)
 char *config_var_list_to_string(const char **list, int size)
 {
 	char *val;
-	int i;
+	int i, len;
 	
 	if (size <= 0 || list == NULL)
 		return NULL;
-	val = (char*)malloc(sizeof(char) * (2+strlen(list[0])));
-	val = strcpy(val, list[0]);
-	val = strcat(val, ":");
-	for (i = 1; i < size; i++) {
-		val = realloc(val, sizeof(char) * (2 + strlen(val) + strlen(list[i])));
-		val = strcat(val, list[i]);
-		val = strcat(val, ":");
+	
+	val = NULL;
+	len = 0;
+	for (i = 0; i < size; i++) {
+		/* skip empty strings */
+		if (!list[i])
+			continue;
+		if (i > 0) 
+			if (append_str(&val, &len, ":") != 0)
+				return NULL;
+		if (append_str(&val, &len, list[i]) != 0)
+			return NULL;
 	}
+
 	return val;
 }
 
