@@ -57,13 +57,22 @@ typedef struct registered_callback {
 } registered_callback_t;
 
 
+typedef struct seaudit_window {
+	GtkWindow *window;
+	GladeXML *xml;
+	GList *views;
+	GtkNotebook *notebook;
+} seaudit_window_t;
+
+seaudit_window_t* seaudit_window_create(audit_log_t *log, bool_t column_visibility[]);
+void seaudit_window_add_new_view(seaudit_window_t *window, audit_log_t *log, bool_t column_visibility[], const char *view_name);
+top_filters_view_t* seaudit_window_get_current_view(seaudit_window_t *window);
+void seaudit_window_filter_views(seaudit_window_t *window);
+
 typedef struct seaudit {
 	policy_t *cur_policy;
 	audit_log_t *cur_log;
-	SEAuditLogViewStore *log_store;
-	GladeXML *top_window_xml;
-	GtkWindow *top_window;
-	filters_t *filters;
+	seaudit_window_t *window;
 	GtkTextBuffer *policy_text;
 	GList *callbacks;
 	FILE *log_file_ptr;
@@ -80,8 +89,8 @@ extern seaudit_t *seaudit_app;
 
 seaudit_t *seaudit_init(void);
 void seaudit_destroy(seaudit_t *seaudit_app);
-int seaudit_open_policy(seaudit_t *seaudit, const char *filename);
-int seaudit_open_log_file(seaudit_t *seaudit, const char *filename);
+int seaudit_open_policy(const char *filename);
+int seaudit_open_log_file(const char *filename);
 
 /* callback and signal handling for seaudit events */
 int seaudit_callback_register(seaudit_callback_t function, void *user_data, unsigned int type);
