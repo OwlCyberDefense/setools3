@@ -78,7 +78,7 @@ int find_mount_points(char *dir, char ***mounts, int *num_mounts, int rw)
 	char *token, *fs, *fs_orig = NULL;
 	
 	if ((mtab = fopen("/etc/mtab", "r")) == NULL) {
-		fprintf(stderr, "Could not open /etc/mtab for reading.\n");
+		
 		return -1;
 	}
 
