@@ -87,9 +87,11 @@ proc Apol_Perms_Map::determine_loaded_pmap { } {
 	set Apol_Perms_Map::edit_flag	0
 	if {[string equal $loaded_pmap $user_default_pmap]} {
 		set dflt_pmap_flg 1
+		set system_dflt_flg 0
 		set title_display $Apol_Perms_Map::dflt_pmap_display
 	} elseif {[string equal [file dirname $loaded_pmap] $sys_dflt_pmap_dir]} {
 		set system_dflt_flg 1
+		set dflt_pmap_flg 0
 		set title_display $Apol_Perms_Map::sys_dflt_pmap_display
 	} elseif {$is_mls_loaded} {
 		set dflt_pmap_flg 0
@@ -507,11 +509,11 @@ proc Apol_Perms_Map::embed_mls_perms_widgets {list_b class selinux_perm} {
 	
 	if {[Apol_Perms_Map::is_mls_perm_undefined $Apol_Perms_Map::mls_base_perms_array($class,$selinux_perm)]} {
 		$lbl1 configure -text "$selinux_perm *" -fg red
-		$cb_read configure -state disabled
-		$cb_write configure -state disabled
-		$cb_both configure -state disabled
-		$cb_none configure -state disabled
-		$spinbox_weight configure -state disabled
+		#$cb_read configure -state disabled
+		#$cb_write configure -state disabled
+		#$cb_both configure -state disabled
+		#$cb_none configure -state disabled
+		#$spinbox_weight configure -state disabled
 	} else {
 		$lbl1 configure -text "$selinux_perm"
 	}
