@@ -1292,7 +1292,7 @@ static int load_cond_list(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int 
 				bool_val = le32_to_cpu(buf[1]);
 				assert(bool_val <= bm->bool_num);
 				expr->bool = bm->bool_map[bool_val-1];
-				if (expr->bool >= policy->num_cond_bools) {
+				if (expr->expr_type == COND_BOOL && expr->bool >= policy->num_cond_bools) {
 					free(expr); 
 					expr = NULL; 
 					continue;
@@ -1352,7 +1352,6 @@ static int load_cond_list(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int 
 				cond_free_rules_list(t_list);
 				cond_free_rules_list(f_list);
 				cond_free_expr(first);
-				assert(FALSE); /* debug aide */
 				return -4;
 			}
 		}
