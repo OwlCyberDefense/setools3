@@ -370,12 +370,6 @@ int find_default_policy_file(unsigned int search_opt, char **policy_file_path)
 	
 	assert(policy_file_path != NULL);
 	
-	/* First, check if the default policy install directory exists before proceeding. */ 
-	rt = access(LIBAPOL_POLICY_INSTALL_DIR, F_OK);
-	if (rt != 0) {
-		return POLICY_INSTALL_DIR_DOES_NOT_EXIST;
-     	}    
-     	
 	/* Try default source policy first as a source  
 	 * policy contains more useful information. */
 	if (search_opt & POL_TYPE_SOURCE) {
