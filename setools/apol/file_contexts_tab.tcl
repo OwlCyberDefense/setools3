@@ -231,9 +231,9 @@ proc Apol_File_Contexts::search_fc_database { } {
 		incr i
 		set class [lindex $results $i]
 		
-		$resultsbox insert end "File: $path\n"
-		if {$show_ctxt} {$resultsbox insert end "Context: $ctxt\n"}
-		if {$show_class} {$resultsbox insert end "Object Class: $class\n"}
+		$resultsbox insert end "$path"
+		if {$show_ctxt} {$resultsbox insert end " $ctxt"}
+		if {$show_class} {$resultsbox insert end " $class\n"}
 		$resultsbox insert end "\n"
 	}
 	ApolTop::makeTextBoxReadOnly $resultsbox 
