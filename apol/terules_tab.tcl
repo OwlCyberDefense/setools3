@@ -1447,7 +1447,7 @@ proc Apol_TE::configure_perms_section { } {
 	
 	# Make sure the permlistbox is enabled. This may have been disabled
 	# by Apol_TE::enable_disable_permissions_section
-	$permslistbox configure -state normal
+	ApolTop::enable_tkListbox $permslistbox
 	set objectsList [Apol_TE::get_Selected_ListItems $objslistbox]
 			
 	if { $Apol_TE::opts(perm_select) == "all" } {
