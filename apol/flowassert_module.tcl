@@ -614,8 +614,8 @@ proc Apol_Analysis_flowassert::create_type_panel {type_panel type_name} {
     $wiz($type_name,remove_b) configure -command [namespace code [list remove_type $id_list_lb $type_name]]
     pack $wiz($type_name,remove_b) -expand 0 -pady 5 -side top
 
-    $add_b configure -command [namespace code [list add_replace_type $id_list_lb $type_name 1]]
-    $wiz($type_name,replace_b) configure -command [namespace code [list add_replace_type $id_list_lb $type_name 0]]
+    $add_b configure -command [namespace code [list add_replace_type $id_list_lb $type_name 0]]
+    $wiz($type_name,replace_b) configure -command [namespace code [list add_replace_type $id_list_lb $type_name 1]]
     bind $id_list_lb <<ListboxSelect>> [namespace code [list select_id_item $id_list_lb $type_name]]
     bind $id_list_lb <Button-1> [namespace code [list id_list_lb_click %W $type_name %y]]
     select_id_item $id_list_lb $type_name
@@ -623,12 +623,6 @@ proc Apol_Analysis_flowassert::create_type_panel {type_panel type_name} {
     # add the widgets' paths to a list, to be read by [populate_lists]
     lappend wiz(type_cbs) $type_names_cb
     lappend wiz(objclass_lbs) $wiz($type_name,objs_lb)
-}
-
-# Safely destroys a modal dialog.
-proc Apol_Analysis_flowassert::destroy_wizard_dlg {dlg} {
-    grab release $dlg
-    destroy $dlg
 }
 
 # Called to populate the ComboBox/listbox holding the type names +
@@ -744,11 +738,14 @@ proc Apol_Analysis_flowassert::select_class {type_name widget newvalue} {
     return 1
 }
 
-# Called when the user clicks on the 'add' button within the wizard.
-# If an item is already selected in the listbox, replace it.
-# Otherwise append a new one.  Either way deselect the listbox.
-# Finally synchronize the label entry.
-proc Apol_Analysis_flowassert::add_replace_type {id_lb type_name always_add} {
+# Callback when the user clicks on the 'add' or 'replace' button
+# within the wizard.  For the add button ($replace_clicked == 0), if
+# an item is already selected insert the new type_id prior to
+# selection; otherwise append to bottom.  For replace, replace the
+# currently selected item.  Either way remove the selection
+# afterwards.
+proc Apol_Analysis_flowassert::add_replace_type {id_lb type_name
+                                                 replace_clicked} {
     variable wiz_var
     set class $wiz_var($type_name,class)
     if {$wiz_var($type_name,include) == "include"} {
@@ -765,11 +762,15 @@ proc Apol_Analysis_flowassert::add_replace_type {id_lb type_name always_add} {
         }
     }
     set type_id "$sign$type$class"
-    if {$always_add || [set selected [$id_lb curselection]] == {}} {
+    if {[set selected [$id_lb curselection]] == {}} {
         lappend wiz_var($type_name) $type_id
     } else {
         set selected [lindex $selected 0]
-        set wiz_var($type_name) [lreplace $wiz_var($type_name) $selected $selected $type_id]
+        if {$replace_clicked == 0} {
+            set wiz_var($type_name) [linsert $wiz_var($type_name) $selected $type_id]
+        } else {
+            set wiz_var($type_name) [lreplace $wiz_var($type_name) $selected $selected $type_id]
+        }
     }
     $id_lb selection clear 0 end
     select_id_item $id_lb $type_name
@@ -777,8 +778,8 @@ proc Apol_Analysis_flowassert::add_replace_type {id_lb type_name always_add} {
     reset_type $type_name
 }
 
-# Synchronize the currently editing line with the contents of the three
-# listboxes.
+# Take the three type_id list boxes and re-render the current
+# assertion line.
 proc Apol_Analysis_flowassert::sync_wiz_lbs_to_line {} {
     variable wiz_var
     foreach var {mode start to via weight} {
@@ -787,7 +788,10 @@ proc Apol_Analysis_flowassert::sync_wiz_lbs_to_line {} {
     set wiz_var(line) [render_assertion [list $mode $start $to $via $weight]]
 }
 
-# Called whenever the selection changes in the assert id listbox.
+# Callback whenever the selection changes in the assert id listbox.
+# If an item is highlighted, fill in the type rb/lb and object class
+# entry; also enable the replace and remove buttons.  If no items are
+# selected then disable replace and remove buttons.
 proc Apol_Analysis_flowassert::select_id_item {id_lb type_name} {
     variable wiz
     variable wiz_var
@@ -812,7 +816,8 @@ proc Apol_Analysis_flowassert::select_id_item {id_lb type_name} {
     }
 }
 
-# Remove the currently selected item from the assert id listbox.
+# Callback whenever the user clicks on the remove button. Remove the
+# currently selected item from the assert id listbox.
 proc Apol_Analysis_flowassert::remove_type {id_lb type_name} {
     if {[set selected [$id_lb curselection]] == {}} {
         return
@@ -826,7 +831,8 @@ proc Apol_Analysis_flowassert::remove_type {id_lb type_name} {
     sync_wiz_lbs_to_line
 }
 
-# Called whenever the user clicks on the assert id lisb box.
+# Callback whenever the user clicks on the assert id list box.  If
+# user clicks on the already selected item deselect it.
 proc Apol_Analysis_flowassert::id_list_lb_click {id_lb type_name y} {
     if {[set clicked [$id_lb index @1,$y]] != -1} {
         if {[$id_lb selection includes $clicked]} {
@@ -858,7 +864,7 @@ proc Apol_Analysis_flowassert::add_assertion {} {
 }
 
 # Resets all widgets in the assertion wizard to their original
-# positions.  Clears the assertion line and the list boxes
+# positions.  Clears the assertion line and type_id list boxes.
 proc Apol_Analysis_flowassert::reset_wizard {origline} {
     variable wiz
     variable wiz_var
