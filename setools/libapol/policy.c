@@ -2981,7 +2981,7 @@ static int update_cond_expr_item(int idx, policy_t *policy)
 	return 0;
 }
 
-void add_cond_expr_item_helper(int cond_expr, cond_rule_list_t *list, policy_t * policy)
+void add_cond_expr_item_helper(int cond_expr, bool_t cond_list, cond_rule_list_t *list, policy_t * policy)
 {
 	int i;
 	
@@ -2990,14 +2990,17 @@ void add_cond_expr_item_helper(int cond_expr, cond_rule_list_t *list, policy_t *
 	
 	for (i = 0; i < list->num_av_access; i++) {
 		policy->av_access[list->av_access[i]].cond_expr = cond_expr;	
+		policy->av_access[list->av_access[i]].cond_list = cond_list;	
 	}
 	
 	for (i = 0; i < list->num_av_audit; i++) {
 		policy->av_audit[list->av_audit[i]].cond_expr = cond_expr;	
+		policy->av_audit[list->av_audit[i]].cond_list = cond_list;	
 	}
 	
 	for (i = 0; i < list->num_te_trans; i++) {
 		policy->te_trans[list->te_trans[i]].cond_expr = cond_expr;	
+		policy->te_trans[list->te_trans[i]].cond_list = cond_list;	
 	}
 	
 }
@@ -3035,9 +3038,9 @@ int add_cond_expr_item(cond_expr_t *expr, cond_rule_list_t *true_list, cond_rule
 	
 	policy->cond_exprs[idx].expr = expr;
 	policy->cond_exprs[idx].true_list = true_list;
-	add_cond_expr_item_helper(idx, true_list, policy);
+	add_cond_expr_item_helper(idx, TRUE, true_list, policy);
 	policy->cond_exprs[idx].false_list = false_list;
-	add_cond_expr_item_helper(idx, false_list, policy);
+	add_cond_expr_item_helper(idx, FALSE, false_list, policy);
 	
 	return idx;
 }
