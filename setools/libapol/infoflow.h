@@ -62,7 +62,6 @@ typedef struct iflow_query {
  * iflow_obj_class is used to represent an object class in the iflow_t (see below).
  */
 typedef struct iflow_obj_class {
-	int obj_class; /* index into policy->obj_classes. */
 	int num_rules;
 	int *rules;
 } iflow_obj_class_t;
