@@ -247,7 +247,7 @@ static void sefs_stmt_populate(char *stmt,sefs_search_keys_t *search_keys,int *o
 		if (search_keys->do_path_regEx) 
 			sprintf(stmt_holder," sefs_paths_compare(paths.path,\"%s\") ",search_keys->path[index]);
 		else 
-			sprintf(stmt_holder," paths.path = \"%s\" ",search_keys->path[index]);
+			sprintf(stmt_holder," paths.path LIKE \"%s%%\" ",search_keys->path[index]);
 		strncat(stmt,stmt_holder,stmt_length-stmt_curr_length);
 		index += 1;
 		while (search_keys->user && index < search_keys->num_path){
@@ -256,7 +256,7 @@ static void sefs_stmt_populate(char *stmt,sefs_search_keys_t *search_keys,int *o
 			if (search_keys->do_path_regEx) 
 				sprintf(stmt_holder," OR sefs_paths_compare(paths.path,\"%s\") ",search_keys->path[index]);
 			else 
-				sprintf(stmt_holder," OR paths.path = \"%s\" ",search_keys->path[index]);
+				sprintf(stmt_holder," OR paths.path LIKE \"%s%%\" ",search_keys->path[index]);
 			strncat(stmt,stmt_holder,stmt_length-stmt_curr_length);
 			index += 1;
 		}
@@ -322,7 +322,7 @@ static int sefs_calc_stmt_size(sefs_search_keys_t *search_keys)
 		if (search_keys->do_path_regEx) 
 			total_size += sefs_calc_search_size(" () AND sefs_paths_compare(paths.path,\"%s\") OR    ",search_keys->path,search_keys->num_path);
 		else 
-			total_size += sefs_calc_search_size(" () AND paths.path = OR \"\"  ",search_keys->path,search_keys->num_path);
+			total_size += sefs_calc_search_size(" () AND paths.path LIKE OR \"\"  ",search_keys->path,search_keys->num_path);
 	}
 
 	if (search_keys->object_class) 
@@ -1139,7 +1139,6 @@ char **sefs_filesystem_db_get_known(sefs_filesystem_db_t *fsd,int *count_in,int 
 			return NULL;
 		}
 		memset(list, 0, list_size * sizeof(char *));
-		
 		rc = sqlite3_exec(db,select_stmt,sefs_search_types_callback,&count,&errmsg);
 		if (rc != SQLITE_OK) {
 			printf("unable to select because\n%s\n",errmsg);
