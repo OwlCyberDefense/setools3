@@ -405,14 +405,24 @@ void seaudit_on_TopWindow_destroy(GtkWidget *widget)
 }
 
 /*
- * glade autoconnected callbacks for file menu
+ * glade autoconnected callbacks for menus
  *
  */
 void seaudit_on_new_tab_clicked(GtkMenuItem *menu_item, gpointer user_data)
 {
 	seaudit_window_add_new_view(seaudit_app->window, seaudit_app->cur_log, seaudit_app->seaudit_conf.column_visibility,
-				    "New view");
+				    NULL);
 
+}
+
+void seaudit_on_open_view_clicked(GtkMenuItem *menu_item, gpointer user_data)
+{
+	seaudit_window_open_view(seaudit_app->window, seaudit_app->cur_log, seaudit_app->seaudit_conf.column_visibility);
+}
+
+void seaudit_on_save_view_clicked(GtkMenuItem *menu_item, gpointer user_data)
+{
+	seaudit_window_save_current_view(seaudit_app->window);
 }
 
 void seaudit_on_PolicyFileOpen_activate(GtkWidget *widget, GdkEvent *event, gpointer callback_data)
