@@ -1747,6 +1747,7 @@ int Apol_GetPermsByClass(ClientData clientData, Tcl_Interp * interp, int argc, c
  * 	classes
  *	perms
  *	common_perms
+ * 	initial_sids
  * argv[2] (OPTIONAL) regular expression
  */
 int Apol_GetNames(ClientData clientData, Tcl_Interp * interp, int argc, char *argv[])
@@ -1846,15 +1847,23 @@ int Apol_GetNames(ClientData clientData, Tcl_Interp * interp, int argc, char *ar
 		}
 	}
 	else if(strcmp("perms", argv[1]) == 0) {
-		for(i = 0; get_perm_name(i, &name, policy) == 0; i++) 
+		for(i = 0; get_perm_name(i, &name, policy) == 0; i++) {
 			Tcl_AppendElement(interp, name);
 			free(name);
 		}
+	}
 	else if(strcmp("common_perms", argv[1]) == 0) {
-		for(i = 0; get_common_perm_name(i, &name, policy) == 0; i++)
+		for(i = 0; get_common_perm_name(i, &name, policy) == 0; i++) {
 			Tcl_AppendElement(interp, name);
 			free(name);
 		}		
+	}
+	else if(strcmp("initial_sids", argv[1]) == 0) {
+		for(i = 0; get_initial_sid_name(i, &name, policy) == 0; i++) {
+			Tcl_AppendElement(interp, name);
+			free(name);
+		}		
+	}
 	else {
 		if(use_regex) 
 			regfree(&reg);
@@ -1865,6 +1874,105 @@ int Apol_GetNames(ClientData clientData, Tcl_Interp * interp, int argc, char *ar
 	if(use_regex) 
 		regfree(&reg);
 			
+	return TCL_OK;
+}
+
+int Apol_SearchInitialSIDs(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
+{
+	char *str, *user = NULL, *role = NULL, *type = NULL;
+	int *isids = NULL, num_isids;
+	char tbuf[64];
+	int sz, rt, i;
+	Tcl_DString *buf, buffer; 
+	
+	if(argc != 4) {
+		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
+		return TCL_ERROR;
+	}
+	if(policy == NULL) {
+		Tcl_AppendResult(interp,"No current policy file is opened!", (char *) NULL);
+		return TCL_ERROR;
+	}
+	
+	if(argv[1] != NULL) {
+		if (!is_valid_str_sz(argv[1])) {
+			Tcl_AppendResult(interp, "The provided user string is too large.", (char *) NULL);
+			return TCL_ERROR;
+		}
+		/* Set user parameter for the query and guard against buffer overflows */
+		if(!str_is_only_white_space(argv[1])) {
+			sz = strlen(argv[1]) + 1;
+	 	        user = (char *)malloc(sz);
+		        if(user == NULL) {
+			      fprintf(stderr, "out of memory");
+			      return TCL_ERROR;
+			}	
+			user = strcpy(user, argv[1]);
+		}
+	}
+	
+	if(argv[2] != NULL) {
+		if (!is_valid_str_sz(argv[2])) {
+			Tcl_AppendResult(interp, "The provided role string is too large.", (char *) NULL);
+			return TCL_ERROR;
+		}
+		
+		/* Set role parameter for the query and guard against buffer overflows */	
+		if(argv[2] != NULL && !str_is_only_white_space(argv[2])) {
+			sz = strlen(argv[2]) + 1;
+	 	        role = (char *)malloc(sz);
+		        if(role == NULL) {
+			      fprintf(stderr, "out of memory");
+			      return TCL_ERROR;
+			}	
+			role = strcpy(role, argv[2]);
+		}
+	}
+	
+	if(argv[3] != NULL) {
+		if (!is_valid_str_sz(argv[3])) {
+			Tcl_AppendResult(interp, "The provided type string is too large.", (char *) NULL);
+			return TCL_ERROR;
+		}
+		
+		/* Set type parameter for the query and guard against buffer overflows */	
+		if(argv[3] != NULL && !str_is_only_white_space(argv[3])) {
+			sz = strlen(argv[3]) + 1;
+	 	        type = (char *)malloc(sz);
+		        if(type == NULL) {
+			      fprintf(stderr, "out of memory");
+			      return TCL_ERROR;
+			}	
+			type = strcpy(type, argv[3]);
+		}
+	}
+	buf = &buffer;	
+	rt = search_initial_sids_context(&isids, &num_isids, user, role, type, policy);
+	if( rt != 0) {
+		Tcl_AppendResult(interp, "Problem searching initial SID contexts\n", (char *) NULL);
+		return TCL_ERROR;
+	}
+	Tcl_DStringInit(buf);
+	sprintf(tbuf, "\nMatching Initial SIDs (%d):\n\n", num_isids);
+	Tcl_DStringAppend(buf, tbuf, -1);
+	
+	for(i = 0; i < num_isids; i++) {
+		sprintf(tbuf, "%s:", policy->initial_sids[isids[i]].name);
+		Tcl_DStringAppend(buf, tbuf, -1);
+		str = re_render_security_context(policy->initial_sids[isids[i]].scontext, policy);
+		if(str == NULL) {
+			Tcl_DStringFree(buf);
+			Tcl_ResetResult(interp);
+			Tcl_AppendResult(interp, "\nProblem rendering security context for", isids[i], "th initial SID.\n", (char *) NULL);
+			return TCL_ERROR;
+		}
+		sprintf(tbuf, "%s\n", str);
+		Tcl_DStringAppend(buf, tbuf, -1);
+		free(str);
+	}
+	free(isids);
+	Tcl_DStringResult(interp, buf);
+								
 	return TCL_OK;
 }
 
@@ -2821,6 +2929,41 @@ int Apol_GetSingleTypeInfo(ClientData clientData, Tcl_Interp *interp, int argc, 
 	
 	Tcl_DStringResult(interp, buf);
 	return TCL_OK;	
+}
+
+/* args ordering:
+ * argv[1]	sid name
+ */
+int Apol_GetInitialSIDInfo(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
+{
+	int idx, rt;
+	char *scontext = NULL, *isid_name = NULL;
+	
+	if(argc != 2) {
+		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
+		return TCL_ERROR;
+	}
+	if(policy == NULL) {
+		Tcl_AppendResult(interp,"No current policy file is opened!", (char *) NULL);
+		return TCL_ERROR;
+	}
+	if(!is_valid_str_sz(argv[1])) {
+		Tcl_AppendResult(interp, "SID string is too large", (char *) NULL);
+		return TCL_ERROR;
+	}
+	
+	idx = get_initial_sid_idx(argv[1], policy);
+	if(is_valid_initial_sid_idx(idx, policy)) {
+		rt = get_initial_sid_name(idx, &isid_name, policy);
+		if(rt != 0) {
+			Tcl_AppendResult(interp, "Unexpected error getting initial SID name\n\n", (char *) NULL);
+			return TCL_ERROR;
+		}
+		scontext = re_render_initial_sid_security_context(idx, policy);
+		Tcl_AppendElement(interp, scontext);			
+	}	
+
+	return TCL_OK;
 }
 
 /* gets information about types/attribs, based on option */
@@ -3830,6 +3973,8 @@ int Apol_Init(Tcl_Interp *interp)
 	Tcl_CreateCommand(interp, "apol_TransitiveFindPathsNext", (Tcl_CmdProc *) Apol_TransitiveFindPathsNext, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_TransitiveFindPathsGetResults", (Tcl_CmdProc *) Apol_TransitiveFindPathsGetResults, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_TransitiveFindPathsAbort", (Tcl_CmdProc *) Apol_TransitiveFindPathsAbort, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+	Tcl_CreateCommand(interp, "apol_SearchInitialSIDs", (Tcl_CmdProc *) Apol_SearchInitialSIDs, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+	Tcl_CreateCommand(interp, "apol_GetInitialSIDInfo", (Tcl_CmdProc *) Apol_GetInitialSIDInfo, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	
 	Tcl_PkgProvide(interp, "apol", (char*)libapol_get_version());
 
