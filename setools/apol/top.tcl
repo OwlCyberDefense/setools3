@@ -83,6 +83,7 @@ namespace eval ApolTop {
 	variable class_perms_tab	"Apol_Class_Perms"
 	variable users_tab		"Apol_Users"
 	variable initial_sids_tab	"Apol_Initial_SIDS"
+	variable cond_bools_tab		"Apol_Cond_Bools"
 	variable policy_conf_tab	"Apol_PolicyConf"
 	variable analysis_tab		"Apol_Analysis"
 	 
@@ -231,6 +232,65 @@ proc ApolTop::enable_tkListbox { my_list_box } {
 	return
 }
 
+# ------------------------------------------------------------------------------
+#  Command ApolTop::popup_listbox_Menu
+# ------------------------------------------------------------------------------
+proc ApolTop::popup_listbox_Menu { global x y popup callbacks list_box} {
+	focus -force $list_box
+	
+	set selected_item [$list_box get active]
+	if {$selected_item == ""} {
+		return
+	}
+	# Getting global coordinates of the application window (of position 0, 0)
+	set gx [winfo rootx $global]	
+	set gy [winfo rooty $global]
+	
+	# Add the global coordinates for the application window to the current mouse coordinates
+	# of %x & %y
+	set cmx [expr $gx + $x]
+	set cmy [expr $gy + $y]
+	
+	$popup delete 0 end
+	foreach callback $callbacks {
+		$popup add command -label "[lindex $callback 0]" -command "[lindex $callback 1] $selected_item"
+	}
+	
+	# Posting the popup menu
+	tk_popup $popup $cmx $cmy
+	
+	return 0
+}
+
+# ------------------------------------------------------------------------------
+#  Command ApolTop::popup_Tab_Menu
+# ------------------------------------------------------------------------------
+proc ApolTop::popup_Tab_Menu { window x y popupMenu callbacks page } {
+	if {$page == ""} {
+		return
+	}
+	
+	# Getting global coordinates of the application window (of position 0, 0)
+	set gx [winfo rootx $window]	
+	set gy [winfo rooty $window]
+	
+	# Add the global coordinates for the application window to the current mouse coordinates
+	# of %x & %y
+	set cmx [expr $gx + $x]
+	set cmy [expr $gy + $y]
+	
+	set page [ApolTop::get_tabname $page]
+	$popupMenu delete 0 end
+	foreach callback $callbacks {
+		$popupMenu add command -label "[lindex $callback 0]" -command "[lindex $callback 1] $page"
+	}
+		
+	# Posting the popup menu
+   	tk_popup $popupMenu $cmx $cmy
+   	
+   	return 0
+}
+
 ################################################################################
 # ::get_tabname -- 
 #	args:	
@@ -324,6 +384,10 @@ proc ApolTop::set_Focus_to_Text { tab } {
 		$ApolTop::initial_sids_tab {
 			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
 			Apol_Initial_SIDS::set_Focus_to_Text
+		} \
+		$ApolTop::cond_bools_tab {
+			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
+			Apol_Cond_Bools::set_Focus_to_Text
 		} \
 		default { 
 			return 
@@ -962,6 +1026,7 @@ proc ApolTop::create { } {
 	Apol_Roles::create $components_nb
 	Apol_Users::create $components_nb
 	Apol_Initial_SIDS::create $components_nb
+	Apol_Cond_Bools::create $components_nb
 	Apol_TE::create $rules_nb
 	Apol_RBAC::create $rules_nb
 	
@@ -1599,9 +1664,9 @@ proc ApolTop::aboutBox {} {
 proc ApolTop::unimplemented {} {
 	tk_messageBox -icon warning \
 		-type ok \
-		-title "Unimplemented Command" \
+		-title "Unimplemented" \
 		-message \
-		"This command is not currently implemented. \n\n\(Cut & paste from the results windows should be enabled.)"
+		"This command is not currently implemented."
 	
 	return
 }
@@ -1634,6 +1699,7 @@ proc ApolTop::closePolicy {} {
         Apol_RBAC::close
         Apol_Users::close
         Apol_Initial_SIDS::close
+        Apol_Cond_Bools::close
         Apol_Analysis::close 
         Apol_PolicyConf::close      
 	ApolTop::set_Focus_to_Text [$ApolTop::notebook raise]
@@ -1725,15 +1791,56 @@ proc ApolTop::openPolicyFile {file recent_flag} {
 	}
 	
 	ApolTop::showPolicyStats
-	Apol_Class_Perms::open
-	Apol_Types::open	
-	Apol_TE::open
-	Apol_Roles::open
-	Apol_RBAC::open
-	Apol_Users::open
-	Apol_Initial_SIDS::open
-	Apol_Analysis::open
-	Apol_PolicyConf::open $file
+	set rt [catch {Apol_Class_Perms::open} err]
+	if {$rt != 0} {
+		tk_messageBox -icon error -type ok -title "Error" -message "$err"
+		return -1
+	}
+	set rt [catch {Apol_Types::open} err]
+	if {$rt != 0} {
+		tk_messageBox -icon error -type ok -title "Error" -message "$err"
+		return -1
+	}	
+	set rt [catch {Apol_TE::open} err]
+	if {$rt != 0} {
+		tk_messageBox -icon error -type ok -title "Error" -message "$err"
+		return -1
+	}
+	set rt [catch {Apol_Roles::open} err]
+	if {$rt != 0} {
+		tk_messageBox -icon error -type ok -title "Error" -message "$err"
+		return -1
+	}
+	set rt [catch {Apol_RBAC::open} err]
+	if {$rt != 0} {
+		tk_messageBox -icon error -type ok -title "Error" -message "$err"
+		return -1
+	}
+	set rt [catch {Apol_Users::open} err]
+	if {$rt != 0} {
+		tk_messageBox -icon error -type ok -title "Error" -message "$err"
+		return -1
+	}
+	set rt [catch {Apol_Initial_SIDS::open} err]
+	if {$rt != 0} {
+		tk_messageBox -icon error -type ok -title "Error" -message "$err"
+		return -1
+	}
+	set rt [catch {Apol_Cond_Bools::open} err]
+	if {$rt != 0} {
+		tk_messageBox -icon error -type ok -title "Error" -message "$err"
+		return -1
+	}
+	set rt [catch {Apol_Analysis::open} err]
+	if {$rt != 0} {
+		tk_messageBox -icon error -type ok -title "Error" -message "$err"
+		return -1
+	}
+	set rt [catch {Apol_PolicyConf::open $file} err]
+	if {$rt != 0} {
+		tk_messageBox -icon error -type ok -title "Error" -message "$err"
+		return -1
+	}
 	set policy_is_open 1
 	
 	if {$recent_flag == 1} {
@@ -1770,11 +1877,26 @@ proc ApolTop::openPolicy {} {
 	return
 }
 
+proc ApolTop::free_call_back_procs { } {
+	Apol_Class_Perms::free_call_back_procs
+	Apol_Types::free_call_back_procs	
+	Apol_TE::free_call_back_procs
+	Apol_Roles::free_call_back_procs
+	Apol_RBAC::free_call_back_procs
+	Apol_Users::free_call_back_procs
+	Apol_Initial_SIDS::free_call_back_procs
+	Apol_Analysis::free_call_back_procs
+	Apol_PolicyConf::free_call_back_procs
+	Apol_Cond_Bools::free_call_back_procs
+	return 0
+}
+
 proc ApolTop::apolExit { } {
 	variable policy_is_open
 	if {$policy_is_open} {
 		ApolTop::closePolicy
 	}
+	ApolTop::free_call_back_procs
 	ApolTop::writeInitFile
 	exit
 }
