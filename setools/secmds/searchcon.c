@@ -173,21 +173,22 @@ XXX JAM add code here
 		}
 		for (i=0; i < fsd->numpaths; i++)
 		{
+/* XXX kill line	*/printf("\nfsd->numpaths: %x\npathlist", fsd->numpaths);	
 			for (j=0; j < fsd->paths[i].numpaths ; j++);
 			{
-/* XXX kill line		printf("%s\n", fsd->paths[i].pathnames[j]);*/
+/* XXX kill line	*/printf("fsd->paths[%x].numpaths: %i\n", i, fsd->paths[i].numpaths);
+/* XXX kill line		*/printf("%s\n", fsd->paths[i].pathnames[j]);
+				if(fsd->paths[i].pathnames[j])
 				if(regexec(&reg, fsd->paths[i].pathnames[j], 0, NULL, 0) == 0)
 				{
 					/*printf("%s\t\t%s\n", fsd->paths[i].pathnames[j],
 						context_str(fsd->paths[i].context)); /*working?*/
 					num++;
 				} 
-/* XXX kill line 		*/printf("%i,%i ", i, j); (i%8)? : printf("\n");
-				if(num)
-					return  0;
-				return 1; 
+/* XXX kill line 		*/printf("%x,%x ", i, j); (i%8)? : printf("\n");
 			}
 		}
+		return num?0:1;
 	}
 	else 
 	{
@@ -257,7 +258,13 @@ int main(int argc, char **argv, char **envp)
 	int optc = 0, rc = 0, list = 0, use_regex = 0;
 	sefs_filesystem_data_t fsdata;
 	
-	while ((optc = getopt_long (argc, argv, "f:t:u:p:rlhv", longopts, NULL)) != -1)  {
+        filename = argv[1];
+	if (filename == NULL) {
+		usage(argv[0], 0);
+		return -1;
+	}
+
+	while ((optc = getopt_long (argc, argv, "t:u:p:rlhv", longopts, NULL)) != -1)  {
 		switch (optc) {
 		case 't': /* type */
 	  		tname = optarg;
@@ -286,11 +293,6 @@ int main(int argc, char **argv, char **envp)
 		}
 	}
 
-        filename = argv[1];
-	if (filename == NULL) {
-		usage(argv[0], 0);
-		return -1;
-	}
 
 	if ((tname == NULL) && (uname == NULL) && (path == NULL) && !list) {
 		fprintf(stderr, "\nYou must specify one of -t|-u|-p\n\n");
