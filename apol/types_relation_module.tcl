@@ -192,8 +192,7 @@ proc Apol_Analysis_tra::display_dif_options { } {
      	wm withdraw $dirflow_options_Dlg	
     	wm title $dirflow_options_Dlg \
     		"Types Relationship Direct Information Flows Options"
-    	wm protocol $dirflow_options_Dlg WM_DELETE_WINDOW \
-    		"destroy $dirflow_options_Dlg"
+    	wm protocol $dirflow_options_Dlg WM_DELETE_WINDOW  " "
 	
 	set top_frame [TitleFrame $dirflow_options_Dlg.top_frame \
 		-text "Filter results by object class:"]    	 	  
@@ -292,6 +291,8 @@ proc Apol_Analysis_tra::display_dif_options { } {
 	wm geom $dirflow_options_Dlg ${width}x${height}
 	wm deiconify $dirflow_options_Dlg
 	focus $dirflow_options_Dlg
+	wm protocol $dirflow_options_Dlg WM_DELETE_WINDOW \
+    		"destroy $dirflow_options_Dlg"
      	return 0
 }
 

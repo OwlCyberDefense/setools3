@@ -775,7 +775,8 @@ proc Apol_Analysis_relabel::adv_options_create_dialog {path_name title_txt} {
     	toplevel $widget_vars($path_name,name) 
      	wm withdraw $widget_vars($path_name,name)	
     	wm title $widget_vars($path_name,name) $title_txt 
-    	   	
+	wm protocol $widget_vars($path_name,name) WM_DELETE_WINDOW  " "
+    	    	   	
    	set close_frame [frame $widget_vars($path_name,name).close_frame -relief sunken -bd 1]
    	set topf  [frame $widget_vars($path_name,name).topf]
         pack $close_frame -side bottom -anchor center -pady 2
@@ -847,9 +848,6 @@ proc Apol_Analysis_relabel::adv_options_create_dialog {path_name title_txt} {
 		-command "Apol_Analysis_relabel::adv_options_destroy_dialog $path_name"]
 	pack $close_bttn -side left -anchor center
 					  
-	wm protocol $widget_vars($path_name,name) WM_DELETE_WINDOW \
-		"Apol_Analysis_relabel::adv_options_destroy_dialog $path_name"
-    	
         # Configure top-level dialog specifications
         set width 780
 	set height 750
@@ -858,7 +856,8 @@ proc Apol_Analysis_relabel::adv_options_create_dialog {path_name title_txt} {
 	focus $widget_vars($path_name,name)
 	
 	Apol_Analysis_relabel::adv_options_set_widgets_to_default_state $path_name
-	return 0
+	wm protocol $widget_vars($path_name,name) WM_DELETE_WINDOW \
+		"Apol_Analysis_relabel::adv_options_destroy_dialog $path_name"
 }
 
 

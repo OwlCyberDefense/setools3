@@ -80,7 +80,7 @@ proc Apol_File_Contexts::display_analysis_info {} {
     	}
 	# Create the top-level dialog and subordinate widgets
     	toplevel $info_Dlg 
-   	wm protocol $info_Dlg WM_DELETE_WINDOW "destroy $info_Dlg"
+   	wm protocol $info_Dlg WM_DELETE_WINDOW " "
     	wm withdraw $info_Dlg
     	wm title $info_Dlg "Analysis Description"
     	set topf  [frame $info_Dlg.topf]
@@ -106,6 +106,7 @@ proc Apol_File_Contexts::display_analysis_info {} {
 	set height 440
 	wm geom $info_Dlg ${width}x${height}
 	wm deiconify $info_Dlg
+	wm protocol $info_Dlg WM_DELETE_WINDOW "destroy $info_Dlg"
 } 
 
 ##############################################################
@@ -360,7 +361,7 @@ proc Apol_File_Contexts::display_create_db_dlg {} {
 	}
 	toplevel $w 
 	wm title $w "Create Index File"
-	wm protocol $w WM_DELETE_WINDOW "destroy $w"
+	wm protocol $w WM_DELETE_WINDOW " "
     	wm withdraw $w
     	
     	set t_frame [frame $w.t_frame]
@@ -411,6 +412,7 @@ proc Apol_File_Contexts::display_create_db_dlg {} {
  	wm geometry $w +50+50
  	wm deiconify $w
  	grab $w
+ 	wm protocol $w WM_DELETE_WINDOW "destroy $w"
 }
 
 proc Apol_File_Contexts::destroy_progressDlg {} {

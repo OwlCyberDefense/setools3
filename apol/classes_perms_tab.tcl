@@ -243,7 +243,6 @@ proc Apol_Class_Perms::popupInfo {which name} {
 	}
 	toplevel $w 
 	wm title $w "$name"
-	wm protocol $w WM_DELETE_WINDOW "destroy $w"
     	wm withdraw $w
 	set sf [ScrolledWindow $w.sf  -scrollbar both -auto both]
 	set f [text [$sf getframe].f -font {helvetica 10} -wrap none -width 35 -height 10]
@@ -255,6 +254,7 @@ proc Apol_Class_Perms::popupInfo {which name} {
  	wm geometry $w +50+50
 	wm deiconify $w	
 	$f configure -state disabled
+	wm protocol $w WM_DELETE_WINDOW "destroy $w"
 	return 0
 }
 
