@@ -72,61 +72,22 @@ seaudit_window_tree_view_onSelect_ViewEntireMsg(GtkTreeView *treeview,
 {
 
 	/* we passed the view as userdata when we connected the signal */
-	seaudit_window_view_entire_message_in_textbox();
+	seaudit_window_view_entire_message_in_textbox(NULL);
 }
 
 static void
-seaudit_window_popup_menu_on_view_msg(GtkWidget *menuitem, gpointer userdata)
+seaudit_window_popup_menu_on_view_msg(GtkWidget *menuitem, gpointer user_data)
 {
-	GtkTreePath *path = NULL;
-	GtkTreeSelection *selection = NULL;
-	seaudit_filtered_view_t *view = NULL;
-	
-	view = seaudit_window_get_current_view(seaudit_app->window);
-	assert(view);
-	selection = gtk_tree_view_get_selection(view->tree_view);
-	
-	/* Make sure to highlight the clicked row in this case if there are more than 1 selected row */
-	if (gtk_tree_selection_count_selected_rows(selection) > 1) {			
-		/* Get tree path for row that was clicked */
-		if (gtk_tree_view_get_path_at_pos(view->tree_view,
-		                             ((GdkEventButton*)userdata)->x, 
-		                             ((GdkEventButton*)userdata)->y,
-		                             &path, NULL, NULL, NULL)) {
-			gtk_tree_selection_unselect_all(selection);
-			gtk_tree_selection_select_path(selection, path);
-			gtk_tree_path_free(path);
-		}
-	}
-		
-	/* we passed the view as userdata when we connected the signal */
-	seaudit_window_view_entire_message_in_textbox();
-}
+	int idx = GPOINTER_TO_INT(user_data);
 
-static void seaudit_window_popup_menu_on_query_policy(GtkWidget *menuitem, gpointer userdata)
+	seaudit_window_view_entire_message_in_textbox(&idx);
+} 
+
+static void seaudit_window_popup_menu_on_query_policy(GtkWidget *menuitem, gpointer user_data)
 {
-	GtkTreePath *path = NULL;
-	GtkTreeSelection *selection = NULL;
-	seaudit_filtered_view_t *view = NULL;
+	int idx = GPOINTER_TO_INT(user_data);
 	
-	view = seaudit_window_get_current_view(seaudit_app->window);
-	assert(view);
-	selection = gtk_tree_view_get_selection(view->tree_view);
-		
-	/* Make sure to highlight the clicked row in this case if there are more than 1 selected row */
-	if (gtk_tree_selection_count_selected_rows(selection) > 1) {			
-		/* Get tree path for row that was clicked */
-		if (gtk_tree_view_get_path_at_pos(view->tree_view,
-		                             ((GdkEventButton*)userdata)->x, 
-		                             ((GdkEventButton*)userdata)->y,
-		                             &path, NULL, NULL, NULL)) {
-			gtk_tree_selection_unselect_all(selection);
-			gtk_tree_selection_select_path(selection, path);
-			gtk_tree_path_free(path);
-		}
-	}
-	
-	query_window_create();
+	query_window_create(&idx);
 }
 
 static void
@@ -136,9 +97,10 @@ seaudit_window_popup_menu_on_export_selection(GtkWidget *menuitem, gpointer user
 }
 
 static void
-seaudit_window_popup_menu(GtkWidget *treeview, GdkEventButton *event, gpointer userdata)
+seaudit_window_popup_menu(GtkWidget *treeview, GdkEventButton *event, int *idx)
 {
 	GtkWidget *menu, *menuitem, *menuitem2, *menuitem3;
+	gint data = *idx;
 	
 	menu = gtk_menu_new();
 	if (menu == NULL) {
@@ -154,11 +116,11 @@ seaudit_window_popup_menu(GtkWidget *treeview, GdkEventButton *event, gpointer u
 	}
 			
 	g_signal_connect(menuitem, "activate",
-	             (GCallback) seaudit_window_popup_menu_on_view_msg, event);
+	             (GCallback) seaudit_window_popup_menu_on_view_msg, GINT_TO_POINTER(data));
 	g_signal_connect(menuitem2, "activate",
-	             (GCallback) seaudit_window_popup_menu_on_query_policy, event);
+	             (GCallback) seaudit_window_popup_menu_on_query_policy, GINT_TO_POINTER(data));
 	g_signal_connect(menuitem3, "activate",
-	             (GCallback) seaudit_window_popup_menu_on_export_selection, event);
+	             (GCallback) seaudit_window_popup_menu_on_export_selection, NULL);
 	
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem2);
@@ -176,10 +138,41 @@ seaudit_window_popup_menu(GtkWidget *treeview, GdkEventButton *event, gpointer u
 static gboolean
 seaudit_window_onButtonPressed(GtkWidget *treeview, GdkEventButton *event, gpointer userdata)
 {
+	GtkTreePath *path;
+	GtkTreeSelection *selection;
+	GtkTreeModel *model;
+	GList *glist = NULL;
+	GtkTreeIter iter;
+	int fltr_msg_idx; 
+	
 	/* single click with the right mouse button? */
-	if (event->type == GDK_BUTTON_PRESS  &&  event->button == 3) {		
-		seaudit_window_popup_menu(treeview, event, userdata);
-		
+	if (event->type == GDK_BUTTON_PRESS  &&  event->button == 3) {	
+        	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(treeview));
+        
+		/* Get tree path for row that was clicked */
+		if (gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(treeview),
+		                              event->x, 
+		                              event->y,
+		                             &path, NULL, NULL, NULL)) {
+		        glist = gtk_tree_selection_get_selected_rows(selection, &model);
+			if (glist == NULL) {
+				gtk_tree_path_free(path);
+				return FALSE;
+			}
+			if (gtk_tree_model_get_iter(model, &iter, path) == 0) {
+				fprintf(stderr, "Could not get valid iterator for the selected path.\n");
+				gtk_tree_path_free(path);
+				g_list_foreach(glist, (GFunc) gtk_tree_path_free, NULL);
+				g_list_free (glist);
+				return FALSE;	
+			}
+			fltr_msg_idx = seaudit_log_view_store_iter_to_idx((SEAuditLogViewStore*)model, &iter);
+			
+			seaudit_window_popup_menu(treeview, event, &fltr_msg_idx);
+			g_list_foreach(glist, (GFunc) gtk_tree_path_free, NULL);
+			g_list_free (glist);
+			gtk_tree_path_free(path);	
+		}
 		return TRUE; /* we handled this */
 	}
 	
@@ -189,7 +182,7 @@ seaudit_window_onButtonPressed(GtkWidget *treeview, GdkEventButton *event, gpoin
 static gboolean
 seaudit_window_onPopupMenu(GtkWidget *treeview, gpointer userdata)
 {
-	seaudit_window_popup_menu(treeview, NULL, userdata);
+	seaudit_window_popup_menu(treeview, NULL, NULL);
 	
 	return TRUE; /* we handled this */
 }
