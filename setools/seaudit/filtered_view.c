@@ -67,6 +67,21 @@ void seaudit_filtered_view_set_log(seaudit_filtered_view_t *view, audit_log_t *l
 	seaudit_log_view_store_open_log(view->store, log);
 }
 
+void seaudit_filtered_view_save_view(seaudit_filtered_view_t* filtered_view)
+{
+	if (!filtered_view)
+		return;
+	multifilter_window_save_multifilter(filtered_view->multifilter_window);
+}
+
+void seaudit_filtered_view_set_multifilter_window(seaudit_filtered_view_t *filtered_view, multifilter_window_t *window)
+{
+	multifilter_window_destroy(filtered_view->multifilter_window);
+	filtered_view->multifilter_window = window;
+	g_string_assign(window->name, filtered_view->name->str);
+	window->parent = filtered_view;
+}
+
 void seaudit_filtered_view_set_notebook_index(seaudit_filtered_view_t *filtered_view, gint index)
 {
 	if (filtered_view == NULL)
@@ -76,7 +91,9 @@ void seaudit_filtered_view_set_notebook_index(seaudit_filtered_view_t *filtered_
 
 void seaudit_filtered_view_do_filter(seaudit_filtered_view_t *view, gpointer user_data)
 {
-	seaudit_log_view_store_do_filter(view->store);
+	if (!view)
+		return;
+	multifilter_window_apply_multifilter(view->multifilter_window);
 }
 
 
