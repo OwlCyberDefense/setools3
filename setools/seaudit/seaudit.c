@@ -27,6 +27,7 @@
 #ifndef SEAUDIT_GUI_VERSION_STRING
 	#define SEAUDIT_GUI_VERSION_STRING "UNKNOWN"
 #endif
+
 seaudit_t *seaudit_app = NULL;
 
 /* command line options */
@@ -305,7 +306,6 @@ void seaudit_save_log_file()
 	GtkWidget *file_selector, *confirmation;
 	gint response, confirm;
 	const gchar *filename;
-	int rt;
 
         file_selector = gtk_file_selection_new("Export Log File");
 	gtk_file_selection_complete(GTK_FILE_SELECTION(file_selector), (*(seaudit_app->audit_log_file)).str);
@@ -350,23 +350,8 @@ void seaudit_save_log_file()
 	
 	gtk_widget_destroy(file_selector);
 
-	if ((rt = seaudit_write_log_file(seaudit_get_current_audit_log_view(), filename)) != 0) {
-		if (rt == ERROR_EXPORT_LOG_BAD_FILE)
-			message_display(seaudit_app->window->window, 
-					GTK_MESSAGE_WARNING,
-					"Log Export Failed!\n\nThe Target File Could Not Be Opened For Writing!");
-
-                if (rt == ERROR_EXPORT_LOG_OUT_OF_MEMORY)
-			message_display(seaudit_app->window->window, 
-					GTK_MESSAGE_WARNING,
-					"Log Export Failed!\n\nOut Of Memory!");
-
-                if (rt == ERROR_EXPORT_LOG_INVALID_LOG_VIEW)
-			message_display(seaudit_app->window->window, 
-					GTK_MESSAGE_WARNING,
-					"Log Export Failed!\n\nThe Log You Are Trying To Export Is Invalid!");
-	}
-
+	seaudit_write_log_file(seaudit_get_current_audit_log_view(), filename);
+		
 	return;
 }
 
@@ -376,36 +361,32 @@ int seaudit_write_log_file(const audit_log_view_t *log_view, const char *filenam
 	FILE *log_file;
 	msg_t *message;
 	audit_log_t *audit_log;
-	seaudit_multifilter_t *multifilter;
 	char *message_header;
 
 	assert(log_view != NULL && filename != NULL && (strlen(filename) < PATH_MAX));
 
-	if (log_view == NULL)
-		return ERROR_EXPORT_LOG_INVALID_LOG_VIEW;
-
 	audit_log = log_view->my_log;
-
-	multifilter = log_view->multifilter;
-
-	if (multifilter == NULL)
-		multifilter = seaudit_multifilter_create();
-
 	log_file = fopen(filename, "w+");
-
-	if (log_file == NULL)
-		return ERROR_EXPORT_LOG_BAD_FILE;
+	if (log_file == NULL) {
+		message_display(seaudit_app->window->window, 
+					GTK_MESSAGE_WARNING,
+					"Error: Could not open file for writing!");
+		return -1;
+	}
 
 	message_header = (char*) malloc((TIME_SIZE + STR_SIZE) * sizeof(char));
-
-	if (message_header == NULL)
-		return ERROR_EXPORT_LOG_OUT_OF_MEMORY;
-
+	if (message_header == NULL) {
+		fclose(log_file);
+		fprintf(stderr, "memory error\n");
+		return -1;
+	}
+	
 	for (i = 0; i < audit_log->num_msgs; i++) {	
 		message = audit_log->msg_list[i];
-
-		if (seaudit_multifilter_should_message_show(multifilter, message, audit_log)) {
-
+		/* If the multifilter member is NULL, then there are no 
+		 * filters for this view, so all messages are ok for writing to file. */
+		if (log_view->multifilter == NULL || 
+		    seaudit_multifilter_should_message_show(log_view->multifilter, message, audit_log)) {
 			generate_message_header(message_header, audit_log, message->date_stamp, message->host);
 
 			if (message->msg_type == AVC_MSG)
@@ -444,10 +425,8 @@ void write_avc_message_to_file(FILE *log_file, const avc_msg_t *message, const c
 	assert(log_file != NULL && message != NULL && message_header != NULL && audit_log != NULL);
 
 	fprintf(log_file, "%s", message_header);
-
-	if (message->audit_header)
-		fprintf(log_file, "%s: ", message->audit_header);
-
+	fprintf(log_file, "audit(%lu.%03lu:%u): ", message->tm_stmp_sec, message->tm_stmp_nano, message->serial);
+		
 	fprintf(log_file, "avc:  %s  {", ((message->msg == AVC_GRANTED) ? "granted" : "denied"));
 
 	for (i = 0; i < message->num_perms; i++)
@@ -578,12 +557,12 @@ audit_log_view_t* seaudit_get_current_audit_log_view()
         filtered_view = seaudit_window_get_current_view(seaudit_app->window);
 	
 	if (filtered_view == NULL)
-		return 0;
+		return NULL;
 
 	log_view_store = filtered_view->store;
 
 	if (log_view_store == NULL)
-		return 0;
+		return NULL;
 
 	return log_view_store->log_view;
 }
