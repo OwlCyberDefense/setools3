@@ -22,8 +22,15 @@ proc search_libs {} {
 	
 	set shared_lib_conf_file "/etc/ld.so.conf"
 	set ret_dir ""
-	# If we can read the shared lib config file (/etc/ld.so.conf) then parse this file first.
-	if {[file exists $shared_lib_conf_file] && [file readable $shared_lib_conf_file]} {
+	
+	# Check the parent dir of the package path directory for tcl.
+	set pkgPath_include_dir "[file dirname $tcl_pkgPath]/include"
+	if {[file exists $pkgPath_include_dir] && [file isdirectory $pkgPath_include_dir] && \
+	    [file exists "$pkgPath_include_dir/tcl.h"] && [file readable "$pkgPath_include_dir/tcl.h"] && \
+	    [file exists "$pkgPath_include_dir/tk.h"] && [file readable "$pkgPath_include_dir/tk.h"]} {
+		set ret_dir $pkgPath_include_dir
+	} else if {[file exists $shared_lib_conf_file] && [file readable $shared_lib_conf_file]} {
+		# If we can read the shared lib config file (/etc/ld.so.conf) then parse this file next.
 		set rt [catch {set f [open $shared_lib_conf_file]} err]
 		if {$rt != 0} {
 			tk_messageBox -icon error -type ok -title "Error" \
@@ -45,17 +52,7 @@ proc search_libs {} {
 			::close $f
 		}
 	} else {
-		# Check the parent dir of the package path directory for tcl.
-		set pkgPath_include_dir "[file dirname $tcl_pkgPath]/include"
-		if {[file exists $pkgPath_include_dir] && [file isdirectory $pkgPath_include_dir] && \
-		    [file exists "$pkgPath_include_dir/tcl.h"] && [file readable "$pkgPath_include_dir/tcl.h"] && \
-		    [file exists "$pkgPath_include_dir/tk.h"] && [file readable "$pkgPath_include_dir/tk.h"]} {
-			set ret_dir $pkgPath_include_dir
-		}
-	}
-	
-	# If we get to this point, then look in standard system header location(s)
-	if {$ret_dir == ""} {
+		# If we get to this point, then look in standard system header location(s)
 		set sys_standard_dir "/usr/include"
 		set local_standard_dir "/usr/local/include"
 		
@@ -68,7 +65,7 @@ proc search_libs {} {
 		    [file exists "$local_standard_dir/tk.h"] && [file readable "$local_standard_dir/tk.h"]} {
 			set ret_dir $local_standard_dir 
 		} else {
-			return none
+			set ret_dir none
 		}
 	} 
 	
