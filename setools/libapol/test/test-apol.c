@@ -34,10 +34,15 @@ static int display_policy_stats(policy_t *p)
 		printf("\nERROR: No policy provided\n");
 		return -1;
 	}
-	printf("\nCurrent policy Statics:\n");
+	printf("\nCurrent policy Statics");
+	if(is_binary_policy(p) )
+		printf(" (binary):\n");
+	else
+		printf(" (.conf):\n");
 	printf("     Classes:            %d\n", p->num_obj_classes);
 	printf("     Permissions:        %d\n", p->num_perms);
 	printf("     Initial Sids:       %d\n", p->num_initial_sids);
+	printf("     Users:              %d\n", p->rule_cnt[RULE_USER]);
 	printf("     Attributes:         %d\n", p->num_attribs);
 	printf("     Types:              %d\n", p->num_types);
 	printf("     Type Aliases:       %d\n", p->num_aliases);
@@ -45,7 +50,7 @@ static int display_policy_stats(policy_t *p)
 	printf("     Audit Rules:        %d\n", p->num_av_audit);
 	printf("     Type Rules:         %d\n", p->num_te_trans);
 	printf("     Roles:              %d\n", p->num_roles);
-	printf("     Role Rules:         %d\n", p->num_role_allow + p->num_role_trans);
+	printf("     Role Rules:         %d\n", (p->num_role_allow + p->num_role_trans));
 	printf("     Booleans            %d\n", p->num_cond_bools);
 	return 0;
 }
@@ -425,7 +430,7 @@ void test_print_bools(policy_t *policy)
         int i;
         
         for (i = 0; i < policy->num_cond_bools; i++) {
-                fprintf(outfile, "name: %s val: %d\n", policy->cond_bools[i].name, policy->cond_bools[i].val);
+                fprintf(outfile, "name: %s state: %d\n", policy->cond_bools[i].name, policy->cond_bools[i].state);
         }
 
 }
@@ -555,11 +560,11 @@ int main(int argc, char *argv[])
 	}
 	fclose(test_f);
 
-	/* open policy.conf */
+	/* open policy */
 	rt = open_policy(policy_file, &policy);
 	if(rt != 0) {
 		free_policy(&policy);
-		fprintf(stderr, "open_policy error (%d)", rt);
+		fprintf(stderr, "open_policy error (%d)\n", rt);
 		exit(1);
 	}
 
