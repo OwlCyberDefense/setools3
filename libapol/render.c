@@ -40,14 +40,10 @@ static int re_append_cls_perms(ta_item_t *list,
 	int multiple = 0;
 
 	if(flags & (!iscls ? AVFLAG_PERM_TILDA : AVFLAG_NONE)) {
-		if(append_str(buf, buf_sz, " ~") != 0)
-			return -1;
-		}
-	else {
-		if(append_str(buf, buf_sz, " ") != 0 )
+		if(append_str(buf, buf_sz, "~") != 0) 
 			return -1;
 	}
-	if(list != NULL && list->next != NULL) {
+	if (list != NULL && list->next != NULL) {
 		multiple = 1;
 		if(append_str(buf, buf_sz, "{ ") != 0) 
 			return -1;
@@ -66,12 +62,17 @@ static int re_append_cls_perms(ta_item_t *list,
 			if(append_str(buf, buf_sz, policy->perms[ptr->idx]) != 0)
 				return -1;
 		}
-		if(append_str(buf, buf_sz, " ") != 0)
-			return -1;
+		if(multiple) {
+			if(append_str(buf, buf_sz, " ") != 0)
+				return -1;
+		}
 	}
-	
 	if(multiple) {
 		if(append_str(buf, buf_sz, "}") != 0)
+			return -1;
+	} 
+	if (iscls) {
+		if(append_str(buf, buf_sz, " ") != 0)
 			return -1;
 	}
 	return 0;	
@@ -152,21 +153,16 @@ char *re_render_av_rule(bool_t 	addlineno, 	/* add policy.conf line  */
 			return NULL;
 		}
 	}
-	else {
-		if(append_str(&buf, &buf_sz, " ") != 0) {
-			free(buf);
-			return NULL;
-		}
-	}
+	
 	if(rule->src_types != NULL && rule->src_types->next != NULL) {
 		multiple = 1;
-		if(append_str(&buf, &buf_sz, "{") != 0) {
+		if(append_str(&buf, &buf_sz, " {") != 0) {
 			free(buf);
 			return NULL;
 		}
 	}
 	if(rule->flags & AVFLAG_SRC_STAR)
-		if(append_str(&buf, &buf_sz, "*") != 0) {
+		if(append_str(&buf, &buf_sz, " *") != 0) {
 			free(buf);
 			return NULL;
 		}
@@ -190,21 +186,16 @@ char *re_render_av_rule(bool_t 	addlineno, 	/* add policy.conf line  */
 			return NULL;
 		}
 	}
-	else {
-		if(append_str(&buf, &buf_sz, " ") != 0) {
-			free(buf);
-			return NULL;
-		}
-	}
+	
 	if(rule->tgt_types != NULL && rule->tgt_types->next != NULL) {
 		multiple = 1;
-		if(append_str(&buf, &buf_sz, "{") != 0) {
+		if(append_str(&buf, &buf_sz, " {") != 0) {
 			free(buf);
 			return NULL;
 		}
 	}
 	if(rule->flags & AVFLAG_TGT_STAR)
-		if(append_str(&buf, &buf_sz, "*") != 0) {
+		if(append_str(&buf, &buf_sz, " *") != 0) {
 			free(buf);
 			return NULL;
 		}
@@ -220,7 +211,7 @@ char *re_render_av_rule(bool_t 	addlineno, 	/* add policy.conf line  */
 		}
 		multiple = 0;
 	}
-	if(append_str(&buf, &buf_sz, " :") != 0) {
+	if(append_str(&buf, &buf_sz, " : ") != 0) {
 		free(buf);
 		return NULL;
 	}
@@ -230,13 +221,13 @@ char *re_render_av_rule(bool_t 	addlineno, 	/* add policy.conf line  */
 		free(buf);
 		return NULL;
 	}
-		
+				
 	/* permissions */
 	if(re_append_cls_perms(rule->perms, 0, rule->flags, &buf, &buf_sz, policy)!= 0) {
 		free(buf);
 		return NULL;
 	}
-
+	
 	if(append_str(&buf, &buf_sz, ";") != 0) {
 		free(buf);
 		return NULL;
@@ -284,21 +275,16 @@ char *re_render_tt_rule(bool_t addlineno, int idx, policy_t *policy)
 			return NULL;
 		}
 	}
-	else
-		if(append_str(&buf, &buf_sz, " ") != 0) {
-			free(buf);
-			return NULL;
-		}
-					
+			
 	if(rule->src_types != NULL && rule->src_types->next != NULL) {
 		multiple = 1;
-		if(append_str(&buf, &buf_sz, "{") != 0) {
+		if(append_str(&buf, &buf_sz, " {") != 0) {
 			free(buf);
 			return NULL;		
 		}
 	}
 	if(rule->flags & AVFLAG_SRC_STAR)
-		if(append_str(&buf, &buf_sz, "*") != 0) {
+		if(append_str(&buf, &buf_sz, " *") != 0) {
 			free(buf);
 			return NULL;
 		}
@@ -322,21 +308,16 @@ char *re_render_tt_rule(bool_t addlineno, int idx, policy_t *policy)
 			return NULL;
 		}
 	}
-	else {
-		if(append_str(&buf, &buf_sz, " ") != 0) {
-			free(buf);
-			return NULL;
-		}
-	}
+	
 	if(rule->tgt_types != NULL && rule->tgt_types->next != NULL) {
 		multiple = 1;
-		if(append_str(&buf, &buf_sz, "{") != 0) {
+		if(append_str(&buf, &buf_sz, " {") != 0) {
 			free(buf);
 			return NULL;
 		}
 	}
 	if(rule->flags & AVFLAG_TGT_STAR)
-		if(append_str(&buf, &buf_sz, "*") != 0) {
+		if(append_str(&buf, &buf_sz, " *") != 0) {
 			free(buf);
 			return NULL;
 		}
@@ -352,7 +333,7 @@ char *re_render_tt_rule(bool_t addlineno, int idx, policy_t *policy)
 		}
 		multiple = 0;
 	}
-	if(append_str(&buf, &buf_sz, " :") != 0) {
+	if(append_str(&buf, &buf_sz, " : ") != 0) {
 		free(buf);
 		return NULL;
 	}
@@ -365,10 +346,10 @@ char *re_render_tt_rule(bool_t addlineno, int idx, policy_t *policy)
 		
 	/* default type */
 	if(rule->dflt_type.type == IDX_TYPE) {
-		sprintf(tbuf, " %s", policy->types[rule->dflt_type.idx].name);
+		sprintf(tbuf, "%s", policy->types[rule->dflt_type.idx].name);
 	}
 	else if(rule->dflt_type.type == IDX_ATTRIB) {
-		sprintf(tbuf, " %s", policy->attribs[rule->dflt_type.idx].name);
+		sprintf(tbuf, "%s", policy->attribs[rule->dflt_type.idx].name);
 	}			
 	else {
 		fprintf(stderr, "Invalid index type: %d\n", rule->dflt_type.type);
