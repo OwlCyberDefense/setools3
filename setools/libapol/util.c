@@ -98,9 +98,10 @@ void trim_trailing_whitespace(char **str)
 /* create a new initialize list */
 llist_t *ll_new(void)
 {
-	llist_t *ll;
+	llist_t *ll = NULL;
+	
 	ll = (llist_t *)malloc(sizeof(llist_t));
-	if(ll == NULL) {
+	if (ll == NULL) {
 		fprintf(stderr, "out of memory");
 		return NULL;
 	}
@@ -454,6 +455,20 @@ int copy_int_array(int **dest, int *src, int len)
 	return 0;
 }
 
+int int_compare(const void *aptr, const void *bptr)
+{
+	int *a = (int*)aptr;
+	int *b = (int*)bptr;
+	
+	assert(a);
+	assert(b);
+
+	if (*a < *b)
+		return -1;
+	if (*a > *b)
+		return 1;
+	return 0;
+}
 
 bool_t is_name_in_list(const char *name, 
 			ta_item_t *list,
