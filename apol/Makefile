@@ -12,7 +12,7 @@ APOL_HELP_FILES	= apol_help.txt dta_help.txt iflow_help.txt obj_perms_help.txt
 APOL_PERM_MAPS = perm_maps/apol_perm_mapping_ver*
 	
 APOL_DFLT_PMAP  = apol_perm_mapping_ver18
-LIBAPOL		= ../lib/libapol-tcl.a ../lib/libapol.a
+LIBAPOL		= ../libapol/libapol-tcl.a ../libapol/libapol.a
 GUI-OBJ		= apol_gui.o $(LIBAPOL)
 CFLAGS          += -DSTARTUP_SCRIPT='"$(APOL_STARTUP_SCRIPT)"'
 
@@ -31,10 +31,10 @@ tmp.tcl: $(TCL-STRIP-FILES)
 	@perl -p -i -e 's/^\s*(\#[^!]*){0,1}$$//s' $@
 
 
-../lib/libapol.a: 
+../libapol/libapol.a: 
 	cd ../; $(MAKE) libapol
 
-../lib/libapol-tcl.a:
+../libapol/libapol-tcl.a:
 	cd ../; $(MAKE) libapol-tcl
 
 %.o:  %.c 
