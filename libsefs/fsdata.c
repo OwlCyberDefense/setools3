@@ -39,22 +39,14 @@
 
 #include <time.h>
 
-
-
-
 #define INDEX_DB_MAGIC 0xf97cff8f
 #define INDEX_DB_VERSION 1
-
-#ifndef SEFS_XATTR_LABELED_FILESYSTEMS
-#define SEFS_XATTR_LABELED_FILESYSTEMS "ext2 ext3 xfs"
-#endif
 
 #ifndef SEFS_XATTR_UNLABELED
 #define SEFS_XATTR_UNLABELED "UNLABELED"
 #endif
 
-
-#define NFTW_FLAGS FTW_MOUNT | FTW_PHYS
+#define NFTW_FLAGS FTW_MOUNT 
 #define NFTW_DEPTH 1024
 
 #define STMTSTART "SELECT types.type_name,users.user_name, paths.path, inodes.obj_class from inodes,types,users,paths where "
@@ -579,6 +571,12 @@ int find_mount_points(char *dir, char ***mounts, int *num_mounts, int rw)
 		if (strstr(entry->mnt_dir, dir) != entry->mnt_dir)
 			continue;
 
+		/* This checks for bind mounts so that we don't recurse them 
+		   I'll use a string constant for now */
+		if (strstr(entry->mnt_opts, "bind") != NULL) {
+			continue;
+		}
+
 		nel = strlen(dir);
 		if (nel > 1) {
 			if (dir[nel - 1] == '/')
@@ -834,6 +832,7 @@ static int ftw_handler(const char *file, const struct stat64 *sb, int flag, stru
 	key.inode = sb->st_ino;
 	key.dev = sb->st_dev;
 	
+	
 	idx = avl_get_idx(&key, &(fsdata->file_tree));
 	
 	if (idx == -1) {
@@ -845,7 +844,8 @@ static int ftw_handler(const char *file, const struct stat64 *sb, int flag, stru
 		pi = &(fsdata->files[idx]);
 		(pi->num_links) = 0;
 
-		rc = getfilecon(file, &con);
+		/* We'll use lgetfilecon here because it's identical to getfilecon and also doesn't dereference symlinks */
+		rc = lgetfilecon(file, &con);
 		if (con)
 			tmp = strtok(con, ":");
 		if (tmp) {
@@ -907,9 +907,7 @@ static int ftw_handler(const char *file, const struct stat64 *sb, int flag, stru
 	if (con)
 		free(con);
 
-
 	pi->obj_class = sefs_get_file_class(sb);
-       
 
 	ptr = (char**)realloc(pi->path_names, (pi->num_links + 1) * sizeof(char*)); 
 	if (!ptr) {
@@ -929,7 +927,6 @@ static int ftw_handler(const char *file, const struct stat64 *sb, int flag, stru
 	/*check to see if file is a symlink and handle appropriately*/
 	if (S_ISLNK(sb->st_mode))
 	{
-		rc = lgetfilecon(file, &con);
 		if (!(tmp = (char*)calloc((PATH_MAX + 1), sizeof(char)) ))
 		{
 			fprintf(stderr, "out of memory\n");
@@ -953,7 +950,6 @@ static int ftw_handler(const char *file, const struct stat64 *sb, int flag, stru
 		pi->symlink_target = NULL;
 	}
 	return 0;
-
 }
 
 static int sefs_init_pathtree(sefs_filesystem_data_t * fsd)
