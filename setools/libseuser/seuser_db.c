@@ -25,6 +25,16 @@
 
 /* assumed defines */
 #define MAKEFILE		"Makefile"
+#define CONFIG_FILE		"seuser.conf"
+
+/* The following should be defined in the make environment */
+#ifndef SETFILES_PROG
+	#define SETFILES_PROG	"/usr/sbin/setfiles"
+#endif
+
+#ifndef LIBSEUSER_VERSION_STRING
+	#define LIBSEUSER_VERSION_STRING "UNKNOWN"
+#endif
 
 /* With the Aug 2002 policy mgt patch, we use intall rather than
  * policy.conf as our "refresh" target.  This will make policy.conf
@@ -33,13 +43,9 @@
  */
 #define POLICY_CONF_TARGET	"install"
 #define INSTALL_TARGET		"load"
+/* Policy makefile target for re-making the file_contexts file */
+#define FILE_CONTEXTS_TARGET	"file_contexts/file_contexts"
 
-static int free_conf_info (user_db_t *db);
-static int init_conf_info(user_db_t *db);
-static int call_make(const char *target, const char *output, const char * policy_dir);
-static int call_set_files_on_home_dir(const char *home_dir, user_db_t *db, const char *output_file);
-static int seuser_call_make_file_contexts(user_db_t *db, const char *output_file);
-static int seuser_get_user_home_dir(const char *user, char *home_dir);
 
 /* frees conf info in db  */
 static int free_conf_info (user_db_t *db)
@@ -49,7 +55,7 @@ static int free_conf_info (user_db_t *db)
 	if(db->policy_conf != NULL) free(db->policy_conf);
 	if(db->user_file != NULL) free(db->user_file);
 	if(db->policy_dir != NULL ) free(db->policy_dir); 
-	if(db->file_contexts_dir != NULL ) free(db->file_contexts_dir); 
+	if(db->file_contexts_file != NULL ) free(db->file_contexts_file); 
 	if(db->config_dir != NULL) free(db->config_dir);
 	return 0;
 }
@@ -60,7 +66,7 @@ static int init_conf_info(user_db_t *db)
 	db->user_file = NULL;
 	db->policy_dir = NULL;
 	db->config_dir = NULL;
-	db->file_contexts_dir = NULL; 
+	db->file_contexts_file = NULL; 
 	db->conf_init = FALSE;
 	return 0;
 }
@@ -417,15 +423,38 @@ static int seuser_get_user_home_dir(const char *user, char *home_dir)
 	struct passwd *line = NULL;
 	
 	assert(user != NULL);	
-	while ((line = getpwent()) != NULL) {
-     		if (strncmp(line->pw_name, user, LINE_SZ) == 0) {
-			snprintf(home_dir, LINE_SZ, "%s", line->pw_dir);
-			break;
-     		}
-   	}   		
-   	endpwent();
+	line = getpwnam(user);
+	if (line != NULL) {
+		snprintf(home_dir, LINE_SZ, "%s", line->pw_dir);
+	} 
    	
      	return 0;
+}
+
+static int call_make(const char *target, const char *output, const char * policy_dir)
+{
+	char *make_str;
+	int rt;
+
+	assert(target != NULL);
+	assert(output != NULL);
+	
+     	make_str = (char *)malloc(strlen(policy_dir) + strlen(MAKEFILE) + 
+     		strlen(target) + strlen(output) + 50);
+     	if(make_str == NULL) {
+     		fprintf(stderr, "out of memory\n");
+     		return -1;
+     	}
+     	sprintf(make_str, "make -f %s -C %s %s > %s 2>&1", MAKEFILE, policy_dir, target, output);
+	
+     	rt = system(make_str);	
+     	if(rt != 0) {
+     		fprintf(stderr, "Error: Make string: %s.", make_str);
+     		free(make_str);
+     		return -1;
+     	} 
+	free(make_str);
+	return 0;
 }
 
 /* Function name: seuser_call_make_file_contexts 
@@ -445,30 +474,14 @@ static int seuser_call_make_file_contexts(user_db_t *db, const char *output_file
 
 /* Function name: call_set_files_on_home_dir 
  */
-static int call_set_files_on_home_dir(const char *home_dir, user_db_t *db, const char *output_file)
+static int call_set_files_on_home_dir(const char *home_dir, user_db_t *db)
 {
-	char setfiles_str[LINE_SZ], fc_file_path[LINE_SZ];
-	int rt, end_idx;
+	char setfiles_str[LINE_SZ];
 
-	assert(home_dir != NULL);
-	assert(output_file != NULL);
-	/* Make sure the last character has the ending '/' for a directory pathname */
-	end_idx = strlen(db->file_contexts_dir) - 1;
-	if (db->file_contexts_dir[end_idx] == '/') {		
-		snprintf(fc_file_path, LINE_SZ, "%s%s", db->file_contexts_dir, FC_FILE);
-	} else {		
-		snprintf(fc_file_path, LINE_SZ, "%s/%s", db->file_contexts_dir, FC_FILE);	
-	}
-	assert(fc_file_path != NULL);	
-  
-     	snprintf(setfiles_str, LINE_SZ, "%s %s %s > %s 2>&1", SETFILES_PROG, fc_file_path, home_dir, output_file);
+	assert(home_dir != NULL);	
+     	snprintf(setfiles_str, LINE_SZ, "%s %s %s", SETFILES_PROG, db->file_contexts_file, home_dir);
 	
-     	rt = system(setfiles_str);	
-     	if(rt != 0) {
-     		fprintf(stderr, "Error: setfiles string: %s.\n", setfiles_str);
-     		return -1;
-     	} 
-	return 0;
+     	return system(setfiles_str);	
 }
 
 /* return code definitions for seuser_label_home_dir(). */
@@ -518,17 +531,16 @@ int seuser_label_home_dir(const char *user, user_db_t *db, policy_t *policy, con
      		
 	/* Get the users home directory */
 	rt = seuser_get_user_home_dir(user, home_dir);
-	if (rt != 0) {
-		fprintf(stderr, "Users home directory (%s) does not exist.\n", home_dir);
+	if (home_dir == NULL) {
+		fprintf(stderr, "Could not get home directory for user %s.\n", user);
 		return LIBSEUSER_LABEL_ERR_NO_HOME_DIR;
 	}
 	
 	/* Given the home directory and specs file path as arguments, call setfiles 
 	 * to label the users home directory files appropriately. */
-	rt = call_set_files_on_home_dir(home_dir, db, output_file);	
+	rt = call_set_files_on_home_dir(home_dir, db);	
      	if(rt != 0) {
-     		/* error relabeling home dir files. */ 
-     		return -1;
+     		perror("call_set_files_on_home_dir");
      	}  
 			
 	return 0;
@@ -781,14 +793,14 @@ int seuser_read_conf_info(user_db_t *db)
      	}
 	/* users file may not exist which is ok, so we won't check read access */  
 	
-	db->file_contexts_dir = get_config_var("file_contexts_dir", fp);
+	db->file_contexts_file = get_config_var("file_contexts_file", fp);
 	if(rt != 0) {
 		fclose(fp);
 		free_conf_info(db);
 		init_conf_info(db);
 		return 8;
      	}
-	rt = access(db->file_contexts_dir, R_OK);
+	rt = access(db->file_contexts_file, R_OK);
 	if(rt != 0) {
 		fclose(fp);
 		free_conf_info(db);
@@ -798,32 +810,6 @@ int seuser_read_conf_info(user_db_t *db)
      	
 	db->conf_init = TRUE; 
 	fclose(fp);
-	return 0;
-}
-
-static int call_make(const char *target, const char *output, const char * policy_dir)
-{
-	char *make_str;
-	int rt;
-
-	assert(target != NULL);
-	assert(output != NULL);
-	
-     	make_str = (char *)malloc(strlen(policy_dir) + strlen(MAKEFILE) + 
-     		strlen(target) + strlen(output) + 50);
-     	if(make_str == NULL) {
-     		fprintf(stderr, "out of memory\n");
-     		return -1;
-     	}
-     	sprintf(make_str, "make -f %s -C %s %s > %s 2>&1", MAKEFILE, policy_dir, target, output);
-	
-     	rt = system(make_str);	
-     	if(rt != 0) {
-     		fprintf(stderr, "Error: Make string: %s.", make_str);
-     		free(make_str);
-     		return -1;
-     	} 
-	free(make_str);
 	return 0;
 }
 
