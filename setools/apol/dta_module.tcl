@@ -699,8 +699,11 @@ proc Apol_Analysis_dta::render_target_type_data { data dta_info_text dta_tree no
 		incr idx
 		# The next element should be the enabled boolean flag.
 		if {[lindex $data $idx] == 0} {
+			$dta_info_text insert end "   "
+			set startIdx [$dta_info_text index insert]
+			$dta_info_text insert end "\[Disabled\]\n"
+			set endIdx [$dta_info_text index insert]
 			$dta_info_text tag add $Apol_Analysis_dta::disabled_rule_tag $start_idx $end_idx
-			$dta_info_text insert end "   \[Disabled\]\n"
 		} else {
 			$dta_info_text insert end "\n"
 		}
@@ -754,8 +757,11 @@ proc Apol_Analysis_dta::render_target_type_data { data dta_info_text dta_tree no
 			incr idx
 			# The next element should be the enabled boolean flag.
 			if {[lindex $data $idx] == 0} {
+				$dta_info_text insert end "   "
+				set startIdx [$dta_info_text index insert]
+				$dta_info_text insert end "\[Disabled\]\n"
+				set endIdx [$dta_info_text index insert]
 				$dta_info_text tag add $Apol_Analysis_dta::disabled_rule_tag $start_idx $end_idx
-				$dta_info_text insert end "   \[Disabled\]\n"
 			} else {
 				$dta_info_text insert end "\n"
 			}
@@ -789,8 +795,11 @@ proc Apol_Analysis_dta::render_target_type_data { data dta_info_text dta_tree no
 			incr idx
 			# The next element should be the enabled boolean flag.
 			if {[lindex $data $idx] == 0} {
+				$dta_info_text insert end "   "
+				set startIdx [$dta_info_text index insert]
+				$dta_info_text insert end "\[Disabled\]\n"
+				set endIdx [$dta_info_text index insert]
 				$dta_info_text tag add $Apol_Analysis_dta::disabled_rule_tag $start_idx $end_idx
-				$dta_info_text insert end "   \[Disabled\]\n"
 			} else {
 				$dta_info_text insert end "\n"
 			}
@@ -812,6 +821,7 @@ proc Apol_Analysis_dta::formatInfoText { tb } {
 	$tb tag configure $Apol_Analysis_dta::rules_tag -font $ApolTop::text_font
 	$tb tag configure $Apol_Analysis_dta::counters_tag -foreground blue -font {Helvetica 11 bold}
 	$tb tag configure $Apol_Analysis_dta::types_tag -font $ApolTop::text_font
+	$tb tag configure $Apol_Analysis_dta::disabled_rule_tag -foreground red 
 	
 	# Configure hyperlinking to policy.conf file
 	Apol_PolicyConf::configure_HyperLinks $tb

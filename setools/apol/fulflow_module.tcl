@@ -1432,8 +1432,11 @@ proc Apol_Analysis_fulflow::render_information_flows {fulflow_info_text fulflow_
 			incr currentIdx
 			# The next element should be the enabled boolean flag.
 			if {[lindex $data $currentIdx] == 0} {
+				$fulflow_info_text insert end "   "
+				set startIdx [$fulflow_info_text index insert]
+				$fulflow_info_text insert end "\[Disabled\]"
+				set endIdx [$fulflow_info_text index insert]
 				$fulflow_info_text tag add $Apol_Analysis_fulflow::disabled_rule_tag $startIdx $endIdx
-				$fulflow_info_text insert end "   \[Disabled\]"
 			} 
 			set startIdx [$fulflow_info_text index insert]
 		    } 
@@ -1457,6 +1460,7 @@ proc Apol_Analysis_fulflow::formatInfoText { tb } {
 	$tb tag configure $Apol_Analysis_fulflow::counters_tag -foreground blue -font {Helvetica 11 bold}
 	$tb tag configure $Apol_Analysis_fulflow::types_tag -font $ApolTop::text_font
 	$tb tag configure $Apol_Analysis_fulflow::find_flows_tag -font {Helvetica 14 bold} -foreground blue -underline 1
+	$tb tag configure $Apol_Analysis_fulflow::disabled_rule_tag -foreground red 
 	
 	$tb tag bind $Apol_Analysis_fulflow::find_flows_tag <Button-1> "Apol_Analysis_fulflow::display_find_more_flows_Dlg"
 	$tb tag bind $Apol_Analysis_fulflow::find_flows_tag <Enter> { set Apol_Analysis_fulflow::orig_cursor [%W cget -cursor]; %W configure -cursor hand2 }
