@@ -110,7 +110,7 @@ help:
 	@echo "   install-seuser:    build and install command line seuser (selinux required)"
 	@echo "   install-seuserx:   build and install seuser and seuserx (selinux required)"
 	@echo "   install-secmds:    build and install command line tools (selinux not required)"
-	@echo "   install-seaudit:   build and install seaudit (selinux not required)"
+	@echo "   install-seaudit:   build and install seaudit and seaudit-report (selinux not required)"
 	@echo ""
 	@echo "   install-dev:       build and install headers and libraries"
 	@echo "   install-docs:      install setools documentation"
@@ -125,7 +125,7 @@ help:
 	@echo "   seuserx:           build SE Linux GUI user tool"
 	@echo "   sepcut             build policy customization/browsing tool"
 	@echo "   secmds:            build setools command line tools"
-	@echo "   seaudit:           built audit log analysis tool"
+	@echo "   seaudit:           built audit log analysis tools"
 	@echo "   awish:             build TCL/TK wish interpreter with SE Linux tools extensions"
 	@echo " "
 	@echo "   clean:             clean up interim files"
@@ -166,7 +166,7 @@ sepcut: selinux_tool
 	cd sepct; $(MAKE) sepcut
 
 seaudit: selinux_tool
-	cd seaudit; $(MAKE)	
+	cd seaudit; $(MAKE) all	
 
 secmds: selinux_tool
 	cd secmds; $(MAKE) all
