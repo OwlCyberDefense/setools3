@@ -46,60 +46,55 @@ namespace eval Apol_Analysis_dta {
 	
     	# Register ourselves
     	Apol_Analysis::register_analysis_modules "Apol_Analysis_dta" "Domain Transition"
-}
-
-##############################################################
-# ::Apol_Analysis_dta_f module namespace
-##############################################################
-namespace eval Apol_Analysis_dta_f {		
-	# description
-	variable descriptive_text	"\n\nThis analysis will determine all (target) domains to which a given (source) domain may transition.  For a domain transition to be allowed, three forms of access must be granted:\n\n\
-\t(1) source domain must have process transition permission for target domain,\n\
-\t(2) source domain must have file execute permission for some entrypoint type, and\n\
-\t(3) target domain must have file entrypoint permission for the same entrypoint type.\n\n\
-The results are presented in tree form.  You can open target children domains to perform another forward domain transition analysis on that domain.\n\nFor additional help on this topic select \"Domain Transition Analysis\" from the help menu."
+    	
+    	variable descriptive_text	"\n\nA forward domain transition analysis will determine all (target) \
+    		domains to which a given (source) domain may transition.  For a forward domain \
+    		transition to be allowed, three forms of access must be granted:\n\n\ \
+    		\t(1) source domain must have process transition permission for target domain,\n\
+    		\t(2) source domain must have file execute permission for some entrypoint type, and\n\
+    		\t(3) target domain must have file entrypoint permission for the same entrypoint type.\n\nA \
+    		reverse domain transition analysis will determine all (source) domains that can transition to \
+    		a given (target) domain.  For a reverse domain transition to be allowed, three forms of access must be granted:\n\n\
+    		\t(1) target domain must have process transition permission from the source domain,\n\
+    		\t(2) target domain must have file entrypoint permission to some entrypoint type, and\n\
+    		\t(3) source domain must have file execute permission to the same entrypoint type.\n\n\The \
+    		results are presented in tree form.  You can open target children domains to \
+    		perform another domain transition analysis on that domain.\n\nFor additional \
+    		help on this topic select \"Domain Transition Analysis\" from the help menu."
 	
-	variable dta_root_text "\n\nThis tab provides the results of a forward domain transition analysis\
-starting from the source domain type above.  The results of this analysis are presented in tree form with the root\
-of the tree (this node) being the start point for the analysis.\n\nEach child node in the tree represents\
-a TARGET DOMAIN TYPE.  A target domain type is a domain to which the source domain may transition.  You can\
-follow the domain transition tree by opening each subsequent generation of children in the tree.\n\nNOTE: For any\
-given generation, if the parent and the child are the same, you cannot open the child. This avoids cyclic analyses.\n\nThe\
-criteria that defines an allowed domain transition are:\n\n1) There must be at least one rule that allows TRANSITION\
-access for PROCESS objects between the SOURCE and TARGET domain types.\n\n2) There must be at least one FILE TYPE that\
-allows the TARGET type ENTRYPOINT access for FILE objects.\n\n3) There must be at least one FILE TYPE that meets\
-criterion 2) above and allows the SOURCE type EXECUTE access for FILE objects.\n\nThe information window shows\
-all the rules and file types that meet these criteria for each target domain type.\n\nFUTURE NOTE: In the future\
-we also plan to show the type_transition rules that provide for a default domain transitions.  While such rules\
-cause a domain transition to occur by default, they do not allow it.  Thus, associated type_transition rules\
-are not truly part of the definition of allowed domain transitions."
-}
-
-##############################################################
-# ::Apol_Analysis_dta_r module namespace
-##############################################################
-namespace eval Apol_Analysis_dta_r {		
-	# description
-	variable descriptive_text	"\n\nThis analysis will determine all (source) domains that can transition to a given (target) domain.  For a domain transition to be allowed, three forms of access must be granted:\n\n\
-\t(1) target domain must have process transition permission from the source domain,\n\
-\t(2) target domain must have file entrypoint permission to some entrypoint type, and\n\
-\t(3) source domain must have file execute permission to the same entrypoint type.\n\n\
-The results are presented in tree form.  You can open children source domains to perform another reverse domain transition analysis on that domain.\n\n For additional help on this topic select \"Domain Transition Analysis\" from the help menu."
+    	
 	
-	variable dta_root_text "\n\nThis tab provides the results of a reverse domain transition analysis\
-given the target domain type above.  The results of this analysis are presented in tree form with the root\
-of the tree (this node) being the target point of the analysis.\n\nEach child node in the tree represents\
-a source DOMAIN TYPE.  A source domain type is a domain that can transition to the target domain.  You can\
-follow the domain transition tree by opening each subsequent generation of children in the tree.\n\nNOTE: For any\
-given generation, if the parent and the child are the same, you cannot open the child. This avoids cyclic analyses.\n\nThe\
-criteria that defines an allowed domain transition are:\n\n1) There must be at least one rule that allows TRANSITION\
-access for PROCESS objects between the SOURCE and TARGET domain types.\n\n2) There must be at least one FILE TYPE that\
-allows the TARGET type ENTRYPOINT access for FILE objects.\n\n3) There must be at least one FILE TYPE that meets\
-criterion 2) above and allows the SOURCE type EXECUTE access for FILE objects.\n\nThe information window shows\
-all the rules and file types that meet these criteria for each source domain type.\n\nFUTURE NOTE: In the future\
-we also plan to show the type_transition rules that provide for a default domain transitions.  While such rules\
-cause a domain transition to occur by default, they do not allow it.  Thus, associated type_transition rules\
-are not truly part of the definition of allowed domain transitions."
+	# root text for forward dta results
+	variable dta_root_text_f 	"\n\nThis tab provides the results of a forward domain transition analysis\
+		starting from the source domain type above.  The results of this analysis are presented in tree form with the root\
+		of the tree (this node) being the start point for the analysis.\n\nEach child node in the tree represents\
+		a TARGET DOMAIN TYPE.  A target domain type is a domain to which the source domain may transition.  You can\
+		follow the domain transition tree by opening each subsequent generation of children in the tree.\n\nNOTE: For any\
+		given generation, if the parent and the child are the same, you cannot open the child. This avoids cyclic analyses.\n\nThe\
+		criteria that defines an allowed domain transition are:\n\n1) There must be at least one rule that allows TRANSITION\
+		access for PROCESS objects between the SOURCE and TARGET domain types.\n\n2) There must be at least one FILE TYPE that\
+		allows the TARGET type ENTRYPOINT access for FILE objects.\n\n3) There must be at least one FILE TYPE that meets\
+		criterion 2) above and allows the SOURCE type EXECUTE access for FILE objects.\n\nThe information window shows\
+		all the rules and file types that meet these criteria for each target domain type.\n\nFUTURE NOTE: In the future\
+		we also plan to show the type_transition rules that provide for a default domain transitions.  While such rules\
+		cause a domain transition to occur by default, they do not allow it.  Thus, associated type_transition rules\
+		are not truly part of the definition of allowed domain transitions."
+	
+	# root text for reverse dta results
+	variable dta_root_text_r 	"\n\nThis tab provides the results of a reverse domain transition analysis\
+		given the target domain type above.  The results of this analysis are presented in tree form with the root\
+		of the tree (this node) being the target point of the analysis.\n\nEach child node in the tree represents\
+		a source DOMAIN TYPE.  A source domain type is a domain that can transition to the target domain.  You can\
+		follow the domain transition tree by opening each subsequent generation of children in the tree.\n\nNOTE: For any\
+		given generation, if the parent and the child are the same, you cannot open the child. This avoids cyclic analyses.\n\nThe\
+		criteria that defines an allowed domain transition are:\n\n1) There must be at least one rule that allows TRANSITION\
+		access for PROCESS objects between the SOURCE and TARGET domain types.\n\n2) There must be at least one FILE TYPE that\
+		allows the TARGET type ENTRYPOINT access for FILE objects.\n\n3) There must be at least one FILE TYPE that meets\
+		criterion 2) above and allows the SOURCE type EXECUTE access for FILE objects.\n\nThe information window shows\
+		all the rules and file types that meet these criteria for each source domain type.\n\nFUTURE NOTE: In the future\
+		we also plan to show the type_transition rules that provide for a default domain transitions.  While such rules\
+		cause a domain transition to occur by default, they do not allow it.  Thus, associated type_transition rules\
+		are not truly part of the definition of allowed domain transitions."
 }
 
 # ------------------------------------------------------------------------------
@@ -150,11 +145,7 @@ proc Apol_Analysis_dta::initialize { } {
 #  Command Apol_Analysis_dta::get_analysis_info
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_dta::get_analysis_info { } {   
-	if {$Apol_Analysis_dta::display_direction == "forward"} {
-		return $Apol_Analysis_dta_f::descriptive_text
-	} else {
-		return $Apol_Analysis_dta_r::descriptive_text
-	}
+	return $Apol_Analysis_dta::descriptive_text
 } 
 
 # ------------------------------------------------------------------------------
@@ -802,9 +793,9 @@ proc Apol_Analysis_dta::display_root_type_info { source_type dta_info_text dta_t
 	$dta_info_text configure -wrap word
 	set start_idx [$dta_info_text index insert]
 	if {[$dta_tree itemcget $source_type -data]} {
-		set root_text $Apol_Analysis_dta_r::dta_root_text
+		set root_text $Apol_Analysis_dta::dta_root_text_r
 	} else {
-		set root_text $Apol_Analysis_dta_f::dta_root_text
+		set root_text $Apol_Analysis_dta::dta_root_text_f
 		
 	}
 	$dta_info_text insert end $root_text
