@@ -108,6 +108,7 @@ int add_i_to_a(int i, int *cnt, int **a);
 int find_int_in_array(int i, const int *a, int a_sz);
 int add_int_to_array(int i, int *a, int num, int a_sz);
 int copy_int_array(int **dest, int *src, int len);
+int int_compare(const void *aptr, const void *bptr);
 
 bool_t is_name_in_list(const char *name, struct ta_item *list, struct policy *policy);
 unsigned char str_is_only_white_space(const char *str);
