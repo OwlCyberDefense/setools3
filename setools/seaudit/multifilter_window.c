@@ -15,13 +15,17 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 
 static void multifilter_window_on_add_button_pressed(GtkButton *button, multifilter_window_t *window);
 static void multifilter_window_on_edit_button_pressed(GtkButton *button, multifilter_window_t *window);
 static void multifilter_window_on_remove_button_pressed(GtkButton *button, multifilter_window_t *window);
 static void multifilter_window_on_apply_button_pressed(GtkButton *button, multifilter_window_t *window);
 static void multifilter_window_on_close_button_pressed(GtkButton *button, multifilter_window_t *window);
+static void multifilter_window_on_import_button_pressed(GtkButton *button, multifilter_window_t *window);
+static void multifilter_window_on_export_button_pressed(GtkButton *button, multifilter_window_t *window);
 static gboolean multifilter_window_on_delete_event(GtkWidget *widget, GdkEvent *event, multifilter_window_t *window);
+static void multifilter_window_add_filter_window(multifilter_window_t *window, filter_window_t *filter_window);
 
 multifilter_window_t* multifilter_window_create(seaudit_filtered_view_t *parent, const gchar *view_name)
 {
@@ -127,6 +131,13 @@ void multifilter_window_display(multifilter_window_t *window)
 	widget = glade_xml_get_widget(window->xml, "AddButton");
 	g_signal_connect(G_OBJECT(widget), "pressed", 
 			 G_CALLBACK(multifilter_window_on_add_button_pressed), window);
+	widget = glade_xml_get_widget(window->xml, "ImportButton");
+	g_signal_connect(G_OBJECT(widget), "pressed",
+			 G_CALLBACK(multifilter_window_on_import_button_pressed), window);
+	widget = glade_xml_get_widget(window->xml, "ExportButton");
+	g_signal_connect(G_OBJECT(widget), "pressed",
+			 G_CALLBACK(multifilter_window_on_export_button_pressed), window);
+
 	g_signal_connect(G_OBJECT(window->window), "delete_event", 
 			 G_CALLBACK(multifilter_window_on_delete_event), window);
 	g_string_free(path, TRUE);
@@ -160,21 +171,10 @@ void multifilter_window_set_filter_name_in_list(multifilter_window_t *window, fi
 static void multifilter_window_on_add_button_pressed(GtkButton *button, multifilter_window_t *window)
 {
 	filter_window_t *filter_window;
-	GtkTreeIter iter;
-	GtkWidget *widget;
 
 	filter_window = filter_window_create(window, window->num_filter_windows, "Untitled");
-	gtk_list_store_append(window->liststore, &iter);
-	window->filter_windows = g_list_append(window->filter_windows, filter_window);
-	window->num_filter_windows++;
-	multifilter_window_set_filter_name_in_list(window, filter_window);
+	multifilter_window_add_filter_window(window, filter_window);
 	filter_window_display(filter_window);
-	widget = glade_xml_get_widget(window->xml, "EditButton");
-	gtk_widget_set_sensitive(widget, TRUE);
-	widget = glade_xml_get_widget(window->xml, "RemoveButton");
-	gtk_widget_set_sensitive(widget, TRUE);	
-	widget = glade_xml_get_widget(window->xml, "ApplyButton");
-	gtk_widget_set_sensitive(widget, TRUE);
 }
 
 static void multifilter_window_on_edit_button_pressed(GtkButton *button, multifilter_window_t *window)
@@ -279,6 +279,81 @@ static void multifilter_window_on_apply_button_pressed(GtkButton *button, multif
 	
 }
 
+static void multifilter_window_on_import_button_pressed(GtkButton *button, multifilter_window_t *window)
+{
+	filter_window_t *filter_window;
+	seaudit_filter_t *filter;
+	GString *filename, *message;
+	gint err;
+
+	filename = get_filename_from_user("Import Filter");
+	if (!filename)
+		return;
+	err = seaudit_filter_load_from_file(&filter, filename->str);
+	if (err < 0) {
+		message = g_string_new("");
+		g_string_printf(message, "Unable to import from %s\n%s", filename->str, strerror(errno));
+		message_display(window->window, GTK_MESSAGE_ERROR, message->str);
+		g_string_free(message, TRUE);
+		return;
+	} else if (err > 0) {
+		message = g_string_new("");
+		g_string_printf(message, "Unable to import from %s\ninvalid file.", filename->str);
+		message_display(window->window, GTK_MESSAGE_ERROR, message->str);
+		g_string_free(message, TRUE);
+		return;
+	}
+
+	filter_window = filter_window_create(window, window->num_filter_windows, filter->name);
+	filter_window_set_values_from_filter(filter_window, filter);
+	multifilter_window_add_filter_window(window, filter_window);
+}
+
+static void multifilter_window_on_export_button_pressed(GtkButton *button, multifilter_window_t *window)
+{
+	GtkTreeSelection *selection;
+	GtkTreeModel *model;
+	GtkTreeIter iter;
+	GtkTreePath *path;
+	gint *index;
+	filter_window_t *filter_window;
+	seaudit_filter_t *filter;
+	GString *filename, *message;
+	gint response, err;
+
+	selection = gtk_tree_view_get_selection(window->treeview);
+	model = GTK_TREE_MODEL(window->liststore);
+	if (!gtk_tree_selection_get_selected(selection, &model, &iter)) {
+		message_display(window->window, GTK_MESSAGE_ERROR, "You must select a filter to export.");
+		return;
+	}
+	path = gtk_tree_path_new();
+        path = gtk_tree_model_get_path(model, &iter);
+	index = gtk_tree_path_get_indices(path);
+	filter_window = g_list_nth_data(window->filter_windows, index[0]);
+	filter = filter_window_get_filter(filter_window);
+	filename = get_filename_from_user("Export filter");
+	if (filename == NULL)
+		return;
+	if (g_file_test(filename->str, G_FILE_TEST_EXISTS)) {
+		message = g_string_new("");
+		g_string_printf(message, "The file %s\nalready exists.  Are you sure you wish to continue?", filename->str);
+		response = get_user_response_to_message(window->window, message->str);
+		g_string_free(message, TRUE);
+		if (response != GTK_RESPONSE_YES)
+			return;
+	}
+	err = seaudit_filter_save_to_file(filter, filename->str);
+	if (err) {
+		message = g_string_new("");
+	        g_string_printf(message, "Unable to export to %s\n%s", filename->str, strerror(errno));
+		message_display(window->window, GTK_MESSAGE_ERROR, message->str);
+		g_string_free(message, TRUE);
+	}
+	seaudit_filter_destroy(filter);
+	g_string_free(filename, TRUE);
+}
+
 static void multifilter_window_on_close_button_pressed(GtkButton *button, multifilter_window_t *window)
 {
 	GList *item;
@@ -297,4 +372,22 @@ static gboolean multifilter_window_on_delete_event(GtkWidget *widget, GdkEvent *
 	button = glade_xml_get_widget(window->xml, "CloseButton");
 	multifilter_window_on_close_button_pressed(GTK_BUTTON(button), window);
 	return TRUE;
+}
+
+static void multifilter_window_add_filter_window(multifilter_window_t *window, filter_window_t *filter_window)
+{
+	GtkTreeIter iter;
+	GtkWidget *widget;
+
+	gtk_list_store_append(window->liststore, &iter);
+	window->filter_windows = g_list_append(window->filter_windows, filter_window);
+	window->num_filter_windows++;
+	multifilter_window_set_filter_name_in_list(window, filter_window);
+	widget = glade_xml_get_widget(window->xml, "EditButton");
+	gtk_widget_set_sensitive(widget, TRUE);
+	widget = glade_xml_get_widget(window->xml, "RemoveButton");
+	gtk_widget_set_sensitive(widget, TRUE);	
+	widget = glade_xml_get_widget(window->xml, "ApplyButton");
+	gtk_widget_set_sensitive(widget, TRUE);
+
 }
