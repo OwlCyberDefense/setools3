@@ -59,7 +59,8 @@ typedef struct registered_callback {
 
 typedef struct seaudit {
 	policy_t *cur_policy;
-	SEAuditLogStore *log_store;
+	audit_log_t *cur_log;
+	SEAuditLogViewStore *log_store;
 	GladeXML *top_window_xml;
 	GtkWindow *top_window;
 	filters_t *filters;
