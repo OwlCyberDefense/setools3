@@ -1,6 +1,6 @@
 AN OVERVIEW OF FILE RELABEL ANALYSIS
 apol, version 2.0
-February 09, 2005
+February 22, 2005
 selinux@tresys.com
 
 UNDERSTANDING FILE RELABEL ANALYSIS
@@ -57,11 +57,11 @@ In Subject mode, the analysis examines relabeling from the perspective of the
 subject entity, which actually initiates the relabeling. So for example, one
 can determine all types 'to' and 'from' which that subject can relabel.
 
-The interface provides the user with radiobuttons for selecting the desired
-mode for the query. Upon selecting Object mode, two checkbuttons will become 
+The interface provides the user with radio buttons for selecting the desired
+mode for the query. Upon selecting Object mode, two checkboxes will become 
 enabled for specifying the direction of the relabeling to the query. By default, 
-the direction is set to Both, which is indicated by both checkbuttons being 
-selected. Also, upon selecting the checkbuttons, the labels within the 'Required
+the direction is set to Both, which is indicated by both checkboxes being 
+selected. Also, upon selecting the checkboxes, the labels within the 'Required
 parameters' frame will change accordingly. 
 
 Within the 'Required parameters' frame are checkboxes, the top-most of which is 
