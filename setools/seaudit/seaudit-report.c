@@ -397,8 +397,17 @@ static int seaudit_report_print_view_results(seaudit_report_info_t report_info,
 			fprintf(outfile, "kernel: security: %d users, %d roles, %d types, %d bools\n",
 						policy_msg->users, policy_msg->roles, 
 						policy_msg->types, policy_msg->bools);
-			fprintf(outfile, "%s ", date);
-			fprintf(outfile, "%s ", audit_log_get_host(log_view->my_log, log_view->my_log->msg_list[indx]->host));
+						
+			if (report_info.html)
+				fprintf(outfile, "<font class=\"message_date\">%s </font>", date);
+			else 	
+				fprintf(outfile, "%s ", date);
+				
+			if (report_info.html)
+				fprintf(outfile, "<font class=\"host_name\">%s </font>", audit_log_get_host(log_view->my_log, log_view->my_log->msg_list[indx]->host));
+			else 
+				fprintf(outfile, "%s ", audit_log_get_host(log_view->my_log, log_view->my_log->msg_list[indx]->host));
+			
 			fprintf(outfile, "kernel: security: %d classes, %d rules",
 						policy_msg->classes, policy_msg->rules);
 		} else if (log_view->my_log->msg_list[indx]->msg_type == AVC_MSG) {
@@ -419,9 +428,9 @@ static int seaudit_report_print_view_results(seaudit_report_info_t report_info,
 			fprintf(outfile, "avc: ");
 			if (report_info.html) {
 				if (cur_msg->msg == AVC_DENIED)
-					fprintf(outfile, "<font class=\"avc_type\">denied </font>");
+					fprintf(outfile, "<font class=\"avc_deny\">denied </font>");
 				else
-					fprintf(outfile, "<font class=\"avc_type\">granted </font>");
+					fprintf(outfile, "<font class=\"avc_grant\">granted </font>");
 			} else {
 				if (cur_msg->msg == AVC_DENIED)
 					fprintf(outfile, "denied ");
@@ -439,10 +448,17 @@ static int seaudit_report_print_view_results(seaudit_report_info_t report_info,
 			}
 			fprintf(outfile, " for ");	
 			fprintf(outfile, "pid=%d ", cur_msg->pid);
-			fprintf(outfile, "exe=%s ", cur_msg->exe);
+			if (report_info.html) 
+				fprintf(outfile, "<font class=\"exe\">exe=%s </font>", cur_msg->exe);
+			else 	
+				fprintf(outfile, "exe=%s ", cur_msg->exe);
 			
-			if (cur_msg->path)
-				fprintf(outfile, "path=%s ", cur_msg->path);
+			if (cur_msg->path) {
+				if (report_info.html) 
+					fprintf(outfile, "<font class=\"path\">path=%s </font>", cur_msg->path);
+				else 	
+					fprintf(outfile, "path=%s ", cur_msg->path);
+			}
 			if (cur_msg->dev)
 				fprintf(outfile, "dev=%s ", cur_msg->dev);
 			if (cur_msg->is_inode)
@@ -598,11 +614,24 @@ static int seaudit_report_print_print_policy_loads(seaudit_report_info_t report_
 				fprintf(outfile, "%s ", audit_log_get_host(report_info.log, report_info.log->msg_list[indx]->host));
 			
 			policy_msg = report_info.log->msg_list[indx]->msg_data.load_policy_msg;						
-			fprintf(outfile, "kernel: security: %d users, %d roles, %d types, %d bools\n",
+			fprintf(outfile, "kernel: security: %d users, %d roles, %d types, %d bools",
 						policy_msg->users, policy_msg->roles, 
 						policy_msg->types, policy_msg->bools);
-			fprintf(outfile, "%s ", date);
-			fprintf(outfile, "%s ", audit_log_get_host(report_info.log, report_info.log->msg_list[indx]->host));
+			if (report_info.html) 
+				fprintf(outfile, "<br>\n");
+			else
+				fprintf(outfile, "\n");
+				
+			if (report_info.html) 	
+				fprintf(outfile, "<font class=\"message_date\">%s </font>", date);
+			else 
+				fprintf(outfile, "%s ", date);
+				
+			if (report_info.html)
+				fprintf(outfile, "<font class=\"host_name\">%s </font>", audit_log_get_host(report_info.log, report_info.log->msg_list[indx]->host));
+			else 
+				fprintf(outfile, "%s ", audit_log_get_host(report_info.log, report_info.log->msg_list[indx]->host));
+			
 			fprintf(outfile, "kernel: security: %d classes, %d rules",
 						policy_msg->classes, policy_msg->rules);
 												
@@ -765,7 +794,7 @@ static int seaudit_report_print_enforce_toggles(seaudit_report_info_t report_inf
 			}
 			fprintf(outfile, "avc: ");
 			if (report_info.html)			
-				fprintf(outfile, "<font class=\"avc_type\">granted </font>");
+				fprintf(outfile, "<font class=\"avc_grant\">granted </font>");
 			else 
 				fprintf(outfile, "granted ");
 			
@@ -779,10 +808,17 @@ static int seaudit_report_print_enforce_toggles(seaudit_report_info_t report_inf
 			}
 			fprintf(outfile, " for ");	
 			fprintf(outfile, "pid=%d ", cur_msg->pid);
-			fprintf(outfile, "exe=%s ", cur_msg->exe);
+			if (report_info.html) 
+				fprintf(outfile, "<font class=\"exe\">exe=%s </font>", cur_msg->exe);
+			else 	
+				fprintf(outfile, "exe=%s ", cur_msg->exe);
 			
-			if (cur_msg->path)
-				fprintf(outfile, "path=%s ", cur_msg->path);
+			if (cur_msg->path) {
+				if (report_info.html) 
+					fprintf(outfile, "<font class=\"path\">path=%s </font>", cur_msg->path);
+				else 	
+					fprintf(outfile, "path=%s ", cur_msg->path);
+			}
 			if (cur_msg->dev)
 				fprintf(outfile, "dev=%s ", cur_msg->dev);
 			if (cur_msg->is_inode)
@@ -943,7 +979,7 @@ static int seaudit_report_print_allow_listing(seaudit_report_info_t report_info,
 			}
 			fprintf(outfile, "avc: ");
 			if (report_info.html) 
-				fprintf(outfile, "<font class=\"avc_type\">granted </font>");
+				fprintf(outfile, "<font class=\"avc_grant\">granted </font>");
 			else 
 				fprintf(outfile, "granted ");
 			
@@ -955,12 +991,20 @@ static int seaudit_report_print_allow_listing(seaudit_report_info_t report_info,
 				}
 				fprintf(outfile, "}");
 			}
-			fprintf(outfile, " for ");	
-			fprintf(outfile, "pid=%d ", cur_msg->pid);
-			fprintf(outfile, "exe=%s ", cur_msg->exe);
+			fprintf(outfile, " for ");
 			
-			if (cur_msg->path)
-				fprintf(outfile, "path=%s ", cur_msg->path);
+			fprintf(outfile, "pid=%d ", cur_msg->pid);
+			if (report_info.html) 
+				fprintf(outfile, "<font class=\"exe\">exe=%s </font>", cur_msg->exe);
+			else 	
+				fprintf(outfile, "exe=%s ", cur_msg->exe);
+			
+			if (cur_msg->path) {
+				if (report_info.html) 
+					fprintf(outfile, "<font class=\"path\">path=%s </font>", cur_msg->path);
+				else 	
+					fprintf(outfile, "path=%s ", cur_msg->path);
+			}
 			if (cur_msg->dev)
 				fprintf(outfile, "dev=%s ", cur_msg->dev);
 			if (cur_msg->is_inode)
@@ -1068,7 +1112,7 @@ static int seaudit_report_print_deny_listing(seaudit_report_info_t report_info, 
 			}
 			fprintf(outfile, "avc: ");
 			if (report_info.html)
-				fprintf(outfile, "<font class=\"avc_type\">denied </font>");
+				fprintf(outfile, "<font class=\"avc_deny\">denied </font>");
 			else 
 				fprintf(outfile, "denied ");
 			
@@ -1083,10 +1127,18 @@ static int seaudit_report_print_deny_listing(seaudit_report_info_t report_info, 
 			fprintf(outfile, " for ");	
 			if (cur_msg->pid)
 				fprintf(outfile, "pid=%d ", cur_msg->pid);
-			if (cur_msg->exe)
-				fprintf(outfile, "exe=%s ", cur_msg->exe);
-			if (cur_msg->path)
-				fprintf(outfile, "path=%s ", cur_msg->path);
+			if (cur_msg->exe) {
+				if (report_info.html) 
+					fprintf(outfile, "<font class=\"exe\">exe=%s </font>", cur_msg->exe);
+				else 	
+					fprintf(outfile, "exe=%s ", cur_msg->exe);
+			}
+			if (cur_msg->path) {
+				if (report_info.html) 
+					fprintf(outfile, "<font class=\"path\">path=%s </font>", cur_msg->path);
+				else 	
+					fprintf(outfile, "path=%s ", cur_msg->path);
+			}
 			if (cur_msg->dev)
 				fprintf(outfile, "dev=%s ", cur_msg->dev);
 			if (cur_msg->is_inode)
