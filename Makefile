@@ -17,6 +17,8 @@ DYNAMIC 		= 0
 # apol that runs on non-selinux machines. Set this to 0 for
 # non-selinux machines
 USE_LIBSELINUX 		= 1
+# This determines whether apol uses libsefs
+USE_LIBSEFS 		= 1
 
 LIBS		= -lfl -lm
 TCLVER		= $(shell env tclsh tcl_vars)
@@ -61,6 +63,11 @@ ifeq ($(USE_LIBSELINUX), 1)
 CC_DEFINES += -DLIBSELINUX
 endif
 
+ifeq ($(USE_LIBSEFS), 1)
+LIBSELINUX  = -lselinux
+CC_DEFINES += -DLIBSEFS
+endif
+
 ifeq ($(DEBUG), 0)
 CFLAGS		= -Wall -O2 -fPIC $(TCL_INCLUDE) $(CC_DEFINES)
 else
@@ -94,9 +101,9 @@ POLICYINSTALLDIRS = seuser
 # exports
 export CFLAGS CC YACC LEX LINKFLAGS BINDIR INSTALL_LIBDIR INSTALL_HELPDIR LIBS TCL_LIBINC TCL_LIBS MAKE 
 export SELINUX_DIR POLICY_INSTALL_DIR POLICY_SRC_DIR SRC_POLICY_DIR POLICY_SRC_FILE DEFAULT_LOG_FILE
-export TOPDIR SHARED_LIB_INSTALL_DIR STATIC_LIB_INSTALL_DIR SETOOLS_INCLUDE DYNAMIC LIBSELINUX
+export TOPDIR SHARED_LIB_INSTALL_DIR STATIC_LIB_INSTALL_DIR SETOOLS_INCLUDE DYNAMIC LIBSELINUX USE_LIBSEFS
 
-all:  all-libs apol awish seuser seuserx sepcut seaudit secmds sediff
+all:  all-libs apol awish seuser seuserx sepcut seaudit secmds sediff sediffx
 
 all-nogui:  corelibs seuser secmds sediff
 
@@ -117,6 +124,8 @@ help:
 	@echo "   install-seuserx:   		build and install seuser and seuserx (selinux required)"
 	@echo "   install-secmds:    		build and install command line tools (selinux required)"
 	@echo "   install-seaudit:   		build and install seaudit and seaudit-report (selinux not required)"
+	@echo "   install-sediff:   		build and install sediff command-line tool"
+	@echo "   install-sediffx:   		build and install sediff GUI tool"
 	@echo ""
 	@echo "   install-dev:       		build and install headers and libraries"
 	@echo "   install-docs:      		install setools documentation"
@@ -133,7 +142,9 @@ help:
 	@echo "   seuserx:           		build SE Linux GUI user tool"
 	@echo "   sepcut             		build policy customization/browsing tool"
 	@echo "   secmds:            		build setools command line tools"
-	@echo "   seaudit:           		built audit log analysis tools"
+	@echo "   seaudit:           		build audit log analysis tools"
+	@echo "   sediff:           		build policy diff command line tool"
+	@echo "   sediffx:           		build policy diff GUI tool"
 	@echo "   awish:             		build TCL/TK wish interpreter with SE Linux tools extensions"
 	@echo " "
 	@echo "   clean:             		clean up interim files"
@@ -155,6 +166,9 @@ seuserx: selinux_tool
 sediff: selinux_tool
 	cd sediff; $(MAKE) sediff;
 
+sediffx: selinux_tool
+	cd sediff; $(MAKE) sediffx
+	
 sepcut: selinux_tool
 	cd sepct; $(MAKE) sepcut
 
@@ -198,6 +212,9 @@ install-awish: $(INSTALL_LIBDIR) $(BINDIR)
 install-seuserx: $(INSTALL_LIBDIR) $(BINDIR)
 	cd seuser; $(MAKE) install; 
 
+install-sediffx: $(INSTALL_LIBDIR) $(BINDIR)
+	cd sediff; $(MAKE) install; 
+	
 # Non-GUI version only
 install-seuser: $(INSTALL_LIBDIR) $(BINDIR)
 	cd seuser; $(MAKE) install-nogui
@@ -207,14 +224,17 @@ install-sepcut: $(INSTALL_LIBDIR) $(BINDIR)
 
 install-secmds: $(INSTALL_LIBDIR) $(BINDIR)
 	cd secmds; $(MAKE) install
+	
+install-sediff: $(INSTALL_LIBDIR) $(BINDIR)
+	cd sediff; $(MAKE) install-nogui
 
 install-seaudit: $(INSTALL_LIBDIR) $(BINDIR)
 	 cd seaudit; $(MAKE) install
 
-install-nogui: $(INSTALL_LIBDIR) install-seuser install-secmds
+install-nogui: $(INSTALL_LIBDIR) install-seuser install-secmds install-sediff
 
 install: $(BINDIR) $(SHARED_LIB_INSTALL_DIR) install-dev install-apol install-seuserx install-sepcut \
-	 install-awish install-secmds install-seaudit install-docs
+	 install-awish install-secmds install-seaudit install-sediff install-docs
 
 $(SHARED_LIB_INSTALL_DIR):
 	install -m 755 -d $(SHARED_LIB_INSTALL_DIR)
