@@ -540,17 +540,15 @@ int search_initial_sids_context(int **isids, int *num_isids, const char *user, c
 		if(ridx < 0) {
 			return 0;
 		}
-	} else {
-		ridx = -1;
-	}
+	} 
+	
 	if(type != NULL) {
 		tidx = get_type_idx(type, policy);
 		if(tidx < 0) {
 			return 0;
 		}
-	} else {
-		tidx = -1;
-	}
+	} 
+	
 	if(user != NULL) {
 		get_user_by_name(user, &uidx, policy);
 		if(uidx == NULL) {
