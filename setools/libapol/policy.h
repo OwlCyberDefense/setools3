@@ -101,15 +101,15 @@ typedef struct name_item {
 
 
 /* IDs for ta_item */
-#define IDX_INVALID		0
-#define IDX_TYPE		1
-#define IDX_ATTRIB		2
-#define IDX_ROLE		3
-#define IDX_PERM		4
-#define IDX_COMMON_PERM		5
-#define IDX_OBJ_CLASS		6
-#define IDX_MAX			6
-#define IDX_BOTH		-1	/* reserve as special indicator for regex rule searches  */
+#define IDX_INVALID		0x0
+#define IDX_TYPE		0x00000001
+#define IDX_ATTRIB		0x00000002
+#define IDX_ROLE		0x00000004
+#define IDX_PERM		0x00000008
+#define IDX_COMMON_PERM		0x00000010
+#define IDX_OBJ_CLASS		0x00000020
+#define IDX_SUBTRACT		0x00000040
+#define IDX_BOTH		0x10000000	/* reserve as special indicator for regex rule searches  */
 
 /* type, attribute, role, perm , common perm list item */
 typedef struct ta_item {
