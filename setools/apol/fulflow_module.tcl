@@ -100,7 +100,8 @@ namespace eval Apol_Analysis_fulflow {
 	variable select_fg_orig		""
 	variable excluded_tag		" (Excluded)"
 	variable progressmsg		""
-	variable progress_indicator	
+	variable progress_indicator	0
+	variable start_time
 	
 	## Within the namespace command for the module, you must call Apol_Analysis::register_analysis_modules,
 	## the first argument is the namespace name of the module, and the second is the
@@ -163,7 +164,7 @@ proc Apol_Analysis_fulflow::do_analysis { results_frame } {
       	variable spinbox_threshhold
       	variable threshhold_cb_value
       	variable threshhold_value
-	        
+		        
         # if a permap is not loaded then load the default permap
         # if an error occurs on open, then skip analysis
         set rt [catch {Apol_Analysis_fulflow::load_default_perm_map} err]
@@ -181,7 +182,7 @@ proc Apol_Analysis_fulflow::do_analysis { results_frame } {
 	set perm_options ""
 	set objects_sel "0"
 	set filter_types "0"
-		
+	
 	foreach class $Apol_Analysis_fulflow::class_list {
 		set perms ""
 		# Make sure to strip out just the class name, as this may be an  
@@ -230,6 +231,7 @@ proc Apol_Analysis_fulflow::do_analysis { results_frame } {
 	if {$filtered_excl_types != ""} {   
 		set filter_types "1"
 	} 
+	
 	set rt [catch {set results [apol_TransitiveFlowAnalysis \
 		$start_type \
 		$flow_direction \
@@ -259,6 +261,7 @@ proc Apol_Analysis_fulflow::do_analysis { results_frame } {
 		return -code error $err
 	}
 	Apol_Analysis_fulflow::destroy_progressDlg
+	set Apol_Analysis_fulflow::progress_indicator 0
      	return 0
 } 
 
@@ -838,9 +841,16 @@ proc Apol_Analysis_fulflow::display_progressDlg {} {
 		-parent $ApolTop::mainframe \
         	-textvariable Apol_Analysis_fulflow::progressmsg \
         	-variable Apol_Analysis_fulflow::progress_indicator \
-        	-maximum 0 \
+        	-maximum 3 \
         	-width 45]
         update
+        bind $progressBar <<AnalysisStarted>> {
+        	set Apol_Analysis_fulflow::progress_indicator [expr $Apol_Analysis_fulflow::progress_indicator + 1]
+        }
+        # generate 3 virtual events to place onto Tcl's event queue.
+	event generate $Apol_Analysis_fulflow::progressDlg <<AnalysisStarted>> -when head
+	event generate $Apol_Analysis_fulflow::progressDlg <<AnalysisStarted>> -when head
+	event generate $Apol_Analysis_fulflow::progressDlg <<AnalysisStarted>> -when head
         return 0
 } 
 
@@ -1017,6 +1027,7 @@ proc Apol_Analysis_fulflow::find_more_flows {src_node tgt_node} {
 	variable find_flows_Dlg
 	variable find_flows_results_Dlg
 	variable find_flows_start
+	variable start_time
 	
 	set time_limit_str [format "%02s:%02s:%02s" $time_limit_hr $time_limit_min $time_limit_sec]
 	if {$flow_limit_num == "" && $time_limit_str == "00:00:00"} {
@@ -1061,10 +1072,19 @@ proc Apol_Analysis_fulflow::find_more_flows {src_node tgt_node} {
 	set start_time [clock seconds]
 	set curr_flows_num 0
 	set find_flows_start 1
-	
+		
 	# Current time - start time = elapsed time
 	$time_exp_lbl configure -text [Apol_Analysis_fulflow::convert_seconds [expr [clock seconds] - $start_time]]
-	update 
+	bind $find_flows_results_Dlg <<FindMoreFlowsStarted>> {
+		set elapsed_time [Apol_Analysis_fulflow::convert_seconds \
+			[expr [clock seconds] - $Apol_Analysis_fulflow::start_time]]
+		$Apol_Analysis_fulflow::time_exp_lbl configure -text $elapsed_time
+       	}
+        # generate 3 virtual events to place onto Tcl's event queue.
+	event generate $find_flows_results_Dlg <<FindMoreFlowsStarted>> -when head
+	event generate $find_flows_results_Dlg <<FindMoreFlowsStarted>> -when head
+	event generate $find_flows_results_Dlg <<FindMoreFlowsStarted>> -when head
+	
 	# The last query arguments were stored in the data for the root node
 	set rt [catch {apol_TransitiveFindPathsStart \
 		$src \
@@ -1086,6 +1106,8 @@ proc Apol_Analysis_fulflow::find_more_flows {src_node tgt_node} {
 	}
 	
 	while {1} {
+		event generate $find_flows_results_Dlg <<FindMoreFlowsStarted>> -when head
+		event generate $find_flows_results_Dlg <<FindMoreFlowsStarted>> -when head
 		# Current time - start time = elapsed time
 		set elapsed_time [Apol_Analysis_fulflow::convert_seconds [expr [clock seconds] - $start_time]]
 		$time_exp_lbl configure -text $elapsed_time
@@ -1611,7 +1633,7 @@ proc Apol_Analysis_fulflow::create_result_tree_structure { fulflow_tree results_
 proc Apol_Analysis_fulflow::do_child_analysis { fulflow_tree selected_node } {    
 	ApolTop::setBusyCursor
 	Apol_Analysis_fulflow::display_progressDlg	
-	if { [$fulflow_tree nodes $selected_node] == "" } {
+	if { [$fulflow_tree nodes $selected_node] == "" } {	
 	    	# The last query arguments were stored in the data for the root node
 		set query_args [$fulflow_tree itemcget [$fulflow_tree nodes root] -data]
 	        set start_t [file tail $selected_node]
