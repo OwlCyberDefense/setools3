@@ -1933,7 +1933,7 @@ proc Sepct_Customize::create_unUsed_Modules_Dir {} {
 	# First, check to see if the unUsed directory exists. 
 	if { [file exists $Sepct_Customize::used_Modules_Dir] } {
 		set rt [catch {file mkdir $Sepct_Customize::unUsed_Modules_Dir} err]
-		if {rt != 0} {
+		if {$rt != 0} {
 			return -code error $err
 		}
 		set rt [Sepct_db::addTree_node $Sepct_Customize::unUsed_Modules_Dir 0 0]
