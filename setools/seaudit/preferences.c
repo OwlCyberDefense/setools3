@@ -4,6 +4,7 @@
 /*
  * Author: Kevin Carr <kcarr@tresys.com>
  * Date: December 31, 2003
+ * Modified: don.patterson@tresys.com 10-2004
  */
 
 #include "preferences.h"
@@ -44,7 +45,7 @@ void set_seaudit_conf_default_log(seaudit_conf_t *conf, const char *filename)
 int load_seaudit_conf_file(seaudit_conf_t *conf)
 {
   	FILE *file;
-	int i, size, index;
+	int i, j, size, index;
 	GString *path;
 	char *value, **list, *dir;
 
@@ -81,23 +82,33 @@ int load_seaudit_conf_file(seaudit_conf_t *conf)
 	list = get_config_var_list("RECENT_LOG_FILES", file, &size);
 	if (list) {
 		for (i = 0; i < size; i++) {
-			add_path_to_recent_log_files(list[i], conf);
+			if (add_path_to_recent_log_files(list[i], conf) != 0) {
+				for (j = i; j < size; j++)
+					free(list[j]);
+				free(list);
+				return -1;
+			}
 			free(list[i]);
 		}
 		free(list);
 	} else 
 		conf->recent_log_files = NULL;
-	conf->num_recent_log_files = size;
+		
 	list = get_config_var_list("RECENT_POLICY_FILES", file, &size);
 	if (list) {
 		for (i = 0; i < size; i++) {
-			add_path_to_recent_policy_files(list[i], conf);
+			if (add_path_to_recent_policy_files(list[i], conf) != 0) {
+				for (j = i; j < size; j++)
+					free(list[j]);
+				free(list);
+				return -1;
+			}
 			free(list[i]);
 		}
 		free(list);
 	} else
 		conf->recent_policy_files = NULL;
-	conf->num_recent_policy_files = size;
+	
 	for (i = 0; i < NUM_FIELDS; i++)
 		conf->column_visibility[i] = TRUE;
 	list = get_config_var_list("LOG_COLUMNS_HIDDEN", file, &size);
@@ -122,60 +133,86 @@ int load_seaudit_conf_file(seaudit_conf_t *conf)
 	return 0;
 }
 
-void add_path_to_recent_log_files(const char *path, seaudit_conf_t *conf_file)
+int add_path_to_recent_log_files(const char *path, seaudit_conf_t *conf_file)
 {
 	int i;
-
-	if (path == NULL || conf_file == NULL)
-		return;
+	char **ptr = NULL;
+	
+	assert(path != NULL || conf_file != NULL);
 
 	/* make sure we don't add duplicates */
 	for (i = 0; i < conf_file->num_recent_log_files; i++)
 		if (strcmp(path, conf_file->recent_log_files[i]) == 0)
-			return;
+			return 0;
 	if (conf_file->num_recent_log_files >= 5) {
 		free(conf_file->recent_log_files[0]);
 		for (i = 1; i < conf_file->num_recent_log_files; i++)
-			conf_file->recent_log_files[i-1] = conf_file->recent_log_files[i];
-		conf_file->recent_log_files[conf_file->num_recent_log_files-1] = (char *)malloc(sizeof(char)*(strlen(path) + 1));
-		strcpy(conf_file->recent_log_files[conf_file->num_recent_log_files-1], path);
-		return;
-
+			conf_file->recent_log_files[i - 1] = conf_file->recent_log_files[i];
+		conf_file->recent_log_files[conf_file->num_recent_log_files - 1] = 
+			(char *)malloc(sizeof(char)*(strlen(path) + 1));
+		if (conf_file->recent_log_files[conf_file->num_recent_log_files - 1] == NULL) {
+			fprintf(stderr, "Out of memory\n");
+			return -1;
+		}
+		strcpy(conf_file->recent_log_files[conf_file->num_recent_log_files - 1], path);
 	} else {
-		conf_file->recent_log_files = (char**)realloc( conf_file->recent_log_files, sizeof(char*)*(conf_file->num_recent_log_files+1));
-		conf_file->recent_log_files[conf_file->num_recent_log_files] = (char *)malloc(sizeof(char)*(strlen(path) + 1));
-		strcpy(conf_file->recent_log_files[conf_file->num_recent_log_files], path);	
+		ptr = (char**)realloc(conf_file->recent_log_files, 
+			sizeof(char*)*(conf_file->num_recent_log_files + 1));
+		if (ptr == NULL) {
+			fprintf(stderr, "Out of memory.\n");
+			return -1;
+		}
+		conf_file->recent_log_files = ptr;
 		conf_file->num_recent_log_files++;
-		return;
+		conf_file->recent_log_files[conf_file->num_recent_log_files - 1] = 
+			(char *)malloc(sizeof(char)*(strlen(path) + 1));
+		if (conf_file->recent_log_files[conf_file->num_recent_log_files - 1] == NULL) {
+			fprintf(stderr, "Out of memory\n");
+			return -1;
+		}
+		strcpy(conf_file->recent_log_files[conf_file->num_recent_log_files - 1], path);	
 	}
+	return 0;
 }
 
-void add_path_to_recent_policy_files(const char *path, seaudit_conf_t *conf_file)
+int add_path_to_recent_policy_files(const char *path, seaudit_conf_t *conf_file)
 {
 	int i;
+	char **ptr = NULL;
 
-	if (path == NULL || conf_file == NULL)
-		return;
+	assert(path != NULL || conf_file != NULL);
 
 	/* make sure we don't add duplicates */
 	for (i = 0; i < conf_file->num_recent_policy_files; i++)
 		if (strcmp(path, conf_file->recent_policy_files[i]) == 0)
-			return;
+			return 0;
 	if (conf_file->num_recent_policy_files >= 5) {
 		free(conf_file->recent_policy_files[0]);
 		for (i = 1; i < conf_file->num_recent_policy_files; i++)
-			conf_file->recent_log_files[i-1] = conf_file->recent_log_files[i];
-		conf_file->recent_policy_files[conf_file->num_recent_policy_files-1] = (char *)malloc(sizeof(char)*(strlen(path) + 1));
-		strcpy(conf_file->recent_policy_files[conf_file->num_recent_policy_files-1], path);
-		return;
+			conf_file->recent_policy_files[i - 1] = conf_file->recent_policy_files[i];
+		if (conf_file->recent_policy_files[conf_file->num_recent_policy_files - 1] == NULL) {
+			fprintf(stderr, "Out of memory\n");
+			return -1;
+		}
+		strcpy(conf_file->recent_policy_files[conf_file->num_recent_policy_files - 1], path);
 	} else {
-		conf_file->recent_policy_files = (char**)realloc(conf_file->recent_policy_files, 							  
-							 sizeof(char*)*(conf_file->num_recent_policy_files+1));
-		conf_file->recent_policy_files[conf_file->num_recent_policy_files] = (char *)malloc(sizeof(char)*(strlen(path) + 1));
-		strcpy(conf_file->recent_policy_files[conf_file->num_recent_policy_files], path);
+		ptr = (char**)realloc(conf_file->recent_policy_files, 							  
+			sizeof(char*)*(conf_file->num_recent_policy_files + 1));
+		if (ptr == NULL) {
+			fprintf(stderr, "Out of memory.\n");
+			return -1;
+		}
+		conf_file->recent_policy_files = ptr;
 		conf_file->num_recent_policy_files++;
-		return;
+		conf_file->recent_policy_files[conf_file->num_recent_policy_files - 1] = 
+			(char *)malloc(sizeof(char)*(strlen(path) + 1));
+		if (conf_file->recent_policy_files[conf_file->num_recent_policy_files - 1] == NULL) {
+			fprintf(stderr, "Out of memory\n");
+			return -1;
+		}
+		strcpy(conf_file->recent_policy_files[conf_file->num_recent_policy_files - 1], path);	
 	}
+	return 0;
 }
 
 int save_seaudit_conf_file(seaudit_conf_t *conf)
