@@ -3,7 +3,10 @@
  * see file 'COPYING' for use and warranty information */
 
 /*
- * Author: kcarr@tresys.com and Karl MacMillan <kmacmillan@tresys.com>
+ * Author: Kevin Carr <kcarr@tresys.com>
+ *         Karl MacMillan <kmacmillan@tresys.com>
+ *         Jeremy Stitz <jstitz@tresys.com>
+ *
  * Date: October 1, 2003
  * 
  * This file contains the implementation of message.h
@@ -30,7 +33,9 @@ const char *audit_log_field_strs[] = { "msg_field",
 				       "tgt_type_field",
 				       "obj_class_field",
 				       "perm_field",
-				       "inode_field", 
+				       "inode_field",
+				       "ipaddr_field",
+				       "audit_header_field",
 				       "pid_field",
 				       "src_sid_field",
 				       "tgt_sid_field", 
@@ -346,13 +351,12 @@ msg_t* avc_msg_create(void)
 	new->is_capability = FALSE;
 	new->is_key = FALSE;
 	new->is_inode = FALSE;
-	new->src_user = -1;
-	new->src_role = -1;
-	new->src_type = -1;
-	new->tgt_user = -1;
-	new->tgt_role = -1;
-	new->tgt_type = -1;
-	new->obj_class = -1;
+	new->is_src_con = FALSE;
+	new->is_tgt_con = FALSE;
+	new->is_obj_class = FALSE;
+	new->is_src_sid = FALSE;
+	new->is_tgt_sid = FALSE;
+	new->is_pid = FALSE;
 	msg->msg_type = AVC_MSG;
 	msg->msg_data.avc_msg = new;
 	return msg;
@@ -462,6 +466,10 @@ static void avc_msg_destroy(avc_msg_t* tmp)
 		free(tmp->saddr);
 	if (tmp->name)
 		free(tmp->name);
+	if (tmp->ipaddr)
+		free(tmp->ipaddr);
+	if (tmp->audit_header)
+		free(tmp->audit_header);
 	free(tmp);
 	return;
 }
