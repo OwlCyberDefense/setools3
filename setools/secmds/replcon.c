@@ -109,7 +109,6 @@ typedef struct replcon_info {
 
 /* globals */
 replcon_info_t replcon_info;
-const char *replcon_object_classes[];
 char **mounts;
 unsigned int num_mounts;
 
@@ -157,6 +156,7 @@ replcon_context_free(replcon_context_t * context)
 void
 replcon_context_destroy(replcon_context_t * context)
 {
+	assert(context != NULL);
 	replcon_context_free(context);
 	free(context);
 }
@@ -370,10 +370,11 @@ void replcon_info_init(replcon_info_t * info)
  * Frees all the allocated memory in info
  */
 void
-replcon_info_free(replcon_info_t * info)
+replcon_info_free(replcon_info_t *info)
 {
 	int i;
-
+	
+	assert(info != NULL);
 	/* Free Object Classes */
 	if (info->obj_classes) {
 		free(info->obj_classes);
@@ -415,10 +416,11 @@ replcon_info_free(replcon_info_t * info)
  *
  * Check if replcon_info has an object class
  */
-int replcon_info_has_object_class(replcon_info_t * info, replcon_classes_t obj_class)
+int replcon_info_has_object_class(replcon_info_t *info, replcon_classes_t obj_class)
 {
 	int i;
 
+	assert(info != NULL); 
 	for (i = 0; i < info->num_classes; i++)
 		if (info->obj_classes[i] == obj_class
 		    || replcon_info.obj_classes[i] == ALL_FILES)
@@ -435,7 +437,8 @@ int replcon_info_has_object_class(replcon_info_t * info, replcon_classes_t obj_c
 int replcon_is_valid_object_class(const char *class_name)
 {
 	int i;
-
+	
+	assert(class_name != NULL);
 	for (i = 0; i < NUM_OBJECT_CLASSES; i++)
 		if (strcmp(class_name, replcon_object_classes[i]) == 0)
 			return i;
@@ -477,6 +480,7 @@ int replcon_is_valid_context_format(const char *context_str)
  */
 int replcon_get_file_class(const struct stat *statptr)
 {
+	assert(statptr != NULL);
 	if (S_ISREG(statptr->st_mode))
 		return NORM_FILE;
 	if (S_ISDIR(statptr->st_mode))
@@ -500,10 +504,11 @@ int replcon_get_file_class(const struct stat *statptr)
  * Adds class_id to the array of object types stored in replcon_info that will have their
  * context changed upon program execution
  */
-int replcon_info_add_object_class(replcon_info_t * info, const char *str)
+int replcon_info_add_object_class(replcon_info_t *info, const char *str)
 {
 	replcon_classes_t class_id;
 
+	assert(info != NULL);
 	class_id = replcon_is_valid_object_class(str);
 
 	/* Check the object class */
@@ -532,10 +537,11 @@ int replcon_info_add_object_class(replcon_info_t * info, const char *str)
  * Adds the context pair, old and new, to the array of context pairs stored in replcon_info
  * that will be changed upon program execution
  */
-int replcon_info_add_context_pair(replcon_info_t * info, const char *old, const char *new)
+int replcon_info_add_context_pair(replcon_info_t *info, const char *old, const char *new)
 {
 	replcon_context_t *context;
 
+	assert(info != NULL);
 	/* Check the context pairs for format before we do any memory mgmt */
 	if (!replcon_is_valid_context_format(old)) {
 		fprintf(stderr,
@@ -596,10 +602,11 @@ int replcon_info_add_context_pair(replcon_info_t * info, const char *old, const 
  * Adds the context to the array of contexts stored in replcon_info
  * that will be sought upon program execution
  */
-int replcon_info_add_context(replcon_info_t * info, const char *con)
+int replcon_info_add_context(replcon_info_t *info, const char *con)
 {
 	replcon_context_t *context;
 
+	assert(info != NULL);
 	/* Check the context for format before we do any memory mgmt */
 	if (!replcon_is_valid_context_format(con)) {
 		fprintf(stderr,
@@ -644,8 +651,10 @@ int replcon_info_add_context(replcon_info_t * info, const char *con)
  * Adds loc to the array of file/directory locations stored in replcon_info that will
  * have contexts replaced
  */
-int replcon_info_add_filename(replcon_info_t * info, const char *file)
+int replcon_info_add_filename(replcon_info_t *info, const char *file)
 {
+	assert(info != NULL);
+	
 	info->filenames =
 	    realloc(info->filenames,
 		    sizeof (char *) * (info->num_filenames + 1));
@@ -675,6 +684,7 @@ replcon_context_equal(const replcon_context_t *context, const replcon_context_t 
 {
 	unsigned char user_match, role_match, type_match;
 
+	assert((context != NULL) && (patterns != NULL));
 	user_match =
 	    ((fnmatch(patterns->user, context->user, 0) == 0) ||
 	     (strcmp(context->user, "") == 0) ||
@@ -709,6 +719,7 @@ replcon_file_context_replace(const char *filename, const struct stat *statptr,
 	security_context_t old_file_con, new_file_con;
 	replcon_info_t *info;
 
+	assert(filename != NULL);
 	info = &replcon_info;
 	file_class = replcon_get_file_class(statptr);
 	if (!replcon_info_has_object_class(info, file_class))
@@ -798,7 +809,8 @@ findcon(const char *filename, const struct stat *statptr,
 	int file_class, i;
 	replcon_context_t *original_con;
 	security_context_t file_con;
-
+	
+	assert(filename != NULL);
 	file_class = replcon_get_file_class(statptr);
 	if (!replcon_info_has_object_class(&replcon_info, file_class))
 		return 0;
@@ -850,6 +862,7 @@ replcon_stat_file_replace_context(const char *filename)
 	char *ptr;
 	int i;
 
+	assert(filename != NULL);
 	if (stat(filename, &file_status) != 0) {
 		fprintf(stderr,
 			"Warning: Can not stat \'%s\'.  Skipping this file.\n",
@@ -889,7 +902,8 @@ void
 remove_new_line_char(char *input)
 {
 	int i;
-
+	
+	assert(input != NULL);
 	for (i = 0; i < strlen(input); i++) {
 		if (input[i] == '\n')
 			input[i] = '\0';
@@ -1031,12 +1045,12 @@ main(int argc, char **argv)
 
 	if ((mtab = fopen("/etc/mtab", "r")) == NULL) {
 		fprintf(stderr, "Could not open /etc/mtab for reading.\n");
-		return 1;
+		goto err;
 	}
 
 	if ((mounts = malloc(sizeof(char*) * len)) == NULL) {
 		fprintf(stderr, "Out of memory.\n");
-		return 1;
+		goto err;
 	}
 
 	while ((entry = getmntent(mtab))) {
@@ -1047,12 +1061,26 @@ main(int argc, char **argv)
 		if(num_mounts >= len) {
 			len *= 2;
 			mounts = realloc(mounts, sizeof(char*) * len);
+			if (mounts == NULL) {
+				fprintf(stderr, "Out of memory.\n");
+				fclose(mtab);
+				goto err;
+			}
 		}
 		fs_orig = fs = strdup(SUPPORTED_FILESYSTEMS);
+		if (fs_orig == NULL) {
+			fprintf(stderr, "Out of memory.\n");
+			fclose(mtab);
+			goto err;
+		}
 		while((token = strtok(fs, " \t")) != NULL) {
 			if (fs) fs = NULL; /* for subsequent strtok calls */
 			if(!strcmp(token, entry->mnt_type)) {
-				mounts[num_mounts++] = strdup(entry->mnt_dir);
+				if ((mounts[num_mounts++] = strdup(entry->mnt_dir)) == NULL) {
+					fprintf(stderr, "Out of memory.\n");
+					fclose(mtab);
+					goto err;
+				}
 				break;
 			}
 		}
@@ -1075,6 +1103,11 @@ main(int argc, char **argv)
 	for (i = 0; i < num_mounts; i++)
 		free(mounts[i]);
 	free(mounts);
-
+	
 	return 0;
+	
+err:
+	replcon_info_free(&replcon_info);
+	if (mounts) free(mounts);
+	return -1;
 }
