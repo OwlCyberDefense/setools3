@@ -107,12 +107,12 @@ int sefs_search_type(sefs_filesystem_data_t * fsd, char *type, int use_regex)
 
 	if (fsd == NULL) {
 		fprintf(stderr, "fsd is null\n");
-		return(-1);
+		return -1;
 	}
 
 	if (type == NULL) {
 		fprintf(stderr, "typename is null\n");
-		return(-1);
+		return -1;
 	}
 
 	if (use_regex) {
@@ -131,18 +131,80 @@ int sefs_search_type(sefs_filesystem_data_t * fsd, char *type, int use_regex)
 		}
 		regfree(&reg);
 		if (num > 0)
-			return 1;
-		return 0;
+			return 0;
+		return 1;
 	} else {
 		rc = avl_get_idx(type, &(fsd->typetree));
 		if (rc<0)
-			return 0;
+			return 1;
 		print_type_paths(&fsd->types[rc], fsd->paths, 0);
 	}
 
-	return 1;
+	return 0;
 }
 
+int sefs_search_path(sefs_filesystem_data_t * fsd, char * path, int use_regex)
+{
+	int i, j, rc, num = 0;
+	regex_t reg;
+
+	if (fsd == NULL)
+	{
+		fprintf(stderr, "fsd is null\n");
+		return -1;
+	}
+
+	if (path == NULL)
+	{
+		fprintf(stderr, "pathname is null\n");
+		return -1;
+	}
+/* \
+XXX JAM add code here
+\ */
+
+	if (use_regex)
+	{
+		rc = regcomp(&reg, path, REG_EXTENDED|REG_NOSUB);	
+		if (rc)
+		{
+			regfree(&reg);
+			return -1;
+		}
+		for (i=0; i < fsd->numpaths; i++)
+		{
+			for (j=0; j < fsd->paths[i].numpaths ; j++);
+			{
+/* XXX kill line		printf("%s\n", fsd->paths[i].pathnames[j]);*/
+				if(regexec(&reg, fsd->paths[i].pathnames[j], 0, NULL, 0) == 0)
+				{
+					/*printf("%s\t\t%s\n", fsd->paths[i].pathnames[j],
+						context_str(fsd->paths[i].context)); /*working?*/
+					num++;
+				} 
+/* XXX kill line 		*/printf("%i,%i ", i, j); (i%8)? : printf("\n");
+				if(num)
+					return  0;
+				return 1; 
+			}
+		}
+	}
+	else 
+	{
+		rc = avl_get_idx(path, &(fsd->pathtree))/* get path tree result */;
+		if (rc < 0)
+			return 1;
+		printf(/*"%s\t\t%s\n", fsd->paths[rc].pathnames[j],
+						context_str(fsd->paths[rc].context));*/
+/* XXX kill line	*/"dummy print\n");
+	}
+
+	return 0;
+}
+
+/* \
+XXX end add code
+\ */
 
 int sefs_search_user(sefs_filesystem_data_t * fsd, char * uname)
 {
@@ -150,12 +212,12 @@ int sefs_search_user(sefs_filesystem_data_t * fsd, char * uname)
 	sefs_fileinfo_t * fileinfo = NULL;
 	const char * u = NULL;
 	char * pathname = NULL;
-	int match = 0;
+	int match = 1;
 
 
 	if (fsd == NULL) {
 		fprintf(stderr, "fsd is null\n");
-		return(-1);
+		return -1;
 	}
 
 	for (i = 0; i < fsd->numpaths; i++) {
@@ -165,7 +227,7 @@ int sefs_search_user(sefs_filesystem_data_t * fsd, char * uname)
 		if (u == NULL) continue;
 
 		if (strcmp(uname, u) == 0) {
-			match = 1;
+			match = 0;
 			for (j = 0; j < fileinfo->numpaths; j++) {
 				pathname = fileinfo->pathnames[j];
 				printf("%s\n", pathname);
@@ -173,7 +235,7 @@ int sefs_search_user(sefs_filesystem_data_t * fsd, char * uname)
 		}
 	}
 
-	return(match);
+	return match;
 }
 
 
@@ -185,7 +247,7 @@ int sefs_list_types(sefs_filesystem_data_t * fsd)
 		printf("%s\n", fsd->types[i].setypename);
 	}
 
-	return(1);
+	return 1;
 }
 
 
@@ -233,30 +295,30 @@ int main(int argc, char **argv, char **envp)
 	if ((tname == NULL) && (uname == NULL) && (path == NULL) && !list) {
 		fprintf(stderr, "\nYou must specify one of -t|-u|-p\n\n");
 		usage(argv[0], 0);
-		return(-1);
+		return -1;
 	}
 	
 	if (sefs_filesystem_data_init(&fsdata) == -1) {
 		fprintf(stderr, "sefs_filesystem_data_init failed\n");
-		return(-1);
+		return -1;
 	}
 	
 	if (sefs_filesystem_data_load(&fsdata, filename) == -1) {
 		fprintf(stderr, "sefs_filesystem_data_load failed\n");
-		return(-1);
+		return -1;
 	}
 	
 	if (sefs_filesystem_data_index(&fsdata) == -1) {
 		fprintf(stderr, "sefs_filesystem_data_index failed\n");
-		return(-1);
+		return -1;
 	}
 
 	if (list) {
 		if (sefs_list_types(&fsdata) == -1) {
 			fprintf(stderr, "list_types() returned error\n");
-			return(-1);
+			return -1;
 		}
-		return(0);
+		return 0;
 	}
 
 	if (uname != NULL) {
@@ -266,14 +328,14 @@ int main(int argc, char **argv, char **envp)
 		case -1:
 			fprintf(stderr, "search_type() returned an error\n");
 			return(-1);
-		case 0:
+		case 1:
 			fprintf(stderr, "user was not found\n");
 			return(-1);
 		default:
 			break;
 		}
 
-		return(0);
+		return 0;
 	}
 
 	if (tname != NULL) {
@@ -282,15 +344,30 @@ int main(int argc, char **argv, char **envp)
 		switch(rc) {
 		case -1:
 			fprintf(stderr, "search_type() returned an error\n");
-			return(-1);
-		case 0:
+			return -1;
+		case 1:
 			fprintf(stderr, "type was not found\n");
-			return(-1);
+			return -1;
 		default:
 			break;
 		}
 
 	}
 
-	return(0);
+	if (path != NULL) {
+		rc = sefs_search_path(&fsdata, path, use_regex);
+
+		switch(rc) {
+		case -1:
+			fprintf(stderr, "search_type() returned an error\n");
+			return -1;
+		case 1: 
+			fprintf(stderr, "path was not found\n");
+			return -1;
+		default:
+			break;
+		}
+	}
+
+	return 0;
 }
