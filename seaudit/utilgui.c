@@ -55,3 +55,46 @@ void clear_wait_cursor(GtkWidget *widget)
 {
 	g_idle_add(&pointer_reset, widget);
 }
+
+GString* get_filename_from_user(const char *title)
+{
+	GtkWidget *file_selector;
+	gint response;
+	GString *filename;
+
+	file_selector = gtk_file_selection_new(title);
+
+	g_signal_connect(GTK_OBJECT(file_selector), "response", 
+			 G_CALLBACK(get_dialog_response), &response);
+	while (1) {
+		gtk_dialog_run(GTK_DIALOG(file_selector));
+		if (response != GTK_RESPONSE_OK) {
+			gtk_widget_destroy(file_selector);
+			return NULL;
+		}
+		filename = g_string_new(gtk_file_selection_get_filename(GTK_FILE_SELECTION(file_selector)));
+		if (g_file_test(filename->str, G_FILE_TEST_IS_DIR))
+			gtk_file_selection_complete(GTK_FILE_SELECTION(file_selector), filename->str);
+		else 
+			break;
+	}
+	gtk_widget_destroy(file_selector);
+	return filename;
+}
+
+/* Get response to a yes/no dialog message */
+gint get_user_response_to_message(GtkWindow *window, const char *message)
+{
+	GtkWidget *dialog;
+	gint response;
+
+	dialog = gtk_message_dialog_new(window,
+					GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+					GTK_MESSAGE_WARNING,
+					GTK_BUTTONS_YES_NO,
+					message);
+	g_signal_connect(G_OBJECT(dialog), "response", G_CALLBACK(get_dialog_response), &response);
+	gtk_dialog_run(GTK_DIALOG(dialog));
+	gtk_widget_destroy(dialog);
+	return response;
+}
