@@ -123,8 +123,6 @@ static unsigned char pmap_convert_map_char(char mapid)
 	case 'B':	return PERMMAP_BOTH;
 	case 'n':
 	case 'N':	return PERMMAP_NONE;
-	case 'u':
-	case 'U':	return PERMMAP_UNMAPPED;
 	default:	fprintf(stderr, "Warning: invalid map character (%c); permission will be unmapped\n", mapid);
 			return PERMMAP_UNMAPPED;
 	} 
