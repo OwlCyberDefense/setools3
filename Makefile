@@ -86,8 +86,7 @@ help:
 	@echo "   install-secmds:  build and install command line tools (selinux not required)"
 	@echo "   install-seaudit: build and install seaudit (selinux not required)"
 	@echo ""
-	@echo "   install-seuser-policy:  install seuser target policy"
-	@echo "   install-secmds-policy:  install secmds target policy"
+	@echo "   install-policy:  install SELinux policy and label files"
 	@echo " "
 	@echo "   all:             build everything, but don't install"
 	@echo "   all-nogui:       only build non-GUI tools and libraries"
@@ -204,12 +203,6 @@ install-seuserx: $(INSTALL_LIBDIR)
 # Non-GUI version only
 install-seuser: $(INSTALL_LIBDIR)
 	cd seuser; $(MAKE) install-nogui
-	
-install-seuser-policy: $(INSTALL_LIBDIR)
-	cd seuser; $(MAKE) install-policy
-	
-install-secmds-policy: $(INSTALL_LIBDIR)
-	cd secmds; $(MAKE) install-policy
 
 install-sepcut: $(INSTALL_LIBDIR)
 	cd sepct; $(MAKE) install
@@ -224,6 +217,16 @@ install-nogui: $(INSTALL_LIBDIR) install-seuser install-secmds
 
 
 install: install-apol install-seuserx install-sepcut install-awish install-secmds install-seaudit
+
+# Install the policy - this is a separate step to better support systems with
+# non-standard policies.
+install-seuser-policy: $(INSTALL_LIBDIR)
+	cd seuser; $(MAKE) install-policy
+	
+install-secmds-policy: $(INSTALL_LIBDIR)
+	cd secmds; $(MAKE) install-policy
+	
+install-policy: install-seuser-policy install-secmds-policy
 
 # Next four targets are to support installation as part of a system
 # install. These targets are deprecated.
