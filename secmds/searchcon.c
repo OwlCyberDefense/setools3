@@ -34,6 +34,33 @@ static struct option const longopts[] =
   {NULL, 0, NULL, 0}
 };
 
+static void sefs_double_array_print(char **array,int size)
+{
+	int i;
+	for (i=0;i<size;i++){
+		printf("%s\n",array[i]);
+	}
+
+}
+
+static void sefs_search_keys_ret_print(sefs_search_ret_t *key) 
+{
+	sefs_search_ret_t *curr = NULL;
+
+	/* walk the linked list  */
+	curr = key;
+	while (curr) {
+		if (curr->context)
+			printf("%s\t",curr->context);
+		if (curr->object_class)
+			printf("%s\t",curr->object_class);
+		if (curr->path)
+			printf("%s",curr->path);
+		printf("\n");
+		curr = curr->next;
+	}
+}
+
 void usage(const char *program_name, int brief)
 {
 	int size;
