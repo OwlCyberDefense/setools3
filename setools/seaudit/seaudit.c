@@ -17,6 +17,7 @@
 #include "utilgui.h"
 #include "preferences.h"
 #include "seaudit_callback.h"
+#include "report_window.h"
 #include <libapol/policy-io.h>
 #include <libapol/util.h>
 #include <stdio.h>
@@ -87,6 +88,7 @@ void seaudit_destroy(seaudit_t *seaudit_app)
 	free_seaudit_conf(&(seaudit_app->seaudit_conf));
 	g_string_free(seaudit_app->policy_file, TRUE);
 	g_string_free(seaudit_app->audit_log_file, TRUE);
+	report_window_destroy(seaudit_app->report_window);
 	free(seaudit_app);
 	seaudit_app = NULL;
 }
@@ -1208,6 +1210,20 @@ void seaudit_on_top_window_query_button_clicked(GtkWidget *widget, GdkEvent *eve
 	query_window_create(NULL);
 }
 
+void seaudit_on_create_standard_report_activate() 
+{
+	if (!seaudit_app->report_window) {
+		seaudit_app->report_window = report_window_create(seaudit_app->window,
+						&seaudit_app->seaudit_conf, 
+						"Create Standard Report");
+		if (!seaudit_app->report_window) {
+			fprintf(stderr, "Error: Out of memory!");
+			return;
+		}
+	}
+
+	report_window_display(seaudit_app->report_window);
+}
 
 void seaudit_on_real_time_button_pressed(GtkButton *button, gpointer user_data)
 {
