@@ -13,12 +13,16 @@
 namespace eval Apol_Users {
 # opts(opt), where opt =
     variable opts
-    set opts(useRole)		   0
-    set opts(showSelection)        all
+    set opts(useRole)		   	0
+    set opts(showSelection)        	all
     variable srchstr ""
     variable role_1ist ""
     variable users_list ""
-    
+    # callback procedures for the listbox items menu. Each element in this list is an embedded list of 2 items.
+    # The 2 items consist of the command label and the function name. The tabname will be added as an
+    # argument to the callback procedure.
+    variable menu_callbacks		""
+	
     # Global Widgets
     variable resultsbox
     variable users_listbox
@@ -81,7 +85,10 @@ proc Apol_Users::open { } {
     variable role_list
     variable users_list
   
-    set users_list [apol_GetNames users] 
+    set rt [catch {set users_list [apol_GetNames users]} err]
+    if {$rt != 0} {
+	return -code error $err
+    }
     set users_list [lsort $users_list]
     $Apol_Users::role_combo_box configure -values $Apol_Roles::role_list
   
@@ -94,13 +101,19 @@ proc Apol_Users::open { } {
 proc Apol_Users::close { } {
     set Apol_Users::role_list ""
     set Apol_Users::users_list ""
-    
     $Apol_Users::role_combo_box configure -values ""
     $Apol_Users::resultsbox configure -state normal
     $Apol_Users::resultsbox delete 0.0 end
     ApolTop::makeTextBoxReadOnly $Apol_Users::resultsbox 
     
     return 0	
+}
+
+proc Apol_Users::free_call_back_procs { } {
+       	variable menu_callbacks	
+    		
+	set menu_callbacks ""
+	return 0
 }
 
 # ------------------------------------------------------------------------------
@@ -144,25 +157,6 @@ proc Apol_Users::popupUserInfo {which user} {
 }
 
 # ------------------------------------------------------------------------------
-#  Command Apol_Users::popupUserInfoMenu
-# ------------------------------------------------------------------------------
-proc Apol_Users::popupUserInfoMenu { global x y popup } {
-    # Getting global coordinates of the application window (of position 0, 0)
-    set gx [winfo rootx $global]	
-    set gy [winfo rooty $global]
-    
-    # Add the global coordinates for the application window to the current mouse coordinates
-    # of %x & %y
-    set cmx [expr $gx + $x]
-    set cmy [expr $gy + $y]
-    
-    # Posting the popup menu
-    tk_popup $popup $cmx $cmy
-
-    return 0
-}
-
-# ------------------------------------------------------------------------------
 #  Command Apol_Users::enable_role_list
 # ------------------------------------------------------------------------------
 proc Apol_Users::enable_role_list { entry } {
@@ -198,7 +192,8 @@ proc Apol_Users::create {nb} {
     variable resultsbox 
     variable srchstr 
     variable role_combo_box
-
+    variable menu_callbacks
+    
     # Layout frames
     set frame [$nb insert end $ApolTop::users_tab -text "Users"]
     set topf  [frame $frame.topf]
@@ -231,14 +226,17 @@ proc Apol_Users::create {nb} {
     	    
     # Popup menu widget
     menu .popupMenu_users
-    .popupMenu_users add command -label "Display User Info" \
-	-command { Apol_Users::popupUserInfo "users" [$Apol_Users::users_listbox get active] }
-	    
+    set menu_callbacks [lappend menu_callbacks {"Display User Info" "Apol_Users::popupUserInfo users"}]
+    	    
     # Event binding on the users list box widget
     bindtags $users_listbox [linsert [bindtags $users_listbox] 3 ulist_Tag]  
     bind ulist_Tag <Double-Button-1> { Apol_Users::popupUserInfo "users" [$Apol_Users::users_listbox get active]}
-    bind ulist_Tag <Button-3> { Apol_Users::popupUserInfoMenu %W %x %y .popupMenu_users }
-        
+    bind ulist_Tag <Button-3> { ApolTop::popup_listbox_Menu \
+    	%W %x %y .popupMenu_users $Apol_Users::menu_callbacks \
+    	$Apol_Users::users_listbox}
+    
+    bind ulist_Tag <<ListboxSelect>> { focus -force $Apol_Users::users_listbox}
+             
     # Search options subframes
     set ofm [$s_optionsbox getframe]
     set l_innerFrame [LabelFrame $ofm.to \

@@ -48,6 +48,10 @@ namespace eval Apol_Analysis {
 	variable tab_deleted_flag	0
         variable keepmodselect          0
  	variable analysis_results_array
+ 	# callback procedures for the tab menu. Each element in this list is an embedded list of 2 items.
+ 	# The 2 items consist of the command label and the function name. The tabname will be added as an
+ 	# argument to the callback procedure.
+ 	variable tab_menu_callbacks	""
 }
 
 # ------------------------------------------------------------------------------
@@ -91,6 +95,13 @@ proc Apol_Analysis::mod_select { mod_name } {
      	return 0
 } 
 
+proc Apol_Analysis::free_call_back_procs { } {
+       	variable tab_menu_callbacks	
+    		
+	set tab_menu_callbacks ""
+	return 0
+}
+
 # ------------------------------------------------------------------------------
 #  Command Apol_Analysis::delete_ResultsTab
 # ------------------------------------------------------------------------------
@@ -104,7 +115,7 @@ proc Apol_Analysis::delete_ResultsTab { pageID } {
         variable updateButton
         variable bClose
         variable keepmodselect
-
+		
         if { [$results_notebook index $Apol_Analysis::emptyTabID] != [$results_notebook index $pageID] } {
         	$bClose configure -state disabled
         	update idletasks
@@ -722,7 +733,10 @@ proc Apol_Analysis::open { } {
 	
         set selected_module [$analysis_listbox selection get]
 	if {$selected_module != ""} {
-		${selected_module}::open	
+		set rt [catch {${selected_module}::open} err]
+		if {$rt != 0} {
+			return -code error $err
+		}
 	}
 	return 0
 } 
@@ -770,29 +784,6 @@ proc Apol_Analysis::search { str case_Insensitive regExpr srch_Direction } {
 }
 
 # ------------------------------------------------------------------------------
-#  Command Apol_Analysis::popupResultsTab_Menu
-# ------------------------------------------------------------------------------
-proc Apol_Analysis::popupResultsTab_Menu { window x y popupMenu page } {
-	variable pageID
-	
-	set page [ApolTop::get_tabname $page]
-	set pageID $page
-        # Getting global coordinates of the application window (of position 0, 0)
-	set gx [winfo rootx $window]	
-	set gy [winfo rooty $window]
-	
-	# Add the global coordinates for the application window to the current mouse coordinates
-	# of %x & %y
-	set cmx [expr $gx + $x]
-	set cmy [expr $gy + $y]
-
-	# Posting the popup menu
-   	tk_popup $popupMenu $cmx $cmy
-   	
-   	return 0
-}
-
-# ------------------------------------------------------------------------------
 #  Command Apol_Analysis::create
 # ------------------------------------------------------------------------------
 proc Apol_Analysis::create { nb } {
@@ -803,6 +794,7 @@ proc Apol_Analysis::create { nb } {
 	variable updateButton
 	variable bClose
 	variable popupTab_Menu
+ 	variable tab_menu_callbacks
  	
 	# Layout frames
         set frame [$nb insert end $ApolTop::analysis_tab -text "Analysis"]
@@ -863,12 +855,12 @@ proc Apol_Analysis::create { nb } {
     	
     	# Popup menu widget
 	set popupTab_Menu [menu .analysis_popup_Menu]
-	$popupTab_Menu add command -label "Delete Tab" \
-		-command { Apol_Analysis::delete_ResultsTab $Apol_Analysis::pageID }
-	
+	set tab_menu_callbacks [lappend tab_menu_callbacks {"Delete Tab" "Apol_Analysis::delete_ResultsTab"}]
 	# Results notebook
 	set results_notebook [NoteBook $b_topf.nb_results]
-	$results_notebook bindtabs <Button-3> {Apol_Analysis::popupResultsTab_Menu %W %x %y $Apol_Analysis::popupTab_Menu} 
+	# All callbacks will take the tab id as an argument. This argument is added in the callback procedure.
+	$results_notebook bindtabs <Button-3> {ApolTop::popup_Tab_Menu \
+		%W %x %y $Apol_Analysis::popupTab_Menu $Apol_Analysis::tab_menu_callbacks} 
     	$results_notebook bindtabs <Button-1> {Apol_Analysis::switch_results_tab}
        	
     	# Add button bar at bottom of results section for closing tabs.

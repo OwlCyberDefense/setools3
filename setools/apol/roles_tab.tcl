@@ -31,17 +31,25 @@ namespace eval Apol_Roles {
 	variable combo_attribute
 	variable cb_attrib
 	variable cb_type
+	
+	# callback procedures for the listbox items menu. Each element in this list is an embedded list of 2 items.
+	# The 2 items consist of the command label and the function name. The tabname will be added as an
+	# argument to the callback procedure.
+	variable menu_callbacks		""
 }
 
 proc Apol_Roles::open { } {
 	variable role_list
     
-        set role_list [apol_GetNames roles]
+        set rt [catch {set role_list [apol_GetNames roles]} err]
+        if {$rt != 0} {
+		return -code error $err
+	}
 	set role_list [lsort $role_list]
 	Apol_Roles::enable_type_list
         $Apol_Roles::combo_types configure -values $Apol_Types::typelist
         $Apol_Roles::combo_attribute configure -values $Apol_Types::attriblist
-        return
+        return 0
 }
 
 proc Apol_Roles::close { } {
@@ -59,7 +67,7 @@ proc Apol_Roles::close { } {
 	set Apol_Roles::role_list 	""
 	set Apol_Roles::types_list 	""
 	set Apol_Roles::selected_attribute	""
-	set Apol_Roles::role_list ""
+	set Apol_Roles::role_list 	""
         $Apol_Roles::combo_types configure -values ""
         $Apol_Roles::combo_attribute configure -values ""
         $Apol_Roles::resultsbox configure -state normal
@@ -68,6 +76,13 @@ proc Apol_Roles::close { } {
         set Apol_Roles::types_list ""
        	Apol_Roles::enable_type_list
 	return	
+}
+
+proc Apol_Roles::free_call_back_procs { } {
+       	variable menu_callbacks	
+    		
+	set menu_callbacks ""
+	return 0
 }
 
 # ----------------------------------------------------------------------------------------
@@ -108,20 +123,6 @@ proc Apol_Roles::popupRoleInfo {which role} {
  	wm deiconify $w
  	$f configure -state disabled
 	return 0
-}
-
-proc Apol_Roles::popupRoleInfoMenu { global x y popup} {
-        # Getting global coordinates of the application window (of position 0, 0)
-	set gx [winfo rootx $global]	
-	set gy [winfo rooty $global]
-	
-	# Add the global coordinates for the application window to the current mouse coordinates
-	# of %x & %y
-	set cmx [expr $gx + $x]
-	set cmy [expr $gy + $y]
-
-	# Posting the popup menu
-   	tk_popup $popup $cmx $cmy
 }
 
 ##############################################################
@@ -245,6 +246,7 @@ proc Apol_Roles::create {nb} {
 	variable combo_attribute
 	variable cb_attrib
 	variable cb_type
+	variable menu_callbacks
 	
 	# Layout frames
 	set frame [$nb insert end $ApolTop::roles_tab -text "Roles"]
@@ -278,13 +280,15 @@ proc Apol_Roles::create {nb} {
 	
 	# Popup menu widget
 	menu .popupMenu_roles
-	.popupMenu_roles add command -label "Display Role Info" \
-	-command { Apol_Roles::popupRoleInfo "role" [$Apol_Roles::rlistbox get active] }
-	    
+	set menu_callbacks [lappend menu_callbacks {"Display Role Info" "Apol_Roles::popupRoleInfo role"}]
+		    
 	# Event bindong on the roles list box widget
 	bindtags $rlistbox [linsert [bindtags $rlistbox] 3 rlist_Tag]  
 	bind rlist_Tag <Double-Button-1> { Apol_Roles::popupRoleInfo "role" [$Apol_Roles::rlistbox get active]}
-	bind rlist_Tag <Button-3> { Apol_Roles::popupRoleInfoMenu %W %x %y .popupMenu_roles }
+	bind rlist_Tag <Button-3> { ApolTop::popup_listbox_Menu \
+		%W %x %y .popupMenu_roles $Apol_Roles::menu_callbacks \
+		$Apol_Roles::rlistbox}
+	bind rlist_Tag <<ListboxSelect>> { focus -force $Apol_Roles::rlistbox}
 	
 	# Search options subframes
 	set ofm [$s_optionsbox getframe]
