@@ -1397,16 +1397,16 @@ int Apol_OpenPolicy(ClientData clientData, Tcl_Interp *interp, int argc, char *a
 		opts = POLOPT_TYPES;
 		break;
 	case '4':
-		opts = POLOPT_OBJECTS;
+		opts = POLOPT_COND_BOOLS;
 		break;
 	case '5':
 		opts = POLOPT_OBJECTS;
 		break;
 	case '6':
-		opts = POLOPT_COND_BOOLS;
+		opts = POLOPT_RBAC;
 		break;
 	case '7':
-		opts = POLOPT_TE_RULES;
+		opts = POLOPT_TE_POLICY;
 		break;
 	case '8':
 		opts = POLOPT_COND_POLICY;
@@ -1418,7 +1418,7 @@ int Apol_OpenPolicy(ClientData clientData, Tcl_Interp *interp, int argc, char *a
 		Tcl_AppendResult(interp, "Invalid option:", argv[2], (char) NULL);
 		return TCL_ERROR;
 	}
-
+	
 	/* open_policy will actually open the file for reading - it is done here so that a
 	 * descriptive error message can be returned if the file cannot be read.
 	 */
@@ -1428,6 +1428,7 @@ int Apol_OpenPolicy(ClientData clientData, Tcl_Interp *interp, int argc, char *a
 	}	
 	fclose(tmp);
 	free_policy(&policy);
+	
 	rt = open_partial_policy(argv[1], opts, &policy);
 	if(rt != 0) {
 		free_policy(&policy);
@@ -3090,7 +3091,7 @@ int Apol_GetRoleRules(ClientData clientData, Tcl_Interp *interp, int argc, char 
 	}
 	
 	if(use_src) {
-		if(match_rbac_rules(src_idx, IDX_ROLE, SRC_LIST, FALSE, tgt_is_role, &src_b, policy, 0) != 0) {
+		if(match_rbac_rules(src_idx, IDX_ROLE, SRC_LIST, FALSE, tgt_is_role, &src_b, policy) != 0) {
 			Tcl_AppendResult(interp, "error matching source", (char *) NULL);
 			free_rbac_bool(&src_b);	
 			free_rbac_bool(&tgt_b);	
@@ -3102,14 +3103,14 @@ int Apol_GetRoleRules(ClientData clientData, Tcl_Interp *interp, int argc, char 
 		all_true_rbac_bool(&src_b, policy);
 	}
 	if(use_src && any) {
-		if(match_rbac_rules(src_idx, IDX_ROLE, TGT_LIST, FALSE, TRUE, &tgt_b, policy, 0) != 0) {
+		if(match_rbac_rules(src_idx, IDX_ROLE, TGT_LIST, FALSE, TRUE, &tgt_b, policy) != 0) {
 			Tcl_AppendResult(interp, "error matching target", (char *) NULL);
 			free_rbac_bool(&src_b);	
 			free_rbac_bool(&tgt_b);	
 			free_rbac_bool(&dflt_b);	
 			return TCL_ERROR;			
 		}
-		if(match_rbac_rules(src_idx, IDX_ROLE, DEFAULT_LIST, FALSE, TRUE, &dflt_b, policy, 0) != 0) {
+		if(match_rbac_rules(src_idx, IDX_ROLE, DEFAULT_LIST, FALSE, TRUE, &dflt_b, policy) != 0) {
 			Tcl_AppendResult(interp, "error matching default", (char *) NULL);
 			free_rbac_bool(&src_b);	
 			free_rbac_bool(&tgt_b);	
@@ -3120,7 +3121,7 @@ int Apol_GetRoleRules(ClientData clientData, Tcl_Interp *interp, int argc, char 
 	else {
 		
 		if(use_tgt && tgt_is_role) {
-			if(match_rbac_rules(tgt_idx, IDX_ROLE, TGT_LIST, FALSE, TRUE, &tgt_b, policy, 0) != 0) {
+			if(match_rbac_rules(tgt_idx, IDX_ROLE, TGT_LIST, FALSE, TRUE, &tgt_b, policy) != 0) {
 				Tcl_AppendResult(interp, "error matching target", (char *) NULL);
 				free_rbac_bool(&src_b);	
 				free_rbac_bool(&tgt_b);	
@@ -3129,7 +3130,7 @@ int Apol_GetRoleRules(ClientData clientData, Tcl_Interp *interp, int argc, char 
 			}
 		}
 		else if(use_tgt && !tgt_is_role) {
-			if(match_rbac_rules(tgt_idx, tgt_type, TGT_LIST, FALSE, FALSE, &tgt_b, policy, 0) != 0) {
+			if(match_rbac_rules(tgt_idx, tgt_type, TGT_LIST, FALSE, FALSE, &tgt_b, policy) != 0) {
 				Tcl_AppendResult(interp, "error matching target", (char *) NULL);
 				free_rbac_bool(&src_b);	
 				free_rbac_bool(&tgt_b);	
@@ -3141,7 +3142,7 @@ int Apol_GetRoleRules(ClientData clientData, Tcl_Interp *interp, int argc, char 
 			all_true_rbac_bool(&tgt_b, policy);
 		}
 		if(use_dflt) {
-			if(match_rbac_rules(dflt_idx, IDX_ROLE, DEFAULT_LIST, FALSE, FALSE, &dflt_b, policy, 0) != 0) {
+			if(match_rbac_rules(dflt_idx, IDX_ROLE, DEFAULT_LIST, FALSE, FALSE, &dflt_b, policy) != 0) {
 				Tcl_AppendResult(interp, "error matching default", (char *) NULL);
 				free_rbac_bool(&src_b);	
 				free_rbac_bool(&tgt_b);	
