@@ -3644,7 +3644,7 @@ int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *interp, int
 					fprintf(stderr, "Invalid object class permission\n");
 					continue;
 				}
-				if (analysis_query_add_obj_class_perm(&dta_query->obj_options, &dta_query->num_obj_options, obj, j) == -1) {
+				if (dta_query_add_obj_class_perm(dta_query, obj, j) == -1) {
 					Tcl_AppendResult(interp, "error adding perm\n", (char *) NULL);
 					return TCL_ERROR;
 				}
@@ -3662,7 +3662,7 @@ int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *interp, int
 				/* This is an invalid ending type, so ignore */
 				continue;
 			}
-			if (analysis_query_add_end_type(&dta_query->end_types, &dta_query->num_end_types, type) != 0) {
+			if (dta_query_add_end_type(dta_query, type) != 0) {
 				dta_query_destroy(dta_query);
 				Tcl_AppendResult(interp, "Memory error!\n", (char *) NULL);
 				return TCL_ERROR;
@@ -3976,7 +3976,7 @@ int Apol_DirectInformationFlowAnalysis(ClientData clientData, Tcl_Interp *interp
 				iflow_query_destroy(iflow_query);
 				return TCL_ERROR;
 			}
-			if (analysis_query_add_obj_class(&iflow_query->obj_options, &iflow_query->num_obj_options, obj) == -1) {
+			if (iflow_query_add_obj_class(iflow_query, obj) == -1) {
 				Tcl_AppendResult(interp, "error adding object class\n", (char *) NULL);
 				iflow_query_destroy(iflow_query);
 				return TCL_ERROR;
@@ -4025,7 +4025,7 @@ int Apol_DirectInformationFlowAnalysis(ClientData clientData, Tcl_Interp *interp
 				free(name);
 				continue;
 			}
-			if (analysis_query_add_end_type(&iflow_query->end_types, &iflow_query->num_end_types, type) != 0) {
+			if (iflow_query_add_end_type(iflow_query, type) != 0) {
 				free(name);
 				iflow_query_destroy(iflow_query);
 				Tcl_AppendResult(interp, "Error adding end type to query!\n", (char *) NULL);
