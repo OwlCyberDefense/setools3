@@ -97,7 +97,7 @@ socket
                         setopt                                    Set socket options
                         getopt                                    Get socket options
                         listen                                    Listen for connections
-                        setattr                                   Change file attributes for file such as access mode. (e.g. chmod, some ioctls, Â…)
+                        setattr                                   Change file attributes for file such as access mode. (e.g. chmod, some ioctls, …)
                         shutdown                                  Shutdown connection
                         relabelto                                 Change the security context based on the new type
                         recv_msg                                  Receive datagram message; implicitly granted if the message SID is equal to the sending socket SID
@@ -152,7 +152,7 @@ netlink_socket
                         listen                                    Listen for connections
                         accept                                    Accept a connection
                         read                                      Read Netlink socket file contents
-                        setattr                                   Change file attributes for file such as access mode. (e.g. chmod, some ioctls, Â…
+                        setattr                                   Change file attributes for file such as access mode. (e.g. chmod, some ioctls, …
                         append                                    Write or append to Netlink socket
                         bind                                      Bind name
                         lock                                      Set and unset socket file locks
@@ -479,7 +479,7 @@ system
                         nfsd_control         v.12                 Control the nfs server
                         avc_toggle           v.12                 Toggle between permissive and enforcing modes
                         bdflush              v.12                 Start, flush, or tune buffer-dirty-flush daemon [man 2 bdflush]
-                        ichsid               v.12
+                        ichsid               v.12 
 
 sem
                         unix_read                                 Read; required by IPC operations
