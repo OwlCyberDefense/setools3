@@ -3701,19 +3701,6 @@ static int types_relation_append_results(types_relation_query_t *tr_query,
 			free(rule);
 		}
 		
-		/* Append common object type access information for type B */
-		snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->common_obj_types_results->num_objs_B);
-		Tcl_AppendElement(interp, tbuf);
-		for(i = 0; i < tr_results->common_obj_types_results->num_objs_B; i++) {
-			if (get_type_name(tr_results->common_obj_types_results->objs_B[i], &name, policy) != 0) {
-				free(name);
-				Tcl_AppendResult(interp, "Error getting attribute name!", (char *) NULL);
-				return TCL_ERROR;
-			}
-			snprintf(tbuf, sizeof(tbuf)-1, "%s", name);
-			Tcl_AppendElement(interp, tbuf);
-			free(name);
-		}
 		/* Append common object type access rules for type B */
 		snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->common_obj_types_results->num_obj_type_rules_B);
 		Tcl_AppendElement(interp, tbuf);
@@ -3725,7 +3712,6 @@ static int types_relation_append_results(types_relation_query_t *tr_query,
 			free(rule);
 		}
 	} else {
-		Tcl_AppendElement(interp, "0");
 		Tcl_AppendElement(interp, "0");
 		Tcl_AppendElement(interp, "0");
 		Tcl_AppendElement(interp, "0");
