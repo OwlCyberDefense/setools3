@@ -2010,7 +2010,11 @@ proc ApolTop::openPolicy {} {
         	{"All files"		*}
 		{"Policy conf files"	{.conf}}
     	}
-        catch [set file [tk_getOpenFile -filetypes $types]]
+    	if {$filename != ""} {
+        	catch [set file [tk_getOpenFile -filetypes $types -initialdir [file dirname $filename]]]
+        } else {
+        	catch [set file [tk_getOpenFile -filetypes $types]]
+        }
         
         if {$file != ""} {
 		ApolTop::openPolicyFile $file 1
