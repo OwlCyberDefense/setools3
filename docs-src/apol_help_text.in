@@ -63,6 +63,10 @@ in default mappings are based on the "mls" file distributed with the
 policy.  See the separate help file on information flow for more 
 information about permission mappings and their management.
 
+The ADVANCED menu also allows you to configure settings for apol through
+the Tool Options dialog. Currently, you may configure which components of 
+the policy should be loaded when opening a policy.
+
 2. POLICY COMPONENTS TAB
 
 These tabs allow you to examine, search, and relate the core 
