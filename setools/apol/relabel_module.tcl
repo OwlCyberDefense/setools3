@@ -18,17 +18,22 @@ namespace eval Apol_Analysis_relabel {
     variable VERSION 1
     
     variable info_button_text \
-	"This analysis checks the possible ways to relabel objects as allowed by the policy. \
-    	The permissions relabelto and relabelfrom are special in a type enforcement environment as they \
-    	provide a method of changing the context of an object.  Relabel analysis is designed to fascilitate queries \
-	about the possible changes for a given type.\n\n\There are two modes for a query, each presenting a \
-    	different perspective:\n\nObject mode - given a starting type, treat it as an object to be \
-    	relabeled and display one or both of the following result sets:\n\
-    	 To - beginning at starting type lists all types to which relabeling is possible and the associated rules.\n\
-	 From - beginning at starting type lists all types from which relabeling is possible and the associated rules.\n\Subject mode\
-	- given a starting subject lists all types to and from which that subject can relabel and the associated rules.\n\
-	\n\Optionally results may be filtered by end types with regular expressions or by object class using the Advanced Filters button."
-
+	"Direct file relabel analysis is designed to facilitate querying a \
+	policy for both potential changes to object labels and relabel \
+	privileges granted to a subject. These two modes are respectively \
+	called Object Mode and Subject Mode.\n\n \
+	OBJECT MODE\n \
+	In object mode the user specifies a starting or ending type and \
+	either To, From, or Both. When To is selected all types to which \
+	the starting type can be relabeled will be displayed. When From \
+	is selected all types from which the ending type can be relabeled \
+	will be displayed. Both will, obviously, do both analyses.\n\n \
+	SUBJECT MODE\n \
+	In subject mode the user specifies only a subject type. Two lists \
+	of types will be displayed corresponding to all of the types To \
+	which the subject can relabel and From which the subject can \
+	relabel. "
+    
 	variable widget_vars 
 	variable widgets
 	# name of widget holding most recently executed assertion
