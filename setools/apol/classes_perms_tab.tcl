@@ -145,8 +145,7 @@ proc Apol_Class_Perms::enable_disable_widgets { } {
         variable sString 
     	variable sEntry
         
-        Apol_Class_Perms::useSearch $sEntry
-        
+        $sString configure -state normal        
     	if { $opts(show_classes1) } {
 		$show_perms1 configure -state normal
 		if { $opts(show_perms1) } {
@@ -179,7 +178,13 @@ proc Apol_Class_Perms::enable_disable_widgets { } {
 		$show_classes3 deselect
 		$show_comm_perms3 deselect
     	}
-    	
+    	# Disable the regex check button if all search criteria is not selected
+    	if { !$opts(show_classes1) && !$opts(show_comm_perms2) && !$opts(show_perms3) } {
+    		$sString deselect 
+    		$sString configure -state disabled
+    	}
+    	Apol_Class_Perms::useSearch $sEntry
+    	update
     	return 0
 }
 
@@ -272,7 +277,11 @@ proc Apol_Class_Perms::search_Class_Perms {} {
 		tk_messageBox -icon error -type ok -title "Error" -message "No regular expression provided!"
 		return
 	}
-	
+	if { !$opts(show_classes1) && !$opts(show_comm_perms2) && !$opts(show_perms3) } {
+    		tk_messageBox -icon error -type ok -title "Error" -message "No search criteria provided!"
+		return
+    	}
+    	
 	set rt [catch {set results [apol_GetClassPermInfo $opts(show_classes1) $opts(show_perms1) \
 		 $opts(show_comm_perms1) $opts(show_comm_perms2) $opts(show_perms2) $opts(show_classes2) \
 		 $opts(show_perms3) $opts(show_classes3) $opts(show_comm_perms3) $opts(usesrchstr) \
