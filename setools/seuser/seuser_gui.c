@@ -16,7 +16,10 @@
 #include "../libapol/apol_tcl.h"
 #include "../libseuser/seuser_tcl.h"
 
-#define STARTUP_SCRIPT "se_user.tcl"
+#ifndef STARTUP_SCRIPT
+	#define STARTUP_SCRIPT "se_user.tcl"
+#endif
+
 #define STRING_LENGTH_MAX 255
 
 int Tcl_AppInit(Tcl_Interp *interp)
