@@ -518,7 +518,7 @@ proc Apol_Analysis_tra::listSelect {tra_listbox tra_info_text selected_item} {
 			
 			set start_idx [$tra_info_text index insert]
 			$tra_info_text insert end " access \
-				[$tra_listbox itemcget $selected_item -data] different type(s).\n\n"
+				[$tra_listbox itemcget $selected_item -data] common type(s).\n\n"
 			set end_idx [$tra_info_text index insert]
 			$tra_info_text tag add $Apol_Analysis_tra::title_tag $start_idx $end_idx
 			
@@ -1524,7 +1524,7 @@ proc Apol_Analysis_tra::create_results_list_structure {tra_listbox results_list}
 	variable dir_flow_sel		
 	variable te_rules_sel	
 	variable tt_rule_sel		
-	
+
 	# Parse the list and add the list elements as we parse
 	# get type strings
 	set typeA [lindex $results_list 0]
@@ -1617,7 +1617,7 @@ proc Apol_Analysis_tra::create_results_list_structure {tra_listbox results_list}
 	# Get # common objects
 	incr i
 	set num_comm_objs [lindex $results_list $i]
-	
+	set start_idx $i
 	# Insert item into listbox 
 	if {$comm_access_sel} {
 		$tra_listbox insert end $parent common_objects \
@@ -1626,8 +1626,6 @@ proc Apol_Analysis_tra::create_results_list_structure {tra_listbox results_list}
 		        	-drawcross auto \
 		        	-data $num_comm_objs 
 	}	
-	
-	set start_idx $i
 	for { set x 0 } { $x < $num_comm_objs } { incr x } { 
 		# Get object type string
 		incr i
@@ -1648,11 +1646,9 @@ proc Apol_Analysis_tra::create_results_list_structure {tra_listbox results_list}
 		        	-data [lrange $results_list $start_idx $i] 
 	}
 
-	
 	# Get # uniqe objects types for A
 	incr i
-	set num_uniqe_objs_A [lindex $results_list $i]
-	
+	set num_uniqe_objs_A [lindex $results_list $i]	
 	# Insert item into listbox
 	if {$unique_access_sel} { 
 		$tra_listbox insert end $parent unique_objects \
@@ -1686,8 +1682,7 @@ proc Apol_Analysis_tra::create_results_list_structure {tra_listbox results_list}
 	
 	# Get unique rules
 	incr i
-	set num_uniqe_objs_B [lindex $results_list $i]
-	
+	set num_uniqe_objs_B [lindex $results_list $i]	
 	if {$unique_access_sel} { 
 		$tra_listbox insert end unique_objects unique_objects:typeB \
 				-text $typeB \
@@ -1712,15 +1707,15 @@ proc Apol_Analysis_tra::create_results_list_structure {tra_listbox results_list}
 			        	-drawcross auto \
 			        	-data $data
 		}
-	}
-	
+	}	
 	# Parse dirflow data 
 	# Get # of target types
 	incr i
 	set start_idx $i
 	set num_dirflow_target_types [lindex $results_list $i]
-	set currentIdx [expr $i + 1]				
-	for { set x 0 } { $x < $num_dirflow_target_types } { incr x } { 		        	
+	# This should be the end type
+	set currentIdx [expr $i + 1]			
+	for { set x 0 } { $x < $num_dirflow_target_types } { incr x } { 
 		set nextIdx [Apol_Analysis_dirflow::parseList_get_index_next_node $currentIdx $results_list]
 		if {$nextIdx == -1} {
 			return -code error "Error parsing results"
