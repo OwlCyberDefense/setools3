@@ -67,11 +67,11 @@ void seaudit_filtered_view_set_log(seaudit_filtered_view_t *view, audit_log_t *l
 	seaudit_log_view_store_open_log(view->store, log);
 }
 
-void seaudit_filtered_view_save_view(seaudit_filtered_view_t* filtered_view)
+void seaudit_filtered_view_save_view(seaudit_filtered_view_t* filtered_view, gboolean saveas)
 {
 	if (!filtered_view)
 		return;
-	multifilter_window_save_multifilter(filtered_view->multifilter_window);
+	multifilter_window_save_multifilter(filtered_view->multifilter_window, saveas);
 }
 
 void seaudit_filtered_view_set_multifilter_window(seaudit_filtered_view_t *filtered_view, multifilter_window_t *window)

@@ -422,7 +422,12 @@ void seaudit_on_open_view_clicked(GtkMenuItem *menu_item, gpointer user_data)
 
 void seaudit_on_save_view_clicked(GtkMenuItem *menu_item, gpointer user_data)
 {
-	seaudit_window_save_current_view(seaudit_app->window);
+	seaudit_window_save_current_view(seaudit_app->window, FALSE);
+}
+
+void seaudit_on_saveas_view_clicked(GtkMenuItem *menu_item, gpointer user_data)
+{
+	seaudit_window_save_current_view(seaudit_app->window, TRUE);
 }
 
 void seaudit_on_PolicyFileOpen_activate(GtkWidget *widget, GdkEvent *event, gpointer callback_data)
