@@ -103,16 +103,34 @@ help:
 
 
 apol: selinux_tool
-	cd apol; $(MAKE) apol 
+	cd apol;
+	-@if [ "${shell env tclsh tcl_vars search_tcl_libs}" != "none" ]; then \
+		cd apol; $(MAKE) apol; \
+	else \
+		echo "Could not build apol."; \
+		echo "Tcl library is not built or not in expected location(s)."; \
+	fi
 
 awish: selinux_tool
-	cd awish; $(MAKE) awish
-
+	cd awish;
+	-@if [ "${shell env tclsh tcl_vars search_tcl_libs}" != "none" ]; then \
+		cd awish; $(MAKE) awish; \
+	else \
+		echo "Could not build awish."; \
+		echo "Tcl library is not built or not in expected location(s)."; \
+	fi
+	
 seuser: selinux_tool
-	cd seuser; $(MAKE) seuser
+	cd seuser; $(MAKE) seuser 	
 
 seuserx: selinux_tool
-	cd seuser; $(MAKE) seuserx
+	cd seuser;
+	-@if [ "${shell env tclsh tcl_vars search_tcl_libs}" != "none" ]; then \
+		cd seuser; $(MAKE) seuserx; \
+	else \
+		echo "Could not build seuserx."; \
+		echo "Tcl library is not built or not in expected location(s)."; \
+	fi
 
 sepcut: selinux_tool
 	cd sepct; $(MAKE) sepcut
@@ -127,13 +145,25 @@ libapol: selinux_tool
 	cd libapol; $(MAKE) libapol
 
 libapol-tcl: selinux_tool
-	cd libapol; $(MAKE) libapol-tcl
+	cd libapol;
+	-@if [ "${shell env tclsh tcl_vars search_tcl_libs}" != "none" ]; then \
+		cd libapol; $(MAKE) libapol-tcl; \
+	else \
+		echo "Could not build libapol-tcl."; \
+		echo "Tcl library is not built or not in expected location(s)."; \
+	fi
 
 libseuser: selinux_tool
 	cd libseuser; $(MAKE) libseuser
 
 libseuser-tcl: selinux_tool
-	cd libseuser; $(MAKE) libseuser-tcl
+	cd libseuser;
+	-@if [ "${shell env tclsh tcl_vars search_tcl_libs}" != "none" ]; then \
+		cd libseuser; $(MAKE) libseuser-tcl; \
+	else \
+		echo "Could not build libseuser-tcl."; \
+		echo "Tcl library is not built or not in expected location(s)."; \
+	fi
 
 libseaudit: selinux_tool
 	cd libseaudit; $(MAKE)
@@ -142,14 +172,32 @@ $(INSTALL_LIBDIR):
 	install -m 755 -d $(INSTALL_LIBDIR)
 
 install-apol: $(INSTALL_LIBDIR)
-	cd apol; $(MAKE) install
+	cd apol;
+	-@if [ "${shell env tclsh tcl_vars search_tcl_libs}" != "none" ]; then \
+		cd apol; $(MAKE) install; \
+	else \
+		echo "Could not install apol."; \
+		echo "Tcl library is not built or not in expected location(s)."; \
+	fi
 
 install-awish: $(INSTALL_LIBDIR)
-	cd awish; $(MAKE) install	
+	cd awish;
+	-@if [ "${shell env tclsh tcl_vars search_tcl_libs}" != "none" ]; then \
+		cd awish; $(MAKE) install; \
+	else \
+		echo "Could not install awish."; \
+		echo "Tcl library is not built or not in expected location(s)."; \
+	fi	
 
 # installs both GUI and non-GUI versions
 install-seuserx: $(INSTALL_LIBDIR)
-	cd seuser; $(MAKE) install
+	cd seuser;
+	-@if [ "${shell env tclsh tcl_vars search_tcl_libs}" != "none" ]; then \
+		cd seuser; $(MAKE) install \
+	else \
+		echo "Could not install seuserx."; \
+		echo "Tcl library is not built or not in expected location(s)."; \
+	fi	
 
 # Non-GUI version only
 install-seuser: $(INSTALL_LIBDIR)
