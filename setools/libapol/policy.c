@@ -1192,7 +1192,12 @@ bool_t does_user_have_role(int user, int role, policy_t *policy)
 
 static int add_type_to_attrib(int type_idx, name_a_t *attrib)
 {
-	return(add_i_to_a(type_idx, &(attrib->num), &(attrib->a)));
+	/* do not multiply add types to attributes */
+	if (find_int_in_array(type_idx, attrib->a, attrib->num) == -1) {
+		if (add_i_to_a(type_idx, &(attrib->num), &(attrib->a)))
+			return -1;
+	}
+	return 0;
 }
 
 
@@ -1308,8 +1313,14 @@ int add_attrib_to_type(int type_idx, char *token, policy_t *policy)
 	idx = add_attrib(TRUE, type_idx, policy, token);
 	if(idx < 0)
 		return -1;
+	
+	/* do not multiply add attributes to types */
+	if (find_int_in_array(idx, policy->types[type_idx].attribs, policy->types[type_idx].num_attribs) == -1) {
+		if (add_i_to_a(idx, &(policy->types[type_idx].num_attribs), &(policy->types[type_idx].attribs)))
+			return -1;
+	}
 
-	return(add_i_to_a(idx, &(policy->types[type_idx].num_attribs), &(policy->types[type_idx].attribs)) );
+	return 0;
 }
 
 
