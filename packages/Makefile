@@ -4,7 +4,7 @@
 
 # INSTALL_PATH is set based upon your current 
 # version of tcl using the tcl_vars script.
-INSTALL_PATH	= $(DESTDIR)$(shell env tclsh ../tcl_vars tcl_library)
+INSTALL_PATH	= $(DESTDIR)/usr/share/tcl$(shell env tclsh ../tcl_vars)/.
 
 install:
 	tar -zxvf BWidget-1.4.1.tar.gz
@@ -12,9 +12,6 @@ install:
 
 remove:
 	rm -r $(INSTALL_PATH)/BWidget-1.4.1
-
-rpm:
-	rpmbuild -ta BWidget-1.4.1.tar.gz
 
 clean:
 	rm -Rf BWidget-1.4.1
