@@ -1,0 +1,28 @@
+#!/bin/env tclsh
+
+##############################################################
+#
+# tcl_vars.tcl: script for extracting the values of variables 
+# 		used by Tcl/Tk. Used by the setools top-level
+#		makefile. Current variables extracted are:
+#
+#			$tcl_version, $tcl_pkgPath
+#
+# Copyright (C) 2004 Tresys Technology, LLC
+# see file 'COPYING' for use and warranty information 
+#
+##############################################################
+
+global tcl_version
+global tcl_pkgPath
+global argv, argc
+
+if {[string equal [lindex $argv 0] "version"]} {
+	puts $tcl_version
+} elseif {[string equal [lindex $argv 0] "pkgPath"]} {
+	puts $tcl_pkgPath
+} else {
+	puts ""
+}
+
+# End of tcl script 
