@@ -49,16 +49,17 @@ void multifilter_window_destroy(multifilter_window_t *window)
 
 	if (!window)
 		return;
-	/* if there is an idle function for this window
-	 * then we must remove it to avoid that function
-	 * being executed after we delete the window. */
-	while(g_idle_remove_by_data(window->window));
 
 	for (item = window->filter_windows; item != NULL; item = g_list_next(item))
 		filter_window_destroy((filter_window_t*)item->data);
 	g_list_free(window->filter_windows);
-	if (window->window)
+	if (window->window) {
+		/* if there is an idle function for this window
+		 * then we must remove it to avoid that function
+		 * being executed after we delete the window. */
+		while(g_idle_remove_by_data(window->window));	       
 		gtk_widget_destroy(GTK_WIDGET(window->window));
+	}
 
 }
 
