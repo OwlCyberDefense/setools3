@@ -56,11 +56,13 @@ policy_t *policy; /* local global for policy DB */
 void* state = NULL; /* local global variable to support step-by-step transitive information flow analysis */
 
 #ifdef LIBSEFS
-sefs_filesystem_db_t fsdata; /* local global for file context DB */
+sefs_filesystem_db_t *fsdata = NULL; /* local global for file context DB */
 bool_t is_libsefs_builtin = TRUE;
 #else
 bool_t is_libsefs_builtin = FALSE;
 #endif
+
+#define APOL_TCL_PMAP_WARNINGS_SUBSET (PERMMAP_RET_UNMAPPED_PERM|PERMMAP_RET_UNMAPPED_OBJ|PERMMAP_RET_OBJ_REMMAPPED)
 
 /**************************************************************************
  * work functions
@@ -652,7 +654,7 @@ static int apol_append_type_files(int ta_idx, bool_t is_attrib,
 	int i, num_types = 0, t_buf_sz = 0;
 	int *types_indexes = NULL;
 	
-	if (fsdata.dbh == NULL) {
+	if (fsdata == NULL) {
 		Tcl_ResetResult(interp);
 		Tcl_AppendResult(interp, "No Index File Loaded!", (char *) NULL);
 		return -1;
@@ -712,7 +714,7 @@ static int apol_append_type_files(int ta_idx, bool_t is_attrib,
 	search_keys.do_type_regEx = 0;
 	search_keys.do_path_regEx = 0;
 
-	if (sefs_filesystem_db_search(&fsdata, &search_keys) != 0) {
+	if (sefs_filesystem_db_search(fsdata, &search_keys) != 0) {
 		Tcl_ResetResult(interp);
 		Tcl_AppendResult(interp, "File search failed\n", (char *) NULL);
 		goto err;
@@ -1276,16 +1278,12 @@ static int load_perm_map_file(char *pmap_file, Tcl_Interp *interp)
 		Tcl_AppendResult(interp, "ERROR loading perm mappings from file:", pmap_file, (char *) NULL);
 		return -1;
 	} 
-	else if(m_ret & PERMMAP_RET_WARNINGS) {
+	else if(m_ret & APOL_TCL_PMAP_WARNINGS_SUBSET) {
 		fprintf(stdout, "There were warnings:\n");
 		if(m_ret & PERMMAP_RET_UNMAPPED_PERM) 
 			fprintf(stdout, "     Some permissions were unmapped.\n");
 		if(m_ret & PERMMAP_RET_UNMAPPED_OBJ)
 			fprintf(stdout, "     Some objects were unmapped.\n");
-		if(m_ret & PERMMAP_RET_UNKNOWN_PERM)
-			fprintf(stdout, "     Map contains unknown permissions, or permission assoicated with wrong objects.\n");
-		if(m_ret & PERMMAP_RET_UNKNOWN_OBJ)
-			fprintf(stdout, "     Map contains unknown objects\n");
 		if(m_ret & PERMMAP_RET_OBJ_REMMAPPED) 
 			fprintf(stdout, "     Some permissions were mapped more than once.\n");
 			
@@ -5536,7 +5534,8 @@ int Apol_Create_FC_Index_File(ClientData clientData, Tcl_Interp *interp, int arg
 	return TCL_ERROR;
 #else	
 	sefs_filesystem_db_t fsdata_local;
-
+	int rt;
+	
 	if(!is_valid_str_sz(argv[1])) {
 		Tcl_AppendResult(interp, "File string too large", (char *) NULL);
 		return TCL_ERROR;
@@ -5545,17 +5544,27 @@ int Apol_Create_FC_Index_File(ClientData clientData, Tcl_Interp *interp, int arg
 		Tcl_AppendResult(interp, "Directory string too large", (char *) NULL);
 		return TCL_ERROR;
 	}
+	
 	fsdata_local.dbh = NULL;
 	fsdata_local.fsdh = NULL;
- 	if (sefs_filesystem_db_populate(&fsdata_local, argv[2]) == -1) {
+	rt = sefs_filesystem_db_populate(&fsdata_local, argv[2]);
+ 	if (rt == -1) {
 		Tcl_AppendResult(interp, "Error populating database.\n", (char *) NULL);
+		return TCL_ERROR;
+	} else if (rt == SEFS_NOT_A_DIR_ERROR) {
+		Tcl_AppendResult(interp, "The pathname (", argv[2], ") is not a directory.\n", (char *) NULL);
+		return TCL_ERROR;
+	} else if (rt == SEFS_DIR_ACCESS_ERROR) {
+		Tcl_AppendResult(interp, "You do not have permission to read the directory ", argv[2], ".\n", (char *) NULL);
 		return TCL_ERROR;
 	}
 	if (sefs_filesystem_db_save(&fsdata_local, argv[1]) != 0) {
-		Tcl_AppendResult(interp, "Error writing file context paths database\n", (char *) NULL);
+		/* Make sure the database is closed and memory freed. */
+		sefs_filesystem_db_close(&fsdata_local);
+		Tcl_AppendResult(interp, "Error creating index file\n", (char *) NULL);
 		return TCL_ERROR;
 	}
-	/* sefs_filesystem_db_save() closes the database */
+	sefs_filesystem_db_close(&fsdata_local);
 	
 	return TCL_OK;
 #endif
@@ -5578,14 +5587,22 @@ int Apol_Load_FC_Index_File(ClientData clientData, Tcl_Interp *interp, int argc,
 		Tcl_AppendResult(interp, "File string too large", (char *) NULL);
 		return TCL_ERROR;
 	}
-	if (fsdata.dbh != NULL) {
-		sefs_filesystem_db_close(&fsdata);
+	if (fsdata != NULL) {
+		sefs_filesystem_db_close(fsdata);
+	} else {
+		fsdata = (sefs_filesystem_db_t*)malloc(sizeof(sefs_filesystem_db_t));
+		if (fsdata == NULL) {
+			Tcl_AppendResult(interp, "Out of memory\n", (char *) NULL);
+			return TCL_ERROR;
+		}
+		memset(fsdata, 0, sizeof(sefs_filesystem_db_t));
 	}
- 	if (sefs_filesystem_db_load(&fsdata, argv[1]) == -1) {
- 		Tcl_AppendResult(interp, "sefs_filesystem_data_load failed\n", (char *) NULL);
+
+ 	if (sefs_filesystem_db_load(fsdata, argv[1]) == -1) {
+ 		Tcl_AppendResult(interp, "Loading of database failed.\n", (char *) NULL);
 		return TCL_ERROR;
 	}
-	/* Need to close the database */
+	
 	return TCL_OK;
 #endif
 }
@@ -5638,7 +5655,7 @@ int Apol_Search_FC_Index_DB(ClientData clientData, Tcl_Interp *interp, int argc,
 	sefs_search_keys_t search_keys;
 	CONST84 char **object_classes, **types, **users, **paths;
 	
-	if (fsdata.dbh == NULL) {
+	if (fsdata == NULL) {
 		Tcl_AppendResult(interp, "No Index File Loaded!", (char *) NULL);
 		return TCL_ERROR;
 	}
@@ -5731,7 +5748,7 @@ int Apol_Search_FC_Index_DB(ClientData clientData, Tcl_Interp *interp, int argc,
 		goto err;
 	}
 	
-	rt = sefs_filesystem_db_search(&fsdata, &search_keys);
+	rt = sefs_filesystem_db_search(fsdata, &search_keys);
 	if (rt != 0) {
 		Tcl_AppendResult(interp, "Search failed\n", (char *) NULL);
 		goto err;
@@ -5768,7 +5785,7 @@ int Apol_FC_Index_DB_Get_Items(ClientData clientData, Tcl_Interp *interp, int ar
 	int list_sz = 0, i, request_type;
 	char **list_ret = NULL;
 	
-	if (fsdata.dbh == NULL) {
+	if (fsdata == NULL) {
 		Tcl_AppendResult(interp, "No Index File Loaded!", (char *) NULL);
 		return TCL_ERROR;
 	}
@@ -5784,7 +5801,7 @@ int Apol_FC_Index_DB_Get_Items(ClientData clientData, Tcl_Interp *interp, int ar
 		return TCL_ERROR;
 	}
 	
- 	if ((list_ret = sefs_filesystem_db_get_known(&fsdata, &list_sz, request_type)) != NULL) {
+ 	if ((list_ret = sefs_filesystem_db_get_known(fsdata, &list_sz, request_type)) != NULL) {
 		for (i = 0; i < list_sz; i++){
 			Tcl_AppendElement(interp, list_ret[i]);
 		}
@@ -5805,8 +5822,10 @@ int Apol_Close_FC_Index_DB(ClientData clientData, Tcl_Interp *interp, int argc, 
 		return TCL_ERROR;
 	}
 #ifdef LIBSEFS
-	if (fsdata.dbh != NULL) {
- 		sefs_filesystem_db_close(&fsdata);
+	if (fsdata != NULL) {
+ 		sefs_filesystem_db_close(fsdata);
+ 		free(fsdata);
+ 		fsdata = NULL;
 	}	
 #endif
 	return TCL_OK;

@@ -50,7 +50,7 @@ Index SELinux contexts on the filesystem\n\
 int main(int argc, char **argv, char **envp)
 {
 	char *outfilename = NULL, *dir = "/";
-	int optc = 0;
+	int optc = 0, rt;
 	sefs_filesystem_db_t fsdata;
 
 	fsdata.fsdh = NULL;
@@ -82,11 +82,18 @@ int main(int argc, char **argv, char **envp)
 		usage(argv[0], 1);
 		exit(1);
 	}
-	
-	if (sefs_filesystem_db_populate(&fsdata,dir) == -1) {
+	rt = sefs_filesystem_db_populate(&fsdata,dir);
+	if (rt == -1) {
 		fprintf(stderr, "Error populating database.\n");
 		return -1;
+	} else if (rt == SEFS_NOT_A_DIR_ERROR) {
+		fprintf(stderr, "The pathname %s is not a directory.\n", dir);
+		return -1;
+	} else if (rt == SEFS_DIR_ACCESS_ERROR) {
+		fprintf(stderr, "You do not have permission to read the directory %s.\n", dir);
+		return -1;
 	}
+	
 	if (sefs_filesystem_db_save(&fsdata, outfilename) != 0) {
 		fprintf(stderr, "Error creating index file.\n");
 		return -1;
