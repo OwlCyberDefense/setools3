@@ -70,7 +70,7 @@ int sefs_get_file_class(const struct stat *statptr)
 	return ALL_FILES;
 }
 
-int find_mount_points(char *dir, char **mounts, int *num_mounts, int rw) 
+int find_mount_points(char *dir, char ***mounts, int *num_mounts, int rw) 
 {
 	FILE *mtab = NULL;
 	int nel = 0, len = 10;
@@ -82,20 +82,20 @@ int find_mount_points(char *dir, char **mounts, int *num_mounts, int rw)
 		return -1;
 	}
 
-	if ((mounts = malloc(sizeof(char*) * len)) == NULL) {
+	if ((*mounts = malloc(sizeof(char*) * len)) == NULL) {
 		fprintf(stderr, "Out of memory.\n");
 		return -1;
 	}
 	
 	while ((entry = getmntent(mtab))) {
-
-printf("trying %s, my dir is %s, strstr is %s\n", entry->mnt_dir, dir, strstr(entry->mnt_dir, dir));
 		if (strstr(entry->mnt_dir, dir) != entry->mnt_dir)
 			continue;
 
 		nel = strlen(dir);
-		if (dir[nel - 1] == '/')
-			dir[nel - 1] = '\0';
+		if (nel > 1) {
+			if (dir[nel - 1] == '/')
+				dir[nel - 1] = '\0';
+		}
 				
 		if (strcmp(entry->mnt_dir, dir) == 0)
 			continue;
@@ -107,8 +107,8 @@ printf("trying %s, my dir is %s, strstr is %s\n", entry->mnt_dir, dir, strstr(en
 
 		if(*num_mounts >= len) {
 			len *= 2;
-			mounts = realloc(mounts, sizeof(char*) * len);
-			if (mounts == NULL) {
+			*mounts = realloc(*mounts, sizeof(char*) * len);
+			if (*mounts == NULL) {
 				fprintf(stderr, "Out of memory.\n");
 				fclose(mtab);
 				return -1;
@@ -119,18 +119,15 @@ printf("trying %s, my dir is %s, strstr is %s\n", entry->mnt_dir, dir, strstr(en
 			fprintf(stderr, "Out of memory.\n");
 			fclose(mtab);
 			return -1;
-		}
-printf("success! on %s\n", entry->mnt_dir);		
+		}	
 		while((token = strtok(fs, " \t")) != NULL) {
 			if (fs) fs = NULL; /* for subsequent strtok calls */
 			if(!strcmp(token, entry->mnt_type)) {
-printf("entry %s matched %s\n", entry->mnt_dir, token);
-				if ((mounts[(*num_mounts)++] = strdup(entry->mnt_dir)) == NULL) {
+				if (((*mounts)[(*num_mounts)++] = strdup(entry->mnt_dir)) == NULL) {
 					fprintf(stderr, "Out of memory.\n");
 					fclose(mtab);
 					return -1;
 				}
-printf("%s\n",mounts[0]);
 				break;
 			}
 		}
