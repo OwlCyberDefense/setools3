@@ -1226,10 +1226,10 @@ unsigned int parse_audit(FILE *syslog, audit_log_t *log)
 	if (get_line(audit_file, &line) & PARSE_RET_MEMORY_ERROR) {
 		return PARSE_RET_MEMORY_ERROR;
 	}
-	if (trim_string(&line) != 0)
-		return PARSE_RET_MEMORY_ERROR;
 		
 	while (line != NULL) {
+		if (trim_string(&line) != 0)
+			return PARSE_RET_MEMORY_ERROR;
      		is_sel = is_selinux(line);
 		if (is_sel != PARSE_NON_SELINUX) {
 			if (ret == LOAD_POLICY_NEXT_LINE && is_sel != PARSE_LOAD_MSG) {
