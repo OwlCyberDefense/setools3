@@ -1337,12 +1337,12 @@ static void txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_it
 					for(tmpcur = avh_find_first_node(&policy2->avh, &cur->key); tmpcur != NULL && !polmatched; tmpcur = avh_find_next_node(tmpcur) )  {
 						fprintf(stderr,"there is a first node\n");
 						if (does_cond_match(tmpcur,policy2,cur,policy2,&inverse)) {
+							//fprintf(stderr,"true\n");
+							rule = re_render_avh_rule(tmpcur, policy2);
 							polmatched = TRUE;
 						}
 					}
-					if(tmpcur == NULL)fprintf(stderr,"tmpcur is null\n");
-					else fprintf(stderr,"tmpcurr is not null\n");
-				rule = re_render_avh_rule(cur, policy2);
+					//rule = re_render_avh_rule(cur, policy2);
 					if (rule == NULL) {
 						g_return_if_reached();
 					}
