@@ -82,6 +82,10 @@ int seuser_free_db(user_db_t *db, bool_t free_conf)
 	return 0;
 }
 
+const char* libseuser_get_version(void)
+{
+	return LIBSEUSER_VERSION_STRING;
+}
 
 const int seuser_copy_db_from_apol(user_db_t *db, policy_t *policy)
 {
