@@ -342,6 +342,70 @@ int match_rbac_rules(int	idx,
 	return 0;
 }
 
+/* the behaviour of this function matches the above, however instead of returning a boolean array
+ * with the indices matching rules the indices match roles.
+ */
+
+int match_rbac_roles(int	idx,
+                     int	type,
+                     unsigned char whichlist,
+                     bool_t	do_indirect,
+                     bool_t	tgt_is_role,
+                     rbac_bool_t *b,
+                     policy_t	*policy)
+{
+	int i;
+	int ans;
+	ta_item_t *ta;
+
+	if(b == NULL)
+		return -1;
+	
+	if((whichlist & (SRC_LIST ^ TGT_LIST)) && !((whichlist & TGT_LIST) && !tgt_is_role) ) {
+		for(i = 0; i < policy->num_role_allow; i++) {
+			if (does_role_allow_use_role(idx, whichlist, do_indirect, &(policy->role_allow[i]), &(b->a_cnt))) {
+                                if (whichlist & TGT_LIST)
+                                        ta = policy->role_allow[i].src_roles;
+				else
+					ta = policy->role_allow[i].tgt_roles;
+
+				while (ta) {
+					b->allow[ta->idx] = TRUE;
+					ta = ta->next;
+				}
+			}
+		}
+	}
+
+	if(!((whichlist & TGT_LIST) && tgt_is_role) ) {
+		for(i = 0; i < policy->num_role_trans; i++) {
+			if(whichlist & (SRC_LIST ^ DEFAULT_LIST)) {
+				if (does_role_trans_use_role(idx, whichlist, do_indirect, &(policy->role_trans[i]), &(b->t_cnt))) {
+
+					if (whichlist & SRC_LIST) {
+						ta = policy->role_trans[i].src_roles;
+						while (ta) {
+							b->trans[ta->idx] = TRUE;
+							ta = ta->next;
+						}
+					}
+                                        else
+						b->trans[policy->role_trans[i].trans_role.idx] = TRUE;
+
+				}
+			}
+			if(!(b->trans[i]) && (whichlist & TGT_LIST) && !tgt_is_role) {
+				ans = does_role_trans_use_ta(idx, type, do_indirect, &(policy->role_trans[i]), 
+						&(b->t_cnt), policy);
+				if (ans == -1)
+					return -1;
+				b->trans[i] = ans;
+			}
+		}
+	}
+	
+	return 0;
+}
 
 /* search and return type enforcement rules based on provided query critiera.  Results are return
  * as arrays of rules indicies 
