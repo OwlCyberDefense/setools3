@@ -50,6 +50,7 @@ namespace eval ApolTop {
 	# Main window dimension defaults
         variable top_width             1000
         variable top_height            700
+	variable libsefs		0
 	
 	# Top-level dialog widgets
 	variable helpDlg
@@ -1126,6 +1127,15 @@ proc ApolTop::display_goto_line_Dlg { } {
 	return 0
 }
 
+proc ApolTop::check_libsefs {} {
+	set rt [catch {set ret [apol_IsLibsefs_BuiltIn]} err]
+	if {$rt != 0} {
+		return -code error $err
+	} 
+	set ApolTop::libsefs $ret
+	return 0
+}
+
 proc ApolTop::create { } {
 	variable notebook 
 	variable mainframe  
@@ -1204,7 +1214,10 @@ proc ApolTop::create { } {
 	# Create Top-level tab frames	
 	set components_frame [$notebook insert end $ApolTop::components_tab -text "Policy Components"]
 	set rules_frame [$notebook insert end $ApolTop::rules_tab -text "Policy Rules"]
-	Apol_File_Contexts::create $notebook
+
+	if {$ApolTop::libsefs == 1} {
+		Apol_File_Contexts::create $notebook
+	}
 	Apol_Analysis::create $notebook
 	Apol_PolicyConf::create $notebook
 	
@@ -2146,7 +2159,9 @@ proc ApolTop::apolExit { } {
 	if {$policy_is_open} {
 		ApolTop::closePolicy
 	}
-	Apol_File_Contexts::close  
+	if {$ApolTop::libsefs == 1} {
+		Apol_File_Contexts::close  
+	}
 	ApolTop::free_call_back_procs
 	ApolTop::writeInitFile
 	exit
@@ -2254,6 +2269,12 @@ proc ApolTop::main {} {
 	wm withdraw .
 	wm title . "SE Linux Policy Analysis"
 	wm protocol . WM_DELETE_WINDOW "ApolTop::apolExit"
+	
+	set rt [catch {ApolTop::check_libsefs} err]
+	if {$rt != 0} {
+		tk_messageBox -icon error -type ok -title "Error" -message "$err"
+		return
+	}
 	
 	# Read apols' default settings file, gather all font information, create the gui and then load recent files into the menu.
 	ApolTop::readInitFile
