@@ -5,7 +5,7 @@
 #  see file 'COPYING' for use and warranty information 
 #
 #  Requires tcl and tk 8.3+, with BWidgets
-#  Author: <jtang@tresys.com>
+#  Author: Jason Tang <jtang@tresys.com>
 # -----------------------------------------------------------
 #
 # This is the implementation of the interface for Information
@@ -173,21 +173,26 @@ proc Apol_Analysis_flowassert::do_analysis {results_frame} {
                 1 {
                     append line "Failed.\n"
                     foreach rules $rules_list {
-                        foreach {start_type end_type via_type rule_num rule} $rules {}
+                        foreach {start_type end_type via_type rule_list} $rules {}
                         if {[set from [lindex $typeslist $start_type]] == ""} {
                             set from "<unknown type>"
                         }
                         if {[set to [lindex $typeslist $end_type]] == ""} {
                             set to "<unknown type>"
                         }
-                        if {$rule_num >= 0} {
+                        if {$rule_list != {}} {
                             if {$ApolTop::policy_type != $ApolTop::binary_policy_type} {
-                                append line "  \["
-                                set start_index [string length $line]
-                                append line $rule_num
-                                set end_index [string length $line]
-                                append line "\] $from to $to via \"$rule\"\n"
-                                lappend policy_tags_list $start_index $end_index
+                                append line "  $from to $to:\n"
+                                foreach rule $rule_list {
+                                    set rule_num [lindex $rule 0]
+                                    set rule_str [lindex $rule 1]
+                                    append line "    \["
+                                    set start_index [string length $line]
+                                    append line $rule_num
+                                    set end_index [string length $line]
+                                    append line "\] $rule_str\n"
+                                    lappend policy_tags_list $start_index $end_index
+                                }
                             } else {
                                 append line "  $from to $to\n"
                             }
