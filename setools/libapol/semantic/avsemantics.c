@@ -160,15 +160,7 @@ static int avh_load_avrules( void *r, int num, bool_t is_av, policy_t *p)
 				num_tgt = num_types(p);
 			}
 		}
-		/* if the target type is self, we have some more work; in this case, the returned list is the same
-		 * as the source list.  We won't need the target list since all we do is add every source to themselves;
-		 */
-		if(!all_tgt && self) {
-			num_tgt = 1; /* always 1 for self, since it is just the current source */
-			free(tgt_a);
-			tgt_a = NULL;
-		}
-			
+
 		rt = extract_obj_classes_from_te_rule(i, key.rule_type, &cls_a, &num_cls, p);
 		if(rt == -1) 
 			goto err_return;
@@ -225,7 +217,7 @@ static int avh_load_avrules( void *r, int num, bool_t is_av, policy_t *p)
 						continue;
 				}
 				else {
-					if(self) 
+					if(tgt_a[k]==0)
 						key.tgt = key.src;
 					else
 						key.tgt = tgt_a[k];
