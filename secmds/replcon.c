@@ -48,7 +48,7 @@
 #define FINDCON_VERSION_NUM "UNKNOWN"
 #endif
 
-#define COPYRIGHT_INFO "Copyright (C) 2005 Tresys Technology, LLC"
+#define COPYRIGHT_INFO "Copyright (C) 2003-2005 Tresys Technology, LLC"
 
 #define DEBUG 0
 #define MAX_INPUT_SIZE 1024
