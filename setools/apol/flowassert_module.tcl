@@ -15,6 +15,7 @@
 ##############################################################
 
 namespace eval Apol_Analysis_flowassert {
+    variable VERSION 1
 
     # widget variables
     variable assertfile_t    
@@ -241,7 +242,10 @@ proc Apol_Analysis_flowassert::open { } {
 # contents of the assertion file and replace it with the remainder
 # from $file_channel.
 proc Apol_Analysis_flowassert::load_query_options {file_channel parentDlg} {
-    variable assertfile_t
+    variable VERSION assertfile_t
+    if {[gets $file_channel] > $VERSION} {
+        return -code error "The specified query version is not allowed."
+    }
     $assertfile_t delete 1.0 end
     $assertfile_t insert end "[string trim [read $file_channel]]\n"
     return 0
@@ -252,8 +256,9 @@ proc Apol_Analysis_flowassert::load_query_options {file_channel parentDlg} {
 #	- file_channel - file channel identifier of the query file to write to.
 #	- file_name - name of the query file
 proc Apol_Analysis_flowassert::save_query_options {module_name file_channel file_name} {
+    variable VERSION assertfile_t
     puts $file_channel $module_name
-    variable assertfile_t
+    puts $file_channel $VERSION
     puts -nonewline $file_channel [$assertfile_t get 1.0 end]
     return 0
 }
