@@ -134,8 +134,7 @@ int sefs_search_type(sefs_filesystem_data_t * fsd, char * type, uint32_t** list,
 	
 
 	}
-
-	return 0;
+	return !(*list_size);
 }
 
 int sefs_search_path(sefs_filesystem_data_t * fsd, char * path, uint32_t** list, uint32_t* list_size, int use_regex)
@@ -161,7 +160,6 @@ int sefs_search_path(sefs_filesystem_data_t * fsd, char * path, uint32_t** list,
 		fprintf(stderr, "pathname is null\n");
 		return -1;
 	}
-
 	if(*list == NULL) {
 		if (use_regex) {
 			rc = regcomp(&reg, path, REG_EXTENDED|REG_NOSUB);
@@ -186,7 +184,9 @@ int sefs_search_path(sefs_filesystem_data_t * fsd, char * path, uint32_t** list,
 		} else {
 			for (i = 0; i < fsd->num_files; i++) {
 				for(j=0; j < fsd->files[i].num_links; j++) {
-					if(strcmp(fsd->files[i].path_names[j], path)) {
+					if(!strncmp(fsd->files[i].path_names[j], path, 
+					strlen(path) < strlen(fsd->files[i].path_names[j]) ?
+					strlen(path) : strlen(fsd->files[i].path_names[j]) )) {
 					rc = add_uint_to_a(i, &new_list_size, new_list);
 						if ( rc == -1) {
 							fprintf(stderr, 
@@ -221,7 +221,9 @@ int sefs_search_path(sefs_filesystem_data_t * fsd, char * path, uint32_t** list,
 		} else {
 			for (i = 0; i < *list_size; i++) {
 				for(j=0; j < fsd->files[(*list)[i]].num_links; j++) {
-					if(strcmp(fsd->files[(*list)[i]].path_names[j], path)) {
+					if(!strncmp(fsd->files[(*list)[i]].path_names[j], path,
+				strlen(path) < strlen(fsd->files[(*list)[i]].path_names[j]) ?
+				strlen(path) : strlen(fsd->files[(*list)[i]].path_names[j]) )) {
 					rc = add_uint_to_a((*list)[i], &new_list_size, new_list);
 						if ( rc == -1) {
 							fprintf(stderr, 
@@ -237,7 +239,7 @@ int sefs_search_path(sefs_filesystem_data_t * fsd, char * path, uint32_t** list,
 	
 	*list = *new_list;
 	*list_size = new_list_size;
-	return 0;
+	return !(*list_size);
 }
 
 
@@ -260,7 +262,7 @@ int sefs_search_user(sefs_filesystem_data_t * fsd, char * uname, uint32_t** list
 
 	if (*list == NULL) {
 		for (i = 0; i < fsd->num_files; i++) {
-			if (!strcmp(fsd->users[fsd->files[i].context.user], uname)) {
+			if (!(strncmp(fsd->users[fsd->files[i].context.user], uname, strlen(uname) ))) {
 				rc = add_uint_to_a(i, &new_list_size, new_list);
 				if (rc == -1) {
 					fprintf(stderr, "error in search_user()\n");
@@ -271,7 +273,7 @@ int sefs_search_user(sefs_filesystem_data_t * fsd, char * uname, uint32_t** list
 		
 	} else {
 		for (i = 0; i < *list_size; i++) {
-			if (!strcmp(fsd->users[fsd->files[(*list)[i]].context.user], uname)) {
+			if (!(strncmp(fsd->users[fsd->files[(*list)[i]].context.user], uname, strlen(uname)))) {
 				rc = add_uint_to_a((*list)[i], &new_list_size, new_list);
 				if (rc == -1) {
 					fprintf(stderr, "error in search_user()\n");
@@ -281,7 +283,9 @@ int sefs_search_user(sefs_filesystem_data_t * fsd, char * uname, uint32_t** list
 		}
 	}
 
-	return 0;
+	*list = *new_list;
+	*list_size = new_list_size;
+	return !(*list_size);
 }
 
 int sefs_search_object_class(sefs_filesystem_data_t * fsd, int object, uint32_t** list, uint32_t* list_size)
@@ -323,7 +327,9 @@ int sefs_search_object_class(sefs_filesystem_data_t * fsd, int object, uint32_t*
 		}
 	}
 
-	return 0;
+	*list = *new_list;
+	*list_size = new_list_size;	
+	return !(*list_size);
 }
 
 void print_list (sefs_filesystem_data_t* fsd, uint32_t* list, uint32_t list_size)
@@ -332,11 +338,14 @@ void print_list (sefs_filesystem_data_t* fsd, uint32_t* list, uint32_t list_size
 	char con[100];
 	
 
-	if (!fsd || !list || !list_size) {
+	if (list_size && (!fsd || !list)) {
 		fprintf(stderr, "invalid search results\n");
 		return;
 	}
-	
+	if(!list_size) {
+		printf("search returned no results\n");
+		return;
+	}	
 	
 	for (i = 0; i < list_size; i++) {
 		snprintf(con, sizeof(con), "%s:%s:%s", fsd->users[fsd->files[list[i]].context.user],
@@ -451,7 +460,7 @@ int main(int argc, char **argv, char **envp)
 			fprintf(stderr, "search_type() returned an error\n");
 			return -1;
 		case 1:
-			fprintf(stderr, "type was not found\n");
+			fprintf(stderr, "no matches found for type\n");
 			return -1;
 		default:
 			break;
@@ -467,13 +476,11 @@ int main(int argc, char **argv, char **envp)
 			fprintf(stderr, "search_type() returned an error\n");
 			return(-1);
 		case 1:
-			fprintf(stderr, "user was not found\n");
+			fprintf(stderr, "no matches found for user\n");
 			return(-1);
 		default:
 			break;
 		}
-
-		return 0;
 	}
 
 	if (object != NULL) {
@@ -490,7 +497,7 @@ int main(int argc, char **argv, char **envp)
 			fprintf(stderr, "search_object_class() returned an error\n");
 			return -1;
 		case 1:
-			fprintf(stderr, "object class not found\n");
+			fprintf(stderr, "no matches found for object class\n");
 			return -1;
 		default:
 			break;
@@ -505,13 +512,12 @@ int main(int argc, char **argv, char **envp)
 			fprintf(stderr, "search_type() returned an error\n");
 			return -1;
 		case 1: 
-			fprintf(stderr, "path was not found\n");
+			fprintf(stderr, "no matches found in path\n");
 			return -1;
 		default:
 			break;
 		}
 	}
-
 	print_list(&fsdata, index_list, index_list_size);
 
 	return 0;
