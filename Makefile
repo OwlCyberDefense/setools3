@@ -46,11 +46,11 @@ BINDIR		= $(DESTDIR)/usr/bin
 
 
 # The code uses the specified path below. If you change this, DO NOT add 
-# a trailing path seperator ("/"). For example, use "/usr/lib/apol" instead
-# of "/usr/lib/apol/". This probably needs to become more robust in the 
-# future.
+# a trailing path seperator ("/"). For example, use "/usr/share/setools" 
+# instead of "/usr/share/setools/". This probably needs to become more 
+# robust in the future.
 #
-INSTALL_LIBDIR	= $(DESTDIR)/usr/lib/apol
+INSTALL_LIBDIR	= $(DESTDIR)/usr/share/setools
 #
 # END NOTE
 
