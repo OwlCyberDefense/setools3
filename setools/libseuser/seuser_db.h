@@ -23,6 +23,20 @@
 
 #include "../libapol/policy.h"
 
+
+/* user statements; linked list */
+typedef struct user_item {
+	char			*name;
+	ta_item_t		*roles;
+	struct user_item	*next;
+	void 			*data;	/* generic pointer used by libseuser; ignored in apol */
+} user_item_t;
+
+typedef struct user_list {
+	user_item_t	*head;
+	user_item_t	*tail;
+} user_list_t;
+
 /* user database structure; based in part on APOL's structures */
 typedef struct user_db {
 	int		num_users;
@@ -61,6 +75,10 @@ int seuser_add_change_user(bool_t new_user, const char *user, char ** roles, int
 int seuser_label_home_dir(const char *user, user_db_t *db, policy_t *policy, const char *output_file);
 const char* seuser_decode_labeling_err(int err);
 const char* libseuser_get_version(void);
+
+int append_user(user_item_t *newuser, user_list_t *list);
+int free_user(user_item_t *ptr);
+int get_user_name(user_item_t *user, char **name);
 
 #endif /*_SEUSER_DB_H_ */
 
