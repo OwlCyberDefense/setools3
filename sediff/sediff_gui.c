@@ -570,7 +570,6 @@ static apol_diff_result_t *diff_policies(const char *p1_file, const char *p2_fil
 		goto err;
 	}	
 	rt = open_partial_policy(p1_file, opts, &p1);
-fprintf(stderr,"\nopening policies");
 	if (rt != 0) {
 		g_warning("Problem opening first policy file: %s\n", p1_file);
 		goto err;
