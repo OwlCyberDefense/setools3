@@ -515,7 +515,7 @@ int get_cond_bool_val_idx(int idx, bool_t *val, policy_t *policy);
 int get_cond_bool_default_val(const char *name, bool_t *val, policy_t *policy);
 int get_cond_bool_default_val_idx(int idx, bool_t *val, policy_t *policy);
 int update_cond_expr_items(policy_t *policy);
-void add_cond_expr_item_helper(int cond_expr, cond_rule_list_t *list, policy_t *policy);
+void add_cond_expr_item_helper(int cond_expr, bool_t cond_list, cond_rule_list_t *list, policy_t *policy);
 int set_cond_bool_vals_to_default(policy_t *policy);
 
 /* users */
