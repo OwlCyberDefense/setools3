@@ -12,24 +12,42 @@ ANALYSIS-MODULES = dta_module.tcl dirflow_module.tcl fulflow_module.tcl \
 
 TCL-FILES	= head.tcl tmp.tcl
 TCL-STRIP-FILES = types_tab.tcl terules_tab.tcl roles_tab.tcl rbac_tab.tcl \
-		  users_tab.tcl initial_sids_tab.tcl cond_bools_tab.tcl \
-		  cond_rules_tab.tcl classes_perms_tab.tcl policyconf.tcl \
-		  perms_map.tcl analysis_tab.tcl $(ANALYSIS-MODULES) top.tcl
+		  users_tab.tcl initial_sids_tab.tcl file_contexts_tab.tcl \
+		  cond_bools_tab.tcl cond_rules_tab.tcl classes_perms_tab.tcl \
+		  policyconf.tcl perms_map.tcl analysis_tab.tcl \
+		  $(ANALYSIS-MODULES) top.tcl
 
 ifeq ($(DYNAMIC), 0)
-LIBAPOL		= ../libapol/libapol-tcl.a ../libapol/libapol.a
-GUI-OBJ		= apol_gui.o $(LIBAPOL)
+	LIBAPOL		= ../libapol/libapol-tcl.a ../libapol/libapol.a
+	
+	ifeq ($(USE_LIBSEFS), 1)
+	LIBSEFS		= ../libsefs/libsefs.a
+	else
+	LIBSEFS = 
+	endif
 else
-LIBAPOL		= ../libapol/libapol.so.$(shell cat ../libapol/VERSION) ../libapol/libapol-tcl.a
-GUI-OBJ		= apol_gui.o $(LIBAPOL)
+	LIBAPOL		= ../libapol/libapol.so.$(shell cat ../libapol/VERSION) ../libapol/libapol-tcl.a
+	
+	ifeq ($(USE_LIBSEFS), 1)
+	LIBSEFS		= ../libsefs/libsefs.so.$(shell cat ../libsefs/VERSION)
+	else
+	LIBSEFS = 
+	endif
 endif
 
+ifeq ($(USE_LIBSEFS), 1)
+	LIBSQLITE  = -lsqlite3
+else
+	LIBSQLITE  =
+endif
+	
+GUI-OBJ 	= apol_gui.o $(LIBAPOL) $(LIBSEFS)
 CFLAGS          += -DSTARTUP_SCRIPT='"$(APOL_STARTUP_SCRIPT)"'
 
 # apol is optionally linked to libselinux. The LIBSELINUX variable 
 # is set in the top-level Makefile.
 apol: $(GUI-OBJ) apol.tcl
-	$(CC) $(TCL_LIBINC) -o $@ $(GUI-OBJ) $(LINKFLAGS) $(TCL_LIBS) $(LIBSELINUX)
+	$(CC) $(TCL_LIBINC) -o $@ $(LINKFLAGS) $(GUI-OBJ) $(TCL_LIBS) $(LIBSELINUX) $(LIBSQLITE) 
 
 
 apol.tcl: $(TCL-FILES)
@@ -55,6 +73,8 @@ tmp.tcl: $(TCL-STRIP-FILES)
 %.tcl: 
 # do nothing
 
+$(LIBSEFS):
+	cd ../ ; $(MAKE) libsefs
 
 install: apol apol.tcl
 	install -m 755 apol $(BINDIR)
