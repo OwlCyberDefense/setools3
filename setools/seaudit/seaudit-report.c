@@ -96,6 +96,7 @@ static void seaudit_report_parse_command_line_args(int argc, char **argv, seaudi
 	  			if (seaudit_report_add_stylesheet_path(optarg, report_info) != 0)
 	  				goto err;
 	  		}
+	  		report_info->use_stylesheet = TRUE;
 			break;
 		case 'm':
 			/* include malformed messages */	
