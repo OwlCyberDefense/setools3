@@ -102,7 +102,11 @@ proc Apol_RBAC::searchRoles {} {
 	} else {
 	    	$resultsbox configure -state normal
 		$resultsbox delete 0.0 end
-		$resultsbox insert end $results
+		if {$results == ""} {
+			$resultsbox insert end "0 rules match the search criteria."
+		} else {
+			$resultsbox insert end $results
+		}
 		ApolTop::makeTextBoxReadOnly $resultsbox 
         }
 	
