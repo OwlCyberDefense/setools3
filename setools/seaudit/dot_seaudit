@@ -9,3 +9,4 @@ RECENT_LOG_FILES
 RECENT_POLICY_FILES
 LOG_COLUMNS_HIDDEN path_field:src_usr_field:src_role_field:tgt_usr_field:tgt_role_field:inode_field:pid_field:
 REAL_TIME_LOG_MONITORING 0
+REAL_TIME_UPDATE_INTERVAL 1000
