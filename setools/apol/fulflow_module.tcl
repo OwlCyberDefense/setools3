@@ -312,7 +312,6 @@ proc Apol_Analysis_fulflow::load_query_options { file_channel parentDlg } {
 	variable filtered_excl_types    
 	variable incl_attrib_combo_value
 	variable excl_attrib_combo_value
-	variable class_listbox
 	variable filter_vars_init
 	variable class_list
 	
@@ -390,7 +389,7 @@ proc Apol_Analysis_fulflow::load_query_options { file_channel parentDlg } {
 	        # This is the end of the list, so grab the first element of the split list, since the last 
 	        # element of split list is an empty list element because the last char of the element is a '}'.
 	        set perm_status_list [lappend perm_status_list [lindex [split [lindex $query_options $i] "\}"] 0]]
-      		
+  
       		# OK, now that we have list of class,permission and perm status, 
       		# filter out permissions that do not exist in the policy. 
       		for {set j 0} {$j < [llength $perm_status_list]} {incr j} {
@@ -2489,7 +2488,7 @@ proc Apol_Analysis_fulflow::advanced_filters_create_dialog {} {
     	# Create the top-level dialog and subordinate widgets
     	toplevel $advanced_filter_Dlg 
      	wm withdraw $advanced_filter_Dlg	
-    	wm title $advanced_filter_Dlg "Advanced Filters"
+    	wm title $advanced_filter_Dlg "Transitive Information Flow Advanced Filters"
     	   	
    	set close_frame [frame $advanced_filter_Dlg.close_frame -relief sunken -bd 1]
    	set topf  [frame $advanced_filter_Dlg.topf]
