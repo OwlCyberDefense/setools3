@@ -1806,13 +1806,13 @@ static iflow_path_t *ta_build_path(iflow_graph_t *g, iflow_query_t *q, int path_
 	}
 	memset(p, 0, sizeof(iflow_path_t));
 	
-	p->iflows = (iflow_t*)malloc(sizeof(iflow_t) * path_len);
+	p->iflows = (iflow_t*)malloc(sizeof(iflow_t) * (path_len - 1));
 	if (!p->iflows) {
 		fprintf(stderr, "Memory error\n");
 		return NULL;
 	}
-	p->num_iflows = path_len;
-	memset(p->iflows, 0, sizeof(iflow_t) * path_len);
+	p->num_iflows = path_len - 1;
+	memset(p->iflows, 0, sizeof(iflow_t) * (path_len - 1));
 
 	/* build the path */
 	length = 0;
@@ -2003,7 +2003,7 @@ static int shortest_path_find_path(iflow_graph_t *g, int start_node, int end_nod
 			return -1;
 		}
 	}
-	
+		
 	/* reverse the path */
 	for (i = 0; i < path_len / 2; i++) {
 		tmp = path[i];
@@ -2016,7 +2016,7 @@ static int shortest_path_find_path(iflow_graph_t *g, int start_node, int end_nod
 
 /* This is a label correcting shortest path algorithm
  * see Bertsekas, D. P., "A Simple and Fast Label Correcting Algorithm for Shortest Paths,"
- * Networks, Vol. 23, pp. 703-709, 1993. for more information. A label correct algorithm is
+ * Networks, Vol. 23, pp. 703-709, 1993. for more information. A label correcting algorithm is
  * needed instead of the more common Dijkstra label setting algorithm to correctly handle the
  * the cycles that are possible in these graphs.
  *
