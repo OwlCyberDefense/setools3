@@ -46,6 +46,12 @@ seaudit_filtered_view_t* seaudit_filtered_view_create(audit_log_t *log, GtkTreeV
 	return filtered_view;
 }
 
+void seaudit_filtered_view_destroy(seaudit_filtered_view_t *view)
+{
+	filters_destroy(view->filters);
+	seaudit_log_view_store_close_log(view->store);
+}
+
 void seaudit_filtered_view_display(seaudit_filtered_view_t* filtered_view)
 {
 	if (filtered_view->filters->window != NULL) {
@@ -57,9 +63,6 @@ void seaudit_filtered_view_display(seaudit_filtered_view_t* filtered_view)
 	glade_xml_signal_connect_data(filtered_view->filters->xml, "filtered_view_on_do_filter_button_clicked",
 				      G_CALLBACK(filtered_view_on_do_filter_button_clicked),
 				      filtered_view);
-				      	
-	filtered_view->store->log_view->fltr_out = TRUE;
-	filtered_view->store->log_view->fltr_and = TRUE;
 }
 
 void seaudit_filtered_view_set_log(seaudit_filtered_view_t *view, audit_log_t *log)
