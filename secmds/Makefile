@@ -36,11 +36,11 @@ seinfo: seinfo.o $(LIBAPOL)
 sesearch: sesearch.o $(LIBAPOL)
 	$(CC) -o $@ sesearch.o $(LIBAPOL) $(LIBS) $(LINKFLAGS)
 
-replcon.o: replcon.c
+replcon.o: replcon.c 
 	$(CC) -c replcon.c -DSEFS_XATTR_LABELED_FILESYSTEMS=$(SEFS_XATTR_LABELED_FILESYSTEMS) $(CFLAGS) $(INCLUDE)
 
-replcon: replcon.o
-	$(CC) -o $@ replcon.o $(LINKFLAGS) $(LIBSELINUX)
+replcon: replcon.o $(LIBSEFS) $(LIBAPOL)
+	$(CC) -o $@ replcon.o $(LINKFLAGS) $(LIBSELINUX) $(LIBSEFS) $(LIBAPOL)
 
 indexcon.o: indexcon.c
 	$(CC) -c indexcon.c -DSEFS_XATTR_LABELED_FILESYSTEMS=$(SEFS_XATTR_LABELED_FILESYSTEMS) $(CFLAGS) $(INCLUDE)
@@ -57,8 +57,8 @@ searchcon: searchcon.o
 findcon.o: replcon.c
 	$(CC) -c replcon.c -o findcon.o -DFINDCON -DSEFS_XATTR_LABELED_FILESYSTEMS=$(SEFS_XATTR_LABELED_FILESYSTEMS) $(CFLAGS) $(INCLUDE)
 
-findcon: findcon.o
-	$(CC) -o $@ findcon.o $(LINKFLAGS) $(LIBSELINUX)
+findcon: findcon.o $(LIBSEFS) $(LIBAPOL)
+	$(CC) -o $@ findcon.o $(LINKFLAGS) $(LIBSELINUX) $(LIBSEFS) $(LIBAPOL)
 	
 install: $(SE_CMDS)
 	install -m 755 $(SE_CMDS) $(BINDIR);
