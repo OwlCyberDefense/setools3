@@ -29,7 +29,7 @@ libseuserso: ../lib/$(LIBSO)
 install-libseuser-shared: libseuserso
 	test -d $(SHARED_LIB_INSTALL_DIR) || install -m 755 -d $(SHARED_LIB_INSTALL_DIR)
 	install -m 755 ../lib/$(LIBSO) $(SHARED_LIB_INSTALL_DIR)
-	/sbin/ldconfig 
+	/sbin/ldconfig $(SHARED_LIB_INSTALL_DIR)
 	cd $(SHARED_LIB_INSTALL_DIR) && ln -sf ./`basename $(SHARED_LIB_INSTALL_DIR)`/$(LIBSO) $(TARGET)
 	
 install-libseuser-static: libseuser
