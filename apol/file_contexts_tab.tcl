@@ -353,6 +353,8 @@ proc Apol_File_Contexts::display_create_db_dlg {} {
 	variable entry_dir
 	variable entry_fn
 	variable create_fc_dlg
+	variable b1_create_dlg
+	variable b2_create_dlg
 	
 	set w $create_fc_dlg
 	set rt [catch {destroy $w} err]
@@ -414,17 +416,18 @@ proc Apol_File_Contexts::display_create_db_dlg {} {
 	$entry_dir insert end "/"
 	
 	set b_frame [frame $w.b_frame]
-     	set b1 [button $b_frame.create -text Create \
+     	set b1_create_dlg [button $b_frame.create -text Create \
      		-command {Apol_File_Contexts::create_fc_db $Apol_File_Contexts::create_fc_dlg} \
      		-width 10]
-     	set b2 [button $b_frame.close1 -text Cancel \
-     		-command {catch {destroy $Apol_File_Contexts::create_fc_dlg; grab release $Apol_File_Contexts::create_fc_dlg}} \
+     	set b2_create_dlg [button $b_frame.close1 -text Cancel \
+     		-command {catch {
+     			destroy $Apol_File_Contexts::create_fc_dlg; grab release $Apol_File_Contexts::create_fc_dlg}} \
      		-width 10]
      	
      	pack $b_frame -side bottom -expand yes -anchor center
      	pack $t_frame -side top -fill both -expand yes
      	pack $f1 $f2 $f3 -side left -anchor nw -padx 5 -pady 5
-     	pack $b1 $b2 -side left -anchor nw -padx 5 -pady 5 
+     	pack $b1_create_dlg $b2_create_dlg -side left -anchor nw -padx 5 -pady 5 
 	pack $lbl_fn $lbl_dir -anchor nw -side top -pady 6
 	pack $entry_fn $entry_dir -anchor nw -side top -expand yes -pady 5
 	pack $browse_fn $browse_dir -anchor nw -side top -expand yes -pady 3
@@ -485,7 +488,12 @@ proc Apol_File_Contexts::create_and_load_fc_db {fname dir_str} {
 proc Apol_File_Contexts::create_fc_db {dlg} {
 	variable entry_dir
 	variable entry_fn
+	variable b1_create_dlg
+	variable b2_create_dlg
 	
+	# Disable the buttons to prevent multiple clicking from causing tk errors.
+	$b1_create_dlg configure -state disabled
+	$b2_create_dlg configure -state disabled
 	set fname [$entry_fn get]
 	set dir_str [$entry_dir get]
 		

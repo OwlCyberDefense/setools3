@@ -114,7 +114,7 @@ proc Apol_Cond_Rules::cond_rules_search {} {
 					 $search_opts(incl_ttrans))]
 		set len [llength $results]
 		if {$len > 0} {
-			set counter 0
+			set counter 1
 			# List should look like {expr1 num_av_rules avrule1_lineno avrule1_string avrule1_status num_audit_rules ... }
 			for {set list_idx 0} {$list_idx < $len} {incr list_idx} {
 				set cond_expr [lindex $results $list_idx]
