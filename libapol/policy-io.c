@@ -26,6 +26,7 @@ extern FILE *yyin;
 extern int yyparse(void);
 extern void yyrestart(FILE *);
 extern unsigned int pass;
+extern int yydebug;
 
 int close_policy(policy_t *policy)
 {
@@ -34,6 +35,7 @@ int close_policy(policy_t *policy)
 
 static int read_policy(policy_t *policy)
 {
+	//yydebug = 1;
 	parse_policy = policy; /* setting the parser's global parse policy */
 	/* assumed yyin is opened to policy file */
 	id_queue = queue_create();
@@ -46,7 +48,9 @@ static int read_policy(policy_t *policy)
 	pass = 1;
 	if (yyparse()) {
 		fprintf(stderr, "error(s) encountered while parsing configuration (first pass, line: %d)\n", policydb_lineno);
-		queue_destroy(id_queue);;
+		queue_destroy(id_queue);
+		rewind(yyin);
+		yyrestart(yyin);	
 		return -1;
 	}
 	
@@ -63,6 +67,8 @@ static int read_policy(policy_t *policy)
 	if (yyparse()) {
 		fprintf(stderr, "error(s) encountered while parsing configuration (second pass, line: %d)\n", policydb_lineno);
 		queue_destroy(id_queue);
+		rewind(yyin);
+		yyrestart(yyin);	
 		return -1;
 	}
 		
