@@ -157,7 +157,7 @@
 		<widget class="GtkVPaned" id="vpaned2">
 		  <property name="visible">True</property>
 		  <property name="can_focus">True</property>
-		  <property name="position">290</property>
+		  <property name="position">270</property>
 
 		  <child>
 		    <widget class="GtkScrolledWindow" id="scrolledwindow_list">
@@ -189,8 +189,8 @@
 		      </child>
 		    </widget>
 		    <packing>
-		      <property name="shrink">True</property>
-		      <property name="resize">True</property>
+		      <property name="shrink">False</property>
+		      <property name="resize">False</property>
 		    </packing>
 		  </child>
 
