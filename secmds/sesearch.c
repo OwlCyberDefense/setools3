@@ -67,10 +67,14 @@ Search Type Enforcement rules in an SELinux policy.\n\
   -c NAME, --class NAME   find rules with NAME as the object class\n\
   -p P1[,P2,...] --perms P1[,P2...]\n\
                          find rules with the specified permissions\n\
+", stdout);
+	fputs("\
   --allow                search for allow rules only \n\
   --neverallow           search for neverallow rules only\n\
   --audit                search for auditallow and dontaudit rules only\n\
   --type                 search for type_trans and type_change rules only\n\
+", stdout);
+	fputs("\
   -i, --indirect         indirect; also search for the type's attributes\n\
   -n, --noregex          do not use regular expression to match type/attributes\n\
   -a, --all              show all rules regardless of type, class, or perms\n\
