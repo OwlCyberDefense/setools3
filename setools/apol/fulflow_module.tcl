@@ -2141,6 +2141,7 @@ proc Apol_Analysis_fulflow::advanced_filters_change_obj_state_on_perm_select {} 
 	variable class_listbox	
 	variable select_fg_orig
 	variable class_selected_idx 
+	variable permissions_title_frame
 	
 	set num_excluded 0	
 	# There may be multiple selected items, but we need the object class that is currently displayed in
@@ -2169,6 +2170,7 @@ proc Apol_Analysis_fulflow::advanced_filters_change_obj_state_on_perm_select {} 
 				$class_listbox itemconfigure $class_selected_idx -foreground $select_fg_orig
 				set [$class_listbox cget -listvar] [lreplace $items $class_selected_idx $class_selected_idx "$class_sel"]
 			}
+  			$permissions_title_frame configure -text "Permissions for [$class_listbox get $class_selected_idx]:"
 		}
 	}
 	
@@ -2558,18 +2560,18 @@ proc Apol_Analysis_fulflow::advanced_filters_create_dialog {} {
 	bindtags $class_listbox [linsert [bindtags $Apol_Analysis_fulflow::class_listbox] 3 object_list_Tag]  
         bind object_list_Tag <<ListboxSelect>> {Apol_Analysis_fulflow::advanced_filters_display_permissions [$Apol_Analysis_fulflow::class_listbox curselection]}
         
-        pack $pw2 -fill both -expand yes
-        pack $pw1 -fill both -expand yes
-        pack $b_excl_all_perms -side right -anchor nw -pady 2 -expand yes -fill x
-        pack $b_incl_all_perms -side left -anchor nw -pady 2 -expand yes -fill x
+        pack $cbutton_threshhold $spinbox_threshhold -side left -anchor nw -padx 2
+        pack $threshhold_frame -fill x -anchor nw -side bottom -pady 2
+        pack $b_excl_all_perms -side right -anchor nw -pady 2 -expand yes -fill x -ipadx 1
+        pack $b_incl_all_perms -side left -anchor nw -pady 2 -expand yes -fill x -ipadx 2
         pack $bframe -side bottom -fill both -anchor sw -pady 2
         pack $permissions_title_frame -pady 2 -padx 2 -fill both -expand yes
-        pack $threshhold_frame -fill x -anchor nw -side bottom -pady 2
-        pack $cbutton_threshhold $spinbox_threshhold -side left -anchor nw 
 	pack $classes_box -padx 2 -side left -fill both -expand yes	   
         pack $sw_class -fill both -expand yes -side top
 	pack $sw_list -fill both -expand yes -side top
-        	
+	pack $pw2 -fill both -expand yes
+        pack $pw1 -fill both -expand yes
+                	
         # Widgets for types frame
         set include_f [TitleFrame [$types_frame getframe].include_f -text "Include these types:" -bd 0]
         set middle_f  [frame [$types_frame getframe].middle_f]
