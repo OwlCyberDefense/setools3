@@ -116,6 +116,8 @@ extern int yyerror(char *msg);
 static char errormsg[255];
 extern unsigned long policydb_lineno;
 
+int yylex(void);
+
 static int insert_separator(int push);
 static int insert_id(char *id,int push);
 static int define_class(void);
