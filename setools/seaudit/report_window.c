@@ -236,6 +236,8 @@ static void on_create_report_button_clicked(GtkButton *button, gpointer user_dat
 		msg = g_string_new("Report generated successfully.\n");
 		message_display(report_window->parent->window, GTK_MESSAGE_INFO, msg->str);
 		g_string_free(msg, TRUE);
+		/* if everything worked correctly hide the report window */
+		hide_window(report_window);
 	}
 	report_window->report_info->log_view = NULL;
 	report_window->report_info->log = NULL;
