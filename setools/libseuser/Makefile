@@ -8,7 +8,8 @@ LOBJS		= $(patsubst %.o,%.lo,$(LIB-OBJ))
 CFLAGS      += -DLIBSEUSER_VERSION_STRING='"$(shell cat VERSION)"'
 CFLAGS      += -DSETFILES_PROG='"$(SETFILES_PROG)"'
 
-LIBSO		= libseuser$(shell cat VERSION).so
+TARGET 	    = libapol.so
+LIBSO	    = $(TARGET).$(shell cat VERSION)
 
 all: libseuser libseuser-tcl libseuserso
 
@@ -26,13 +27,15 @@ libseuserso: ../lib/$(LIBSO)
 	$(CC) $(LDFLAGS) -shared -o ../lib/$(LIBSO) $(LOBJS) -Wl,-soname,$(LIBSO)
 
 install-libseuser-shared: libseuserso
-	install -m 644 ../lib/$(LIBSO) $(SHARED_LIB_INSTALL_DIR)
-	/sbin/ldconfig $(SHARED_LIB_INSTALL_DIR)
-	ln -sf $(SHARED_LIB_INSTALL_DIR)/$(LIBSO) $(SHARED_LIB_INSTALL_DIR)/libseuser.so
-
+	test -d $(SHARED_LIB_INSTALL_DIR) || install -m 755 -d $(SHARED_LIB_INSTALL_DIR)
+	install -m 755 ../lib/$(LIBSO) $(SHARED_LIB_INSTALL_DIR)
+	/sbin/ldconfig 
+	cd $(SHARED_LIB_INSTALL_DIR) && ln -sf ./`basename $(SHARED_LIB_INSTALL_DIR)`/$(LIBSO) $(TARGET)
+	
 install-libseuser-static: libseuser
-	mkdir -p $(SETOOLS_INCLUDE)
+	test -d $(STATIC_LIB_INSTALL_DIR) || install -m 755 -d $(STATIC_LIB_INSTALL_DIR)
 	install -m 644 ../lib/libseuser.a $(STATIC_LIB_INSTALL_DIR)
+	test -d $(SETOOLS_INCLUDE) || install -m 755 -d $(SETOOLS_INCLUDE)
 	install -m 644 *.h $(SETOOLS_INCLUDE)
 
 install: install-libseuser-shared install-libseuser-static
