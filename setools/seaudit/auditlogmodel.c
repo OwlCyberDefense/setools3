@@ -664,6 +664,9 @@ static int int_compare(const void *aptr, const void *bptr)
 {
 	int *a = (int*)aptr;
 	int *b = (int*)bptr;
+	
+	assert(a);
+	assert(b);
 
 	if (*a < *b)
 		return -1;
@@ -697,6 +700,7 @@ void seaudit_log_view_store_do_filter(SEAuditLogViewStore *store)
 		gtk_tree_model_row_deleted(GTK_TREE_MODEL(store), path);
 		gtk_tree_path_free(path);
 		cnt++;
+
 	}
 	num_kept = old_sz - num_deleted;
 
@@ -717,7 +721,7 @@ void seaudit_log_view_store_do_filter(SEAuditLogViewStore *store)
 		gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(store), sortId, store->order);
 	else 
 		gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(store), DATE_FIELD, GTK_SORT_ASCENDING);
-	log_filtered_signal_emit();
+	log_filtered_signal_emit(); /* To Do: need to pass store to signal emit */
 	return;
 }
 
@@ -758,6 +762,7 @@ int seaudit_log_view_store_open_log(SEAuditLogViewStore *store, audit_log_t *new
 		gtk_tree_model_row_inserted(GTK_TREE_MODEL(store), path, &iter);
 		gtk_tree_path_free(path);
 	}
+	seaudit_log_view_store_sort(store);
 	return 0;
 }
 
