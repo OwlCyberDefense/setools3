@@ -16,8 +16,8 @@
 #include "../libapol/policy.h"
 
 /* The following should be defined in the make environment */
-#ifndef SEUSER_VERSION_STRING
-	#define SEUSER_VERSION_STRING "UNKNOWN"
+#ifndef LIBSEUSER_VERSION_STRING
+	#define LIBSEUSER_VERSION_STRING "UNKNOWN"
 #endif
 /* NOTE: As of version 1.0, we completely remove all support for the older
  * default_context and cron_context; which greatly simplified the code.
@@ -61,6 +61,7 @@ int seuser_reinstall_policy(const char *tmpfile, user_db_t *db);
 int seuser_check_commit_perm(user_db_t *db);
 const char* seuser_decode_read_conf_err(int err);
 int seuser_add_change_user(bool_t new_user, const char *user, char ** roles, int num_roles, user_db_t *db, policy_t *policy);
+const char* libseuser_get_version(void);
 
 #endif /*_SEUSER_DB_H_ */
 
