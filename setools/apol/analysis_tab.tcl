@@ -663,7 +663,7 @@ proc Apol_Analysis::do_analysis { which } {
 	if { $curr_analysis_module == "" } {
 		tk_messageBox -icon error -type ok -title "Error" \
 			-message "You must select an analysis type."
-		return 
+		return -1
 	}
 	# Hold the currently raised tab.
 	set prev_raisedTab [$results_notebook raise]
@@ -684,21 +684,22 @@ proc Apol_Analysis::do_analysis { which } {
 			$Apol_Analysis::updateButton configure -state disabled
 			update
 			# Destroy results tab subwidgets and free any data associated with them.
-			set results_frame [Apol_Analysis::get_results_frame [ $results_notebook raise ]]
+			set results_frame [Apol_Analysis::get_results_frame [$results_notebook raise]]
 			set parent [winfo parent $results_frame]
 			Apol_Analysis::clear_results_frame $results_frame [$results_notebook raise]
 			Apol_Analysis::create_results_frame $parent
 		}
 		default {
-			return -code error
+			ApolTop::resetBusyCursor
+			return -1
 		}
 	} 
-	if { $results_frame != "" } {
+	if {$results_frame != ""} {
 		set rt [catch {${curr_analysis_module}::do_analysis $results_frame} err] 
-		ApolTop::resetBusyCursor
 		
 		# Handle an error.
-		if { $rt != 0 && $which == "new_analysis" } { 	
+		if {$rt != 0 && $which == "new_analysis"} { 
+			ApolTop::resetBusyCursor	
 			# Re-enable buttons
 			$Apol_Analysis::newButton configure -state normal
 			$Apol_Analysis::updateButton configure -state disabled
@@ -710,13 +711,16 @@ proc Apol_Analysis::do_analysis { which } {
 			Apol_Analysis::switch_results_tab $prev_raisedTab
 			return -1
 		}
-	}
-    	set raised_tab_analysis_type $curr_analysis_module
+	    	set raised_tab_analysis_type $curr_analysis_module
+	    	# Here store the current content of the new tab.
+		Apol_Analysis::store_current_results_state [$results_notebook raise] 
+	} 
+	ApolTop::resetBusyCursor
+	
 	# Re-enable buttons
 	$Apol_Analysis::newButton configure -state normal
 	$Apol_Analysis::updateButton configure -state normal
-	# Here store the current content of the new tab.
-	Apol_Analysis::store_current_results_state [$results_notebook raise]        
+	       
      	return 0
 } 
 
