@@ -10,7 +10,6 @@ CFLAGS            += -DINSTALL_LIBDIR='"$(INSTALL_LIBDIR)"'
 CFLAGS            += -DSEAUDIT_GUI_VERSION_STRING='"$(shell cat SEAUDIT_GUI_VERSION)"'
 CFLAGS            += -DSEREPORT_VERSION_NUM='"$(shell cat SEAUDIT_REPORT_VERSION)"'
 
-LIBSELINUX      = -lselinux
 LIBXML_FLAGS    = `pkg-config --cflags libxml-2.0`
 LIBXML_LIBS     = `pkg-config --libs libxml-2.0`
 
@@ -22,7 +21,7 @@ LOGWATCH_GROUP = $(LOGWATCH_DIR)/conf/logfiles
 LOGWATCH_SERVICE = $(LOGWATCH_DIR)/conf/services
 LOGWATH_FILTER = $(LOGWATCH_DIR)/scripts/services
 
-ifeq ($(DEBUG), 1)
+ifeq ($(DYNAMIC), 0)
 SEAUDIT_LIBS	= ../libseaudit/libseaudit.a ../libapol/libapol.a $(LIBSELINUX)	
 else
 SEAUDIT_LIBS	= ../libseaudit/libseaudit.so.$(shell cat ../libseaudit/VERSION) \
