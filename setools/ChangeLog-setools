@@ -1,4 +1,11 @@
 CHANGE LOG, SE Linux TOOLS (setools)
+=======================================================
+????? ??, 2004, Version 1.??
+
+liapol: 
+	Added support for using binary policy files (in 
+		addition to source policy files)
+
 
 =======================================================
 April 15, 2004 Version 1.3
