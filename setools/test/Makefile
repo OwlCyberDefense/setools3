@@ -1,7 +1,7 @@
 
 MAKE 		= make
 CC		= gcc
-LIBAPOL		= ../lib/libapol.a
+LIBAPOL		= ../libapol/libapol.a
 LIBS		= -lm -lfl
 OBJS		= test.o $(LIBAPOL)
 INCLUDES	= -I../libapol/
@@ -37,7 +37,7 @@ roles: $(OBJS) roles.o
 	$(CC) roles.o $(CFLAGS) $(OBJS) $(LIBS) -o roles
 
 $(LIBAPOL): 
-	cd ../libapol/ ; $(MAKE) libapol
+	cd ../ ; $(MAKE) libapol
 
 clean:
 	rm -f *.o partial_load transitive_flow template reload perm_map_reload obj_perms binpol roles

@@ -1,7 +1,7 @@
 # libseuser test
 
-LIBAPOL-TCL	= ../../lib/libapol-tcl.a ../../lib/libapol.a
-LIBSEUSER-TCL	= ../../lib/libseuser-tcl.a ../../lib/libseuser.a
+LIBAPOL-TCL	= ../../libapol/libapol-tcl.a ../../libapol/libapol.a
+LIBSEUSER-TCL	= ../../libseuser/libseuser-tcl.a ../../libseuser/libseuser.a
 OBJS		= test-seuser.o   $(LIBSEUSER-TCL)  $(LIBAPOL-TCL)
 
 test-seuser: $(OBJS)
@@ -11,16 +11,16 @@ test-seuser: $(OBJS)
 	$(CC) $(CFLAGS) -c $<
 
 	
-../../lib/libapol.a:
+../../libapol/libapol.a:
 	cd ../../ ; $(MAKE) libapol
 	
-../../lib/libapol-tcl.a: 
+../../libapol/libapol-tcl.a: 
 	cd ../../ ; $(MAKE) libapol-tcl
 
-../../lib/libseuser-tcl.a:
+../../libseuser/libseuser-tcl.a:
 	cd ../../ ; $(MAKE) libseuser-tcl
 	
-../../lib/libseuser.a:
+../../libseuser/libseuser.a:
 	cd ../../ ; $(MAKE) libseuser
 
 clean:
