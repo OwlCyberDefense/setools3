@@ -544,7 +544,7 @@ static int load_user(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts,
 	if(keep) {
 		for(i = 0; i < e.highbit; i++) {
 			if(ebitmap_get_bit(&e, i)) {
-				rt = add_role_to_user(u, i, policy);
+				rt = add_role_to_user(u, bm->r_map[i], policy);
 				if(rt == -1) {
 					assert(FALSE); /* debug aide */
 					return -4;
