@@ -76,7 +76,7 @@ proc Apol_Initial_SIDS::searchSIDs {} {
 		return -1
 	} 
 	
-	set rt [catch {set results [puts "Not implemented"]} err]
+	set rt [catch {set results [apol_SearchInitialSIDs $opts(user) $opts(role) $opts(type)]} err]
 	if {$rt != 0} {	
 		tk_messageBox -icon error -type ok -title "Error" -message "$err"
 		return -1
@@ -96,7 +96,7 @@ proc Apol_Initial_SIDS::searchSIDs {} {
 proc Apol_Initial_SIDS::open { } {
 	variable sids_list
 	
-	set sids_list [puts "Not implemented"] 
+	set sids_list [apol_GetNames initial_sids] 
 	set sids_list [lsort $sids_list]
 	$Apol_Initial_SIDS::user_combo_box configure -values $Apol_Users::users_list
 	$Apol_Initial_SIDS::role_combo_box configure -values $Apol_Roles::role_list
@@ -135,7 +135,7 @@ proc Apol_Initial_SIDS::close { } {
 #  Command Apol_Initial_SIDS::popupSIDInfo
 # ------------------------------------------------------------------------------
 proc Apol_Initial_SIDS::popupSIDInfo {sid} {
-	set rt [catch {set info [puts "Not implemented"]} err]
+	set rt [catch {set info [apol_GetInitialSIDInfo $sid]} err]
 	if {$rt != 0} {
 		tk_messageBox -icon error -type ok -title "Error" -message "$err"
 		return -1
@@ -150,7 +150,7 @@ proc Apol_Initial_SIDS::popupSIDInfo {sid} {
 	
 	catch {destroy $w}
 	toplevel $w 
-	wm title $w "$sid"
+	wm title $w "$sid Context"
 	wm protocol $w WM_DELETE_WINDOW "destroy $w"
     	wm withdraw $w
     	
@@ -162,7 +162,7 @@ proc Apol_Initial_SIDS::popupSIDInfo {sid} {
 	pack $sf -fill both -expand yes
 	set user_count [llength $info]
 	$f insert end "$sid:\n"
-	$f insert end "   \n"
+	$f insert end "   $info\n"
 	
 	wm geometry $w +50+50
 	wm deiconify $w
@@ -306,7 +306,7 @@ proc Apol_Initial_SIDS::create {nb} {
 	    
 	# Popup menu widget
 	menu .popupMenu_sids
-	.popupMenu_sids add command -label "Display Initial SIDs Info" \
+	.popupMenu_sids add command -label "Display Initial SIDs Context" \
 		-command {Apol_Initial_SIDS::popupSIDInfo [$Apol_Initial_SIDS::init_sids_listbox get active]}
 	    
 	# Event binding on the users list box widget
