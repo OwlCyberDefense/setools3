@@ -36,11 +36,6 @@ typedef struct filter {
 	struct filter *next;
 } filter_t;
 
-typedef struct filt_info {
-	int orig_indx;
-	bool_t filtered;
-} filt_info_t;
-
 /*
  * the following functions are for creating filters */
 filter_t* filter_create(void);
