@@ -777,6 +777,23 @@ proc Apol_Analysis_relabel::adv_options_incl_excl_classes {path_name remove_list
 	}  
 	return 0	
 }
+# ------------------------------------------------------------------------------
+#  Command Apol_Analysis_relabel::select_all_lbox_items
+#	- Takes a Tk listbox widget as an argument.
+# ------------------------------------------------------------------------------
+proc Apol_Analysis_relabel::select_all_lbox_items {lbox} {
+        $lbox selection set 0 end
+        return 0
+}
+
+# ------------------------------------------------------------------------------
+#  Command Apol_Analysis_relabel::clear_all_lbox_items
+#	- Takes a Tk listbox widget as an argument.
+# ------------------------------------------------------------------------------
+proc Apol_Analysis_relabel::clear_all_lbox_items {lbox} {
+        $lbox selection clear 0 end
+        return 0
+}
 
 # ------------------------------------------------------------------------------
 #  Command Apol_Analysis_relabel::adv_options_create_dialog
@@ -822,8 +839,7 @@ proc Apol_Analysis_relabel::adv_options_create_dialog {path_name title_txt} {
 	set subj_frame  [TitleFrame $topf.subj_frame -text "Filter by subject type:"]
         
         set top_lbl [Label $label_frame.top_lbl -justify left -font $ApolTop::dialog_font \
-        	-text "NOTE: The following list of object classes does not necessarily include all \
-        	object classes defined in the policy.\nThis list has been filtered to include \
+        	-text "NOTE: The following list of object classes has been filtered to include \
         	only object classes which have both 'relabelto' and 'relabelfrom' permission."]
         # Widgets for object classes frame
         set search_pane [frame [$objs_frame getframe].search_pane]
@@ -832,6 +848,10 @@ proc Apol_Analysis_relabel::adv_options_create_dialog {path_name title_txt} {
 	set subj_pane [frame [$subj_frame getframe].subj_pane]
 	set search_pane2 [frame [$subj_frame getframe].search_pane2]
 	set button_f2 [frame [$subj_frame getframe].button_f2]
+	set obj_incl_butn_f [frame [$objs_frame getframe].obj_incl_butn_f]
+	set obj_excl_butn_f [frame [$objs_frame getframe].obj_excl_butn_f]
+	set subj_incl_butn_f [frame [$subj_frame getframe].subj_incl_butn_f]
+	set subj_excl_butn_f [frame [$subj_frame getframe].subj_excl_butn_f]
 
         set incl_classes_box [TitleFrame $class_pane.tbox \
         	-text "Included Object Classes:" -bd 0]
@@ -910,9 +930,49 @@ proc Apol_Analysis_relabel::adv_options_create_dialog {path_name title_txt} {
 			$Apol_Analysis_relabel::widgets($path_name,subj_incl_lb) \
 			$Apol_Analysis_relabel::widgets($path_name,subj_excl_lb) \
 			exclude"]
+	set b_incl_subj_sel_all [Button $subj_incl_butn_f.b_incl_subj_sel_all \
+		 -text "Select All" \
+		-command "Apol_Analysis_relabel::select_all_lbox_items \
+			$Apol_Analysis_relabel::widgets($path_name,subj_incl_lb)"]
+	set b_excl_subj_sel_all [Button $subj_excl_butn_f.b_excl_subj_sel_all \
+		-text "Select All" \
+		-command "Apol_Analysis_relabel::select_all_lbox_items \
+			$Apol_Analysis_relabel::widgets($path_name,subj_excl_lb)"]
+	set b_incl_obj_sel_all [Button $obj_incl_butn_f.b_incl_obj_sel_all \
+		-text "Select All" \
+		-command "Apol_Analysis_relabel::select_all_lbox_items \
+			$Apol_Analysis_relabel::widgets($path_name,class_incl_lb)"]
+	set b_excl_obj_sel_all [Button $obj_excl_butn_f.b_excl_obj_sel_all \
+		-text "Select All" \
+		-command "Apol_Analysis_relabel::select_all_lbox_items \
+			$Apol_Analysis_relabel::widgets($path_name,class_excl_lb)"]
+	set b_incl_subj_clear_all [Button $subj_incl_butn_f.b_incl_subj_clear_all \
+		-text "Unselect" \
+		-command "Apol_Analysis_relabel::clear_all_lbox_items \
+			$Apol_Analysis_relabel::widgets($path_name,subj_incl_lb)"]
+	set b_excl_subj_clear_all [Button $subj_excl_butn_f.b_excl_subj_clear_all \
+		-text "Unselect" \
+		-command "Apol_Analysis_relabel::clear_all_lbox_items \
+			$Apol_Analysis_relabel::widgets($path_name,subj_excl_lb)"]
+	set b_incl_obj_clear_all [Button $obj_incl_butn_f.b_incl_obj_clear_all \
+		-text "Unselect" \
+		-command "Apol_Analysis_relabel::clear_all_lbox_items \
+			$Apol_Analysis_relabel::widgets($path_name,class_incl_lb)"]
+	set b_excl_obj_clear_all [Button $obj_excl_butn_f.b_excl_obj_clear_all \
+		-text "Unselect" \
+		-command "Apol_Analysis_relabel::clear_all_lbox_items \
+			$Apol_Analysis_relabel::widgets($path_name,class_excl_lb)"]
 	
         pack $b_excl_classes $b_incl_classes -side top -anchor nw -pady 2 -fill x
 	pack $b_excl_subj $b_incl_subj -side top -anchor nw -pady 2 -fill x
+	pack $b_incl_subj_sel_all $b_incl_subj_clear_all -side left -anchor nw -padx 4 -fill x 
+	pack $b_excl_subj_sel_all $b_excl_subj_clear_all -side left -anchor nw -pady 2 -fill x
+	pack $b_incl_obj_sel_all $b_incl_obj_clear_all -side left -anchor nw -pady 2 -fill x
+	pack $b_excl_obj_sel_all $b_excl_obj_clear_all -side left -anchor nw -pady 2 -fill x
+	pack $obj_incl_butn_f -in $class_pane -side bottom -padx 5 -pady 2 -expand 0
+	pack $obj_excl_butn_f -in $search_pane -side bottom -padx 5 -pady 2 -expand 0
+	pack $subj_incl_butn_f -in $subj_pane -side bottom -padx 5 -pady 2 -expand 0
+	pack $subj_excl_butn_f -in $search_pane2 -side bottom -padx 5 -pady 2 -expand 0
         pack $class_pane -fill both -expand yes -side left -anchor nw
         pack $subj_pane -fill both -expand yes -side left -anchor nw
         pack $button_f -anchor center -fill x -expand yes -side left -pady 20
