@@ -24,13 +24,14 @@
 #define OLD_LOAD_POLICY_STRING "loadingpolicyconfigurationfrom"
 #define AVCMSG " avc: "
 #define LOADMSG " security: "
-#define HEADER_STRING "audit"
+#define SYSCALL_STRING "audit("
 #define BOOLMSG "committed booleans"
 #define PARSE_AVC_MSG 1
 #define PARSE_LOAD_MSG 2
 #define PARSE_BOOL_MSG 3
 #define PARSE_NON_SELINUX -1
 #define PARSE_NUM_CONTEXT_FIELDS 3
+#define PARSE_NUM_SYSCALL_FIELDS 3
 #define PARSE_NOT_MATCH -1
 #define MSG_MEMORY_ERROR -1
 #define MSG_INSERT_SUCCESS 0
@@ -65,7 +66,7 @@ static int is_selinux(char *line)
 static int avc_msg_is_token_new_audit_header(char *token) 
 {
 	assert(token != NULL);
-	if (strstr(token, HEADER_STRING)) 
+	if (strstr(token, SYSCALL_STRING)) 
 		return TRUE;
 	else 
 		return FALSE;
@@ -228,27 +229,41 @@ static unsigned int insert_time(char **tokens, msg_t *msg, int *position, int nu
 	
 }
 
-static unsigned int avc_msg_insert_audit_header(char *token, msg_t *msg)
+static unsigned int avc_msg_insert_syscall_info(char *token, msg_t *msg)
 {
-	int length;
-
+	int length, header_len = 0, i = 0;
+	char *fields[PARSE_NUM_SYSCALL_FIELDS];
+	char *time_str = NULL;
+	 
 	assert(token != NULL && msg != NULL);
 	
 	length = strlen(token);
-
 	if (length > LINE_MAX)
 		length = LINE_MAX;
+	
+	/* Chop off the ':' at the end of the syscall info token */
+	if (token[length - 1] == ':') {
+		token[length - 1] = '\0';
+		length--;
+	}
+	/* Chop off the ')' at the end of the syscall info token */
+	if (token[length - 1] == ')') {
+		token[length - 1] = '\0';
+		length--;
+	}
+	header_len = strlen(SYSCALL_STRING);
+	time_str = &token[header_len];
+	/* Parse seconds.nanoseconds:serial */
+        while ((fields[i] = strsep(&time_str, ".:")) != NULL && i < PARSE_NUM_SYSCALL_FIELDS) {
+		i++;       	       	
+        }
 
-	/* Chop off the ':' at the end of the audit header */
-	length--;
+	if (i != PARSE_NUM_SYSCALL_FIELDS)
+		return PARSE_RET_INVALID_MSG_WARN;
 
-	if ((msg->msg_data.avc_msg->audit_header = (char*) malloc((length + 1) * sizeof(char))) == NULL)
-		return PARSE_RET_MEMORY_ERROR;
-
-	strncpy(msg->msg_data.avc_msg->audit_header, token, length);
-
-	/* NULL-terminate the string since strncpy does not do this automatically */
-	msg->msg_data.avc_msg->audit_header[length] = '\0';
+	msg->msg_data.avc_msg->tm_stmp_sec = atoi(fields[0]);
+	msg->msg_data.avc_msg->tm_stmp_nano = atoi(fields[1]);
+	msg->msg_data.avc_msg->serial = atoi(fields[2]);
 
 	return PARSE_RET_SUCCESS;
 }
@@ -821,7 +836,7 @@ static unsigned int avc_msg_insert_field_data(char **tokens, msg_t *msg, audit_l
 
 	/* Insert the audit header if it exists */
 	if (avc_msg_is_token_new_audit_header(*(&tokens[position]))) {
-		ret |= avc_msg_insert_audit_header(*(&tokens[position]), msg);
+		ret |= avc_msg_insert_syscall_info(*(&tokens[position]), msg);
 		
 		if (ret == PARSE_RET_SUCCESS) {
 			position++;
