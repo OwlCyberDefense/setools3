@@ -688,10 +688,14 @@ proc Apol_Analysis_dta::render_target_type_data { data dta_info_text dta_tree no
 		incr idx
 		$dta_info_text insert end "\t"
 		set start_idx [$dta_info_text index insert]
-		$dta_info_text insert end "($lineno) "
-		set end_idx [$dta_info_text index insert]
-		Apol_PolicyConf::insertHyperLink $dta_info_text "$start_idx wordstart + 1c" "$start_idx wordstart + [expr [string length $lineno] + 1]c"
-		set start_idx $end_idx
+		
+		# Only display line number hyperlink if this is not a binary policy.
+		if {$ApolTop::policy_type != $ApolTop::binary_policy_type} {
+			$dta_info_text insert end "($lineno) "
+			set end_idx [$dta_info_text index insert]
+			Apol_PolicyConf::insertHyperLink $dta_info_text "$start_idx wordstart + 1c" "$start_idx wordstart + [expr [string length $lineno] + 1]c"
+			set start_idx $end_idx
+		}
 		$dta_info_text insert end "$rule"
 		set end_idx [$dta_info_text index insert]
 		$dta_info_text tag add $Apol_Analysis_dta::rules_tag $start_idx $end_idx
@@ -746,11 +750,15 @@ proc Apol_Analysis_dta::render_target_type_data { data dta_info_text dta_tree no
 			incr idx
 			$dta_info_text insert end "\t\t"
 			set start_idx [$dta_info_text index insert]
-			$dta_info_text insert end "($lineno) "
-			set end_idx [$dta_info_text index insert]
-			Apol_PolicyConf::insertHyperLink $dta_info_text "$start_idx wordstart + 1c" "$start_idx wordstart + [expr [string length $lineno] + 1]c"
-			set start_idx $end_idx
-			$dta_info_text insert end "$rule\n"
+			
+			# Only display line number hyperlink if this is not a binary policy.
+			if {$ApolTop::policy_type != $ApolTop::binary_policy_type} {
+				$dta_info_text insert end "($lineno) "
+				set end_idx [$dta_info_text index insert]
+				Apol_PolicyConf::insertHyperLink $dta_info_text "$start_idx wordstart + 1c" "$start_idx wordstart + [expr [string length $lineno] + 1]c"
+				set start_idx $end_idx
+			}
+			$dta_info_text insert end "$rule"
 			set end_idx [$dta_info_text index insert]
 			$dta_info_text tag add $Apol_Analysis_dta::rules_tag $start_idx $end_idx
 			
@@ -784,11 +792,15 @@ proc Apol_Analysis_dta::render_target_type_data { data dta_info_text dta_tree no
 			incr idx
 			$dta_info_text insert end "\t\t"
 			set start_idx [$dta_info_text index insert]
-			$dta_info_text insert end "($lineno) "
-			set end_idx [$dta_info_text index insert]
-			Apol_PolicyConf::insertHyperLink $dta_info_text "$start_idx wordstart + 1c" "$start_idx wordstart + [expr [string length $lineno] + 1]c"
-			set start_idx $end_idx
-			$dta_info_text insert end "$rule\n"
+			
+			# Only display line number hyperlink if this is not a binary policy.
+			if {$ApolTop::policy_type != $ApolTop::binary_policy_type} {
+				$dta_info_text insert end "($lineno) "
+				set end_idx [$dta_info_text index insert]
+				Apol_PolicyConf::insertHyperLink $dta_info_text "$start_idx wordstart + 1c" "$start_idx wordstart + [expr [string length $lineno] + 1]c"
+				set start_idx $end_idx
+			}
+			$dta_info_text insert end "$rule"
 			set end_idx [$dta_info_text index insert]
 			$dta_info_text tag add $Apol_Analysis_dta::rules_tag $start_idx $end_idx
 			
@@ -804,8 +816,6 @@ proc Apol_Analysis_dta::render_target_type_data { data dta_info_text dta_tree no
 				$dta_info_text insert end "\n"
 			}
 		}
-
-		$dta_info_text insert end "\n"
 	}
 	$dta_info_text configure -state disabled
 	return 0

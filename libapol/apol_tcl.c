@@ -3311,7 +3311,7 @@ int Apol_GetTypeInfo(ClientData clientData, Tcl_Interp *interp, int argc, char *
 	Tcl_DStringInit(buf);	
 	if(!use_srchstr) {	
 		if(do_types) {
-			sprintf(tmpbuf, "\n\nTYPES (%d):\n", policy->num_types);
+			sprintf(tmpbuf, "TYPES (%d):\n", policy->num_types);
 			Tcl_DStringAppend(buf, tmpbuf, -1);
 			for(i = 0; i < policy->num_types; i++) {
 				rt = append_type_str(type_attribs, use_aliases, 1, i, policy, buf);
@@ -3325,7 +3325,11 @@ int Apol_GetTypeInfo(ClientData clientData, Tcl_Interp *interp, int argc, char *
 		}
 		
 		if(do_attribs) {
-			sprintf(tmpbuf, "\n\nTYPE ATTRIBUTES (%d):\n", policy->num_attribs);
+			if(do_types) 
+				sprintf(tmpbuf, "\n\nTYPE ATTRIBUTES (%d):\n", policy->num_attribs);
+			else 
+				sprintf(tmpbuf, "TYPE ATTRIBUTES (%d):\n", policy->num_attribs);
+				
 			Tcl_DStringAppend(buf, tmpbuf, -1);
 			for(i = 0; i < policy->num_attribs; i++) {
 				sprintf(tmpbuf, "%d: ", i+1);
