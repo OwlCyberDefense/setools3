@@ -1131,12 +1131,16 @@ int main (int argc, char **argv)
 	printf("   p1 (%6s, ver: %2d): %s\n", policy_type(diff->p1), get_policy_version_num(diff->p1), p1_file);
 	printf("   p2 (%6s, ver: %2d): %s\n\n", policy_type(diff->p2), get_policy_version_num(diff->p2), p2_file);
 	
-	if((types || all) && !(quiet && (diff->diff1->num_types == 0 && diff->diff2->num_types == 0))) {
-		print_type_diffs(stdout, diff);
-		printf("\n");
-		print_attrib_diffs(stdout, diff);
-		if(!apol_is_bindiff(diff))
+	if(types || all) {
+		if (!(quiet && (diff->diff1->num_types == 0 && diff->diff2->num_types == 0))) {
+			print_type_diffs(stdout, diff);
 			printf("\n");
+		}
+		if (!(quiet && (diff->diff1->num_attribs == 0 && diff->diff2->num_attribs == 0))) {
+			print_attrib_diffs(stdout, diff);
+			if(!apol_is_bindiff(diff))
+				printf("\n");
+		}
 	}
 	if((roles || all) && !(quiet && (diff->diff1->num_roles == 0 && diff->diff2->num_roles == 0))) {
 		print_role_diffs(stdout, diff);
@@ -1150,13 +1154,19 @@ int main (int argc, char **argv)
 		print_boolean_diffs(stdout, diff);
 		printf("\n");
 	}
-	if((classes || all) && !(quiet && (diff->diff1->num_classes == 0 && diff->diff2->num_classes == 0))) {
-		print_classes_diffs(stdout, diff);
-		printf("\n");
-		print_perms_diffs(stdout, diff);
-		printf("\n");
+	if(classes || all)  {
+		if (!(quiet && (diff->diff1->num_classes == 0 && diff->diff2->num_classes == 0))) {
+			print_classes_diffs(stdout, diff);
+			printf("\n");
+		}
+		if (!(quiet && (diff->diff1->num_perms == 0 && diff->diff2->num_perms == 0))) {
+			print_perms_diffs(stdout, diff);
+			printf("\n");
+		}
+		if (!(quiet && (diff->diff1->num_common_perms == 0 && diff->diff2->num_common_perms == 0))) {
 		print_common_perms_diffs(stdout, diff);
 		printf("\n");
+		}
 	}
 	if((rbac || all) && !(quiet && (diff->diff1->num_role_allow == 0 && diff->diff2->num_role_allow == 0))) {
 		print_rbac_diffs(stdout, diff);
