@@ -118,45 +118,30 @@ proc Apol_Analysis::delete_ResultsTab { pageID } {
         variable keepmodselect
 		
         if { [$results_notebook index $Apol_Analysis::emptyTabID] != [$results_notebook index $pageID] } {
-        	$bClose configure -state disabled
-        	update
+		$bClose configure -state disabled
+		update
 		# Get previous page index.
 		set prevPageIdx [expr [$results_notebook index $pageID] - 1]
 		set results_frame [Apol_Analysis::get_results_frame $pageID]
 		Apol_Analysis::clear_results_frame $results_frame $pageID
 		# Remove tab and its' widgets; then decrement current tab counter
 		$results_notebook delete $pageID 
-    		set currTabCount [expr $currTabCount - 1]
-     		
-    		# Raise the previous page.  If keepmodselected then raise empty tab
-		if { $prevPageIdx >= 0 } {
-		    if { $Apol_Analysis::keepmodselect } {
-			set raised [$results_notebook raise [$results_notebook page 0]]
-		    } else {
-			set raised [$results_notebook raise [$results_notebook page $prevPageIdx]]
-		    }
-		} else { 
-		    set raised [$results_notebook raise [$results_notebook page 0]]
-		}
-		if {$raised == $Apol_Analysis::emptyTabID} {
-		    Apol_Analysis::clear_options_frame $opts_frame
-		    Apol_Analysis::display_mod_options $curr_analysis_module $opts_frame
-		    $updateButton configure -state disabled
-		    return 0
-		}
-    		# Set the search option widgets according to the now raised results tab.
-		# Only redraw the options frame if this is a new analysis type. 
-		if { $analysis_results_array($raised,mod_name) != $analysis_results_array($pageID,mod_name) } {
-			set curr_analysis_module $analysis_results_array($raised,mod_name)
-			Apol_Analysis::clear_options_frame $opts_frame
-			Apol_Analysis::display_mod_options $curr_analysis_module $opts_frame 	 	
-		}
+		set currTabCount [expr $currTabCount - 1]
+		
 		# Remove the deleted tabs information from the content array
-    		array unset analysis_results_array "$pageID,*"
-    		set tab_deleted_flag 1
-    		Apol_Analysis::switch_results_tab $raised
-    		set tab_deleted_flag 0
-    		$bClose configure -state normal
+		array unset analysis_results_array "$pageID,*"
+		     		
+		# Raise the empty tab.  
+		set raised [$results_notebook raise [$results_notebook page 0]]
+		# The following 2 lines are disabled in this release to prevent reinitializing query criteria.
+		#Apol_Analysis::clear_options_frame $opts_frame
+		#Apol_Analysis::display_mod_options $curr_analysis_module $opts_frame
+		$updateButton configure -state disabled
+		
+		set tab_deleted_flag 1
+		Apol_Analysis::switch_results_tab $raised
+		set tab_deleted_flag 0
+		$bClose configure -state normal
 	} 
      	update
     	return 0
