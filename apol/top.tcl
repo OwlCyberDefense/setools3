@@ -1821,6 +1821,29 @@ proc ApolTop::open_apol_modules {file} {
  }
  
 proc ApolTop::enable_disable_conditional_widgets {enable} {
+	set tab [$ApolTop::notebook raise] 
+	switch -exact -- [ApolTop::get_tabname $tab] \
+		$ApolTop::components_tab {
+			if {[ApolTop::get_tabname [$ApolTop::components_nb raise]] == $ApolTop::cond_bools_tab} {
+				if {$enable} {
+					$ApolTop::components_nb raise $ApolTop::cond_bools_tab
+				} else {
+					$ApolTop::components_nb raise [$ApolTop::components_nb pages 0]
+				}
+			}				
+		} \
+		$ApolTop::rules_tab {
+			if {[ApolTop::get_tabname [$ApolTop::rules_nb raise]] == $ApolTop::cond_rules_tab} {
+				if {$enable} {
+					$ApolTop::rules_nb raise $ApolTop::cond_rules_tab
+				} else {
+					$ApolTop::rules_nb raise [$ApolTop::rules_nb pages 0]
+				}
+			}
+		} \
+		default { 
+		}
+		
 	if {$enable} {
 		$ApolTop::components_nb itemconfigure $ApolTop::cond_bools_tab -state normal
 		$ApolTop::rules_nb itemconfigure $ApolTop::cond_rules_tab -state normal
@@ -1828,6 +1851,7 @@ proc ApolTop::enable_disable_conditional_widgets {enable} {
 		$ApolTop::components_nb itemconfigure $ApolTop::cond_bools_tab -state disabled
 		$ApolTop::rules_nb itemconfigure $ApolTop::cond_rules_tab -state disabled
 	}
+			
 	Apol_TE::enable_disable_conditional_widgets $enable
 	return 0
 }
@@ -1837,10 +1861,10 @@ proc ApolTop::set_initial_open_policy_state {} {
 	if {$rt != 0} {
 		return -code error $err
 	}
-	
+
 	if {$version_num < 16} {
 		ApolTop::enable_disable_conditional_widgets 0
-	}
+	} 
 	
 	if {$ApolTop::policy_type == $ApolTop::binary_policy_type} {
    		$ApolTop::components_nb itemconfigure $ApolTop::initial_sids_tab -state disabled
