@@ -65,7 +65,7 @@ void usage(const char *program_name, int brief)
 {
 	int size;
 	char **array = NULL;
-	printf("%s (listcon ver. %s)\n\n", COPYRIGHT_INFO, SEARCHCON_VERSION_NUM);
+	printf("%s (searchcon ver. %s)\n\n", COPYRIGHT_INFO, SEARCHCON_VERSION_NUM);
 	printf("Usage: %s <index file> [OPTIONS]\n", program_name);
 	if(brief) {
 		printf("\n   Try %s --help for more help.\n\n", program_name);
