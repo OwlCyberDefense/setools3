@@ -16,7 +16,7 @@
 #include "fbuf.h"
 #include "borrowed.h"
 #include "bpmaps.h"
-#include "ebitmap.c"
+#include "ebitmap.h"
 #include "../policy.h"
 #include "../policy-io.h"
 #include "../util.h"
