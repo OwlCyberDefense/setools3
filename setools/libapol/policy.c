@@ -2913,7 +2913,7 @@ int get_cond_bool_default_val(const char *name, bool_t *val, policy_t *policy)
 }
 
 int get_cond_bool_val_idx(int idx, bool_t *val, policy_t *policy) {
-	if(val == NULL || is_valid_cond_bool_idx(idx, policy))
+	if(val == NULL || !is_valid_cond_bool_idx(idx, policy))
 		return -1;
 	
 	*val = policy->cond_bools[idx].state; 
@@ -2921,7 +2921,7 @@ int get_cond_bool_val_idx(int idx, bool_t *val, policy_t *policy) {
 }
 
 int get_cond_bool_default_val_idx(int idx, bool_t *val, policy_t *policy) {
-	if(val == NULL || is_valid_cond_bool_idx(idx, policy))
+	if(val == NULL || !is_valid_cond_bool_idx(idx, policy))
 		return -1;
 	
 	*val = policy->cond_bools[idx].default_state; 
