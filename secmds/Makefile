@@ -7,21 +7,17 @@ ifeq ($(DEBUG), 1)
 LIBAPOL		= ../libapol/libapol.a
 LIBSEFS		= ../libsefs/libsefs.a
 LIBSEUSER	= ../libseuser/libseuser.a
-LIBSEAUDIT	= ../libseaudit/libseaudit.a
 else
 LIBAPOL		= ../libapol/libapol.so.$(shell cat ../libapol/VERSION)
 LIBSEFS		= ../libsefs/libsefs.so.$(shell cat ../libsefs/VERSION)
 LIBSEUSER	= ../libseuser/libseuser.so.$(shell cat ../libseuser/VERSION)
-LIBSEAUDIT	= ../libseaudit/libseaudit.so.$(shell cat ../libseaudit/VERSION)
 endif
 
 LIBSELINUX      = -lselinux
-LIBXML_FLAGS    = `pkg-config --cflags libxml-2.0`
-LIBXML_LIBS     = `pkg-config --libs libxml-2.0`
 
-INCLUDE		= -I.. -I../libapol -I../libsefs -I../libseaudit
+INCLUDE		= -I.. -I../libapol -I../libsefs
 
-SE_CMDS		= seinfo sesearch replcon findcon indexcon searchcon seaudit-report
+SE_CMDS		= seinfo sesearch replcon findcon indexcon searchcon
 
 CFLAGS  	+= -DSEINFO_VERSION_NUM='"$(shell cat SEINFO_VERSION)"'
 CFLAGS  	+= -DSESEARCH_VERSION_NUM='"$(shell cat SESEARCH_VERSION)"'
@@ -29,11 +25,7 @@ CFLAGS          += -DREPLCON_VERSION_NUM='"$(shell cat REPLCON_VERSION)"'
 CFLAGS          += -DFINDCON_VERSION_NUM='"$(shell cat FINDCON_VERSION)"'
 CFLAGS          += -DINDEXCON_VERSION_NUM='"$(shell cat INDEXCON_VERSION)"'
 CFLAGS          += -DSEARCHCON_VERSION_NUM='"$(shell cat SEARCHCON_VERSION)"'
-CFLAGS          += -DSEREPORT_VERSION_NUM='"$(shell cat SEREPORT_VERSION)"'
 
-SEAUDIT_REPORT_CONF_FILE = seaudit-report.conf
-SEAUDIT_REPORT_STYLESHEET = seaudit-report.css
-SEAUDIT_REPORT_CONF_INSTALL_DIR = $(DESTDIR)/etc
 SHELL = /bin/sh
 
 all: $(SE_CMDS)
@@ -67,18 +59,9 @@ findcon.o: replcon.c
 
 findcon: findcon.o
 	$(CC) -o $@ findcon.o $(LINKFLAGS) $(LIBSELINUX)
-
-seaudit-report.o: seaudit-report.c
-	$(CC) -c seaudit-report.c $(CFLAGS) $(LIBXML_FLAGS) $(INCLUDE)
-
-seaudit-report: seaudit-report.o $(LIBAPOL) $(LIBSEAUDIT)
-	$(CC) $(INCLUDE) -o $@ seaudit-report.o $(LINKFLAGS) $(LIBSEAUDIT) $(LIBAPOL) $(LIBXML_LIBS) $(LIBS)
-
+	
 install: $(SE_CMDS)
 	install -m 755 $(SE_CMDS) $(BINDIR);
-	install -m 644 $(SEAUDIT_REPORT_CONF_FILE) $(SEAUDIT_REPORT_CONF_INSTALL_DIR)
-	install -m 755 -d $(INSTALL_LIBDIR)/secmds
-	install -m 644 $(SEAUDIT_REPORT_STYLESHEET) $(INSTALL_LIBDIR)/secmds
 
 install-policy:
 	-@if [ -e $(BINDIR)/replcon ]; then \
@@ -99,9 +82,6 @@ $(LIBSEFS):
 
 $(LIBSEUSER):
 	cd ../ ; $(MAKE) libseuser
-
-$(LIBSEAUDIT):
-	cd ../ ; $(MAKE) libseaudit
 
 $(LIBSEUSER-TCL):
 	cd ../ ; $(MAKE) libseuser-tcl
