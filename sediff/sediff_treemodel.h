@@ -25,13 +25,13 @@
 /* defines for the sediff options */
 #define OPT_CLASSES 		0
 #define OPT_TYPES 		1
-#define OPT_ROLES		2
-#define OPT_USERS		3
-#define OPT_BOOLEANS 		4
-#define OPT_SIDS 		5
+#define OPT_ATTRIBUTES          2
+#define OPT_ROLES		3
+#define OPT_USERS		4
+#define OPT_BOOLEANS 		5
 #define OPT_TE_RULES		6
 #define OPT_RBAC_RULES		7
-#define OPT_CONDITIONALS	8
+
 
 /* The data columns that we export via the tree model interface */
 enum
