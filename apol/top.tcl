@@ -1125,9 +1125,12 @@ proc ApolTop::writeInitFile { } {
 	}
 	puts $f "recent_files"
 	puts $f $num_recent_files
-	for {set i 0 } {$i < $num_recent_files} {incr i } {
-		puts $f $recent_files($i)
-	}
+	for {set i 0} {$i < $num_recent_files} {incr i} {
+ 		puts $f $recent_files($i)
+ 	}
+	# free the recent files array
+	array unset recent_files
+
 	puts $f "\n"
 	puts $f "# Font format: family ?size? ?style? ?style ...?"
 	puts $f "# Possible values for the style arguments are as follows:"
@@ -1373,7 +1376,7 @@ proc ApolTop::addRecent {file} {
     	variable max_recent_files
     	variable most_recent_file
     	
-    	if {$num_recent_files<$max_recent_files} {
+    	if {$num_recent_files < $max_recent_files} {
     		set x $num_recent_files
     		set less_than_max 1
     	} else {
@@ -1382,12 +1385,12 @@ proc ApolTop::addRecent {file} {
     	}
 	
 	# First check if already in recent file list
-	for {set i 0} {$i<$x } {incr i} {
-		if {$file == $recent_files($i) } {
-			return
-		}
+	for {set i 0} {$i < $x } {incr i} {
+		if {[string equal $file $recent_files($i)]} {
+ 			return
+ 		}
 	}
-	if {$num_recent_files<$max_recent_files} {
+	if {$num_recent_files < $max_recent_files} {
 		#list not full, just add to list and insert into menu
 		set recent_files($num_recent_files) $file
 		[$mainframe getmenu recent] insert 0 command -label "$recent_files($num_recent_files)" -command "ApolTop::openPolicyFile $recent_files($num_recent_files) 0"
