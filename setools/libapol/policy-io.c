@@ -298,24 +298,28 @@ int find_default_policy_file(unsigned int search_opt, char **policy_file_path)
 	if (rt != 0) {
 		return NOT_SELINUX_AWARE;
      	}    
+     	
+	/* Try default source policy first as a source  
+	 * policy contains more  useful information. */
+	if (search_opt & POL_TYPE_SOURCE) {
+		rt = search_policy_src_file(policy_file_path);
+		if (rt == FIND_DEFAULT_SUCCESS) {
+	     		return FIND_DEFAULT_SUCCESS;	
+	     	}
+	     	/* Only continue if a source policy couldn't be found. */
+	     	if (rt != SRC_POL_FILE_DOES_NOT_EXIST) {
+	     		return rt;	
+	     	}  
+	}
+	
 	/* Try a binary policy */
         if (search_opt & POL_TYPE_BINARY) {
 	     	rt = search_binary_policy_file(policy_file_path);
-	     	if (rt == FIND_DEFAULT_SUCCESS) {
-	     		return FIND_DEFAULT_SUCCESS;	
-	     	}
-	     	/* Only continue if a binary policy couldn't be found. */
-	     	if (rt != BIN_POL_FILE_DOES_NOT_EXIST) {
-	     		return rt;	
-	     	}  	
-	} 
-	/* Try default source policy */
-	if (search_opt & POL_TYPE_SOURCE) {
-		rt = search_policy_src_file(policy_file_path);
-		if (rt != FIND_DEFAULT_SUCCESS) {
+	     	if (rt != FIND_DEFAULT_SUCCESS) {
 	     		return rt;
-	     	}
-	}
+	     	}	
+	} 
+	
 	return rt;
 }
 
