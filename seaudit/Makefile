@@ -1,4 +1,4 @@
-OBJS	          = auditlogmodel.o seaudit.o query_window.o filter_window.o utilgui.o preferences.o seaudit_window.o seaudit_callback.o filtered_view.o
+OBJS	          = auditlogmodel.o seaudit.o query_window.o filter_window.o multifilter_window.o utilgui.o preferences.o seaudit_window.o seaudit_callback.o filtered_view.o
 INCLUDE           = -I.. -I../libseaudit
 GTK_CFLAGS        = `pkg-config --cflags libglade-2.0`
 GTK_LIBS          = `pkg-config --libs libglade-2.0`
