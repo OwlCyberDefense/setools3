@@ -1,4 +1,4 @@
-/* Copyright (C) 2001-2003 Tresys Technology, LLC
+/* Copyright (C) 2001-2004 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
 
 /* 
@@ -51,6 +51,7 @@
 #include "queue.h"
 #include "policy.h"
 #include "cond.h"
+#include <assert.h>
 
 queue_t id_queue = 0;
 unsigned int pass;
@@ -126,7 +127,7 @@ static int define_role_allow(void);
 static int define_constraint(void);
 static constraint_expr_t *define_cexpr(__u32 expr_type, __u32 arg1, __u32 arg2);
 static int define_user(void);
-static int parse_security_context(void);
+static security_context_t *parse_security_context(int dontsave);
 static int define_initial_sid_context(void);
 static int define_devfs_context(int has_type);
 static int define_fs_context(int ver);
@@ -974,15 +975,14 @@ static int define_type(int alias)
 	}
 	
 	/* On first call we add the psuedo type 'self' to the list as the first entry */
-	if(parse_policy->fresh_pol) {
-		parse_policy->fresh_pol = FALSE;
+	if(parse_policy->num_types == 0) {
 		id = (char *)malloc(5);
 		if(id == NULL) {
 			yyerror("out of memory");
 			return -1;
 		}
 		strcpy(id, "self");
-		idx = add_type	(id, parse_policy);
+		idx = add_type(id, parse_policy);
 		if(idx < 0)
 			return -1;
 	}
@@ -1501,54 +1501,57 @@ static int define_te_clone(void)
 
 static int define_role_types(void)
 {
-	char *id;
-	int idx, rt;
-	role_item_t *role;
-	bool_t exists;
+	char *id, *or_name;
+	int role_idx, idx, rt;
 
 	if (pass == 1 || (pass == 2 && !(parse_policy->opts & POLOPT_ROLES))) {
 		while ((id = queue_remove(id_queue))) 
 			free(id);
 		return 0;
 	}
-	
-	if(parse_policy->num_roles >= parse_policy->list_sz[POL_LIST_ROLES]) {
-		/* grow the dynamic array */
-		role_item_t * ptr;		
-			ptr = (role_item_t *)realloc(parse_policy->roles, (LIST_SZ+parse_policy->list_sz[POL_LIST_ROLES]) * sizeof(role_item_t));
-		if(ptr == NULL) {
-			yyerror("out of memory\n");
-			return -1;
-		}
-		parse_policy->roles = ptr;
-		parse_policy->list_sz[POL_LIST_ROLES] += LIST_SZ;
-	}	
+
 	id = (char *) queue_remove(id_queue);
 	if (!id) {
 		yyerror("no role name for role definition?");
 		return -1;
-	}	
-	/* if the role already exists, we'll just add the new type, otherwise
-	 * we create new role */
-	idx = get_role_idx(id, parse_policy);
-	if(idx < 0) {
-		exists = FALSE;
-		if(!is_valid_str_sz(id) ) {
-			sprintf(errormsg, "string \"%s\" exceeds APOL_SZ_SIZE", id);
-			yyerror(errormsg);
-			return -1;
-		}
-		role = &(parse_policy->roles[parse_policy->num_roles]);
-		role->name = id;	/* don't free id if new */
-		role->num_types = 0;
-		role->types = NULL;
 	}
-	else {
-		exists = TRUE;
-		role = &(parse_policy->roles[idx]);
-		free(id);
+	if(!is_valid_str_sz(id) ) {
+		sprintf(errormsg, "string \"%s\" is too large", id);
+		yyerror(errormsg);
+		return -1;
 	}
 	
+	/* If this is the first role to be added, then add the hard-coded
+	 * default object role "object_r" as it will not show up in the policy */
+	if(parse_policy->num_roles < 1) {
+		#define OR_NAME "object_r"
+		or_name = (char *)malloc(strlen(OR_NAME) + 1);
+		strcpy(or_name, OR_NAME);
+		role_idx = add_role(or_name, parse_policy);
+		if(role_idx < 0) {
+			yyerror("Problem adding object role object_r to policy");
+			free(id);
+			return -1;
+		}
+		assert(role_idx == 0);
+	}
+	
+	/* if the role already exists, we'll just add the new type, otherwise
+	 * we create new role */
+	role_idx = get_role_idx(id, parse_policy);
+	if(role_idx < 0) {
+		role_idx = add_role(id, parse_policy);
+		/* don't free id if we added it; the add_role type uses the memory */
+		if(role_idx < 0) {
+			sprintf(errormsg, "Problem adding role %s to policy", id);
+			yyerror(errormsg);
+			free(id);
+			return -1;
+		}
+	}
+	else 
+		/* get rid of the role name if it alrady exists */
+		free(id);
 		
 	while ((id = queue_remove(id_queue))) {
 		idx = get_type_idx(id, parse_policy);
@@ -1557,14 +1560,12 @@ static int define_role_types(void)
 			yyerror(errormsg);
 			return -1;
 		}
-		rt = add_type_to_role(idx, role);
+		rt = add_type_to_role(idx, role_idx, parse_policy);
 		if(rt != 0)
 			return rt;
 		free(id);	
 	}
-	if(!exists) {
-		(parse_policy->num_roles)++;
-	}
+
 	return 0;
 }
 
@@ -2241,6 +2242,192 @@ static int define_cond_te_avtab()
 #endif
 }
 
+
+static int define_initial_sid(void)
+{
+	char *id = 0;
+	int idx;
+	
+	if (pass == 2 ||(pass == 1 && !(parse_policy->opts & POLOPT_INITIAL_SIDS))) {
+		id = queue_remove(id_queue);
+		free(id);
+		return 0;
+	}
+	
+	/* add initial SID name; context will be added in define_initial_sid_context() */
+	id = (char *) queue_remove(id_queue);
+	if (!id) {
+		yyerror("no name for SID definition?");
+		free(id);
+		return -1;
+	}
+	if(!is_valid_str_sz(id)) {
+		sprintf(errormsg, "string \"%s\" exceeds APOL_SZ_SIZE", id);
+		yyerror(errormsg);
+		free(id);
+		return -1;
+	}
+	idx = add_initial_sid(id, parse_policy);
+	if(idx == -2) {
+		sprintf(errormsg, "duplicate initial SID decalaration (%s)\n", id);
+		yyerror(errormsg);
+		return -1;
+	}
+	else if(idx < 0)
+		return -1;
+			
+	return 0;
+}
+
+/* If dontsave, then just clear the queue and return NULL (the return
+ * should be ignored in this case).  Otherwise, allocate a context
+ * structure and return it, or NULL for error
+ */
+static security_context_t *parse_security_context(int dontsave)
+{
+	char *id;
+	user_item_t *user;
+	int rt; 
+	security_context_t *scontext;
+	
+	if (pass == 1 || dontsave) {
+		id = queue_remove(id_queue);  /* user  */
+		free(id);
+		id = queue_remove(id_queue);  /* role  */
+		free(id);
+		id = queue_remove(id_queue);  /* type  */
+		free(id);
+#ifdef CONFIG_SECURITY_SELINUX_MLS
+		{
+		int l;
+		id = queue_remove(id_queue); free(id); 
+		for (l = 0; l < 2; l++) {
+			while ((id = queue_remove(id_queue))) {
+				free(id);
+			}
+		}
+		}
+#endif 
+	return NULL; /* In this case this is not an error */
+	}
+	
+	scontext = (security_context_t *)malloc(sizeof(security_context_t));
+	if(scontext == NULL) {
+		yyerror("out of memory");
+		return NULL;
+	}
+	/* user */
+	id = queue_remove(id_queue);
+	if (!id) {
+		yyerror("Security context missing user?");
+		free(scontext);
+		return NULL;
+	}
+	rt = get_user_by_name(id, &user, parse_policy);
+	if(rt != 0) {
+		sprintf(errormsg, "User %s is not defined in policy.", id);
+		yyerror(errormsg);
+		free(id);
+		free(scontext);
+		return NULL;
+	}
+	free(id);
+	scontext->user = user;
+	
+	/* role */
+	id = queue_remove(id_queue);
+	if (!id) {
+		yyerror("Security context missing role?");
+		free(scontext);
+		return NULL;
+	}			
+	rt = get_role_idx(id, parse_policy);
+	if(rt < 0) {
+		sprintf(errormsg, "Role %s is not defined in policy.", id);
+		yyerror(errormsg);
+		free(id);
+		free(scontext);
+		return NULL;
+	}
+	free(id);
+	scontext->role = rt;
+	
+	/* type */
+	id = queue_remove(id_queue);
+	if (!id) {
+		yyerror("Security context missing type?");
+		free(scontext);
+		return NULL;
+	}			
+	rt = get_type_idx(id, parse_policy);
+	if(rt < 0) {
+		sprintf(errormsg, "Type %s is not defined in policy.", id);
+		yyerror(errormsg);
+		free(id);
+		free(scontext);
+		return NULL;
+	}
+	free(id);
+	scontext->type = rt;	
+	
+#ifdef CONFIG_SECURITY_SELINUX_MLS
+	{
+	int l;
+	id = queue_remove(id_queue); free(id); 
+	for (l = 0; l < 2; l++) {
+		while ((id = queue_remove(id_queue))) {
+			free(id);
+		}
+	}
+	}
+#endif 	
+	return scontext;
+}
+
+
+static int define_initial_sid_context(void)
+{
+	char *id;
+	int idx;
+	security_context_t *scontext;
+
+	if (pass == 1) {
+		id = (char *) queue_remove(id_queue); 
+		parse_security_context(1);
+		free(id);
+		return 0;
+	}
+
+	id = (char *) queue_remove(id_queue);
+	if (!id) {
+		yyerror("no sid name for SID context definition?");
+		return -1;
+	}
+	if(!is_valid_str_sz(id)) {
+		sprintf(errormsg, "string \"%s\" exceeds APOL_SZ_SIZE", id);
+		yyerror(errormsg);
+		free(id);
+		return -1;
+	}
+	idx = get_initial_sid_idx(id, parse_policy);
+	if(idx < 0) {
+		sprintf(errormsg, "%s is not a valid initial SID name", id);
+		yyerror(errormsg);
+		free(id);
+		return -1;
+	}
+	free(id);
+	scontext = parse_security_context(0);
+	if(scontext == NULL) 
+		return -1;
+	if(add_initial_sid_context(idx, scontext, parse_policy) != 0) {
+		yyerror("problem adding security context to Initial SID");
+		return -1;
+	}		
+	
+	return 0;
+}
+
 /************************************************************************
  *
  * Until we decide to include these additional statments in the analysis
@@ -2248,14 +2435,6 @@ static int define_cond_te_avtab()
  *
  ************************************************************************/
 
-
-static int define_initial_sid(void)
-{
-	char *id = 0;
-	id = queue_remove(id_queue);
-	free(id);
-	return 0;
-}
 
 
 static int define_sens(void)
@@ -2381,37 +2560,7 @@ static constraint_expr_t *
 }
 
 
-static int parse_security_context(void)
-{
-	char *id;
-	id = queue_remove(id_queue);  /* user  */
-	free(id);
-	id = queue_remove(id_queue);  /* role  */
-	free(id);
-	id = queue_remove(id_queue);  /* type  */
-	free(id);
-#ifdef CONFIG_SECURITY_SELINUX_MLS
-	{
-	int l;
-	id = queue_remove(id_queue); free(id); 
-	for (l = 0; l < 2; l++) {
-		while ((id = queue_remove(id_queue))) {
-			free(id);
-		}
-	}
-	}
-#endif 
-	return 0;
-}
 
-static int define_initial_sid_context(void)
-{
-	char *id;
-	id = (char *) queue_remove(id_queue); 
-	free(id);
-	parse_security_context();
-	return 0;
-}
 
 static int define_fs_context(int ver)
 {
@@ -2422,8 +2571,8 @@ static int define_fs_context(int ver)
 		yyerror("error setting policy version");
 		return -1;
 	}
-	parse_security_context();
-	parse_security_context();
+	parse_security_context(1);
+	parse_security_context(1);
 	return 0;
 }
 
@@ -2440,7 +2589,7 @@ static int define_port_context(int ver)
 	}
 	id = (char *) queue_remove(id_queue); 
 	free(id);
-	parse_security_context();
+	parse_security_context(1);
 	return 0;
 }
 
@@ -2454,8 +2603,8 @@ static int define_netif_context(int ver)
 		return -1;
 	}
 	free(queue_remove(id_queue));
-	parse_security_context();
-	parse_security_context();
+	parse_security_context(1);
+	parse_security_context(1);
 	return 0;
 }
 
@@ -2468,7 +2617,7 @@ static int define_node_context(int ver)
 		yyerror("error setting policy version");
 		return -1;
 	}
-	parse_security_context();
+	parse_security_context(1);
 	return 0;
 }
 
@@ -2486,7 +2635,7 @@ static int define_devfs_context(int has_type)
 	free(queue_remove(id_queue));
 	if (has_type)
 		free(queue_remove(id_queue));
-	parse_security_context();
+	parse_security_context(1);
 	return 0;
 }
 /* removed Jul 2002 */
@@ -2500,7 +2649,7 @@ static int define_nfs_context(void)
 		yyerror("error setting policy version");
 		return -1;
 	}
-	parse_security_context();
+	parse_security_context(1);
 	return 0;
 }
 
@@ -2517,7 +2666,7 @@ static int define_fs_use(int behavior, int ver)
 	}
 	free(queue_remove(id_queue));
 	if(behavior != 0)
-		parse_security_context();
+		parse_security_context(1);
 	return 0;
 
 }
@@ -2536,7 +2685,7 @@ static int define_genfs_context_helper(char *fstype, int has_type)
 	free(queue_remove(id_queue));
 	if (has_type)
 		free(queue_remove(id_queue));
-	parse_security_context();
+	parse_security_context(1);
 	return 0;
 }
 
