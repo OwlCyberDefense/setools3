@@ -451,8 +451,28 @@ proc Apol_Analysis::switch_results_tab { tabID } {
 	Apol_Analysis::set_display_to_results_state $curr_analysis_module $analysis_results_array($tabID,query)
      	set raised_tab_analysis_type $curr_analysis_module
    	$results_notebook raise $tabID
+   	Apol_Analysis::set_Focus_to_Text $tabID
+   	
      	return 0
 } 
+
+# ----------------------------------------------------------------------------------------
+#  Command Apol_Analysis::set_Focus_to_Text
+# ----------------------------------------------------------------------------------------
+proc Apol_Analysis::set_Focus_to_Text { tab } {
+	variable results_notebook
+	variable analysis_results_array
+	
+	if {$tab == $Apol_Analysis::emptyTabID} {
+		return	
+	}
+	if {[array exists analysis_results_array]} {
+		set curr_analysis_module $analysis_results_array($tab,mod_name)
+	   	focus -force [${curr_analysis_module}::get_results_raised_tab]
+	}
+		
+	return 0
+}
 
 # ------------------------------------------------------------------------------
 #  Command Apol_Analysis::store_current_results_state
@@ -604,6 +624,15 @@ proc Apol_Analysis::register_analysis_modules { mod_name desc_name } {
 proc Apol_Analysis::get_analysis_info {mod_name} {
 	set d_text [${mod_name}::get_analysis_info]
      	return $d_text
+} 
+
+# ------------------------------------------------------------------------------
+#  Command Apol_Analysis::get_results_raised_tab
+# ------------------------------------------------------------------------------
+proc Apol_Analysis::get_results_raised_tab {} {
+	variable results_notebook
+	
+     	return [$results_notebook raise]
 } 
 
 # ------------------------------------------------------------------------------

@@ -998,6 +998,15 @@ proc Apol_TE::get_Selected_ListItems { listname } {
 }
 
 # ------------------------------------------------------------------------------
+#  Command Apol_TE::get_results_raised_tab
+# ------------------------------------------------------------------------------
+proc Apol_TE::get_results_raised_tab {} {
+	variable notebook_results
+	
+     	return [$notebook_results raise]
+} 
+
+# ------------------------------------------------------------------------------
 #  Command Apol_TE::open
 # ------------------------------------------------------------------------------
 proc Apol_TE::open { } {
