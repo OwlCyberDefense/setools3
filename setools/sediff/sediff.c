@@ -724,11 +724,52 @@ int print_perms_diffs(FILE *fp, apol_diff_result_t *diff)
 	return 0;	
 }
 
+static int print_te_rule(avh_node_t *cur, policy_t *policy, const char *string,
+			 char **buf, int *sz)
+{
+	char *rule = NULL, *cond = NULL;
+	char tbuf[APOL_STR_SZ+64];
+	
+	if (cur == NULL || policy == NULL)
+		return -1;
+
+	if (cur->flags & AVH_FLAG_COND) {
+		cond = re_render_avh_rule_cond_state(cur,policy);
+	}
+	/* print the rule */
+	rule = re_render_avh_rule(cur, policy); 
+	if (rule == NULL) { 
+		return -1;
+	} 
+	sprintf(tbuf, "%s%s%s", cond == NULL ? " " : cond,string,rule);
+	append_str(buf,sz,tbuf);
+	free(rule); 
+	if (cond != NULL) {
+		free(cond);
+		cond = NULL;
+	}
+	
+	/* get the line # */
+	rule = re_render_avh_rule_linenos(cur, policy); 
+	if (rule != NULL) { 
+		append_str(buf,sz,"(");
+		if (!is_binary_policy(policy)) { 
+			append_str(buf,sz,rule);
+		}
+		append_str(buf,sz,")"); 
+		free(rule); 
+	} 
+	append_str(buf,sz,"\n");
+	return 0;
+}
+
 int print_te_diffs(FILE *fp, apol_diff_result_t *diff)
 {
 	int i,j;
 	avh_node_t *cur = NULL;
 	avh_node_t *cur2 = NULL;
+	avh_node_t *diffcur1 = NULL;
+	avh_node_t *diffcur2 = NULL;
 	avh_node_t *tmpcur = NULL;
 	avh_key_t p2key,p1key;
 	char *rule = NULL, *cond = NULL, *name=NULL;;
@@ -754,159 +795,38 @@ int print_te_diffs(FILE *fp, apol_diff_result_t *diff)
 
  	/* find removed */
  	for (i = 0; i < AVH_SIZE; i++) { 
- 		for (cur = diff1->te.tab[i];cur != NULL; cur = cur->next) { 
+ 		for (diffcur1 = diff1->te.tab[i];diffcur1 != NULL; diffcur1 = diffcur1->next) { 
 			cond = NULL;
- 			/* make the p1 key */
- 			make_p2_key(&cur->key,&p2key,policy1,policy2); 
+ 			/* make the p2 key */
+ 			make_p2_key(&diffcur1->key,&p2key,policy1,policy2); 
 			/* search for the key/cond in p2, at this point we do not want to print out changes */
 			matched = FALSE;
-			for(cur2 = avh_find_first_node(&diff2->te, &p2key); cur2 != NULL && !matched; cur2 = avh_find_next_node(cur2) )  {
-				if (does_cond_match(cur,policy1,cur2,policy2,&inverse)) {
-					matched = TRUE;
-				}
-			}
-			/* if the rule is not in policy 2 at all */
-			if (!matched) {
-				/* update the number removed */
-				num_removed += 1;
-				/* are there conditionals */
- 				if (cur->flags & AVH_FLAG_COND) {
-					cond = re_render_avh_rule_cond_state(cur,policy1);
-				}
-				/* print the rule */
-			        rule = re_render_avh_rule(cur, policy1); 
-				if (rule == NULL) { 
-					goto print_te_error;
-				} 
-				sprintf(tbuf, "%s\t\t- %s", cond == NULL ? " " : cond,rule);
-				append_str(&removed_buf,&removed_sz,tbuf);
-    				free(rule); 
-				if (cond != NULL) {
-					free(cond);
-					cond = NULL;
-				}
-			
-				/* get the line # */
-				rule = re_render_avh_rule_linenos(cur, policy1); 
-				if (rule != NULL) { 
-					append_str(&removed_buf,&removed_sz,"(");
-					if (!is_binary_policy(policy1)) { 
-						append_str(&removed_buf,&removed_sz,rule);
-					}
-					append_str(&removed_buf,&removed_sz,")"); 
-					free(rule); 
-				} 
-				append_str(&removed_buf,&removed_sz,"\n");
- 			} 
- 		} 
- 	} 
-	/* find added and changed rules*/
-	for (i = 0; i < AVH_SIZE; i++) {
-		for (cur = diff2->te.tab[i];cur != NULL; cur = cur->next) {
-			/* make the p1 key */
-			make_p2_key(&cur->key,&p1key,policy2,policy1);
-			/* now loop through list and find not only matching key but also matching 
-			   conditional */
-			matched = FALSE;
-			for(cur2 = avh_find_first_node(&diff1->te, &p1key); cur2 != NULL && !matched; cur2 = avh_find_next_node(cur2) )  {
-				if (does_cond_match(cur,policy2,cur2,policy1,&inverse)) {
+			cur2 = avh_find_first_node(&policy2->avh, &p2key);
+			while (cur2 != NULL && does_cond_match(cur2,policy2,diffcur1,policy1,&inverse) == FALSE)
+				cur2 = avh_find_next_node(cur2);
+			/* is this key in policy 2? */
+			if (cur2 != NULL) {
+				/* now check to see if its in diff2 */
+				diffcur2 = avh_find_first_node(&diff2->te, &p2key);
+				while (diffcur2 != NULL && does_cond_match(diffcur1,policy1,diffcur2,policy2,&inverse) == FALSE)
+					diffcur2 = avh_find_next_node(diffcur2);
+				/* if diffcur2 == NULL then this rule is a changed rule 
+				   with diffs in diff1 only, if its in diff2 we'll find it when
+				   we loop through the diff2 struct later
+				*/
+				if (diffcur2 == NULL) {
 					num_changed += 1;
-					matched = TRUE;
-
-					/* are there conditionals */
-					if (cur2->flags & AVH_FLAG_COND) {
-						cond = re_render_avh_rule_cond_state(cur2,policy1);
-					}
-
-					/* find the complete rule in policy 1 */
-					polmatched = FALSE;
-					for(tmpcur = avh_find_first_node(&policy1->avh, &cur2->key); 
-					    tmpcur != NULL && !polmatched; tmpcur = avh_find_next_node(tmpcur) )  {
-						/* look for this match in policy 2 */
-						if (does_cond_match(tmpcur,policy1,cur2,policy1,&inverse)) {
-							rule = re_render_avh_rule(tmpcur, policy1);
-							polmatched = TRUE;
-						}
-						/* if there is no match we have an error return */
-						else
-							goto print_te_error;
-					}
-
-					if (rule == NULL) {
+					/* find the complete rule in p1 for printing out changes */
+					cur = avh_find_first_node(&policy1->avh, &diffcur1->key);
+					while (cur != NULL && does_cond_match(cur,policy1,diffcur1,policy1,&inverse) == FALSE)
+						cur = avh_find_next_node(cur);					     
+					if (print_te_rule(cur,policy1,"\t\t* Policy 1: ",&changed_buf,&changed_sz) < 0)
 						goto print_te_error;
-					}
-					sprintf(tbuf, "%s\t\t* Policy 1: %s",cond == NULL ? " " : cond,rule);
-					append_str(&changed_buf,&changed_sz,tbuf);
-					free(rule);
-					if (cond != NULL) {
-						free(cond);
-						cond = NULL;
-					}
-					
-					rule = re_render_avh_rule_linenos(cur2, policy1);
-					if (rule != NULL) {
-						append_str(&changed_buf,&changed_sz,"(");
-						if (!is_binary_policy(policy1)) {
-							append_str(&changed_buf,&changed_sz,rule);
-						}
-						append_str(&changed_buf,&changed_sz,")\n");
-						free(rule);
-					}
-
-
-					/* are there conditionals */
-					if (cur->flags & AVH_FLAG_COND) {
-						cond = re_render_avh_rule_cond_state(cur,policy2);
-					}
-
-					/* find the complete rule in policy 2 */
-					polmatched = FALSE;
-					for(tmpcur = avh_find_first_node(&policy2->avh, &cur->key); 
-					    tmpcur != NULL && !polmatched; tmpcur = avh_find_next_node(tmpcur) )  {
-						/* look for this match in policy 2 */
-						if (does_cond_match(tmpcur,policy2,cur,policy2,&inverse)) {
-							rule = re_render_avh_rule(tmpcur, policy2);
-							polmatched = TRUE;
-						}
-						/* if there is no match we have an error return */
-						else
-							goto print_te_error;
-					}
-					if (rule == NULL) {
+					if (print_te_rule(cur2,policy2,"\t\t* Policy 2: ",&changed_buf,&changed_sz) < 0)
 						goto print_te_error;
-					}
-
-					sprintf(tbuf, "%s\t\t* Policy 2: %s",cond == NULL ? " " : cond,rule);
-					append_str(&changed_buf,&changed_sz,tbuf);
-					free(rule);
-					if (cond != NULL) {
-						free(cond);
-						cond = NULL;
-					}
-
-					/* render the line number */
-					rule = re_render_avh_rule_linenos(cur, policy2);
-					if (rule != NULL) {
-						append_str(&changed_buf,&changed_sz,"(");
-						if (!is_binary_policy(policy2)) {
-							append_str(&changed_buf,&changed_sz,rule);
-						}
-						append_str(&changed_buf,&changed_sz,")\n");
-						free(rule);
-					}
-
-					/* now print the diffs */
-					if (cur->key.rule_type <= RULE_MAX_AV) {
-						for (j = 0 ; j < cur->num_data; j++) {
-							if (get_perm_name(cur->data[j],&name,policy2) == 0) {
-								append_str(&changed_buf,&changed_sz," \t\t\t+ ");
-								append_str(&changed_buf,&changed_sz,name);
-								append_str(&changed_buf,&changed_sz,"\n");
-								free(name);
-							}
-						}
-						for (j = 0 ; j < cur2->num_data; j++) {
-							if (get_perm_name(cur2->data[j],&name,policy1) == 0) {
+					if (diffcur1->key.rule_type <= RULE_MAX_AV) {
+						for (j = 0 ; j < diffcur1->num_data; j++) {
+							if (get_perm_name(diffcur1->data[j],&name,policy1) == 0) {
 								append_str(&changed_buf,&changed_sz," \t\t\t- ");
 								append_str(&changed_buf,&changed_sz,name);
 								append_str(&changed_buf,&changed_sz,"\n");
@@ -915,58 +835,111 @@ int print_te_diffs(FILE *fp, apol_diff_result_t *diff)
 						}
 					}
 					else {
-						if (cur->num_data == 1) {
-							if (get_type_name(cur->data[0],&name,policy2) == 0) {
-								append_str(&changed_buf,&changed_sz," \t\t\t+ ");
-								append_str(&changed_buf,&changed_sz,name);
-								append_str(&changed_buf,&changed_sz,"\n");
-								free(name);
-							}
-						}
-						if(cur2->num_data == 1) {
-							if (get_type_name(cur2->data[0],&name,policy1) == 0) {
-								append_str(&changed_buf,&changed_sz," \t\t\t+ ");
+						if (diffcur1->num_data == 1) {
+							if (get_type_name(diffcur1->data[0],&name,policy1) == 0) {
+								append_str(&changed_buf,&changed_sz," \t\t\t- ");
 								append_str(&changed_buf,&changed_sz,name);
 								append_str(&changed_buf,&changed_sz,"\n");
 								free(name);
 							}
 						}
 					}
-					append_str(&changed_buf,&changed_sz,"\n");
-				}
-			}
-			/* is this a new rule */
-			if (matched == FALSE) {
-				num_added += 1;
 
-				/* are there conditionals */
- 				if (cur->flags & AVH_FLAG_COND) {
-					cond = re_render_avh_rule_cond_state(cur,policy2);
 				}
-				
-				rule = re_render_avh_rule(cur, policy2);
-				if (rule == NULL) {
+
+			}
+			/* if the key is not in policy 2 at all */
+			else if (!cur2) {
+				/* update the number removed */
+				num_removed += 1;
+				if (print_te_rule(diffcur1,policy1,"\t\t- ",&removed_buf,&removed_sz) < 0)
 					goto print_te_error;
-				}
-				
-				sprintf(tbuf, "%s\t\t+ %s", cond == NULL ? " " : cond,rule);
-				append_str(&added_buf,&added_sz,tbuf);
-    				free(rule); 
-				if (cond != NULL) {
-					free(cond);
-					cond = NULL;
-				}
-				
-				rule = re_render_avh_rule_linenos(cur, policy2);
-				if (rule != NULL) {
-					append_str(&added_buf,&added_sz,"(");
-					if (!is_binary_policy(policy2)) { 
-						append_str(&added_buf,&added_sz,rule);
+
+ 			} 
+ 		} 
+ 	} 
+	/* find added and changed rules*/
+	for (i = 0; i < AVH_SIZE; i++) {
+		for (diffcur2 = diff2->te.tab[i];diffcur2 != NULL; diffcur2 = diffcur2->next) {
+			/* make the p1 key */
+			make_p2_key(&diffcur2->key,&p1key,policy2,policy1);
+			/* now loop through policy 1 and find not only matching key but also matching 
+			   conditional */
+			matched = FALSE;
+			
+			cur = avh_find_first_node(&policy1->avh, &p1key);
+			while (cur != NULL && does_cond_match(diffcur2,policy2,cur,policy1,&inverse) == FALSE)
+				cur = avh_find_next_node(cur);
+
+			/* if the key was in policy1 this is a changed rule*/
+			if (cur != NULL) {
+				num_changed += 1;
+				/* find the complete rule in policy 2 */
+				cur2 = avh_find_first_node(&policy2->avh, &diffcur2->key);
+				while (cur2 != NULL && does_cond_match(cur2,policy2,diffcur2,policy2,&inverse) == FALSE)
+					cur2 = avh_find_next_node(cur2);
+				if (cur2 == NULL)
+					goto print_te_error;
+				if (print_te_rule(cur,policy1,"\t\t* Policy 1: ",&changed_buf,&changed_sz) < 0)
+					goto print_te_error;
+				if (print_te_rule(cur2,policy2,"\t\t* Policy 2: ",&changed_buf,&changed_sz) < 0)
+					goto print_te_error;
+
+				/* now that we have found the node in policy1 we know that the current
+				   p2 node is at least in both, now we look in the p1 diff to see
+				   if there were any changes in p1 */
+				diffcur1 = avh_find_first_node(&diff1->te, &p1key);
+				while (diffcur1 != NULL && does_cond_match(diffcur2,policy2,diffcur1,policy1,&inverse) == FALSE)
+					diffcur1 = avh_find_next_node(diffcur1);
+
+				/* now print the diffs */
+				if (diffcur2->key.rule_type <= RULE_MAX_AV) {
+					for (j = 0 ; j < diffcur2->num_data; j++) {
+						if (get_perm_name(diffcur2->data[j],&name,policy2) == 0) {
+							append_str(&changed_buf,&changed_sz," \t\t\t+ ");
+							append_str(&changed_buf,&changed_sz,name);
+							append_str(&changed_buf,&changed_sz,"\n");
+							free(name);
+						}
 					}
-					append_str(&added_buf,&added_sz,")");
-					free(rule); 
-				} 
-				append_str(&added_buf,&added_sz,"\n");
+					if (diffcur1 != NULL) {
+						for (j = 0 ; j < diffcur1->num_data; j++) {
+							if (get_perm_name(diffcur1->data[j],&name,policy1) == 0) {
+								append_str(&changed_buf,&changed_sz," \t\t\t- ");
+								append_str(&changed_buf,&changed_sz,name);
+								append_str(&changed_buf,&changed_sz,"\n");
+								free(name);
+							}
+						}
+					}
+				}
+				else {
+					if (diffcur2->num_data == 1) {
+						if (get_type_name(diffcur2->data[0],&name,policy2) == 0) {
+							append_str(&changed_buf,&changed_sz," \t\t\t+ ");
+							append_str(&changed_buf,&changed_sz,name);
+							append_str(&changed_buf,&changed_sz,"\n");
+							free(name);
+						}
+					}
+					if (diffcur1 != NULL) {
+						if(diffcur1->num_data == 1) {
+							if (get_type_name(diffcur1->data[0],&name,policy1) == 0) {
+								append_str(&changed_buf,&changed_sz," \t\t\t+ ");
+								append_str(&changed_buf,&changed_sz,name);
+								append_str(&changed_buf,&changed_sz,"\n");
+								free(name);
+							}
+						}
+					}
+				}
+				append_str(&changed_buf,&changed_sz,"\n");
+			}
+			/* if the key is only in diff2 */
+			else if (cur == NULL) {
+				num_added += 1;
+				if(print_te_rule(diffcur2,policy2,"\t\t+ ",&added_buf,&added_sz) < 0)
+					goto print_te_error;
 
 			}
 		}
@@ -989,6 +962,7 @@ int print_te_diffs(FILE *fp, apol_diff_result_t *diff)
 
 	/*handle memory before we quit from an error */
  print_te_error:
+	fprintf(stderr,"error\n");
 	if (changed_buf)
 		free(changed_buf);
 	if (added_buf)
