@@ -812,7 +812,6 @@ proc Apol_Analysis_dta::formatInfoText { tb } {
 	$tb tag configure $Apol_Analysis_dta::rules_tag -font $ApolTop::text_font
 	$tb tag configure $Apol_Analysis_dta::counters_tag -foreground blue -font {Helvetica 11 bold}
 	$tb tag configure $Apol_Analysis_dta::types_tag -font $ApolTop::text_font
-	$tb tag configure $Apol_Analysis_dta::disabled_rule_tag -foreground gray 
 	
 	# Configure hyperlinking to policy.conf file
 	Apol_PolicyConf::configure_HyperLinks $tb
