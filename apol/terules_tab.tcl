@@ -1769,7 +1769,7 @@ proc ApolTE::createTypesAttribsTab {notebook_ta_tab} {
     # If bindtags is invoked with only one argument, then the current set of binding tags for window is 
     # returned as a list. 
     bindtags $source_list.e [linsert [bindtags $source_list.e] 3 source_list_Tag]
-    bind source_list_Tag <KeyPress> { Apol_Users::_create_popup $ApolTE::source_list %W %K }
+    bind source_list_Tag <KeyPress> { ApolTop::_create_popup $ApolTE::source_list %W %K }
         
     # Radio buttons and check buttons for Source Type/Attrib section
     set list_types_1 [checkbutton $fm_ta_buttons.list_types_1 -text "Types" \
@@ -1803,7 +1803,7 @@ proc ApolTE::createTypesAttribsTab {notebook_ta_tab} {
     # If bindtags is invoked with only one argument, then the current set of binding tags for window is 
     # returned as a list.
     bindtags $target_list.e [linsert [bindtags $target_list.e] 3 target_list_Tag]
-    bind target_list_Tag <KeyPress> { Apol_Users::_create_popup $ApolTE::target_list %W %K }
+    bind target_list_Tag <KeyPress> { ApolTop::_create_popup $ApolTE::target_list %W %K }
     
     # Radio buttons and check buttons for Target Type/Attrib section
     set list_types_2 [checkbutton $fm_ta_buttons2.list_types_2 -text "Types" \
@@ -1832,7 +1832,7 @@ proc ApolTE::createTypesAttribsTab {notebook_ta_tab} {
     # If bindtags is invoked with only one argument, then the current set of binding tags for window is 
     # returned as a list.
     bindtags $dflt_type_list.e [linsert [bindtags $dflt_type_list.e] 3 dflt_type_list_Tag]
-    bind dflt_type_list_Tag <KeyPress> { Apol_Users::_create_popup $ApolTE::dflt_type_list %W %K }
+    bind dflt_type_list_Tag <KeyPress> { ApolTop::_create_popup $ApolTE::dflt_type_list %W %K }
     
     # Radio buttons and check buttons for Default Type section
     set use_3rd_list [checkbutton $fm_top3.use_3rd_list -text $ApolTE::m_disable_dflt_type \

@@ -178,15 +178,6 @@ proc Apol_Users::enable_role_list { entry } {
     return 0
 }
 
-# ------------------------------------------------------------------------------
-#  Command Apol_Users::_getIndexValue
-# ------------------------------------------------------------------------------
-proc Apol_Users::getIndexValue { path value } { 
-    set listValues [Widget::getMegawidgetOption $path -values]
-
-    return [lsearch -glob $listValues "$value*"]
-}
-
 ########################################################################
 # ::goto_line
 #  	- goes to indicated line in text box
@@ -196,88 +187,6 @@ proc Apol_Users::goto_line { line_num } {
 	
 	ApolTop::goto_line $line_num $resultsbox
 	return 0
-}
-
-# ------------------------------------------------------------------------------
-#  Command Apol_Users::_mapliste
-# ------------------------------------------------------------------------------
-proc Apol_Users::_mapliste { path } {
-    set listb $path.shell.listb
-    if { [Widget::cget $path -state] == "disabled" } {
-        return
-    }
-    if { [set cmd [Widget::getMegawidgetOption $path -postcommand]] != "" } {
-        uplevel \#0 $cmd
-    }
-    if { ![llength [Widget::getMegawidgetOption $path -values]] } {
-        return
-    }
-
-    ComboBox::_create_popup $path
-    ArrowButton::configure $path.a -relief sunken
-    update
-
-    $listb selection clear 0 end
-    BWidget::place $path.shell [winfo width $path] 0 below $path
-    wm deiconify $path.shell
-    raise $path.shell
-    BWidget::grab local $path
-
-    return $listb
-}
-
-# ------------------------------------------------------------------------------
-#  Command Apol_Users::_create_popup
-# ------------------------------------------------------------------------------
-proc Apol_Users::_create_popup { path entryBox key } { 
-    # Getting value from the entry subwidget of the combobox 
-    # and then checking its' length
-    set value  [Entry::cget $path.e -text]
-    set len [string length $value]
-    
-    # Key must be an alphanumeric ASCII character.  
-    if { [string is alpha $key] } {
-	    #ComboBox::_unmapliste $path
-	    set idx [ Apol_Users::getIndexValue $path $value ]  
-	    
-	    if { $idx != -1 } {
-	    # Calling setSelection function to set the selection to the index value
-	    	Apol_Users::setSelection $idx $path $entryBox $key
-	    }
-    } 
-    
-    if { $key == "Return" } {
-    	    # If the dropdown box visible, then we just select the value and unmap the list.
-    	    if {[winfo exists $path.shell.listb] && [winfo viewable $path.shell.listb]} {
-    	    	    set index [$path.shell.listb curselection]
-	    	    if { $index != -1 } {
-		        if { [ComboBox::setvalue $path @$index] } {
-			    set cmd [Widget::getMegawidgetOption $path -modifycmd]
-		            if { $cmd != "" } {
-		                uplevel \#0 $cmd
-		            }
-		        }
-		    }
-	    	ComboBox::_unmapliste $path
-	    	focus -force .
-	    }
-    }
-    
-    return 0
-}
-
-# ------------------------------------------------------------------------------
-#  Command Apol_Users::setSelection
-# ------------------------------------------------------------------------------
-proc Apol_Users::setSelection { idx path entryBox key } {
-    if {$idx != -1} {
-	set listb [Apol_Users::_mapliste $path]
-	$listb selection set $idx
-	$listb activate $idx
-	$listb see $idx
-    } 
-    
-    return 0
 }
 
 # ------------------------------------------------------------------------------
@@ -353,7 +262,7 @@ proc Apol_Users::create {nb} {
     # If bindtags is invoked with only one argument, then the current set of binding tags for window is 
     # returned as a list.
     bindtags $role_combo_box.e [linsert [bindtags $role_combo_box.e] 3 rolesTag]
-    bind rolesTag <KeyPress> { Apol_Users::_create_popup $Apol_Users::role_combo_box %W %K }
+    bind rolesTag <KeyPress> { ApolTop::_create_popup $Apol_Users::role_combo_box %W %K }
 
     radiobutton $lfm.names_only -text "Names Only" -variable Apol_Users::opts(showSelection) -value names 
     radiobutton $lfm.all_info -text "All Information" -variable Apol_Users::opts(showSelection) -value all 

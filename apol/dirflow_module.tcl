@@ -1329,10 +1329,10 @@ proc Apol_Analysis_dirflow::create_options { options_frame } {
 	# returned as a list. 
 
         bindtags $combo_start.e [linsert [bindtags $combo_start.e] 3 start_list_Tag]
-        bind start_list_Tag <KeyPress> {Apol_Users::_create_popup $Apol_Analysis_dirflow::combo_start %W %K}
+        bind start_list_Tag <KeyPress> {ApolTop::_create_popup $Apol_Analysis_dirflow::combo_start %W %K}
 
 	bindtags $combo_attribute.e [linsert [bindtags $combo_attribute.e] 3 attribs_list_Tag]
-	bind attribs_list_Tag <KeyPress> { Apol_Users::_create_popup $Apol_Analysis_dirflow::combo_attribute %W %K }
+	bind attribs_list_Tag <KeyPress> { ApolTop::_create_popup $Apol_Analysis_dirflow::combo_attribute %W %K }
 
 	bindtags $list_objs [linsert [bindtags $list_objs] 3 list_objs_Tag]
 	return 0	
