@@ -26,6 +26,22 @@
 #include "policy-query.h"
 #include "queue.h"
 
+/*
+ * Nodes in the graph represent either a type used in the source
+ * of an allow rule or the target: these defines are used to
+ * represent which.
+ */
+#define IFLOW_SOURCE_NODE 	0x0
+#define IFLOW_TARGET_NODE 	0x1
+
+/*
+ * These defines are used to color nodes in the graph algorithms.
+ */
+#define IFLOW_COLOR_WHITE 0
+#define IFLOW_COLOR_GREY  1
+#define IFLOW_COLOR_BLACK 2
+#define IFLOW_COLOR_RED   3
+
 typedef struct iflow_edge {
 	int num_rules;
 	int *rules;
@@ -143,6 +159,22 @@ void iflow_query_destroy(iflow_query_t *q)
 	if (q->obj_options)
 		free(q->obj_options);
 	free(q);
+}
+
+int iflow_query_add_obj_class(iflow_query_t *q, int obj_class)
+{
+	return analysis_query_add_obj_class(&q->obj_options, &q->num_obj_options, obj_class);
+
+}
+
+int iflow_query_add_obj_class_perm(iflow_query_t *q, int obj_class, int perm)
+{
+	return analysis_query_add_obj_class_perm(&q->obj_options, &q->num_obj_options, obj_class, perm);
+}
+
+int iflow_query_add_end_type(iflow_query_t *q, int end_type)
+{
+	return analysis_query_add_end_type(&q->end_types, &q->num_end_types, end_type);
 }
 
 int iflow_query_add_type(iflow_query_t *q, int type)

@@ -321,7 +321,7 @@ static iflow_query_t* set_transitive_query_args(Tcl_Interp *interp, char *argv[]
 			}
 			/* If this there are no permissions given then exclude the entire object class. */
 			if (num_obj_perms == 0) {
-				if (analysis_query_add_obj_class(&iflow_query->obj_options, &iflow_query->num_obj_options, obj) == -1) {
+				if (iflow_query_add_obj_class(iflow_query, obj) == -1) {
 					Tcl_AppendResult(interp, "error adding obj\n", (char *) NULL);
 					return NULL;
 				}
@@ -333,7 +333,7 @@ static iflow_query_t* set_transitive_query_args(Tcl_Interp *interp, char *argv[]
 						fprintf(stderr, "Invalid object class permission\n");
 						continue;
 					}
-					if (analysis_query_add_obj_class_perm(&iflow_query->obj_options, &iflow_query->num_obj_options, obj, j) == -1) {
+					if (iflow_query_add_obj_class_perm(iflow_query, obj, j) == -1) {
 						Tcl_AppendResult(interp, "error adding perm\n", (char *) NULL);
 						return NULL;
 					}
@@ -384,7 +384,7 @@ static iflow_query_t* set_transitive_query_args(Tcl_Interp *interp, char *argv[]
 				free(name);
 				continue;
 			}
-			if (analysis_query_add_end_type(&iflow_query->end_types, &iflow_query->num_end_types, type) != 0) {
+			if (iflow_query_add_end_type(iflow_query, type) != 0) {
 				free(name);
 				iflow_query_destroy(iflow_query);
 				Tcl_AppendResult(interp, "Error adding end type to query!\n", (char *) NULL);
