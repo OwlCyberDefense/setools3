@@ -117,7 +117,7 @@ static bool_t dta_query_does_av_rule_contain_obj_class_options(dta_query_t *q,
 		/* To pass, the rule must contain one of the specified classes 
 		 * and any of the specified permissions for that class. */
 		if (does_av_rule_use_classes(rule_idx, 1, &q->obj_options[i].obj_class, 1, policy) &&
-		    does_av_rule_use_perms(0, rule_idx, 1, q->obj_options[i].perms, 
+		    does_av_rule_use_perms(rule_idx, 1, q->obj_options[i].perms, 
 		    			   q->obj_options[i].num_perms, policy))
 			return TRUE;
 	}		
@@ -133,7 +133,7 @@ static bool_t dta_query_does_av_rule_contain_obj_types(dta_query_t *q,
 	assert(q && is_valid_av_rule_idx(rule_idx, 1, policy));
 	
 	for (i = 0; i < q->num_end_types; i++) {
-		if (does_av_rule_idx_use_type(0, rule_idx, 0, q->end_types[i], 
+		if (does_av_rule_idx_use_type(rule_idx, 0, q->end_types[i], 
 					      IDX_TYPE, TGT_LIST, TRUE, policy))
 			return TRUE;
 	}		
@@ -355,7 +355,7 @@ static int dta_add_forward_process_trans_types_and_rules(dta_query_t *dta_query,
 			if ((policy->av_access)[j].type != RULE_TE_ALLOW)
 				continue;
 			/* Get only access rules that have this target type as the source field. */	
-			rule_uses_type = does_av_rule_idx_use_type(0, j, 0, idx, 
+			rule_uses_type = does_av_rule_idx_use_type(j, 0, idx, 
 					      IDX_TYPE, SRC_LIST, TRUE, 
 					      policy);
 			if (rule_uses_type == -1)
@@ -420,11 +420,11 @@ static int dta_add_process_trans_data(dta_query_t *dta_query,
 	if(dta_query->reverse) {
 		rt = extract_types_from_te_rule(rule_idx, RULE_TE_ALLOW, 
 						SRC_LIST, &types, &num_types, 
-						policy);
+						NULL, policy);
 	} else {
 		rt = extract_types_from_te_rule(rule_idx, RULE_TE_ALLOW, 
 						TGT_LIST, &types, &num_types, 
-						policy);
+						NULL, policy);
 	}
 	
 	if (rt < 0)
@@ -563,7 +563,7 @@ static int dta_add_file_entrypoint_type(bool_t reverse,
 	 * extracted from the TARGET field of the rule */
 	rt = extract_types_from_te_rule(rule_idx, RULE_TE_ALLOW, 
 					TGT_LIST, &types, &num_types, 
-					policy);
+					NULL, policy);
 
 	if(rt < 0)
 		return -1;
@@ -697,13 +697,13 @@ int determine_domain_trans(dta_query_t *dta_query,
 			continue;
 		
 		if (reverse) {
-			rule_uses_type = does_av_rule_idx_use_type(0, i, 0, start_idx, 
+			rule_uses_type = does_av_rule_idx_use_type(i, 0, start_idx, 
 					      IDX_TYPE, TGT_LIST, TRUE, 
 					      policy);
 			if (rule_uses_type == -1)
 				goto err_return;
 		} else {
-			rule_uses_type = does_av_rule_idx_use_type(0, i, 0, start_idx, 
+			rule_uses_type = does_av_rule_idx_use_type(i, 0, start_idx, 
 					      IDX_TYPE, SRC_LIST, TRUE, 
 					      policy);
 			if (rule_uses_type == -1)
@@ -714,7 +714,7 @@ int determine_domain_trans(dta_query_t *dta_query,
 			continue;
 			
 		if (does_av_rule_use_classes(i, 1, classes, 1, policy) &&
-		    does_av_rule_use_perms(0, i, 1, perms, 1, policy)) {
+		    does_av_rule_use_perms(i, 1, perms, 1, policy)) {
 			/* 2.a we have a rule that allows process tran access, add its' data to pur results for now */
 			rt = dta_add_process_trans_data(dta_query, i, b_type, *dta_results, policy);
 			if(rt != 0)
@@ -769,7 +769,7 @@ int determine_domain_trans(dta_query_t *dta_query,
 			if ((policy->av_access)[i].type != RULE_TE_ALLOW)
 				continue;
 			
-			rule_uses_type = does_av_rule_idx_use_type(0, i, 0, t_ptr->trans_type, 
+			rule_uses_type = does_av_rule_idx_use_type(i, 0, t_ptr->trans_type, 
 					      IDX_TYPE, SRC_LIST, TRUE, 
 					      policy);
 			if (rule_uses_type == -1)
@@ -779,7 +779,7 @@ int determine_domain_trans(dta_query_t *dta_query,
 				continue;
 					
 			if (does_av_rule_use_classes(i, 1, classes, 1, policy) &&
-			    does_av_rule_use_perms(0, i, 1, perms, 1, policy)) {
+			    does_av_rule_use_perms(i, 1, perms, 1, policy)) {
 				rt = dta_add_file_entrypoint_type(reverse, i, b_type, t_ptr, policy);
 				if(rt != 0)
 					goto err_return;
@@ -798,7 +798,7 @@ int determine_domain_trans(dta_query_t *dta_query,
 				if ((policy->av_access)[i].type != RULE_TE_ALLOW)
 					continue;
 				
-				rule_uses_type = does_av_rule_idx_use_type(0, i, 0, start_idx, 
+				rule_uses_type = does_av_rule_idx_use_type(i, 0, start_idx, 
 						      IDX_TYPE, SRC_LIST, TRUE, 
 						      policy);
 				if (rule_uses_type == -1)
@@ -809,7 +809,7 @@ int determine_domain_trans(dta_query_t *dta_query,
 				/* To be of interest, rule must have SOURCE field as start_type, be an allow
 				 * rule, provide file execute (forward DT) or file entrypoint (reverse DT) access 
 				 * to the current entrypoint file type, and relate to file class objects. */
-				rule_uses_type = does_av_rule_idx_use_type(0, i, 0, ep->file_type, 
+				rule_uses_type = does_av_rule_idx_use_type(i, 0, ep->file_type, 
 								IDX_TYPE, TGT_LIST, 
 								TRUE, policy);
 				if (rule_uses_type == -1)
@@ -818,7 +818,7 @@ int determine_domain_trans(dta_query_t *dta_query,
 					continue;
 						
 				if(does_av_rule_use_classes(i, 1, classes, 1, policy) &&
-				   does_av_rule_use_perms(0, i, 1, perms2, 1, policy)) {	
+				   does_av_rule_use_perms(i, 1, perms2, 1, policy)) {	
 					rt = dta_add_rule_to_entry_point_type(reverse, i, ep);
 					if(rt != 0)
 						goto err_return;
@@ -1665,13 +1665,13 @@ static int types_relation_find_obj_types_access(types_relation_query_t *tra_quer
 		if ((policy->av_access)[rule_idx].type != RULE_TE_ALLOW)
 			continue;
 					
-		typeA_uses_type = does_av_rule_idx_use_type(0, rule_idx, 0, tra_query->type_A, 
+		typeA_uses_type = does_av_rule_idx_use_type(rule_idx, 0, tra_query->type_A, 
 					      IDX_TYPE, SRC_LIST, TRUE, 
 					      policy);
 		if (typeA_uses_type == -1)
 			goto err;
 					
-		typeB_accesses_type = does_av_rule_idx_use_type(0, rule_idx, 0, tra_query->type_B, 
+		typeB_accesses_type = does_av_rule_idx_use_type(rule_idx, 0, tra_query->type_B, 
 					      IDX_TYPE, SRC_LIST, TRUE, 
 					      policy);
 		if (typeB_accesses_type == -1)
@@ -1686,7 +1686,7 @@ static int types_relation_find_obj_types_access(types_relation_query_t *tra_quer
 		/* Extract target type(s) from the rule */
 		rt = extract_types_from_te_rule(rule_idx, RULE_TE_ALLOW, 
 					        TGT_LIST, &tgt_types, &num_tgt_types, 
-					        policy);
+					        NULL, policy);
 		if (rt < 0)
 			goto err;
 		
