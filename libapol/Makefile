@@ -36,7 +36,7 @@ install-libapol-shared: libapolso
 
 install-libapol-static: libapol
 	install -m 644 libapol.a $(STATIC_LIB_INSTALL_DIR)
-	install -d 755 -d $(SETOOLS_INCLUDE)/libapol
+	install -m 755 -d $(SETOOLS_INCLUDE)/libapol
 	install -m 644 *.h $(SETOOLS_INCLUDE)/libapol
 
 install: install-libapol-shared install-libapol-static
