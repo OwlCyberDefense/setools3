@@ -345,6 +345,7 @@ proc Apol_Analysis_tra::do_analysis {results_frame} {
 	variable te_rules_sel	
 	variable tt_rule_sel		
 	variable excluded_dirflow_objs
+	variable forward_options_Dlg
 	
 	if {![ApolTop::is_policy_open]} {
 		tk_messageBox -icon error -type ok -title "Error" \
@@ -391,7 +392,11 @@ proc Apol_Analysis_tra::do_analysis {results_frame} {
 		}
 	    }
 	}
-	
+	set dta_object(x) "" 
+	if {$dta_AB_sel || $dta_BA_sel} {
+		Apol_Analysis_dta::forward_options_copy_object $forward_options_Dlg dta_object
+	}
+
 	# Initialize dta variables - These options are here for setting advanced options for DTA analysis.
         set dta_reverse 0
 	set dta_num_object_classes 0
@@ -399,7 +404,44 @@ proc Apol_Analysis_tra::do_analysis {results_frame} {
         set dta_filter_types 0
         set dta_types ""
 	set dta_objects_sel 0
+	
+	if {$dta_AB_sel || $dta_BA_sel} {	        		
+		foreach class $dta_object($forward_options_Dlg,class_list) {
+			set perms ""
+			# Make sure to strip out just the class name, as this may be an excluded class.
+			set idx [string first $Apol_Analysis_dta::excluded_tag $class]
+			if {$idx == -1} {
+				set class_elements [array names dta_object "$forward_options_Dlg,perm_status_array,$class,*"]
+				set class_added 0
+				foreach element $class_elements {
+					set perm [lindex [split $element ","] 3]
+					if {[string equal $dta_object($element) "include"]} {
+						if {$class_added == 0} {
+							incr dta_num_object_classes 
+							set dta_perm_options [lappend dta_perm_options $class]
+							set class_added 1
+						}	
+						set perms [lappend perms $perm]
+					}
+				}
+				if {$perms != ""} {
+					set dta_perm_options [lappend dta_perm_options [llength $perms]]
+					foreach perm $perms {
+						set dta_perm_options [lappend dta_perm_options $perm]
+					}
+				}	
+			}
+		}
+		set dta_types $dta_object($forward_options_Dlg,filtered_incl_types)
 		
+		if {$dta_num_object_classes} {	
+			set dta_objects_sel 1
+		} 
+		if {$dta_types != ""} {   
+			set dta_filter_types 1
+		} 
+	}
+
 	# Initialize transitive flow variables - These options are here for setting advanced options for DTA analysis.
 	set tif_num_object_classes 0
 	set tif_perm_options ""
@@ -436,13 +478,13 @@ proc Apol_Analysis_tra::do_analysis {results_frame} {
 		$dta_types \
 		$filter_dirflow_objs \
 		$excluded_dirflow_objs]} err]
-		
+
 	Apol_Analysis_tra::destroy_progressDlg	
      	if {$rt != 0} {	
 	        tk_messageBox -icon error -type ok -title "Error" -message "$err"
 		return -code error
 	} 
-
+	array unset dta_object
 	set tra_listbox [Apol_Analysis_tra::create_resultsDisplay $results_frame]
 	set rt [catch {Apol_Analysis_tra::create_results_list_structure $tra_listbox $results} err]
 	if {$rt != 0} {	
@@ -1466,14 +1508,15 @@ proc Apol_Analysis_tra::display_dta_info {tra_listbox tra_info_text data start_t
 		}
 		
 		set start_idx $end_idx
-		$tra_info_text insert end "\nPrivileges for this target domain:  "
+		$tra_info_text insert end "\nAccess granted to this target domain:  "
 		set end_idx [$tra_info_text index insert]
 		$tra_info_text tag add $Apol_Analysis_tra::subtitle_tag $start_idx $end_idx
 		set start_idx $end_idx
-		$tra_info_text insert end "$num_additional\n"
+		$tra_info_text insert end "$num_additional"
 		set end_idx [$tra_info_text index insert]
 		$tra_info_text tag add $Apol_Analysis_tra::counters_tag $start_idx $end_idx
-
+		$tra_info_text insert end "rules\n"
+	
 		for {set j 0 } { $j < $num_additional } { incr j }  {
 			incr idx
 			set rule [lindex $data $idx]
@@ -1482,14 +1525,18 @@ proc Apol_Analysis_tra::display_dta_info {tra_listbox tra_info_text data start_t
 		
 			$tra_info_text insert end "\t"
 			set start_idx [$tra_info_text index insert]
-			$tra_info_text insert end "($lineno) "
-			set end_idx [$tra_info_text index insert]
-			Apol_PolicyConf::insertHyperLink $tra_info_text "$start_idx wordstart + 1c" "$start_idx wordstart + [expr [string length $lineno] + 1]c"
-			set start_idx $end_idx
-			$tra_info_text insert end "$rule\n"
+			
+			# Only display line number hyperlink if this is not a binary policy.
+			if {![ApolTop::is_binary_policy]} {
+				$tra_info_text insert end "($lineno) "
+				set end_idx [$tra_info_text index insert]
+				Apol_PolicyConf::insertHyperLink $tra_info_text "$start_idx wordstart + 1c" "$start_idx wordstart + [expr [string length $lineno] + 1]c"
+				set start_idx $end_idx
+			}
+			$tra_info_text insert end "$rule"
 			set end_idx [$tra_info_text index insert]
 			$tra_info_text tag add $Apol_Analysis_tra::rules_tag $start_idx $end_idx
-			
+				
 			incr idx
 			# The next element should be the enabled boolean flag.
 			if {[lindex $data $idx] == 0} {
