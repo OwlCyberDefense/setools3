@@ -7,7 +7,7 @@ OBJS		= test.o $(LIBAPOL)
 INCLUDES	= -I../libapol/
 CFLAGS		+= $(INCLUDES)
 
-all:	partial_load transitive_flow obj_perms perm_map_reload template reload
+all:	partial_load transitive_flow obj_perms perm_map_reload template reload roles
 
 %.o:	%.c
 	$(CC) $(CFLAGS) -c $<
@@ -29,6 +29,9 @@ reload: $(OBJS) reload.o
 
 template: $(OBJS) template.o
 	$(CC) template.o $(CFLAGS) $(OBJS) $(LIBS) -o template
+
+roles: $(OBJS) roles.o
+	$(CC) roles.o $(CFLAGS) $(OBJS) $(LIBS) -o roles
 
 $(LIBAPOL): 
 	cd ../libapol/ ; $(MAKE) libapol
