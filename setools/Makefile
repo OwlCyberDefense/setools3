@@ -209,21 +209,26 @@ remove-docs:
 	cd docs-src; make remove-docs
 
 # test targets
-tests: test-seuser test-apol
+tests: test-seuser test-apol test-regression
 
 test-apol: selinux_tool
 	cd libapol/test; $(MAKE) $@
 
 test-seuser: selinux_tool
 	cd libseuser/test; $(MAKE) $@
+	
+test-regression: selinux_tool
+	cd test; $(MAKE)
 
 test-clean: 
 	cd libapol/test; $(MAKE) clean
 	cd libseuser/test; $(MAKE) clean
+	cd test; $(MAKE) clean
 
 test-bare:
 	cd libapol/test; $(MAKE) bare
-	cd libseuser/test; $(MAKE) clean
+	cd libseuser/test; $(MAKE) bare
+	cd test; $(MAKE) bare
 
 clean: test-clean
 	cd apol; $(MAKE) clean
