@@ -84,6 +84,7 @@ namespace eval ApolTop {
 	variable users_tab		"Apol_Users"
 	variable initial_sids_tab	"Apol_Initial_SIDS"
 	variable cond_bools_tab		"Apol_Cond_Bools"
+	variable cond_rules_tab		"Apol_Cond_Rules"
 	variable policy_conf_tab	"Apol_PolicyConf"
 	variable analysis_tab		"Apol_Analysis"
 	 
@@ -388,6 +389,10 @@ proc ApolTop::set_Focus_to_Text { tab } {
 		$ApolTop::cond_bools_tab {
 			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
 			Apol_Cond_Bools::set_Focus_to_Text
+		} \
+		$ApolTop::cond_bools_tab {
+			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
+			Apol_Cond_Rules::set_Focus_to_Text
 		} \
 		default { 
 			return 
@@ -1021,14 +1026,18 @@ proc ApolTop::create { } {
 	set components_nb [NoteBook $components_frame.components_nb]
 	set rules_nb [NoteBook $rules_frame.rules_nb]
 	
+	# Subtabs for the main policy components tab.
 	Apol_Types::create $components_nb
 	Apol_Class_Perms::create $components_nb
 	Apol_Roles::create $components_nb
 	Apol_Users::create $components_nb
 	Apol_Initial_SIDS::create $components_nb
 	Apol_Cond_Bools::create $components_nb
+	
+	# Subtabs for the main policy rules tab
 	Apol_TE::create $rules_nb
 	Apol_RBAC::create $rules_nb
+	Apol_Cond_Rules::create $rules_nb
 	
 	$components_nb compute_size
 	pack $components_nb -fill both -expand yes -padx 4 -pady 4
@@ -1704,6 +1713,7 @@ proc ApolTop::closePolicy {} {
         Apol_Users::close
         Apol_Initial_SIDS::close
         Apol_Cond_Bools::close
+        Apol_Cond_Rules::close
         Apol_Analysis::close 
         Apol_PolicyConf::close      
 	ApolTop::set_Focus_to_Text [$ApolTop::notebook raise]
@@ -1835,6 +1845,11 @@ proc ApolTop::openPolicyFile {file recent_flag} {
 		tk_messageBox -icon error -type ok -title "Error" -message "$err"
 		return -1
 	}
+	set rt [catch {Apol_Cond_Rules::open} err]
+	if {$rt != 0} {
+		tk_messageBox -icon error -type ok -title "Error" -message "$err"
+		return -1
+	}
 	set rt [catch {Apol_Analysis::open} err]
 	if {$rt != 0} {
 		tk_messageBox -icon error -type ok -title "Error" -message "$err"
@@ -1892,6 +1907,7 @@ proc ApolTop::free_call_back_procs { } {
 	Apol_Analysis::free_call_back_procs
 	Apol_PolicyConf::free_call_back_procs
 	Apol_Cond_Bools::free_call_back_procs
+	Apol_Cond_Rules::free_call_back_procs
 	return 0
 }
 
