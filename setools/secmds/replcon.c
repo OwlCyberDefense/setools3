@@ -469,6 +469,32 @@ int replcon_info_add_object_class(replcon_info_t *info, const char *str)
 
 	assert(info != NULL);
 	class_id = sefs_is_valid_object_class(str);
+	switch(class_id) {
+	case 0:
+		class_id = NORM_FILE;
+		break;
+	case 1:
+		class_id = DIR;
+		break;
+	case 2:
+		class_id = LNK_FILE;
+		break;
+	case 3:
+		class_id = CHR_FILE;
+		break;
+	case 4:
+		class_id = BLK_FILE;
+		break;
+	case 5:
+		class_id = SOCK_FILE;
+		break;
+	case 6:
+		class_id = FIFO_FILE;
+		break;
+	default:
+		class_id = ALL_FILES;
+		break;
+ 	}
 
 	/* Check the object class */
 	if (class_id == -1) {
