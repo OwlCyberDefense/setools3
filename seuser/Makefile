@@ -107,32 +107,47 @@ seuser-policy:
 		rm -f ../policy/seuser.fc; \
 	fi
 	
-
-policy-install: seuser-policy
 	-@if [ -e $(POLICY_SRC_DIR)/Makefile ]; then \
 		make -C $(POLICY_SRC_DIR)/ clean; \
 		make -C $(POLICY_SRC_DIR)/ load; \
-	fi 
-
-install-nogui: seuser policy-install
-	install -d $(BINDIR)
-	-@if [ -e $(POLICY_SRC_DIR)/Makefile ]; then \
-		install -m 755 -Z system_u:object_r:seuser_exec_t seuser $(BINDIR); \
-		install -m 644 -Z system_u:object_r:seuser_conf_t $(SEUSER_CONF_FILE) $(INSTALL_LIBDIR); \
-	else \
-		install -m 755 seuser $(BINDIR); \
-		install -m 644 $(SEUSER_CONF_FILE) $(INSTALL_LIBDIR); \
 	fi
+
+install-gui-policy: 	
+	-@if [ -e $(BINDIR)/seuserx ]; then \
+		chcon system_u:object_r:seuser_exec_t $(BINDIR)/seuserx; \
+	fi
+	
+install-nogui-policy: 
+	-@if [ -e $(BINDIR)/seuser ]; then \
+		chcon system_u:object_r:seuser_exec_t $(BINDIR)/seuser; \
+	fi
+	
+	-@if [ -e $(BINDIR)/seuseradd ]; then \
+		chcon system_u:object_r:seuser_exec_t $(BINDIR)/seuseradd; \
+	fi
+	
+	-@if [ -e $(BINDIR)/seuserdel ]; then \
+		chcon system_u:object_r:seuser_exec_t $(BINDIR)/seuserdel; \
+	fi
+	
+	-@if [ -e $(BINDIR)/seusermod ]; then \
+		chcon system_u:object_r:seuser_exec_t $(BINDIR)/seusermod; \
+	fi
+
+install-policy: seuser-policy install-gui-policy install-nogui-policy
+	-@if [ -e $(SEUSER_CONF_FILE) ]; then \
+		chcon system_u:object_r:seuser_conf_t $(SEUSER_CONF_FILE); \
+	fi
+
+install-nogui: seuser 
+	install -d $(BINDIR)
 	install -m 755 $(SE_SHELL_SCRIPTS) $(BINDIR)
+	install -m 644 $(SEUSER_CONF_FILE) $(INSTALL_LIBDIR);
 
 install: install-nogui seuserx se_user.tcl
 	install -d $(BINDIR) 
-	-@if [ -e $(POLICY_SRC_FILE) ]; then \
-		install -m 755 -Z system_u:object_r:seuser_exec_t seuserx $(BINDIR); \
-	else \
-		install -m 755 seuserx $(BINDIR); \
-	fi
 	install -m 644 se_user.tcl $(SEUSER_HELP_FILE) $(INSTALL_LIBDIR)
+	install -m 644 $(SEUSER_CONF_FILE) $(INSTALL_LIBDIR);
 
 clean:
 	rm -f *.o  core* seuser seuserx *~ se_user.tcl tmp.tcl
