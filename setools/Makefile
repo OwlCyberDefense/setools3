@@ -93,33 +93,36 @@ all-libs: corelibs guilibs
 
 help:
 	@echo "Make targets for setools: "
-	@echo "   install:         build and install everything (selinux required)"
-	@echo "   install-nogui:   build and install all non-GUI tools (selinux required)"
+	@echo "   install:           build and install everything (selinux required)"
+	@echo "   install-nogui:     build and install all non-GUI tools (selinux required)"
 	@echo ""
-	@echo "   install-apol:    build and install apol (selinux not required)"
-	@echo "   install-sepcut:  build and install sepct (selinux not required)"
-	@echo "   install-seuser:  build and install command line seuser (selinux required)"
-	@echo "   install-seuserx: build and install seuser and seuserx (selinux required)"
-	@echo "   install-secmds:  build and install command line tools (selinux not required)"
-	@echo "   install-seaudit: build and install seaudit (selinux not required)"
+	@echo "   install-apol:      build and install apol (selinux not required)"
+	@echo "   install-sepcut:    build and install sepct (selinux not required)"
+	@echo "   install-seuser:    build and install command line seuser (selinux required)"
+	@echo "   install-seuserx:   build and install seuser and seuserx (selinux required)"
+	@echo "   install-secmds:    build and install command line tools (selinux not required)"
+	@echo "   install-seaudit:   build and install seaudit (selinux not required)"
 	@echo ""
-	@echo "   install-docs:    install setools documentation"
-	@echo "   install-policy:  install SELinux policy and label files"
-	@echo "   install-bwidget: install BWidgets-1.4.1 package (requires Tcl/Tk)"
+	@echo "   install-libapol:   build and install libapol static/shared libraries"
+	@echo "   install-libseuser: build and install libseuser static/shared libraries"
+	@echo ""
+	@echo "   install-docs:      install setools documentation"
+	@echo "   install-policy:    install SELinux policy and label files"
+	@echo "   install-bwidget:   install BWidgets-1.4.1 package (requires Tcl/Tk)"
 	@echo " "
-	@echo "   all:             build everything, but don't install"
-	@echo "   all-nogui:       only build non-GUI tools and libraries"
+	@echo "   all:               build everything, but don't install"
+	@echo "   all-nogui:         only build non-GUI tools and libraries"
 	@echo ""
-	@echo "   apol:            build policy analysis tool"
-	@echo "   seuser:          build SE Linux command line user tool"
-	@echo "   seuserx:         build SE Linux GUI user tool"
-	@echo "   sepcut           build policy customization/browsing tool"
-	@echo "   secmds:          build setools command line tools"
-	@echo "   seaudit:         built audit log analysis tool"
-	@echo "   awish:           build TCL/TK wish interpreter with SE Linux tools extensions"
+	@echo "   apol:              build policy analysis tool"
+	@echo "   seuser:            build SE Linux command line user tool"
+	@echo "   seuserx:           build SE Linux GUI user tool"
+	@echo "   sepcut             build policy customization/browsing tool"
+	@echo "   secmds:            build setools command line tools"
+	@echo "   seaudit:           built audit log analysis tool"
+	@echo "   awish:             build TCL/TK wish interpreter with SE Linux tools extensions"
 	@echo " "
-	@echo "   clean:           clean up interim files"
-	@echo "   bare:            more extensive clean up"
+	@echo "   clean:             clean up interim files"
+	@echo "   bare:              more extensive clean up"
 
 
 apol: selinux_tool
@@ -174,7 +177,7 @@ libapol-tcl: selinux_tool
 	fi
 
 libseuser: selinux_tool
-	cd libseuser; $(MAKE) libseuser
+	cd libseuser; $(MAKE) libseuser libseuserso
 
 libseuser-tcl: selinux_tool
 	cd libseuser;
@@ -238,10 +241,10 @@ install: install-apol install-seuserx install-sepcut install-awish install-secmd
 
 # Install the libraries
 install-libseuser:
-	cd libseuser; $(MAKE) bare; $(MAKE) install
+	cd libseuser; $(MAKE) install
 
 install-libapol:
-	cd libapol; $(MAKE) bare; $(MAKE) install
+	cd libapol; $(MAKE) install
 	
 # Install the policy - this is a separate step to better support systems with
 # non-standard policies.
@@ -257,23 +260,6 @@ install-policy: install-seuser-policy install-secmds-policy
 install-bwidget:
 	cd packages; $(MAKE) install
 	
-# Next four targets are to support installation as part of a system
-# install. These targets are deprecated.
-#
-# copy all policy files to the uninstalled selinux policy build directory
-insert-policy: 
-	cd seuser ; $(MAKE) $@ 
-
-sysinstall-seuser: $(INSTALL_LIBDIR)
-	cd seuser; $(MAKE) sys-install "CFLAGS+=$(SYS_OPTIONS)"
-
-sysall-seuser: 
-	cd seuser; $(MAKE) sys-all "CFLAGS+=$(SYS_OPTIONS)"
-
-sys-install: install-apol sysinstall-seuser install-sepcut
-
-sys-all: apol sysall-seuser sepcut
-
 # Re-generate all setools documentation in source tree
 docs:
 	cd docs-src; $(MAKE) docs
