@@ -1518,14 +1518,12 @@ static int txt_buffer_insert_te_line(GtkTextBuffer *txt, GtkTextIter *iter,
 		free(rule); 
 		g_strfreev(split_line_array); 
 	} 		
-
-	if (cur->flags & AVH_FLAG_COND && !is_binary_policy(policy)) {
-		if (get_cond_bool_name(cur->cond_expr,&rule,policy) < 0)
-			return -1;
-		g_string_printf(string," [ %s ]",rule);
-		gtk_text_buffer_insert_with_tags(txt, iter, string->str, -1, colortag, NULL); 
+	/* get the conditional expression */
+	if (cur->flags & AVH_FLAG_COND) {
+		rule = re_render_avh_rule_cond_expr(cur,policy);
+		gtk_text_buffer_insert_with_tags(txt, iter, rule, -1, colortag, NULL); 		
 		free(rule);
-	}	
+	}
        	gtk_text_buffer_insert(txt, iter, "\n", -1); 
 	return 0;
 	
@@ -2478,8 +2476,6 @@ static void sediff_destroy(sediff_app_t *sediff_app)
 		g_object_unref(G_OBJECT(sediff_app->window_xml));
 	if (sediff_app->open_dlg_xml != NULL)
 		g_object_unref(G_OBJECT(sediff_app->open_dlg_xml));
-	if (sediff_app->loading_dlg_xml != NULL)
-		g_object_unref(G_OBJECT(sediff_app->loading_dlg_xml));
 	if (sediff_app->p1_filename) 
 		g_string_free(sediff_app->p1_filename,TRUE);
 	if (sediff_app->p2_filename) 
@@ -2747,8 +2743,6 @@ static void sediff_loading_dialog_on_window_destroy(GtkWidget *widget, GdkEvent 
 {
   	gtk_widget_destroy(widget);
 	sediff_app->loading_dlg = NULL;
-	g_object_unref(G_OBJECT(sediff_app->loading_dlg_xml));
-	sediff_app->loading_dlg_xml = NULL;	
 }
 
 
@@ -2771,6 +2765,7 @@ void sediff_open_dialog_on_cancel_button_clicked(GtkButton *button, gpointer use
 void sediff_menu_on_open_clicked(GtkMenuItem *menuitem, gpointer user_data)
 {	
 	GtkEntry *entry = NULL;
+
 	if (sediff_app->open_dlg) {
 		gtk_window_present(sediff_app->open_dlg);
 	} else {
@@ -2873,26 +2868,29 @@ gboolean sediff_load_dlg_destroy()
 		widget = GTK_WIDGET(sediff_app->loading_dlg);
 		gtk_widget_destroy(GTK_WIDGET(sediff_app->loading_dlg));
 		sediff_app->loading_dlg = NULL;
-		g_object_unref(G_OBJECT(sediff_app->loading_dlg_xml));
-		sediff_app->loading_dlg_xml = NULL;
 	}
 	return FALSE;
 }
 
 gboolean sediff_load_dlg_show()
 {
+	GtkWidget *label;
 	/* if the dialog is not already up */
 	if (sediff_app->loading_dlg == NULL) {
-		if (sediff_app->loading_dlg_xml == NULL) {
-			sediff_app->loading_dlg_xml = glade_xml_new(GLADEFILE, LOADING_DIALOG_ID, NULL);
-		}
-		
-		sediff_app->loading_dlg = GTK_WINDOW(glade_xml_get_widget(sediff_app->loading_dlg_xml, LOADING_DIALOG_ID));	
+		sediff_app->loading_dlg = gtk_dialog_new_with_buttons ("Loading",
+						      sediff_app->window,
+						      GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_NO_SEPARATOR,
+				     NULL);
+		gtk_widget_set_usize(sediff_app->loading_dlg,200,100);
+		label = gtk_label_new ("Loading...");
+		gtk_container_add (GTK_CONTAINER (GTK_DIALOG(sediff_app->loading_dlg)->vbox),
+				   label);
+
+		gtk_widget_show_all (sediff_app->loading_dlg);
+	}
 		g_signal_connect(G_OBJECT(sediff_app->loading_dlg), "delete_event", 
 			G_CALLBACK(sediff_loading_dialog_on_window_destroy), sediff_app);
-		glade_xml_signal_autoconnect(sediff_app->loading_dlg_xml);
 
-	}
 	return FALSE;
 }
 
@@ -3147,7 +3145,6 @@ int main(int argc, char **argv)
 	sediff_app->te_buffer = NULL;
 	sediff_app->rbac_buffer = NULL;
 	sediff_app->tree_view = NULL;
-	sediff_app->loading_dlg_xml = NULL;
 	sediff_app->open_dlg_xml = NULL;
 	sediff_app->loading_dlg = NULL;
 	sediff_app->open_dlg = NULL;
