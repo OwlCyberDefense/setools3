@@ -432,7 +432,7 @@ proc Apol_RBAC::create {nb} {
     set pw2 [PanedWindow $topf.pw2 -side top -weights available]
     $pw2 add -minsize 110
     $pw2 add -weight 6
-    set obox [TitleFrame [$pw2 getframe 1].obox -text "Search Options"]
+    set obox [TitleFrame [$pw2 getframe 1].obox -text "Search Criteria"]
     set tbox [TitleFrame [$pw2 getframe 0].tbox -text "Rule Selection"]
     set dbox [TitleFrame $bottomf.dbox -text "RBAC Rules Display"]
     #set okbox [frame $topf.okbox]
