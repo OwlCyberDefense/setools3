@@ -548,7 +548,7 @@ bool_t is_type_in_role(const char *type, int role_idx, policy_t *policy);
 #define is_valid_tt_rule_idx(idx, policy) (idx >= 0 && idx < policy->num_te_trans)
 #define is_cond_rule(rule) (rule.cond_expr >= 0)
 #define is_av_rule_type(type) ((type >= RULE_TE_ALLOW) && (type <= RULE_MAX_AV))
-#define is_av_access_rule_type(type) ((type >= RULE_TE_ALLOW) && (type <= RULE_NEVERALLOW))
+#define is_av_access_rule_type(type) ((type == RULE_TE_ALLOW) || (type == RULE_NEVERALLOW))
 #define is_av_audit_rule_type(type) ((type >= RULE_AUDITALLOW) && (type <= RULE_MAX_AV))
 #define is_type_rule_type(type) ((type >= RULE_TE_TRANS) && (type <= RULE_MAX_TE))
 #define is_te_rule_type(type) ((type >= RULE_TE_ALLOW) && (type <= RULE_MAX_TE))
