@@ -361,7 +361,7 @@ proc ApolTop::set_Focus_to_Text { tab } {
 		} \
 		$ApolTop::terules_tab {
 			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag normal 
-			set raisedPage [$Apol_TE::notebook_results raise]
+			set raisedPage [Apol_TE::get_results_raised_tab]
 			if {$raisedPage != ""} {
 				Apol_TE::set_Focus_to_Text $raisedPage
 			} else {
@@ -387,6 +387,10 @@ proc ApolTop::set_Focus_to_Text { tab } {
 		$ApolTop::analysis_tab {
 			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag normal
 			$ApolTop::mainframe setmenustate Disable_SearchMenu_Tag disabled
+			set raisedPage [Apol_Analysis::get_results_raised_tab]
+			if {$raisedPage != ""} {
+				Apol_Analysis::set_Focus_to_Text $raisedPage
+			} 
 		} \
 		$ApolTop::policy_conf_tab {
 			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
@@ -1529,9 +1533,9 @@ proc ApolTop::helpDlg {title file_name} {
     set hbox [frame $helpDlg.hbox ]
     # Display results window
     set sw [ScrolledWindow $hbox.sw -auto none]
-    set resultsbox [text [$sw getframe].text -bg white -wrap none]
+    set resultsbox [text [$sw getframe].text -bg white -wrap none -font $ApolTop::text_font]
     $sw setwidget $resultsbox
-    set okButton [Button $hbox.okButton -text "OK" \
+    set okButton [Button $hbox.okButton -text "Close" \
 		      -command "destroy $helpDlg"]
     # go to the script dir to find the help file
     set script_dir  [apol_GetScriptDir "$file_name"]
@@ -1553,18 +1557,18 @@ proc ApolTop::helpDlg {title file_name} {
     	$resultsbox insert end [read $f]
     	close $f
     }
-    $resultsbox configure -state disabled
+    ApolTop::makeTextBoxReadOnly $resultsbox
    	 
     return
 }
 
 proc ApolTop::makeTextBoxReadOnly {w} {
-	    $w configure -state disabled
-	    $w mark set insert 0.0
-	    $w mark set anchor insert
-	    focus $w
-	    
-	    return 0
+	$w mark set insert 0.0
+	$w mark set anchor insert
+	$w configure -state disabled
+	focus -force $w
+	
+	return 0
 }
 
 proc ApolTop::setBusyCursor {} {
