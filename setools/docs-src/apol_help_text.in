@@ -17,8 +17,9 @@ This version of apol allows you to:
 	transitive (indirect) information flow analysis.
 
 New in this version are several new automated analyses (see Analysis 
-Tab below), to include reverse domain transition analysis, direct 
-information flow analysis, and transitive information flow analysis.
+Tab below), to include forward and reverse domain transition analysis, 
+direct information flow analysis, and transitive information flow 
+analysis.
 
 Apol attempts to provide compatibility with the current and older 
 policy syntax to allow one to analyze current and old policies.  As of 
@@ -36,12 +37,13 @@ policy.conf file can be open at a time, so if you open another file,
 the current one will be closed.
 
 The Query menu allows the user to save and/or load a query for a TE Rules
-search or for an analysis module listed on the Analysis tab. Saving a 
-query involves saving the required query parameters, as well as any 
-specified filter settings to a file. Query files are saved with a '.qf' 
-extension. Loading a query involves parsing the specified query file, 
+search or for an analysis module listed on the Analysis tab. Saving a TE
+Rules query involves saving the required query parameters, whereas saving 
+an analysis query involves saving the required query parameters as well 
+as any specified filter settings to a file. Query files are saved with a 
+'.qf' extension. Loading a query will parsing the specified query file, 
 raising the correct notebook tab in apol and configuring the query options 
-with the specified query parameters and filter settings. Currently, the 
+with the specified query parameters and/or filter settings. Currently, the 
 save query menu item is only enabled when the ANALYSIS TAB or the 
 TE RULES TAB (see POLICY RULES TAB below) is raised. However, the load 
 query menu item is enabled across all tabs. The Query menu also allows 
@@ -52,9 +54,9 @@ bar when a policy file is opened.
 The Advanced menu currently allows you to directly manage permission 
 mappings for apol's direct and transitive information flow analyses, 
 which are new features in this version of the tool. You do not need to 
-use this tab in order to perform an information flow analysis.  However 
+use this dialog in order to perform an information flow analysis. However 
 you might need greater control over the mappings of permission to 
-read/write access for a given analysis you are performing.  This tab 
+read/write access for a given analysis you are performing.  This dialog 
 gives you the flexibility to control these mappings directly.  The built-
 in default mappings are based on the "mls" file distributed with the 
 policy.  See the separate help file on information flow for more 
@@ -204,7 +206,8 @@ a set of search criteria you select.
 	results displayed for the current window based on the current 
 	search option.  "New" will create a new results window based 
 	on the current search options.  Use the "Close Tab" bar at the 
-	bottom to destroy a results window.
+	bottom to destroy a results window. Also, the TE Rules tab allows
+	you to save/load search criteria to a file (see MENU section above).
 
 
 	II. RBAC RULES TAB:
@@ -230,12 +233,16 @@ a set of search criteria you select.
 
 4. ANALYSIS TAB
 
-This tab provides automated analysis capabilities.  The "Info" button 
-provides a description for the selected analysis type. Current analyses 
-are:
+This tab provides automated analysis capabilities.  The "Info" button provides 
+a description for the selected analysis type. Also, this tab allows you to 
+save/load any query criteria to a file (see MENU section above). Current 
+analyses are:
 
 	I. DOMAIN TRANSITION ANALYSIS
-
+	
+	The Domain Transition analysis module allows you to specify a transition
+	direction for the analysis. The 2 directions provided are:
+	 
 		FORWARD: The Forward Domain Transition (FDT) analysis takes a 
 		starting SOURCE domain and presents a tree of all the resulting 
 		TARGET 	domains that can be transitioned into from that starting 
@@ -346,10 +353,4 @@ file.  In addition, the TE rules tab and the Domain Transition analysis
 (on the Analysis tab) currently support a hyperlink to the source 
 policy.conf file.
 
-Known Bugs: 
-
-1. If you get a parse error opening a policy file, you need to exit and 
-re-start apol.  This bug causes apol to not recognize valid policy.conf 
-files; the tool will automatically exit in such cases so you may restart 
-the tool.
 																																																																																                                                                                                                                                                                                                                                                                                                                                 
