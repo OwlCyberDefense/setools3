@@ -30,8 +30,9 @@
 const char *policy_version_strings[] = { "Unkown version", 
 			 	 	 "prior to v. 11", 
 			 	 	 "v.11 -- v.12", 
-			 	 	 "v.13 -- v.15", 
-			 	 	 "v.16", "v.17" };
+			 	 	 "v.15", 
+			 	 	 "v.16", 
+			 	 	 "v.17" };
 			 	 
 /* get a policy version string from the global array of constant strings. 
  * We use the defined policy version numbers as indices into this array.*/
