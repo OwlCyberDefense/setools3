@@ -1,20 +1,18 @@
 CC = gcc
-CFLAGS = -I. -I../libapol/ -Wall 
+CFLAGS = -I. -I../../libapol/ -Wall 
 LINKFLAGS = -lm -lselinux 
 
 OBJS =  
-LIBAPOL = ../libapol/libapol.a 
+LIBAPOL = ../../libapol/libapol.a 
 
 most: $(OBJS) cmd-line-tool
 
-
-all: most relabel-test ../libapol/relabel_analysis.o
-
+all: most ../../libapol/relabel_analysis.o
 
 cmd-line-tool: $(OBJS) ./relabel_analysis_tool.o
 	$(CC) $(OBJS) relabel_analysis_tool.o $(LIBAPOL) -o relabel-analysis-tool $(LINKFLAGS) -lfl
 
-relabel-test: $(OBJS) ./test/relabel_analysis_test.o
+test: $(OBJS) 
 	cd ./test/; make ra-test
 
 %.o : %.c
