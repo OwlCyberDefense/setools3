@@ -641,7 +641,7 @@ proc Apol_Analysis::display_analysis_info {} {
     	set botf  [frame $info_Dlg.botf]
     	set sw [ScrolledWindow $topf.sw  -auto none]
 	set descrp_text [text $sw.descrp_text -height 5 -width 20 -font $ApolTop::text_font \
-		-bg white -wrap word]
+		-bg white -wrap none]
 	$sw setwidget $descrp_text
 	set b_ok [button $botf.b_ok -text "OK" -width 6 -command "destroy $Apol_Analysis::info_Dlg"]
 	pack $topf -side top -fill both -expand yes -padx 5 -pady 5
