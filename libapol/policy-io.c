@@ -243,8 +243,8 @@ static int search_binary_policy_file(char **policy_file_path)
 		free(version);
 		return GENERAL_ERROR;
 	}
-	snprintf(policy_path_tmp, PATH_MAX - 1, "%s/%s%s", selinux_binary_policy_path(), 
-		BIN_POLICY_ROOTNAME, version);
+	snprintf(policy_path_tmp, PATH_MAX - 1, "%s%s%s", selinux_binary_policy_path(), 
+		"." , version);
 #else	
      	len = strlen(LIBAPOL_SELINUX_DIR) + strlen(POLICY_VER_FILE_NAME) + 1;
      	if((policy_version_file = (char *)malloc(sizeof(char) * (len+1))) == NULL) {
