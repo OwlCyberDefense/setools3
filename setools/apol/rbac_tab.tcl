@@ -86,8 +86,6 @@ proc Apol_RBAC::searchRoles {} {
         variable tgt_selection
         variable list_dflt_role
 		
-	update idletasks
-        
         if {$opts(list_type) == "roles"} {
 		set tgt_is_role 1
 	} else {

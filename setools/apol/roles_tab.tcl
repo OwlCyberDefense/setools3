@@ -19,7 +19,7 @@ namespace eval Apol_Roles {
 	set opts(useType)		0
 	set opts(showSelection)         all
 	variable srchstr 		""
-	variable role_1ist 		""
+	variable role_list 		""
 	variable types_list 		""
 	variable selected_attribute	""
 	variable attrib_sel		0
@@ -56,7 +56,7 @@ proc Apol_Roles::close { } {
 	set Apol_Roles::attrib_sel	0
 	set opts(showSelection) 	all
 	set Apol_Roles::srchstr 	""
-	set Apol_Roles::role_1ist 	""
+	set Apol_Roles::role_list 	""
 	set Apol_Roles::types_list 	""
 	set Apol_Roles::selected_attribute	""
 	set Apol_Roles::role_list ""
@@ -138,8 +138,6 @@ proc Apol_Roles::search { str case_Insensitive regExpr srch_Direction } {
 proc Apol_Roles::searchRoles {} {
 	variable opts
 	variable resultsbox
-
-	update idletasks
 
 	if {$opts(showSelection) == "names"} {
 		set name_only 1
