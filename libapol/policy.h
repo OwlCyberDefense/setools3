@@ -222,6 +222,7 @@ typedef struct security_context {
 typedef struct av_item {
  	int		type;		/* rule type; av rule IDs defined above */
  	unsigned char	flags;		/* where we handle '~' and '*' */
+ 	bool_t		enabled;	/* enabled flag for conditional policy support */
  	unsigned long	lineno;		/* line # from policy.conf */
  	ta_item_t	*src_types;	/* the domain types/attribs */
  	ta_item_t	*tgt_types;	/* the object types/attribs */
@@ -233,6 +234,7 @@ typedef struct av_item {
 typedef struct tt_item {
 	int		type;		/* rule type; av rule IDs defined above */
 	unsigned char	flags;		/* use AV* flags above, only need SRC, TGT, & CLS */
+	bool_t		enabled;	/* enabled flag for conditional policy support */
  	unsigned long	lineno;		/* line # from policy.conf */
 	ta_item_t	*src_types;	/* the domain types/attribs */
  	ta_item_t	*tgt_types;	/* the object types/attribs */
