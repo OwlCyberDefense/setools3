@@ -19,14 +19,14 @@ CFLAGS  += -DAPOL_INSTALL_DIR='"$(INSTALL_LIBDIR)"'
 CFLAGS  += -DLIBAPOL_POLICY_INSTALL_DIR='"$(POLICY_INSTALL_DIR)"'
 CFLAGS  += -DLIBAPOL_SELINUX_DIR='"$(SELINUX_DIR)"'
 CFLAGS	+= -DLIBAPOL_DEFAULT_POLICY='"$(POLICY_SRC_FILE)"'
-CFLAGS  += -I.
+CFLAGS  += -I. 
 
 all: libapol libapol-tcl libapolso libapol-tclso
 
 libapol: libapol.a
 libapol-tcl: libapol-tcl.a
 libapolso: $(LIB-OBJ)
-	$(CC) $(LDFLAGS) -shared -o $(LIBSO) $(LIB-OBJ) -Wl,-soname,$(SONAME) 
+	$(CC) $(LDFLAGS) -shared -o $(LIBSO) $(LIB-OBJ) -Wl,-soname,$(SONAME)  
 
 libapol-tclso: $(LIB-OBJ-TCL)
 	$(CC) $(LDFLAGS) -shared -o $(LIBSOTCL) $(LIB-OBJ-TCL) -Wl,-soname,$(SONAMETCL) 

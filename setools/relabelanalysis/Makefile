@@ -1,6 +1,6 @@
 CC = gcc
-CFLAGS = -I. -I../libapol/ -Wall
-LINKFLAGS = -lm -lselinux
+CFLAGS = -I. -I../libapol/ -Wall 
+LINKFLAGS = -lm -lselinux 
 
 OBJS =  
 LIBAPOL = ../libapol/libapol.a 
