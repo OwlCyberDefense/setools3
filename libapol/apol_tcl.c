@@ -1422,6 +1422,8 @@ int Apol_GetStats(ClientData clientData, Tcl_Interp *interp, int argc, char *arg
 	Tcl_AppendElement(interp, buf);
 	sprintf(buf, "sids %d", policy->num_initial_sids);
 	Tcl_AppendElement(interp, buf);
+	sprintf(buf, "cond_bools %d", policy->num_cond_bools);
+	Tcl_AppendElement(interp, buf);
 			
 	return TCL_OK;
 }
