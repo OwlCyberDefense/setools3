@@ -218,7 +218,7 @@ static int get_iad_buffer(GtkTextBuffer *txt, GtkTextIter *txt_iter,GString *str
 
 
 	/* create a mark that always goes to the left..urr top */ 	
-	mark = gtk_text_buffer_get_mark(txt,"mark");
+	mark = gtk_text_buffer_get_mark(txt,"added-mark");
 	if (!mark)
 		mark = gtk_text_buffer_create_mark (txt,"added-mark",txt_iter,TRUE);
 	gtk_text_buffer_get_iter_at_mark(txt,txt_iter,mark);
@@ -1282,8 +1282,9 @@ static void sediff_populate_buffer_hdrs()
 			sediff_app->summary.booleans.removed, sediff_app->summary.booleans.changed);
 	sediff_add_hdr(sediff_app->booleans_buffer,string);
 	/* rbac */
-	g_string_printf(string, "Role Allows (%d Added, %d Removed, %d Changed)\n\n",sediff_app->summary.rbac.added,
+	g_string_printf(string, "Role Allows (%d Added, %d Removed, %d Changed)\n",sediff_app->summary.rbac.added,
 			sediff_app->summary.rbac.removed, sediff_app->summary.rbac.changed);
+	g_string_append_printf(string, "Role Transitions will be available in the upcoming releases\n\n");
 	sediff_add_hdr(sediff_app->rbac_buffer,string);
 	/* te rules */
 	g_string_printf(string, "TE Rules (%d Added, %d Removed, %d Changed)\n",sediff_app->summary.te_rules.added,
@@ -1942,11 +1943,10 @@ static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 				    	  policy_t *policy_old, policy_t *policy_new)
 {
 
-	g_string_printf(string,"This feature will be available in the upcoming releases\n");
-	gtk_text_buffer_insert(txt,txt_iter,string->str,-1);
+	g_string_printf(string,"Conditionals will be available in the upcoming releases\n");
+	sediff_add_hdr(txt,string);
 
-	
-	return 0;
+       	return 0;
 }
 
 /*
@@ -1958,6 +1958,66 @@ static int txt_buffer_insert_sid_results(GtkTextBuffer *txt, GtkTextIter *txt_it
 	return 0;
 }
 */
+
+
+/* in clearing buffers we need to remove the marks and the iters
+   but not the tags */
+static void sediff_clear_stored_buffer(GtkTextBuffer *txt)
+{
+	GtkTextMark *mark = NULL;
+
+	/* clear the text buffer of any data */
+	sediff_clear_text_buffer(txt);
+
+	/* remove the marks */
+	mark = gtk_text_buffer_get_mark(txt,"changed-mark");
+	if (mark)
+		gtk_text_buffer_delete_mark(txt,mark);
+	mark = gtk_text_buffer_get_mark(txt,"added-mark");
+	if (mark)
+		gtk_text_buffer_delete_mark(txt,mark);
+}
+
+
+static void sediff_clear_stored_buffers()
+{
+
+	if (sediff_app->summary_buffer) {
+		sediff_clear_stored_buffer(GTK_TEXT_BUFFER(sediff_app->summary_buffer));
+	}
+	if (sediff_app->classes_buffer) {
+		sediff_clear_stored_buffer(GTK_TEXT_BUFFER(sediff_app->classes_buffer));
+	}
+	if (sediff_app->types_buffer) {
+		sediff_clear_stored_buffer(GTK_TEXT_BUFFER(sediff_app->types_buffer));
+	}
+	if (sediff_app->roles_buffer) {
+		sediff_clear_stored_buffer(GTK_TEXT_BUFFER(sediff_app->roles_buffer));
+	}
+	if (sediff_app->users_buffer) {
+		sediff_clear_stored_buffer(GTK_TEXT_BUFFER(sediff_app->users_buffer));
+	}
+	if (sediff_app->booleans_buffer) {
+		sediff_clear_stored_buffer(GTK_TEXT_BUFFER(sediff_app->booleans_buffer));
+	}
+	if (sediff_app->attribs_buffer) {
+		sediff_clear_stored_buffer(GTK_TEXT_BUFFER(sediff_app->attribs_buffer));
+	}
+	if (sediff_app->te_buffer) {
+		sediff_clear_stored_buffer(GTK_TEXT_BUFFER(sediff_app->te_buffer));
+	}
+	if (sediff_app->rbac_buffer) {
+		sediff_clear_stored_buffer(GTK_TEXT_BUFFER(sediff_app->rbac_buffer));
+	}
+	if (sediff_app->conditionals_buffer) {
+		sediff_clear_stored_buffer(GTK_TEXT_BUFFER(sediff_app->conditionals_buffer));
+	}
+
+}
+
+
+
+
 /*
   clear the text buffers 
 */
@@ -2016,35 +2076,46 @@ static void sediff_free_stored_buffers()
 */
 static void sediff_create_buffers()
 {
-	sediff_app->summary_buffer = gtk_text_buffer_new(NULL);
-	g_object_ref (G_OBJECT(sediff_app->summary_buffer)); 
-
-	sediff_app->classes_buffer = gtk_text_buffer_new(NULL);
-	g_object_ref (G_OBJECT(sediff_app->classes_buffer)); 
-
-	sediff_app->types_buffer = gtk_text_buffer_new(NULL);	
-	g_object_ref (G_OBJECT(sediff_app->types_buffer)); 
-
-	sediff_app->roles_buffer = gtk_text_buffer_new(NULL);
-	g_object_ref (G_OBJECT(sediff_app->roles_buffer)); 
-
-	sediff_app->users_buffer = gtk_text_buffer_new(NULL);
-	g_object_ref (G_OBJECT(sediff_app->users_buffer)); 
-
-	sediff_app->booleans_buffer = gtk_text_buffer_new(NULL);
-	g_object_ref (G_OBJECT(sediff_app->booleans_buffer)); 
-
-	sediff_app->attribs_buffer = gtk_text_buffer_new(NULL);
-	g_object_ref (G_OBJECT(sediff_app->attribs_buffer)); 
-
-	sediff_app->te_buffer = gtk_text_buffer_new(NULL);
-	g_object_ref (G_OBJECT(sediff_app->te_buffer)); 
-
-	sediff_app->rbac_buffer = gtk_text_buffer_new(NULL);
-	g_object_ref (G_OBJECT(sediff_app->rbac_buffer)); 
-
-	sediff_app->conditionals_buffer = gtk_text_buffer_new(NULL);
-	g_object_ref (G_OBJECT(sediff_app->conditionals_buffer)); 
+	if (sediff_app->summary_buffer == NULL) {
+		sediff_app->summary_buffer = gtk_text_buffer_new(NULL);
+		g_object_ref (G_OBJECT(sediff_app->summary_buffer)); 
+	}
+	if (sediff_app->classes_buffer == NULL) {
+		sediff_app->classes_buffer = gtk_text_buffer_new(NULL);
+		g_object_ref (G_OBJECT(sediff_app->classes_buffer)); 
+	}
+	if (sediff_app->types_buffer == NULL) {
+		sediff_app->types_buffer = gtk_text_buffer_new(NULL);
+		g_object_ref (G_OBJECT(sediff_app->types_buffer)); 
+	}
+	if (sediff_app->roles_buffer == NULL) {
+		sediff_app->roles_buffer = gtk_text_buffer_new(NULL);
+		g_object_ref (G_OBJECT(sediff_app->roles_buffer)); 
+	}
+	if (sediff_app->users_buffer == NULL) {
+		sediff_app->users_buffer = gtk_text_buffer_new(NULL);
+		g_object_ref (G_OBJECT(sediff_app->users_buffer)); 
+	}
+	if (sediff_app->booleans_buffer == NULL) {
+		sediff_app->booleans_buffer = gtk_text_buffer_new(NULL);
+		g_object_ref (G_OBJECT(sediff_app->booleans_buffer)); 
+	}
+	if (sediff_app->attribs_buffer == NULL) {
+		sediff_app->attribs_buffer = gtk_text_buffer_new(NULL);
+		g_object_ref (G_OBJECT(sediff_app->attribs_buffer)); 
+	}
+	if (sediff_app->te_buffer == NULL) {
+		sediff_app->te_buffer = gtk_text_buffer_new(NULL);
+		g_object_ref (G_OBJECT(sediff_app->te_buffer)); 
+	}
+	if (sediff_app->rbac_buffer == NULL) {
+		sediff_app->rbac_buffer = gtk_text_buffer_new(NULL);
+		g_object_ref (G_OBJECT(sediff_app->rbac_buffer)); 
+	}
+	if (sediff_app->conditionals_buffer == NULL) {
+		sediff_app->conditionals_buffer = gtk_text_buffer_new(NULL);
+		g_object_ref (G_OBJECT(sediff_app->conditionals_buffer)); 
+	}
 }
 
 /* Insert the diff stats into the summary buffer */
@@ -2222,11 +2293,9 @@ static void txt_view_populate_buffers(apol_diff_t *stuff_removed,
 	GString *string = g_string_new("");
 	GtkTextIter end;
 
-	sediff_free_stored_buffers();
-	sediff_create_buffers();
+	sediff_clear_stored_buffers();
 
-  
-	/* case OPT_CLASSES: */
+ 	/* case OPT_CLASSES: */
 	gtk_text_buffer_get_start_iter(sediff_app->classes_buffer, &end);
 	rt = txt_buffer_insert_classes_results(sediff_app->classes_buffer, &end,
 					       string, stuff_removed, 
@@ -2513,9 +2582,12 @@ static void sediff_callbacks_free_elem_data(gpointer data, gpointer user_data)
 
 static void sediff_destroy(sediff_app_t *sediff_app)
 {
+
 	g_assert(sediff_app != NULL);
-	if (sediff_app->dummy_view && !GTK_WIDGET_MAPPED(sediff_app->dummy_view)) 
+	
+	if (sediff_app->dummy_view && gtk_widget_get_parent(GTK_WIDGET(sediff_app->dummy_view)) == NULL) {
 		gtk_widget_unref(sediff_app->dummy_view);
+	}
 	if (sediff_app->tree_view != NULL) 
 		gtk_widget_destroy(GTK_WIDGET(sediff_app->tree_view));
 	if (sediff_app->window != NULL)
@@ -2536,6 +2608,8 @@ static void sediff_destroy(sediff_app_t *sediff_app)
 	g_list_foreach(sediff_app->callbacks, &sediff_callbacks_free_elem_data, NULL);
 	g_list_free(sediff_app->callbacks);
 
+	/* destroy our stored buffers */
+	sediff_free_stored_buffers();
 	free(sediff_app);
 	sediff_app = NULL;
 }
@@ -3001,6 +3075,11 @@ static void sediff_initialize()
 	GtkWidget *container = NULL;
 	GtkLabel *label = NULL;
 	
+	/* create our stored buffers this function will check to see if
+	      they already exist
+	*/
+	sediff_create_buffers();
+
 	/* delete tree_view if it existed before */
 	if (sediff_app->tree_view) {
 		gtk_widget_destroy(GTK_WIDGET(sediff_app->tree_view));
@@ -3013,9 +3092,10 @@ static void sediff_initialize()
 	if (sediff_app->dummy_view == NULL) {
 		sediff_app->dummy_view = gtk_text_view_new();
 		g_assert(sediff_app->dummy_view);
+		gtk_text_view_set_editable(GTK_TEXT_VIEW(sediff_app->dummy_view),FALSE);
 		gtk_container_add(GTK_CONTAINER(container), sediff_app->dummy_view);
 		gtk_widget_show_all(container);				
-	} else if (!GTK_WIDGET_MAPPED(sediff_app->dummy_view)) { 
+	} else if (gtk_widget_get_parent(GTK_WIDGET(sediff_app->dummy_view)) == NULL) { 
 		/* If the dummy view has been removed, then re-add it to the container */
 		gtk_container_add(GTK_CONTAINER(container), sediff_app->dummy_view);
 		gtk_widget_show_all(container);					
@@ -3089,8 +3169,8 @@ static int sediff_diff_and_load_policies(const char *p1_file, const char *p2_fil
 	GString *string = g_string_new("");
 	GdkCursor *cursor = NULL;
 	GtkNotebook *notebook1, *notebook2;
-	GdkEvent *event = NULL;
-	
+
+
 	sediff_initialize();
 	/* show our loading dialog while we load */
 	sediff_load_dlg_show();
@@ -3190,11 +3270,6 @@ static int sediff_diff_and_load_policies(const char *p1_file, const char *p2_fil
 	if (gtk_tree_model_get_iter_first(tree_model,&iter)) {
 		gtk_tree_selection_select_iter(sel,&iter);
 	}
-	event = gdk_event_get();
-	while (event) {
-		gdk_event_free(event);
-	event = gdk_event_get();
-	}	
 	/* get rid of the loading when done */
 	sediff_load_dlg_destroy();
 
@@ -3307,6 +3382,7 @@ int main(int argc, char **argv)
 	const char *fname1;
 	filenames.p1_file = filenames.p2_file = NULL;
 	GtkNotebook *notebook;
+	GtkTextView *textview;
 	
 	if (rindex(argv[0],'/')) {
 		fname1 = rindex(argv[0],'/')+1;
@@ -3449,11 +3525,19 @@ int main(int argc, char **argv)
 		
 	glade_xml_signal_autoconnect(sediff_app->window_xml);
 	
-	if (havefiles) {
+	sediff_initialize();
+	if (havefiles) 
 		g_idle_add(&delayed_main,&filenames);
-	} else {
-		sediff_initialize();
-	}
+
+	/* grab the text buffers for our text views */
+	textview = GTK_TEXT_VIEW(glade_xml_get_widget(sediff_app->window_xml, "sediff_p1_results_txt_view"));
+	g_assert(textview);
+
+	/* Configure text_view */
+	gtk_text_view_set_editable(textview, FALSE);
+	gtk_text_view_set_cursor_visible(textview, FALSE);
+			
+	txt_view_switch_buffer(textview,OPT_SUMMARY,1);
 	
 	gtk_main();
 	
