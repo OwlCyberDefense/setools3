@@ -2,16 +2,19 @@
 
 SETFILES_PROG = /usr/sbin/setfiles
 LIB-OBJ		= seuser_db.o 
-LIB-OBJ-TCL = $(LIB-OBJ) seuser_tcl.o
+LIB-OBJ-TCL 	= $(LIB-OBJ) seuser_tcl.o
+LOBJS		= $(patsubst %.o,%.lo,$(LIB-OBJ))
+
 CFLAGS      += -DLIBSEUSER_VERSION_STRING='"$(shell cat VERSION)"'
 CFLAGS      += -DSETFILES_PROG='"$(SETFILES_PROG)"'
-PIC_FLAG =
+
+LIBSO		= libseuser$(shell cat VERSION).so
+
+all: libseuser libseuser-tcl libseuserso
 
 libseuser: ../lib/libseuser.a
-
-libseuser-shared: ../lib/libseuser.$(shell cat VERSION).so
-
 libseuser-tcl: ../lib/libseuser-tcl.a
+libseuserso: ../lib/$(LIBSO)
 
 ../lib/libseuser.a: ../lib $(LIB-OBJ) 
 	 ar cr $@ $(LIB-OBJ) 
@@ -19,37 +22,34 @@ libseuser-tcl: ../lib/libseuser-tcl.a
 ../lib/libseuser-tcl.a: ../lib $(LIB-OBJ-TCL) 
 	 ar cr $@ $(LIB-OBJ-TCL)
 
-../lib/libseuser.$(shell cat VERSION).so : PIC_FLAG = -fPIC
-	 
-../lib/libseuser.$(shell cat VERSION).so: ../lib $(LIB-OBJ)
-	$(CC) $(CFLAGS) -shared -Wl,-soname,$@ \
-	    -o $@ $(LIB-OBJ) -lc
+../lib/$(LIBSO): ../lib $(LOBJS)
+	$(CC) $(LDFLAGS) -shared -o ../lib/$(LIBSO) $(LOBJS) -Wl,-soname,$(LIBSO)
 
-install-libseuser-shared: ../lib/libseuser.$(shell cat VERSION).so
-	install -m 644 ../lib/libseuser.$(shell cat VERSION).so $(SHARED_LIB_INSTALL_DIR)
-	/sbin/ldconfig -n $(SHARED_LIB_INSTALL_DIR)
-	ln -sf $(SHARED_LIB_INSTALL_DIR)/libseuser.$(shell cat VERSION).so $(SHARED_LIB_INSTALL_DIR)/libseuser.so
+install-libseuser-shared: libseuserso
+	install -m 644 ../lib/$(LIBSO) $(SHARED_LIB_INSTALL_DIR)
+	/sbin/ldconfig $(SHARED_LIB_INSTALL_DIR)
+	ln -sf $(SHARED_LIB_INSTALL_DIR)/$(LIBSO) $(SHARED_LIB_INSTALL_DIR)/libseuser.so
 
-install-libseuser-static: ../lib/libseuser.a
+install-libseuser-static: libseuser
 	mkdir -p $(SETOOLS_INCLUDE)
 	install -m 644 ../lib/libseuser.a $(STATIC_LIB_INSTALL_DIR)
 	install -m 644 *.h $(SETOOLS_INCLUDE)
-	
-%.o:  %.c 
-	$(CC) $(CFLAGS) $(PIC_FLAG) -c $<
 
 install: install-libseuser-shared install-libseuser-static
 	
-	
+%.o:  %.c 
+	$(CC) $(CFLAGS) -c $<
+
+%.lo:  %.c
+	$(CC) $(CFLAGS) -fPIC -c $< -o $@
+
 ../lib:
 	mkdir -p $@ 
 
 
 clean:
-	rm -f *.o  core *~
+	rm -f *.o  core *~ $(LOBJS)
 
-bare:
-	rm -f *.o  core *~ ../lib/libseuser.a ../lib/libseuser-tcl.a \
-		../lib/libseuser.$(shell cat VERSION).so
-
+bare: clean
+	rm -f *.o  core *~ ../lib/libseuser.a ../lib/libseuser-tcl.a ../lib/$(LIBSO)
 
