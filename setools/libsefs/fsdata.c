@@ -352,6 +352,7 @@ static int ftw_handler(const char *file, const struct stat *sb, int flag, struct
 	} else {
 		pi = &(fsdata->files[idx]);
 	}	
+	free(con);
 
 	pi->obj_class = sefs_get_file_class(sb);
 
@@ -370,33 +371,33 @@ static int ftw_handler(const char *file, const struct stat *sb, int flag, struct
 	strncpy(pi->path_names[pi->num_links], file, strlen(file));
 	(pi->num_links)++;
 
-		/*check to see if file is a symlink and handle appropriately*/
-		if (S_ISLNK(sb->st_mode))
+	/*check to see if file is a symlink and handle appropriately*/
+	if (S_ISLNK(sb->st_mode))
+	{
+		rc = lgetfilecon(file, &con);
+		if(!(tmp = (char*)calloc((PATH_MAX + 1), sizeof(char)) ))
 		{
-			rc = lgetfilecon(file, &con);
-			if(!(tmp = (char*)calloc((PATH_MAX + 1), sizeof(char)) ))
-			{
-				fprintf(stderr, "out of memory\n");
-				return -1;
-			}
-			readlink(file, tmp, (PATH_MAX + 1) * sizeof(char)); 
-			if(errno == EINVAL || errno == EIO)
-			{
-				fprintf(stderr, "error reading link\n");
-				return -1;
-			}
-			else if (errno == EACCES)
-			{
-				fprintf(stderr, "Access denied to link at %s\n", file);
-				errno = 0;
-			}
-			else
-			{
-				pi->symlink_target = tmp;
-			}
-		} else {
-			pi->symlink_target = NULL;
+			fprintf(stderr, "out of memory\n");
+			return -1;
 		}
+		readlink(file, tmp, (PATH_MAX + 1) * sizeof(char)); 
+		if(errno == EINVAL || errno == EIO)
+		{
+			fprintf(stderr, "error reading link\n");
+			return -1;
+		}
+		else if (errno == EACCES)
+		{
+			fprintf(stderr, "Access denied to link at %s\n", file);
+			errno = 0;
+		}
+		else
+		{
+			pi->symlink_target = tmp;
+		}
+	} else {
+		pi->symlink_target = NULL;
+	}
 
 	return 0;
 
