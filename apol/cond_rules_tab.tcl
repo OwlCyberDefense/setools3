@@ -16,8 +16,6 @@ namespace eval Apol_Cond_Rules {
 	# Search options
 	# search_opts(opt), where opt =
 	# 	boolean  	the name of the boolean
-	# 	show_rules  	whether to display rules along 
-	#		     	with conditional expression
 	#	allow_regex  	use regex
 	#
 	# Currently, only the following types of statements are  
@@ -27,7 +25,6 @@ namespace eval Apol_Cond_Rules {
 	# 	incl_ttrans	type trans rules	
 	variable search_opts 
 	set search_opts(boolean)	""
-	set search_opts(show_rules)	1
 	set search_opts(incl_teallow)	1
 	set search_opts(incl_teaudit)	0
 	set search_opts(incl_ttrans)	0
@@ -41,10 +38,43 @@ namespace eval Apol_Cond_Rules {
 	variable cond_bools_listbox
 	variable bool_combo_box
 	variable cb_regex
-	variable cb_show_rules
 	variable bool_combo_box
 	variable cb_enable_bool_combo_box
 }
+
+###############################################################
+#  ::cond_rules_render_rules
+#
+proc Apol_Cond_Rules::cond_rules_render_rules {resultsbox results num_rules list_idx_1} {
+	upvar 1 $list_idx_1 list_idx
+	
+	for {set j 0} {$j < $num_rules} {incr j} {
+		incr list_idx
+		$resultsbox insert end "   "
+		# Only display line number hyperlink if this is not a binary policy.
+		if {![ApolTop::is_binary_policy]} {
+			set lineno [lindex $results $list_idx]
+			$resultsbox insert end "\["
+			set start_idx [$resultsbox index insert]
+			$resultsbox insert end "$lineno"
+			set end_idx [$resultsbox index insert]
+			Apol_PolicyConf::insertHyperLink $resultsbox $start_idx $end_idx
+			$resultsbox insert end "\]"
+		}
+		incr list_idx
+		set rule [lindex $results $list_idx]
+		$resultsbox insert end " $rule "
+		
+		incr list_idx
+		if {[lindex $results $list_idx]} {
+			$resultsbox insert end "\[enabled\]"
+		} else {
+			$resultsbox insert end "\[disabled\]"
+		}
+		$resultsbox insert end "\n"
+	}
+}
+
 
 ###############################################################
 #  ::cond_rules_search
@@ -67,7 +97,6 @@ proc Apol_Cond_Rules::cond_rules_search {} {
 	set rt [catch {set results [apol_SearchConditionalRules \
 		$bool_name \
 		$search_opts(allow_regex) \
-		$search_opts(show_rules) \
 		$search_opts(incl_teallow) \
 		$search_opts(incl_teaudit) \
 		$search_opts(incl_ttrans)]} err]
@@ -78,7 +107,64 @@ proc Apol_Cond_Rules::cond_rules_search {} {
 	} else {
 		$resultsbox configure -state normal
 		$resultsbox delete 0.0 end
-		$resultsbox insert end $results
+		$resultsbox insert end "Found the following expressions in Reverse Polish Notation:\n"
+		set list_idx 0
+		set rule_selected [expr ($search_opts(incl_teallow) || \
+					 $search_opts(incl_teaudit) || \
+					 $search_opts(incl_ttrans))]
+		set num_cond_exprs [lindex $results $list_idx]
+		for {set i 0} {$i < $num_cond_exprs} {incr i} {
+			incr list_idx
+			set cond_expr [lindex $results $list_idx]
+			$resultsbox insert end "\nconditional expression $i: \[ $cond_expr \]\n\n"
+			
+			if {$rule_selected} {
+				$resultsbox insert end "TRUE list:\n"
+			}
+			incr list_idx
+			set num_av_access [lindex $results $list_idx]
+			
+			if {$search_opts(incl_teallow)} {
+				Apol_Cond_Rules::cond_rules_render_rules \
+					$resultsbox $results $num_av_access list_idx
+			}
+			incr list_idx
+			set num_av_audit [lindex $results $list_idx]
+			if {$search_opts(incl_teaudit)} {
+				Apol_Cond_Rules::cond_rules_render_rules \
+					$resultsbox $results $num_av_audit list_idx
+			}
+			incr list_idx
+			set num_ttrans [lindex $results $list_idx]
+			if {$search_opts(incl_ttrans)} {
+				Apol_Cond_Rules::cond_rules_render_rules \
+					$resultsbox $results $num_ttrans list_idx
+			}
+			
+			if {$rule_selected} {
+				$resultsbox insert end "\n\nFALSE list:\n"
+			}
+			incr list_idx
+			set num_av_access [lindex $results $list_idx]
+			if {$search_opts(incl_teallow)} {
+				Apol_Cond_Rules::cond_rules_render_rules \
+					$resultsbox $results $num_av_access list_idx
+			}
+			incr list_idx
+			set num_av_audit [lindex $results $list_idx]
+			if {$search_opts(incl_teaudit)} {
+				Apol_Cond_Rules::cond_rules_render_rules \
+					$resultsbox $results $num_av_audit list_idx
+			}
+			incr list_idx
+			set num_ttrans [lindex $results $list_idx]
+			if {$search_opts(incl_ttrans)} {
+				Apol_Cond_Rules::cond_rules_render_rules \
+					$resultsbox $results $num_ttrans list_idx
+			}
+			$resultsbox insert end "\n"		
+		}
+		Apol_PolicyConf::configure_HyperLinks $resultsbox
 		ApolTop::makeTextBoxReadOnly $resultsbox 
 	}
 
@@ -93,7 +179,6 @@ proc Apol_Cond_Rules::cond_rules_reset_variables { } {
 	variable enable_bool_combo_box	
 	
 	set search_opts(boolean)	""
-	set search_opts(show_rules)	1
 	set search_opts(incl_teallow)	1
 	set search_opts(incl_teaudit)	0
 	set search_opts(incl_ttrans)	0
@@ -145,7 +230,6 @@ proc Apol_Cond_Rules::open { } {
 	set cond_bools_list [lsort $cond_bools_list] 
 	
 	$Apol_Cond_Rules::bool_combo_box configure -values $cond_bools_list
-	Apol_Cond_Rules::on_rule_buttons_selected
 	return 0
 } 
 
@@ -189,23 +273,6 @@ proc Apol_Cond_Rules::cond_rules_enable_bool_combo_box {} {
 	return 0
 }
 
-proc Apol_Cond_Rules::on_rule_buttons_selected {} {
-	variable search_opts
-	variable cb_show_rules
-	variable bool_combo_box
-	variable cb_enable_bool_combo_box
-	variable cb_regex
-
-	# Disable 'Display rules within cond expression' if no rule selections  
-	if {!$search_opts(incl_teallow) && !$search_opts(incl_teaudit) && !$search_opts(incl_ttrans)} {
-		$cb_show_rules configure -state disabled
-	} else {
-		$cb_show_rules configure -state normal
-	}
-	
-	return 0
-}
-
 ################################################################
 #  ::create
 #
@@ -213,7 +280,6 @@ proc Apol_Cond_Rules::create {nb} {
 	variable bool_combo_box
 	variable resultsbox 
 	variable cb_regex
-	variable cb_show_rules
 	variable bool_combo_box
 	variable cb_enable_bool_combo_box
 	
@@ -252,22 +318,20 @@ proc Apol_Cond_Rules::create {nb} {
 	set c_innerFrame [LabelFrame $ofm.c_innerFrame]
 	set buttons_f    [LabelFrame $ofm.buttons_f]
 	
+	set rule_lbl [label $rules_fm.rules_lbl -text "Select rules to display within expression(s):"]
 	set rules_inner_left_fm [frame $rules_fm.rules_inner_left_fm]
 	set teallow [checkbutton $rules_inner_left_fm.teallow \
 		-text "Allow" \
 		-variable Apol_Cond_Rules::search_opts(incl_teallow) \
-	    	-onvalue 1 -offvalue 0 \
-	    	-command {Apol_Cond_Rules::on_rule_buttons_selected}]
+	    	-onvalue 1 -offvalue 0]
 	set auallow [checkbutton $rules_inner_left_fm.auallow \
 		-text "Auditallow and dontaudit" \
 		-variable Apol_Cond_Rules::search_opts(incl_teaudit) \
-	    	-onvalue 1 -offvalue 0 \
-	    	-command {Apol_Cond_Rules::on_rule_buttons_selected}]
+	    	-onvalue 1 -offvalue 0]
 	set ttrans [checkbutton $rules_inner_left_fm.ttrans \
 		-text "Type transition and type change" \
 		-variable Apol_Cond_Rules::search_opts(incl_ttrans) \
-	    	-onvalue 1 -offvalue 0 \
-	    	-command {Apol_Cond_Rules::on_rule_buttons_selected}]
+	    	-onvalue 1 -offvalue 0]
 	    
 	set bool_combo_box [ComboBox [$l_innerFrame getframe].bool_combo_box \
 		-textvariable Apol_Cond_Rules::search_opts(boolean) \
@@ -277,9 +341,6 @@ proc Apol_Cond_Rules::create {nb} {
 		-variable Apol_Cond_Rules::enable_bool_combo_box \
 		-onvalue 1 -offvalue 0 -text "Search using boolean variable" \
 		-command {Apol_Cond_Rules::cond_rules_enable_bool_combo_box}]
-	set cb_show_rules [checkbutton [$c_innerFrame getframe].cb_show_rules \
-		-variable Apol_Cond_Rules::search_opts(show_rules) \
-		-onvalue 1 -offvalue 0 -text "Display rules within conditional expression(s)"]
 	set cb_regex [checkbutton [$c_innerFrame getframe].cb_regex \
 		-variable Apol_Cond_Rules::search_opts(allow_regex) \
 		-onvalue 1 -offvalue 0 -text "Use regular expression" \
@@ -306,10 +367,11 @@ proc Apol_Cond_Rules::create {nb} {
 	pack $l_innerFrame $c_innerFrame -side left -fill y -anchor nw -padx 4 -pady 4
 	
 	pack $cb_enable_bool_combo_box $bool_combo_box -side top -anchor nw -fill x
-	pack $cb_show_rules $cb_regex -side top -anchor nw 
+	pack $cb_regex -side top -anchor nw 
 	pack $sw_d -side left -expand yes -fill both 
 	pack $rules_fm -side left -anchor nw 
-	pack $rules_inner_left_fm -side left -anchor nw -fill both -expand yes
+	pack $rule_lbl -side top -anchor nw -fill both -expand yes -pady 2
+	pack $rules_inner_left_fm -side left -anchor nw -fill both -expand yes -padx 4
 	pack $teallow $auallow $ttrans -anchor nw -side top 
     
 	return $frame	
