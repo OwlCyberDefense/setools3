@@ -1,4 +1,4 @@
-/* Copyright (C) 2004 Tresys Technology, LLC
+/* Copyright (C) 2004-2005 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information 
  * 
  * Author: Don Patterson <don.patterson@tresys.com>
