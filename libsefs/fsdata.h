@@ -21,6 +21,8 @@
 #define __USE_FILE_OFFSET64 1
 #include <sys/stat.h>
 
+#define SEFS_NOT_A_DIR_ERROR	-2
+#define SEFS_DIR_ACCESS_ERROR	-3
 
 /* Predefined labels */
 #define OBJECT_R 0
