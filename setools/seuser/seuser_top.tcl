@@ -36,7 +36,7 @@ namespace eval SEUser_Top {
 	variable b_lbl_roles
 	variable b_lbl_groups
 	
-	# Miscellaneous variables
+	# All capital letters is the convention for variables defined via the Makefile.
 	# The version number is defined as a magical string here. This is later configured in the make environment.
 	variable gui_ver		SEUSER_GUI_VERSION
 	variable copyright_date		"2002-2004"
