@@ -216,15 +216,20 @@ static int make_p2_cond_expr(int idx1, policy_t *p1, cond_expr_t **expr2, policy
 	*expr2 = cur2 = NULL;
 	
 	for(cur1 = p1->cond_exprs[idx1].expr; cur1 != NULL; cur1  = cur1->next) {
-		if (cur1->bool >= p1->num_cond_bools || cur1->bool < 0) {
-			continue;
-		}
-		idx2 = get_cond_bool_idx(p1->cond_bools[cur1->bool].name, p2);
-		if(idx2 < 0) {
-			cond_free_expr(*expr2); 
-			*expr2 = NULL;
-			return 0; /* can't make it */
-		}
+		if (cur1->expr_type == COND_BOOL) {
+                        if (cur1->bool >= p1->num_cond_bools || cur1->bool < 0) {
+                                continue;
+                        }
+                        idx2 = get_cond_bool_idx(p1->cond_bools[cur1->bool].name, p2);
+                        if(idx2 < 0) {
+                                cond_free_expr(*expr2); 
+                                *expr2 = NULL;
+                                return 0; /* can't make it */
+                        }
+                }
+                else {
+                        idx2 = cur1->bool;
+                }
 		t = malloc(sizeof(cond_expr_t));
 		if (t == NULL) {
 			fprintf(stderr, "out of memory\n");
