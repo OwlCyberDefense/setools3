@@ -70,11 +70,7 @@ static gboolean real_time_update_log(gpointer callback_data)
 	if (!seaudit_app->log_file_ptr)
 		return TRUE;
 
-	if (feof(seaudit_app->log_file_ptr))
-		return TRUE;
-
 	seaudit_log_store_refresh(seaudit_app->log_store, seaudit_app->log_file_ptr);
-	log_filtered_signal_emit();
 	return TRUE;
 }
 
