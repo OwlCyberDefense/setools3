@@ -1392,11 +1392,13 @@ proc ApolTop::readInitFile { } {
 						puts "EOF reached trying to read recent file name $num."
 						break
 					}
+					if {[string is space $tline]} {
+						continue
+					}
 					# check if stored num is greater than max; if so just ignore the rest
 					if {$i >= $max_recent_files} {
 						continue
-					}
-					
+					}		
 					# Add to recent files list.
 					set temp_recent_files [lappend temp_recent_files $tline]
 				}
@@ -1436,26 +1438,32 @@ proc ApolTop::addRecent {file} {
  			return
  		}
 	}
+
 	if {$num_recent_files < $max_recent_files} {
-		#list not full, just add to list and insert into menu
+		# list not full, just add to list and insert into menu
 		set recent_files($num_recent_files) $file
-		[$mainframe getmenu recent] insert 0 command -label "$recent_files($num_recent_files)" -command "ApolTop::openPolicyFile $recent_files($num_recent_files) 0"
-		set most_recent_file $num_recent_files
+		[$mainframe getmenu recent] insert $num_recent_files command -label "$recent_files($num_recent_files)" -command "ApolTop::openPolicyFile $recent_files($num_recent_files) 0"
 		incr num_recent_files
 	} else {
-		#list is full, need to replace one
-		#find oldest entry
-		if {$most_recent_file != 0} {
-			set oldest [expr $most_recent_file - 1]
-		} else {
-			set oldest [expr $max_recent_files - 1]
+		[$mainframe getmenu recent] delete 0 end
+		# list is full, need to replace the last entry, which is the oldest.
+		set oldest [expr $max_recent_files - 1]
+		# Replace the first elements value with the new file. We have now popped the oldest menu item off the bottom of
+		# the list and stacked the new opened file to the top of the list. The most recent file should be the top-most.
+		set recent_files_tmp($most_recent_file) $file
+		[$mainframe getmenu recent] insert $most_recent_file command -label "$recent_files_tmp($most_recent_file)" -command "ApolTop::openPolicyFile $recent_files_tmp($most_recent_file) 0"
+		
+		for {set i 0} {$i < [expr $max_recent_files - 1]} {incr i} {
+			set next [expr $i + 1]
+			# Replace the next elements value to the current index value. 
+			set recent_files_tmp($next) $recent_files($i)
+			[$mainframe getmenu recent] insert $next command -label "$recent_files_tmp($next)" -command "ApolTop::openPolicyFile $recent_files_tmp($next) 0"
 		}
-		[$mainframe getmenu recent] delete $recent_files($oldest)
-		set recent_files($oldest) $file
-		[$mainframe getmenu recent] insert 0 command -label "$recent_files($oldest)" -command "ApolTop::openPolicyFile $recent_files($oldest) 0"
-		set most_recent_file $oldest
+		array set recent_files [array get recent_files_tmp]
+		array unset recent_files_tmp
+		set most_recent_file 0
 	}	
-	return	
+	return 0
 }
 
 proc ApolTop::helpDlg {title file_name} {
@@ -1976,8 +1984,8 @@ proc ApolTop::openPolicy {} {
         set progressval 0
         set file ""
         set types {
+        	{"All files"		*}
 		{"Policy conf files"	{.conf}}
-		{"All files"		*}
     	}
         catch [set file [tk_getOpenFile -filetypes $types]]
         
@@ -2014,10 +2022,15 @@ proc ApolTop::apolExit { } {
 
 proc ApolTop::load_recent_files { } {
 	variable temp_recent_files
+	variable most_recent_file
+	variable max_recent_files
 	
-	foreach r_file $temp_recent_files {
-		ApolTop::addRecent $r_file
+	set most_recent_file 0
+	set length [llength $temp_recent_files]
+	for {set i 0} {$i < $length} {incr i} {
+		ApolTop::addRecent [lindex $temp_recent_files $i]
 	}
+	
 	# No longer need this variable; so, delete.
 	unset temp_recent_files
 	return 0
