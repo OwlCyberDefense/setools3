@@ -1,22 +1,33 @@
-# libseuser and libseuser-tcl
+# libsefs 
 
-LIB-OBJ		= fsdata.o
+LIB-OBJ	= fsdata.o 
+
+SQL-OBJ = sqlite/attach.o sqlite/auth.o sqlite/btree.o sqlite/build.o sqlite/date.o \
+	sqlite/delete.o sqlite/expr.o sqlite/func.o sqlite/hash.o sqlite/insert.o sqlite/legacy.o \
+	sqlite/main.o sqlite/opcodes.o sqlite/os_mac.o sqlite/os_unix.o sqlite/os_win.o sqlite/pager.o \
+	sqlite/parse.o sqlite/pragma.o sqlite/printf.o sqlite/random.o sqlite/select.o sqlite/table.o \
+	sqlite/tokenize.o sqlite/trigger.o sqlite/update.o sqlite/utf.o sqlite/util.o sqlite/vacuum.o \
+	sqlite/vdbeapi.o sqlite/vdbeaux.o sqlite/vdbe.o sqlite/vdbemem.o sqlite/where.o
 
 TARGET = libsefs.so
 SONAME = $(TARGET).1
 LIBSO  = $(TARGET).$(shell cat VERSION)
 
-CFLAGS		+= -I. -I../libapol
 
-all: libsefs libsefsso
+CFLAGS		+= -I. -I../libapol 
 
-libsefs: libsefs.a
+all: sqlite libsefs libsefsso 
+
+sqlite: nothing
+	cd sqlite; $(MAKE)
+
+libsefs: sqlite libsefs.a 
 
 libsefsso: $(LIB-OBJ)
-	$(CC) $(LDFLAGS) -shared -o $(LIBSO) $(LIB-OBJ) -Wl,-soname,$(SONAME) 
+	$(CC) $(LDFLAGS) -shared -o $(LIBSO) $(LIB-OBJ) $(SQL-OBJ) -Wl,-soname,$(SONAME) 
 
 libsefs.a:  $(LIB-OBJ) 
-	 ar cr $@ $(LIB-OBJ) 
+	 ar cr $@ $(LIB-OBJ) $(SQL-OBJ)
 
 install-libsefs-shared: libsefsso
 	install -m 755 $(LIBSO) $(SHARED_LIB_INSTALL_DIR)
@@ -32,12 +43,21 @@ install: install-libsefs-shared install-libsefs-static
 install-policy:
 	chcon system_u:object_r:shlib_t $(SHARED_LIB_INSTALL_DIR)/$(LIBSO)
 	
+fsdata.o: fsdata.c
+	$(CC) $(CFLAGS) -c fsdata.c
+
 %.o:  %.c 
+	cd sqlite
 	$(CC) $(CFLAGS) -c $<
 
 clean:
+	cd sqlite; $(MAKE) clean
 	rm -f *.o core *~
+
+
 
 bare: clean
 	rm -f *.o core *~ libsefs.a $(LIBSO) $(SONAME)
+	cd sqlite; $(MAKE) bare
 
+nothing:
