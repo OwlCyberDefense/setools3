@@ -1103,7 +1103,6 @@ proc ApolTop::create { } {
 	    {command "&General Help" {all option} "Show help" {} -command {ApolTop::helpDlg "Help" "apol_help.txt"}}
 	    {command "&Domain Transition Analysis" {all option} "Show help" {} -command {ApolTop::helpDlg "Domain Transition Analysis Help" "dta_help.txt"}}
 	    {command "&Information Flow Analysis" {all option} "Show help" {} -command {ApolTop::helpDlg "Information Flow Analysis Help" "iflow_help.txt"}}
-	    {command "&Object Classes and Permissions" {all option} "Show help" {} -command {ApolTop::helpDlg "Object Classes/Permissions Help" "obj_perms_help.txt"}}
 	    {command "&About" {all option} "Show about box" {} -command ApolTop::aboutBox}
 	}
 	}
