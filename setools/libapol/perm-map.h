@@ -18,6 +18,9 @@
 #include "policy.h"
 #include <stdio.h>
 
+#define PERMMAP_MAX_WEIGHT 10
+#define PERMMAP_MIN_WEIGHT 1
+
 /* Permission maps: For each object class we need to map all permisions
  * to either read and/or write, or non similar as is done for the MLS stuff.
  * This allows us to determine information flow.  These mappings will be
@@ -33,6 +36,7 @@ typedef struct perm_map {
 #define PERMMAP_NONE		0x10	
 #define PERMMAP_UNDEFINED	0x20	/* undefined obj/perm, but with map */
 	unsigned char	map;
+	char 		weight;		/* the weight (importance) of this perm. (least) 1 - 10 (most); */
 } perm_map_t;
 /* There is one class_perm_map_t per object class. */
 typedef struct class_perm_map {
@@ -69,4 +73,3 @@ unsigned int load_policy_perm_mappings(policy_t *policy, FILE *fp);
 int write_perm_map_file(classes_perm_map_t *map, policy_t *policy, FILE *outfile);
 
 #endif /*_APOLICY_PERMMAP_H_*/
-
