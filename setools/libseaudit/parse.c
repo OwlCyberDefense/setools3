@@ -816,7 +816,6 @@ static int get_bool(char *token, int *bool, bool_t *val, audit_log_t *log)
         if (audit_log_add_bool(log, token, bool) == -1)
                 return PARSE_MEMORY_ERROR;
  
-
         return PARSE_SUCCESS;
 }
 
@@ -859,11 +858,7 @@ static int create_boolean(char **tokens, msg_t **msg, audit_log_t *log)
 	}
 
 	if (num_bools == 0){
-	        (*msg)->msg_data.boolean_msg->num_bools = 0;
-	        (*msg)->msg_data.boolean_msg->booleans = NULL;
-	        (*msg)->msg_data.boolean_msg->values = NULL;
-	  
-	         return PARSE_MALFORMED_MSG_WARN;
+	         return PARSE_INVALID_MSG_WARN;
 	}
 
 	if ((booleans = (int*) malloc(num_bools * sizeof(int))) == NULL) {
@@ -882,10 +877,9 @@ static int create_boolean(char **tokens, msg_t **msg, audit_log_t *log)
 		        free(values);
 		        return result;
 		}
-		booleans[num_bools - 1] = bool;
-		values[num_bools - 1] = val;
+		booleans[i] = bool;
+		values[i] = val;
 	}
-
 	(*msg)->msg_data.boolean_msg->num_bools = num_bools;
 	(*msg)->msg_data.boolean_msg->booleans = booleans;
 	(*msg)->msg_data.boolean_msg->values = values;
