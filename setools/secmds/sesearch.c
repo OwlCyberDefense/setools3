@@ -36,7 +36,6 @@ static struct option const longopts[] =
   {"target", required_argument, NULL, 't'},
   {"class", required_argument, NULL, 'c'},
   {"perms", required_argument, NULL, 'p'},
-  {"policytype", required_argument, NULL, '0'},
   {"allow", no_argument, NULL, 'A'},
   {"neverallow", no_argument, NULL, 'N'},
   {"audit", no_argument, NULL, 'U'},
@@ -78,8 +77,6 @@ Search Type Enforcement rules in an SELinux policy.\n\
   -a, --all              show all rules regardless of type, class, or perms\n\
   -l, --lineno           include line # in policy.conf for each rule.\n\
   			 This option is ignored if using a binary policy.\n\n\
-  --policytype[=POLICYTYPE] \n\
-  			 default to policy type (POLICYTYPE=source|binary)\n\
   -h, --help             display this help and exit\n\
   -v, --version          output version information and exit\n\
 ", stdout);
@@ -88,16 +85,8 @@ If none of -s, -t, -c, -p are specified, then all rules are shown\n\
 You specify -a (--all), or one of more of --allow, --neverallow, \n\
 --audit, or --type.\
 \n\n\
-For --policytype, if no POLICY_FILE is provided, sesearch will attempt to use \n\
-the specified system default policy type. Without the --policytype option, if \n\
-no POLICY_FILE is provided, sesearch will attempt to use the installed binary \n\
-policy version as specified in /selinux/policy_vers and if this cannot be found,\n\
-it will resort to the highest binary policy version it can find in the policy \n\
-install directory. If all fails, sesearch attempts to use the default source \n\
-policy:\n\
-", stdout);
-	printf("      %s\n\n", LIBAPOL_DEFAULT_POLICY);
-
+The default source policy, or if that is unavailable the default binary\n\
+ policy, will be opened if no policy file name is provided.\n", stdout);
 	return;
 }
 
@@ -172,14 +161,6 @@ int main (int argc, char **argv)
 	  		if (!permlist) {
 	  			fprintf(stderr, "Memory error!\n");
 	  			exit(1);	
-	  		}
-	  		break;
-	  	case '0': /* default to policy type */
-	  		if(optarg != 0) {
-	 			if (strcasecmp("source", optarg) == 0) 
-	  				search_opts |= POL_TYPE_SOURCE;
-	  			else if (strcasecmp("binary", optarg) == 0) 
-	  				search_opts |= POL_TYPE_BINARY;
 	  		}
 	  		break;
 	  	case 'i': /* indirect search */

@@ -38,7 +38,6 @@ static struct option const longopts[] =
   {"users", optional_argument, NULL, 'u'},
   {"booleans", optional_argument, NULL, 'b'},
   {"initialsids", optional_argument, NULL, 'i'},
-  {"policytype", required_argument, NULL, '0'},
   {"stats", no_argument, NULL, 's'},
   {"all", no_argument, NULL, 'A'},
   {"expand", no_argument, NULL, 'x'},
@@ -69,8 +68,6 @@ Print requested information about an SELinux policy.\n\
   -s, --stats                print useful policy statics\n\
 ", stdout);
 fputs("\n\
-  --policytype[=POLICYTYPE]\n\
-  			     default to policy type (POLICYTYPE=source|binary)\n\
   -h, --help                 display this help and exit\n\
   -v, --version              output version information and exit\n\
 ", stdout);
@@ -78,16 +75,8 @@ fputs("\n\
 For -ctarui, if NAME is provided, then only show info for NAME.\n\
  Specifying a name is most useful when used with the -x option.\n\
  If no option is provided, display useful policy statics (-s).\n\n\
-For --policytype, if no POLICY_FILE is provided, seinfo will attempt \n\
-to use the specified system default policy type. Without the --policytype \n\
-option, if no POLICY_FILE is provided, seinfo will attempt to use the \n\
-installed binary policy version as specified in /selinux/policy_vers \n\
-and if this cannot be found, it will resort to the highest binary policy \n\
-version it can find in the policy install directory. If all fails, seinfo \n\
-attempts to use the default source policy:\n\
-", stdout);
-	printf("      %s\n\n", LIBAPOL_DEFAULT_POLICY);
-
+The default source policy, or if that is unavailable the default binary\n\
+ policy, will be opened if no policy file name is provided.\n", stdout);
 	return;
 }
 
@@ -512,14 +501,6 @@ int main (int argc, char **argv)
 	  		open_opts |= POLOPT_INITIAL_SIDS;
 	  		if(optarg != 0)
 	  			isid_name = optarg;
-	  		break;
-	  	case '0': /* default to policy type */
-	  		if(optarg != 0) {
-	 			if (strcasecmp("source", optarg) == 0) 
-	  				search_opts |= POL_TYPE_SOURCE;
-	  			else if (strcasecmp("binary", optarg) == 0) 
-	  				search_opts |= POL_TYPE_BINARY;
-	  		}
 	  		break;
 	  	case 'A': /* all */
 	  		all = 1;
