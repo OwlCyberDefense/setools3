@@ -22,7 +22,7 @@
 #endif
 
 #ifndef APOL_INSTALL_DIR
-	#define APOL_INSTALL_DIR "/usr/lib/apol"
+	#define APOL_INSTALL_DIR "/usr/share/setools"
 #endif	
 
 /* use 8k line size */
