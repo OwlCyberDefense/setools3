@@ -58,24 +58,25 @@ seaudit_window_t* seaudit_window_create(audit_log_t *log, bool_t column_visibili
 	vbox = glade_xml_get_widget(window->xml, "NotebookVBox");
 	gtk_container_add(GTK_CONTAINER(vbox), GTK_WIDGET(window->notebook));
 	gtk_widget_show(GTK_WIDGET(window->notebook));
-	seaudit_window_add_new_view(window, log, column_visibility, "default");
+	seaudit_window_add_new_view(window, log, column_visibility, NULL);
 
 	/* connect signal handlers */
 	glade_xml_signal_autoconnect(window->xml);
 	return window;
 }
 
-void seaudit_window_add_new_view(seaudit_window_t *window, audit_log_t *log, bool_t column_visibility[], const char *view_name)
+seaudit_filtered_view_t* seaudit_window_add_new_view(seaudit_window_t *window, audit_log_t *log, bool_t *column_visibility, const char *view_name)
 {
 	seaudit_filtered_view_t *view;
 	GtkWidget *scrolled_window, *tree_view, *button, *label;
 	gint page_index;
 	GtkWidget *hbox, *image;
+	char tab_title[24];
 
 	if (window == NULL)
-		return;
+		return NULL;
 	if (window->window == NULL || window->notebook == NULL || window->xml == NULL)
-		return;
+		return NULL;
 		
 	show_wait_cursor(GTK_WIDGET(window->window));
 	scrolled_window = gtk_scrolled_window_new(NULL, NULL);
@@ -84,6 +85,11 @@ void seaudit_window_add_new_view(seaudit_window_t *window, audit_log_t *log, boo
 	gtk_container_add(GTK_CONTAINER(scrolled_window), tree_view);
 	seaudit_window_create_list(GTK_TREE_VIEW(tree_view), column_visibility);
 
+	if (view_name == NULL) {
+		window->num_untitled_views++;
+		snprintf(tab_title, 24, "Untitled %d", window->num_untitled_views);
+		view_name = tab_title;
+	}
 	view = seaudit_filtered_view_create(log, GTK_TREE_VIEW(tree_view), view_name);
 	hbox = gtk_hbox_new(FALSE, 5);
 	button = gtk_button_new();
@@ -93,6 +99,7 @@ void seaudit_window_add_new_view(seaudit_window_t *window, audit_log_t *log, boo
 	gtk_widget_set_size_request(image, 8, 8);
 	g_signal_connect(G_OBJECT(button), "pressed", G_CALLBACK(seaudit_window_close_view), window);
 	label = gtk_label_new(view_name);
+	g_object_set_data(G_OBJECT(hbox), "label", label);
 	gtk_box_pack_start(GTK_BOX(hbox), label, TRUE, TRUE, 5);
 	gtk_box_pack_end(GTK_BOX(hbox), button, FALSE, FALSE, 5);
 	gtk_notebook_append_page(window->notebook, GTK_WIDGET(scrolled_window), hbox);
@@ -106,6 +113,46 @@ void seaudit_window_add_new_view(seaudit_window_t *window, audit_log_t *log, boo
 	window->views = g_list_append(window->views, view);
 	gtk_notebook_set_current_page(window->notebook, page_index);
 	clear_wait_cursor(GTK_WIDGET(window->window));
+	return view;
+}
+
+void seaudit_window_open_view(seaudit_window_t *window, audit_log_t *log, bool_t *column_visibility)
+{
+	multifilter_window_t *multifilter_window;
+	seaudit_filtered_view_t *view;
+
+	if (!window)
+		return;
+	multifilter_window = multifilter_window_create(NULL, NULL);
+	if (multifilter_window_load_multifilter(multifilter_window) != 0) {
+		multifilter_window_destroy(multifilter_window);
+		return;
+	}
+	if (strcmp(multifilter_window->name->str, "") != 0)
+		view = seaudit_window_add_new_view(window, log, column_visibility, multifilter_window->name->str);
+	else 
+		view = seaudit_window_add_new_view(window, log, column_visibility, NULL);
+
+	seaudit_filtered_view_set_multifilter_window(view, multifilter_window);
+	seaudit_filtered_view_do_filter(view, NULL);
+}
+
+int seaudit_window_get_num_views(seaudit_window_t *window)
+{
+	if (!window)
+		return -1;
+	return gtk_notebook_get_n_pages(window->notebook);
+}
+
+void seaudit_window_save_current_view(seaudit_window_t *window)
+{
+	seaudit_filtered_view_t *view;
+
+	if (!window)
+		return;
+	view = seaudit_window_get_current_view(window);
+	g_assert(view);
+	seaudit_filtered_view_save_view(view);
 }
 
 seaudit_filtered_view_t* seaudit_window_get_current_view(seaudit_window_t *window)
@@ -113,6 +160,8 @@ seaudit_filtered_view_t* seaudit_window_get_current_view(seaudit_window_t *windo
 	gint index;
 	GList *node;
 
+	if (!window)
+		return NULL;
 	index = gtk_notebook_get_current_page(window->notebook);
 	node = g_list_find_custom(window->views, GINT_TO_POINTER(index), &seaudit_window_view_matches_tab_index);
 	if (!node) {
@@ -123,6 +172,8 @@ seaudit_filtered_view_t* seaudit_window_get_current_view(seaudit_window_t *windo
 
 void seaudit_window_filter_views(seaudit_window_t *window)
 {
+	if (!window)
+		return;
 	g_list_foreach(window->views, (GFunc)seaudit_filtered_view_do_filter, NULL);
 }
 
@@ -165,6 +216,12 @@ static void seaudit_window_on_log_column_clicked(GtkTreeViewColumn *column, gpoi
 static void seaudit_window_on_log_row_activated(GtkTreeView *treeview, GtkTreePath *path, GtkTreeViewColumn *col, gpointer user_data)
 {
 	query_window_create();
+}
+
+static void seaudit_window_on_notebook_switch_page(GtkNotebook *notebook, GtkNotebookPage *page, guint pagenum, seaudit_window_t *window)
+{
+	seaudit_update_status_bar(seaudit_app);
+
 }
 
 /*
@@ -317,10 +374,4 @@ static int seaudit_window_create_list(GtkTreeView *view, bool_t visibility[])
 	gtk_tree_view_column_set_visible(column, visibility[AVC_MISC_FIELD]);
 
 	return 0;
-}
-
-static void seaudit_window_on_notebook_switch_page(GtkNotebook *notebook, GtkNotebookPage *page, guint pagenum, seaudit_window_t *window)
-{
-	seaudit_update_status_bar(seaudit_app);
-
 }
