@@ -65,12 +65,13 @@ static void txt_view_populate_buffers(apol_diff_t *stuff_removed,
 				     policy_t *policy_old,
 				     policy_t *policy_new);
 
+/* internal fcns */
 static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy_option);
 static int sediff_diff_and_load_policies(const char *p1_file,const char *p2_file);
 static void sediff_populate_buffer_hdrs();
 static void sediff_update_status_bar();
 static void sediff_rename_policy_tabs(const char *p1,const char *p2) ;
-
+static void txt_buffer_insert_summary_results();
 
 static void sediff_callback_signal_emit_1(gpointer data, gpointer user_data)
 {
@@ -1715,15 +1716,20 @@ static int txt_buffer_insert_rbac_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 
 	return 0;
 }
-/*
+
 static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_iter,
-					  GString *string, apol_diff_t *diff, policy_t *policy)
+					  GString *string, apol_diff_t *stuff_removed, apol_diff_t *stuff_added,
+				    	  policy_t *policy_old, policy_t *policy_new)
 {
-	g_return_val_if_fail(diff != NULL, -1);
+
+	g_string_printf(string,"This feature is will be available in the upcoming releases\n");
+	gtk_text_buffer_insert(txt,txt_iter,string->str,-1);
+
 	
 	return 0;
 }
 
+/*
 static int txt_buffer_insert_sid_results(GtkTextBuffer *txt, GtkTextIter *txt_iter,
 					 GString *string, apol_diff_t *diff, policy_t *policy)
 {
@@ -1737,6 +1743,10 @@ static int txt_buffer_insert_sid_results(GtkTextBuffer *txt, GtkTextIter *txt_it
 */
 static void sediff_clear_buffers()
 {
+	if (sediff_app->summary_buffer) {
+		g_object_unref (G_OBJECT(sediff_app->summary_buffer)); 
+
+	}
 	if (sediff_app->classes_buffer) {
 		g_object_unref (G_OBJECT(sediff_app->classes_buffer)); 
 
@@ -1762,7 +1772,12 @@ static void sediff_clear_buffers()
 	if (sediff_app->rbac_buffer) {
 		g_object_unref (G_OBJECT(sediff_app->rbac_buffer)); 
 	}
+	if (sediff_app->conditionals_buffer) {
+		g_object_unref (G_OBJECT(sediff_app->conditionals_buffer)); 
+	}
+	
 
+	sediff_app->summary_buffer = NULL;
 	sediff_app->classes_buffer = NULL;
 	sediff_app->types_buffer = NULL;	
 	sediff_app->roles_buffer = NULL;
@@ -1771,6 +1786,7 @@ static void sediff_clear_buffers()
 	sediff_app->attribs_buffer = NULL;
 	sediff_app->te_buffer = NULL;
 	sediff_app->rbac_buffer = NULL;
+	sediff_app->conditionals_buffer = NULL;
 
 }
 
@@ -1780,9 +1796,11 @@ static void sediff_clear_buffers()
 */
 static void sediff_create_buffers()
 {
+	sediff_app->summary_buffer = gtk_text_buffer_new(NULL);
+	g_object_ref (G_OBJECT(sediff_app->summary_buffer)); 
+
 	sediff_app->classes_buffer = gtk_text_buffer_new(NULL);
 	g_object_ref (G_OBJECT(sediff_app->classes_buffer)); 
-
 
 	sediff_app->types_buffer = gtk_text_buffer_new(NULL);	
 	g_object_ref (G_OBJECT(sediff_app->types_buffer)); 
@@ -1790,27 +1808,111 @@ static void sediff_create_buffers()
 	sediff_app->roles_buffer = gtk_text_buffer_new(NULL);
 	g_object_ref (G_OBJECT(sediff_app->roles_buffer)); 
 
-
 	sediff_app->users_buffer = gtk_text_buffer_new(NULL);
 	g_object_ref (G_OBJECT(sediff_app->users_buffer)); 
-
 
 	sediff_app->booleans_buffer = gtk_text_buffer_new(NULL);
 	g_object_ref (G_OBJECT(sediff_app->booleans_buffer)); 
 
-
 	sediff_app->attribs_buffer = gtk_text_buffer_new(NULL);
 	g_object_ref (G_OBJECT(sediff_app->attribs_buffer)); 
-
 
 	sediff_app->te_buffer = gtk_text_buffer_new(NULL);
 	g_object_ref (G_OBJECT(sediff_app->te_buffer)); 
 
-
 	sediff_app->rbac_buffer = gtk_text_buffer_new(NULL);
 	g_object_ref (G_OBJECT(sediff_app->rbac_buffer)); 
 
+	sediff_app->conditionals_buffer = gtk_text_buffer_new(NULL);
+	g_object_ref (G_OBJECT(sediff_app->conditionals_buffer)); 
 }
+
+/* Insert the diff stats into the summary buffer */
+static void txt_buffer_insert_summary_results()
+{
+	GtkTextBuffer *txt;
+	GtkTextIter start,end,iter;
+	GtkTextTagTable *table;
+	GString *string = g_string_new("");
+	GtkTextTag *header_tag;
+
+	txt = sediff_app->summary_buffer;
+
+	/* Clear the buffer */
+	gtk_text_buffer_get_start_iter(txt, &start);
+	gtk_text_buffer_get_end_iter(txt, &end);
+	gtk_text_buffer_delete(txt, &start, &end);
+
+	table = gtk_text_buffer_get_tag_table(txt);
+	header_tag = gtk_text_tag_table_lookup(table, "header-tag");	
+	if (!header_tag) {
+	        header_tag = gtk_text_buffer_create_tag(txt, "header-tag",
+							"weight", PANGO_WEIGHT_BOLD,
+							"underline", PANGO_UNDERLINE_SINGLE,
+							NULL); 	      
+	}
+	gtk_text_buffer_get_start_iter(txt,&iter);
+	g_string_printf(string,"Policy Difference Statistics\n\n");
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_tag,NULL);
+	
+
+	g_string_printf(string,"Classes and Permissions:\n");
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_tag,NULL);
+	g_string_printf(string,"\tClasses:\n\t\tAdded: %d\n\t\tRemoved:%d\n\t\tChanged %d\n\n",
+			sediff_app->summary.classes.added,sediff_app->summary.classes.removed,sediff_app->summary.classes.changed);
+	gtk_text_buffer_insert(txt,&iter,string->str,-1);
+	g_string_printf(string,"\tCommons:\n\t\tAdded: %d\n\t\tRemoved:%d\n\t\tChanged %d\n\n",
+			sediff_app->summary.commons.added,sediff_app->summary.commons.removed,sediff_app->summary.commons.changed);
+	gtk_text_buffer_insert(txt,&iter,string->str,-1);
+	g_string_printf(string,"\tPermissions:\n\t\tAdded: %d\n\t\tRemoved:%d\n\n",
+			sediff_app->summary.permissions.added,sediff_app->summary.permissions.removed);
+	gtk_text_buffer_insert(txt,&iter,string->str,-1);
+
+	g_string_printf(string,"Types:\n");
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_tag,NULL);
+	g_string_printf(string,"\tTypes:\n\t\tAdded: %d\n\t\tRemoved:%d\n\t\tChanged %d\n\n",
+			sediff_app->summary.types.added,sediff_app->summary.types.removed,sediff_app->summary.types.changed);
+	gtk_text_buffer_insert(txt,&iter,string->str,-1);
+
+	g_string_printf(string,"Attributes:\n");
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_tag,NULL);
+	g_string_printf(string,"\tAttributes:\n\t\tAdded: %d\n\t\tRemoved:%d\n\t\tChanged %d\n\n",
+			sediff_app->summary.attributes.added,sediff_app->summary.attributes.removed,sediff_app->summary.attributes.changed);
+	gtk_text_buffer_insert(txt,&iter,string->str,-1);
+
+	g_string_printf(string,"Roles:\n");
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_tag,NULL);
+	g_string_printf(string,"\tRoles:\n\t\tAdded: %d\n\t\tRemoved:%d\n\t\tChanged %d\n\n",
+			sediff_app->summary.roles.added,sediff_app->summary.roles.removed,sediff_app->summary.roles.changed);
+	gtk_text_buffer_insert(txt,&iter,string->str,-1);
+
+	g_string_printf(string,"Users:\n");
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_tag,NULL);
+	g_string_printf(string,"\tUsers:\n\t\tAdded: %d\n\t\tRemoved:%d\n\t\tChanged %d\n\n",
+			sediff_app->summary.users.added,sediff_app->summary.users.removed,sediff_app->summary.users.changed);
+	gtk_text_buffer_insert(txt,&iter,string->str,-1);
+
+	g_string_printf(string,"Booleans:\n");
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_tag,NULL);
+	g_string_printf(string,"\tBooleans:\n\t\tAdded: %d\n\t\tRemoved:%d\n\t\tChanged %d\n\n",
+			sediff_app->summary.booleans.added,sediff_app->summary.booleans.removed,sediff_app->summary.booleans.changed);
+	gtk_text_buffer_insert(txt,&iter,string->str,-1);
+
+	g_string_printf(string,"TE Rules:\n");
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_tag,NULL);
+	g_string_printf(string,"\tTE Rules:\n\t\tAdded: %d\n\t\tRemoved:%d\n\t\tChanged %d\n\n",
+			sediff_app->summary.te_rules.added,sediff_app->summary.te_rules.removed,sediff_app->summary.te_rules.changed);
+	gtk_text_buffer_insert(txt,&iter,string->str,-1);
+
+	g_string_printf(string,"RBAC:\n");
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_tag,NULL);
+	g_string_printf(string,"\tRBAC:\n\t\tAdded: %d\n\t\tRemoved:%d\n\t\tChanged %d\n\n",
+			sediff_app->summary.rbac.added,sediff_app->summary.rbac.removed,sediff_app->summary.rbac.changed);
+	gtk_text_buffer_insert(txt,&iter,string->str,-1);
+
+	g_string_free(string,TRUE);
+}
+
 
 /*
   puts the diff results into the precreated text buffers
@@ -1894,6 +1996,17 @@ static void txt_view_populate_buffers(apol_diff_t *stuff_removed,
 					      string, stuff_removed, stuff_added, 
 					      policy_old, policy_new);
 
+	/* case CONDITIONALS: */
+	g_string_truncate(string,0);
+	gtk_text_buffer_get_end_iter(sediff_app->conditionals_buffer, &end);
+	rt = txt_buffer_insert_cond_results(sediff_app->conditionals_buffer,&end,
+					      string, stuff_removed, stuff_added, 
+					      policy_old, policy_new);
+
+
+
+	/* insert the diff summary */
+	txt_buffer_insert_summary_results();
 
 	/* load up the headers */
 	sediff_populate_buffer_hdrs();	
@@ -1919,6 +2032,9 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 
 	if (policy_option == 1) {
 		switch (option) {
+		case OPT_SUMMARY:
+			gtk_text_view_set_buffer(textview,sediff_app->summary_buffer);
+			break;
 		case OPT_CLASSES:
 			gtk_text_view_set_buffer(textview,sediff_app->classes_buffer);
 			break;
@@ -1960,6 +2076,9 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 			break;
 		case OPT_RBAC_RULES:
 			gtk_text_view_set_buffer(textview,sediff_app->rbac_buffer);
+			break;
+		case OPT_CONDITIONALS:
+			gtk_text_view_set_buffer(textview,sediff_app->conditionals_buffer);
 			break;
 		default:
 			fprintf(stderr, "Invalid list item %d!", option);
@@ -2125,7 +2244,7 @@ static GtkWidget *sediff_tree_view_create_from_store(SEDiffTreeViewStore *tree_s
 	col = gtk_tree_view_column_new();
 	gtk_tree_view_column_pack_start (col, renderer, TRUE);
 	gtk_tree_view_column_add_attribute (col, renderer, "text", SEDIFF_LABEL_COLUMN);
-	gtk_tree_view_column_set_title (col, "Policy Components");
+//	gtk_tree_view_column_set_title (col, "Policy Components");
 	gtk_tree_view_append_column(GTK_TREE_VIEW(tree_view),col);
 	
 	renderer = gtk_cell_renderer_text_new();
@@ -2444,12 +2563,12 @@ static int sediff_diff_and_load_policies(const char *p1_file,const char *p2_file
 	sediff_policy_file_textview_populate(p1_file, p1_textview);
 	sediff_policy_file_textview_populate(p2_file, p2_textview);
 
+	/* populate the 2 stat buffers */
 	stats = (GtkTextView *)glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p1_stats_text");
 	sediff_policy_stats_textview_populate(tree_store->diff_results->p1, stats);
 
 	stats = (GtkTextView *)glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p2_stats_text");
 	sediff_policy_stats_textview_populate(tree_store->diff_results->p2, stats);
-
 
 	/* create the tree_view */
 	sediff_app->tree_view = sediff_tree_view_create_from_store(tree_store);
@@ -2610,6 +2729,7 @@ int main(int argc, char **argv)
 	}
 	memset(sediff_app, 0, sizeof(sediff_app_t));
 
+	sediff_app->summary_buffer = NULL;
 	sediff_app->classes_buffer = NULL;
 	sediff_app->types_buffer = NULL;	
 	sediff_app->roles_buffer = NULL;
