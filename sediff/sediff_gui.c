@@ -2821,7 +2821,6 @@ static int sediff_diff_and_load_policies(const char *p1_file,const char *p2_file
 	GtkTreeModel *tree_model;
 	GtkTreeSelection *sel;
 	GtkTreeIter iter;
-	GtkLabel *lbl_p1, *lbl_p2;
 
 	/* show our loading dialog while we load */
 	sediff_load_dlg_show();
@@ -2850,13 +2849,6 @@ static int sediff_diff_and_load_policies(const char *p1_file,const char *p2_file
 
 		return -1;
 	}
-
-	/* Update the Label widgets */
-	lbl_p1 = (GtkLabel*)glade_xml_get_widget(sediff_app->window_xml, "lbl_policy1");
-	lbl_p2 = (GtkLabel*)glade_xml_get_widget(sediff_app->window_xml, "lbl_policy2");
-	
-	gtk_label_set_text(lbl_p1, (const char*)p1_file);
-	gtk_label_set_text(lbl_p2, (const char*)p2_file);
 
 	/* create a new tree_store */
 	tree_store = sediff_tree_store_new();
