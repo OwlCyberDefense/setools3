@@ -451,8 +451,54 @@ char *re_render_avh_rule_enabled_state(avh_node_t *node, policy_t *p)
 	return t;
 }
 
+/* print the cond expr in rpn for a rule */
+char *re_render_avh_rule_cond_expr(avh_node_t *node, policy_t *p)
+{
+	cond_expr_t *cond;
+	char *rt = NULL;
+	int sz;
+	char tbuf[BUF_SZ];
+	if (node->flags & AVH_FLAG_COND) {
+		append_str(&rt,&sz," [ ");
+		for(cond = p->cond_exprs[node->cond_expr].expr; cond != NULL; cond  = cond->next) {
+			switch (cond->expr_type) {
+			case COND_BOOL:
+				snprintf(tbuf, sizeof(tbuf)-1, "%s ", p->cond_bools[cond->bool].name); 
+				append_str(&rt,&sz,tbuf);
+				break;
+			case COND_NOT:
+				snprintf(tbuf, sizeof(tbuf)-1, "! "); 
+				append_str(&rt,&sz,tbuf);
+				break;
+			case COND_OR:
+				snprintf(tbuf, sizeof(tbuf)-1, "|| "); 
+				append_str(&rt,&sz,tbuf);
+				break;
+			case COND_AND:
+				snprintf(tbuf, sizeof(tbuf)-1, "&& "); 
+				append_str(&rt,&sz,tbuf);
+				break;
+			case COND_XOR:
+				snprintf(tbuf, sizeof(tbuf)-1, "^ "); 
+				append_str(&rt,&sz,tbuf);
+				break;
+			case COND_EQ:
+				append_str(&rt,&sz,tbuf);
+				snprintf(tbuf, sizeof(tbuf)-1, "== "); 
+				break;
+			case COND_NEQ:
+				append_str(&rt,&sz,tbuf);
+				snprintf(tbuf, sizeof(tbuf)-1, "!= ");
+				break;
+			default:
+				break;
+			}
 
-
+		}
+		append_str(&rt,&sz," ] ");			
+	}
+	return rt;
+}
 
 /* render a AV/Type rule from av hash table; caller must free memory.
  * Return NULL on error. */
@@ -478,31 +524,11 @@ char *re_render_avh_rule_cond_state(avh_node_t *node, policy_t *p)
 	}
 	if(rt < 0)
 		goto err_return;
-	
-/*	u = re_render_avh_rule_enabled_state(node,p);
-	if (u == NULL)
-		goto err_return;
 
-	rt = append_str(&t,&sz,u);
-	if(rt < 0)
-		goto err_return;
-	if (u != NULL)
-		free(u);
-	
-	if(avh_is_enabled(node, p))
-		rt = append_str(&t, &sz, " E: ");
-	else
-		rt = append_str(&t, &sz, " D: ");
-*/	if(rt < 0)
-		goto err_return;
-
-		
 	return t;
 err_return:
 	if(t != NULL)
 		free(t);
-//	if(u != NULL)
-//		free(u);
 	return NULL;	
 }
 
