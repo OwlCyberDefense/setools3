@@ -116,6 +116,8 @@ help:
 	@echo "   install-docs:      install setools documentation"
 	@echo "   install-policy:    install SELinux policy and label files"
 	@echo "   install-bwidget:   install BWidgets-1.4.1 package (requires Tcl/Tk)"
+	@echo ""
+	@echo "   install-service:   install seaudit-report as a plug-in to LogWatch (LogWatch required)"
 	@echo " "
 	@echo "   all:               build everything, but don't install"
 	@echo "   all-nogui:         only build non-GUI tools and libraries"
@@ -294,6 +296,10 @@ install-policy: install-seuser-policy install-secmds-policy \
 install-bwidget:
 	cd packages; $(MAKE) install
 
+# Install LogWatch config files to plug-in seaudit-report to LogWatch
+install-service:
+	cd seaudit; $(MAKE) install-logwatch-service
+	
 # Re-generate all setools documentation in source tree
 docs:
 	cd docs-src; $(MAKE) docs
