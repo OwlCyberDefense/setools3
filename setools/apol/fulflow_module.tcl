@@ -97,8 +97,6 @@ namespace eval Apol_Analysis_fulflow {
 	variable disabled_rule_tag     	DISABLE_RULE
 	
 	variable abort_trans_analysis 	0
-	# Return value to indicate that perm map loaded successfully, but there were warnings
-	variable warning_return_val	"-2"
 	variable orig_cursor		""
 	variable excluded_tag		" (Excluded)"
 	variable progressmsg		""
@@ -157,7 +155,6 @@ proc Apol_Analysis_fulflow::do_analysis { results_frame } {
 	variable fulflow_tree
 	variable fulflow_info_text
         variable flow_direction
-	variable warning_return_val
 	variable advanced_filter_Dlg
 	variable f_opts
 		        
@@ -1912,7 +1909,7 @@ proc Apol_Analysis_fulflow::load_default_perm_map {} {
 	if {!$map_loaded} {
 		set rt [catch {Apol_Perms_Map::load_default_perm_map} err]
 		if { $rt != 0 } {
-			if {$rt == $Apol_Analysis_fulflow::warning_return_val} {
+			if {$rt == $Apol_Perms_Map::warning_return_val} {
 				tk_messageBox -icon warning -type ok -title "Warning" -message "$err"
 			} else {
 				tk_messageBox -icon error -type ok -title "Error" -message "$err"
