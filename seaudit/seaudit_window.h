@@ -25,7 +25,7 @@ typedef struct seaudit_window {
 
 seaudit_window_t* seaudit_window_create(audit_log_t *log, bool_t *column_visibility);
 seaudit_filtered_view_t* seaudit_window_add_new_view(seaudit_window_t *window, audit_log_t *log, bool_t *column_visibility, const char *view_name);
-void seaudit_window_save_current_view(seaudit_window_t *window);
+void seaudit_window_save_current_view(seaudit_window_t *window, gboolean saveas);
 void seaudit_window_open_view(seaudit_window_t *window, audit_log_t *log, bool_t *column_visibility);
 seaudit_filtered_view_t* seaudit_window_get_current_view(seaudit_window_t *window);
 int seaudit_window_get_num_views(seaudit_window_t *window);

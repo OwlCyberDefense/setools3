@@ -37,6 +37,7 @@ static void multifilter_window_get_selected_filters(multifilter_window_t *window
 static void multifilter_window_get_selected_filters_on_cancel_clicked(GtkButton *button, multifilter_window_t *window);
 static void multifilter_window_get_selected_filters_on_ok_clicked(GtkButton *button, multifilter_window_t *window);
 static gboolean multifilter_window_get_selected_on_delete_event(GtkWidget *widget, GdkEvent *event, seaudit_multifilter_t *user_data);
+static void multifilter_window_on_save_button_pressed(GtkButton *button, multifilter_window_t *user_data);
 
 multifilter_window_t* multifilter_window_create(seaudit_filtered_view_t *parent, const gchar *view_name)
 {
@@ -58,6 +59,7 @@ void multifilter_window_init(multifilter_window_t *window, seaudit_filtered_view
 	window->name = g_string_new(view_name);
 	window->match = g_string_new("All");
 	window->show = g_string_new("Show");
+	window->filename = g_string_new("");
 	window->liststore = gtk_list_store_new(1, G_TYPE_STRING);
 }
 
@@ -78,6 +80,10 @@ void multifilter_window_destroy(multifilter_window_t *window)
 		while(g_idle_remove_by_data(window->window));	       
 		gtk_widget_destroy(GTK_WIDGET(window->window));
 	}
+	g_string_free(window->name, TRUE);
+	g_string_free(window->match, TRUE);
+	g_string_free(window->show, TRUE);
+	g_string_free(window->filename, TRUE);
 }
 
 void multifilter_window_display(multifilter_window_t *window)
@@ -157,6 +163,9 @@ void multifilter_window_display(multifilter_window_t *window)
 	widget = glade_xml_get_widget(window->xml, "ExportButton");
 	g_signal_connect(G_OBJECT(widget), "pressed",
 			 G_CALLBACK(multifilter_window_on_export_button_pressed), window);
+	widget = glade_xml_get_widget(window->xml, "SaveButton");
+	g_signal_connect(G_OBJECT(widget), "pressed",
+			 G_CALLBACK(multifilter_window_on_save_button_pressed), window);
 
 	g_signal_connect(G_OBJECT(window->window), "delete_event", 
 			 G_CALLBACK(multifilter_window_on_delete_event), window);
@@ -164,7 +173,7 @@ void multifilter_window_display(multifilter_window_t *window)
 	multifilter_window_update_buttons_sensitivity(window);
 }
 
-void multifilter_window_save_multifilter(multifilter_window_t *window)
+void multifilter_window_save_multifilter(multifilter_window_t *window, gboolean saveas)
 {
 	seaudit_multifilter_t *multifilter;
 	filter_window_t *filter_window;
@@ -176,17 +185,23 @@ void multifilter_window_save_multifilter(multifilter_window_t *window)
 
 	if (!window)
 		return;
-	filename = get_filename_from_user("Save View", window->name->str);
-	if (filename == NULL)
-		return;
-	if (g_file_test(filename->str, G_FILE_TEST_EXISTS)) {
-		message = g_string_new("");
-		g_string_printf(message, "The file %s\nalready exists.  Are you sure you wish to continue?", filename->str);
-		response = get_user_response_to_message(window->window, message->str);
-		g_string_free(message, TRUE);
-		if (response != GTK_RESPONSE_YES)
+
+	if (!saveas && strcmp(window->filename->str, "") != 0)
+		filename = g_string_new(window->filename->str);
+	else {
+		filename = get_filename_from_user("Save View", window->name->str);
+		if (filename == NULL)
 			return;
+		if (g_file_test(filename->str, G_FILE_TEST_EXISTS)) {
+			message = g_string_new("");
+			g_string_printf(message, "The file %s\nalready exists.  Are you sure you wish to continue?", filename->str);
+			response = get_user_response_to_message(window->window, message->str);
+			g_string_free(message, TRUE);
+			if (response != GTK_RESPONSE_YES)
+				return;
+		}
 	}
+	g_assert(filename);
 	multifilter = seaudit_multifilter_create();
 	seaudit_multifilter_set_name(multifilter, window->name->str);
 	if (window->xml) {
@@ -217,7 +232,11 @@ void multifilter_window_save_multifilter(multifilter_window_t *window)
 	        g_string_printf(message, "Unable to save view to %s\n%s", filename->str, strerror(errno));
 		message_display(window->window, GTK_MESSAGE_ERROR, message->str);
 		g_string_free(message, TRUE);
+	} else {
+		window->filename = g_string_assign(window->filename, filename->str);
+		multifilter_window_set_title(window);
 	}
+
 	seaudit_multifilter_destroy(multifilter);
 	g_string_free(filename, TRUE);
 }
@@ -281,6 +300,8 @@ int multifilter_window_load_multifilter(multifilter_window_t *window)
 	else 
 		window->show = g_string_assign(window->show, "Hide");
 	seaudit_multifilter_destroy(multifilter);
+	window->filename = g_string_assign(window->filename, filename->str);
+
 	return 0;
 
 }
@@ -581,10 +602,18 @@ static void multifilter_window_set_title(multifilter_window_t *window)
 {
 	GString *title;
 
-	title = g_string_new("View - ");
-	title = g_string_append(title, window->name->str);
+	if (!window || !window->window)
+		return;
+
+	if (strcmp(window->filename->str, "") == 0) {
+		title = g_string_new("View - ");
+		title = g_string_append(title, window->name->str);
+	} else {
+		title = g_string_new("Save to - ");
+		title = g_string_append(title, window->filename->str);
+	}
 	gtk_window_set_title(window->window, title->str);
-	g_string_free(title, TRUE);	
+	g_string_free(title, TRUE);
 
 }
 
@@ -766,4 +795,10 @@ static gboolean multifilter_window_get_selected_on_delete_event(GtkWidget *widge
 	seaudit_multifilter_destroy(user_data);
 	gtk_widget_destroy(widget);
 	return TRUE;
+}
+
+static void multifilter_window_on_save_button_pressed(GtkButton *button, multifilter_window_t *user_data)
+{
+	multifilter_window_save_multifilter(user_data, FALSE);
+	
 }

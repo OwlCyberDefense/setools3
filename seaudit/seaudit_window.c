@@ -144,7 +144,7 @@ int seaudit_window_get_num_views(seaudit_window_t *window)
 	return gtk_notebook_get_n_pages(window->notebook);
 }
 
-void seaudit_window_save_current_view(seaudit_window_t *window)
+void seaudit_window_save_current_view(seaudit_window_t *window, gboolean saveas)
 {
 	seaudit_filtered_view_t *view;
 
@@ -152,7 +152,7 @@ void seaudit_window_save_current_view(seaudit_window_t *window)
 		return;
 	view = seaudit_window_get_current_view(window);
 	g_assert(view);
-	seaudit_filtered_view_save_view(view);
+	seaudit_filtered_view_save_view(view, saveas);
 }
 
 seaudit_filtered_view_t* seaudit_window_get_current_view(seaudit_window_t *window)
