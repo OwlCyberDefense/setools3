@@ -503,6 +503,8 @@ proc Apol_File_Contexts::create_fc_db {dlg} {
 	if {$rt != 0} {
 		tk_messageBox -icon error -type ok -title "Error" \
 			-message "$err\nSee stderr for more information."
+		$b1_create_dlg configure -state normal
+		$b2_create_dlg configure -state normal
 		return
 	} 
 	catch {destroy $dlg} 
