@@ -791,24 +791,15 @@ proc Apol_TE::delete_ResultsTab { pageID } {
 }
 
 # ------------------------------------------------------------------------------
-#  Command Apol_TE::resetObjsPerms_Selections
+#  Command Apol_TE::resetObjs_Selections
 # ------------------------------------------------------------------------------
-proc Apol_TE::resetObjsPerms_Selections { selObjectsList selPermsList } {
+proc Apol_TE::resetObjs_Selections {selObjectsList} {
 	variable objslistbox
-    	variable permslistbox
-	
 	# Now get the number of elements in each listbox 
 	set objectsCount [$objslistbox index end]
-	set permsCount 	 [$permslistbox index end]
+	
 	# Clear the selections in the listboxes.
 	$objslistbox selection clear 0 end
-	$permslistbox selection clear 0 end
-	
-	if {$selObjectsList != ""} {
-		$permslistbox configure -bg white
-	} else { 
-		$permslistbox configure -bg $ApolTop::default_bg_color
-	}
 		
 	# This loop goes through each element in the objects listbox and sets the selection 
 	# for any items that match an item from the selObjectsList.
@@ -822,7 +813,16 @@ proc Apol_TE::resetObjsPerms_Selections { selObjectsList selPermsList } {
     			}
 		}	
     	}
-    	
+}
+
+# ------------------------------------------------------------------------------
+#  Command Apol_TE::resetPerms_Selections
+# ------------------------------------------------------------------------------
+proc Apol_TE::resetPerms_Selections {selPermsList} {
+	variable permslistbox
+	
+    	set permsCount 	 [$permslistbox index end]
+    	$permslistbox selection clear 0 end
     	# This loop goes through each element in the perms list box and sets the selection 
 	# for any items that match an item from the selPermsList.
     	for { set idx 0 } { $idx != $permsCount} { incr idx } {	
@@ -835,7 +835,23 @@ proc Apol_TE::resetObjsPerms_Selections { selObjectsList selPermsList } {
     			}
 		}	
     	}
+}
+
+# ------------------------------------------------------------------------------
+#  Command Apol_TE::resetObjsPerms_Selections
+# ------------------------------------------------------------------------------
+proc Apol_TE::resetObjsPerms_Selections {selObjectsList selPermsList} {
+    	variable permslistbox
+	
+	Apol_TE::resetObjs_Selections $selObjectsList
+    	Apol_TE::resetPerms_Selections $selPermsList
     	
+    	if {$selObjectsList != ""} {
+		$permslistbox configure -bg white
+	} else { 
+		$permslistbox configure -bg $ApolTop::default_bg_color
+	}
+	
     	return 0
 }
 
@@ -2578,7 +2594,11 @@ proc Apol_TE::enable_disable_permissions_section {enable} {
 			$b_union configure -state normal
 			$b_intersection configure -state normal
 			$cb_perms_tilda configure -state normal
+			# Grab the selected items before updating the perms box (b/c this proc clears the selection)
+			set selPermsList [Apol_TE::get_Selected_ListItems $permslistbox]
 			Apol_TE::configure_perms_section
+			# Re-select the previous selected items
+			Apol_TE::resetPerms_Selections $selPermsList
     			Apol_TE::set_Indicator [$Apol_TE::notebook_searchOpts raise]
 		}
 		$b_allPerms configure -state normal
