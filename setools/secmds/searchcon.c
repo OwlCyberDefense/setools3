@@ -176,6 +176,7 @@ XXX JAM add code here
 /* XXX kill line	*/printf("\nfsd->numpaths: %x\npathlist", fsd->numpaths);	
 			for (j=0; j < fsd->paths[i].numpaths ; j++);
 			{
+/* XXX kill line 		*/printf("%x,%x ", i, j); (i%8)? : printf("\n");
 /* XXX kill line	*/printf("fsd->paths[%x].numpaths: %i\n", i, fsd->paths[i].numpaths);
 /* XXX kill line		*/printf("%s\n", fsd->paths[i].pathnames[j]);
 				if(fsd->paths[i].pathnames[j])
@@ -185,7 +186,7 @@ XXX JAM add code here
 						context_str(fsd->paths[i].context)); /*working?*/
 					num++;
 				} 
-/* XXX kill line 		*/printf("%x,%x ", i, j); (i%8)? : printf("\n");
+
 			}
 		}
 		return num?0:1;
