@@ -168,7 +168,6 @@ static int load_perms(ap_fbuf_t *fb, FILE *fp, bool_t is_cp, __u32 cval, int cid
 		}
 		
 		if(keep) {
-			assert(rt != LOAD_SUCCESS_NO_SAVE);
 			if(is_cp) {
 				rt = add_perm_to_common(cidx, idx, policy);
 			}
@@ -513,8 +512,7 @@ static int load_user(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts,
 	size_t len;
 	unsigned char *kbuf, *key;
 	bool_t keep = FALSE;
-	user_item_t *u = NULL;
-	int i, rt;
+	int i, rt, idx = -1;
 	ebitmap_t e;
 
 	INTERNAL_ASSERTION
@@ -537,13 +535,13 @@ static int load_user(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts,
 		memcpy(key, kbuf, len);
 		key[len] = '\0';
 		
-		u = add_user(key, policy);
-		if(u == NULL) {
+		idx = add_user(key, policy);
+		if(idx < 0) {
 			free(key);
 			assert(FALSE); /* debug aide */
 			return -4;
 		}
-		bm->u_map[val-1] = u;
+		bm->u_map[val-1] = idx;
 	}	
 
 	/* process the user's roles  */
@@ -553,8 +551,8 @@ static int load_user(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts,
 	if(keep) {
 		for(i = 0; i < e.highbit; i++) {
 			if(ebitmap_get_bit(&e, i)) {
-				rt = add_role_to_user(u, bm->r_map[i], policy);
-				if(rt == -1) {
+				rt = add_role_to_user(bm->r_map[i], idx, policy);
+				if(rt < 0) {
 					assert(FALSE); /* debug aide */
 					ebitmap_destroy(&e);
 					return -4;
@@ -1558,7 +1556,7 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 			bm->t_num = nprim;
 			break;
 		case 4:		/* users */
-			bm->u_map = (user_item_t **)malloc(sizeof(user_item_t *) * nprim);
+			bm->u_map = (int *)malloc(sizeof(int) * nprim);
 			if(bm->u_map == NULL){
 				rt = -1;
 				goto err_return;
