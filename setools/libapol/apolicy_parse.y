@@ -2263,6 +2263,7 @@ static int cond_rule_add_helper(int **list, int *list_len, int *add, int add_len
 		return 0;
 		
 	if (!*list) {
+		/* Copy the pointer of the incoming true|false list into our cond_expr_item_t list member */
 		*list = add;
 		return 0;
 	}
@@ -2316,9 +2317,7 @@ static int define_conditional(cond_expr_t *expr, cond_rule_list_t *t_list, cond_
 				if (cond_rule_add_helper(&cur->true_list->te_trans, &cur->true_list->num_te_trans,
 					t_list->te_trans, t_list->num_te_trans) == -1)
 						return -1;
-				cond_free_rules_list(t_list);
-			}
-				
+			}	
 		}
 		if (f_list) {
 			if (!cur->false_list) {
@@ -2333,9 +2332,7 @@ static int define_conditional(cond_expr_t *expr, cond_rule_list_t *t_list, cond_
 				if (cond_rule_add_helper(&cur->false_list->te_trans, &cur->false_list->num_te_trans,
 					f_list->te_trans, f_list->num_te_trans) == -1)
 						return -1;
-				cond_free_rules_list(f_list);
 			}
-				
 		}
 	} else {
 		if (add_cond_expr_item(expr, t_list, f_list, parse_policy) < 0) {
