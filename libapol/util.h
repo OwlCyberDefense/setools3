@@ -16,7 +16,10 @@
 #include <stdio.h>
 #include <regex.h>
 
-#define VERSION_STRING "1.2"
+/* The following should be defined in the make environment */
+#ifndef LIBAPOL_VERSION_STRING
+	#define LIBAPOL_VERSION_STRING "UNKNOWN"
+#endif
 
 /* use 8k line size */
 #define LINE_SZ 8192
