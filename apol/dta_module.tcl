@@ -414,7 +414,7 @@ proc Apol_Analysis_dta::forward_options_change_obj_state_on_perm_select {} {
 		if {$idx != -1} {
 			set class_sel [string range $class_sel 0 [expr $idx - 1]]
 		}
-		set class_elements [array get perm_status_array "$class_sel*"]
+		set class_elements [array get perm_status_array "$class_sel,*"]
 		if {$class_elements != ""} {
 			set num_perms_for_class [expr {[llength $class_elements] / 2}]
 			for {set i 0} {$i < [llength $class_elements]} {incr i} {
