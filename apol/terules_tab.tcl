@@ -102,6 +102,8 @@ namespace eval Apol_TE {
 	# GLOBAL WIDGETS AND VARIABLES FOR OBJS/CLASSES TAB
 	variable objslistbox
     	variable permslistbox	
+    	variable b_clearReverse
+    	variable b_reverseSel
 	set opts(perm_union)		union
 	set opts(perm_select)		selected
 	set opts(perms_tilda)		0
@@ -481,6 +483,19 @@ proc Apol_TE::searchTErules { whichButton } {
 }
 
 # ------------------------------------------------------------------------------
+#  Command Apol_TE::initialize
+# ------------------------------------------------------------------------------
+proc Apol_TE::initialize {} {
+	variable notebook_searchOpts
+		
+	set raisedPage [$notebook_searchOpts raise [$notebook_searchOpts page 0]]
+	Apol_TE::set_Indicator $raisedPage
+	Apol_TE::create_empty_resultsTab
+	Apol_TE::enable_disable_syntactic_search_widgets $Apol_TE::allow_syntactic
+	Apol_TE::on_rule_selection
+}
+
+# ------------------------------------------------------------------------------
 #  Command Apol_TE::insertTERules
 #	takes a results list (from apol_SearchTERules) and explodes it into
 #	a provided text box
@@ -490,7 +505,7 @@ proc Apol_TE::insertTERules { tb results } {
 	variable tag_enabled_rules
 	variable tag_disabled_rules
 	
-	# Determine number of rules returned (1/3 size of llength). 
+	# Determine number of rules returned (1/4 size of llength). 
 	# This is because each rule returned consists of:
 	#	1. rule
 	#	2. line number
@@ -1052,8 +1067,8 @@ proc Apol_TE::open { } {
 		set master_permlist [lsort $master_permlist]
 		set permslist $master_permlist
 	}
-	Apol_TE::configure_perms
-	
+	Apol_TE::configure_perms_section
+	Apol_TE::on_rule_selection
         return 0
 }
 	
@@ -1422,19 +1437,25 @@ proc Apol_TE::remove_star_from_permissions_list {perms_list_1} {
 }
 
 # ------------------------------------------------------------------------------
-#  Command Apol_TE::configure_perms
+#  Command Apol_TE::configure_perms_section
 # ------------------------------------------------------------------------------
-proc Apol_TE::configure_perms { } {
+proc Apol_TE::configure_perms_section { } {
+	variable opts
 	variable permslist
 	variable objslistbox
     	variable permslistbox
 	variable master_permlist
+	variable cb_perms_tilda
 	
-	# First clear the selection in the permissions listbox and then get the selected items
-	# from the objects listbox.
-	$Apol_TE::permslistbox selection clear 0 end
+	if {!$opts(teallow) && !$opts(neverallow) && !$opts(auallow) && !$opts(audont)} {
+		return 0
+	}
+	
+	# Make sure the permlistbox is enabled. This may have been disabled
+	# by Apol_TE::enable_disable_permissions_section
+	$permslistbox configure -state normal
 	set objectsList [Apol_TE::get_Selected_ListItems $objslistbox]
-	
+			
 	if { $Apol_TE::opts(perm_select) == "all" } {
 		$Apol_TE::b_union configure -state disabled
     		$Apol_TE::b_intersection configure -state disabled
@@ -1442,7 +1463,15 @@ proc Apol_TE::configure_perms { } {
 		if {$permslist != ""} {
 			$permslistbox configure -bg white
 		}
+		if {$Apol_TE::allow_syntactic} {
+		        Apol_TE::insert_star_into_perms_list Apol_TE::permslist 
+	    	} 
 	} elseif { $Apol_TE::opts(perm_select) == "selected" && $objectsList != ""} {
+		# First clear the selection in the permissions listbox and then get the selected items
+		# from the objects listbox.
+		$Apol_TE::permslistbox selection clear 0 end
+		$cb_perms_tilda configure -state disabled
+	
 		# If items from the objects list have been selected and the selected radio
 		# button is selected, enable and invoke union and intersect radio buttons.
 		$Apol_TE::b_union configure -state normal
@@ -1463,23 +1492,23 @@ proc Apol_TE::configure_perms { } {
     		if {$permslist != ""} {
     			$permslistbox configure -bg white
     		}
+    		if {$Apol_TE::allow_syntactic} {
+		        Apol_TE::insert_star_into_perms_list Apol_TE::permslist 
+	    	} 
     	} else {
     		# Clear button has been invoked OR no selection has been made in the objects listbox.
     		# So, clear permissions listbox items.
+    		$Apol_TE::permslistbox selection clear 0 end
     		set permslist "" 
     		$permslistbox configure -bg  $ApolTop::default_bg_color
     		if { $Apol_TE::opts(perm_select) == "selected" } {
     			$Apol_TE::b_union configure -state disabled
     			$Apol_TE::b_intersection configure -state disabled
     		}
+    		$cb_perms_tilda configure -state disabled
     		return
     	}
-     	set objectsList ""
-     	
-     	if {$Apol_TE::allow_syntactic} {
-	        Apol_TE::insert_star_into_perms_list Apol_TE::permslist 
-    	} 
-     		
+         	     		
     	return 0
 }
 
@@ -1610,9 +1639,9 @@ proc Apol_TE::enable_listbox { cBox list_number b1 b2 } {
 }
 
 # ------------------------------------------------------------------------------
-#  Command Apol_TE::determine_CheckedRules
+#  Command Apol_TE::is_only_type_rules_selected
 # ------------------------------------------------------------------------------
-proc Apol_TE::determine_CheckedRules { } {
+proc Apol_TE::is_only_type_rules_selected { } {
     # Any type rules are checked
     set bool1 [expr ($Apol_TE::opts(ttrans) == 1 ||  $Apol_TE::opts(tmember) == 1 || $Apol_TE::opts(tchange) == 1)]
     # All type rules are checked 
@@ -1658,7 +1687,7 @@ proc Apol_TE::defaultType_Enable_Disable { } {
 	$cb_dflt_subtract configure -state disabled
     }
     # Determine the checked rules
-    set bool [Apol_TE::determine_CheckedRules]
+    set bool [Apol_TE::is_only_type_rules_selected]
     
     if { $bool } {
 	if { $Apol_TE::opts(use_1st_list) && $Apol_TE::opts(which_1) == "source"} {
@@ -1694,7 +1723,7 @@ proc Apol_TE::change_tgt_dflt_state { } {
     variable global_any
     
     # Determine the checked rules
-    set bool [Apol_TE::determine_CheckedRules]
+    set bool [Apol_TE::is_only_type_rules_selected]
     
     if { $Apol_TE::opts(use_1st_list) == 1 && $Apol_TE::opts(which_1) == "either" } {
     	# Disable default type section
@@ -1729,6 +1758,9 @@ proc Apol_TE::change_tgt_dflt_state { } {
 #  Command Apol_TE::reverseSelection
 # ------------------------------------------------------------------------------
 proc Apol_TE::reverseSelection {listname} {
+	variable cb_perms_tilda
+	variable permslistbox
+	
 	# Returns a list of all the indices of the selected items in the listbox
 	set indicesList [$listname curselection]
 		
@@ -1751,6 +1783,10 @@ proc Apol_TE::reverseSelection {listname} {
     		}
 	} else {
 		return
+	}
+	if {[Apol_TE::get_Selected_ListItems $permslistbox] == ""} {
+		# Disable the ~ modifier button if the reverse yields nothing selected
+		$cb_perms_tilda configure -state disabled
 	}
 	return 0
 }
@@ -2089,6 +2125,34 @@ proc Apol_TE::enable_RegExpr { which } {
 }
 
 # ----------------------------------------------------------------------------------------
+#  Command Apol_TE::clear_perms_selection
+# ----------------------------------------------------------------------------------------
+proc Apol_TE::clear_perms_selection {} {
+	variable cb_perms_tilda
+	
+	$cb_perms_tilda configure -state disabled
+	$Apol_TE::permslistbox selection clear 0 end
+	Apol_TE::set_Indicator [$Apol_TE::notebook_searchOpts raise]
+	return 0
+}
+
+# ----------------------------------------------------------------------------------------
+#  Command Apol_TE:on_perms_selection
+# ----------------------------------------------------------------------------------------
+proc Apol_TE::on_perms_selection {} {
+	variable cb_perms_tilda
+	variable permslistbox
+	
+	if {[Apol_TE::get_Selected_ListItems $permslistbox] != ""} {
+		$cb_perms_tilda configure -state normal
+	} else {
+		$cb_perms_tilda configure -state disabled
+	}
+	Apol_TE::set_Indicator [$Apol_TE::notebook_searchOpts raise]
+	return 0
+}
+
+# ----------------------------------------------------------------------------------------
 #  Command Apol_TE::createObjsClassesTab
 #
 #  Description: This function is called by Apol_TE::create.
@@ -2102,6 +2166,8 @@ proc Apol_TE::createObjsClassesTab {notebook_objects_tab} {
     variable b_allPerms
     variable b_selObjsPerms
     variable cb_perms_tilda
+    variable b_clearReverse
+    variable b_reverseSel
     
     # Define Object-Classes and Permissions section subframes
     set fm_objs [frame $notebook_objects_tab.objectsFrame -relief flat -borderwidth 1]
@@ -2131,7 +2197,7 @@ proc Apol_TE::createObjsClassesTab {notebook_objects_tab} {
     set clearSelectButton [button [$fm_objs_frame getframe].clear -text "Clear" -width 6 \
     		      	-command { 
     		      		$Apol_TE::objslistbox selection clear 0 end
-    		      		Apol_TE::configure_perms 
+    		      		Apol_TE::configure_perms_section 
     		      		Apol_TE::set_Indicator [$Apol_TE::notebook_searchOpts raise]}]
     set sw_objs       [ScrolledWindow [$fm_objs_frame getframe].sw -auto both]
     set objslistbox [listbox [$sw_objs getframe].lb -height 5 -highlightthickness 0 \
@@ -2141,22 +2207,22 @@ proc Apol_TE::createObjsClassesTab {notebook_objects_tab} {
     # Set binding when selecting an item in the objects listbox to configure the permissions listbox items.
     bindtags $objslistbox [linsert [bindtags $objslistbox] 3 objects_list_Tag]
     bind objects_list_Tag <<ListboxSelect>> { 
-    		Apol_TE::configure_perms
+    		Apol_TE::configure_perms_section
     		Apol_TE::set_Indicator [$Apol_TE::notebook_searchOpts raise] } 
     
     # Define widgets for Permissions Section
     set b_allPerms [radiobutton $fm_perm_buttons.allPerms -text "Show all permissions" \
     			-variable Apol_TE::opts(perm_select) -value all \
-    			-command { Apol_TE::configure_perms }]
+    			-command { Apol_TE::configure_perms_section }]
     set b_selObjsPerms [radiobutton $fm_perm_buttons.selObjsPerms -text "Only show permissions for\nselected object classes" \
     			-justify left -variable Apol_TE::opts(perm_select) -value selected \
-    			-command { Apol_TE::configure_perms }] 
+    			-command { Apol_TE::configure_perms_section }] 
     set b_union [radiobutton $fm_perm_buttons_bot.union -text "Union" \
     			-variable Apol_TE::opts(perm_union) -value union -state disabled \
-    			-command { Apol_TE::configure_perms }]
+    			-command { Apol_TE::configure_perms_section }]
     set b_intersection [radiobutton $fm_perm_buttons_bot.intersection -text "Intersection" \
     			-variable Apol_TE::opts(perm_union) -value intersection -state disabled \
-    			-command { Apol_TE::configure_perms }]
+    			-command { Apol_TE::configure_perms_section }]
     set sw_perms       [ScrolledWindow $fm_permissions_mid.sw -auto both]
     set permslistbox [listbox [$sw_perms getframe].lb -height 5 -highlightthickness 0 \
 		      -listvar Apol_TE::permslist -selectmode multiple -exportselection 0] 
@@ -2170,13 +2236,11 @@ proc Apol_TE::createObjsClassesTab {notebook_objects_tab} {
     # Set binding when selecting an item in the perms listbox to indicate search critera 
     # has been selected/deselected.
     bindtags $permslistbox [linsert [bindtags $permslistbox] 3 perms_list_Tag]
-    bind perms_list_Tag <<ListboxSelect>> { Apol_TE::set_Indicator [$Apol_TE::notebook_searchOpts raise] } 
+    bind perms_list_Tag <<ListboxSelect>> {Apol_TE::on_perms_selection} 
     
     # Define Clear and Reverse buttons for the permissions listbox	
     set b_clearReverse [button $fm_permissions_bot.clear -text "Clear" -width 6 -anchor center \
-    		      	-command { 
-    		      		$Apol_TE::permslistbox selection clear 0 end
-    		      		Apol_TE::set_Indicator [$Apol_TE::notebook_searchOpts raise] }]
+    		      	-command {Apol_TE::clear_perms_selection}]
     set b_reverseSel [button $fm_permissions_bot.reverse -text "Reverse" -width 6 -anchor center \
     		      	-command { Apol_TE::reverseSelection $Apol_TE::permslistbox }]
     
@@ -2211,6 +2275,7 @@ proc Apol_TE::enable_disable_syntactic_search_widgets {enable} {
 	variable opts
 	variable permslist
     	variable cb_perms_tilda
+    	variable permslistbox
     	
 	if {$enable} {
 		if {$opts(use_1st_list)} {
@@ -2232,7 +2297,12 @@ proc Apol_TE::enable_disable_syntactic_search_widgets {enable} {
 			$cb_dflt_subtract configure -state normal
 		    	Apol_TE::insert_star_into_types_attribs_list $dflt_type_list
 		}
-		$cb_perms_tilda configure -state normal
+		if {[Apol_TE::get_Selected_ListItems $permslistbox] == ""} {
+			# Disable the ~ modifier button
+			$cb_perms_tilda configure -state disabled
+		} else {
+			$cb_perms_tilda configure -state normal
+		}
 		Apol_TE::insert_star_into_perms_list Apol_TE::permslist
 	} else { 
 		if {$opts(use_1st_list)} {
@@ -2520,6 +2590,70 @@ proc Apol_TE::createTypesAttribsTab {notebook_ta_tab} {
 }
 
 # ------------------------------------------------------------------------------
+#  Command Apol_TE::enable_disable_permissions_section
+# ------------------------------------------------------------------------------
+proc Apol_TE::enable_disable_permissions_section {enable} {
+	variable objslistbox
+	variable permslistbox
+	variable b_union
+	variable b_intersection
+	variable b_allPerms
+	variable b_selObjsPerms
+	variable cb_perms_tilda
+	variable b_clearReverse
+    	variable b_reverseSel
+    	
+	if {!$enable} { 
+		$permslistbox selection clear 0 end
+		$permslistbox configure -state disabled -bg $ApolTop::default_bg_color
+		$b_union configure -state disabled
+		$b_intersection configure -state disabled
+		$b_allPerms configure -state disabled
+		$b_selObjsPerms configure -state disabled
+		$cb_perms_tilda configure -state disabled
+		$cb_perms_tilda deselect
+		$b_clearReverse configure -state disabled
+		$b_reverseSel configure -state disabled
+	} else {
+		if {[Apol_TE::get_Selected_ListItems $objslistbox] == ""} {
+			$permslistbox configure -state disabled -bg $ApolTop::default_bg_color
+			$b_union configure -state disabled
+			$b_intersection configure -state disabled
+			$cb_perms_tilda configure -state disabled
+		} else {
+			$permslistbox configure -state normal -bg white
+			$b_union configure -state normal
+			$b_intersection configure -state normal
+			$cb_perms_tilda configure -state normal
+			Apol_TE::configure_perms_section
+    			Apol_TE::set_Indicator [$Apol_TE::notebook_searchOpts raise]
+		}
+		$b_allPerms configure -state normal
+		$b_selObjsPerms configure -state normal
+		$b_clearReverse configure -state normal
+		$b_reverseSel configure -state normal
+	} 
+	return 0
+}
+
+
+# ------------------------------------------------------------------------------
+#  Command Apol_TE::on_rule_selection
+# ------------------------------------------------------------------------------
+proc Apol_TE::on_rule_selection {} {
+	variable opts
+	
+	if {$opts(teallow) || $opts(neverallow) || $opts(auallow) || $opts(audont)} {
+		Apol_TE::enable_disable_permissions_section 1
+	} else {
+		Apol_TE::enable_disable_permissions_section 0
+	}
+    
+	Apol_TE::defaultType_Enable_Disable
+	return 0	
+}
+
+# ------------------------------------------------------------------------------
 #  Command Apol_TE::create
 # ------------------------------------------------------------------------------
 proc Apol_TE::create {nb} {
@@ -2599,25 +2733,25 @@ proc Apol_TE::create {nb} {
     
     # First column of checkbuttons under rule selection subframe
     set teallow [checkbutton $tefm.teallow -text "allow" -variable Apol_TE::opts(teallow) \
-	    -command "Apol_TE::defaultType_Enable_Disable"]
+	    -command "Apol_TE::on_rule_selection"]
     set neverallow [checkbutton $tefm.neverallow -text "neverallow" -variable Apol_TE::opts(neverallow) \
-            -command "Apol_TE::defaultType_Enable_Disable" ]
+            -command "Apol_TE::on_rule_selection" ]
     set auallow [checkbutton $tefm.auallow -text "auditallow" -variable Apol_TE::opts(auallow) \
-            -command "Apol_TE::defaultType_Enable_Disable" ]
+            -command "Apol_TE::on_rule_selection" ]
     #set audeny [checkbutton $tefm.audeny -text "auditdeny" -variable Apol_TE::opts(audeny) \
-    #        -command "Apol_TE::defaultType_Enable_Disable" ]
+    #        -command "Apol_TE::on_rule_selection" ]
     set audont [checkbutton $tefm.audont -text "dontaudit"  -variable Apol_TE::opts(audont) \
-    	    -command "Apol_TE::defaultType_Enable_Disable" ]
+    	    -command "Apol_TE::on_rule_selection" ]
     
     # Second column of checkbuttons under rule selection subframe
     set ttrans [checkbutton $ttfm.ttrans -text "type_trans" -variable Apol_TE::opts(ttrans) \
-	    -command "Apol_TE::defaultType_Enable_Disable"]
+	    -command "Apol_TE::on_rule_selection"]
     set tmember [checkbutton $ttfm.tmember -text "type_member" -variable Apol_TE::opts(tmember) \
-            -command "Apol_TE::defaultType_Enable_Disable"]
+            -command "Apol_TE::on_rule_selection"]
     set tchange [checkbutton $ttfm.tchange -text "type_change" -variable Apol_TE::opts(tchange) \
-            -command "Apol_TE::defaultType_Enable_Disable" ]
+            -command "Apol_TE::on_rule_selection" ]
     set clone [checkbutton $ttfm.clone -text "clone" -variable Apol_TE::opts(clone) \
-            -command "Apol_TE::defaultType_Enable_Disable" ]
+            -command "Apol_TE::on_rule_selection" ]
     
     set cb_show_enabled_rules [checkbutton $enabled_fm.cb_show_enabled_rules -text "Only search for enabled rules" \
     		-variable Apol_TE::show_enabled_rules -onvalue 1 -offvalue 0 \
@@ -2683,13 +2817,10 @@ proc Apol_TE::create {nb} {
     # Placing the search options notebook frame within the search options section    
     $notebook_searchOpts compute_size
     pack $notebook_searchOpts -fill both -expand yes -padx 4
-    set raisedPage [$notebook_searchOpts raise [$notebook_searchOpts page 0]]
-    Apol_TE::set_Indicator $raisedPage
-    Apol_TE::create_empty_resultsTab
-    Apol_TE::enable_disable_syntactic_search_widgets $Apol_TE::allow_syntactic
-               
+     
     # Placing the results notebook frame within the results section    
     pack $notebook_results -fill both -expand yes -padx 4
-       
+ 	
+    Apol_TE::initialize      
     return $frame	
 }
