@@ -99,6 +99,7 @@ proc Apol_Cond_Bools::cond_bool_insert_listbox_items { } {
 		 	 	$Apol_Cond_Bools::cond_bools_listbox $bool_name]  
 		  
 	}
+
     	# Display updates immediately.
     	# Adjust the view so that no part of the canvas is off-screen to the left.
 	$cond_bools_listbox configure -redraw 1
@@ -171,7 +172,9 @@ proc Apol_Cond_Bools::open { } {
 		return -code error $err
 	}
 	$Apol_Cond_Bools::bool_combo_box configure -values $Apol_Cond_Bools::cond_bools_list
-	Apol_Cond_Bools::cond_bool_insert_listbox_items			 	 
+	if {$Apol_Cond_Bools::cond_bools_list != ""} {
+		Apol_Cond_Bools::cond_bool_insert_listbox_items
+	}
 	return 0
 } 
 
