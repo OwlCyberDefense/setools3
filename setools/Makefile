@@ -45,12 +45,10 @@ CFLAGS		= -Wall -g $(TCL_INCLUDE) $(CC_DEFINES)
 BINDIR		= $(DESTDIR)/usr/bin
 
 
-# NOTE: DON'T CHANGE INSTALL_LIBDIR.  The code expects below INSTALL_LIBDIR 
-# to point here.  We will eventually fix this so that the code
-# uses the path below, rather than having a hard-coded path.  If you really want
-# to change this, then change it here, and change the #define for APOL_INSTALL_DIR
-# in ./setools/libapol/apol_tcl/util/sepct/top.tcl .  Also make sure to change 
-# ./setools/policy/seuser.fc to reflect the change.
+# The code uses the specified path below. If you change this, DO NOT add 
+# a trailing path seperator ("/"). For example, use "/usr/lib/apol" instead
+# of "/usr/lib/apol/". This probably needs to become more robust in the 
+# future.
 #
 INSTALL_LIBDIR	= $(DESTDIR)/usr/lib/apol
 #
