@@ -18,16 +18,19 @@ namespace eval Apol_Analysis_dta {
 	variable combo_domain
 	variable combo_attribute
 	variable cb_attrib
+	variable lbl_domain
 		
     	# Options Display Variables
 	variable display_type			""
 	variable display_attribute		""
 	variable display_attrib_sel		0
+	variable display_direction		"forward"
 	
 	# Options State Variables
 	variable type_state			""
 	variable attribute_state		""
 	variable attrib_selected_state 		0
+	variable direction_state		"forward"
 	
 	# Current results display
 	variable dta_tree		""	
@@ -42,7 +45,61 @@ namespace eval Apol_Analysis_dta {
 	variable types_tag		TYPE
 	
     	# Register ourselves
-    	#Apol_Analysis::register_analysis_modules "Apol_Analysis_dta" "Domain Transition"
+    	Apol_Analysis::register_analysis_modules "Apol_Analysis_dta" "Domain Transition"
+}
+
+##############################################################
+# ::Apol_Analysis_dta_f module namespace
+##############################################################
+namespace eval Apol_Analysis_dta_f {		
+	# description
+	variable descriptive_text	"\n\nThis analysis will determine all (target) domains to which a given (source) domain may transition.  For a domain transition to be allowed, three forms of access must be granted:\n\n\
+\t(1) source domain must have process transition permission for target domain,\n\
+\t(2) source domain must have file execute permission for some entrypoint type, and\n\
+\t(3) target domain must have file entrypoint permission for the same entrypoint type.\n\n\
+The results are presented in tree form.  You can open target children domains to perform another forward domain transition analysis on that domain.\n\nFor additional help on this topic select \"Domain Transition Analysis\" from the help menu."
+	
+	variable dta_root_text "\n\nThis tab provides the results of a forward domain transition analysis\
+starting from the source domain type above.  The results of this analysis are presented in tree form with the root\
+of the tree (this node) being the start point for the analysis.\n\nEach child node in the tree represents\
+a TARGET DOMAIN TYPE.  A target domain type is a domain to which the source domain may transition.  You can\
+follow the domain transition tree by opening each subsequent generation of children in the tree.\n\nNOTE: For any\
+given generation, if the parent and the child are the same, you cannot open the child. This avoids cyclic analyses.\n\nThe\
+criteria that defines an allowed domain transition are:\n\n1) There must be at least one rule that allows TRANSITION\
+access for PROCESS objects between the SOURCE and TARGET domain types.\n\n2) There must be at least one FILE TYPE that\
+allows the TARGET type ENTRYPOINT access for FILE objects.\n\n3) There must be at least one FILE TYPE that meets\
+criterion 2) above and allows the SOURCE type EXECUTE access for FILE objects.\n\nThe information window shows\
+all the rules and file types that meet these criteria for each target domain type.\n\nFUTURE NOTE: In the future\
+we also plan to show the type_transition rules that provide for a default domain transitions.  While such rules\
+cause a domain transition to occur by default, they do not allow it.  Thus, associated type_transition rules\
+are not truly part of the definition of allowed domain transitions."
+}
+
+##############################################################
+# ::Apol_Analysis_dta_r module namespace
+##############################################################
+namespace eval Apol_Analysis_dta_r {		
+	# description
+	variable descriptive_text	"\n\nThis analysis will determine all (source) domains that can transition to a given (target) domain.  For a domain transition to be allowed, three forms of access must be granted:\n\n\
+\t(1) target domain must have process transition permission from the source domain,\n\
+\t(2) target domain must have file entrypoint permission to some entrypoint type, and\n\
+\t(3) source domain must have file execute permission to the same entrypoint type.\n\n\
+The results are presented in tree form.  You can open children source domains to perform another reverse domain transition analysis on that domain.\n\n For additional help on this topic select \"Domain Transition Analysis\" from the help menu."
+	
+	variable dta_root_text "\n\nThis tab provides the results of a reverse domain transition analysis\
+given the target domain type above.  The results of this analysis are presented in tree form with the root\
+of the tree (this node) being the target point of the analysis.\n\nEach child node in the tree represents\
+a source DOMAIN TYPE.  A source domain type is a domain that can transition to the target domain.  You can\
+follow the domain transition tree by opening each subsequent generation of children in the tree.\n\nNOTE: For any\
+given generation, if the parent and the child are the same, you cannot open the child. This avoids cyclic analyses.\n\nThe\
+criteria that defines an allowed domain transition are:\n\n1) There must be at least one rule that allows TRANSITION\
+access for PROCESS objects between the SOURCE and TARGET domain types.\n\n2) There must be at least one FILE TYPE that\
+allows the TARGET type ENTRYPOINT access for FILE objects.\n\n3) There must be at least one FILE TYPE that meets\
+criterion 2) above and allows the SOURCE type EXECUTE access for FILE objects.\n\nThe information window shows\
+all the rules and file types that meet these criteria for each source domain type.\n\nFUTURE NOTE: In the future\
+we also plan to show the type_transition rules that provide for a default domain transitions.  While such rules\
+cause a domain transition to occur by default, they do not allow it.  Thus, associated type_transition rules\
+are not truly part of the definition of allowed domain transitions."
 }
 
 # ------------------------------------------------------------------------------
@@ -52,10 +109,10 @@ proc Apol_Analysis_dta::close { } {
 	Apol_Analysis_dta::reset_variables
      	$Apol_Analysis_dta::combo_attribute configure -values ""
 	$Apol_Analysis_dta::combo_attribute configure -state disabled -entrybg $ApolTop::default_bg_color
+	Apol_Analysis_dta::config_domain_label
         Apol_Analysis_dta::config_attrib_comboBox_state
 	$Apol_Analysis_dta::combo_domain configure -values ""
-
-
+	
      	return 0
 } 
 
@@ -68,11 +125,11 @@ proc Apol_Analysis_dta::open { } {
 	Apol_Analysis_dta::populate_ta_list	
 	# Have the attributes checkbutton OFF by default
 	set display_attrib_sel	0
+	Apol_Analysis_dta::config_domain_label
 	Apol_Analysis_dta::config_attrib_comboBox_state
 	Apol_Analysis_dta::change_types_list	
      	return 0
 } 
-
 
 # ------------------------------------------------------------------------------
 #  Command Apol_Analysis_dta::initialize
@@ -82,6 +139,7 @@ proc Apol_Analysis_dta::initialize { } {
 	if {[ApolTop::is_policy_open]} {
 	     	# Have the attributes checkbutton OFF by default
 		set Apol_Analysis_dta::display_attrib_sel	0
+		Apol_Analysis_dta::config_domain_label
 		Apol_Analysis_dta::config_attrib_comboBox_state
 		Apol_Analysis_dta::change_types_list	
 	}
@@ -89,11 +147,23 @@ proc Apol_Analysis_dta::initialize { } {
 } 
 
 # ------------------------------------------------------------------------------
+#  Command Apol_Analysis_dta::get_analysis_info
+# ------------------------------------------------------------------------------
+proc Apol_Analysis_dta::get_analysis_info { } {   
+	if {$Apol_Analysis_dta::display_direction == "forward"} {
+		return $Apol_Analysis_dta_f::descriptive_text
+	} else {
+		return $Apol_Analysis_dta_r::descriptive_text
+	}
+} 
+
+# ------------------------------------------------------------------------------
 #  Command Apol_Analysis_dta::display_mod_options
 # ------------------------------------------------------------------------------
-proc Apol_Analysis_dta::display_mod_options { opts_frame reverse descriptive_text } {
+proc Apol_Analysis_dta::display_mod_options { opts_frame } {
 	Apol_Analysis_dta::reset_variables	  	
-     	Apol_Analysis_dta::create_options $opts_frame $reverse $descriptive_text
+     	Apol_Analysis_dta::create_options $opts_frame
+     	Apol_Analysis_dta::config_domain_label
      	Apol_Analysis_dta::populate_ta_list
      	
      	if {[ApolTop::is_policy_open]} {
@@ -112,6 +182,7 @@ proc Apol_Analysis_dta::load_query_options { file_channel parentDlg } {
         variable type_state		
 	variable attribute_state		
 	variable attrib_selected_state 
+	variable direction_state
 	
 	set query_options ""
         while {[eof $file_channel] != 1} {
@@ -146,7 +217,6 @@ proc Apol_Analysis_dta::load_query_options { file_channel parentDlg } {
      		set tmp [string trim [lindex $query_options 1] "\{\}"]
      		if {[lsearch -exact $ApolTypes::attriblist $tmp] != -1} {
      			set attribute_state $tmp
-     			set attrib_selected_state [lindex $query_options 2]
      		} else {
      			tk_messageBox -icon warning -type ok -title "Warning" \
 				-message "The specified attribute $tmp does not exist in the currently \
@@ -154,9 +224,16 @@ proc Apol_Analysis_dta::load_query_options { file_channel parentDlg } {
 				-parent $parentDlg
 		}
      	}
+	set attrib_selected_state [lindex $query_options 2]
+	
+	if {[lindex $query_options 3] != "\{\}"} {
+     		set tmp [string trim [lindex $query_options 3] "\{\}"]
+     		set direction_state $tmp
+     	}
 	
 	# After updating any display variables, must configure widgets accordingly
 	Apol_Analysis_dta::update_display_variables 
+	Apol_Analysis_dta::config_domain_label
 	Apol_Analysis_dta::config_attrib_comboBox_state	
 	if { $attribute_state != "" } {
 		# Need to change the types list to reflect the currently selected attrib and then reset the 
@@ -177,8 +254,9 @@ proc Apol_Analysis_dta::save_query_options {module_name file_channel file_name} 
 	variable display_type			
 	variable display_attribute		
 	variable display_attrib_sel
-		     	
-     	set options [list $display_type $display_attribute $display_attrib_sel]
+	variable display_direction
+			     	
+     	set options [list $display_type $display_attribute $display_attrib_sel $display_direction]
      	
      	puts $file_channel "$module_name"
 	puts $file_channel "$options"
@@ -192,10 +270,11 @@ proc Apol_Analysis_dta::get_current_results_state { } {
 	variable display_type			
 	variable display_attribute		
 	variable display_attrib_sel
+	variable display_direction
 	variable dta_tree
 	variable dta_info_text
 		     	
-     	set options [list $dta_tree $dta_info_text $display_type $display_attribute $display_attrib_sel]
+     	set options [list $dta_tree $dta_info_text $display_type $display_attribute $display_attrib_sel $display_direction]
      	return $options
 } 
 
@@ -206,6 +285,7 @@ proc Apol_Analysis_dta::set_display_to_results_state { query_options } {
      	variable type_state		
 	variable attribute_state		
 	variable attrib_selected_state 
+	variable direction_state
 	variable dta_tree
 	variable dta_info_text
 		    
@@ -216,9 +296,11 @@ proc Apol_Analysis_dta::set_display_to_results_state { query_options } {
      	set type_state [lindex $query_options 2]
      	set attribute_state  [lindex $query_options 3]
      	set attrib_selected_state [lindex $query_options 4]
+     	set direction_state [lindex $query_options 5]
      	
 	# After updating any display variables, must configure widgets accordingly
 	Apol_Analysis_dta::update_display_variables 
+	Apol_Analysis_dta::config_domain_label
 	Apol_Analysis_dta::config_attrib_comboBox_state	
 	if { $attribute_state != "" } {
 		# Need to change the types list to reflect the currently selected attrib and then reset the 
@@ -253,7 +335,7 @@ proc Apol_Analysis_dta::free_results_data {query_options} {
 # ------------------------------------------------------------------------------
 #  Command Apol_Analysis_dta::do_analysis
 # ------------------------------------------------------------------------------
-proc Apol_Analysis_dta::do_analysis { results_frame reverse } {     
+proc Apol_Analysis_dta::do_analysis { results_frame } {     
 	variable display_type		
 	variable display_attribute		
 	variable display_attrib_sel 
@@ -264,6 +346,12 @@ proc Apol_Analysis_dta::do_analysis { results_frame reverse } {
 	    tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened!"
 	    return -code error
         } 		
+      	if {$Apol_Analysis_dta::display_direction == "forward"} {
+		set reverse 0
+	} else {
+		set reverse 1
+	}
+	
      	set rt [catch {set results [apol_DomainTransitionAnalysis $reverse $display_type]} err]
      	if {$rt != 0} {	
 	        tk_messageBox -icon error -type ok -title "Error" -message "$err"
@@ -291,11 +379,13 @@ proc Apol_Analysis_dta::reset_variables { } {
     	set Apol_Analysis_dta::display_type		""
 	set Apol_Analysis_dta::display_attribute	""
 	set Apol_Analysis_dta::display_attrib_sel 	0
+	set Apol_Analysis_dta::display_direction	"forward"
 	
 	# Reset state vars
 	set Apol_Analysis_dta::type_state		""
 	set Apol_Analysis_dta::attribute_state		""
 	set Apol_Analysis_dta::attrib_selected_state 	0
+	set Apol_Analysis_dta::direction_state		"forward"
 	
 	# Reset results display variables
 	set Apol_Analysis_dta::dta_tree		""	
@@ -310,10 +400,12 @@ proc Apol_Analysis_dta::update_display_variables {  } {
 	variable display_type			
 	variable display_attribute		
 	variable display_attrib_sel	
+	variable display_direction
 	
 	set display_type $Apol_Analysis_dta::type_state	
 	set display_attribute $Apol_Analysis_dta::attribute_state
 	set display_attrib_sel $Apol_Analysis_dta::attrib_selected_state
+	set display_direction $Apol_Analysis_dta::direction_state
 	return 0
 }
 
@@ -364,6 +456,20 @@ proc Apol_Analysis_dta::change_types_list { } {
         	$combo_domain configure -values $attrib_typesList
         }
      	return 0
+}
+
+# ------------------------------------------------------------------------------
+#  Command Apol_Analysis_dta::config_domain_label
+# ------------------------------------------------------------------------------
+proc Apol_Analysis_dta::config_domain_label { } {    
+     	variable lbl_domain 	
+	
+	if {$Apol_Analysis_dta::display_direction == "forward"} {
+		$lbl_domain configure -text "Starting source domain:"
+	} else {
+		$lbl_domain configure -text "Starting target domain:"
+	}
+     	return 0
 } 
 
 # ------------------------------------------------------------------------------
@@ -392,7 +498,6 @@ proc Apol_Analysis_dta::config_attrib_comboBox_state { } {
      	return 0
 } 
 
-
 # ------------------------------------------------------------------------------
 #  Command Apol_Analysis_dta::create_result_tree_structure
 # ------------------------------------------------------------------------------
@@ -403,9 +508,9 @@ proc Apol_Analysis_dta::create_result_tree_structure { dta_tree results_list rev
 	# Create target type children nodes.
 	Apol_Analysis_dta::create_target_type_nodes $home_node $dta_tree $results_list
 	Apol_Analysis_dta::treeSelect $Apol_Analysis_dta::dta_tree $Apol_Analysis_dta::dta_info_text $home_node
+	
         return 0
 }
-
 
 # ------------------------------------------------------------------------------
 #  Command Apol_Analysis_dta::create_target_type_nodes
@@ -741,18 +846,17 @@ proc Apol_Analysis_dta::insert_src_type_node { source_type dta_tree reverse } {
 # ------------------------------------------------------------------------------
 #  Command Apol_Analysis_dta::create_options
 # ------------------------------------------------------------------------------
-proc Apol_Analysis_dta::create_options { options_frame reverse descriptive_text } {
+proc Apol_Analysis_dta::create_options { options_frame } {
 	variable combo_domain
 	variable combo_attribute
 	variable cb_attrib
+	variable lbl_domain
 	
 	set entry_frame [frame $options_frame.entry_frame]
+	set radio_frame [frame $options_frame.radio_frame]
+	
 	# Domain transition section
-	if {$reverse} {
-		set lbl_domain [Label $entry_frame.lbl_domain -text "Starting target domain:"]
-	} else {
-		set lbl_domain [Label $entry_frame.lbl_domain -text "Starting source domain:"]
-	}
+	set lbl_domain [Label $entry_frame.lbl_domain]
     	set combo_domain [ComboBox $entry_frame.combo_domain -width 20 \
     		-helptext "Starting Domain"  \
     		-editable 1 \
@@ -765,13 +869,26 @@ proc Apol_Analysis_dta::create_options { options_frame reverse descriptive_text 
 		-variable Apol_Analysis_dta::display_attrib_sel \
 		-offvalue 0 -onvalue 1 \
 		-command { Apol_Analysis_dta::config_attrib_comboBox_state }]
-		
-	pack $entry_frame  -side left -fill both -padx 10
+	set lbl_direction [Label $radio_frame.lbl_direction -text "Select direction:"]
+	set radio_forward [radiobutton $radio_frame.radio_forward -text "Forward" \
+		-variable Apol_Analysis_dta::display_direction \
+		-value forward \
+		-command {Apol_Analysis_dta::config_domain_label}]
+	set radio_reverse [radiobutton $radio_frame.radio_reverse -text "Reverse" \
+		-variable Apol_Analysis_dta::display_direction \
+		-value reverse \
+		-command {Apol_Analysis_dta::config_domain_label}]
+	
+	pack $radio_frame -side top -anchor nw -pady 5
+	pack $entry_frame -side top -padx 10 -anchor nw
+	
 	pack $lbl_domain -side top -anchor nw
 	pack $combo_domain -side top -anchor nw -fill x
     	pack $cb_attrib -padx 15 -side top -anchor nw
     	pack $combo_attribute -side top -anchor nw -fill x -padx 15
-	    	
+	pack $lbl_direction -side left -anchor nw 
+	pack $radio_forward $radio_reverse -side left -anchor nw -padx 5
+	
 	# ComboBox is not a simple widget, it is a mega-widget, and bindings for mega-widgets are non-trivial.
 	# If bindtags is invoked with only one argument, then the current set of binding tags for window is 
 	# returned as a list. 
@@ -779,12 +896,9 @@ proc Apol_Analysis_dta::create_options { options_frame reverse descriptive_text 
 	bind attribs_list_Tag <KeyPress> { Apol_Users::_create_popup $Apol_Analysis_dta::combo_attribute %W %K }
 	bindtags $combo_domain.e [linsert [bindtags $combo_domain.e] 3 domains_list_Tag]
 	bind domains_list_Tag <KeyPress> { Apol_Users::_create_popup $Apol_Analysis_dta::combo_domain %W %K }
-	
-	Apol_Analysis_dta::config_attrib_comboBox_state			    	    
+
 	return 0	
 }
-
-
 
 # ------------------------------------------------------------------------------
 #  Command Apol_Analysis_dta::create_resultsDisplay
@@ -830,254 +944,4 @@ proc Apol_Analysis_dta::create_resultsDisplay {results_frame reverse} {
     	$dta_tree bindText  <Double-ButtonPress-1> {Apol_Analysis_dta::treeSelect $Apol_Analysis_dta::dta_tree $Apol_Analysis_dta::dta_info_text}
     
 	return $dta_tree
-}
-
-##############################################################
-# ::Apol_Analysis_dta_f module namespace
-##############################################################
-namespace eval Apol_Analysis_dta_f {		
-	# description
-	variable descriptive_text	"\n\nThis analysis will determine all (target) domains to which a given (source) domain may transition.  For a domain transition to be allowed, three forms of access must be granted:\n\n\
-\t(1) source domain must have process transition permission for target domain,\n\
-\t(2) source domain must have file execute permission for some entrypoint type, and\n\
-\t(3) target domain must have file entrypoint permission for the same entrypoint type.\n\n\
-The results are presented in tree form.  You can open target children domains to perform another forward domain transition analysis on that domain.\n\nFor additional help on this topic select \"Domain Transition Analysis\" from the help menu."
-	
-	variable dta_root_text "\n\nThis tab provides the results of a forward domain transition analysis\
-starting from the source domain type above.  The results of this analysis are presented in tree form with the root\
-of the tree (this node) being the start point for the analysis.\n\nEach child node in the tree represents\
-a TARGET DOMAIN TYPE.  A target domain type is a domain to which the source domain may transition.  You can\
-follow the domain transition tree by opening each subsequent generation of children in the tree.\n\nNOTE: For any\
-given generation, if the parent and the child are the same, you cannot open the child. This avoids cyclic analyses.\n\nThe\
-criteria that defines an allowed domain transition are:\n\n1) There must be at least one rule that allows TRANSITION\
-access for PROCESS objects between the SOURCE and TARGET domain types.\n\n2) There must be at least one FILE TYPE that\
-allows the TARGET type ENTRYPOINT access for FILE objects.\n\n3) There must be at least one FILE TYPE that meets\
-criterion 2) above and allows the SOURCE type EXECUTE access for FILE objects.\n\nThe information window shows\
-all the rules and file types that meet these criteria for each target domain type.\n\nFUTURE NOTE: In the future\
-we also plan to show the type_transition rules that provide for a default domain transitions.  While such rules\
-cause a domain transition to occur by default, they do not allow it.  Thus, associated type_transition rules\
-are not truly part of the definition of allowed domain transitions."
-
-	# Register ourselves
-	Apol_Analysis::register_analysis_modules "Apol_Analysis_dta_f" "Forward Domain Transition"
-}
-
-# ------------------------------------------------------------------------------
-#  Command Apol_Analysis_dta_f::do_analysis
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_dta_f::do_analysis { results_frame } {     
-	Apol_Analysis_dta::do_analysis $results_frame 0
-     	return 0
-} 	    
-
-# ------------------------------------------------------------------------------
-#  Command Apol_Analysis_dta_f::initialize
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_dta_f::initialize { } {   
-	Apol_Analysis_dta::initialize 
-     	return 0
-} 	
-
-# ------------------------------------------------------------------------------
-#  Command Apol_Analysis_dta_f::close
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_dta_f::close { } {   
-	Apol_Analysis_dta::close
-     	return 0
-} 
-
-# ------------------------------------------------------------------------------
-#  Command Apol_Analysis_dta_f::open
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_dta_f::open { } {   
-	Apol_Analysis_dta::open	
-     	return 0
-} 
-
-# ------------------------------------------------------------------------------
-#  Command Apol_Analysis_dta_f::display_mod_options
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_dta_f::display_mod_options { opts_frame } {
-	Apol_Analysis_dta::display_mod_options $opts_frame 0 $Apol_Analysis_dta_f::descriptive_text
-     	return 0
-} 
-
-# ------------------------------------------------------------------------------
-#  Command Apol_Analysis_dta_f::save_query_options
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_dta_f::save_query_options {module_name file_channel file_name} {
-     	set options [Apol_Analysis_dta::save_query_options $module_name $file_channel $file_name]
-     	return $options
-} 
-
-# ------------------------------------------------------------------------------
-#  Command Apol_Analysis_dta_f::load_query_options
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_dta_f::load_query_options { file_channel parentDlg } {       
-	Apol_Analysis_dta::load_query_options $file_channel $parentDlg
-	return 0
-}
-
-# ------------------------------------------------------------------------------
-#  Command Apol_Analysis_dta_f::get_current_results_state
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_dta_f::get_current_results_state { } {
-     	set options [Apol_Analysis_dta::get_current_results_state]
-     	return $options
-} 
-
-# ------------------------------------------------------------------------------
-#  Command Apol_Analysis_dta_f::set_display_to_results_state
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_dta_f::set_display_to_results_state { query_options } {     
-	Apol_Analysis_dta::set_display_to_results_state $query_options	
-     	return 0
-} 
-
-# ------------------------------------------------------------------------------
-#  Command Apol_Analysis_dta_f::free_results_data
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_dta_f::free_results_data {options} { 
-	set rt [Apol_Analysis_dta::free_results_data $options] 
-	return $rt
-}
-
-# ------------------------------------------------------------------------------
-#  Command Apol_Analysis_dta_f::display_analysis_info
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_dta_f::display_analysis_info {} {
-	Apol_Analysis_dta::display_analysis_info $Apol_Analysis_dta_f::descriptive_text 
-	return 0
-}
-
-# ------------------------------------------------------------------------------
-#  Command Apol_Analysis_dta_f::get_analysis_info
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_dta_f::get_analysis_info {} {
-     	return $Apol_Analysis_dta_f::descriptive_text
-} 
-
-##############################################################
-# ::Apol_Analysis_dta_r module namespace
-##############################################################
-namespace eval Apol_Analysis_dta_r {		
-	# description
-	variable descriptive_text	"\n\nThis analysis will determine all (source) domains that can transition to a given (target) domain.  For a domain transition to be allowed, three forms of access must be granted:\n\n\
-\t(1) target domain must have process transition permission from the source domain,\n\
-\t(2) target domain must have file entrypoint permission to some entrypoint type, and\n\
-\t(3) source domain must have file execute permission to the same entrypoint type.\n\n\
-The results are presented in tree form.  You can open children source domains to perform another reverse domain transition analysis on that domain.\n\n For additional help on this topic select \"Domain Transition Analysis\" from the help menu."
-	
-	variable dta_root_text "\n\nThis tab provides the results of a reverse domain transition analysis\
-given the target domain type above.  The results of this analysis are presented in tree form with the root\
-of the tree (this node) being the target point of the analysis.\n\nEach child node in the tree represents\
-a source DOMAIN TYPE.  A source domain type is a domain that can transition to the target domain.  You can\
-follow the domain transition tree by opening each subsequent generation of children in the tree.\n\nNOTE: For any\
-given generation, if the parent and the child are the same, you cannot open the child. This avoids cyclic analyses.\n\nThe\
-criteria that defines an allowed domain transition are:\n\n1) There must be at least one rule that allows TRANSITION\
-access for PROCESS objects between the SOURCE and TARGET domain types.\n\n2) There must be at least one FILE TYPE that\
-allows the TARGET type ENTRYPOINT access for FILE objects.\n\n3) There must be at least one FILE TYPE that meets\
-criterion 2) above and allows the SOURCE type EXECUTE access for FILE objects.\n\nThe information window shows\
-all the rules and file types that meet these criteria for each source domain type.\n\nFUTURE NOTE: In the future\
-we also plan to show the type_transition rules that provide for a default domain transitions.  While such rules\
-cause a domain transition to occur by default, they do not allow it.  Thus, associated type_transition rules\
-are not truly part of the definition of allowed domain transitions."
-
-	# Register ourselves
-	Apol_Analysis::register_analysis_modules "Apol_Analysis_dta_r" "Reverse Domain Transition"
-}
-
-# ------------------------------------------------------------------------------
-#  Command Apol_Analysis_dta_r::do_analysis
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_dta_r::do_analysis { results_frame } {     
-	Apol_Analysis_dta::do_analysis $results_frame 1
-     	return 0
-} 	    
-
-# ------------------------------------------------------------------------------
-#  Command Apol_Analysis_dta_r::initialize
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_dta_r::initialize { } {    
-	Apol_Analysis_dta::initialize
-     	return 0
-} 	
-
-# ------------------------------------------------------------------------------
-#  Command Apol_Analysis_dta_r::close
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_dta_r::close { } {   
-	Apol_Analysis_dta::close
-     	return 0
-} 
-
-# ------------------------------------------------------------------------------
-#  Command Apol_Analysis_dta_r::open
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_dta_r::open { } {   
-	Apol_Analysis_dta::open	
-     	return 0
-} 
-
-# ------------------------------------------------------------------------------
-#  Command Apol_Analysis_dta_r::display_mod_options
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_dta_r::display_mod_options { opts_frame } {
-	Apol_Analysis_dta::display_mod_options $opts_frame 1 $Apol_Analysis_dta_r::descriptive_text
-     	return 0
-} 
-
-# ------------------------------------------------------------------------------
-#  Command Apol_Analysis_dta_r::save_query_options
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_dta_r::save_query_options {module_name file_channel file_name} {
-     	set options [Apol_Analysis_dta::save_query_options $module_name $file_channel $file_name]
-     	return $options
-} 
-
-# ------------------------------------------------------------------------------
-#  Command Apol_Analysis_dta_r::load_query_options
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_dta_r::load_query_options { file_channel parentDlg } {        
-	Apol_Analysis_dta::load_query_options $file_channel $parentDlg
-	return 0
-}
-
-# ------------------------------------------------------------------------------
-#  Command Apol_Analysis_dta_r::get_current_results_state
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_dta_r::get_current_results_state { } {
-     	set options [Apol_Analysis_dta::get_current_results_state]
-     	return $options
-} 
-
-# ------------------------------------------------------------------------------
-#  Command Apol_Analysis_dta_r::set_display_to_results_state
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_dta_r::set_display_to_results_state { query_options } {     
-	Apol_Analysis_dta::set_display_to_results_state $query_options 	
-     	return 0
-} 
-	
-# ------------------------------------------------------------------------------
-#  Command Apol_Analysis_dta_r::display_analysis_info
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_dta_r::display_analysis_info {} {
-	Apol_Analysis_dta::display_analysis_info $Apol_Analysis_dta_r::descriptive_text 
-	return 0
-}
-
-# ------------------------------------------------------------------------------
-#  Command Apol_Analysis_dta_r::get_analysis_info
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_dta_r::get_analysis_info {} {
-     	return $Apol_Analysis_dta_r::descriptive_text
-} 
-
-# ------------------------------------------------------------------------------
-#  Command Apol_Analysis_dta_r::free_results_data
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_dta_r::free_results_data {options} {  
-	set rt [Apol_Analysis_dta::free_results_data $options]
-	return $rt
 }
