@@ -602,7 +602,8 @@ proc Apol_Analysis::do_analysis { which } {
 			-message "You must select an analysis type."
 		return 
 	}
-
+	# Hold the currently raised tab.
+	set prev_raisedTab [$results_notebook raise]
 	ApolTop::setBusyCursor
 	switch $which {
 		new_analysis {
@@ -639,13 +640,11 @@ proc Apol_Analysis::do_analysis { which } {
 			$Apol_Analysis::newButton configure -state normal
 			$Apol_Analysis::updateButton configure -state disabled
 			
-			# Since a new results tab was created, then we must  
-			# destroy the tab, and then raise the previous tab.
-			set prevPageIdx [expr [$results_notebook index [$results_notebook raise]] - 1]
 			# Remove the bad tab and then decrement current tab counter
 			$results_notebook delete [$results_notebook raise]
 	    		set currTabCount [expr $currTabCount - 1]	
-			Apol_Analysis::switch_results_tab [$results_notebook page $prevPageIdx]
+	    		# Raise the previously raise tab.
+			Apol_Analysis::switch_results_tab $prev_raisedTab
 			return -1
 		}
 	}
