@@ -11,7 +11,7 @@ TCL_LIBS	= -ltk$(TCLVER) -ltcl$(TCLVER) -ldl $(LIBS)
 
 LINKFLAGS	= 
 CC		= gcc 
-YACC		= bison -y 
+YACC		= bison -y
 LEX		= flex -olex.yy.c
 
 
@@ -33,8 +33,8 @@ DEFAULT_LOG_FILE = /var/log/messages
 #
 CC_DEFINES	=
 
-CFLAGS		= -Wall -O2 $(TCL_INCLUDE) $(CC_DEFINES)
-#CFLAGS		= -Wall -g $(TCL_INCLUDE) $(CC_DEFINES)
+#CFLAGS		= -Wall -O2 $(TCL_INCLUDE) $(CC_DEFINES)
+CFLAGS		= -Wall -g $(TCL_INCLUDE) $(CC_DEFINES)
 #CFLAGS		= -Wall -ansi -pedantic -g $(TCL_INCLUDE) $(CC_DEFINES)
 
 # Install directories
@@ -165,7 +165,7 @@ install-secmds: $(INSTALL_LIBDIR)
 
 install-seaudit: $(INSTALL_LIBDIR)
 	 cd seaudit; $(MAKE) install
-	 
+
 install-nogui: $(INSTALL_LIBDIR) install-seuser install-secmds
 
 
@@ -204,7 +204,7 @@ docs:
 # Remove all generated setools documentation 
 remove-docs:
 	cd docs-src; make remove-docs
-	
+
 # test targets
 tests: test-seuser test-apol
 
