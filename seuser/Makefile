@@ -8,7 +8,7 @@ LIBAPOL		= ../lib/libapol.a
 LIBAPOL-TCL	= ../lib/libapol-tcl.a
 LIBSEUSER	= ../lib/libseuser.a
 LIBSEUSER-TCL	= ../lib/libseuser-tcl.a
-CMD-OBJ		= seuser_cmd.o $(LIBAPOL)
+CMD-OBJ		= seuser_cmd.o $(LIBSEUSER)  $(LIBAPOL)
 GUI-OBJ		= seuser_gui.o $(LIBAPOL-TCL) $(LIBSEUSER-TCL)  $(LIBSEUSER) $(LIBAPOL)
 SE_SHELL_SCRIPTS = seuseradd seuserdel seusermod
 
@@ -105,18 +105,13 @@ install-nogui: seuser policy-install
 	fi
 	install -m 755 $(SE_SHELL_SCRIPTS) $(BINDIR)
 
-install: seuser seuserx policy-install se_user.tcl
+install: install-nogui seuserx se_user.tcl
 	install -d $(BINDIR); 
 	@if [ -e /etc/security/selinux/src/policy/policy.conf ]; then \
-		install -m 755 -Z system_u:object_r:seuser_exec_t seuser $(BINDIR); \
 		install -m 755 -Z system_u:object_r:seuser_exec_t seuserx $(BINDIR); \
-		install -m 644 -Z system_u:object_r:seuser_conf_t $(SEUSER_CONF_FILE) $(INSTALL_LIBDIR); \
 	else \
-		install -m 755 seuser $(BINDIR); \
 		install -m 755 seuserx $(BINDIR); \
-		install -m 644 $(SEUSER_CONF_FILE) $(INSTALL_LIBDIR); \
 	fi
-	install -m 755 $(SE_SHELL_SCRIPTS) $(BINDIR)
 	install -m 644 se_user.tcl $(SEUSER_HELP_FILE) $(INSTALL_LIBDIR)
 
 clean:
