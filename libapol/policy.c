@@ -2631,3 +2631,4 @@ int get_cond_bool_name(int idx, char **name, policy_t *policy)
 	strcpy(*name, policy->cond_bools[idx].name);
 	return 0;
 }
+
