@@ -20,6 +20,7 @@
 #include "cond.h"
 #include "avl-util.h"
 #include "util.h"
+#include "semantic/avhash.h"
 #include <asm/types.h>
 
 #include <stdio.h>
@@ -95,7 +96,7 @@ typedef struct name_item {
 
 
 
-/* IDs for ta_item */
+/* IDs for policy components */
 #define IDX_INVALID		0x0
 #define IDX_TYPE		0x00000001
 #define IDX_ATTRIB		0x00000002
@@ -103,8 +104,10 @@ typedef struct name_item {
 #define IDX_PERM		0x00000008
 #define IDX_COMMON_PERM		0x00000010
 #define IDX_OBJ_CLASS		0x00000020
-#define IDX_SUBTRACT		0x00000040
+#define IDX_USER		0x00000040
+#define IDX_BOOLEAN		0x00000080
 #define IDX_BOTH		0x10000000	/* reserve as special indicator for regex rule searches  */
+#define IDX_SUBTRACT		0x20000000
 
 /* type, attribute, role, perm , common perm list item */
 typedef struct ta_item {
@@ -163,14 +166,13 @@ typedef struct security_context {
 #define RULE_TE_ALLOW		0 	/*AV rule */
 #define RULE_AUDITALLOW		1	/*AV rule */
 #define RULE_AUDITDENY		2	/*AV rule */
-/* removed NOTIFY and replaced with DONTAUDIT  Jul 2002 */
-#define RULE_NOTIFY		3	/*AV rule */
-#define RULE_DONTAUDIT		3	/*replaces NOTIFY */
+#define RULE_DONTAUDIT		3	/* really the same as auditdeny */
 #define RULE_NEVERALLOW		4	/*AV rule */
 #define RULE_MAX_AV		4   	/*end of AV rule types */
 #define RULE_TE_TRANS		5   	/*TT rule (type transition|change|member) */
 #define RULE_TE_MEMBER		6   	/*TT rule */
 #define RULE_TE_CHANGE		7	/*TT rule */
+#define RULE_MAX_TE		7
 #define RULE_CLONE		8	/*clone rule */
 #define RULE_ROLE_ALLOW		9	/* Role allow */
 #define RULE_ROLE_TRANS		10	/* Role transition */
@@ -196,6 +198,7 @@ typedef struct av_item {
  	unsigned char	flags;		/* where we handle '~' and '*' */
 	bool_t		enabled;	/* whether the rule is enabled or not for conditionals */
 	int		cond_expr;	/* the conditional expression that owns this rule */
+	bool_t		cond_list;	/* if cond, TRUE mean on the true list; FALSE the false list; ignore for uncond */
  	unsigned long	lineno;		/* line # from policy.conf */
  	ta_item_t	*src_types;	/* the domain types/attribs */
  	ta_item_t	*tgt_types;	/* the object types/attribs */
@@ -209,6 +212,7 @@ typedef struct tt_item {
 	unsigned char	flags;		/* use AV* flags above, only need SRC, TGT, & CLS */
 	bool_t		enabled;	/* whether the rule is enabled or not for conditionals */
 	int		cond_expr;	/* the conditional expression that owns this rule */
+	bool_t		cond_list;	/* if cond, TRUE mean on the true list; FALSE the false list; ignore for uncond */
  	unsigned long	lineno;		/* line # from policy.conf */
 	ta_item_t	*src_types;	/* the domain types/attribs */
  	ta_item_t	*tgt_types;	/* the object types/attribs */
@@ -358,6 +362,9 @@ typedef struct policy {
 	name_a_t	*users;		/* users (ARRAY) */
 /* Permissions map (which is used for information flow analysis) */
 	struct classes_perm_map *pmap;	/* see perm-map.h */
+/* Semantic hash table; this structure is created when necessary (NULL ptr means its necessary)
+ * and is used to semantically check TE (av and type) rules in policy */
+ 	avh_t		avh;		/* TE rule hash table */
 } policy_t;
 
 /*
@@ -390,9 +397,11 @@ int init_policy( policy_t **policy_ptr);
 int free_policy(policy_t **policy_ptr);
 int set_policy_version(int ver, policy_t *policy);
 const char* get_policy_version_name(int policy_version);
+int get_policy_version_num(policy_t *policy);
 
 #define is_binary_policy(policy) (policy != NULL ? (policy->policy_type & POL_TYPE_BINARY) : 0)
 #define is_valid_policy_version(version) (version >= POL_VER_UNKNOWN && version <= POL_VER_MAX)
+#define get_policy_version_id(policy) (policy != NULL ? policy->version : -1)
 
 /* DB updates/additions/changes */
 #define add_common_perm_to_class(cls_idx, cp_idx, policy) ((is_valid_obj_class_idx(cls_idx, policy) && is_valid_common_perm_idx(cp_idx, policy)) ? policy->obj_classes[cls_idx].common_perms = cp_idx: -1 )
@@ -488,16 +497,23 @@ int get_type_attribs(int type, int *num_attribs, int **attribs, policy_t *policy
 int get_type_users(int type, int *num_users, int **users, policy_t *policy);
 int get_type_roles(int type, int *num_roles, int **roles, policy_t *policy);
 int get_attrib_types(int attrib, int *num_types, int **types, policy_t *policy);
+bool_t is_attrib_in_type(const char *attrib, int type_idx, policy_t *policy);
+bool_t is_type_in_attrib(const char *type, int attrib_idx, policy_t *policy);
+
 
 /* conditional policy */
-#define is_valid_cond_bool_idx(idx, policy) (policy != NULL ? (idx >= 0 && idx < policy->num_cond_bools) : 0)
+#define is_valid_cond_bool_idx(idx, policy) (policy != NULL && (idx >= 0 && idx < policy->num_cond_bools))
+#define is_valid_cond_expr_idx(idx, policy) (policy != NULL && (idx >= 0 && idx < num_cond_exprs(policy)))
 #define num_cond_bools(policy) (policy != NULL ? policy->num_cond_bools : -1)
 #define num_cond_exprs(policy) (policy != NULL ? policy->num_cond_exprs : -1)
 #define get_cond_bool_default_state(idx, policy) (is_valid_cond_bool_idx(idx, policy) ? policy->cond_bools[idx].default_state : 0)
 int get_cond_bool_idx(const char *name, policy_t *policy);
-int set_cond_bool_val(int bool, bool_t state, policy_t *policy);
-int get_cond_bool_val(char *name, policy_t *policy);
 int get_cond_bool_name(int idx, char **name, policy_t *policy);
+int set_cond_bool_val(int bool, bool_t state, policy_t *policy);
+int get_cond_bool_val(const char *name, bool_t *val, policy_t *policy);
+int get_cond_bool_val_idx(int idx, bool_t *val, policy_t *policy);
+int get_cond_bool_default_val(const char *name, bool_t *val, policy_t *policy);
+int get_cond_bool_default_val_idx(int idx, bool_t *val, policy_t *policy);
 int update_cond_expr_items(policy_t *policy);
 void add_cond_expr_item_helper(int cond_expr, cond_rule_list_t *list, policy_t *policy);
 int set_cond_bool_vals_to_default(policy_t *policy);
@@ -509,6 +525,7 @@ int set_cond_bool_vals_to_default(policy_t *policy);
 int add_role_to_user(int role_idx, int user_idx, policy_t *policy);
 int add_user(char *user, policy_t *policy);
 bool_t does_user_have_role(int user, int role, policy_t *policy);
+bool_t is_role_in_user(const char *role, int user_idx, policy_t *policy);
 bool_t does_user_exists(const char *name, policy_t *policy);
 int get_user_idx(const char *name, policy_t *policy);
 int get_user_name2(int idx, char **name, policy_t *policy);
@@ -523,11 +540,18 @@ int add_role(char *role, policy_t *policy);
 int get_role_name(int idx, char **name, policy_t *policy);
 int get_role_idx(const char *name, policy_t *policy);
 bool_t does_role_use_type(int role, int type, policy_t *policy);
+bool_t is_type_in_role(const char *type, int role_idx, policy_t *policy);
 
 /* TE rules */
 /* if rule_type == 1, then access rules, otherwise audit rules */
 #define is_valid_av_rule_idx(idx, rule_type, policy) (idx >= 0 && ( (rule_type == 1) ? idx < policy->num_av_access : idx < policy->num_av_audit) )
 #define is_valid_tt_rule_idx(idx, policy) (idx >= 0 && idx < policy->num_te_trans)
+#define is_cond_rule(rule) (rule.cond_expr >= 0)
+#define is_av_rule_type(type) ((type >= RULE_TE_ALLOW) && (type <= RULE_MAX_AV))
+#define is_av_access_rule_type(type) ((type >= RULE_TE_ALLOW) && (type <= RULE_NEVERALLOW))
+#define is_av_audit_rule_type(type) ((type >= RULE_AUDITALLOW) && (type <= RULE_MAX_AV))
+#define is_type_rule_type(type) ((type >= RULE_TE_TRANS) && (type <= RULE_MAX_TE))
+#define is_te_rule_type(type) ((type >= RULE_TE_ALLOW) && (type <= RULE_MAX_TE))
 
 int extract_types_from_te_rule(int rule_idx, int rule_type, unsigned char whichlist, int **types, int *num_types, bool_t *self, policy_t *policy);
 int extract_obj_classes_from_te_rule(int rule_idx, int rule_type, int **obj_classes, int *num_obj_classes, policy_t *policy);
