@@ -7,7 +7,6 @@
  *
  * Modified by Don Patterson <don.patterson@tresys.com>
  * Comment(s): Changed to a more object-oriented design.
- * Date Modified: November 17, 2003
  *
  * Karl MacMillan <kmacmillan@tresys.com>
  *
@@ -16,47 +15,11 @@
 #include "filter_window.h"
 #include "seaudit.h"
 #include "utilgui.h"
+#include "seaudit_callback.h"
 #include <libseaudit/filters.h>
 #include <libseaudit/auditlog.h>
 #include <libapol/policy.h>
 #include <string.h>
-
-enum {
-	ITEMS_LIST_COLUMN, 
-	NUMBER_ITEMS_LIST_COLUMNS
-};
-
-enum items_list_types_t {
-	SEAUDIT_SRC_TYPES,
-	SEAUDIT_SRC_USERS,
-	SEAUDIT_SRC_ROLES,
-	SEAUDIT_TGT_TYPES,
-	SEAUDIT_TGT_USERS,
-	SEAUDIT_TGT_ROLES,
-	SEAUDIT_OBJECTS
-};
-
-enum select_values_source_t {
-	SEAUDIT_FROM_LOG,
-	SEAUDIT_FROM_POLICY,
-	SEAUDIT_FROM_UNION
-};
-
-typedef struct  seaudit_filter_list {
-	char **list;
-	int size;
-} seaudit_filter_list_t;
-
-typedef struct filters_select_items {
-	GtkListStore *selected_items;
-	GtkListStore *unselected_items;
-	enum items_list_types_t items_list_type;
-        enum select_values_source_t items_source;
-	GtkWindow *window;
-	GladeXML *xml;
-	filters_t *parent;
-} filters_select_items_t;
-
 
 extern seaudit_t *seaudit_app;
 
@@ -672,7 +635,7 @@ static void filters_select_items_destroy(filters_select_items_t* item)
 	item = NULL;
 }
 
-static void filters_select_items_parse_entry(filters_select_items_t *s)
+void filters_select_items_parse_entry(filters_select_items_t *s)
 {
 	GtkTreeIter iter;
 	gboolean valid;
@@ -967,7 +930,7 @@ static void filters_update_values(filters_t *filters)
 	filters->path = g_string_assign(filters->path, gtk_entry_get_text(GTK_ENTRY(widget)));
 }
 
-static void filters_seaudit_filter_list_free(seaudit_filter_list_t *list)
+void filters_seaudit_filter_list_free(seaudit_filter_list_t *list)
 {
 	int i;
 
@@ -982,7 +945,7 @@ static void filters_seaudit_filter_list_free(seaudit_filter_list_t *list)
 }
 
 /* Note: the caller must free the returned list */
-static seaudit_filter_list_t* filters_seaudit_filter_list_set(filters_select_items_t *filters_select_item)
+seaudit_filter_list_t* filters_seaudit_filter_list_get(filters_select_items_t *filters_select_item)
 {
 	GtkTreeModel *incl_model;
 	GtkTreeIter iter;
@@ -1154,170 +1117,6 @@ static gboolean filters_on_filter_window_destroy(GtkWidget *widget, GdkEvent *ev
 	return FALSE;
 }
 
-static void filters_on_do_filter_button_clicked(GtkButton *button, top_filters_view_t *filters_view)
-{
-	GtkWidget *widget;
-	GtkWidget *window;
-	GtkTreeIter iter;
-	GladeXML *xml;
-	SEAuditLogViewStore *store;
-	seaudit_filter_list_t *items_list = NULL;
-	filter_t *filter;
-	char *text;
-	int int_val;
-	
-	window = GTK_WIDGET(filters_view->filters->window);
-	g_assert(window);
-	show_wait_cursor(window);	
-	
-	audit_log_view_purge_filters(filters_view->store->log_view);
-	store = filters_view->store;
-
-	/* Result message value */
-	xml = filters_view->filters->xml;
-	widget = glade_xml_get_widget(xml, "ResultComboEntry");
-	text = (char*)gtk_entry_get_text(GTK_ENTRY(widget));
-	if (strcmp(text, "SHOW messages that match ALL criteria") == 0) {
-		store->log_view->fltr_out = FALSE;
-		store->log_view->fltr_and = TRUE;
-	} else if (strcmp(text, "SHOW messages that match ANY criteria") == 0) {
-		store->log_view->fltr_out = FALSE;
-		store->log_view->fltr_and = FALSE;
-	} else if (strcmp(text, "HIDE messages that match ALL criteria") == 0) {
-		store->log_view->fltr_out = TRUE;
-		store->log_view->fltr_and = TRUE;
-	} else if (strcmp(text, "HIDE messages that match ANY criteria") == 0) {
-		store->log_view->fltr_out = TRUE;
-		store->log_view->fltr_and = FALSE;
-	} else {
-		message_display(GTK_WINDOW(window), GTK_MESSAGE_ERROR, "Invalid results message combobox value.\n");
-		return;		
-	}
-	
-	/* check for src type filter */
-	filters_select_items_parse_entry(filters_view->filters->src_types_items);
-	if (gtk_tree_model_get_iter_first(GTK_TREE_MODEL(filters_view->filters->src_types_items->selected_items), &iter)) {
-		items_list = filters_seaudit_filter_list_set(filters_view->filters->src_types_items);
-		if (items_list == NULL) 
-			return;
-		filter = src_type_filter_create(items_list->list, items_list->size);
-		filters_seaudit_filter_list_free(items_list);
-		audit_log_view_add_filter(store->log_view, filter);	
-	}
-
-	/* check for tgt type filter */
-	filters_select_items_parse_entry(filters_view->filters->tgt_types_items);
-	if (gtk_tree_model_get_iter_first(GTK_TREE_MODEL(filters_view->filters->tgt_types_items->selected_items), &iter)) {
-		items_list = filters_seaudit_filter_list_set(filters_view->filters->tgt_types_items);
-		if (items_list == NULL) 
-			return;
-		filter = tgt_type_filter_create(items_list->list, items_list->size);
-		filters_seaudit_filter_list_free(items_list);
-		audit_log_view_add_filter(store->log_view, filter);
-	}
-	/* check for obj class filter */
-	filters_select_items_parse_entry(filters_view->filters->obj_class_items);
-	if (gtk_tree_model_get_iter_first(GTK_TREE_MODEL(filters_view->filters->obj_class_items->selected_items), &iter)) {
-		items_list = filters_seaudit_filter_list_set(filters_view->filters->obj_class_items);
-		if (items_list == NULL) 
-			return;
-		filter = class_filter_create(items_list->list, items_list->size);
-		filters_seaudit_filter_list_free(items_list);
-		audit_log_view_add_filter(store->log_view, filter);
-	}
-
-	/* check for src user filter */
-	filters_select_items_parse_entry(filters_view->filters->src_users_items);
-	if (gtk_tree_model_get_iter_first(GTK_TREE_MODEL(filters_view->filters->src_users_items->selected_items), &iter)) {
-		items_list = filters_seaudit_filter_list_set(filters_view->filters->src_users_items);
-		if (items_list == NULL) 
-			return;
-		filter = src_user_filter_create(items_list->list, items_list->size);
-		filters_seaudit_filter_list_free(items_list);
-		audit_log_view_add_filter(store->log_view, filter);
-	}
-
-	/* check for src role filter */
-	filters_select_items_parse_entry(filters_view->filters->src_roles_items);
-	if (gtk_tree_model_get_iter_first(GTK_TREE_MODEL(filters_view->filters->src_roles_items->selected_items), &iter)) {
-		items_list = filters_seaudit_filter_list_set(filters_view->filters->src_roles_items);
-		if (items_list == NULL) 
-			return;
-		filter = src_role_filter_create(items_list->list, items_list->size);
-		filters_seaudit_filter_list_free(items_list);
-		audit_log_view_add_filter(store->log_view, filter);
-	}
-
-	/* check for tgt user filter */
-	filters_select_items_parse_entry(filters_view->filters->tgt_users_items);
-	if (gtk_tree_model_get_iter_first(GTK_TREE_MODEL(filters_view->filters->tgt_users_items->selected_items), &iter)) {
-		items_list = filters_seaudit_filter_list_set(filters_view->filters->tgt_users_items);
-		if (items_list == NULL) 
-			return;
-		filter = tgt_user_filter_create(items_list->list, items_list->size);
-		filters_seaudit_filter_list_free(items_list);
-		audit_log_view_add_filter(store->log_view, filter);
-	}
-
-	/* check for tgt role filter */
-	filters_select_items_parse_entry(filters_view->filters->tgt_roles_items);
-	if (gtk_tree_model_get_iter_first(GTK_TREE_MODEL(filters_view->filters->tgt_roles_items->selected_items), &iter)) {
-		items_list = filters_seaudit_filter_list_set(filters_view->filters->tgt_roles_items);
-		if (items_list == NULL) 
-			return;
-		filter = tgt_role_filter_create(items_list->list, items_list->size);
-		filters_seaudit_filter_list_free(items_list);
-		audit_log_view_add_filter(store->log_view, filter);
-	}
-	
-	/* check for network address filter */
-	widget = glade_xml_get_widget(xml, "IPAddressEntry");
-	text = (char*)gtk_entry_get_text(GTK_ENTRY(widget));
-	if (strcmp(text, "") != 0) {
-		filter = ipaddr_filter_create(text);
-		audit_log_view_add_filter(store->log_view, filter);
-	}
-
-	/* check for network port filter */
-	widget = glade_xml_get_widget(xml, "PortEntry");
-	text = (char*)gtk_entry_get_text(GTK_ENTRY(widget));
-	if (strcmp(text, "") != 0) {
-		int_val = atoi(text);
-		filter = ports_filter_create(int_val);
-		audit_log_view_add_filter(store->log_view, filter);
-	}
-	
-	/* check for network interface filter */
-	widget = glade_xml_get_widget(xml, "InterfaceEntry");
-	text = (char*)gtk_entry_get_text(GTK_ENTRY(widget));
-	if (strcmp(text, "") != 0) {
-		filter = netif_filter_create(text);
-		audit_log_view_add_filter(store->log_view, filter);
-	}
-	
-	/* check for executable filter */
-	widget = glade_xml_get_widget(xml, "ExeEntry");
-	text = (char*)gtk_entry_get_text(GTK_ENTRY(widget));
-	if (strcmp(text, "") != 0) {
-		filter = exe_filter_create(text);
-		audit_log_view_add_filter(store->log_view, filter);
-	}
-	
-	/* check for path filter */
-	widget = glade_xml_get_widget(xml, "PathEntry");
-	text = (char*)gtk_entry_get_text(GTK_ENTRY(widget));
-	if (strcmp(text, "") != 0) {
-		filter = path_filter_create(text);
-		audit_log_view_add_filter(store->log_view, filter);
-	}
-	
-	show_wait_cursor(window);
-
-	/* do the filter on the model */
- 	seaudit_log_view_store_do_filter(store);
-	clear_wait_cursor(window);
-}
-
 static void filters_on_ContextClearButton_clicked(GtkButton *button, filters_t *filters)
 {
 	filters_clear_context_tab_values(filters);
@@ -1396,17 +1195,14 @@ void filters_destroy(filters_t *filters)
 	filters = NULL;
 }
 
-void top_filters_view_display(top_filters_view_t* filters_view)
+
+void filters_display(filters_t* filters)
 {
 	GladeXML *xml;
 	GtkWindow *window;
 	GString *path;
 	char *dir;
 
-	if (filters_view->filters->window != NULL) {
-		gtk_window_present(filters_view->filters->window); 
-		return;
-	}
 	dir = find_file("filter_window.glade");
 	if (!dir){
 		fprintf(stderr, "could not find filter_window.glade\n");
@@ -1422,103 +1218,42 @@ void top_filters_view_display(top_filters_view_t* filters_view)
 	window = GTK_WINDOW(glade_xml_get_widget(xml, "FilterWindow"));
 	g_assert(window);
 		
-	filters_view->filters->window = window;
-	filters_view->filters->xml = xml;
+	filters->window = window;
+	filters->xml = xml;
 
 	g_signal_connect(G_OBJECT(window), "delete_event", 
 			 G_CALLBACK(filters_on_filter_window_destroy), 
-			 filters_view->filters);
+			 filters);
 	glade_xml_signal_connect_data(xml, "filters_on_src_type_custom_clicked",
 				      G_CALLBACK(filters_on_custom_clicked),
-				      filters_view->filters->src_types_items);
+				      filters->src_types_items);
 	glade_xml_signal_connect_data(xml, "filters_on_src_users_custom_clicked",
 				      G_CALLBACK(filters_on_custom_clicked),
-				      filters_view->filters->src_users_items);
+				      filters->src_users_items);
 	glade_xml_signal_connect_data(xml, "filters_on_src_roles_custom_clicked",
 				      G_CALLBACK(filters_on_custom_clicked),
-				      filters_view->filters->src_roles_items);
+				      filters->src_roles_items);
 
 	glade_xml_signal_connect_data(xml, "filters_on_tgt_type_custom_clicked",
 				      G_CALLBACK(filters_on_custom_clicked),
-				      filters_view->filters->tgt_types_items);
+				      filters->tgt_types_items);
 	glade_xml_signal_connect_data(xml, "filters_on_tgt_users_custom_clicked",
 				      G_CALLBACK(filters_on_custom_clicked),
-				      filters_view->filters->tgt_users_items);
+				      filters->tgt_users_items);
 	glade_xml_signal_connect_data(xml, "filters_on_tgt_roles_custom_clicked",
 				      G_CALLBACK(filters_on_custom_clicked),
-				      filters_view->filters->tgt_roles_items);
+				      filters->tgt_roles_items);
 
 	glade_xml_signal_connect_data(xml, "filters_on_objs_custom_clicked",
 				      G_CALLBACK(filters_on_custom_clicked),
-				      filters_view->filters->obj_class_items);
-	glade_xml_signal_connect_data(xml, "filters_on_do_filter_button_clicked",
-				      G_CALLBACK(filters_on_do_filter_button_clicked),
-				      filters_view);
-	
+				      filters->obj_class_items);
 	glade_xml_signal_connect_data(xml, "filters_on_ContextClearButton_clicked",
 				      G_CALLBACK(filters_on_ContextClearButton_clicked),
-				      filters_view->filters);
+				      filters);
 	glade_xml_signal_connect_data(xml, "filters_on_OtherClearButton_clicked",
 				      G_CALLBACK(filters_on_OtherClearButton_clicked),
-				      filters_view->filters);
-				      	
-	filters_view->store->log_view->fltr_out = TRUE;
-	filters_view->store->log_view->fltr_and = TRUE;
-	
+				      filters);
+
 	/* Restore previous values and selections for the filter dialog */
-	filters_set_values(filters_view->filters);
-
-}
-
-top_filters_view_t* top_filters_view_create(audit_log_t *log, GtkTreeView *tree_view)
-{
-	top_filters_view_t *filters_view;
-
-	if (tree_view == NULL)
-		return NULL;
-
-	filters_view = (top_filters_view_t *)malloc(sizeof(top_filters_view_t));
-	if (filters_view == NULL) {
-		fprintf(stderr, "out of memory");
-		return NULL;
-	}
-
-	if ((filters_view->filters = filters_create()) == NULL) {
-		fprintf(stderr, "out of memory");
-		free(filters_view);
-		return NULL;
-	}
-	if ((filters_view->store = seaudit_log_view_store_create()) == NULL) {
-		fprintf(stderr, "out of memory");
-		free(filters_view->filters);
-		free(filters_view);
-		return NULL;
-	}
-	filters_view->notebook_index = -1;
-	filters_view->tree_view = tree_view;
-	seaudit_log_view_store_open_log(filters_view->store, log);
-	gtk_tree_view_set_model(tree_view, GTK_TREE_MODEL(filters_view->store));
-
-	return filters_view;
-}
-
-void top_filters_view_set_log(top_filters_view_t *view, audit_log_t *log)
-{
-	if (view == NULL)
-		return ;
-	seaudit_log_view_store_close_log(view->store);
-	seaudit_log_view_store_open_log(view->store, log);
-}
-
-void top_filters_view_set_notebook_index(top_filters_view_t *filters_view, gint index)
-{
-	if (filters_view == NULL)
-		return;
-	filters_view->notebook_index = index;
-}
-
-void top_filters_view_do_filter(gpointer data, gpointer user_data)
-{
-	top_filters_view_t *view = (top_filters_view_t*)data;
-	seaudit_log_view_store_do_filter(view->store);
+	filters_set_values(filters);
 }
