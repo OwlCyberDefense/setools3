@@ -3,8 +3,8 @@ apol, version 1.4
 May 27, 2004
 selinux@tresys.com
 
-This file contains basic help information for using apol, version 1.4 
-This version of apol allows you to:
+This file contains basic help information for using apol, version
+1.4 This version of apol allows you to:
 
 	+ examine, search, and relate policy components (types, type 
 	attributes, object classes, object permissions, roles, users,
@@ -12,20 +12,22 @@ This version of apol allows you to:
 	neverallow, auditallow, dontaudit, type_transition, 
 	type_change); and 
 	
-	+ perform some simple automated analysis of policies which 
+	+ perform some automated analysis of policies which 
 	currently includes forward and reverse domain transition 
 	analyses, direct information flow analysis, and transitive 
 	(indirect) information flow analysis.
 
-New in this version are several new automated analyses (see Analysis 
-Tab below), to include forward and reverse domain transition analysis, 
-direct information flow analysis, and transitive information flow 
-analysis.
+New in this version is support for binary policies. This allows you to load
+either a binary or source policy and use all of the features of Apol as
+appropriate. Some features are incompatible with binary policies (notably
+attributes and the policy.conf display), so those features are disabled when
+using a binary policy. Otherwise, Apol treats the two types of policies
+similarly.
 
 Apol attempts to provide compatibility with the current and older 
 policy syntax to allow one to analyze current and old policies.  As of 
 this version, we believe the tools are compatible with all policy 
-versions from Version 11 to the current Version 16.
+versions from Version 11 to the current Version 17.
 
 See setools/ChangeLog-setools for a list of new features in this 
 release. See setools/KNOWN_BUGS for a list of current bugs.
@@ -39,18 +41,18 @@ the current one will be closed.
 
 The QUERY menu allows the user to save and/or load a query for a TE Rules
 search or for an analysis module listed on the Analysis tab. Saving a TE
-Rules query involves saving the required query parameters, whereas saving 
-an analysis query involves saving the required query parameters as well 
-as any specified filter settings to a file. Query files are saved with a 
-'.qf' extension. Loading a query involves parsing the specified query file, 
-raising the correct notebook tab in apol and configuring the query options 
-with the specified query parameters and/or filter settings. Currently, the 
-save query menu item is only enabled when the ANALYSIS TAB or the 
-TE RULES TAB (see POLICY RULES TAB below) is raised. However, the load 
-query menu item is enabled across all tabs. The Query menu also allows 
-the user to display statistics about the currently loaded policy. A 
-shorthand version of these statistics is always displayed on the status 
-bar when a policy file is opened.
+Rules query involves saving the required query parameters, whereas saving an
+analysis query involves saving the required query parameters as well as any
+specified filter settings to a file. Query files are saved with a '.qf'
+extension. Loading a query involves parsing the specified query file,
+raising the correct tab in apol and configuring the query options with the
+specified query parameters and/or filter settings. Currently, the save query
+menu item is only enabled when the ANALYSIS TAB or the TE RULES TAB (see
+POLICY RULES TAB below) is raised. However, the load query menu item is
+enabled across all tabs. The Query menu also allows the user to display
+statistics about the currently loaded policy. A shorthand version of these
+statistics is always displayed on the status bar when a policy file is
+opened.
 
 The ADVANCED menu currently allows you to directly manage permission 
 mappings for apol's direct and transitive information flow analyses, 
@@ -126,13 +128,12 @@ components of an SELinux policy.
 	
 	VI. BOOLEANS TAB
 
-	This tab allows you to search boolean variables defined in 
-	the policy, as well as view the current state and/or policy
-	default state of the variable. Additionally, you can change 
-	the state of the boolean variable to TRUE or FALSE from this
-	tab. Changing the state of a variable will only be applied 
-	in memory and will not change the state within the actual 
-	policy file.
+	This tab allows you to search boolean variables defined in the
+	policy, as well as view the current state and/or policy default
+	state of the variable. Additionally, you can change the state of the
+	boolean variable to TRUE or FALSE from this tab. Changing the state
+	of a variable will be applied in memory and but will not change the
+	state within the actual policy file.
 
 
 3. POLICY RULES TAB 
@@ -294,30 +295,28 @@ analyses are:
 
 	I. DOMAIN TRANSITION ANALYSIS
 	
-	The Domain Transition analysis module allows you to specify a transition
-	direction for the analysis. The 2 directions provided are:
+	The Domain Transition analysis module allows you to specify a
+	transition direction for the analysis. The 2 directions provided
+	are:
 	 
-		FORWARD: The Forward Domain Transition (FDT) analysis takes a 
-		starting SOURCE domain and presents a tree of all the resulting 
-		TARGET 	domains that can be transitioned into from that starting 
-		domain. You can also select object classes, permissions, and 
-		object types to add to the query in order to to find transitions 
-		to domains that have specific privileges or that have access to 
-		a particular object type(s). The tree can be walked to follow the 
-		FDT tree as deep as you like. The only restriction is that a 
-		subtree will not expand if its parent is the same as the node. 
-		Each node in the FDT tree represents a TARGET domain to which the 
-		parent domain can directly transition.  
+		FORWARD: The Forward Domain Transition (FDT) analysis takes
+		a starting SOURCE domain and presents a tree of all the
+		resulting TARGET domains that can be transitioned into from
+		that starting domain. The tree can be walked to follow the
+		FDT tree as deep as you like. The only restriction is that a
+		subtree will not expand if its parent is the same as the
+		node. Each node in the FDT tree represents a TARGET domain
+		to which the parent domain can directly transition.
 	
-		REVERSE: As its name implies, the Reverse Domain Transition (RDT) 
-		analysis is the reverse of the FDT analysis.  The RDT takes a 
-		starting TARGET domain and presents a tree of all the resulting 
-		SOURCE domains that can directly transition to that TARGET 
-		domain.  The tree can be walked to follow the RDT tree as deep as 
-		you like.  The only restriction is that a subtree will not 
-		expand if its parent is the same as the node. Each node in the 
-		RDT tree represents a SOURCE domain that can transition to its 
-		parent node.
+		REVERSE: As its name implies, the Reverse Domain Transition
+		(RDT) analysis is the reverse of the FDT analysis. The RDT
+		takes a starting TARGET domain and presents a tree of all
+		the resulting SOURCE domains that can directly transition to
+		that TARGET domain. The tree can be walked to follow the RDT
+		tree as deep as you like. The only restriction is that a
+		subtree will not expand if its parent is the same as the
+		node. Each node in the RDT tree represents a SOURCE domain
+		that can transition to its parent node.
 
 	Selecting a child node will show all the rules that permit the 
 	transition to occur.
