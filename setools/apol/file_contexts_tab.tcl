@@ -444,11 +444,12 @@ proc Apol_File_Contexts::display_progressDlg {} {
 proc Apol_File_Contexts::create_and_load_fc_db {fname dir_str} {
 	set rt [catch {apol_Create_FC_Index_File $fname $dir_str} err]
 	if {$rt != 0} {
-		return -code error $err
+		return -code error "Error while creating the index file: $err"
 	} 
 	set rt [catch {apol_Load_FC_Index_File $fname} err]
 	if {$rt != 0} {
-		return -code error $err
+		return -code error \
+			"The index file was created successfully, however, there was an error while loading: $err"
 	} 
 	Apol_File_Contexts::initialize
 	set Apol_File_Contexts::db_loaded 1
@@ -468,19 +469,14 @@ proc Apol_File_Contexts::create_fc_db {dlg} {
 		
 	Apol_File_Contexts::display_progressDlg	
 	set rt [catch {Apol_File_Contexts::create_and_load_fc_db $fname $dir_str} err]
-	if {$rt != 0} {
-		Apol_File_Contexts::destroy_progressDlg
-		tk_messageBox -icon error -type ok -title "Error" \
-			-message $err
-	}
-
-	Apol_File_Contexts::change_status_label $fname
-	Apol_File_Contexts::clear_combo_box_values
-	Apol_File_Contexts::populate_combo_boxes	
 	Apol_File_Contexts::destroy_progressDlg
+	if {$rt != 0} {
+		tk_messageBox -icon error -type ok -title "Error" \
+			-message "$err\nSee stderr for more information."
+		return
+	} 
 	catch {destroy $dlg} 
 	grab release $dlg
-	return 0
 }
 
 # ------------------------------------------------------------------------------
@@ -494,9 +490,9 @@ proc Apol_File_Contexts::load_fc_db { } {
 	if {$db_file != ""} {	
 		set rt [catch {apol_Load_FC_Index_File $db_file} err]
 		if {$rt != 0} {
-			tk_messageBox -icon error -type ok -title "Error" \
-				-message "Error loading file context database: $err.\n"
-			return
+			tk_messageBox -icon error -type ok -title "Error" -message \
+				"Error loading file context database: $err.\nSee stderr for more information."
+			return -1
 		} 
 		Apol_File_Contexts::initialize
 		set db_loaded 1
