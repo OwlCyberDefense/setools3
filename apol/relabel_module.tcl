@@ -290,7 +290,7 @@ proc Apol_Analysis_relabel::do_analysis {results_frame} {
 	foreach class $widget_vars($advanced_filter_Dlg,incl_class_list) {
 		lappend objs_list $class 
 	}
-	foreach subj $widget_vars($advanced_filter_Dlg,excl_subj_list) {
+	foreach subj $widget_vars($advanced_filter_Dlg,master_excl_subj_list) {
 		lappend subj_list $subj
 	}
 
@@ -301,7 +301,7 @@ proc Apol_Analysis_relabel::do_analysis {results_frame} {
 		return -code error
 	}
 
-	if {[llength $widget_vars($advanced_filter_Dlg,incl_subj_list)] == 0} {
+	if {[llength $widget_vars($advanced_filter_Dlg,master_incl_subj_list)] == 0} {
 		tk_messageBox -icon error -type ok \
 		    -title "Relabel Analysis Error" \
 		    -message "You cannot exclude all subject types in the filter!"
@@ -656,6 +656,10 @@ proc Apol_Analysis_relabel::adv_options_set_widgets_to_default_state {path_name}
 	variable widget_vars
 	variable widgets
 	
+	$widgets($path_name,incl_cmb) configure -values $Apol_Types::attriblist
+	$widgets($path_name,excl_cmb) configure -values $Apol_Types::attriblist
+	$widgets($path_name,incl_cmb) configure -text $Apol_Analysis_relabel::widget_vars($path_name,incl_attrib)
+	$widgets($path_name,excl_cmb) configure -text $Apol_Analysis_relabel::widget_vars($path_name,excl_attrib)
 	set widget_vars($path_name,select_fg_orig) [$widgets($path_name,class_incl_lb) cget -foreground]
         set class_lbox_idx 0
 }
@@ -686,14 +690,23 @@ proc Apol_Analysis_relabel::adv_options_initialize_objs_and_perm_filters {path_n
 #		}
 		set tmp_list [lappend tmp_list $class]
 	}
+
+	set Apol_Analysis_relabel::widget_vars($path_name,filter_incl_subj) 0
+	set Apol_Analysis_relabel::widget_vars($path_name,filter_excl_subj) 0
 	set Apol_Analysis_relabel::widget_vars($path_name,incl_class_list) $tmp_list
 	set Apol_Analysis_relabel::widget_vars($path_name,excl_subj_list) ""
+	set Apol_Analysis_relabel::widget_vars($path_name,master_excl_subj_list) ""
 	set Apol_Analysis_relabel::widget_vars($path_name,incl_subj_list) ""
+	set Apol_Analysis_relabel::widget_vars($path_name,master_incl_subj_list) ""
 	foreach type_id $Apol_Types::typelist {
 		if {$type_id != "self"} {
 			lappend Apol_Analysis_relabel::widget_vars($path_name,incl_subj_list) $type_id
+			lappend Apol_Analysis_relabel::widget_vars($path_name,master_incl_subj_list) $type_id
 		}
 	}
+	set Apol_Analysis_relabel::widget_vars($path_name,incl_attrib) ""
+	set Apol_Analysis_relabel::widget_vars($path_name,excl_attrib) ""
+
 	return 0
 }
 
@@ -715,7 +728,12 @@ proc Apol_Analysis_relabel::adv_options_create_object {path_name} {
 # ------------------------------------------------------------------------------
 #  Command Apol_Analysis_relabel::adv_options_copy_object
 # ------------------------------------------------------------------------------
-proc Apol_Analysis_relabel::adv_options_copy_object {path_name new_object} {
+proc Apol_Analysis_relabel::adv_options_copy_object {path_name new_object} {		set rt [catch {set attrib_types [apol_GetAttribTypesList $attribute]} err]
+		if {$rt != 0} {
+			tk_messageBox -icon error -type ok -title "Error" -message "$err"
+			return -1
+		}
+
 	variable widget_vars
 	upvar 1 $new_object object 
 	
@@ -748,13 +766,11 @@ proc Apol_Analysis_relabel::adv_options_destroy_object {path_name} {
 #		     being added. 
 #	- remove_lbox - listbox widget from which the type is being removed.
 #	- add_lbox - listbox widget to which the type is being added.
-#	- perm_value - include | exclude each permission for the object class 
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_relabel::adv_options_incl_excl_classes {path_name remove_list_1 \
 							    	add_list_1 \
 							    	remove_lbox \
-							    	add_lbox \
-							    	perm_value} {
+							    	add_lbox } {
 	upvar #0 $remove_list_1 remove_list
 	upvar #0 $add_list_1 add_list
 	
@@ -777,6 +793,56 @@ proc Apol_Analysis_relabel::adv_options_incl_excl_classes {path_name remove_list
 	}  
 	return 0	
 }
+
+# ------------------------------------------------------------------------------
+#  Command Apol_Analysis_relabel::adv_options_incl_excl_types
+#	- path_name - name of the object
+#	- remove_list - the list displayed inside the listbox from which the 
+#			type is being removed.
+#	- add_list - the list displayed inside the listbox to which the type 
+#		     being added. 
+#	- remove_lbox - listbox widget from which the type is being removed.
+#	- add_lbox - listbox widget to which the type is being added.
+# ------------------------------------------------------------------------------
+proc Apol_Analysis_relabel::adv_options_incl_excl_types {path_name remove_list_1 \
+							    	add_list_1 \
+							    	remove_lbox \
+							    	add_lbox \
+								master_remove_list_1\
+								master_add_list_1} {
+	upvar #0 $remove_list_1 remove_list
+	upvar #0 $add_list_1 add_list
+	upvar #0 $master_remove_list_1 master_remove_list
+	upvar #0 $master_add_list_1 master_add_list
+	
+	set subj_indices [$remove_lbox curselection]		
+	if {$subj_indices != ""} {
+		set tmp_list ""
+		foreach idx $subj_indices {
+			set tmp_list [lappend tmp_list [$remove_lbox get $idx]]	
+		}
+		foreach type $tmp_list {
+			set idx  [lsearch -exact $remove_list $type]
+			if {$idx != -1} {
+				set remove_list [lreplace $remove_list $idx $idx]
+				# put in add list
+				set add_list [lappend add_list $type]
+				set add_list [lsort $add_list]
+			} 
+			# set master list as well
+			set idx  [lsearch -exact $master_remove_list $type]
+			if {$idx != -1} {
+				set master_remove_list [lreplace $master_remove_list $idx $idx]
+				# put in add list
+				set master_add_list [lappend master_add_list $type]
+				set master_add_list [lsort $master_add_list]
+			} 
+		} 
+		$remove_lbox selection clear 0 end
+	}  
+	return 0	
+}
+
 # ------------------------------------------------------------------------------
 #  Command Apol_Analysis_relabel::select_all_lbox_items
 #	- Takes a Tk listbox widget as an argument.
@@ -794,6 +860,102 @@ proc Apol_Analysis_relabel::clear_all_lbox_items {lbox} {
         $lbox selection clear 0 end
         return 0
 }
+
+# ------------------------------------------------------------------------------
+#  Command Apol_Analysis_relabel::adv_options_filter_list_by_attrib
+#	filter_list_1 - list to be filtered
+#	master_list_1 - master (unfiltered) list
+#	attrib_1 - attribute to filter by
+#	lbox - the list box to change
+# ------------------------------------------------------------------------------
+proc Apol_Analysis_relabel::adv_options_filter_list_by_attrib {filter_list_1 master_list_1 attrib_1 lbox} {
+	upvar #0 $filter_list_1 filter_list
+	if {$master_list_1 != ""} {
+		upvar #0 $master_list_1 master_list
+	} else { 
+		set master_list ""
+	}
+	if {$attrib_1 != ""} {
+		upvar $attrib_1 attrib
+	} else {
+		set attrib ""
+	}
+
+	if {$attrib != ""} {
+
+		set rt [catch {set attrib_types [apol_GetAttribTypesList $attrib]} err]
+		if {$rt != 0} {
+			tk_messageBox -icon error -type ok -title "Error" -message "$err"
+			return -1
+		}
+		if {$master_list != ""} {
+			$lbox delete 0 end
+			foreach subj $master_list {
+				set idx [lsearch -exact $attrib_types $subj]
+				if {$idx != -1} {
+					$lbox insert end $subj
+				}
+			}
+		}
+	} else {
+		if {$master_list != ""} {
+			$lbox delete 0 end
+			foreach subj $master_list {
+				$lbox insert end $subj
+			}
+		}
+	}
+
+}
+
+# ------------------------------------------------------------------------------
+#  Command Apol_Analysis_relabel::adv_objtions_config_combo
+#
+#
+# ------------------------------------------------------------------------------
+proc Apol_Analysis_relabel::adv_objtions_config_combo {combo_box checkboxval which_list path_name} {
+	upvar #0 $checkboxval checkbox_val
+	set empty_attrib ""
+	if {$checkbox_val} {
+		$combo_box configure -state normal -entrybg white
+		if {$which_list == "incl"} {
+			Apol_Analysis_relabel::adv_options_filter_list_by_attrib \
+				Apol_Analysis_relabel::widget_vars($path_name,incl_subj_list) \
+				Apol_Analysis_relabel::widget_vars($path_name,master_incl_subj_list) \
+				Apol_Analysis_relabel::widget_vars($path_name,incl_attrib) \
+				$Apol_Analysis_relabel::widgets($path_name,subj_incl_lb) 
+		} else {
+			Apol_Analysis_relabel::adv_options_filter_list_by_attrib \
+				Apol_Analysis_relabel::widget_vars($path_name,excl_subj_list) \
+				Apol_Analysis_relabel::widget_vars($path_name,master_excl_subj_list) \
+				Apol_Analysis_relabel::widget_vars($path_name,excl_attrib) \
+				$Apol_Analysis_relabel::widgets($path_name,subj_excl_lb) 
+		}
+	} else {
+		$combo_box configure -state disabled -entrybg $ApolTop::default_bg_color
+		if {$which_list == "incl"} {
+			if {$Apol_Analysis_relabel::widget_vars($path_name,master_incl_subj_list) != ""} {
+				$Apol_Analysis_relabel::widgets($path_name,subj_incl_lb) delete 0 end
+				foreach subj \
+				$Apol_Analysis_relabel::widget_vars($path_name,master_incl_subj_list) {
+					$Apol_Analysis_relabel::widgets($path_name,subj_incl_lb) \
+						insert end $subj
+				}
+			}
+		} else {
+			if {$Apol_Analysis_relabel::widget_vars($path_name,master_excl_subj_list) != ""} {
+				$Apol_Analysis_relabel::widgets($path_name,subj_excl_lb) delete 0 end
+				foreach subj \
+				$Apol_Analysis_relabel::widget_vars($path_name,master_excl_subj_list) {
+					$Apol_Analysis_relabel::widgets($path_name,subj_excl_lb) \
+						insert end $subj
+				}
+			}
+		}
+	}
+}
+
+
 
 # ------------------------------------------------------------------------------
 #  Command Apol_Analysis_relabel::adv_options_create_dialog
@@ -852,6 +1014,8 @@ proc Apol_Analysis_relabel::adv_options_create_dialog {path_name title_txt} {
 	set obj_excl_butn_f [frame [$objs_frame getframe].obj_excl_butn_f]
 	set subj_incl_butn_f [frame [$subj_frame getframe].subj_incl_butn_f]
 	set subj_excl_butn_f [frame [$subj_frame getframe].subj_excl_butn_f]
+	set attrib_incl_f [frame [$subj_frame getframe].attrib_incl_f]
+	set attrib_excl_f [frame [$subj_frame getframe].attrib_excl_f]
 
         set incl_classes_box [TitleFrame $class_pane.tbox \
         	-text "Included Object Classes:" -bd 0]
@@ -893,7 +1057,41 @@ proc Apol_Analysis_relabel::adv_options_create_dialog {path_name title_txt} {
 		-listvar Apol_Analysis_relabel::widget_vars($path_name,excl_subj_list) \
 		-exportselection 0]
 	$sw_excl_subj setwidget $widgets($path_name,subj_excl_lb)
-	
+
+	set attrib_incl_cbox [ComboBox $attrib_incl_f.attrib_incl_cbox -editable 1 \
+		-entrybg white -width 16 -state disabled \
+		-textvariable Apol_Analysis_relabel::widget_vars($path_name,incl_attrib) \
+		-modifycmd "Apol_Analysis_relabel::adv_options_filter_list_by_attrib \
+			Apol_Analysis_relabel::widget_vars($path_name,incl_subj_list) \
+			Apol_Analysis_relabel::widget_vars($path_name,master_incl_subj_list) \
+			Apol_Analysis_relabel::widget_vars($path_name,incl_attrib) \
+			$widgets($path_name,subj_incl_lb)"]
+	set attrib_excl_cbox [ComboBox $attrib_excl_f.attrib_excl_cbox -editable 1 \
+		-entrybg white -width 16 -state disabled \
+		-textvariable Apol_Analysis_relabel::widget_vars($path_name,excl_attrib) \
+		-modifycmd "Apol_Analysis_relabel::adv_options_filter_list_by_attrib \
+			Apol_Analysis_relabel::widget_vars($path_name,excl_subj_list) \
+			Apol_Analysis_relabel::widget_vars($path_name,master_excl_subj_list) \
+			Apol_Analysis_relabel::widget_vars($path_name,excl_attrib) \
+			$widgets($path_name,subj_excl_lb)"]
+
+	set cb_incl_attrib_filter [checkbutton $attrib_incl_f.cb_incl_attrib_filter  \
+		-text "Filter included subject types by attribute" -offvalue 0 -onvalue 1 \
+		-variable Apol_Analysis_relabel::widget_vars($path_name,filter_incl_subj) \
+		-command "Apol_Analysis_relabel::adv_objtions_config_combo \
+			$attrib_incl_cbox \
+			Apol_Analysis_relabel::widget_vars($path_name,filter_incl_subj) \
+			incl $path_name"]
+	set cb_excl_attrib_filter [checkbutton $attrib_excl_f.cb_excl_attrib_filter  \
+		-text "Filter excluded subject types by attribute" -offvalue 0 -onvalue 1 \
+		-variable Apol_Analysis_relabel::widget_vars($path_name,filter_excl_subj) \
+		-command "Apol_Analysis_relabel::adv_objtions_config_combo \
+			$attrib_excl_cbox \
+			Apol_Analysis_relabel::widget_vars($path_name,filter_excl_subj) \
+			excl $path_name"]
+	set widgets($path_name,incl_cmb) $attrib_incl_cbox
+	set widgets($path_name,excl_cmb) $attrib_excl_cbox
+
 	set b_incl_classes [Button $button_f.b_incl_classes -text "<--"  \
 		-helptext "Include the selected object classes in the results." \
 		-command "Apol_Analysis_relabel::adv_options_incl_excl_classes \
@@ -901,8 +1099,7 @@ proc Apol_Analysis_relabel::adv_options_create_dialog {path_name title_txt} {
 			Apol_Analysis_relabel::widget_vars($path_name,excl_class_list) \
 			Apol_Analysis_relabel::widget_vars($path_name,incl_class_list) \
 			$Apol_Analysis_relabel::widgets($path_name,class_excl_lb) \
-			$Apol_Analysis_relabel::widgets($path_name,class_incl_lb) \
-			include"]
+			$Apol_Analysis_relabel::widgets($path_name,class_incl_lb)"]
 	set b_excl_classes [Button $button_f.b_excl_classes -text "-->" \
 		-helptext "Exclude the selected object classes from the results." \
 		-command "Apol_Analysis_relabel::adv_options_incl_excl_classes \
@@ -910,26 +1107,27 @@ proc Apol_Analysis_relabel::adv_options_create_dialog {path_name title_txt} {
 			Apol_Analysis_relabel::widget_vars($path_name,incl_class_list)  \
 			Apol_Analysis_relabel::widget_vars($path_name,excl_class_list) \
 			$Apol_Analysis_relabel::widgets($path_name,class_incl_lb) \
-			$Apol_Analysis_relabel::widgets($path_name,class_excl_lb) \
-			exclude"]
+			$Apol_Analysis_relabel::widgets($path_name,class_excl_lb)"]
 	set b_incl_subj [Button $button_f2.b_incl_subj -text "<--" \
 		-helptext "Include the selected subject types in the results." \
-		-command "Apol_Analysis_relabel::adv_options_incl_excl_classes \
+		-command "Apol_Analysis_relabel::adv_options_incl_excl_types \
 			$path_name \
 			Apol_Analysis_relabel::widget_vars($path_name,excl_subj_list) \
 			Apol_Analysis_relabel::widget_vars($path_name,incl_subj_list) \
 			$Apol_Analysis_relabel::widgets($path_name,subj_excl_lb) \
 			$Apol_Analysis_relabel::widgets($path_name,subj_incl_lb) \
-			include"]
+			Apol_Analysis_relabel::widget_vars($path_name,master_excl_subj_list) \
+			Apol_Analysis_relabel::widget_vars($path_name,master_incl_subj_list)"]
 	set b_excl_subj [Button $button_f2.b_excl_subj -text "-->" \
 		-helptext "Exclude the selected subject types from the results." \
-		-command "Apol_Analysis_relabel::adv_options_incl_excl_classes \
+		-command "Apol_Analysis_relabel::adv_options_incl_excl_types \
 			$path_name \
 			Apol_Analysis_relabel::widget_vars($path_name,incl_subj_list)  \
 			Apol_Analysis_relabel::widget_vars($path_name,excl_subj_list) \
 			$Apol_Analysis_relabel::widgets($path_name,subj_incl_lb) \
 			$Apol_Analysis_relabel::widgets($path_name,subj_excl_lb) \
-			exclude"]
+			Apol_Analysis_relabel::widget_vars($path_name,master_incl_subj_list)  \
+			Apol_Analysis_relabel::widget_vars($path_name,master_excl_subj_list)"]
 	set b_incl_subj_sel_all [Button $subj_incl_butn_f.b_incl_subj_sel_all \
 		 -text "Select All" \
 		-command "Apol_Analysis_relabel::select_all_lbox_items \
@@ -962,6 +1160,7 @@ proc Apol_Analysis_relabel::adv_options_create_dialog {path_name title_txt} {
 		-text "Unselect" \
 		-command "Apol_Analysis_relabel::clear_all_lbox_items \
 			$Apol_Analysis_relabel::widgets($path_name,class_excl_lb)"]
+
 	
         pack $b_excl_classes $b_incl_classes -side top -anchor nw -pady 2 -fill x
 	pack $b_excl_subj $b_incl_subj -side top -anchor nw -pady 2 -fill x
@@ -969,10 +1168,14 @@ proc Apol_Analysis_relabel::adv_options_create_dialog {path_name title_txt} {
 	pack $b_excl_subj_sel_all $b_excl_subj_clear_all -side left -anchor nw -pady 2 -fill x
 	pack $b_incl_obj_sel_all $b_incl_obj_clear_all -side left -anchor nw -pady 2 -fill x
 	pack $b_excl_obj_sel_all $b_excl_obj_clear_all -side left -anchor nw -pady 2 -fill x
+	pack $cb_incl_attrib_filter $attrib_incl_cbox -side top -padx 2 -pady 2 -anchor nw -fill x
+	pack $cb_excl_attrib_filter $attrib_excl_cbox -side top -padx 2 -pady 2 -anchor nw -fill x
 	pack $obj_incl_butn_f -in $class_pane -side bottom -padx 5 -pady 2 -expand 0
 	pack $obj_excl_butn_f -in $search_pane -side bottom -padx 5 -pady 2 -expand 0
 	pack $subj_incl_butn_f -in $subj_pane -side bottom -padx 5 -pady 2 -expand 0
 	pack $subj_excl_butn_f -in $search_pane2 -side bottom -padx 5 -pady 2 -expand 0
+	pack $attrib_incl_f -in $subj_pane -side bottom -padx 5 -pady 2 -expand 0
+	pack $attrib_excl_f -in $search_pane2 -side bottom -padx 5 -pady 2 -expand 0
         pack $class_pane -fill both -expand yes -side left -anchor nw
         pack $subj_pane -fill both -expand yes -side left -anchor nw
         pack $button_f -anchor center -fill x -expand yes -side left -pady 20
