@@ -1,6 +1,6 @@
 AN OVERVIEW OF OBJECT CLASSES AND PERMISSIONS
 apol, version 1.6
-December 18, 2004
+February 09, 2005
 selinux@tresys.com
 
 OVERVIEW
