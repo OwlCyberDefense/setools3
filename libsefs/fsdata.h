@@ -81,7 +81,7 @@ typedef struct sefs_fileinfo {
 
 
 typedef struct sefs_typeinfo {
-	char * 			name;
+	char*			name;
 	uint32_t 		num_inodes;
 	uint32_t *		index_list;
 } sefs_typeinfo_t;
@@ -92,8 +92,14 @@ typedef struct sefs_filesystem_data {
 	uint32_t 		num_types;
 	sefs_fileinfo_t *	files;
 	sefs_typeinfo_t *	types;
+	char**			roles;
+	char**			users;
+
+	/* not stored in index file */
 	avl_tree_t		file_tree;
 	avl_tree_t		type_tree;
+	avl_tree_t		role_tree;
+	avl_tree_t		user_tree;
 } sefs_filesystem_data_t;
 
 
