@@ -72,5 +72,6 @@ void generate_message_header(char *message_header, audit_log_t *audit_log, struc
 void write_avc_message_to_file(FILE *log_file, const avc_msg_t *message, const char *message_header, audit_log_t *audit_log);
 void write_load_policy_message_to_file(FILE *log_file, const load_policy_msg_t *message, const char *message_header);
 void write_boolean_message_to_file(FILE *log_file, const boolean_msg_t *message, const char *message_header, audit_log_t *audit_log);
+void seaudit_window_view_entire_message_in_textbox(GtkTreeView *treeview);
 
 #endif
