@@ -5,6 +5,7 @@
  * Author: mbrown@tresys.com
  * Date: October 3, 2003
  * Modified 3/26/2004 <don.patterson@tresys.com>
+ * Modified 7/20/2004 <jstitz@tresys.com>
  *
  * This file contains the implementation of the parse.h
  *
@@ -23,6 +24,8 @@
 #define AVCMSG " avc: "
 #define LOADMSG " security: "
 #define HEADER_STRING "audit"
+#define AUDIT_HEADER_FULL_LENGTH 24
+#define AUDIT_HEADER_COPY_LENGTH 16
 #define BOOLMSG "committed booleans"
 #define PARSE_AVC_MSG 1
 #define PARSE_LOAD_MSG 2
@@ -225,6 +228,24 @@ static unsigned int insert_time(char **tokens, msg_t *msg, int *position, int nu
 	
 }
 
+static unsigned int avc_msg_insert_audit_header(char *token, msg_t *msg)
+{
+	assert(token != NULL && msg != NULL);
+
+	if (strlen(token) != AUDIT_HEADER_FULL_LENGTH)
+		return PARSE_RET_INVALID_MSG_WARN;
+
+	if ((msg->msg_data.avc_msg->audit_header = (char*) malloc((AUDIT_HEADER_COPY_LENGTH + 1) * sizeof(char))) == NULL)
+		return PARSE_RET_MEMORY_ERROR;
+
+	strncpy(msg->msg_data.avc_msg->audit_header, (token + strlen(HEADER_STRING) + 1), AUDIT_HEADER_COPY_LENGTH);
+
+	/* NULL-terminate the string since strncpy does not do this automatically */
+	msg->msg_data.avc_msg->audit_header[AUDIT_HEADER_COPY_LENGTH] = '\0';
+
+	return PARSE_RET_SUCCESS;
+}
+
 static unsigned int avc_msg_insert_access_type(char *token, msg_t *msg) 
 {
 	assert(token != NULL && msg != NULL);
@@ -238,7 +259,6 @@ static unsigned int avc_msg_insert_access_type(char *token, msg_t *msg)
 		return PARSE_RET_INVALID_MSG_WARN;     
 }
 
-
 static int avc_msg_insert_capability(msg_t *msg, char **tmp)
 {
 	assert(msg != NULL && tmp != NULL && *tmp != NULL);		
@@ -247,7 +267,6 @@ static int avc_msg_insert_capability(msg_t *msg, char **tmp)
 	
 	return MSG_INSERT_SUCCESS;
 }
-
 
 static int avc_msg_insert_ino(msg_t *msg, char **tmp)
 {
@@ -273,6 +292,8 @@ static int avc_msg_insert_tclass(msg_t *msg, char **tmp, audit_log_t *log)
 	if (audit_log_add_obj(log, *tmp, &id) == -1)
 		return MSG_MEMORY_ERROR;
 	msg->msg_data.avc_msg->obj_class = id;
+
+	msg->msg_data.avc_msg->is_obj_class = TRUE;
 	
 	return MSG_INSERT_SUCCESS;
 }
@@ -347,6 +368,8 @@ static int avc_msg_insert_tcon(msg_t *msg, char **tmp, audit_log_t *log)
 		}
 		msg->msg_data.avc_msg->tgt_type = id;
 	       
+		msg->msg_data.avc_msg->is_tgt_con = TRUE;
+
 		free(user);
 		free(role);
 		free(type);
@@ -407,6 +430,8 @@ static int avc_msg_insert_scon(msg_t *msg, char **tmp, audit_log_t *log)
 		}
 		msg->msg_data.avc_msg->src_type = id;
 	       
+		msg->msg_data.avc_msg->is_src_con = TRUE;
+
 		free(user);
 		free(role);
 		free(type);
@@ -517,6 +542,7 @@ static unsigned int avc_msg_insert_additional_field_data(char **tokens, msg_t *m
 	for (i = (*position); i < num_tokens && strcmp(*(&tokens[i]), "") != 0; i++) {
 		if (found[AVC_PID_FIELD] == PARSE_NOT_MATCH && avc_msg_is_prefix(*(&tokens[i]), "pid=", &field_value) != FALSE) {
 			found[AVC_PID_FIELD] = avc_msg_insert_uint(&msg->msg_data.avc_msg->pid, &field_value);
+			msg->msg_data.avc_msg->is_pid = TRUE;
 			if (found[AVC_PID_FIELD] == PARSE_RET_MEMORY_ERROR)
 			    return PARSE_RET_MEMORY_ERROR;
 		}
@@ -647,12 +673,14 @@ static unsigned int avc_msg_insert_additional_field_data(char **tokens, msg_t *m
 		
 		if (found[AVC_SRC_SID_FIELD] == PARSE_NOT_MATCH && avc_msg_is_prefix(*(&tokens[i]), "ssid=", &field_value) != FALSE) {
 			found[AVC_SRC_SID_FIELD] = avc_msg_insert_uint(&msg->msg_data.avc_msg->src_sid, &field_value);
+			msg->msg_data.avc_msg->is_src_sid = TRUE;
 			if (found[AVC_SRC_SID_FIELD] == PARSE_RET_MEMORY_ERROR)
 			    return PARSE_RET_MEMORY_ERROR;
 		}
 	
 		if (found[AVC_TGT_SID_FIELD] == PARSE_NOT_MATCH && avc_msg_is_prefix(*(&tokens[i]), "tsid=", &field_value) != FALSE) {
 			found[AVC_TGT_SID_FIELD] = avc_msg_insert_uint(&msg->msg_data.avc_msg->tgt_sid , &field_value);
+			msg->msg_data.avc_msg->is_tgt_sid = TRUE;
 			if (found[AVC_TGT_SID_FIELD] == PARSE_RET_MEMORY_ERROR)
 			    return PARSE_RET_MEMORY_ERROR;
 		}
@@ -679,7 +707,13 @@ static unsigned int avc_msg_insert_additional_field_data(char **tokens, msg_t *m
 			if (found[AVC_INODE_FIELD] == PARSE_RET_MEMORY_ERROR)
 			    return PARSE_RET_MEMORY_ERROR;
 		}
-	  
+
+		if (found[AVC_IPADDR_FIELD] == PARSE_NOT_MATCH && avc_msg_is_prefix(*(&tokens[i]), "ipaddr=", &field_value) != FALSE) {
+			found[AVC_IPADDR_FIELD] = avc_msg_insert_string(&msg->msg_data.avc_msg->ipaddr, &field_value);
+			if (found[AVC_IPADDR_FIELD] == PARSE_RET_MEMORY_ERROR)
+			    return PARSE_RET_MEMORY_ERROR;
+		}
+
 		if (found[AVC_SRC_USER_FIELD] == PARSE_NOT_MATCH && avc_msg_is_prefix(*(&tokens[i]), "scontext=", &field_value) != FALSE){
 			found[AVC_SRC_USER_FIELD] = avc_msg_insert_scon(msg, &field_value, log);
 			if (found[AVC_SRC_USER_FIELD] == AVC_MSG_INSERT_INVALID_CONTEXT) {
@@ -778,11 +812,15 @@ static unsigned int avc_msg_insert_field_data(char **tokens, msg_t *msg, audit_l
 			return PARSE_RET_INVALID_MSG_WARN;
 	}
 
-	/* Skip the audit header token, if it exists. */
+	/* Insert the audit header if it exists */
 	if (avc_msg_is_token_new_audit_header(*(&tokens[position]))) {
-		position++;
-		if (position == num_tokens)
-			return PARSE_RET_INVALID_MSG_WARN;
+		ret |= avc_msg_insert_audit_header(*(&tokens[position]), msg);
+		
+		if (ret == PARSE_RET_SUCCESS) {
+			position++;
+			if (position == num_tokens)
+				return PARSE_RET_INVALID_MSG_WARN;
+		}
 	}
 	
 	/* Make sure the following token is the string "avc:" */
