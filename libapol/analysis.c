@@ -34,6 +34,14 @@ typedef struct types_relation_rules {
 	int *rules;
 } types_relation_rules_t;
 
+/* This struct is basically a database for a particular type, which in the types relationship
+ * analysis would be considered the start type. This structure contains an array of 
+ * types_relation_rules_t structs, each of which maps 'allow' rules from the policy which 
+ * give a starting type access to a particular target type. So for example, this would 
+ * be used to store all 'allow' rule indices from the main policy database which allow typeA 
+ * access to let's say...passwd_t. By having seperate instances of this structure for a
+ * typeA and typeB, we can then determine the access to types that they have in common, 
+ * as well as any unique access. */
 typedef struct types_relation_type_access_pool {	
 	int num_types;				/* This corresponds to the number of types in the policy */
 	int *types;				
@@ -1214,7 +1222,7 @@ static int types_relation_find_direct_flows(types_relation_query_t *tra_query,
 	       && *tra_results != NULL && policy != NULL);
 	/* Set direction paramter to BOTH, in order to find direct  
 	 * flows both into and out of typeA [from/to] typeB. */
-	tra_query->direct_flow_query->direction = IFLOW_BOTH;
+	tra_query->direct_flow_query->direction = IFLOW_EITHER;
 	
 	/* Configure the query arguments to have typeA as  
 	 * the starting domain and the end type as typeB. */
@@ -1622,7 +1630,7 @@ static int types_relation_find_obj_types_access(types_relation_query_t *tra_quer
 {		
 	int *tgt_types = NULL, num_tgt_types = 0;
 	int rule_idx, type_idx, j, rt;
-	int typeA_uses_type, typeB_accesses_type;
+	int typeA_accesses_type, typeB_accesses_type;
 	types_relation_type_access_pool_t *tgt_type_access_pool_A = NULL; 
 	types_relation_type_access_pool_t *tgt_type_access_pool_B = NULL; 
 	
@@ -1634,17 +1642,17 @@ static int types_relation_find_obj_types_access(types_relation_query_t *tra_quer
 	}
 			
 	/* The following are seperate databases to hold rules for typeA and typeB respectively. 
-	 * The database holds an array of pointers to types_relation_rules_db_t structs. The
-	 * indices of the array correspond to type indices in the policy database. So for example, 
+	 * The database holds an array of pointers to types_relation_rules_t structs. The
+	 * indices of this array correspond to type indices in the policy database. So for example, 
 	 * if we need to get the rules for typeA that have a specific type in its' target type
 	 * list, we will be able to do so by simply specifying the index of the type we are 
 	 * interested in as the array index for tgt_type_access_pool_A. The same is true if we
 	 * wanted to get rules for typeB that have a specific type in it's target type list, except
-	 * we would specify the types index to tgt_type_access_pool_B. This increases the performance
-	 * of this function, b/c it allows us to avoid looping through all of the access rules a 
-	 * second time. Instead, the result is a local database of all the information we need after 
-	 * only a single loop through the rules. We can then compare target types list for typeA 
-	 * and typeB, determine common and unique access and have easy access to the relevant rules. */
+	 * we would specify the types index to tgt_type_access_pool_B. This is better for the performance
+	 * of this analysis, as opposed to looping through all of the access rules more than once.
+	 * Instead, the end result are 2 local databases which contain all of the information we need.
+	 * We can then compare target types list for typeA and typeB, determine common and unique access 
+	 * and have easy access to the relevant rules. */
 	tgt_type_access_pool_A = types_relation_create_type_access_pool(policy);
 	if (tgt_type_access_pool_A == NULL) {
 		fprintf(stderr, "out of memory\n");
@@ -1664,23 +1672,21 @@ static int types_relation_find_obj_types_access(types_relation_query_t *tra_quer
 		/* Skip neverallow rules */
 		if ((policy->av_access)[rule_idx].type != RULE_TE_ALLOW)
 			continue;
-					
-		typeA_uses_type = does_av_rule_idx_use_type(rule_idx, 0, tra_query->type_A, 
+		/* Does this rule have typeA in its' source types list? */					
+		typeA_accesses_type = does_av_rule_idx_use_type(rule_idx, 0, tra_query->type_A, 
 					      IDX_TYPE, SRC_LIST, TRUE, 
 					      policy);
-		if (typeA_uses_type == -1)
+		if (typeA_accesses_type == -1)
 			goto err;
-					
+		/* Does this rule have typeB in its' source types list? */			
 		typeB_accesses_type = does_av_rule_idx_use_type(rule_idx, 0, tra_query->type_B, 
 					      IDX_TYPE, SRC_LIST, TRUE, 
 					      policy);
 		if (typeB_accesses_type == -1)
 			goto err;
 		
-		/* Make sure this is a rule that has either typeA or typeB as the source. 			
-		 * NOTE: Keep in mind that the target for the rule could also be an attribute(s)
-		 * of which BOTH typeA and typeB are a member. */
-		if (!(typeA_uses_type || typeB_accesses_type)) 
+		/* Make sure this is a rule that has either typeA or typeB as the source. */
+		if (!(typeA_accesses_type || typeB_accesses_type)) 
 			continue;
 				 
 		/* Extract target type(s) from the rule */
@@ -1704,7 +1710,7 @@ static int types_relation_find_obj_types_access(types_relation_query_t *tra_quer
 		
 		
 		/* Check to see if the rule has typeA or typeB as the source argument. */
-		if (typeA_uses_type){						
+		if (typeA_accesses_type){						
 			for (j = 0; j < num_tgt_types; j++) {
 				/* We don't want the pseudo type 'self' */
 				if (tgt_types[j] == 0) {
@@ -1774,7 +1780,7 @@ static int types_relation_find_obj_types_access(types_relation_query_t *tra_quer
 	 */
 	for (type_idx = 1; type_idx < policy->num_types; type_idx++) {
 		/* Determine if this is a type that typeA has access to */
-		typeA_uses_type = find_int_in_array(type_idx, 
+		typeA_accesses_type = find_int_in_array(type_idx, 
 		    				    tgt_type_access_pool_A->types, 
 		    				    tgt_type_access_pool_A->num_types);
 		
@@ -1784,7 +1790,7 @@ static int types_relation_find_obj_types_access(types_relation_query_t *tra_quer
 		    				    tgt_type_access_pool_B->num_types);
 		    				    
 		/* Neither typeA nor typeB have access to this type, so move on.*/		    				    
-		if (typeA_uses_type < 0 && typeB_accesses_type < 0) 
+		if (typeA_accesses_type < 0 && typeB_accesses_type < 0) 
 			continue;
 			
 		/* There can only be 3 cases here:
@@ -1792,7 +1798,7 @@ static int types_relation_find_obj_types_access(types_relation_query_t *tra_quer
 		 *	2. TypeA alone has access to this type, hence indicating unique access.
 		 *	3. TypeB alone has access to this type, hence indicating unique access. */
 		if ((tra_query->options & TYPES_REL_COMMON_ACCESS) && 
-		    (typeA_uses_type >= 0) && 
+		    (typeA_accesses_type >= 0) && 
 		    (typeB_accesses_type >= 0)) {
 			/* Add as common target type for typeA within our results */
 			if (add_i_to_a(type_idx, 
@@ -1831,7 +1837,7 @@ static int types_relation_find_obj_types_access(types_relation_query_t *tra_quer
 					 }
 				}
 			}	
-		} else if ((tra_query->options & TYPES_REL_UNIQUE_ACCESS) && (typeA_uses_type >= 0)) {		
+		} else if ((tra_query->options & TYPES_REL_UNIQUE_ACCESS) && (typeA_accesses_type >= 0)) {		
 			/* Add the unique type to typeA's unique results */			
 			if (add_i_to_a(type_idx, 
 			    	&(*tra_results)->unique_obj_types_results->num_objs_A, 
