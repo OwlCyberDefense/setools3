@@ -24,6 +24,8 @@ endif
 
 CFLAGS          += -DSTARTUP_SCRIPT='"$(APOL_STARTUP_SCRIPT)"'
 
+# apol is optionally linked to libselinux. The LIBSELINUX variable 
+# is set in the top-level Makefile.
 apol: $(GUI-OBJ) apol.tcl
 	$(CC) $(TCL_LIBINC) -o $@ $(GUI-OBJ) $(LINKFLAGS) $(TCL_LIBS) $(LIBSELINUX)
 
@@ -44,9 +46,6 @@ tmp.tcl: $(TCL-STRIP-FILES)
 
 ../libapol/libapol-tcl.a:
 	cd ../; $(MAKE) libapol-tcl
-
-../libapol/libapol.so.1.5 ../libapol/libapol-tcl.so.1.5:
-	cd ../; $(MAKE) libapol libapol-tcl
 
 %.o:  %.c 
 	$(CC) $(CFLAGS) -c $<
