@@ -72,64 +72,82 @@ static int check_str_sz(char **str, int *sz, int needed)
  */
 const int seu_show_users(const char *user, char **outstr, user_db_t *db, policy_t *policy)
 {
-	user_item_t *ptr;
-	char *name, *role, *tmp;
-	int sz;
-	bool_t found = FALSE;
-	ta_item_t *item;
+	char *name = NULL, *role_name = NULL, *tmp = NULL;
+	int sz, i, j, rt;
+	int num_roles = 0, *roles = NULL;
 		
-	if(db == NULL || outstr == NULL) {
+	if (db == NULL || outstr == NULL) {
 		return -1;
 	}
 	
 	sz = ALLOC_SZ;
 	tmp = (char *)malloc(sz);
-	if(tmp == NULL) {
+	if (tmp == NULL) {
 		fprintf(stderr, "out of memory");
 		return -1;
 	}
 	tmp[0] = '\0';
-	for(ptr = db->users.head; get_user_name(ptr, &name) == 0; ptr = ptr->next) {
-		if(user != NULL) {
-			if(strcmp(user, name) == 0) 
-				found = TRUE;
-			else 
-				continue;
+	for (i = 0; is_valid_user_idx(i, policy); i++) {
+		rt = get_user_name2(i, &name, policy);
+		if (rt < 0) {
+			goto err;
 		}
+			
+		if (user != NULL && strcmp(user, name)) {
+			free(name);
+			continue;
+		}
+			
 		/* ensure enough room for name and ending \n character and ": "*/
-		if(check_str_sz(&tmp, &sz, strlen(name)+3) != 0) {
-			return -1;
+		if (check_str_sz(&tmp, &sz, strlen(name)+3) != 0) {
+			goto err;
 		}
 		strcat(tmp, name);
 		strcat(tmp, ": ");
-
-		/* add each role */
-		for(item = ptr->roles; item != NULL; item = item->next) {
-			if(get_role_name(item->idx, &role, policy) != 0) {
-				return -1;
-			}
-			if(check_str_sz(&tmp, &sz, strlen(role)+1) != 0) {
-				return -1;
-			}
-			strcat(tmp, role);
-			strcat(tmp, " ");
-			free(role);
+		
+		rt = get_user_roles(i, &num_roles, &roles, policy);
+		if (rt != 0) {
+			goto err;
 		}
+			
+		/* add each role */
+		for (j = 0; j < num_roles; j++) {
+			rt = get_role_name(roles[j], &role_name, policy);
+			if (rt != 0) {
+				goto err;
+			}
+			if (check_str_sz(&tmp, &sz, strlen(role_name)+1) != 0) {
+				goto err;
+			}
+			strcat(tmp, role_name);
+			strcat(tmp, " ");
+			free(role_name);
+		}
+		free(roles);
 		
 		strcat(tmp, "\n");
 		free(name);
+		/* if a username was provided, return as we only need the one asked for */
+		if (user != NULL)
+			break;
 	}
 	
-	if(strlen(tmp) == 0) {
+	if (strlen(tmp) == 0) {
 		free(tmp);
-		if(user != NULL)
+		if (user != NULL)
 			return 1; /* user specified but not found */
 		*outstr = NULL; /* no users defined at all */
-	}
-	else
+	} else {
 		*outstr = tmp;
+	}
 		
 	return 0;
+err:	
+	if (name) free(name);
+	if (tmp) free(tmp);
+	if (role_name) free(role_name);
+	if (roles) free(roles);
+	return -1;
 }
 
 /* display all roles */
@@ -194,7 +212,7 @@ void usage(bool_t brief)
 		fprintf(stdout, "The add/change commands will add/change a user and the user's policy \n");
 		fprintf(stdout, "information.  You must provide role for change/add as such:\n");
 		fprintf(stdout, "     -R     authorized role(s)\n\n");
-		fprintf(stdout, "The label command will label home directory files for the specified user.\n");
+		fprintf(stdout, "The label command will label home directory files for the specified user.\n\n");
 		fprintf(stdout, "The rename command will change the name of oldname to newname, leaving all\n");
 		fprintf(stdout, "other information the same.\n\n");
 		fprintf(stdout, "The show command will display users or roles currently defined in the policy.\n\n");
