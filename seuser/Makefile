@@ -13,9 +13,9 @@ CMD-OBJ		= seuser_cmd.o $(LIBSEUSER) $(LIBAPOL)
 GUI-OBJ		= seuser_gui.o $(LIBAPOL-TCL) $(LIBSEUSER-TCL) $(LIBSEUSER) $(LIBAPOL)
 SE_SHELL_SCRIPTS = seuseradd seuserdel seusermod
 
-TE_PROGS_DIR	= $(POLICY_SRC_DIR)/policy/domains/program
-FC_PROGS_DIR	= $(POLICY_SRC_DIR)/policy/file_contexts/program
-#POLICY_FULL_SRC = $(POLICY_SRC_DIR)/policy  
+TE_PROGS_DIR	= $(POLICY_SRC_DIR)/domains/program
+FC_PROGS_DIR	= $(POLICY_SRC_DIR)/file_contexts/program
+#POLICY_FULL_SRC = $(POLICY_SRC_DIR) 
 GUI_CFLAGS  	+= -DSTARTUP_SCRIPT='"$(SEUSER_STARTUP_SCRIPT)"'
 CFLAGS  	+= -DSEUSERCMD_VERSION_STRING='"$(shell cat CMD_VERSION)"'
 
@@ -87,7 +87,7 @@ seuser-policy:
 	sed -e 's|SEUSER_BINDIR|$(BINDIR)|g' | \
 	sed -e 's|SEUSER_INSTALL_LIBDIR|$(INSTALL_LIBDIR)|g' > ../policy/seuser.fc 
 	
-	-@if [ -e $(POLICY_SRC_DIR)/policy/Makefile -a -e ../policy/seuser.fc ]; then \
+	-@if [ -e $(POLICY_SRC_DIR)/Makefile -a -e ../policy/seuser.fc ]; then \
 		install -d $(TE_PROGS_DIR); \
 		install -d $(FC_PROGS_DIR); \
 		install -m 644 -Z system_u:object_r:policy_src_t ../policy/seuser.te $(TE_PROGS_DIR); \
@@ -109,14 +109,14 @@ seuser-policy:
 	
 
 policy-install: seuser-policy
-	-@if [ -e $(POLICY_SRC_DIR)/policy/Makefile ]; then \
-		make -C $(POLICY_SRC_DIR)/policy/ clean; \
-		make -C $(POLICY_SRC_DIR)/policy/ load; \
+	-@if [ -e $(POLICY_SRC_DIR)/Makefile ]; then \
+		make -C $(POLICY_SRC_DIR)/ clean; \
+		make -C $(POLICY_SRC_DIR)/ load; \
 	fi 
 
 install-nogui: seuser policy-install
 	install -d $(BINDIR)
-	-@if [ -e $(POLICY_SRC_DIR)/policy/Makefile ]; then \
+	-@if [ -e $(POLICY_SRC_DIR)/Makefile ]; then \
 		install -m 755 -Z system_u:object_r:seuser_exec_t seuser $(BINDIR); \
 		install -m 644 -Z system_u:object_r:seuser_conf_t $(SEUSER_CONF_FILE) $(INSTALL_LIBDIR); \
 	else \
