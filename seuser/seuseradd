@@ -8,17 +8,8 @@
 
     SEUSER=/usr/bin/seuser
     GREP=/bin/grep
-    # determine if useradd knows selinux
-    /usr/bin/ldd /usr/sbin/useradd | $GREP selinux > /dev/null 2>&1
-    RC=$?
-    if [ $RC -eq 0 ] ;
-    then
-	# useradd is selinux aware
-	USERADD=/usr/sbin/useradd
-    else
-	# useradd living in past
-	USERADD=/usr/local/selinux/bin/suseradd
-    fi
+    USERADD=/usr/sbin/useradd
+    
     SEUSERDEL="${SEUSER} delete"
     seuseropts=""
     suseraddopts=""
@@ -226,6 +217,7 @@ if [ $# -ne 0 ]; then
     exit 1
 fi
 
+ROLES_RC=0
 # First add user to policy if roles were given
 # We use 'change' instead of 'add' because of the case where
 # the user is in the policy and not in the system.  In that
@@ -240,6 +232,8 @@ if [ $ROLES -eq 1 ]; then
 	RC=$?
 	echo >&2 "Failed adding $USERNAME to policy; did not create system user"
 	exit $RC
+    else
+    	ROLES_RC=1
     fi
 # if no roles are specified we are creating a generic user.  We 
 # delete the user from the policy in case the user exists.  We 
@@ -269,9 +263,13 @@ if [ "${USERNAME}" != "user_u" ]; then
     fi
 fi
 
-# if we were successful with everything we reach here and load the policy
-${SEUSER} load 2> /dev/null
-
-if [ $RC -eq 0 ]; then
-	${SEUSER} label ${USERNAME}
+# Only reload policy and perform labeling if role(s) were successfully
+# added to the policy.
+if [ $ROLES -eq 1 -a $ROLES_RC -eq 0 ]; then
+	# if we were successful with everything we reach here and load the policy
+	${SEUSER} load 2> /dev/null
+	
+	if [ $RC -eq 0 ]; then
+		${SEUSER} label ${USERNAME}
+	fi
 fi
