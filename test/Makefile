@@ -43,7 +43,7 @@ $(LIBAPOL):
 	cd ../ ; $(MAKE) libapol
 
 clean:
-	rm -f *.o partial_load transitive_flow template reload perm_map_reload obj_perms binpol roles
+	rm -f *.o partial_load transitive_flow template reload perm_map_reload obj_perms binpol roles relabel
 
 bare: clean
 	rm -f *~ core core.* a.out
