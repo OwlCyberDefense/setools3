@@ -7,6 +7,7 @@ LIB-OBJ +=  binpol/binpol.o binpol/bpmaps.o binpol/fbuf.o binpol/ebitmap.o
 LIB-OBJ-TCL = apol_tcl.o
 
 TARGET = libapol.so
+SONAME = $(TARGET).1.4
 LIBSO  = $(TARGET).$(shell cat VERSION)
 
 CFLAGS  += -DLIBAPOL_VERSION_STRING='"$(shell cat VERSION)"'
@@ -21,7 +22,7 @@ all: libapol libapol-tcl libapolso
 libapol: libapol.a
 libapol-tcl: libapol-tcl.a
 libapolso: $(LIB-OBJ)
-	$(CC) $(LDFLAGS) -shared -o $(LIBSO) $(LIB-OBJ) -Wl,-soname,$(LIBSO) 
+	$(CC) $(LDFLAGS) -shared -o $(LIBSO) $(LIB-OBJ) -Wl,-soname,$(SONAME) 
 	
 libapol.a: $(LIB-OBJ) 
 	 ar cr $@ $(LIB-OBJ) 
@@ -37,8 +38,8 @@ install-libapol-shared: libapolso
 install-libapol-static: libapol
 	test -d $(STATIC_LIB_INSTALL_DIR) || install -m 755 -d $(STATIC_LIB_INSTALL_DIR)
 	install -m 644 libapol.a $(STATIC_LIB_INSTALL_DIR)
-	test -d $(SETOOLS_INCLUDE) || install -m 755 -d $(SETOOLS_INCLUDE)
-	install -m 644 *.h $(SETOOLS_INCLUDE)
+	test -d $(SETOOLS_INCLUDE)/libapol || install -m 755 -d $(SETOOLS_INCLUDE)/libapol
+	install -m 644 *.h $(SETOOLS_INCLUDE)/libapol
 
 install: install-libapol-shared install-libapol-static
 	
