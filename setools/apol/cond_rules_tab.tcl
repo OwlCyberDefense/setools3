@@ -31,7 +31,7 @@ namespace eval Apol_Cond_Rules {
 	set search_opts(incl_teallow)	1
 	set search_opts(incl_teaudit)	0
 	set search_opts(incl_ttrans)	0
-	set search_opts(allow_regex)	1	
+	set search_opts(allow_regex)	0	
 	
 	# other
 	variable enable_bool_combo_box	0
@@ -40,6 +40,7 @@ namespace eval Apol_Cond_Rules {
 	variable resultsbox
 	variable cond_bools_listbox
 	variable bool_combo_box
+	variable cb_regex
 }
 
 ###############################################################
@@ -93,7 +94,7 @@ proc Apol_Cond_Rules::cond_rules_reset_variables { } {
 	set search_opts(incl_teallow)	1
 	set search_opts(incl_teaudit)	0
 	set search_opts(incl_ttrans)	0
-	set search_opts(allow_regex)	1
+	set search_opts(allow_regex)	0
 	set enable_bool_combo_box 0
 	
 	return 0	
@@ -152,7 +153,7 @@ proc Apol_Cond_Rules::close { } {
 	Apol_Cond_Rules::cond_rules_reset_variables
 	
 	$Apol_Cond_Rules::bool_combo_box configure -values ""
-	ApolTop::change_comboBox_state $Apol_Cond_Rules::enable_bool_combo_box $Apol_Cond_Rules::bool_combo_box
+	Apol_Cond_Rules::cond_rules_enable_bool_combo_box
 	$Apol_Cond_Rules::resultsbox configure -state normal
 	$Apol_Cond_Rules::resultsbox delete 0.0 end
 	ApolTop::makeTextBoxReadOnly $Apol_Cond_Rules::resultsbox 
@@ -169,11 +170,28 @@ proc Apol_Cond_Rules::free_call_back_procs { } {
 }
 
 ################################################################
+#  ::cond_rules_enable_bool_combo_box
+#
+proc Apol_Cond_Rules::cond_rules_enable_bool_combo_box {} {
+	variable cb_regex
+	
+     	ApolTop::change_comboBox_state $Apol_Cond_Rules::enable_bool_combo_box \
+     		$Apol_Cond_Rules::bool_combo_box
+     	if {$Apol_Cond_Rules::enable_bool_combo_box} {
+     		$cb_regex configure -state normal
+     	} else {
+     		$cb_regex configure -state disabled
+     	}
+	return 0
+}
+
+################################################################
 #  ::create
 #
 proc Apol_Cond_Rules::create {nb} {
 	variable bool_combo_box
 	variable resultsbox 
+	variable cb_regex
 	
 	# Layout frames
 	set frame [$nb insert end $ApolTop::cond_rules_tab -text "Conditional Expressions"]
@@ -232,13 +250,14 @@ proc Apol_Cond_Rules::create {nb} {
 	set cb_enable_bool_combo_box [checkbutton [$l_innerFrame getframe].cb_enable_bool_combo_box \
 		-variable Apol_Cond_Rules::enable_bool_combo_box \
 		-onvalue 1 -offvalue 0 -text "Search using boolean variable" \
-		-command {ApolTop::change_comboBox_state $Apol_Cond_Rules::enable_bool_combo_box $Apol_Cond_Rules::bool_combo_box}]
+		-command {Apol_Cond_Rules::cond_rules_enable_bool_combo_box}]
 	set cb_show_rules [checkbutton [$c_innerFrame getframe].cb_show_rules \
 		-variable Apol_Cond_Rules::search_opts(show_rules) \
 		-onvalue 1 -offvalue 0 -text "Display rules within conditional expression(s)"]
 	set cb_regex [checkbutton [$c_innerFrame getframe].cb_regex \
 		-variable Apol_Cond_Rules::search_opts(allow_regex) \
-		-onvalue 1 -offvalue 0 -text "Use regular expression"]
+		-onvalue 1 -offvalue 0 -text "Use regular expression" \
+		-state disabled]
 	
 	# ComboBox is not a simple widget, it is a mega-widget, and bindings for mega-widgets are non-trivial.
 	# If bindtags is invoked with only one argument, then the current set of binding tags for window is 
