@@ -1,0 +1,138 @@
+﻿Semantic Policy Difference Tool for Security Enhanced Linux
+sediff, Graphical User Interface version 
+February 8, 2005
+selinux@tresys.com
+
+Overview:
+--------- 
+This File contains basic help information for using the sediff gui, a
+tool to compare two Security Enhanced Linux (SE Linux) policies.
+
+The tool does not need to be installed on an SE Linux system; it will
+work on any Linux machine. The tool parses two given policy files and 
+compares them showing a list of the differences.
+
+
+Understanding a Policy Semantic DIFF: 
+------------------------------------
+In this section, we analyze the various aspects of a policy and discuss what a diff means. Where meaningful, we also discuss the differences between handling a policy source and a policy binary file.
+
+Policy Components: 
+    The base policy components (i.e., the identifiers) are the easiest part of the policy on which to perform a diff.
+
+    In the case of a source policy, we maintain line references back to the associated policy.conf (there are no line references for binary policy as there is no policy source file to reference). For binary policies, currently there are no attributes.
+
+Types:
+    Determining the difference between two lists of types might be easiest, as long as we keep our definition of difference simple. In this case, we would compare both list of types using a string compare, and identify any types not in both policies. We will not attempt to recognize any difference in semantic meaning of the type string identifier (not even sure that is possible!).
+
+Attributes:
+    Attributes are a little more difficult than types, yet
+still fairly simple. First we need to identify any attributes that
+are not present in both policies. Second we must determine whether
+the list of types for an attribute differ between policies.
+
+Classes and Permissions:
+    To date, difference in classes and permissions generally also mean a different policy version. However that coupling will likely change in the future as user-mode object servers are added.
+
+Objects: There are two issues to examine: 
+    1) whether the list of object classes are the same
+    2) whether the assignment of permissions are the same.
+
+Permissions & Common Permissions :
+    We determine whether the list of specific permission names is the same. Next we determine whether the list of common permissions are the same, and whether the assignment of permissions to common permission is also the same.
+
+Roles:  There are two issues with roles: 
+    1) whether the list of role names are the same
+    2) whether the assignment of types to each role are the same.
+
+Users: There are two issues with users: 
+    1) whether the list of user names are the same
+    2) whether the assignment of roles to each user are the same.
+
+Booleans: There are two issues with Booleans: 
+    1) whether the list of Boolean names is the same 
+    2) whether the default state is the same in each policy.
+
+
+AV and Type Rules: 
+    The TE rules are the most difficult aspect of diffing two policies.
+
+    In the case of binary policies, the rules are already condensed down to single source-target-class triples, with only one rule of a given rule type per triple (ignoring conditional policies for now). However, source policies are not so compact, and there may (and usually are) many rules that have many sources, targets, and object classes and many other rules that match these rules for some aspect. This is further complicated with the use of attributes. Indeed the simpler (but verbose) case of a binary policy is really just a simple case of the more general case represented by the source policy. Thus the first issue is a general solution for determining whether a given rule in policy_1 is semantically included in policy_2.
+
+Role Allow Rules:
+    Role rules (role allow and transition) can be checked much in the same way as described above for TE rules.
+
+Conditional Policy:
+    Conditional policies are a little more involved. First we must check for differences in conditional expressions. If an entire expression is missing within one policy or the other, then we need to identify the missing expression.
+
+    Second, for expressions that are the same in both policies, we need to check the true and false lists in both expressions, and ensure that there are no changes in rule sets. This can be done in a manner similar as described for the AV rules above. Note, we can ignore the enabled stated in this analysis as that would be reflected by a change in default Boolean state.
+
+
+
+Startup:
+--------
+Sediff accepts the following command line arguments:
+sediff -X [policy1 policy2]
+sediffx [policy1 policy2]
+
+Loading Policies:
+-----------------
+Sediff will load policies from startup as shown in the startup section.
+You can also open policies by chooosing File->Open from the menu bar.
+
+Menus:
+------
+The FILE menu allows you to open new policies, to reload the current
+open policies, and to quit the application.
+
+The HELP menu opens this help dialog, and a dialog displaying the 
+current version of the sediff gui you are using.
+
+Differences Tab:
+--------------
+    When two policies are loaded, the sediff gui displays a list of selections on the left hand side. Each of these selections represent a set of differences between the policies as explained earlier. The total number of differences in each of these sets in displayed in the status bar at the bottom of the main window.
+
+    Differences:
+    ------------
+        Difference Summary - The statistics of the difference between the policies.
+        Classes and Permisssions - The difference between classes, permissions, and common permissions in the policies.
+        Types - The difference between types in the policies.
+        Attributes - The difference between attributes in the policies.
+        Roles - The difference between roles in the policies.
+        Users - The difference between booleans in the policies.
+        Booleans - The difference between booleans in the policies.
+        TE Rules - The difference in the type enforcment rules in the policies.
+        RBAC Rules - The difference in the role allow rules in the policies.
+        Conditionals - This is not implemented in this version of the tool.
+
+    Difference Window:
+    ------------------
+        When you make a selection from the list the right hand side will be populated by the differences for that set. The differences are displayed in the following format:
+            Items added to Policy 1 in Policy 2 are in green, starting with a '+'.
+            Items removed from Policy 1 in Policy 2 are in red, starting with a '-'.
+            Changes of a major item from Policy 1 to Policy 2 are in blue, starting with a star '*' where the changes are represented using additions and subtractions.
+
+        When viewing differences in TE Rules the format of the line is:
+            [T|F]  [+|-|*] rule [ CONDITIONAL EXPRESSION] [ LINE NUMBER ] 
+            T|F: Used when the rule is inside of a TRUE/FALSE statement.
+            CONDITIONAL EXPRESSION: The conditional expression of the TRUE/FALSE statement
+	    LINE NUMBER: If the policy is a source policy, a link of the line number of that statement is shown in blue.
+    
+    Difference Key:
+    ---------------
+        The difference key is shown in the bottom left hand corner and explains what is displayed in the difference window.
+
+Policy Tabs:
+------------
+        Each policy has a tab on the main window labeled Policy #: followed by the source file name. Under each of these tabs are a policy statistics tab, and a source tab.
+
+    Policy Statistics Tab:
+    ----------------------
+        The policy statistics tab displays the statistics of that policy.
+    
+    Source Tab:
+    -----------
+        If the policy is a source policy, and not a binary policy this tab will display the source of that policy. When viewing the source of either policy the bottom right hand corner of the main window will display your current line number.
+
+In the bottom left hand corner of the difference tab is a key showing you
+
