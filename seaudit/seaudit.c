@@ -20,6 +20,10 @@
 #include <errno.h>
 #include <getopt.h>
 
+/* The following should be defined in the make environment */
+#ifndef SEAUDIT_GUI_VERSION_STRING
+	#define SEAUDIT_GUI_VERSION_STRING "UNKNOWN"
+#endif
 seaudit_t *seaudit_app = NULL;
 
 static struct option const opts[] =
