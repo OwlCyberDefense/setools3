@@ -121,6 +121,22 @@ static int grow_perm_array(void *user_data, int sz)
 	return 0;
 }
 
+static int grow_cond_bool_array(void *user_data, int sz)
+{
+	policy_t *policy = (policy_t*)user_data;
+	
+	if(policy->list_sz[POL_LIST_COND_BOOLS] <= policy->num_cond_bools) {
+		sz = policy->list_sz[POL_LIST_COND_BOOLS] + LIST_SZ;
+		policy->cond_bools = (cond_bool_t*)realloc(policy->cond_bools, sizeof(cond_bool_t) * sz);
+		if(policy->cond_bools == NULL) {
+			fprintf(stderr, "out of memory\n");
+			return -1;
+		}
+		policy->list_sz[POL_LIST_COND_BOOLS] = sz;
+	}
+	return 0;
+}
+
 /* Compare support function for TYPES to use with avl-utils */
 static int type_compare(void *user_data, const void *key, int idx)
 {
@@ -149,6 +165,14 @@ static int perm_compare(void *user_data, const void *key, int idx)
 	policy_t *policy = (policy_t*)user_data;
 	assert(!(key == NULL || policy == NULL || !is_valid_perm_idx(idx, policy)));
 	return strcmp((char*)key, policy->perms[idx]);
+}
+
+/* cond bool comp functions */
+static int cond_bool_compare(void *user_data, const void *key, int idx)
+{
+	policy_t *policy = (policy_t*)user_data;
+	assert(!(key == NULL || policy == NULL || !is_valid_cond_bool_idx(idx, policy)));
+	return strcmp((char*)key, policy->cond_bools[idx].name);
 }
 
 static int initial_sid_compare( void *user_data, const void *key, int idx)
@@ -225,6 +249,17 @@ static int avl_add_perm(void *user_data, const void *key, int idx)
 	return 0;
 }
 
+static int avl_add_cond_bool(void *user_data, const void *key, int idx)
+{
+	policy_t *policy = (policy_t*)user_data;
+	char *b = (char*)key;
+	
+	policy->cond_bools[idx].name = b;
+        policy->cond_bools[idx].val = FALSE;
+	(policy->num_cond_bools)++;
+	return 0;
+}
+
 int init_avl_trees(policy_t *policy)
 {
 	if(policy == NULL)
@@ -240,6 +275,8 @@ int init_avl_trees(policy_t *policy)
 		return -1;
 	if (avl_init(&policy->tree[AVL_INITIAL_SIDS], policy, initial_sid_compare, grow_initial_sid_array, avl_add_initial_sid))
 		return -1;
+	if (avl_init(&policy->tree[AVL_COND_BOOLS], policy, cond_bool_compare, grow_cond_bool_array, avl_add_cond_bool))
+		return -1;
 
 	return 0;
 }
@@ -254,8 +291,3 @@ int free_avl_trees(policy_t *policy)
 		}
 	return 0;
 }
-
-
-
-
-
