@@ -2266,12 +2266,9 @@ proc Apol_Analysis_tra::load_query_options { file_channel parentDlg } {
 	# by a single space. Then split this string into a list using space and colon characters
 	# as the delimeters.	
 	set query_options_tmp [split [join $query_options_tmp " "] " :"]
-	set indices [lsearch -all $query_options_tmp ""]
-	set length [llength $query_options_tmp]
-	for {set i 0} {$i < $length} {incr i} {
-		if {[lsearch -exact -integer $indices $i] == -1} {
-			set query_options [lappend query_options [lindex $query_options_tmp $i]]
-		}	
+	set query_options [ApolTop::strip_list_of_empty_items $query_options_tmp]
+	if {$query_options == ""} {
+		return -code error "No query parameters were found."
 	}
 	# Parse the list starting from the beginning index 0.
 	Apol_Analysis_tra::parse_query_options_list $query_options 0 $parentDlg
@@ -2433,14 +2430,8 @@ proc Apol_Analysis_tra::set_display_to_results_state {query_options} {
 	# by a single space. Then split this string into a list using space and colon characters
 	# as the delimeters.	
 	set query_options_tmp [split [join $query_options_tmp " "] " :"]
-	set indices [lsearch -all $query_options_tmp ""]
-	set length [llength $query_options_tmp]
-	set query_options_formatted ""
-	for {set i 0} {$i < $length} {incr i} {
-		if {[lsearch -exact -integer $indices $i] == -1} {
-			set query_options_formatted [lappend query_options_formatted [lindex $query_options_tmp $i]]
-		}	
-	}
+	set query_options_formatted [ApolTop::strip_list_of_empty_items $query_options_tmp]
+	
 	set parentDlg [ApolTop::get_toplevel_dialog]
 	# widget variables
         set tra_listbox [lindex $query_options_formatted 0]
