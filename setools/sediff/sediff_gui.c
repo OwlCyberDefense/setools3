@@ -24,13 +24,19 @@
 #include <string.h>
 #include <stdio.h>
 #include <assert.h>
-
+#include <getopt.h>
 #include <time.h>
 
 /* The following should be defined in the make environment */
 #ifndef SEDIFF_GUI_VERSION_NUM
 	#define SEDIFF_GUI_VERSION_NUM "UNKNOWN"
 #endif
+
+#ifndef COPYRIGHT_INFO
+        #define COPYRIGHT_INFO "Copyright (C) 2004-2005 Tresys Technology, LLC"
+#endif
+#define SEDIFF_GUI_PROG	"sediffx"
+
 
 #define GLADEFILE 	"sediff.glade"
 #define MAIN_WINDOW_ID 	"sediff_main_window"
@@ -44,6 +50,27 @@ sediff_app_t *sediff_app = NULL;
 
 gboolean toggle = TRUE;
 gint curr_option = OPT_CLASSES; 
+
+
+static struct option const longopts[] =
+{
+  {"classes", no_argument, NULL, 'c'},
+  {"types", no_argument, NULL, 't'},
+  {"roles", no_argument, NULL, 'r'},
+  {"users", no_argument, NULL, 'u'},
+  {"booleans", no_argument, NULL, 'b'},
+  {"initialsids", no_argument, NULL, 'i'},
+  {"terules", no_argument, NULL, 'T'},
+  {"rbacrules", no_argument, NULL, 'R'},
+  {"conds", no_argument, NULL, 'C'},
+  {"stats", no_argument, NULL, 's'},
+  {"gui", no_argument, NULL, 'X'},
+  {"quiet", no_argument, NULL, 'q'},
+  {"help", no_argument, NULL, 'h'},
+  {"version", no_argument, NULL, 'v'},
+  {NULL, 0, NULL, 0}
+};
+
 
 
 /* Generic function prototype for getting policy components */
@@ -78,6 +105,30 @@ static void txt_buffer_insert_summary_results();
 static char *sediff_get_tab_spaces(int numspaces);
 static void sediff_loading_dialog_on_window_destroy(GtkWidget *widget, GdkEvent *event, gpointer user_data);
 void sediff_menu_on_reload_clicked(GtkMenuItem *menuitem, gpointer user_data);
+
+
+void usage(const char *program_name, int brief)
+{
+	printf("%s (sediff ver. %s)\n\n", COPYRIGHT_INFO, SEDIFF_VERSION_NUM);
+	printf("Usage: %s [OPTIONS]\n", program_name);
+	printf("Usage: %s [POLICY1 POLICY2]\n",program_name);
+	if(brief) {
+		printf("\n   Try %s --help for more help.\n\n", program_name);
+		return;
+	}
+	fputs("\n\
+Semantically differentiate two policies.  The policies can be either source\n\
+or binary policy files, version 15 or later.  By default, all supported\n\
+policy elements are examined.  The following diff options are available:\n\
+", stdout);
+	fputs("\n\
+  -h, --help       display this help and exit\n\
+  -v, --version    output version information and exit\n\n\
+", stdout);
+	return;
+}
+
+
 
 /* allocate a string that creates a "tab" of numspaces
    user in charge of freeing */
@@ -1157,7 +1208,7 @@ static void sediff_populate_key_buffer()
 	g_string_printf(string," Changed(*):\n  Items changed\n  in policy 2.\n\n");
 	gtk_text_buffer_insert_with_tags_by_name(txt, &iter, string->str, 
 						 -1, "changed-tag", NULL);
-	g_string_printf(string," T:\n  A TRUE\n  conditional\n  rule.\n\n F:\n  A FALSE\n  conditional\n  rule.\n");
+	g_string_printf(string," T:\n  A TRUE\n  conditional \n  TE rule.\n\n F:\n  A FALSE\n  conditional\n  TE rule.\n");
 	gtk_text_buffer_insert_with_tags_by_name(txt, &iter, string->str, 
 						 -1, "mono-tag", NULL);
 
@@ -3089,29 +3140,111 @@ int main(int argc, char **argv)
 	GString *path; 
 	filename_data_t filenames;
 	bool_t havefiles = FALSE;
-	
+	int optc;
+	int cli;
+	const char *fname1;
 	filenames.p1_file = filenames.p2_file = NULL;
 
-	/* sediff.c with file names */
-	if (argc == 2) {
-		/* make sure not some messup somewhere */
-		if (strcmp("sediffx",argv[0]) == 0) {
-			printf("Usage: ./sediffx [POLICY1 POLICY2]"); 
-			return -1; 
+	if (rindex(argv[0],'/')) {
+		fname1 = rindex(argv[0],'/')+1;
+	}
+	else
+		fname1 = argv[0];
+
+	cli = strncmp("sediffx",fname1,strlen("sediffx"));
+	
+	while ((optc = getopt_long (argc, argv, "qXctrubiTRCshv", longopts, NULL)) != -1)  {
+		switch (optc) {
+		case 0:
+	  		break;
+		case 'X': /* gui */
+			if (cli == 0) {
+				usage(argv[0], 0);
+				exit(0);
+			}
+			break;
+	  	case 'c': /* classes */
+			if (cli == 0) {
+				usage(argv[0], 0);
+				exit(0);
+			}
+	  		break;
+	  	case 't': /* types */
+			if (cli == 0) {
+				usage(argv[0], 0);
+				exit(0);
+			}
+	  		break;
+	  	case 'r': /* roles */
+			if (cli == 0) {
+				usage(argv[0], 0);
+				exit(0);
+			}
+	  		break;
+	  	case 'u': /* users */
+			if (cli == 0) {
+				usage(argv[0], 0);
+				exit(0);
+			}
+	  		break;
+	  	case 'b': /* conditional booleans */
+			if (cli == 0) {
+				usage(argv[0], 0);
+				exit(0);
+			}
+	  		break;
+	  	case 'i': /* initial SIDs */
+			if (cli == 0) {
+				usage(argv[0], 0);
+				exit(0);
+			}
+	  		break;
+	  	case 's': /* stats */
+			if (cli == 0) {
+				usage(argv[0], 0);
+				exit(0);
+			}
+	  		break;
+	  	case 'T': /* te rules */
+			if (cli == 0) {
+				usage(argv[0], 0);
+				exit(0);
+			}
+	  		break;
+	  	case 'R': /* rbac */
+			if (cli == 0) {
+				usage(argv[0], 0);
+				exit(0);
+			}
+	  		break;
+	  	case 'C': /* conditionals */
+			if (cli == 0) {
+				usage(argv[0], 0);
+				exit(0);
+			}
+	  		break;
+	  	case 'h': /* help */
+	  		usage(argv[0], 0);
+	  		exit(0);
+	  		break;
+	  	case 'v': /* version */
+	  		printf("\n%s (sediff ver. %s)\n\n", COPYRIGHT_INFO, SEDIFF_VERSION_NUM);
+	  		exit(0);
+	  		break;
+	  	default:
+	  		usage(argv[0], 1);
+	  		exit(1);
 		}
-		havefiles = TRUE;
-		filenames.p1_file = g_string_new(argv[0]); 
-		filenames.p2_file = g_string_new(argv[1]); 
 	}
-	/* cli with files */
-	else if (argc == 3) {
+
+	/* sediff with file names */
+	if (argc - optind == 2) {
 		havefiles = TRUE;
-		filenames.p1_file = g_string_new(argv[1]); 
-		filenames.p2_file = g_string_new(argv[2]); 
+		filenames.p1_file = g_string_new(argv[optind]); 
+		filenames.p2_file = g_string_new(argv[optind+1]); 
 	}
-	/* not sediff.c with no args or cli with no args */
-	else if (argc != 0 && argc != 1){
-		printf("Usage: ./sediffx [POLICY1 POLICY2]"); 
+	else if (argc - optind != 0){
+		usage(argv[0],0);
 		return -1; 
 	}
 
