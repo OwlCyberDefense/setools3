@@ -32,30 +32,43 @@ role sysadm_r types seuser_t ;
 # Allow sysadm_t to run with privilege
 domain_auto_trans(sysadm_t, seuser_exec_t, seuser_t)
 
-# Grant the new domain permissions to many common operations
-# FIX: Should be more resticted than this.
-#every_domain(seuser_t)
+# Allow the seuser_t domain to execute files of seuser_exec_t w/o a 
+# domain transition. This is necessary for such scripts as seuseradd,
+# seuserdel, seusermod which need to execute the /usr/bin/seuser 
+# program. 
+allow seuser_t seuser_exec_t:file { execute_no_trans };
+
+# Grant the new domain permissions to required operations
 allow seuser_t self:process { fork sigchld };
-allow seuser_t self:fifo_file read;
+allow seuser_t self:fifo_file { read getattr write };
 allow seuser_t self:unix_stream_socket {create connect};
 allow seuser_t self:dir {search};
 allow seuser_t self:file { read getattr };
 
+# Allow seuser to read terminal capability database library.
+allow seuser_t self:lnk_file { read };
+
 allow seuser_t etc_t:dir { search };
 allow seuser_t etc_t:{lnk_file file} { read getattr};
+# Read filesystem information in /etc/mtab and /etc/fstab
+allow seuser_t etc_runtime_t:file { read getattr };
+
+# Permissions to read the locale data. 
+# /etc/localtime and the files that it links to
 read_locale(seuser_t)
-allow seuser_t { var_run_t var_t}:dir search;
 
 uses_shlib(seuser_t)
 
+allow seuser_t { var_run_t var_t}:dir search;
+allow seuser_t devpts_t : dir { search } ;
 allow seuser_t devtty_t:chr_file {read write };
 allow seuser_t proc_t:dir search;
 allow seuser_t proc_t:{lnk_file file} { getattr read };
 
 allow seuser_t root_t:dir { search };
-allow seuser_t staff_home_dir_t:dir {search };
+allow seuser_t staff_home_dir_t:dir { search getattr };
+allow seuser_t staff_home_dir_t:file { read getattr };
 allow seuser_t home_root_t:dir { getattr search };
-allow seuser_t staff_home_dir_t:dir getattr;
 allow seuser_t default_t:file {read getattr};
 
 allow seuser_t bin_t:dir { getattr search read} ;
@@ -100,14 +113,30 @@ allow useradd_t seuser_tmp_t:file { getattr write } ;
 
 
 # FIX:  Temporarily allow seuser_t permissions for executing programs with a 
-# bint_t type without changing domains. We have to give seuser_t the following 
-# access because we use the policy make process to build new plicy.conf files. 
-# At some point, a new policy management infrastructure should remove the ability 
-# to modify policy source files with arbitrary progams
+# sbin_t and bint_t type without changing domains. We have to give seuser_t 
+# the following access because we use the policy make process to build new 
+# policy.conf files. At some point, a new policy management infrastructure 
+# should remove the ability to modify policy source files with arbitrary 
+# progams.
 #
 can_exec(seuser_t, bin_t)
 can_exec(seuser_t, shell_exec_t)
+# This definitely needs to be fixed. This access is necessary because the
+# policy make process now executes the /usr/sbin/genhomedircon script.
+can_exec(seuser_t, sbin_t)
 
+# Allow seuser to search for the python program used by /usr/sbin/genhomedircon
+# genhomedircon really should run in its' own domain.
+allow seuser_t sbin_t:dir { search getattr };
+
+# Need the following permission because the policy make process reads the 
+# /selinux/policy_vers file when calling the load_policy program?
+allow seuser_t security_t:dir { search getattr };
+allow seuser_t security_t:file { read getattr };
+
+# Allow seuser_t to transition into the useradd_t domain in 
+# order to run the useradd, userdel, and usermod programs.
+domain_auto_trans(seuser_t, useradd_exec_t, useradd_t)
 
 # Read/write permission to the login context files in /etc/security
 allow seuser_t login_contexts:file create_file_perms ;
@@ -117,9 +146,10 @@ allow seuser_t policy_src_t:dir create_dir_perms ;
 allow seuser_t policy_src_t:file create_file_perms ;
 
 # Allow search and stat for policy_config_t
-allow seuser_t policy_config_t:dir { search getattr } ;
-allow seuser_t policy_config_t:file stat_file_perms;
-
+allow seuser_t policy_config_t:dir { search read getattr } ;
+# Allow permission to create files in policy directory
+allow seuser_t policy_config_t:file { create_file_perms stat_file_perms };
+allow seuser_t policy_config_t:dir rw_dir_perms ;
 
 #ifdef(`xserver.te', `
 ############################################################
