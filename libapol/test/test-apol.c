@@ -24,10 +24,161 @@
 #include "../policy-io.h"
 #include "../policy-query.h"
 #include "../infoflow.h"
+#include "../semantic/avhash.h"
+#include "../semantic/avsemantics.h"
 
 FILE *outfile;
 char *policy_file = NULL;
 
+static int render_hash_table(policy_t *p)
+{
+	int i;
+	avh_node_t *cur;
+	char *rule;
+	
+	if(p == NULL)
+		return -1;
+	
+	for (i = 0; i < AVH_SIZE; i++) {
+		cur = p->avh.tab[i];
+		if (cur != NULL) {
+			while (cur != NULL) {
+				rule = re_render_avh_rule_cond_state(cur, p);
+				if(rule == NULL) {
+					assert(0);
+					return -1;
+				}
+				fprintf(outfile, "%s", rule);
+				free(rule);
+				rule = re_render_avh_rule(cur, p);
+				if(rule == NULL) {
+					assert(0);
+					return -1;
+				}
+				fprintf(outfile, "%s", rule);
+				free(rule);
+				rule = re_render_avh_rule_linenos(cur, p);
+				if(rule != NULL) {
+					fprintf(outfile, " (");
+					fprintf(outfile, "%s", rule);
+					fprintf(outfile, ")");
+					free(rule);
+				}
+				fprintf(outfile, "\n");
+				cur = cur->next;
+			}
+		}
+	}
+	
+	return 0;
+}
+
+
+static int test_hash_table(policy_t *policy)
+{
+	char ans[81];
+	int rt;
+	int max, num_buckets, num_used, num_entries;
+			
+			
+	for(;;) {
+		printf("\nActions:\n");
+		printf("     0)  (Re)Load Hash table (will free existing)\n");
+		printf("     1)  Free Hash table\n");
+		printf("     2)  Display Hash Table stats\n");
+		printf("     3)  Render Hash table\n");
+		printf("     q)  Exit Hash Table submenu\n");
+		printf("\nCommand (\'m\' for menu):  ");
+		fgets(ans, sizeof(ans), stdin);	
+		switch(ans[0]) {
+		case '0':
+			if(avh_hash_table_present(policy->avh)) 
+				avh_free(&policy->avh);
+			rt = avh_build_hashtab(policy);
+			if(rt < 0) {
+				fprintf(stderr, "\nError building hash table: %d\n", rt);
+				break;
+			}
+			break;
+		case '1':
+			if(avh_hash_table_present(policy->avh)) 
+				avh_free(&policy->avh);
+			break;
+		case '2':
+			if(!avh_hash_table_present(policy->avh)) 
+				printf("   You must first load the hash table\n");
+			else {
+				rt = avh_eval(&policy->avh, &max, &num_entries, &num_buckets, &num_used);
+				if(rt < 0) {
+					fprintf(stderr, "\nError getting hash stats: %d\n", rt);
+					break;
+				}
+				printf("\n\nHash table loaded; stats follow:\n");
+				printf("     max chain length: %d\n", max);
+				printf("     num entries     : %d\n", num_entries);
+				printf("     num buckts      : %d\n", num_buckets);
+				printf("     num buckets used: %d\n\n", num_used);
+			}
+			break;
+		case '3':
+			{
+			bool_t redirect, changed = FALSE;
+			FILE *cur_file = NULL;
+			char OutfileName[121];
+			char ans[81];
+			char *ans_ptr = &ans[0];
+			
+			if(!avh_hash_table_present(policy->avh)) 
+				printf("   You must first load the hash table\n");
+			else {
+				printf("Redirect output for this one command?[y|N]: ");
+				fgets(ans, sizeof(ans), stdin);
+				trim_trailing_whitespace(&ans_ptr);
+				if (ans[0] == 'y')
+					redirect = TRUE;
+				else
+					redirect = FALSE;
+				if(redirect) {
+					cur_file = outfile;
+					printf("\nFilename for output [current output file]: ");
+					fgets(OutfileName, sizeof(OutfileName), stdin);	
+					OutfileName[strlen(OutfileName)-1] = '\0'; /* fix_string (remove LF) */
+					if (strlen(OutfileName) == 0) 
+						outfile = cur_file;
+					else if ((outfile = fopen(OutfileName, "w")) == NULL) {
+						fprintf (stderr, "Cannot open output file %s\n", OutfileName);
+						outfile = cur_file;
+					}
+					else {
+						changed = TRUE;
+						printf("\nOutput to file: %s\n", OutfileName);
+					}
+				}
+				rt = render_hash_table(policy);
+				if(rt < 0) {
+					fprintf(stderr, "\nError rendering hash table.\n");
+					break;
+				}
+				if(changed) {
+					printf("\nOutput reset to previous output file\n");
+					outfile = cur_file;
+				}
+			}
+			}
+			break;	
+		case 'q':
+		case 'x':
+			return 0;
+		case 'm':
+			break;
+		default:
+			printf("Invalid choice\n");
+			break;
+		}
+	}
+
+	return 0;
+}
 
 static int display_policy_stats(policy_t *p)
 {
@@ -1088,6 +1239,7 @@ int menu() {
 	printf("8)  set the value of a boolean\n");
 	printf("9)  search for conditional expressions\n");
 	printf("t)  analyze types relationship\n");
+	printf("h)  (re)load hash table, and print table eval stats\n");
 	printf("\n");
 	printf("r)  re-load policy with options\n");
 	printf("s)  display policy statics\n");
@@ -1670,6 +1822,10 @@ int main(int argc, char *argv[])
 			if (tr_results) types_relation_destroy_results(tr_results);
 			break;
 		}
+		case 'h': 
+			test_hash_table(policy);
+			menu();
+			break;
 		case 'f':
 			printf("\nFilename for output (<CR> for screen output): ");
 			fgets(OutfileName, sizeof(OutfileName), stdin);	
@@ -1710,7 +1866,7 @@ int main(int argc, char *argv[])
 		}
 	}
 usage:
-	printf("\nUsage: %s policy.conf_file \n", argv[0]);
+	printf("\nUsage: %s policy file \n", argv[0]);
 	exit(1);
 
 }
