@@ -16,6 +16,7 @@ directory with the following subdirectories:
 
 apol            The policy analysis tool
 awish           Our customized version of the Tk wish interpreter
+docs-src	Repository for generating setools documentation.
 libapol         The main policy (policy.conf) analysis library
 libseaudit	The seaudit support library 
 libseuser       The seuser support library	
@@ -61,9 +62,11 @@ Short version: make all; su root; make install
 
 Long version follows:
 
-0. Review the ./setools/Makefile, and ensure that the TCL_INCLUDE and 
-TCL_LIBINC variables are set appropriately for your installation of 
-Tcl/Tk.
+0. Review the ./setools/Makefile. When running 'make', the TCLVER, 
+TCL_INCLUDE and TCL_LIBINC variables should be set appropriately 
+for your installation of Tcl/Tk; however, if you wish to change 
+these variables, you may do so using the commented lines below 
+this section.
    
 1. If you are installing seuser and have a version of SELinux based
 on an LSM kernel earlier than 2.4.19 (prior to August 2002 or so): 
