@@ -23,15 +23,16 @@
 #define SEDIFF_TREE_STORE_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj),  SEDIFF_TYPE_TREE_STORE, SEDiffTreeViewStoreClass))
 
 /* defines for the sediff options */
-#define OPT_CLASSES 		0
-#define OPT_TYPES 		1
-#define OPT_ATTRIBUTES          2
-#define OPT_ROLES		3
-#define OPT_USERS		4
-#define OPT_BOOLEANS 		5
-#define OPT_TE_RULES		6
-#define OPT_RBAC_RULES		7
-
+#define OPT_SUMMARY             0
+#define OPT_CLASSES 		1
+#define OPT_TYPES 		2
+#define OPT_ATTRIBUTES          3
+#define OPT_ROLES		4
+#define OPT_USERS		5
+#define OPT_BOOLEANS 		6
+#define OPT_TE_RULES		7
+#define OPT_RBAC_RULES		8
+#define OPT_CONDITIONALS        9
 
 /* The data columns that we export via the tree model interface */
 enum
