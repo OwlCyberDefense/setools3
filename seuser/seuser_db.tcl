@@ -159,7 +159,7 @@ proc SEUser_db::add_selinuxUser {user roles dflt_login_cxt role_login type_login
 #  Description: This is the interface for adding a user to an selinux system. 
 #
 proc SEUser_db::add_sysUser { user useradd_args passwd } {
-	set exec_files [auto_execok susermod]
+	set exec_files [auto_execok suseradd]
 	# Here we use what should be a TCL principle that commands should always be constructed with "list" and "concat".
 	if {$exec_files != ""} {
 		set cmd [list exec suseradd]
