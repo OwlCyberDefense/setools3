@@ -1808,8 +1808,9 @@ proc Sepct::update_fileStatus { fn {do_pos 0 }} {
 		set pos [Sepct_db::get_pos $fn]
 		if { $pos == "" } {
 			puts stderr "update_fileStatus: Error getting position info for $fn" 
-		}
-	    	Sepct::update_positionStatus $pos
+		} else {
+	    		Sepct::update_positionStatus $pos
+	    	}
 	}
     	return 0
 }

@@ -683,7 +683,7 @@ proc Sepct_Customize::change_module_status { cb } {
 	    	# Need to update the status bar if the current selection is the current module
 		if { $raisedPage == $Sepct_Customize::te_tabID && [$list_b selection get] == $module } {
 			set curr_TE_file $target_Path
-	    		Sepct::update_fileStatus $curr_TE_file 1
+	    		Sepct::update_fileStatus $curr_TE_file 0
 	    	} 
     	}
     	
