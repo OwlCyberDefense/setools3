@@ -61,7 +61,7 @@ remove-docs :
 		rm -f ../$$file; \
 	done
 
-install: docs
+install:
 	cd ..; \
 	for file in $(INSTALL_DOCS); do \
 		install -m 644 $$file ${INSTALL_HELPDIR}; \
