@@ -23,6 +23,7 @@ namespace eval Apol_Analysis_flowassert {
     # widget variables (view)
     variable assertfile_t
     variable assert_wizard_dlg ""
+    variable progressDlg .progress
 
     # name of widget holding most recently executed assertion
     variable most_recent_results ""
@@ -104,7 +105,6 @@ proc Apol_Analysis_flowassert::get_results_raised_tab {} {
 proc Apol_Analysis_flowassert::do_analysis {results_frame} {  
     # if a permission map is not loaded then load the default one
     # if an error occurs on open then skip analysis
-    Apol_Analysis_flowassert::display_progressDlg
     if {[catch {Apol_Perms_Map::is_pmap_loaded} err] || $err == 0} {
         if {[set rt [catch {Apol_Perms_Map::load_default_perm_map} err]] != 0} {
             if {$rt == $Apol_Perms_Map::warning_return_val} {
@@ -124,6 +124,9 @@ proc Apol_Analysis_flowassert::do_analysis {results_frame} {
               -exportselection 1]
     Apol_PolicyConf::configure_HyperLinks $t
     $t tag configure assert_file_tag -underline 1 -foreground blue
+    $t tag configure title_tag -font {Helvetica 14 bold}
+    $t tag configure title_num_tag -font {Helvetica 14 bold} -foreground blue
+    $t tag configure subtitle_tag -font {Helvetica 11 bold}
     $t tag bind assert_file_tag <Button-1> [namespace code [list highlight_assert_line  %W %x %y]]
     $t tag bind assert_file_tag <Enter> { set Apol_PolicyConf::orig_cursor [%W cget -cursor]; %W configure -cursor hand2 }
     $t tag bind assert_file_tag <Leave> { %W configure -cursor $Apol_PolicyConf::orig_cursor }
@@ -135,7 +138,10 @@ proc Apol_Analysis_flowassert::do_analysis {results_frame} {
     
     variable assertfile_t
     set assert_contents [string trim [$assertfile_t get 1.0 end]]
-    #$t insert end "Executing:\n$assert_contents"
+    $t insert end "Executing:\n\n$assert_contents"
+    $t tag add title_tag 1.0 "1.0 lineend"
+    display_progressDlg
+    update idletasks
 
     if [catch {apol_FlowAssertExecute $assert_contents 0} assert_results] {
         set retval -1
@@ -146,6 +152,7 @@ proc Apol_Analysis_flowassert::do_analysis {results_frame} {
         } else {
             set bin_policy 0
         }
+        
         # build summary statement
         set num_passed 0
         set num_failed 0
@@ -158,12 +165,15 @@ proc Apol_Analysis_flowassert::do_analysis {results_frame} {
             }
         }
         set summary "Results: "
+        set i [string length $summary]
         if {$num_passed == 1} {
             append summary "1 assertion passed"
         } else {
             append summary "$num_passed assertions passed"
         }
+        set j [string length $summary]
         append summary ", $num_failed failed"
+        set k [string length $summary]
         if {$num_illegal == 1} {
             append summary ", and 1 statement could not be evaluated."
         } elseif {$num_illegal > 1} {
@@ -172,6 +182,12 @@ proc Apol_Analysis_flowassert::do_analysis {results_frame} {
             append summary "."
         }
         $t insert end "$summary\n\n"
+        $t tag add title_tag 1.0 "1.0 lineend"
+        $t tag add title_num_tag "1.0 + $i c" "1.0 + $i c + [string length $num_passed] c"
+        $t tag add title_num_tag "1.0 + $j c + 2 c" "1.0 + $j c + 2 c + [string length $num_failed] c"
+        if {$num_illegal >= 1} {
+            $t tag add title_num_tag "1.0 + $k c + 6 c" "1.0 + $k c + 6 c + [string length $num_illegal] c"
+        }
         set typeslist [apol_GetNames types]
         foreach result $assert_results {
             foreach {mode lineno result rules_list} $result {}
@@ -180,6 +196,8 @@ proc Apol_Analysis_flowassert::do_analysis {results_frame} {
             set line_end_index [string length $line]
             append line ": "
             set policy_tags_list ""
+            set i [string length $line]
+            set j {}
             switch -- $result {
                 0 { append line "Passed.\n" }
                 1 {
@@ -193,19 +211,24 @@ proc Apol_Analysis_flowassert::do_analysis {results_frame} {
                             set to "<unknown type>"
                         }
                         if {$rule_list != {}} {
+                            lappend j [string length $line]
                             append line "  $from to $to:\n"
                             foreach rule $rule_list {
                                 set rule_num [lindex $rule 0]
                                 set rule_str [lindex $rule 1]
-                                append line "    \["
-                                set start_index [string length $line]
-                                append line $rule_num
-                                set end_index [string length $line]
-                                append line "\] $rule_str\n"
-                                lappend policy_tags_list $start_index $end_index
+                                append line "    "
+                                if {$bin_policy == 0} {
+                                    append line "\["
+                                    set start_index [string length $line]
+                                    append line $rule_num
+                                    set end_index [string length $line]
+                                    append line "\] "
+                                    lappend policy_tags_list $start_index $end_index
+                                }
+                                append line "$rule_str\n"
                             }
                         } elseif {$via_type >= 0} {
-                            if {[set via [lindex $Apol_Types::typelist $via_type]] == ""} {
+                            if {[set via [lindex $typeslist $via_type]] == ""} {
                                 set via "<unknown type>"
                             }
                             append line "  no rule from $from to $to via $via\n"
@@ -228,6 +251,10 @@ proc Apol_Analysis_flowassert::do_analysis {results_frame} {
             set offset [$t index "end - 1c"]
             $t insert end "$line\n"
             $t tag add assert_file_tag $offset "$offset + $line_end_index c"
+            $t tag add subtitle_tag "$offset + $i c" "$offset lineend"
+            foreach k $j {
+                $t tag add subtitle_tag "$offset + $k c" "$offset + $k c lineend"
+            }
             $t tag add l$lineno $offset "$offset + $line_end_index c"
             
             # hyperlink to policy.conf if policy is not binary
@@ -240,7 +267,6 @@ proc Apol_Analysis_flowassert::do_analysis {results_frame} {
         }
         set retval 0
     }
-    Apol_Analysis_flowassert::destroy_progressDlg
     if {$assert_results == ""} {
         $t insert end "<success>"
     }
@@ -250,6 +276,7 @@ proc Apol_Analysis_flowassert::do_analysis {results_frame} {
             -message $assert_results
     }
     $assertfile_t tag remove assert_file_sel_tag 1.0 end
+    destroy_progressDlg
     return $retval
 }
 
@@ -529,11 +556,11 @@ proc Apol_Analysis_flowassert::create_assert_wizard_dlg {{origline {}}} {
     } else {
         set title "Edit Flow Assertion"
     }
-    # create a modal dialog to hold the wizard
+    # create a dialog to hold the wizard
     variable assertfile_t
     variable assert_wizard_dlg [Dialog .assertfile_wizard_dlg -homogeneous 1 \
                                     -spacing 20 -anchor c -cancel 2 \
-                                    -modal global -parent $assertfile_t \
+                                    -modal local -parent $assertfile_t \
                                     -separator 0 -side bottom -title $title]
     set f [$assert_wizard_dlg getframe]
     set topf [frame $f.topf]
@@ -654,8 +681,8 @@ proc Apol_Analysis_flowassert::create_type_panel {type_panel type_name} {
     set add_b [button $add_replace_f.add_b -text "Add"]
     set wiz($type_name,replace_b) [button $add_replace_f.replace_b -text "Replace"]
     grid $add_b $wiz($type_name,replace_b) -padx 5 -sticky ew
-    grid columnconfigure $add_replace_f 0 -weight 1 -uniform 1
-    grid columnconfigure $add_replace_f 1 -weight 1 -uniform 1
+    grid columnconfigure $add_replace_f 0 -weight 1
+    grid columnconfigure $add_replace_f 1 -weight 1
     pack $add_replace_f -expand 0 -fill x -pady 5 -side top
     
     pack [Separator $type_panel.strut2 -orient horizontal] \
@@ -935,7 +962,7 @@ proc Apol_Analysis_flowassert::add_assertion {} {
     }
 }
 
-# Resets all widgets in the assertion wizard to their original
+# Resets all widgets in the assertion wizard to theimdr original
 # positions.  Clears the assertion line and type_id list boxes.
 proc Apol_Analysis_flowassert::reset_wizard {origline} {
     variable wiz
@@ -1026,35 +1053,6 @@ proc Apol_Analysis_flowassert::sync_asserts_to_text {} {
     enable_line_editing
 }
 
-proc Apol_Analysis_flowassert::destroy_progressDlg {} {
-	variable progressDlg
-	
-	if {[winfo exists $progressDlg]} {
-		destroy $progressDlg
-	}
-     	return 0
-} 
-
-proc Apol_Analysis_flowassert::display_progressDlg {} {
-     	variable progressDlg
-	    		
-	set Apol_Analysis_flowassert::progressmsg "Executing assertion statements..."
-	set progressBar [ProgressDlg $progressDlg \
-		-parent $ApolTop::mainframe \
-        	-textvariable Apol_Analysis_flowassert::progressmsg \
-        	-variable Apol_Analysis_flowassert::progress_indicator \
-        	-maximum 3 \
-        	-width 45]
-        update
-        bind $progressBar <<AnalysisStarted>> {
-        	set Apol_Analysis_fulflow::progress_indicator [expr $Apol_Analysis_fulflow::progress_indicator + 1]
-        }
-        # TODO: generate virtual events to place onto Tcl's event queue, to capture progress.
-	#event generate $Apol_Analysis_fulflow::progressDlg <<AnalysisStarted>> -when head
-
-        return 0
-} 
-
 # Displays a dialog box to allow user to add a comment to the
 # assertion file.  Returns 1 if something was added, 0 otherwise.
 proc Apol_Analysis_flowassert::add_comment_dlg {{origcomment ""}} {
@@ -1069,7 +1067,7 @@ proc Apol_Analysis_flowassert::add_comment_dlg {{origcomment ""}} {
     }
     variable assertfile_t
     set d [Dialog .assertfile_comment_dlg -homogeneous 1 -spacing 10 \
-               -anchor e -cancel 1 -default 0 -modal global \
+               -anchor e -cancel 1 -default 0 -modal local \
                -parent $assertfile_t -separator 0 -side bottom \
                -title $title]
     $d add -text "OK"
@@ -1154,4 +1152,32 @@ proc Apol_Analysis_flowassert::add_line {line} {
         $assertfile_t tag add assert_file_sel_tag $oldline.0 [expr {$oldline + 1}].0
     }
     enable_line_editing
+}
+
+proc Apol_Analysis_flowassert::destroy_progressDlg {} {
+    variable progressDlg
+    
+    if {[winfo exists $progressDlg]} {
+        destroy $progressDlg
+    }
+    return 0
+} 
+
+proc Apol_Analysis_flowassert::display_progressDlg {} {
+    variable progressDlg   
+    variable progressMsg "Executing assertion statements..."
+    variable progress_indicator -1
+    destroy $progressDlg
+    set progressBar [ProgressDlg $progressDlg \
+                         -parent $ApolTop::mainframe \
+                         -textvariable Apol_Analysis_flowassert::progressMsg \
+                         -variable Apol_Analysis_flowassert::progress_indicator \
+                         -maximum 3 \
+                         -width 45]
+    update
+    bind $progressBar <<AnalysisStarted>> {
+        set Apol_Analysis_fulflow::progress_indicator \
+            [expr {Apol_Analysis_fulflow::progress_indicator + 1}]
+    }
+    return 0
 }
