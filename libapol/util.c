@@ -418,6 +418,29 @@ int add_i_to_a(int i, int *cnt, int **a)
 	return 0;
 }
 
+int add_uint_to_a(uint32_t i, uint32_t *cnt, uint32_t **a)
+{
+        if(cnt == NULL || a == NULL)
+                return -1;
+
+        /* FIX: This is not very elegant! We use an array that we
+         * grow as new int are added to an array.  But rather than be smart
+         * about it, for now we realloc() the array each time a new int is added! */
+        if(*a != NULL) {
+                *a = (uint32_t *) realloc(*a, (*cnt + 1) * sizeof(uint32_t));
+        } else /* empty list */ {
+                *cnt = 0;
+                *a = (uint32_t *) malloc(sizeof(uint32_t));
+        }
+        if(*a == NULL) {
+                fprintf(stderr, "out of memory\n");
+                return -1;
+        }
+        (*a)[*cnt] = i;
+        (*cnt)++;
+        return 0;
+}
+
 /* See if provided integer is in the provided integer array; if found return
  * the index for a, otherwise return -1 */
 int find_int_in_array(int i, const int *a, int a_sz)
@@ -743,7 +766,7 @@ char **get_config_var_list(const char *var, FILE *file, int *list_sz)
 					free(values);
 					if (results) {
 						/* Free list up to the previous list item */
-						for (i = 0; i < list_sz - 1; i++) 
+						for (i = 0; i < *list_sz; i++) 
 							free(results[i]);
 						free(results);
 					}
