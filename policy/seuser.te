@@ -24,20 +24,13 @@
 type seuser_t, domain, privhome  ;
 type seuser_conf_t, file_type, sysadmfile ;
 type seuser_exec_t, file_type, sysadmfile, exec_type ;
-type seuser_tmp_t, file_type, sysadmfile, tmpfile ;
+tmp_domain(seuser)
 
 # Authorize roles
 role sysadm_r types seuser_t ;
 
 # Allow sysadm_t to run with privilege
 domain_auto_trans(sysadm_t, seuser_exec_t, seuser_t)
-
-# Permission to create files in /tmp with seuser_tmp_t derived type rather than 
-# the tmp_t type
-file_type_auto_trans(seuser_t, tmp_t, seuser_tmp_t)
-
-# Permission to use shared libraries
-uses_shlib(seuser_t)
 
 # Grant the new domain permissions to many common operations
 # FIX: Should be more resticted than this.
@@ -50,21 +43,11 @@ allow seuser_t self:file { read getattr };
 
 allow seuser_t etc_t:dir { search };
 allow seuser_t etc_t:{lnk_file file} { read getattr};
-allow seuser_t locale_t:file { getattr read};
-allow seuser_t locale_t:dir { search};
+read_locale(seuser_t)
 allow seuser_t { var_run_t var_t}:dir search;
 
-allow seuser_t usr_t:dir { search };
-allow seuser_t shlib_t:file { read getattr execute};
-allow seuser_t shlib_t:lnk_file { read };
-allow seuser_t shlib_t:dir {search};
-allow seuser_t lib_t:dir { getattr search };
-allow seuser_t ld_so_cache_t:file { read getattr };
-allow seuser_t ld_so_t:lnk_file { read };
-allow seuser_t ld_so_t:file { read execute };
+uses_shlib(seuser_t)
 
-allow seuser_t null_device_t:chr_file {read write} ;
-allow seuser_t device_t:dir search;
 allow seuser_t devtty_t:chr_file {read write };
 allow seuser_t proc_t:dir search;
 allow seuser_t proc_t:{lnk_file file} { getattr read };
@@ -72,14 +55,12 @@ allow seuser_t proc_t:{lnk_file file} { getattr read };
 allow seuser_t root_t:dir { search };
 allow seuser_t staff_home_dir_t:dir {search };
 allow seuser_t home_root_t:dir { getattr search };
-allow seuser_t file_t:file read;
 allow seuser_t staff_home_dir_t:dir getattr;
-allow seuser_t file_t:file {read getattr};
+allow seuser_t default_t:file {read getattr};
 
 allow seuser_t bin_t:dir { getattr search read} ;
 allow seuser_t bin_t:lnk_file { read getattr };
 allow seuser_t sbin_t:dir search;
-allow seuser_t usr_t:dir getattr;
 
 # Inherit and use descriptors from login.
 allow seuser_t privfd:fd use;
@@ -140,20 +121,20 @@ allow seuser_t policy_config_t:dir { search getattr } ;
 allow seuser_t policy_config_t:file stat_file_perms;
 
 
-ifdef(`xserver.te', `
+#ifdef(`xserver.te', `
 ############################################################
 # Xserver section - To support our GUI interface, 
 ############################################################
 # Permission to create files in /tmp/.X11-Unix
-allow seuser_t sysadm_xserver_tmp_t:dir { search } ;
-allow seuser_t sysadm_xserver_tmp_t:sock_file { write } ;
-allow seuser_t user_xserver_tmp_t:dir { search } ;
-allow seuser_t user_xserver_tmp_t:sock_file { write } ;
+#allow seuser_t sysadm_xserver_tmp_t:dir { search } ;
+#allow seuser_t sysadm_xserver_tmp_t:sock_file { write } ;
+#allow seuser_t user_xserver_tmp_t:dir { search } ;
+#allow seuser_t user_xserver_tmp_t:sock_file { write } ;
 
 # Permission to establish a Unix stream connection to X server
-can_unix_connect(seuser_t, user_xserver_t)
-can_unix_connect(seuser_t, sysadm_xserver_t)
-')
+#can_unix_connect(seuser_t, user_xserver_t)
+#can_unix_connect(seuser_t, sysadm_xserver_t)
+#')
 ifdef(`xdm.te', `
 can_unix_connect(seuser_t, xdm_xserver_t)
 ')
@@ -164,9 +145,4 @@ can_exec(seuser_t, lib_t)
 # Access ttys
 allow seuser_t sysadm_tty_device_t:chr_file rw_file_perms ;
 allow seuser_t sysadm_devpts_t:chr_file rw_file_perms ;
-
-
-
-
-
 
