@@ -25,15 +25,15 @@
 /* Predefined labels */
 #define OBJECT_R 0
 
-#define NUM_OBJECT_CLASSES 8
-#define NORM_FILE	1
-#define DIR		2
-#define LNK_FILE	4
-#define CHR_FILE	8
-#define BLK_FILE	16
-#define	SOCK_FILE	32
-#define FIFO_FILE	64
-#define ALL_FILES	(NORM_FILE | DIR | LNK_FILE | CHR_FILE | BLK_FILE | SOCK_FILE | FIFO_FILE)
+#define SEFS_NUM_OBJECT_CLASSES 8
+#define SEFS_NORM_FILE	1
+#define SEFS_DIR		2
+#define SEFS_LNK_FILE	4
+#define SEFS_CHR_FILE	8
+#define SEFS_BLK_FILE	16
+#define	SEFS_SOCK_FILE	32
+#define SEFS_FIFO_FILE	64
+#define SEFS_ALL_FILES	(SEFS_NORM_FILE | SEFS_DIR | SEFS_LNK_FILE | SEFS_CHR_FILE | SEFS_BLK_FILE | SEFS_SOCK_FILE | SEFS_FIFO_FILE)
 #define SEFS_TYPES      1
 #define SEFS_USERS      2
 #define SEFS_OBJECTCLASS 3
@@ -103,7 +103,6 @@ void sefs_search_keys_ret_print(sefs_search_ret_t *key);
 char **sefs_filesystem_db_get_known(sefs_filesystem_db_t *fsd,int *count,int request_type);
 
 int sefs_double_array_destroy(char **array,int size);
-void sefs_double_array_print(char **array,int size);
 
 /* find the mount points */
 int find_mount_points(char *dir, char ***mounts, int *num_mounts, int rw);
