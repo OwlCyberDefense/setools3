@@ -1291,7 +1291,12 @@ static int load_cond_list(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int 
 				expr->expr_type = le32_to_cpu(buf[0]);
 				bool_val = le32_to_cpu(buf[1]);
 				assert(bool_val <= bm->bool_num);
-				expr->bool = bm->bool_map[bool_val-1];
+				expr->bool = bm->bool_map[bool_val/*-1*/];
+				if (expr->bool >= policy->num_cond_bools) {
+					free(expr); 
+					expr = NULL; 
+					continue;
+				}
 				if(j == 0) {
 					first = expr;
 				}
