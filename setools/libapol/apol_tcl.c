@@ -28,6 +28,7 @@
 #include "perm-map.h"
 #include "policy-query.h"
 #include "flowassert.h"
+#include "relabel_analysis.h"
 #ifdef APOL_PERFORM_TEST
 #include <time.h>
 #endif
@@ -5472,6 +5473,75 @@ int Apol_FlowAssertExecute (ClientData clientData, Tcl_Interp *interp,
         return TCL_OK;
 }
 
+/* objv [1] = starting type (string)
+ * objv [2] = mode ("to", "from", "domain")
+ */
+int Apol_RelabelAnalysis (ClientData clientData, Tcl_Interp *interp,
+                          int objc, Tcl_Obj * CONST objv[]) {
+        static relabel_set_t *sets = NULL;         /* cache this value */
+        static policy_t *last_policy = NULL;       /* policy which built this set */
+        /* FIX ME: call explicit function whenever policy changes */
+        relabel_mode_t mode;
+        relabel_result_t results;
+        relabel_filter_t filter;
+        char *mode_string;
+        int start_type;
+        Tcl_Obj *results_list_obj;
+        if (policy == NULL) {
+                Tcl_SetResult (interp, "No current policy file is opened!",
+                               TCL_STATIC);
+                return TCL_ERROR;
+        }
+        if (objc < 3) {
+                Tcl_SetResult (interp, "wrong # of args", TCL_STATIC);
+                return TCL_ERROR;
+        }
+        if (last_policy != policy) {
+                apol_free_relabel_set_data (sets);
+                free (sets);
+                if (apol_do_relabel_analysis (&sets, policy)) {
+                        Tcl_SetResult (interp, "Error while fill relabel", TCL_STATIC);
+                        return TCL_ERROR;
+                }
+                last_policy = policy;
+        }
+        if (apol_relabel_mode_init (&mode)) {
+                Tcl_SetResult (interp, "Error while initializing mode", TCL_STATIC);
+                return TCL_ERROR;
+        }
+        start_type = get_type_idx (Tcl_GetString (objv [1]), policy);
+        if (!is_valid_type (policy, start_type, 0)) {
+                Tcl_SetResult (interp, "Invalid starting type name", TCL_STATIC);
+                return TCL_ERROR;
+        }
+        mode_string = Tcl_GetString (objv [2]);
+        if (strcmp (mode_string, "to") == 0) {
+                mode.mode = MODE_TO;
+        }
+        else if (strcmp (mode_string, "from") == 0) {
+                mode.mode = MODE_FROM;
+        }
+        else if (strcmp (mode_string, "domain") == 0) {
+                mode.mode = MODE_DOM;
+        }
+        else {
+                Tcl_SetResult (interp, "Invalid relabel mode", TCL_STATIC);
+                return TCL_ERROR;
+        }
+        if (apol_relabel_result_init (&results)) {
+                Tcl_SetResult (interp, "Error while initializing results", TCL_STATIC);
+                return TCL_ERROR;
+        }
+        if (apol_query_relabel_analysis (sets, start_type, &results,
+                                         policy, &mode, &filter)) {
+                apol_free_relabel_result_data (&results);
+                Tcl_SetResult (interp, "Error doing analysis", TCL_STATIC);
+                return TCL_ERROR;
+        }
+        Tcl_SetObjResult (interp, Tcl_NewIntObj (results.num_types));
+        return TCL_OK;
+}
+
 
 /* Package initialization */
 int Apol_Init(Tcl_Interp *interp) 
@@ -5523,6 +5593,7 @@ int Apol_Init(Tcl_Interp *interp)
 	Tcl_CreateCommand(interp, "apol_GetPolicyType", (Tcl_CmdProc *) Apol_GetPolicyType, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_TypesRelationshipAnalysis", (Tcl_CmdProc *) Apol_TypesRelationshipAnalysis, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateObjCommand(interp, "apol_FlowAssertExecute", (Tcl_ObjCmdProc *) Apol_FlowAssertExecute, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);	
+	Tcl_CreateObjCommand(interp, "apol_RelabelAnalysis", (Tcl_ObjCmdProc *) Apol_RelabelAnalysis, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);	
 	Tcl_PkgProvide(interp, "apol", (char*)libapol_get_version());
 
 	return TCL_OK;
