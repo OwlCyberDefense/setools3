@@ -96,9 +96,9 @@ export CFLAGS CC YACC LEX LINKFLAGS BINDIR INSTALL_LIBDIR INSTALL_HELPDIR LIBS T
 export SELINUX_DIR POLICY_INSTALL_DIR POLICY_SRC_DIR SRC_POLICY_DIR POLICY_SRC_FILE DEFAULT_LOG_FILE
 export TOPDIR SHARED_LIB_INSTALL_DIR STATIC_LIB_INSTALL_DIR SETOOLS_INCLUDE DYNAMIC LIBSELINUX
 
-all:  all-libs apol awish seuser seuserx sepcut seaudit secmds
+all:  all-libs apol awish seuser seuserx sepcut seaudit secmds sediff
 
-all-nogui:  corelibs seuser secmds
+all-nogui:  corelibs seuser secmds sediff
 
 corelibs: libapol libseuser libseaudit libsefs
 
@@ -151,6 +151,9 @@ seuser: selinux_tool
 
 seuserx: selinux_tool
 	cd seuser; $(MAKE) seuserx;
+	
+sediff: selinux_tool
+	cd sediff; $(MAKE) sediff;
 
 sepcut: selinux_tool
 	cd sepct; $(MAKE) sepcut
@@ -310,6 +313,7 @@ clean: test-clean
 	cd seaudit; $(MAKE) clean
 	cd secmds; $(MAKE) clean
 	cd libseaudit; $(MAKE) clean
+	cd sediff; $(MAKE) clean
 	rm -f *~
 	rm -f lib/*.a lib/*.so lib/*.so.1
 
@@ -324,6 +328,9 @@ bare: test-bare
 	cd seaudit; $(MAKE) bare
 	cd secmds; $(MAKE) bare
 	cd libseaudit; $(MAKE) bare
+	cd sediff; $(MAKE) bare
+	rm -f *~
+	rm -rf ./lib
 	cd libseaudit; $(MAKE) bare
 	cd packages; $(MAKE) bare
 
