@@ -1018,6 +1018,20 @@ types_relation_results_t *types_relation_create_results(void)
 	return tra;
 }
 
+static void types_relation_destroy_type_access_pool(types_relation_type_access_pool_t *p)
+{	
+	int i;
+	
+	assert(p != NULL);
+	for (i = 0; i < p->num_types; i++) {
+		if (p->type_rules[i]->rules)
+			free(p->type_rules[i]->rules);
+	}
+	free(p->type_rules);
+	if (p->types) free(p->types);
+	free(p);
+}
+
 void types_relation_destroy_results(types_relation_results_t *tra)
 {
 	assert(tra != NULL);
@@ -1575,20 +1589,6 @@ err:
 	free_teq_results_contents(&results);
 	return -1;
 }
-
-static void types_relation_destroy_type_access_pool(types_relation_type_access_pool_t *p)
-{	
-	int i;
-	
-	assert(p != NULL);
-	for (i = 0; i < p->num_types; i++) {
-		if (p->type_rules[i]->rules)
-			free(p->type_rules[i]->rules);
-	}
-	free(p->type_rules);
-	if (p->types) free(p->types);
-	free(p);
-}
 			
 static types_relation_type_access_pool_t *types_relation_create_type_access_pool(policy_t *policy)
 {	
@@ -1877,13 +1877,12 @@ err:
  *	- any transitive information flows between TypeA and TypeB (TIF analysis)
  *	- any domain transitions from TypeA to TypeB or from TypeB to TypeA. 
  *	  (DTA analysis)
- *	- any additional type transition rules from TypeA to TypeB or from 
+ *	- all type transition rules from TypeA to TypeB or from 
  *	   TypeB to TypeA. (TE rules query)
- *	- object types to which both types are granted access. (essentially, 
- *	   the intersection of the TE rules queries)
+ *	- object types to which both types share access. 
  *	- any process interactions between TypeA and TypeB (e.g., allow rules that 
  *	   allow TypeA and TypeB to send signals to each other). (TE rules query)
- *	- the additional types to which TypeA and TypeB have access. (TE rules query)
+ *	- types to which each TypeA and TypeB have special access. (TE rules query)
  */
 int types_relation_determine_relationship(types_relation_query_t *tra_query, 
 				   	  types_relation_results_t **tra_results,
