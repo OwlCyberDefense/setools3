@@ -107,6 +107,9 @@ namespace eval Apol_Analysis_fulflow {
 	## the first argument is the namespace name of the module, and the second is the
 	## descriptive display name you want to be displayed in the GUI selection box.
     	Apol_Analysis::register_analysis_modules "Apol_Analysis_fulflow" "Transitive Information Flow"
+    	
+    	# Provided to tkwait to prevent multiple clicks on an object in the Advanced Search options dialog.
+    	variable rendering_finished	0
 }
 
 
@@ -2284,6 +2287,7 @@ proc Apol_Analysis_fulflow::advanced_filters_change_obj_state_on_perm_select {pa
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_fulflow::advanced_filters_embed_perm_buttons {list_b class perm path_name} {
 	variable f_opts
+	variable rendering_finished
 	
  	# Frames
 	set frame [frame $list_b.f:$class:$perm -bd 0 -bg white]
@@ -2319,6 +2323,7 @@ proc Apol_Analysis_fulflow::advanced_filters_embed_perm_buttons {list_b class pe
 	pack $lbl1 $lbl2 -side left -anchor nw
 	pack $cb_include $cb_exclude $lbl_weight -side left -anchor nw
 	
+	set rendering_finished 1
 	# Return the pathname of the frame to embed.
  	return $frame
 }
@@ -2405,7 +2410,10 @@ proc Apol_Analysis_fulflow::advanced_filters_display_permissions {path_name} {
 			$f_opts($path_name,perms_box) $class_name $perm $path_name] 
 		$f_opts($path_name,perms_box) insert end "\n"
 	}
-
+	tkwait variable Apol_Analysis_fulflow::rendering_finished
+	set rendering_finished 0
+	update idletasks
+	
 	# Disable the text widget. 
 	$f_opts($path_name,perms_box) configure -state disabled
 	set f_opts($path_name,class_selected_idx) $class_idx
