@@ -8,13 +8,14 @@ LIBAPOL		= ../lib/libapol.a
 LIBAPOL-TCL	= ../lib/libapol-tcl.a
 LIBSEUSER	= ../lib/libseuser.a
 LIBSEUSER-TCL	= ../lib/libseuser-tcl.a
-CMD-OBJ		= seuser_cmd.o $(LIBSEUSER)  $(LIBAPOL)
-GUI-OBJ		= seuser_gui.o $(LIBAPOL-TCL) $(LIBSEUSER-TCL)  $(LIBSEUSER) $(LIBAPOL)
+CMD-OBJ		= seuser_cmd.o $(LIBSEUSER) $(LIBAPOL)
+GUI-OBJ		= seuser_gui.o $(LIBAPOL-TCL) $(LIBSEUSER-TCL) $(LIBSEUSER) $(LIBAPOL)
 SE_SHELL_SCRIPTS = seuseradd seuserdel seusermod
 
 TE_PROGS_DIR	= $(POLICY_SRC_DIR)/policy/domains/program
 FC_PROGS_DIR	= $(POLICY_SRC_DIR)/policy/file_contexts/program
 #POLICY_FULL_SRC = $(POLICY_SRC_DIR)/policy  
+CFLAGS  += -DSEUSERCMD_VERSION_STRING='"$(shell cat CMD_VERSION)"'
 
 SHELL = /bin/sh
 
@@ -26,7 +27,7 @@ seuserx: $(GUI-OBJ) se_user.tcl
 
 se_user.tcl: $(TCL-FILES)
 	cat $(TCL-FILES) | \
-	sed -e 's/SEUSER_GUI_VERSION/$(shell cat VERSION)/g' > $@ 
+	sed -e 's/SEUSER_GUI_VERSION/$(shell cat GUI_VERSION)/g' > $@ 
 
 tmp.tcl: $(TCL-STRIP-FILES)
 	cat $(TCL-STRIP-FILES) > $@
