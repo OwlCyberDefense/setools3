@@ -224,7 +224,7 @@ following reasons:
 Because of these reasons, apol was designed to provide great latitude in 
 managing permission mappings using the Advanced->Permission Mappings 
 menus.  A user need not manage permission maps directly.  Apol is 
-equipped with default permission maps (in /usr/lib/apol/) that 
+equipped with default permission maps (in /usr/share/setools/) that 
 will be loaded automatically when an information flow analysis is 
 performed. 
 
@@ -247,7 +247,7 @@ match the loaded map.
 If you make changes to the default permission map, a copy will be made 
 for you in $HOME/.apol_perm_mapping.  If .apol_perm_mapping exists, 
 it will be used as your default.  Otherwise the system default from 
-/usr/lib/apol will be used as the default.
+/usr/share/setools will be used as the default.
 
    NOTE: Only one permission map may be loaded at a time, and only if a 
    policy.conf file is opened.  If you have performed an information 
