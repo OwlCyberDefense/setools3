@@ -87,6 +87,7 @@ void seaudit_window_add_new_view(seaudit_window_t *window, audit_log_t *log, boo
 	view = seaudit_filtered_view_create(log, GTK_TREE_VIEW(tree_view), view_name);
 	hbox = gtk_hbox_new(FALSE, 5);
 	button = gtk_button_new_with_label("x");
+	g_object_set_data(G_OBJECT(button), "view", view);
 	g_signal_connect(G_OBJECT(button), "pressed", G_CALLBACK(seaudit_window_close_view), window);
 	label = gtk_label_new(view_name);
 	gtk_box_pack_start(GTK_BOX(hbox), label, TRUE, TRUE, 5);
@@ -186,7 +187,7 @@ static GtkTreeViewColumn *seaudit_window_create_column(GtkTreeView *view, const 
 
 static void seaudit_window_close_view(GtkButton *button, seaudit_window_t *window)
 {
-	seaudit_filtered_view_t *curent_view;
+	seaudit_filtered_view_t *view;
 	GList *item;
 	gint index;
 
@@ -196,18 +197,18 @@ static void seaudit_window_close_view(GtkButton *button, seaudit_window_t *windo
 	if (gtk_notebook_get_n_pages(window->notebook) <= 1)
 		return;
 
-	curent_view = seaudit_window_get_current_view(window);
-	g_assert(curent_view);
-	index = curent_view->notebook_index;
-	item = g_list_find(window->views, curent_view);
+	view = g_object_get_data(G_OBJECT(button), "view");
+	g_assert(view);
+	index = view->notebook_index;
+	item = g_list_find(window->views, view);
 	window->views = g_list_remove_link(window->views, item);
 	seaudit_filtered_view_destroy(item->data);
 	g_list_free(item);
 	gtk_notebook_remove_page(window->notebook, index);
-	for (item = window->views; item != NULL; item = g_list_next(item)) {
-		curent_view = (seaudit_filtered_view_t*)item->data;
-		if (curent_view->notebook_index >= index)
-			curent_view->notebook_index--;
+	for (item = window->views; item != NULL; item = g_list_next(item)){
+		view = (seaudit_filtered_view_t*)item->data;
+		if (view->notebook_index >= index)
+			view->notebook_index--;
 	}
 }
 
