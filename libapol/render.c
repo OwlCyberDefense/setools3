@@ -388,7 +388,7 @@ char *re_render_tt_rule(bool_t addlineno, int idx, policy_t *policy)
 }
 
 /* security contexts */
-char *re_render_security_context(const security_context_t *context,
+char *re_render_security_context(const security_con_t *context,
 				 policy_t *policy
 				 )
 {
@@ -398,7 +398,7 @@ char *re_render_security_context(const security_context_t *context,
 		return NULL;
 	
 	if(context != NULL && (!is_valid_type_idx(context->type, policy) || !is_valid_role_idx(context->role, policy) || 
-			context->user == NULL) )
+			!is_valid_user_idx(context->user, policy)) )
 		return NULL;
 
 	/* initialize the buffer */
@@ -413,8 +413,11 @@ char *re_render_security_context(const security_context_t *context,
 	}
 
 	/* render context */
-	if(append_str(&buf, &buf_sz, context->user->name) != 0) 
+	if(get_user_name2(context->user, &name, policy) != 0)
 		goto err_return;
+	if(append_str(&buf, &buf_sz, name) != 0) 
+		goto err_return;
+	free(name);
 	if(append_str(&buf, &buf_sz, ":") != 0) 
 		goto err_return;
 	if(get_role_name(context->role, &name, policy) != 0) 
