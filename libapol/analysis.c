@@ -1764,106 +1764,131 @@ out:
 	return ret;
 }
 
+static int ta_find_edge(iflow_graph_t *g, iflow_query_t *q, int path_len, int *path, int start)
+{
+	int i, edge;
+	
+	if (q->direction == IFLOW_OUT) {
+		for (i = 0; i < g->nodes[path[start]].num_out_edges; i++) {
+			edge = g->nodes[path[start]].out_edges[i];
+			if (g->edges[edge].start_node == path[start] &&
+				g->edges[edge].end_node == path[start + 1])
+				break;
+		}
+		if (i == g->nodes[path[start]].num_out_edges) {
+			fprintf(stderr, "Did not find an edge\n");
+			return -1;
+		}
+	} else {
+		for (i = 0; i < g->nodes[path[start]].num_in_edges; i++) {
+			edge = g->nodes[path[start]].in_edges[i];
+			if (g->edges[edge].end_node == path[start] &&
+				g->edges[edge].start_node == path[start + 1])
+				break;
+		}
+		if (i == g->nodes[path[start]].num_in_edges) {
+			fprintf(stderr, "Did not find an edge\n");
+			return -1;
+		}
+	}
+	return edge;
+}
+
+static iflow_path_t *ta_build_path(iflow_graph_t *g, iflow_query_t *q, int path_len, int *path)
+{
+	int i, length, edge;
+	iflow_path_t *p;
+	
+	p = (iflow_path_t*)malloc(sizeof(iflow_path_t));
+	if (!p) {
+		fprintf(stderr, "Memory error\n");
+		return NULL;
+	}
+	memset(p, 0, sizeof(iflow_path_t));
+	
+	p->iflows = (iflow_t*)realloc(p->iflows, sizeof(iflow_t) * path_len);
+	if (!p->iflows) {
+		fprintf(stderr, "Memory error\n");
+		return NULL;
+	}
+	p->num_iflows = path_len;
+
+	/* build the path */
+	length = 0;
+	for (i = 0; i < path_len - 1; i++) {
+		edge = ta_find_edge(g, q, path_len, path, i);
+		if (edge < 0)
+			return NULL;
+			
+		length += g->edges[edge].length;		
+
+		if (iflow_init(g, &p->iflows[i])) {
+			fprintf(stderr, "Memory error\n");
+			return NULL;
+		}
+		if (q->direction == IFLOW_OUT) {
+			if (iflow_define_flow(g, &p->iflows[i], IFLOW_OUT,
+					      path[i], edge))
+				return NULL;
+		} else {
+			if (iflow_define_flow(g, &p->iflows[i], IFLOW_IN,
+					      path[i + 1], edge))
+				return NULL;
+		}
+	}
+	p->length = length;
+	
+	return p;
+}
+
+static bool_t ta_iflow_equal(iflow_t *a, iflow_t *b)
+{
+	if (a->start_type != b->start_type || a->end_type != b->end_type || a->direction != b->direction)
+		return FALSE;
+	return TRUE;
+}
+
 /* helper for iflow_transitive_flows */
 static int transitive_answer_append(iflow_graph_t *g, iflow_query_t *q, iflow_transitive_t* a,
-				    int end_node, int path_len, int* path)
+				    int end_node, int path_len, int *path)
 {
 	int i, j, cur_type, cur;
 	iflow_path_t *p, *last_path = NULL;
 	bool_t found_dup, new_path = FALSE;
 
-	p = (iflow_path_t*)malloc(sizeof(iflow_path_t));
-	if (!p) {
-		fprintf(stderr, "Memory error\n");
+	p = ta_build_path(g, q, path_len, path);
+	if (!p)
 		return -1;
-	}
-	memset(p, 0, sizeof(iflow_path_t));
-
-	/* build the path */
-	for (i = 0; i < path_len - 1; i++) {
-		int edge = -1;
-		/* find the edge */
-		if (q->direction == IFLOW_OUT) {
-			for (j = 0; j < g->nodes[path[i]].num_out_edges; j++) {
-				edge = g->nodes[path[i]].out_edges[j];
-				if (g->edges[edge].start_node == path[i] &&
-				    g->edges[edge].end_node == path[i + 1])
-					break;
-			}
-			if (j == g->nodes[path[i]].num_out_edges) {
-				fprintf(stderr, "Did not find an edge\n");
-				return -1;
-			}
-		} else {
-			for (j = 0; j < g->nodes[path[i]].num_in_edges; j++) {
-				edge = g->nodes[path[i]].in_edges[j];
-				if (g->edges[edge].end_node == path[i] &&
-				    g->edges[edge].start_node == path[i + 1])
-					break;
-			}
-			if (j == g->nodes[path[i]].num_in_edges) {
-				fprintf(stderr, "Did not find an edge\n");
-				return -1;
-			}
-		}
-		assert(edge >= 0);
-		p->num_iflows++;
-		/* TODO - we should preallocate this since we know the length ahead of time */
-		p->iflows = (iflow_t*)realloc(p->iflows, sizeof(iflow_t) * p->num_iflows);
-		if (!p->iflows) {
-			fprintf(stderr, "Memory error\n");
-			return -1;
-		}
-		if (iflow_init(g, &p->iflows[p->num_iflows - 1])) {
-			fprintf(stderr, "Memory error\n");
-			return -1;
-		}
-		if (q->direction == IFLOW_OUT) {
-			if (iflow_define_flow(g, &p->iflows[p->num_iflows - 1], IFLOW_OUT,
-					      path[i], edge))
-				return -1;
-		} else {
-			if (iflow_define_flow(g, &p->iflows[p->num_iflows - 1], IFLOW_IN,
-					      path[i + 1], edge))
-				return -1;
-		}
-	}
-
-	/* see if we've already seen this type */
+	
+	/* First we look for duplicate paths */
 	cur_type = g->nodes[end_node].type;
 	for (i = 0; i < a->num_end_types; i++) {
-		if (a->end_types[i] == cur_type) {
-			last_path = a->paths[i];
-			/* find the last path while checking for duplicates */
-			while (1) {
-				if (last_path->num_iflows == p->num_iflows) {
-					found_dup = TRUE;
-					for (j = 0; j < last_path->num_iflows; j++) {
-						if (last_path->iflows[j].start_type != p->iflows[j].start_type
-						    || last_path->iflows[j].start_type != p->iflows[j].start_type
-						    || last_path->iflows[j].direction != p->iflows[j].direction) {
-							found_dup = FALSE;
-							break;
-						}
-					}
-					/* found a dup TODO - make certain all of the object class / rules are kept */
-					if (found_dup) {
-						iflow_path_destroy(p);
-						return 0;
-					}
-				}
-				if (!last_path->next)
+		if (a->end_types[i] != cur_type)
+			continue;
+		/* find the last path while checking for duplicates */
+		for (last_path = a->paths[i]; last_path; last_path = last_path->next) {
+			if (last_path->num_iflows != p->num_iflows)
+				continue;
+			found_dup = TRUE;
+			for (j = 0; j < last_path->num_iflows; j++) {
+				if (!ta_iflow_equal(&last_path->iflows[j], &p->iflows[j])) {
+					found_dup = FALSE;
 					break;
-				last_path = last_path->next;
+				}
 			}
-			new_path = TRUE;
-			a->num_paths[i]++;
-			last_path->next = p;
-			break;
+			/* found a dup TODO - make certain all of the object class / rules are kept */
+			if (found_dup) {
+				iflow_path_destroy(p);
+				return 0;
+			}
 		}
+		new_path = TRUE;
+		a->num_paths[i]++;
+		last_path->next = p;
+		break;
 	}
 
-	/* this is a new type */
+	/* If we are here there are no other paths with this end type */
 	if (!last_path) {
 		new_path = TRUE;
 		cur = a->num_end_types;
@@ -1890,6 +1915,66 @@ static int transitive_answer_append(iflow_graph_t *g, iflow_query_t *q, iflow_tr
 	if (new_path)
 		return 1;
 	return 0;
+}
+
+static int iflow_path_compare(const void *a, const void *b)
+{
+	iflow_path_t *path_a, *path_b;
+	path_a = *((iflow_path_t**)a);
+	path_b = *((iflow_path_t**)b);
+	
+	if (path_a->length == path_b->length)
+		return 0;
+	else if (path_a->length < path_b->length)
+		return -1;
+	else
+		return 1;
+}
+
+static iflow_path_t *iflow_sort_paths(iflow_path_t *path)
+{
+	int i, num_paths;
+	iflow_path_t *cur, *start, **paths;
+	
+	if (!path) {
+		fprintf(stderr, "sort_iflow_paths got NULL path\n");
+		return NULL;
+	}
+	
+	num_paths = 0;
+	cur = path;
+	while (cur) {
+		num_paths++;
+		cur = cur->next;
+	}
+	
+	if (num_paths == 1) {
+		return path;
+	}
+	
+	paths = (iflow_path_t**)malloc(sizeof(iflow_path_t*) * num_paths);
+	if (!paths) {
+		fprintf(stderr, "Memory error\n");
+		return NULL;
+	}
+	memset(paths, 0, sizeof(iflow_path_t*) * num_paths);
+	
+	i = 0;
+	cur = path;
+	while (cur) {
+		paths[i++] = cur;
+		cur = cur->next;
+	}
+	
+	qsort(paths, num_paths, sizeof(iflow_path_t*), iflow_path_compare);
+	
+	cur = start = paths[0];
+	for (i = 1; i < num_paths; i++) {
+		cur->next = paths[i];
+		cur = cur->next;
+	}
+	
+	return start;
 }
 
 static int shortest_path_find_path(iflow_graph_t *g, int start_node, int end_node, int *path)
@@ -2056,6 +2141,15 @@ int iflow_graph_shortest_path(iflow_graph_t *g, int start_node, iflow_transitive
 			goto out;
 		}
 		if (transitive_answer_append(g, q, a, i, path_len, path) == -1) {
+			rc = -1;
+			goto out;
+		}
+	}
+	
+	/* sort the paths by length */
+	for (i = 0; i < a->num_end_types; i++) {
+		a->paths[i] = iflow_sort_paths(a->paths[i]);
+		if (a->paths[i] == NULL) {
 			rc = -1;
 			goto out;
 		}
