@@ -1,5 +1,19 @@
 CHANGE LOG, SE Linux TOOLS (setools)
 =======================================================
+November 4, 2004, Version 1.5.1
+
+apol:
+	Fixed compatibility with tcl 8.3.
+	
+libsefs:
+	Fixed compile problem on PPC.
+	
+secmds:
+	Fixed fatal error in replcon.
+	
+setools:
+	Reverted to static linking and fixed various small bugs.
+
 October 27, 2004, Version 1.5
 
 apol: 
