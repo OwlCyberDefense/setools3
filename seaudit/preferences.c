@@ -274,11 +274,23 @@ void free_seaudit_conf(seaudit_conf_t *conf_file)
 	return;
 }
 
-void on_prefer_window_ok_button_clicked(GtkWidget *widget, gpointer user_data)
+void update_column_visibility(top_filters_view_t *view, gpointer user_data)
 {
-	GtkWidget *tree_view, *prefer_window;
 	GList *columns;
 	GtkTreeViewColumn *col = NULL;
+
+	columns = gtk_tree_view_get_columns(view->tree_view);
+	while (columns != NULL) {
+		col = GTK_TREE_VIEW_COLUMN(columns->data);
+		gtk_tree_view_column_set_visible(col, seaudit_app->seaudit_conf.column_visibility[
+						 gtk_tree_view_column_get_sort_column_id(col)]);
+		columns = g_list_next(columns);
+	}	
+}
+
+void on_prefer_window_ok_button_clicked(GtkWidget *widget, gpointer user_data)
+{
+	GtkWidget *prefer_window;
 	GladeXML *xml = (GladeXML*)user_data;
 	GtkEntry *log_entry, *pol_entry;
 
@@ -297,15 +309,7 @@ void on_prefer_window_ok_button_clicked(GtkWidget *widget, gpointer user_data)
 	/* set the updated visibility if needed */
 	if (!seaudit_app->column_visibility_changed)
 		return;
-	tree_view = glade_xml_get_widget(seaudit_app->top_window_xml, "LogListView");
-	g_assert(tree_view);
-	columns = gtk_tree_view_get_columns(GTK_TREE_VIEW(tree_view));
-	while (columns != NULL) {
-		col = GTK_TREE_VIEW_COLUMN(columns->data);
-		gtk_tree_view_column_set_visible(col, seaudit_app->seaudit_conf.column_visibility[
-						 gtk_tree_view_column_get_sort_column_id(col)]);
-		columns = g_list_next(columns);
-	}
+	g_list_foreach(seaudit_app->window->views, (GFunc)update_column_visibility, NULL);
 	seaudit_app->column_visibility_changed = FALSE;
 	gtk_widget_destroy(prefer_window);
 }
