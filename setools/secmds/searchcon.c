@@ -59,29 +59,6 @@ static struct option const longopts[] =
 
 extern const char *sefs_object_classes[];
 
-int get_class_string_index( int flag_val)
-{
-	switch (flag_val) {
-		case  1:
-			return 0;
-		case  2:
-			return 1;
-		case  4:
-			return 2;
-		case  8:
-			return 3;
-		case 16:
-			return 4;
-		case 32:
-			return 5;
-		case 64:
-			return 6;
-		default:
-			return 7;
-	}
-}
-
-
 void usage(const char *program_name, int brief)
 {
 	printf("%s (listcon ver. %s)\n\n", COPYRIGHT_INFO, SEARCHCON_VERSION_NUM);
@@ -332,7 +309,7 @@ int sefs_search_object_class(sefs_filesystem_data_t * fsd, int object, uint32_t*
 
 	if(*list == NULL) {
 		for (i = 0; i < fsd->num_files; i++) {
-			if (object == get_class_string_index(fsd->files[i].obj_class)) {
+			if (object == sefs_is_valid_object_class(sefs_get_class_string(fsd->files[i].obj_class))) {
 				rc = add_uint_to_a(i, &new_list_size, new_list);
 				if (rc == -1) {
 					fprintf(stderr, "error in search_object()\n");
@@ -342,7 +319,7 @@ int sefs_search_object_class(sefs_filesystem_data_t * fsd, int object, uint32_t*
 		}
 	} else {
 		for (i = 0; i < *list_size; i++) {
-			if (object == fsd->files[(*list)[i]].obj_class) {
+			if (object == sefs_is_valid_object_class(sefs_get_class_string(fsd->files[(*list)[i]].obj_class))) {
 				rc = add_uint_to_a((*list)[i], &new_list_size, new_list);
 				if (rc == -1) {
 					fprintf(stderr, "error in search_object()\n");
@@ -360,7 +337,7 @@ int sefs_search_object_class(sefs_filesystem_data_t * fsd, int object, uint32_t*
 
 void print_list (sefs_filesystem_data_t* fsd, uint32_t* list, uint32_t list_size)
 {
-	int i, class_index;
+	int i;
 	char con[100];
 	
 
@@ -378,10 +355,8 @@ void print_list (sefs_filesystem_data_t* fsd, uint32_t* list, uint32_t list_size
 			fsd->files[list[i]].context.role == OBJECT_R ? "object_r": "UNLABLED",
 			fsd->types[fsd->files[list[i]].context.type].name);
 
-		class_index = get_class_string_index(fsd->files[list[i]].obj_class);
-
 		printf("%-40s %-10s %s", con, 
-			sefs_object_classes[class_index],
+			sefs_get_class_string(fsd->files[list[i]].obj_class),
 			fsd->files[list[i]].path_names[0]);
 
 		if (fsd->files[list[i]].obj_class == LNK_FILE)
