@@ -1,8 +1,8 @@
-SELinux Tools (setools), version 2.0
+SELinux Tools (setools), version 2.0-35
 by Tresys Technology, LLC
 (selinux@tresys.com, www.tresys.com/selinux)
 
-February 22, 2005
+February 28, 2005
 
 OVERVIEW
 
@@ -89,15 +89,15 @@ The tools and libraries in this release include:
 13. sediff: A GUI (sediffx) and command line (sediff) tool to find
     the semantic difference between two SELinux policies.
 
-Apol, sepcut, seuser, seaudit, seaudit-report, secmds, and the seuser* 
-shell scripts are the primary tools in this package.  The other tool 
-(awish) and the four libraries can serve as building blocks for the 
-development of additional tools.  All of these tools and libraries 
-are early generation, with little maturity, and should be used with 
-care.
+Apol, sepcut, seuser, seaudit, seaudit-report, secmds, sediff,
+and the seuser* shell scripts are the primary tools in this
+package.  The other tool (awish) and the four libraries can serve
+as building blocks for the development of additional tools.  All
+of these tools and libraries are early generation, with little
+maturity, and should be used with care.
 
-See the help files for apol, sepcut, seaudit, and seuser for specific 
-help on using these tools.
+See the help files for apol, sepcut, seaudit, sediff, and seuser
+for specific help on using these tools.
 
 These tools will likely have bugs (see KNOWN-BUGS for those of which 
 we are aware).  Please report any new bugs or comments to 
