@@ -61,7 +61,9 @@ namespace eval Apol_TE {
 	# GLOBAL WIDGETS FOR RULE SELECTION 
 	variable teallow 
 	variable neverallow 
-	variable auallow 
+	variable auallow
+	# In search TE rules, selecting dontaudit and auditdeny has the exact same effect, 
+	# so the audit deny checkbutton widget has now been deprecated.
 	variable audeny
 	variable audont
 	variable ttrans 
@@ -1998,8 +2000,8 @@ proc Apol_TE::create {nb} {
             -command "Apol_TE::defaultType_Enable_Disable" ]
     set auallow [checkbutton $tefm.auallow -text "auditallow" -variable Apol_TE::opts(auallow) \
             -command "Apol_TE::defaultType_Enable_Disable" ]
-    set audeny [checkbutton $tefm.audeny -text "auditdeny" -variable Apol_TE::opts(audeny) \
-            -command "Apol_TE::defaultType_Enable_Disable" ]
+    #set audeny [checkbutton $tefm.audeny -text "auditdeny" -variable Apol_TE::opts(audeny) \
+    #        -command "Apol_TE::defaultType_Enable_Disable" ]
     set audont [checkbutton $tefm.audont -text "dontaudit"  -variable Apol_TE::opts(audont) \
     	    -command "Apol_TE::defaultType_Enable_Disable" ]
     
@@ -2056,7 +2058,7 @@ proc Apol_TE::create {nb} {
     pack $newButton $updateButton -side top -pady 5 -anchor se 
     
     # Placing rule selection section widgets
-    pack $teallow $neverallow $auallow $audeny $audont -anchor w 
+    pack $teallow $neverallow $auallow $audont -anchor w 
     pack $ttrans $tmember $tchange $clone -anchor w 
     pack $tefm $ttfm -side left -anchor nw 
     pack $enabled_fm -side top -pady 6 -anchor nw -fill both 
