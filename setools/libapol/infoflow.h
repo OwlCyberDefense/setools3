@@ -20,9 +20,9 @@
 #define _APOLICY_INFOFLOW_H_
 
 #include "policy.h"
+#include "policy-query.h"
 #include "perm-map.h"
 #include "util.h"
-#include "analysis.h"
 
 /*
  * All operations are mapped in either an information flow
@@ -35,6 +35,7 @@
 #define IFLOW_OUT       	0x02
 #define IFLOW_BOTH      	(IFLOW_IN | IFLOW_OUT)
 #define IFLOW_EITHER    	0x04
+
 
 /*
  * iflow_query_t encapsulates all of the paramaters of a query. It should
@@ -55,7 +56,7 @@ typedef struct iflow_query {
 	int num_types; 				/* number of intermediate types */
 	int *types; 				/* indices of intermediate types in policy->types */
 	int num_obj_options; 			/* number of permission options */
-	analysis_obj_options_t *obj_options; 	/* Allows the exclusion of individual permissions 
+	policy_query_obj_options_t *obj_options; 	/* Allows the exclusion of individual permissions 
 					      	 * or entire object classes. This struct is defined 
 					      	 * in analysis.h */
 } iflow_query_t;
