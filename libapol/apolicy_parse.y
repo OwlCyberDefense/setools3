@@ -14,7 +14,10 @@
  * Below is our record of the versions we track, and what we think distinguishes them.
  * This is not a complete version determiner; just key issues.
  *
- * Policy Version 17 (POL_VER_17_
+ * Policy Version 18 (POL_VER_18)
+ *	Added new netlink permission
+ *
+ * Policy Version 17 (POL_VER_17)
  *	Added support for IPv6
  *
  * Policy Version 16 (POL_VER_16):
