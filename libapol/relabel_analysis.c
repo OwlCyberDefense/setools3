@@ -479,6 +479,8 @@ static int ap_relabel_subject_mode_query(int start_type, ap_relabel_result_t *re
 	if(!index)
 		return 0;
 	for (i = 0; i < index->num_nodes; i++) {
+		if(index->nodes[i]->key.rule_type != RULE_TE_ALLOW)
+			continue;
 		for (j = 0; j < index->nodes[i]->num_data; j++) {
 			if(index->nodes[i]->data[j] == relabelto_index)
 				direction_flag |= AP_RELABEL_DIR_TO;
