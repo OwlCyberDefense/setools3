@@ -14,7 +14,7 @@
   <property name="default_height">600</property>
   <property name="resizable">True</property>
   <property name="destroy_with_parent">True</property>
-  <signal name="destroy" handler="on_TopWindow_destroy" last_modification_time="Fri, 19 Sep 2003 18:52:59 GMT"/>
+  <signal name="destroy" handler="seaudit_on_TopWindow_destroy" last_modification_time="Fri, 23 Jan 2004 18:06:38 GMT"/>
 
   <child>
     <widget class="GtkVBox" id="vbox1">
@@ -49,7 +49,7 @@
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">Tab</property>
 			      <property name="use_underline">True</property>
-			      <signal name="activate" handler="seaudit_new_tab_clicked" last_modification_time="Tue, 20 Jan 2004 16:55:44 GMT"/>
+			      <signal name="activate" handler="seaudit_on_new_tab_clicked" last_modification_time="Fri, 23 Jan 2004 18:08:36 GMT"/>
 			      <accelerator key="T" modifiers="GDK_CONTROL_MASK" signal="activate"/>
 			    </widget>
 			  </child>
@@ -69,11 +69,11 @@
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Open Audit Log</property>
 		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="on_LogFileOpen_activate" last_modification_time="Thu, 23 Oct 2003 13:12:16 GMT"/>
+		      <signal name="activate" handler="seaudit_on_LogFileOpen_activate" last_modification_time="Fri, 23 Jan 2004 18:08:36 GMT"/>
 		      <accelerator key="L" modifiers="GDK_CONTROL_MASK" signal="activate"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image304">
+			<widget class="GtkImage" id="image339">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-open</property>
 			  <property name="icon_size">1</property>
@@ -105,11 +105,11 @@
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Open Policy</property>
 		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="on_PolicyFileOpen_activate" last_modification_time="Thu, 23 Oct 2003 13:12:16 GMT"/>
+		      <signal name="activate" handler="seaudit_on_PolicyFileOpen_activate" last_modification_time="Fri, 23 Jan 2004 18:08:36 GMT"/>
 		      <accelerator key="P" modifiers="GDK_CONTROL_MASK" signal="activate"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image305">
+			<widget class="GtkImage" id="image340">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-open</property>
 			  <property name="icon_size">1</property>
@@ -145,7 +145,7 @@
 		      <accelerator key="P" modifiers="GDK_MOD1_MASK" signal="activate"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image306">
+			<widget class="GtkImage" id="image341">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-preferences</property>
 			  <property name="icon_size">1</property>
@@ -169,10 +169,10 @@
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Quit</property>
 		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="on_FileQuit_activate" last_modification_time="Fri, 19 Sep 2003 18:52:08 GMT"/>
+		      <signal name="activate" handler="seaudit_on_FileQuit_activate" last_modification_time="Fri, 23 Jan 2004 18:08:36 GMT"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image307">
+			<widget class="GtkImage" id="image342">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-quit</property>
 			  <property name="icon_size">1</property>
@@ -203,11 +203,11 @@
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Filter log</property>
 		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="on_edit_filter_activate" last_modification_time="Wed, 19 Nov 2003 12:44:44 GMT"/>
+		      <signal name="activate" handler="seaudit_on_filter_log_button_clicked" last_modification_time="Fri, 23 Jan 2004 18:13:21 GMT"/>
 		      <accelerator key="F" modifiers="GDK_CONTROL_MASK" signal="activate"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image308">
+			<widget class="GtkImage" id="image343">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-find</property>
 			  <property name="icon_size">1</property>
@@ -225,11 +225,11 @@
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Query policy</property>
 		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="on_top_window_query_button_clicked" last_modification_time="Fri, 21 Nov 2003 16:29:35 GMT"/>
+		      <signal name="activate" handler="seaudit_on_top_window_query_button_clicked" last_modification_time="Fri, 23 Jan 2004 18:13:21 GMT"/>
 		      <accelerator key="Q" modifiers="GDK_CONTROL_MASK" signal="activate"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image309">
+			<widget class="GtkImage" id="image344">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-find</property>
 			  <property name="icon_size">1</property>
@@ -260,11 +260,11 @@
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Help</property>
 		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="on_seaudit_help_activate" last_modification_time="Thu, 13 Nov 2003 16:43:40 GMT"/>
+		      <signal name="activate" handler="seaudit_on_help_activate" last_modification_time="Fri, 23 Jan 2004 18:06:10 GMT"/>
 		      <accelerator key="H" modifiers="GDK_CONTROL_MASK" signal="activate"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image310">
+			<widget class="GtkImage" id="image345">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-help</property>
 			  <property name="icon_size">1</property>
@@ -282,10 +282,10 @@
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">About seAudit</property>
 		      <property name="use_underline">True</property>
-		      <signal name="activate" handler="on_about_seaudit_activate" last_modification_time="Thu, 13 Nov 2003 16:43:40 GMT"/>
+		      <signal name="activate" handler="seaudit_on_about_seaudit_activate" last_modification_time="Fri, 23 Jan 2004 18:06:10 GMT"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image311">
+			<widget class="GtkImage" id="image346">
 			  <property name="visible">True</property>
 			  <property name="stock">gnome-stock-about</property>
 			  <property name="icon_size">1</property>
@@ -321,7 +321,7 @@
 	      <property name="visible">True</property>
 	      <property name="tooltip" translatable="yes">Query the loaded policy for the types and objects in this message</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
-	      <signal name="clicked" handler="on_top_window_query_button_clicked" last_modification_time="Fri, 17 Oct 2003 18:40:37 GMT"/>
+	      <signal name="clicked" handler="seaudit_on_top_window_query_button_clicked" last_modification_time="Fri, 23 Jan 2004 18:10:02 GMT"/>
 
 	      <child>
 		<widget class="GtkAlignment" id="alignment1">
@@ -391,7 +391,7 @@
 	      <property name="visible">True</property>
 	      <property name="can_focus">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
-	      <signal name="clicked" handler="on_edit_filter_activate" last_modification_time="Wed, 19 Nov 2003 12:45:01 GMT"/>
+	      <signal name="clicked" handler="seaudit_on_filter_log_button_clicked" last_modification_time="Fri, 23 Jan 2004 18:10:31 GMT"/>
 
 	      <child>
 		<widget class="GtkAlignment" id="alignment3">
@@ -463,7 +463,7 @@
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="active">False</property>
 	      <property name="inconsistent">False</property>
-	      <signal name="toggled" handler="on_realtime_toggled" last_modification_time="Wed, 31 Dec 2003 21:44:17 GMT"/>
+	      <signal name="toggled" handler="seaudit_on_realtime_toggled" last_modification_time="Fri, 23 Jan 2004 18:11:22 GMT"/>
 
 	      <child>
 		<widget class="GtkAlignment" id="alignment4">
