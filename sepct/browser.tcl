@@ -553,9 +553,7 @@ proc Sepct_Browse::displayFile { list_box text_c selected_file } {
 			or NO to remove file and continue"]
 		
 		if {$ans == "yes" } {
-			set poldir $Sepct::policyDir
-			Sepct::closePolicy
-			Sepct::openPolicyDir $poldir 0
+			Sepct::reloadPolicy
 		} elseif {$ans == "no" } {
 			$list_box delete $selected_file 
 		} 
