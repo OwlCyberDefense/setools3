@@ -452,23 +452,41 @@ char * re_render_initial_sid_security_context(int idx, policy_t *policy)
 	return(re_render_security_context(policy->initial_sids[idx].scontext, policy));
 }
 
+
+char *re_render_avh_rule_enabled_state(avh_node_t *node, policy_t *p)
+{
+	char *t = NULL;
+	int sz, rt;
+	if(avh_is_enabled(node, p))
+		rt = append_str(&t, &sz, "E: ");
+	else
+		rt = append_str(&t, &sz, "D: ");
+	if(rt < 0) {
+		if(t != NULL)
+			free(t);
+		return NULL;	
+	}
+	/* else */
+	return t;
+}
+
 /* render a AV/Type rule from av hash table; caller must free memory.
  * Return NULL on error. */
 
 /* conditional states */
 char *re_render_avh_rule_cond_state(avh_node_t *node, policy_t *p)
 {
-	char *t = NULL;
+	char *t = NULL, *u = NULL;
 	int sz = 0, rt;
 	
 	if(node == NULL || p == NULL)
 		return NULL;
 	if(node->flags & AVH_FLAG_COND) {
 		if(node->cond_list) {
-			rt = append_str(&t, &sz, "CT");
+			rt = append_str(&t, &sz, "CT ");
 		}
 		else {
-			rt = append_str(&t, &sz, "CF");
+			rt = append_str(&t, &sz, "CF ");
 		}
 	}
 	else {
@@ -477,11 +495,21 @@ char *re_render_avh_rule_cond_state(avh_node_t *node, policy_t *p)
 	if(rt < 0)
 		goto err_return;
 	
+	u = re_render_avh_rule_enabled_state(node,p);
+	if (u == NULL)
+		goto err_return;
+
+	rt = append_str(&t,&sz,u);
+	if(rt < 0)
+		goto err_return;
+	if (u != NULL)
+		free(u);
+/*	
 	if(avh_is_enabled(node, p))
 		rt = append_str(&t, &sz, " E: ");
 	else
 		rt = append_str(&t, &sz, " D: ");
-	if(rt < 0)
+*/	if(rt < 0)
 		goto err_return;
 
 		
@@ -489,6 +517,8 @@ char *re_render_avh_rule_cond_state(avh_node_t *node, policy_t *p)
 err_return:
 	if(t != NULL)
 		free(t);
+	if(u != NULL)
+		free(u);
 	return NULL;	
 }
 
