@@ -1,4 +1,4 @@
-/* Copyright (C) 2003 Tresys Technology, LLC
+/* Copyright (C) 2003-2004 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
 
 /*
@@ -15,6 +15,7 @@
 #include "filter_window.h"
 #include "seaudit.h"
 #include "utilgui.h"
+#include "filters.h"
 #include "seaudit_callback.h"
 #include <libseaudit/filters.h>
 #include <libseaudit/auditlog.h>
@@ -635,7 +636,7 @@ static void filters_select_items_destroy(filters_select_items_t* item)
 	item = NULL;
 }
 
-void filters_select_items_parse_entry(filters_select_items_t *s)
+static void filters_select_items_parse_entry(filters_select_items_t *s)
 {
 	GtkTreeIter iter;
 	gboolean valid;
@@ -682,7 +683,7 @@ void filters_select_items_parse_entry(filters_select_items_t *s)
 	}
 }
 
-static filters_select_items_t* filters_select_items_create(filters_t *parent, enum items_list_types_t items_type)
+static filters_select_items_t* filters_select_items_create(filter_window_t *parent, enum items_list_types_t items_type)
 {
 	filters_select_items_t *item = NULL;
 	
@@ -862,75 +863,102 @@ static void filters_select_items_display(filters_select_items_t *filter_items_li
 /********************************************************
  * Private methods and callbacks for the filters object *
  ********************************************************/ 
-static void filters_set_values(filters_t *filters)
+static void filter_window_set_title(filter_window_t *filter_window)
+{
+	GString *title;
+	
+	if (!filter_window || !filter_window->window)
+		return;
+	title = g_string_new("Edit filter - ");
+	g_string_append(title, filter_window->name->str);
+	gtk_window_set_title(filter_window->window, title->str);
+	g_string_free(title, TRUE);
+}
+
+static void filter_window_set_values(filter_window_t *filter_window)
 {
 	GtkWidget *widget;
 	
-	filters_select_items_fill_entry(filters->src_types_items);
-	filters_select_items_fill_entry(filters->src_users_items);
-	filters_select_items_fill_entry(filters->src_roles_items);
-	filters_select_items_fill_entry(filters->tgt_types_items);
-	filters_select_items_fill_entry(filters->tgt_users_items);
-	filters_select_items_fill_entry(filters->tgt_roles_items);
-	filters_select_items_fill_entry(filters->obj_class_items);
+	filters_select_items_fill_entry(filter_window->src_types_items);
+	filters_select_items_fill_entry(filter_window->src_users_items);
+	filters_select_items_fill_entry(filter_window->src_roles_items);
+	filters_select_items_fill_entry(filter_window->tgt_types_items);
+	filters_select_items_fill_entry(filter_window->tgt_users_items);
+	filters_select_items_fill_entry(filter_window->tgt_roles_items);
+	filters_select_items_fill_entry(filter_window->obj_class_items);
 	
 	/* set network address */
-	widget = glade_xml_get_widget(filters->xml, "IPAddressEntry");
-	gtk_entry_set_text(GTK_ENTRY(widget), filters->ip_address->str);
+	widget = glade_xml_get_widget(filter_window->xml, "IPAddressEntry");
+	gtk_entry_set_text(GTK_ENTRY(widget), filter_window->ip_address->str);
 
 	/* set network port */
-	widget = glade_xml_get_widget(filters->xml, "PortEntry");
-	gtk_entry_set_text(GTK_ENTRY(widget), filters->port->str);
+	widget = glade_xml_get_widget(filter_window->xml, "PortEntry");
+	gtk_entry_set_text(GTK_ENTRY(widget), filter_window->port->str);
 	
 	/* set network interface */
-	widget = glade_xml_get_widget(filters->xml, "InterfaceEntry");
-	gtk_entry_set_text(GTK_ENTRY(widget), filters->interface->str);
+	widget = glade_xml_get_widget(filter_window->xml, "InterfaceEntry");
+	gtk_entry_set_text(GTK_ENTRY(widget), filter_window->interface->str);
 	
 	/* set executable */
-	widget = glade_xml_get_widget(filters->xml, "ExeEntry");
-	gtk_entry_set_text(GTK_ENTRY(widget), filters->executable->str);
+	widget = glade_xml_get_widget(filter_window->xml, "ExeEntry");
+	gtk_entry_set_text(GTK_ENTRY(widget), filter_window->executable->str);
 	
 	/* set path */
-	widget = glade_xml_get_widget(filters->xml, "PathEntry");
-	gtk_entry_set_text(GTK_ENTRY(widget), filters->path->str);
+	widget = glade_xml_get_widget(filter_window->xml, "PathEntry");
+	gtk_entry_set_text(GTK_ENTRY(widget), filter_window->path->str);
 	
+	widget = glade_xml_get_widget(filter_window->xml, "NameEntry");
+	gtk_entry_set_text(GTK_ENTRY(widget), filter_window->name->str);
+	filter_window_set_title(filter_window);
+
+	widget = glade_xml_get_widget(filter_window->xml, "MatchEntry");
+	gtk_entry_set_text(GTK_ENTRY(widget), filter_window->match->str);
+
 }
 
-static void filters_update_values(filters_t *filters)
+static void filter_window_update_values(filter_window_t *filter_window)
 {
 	GtkWidget *widget;
 	
 	/* First parse all selection enabled entry boxes, because the user may have typed in the value */
-	filters_select_items_parse_entry(filters->src_types_items);
-	filters_select_items_parse_entry(filters->src_users_items);
-	filters_select_items_parse_entry(filters->src_roles_items);
-	filters_select_items_parse_entry(filters->tgt_types_items);
-	filters_select_items_parse_entry(filters->tgt_users_items);
-	filters_select_items_parse_entry(filters->tgt_roles_items);
-	filters_select_items_parse_entry(filters->obj_class_items);
+	filters_select_items_parse_entry(filter_window->src_types_items);
+	filters_select_items_parse_entry(filter_window->src_users_items);
+	filters_select_items_parse_entry(filter_window->src_roles_items);
+	filters_select_items_parse_entry(filter_window->tgt_types_items);
+	filters_select_items_parse_entry(filter_window->tgt_users_items);
+	filters_select_items_parse_entry(filter_window->tgt_roles_items);
+	filters_select_items_parse_entry(filter_window->obj_class_items);
 	
 	/* update network address value */
-	widget = glade_xml_get_widget(filters->xml, "IPAddressEntry");
-	filters->ip_address = g_string_assign(filters->ip_address, gtk_entry_get_text(GTK_ENTRY(widget)));
+	widget = glade_xml_get_widget(filter_window->xml, "IPAddressEntry");
+	filter_window->ip_address = g_string_assign(filter_window->ip_address, gtk_entry_get_text(GTK_ENTRY(widget)));
 
 	/* update network port value */
-	widget = glade_xml_get_widget(filters->xml, "PortEntry");
-	filters->port = g_string_assign(filters->port, gtk_entry_get_text(GTK_ENTRY(widget)));
+	widget = glade_xml_get_widget(filter_window->xml, "PortEntry");
+	filter_window->port = g_string_assign(filter_window->port, gtk_entry_get_text(GTK_ENTRY(widget)));
 	
 	/* update network interface value */
-	widget = glade_xml_get_widget(filters->xml, "InterfaceEntry");
-	filters->interface = g_string_assign(filters->interface, gtk_entry_get_text(GTK_ENTRY(widget)));
+	widget = glade_xml_get_widget(filter_window->xml, "InterfaceEntry");
+	filter_window->interface = g_string_assign(filter_window->interface, gtk_entry_get_text(GTK_ENTRY(widget)));
 
 	/* update executable value */
-	widget = glade_xml_get_widget(filters->xml, "ExeEntry");
-	filters->executable = g_string_assign(filters->executable, gtk_entry_get_text(GTK_ENTRY(widget)));
+	widget = glade_xml_get_widget(filter_window->xml, "ExeEntry");
+	filter_window->executable = g_string_assign(filter_window->executable, gtk_entry_get_text(GTK_ENTRY(widget)));
 	
 	/* update path value */
-	widget = glade_xml_get_widget(filters->xml, "PathEntry");
-	filters->path = g_string_assign(filters->path, gtk_entry_get_text(GTK_ENTRY(widget)));
+	widget = glade_xml_get_widget(filter_window->xml, "PathEntry");
+	filter_window->path = g_string_assign(filter_window->path, gtk_entry_get_text(GTK_ENTRY(widget)));
+	
+	widget = glade_xml_get_widget(filter_window->xml, "NameEntry");
+	filter_window->name = g_string_assign(filter_window->name, gtk_entry_get_text(GTK_ENTRY(widget)));
+
+	widget = glade_xml_get_widget(filter_window->xml, "MatchEntry");
+	filter_window->match = g_string_assign(filter_window->match, gtk_entry_get_text(GTK_ENTRY(widget)));
+		
 }
 
-void filters_seaudit_filter_list_free(seaudit_filter_list_t *list)
+
+static void filter_window_seaudit_filter_list_free(seaudit_filter_list_t *list)
 {
 	int i;
 
@@ -945,7 +973,7 @@ void filters_seaudit_filter_list_free(seaudit_filter_list_t *list)
 }
 
 /* Note: the caller must free the returned list */
-seaudit_filter_list_t* filters_seaudit_filter_list_get(filters_select_items_t *filters_select_item)
+static seaudit_filter_list_t* filter_window_seaudit_filter_list_get(filters_select_items_t *filters_select_item)
 {
 	GtkTreeModel *incl_model;
 	GtkTreeIter iter;
@@ -978,7 +1006,7 @@ seaudit_filter_list_t* filters_seaudit_filter_list_get(filters_select_items_t *f
 		} else {
 			flist->list = (char **)realloc(flist->list, count * sizeof(char*));
 			if (flist->list == NULL) {
-				filters_seaudit_filter_list_free(flist);
+				filter_window_seaudit_filter_list_free(flist);
 				fprintf(stderr, "out of memory\n");
 				return NULL;
 			}
@@ -986,7 +1014,7 @@ seaudit_filter_list_t* filters_seaudit_filter_list_get(filters_select_items_t *f
 		/* We subtract 1 from the count to get the correct index because count is incremented above */
 		flist->list[count - 1] = (char *)malloc(strlen((const char*)str_data) + 1);
 		if(flist->list[count - 1] == NULL) {
-			filters_seaudit_filter_list_free(flist);
+			filter_window_seaudit_filter_list_free(flist);
 			fprintf(stderr, "out of memory\n");
 			return NULL;
 		}
@@ -998,69 +1026,69 @@ seaudit_filter_list_t* filters_seaudit_filter_list_get(filters_select_items_t *f
 	return flist;
 }
 
-static void filters_clear_other_tab_values(filters_t *filters)
+static void filter_window_clear_other_tab_values(filter_window_t *filter_window)
 {
 	GtkWidget *widget;
 	
-	widget = glade_xml_get_widget(filters->xml, "IPAddressEntry");
+	widget = glade_xml_get_widget(filter_window->xml, "IPAddressEntry");
 	g_assert(widget);
 	gtk_entry_set_text(GTK_ENTRY(widget), "");
 
 	/* clear network port */
-	widget = glade_xml_get_widget(filters->xml, "PortEntry");
+	widget = glade_xml_get_widget(filter_window->xml, "PortEntry");
 	g_assert(widget);
 	gtk_entry_set_text(GTK_ENTRY(widget), "");
 	
 	/* clear network interface */
-	widget = glade_xml_get_widget(filters->xml, "InterfaceEntry");
+	widget = glade_xml_get_widget(filter_window->xml, "InterfaceEntry");
 	g_assert(widget);
 	gtk_entry_set_text(GTK_ENTRY(widget), "");
 	
 	/* clear executable */
-	widget = glade_xml_get_widget(filters->xml, "ExeEntry");
+	widget = glade_xml_get_widget(filter_window->xml, "ExeEntry");
 	g_assert(widget);
 	gtk_entry_set_text(GTK_ENTRY(widget), "");
 	
 	/* clear path */
-	widget = glade_xml_get_widget(filters->xml, "PathEntry");
+	widget = glade_xml_get_widget(filter_window->xml, "PathEntry");
 	g_assert(widget);
 	gtk_entry_set_text(GTK_ENTRY(widget), "");
 }
 
-static void filters_clear_context_tab_values(filters_t *filters)
+static void filter_window_clear_context_tab_values(filter_window_t *filter_window)
 {
 	GtkEntry *entry;
 	
-	entry = filters_select_items_get_entry(filters->src_types_items);
+	entry = filters_select_items_get_entry(filter_window->src_types_items);
 	g_assert(entry);
 	gtk_entry_set_text(entry, "");
 	
-	entry = filters_select_items_get_entry(filters->src_users_items);
+	entry = filters_select_items_get_entry(filter_window->src_users_items);
 	g_assert(entry);
 	gtk_entry_set_text(entry, "");
 	
-	entry = filters_select_items_get_entry(filters->src_roles_items);
+	entry = filters_select_items_get_entry(filter_window->src_roles_items);
 	g_assert(entry);
 	gtk_entry_set_text(entry, "");
 	
-	entry = filters_select_items_get_entry(filters->tgt_types_items);
+	entry = filters_select_items_get_entry(filter_window->tgt_types_items);
 	g_assert(entry);
 	gtk_entry_set_text(entry, "");
 	
-	entry = filters_select_items_get_entry(filters->tgt_users_items);
+	entry = filters_select_items_get_entry(filter_window->tgt_users_items);
 	g_assert(entry);
 	gtk_entry_set_text(entry, "");
 	
-	entry = filters_select_items_get_entry(filters->tgt_roles_items);
+	entry = filters_select_items_get_entry(filter_window->tgt_roles_items);
 	g_assert(entry);
 	gtk_entry_set_text(entry, "");
 	
-	entry = filters_select_items_get_entry(filters->obj_class_items);
+	entry = filters_select_items_get_entry(filter_window->obj_class_items);
 	g_assert(entry);
 	gtk_entry_set_text(entry, "");
 }
 
-static void filters_on_custom_clicked(GtkButton *button, filters_select_items_t *filter_items_list)
+static void filter_window_on_custom_clicked(GtkButton *button, filters_select_items_t *filter_items_list)
 {	
 	if (filter_items_list->window != NULL) {
 		/* add anything from the entry to the list stores */
@@ -1073,136 +1101,171 @@ static void filters_on_custom_clicked(GtkButton *button, filters_select_items_t 
 	filters_select_items_display(filter_items_list);
 }
 
-static gboolean filters_on_filter_window_destroy(GtkWidget *widget, GdkEvent *event, filters_t *filters)
+static void filter_window_on_close_button_pressed(GtkButton *button, filter_window_t *filter_window)
 {
-	if (filters->window != NULL) {
-		if (filters->src_types_items->window) {
-			filters_select_items_on_close_button_clicked(NULL, filters->src_types_items);
-			filters->src_types_items->window = NULL;
-		}
-		if (filters->tgt_types_items->window) {
-			filters_select_items_on_close_button_clicked(NULL, filters->tgt_types_items);
-			filters->tgt_types_items->window = NULL;
-		}
-		if (filters->src_users_items->window) {
-			filters_select_items_on_close_button_clicked(NULL, filters->src_users_items);
-			filters->src_users_items->window = NULL;
-		}
-		if (filters->tgt_users_items->window) {
-			filters_select_items_on_close_button_clicked(NULL, filters->tgt_users_items);
-			filters->tgt_users_items->window = NULL;
-		}
-		if (filters->src_roles_items->window) {
-			filters_select_items_on_close_button_clicked(NULL, filters->src_roles_items);
-			filters->src_roles_items->window = NULL;
-		}
-		if (filters->tgt_roles_items->window) {
-			filters_select_items_on_close_button_clicked(NULL, filters->tgt_roles_items);
-			filters->tgt_roles_items->window = NULL;
-		}
-		if (filters->obj_class_items->window) {
-			filters_select_items_on_close_button_clicked(NULL, filters->obj_class_items);
-			filters->obj_class_items->window = NULL;
-		}
-		filters_update_values(filters);
-		/* if there is an idle function for this window
-		 * then we must remove it to avoid that function
-		 * being executed after we delete the window.  This
-		 * may happen if the window is closed during a search. */
-		while(g_idle_remove_by_data(filters->window));
+	filter_window_hide(filter_window);
+}
 
-		gtk_widget_destroy(GTK_WIDGET(filters->window));
-		filters->window = NULL;
-	}
+static gboolean filter_window_on_filter_window_destroy(GtkWidget *widget, GdkEvent *event, filter_window_t *filter_window)
+{
+	filter_window_hide(filter_window);
+	return TRUE;
+}
+
+static void filter_window_on_ContextClearButton_clicked(GtkButton *button, filter_window_t *filter_window)
+{
+	filter_window_clear_context_tab_values(filter_window);
+}
+
+static void filter_window_on_OtherClearButton_clicked(GtkButton *button, filter_window_t *filter_window)
+{
+	filter_window_clear_other_tab_values(filter_window);
+}
+
+static gboolean filter_window_name_entry_text_changed(GtkWidget *widget, GdkEventKey *event, filter_window_t *filter_window)
+{
+	const gchar *name;
+
+	name = gtk_entry_get_text(GTK_ENTRY(widget));
+	g_string_assign(filter_window->name, name);
+	filter_window_set_title(filter_window);
+	multifilter_window_set_filter_name_in_list(filter_window->parent, filter_window);
 	return FALSE;
 }
 
-static void filters_on_ContextClearButton_clicked(GtkButton *button, filters_t *filters)
-{
-	filters_clear_context_tab_values(filters);
-}
-
-static void filters_on_OtherClearButton_clicked(GtkButton *button, filters_t *filters)
-{
-	filters_clear_other_tab_values(filters);
-}
-
 /***************************************************
- * Public member functions for the filters object  *
+ * Public member functions for the filter_window object  *
  ***************************************************/
-filters_t* filters_create(void)
+filter_window_t* filter_window_create(multifilter_window_t *parent, gint parent_index, const char *name)
 {
-	filters_t *filters;
+	filter_window_t *filter_window;
 	
-	filters = (filters_t *)malloc(sizeof(filters_t));
-	if (filters == NULL) {
+	filter_window = (filter_window_t *)malloc(sizeof(filter_window_t));
+	if (filter_window == NULL) {
 		fprintf(stderr, "Out of memory.");
 		return NULL;
 	}
-	memset (filters, 0, sizeof(filters_t));
+	memset (filter_window, 0, sizeof(filter_window_t));
 
-	filters->src_types_items = filters_select_items_create(filters, SEAUDIT_SRC_TYPES);
-	filters->src_users_items = filters_select_items_create(filters, SEAUDIT_SRC_USERS);
-	filters->src_roles_items = filters_select_items_create(filters, SEAUDIT_SRC_ROLES);
-	filters->tgt_types_items = filters_select_items_create(filters, SEAUDIT_TGT_TYPES);
-	filters->tgt_users_items = filters_select_items_create(filters, SEAUDIT_TGT_USERS);
-	filters->tgt_roles_items = filters_select_items_create(filters, SEAUDIT_TGT_ROLES);
-	filters->obj_class_items = filters_select_items_create(filters, SEAUDIT_OBJECTS);
+	filter_window->src_types_items = filters_select_items_create(filter_window, SEAUDIT_SRC_TYPES);
+	filter_window->src_users_items = filters_select_items_create(filter_window, SEAUDIT_SRC_USERS);
+	filter_window->src_roles_items = filters_select_items_create(filter_window, SEAUDIT_SRC_ROLES);
+	filter_window->tgt_types_items = filters_select_items_create(filter_window, SEAUDIT_TGT_TYPES);
+	filter_window->tgt_users_items = filters_select_items_create(filter_window, SEAUDIT_TGT_USERS);
+	filter_window->tgt_roles_items = filters_select_items_create(filter_window, SEAUDIT_TGT_ROLES);
+	filter_window->obj_class_items = filters_select_items_create(filter_window, SEAUDIT_OBJECTS);
 	
-	filters->ip_address = g_string_new("");
-	filters->port = g_string_new("");
-	filters->interface = g_string_new("");
-	filters->executable = g_string_new("");
-	filters->path = g_string_new("");
+	filter_window->ip_address = g_string_new("");
+	filter_window->port = g_string_new("");
+	filter_window->interface = g_string_new("");
+	filter_window->executable = g_string_new("");
+	filter_window->path = g_string_new("");
+	filter_window->match = g_string_new("All");
 	
-	filters->window = NULL;
-	filters->xml = NULL;
+	filter_window->window = NULL;
+	filter_window->xml = NULL;
+	filter_window->name = g_string_new(name);
+	filter_window->parent = parent;
+	filter_window->parent_index = parent_index;
 
-	return filters;
+	return filter_window;
 }
 
-void filters_destroy(filters_t *filters)
+void filter_window_destroy(filter_window_t *filter_window)
 {
-	if (filters == NULL)
+	if (filter_window == NULL)
 		return;
 	
-	filters_select_items_destroy(filters->src_types_items);
-	filters_select_items_destroy(filters->src_users_items);
-	filters_select_items_destroy(filters->src_roles_items);
+	filters_select_items_destroy(filter_window->src_types_items);
+	filters_select_items_destroy(filter_window->src_users_items);
+	filters_select_items_destroy(filter_window->src_roles_items);
 
-	filters_select_items_destroy(filters->tgt_types_items);
-	filters_select_items_destroy(filters->tgt_users_items);
-	filters_select_items_destroy(filters->tgt_roles_items);
+	filters_select_items_destroy(filter_window->tgt_types_items);
+	filters_select_items_destroy(filter_window->tgt_users_items);
+	filters_select_items_destroy(filter_window->tgt_roles_items);
 
-	filters_select_items_destroy(filters->obj_class_items);
+	filters_select_items_destroy(filter_window->obj_class_items);
 	
-	if (filters->ip_address)
-		g_string_free(filters->ip_address, TRUE);
-	if (filters->port)
-		g_string_free(filters->port, TRUE);
-	if (filters->interface)
-		g_string_free(filters->interface, TRUE);
-	if (filters->executable)
-		g_string_free(filters->executable, TRUE);
-	if (filters->path)
-		g_string_free(filters->path, TRUE);
+	if (filter_window->ip_address)
+		g_string_free(filter_window->ip_address, TRUE);
+	if (filter_window->port)
+		g_string_free(filter_window->port, TRUE);
+	if (filter_window->interface)
+		g_string_free(filter_window->interface, TRUE);
+	if (filter_window->executable)
+		g_string_free(filter_window->executable, TRUE);
+	if (filter_window->path)
+		g_string_free(filter_window->path, TRUE);
 		
-	if (filters->window != NULL)
-		gtk_widget_destroy(GTK_WIDGET(filters->window));
-	if (filters->xml != NULL)
-		g_object_unref(G_OBJECT(filters->xml));
-	free(filters);
-	filters = NULL;
+	if (filter_window->window != NULL)
+		gtk_widget_destroy(GTK_WIDGET(filter_window->window));
+	if (filter_window->xml != NULL)
+		g_object_unref(G_OBJECT(filter_window->xml));
+
+	free(filter_window);
 }
 
 
-void filters_display(filters_t* filters)
+void filter_window_hide(filter_window_t *filter_window)
+{
+	if (!filter_window->window)
+		return;
+
+	show_wait_cursor(GTK_WIDGET(filter_window->window));
+	if (filter_window->src_types_items->window) {
+		filters_select_items_on_close_button_clicked(NULL, filter_window->src_types_items);
+		filter_window->src_types_items->window = NULL;
+	}
+	if (filter_window->tgt_types_items->window) {
+		filters_select_items_on_close_button_clicked(NULL, filter_window->tgt_types_items);
+		filter_window->tgt_types_items->window = NULL;
+	}
+	if (filter_window->src_users_items->window) {
+		filters_select_items_on_close_button_clicked(NULL, filter_window->src_users_items);
+		filter_window->src_users_items->window = NULL;
+	}
+	if (filter_window->tgt_users_items->window) {
+		filters_select_items_on_close_button_clicked(NULL, filter_window->tgt_users_items);
+		filter_window->tgt_users_items->window = NULL;
+	}
+	if (filter_window->src_roles_items->window) {
+		filters_select_items_on_close_button_clicked(NULL, filter_window->src_roles_items);
+		filter_window->src_roles_items->window = NULL;
+	}
+	if (filter_window->tgt_roles_items->window) {
+		filters_select_items_on_close_button_clicked(NULL, filter_window->tgt_roles_items);
+		filter_window->tgt_roles_items->window = NULL;
+	}
+	if (filter_window->obj_class_items->window) {
+		filters_select_items_on_close_button_clicked(NULL, filter_window->obj_class_items);
+		filter_window->obj_class_items->window = NULL;
+	}
+	filter_window_update_values(filter_window);
+	/* if there is an idle function for this window
+	 * then we must remove it to avoid that function
+	 * being executed after we delete the window.  This
+	 * may happen if the window is closed during a search. */
+	while(g_idle_remove_by_data(filter_window->window));
+	
+	gtk_widget_destroy(GTK_WIDGET(filter_window->window));
+	filter_window->window = NULL;
+}
+
+void filter_window_display(filter_window_t* filter_window)
 {
 	GladeXML *xml;
 	GtkWindow *window;
+	GtkWidget *widget;
 	GString *path;
 	char *dir;
 
+	if (!filter_window)
+		return;
+
+	if (filter_window->window) {
+		gtk_window_present(filter_window->window);
+		return;
+	}
 	dir = find_file("filter_window.glade");
 	if (!dir){
 		fprintf(stderr, "could not find filter_window.glade\n");
@@ -1218,42 +1281,199 @@ void filters_display(filters_t* filters)
 	window = GTK_WINDOW(glade_xml_get_widget(xml, "FilterWindow"));
 	g_assert(window);
 		
-	filters->window = window;
-	filters->xml = xml;
+	filter_window->window = window;
+	filter_window->xml = xml;
 
 	g_signal_connect(G_OBJECT(window), "delete_event", 
-			 G_CALLBACK(filters_on_filter_window_destroy), 
-			 filters);
+			 G_CALLBACK(filter_window_on_filter_window_destroy), filter_window);
+
+	widget = glade_xml_get_widget(filter_window->xml, "CloseButton");
+	g_signal_connect(G_OBJECT(widget), "pressed", 
+			 G_CALLBACK(filter_window_on_close_button_pressed), filter_window);
+	widget = glade_xml_get_widget(filter_window->xml, "NameEntry");
+	g_signal_connect(G_OBJECT(widget), "key-release-event", 
+			 G_CALLBACK(filter_window_name_entry_text_changed), filter_window);
+
 	glade_xml_signal_connect_data(xml, "filters_on_src_type_custom_clicked",
-				      G_CALLBACK(filters_on_custom_clicked),
-				      filters->src_types_items);
+				      G_CALLBACK(filter_window_on_custom_clicked),
+				      filter_window->src_types_items);
 	glade_xml_signal_connect_data(xml, "filters_on_src_users_custom_clicked",
-				      G_CALLBACK(filters_on_custom_clicked),
-				      filters->src_users_items);
+				      G_CALLBACK(filter_window_on_custom_clicked),
+				      filter_window->src_users_items);
 	glade_xml_signal_connect_data(xml, "filters_on_src_roles_custom_clicked",
-				      G_CALLBACK(filters_on_custom_clicked),
-				      filters->src_roles_items);
+				      G_CALLBACK(filter_window_on_custom_clicked),
+				      filter_window->src_roles_items);
 
 	glade_xml_signal_connect_data(xml, "filters_on_tgt_type_custom_clicked",
-				      G_CALLBACK(filters_on_custom_clicked),
-				      filters->tgt_types_items);
+				      G_CALLBACK(filter_window_on_custom_clicked),
+				      filter_window->tgt_types_items);
 	glade_xml_signal_connect_data(xml, "filters_on_tgt_users_custom_clicked",
-				      G_CALLBACK(filters_on_custom_clicked),
-				      filters->tgt_users_items);
+				      G_CALLBACK(filter_window_on_custom_clicked),
+				      filter_window->tgt_users_items);
 	glade_xml_signal_connect_data(xml, "filters_on_tgt_roles_custom_clicked",
-				      G_CALLBACK(filters_on_custom_clicked),
-				      filters->tgt_roles_items);
+				      G_CALLBACK(filter_window_on_custom_clicked),
+				      filter_window->tgt_roles_items);
 
 	glade_xml_signal_connect_data(xml, "filters_on_objs_custom_clicked",
-				      G_CALLBACK(filters_on_custom_clicked),
-				      filters->obj_class_items);
+				      G_CALLBACK(filter_window_on_custom_clicked),
+				      filter_window->obj_class_items);
 	glade_xml_signal_connect_data(xml, "filters_on_ContextClearButton_clicked",
-				      G_CALLBACK(filters_on_ContextClearButton_clicked),
-				      filters);
+				      G_CALLBACK(filter_window_on_ContextClearButton_clicked),
+				      filter_window);
 	glade_xml_signal_connect_data(xml, "filters_on_OtherClearButton_clicked",
-				      G_CALLBACK(filters_on_OtherClearButton_clicked),
-				      filters);
+				      G_CALLBACK(filter_window_on_OtherClearButton_clicked),
+				      filter_window);
 
 	/* Restore previous values and selections for the filter dialog */
-	filters_set_values(filters);
+	filter_window_set_values(filter_window);
+}
+
+seaudit_filter_t* filter_window_get_filter(filter_window_t *filter_window)
+{
+	seaudit_filter_t *rt;
+	GtkTreeIter iter;
+	seaudit_filter_list_t *items_list = NULL;
+	GtkWidget *widget;
+	char *text;
+	int int_val;
+
+	rt = seaudit_filter_create();
+
+	/* check for src type filter */
+	if (filter_window->window)
+		filters_select_items_parse_entry(filter_window->src_types_items);
+	if (gtk_tree_model_get_iter_first(GTK_TREE_MODEL(filter_window->src_types_items->selected_items), &iter)) {
+		items_list = filter_window_seaudit_filter_list_get(filter_window->src_types_items);
+		if (items_list) {
+			rt->src_type_criteria = src_type_criteria_create(items_list->list, items_list->size);
+			filter_window_seaudit_filter_list_free(items_list);
+		}
+	}
+	/* check for tgt type filter */
+	if (filter_window->window)
+		filters_select_items_parse_entry(filter_window->tgt_types_items);
+	if (gtk_tree_model_get_iter_first(GTK_TREE_MODEL(filter_window->tgt_types_items->selected_items), &iter)) {
+		items_list = filter_window_seaudit_filter_list_get(filter_window->tgt_types_items);
+		if (items_list) {
+			rt->tgt_type_criteria = tgt_type_criteria_create(items_list->list, items_list->size);
+			filter_window_seaudit_filter_list_free(items_list);
+		}
+	}
+	/* check for obj class filter */
+	if (filter_window->window)
+		filters_select_items_parse_entry(filter_window->obj_class_items);
+	if (gtk_tree_model_get_iter_first(GTK_TREE_MODEL(filter_window->obj_class_items->selected_items), &iter)) {
+		items_list = filter_window_seaudit_filter_list_get(filter_window->obj_class_items);
+		if (items_list) { 
+			rt->class_criteria = class_criteria_create(items_list->list, items_list->size);
+			filter_window_seaudit_filter_list_free(items_list);
+		}
+	}
+
+	/* check for src user filter */
+	if (filter_window->window)
+		filters_select_items_parse_entry(filter_window->src_users_items);
+	if (gtk_tree_model_get_iter_first(GTK_TREE_MODEL(filter_window->src_users_items->selected_items), &iter)) {
+		items_list = filter_window_seaudit_filter_list_get(filter_window->src_users_items);
+		if (items_list) {
+			rt->src_user_criteria = src_user_criteria_create(items_list->list, items_list->size);
+			filter_window_seaudit_filter_list_free(items_list);
+		}
+	}
+
+	/* check for src role filter */
+	if (filter_window->window)
+		filters_select_items_parse_entry(filter_window->src_roles_items);
+	if (gtk_tree_model_get_iter_first(GTK_TREE_MODEL(filter_window->src_roles_items->selected_items), &iter)) {
+		items_list = filter_window_seaudit_filter_list_get(filter_window->src_roles_items);
+		if (items_list) {
+			rt->src_role_criteria = src_role_criteria_create(items_list->list, items_list->size);
+			filter_window_seaudit_filter_list_free(items_list);
+		}
+	}
+
+	/* check for tgt user filter */
+	if (filter_window->window)
+		filters_select_items_parse_entry(filter_window->tgt_users_items);
+	if (gtk_tree_model_get_iter_first(GTK_TREE_MODEL(filter_window->tgt_users_items->selected_items), &iter)) {
+		items_list = filter_window_seaudit_filter_list_get(filter_window->tgt_users_items);
+		if (items_list) {
+			rt->tgt_user_criteria = tgt_user_criteria_create(items_list->list, items_list->size);
+			filter_window_seaudit_filter_list_free(items_list);
+		}
+	}
+
+	/* check for tgt role filter */
+	if (filter_window->window)
+		filters_select_items_parse_entry(filter_window->tgt_roles_items);
+	if (gtk_tree_model_get_iter_first(GTK_TREE_MODEL(filter_window->tgt_roles_items->selected_items), &iter)) {
+		items_list = filter_window_seaudit_filter_list_get(filter_window->tgt_roles_items);
+		if (items_list) {
+			rt->tgt_role_criteria = tgt_role_criteria_create(items_list->list, items_list->size);
+			filter_window_seaudit_filter_list_free(items_list);
+		}
+	}
+	
+	/* check for network address filter */
+	if (filter_window->window) {
+		widget = glade_xml_get_widget(filter_window->xml, "IPAddressEntry");
+		text = (char*)gtk_entry_get_text(GTK_ENTRY(widget));
+	} else 
+		text = filter_window->ip_address->str;
+	if (strcmp(text, "") != 0) {
+		rt->ipaddr_criteria = ipaddr_criteria_create(text);
+	}
+
+	/* check for network port filter */
+	if (filter_window->window) {
+		widget = glade_xml_get_widget(filter_window->xml, "PortEntry");
+		text = (char*)gtk_entry_get_text(GTK_ENTRY(widget));
+	} else
+		text = filter_window->port->str;
+	if (strcmp(text, "") != 0) {
+		int_val = atoi(text);
+		rt->ports_criteria = ports_criteria_create(int_val);
+	}
+	
+	/* check for network interface filter */
+	if (filter_window->window) {
+		widget = glade_xml_get_widget(filter_window->xml, "InterfaceEntry");
+		text = (char*)gtk_entry_get_text(GTK_ENTRY(widget));
+	} else 
+		text = filter_window->interface->str;
+	if (strcmp(text, "") != 0) {
+		rt->netif_criteria = netif_criteria_create(text);
+	}
+	
+	/* check for executable filter */
+	if (filter_window->window) {
+		widget = glade_xml_get_widget(filter_window->xml, "ExeEntry");
+		text = (char*)gtk_entry_get_text(GTK_ENTRY(widget));
+	} else 
+		text = filter_window->executable->str;
+	if (strcmp(text, "") != 0) {
+		rt->exe_criteria = exe_criteria_create(text);
+	}
+	
+	/* check for path filter */
+	if (filter_window->window) {
+		widget = glade_xml_get_widget(filter_window->xml, "PathEntry");
+		text = (char*)gtk_entry_get_text(GTK_ENTRY(widget));
+	} else 
+		text = filter_window->path->str;
+	if (strcmp(text, "") != 0) {
+		rt->path_criteria = path_criteria_create(text);
+	}	
+
+	if (filter_window->window) {
+		widget = glade_xml_get_widget(filter_window->xml, "MatchEntry");
+		text = (char*)gtk_entry_get_text(GTK_ENTRY(widget));
+	} else
+		text = filter_window->match->str;
+	if (strcmp("All", text) == 0)
+		seaudit_filter_set_match(rt, SEAUDIT_FILTER_MATCH_ALL);
+	else 
+		seaudit_filter_set_match(rt, SEAUDIT_FILTER_MATCH_ANY);
+
+	return rt;
 }
