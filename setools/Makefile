@@ -164,7 +164,7 @@ libapol-tcl: selinux_tool
 	fi
 
 libseuser: selinux_tool
-	cd libseuser; $(MAKE) libseuser libseuserso
+	cd libseuser; $(MAKE) libseuser
 
 libseuser-tcl: selinux_tool
 	cd libseuser;
