@@ -10,6 +10,7 @@
 # The top level GUI
 ##############################################################
 namespace eval ApolTop {
+	variable bwidget_version	""
 	variable status 		""
 	variable polversion 		""
 	variable filename 		""
@@ -66,10 +67,13 @@ namespace eval ApolTop {
 	variable policy_is_open		0
 	
 	# Notebook tab IDENTIFIERS; NOTE: We name all tabs after their related namespace qualified names.
-	variable components_tab 	"Components"
-    	variable rules_tab 		"Rules"
-	variable types_tab		"ApolTypes"
-	variable terules_tab		"ApolTE"
+	# We use the prefix 'Apol_' for all notebook tabnames. Note that the prefix must end with an 
+	# underscore and that that tabnames may NOT have a colon.
+	variable tabName_prefix		"Apol_"
+	variable components_tab 	"Apol_Components"
+    	variable rules_tab 		"Apol_Rules"
+	variable types_tab		"Apol_Types"
+	variable terules_tab		"Apol_TE"
 	variable roles_tab		"Apol_Roles"
 	variable rbac_tab		"Apol_RBAC"
 	variable class_perms_tab	"Apol_Class_Perms"
@@ -219,8 +223,40 @@ proc ApolTop::enable_tkListbox { my_list_box } {
 	return
 }
 
+################################################################################
+# ::get_tabname -- 
+#	args:	
+#		- tabID - the tabID provided from the Notebook::bindtabs command
+#
+# Description: 	There is a bug with the BWidgets 1.7.0 Notebook widget where the 
+#	  	tabname is stripped of its' first 2 characters AND an additional 
+#		string, consisting of a colon followed by an embedded widget name 
+#		from the tab, is appended. For example, the tab name will be 
+#		'sults1:text' instead of 'Results1".
+#
+proc ApolTop::get_tabname {tab} {	
+	variable tabName_prefix
+	
+	set idx [string last ":" $tab]
+	if {$idx != -1} {
+		# Strip off the last ':' and any following characters from the end of the string
+		set tab [string range $tab 0 [expr $idx - 1]]
+	}
+	set prefix_len [string length $tabName_prefix]
+	if {[string range $tab 0 $prefix_len] == $tabName_prefix} {
+		return $tab
+	}
+	
+	set tmp $tabName_prefix
+	set idx [string first "_" $tab]
+	if {$idx == -1} {
+		return $tab
+	}
+	set tab_fixed [append tmp [string range $tab [expr $idx + 1] end]]
+	return $tab_fixed
+}
+
 proc ApolTop::set_Focus_to_Text { tab } {
-	variable notebook
 	variable components_nb
 	variable rules_nb
 	
@@ -231,7 +267,9 @@ proc ApolTop::set_Focus_to_Text { tab } {
 	# to allow saving queries for the other tabs.
 	$ApolTop::mainframe setmenustate Disable_LoadQuery_Tag normal
 	set ApolTop::policyConf_lineno ""
-	switch $tab \
+	
+	set tab [ApolTop::get_tabname $tab]	
+	switch -exact -- $tab \
 		$ApolTop::components_tab {
 			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
 			ApolTop::set_Focus_to_Text [$components_nb raise]
@@ -282,7 +320,7 @@ proc ApolTop::set_Focus_to_Text { tab } {
 		default { 
 			return 
 		}
-    		
+	
 	return 0
 }
 
@@ -886,7 +924,7 @@ proc ApolTop::create { } {
 	[$mainframe getmenu pmap_menu] insert 0 command -label "Load Default Perm Map" -command "ApolTop::load_default_perm_map_Dlg"
 	[$mainframe getmenu pmap_menu] insert 0 command -label "Load Perm Map from file..." -command "ApolTop::load_perm_map_fileDlg"
 	$mainframe addindicator -textvariable ApolTop::policyConf_lineno -width 14
-	$mainframe addindicator -textvariable ApolTop::polstats -width 95
+	$mainframe addindicator -textvariable ApolTop::polstats -width 85
 	$mainframe addindicator -textvariable ApolTop::polversion -width 19 
 	
 	# Disable menu items since a policy is not yet loaded.
@@ -1536,7 +1574,6 @@ proc ApolTop::showPolicyStats {} {
 		$stats(tetrans) + $stats(temember) + $stats(techange)]   "
 	append polstats "Roles: $stats(roles)   RBAC rules: [expr $stats(roleallow) + $stats(roletrans)]"
 	append polstats "   Users: $stats(users)"
-	append polstats "   Initial SIDs: $stats(sids)"
 	return
 }
 
@@ -1781,6 +1818,7 @@ proc ApolTop::main {} {
 	global tk_patchLevel
 	variable top_width
         variable top_height
+	variable bwidget_version
 	
 	# Prevent the application from responding to incoming send requests and sending 
 	# outgoing requests. This way any other applications that can connect to our X 
@@ -1788,7 +1826,7 @@ proc ApolTop::main {} {
 	rename send {}
 	
 	# Load BWidget package into the interpreter
-        set rt [catch {set version [package require BWidget]} err]
+        set rt [catch {set bwidget_version [package require BWidget]} err]
     
 	if {$rt != 0 } {
 		tk_messageBox -icon error -type ok -title "Missing BWidgets package" -message \
@@ -1797,7 +1835,7 @@ proc ApolTop::main {} {
 			http://sourceforge.net/projects/tcllib"
 		exit
 	}
-	if {[package vcompare $version "1.4.1"] == -1} {
+	if {[package vcompare $bwidget_version "1.4.1"] == -1} {
 		tk_messageBox -icon warning -type ok -title "Package Version" -message \
 			"This tool requires BWidgets 1.4.1 or later. You may experience problems\
 			while running the application. It is recommended that you upgrade your BWidgets\
@@ -1805,9 +1843,9 @@ proc ApolTop::main {} {
 	}
 	
 	# Provide the user with a warning if incompatible Tk and BWidget libraries are being used.
-	if {[package vcompare $version "1.4.1"] && $tk_version == "8.3"} {
+	if {[package vcompare $bwidget_version "1.4.1"] && $tk_version == "8.3"} {
 		tk_messageBox -icon error -type ok -title "Error" -message \
-			"Your installed Tk version $tk_version includes an incompatible BWidgets $version package version. \
+			"Your installed Tk version $tk_version includes an incompatible BWidgets $bwidget_version package version. \
 			This has been known to cause a tk application to crash.\n\nIt is recommended that you either upgrade your \
 			Tk library to version 8.4 or greater or use BWidgets 1.4.1 instead. See the README for more information."	
 		exit
