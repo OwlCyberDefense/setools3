@@ -342,7 +342,7 @@ void seaudit_on_TopWindow_destroy(GtkWidget *widget)
 void seaudit_on_new_tab_clicked(GtkMenuItem *menu_item, gpointer user_data)
 {
 	seaudit_window_add_new_view(seaudit_app->window, seaudit_app->cur_log, seaudit_app->seaudit_conf.column_visibility,
-				    NULL);
+				    "New view");
 
 }
 
@@ -805,8 +805,12 @@ static void seaudit_update_status_bar(void *user_data)
 		gtk_label_set_text(d_status_bar, str);
 	} else {
 		view = seaudit_window_get_current_view(seaudit_app->window);
+		if (view)
+			num_filtered_log_msgs = view->store->log_view->num_fltr_msgs;
+		else 
+			num_filtered_log_msgs = 0;
+
 		num_log_msgs = seaudit_app->cur_log->num_msgs;
-		num_filtered_log_msgs = view->store->log_view->num_fltr_msgs;
 		snprintf(str, STR_SIZE, "Log Messages: %d/%d", num_filtered_log_msgs, num_log_msgs);
 		gtk_label_set_text(l_status_bar, str);
 		if (num_log_msgs > 0) {
