@@ -615,18 +615,6 @@ bool_t is_valid_type(policy_t *policy, int type, bool_t self_allowed)
 	return TRUE;
 }
 
-/*
- * Check that obj_class is valid for this policy.
- */
-bool_t is_valid_obj_class(policy_t *policy, int obj_class)
-{
-	assert(policy);
-
-	if (obj_class < 0 || obj_class >= policy->num_obj_classes)
-		return FALSE;
-	return TRUE;
-}
-
 /* check if TYPE ALIAS array has room for new entry, grow if necessary */
 int check_alias_array(policy_t *policy)
 {
@@ -1584,6 +1572,49 @@ int add_name(char *name, name_item_t **list)
 	return 0;
 }
 
+/* Get the next available entry in AV rule list, ensuring list grows as necessary.
+ * We return a pointer to the new rule so that caller can complete its content. 
+ * On return, the new rule will be in the batabase, but initialized. */
+av_item_t *add_new_av_rule(int rule_type, policy_t *policy)
+{
+	int *sz, *num;
+	av_item_t **rlist, *newitem;
+	
+	if(rule_type == RULE_TE_ALLOW || rule_type == RULE_NEVERALLOW) {
+		sz = &(policy->list_sz[POL_LIST_AV_ACC]);
+		num = &(policy->num_av_access);
+		rlist = &(policy->av_access);
+	}
+	else if(rule_type == RULE_DONTAUDIT || rule_type == RULE_AUDITDENY || rule_type == RULE_AUDITALLOW) {
+		sz = &(policy->list_sz[POL_LIST_AV_AU]);
+		num = &(policy->num_av_audit);
+		rlist = &(policy->av_audit);
+	}
+	else
+		return NULL;
+	
+	if (*num >= *sz) {
+		/* grow the dynamic array */
+		av_item_t * ptr;		
+		ptr = (av_item_t *)realloc(*rlist, (LIST_SZ + *sz) * sizeof(av_item_t));
+		if(ptr == NULL) {
+			fprintf(stderr,"out of memory\n");
+			return NULL;
+		}
+		*rlist = ptr;
+		*sz += LIST_SZ;
+	}	
+	
+	newitem = &((*rlist)[*num]);
+	(*num)++;
+	/* initialize */
+	memset(newitem, 0, sizeof(av_item_t));
+	newitem->type = rule_type;
+	newitem->lineno = 0;
+	(policy->rule_cnt[rule_type])++;
+	
+	return newitem;
+}
 
 /* add a clone rule to a policy */
 int add_clone_rule(int src, int tgt, unsigned long lineno, policy_t *policy)
