@@ -87,8 +87,6 @@ help:
 	@echo "   all:             build everything, but don't install"
 	@echo "   all-nogui:       only build non-GUI tools and libraries"
 	@echo ""
-	@echo "   docs:            generate setools documentation"
-	@echo "   remove-docs:     remove setools documentation"
 	@echo "   apol:            build policy analysis tool"
 	@echo "   seuser:          build SE Linux command line user tool"
 	@echo "   seuserx:         build SE Linux GUI user tool"
