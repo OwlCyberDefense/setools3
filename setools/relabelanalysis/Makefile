@@ -8,7 +8,7 @@ LIBAPOL = ../libapol/libapol.a
 most: $(OBJS) cmd-line-tool
 
 
-all: most relabel-test
+all: most relabel-test ../libapol/relabel_analysis.o
 
 
 cmd-line-tool: $(OBJS) ./relabel_analysis_tool.o
