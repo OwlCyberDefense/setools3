@@ -216,11 +216,11 @@ proc Apol_Cond_Rules::create {nb} {
 		-variable Apol_Cond_Rules::search_opts(incl_teallow) \
 	    	-onvalue 1 -offvalue 0]
 	set auallow [checkbutton $rules_inner_left_fm.auallow \
-		-text "Audit" \
+		-text "Auditallow and dontaudit" \
 		-variable Apol_Cond_Rules::search_opts(incl_teaudit) \
 	    	-onvalue 1 -offvalue 0]
 	set ttrans [checkbutton $rules_inner_left_fm.ttrans \
-		-text "Transition" \
+		-text "Type transition and type change" \
 		-variable Apol_Cond_Rules::search_opts(incl_ttrans) \
 	    	-onvalue 1 -offvalue 0]
 	
