@@ -597,20 +597,22 @@ static void sediff_rename_policy_tabs(const char *p1,const char *p2)
 	const char *fname2; 
 	GtkNotebook *notebook;
 	GtkWidget *p1_label,*p2_label;
-
+	GString *string = g_string_new("");
 
 	notebook = GTK_NOTEBOOK(glade_xml_get_widget(sediff_app->window_xml, "main_notebook"));
 
 	if (rindex(p1,'/')) {
 		fname1 = rindex(p1,'/')+1;
-		p1_label = gtk_label_new (fname1);
+		g_string_printf(string,"Policy 1: %s",fname1);
+		p1_label = gtk_label_new (string->str);
 		gtk_widget_show (p1_label);
 		gtk_notebook_set_tab_label (notebook, gtk_notebook_get_nth_page (notebook, 1), p1_label);
 	}
 
 	if (rindex(p2,'/')) {
 		fname2 = rindex(p2,'/')+1;
-		p2_label = gtk_label_new (fname2);
+		g_string_printf(string,"Policy 2: %s",fname2);
+		p2_label = gtk_label_new (string->str);
 		gtk_widget_show (p2_label);
 		gtk_notebook_set_tab_label (notebook, gtk_notebook_get_nth_page (notebook, 2), p2_label);
 	}
@@ -1144,10 +1146,6 @@ static void sediff_populate_key_buffer()
 
 
 	gtk_text_buffer_get_start_iter(txt,&iter);
-	g_string_printf(string," TE Rules Key\n\n");
-	gtk_text_buffer_insert_with_tags_by_name(txt, &iter, string->str, 
-						 -1, "header-tag", NULL);
-
 	g_string_printf(string," Added(+):\n  Items added\n  in policy 2.\n\n");
 	gtk_text_buffer_insert_with_tags_by_name(txt, &iter, string->str, 
 						 -1, "added-tag", NULL);
