@@ -7,7 +7,7 @@ MAKE = make
 
 # If debug is zero, an optimized version that is dynamically
 # linked is created
-DEBUG			= 0
+DEBUG			= 1
 # This determines whether libapol and libseuser use libselinux
 # to find the default policies. Useful to create a verion of
 # apol that runs on non-selinux machines. Set this to 0 for
