@@ -122,7 +122,7 @@ static int load_perm(ap_fbuf_t *fb, FILE *fp, __u32 *val, unsigned int opts, pol
 static int load_perms(ap_fbuf_t *fb, FILE *fp, bool_t is_cp, __u32 cval, int cidx, int cp_idx, size_t nel, 
 			ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
 {
-	int i, idx, rt;
+	int i, idx, rt = 0;
 	bool_t keep;
 	ap_permission_bmap_t *pmap;
 	__u32 val, num_cp = 0;
@@ -547,11 +547,14 @@ static int load_user(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts,
 				rt = add_role_to_user(u, bm->r_map[i], policy);
 				if(rt == -1) {
 					assert(FALSE); /* debug aide */
+					ebitmap_destroy(&e);
 					return -4;
 				}
 			}
 		}
 	}
+	
+	ebitmap_destroy(&e);
 	
 	/* discard any unsupported MLS stuff */
 	if(mls_config) {
@@ -1724,5 +1727,49 @@ bool_t ap_is_file_binpol(FILE *fp)
 		rt = FALSE;
 		
 	rewind(fp);
+	return rt;
+}
+
+/* returns the version number of the binary policy
+ * will return the file rewound.
+ *
+ * return codes:
+ * 	N	success - policy version returned
+ *	-1	general error
+ *	-2	wrong magic # for file
+ *	-3	problem reading file
+ */
+int ap_binpol_version(FILE *fp)
+{
+	__u32  *buf;
+	int rt, len;
+	ap_fbuf_t *fb;
+	
+	if (fp == NULL)
+		return -1;
+	
+	if(ap_init_fbuf(&fb) != 0)
+		return -1;
+	
+	/* magic # and sz of policy string */
+	buf = ap_read_fbuf(fb, sizeof(__u32)*2, fp);
+	if (buf == NULL) { rt = fb->err; goto err_return; }
+	if (buf[0] != SELINUX_MAGIC) { rt = -2; goto err_return; }
+	
+	len = le32_to_cpu(buf[1]);
+	if(len < 0) { rt = -3; goto err_return; }
+	/* skip over the policy string */
+	if(fseek(fp, sizeof(char)*len, SEEK_CUR) != 0) { rt = -3; goto err_return; }
+	
+	/* Read the version, config, and table sizes. */
+	buf = ap_read_fbuf(fb, sizeof(__u32) * 1, fp);
+	if(buf == NULL) { rt = fb->err; goto err_return; }	
+	buf[0] = le32_to_cpu(buf[0]);
+	
+	rt = buf[0];
+		
+err_return:
+	rewind(fp);
+	ap_free_fbuf(&fb); 
 	return rt;
 }
