@@ -2359,7 +2359,8 @@ static int cond_rule_add_helper(int **list, int *list_len, int *add, int add_len
 static int define_conditional(cond_expr_t *expr, cond_rule_list_t *t_list, cond_rule_list_t *f_list)
 {
 	int idx, rt;
-		
+	cond_expr_item_t *cur = NULL;
+	
 	rt = set_policy_version(POL_VER_COND, parse_policy);
 	if(rt != 0) {
 		yyerror("error setting policy version");
@@ -2379,7 +2380,7 @@ static int define_conditional(cond_expr_t *expr, cond_rule_list_t *t_list, cond_
 	/* found matching expressions - add the rules to this expression. */
 	if (idx != -1) {
 		cond_free_expr(expr);
-		cond_expr_item_t *cur = &parse_policy->cond_exprs[idx];
+		cur = &parse_policy->cond_exprs[idx];
 		if (t_list) {
 			if (!cur->true_list) {
 				cur->true_list = t_list;
