@@ -21,19 +21,13 @@ namespace eval Apol_Analysis_relabel {
 	"This analysis checks the possible ways to relabel objects as allowed by a policy. \
     	The permissions relabelto and relabelfrom are special in a type enforcement environment as they \
     	provide a method of changing type.  Relabel analysis is designed to fascilitate queries about \
-    	the possible changes for a given type.\n\n\There are four modes for a query, each presenting a \
-    	differnt perspective:\n\n\To mode - beginning at starting type lists all types to which relabeling \
-    	is possible and the associated rules*. \n\From mode - beginning at starting type lists all types \
-    	from which relabeling is possible and the associated rules*.\n\Both mode - beginning at starting \
-    	type lists all types to or from which relabeling is possible and the associated rules*.\n\Subject mode - \
-    	given a starting subject lists all types to and from which that subject can relabel and the \
-    	associated rules*.\n\n\Optionally results may be filtered by object class and permission using the \
-    	Advanced Filters button. Permissions may be enabled or disabled for each object class. \n\n\*A note \
-    	on rules display and filtering: Rules are stored for each type found to have relabeling permission, \
-    	therefore it is possible to specify a permission in a filter and still see a rule that does not contain \
-    	that specific permission.  This is not an error rather it means that multiple rules grant permissions \
-    	for that specific source-target-object triplet. To see all rules governing a particular triplet use the \
-    	Policy Rules tab."
+    	the possible changes for a given type.\n\n\There are two modes for a query, each presenting a \
+    	different perspective:\n\nObject mode - given a starting type, treat it as an object to be \
+    	relabeled and display one or both of the following result sets:\n\
+    	 To - beginning at starting type lists all types to which relabeling is possible and the associated rules.\n\
+	 From - beginning at starting type lists all types from which relabeling is possible and the associated rules.\n\Subject mode\
+	- given a starting subject lists all types to and from which that subject can relabel and the associated rules.\n\
+	\n\Optionally results may be filtered by end types with regular expressions or by object class using the Advanced Filters button."
 
 	variable widget_vars 
 	variable widgets
@@ -221,6 +215,12 @@ proc Apol_Analysis_relabel::do_analysis {results_frame} {
 	variable most_recent_results
 	variable advanced_filter_Dlg
 	
+	if {![ApolTop::is_policy_open]} {
+		tk_messageBox -icon error -type ok \
+		    -title "Relabel Analysis Error" \
+		    -message "No current policy file is opened!"
+		return -code error
+	}
 	# convert the object permissions list into Tcl lists
 	set objs_list ""
 	
@@ -619,7 +619,7 @@ proc Apol_Analysis_relabel::adv_options_initialize_objs_and_perm_filters {path_n
 			return -1
 		}
 		# Filter out object classes that do not have relabelto/relabelfrom permission
-		set idx1 [lsearch -exact $perms_list $Apol_Analysis_relabel::relabelto_perm]
+		set idx1 [lsearch -exact elabel::relabelto_perm]
 		set idx2 [lsearch -exact $perms_list $Apol_Analysis_relabel::relabelfrom_perm]
 		if {$idx1 == -1 && $idx2 == -1} {
 			continue
