@@ -44,7 +44,7 @@ raising the correct notebook tab in apol and configuring the query options
 with the specified query parameters and filter settings. Currently, the 
 save query menu item is only enabled when the ANALYSIS TAB or the 
 TE RULES TAB (see POLICY RULES TAB below) is raised. However, the load 
-query menu item is enabled across all tabs. The Analysis menu also allows 
+query menu item is enabled across all tabs. The Query menu also allows 
 the user to display statistics about the currently loaded policy. A 
 shorthand version of these statistics is always displayed on the status 
 bar when a policy file is opened.
