@@ -801,6 +801,10 @@ static int append_direct_edge_to_results(policy_t *policy, iflow_query_t* q,
 				}
 				Tcl_AppendElement(interp, rule);
 				free(rule);
+				/* Append a boolean value indicating whether this rule is enabled 
+				 * for conditional policy support */
+				sprintf(tbuf, "%d", policy->av_access[answer->obj_classes[j].rules[k]].enabled);
+				Tcl_AppendElement(interp, tbuf);
 			}			
 		}
 	}
@@ -826,6 +830,10 @@ static int append_transitive_iflow_rules_to_results(policy_t *policy, iflow_tran
 		}
 		Tcl_AppendElement(interp, rule);
 		free(rule);
+		/* Append a boolean value indicating whether this rule is enabled 
+		 * for conditional policy support */
+		sprintf(tbuf, "%d", policy->av_access[cur->iflows[path_idx].obj_classes[obj_idx].rules[l]].enabled);
+		Tcl_AppendElement(interp, tbuf);
 	}
 	return 0;
 }
@@ -2290,6 +2298,10 @@ int Apol_SearchTErules(ClientData clientData, Tcl_Interp *interp, int argc, char
 			Tcl_DStringFree(buf);
 			sprintf(tmpbuf, "%lu", policy->av_access[results.av_access[i]].lineno);
 			Tcl_AppendElement(interp, tmpbuf);
+			/* Append a boolean value indicating whether this rule is enabled 
+			 * for conditional policy support */
+			sprintf(tmpbuf, "%d", policy->av_access[results.av_access[i]].enabled);
+			Tcl_AppendElement(interp, tmpbuf);
 		}
 	}
 	if(results.num_av_audit > 0) {
@@ -2305,6 +2317,10 @@ int Apol_SearchTErules(ClientData clientData, Tcl_Interp *interp, int argc, char
 			Tcl_AppendElement(interp, buf->string);
 			Tcl_DStringFree(buf);
 			sprintf(tmpbuf, "%lu", policy->av_audit[results.av_audit[i]].lineno);
+			Tcl_AppendElement(interp, tmpbuf);
+			/* Append a boolean value indicating whether this rule is enabled 
+			 * for conditional policy support */
+			sprintf(tmpbuf, "%d", policy->av_audit[results.av_audit[i]].enabled);
 			Tcl_AppendElement(interp, tmpbuf);
 		}
 	}
@@ -2322,6 +2338,10 @@ int Apol_SearchTErules(ClientData clientData, Tcl_Interp *interp, int argc, char
 			Tcl_DStringFree(buf);
 			sprintf(tmpbuf, "%lu", policy->te_trans[results.type_rules[i]].lineno);
 			Tcl_AppendElement(interp, tmpbuf);
+			/* Append a boolean value indicating whether this rule is enabled 
+			 * for conditional policy support */
+			sprintf(tmpbuf, "%d", policy->te_trans[results.type_rules[i]].enabled);
+			Tcl_AppendElement(interp, tmpbuf);
 		}
 	}
 	if(results.num_clones > 0) {
@@ -2338,6 +2358,10 @@ int Apol_SearchTErules(ClientData clientData, Tcl_Interp *interp, int argc, char
 			Tcl_DStringFree(buf);
 			sprintf(tmpbuf, "%lu", policy->clones[results.clones[i]].lineno);
 			Tcl_AppendElement(interp, tmpbuf);
+			/* Since the enabled flag member is only supported in access, audit and type 
+			 * transition rules, always append TRUE, so the returned list can be parsed 
+			 * correctly. */
+			Tcl_AppendElement(interp, "1");
 		}
 	}
 	free_teq_query_contents(&query);
@@ -3245,6 +3269,10 @@ int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *interp, int
 			free(tmp);
 			sprintf(tbuf, "%d", get_rule_lineno(t->pt_rules[i],RULE_TE_ALLOW, policy));
 			Tcl_AppendElement(interp, tbuf);
+			/* Append a boolean value indicating whether this rule is enabled 
+			 * for conditional policy support */
+			sprintf(tbuf, "%d", policy->av_access[t->pt_rules[i]].enabled);
+			Tcl_AppendElement(interp, tbuf);
 		}
 		/* # of entrypoint file types */
 		sprintf(tbuf, "%d", t->entry_types->num);
@@ -3276,6 +3304,10 @@ int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *interp, int
 				Tcl_AppendElement(interp, tmp);
 				free(tmp);
 				sprintf(tbuf, "%d", get_rule_lineno(ep->ep_rules[i],RULE_TE_ALLOW, policy));
+				Tcl_AppendElement(interp, tbuf);
+				/* Append a boolean value indicating whether this rule is enabled 
+				 * for conditional policy support */
+				sprintf(tbuf, "%d", policy->av_access[ep->ep_rules[i]].enabled);
 				Tcl_AppendElement(interp, tbuf);				
 			}
 			/* # of file execute rules */
@@ -3292,6 +3324,10 @@ int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *interp, int
 				Tcl_AppendElement(interp, tmp);
 				free(tmp);
 				sprintf(tbuf, "%d", get_rule_lineno(ep->ex_rules[i],RULE_TE_ALLOW, policy));
+				Tcl_AppendElement(interp, tbuf);
+				/* Append a boolean value indicating whether this rule is enabled 
+				 * for conditional policy support */
+				sprintf(tbuf, "%d", policy->av_access[ep->ex_rules[i]].enabled);
 				Tcl_AppendElement(interp, tbuf);
 			}
 		}
