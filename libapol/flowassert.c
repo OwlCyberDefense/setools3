@@ -477,7 +477,6 @@ static bool_t is_type_in_path (iflow_t *iflow, int num_iflows,
                                policy_t *policy) {
         int flow_num;
         int type_id = assert_id->type_id;
-        classes_perm_map_t *pmap = policy->pmap;
         for (flow_num = 0; flow_num < num_iflows; flow_num++) {
                 iflow_t *flow = iflow + flow_num;
                 if (flow->start_type == type_id || flow->end_type == type_id) {
