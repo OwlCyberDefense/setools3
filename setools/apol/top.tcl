@@ -38,7 +38,9 @@ namespace eval ApolTop {
 	variable goto_line_num
 	# Default GUI settings
 	variable prevCursor		arrow
+	# store the default background color for use when diabling widgets
 	variable default_bg_color
+	set default_bg_color 		[. cget -background] 
 	variable text_font		""
 	variable title_font		""
 	variable dialog_font		""
@@ -98,40 +100,21 @@ namespace eval ApolTop {
 	 
 	variable tk_msgBox_Wait
 
-# "contents" indicates which aspects of the policy are included in the current opened policy file
-# indicies into this array are:
-# 	classes
-#	perms			(inlcudes common perms)
-#	types			(include attribs)
-#	te_rules		(all type enforcement rules)
-#	roles			
-#	rbac			(all role rules)
-#	users
+	# "contents" indicates which aspects of the policy are included in the current opened policy file
+	# indicies into this array are:
+	# 	classes
+	#	perms			(inlcudes common perms)
+	#	types			(include attribs)
+	#	te_rules		(all type enforcement rules)
+	#	roles			
+	#	rbac			(all role rules)
+	#	users
         variable contents
 
-# initialize the recent files list
-	for {set i 0} {$i<$max_recent_files } {incr i} {
+	# Initialize the recent files list
+	for {set i 0} {$i<$max_recent_files} {incr i} {
 		set recent_files($i) ""
 	}
-
-# NOTE: We no longer need to include these tab files at run-time; instead
-#	we create a single.tcl file at compile time.
-# below allows separate files for each "tab" on the app
-#    set pwd [pwd]
-#    cd [file dirname [info script]]
-#    variable MYDIR [pwd]
-#    foreach script {
-#	types_tab.tcl terules_tab.tcl \
-#	roles_tab.tcl rbac_tab.tcl \
-#	classes_perms_tab.tcl users_tab.tcl policyconf.tcl
-#   } {
-#	namespace inscope :: source $script
-#    }
-#    cd $pwd    
-
-	# store the default background color for use when diabling widgets
-	set default_bg_color [. cget -background] 
-
 }
 
 proc ApolTop::is_policy_open {} {
