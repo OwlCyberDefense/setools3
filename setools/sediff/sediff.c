@@ -1063,9 +1063,9 @@ int main (int argc, char **argv)
 		if (argc - optind == 0 ) {
 			rt = access(prog_path, X_OK);
 			if (rt == 0) {
-				rt = execvp(prog_path,NULL);
+				rt = execvp(prog_path,argv);
 			} else {
-				rt = execvp(SEDIFF_GUI_PROG,NULL);
+				rt = execvp(SEDIFF_GUI_PROG,argv);
 			}
 
 
@@ -1074,9 +1074,9 @@ int main (int argc, char **argv)
 		else if (argc - optind == 2) {
 			rt = access(prog_path, X_OK);
 			if (rt == 0) {
-				rt = execvp(prog_path,&argv[optind]);
+				rt = execvp(prog_path,argv);
 			} else {
-				rt = execvp(SEDIFF_GUI_PROG,&argv[optind]);
+				rt = execvp(prog_path,argv);
 			}			
 		}
 		if (argc - optind != 0 && argc - optind != 2) {
