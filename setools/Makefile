@@ -37,17 +37,6 @@ DEFAULT_LOG_FILE = /var/log/messages
 # -DCONFIG_SECURITY_SELINUX_MLS 
 #		compiles library to be compatible with MLS 
 ##		in the policy (experimental, see Readme)
-# -DLIBSELINUX 
-#		compiles libapol and libseuser libraries to use the
-#		libselinux helper functions for locating system default 
-#		policy resources, instead of the logic from libapol or 
-#		the locations defined in the seuser.conf file.
-#
-#		NOTE: When using this compile option, you will need to   
-#		link in the libselinux library for the following 
-#		programs: 
-#		  seaudit, seinfo, sesearch, seuser, seuserx
-##
 CC_DEFINES	= 
 
 CFLAGS		= -Wall -O2 $(TCL_INCLUDE) $(CC_DEFINES)
@@ -103,9 +92,7 @@ help:
 	@echo "   install-secmds:    build and install command line tools (selinux not required)"
 	@echo "   install-seaudit:   build and install seaudit (selinux not required)"
 	@echo ""
-	@echo "   install-libapol:   build and install libapol static/shared libraries"
-	@echo "   install-libseuser: build and install libseuser static/shared libraries"
-	@echo ""
+	@echo "   install-dev:       build and install headers and libraries"
 	@echo "   install-docs:      install setools documentation"
 	@echo "   install-policy:    install SELinux policy and label files"
 	@echo "   install-bwidget:   install BWidgets-1.4.1 package (requires Tcl/Tk)"
@@ -245,6 +232,8 @@ install-libseuser:
 
 install-libapol:
 	cd libapol; $(MAKE) install
+	
+install-dev: install-libseuser install-libapol
 	
 # Install the policy - this is a separate step to better support systems with
 # non-standard policies.
