@@ -7,8 +7,6 @@ setools:
 	  makefile target to better support non-default policies
 	  like the 'targeted' policy included in Fedora Core 2.
 apol:
-	GUI changes to forward dta analysis for selecting 
-	  object classes, permissions, and object types. 
 	Added support for the user to change the name of
 	 result tabs.
 	Added new Tool Options dialog for opening limited
@@ -21,10 +19,7 @@ libapol:
 	  addition to source policy files).
 	Added utility functions for finding default policies
 	  - both source and binary.
-	Various cleanups and bug fixes to source policy parsing.
-	Changed forward dta analysis to support filtering by
-	  object classes, permissions, and object types for
-	  the target type.		
+	Various cleanups and bug fixes to source policy parsing.		
 secmds:
 	Added conditional policy support to seinfo.
 	Changed to use libapol default policy logic.
