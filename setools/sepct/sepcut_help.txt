@@ -1,6 +1,6 @@
 SE Linux Policy Customization and Editing Tool Help File
 sepcut, version 0.3.7
-July 06, 2004
+July 07, 2004
 selinux@tresys.com
 
 
