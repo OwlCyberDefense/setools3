@@ -8,7 +8,8 @@ LIB-OBJ-TCL = apol_tcl.o
 
 LOBJS = $(patsubst %.o,%.lo,$(LIB-OBJ))
 
-LIBSO = libapol$(shell cat VERSION).so
+TARGET = libapol.so
+LIBSO  = $(TARGET).$(shell cat VERSION)
 
 CFLAGS  += -DLIBAPOL_VERSION_STRING='"$(shell cat VERSION)"'
 CFLAGS  += -DAPOL_INSTALL_DIR='"$(INSTALL_LIBDIR)"'
@@ -33,13 +34,15 @@ libapolso: ../lib/$(LIBSO)
 	 ar cr $@ $(LIB-OBJ-TCL) 
 
 install-libapol-shared: libapolso
-	install -m 644 ../lib/$(LIBSO) $(SHARED_LIB_INSTALL_DIR)
-	/sbin/ldconfig $(SHARED_LIB_INSTALL_DIR)
-	ln -sf $(SHARED_LIB_INSTALL_DIR)/$(LIBSO) $(SHARED_LIB_INSTALL_DIR)/libapol.so
+	test -d $(SHARED_LIB_INSTALL_DIR) || install -m 755 -d $(SHARED_LIB_INSTALL_DIR)
+	install -m 755 ../lib/$(LIBSO) $(SHARED_LIB_INSTALL_DIR)
+	/sbin/ldconfig 
+	cd $(SHARED_LIB_INSTALL_DIR) && ln -sf ./`basename $(SHARED_LIB_INSTALL_DIR)`/$(LIBSO) $(TARGET)
 
 install-libapol-static: libapol
-	mkdir -p $(SETOOLS_INCLUDE)
+	test -d $(STATIC_LIB_INSTALL_DIR) || install -m 755 -d $(STATIC_LIB_INSTALL_DIR)
 	install -m 644 ../lib/libapol.a $(STATIC_LIB_INSTALL_DIR)
+	test -d $(SETOOLS_INCLUDE) || install -m 755 -d $(SETOOLS_INCLUDE)
 	install -m 644 *.h $(SETOOLS_INCLUDE)
 
 install: install-libapol-shared install-libapol-static
