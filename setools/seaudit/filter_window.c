@@ -593,6 +593,12 @@ static void filters_select_on_log_opened(void *filter_items_list)
 static void filters_select_items_on_close_button_clicked(GtkButton *button, filters_select_items_t *filter_items_list)
 {	
 	if (filter_items_list->window != NULL) {
+		/* if there is an idle function for this window
+		 * then we must remove it to avoid that function
+		 * being executed after we delete the window.  This 
+		 * may happen if the window is closed during a search. */
+		while(g_idle_remove_by_data(filter_items_list->window));
+
 		gtk_widget_destroy(GTK_WIDGET(filter_items_list->window));
 		filter_items_list->window = NULL;
 		filters_select_items_fill_entry(filter_items_list);
@@ -603,6 +609,7 @@ static void filters_select_items_on_close_button_clicked(GtkButton *button, filt
 
 static gboolean filters_select_items_on_window_destroy(GtkWidget *widget, GdkEvent *event, filters_select_items_t *filter_items_list)
 {
+	
 	filters_select_items_on_close_button_clicked(NULL, filter_items_list);
 	return FALSE;
 }
@@ -1107,34 +1114,40 @@ static gboolean filters_on_filter_window_destroy(GtkWidget *widget, GdkEvent *ev
 {
 	if (filters->window != NULL) {
 		if (filters->src_types_items->window) {
-			gtk_widget_destroy(GTK_WIDGET(filters->src_types_items->window));
+			filters_select_items_on_close_button_clicked(NULL, filters->src_types_items);
 			filters->src_types_items->window = NULL;
 		}
 		if (filters->tgt_types_items->window) {
-			gtk_widget_destroy(GTK_WIDGET(filters->tgt_types_items->window));
+			filters_select_items_on_close_button_clicked(NULL, filters->tgt_types_items);
 			filters->tgt_types_items->window = NULL;
 		}
 		if (filters->src_users_items->window) {
-			gtk_widget_destroy(GTK_WIDGET(filters->src_users_items->window));
+			filters_select_items_on_close_button_clicked(NULL, filters->src_users_items);
 			filters->src_users_items->window = NULL;
 		}
 		if (filters->tgt_users_items->window) {
-			gtk_widget_destroy(GTK_WIDGET(filters->tgt_users_items->window));
+			filters_select_items_on_close_button_clicked(NULL, filters->tgt_users_items);
 			filters->tgt_users_items->window = NULL;
 		}
 		if (filters->src_roles_items->window) {
-			gtk_widget_destroy(GTK_WIDGET(filters->src_roles_items->window));
+			filters_select_items_on_close_button_clicked(NULL, filters->src_roles_items);
 			filters->src_roles_items->window = NULL;
 		}
 		if (filters->tgt_roles_items->window) {
-			gtk_widget_destroy(GTK_WIDGET(filters->tgt_roles_items->window));
+			filters_select_items_on_close_button_clicked(NULL, filters->tgt_roles_items);
 			filters->tgt_roles_items->window = NULL;
 		}
 		if (filters->obj_class_items->window) {
-			gtk_widget_destroy(GTK_WIDGET(filters->obj_class_items->window));
+			filters_select_items_on_close_button_clicked(NULL, filters->obj_class_items);
 			filters->obj_class_items->window = NULL;
 		}
 		filters_update_values(filters);
+		/* if there is an idle function for this window
+		 * then we must remove it to avoid that function
+		 * being executed after we delete the window.  This
+		 * may happen if the window is closed during a search. */
+		while(g_idle_remove_by_data(filters->window));
+
 		gtk_widget_destroy(GTK_WIDGET(filters->window));
 		filters->window = NULL;
 	}
