@@ -282,7 +282,7 @@ proc Apol_Cond_Bools::close { } {
 	Apol_Cond_Bools::cond_bool_reset_variables
 	
 	Apol_Cond_Bools::cond_bool_remove_listbox_items
-	Apol_Initial_SIDS::enable_comboBox $Apol_Cond_Bools::enable_bool_combo_box $Apol_Cond_Bools::bool_combo_box
+	ApolTop::change_comboBox_state $Apol_Cond_Bools::enable_bool_combo_box $Apol_Cond_Bools::bool_combo_box
 	$Apol_Cond_Bools::resultsbox configure -state normal
 	$Apol_Cond_Bools::resultsbox delete 0.0 end
 	ApolTop::makeTextBoxReadOnly $Apol_Cond_Bools::resultsbox 
@@ -295,21 +295,6 @@ proc Apol_Cond_Bools::close { } {
 #
 proc Apol_Cond_Bools::free_call_back_procs { } {
      
-	return 0
-}
-
-################################################################
-#  ::enable_comboBox
-#
-proc Apol_Cond_Bools::enable_comboBox {cb_value combo_box} {
-	selection clear -displayof $combo_box
-
-	if {$cb_value} {
-		$combo_box configure -state normal -entrybg white
-	} else {
-		$combo_box configure -state disabled -entrybg $ApolTop::default_bg_color
-	}
-	
 	return 0
 }
 
@@ -380,7 +365,7 @@ proc Apol_Cond_Bools::create {nb} {
 	set cb_enable_bool_combo_box [checkbutton [$l_innerFrame getframe].cb_enable_bool_combo_box \
 		-variable Apol_Cond_Bools::enable_bool_combo_box \
 		-onvalue 1 -offvalue 0 -text "Search using boolean variable" \
-		-command {Apol_Cond_Bools::enable_comboBox $Apol_Cond_Bools::enable_bool_combo_box $Apol_Cond_Bools::bool_combo_box}]
+		-command {ApolTop::change_comboBox_state $Apol_Cond_Bools::enable_bool_combo_box $Apol_Cond_Bools::bool_combo_box}]
 			
 	# Action Buttons
 	set ok_button [button [$buttons_f getframe].ok -text OK -width 6 -command {Apol_Cond_Bools::cond_bool_search_bools}]
