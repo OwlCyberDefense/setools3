@@ -38,6 +38,7 @@ typedef struct perm_map {
 	unsigned char	map;
 	char 		weight;		/* the weight (importance) of this perm. (least) 1 - 10 (most); */
 } perm_map_t;
+
 /* There is one class_perm_map_t per object class. */
 typedef struct class_perm_map {
 	unsigned char	mapped;		/* mask */
