@@ -1312,27 +1312,11 @@ int Apol_GetPolicyContents(ClientData clientData, Tcl_Interp *interp, int argc, 
 int Apol_GetPolicyVersionString(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
 {
 	if(policy == NULL) {
-		Tcl_AppendResult(interp,"No current policy file is opened!", (char *) NULL);
+		Tcl_AppendResult(interp, "No current policy file is opened!", (char *) NULL);
 		return TCL_ERROR;
 	}
-	switch (policy->version) {
-	case POL_VER_PRE_11:
-		Tcl_AppendResult(interp, POL_VER_STRING_PRE_11, (char *) NULL);
-		break;
-	case POL_VER_11:
-	/* case POL_VER_12: */ /* (currently synonmous with v.11 */
-		Tcl_AppendResult(interp, POL_VER_STRING_11, (char *) NULL);
-		break;
-	case POL_VER_15:
-		Tcl_AppendResult(interp, POL_VER_STRING_15, (char *) NULL);
-		break;
-	case POL_VER_16:
-		Tcl_AppendResult(interp, POL_VER_STRING_16, (char *) NULL);
-		break;
-	default:
-		Tcl_AppendResult(interp, "Unkown version", (char *) NULL);
-		break;
-	}
+	Tcl_AppendResult(interp, (char *)get_policy_version_string(policy->version), (char *) NULL);
+
 	return TCL_OK;
 }
 
