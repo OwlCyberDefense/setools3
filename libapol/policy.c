@@ -2524,7 +2524,7 @@ int get_rule_lineno(int rule_idx, int rule_type, policy_t *policy)
  * TODO?: ~ is ignored in this
  */
 int extract_types_from_te_rule(int rule_idx, int rule_type, unsigned char whichlist, int **types, 
-		int *num_types, bool_t *self, policy_t *policy)
+		int *num_types, policy_t *policy)
 {
 	ta_item_t *tlist, *t;
 	unsigned char flags;
@@ -2535,9 +2535,6 @@ int extract_types_from_te_rule(int rule_idx, int rule_type, unsigned char whichl
 	if(policy == NULL || types == NULL || num_types == NULL || rule_idx < 0 || !(whichlist & SRC_LIST || whichlist &TGT_LIST))
 		return -1;
 		
-	if (self)
-		*self = FALSE;
-	
 	/* finish validation and get ptr to appropriate type list */
 	switch (rule_type) {
 	case RULE_TE_ALLOW:
@@ -2629,55 +2626,12 @@ int extract_types_from_te_rule(int rule_idx, int rule_type, unsigned char whichl
 			if (find_int_in_array(t->idx, subtracted_types, num_subtracted_types) != -1) {
 				continue;
 			}
-			/* handle self in the target list */
-			if (whichlist & TGT_LIST && t->idx == 0) {
-				int i, r, n, *l;
-				
-				if (self) {
-					/* self is fixed to be idx 0 */
-					if(add_i_to_a(0, num_types, types) != 0) {
-						ret = -1;
-						goto out;
-					}
-					*self = TRUE;
-					continue;	
-				}
-				r = extract_types_from_te_rule(rule_idx, rule_type, SRC_LIST, &l, &n, NULL, policy);
-				if (r == -1) {
-					ret = -1;
-					goto out;
-				}
-				if (r == 2) {
-					if (*types != NULL) {
-						free(*types);
-						*types = NULL;
-					}
-					*num_types = policy->num_types;
-					ret = 2;
-					goto out;
-				}
-				for (i = 0; i < n; i++) {
-					if (b_types[l[i]])
-						continue;
-					if (find_int_in_array(t->idx, subtracted_types, num_subtracted_types) != -1)
-						continue;
-					if(add_i_to_a(l[i], num_types, types) != 0) {
-						ret = -1;
-						free(l);
-						goto out;
-					}
-					b_types[l[i]] = TRUE;
-				}
-				free(l);
-				b_types[t->idx] = TRUE;
-			} else {
-				/* new type...add to list */
-				if(add_i_to_a(t->idx, num_types, types) != 0) {
-					ret = -1;
-					goto out;
-				}
-				b_types[t->idx] = TRUE;
+			/* new type...add to list */
+			if(add_i_to_a(t->idx, num_types, types) != 0) {
+				ret = -1;
+				goto out;
 			}
+			b_types[t->idx] = TRUE;
 		} else if (t->type == IDX_ATTRIB) {
 			/* attribute; need to enumerate all the assoicated types */
 			int i, tidx;
