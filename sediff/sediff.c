@@ -1028,6 +1028,7 @@ int main (int argc, char **argv)
 	  		break;
 	  	case 'C': /* conditionals */
 	  		opts |= POLOPT_COND_POLICY;
+			printf("Conditionals are not currently supported.\n");
 	  		conds = 1;
 	  		break;
 	  	case 'h': /* help */
