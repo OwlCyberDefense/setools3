@@ -11,13 +11,15 @@ int main(int argc, char **argv)
 	
 	init_tests(argc, argv);
 	
+	/* test reading the policy version */
 	fp = fopen("policy/binary_small.17", "r");
-	
 	TEST("open binary policy", fp);
 	ver =  ap_binpol_version(fp);
 	printf("version is %d\n", ver);
 	TEST("getting version", ver);
-
+	fclose(fp);
+	
+	/* reading a binary policy */
 	TEST("load", open_policy("policy/binary_small.17", &policy) == 0);
 
 	free_policy(&policy);

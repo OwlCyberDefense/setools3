@@ -89,12 +89,16 @@ int ap_add_alias_bmap(char *alias, __u32 val, ap_bmaps_t *bm)
 
 int ap_free_alias_bmap(ap_bmaps_t *bm)
 {
-	ap_alias_bmap_t *a;
-	for(a = bm->alias_map; a != NULL; a = a->next) {
+	ap_alias_bmap_t *a, *tmp;
+	for(a = bm->alias_map; a != NULL;) {
 		if(a->name != NULL)
 			free(a->name);
+		tmp = a->next;
+		free(a);
+		a = tmp;
+		
 	}
-	free(bm->alias_map);
+
 	return 0;
 
 }
