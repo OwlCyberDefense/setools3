@@ -430,8 +430,10 @@ static int ap_relabel_object_mode_query(int start_type, unsigned char requested_
 	}
 	for (i = 0; i < num_starting_points; i++) {
 		index = avh_src_type_idx_find(&(policy->avh), starting_points[i].source_type);
+		if (!index)
+			return -1;
 		for (j = 0; j < index->num_nodes; j++) {
-			if(index->nodes[i]->key.rule_type != RULE_TE_ALLOW)
+			if(index->nodes[j]->key.rule_type != RULE_TE_ALLOW)
 				continue;
 			if (index->nodes[j]->key.cls != starting_points[i].object_class)
 				continue;
