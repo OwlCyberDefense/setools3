@@ -174,6 +174,7 @@ int seuser_open_user_db(user_db_t *db, policy_t **policy)
 		
 	/* open policy with apol; all we need are users, roles, and types */
 	rt = open_partial_policy(db->policy_conf, (POLOPT_USERS|POLOPT_ROLES|POLOPT_TYPES), policy);
+	//rt = open_policy(db->policy_conf, policy);
 	if(rt != 0)
 		return rt;
 	/* create user database from the policy  */
