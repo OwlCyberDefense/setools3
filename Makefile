@@ -33,8 +33,8 @@ DEFAULT_LOG_FILE = /var/log/messages
 #
 CC_DEFINES	=
 
-#CFLAGS		= -Wall -O2 $(TCL_INCLUDE) $(CC_DEFINES)
-CFLAGS		= -Wall -g $(TCL_INCLUDE) $(CC_DEFINES)
+CFLAGS		= -Wall -O2 $(TCL_INCLUDE) $(CC_DEFINES)
+#CFLAGS		= -Wall -g $(TCL_INCLUDE) $(CC_DEFINES)
 #CFLAGS		= -Wall -ansi -pedantic -g $(TCL_INCLUDE) $(CC_DEFINES)
 
 # Install directories
@@ -64,11 +64,9 @@ POLICYINSTALLDIRS = seuser
 export CFLAGS CC YACC LEX LINKFLAGS BINDIR INSTALL_LIBDIR LIBS TCL_LIBINC TCL_LIBS MAKE 
 export POLICY_SRC_DIR SRC_POLICY_DIR POLICY_SRC_FILE DEFAULT_LOG_FILE
 
-all:  all-libs all-nogui all-gui
+all:  all-libs apol awish seuserx sepcut seaudit secmds
 
 all-nogui:  corelibs seuser secmds
-
-all-gui: all-libs apol awish seuserx sepcut seaudit
 
 corelibs: libapol libseuser libseaudit
 
@@ -168,7 +166,8 @@ install-seaudit: $(INSTALL_LIBDIR)
 	 
 install-nogui: $(INSTALL_LIBDIR) install-seuser install-secmds
 
-install: install-apol install-seuser install-seuserx install-sepcut install-awish install-secmds install-seaudit
+
+install: install-apol install-seuserx install-sepcut install-awish install-secmds install-seaudit
 
 # Next four targets are to support installation as part of a system
 # install. These targets are deprecated.
