@@ -96,6 +96,18 @@ void seaudit_destroy(seaudit_t *seaudit_app)
 	seaudit_app = NULL;
 }
 
+static void seaudit_change_report_menuitem_state(bool_t disable) 
+{
+	GtkWidget *report_menu;
+
+	report_menu = glade_xml_get_widget(seaudit_app->window->xml, "create_standard_report");
+	g_assert(report_menu);
+	if (disable)
+		gtk_widget_set_sensitive(report_menu , 0); 
+	else 
+		gtk_widget_set_sensitive(report_menu , 1); 
+}
+
 void seaudit_update_status_bar(seaudit_t *seaudit)
 {	
 	char str[STR_SIZE];
@@ -307,6 +319,7 @@ int seaudit_open_log_file(seaudit_t *seaudit, const char *filename)
 	seaudit_set_recent_logs_submenu(&(seaudit->seaudit_conf));
 	save_seaudit_conf_file(&(seaudit->seaudit_conf));
 	log_load_signal_emit();
+	seaudit_change_report_menuitem_state(FALSE);
 	clear_wait_cursor(GTK_WIDGET(seaudit->window->window));
 	return 0;
 }
@@ -853,7 +866,7 @@ int main(int argc, char **argv)
 	seaudit_app = seaudit_init();
 	if (!seaudit_app)
 		exit(1);
-
+	seaudit_change_report_menuitem_state(TRUE);
 	seaudit_set_recent_policys_submenu(&(seaudit_app->seaudit_conf));
 	seaudit_set_recent_logs_submenu(&(seaudit_app->seaudit_conf));
 	seaudit_set_real_time_log_button_state(seaudit_app->seaudit_conf.real_time_log);
