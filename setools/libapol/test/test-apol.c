@@ -23,6 +23,7 @@
 #include "../perm-map.h"
 #include "../policy-io.h"
 #include "../policy-query.h"
+#include "../infoflow.h"
 
 FILE *outfile;
 char *policy_file = NULL;
@@ -242,7 +243,7 @@ int test_disaply_perm_map(classes_perm_map_t *map, policy_t *p)
 	return 0;
 }
 
-int test_print_direct_flow_analysis(policy_t *policy, iflow_query_t* q, int num_answers, iflow_t* answers)
+int test_print_direct_flow_analysis(policy_t *policy, iflow_query_t *q, int num_answers, iflow_t *answers)
 {
 	int i, j, k;
 
@@ -274,7 +275,7 @@ int test_print_direct_flow_analysis(policy_t *policy, iflow_query_t* q, int num_
 	return 0;
 }
 
-void test_print_iflow_path(policy_t *policy, iflow_query_t* q, iflow_path_t *path)
+void test_print_iflow_path(policy_t *policy, iflow_query_t *q, iflow_path_t *path)
 {
 	int i, j, k, path_num = 0;
 	iflow_path_t *cur;
@@ -300,7 +301,7 @@ void test_print_iflow_path(policy_t *policy, iflow_query_t* q, iflow_path_t *pat
 	}
 }
 
-int test_print_transitive_flow_analysis(iflow_query_t* q, iflow_transitive_t* a, policy_t *policy)
+int test_print_transitive_flow_analysis(iflow_query_t *q, iflow_transitive_t* a, policy_t *policy)
 {
 	int i;
 
@@ -344,7 +345,7 @@ int get_iflow_query(iflow_query_t *query, policy_t *policy)
 			fprintf(stderr, "Invalid ending type\n");
 			continue;
 		}
-		if (iflow_query_add_end_type(query, type) != 0)
+		if (analysis_query_add_end_type(&query->end_types, &query->num_end_types, type) != 0)
 			return -1;
 	}
 
@@ -391,13 +392,13 @@ int get_iflow_query(iflow_query_t *query, policy_t *policy)
 					fprintf(stderr, "Invalid object class permission\n");
 					continue;
 				}
-				if (iflow_query_add_obj_class_perm(query, object, perm) != 0) {
+				if (analysis_query_add_obj_class_perm(&query->obj_options, &query->num_obj_options, object, perm) != 0) {
 					fprintf(stderr, "error adding perm\n");
 					return -1;
 				}
 			}
 		} else {
-			if (iflow_query_add_obj_class(query, object) == -1) {
+			if (analysis_query_add_obj_class(&query->obj_options, &query->num_obj_options, object) == -1) {
 				fprintf(stderr, "error adding object class\n");
 				return -1;
 			}
@@ -601,67 +602,138 @@ int main(int argc, char *argv[])
 
 		case '0':
 		{
-			domain_trans_analysis_t *dta;
-			char *start_domain;
-			llist_node_t *x;
-			char buf[1024];
-			int *classes = NULL, *perms = NULL;
-			int num_classes = 0, num_perms = 0;
+			domain_trans_analysis_t *dta = NULL;
+			dta_query_t *dta_query = NULL;
+			char *start_domain = NULL, buf[1024];
+			llist_node_t *x = NULL;
+			int obj, type, i, j, num_perms, *perms = NULL;
 			
+			/* Create the query structure */
+			dta_query = dta_query_create();
+			if (dta_query == NULL) {
+				fprintf(stderr, "Memory error allocating dta query.\n");
+				return -1;
+			}
 			printf("\tenter starting domain type name:  ");
 			fgets(ans, sizeof(ans), stdin);
 			fix_string(ans, sizeof(ans));
 			
-			while (1) {
-				int object;
-				printf("Add object class or f to finish: ");
-				fgets(buf, sizeof(buf), stdin);
-				buf[strlen(buf)-1] = '\0';
-				if (strlen(buf) == 1 && buf[0] == 'f')
-					break;
-				object = get_obj_class_idx(buf, policy);
-				if (object < 0) {
-					fprintf(stderr, "Invalid object class\n");
-					continue;
-				} else if (classes != NULL && check_for_duplicate_object(classes, num_classes, object) >= 0) {
-					fprintf(stderr, "Object class already added.\n");
-					continue;
-				}
-				num_classes += 1;
-				classes = (int *)realloc(classes, (sizeof(int) * num_classes));
-				if (classes == NULL) {
-					fprintf(stderr, "out of memory");
-					return -1;
-				}
-				classes[num_classes - 1] = object;
-						
-				printf("Limit specific permissions (y/n)? ");
-				fgets(buf, sizeof(buf), stdin);
-				if (buf[0] == 'y' || buf[0] == 'Y') {
-					while (1) {
-						int perm;
-						printf("Add object class permission or f to finish: ");
-						fgets(buf, sizeof(buf), stdin);
-						buf[strlen(buf)-1] = '\0';
-						if (strlen(buf) == 1 && buf[0] == 'f')
-							break;
-						perm = get_perm_idx(buf, policy);
-						if (perm < 0 || !is_valid_perm_for_obj_class(policy, object, perm)) {
-							fprintf(stderr, "Invalid object class permission\n");
-							continue;
-						}
-						num_perms += 1;
-						perms = (int *)realloc(perms, (sizeof(int) * num_perms));
-						if (perms == NULL) {
-							fprintf(stderr, "out of memory");
-							return -1;
-						}
-						perms[num_perms - 1] = perm;
-					}
-				} 
+			/* Set the start type for our query */ 					
+			dta_query->start_type = get_type_idx(ans, policy);
+			if (dta_query->start_type < 0) {
+				dta_query_destroy(dta_query);
+				fprintf(stderr, "Invalid starting type.");
+				return -1;
 			}
-	
-			rt = determine_domain_trans(0, ans, num_classes, classes, num_perms, perms, &dta, policy);
+			
+			/* determine if requesting a reverse DT analysis */
+			dta_query->reverse = FALSE;
+			
+			printf("\tSearch for ALL object classes and permissions (y/n)? ");
+			fgets(buf, sizeof(buf), stdin);
+			if (buf[0] == 'n' || buf[0] == 'N') {		
+				while (1) {
+					int object;
+					
+					printf("\tAdd object class or f to finish: ");
+					fgets(buf, sizeof(buf), stdin);
+					buf[strlen(buf)-1] = '\0';
+					if (strlen(buf) == 1 && buf[0] == 'f')
+						break;
+					object = get_obj_class_idx(buf, policy);
+					if (object < 0) {
+						fprintf(stderr, "Invalid object class\n");
+						continue;
+					} 
+					if (analysis_query_add_obj_class(&dta_query->obj_options, &dta_query->num_obj_options, object) == -1) {
+						dta_query_destroy(dta_query);
+						fprintf(stderr, "error adding obj\n");
+						return -1;
+					}
+																				
+					printf("\tLimit specific permissions (y/n)? ");
+					fgets(buf, sizeof(buf), stdin);
+					if (buf[0] == 'y' || buf[0] == 'Y') {
+						while (1) {
+							int perm;
+							printf("\tAdd object class permission or f to finish: ");
+							fgets(buf, sizeof(buf), stdin);
+							buf[strlen(buf)-1] = '\0';
+							if (strlen(buf) == 1 && buf[0] == 'f') {
+								break;
+							}
+							perm = get_perm_idx(buf, policy);
+							if (perm < 0 || !is_valid_perm_for_obj_class(policy, object, perm)) {
+								fprintf(stderr, "Invalid object class permission\n");
+								continue;
+							}
+							if (analysis_query_add_obj_class_perm(&dta_query->obj_options, &dta_query->num_obj_options, object, perm) == -1) {
+								dta_query_destroy(dta_query);
+								fprintf(stderr, "error adding perm to query\n");
+								return -1;
+							}
+						}
+					}
+				}
+			} else {
+				for (i = 0; i < policy->num_obj_classes; i++) {
+					obj = get_obj_class_idx(policy->obj_classes[i].name, policy);
+					if (obj < 0) {
+						fprintf(stderr, "Invalid object class\n");
+						continue;
+					}
+					if (get_obj_class_perms(obj, &num_perms, &perms, policy) == -1) {
+						dta_query_destroy(dta_query);
+						fprintf(stderr, "Error getting class perms.");
+						return -1;	
+					}
+					for (j = 0; j < num_perms; j++) {
+						if (analysis_query_add_obj_class_perm(&dta_query->obj_options, &dta_query->num_obj_options, obj, perms[j]) == -1) {
+							dta_query_destroy(dta_query);
+							fprintf(stderr, "error adding perm to query\n");
+							return -1;
+						}	
+					}
+					free(perms);
+				}
+			}
+			printf("\tSearch for ALL object types (y/n)? ");
+			fgets(buf, sizeof(buf), stdin);
+			if (buf[0] == 'n' || buf[0] == 'N') {		
+				while (1) {
+					printf("\tAdd object type or f to finish: ");
+					fgets(buf, sizeof(buf), stdin);
+					buf[strlen(buf)-1] = '\0';
+					if (strlen(buf) == 1 && buf[0] == 'f')
+						break;
+					type = get_type_idx(buf, policy);
+					if (type < 0) {
+						fprintf(stderr, "invalid type\n");
+						continue;
+					}
+					if (analysis_query_add_end_type(&dta_query->end_types, &dta_query->num_end_types, type) != 0) {
+						dta_query_destroy(dta_query);
+						fprintf(stderr, "Memory error!\n");
+						return -1;
+					}
+				}
+			} else {
+				for (i = 0; i < policy->num_types; i++) {
+					type = get_type_idx(policy->types[i].name, policy);
+					if (type < 0) {
+						/* This is an invalid ending type, so ignore */
+						continue;
+					}
+					if (analysis_query_add_end_type(&dta_query->end_types, &dta_query->num_end_types, type) != 0) {
+						dta_query_destroy(dta_query);
+						fprintf(stderr, "Memory error!\n");
+						return -1;
+					}
+				}
+			}
+			
+			/* Perform the analysis */
+			rt = determine_domain_trans(dta_query, &dta, policy);
 			if(rt == -2) {
 				fprintf(stderr, "\n%s is not a valid type name\n", ans);
 				break;
@@ -670,6 +742,7 @@ int main(int argc, char *argv[])
 				fprintf(stderr, "\n error with analysis\n");
 				break;
 			}
+			dta_query_destroy(dta_query);
 			rt = get_type_name(dta->start_type, &start_domain, policy);
 			if(rt != 0) {
 				free_domain_trans_analysis(dta);
@@ -697,67 +770,35 @@ int main(int argc, char *argv[])
 			break;
 		case '1':
 		{
-			domain_trans_analysis_t *dta;
-			char *start_domain;
+			domain_trans_analysis_t *dta = NULL;
+			dta_query_t *dta_query = NULL;
+			char *start_domain = NULL;
 			llist_node_t *x;
-			char buf[1024];
-			int *classes = NULL, *perms = NULL;
-			int num_classes = 0, num_perms = 0;
+			
+			/* Create the query structure */
+			dta_query = dta_query_create();
+			if (dta_query == NULL) {
+				fprintf(stderr, "Memory error allocating dta query.\n");
+				return -1;
+			}
 			
 			printf("\tenter ending domain type name:  ");
 			fgets(ans, sizeof(ans), stdin);
 			fix_string(ans, sizeof(ans));
 			
-			while (1) {
-				int object;
-				printf("Add object class or f to finish: ");
-				fgets(buf, sizeof(buf), stdin);
-				buf[strlen(buf)-1] = '\0';
-				if (strlen(buf) == 1 && buf[0] == 'f')
-					break;
-				object = get_obj_class_idx(buf, policy);
-				if (object < 0) {
-					fprintf(stderr, "Invalid object class\n");
-					continue;
-				} else if (classes != NULL && check_for_duplicate_object(classes, num_classes, object) >= 0) {
-					fprintf(stderr, "Object class already added.\n");
-					continue;
-				}
-				num_classes += 1;
-				classes = (int *)realloc(classes, (sizeof(int) * num_classes));
-				if (classes == NULL) {
-					fprintf(stderr, "out of memory");
-					return -1;
-				}
-				classes[num_classes - 1] = object;
-						
-				printf("Limit specific permissions (y/n)? ");
-				fgets(buf, sizeof(buf), stdin);
-				if (buf[0] == 'y' || buf[0] == 'Y') {
-					while (1) {
-						int perm;
-						printf("Add object class permission or f to finish: ");
-						fgets(buf, sizeof(buf), stdin);
-						buf[strlen(buf)-1] = '\0';
-						if (strlen(buf) == 1 && buf[0] == 'f')
-							break;
-						perm = get_perm_idx(buf, policy);
-						if (perm < 0 || !is_valid_perm_for_obj_class(policy, object, perm)) {
-							fprintf(stderr, "Invalid object class permission\n");
-							continue;
-						}
-						num_perms += 1;
-						perms = (int *)realloc(perms, (sizeof(int) * num_perms));
-						if (perms == NULL) {
-							fprintf(stderr, "out of memory");
-							return -1;
-						}
-						perms[num_perms - 1] = perm;
-					}
-				} 
+			/* Set the start type for our query */ 					
+			dta_query->start_type = get_type_idx(ans, policy);
+			if (dta_query->start_type < 0) {
+				dta_query_destroy(dta_query);
+				fprintf(stderr, "Invalid starting type.");
+				return -1;
 			}
 			
-			rt = determine_domain_trans(1, ans, num_classes, classes, num_perms, perms, &dta, policy);
+			/* determine if requesting a reverse DT analysis */
+			dta_query->reverse = TRUE;
+									
+			/* Perform the analysis */
+			rt = determine_domain_trans(dta_query, &dta, policy);
 			if(rt == -2) {
 				fprintf(stderr, "\n%s is not a valid type name\n", ans);
 				break;
@@ -766,6 +807,7 @@ int main(int argc, char *argv[])
 				fprintf(stderr, "\n error with analysis\n");
 				break;
 			}
+			dta_query_destroy(dta_query);
 			rt = get_type_name(dta->start_type, &start_domain, policy);
 			if(rt != 0) {
 				free_domain_trans_analysis(dta);
