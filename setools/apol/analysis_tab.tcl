@@ -37,10 +37,11 @@ namespace eval Apol_Analysis {
 	variable totalTabCount		10
 	variable currTabCount		0
 	variable pageNums		0
-	variable tabName		"ResultsTab"
+	# We use the prefix 'Apol_' for all notebook tabnames. Also, tabnames may not have a colon.
+	variable tabName		"Apol_ResultsTab"
+	variable emptyTabID		"Apol_Emptytab"	
 	variable tabText		"Results "
 	variable pageID			""
-	variable emptyTabID		"Emptytab"	
 	variable results		""
 	variable enableUpdate		0
 	variable initTab		0
@@ -340,7 +341,9 @@ proc Apol_Analysis::switch_results_tab { tabID } {
         variable updateButton
         variable newButton
      	variable bClose
-
+	variable tabName
+	
+	set tabID [ApolTop::get_tabname $tabID]
         # First check to see if the user has selected the Empty tab.  If so
 	# do not switch tabs
 	if { $tabID == $Apol_Analysis::emptyTabID } {

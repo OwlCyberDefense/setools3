@@ -33,9 +33,13 @@ namespace eval SEUser_Advanced {
 	variable advanced_Dlg
 	set advanced_Dlg .advanced_Dlg
 	
-	# Miscellaneous variables
+	# Notebook tab IDENTIFIERS; NOTE: We name all tabs after their related namespace qualified names.
+	# We use the prefix 'SEUser_' for all notebook tabnames. Note that the prefix must end with an 
+	# underscore and that that tabnames may NOT have a colon.
 	variable generic_users_tabID		"SEUser_Generic_Users"
 	variable usr_polMgnt_tabID		"SEUser_SELinux_Users"
+	
+	# Miscellaneous variables
 	variable policy_changes_flag		0
 	
 	# Set up a trace on the policy_changes_flag variable in order to monitor 
@@ -147,21 +151,22 @@ proc SEUser_Advanced::createMainButtons { b_frame } {
 #
 #  Description: Checks for and applies any updates 
 # ------------------------------------------------------------------------------
-proc SEUser_Advanced::switch_tab { newPage } {	
+proc SEUser_Advanced::switch_tab { tabID } {	
 	variable notebook
 	
+	set tabID [SEUser_Top::get_tabname $tabID]
 	set raisedPage [$notebook raise]
 	
 	# if selecting same tab do nothing
-	if { $raisedPage == $newPage } {
+	if { $raisedPage == $tabID } {
     		return 0
     	}
     	
     	# Do processing before leaving a tab. 
 	${raisedPage}::leave_tab 
 	# Second let the entering tab do its processing
-	${newPage}::enter_tab 
-	$SEUser_Advanced::notebook raise $newPage
+	${tabID}::enter_tab 
+	$SEUser_Advanced::notebook raise $tabID
 	return 0
 }
 

@@ -15,8 +15,8 @@
 namespace eval Sepct_Test {    
 	variable progressmsg		""
 	variable indicator 		0
-	variable MakeOutputTabName	"MakeOutputTab"
-	variable PolicyConfTabName	"PolicyConf"
+	variable MakeOutputTabName	"Sepct_MakeOutputTab"
+	variable PolicyConfTabName	"Sepct_PolicyConf"
 	
 	# Global widgets
 	variable notebook
@@ -196,19 +196,19 @@ proc Sepct_Test::enter_Tab { } {
 	return 0
 }
 
-
 ############################################################################
 # ::switch_internal_tab
 #  	- called when switching between output and policy.conf tabs
 #	  just sets focus
 #
-proc Sepct_Test::switch_internal_tab { newpage } {
+proc Sepct_Test::switch_internal_tab { tabID } {
     	variable textbox_makeOutput
     	variable textbox_policyConf
     	variable MakeOutputTabName
     	variable policy_conf_opened
-  
-	if { $newpage == $MakeOutputTabName } {
+  	
+  	set tabID [Sepct::get_tabname $tabID]
+	if { $tabID == $MakeOutputTabName } {
 		focus $textbox_makeOutput
 		Sepct::clear_fileStatus
 	} else {
