@@ -623,6 +623,7 @@ int apol_do_relabel_analysis(relabel_set_t **sets, policy_t *policy)
 				goto bail_point;
 		}
 
+/* XXX kill line */if (num_targets > 1) printf("rule %i line %u numtgt=%i\n", i, policy->av_access[i].lineno, num_targets);
 		for (j = 0; j < num_perms; j++) {
 			if (perms[j] == relabelto_idx) {
 				for (k = 0; k < num_subjects; k++) {
@@ -1053,35 +1054,11 @@ static int apol_type_relabel(relabel_set_t *sets, int type, relabel_result_t *re
 			temp_array2 = NULL;
 			size2 = 0;
 		}
-
 		
 		if (size) {
 			retv = apol_add_domain_to_result(res, i, temp_array, size, rules, num_rules);
 			if (retv) 
 				return retv;
-			if (mode == MODE_TO) {
-				for (j = 0; j < sets[i].num_to_rules; j++) {
-					for (k = 0; k < res->num_types; k++) {
-						if (does_av_rule_idx_use_type(sets[i].to_rules[j], RULE_TE_ALLOW, res->types[k], IDX_TYPE, TGT_LIST, 1, policy)) {
-							retv = add_i_to_a(sets[i].to_rules[j], &(res->num_rules), &(res->rules));
-							if (retv == -1)
-								return -1;
-							break;
-						}
-					}
-				}
-			} else {
-				for (j = 0; j < sets[i].num_from_rules; j++) {
-					for (k = 0; k < res->num_types; k++) {
-						if (does_av_rule_idx_use_type(sets[i].from_rules[j], RULE_TE_ALLOW, res->types[k], IDX_TYPE, TGT_LIST, 1, policy)) {
-							retv = add_i_to_a(sets[i].from_rules[j], &(res->num_rules), &(res->rules));
-							if (retv == -1)
-								return -1;
-							break;
-						}
-					}
-				}
-			}
 		}
 	}
 
