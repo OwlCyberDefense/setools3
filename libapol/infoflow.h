@@ -22,6 +22,7 @@
 #include "policy.h"
 #include "perm-map.h"
 #include "util.h"
+#include "analysis.h"
 
 /*
  * All operations are mapped in either an information flow
@@ -52,18 +53,6 @@
 #define IFLOW_COLOR_RED   3
 
 /*
- * iflow_obj_options_t allows the exclusion of individual permissions
- * on object classes or entire object classes. If perms is non-NULL then
- * only those permissions are ignored, otherwise the entire object class
- * is ignored.
- */
-typedef struct iflow_obj_options {
-	int obj_class;   /* index policy->obj_classes */
-	int num_perms;
-	int *perms;    /* index of an object class' permission */
-} iflow_obj_options_t;
-
-/*
  * iflow_query_t encapsulates all of the paramaters of a query. It should
  * always be allocated with iflow_query_create and deallocated with
  * iflow_query_destroy. Limiting by ending_types, obj_classes, intermed types,
@@ -75,18 +64,20 @@ typedef struct iflow_obj_options {
  * appear.
  */
 typedef struct iflow_query {
-	int start_type; /* index into policy->types */
-	unsigned char direction; /* IFLOW_IN/OUT/BOTH/EITHER */
+	int start_type; 			/* index into policy->types */
+	unsigned char direction; 		/* IFLOW_IN/OUT/BOTH/EITHER */
 	int num_end_types;
-	int *end_types; /* indices into policy->types */
-	int num_types; /* number of intermediate types */
-	int *types; /* indices of intermediate types in policy->types */
-	int num_obj_options; /* number of permission options */
-	iflow_obj_options_t *obj_options;
+	int *end_types; 			/* indices into policy->types */
+	int num_types; 				/* number of intermediate types */
+	int *types; 				/* indices of intermediate types in policy->types */
+	int num_obj_options; 			/* number of permission options */
+	analysis_obj_options_t *obj_options; 	/* Allows the exclusion of individual permissions 
+					      	 * or entire object classes. This struct is defined 
+					      	 * in analysis.h */
 } iflow_query_t;
 
 /*
- * iflow_obj_clsas is used to represent an object class in the iflow_t (see below).
+ * iflow_obj_class is used to represent an object class in the iflow_t (see below).
  */
 typedef struct iflow_obj_class {
 	int obj_class; /* index into policy->obj_classes. */
