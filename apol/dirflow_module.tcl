@@ -280,20 +280,28 @@ proc Apol_Analysis_dirflow::load_query_options { file_channel parentDlg } {
 		}
 	}
      	Apol_Analysis_dirflow::config_objects_list_state
+     	set invalid_objs ""
         foreach obj $active_objs {
         	# Search to see if it exists in the current listbox elements. Another policy may be loaded.
         	set idx [lsearch -exact [$Apol_Analysis_dirflow::list_objs get 0 end] $obj]
         	if {$idx != -1} {
             		$Apol_Analysis_dirflow::list_objs selection set $idx
             	} else {
-     			tk_messageBox -icon warning -type ok -title "Warning" \
-				-message "The specified object class $obj does not exist in the currently\
-				loaded policy. It will be ignored." \
-				-parent $parentDlg
+     			set invalid_objs [lappend invalid_objs $obj]
      		}  
             	# If it doesn't exist, then simply ignore.
         }
-	        
+	# Display a popup with a list of invalid objects
+	if {$invalid_objs != ""} {
+		foreach obj $invalid_objs {
+			set objs_str [append objs_str "$obj\n"]	
+		}
+		tk_messageBox -icon warning -type ok -title "Invalid Objects" \
+			-message "The following objects do not exist in the currently \
+			loaded policy and were ignored.\n\n$objs_str" \
+			-parent $parentDlg
+	}
+		        
 	Apol_Analysis_dirflow::config_endtype_state
 	Apol_Analysis_dirflow::config_attrib_comboBox_state
 	
