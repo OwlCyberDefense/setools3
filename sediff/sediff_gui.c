@@ -935,14 +935,17 @@ static void txt_view_raise_policy_tab_goto_line(unsigned long line, int whichvie
 	while (!gtk_text_iter_ends_line(&end_iter))	
 		gtk_text_iter_forward_char(&end_iter);
 
-	gtk_text_buffer_apply_tag(buffer,highlight_tag,&iter,&end_iter);
-
+	
 	gtk_text_view_scroll_to_iter(text_view, &iter, 0.0, TRUE, 0.0, 0.5);
 
-	gtk_text_iter_backward_line(&iter);
-	gtk_text_buffer_place_cursor(buffer, &iter);
-
 	gtk_text_view_set_cursor_visible(text_view, TRUE);
+//	gtk_text_iter_backward_line(&iter);
+	gtk_text_buffer_place_cursor(buffer, &iter);
+//	gtk_text_buffer_apply_tag(buffer,highlight_tag,&iter,&end_iter);
+	gtk_text_buffer_select_range(buffer,&iter,&end_iter);
+
+
+
 	return;
 }
 
@@ -1017,9 +1020,6 @@ static gboolean txt_view_on_policy2_link_event(GtkTextTag *tag, GObject *event_o
 
 	return FALSE;
 }
-
-
-
 
 /* set the cursor to a hand when user scrolls over a line number in when displaying te diff */
 gboolean txt_view_on_text_view_motion(GtkWidget *widget, GdkEventMotion *event, gpointer user_data)
@@ -1099,7 +1099,7 @@ static void sediff_populate_key_buffer()
 	GtkTextView *txt_view;
 	GtkTextBuffer *txt;
 	GString *string = g_string_new("");
-	GtkTextTag *added_tag,*removed_tag,*changed_tag,*mono_tag;
+	GtkTextTag *added_tag,*removed_tag,*changed_tag,*mono_tag,*header_tag;
 	GtkTextTagTable *table;
 	GtkTextIter iter,start,end;
 
@@ -1140,7 +1140,20 @@ static void sediff_populate_key_buffer()
 						      "family", "monospace", 
 						      NULL);
 	}
+	header_tag = gtk_text_tag_table_lookup(table, "header-tag");
+	if(!header_tag) {
+		header_tag = gtk_text_buffer_create_tag (txt, "header-tag",
+							 "family", "monospace",
+							 "weight", PANGO_WEIGHT_BOLD, 
+							 "underline", PANGO_UNDERLINE_SINGLE,NULL); 
+	}
+
+
 	gtk_text_buffer_get_start_iter(txt,&iter);
+	g_string_printf(string," TE Rules Key\n\n");
+	gtk_text_buffer_insert_with_tags_by_name(txt, &iter, string->str, 
+						 -1, "header-tag", NULL);
+
 	g_string_printf(string," Added(+):\n  Items added\n  in policy 2.\n\n");
 	gtk_text_buffer_insert_with_tags_by_name(txt, &iter, string->str, 
 						 -1, "added-tag", NULL);
@@ -1511,6 +1524,14 @@ static int txt_buffer_insert_te_line(GtkTextBuffer *txt, GtkTextIter *iter,
 		free(rule); 
 		g_strfreev(split_line_array); 
 	} 		
+
+	if (cur->flags & AVH_FLAG_COND) {
+		if (get_cond_bool_name(cur->cond_expr,&rule,policy) < 0)
+			return -1;
+		g_string_printf(string," [ %s ]",rule);
+		gtk_text_buffer_insert_with_tags(txt, iter, string->str, -1, colortag, NULL); 
+		free(rule);
+	}	
        	gtk_text_buffer_insert(txt, iter, "\n", -1); 
 	return 0;
 	
@@ -1835,7 +1856,6 @@ static int txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_ite
 
 	}
 
-//	gtk_text_buffer_get_iter_at_mark(txt,&added_iter,added_mark);
 	gtk_text_buffer_get_start_iter(txt,&added_iter);
 	g_string_printf(string, "\nTE RULES ADDED: %d\n",sediff_app->summary.te_rules.added);
 	gtk_text_buffer_insert_with_tags_by_name(txt, &added_iter, string->str,-1, "header-tag", NULL); 
@@ -1843,8 +1863,6 @@ static int txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_ite
 	gtk_text_buffer_get_iter_at_mark(txt,&added_iter,holder_mark);
 	g_string_printf(string, "\nTE RULES CHANGED: %d \n",sediff_app->summary.te_rules.changed);
 	gtk_text_buffer_insert_with_tags_by_name(txt, &added_iter, string->str,-1, "header-tag", NULL); 
-
-
 
 	if (fulltab)
 		free(fulltab);
@@ -1991,8 +2009,10 @@ static void txt_buffer_insert_summary_results()
 	GtkTextIter start,end,iter;
 	GtkTextTagTable *table;
 	GString *string = g_string_new("");
-	GtkTextTag *header_tag;
+	GtkTextTag *header_tag, *header_removed_tag = NULL, *header_changed_tag = NULL;
+	GtkTextTag *header_added_tag = NULL, *main_header_tag;
 
+	
 	txt = sediff_app->summary_buffer;
 
 	/* Clear the buffer */
@@ -2002,15 +2022,45 @@ static void txt_buffer_insert_summary_results()
 
 	table = gtk_text_buffer_get_tag_table(txt);
 	header_tag = gtk_text_tag_table_lookup(table, "header-tag");	
-	if (!header_tag) {
-	        header_tag = gtk_text_buffer_create_tag(txt, "header-tag",
+	if(!header_tag) {
+		header_tag = gtk_text_buffer_create_tag (txt, "header-tag",
+						      "family", "monospace",
+							 "weight", PANGO_WEIGHT_BOLD,
+							 "underline", PANGO_UNDERLINE_SINGLE,
+							 NULL); 
+	}
+	main_header_tag = gtk_text_tag_table_lookup(table, "main-header-tag");	
+	if (!main_header_tag) {
+	        main_header_tag = gtk_text_buffer_create_tag(txt, "main-header-tag",
 							 "style", PANGO_STYLE_ITALIC,
 							 "weight", PANGO_WEIGHT_BOLD, 
 							NULL); 	      
 	}
+	header_removed_tag = gtk_text_tag_table_lookup(table, "header-removed-tag");
+	if(!header_removed_tag) {
+		header_removed_tag = gtk_text_buffer_create_tag (txt, "header-removed-tag",
+							 "family", "monospace",
+							 "foreground", "red",
+							 "weight", PANGO_WEIGHT_BOLD, NULL); 
+	}
+	header_added_tag = gtk_text_tag_table_lookup(table, "header-added-tag");
+	if(!header_added_tag) {
+		header_added_tag = gtk_text_buffer_create_tag (txt, "header-added-tag",
+							 "family", "monospace",
+							 "foreground", "dark green",
+							 "weight", PANGO_WEIGHT_BOLD, NULL); 
+	}
+	header_changed_tag = gtk_text_tag_table_lookup(table, "header-changed-tag");
+	if(!header_changed_tag) {
+		header_changed_tag = gtk_text_buffer_create_tag (txt, "header-changed-tag",
+							 "family", "monospace",
+							 "foreground", "dark blue",
+							 "weight", PANGO_WEIGHT_BOLD, NULL); 
+	}
+
 	gtk_text_buffer_get_start_iter(txt,&iter);
 	g_string_printf(string,"Policy Difference Statistics\n\n");
-	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_tag,NULL);
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,main_header_tag,NULL);
 	
 	g_string_printf(string,"Policy Filenames:\n");
 	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_tag,NULL);
@@ -2020,60 +2070,98 @@ static void txt_buffer_insert_summary_results()
 	gtk_text_buffer_insert(txt,&iter,string->str,-1);
 
 
+	
 
-	g_string_printf(string,"Classes and Permissions:\n");
+	g_string_printf(string,"Classes:\n");
 	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_tag,NULL);
-	g_string_printf(string,"\tClasses:\n\t\tAdded: %d\n\t\tRemoved:%d\n\t\tChanged %d\n\n",
-			sediff_app->summary.classes.added,sediff_app->summary.classes.removed,sediff_app->summary.classes.changed);
-	gtk_text_buffer_insert(txt,&iter,string->str,-1);
-	g_string_printf(string,"\tCommons:\n\t\tAdded: %d\n\t\tRemoved:%d\n\t\tChanged %d\n\n",
-			sediff_app->summary.commons.added,sediff_app->summary.commons.removed,sediff_app->summary.commons.changed);
-	gtk_text_buffer_insert(txt,&iter,string->str,-1);
-	g_string_printf(string,"\tPermissions:\n\t\tAdded: %d\n\t\tRemoved:%d\n\n",
-			sediff_app->summary.permissions.added,sediff_app->summary.permissions.removed);
-	gtk_text_buffer_insert(txt,&iter,string->str,-1);
+	g_string_printf(string,"\tAdded: %d\n",sediff_app->summary.classes.added);
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_added_tag,NULL);
+	g_string_printf(string,"\tRemoved: %d\n",sediff_app->summary.classes.removed);
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_removed_tag,NULL);
+	g_string_printf(string,"\tChanged: %d\n",sediff_app->summary.classes.changed);
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_changed_tag,NULL);
+
+	g_string_printf(string,"Commons:\n");
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_tag,NULL);
+	g_string_printf(string,"\tAdded: %d\n",sediff_app->summary.commons.added);
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_added_tag,NULL);
+	g_string_printf(string,"\tRemoved: %d\n",sediff_app->summary.commons.removed);
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_removed_tag,NULL);
+	g_string_printf(string,"\tChanged: %d\n",sediff_app->summary.commons.changed);
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_changed_tag,NULL);
+
+	g_string_printf(string,"Permissions:\n");
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_tag,NULL);
+	g_string_printf(string,"\tAdded: %d\n",sediff_app->summary.permissions.added);
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_added_tag,NULL);
+	g_string_printf(string,"\tRemoved: %d\n",sediff_app->summary.permissions.removed);
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_removed_tag,NULL);
+	g_string_printf(string,"\tChanged: %d\n",sediff_app->summary.permissions.changed);
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_changed_tag,NULL);
 
 	g_string_printf(string,"Types:\n");
 	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_tag,NULL);
-	g_string_printf(string,"\tTypes:\n\t\tAdded: %d\n\t\tRemoved:%d\n\t\tChanged %d\n\n",
-			sediff_app->summary.types.added,sediff_app->summary.types.removed,sediff_app->summary.types.changed);
-	gtk_text_buffer_insert(txt,&iter,string->str,-1);
+	g_string_printf(string,"\tAdded: %d\n",sediff_app->summary.types.added);
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_added_tag,NULL);
+	g_string_printf(string,"\tRemoved: %d\n",sediff_app->summary.types.removed);
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_removed_tag,NULL);
+	g_string_printf(string,"\tChanged: %d\n",sediff_app->summary.types.changed);
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_changed_tag,NULL);
 
 	g_string_printf(string,"Attributes:\n");
 	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_tag,NULL);
-	g_string_printf(string,"\tAttributes:\n\t\tAdded: %d\n\t\tRemoved:%d\n\t\tChanged %d\n\n",
-			sediff_app->summary.attributes.added,sediff_app->summary.attributes.removed,sediff_app->summary.attributes.changed);
-	gtk_text_buffer_insert(txt,&iter,string->str,-1);
+	g_string_printf(string,"\tAdded: %d\n",sediff_app->summary.attributes.added);
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_added_tag,NULL);
+	g_string_printf(string,"\tRemoved: %d\n",sediff_app->summary.attributes.removed);
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_removed_tag,NULL);
+	g_string_printf(string,"\tChanged: %d\n",sediff_app->summary.attributes.changed);
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_changed_tag,NULL);
 
 	g_string_printf(string,"Roles:\n");
 	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_tag,NULL);
-	g_string_printf(string,"\tRoles:\n\t\tAdded: %d\n\t\tRemoved:%d\n\t\tChanged %d\n\n",
-			sediff_app->summary.roles.added,sediff_app->summary.roles.removed,sediff_app->summary.roles.changed);
-	gtk_text_buffer_insert(txt,&iter,string->str,-1);
+	g_string_printf(string,"\tAdded: %d\n",sediff_app->summary.roles.changed);
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_added_tag,NULL);
+	g_string_printf(string,"\tRemoved: %d\n",sediff_app->summary.roles.removed);
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_removed_tag,NULL);
+	g_string_printf(string,"\tChanged: %d\n",sediff_app->summary.roles.changed);
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_changed_tag,NULL);
 
 	g_string_printf(string,"Users:\n");
 	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_tag,NULL);
-	g_string_printf(string,"\tUsers:\n\t\tAdded: %d\n\t\tRemoved:%d\n\t\tChanged %d\n\n",
-			sediff_app->summary.users.added,sediff_app->summary.users.removed,sediff_app->summary.users.changed);
-	gtk_text_buffer_insert(txt,&iter,string->str,-1);
+	g_string_printf(string,"\tAdded: %d\n",sediff_app->summary.users.added);
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_added_tag,NULL);
+	g_string_printf(string,"\tRemoved: %d\n",sediff_app->summary.users.removed);
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_removed_tag,NULL);
+	g_string_printf(string,"\tChanged: %d\n",sediff_app->summary.users.changed);
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_changed_tag,NULL);
+
 
 	g_string_printf(string,"Booleans:\n");
 	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_tag,NULL);
-	g_string_printf(string,"\tBooleans:\n\t\tAdded: %d\n\t\tRemoved:%d\n\t\tChanged %d\n\n",
-			sediff_app->summary.booleans.added,sediff_app->summary.booleans.removed,sediff_app->summary.booleans.changed);
-	gtk_text_buffer_insert(txt,&iter,string->str,-1);
+	g_string_printf(string,"\tAdded: %d\n",sediff_app->summary.booleans.added);
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_added_tag,NULL);
+	g_string_printf(string,"\tRemoved: %d\n",sediff_app->summary.booleans.removed);
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_removed_tag,NULL);
+	g_string_printf(string,"\tChanged: %d\n",sediff_app->summary.booleans.changed);
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_changed_tag,NULL);
 
 	g_string_printf(string,"TE Rules:\n");
 	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_tag,NULL);
-	g_string_printf(string,"\tTE Rules:\n\t\tAdded: %d\n\t\tRemoved:%d\n\t\tChanged %d\n\n",
-			sediff_app->summary.te_rules.added,sediff_app->summary.te_rules.removed,sediff_app->summary.te_rules.changed);
-	gtk_text_buffer_insert(txt,&iter,string->str,-1);
+	g_string_printf(string,"\tAdded: %d\n",sediff_app->summary.te_rules.added);
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_added_tag,NULL);
+	g_string_printf(string,"\tRemoved: %d\n",sediff_app->summary.te_rules.removed);
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_removed_tag,NULL);
+	g_string_printf(string,"\tChanged: %d\n",sediff_app->summary.te_rules.changed);
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_changed_tag,NULL);
 
 	g_string_printf(string,"RBAC:\n");
 	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_tag,NULL);
-	g_string_printf(string,"\tRBAC:\n\t\tAdded: %d\n\t\tRemoved:%d\n\t\tChanged %d\n\n",
-			sediff_app->summary.rbac.added,sediff_app->summary.rbac.removed,sediff_app->summary.rbac.changed);
-	gtk_text_buffer_insert(txt,&iter,string->str,-1);
+	g_string_printf(string,"\tAdded: %d\n",sediff_app->summary.rbac.added);
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_added_tag,NULL);
+	g_string_printf(string,"\tRemoved: %d\n",sediff_app->summary.rbac.removed);
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_removed_tag,NULL);
+	g_string_printf(string,"\tChanged: %d\n",sediff_app->summary.rbac.changed);
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_changed_tag,NULL);
 
 	g_string_free(string,TRUE);
 }
