@@ -376,7 +376,7 @@ proc Apol_Analysis_flowassert::enable_line_editing {} {
 }
 
 # Deletes the contents of the assertion file text box, and thus
-# consequently clearing the file.
+# consequently clears the file.
 proc Apol_Analysis_flowassert::clear_assert_file {} {
     variable asserts ""
     sync_asserts_to_text
@@ -453,11 +453,13 @@ proc Apol_Analysis_flowassert::create_assert_wizard_dlg {{origline {}}} {
         return
     }
 
-    variable assert_wiz_mode
-    variable assert_wiz_line
-    variable assert_wiz_weight
+    variable wiz
+    array unset wiz
+    variable wiz_var
+    array unset wiz_var
 
-    # create a modal dialog
+    # create a modal dialog to hold the wizard
+    destroy .assertfile_wizard_dlg
     set assert_wizard_dlg [Dialog .assertfile_wizard_dlg -homogeneous 1 \
                                -spacing 20 -anchor c -cancel 2 -modal global \
                                -parent $assertfile_t -separator 0 \
@@ -465,51 +467,49 @@ proc Apol_Analysis_flowassert::create_assert_wizard_dlg {{origline {}}} {
     set f [$assert_wizard_dlg getframe]
     set topf [frame $f.topf]
 
-    variable assert_wiz_type_cbs ""
-    variable assert_wiz_objclass_lbs ""
     set start_tf [TitleFrame $topf.start_tf -text "Starting Types"]
-    create_type_panel [$start_tf getframe] start assert_wiz_start_type
+    create_type_panel [$start_tf getframe] start
     set end_tf [TitleFrame $topf.end_tf -text "Ending Types"]
-    create_type_panel [$end_tf getframe] end assert_wiz_end_type
-    set via_tf [TitleFrame $topf.via_tf -text "Exceptions Type"]
-    create_type_panel [$via_tf getframe] via assert_wiz_via_type
+    create_type_panel [$end_tf getframe] to
+    set wiz(via_tf) [TitleFrame $topf.via_tf -text "Exceptions Type"]
+    create_type_panel [$wiz(via_tf) getframe] via
     
     set f0 [frame $topf.f0]
     set mode_tf [TitleFrame $f0.tf -text "Assertion Mode"]
     set noflow_rb [radiobutton [$mode_tf getframe].noflow_rb \
                   -text "noflow" -value "noflow" \
-                  -variable Apol_Analysis_flowassert::assert_wiz_mode \
-                  -command [namespace code [list set_mode "noflow" $via_tf]]]
+                  -variable Apol_Analysis_flowassert::wiz_var(mode) \
+                  -command [namespace code [list set_mode "noflow"]]]
     set mustflow_rb [radiobutton [$mode_tf getframe].mustflow_rb \
                   -text "mustflow" -value "mustflow" \
-                  -variable Apol_Analysis_flowassert::assert_wiz_mode \
-                  -command [namespace code [list set_mode "mustflow" $via_tf]]]
+                  -variable Apol_Analysis_flowassert::wiz_var(mode) \
+                  -command [namespace code [list set_mode "mustflow"]]]
     set onlyflow_rb [radiobutton [$mode_tf getframe].onlyflow_rb \
                   -text "onlyflow" -value "onlyflow" \
-                  -variable Apol_Analysis_flowassert::assert_wiz_mode \
-                  -command [namespace code [list set_mode "onlyflow" $via_tf]]]
+                  -variable Apol_Analysis_flowassert::wiz_var(mode) \
+                  -command [namespace code [list set_mode "onlyflow"]]]
     pack $noflow_rb $mustflow_rb $onlyflow_rb -anchor w -side top
     set lf [LabelFrame $f0.lf -text "Minimum Weight: " -side left]
     set weight_sb [SpinBox [$lf getframe].weight_sb -font $ApolTop::text_font \
                     -width 3 -entrybg white -range [list 1 10 1] \
                     -editable 0 -justify right \
-                    -textvariable Apol_Analysis_flowassert::assert_wiz_weight \
-                    -modifycmd [namespace code set_weight]]
+                    -textvariable Apol_Analysis_flowassert::wiz_var(weight) \
+                    -modifycmd [namespace code sync_wiz_lbs_to_line]]
     pack $weight_sb -expand 1 -fill both
     pack $mode_tf -expand 1 -fill both -pady 20
     pack $lf -expand 1 -fill x -pady 20
     pack $f0 -expand 0 -fill none -side left -padx 10
-    pack $start_tf $end_tf $via_tf -expand 1 -fill both -side left
+    pack $start_tf $end_tf $wiz(via_tf) -expand 1 -fill both -side left
     pack $topf -side top -expand 1 -fill both
     
     set rule_e [LabelEntry $f.rule_e -width 80 \
                    -font $ApolTop::text_font -entrybg white \
-                    -label "Assertion Line: " \
-                    -textvariable Apol_Analysis_flowassert::assert_wiz_line]
+                    -label "Assertion Line: " -editable 0 \
+                    -textvariable Apol_Analysis_flowassert::wiz_var(line)]
     pack $rule_e -side top -expand 0 -fill x -padx 20 -pady 20 -anchor center
 
     $assert_wizard_dlg add -text "Reset Line" \
-        -command [namespace code [list reset_wizard $via_tf $origline]]
+        -command [namespace code [list reset_wizard $origline]]
     if {$origline == ""} { 
         $assert_wizard_dlg add -text "Add Line" \
             -command [namespace code add_assertion]
@@ -520,7 +520,7 @@ proc Apol_Analysis_flowassert::create_assert_wizard_dlg {{origline {}}} {
     $assert_wizard_dlg add -text "Cancel"
     
     populate_lists 1
-    reset_wizard $via_tf $origline
+    reset_wizard $origline
 
     set result [$assert_wizard_dlg draw]
     destroy $assert_wizard_dlg
@@ -535,18 +535,20 @@ proc Apol_Analysis_flowassert::create_assert_wizard_dlg {{origline {}}} {
 
 # Creates an individual panel {starting, ending, via/exceptions} for
 # the assertion wizard.
-proc Apol_Analysis_flowassert::create_type_panel {type_panel type_name type_var} {
+proc Apol_Analysis_flowassert::create_type_panel {type_panel type_name} {
+    variable wiz
+    variable wiz_var
+    
     # add the type selection radiobutton + ComboBox
     set type_star_rb [radiobutton $type_panel.star_cb -value "*" \
                           -text "Any Type" \
-                          -variable Apol_Analysis_flowassert::assert_wiz_${type_name}_type_rb]
+                          -variable Apol_Analysis_flowassert::wiz_var($type_name,type,rb)]
     pack $type_star_rb -anchor w -side top
-    
     set type_names_f [frame $type_panel.type_names_f]
     set type_names_l [label $type_names_f.names_l -text "Type Names:"]
     set type_names_cb [ComboBox $type_names_f.names_cb -width 24 \
                            -editable 1 -entrybg white -exportselection 0 \
-                           -textvariable Apol_Analysis_flowassert::assert_wiz_${type_name}_type_name]
+                           -textvariable Apol_Analysis_flowassert::wiz_var($type_name,type,name)]
     bindtags $type_names_cb.e [linsert [bindtags $type_names_cb.e] 3 ${type_name}_names_tags]
     bind ${type_name}_names_tags <KeyPress> [list ApolTop::_create_popup $type_names_cb %W %K]
     pack $type_names_l -expand 0 -side top
@@ -554,55 +556,73 @@ proc Apol_Analysis_flowassert::create_type_panel {type_panel type_name type_var}
     pack $type_names_f -expand 0 -fill none -side top -pady 2
 
     # add bindings between these so that modifying one clears the other
-    set bindcmd [namespace code [list set_type $type_star_rb $type_names_cb $type_var star ""]]
+    set bindcmd [namespace code [list set_type $type_star_rb $type_names_cb $type_name star ""]]
     $type_star_rb configure -command $bindcmd
-    set bindcmd [namespace code [list set_type $type_star_rb $type_names_cb $type_var name %P]]
+    set bindcmd [namespace code [list set_type $type_star_rb $type_names_cb $type_name name %P]]
     $type_names_cb configure -modifycmd $bindcmd -vcmd $bindcmd -validate key
 
-    pack [Separator $type_panel.strut0 -orient horizontal] \
-        -expand 0 -fill x -side top -pady 10
+#    pack [Separator $type_panel.strut0 -orient horizontal] \
+#        -expand 0 -fill x -side top -pady 10
 
     # add the object selection listbox + Entry
-    set class_var assert_wiz_${type_name}_class
-    pack [label $type_panel.objs_l -text "Object Classes:"] -expand 0
+#    pack [label $type_panel.objs_l -text "Object Classes:"] -expand 0
     set objs_sw [ScrolledWindow $type_panel.objs_sw -auto horizontal]
-    set objs_lb [listbox [$objs_sw getframe].objs_lb -selectmode multiple \
+    set wiz($type_name,objs_lb) [listbox [$objs_sw getframe].objs_lb -selectmode multiple \
                      -height 5 -highlightthickness 0 -exportselection 0 \
                      -setgrid 0 -background white \
                      -listvariable Apol_Analysis_flowassert::assert_wizard_objclasses]
-    $objs_sw setwidget $objs_lb
+    $objs_sw setwidget $wiz($type_name,objs_lb)
 #    pack $objs_sw -expand 0 -fill both
     set objs_e [Entry $type_panel.objs_e -background white -validate key \
-                    -textvariable Apol_Analysis_flowassert::${class_var}]
-    $objs_e configure -vcmd [namespace code [list select_class $objs_lb $class_var $objs_e %P]]
+                    -textvariable Apol_Analysis_flowassert::wiz_var($type_name,class)]
+    $objs_e configure -vcmd [namespace code [list select_class $type_name $objs_e %P]]
 #    pack $objs_e -expand 0 -fill x -pady 2
-    bind $objs_lb <<ListboxSelect>> [namespace code [list select_class $objs_lb $class_var $objs_lb ""]]
+    bind $wiz($type_name,objs_lb) <<ListboxSelect>> [namespace code [list select_class $type_name $wiz($type_name,objs_lb) ""]]
     
 #    pack [Separator $type_panel.strut1 -orient horizontal] \
 # -expand 0 -fill x -side top -pady 10
 
     # add the include / exclude radio buttons
-    set include_var assert_wiz_${type_name}_include
     set include_rb [radiobutton $type_panel.include_rb -value "include" \
                         -text "Include Type/Object" \
-                        -variable Apol_Analysis_flowassert::$include_var]
+                        -variable Apol_Analysis_flowassert::wiz_var($type_name,include)]
     set exclude_rb [radiobutton $type_panel.exclude_rb -value "exclude" \
                         -text "Exclude Type/Object" \
-                        -variable Apol_Analysis_flowassert::$include_var]
-#    pack $include_rb $exclude_rb -anchor w -side top
+                        -variable Apol_Analysis_flowassert::wiz_var($type_name,include)]
+    pack $include_rb $exclude_rb -anchor w -side top
 
-    # FIX ME: temporary patch for now for lack of object classes
-    pack [label $type_panel.nobj -text "Object classes are\ncurrently disabled." -bd 1 -relief sunken -padx 5 -pady 5] -pady 5 -expand 0 -fill none
+    set add_replace_f [frame $type_panel.add_replace_f]
+    set add_b [button $add_replace_f.add_b -text "Add"]
+    set wiz($type_name,replace_b) [button $add_replace_f.replace_b -text "Replace"]
+    grid $add_b $wiz($type_name,replace_b) -padx 5 -sticky ew
+    grid columnconfigure $add_replace_f 0 -weight 1 -uniform 1
+    grid columnconfigure $add_replace_f 1 -weight 1 -uniform 1
+    pack $add_replace_f -expand 0 -fill x -pady 5 -side top
     
-    pack [button $type_panel.add_b -text "Add" \
-              -command [namespace code [list add_type $type_var $type_name $class_var $include_var]]] \
-        -expand 0 -pady 10 -side bottom
+    pack [Separator $type_panel.strut2 -orient horizontal] \
+        -expand 0 -fill x -side top -pady 10
+
+    set id_list_sw [ScrolledWindow $type_panel.id_list_sw -auto horizontal]
+    set id_list_lb [listbox [$id_list_sw getframe].id_list_lb \
+                        -selectmode browse -height 4 -exportselection 0 \
+                        -listvariable Apol_Analysis_flowassert::wiz_var($type_name) \
+                        -background white]
+    set wiz($type_name,id_lb) $id_list_lb
+    $id_list_sw setwidget $id_list_lb
+    pack $id_list_sw -side top -expand 1 -fill both
+    set wiz($type_name,remove_b) [button $type_panel.remove_b -text "Remove"]
+    $wiz($type_name,remove_b) configure -command [namespace code [list remove_type $id_list_lb $type_name]]
+    pack $wiz($type_name,remove_b) -expand 0 -pady 5 -side top
+
+    $add_b configure -command [namespace code [list add_replace_type $id_list_lb $type_name 1]]
+    $wiz($type_name,replace_b) configure -command [namespace code [list add_replace_type $id_list_lb $type_name 0]]
+    bind $id_list_lb <<ListboxSelect>> [namespace code [list select_id_item $id_list_lb $type_name]]
+    bind $id_list_lb <Button-1> [namespace code [list id_list_lb_click %W $type_name %y]]
+    select_id_item $id_list_lb $type_name
     
-    # add the widgets' paths list
-    variable assert_wiz_type_cbs
-    lappend assert_wiz_type_cbs $type_names_cb
-    variable assert_wiz_objclass_lbs
-    lappend assert_wiz_objclass_lbs $objs_lb
+    # add the widgets' paths to a list, to be read by [populate_lists]
+    lappend wiz(type_cbs) $type_names_cb
+    lappend wiz(objclass_lbs) $wiz($type_name,objs_lb)
 }
 
 # Safely destroys a modal dialog.
@@ -616,21 +636,21 @@ proc Apol_Analysis_flowassert::destroy_wizard_dlg {dlg} {
 # upon wizard dialog creation, when opening a policy, and when closing
 # a policy.
 proc Apol_Analysis_flowassert::populate_lists {add_items} {
-    variable assert_wiz_type_cbs
-    variable assert_wiz_objclass_lbs
+    variable wiz
+    
     if $add_items {
-        foreach type_cb $assert_wiz_type_cbs {
+        foreach type_cb $wiz(type_cbs) {
             $type_cb configure -values [lsort [concat $Apol_Types::typelist $Apol_Types::attriblist]]
         }
-        foreach objclass_lb $assert_wiz_objclass_lbs {
+        foreach objclass_lb $wiz(objclass_lbs) {
             set var [$objclass_lb cget -listvariable]
             set $var $Apol_Class_Perms::class_list
         }
     } else {
-        foreach type_cb $assert_wiz_type_cbs {
+        foreach type_cb $wiz(type_cbs) {
             $type_cb configure -values {}
         }
-        foreach objclass_lb $assert_wiz_objclass_lbs {
+        foreach objclass_lb $wiz(objclass_lbs) {
             set var [$objclass_lb cget -listvariable]
             set $var {}
         }
@@ -640,48 +660,37 @@ proc Apol_Analysis_flowassert::populate_lists {add_items} {
 # Callback when a user clicks on a mode radiobutton {noflow, mustflow,
 # onlyflow}.  Updates the title of the via_tf frame.  Updates the mode
 # listed in the current assertion line.
-proc Apol_Analysis_flowassert::set_mode {newmode via_tf} {
-    variable assert_wiz_line
+proc Apol_Analysis_flowassert::set_mode {newmode} {
+    variable wiz
     if {$newmode == "noflow"} {
-        $via_tf configure -text "Exception Types (optional)"
+        $wiz(via_tf) configure -text "Exception Types (optional)"
     } elseif {$newmode == "mustflow"} {
-        $via_tf configure -text "Via Types (optional)"
+        $wiz(via_tf) configure -text "Via Types (optional)"
     } else {
-        $via_tf configure -text "Via Types (required)"
+        $wiz(via_tf) configure -text "Via Types (required)"
     }
-    set assert_wiz_line [concat $newmode [lrange $assert_wiz_line 1 end]]
-}
-
-# Callback whenever a user selects a new weight from the spinner.
-# Updates the weighting value in the current assertion line.
-proc Apol_Analysis_flowassert::set_weight {} {
-    variable assert_wiz_line
-    variable assert_wiz_weight
-    if {[llength $assert_wiz_line] >= 5} {
-        set assert_wiz_line [lrange $assert_wiz_line 0 end-1]
-        lappend assert_wiz_line $assert_wiz_weight
-    } elseif {[llength $assert_wiz_line] == 4} {
-        lappend assert_wiz_line $assert_wiz_weight
-    }
+    sync_wiz_lbs_to_line
 }
 
 # Callback whenever the user selects a type.  Disables the other
 # widgets.  Sets the internal variable to be equal to the name of the
 # type.
-proc Apol_Analysis_flowassert::set_type {star_rb names_cb type_var which newvalue} {
-    variable $type_var
+proc Apol_Analysis_flowassert::set_type {star_rb names_cb type_name which newvalue} {
+    variable wiz_var
     switch -- $which {
         star {
             $star_rb select
             $names_cb configure -text ""
-            set $type_var "*"
+            set wiz_var($type_name,type) "*"
         }
         name {
-            $star_rb deselect
-            if {$newvalue == "%P"} {
-                set newvalue [$names_cb cget -text]
+            if {$newvalue != ""} {
+                $star_rb deselect
+                if {$newvalue == "%P"} {
+                    set newvalue [$names_cb cget -text]
+                }
+                set wiz_var($type_name,type) $newvalue
             }
-            set $type_var $newvalue
         }
     }
     return 1
@@ -692,8 +701,11 @@ proc Apol_Analysis_flowassert::set_type {star_rb names_cb type_var which newvalu
 # one.  If clicking on the listbox, update the entry by
 # appending/removing classes.  If manually editing the entry,
 # select/deslect items from the listbox.
-proc Apol_Analysis_flowassert::select_class {objs_lb class_var widget newvalue} {
-    variable $class_var
+proc Apol_Analysis_flowassert::select_class {type_name widget newvalue} {
+    variable wiz
+    variable wiz_var
+    set objs_lb $wiz($type_name,objs_lb)
+    set class_var wiz_var($type_name,class)
     set objs_list [$objs_lb get 0 end]
     if {[string range $widget end-2 end] == "_lb"} {
         # user selected/deselected something from the listbox.
@@ -732,60 +744,99 @@ proc Apol_Analysis_flowassert::select_class {objs_lb class_var widget newvalue} 
     return 1
 }
 
-# Add a type to either the starting, ending, or via list.  Do it
-# smartly -- e.g., adding a '*' to a via list clears it.
-proc Apol_Analysis_flowassert::add_type {type_var pos class_var include_var} {
-    variable $type_var
-    if {[set type [set $type_var]] == ""} {
+# Called when the user clicks on the 'add' button within the wizard.
+# If an item is already selected in the listbox, replace it.
+# Otherwise append a new one.  Either way deselect the listbox.
+# Finally synchronize the label entry.
+proc Apol_Analysis_flowassert::add_replace_type {id_lb type_name always_add} {
+    variable wiz_var
+    set class $wiz_var($type_name,class)
+    if {$wiz_var($type_name,include) == "include"} {
+        set sign ""
+    } else {
+        set sign "-"
+    }
+    set type $wiz_var($type_name,type)
+    if {$class != ""} {
+        if {[llength $class] > 1} {
+            set class ":\{$class\}"
+        } else {
+            set class ":$class"
+        }
+    }
+    set type_id "$sign$type$class"
+    if {$always_add || [set selected [$id_lb curselection]] == {}} {
+        lappend wiz_var($type_name) $type_id
+    } else {
+        set selected [lindex $selected 0]
+        set wiz_var($type_name) [lreplace $wiz_var($type_name) $selected $selected $type_id]
+    }
+    $id_lb selection clear 0 end
+    select_id_item $id_lb $type_name
+    sync_wiz_lbs_to_line
+    reset_type $type_name
+}
+
+# Synchronize the currently editing line with the contents of the three
+# listboxes.
+proc Apol_Analysis_flowassert::sync_wiz_lbs_to_line {} {
+    variable wiz_var
+    foreach var {mode start to via weight} {
+        set $var $wiz_var($var)
+    }
+    set wiz_var(line) [render_assertion [list $mode $start $to $via $weight]]
+}
+
+# Called whenever the selection changes in the assert id listbox.
+proc Apol_Analysis_flowassert::select_id_item {id_lb type_name} {
+    variable wiz
+    variable wiz_var
+    if {[set selected [$id_lb curselection]] != {}} {
+        $wiz($type_name,remove_b) configure -state normal
+        $wiz($type_name,replace_b) configure -state normal
+        # fill in the other fields given the currently selected one
+        set type_id [lindex $wiz_var($type_name) [lindex $selected 0]]
+        foreach {type class} [split $type_id ":"] {}
+        set wiz_var($type_name,type) $type
+        if {$type == "*"} {
+            set wiz_var($type_name,type,name) ""
+            set wiz_var($type_name,type,rb) "*"
+        } else {
+            set wiz_var($type_name,type,rb) ""
+            set wiz_var($type_name,type,name) $type
+        }
+        set wiz_var($type_name,class) $class
+    } else {
+        $wiz($type_name,replace_b) configure -state disabled
+        $wiz($type_name,remove_b) configure -state disabled
+    }
+}
+
+# Remove the currently selected item from the assert id listbox.
+proc Apol_Analysis_flowassert::remove_type {id_lb type_name} {
+    if {[set selected [$id_lb curselection]] == {}} {
         return
     }
+    set selected [lindex $selected 0]
+    variable wiz_var
+    set wiz_var($type_name) [lreplace $wiz_var($type_name) $selected $selected]
+    $id_lb selection clear 0 end
+    select_id_item $id_lb $type_name
+    reset_type $type_name
+    sync_wiz_lbs_to_line
+}
 
-    switch -- $pos {
-        start { set old_pos 1 }
-        end   { set old_pos 2 }
-        via   { set old_pos 3 }
-    }
-    variable assert_wiz_line
-    set old_list [lindex $assert_wiz_line $old_pos]
-    
-    variable $include_var
-    variable $class_var
-    set objclasses [set $class_var]
-    if {[llength $objclasses] > 1} {
-        set objclasses [list $objclasses]
-    }
-    if {$objclasses != ""} {
-        set typeid "$type:$objclasses"
-    } else {
-        set typeid $type
-    }
-    if {[set $include_var] == "include"} {
-        if {$old_list == "*"} {
-            set new_list $typeid
-        } elseif {$typeid == "*"} {
-            if {$pos == "via"} {
-                set new_list {}
-            } else {
-                set new_list "*"
-            }
-        } else {
-            set new_list [concat $old_list $typeid]
+# Called whenever the user clicks on the assert id lisb box.
+proc Apol_Analysis_flowassert::id_list_lb_click {id_lb type_name y} {
+    if {[set clicked [$id_lb index @1,$y]] != -1} {
+        if {[$id_lb selection includes $clicked]} {
+            # deselect the item
+            $id_lb selection clear $clicked
+            select_id_item $id_lb $type_name
+            return -code break
         }
-    } else {
-        set typeid "-$typeid"
-        if {$typeid == "-*"} {
-            if {$pos == "via"} {
-                set new_list {}
-            } else {
-                set new_list "*"
-            }
-        } else {
-            set new_list [concat $old_list $typeid]
-        }
+        select_id_item $id_lb $type_name
     }
-
-    set assert_wiz_line [lreplace $assert_wiz_line $old_pos $old_pos $new_list]
-    reset_type $pos
 }
 
 # Takes the current assertion line and adds it to the current
@@ -796,16 +847,21 @@ proc Apol_Analysis_flowassert::add_assertion {} {
     # might not be the case if the user has clicked on a different
     # analysis module since this wizard was created)
     if [winfo exists $assertfile_t] {
-        variable assert_wiz_line
-        add_line $assert_wiz_line
+        variable wiz_var
+        foreach var {mode start to via weight} {
+            set $var $wiz_var($var)
+        }
+        add_line [list $mode $start $to $via $weight]
         variable assert_wizard_dlg
         $assert_wizard_dlg enddialog 1
     }
 }
 
 # Resets all widgets in the assertion wizard to their original
-# positions.  Clears the assertion line.
-proc Apol_Analysis_flowassert::reset_wizard {via_tf origline} {
+# positions.  Clears the assertion line and the list boxes
+proc Apol_Analysis_flowassert::reset_wizard {origline} {
+    variable wiz
+    variable wiz_var
     if {$origline == ""} {
         set mode "noflow"
         set start {}
@@ -815,32 +871,27 @@ proc Apol_Analysis_flowassert::reset_wizard {via_tf origline} {
     } else {
         foreach {mode start to via weight} $origline {}
     }
-    if {$start == {}} {
-        set start "*"
+    foreach var {mode start to via weight} {
+        set wiz_var($var) [set $var]
     }
-    if {$to == {}} {
-        set to "*"
+    foreach type_name {start to via} {
+        reset_type $type_name
+        $wiz($type_name,id_lb) selection set 0
+        select_id_item $wiz($type_name,id_lb) $type_name
     }
-    variable assert_wiz_mode $mode
-    variable assert_wiz_line [list $mode $start $to $via $weight]
-    variable assert_wiz_weight $weight
-    set_mode $mode $via_tf
-    foreach name {start end via} {
-        reset_type $name
-    }
+    set_mode $mode
 }
 
-# Clears the values within a single wizard type panel.  This has the
-# side effect of clearing the widget view as well.
-proc Apol_Analysis_flowassert::reset_type {name} {
-    # because the next three variables are all bounded to event
-    # handlers, do the radiobutton last so that its display dominates
-    # the other two
-    variable assert_wiz_${name}_type_name ""
-    variable assert_wiz_${name}_type_rb "*"
-    variable assert_wiz_${name}_type "*"
-    variable assert_wiz_${name}_class ""
-    variable assert_wiz_${name}_include "include"
+# Clears the values within a single wizard type panel.
+proc Apol_Analysis_flowassert::reset_type {type_name} {
+    variable wiz_var
+    set wiz_var($type_name,type) "*"
+    set wiz_var($type_name,class) ""
+    set wiz_var($type_name,include) "include"
+    # do these in reverse order so that the radiobutton change event
+    # fires last
+    set wiz_var($type_name,type,name) ""
+    set wiz_var($type_name,type,rb) "*"
 }
 
 # Whenever the user clicks on the assertion "line xxx" hyperlink from
@@ -865,7 +916,7 @@ proc Apol_Analysis_flowassert::render_assertion {assertion} {
         return $assertion
     } else {
         foreach {mode start to via weight} $assertion {}
-        if {$start == {}} {
+        if {[llength $start] == 0} {
             set start "*"
         }
         if {$to == {}} {
