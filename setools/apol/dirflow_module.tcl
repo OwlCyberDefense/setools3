@@ -891,7 +891,7 @@ proc Apol_Analysis_dirflow::create_resultsDisplay { results_frame } {
 
 	# tree window
 	set dirflow_tree  [Tree [$sw_tree getframe].dirflow_tree \
-	           -relief flat -borderwidth 0 -width 15 -highlightthickness 0 \
+	           -relief flat -borderwidth 0 -highlightthickness 0 \
 		   -redraw 0 -bg white -showlines 1 -padx 0 \
 		   -opencmd  {Apol_Analysis_dirflow::do_child_analysis $Apol_Analysis_dirflow::dirflow_tree}]
 	$sw_tree setwidget $dirflow_tree 
@@ -1301,7 +1301,6 @@ proc Apol_Analysis_dirflow::create_options { options_frame } {
         set entry_end [Entry $endtype_frame.entry_end \
 		-helptext "You may choose an optional result type" \
 		-editable 1 \
-		-width 25 \
 		-textvariable Apol_Analysis_dirflow::end_type \
 		-exportselection 0] 
 
@@ -1312,7 +1311,7 @@ proc Apol_Analysis_dirflow::create_options { options_frame } {
 		-command {Apol_Analysis_dirflow::config_objects_list_state }]
 
         set sw_objs [ScrolledWindow $objcl_frame.sw_objs -auto both]
-        set list_objs [listbox [$sw_objs getframe].list_objs -height 7 -width 20 -highlightthickness 0 \
+        set list_objs [listbox [$sw_objs getframe].list_objs -height 7 -highlightthickness 0 \
 		      -selectmode multiple \
 		      -exportselection 0] 
         $sw_objs setwidget $list_objs
