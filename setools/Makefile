@@ -25,16 +25,13 @@ POLICY_SRC_FILE = $(POLICY_SRC_DIR)/policy.conf
 DEFAULT_LOG_FILE = /var/log/messages
 
 # Compile options
-# -DCONFIG_SECURITY_SELINUX_CONDITIONAL_POLICY 
-##		support the new conditional policy extensions, soon to be released
-##		in the new checkpolicy.
 # -DAPOL_PERFORM_TEST	
 ##		simple performance measure tests (shouldn't normally use)
 # -DCONFIG_SECURITY_SELINUX_MLS 
 ##		compiles library to be compatible with MLS 
 #		in the policy (experimental, see Readme)
 #
-CC_DEFINES	= -DCONFIG_SECURITY_SELINUX_CONDITIONAL_POLICY
+CC_DEFINES	= 
 
 #CFLAGS		= -Wall -O2 $(TCL_INCLUDE) $(CC_DEFINES)
 CFLAGS		= -Wall -g $(TCL_INCLUDE) $(CC_DEFINES)
