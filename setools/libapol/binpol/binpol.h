@@ -14,6 +14,7 @@
 
 
 bool_t ap_is_file_binpol(FILE *fp);
+int ap_binpol_version(FILE *fp);
 int ap_read_binpol_file(FILE *fp, unsigned int options, policy_t *policy);
 
 #endif
