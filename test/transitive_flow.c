@@ -1,7 +1,7 @@
 #include "policy.h"
 #include "policy-io.h"
 #include "test.h"
-#include "analysis.h"
+#include "infoflow.h"
 
 policy_t *policy;
 
