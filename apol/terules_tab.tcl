@@ -458,7 +458,8 @@ proc Apol_TE::insertTERules { tb results } {
 	#	2. line number
 	#	3. enabled flag
 	set num [expr { [llength $results] / 3 }]
-		
+	$tb insert 0.0 "$num rules match the search criteria\n\n"
+	
 	for {set x 0} {$x < [llength $results]} {incr x} { 
 		set start_line_pos [$tb index insert]
 		set line_num [lindex [split $start_line_pos "."] 0]
@@ -467,13 +468,7 @@ proc Apol_TE::insertTERules { tb results } {
 		set lineno [lindex $results $x]
 		incr x
 		set enabled [lindex $results $x]
-		
-		# If the Show Only Enabled rules button is selected, then skip disabled rules. 
-		#if {$show_enabled_rules && !$enabled} 
-		#	set num [expr $num - 1]
-		#	continue
-		#
-		
+				
 		# Only display line number hyperlink if this is not a binary policy.
 		if {$ApolTop::policy_type != $ApolTop::binary_policy_type} {
 			$tb insert end "($lineno"
@@ -494,8 +489,6 @@ proc Apol_TE::insertTERules { tb results } {
 		}
 		$tb insert end "\n"
 	}	
-	
-	$tb insert 0.0 "$num rules match the search criteria\n\n"
 	Apol_PolicyConf::configure_HyperLinks $tb
 	
 	if {$tag_enabled_rules} {
