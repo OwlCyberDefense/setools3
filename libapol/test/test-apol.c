@@ -1818,22 +1818,29 @@ int main(int argc, char *argv[])
 		}
 		case '9':
 		{
-			bool_t regex, *exprs_b;
+			bool_t regex = FALSE, *exprs_b, use_bool;
 			char *error_msg;
 			int i;
 			
-			printf("use regex [y|N]: ");
+			printf("Search using boolean? [y|N]: ");
 			fgets(ans, sizeof(ans), stdin);
 			trim_trailing_whitespace(&ans_ptr);
-			if (ans[0] == 'y')
-				regex = TRUE;
-			else
-				regex = FALSE;
-			
-			printf("boolean name: ");
-			fgets(ans, sizeof(ans), stdin);
-			trim_trailing_whitespace(&ans_ptr);
-			
+			if (ans[0] == 'y') {
+				use_bool = TRUE;
+				printf("use regex [y|N]: ");
+				fgets(ans, sizeof(ans), stdin);
+				trim_trailing_whitespace(&ans_ptr);
+				if (ans[0] == 'y')
+					regex = TRUE;
+				else
+					regex = FALSE;
+				
+				printf("boolean name: ");
+				fgets(ans, sizeof(ans), stdin);
+				trim_trailing_whitespace(&ans_ptr);
+			} else {
+				use_bool = FALSE;
+			}			
 			exprs_b = (bool_t*)malloc(sizeof(bool_t) * policy->num_cond_exprs);
 			if (!exprs_b) {
 				fprintf(stderr, "Memory error\n");
@@ -1841,7 +1848,7 @@ int main(int argc, char *argv[])
 			}
 			memset(exprs_b, FALSE, sizeof(bool_t) * policy->num_cond_exprs);
 			
-			if (search_conditional_expressions(ans, regex, exprs_b, &error_msg, policy) != 0) {
+			if (search_conditional_expressions(use_bool, ans, regex, exprs_b, &error_msg, policy) != 0) {
 				fprintf(stderr, "Error searching conditional expressions: %s\n", error_msg);
 				free(error_msg);
 				break;
