@@ -62,10 +62,6 @@ unsigned int pass;
 /* our GLOBAL policy structure */
 policy_t *parse_policy = NULL;
 
-/* from /usr/include/asm/types.h DAC */
-/*#include <types.h> */
-typedef unsigned int __u32;
-
 /* from originial constraint.h */
 /* Needed by apolicy_parse.y for "borrowed" code */
 typedef struct constraint_expr {
@@ -1064,6 +1060,7 @@ static int define_type(int alias)
 				yyerror(errormsg);
 				return -1;			
 			}
+			free(id); /* add_alias() makes its owm copy of the string */
 		}
 	}
 	
@@ -1124,31 +1121,18 @@ static int define_typealias(void)
 
 /* add a rule to the provided av rule list */
 static int add_avrule(int type, av_item_t **rlist, int *list_num, bool_t enabled) {
-	int idx, idx_type, *sz;
+	int idx, idx_type;
 	char *id;
 	av_item_t *item;
 	ta_item_t *titem;
 	bool_t subtract;
-
-	if(type == RULE_TE_ALLOW ||type == RULE_NEVERALLOW) 
-		sz = &(parse_policy->list_sz[POL_LIST_AV_ACC]);
-	else
-		sz = &(parse_policy->list_sz[POL_LIST_AV_AU]);
 		
-	if (*list_num >= *sz) {
-		/* grow the dynamic array */
-		av_item_t * ptr;		
-		ptr = (av_item_t *)realloc(*rlist, (LIST_SZ + *sz) * sizeof(av_item_t));
-		if(ptr == NULL) {
-			yyerror("out of memory\n");
-			return -1;
-		}
-		*rlist = ptr;
-		*sz += LIST_SZ;
-	}	
+	item = add_new_av_rule(type, parse_policy);
+	if(item == NULL) {
+		yyerror("Problem adding AV rule to policy database");
+		return -1;
+	}
 	
-	item = &((*rlist)[*list_num]);
-	memset(item, 0, sizeof(av_item_t));
 	item->type = type;
 	item->lineno = policydb_lineno;
 	item->enabled = enabled;
@@ -1304,8 +1288,7 @@ static int add_avrule(int type, av_item_t **rlist, int *list_num, bool_t enabled
 		free(id);
 	}	
 
-	(*list_num)++;
-	return *list_num - 1;
+	return 0;
 }
 
 /* store av rules */
@@ -1356,7 +1339,6 @@ static int define_te_avtab(int rule_type)
 	}
 	if(rt < 0) 
 		return rt;
-	(parse_policy->rule_cnt[rule_type])++;
 	return 0;
 skip_avtab_rule:
 	while ((id = queue_remove(id_queue))) 
@@ -1379,20 +1361,12 @@ static int add_ttrule(int rule_type, bool_t enabled)
 	ta_item_t *titem;
 	bool_t subtract;
 		
-	if (parse_policy->num_te_trans >= (parse_policy->list_sz[POL_LIST_TE_TRANS])) {
-		/* grow the dynamic array */
-		tt_item_t *ptr;		
-		ptr = (tt_item_t *)realloc(parse_policy->te_trans, (LIST_SZ + parse_policy->list_sz[POL_LIST_TE_TRANS]) * sizeof(tt_item_t));
-		if(ptr == NULL) {
-			yyerror("out of memory\n");
-			return -1;
-		}
-		parse_policy->te_trans = ptr;
-		parse_policy->list_sz[POL_LIST_TE_TRANS] += LIST_SZ;
-	}	
+	item = add_new_tt_rule(rule_type, parse_policy);
+	if(item == NULL) {
+		yyerror("Problem adding TT rule to policy database");
+		return -1;
+	}
 	
-	item = &(parse_policy->te_trans[parse_policy->num_te_trans]);
-	memset(item, 0, sizeof(tt_item_t));
 	item->type = rule_type;
 	item->cond_expr = -1;
 	item->lineno = policydb_lineno;
@@ -1631,7 +1605,7 @@ static int define_te_clone(void)
 static int define_role_types(void)
 {
 	char *id, *or_name;
-	int i, role_idx, idx, idx_type, num_types, *types, rt;
+	int role_idx, idx, idx_type, rt;
 
 	if (pass == 1 || (pass == 2 && !(parse_policy->opts & POLOPT_ROLES))) {
 		while ((id = queue_remove(id_queue))) 
@@ -1689,24 +1663,9 @@ static int define_role_types(void)
 			yyerror(errormsg);
 			return -1;
 		}
-		if (idx_type == IDX_TYPE) {
-			rt = add_type_to_role(idx, role_idx, parse_policy);
-			if(rt != 0)
-				return rt;
-		} else {
-			rt = get_attrib_types(idx, &num_types, &types, parse_policy);
-			if (rt != 0)
-				return rt;
-			for (i = 0; i < num_types; i++) {
-				rt = add_type_to_role(types[i], role_idx, parse_policy);
-				if(rt != 0) { 
-					free(types);
-					return rt;
-				}
-				
-			}
-			free(types);
-		}
+		rt = add_type_to_role(idx, role_idx, parse_policy);
+		if(rt != 0)
+			return rt;
 		free(id);	
 	}
 
@@ -1781,7 +1740,7 @@ static int define_role_allow(void)
 		free(id);
 	}
 	
-	/* target object types/attribs */
+	/* target role */
 	while ((id = queue_remove(id_queue))) {
 		if(strcmp(id, "*") == 0) {
 			rule->flags |= AVFLAG_TGT_STAR;
@@ -2257,7 +2216,7 @@ static int
 static int define_bool(void)
 {
 	char *id, *name;
-	bool_t val;
+	bool_t state;
 	int rt;
 	
 	rt = set_policy_version(POL_VER_COND, parse_policy);
@@ -2285,12 +2244,12 @@ static int define_bool(void)
 	}
 	
 	if (strcmp(id, "T") == 0)
-		val = TRUE;
+		state = TRUE;
 	else
-		val = FALSE;
+		state = FALSE;
 	free(id);
 	
-	rt = add_cond_bool(name, val, parse_policy);
+	rt = add_cond_bool(name, state, parse_policy);
 	if (rt == -2) {
 		sprintf(errormsg, "Boolean %s already exists", name);
 		yyerror(errormsg);
@@ -2700,6 +2659,7 @@ static int define_initial_sid(void)
 {
 	char *id = 0;
 	int idx;
+	__u32 sid;
 	
 	if (pass == 2 ||(pass == 1 && !(parse_policy->opts & POLOPT_INITIAL_SIDS))) {
 		id = queue_remove(id_queue);
@@ -2720,7 +2680,10 @@ static int define_initial_sid(void)
 		free(id);
 		return -1;
 	}
-	idx = add_initial_sid(id, parse_policy);
+	sid = num_initial_sids(parse_policy)+1;	/* from the src parse, the enxt SID # is always the
+						 * number of SIDs plus one (SIDs start from 1) */
+	idx = add_initial_sid2(id, sid, parse_policy);
+	//idx = add_initial_sid(id, parse_policy);
 	if(idx == -2) {
 		sprintf(errormsg, "duplicate initial SID decalaration (%s)\n", id);
 		yyerror(errormsg);
@@ -2728,7 +2691,7 @@ static int define_initial_sid(void)
 	}
 	else if(idx < 0)
 		return -1;
-			
+		
 	return 0;
 }
 
