@@ -752,5 +752,4 @@ void seaudit_log_store_refresh(SEAuditLogStore *store, FILE *file)
 	if (parsed == PARSE_NO_PARSE || parsed == PARSE_NO_SELINUX_ERROR)
 		return;
 	seaudit_log_store_do_filter(store);
-	printf("parsed\n");
 }
