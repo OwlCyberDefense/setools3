@@ -561,6 +561,7 @@ static int append_type_str(bool_t do_attribs, bool_t do_aliases, bool_t newline,
 	if(idx >= policy->num_types || buf == NULL) {
 		return -1;
 	}
+
 	Tcl_DStringAppend(buf, policy->types[idx].name, -1);
 	
 	if(do_aliases) {
@@ -657,7 +658,6 @@ static int apol_append_type_files(int ta_idx, bool_t is_attrib,
 	int *types_indexes = NULL;
 	
 	if (fsdata.dbh == NULL) {
-		Tcl_DStringFree(buf);
 		Tcl_ResetResult(interp);
 		Tcl_AppendResult(interp, "No Index File Loaded!", (char *) NULL);
 		return -1;
@@ -665,44 +665,46 @@ static int apol_append_type_files(int ta_idx, bool_t is_attrib,
 	assert(policy != NULL);				
 	if (is_attrib) {
 		if (get_attrib_types(ta_idx, &num_types, &types_indexes, policy) != 0) {
-			Tcl_DStringFree(buf);
 			Tcl_ResetResult(interp);
 			Tcl_AppendResult(interp, "Error getting type indexes for attribute!", (char *) NULL);
 			return -1;
 		}
-		assert(types_indexes != NULL && num_types > 0);
+		if (types_indexes == NULL) {
+			/* No types are assigned to this attribute. */
+			Tcl_DStringAppend(buf, "\nFiles: None\n\n", -1);
+			return 0;	
+		}
 	} else {
 		if (add_i_to_a(ta_idx, &num_types, &types_indexes) != 0) {
-			Tcl_DStringFree(buf);
 			Tcl_ResetResult(interp);
 			Tcl_AppendResult(interp, "Error adding type idx to array!", (char *) NULL);
 			return -1;
 		}
 		assert(types_indexes != NULL && num_types > 0);
 	}
-	assert(types_indexes != NULL && num_types > 0);
 	type_strings = (const char**)malloc(sizeof(char*) * num_types);
 	if (type_strings == NULL) {
 		fprintf(stderr, "Memory error.\n");
 		goto err;
 	}
-	memset(type_strings, 0, sizeof(const char*) * num_types);
+	memset(type_strings, 0, sizeof(char*) * num_types);
 	for (i = 0; i < num_types; i++) {
 		if (get_type_name(types_indexes[i], &name, policy) != 0) {
-			Tcl_DStringFree(buf);
 			Tcl_ResetResult(interp);
 			Tcl_AppendResult(interp, "Error getting type name!", (char *) NULL);
 			goto err;
 		}
 		assert(name != NULL);
-		if ((type_strings[i] = (const char*)strdup((const char*)name)) == NULL) {
+		if ((type_strings[i] = (char*)strdup((char*)name)) == NULL) {
 			fprintf(stderr, "Memory error.\n");
 			goto err;
 		}
 		free(name);
+		name = NULL;
 	}
 	assert(type_strings != NULL);	
-		
+	free(types_indexes);
+	types_indexes = NULL;
 	search_keys.user = NULL;
 	search_keys.path = NULL;
 	search_keys.type = type_strings;
@@ -714,14 +716,13 @@ static int apol_append_type_files(int ta_idx, bool_t is_attrib,
 	search_keys.do_user_regEx = 0;
 	search_keys.do_type_regEx = 0;
 	search_keys.do_path_regEx = 0;
-	
+
 	if (sefs_filesystem_db_search(&fsdata, &search_keys) != 0) {
-		Tcl_DStringFree(buf);
 		Tcl_ResetResult(interp);
 		Tcl_AppendResult(interp, "File search failed\n", (char *) NULL);
 		goto err;
 	}
-			
+		
 	curr = search_keys.search_ret;
 	if (curr == NULL) {
 		if (append_str(&t_buf, &t_buf_sz, "\nFiles: None\n") != 0)  {
@@ -780,27 +781,25 @@ static int apol_append_type_files(int ta_idx, bool_t is_attrib,
 	sefs_search_keys_ret_destroy(search_keys.search_ret);
 	Tcl_DStringAppend(buf, t_buf, -1);
 	
-	if (type_strings) {
+	if (type_strings != NULL) {
 		for (i = 0; i < num_types; i++) {
-			if (type_strings[i]) free((char*)type_strings[i]);
+			free((char*)type_strings[i]);
 		}
 		free(type_strings);
 	}
-	if (types_indexes) free(types_indexes);
-	if (name) free(name);
-	if (t_buf) free(t_buf);
+	if (t_buf != NULL) free(t_buf);
 	
 	return 0;
 err:
-	if (type_strings) {
+	if (type_strings != NULL) {
 		for (i = 0; i < num_types; i++) {
 			if (type_strings[i]) free((char*)type_strings[i]);
 		}
 		free(type_strings);
 	}
-	if (types_indexes) free(types_indexes);
-	if (name) free(name);
-	if (t_buf) free(t_buf);
+	if (types_indexes != NULL) free(types_indexes);
+	if (name != NULL) free(name);
+	if (t_buf != NULL) free(t_buf);
 	return -1;
 }
 #endif
@@ -835,15 +834,27 @@ static int append_all_ta_using_regex(regex_t *preg, const char *regexp, bool_t d
 	
 	if(do_types) {
 		Tcl_DStringAppend(buf, "\n\nTYPES:\n", -1);
-		for(i = 0; i < policy->num_types; i++) {
+		for (i = 0; i < policy->num_types; i++) {
 			rt = regexec(preg, policy->types[i].name, 0, NULL, 0);
 			if(rt == 0) {
 				rt = append_type_str(type_attribs, use_aliases, 0, i, policy, buf);
 				if(rt != 0) {
 					return -1;
 				}
-			}
-			else if(use_aliases) {
+				if (show_files) {
+#ifdef LIBSEFS
+					if (apol_append_type_files(i, FALSE, include_cxt, include_class, buf, policy, interp) != 0) {
+						Tcl_DStringFree(buf);
+						return TCL_ERROR;
+					}
+#else
+					Tcl_DStringFree(buf);
+					Tcl_ResetResult(interp);
+					Tcl_AppendResult(interp, "Error: You need to build apol with libsefs! Please deselect the 'Show Files' checkbutton and run the search again.", (char *) NULL);
+					return TCL_ERROR;
+#endif
+				}	
+			} else if(use_aliases) {
 				name_item_t *ptr;
 				for(ptr = policy->types[i].aliases; ptr != NULL; ptr = ptr->next) {
 					rt = regexec(preg, ptr->name, 0, NULL, 0);
@@ -855,20 +866,6 @@ static int append_all_ta_using_regex(regex_t *preg, const char *regexp, bool_t d
 					}
 				}
 			}
-			if (show_files) {
-#ifdef LIBSEFS
-				if (apol_append_type_files(i, FALSE, include_cxt, include_class, buf, policy, interp) != 0) {
-					return TCL_ERROR;
-				}
-#else
-				Tcl_DStringFree(buf);
-				Tcl_ResetResult(interp);
-				Tcl_AppendResult(interp, "Error: You need to build apol with libsefs! Please deselect the 'Show Files' checkbutton and run the search again.", (char *) NULL);
-				return TCL_ERROR;
-#endif
-			} else {
-				Tcl_DStringAppend(buf, "\n", -1);
-			}	
 		}
 	}
 	
@@ -880,22 +877,20 @@ static int append_all_ta_using_regex(regex_t *preg, const char *regexp, bool_t d
 				if(rt != 0) {
 					return -1;
 				}
-
-			}
-			if (show_files) {
+				if (show_files) {
 #ifdef LIBSEFS
-				if (apol_append_type_files(i, TRUE, include_cxt, include_class, buf, policy, interp) != 0) {
-					return TCL_ERROR;
-				}
+					if (apol_append_type_files(i, TRUE, include_cxt, include_class, buf, policy, interp) != 0) {
+						Tcl_DStringFree(buf);
+						return TCL_ERROR;
+					}
 #else
-				Tcl_DStringFree(buf);
-				Tcl_ResetResult(interp);
-				Tcl_AppendResult(interp, "Error: You need to build apol with libsefs! Please deselect the 'Show Files' checkbutton and run the search again.", (char *) NULL);
-				return TCL_ERROR;
+					Tcl_DStringFree(buf);
+					Tcl_ResetResult(interp);
+					Tcl_AppendResult(interp, "Error: You need to build apol with libsefs! Please deselect the 'Show Files' checkbutton and run the search again.", (char *) NULL);
+					return TCL_ERROR;
 #endif
-			} else {
-				Tcl_DStringAppend(buf, "\n", -1);
-			}							
+				} 	
+			}						
 		}
 	}
 
@@ -3829,6 +3824,8 @@ int Apol_GetTypeInfo(ClientData clientData, Tcl_Interp *interp, int argc, char *
 			sprintf(tmpbuf, "\n\nTYPES (%d):\n", policy->num_types);
 			Tcl_DStringAppend(buf, tmpbuf, -1);
 			for(i = 0; i < policy->num_types; i++) {
+				sprintf(tmpbuf, "%d: ", i+1);
+				Tcl_DStringAppend(buf, tmpbuf, -1);
 				rt = append_type_str(type_attribs, use_aliases, 0, i, policy, buf);
 				if(rt != 0) {
 					Tcl_DStringFree(buf);
@@ -3839,6 +3836,7 @@ int Apol_GetTypeInfo(ClientData clientData, Tcl_Interp *interp, int argc, char *
 				if (show_files) {
 #ifdef LIBSEFS
 					if (apol_append_type_files(i, FALSE, include_cxt, include_class, buf, policy, interp) != 0) {
+						Tcl_DStringFree(buf);
 						return TCL_ERROR;
 					}
 #else
@@ -3870,6 +3868,7 @@ int Apol_GetTypeInfo(ClientData clientData, Tcl_Interp *interp, int argc, char *
 				if (show_files) {
 #ifdef LIBSEFS
 					if (apol_append_type_files(i, TRUE, include_cxt, include_class, buf, policy, interp) != 0) {
+						Tcl_DStringFree(buf);
 						return TCL_ERROR;
 					}
 #else
