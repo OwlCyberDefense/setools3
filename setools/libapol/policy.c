@@ -215,7 +215,7 @@ int init_policy( policy_t **p)
 	if(init_avl_trees(policy) != 0) {
 		return -1;
 	}
-	
+
 	*p = policy;
 	return 0;
 }
@@ -521,8 +521,9 @@ int search_initial_sids_context(int **isids, int *num_isids, const char *user, c
 	user_item_t *uidx = NULL;
 	int ridx, tidx, i;
 	
-	if(policy == NULL || isids == NULL || num_isids == NULL)
+	if(policy == NULL || isids == NULL || num_isids == NULL) {
 		return -1;
+	}
 	
 	/* For role and type idx, we use < 0 as an indicator that we don't care about these criteria.
 	 * So we can simply take the error return from the idx lookup functions.  For uidx, NULL
@@ -536,30 +537,51 @@ int search_initial_sids_context(int **isids, int *num_isids, const char *user, c
 		
 	if(role != NULL) {
 		ridx = get_role_idx(role, policy);
-		if(ridx < 0)
+		if(ridx < 0) {
 			return 0;
+		}
+	} else {
+		ridx = -1;
 	}
 	if(type != NULL) {
 		tidx = get_type_idx(type, policy);
-		if(tidx < 0)
+		if(tidx < 0) {
 			return 0;
+		}
+	} else {
+		tidx = -1;
 	}
 	if(user != NULL) {
 		get_user_by_name(user, &uidx, policy);
-		if(uidx == NULL)
+		if(uidx == NULL) {
 			return 0;
-	}
+		}
+	} 
 
 	for(i = 0; i < policy->num_initial_sids; i++) {
-		if((type == NULL || tidx == policy->initial_sids[i].scontext->type ) &&
-		   (role == NULL || ridx == policy->initial_sids[i].scontext->role ) &&
-		   (user == NULL || strcmp(uidx->name, policy->initial_sids[i].scontext->user->name) == 0)  ) {
-			if(add_i_to_a(i, num_isids, isids) < 0) {
-				free(isids);
-				return -1;
-			}
+		if (type != NULL) {
+			 /* Make sure this sid has a context and if so, compare the type field */
+			 if (!(policy->initial_sids[i].scontext != NULL && tidx == policy->initial_sids[i].scontext->type)) {
+			 	continue;
+			 }
 		}
-		
+		if (role != NULL) {
+			 /* Make sure this sid has a context and if so, compare the role field */
+			 if (!(policy->initial_sids[i].scontext != NULL && ridx == policy->initial_sids[i].scontext->role)) {
+			 	continue;	
+			 }
+		}
+		if (user != NULL) {
+			 /* Make sure this sid has a context and if so, compare the user field */
+			 if (!(policy->initial_sids[i].scontext != NULL && strcmp(uidx->name, policy->initial_sids[i].scontext->user->name) == 0)) {
+			 	continue;	
+			 }
+		}
+		/* If we get here, we have either matched ALL criteria or all parameters given are empty. */
+		if(add_i_to_a(i, num_isids, isids) < 0) {
+			free(isids);
+			return -1;
+		}
 	}
 	return 0;
 }

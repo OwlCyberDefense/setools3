@@ -1894,59 +1894,54 @@ int Apol_SearchInitialSIDs(ClientData clientData, Tcl_Interp *interp, int argc, 
 		return TCL_ERROR;
 	}
 	
-	if(argv[1] != NULL) {
-		if (!is_valid_str_sz(argv[1])) {
-			Tcl_AppendResult(interp, "The provided user string is too large.", (char *) NULL);
-			return TCL_ERROR;
-		}
-		/* Set user parameter for the query and guard against buffer overflows */
-		if(!str_is_only_white_space(argv[1])) {
-			sz = strlen(argv[1]) + 1;
-	 	        user = (char *)malloc(sz);
-		        if(user == NULL) {
-			      fprintf(stderr, "out of memory");
-			      return TCL_ERROR;
-			}	
-			user = strcpy(user, argv[1]);
-		}
+	if (!is_valid_str_sz(argv[1])) {
+		Tcl_AppendResult(interp, "The provided user string is too large.", (char *) NULL);
+		return TCL_ERROR;
+	}
+	/* Set user parameter for the query and guard against buffer overflows */
+	if(!str_is_only_white_space(argv[1])) {
+		sz = strlen(argv[1]) + 1;
+ 	        user = (char *)malloc(sz);
+	        if(user == NULL) {
+		      fprintf(stderr, "out of memory");
+		      return TCL_ERROR;
+		}	
+		user = strcpy(user, argv[1]);
 	}
 	
-	if(argv[2] != NULL) {
-		if (!is_valid_str_sz(argv[2])) {
-			Tcl_AppendResult(interp, "The provided role string is too large.", (char *) NULL);
-			return TCL_ERROR;
-		}
-		
-		/* Set role parameter for the query and guard against buffer overflows */	
-		if(argv[2] != NULL && !str_is_only_white_space(argv[2])) {
-			sz = strlen(argv[2]) + 1;
-	 	        role = (char *)malloc(sz);
-		        if(role == NULL) {
-			      fprintf(stderr, "out of memory");
-			      return TCL_ERROR;
-			}	
-			role = strcpy(role, argv[2]);
-		}
+	if (!is_valid_str_sz(argv[2])) {
+		Tcl_AppendResult(interp, "The provided role string is too large.", (char *) NULL);
+		return TCL_ERROR;
 	}
 	
-	if(argv[3] != NULL) {
-		if (!is_valid_str_sz(argv[3])) {
-			Tcl_AppendResult(interp, "The provided type string is too large.", (char *) NULL);
-			return TCL_ERROR;
-		}
-		
-		/* Set type parameter for the query and guard against buffer overflows */	
-		if(argv[3] != NULL && !str_is_only_white_space(argv[3])) {
-			sz = strlen(argv[3]) + 1;
-	 	        type = (char *)malloc(sz);
-		        if(type == NULL) {
-			      fprintf(stderr, "out of memory");
-			      return TCL_ERROR;
-			}	
-			type = strcpy(type, argv[3]);
-		}
+	/* Set role parameter for the query and guard against buffer overflows */	
+	if(argv[2] != NULL && !str_is_only_white_space(argv[2])) {
+		sz = strlen(argv[2]) + 1;
+ 	        role = (char *)malloc(sz);
+	        if(role == NULL) {
+		      fprintf(stderr, "out of memory");
+		      return TCL_ERROR;
+		}	
+		role = strcpy(role, argv[2]);
+	}
+	
+	if (!is_valid_str_sz(argv[3])) {
+		Tcl_AppendResult(interp, "The provided type string is too large.", (char *) NULL);
+		return TCL_ERROR;
+	}
+	
+	/* Set type parameter for the query and guard against buffer overflows */	
+	if(argv[3] != NULL && !str_is_only_white_space(argv[3])) {
+		sz = strlen(argv[3]) + 1;
+ 	        type = (char *)malloc(sz);
+	        if(type == NULL) {
+		      fprintf(stderr, "out of memory");
+		      return TCL_ERROR;
+		}	
+		type = strcpy(type, argv[3]);
 	}
 	buf = &buffer;	
+
 	rt = search_initial_sids_context(&isids, &num_isids, user, role, type, policy);
 	if( rt != 0) {
 		Tcl_AppendResult(interp, "Problem searching initial SID contexts\n", (char *) NULL);
