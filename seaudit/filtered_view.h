@@ -7,24 +7,26 @@
  *
  */
 
-#include <gtk/gtk.h>
-#include <glade/glade.h>
-#include "filter_window.h"
-
 #ifndef SEAUDIT_FILTERED_VIEW_H
 #define SEAUDIT_FILTERED_VIEW_H
 
+#include <gtk/gtk.h>
+#include <glade/glade.h>
+#include "multifilter_window.h"
+#include "auditlogmodel.h"
+
 typedef struct seaudit_filtered_view {
-	filters_t *filters;
+	multifilter_window_t *multifilter_window;
 	SEAuditLogViewStore *store;
 	GtkTreeView *tree_view;
 	gint notebook_index;
+	GString *name;
 } seaudit_filtered_view_t;
 
 /*
  * Public member functions
  */
-seaudit_filtered_view_t* seaudit_filtered_view_create(audit_log_t *log, GtkTreeView *tree_view);
+seaudit_filtered_view_t* seaudit_filtered_view_create(audit_log_t *log, GtkTreeView *tree_view, const char *view_name);
 void seaudit_filtered_view_destroy(seaudit_filtered_view_t *view);
 void seaudit_filtered_view_set_log(seaudit_filtered_view_t *view, audit_log_t *log);
 void seaudit_filtered_view_display(seaudit_filtered_view_t* filters_view);
