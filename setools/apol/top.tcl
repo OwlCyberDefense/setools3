@@ -1162,8 +1162,8 @@ proc ApolTop::create { } {
 	
 	# Subtabs for the main policy rules tab
 	Apol_TE::create $rules_nb
-	Apol_RBAC::create $rules_nb
 	Apol_Cond_Rules::create $rules_nb
+	Apol_RBAC::create $rules_nb
 	
 	$components_nb compute_size
 	pack $components_nb -fill both -expand yes -padx 4 -pady 4
