@@ -37,6 +37,10 @@ namespace eval SEUser_db {
 	# Mod counter used to indicate changes to policy. 
 	variable mod_cntr		0
 	variable passwd_file		"/etc/passwd"
+	# List to hold all users that have been added. We
+	# use this list to label home directories after 
+	# the policy loaded successfully.
+	variable added_users ""
 }
 
 ########################################################################
@@ -221,10 +225,7 @@ proc SEUser_db::add_user { user generic_flag roles useradd_args passwd overwrite
 				return -code error $err 
 			} 
 		}	
-		set rt [catch {seuser_LabelHomeDirectory $user} err]
-		if {$rt != 0 } {
-			return -code error $err 
-		}  
+		set SEUser_db::added_users [lappend SEUser_db::added_users $user]
 		# else, this is an existing policy user and do not wish to overwrite, so do nothing.
 	}
 	return 0
@@ -572,6 +573,7 @@ proc SEUser_db::free_db {} {
 	set SEUser_db::sysUsers_list 		""
 	set SEUser_db::groups_list 		""
 	set SEUser_db::selinuxUsers_list 	""
+	set SEUser_db::added_users 		""
 	SEUser_db::reset_mod_cntr
 	return 0	
 }
@@ -585,6 +587,13 @@ proc SEUser_db::load_policy { } {
 	if { $rt != 0 } {
 		return -code error $err
 	}
+	foreach user $SEUser_db::added_users {
+		set rt [catch {seuser_LabelHomeDirectory $user} err]
+		if {$rt != 0 } {
+			return -code error $err 
+		}  
+	}
+	set SEUser_db::added_users ""
 	return 0
 }
 
