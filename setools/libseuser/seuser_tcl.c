@@ -323,7 +323,7 @@ int Seuser_RemoveUser(ClientData clientData, Tcl_Interp * interp, int argc, char
 		return TCL_ERROR;
 	}
 	else if(rt != 0) {
-		Tcl_AppendResult(interp, "Error removing the user from the database");
+		Tcl_AppendResult(interp, "Error removing the user from the database", (char *) NULL);
 		return TCL_ERROR;
 	}		
 	
@@ -504,7 +504,7 @@ int Seuser_Commit(ClientData clientData, Tcl_Interp *interp, int argc, char *arg
 	
 	rt = seuser_write_user_file(&db, policy);
 	if(rt != 0) {
-		Tcl_AppendResult(interp, "Problem writing the user file");
+		Tcl_AppendResult(interp, "Problem writing the user file", (char *) NULL);
 		return TCL_ERROR;
 	}	
 	return TCL_OK;
