@@ -5,6 +5,7 @@
  * Author: Karl MacMillan <kmacmillan@tresys.com>
  *         Kevin Carr <kcarr@tresys.com>
  *         Jeremy Stitz <jstitz@tresys.com>
+ * 	   don.patterson@tresys.com 10-2004
  */
 
 #include "seaudit.h"
@@ -66,7 +67,10 @@ seaudit_t* seaudit_init(void)
 	memset(seaudit, 0, sizeof(seaudit_t));
 	/* we load user configuration first so the window can be set up
 	 * set up properly on create */
-	load_seaudit_conf_file(&(seaudit->seaudit_conf));
+	if (load_seaudit_conf_file(&(seaudit->seaudit_conf)) != 0) {
+		free(seaudit);
+		return NULL;
+	}
 	seaudit->window = seaudit_window_create(NULL, seaudit->seaudit_conf.column_visibility);
 	seaudit->policy_file = g_string_new("");
 	seaudit->audit_log_file = g_string_new("");
