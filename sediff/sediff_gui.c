@@ -2809,6 +2809,7 @@ void sediff_menu_on_help_clicked(GtkMenuItem *menuitem, gpointer user_data)
 	gtk_window_set_default_size(GTK_WINDOW(window), 480, 300);
 	gtk_container_add(GTK_CONTAINER(window), scroll);
 	gtk_container_add(GTK_CONTAINER(scroll), text_view);
+	gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(text_view),GTK_WRAP_WORD);
 	buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));	
 	dir = find_file("sediff_help.txt");
 	if (!dir) {
@@ -2881,7 +2882,7 @@ gboolean sediff_load_dlg_show()
 						      GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_NO_SEPARATOR,
 				     NULL);
 		gtk_widget_set_usize(sediff_app->loading_dlg,200,100);
-		label = gtk_label_new ("Loading...");
+		label = gtk_label_new ("Calculating difference - this may take a while");
 		gtk_container_add (GTK_CONTAINER (GTK_DIALOG(sediff_app->loading_dlg)->vbox),
 				   label);
 
