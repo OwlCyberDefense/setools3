@@ -125,7 +125,7 @@ static int load_perms(ap_fbuf_t *fb, FILE *fp, bool_t is_cp, __u32 cval, int cid
 {
 	int i, idx, rt = 0;
 	bool_t keep = FALSE;
-	ap_permission_bmap_t *pmap;
+	ap_permission_bmap_t *pmap = NULL;
 	__u32 val, num_cp = 0;
 	
 	if(nel == 0)
