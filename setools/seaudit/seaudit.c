@@ -387,13 +387,13 @@ void on_about_seaudit_activate(GtkWidget *widget, GdkEvent *event, gpointer call
 	
 	str = g_string_new("");
 	g_string_assign(str, "Audit Log Analysis Tool for Security \nEnhanced Linux");
-        g_string_append(str, "\n\nCopyright (c) 2003\nTresys Technology, LLC\nwww.tresys.com/selinux");
+        g_string_append(str, "\n\nCopyright (c) 2003-2004\nTresys Technology, LLC\nwww.tresys.com/selinux");
 	g_string_append(str, "\n\nGUI version ");
 	g_string_append(str, SEAUDIT_GUI_VERSION_STRING);
 	g_string_append(str, "\nlibseaudit version ");
-	g_string_append(str, LIBSEAUDIT_VERSION_STRING);
+	g_string_append(str, libseaudit_get_version());
 	g_string_append(str, "\nlibapol version ");
-	g_string_append(str, LIBAPOL_VERSION_STRING); /* the libapol version */
+	g_string_append(str, libapol_get_version()); /* the libapol version */
 	
 	dialog = gtk_message_dialog_new(seaudit_app->top_window,
 					GTK_DIALOG_DESTROY_WITH_PARENT,
@@ -926,8 +926,8 @@ static void print_version_info(void)
 {
 	printf("Audit Log analysis tool for Security Enhanced Linux\n\n");
 	printf("   GUI version %s\n", SEAUDIT_GUI_VERSION_STRING);
-	printf("   libapol version %s\n", LIBAPOL_VERSION_STRING);
-	printf("   libseaudit version %s\n\n", LIBSEAUDIT_VERSION_STRING);
+	printf("   libapol version %s\n", libapol_get_version());
+	printf("   libseaudit version %s\n\n", libseaudit_get_version());
 }
 
 static void usage(const char *program_name, bool_t brief)
