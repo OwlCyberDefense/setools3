@@ -623,7 +623,6 @@ int apol_do_relabel_analysis(relabel_set_t **sets, policy_t *policy)
 				goto bail_point;
 		}
 
-/* XXX kill line */if (num_targets > 1) printf("rule %i line %u numtgt=%i\n", i, policy->av_access[i].lineno, num_targets);
 		for (j = 0; j < num_perms; j++) {
 			if (perms[j] == relabelto_idx) {
 				for (k = 0; k < num_subjects; k++) {
@@ -1140,4 +1139,25 @@ int apol_query_relabel_analysis(relabel_set_t *sets, int type, relabel_result_t 
 		retv = apol_filter_rules_list(res, policy, filter);
 
 	return retv;
+}
+
+int apol_rules_per_domain(relabel_result_t *res, int domain, int **rules, int *num_rules, policy_t *policy) 
+{
+	int retv, i;
+
+	if (!res || !rules || !num_rules || !policy) 
+		return -1;
+
+	*rules = NULL;
+	*num_rules = 0;
+
+	for (i = 0; i < res->num_rules; i++) {
+		if (does_av_rule_idx_use_type(res->rules[i], RULE_TE_ALLOW, domain, IDX_TYPE, SRC_LIST, 1, policy)) {
+			retv = add_i_to_a(res->rules[i], num_rules, rules);
+			if (retv)
+				return -1;
+		}
+	}
+
+	return 0;
 }
