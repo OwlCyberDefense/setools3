@@ -54,8 +54,6 @@ proc Apol_Users::searchUsers {} {
     variable opts
     variable resultsbox
     
-    update idletasks
-    
     if {$opts(showSelection) == "names"} {
 	set name_only 1
     } else {
