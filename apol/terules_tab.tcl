@@ -1650,29 +1650,16 @@ proc Apol_TE::is_only_type_rules_selected { } {
 proc Apol_TE::defaultType_Enable_Disable { } {
     variable dflt_type_list
     variable use_3rd_list
-    variable cb_dflt_tilda
-    variable cb_dflt_subtract
     variable dflt_type_list
      
     # Set/unset indicator on raised tab to indicate search critera has been selected/deselected.
     Apol_TE::set_Indicator [$Apol_TE::notebook_searchOpts raise]
     
     if {$Apol_TE::opts(use_3rd_list) } {
-    	if {$Apol_TE::allow_syntactic} {
-    		$cb_dflt_tilda configure -state normal
-		$cb_dflt_subtract configure -state normal
-		Apol_TE::insert_star_into_types_attribs_list $dflt_type_list
-    	} else {
-    		$cb_dflt_tilda configure -state disabled
-		$cb_dflt_subtract configure -state disabled
-		Apol_TE::remove_star_from_types_attribs_list $dflt_type_list
-    	}
 	$Apol_TE::dflt_type_list configure -state normal -entrybg white
     } else {
 	$Apol_TE::dflt_type_list configure -state disabled  -entrybg  $ApolTop::default_bg_color
 	selection clear -displayof $Apol_TE::dflt_type_list
-	$cb_dflt_tilda configure -state disabled
-	$cb_dflt_subtract configure -state disabled
     }
     # Determine the checked rules
     set bool [Apol_TE::is_only_type_rules_selected]
@@ -2253,8 +2240,6 @@ proc Apol_TE::enable_disable_syntactic_search_widgets {enable} {
 	variable cb_src_subtract
 	variable cb_tgt_tilda
 	variable cb_tgt_subtract
-	variable cb_dflt_tilda
-	variable cb_dflt_subtract
 	variable incl_indirect1
 	variable incl_indirect2
 	variable source_list
@@ -2280,11 +2265,6 @@ proc Apol_TE::enable_disable_syntactic_search_widgets {enable} {
 	    		$incl_indirect2 deselect
 	    		Apol_TE::insert_star_into_types_attribs_list $target_list
 	    	}
-	    	if {$opts(use_3rd_list)} {	    	
-			$cb_dflt_tilda configure -state normal
-			$cb_dflt_subtract configure -state normal
-		    	Apol_TE::insert_star_into_types_attribs_list $dflt_type_list
-		}
 		if {[Apol_TE::get_Selected_ListItems $permslistbox] == ""} {
 			# Disable the ~ modifier button
 			$cb_perms_tilda configure -state disabled
@@ -2306,8 +2286,6 @@ proc Apol_TE::enable_disable_syntactic_search_widgets {enable} {
 			Apol_TE::remove_star_from_types_attribs_list $target_list
 		}
 		if {$opts(use_3rd_list)} {
-			$cb_dflt_tilda configure -state disabled
-			$cb_dflt_subtract configure -state disabled
 			Apol_TE::remove_star_from_types_attribs_list $dflt_type_list
 		}
 		$cb_perms_tilda configure -state disabled
@@ -2364,8 +2342,6 @@ proc Apol_TE::createTypesAttribsTab {notebook_ta_tab} {
     variable cb_src_subtract
     variable cb_tgt_tilda
     variable cb_tgt_subtract
-    variable cb_dflt_tilda
-    variable cb_dflt_subtract
     
     # Search options section subframes used to group the widget items under the Source Type/Attrib section
     set fm_src [frame $notebook_ta_tab.ta1 -relief flat -borderwidth 1]
@@ -2538,17 +2514,8 @@ proc Apol_TE::createTypesAttribsTab {notebook_ta_tab} {
 			     -offvalue 0 \
 			     -onvalue  1 \
 			     -command "Apol_TE::defaultType_Enable_Disable" ]
-    set cb_dflt_tilda [checkbutton $fm_syntactic_3.cb_dflt_tilda -text "~" -font bold \
-			 -variable Apol_TE::opts(dflt_tilda_sel) \
-			 -onvalue 1 \
-			 -offvalue 0]
-    set cb_dflt_subtract [checkbutton $fm_syntactic_3.cb_dflt_subtract -text "-" -font bold \
-			 -variable Apol_TE::opts(dflt_subtract_sel) \
-			 -onvalue 1 \
-			 -offvalue 0]
-			 
+   			 
     # Placing Default Type widget items
-    pack $cb_dflt_tilda $cb_dflt_subtract -side left -anchor nw -fill x -expand yes
     pack $use_3rd_list -side top -anchor nw 
     pack $dflt_type_list -anchor w -fill x -expand yes
    
