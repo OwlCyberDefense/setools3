@@ -1,6 +1,7 @@
 # SE Tools Documentation makefile
 TOP-DOCS = INSTALL KNOWN-BUGS README
-
+INSTALL_DOCS = KNOWN-BUGS README apol/*.txt sepct/sepcut_help.txt \
+	       seuser/seuser_help.txt seaudit/seaudit_help.txt
 
 docs: apol-doc sepcut-doc seuser-doc seaudit-doc top-docs
 
@@ -29,6 +30,10 @@ apol-doc:
 	sed -e 's/APOL_GUI_VERSION/$(shell cat ../apol/VERSION)/g' | \
 	sed -e 's/MOD_DATE/$(shell date '+%B %d, %G')/g' > ../apol/obj_perms_help.txt
 	
+	cat types_relation_help.in | \
+	sed -e 's/APOL_GUI_VERSION/$(shell cat ../apol/VERSION)/g' | \
+	sed -e 's/MOD_DATE/$(shell date '+%B %d, %G')/g' > ../apol/types_relation_help.txt
+	
 sepcut-doc: 
 	rm -f ../sepct/*.txt; \
 	cat sepcut_help_text.in | \
@@ -55,3 +60,10 @@ remove-docs :
 	for file in $(TOP-DOCS); do \
 		rm -f ../$$file; \
 	done
+
+install: docs
+	cd ..; \
+	for file in $(INSTALL_DOCS); do \
+		install -m 644 $$file ${INSTALL_HELPDIR}; \
+	done 
+	 
