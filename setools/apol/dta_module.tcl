@@ -403,6 +403,7 @@ proc Apol_Analysis_dta::forward_options_change_obj_state_on_perm_select {} {
 	variable class_listbox	
 	variable select_fg_orig
 	variable class_selected_idx 
+	variable permissions_title_frame
 	
 	set num_excluded 0	
 	# There may be multiple selected items, but we need the object class that is currently displayed in
@@ -431,6 +432,7 @@ proc Apol_Analysis_dta::forward_options_change_obj_state_on_perm_select {} {
 				$class_listbox itemconfigure $class_selected_idx -foreground $select_fg_orig
 				set [$class_listbox cget -listvar] [lreplace $items $class_selected_idx $class_selected_idx "$class_sel"]
 			}
+			$permissions_title_frame configure -text "Permissions for [$class_listbox get $class_selected_idx]:"
 		}
 	}
 	
@@ -750,11 +752,11 @@ proc Apol_Analysis_dta::forward_options_create_dialog {} {
         set types_frame [TitleFrame [$pw1 getframe 1].types_frame -text "Search by object type(s):"]
         
         # Widgets for object classes frame
-        set pw1   [PanedWindow [$objs_frame getframe].pw -side top]
+        set pw1   [PanedWindow [$objs_frame getframe].pw -side top -weights available]
         set pane  [$pw1 add]
-        set search_pane [$pw1 add -weight 3]
+        set search_pane [$pw1 add]
         set pw2   [PanedWindow $pane.pw -side left -weights available]
-        set class_pane 	[$pw2 add -weight 2]
+        set class_pane 	[$pw2 add]
         set classes_box [TitleFrame $class_pane.tbox -text "Object Classes:" -bd 0]
         set permissions_title_frame [TitleFrame $search_pane.rbox -text "Permissions:" -bd 0]
           
@@ -787,8 +789,8 @@ proc Apol_Analysis_dta::forward_options_create_dialog {} {
         pack $permissions_title_frame -pady 2 -padx 2 -fill both -expand yes
         pack $pw1 -fill both -expand yes
         pack $pw2 -fill both -expand yes
-       	pack $b_excl_all_perms -side right -anchor center -pady 2 -expand yes -fill x	
-       	pack $b_incl_all_perms -side left -anchor center -pady 2 -expand yes -fill x
+       	pack $b_excl_all_perms -side right -anchor nw -pady 2 -expand yes -fill x	
+       	pack $b_incl_all_perms -side left -anchor nw -pady 2 -expand yes -fill x
         pack $topf -fill both -expand yes -padx 10 -pady 10   
         pack $sw_class -fill both -expand yes -side top
         pack $bframe -side bottom -fill both -anchor sw -pady 2
@@ -919,9 +921,9 @@ proc Apol_Analysis_dta::forward_options_create_dialog {} {
 	wm protocol $forward_options_Dlg WM_DELETE_WINDOW "Apol_Analysis_dta::forward_options_destroy_dialog"
     	
         # Configure top-level dialog specifications
-        set width 780
+	set width 780
 	set height 750
-	wm geom $forward_options_Dlg ${width}x${height}
+        wm geom $forward_options_Dlg ${width}x${height}
 	wm deiconify $forward_options_Dlg
 	focus $forward_options_Dlg
 	
