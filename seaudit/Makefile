@@ -25,10 +25,10 @@ seaudit: $(OBJS) $(GTK-SOURCEVIEW-OBJS) ../lib/libseaudit.a ../lib/libapol.a
 	mkdir -p $@
 
 install: seaudit
-	install -m 755 seaudit $(BINDIR)
-	install -m 644 $(GLADE_FILES) $(INSTALL_LIBDIR)
-	install -m 644 seaudit_help.txt  $(INSTALL_LIBDIR)
-	install -m 444 dot_seaudit $(INSTALL_LIBDIR)
+	-install -m 755 seaudit $(BINDIR)
+	-install -m 644 $(GLADE_FILES) $(INSTALL_LIBDIR)
+	-install -m 644 seaudit_help.txt  $(INSTALL_LIBDIR)
+	-install -m 444 dot_seaudit $(INSTALL_LIBDIR)
 
 clean:
 	rm -f *.o seaudit *~ core* *.bak *.gladep
