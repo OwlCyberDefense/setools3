@@ -17,8 +17,7 @@ endif
 STATICAPOL = ../libapol/libapol.a
 STATICSEFS = ../libsefs/libsefs.a
 
-
-LIBSELINUX      = -lselinux
+LIBSELINUXSO      = -lselinux
 
 INCLUDE		= -I.. -I../libapol -I../libsefs
 
@@ -36,31 +35,31 @@ SHELL = /bin/sh
 all: $(SE_CMDS)
 
 seinfo: seinfo.o $(LIBAPOL)
-	$(CC) -o $@  seinfo.o $(LIBAPOL) $(LIBS) $(LINKFLAGS)
+	$(CC) -o $@  seinfo.o $(LIBAPOL) $(LIBS) $(LINKFLAGS) $(LIBSELINUX)
 
 sesearch: sesearch.o $(LIBAPOL)
-	$(CC) -o $@ sesearch.o $(LIBAPOL) $(LIBS) $(LINKFLAGS)
+	$(CC) -o $@ sesearch.o $(LIBAPOL) $(LIBS) $(LINKFLAGS) $(LIBSELINUX)
 
 replcon.o: replcon.c 
-	$(CC) -c replcon.c -DSEFS_XATTR_LABELED_FILESYSTEMS=$(SEFS_XATTR_LABELED_FILESYSTEMS) $(CFLAGS) $(INCLUDE)
+	$(CC) -c replcon.c $(CFLAGS) $(INCLUDE)
 
 replcon: replcon.o $(LIBSEFS) $(LIBAPOL)
-	$(CC) -o $@ replcon.o $(LINKFLAGS) $(LIBSELINUX) $(LIBSEFS) $(LIBAPOL) $(LIBS)
+	$(CC) -o $@ replcon.o $(LINKFLAGS) $(LIBSELINUXSO) $(LIBSEFS) $(LIBAPOL) $(LIBS)
 
 indexcon.o: indexcon.c
-	$(CC) -c indexcon.c -DSEFS_XATTR_LABELED_FILESYSTEMS=$(SEFS_XATTR_LABELED_FILESYSTEMS) $(CFLAGS) $(INCLUDE)
+	$(CC) -c indexcon.c $(CFLAGS) $(INCLUDE) $(LIBSELINUX)
 
 indexcon: indexcon.o $(LIBAPOL) $(LIBSEFS)
-	$(CC) -o $@ indexcon.o $(LINKFLAGS) $(LIBSEFS) $(LIBSELINUX) $(LIBAPOL) $(LIBS)
+	$(CC) -static -o $@ indexcon.o $(LINKFLAGS) $(STATICSEFS) $(LIBSELINUXSO) $(STATICAPOL) $(LIBS)
 
 searchcon.o: searchcon.c
-	$(CC) -c searchcon.c -DSEFS_XATTR_LABELED_FILESYSTEMS=$(SEFS_XATTR_LABELED_FILESYSTEMS) $(CFLAGS) $(INCLUDE)
+	$(CC) -c searchcon.c $(CFLAGS) $(INCLUDE)
 
 searchcon: searchcon.o $(LIBSEFS) $(LIBAPOL)
-	$(CC) -static -o $@ searchcon.o $(LINKFLAGS) $(STATICSEFS) $(LIBSELINUX) $(STATICAPOL) $(LIBS)
+	$(CC) -o $@ searchcon.o $(LINKFLAGS) $(LIBSEFS) $(LIBSELINUX) $(LIBAPOL) $(LIBS)
 
 findcon.o: replcon.c
-	$(CC) -c replcon.c -o findcon.o -DFINDCON -DSEFS_XATTR_LABELED_FILESYSTEMS=$(SEFS_XATTR_LABELED_FILESYSTEMS) $(CFLAGS) $(INCLUDE)
+	$(CC) -c replcon.c -o findcon.o -DFINDCON $(CFLAGS) $(INCLUDE)
 
 findcon: findcon.o $(LIBSEFS) $(LIBAPOL)
 	$(CC) -o $@ findcon.o $(LINKFLAGS) $(LIBSELINUX) $(LIBSEFS) $(LIBAPOL) $(LIBS)
