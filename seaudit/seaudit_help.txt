@@ -1,6 +1,6 @@
 Audit Log Analysis Tool for Security Enhanced Linux
 seaudit, version 1.0
-January 07, 2004
+January 09, 2004
 selinux@tresys.com
 
 Overview:  
@@ -34,8 +34,7 @@ it must not generate errors when run through checkpolicy).  If you
 choose not to open a policy.conf file your functionality will be 
 limited. Only one policy.conf file and one audit log can be open at a 
 time, so if you open another one of these files the current one will 
-be closed. If an invalid policy.conf file is opened the tool should be 
-restarted; this is a known bug.
+be closed.
 
 If you get a warning when opening a log file that says "Warning! One
 or more malformed messages found in audit log.", that means one or
