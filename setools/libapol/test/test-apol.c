@@ -572,7 +572,8 @@ int main(int argc, char *argv[])
 	char OutfileName[121];
 	policy_t *policy = NULL;
 	FILE *test_f;
-
+	char *ans_ptr = &ans[0];
+	
 	outfile = stdout;		/* Default output to  stdout */
 	if(argc != 2 )
 		goto usage;
@@ -616,7 +617,7 @@ int main(int argc, char *argv[])
 			}
 			printf("\tenter starting domain type name:  ");
 			fgets(ans, sizeof(ans), stdin);
-			fix_string(ans, sizeof(ans));
+			trim_trailing_whitespace(&ans_ptr);
 			
 			/* Set the start type for our query */ 					
 			dta_query->start_type = get_type_idx(ans, policy);
@@ -784,7 +785,7 @@ int main(int argc, char *argv[])
 			
 			printf("\tenter ending domain type name:  ");
 			fgets(ans, sizeof(ans), stdin);
-			fix_string(ans, sizeof(ans));
+			trim_trailing_whitespace(&ans_ptr);
 			
 			/* Set the start type for our query */ 					
 			dta_query->start_type = get_type_idx(ans, policy);
@@ -944,7 +945,7 @@ int main(int argc, char *argv[])
 			
 			printf("\tenter regular expression:  ");
 			fgets(ans, sizeof(ans), stdin);
-			fix_string(ans, sizeof(ans));
+			trim_trailing_whitespace(&ans_ptr);
 			
 			rt = regcomp(&reg, ans, REG_ICASE|REG_EXTENDED|REG_NOSUB);
 			if(rt != 0) {
@@ -1034,7 +1035,7 @@ int main(int argc, char *argv[])
 			
 			printf("Do you want to enter search criteria [n]?:  ");
 			fgets(ans, sizeof(ans), stdin);
-			fix_string(ans, sizeof(ans));
+			trim_trailing_whitespace(&ans_ptr);
 			if(ans[0] =='y' || ans[0] == 'Y') 
 				search = TRUE;
 				
@@ -1043,7 +1044,7 @@ int main(int argc, char *argv[])
 				ans[0] = '\0';
 				printf("     User [none]:  ");
 				fgets(ans, sizeof(ans), stdin);
-				fix_string(ans, sizeof(ans));
+				trim_trailing_whitespace(&ans_ptr);
 				if(ans[0] != '\0') {
 					user = (char *)malloc(strlen(ans) + 1);
 					strcpy(user, ans);
@@ -1051,7 +1052,7 @@ int main(int argc, char *argv[])
 				ans[0] = '\0';
 				printf("     Role [none]:  ");
 				fgets(ans, sizeof(ans), stdin);
-				fix_string(ans, sizeof(ans));
+				trim_trailing_whitespace(&ans_ptr);
 				if(ans[0] != '\0') {
 					role = (char *)malloc(strlen(ans) + 1);
 					strcpy(role, ans);
@@ -1059,7 +1060,7 @@ int main(int argc, char *argv[])
 				ans[0] = '\0';
 				printf("     Type [none]:  ");
 				fgets(ans, sizeof(ans), stdin);
-				fix_string(ans, sizeof(ans));
+				trim_trailing_whitespace(&ans_ptr);
 				if(ans[0] != '\0') {
 					type = (char *)malloc(strlen(ans) + 1);
 					strcpy(type, ans);
@@ -1100,16 +1101,18 @@ int main(int argc, char *argv[])
 			break;
 		}
                 case '7':
+                {
                         test_print_bools(policy);
                         test_print_cond_exprs(policy);
                         break;
+                }
 		case '8':
 		{
 			int bool_idx;
 			bool_t bool_val;
 			printf("boolean name: ");
 			fgets(ans, sizeof(ans), stdin);
-			fix_string(ans, sizeof(ans));
+			trim_trailing_whitespace(&ans_ptr);
 			bool_idx = get_cond_bool_idx(ans, policy);
 			if (bool_idx < 0) {
 				fprintf(stderr, "Invalid boolean name\n");
@@ -1142,7 +1145,7 @@ int main(int argc, char *argv[])
 			
 			printf("use regex [y|N]: ");
 			fgets(ans, sizeof(ans), stdin);
-			fix_string(ans, sizeof(ans));
+			trim_trailing_whitespace(&ans_ptr);
 			if (ans[0] == 'y')
 				regex = TRUE;
 			else
@@ -1150,7 +1153,7 @@ int main(int argc, char *argv[])
 			
 			printf("boolean name: ");
 			fgets(ans, sizeof(ans), stdin);
-			fix_string(ans, sizeof(ans));
+			trim_trailing_whitespace(&ans_ptr);
 			
 			exprs_b = (bool_t*)malloc(sizeof(bool_t) * policy->num_cond_exprs);
 			if (!exprs_b) {

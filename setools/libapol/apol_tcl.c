@@ -346,7 +346,7 @@ static iflow_query_t* set_transitive_query_args(Tcl_Interp *interp, char *argv[]
 
 	/* filter ending type(s) */
 	if(filter_end_types) {	
-		fix_string(end_type, sz);
+		trim_trailing_whitespace(&end_type);
 		rt = regcomp(&reg, end_type, REG_EXTENDED|REG_NOSUB);
 		if(rt != 0) {
 			sz = regerror(rt, &reg, NULL, 0);
@@ -3987,7 +3987,7 @@ int Apol_DirectInformationFlowAnalysis(ClientData clientData, Tcl_Interp *interp
 
 	/* filter ending type(s) */
 	if(filter_end_types) {	
-		fix_string(end_type, sz);
+		trim_trailing_whitespace(&end_type);
 		rt = regcomp(&reg, end_type, REG_EXTENDED|REG_NOSUB);
 		if(rt != 0) {
 			sz = regerror(rt, &reg, NULL, 0);
