@@ -404,19 +404,34 @@ static int apol_add_perm_to_set_member(relabel_set_t *set, int type_idx, int obj
 
 static int apol_add_domain_to_result(relabel_result_t *res, int domain, int *types, int num_types, int *rules, int num_rules)
 {
-	int i, retv;
+	int i, retv, where;
 
 	if (!res || !types || !rules || !num_types || !num_rules) 
 		return -1;
 
 	/* add any new types */
 	for (i = 0; i < num_types; i++) {
-		retv = find_int_in_array(types[i], res->types, res->num_types);
-		if (retv == -1) {
+		where = find_int_in_array(types[i], res->types, res->num_types);
+		if (where == -1) {
 			retv = add_i_to_a(types[i], &(res->num_types), &(res->types));
 			if (retv)
 				return -1;
+			if (res->domains) {
+				res->domains = (int**)realloc(res->domains, res->num_types * sizeof(int*));
+				if (!res->doamins)
+					return -1;
+				res->domains[res->num_types - 1] = NULL;
+			} else {
+				res->domains = (int**)calloc(1, sizeof(int*));
+				if (!res->domains)
+					return -1;
+			}
+			where = res->num_types - 1;
 		}
+		retv = add_i_to_a(domain, $(res->num_domains[where]), &(res->domains[where]));
+		if (retv) 
+			return -1;
+		
 	}
 
 	/* do rules */
