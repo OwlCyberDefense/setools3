@@ -1,5 +1,7 @@
 # SE Tools Main makefile
 
+TOPDIR		= $(shell pwd)
+
 MAKEFILE =  Makefile
 MAKE = make
 
@@ -18,7 +20,10 @@ CC		= gcc
 YACC		= bison -y
 LEX		= flex -olex.yy.c
 
-SHARED_LIB_INSTALL_DIR = $(DESTDIR)/usr/lib
+DEBUG		= 1
+DYNAMIC		= 0
+
+SHARED_LIB_INSTALL_DIR = /usr/lib
 STATIC_LIB_INSTALL_DIR = $(SHARED_LIB_INSTALL_DIR)
 SETOOLS_INCLUDE = $(DESTDIR)$(INCLUDE_DIR)/setools
 
@@ -37,11 +42,26 @@ DEFAULT_LOG_FILE = /var/log/messages
 # -DCONFIG_SECURITY_SELINUX_MLS 
 #		compiles library to be compatible with MLS 
 ##		in the policy (experimental, see Readme)
+# -DLIBSELINUX 
+#		compiles libapol and libseuser libraries to use the
+#		libselinux helper functions for locating system default 
+#		policy resources, instead of the logic from libapol or 
+#		the locations defined in the seuser.conf file.
+#
+#		NOTE: When using this compile option, you will need to   
+#		link in the libselinux library for the following 
+#		programs: 
+#		  seaudit, seinfo, sesearch, seuser, seuserx
+##
 CC_DEFINES	= -fPIC
 
+ifeq ($(DEBUG), 0)
 CFLAGS		= -Wall -O2 $(TCL_INCLUDE) $(CC_DEFINES)
-#CFLAGS		= -Wall -g $(TCL_INCLUDE) $(CC_DEFINES)
+else
+CFLAGS		= -Wall -ggdb3 $(TCL_INCLUDE) $(CC_DEFINES)
 #CFLAGS		= -Wall -ansi -pedantic -g $(TCL_INCLUDE) $(CC_DEFINES)
+endif
+
 
 # Install directories
 # Binaries go here
@@ -68,13 +88,13 @@ POLICYINSTALLDIRS = seuser
 # exports
 export CFLAGS CC YACC LEX LINKFLAGS BINDIR INSTALL_LIBDIR INSTALL_HELPDIR LIBS TCL_LIBINC TCL_LIBS MAKE 
 export SELINUX_DIR POLICY_INSTALL_DIR POLICY_SRC_DIR SRC_POLICY_DIR POLICY_SRC_FILE DEFAULT_LOG_FILE
-export SHARED_LIB_INSTALL_DIR STATIC_LIB_INSTALL_DIR SETOOLS_INCLUDE
+export TOPDIR SHARED_LIB_INSTALL_DIR STATIC_LIB_INSTALL_DIR SETOOLS_INCLUDE DEBUG
 
 all:  all-libs apol awish seuser seuserx sepcut seaudit secmds
 
 all-nogui:  corelibs seuser secmds
 
-corelibs: libapol libseuser libseaudit
+corelibs: libapol libseuser libseaudit libsefs
 
 guilibs: libapol-tcl libseuser-tcl
 
@@ -129,7 +149,7 @@ awish: selinux_tool
 		echo "Could not build awish."; \
 		echo "Tcl library is not built or not in expected location(s)."; \
 	fi
-	
+
 seuser: selinux_tool
 	cd seuser; $(MAKE) seuser 	
 
@@ -150,33 +170,36 @@ seaudit: selinux_tool
 
 secmds: selinux_tool
 	cd secmds; $(MAKE) all
-	
+
 libapol: selinux_tool
-	cd libapol; $(MAKE) libapol
+	cd libapol; $(MAKE) libapol libapolso
 
 libapol-tcl: selinux_tool
 	cd libapol;
 	@if [ "${shell env tclsh tcl_vars search_tcl_libs}" != "none" ]; then \
-		cd libapol; $(MAKE) libapol-tcl; \
+		cd libapol; $(MAKE) libapol-tcl libapol-tclso; \
 	else \
 		echo "Could not build libapol-tcl."; \
 		echo "Tcl library is not built or not in expected location(s)."; \
 	fi
 
+libsefs: selinux_tool
+	cd libsefs; $(MAKE) libsefs libsefsso
+
 libseuser: selinux_tool
-	cd libseuser; $(MAKE) libseuser
+	cd libseuser; $(MAKE) libseuser libseuserso
 
 libseuser-tcl: selinux_tool
 	cd libseuser;
 	@if [ "${shell env tclsh tcl_vars search_tcl_libs}" != "none" ]; then \
-		cd libseuser; $(MAKE) libseuser-tcl; \
+		cd libseuser; $(MAKE) libseuser-tcl libseuser-tclso; \
 	else \
 		echo "Could not build libseuser-tcl."; \
 		echo "Tcl library is not built or not in expected location(s)."; \
 	fi
 
 libseaudit: selinux_tool
-	cd libseaudit; $(MAKE)
+	cd libseaudit; $(MAKE) libseaudit libseauditso
 
 $(INSTALL_LIBDIR):
 	install -m 755 -d $(INSTALL_LIBDIR)
@@ -224,7 +247,9 @@ install-seaudit: $(INSTALL_LIBDIR)
 
 install-nogui: $(INSTALL_LIBDIR) install-seuser install-secmds
 
-install: install-apol install-seuserx install-sepcut install-awish install-secmds install-seaudit
+install: install-dev install-apol install-seuserx install-sepcut \
+	 install-awish install-secmds install-seaudit install-docs \
+	 install-policy install-bwidget
 
 # Install the libraries
 install-libseuser:
@@ -232,35 +257,43 @@ install-libseuser:
 
 install-libapol:
 	cd libapol; $(MAKE) install
-	
+
 install-libseaudit:
 	cd libseaudit; $(MAKE) install
-	
-install-dev: install-libseuser install-libapol install-libseaudit
-	
+
+install-libsefs:
+	cd libsefs; $(MAKE) install
+
+install-dev: install-libseuser install-libapol install-libseaudit install-libsefs
+
 # Install the policy - this is a separate step to better support systems with
 # non-standard policies.
 install-seuser-policy: $(INSTALL_LIBDIR)
 	cd seuser; $(MAKE) install-policy
-	
+
 install-secmds-policy: $(INSTALL_LIBDIR)
 	cd secmds; $(MAKE) install-policy
-	
+
 install-libapol-policy:
 	cd libapol; $(MAKE) install-policy
-	
+
 install-libseuser-policy:
 	cd libseuser; $(MAKE) install-policy
-	
+
 install-libseaudit-policy:
 	cd libseaudit; $(MAKE) install-policy
 	
-install-policy: install-seuser-policy install-secmds-policy install-libapol-policy install-libseuser-policy install-libseaudit-policy
+install-libsefs-policy:
+	cd libsefs; $(MAKE) install-policy
+
+install-policy: install-seuser-policy install-secmds-policy \
+		install-libapol-policy install-libseuser-policy \
+		install-libseaudit-policy install-libsefs-policy
 
 # Install the BWidgets package
 install-bwidget:
 	cd packages; $(MAKE) install
-	
+
 # Re-generate all setools documentation in source tree
 docs:
 	cd docs-src; $(MAKE) docs
@@ -271,15 +304,18 @@ remove-docs:
 
 install-docs:
 	cd docs-src; $(MAKE) install
-	
+
 # test targets
-tests: test-seuser test-apol test-regression
+tests: test-seuser test-apol test-seaudit test-regression
 
 test-apol: selinux_tool
 	cd libapol/test; $(MAKE) $@
 
 test-seuser: selinux_tool
 	cd libseuser/test; $(MAKE) $@
+	
+test-seaudit: selinux_tool
+	cd libseaudit/test; $(MAKE) $@
 
 test-clean: 
 	cd libapol/test; $(MAKE) clean
@@ -289,6 +325,7 @@ test-clean:
 test-bare:
 	cd libapol/test; $(MAKE) bare
 	cd libseuser/test; $(MAKE) bare
+	cd libseaudit/test; $(MAKE) bare
 	cd test; $(MAKE) bare
 
 test-regression: selinux_tool
@@ -301,11 +338,12 @@ clean: test-clean
 	cd sepct; $(MAKE) clean
 	cd seuser; $(MAKE) clean
 	cd libseuser; $(MAKE) clean
+	cd libsefs; $(MAKE) clean
 	cd seaudit; $(MAKE) clean
 	cd secmds; $(MAKE) clean
 	cd libseaudit; $(MAKE) clean
 	rm -f *~
-	rm -f lib/*.a
+	rm -f lib/*.a lib/*.so lib/*.so.1
 
 bare: test-bare
 	cd apol; $(MAKE) bare
@@ -314,11 +352,12 @@ bare: test-bare
 	cd seuser; $(MAKE) bare
 	cd sepct; $(MAKE) bare
 	cd libseuser; $(MAKE) bare
+	cd libsefs; $(MAKE) bare
 	cd seaudit; $(MAKE) bare
 	cd secmds; $(MAKE) bare
 	cd libseaudit; $(MAKE) bare
-	rm -f *~
-	rm -rf ./lib
+	cd libseaudit; $(MAKE) bare
+	cd packages; $(MAKE) bare
 
 
 # Leave this empty target here!
