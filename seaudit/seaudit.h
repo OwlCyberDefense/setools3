@@ -62,7 +62,7 @@ seaudit_t *seaudit_init(void);
 void seaudit_destroy(seaudit_t *seaudit_app);
 int seaudit_open_policy(seaudit_t *seaudit_app, const char *filename);
 int seaudit_open_log_file(seaudit_t *seaudit_app, const char *filename);
-
+void seaudit_update_status_bar(seaudit_t *seaudit);
 
 
 #endif
