@@ -147,11 +147,18 @@ int apol_fill_filter_sets(FILE *infile, relabel_filter_t *filter, policy_t *poli
 		} else if (retv < 0) {
 			return retv;
 		}
-
+		
 		if (perm_idx >= 0) {
 			retv = apol_add_perm_to_obj_perm_set_list(&(filter->perm_sets), &(filter->num_perm_sets), obj_idx, perm_idx);
 			if (retv == -1) 
 				return -1;
+		} else {
+			retv = find_obj_in_array(filter->perm_sets, filter->num_perm_sets, obj_idx);
+			if (filter->perm_sets[retv].perms) {
+				free(filter->perm_sets[retv].perms);
+				filter->perm_sets[retv].perms = NULL;
+			}
+			filter->perm_sets[retv].num_perms = 0;
 		}
 	}
 
