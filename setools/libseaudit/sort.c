@@ -215,6 +215,27 @@ static int date_compare(const msg_t *a, const msg_t *b)
 
 }
 
+static int host_field_compare(const msg_t *a, const msg_t *b)
+{
+	int i_a, i_b;
+	const char *sa, *sb;
+
+	i_a = a->host;
+	i_b = b->host;
+
+	if (i_a < 0)
+		return -1;
+	if (i_b < 0)
+		return 1;
+
+	sa = audit_log_get_host(audit_log, i_a);
+	sb = audit_log_get_host(audit_log, i_b);
+
+	assert(sa && sb);
+
+	return strcmp(sa, sb);
+}
+
 static int src_user_compare(const msg_t *a, const msg_t *b)
 {
 	int i_a, i_b;
@@ -455,6 +476,17 @@ sort_action_node_t *msg_sort_action_create(void)
 	return node;	
 }
 
+sort_action_node_t *host_sort_action_create(void)
+{
+	sort_action_node_t *node = sort_action_node_create();
+	if (!node) {
+		fprintf(stderr, "Out of memory!\n");
+		return NULL;
+	}
+	node->msg_types = AVC_MSG | LOAD_POLICY_MSG;
+	node->sort = &host_field_compare;
+	return node;	
+}
 
 sort_action_node_t *perm_sort_action_create(void)
 {
