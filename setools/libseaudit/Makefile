@@ -3,6 +3,7 @@ INCLUDE        = -I..
 SEAUDIT_LIBS   = ../lib/libseaudit.a ../lib/libapol.a $(LIBS)
 CFLAGS		+= -D_GNU_SOURCE
 CFLAGS          += -DLIBSEAUDIT_VERSION_STRING='"$(shell cat VERSION)"'
+LIBXML_FLAGS   = `pkg-config --cflags libxml`
 
 libseaudit: ../lib/libseaudit.a
 
@@ -13,7 +14,7 @@ libseaudit: ../lib/libseaudit.a
 	cd ../; $(MAKE) libapol
 
 %.o:  %.c 
-	$(CC) $(CFLAGS) $(INCLUDE) -c $<
+	$(CC) $(CFLAGS) $(LIBXML_FLAGS) $(INCLUDE) -c $<
 
 ../lib:
 	mkdir -p $@
