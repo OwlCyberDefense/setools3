@@ -1683,6 +1683,7 @@ av_item_t *add_new_av_rule(int rule_type, policy_t *policy)
 	/* initialize */
 	memset(newitem, 0, sizeof(av_item_t));
 	newitem->type = rule_type;
+	newitem->cond_expr = -1;
 	newitem->lineno = 0;
 	(policy->rule_cnt[rule_type])++;
 	
@@ -1722,6 +1723,7 @@ tt_item_t *add_new_tt_rule(int rule_type, policy_t *policy)
 	/* initialize */
 	memset(newitem, 0, sizeof(tt_item_t));
 	newitem->type = rule_type;
+	newitem->cond_expr = -1;
 	newitem->lineno = 0;
 	(policy->rule_cnt[rule_type])++;
 	
