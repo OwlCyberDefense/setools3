@@ -2,7 +2,7 @@ SELinux Tools (setools), version 2.0
 by Tresys Technology, LLC
 (selinux@tresys.com, www.tresys.com/selinux)
 
-February 09, 2005
+February 22, 2005
 
 OVERVIEW
 
@@ -63,38 +63,35 @@ The tools and libraries in this release include:
    for pathnames whose label contains a particular type name and/or user 
    name. 
     
-7. sediff: This is a new GUI and command-line policy semantic diff tool for 
-   SE Linux.  This tool allows a user to take two policies and find the 
-   differences, including added or removed types, users, roles, booleans 
-   and more importantly, type enforcement rules. The semantic difference of 
-   a policy is different from the syntactic difference in that it shows the 
-   cumulative effect of rules rather than doing a line-by-line comparison. 
 
-8. sepcut: A basic GUI-based policy configuration, browsing, editing, 
+7. sepcut: A basic GUI-based policy configuration, browsing, editing, 
    and testing tool. This tool is intended to provide a complete, 
    single user interface for viewing the source files of a policy, 
    configuring policy program modules, editing policy files, and 
    making and testing the policy.
 
-9. awish: A version of the Tcl/Tk wish interpreter that includes the 
+8. awish: A version of the Tcl/Tk wish interpreter that includes the 
    setools libraries.  We use this to test our GUIs (apol and seuser 
    have the interpreter compiled within them).  One could conceivably 
    write one's own GUI tools using Tcl/Tk as extended via awish.
 
-10. libapol: The main policy analysis library, which is the core 
+9. libapol: The main policy analysis library, which is the core 
    library for all of our tools.
 
-11. libseuser: The primary logic used for seuser.
+10. libseuser: The primary logic used for seuser.
 
-12. libseaudit: The library for parsing and storing SE Linux 
+11. libseaudit: The library for parsing and storing SE Linux 
     audit messages.
   
-13. libsefs: The library for indexing and analyzing a snapshot of 
+12. libsefs: The library for indexing and analyzing a snapshot of 
     security contexts for SE Linux filesystem entities.
 
-Apol, sepcut, seuser, sediff, seaudit, seaudit-report, secmds, and the 
-seuser* shell scripts are the primary tools in this package.  The other 
-tool (awish) and the four libraries can serve as building blocks for the 
+13. sediff: A GUI (sediffx) and command line (sediff) tool to find
+    the semantic difference between two SELinux policies.
+
+Apol, sepcut, seuser, seaudit, seaudit-report, secmds, and the seuser* 
+shell scripts are the primary tools in this package.  The other tool 
+(awish) and the four libraries can serve as building blocks for the 
 development of additional tools.  All of these tools and libraries 
 are early generation, with little maturity, and should be used with 
 care.

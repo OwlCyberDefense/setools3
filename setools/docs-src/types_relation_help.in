@@ -28,7 +28,7 @@ be affected by the removal of all instances of this type?
 
 Case 2
 The user may want to determine whether both types are assigned to a common 
-attribute or a common role. What users have access to this attribute and under 
+attribute or a common role. What users have access to these types and under 
 what roles and should this be the case?
 
 Case 3
@@ -46,9 +46,9 @@ does information move from one domain to the other, directly and indirectly?
 
 USING THE TYPES RELATIONSHIP SUMMARY ANALYSIS INTERFACE IN APOL
 
-The interface in apol presents the user with comboboxes for selecting the two 
+The interface in apol presents the user with checkboxes for selecting the two 
 types to be analyzed. They are labeled 'Type A' and 'Type B' respectively. 
-Additionally, there are comboboxes below each in order to allow the user to 
+Additionally, there are checkboxes below each in order to allow the user to 
 create a smaller subset of types from which to choose for Type A and Type B.
 Two subtabs, labeled 'Basic' and 'Analysis', are provided in the interface for
 selecting the analyses to include in the summary. 
@@ -73,12 +73,12 @@ Flow option is a two-way analysis (i.e. from A<->B), whereas the Transitive
 Information Flow and Domain Transition options are one-way (i.e. A->B and B->A)
 analyses. So for example, if one needs to determine if any domain transitions 
 exist between Type A and Type B, he or she would need to select both Domain 
-Transition checkbuttons to perform the analysis. 
+Transition checkboxes to perform the analysis. 
 
 After selecting the desired options for the analysis, select 'New' or 'Update'
 to start the analysis. This analysis may contain an overwhelming amount of 
 information, so the results are simplified by listing each option selected as
-an element of a tree widget. This allows the user to select an option from the 
+an element of a tree. This allows the user to select an option from the 
 tree and have more specific results displayed within the textbox.
 
 UNDERSTANDING THE RESULTS OF A TYPES RELATIONSHIP SUMMARY ANALYSIS
