@@ -1222,11 +1222,15 @@ int Apol_GetDefault_PermMap(ClientData clientData, Tcl_Interp *interp, int argc,
  *      argv[2] - open option for loading all or pieces of a policy.  
  *		  This option option may be one of the following:
  *	 		0 - ALL of the policy
- *			1 - Pass 1 policy only
- *			2 - TE Policy only
- *			3 - Types and roles only
- *			4 - Classes and permissions only
- *			5 - RRBAC policy
+ *			1 - Users only
+ *			2 - Roles only
+ *			3 - Types and attributes only
+ *			4 - Booleans only
+ *			5 - Classes and permissions only
+ *			6 - RBAC rules only
+ *			7 - TE rules only
+ *			8 - Conditionals only
+ *			9 - Initial SIDs only
  */
 int Apol_OpenPolicy(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
 {
@@ -1258,19 +1262,31 @@ int Apol_OpenPolicy(ClientData clientData, Tcl_Interp *interp, int argc, char *a
 		opts = POLOPT_ALL;
 		break;
 	case '1':
-		opts = PLOPT_PASS_1;
+		opts = POLOPT_USERS;
 		break;
 	case '2':
-		opts = POLOPT_TE_POLICY;
+		opts = POLOPT_ROLES;
 		break;
 	case '3':
-		opts = (POLOPT_TYPES|POLOPT_ROLES);
+		opts = POLOPT_TYPES;
 		break;
 	case '4':
 		opts = POLOPT_OBJECTS;
 		break;
 	case '5':
-		opts = POLOPT_RBAC;
+		opts = POLOPT_OBJECTS;
+		break;
+	case '6':
+		opts = POLOPT_COND_BOOLS;
+		break;
+	case '7':
+		opts = POLOPT_TE_RULES;
+		break;
+	case '8':
+		opts = POLOPT_COND_POLICY;
+		break;
+	case '9':
+		opts = POLOPT_INITIAL_SIDS;
 		break;
 	default:
 		Tcl_AppendResult(interp, "Invalid option:", argv[2], (char) NULL);
