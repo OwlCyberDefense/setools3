@@ -15,6 +15,8 @@
 ##############################################################
 
 namespace eval Apol_Analysis_relabel {
+    variable VERSION 1
+    
     variable info_button_text {This analysis checks the possible ways to relabel objects allowed by a policy.  The permissions relabelto
 and relabelfrom are special in a type enforcement environment as they provide a method of changing type.
 Relable analysis is designed to fascilitate queries about the possible changes for a given type.
@@ -217,7 +219,10 @@ proc Apol_Analysis_relabel::open { } {
 # contents of the assertion file and replace it with the remainder
 # from $file_channel.
 proc Apol_Analysis_relabel::load_query_options {file_channel parentDlg} {
-    variable widget_vars
+    variable VERSION widget_vars
+    if {[gets $file_channel] > $VERSION} {
+        return -code error "The specified query version is not allowed."
+    }
     array set widget_vars [read $file_channel]
     toggle_attributes 0
     toggle_permissions
@@ -229,8 +234,9 @@ proc Apol_Analysis_relabel::load_query_options {file_channel parentDlg} {
 #	- file_channel - file channel identifier of the query file to write to.
 #	- file_name - name of the query file
 proc Apol_Analysis_relabel::save_query_options {module_name file_channel file_name} {
-    variable widget_vars
+    variable VERSION widget_vars
     puts $file_channel $module_name
+    puts $file_channel $VERSION
     puts $file_channel [array get widget_vars]
     return 0
 }
