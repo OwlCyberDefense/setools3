@@ -50,10 +50,17 @@ namespace eval Apol_TE {
 	set opts(indirect_1)		0
 	set opts(indirect_2)		0
 	set opts(indirect_3)		0
+	set opts(src_tilda_sel)		0
+	set opts(src_subtract_sel)	0
+	set opts(tgt_tilda_sel)		0
+	set opts(tgt_subtract_sel)	0
+	set opts(dflt_tilda_sel)	0
+	set opts(dflt_subtract_sel)	0
 	variable ta1 			""
 	variable ta2 			""
 	variable ta3 			""
 	variable allow_regex		1
+	variable allow_syntactic	0
 	variable show_enabled_rules	1
 	variable ta1_opt 		"both"
 	variable ta2_opt 		"both"
@@ -97,6 +104,7 @@ namespace eval Apol_TE {
     	variable permslistbox	
 	set opts(perm_union)		union
 	set opts(perm_select)		selected
+	set opts(perms_tilda)		0
 	variable selObjectsList		""
     	variable selPermsList		""
 	variable objectslist 		""
@@ -215,6 +223,18 @@ proc Apol_TE::enable_disable_conditional_widgets {enable} {
 		} else {
 			$cb_tag_disabled_rules configure -state normal
 		}
+	}
+	return 0
+}
+
+proc Apol_TE::enable_disable_regex_cbutton {enable} {
+	variable cb_RegExp
+    	
+	if {$enable} {
+		$cb_RegExp deselect
+		$cb_RegExp configure -state disabled
+	} else {
+		$cb_RegExp configure -state normal
 	}
 	return 0
 }
@@ -972,7 +992,7 @@ proc Apol_TE::get_Selected_ListItems { listname } {
 			lappend itemsList $item		
 		}	
 	} else {
-		return "";
+		return ""
 	}
 	return $itemsList
 }
@@ -1077,12 +1097,14 @@ proc Apol_TE::reset_search_criteria { } {
 	variable list_attribs_2 
 	variable objslistbox
     	variable permslistbox
+    	variable allow_syntactic
     	
 	Apol_TE::reinitialize_default_search_options
 	
 	# check enable/disable status
         Apol_TE::enable_listbox $source_list 1 $list_types_1 $list_attribs_1
         Apol_TE::enable_listbox $target_list 2 $list_types_2 $list_attribs_2
+        Apol_TE::enable_disable_syntactic_search_widgets $allow_syntactic
         Apol_TE::defaultType_Enable_Disable
         Apol_TE::change_tgt_dflt_state
     	$Apol_TE::b_union configure -state disabled
@@ -1134,9 +1156,16 @@ proc Apol_TE::reinitialize_default_search_options { } {
 	set opts(indirect_1)	0
 	set opts(indirect_2)	0
 	set opts(indirect_3)	0
+	set opts(src_tilda_sel)		0
+	set opts(src_subtract_sel)	0
+	set opts(tgt_tilda_sel)		0
+	set opts(tgt_subtract_sel)	0
+	set opts(dflt_tilda_sel)	0
+	set opts(dflt_subtract_sel)	0
 	set opts(perm_union)	union
 	set opts(perm_select)	selected
 	set Apol_TE::allow_regex	1
+	set Apol_TE::allow_syntactic	0
 	set Apol_TE::show_enabled_rules	1
 	set Apol_TE::src_list_type_1	1
 	set Apol_TE::src_list_type_2	0
@@ -1200,7 +1229,11 @@ proc Apol_TE::populate_ta_list { list } {
 	variable ta1_opt
 	variable ta2_opt
 	variable ta_state_Array
-
+	variable cb_src_subtract
+	variable cb_tgt_subtract
+	variable cb_dflt_subtract
+	variable allow_syntactic
+	
 	if { $list == 1 } {
 		# Make sure that either "Types" OR "Attribs", OR Both checkbuttons are selected
 		# and set the variable ta1_opt accordingly. ta_state_Array variable holds the 
@@ -1225,6 +1258,7 @@ proc Apol_TE::populate_ta_list { list } {
 				$Apol_TE::list_attribs_1 invoke
 			}
 		}
+		set subtract_cb $cb_src_subtract
 		set which $ta1_opt
 		set uselist $Apol_TE::source_list
 		set ta Apol_TE::ta1
@@ -1254,12 +1288,14 @@ proc Apol_TE::populate_ta_list { list } {
 				$Apol_TE::list_attribs_2 invoke
 			}
 		}
+		set subtract_cb $cb_tgt_subtract
 		set which $ta2_opt
 		set uselist $Apol_TE::target_list
 		set ta Apol_TE::ta2
 	        set cBox $incl_indirect2
 	        set useStatus $Apol_TE::opts(use_2nd_list)
 	} elseif { $list == 3 } {
+		set subtract_cb $cb_dflt_subtract
 		set which $Apol_RBAC::opts(list_type)
 		set uselist $Apol_RBAC::list_tgt
 		set ta Apol_TE::ta3
@@ -1267,35 +1303,109 @@ proc Apol_TE::populate_ta_list { list } {
 	} else {
 		return -code error
 	}
-	
-	# Clear the value in the ComboBox
-	#set $ta ""
-		
+			
 	switch $which {
 		types {
 			$uselist configure -values $Apol_Types::typelist
 			if { $useStatus } {
-		        	$cBox configure -state normal	    
+				if {!$allow_syntactic} {
+		        		$cBox configure -state normal	
+		        	} else {
+		        		$subtract_cb configure -state normal    
+		        	}
 		        }
 		}
 		attribs {
 			$uselist configure -values $Apol_Types::attriblist
-		        $cBox configure -state disabled
-		        $cBox deselect
+		        if {!$allow_syntactic} {
+		        	$cBox configure -state disabled
+		        	$cBox deselect
+		        } else {
+		        	$subtract_cb configure -state disabled
+		        }
 		}
 		both {
 			set bothlist [concat $Apol_Types::typelist $Apol_Types::attriblist]
 			set bothlist [lsort -dictionary $bothlist]
 			$uselist configure -values $bothlist
-			$cBox configure -state disabled
-			$cBox deselect
+			if {!$allow_syntactic} {
+				$cBox configure -state disabled
+				$cBox deselect
+			} else {
+				$subtract_cb configure -state disabled
+			}
 		}
    	        roles {
 		        $uselist configure -values $Apol_Roles::role_list
 		}
 		default {
 			$uselist configure -values ""
-			$cBox configure -state normal
+			if {!$allow_syntactic} {
+				$cBox configure -state normal
+			}
+		}
+	}
+	if {$allow_syntactic} {
+        	Apol_TE::insert_star_into_types_attribs_list $uselist
+    	}
+    	
+	return 0
+}
+
+# ------------------------------------------------------------------------------
+#  Command Apol_TE::insert_star_into_types_attribs_list
+# ------------------------------------------------------------------------------
+proc Apol_TE::insert_star_into_types_attribs_list {combobox} {
+	if {[ApolTop::is_policy_open]} {
+		set tmp_list [$combobox cget -values]
+		set idx [lsearch -exact $tmp_list "*"]
+		if {$idx == -1} {
+			set tmp_list [linsert $tmp_list 0 "*"] 
+			$combobox configure -values $tmp_list
+		}	
+	}
+	return 0
+}
+
+# ------------------------------------------------------------------------------
+#  Command Apol_TE::insert_star_into_perms_list
+# ------------------------------------------------------------------------------
+proc Apol_TE::insert_star_into_perms_list {perms_list_1} {
+	if {[ApolTop::is_policy_open] && [Apol_TE::get_Selected_ListItems $Apol_TE::objslistbox] != ""} {
+		upvar #0 $perms_list_1 perms_list
+		set idx [lsearch -exact $perms_list "*"]
+		if {$idx == -1} {
+			set perms_list [linsert $perms_list 0 "*"] 
+		}	
+	}
+	return 0
+}
+
+# ------------------------------------------------------------------------------
+#  Command Apol_TE::remove_star_from_types_attribs_list
+# ------------------------------------------------------------------------------
+proc Apol_TE::remove_star_from_types_attribs_list {combobox} {
+	if {[ApolTop::is_policy_open]} {
+		set tmp_list [$combobox cget -values]
+		set idx [lsearch -exact $tmp_list "*"]
+		if {$idx != -1} {
+			set tmp_list [lreplace $tmp_list $idx $idx]
+		}
+		$combobox configure -values $tmp_list
+	}
+	
+	return 0
+}
+
+# ------------------------------------------------------------------------------
+#  Command Apol_TE::remove_star_from_permissions_list
+# ------------------------------------------------------------------------------
+proc Apol_TE::remove_star_from_permissions_list {perms_list_1} {
+	if {[ApolTop::is_policy_open]} {
+		upvar #0 $perms_list_1 perms_list
+		set idx [lsearch -exact $perms_list "*"]
+		if {$idx != -1} {
+			set perms_list [lreplace $perms_list $idx $idx]
 		}
 	}
 	
@@ -1356,6 +1466,10 @@ proc Apol_TE::configure_perms { } {
     		return
     	}
      	set objectsList ""
+     	
+     	if {$Apol_TE::allow_syntactic} {
+	        Apol_TE::insert_star_into_perms_list Apol_TE::permslist 
+    	} 
      		
     	return 0
 }
@@ -1369,7 +1483,14 @@ proc Apol_TE::enable_listbox { cBox list_number b1 b2 } {
     variable incl_indirect1
     variable incl_indirect2
     variable opts
-
+    variable cb_src_tilda
+    variable cb_src_subtract
+    variable cb_tgt_tilda
+    variable cb_tgt_subtract
+    variable allow_syntactic
+    variable source_list
+    variable target_list
+    
     # Set/unset indicator on raised tab to indicate search critera has been selected/deselected.
     Apol_TE::set_Indicator [$Apol_TE::notebook_searchOpts raise]
 	    
@@ -1406,11 +1527,24 @@ proc Apol_TE::enable_listbox { cBox list_number b1 b2 } {
 			$incl_indirect1 configure -state disabled
 		    	$incl_indirect1 deselect
 		}
+		if {$allow_syntactic} {
+	    		$cb_src_tilda configure -state normal
+    			$cb_src_subtract configure -state normal
+    			$incl_indirect1 configure -state disabled
+		    	$incl_indirect1 deselect
+		    	Apol_TE::insert_star_into_types_attribs_list $source_list
+	    	} else {
+	    		$cb_src_tilda configure -state disabled
+    			$cb_src_subtract configure -state disabled
+    			Apol_TE::remove_star_from_types_attribs_list $source_list
+	    	}
 	    } else { 
 		$cBox configure -state disabled -entrybg  $ApolTop::default_bg_color
 		selection clear -displayof $cBox
 		$b1 configure -state disabled
 		$b2 configure -state disabled
+		$cb_src_tilda configure -state disabled
+    		$cb_src_subtract configure -state disabled
 		$Apol_TE::global_asSource configure -state disabled
 		$Apol_TE::global_any configure -state disabled
 		$incl_indirect1 configure -state disabled
@@ -1419,7 +1553,7 @@ proc Apol_TE::enable_listbox { cBox list_number b1 b2 } {
 	    }
 	}
 	list2 {
-	    if { $Apol_TE::opts(use_2nd_list) } {
+	    if { $Apol_TE::opts(use_2nd_list) } {   	
 		$cBox configure -state normal -entrybg white
 		$b1 configure -state normal
 		$b2 configure -state normal
@@ -1433,11 +1567,26 @@ proc Apol_TE::enable_listbox { cBox list_number b1 b2 } {
 			$incl_indirect2 configure -state disabled
 		    	$incl_indirect2 deselect
 		}
+		if {$allow_syntactic} {
+	    		$cb_tgt_tilda configure -state normal
+    			$cb_tgt_subtract configure -state normal
+    			$incl_indirect2 configure -state disabled
+		    	$incl_indirect2 deselect
+		    	Apol_TE::insert_star_into_types_attribs_list $target_list
+	    	} else {
+	    		$cb_tgt_tilda configure -state disabled
+    			$cb_tgt_subtract configure -state disabled
+    			Apol_TE::remove_star_from_types_attribs_list $target_list
+	    	}
+	    	# Populate the type/attribs combo-boxes
+	    	Apol_TE::populate_ta_list 2
 	    } else {
 		$cBox configure -state disabled  -entrybg  $ApolTop::default_bg_color
 		selection clear -displayof $cBox
 		$b1 configure -state disabled
 		$b2 configure -state disabled
+		$cb_tgt_tilda configure -state disabled
+    		$cb_tgt_subtract configure -state disabled
 		$incl_indirect2 configure -state disabled
 		$incl_indirect2 deselect
 	    }
@@ -1475,15 +1624,29 @@ proc Apol_TE::determine_CheckedRules { } {
 proc Apol_TE::defaultType_Enable_Disable { } {
     variable dflt_type_list
     variable use_3rd_list
-    
+    variable cb_dflt_tilda
+    variable cb_dflt_subtract
+    variable dflt_type_list
+     
     # Set/unset indicator on raised tab to indicate search critera has been selected/deselected.
     Apol_TE::set_Indicator [$Apol_TE::notebook_searchOpts raise]
     
-    if { $Apol_TE::opts(use_3rd_list) } {
+    if {$Apol_TE::opts(use_3rd_list) } {
+    	if {$Apol_TE::allow_syntactic} {
+    		$cb_dflt_tilda configure -state normal
+		$cb_dflt_subtract configure -state normal
+		Apol_TE::insert_star_into_types_attribs_list $dflt_type_list
+    	} else {
+    		$cb_dflt_tilda configure -state disabled
+		$cb_dflt_subtract configure -state disabled
+		Apol_TE::remove_star_from_types_attribs_list $dflt_type_list
+    	}
 	$Apol_TE::dflt_type_list configure -state normal -entrybg white
     } else {
 	$Apol_TE::dflt_type_list configure -state disabled  -entrybg  $ApolTop::default_bg_color
 	selection clear -displayof $Apol_TE::dflt_type_list
+	$cb_dflt_tilda configure -state disabled
+	$cb_dflt_subtract configure -state disabled
     }
     # Determine the checked rules
     set bool [Apol_TE::determine_CheckedRules]
@@ -1929,6 +2092,7 @@ proc Apol_TE::createObjsClassesTab {notebook_objects_tab} {
     variable b_intersection
     variable b_allPerms
     variable b_selObjsPerms
+    variable cb_perms_tilda
     
     # Define Object-Classes and Permissions section subframes
     set fm_objs [frame $notebook_objects_tab.objectsFrame -relief flat -borderwidth 1]
@@ -1940,6 +2104,7 @@ proc Apol_TE::createObjsClassesTab {notebook_objects_tab} {
     set fm_permissions [frame [$fm_perms_frame getframe].permissionsFrame -relief flat -borderwidth 1]
     set fm_permissions_bot [frame $fm_permissions.bottomf -relief flat -borderwidth 1]
     set fm_permissions_mid [frame $fm_permissions.middlef -relief flat -borderwidth 1]
+    set fm_tilda [frame $fm_permissions.fm_tilda -relief flat -borderwidth 1]
     set fm_perm_buttons_bot [frame $fm_perm_buttons.botf -relief flat -borderwidth 1]
     
     # Placing all frames
@@ -1950,6 +2115,7 @@ proc Apol_TE::createObjsClassesTab {notebook_objects_tab} {
     pack $fm_permissions -side left -anchor n -padx 2 -fill y -expand yes
     pack $fm_perm_buttons_bot -side bottom -anchor nw -fill y -expand yes
     pack $fm_permissions_mid -side top -anchor n -fill both -expand yes
+    pack $fm_tilda -side top -anchor n -fill x -pady 2
     pack $fm_permissions_bot -side bottom -anchor n -fill both -expand yes
     
     # Define widgets for Object-Classes Section 
@@ -1987,6 +2153,11 @@ proc Apol_TE::createObjsClassesTab {notebook_objects_tab} {
 		      -listvar Apol_TE::permslist -selectmode multiple -exportselection 0] 
     $sw_perms setwidget $permslistbox
     
+    set cb_perms_tilda [checkbutton $fm_tilda.cb_perms_tilda -text "~" -font bold \
+    	 -variable Apol_TE::opts(perms_tilda) \
+         -offvalue 0 \
+         -onvalue  1]
+         
     # Set binding when selecting an item in the perms listbox to indicate search critera 
     # has been selected/deselected.
     bindtags $permslistbox [linsert [bindtags $permslistbox] 3 perms_list_Tag]
@@ -2004,12 +2175,102 @@ proc Apol_TE::createObjsClassesTab {notebook_objects_tab} {
     pack $sw_objs -fill both -expand yes
     pack $clearSelectButton -side bottom -pady 2
     pack $b_allPerms $b_selObjsPerms -side top -anchor nw -pady 2 -padx 2
+    pack $cb_perms_tilda -side left -anchor nw -fill x
     pack $b_union -side top -anchor nw -padx 18
     pack $b_intersection -side top -anchor nw -padx 18
     pack $sw_perms -side bottom -fill both -expand yes 
     pack $b_clearReverse $b_reverseSel -side left -pady 2 -padx 1 -anchor center -fill x -expand yes 
     
     return 0
+}
+
+# ----------------------------------------------------------------------------------------
+#  Command Apol_TE::enable_disable_syntactic_search_widgets
+# ----------------------------------------------------------------------------------------
+proc Apol_TE::enable_disable_syntactic_search_widgets {enable} {
+	variable cb_src_tilda
+	variable cb_src_subtract
+	variable cb_tgt_tilda
+	variable cb_tgt_subtract
+	variable cb_dflt_tilda
+	variable cb_dflt_subtract
+	variable incl_indirect1
+	variable incl_indirect2
+	variable source_list
+	variable target_list
+	variable dflt_type_list
+	variable opts
+	variable permslist
+    	variable cb_perms_tilda
+    	
+	if {$enable} {
+		if {$opts(use_1st_list)} {
+			$cb_src_tilda configure -state normal
+			$cb_src_subtract configure -state normal
+			$incl_indirect1 configure -state disabled
+	    		$incl_indirect1 deselect
+	    		Apol_TE::insert_star_into_types_attribs_list $source_list
+	    	}
+	    	if {$opts(use_2nd_list)} {
+			$cb_tgt_tilda configure -state normal
+			$cb_tgt_subtract configure -state normal
+			$incl_indirect2 configure -state disabled
+	    		$incl_indirect2 deselect
+	    		Apol_TE::insert_star_into_types_attribs_list $target_list
+	    	}
+	    	if {$opts(use_3rd_list)} {	    	
+			$cb_dflt_tilda configure -state normal
+			$cb_dflt_subtract configure -state normal
+		    	Apol_TE::insert_star_into_types_attribs_list $dflt_type_list
+		}
+		$cb_perms_tilda configure -state normal
+		Apol_TE::insert_star_into_perms_list Apol_TE::permslist
+	} else { 
+		if {$opts(use_1st_list)} {
+	    		$cb_src_tilda configure -state disabled
+			$cb_src_subtract configure -state disabled
+			$incl_indirect1 configure -state normal
+			Apol_TE::remove_star_from_types_attribs_list $source_list
+		}
+		if {$opts(use_2nd_list)} {
+			$cb_tgt_tilda configure -state disabled
+			$cb_tgt_subtract configure -state disabled
+			$incl_indirect2 configure -state normal
+			Apol_TE::remove_star_from_types_attribs_list $target_list
+		}
+		if {$opts(use_3rd_list)} {
+			$cb_dflt_tilda configure -state disabled
+			$cb_dflt_subtract configure -state disabled
+			Apol_TE::remove_star_from_types_attribs_list $dflt_type_list
+		}
+		$cb_perms_tilda configure -state disabled
+		Apol_TE::remove_star_from_permissions_list Apol_TE::permslist		
+	}
+	Apol_TE::enable_disable_regex_cbutton $enable
+	return 0	
+}
+
+# ----------------------------------------------------------------------------------------
+#  Command Apol_TE::enable_disable_attrib_checkbox
+# ----------------------------------------------------------------------------------------
+proc Apol_TE::enable_disable_attrib_checkbox {enable which} {
+	variable list_attribs_1 
+	variable list_attribs_2 
+    
+    	if {$enable} {
+    		if {$which == 1} {
+    			$list_attribs_1 configure -state disabled
+    		} else {
+    			$list_attribs_2 configure -state disabled
+    		}
+    	} else {
+    		if {$which == 1} {
+    			$list_attribs_1 configure -state normal
+    		} else {
+    			$list_attribs_2 configure -state normal
+    		}
+    	}
+	return 0
 }
 
 # ----------------------------------------------------------------------------------------
@@ -2033,6 +2294,12 @@ proc Apol_TE::createTypesAttribsTab {notebook_ta_tab} {
     variable list_attribs_2 
     variable global_asSource 
     variable global_any
+    variable cb_src_tilda
+    variable cb_src_subtract
+    variable cb_tgt_tilda
+    variable cb_tgt_subtract
+    variable cb_dflt_tilda
+    variable cb_dflt_subtract
     
     # Search options section subframes used to group the widget items under the Source Type/Attrib section
     set fm_src [frame $notebook_ta_tab.ta1 -relief flat -borderwidth 1]
@@ -2043,6 +2310,7 @@ proc Apol_TE::createTypesAttribsTab {notebook_ta_tab} {
     set fm_incl_cBox [frame $fm_inner.fm_incl_cBox -relief flat -borderwidth 1]
     set fm_src_radio_buttons [frame $fm_inner.fm_src_radio_buttons -relief flat -borderwidth 1]
     set fm_inner_ta [frame $fm_inner.fm_inner_ta -relief ridge -borderwidth 3]
+    set fm_syntactic_1 [frame $fm_inner.fm_syntactic_1 -relief flat -borderwidth 1]
     set fm_ta_buttons [frame $fm_inner_ta.fm_inner_top -relief flat -borderwidth 1]
     set fm_comboBox [frame $fm_inner_ta.fm_inner_bottom -relief flat -borderwidth 1]
 
@@ -2053,6 +2321,7 @@ proc Apol_TE::createTypesAttribsTab {notebook_ta_tab} {
     pack $fm_incl_cBox -fill x
     pack $fm_src_radio_buttons -anchor center
     pack $fm_inner_ta -pady 5
+    pack $fm_syntactic_1 -anchor nw -side bottom -fill x -expand yes
     pack $fm_ta_buttons -side top -padx 5 
     pack $fm_comboBox -side bottom -padx 5 -pady 5
 
@@ -2065,6 +2334,7 @@ proc Apol_TE::createTypesAttribsTab {notebook_ta_tab} {
     set fm_incl_cBox2 [frame $fm_inner2.fm_incl_cBox2 -relief flat -borderwidth 1]
     set fm_src_radio_buttons2 [frame $fm_inner2.fm_src_radio_buttons -relief flat -borderwidth 1]
     set fm_inner_ta2 [frame $fm_inner2.fm_inner_ta2 -relief ridge -borderwidth 3]
+    set fm_syntactic_2 [frame $fm_inner2.fm_syntactic_2 -relief flat -borderwidth 1]
     set fm_ta_buttons2 [frame $fm_inner_ta2.fm_inner_top -relief flat -borderwidth 1]
     set fm_comboBox2 [frame $fm_inner_ta2.fm_inner_bottom -relief flat -borderwidth 1]
 
@@ -2074,7 +2344,8 @@ proc Apol_TE::createTypesAttribsTab {notebook_ta_tab} {
     pack $fm_inner2 -padx 5 -fill x 
     pack $fm_incl_cBox2 -fill x -ipady 10.5
     pack $fm_src_radio_buttons2 -anchor center -expand yes
-    pack $fm_inner_ta2 -pady 5 -anchor s -side bottom -expand yes
+    pack $fm_inner_ta2 -pady 5 -anchor s -side top -expand yes
+    pack $fm_syntactic_2 -anchor nw -side bottom -fill x -expand yes
     pack $fm_ta_buttons2 -side top -padx 5 
     pack $fm_comboBox2 -side bottom -padx 5 -pady 5
 
@@ -2087,6 +2358,7 @@ proc Apol_TE::createTypesAttribsTab {notebook_ta_tab} {
     set fm_incl_cBox3 [frame $fm_inner3.fm_incl_cBox2 -relief flat -borderwidth 1]
     set fm_src_radio_buttons3 [frame $fm_inner3.fm_src_radio_buttons -relief flat -borderwidth 1]
     set fm_inner_ta3 [frame $fm_inner3.fm_inner_ta2 -relief ridge -borderwidth 3]
+    set fm_syntactic_3 [frame $fm_inner3.fm_syntactic_3 -relief flat -borderwidth 1]
     set fm_ta_buttons3 [frame $fm_inner_ta3.fm_inner_top -relief flat -borderwidth 1]
     set fm_comboBox3 [frame $fm_inner_ta3.fm_inner_bottom -relief flat -borderwidth 1]
 
@@ -2096,7 +2368,8 @@ proc Apol_TE::createTypesAttribsTab {notebook_ta_tab} {
     pack $fm_inner3 -padx 5 -fill x 
     pack $fm_incl_cBox3 -fill x -ipady 10.5
     pack $fm_src_radio_buttons3 -anchor center -expand yes -ipady 10.5
-    pack $fm_inner_ta3 -pady 5 -anchor s -side bottom -expand yes
+    pack $fm_inner_ta3 -pady 5 -anchor s -side top -expand yes
+    pack $fm_syntactic_3 -anchor nw -side bottom -fill x -expand yes
     pack $fm_ta_buttons3 -side top -padx 5 -ipady 10
     pack $fm_comboBox3 -side bottom -padx 5 -pady 5 -expand yes -fill x
 
@@ -2133,6 +2406,16 @@ proc Apol_TE::createTypesAttribsTab {notebook_ta_tab} {
 			 -variable Apol_TE::opts(indirect_1) \
 			 -onvalue 1 \
 			 -offvalue 0]
+			 
+    set cb_src_tilda [checkbutton $fm_syntactic_1.cb_src_tilda -text "~" -font bold \
+			 -variable Apol_TE::opts(src_tilda_sel) \
+			 -onvalue 1 \
+			 -offvalue 0]
+    set cb_src_subtract [checkbutton $fm_syntactic_1.cb_src_subtract -text "-" -font bold \
+			 -variable Apol_TE::opts(src_subtract_sel) \
+			 -onvalue 1 \
+			 -offvalue 0 \
+			 -command {Apol_TE::enable_disable_attrib_checkbox $Apol_TE::opts(src_subtract_sel) 1}]
 	     
     # Widget items for Target Type/Attrib section
     set target_list [ComboBox $fm_comboBox2.cb \
@@ -2162,7 +2445,16 @@ proc Apol_TE::createTypesAttribsTab {notebook_ta_tab} {
 			    -variable Apol_TE::opts(indirect_2) \
 			    -onvalue 1 \
 			    -offvalue 0]
-    
+    set cb_tgt_tilda [checkbutton $fm_syntactic_2.cb_tgt_tilda -text "~" -font bold \
+			 -variable Apol_TE::opts(tgt_tilda_sel) \
+			 -onvalue 1 \
+			 -offvalue 0]
+    set cb_tgt_subtract [checkbutton $fm_syntactic_2.cb_tgt_subtract -text "-" -font bold \
+			 -variable Apol_TE::opts(tgt_subtract_sel) \
+			 -onvalue 1 \
+			 -offvalue 0 \
+			 -command {Apol_TE::enable_disable_attrib_checkbox $Apol_TE::opts(tgt_subtract_sel) 2}]
+			 
     # Widget items for Default Type section
     set dflt_type_list [ComboBox $fm_comboBox3.cb -helptext "Third type search parameter"  \
     	-textvariable Apol_TE::ta3 -helptext "Type or select a type" \
@@ -2180,18 +2472,29 @@ proc Apol_TE::createTypesAttribsTab {notebook_ta_tab} {
 			     -offvalue 0 \
 			     -onvalue  1 \
 			     -command "Apol_TE::defaultType_Enable_Disable" ]
-
+    set cb_dflt_tilda [checkbutton $fm_syntactic_3.cb_dflt_tilda -text "~" -font bold \
+			 -variable Apol_TE::opts(dflt_tilda_sel) \
+			 -onvalue 1 \
+			 -offvalue 0]
+    set cb_dflt_subtract [checkbutton $fm_syntactic_3.cb_dflt_subtract -text "-" -font bold \
+			 -variable Apol_TE::opts(dflt_subtract_sel) \
+			 -onvalue 1 \
+			 -offvalue 0]
+			 
     # Placing Default Type widget items
+    pack $cb_dflt_tilda $cb_dflt_subtract -side left -anchor nw -fill x -expand yes
     pack $use_3rd_list -side top -anchor nw 
     pack $dflt_type_list -anchor w -fill x -expand yes
-
+   
     # Placing Target Type/Attrib widget items
+    pack $cb_tgt_tilda $cb_tgt_subtract -side left -anchor nw -fill x -expand yes
     pack $use_2nd_list -side top -anchor nw 
     pack $incl_indirect2 -side top -anchor w 
     pack $list_types_2  $list_attribs_2 -side left
     pack $target_list -anchor w -expand yes -fill x
         
     # Placing Source Type/Attrib widget items 
+    pack $cb_src_tilda $cb_src_subtract -side left -anchor nw -fill x -expand yes
     pack $use_1st_list -side top -anchor nw 
     pack $incl_indirect1 -side top -anchor w 
     pack $global_asSource $global_any -side left -anchor center 
@@ -2238,7 +2541,7 @@ proc Apol_TE::create {nb} {
     # Layout Frames
     set frame [$nb insert end $ApolTop::terules_tab -text "TE Rules"]
     set pw2 [PanedWindow $frame.pw2 -side left -weights available]
-    $pw2 add -minsize 230
+    $pw2 add -minsize 250
     $pw2 add
     set topf  [frame [$pw2 getframe 0].topf]
     set bottomf [frame [$pw2 getframe 1].bottomf]
@@ -2321,6 +2624,9 @@ proc Apol_TE::create {nb} {
     # Checkbutton to Enable/Disable Regular Expressions option.
     set cb_RegExp [checkbutton $cb_fm.cb_RegExp -text "Enable Regular Expressions" \
     		-variable Apol_TE::allow_regex -onvalue 1 -offvalue 0]
+    set cb_syntactic [checkbutton $cb_fm.cb_syntactic -text "Enable Syntactic Search" \
+    		-variable Apol_TE::allow_syntactic -onvalue 1 -offvalue 0 \
+    		-command {Apol_TE::enable_disable_syntactic_search_widgets $Apol_TE::allow_syntactic}]
                 	    
     # NoteBook creation for search options subframe
     set notebook_searchOpts [NoteBook $frame_search.nb]
@@ -2357,7 +2663,7 @@ proc Apol_TE::create {nb} {
     
     # Placing rule selection section widgets
     pack $cb_fm -side bottom -anchor nw
-    pack $cb_RegExp -side top -anchor nw 
+    pack $cb_RegExp $cb_syntactic -side top -anchor nw 
     pack $cb_show_enabled_rules $cb_tag_enabled_rules $cb_tag_disabled_rules -side top -anchor nw
     pack $teallow $neverallow $auallow $audont -anchor w 
     pack $ttrans $tmember $tchange $clone -anchor w 
@@ -2371,7 +2677,8 @@ proc Apol_TE::create {nb} {
     set raisedPage [$notebook_searchOpts raise [$notebook_searchOpts page 0]]
     Apol_TE::set_Indicator $raisedPage
     Apol_TE::create_empty_resultsTab
-           
+    Apol_TE::enable_disable_syntactic_search_widgets $Apol_TE::allow_syntactic
+               
     # Placing the results notebook frame within the results section    
     pack $notebook_results -fill both -expand yes -padx 4
        
