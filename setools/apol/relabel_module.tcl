@@ -178,8 +178,8 @@ proc Apol_Analysis_relabel::create_widgets_to_display_results {results results_f
 		        	-text "From" -open 1 \
 				-drawcross auto 
 				
-			set to_list [lindex $results 0]
-			set from_list [lindex $results 1]
+			set from_list [lindex $results 0]
+			set to_list [lindex $results 1]
 
 			# From list
 			foreach datum $from_list {
