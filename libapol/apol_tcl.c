@@ -1406,6 +1406,8 @@ int Apol_GetStats(ClientData clientData, Tcl_Interp *interp, int argc, char *arg
 	Tcl_AppendElement(interp, buf);
 	sprintf(buf, "users %d", policy->rule_cnt[RULE_USER]);
 	Tcl_AppendElement(interp, buf);
+	sprintf(buf, "sids %d", policy->num_initial_sids);
+	Tcl_AppendElement(interp, buf);
 			
 	return TCL_OK;
 }
@@ -1952,7 +1954,7 @@ int Apol_SearchInitialSIDs(ClientData clientData, Tcl_Interp *interp, int argc, 
 	Tcl_DStringAppend(buf, tbuf, -1);
 	
 	for(i = 0; i < num_isids; i++) {
-		sprintf(tbuf, "%s:", policy->initial_sids[isids[i]].name);
+		sprintf(tbuf, "%-25s :      ", policy->initial_sids[isids[i]].name);
 		Tcl_DStringAppend(buf, tbuf, -1);
 		str = re_render_security_context(policy->initial_sids[isids[i]].scontext, policy);
 		if(str == NULL) {
