@@ -1,6 +1,6 @@
 AN OVERVIEW OF INFORMATION FLOW ANALYSIS
 apol, version 1.3
-April 14, 2004
+April 15, 2004
 selinux@tresys.com
 
 
@@ -150,7 +150,7 @@ will allow you to take a policy mls file and convert it into the
 permission mapping file format required by apol.
 
 As distributed, apol provides default permission mappings (for policy 
-version 12 through policy version 16). These files are directly 
+version 12 through policy version 17). These files are directly 
 converted from their respective policy mls files.
 
    NOTE: It has often been noted on the mail list that the mls file is 
@@ -163,6 +163,48 @@ Apol provides mechanisms to allow you to manage and customize permission
 mappings that best suit your needs.  These tools, including a 
 permission map editor, are all available under the Advanced menu (see 
 more on this topic below).
+
+PERMISSION WEIGHTING
+
+In addition to mapping each permission to read, write, both, or none it is 
+possible to assign the permission a weight between 1 and 10 (the default is 10). 
+This weight is used to rate the importance of the information flow this 
+permission represents and allows the user to make fine-grained distinctions 
+between high-bandwidth, overt information flows and low-bandwidth, or difficult 
+to use covert information flows. For example, the permissions "read" and "write" 
+on the file object could be given a weight of 10 because it is a very high-
+bandwidth information flow. Additionally, the "use" permission on the fd object 
+(file descriptor) would probably be given a weight of 1 because it is a very 
+low-bandwidth covert flow at best. Note that a permission might be important for 
+access control, like fd use, but be given a low weight for information flow 
+because it cannot be used to pass large amounts of information.
+
+The default permission maps that are installed with Apol have weights assigned 
+for all of the permissions. The weights are in four general categories as 
+follows:
+
+	1 – 2		difficult to exploit covert flows (example: fd:use)
+	3 – 5		less difficult to exploit covert flows (example: process:signal)
+	6 – 7		difficult to use, noisy, or low-bandwidth overt flows (example: file:setattr)
+	8 – 10		high-bandwidth overt flows (example: file:write)
+
+These categories are loosely defined and the placement of the permissions into 
+these categories is subjective. Additional work needs to be done to verify the 
+accuracy of both the mappings of the permissions and the assigned weights.
+
+These weights are used in transitive information flow analysis to rank the 
+results and to make certain that important paths between types are presented 
+first. For example, consider a policy with the following information flows:
+
+	allow one_t two_t : file write;
+	allow three_t two_t : file read;
+	allow one_t three_t : fd use;
+
+If the permissions were mapped as described above and an analysis of the 
+transitive flows from one_t to three_t were done, the analysis would return the 
+path one_t->two_t->three_t first because the read and write permissions have a 
+much higher weight. The direct flow between one_t and three_t would still be 
+returned by the find more flows, but it would appear later in the list of flows.
 
 
 TYPES OF INFORMATION FLOW ANALYSIS
