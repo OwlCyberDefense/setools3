@@ -217,6 +217,7 @@ typedef struct av_item {
  	int		type;		/* rule type; av rule IDs defined above */
  	unsigned char	flags;		/* where we handle '~' and '*' */
 	bool_t		enabled;	/* whether the rule is enabled or not for conditionals */
+	int		cond_expr;	/* the conditional expression that owns this rule */
  	unsigned long	lineno;		/* line # from policy.conf */
  	ta_item_t	*src_types;	/* the domain types/attribs */
  	ta_item_t	*tgt_types;	/* the object types/attribs */
@@ -229,6 +230,7 @@ typedef struct tt_item {
 	int		type;		/* rule type; av rule IDs defined above */
 	unsigned char	flags;		/* use AV* flags above, only need SRC, TGT, & CLS */
 	bool_t		enabled;	/* whether the rule is enabled or not for conditionals */
+	int		cond_expr;	/* the conditional expression that owns this rule */
  	unsigned long	lineno;		/* line # from policy.conf */
 	ta_item_t	*src_types;	/* the domain types/attribs */
  	ta_item_t	*tgt_types;	/* the object types/attribs */
