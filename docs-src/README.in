@@ -86,6 +86,9 @@ The tools and libraries in this release include:
 12. libsefs: The library for indexing and analyzing a snapshot of 
     security contexts for SE Linux filesystem entities.
 
+13. sediff: A GUI (sediffx) and command line (sediff) tool to find
+    the semantic difference between two SELinux policies.
+
 Apol, sepcut, seuser, seaudit, seaudit-report, secmds, and the seuser* 
 shell scripts are the primary tools in this package.  The other tool 
 (awish) and the four libraries can serve as building blocks for the 
