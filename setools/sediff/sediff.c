@@ -1084,7 +1084,6 @@ int main (int argc, char **argv)
 			exit(1);
 		}
 		exit(1);
-		/* otherwise execlp() won't ever return! */
 	}
 
 	else {
