@@ -211,6 +211,7 @@ static void on_create_report_button_clicked(GtkButton *button, gpointer user_dat
 	GString *msg;
 	seaudit_filtered_view_t *filtered_view;
 	audit_log_view_t *log_view;
+	GtkEntry *entry;
 			
 	assert(report_window != NULL);
 	filename = get_filename_from_user("Save Report to File", NULL);
@@ -236,7 +237,24 @@ static void on_create_report_button_clicked(GtkButton *button, gpointer user_dat
 	if (!report_window->use_entire_log) {
 		report_window->report_info->log_view = log_view;
 	}
-
+	
+	entry = GTK_ENTRY(glade_xml_get_widget(report_window->xml, "entry_stylesheet"));
+	g_assert(entry);
+	if (report_window->report_info->stylesheet_file) {
+		free(report_window->report_info->stylesheet_file);
+		report_window->report_info->stylesheet_file = NULL;
+	}
+	seaudit_report_add_stylesheet_path(gtk_entry_get_text(GTK_ENTRY(entry)), report_window->report_info);
+	
+	entry = GTK_ENTRY(glade_xml_get_widget(report_window->xml, "entry_report_config"));
+	g_assert(entry);
+	if (report_window->report_info->configPath) {
+		free(report_window->report_info->configPath);
+		report_window->report_info->configPath = NULL;
+	}
+	
+	seaudit_report_add_configFile_path(gtk_entry_get_text(GTK_ENTRY(entry)), report_window->report_info);
+	
 	/* Generate the report */
 	if (seaudit_report_generate_report(report_window->report_info) != 0) {
 		msg = g_string_new("Error generating report!\n");
@@ -291,13 +309,6 @@ static void on_browse_report_config_button_clicked(GtkButton *button, gpointer u
 			gtk_file_selection_complete(GTK_FILE_SELECTION(file_selector), filename);
 	}
 	gtk_entry_set_text(GTK_ENTRY(entry), filename);
-	
-	if (report_window->report_info->configPath) {
-		free(report_window->report_info->configPath);
-		report_window->report_info->configPath = NULL;
-	}
-	
-	seaudit_report_add_configFile_path(filename, report_window->report_info);
 	gtk_widget_destroy(file_selector);
 }
 
@@ -331,13 +342,6 @@ static void on_browse_report_css_button_clicked(GtkButton *button, gpointer user
 			gtk_file_selection_complete(GTK_FILE_SELECTION(file_selector), filename);
 	}
 	gtk_entry_set_text(GTK_ENTRY(entry), filename);
-
-	if (report_window->report_info->stylesheet_file) {
-		free(report_window->report_info->stylesheet_file);
-		report_window->report_info->stylesheet_file = NULL;
-	}
-			
-	seaudit_report_add_stylesheet_path(filename, report_window->report_info);
 	gtk_widget_destroy(file_selector);
 }
 
