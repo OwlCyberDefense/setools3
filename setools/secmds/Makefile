@@ -30,6 +30,8 @@ CFLAGS          += -DSEARCHCON_VERSION_NUM='"$(shell cat SEARCHCON_VERSION)"'
 SHELL = /bin/sh
 
 all: $(SE_CMDS)
+	cd flowtool; $(MAKE) all
+	cd relabelanalysis; $(MAKE) all
 
 # seinfo and sesearch are optionally linked to libselinux.  
 # The LIBSELINUX variable is set in the top-level Makefile. 
@@ -93,5 +95,10 @@ $(LIBSEUSER-TCL):
 
 clean:
 	rm -f *.o core* $(SE_CMDS) *~
-bare:
+	cd flowtool; $(MAKE) clean
+	cd relabelanalysis; $(MAKE) clean
+
+bare: clean
 	rm -f *.o core* $(SE_CMDS) *~
+	cd flowtool; $(MAKE) bare
+	cd relabelanalysis; $(MAKE) bare
