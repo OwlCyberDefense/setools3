@@ -20,8 +20,8 @@
 #include <getopt.h>
 
 /* The following should be defined in the make environment */
-#ifndef SECMDS_VERSION_NUM
-	#define SECMDS_VERSION_NUM "UNKNOWN"
+#ifndef SEINFO_VERSION_NUM
+	#define SEINFO_VERSION_NUM "UNKNOWN"
 #endif
 
 #define COPYRIGHT_INFO "Copyright (C) 2003-2004 Tresys Technology, LLC"
@@ -465,7 +465,7 @@ int main (int argc, char **argv)
 	  		usage(argv[0], 0);
 	  		exit(0);
 	  	case 'v': /* version */
-	  		printf("\n%s (%s)\n\n", COPYRIGHT_INFO, SECMDS_VERSION_NUM);
+	  		printf("\n%s (%s)\n\n", COPYRIGHT_INFO, SEINFO_VERSION_NUM);
 	  		exit(0);
 	  	default:
 	  		usage(argv[0], 1);
