@@ -286,10 +286,29 @@ proc Apol_Analysis_tra::display_dif_options { } {
 }
 
 # ------------------------------------------------------------------------------
+#  Command Apol_Analysis_tra::initialize_widgets_state
+# ------------------------------------------------------------------------------
+proc Apol_Analysis_tra::initialize_widgets_state { } {  
+	variable combo_typeA
+     	variable combo_typeB
+        variable combo_attribA
+        variable combo_attribB
+        variable cb_attribA
+	variable cb_attribB
+		  
+     	Apol_Analysis_tra::config_attrib_comboBox_state \
+		$cb_attribA $combo_attribA $combo_typeA 0
+	Apol_Analysis_tra::config_attrib_comboBox_state \
+		$cb_attribB $combo_attribB $combo_typeB 0
+	
+     	return 0
+}
+
+# ------------------------------------------------------------------------------
 #  Command Apol_Analysis_tra::initialize
 # ------------------------------------------------------------------------------
-proc Apol_Analysis_tra::initialize { } {    
-     	
+proc Apol_Analysis_tra::initialize { } {  
+	Apol_Analysis_tra::reset_variables
      	return 0
 }
 
@@ -608,7 +627,6 @@ proc Apol_Analysis_tra::display_all_results {tra_listbox tra_info_text} {
 		}
 		$tra_info_text insert end "\n\n"
 	}
-	$tra_info_text configure -state disabled
 	return 0
 }
 
@@ -712,7 +730,7 @@ proc Apol_Analysis_tra::listSelect {tra_listbox tra_info_text selected_item} {
 			return -1
 		}
 	}
-	$tra_info_text configure -state disabled
+	ApolTop::makeTextBoxReadOnly $tra_info_text
 	$tra_listbox selection set $selected_item
 	Apol_Analysis_tra::formatInfoText $Apol_Analysis_tra::tra_info_text
 	return 0
@@ -1898,10 +1916,7 @@ proc Apol_Analysis_tra::open { } {
 	variable cb_attribB
 	    	  
 	Apol_Analysis_tra::populate_ta_list
-	Apol_Analysis_tra::config_attrib_comboBox_state \
-		$cb_attribA $combo_attribA $combo_typeA 0
-	Apol_Analysis_tra::config_attrib_comboBox_state \
-		$cb_attribB $combo_attribB $combo_typeB 0
+	Apol_Analysis_tra::initialize_widgets_state
 	Apol_Analysis_tra::change_types_list $combo_typeA $combo_attribA 1
 	Apol_Analysis_tra::change_types_list $combo_typeB $combo_attribB 1
 	 
@@ -1938,6 +1953,13 @@ proc Apol_Analysis_tra::display_mod_options { opts_frame } {
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_tra::get_analysis_info {} {
      	return $Apol_Analysis_tra::descriptive_text
+} 
+
+# ------------------------------------------------------------------------------
+#  Command Apol_Analysis_tra::get_results_raised_tab
+# ------------------------------------------------------------------------------
+proc Apol_Analysis_tra::get_results_raised_tab {} {
+     	return $Apol_Analysis_tra::tra_info_text
 } 
 
 # ------------------------------------------------------------------------------
@@ -2557,8 +2579,10 @@ proc Apol_Analysis_tra::create_resultsDisplay {results_frame} {
 	$sw_lbox setwidget $tra_listbox 
 
 	# info window
-	set tra_info_text [text [$sw_info getframe].tra_info_text -wrap none -bg white -font $ApolTop::text_font]
+	set tra_info_text [text [$sw_info getframe].tra_info_text \
+		-wrap none -bg white -font $ApolTop::text_font]
 	$sw_info setwidget $tra_info_text
+	bind $tra_info_text <Enter> {focus %W}
 	
 	pack $pw -fill both -expand yes -anchor nw 
 	pack $frm_tree -fill both -expand yes -anchor nw
@@ -2747,6 +2771,8 @@ proc Apol_Analysis_tra::create_options { options_frame } {
 	bindtags $combo_attribB.e [linsert [bindtags $combo_attribB.e] 3 combo_attribB_Tag]
 	bind combo_attribB_Tag <KeyPress> \
 		{ApolTop::_create_popup $Apol_Analysis_tra::combo_attribB %W %K}
-
+	
+	Apol_Analysis_tra::initialize_widgets_state
+	
 	return 0	
 }
