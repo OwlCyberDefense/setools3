@@ -263,37 +263,25 @@ int seaudit_open_log_file(seaudit_t *seaudit, const char *filename)
 
 	new_log = audit_log_create();
 	rt = parse_audit(tmp_file, new_log);
-	if (rt == PARSE_MEMORY_ERROR) {
+	if (rt == PARSE_RET_MEMORY_ERROR) {
 		message_display(seaudit->window->window, 
 				GTK_MESSAGE_ERROR, 
 				PARSE_MEMORY_ERROR_MSG);
 		goto dont_load_log;
 	}
-	else if (rt == PARSE_NO_SELINUX_ERROR) {
+	else if (rt == PARSE_RET_NO_SELINUX_ERROR) {
 		message_display(seaudit->window->window, 
 				GTK_MESSAGE_ERROR, 
 				PARSE_NO_SELINUX_ERROR_MSG);
 		goto dont_load_log;
 	}
-	else if (rt == PARSE_INVALID_MSG_WARN) {
+	else if (rt == PARSE_RET_INVALID_MSG_WARN) {
 		message_display(seaudit->window->window, 
 				GTK_MESSAGE_WARNING, 
 				PARSE_INVALID_MSG_WARN_MSG);
 		goto load_log;
 	}
-	else if (rt == PARSE_MALFORMED_MSG_WARN) {
-		message_display(seaudit->window->window, 
-				GTK_MESSAGE_WARNING, 
-				PARSE_MALFORMED_MSG_WARN_MSG);
-		goto load_log;
-	}
-	else if (rt == PARSE_BOTH_MSG_WARN) {
-		message_display(seaudit->window->window, 
-				GTK_MESSAGE_WARNING, 
-				PARSE_BOTH_MSG_WARN_MSG);
-		goto load_log;
-	}
-	else if (rt == PARSE_SUCCESS)
+	else if (rt == PARSE_RET_SUCCESS)
 		goto load_log;
 	
  dont_load_log:
@@ -668,7 +656,7 @@ static gboolean seaudit_real_time_update_log(gpointer callback_data)
 		return TRUE;
 
 	rt = parse_audit(seaudit_app->log_file_ptr, seaudit_app->cur_log);
-	if (rt == PARSE_NO_PARSE || rt == PARSE_NO_SELINUX_ERROR)
+	if (rt == PARSE_RET_NO_SELINUX_ERROR)
 		return TRUE;
 	seaudit_window_filter_views(seaudit_app->window);
 	return TRUE;
