@@ -175,8 +175,11 @@ allow seuser_t fonts_t:dir { getattr search };
 
 # Permission to create and establish a Unix stream connection to X server
 allow seuser_t self:unix_stream_socket create_stream_socket_perms ;
-can_unix_connect(seuser_t, user_xserver_t)
 can_unix_connect(seuser_t, sysadm_xserver_t)
+
+# Permission to connect to X over ssh tunnel
+can_network(seuser_t)
+can_tcp_connect(seuser_t, sshd_t)
 ')
 ifdef(`xdm.te', `
 can_unix_connect(seuser_t, xdm_xserver_t)
