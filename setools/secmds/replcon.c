@@ -130,8 +130,9 @@ static struct option const longopts[] = {
  * Frees the contents of the specified replcon_context_t
  */
 void
-replcon_context_free(replcon_context_t * context)
+replcon_context_free(replcon_context_t *context)
 {
+	assert(context != NULL);
 	if (context->user != NULL) {
 		free(context->user);
 		context->user = NULL;
@@ -166,58 +167,66 @@ replcon_context_destroy(replcon_context_t * context)
  *
  * Creates a new replcon_context_t object using the specified string
  *
- * Warning: does not check the format of the context string,
- *          use replcon_is_valid_context_format to accomplish this
+ * NOTE: Only checks the string for the format "xxx:xxx:xxx".
+ *       Use replcon_is_valid_context_format for more robust
+ *	 constext string validation.
  */
 replcon_context_t *
 replcon_context_create(const char *context_str)
 {
 	replcon_context_t *context = NULL;
-	char **parts;
-	char *tokens, *tokens_orig;
-	int i;
+	char **parts = NULL;
+	char *tokens = NULL, *tokens_orig = NULL;
+	int i = 0;
 
-	if (!context_str)
-		return NULL;
-
-	if ((context = malloc(sizeof (replcon_context_t))) == NULL)
+	assert(context_str != NULL);
+	if ((context = malloc(sizeof (replcon_context_t))) == NULL) {
+		fprintf(stderr, "Out of memory.\n");
 		goto err;
-
-	if ((parts = malloc(3 * sizeof(char*))) == NULL)
+	}
+	if ((parts = malloc(3 * sizeof(char*))) == NULL) {
+		fprintf(stderr, "Out of memory.\n");
 		goto err;
-
-	if ((tokens_orig = tokens = strdup(context_str)) == NULL)
-		goto err;
-
-	parts[0] = strsep(&tokens, ":");
-	parts[1] = strsep(&tokens, ":");
-	parts[2] = tokens;
-
-	for (i = 0; i < 3; i++) {
-		if (parts[i] == NULL)
-			goto err;
 	}
 
-	context->user = strdup(parts[0]);
-	context->role = strdup(parts[1]);
-	context->type = strdup(parts[2]);
-
-	if ((context->user == NULL) ||
-	    (context->role == NULL) ||
-	    (context->type == NULL))
+	if ((tokens_orig = tokens = strdup(context_str)) == NULL) {
+		fprintf(stderr, "Out of memory.\n");
 		goto err;
-
+	}
+	
+	assert(tokens_orig != NULL);
+        while (i < 3) {
+        	if ((parts[i] = strsep(&tokens, ":")) == NULL) {
+        		fprintf(stderr, "Invalid context format.\n");
+			goto err;
+		}
+       	       	i++;
+        }
+        
+	if ((context->user = strdup(parts[0])) == NULL) {
+		fprintf(stderr, "Out of memory.\n");
+		goto err;
+	}
+	if ((context->role = strdup(parts[1])) == NULL) {
+		fprintf(stderr, "Out of memory.\n");
+		goto err;
+	}
+	if ((context->type = strdup(parts[2])) == NULL) {
+		fprintf(stderr, "Out of memory.\n");
+		goto err;
+	}
+	
 	free(tokens_orig);
 	free(parts);
 
 	return context;
 
-      err:
-	if (tokens_orig) free (tokens_orig);
-	if (parts) free (parts);
-	replcon_context_destroy(context);
-	fprintf(stderr, "Could not create file context from %s...\n", context_str);
-	return NULL;
+	err:
+	  if (tokens_orig) free (tokens_orig);
+	  if (parts) free (parts);
+	  replcon_context_destroy(context);
+	  fprintf(stderr, "Could not create file context from %s...\n", context_str);
+	  return NULL;
 }
 
 /*
@@ -225,8 +234,9 @@ replcon_context_create(const char *context_str)
  *
  * Sets the user member of a replcon_context_t object using the specified argument
  */
-int replcon_context_user_set(replcon_context_t * context, const char *user)
+int replcon_context_user_set(replcon_context_t *context, const char *user)
 {
+	assert(context != NULL);
 	if (context->user != NULL) {
 		free(context->user);
 		context->user = NULL;
@@ -243,8 +253,9 @@ int replcon_context_user_set(replcon_context_t * context, const char *user)
  *
  * Sets the role member of a replcon_context_t object using the specified argument
  */
-int replcon_context_role_set(replcon_context_t * context, const char *role)
+int replcon_context_role_set(replcon_context_t *context, const char *role)
 {
+	assert(context != NULL);
 	if (context->role != NULL) {
 		free(context->role);
 		context->role = NULL;
@@ -261,8 +272,9 @@ int replcon_context_role_set(replcon_context_t * context, const char *role)
  *
  * Sets the type member of a replcon_context_t object using the specified argument
  */
-int replcon_context_type_set(replcon_context_t * context, const char *type)
+int replcon_context_type_set(replcon_context_t *context, const char *type)
 {
+	assert(context != NULL);
 	if (context->type != NULL) {
 		free(context->type);
 		context->type = NULL;
@@ -280,10 +292,11 @@ int replcon_context_type_set(replcon_context_t * context, const char *type)
  * Assembles a security_context_t from the information in the replcon context
  */
 security_context_t
-get_security_context(const replcon_context_t * context)
+get_security_context(const replcon_context_t *context)
 {
 	security_context_t sec_con;
-
+	
+	assert(context != NULL);
 	if ((sec_con = malloc(strlen(context->user) +
 			      strlen(context->role) +
 			      strlen(context->type) +
@@ -344,8 +357,9 @@ replcon_usage(const char *program_name, int brief)
  *
  * Sets the data members of info to initial values
  */
-void replcon_info_init(replcon_info_t * info)
+void replcon_info_init(replcon_info_t *info)
 {
+	assert(info != NULL);
 	info->recursive = 0;
 	info->quiet = 0;
 	info->verbose = 0;
@@ -454,9 +468,7 @@ int replcon_is_valid_context_format(const char *context_str)
 {
 	int i, len, count = 0;
 
-	if (context_str == NULL)
-		return FALSE;
-
+	assert(context_str != NULL);	
 	if (!strcasecmp("unlabeled", context_str))
 		return TRUE;
 
@@ -521,8 +533,10 @@ int replcon_info_add_object_class(replcon_info_t *info, const char *str)
 	    (replcon_classes_t *) realloc(info->obj_classes,
 					  sizeof (replcon_classes_t) *
 					  (info->num_classes + 1));
-	if (!info->obj_classes)
+	if (!info->obj_classes) {
+		fprintf(stderr, "Error: Out of memory\n");
 		return -1;
+	}
 
 	info->obj_classes[info->num_classes] = class_id;
 	info->num_classes++;
@@ -539,7 +553,7 @@ int replcon_info_add_object_class(replcon_info_t *info, const char *str)
  */
 int replcon_info_add_context_pair(replcon_info_t *info, const char *old, const char *new)
 {
-	replcon_context_t *context;
+	replcon_context_t *context = NULL;
 
 	assert(info != NULL);
 	/* Check the context pairs for format before we do any memory mgmt */
@@ -559,8 +573,10 @@ int replcon_info_add_context_pair(replcon_info_t *info, const char *old, const c
 	    (replcon_context_pair_t *) realloc(info->pairs,
 					       sizeof (replcon_context_pair_t) *
 					       (info->num_pairs + 1));
-	if (!info->pairs)
+	if (!info->pairs) {
+		fprintf(stderr, "Error: Out of memory\n");
 		goto err;
+	}
 
 	if (!strcasecmp("unlabeled", old))
 		context = replcon_context_create("!:!:!");
@@ -604,7 +620,7 @@ int replcon_info_add_context_pair(replcon_info_t *info, const char *old, const c
  */
 int replcon_info_add_context(replcon_info_t *info, const char *con)
 {
-	replcon_context_t *context;
+	replcon_context_t *context = NULL;
 
 	assert(info != NULL);
 	/* Check the context for format before we do any memory mgmt */
@@ -715,11 +731,11 @@ replcon_file_context_replace(const char *filename, const struct stat *statptr,
 {
 	int file_class, i;
 	unsigned char match = FALSE;
-	replcon_context_t *replacement_con, *original_con, *new_con;
-	security_context_t old_file_con, new_file_con;
-	replcon_info_t *info;
+	replcon_context_t *replacement_con = NULL, *original_con = NULL, *new_con = NULL;
+	security_context_t old_file_con, new_file_con = NULL;
+	replcon_info_t *info = NULL;
 
-	assert(filename != NULL);
+	assert(filename != NULL && statptr != NULL);
 	info = &replcon_info;
 	file_class = replcon_get_file_class(statptr);
 	if (!replcon_info_has_object_class(info, file_class))
@@ -764,7 +780,10 @@ replcon_file_context_replace(const char *filename, const struct stat *statptr,
 			replcon_context_type_set(replacement_con, original_con->type);
 
 		new_file_con = get_security_context(replacement_con);
-
+		if (new_file_con == NULL) {
+			fprintf(stderr, "Unable to create new file security context.");	
+			goto err;
+		}
 		if (lsetfilecon(filename, new_file_con) != 0) {
 			fprintf(stderr, "Error setting context %s for file %s:\n", new_file_con, filename);
 			perror("  lsetfilecon");
@@ -807,10 +826,10 @@ findcon(const char *filename, const struct stat *statptr,
 			     int fileflags, struct FTW *pfwt)
 {
 	int file_class, i;
-	replcon_context_t *original_con;
+	replcon_context_t *original_con = NULL;
 	security_context_t file_con;
 	
-	assert(filename != NULL);
+	assert(filename != NULL && statptr != NULL);
 	file_class = replcon_get_file_class(statptr);
 	if (!replcon_info_has_object_class(&replcon_info, file_class))
 		return 0;
@@ -858,8 +877,9 @@ void
 replcon_stat_file_replace_context(const char *filename)
 {
 	struct stat file_status;
+	/* Use path length limit defined in limits.h */
 	char actual_path[PATH_MAX+1];
-	char *ptr;
+	char *ptr = NULL;
 	int i;
 
 	assert(filename != NULL);
@@ -870,18 +890,38 @@ replcon_stat_file_replace_context(const char *filename)
 		return;
 	}
 
-	if (replcon_info.recursive && (ptr = realpath(filename, actual_path)) != NULL) {
+	if (replcon_info.recursive) {
+		if ((ptr = realpath(filename, actual_path)) == NULL) {
+			perror("replcon_stat_file_replace_context");
+			return;
+		}
 #ifndef FINDCON
-		nftw(actual_path, replcon_file_context_replace, NFTW_DEPTH, NFTW_FLAGS);
+		if (nftw(actual_path, replcon_file_context_replace, NFTW_DEPTH, NFTW_FLAGS)) {
+			fprintf(stderr,
+				"Error walking directory tree: %s\n", actual_path);
+			return;
+		}
 #else
-		nftw(actual_path, findcon, NFTW_DEPTH, NFTW_FLAGS);
+		if (nftw(actual_path, findcon, NFTW_DEPTH, NFTW_FLAGS)) {
+			fprintf(stderr,
+				"Error walking directory tree: %s\n", actual_path);
+			return;
+		}
 #endif
 		for(i = 0; i < num_mounts; i++) {
 			if (strstr(mounts[i], actual_path) == mounts[i])
 #ifndef FINDCON
-				nftw(mounts[i], replcon_file_context_replace, NFTW_DEPTH, NFTW_FLAGS);
+				if (nftw(mounts[i], replcon_file_context_replace, NFTW_DEPTH, NFTW_FLAGS)) {
+					fprintf(stderr,
+						"Error walking directory tree: %s\n", actual_path);
+					return;
+				}
 #else
-				nftw(mounts[i], findcon, NFTW_DEPTH, NFTW_FLAGS);
+				if (nftw(mounts[i], findcon, NFTW_DEPTH, NFTW_FLAGS)) {
+					fprintf(stderr,
+						"Error walking directory tree: %s\n", actual_path);
+					return;
+				}
 #endif
 		}
 	} else {
@@ -901,10 +941,11 @@ replcon_stat_file_replace_context(const char *filename)
 void
 remove_new_line_char(char *input)
 {
-	int i;
+	int i, len;
 	
 	assert(input != NULL);
-	for (i = 0; i < strlen(input); i++) {
+	len = strlen(input);
+	for (i = 0; i < len; i++) {
 		if (input[i] == '\n')
 			input[i] = '\0';
 	}
@@ -936,7 +977,8 @@ replcon_parse_command_line(int argc, char **argv)
 			break;
 		case 'c':
 #ifndef FINDCON
-			if (optind < argc) { // Two arguments required!
+			if (optind < argc) { 
+				/* Two arguments required! */
 				if (replcon_info_add_context_pair
 				    (&replcon_info, optarg, argv[optind++])) {
 					fprintf(stderr,
@@ -1035,9 +1077,9 @@ main(int argc, char **argv)
 {
 	char stream_input[MAX_INPUT_SIZE];
 	int i, len=10;
-	FILE *mtab;
+	FILE *mtab = NULL;
 	struct mntent *entry;
-	char *token, *fs, *fs_orig;
+	char *token, *fs, *fs_orig = NULL;
 
 	replcon_info_init(&replcon_info);
 	replcon_parse_command_line(argc, argv);
@@ -1109,5 +1151,6 @@ main(int argc, char **argv)
 err:
 	replcon_info_free(&replcon_info);
 	if (mounts) free(mounts);
+	if (fs_orig) free(fs_orig);
 	return -1;
 }
