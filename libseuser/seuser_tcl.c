@@ -510,6 +510,27 @@ int Seuser_Commit(ClientData clientData, Tcl_Interp *interp, int argc, char *arg
 	return TCL_OK;
 }
 
+int Seuser_LabelHomeDirectory(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
+{
+	int rt;
+	
+	if(argc != 2) {
+		Tcl_AppendResult(interp, "Seuser_Exit: wrong # of args", (char *) NULL);
+		return TCL_ERROR;
+	}
+	if(!is_valid_str_sz(argv[1])) {
+		Tcl_AppendResult(interp, "User name string too large", (char *) NULL);
+		return TCL_ERROR;
+	}
+	
+	rt = seuser_label_home_dir(argv[1], &db, policy, tmpmakeout);
+	if (rt != 0) {
+		Tcl_AppendResult(interp, seuser_decode_labeling_err(rt), (char *) NULL);
+		return TCL_ERROR;
+	}
+	return TCL_OK;
+}
+
 /* get roles for a user *
  * argv[1] user name
  */
@@ -668,7 +689,8 @@ int Seuser_Init(Tcl_Interp *interp)
 	Tcl_CreateCommand(interp, "seuser_Use_Old_Login_Contexts", (Tcl_CmdProc *) Seuser_Use_Old_Login_Contexts, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "seuser_Exit", (Tcl_CmdProc *) Seuser_Exit, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "seuser_CheckCommitAccess", (Tcl_CmdProc *) Seuser_CheckCommitAccess, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-
+	Tcl_CreateCommand(interp, "seuser_LabelHomeDirectory", (Tcl_CmdProc *) Seuser_LabelHomeDirectory, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+	
 	Tcl_PkgProvide(interp, "seuser", (char*)libseuser_get_version());
 
 	return TCL_OK;
