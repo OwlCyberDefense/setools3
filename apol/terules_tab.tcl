@@ -2763,7 +2763,7 @@ proc Apol_TE::create {nb} {
     pack $cb_RegExp $cb_syntactic -side top -anchor nw 
     pack $cb_show_enabled_rules $cb_tag_enabled_rules $cb_tag_disabled_rules -side top -anchor nw
     pack $teallow $neverallow $auallow $audont -anchor w 
-    pack $ttrans $tmember $tchange $clone -anchor w 
+    pack $ttrans $tchange -anchor w 
     pack $tefm $ttfm -side left -anchor nw 
     pack $enabled_fm -side top -pady 6 -anchor nw -fill both 
     pack $optsfm -side top -fill x -expand yes -anchor nw
