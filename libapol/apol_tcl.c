@@ -1880,6 +1880,12 @@ int Apol_GetNames(ClientData clientData, Tcl_Interp * interp, int argc, char *ar
 			free(name);
 		}		
 	}
+	else if(strcmp("cond_bools", argv[1]) == 0) {
+		for(i = 0; get_cond_bool_name(i, &name, policy) == 0; i++) {
+			Tcl_AppendElement(interp, name);
+			free(name);
+		}		
+	}
 	else {
 		if(use_regex) 
 			regfree(&reg);
@@ -2026,6 +2032,7 @@ int Apol_SearchInitialSIDs(ClientData clientData, Tcl_Interp *interp, int argc, 
  * 22		allow_regex (bool, indicate whether ta* are regexp or not)
  * 23		ta1_opt (indicates whether ta1 is a TYPES, ATTRIBS, or BOTH)
  * 24		ta2_opt (same for ta2; NOTE ta3 is always a TYPES)
+ * 25		include only rules that are enabled by the conditional policy (boolean)
  */
 int Apol_SearchTErules(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
 {	
@@ -2041,7 +2048,7 @@ int Apol_SearchTErules(ClientData clientData, Tcl_Interp *interp, int argc, char
 		Tcl_AppendResult(interp,"No current policy file is opened!", (char *) NULL);
 		return TCL_ERROR;
 	}
-	if(argc != 25) {
+	if(argc != 26) {
 		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
 		return TCL_ERROR;
 	}
@@ -2068,10 +2075,12 @@ int Apol_SearchTErules(ClientData clientData, Tcl_Interp *interp, int argc, char
 	if(getbool(argv[9]))
 		query.rule_select |= TEQ_TYPE_CHANGE;		
 	query.use_regex = getbool(argv[22]);
-
+	query.only_enabled = getbool(argv[25]);
+	
 	query.ta1.indirect = getbool(argv[11]);
 	query.ta2.indirect = getbool(argv[15]);
 	query.ta3.indirect = getbool(argv[18]);
+	
 
 	use_1 = getbool(argv[10]);
 	if(use_1) {
@@ -2976,6 +2985,43 @@ int Apol_GetSingleTypeInfo(ClientData clientData, Tcl_Interp *interp, int argc, 
 	
 	Tcl_DStringResult(interp, buf);
 	return TCL_OK;	
+}
+
+/* args ordering:
+ * argv[1]	bool name
+ * argv[2]	new value
+ */
+int Apol_Cond_Bool_SetBoolValue(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
+{
+	int rt, bool_idx;
+	bool_t value;
+		
+	if(argc != 3) {
+		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
+		return TCL_ERROR;
+	}
+	if(policy == NULL) {
+		Tcl_AppendResult(interp,"No current policy file is opened!", (char *) NULL);
+		return TCL_ERROR;
+	}
+	if(!is_valid_str_sz(argv[1])) {
+		Tcl_AppendResult(interp, "Bool string is too large", (char *) NULL);
+		return TCL_ERROR;
+	}
+	bool_idx = get_cond_bool_idx(argv[1], policy);
+	if (bool_idx < 0) {
+		Tcl_AppendResult(interp, "Error getting index value for ", argv[1], (char *) NULL);
+		return TCL_ERROR;
+	}
+	value = getbool(argv[2]);
+	
+	rt = set_cond_bool_val(bool_idx, value, policy);
+	if (rt != 0) {
+		Tcl_AppendResult(interp, "Error setting value for ", argv[1], (char *) NULL);
+		return TCL_ERROR;
+	}	
+	
+	return TCL_OK;
 }
 
 /* args ordering:
@@ -4039,6 +4085,7 @@ int Apol_Init(Tcl_Interp *interp)
 	Tcl_CreateCommand(interp, "apol_TransitiveFindPathsAbort", (Tcl_CmdProc *) Apol_TransitiveFindPathsAbort, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_SearchInitialSIDs", (Tcl_CmdProc *) Apol_SearchInitialSIDs, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_GetInitialSIDInfo", (Tcl_CmdProc *) Apol_GetInitialSIDInfo, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+	Tcl_CreateCommand(interp, "apol_Cond_Bool_SetBoolValue", (Tcl_CmdProc *) Apol_Cond_Bool_SetBoolValue, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	
 	Tcl_PkgProvide(interp, "apol", (char*)libapol_get_version());
 
