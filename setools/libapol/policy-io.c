@@ -73,6 +73,7 @@ const char* find_default_policy_file_strerr(int err)
 static bool_t is_binpol_valid(const char *policy_fname, const char *version)
 {
 	FILE *policy_fp = NULL;
+	int ret_version;
 	
 	assert(policy_fname != NULL && version != NULL);
 	policy_fp = fopen(policy_fname, "r");
@@ -85,7 +86,11 @@ static bool_t is_binpol_valid(const char *policy_fname, const char *version)
 		fclose(policy_fp);
 		return FALSE;
 	}
+	ret_version = ap_binpol_version(policy_fp);
 	fclose(policy_fp);
+	if (ret_version != atoi(version))
+		return FALSE;
+	
      	return TRUE;
 }
 
