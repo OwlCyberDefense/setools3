@@ -78,7 +78,7 @@ int find_mount_points(char *dir, char **mounts, int *num_mounts, int rw)
 	char *token, *fs, *fs_orig = NULL;
 	
 	if ((mtab = fopen("/etc/mtab", "r")) == NULL) {
-		fprintf(stderr, "Could not open /etc/mtab for reading.\n");
+		printf(stderr, "Could not open /etc/mtab for reading.\n");
 		return -1;
 	}
 
@@ -89,11 +89,16 @@ int find_mount_points(char *dir, char **mounts, int *num_mounts, int rw)
 	
 	while ((entry = getmntent(mtab))) {
 
-		if (!strstr(entry->mnt_dir, dir) == entry->mnt_dir)
+		if ((strcmp(strstr(entry->mnt_dir, dir), entry->mnt_dir)) == 0)
 			continue;
 				
 		if (strcmp(entry->mnt_dir, dir) == 0)
 			continue;
+
+		/* make sure we don't add ourselves to the mountpoint list */
+		if (strcmp(dir[strlen(dir)-1], "/") == 0) 
+			if (strncmp(entry->mnt_dir, dir, strlen(dir) - 1))
+				continue;
 
 		if (rw)
 			if (hasmntopt(entry, MNTOPT_RW) == NULL)
