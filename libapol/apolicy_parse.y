@@ -1361,7 +1361,7 @@ skip_avtab_rule:
 }	
 
 /* add a new type transition rule */
-static int add_ttrule(int rule_type)
+static int add_ttrule(int rule_type, bool_t enabled)
 {
 	int idx, idx_type;
 	char *id;
@@ -1385,6 +1385,7 @@ static int add_ttrule(int rule_type)
 	memset(item, 0, sizeof(tt_item_t));
 	item->type = rule_type;
 	item->lineno = policydb_lineno;
+	item->enabled = enabled;
 
 	/* source (domain) types/attribs */
 	subtract = FALSE;
@@ -1550,7 +1551,7 @@ static int define_compute_type(int rule_type)
 		yyerror(errormsg);
 		return -1;
 	}
-	rt = add_ttrule(rule_type);
+	rt = add_ttrule(rule_type, TRUE);
 	if(rt < 0) 
 		return rt;
 		
@@ -2429,6 +2430,8 @@ static cond_expr_t *define_cond_expr(__u32 expr_type, void *arg1, void *arg2)
 		
 		bool_var = get_cond_bool_idx(id, parse_policy);
 		
+		printf("got bool %d for string %s\n", bool_var, id);
+		
 		if (bool_var < 0) {
 			sprintf(errormsg, "unknown boolean %s in conditional expression", id);
 			yyerror(errormsg);
@@ -2436,7 +2439,7 @@ static cond_expr_t *define_cond_expr(__u32 expr_type, void *arg1, void *arg2)
 			free(id);
 			return NULL ;
 		}
-		expr->bool = parse_policy->cond_bools[bool_var].val;
+		expr->bool = bool_var;
                 free(id);
 		return expr;
 	default:
@@ -2534,7 +2537,7 @@ static rule_desc_t *define_cond_compute_type(int rule_type)
 		yyerror(errormsg);
 		return NULL;
 	}
-	rt = add_ttrule(rule_type);
+	rt = add_ttrule(rule_type, TRUE);
 	if(rt != 0) 
 		return NULL;
 		
