@@ -55,6 +55,7 @@ static struct option const longopts[] =
 
 void usage(const char *program_name, int brief)
 {
+	printf("%s (tool ver. %s)\n\n", COPYRIGHT_INFO, SESEARCH_VERSION_NUM);
 	printf("Usage: %s [OPTIONS] [POLICY_FILE]\n", program_name);
 	if(brief) {
 		printf("\n   Try %s --help for more help.\n\n", program_name);
@@ -176,11 +177,10 @@ int main (int argc, char **argv)
 	  		lineno = TRUE;
 	  		break;
 	  	case 'h': /* help */
-	  		printf("\n%s (Ver. %s)\n\n", COPYRIGHT_INFO, SESEARCH_VERSION_NUM);
 	  		usage(argv[0], 0);
 	  		exit(0);
 	  	case 'v': /* version */
-	  		printf("\n%s (Ver. %s)\n\n", COPYRIGHT_INFO, SESEARCH_VERSION_NUM);
+	  		printf("\n%s (tool ver. %s)\n\n", COPYRIGHT_INFO, SESEARCH_VERSION_NUM);
 	  		exit(0);
 	  	default:
 	  		usage(argv[0], 1);
