@@ -21,6 +21,10 @@
 	#define LIBAPOL_VERSION_STRING "UNKNOWN"
 #endif
 
+#ifndef APOL_INSTALL_DIR
+	#define APOL_INSTALL_DIR "/usr/lib/apol"
+#endif	
+
 /* use 8k line size */
 #define LINE_SZ 8192
 #define BUF_SZ 240
@@ -31,8 +35,6 @@
 #define APOL_STR_SZ 128
 #define is_valid_str_sz(str) (strlen(str) < APOL_STR_SZ)
 
-
-#define APOL_INSTALL_DIR "/usr/lib/apol/"
 #define APOL_ENVIRON_VAR_NAME "APOL_INSTALL_DIR"
 
 /* structs defined in policy.h */
