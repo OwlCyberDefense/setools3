@@ -211,7 +211,9 @@ int seaudit_open_policy(seaudit_t *seaudit, const char *filename)
 		close_policy(seaudit->cur_policy);
 	seaudit->cur_policy = tmp_policy;
 	g_string_assign(seaudit->policy_file, filename);
-	seaudit_read_policy_conf(filename);
+	if (!is_binary_policy(seaudit_app->cur_policy)) {
+		seaudit_read_policy_conf(filename);
+	}
 	policy_load_signal_emit();
 
 	add_path_to_recent_policy_files(filename, &(seaudit->seaudit_conf));
