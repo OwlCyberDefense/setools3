@@ -314,6 +314,7 @@ clean: test-clean
 	cd secmds; $(MAKE) clean
 	cd libseaudit; $(MAKE) clean
 	cd sediff; $(MAKE) clean
+	cd flowtool; $(MAKE) clean
 	rm -f *~
 	rm -f lib/*.a lib/*.so lib/*.so.1
 
@@ -329,6 +330,7 @@ bare: test-bare
 	cd secmds; $(MAKE) bare
 	cd libseaudit; $(MAKE) bare
 	cd sediff; $(MAKE) bare
+	cd flowtool; $(MAKE) bare
 	rm -f *~
 	rm -rf ./lib
 	cd libseaudit; $(MAKE) bare
