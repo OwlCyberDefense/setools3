@@ -39,7 +39,6 @@
 #define TEXT_BIN_POL_FILE_DOES_NOT_EXIST	"Could not locate a default binary policy file.\n"
 #define TEXT_SRC_POL_FILE_DOES_NOT_EXIST	"Could not locate default source policy file.\n"
 #define TEXT_NOT_SELINUX_AWARE			"This is not an selinux system.\n"
-#define TEXT_READ_POLICY_VER_FILE_ERROR		"Cannot read selinux policy version file.\n"
 #define TEXT_READ_POLICY_FILE_ERROR		"Cannot read default policy file.\n"
 #define TEXT_GENERAL_ERROR_TEXT			"Error in find_default_policy_file().\n"
 
@@ -63,8 +62,6 @@ const char* find_default_policy_file_strerr(int err)
 		return TEXT_SRC_POL_FILE_DOES_NOT_EXIST;
 	case NOT_SELINUX_AWARE:
 		return TEXT_NOT_SELINUX_AWARE;
-	case READ_POLICY_VER_FILE_ERROR:
-		return TEXT_READ_POLICY_VER_FILE_ERROR;
 	default:
 		return TEXT_GENERAL_ERROR_TEXT;
 	}
@@ -112,14 +109,17 @@ static int search_for_policyfile_with_ver(const char *binpol_install_dir, char *
 	
 	/* Call glob() to get a list of filenames matching pattern. We glob for 'policy.*' */
 	glob_buf.gl_offs = 1;
-	if (glob(pattern, GLOB_DOOFFS, NULL, &glob_buf) != 0)
+	if (glob(pattern, GLOB_DOOFFS, NULL, &glob_buf) != 0) {
 		perror("search_for_policyfile_with_ver");
+		return GENERAL_ERROR;
+	}
 	num_matches = glob_buf.gl_pathc;
 	for (i = 0; i < num_matches; i++) {
 		if (stat(glob_buf.gl_pathv[i], &fstat) != 0) {
 			globfree(&glob_buf);
 			free(pattern);
 			perror("search_for_policyfile_with_ver");
+			return GENERAL_ERROR;
 		}
 		/* skip directories */
 		if (S_ISDIR(fstat.st_mode))
@@ -157,14 +157,17 @@ static int search_for_policyfile_with_highest_ver(const char *binpol_install_dir
 	sprintf(pattern, "%s/policy.*", binpol_install_dir);
 	glob_buf.gl_offs = 0;
 	/* Call glob() to get a list of filenames matching pattern */
-	if (glob(pattern, GLOB_DOOFFS, NULL, &glob_buf) != 0)
+	if (glob(pattern, GLOB_DOOFFS, NULL, &glob_buf) != 0) {
 		perror("search_for_policyfile_with_highest_ver");
+		return GENERAL_ERROR;
+	}
 	num_matches = glob_buf.gl_pathc;
 	for (i = 0; i < num_matches; i++) {
 		if (stat(glob_buf.gl_pathv[i], &fstat) != 0) {
 			globfree(&glob_buf);
 			free(pattern);
 			perror("search_for_policyfile_with_highest_ver");
+			return GENERAL_ERROR;
 		}
 		/* skip directories */
 		if (S_ISDIR(fstat.st_mode))
@@ -208,33 +211,32 @@ static int search_binary_policy_file(char **policy_file_path)
 	if (rt == 0) {
 	     	/* 1. Read in the loaded policy version number. */
 		rt = read_file_to_buffer(policy_version_file, &version, &len);
-		if (rt != 0) {
-			if (version) free(version);
-			free(policy_version_file);
-			return READ_POLICY_VER_FILE_ERROR;
-		}
 		free(policy_version_file);
-		
-		/* 2. See if policy.VERSION exists in the policy install directory. */
-		len = strlen(LIBAPOL_POLICY_INSTALL_DIR) + strlen("policy.") + strlen(version) + 1;
-	     	if((policy_path_tmp = (char *)malloc(len+1)) == NULL) {
-	     		if (version) free(version);
-			fprintf(stderr, "out of memory\n");
-			return GENERAL_ERROR;
-		} 
-		sprintf(policy_path_tmp, "%s/policy.%s", LIBAPOL_POLICY_INSTALL_DIR, version);
-		
-		/* 3. make sure the actual binary policy version matches the policy version from  /selinux/policyvers. 
-		 * If it does not, then search the policy install directory for a binary file of the correct version. */
-		is_valid = is_binpol_valid(policy_path_tmp, version);
-	     	if (!is_valid) {
-	     		free(policy_path_tmp);
-	     		policy_path_tmp = NULL;
-	     		rt = search_for_policyfile_with_ver(LIBAPOL_POLICY_INSTALL_DIR, &policy_path_tmp, version);
-	     	}
-	     	if (version) free(version);
-	     	if (rt == GENERAL_ERROR)
-	     		return GENERAL_ERROR;
+		if (rt == 0) {
+			/* 2. See if policy.VERSION exists in the policy install directory. */
+			len = strlen(LIBAPOL_POLICY_INSTALL_DIR) + strlen("policy.") + strlen(version) + 1;
+		     	if((policy_path_tmp = (char *)malloc(len+1)) == NULL) {
+		     		if (version) free(version);
+				fprintf(stderr, "out of memory\n");
+				return GENERAL_ERROR;
+			} 
+			sprintf(policy_path_tmp, "%s/policy.%s", LIBAPOL_POLICY_INSTALL_DIR, version);
+			
+			/* 3. make sure the actual binary policy version matches the policy version from  /selinux/policyvers. 
+			 * If it does not, then search the policy install directory for a binary file of the correct version. */
+			is_valid = is_binpol_valid(policy_path_tmp, version);
+		     	if (!is_valid) {
+		     		free(policy_path_tmp);
+		     		policy_path_tmp = NULL;
+		     		rt = search_for_policyfile_with_ver(LIBAPOL_POLICY_INSTALL_DIR, &policy_path_tmp, version);
+		     	}
+		     	if (version) free(version);
+		     	if (rt == GENERAL_ERROR)
+		     		return GENERAL_ERROR;
+		} else {
+			/* Cannot read policy_vers file, so move on an step b. */
+			if (version) free(version);
+		}
 	} else {
 		free(policy_version_file);
 	}
@@ -302,7 +304,8 @@ int find_default_policy_file(unsigned int search_opt, char **policy_file_path)
 	     	if (rt == FIND_DEFAULT_SUCCESS) {
 	     		return FIND_DEFAULT_SUCCESS;	
 	     	}
-	     	if (rt != BIN_POL_FILE_DOES_NOT_EXIST && rt != READ_POLICY_VER_FILE_ERROR) {
+	     	/* Only continue if a binary policy couldn't be found. */
+	     	if (rt != BIN_POL_FILE_DOES_NOT_EXIST) {
 	     		return rt;	
 	     	}  	
 	} 
