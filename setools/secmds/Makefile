@@ -1,8 +1,5 @@
 # various setools command line tools
 
-# replcon and findcon only support filesystems featuring Security Labels
-SEFS_XATTR_LABELED_FILESYSTEMS	= '"ext2 ext3"'
-
 ifeq ($(DEBUG), 1)
 LIBAPOL		= ../libapol/libapol.a
 LIBSEFS		= ../libsefs/libsefs.a
