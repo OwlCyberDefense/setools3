@@ -1266,7 +1266,7 @@ int Apol_ClosePolicy(ClientData clientData, Tcl_Interp *interp, int argc, char *
 
 int Apol_GetVersion(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
 {
-	Tcl_AppendResult(interp, LIBAPOL_VERSION_STRING, (char *) NULL);
+	Tcl_AppendResult(interp, libapol_get_version(), (char *) NULL);
 	return TCL_OK;
 }
 
@@ -3827,7 +3827,7 @@ int Apol_Init(Tcl_Interp *interp)
 	Tcl_CreateCommand(interp, "apol_TransitiveFindPathsGetResults", (Tcl_CmdProc *) Apol_TransitiveFindPathsGetResults, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_TransitiveFindPathsAbort", (Tcl_CmdProc *) Apol_TransitiveFindPathsAbort, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	
-	Tcl_PkgProvide(interp, "apol", LIBAPOL_VERSION_STRING);
+	Tcl_PkgProvide(interp, "apol", libapol_get_version());
 
 	return TCL_OK;
 }
