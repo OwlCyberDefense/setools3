@@ -141,7 +141,33 @@ proc Apol_Analysis_relabel::create_widgets_to_display_results {results results_f
 	if {$results == ""} {
 		$dtree configure -state disabled
 		set start_index 0
-		set text_s "$widget_vars(start_type)"
+		set text_s ""
+		$widget_vars(current_rtext) configure -wrap word
+		set start_index [string length $text_s]
+		append text_s "Direct File Relabel Analysis: "
+		if {$widget_vars(mode) == "object"} {
+			if {$widget_vars(to_mode) && $widget_vars(from_mode)} {
+				append text_s "Starting/Ending Type: "
+			} elseif {$widget_vars(to_mode) && !$widget_vars(from_mode)} {
+				append text_s "Starting Type: "
+			} elseif {!$widget_vars(to_mode) && $widget_vars(from_mode)} {
+				append text_s "Ending Type: "
+			} else {
+				puts "Direction must be to, from, or both for object mode."
+				return
+			}
+		} else {
+			append text_s "Subject: "
+		}
+		set end_index [string length $text_s]
+		lappend title_tags $start_index $end_index
+		set start_index [string length $text_s]
+		append text_s "$widget_vars(start_type)"
+		set end_index [string length $text_s]
+		lappend title_type_tags $start_index $end_index
+		append text_s "\n\n"
+
+		append text_s "$widget_vars(start_type)"
 		set end_index [string length $text_s]
 		lappend title_type_tags $start_index $end_index
 		if {$widget_vars(mode) == "object"} {
@@ -172,6 +198,10 @@ proc Apol_Analysis_relabel::create_widgets_to_display_results {results results_f
 		}
 		foreach {start_index end_index} $subtitle_type_tags {
 			$rtext tag add $Apol_Analysis_relabel::subtitle_tag \
+				"1.0 + $start_index c" "1.0 + $end_index c"
+		}
+		foreach {start_index end_index} $title_tags {
+			$rtext tag add $Apol_Analysis_relabel::title_tag \
 				"1.0 + $start_index c" "1.0 + $end_index c"
 		}
 		Apol_Analysis_relabel::formatInfoText $rtext
