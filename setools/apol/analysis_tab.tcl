@@ -728,6 +728,7 @@ proc Apol_Analysis::do_analysis { which } {
 		
 		# Handle an error.
 		if {$rt != 0 && $which == "new_analysis"} { 
+			puts $err
 			ApolTop::resetBusyCursor	
 			# Re-enable buttons
 			$Apol_Analysis::newButton configure -state normal
@@ -739,6 +740,8 @@ proc Apol_Analysis::do_analysis { which } {
 	    		# Raise the previously raise tab.
 			Apol_Analysis::switch_results_tab $prev_raisedTab
 			return -1
+		} elseif {$rt != 0} {
+			puts $err
 		}
 	    	set raised_tab_analysis_type $curr_analysis_module
 	    	# Here store the current content of the new tab.
