@@ -20,6 +20,7 @@
 #include "cond.h"
 #include "avl-util.h"
 #include "util.h"
+#include <asm/types.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -39,19 +40,19 @@
  */
 #define POLOPT_NONE		0x0
 #define	POLOPT_CLASSES		0x00000001	/* object classes  */
-#define POLOPT_PERMS		0x00000002	/* types and type attributes */
-#define POLOPT_TYPES		0x00000004	/* role declarations */
-#define POLOPT_ROLES		0x00000008	/* user declarations */
-#define POLOPT_USERS		0x00000010	/* TE allow rules */
-#define POLOPT_TE_ALLOW		0x00000020	/* neverallow rules */
-#define POLOPT_TE_NEVERALLOW	0x00000040
-#define POLOPT_TE_AUDITALLOW	0x00000080	/* includes old auditdeny rules */
-#define POLOPT_TE_DONTAUDIT	0x00000100	/* type_transition rules */
-#define POLOPT_TE_TRANS		0x00000200
+#define POLOPT_PERMS		0x00000002	
+#define POLOPT_TYPES		0x00000004	/* types and type attributes */
+#define POLOPT_ROLES		0x00000008	/* role declarations */
+#define POLOPT_USERS		0x00000010	/* user declarations */
+#define POLOPT_TE_ALLOW		0x00000020	/* TE allow rules */
+#define POLOPT_TE_NEVERALLOW	0x00000040	/* neverallow rules */
+#define POLOPT_TE_AUDITALLOW	0x00000080	
+#define POLOPT_TE_DONTAUDIT	0x00000100	/* includes old auditdeny rules */
+#define POLOPT_TE_TRANS		0x00000200	/* type_transition rules */
 #define POLOPT_TE_MEMBER	0x00000400
-#define POLOPT_TE_CHANGE	0x00000800	/* all role rules (allow, old trans)*/
-#define POLOPT_ROLE_RULES	0x00001000	/* conditional boolean definitions */
-#define POLOPT_COND_BOOLS	0x00002000	/* conditional expression definitions */
+#define POLOPT_TE_CHANGE	0x00000800	
+#define POLOPT_ROLE_RULES	0x00001000	/* all role rules (allow, old trans)*/
+#define POLOPT_COND_BOOLS	0x00002000	/* conditional booleans */
 #define POLOPT_COND_EXPR	0x00004000	/* conditional expression definitions */
 #define POLOPT_COND_TE_RULES	0x00008000	/* conditional TE rules */
 #define POLOPT_INITIAL_SIDS	0x00010000	/* initial SIDs and their context */
@@ -197,6 +198,7 @@ typedef struct security_context {
 #define RULE_ROLE_TRANS		10	/* Role transition */
 #define RULE_USER		11	/* User role definition */
 #define RULE_MAX		12	/* # of rule IDs defined (1+last rule)*/
+#define RULE_INVALID		99
 
 
 
@@ -269,6 +271,7 @@ typedef struct cln_item {
 /* initial SIDs and their context */
 typedef struct initial_sid {
 	char			*name;
+	__u32			sid;
 	security_context_t 	*scontext;
 } initial_sid_t;
 
@@ -324,6 +327,7 @@ typedef struct alias_item {
 typedef struct policy {
 	int	version;		/* weak indicator of policy version, see comments above */
 	unsigned int opts;		/* indicates which parts of the policy are included in this policy */
+	bool_t	binary;			/* whether read from binary or .conf source file */
 	int	num_types;		/* array current ptr */
 	int	num_attribs;		/* " " */
 	int	num_av_access;		/* " " */
@@ -396,7 +400,7 @@ int free_policy(policy_t **policy_ptr);
 int set_policy_version(int ver, policy_t *policy);
 const char* get_policy_version_name(int policy_version);
 
-/* Policy version name macros */
+#define is_binary_policy(policy) (policy != NULL ? policy->binary : 0)
 #define is_valid_policy_version(version) (version >= POL_VER_UNKNOWN && version <= POL_VER_MAX)
 
 /* DB updates/additions/changes */
@@ -416,13 +420,14 @@ int add_perm_to_class(int cls_idx, int p_idx, policy_t *policy);
 int add_common_perm(char *name, policy_t *policy);
 int add_perm_to_common(int comm_perm_idx, int perm_idx, policy_t *policy);
 int add_perm(char *perm, policy_t *policy);
-int add_cond_bool(char *name, bool_t val, policy_t *policy);
+int add_cond_bool(char *name, bool_t state, policy_t *policy);
 int add_cond_expr_item(cond_expr_t *expr, cond_rule_list_t *true_list, cond_rule_list_t *false_list, policy_t *policy);
 av_item_t *add_new_av_rule(int rule_type, policy_t *policy);
+tt_item_t *add_new_tt_rule(int rule_type, policy_t *policy);
 
 /* Object Classes */
 #define num_obj_classes(policy) (policy != NULL ? policy->num_obj_classes : -1)
-#define is_valid_obj_class_idx(idx, policy) (policy != NULL && (idx >= 0 && idx < policy->num_obj_classes))
+#define is_valid_obj_class(policy, idx) is_valid_obj_class_idx(idx, policy)
 #define does_class_use_common_perm(cls_idx, cp_idx, policy)  ((is_valid_obj_class_idx(cls_idx,policy) && is_valid_common_perm_idx(cp_idx,policy)) ? (cp_idx == policy->obj_classes[cls_idx].common_perms) : FALSE)
 #define num_of_class_perms(cls_idx, policy) (is_valid_obj_class_idx(cls_idx,policy) ? \
 	policy->obj_classes[cls_idx].num_u_perms + \
@@ -436,13 +441,16 @@ int get_num_perms_for_obj_class(int clss_idx, policy_t *policy);
 int get_obj_class_common_perm_idx(int cls_idx,  policy_t *policy);
 int get_obj_class_perm_idx(int cls_idx, int idx, policy_t *policy);
 int get_obj_class_perms(int obj_class, int *num_perms, int **perms, policy_t *policy);
+int get_obj_class_nth_perm_idx(int cls_idx, int n, policy_t *policy);
 
 
 /* Permissions */
 #define is_valid_perm_idx(idx, policy) (policy != NULL  && (idx >= 0 && idx < policy->num_perms))
 #define is_valid_common_perm_idx(idx, policy) (idx >= 0 && idx < policy->num_common_perms)
-bool_t is_valid_perm_for_obj_class(policy_t *policy, int class, int perm);
+#define num_common_perm_perms(idx, policy) (is_valid_common_perm_idx(idx, policy) ? \
+	policy->common_perms[idx].num_perms : -1)
 
+bool_t is_valid_perm_for_obj_class(policy_t *policy, int class, int perm);
 int get_common_perm_name(int idx, char **name, policy_t *policy);
 int get_common_perm_perm_name(int cp_idx, int *p_idx, char **name, policy_t *policy);
 int get_common_perm_idx(const char *name, policy_t *policy);
@@ -458,6 +466,7 @@ bool_t does_class_indirectly_use_perm(int cls_idx, int perm_idx, policy_t *polic
 #define is_valid_initial_sid_idx(idx, policy) (policy != NULL && (idx >= 0 && idx < policy->num_initial_sids))
 #define num_initial_sids(policy) (policy != NULL ? policy->num_initial_sids : -1)
 int add_initial_sid(char *name, policy_t *policy);
+int add_initial_sid2(char *name, __u32 sid, policy_t *policy);
 int get_initial_sid_idx(const char *name, policy_t *policy);
 int add_initial_sid_context(int idx, security_context_t *scontext, policy_t *policy);
 int get_initial_sid_name(int idx, char **name, policy_t *policy);
@@ -468,9 +477,14 @@ int search_initial_sids_context(int **isids, int *num_isids, const char *user, c
 #define num_attribs(policy) (policy->num_attribs)
 #define is_valid_attrib_idx(idx, policy) (policy != NULL && (idx >= 0 && idx < policy->num_attribs))
 #define is_valid_type_idx(idx, policy) (policy != NULL && (idx >= 0 && idx < policy->num_types))
-
 bool_t is_valid_type(policy_t *policy, int type, bool_t self_allowed);
 bool_t is_valid_obj_class(policy_t *policy, int obj_class);
+
+int add_type(char *type, policy_t *policy);
+int add_alias(int type_idx, char *alias, policy_t *policy);
+int add_attrib_to_type(int type_idx, char *token, policy_t *policy);
+int init_policy( policy_t **policy_ptr);
+int free_policy(policy_t **policy_ptr);
 
 int get_type_idx(const char *name, policy_t *policy);
 int get_type_idx_by_alias_name(const char *alias, policy_t *policy);
@@ -484,7 +498,7 @@ int get_attrib_types(int attrib, int *num_types, int **types, policy_t *policy);
 /* conditional policy */
 #define is_valid_cond_bool_idx(idx, policy) (idx >= 0 && idx < policy->num_cond_bools)
 int get_cond_bool_idx(char *name, policy_t *policy);
-int set_cond_bool_val(int bool, bool_t val, policy_t *policy);
+int set_cond_bool_val(int bool, bool_t state, policy_t *policy);
 int get_cond_bool_val(char *name, policy_t *policy);
 int get_cond_bool_name(int idx, char **name, policy_t *policy);
 int update_cond_expr_items(policy_t *policy);
