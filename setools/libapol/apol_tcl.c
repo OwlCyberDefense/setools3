@@ -1315,7 +1315,7 @@ int Apol_GetPolicyVersionString(ClientData clientData, Tcl_Interp *interp, int a
 		Tcl_AppendResult(interp, "No current policy file is opened!", (char *) NULL);
 		return TCL_ERROR;
 	}
-	Tcl_AppendResult(interp, (char *)get_policy_version_string(policy->version), (char *) NULL);
+	Tcl_AppendResult(interp, (char *)get_policy_version_name(policy->version), (char *) NULL);
 
 	return TCL_OK;
 }

@@ -103,25 +103,7 @@ void seaudit_update_status_bar(seaudit_t *seaudit)
 		ver_str = "Policy Version: No policy";
 		gtk_label_set_text(v_status_bar, ver_str);
 	} else {
-		switch (seaudit->cur_policy->version) 
-		{
-			case POL_VER_PRE_11:
-				ver_str = POL_VER_STRING_PRE_11;
-				break;
-			case POL_VER_11: /* same as POL_VER_12 */
-				ver_str = POL_VER_STRING_11;
-				break;
-			case POL_VER_15:
-				ver_str = POL_VER_STRING_15;
-				break;
-			case POL_VER_16:   /* conditional policy extensions */
-				ver_str = POL_VER_STRING_16;
-				break;
-			default:
-				ver_str = "Unknown";
-				break;
-		}
-		snprintf(str, STR_SIZE, "Policy Version: %s", ver_str);
+		snprintf(str, STR_SIZE, "Policy Version: %s", get_policy_version_name(seaudit->cur_policy->version));
 		gtk_label_set_text(v_status_bar, str);
 	}
 
