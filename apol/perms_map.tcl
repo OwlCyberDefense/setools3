@@ -45,7 +45,8 @@ namespace eval Apol_Perms_Map {
 	variable dflt_pmap_flg		0
 	variable system_dflt_flg	0
 	variable user_default_pmap	"[file join "$::env(HOME)" ".apol_perm_mapping"]"
-	variable sys_dflt_pmap_dir	"/usr/lib/apol"
+	# Default pmap directory is defined at initialization
+	variable sys_dflt_pmap_dir	""
 	variable dflt_pmap_display	"User Default Permission Map"
 	variable sys_dflt_pmap_display	"System Default Permission Map (Read-Only)"
 	# Return value to indicate that perm map loaded successfully, but there were warnings
@@ -1098,6 +1099,7 @@ proc Apol_Perms_Map::initialize { } {
 	variable title_display
 	variable is_mls_loaded
 
+	set sys_dflt_pmap_dir [ApolTop::get_install_dir]
 	set Apol_Perms_Map::edit_flag	0
 	if {[string equal $loaded_pmap $user_default_pmap]} {
 		set dflt_pmap_flg 1
