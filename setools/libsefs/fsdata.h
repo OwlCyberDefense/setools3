@@ -86,11 +86,11 @@ typedef struct sefs_typeinfo {
 	
 
 typedef struct sefs_filesystem_data {
-	uint32_t 		num_files;
 	uint32_t 		num_types;
 	uint32_t		num_users;
-	sefs_fileinfo_t *	files;
+	uint32_t 		num_files;
 	sefs_typeinfo_t *	types;
+	sefs_fileinfo_t *	files;
 	char**			users;
 
 	/* not stored in index file */
