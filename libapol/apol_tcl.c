@@ -27,6 +27,11 @@
 #include "infoflow.h"
 #include "perm-map.h"
 #include "policy-query.h"
+
+#ifdef LIBSEFS
+#include "../libsefs/fsdata.h"
+#endif
+
 #include "flowassert.h"
 #include "relabel_analysis.h"
 #ifdef APOL_PERFORM_TEST
@@ -49,6 +54,10 @@ extern char *rulenames[]; /* in render.c*/
 policy_t *policy; /* local global for policy DB */
 void* state = NULL; /* local global variable to support step-by-step transitive information flow analysis */
 
+#ifdef LIBSEFS
+sefs_filesystem_db_t fsdata; /* local global for file context DB */
+#endif
+
 /**************************************************************************
  * work functions
  **************************************************************************/
@@ -67,12 +76,7 @@ static int load_perm_map_file(char *pmap_file, Tcl_Interp *interp);
 static char* find_perm_map_file(char *perm_map_fname);
 static char* find_tcl_script(char *script_name);
 
-static Tcl_Obj *apol_relabel_fromto_results (relabel_result_t *results,
-                                             policy_t *policy);
-static Tcl_Obj *apol_relabel_domain_results (relabel_result_t *results,
-                                             int start_type,
-                                             policy_t *policy);
-static relabel_set_t *relabel_sets_cache = NULL;
+static relabel_set_t *relabel_sets_cache = NULL;	/* The relabel analysis cache */
 static int relabel_sets_num_types = 0;
 
 
@@ -3169,16 +3173,16 @@ int Apol_GetRoleRules(ClientData clientData, Tcl_Interp *interp, int argc, char 
 	
 	Tcl_DStringInit(buf);
 	
-	if(init_rbac_bool(&src_b, policy) != 0) {
+	if(init_rbac_bool(&src_b, policy, FALSE) != 0) {
 		Tcl_AppendResult(interp, "error initializing src rules bool", (char *) NULL);
 		return TCL_ERROR;
 	}
-	if(init_rbac_bool(&tgt_b, policy) != 0) {
+	if(init_rbac_bool(&tgt_b, policy, FALSE) != 0) {
 		Tcl_AppendResult(interp, "error initializing tgt rules bool", (char *) NULL);
 		free_rbac_bool(&src_b);	
 		return TCL_ERROR;
 	}
-	if(init_rbac_bool(&dflt_b, policy) != 0) {
+	if(init_rbac_bool(&dflt_b, policy, FALSE) != 0) {
 		Tcl_AppendResult(interp, "error initializing default rules bool", (char *) NULL);
 		free_rbac_bool(&src_b);	
 		free_rbac_bool(&tgt_b);	
@@ -5228,6 +5232,283 @@ int Apol_LoadPermMap(ClientData clientData, Tcl_Interp *interp, int argc, char *
 }
 
 /* 
+ * argv[1] - file name to save 
+ * argv[2] - directory to start scanning
+ */
+int Apol_Create_FC_Index_File(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
+{	
+	if(argc != 3) {
+		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
+		return TCL_ERROR;
+	}	
+#ifndef LIBSEFS
+	Tcl_AppendResult(interp, "You need to build apol with libsefs!", (char *) NULL);
+	return TCL_ERROR;
+#else	
+	sefs_filesystem_db_t fsdata_local;
+
+	if(!is_valid_str_sz(argv[1])) {
+		Tcl_AppendResult(interp, "File string too large", (char *) NULL);
+		return TCL_ERROR;
+	}
+	if(!is_valid_str_sz(argv[2])) {
+		Tcl_AppendResult(interp, "Directory string too large", (char *) NULL);
+		return TCL_ERROR;
+	}
+	fsdata_local.dbh = NULL;
+	fsdata_local.fsdh = NULL;
+ 	if (sefs_filesystem_db_populate(&fsdata_local, argv[2]) == -1) {
+		fprintf(stderr, "fsdata_init failed\n");
+		return TCL_ERROR;
+	}
+	if (sefs_filesystem_db_save(&fsdata_local, argv[1]) != 0) {
+		if (fsdata_local.fsdh != NULL) sefs_filesystem_db_close(&fsdata_local);
+		Tcl_AppendResult(interp, "Error writing file context paths database\n", (char *) NULL);
+		return TCL_ERROR;
+	}
+	if (fsdata_local.fsdh != NULL) sefs_filesystem_db_close(&fsdata_local);
+	
+	return TCL_OK;
+#endif
+}
+
+/* 
+ * argv[1] - index file to load
+ */
+int Apol_Load_FC_Index_File(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
+{
+	if(argc != 2) {
+		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
+		return TCL_ERROR;
+	}
+#ifndef LIBSEFS
+	Tcl_AppendResult(interp, "You need to build apol with libsefs!", (char *) NULL);
+	return TCL_ERROR;
+#else		
+	if(!is_valid_str_sz(argv[1])) {
+		Tcl_AppendResult(interp, "File string too large", (char *) NULL);
+		return TCL_ERROR;
+	}
+	if (fsdata.dbh != NULL) {
+		sefs_filesystem_db_close(&fsdata);
+	}
+ 	if (sefs_filesystem_db_load(&fsdata, argv[1]) == -1) {
+ 		Tcl_AppendResult(interp, "sefs_filesystem_data_load failed\n", (char *) NULL);
+		return TCL_ERROR;
+	}
+	/* Need to close the database */
+	return TCL_OK;
+#endif
+}
+
+#ifdef LIBSEFS
+static void apol_search_fc_index_append_results(sefs_search_ret_t *key, Tcl_Interp *interp) 
+{
+	sefs_search_ret_t *curr = key;
+	
+	/* walk the linked list */
+	while (curr) {
+		if (curr->path)
+			Tcl_AppendElement(interp, curr->path);
+		if (curr->context)
+			Tcl_AppendElement(interp, curr->context);
+		if (curr->object_class)
+			Tcl_AppendElement(interp, curr->object_class);
+		curr = curr->next;
+	}
+}
+#endif
+
+/* 
+ * This function expects a file context index to be loaded into memory.
+ * Arguments:
+ *	argv[1] - use regular expressions
+ *	argv[2] - use_type [bool]
+ * 	argv[3] - type [TCL list of strings]
+ * 	argv[4] - use_user [bool]
+ *	argv[5] - user [TCL list of strings]
+ * 	argv[6] - use_class [bool]
+ * 	argv[7] - object class [TCL list of strings]
+ * 	argv[8] - use_path [bool]
+ * 	argv[9] - path [Tcl list of strings]
+ */
+int Apol_Search_FC_Index_DB(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
+{	
+	if(argc != 10) {
+		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
+		return TCL_ERROR;
+	}
+#ifndef LIBSEFS
+	Tcl_AppendResult(interp, "You need to build apol with libsefs!", (char *) NULL);
+	return TCL_ERROR;
+#else		
+	int rt, use_regex;
+	int num_types, num_users, num_classes, num_paths;
+	sefs_search_keys_t search_keys;
+	CONST84 char **object_classes, **types, **users, **paths;
+	
+	if (fsdata.dbh == NULL) {
+		Tcl_AppendResult(interp, "No Index File Loaded!", (char *) NULL);
+		return TCL_ERROR;
+	}
+	object_classes = types = users = paths = NULL;
+	rt = Tcl_GetInt(interp, argv[1], &use_regex);
+	if (rt == TCL_ERROR) {
+		Tcl_AppendResult(interp, "argv[1] apparently is not an integer", (char *) NULL);
+		return TCL_ERROR;
+	}
+	search_keys.user = NULL;
+	search_keys.path = NULL;
+	search_keys.type = NULL;
+	search_keys.object_class = NULL;
+	search_keys.num_type = 0;
+	search_keys.num_user = 0;
+	search_keys.num_object_class = 0;
+	search_keys.num_path = 0;
+	
+	if (getbool(argv[2])) {
+		rt = Tcl_SplitList(interp, argv[3], &num_types, &types);
+		if (rt != TCL_OK) {
+			Tcl_AppendResult(interp, "Error splitting TCL list.", (char *) NULL);
+			goto err;
+		}
+		
+		if (num_types < 1) {
+			Tcl_AppendResult(interp, "Must provide at least 1 type.", (char *) NULL);
+			goto err;
+		}
+		search_keys.num_type = num_types;
+		search_keys.type = types;
+	}
+	if (getbool(argv[4])) {
+		rt = Tcl_SplitList(interp, argv[5], &num_users, &users);
+		if (rt != TCL_OK) {
+			Tcl_AppendResult(interp, "Error splitting TCL list.", (char *) NULL);
+			goto err;
+		}
+		
+		if (num_users < 1) {
+			Tcl_AppendResult(interp, "Must provide at least 1 user.", (char *) NULL);
+			goto err;
+		}
+		search_keys.num_user = num_users;
+		search_keys.user = users;
+	}
+	if (getbool(argv[6])) {
+		rt = Tcl_SplitList(interp, argv[7], &num_classes, &object_classes);
+		if (rt != TCL_OK) {
+			Tcl_AppendResult(interp, "Error splitting TCL list.", (char *) NULL);
+			goto err;
+		}
+		
+		if (num_classes < 1) {
+			Tcl_AppendResult(interp, "Must provide at least 1 object class.", (char *) NULL);
+			goto err;
+		}
+		search_keys.num_object_class = num_classes;
+		search_keys.object_class = object_classes;
+	}
+	if (getbool(argv[8])) {
+		rt = Tcl_SplitList(interp, argv[9], &num_paths, &paths);
+		if (rt != TCL_OK) {
+			Tcl_AppendResult(interp, "Error splitting TCL list.", (char *) NULL);
+			goto err;
+		}
+		
+		if (num_paths < 1) {
+			Tcl_AppendResult(interp, "Must provide at least 1 path.", (char *) NULL);
+			goto err;
+		}
+		search_keys.num_path = num_paths;
+		search_keys.path = paths;
+	}
+	if (!search_keys.type && !search_keys.user && !search_keys.object_class && !search_keys.path) {
+		Tcl_AppendResult(interp, "You must specify search criteria!", (char *) NULL);
+		goto err;
+	}
+	
+	rt = sefs_filesystem_db_search(&fsdata, &search_keys, use_regex);
+	if (rt != 0) {
+		Tcl_AppendResult(interp, "Search failed\n", (char *) NULL);
+		goto err;
+	}
+	apol_search_fc_index_append_results(search_keys.search_ret, interp);
+	sefs_search_keys_ret_destroy(search_keys.search_ret);
+	if (types) Tcl_Free((char *) types);
+	if (users) Tcl_Free((char *) users);
+	if (object_classes) Tcl_Free((char *) object_classes);
+	if (paths) Tcl_Free((char *) paths);
+	return TCL_OK;
+err:
+	if (types) Tcl_Free((char *) types);
+	if (users) Tcl_Free((char *) users);
+	if (object_classes) Tcl_Free((char *) object_classes);
+	if (paths) Tcl_Free((char *) paths);
+	return TCL_ERROR;
+#endif
+}
+
+/* 
+ * No arguments, however, this function expects a file context index to be loaded into memory.
+ */
+int Apol_FC_Index_DB_Get_Items(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
+{
+	if(argc != 2) {
+		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
+		return TCL_ERROR;
+	}
+#ifndef LIBSEFS
+	Tcl_AppendResult(interp, "You need to build apol with libsefs!", (char *) NULL);
+	return TCL_ERROR;
+#else		
+	int list_sz = 0, i, request_type;
+	char **list_ret = NULL;
+	
+	if (fsdata.dbh == NULL) {
+		Tcl_AppendResult(interp, "No Index File Loaded!", (char *) NULL);
+		return TCL_ERROR;
+	}
+	
+	if(strcmp("types", argv[1]) == 0) {
+		request_type = SEFS_TYPES;
+	} else if(strcmp("users", argv[1]) == 0) {
+		request_type = SEFS_USERS;
+	} else if(strcmp("classes", argv[1]) == 0) {
+		request_type = SEFS_OBJECTCLASS;
+	}  else {
+		Tcl_AppendResult(interp, "Invalid option: ", argv[1], (char *) NULL);
+		return TCL_ERROR;
+	}
+	
+ 	if ((list_ret = sefs_filesystem_db_get_known(&fsdata, &list_sz, request_type)) != NULL) {
+		for (i = 0; i < list_sz; i++){
+			Tcl_AppendElement(interp, list_ret[i]);
+		}
+		sefs_double_array_destroy(list_ret, list_sz);
+	}
+
+	return TCL_OK;
+#endif
+}
+
+/* 
+ * No arguments.
+ */
+int Apol_Close_FC_Index_DB(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
+{
+	if(argc != 1) {
+		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
+		return TCL_ERROR;
+	}
+#ifdef LIBSEFS
+	if (fsdata.dbh != NULL) {
+ 		sefs_filesystem_db_close(&fsdata);
+	}	
+#endif
+	return TCL_OK;
+}
+
+/* 
  * argv[1] - file name of policy map to save to disk
  */
 int Apol_SavePermMap(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
@@ -5482,11 +5763,266 @@ int Apol_FlowAssertExecute (ClientData clientData, Tcl_Interp *interp,
         return TCL_OK;
 }
 
+static int apol_relabel_fromto_results_append_subject_info(relabel_result_t *results, relabel_set_t *sets, 
+							   int start_type, int subj_idx, int type_idx, int list, 
+							   bool_t skip_filter, relabel_filter_t *filter,
+							   policy_t *policy, Tcl_Obj *subjects_list)
+{
+        int i, j, where, rule_idx;
+        Tcl_Obj *subject_list[2];
+       	Tcl_Obj *rule_list[2];
+	char *str;
+	
+	assert(results != NULL && sets != NULL && policy != NULL && subjects_list != NULL);
+	if (get_type_name(subj_idx, &str, policy)) {
+		fprintf(stderr, "Could not get name for subject from policy.\n");
+		return -1;
+	}	
+       	subject_list[0] = Tcl_NewStringObj (str, -1); /* subject type string */
+       	free(str);  
+       	if (Tcl_ListObjAppendElement(NULL, subjects_list, subject_list[0])) {
+		fprintf(stderr, "Tcl error while appending element to list.\n");
+	        return -1;
+	}
+        subject_list[1] = Tcl_NewListObj (0, NULL); /* List of line_no/rules */
+       	where = apol_where_is_type_in_list(&(sets[subj_idx]), results->types[type_idx], list);
+       	if (where == NOTHERE) {
+		fprintf(stderr, "fatal internal error\n");
+		return -1;
+	}
+	for (i = 0; i < sets[subj_idx].types[where].num_rules; i++) {
+		if (!skip_filter) {
+			for (j = 0; j < filter->num_perm_sets; j++) {
+				if (!does_av_rule_use_classes(sets[subj_idx].types[where].rules[i], 1, 
+				    &(filter->perm_sets[j].obj_class), 1, policy))
+					continue;
+			}
+			
+		} 
+		assert(sets[subj_idx].types[where].rules != NULL); 	/* Make sure we have rules!! */
+		rule_idx = sets[subj_idx].types[where].rules[i];
+		rule_list[0] = Tcl_NewIntObj(get_rule_lineno(rule_idx, RULE_TE_ALLOW, policy));
+		if (Tcl_ListObjAppendElement(NULL, subject_list[1], rule_list[0])) {
+			fprintf(stderr, "Tcl error while appending element to list.\n");
+		        return -1;
+		}
+		str = re_render_av_rule(FALSE, rule_idx, 0, policy);	
+		if (str == NULL) {
+			fprintf(stderr, "Error rendering rule.\n");
+			return -1;
+		}
+		rule_list[1] = Tcl_NewStringObj(str, -1);
+		free(str);
+		if (Tcl_ListObjAppendElement(NULL, subject_list[1], rule_list[1])) {
+			fprintf(stderr, "Tcl error while appending element to list.\n");
+		        return -1;
+		}
+	}
+	if (sets[subj_idx].types[where].list == BOTHLIST) {
+		where = apol_where_is_type_in_list(&(sets[subj_idx]), start_type, ANYLIST);
+		if (where == NOTHERE) {
+			fprintf(stderr, "fatal internal error\n");
+			return -1;
+		}
+		for (i = 0; i < sets[subj_idx].types[where].num_rules; i++) {
+			if (!skip_filter) {
+				for (j = 0; j < filter->num_perm_sets; j++) {
+					if (!does_av_rule_use_classes(sets[subj_idx].types[where].rules[i], 1, 
+					    &(filter->perm_sets[j].obj_class), 1, policy))
+						continue;
+				}
+				
+			} 
+			assert(sets[subj_idx].types[where].rules != NULL);	/* Make sure we have rules!! */
+			rule_idx = sets[subj_idx].types[where].rules[i];
+			rule_list[0] = Tcl_NewIntObj(get_rule_lineno(rule_idx, RULE_TE_ALLOW, policy));
+			if (Tcl_ListObjAppendElement(NULL, subject_list[1], rule_list[0])) {
+				fprintf(stderr, "Tcl error while appending element to list.\n");
+			        return -1;
+			}
+			str = re_render_av_rule(FALSE, rule_idx, 0, policy);	
+			if (str == NULL) {
+				fprintf(stderr, "Error rendering rule.\n");
+				return -1;
+			}
+			rule_list[1] = Tcl_NewStringObj(str, -1);
+			free(str);
+			if (Tcl_ListObjAppendElement (NULL, subject_list[1], rule_list[1])) {
+				fprintf(stderr, "Tcl error while appending element to list.\n");
+			        return -1;
+			}
+		}
+	}	
+	if (Tcl_ListObjAppendElement(NULL, subjects_list, subject_list[1])) {
+		fprintf(stderr, "Tcl error while appending element to list.\n");
+	        return -1;
+	}
+		
+	return 0;                                       	
+}
+
+/* Generates and returns the actual results list structure for a file
+   relabeling to or relabeling from query. */
+static Tcl_Obj *apol_relabel_fromto_results(relabel_result_t *results, relabel_set_t *sets, relabel_mode_t *mode,
+                                            int start_type, relabel_filter_t *filter, policy_t *policy) {
+        Tcl_Obj *results_list_obj = Tcl_NewListObj (0, NULL);
+        int i, j, list;
+        Tcl_Obj *end_types_list[2];	/* Holds the end type string and a list of subject info */
+        Tcl_Obj *end_type_elem;
+	char *str;
+		                
+        assert(results != NULL);
+        switch (mode->mode) {
+        case MODE_BOTH:
+        	list = BOTHLIST;
+        	break;
+        case MODE_FROM:
+        	list = FROMLIST;
+        	break;
+        case MODE_TO:
+        	list = TOLIST;
+        	break;
+        default: 
+                fprintf(stderr, "Invalid mode specified!\n");
+		return NULL;
+        }
+   
+        for (i = 0; i < results->num_types; i++) {
+        	/* Append the end type */
+                if (get_type_name(results->types[i], &str, policy)) {
+                	fprintf(stderr, "Could not get name for end type from policy.\n");
+                        return NULL;
+                }
+                end_types_list[0] = Tcl_NewStringObj(str, -1); /* end type string */
+                free(str);           
+                end_types_list[1] = Tcl_NewListObj(0, NULL);   /* List of subjects */
+                
+                for (j = 0; j < results->num_subjects[i]; j++) {
+                	if (apol_relabel_fromto_results_append_subject_info(results, sets, start_type, 
+                	    results->subjects[i][j], i, list, mode->filter, filter, policy, 
+                	    end_types_list[1]) < 0) {
+                		return NULL;
+                	}                  
+                }
+                end_type_elem = Tcl_NewListObj (2, end_types_list);
+	        if (Tcl_ListObjAppendElement(NULL, results_list_obj, end_type_elem)) {
+	        	fprintf(stderr, "Tcl error while appending element to list.\n");
+	                return NULL;
+	        }
+        }
+        
+        return results_list_obj;
+}
+
+/* Generates and returns the actual results list structure for a file
+   domain relabeling query. */
+static Tcl_Obj *apol_relabel_domain_results(relabel_result_t *results, int start_type, policy_t *policy) {
+        Tcl_Obj *results_list_elem, *results_list_obj;
+        Tcl_Obj *results_list[2], *results_list_ptr;
+        Tcl_Obj *rule_list[2], *rule_elem;
+        Tcl_Obj *temp_obj;
+        relabel_set_t *set = results->set;
+        char *str;
+        int i, j, type_idx;
+
+	assert(set != NULL && policy != NULL);
+        if (set->num_types == 0) {
+                /* no results from domain relabel analysis */
+                return Tcl_NewListObj (0, NULL);
+        }
+        results_list[0] = Tcl_NewListObj(0, NULL);	/* FROM list */
+        assert(results_list[0]);
+        results_list[1] = Tcl_NewListObj(0, NULL);	/* TO list */
+        assert(results_list[1]);
+         
+        for (i = 0; i < set->num_types; i++) {
+                results_list_ptr = results_list[0];
+	        if (set->types[i].list == TOLIST) 
+	        	continue;
+	       
+	        type_idx = set->types[i].type;
+	        if (get_type_name(type_idx, &str, policy)) {
+	        	fprintf(stderr, "Could not get name for end type from policy.\n");
+                        return NULL;
+                }
+	        temp_obj = Tcl_NewStringObj(str, -1);
+	        assert(temp_obj);
+                free (str);
+                if (Tcl_ListObjAppendElement(NULL, results_list_ptr, temp_obj)) {
+                	fprintf(stderr, "Tcl error while appending element to list.\n");
+                        return NULL;
+                }
+                assert(set->types[i].rules != NULL);		/* Make sure we have rules!! */
+                for (j = 0; j < set->types[i].num_rules; j++) {
+	                rule_list[0] = Tcl_NewIntObj(get_rule_lineno(set->types[i].rules[j], RULE_TE_ALLOW, policy));
+	                assert(rule_list[0]);
+	                str = re_render_av_rule(FALSE, set->types[i].rules[j], FALSE, policy);
+	                if (str == NULL) 
+				return NULL;
+	                rule_list[1] = Tcl_NewStringObj(str, -1);
+	                assert(rule_list[1]);
+	                free (str);
+	                rule_elem = Tcl_NewListObj(2, rule_list);
+	                assert(rule_elem);
+	                
+	                if (Tcl_ListObjAppendElement(NULL, results_list_ptr, rule_elem)) {
+	                	fprintf(stderr, "Tcl error while appending element to list.\n");
+	                        return NULL;
+	                }
+	        }
+        }
+        
+         for (i = 0; i < set->num_types; i++) {
+                results_list_ptr = results_list[1];
+	        if (set->types[i].list == FROMLIST) 
+	        	continue;
+	       
+	        type_idx = set->types[i].type;
+	        if (get_type_name(type_idx, &str, policy)) {
+	        	fprintf(stderr, "Could not get name for end type from policy.\n");
+                        return NULL;
+                }
+	        temp_obj = Tcl_NewStringObj(str, -1);
+	        assert(temp_obj);
+                free (str);
+                if (Tcl_ListObjAppendElement(NULL, results_list_ptr, temp_obj)) {
+                	fprintf(stderr, "Tcl error while appending element to list.\n");
+                        return NULL;
+                }
+                assert(set->types[i].rules != NULL);		/* Make sure we have rules!! */
+                for (j = 0; j < set->types[i].num_rules; j++) {
+	                rule_list[0] = Tcl_NewIntObj(get_rule_lineno(set->types[i].rules[j], RULE_TE_ALLOW, policy));
+	                assert(rule_list[0]);
+	                str = re_render_av_rule(FALSE, set->types[i].rules[j], FALSE, policy);
+	                if (str == NULL) 
+				return NULL;
+	                rule_list[1] = Tcl_NewStringObj(str, -1);
+	                assert(rule_list[1]);
+	                free (str);
+	                rule_elem = Tcl_NewListObj(2, rule_list);
+	                assert(rule_elem);
+	                
+	                if (Tcl_ListObjAppendElement(NULL, results_list_ptr, rule_elem)) {
+	                	fprintf(stderr, "Tcl error while appending element to list.\n");
+	                        return NULL;
+	                }
+	        }
+        }
+        
+        results_list_elem = Tcl_NewListObj(2, results_list);
+        assert(results_list_elem);
+        /* wrap the entire list inside another, to be like relabelto/from */
+        results_list_obj = Tcl_NewListObj(1, &results_list_elem);
+        assert(results_list_obj);
+        
+        return results_list_obj;
+}
 
 /* File Relabeling Analysis Tcl<->C interface
  * objv [1] = starting type (string)
  * objv [2] = mode ("to", "from", "domain")
- * objv [3] = list of object class permissions
+ * objv [3] = list of object class permissions - This list is in the form...
+ 	
  *
  * Returns a list of results.  For relabelto / relabelfrom each result
  * is a 3-ple; for domains each is a 4-ple.
@@ -5513,6 +6049,7 @@ int Apol_RelabelAnalysis (ClientData clientData, Tcl_Interp *interp,
         char *mode_string;
         int start_type, num_perm_objs;
         Tcl_Obj *results_list_obj, **perm_list;
+        
         if (policy == NULL) {
                 Tcl_SetResult (interp, "No current policy file is opened!",
                                TCL_STATIC);
@@ -5522,14 +6059,17 @@ int Apol_RelabelAnalysis (ClientData clientData, Tcl_Interp *interp,
                 Tcl_SetResult (interp, "wrong # of args", TCL_STATIC);
                 return TCL_ERROR;
         }
+        /* Check to see if a previous relabel analysis has been performed and is stored in global cache. */
         if (relabel_sets_cache == NULL) {
-                if (apol_do_relabel_analysis (&relabel_sets_cache, policy)) {
-                        Tcl_SetResult (interp, "Error while fill relabel", TCL_STATIC);
+                if (apol_do_relabel_analysis(&relabel_sets_cache, policy)) {
+                        Tcl_SetResult (interp, "Error while doing relabel analysis!", TCL_STATIC);
                         return TCL_ERROR;
                 }
-                relabel_sets_num_types = num_types (policy);
+                relabel_sets_num_types = num_types(policy); /* num_types macro defined in policy.h */
         }
         sets = relabel_sets_cache;
+        
+        /* Set mode information */
         if (apol_relabel_mode_init (&mode)) {
                 Tcl_SetResult (interp, "Error while initializing mode", TCL_STATIC);
                 return TCL_ERROR;
@@ -5540,45 +6080,59 @@ int Apol_RelabelAnalysis (ClientData clientData, Tcl_Interp *interp,
                 return TCL_ERROR;
         }
         mode_string = Tcl_GetString (objv [2]);
+    
         if (strcmp (mode_string, "to") == 0) {
                 mode.mode = MODE_TO;
-        }
-        else if (strcmp (mode_string, "from") == 0) {
+        } else if (strcmp (mode_string, "from") == 0) {
                 mode.mode = MODE_FROM;
-        }
-        else if (strcmp (mode_string, "domain") == 0) {
+        } else if (strcmp (mode_string, "domain") == 0) {
                 mode.mode = MODE_DOM;
-        }
-        else {
+        } else if (strcmp (mode_string, "both") == 0) {
+                mode.mode = MODE_BOTH;
+        } else {
                 Tcl_SetResult (interp, "Invalid relabel mode", TCL_STATIC);
                 return TCL_ERROR;
         }
-        if (apol_relabel_filter_init (&filter)) {
-                Tcl_SetResult (interp, "Error while initializing filter", TCL_STATIC);
+        
+        /* Set permission filtering information */
+        if (apol_relabel_filter_init(&filter)) {
+                Tcl_SetResult(interp, "Error while initializing filter", TCL_STATIC);
                 return TCL_ERROR;
         }
-        if (Tcl_ListObjGetElements (interp, objv [3], &num_perm_objs, &perm_list) == TCL_ERROR) {
+        if (Tcl_ListObjGetElements(interp, objv [3], &num_perm_objs, &perm_list) == TCL_ERROR) {
                 return TCL_ERROR;
         }
+        if (num_perm_objs)
+        	mode.filter = 1;
         for ( ; num_perm_objs > 0; num_perm_objs--, perm_list++) {
-                Tcl_Obj *object_obj, *perm_obj;
+                Tcl_Obj *object_obj, *perm_list_obj, **perms;
                 char *object_class, *permission;
-                if (Tcl_ListObjIndex (interp, *perm_list, 0, &object_obj) == TCL_ERROR) {
+                int num_perms, i;
+                
+                if (Tcl_ListObjIndex(interp, *perm_list, 0, &object_obj) == TCL_ERROR) {
                         return TCL_ERROR;
                 }
-                if (Tcl_ListObjIndex (interp, *perm_list, 1, &perm_obj) == TCL_ERROR) {
+                if (Tcl_ListObjIndex(interp, *perm_list, 1, &perm_list_obj) == TCL_ERROR) {
                         return TCL_ERROR;
                 }
-                object_class = Tcl_GetString (object_obj);
-                permission = Tcl_GetString (perm_obj);
-                if (apol_fill_filter_set (object_class, permission, &filter,
-                                          policy) != 0) {
-                        Tcl_SetResult (interp, "Error while filling filter set", TCL_STATIC);
-                        return TCL_ERROR;
-                }
-                mode.filter = 1;
+                object_class = Tcl_GetString(object_obj);
+                if (Tcl_ListObjGetElements(interp, perm_list_obj, &num_perms, &perms) == TCL_ERROR) {
+	                return TCL_ERROR;
+	        }
+	        assert(num_perms > 0);
+fprintf(stderr, "%s ", object_class);
+	        for (i = 0; i < num_perms; i++) {
+	        	permission = Tcl_GetString(perms[i]);
+fprintf(stderr, "%s ", permission);
+	                if (apol_fill_filter_set(object_class, permission, &filter, policy) != 0) {
+	                        Tcl_SetResult (interp, "Error while filling filter set", TCL_STATIC);
+	                        return TCL_ERROR;
+	                }
+	        }
+fprintf(stderr, "\n");
         }
         
+        /* Get the results of our query */
         if (apol_relabel_result_init (&results)) {
                 Tcl_SetResult (interp, "Error while initializing results", TCL_STATIC);
                 return TCL_ERROR;
@@ -5591,13 +6145,14 @@ int Apol_RelabelAnalysis (ClientData clientData, Tcl_Interp *interp,
                 return TCL_ERROR;
         }
         switch (mode.mode) {
+        case MODE_BOTH:
         case MODE_FROM:
         case MODE_TO: {
-                results_list_obj = apol_relabel_fromto_results (&results, policy);
+                results_list_obj = apol_relabel_fromto_results(&results, sets, &mode, start_type, &filter, policy);
                 break;
         }
         default: {
-                results_list_obj = apol_relabel_domain_results (&results, start_type, policy);
+                results_list_obj = apol_relabel_domain_results(&results, start_type, policy);
                 break;
         }
         }
@@ -5624,145 +6179,6 @@ int Apol_RelabelFlushSets (ClientData clientData, Tcl_Interp *interp,
         relabel_sets_cache = NULL;
     }
     return TCL_OK;
-}
-
-
-/* Generates and returns the actual results list structure for a file
-   relabeling to or relabeling from query. */
-static Tcl_Obj *apol_relabel_fromto_results (relabel_result_t *results,
-                                             policy_t *policy) {
-        Tcl_Obj *results_list_obj = Tcl_NewListObj (0, NULL);
-        int *temp_dom_list = NULL;
-        int temp_dom_list_size = -1;
-        int i, j;
-        /* collect all possible domain names (i.e., Smalltalk's set) */
-        for (i = 0; i < results->num_types; i++) {
-                for (j = 0; j < results->num_domains [i]; j++) {
-                        if (find_int_in_array (results->domains [i][j], temp_dom_list, temp_dom_list_size) == -1 &&
-                            add_i_to_a (results->domains [i][j], &temp_dom_list_size, &temp_dom_list) != 0) {
-                                free (temp_dom_list);
-                                return NULL;
-                        }
-                }
-        }
-        /* iterate through all possible [unsorted] domains */
-        for (i = 0; i < temp_dom_list_size; i++) {
-                Tcl_Obj *domain_list [3];
-                Tcl_Obj *domain_elem;
-                char *s;
-                int *rules_list = NULL, num_rules = 0;
-                if (get_type_name (temp_dom_list [i], &s, policy)) {
-                        free (temp_dom_list);
-                        return NULL;
-                }
-                domain_list [0] = Tcl_NewStringObj (s, -1);
-                free (s);                /* remove the ".*" from the end before storing */
-
-                domain_list [1] = Tcl_NewListObj (0, NULL);
-                domain_list [2] = Tcl_NewListObj (0, NULL);
-                for (j = 0; j < results->num_types; j++) {
-                        if (find_int_in_array (temp_dom_list [i], results->domains [j], results->num_domains [j]) > -1) {
-                                Tcl_Obj *type_name;
-                                if (get_type_name (results->types [j], &s, policy)) {
-                                        free (temp_dom_list);
-                                        return NULL;
-                                }
-                                type_name = Tcl_NewStringObj (s, -1);
-                                free (s);
-                                if (Tcl_ListObjAppendElement (NULL, domain_list [1], type_name)) {
-                                        free (temp_dom_list);
-                                        return NULL;
-                                }
-                        }
-                }
-                if (apol_rules_per_domain (results, temp_dom_list [i],
-                                           &rules_list, &num_rules, policy) != 0) {
-                        free (temp_dom_list);
-                        return NULL;
-                }
-                for (j = 0; j < num_rules; j++) {
-                        Tcl_Obj *rule_list [2], *rule_elem;
-                        s = re_render_av_rule (FALSE, rules_list [j], FALSE,
-                                               policy);
-                        rule_list [0] = Tcl_NewStringObj (s, -1);
-                        free (s);
-                        rule_list [1] = Tcl_NewIntObj (get_rule_lineno (rules_list [j], RULE_TE_ALLOW, policy));
-                        rule_elem = Tcl_NewListObj (2, rule_list);
-                        if (Tcl_ListObjAppendElement (NULL, domain_list [2], rule_elem)) {
-                                free (temp_dom_list);
-                                return NULL;
-                        }
-                }
-                domain_elem = Tcl_NewListObj (3, domain_list);
-                if (Tcl_ListObjAppendElement (NULL, results_list_obj, domain_elem)) {
-                        free (temp_dom_list);
-                        return NULL;
-                }
-        }
-        free (temp_dom_list);
-        return results_list_obj;
-}
-
-/* Generates and returns the actual results list structure for a file
-   domain relabeling query. */
-static Tcl_Obj *apol_relabel_domain_results (relabel_result_t *results,
-                                             int start_type,
-                                             policy_t *policy) {
-        Tcl_Obj *results_list_elem, *results_list_obj;
-        Tcl_Obj *results_list [4];
-        Tcl_Obj *rule_list [2], *rule_elem;
-        Tcl_Obj *temp_obj;
-        relabel_set_t *set = results->set;
-        char *s;
-        int i;
-
-        if (set->num_from_types == 0 && set->num_to_types == 0) {
-                /* no results from domain relabel analysis */
-                return Tcl_NewListObj (0, NULL);
-        }
-        if (get_type_name (start_type, &s, policy)) {
-                return NULL;
-        }
-        results_list [0] = Tcl_NewStringObj (s, -1);
-        free (s);
-        results_list [1] = Tcl_NewListObj (0, NULL);
-        results_list [2] = Tcl_NewListObj (0, NULL);
-        results_list [3] = Tcl_NewListObj (0, NULL);
-        for (i = 0; i < set->num_from_types; i++) {
-                if (get_type_name (set->from_types [i].type, &s, policy)) {
-                        return NULL;
-                }
-                temp_obj = Tcl_NewStringObj (s, -1);
-                free (s);
-                if (Tcl_ListObjAppendElement (NULL, results_list [1], temp_obj)) {
-                        return NULL;
-                }
-        }
-        for (i = 0; i < set->num_to_types; i++) {
-                if (get_type_name (set->to_types [i].type, &s, policy)) {
-                        return NULL;
-                }
-                temp_obj = Tcl_NewStringObj (s, -1);
-                free (s);
-                if (Tcl_ListObjAppendElement (NULL, results_list [2], temp_obj)) {
-                        return NULL;
-                }
-        }
-        for (i = 0; i < results->num_rules; i++) {
-                s = re_render_av_rule (FALSE, results->rules [i], FALSE,
-                                       policy);
-                rule_list [0] = Tcl_NewStringObj (s, -1);
-                free (s);
-                rule_list [1] = Tcl_NewIntObj (get_rule_lineno (results->rules [i], RULE_TE_ALLOW, policy));
-                rule_elem = Tcl_NewListObj (2, rule_list);
-                if (Tcl_ListObjAppendElement (NULL, results_list [3], rule_elem)) {
-                        return NULL;
-                }
-        }
-        results_list_elem = Tcl_NewListObj (4, results_list);
-        /* wrap the entire list inside another, to be like relabelto/from */
-        results_list_obj = Tcl_NewListObj (1, &results_list_elem);
-        return results_list_obj;
 }
 
 /* Package initialization */
@@ -5814,6 +6230,12 @@ int Apol_Init(Tcl_Interp *interp)
 	Tcl_CreateCommand(interp, "apol_SearchConditionalRules", (Tcl_CmdProc *) Apol_SearchConditionalRules, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_GetPolicyType", (Tcl_CmdProc *) Apol_GetPolicyType, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_TypesRelationshipAnalysis", (Tcl_CmdProc *) Apol_TypesRelationshipAnalysis, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+	
+	Tcl_CreateCommand(interp, "apol_Close_FC_Index_DB", (Tcl_CmdProc *) Apol_Close_FC_Index_DB, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+	Tcl_CreateCommand(interp, "apol_Create_FC_Index_File", (Tcl_CmdProc *) Apol_Create_FC_Index_File, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+	Tcl_CreateCommand(interp, "apol_Load_FC_Index_File", (Tcl_CmdProc *) Apol_Load_FC_Index_File, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+	Tcl_CreateCommand(interp, "apol_Search_FC_Index_DB", (Tcl_CmdProc *) Apol_Search_FC_Index_DB, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+	Tcl_CreateCommand(interp, "apol_FC_Index_DB_Get_Items", (Tcl_CmdProc *) Apol_FC_Index_DB_Get_Items, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateObjCommand(interp, "apol_FlowAssertExecute", (Tcl_ObjCmdProc *) Apol_FlowAssertExecute, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);	
 	Tcl_CreateObjCommand(interp, "apol_RelabelAnalysis", (Tcl_ObjCmdProc *) Apol_RelabelAnalysis, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);	
 	Tcl_CreateObjCommand(interp, "apol_RelabelFlushSets", (Tcl_ObjCmdProc *) Apol_RelabelFlushSets, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);	
