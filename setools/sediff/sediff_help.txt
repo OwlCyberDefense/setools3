@@ -1,6 +1,6 @@
 Semantic Policy Difference Tool for Security Enhanced Linux
 sediff, Graphical User Interface version 1.0
-February 15, 2005
+February 28, 2005
 selinux@tresys.com
 
 Overview:
@@ -10,14 +10,14 @@ Sediff is a policy analysis tool that parses two given policy files and compares
 Limitations:
 ===========
 Sediff currently compares only the following policy elements:
-	+ object classes and permissions
-	+ types and attributes
-	+ roles
-	+ users
-	+ booleans
-	+ type enforcement rules (allow, type_transitions, etc.)
-	+ role allow rules
-	
+        + object classes and permissions
+        + types and attributes
+        + roles
+        + users
+        + booleans
+        + type enforcement rules (allow, type_transitions, etc.)
+        + role allow rules
+        
 Other elements will be added as the core libraries support them.
 
 What is a Semantic Diff?
@@ -31,8 +31,8 @@ NOTE: The one semantic assumption sediff makes is that when an identifier (e.g.,
 Sediff commands:
 ===============
 Sediff can be run from command line or as a GUI. For command line help, run "sediff --help". To start the GUI (the primary focus of this help file), either of the following commands will work:
-	sediff -X [policy1 policy2]
-	sediffx [policy1 policy2]
+        sediff -X [policy1 policy2]
+        sediffx [policy1 policy2]
 
 
 Understanding Sediff's Results: 
@@ -41,10 +41,10 @@ After differing two policies, the GUI shows the policy areas compared in the lef
 
 NOTE: All differences are shown from the perspective of the first policy given (i.e., policy 1).  There are three types of differences shown:
 
-	+ Added (+): A policy component was added by policy 2 (in policy 2 but not policy 1)
-	+ Removed (-): A policy component was removed by policy 2 (in policy 1 but not policy 2)
-	+ Changed (*): A policy component was present in both policies, but somehow changed by policy 2.
-	
+        + Added (+): A policy component was added by policy 2 (in policy 2 but not policy 1)
+        + Removed (-): A policy component was removed by policy 2 (in policy 1 but not policy 2)
+        + Changed (*): A policy component was present in both policies, but somehow changed by policy 2.
+        
 
 Supported Policy Areas Differences:
 ==================================
@@ -54,17 +54,17 @@ Below is an explanation of the difference for each supported policy area:
    -----------------------
    This area examines three aspects of a policy: class definitions, common permission definitions, and permissions:
    
-   	Classes:
-   	-------
-   	Classes can be added, removed, or changed. Changed means that the permissions associated with the classes have changed between the two policies.
-   	
-   	Common Permissions:
-   	-------------------
-   	Common permissions are compared much like classes. They can be added, removed or changed, where change means that the permissions associated with the common permission has changed.
-   	
-   	Permissions:
-   	-----------
-   	Permissions can either be added or removed, they cannot be changed.
+        Classes:
+        -------
+        Classes can be added, removed, or changed. Changed means that the permissions associated with the classes have changed between the two policies.
+        
+        Common Permissions:
+        -------------------
+        Common permissions are compared much like classes. They can be added, removed or changed, where change means that the permissions associated with the common permission has changed.
+        
+        Permissions:
+        -----------
+        Permissions can either be added or removed, they cannot be changed.
 
    Types:
    -----
@@ -98,7 +98,7 @@ Below is an explanation of the difference for each supported policy area:
 
    RBAC Rules:
    ----------
-   RBAC includes role allow and role_transition rules. Currently role_transition rules are not supported in sediff. Role allow rules can *************************** I'M CONFUSED BY THE TOOL. CERTAINLY WHAT WAS HERE BEFORE MAKES NO SENSE.
+   RBAC includes role allow and role_transition rules. Currently role_transition rules are not supported in sediff. Role allow rules determine if a role is allowed to transition (either explicitly or through a role_transition) to another. Diffing a role allow involves taking the source role and checking to see if there are corresponding rules in the other policy. If there is no rule with this source in the first policy it is an add, likewise if there is none in the second policy it is a remove. If role allows with the same source exist in both policies then the target roles are shown as a change.
    
    Conditional Expressions:
    -----------------------
