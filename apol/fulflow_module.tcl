@@ -182,7 +182,7 @@ proc Apol_Analysis_fulflow::do_analysis { results_frame } {
 	set perm_options ""
 	set objects_sel "0"
 	set filter_types "0"
-	
+
 	foreach class $f_opts($advanced_filter_Dlg,class_list) {
 		set perms ""
 		# Make sure to strip out just the class name, as this may be an  
@@ -193,24 +193,29 @@ proc Apol_Analysis_fulflow::do_analysis { results_frame } {
 			set class_elements [array names f_opts "$advanced_filter_Dlg,perm_status_array,$class,*"]
 			set exclude_perm_added 0
 			foreach element $class_elements {
-				set perm [lindex [split $element ","] 1]
-				# If threshhold is enabled, the skip any permissions that fall below threshhold.
-				if {$f_opts($advanced_filter_Dlg,threshhold_cb_value)} {
-					if {[Apol_Perms_Map::get_weight_for_class_perm $class $perm] < \
+				set perm [lindex [split $element ","] 3]
+				# These are manually set to be included, so skip.
+				if {![string equal $f_opts($element) "exclude"] && 
+				    !$f_opts($advanced_filter_Dlg,threshhold_cb_value)} {
+					continue
+				} elseif {![string equal $f_opts($element) "exclude"] && 
+				    $f_opts($advanced_filter_Dlg,threshhold_cb_value)} {
+					# If threshhold is enabled, then skip any permissions that are >=  
+					# to the threshhold since these are to be included in the results.
+					if {[Apol_Perms_Map::get_weight_for_class_perm $class $perm] >= \
 						$f_opts($advanced_filter_Dlg,threshhold_value)} {
 						# Skip this permisssion
 						continue
 					}
 				}
-		
-				if {[string equal $f_opts($element) "exclude"]} {
-					if {$exclude_perm_added == 0} {
-						incr num_object_classes 
-						set perm_options [lappend perm_options $class]
-						set exclude_perm_added 1
-					}	
-					set perms [lappend perms $perm]
-				}
+				# If we get to this point, then the permission was either manually excluded,
+				# excluded because it's weight falls below the threshhold value, or both.
+				if {$exclude_perm_added == 0} {
+					incr num_object_classes 
+					set perm_options [lappend perm_options $class]
+					set exclude_perm_added 1
+				}	
+				set perms [lappend perms $perm]
 			}
 			if {$perms != ""} {
 				set perm_options [lappend perm_options [llength $perms]]
@@ -221,6 +226,9 @@ proc Apol_Analysis_fulflow::do_analysis { results_frame } {
 		} else {
 			set class [string range $class 0 [expr $idx - 1]]
 			set perm_options [lappend perm_options $class]	
+			# Appending 0 for the number of permissions indicates to the  
+			# lower-level code to exclude the entire object class from the 
+			# results
 			set perm_options [lappend perm_options 0]	
 			incr num_object_classes 
 		}
@@ -232,7 +240,7 @@ proc Apol_Analysis_fulflow::do_analysis { results_frame } {
 	if {$f_opts($advanced_filter_Dlg,filtered_excl_types) != ""} {   
 		set filter_types "1"
 	} 
-	
+
 	Apol_Analysis_fulflow::display_progressDlg
 	set rt [catch {set results [apol_TransitiveFlowAnalysis \
 		$start_type \
