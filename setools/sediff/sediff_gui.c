@@ -1362,11 +1362,12 @@ static int txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_ite
 
 	GtkTextMark *added_mark,*changed_mark;
 	GtkTextIter added_iter,changed_iter;
-	GtkTextTag *link1_tag,*link2_tag, *rules_tag,*added_tag,*changed_tag,*removed_tag;
+	GtkTextTag *link1_tag,*link2_tag, *rules_tag,*added_tag,*changed_tag,*removed_tag,*header_tag;
 	GtkTextTagTable *table;
 	gchar **split_line_array = NULL;
 	char *name = NULL;
 	bool_t inverse,matched,polmatched;
+
 
 
 	/* reset the te summary counters */
@@ -1416,8 +1417,13 @@ static int txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_ite
 							 "foreground", "red",
 							 NULL);
 	}
-
-
+	header_tag = gtk_text_tag_table_lookup(table, "header-tag");
+	if(!header_tag) {
+		header_tag = gtk_text_buffer_create_tag (txt, "header-tag",
+							 "weight", PANGO_WEIGHT_BOLD,
+							 "underline", PANGO_UNDERLINE_SINGLE,
+							 NULL); 
+	}
 	rules_tag = gtk_text_tag_table_lookup(table, "rules-tag");
 	if (!rules_tag) {
 		rules_tag = gtk_text_buffer_create_tag(txt, "rules-tag",
@@ -1449,7 +1455,7 @@ static int txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_ite
 
  	/* find removed */
 	g_string_printf(string, "\nTE RULES REMOVED \n");
-	gtk_text_buffer_insert_with_tags_by_name(txt, &changed_iter, string->str,-1, "rules-tag", NULL); 
+	gtk_text_buffer_insert_with_tags_by_name(txt, &changed_iter, string->str,-1, "header-tag", NULL); 
  	for (i = 0; i < AVH_SIZE; i++) { 
  		for (cur = diff1->te.tab[i];cur != NULL; cur = cur->next) { 
 			gtk_text_buffer_get_iter_at_mark(txt,&changed_iter,changed_mark);
@@ -1524,7 +1530,7 @@ static int txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_ite
 
 	gtk_text_buffer_get_end_iter(txt, &changed_iter);
 	g_string_printf(string, "\nTE RULES CHANGED \n");
-	gtk_text_buffer_insert_with_tags_by_name(txt, &changed_iter, string->str,-1, "rules-tag", NULL); 
+	gtk_text_buffer_insert_with_tags_by_name(txt, &changed_iter, string->str,-1, "header-tag", NULL); 
 
 
 	/* find added and changed rules*/
@@ -1542,6 +1548,59 @@ static int txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_ite
 					sediff_app->summary.te_rules.changed += 1;
 					matched = TRUE;
 					gtk_text_buffer_get_end_iter(txt, &changed_iter);
+					/* find the complete rule in policy 1 */
+					polmatched = FALSE;
+					for(tmpcur = avh_find_first_node(&policy1->avh, &cur2->key); tmpcur != NULL && !polmatched; tmpcur = avh_find_next_node(tmpcur) )  {
+						/* look for this match in policy 2 */
+						if (does_cond_match(tmpcur,policy1,cur2,policy1,&inverse)) {
+							//fprintf(stderr,"true\n");
+							rule = re_render_avh_rule(tmpcur, policy1);
+							polmatched = TRUE;
+						}
+						/* if there is no match we have an error return */
+						else
+							return -1;
+					}
+					//rule = re_render_avh_rule(cur, policy2);
+					if (rule == NULL) {
+						g_return_val_if_reached(-1);
+					}
+					g_string_printf(string, "\t* Policy 1: %s", rule);
+					free(rule);
+					
+					gtk_text_buffer_insert_with_tags_by_name(txt, &changed_iter, string->str, -1, "changed-tag", NULL);	
+				
+					if (cur->flags & AVH_FLAG_COND) {
+						rule = re_render_avh_rule_cond_state(cur, policy2);
+						if (rule == NULL) {
+							g_return_val_if_reached(-1);
+						}
+						g_string_printf(string, "   %s", rule);
+						gtk_text_buffer_insert(txt, &changed_iter, string->str, -1);
+						gtk_text_buffer_get_iter_at_offset(txt, &changed_iter, -1);
+  						free(rule);
+					
+						g_string_printf(string, " (cond = %d)", cur->cond_expr);
+						gtk_text_buffer_insert(txt, &changed_iter, string->str, -1);
+						gtk_text_buffer_get_iter_at_offset(txt, &changed_iter, -1);
+					}
+					rule = re_render_avh_rule_linenos(cur2, policy1);
+					if (rule != NULL) {
+						j = 0;
+						split_line_array = g_strsplit((const gchar*)rule, " ", 0);  
+						while (split_line_array[j] != NULL) {  
+							gtk_text_buffer_insert_with_tags_by_name(txt, &changed_iter, "(", -1, "rules-tag", NULL);
+							g_string_printf(string, "%s", split_line_array[j]);
+							if (!is_binary_policy(policy2)) {
+								gtk_text_buffer_insert_with_tags_by_name(txt, &changed_iter, string->str, -1, "policy1-link-tag", NULL);
+							}
+							gtk_text_buffer_insert_with_tags_by_name(txt, &changed_iter, ")", -1, "rules-tag", NULL);
+							j++;
+						}
+						free(rule);
+						g_strfreev(split_line_array);
+					}
+					gtk_text_buffer_insert(txt, &changed_iter, "\n", -1);
 					/* find the complete rule in policy 2 */
 					polmatched = FALSE;
 					for(tmpcur = avh_find_first_node(&policy2->avh, &cur->key); tmpcur != NULL && !polmatched; tmpcur = avh_find_next_node(tmpcur) )  {
@@ -1559,7 +1618,7 @@ static int txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_ite
 					if (rule == NULL) {
 						g_return_val_if_reached(-1);
 					}
-					g_string_printf(string, "\t* %s", rule);
+					g_string_printf(string, "\t* Policy 2: %s", rule);
 					free(rule);
 					
 					gtk_text_buffer_insert_with_tags_by_name(txt, &changed_iter, string->str, -1, "changed-tag", NULL);	
@@ -1689,7 +1748,7 @@ static int txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_ite
 
 	gtk_text_buffer_get_iter_at_mark(txt,&added_iter,added_mark);
 	g_string_printf(string, "\nTE RULES ADDED\n");
-	gtk_text_buffer_insert_with_tags_by_name(txt, &added_iter, string->str,-1, "rules-tag", NULL); 
+	gtk_text_buffer_insert_with_tags_by_name(txt, &added_iter, string->str,-1, "header-tag", NULL); 
 	return 0;
 
 
@@ -2029,6 +2088,9 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 	GtkTextTag *link2_tag;
 	GtkTextTagTable *table;
 	gint page = 1;
+	PangoTabArray *tabs = pango_tab_array_new(4,FALSE);
+
+	gtk_text_view_set_tabs(textview,tabs);
 
 	if (policy_option == 1) {
 		switch (option) {
@@ -2672,10 +2734,34 @@ int main(int argc, char **argv)
 	char *dir;
 	GString *path; 
 	filename_data_t filenames;
-//	int i;
-//	bool_t havefiles = FALSE;
+	bool_t havefiles = FALSE;
+
+
 	
 	filenames.p1_file = filenames.p2_file = NULL;
+
+	/* sediff.c with file names */
+	if (argc == 2) {
+		/* make sure not some messup somewhere */
+		if (strcmp("sediffx",argv[0]) == 0) {
+			printf("Usage: ./sediffx [POLICY1 POLICY2]"); 
+			return -1; 
+		}
+		havefiles = TRUE;
+		filenames.p1_file = g_string_new(argv[0]); 
+		filenames.p2_file = g_string_new(argv[1]); 
+	}
+	/* cli with files */
+	else if (argc == 3) {
+		havefiles = TRUE;
+		filenames.p1_file = g_string_new(argv[1]); 
+		filenames.p2_file = g_string_new(argv[2]); 
+	}
+	/* not sediff.c with no args or cli with no args */
+	else if (argc != 0 && argc != 1){
+		printf("Usage: ./sediffx [POLICY1 POLICY2]"); 
+		return -1; 
+	}
 
 	
 	gtk_init(&argc, &argv);
@@ -2685,38 +2771,6 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Could not find sediff.glade!");
 		return -1;
 	}
-
-/* 	/\* the cli pgm will call us with 0 args *\/ */
-/* 	if (argc != 0) { */
-/* 		/\* did we get called from the cli with just sediffx *\/ */
-/* 		if (argc == 1 && strncmp ("sediffx",argv[0],strlen("sediffx")) != 0) { */
-/* 			printf("Usage: sediffx | sediffx policy1 policy2\n"); */
-/* 			return -1; */
-/* 		} */
-/* 		/\* did the cli pgm pass us in files *\/ */
-/* 		if (argc == 2) { */
-/* 			if (strcmp (argv[0],"sediffx") == 0) { */
-/* 				printf("Usage: sediffx | sediffx policy1 policy2\n"); */
-/* 				return -1; */
-/* 			} */
-/* 			else { */
-/* 				filenames.p1_file = g_string_new(argv[0]); */
-/* 				filenames.p2_file = g_string_new(argv[1]); */
-/* 				havefiles = TRUE; */
-/* 			} */
-/* 		} */
-/* 		/\* did the cli pass us in args *\/ */
-/* 		else if (argc == 3) { */
-/* 			filenames.p1_file = g_string_new(argv[0]); */
-/* 			filenames.p2_file = g_string_new(argv[1]); */
-/* 			havefiles = TRUE; */
-/* 		}		 */
-/* 	} */
-/* 	printf("%d\n",argc); */
-/* 	for (i = 0;i<argc;i++) */
-/* 		printf("%s\n",argv[i]); */
-
-
 
 	path = g_string_new(dir);
 	free(dir);
@@ -2755,10 +2809,7 @@ int main(int argc, char **argv)
 
 	glade_xml_signal_autoconnect(sediff_app->window_xml);
 
-	if (argc == 3) {
-		filenames.p1_file = g_string_new(argv[1]); 
-		filenames.p2_file = g_string_new(argv[2]); 
-
+	if (havefiles) {
 		g_idle_add(&delayed_main,&filenames);
 	}
 
