@@ -25,12 +25,12 @@ namespace eval Apol_Analysis_tra {
 		 	          - any direct information flows between TypeA and TypeB (DIF analysis) \n \
 		 	          - any transitive information flows between TypeA and TypeB (TIF analysis) \n \
 		 	          - any domain transitions from TypeA to TypeB or from TypeB to TypeA. (DTA analysis) \n \
-		 	          - any additional type transition rules from TypeA to TypeB or from TypeB to TypeA, \n \
-		 	            excluding tt rules from the DTA analysis. (TE rules query) \n \
-		 	          - object types to which both types are granted access. (essentially, the intersection \n \
-		 	            of the TE rules queries) \n \
-		 	          - any process interactions between TypeA and TypeB (e.g., allow rules that allow TypeA \n \
-		 	            and TypeB to send signals to each other). (TE rules query) \n \
+		 	          - any additional type transition rules from TypeA to TypeB or from TypeB to TypeA,\
+		 	          excluding tt rules from the DTA analysis. (TE rules query) \n \
+		 	          - object types to which both types are granted access. (essentially, the intersection\
+		 	          of the TE rules queries) \n \
+		 	          - any process interactions between TypeA and TypeB (e.g., allow rules that allow TypeA\
+		 	          and TypeB to send signals to each other). (TE rules query) \n \
 		 	          - the additional types to which TypeA and TypeB have access. (TE rules query)\n\n\The results \
 		 	          of the analysis may be optionally filtered by object classes and/or permissions, \
 		 	          and target types; however, this is only for the Domain Transition, Transitive Information Flow and \
@@ -39,7 +39,7 @@ namespace eval Apol_Analysis_tra {
 		 	          listbox, thereby allowing the user to select any aspect of the analysis from the listbox and have \
 		 	          that specific information displayed within the results textbox, instead of all the information being \
 		 	          displayed at once. If desired, all results can be displayed at once as well by selecting the \
-		 	          listbox item labeled 'Show All Results'.\n\nFor additional help on \
+		 	          listbox item labeled 'Show All of the Above'.\n\nFor additional help on \
     				  this topic select \"Types Relationship Analysis\" from the help menu."
 	variable progressmsg		""
 	variable progress_indicator	-1
@@ -109,7 +109,7 @@ proc Apol_Analysis_tra::display_dta_options { } {
 # ------------------------------------------------------------------------------
 #  Command Apol_Analysis_tra::display_tif_options
 # ------------------------------------------------------------------------------
-proc Apol_Analysis_tra::display_tif_options { } { 	 	  
+proc Apol_Analysis_tra::display_tif_options { } { 		  
 	Apol_Analysis_fulflow::advanced_filters_create_dialog \
 		$Apol_Analysis_tra::transflow_options_Dlg \
 		"Types Relationship Transitive Information Flows Options"
@@ -342,7 +342,7 @@ proc Apol_Analysis_tra::do_analysis {results_frame} {
 			-message "No current policy file is opened!"
 		return -code error
         } 
-       
+   
        	if {$typeA == ""} {
        		tk_messageBox -icon error -type ok -title "Error" \
        			-message "TypeA cannot be empty!"
@@ -493,7 +493,8 @@ proc Apol_Analysis_tra::do_analysis {results_frame} {
 	set filter_dirflow_objs 0
 	if {$excluded_dirflow_objs != ""} {
 		set filter_dirflow_objs 1
-	}	
+	}
+
 	Apol_Analysis_tra::display_progressDlg			
 	set rt [catch {set results [apol_TypesRelationshipAnalysis \
 		$typeA \
@@ -526,7 +527,7 @@ proc Apol_Analysis_tra::do_analysis {results_frame} {
 	        tk_messageBox -icon error -type ok -title "Error" -message "$err"
 		return -code error
 	} 
-	
+
 	set tra_listbox [Apol_Analysis_tra::create_resultsDisplay $results_frame]
 	set rt [catch {Apol_Analysis_tra::create_results_list_structure $tra_listbox $results} err]
 	if {$rt != 0} {	
@@ -572,14 +573,14 @@ proc Apol_Analysis_tra::display_all_results {tra_listbox tra_info_text} {
 				Apol_Analysis_tra::display_rules \
 					$tra_listbox \
 					$tra_info_text \
-					"Other type transition rules" \
+					"Additional type transition rules" \
 					[$tra_listbox itemcget $item -data]
 			}
 			process_rules {
 				Apol_Analysis_tra::display_rules \
 					$tra_listbox \
 					$tra_info_text \
-					"Process rules" \
+					"Process interactions" \
 					[$tra_listbox itemcget $item -data]
 			}
 			common_objects {
@@ -675,14 +676,14 @@ proc Apol_Analysis_tra::listSelect {tra_listbox tra_info_text selected_item} {
 			Apol_Analysis_tra::display_rules \
 				$tra_listbox \
 				$tra_info_text \
-				"Other type transition rules" \
+				"Additional type transition rules" \
 				[$tra_listbox itemcget $selected_item -data]
 		}
 		process_rules {
 			Apol_Analysis_tra::display_rules \
 				$tra_listbox \
 				$tra_info_text \
-				"Process rules" \
+				"Process interactions" \
 				[$tra_listbox itemcget $selected_item -data]
 		}
 		common_objects {
@@ -850,21 +851,21 @@ proc Apol_Analysis_tra::display_common_object_info {tra_listbox tra_info_text da
 		
 	set i 0
         # Get # common objects
-	set num_comm_objs_A [lindex $data $i]
+	set num_comm_objs [lindex $data $i]
 	set start_idx [$tra_info_text index insert]
 	$tra_info_text insert end "$typeA "   
 	set end_idx [$tra_info_text index insert]
 	$tra_info_text tag add $Apol_Analysis_tra::title_type_tag $start_idx $end_idx
 	
 	set start_idx [$tra_info_text index insert]
-	$tra_info_text insert end "Common Object Types ($num_comm_objs_A):\n\n"   
+	$tra_info_text insert end "Common Object Types ($num_comm_objs):\n\n"   
 	set end_idx [$tra_info_text index insert]
 	$tra_info_text tag add $Apol_Analysis_tra::title_tag $start_idx $end_idx
 	
 	# Get next element index
 	set curr_idx [expr $i + 1]
-	if {$num_comm_objs_A} { 
-		for { set x 0 } { $x < $num_comm_objs_A } { incr x } { 
+	if {$num_comm_objs} { 
+		for { set x 0 } { $x < $num_comm_objs } { incr x } { 
 			$tra_info_text insert end "[lindex $data $curr_idx]\n"
 			incr curr_idx
 		}
@@ -888,39 +889,20 @@ proc Apol_Analysis_tra::display_common_object_info {tra_listbox tra_info_text da
 		}
 	}
 	set i $curr_idx
-	set num_comm_objs_B [lindex $data $i]
 	set start_idx [$tra_info_text index insert]
-	$tra_info_text insert end "\n\n$typeB "   
+	$tra_info_text insert end "\n$typeB "   
 	set end_idx [$tra_info_text index insert]
 	$tra_info_text tag add $Apol_Analysis_tra::title_type_tag $start_idx $end_idx
 		
 	set start_idx [$tra_info_text index insert]
-	$tra_info_text insert end "Common Object Types ($num_comm_objs_B):\n\n" 
+	set num_comm_rules_B [lindex $data $i]
+	$tra_info_text insert end "Common Object Type Rules ($num_comm_rules_B):\n\n" 
 	set end_idx [$tra_info_text index insert]
 	$tra_info_text tag add $Apol_Analysis_tra::title_tag $start_idx $end_idx
-	if  {$num_comm_objs_B} {
-		set curr_idx [expr $i + 1]
-		for { set x 0 } { $x < $num_comm_objs_B } { incr x } { 
-			$tra_info_text insert end "[lindex $data $curr_idx]\n"
-			incr curr_idx
-		}
-		set i $curr_idx
-		
-		set num_comm_rules_B [lindex $data $i]
-		set start_idx [$tra_info_text index insert]
-		$tra_info_text insert end "\n$typeB "   
-		set end_idx [$tra_info_text index insert]
-		$tra_info_text tag add $Apol_Analysis_tra::title_type_tag $start_idx $end_idx
-	
-		set start_idx [$tra_info_text index insert]
-		$tra_info_text insert end "Common Object Type Rules ($num_comm_rules_B):\n\n" 
-		set end_idx [$tra_info_text index insert]
-		$tra_info_text tag add $Apol_Analysis_tra::title_tag $start_idx $end_idx
-		set curr_idx [expr $i + 1]
-		for { set x 0 } { $x < $num_comm_rules_B } { incr x } { 
-			Apol_Analysis_tra::print_rule $tra_info_text $data $curr_idx
-			incr curr_idx
-		}
+	set curr_idx [expr $i + 1]
+	for { set x 0 } { $x < $num_comm_rules_B } { incr x } { 
+		Apol_Analysis_tra::print_rule $tra_info_text $data $curr_idx
+		incr curr_idx
 	}
 
 	return 0
@@ -1736,7 +1718,7 @@ proc Apol_Analysis_tra::create_results_list_structure {tra_listbox results_list}
 	# Insert item into listbox 
 	if {$other_ttrules_sel} {
 		$tra_listbox insert end tt_rules \
-			-text "Other Type Transition Rules" \
+			-text "Additional Type Transition Rules" \
 			-data [lrange $results_list $start_idx $i] 
 	}
 	
@@ -1751,15 +1733,15 @@ proc Apol_Analysis_tra::create_results_list_structure {tra_listbox results_list}
 	# Insert item into listbox 
 	if {$process_sel} {
 		$tra_listbox insert end process_rules \
-			-text "Process Rules" \
+			-text "Process Interactions" \
 			-data [lrange $results_list $start_idx $i] 
 	}
 		
 	# Get # common objects
 	incr i
-	set num_comm_objs_A [lindex $results_list $i]
+	set num_comm_objs [lindex $results_list $i]
 	set start_idx $i
-	for { set x 0 } { $x < $num_comm_objs_A } { incr x } { 
+	for { set x 0 } { $x < $num_comm_objs } { incr x } { 
 		incr i
 	}
 	
@@ -1770,11 +1752,6 @@ proc Apol_Analysis_tra::create_results_list_structure {tra_listbox results_list}
 		incr i
 	}
 	
-	incr i
-	set num_comm_objs_B [lindex $results_list $i]
-	for { set x 0 } { $x < $num_comm_objs_B } { incr x } { 
-		incr i
-	}
 	incr i
 	set num_comm_rules_B [lindex $results_list $i]
 	for { set x 0 } { $x < $num_comm_rules_B } { incr x } { 
@@ -1795,7 +1772,7 @@ proc Apol_Analysis_tra::create_results_list_structure {tra_listbox results_list}
 		incr i
 	}
 	
-	# Get uniqe rules
+	# Get unique rules
 	incr i
 	set num_uniqe_rules_A [lindex $results_list $i]
 	for { set x 0 } { $x < $num_uniqe_rules_A } { incr x } { 
@@ -1917,7 +1894,7 @@ proc Apol_Analysis_tra::create_results_list_structure {tra_listbox results_list}
 			-data [lrange $results_list $start_idx [expr $i - 1]] 
 	}						
 	# Insert final item into listbox (i.e. display ALL info item 
-	$tra_listbox insert end all -text "Show All Results"
+	$tra_listbox insert end all -text "Show All of the Above"
 	
         $tra_listbox configure -redraw 1
 	        
@@ -1929,7 +1906,8 @@ proc Apol_Analysis_tra::create_results_list_structure {tra_listbox results_list}
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_tra::close { } {   
 	Apol_Analysis_tra::reset_variables
-	
+	Apol_Analysis_fulflow::advanced_filters_destroy_dialog $Apol_Analysis_tra::transflow_options_Dlg
+	Apol_Analysis_fulflow::advanced_filters_destroy_object $Apol_Analysis_tra::transflow_options_Dlg
      	return 0
 } 
 
@@ -1975,7 +1953,7 @@ proc Apol_Analysis_tra::display_mod_options { opts_frame } {
 	# be empty, if the close function was called.
 	set Apol_Analysis_tra::included_dirflow_objs $Apol_Class_Perms::class_list
 	set Apol_Analysis_tra::excluded_dirflow_objs ""
-	
+
      	return 0
 } 
 
@@ -2586,7 +2564,7 @@ proc Apol_Analysis_tra::create_resultsDisplay {results_frame} {
 	set pw_info [$pw add -weight 5]
 	
 	# title frames
-	set frm_tree [TitleFrame [$pw getframe 0].frm_tree -text "Types Relationship Aspects"]
+	set frm_tree [TitleFrame [$pw getframe 0].frm_tree -text "Types Relationship Results"]
 	set frm_info [TitleFrame [$pw getframe 1].frm_info -text "Types Relationship Information"]	
 
 	set sw_lbox [ScrolledWindow [$frm_tree getframe].sw_lbox -auto none]		 
@@ -2744,13 +2722,13 @@ proc Apol_Analysis_tra::create_options { options_frame } {
     		-variable Apol_Analysis_tra::process_sel]
 	
 	set b_dta_adv [button $bot.b_dta_adv \
-		-text "DT options" -width 12 \
+		-text "Domain Transition options" -width 20 \
 		-command Apol_Analysis_tra::display_dta_options]
 	set b_transf_adv [button $bot.b_transf_adv \
-		-text "TIF options" -width 12 \
+		-text "Transitive Flow options" -width 20 \
 		-command Apol_Analysis_tra::display_tif_options]
 	set b_directf_adv [button $bot.b_directf_adv \
-		-text "DIF options" -width 12 \
+		-text "Direct Flow options" -width 20 \
 		-command Apol_Analysis_tra::display_dif_options]
 	
         # pack all the widgets
