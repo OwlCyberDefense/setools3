@@ -16,7 +16,7 @@ STATICSEFS = ../libsefs/libsefs.a
 
 LIBSELINUXSO      = -lselinux
 
-INCLUDE		= -I.. -I../libapol -I../libsefs
+INCLUDE		= -I.. -I../libapol -I../libsefs 
 
 SE_CMDS		= seinfo sesearch replcon findcon indexcon searchcon
 
