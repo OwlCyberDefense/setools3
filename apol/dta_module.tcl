@@ -1858,12 +1858,15 @@ proc Apol_Analysis_dta::hide_forward_advanced_button { } {
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_dta::configure_widgets_for_dta_direction { } {    
      	variable entry_frame 	
+	variable cb_attrib
 	
 	if {$Apol_Analysis_dta::display_direction == "forward"} {
 		$entry_frame configure -text "Select source domain:"
+		$cb_attrib configure -text "Filter source domains to select using attribute:"
 		Apol_Analysis_dta::display_forward_advanced_button
 	} else {
 		$entry_frame configure -text "Select target domain:"
+		$cb_attrib configure -text "Filter target domains to select using attribute:"
 		Apol_Analysis_dta::hide_forward_advanced_button
 	}
      	return 0
@@ -2405,8 +2408,9 @@ proc Apol_Analysis_dta::create_options { options_frame } {
     	set combo_attribute [ComboBox [$entry_frame getframe].combo_attribute  \
     		-textvariable Apol_Analysis_dta::display_attribute \
     		-modifycmd { Apol_Analysis_dta::change_types_list}]  
-	set cb_attrib [checkbutton [$entry_frame getframe].trans -text "Select starting domain using attrib:" \
+	set cb_attrib [checkbutton [$entry_frame getframe].trans \
 		-variable Apol_Analysis_dta::display_attrib_sel \
+		-text "Filter source domains to select using attribute:" \
 		-offvalue 0 -onvalue 1 \
 		-command { Apol_Analysis_dta::config_attrib_comboBox_state }]
 		

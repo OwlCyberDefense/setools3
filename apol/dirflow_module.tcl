@@ -1333,7 +1333,7 @@ proc Apol_Analysis_dirflow::create_options { options_frame } {
 		-command { Apol_Analysis_dirflow::both_button_press }]
 
         set cb_attrib [checkbutton $attrib_frame.cb_attrib \
-        	-text "Select starting type using attrib:" \
+        	-text "Filter starting types to select using attribute:" \
 		-variable Apol_Analysis_dirflow::display_attrib_sel \
 		-offvalue 0 -onvalue 1 \
 		-command { Apol_Analysis_dirflow::config_attrib_comboBox_state }]
