@@ -313,7 +313,8 @@ typedef struct alias_item {
 #define POL_VER_15		3	/* somewhere between v 12 and 15! */
 #define	POL_VER_16		4	/* conditional policy extensions */
 #define POL_VER_COND		4	/* same */
-#define	POL_VER_MAX		4
+#define POL_VER_17		5
+#define	POL_VER_MAX		6
 
 			 	 
 /**************************************/
