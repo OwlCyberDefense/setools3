@@ -3974,21 +3974,21 @@ static int types_relation_append_results(types_relation_query_t *tr_query,
 		Tcl_AppendElement(interp, tbuf);
 		free(name);
 	}
-	/* Append the number of other type transition rules */
-	snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->num_other_tt_rules);
+	/* Append the number of type transition/change rules */
+	snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->num_tt_rules);
 	Tcl_AppendElement(interp, tbuf);
-	for (i = 0; i < tr_results->num_other_tt_rules; i++) {
-		rule = re_render_tt_rule(1, tr_results->other_tt_rules_results[i], policy);
+	for (i = 0; i < tr_results->num_tt_rules; i++) {
+		rule = re_render_tt_rule(1, tr_results->tt_rules_results[i], policy);
 		if (rule == NULL)
 			return TCL_ERROR;
 		Tcl_AppendElement(interp, rule);
 		free(rule);
 	}
-	/* Append the number of process rules */
-	snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->num_process_inter_rules);
+	/* Append the number of allow rules */
+	snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->num_allow_rules);
 	Tcl_AppendElement(interp, tbuf);
-	for (i = 0; i < tr_results->num_process_inter_rules; i++) {
-		rule = re_render_av_rule(1, tr_results->process_inter_results[i], 0, policy);
+	for (i = 0; i < tr_results->num_allow_rules; i++) {
+		rule = re_render_av_rule(1, tr_results->allow_rules_results[i], 0, policy);
 		if (rule == NULL)
 			return TCL_ERROR;
 		Tcl_AppendElement(interp, rule);
@@ -4457,8 +4457,8 @@ static int types_relation_get_transflow_options(iflow_query_t *trans_flow_query,
  * argv[8]  - dta_sel (boolean value)		
  * argv[9]  - trans_flow_sel (boolean value)
  * argv[10] - dir_flow_sel (boolean value)
- * argv[11] - other_ttrules_sel	(boolean value)
- * argv[12] - process_sel (boolean value)
+ * argv[11] - tt_rule_sel  (boolean value)
+ * argv[12] - te_rules_sel (boolean value)
  *
  * argv[13] - (boolean value) for indicating that a list of transitive flow object classes are being provided to the TIF query.
  * argv[14] - number of object classes that are to be included in the transitive flow query.
@@ -4501,14 +4501,14 @@ static int types_relation_get_transflow_options(iflow_query_t *trans_flow_query,
  *		next		user 1
  *		...
  *		Nu		user Nu
- *	next			Number of other type transition rules
+ *	next			Number of type transition rules
  *		next
  *		...
  *		N		tt rule N
- *	next			Number of other process rules
+ *	next			Number of other allow rules
  *		next	
  *		...
- *		Np		process rule Np
+ *		Np		allow rule Np
  * 	next			Number of common objects for typeA
  *		next		object 1
  *		...
@@ -4529,7 +4529,7 @@ static int types_relation_get_transflow_options(iflow_query_t *trans_flow_query,
  *	next			Number of Forward Domain Transitions from typeA->typeB
  *	next		N, # of target domain types (if none, then no other results returned)
  *	  next		name first target type (if any)
- *	  next		X, # of process transition rules
+ *	  next		X, # of allow transition rules
  *	  next X*2	pt rule1, lineno1, ....
  *	  next		Y, # of entry point file types for first target type
  *	    next	first file type
@@ -4666,10 +4666,10 @@ int Apol_TypesRelationshipAnalysis(ClientData clientData, Tcl_Interp *interp, in
 				}
 				break;
 			case 11:
-				tr_query->options |= TYPES_REL_OTHER_TTRULES;
+				tr_query->options |= TYPES_REL_TTRULES;
 				break;
 			case 12:
-				tr_query->options |= TYPES_REL_PROCESS_INTER;
+				tr_query->options |= TYPES_REL_ALLOW_RULES;
 				break;
 			default:
 				fprintf(stderr, "Invalid option index: %d\n", i);

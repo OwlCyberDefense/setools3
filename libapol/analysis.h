@@ -111,9 +111,9 @@ typedef struct types_relation_query {
 	#define TYPES_REL_DOMAINTRANS		0x00000008	/* search domain transitions */
 	#define TYPES_REL_DIRFLOWS		0x00000010	/* search direct flows */
 	#define TYPES_REL_TRANSFLOWS		0x00000020	/* search transitive flows */
-	#define TYPES_REL_OTHER_TTRULES		0x00000040	/* search additional type transition rules */
+	#define TYPES_REL_TTRULES		0x00000040	/* search additional type transition rules */
 	#define TYPES_REL_COMMON_ACCESS		0x00000080	/* search access to common object types */	
-	#define TYPES_REL_PROCESS_INTER		0x00000100	/* search process interactions */
+	#define TYPES_REL_ALLOW_RULES		0x00000100	/* search process interactions */
 	#define TYPES_REL_UNIQUE_ACCESS		0x00000200	/* search unique object type access */
 	char *type_name_A;
 	char *type_name_B;
@@ -173,10 +173,10 @@ typedef struct types_relation_results {
 	iflow_t *direct_flow_results;
 	iflow_transitive_t *trans_flow_results_A_to_B;
 	iflow_transitive_t *trans_flow_results_B_to_A;
-	int num_other_tt_rules;
-	int *other_tt_rules_results;
-	int num_process_inter_rules;
-	int *process_inter_results;
+	int num_tt_rules;
+	int *tt_rules_results;
+	int num_allow_rules;
+	int *allow_rules_results;
 	types_relation_type_access_pool_t *typeA_access_pool;
 	types_relation_type_access_pool_t *typeB_access_pool;
 	types_relation_obj_access_t *common_obj_types_results;
