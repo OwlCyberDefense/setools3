@@ -133,7 +133,7 @@ int print_diff_stats(FILE *fp, apol_diff_result_t *diff)
 		return -1;
 	fprintf(fp,"Total Differences:\n\tClasses & Permissions %d \n "
 		"\tTypes %d \n\tAttributes %d \n\tRoles %d  \n\tUsers %d  \n\tBooleans %d"
-		" \n\tTE Rules %d  \n\tRbac %d  \n",
+		" \n\tRbac %d  \n\tTE Rules %d  \n",
 		(diff->diff1->num_classes + diff->diff1->num_common_perms + diff->diff1->num_perms +
 		 diff->diff2->num_classes + diff->diff2->num_common_perms + diff->diff2->num_perms),
 		(diff->diff1->num_types + diff->diff2->num_types),
