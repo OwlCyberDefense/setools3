@@ -12,6 +12,7 @@
  */
 
 #include "parse.h"
+#include "limits.h"
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
@@ -24,8 +25,6 @@
 #define AVCMSG " avc: "
 #define LOADMSG " security: "
 #define HEADER_STRING "audit"
-#define AUDIT_HEADER_FULL_LENGTH 24
-#define AUDIT_HEADER_COPY_LENGTH 16
 #define BOOLMSG "committed booleans"
 #define PARSE_AVC_MSG 1
 #define PARSE_LOAD_MSG 2
@@ -231,18 +230,25 @@ static unsigned int insert_time(char **tokens, msg_t *msg, int *position, int nu
 
 static unsigned int avc_msg_insert_audit_header(char *token, msg_t *msg)
 {
+	int length;
+
 	assert(token != NULL && msg != NULL);
+	
+	length = strlen(token);
 
-	if (strlen(token) != AUDIT_HEADER_FULL_LENGTH)
-		return PARSE_RET_INVALID_MSG_WARN;
+	if (length > LINE_MAX)
+		length = LINE_MAX;
 
-	if ((msg->msg_data.avc_msg->audit_header = (char*) malloc((AUDIT_HEADER_COPY_LENGTH + 1) * sizeof(char))) == NULL)
+	/* Chop off the ':' at the end of the audit header */
+	length--;
+
+	if ((msg->msg_data.avc_msg->audit_header = (char*) malloc((length + 1) * sizeof(char))) == NULL)
 		return PARSE_RET_MEMORY_ERROR;
 
-	strncpy(msg->msg_data.avc_msg->audit_header, (token + strlen(HEADER_STRING) + 1), AUDIT_HEADER_COPY_LENGTH);
+	strncpy(msg->msg_data.avc_msg->audit_header, token, length);
 
 	/* NULL-terminate the string since strncpy does not do this automatically */
-	msg->msg_data.avc_msg->audit_header[AUDIT_HEADER_COPY_LENGTH] = '\0';
+	msg->msg_data.avc_msg->audit_header[length] = '\0';
 
 	return PARSE_RET_SUCCESS;
 }
