@@ -634,7 +634,7 @@ proc Apol_Analysis_dirflow::render_target_type_data {data dirflow_info_text dirf
 			set rule [string range $rule [expr $end_link_idx + 1] end]
 			
 			# Only display line number hyperlink if this is not a binary policy.
-			if {$ApolTop::policy_type != $ApolTop::binary_policy_type} {
+			if {![ApolTop::is_binary_policy]} {
 				$dirflow_info_text insert end "\[$lineno\]"
 				Apol_PolicyConf::insertHyperLink $dirflow_info_text "$startIdx wordstart + 1c" "$startIdx wordstart + [expr [string length $lineno] + 1]c"
 			}
@@ -734,7 +734,7 @@ proc Apol_Analysis_dirflow::render_target_type_data {data dirflow_info_text dirf
 			set rule [string range $rule [expr $end_link_idx + 1] end]
 			
 			# Only display line number hyperlink if this is not a binary policy.
-			if {$ApolTop::policy_type != $ApolTop::binary_policy_type} {
+			if {![ApolTop::is_binary_policy]} {
 				$dirflow_info_text insert end "\[$lineno\]"
 				Apol_PolicyConf::insertHyperLink $dirflow_info_text "$startIdx wordstart + 1c" "$startIdx wordstart + [expr [string length $lineno] + 1]c"
 			}

@@ -129,6 +129,13 @@ proc ApolTop::get_toplevel_dialog {} {
 	return $ApolTop::mainframe
 }
 
+proc ApolTop::is_binary_policy {} {
+	if {$ApolTop::policy_type == $ApolTop::binary_policy_type} {
+		return 1
+	}
+	return 0
+}
+
 ########################################################################
 # ::load_perm_map_fileDlg -- 
 #	- Called from Advanced menu
@@ -1944,7 +1951,7 @@ proc ApolTop::set_initial_open_policy_state {} {
 		ApolTop::enable_disable_conditional_widgets 0
 	} 
 	
-	if {$ApolTop::policy_type == $ApolTop::binary_policy_type} {
+	if {[ApolTop::is_binary_policy]} {
    		ApolTop::disable_non_binary_tabs
    	}   	
    	

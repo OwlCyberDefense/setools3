@@ -824,7 +824,7 @@ proc Apol_Analysis_tra::print_rule {tra_info_text data curr_idx} {
 	set rule [string range $rule [expr $end_link_idx + 1] end]
 	
 	# Only display line number hyperlink if this is not a binary policy.
-	if {$ApolTop::policy_type != $ApolTop::binary_policy_type} {
+	if {![ApolTop::is_binary_policy]} {
 		$tra_info_text insert end "\[$lineno\]"
 		Apol_PolicyConf::insertHyperLink $tra_info_text "$startIdx wordstart + 1c" "$startIdx wordstart + [expr [string length $lineno] + 1]c"
 	}
@@ -1126,7 +1126,7 @@ proc Apol_Analysis_tra::display_direct_flows {tra_listbox tra_info_text data} {
 						set rule [string range $rule [expr $end_link_idx + 1] end]
 						
 						# Only display line number hyperlink if this is not a binary policy.
-						if {$ApolTop::policy_type != $ApolTop::binary_policy_type} {
+						if {![ApolTop::is_binary_policy]} {
 							$tra_info_text insert end "\[$lineno\]"
 							Apol_PolicyConf::insertHyperLink $tra_info_text "$startIdx wordstart + 1c" "$startIdx wordstart + [expr [string length $lineno] + 1]c"
 						}
@@ -1227,7 +1227,7 @@ proc Apol_Analysis_tra::display_direct_flows {tra_listbox tra_info_text data} {
 						set rule [string range $rule [expr $end_link_idx + 1] end]
 						
 						# Only display line number hyperlink if this is not a binary policy.
-						if {$ApolTop::policy_type != $ApolTop::binary_policy_type} {
+						if {![ApolTop::is_binary_policy]} {
 							$tra_info_text insert end "\[$lineno\]"
 							Apol_PolicyConf::insertHyperLink $tra_info_text "$startIdx wordstart + 1c" "$startIdx wordstart + [expr [string length $lineno] + 1]c"
 						}
@@ -1387,7 +1387,7 @@ proc Apol_Analysis_tra::display_transitive_flows {tra_listbox tra_info_text data
 				set rule [string range $rule [expr $end_link_idx + 1] end]
 				
 				# Only display line number hyperlink if this is not a binary policy.
-				if {$ApolTop::policy_type != $ApolTop::binary_policy_type} {
+				if {![ApolTop::is_binary_policy]} {
 					$tra_info_text insert end "\[$lineno\]"
 					Apol_PolicyConf::insertHyperLink $tra_info_text "$startIdx wordstart + 1c" "$startIdx wordstart + [expr [string length $lineno] + 1]c"
 				}
@@ -1483,7 +1483,7 @@ proc Apol_Analysis_tra::display_dta_info {tra_listbox tra_info_text data start_t
 			set start_idx [$tra_info_text index insert]
 			
 			# Only display line number hyperlink if this is not a binary policy.
-			if {$ApolTop::policy_type != $ApolTop::binary_policy_type} {
+			if {![ApolTop::is_binary_policy]} {
 				$tra_info_text insert end "($lineno) "
 				set end_idx [$tra_info_text index insert]
 				Apol_PolicyConf::insertHyperLink $tra_info_text "$start_idx wordstart + 1c" "$start_idx wordstart + [expr [string length $lineno] + 1]c"
@@ -1547,7 +1547,7 @@ proc Apol_Analysis_tra::display_dta_info {tra_listbox tra_info_text data start_t
 				set start_idx [$tra_info_text index insert]
 				
 				# Only display line number hyperlink if this is not a binary policy.
-				if {$ApolTop::policy_type != $ApolTop::binary_policy_type} {
+				if {![ApolTop::is_binary_policy]} {
 					$tra_info_text insert end "($lineno) "
 					set end_idx [$tra_info_text index insert]
 					Apol_PolicyConf::insertHyperLink $tra_info_text "$start_idx wordstart + 1c" "$start_idx wordstart + [expr [string length $lineno] + 1]c"
@@ -1591,7 +1591,7 @@ proc Apol_Analysis_tra::display_dta_info {tra_listbox tra_info_text data start_t
 				set start_idx [$tra_info_text index insert]
 				
 				# Only display line number hyperlink if this is not a binary policy.
-				if {$ApolTop::policy_type != $ApolTop::binary_policy_type} {
+				if {![ApolTop::is_binary_policy]} {
 					$tra_info_text insert end "($lineno) "
 					set end_idx [$tra_info_text index insert]
 					Apol_PolicyConf::insertHyperLink $tra_info_text "$start_idx wordstart + 1c" "$start_idx wordstart + [expr [string length $lineno] + 1]c"
