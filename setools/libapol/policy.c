@@ -2599,3 +2599,16 @@ int set_cond_bool_val(int bool, bool_t val, policy_t *policy)
 	}
 	return 0;
 }
+
+/* allocates space for name, release memory with free() */
+int get_cond_bool_name(int idx, char **name, policy_t *policy)
+{
+	if(policy == NULL || !is_valid_cond_bool_idx(idx, policy) || name == NULL)
+		return -1;
+	if((*name = (char *)malloc(strlen(policy->cond_bools[idx].name) + 1)) == NULL) {
+		fprintf(stderr, "out of memory\n");
+		return -1;
+	}
+	strcpy(*name, policy->cond_bools[idx].name);
+	return 0;
+}
