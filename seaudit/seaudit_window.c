@@ -69,13 +69,13 @@ static void
 seaudit_window_popup_menu_onSelect_ViewEntireMsg (GtkWidget *menuitem, gpointer userdata)
 {
 	/* we passed the view as userdata when we connected the signal */
-	seaudit_window_view_entire_message_in_textbox(GTK_TREE_VIEW(userdata));
+	seaudit_window_view_entire_message_in_textbox();
 }
 
 static void
 seaudit_window_popup_menu (GtkWidget *treeview, GdkEventButton *event, gpointer userdata)
 {
-	GtkWidget *menu, *menuitem;
+	GtkWidget *menu, *menuitem, *menuitem2, *menuitem3;
 	
 	menu = gtk_menu_new();
 	if (menu == NULL) {
@@ -83,15 +83,23 @@ seaudit_window_popup_menu (GtkWidget *treeview, GdkEventButton *event, gpointer 
 		return;
 	} 
 	menuitem = gtk_menu_item_new_with_label("View Entire Message");
-	if (menuitem == NULL) {
-		fprintf(stderr, "Unable to create menuitem widget.\n");
+	menuitem2 = gtk_menu_item_new_with_label("Query Policy");
+	menuitem3 = gtk_menu_item_new_with_label("Export Message to File");
+	if (menuitem == NULL || menuitem2 == NULL || menuitem3 == NULL) {
+		fprintf(stderr, "Unable to create menuitem widgets.\n");
 		return;
 	}
-		
+			
 	g_signal_connect(menuitem, "activate",
-	             (GCallback) seaudit_window_popup_menu_onSelect_ViewEntireMsg, treeview);
+	             (GCallback) seaudit_window_popup_menu_onSelect_ViewEntireMsg, NULL);
+	g_signal_connect(menuitem2, "activate",
+	             (GCallback) seaudit_window_on_log_row_activated, NULL);
+	g_signal_connect(menuitem3, "activate",
+	             (GCallback) seaudit_window_on_export_selection_activated, NULL);
 	
 	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem2);
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem3);
 	
 	gtk_widget_show_all(menu);
 	
@@ -171,7 +179,7 @@ seaudit_filtered_view_t* seaudit_window_add_new_view(seaudit_window_t *window, a
 	gtk_tree_selection_set_mode(selection, GTK_SELECTION_MULTIPLE);
 	
 	/* Connect callback to double-click event on tree view item */
-	g_signal_connect(G_OBJECT(tree_view), "row_activated", G_CALLBACK(seaudit_window_on_log_row_activated), NULL);
+	g_signal_connect(G_OBJECT(tree_view), "row_activated", G_CALLBACK(seaudit_window_popup_menu_onSelect_ViewEntireMsg), NULL);
 	/* Connect callback to right-click event on tree view item */
 	g_signal_connect(G_OBJECT(tree_view), "button-press-event", (GCallback) seaudit_window_onButtonPressed, NULL);
 	/* Connect to the "popup-menu" signal, so users can access your context menu without a mouse */
