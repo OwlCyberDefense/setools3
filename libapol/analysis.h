@@ -102,6 +102,14 @@ int determine_domain_trans(bool_t reverse, char *start_domain, domain_trans_anal
 #define IFLOW_TARGET_NODE 	0x1
 
 /*
+ * These defines are used to color nodes in the graph algorithms.
+ */
+#define IFLOW_COLOR_WHITE 0
+#define IFLOW_COLOR_GREY  1
+#define IFLOW_COLOR_BLACK 2
+#define IFLOW_COLOR_RED   3
+
+/*
  * iflow_obj_options_t allows the exclusion of individual permissions
  * on object classes or entire object classes. If perms is non-NULL then
  * only those permissions are ignored, otherwise the entire object class
@@ -174,8 +182,8 @@ typedef struct iflow_transitive {
 } iflow_transitive_t;
 
 typedef struct iflow_edge {
-	int num_obj_classes;
-	iflow_obj_class_t *obj_classes;
+	int num_rules;
+	int *rules;
 	int start_node; /* index into iflow_graph->nodes */
 	int end_node; /* index into iflow_graph->nodes */
 	int length;
@@ -189,10 +197,6 @@ typedef struct iflow_node {
 	int *in_edges;
 	int num_out_edges;
 	int *out_edges;
-#define IFLOW_COLOR_WHITE 0
-#define IFLOW_COLOR_GREY  1
-#define IFLOW_COLOR_BLACK 2
-#define IFLOW_COLOR_RED   3
 	unsigned char color;
 	int parent;
 	int distance;
