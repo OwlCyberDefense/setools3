@@ -392,7 +392,7 @@ int determine_domain_trans(bool_t reverse, char *start_domain, domain_trans_anal
 	trans_domain_t *t_ptr;
 	entrypoint_type_t *ep;
 	llist_node_t *ll_node, *ll_node2;
-	bool_t ans;
+	int ans;
 
 	if(policy == NULL || dta == NULL)
 		return -1;
@@ -547,7 +547,8 @@ int determine_domain_trans(bool_t reverse, char *start_domain, domain_trans_anal
 				/* To be of interest, rule must have SOURCE field as start_type (b_start), be an allow
 				 * rule, provide file execute (forward DT) or file entrypoint (reverse DT) access 
 				 * to the current entrypoint file type, and relate to file class objects. */
-				if (does_av_rule_idx_use_type(i, 0, ep->file_type, IDX_TYPE, TGT_LIST, TRUE, &ans, policy) == -1)
+				ans = does_av_rule_idx_use_type(i, 0, ep->file_type, IDX_TYPE, TGT_LIST, TRUE, policy);
+				if (ans == -1)
 					return -1;
 				if(b_start.access[i] && policy->av_access[i].type == RULE_TE_ALLOW && ans &&
 				  does_av_rule_use_classes(i, 1, classes, 1, policy) &&
