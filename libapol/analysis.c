@@ -28,26 +28,6 @@
 #include "infoflow.h"
 #include "queue.h"
 
-/* Structs used for the Types Relationship Analysis */
-typedef struct types_relation_rules {
-	int num_rules;
-	int *rules;
-} types_relation_rules_t;
-
-/* This struct is basically a database for a particular type, which in the types relationship
- * analysis would be considered the start type. This structure contains an array of 
- * types_relation_rules_t structs, each of which maps 'allow' rules from the policy which 
- * give a starting type access to a particular target type. So for example, this would 
- * be used to store all 'allow' rule indices from the main policy database which allow typeA 
- * access to let's say...passwd_t. By having seperate instances of this structure for a
- * typeA and typeB, we can then determine the access to types that they have in common, 
- * as well as any unique access. */
-typedef struct types_relation_type_access_pool {	
-	int num_types;				/* This corresponds to the number of types in the policy */
-	int *types;				
-	types_relation_rules_t **type_rules; 	/* each array index corresponds to a type index from the policy */
-} types_relation_type_access_pool_t;
-
 /* Select by object class/permissions.	
  * Forward domain transition - limits the query to to find transitions to domains  
  *	that have specific permissions on object classes or entire object classes.  
@@ -1018,10 +998,7 @@ static void types_relation_obj_access_destroy(types_relation_obj_access_t *t)
 		free(t->objs_A);
 	if (t->objs_B)
 		free(t->objs_B);
-	if (t->obj_type_rules_A)
-		free(t->obj_type_rules_A);
-	if (t->obj_type_rules_B)
-		free(t->obj_type_rules_B);
+	
 	free(t);
 }
 
@@ -1074,7 +1051,10 @@ void types_relation_destroy_results(types_relation_results_t *tra)
 		types_relation_obj_access_destroy(tra->common_obj_types_results);
 	if (tra->unique_obj_types_results)
 		types_relation_obj_access_destroy(tra->unique_obj_types_results);
-
+	
+	if (tra->typeA_access_pool) types_relation_destroy_type_access_pool(tra->typeA_access_pool);
+	if (tra->typeB_access_pool) types_relation_destroy_type_access_pool(tra->typeB_access_pool);
+	
 	free(tra);
 	
 	return;
@@ -1850,48 +1830,12 @@ static int types_relation_find_obj_types_access(types_relation_query_t *tra_quer
 			    		&(*tra_results)->common_obj_types_results->objs_B) != 0) {
 				return -1;
 			}
-			/* Add allow rules for typeA to results. We use the type index to get 
-			 * the correct rules out of the tgt_type_access_pool_A database. */
-			for (j = 0; j < tgt_type_access_pool_A->type_rules[type_idx]->num_rules; j++) {
-				if (find_int_in_array(tgt_type_access_pool_A->type_rules[type_idx]->rules[j], 
-				    (*tra_results)->common_obj_types_results->obj_type_rules_A, 
-				    (*tra_results)->common_obj_types_results->num_obj_type_rules_A) < 0) {
-					if (add_i_to_a(tgt_type_access_pool_A->type_rules[type_idx]->rules[j], 
-					    	&(*tra_results)->common_obj_types_results->num_obj_type_rules_A, 
-		       			    	&(*tra_results)->common_obj_types_results->obj_type_rules_A) != 0) {
-						goto err;
-					 }
-				}
-			}
-			/* Add allow rules for typeB to results. */
-			for (j = 0; j < tgt_type_access_pool_B->type_rules[type_idx]->num_rules; j++) {
-				if (find_int_in_array(tgt_type_access_pool_B->type_rules[type_idx]->rules[j], 
-				    (*tra_results)->common_obj_types_results->obj_type_rules_B, 
-				    (*tra_results)->common_obj_types_results->num_obj_type_rules_B) < 0) {
-					if (add_i_to_a(tgt_type_access_pool_B->type_rules[type_idx]->rules[j], 
-					    	&(*tra_results)->common_obj_types_results->num_obj_type_rules_B, 
-		       			    	&(*tra_results)->common_obj_types_results->obj_type_rules_B) != 0) {
-						goto err;
-					 }
-				}
-			}	
 		} else if ((tra_query->options & TYPES_REL_UNIQUE_ACCESS) && (typeA_accesses_type >= 0)) {		
 			/* Add the unique type to typeA's unique results */			
 			if (add_i_to_a(type_idx, 
 			    	&(*tra_results)->unique_obj_types_results->num_objs_A, 
 			    	&(*tra_results)->unique_obj_types_results->objs_A) != 0) {
 				return -1;
-			}
-			for (j = 0; j < tgt_type_access_pool_A->type_rules[type_idx]->num_rules; j++) {
-				if (find_int_in_array(tgt_type_access_pool_A->type_rules[type_idx]->rules[j], 
-				    (*tra_results)->unique_obj_types_results->obj_type_rules_A, 
-				    (*tra_results)->unique_obj_types_results->num_obj_type_rules_A) < 0) {
-					if (add_i_to_a(tgt_type_access_pool_A->type_rules[type_idx]->rules[j], 
-					    	&(*tra_results)->unique_obj_types_results->num_obj_type_rules_A, 
-		       			    	&(*tra_results)->unique_obj_types_results->obj_type_rules_A) != 0) {
-						goto err;
-					 }
-				}
 			}
 		} else if ((tra_query->options & TYPES_REL_UNIQUE_ACCESS) && (typeB_accesses_type >= 0)) {
 			/* Add the unique type to typeB's unique results */					
@@ -1900,23 +1844,12 @@ static int types_relation_find_obj_types_access(types_relation_query_t *tra_quer
 			    	&(*tra_results)->unique_obj_types_results->objs_B) != 0) {
 				return -1;
 			}
-			for (j = 0; j < tgt_type_access_pool_B->type_rules[type_idx]->num_rules; j++) {
-				if (find_int_in_array(tgt_type_access_pool_B->type_rules[type_idx]->rules[j], 
-				    (*tra_results)->unique_obj_types_results->obj_type_rules_B, 
-				    (*tra_results)->unique_obj_types_results->num_obj_type_rules_B) < 0) {
-					if (add_i_to_a(tgt_type_access_pool_B->type_rules[type_idx]->rules[j], 
-					    	&(*tra_results)->unique_obj_types_results->num_obj_type_rules_B, 
-		       			    	&(*tra_results)->unique_obj_types_results->obj_type_rules_B) != 0) {
-						goto err;
-					 }
-				}
-			}
 		}
 	}
 
-	/* Free all allocated memory */
-	if (tgt_type_access_pool_A) types_relation_destroy_type_access_pool(tgt_type_access_pool_A);
-	if (tgt_type_access_pool_B) types_relation_destroy_type_access_pool(tgt_type_access_pool_B);
+	/* Set pointer to access pools within results */
+	(*tra_results)->typeA_access_pool = tgt_type_access_pool_A;
+	(*tra_results)->typeB_access_pool = tgt_type_access_pool_B;
 					
 	return 0;
 err:
