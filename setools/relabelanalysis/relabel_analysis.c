@@ -461,8 +461,6 @@ int type_relabel_to(relabel_set_t *sets, int type, relabel_result_t *res, policy
 {
 	int i, retv, size = 0;
 	int *temp_array = NULL;
-/* XXX kill line */char* debug_str;
-/* XXX kill line */debug_str = (char*)calloc(50, sizeof(char));
 
 	if(!sets || !policy) return INVNULL;
 	if(res){
@@ -475,8 +473,6 @@ int type_relabel_to(relabel_set_t *sets, int type, relabel_result_t *res, policy
 		retv = single_type_relabel_to(sets, i, type, &temp_array, &size, policy);
 		if(retv != NOERROR && retv != NOTHERE) return retv;
 		if(size){
-/* XXX kill line */get_type_name(i, &debug_str, policy);
-/* XXX kill line */printf("adding domain %i : %s\n", i, debug_str);
 			retv = add_domain_to_result(res, i, temp_array, size);
 			if(retv != NOERROR) return retv;
 		}
