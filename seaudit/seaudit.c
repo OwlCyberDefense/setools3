@@ -103,7 +103,10 @@ void seaudit_update_status_bar(seaudit_t *seaudit)
 		ver_str = "Policy Version: No policy";
 		gtk_label_set_text(v_status_bar, ver_str);
 	} else {
-		snprintf(str, STR_SIZE, "Policy Version: %s", get_policy_version_name(seaudit->cur_policy->version));
+               	if(is_binary_policy(seaudit->cur_policy))
+                	snprintf(str, STR_SIZE, "Policy Version: %s (binary)", get_policy_version_name(seaudit->cur_policy->version));
+               	else
+                	snprintf(str, STR_SIZE, "Policy Version: %s (source)", get_policy_version_name(seaudit->cur_policy->version));
 		gtk_label_set_text(v_status_bar, str);
 	}
 
@@ -196,7 +199,7 @@ int seaudit_open_policy(seaudit_t *seaudit, const char *filename)
 		fclose(file);
 	
 	opts = POLOPT_AV_RULES | POLOPT_USERS | POLOPT_ROLES;
-	opts = validate_policy_options(opts);
+	
 	rt = open_partial_policy(filename, opts, &tmp_policy);
 	if (rt != 0) {
 		if (tmp_policy)
@@ -326,6 +329,8 @@ gboolean delayed_main(gpointer data)
 int main(int argc, char **argv)
 {
 	filename_data_t filenames;
+	char policy_file[BUF_SZ];
+        GString *msg = NULL;
 
 	filenames.policy_filename = filenames.log_filename = NULL; 			
 	seaudit_parse_command_line(argc, argv, &filenames.policy_filename, &filenames.log_filename);
@@ -345,9 +350,23 @@ int main(int argc, char **argv)
 	if (filenames.log_filename == NULL)
 		if (seaudit_app->seaudit_conf.default_log_file)
 			filenames.log_filename = g_string_new(seaudit_app->seaudit_conf.default_log_file);
-	if (filenames.policy_filename == NULL)
-		if (seaudit_app->seaudit_conf.default_policy_file)
+	if (filenames.policy_filename == NULL) {
+		if (seaudit_app->seaudit_conf.default_policy_file) {
 			filenames.policy_filename = g_string_new(seaudit_app->seaudit_conf.default_policy_file);
+		} else {
+                        /* There was no default policy file specified at the command-line or
+                         * in the users .seaudit file, so attempt the policy default logic from libapol. */
+                        if (find_default_policy_file(SEARCH_BOTH, policy_file) == 0) {
+                                filenames.policy_filename = g_string_new(policy_file);
+                        } else {
+                                /* no policy to use, so warn the user and then start up without a default policy. */
+                                msg = g_string_new("Could not find system default policy to open. Use the File menu to open a policy");
+                                message_display(seaudit_app->window->window,
+                                        GTK_MESSAGE_WARNING,
+                                        msg->str);
+                        }
+               }	
+	}
 
 	seaudit_update_status_bar(seaudit_app);
 	seaudit_update_title_bar(NULL);
