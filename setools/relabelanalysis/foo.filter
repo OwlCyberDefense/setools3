@@ -1,6 +1,6 @@
 #test comment
-file:read
-dir:*
+file:write
+#dir:*
 #end of file here->
-chr_file:write
+#chr_file:write
 
