@@ -644,7 +644,6 @@ int determine_domain_trans(dta_query_t *dta_query,
 			   domain_trans_analysis_t **dta_results, 
 			   policy_t *policy)
 {
-	int start_idx, i, classes[1], perms[1], perms2[1], rt;
 	rules_bool_t b_start, b_trans; 	/* structures are used for passing TE rule match booleans */
 	bool_t *b_type;			/* scratch pad arrays to keep track of types that have already been added */
 	trans_domain_t *t_ptr;
@@ -860,7 +859,7 @@ int determine_domain_trans(dta_query_t *dta_query,
 								TRUE, policy);
 				if (rule_uses_type == -1)
 					return -1;
-				if(b_start.access[i] && policy->av_access[i].type == RULE_TE_ALLOW  &&
+				if(b_start.access[i] && policy->av_access[i].type == RULE_TE_ALLOW && ans &&
 				  does_av_rule_use_classes(i, 1, classes, 1, policy) &&
 				  does_av_rule_use_perms(i, 1, perms2, 1, policy)) {	
 					rt = dta_add_rule_to_entry_point_type(reverse, i, ep);
@@ -1406,7 +1405,23 @@ static int types_relation_search_te_rules(teq_query_t *query,
 	return 0;
 }
 
-/* This function finds all type transition rules from typeA->typeB and from 
+static bool_t types_relation_is_tt_rule_in_domain_trans_list(int rule_idx, domain_trans_analysis_t *dt_list)
+{
+	trans_domain_t *t_ptr;
+	llist_node_t *ll_node;
+	
+	if (dt_list != NULL) {
+		for (ll_node = dt_list->trans_domains->head; ll_node != NULL; ) {
+			t_ptr = (trans_domain_t *)ll_node->data;
+			assert(t_ptr != NULL);
+			if (find_int_in_array(rule_idx, t_ptr->other_rules, t_ptr->num_other_rules) < 0) 
+				return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+/* This function finds any additonal type transition rules from typeA->typeB and from 
  * typeB->typeA. It will filter out those tt rules that are already included in the DTA 
  * results. */
 static int types_relation_find_type_trans_rules(types_relation_query_t *tra_query, 
@@ -1442,6 +1457,16 @@ static int types_relation_find_type_trans_rules(types_relation_query_t *tra_quer
 		query.classes[i] = i;
 	}
 	
+	/* search using all perms */
+	query.num_perms = policy->num_perms;
+	query.perms = (int *)malloc(sizeof(int)*query.num_perms);
+	if(query.perms == NULL) {
+		fprintf(stderr, "out of memory");
+		goto err;
+	}
+	for(i = 0; i < query.num_perms; i++) {
+		query.perms[i] = i;
+	}
 	/* First, query with type_A as the source type and type_B as the target type */				
 	rt = types_relation_search_te_rules(&query, &results, 
 					    tra_query->type_name_A, 
@@ -1451,15 +1476,19 @@ static int types_relation_find_type_trans_rules(types_relation_query_t *tra_quer
 		fprintf(stderr, "Problem searching TE rules");
 		goto err;
 	}
-	for (i = 0; i < results.num_type_rules; i++) {
-		/* Append type transition rule indices into type relationship results structure */
-		if (add_i_to_a(results.type_rules[i], 
-			       &(*tra_results)->num_other_tt_rules, 
-			       &(*tra_results)->other_tt_rules_results) != 0) {
-			goto err;
+	if (results.num_type_rules > 0) { 
+		for(i = 0; i < results.num_type_rules; i++) {
+			/* Ignore those tt rules that are already included in the DTA results. */
+			if (!types_relation_is_tt_rule_in_domain_trans_list(results.type_rules[i], (*tra_results)->dta_results_A_to_B)) {
+				/* Append indices into type relationship results structure */
+				if (add_i_to_a(results.type_rules[i], 
+					       &(*tra_results)->num_other_tt_rules, 
+					       &(*tra_results)->other_tt_rules_results) != 0) {
+					goto err;
+				}
+			}
 		}
 	}
-
 	/* Free intermediate results, since we have copied the rule indices */
 	free_teq_results_contents(&results);
 	/* Flip the query to have type_B as the source type and type_A as the target type */
@@ -1476,15 +1505,19 @@ static int types_relation_find_type_trans_rules(types_relation_query_t *tra_quer
 	/* We're done with our local te query struct, so free up memory */
 	free_teq_query_contents(&query);
 	
-	for(i = 0; i < results.num_type_rules; i++) {
-		/* Append indices into type relationship results structure */
-		if (add_i_to_a(results.type_rules[i], 
-			       &(*tra_results)->num_other_tt_rules, 
-			       &(*tra_results)->other_tt_rules_results) != 0) {
-			goto err;
+	if (results.num_type_rules > 0) { 
+		for(i = 0; i < results.num_type_rules; i++) {
+			/* Ignore those tt rules that are already included in the DTA results. */
+			if (!types_relation_is_tt_rule_in_domain_trans_list(results.type_rules[i], (*tra_results)->dta_results_B_to_A)) {
+				/* Append indices into type relationship results structure */
+				if (add_i_to_a(results.type_rules[i], 
+					       &(*tra_results)->num_other_tt_rules, 
+					       &(*tra_results)->other_tt_rules_results) != 0) {
+					goto err;
+				}
+			}
 		}
 	}
-	
 	free_teq_results_contents(&results);
 	
 	return 0;
@@ -1946,7 +1979,7 @@ int types_relation_determine_relationship(types_relation_query_t *tra_query,
 	    	types_relation_destroy_results(*tra_results);
 		return -1;
 	}
-	/* Find all type transition rules between the 2 types. */
+	/* Find any additional type transition rules between the 2 types. */
 	if ((tra_query->options & TYPES_REL_OTHER_TTRULES) && 
 	    types_relation_find_type_trans_rules(tra_query, tra_results, policy) != 0) {
 	    	types_relation_destroy_results(*tra_results);
