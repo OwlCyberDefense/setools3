@@ -395,6 +395,7 @@ proc ApolTE::create_New_ResultsTab { results } {
 	variable tabName
 	variable tabText
 	variable totalTabCount
+	variable optionsArray
 	
 	if {$currTabCount >= $totalTabCount} {		
 		tk_messageBox -icon error -type ok -title "Attention" \
@@ -419,7 +420,7 @@ proc ApolTE::create_New_ResultsTab { results } {
 	ApolTE::insertTERules $resultsbox $results
 	ApolTop::makeTextBoxReadOnly $resultsbox 
 	# Hold a reference to the results tab text widget
-	set ApolTE::optionsArray($raisedPage,textbox) $resultsbox
+	set optionsArray($raisedPage,textbox) $resultsbox
 	
     	return $raisedPage
 }
