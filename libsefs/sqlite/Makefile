@@ -12,14 +12,14 @@ LIBSO  = $(TARGET).$(shell cat VERSION)
 
 all: config.h $(LIB-OBJ)
 
+%.o: %.c 
+	$(CC) $(CFLAGS) -c $<
+
 config: config.c
 	$(CC) $(CFLAGS) $@.c -o $@
 
 config.h: config
 	./config > $@
-
-%.o:  %.c 
-	$(CC) $(CFLAGS) -c $<
 
 clean: 
 	rm -f *.so *.o config core *~
@@ -27,3 +27,4 @@ clean:
 bare: clean
 	rm -f *.o *.so config config.h core *~
 
+$(LIB-OBJ): config.h
