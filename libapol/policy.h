@@ -553,7 +553,7 @@ bool_t is_type_in_role(const char *type, int role_idx, policy_t *policy);
 #define is_type_rule_type(type) ((type >= RULE_TE_TRANS) && (type <= RULE_MAX_TE))
 #define is_te_rule_type(type) ((type >= RULE_TE_ALLOW) && (type <= RULE_MAX_TE))
 
-int extract_types_from_te_rule(int rule_idx, int rule_type, unsigned char whichlist, int **types, int *num_types, bool_t *self, policy_t *policy);
+int extract_types_from_te_rule(int rule_idx, int rule_type, unsigned char whichlist, int **types, int *num_types, policy_t *policy);
 int extract_obj_classes_from_te_rule(int rule_idx, int rule_type, int **obj_classes, int *num_obj_classes, policy_t *policy);
 int extract_perms_from_te_rule(int rule_idx, int rule_type, int **perms, int *num_perms, policy_t *policy);
 int does_av_rule_idx_use_type(int rule_idx, unsigned char rule_type, int type_idx, int ta_type, 

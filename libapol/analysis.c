@@ -429,11 +429,11 @@ static int dta_add_process_trans_data(dta_query_t *dta_query,
 	if(dta_query->reverse) {
 		rt = extract_types_from_te_rule(rule_idx, RULE_TE_ALLOW, 
 						SRC_LIST, &types, &num_types, 
-						NULL, policy);
+						policy);
 	} else {
 		rt = extract_types_from_te_rule(rule_idx, RULE_TE_ALLOW, 
 						TGT_LIST, &types, &num_types, 
-						NULL, policy);
+						policy);
 	}
 	
 	if (rt < 0)
@@ -572,7 +572,7 @@ static int dta_add_file_entrypoint_type(bool_t reverse,
 	 * extracted from the TARGET field of the rule */
 	rt = extract_types_from_te_rule(rule_idx, RULE_TE_ALLOW, 
 					TGT_LIST, &types, &num_types, 
-					NULL, policy);
+					policy);
 
 	if(rt < 0)
 		return -1;
@@ -1687,7 +1687,7 @@ static int types_relation_find_obj_types_access(types_relation_query_t *tra_quer
 		/* Extract target type(s) from the rule */
 		rt = extract_types_from_te_rule(rule_idx, RULE_TE_ALLOW, 
 					        TGT_LIST, &tgt_types, &num_tgt_types, 
-					        NULL, policy);
+					        policy);
 		if (rt < 0)
 			goto err;
 		

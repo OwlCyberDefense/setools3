@@ -73,7 +73,7 @@ static int avh_load_avrules( void *r, int num, bool_t is_av, policy_t *p)
 {
 	int i, j, k, x, y, rt, start;
 	int num_src, num_tgt, num_src_tilda = 0, num_tgt_tilda = 0, num_cls, num_perm, num_perm_tilda = 0, pidx, *src_a, *tgt_a, *cls_a, *perm_a, dflt = -1, cond_expr = -1;
-	bool_t all_src, all_tgt, all_cls, all_perms = FALSE, is_cond, cond_list = FALSE, self = FALSE, src_tilda, tgt_tilda, perm_tilda = FALSE;
+	bool_t all_src, all_tgt, all_cls, all_perms = FALSE, is_cond, cond_list = FALSE, src_tilda, tgt_tilda, perm_tilda = FALSE;
 	avh_key_t  key;
 	avh_node_t *node;
 	
@@ -133,7 +133,7 @@ static int avh_load_avrules( void *r, int num, bool_t is_av, policy_t *p)
 		}
 		
 		/* extract all the rule elements */
-		rt = extract_types_from_te_rule(i, key.rule_type, SRC_LIST, &src_a, &num_src, &self, p);
+		rt = extract_types_from_te_rule(i, key.rule_type, SRC_LIST, &src_a, &num_src, p);
 		if(rt == -1)
 			goto err_return;
 		else if(rt == 2) {
@@ -147,7 +147,7 @@ static int avh_load_avrules( void *r, int num, bool_t is_av, policy_t *p)
 			}
 		}
 			
-		rt = extract_types_from_te_rule(i, key.rule_type, TGT_LIST, &tgt_a, &num_tgt, &self, p);
+		rt = extract_types_from_te_rule(i, key.rule_type, TGT_LIST, &tgt_a, &num_tgt, p);
 		if(rt == -1)
 			goto err_return;
 		else if (rt == 2) {
