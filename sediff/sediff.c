@@ -73,7 +73,7 @@ void usage(const char *program_name, int brief)
 "  -b, --booleans   boolean definitions and default values\n"
 /* "  -i, --initialsids initial SIDs (not currently supported)\n" */
 "  -T, --terules    type enforcement rules\n"
-"  -R, --rbacrules  role rules\n"
+"  -R, --rbacrules  role rules (role transitions are not currently supported)\n"
 "  -C, --conds      conditionals and their rules\n\n"
 "  -X, --gui        launch the sediff gtk gui\n"
 "  -q, --quiet      only print different definitions\n"
@@ -1028,7 +1028,6 @@ int main (int argc, char **argv)
 	  		break;
 	  	case 'C': /* conditionals */
 	  		opts |= POLOPT_COND_POLICY;
-			printf("Conditionals are not currently supported.\n");
 	  		conds = 1;
 	  		break;
 	  	case 'h': /* help */
@@ -1167,6 +1166,9 @@ int main (int argc, char **argv)
 		print_common_perms_diffs(stdout, diff);
 		printf("\n");
 		}
+	}
+	if((conds || all)) {
+		printf("Conditionals are not currently supported.\n");
 	}
 	if((rbac || all) && !(quiet && (diff->diff1->num_role_allow == 0 && diff->diff2->num_role_allow == 0))) {
 		print_rbac_diffs(stdout, diff);
