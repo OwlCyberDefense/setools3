@@ -17,7 +17,7 @@
 #include "policy.h"
 
 
-static int cond_free_expr(cond_expr_t *expr)
+int cond_free_expr(cond_expr_t *expr)
 {
 	cond_expr_t *cur, *next;
 
@@ -28,7 +28,7 @@ static int cond_free_expr(cond_expr_t *expr)
 	return 0;
 }
 
-static int cond_free_rules_list(cond_rule_list_t *rl)
+int cond_free_rules_list(cond_rule_list_t *rl)
 {
 	if(rl == NULL)
 		return 0;
@@ -122,4 +122,39 @@ int cond_evaluate_expr(cond_expr_t *expr, policy_t *policy)
 		}
 	}
 	return s[0];
+}
+
+/* Compare 2 conditional expressions for equality. This is a very basic compare and
+ * the expressions need to be exactly the same in order to match (including order).
+ *
+ * TODO: Add semantic comparison.
+ *
+ * RETURNS:
+ *	TRUE or FALSE if the conditional expressions match or not.
+ */
+bool_t cond_exprs_equal(cond_expr_t *a, cond_expr_t *b)
+{
+	cond_expr_t *cur_a, *cur_b;
+	
+	if (!a || !b)
+		return FALSE;
+	
+	cur_a = a;
+	cur_b = b;
+	
+	while (1) {
+		if (!cur_a && !cur_b)
+			return TRUE;
+		if (!cur_a || !cur_b)
+			return FALSE;
+		if (cur_a->expr_type != cur_b->expr_type)
+			return FALSE;
+		if (cur_a->expr_type == COND_BOOL)
+			if (cur_a->bool != cur_b->bool)
+				return FALSE;
+		cur_a = cur_a->next;
+		cur_b = cur_b->next;
+	}
+	/* can't be reached */
+	return TRUE;
 }
