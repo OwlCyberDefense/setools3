@@ -550,7 +550,6 @@ static int add_edges(iflow_graph_t* g, int obj_class, int rule_idx, bool_t found
 	bool_t found_write, int write_len) {
 	int i, j, k, ret;
 	int src_node, tgt_node;
-	bool_t self;
 
 	bool_t all_src_types = FALSE;
 	int cur_src_type;
@@ -567,13 +566,13 @@ static int add_edges(iflow_graph_t* g, int obj_class, int rule_idx, bool_t found
 	/* extract all of the rules */
 	rule = &g->policy->av_access[rule_idx];
 
-	ret = extract_types_from_te_rule(rule_idx, RULE_TE_ALLOW, SRC_LIST, &src_types, &num_src_types, NULL, g->policy);
+	ret = extract_types_from_te_rule(rule_idx, RULE_TE_ALLOW, SRC_LIST, &src_types, &num_src_types, g->policy);
 	if (ret == -1)
 		return -1;
 	if (ret == 2)
 		all_src_types = TRUE;
 
-	ret = extract_types_from_te_rule(rule_idx, RULE_TE_ALLOW, TGT_LIST, &tgt_types, &num_tgt_types, &self, g->policy);
+	ret = extract_types_from_te_rule(rule_idx, RULE_TE_ALLOW, TGT_LIST, &tgt_types, &num_tgt_types, g->policy);
 	if (ret == -1)
 		return -1;
 	if (ret == 2)
@@ -608,37 +607,6 @@ static int add_edges(iflow_graph_t* g, int obj_class, int rule_idx, bool_t found
 		src_node = iflow_graph_add_node(g, cur_src_type, IFLOW_SOURCE_NODE, -1);
 		if (src_node < 0)
 			return -1;
-			
-		if (self) {
-			int edge;
-			tgt_node = iflow_graph_add_node(g, cur_src_type, IFLOW_TARGET_NODE, obj_class);
-			if (tgt_node < 0)
-				return -1;
-			if (found_read) {
-				edge = iflow_graph_connect(g, tgt_node, src_node, read_len);
-				if (edge < 0) {
-					fprintf(stderr, "Could not add edge!\n");
-					return -1;
-				}
-				
-				if (add_i_to_a(rule_idx, &g->edges[edge].num_rules,
-					       &g->edges[edge].rules) != 0) {
-					fprintf(stderr, "Could not add rule!\n");
-				}
-			}
-			if (found_write) {
-				edge = iflow_graph_connect(g, src_node, tgt_node, write_len);
-				if (edge < 0) {
-					fprintf(stderr, "Could not add edge!\n");
-					return -1;
-				}
-				
-				if (add_i_to_a(rule_idx, &g->edges[edge].num_rules,
-					       &g->edges[edge].rules) != 0) {
-					fprintf(stderr, "Could not add rule!\n");
-				}
-			}
-		}
 		
 		for (j = 0; j < num_tgt_types; j++) {
 			int edge;
@@ -647,6 +615,9 @@ static int add_edges(iflow_graph_t* g, int obj_class, int rule_idx, bool_t found
 				cur_tgt_type = j;
 				if (j == 0)
 					continue;
+			} else if (tgt_types[j]==0) {
+				/* idx 0 is self */
+				cur_tgt_type = cur_src_type;
 			} else {
 				cur_tgt_type = tgt_types[j];
 			}
@@ -664,7 +635,7 @@ static int add_edges(iflow_graph_t* g, int obj_class, int rule_idx, bool_t found
 				}
 			}
 			
-			/* add the target type excluding self */
+			/* add the target type */
 			tgt_node = iflow_graph_add_node(g, cur_tgt_type, IFLOW_TARGET_NODE, obj_class);
 			if (tgt_node < 0)
 				return -1;
