@@ -46,9 +46,12 @@ static void sefs_double_array_print(char **array,int size)
 static void sefs_search_keys_ret_print(sefs_search_ret_t *key) 
 {
 	sefs_search_ret_t *curr = NULL;
-
+	
 	/* walk the linked list  */
 	curr = key;
+	if (curr == NULL) {
+		printf("No results\n");
+	}
 	while (curr) {
 		if (curr->context)
 			printf("%s\t",curr->context);
