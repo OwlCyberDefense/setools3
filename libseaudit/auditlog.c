@@ -18,28 +18,59 @@
 #include <string.h>
 #include <assert.h>
 
-const char *audit_log_field_strs[] = { "msg_field", "exe_field", "path_field", "dev_field", 
-				       "src_usr_field", "src_role_field", "src_type_field",
-				       "tgt_usr_field", "tgt_role_field", "tgt_type_field",
-				       "obj_class_field", "perm_field", "inode_field", 
-				       "pid_field", "src_sid_field", "tgt_sid_field", 
-				       "comm_field", "netif_field", "key_field", "cap_field",
-				       "port_field", "lport_field", "fport_field", "dest_field",
-				       "source_field", "laddr_field", "faddr_field", "daddr_field",
-				       "saddr_field", "src_context", "tgt_context", "name_field",
-				       "other_field", "policy_usrs_field", "policy_roles_field",
-				       "policy_types_field", "policy_classes_field", 
-				       "policy_rules_field", "policy_binary_field" , 
-                                       "boolean_bool_field", "boolean_value_field", "date_field" ,
+const char *audit_log_field_strs[] = { "msg_field",
+				       "exe_field",
+				       "path_field",
+				       "dev_field", 
+				       "src_usr_field",
+				       "src_role_field",
+				       "src_type_field",
+				       "tgt_usr_field",
+				       "tgt_role_field",
+				       "tgt_type_field",
+				       "obj_class_field",
+				       "perm_field",
+				       "inode_field", 
+				       "pid_field",
+				       "src_sid_field",
+				       "tgt_sid_field", 
+				       "comm_field",
+				       "netif_field",
+				       "key_field",
+				       "cap_field",
+				       "port_field",
+				       "lport_field",
+				       "fport_field",
+				       "dest_field",
+				       "source_field",
+				       "laddr_field",
+				       "faddr_field",
+				       "daddr_field",
+				       "saddr_field",
+				       "src_context",
+				       "tgt_context",
+				       "name_field",
+				       "other_field",
+				       "policy_usrs_field",
+				       "policy_roles_field",
+				       "policy_types_field",
+				       "policy_classes_field", 
+				       "policy_rules_field",
+				       "policy_binary_field",
+				       "boolean_num_field",
+                                       "boolean_bool_field",
+				       "boolean_value_field",
+				       "date_field" ,
                                        "host_field" };
 
 int audit_log_field_strs_get_index(const char *str)
 {
 	int i;
 
-	for (i = 0; i < NUM_FIELDS; i++)
+	for (i = 0; i < NUM_FIELDS; i++) {
 		if (strcmp(str, audit_log_field_strs[i]) == 0)
 			return i;
+	}
 	return -1;
 }
 
