@@ -105,7 +105,6 @@ int main(int argc, char **argv, char **envp)
 		fprintf(stderr, "fsdata_init failed\n");
 		return(-1);
 	}
-		
 	if (sefs_scan_tree(dir) == -1) {
 		fprintf(stderr, "fsdata_scan_tree failed\n");
 		return(-1);
