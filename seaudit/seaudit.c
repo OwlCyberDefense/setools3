@@ -1081,7 +1081,7 @@ void seaudit_on_ExportLog_activate(GtkWidget *widget, GdkEvent *event, gpointer 
 	return;
 }
 
-void seaudit_window_on_export_selection_activated(GtkWidget *widget, GdkEvent *event, gpointer callback_data)
+void seaudit_on_export_selection_activated(void)
 {
 	seaudit_save_log_file(TRUE);
 }
