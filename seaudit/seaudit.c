@@ -772,10 +772,10 @@ int seaudit_open_policy(seaudit_t *seaudit, const char *filename)
 		g_string_append(msg, "The specified file does not appear to be a valid\nSE Linux Policy\n\n");
 		g_string_append(msg, "WARNING: This program has a bug which will cause it to\n");
 		g_string_append(msg, "work improperly once an invalid policy was opened.\n");
-		g_string_append(msg, "Therefore, seaudit WILL NOW EXIT so you can restart it.");
+		g_string_append(msg, "Therefore, you SHOULD EXIT NOW and RESTART seaudit.");
 		message_display(seaudit->top_window, GTK_MESSAGE_ERROR, msg->str);
 		gdk_window_set_cursor(GTK_WIDGET(seaudit_app->top_window)->window, NULL);
-		exit(1);
+		return -1;
 	}
 	if (seaudit->cur_policy)
 		close_policy(seaudit->cur_policy);
