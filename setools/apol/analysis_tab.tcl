@@ -949,7 +949,7 @@ proc Apol_Analysis::create { nb } {
     	$analysis_listbox bindText <ButtonPress-1> { Apol_Analysis::mod_select }
     	
     	# Popup menu widget
-	set popupTab_Menu [menu .analysis_popup_Menu]
+	set popupTab_Menu [menu .analysis_popup_Menu -tearoff 0]
 	set tab_menu_callbacks [lappend tab_menu_callbacks {"Delete Tab" "Apol_Analysis::delete_ResultsTab"}]
 	set tab_menu_callbacks [lappend tab_menu_callbacks {"Rename Tab" "Apol_Analysis::display_rename_tab_Dlg"}]
 	 
