@@ -135,21 +135,41 @@ proc Apol_Analysis_relabel::create_widgets_to_display_results {results results_f
 	# now fill the domain tree with results info
 	if {$results == ""} {
 		$dtree configure -state disabled
-		set text "$widget_vars(start_type) does not "
+		set start_index 0
+		set text_s "$widget_vars(start_type)"
+		set end_index [string length $text_s]
+		lappend title_type_tags $start_index $end_index
 		if {$widget_vars(mode) == "object"} {
+			append text_s " cannot be relabeled "
+			set start_index [string length $text_s]
 			if {$widget_vars(to_mode) && $widget_vars(from_mode)} {
-				append text "relabel to/from anything."
+				append text_s "to/from"
 			} elseif {$widget_vars(to_mode)} {
-				append text "relabel to anything."
+				append text_s "to"
 			} else {
-				append text "relabel from anything."
+				append text_s "from"
 			}
+			set end_index [string length $text_s]
+			lappend subtitle_type_tags $start_index $end_index
+			append text_s " any type."
 		} else {
-			append text "relabel to or from any subject."
+			append text_s " does not relabel "
+			set start_index [string length $text_s]
+			append text_s "to or from"
+			set end_index [string length $text_s]
+			lappend subtitle_type_tags $start_index $end_index
+			append text_s " any type as a subject."
 		}
-		$rtext insert end $text
-		$dtree itemconfigure $Apol_Analysis_relabel::top_node \
-			-data 0
+		$rtext insert end $text_s
+		foreach {start_index end_index} $title_type_tags {
+			$rtext tag add $Apol_Analysis_relabel::title_type_tag \
+				"1.0 + $start_index c" "1.0 + $end_index c"
+		}
+		foreach {start_index end_index} $subtitle_type_tags {
+			$rtext tag add $Apol_Analysis_relabel::subtitle_tag \
+				"1.0 + $start_index c" "1.0 + $end_index c"
+		}
+		Apol_Analysis_relabel::formatInfoText $rtext
 	} else {
 		$rtext insert end "This tab provides the results of a file relabeling analysis."
 		if {$widget_vars(mode) == "subject"} {
@@ -1249,16 +1269,17 @@ proc Apol_Analysis_relabel::tree_select {widget node} {
 			set parent [$widget parent $node]
 			if {$parent == "TO_LIST"} {
 				append line "to"
-				set node [string trimleft $node "to_list:"]
+				set id_end [string length "to_list:"]
 			} else {
 				append line "from"
-				set node [string trim $node "from_list:"]
+				set id_end [string length "from_list:"]
 			}
+			set node_str [string range $node $id_end end]
 			set end_index [string length $line]
 			lappend subtitle_type_tags $start_index $end_index
 				
 			set start_index [string length $line]
-			append line " $node"
+			append line " $node_str"
 			set end_index [string length $line]
 			lappend title_type_tags $start_index $end_index
 			append line "\n\n"
