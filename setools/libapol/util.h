@@ -16,7 +16,7 @@
 #include <stdio.h>
 #include <regex.h>
 
-#define VERSION_STRING "1.1"
+#define VERSION_STRING "1.2"
 
 /* use 8k line size */
 #define LINE_SZ 8192
@@ -109,5 +109,6 @@ char **get_config_var_list(const char *var, FILE *file, int *list_sz);
 char *config_var_list_to_string(const char **list, int size);
 unsigned char str_token_is_not_valid(const char *str);
 int append_str(char **tgt, int *tgt_sz, const char *str);
+int read_file_to_buffer(const char *fname, char **buf, int *len);
 
 #endif /*_APOLICY_UTIL_H_*/
