@@ -639,7 +639,7 @@ proc Apol_Analysis_relabel::adv_options_initialize_objs_and_perm_filters {path_n
 			return -1
 		}
 		# Filter out object classes that do not have relabelto/relabelfrom permission
-		set idx1 [lsearch -exact elabel::relabelto_perm]
+		set idx1 [lsearch -exact $perms_list $Apol_Analysis_relabel::relabelto_perm]
 		set idx2 [lsearch -exact $perms_list $Apol_Analysis_relabel::relabelfrom_perm]
 		if {$idx1 == -1 && $idx2 == -1} {
 			continue
