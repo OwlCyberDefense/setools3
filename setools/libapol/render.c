@@ -36,7 +36,7 @@ static int re_append_cls_perms(ta_item_t *list,
 	ta_item_t *ptr;
 	int multiple = 0;
 
-	if(flags & (iscls ? AVFLAG_CLS_TILDA : AVFLAG_PERM_TILDA)) {
+	if(flags & (!iscls ? AVFLAG_PERM_TILDA : AVFLAG_NONE)) {
 		if(append_str(buf, buf_sz, " ~") != 0)
 			return -1;
 		}
@@ -49,7 +49,7 @@ static int re_append_cls_perms(ta_item_t *list,
 		if(append_str(buf, buf_sz, "{ ") != 0) 
 			return -1;
 	}
-	if(flags & (iscls ? AVFLAG_CLS_STAR : AVFLAG_PERM_STAR))
+	if(flags & (!iscls ? AVFLAG_PERM_STAR : AVFLAG_NONE))
 		if(append_str(buf, buf_sz, "* ") != 0)
 			return -1;
 		
