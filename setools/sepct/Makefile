@@ -23,8 +23,8 @@ tmp.tcl: $(TCL-STRIP_FILES)
 # do nothing
 
 install: sepcut
-	install -m 755 sepcut $(BINDIR)
-	install -m 644 $(SEPCUT_HELP_FILE) $(INSTALL_LIBDIR)
+	-install -m 755 sepcut $(BINDIR)
+	-install -m 644 $(SEPCUT_HELP_FILE) $(INSTALL_LIBDIR)
 
 clean:
 	rm -f sepcut *~ tmp.tcl
