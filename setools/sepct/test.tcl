@@ -660,8 +660,8 @@ proc Sepct_Test::create { nb } {
 		-helptype balloon -helptext "Build binary policy and install\nit, but don't load into running system"]
 	set b_reload  [Button $rightf.reload  -text "Load Policy" -width 8 -command {Sepct_Test::test_Policy load} \
 		-helptype balloon -helptext "Build binary policy and install\nand load it into running system"]
-	set b_relabel [Button $rightf.relabel -text "Relabel Files" -width 8 -command {Sepct_Test::test_Policy relabel}  \
-		-helptype balloon -helptext "Relabel all files according to \ncurrently loaded policy"]
+	#set b_relabel [Button $rightf.relabel -text "Relabel Files" -width 8 -command {Sepct_Test::test_Policy relabel}  \
+	#	-helptype balloon -helptext "Relabel all files according to \ncurrently loaded policy"]
 	set b_view_pc [Button $rightf.view_pc -text "Open\npolicy.conf"  -width 8 -command \
 		{Sepct_Test::display_test_policy_conf; $Sepct_Test::notebook raise $Sepct_Test::PolicyConfTabName }  \
 		-helptype balloon -helptext "Load (reload) policy.conf file"]
@@ -671,7 +671,7 @@ proc Sepct_Test::create { nb } {
 	# NoteBook creation
 	Sepct_Test::createNoteBook $leftf
 	
-	pack $b_test $b_clean $b_install $b_reload $b_relabel $b_view_pc $b_clear -side top -anchor center -pady 5
+	pack $b_test $b_clean $b_install $b_reload $b_view_pc $b_clear -side top -anchor center -pady 5
 	
 	return $frame
 }     
