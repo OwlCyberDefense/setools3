@@ -193,12 +193,14 @@ static void display_policy_query_results(GladeXML *xml, GString *src_type, GStri
 	gtk_text_buffer_insert(buffer, &end, "\n", -1);
 
 	for (i = 0; i < r->num_av_access; i++) {
-		sprintf(tbuf, "(");
-		gtk_text_buffer_insert_with_tags_by_name(buffer, &end, tbuf, -1, "rules-tag", NULL);
-		sprintf(tbuf, "%d", r->av_access_lineno[i]);
-		gtk_text_buffer_insert_with_tags_by_name(buffer, &end, tbuf, -1, "policy-link-tag", NULL);
-		sprintf(tbuf, ") ");
-		gtk_text_buffer_insert_with_tags_by_name(buffer, &end, tbuf, -1, "rules-tag", NULL);
+		if (!is_binary_policy(seaudit_app->cur_policy)) {
+                       sprintf(tbuf, "(");
+                       gtk_text_buffer_insert_with_tags_by_name(buffer, &end, tbuf, -1, "rules-tag", NULL);
+                       sprintf(tbuf, "%d", r->av_access_lineno[i]);
+                       gtk_text_buffer_insert_with_tags_by_name(buffer, &end, tbuf, -1, "policy-link-tag", NULL);
+                       sprintf(tbuf, ") ");
+                       gtk_text_buffer_insert_with_tags_by_name(buffer, &end, tbuf, -1, "rules-tag", NULL);
+               	}
 		string = re_render_av_rule(FALSE, r->av_access[i], FALSE, seaudit_app->cur_policy);
 		gtk_text_buffer_insert_with_tags_by_name(buffer, &end, string, -1, "rules-tag", NULL);
 		gtk_text_buffer_insert(buffer, &end, "\n", -1);
