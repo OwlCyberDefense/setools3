@@ -769,7 +769,7 @@ static int append_direct_edge_to_results(policy_t *policy, iflow_query_t* q,
 					 iflow_t *answer, Tcl_Interp *interp)
 {
 	int j, k, num_obj_classes = 0;
-	char *rule, tbuf[64];
+	char *rule, tbuf[BUF_SZ];
 	
 	/* Append number of object classes */
 	for (j = 0; j < answer->num_obj_classes; j++)
@@ -813,7 +813,7 @@ static int append_direct_edge_to_results(policy_t *policy, iflow_query_t* q,
 
 static int append_transitive_iflow_rules_to_results(policy_t *policy, iflow_transitive_t* answers, iflow_path_t *cur, int path_idx, int obj_idx, Tcl_Interp *interp)
 {
-	char tbuf[64], *rule;
+	char tbuf[BUF_SZ], *rule;
 	int l;
 	
 	/* Append the number of rules */
@@ -839,7 +839,7 @@ static int append_transitive_iflow_rules_to_results(policy_t *policy, iflow_tran
 }
 static int append_transitive_iflow_objects_to_results(policy_t *policy, iflow_transitive_t *answers, iflow_path_t *cur, Tcl_Interp *interp, int j)
 {
-	char tbuf[64];
+	char tbuf[BUF_SZ];
 	int num_obj_classes, k, rt;
 	
 	/* Append the number of object classes */
@@ -869,7 +869,7 @@ static int append_transitive_iflow_objects_to_results(policy_t *policy, iflow_tr
 
 static int append_transitive_iflows_to_results(policy_t *policy, iflow_transitive_t* answers, iflow_path_t *cur, Tcl_Interp *interp)
 {
-	char tbuf[64];
+	char tbuf[BUF_SZ];
 	int j, rt;
 
 	/* Append the number of flows in path */
@@ -892,7 +892,7 @@ static int append_transitive_iflows_to_results(policy_t *policy, iflow_transitiv
 
 static int append_transitive_iflow_paths_to_results(policy_t *policy, iflow_transitive_t* answers, Tcl_Interp *interp, int end_type)
 {
-	char tbuf[64];
+	char tbuf[BUF_SZ];
 	int rt;
 	iflow_path_t *cur;
 
@@ -911,7 +911,7 @@ static int append_transitive_iflow_paths_to_results(policy_t *policy, iflow_tran
 
 static int append_transitive_iflow_results(policy_t *policy, iflow_transitive_t* answers, Tcl_Interp *interp)
 {
-	char tbuf[64];
+	char tbuf[BUF_SZ];
 	int i, rt;
 	
 	/* Append the number of types */
@@ -1903,7 +1903,7 @@ int Apol_SearchInitialSIDs(ClientData clientData, Tcl_Interp *interp, int argc, 
 {
 	char *str, *user = NULL, *role = NULL, *type = NULL;
 	int *isids = NULL, num_isids;
-	char tbuf[64];
+	char tbuf[BUF_SZ];
 	int sz, rt, i;
 	Tcl_DString *buf, buffer; 
 	
@@ -1988,6 +1988,139 @@ int Apol_SearchInitialSIDs(ClientData clientData, Tcl_Interp *interp, int argc, 
 		free(str);
 	}
 	free(isids);
+	Tcl_DStringResult(interp, buf);
+								
+	return TCL_OK;
+}
+
+void apol_cond_rules_append_cond_list(cond_rule_list_t *list, bool_t include_allow, bool_t include_audit, bool_t include_tt, 
+				     policy_t *policy, Tcl_DString *buf, Tcl_Interp *interp)
+{
+	int i;
+	char tbuf[BUF_SZ], *rule = NULL;
+	
+	if (!list)
+		return;
+	assert(policy != NULL);
+	
+	if (include_allow) {
+		for (i = 0; i < list->num_av_access; i++) {
+			rule = re_render_av_rule(FALSE, list->av_access[i], FALSE, policy);
+			assert(rule);
+			snprintf(tbuf, sizeof(tbuf)-1, "\t%d %s\n", policy->av_access[list->av_access[i]].enabled, rule);
+			Tcl_DStringAppend(buf, tbuf, -1);
+			free(rule);
+		}
+	}
+	if (include_audit) {
+		for (i = 0; i < list->num_av_audit; i++) {
+			rule = re_render_av_rule(FALSE, list->av_audit[i], TRUE, policy);
+			assert(rule);
+			snprintf(tbuf, sizeof(tbuf)-1, "\t%d %s\n", policy->av_audit[list->av_audit[i]].enabled, rule);
+			Tcl_DStringAppend(buf, tbuf, -1);
+			free(rule);
+		}
+	}
+	if (include_tt) {
+		for (i = 0; i < list->num_te_trans; i++) {
+			rule = re_render_tt_rule(FALSE, list->te_trans[i], policy);
+			assert(rule);
+			snprintf(tbuf, sizeof(tbuf)-1, "\t%d %s\n", policy->te_trans[list->te_trans[i]].enabled, rule);
+			Tcl_DStringAppend(buf, tbuf, -1);
+			free(rule);
+		}
+	}
+}
+
+/* 
+ * argv[1] boolean name
+ * argv[2] use reg expression
+ * argv[3] show rules
+ * argv[3] include allow rules
+ * argv[4] include audit rules
+ * argv[5] include type transition rules
+ */
+int Apol_SearchConditionalRules(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
+{
+	char *error_msg = NULL;
+	char tbuf[BUF_SZ];
+	bool_t regex, show_rules, *exprs_b;
+	bool_t include_allow, include_audit, include_tt;
+	int i;
+	Tcl_DString *buf, buffer; 
+	
+	if(argc != 7) {
+		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
+		return TCL_ERROR;
+	}
+	if(policy == NULL) {
+		Tcl_AppendResult(interp,"No current policy file is opened!", (char *) NULL);
+		return TCL_ERROR;
+	}
+	
+	if (!is_valid_str_sz(argv[1])) {
+		Tcl_AppendResult(interp, "The provided user string is too large.", (char *) NULL);
+		return TCL_ERROR;
+	}
+	buf = &buffer;	
+	regex = getbool(argv[2]);
+	show_rules = getbool(argv[3]);
+	include_allow = getbool(argv[4]);
+	include_audit = getbool(argv[5]);
+	include_tt = getbool(argv[6]);
+	
+	/* If regex is turned OFF, then validate that the boolean exists. */
+	if (!regex && !str_is_only_white_space(argv[1]) && get_cond_bool_idx(argv[1], policy) < 0) {
+		Tcl_AppendResult(interp, "Invalid boolean name provided. You may need to turn on the regular expression option.", (char *) NULL);
+		return TCL_ERROR;
+	} 
+	/* In order to handle when no bool name is provided and regex is turned OFF, we turn regex ON for this special case. */
+	if (!regex && str_is_only_white_space(argv[1])) {
+		regex = 1;
+	}
+	
+	exprs_b = (bool_t*)malloc(sizeof(bool_t) * policy->num_cond_exprs);
+	if (!exprs_b) {
+		Tcl_AppendResult(interp, "Memory error\n", (char *) NULL);
+		return TCL_ERROR;
+	}
+	memset(exprs_b, FALSE, sizeof(bool_t) * policy->num_cond_exprs);
+	
+	if (search_conditional_expressions(argv[1], regex, exprs_b, &error_msg, policy) != 0) {
+		Tcl_AppendResult(interp, "Error searching conditional expressions: ", error_msg, (char *) NULL);
+		free(error_msg);
+		return TCL_ERROR;
+	}
+			
+	Tcl_DStringInit(buf);
+	snprintf(tbuf, sizeof(tbuf)-1, "Found the following expressions:\n");
+	Tcl_DStringAppend(buf, tbuf, -1);
+		
+	for (i = 0; i < policy->num_cond_exprs; i++) {
+		if (exprs_b[i]) {
+			snprintf(tbuf, sizeof(tbuf)-1, "\nconditional expression %d: [ %s ]\n\n", i, 
+				policy->cond_bools[policy->cond_exprs[i].expr->bool].name);
+			Tcl_DStringAppend(buf, tbuf, -1);
+			
+			if (show_rules) {
+				snprintf(tbuf, sizeof(tbuf)-1, "TRUE list:\n");
+				Tcl_DStringAppend(buf, tbuf, -1);
+				
+				apol_cond_rules_append_cond_list(policy->cond_exprs[i].true_list, 
+								include_allow, include_audit, include_tt, 
+								policy, buf, interp);
+								
+				snprintf(tbuf, sizeof(tbuf)-1, "FALSE list:\n");
+				Tcl_DStringAppend(buf, tbuf, -1);
+				
+				apol_cond_rules_append_cond_list(policy->cond_exprs[i].false_list, 
+								include_allow, include_audit, include_tt, 
+								policy, buf, interp);
+			}
+		}
+	}
+	free(exprs_b);
+			
 	Tcl_DStringResult(interp, buf);
 								
 	return TCL_OK;
@@ -4128,6 +4261,7 @@ int Apol_Init(Tcl_Interp *interp)
 	Tcl_CreateCommand(interp, "apol_GetInitialSIDInfo", (Tcl_CmdProc *) Apol_GetInitialSIDInfo, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_Cond_Bool_SetBoolValue", (Tcl_CmdProc *) Apol_Cond_Bool_SetBoolValue, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_Cond_Bool_GetBoolValue", (Tcl_CmdProc *) Apol_Cond_Bool_GetBoolValue, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+	Tcl_CreateCommand(interp, "apol_SearchConditionalRules", (Tcl_CmdProc *) Apol_SearchConditionalRules, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	
 	Tcl_PkgProvide(interp, "apol", (char*)libapol_get_version());
 
