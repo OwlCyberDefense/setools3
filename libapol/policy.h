@@ -31,6 +31,9 @@
 			 * dynamically grow in this increments as necesary */
 
 
+#define OBJECT_R_NAME "object_r"
+
+
 /* policy options used for opening a policy; controls which part of the
  * policy were loaded. 
  */
@@ -490,6 +493,8 @@ int set_cond_bool_vals_to_default(policy_t *policy);
 #define get_user_next_role_ptr(role) ((role != NULL) ? role->next : NULL)
 #define num_users(policy) (policy != NULL ? policy->rule_cnt[RULE_USER] : -1)
 
+user_item_t *add_user(char *user, policy_t *policy);
+int add_role_to_user(user_item_t *user, int role_idx, policy_t *policy);
 int free_user(user_item_t *ptr);
 int get_user_name(user_item_t *user, char **name);
 bool_t does_user_exists(const char *name, policy_t *policy);
