@@ -2833,7 +2833,7 @@ static int update_cond_expr_item(int idx, policy_t *policy)
 	return 0;
 }
 
-static void add_cond_expr_item_helper(int cond_expr, cond_rule_list_t *list, policy_t * policy)
+void add_cond_expr_item_helper(int cond_expr, cond_rule_list_t *list, policy_t * policy)
 {
 	int i;
 	
