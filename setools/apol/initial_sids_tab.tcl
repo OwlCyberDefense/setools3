@@ -119,10 +119,10 @@ proc Apol_Initial_SIDS::open { } {
 	$Apol_Initial_SIDS::type_combo_box configure -values $Apol_Types::typelist
 	$Apol_Initial_SIDS::attribute_combo_box configure -values $Apol_Types::attriblist
 	
-	Apol_Initial_SIDS::enable_comboBox $Apol_Initial_SIDS::user_cb_value $Apol_Initial_SIDS::user_combo_box
-	Apol_Initial_SIDS::enable_comboBox $Apol_Initial_SIDS::role_cb_value $Apol_Initial_SIDS::role_combo_box
-	Apol_Initial_SIDS::enable_comboBox $Apol_Initial_SIDS::type_cb_value $Apol_Initial_SIDS::type_combo_box
-	Apol_Initial_SIDS::enable_comboBox $Apol_Initial_SIDS::attribute_cb_value $Apol_Initial_SIDS::attribute_combo_box
+	ApolTop::change_comboBox_state $Apol_Initial_SIDS::user_cb_value $Apol_Initial_SIDS::user_combo_box
+	ApolTop::change_comboBox_state $Apol_Initial_SIDS::role_cb_value $Apol_Initial_SIDS::role_combo_box
+	ApolTop::change_comboBox_state $Apol_Initial_SIDS::type_cb_value $Apol_Initial_SIDS::type_combo_box
+	ApolTop::change_comboBox_state $Apol_Initial_SIDS::attribute_cb_value $Apol_Initial_SIDS::attribute_combo_box
 	$Apol_Initial_SIDS::cb_attrib configure -state disabled
 	return 0
 } 
@@ -143,10 +143,10 @@ proc Apol_Initial_SIDS::close { } {
 	$Apol_Initial_SIDS::resultsbox configure -state normal
 	$Apol_Initial_SIDS::resultsbox delete 0.0 end
 	ApolTop::makeTextBoxReadOnly $Apol_Initial_SIDS::resultsbox 
-	Apol_Initial_SIDS::enable_comboBox $Apol_Initial_SIDS::user_cb_value $Apol_Initial_SIDS::user_combo_box
-	Apol_Initial_SIDS::enable_comboBox $Apol_Initial_SIDS::role_cb_value $Apol_Initial_SIDS::role_combo_box
-	Apol_Initial_SIDS::enable_comboBox $Apol_Initial_SIDS::type_cb_value $Apol_Initial_SIDS::type_combo_box
-	Apol_Initial_SIDS::enable_comboBox $Apol_Initial_SIDS::attribute_cb_value $Apol_Initial_SIDS::attribute_combo_box
+	ApolTop::change_comboBox_state $Apol_Initial_SIDS::user_cb_value $Apol_Initial_SIDS::user_combo_box
+	ApolTop::change_comboBox_state $Apol_Initial_SIDS::role_cb_value $Apol_Initial_SIDS::role_combo_box
+	ApolTop::change_comboBox_state $Apol_Initial_SIDS::type_cb_value $Apol_Initial_SIDS::type_combo_box
+	ApolTop::change_comboBox_state $Apol_Initial_SIDS::attribute_cb_value $Apol_Initial_SIDS::attribute_combo_box
 	
 	return 0	
 }
@@ -198,29 +198,15 @@ proc Apol_Initial_SIDS::popupSIDInfo {sid} {
 }
 
 # ------------------------------------------------------------------------------
-#  Command Apol_Initial_SIDS::enable_comboBox
-# ------------------------------------------------------------------------------
-proc Apol_Initial_SIDS::enable_comboBox {cb_value combo_box} {
-	selection clear -displayof $combo_box
-	if {$cb_value} {
-		$combo_box configure -state normal -entrybg white
-	} else {
-		$combo_box configure -state disabled -entrybg $ApolTop::default_bg_color
-	}
-	
-	return 0
-}
-
-# ------------------------------------------------------------------------------
 #  Command Apol_Initial_SIDS::enable_types_widgets
 # ------------------------------------------------------------------------------
 proc Apol_Initial_SIDS::enable_types_widgets {} {
-	Apol_Initial_SIDS::enable_comboBox $Apol_Initial_SIDS::type_cb_value $Apol_Initial_SIDS::type_combo_box
-	Apol_Initial_SIDS::enable_comboBox $Apol_Initial_SIDS::attribute_cb_value $Apol_Initial_SIDS::attribute_combo_box
+	ApolTop::change_comboBox_state $Apol_Initial_SIDS::type_cb_value $Apol_Initial_SIDS::type_combo_box
+	ApolTop::change_comboBox_state $Apol_Initial_SIDS::attribute_cb_value $Apol_Initial_SIDS::attribute_combo_box
 	if {$Apol_Initial_SIDS::type_cb_value} {
 		$Apol_Initial_SIDS::cb_attrib configure -state normal
 	} else {
-		Apol_Initial_SIDS::enable_comboBox 0 $Apol_Initial_SIDS::attribute_combo_box
+		ApolTop::change_comboBox_state 0 $Apol_Initial_SIDS::attribute_combo_box
 		$Apol_Initial_SIDS::cb_attrib configure -state disabled
 	}
 	
@@ -303,7 +289,7 @@ proc Apol_Initial_SIDS::create {nb} {
 	pack $pw2 -fill both -expand yes
 	
 	# Placing title frames
-	pack $s_optionsbox -padx 2 -fill both -expand yes
+	pack $s_optionsbox -padx 2 -fill both 
 	pack $sids_box -padx 2 -side left -fill both -expand yes
 	pack $rslts_frame -pady 2 -padx 2 -fill both -anchor n -side bottom -expand yes
 	
@@ -383,16 +369,16 @@ proc Apol_Initial_SIDS::create {nb} {
 	set cb_user [checkbutton [$l_innerFrame getframe].cb_user \
 		-variable Apol_Initial_SIDS::user_cb_value -text "Search Using User" \
 		-onvalue 1 -offvalue 0 \
-		-command {Apol_Initial_SIDS::enable_comboBox $Apol_Initial_SIDS::user_cb_value $Apol_Initial_SIDS::user_combo_box}]
+		-command {ApolTop::change_comboBox_state $Apol_Initial_SIDS::user_cb_value $Apol_Initial_SIDS::user_combo_box}]
 	set cb_role [checkbutton [$c_innerFrame getframe].cb_role \
 		-variable Apol_Initial_SIDS::role_cb_value -text "Search Using Role" \
 		-onvalue 1 -offvalue 0 \
-		-command {Apol_Initial_SIDS::enable_comboBox $Apol_Initial_SIDS::role_cb_value $Apol_Initial_SIDS::role_combo_box}]
+		-command {ApolTop::change_comboBox_state $Apol_Initial_SIDS::role_cb_value $Apol_Initial_SIDS::role_combo_box}]
 	set cb_attrib [checkbutton [$r_innerFrame getframe].cb_attrib \
 		-text "Select type using attrib:" \
 		-variable Apol_Initial_SIDS::attribute_cb_value \
 		-offvalue 0 -onvalue 1 \
-		-command {Apol_Initial_SIDS::enable_comboBox $Apol_Initial_SIDS::attribute_cb_value $Apol_Initial_SIDS::attribute_combo_box
+		-command {ApolTop::change_comboBox_state $Apol_Initial_SIDS::attribute_cb_value $Apol_Initial_SIDS::attribute_combo_box
 				Apol_Initial_SIDS::change_types_list}]
 	set cb_type [checkbutton [$r_innerFrame getframe].cb_type \
 		-variable Apol_Initial_SIDS::type_cb_value -text "Search Using Type" \
@@ -416,7 +402,7 @@ proc Apol_Initial_SIDS::create {nb} {
 	pack $cb_user $cb_role $cb_type -side top -anchor nw
 	pack $user_combo_box $role_combo_box $type_combo_box -side top -fill x -anchor nw -padx 4
 	pack $cb_attrib -side top -anchor nw -padx 15
-	pack $attribute_combo_box -side top -fill x -anchor nw -padx 25
+	pack $attribute_combo_box -side top -fill x -anchor nw -padx 25 -pady 2
 	pack $sw_r -fill both -expand yes
 	pack $sw_d -side left -expand yes -fill both 
 	
