@@ -38,9 +38,7 @@ namespace eval Apol_Analysis_relabel {
 	set advanced_filter_Dlg .advanced_filter_Dlg
 	
 	variable excluded_tag		" (Excluded)"	
-	# Provided to tkwait to prevent multiple clicks on an object in the Advanced Search options dialog.
-	variable rendering_finished	0
-	
+
 	# defined tag names for output 
 	variable title_type_tag		TITLE_TYPE
 	variable subtitle_tag		SUBTITLES
@@ -482,7 +480,6 @@ proc Apol_Analysis_relabel::adv_options_change_obj_state_on_perm_select {path_na
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_relabel::adv_options_embed_perm_buttons {list_b class perm path_name} {
 	variable widget_vars
-	variable rendering_finished
 	
  	# Frames
 	set frame [frame $list_b.f:$class:$perm -bd 0 -bg white]
@@ -515,7 +512,6 @@ proc Apol_Analysis_relabel::adv_options_embed_perm_buttons {list_b class perm pa
 	pack $lbl1 $lbl2 -side left -anchor nw
 	pack $cb_include $cb_exclude -side left -anchor nw
 	
-	set rendering_finished 1
 	# Return the pathname of the frame to embed.
  	return $frame
 }
@@ -547,24 +543,8 @@ proc Apol_Analysis_relabel::adv_options_clear_perms_text {path_name} {
 	return 0
 }
 
-# ------------------------------------------------------------------------------
-# Command Apol_Analysis_relabel::adv_options_display_permissions 
-# 	- Displays permissions for the selected object class in the permissions 
-#	  text box.
-#	- Takes the selected object class index as the only argument. 
-#	  This proc also searches the class string for the sequence " (Excluded)"
-# 	  in order to process the class name only. This is because a Tk listbox
-# 	  is being used and does not provide a -text option for items in the 
-# 	  listbox.
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_relabel::adv_options_display_permissions {path_name} {
+proc Apol_Analysis_relabel::render_permissions {path_name} {
 	variable widget_vars
-	
-	if {[$widget_vars($path_name,class_incl_lb) get 0 end] == "" || \
-		[llength [$widget_vars($path_name,class_incl_lb) curselection]] > 1} {
-		# Nothing in the listbox; return
-		return 0
-	}
 	
 	set class_idx [$widget_vars($path_name,class_incl_lb) curselection]
 	if {$class_idx == ""} {
@@ -602,14 +582,33 @@ proc Apol_Analysis_relabel::adv_options_display_permissions {path_name} {
 			$widget_vars($path_name,perms_box) $class_name $perm $path_name] 
 		$widget_vars($path_name,perms_box) insert end "\n"
 	}
-	tkwait variable Apol_Analysis_relabel::rendering_finished
-	set rendering_finished 0
-	update 
-	
 	# Disable the text widget. 
 	$widget_vars($path_name,perms_box) configure -state disabled
-	set widget_vars($path_name,class_selected_idx) $class_idx
-	return 0
+}
+
+# ------------------------------------------------------------------------------
+# Command Apol_Analysis_relabel::adv_options_display_permissions 
+# 	- Displays permissions for the selected object class in the permissions 
+#	  text box.
+#	- Takes the selected object class index as the only argument. 
+#	  This proc also searches the class string for the sequence " (Excluded)"
+# 	  in order to process the class name only. This is because a Tk listbox
+# 	  is being used and does not provide a -text option for items in the 
+# 	  listbox.
+# ------------------------------------------------------------------------------
+proc Apol_Analysis_relabel::adv_options_display_permissions {path_name} {
+	variable widget_vars
+	
+	if {[$widget_vars($path_name,class_incl_lb) get 0 end] == "" || \
+		[llength [$widget_vars($path_name,class_incl_lb) curselection]] > 1} {
+		# Nothing in the listbox; return
+		return 0
+	}
+	bind $widget_vars($path_name,class_incl_lb) <<ListboxSelect>> ""
+	set widget_vars($path_name,class_selected_idx) [$widget_vars($path_name,class_incl_lb) curselection]]
+	Apol_Analysis_relabel::render_permissions $path_name
+	update idletasks
+	bind $widget_vars($path_name,class_incl_lb) <<ListboxSelect>> "Apol_Analysis_dta::forward_options_display_permissions $path_name"
 }
 
 # ------------------------------------------------------------------------------

@@ -433,10 +433,10 @@ proc Apol_Analysis::switch_results_tab { tabID } {
 	    Apol_Analysis::clear_options_frame $opts_frame
 	    Apol_Analysis::display_mod_options $curr_analysis_module $opts_frame 	 	
 	}
-	Apol_Analysis::set_display_to_results_state $curr_analysis_module $analysis_results_array($tabID,query)
-     	set raised_tab_analysis_type $curr_analysis_module
+	set raised_tab_analysis_type $curr_analysis_module
    	$results_notebook raise $tabID
    	Apol_Analysis::set_Focus_to_Text $tabID
+	Apol_Analysis::set_display_to_results_state $curr_analysis_module $analysis_results_array($tabID,query)
    	
      	return 0
 } 
@@ -887,9 +887,9 @@ proc Apol_Analysis::create { nb } {
  	
 	# Layout frames
         set frame [$nb insert end $ApolTop::analysis_tab -text "Analysis"]
-        set analysis_top_pane [PanedWindow $frame.pw1 -side left -weights extra]
+        set analysis_top_pane [PanedWindow $frame.pw1 -side left -weights available]
         $analysis_top_pane add -weight 1
-        $analysis_top_pane add -weight 2
+        $analysis_top_pane add
 	set analysis_top_f  [frame [$analysis_top_pane getframe 0].topf]
 	set botf  [frame [$analysis_top_pane getframe 1].botf]
         set pw2   [PanedWindow $analysis_top_f.pw -side top -weights available]
