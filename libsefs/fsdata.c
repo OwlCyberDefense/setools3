@@ -287,16 +287,13 @@ static int ftw_handler(const char *file, const struct stat *sb, int flag, struct
 				avl_insert(&(fsdata->type_tree), tmp, &rc);
 			}
 			pi->context.type=(int32_t)rc;
-/*
- * no need to add these indexes anymore during filesystem walking
-			if (add_uint_to_a((uint32_t)idx, &fsdata->types[rc].num_inodes, &fsdata->types[rc].index_list)) {
-				return -1;
+		} else {
+			rc = avl_get_idx(SEFS_XATTR_UNLABELED, &fsdata->type_tree);
+			if (rc == -1) {
+				avl_insert(&(fsdata->type_tree), SEFS_XATTR_UNLABELED, &rc);
 			}
-*/
+			pi->context.type = rc;
 		}
-		else
-			pi->context.type = XATTR_UNLABELED;
-		
 	} else {
 		pi = &(fsdata->files[idx]);
 	}	
@@ -582,7 +579,7 @@ int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char *filename)
 	if (rc != 1)
 		goto bad;
 			
-	for(i=0; i<fsd->num_files; i++) {
+	for(i=0; i < fsd->num_files; i++) {
 
 		pinfo = &(fsd->files[i]);
 	
@@ -600,15 +597,31 @@ int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char *filename)
 			return -1;
 		}
 
+		
 		items = 0;
 		sbuf[items++] = cpu_to_le32(pinfo->context.user);
 		sbuf[items++] = cpu_to_le32(pinfo->context.role);
 		sbuf[items++] = cpu_to_le32(pinfo->context.type);
-		
+		sbuf[items++] = cpu_to_le32(pinfo->obj_class);
+				
 		items2 = fwrite(sbuf, sizeof(int32_t), items, fp);
 		if (items2 != items) {
 			fprintf(stderr, "3 error writing file %s\n", filename);
 			return -1;
+		}
+		
+		if (pinfo->obj_class || LNK_FILE) {
+				/* write our symlink target */
+				len = strlen(pinfo->symlink_target);
+				buf[0] = cpu_to_le32(len);
+				items = fwrite(buf, sizeof(uint32_t), 1, fp);
+				if (items != 1)
+					goto bad;
+					
+				items = fwrite(pinfo->symlink_target, sizeof(char), len, fp);
+				if (items != len)
+					goto bad;
+					
 		}
 		
 		/* Write the number of pathnames */
@@ -655,7 +668,7 @@ int sefs_filesystem_data_load(sefs_filesystem_data_t* fsd, char *filename)
 	sefs_fileinfo_t * pinfo = NULL;
 	FILE *fp;
 	size_t items;
-	uint32_t buf[512], *pbuf, len;
+	uint32_t buf[PATH_MAX],len;
 	int32_t sbuf[3];
 	
 	fp = fopen(filename, "r");
@@ -740,6 +753,38 @@ printf("with %d inodes\n", len);
 */	
 	}
 
+	/* read the number of users */
+	items = fread(buf, sizeof(uint32_t), 1, fp);
+	if (items != 1)
+		goto bad;
+		
+	fsd->num_users = le32_to_cpu(buf[0]);
+	
+	fsd->users = (char **)malloc(sizeof(char *) * fsd->num_users);
+	if (!fsd->users) 
+		goto bad;
+	
+	for (i = 0; i < fsd->num_users ; i++) {
+		/* read the length of the user */
+		items = fread(buf, sizeof(uint32_t), 1, fp);
+		if (items != 1) 
+			goto bad;
+			
+		len = le32_to_cpu(buf[0]);				
+		items = fread(buf, sizeof(char), len, fp);
+		if (items != len)
+			goto bad;
+			
+		fsd->users[i] = (char *) malloc(sizeof(char) * (len +1));
+		if (!fsd->users[i])
+			goto bad;
+		bzero(fsd->users[i], (sizeof(char) * (len + 1)));
+		
+		memcpy(fsd->users[i], buf, len);
+
+printf("got me a user! %s\n", fsd->users[i]);
+	}
+
 	/* read the number of inodes */
 	items = fread(buf, sizeof(uint32_t), 1, fp);
 	if (items != 1)
@@ -749,18 +794,19 @@ printf("with %d inodes\n", len);
 
 	pinfo = (sefs_fileinfo_t *) malloc(fsd->num_files * sizeof(sefs_fileinfo_t));
 	if (!pinfo) {
-		fprintf(stderr, "out of memory\n");
+		fprintf(stderr, "4out of memory\n");
 		return -1;
 	}
 	fsd->files = pinfo;
-	
+
+printf("number of files: %d\n", fsd->num_files);	
 	for(i = 0; i < fsd->num_files; i++) {
 		
 		pinfo = &(fsd->files[i]);
 
 		key = (inode_key_t *)malloc(sizeof(inode_key_t));
 		if (!key) {
-			fprintf(stderr, "Out of memory\n");
+			fprintf(stderr, "3Out of memory\n");
 			return -1;
 		}
 		
@@ -778,7 +824,7 @@ printf("with %d inodes\n", len);
 		}
 		
 		/* Read the context */
-		items = fread(sbuf, sizeof(int32_t), 3, fp);
+		items = fread(sbuf, sizeof(int32_t), 4, fp);
 		if (items != 3) {
 			fprintf(stderr, "error reading file %s\n", filename);
 			return -1;
@@ -787,8 +833,28 @@ printf("with %d inodes\n", len);
 		pinfo->context.user = sbuf[0];
 		pinfo->context.role = sbuf[1];
 		pinfo->context.type = sbuf[2];
+		pinfo->obj_class = sbuf[4];
+
+		if (pinfo->obj_class || LNK_FILE) {
+				/* read the symlink target */
+				items = fread(buf, sizeof(uint32_t), 1, fp);
+				if (items != 1)
+					goto bad;
+				
+				len = le32_to_cpu(buf[0]);
+				
+				pinfo->symlink_target = (char *) malloc(sizeof(char) * (len +1));
+				if (!pinfo->symlink_target)
+					goto bad;
+				bzero(pinfo->symlink_target, (sizeof(char) * (len + 1)));	
+							
+				items = fread(pinfo->symlink_target, sizeof(char), len, fp);
+				if (items != len)
+					goto bad;
+		}
 
 		/* add the type of this inode to the type index list */
+printf ("adding path %d to type %d\n",i,pinfo->context.type);
 		add_uint_to_a(i, &fsd->types[pinfo->context.type].num_inodes, &fsd->types[pinfo->context.type].index_list);
 		
 		/* Read the pathname count */
@@ -800,7 +866,7 @@ printf("with %d inodes\n", len);
 
 		pinfo->path_names = (char **)malloc(pinfo->num_links * sizeof(char *));
 		if (!pinfo->path_names) {
-			fprintf(stderr, "Out of memory\n");
+			fprintf(stderr, "1 %d %d Out of memory\n", pinfo->num_links, pinfo->key.inode);
 			return -1;
 		}
 		
@@ -812,7 +878,7 @@ printf("with %d inodes\n", len);
 			}
 			
 			if ((pinfo->path_names[j] = (char *)malloc((len + 1) * sizeof(char))) == NULL) {
-				fprintf(stderr, "Out of memory\n");
+				fprintf(stderr, "2Out of memory\n");
 				return -1;
 			}
 			
