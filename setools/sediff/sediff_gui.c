@@ -220,8 +220,6 @@ static int get_iad_buffer(GtkTextBuffer *txt, GtkTextIter *txt_iter,GString *str
 							 NULL); 
 	}
 	
-
-
 	assert(string != NULL && p_old != NULL && p_new != NULL);
 	assert((id & (IDX_TYPE|IDX_ATTRIB|IDX_ROLE|IDX_USER|IDX_OBJ_CLASS|IDX_COMMON_PERM|IDX_PERM)) != 0);
 
@@ -230,7 +228,6 @@ static int get_iad_buffer(GtkTextBuffer *txt, GtkTextIter *txt_iter,GString *str
 	summary_node->added = 0;
 	summary_node->removed = 0;
 	summary_node->changed = 0;
-
 	
 	switch(id) {
 	case IDX_ROLE|IDX_PERM:
@@ -1898,9 +1895,6 @@ static int txt_buffer_insert_rbac_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 
 	g_return_val_if_fail(stuff_removed != NULL, -1);
 	g_return_val_if_fail(stuff_added != NULL, -1);
-//	g_string_printf(string, "ROLES: %d removed, %d added.\n", 
-//		stuff_removed->num_role_allow, stuff_added->num_role_allow);
-//	gtk_text_buffer_insert(txt, txt_iter, string->str, -1);
 	gtk_text_buffer_get_end_iter(txt, txt_iter);
 	rt = get_iad_buffer(txt,txt_iter,string, IDX_ROLE|IDX_PERM, stuff_removed->role_allow, 
 			    stuff_added->role_allow, policy_old, policy_new,&sediff_app->summary.rbac);
@@ -2926,7 +2920,7 @@ void sediff_open_dialog_on_diff_button_clicked(GtkButton *button, gpointer user_
 	p1_file = gtk_entry_get_text(p1_entry);
 	p2_file = gtk_entry_get_text(p2_entry);
 	
-	if (!g_file_test(p1_file, G_FILE_TEST_EXISTS) || g_file_test(p2_file, G_FILE_TEST_IS_DIR)) {
+	if (!g_file_test(p1_file, G_FILE_TEST_EXISTS) || g_file_test(p1_file, G_FILE_TEST_IS_DIR)) {
 		string = g_string_new("Invalid file specified for policy 1!");
 		message_display(sediff_app->window, GTK_MESSAGE_ERROR, string->str);
 		g_string_free(string, TRUE);
@@ -2936,6 +2930,7 @@ void sediff_open_dialog_on_diff_button_clicked(GtkButton *button, gpointer user_
 		string = g_string_new("Invalid file specified for policy 2!");
 		message_display(sediff_app->window, GTK_MESSAGE_ERROR, string->str);
 		g_string_free(string, TRUE);
+		return;
 	}
 	
 	/* set the cursor to a hand */
