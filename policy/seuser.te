@@ -154,6 +154,8 @@ allow seuser_t policy_config_t:dir { search read getattr } ;
 allow seuser_t policy_config_t:file { create_file_perms stat_file_perms };
 allow seuser_t policy_config_t:dir rw_dir_perms ;
 
+
+
 ifdef(`xserver.te', `
 ############################################################
 # Xserver section - To support our GUI interface, 
