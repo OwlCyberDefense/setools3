@@ -124,9 +124,9 @@ install: install-nogui seuserx se_user.tcl
 	install -m 644 se_user.tcl $(SEUSER_HELP_FILE) $(INSTALL_LIBDIR)
 
 clean:
-	rm -f *.o  core seuser seuserx *~ se_user.tcl tmp.tcl
+	rm -f *.o  core* seuser seuserx *~ se_user.tcl tmp.tcl
 bare:
-	rm -f *.o  core seuser seuserx *~ se_user.tcl tmp.tcl 
+	rm -f *.o  core* seuser seuserx *~ se_user.tcl tmp.tcl 
 
 
 
