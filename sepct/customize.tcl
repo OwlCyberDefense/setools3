@@ -2272,7 +2272,7 @@ proc Sepct_Customize::store_mod_descrptive_name { mod_name is_used } {
 				if { [string length $d_string] > $max_Label_Length } {
 					set d_string [string range $d_string 0 $max_Label_Length]
 				}
-				return $d_string	
+				return [string trim $d_string]
 			} else {
 				return $mod_name
 			}
