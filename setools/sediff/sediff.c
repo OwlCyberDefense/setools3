@@ -564,7 +564,7 @@ int main (int argc, char **argv)
 	apol_diff_result_t *diff;
 	unsigned int opts = POLOPT_NONE;
 	char prog_path[PATH_MAX];
-	char prog_options[PATH_MAX];
+
 	
 	classes = types = roles = users = bools = all = stats = isids = conds = terules = rbac = gui = 0;
 	while ((optc = getopt_long (argc, argv, "XctrubiTRCshv", longopts, NULL)) != -1)  {
@@ -634,51 +634,39 @@ int main (int argc, char **argv)
 		opts = POLOPT_ALL;
 		all = 1;
 	}
-
 	if (gui == 0 && (argc - optind > 2 || argc - optind < 1)) {
 		usage(argv[0], 1);
 		exit(1);
 	}
 	/* are we going to use the gui */
 	else if (gui == 1) {
+		snprintf(prog_path, PATH_MAX, "./%s", SEDIFF_GUI_PROG);
+		/* launch the gui with no arguments */
+		if (argc - optind == 0 ) {
+			rt = access(prog_path, X_OK);
+			if (rt == 0) {
+				rt = execvp(prog_path,NULL);
+			} else {
+				rt = execvp(SEDIFF_GUI_PROG,NULL);
+			}
+
+
+		}
+		/* launch the gui with file args */
+		else if (argc - optind == 2) {
+			rt = access(prog_path, X_OK);
+			if (rt == 0) {
+				rt = execvp(prog_path,&argv[optind]);
+			} else {
+				rt = execvp(SEDIFF_GUI_PROG,&argv[optind]);
+			}			
+		}
 		if (argc - optind != 0 && argc - optind != 2) {
 			usage(argv[0], 1);
 			exit(1);
 		}
-		snprintf(prog_path, PATH_MAX, "./%s", SEDIFF_GUI_PROG);
-		if (argc - optind == 0) {
-			rt = access(prog_path, X_OK);
-			if (rt == 0) {
-				rt = execvp(prog_path,NULL);
-//			rt = execlp(prog_path, prog_options);
-			} else {
-				rt = execvp(SEDIFF_GUI_PROG,NULL);
-//			rt = execlp(SEDIFF_GUI_PROG, prog_options);
-			}
-			if (rt == -1) {
-				fprintf(stderr, "Cannot execute the seuserx program. You may need to install the setools-gui package.");
-			}
-		}
-		else {
-			rt = access(prog_path, X_OK);
-			if (rt == 0) {
-				rt = execvp(prog_path,&argv[--optind]);
-//			rt = execlp(prog_path, prog_options);
-			} else {
-				rt = execvp(SEDIFF_GUI_PROG,&argv[--optind]);
-//			rt = execlp(SEDIFF_GUI_PROG, prog_options);
-			}
-			if (rt == -1) {
-				fprintf(stderr, "Cannot execute the seuserx program. You may need to install the setools-gui package.");
-			}
-
-			p1_file = argv[optind++];
-			p2_file = argv[optind];		
-			snprintf(prog_options, PATH_MAX, "%s %s", p1_file,p2_file);
-		}
 		exit(1);
 		/* otherwise execlp() won't ever return! */
-
 	}
 
 	else {
