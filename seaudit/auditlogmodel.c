@@ -275,7 +275,7 @@ static void log_view_store_get_value(GtkTreeModel *tree_model, GtkTreeIter *iter
 				if (!string)
 				        return;
 
-				g_string_append_printf(string, ":%d", boolean_msg->values[0]);
+				g_string_append_printf(string, ":%d", boolean_msg->values[j]);
 			}
 			set_utf8_return_value(value, string->str);
 			g_string_free(string, TRUE);
