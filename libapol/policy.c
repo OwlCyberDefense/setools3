@@ -1577,7 +1577,48 @@ static bool_t type_list_match_by_name(char * type, ta_item_t *list, policy_t *po
 }
 #endif
 
+static int append_attrib_types_to_array(int attrib, int *array_len, int **array, policy_t *policy)
+{
+	int i;
+	
+	if (attrib >= policy->num_attribs)
+		return -1;
 
+	for (i = 0; i < policy->attribs[attrib].num_types; i++) {
+		if (add_i_to_a(policy->attribs[attrib].types[i], array_len, array) == -1)
+					return -1;
+	}
+	return 0;
+}
+
+static int collect_subtracted_types_attribs(int *num_subtracted_types, int **subtracted_types,
+	int *num_subtracted_attribs, int **subtracted_attribs, ta_item_t *tlist, policy_t *policy)
+{
+	ta_item_t *t;
+	
+	*subtracted_types = *subtracted_attribs = NULL;
+	*num_subtracted_types = *num_subtracted_attribs = 0;
+	for (t = tlist; t != NULL; t = t->next) {
+		if ((t->type & IDX_SUBTRACT) && (t->type & IDX_TYPE)) {
+			if (add_i_to_a(t->idx, num_subtracted_types, subtracted_types) == -1)
+				goto err;
+		} else if ((t->type & IDX_SUBTRACT) && (t->type & IDX_ATTRIB)) {
+			if (append_attrib_types_to_array(t->idx, num_subtracted_types,
+				subtracted_types, policy) == -1)
+				goto err;
+			if (add_i_to_a(t->idx, num_subtracted_attribs, subtracted_attribs) == -1)
+				goto err;
+		}
+	}
+	
+	return 0;
+err:
+	if (*subtracted_types)
+		free(*subtracted_types);
+	if (*subtracted_attribs)
+		free(*subtracted_attribs);
+	return -1;
+}
 /* Checks not only for a direct match, but also indirect checks if user entered a type.
  * By indirect, we mean if type == IDX_TYPE, we see if the list contains either the type,
  * or one of the type's attributes. However, if type == IDX_ATTRIB (meaning the user 
@@ -1585,23 +1626,35 @@ static bool_t type_list_match_by_name(char * type, ta_item_t *list, policy_t *po
  * Logically, if one is asking for a match on an attribute, they want to match just
  * the attribute and not one of the attribute's types. 
  */
-static bool_t type_list_match_by_idx(	int idx,		/* idx of type/or attribure being matched*/
+static int type_list_match_by_idx(	int idx,		/* idx of type/or attribure being matched*/
 					int type, 		/* tells whether idx is type or attrib */
 					bool_t do_indirect,
 					ta_item_t *list,	/* list of types/attribs from a rule, usually src or tgt */
+					bool_t *ans,
 					policy_t *policy
 					) 
 {
 	ta_item_t *ptr;
-	int i;
+	int i, ret = 0, num_subtracted_types, num_subtracted_attribs;
+	int *subtracted_types, *subtracted_attribs;
 
-	/*
-	 * If a type/attrib is in the subtract list then we know that the
-	 * the rule doesn't use the type, so we can return immediately.
-	 */
-	for (ptr = list; ptr != NULL; ptr = ptr->next) {
-		if ((ptr->type & IDX_SUBTRACT) && idx == ptr->idx) {
-			return FALSE;
+	assert(type == IDX_TYPE || type == IDX_ATTRIB);
+	
+	if (collect_subtracted_types_attribs(&num_subtracted_types, &subtracted_types,
+		&num_subtracted_attribs, &subtracted_attribs, list, policy) == -1) {
+		ret = -1;
+		goto out;
+	}
+	
+	if (type == IDX_TYPE) {
+		if (find_int_in_array(idx, subtracted_types, num_subtracted_types) != -1) {
+			*ans = FALSE;
+			goto out;
+		}
+	} else {
+		if (find_int_in_array(idx, subtracted_attribs, num_subtracted_attribs) != -1) {
+			*ans = FALSE;
+			goto out;
 		}
 	}
 	
@@ -1610,42 +1663,58 @@ static bool_t type_list_match_by_idx(	int idx,		/* idx of type/or attribure bein
 	 */
 	for(ptr = list; ptr != NULL; ptr = ptr->next) {
 		if(type == ptr->type && idx == ptr->idx) {
-			return TRUE;
+			*ans = TRUE;
+			goto out;
 		}
 	}
 	
 	/* check for indirect matches if type == IDX_TYPE  && do_indirect*/
 	if(type == IDX_TYPE && do_indirect) {
 		for(ptr = list; ptr != NULL; ptr = ptr->next) {
-			if(ptr->type == IDX_TYPE)
+			if((ptr->type == IDX_TYPE) || (ptr->type & IDX_SUBTRACT))
 				continue;
 			for(i = 0; i < policy->types[idx].num_attribs; i++) {
-				if(ptr->idx == policy->types[idx].attribs[i])
-					return TRUE;
+				if(ptr->idx == policy->types[idx].attribs[i]) {
+					if (find_int_in_array(ptr->idx, subtracted_types, num_subtracted_types) != -1)
+						continue;
+					*ans = TRUE;
+					goto out;
+				}
 			}
 		}
 	}
-	return FALSE;
+	
+	*ans = FALSE;
+out:
+	if (subtracted_types)
+		free(subtracted_types);
+	if (subtracted_attribs)
+		free(subtracted_attribs);
+	return ret;
 }
 
 
 
-bool_t does_tt_rule_use_type(int idx, int type, unsigned char whichlist, bool_t do_indirect, tt_item_t *rule, int *cnt, policy_t *policy)
+int does_tt_rule_use_type(int idx, int type, unsigned char whichlist, bool_t do_indirect, tt_item_t *rule,
+	int *cnt, bool_t *ret, policy_t *policy)
 {
-	int ans = 0;
-	
+	bool_t ans = FALSE;
+		
 	if(whichlist & SRC_LIST) {
 		if(rule->flags & (AVFLAG_SRC_STAR)) {
 			if(do_indirect) {
 				(*cnt)++;
-				return 1;
+				*ret = TRUE;
+				return 0;
 			}
 		}
 		else {
-			ans = type_list_match_by_idx(idx, type, do_indirect, rule->src_types, policy);
+			if (type_list_match_by_idx(idx, type, do_indirect, rule->src_types, &ans, policy) == -1)
+				return -1;
 			if(ans) {
 				(*cnt)++;
-				 return 1;
+				 *ret = TRUE;
+				return 0;
 			}		
 		}
 	}
@@ -1654,33 +1723,39 @@ bool_t does_tt_rule_use_type(int idx, int type, unsigned char whichlist, bool_t 
 		if(rule->flags & (AVFLAG_TGT_STAR)) {
 			if(do_indirect) {
 				(*cnt)++;
-				return 1;
+				*ret = TRUE;
+				return 0;
 			}
 		}
 		else {
-			ans = type_list_match_by_idx(idx, type, do_indirect, rule->tgt_types, policy);
+			if (type_list_match_by_idx(idx, type, do_indirect, rule->tgt_types, &ans, policy) == -1)
+				return -1;
 			if(ans) {
 				(*cnt)++;
-				 return 1;
+				 *ret = TRUE;
+				return 0;
 			}
 		}		
 	}
 	if(whichlist & DEFAULT_LIST) {
-		ans = type_list_match_by_idx(idx, type, do_indirect, &(rule->dflt_type), policy);
+		if (type_list_match_by_idx(idx, type, do_indirect, &(rule->dflt_type), &ans, policy) == -1)
+			return -1;
 		if(ans) {
 			(*cnt)++;
-			 return 1;
+			 *ret = TRUE;
+			 return 0;
 		}		
 	}
 	
 	/* no match */
+	*ret = FALSE;
 	return 0;
 }
 
-bool_t does_av_rule_use_type(int idx, int type, unsigned char whichlist, bool_t do_indirect, 
-	av_item_t *rule, int *cnt, policy_t *policy)
+int does_av_rule_use_type(int idx, int type, unsigned char whichlist, bool_t do_indirect, 
+	av_item_t *rule, int *cnt, bool_t *ret, policy_t *policy)
 {
-	int ans = 0;
+	bool_t ans = 0;
 	
 	if(whichlist & SRC_LIST) {
 		if(rule->flags & (AVFLAG_SRC_STAR)) {
@@ -1690,10 +1765,12 @@ bool_t does_av_rule_use_type(int idx, int type, unsigned char whichlist, bool_t 
 			}
 		}
 		else {
-			ans = type_list_match_by_idx(idx, type, do_indirect, rule->src_types, policy);
+			if (type_list_match_by_idx(idx, type, do_indirect, rule->src_types, &ans, policy) == -1)
+				return -1;
 			if(ans) {
 				(*cnt)++;
-				 return 1;
+				 *ret = TRUE;
+				return 0;
 			}
 		}		
 	}
@@ -1702,19 +1779,22 @@ bool_t does_av_rule_use_type(int idx, int type, unsigned char whichlist, bool_t 
 		if(rule->flags & (AVFLAG_TGT_STAR)) {
 			if(do_indirect) {
 				(*cnt)++;
-				return 1;
-			}
+				*ret = TRUE;
+				return 0;			}
 		}
 		else {
-			ans = type_list_match_by_idx(idx, type, do_indirect, rule->tgt_types, policy);
+			if (type_list_match_by_idx(idx, type, do_indirect, rule->tgt_types, &ans, policy) == -1)
+				return -1;
 			if(ans) {
 				(*cnt)++;
-				 return 1;
+				 *ret = TRUE;
+				return 0;
 			}		
 		}
 	}	
 	
 	/* no match */
+	*ret = FALSE;
 	return 0;
 }
 
@@ -1722,8 +1802,8 @@ bool_t does_av_rule_use_type(int idx, int type, unsigned char whichlist, bool_t 
 /* wrapper for does_av_rule_use_type() that accepts a rule idx rather than a rule pointer 
  * This wrapper also does not expose the cnter incrementing feature.  For rule_type,
  * 0 = access rules, 1 = audit rules  */
-bool_t does_av_rule_idx_use_type(int rule_idx, unsigned char rule_type, int type_idx, int ta_type, 
-		unsigned char whichlist, bool_t do_indirect, policy_t *policy)
+int does_av_rule_idx_use_type(int rule_idx, unsigned char rule_type, int type_idx, int ta_type, 
+		unsigned char whichlist, bool_t do_indirect, bool_t *ret, policy_t *policy)
 {
 	int unused_cnt = 0;
 	av_item_t *rule;
@@ -1742,7 +1822,7 @@ bool_t does_av_rule_idx_use_type(int rule_idx, unsigned char rule_type, int type
 	}
 	else
 		return FALSE;
-	return does_av_rule_use_type(type_idx, ta_type, whichlist, do_indirect, rule, &unused_cnt, policy);
+	return does_av_rule_use_type(type_idx, ta_type, whichlist, do_indirect, rule, &unused_cnt, ret, policy);
 }
 
 
@@ -1890,7 +1970,7 @@ bool_t does_role_trans_use_role(int idx, unsigned char whichlist, bool_t do_indi
 }
 
 /* NOTE: role_transition rule only has types/attribs in the target field. */
-bool_t does_role_trans_use_ta(int idx, int type, bool_t do_indirect, rt_item_t *rule, int *cnt, policy_t *policy)
+int does_role_trans_use_ta(int idx, int type, bool_t do_indirect, rt_item_t *rule, int *cnt, bool_t *ret, policy_t *policy)
 {
 	ta_item_t *item;
 	bool_t ans;
@@ -1898,20 +1978,24 @@ bool_t does_role_trans_use_ta(int idx, int type, bool_t do_indirect, rt_item_t *
 	if(rule->flags & (AVFLAG_TGT_STAR)) {
 		if(do_indirect) {
 			(*cnt)++;
-			return TRUE;
+			*ret = TRUE;
+			return 0;
 		}
 	}
 	else {			
 		for(item = rule->tgt_types; item != NULL; item = item->next) {
-			ans = type_list_match_by_idx(idx, type, do_indirect, rule->tgt_types, policy);
+			if (type_list_match_by_idx(idx, type, do_indirect, rule->tgt_types, &ans, policy) == -1)
+				return -1;
 			if(ans) {
 				(*cnt)++;
-				 return TRUE;
+				*ret = TRUE;
+				return 0;
 			}		
 		}
 	}	
 	
-	return FALSE;
+	*ret = FALSE;
+	return 0;
 }
 
 /* rule_type == 1 means access rules, otherwise audit rules */
@@ -2052,20 +2136,6 @@ int get_rule_lineno(int rule_idx, int rule_type, policy_t *policy)
 	}
 }
 
-static int append_attrib_types_to_array(int attrib, int *array_len, int **array, policy_t *policy)
-{
-	int i;
-	
-	if (attrib >= policy->num_attribs)
-		return -1;
-
-	for (i = 0; i < policy->attribs[attrib].num_types; i++) {
-		if (add_i_to_a(policy->attribs[attrib].types[i], array_len, array) == -1)
-					return -1;
-	}
-	return 0;
-}
-
 /* extract indicies of all types for selected rule, expanding attributes 
  * types is returned as an allocated array of ints num_types in sz, caller must free types 
  *
@@ -2130,21 +2200,9 @@ int extract_types_from_te_rule(int rule_idx, int rule_type, unsigned char whichl
 	}
 	
 	/* first look for subtracted types and attributes - collect these for use later */
-	subtracted_types = subtracted_attribs = NULL;
-	num_subtracted_types = num_subtracted_attribs = 0;
-	for (t = tlist; t != NULL; t = t->next) {
-		if ((t->type & IDX_SUBTRACT) && (t->type & IDX_TYPE)) {
-			printf("adding subtracted type %s\n", policy->types[t->idx].name);
-			if (add_i_to_a(t->idx, &num_subtracted_types, &subtracted_types) == -1)
-				return -1;
-		} else if ((t->type & IDX_SUBTRACT) && (t->type & IDX_ATTRIB)) {
-			if (append_attrib_types_to_array(t->idx, &num_subtracted_attribs,
-				&subtracted_attribs, policy) == -1)
-				return -1;
-			if (add_i_to_a(t->idx, &num_subtracted_attribs, &subtracted_attribs) == -1)
-				return -1;
-		}
-	}
+	if (collect_subtracted_types_attribs(&num_subtracted_types, &subtracted_types,
+			&num_subtracted_attribs, &subtracted_attribs, tlist, policy) == -1)
+		return -1;
 	
 	*types = NULL;
 	*num_types = 0;
@@ -2185,9 +2243,7 @@ int extract_types_from_te_rule(int rule_idx, int rule_type, unsigned char whichl
 		if(t->type == IDX_TYPE) {
 			if (b_types[t->idx])
 				continue;
-			printf("num subtracted types %d %d\n", num_subtracted_types, subtracted_types[0]);
 			if (find_int_in_array(t->idx, subtracted_types, num_subtracted_types) != -1) {
-				printf("skipping type %s\n", policy->types[t->idx].name);
 				continue;
 			}
 			/* handle self in the target list */
@@ -2237,7 +2293,7 @@ int extract_types_from_te_rule(int rule_idx, int rule_type, unsigned char whichl
 				continue;
 			for (i = 0; i < policy->attribs[t->idx].num_types; i++) {
 				tidx = policy->attribs[t->idx].types[i];
-				if(!b_types[t->idx] && !(find_int_in_array(tidx, subtracted_types, num_subtracted_types) == -1)) {
+				if(!b_types[t->idx] && (find_int_in_array(tidx, subtracted_types, num_subtracted_types) == -1)) {
 					if(add_i_to_a(tidx, num_types, types) != 0) {
 						ret = -1;
 						goto out;
