@@ -15,6 +15,9 @@
 #ifndef SEAUDIT_PREFERENCES_H
 #define SEAUDIT_PREFERENCES_H
 
+/* interval in seconds */
+#define DEFAULT_LOG_UPDATE_INTERVAL 1000
+
 typedef struct seaudit_conf {
 	char **recent_log_files;
 	int num_recent_log_files;
@@ -24,6 +27,7 @@ typedef struct seaudit_conf {
 	char *default_log_file;
   	bool_t column_visibility[NUM_FIELDS];
 	bool_t real_time_log;
+	int real_time_interval;
 	char *default_seaudit_report_config_file;
 	char *default_seaudit_report_css_file;
 } seaudit_conf_t;

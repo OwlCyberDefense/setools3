@@ -10,6 +10,7 @@
 #include "preferences.h"
 #include "utilgui.h"
 #include "seaudit.h"
+#include <glib/gprintf.h>
 
 extern seaudit_t *seaudit_app;
 
@@ -181,6 +182,13 @@ int load_seaudit_conf_file(seaudit_conf_t *conf)
 		conf->real_time_log = atoi(value);
 		free(value);
 	}
+	value = get_config_var("REAL_TIME_LOG_UPDATE_INTERVAL", file);
+	if (!value)
+		conf->real_time_interval = DEFAULT_LOG_UPDATE_INTERVAL;
+	else  {
+		conf->real_time_interval = atoi(value);
+		free(value);
+	}
 	fclose(file);
 
 	return 0;
@@ -350,7 +358,8 @@ int save_seaudit_conf_file(seaudit_conf_t *conf)
 		}
 	}
 		
-	fprintf(file, "\nREAL_TIME_LOG_MONITORING %d\n", conf->real_time_log);
+	fprintf(file, "\nREAL_TIME_LOG_MONITORING %d", conf->real_time_log);
+	fprintf(file, "\nREAL_TIME_LOG_UPDATE_INTERVAL %d\n", conf->real_time_interval);
 	fclose(file);
 	return 0;
 }
@@ -391,12 +400,20 @@ void update_column_visibility(seaudit_filtered_view_t *view, gpointer user_data)
 	}	
 }
 
+static void change_log_update_interval(seaudit_conf_t *conf_file, int millisecs)
+{
+	assert(millisecs > 0);
+	conf_file->real_time_interval =  millisecs;
+}
+
 void on_prefer_window_ok_button_clicked(GtkWidget *widget, gpointer user_data)
 {
 	GtkWidget *prefer_window;
 	GladeXML *xml = (GladeXML*)user_data;
-	GtkEntry *log_entry, *pol_entry, *report_css, *report_config;
+	GtkEntry *log_entry, *pol_entry, *report_css, *report_config, *interval_lbl;
 	seaudit_conf_t *seaudit_conf = NULL;
+	const gchar *interval_str = NULL;
+	int interval;
 	
 	prefer_window = glade_xml_get_widget(xml, "PreferWindow");
 	g_assert(widget);
@@ -408,8 +425,26 @@ void on_prefer_window_ok_button_clicked(GtkWidget *widget, gpointer user_data)
 	g_assert(report_css);
 	report_config = GTK_ENTRY(glade_xml_get_widget(xml, "report-config-entry"));
 	g_assert(report_config);
+	interval_lbl = GTK_ENTRY(glade_xml_get_widget(xml, "interval_lbl"));
+	g_assert(interval_lbl);
 	
 	seaudit_conf = &(seaudit_app->seaudit_conf);
+	interval_str = gtk_entry_get_text(interval_lbl);
+	if (!str_is_only_white_space(interval_str)) {
+		interval = atoi(interval_str);
+		if (interval > 0) 
+			change_log_update_interval(seaudit_conf, interval);
+		else {
+			message_display(seaudit_app->window->window, 
+				GTK_MESSAGE_ERROR, "Update interval must be greater than 0!");
+			return;
+		}
+	} else {
+		message_display(seaudit_app->window->window, 
+			GTK_MESSAGE_ERROR, "Update interval cannot be empty!");
+		return;
+	}
+
 	set_seaudit_conf_default_log(seaudit_conf,
 				     gtk_entry_get_text(log_entry));
 	set_seaudit_conf_default_policy(seaudit_conf,
@@ -422,7 +457,7 @@ void on_prefer_window_ok_button_clicked(GtkWidget *widget, gpointer user_data)
 		gtk_entry_get_text(report_css)) != 0) 
 		return;
 	save_seaudit_conf_file(seaudit_conf);
-
+	
 	/* set the updated visibility if needed */
 	if (!seaudit_app->column_visibility_changed)
 		return;
@@ -581,7 +616,9 @@ void on_preferences_activate(GtkWidget *widget, GdkEvent *event, gpointer callba
 	GtkToggleButton *toggle = NULL;
 	GString *path;
 	char *dir;
-
+	GString *interval = g_string_new("");
+	
+	assert(interval);
 	dir = find_file("prefer_window.glade");
 	if (!dir){
 		fprintf(stderr, "could not find prefer_window.glade\n");
@@ -594,7 +631,13 @@ void on_preferences_activate(GtkWidget *widget, GdkEvent *event, gpointer callba
 	g_string_free(path, TRUE);
 	window = glade_xml_get_widget(xml, "PreferWindow");
 	g_assert(window);
-
+	
+	entry = GTK_ENTRY(glade_xml_get_widget(xml, "interval_lbl"));
+	g_assert(entry);
+	g_string_printf(interval, "%d", seaudit_app->seaudit_conf.real_time_interval);
+	assert(interval != NULL);
+	gtk_entry_set_text(entry, interval->str);
+		
 	entry = GTK_ENTRY(glade_xml_get_widget(xml, "DefaultLogEntry"));
 	g_assert(entry);
 	if (seaudit_app->seaudit_conf.default_log_file)
