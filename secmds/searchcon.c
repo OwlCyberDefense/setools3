@@ -420,12 +420,12 @@ int main(int argc, char **argv, char **envp)
 		fprintf(stderr, "sefs_filesystem_data_load failed\n");
 		return -1;
 	}
-	
+/*	
 	if (sefs_filesystem_data_index(&fsdata) == -1) {
 		fprintf(stderr, "sefs_filesystem_data_index failed\n");
 		return -1;
 	}
-
+*/
 	if (list) {
 		if (sefs_list_types(&fsdata) == -1) {
 			fprintf(stderr, "list_types() returned error\n");
