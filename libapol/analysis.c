@@ -910,7 +910,7 @@ bool_t iflow_obj_option_is_valid(iflow_obj_options_t *o, policy_t *policy)
 
 	assert(o && policy);
 
-	if (!is_valid_obj_class(policy, o->obj_class))
+	if (!is_valid_obj_class_idx(o->obj_class, policy))
 		return FALSE;
 
 	if (o->num_perms) {
