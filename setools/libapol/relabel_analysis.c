@@ -498,7 +498,6 @@ int apol_do_relabel_analysis(relabel_set_t **sets, policy_t *policy)
 	int i, j, k, x, y, retv, relabelto_idx, relabelfrom_idx, temp;  
 	int num_subjects, num_targets, num_objects, num_perms;
 	int *subjects = NULL, *targets = NULL, *objects = NULL, *perms = NULL;
-	bool_t dummy[1] = {0};
 
 	if (!sets || !policy) 
 		return -1;
@@ -527,7 +526,7 @@ int apol_do_relabel_analysis(relabel_set_t **sets, policy_t *policy)
 
 		/* extract rule parts to arrays */
 		/* if any of these fail, abort */
-		retv = extract_types_from_te_rule(i, RULE_TE_ALLOW, SRC_LIST, &subjects, &num_subjects, dummy, policy);
+		retv = extract_types_from_te_rule(i, RULE_TE_ALLOW, SRC_LIST, &subjects, &num_subjects, policy);
 		if (retv) {
 			if(retv == 2){
 				retv = apol_fill_array_with_all(&subjects, ALL_TYPES, policy);
@@ -536,7 +535,7 @@ int apol_do_relabel_analysis(relabel_set_t **sets, policy_t *policy)
 			} else
 				goto bail_point;
 		}
-		retv = extract_types_from_te_rule(i, RULE_TE_ALLOW, TGT_LIST, &targets, &num_targets, dummy, policy);
+		retv = extract_types_from_te_rule(i, RULE_TE_ALLOW, TGT_LIST, &targets, &num_targets, policy);
 		if (retv) {
 			if(retv == 2){
 				retv = apol_fill_array_with_all(&targets, ALL_TYPES, policy);
@@ -639,7 +638,7 @@ int apol_do_relabel_analysis(relabel_set_t **sets, policy_t *policy)
 
 		/* extract rule parts to arrays */
 		/* if any of these fail, abort */
-		retv = extract_types_from_te_rule(i, RULE_TE_ALLOW, SRC_LIST, &subjects, &num_subjects, dummy, policy);
+		retv = extract_types_from_te_rule(i, RULE_TE_ALLOW, SRC_LIST, &subjects, &num_subjects, policy);
 		if (retv) {
 			if(retv == 2){
 				retv = apol_fill_array_with_all(&subjects, ALL_TYPES, policy);
@@ -648,7 +647,7 @@ int apol_do_relabel_analysis(relabel_set_t **sets, policy_t *policy)
 			} else
 				goto bail_point;
 		}
-		retv = extract_types_from_te_rule(i, RULE_TE_ALLOW, TGT_LIST, &targets, &num_targets, dummy, policy);
+		retv = extract_types_from_te_rule(i, RULE_TE_ALLOW, TGT_LIST, &targets, &num_targets, policy);
 		if (retv) {
 			if(retv == 2){
 				retv = apol_fill_array_with_all(&targets, ALL_TYPES, policy);
