@@ -16,7 +16,7 @@ class security 9
    compute_relabel     n
       compute_user     n
         setenforce     n
-           setbool     u
+           setbool     n
 
 class process 23
               fork     n
@@ -39,9 +39,9 @@ class process 23
            setexec     w
        setfscreate     w
         noatsecure     n
-            siginh     u
-         setrlimit     u
-         rlimitinh     u
+            siginh     n
+         setrlimit     n
+         rlimitinh     n
 
 class system 4
           ipc_info     n
@@ -531,4 +531,4 @@ class passwd 4
             passwd     w
               chfn     w
               chsh     w
-            rootok     u
+            rootok     n
