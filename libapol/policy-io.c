@@ -330,7 +330,7 @@ static int search_policy_src_file(char **policy_file_path)
 		fprintf(stderr, "out of memory\n");
 		return GENERAL_ERROR;
 	}
-	snprintf(path, PATH_MAX - 1, "%s/src/policy/policy.conf", 
+	snprintf(path, PATH_MAX - 1, "%s/src/policy.conf", 
 		 selinux_policy_root());
 #else	
 	if ((path = (char *)malloc(sizeof(char) * (strlen(LIBAPOL_DEFAULT_POLICY) + 1))) == NULL) {
