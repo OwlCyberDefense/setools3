@@ -343,9 +343,14 @@ void print_list (sefs_filesystem_data_t* fsd, uint32_t* list, uint32_t list_size
 			fsd->files[list[i]].context.role == OBJECT_R ? "object_r": "UNLABLED",
 			fsd->types[fsd->files[list[i]].context.type].name);
 
-		printf("%-40s %-10s %s\n", con, 
+		printf("%-40s %-10s %s", con, 
 			sefs_object_classes[fsd->files[list[i]].obj_class],
 			fsd->files[list[i]].path_names[0]);
+
+		if (fsd->files[list[i]].obj_class == LNK_FILE)
+			printf(" -> %s\n", fsd->files[list[i]].symlink_target);
+		else
+			printf("\n");
 			
 	}	
 }
