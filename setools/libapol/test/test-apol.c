@@ -172,10 +172,14 @@ static int render_relabel_result (ap_relabel_result_t * res, policy_t * policy, 
 
 static int test_relabel_analysis(policy_t *policy) 
 {
-	char ans[81], *temp = NULL;
-	int retv;
+	char ans[81], *temp = NULL, *str = NULL;
+	int retv, i;
 	ap_relabel_result_t *res = NULL;
 	int start_type = -1;
+	int *excluded_types = NULL;
+	int num_excluded_types = 0;
+	int *class_filter = NULL;
+	int class_filter_sz = 0;
 	unsigned char mode = 0, direction = 0;
 
 	if (!(res = (ap_relabel_result_t*)calloc(1, sizeof(ap_relabel_result_t)) ))
@@ -187,6 +191,9 @@ static int test_relabel_analysis(policy_t *policy)
 		printf("    1)  (Re)Print Results\n");
 		printf("    2)  Print List of Result Types\n");
 		printf("    3)  Print Results for One Target Only\n");
+		printf("    4)  Change Excluded Subject Types Filter\n");
+		printf("    5)  Change Object Class Filter\n");
+		printf("    6)  Print Curret Filters\n");
 		printf("    q)  Exit Relabel Analysis Submenu\n");
 		printf("\nCommand (\'m\' for menu): ");
 		fgets(ans, sizeof(ans), stdin);
@@ -235,7 +242,8 @@ static int test_relabel_analysis(policy_t *policy)
 				}
 			}
 			printf("Performing Query ...\n");
-			retv = ap_relabel_query(start_type, mode, direction, res, policy);
+			retv = ap_relabel_query(start_type, mode, direction, excluded_types, 
+				num_excluded_types, class_filter, class_filter_sz, res, policy);
 			if (retv)
 				printf("Error!\n");
 			else 
@@ -267,12 +275,88 @@ static int test_relabel_analysis(policy_t *policy)
 			if (retv) 
 				printf("Error printing results!\n");
 			break;
+		case '4':
+			printf("1: Add Type\n");
+			printf("2: Clear Filter\n");
+			printf("Enter Choice: \n");
+			fgets(ans, sizeof(ans), stdin);
+			if (ans[0] == '1') {
+				printf("Enter Type:\n");
+				fgets(ans, sizeof(ans), stdin);
+				temp = strstr(ans, "\n");
+				if (temp)
+					*temp = '\0';
+				i = get_type_idx(ans, policy);
+				if (i == -1) {
+					printf("Invalid type\n");
+				} else {
+					retv = add_i_to_a(i, &num_excluded_types, &excluded_types);
+					if (retv == -1)
+						printf("Error adding type\n");
+				}
+			} else if (ans[0] == '2') {
+				free(excluded_types);
+				excluded_types = NULL;
+				num_excluded_types = 0;
+			}
+			break;
+		case '5':
+			printf("1: Add Object Class\n");
+			printf("2: Clear Filter\n");
+			printf("Enter Choice: \n");
+			fgets(ans, sizeof(ans), stdin);
+			if (ans[0] == '1') {
+				printf("Enter Object Class:\n");
+				fgets(ans, sizeof(ans), stdin);
+				temp = strstr(ans, "\n");
+				if (temp)
+					*temp = '\0';
+				i = get_obj_class_idx(ans, policy);
+				if (i == -1) {
+					printf("Invalid object class\n");
+				} else {
+					retv = add_i_to_a(i, &class_filter_sz, &class_filter);
+					if (retv == -1)
+						printf("Error adding ojbect class\n");
+				}
+			} else if (ans[0] == '2') {
+				free(class_filter);
+				class_filter = NULL;
+				class_filter_sz = 0;
+			}
+			break;
+		case '6':
+			printf("\nExcluded Subject Types:\n");
+			if (!excluded_types || num_excluded_types < 1) {
+				num_excluded_types = 0;
+				printf("<none>\n");
+			}
+			for (i = 0; i < num_excluded_types; i++) {
+				get_type_name(excluded_types[i], &str, policy);
+				printf("%s\n", str);
+				free(str);
+				str = NULL;
+			}
+			printf("\nObject Class Filter:\n");
+			if (!class_filter || class_filter_sz < 1) {
+				class_filter_sz = 0;
+				printf("<none>\n");
+			}
+			for (i = 0; i < class_filter_sz; i++) {
+				get_obj_class_name(class_filter[i], &str, policy);
+				printf("%s\n", str);
+				free(str);
+				str = NULL;
+			}
+			break;
 		case 'q':
 		case 'Q':
 		case 'x':
 		case 'X':
 			ap_relabel_result_destroy(res);
 			free(res);
+			free(excluded_types);
+			free(class_filter);
 			return 0;
 		case 'm':
 		case 'M':
