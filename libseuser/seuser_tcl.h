@@ -50,6 +50,8 @@ int Seuser_UserRoles(ClientData clientData, Tcl_Interp *interp, int argc, char *
 int Seuser_Commit(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[]);
 int Seuser_Get_System_Version(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[]);
 int Seuser_GetVersion(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[]);
+int Seuser_LabelHomeDirectory(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[]);
+
 
 #endif
 
