@@ -12,6 +12,7 @@
 #include "auditlog.h"
 #include "auditlogmodel.h"
 #include "filter_window.h"
+#include "preferences.h"
 #include <libapol/policy.h>
 #include <gtk/gtk.h>
 #include <glade/glade.h>
@@ -22,6 +23,21 @@
 #endif
 #ifndef TIME_SIZE
   #define TIME_SIZE 64
+#endif
+
+#define SEAUDIT_GUI_VERSION_STRING "1.1"
+
+/* DEFAULT_POLICY and DEFAULT_LOG should be defined in the make environment */
+#ifndef DEFAULT_POLICY
+	#define DEFAULT_POLICY "/etc/security/selinux/src/policy.conf"
+#endif
+
+#ifndef DEFAULT_LOG
+	#define DEFAULT_LOG "/var/log/messages"
+#endif
+
+#ifndef INSTALL_LIBDIR
+        #define INSTALL_LIBDIR "/usr/lib/apol"
 #endif
 
 typedef void(*seaudit_callback_t)(void *user_data);
@@ -42,19 +58,6 @@ typedef struct registered_callback {
 #define LOG_FILTERED_SIGNAL  LOG_FILTERED_CALLBACK
 } registered_callback_t;
 
-typedef struct seaudit_conf {
-	char **recent_log_files;
-	int num_recent_log_files;
-	char **recent_policy_files;
-	int num_recent_policy_files;
-	char *default_policy_file;
-	char *default_log_file;
-  	bool_t column_visibility[NUM_FIELDS];
-	bool_t real_time_log;
-/* interval in milli seconds */
-#define LOG_UPDATE_INTERVAL 1000
-	guint timeout_key;
-} seaudit_conf_t;
 
 typedef struct seaudit {
 	policy_t *cur_policy;
@@ -65,6 +68,9 @@ typedef struct seaudit {
 	GtkTextBuffer *policy_text;
 	GList *callbacks;
 	FILE *log_file_ptr;
+/* interval in milli seconds */
+#define LOG_UPDATE_INTERVAL 1000
+	guint timeout_key;
 	seaudit_conf_t seaudit_conf;
 	GString *policy_file;
 	GString *audit_log_file;
@@ -72,12 +78,6 @@ typedef struct seaudit {
 } seaudit_t;
 
 extern seaudit_t *seaudit_app;
-
-
-typedef struct user_data_items {
-	void *user_data_1;
-	void *user_data_2;
-} user_data_items_t;
 
 seaudit_t *seaudit_init(void);
 void seaudit_destroy(seaudit_t *seaudit_app);
@@ -93,19 +93,11 @@ void seaudit_callback_signal_emit(unsigned int type);
 #define policy_load_callback_register(function, user_data) seaudit_callback_register(function, user_data, POLICY_LOADED_CALLBACK)
 #define policy_load_callback_remove(function, user_data) seaudit_callback_remove(function, user_data, POLICY_LOADED_CALLBACK) 
 #define policy_load_signal_emit() seaudit_callback_signal_emit(POLICY_LOADED_SIGNAL)
-
 #define log_load_callback_register(function, user_data) seaudit_callback_register(function, user_data, LOG_LOADED_CALLBACK)
 #define log_load_callback_remove(function, user_data) seaudit_callback_remove(function, user_data, LOG_LOADED_CALLBACK) 
 #define log_load_signal_emit() seaudit_callback_signal_emit(LOG_LOADED_SIGNAL)
-
 #define log_filtered_callback_register(function, user_data) seaudit_callback_register(function, user_data, LOG_FILTERED_CALLBACK)
 #define log_filtered_callback_remove(function, user_data) seaudit_callback_remove(function, user_data, LOG_FILTERED_CALLBACK) 
 #define log_filtered_signal_emit() seaudit_callback_signal_emit(LOG_FILTERED_SIGNAL)
-
-/* utils */
-void show_wait_cursor(GtkWidget *widget);
-void clear_wait_cursor(GtkWidget *widget);
-void message_display(GtkWindow *parent, GtkMessageType msg_type, const char *msg);
-void update_status_bar(void *user_data);
 
 #endif
