@@ -1,6 +1,6 @@
 CHANGE LOG, SE Linux TOOLS (setools)
 =======================================================
-June 25, 2004, Version 1.4.1
+July 7, 2004, Version 1.4.1
 
 setools:
 	Added the install target install-dev to install the
