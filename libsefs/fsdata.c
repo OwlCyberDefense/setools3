@@ -73,12 +73,12 @@ int sefs_get_file_class(const struct stat *statptr)
 int find_mount_points(char *dir, char **mounts, int *num_mounts, int rw) 
 {
 	FILE *mtab = NULL;
-	int len = 10;
+	int nel = 0, len = 10;
 	struct mntent *entry;
 	char *token, *fs, *fs_orig = NULL;
 	
 	if ((mtab = fopen("/etc/mtab", "r")) == NULL) {
-		printf(stderr, "Could not open /etc/mtab for reading.\n");
+		fprintf(stderr, "Could not open /etc/mtab for reading.\n");
 		return -1;
 	}
 
@@ -89,20 +89,21 @@ int find_mount_points(char *dir, char **mounts, int *num_mounts, int rw)
 	
 	while ((entry = getmntent(mtab))) {
 
-		if ((strcmp(strstr(entry->mnt_dir, dir), entry->mnt_dir)) == 0)
+printf("trying %s, my dir is %s, strstr is %s\n", entry->mnt_dir, dir, strstr(entry->mnt_dir, dir));
+		if (strstr(entry->mnt_dir, dir) != entry->mnt_dir)
 			continue;
+
+		nel = strlen(dir);
+		if (dir[nel - 1] == '/')
+			dir[nel - 1] = '\0';
 				
 		if (strcmp(entry->mnt_dir, dir) == 0)
 			continue;
 
-		/* make sure we don't add ourselves to the mountpoint list */
-		if (strcmp(dir[strlen(dir)-1], "/") == 0) 
-			if (strncmp(entry->mnt_dir, dir, strlen(dir) - 1))
-				continue;
-
 		if (rw)
 			if (hasmntopt(entry, MNTOPT_RW) == NULL)
 				continue;
+
 
 		if(*num_mounts >= len) {
 			len *= 2;
@@ -119,15 +120,17 @@ int find_mount_points(char *dir, char **mounts, int *num_mounts, int rw)
 			fclose(mtab);
 			return -1;
 		}
-
+printf("success! on %s\n", entry->mnt_dir);		
 		while((token = strtok(fs, " \t")) != NULL) {
 			if (fs) fs = NULL; /* for subsequent strtok calls */
 			if(!strcmp(token, entry->mnt_type)) {
+printf("entry %s matched %s\n", entry->mnt_dir, token);
 				if ((mounts[(*num_mounts)++] = strdup(entry->mnt_dir)) == NULL) {
 					fprintf(stderr, "Out of memory.\n");
 					fclose(mtab);
 					return -1;
 				}
+printf("%s\n",mounts[0]);
 				break;
 			}
 		}
