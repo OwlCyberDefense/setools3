@@ -2,7 +2,7 @@ SELinux Tools (setools), version 1.2
 by Tresys Technology, LLC
 (selinux@tresys.com, www.tresys.com/selinux)
 
-January 12, 2004
+February 04, 2004
 
 BUILDING AND INSTALLING NOTES AND WARNINGS
 
@@ -120,9 +120,9 @@ using are:
 
 NOTE: You may run the tools using a pre-1.4.1 BWidgets package, 
 however, you may experience problems. These tools have been tested 
-using BWidgets 1.4.1 and 1.6.0. See TESTING INFORMATION in KNOWN-BUGS for
-more  information on what platforms and configurations these tools have
-been tested against.
+using the latest BWidgets packages starting from version 1.4.1. 
+See TESTING INFORMATION in KNOWN-BUGS for more information on what 
+platforms and configurations these tools have been tested against.
 
 Once you  have downloaded the correct version of BWidgets, then you 
 can install it in your TCL directory. For instance, if you have 

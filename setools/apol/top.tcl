@@ -278,13 +278,13 @@ proc ApolTop::set_Focus_to_Text { tab } {
 			ApolTop::set_Focus_to_Text [$rules_nb raise]
 		} \
 		$ApolTop::types_tab {
-			ApolTypes::set_Focus_to_Text
+			Apol_Types::set_Focus_to_Text
 		} \
 		$ApolTop::terules_tab {
 			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag normal 
-			set raisedPage [$ApolTE::notebook_results raise]
+			set raisedPage [$Apol_TE::notebook_results raise]
 			if {$raisedPage != ""} {
-				ApolTE::set_Focus_to_Text $raisedPage
+				Apol_TE::set_Focus_to_Text $raisedPage
 			} else {
 				focus [$ApolTop::rules_nb getframe $ApolTop::terules_tab]
 			}
@@ -579,7 +579,7 @@ proc ApolTop::load_query_info {} {
 			}
 			break
 		}
-	
+
 		switch -- $query_id \
 	    		$analysis_tab {
 	    			set rt [catch {${analysis_tab}::load_query_options $f $mainframe} err]
@@ -921,10 +921,11 @@ proc ApolTop::create { } {
 	[$mainframe getmenu pmap_menu] insert 0 command -label "Edit perm map... (Not loaded)" -command "Apol_Perms_Map::display_perm_mappings_Dlg"
 	[$mainframe getmenu pmap_menu] insert 0 separator
 	[$mainframe getmenu pmap_menu] insert 0 command -label "Load Perm Map from MLS file..." -command "ApolTop::load_perm_map_mlsDlg"
-	[$mainframe getmenu pmap_menu] insert 0 command -label "Load Default Perm Map" -command "ApolTop::load_default_perm_map_Dlg"
 	[$mainframe getmenu pmap_menu] insert 0 command -label "Load Perm Map from file..." -command "ApolTop::load_perm_map_fileDlg"
+	[$mainframe getmenu pmap_menu] insert 0 separator
+	[$mainframe getmenu pmap_menu] insert 0 command -label "Load Default Perm Map" -command "ApolTop::load_default_perm_map_Dlg"
 	$mainframe addindicator -textvariable ApolTop::policyConf_lineno -width 14
-	$mainframe addindicator -textvariable ApolTop::polstats -width 85
+	$mainframe addindicator -textvariable ApolTop::polstats -width 88
 	$mainframe addindicator -textvariable ApolTop::polversion -width 19 
 	
 	# Disable menu items since a policy is not yet loaded.
@@ -948,12 +949,12 @@ proc ApolTop::create { } {
 	set components_nb [NoteBook $components_frame.components_nb]
 	set rules_nb [NoteBook $rules_frame.rules_nb]
 	
-	ApolTypes::create $components_nb
+	Apol_Types::create $components_nb
 	Apol_Class_Perms::create $components_nb
 	Apol_Roles::create $components_nb
 	Apol_Users::create $components_nb
 	Apol_Initial_SIDS::create $components_nb
-	ApolTE::create $rules_nb
+	Apol_TE::create $rules_nb
 	Apol_RBAC::create $rules_nb
 	
 	$components_nb compute_size
@@ -1619,8 +1620,8 @@ proc ApolTop::closePolicy {} {
 	wm title . "SE Linux Policy Analysis"
 	Apol_Perms_Map::close $ApolTop::mainframe 
 	Apol_Class_Perms::close
-	ApolTypes::close
-	ApolTE::close
+	Apol_Types::close
+	Apol_TE::close
 	Apol_Roles::close
         Apol_RBAC::close
         Apol_Users::close
@@ -1717,8 +1718,8 @@ proc ApolTop::openPolicyFile {file recent_flag} {
 	
 	ApolTop::showPolicyStats
 	Apol_Class_Perms::open
-	ApolTypes::open	
-	ApolTE::open
+	Apol_Types::open	
+	Apol_TE::open
 	Apol_Roles::open
 	Apol_RBAC::open
 	Apol_Users::open

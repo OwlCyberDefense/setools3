@@ -381,7 +381,7 @@ static iflow_query_t* set_transitive_query_args(Tcl_Interp *interp, char *argv[]
 			return NULL;
 		}
 		free(end_type);
-		rt = get_type_idxs_by_regex(&types, &num, &reg, policy);
+		rt = get_type_idxs_by_regex(&types, &num, &reg, FALSE, policy);
 		if(rt < 0) {
 			Tcl_AppendResult(interp, "Error searching types\n", (char *) NULL);
 			iflow_query_destroy(iflow_query);
@@ -1807,7 +1807,7 @@ int Apol_GetNames(ClientData clientData, Tcl_Interp * interp, int argc, char *ar
 			}
 		} 
 		else {
-			rt = get_type_idxs_by_regex(&idx_array, &num, &reg, policy);
+			rt = get_type_idxs_by_regex(&idx_array, &num, &reg, TRUE, policy);
 			if(rt < 0) {
 				Tcl_AppendResult(interp, "Error searching types\n", (char *) NULL);
 				return TCL_ERROR;
@@ -2064,6 +2064,14 @@ int Apol_SearchTErules(ClientData clientData, Tcl_Interp *interp, int argc, char
 
 	use_1 = getbool(argv[10]);
 	if(use_1) {
+                if(argv[12] == NULL || str_is_only_white_space(argv[12])) {
+		        Tcl_AppendResult(interp, "empty source type/attrib!", (char *) NULL);
+		        return TCL_ERROR;
+	        }
+		if(!is_valid_str_sz(argv[12])) {
+			Tcl_AppendResult(interp, "Source type/attrib string too large", (char *) NULL);
+			return TCL_ERROR;
+		}
 		if(strcmp(argv[13], "source") == 0) 
 			query.any = FALSE;
 		else if(strcmp(argv[13], "either") == 0)
@@ -2072,58 +2080,67 @@ int Apol_SearchTErules(ClientData clientData, Tcl_Interp *interp, int argc, char
 			Tcl_AppendResult(interp, "Invalid which option for source parameter", (char *) NULL);
 			return TCL_ERROR;			
 		}
-		if(!is_valid_str_sz(argv[12])) {
-			Tcl_AppendResult(interp, "Source type/attrib string too large", (char *) NULL);
-			return TCL_ERROR;
-		}
+		
 		query.ta1.ta = (char *)malloc(strlen(argv[12]) + 1);
 		if(query.ta1.ta == NULL) {
 			Tcl_AppendResult(interp, "out of memory", (char *) NULL);
 			return TCL_ERROR;
 		}
 		strcpy(query.ta1.ta, argv[12]);	/* The ta string */
-		/* If regex, need to get the list indicator */
-		if(query.use_regex) {
-			if(strcmp("types", argv[23])  == 0) 
-				query.ta1.t_or_a = IDX_TYPE;
-			else	if(strcmp("attribs", argv[23]) == 0) 
-				query.ta1.t_or_a = IDX_ATTRIB;
-			else if((strcmp("both", argv[23]) == 0) ||( strcmp("either", argv[23]) == 0)) 
-				query.ta1.t_or_a = IDX_BOTH;
-			else {
-				sprintf(tmpbuf, "ta1_opt value invalid: %s", argv[23]);
-				free_teq_query_contents(&query);
-				Tcl_AppendResult(interp, tmpbuf, (char*) NULL);
-				return TCL_ERROR;
-			}
-		}
+		
+       	        if(strcmp("types", argv[23])  == 0) 
+		        query.ta1.t_or_a = IDX_TYPE;
+	        else if(strcmp("attribs", argv[23]) == 0) 
+		        query.ta1.t_or_a = IDX_ATTRIB;
+   	        else if((strcmp("both", argv[23]) == 0) ||( strcmp("either", argv[23]) == 0)) 
+		        query.ta1.t_or_a = IDX_BOTH;
+	        else {
+		        sprintf(tmpbuf, "ta1_opt value invalid: %s", argv[23]);
+ 		        free_teq_query_contents(&query);
+		        Tcl_AppendResult(interp, tmpbuf, (char*) NULL);
+		        return TCL_ERROR;
+	        }
 	}
 	use_2 = (getbool(argv[14]) & ! query.any);
 	if(use_2) {
+	        if(argv[16] == NULL || str_is_only_white_space(argv[16])) {
+		        Tcl_AppendResult(interp, "empty target type/attrib!", (char *) NULL);
+		        return TCL_ERROR;
+	        }
+		if(!is_valid_str_sz(argv[16])) {
+			Tcl_AppendResult(interp, "Target type/attrib string too large", (char *) NULL);
+			return TCL_ERROR;
+		}
 		query.ta2.ta = (char *)malloc(strlen(argv[16]) + 1);
 		if(query.ta2.ta == NULL) {
 			Tcl_AppendResult(interp, "out of memory", (char *) NULL);
 			return TCL_ERROR;
 		}
 		strcpy(query.ta2.ta, argv[16]);	/* The ta string */
-		
-		if(query.use_regex) {
-			if(strcmp("types", argv[24])  == 0) 
-				query.ta2.t_or_a = IDX_TYPE;
-			else if(strcmp("attribs", argv[24]) == 0) 
-				query.ta2.t_or_a = IDX_ATTRIB;
-			else if((strcmp("both", argv[24]) == 0) || ( strcmp("either", argv[24]) == 0)) 
-				query.ta2.t_or_a = IDX_BOTH;
-			else {
-				sprintf(tmpbuf, "ta2_opt value invalid: %s", argv[24]);
-				free_teq_query_contents(&query);
-				Tcl_AppendResult(interp, tmpbuf, (char*) NULL);		
-				return TCL_ERROR;
-			}
+
+		if(strcmp("types", argv[24])  == 0) 
+			query.ta2.t_or_a = IDX_TYPE;
+		else if(strcmp("attribs", argv[24]) == 0) 
+			query.ta2.t_or_a = IDX_ATTRIB;
+		else if((strcmp("both", argv[24]) == 0) || ( strcmp("either", argv[24]) == 0)) 
+			query.ta2.t_or_a = IDX_BOTH;
+		else {
+			sprintf(tmpbuf, "ta2_opt value invalid: %s", argv[24]);
+			free_teq_query_contents(&query);
+			Tcl_AppendResult(interp, tmpbuf, (char*) NULL);		
+			return TCL_ERROR;
 		}
 	}
 	use_3 = getbool(argv[17]) && !query.any;
 	if(use_3) {
+	        if(argv[19] == NULL || str_is_only_white_space(argv[19])) {
+		        Tcl_AppendResult(interp, "empty default type!", (char *) NULL);
+		        return TCL_ERROR;
+	        }
+		if(!is_valid_str_sz(argv[19])) {
+			Tcl_AppendResult(interp, "Default type string too large", (char *) NULL);
+			return TCL_ERROR;
+		}
 		query.ta3.ta = (char *)malloc(strlen(argv[19]) + 1);
 		if(query.ta3.ta == NULL) {
 			Tcl_AppendResult(interp, "out of memory", (char *) NULL);
@@ -3463,7 +3480,7 @@ int Apol_DirectInformationFlowAnalysis(ClientData clientData, Tcl_Interp *interp
 			return TCL_ERROR;
 		}
 		free(end_type);
-		rt = get_type_idxs_by_regex(&types, &num, &reg, policy);
+		rt = get_type_idxs_by_regex(&types, &num, &reg, FALSE, policy);
 		if(rt < 0) {
 			Tcl_AppendResult(interp, "Error searching types\n", (char *) NULL);
 			iflow_query_destroy(iflow_query);

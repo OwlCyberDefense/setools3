@@ -21,7 +21,7 @@ SHELL = /bin/sh
 
 seuser: $(CMD-OBJ) 
 	$(CC) -o $@ $(CMD-OBJ) $(LINKFLAGS) $(LIBS)
-	
+
 seuserx: $(GUI-OBJ) se_user.tcl
 	$(CC) $(TCL_LIBINC) -o $@ $(GUI-OBJ) $(LINKFLAGS) $(TCL_LIBS)
 
@@ -31,7 +31,7 @@ se_user.tcl: $(TCL-FILES)
 
 tmp.tcl: $(TCL-STRIP-FILES)
 	cat $(TCL-STRIP-FILES) > $@
-	# compact it by removing comments and empty lines
+        # compact it by removing comments and empty lines
 	@perl -p -i -e 's/^\s*(\#[^!]*){0,1}$$//s' $@ 
 
 %.o:  %.c 
@@ -39,13 +39,13 @@ tmp.tcl: $(TCL-STRIP-FILES)
 
 $(LIBAPOL): 
 	cd ../ ; $(MAKE) libapol
-	
+
 $(LIBAPOL-TCL): 
 	cd ../ ; $(MAKE) libapol-tcl
 
 $(LIBSEUSER):
 	cd ../ ; $(MAKE) libseuser
-	
+
 $(LIBSEUSER-TCL):
 	cd ../ ; $(MAKE) libseuser-tcl
 
@@ -74,7 +74,7 @@ sys-install: seuser seuserx se_user.tcl
 #
 # NOTE The following targets assume selinux and the chcon utility
 seuser-policy:
-	@if [ -e /etc/security/selinux/src/policy/policy.conf ]; then \
+	@if [ -e $(POLICY_SRC_DIR)/policy/Makefile ]; then \
 		install -d $(TE_PROGS_DIR); \
 		install -d $(FC_PROGS_DIR); \
 		install -m 644 -Z system_u:object_r:policy_src_t ../policy/seuser.te $(TE_PROGS_DIR); \
@@ -98,7 +98,7 @@ policy-install: seuser-policy
 
 install-nogui: seuser policy-install
 	install -d $(BINDIR); 
-	@if [ -e /etc/security/selinux/src/policy/policy.conf ]; then \
+	@if [ -e $(POLICY_SRC_DIR)/policy/Makefile ]; then \
 		install -m 755 -Z system_u:object_r:seuser_exec_t seuser $(BINDIR); \
 		install -m 644 -Z system_u:object_r:seuser_conf_t $(SEUSER_CONF_FILE) $(INSTALL_LIBDIR); \
 	else \

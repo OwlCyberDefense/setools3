@@ -3,10 +3,11 @@
 LIBAPOL		= ../lib/libapol.a
 LIBSEUSER	= ../lib/libseuser.a
 
+LIBSELINUX      = -lselinux
+
 INCLUDE		= -I.. -I../libapol
 
 SE_CMDS		= seinfo sesearch
-
 
 CFLAGS		+= -DDEFAULT_POLICY='"$(POLICY_SRC_FILE)"'
 CFLAGS  	+= -DSEINFO_VERSION_NUM='"$(shell cat SEINFO_VERSION)"'
@@ -18,9 +19,10 @@ all: $(SE_CMDS)
 
 seinfo: seinfo.o $(LIBAPOL)
 	$(CC) -o $@  seinfo.o $(LIBAPOL) $(LINKFLAGS) $(LIBS)
-	
+
 sesearch: sesearch.o $(LIBAPOL)
 	$(CC) -o $@ sesearch.o $(LIBAPOL) $(LINKFLAGS) $(LIBS)
+
 
 install: $(SE_CMDS)
 	install -m 755 $(SE_CMDS) $(BINDIR);
@@ -30,13 +32,13 @@ install: $(SE_CMDS)
 
 $(LIBAPOL): 
 	cd ../ ; $(MAKE) libapol
-	
+
 $(LIBAPOL-TCL): 
 	cd ../ ; $(MAKE) libapol-tcl
 
 $(LIBSEUSER):
 	cd ../ ; $(MAKE) libseuser
-	
+
 $(LIBSEUSER-TCL):
 	cd ../ ; $(MAKE) libseuser-tcl
 

@@ -71,6 +71,8 @@ namespace eval Sepct_Customize {
 	variable add_Dialog
     	variable cb_show_Filenames
     	variable add_Module_Dlg
+    	variable duplicate_mods_dlg
+    	set duplicate_mods_dlg .duplicate_mods_dlg
     	
     	# This is hard coded and shouldn't be changed
     	# see ::browse_text_widget proc below
@@ -137,6 +139,51 @@ proc Sepct_Customize::embed_checkbutton { te_file is_used } {
 	return $cb_name
 }
 
+###########################################################################################
+# ::display_duplicate_modules_Dlg
+# 	- Description: Displays a dialog listing the duplicate modules found.
+#
+proc Sepct_Customize::display_duplicate_modules_Dlg {duplicate_modules_list} {
+	variable duplicate_mods_dlg
+	
+	if {[winfo exists $duplicate_mods_dlg]} {
+		catch {destroy $duplicate_mods_dlg}
+	}
+	toplevel $duplicate_mods_dlg
+	wm title $duplicate_mods_dlg "Duplicate modules!"
+	wm protocol $duplicate_mods_dlg WM_DELETE_WINDOW "catch {destroy $duplicate_mods_dlg}"
+	
+     	set close_b [button $duplicate_mods_dlg.close -text "OK" -command "catch {destroy $duplicate_mods_dlg}" -width 10]
+     	set lbl_f [frame $duplicate_mods_dlg.lbl_f]
+     	set txt_f [frame $duplicate_mods_dlg.txt_f]
+	set sw_c [ScrolledWindow $txt_f.sw_c -auto none]
+	set dlg_txt [text [$sw_c getframe].dlg_txt -wrap none]
+	$sw_c setwidget $dlg_txt
+	
+	set lbl_img [label $lbl_f.img -justify left \
+		-image [Bitmap::get warning]]
+	set lbl_txt [label $lbl_f.txt -justify left \
+		-text "Duplicate modules were found in the program directory and have been ignored.\
+	\nPlease be aware that these files will be overwritten when disabling the module.\
+	\nThe following are the duplicate modules found:"]
+		
+	$dlg_txt insert end "$duplicate_modules_list\n"  
+	$dlg_txt configure -state disabled
+		
+	pack $close_b -side bottom -anchor center 
+	pack $lbl_f -side top -anchor nw -pady 4 -padx 4
+	pack $txt_f -side top -anchor nw -pady 4 -padx 4 -fill both -expand yes
+	pack $lbl_img -side left -anchor nw -expand yes -padx 2
+	pack $lbl_txt -side left -anchor nw -fill x -expand yes
+	pack $sw_c -side left -expand yes -fill both 
+	
+	wm geometry $duplicate_mods_dlg +30+40
+	focus -force $duplicate_mods_dlg
+	wm transient $duplicate_mods_dlg $Sepct::mainframe
+        catch {grab $duplicate_mods_dlg}
+   
+	return 0
+}
 
 ###########################################################################################
 # ::insert_ListBox_Items
@@ -150,16 +197,11 @@ proc Sepct_Customize::insert_ListBox_Items { } {
 	variable show_Filenames
 	
 	# Now, we insert all sorted items into the listbox widget
+	set duplicate_modules ""
 	foreach te_file $all_Modules { 
 		if {[$list_b exists $te_file]} {
-			tk_messageBox \
-			     -icon warning \
-			     -type ok \
-			     -title "Duplicate modules!" \
-			     -message \
-				"The module $te_file already exists and will be ignored. Please be aware that \
-				this file will be overwritten when disabling the module."
-			continue   
+			set duplicate_modules [append duplicate_modules "$te_file\n"]
+			continue
 		}
 		# get descriptive name
 		set is_used [Sepct_Customize::is_module_used $te_file]
@@ -174,6 +216,11 @@ proc Sepct_Customize::insert_ListBox_Items { } {
 		 	 -data $dscp_name \
 		 	 -window [Sepct_Customize::embed_checkbutton $te_file $is_used ]  
 	} 
+	
+	if {$duplicate_modules != ""} {
+		Sepct_Customize::display_duplicate_modules_Dlg $duplicate_modules
+	}
+		
 	return 0
 }
 

@@ -63,10 +63,10 @@ TESTING INFORMATION
 
 Operating Systems: Red Hat Linux 7.2/9.0/Fedora Core 1
 SELinux versions: 2.4, 2.6
-SELinux Policy versions: 12, 15 (with and without MLS support)
+SELinux Policy versions: 12, 15, and 16 (with and without MLS support)
 TCL/TK versions: 8.3, 8.4
-BWidget versions: 1.4, 1.6
-Desktop managers: Gnome, KDE, Ximiam, fvwm 
+BWidget versions: 1.4, 1.6, 1.7
+Desktops: Gnome, KDE, Ximiam Gnome, fvwm 
 
 These tools will likely have some bugs of which we are currently unaware.  
 Please report any new bugs or comments to selinux@tresys.com.  Thank you 
