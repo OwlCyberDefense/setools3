@@ -19,6 +19,7 @@ static GtkTreeViewColumn *seaudit_window_create_column(GtkTreeView *view, const 
 						       int max_width, bool_t visibility[]);
 static void seaudit_window_on_log_column_clicked(GtkTreeViewColumn *column, gpointer user_data);
 static void seaudit_window_on_log_row_activated(GtkTreeView *treeview, GtkTreePath *path, GtkTreeViewColumn *col, gpointer user_data);
+static void seaudit_window_close_view(GtkButton *button, seaudit_window_t *window);
 
 /*
  * seaudit_window_t public functions
@@ -28,6 +29,7 @@ seaudit_window_t* seaudit_window_create(audit_log_t *log, bool_t column_visibili
 	seaudit_window_t *window;
 	GString *path; 
 	char *dir;
+	GtkWidget *vbox;
 
 	dir = find_file("seaudit.glade");
 	if (!dir){
@@ -46,8 +48,12 @@ seaudit_window_t* seaudit_window_create(audit_log_t *log, bool_t column_visibili
 	memset(window, 0, sizeof(seaudit_window_t));
 	window->xml = glade_xml_new(path->str, NULL, NULL);
 	window->window = GTK_WINDOW(glade_xml_get_widget(window->xml, "TopWindow"));
-	window->notebook = GTK_NOTEBOOK(glade_xml_get_widget(window->xml, "TopNotebook"));
+	window->notebook = GTK_NOTEBOOK(gtk_notebook_new());
+	vbox = glade_xml_get_widget(window->xml, "NotebookVBox");
+	gtk_container_add(GTK_CONTAINER(vbox), GTK_WIDGET(window->notebook));
+	gtk_widget_show(GTK_WIDGET(window->notebook));
 	seaudit_window_add_new_view(window, log, column_visibility, "default");
+
 	/* connect signal handlers */
 	glade_xml_signal_autoconnect(window->xml);
 	return window;
@@ -56,9 +62,10 @@ seaudit_window_t* seaudit_window_create(audit_log_t *log, bool_t column_visibili
 void seaudit_window_add_new_view(seaudit_window_t *window, audit_log_t *log, bool_t column_visibility[], const char *view_name)
 {
 	seaudit_filtered_view_t *view;
-	GtkWidget *scrolled_window, *tree_view;
+	GtkWidget *scrolled_window, *tree_view, *button, *label;
 	gint page_index;
-
+	GtkWidget *hbox;
+ 
 	if (window == NULL)
 		return;
 	if (window->window == NULL || window->notebook == NULL || window->xml == NULL)
@@ -70,8 +77,17 @@ void seaudit_window_add_new_view(seaudit_window_t *window, audit_log_t *log, boo
 	g_signal_connect(G_OBJECT(tree_view), "row_activated", G_CALLBACK(seaudit_window_on_log_row_activated), NULL);
 	gtk_container_add(GTK_CONTAINER(scrolled_window), tree_view);
 	seaudit_window_create_list(GTK_TREE_VIEW(tree_view), column_visibility);
+
 	view = seaudit_filtered_view_create(log, GTK_TREE_VIEW(tree_view));
-	gtk_notebook_append_page(window->notebook, GTK_WIDGET(scrolled_window), NULL);
+	hbox = gtk_hbox_new(FALSE, 5);
+	button = gtk_button_new_with_label("x");
+	g_signal_connect(G_OBJECT(button), "pressed", G_CALLBACK(seaudit_window_close_view), window);
+	label = gtk_label_new(view_name);
+	gtk_box_pack_start(GTK_BOX(hbox), label, TRUE, TRUE, 5);
+	gtk_box_pack_end(GTK_BOX(hbox), button, FALSE, FALSE, 5);
+	gtk_notebook_append_page(window->notebook, GTK_WIDGET(scrolled_window), hbox);
+	gtk_widget_show(label);
+	gtk_widget_show(button);
 	gtk_widget_show(scrolled_window);
 	gtk_widget_show(tree_view);
 	page_index = gtk_notebook_get_n_pages(window->notebook)-1;
@@ -160,6 +176,34 @@ static GtkTreeViewColumn *seaudit_window_create_column(GtkTreeView *view, const 
 	g_signal_connect_after(G_OBJECT(column), "clicked", G_CALLBACK(seaudit_window_on_log_column_clicked),
 			       view);
 	return column;
+}
+
+static void seaudit_window_close_view(GtkButton *button, seaudit_window_t *window)
+{
+	seaudit_filtered_view_t *curent_view;
+	GList *item;
+	gint index;
+
+	if (!window)
+		return;
+
+	if (gtk_notebook_get_n_pages(window->notebook) <= 1)
+		return;
+
+	curent_view = seaudit_window_get_current_view(window);
+	g_assert(curent_view);
+	index = curent_view->notebook_index;
+	item = g_list_find(window->views, curent_view);
+	window->views = g_list_remove_link(window->views, item);
+	seaudit_filtered_view_destroy(item->data);
+	g_list_free(item);
+	gtk_notebook_remove_page(window->notebook, index);
+	for (item = window->views; item != NULL; item = g_list_next(item)) {
+		curent_view = (seaudit_filtered_view_t*)item->data;
+		if (curent_view->notebook_index >= index)
+			curent_view->notebook_index--;
+		
+	}
 }
 
 static int seaudit_window_create_list(GtkTreeView *view, bool_t visibility[])
