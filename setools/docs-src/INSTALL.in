@@ -18,7 +18,8 @@ awish           Our customized version of the Tk wish interpreter
 docs-src	Repository for generating setools documentation.
 libapol         The main policy analysis library
 libseaudit	The seaudit support library 
-libseuser       The seuser support library	
+libseuser       The seuser support library
+libsefs		The selinux filesystem database library	
 seaudit 	The audit log analysis tool (seaudit)
 secmds		The setools command line tools (seinfo, sesearch, 
 		findcon, replcon)

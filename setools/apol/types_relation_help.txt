@@ -1,6 +1,6 @@
 AN OVERVIEW OF TYPES RELATIONSHIP ANALYSIS
-apol, version 1.4
-August 10, 2004
+apol, version 1.4.1
+October 21, 2004
 selinux@tresys.com
 
 
