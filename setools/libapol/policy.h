@@ -478,6 +478,7 @@ int get_attrib_types(int attrib, int *num_types, int **types, policy_t *policy);
 #define is_valid_cond_bool_idx(idx, policy) (idx >= 0 && idx < policy->num_cond_bools)
 int get_cond_bool_idx(char *name, policy_t *policy);
 int set_cond_bool_val(int bool, bool_t val, policy_t *policy);
+int get_cond_bool_val(char *name, policy_t *policy);
 int get_cond_bool_name(int idx, char **name, policy_t *policy);
 
 /* users */
