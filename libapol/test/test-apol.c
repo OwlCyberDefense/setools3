@@ -36,6 +36,7 @@ static int display_policy_stats(policy_t *p)
 	printf("\nCurrent policy Statics:\n");
 	printf("     Classes:            %d\n", p->num_obj_classes);
 	printf("     Permissions:        %d\n", p->num_perms);
+	printf("     Initial Sids:       %d\n", p->num_initial_sids);
 	printf("     Attributes:         %d\n", p->num_attribs);
 	printf("     Types:              %d\n", p->num_types);
 	printf("     Type Aliases:       %d\n", p->num_aliases);
@@ -427,6 +428,7 @@ int menu() {
 	printf("3)  analyze direct information flows\n");
 	printf("4)  test regex type name matching\n");
 	printf("5)  test transitive inflormation flows\n");
+	printf("6)  display initial SIDs and contexts\n");
 	printf("\n");
 	printf("r)  re-load policy with options\n");
 	printf("s)  display policy statics\n");
@@ -752,6 +754,79 @@ int main(int argc, char *argv[])
 
 			iflow_transitive_destroy(answers);
 			iflow_query_destroy(query);
+			break;
+		}
+		case '6':
+		{
+			int i;
+			char *str, *user = NULL, *role = NULL, *type= NULL;
+			bool_t search = FALSE;
+			
+			printf("Do you want to enter search criteria [n]?:  ");
+			fgets(ans, sizeof(ans), stdin);
+			fix_string(ans, sizeof(ans));
+			if(ans[0] =='y' || ans[0] == 'Y') 
+				search = TRUE;
+				
+			if(search) {
+				int *isids = NULL, num_isids;
+				ans[0] = '\0';
+				printf("     User [none]:  ");
+				fgets(ans, sizeof(ans), stdin);
+				fix_string(ans, sizeof(ans));
+				if(ans[0] != '\0') {
+					user = (char *)malloc(strlen(ans) + 1);
+					strcpy(user, ans);
+				}
+				ans[0] = '\0';
+				printf("     Role [none]:  ");
+				fgets(ans, sizeof(ans), stdin);
+				fix_string(ans, sizeof(ans));
+				if(ans[0] != '\0') {
+					role = (char *)malloc(strlen(ans) + 1);
+					strcpy(role, ans);
+				}
+				ans[0] = '\0';
+				printf("     Type [none]:  ");
+				fgets(ans, sizeof(ans), stdin);
+				fix_string(ans, sizeof(ans));
+				if(ans[0] != '\0') {
+					type = (char *)malloc(strlen(ans) + 1);
+					strcpy(type, ans);
+				}
+				rt = search_initial_sids_context(&isids, &num_isids, user, role, type, policy);
+				if( rt != 0) {
+					fprintf(stderr, "Problem searching initial SID contexts\n");
+					break;
+				}
+				printf("\nMatching Initial SIDs (%d)\n\n", num_isids);
+				for(i = 0; i < num_isids; i++) {
+					printf("%20s : ", policy->initial_sids[isids[i]].name);
+					str = re_render_security_context(policy->initial_sids[isids[i]].scontext, policy);
+					if(str == NULL) {
+						fprintf(stderr, "\nProblem rendering security context for %dth initial SID.\n", isids[i]);
+						break;
+					}
+					printf("%s\n", str);
+					free(str);
+				}
+				free(isids);
+
+			}
+			else {
+				printf("Initial SIDs (%d)\n\n", policy->num_initial_sids);
+				for(i = 0; i < policy->num_initial_sids; i++) {
+					printf("%20s : ", policy->initial_sids[i].name);
+					str = re_render_security_context(policy->initial_sids[i].scontext, policy);
+					if(str == NULL) {
+						fprintf(stderr, "\nProblem rendering security context for %dth initial SID.\n", i);
+						break;
+					}
+					printf("%s\n", str);
+					free(str);
+				}
+			}
+			printf("\n");
 			break;
 		}
 		case 'f':
