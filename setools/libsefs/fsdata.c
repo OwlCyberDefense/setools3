@@ -35,7 +35,6 @@
 
 /* file tree walking commands */
 #define __USE_XOPEN_EXTENDED 1
-#define __USE_LARGEFILE64
 #include <ftw.h>
 #include <mntent.h>
 #include <policy.h>
