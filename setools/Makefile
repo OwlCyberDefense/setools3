@@ -195,6 +195,10 @@ rpm: bare
 	fi
 	cd ..; tar cfz setools-$(VER).tgz setools-$(VER); rpmbuild -tb setools-$(VER).tgz; 
 
+# Make all setools documentation
+docs:
+	cd docs-src; make docs
+	
 # test targets
 tests: test-seuser test-apol
 
