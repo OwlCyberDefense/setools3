@@ -1,6 +1,6 @@
 Audit Log Analysis Tool for Security Enhanced Linux
 seaudit, version 1.0
-December 18, 2003
+January 05, 2004
 selinux@tresys.com
 
 Overview:  
