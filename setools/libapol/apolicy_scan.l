@@ -30,6 +30,8 @@ ROLES |
 roles				{ return(ROLES); }
 TYPES |
 types				{ return(TYPES); }
+TYPEALIAS |
+typealias			{ return(TYPEALIAS); }
 BOOL |
 bool                            { return(BOOL); }
 IF |
@@ -166,5 +168,3 @@ int yywarn(char *msg)
 	fprintf(stderr, "\nwarning about the statement ending on line %ld (token '%s'): %s\n\n", policydb_lineno, yytext, msg);
 	return 0;
 }
-
-
