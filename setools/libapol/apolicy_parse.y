@@ -2608,7 +2608,6 @@ static rule_desc_t *define_cond_te_avtab(int rule_type)
 	}
 	if (rt < 0) 
 		return NULL;
-	(parse_policy->rule_cnt[rule_type])++;
 	
 	rule->rule_type = rule_type;
 	rule->idx = rt;
