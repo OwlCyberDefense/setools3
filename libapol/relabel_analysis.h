@@ -82,5 +82,6 @@ void apol_free_relabel_filter_data(relabel_filter_t *fltr);
 int apol_fill_filter_set (char *object_class, char *permission, relabel_filter_t *filter, policy_t *policy);
 int apol_do_relabel_analysis(relabel_set_t **sets, policy_t *policy);
 int apol_query_relabel_analysis(relabel_set_t *sets, int type, relabel_result_t *res, policy_t *policy, relabel_mode_t *mode, relabel_filter_t *filter);
+int apol_rules_per_domain(relabel_result_t *res, int domain, int **rules, int *num_rules, policy_t *policy) ;
 
 #endif /* __RELABEL_ANALYSIS_H_FILE__ */
