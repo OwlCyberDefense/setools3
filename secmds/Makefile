@@ -104,7 +104,7 @@ $(LIBSEUSER-TCL):
 	cd ../ ; $(MAKE) libseuser-tcl
 
 clean:
-	rm -f *.o core* $(SE_CMDS) *~
+	rm -f *.o core* $(SE_CMDS) $(SELINUX_TOOLS) *~
 
 bare: clean
-	rm -f *.o core* $(SE_CMDS) *~
+	rm -f *.o core* $(SE_CMDS) $(SELINUX_TOOLS) *~
