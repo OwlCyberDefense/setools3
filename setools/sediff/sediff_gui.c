@@ -2964,12 +2964,20 @@ static int sediff_diff_and_load_policies(const char *p1_file,const char *p2_file
 	GtkTreeIter iter;
 	gchar **labels = NULL;
 	GString *string = g_string_new("");
+	GdkCursor *cursor = NULL;
 
 	/* show our loading dialog while we load */
 	sediff_load_dlg_show();
+
+	/* set the cursor to a hand */
+	cursor = gdk_cursor_new(GDK_WATCH);
+	gdk_window_set_cursor(GTK_WIDGET(sediff_app->loading_dlg)->window, cursor);	
+	gdk_window_set_cursor(GTK_WIDGET(sediff_app->window)->window, cursor);	
+	gdk_cursor_unref(cursor);
+	gdk_flush();
+
 	while (gtk_events_pending ())
 		gtk_main_iteration ();
-
 
 	/* get the scrolled window we are going to put the tree_store in */
 	container = glade_xml_get_widget(sediff_app->window_xml, "scrolledwindow_list");
@@ -2989,7 +2997,8 @@ static int sediff_diff_and_load_policies(const char *p1_file,const char *p2_file
 	if (!diff_results) {
 		/* get rid of the loading dialog on error */
 		sediff_load_dlg_destroy();
-
+		/* diff is done set cursor back to a ptr */
+		gdk_window_set_cursor(GTK_WIDGET(sediff_app->window)->window, NULL);	
 		return -1;
 	}
 
@@ -3050,8 +3059,10 @@ static int sediff_diff_and_load_policies(const char *p1_file,const char *p2_file
 	/* get rid of the loading when done */
 	sediff_load_dlg_destroy();
 
-	return 0;
+	/* diff is done set cursor back to a ptr */
+	gdk_window_set_cursor(GTK_WIDGET(sediff_app->window)->window, NULL);	
 
+	return 0;
 }
 
 
@@ -3094,7 +3105,6 @@ void sediff_open_dialog_on_diff_button_clicked(GtkButton *button, gpointer user_
 	gdk_window_set_cursor(GTK_WIDGET(sediff_app->open_dlg)->window, cursor);	
 	gdk_cursor_unref(cursor);
 	gdk_flush();
-
 
 	rt = sediff_diff_and_load_policies((const char*)p1_file, (const char*)p2_file);
 
