@@ -125,7 +125,11 @@ int main (int argc, char **argv)
 	  			printf("Missing source type/attribute for -s (--source)\n");
 	  			exit(1);
 	  		}
-	  		src_name = optarg;
+	  		src_name = strdup(optarg);
+	  		if (!src_name) {
+	  			fprintf(stderr, "Memory error!\n");
+	  			exit(1);	
+	  		}
 	  		break;
 	  	case 't': /* target */
 	  		if(optarg == 0) {
@@ -133,7 +137,11 @@ int main (int argc, char **argv)
 	  			printf("Missing target type/attribute for -t (--target)\n");
 	  			exit(1);
 	  		}
-	  		tgt_name = optarg;
+	  		tgt_name = strdup(optarg);
+	  		if (!tgt_name) {
+	  			fprintf(stderr, "Memory error!\n");
+	  			exit(1);	
+	  		}
 	  		break;
 	  	case 'c': /* class */
 	  		if(optarg == 0) {
@@ -141,7 +149,11 @@ int main (int argc, char **argv)
 	  			printf("Missing object class for -c (--class)\\n");
 	  			exit(1);
 	  		}
-	  		class_name = optarg;
+	  		class_name = strdup(optarg);
+	  		if (!class_name) {
+	  			fprintf(stderr, "Memory error!\n");
+	  			exit(1);	
+	  		}
 	  		break;
 	  	case 'p': /* permissions */
 	  		if(optarg == 0) {
@@ -149,7 +161,11 @@ int main (int argc, char **argv)
 	  			printf("Missing permissions for -p (--perms)\n\n");
 	  			exit(1);
 	  		}
-	  		permlist = optarg;
+	  		permlist = strdup(optarg);
+	  		if (!permlist) {
+	  			fprintf(stderr, "Memory error!\n");
+	  			exit(1);	
+	  		}
 	  		break;
 	  	case 'i': /* indirect search */
 	  		indirect = TRUE;
@@ -220,6 +236,7 @@ int main (int argc, char **argv)
 			}
 			add_i_to_a(idx, &num_perms, &perms);
 		}
+		free(permlist);
 	}
 	
 	if(all) 
