@@ -51,7 +51,7 @@ static void seaudit_policy_file_open_from_recent_menu(GtkWidget *widget, gpointe
 static void seaudit_log_file_open_from_recent_menu(GtkWidget *widget, gpointer user_data);
 static gboolean seaudit_real_time_update_log(gpointer callback_data);
 static void seaudit_exit_app(void);
-}
+
 
 int seaudit_open_policy(seaudit_t *seaudit, const char *filename)
 {
