@@ -388,6 +388,8 @@ static void log_view_store_get_value(GtkTreeModel *tree_model, GtkTreeIter *iter
 		string = g_string_new("");
 		if (!string)
 			return;
+		if (cur_msg->audit_header)
+			g_string_append_printf(string, "header=%s ", cur_msg->audit_header);
 		if (cur_msg->dev)
 			g_string_append_printf(string, "dev=%s ", cur_msg->dev);
 		if (cur_msg->ipaddr)
