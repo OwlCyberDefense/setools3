@@ -9,7 +9,7 @@ OBJS		= test-apol.o  $(LIBAPOL)
 
 
 test-apol: $(OBJS)
-	$(CC) $(TCL_LIBINC) -g -o $@ $(OBJS) $(LINKFLAGS) $(TCL_LIBS)
+	$(CC) $(TCL_LIBINC) -g -o $@ $(OBJS) $(LINKFLAGS) $(LIBS)
 
 %.o:  %.c 
 	$(CC) $(CFLAGS) -g -c $<
