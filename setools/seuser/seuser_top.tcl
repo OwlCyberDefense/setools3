@@ -1030,9 +1030,9 @@ proc SEUser_Top::main {} {
 	SEUser_Top::display_splashScreen 
 	set progressMsg "Loading policy..."   
 	update idletasks
-	
+
 	# Configure tool and read user database
-	set rt [catch [seuser_InitUserdb] err]
+	set rt [catch {seuser_InitUserdb} err]
 	if {$rt != 0} {	
 		tk_messageBox -icon error -type ok -title "Error" \
 			-parent . \
