@@ -25,6 +25,42 @@ each other; through process signaling or through a more complex interprocess
 communication (IPC) mechanism? Do the two types share any data and if so, how 
 does information move from one domain to another?
 
+USING THE TYPES RELATIONSHIP SUMMARY ANALYSIS INTERFACE IN APOL
+
+The interface in apol presents the user with comboboxes for selecting the two 
+types to be analyzed. They are labeled 'Type A' and 'Type B' respectively. 
+Additionally, there are comboboxes below each in order to allow the user to 
+create a smaller subset of types from which to choose for Type A and Type B.
+Two subtabs, labeled 'Basic' and 'Analysis', are provided in the interface for
+selecting the analyses to include in the summary. 
+
+The 'Basic' tab contains options for determining the common attributes, roles 
+and users that exist between Type A and Type B. Common users consist of users 
+defined in the policy which have access to both Type A and Type B through a 
+common role. This tab also provides options for determining common, as well 
+as dissimilar, access to object types. So for example, if Type A and Type B 
+are allowed some sort of access to 'user_home_dir_t', then the object type and  
+the rule proof will appear within the results. And finally, the 'Basic' tab 
+provides an option for searching for all allow rules that permit access between 
+the two, as well an option for searching for all type transition/change rules 
+between the two. 
+
+The 'Analysis' tab contains options for performing additional analysis bwtween
+the two types using the existing analysis modules in apol, namely, the Domain 
+Transition, Direct and Transitive Information Flow analyses. These options are
+provided more as a convenience to the user for including these analyses within
+the summary. You will notice a limitation here in that the Direct Information 
+Flow option is a two-way analysis (i.e. from A<->B), whereas the Transitive 
+Information Flow and Domain Transition options are one-way (i.e. A->B and B->A)
+analyses. So for example, if one needs to determine if any domain transitions 
+exist between Type A and Type B, he or she would need to select both Domain 
+Transition checkbuttons to perform the analysis. 
+
+After selecting the desired options for the analysis, select 'New' or 'Update'
+to start the analysis. This analysis may contain an overwhelming amount of 
+information, so the results are simplified by listing each option selected as
+an element of a tree widget. This allows the user to select an option from the 
+tree and have more specific results displayed within the textbox.
 
 UNDERSTANDING THE RESULTS OF A TYPES RELATIONSHIP SUMMARY ANALYSIS
 
@@ -39,18 +75,14 @@ of this analysis consist of:
 	- the role(s) which have access to both TypeA and TypeB (common roles) 
 	- the users which have access to both TypeA and TypeB through a common
 	  role. (common users) 
-	- all type transition/change rules from TypeA to TypeB or vice versa.
+	- all type transition/change rules from TypeA to TypeB or vice versa
 	- all allow rules that provide access between TypeA and TypeB 
-	  (e.g., allow rules that allow TypeA and TypeB to send signals to each other). 
-	- types to which both TypeA and TypeB have common access. 
-	- types to which TypeA and TypeB have dissimilar access.
-	- any direct information flows between TypeA and TypeB 
+	  (e.g., allow rules that allow TypeA and TypeB to send signals to each other)
+	- types to which both TypeA and TypeB have common access 
+	- types to which TypeA and TypeB have dissimilar access
+	- any direct information flows between TypeA and TypeB
 	- any transitive information flows between TypeA and TypeB
-	- any domain transitions from TypeA to TypeB or vice versa. 
-	
-This analysis may contain an overwhelming amount of information, so the results
-are simplified by listing each aspect of the analysis as a separate child element 
-within a tree widget. This allows the user to select any aspect of the analysis 
-from the tree and have more specific results displayed within the textbox. 
+	- any domain transitions from TypeA to TypeB or vice versa 
+	 
     
 	
