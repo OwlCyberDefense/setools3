@@ -278,6 +278,7 @@ static int ftw_handler(const char *file, const struct stat *sb, int flag, struct
 	sefs_fileinfo_t * pi = NULL;
 	char *con = NULL;
 	char *tmp = NULL;
+	char *tmp2 = NULL; 
 	char** ptr = NULL;
 		
 	key.inode = sb->st_ino;
@@ -298,9 +299,12 @@ static int ftw_handler(const char *file, const struct stat *sb, int flag, struct
 		/* extract the context parts */
 		tmp = strtok(con, ":");
 		if (tmp) {
+			tmp2 = (char*)malloc(sizeof(char) * (strlen(tmp) + 1));
+			strncpy(tmp2, tmp, sizeof(char) * strlen(tmp));
+			tmp2[strlen(tmp)] = '\0';
 			rc = avl_get_idx(tmp, &fsdata->user_tree);
 			if(rc == -1)
-				avl_insert(&(fsdata->user_tree),tmp, &rc);
+				avl_insert(&(fsdata->user_tree),tmp2, &rc);
 
 			pi->context.user=rc;
 		}
@@ -325,9 +329,12 @@ static int ftw_handler(const char *file, const struct stat *sb, int flag, struct
 
 		tmp = strtok(NULL, ":");
 		if (tmp) {
+			tmp2 = (char*)malloc(sizeof(char) * (strlen(tmp) + 1));
+			strncpy(tmp2, tmp, sizeof(char) * strlen(tmp));
+			tmp2[strlen(tmp)] = '\0';
 			rc = avl_get_idx(tmp, &fsdata->type_tree);
 			if (rc == -1) {
-				avl_insert(&(fsdata->type_tree), tmp, &rc);
+				avl_insert(&(fsdata->type_tree), tmp2, &rc);
 			}
 			pi->context.type=(int32_t)rc;
 		} else {
@@ -382,6 +389,8 @@ static int ftw_handler(const char *file, const struct stat *sb, int flag, struct
 			{
 				pi->symlink_target = tmp;
 			}
+		} else {
+			pi->symlink_target = NULL;
 		}
 
 	return 0;
@@ -974,7 +983,8 @@ void sefs_print_valid_object_classes( void )
 	}
 }
 
-void destroy_fsdata(sefs_filesystem_data_t * fsd) {
+void destroy_fsdata(sefs_filesystem_data_t * fsd) 
+{
 	int i,j;
 
 	/* empty arrays */
@@ -1006,6 +1016,4 @@ void destroy_fsdata(sefs_filesystem_data_t * fsd) {
 	avl_free(&(fsd->type_tree));
 	avl_free(&(fsd->user_tree));
 
-	/* destroy main structure */
-	free(fsd);
 }
