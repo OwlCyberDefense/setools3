@@ -243,6 +243,7 @@ int main (int argc, char **argv)
 		cls = get_obj_class_idx(class_name, policy);
 		if(cls < 0) {
 			printf("Invalid class name: %s\n", class_name);
+			free_teq_query_contents(&q);
 			exit(1);
 		}
 		q.classes = &cls;
@@ -255,6 +256,8 @@ int main (int argc, char **argv)
 	rt = search_te_rules(&q, &r, policy);
 	if(rt == -1) {
 		printf("Unexpected error (-1) searching rules\n");
+		free_teq_query_contents(&q);
+		free_teq_results_contents(&r);
 		close_policy(policy);
 		exit(1);
 	}
@@ -303,6 +306,7 @@ int main (int argc, char **argv)
 			printf("Unexpected error (-2) searching rules\n");
 			break;
 		}
+		free_teq_query_contents(&q);
 		free_teq_results_contents(&r);
 		close_policy(policy);
 		exit(1);
@@ -311,6 +315,7 @@ int main (int argc, char **argv)
 	if(r.num_av_access > 0) {
 		for(i = 0; i < r.num_av_access; i++) {
 			rule = re_render_av_rule(FALSE, r.av_access[i], FALSE, policy);
+			assert(rule);
 			if(lineno)
 				printf("[%6d]  ", r.av_access_lineno[i]);
 			printf("%s\n", rule);
@@ -321,6 +326,7 @@ int main (int argc, char **argv)
 	if(r.num_av_audit > 0) {
 		for(i = 0; i < r.num_av_audit; i++) {
 			rule = re_render_av_rule(FALSE, r.av_audit[i], TRUE, policy);
+			assert(rule);
 			if(lineno)
 				printf("[%6d]  ", r.av_audit_lineno[i]);
 			printf("%s\n", rule);
@@ -331,6 +337,7 @@ int main (int argc, char **argv)
 	if(r.num_type_rules > 0) { 
 		for(i = 0; i < r.num_type_rules; i++) {
 			rule = re_render_tt_rule(FALSE, r.type_rules[i], policy);
+			assert(rule);
 			if(lineno)
 				printf("[%6d]  ", r.type_lineno[i]);
 			printf("%s\n", rule);
@@ -339,6 +346,7 @@ int main (int argc, char **argv)
 		}
 	}
 
+	free_teq_query_contents(&q);
 	free_teq_results_contents(&r);
 	close_policy(policy);
 	exit(0);
