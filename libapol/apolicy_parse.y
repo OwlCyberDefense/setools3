@@ -1647,7 +1647,7 @@ static int define_role_types(void)
 		/* get rid of the role name if it alrady exists */
 		free(id);
 	}
-		
+	/* add the types or attributes */	
 	while ((id = queue_remove(id_queue))) {
 		idx = get_type_or_attrib_idx(id, &idx_type, parse_policy);
 		if(idx < 0) {
