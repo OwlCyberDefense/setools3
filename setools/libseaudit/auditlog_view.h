@@ -39,8 +39,9 @@ typedef struct audit_log_view {
 audit_log_view_t* audit_log_view_create(void);
 void audit_log_view_destroy(audit_log_view_t* view);
 
+void audit_log_view_set_log(audit_log_view_t *view, audit_log_t *log);
 int audit_log_view_add_filter(audit_log_view_t *log, struct filter *filter);
 void audit_log_view_purge_filters(audit_log_view_t *log);
 void audit_log_view_purge_fltr_msgs(audit_log_view_t *view);
-int audit_log_view_do_filter(audit_log_view_t *log, bool_t details, int **deleted, int *num_deleted);
+int audit_log_view_do_filter(audit_log_view_t *log, int **deleted, int *num_deleted);
 #endif
