@@ -232,7 +232,7 @@ void print_relabel_result(relabel_result_t *res, int start_type, policy_t *polic
 			str = NULL;
 		}
 
-		str = re_render_av_rule(0, res->rules[i], 0, policy);
+		str = re_render_av_rule(1, res->rules[i], 0, policy);
 		if (!str)
 			fprintf(out, "Could not render rule number %i\n", res->rules[i]);
 		else
