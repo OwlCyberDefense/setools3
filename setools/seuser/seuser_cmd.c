@@ -324,12 +324,11 @@ int main(int argc, char *argv[])
 		/* replaced -g with less desireable -X because -g already used by
 		* one of the user[add|mod|del] commands */
 		if(argv[1][1] == 'X' ) { 
-			snprintf(prog_path, PATH_MAX, "./%s", SEUSER_GUI_PROG);
 			rt = access(prog_path, X_OK);
 			if (rt == 0) {
-				rt = execlp(prog_path, NULL);
+				rt = execvp(prog_path, argv);
 			} else {
-				rt = execlp(SEUSER_GUI_PROG, NULL);
+				rt = execvp(SEUSER_GUI_PROG, argv);
 			}
 			if (rt == -1) {
 				fprintf(stderr, "Cannot execute the seuserx program. You may need to install the setools-gui package.");
