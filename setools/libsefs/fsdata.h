@@ -70,6 +70,9 @@ typedef struct sefs_search_keys {
 	int num_path;
 	/* number of object classes in array */
 	int num_object_class;
+	int do_type_regEx;
+	int do_user_regEx;
+	int do_path_regEx;
 	/* this is a linked list of returned matches */
 	sefs_search_ret_t      *search_ret;
 
@@ -91,7 +94,7 @@ int sefs_filesystem_db_save(sefs_filesystem_db_t *fsd,char *filename);
 /* CREATING AN INDEXFILE??? fsd allocated by caller*/
 int sefs_filesystem_db_populate(sefs_filesystem_db_t *fsd,char *dir);
 /* SEARCH THE LOADED FILE fsd,search_keys allocated by caller search_keys->search_ret is not!!!*/
-int sefs_filesystem_db_search(sefs_filesystem_db_t *fsd,sefs_search_keys_t *search_keys, int use_regex);
+int sefs_filesystem_db_search(sefs_filesystem_db_t *fsd,sefs_search_keys_t *search_keys);
 /* destroy the dynamically allocated return data from search */
 int sefs_search_keys_ret_destroy(sefs_search_ret_t *key);
 /* print the return data from a search */
