@@ -2,8 +2,8 @@
 
 # replcon and findcon only support filesystems featuring Security Labels
 SUPPORTED_FILESYSTEMS	= '"ext2 ext3"'
-LIBAPOL		= ../lib/libapol.a
-LIBSEUSER	= ../lib/libseuser.a
+LIBAPOL		= ../libapol/libapol.a
+LIBSEUSER	= ../libseuser/libseuser.a
 
 LIBSELINUX      = -lselinux
 
