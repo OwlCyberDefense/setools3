@@ -16,6 +16,7 @@
 #include "semantic/avhash.h"
 #include "semantic/avsemantics.h"
 #include <assert.h>
+#include <string.h>
 
 static apol_diff_t *apol_new_diff()
 {
@@ -40,6 +41,8 @@ static void free_inta_diff(int_a_diff_t *nad)
 	for(t = nad; t != NULL; ) {
 		if(t->a != NULL)
 			free(t->a);
+		if(t->str_id != NULL)
+			free(t->str_id);
 		n = t->next;
 		free(t);
 		t = n;
@@ -123,14 +126,19 @@ static int find_type_in_p2(const char *name, name_item_t *aliases, policy_t *p2)
 }
 
 
-static int add_i_to_inta(int i, int *num, int_a_diff_t **inta)
+static int add_i_to_inta(int i, int *num, int_a_diff_t **inta,char **str_id)
 {
 	int_a_diff_t *t;
+	int_a_diff_t *p,*q;
 	if(num == NULL || inta == NULL)
 		return -1;
 		
 	/* since we don't care about ordering, and we have only single linked lists,
 	 * we always PREpend new nodes into an int_a_diff struct */
+
+	/* now we do care(for showing the diff in the gui) about ordering, so now we
+	   are going to do an in order insert based on str_id */
+
 	t = (int_a_diff_t *)malloc(sizeof(int_a_diff_t));
 	if(t == NULL) {
 		fprintf(stderr, "out of memory\n");
@@ -138,8 +146,19 @@ static int add_i_to_inta(int i, int *num, int_a_diff_t **inta)
 	}
 	memset(t, 0, sizeof(int_a_diff_t));
 	t->idx = i;
-	t->next = *inta;
-	*inta = t;
+	t->str_id = *str_id;
+	t->next = NULL;
+	/* is the list empty? just shove it on there*/
+	if (inta != NULL) {
+		t->next = *inta;
+		*inta = t;
+	}
+	else {
+		for(p = *inta; p !=NULL && (strcmp(p->str_id,*str_id) < 0);p = p->next)
+			q = p;
+		q->next = t;
+		t->next = p;
+	}
 	(*num)++;
 
 	return 0;
@@ -166,7 +185,7 @@ static int add_bool_diff(int idx, bool_t state_diff, apol_diff_t *diff)
 	return 0;
 }
 
-static int make_p2_key(avh_key_t *p1key, avh_key_t *p2key, policy_t *p1, policy_t *p2)
+int make_p2_key(avh_key_t *p1key, avh_key_t *p2key, policy_t *p1, policy_t *p2)
 {
 	assert(p1key != NULL && p2key != NULL && p1 != NULL && p2 != NULL);
 	assert(is_valid_type_idx(p1key->src, p1));
@@ -267,9 +286,10 @@ static bool_t does_cond_match(avh_node_t *n1, policy_t *p1, avh_node_t *n2, poli
 /* find things in p1 that are different than in p2; this fun is from the perspective of p1 */
 static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t *p2, bool_t isbin) 
 {
-	int i, j, idx, idx2, rt;
+	int i, j, idx, idx2, rt=0;
 	apol_diff_t *t = NULL;
 	char *name;
+	char *str_name;
 	bool_t added;
 	int *pmap = NULL;
 	rbac_bool_t rb, rb2;
@@ -291,7 +311,8 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 			idx2 = find_type_in_p2(p1->types[i].name, p1->types[i].aliases, p2);
 			if(idx2 < 0) {
 				/* type i is missing from p2 */
-				rt = add_i_to_inta(i, &t->num_types, &t->types);
+				if (get_type_name(i,&str_name,p1) >= 0)
+					rt = add_i_to_inta(i, &t->num_types, &t->types,&str_name);
 				if(rt < 0)
 					goto err_return;
 			}
@@ -307,7 +328,8 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 						if(!added) {
 							/* add the type to the diff, and then note the first missing attrib */
 							added = TRUE;
-							rt = add_i_to_inta(i, &t->num_types, &t->types);
+							if (get_type_name(i,&str_name,p1) >= 0)
+								rt = add_i_to_inta(i, &t->num_types, &t->types,&str_name);
 							if(rt < 0) {
 								free(name);
 								goto err_return;
@@ -332,7 +354,8 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 			idx2 = get_attrib_idx(p1->attribs[i].name, p2);
 			if(idx2 < 0) {
 				/* attrib i is missing from p2 */
-				rt = add_i_to_inta(i, &t->num_attribs, &t->attribs);
+				if (get_attrib_name(i,&str_name,p1) >= 0)
+					rt = add_i_to_inta(i, &t->num_attribs, &t->attribs,&str_name);
 				if(rt < 0)
 					goto err_return;
 			}
@@ -347,7 +370,8 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 						if(!added) {
 							/* add the attrib to the diff, and then note the first missing type */
 							added = TRUE;
-							rt = add_i_to_inta(i, &t->num_attribs, &t->attribs);
+							if (get_attrib_name(i,&str_name,p1) >= 0)
+								rt = add_i_to_inta(i, &t->num_attribs, &t->attribs,&str_name);
 							if(rt < 0) {
 								free(name);
 								goto err_return;
@@ -372,8 +396,9 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 		for(i = 0; i < p1->num_roles; i++) {
 			idx2 = get_role_idx(p1->roles[i].name, p2);
 			if(idx2 < 0) {
-				/* attrib i is missing from p2 */
-				rt = add_i_to_inta(i, &t->num_roles, &t->roles);
+				/* role i is missing from p2 */
+				if (get_role_name(i,&str_name,p1) >= 0)
+					rt = add_i_to_inta(i, &t->num_roles, &t->roles,&str_name);
 				if(rt  < 0)
 					goto err_return;
 			}
@@ -388,7 +413,8 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 						if(!added) {
 							/* add the role to the diff, and then note the first missing type */
 							added = TRUE;
-							rt  = add_i_to_inta(i, &t->num_roles, &t->roles);
+							if (get_role_name(i,&str_name,p1) >= 0)
+								rt  = add_i_to_inta(i, &t->num_roles, &t->roles,&str_name);
 							if(rt  < 0) {
 								free(name);
 								goto err_return;
@@ -413,7 +439,8 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 			idx2 = get_user_idx(p1->users[i].name, p2);
 			if(idx2 < 0) {
 				/* user i is missing from p2 */
-				rt  = add_i_to_inta(i, &t->num_users, &t->users);
+				if (get_user_name2(i,&str_name,p1) >= 0)
+					rt  = add_i_to_inta(i, &t->num_users, &t->users,&str_name);
 				if(rt  < 0)
 					goto err_return;
 			}
@@ -428,7 +455,8 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 						if(!added) {
 							/* add the user to the diff, and then note the first missing role*/
 							added = TRUE;
-							rt  = add_i_to_inta(i, &t->num_users, &t->users);
+							if (get_user_name2(i,&str_name,p1) >= 0)
+								rt  = add_i_to_inta(i, &t->num_users, &t->users,&str_name);
 							if(rt  < 0) {
 								free(name);
 								goto err_return;
@@ -474,7 +502,8 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 			idx2 = get_obj_class_idx(p1->obj_classes[i].name, p2);
 			if(idx2 < 0) {
 				/* class i is missing from p2 */
-				rt  = add_i_to_inta(i, &t->num_classes, &t->classes);
+				if (get_obj_class_name(i,&str_name,p1) >= 0)
+					rt  = add_i_to_inta(i, &t->num_classes, &t->classes,&str_name);
 				if(rt  < 0)
 					goto err_return;
 			}
@@ -498,7 +527,8 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 						if(!added) {
 							/* add the class to the diff, and then note the first missing perm */
 							added = TRUE;
-							rt  = add_i_to_inta(i, &t->num_classes, &t->classes);
+							if (get_obj_class_name(i,&str_name,p1) >= 0)
+							rt  = add_i_to_inta(i, &t->num_classes, &t->classes,&str_name);
 							if(rt  < 0) 
 								goto err_return;
 						}
@@ -517,7 +547,6 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 		for(i = 0; i < p1->num_perms; i++) {
 			idx2 = get_perm_idx(p1->perms[i], p2);
 			if(idx2 < 0) {
-				/* permission missing in p2 */
 				rt = add_i_to_a(i, &t->num_perms, &t->perms);
 				if(rt < 0)
 					goto err_return;
@@ -531,7 +560,8 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 			idx2 = get_common_perm_idx(p1->common_perms[i].name, p2);
 			if(idx2 < 0) {
 				/* common perm i is missing from p2 */
-				rt  = add_i_to_inta(i, &t->num_common_perms, &t->common_perms);
+				if (get_common_perm_name(i,&str_name,p1) >= 0)
+					rt  = add_i_to_inta(i, &t->num_common_perms, &t->common_perms,&str_name);
 				if(rt  < 0)
 					goto err_return;
 			}
@@ -553,7 +583,8 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 						if(!added) {
 							/* add the common perm to the diff, and then note the first missing perm */
 							added = TRUE;
-							rt  = add_i_to_inta(i, &t->num_common_perms, &t->common_perms);
+							if (get_common_perm_name(i,&str_name,p1) >= 0)
+								rt  = add_i_to_inta(i, &t->num_common_perms, &t->common_perms,&str_name);
 							if(rt  < 0) 
 								goto err_return;
 						}
@@ -606,7 +637,8 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 					if(!added) {
 						/* add the role to the diff, and then note the first missing role */
 						added = TRUE;
-						rt  = add_i_to_inta(i, &t->num_role_allow, &t->role_allow);
+						if (get_role_name(i,&str_name,p1) >= 0)
+							rt  = add_i_to_inta(i, &t->num_role_allow, &t->role_allow,&str_name);
 						if(rt  < 0) 
 							goto err_return;
 					}
