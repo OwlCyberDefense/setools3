@@ -153,10 +153,21 @@ int main(int argc, char *argv[])
 
 	parse_command_line(argc, argv);
 	interp = Tcl_CreateInterp();
-	Tk_MainEx(1, argv, Tcl_AppInit, interp);
+	/* Compute the full path name of the executable file from which 
+	 * the application was invoked and save it for Tcl's internal 
+	 * use. */
+	Tcl_FindExecutable(argv[0]);
+
+	/* Normally, the function 'Tk_MainEx(1, argv, Tcl_AppInit, interp);'
+	 * would have been called instead of the following 'if' statement,
+	 * however, this would cause apol to run wish in interactive mode, 
+	 * which is usually used for debugging purposes and this causes a 
+	 * strange interaction with normal shell operations (backgrounding, 
+	 * etc). 
+	 */
+	if (Tcl_AppInit(interp) == TCL_OK) 
+		Tk_MainLoop();
+	
+	/* Exit after the event loop returns. */
   	exit(0);
-}
-
-
-
-
+}                          
