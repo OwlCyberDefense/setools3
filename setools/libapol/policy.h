@@ -48,11 +48,9 @@
 #define POLOPT_TE_MEMBER	0x00000400
 #define POLOPT_TE_CHANGE	0x00000800	/* all role rules (allow, old trans)*/
 #define POLOPT_ROLE_RULES	0x00001000	/* conditional boolean definitions */
-#ifdef CONFIG_SECURITY_SELINUX_CONDITIONAL_POLICY
 #define POLOPT_COND_BOOLS	0x00002000	/* conditional expression definitions */
 #define POLOPT_COND_EXPR	0x00004000	/* conditional expression definitions */
 #define POLOPT_COND_TE_RULES	0x00008000	/* conditional TE rules */
-#endif
 #define POLOPT_INITIAL_SIDS	0x00010000	/* initial SIDs and their context */
 #define POLOPT_OTHER		0x10000000	/* Everything else not covered above. */
 
@@ -62,23 +60,15 @@
 #define POLOPT_TE_RULES		(POLOPT_AV_RULES|POLOPT_TYPE_RULES)
 #define POLOPT_TE_POLICY	(POLOPT_TE_RULES|POLOPT_TYPES)
 #define POLOPT_RBAC		(POLOPT_ROLES|POLOPT_ROLE_RULES)
-#ifdef CONFIG_SECURITY_SELINUX_CONDITIONAL_POLICY
 #define POLOPT_UNCOND_TE_RULES	(POLOPT_TE_RULES)
 #define POLOPT_COND_POLICY	(POLOPT_COND_BOOLS|POLOPT_COND_EXPR|POLOPT_COND_TE_RULES)
 #define POLOPT_ALL		(POLOPT_INITIAL_SIDS|POLOPT_OBJECTS|POLOPT_TE_POLICY|POLOPT_RBAC|POLOPT_USERS|POLOPT_COND_POLICY|POLOPT_OTHER)
-#else
-#define POLOPT_ALL		(POLOPT_INITIAL_SIDS|POLOPT_OBJECTS|POLOPT_TE_POLICY|POLOPT_RBAC|POLOPT_USERS|POLOPT_OTHER)
-#endif
+
 /* The following define which pass of the parser the components are collected.  We
  * don't include all the options (like POLOPT_OTHER), but rather only those that 
  * apol currently makes use of (or will in the near future) */
-#ifdef CONFIG_SECURITY_SELINUX_CONDITIONAL_POLICY
 #define PLOPT_PASS_1		(POLOPT_OBJECTS|POLOPT_TYPES|POLOPT_COND_BOOLS)
 #define PLOPT_PASS_2		(POLOPT_RBAC|POLOPT_USERS|POLOPT_TE_RULES|POLOPT_COND_EXPR|POLOPT_COND_TE_RULES)
-#else
-#define PLOPT_PASS_1		(POLOPT_OBJECTS|POLOPT_TYPES)
-#define PLOPT_PASS_2		(POLOPT_ROLES|POLOPT_ROLE_RULES|POLOPT_USERS|POLOPT_TE_RULES)
-#endif
 
 /* NOTE:Rather than implement a structure like a hash table, or 
  * better yet "borrow" the policydb from the SE Linux  source,
@@ -124,7 +114,8 @@ typedef struct ta_item {
 #define AVL_CLASSES		2	/* object classes */
 #define AVL_PERMS		3	/* permissions */
 #define AVL_INITIAL_SIDS	4	/* initial SID contexts */
-#define	AVL_NUM_TREES		5	/* # of avl trees supported */
+#define AVL_COND_BOOLS		5
+#define	AVL_NUM_TREES		6	/* # of avl trees supported */
 
 /* type decalaration */
 typedef struct type_item {
@@ -222,7 +213,7 @@ typedef struct security_context {
 typedef struct av_item {
  	int		type;		/* rule type; av rule IDs defined above */
  	unsigned char	flags;		/* where we handle '~' and '*' */
- 	bool_t		enabled;	/* enabled flag for conditional policy support */
+	bool_t		enabled;	/* whether the rule is enabled or not for conditionals */
  	unsigned long	lineno;		/* line # from policy.conf */
  	ta_item_t	*src_types;	/* the domain types/attribs */
  	ta_item_t	*tgt_types;	/* the object types/attribs */
@@ -234,7 +225,7 @@ typedef struct av_item {
 typedef struct tt_item {
 	int		type;		/* rule type; av rule IDs defined above */
 	unsigned char	flags;		/* use AV* flags above, only need SRC, TGT, & CLS */
-	bool_t		enabled;	/* enabled flag for conditional policy support */
+	bool_t		enabled;	/* whether the rule is enabled or not for conditionals */
  	unsigned long	lineno;		/* line # from policy.conf */
 	ta_item_t	*src_types;	/* the domain types/attribs */
  	ta_item_t	*tgt_types;	/* the object types/attribs */
@@ -297,13 +288,9 @@ typedef struct alias_item {
 #define POL_LIST_OBJ_CLASSES	10
 #define POL_LIST_ALIAS		11
 #define POL_LIST_INITIAL_SIDS	12
-#ifdef CONFIG_SECURITY_SELINUX_CONDITIONAL_POLICY
 #define POL_LIST_COND_BOOLS	13
 #define POL_LIST_COND_EXPRS	14
 #define POL_NUM_LISTS		15
-#else
-#define POL_NUM_LISTS		13
-#endif
 
 /* These are our weak indicators of which version of policy we're using.
  * The syntax and semantics of a policy are in great flux, and many changes
@@ -321,20 +308,14 @@ typedef struct alias_item {
 #define POL_VER_11		2	/* same as POL_VER_JUL2002 */
 #define POL_VER_12		2	/* same as POL_VER_JUL2002; no apparent syntax changes b/w 11 and 12 */
 #define POL_VER_15		3	/* somewhere between v 12 and 15! */
-#ifdef CONFIG_SECURITY_SELINUX_CONDITIONAL_POLICY
 #define	POL_VER_16		4	/* conditional policy extensions */
 #define POL_VER_COND		4	/* same */
 #define	POL_VER_MAX		4
-#else
-#define POL_VER_MAX		3
-#endif
 
 #define POL_VER_STRING_PRE_11 	"prior to v. 11"
 #define POL_VER_STRING_11	"v.11 -- v.12"
 #define POL_VER_STRING_15	"v.13 -- v.15"
-#ifdef CONFIG_SECURITY_SELINUX_CONDITIONAL_POLICY
 #define POL_VER_STRING_16	"v.16"
-#endif
 
 /**************************************/
 /* This is an actual policy data base */
@@ -346,10 +327,8 @@ typedef struct policy {
 	int	num_av_access;		/* " " */
 	int	num_av_audit;		/* " " */
 	int	num_te_trans;		/* " " */
-#ifdef CONFIG_SECURITY_SELINUX_CONDITIONAL_POLICY
 	int	num_cond_bools;		/* " " */
 	int	num_cond_exprs;		/* " " */
-#endif
 	int	num_roles;		/* " " */
 	int	num_role_allow;		/* " " */
 	int	num_role_trans;		/* " " */
@@ -379,11 +358,9 @@ typedef struct policy {
 	cln_item_t	*clones;	/* clone rules (LLIST) */
 /* Misc. Policy */
 	initial_sid_t	*initial_sids;	/* initial SIDs and their context (ARRAY) */
-#ifdef CONFIG_SECURITY_SELINUX_CONDITIONAL_POLICY
 /* Conditional Policy */
 	cond_bool_t	*cond_bools;	/* conditional policy booleans (ARRAY) */
 	cond_expr_item_t *cond_exprs;	/* conditional expressions (ARRAY) */
-#endif
 /* Role-based access control rules */
 	role_item_t	*roles;		/* roles (ARRAY)*/
 	role_allow_t	*role_allow;	/* role allow rules (ARRAY) */
@@ -433,6 +410,8 @@ int add_perm_to_class(int cls_idx, int p_idx, policy_t *policy);
 int add_common_perm(char *name, policy_t *policy);
 int add_perm_to_common(int comm_perm_idx, int perm_idx, policy_t *policy);
 int add_perm(char *perm, policy_t *policy);
+int add_cond_bool(char *name, bool_t val, policy_t *policy);
+int add_cond_expr_item(cond_expr_t *expr, cond_rule_list_t *true_list, cond_rule_list_t *false_list, policy_t *policy);
 
 /* Object Classes */
 #define num_obj_classes(policy) (policy != NULL ? policy->num_obj_classes : -1)
@@ -495,6 +474,10 @@ int get_attrib_name(int idx, char **name, policy_t *policy);
 int get_type_attribs(int type, int *num_attribs, int **attribs, policy_t *policy);
 int get_attrib_types(int attrib, int *num_types, int **types, policy_t *policy);
 
+/* conditional policy */
+#define is_valid_cond_bool_idx(idx, policy) (idx >= 0 && idx < policy->num_cond_bools)
+int get_cond_bool_idx(char *name, policy_t *policy);
+int set_cond_bool_val(int bool, bool_t val, policy_t *policy);
 
 /* users */
 #define get_first_user_ptr(policy) ((policy != NULL) ? policy->users.head : NULL)
