@@ -3971,7 +3971,7 @@ int Apol_SavePermMap(ClientData clientData, Tcl_Interp *interp, int argc, char *
 		return TCL_ERROR;
 	}
 	/* perm map file */
-	if((fp = fopen(pmap_file, "w")) == NULL) {
+	if((fp = fopen(pmap_file, "w+")) == NULL) {
 		sprintf(tbuf, "Write permission to perm map file (%s) was not permitted!", pmap_file);
 		Tcl_AppendResult(interp, tbuf, (char *) NULL);
 		return TCL_ERROR;
@@ -4078,6 +4078,8 @@ int Apol_GetPermMap(ClientData clientData, Tcl_Interp *interp, int argc, char *a
 				default:		Tcl_AppendElement(interp, "?");
 				} 
 			} 
+			sprintf(tbuf, "%d", cls->perm_maps[j].weight);
+			Tcl_AppendElement(interp, tbuf);
 		} 
 	} 	
 	return TCL_OK;
