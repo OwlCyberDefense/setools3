@@ -52,6 +52,8 @@
 #define XATTR_UNLABELED -1
 #define OBJECT_R 0
 
+#define NUM_OBJECT_CLASSES 8
+
 typedef enum sefs_classes {
 	NORM_FILE,
 	DIR,
@@ -107,6 +109,8 @@ int sefs_scan_tree(char * dir);
 int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char * filename);
 int sefs_filesystem_data_load(sefs_filesystem_data_t * fsd, char *filename);
 int sefs_get_file_class(const struct stat *statptr);
+int sefs_is_valid_object_class(const char *class_name);
+void sefs_print_valid_object_classes( void );
 
 #endif /* _FSDATA_H */
 
