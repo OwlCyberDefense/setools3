@@ -1,8 +1,8 @@
-SELinux Tools (setools), version 1.5.1
+SELinux Tools (setools), version 1.6
 by Tresys Technology, LLC
 (selinux@tresys.com, www.tresys.com/selinux)
 
-November 04, 2004
+February 09, 2005
 
 BUILDING AND INSTALLING NOTES AND WARNINGS
 
@@ -20,11 +20,13 @@ libapol         The main policy analysis library
 libseaudit	The seaudit support library 
 libseuser       The seuser support library
 libsefs		The selinux filesystem database library	
-seaudit 	The audit log analysis tool (seaudit)
+seaudit 	The audit log analysis tools (seaudit and seaudit-report)
 secmds		The setools command line tools (seinfo, sesearch, 
 		findcon, replcon, indexcon, searchcon)
 sepct           The policy configuration/editing tool (sepcut)
 seuser          The user management tool and shell scripts
+sediff 		The semantic policy difference tool (command-line)
+sediffx		The semantic policy difference tool (GUI)
 packages	External packages required by setools
 
 Apol and the other tools are designed to specifically not address MLS
@@ -45,10 +47,16 @@ distribution. It can be installed by going to the packages subdirectory and
 typing "make install". If you have BWidgets installed make certain that it
 is a compatible version. See BWIDGETS VERSIONS below for more information.
 
-LIBSELINUX: In order to successfully build and install secmds
-onto your system you will need libselinux and the associated headers. A
-package may be available for your distribution - on Fedora Core it is called
-libselinux-devel. 
+LIBSELINUX: In order to successfully build and install the file context tools 
+that come with the secmds package onto your system, as well as include the 
+file context interface in apol, you will need to install libselinux version 
+1.18 or higher and the associated headers. A package may be available for 
+your distribution - on Fedora Core it is called libselinux-devel. 
+
+If you DO NOT wish to install libselinux, make sure to set the USE_LIBSELINUX 
+variable in the top-level Makefile to 0, which is set to 1 by default. Setting 
+this variable to 0 will only build seinfo and sesearch, as well as exclude the 
+file context interface from apol.
 
 GTK: In order to successfully install seaudit onto your system you will need
 libglade and GTK2.0 or above installed. It also requires the pkg-config
@@ -81,10 +89,13 @@ variables in this Makefile.
 	- DEBUG : If set to 0, this will create an optimized version
 	- DYNAMIC : If set to 1, this will dynamically link with internal 
 	     libraries.
-	- USE_LIBSELINUX : This determines whether libapol and libseuser use 
-	     libselinux to find the default policies. Useful to create a 
-	     verion of apol that runs on non-selinux machines. Set this to 0 
-	     for non-selinux machines.
+	- USE_LIBSELINUX : This determines:
+	     	1. whether libapol and libseuser use libselinux to find the 
+	           default policies. NOTE: libselinux must be version 1.18 or 
+	           greater.
+		2. whether libsefs will be built into apol, awish and seuserx. 
+	   Useful to create a version of apol that runs on non-selinux machines. 
+	   Set this to 0 for non-selinux machines.
       
 1. If you are installing seuser and have a version of SELinux based
 on an LSM kernel earlier than 2.4.19 (prior to August 2002 or so): 
@@ -129,7 +140,7 @@ Send comments/questions to selinux@tresys.com.
 
 DEVELOPMENT SUPPORT INSTALLATION
 
-Support for developing using the setools libraries can be installed using the 
+Support for development using the setools libraries can be installed using the 
 'make install-dev' target. This target installs the headers and libraries for 
 libapol, libseuser, and libseaudit. This is provided as a convenience to third 
 party developers, but is not otherwise supported. These libraries are in 
