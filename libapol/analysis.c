@@ -1766,7 +1766,7 @@ out:
 
 static int ta_find_edge(iflow_graph_t *g, iflow_query_t *q, int path_len, int *path, int start)
 {
-	int i, edge;
+	int i, edge = -1;
 	
 	if (q->direction == IFLOW_OUT) {
 		for (i = 0; i < g->nodes[path[start]].num_out_edges; i++) {
