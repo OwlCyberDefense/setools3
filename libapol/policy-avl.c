@@ -46,7 +46,6 @@ static int grow_type_array(void *user_data, int sz)
 	assert(policy != NULL);
 
 	if (sz > policy->list_sz[POL_LIST_TYPE]) {
-	
 		ptr = (type_item_t *)realloc(policy->types,
 					     (LIST_SZ + policy->list_sz[POL_LIST_TYPE])
 					     * sizeof(type_item_t));
@@ -66,11 +65,11 @@ static int grow_attrib_array(void *user_data, int sz)
 	assert(policy != NULL);
 	if (sz > policy->list_sz[POL_LIST_ATTRIB]) {
 		/* grow the dynamic array */
-		attrib_item_t * ptr;
+		name_a_t * ptr;
 
-		ptr = (attrib_item_t *)realloc(policy->attribs,
+		ptr = (name_a_t *)realloc(policy->attribs,
 					       (LIST_SZ+policy->list_sz[POL_LIST_ATTRIB])
-					       * sizeof(attrib_item_t));
+					       * sizeof(name_a_t));
 		if(ptr == NULL) {
 			fprintf(stderr, "out of memory\n");
 			return -1;
@@ -193,8 +192,8 @@ static int avl_add_attrib(void *user_data, const void *key, int idx)
 		return -1;
 	}
 	strcpy(policy->attribs[idx].name, attrib);
-	policy->attribs[idx].num_types = 0;
-	policy->attribs[idx].types = NULL;
+	policy->attribs[idx].num = 0;
+	policy->attribs[idx].a = NULL;
 	(policy->num_attribs)++;
 	return 0;
 }

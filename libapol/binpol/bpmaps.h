@@ -43,7 +43,7 @@ typedef struct bpmaps {
 	int	t_num;
 	ap_alias_bmap_t *alias_map;	/* aliases (top) */
 	ap_alias_bmap_t *alias_map_last; /* (bottom) */
-	user_item_t **u_map;	/* users */
+	int	*u_map;		/* users */
 	int	u_num;
 	int	*bool_map;	/* conditional booleans */
 	int	bool_num;
