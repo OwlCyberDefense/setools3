@@ -122,7 +122,7 @@ proc Apol_Analysis_relabel::do_analysis {results_frame} {
 		} 
 	}
 	
-	if ($objs_list == "") {
+	if {$objs_list == ""} {
 		tk_messageBox -icon error -type ok \
 		    -title "Relabel Analysis Error" \
 		    -message "You cannot exclude all object classes and permissions in the filter!"
@@ -1051,10 +1051,10 @@ proc Apol_Analysis_relabel::tree_select {widget node} {
 	
 	set policy_tags_list ""
 	set line ""
-	set start_index [expr {[string length $line] + 1}]
+	set start_index 0
 	append line "$widget_vars(start_type)"
 	set end_index [string length $line]
-	$widget_vars(current_rtext) tag add $Apol_Analysis_relabel::title_type_tag $start_idx $end_idx
+	lappend title_type_tags $start_index $end_index
 	append line " can "
 	
 	switch -- $widget_vars(mode) {
@@ -1063,20 +1063,22 @@ proc Apol_Analysis_relabel::tree_select {widget node} {
 	    both   {append line "both relabel to and from "}
 	    domain {append line "relabel to or from "}
 	} 
-	set start_index [expr {[string length $line] + 1}]
-	append line "$node"
-	set end_index [string length $line]
-	$widget_vars(current_rtext) tag add $Apol_Analysis_relabel::title_type_tag $start_idx $end_idx
+	
 	if {$widget_vars(mode) == "domain"} {
 		if {$node == "TO_LIST" || $node == "FROM_LIST"} {
 			return
 		}
+		
 		if {[$widget_vars(current_dtree) parent $node] == "TO_LIST"} {
 			set node [string trimleft $node "to_list:"]
 		} else {
 			set node [string trim $node "from_list:"]
 		}
-		append line " $node\n\n"
+		set start_index [expr {[string length $line] + 1}]
+		append line "$node"
+		set end_index [string length $line]
+		lappend title_type_tags $start_index $end_index
+		append line "\n\n"
 		
 		foreach item $data {
 		    set start_index [expr {[string length $line] + 1}]
@@ -1087,13 +1089,17 @@ proc Apol_Analysis_relabel::tree_select {widget node} {
 		}
 		append line "\n"
 	} else {
+		set start_index [expr {[string length $line] + 1}]
+		append line "$node"
+		set end_index [string length $line]
+		lappend title_type_tags $start_index $end_index
 		append line " by:\n\n"
 		foreach datum $data {
 			foreach {subject rule_proof} $datum {
 				set start_index [expr {[string length $line] + 1}]
 				append line "$subject\n"
 				set end_index [string length $line]
-				$widget_vars(current_rtext) tag add $Apol_Analysis_relabel::subtitle_tag $start_idx $end_idx
+				lappend subtitle_type_tags $start_index $end_index
 				append line "\n"
 				foreach {rule_num rule} $rule_proof {
 				    append line "    "
@@ -1110,6 +1116,14 @@ proc Apol_Analysis_relabel::tree_select {widget node} {
 	$widget_vars(current_rtext) insert end $line
 	foreach {start_index end_index} $policy_tags_list {
 		Apol_PolicyConf::insertHyperLink $widget_vars(current_rtext) \
+			"1.0 + $start_index c" "1.0 + $end_index c"
+	}
+	foreach {start_index end_index} $subtitle_type_tags {
+		$widget_vars(current_rtext) tag add $Apol_Analysis_relabel::subtitle_tag \
+			"1.0 + $start_index c" "1.0 + $end_index c"
+	}
+	foreach {start_index end_index} $title_type_tags {
+		$widget_vars(current_rtext) tag add $Apol_Analysis_relabel::title_type_tag \
 			"1.0 + $start_index c" "1.0 + $end_index c"
 	}
 	Apol_Analysis_relabel::formatInfoText $widget_vars(current_rtext)
