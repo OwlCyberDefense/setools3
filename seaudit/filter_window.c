@@ -18,6 +18,7 @@
 #include "utilgui.h"
 #include <libseaudit/filters.h>
 #include <libseaudit/auditlog.h>
+#include <libapol/policy.h>
 #include <string.h>
 
 enum {
@@ -35,6 +36,12 @@ enum items_list_types_t {
 	SEAUDIT_OBJECTS
 };
 
+enum select_values_source_t {
+	SEAUDIT_FROM_LOG,
+	SEAUDIT_FROM_POLICY,
+	SEAUDIT_FROM_UNION
+};
+
 typedef struct  seaudit_filter_list {
 	char **list;
 	int size;
@@ -44,6 +51,7 @@ typedef struct filters_select_items {
 	GtkListStore *selected_items;
 	GtkListStore *unselected_items;
 	enum items_list_types_t items_list_type;
+        enum select_values_source_t items_source;
 	GtkWindow *window;
 	GladeXML *xml;
 	filters_t *parent;
@@ -97,7 +105,7 @@ static GtkEntry* filters_select_items_get_entry(filters_select_items_t *s)
 }
 
 /* Note: the caller must free the string */
-static void filters_select_items_add_item_to_list_model(GtkTreeModel *model, gchar *item)
+static void filters_select_items_add_item_to_list_model(GtkTreeModel *model, const gchar *item)
 {
 	GtkTreeIter iter;
 	gchar *str_data = NULL;
@@ -106,7 +114,7 @@ static void filters_select_items_add_item_to_list_model(GtkTreeModel *model, gch
 	
 	/* As a defensive programming technique, we first make sure the string is */
 	/* a valid size before adding it to the list store. If not, then ignore.  */
-	if (!is_valid_str_sz((char *)item)) {
+	if (!is_valid_str_sz(item)) {
 		fprintf(stderr, "Item string too large....Ignoring");
 		return;
 	}
@@ -114,7 +122,7 @@ static void filters_select_items_add_item_to_list_model(GtkTreeModel *model, gch
 	valid = gtk_tree_model_get_iter_first(model, &iter);
 	while (valid) {
 		gtk_tree_model_get(model, &iter, ITEMS_LIST_COLUMN, &str_data, -1);
-		if (strcmp((const char*)item, (const char*)str_data) < 0) 
+		if (strcmp(item, str_data) < 0) 
 			break;
 		valid = gtk_tree_model_iter_next (model, &iter);
 		row++;
@@ -124,49 +132,319 @@ static void filters_select_items_add_item_to_list_model(GtkTreeModel *model, gch
 	gtk_list_store_set(GTK_LIST_STORE(model), &iter, ITEMS_LIST_COLUMN, item, -1);
 }
 
-static void filters_select_items_set_list_stores_default_values(filters_select_items_t* filter_items_list)
-{ 
-	int i = 0; 
-	user_item_t *cur_user;
-	
-	if (filter_items_list->items_list_type == SEAUDIT_SRC_TYPES
-	    || filter_items_list->items_list_type == SEAUDIT_TGT_TYPES) {
-		/* types - start iteration of types at index 1 in order to skip 'self' type */
-		for (i = 1; i < seaudit_app->cur_policy->num_types; i++) {
-			filters_select_items_add_item_to_list_model(GTK_TREE_MODEL(filter_items_list->unselected_items),
-									 seaudit_app->cur_policy->types[i].name);
-		}
-	} else if (filter_items_list->items_list_type == SEAUDIT_SRC_USERS
-		   || filter_items_list->items_list_type == SEAUDIT_TGT_USERS) {
-		/* users */
-		for (cur_user = seaudit_app->cur_policy->users.head;
-		     cur_user != NULL; cur_user = cur_user->next) {
-			filters_select_items_add_item_to_list_model(GTK_TREE_MODEL(filter_items_list->unselected_items),
-									 cur_user->name);
-			
-		}
-	} else if (filter_items_list->items_list_type == SEAUDIT_SRC_ROLES
-		   || filter_items_list->items_list_type == SEAUDIT_TGT_ROLES) {
-		/* roles */
-		for (i = 0; i < seaudit_app->cur_policy->num_roles; i++) {
-			filters_select_items_add_item_to_list_model(GTK_TREE_MODEL(filter_items_list->unselected_items),
-									 seaudit_app->cur_policy->roles[i].name);
+static gboolean filters_select_items_is_value_selected(filters_select_items_t *filter_items_list, const gchar *item)
+{
+	gboolean valid;
+	GtkTreeIter iter;
+	GtkTreeModel *model = GTK_TREE_MODEL(filter_items_list->selected_items);
+	gchar *str_data;
 
+	valid = gtk_tree_model_get_iter_first(model, &iter);
+	while (valid) {
+		gtk_tree_model_get(model, &iter, ITEMS_LIST_COLUMN, &str_data, -1);
+		if (strcmp(item, str_data) == 0) 
+			return TRUE;
+		valid = gtk_tree_model_iter_next (model, &iter);
+	}
+	return FALSE;
+}
+
+static gboolean filters_select_items_is_value_unselected(filters_select_items_t *filter_items_list, const gchar *item)
+{
+	gboolean valid;
+	GtkTreeIter iter;
+	GtkTreeModel *model = GTK_TREE_MODEL(filter_items_list->unselected_items);
+	gchar *str_data;
+
+	valid = gtk_tree_model_get_iter_first(model, &iter);
+	while (valid) {
+		gtk_tree_model_get(model, &iter, ITEMS_LIST_COLUMN, &str_data, -1);
+		if (strcmp(item, str_data) == 0) 
+			return TRUE;
+		valid = gtk_tree_model_iter_next (model, &iter);
+	}
+	return FALSE;
+}
+
+static gboolean is_value_from_current_items_source(filters_select_items_t *filter_items_list, const gchar *item_str)
+{
+	if (filter_items_list->items_list_type == SEAUDIT_SRC_TYPES ||
+	    filter_items_list->items_list_type == SEAUDIT_TGT_TYPES)
+		switch (filter_items_list->items_source) {
+		case SEAUDIT_FROM_LOG:
+			return (audit_log_get_type_idx(seaudit_app->log_store->log, item_str) != -1);
+		case SEAUDIT_FROM_POLICY:
+			return (get_type_idx(item_str, seaudit_app->cur_policy) != -1);
+		case SEAUDIT_FROM_UNION:
+			if (audit_log_get_type_idx(seaudit_app->log_store->log, item_str) != -1)
+				return TRUE;
+			if (get_type_idx(item_str, seaudit_app->cur_policy) != -1)
+				return TRUE;
+			return FALSE;
+		default:
+			break;
 		}
-	} else if (filter_items_list->items_list_type == SEAUDIT_OBJECTS ) {
+
+	else if (filter_items_list->items_list_type == SEAUDIT_SRC_USERS ||
+	    filter_items_list->items_list_type == SEAUDIT_TGT_USERS)
+		switch (filter_items_list->items_source) {
+		case SEAUDIT_FROM_LOG:
+			return (audit_log_get_user_idx(seaudit_app->log_store->log, item_str) != -1);
+		case SEAUDIT_FROM_POLICY:
+			return does_user_exists(item_str, seaudit_app->cur_policy);
+		case SEAUDIT_FROM_UNION:
+			if (audit_log_get_user_idx(seaudit_app->log_store->log, item_str) != -1)
+				return TRUE;
+			if (does_user_exists(item_str, seaudit_app->cur_policy))
+				return TRUE;
+			return FALSE;
+		default:
+			break;
+		}
+
+	else if (filter_items_list->items_list_type == SEAUDIT_SRC_ROLES || 
+	    filter_items_list->items_list_type == SEAUDIT_TGT_ROLES)
+		switch (filter_items_list->items_source) {
+		case SEAUDIT_FROM_LOG:
+			return (audit_log_get_role_idx(seaudit_app->log_store->log, item_str) != -1);
+		case SEAUDIT_FROM_POLICY:
+			return (get_role_idx(item_str, seaudit_app->cur_policy) != -1);
+		case SEAUDIT_FROM_UNION:
+			if (audit_log_get_role_idx(seaudit_app->log_store->log, item_str) != -1)
+				return TRUE;
+			if (get_role_idx(item_str, seaudit_app->cur_policy) != -1)
+				return TRUE;
+			return FALSE;
+		default:
+			break;
+		}
+	else if (filter_items_list->items_list_type == SEAUDIT_OBJECTS)
+		switch (filter_items_list->items_source) {
+		case SEAUDIT_FROM_LOG:
+			return (audit_log_get_obj_idx(seaudit_app->log_store->log, item_str) != -1);
+		case SEAUDIT_FROM_POLICY:
+			return (get_obj_class_idx(item_str, seaudit_app->cur_policy));
+		case SEAUDIT_FROM_UNION:
+			if (audit_log_get_obj_idx(seaudit_app->log_store->log, item_str) != -1)
+				return TRUE;
+			if (get_obj_class_idx(item_str, seaudit_app->cur_policy))
+				return TRUE;
+			return FALSE;
+		default:
+			break;
+		}
+	return FALSE;
+}
+
+/* add an unselected item */
+static void filters_select_items_add_unselected_value(filters_select_items_t *filter_items_list, const gchar *item)
+{
+	if (filters_select_items_is_value_selected(filter_items_list, item))
+		return;
+	if (filters_select_items_is_value_unselected(filter_items_list, item))
+		return;
+	filters_select_items_add_item_to_list_model(GTK_TREE_MODEL(filter_items_list->unselected_items), item);
+}
+
+static void filters_select_items_add_selected_value(filters_select_items_t *filter_items_list, const gchar *item)
+{
+	if (filters_select_items_is_value_selected(filter_items_list, item))
+		return;
+	if (filters_select_items_is_value_unselected(filter_items_list, item))
+		return;	
+	filters_select_items_add_item_to_list_model(GTK_TREE_MODEL(filter_items_list->selected_items), item);
+}
+
+static void filters_select_items_set_objects_list_stores_default_values(filters_select_items_t *filter_items_list)
+{
+	int i;
+	const char *object;
+
+	switch (filter_items_list->items_source) {
+	case SEAUDIT_FROM_LOG:
+		for (i = 0; (object = audit_log_get_obj(seaudit_app->log_store->log, i)) != NULL; i++)
+			if (g_utf8_validate(object, -1, NULL))
+				filters_select_items_add_unselected_value(filter_items_list,
+									  object);
+		break;
+	case SEAUDIT_FROM_POLICY:
 		for (i = 0; i < seaudit_app->cur_policy->num_obj_classes; i++) {
 			/* Add to excluded objects list store */
-			filters_select_items_add_item_to_list_model(GTK_TREE_MODEL(filter_items_list->unselected_items),
-									 seaudit_app->cur_policy->obj_classes[i].name);
+			filters_select_items_add_unselected_value(filter_items_list,
+								  seaudit_app->cur_policy->obj_classes[i].name);
 		}
-	} else {
+		break;
+	case SEAUDIT_FROM_UNION:
+		for (i = 0; (object = audit_log_get_obj(seaudit_app->log_store->log, i)) != NULL; i++)
+			if (g_utf8_validate(object, -1, NULL))
+				filters_select_items_add_unselected_value(filter_items_list,
+									  object);
+		for (i = 0; i < seaudit_app->cur_policy->num_obj_classes; i++)
+			/* Add to excluded objects list store */
+			filters_select_items_add_unselected_value(filter_items_list,
+								  seaudit_app->cur_policy->obj_classes[i].name);
+		break;
+	default:
+		fprintf(stderr, "Bad filters_select_items_t object!!\n");
+		return;
+	}
+}
+
+static void filters_select_items_set_roles_list_stores_default_values(filters_select_items_t *filter_items_list)
+{
+	int i;
+	const char *role;
+
+	switch (filter_items_list->items_source) {
+	case SEAUDIT_FROM_LOG:
+		for (i = 0; (role = audit_log_get_role(seaudit_app->log_store->log, i)) != NULL; i++)
+			if (g_utf8_validate(role, -1, NULL))
+				filters_select_items_add_unselected_value(filter_items_list,
+									  role);
+		break;
+	case SEAUDIT_FROM_POLICY:
+		for (i = 0; i < seaudit_app->cur_policy->num_roles; i++)
+			filters_select_items_add_unselected_value(filter_items_list,
+								  seaudit_app->cur_policy->roles[i].name);
+		break;
+	case SEAUDIT_FROM_UNION:
+		for (i = 0; (role = audit_log_get_role(seaudit_app->log_store->log, i)) != NULL; i++)
+			if (g_utf8_validate(role, -1, NULL))
+				filters_select_items_add_unselected_value(filter_items_list,
+									  role);
+		for (i = 0; i < seaudit_app->cur_policy->num_roles; i++)
+			filters_select_items_add_unselected_value(filter_items_list,
+								  seaudit_app->cur_policy->roles[i].name);
+		break;
+	default:
+		fprintf(stderr, "Bad filters_select_items_t object!!\n");
+		return;
+	}	
+}
+
+static void filters_select_items_set_users_list_stores_default_values(filters_select_items_t *filter_items_list)
+{
+	user_item_t *cur_user;
+	const char *user;
+	int i;
+
+	switch (filter_items_list->items_source) {
+	case SEAUDIT_FROM_LOG:
+		for (i = 0; (user = audit_log_get_user(seaudit_app->log_store->log, i)) != NULL; i++)
+			if (g_utf8_validate(user, -1, NULL))
+				filters_select_items_add_unselected_value(filter_items_list,
+									  user);
+		break;
+	case SEAUDIT_FROM_POLICY:
+		for (cur_user = seaudit_app->cur_policy->users.head;
+		     cur_user != NULL; cur_user = cur_user->next) {
+			filters_select_items_add_unselected_value(filter_items_list,
+								  cur_user->name);
+		}
+		break;
+	case SEAUDIT_FROM_UNION:
+		for (i = 0; (user = audit_log_get_user(seaudit_app->log_store->log, i)) != NULL; i++)
+			if (g_utf8_validate(user, -1, NULL))
+				filters_select_items_add_unselected_value(filter_items_list,
+									  user);
+		for (cur_user = seaudit_app->cur_policy->users.head;
+		     cur_user != NULL; cur_user = cur_user->next) {
+			filters_select_items_add_unselected_value(filter_items_list,
+								  cur_user->name);
+		}
+		break;
+	default:
+		fprintf(stderr, "Bad filters_select_items_t object!!\n");
+		return;
+	}		
+}
+
+static void filters_select_items_set_types_list_stores_default_values(filters_select_items_t *filter_items_list)
+{
+	int i; 
+	const char *type;
+
+	switch (filter_items_list->items_source) {
+	case SEAUDIT_FROM_LOG:
+		for (i = 0; (type = audit_log_get_type(seaudit_app->log_store->log, i)) != NULL; i++)
+			if (g_utf8_validate(type, -1, NULL))
+				filters_select_items_add_unselected_value(filter_items_list,
+									  type);
+		break;
+	case SEAUDIT_FROM_POLICY:
+		/* start iteration of types at index 1 in order to skip 'self' type */
+		for (i = 1; i < seaudit_app->cur_policy->num_types; i++) {
+			filters_select_items_add_unselected_value(filter_items_list,
+								  seaudit_app->cur_policy->types[i].name);
+		}
+		break;
+	case SEAUDIT_FROM_UNION:
+		for (i = 0; (type = audit_log_get_type(seaudit_app->log_store->log, i)) != NULL; i++)
+			if (g_utf8_validate(type, -1, NULL))
+				filters_select_items_add_unselected_value(filter_items_list,
+									  type);
+		for (i = 1; i < seaudit_app->cur_policy->num_types; i++) {
+			filters_select_items_add_unselected_value(filter_items_list,
+								  seaudit_app->cur_policy->types[i].name);
+		}
+		break;
+	default:
+		fprintf(stderr, "Bad filters_select_items_t object!!\n");
+		return;
+	}
+}
+
+static void filters_select_items_set_list_stores_default_values(filters_select_items_t* filter_items_list)
+{ 
+	if (filter_items_list->items_list_type == SEAUDIT_SRC_TYPES
+	    || filter_items_list->items_list_type == SEAUDIT_TGT_TYPES)
+		/* types */
+		filters_select_items_set_types_list_stores_default_values(filter_items_list);
+
+	else if (filter_items_list->items_list_type == SEAUDIT_SRC_USERS
+		   || filter_items_list->items_list_type == SEAUDIT_TGT_USERS)
+		/* users */
+		filters_select_items_set_users_list_stores_default_values(filter_items_list);
+
+	else if (filter_items_list->items_list_type == SEAUDIT_SRC_ROLES
+		   || filter_items_list->items_list_type == SEAUDIT_TGT_ROLES)
+		/* roles */
+		filters_select_items_set_roles_list_stores_default_values(filter_items_list);
+
+	else if (filter_items_list->items_list_type == SEAUDIT_OBJECTS )
+		/* objects */
+		filters_select_items_set_objects_list_stores_default_values(filter_items_list);
+
+	else
 		fprintf(stderr, "Wrong filter parameter specified.\n");
+}
+
+static void filters_select_items_refresh_unselected_list_store(filters_select_items_t *filters_select)
+{
+	show_wait_cursor(GTK_WIDGET(filters_select->window));
+	gtk_list_store_clear(filters_select->unselected_items);
+	filters_select_items_set_list_stores_default_values(filters_select);
+	clear_wait_cursor(GTK_WIDGET(filters_select->window));
+}
+
+static void filters_select_items_on_radio_button_toggled(GtkToggleButton *button, gpointer user_data)
+{
+	filters_select_items_t *filters_select = (filters_select_items_t*)user_data;
+
+	if (gtk_toggle_button_get_active(button)) {
+		if (strcmp("LogRadioButton", gtk_widget_get_name(GTK_WIDGET(button))) == 0)
+			filters_select->items_source = SEAUDIT_FROM_LOG;
+		if (strcmp("PolicyRadioButton", gtk_widget_get_name(GTK_WIDGET(button))) ==0)
+			filters_select->items_source = SEAUDIT_FROM_POLICY;
+		if (strcmp("UnionRadioButton", gtk_widget_get_name(GTK_WIDGET(button))) == 0)
+			filters_select->items_source = SEAUDIT_FROM_UNION;
+		filters_select_items_refresh_unselected_list_store(filters_select);
 	}
 }
 
 static void filters_select_items_fill_entry(filters_select_items_t *s)
-
-{	GtkTreeIter iter;
+{	
+	GtkTreeIter iter;
 	gboolean valid, first = TRUE;
 	GString *string;
 	gchar *item;
@@ -191,98 +469,6 @@ static void filters_select_items_fill_entry(filters_select_items_t *s)
 	}
 	gtk_entry_set_text(entry, string->str);
 	g_string_free(string, TRUE);
-}
-
-static bool_t filters_select_items_is_valid_item(filters_select_items_t *s, char *item)
-{
-	switch (s->items_list_type) {
-	case SEAUDIT_SRC_TYPES:
-	case SEAUDIT_TGT_TYPES:
-		if (get_type_idx(item, seaudit_app->cur_policy) < 0)
-			return FALSE;
-		else
-			return TRUE;
-		break;
-
-	case SEAUDIT_SRC_USERS:
-	case SEAUDIT_TGT_USERS:
-		return does_user_exists(item, seaudit_app->cur_policy);
-		break;
-
-	case SEAUDIT_SRC_ROLES:
-	case SEAUDIT_TGT_ROLES:
-		if (get_role_idx(item, seaudit_app->cur_policy) < 0)
-			return FALSE;
-		else
-			return TRUE;
-		break;
-
-	case SEAUDIT_OBJECTS:
-		if (get_obj_class_idx(item, seaudit_app->cur_policy) < 0)
-			return FALSE;
-		else
-			return TRUE;
-		break;
-	default:
-		fprintf(stderr, "Bad filters_select_items_t object!!\n");
-		return FALSE;
-	};
-}
-
-static void filters_select_items_display_invalid_items(filters_select_items_t *s, GList *invalid_items)
-{
-	GString *msg, *tmp;
-	guint i;
-	char *item_str;
-	const int SEAUDIT_STR_SZ = 128;
-
-	switch (s->items_list_type) {
-	case SEAUDIT_SRC_TYPES:
-		msg = g_string_new("The following were invalid source types and will be removed:\n\n");
-		break;
-	case SEAUDIT_TGT_TYPES:
-		msg = g_string_new("The following were invalid target types and will be removed:\n\n");
-		break;
-
-	case SEAUDIT_SRC_USERS:
-		msg = g_string_new("The following were invalid source users and will be removed:\n\n");
-		break;
-	case SEAUDIT_TGT_USERS:
-		msg = g_string_new("The following were invalid target users and will be removed:\n\n");
-		break;
-
-	case SEAUDIT_SRC_ROLES:
-		msg = g_string_new("The following were invalid source roles and will be removed:\n\n");
-		break;
-	case SEAUDIT_TGT_ROLES:
-		msg = g_string_new("The following were invalid target roles and will be removed:\n\n");
-		break;
-
-	case SEAUDIT_OBJECTS:
-		msg = g_string_new("The following were invalid object classes and will be removed:\n\n");
-		break;
-	default:
-		fprintf(stderr, "Bad filters_select_items_t object!!\n");
-		return;
-	};
-	
-	for (i = 0; i < g_list_length(invalid_items); i++) {
-		g_string_append(msg, "\t\"");
-		/* We perform a deep copy using the defined valid string size in order 	*/
-		/* to put a cap on the size of the error message pop-up dialog. 	*/
-		tmp = g_list_nth_data(invalid_items, i);
-		if (strlen(tmp->str) > SEAUDIT_STR_SZ) {
-			item_str = g_strndup(tmp->str, SEAUDIT_STR_SZ);
-			g_string_append(msg, item_str);
-			g_string_append(msg, "...");
-			g_free(item_str);
-		} else {
-			g_string_append(msg, tmp->str);
-		}
-		g_string_append(msg, "\"\n");
-	}
-	message_display(seaudit_app->filters->window, GTK_MESSAGE_ERROR, msg->str);
-	g_string_free(msg, TRUE);
 }
 
 static void filters_select_items_move_to_selected_items_list(filters_select_items_t *filter_items_list)
@@ -326,10 +512,10 @@ static void filters_select_items_move_to_selected_items_list(filters_select_item
 	filters_select_items_fill_entry(filter_items_list);
 }
 
-static void filters_select_items_move_to_unselected_items_list(filters_select_items_t *filter_items_list)
+static void filters_select_items_remove_selected_items(filters_select_items_t *filter_items_list)
 {
-	GtkTreeView *include_tree, *exclude_tree;
-	GtkTreeModel *incl_model, *excl_model;
+	GtkTreeModel *incl_model;
+	GtkTreeView *include_tree;
         GtkTreeIter iter;
 	GList *sel_rows = NULL;
 	GtkTreePath *path;
@@ -337,11 +523,8 @@ static void filters_select_items_move_to_unselected_items_list(filters_select_it
 	                           
 	include_tree = GTK_TREE_VIEW(glade_xml_get_widget(filter_items_list->xml, "IncludeTreeView"));
 	g_assert(include_tree);
-	exclude_tree = GTK_TREE_VIEW(glade_xml_get_widget(filter_items_list->xml, "ExcludeTreeView"));
-	g_assert(exclude_tree);
 	
 	incl_model = GTK_TREE_MODEL(filter_items_list->selected_items);
-	excl_model = GTK_TREE_MODEL(filter_items_list->unselected_items);
 	sel_rows = gtk_tree_selection_get_selected_rows(gtk_tree_view_get_selection(include_tree), &incl_model);
 	
 	if(sel_rows == NULL) 
@@ -356,7 +539,8 @@ static void filters_select_items_move_to_unselected_items_list(filters_select_it
 		}
 		gtk_tree_model_get(incl_model, &iter, ITEMS_LIST_COLUMN, &item_str, -1);
 		gtk_list_store_remove(GTK_LIST_STORE(incl_model), &iter);
-		filters_select_items_add_item_to_list_model(excl_model, item_str);
+		if (is_value_from_current_items_source(filter_items_list, item_str))
+			filters_select_items_add_unselected_value(filter_items_list, item_str);
 		g_free(item_str);
 				
 		/* Free the list of selected tree paths; we have to get the list of selected items again since the list has now changed */
@@ -367,12 +551,6 @@ static void filters_select_items_move_to_unselected_items_list(filters_select_it
 	filters_select_items_fill_entry(filter_items_list);
 }
 
-static void g_list_free_1_gstring(void *data, void *user_data)
-{
-	if (data)
-		g_string_free((GString*)data, TRUE);
-}
-
 /* filters_select_items events */
 static void filters_select_items_on_add_button_clicked(GtkButton *button, filters_select_items_t *filter_items_list)
 {
@@ -381,7 +559,27 @@ static void filters_select_items_on_add_button_clicked(GtkButton *button, filter
 
 static void filters_select_items_on_remove_button_clicked(GtkButton *button, filters_select_items_t *filter_items_list)
 {
-	filters_select_items_move_to_unselected_items_list(filter_items_list);
+	filters_select_items_remove_selected_items(filter_items_list);
+}
+
+static void filters_select_on_policy_opened(void *filter_items_list)
+{
+	filters_select_items_t *s = (filters_select_items_t*)filter_items_list;
+
+	if (s->items_source == SEAUDIT_FROM_LOG)
+		return;
+	else 
+		filters_select_items_refresh_unselected_list_store(s);
+}
+
+static void filters_select_on_log_opened(void *filter_items_list)
+{
+	filters_select_items_t *s = (filters_select_items_t*)filter_items_list;
+
+	if (s->items_source == SEAUDIT_FROM_POLICY)
+		return;
+	else 
+		filters_select_items_refresh_unselected_list_store(s);
 }
 
 static void filters_select_items_on_close_button_clicked(GtkButton *button, filters_select_items_t *filter_items_list)
@@ -390,16 +588,14 @@ static void filters_select_items_on_close_button_clicked(GtkButton *button, filt
 		gtk_widget_destroy(GTK_WIDGET(filter_items_list->window));
 		filter_items_list->window = NULL;
 		filters_select_items_fill_entry(filter_items_list);
+		log_load_callback_remove(&filters_select_on_log_opened, filter_items_list);
+		policy_load_callback_remove(&filters_select_on_policy_opened, filter_items_list);
 	}
 }
 
 static gboolean filters_select_items_on_window_destroy(GtkWidget *widget, GdkEvent *event, filters_select_items_t *filter_items_list)
 {
-	if (filter_items_list->window != NULL) {
-		gtk_widget_destroy(GTK_WIDGET(filter_items_list->window));
-		filter_items_list->window = NULL;
-		filters_select_items_fill_entry(filter_items_list);
-	}
+	filters_select_items_on_close_button_clicked(NULL, filter_items_list);
 	return FALSE;
 }
 
@@ -464,13 +660,11 @@ static void filters_select_items_destroy(filters_select_items_t* item)
 static void filters_select_items_parse_entry(filters_select_items_t *s)
 {
 	GtkTreeIter iter;
-	gboolean valid, found;
+	gboolean valid;
 	const gchar *entry_text;
 	gchar **items, *cur, *item;
 	int cur_index;
-	GList *invalid_items = NULL;
 	GtkEntry *entry;
-	GString *tmp = NULL;
 	
 	entry = filters_select_items_get_entry(s);
 	if (!entry) {
@@ -489,10 +683,8 @@ static void filters_select_items_parse_entry(filters_select_items_t *s)
 			/* remove whitespace from the beginning and end */
 			g_strchug(cur);
 			g_strchomp(cur);
-	
-			/* see if it is valid */
-			if (filters_select_items_is_valid_item(s, cur)) {
-				/* See if item exists in unselected list store; if so, remove */
+			/* See if item exists in unselected list store; if so, remove */
+			if (filters_select_items_is_value_unselected(s, cur)) {
 				valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(s->unselected_items), &iter);
 				while (valid) {
 					gtk_tree_model_get(GTK_TREE_MODEL(s->unselected_items), &iter, ITEMS_LIST_COLUMN, &item, -1);
@@ -503,39 +695,12 @@ static void filters_select_items_parse_entry(filters_select_items_t *s)
 					valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(s->unselected_items), &iter);
 					g_free(item);
 				}
-						
-				/* See if the string already exists in the selected items list store */
-				found = FALSE;
-				valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(s->selected_items), &iter);
-				while (valid) {
-					gtk_tree_model_get(GTK_TREE_MODEL(s->selected_items), &iter, ITEMS_LIST_COLUMN, &item, -1);
-					if (strcmp(cur, item) == 0) {
-						found = TRUE;
-						break;
-					}
-					valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(s->selected_items), &iter);
-					g_free(item);
-				}			
-				/* insertions should be folded into existence checking for efficiency - too much
-				 * trouble for now, though */
-				if (!found) {
-					filters_select_items_add_item_to_list_model(GTK_TREE_MODEL(s->selected_items), cur);
-				}
-			} else {
-				tmp = g_string_new(cur);				
-				invalid_items = g_list_append(invalid_items, tmp);
 			}
+			filters_select_items_add_selected_value(s, cur);
 			cur_index++;
 			cur = items[cur_index];
 		}
 		g_strfreev(items);
-		if (invalid_items != NULL) {
-			filters_select_items_display_invalid_items(s, invalid_items);
-			g_list_foreach(invalid_items, g_list_free_1_gstring, NULL);
-			g_list_free(invalid_items);
-			/* Since there were invalid items found we must re-fill the entry box. */
-			filters_select_items_fill_entry(s);
-		}
 	}
 }
 
@@ -550,8 +715,8 @@ static filters_select_items_t* filters_select_items_create(filters_t *parent, en
 		return NULL;
 	}
 	memset (item, 0, sizeof(filters_select_items_t));
-	item->selected_items = gtk_list_store_new(NUMBER_ITEMS_LIST_COLUMNS, G_TYPE_STRING);;
-	item->unselected_items = gtk_list_store_new(NUMBER_ITEMS_LIST_COLUMNS, G_TYPE_STRING);;
+	item->selected_items = gtk_list_store_new(NUMBER_ITEMS_LIST_COLUMNS, G_TYPE_STRING);
+	item->unselected_items = gtk_list_store_new(NUMBER_ITEMS_LIST_COLUMNS, G_TYPE_STRING);
 	item->items_list_type = items_type;
 	item->parent = parent;
 	
@@ -565,8 +730,8 @@ static void filters_select_items_display(filters_select_items_t *filter_items_li
 	GtkCellRenderer *renderer;
 	GtkTreeViewColumn *excl_column, *incl_column;
 	GtkWindow *window;
+	GtkWidget *widget;
 	GString *path;
-	GtkTreeIter iter;
 	char *dir;
 	GtkLabel *lbl;
 	GtkLabel *incl_lbl;
@@ -587,43 +752,49 @@ static void filters_select_items_display(filters_select_items_t *filter_items_li
 	window = GTK_WINDOW(glade_xml_get_widget(xml, "CreateFilterWindow"));
 	g_assert(window);
 	filter_items_list->window = window;
-	
+
 	/* Set this new dialog transient for the parent filters dialog so that
 	 * it will be destroyed when the parent filters dialog is destroyed */
 	gtk_window_set_transient_for(window, filter_items_list->parent->window);
 	gtk_window_set_destroy_with_parent(window, FALSE);
-	                                             
+	    
 	if (!seaudit_app->cur_policy) {
-		g_assert(window);
-		message_display(window, GTK_MESSAGE_ERROR, "You must load a policy first.\n");
-		return;
+		widget = glade_xml_get_widget(xml, "PolicyRadioButton");
+		g_assert(widget);
+		gtk_widget_set_sensitive(widget, FALSE);
+		widget = glade_xml_get_widget(xml, "UnionRadioButton");
+		g_assert(widget);
+		gtk_widget_set_sensitive(widget, FALSE);		
 	}
 
 	/* Connect all signals to callback functions */
 	g_signal_connect(G_OBJECT(window), "delete_event", 
 			 G_CALLBACK(filters_select_items_on_window_destroy), 
 			 filter_items_list);
+	glade_xml_signal_connect_data(xml, "filters_select_items_on_radio_button_toggled", 
+				      G_CALLBACK(filters_select_items_on_radio_button_toggled),
+				      filter_items_list);
 	glade_xml_signal_connect_data(xml, "filters_select_items_on_close_button_clicked",
-				  G_CALLBACK(filters_select_items_on_close_button_clicked),
-				  filter_items_list);
+				      G_CALLBACK(filters_select_items_on_close_button_clicked),
+				      filter_items_list);
 	glade_xml_signal_connect_data(xml, "filters_select_items_on_add_button_clicked",
-				  G_CALLBACK(filters_select_items_on_add_button_clicked),
-				  filter_items_list);
+				      G_CALLBACK(filters_select_items_on_add_button_clicked),
+				      filter_items_list);
 	glade_xml_signal_connect_data(xml, "filters_select_items_on_remove_button_clicked",
-				  G_CALLBACK(filters_select_items_on_remove_button_clicked),
-				  filter_items_list);
+				      G_CALLBACK(filters_select_items_on_remove_button_clicked),
+				      filter_items_list);
 	glade_xml_signal_connect_data(xml, "filters_select_items_on_Selected_SelectAllButton_clicked",
-				  G_CALLBACK(filters_select_items_on_Selected_SelectAllButton_clicked),
-				  filter_items_list);
+				      G_CALLBACK(filters_select_items_on_Selected_SelectAllButton_clicked),
+				      filter_items_list);
 	glade_xml_signal_connect_data(xml, "filters_select_items_on_Selected_ClearButton_clicked",
-				  G_CALLBACK(filters_select_items_on_Selected_ClearButton_clicked),
-				  filter_items_list);
+				      G_CALLBACK(filters_select_items_on_Selected_ClearButton_clicked),
+				      filter_items_list);
 	glade_xml_signal_connect_data(xml, "filters_select_items_on_Unselected_SelectAllButton_clicked",
-				  G_CALLBACK(filters_select_items_on_Unselected_SelectAllButton_clicked),
-				  filter_items_list);
+				      G_CALLBACK(filters_select_items_on_Unselected_SelectAllButton_clicked),
+				      filter_items_list);
 	glade_xml_signal_connect_data(xml, "filters_select_items_on_Unselected_ClearButton_clicked",
-				  G_CALLBACK(filters_select_items_on_Unselected_ClearButton_clicked),
-				  filter_items_list);
+				      G_CALLBACK(filters_select_items_on_Unselected_ClearButton_clicked),
+				      filter_items_list);
 	
 	/* Set labeling */
 	lbl = GTK_LABEL(glade_xml_get_widget(xml, "TitleFrameLabel"));
@@ -665,11 +836,28 @@ static void filters_select_items_display(filters_select_items_t *filter_items_li
 	exclude_tree = GTK_TREE_VIEW(glade_xml_get_widget(xml, "ExcludeTreeView"));
 	g_assert(exclude_tree);
 	
-	/* List stores are already created */	
-	/* Set default values if they have not been set already */
-	if(gtk_tree_model_get_iter_first(GTK_TREE_MODEL(filter_items_list->selected_items), &iter) == FALSE 
-		&& gtk_tree_model_get_iter_first(GTK_TREE_MODEL(filter_items_list->unselected_items), &iter) == FALSE)	
-		filters_select_items_set_list_stores_default_values(filter_items_list);
+	switch (filter_items_list->items_source) {
+	case SEAUDIT_FROM_LOG:
+		widget = glade_xml_get_widget(xml, "LogRadioButton");
+		g_assert(widget);
+		/* emits the toggled signal */
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), TRUE);
+		break;
+	case SEAUDIT_FROM_POLICY:
+		widget = glade_xml_get_widget(xml, "PolicyRadioButton");
+		g_assert(widget);
+		/* emits the toggled signal */
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), TRUE);
+		break;
+	case SEAUDIT_FROM_UNION:
+		widget = glade_xml_get_widget(xml, "UnionRadioButton");
+		g_assert(widget);
+		/* emits the toggled signal */
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), TRUE);
+		break;
+	default:
+		break;
+	}
 	
 	gtk_tree_view_set_model(include_tree, GTK_TREE_MODEL(filter_items_list->selected_items));
 	gtk_tree_view_set_model(exclude_tree, GTK_TREE_MODEL(filter_items_list->unselected_items));
@@ -688,6 +876,9 @@ static void filters_select_items_display(filters_select_items_t *filter_items_li
 	/* Set selection mode */
 	gtk_tree_selection_set_mode(gtk_tree_view_get_selection(include_tree), GTK_SELECTION_MULTIPLE);
 	gtk_tree_selection_set_mode(gtk_tree_view_get_selection(exclude_tree), GTK_SELECTION_MULTIPLE);
+
+	policy_load_callback_register(&filters_select_on_policy_opened, filter_items_list);
+	log_load_callback_register(&filters_select_on_log_opened, filter_items_list);
 }
 
 /********************************************************
@@ -891,23 +1082,6 @@ static void filters_clear_context_tab_values(filters_t *filters)
 	gtk_entry_set_text(entry, "");
 }
 
-/* filters events */
-static void filters_on_opened_new_policy(void *user_data)
-{
-	filters_t *filters = (filters_t *)user_data;
-
-	/* Here, we only need to update the 'Context' tab values, because a new
-	 * policy has been loaded. The 'Other' tab values can stay around as they
-	 * are policy independant */
-	filters_select_items_parse_entry(filters->src_types_items);
-	filters_select_items_parse_entry(filters->src_users_items);
-	filters_select_items_parse_entry(filters->src_roles_items);
-	filters_select_items_parse_entry(filters->tgt_types_items);
-	filters_select_items_parse_entry(filters->tgt_users_items);
-	filters_select_items_parse_entry(filters->tgt_roles_items);
-	filters_select_items_parse_entry(filters->obj_class_items);
-}
-
 static void filters_on_custom_clicked(GtkButton *button, filters_select_items_t *filter_items_list)
 {	
 	if (filter_items_list->window != NULL) {
@@ -953,7 +1127,6 @@ static gboolean filters_on_filter_window_destroy(GtkWidget *widget, GdkEvent *ev
 			filters->obj_class_items->window = NULL;
 		}
 		filters_update_values(filters);
-		policy_load_callback_remove(&filters_on_opened_new_policy, filters);
 		gtk_widget_destroy(GTK_WIDGET(filters->window));
 		filters->window = NULL;
 	}
@@ -1269,9 +1442,7 @@ void filters_display(filters_t* filters)
 	glade_xml_signal_connect_data(xml, "filters_on_OtherClearButton_clicked",
 				      G_CALLBACK(filters_on_OtherClearButton_clicked),
 				      filters);
-				      			      
-	policy_load_callback_register(&filters_on_opened_new_policy, filters);
-
+				      	
 	widget = glade_xml_get_widget(seaudit_app->top_window_xml, "LogListView");
  	model = gtk_tree_view_get_model(GTK_TREE_VIEW(widget));
 	store = (SEAuditLogStore*)model;
