@@ -6086,92 +6086,6 @@ int Apol_FlowAssertExecute (ClientData clientData, Tcl_Interp *interp,
         return TCL_OK;
 }
 
-static int apol_relabel_fromto_results_append_subject_info(ap_relabel_result_t *results, int source_type, 
-							int tgt_idx, unsigned char direction, 
-							policy_t *policy, Tcl_Obj *subjects_list)
-{
-        int i, j, k, rule_idx;
-        Tcl_Obj *subject_list[3];
-       	Tcl_Obj *rule_list[2];
-	char *str;
-	int *rules = NULL;
-	int num_rules = 0;
-	
-	assert(results != NULL && policy != NULL && subjects_list != NULL);
-	/* set subject_list[0] to direction of tgt */
-	direction &= (~AP_RELABEL_DIR_START);
-	if (direction == AP_RELABEL_DIR_TO) {
-		subject_list[0] = Tcl_NewStringObj("to", -1);
-	} else if (direction == AP_RELABEL_DIR_FROM) {
-		subject_list[0] = Tcl_NewStringObj("from", -1);
-	} else if (direction == AP_RELABEL_DIR_BOTH) {
-		subject_list[0] = Tcl_NewStringObj("both", -1);
-	} else {
-		fprintf(stderr, "Invalid direction.\n");
-		return -1;
-	}
-	if (Tcl_ListObjAppendElement(NULL, subjects_list, subject_list[0])) {
-		fprintf(stderr, "Tcl error while appending element to list.\n");
-	        return -1;
-	}
-	
-	if (get_type_name(source_type, &str, policy)) {
-		fprintf(stderr, "Could not get name for subject from policy.\n");
-		return -1;
-	}	
-		
-       	subject_list[1] = Tcl_NewStringObj(str, -1); /* subject type string */
-       	free(str);  
-       	if (Tcl_ListObjAppendElement(NULL, subjects_list, subject_list[1])) {
-		fprintf(stderr, "Tcl error while appending element to list.\n");
-	        return -1;
-	}
-        subject_list[2] = Tcl_NewListObj (0, NULL); /* List of line_no/rules */
-	for (i = 0; i < results->targets[tgt_idx].num_objects; i++ ) {
-		for (j = 0; j < results->targets[tgt_idx].objects[i].num_subjects; j++) {
-			if (results->targets[tgt_idx].objects[i].subjects[j].source_type != source_type)
-				continue;
-			for (k = 0; k < results->targets[tgt_idx].objects[i].subjects[j].num_rules; k++) {
-				if (find_int_in_array(results->targets[tgt_idx].objects[i].subjects[j].rules[k].rule_index,
-							rules, num_rules) == -1)
-					if (add_i_to_a(results->targets[tgt_idx].objects[i].subjects[j].rules[k].rule_index,
-							&num_rules, &rules) == -1)
-						return -1;
-					if ((results->targets[tgt_idx].objects[i].subjects[j].rules[k].direction
-						& results->requested_direction) || (AP_RELABEL_DIR_START &
-						results->targets[tgt_idx].objects[i].subjects[j].rules[k].direction)) {
-
-						rule_idx = results->targets[tgt_idx].objects[i].subjects[j].rules[k].rule_index;
-						rule_list[0] = Tcl_NewIntObj(get_rule_lineno(rule_idx, RULE_TE_ALLOW, policy));
-						if (Tcl_ListObjAppendElement(NULL, subject_list[2], rule_list[0])) {
-							fprintf(stderr, "Tcl error while appending element to list.\n");
-						        return -1;
-						}
-						str = re_render_av_rule(FALSE, rule_idx, 0, policy);	
-						if (str == NULL) {
-							fprintf(stderr, "Error rendering rule.\n");
-							return -1;
-						}
-						rule_list[1] = Tcl_NewStringObj(str, -1);
-						free(str);
-						if (Tcl_ListObjAppendElement(NULL, subject_list[2], rule_list[1])) {
-							fprintf(stderr, "Tcl error while appending element to list.\n");
-		        				return -1;
-						}
-
-					}
-			}
-		}
-	}
-
-	if (Tcl_ListObjAppendElement(NULL, subjects_list, subject_list[2])) {
-		fprintf(stderr, "Tcl error while appending element to list.\n");
-	        return -1;
-	}
-		
-	return 0;                                       	
-}
-
 /* Generates and returns the actual results list structure for a file
    relabeling to or relabeling from query. */
 static Tcl_Obj *apol_relabel_fromto_results(ap_relabel_result_t *results, int start_type, 
@@ -6179,32 +6093,19 @@ static Tcl_Obj *apol_relabel_fromto_results(ap_relabel_result_t *results, int st
 						int *filter_types, int num_filter_types) 
 {
         Tcl_Obj *results_list_obj = Tcl_NewListObj (0, NULL);
-        int i, j, k, where;
+        int i, j, k, x, rule_idx;
         Tcl_Obj *end_types_list[2];	/* Holds the end type string, (to|from|both) and a list of subject info */
         Tcl_Obj *end_type_elem;
+	Tcl_Obj *obj_list[2];
+	Tcl_Obj *obj_elem;
+	Tcl_Obj *subj_list[3];
+	Tcl_Obj *subj_elem;
+	Tcl_Obj *rule_list[2];
+	Tcl_Obj *rule_elem;
 	char *str;
-	unsigned char direction;
-	int *src_list = NULL;
-	int src_list_sz = 0;
-	unsigned char *dir_list = NULL;
 	       
         assert(results != NULL);
     
-        switch (results->requested_direction) {
-        case AP_RELABEL_DIR_BOTH:
-        	direction = AP_RELABEL_DIR_BOTH;
-        	break;
-        case AP_RELABEL_DIR_FROM:
-        	direction = AP_RELABEL_DIR_FROM;
-        	break;
-        case AP_RELABEL_DIR_TO:
-        	direction = AP_RELABEL_DIR_TO;
-        	break;
-        default: 
-                fprintf(stderr, "Invalid direction specified!\n");
-		return NULL;
-        }
-        	
         for (i = 0; i < results->num_targets; i++) {
 		if (do_filter && (find_int_in_array(results->targets[i].target_type, filter_types, num_filter_types) < 0)) 
 			continue;
@@ -6215,34 +6116,76 @@ static Tcl_Obj *apol_relabel_fromto_results(ap_relabel_result_t *results, int st
                 }
                 end_types_list[0] = Tcl_NewStringObj(str, -1); /* end type string */
                 free(str);      
-                end_types_list[1] = Tcl_NewListObj(0, NULL);   /* List of subjects */
+                end_types_list[1] = Tcl_NewListObj(0, NULL);   /* List of objects */
+
                 for (j = 0; j < results->targets[i].num_objects; j++) {
+			if (get_obj_class_name(results->targets[i].objects[j].object_class, &str, policy)) {
+	                	fprintf(stderr, "Could not get name for object class from policy.\n");
+        	                return NULL;
+			}
+			obj_list[0] = Tcl_NewStringObj(str, -1); /* object class string */
+			free(str);
+			obj_list[1] = Tcl_NewListObj(0, NULL); /* list of subjects */
+
 			for (k = 0; k < results->targets[i].objects[j].num_subjects; k++) {
-				if ((where = find_int_in_array(results->targets[i].objects[j].subjects[k].source_type,
-							src_list, src_list_sz)) == -1) {
-					if (add_i_to_a(results->targets[i].objects[j].subjects[k].source_type,
-							&src_list_sz, &src_list) == -1) {
+				switch (results->targets[i].objects[j].subjects[k].direction & (~AP_RELABEL_DIR_START)) {
+				case AP_RELABEL_DIR_TO:
+					subj_list[0] = Tcl_NewStringObj("to", -1);
+					break;
+				case AP_RELABEL_DIR_FROM:
+					subj_list[0] = Tcl_NewStringObj("from", -1);
+					break;
+				case AP_RELABEL_DIR_BOTH:
+					subj_list[0] = Tcl_NewStringObj("both", -1);
+					break;
+				default:
+					fprintf(stderr, "Invalid direction.\n");
+					return NULL;
+				}
+		                if (get_type_name(results->targets[i].objects[j].subjects[k].source_type, &str, policy)) {
+                			fprintf(stderr, "Could not get name for source type from policy.\n");
+                        		return NULL;
+				}
+				subj_list[1] = Tcl_NewStringObj(str, -1);
+				free(str);
+				subj_list[2] = Tcl_NewListObj(0, NULL);
+
+				for (x = 0; x < results->targets[i].objects[j].subjects[k].num_rules; x++) {
+					/* check that rule is either the correct direction or a starting point*/
+					if (!((results->targets[i].objects[j].subjects[k].rules[x].direction & 
+						results->requested_direction) || (AP_RELABEL_DIR_START &
+						results->targets[i].objects[j].subjects[k].rules[x].direction) ))
+						continue;
+
+					rule_idx = results->targets[i].objects[j].subjects[k].rules[x].rule_index;
+					rule_list[0] = Tcl_NewIntObj(get_rule_lineno(rule_idx, RULE_TE_ALLOW, policy));
+					str = re_render_av_rule(FALSE, rule_idx, 0, policy);	
+					if (str == NULL) {
+						fprintf(stderr, "Error rendering rule.\n");
 						return NULL;
 					}
-					if (!(dir_list = (unsigned char*)realloc(dir_list, src_list_sz * sizeof(unsigned char))))
-						return NULL;
-					where = src_list_sz - 1;
-					dir_list[where] = AP_RELABEL_DIR_NONE;
+					rule_list[1] = Tcl_NewStringObj(str, -1);
+					free(str);
+					rule_elem = Tcl_NewListObj(2, rule_list);
+					if (Tcl_ListObjAppendElement(NULL, subj_list[2], rule_elem)) {
+			        		fprintf(stderr, "Tcl error while appending element to list.\n");
+			                	return NULL;
+					}
 				}
-				dir_list[where] |= results->targets[i].objects[j].subjects[k].direction;
+
+				subj_elem = Tcl_NewListObj(3, subj_list);
+				if (Tcl_ListObjAppendElement(NULL, obj_list[1], subj_elem)) {
+			        	fprintf(stderr, "Tcl error while appending element to list.\n");
+			                return NULL;
+				}
+			}
+
+			obj_elem = Tcl_NewListObj(2, obj_list);
+			if (Tcl_ListObjAppendElement(NULL, end_types_list[1], obj_elem)) {
+		        	fprintf(stderr, "Tcl error while appending element to list.\n");
+		                return NULL;
 			}
 		}
-		for (j = 0; j < src_list_sz; j++) {
-			if (apol_relabel_fromto_results_append_subject_info(results, src_list[j], i,
-					dir_list[j], policy, end_types_list[1]) < 0) {
-				return NULL;
-			}
-		}
-		free(src_list);
-		src_list = NULL;
-		free(dir_list);
-		dir_list = NULL;
-		src_list_sz = 0;
 
                 end_type_elem = Tcl_NewListObj (2, end_types_list);
 	        if (Tcl_ListObjAppendElement(NULL, results_list_obj, end_type_elem)) {
