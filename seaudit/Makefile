@@ -17,6 +17,11 @@ LIBXML_LIBS     = `pkg-config --libs libxml-2.0`
 SEAUDIT_REPORT_CONF_FILE = seaudit-report.conf
 SEAUDIT_REPORT_STYLESHEET = seaudit-report.css
 
+LOGWATCH_DIR = /etc/log.d
+LOGWATCH_GROUP = $(LOGWATCH_DIR)/conf/logfiles
+LOGWATCH_SERVICE = $(LOGWATCH_DIR)/conf/services
+LOGWATH_FILTER = $(LOGWATCH_DIR)/scripts/services
+
 ifeq ($(DEBUG), 1)
 SEAUDIT_LIBS	= ../libseaudit/libseaudit.a ../libapol/libapol.a 	
 else
@@ -55,6 +60,11 @@ install: seaudit seaudit-report
 	install -m 444 dot_seaudit $(INSTALL_LIBDIR)
 	install -m 644 $(SEAUDIT_REPORT_CONF_FILE) $(INSTALL_LIBDIR)
 	install -m 644 $(SEAUDIT_REPORT_STYLESHEET) $(INSTALL_LIBDIR)
+
+install-logwatch-service: 
+	install -m 644 -Z system_u:object_r:etc_t seaudit-report-group.conf $(LOGWATCH_GROUP)
+	install -m 644 -Z system_u:object_r:etc_t seaudit-report-service.conf $(LOGWATCH_SERVICE)
+	install -m 755 -Z system_u:object_r:etc_t seaudit-report-service $(LOGWATH_FILTER)
 
 clean:
 	rm -f *.o seaudit seaudit-report *~ core* *.bak *.gladep
