@@ -108,6 +108,11 @@ int main(int argc, char **argv, char **envp)
 	
 	if (find_mount_points(dir, mounts, &num_mounts, 0))
 		return -1;
+
+	if (sefs_scan_tree(dir) == -1) {
+		fprintf(stderr, "fsdata_scan_tree failed\n");
+		return -1;
+	}
 	
 	for (i = 0; i < num_mounts; i++ ){
 		if (sefs_scan_tree(mounts[i]) == -1) {
