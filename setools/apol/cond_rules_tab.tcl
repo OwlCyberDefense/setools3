@@ -10,14 +10,22 @@
 ##############################################################
 # ::Apol_Cond_Rules
 #  
-# The Conditional Booleans tab namespace
+# The Conditional Rules tab namespace
 ##############################################################
 namespace eval Apol_Cond_Rules {
 	# Search options
 	# search_opts(opt), where opt =
-	# 	boolean - the name of the boolean
-	# 	show_rules - whether to display rules along 
-	#		     with conditional expression
+	# 	boolean  	the name of the boolean
+	# 	show_rules  	whether to display rules along 
+	#		     	with conditional expression
+	#
+	# Currently, only the following types of statements are  
+      	# allowed inside of conditional policy blocks:
+	# 	teallow		type allow rules
+	# 	auallow		audit allow
+	# 	audont		dont audit 		
+	# 	ttrans		type trans
+	# 	tchange		type change
 	variable search_opts 
 	set search_opts(boolean)	""
 	set search_opts(show_rules)	""
@@ -32,7 +40,6 @@ namespace eval Apol_Cond_Rules {
 	
 	# Global widgets
 	variable resultsbox
-	variable cond_bools_listbox
 	variable bool_combo_box
 }
 
