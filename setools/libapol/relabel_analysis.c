@@ -749,7 +749,7 @@ static int apol_single_type_relabel(relabel_set_t *sets, int domain, int type, i
 		return -1;
 	*array = NULL;
 	*size = 0;
-	if(mode == MODE_FROM){
+	if(mode == MODE_FROM) {
 		if (!apol_is_type_in_list(&(sets[domain]), type, FROMLIST)) 
 			return NOTHERE;
 		for (i = 0; i < sets[domain].num_types; i++){
@@ -772,11 +772,22 @@ static int apol_single_type_relabel(relabel_set_t *sets, int domain, int type, i
 	} else if (mode == MODE_BOTH) {
 		if (!apol_is_type_in_list(&(sets[domain]), type, ANYLIST))
 			return NOTHERE;
-		for (i = 0; i < sets[domain].num_types; i++){
-			if (apol_is_type_in_list(&(sets[domain]), sets[domain].types[i].type, ANYLIST)) {
-				retv = add_i_to_a(sets[domain].types[i].type, size, array);
-				if(retv == -1) 
-					return -1;
+		if (apol_is_type_in_list(&(sets[domain]), type, TOLIST)) {
+			for (i = 0; i < sets[domain].num_types; i++){
+				if (apol_is_type_in_list(&(sets[domain]), sets[domain].types[i].type, FROMLIST)) {
+					retv = add_i_to_a(sets[domain].types[i].type, size, array);
+					if(retv == -1) 
+						return -1;
+				}
+			}
+		}
+		if (apol_is_type_in_list(&(sets[domain]), type, FROMLIST)) {
+			for (i = 0; i < sets[domain].num_types; i++){
+				if (apol_is_type_in_list(&(sets[domain]), sets[domain].types[i].type, TOLIST)) {
+					retv = add_i_to_a(sets[domain].types[i].type, size, array);
+					if(retv == -1) 
+						return -1;
+				}
 			}
 		}
 	}
