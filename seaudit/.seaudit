@@ -1,8 +1,0 @@
-# configuration file for seaudit - an audit log tool for Security Enhanced Linux.
-# this file is auto-generated
-
-DEFAULT_LOG_FILE /var/log/messages
-DEFAULT_POLICY_FILE /etc/security/selinux/src/policy/policy.conf
-RECENT_LOG_FILES
-RECENT_POLICY_FILES
-LOG_COLUMNS_HIDEN path_field:src_usr_field:src_role_field:tgt_usr_field:tgt_role_field:inode_field:pid_field:
