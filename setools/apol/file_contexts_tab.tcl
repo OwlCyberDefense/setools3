@@ -48,27 +48,17 @@ namespace eval Apol_File_Contexts {
 	variable load_button
 	variable create_fc_dlg		.fc_db_create_Dlg
 	
-	variable info_button_text \
-{"Creating/Loading an Index File\n\n" \
-\
-{If the user has not loaded an index file, then all search items will be grayed out \
-and a red label indicating that an index file is not loaded is displayed at the top. \
-Buttons are presented for creating and loading an index file. Selecting the \
-'Load' button displays a file selection dialog from which you can choose a saved index \
-file to load. Selecting the 'Create and Load' button will display a dialog for you to specify \
-the save file and the directory from which to start the indexing. Upon selecting the 'Create' button, an index \
-file will be created and then loaded into apol.} \
-\
-"\n\nSearching an Index File\n\n" \
-\
-{Searches on the index file can be done by specifying the user, type, object class, or path \
-search criteria to search for using the checkboxes. Drop down lists and entryboxes \
-are presented for specifying the search criteria, of which the drop down lists contain items from \
-the index file.  You can also use regular expressions, however, this option is not available for \
-the object class field.  Additionally, you may use the checkboxes under the search options frame, \
-for indicating whether to include the object class and/or file context within the results. To \
-perform a search, click the 'OK' button. Once the search is finished, you should be presented with \
-a list of files that matched the criteria, along with their context and/or object type, if specified.}}
+	variable info_button_text { \
+		"This tab allows you to create and load a file context index. \n \
+		The file context index is an on-disk database which contains \n \
+		the labeling information for an entire filesystem. Once an \n \
+		index has been created you can query the database by enabling \n \
+		and selecting a user, type, object class or path. A query can \n \
+		also use regular expressions, if this is enabled. \n\n \
+		The results of the context query show the number of results \n \
+		followed by a list of the matching files. The first field is \n \
+		the full context followed by the object class of the file and \n \
+		lastly the path.\n"}
 }
 
 proc Apol_File_Contexts::display_analysis_info {} {
