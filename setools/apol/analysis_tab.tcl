@@ -538,8 +538,7 @@ proc Apol_Analysis::display_analysis_info {} {
 	variable descrp_text
 	
 	if { [winfo exists $info_Dlg] } {
-    		raise $info_Dlg
-    		return 0
+    		destroy $info_Dlg
     	}
     		
 	set descriptive_text [Apol_Analysis::get_analysis_info $curr_analysis_module]
