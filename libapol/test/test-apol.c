@@ -794,7 +794,8 @@ static int test_print_type_relation_results(types_relation_query_t *tr_query,
 {
 	char *name = NULL, *rule = NULL;
 	llist_node_t *x = NULL;
-	int i, rt;
+	int i, j, rt;
+	int rule_idx, type_idx; 
 	
 	if (tr_query->options & TYPES_REL_COMMON_ATTRIBS) {
 		if (tr_results->num_common_attribs)
@@ -909,94 +910,84 @@ static int test_print_type_relation_results(types_relation_query_t *tr_query,
 	
 	if ((tr_query->options & TYPES_REL_COMMON_ACCESS) && tr_results->common_obj_types_results) {
 		fprintf(outfile, "\nCommon objects:");
-		fprintf(outfile, "\nTypeA common objects: %d\n", tr_results->common_obj_types_results->num_objs_A);
-		for(i = 0; i < tr_results->common_obj_types_results->num_objs_A; i++) {
-			if (get_type_name(tr_results->common_obj_types_results->objs_A[i], &name, policy) != 0) {
-				fprintf(stderr, "Error getting attribute name.");
-				free(name);
-				types_relation_destroy_results(tr_results);
-				return -1;
-			}
-			fprintf(outfile, "%s\n", name);
-			free(name);
-		}
-				
-		fprintf(outfile, "\nCommon object rules for type A: %d\n", 
-		        tr_results->common_obj_types_results->num_obj_type_rules_A);
-		for(i = 0; i < tr_results->common_obj_types_results->num_obj_type_rules_A; i++) {
-			rule = re_render_av_rule(1, tr_results->common_obj_types_results->obj_type_rules_A[i], 0, policy);
-			if (rule == NULL)
-				return -1;
-			fprintf(outfile, "%s\n", rule);
-			free(rule);
-		}
-		fprintf(outfile, "\nTypeB common objects: %d\n", tr_results->common_obj_types_results->num_objs_B);
-		for(i = 0; i < tr_results->common_obj_types_results->num_objs_B; i++) {
-			if (get_type_name(tr_results->common_obj_types_results->objs_B[i], &name, policy) != 0) {
-				fprintf(stderr, "Error getting attribute name.");
-				free(name);
-				types_relation_destroy_results(tr_results);
-				return -1;
-			}
-			fprintf(outfile, "%s\n", name);
-			free(name);
-		}
-		fprintf(outfile, "\n");
+		fprintf(outfile, "\nShared access to %d common objects:\n", tr_results->common_obj_types_results->num_objs_A);
 		
-		fprintf(outfile, "\nCommon object rules for type B: %d\n",
-			tr_results->common_obj_types_results->num_obj_type_rules_B);
-		for(i = 0; i < tr_results->common_obj_types_results->num_obj_type_rules_B; i++) {
-			rule = re_render_av_rule(1, tr_results->common_obj_types_results->obj_type_rules_B[i], 0, policy);
-			if (rule == NULL)
+		for (i = 0; i < tr_results->common_obj_types_results->num_objs_A; i++) {
+			type_idx = tr_results->common_obj_types_results->objs_A[i];
+			if (get_type_name(type_idx, &name, policy) != 0) {
+				free(name);
+				fprintf(stderr, "Error getting type name!");
 				return -1;
-			fprintf(outfile, "%s\n", rule);
-			free(rule);
+			}
+			fprintf(outfile, "%s\n", name);
+			
+			for (j = 0; j < tr_results->typeA_access_pool->type_rules[type_idx]->num_rules; j++) {
+				rule_idx = tr_results->typeA_access_pool->type_rules[type_idx]->rules[j];
+				rule = re_render_av_rule(1, rule_idx, 0, policy);
+				if (rule == NULL)
+					return -1;
+				fprintf(outfile, "%s\n", rule);
+				free(rule);
+			}
+			for (j = 0; j < tr_results->typeB_access_pool->type_rules[type_idx]->num_rules; j++) {
+				rule_idx = tr_results->typeB_access_pool->type_rules[type_idx]->rules[j];
+				rule = re_render_av_rule(1, rule_idx, 0, policy);
+				if (rule == NULL)
+					return -1;
+				fprintf(outfile, "%s\n", rule);
+				free(rule);
+			}
+			fprintf(outfile, "\n\n");
 		}
-		fprintf(outfile, "\n");
 	}
 	if ((tr_query->options & TYPES_REL_UNIQUE_ACCESS) && tr_results->unique_obj_types_results) {
 		fprintf(outfile, "\nUnique objects:");
-		fprintf(outfile, "\nTypeA unique objects: %d\n", tr_results->unique_obj_types_results->num_objs_A);
-		for(i = 0; i < tr_results->unique_obj_types_results->num_objs_A; i++) {
-			if (get_type_name(tr_results->unique_obj_types_results->objs_A[i], &name, policy) != 0) {
-				fprintf(stderr, "Error getting attribute name.");
+		fprintf(outfile, "\nTypeA has special access to %d objects:\n", 
+			tr_results->unique_obj_types_results->num_objs_A);
+		
+		for (i = 0; i < tr_results->unique_obj_types_results->num_objs_A; i++) {
+			type_idx = tr_results->unique_obj_types_results->objs_A[i];
+			if (get_type_name(type_idx, &name, policy) != 0) {
 				free(name);
-				types_relation_destroy_results(tr_results);
+				fprintf(stderr, "Error getting attribute name!");
 				return -1;
 			}
 			fprintf(outfile, "%s\n", name);
-			free(name);
-		}		
-		fprintf(outfile, "\nUnique object rules for type A: %d\n",
-			tr_results->unique_obj_types_results->num_obj_type_rules_A);
-		for(i = 0; i < tr_results->unique_obj_types_results->num_obj_type_rules_A; i++) {
-			rule = re_render_av_rule(1, tr_results->unique_obj_types_results->obj_type_rules_A[i], 0, policy);
-			if (rule == NULL)
-				return -1;
-			fprintf(outfile, "%s\n", rule);
-			free(rule);
-		}		
-		fprintf(outfile, "\nTypeB unique objects: %d\n", tr_results->unique_obj_types_results->num_objs_B);
+			
+			snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->typeA_access_pool->type_rules[type_idx]->num_rules);
+			Tcl_AppendElement(interp, tbuf);
+			for (j = 0; j < tr_results->typeA_access_pool->type_rules[type_idx]->num_rules; j++) {
+				rule_idx = tr_results->typeA_access_pool->type_rules[type_idx]->rules[j];
+				rule = re_render_av_rule(1, rule_idx, 0, policy);
+				if (rule == NULL)
+					return -1;
+				fprintf(outfile, "%s\n", rule);
+				free(rule);
+			}
+			fprintf(outfile, "\n\n");
+		}	
+		/* Append unique object type access information for type B */
+		fprintf(outfile, "\nTypeB has special access to %d objects:\n", 
+			tr_results->unique_obj_types_results->num_objs_B);
 		for(i = 0; i < tr_results->unique_obj_types_results->num_objs_B; i++) {
-			if (get_type_name(tr_results->unique_obj_types_results->objs_B[i], &name, policy) != 0) {
-				fprintf(stderr, "Error getting attribute name.");
+			type_idx = tr_results->unique_obj_types_results->objs_B[i];
+			if (get_type_name(type_idx, &name, policy) != 0) {
 				free(name);
-				types_relation_destroy_results(tr_results);
+				fprintf(stderr, "Error getting type name!");
 				return -1;
 			}
 			fprintf(outfile, "%s\n", name);
-			free(name);
+			
+			for (j = 0; j < tr_results->typeB_access_pool->type_rules[type_idx]->num_rules; j++) {
+				rule_idx = tr_results->typeB_access_pool->type_rules[type_idx]->rules[j];
+				rule = re_render_av_rule(1, rule_idx, 0, policy);
+				if (rule == NULL)
+					return -1;
+				fprintf(outfile, "%s\n", rule);
+				free(rule);
+			}
+			fprintf(outfile, "\n\n");
 		}
-		fprintf(outfile, "\nUnique object rules for type B: %d\n",
-			tr_results->unique_obj_types_results->num_obj_type_rules_B);
-		for(i = 0; i < tr_results->unique_obj_types_results->num_obj_type_rules_B; i++) {
-			rule = re_render_av_rule(1, tr_results->unique_obj_types_results->obj_type_rules_B[i], 0, policy);
-			if (rule == NULL)
-				return -1;
-			fprintf(outfile, "%s\n", rule);
-			free(rule);
-		}
-		fprintf(outfile, "\n");
 	}
 	
 	return 0;

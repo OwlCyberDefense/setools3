@@ -27,8 +27,8 @@ namespace eval Apol_Analysis_tra {
 		 	          - all type transition rules from TypeA to TypeB or from TypeB to TypeA. \n \
 		 	          - any process interactions between TypeA and TypeB (e.g., allow rules that allow TypeA \
 		 	          and TypeB to send signals to each other). \n \
-		 	          - object types to which both TypeA and TypeB are granted access. \n \
-		 	          - the additional types to which TypeA and TypeB have access. \n \
+		 	          - types to which both types have shared access. \n \
+		 	          - types to which TypeA and TypeB have special access. \n \
 		 	          - any direct information flows between TypeA and TypeB \n \
 		 	          - any transitive information flows between TypeA and TypeB \n \
 		 	          - any domain transitions from TypeA to TypeB or from TypeB to TypeA. \n \
@@ -37,7 +37,7 @@ namespace eval Apol_Analysis_tra {
 				  within the listbox. This allows the user to select any aspect of the analysis \
 				  from the listbox and have that specific information displayed within the results \
 				  textbox. If desired, all results can be displayed at once by selecting the listbox \
-				  item labeled 'Show All Results'.\n\nFor additional information on \
+				  item labeled 'Summary Report'.\n\nFor additional information on \
     				  this topic select \"Two Types Relationship Analysis\" from the help menu."
 	variable progressmsg		""
 	variable progress_indicator	-1
@@ -721,6 +721,9 @@ proc Apol_Analysis_tra::display_rules {tra_listbox tra_info_text header_txt data
 #  Command Apol_Analysis_tra::print_rule
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_tra::print_rule {tra_info_text data curr_idx indent} {	
+	if {$indent} {
+		$tra_info_text insert end "    "
+	}
 	set startIdx [$tra_info_text index insert]
 	set rule [lindex $data $curr_idx]
 	# Get the line number only
@@ -730,9 +733,6 @@ proc Apol_Analysis_tra::print_rule {tra_info_text data curr_idx indent} {
 
 	set rule [string range $rule [expr $end_link_idx + 1] end]
 	
-	if {$indent} {
-		$tra_info_text insert end "    "
-	}
 	# Only display line number hyperlink if this is not a binary policy.
 	if {![ApolTop::is_binary_policy]} {
 		$tra_info_text insert end "\[$lineno\]"
@@ -763,7 +763,7 @@ proc Apol_Analysis_tra::display_common_object_info {tra_listbox tra_info_text da
 	set num_comm_objs [lindex $data $i]
 	
 	set start_idx [$tra_info_text index insert]
-	$tra_info_text insert end "Shared access to $num_comm_objs types:\n\n"   
+	$tra_info_text insert end "Shared access to $num_comm_objs type(s):\n\n"   
 	set end_idx [$tra_info_text index insert]
 	$tra_info_text tag add $Apol_Analysis_tra::title_tag $start_idx $end_idx
 		
@@ -788,6 +788,7 @@ proc Apol_Analysis_tra::display_common_object_info {tra_listbox tra_info_text da
 				incr i
 				Apol_Analysis_tra::print_rule $tra_info_text $data $i 1
 			}
+			$tra_info_text insert end "\n\n"
 		}
 	}
 
@@ -845,7 +846,7 @@ proc Apol_Analysis_tra::display_unique_object_info {tra_listbox tra_info_text da
 	$tra_info_text tag add $Apol_Analysis_tra::title_type_tag $start_idx $end_idx
 				
 	set start_idx [$tra_info_text index insert]
-	$tra_info_text insert end "special access to $num_unique_objs_A types:\n\n" 
+	$tra_info_text insert end "special access to $num_unique_objs_A type(s):\n\n" 
 	set end_idx [$tra_info_text index insert]
 	$tra_info_text tag add $Apol_Analysis_tra::title_tag $start_idx $end_idx
 		
@@ -865,6 +866,7 @@ proc Apol_Analysis_tra::display_unique_object_info {tra_listbox tra_info_text da
 				incr i
 				Apol_Analysis_tra::print_rule $tra_info_text $data $i 1
 			}
+			$tra_info_text insert end "\n"   
 		}
 	} 
 	incr i
@@ -895,6 +897,7 @@ proc Apol_Analysis_tra::display_unique_object_info {tra_listbox tra_info_text da
 				incr i
 				Apol_Analysis_tra::print_rule $tra_info_text $data $i 1
 			}
+			$tra_info_text insert end "\n"   
 		}
 	} 
 	
@@ -1614,16 +1617,14 @@ proc Apol_Analysis_tra::create_results_list_structure {tra_listbox results_list}
 	set start_idx $i
 	for { set x 0 } { $x < $num_comm_objs } { incr x } { 
 		# Skip object type string
-		incr i
-		# Next item should be number of rules 
+		incr i 2
+		# Next item should be number of rules for type A
 		set num_rules_A [lindex $results_list $i]
 		incr i $num_rules_A
 		# Increment to number of rules for type B
 		incr i 
 		set num_rules_b [lindex $results_list $i]
 		incr i $num_rules_b
-		# Move to next object type
-		incr i		
 	}
 
 	# Insert item into listbox 
@@ -1638,12 +1639,10 @@ proc Apol_Analysis_tra::create_results_list_structure {tra_listbox results_list}
 	set start_idx $i
 	for { set x 0 } { $x < $num_uniqe_objs_A } { incr x } { 
 		# Skip object type string
-		incr i
+		incr i 2
 		# Next item should be number of rules 
 		set num_rules_A [lindex $results_list $i]
 		incr i $num_rules_A
-		# Increment to next object type
-		incr i 	
 	}
 	
 	# Get unique rules
@@ -1651,12 +1650,10 @@ proc Apol_Analysis_tra::create_results_list_structure {tra_listbox results_list}
 	set num_uniqe_objs_B [lindex $results_list $i]
 	for { set x 0 } { $x < $num_uniqe_objs_B } { incr x } { 
 		# Skip object type string
-		incr i
+		incr i 2
 		# Next item should be number of rules 
 		set num_rules_B [lindex $results_list $i]
 		incr i $num_rules_B
-		# Increment to next object type
-		incr i 	
 	}
 	
 	# Insert item into listbox
