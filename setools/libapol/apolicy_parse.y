@@ -1012,20 +1012,6 @@ static int define_type(int alias)
 		}
 		return 0;
 	}
-	
-	/* On first call we add the psuedo type 'self' to the list as the first entry */
-	if(parse_policy->num_types == 0) {
-		id = (char *)malloc(5);
-		if(id == NULL) {
-			yyerror("out of memory");
-			return -1;
-		}
-		strcpy(id, "self");
-		idx = add_type(id, parse_policy);
-		if(idx < 0)
-			return -1;
-	}
-
 
 	/* add the new type */
 	id = (char *) queue_remove(id_queue);
