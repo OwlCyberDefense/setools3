@@ -195,6 +195,16 @@ int test_print_trans_dom(trans_domain_t *t, policy_t *policy)
 			return -1;
 		}
 	}
+	fprintf(outfile, "\n\t     ADDITIONAL RULES (%d rules):\n", t->num_other_rules);
+	for(i = 0; i < t->num_other_rules; i++) {
+		rule = re_render_av_rule(0, t->other_rules[i], 0, policy);
+		if(rule == NULL) {
+			fprintf(stderr, "\nproblem rendering transition rule %d\n", i);
+			return -1;
+		}
+		fprintf(outfile, "\t     (%d) %s\n", get_rule_lineno(t->other_rules[i], RULE_TE_ALLOW, policy), rule);	
+		free(rule);
+	}
 	
 	fprintf(outfile, "\n");
 	
@@ -516,6 +526,20 @@ void test_print_cond_exprs(policy_t *policy)
         }
 }
 
+int check_for_duplicate_object(int *classes, int num_objs, int obj_class)
+{
+	int i;
+
+	assert(classes);
+	assert(obj_class >= 0 && num_objs >= 0);
+
+	for (i = 0; i < num_objs; i++) {
+		if (classes[i] == obj_class) {
+			return i;
+		}
+	}
+	return -1;
+}
 
 int menu() {
 	printf("\nSelect a command:\n");
@@ -580,12 +604,64 @@ int main(int argc, char *argv[])
 			domain_trans_analysis_t *dta;
 			char *start_domain;
 			llist_node_t *x;
+			char buf[1024];
+			int *classes = NULL, *perms = NULL;
+			int num_classes = 0, num_perms = 0;
 			
 			printf("\tenter starting domain type name:  ");
 			fgets(ans, sizeof(ans), stdin);
 			fix_string(ans, sizeof(ans));
 			
-			rt = determine_domain_trans(0, ans, &dta, policy);
+			while (1) {
+				int object;
+				printf("Add object class or f to finish: ");
+				fgets(buf, sizeof(buf), stdin);
+				buf[strlen(buf)-1] = '\0';
+				if (strlen(buf) == 1 && buf[0] == 'f')
+					break;
+				object = get_obj_class_idx(buf, policy);
+				if (object < 0) {
+					fprintf(stderr, "Invalid object class\n");
+					continue;
+				} else if (classes != NULL && check_for_duplicate_object(classes, num_classes, object) >= 0) {
+					fprintf(stderr, "Object class already added.\n");
+					continue;
+				}
+				num_classes += 1;
+				classes = (int *)realloc(classes, (sizeof(int) * num_classes));
+				if (classes == NULL) {
+					fprintf(stderr, "out of memory");
+					return -1;
+				}
+				classes[num_classes - 1] = object;
+						
+				printf("Limit specific permissions (y/n)? ");
+				fgets(buf, sizeof(buf), stdin);
+				if (buf[0] == 'y' || buf[0] == 'Y') {
+					while (1) {
+						int perm;
+						printf("Add object class permission or f to finish: ");
+						fgets(buf, sizeof(buf), stdin);
+						buf[strlen(buf)-1] = '\0';
+						if (strlen(buf) == 1 && buf[0] == 'f')
+							break;
+						perm = get_perm_idx(buf, policy);
+						if (perm < 0 || !is_valid_perm_for_obj_class(policy, object, perm)) {
+							fprintf(stderr, "Invalid object class permission\n");
+							continue;
+						}
+						num_perms += 1;
+						perms = (int *)realloc(perms, (sizeof(int) * num_perms));
+						if (perms == NULL) {
+							fprintf(stderr, "out of memory");
+							return -1;
+						}
+						perms[num_perms - 1] = perm;
+					}
+				} 
+			}
+	
+			rt = determine_domain_trans(0, ans, num_classes, classes, num_perms, perms, &dta, policy);
 			if(rt == -2) {
 				fprintf(stderr, "\n%s is not a valid type name\n", ans);
 				break;
@@ -624,12 +700,64 @@ int main(int argc, char *argv[])
 			domain_trans_analysis_t *dta;
 			char *start_domain;
 			llist_node_t *x;
+			char buf[1024];
+			int *classes = NULL, *perms = NULL;
+			int num_classes = 0, num_perms = 0;
 			
 			printf("\tenter ending domain type name:  ");
 			fgets(ans, sizeof(ans), stdin);
 			fix_string(ans, sizeof(ans));
 			
-			rt = determine_domain_trans(1, ans, &dta, policy);
+			while (1) {
+				int object;
+				printf("Add object class or f to finish: ");
+				fgets(buf, sizeof(buf), stdin);
+				buf[strlen(buf)-1] = '\0';
+				if (strlen(buf) == 1 && buf[0] == 'f')
+					break;
+				object = get_obj_class_idx(buf, policy);
+				if (object < 0) {
+					fprintf(stderr, "Invalid object class\n");
+					continue;
+				} else if (classes != NULL && check_for_duplicate_object(classes, num_classes, object) >= 0) {
+					fprintf(stderr, "Object class already added.\n");
+					continue;
+				}
+				num_classes += 1;
+				classes = (int *)realloc(classes, (sizeof(int) * num_classes));
+				if (classes == NULL) {
+					fprintf(stderr, "out of memory");
+					return -1;
+				}
+				classes[num_classes - 1] = object;
+						
+				printf("Limit specific permissions (y/n)? ");
+				fgets(buf, sizeof(buf), stdin);
+				if (buf[0] == 'y' || buf[0] == 'Y') {
+					while (1) {
+						int perm;
+						printf("Add object class permission or f to finish: ");
+						fgets(buf, sizeof(buf), stdin);
+						buf[strlen(buf)-1] = '\0';
+						if (strlen(buf) == 1 && buf[0] == 'f')
+							break;
+						perm = get_perm_idx(buf, policy);
+						if (perm < 0 || !is_valid_perm_for_obj_class(policy, object, perm)) {
+							fprintf(stderr, "Invalid object class permission\n");
+							continue;
+						}
+						num_perms += 1;
+						perms = (int *)realloc(perms, (sizeof(int) * num_perms));
+						if (perms == NULL) {
+							fprintf(stderr, "out of memory");
+							return -1;
+						}
+						perms[num_perms - 1] = perm;
+					}
+				} 
+			}
+			
+			rt = determine_domain_trans(1, ans, num_classes, classes, num_perms, perms, &dta, policy);
 			if(rt == -2) {
 				fprintf(stderr, "\n%s is not a valid type name\n", ans);
 				break;
