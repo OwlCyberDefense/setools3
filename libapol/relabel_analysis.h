@@ -60,7 +60,7 @@ typedef struct relabel_result {
 } relabel_result_t;
 
 typedef struct relabel_filter {
-	obj_perm_set_t *perm_sets;
+	obj_perm_set_t *perm_sets; /* Anything in here is what is displayed. */
 	int num_perm_sets;
 } relabel_filter_t;
 

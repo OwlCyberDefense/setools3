@@ -5917,10 +5917,10 @@ static Tcl_Obj *apol_relabel_fromto_results(relabel_result_t *results, relabel_s
 /* Generates and returns the actual results list structure for a file
    domain relabeling query. */
 static Tcl_Obj *apol_relabel_domain_results(relabel_result_t *results, int start_type, policy_t *policy) {
-        Tcl_Obj *results_list_elem, *results_list_obj;
+        Tcl_Obj *results_list_obj;
         Tcl_Obj *results_list[2], *results_list_ptr;
+        Tcl_Obj *item_list[2], *item_elem;
         Tcl_Obj *rule_list[2], *rule_elem;
-        Tcl_Obj *temp_obj;
         relabel_set_t *set = results->set;
         char *str;
         int i, j, type_idx;
@@ -5945,34 +5945,42 @@ static Tcl_Obj *apol_relabel_domain_results(relabel_result_t *results, int start
 	        	fprintf(stderr, "Could not get name for end type from policy.\n");
                         return NULL;
                 }
-	        temp_obj = Tcl_NewStringObj(str, -1);
-	        assert(temp_obj);
+	        item_list[0] = Tcl_NewStringObj(str, -1);	/* end_type */
+	        assert(item_list[0]);
                 free (str);
-                if (Tcl_ListObjAppendElement(NULL, results_list_ptr, temp_obj)) {
-                	fprintf(stderr, "Tcl error while appending element to list.\n");
-                        return NULL;
-                }
+                item_list[1] = Tcl_NewListObj(0, NULL);		/* Rule list */
+                assert(item_list[1]);
                 assert(set->types[i].rules != NULL);		/* Make sure we have rules!! */
                 for (j = 0; j < set->types[i].num_rules; j++) {
+                	/* Rule number */
 	                rule_list[0] = Tcl_NewIntObj(get_rule_lineno(set->types[i].rules[j], RULE_TE_ALLOW, policy));
 	                assert(rule_list[0]);
+	            
 	                str = re_render_av_rule(FALSE, set->types[i].rules[j], FALSE, policy);
 	                if (str == NULL) 
 				return NULL;
+			/* Rule string */
 	                rule_list[1] = Tcl_NewStringObj(str, -1);
 	                assert(rule_list[1]);
 	                free (str);
-	                rule_elem = Tcl_NewListObj(2, rule_list);
-	                assert(rule_elem);
-	                
-	                if (Tcl_ListObjAppendElement(NULL, results_list_ptr, rule_elem)) {
+	   		
+	   		rule_elem = Tcl_NewListObj(2, rule_list);
+	        	assert(rule_elem);
+	                if (Tcl_ListObjAppendElement(NULL, item_list[1], rule_elem)) {
 	                	fprintf(stderr, "Tcl error while appending element to list.\n");
 	                        return NULL;
 	                }
 	        }
+	        item_elem = Tcl_NewListObj(2, item_list);
+	        assert(item_elem);
+	        if (Tcl_ListObjAppendElement(NULL, results_list_ptr, item_elem)) {
+                	fprintf(stderr, "Tcl error while appending element to list.\n");
+                        return NULL;
+                }
+                /* TCL list should look like { end_type1 rule_list end_type2 rule_list ... } */
         }
         
-         for (i = 0; i < set->num_types; i++) {
+        for (i = 0; i < set->num_types; i++) {
                 results_list_ptr = results_list[1];
 	        if (set->types[i].list == FROMLIST) 
 	        	continue;
@@ -5982,37 +5990,39 @@ static Tcl_Obj *apol_relabel_domain_results(relabel_result_t *results, int start
 	        	fprintf(stderr, "Could not get name for end type from policy.\n");
                         return NULL;
                 }
-	        temp_obj = Tcl_NewStringObj(str, -1);
-	        assert(temp_obj);
+	        item_list[0] = Tcl_NewStringObj(str, -1);
+	        assert(item_list[0]);
                 free (str);
-                if (Tcl_ListObjAppendElement(NULL, results_list_ptr, temp_obj)) {
-                	fprintf(stderr, "Tcl error while appending element to list.\n");
-                        return NULL;
-                }
+                item_list[1] = Tcl_NewListObj(0, NULL);
+             	assert(item_list[1]);
                 assert(set->types[i].rules != NULL);		/* Make sure we have rules!! */
                 for (j = 0; j < set->types[i].num_rules; j++) {
 	                rule_list[0] = Tcl_NewIntObj(get_rule_lineno(set->types[i].rules[j], RULE_TE_ALLOW, policy));
 	                assert(rule_list[0]);
+	             
 	                str = re_render_av_rule(FALSE, set->types[i].rules[j], FALSE, policy);
 	                if (str == NULL) 
 				return NULL;
 	                rule_list[1] = Tcl_NewStringObj(str, -1);
 	                assert(rule_list[1]);
 	                free (str);
-	                rule_elem = Tcl_NewListObj(2, rule_list);
-	                assert(rule_elem);
 	                
-	                if (Tcl_ListObjAppendElement(NULL, results_list_ptr, rule_elem)) {
+	                rule_elem = Tcl_NewListObj(2, rule_list);
+	        	assert(rule_elem);
+	                if (Tcl_ListObjAppendElement(NULL, item_list[1], rule_elem)) {
 	                	fprintf(stderr, "Tcl error while appending element to list.\n");
 	                        return NULL;
 	                }
 	        }
+	        item_elem = Tcl_NewListObj(2, item_list);
+	        assert(item_elem);
+	        if (Tcl_ListObjAppendElement(NULL, results_list_ptr, item_elem)) {
+                	fprintf(stderr, "Tcl error while appending element to list.\n");
+                        return NULL;
+                }
         }
         
-        results_list_elem = Tcl_NewListObj(2, results_list);
-        assert(results_list_elem);
-        /* wrap the entire list inside another, to be like relabelto/from */
-        results_list_obj = Tcl_NewListObj(1, &results_list_elem);
+        results_list_obj = Tcl_NewListObj(2, results_list);	/* Return TCL list of 2 elements { from_list to_list } */
         assert(results_list_obj);
         
         return results_list_obj;
@@ -6047,7 +6057,7 @@ int Apol_RelabelAnalysis (ClientData clientData, Tcl_Interp *interp,
         relabel_result_t results;
         relabel_filter_t filter;
         char *mode_string;
-        int start_type, num_perm_objs;
+        int start_type, num_perm_objs = 0;
         Tcl_Obj *results_list_obj, **perm_list;
         
         if (policy == NULL) {
@@ -6102,7 +6112,7 @@ int Apol_RelabelAnalysis (ClientData clientData, Tcl_Interp *interp,
         if (Tcl_ListObjGetElements(interp, objv [3], &num_perm_objs, &perm_list) == TCL_ERROR) {
                 return TCL_ERROR;
         }
-        if (num_perm_objs)
+        if (num_perm_objs) 
         	mode.filter = 1;
         for ( ; num_perm_objs > 0; num_perm_objs--, perm_list++) {
                 Tcl_Obj *object_obj, *perm_list_obj, **perms;
