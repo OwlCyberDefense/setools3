@@ -1101,7 +1101,8 @@ char **sefs_filesystem_db_get_known(sefs_filesystem_db_t *fsd,int *count_in,int 
 		/* first get the number  */
 		sqlite3_exec(db,count_stmt,sefs_count_callback,&list_size,&errmsg);
 		if (rc != SQLITE_OK) {
-			printf("unable to select because\n%s\n",errmsg);
+			fprintf(stderr, "SQL error: %s\n", errmsg);
+			sqlite3_free(errmsg);
 			return NULL;
 		}
 		/* malloc out the memory for the types */
@@ -1112,7 +1113,8 @@ char **sefs_filesystem_db_get_known(sefs_filesystem_db_t *fsd,int *count_in,int 
 		memset(list, 0, list_size * sizeof(char *));
 		rc = sqlite3_exec(db,select_stmt,sefs_search_types_callback,&count,&errmsg);
 		if (rc != SQLITE_OK) {
-			printf("unable to select because\n%s\n",errmsg);
+			fprintf(stderr, "SQL error: %s\n", errmsg);
+			sqlite3_free(errmsg);
 			return NULL;
 		}
 		*count_in = list_size;
@@ -1237,6 +1239,7 @@ int sefs_filesystem_db_search(sefs_filesystem_db_t *fsd,sefs_search_keys_t *sear
 	rc = sqlite3_exec(db,stmt,sefs_search_callback,0,&errmsg);
 	if (rc != SQLITE_OK) {
 		fprintf(stderr, "SQL error: %s\n", errmsg);
+		sqlite3_free(errmsg);
 		ret_val = -1;
 	}
 	else
@@ -1260,7 +1263,14 @@ int sefs_filesystem_db_populate(sefs_filesystem_db_t *fsd, char *dir)
 	int num_mounts=0;
 	int i;
 	sefs_filesystem_data_t *fsdh;
-
+	
+	assert(dir);
+	/* Make sure directory exists */
+	if (access(dir, R_OK) != 0) {
+		perror("Directory to index");
+		return -1;
+     	}
+     	
 	/* malloc out some memory for the fsdh */
 	if ((fsdh = (void *)malloc(1 * sizeof(sefs_filesystem_data_t))) == NULL) {
 		fprintf(stderr, "out of memory\n");
@@ -1357,7 +1367,7 @@ int sefs_filesystem_db_save(sefs_filesystem_db_t *fsd, char *filename)
 	
 	fp = fopen(filename, "w");
 	if (!fp) {
-		fprintf(stderr, "Error opening file %s\n", filename);
+		fprintf(stderr, "Error opening save file %s\n", filename);
 		return -1;
 	}
 	fclose(fp);
@@ -1374,6 +1384,7 @@ int sefs_filesystem_db_save(sefs_filesystem_db_t *fsd, char *filename)
 	rc = sqlite3_exec(db, DB_SCHEMA, NULL, 0, &errmsg);
 	if (rc != SQLITE_OK) {
 		fprintf(stderr, "SQL error while creating database(%d): %s\n",rc, errmsg);
+		sqlite3_free(errmsg);
 		sqlite3_close(db);
 		return -1;
 	}
@@ -1383,7 +1394,8 @@ int sefs_filesystem_db_save(sefs_filesystem_db_t *fsd, char *filename)
 	/* the data to the places it should be for our sqlite3 db */
 	sprintf(stmt,"BEGIN TRANSACTION");  
 	rc = sqlite3_exec(db,stmt,NULL,0,&errmsg);
-
+	if (rc != SQLITE_OK) 
+		goto bad;
 	for (i=0; i < fsdh->num_types; i++) {
 		sprintf(stmt,"insert into types (type_name,type_id) values "
 			"(\"%s\",%d);",fsdh->types[i].name,i);  
@@ -1438,7 +1450,8 @@ int sefs_filesystem_db_save(sefs_filesystem_db_t *fsd, char *filename)
 	}
 	sprintf(stmt,"END TRANSACTION");  
 	rc = sqlite3_exec(db,stmt,NULL,0,&errmsg);
-
+	if (rc != SQLITE_OK) 
+		goto bad;
  	gethostname(hostname,50);
 	time(&mytime);
 	sprintf(stmt,"insert into info (key,value) values ('dbversion',1);"
