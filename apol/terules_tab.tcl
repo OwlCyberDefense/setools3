@@ -2565,7 +2565,8 @@ proc Apol_TE::enable_disable_permissions_section {enable} {
     	
 	if {!$enable} { 
 		$permslistbox selection clear 0 end
-		$permslistbox configure -state disabled -bg $ApolTop::default_bg_color
+		ApolTop::disable_tkListbox $permslistbox
+		
 		$b_union configure -state disabled
 		$b_intersection configure -state disabled
 		$b_allPerms configure -state disabled
@@ -2576,12 +2577,12 @@ proc Apol_TE::enable_disable_permissions_section {enable} {
 		$b_reverseSel configure -state disabled
 	} else {
 		if {[Apol_TE::get_Selected_ListItems $objslistbox] == ""} {
-			$permslistbox configure -state disabled -bg $ApolTop::default_bg_color
+			ApolTop::disable_tkListbox $permslistbox
 			$b_union configure -state disabled
 			$b_intersection configure -state disabled
 			$cb_perms_tilda configure -state disabled
 		} else {
-			$permslistbox configure -state normal -bg white
+			SEUser_Top::enable_tkListbox $permslistbox
 			$b_union configure -state normal
 			$b_intersection configure -state normal
 			$cb_perms_tilda configure -state normal
