@@ -273,6 +273,9 @@ int init_policy(policy_t **p)
 		return -1;
 	}
 	
+	policy->avh.tab = NULL;
+	policy->avh.num = 0;
+
 	*p = policy;
 	return 0;
 }
@@ -291,7 +294,7 @@ int set_policy_version(int ver, policy_t *policy)
 	return 0;
 }
 
-int pol_ver[] = {0,10,12,15,16,17};
+int pol_ver[] = {0,10,12,15,16,17,18};
 int get_policy_version_num(policy_t *policy)
 {
 	if(policy == NULL || !is_valid_policy_version(policy->version))
