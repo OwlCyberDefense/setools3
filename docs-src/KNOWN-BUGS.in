@@ -61,9 +61,9 @@ SEAUDIT
 
 TESTING INFORMATION
 
-Operating Systems: Red Hat Linux 7.2/9.0/Fedora Core 1
+Operating Systems: Red Hat Linux 7.2/9.0/Fedora Core 1/Fedora Core 2 Test releases
 SELinux versions: 2.4, 2.6
-SELinux Policy versions: 12, 15, and 16 (with and without MLS support)
+SELinux Policy versions: 12, 15, 16, and 17 (with and without MLS support)
 TCL/TK versions: 8.3, 8.4
 BWidget versions: 1.4, 1.6, 1.7
 Desktops: Gnome, KDE, Ximiam Gnome, fvwm 
