@@ -58,8 +58,8 @@
 #define NFTW_DEPTH 1024
 
 #define STMTSTART "SELECT types.type_name,users.user_name, paths.path, inodes.obj_class from inodes,types,users,paths where "
-
 #define STMTEND " inodes.user = users.user_id  AND paths.inode = inodes.inode_id AND types.type_id = inodes.type"
+#define SORTSTMT  " ORDER BY paths.path ASC"
 
 #define STMTHOLDERSIZE 100000
 
@@ -119,8 +119,8 @@ const char * sefs_get_class_string( int flag_val);
 
 /* handle statement */
 static int sefs_calc_search_size(const char *st,const char **arr,int size);
-static int sefs_calc_stmt_size(sefs_search_keys_t *search_keys,int use_regexp);
-static void sefs_stmt_populate(char *stmt,sefs_search_keys_t *search_keys,int *objects,int stmt_size,int use_regexp);
+static int sefs_calc_stmt_size(sefs_search_keys_t *search_keys);
+static void sefs_stmt_populate(char *stmt,sefs_search_keys_t *search_keys,int *objects,int stmt_size);
 
 
 /* our main sqlite db struct */
@@ -185,125 +185,92 @@ static int sefs_count_callback(void *NotUsed, int argc, char **argv, char **azCo
 }
 
 
-static void sefs_stmt_populate(char *stmt,sefs_search_keys_t *search_keys,int *objects,int stmt_size,int use_regexp) 
+static void sefs_stmt_populate(char *stmt,sefs_search_keys_t *search_keys,int *objects,int stmt_size) 
 {
 	int index;
 	/* we'll guess that 1000 is enough to hold a portion of our statment */
 	char stmt_holder[100000];
 	int stmt_length = stmt_size/sizeof(char);
 	int stmt_curr_length = 0;
+
 	/* at this point stmt should be empty but better make sure */
 	bzero(stmt,stmt_size);	
 	/* first put the starting statement */
 	sprintf(stmt,"%s ",STMTSTART);
-	if (use_regexp == 0) {
-		/* now we go through the search keys populating the statement */
-		/* type,user,path,object_class */
-		index = 0;		
-		if (search_keys->type && search_keys->num_type > 0){
-			strcat(stmt,"( ");
-			bzero(stmt_holder,STMTHOLDERSIZE);	
-			stmt_curr_length = strlen(stmt);
-			sprintf(stmt_holder," types.type_name = \"%s\" ",search_keys->type[index]);
-			strncat(stmt,stmt_holder,stmt_length-stmt_curr_length);
-			index += 1;
-			while (search_keys->type && index < search_keys->num_type){
-				bzero(stmt_holder,STMTHOLDERSIZE);	
-				stmt_curr_length = strlen(stmt);
-				sprintf(stmt_holder," OR types.type_name = \"%s\" ",search_keys->type[index]);
-				strncat(stmt,stmt_holder,stmt_length-stmt_curr_length);
-				index += 1;
-			}
-			strcat(stmt," ) AND ");
-		}
-		index = 0;
-		if (search_keys->user && search_keys->num_user > 0){
-			strcat(stmt,"( ");
-			bzero(stmt_holder,STMTHOLDERSIZE);	
-			stmt_curr_length = strlen(stmt);
-			sprintf(stmt_holder," users.user_name = \"%s\" ",search_keys->user[index]);
-			strncat(stmt,stmt_holder,stmt_length-stmt_curr_length);
-			index += 1;
-			while (search_keys->user && index < search_keys->num_user){
-				bzero(stmt_holder,STMTHOLDERSIZE);	
-				stmt_curr_length = strlen(stmt);
-				sprintf(stmt_holder," OR users.user_name = \"%s\" ",search_keys->user[index]);
-				strncat(stmt,stmt_holder,stmt_length-stmt_curr_length);
-				index += 1;
-			}
-			strcat(stmt," ) AND ");
-		}
-		index = 0;
-		if (search_keys->path && search_keys->num_path > 0){
-			strcat(stmt,"( ");
-			bzero(stmt_holder,STMTHOLDERSIZE);	
-			stmt_curr_length = strlen(stmt);
-			sprintf(stmt_holder," paths.path = \"%s\" ",search_keys->path[index]);
-			strncat(stmt,stmt_holder,stmt_length-stmt_curr_length);
-			index += 1;
-			while (search_keys->user && index < search_keys->num_path){
-				bzero(stmt_holder,STMTHOLDERSIZE);	
-				stmt_curr_length = strlen(stmt);
-				sprintf(stmt_holder," OR paths.path = \"%s\" ",search_keys->path[index]);
-				strncat(stmt,stmt_holder,stmt_length-stmt_curr_length);
-				index += 1;
-			}
-			strcat(stmt," ) AND ");
-		}
-	} 
-	else {
-		index = 0;		
-		if (search_keys->type && search_keys->num_type > 0){
-			strcat(stmt,"( ");
-			bzero(stmt_holder,STMTHOLDERSIZE);	
-			stmt_curr_length = strlen(stmt);
+	
+	/* now we go through the search keys populating the statement */
+	/* type,user,path,object_class */
+	index = 0;		
+	if (search_keys->type && search_keys->num_type > 0){
+		strcat(stmt,"( ");
+		bzero(stmt_holder,STMTHOLDERSIZE);	
+		stmt_curr_length = strlen(stmt);
+		if (search_keys->do_type_regEx) 
 			sprintf(stmt_holder," sefs_types_compare(types.type_name,\"%s\") ",search_keys->type[index]);
-			strncat(stmt,stmt_holder,stmt_length-stmt_curr_length);
-			index += 1;
-			while (search_keys->type && index < search_keys->num_type){
-				bzero(stmt_holder,STMTHOLDERSIZE);	
-				stmt_curr_length = strlen(stmt);
+		else
+			sprintf(stmt_holder," types.type_name = \"%s\" ",search_keys->type[index]);
+		strncat(stmt,stmt_holder,stmt_length-stmt_curr_length);
+		index += 1;
+		while (search_keys->type && index < search_keys->num_type){
+			bzero(stmt_holder,STMTHOLDERSIZE);	
+			stmt_curr_length = strlen(stmt);
+			if (search_keys->do_type_regEx) 
 				sprintf(stmt_holder," OR sefs_types_compare(types.type_name,\"%s\")  ",search_keys->type[index]);
-				strncat(stmt,stmt_holder,stmt_length-stmt_curr_length);
-				index += 1;
-			}
-			strcat(stmt," ) AND ");
-		}
-		index = 0;
-		if (search_keys->user && search_keys->num_user > 0){
-			strcat(stmt,"( ");
-			bzero(stmt_holder,STMTHOLDERSIZE);	
-			stmt_curr_length = strlen(stmt);
-			sprintf(stmt_holder," sefs_users_compare(users.user_name,\"%s\") ",search_keys->user[index]);
+			else 
+				sprintf(stmt_holder," OR types.type_name = \"%s\" ",search_keys->type[index]);
 			strncat(stmt,stmt_holder,stmt_length-stmt_curr_length);
 			index += 1;
-			while (search_keys->user && index < search_keys->num_user){
-				bzero(stmt_holder,STMTHOLDERSIZE);	
-				stmt_curr_length = strlen(stmt);
-				sprintf(stmt_holder," OR sefs_users_compare(users.user_name,\"%s\") ",search_keys->user[index]);
-				strncat(stmt,stmt_holder,stmt_length-stmt_curr_length);
-				index += 1;
-			}
-			strcat(stmt," ) AND ");
 		}
-		index = 0;
-		if (search_keys->path && search_keys->num_path > 0){
-			strcat(stmt,"( ");
-			bzero(stmt_holder,STMTHOLDERSIZE);	
-			stmt_curr_length = strlen(stmt);
-			sprintf(stmt_holder," sefs_paths_compare(paths.path,\"%s\") ",search_keys->path[index]);
-			strncat(stmt,stmt_holder,stmt_length-stmt_curr_length);
-			index += 1;
-			while (search_keys->user && index < search_keys->num_path){
-				bzero(stmt_holder,STMTHOLDERSIZE);	
-				stmt_curr_length = strlen(stmt);
-				sprintf(stmt_holder," OR sefs_paths_compare(paths.path,\"%s\") ",search_keys->path[index]);
-				strncat(stmt,stmt_holder,stmt_length-stmt_curr_length);
-				index += 1;
-			}
-			strcat(stmt," ) AND ");
-		}
+		strcat(stmt," ) AND ");
 	}
+		
+	index = 0;
+	if (search_keys->user && search_keys->num_user > 0){
+		strcat(stmt,"( ");
+		bzero(stmt_holder,STMTHOLDERSIZE);	
+		stmt_curr_length = strlen(stmt);
+		if (search_keys->do_user_regEx) 
+			sprintf(stmt_holder," sefs_users_compare(users.user_name,\"%s\") ",search_keys->user[index]);
+		else 
+			sprintf(stmt_holder," users.user_name = \"%s\" ",search_keys->user[index]);
+		strncat(stmt,stmt_holder,stmt_length-stmt_curr_length);
+		index += 1;
+		while (search_keys->user && index < search_keys->num_user){
+			bzero(stmt_holder,STMTHOLDERSIZE);	
+			stmt_curr_length = strlen(stmt);
+			if (search_keys->do_user_regEx) 
+				sprintf(stmt_holder," OR sefs_users_compare(users.user_name,\"%s\") ",search_keys->user[index]);
+			else 
+				sprintf(stmt_holder," OR users.user_name = \"%s\" ",search_keys->user[index]);
+			strncat(stmt,stmt_holder,stmt_length-stmt_curr_length);
+			index += 1;
+		}
+		strcat(stmt," ) AND ");
+	}
+	index = 0;
+	if (search_keys->path && search_keys->num_path > 0){
+		strcat(stmt,"( ");
+		bzero(stmt_holder,STMTHOLDERSIZE);	
+		stmt_curr_length = strlen(stmt);
+		if (search_keys->do_path_regEx) 
+			sprintf(stmt_holder," sefs_paths_compare(paths.path,\"%s\") ",search_keys->path[index]);
+		else 
+			sprintf(stmt_holder," paths.path = \"%s\" ",search_keys->path[index]);
+		strncat(stmt,stmt_holder,stmt_length-stmt_curr_length);
+		index += 1;
+		while (search_keys->user && index < search_keys->num_path){
+			bzero(stmt_holder,STMTHOLDERSIZE);	
+			stmt_curr_length = strlen(stmt);
+			if (search_keys->do_path_regEx) 
+				sprintf(stmt_holder," OR sefs_paths_compare(paths.path,\"%s\") ",search_keys->path[index]);
+			else 
+				sprintf(stmt_holder," OR paths.path = \"%s\" ",search_keys->path[index]);
+			strncat(stmt,stmt_holder,stmt_length-stmt_curr_length);
+			index += 1;
+		}
+		strcat(stmt," ) AND ");
+	}
+	
 	index = 0;
 	if (search_keys->object_class && search_keys->num_object_class > 0){
 		strcat(stmt,"( ");
@@ -321,9 +288,12 @@ static void sefs_stmt_populate(char *stmt,sefs_search_keys_t *search_keys,int *o
 		}
 		strcat(stmt," ) AND ");
 	}
+	
 	stmt_curr_length = strlen(stmt);
-	/* now put on the end */
 	strncat(stmt,STMTEND,stmt_length-stmt_curr_length);
+	stmt_curr_length = strlen(stmt);
+	/* now put sort statement on the end */
+	strncat(stmt,SORTSTMT,stmt_length-stmt_curr_length);
 }
 
 
@@ -338,31 +308,36 @@ static int sefs_calc_search_size(const char *str,const char **arr,int size)
 	return tot_size;
 }
 
-static int sefs_calc_stmt_size(sefs_search_keys_t *search_keys,int use_regexp)
+static int sefs_calc_stmt_size(sefs_search_keys_t *search_keys)
 {
 	/* first set the size to our normal select options */
 	int total_size = (strlen(STMTSTART)*sizeof(char));
-
-	if (use_regexp == 0) {
-		if (search_keys->num_type != 0)
+	
+	
+	if (search_keys->num_type != 0) {
+		if (search_keys->do_type_regEx) 
+			total_size += sefs_calc_search_size(" () AND sefs_types_compare(types.type_name,\"%s\") OR   ",search_keys->type,search_keys->num_type);
+		else 
 			total_size += sefs_calc_search_size(" () AND types.type_name = \"\" OR ",search_keys->type,search_keys->num_type);
-		if (search_keys->num_user != 0)
+	}
+	if (search_keys->num_user != 0) {
+		if (search_keys->do_user_regEx) 
+			total_size += sefs_calc_search_size(" () AND sefs_users_compare(users.user_name,\"%s\") OR   ",search_keys->user,search_keys->num_user);
+		else 
 			total_size += sefs_calc_search_size(" () AND users.users_name = OR \"\"  ",search_keys->user,search_keys->num_user);
-		if (search_keys->num_path != 0)
+	}
+	if (search_keys->num_path != 0) {
+		if (search_keys->do_path_regEx) 
+			total_size += sefs_calc_search_size(" () AND sefs_paths_compare(paths.path,\"%s\") OR    ",search_keys->path,search_keys->num_path);
+		else 
 			total_size += sefs_calc_search_size(" () AND paths.path = OR \"\"  ",search_keys->path,search_keys->num_path);
 	}
-	else {
-		if (search_keys->num_type != 0)
-			total_size += sefs_calc_search_size(" () AND sefs_types_compare(types.type_name,\"%s\") OR   ",search_keys->type,search_keys->num_type);
-		if (search_keys->num_user != 0)
-			total_size += sefs_calc_search_size(" () AND sefs_users_compare(users.user_name,\"%s\") OR   ",search_keys->user,search_keys->num_user);
-		if (search_keys->num_path != 0)
-			total_size += sefs_calc_search_size(" () AND sefs_paths_compare(paths.path,\"%s\") OR    ",search_keys->path,search_keys->num_path);
-	}
+
 	if (search_keys->object_class) 
 		total_size += sefs_calc_search_size(" () AND inodes.obj_class = OR ",search_keys->object_class,search_keys->num_object_class);
  	total_size += (strlen(STMTEND)*sizeof(char));
-
+ 	total_size += (strlen(SORTSTMT)*sizeof(char));
+	
 	return total_size;
 }
 
@@ -1179,8 +1154,7 @@ char **sefs_filesystem_db_get_known(sefs_filesystem_db_t *fsd,int *count_in,int 
 
 }
 
-int sefs_filesystem_db_search(sefs_filesystem_db_t *fsd,sefs_search_keys_t *search_keys,
-				int use_regex)
+int sefs_filesystem_db_search(sefs_filesystem_db_t *fsd,sefs_search_keys_t *search_keys)
 {
 	
 	unsigned char *stmt = NULL;
@@ -1196,7 +1170,7 @@ int sefs_filesystem_db_search(sefs_filesystem_db_t *fsd,sefs_search_keys_t *sear
 	sefs_search_keys = search_keys;
 
 	/* malloc out the memory needed for stmt */
-	stmt_size = sefs_calc_stmt_size(search_keys,use_regex);
+	stmt_size = sefs_calc_stmt_size(search_keys);
 
 	stmt = (char *)malloc(stmt_size);
 
@@ -1218,6 +1192,7 @@ int sefs_filesystem_db_search(sefs_filesystem_db_t *fsd,sefs_search_keys_t *sear
 			}
 			else {
 				ret_val = -1;
+				fprintf(stderr, "Invalid object class provided!\n");
 				goto done_search;
 			}
 		}
@@ -1225,30 +1200,28 @@ int sefs_filesystem_db_search(sefs_filesystem_db_t *fsd,sefs_search_keys_t *sear
 
 
 	/* are we searching using regexp? */
-	if (use_regex == 1) {
-	
+	if (search_keys->do_type_regEx) {
 		/* create our comparison functions */
 		sqlite3_create_function(db,"sefs_types_compare",2,SQLITE_UTF8,NULL,&sefs_types_compare,NULL,NULL);
-		sqlite3_create_function(db,"sefs_users_compare",2,SQLITE_UTF8,NULL,&sefs_users_compare,NULL,NULL);
-		sqlite3_create_function(db,"sefs_paths_compare",2,SQLITE_UTF8,NULL,&sefs_paths_compare,NULL,NULL);
-	
 		/* create our compiled regular expressions and our search string*/
 		if (search_keys->type)
 			regcomp(&types_re, search_keys->type[0],REG_NOSUB|REG_EXTENDED);
+	} 
+	if (search_keys->do_user_regEx) {
+		sqlite3_create_function(db,"sefs_users_compare",2,SQLITE_UTF8,NULL,&sefs_users_compare,NULL,NULL);
 		if (search_keys->user)
 			regcomp(&users_re, search_keys->user[0],REG_NOSUB|REG_EXTENDED);
+	}
+	if (search_keys->do_path_regEx) {
+		sqlite3_create_function(db,"sefs_paths_compare",2,SQLITE_UTF8,NULL,&sefs_paths_compare,NULL,NULL);
 		if (search_keys->path)
 			regcomp(&paths_re, search_keys->path[0],REG_NOSUB|REG_EXTENDED);
-
-		sefs_stmt_populate(stmt,search_keys,object_class,stmt_size,use_regex); 
-       
 	}
-	else {
-		sefs_stmt_populate(stmt,search_keys,object_class,stmt_size,use_regex); 
+	sefs_stmt_populate(stmt,search_keys,object_class,stmt_size); 
 
-	}
 	rc = sqlite3_exec(db,stmt,sefs_search_callback,0,&errmsg);
 	if (rc != SQLITE_OK) {
+		fprintf(stderr, "SQL error: %s\n", errmsg);
 		ret_val = -1;
 	}
 	else
