@@ -1,5 +1,5 @@
 AN OVERVIEW OF DOMAIN TRANSITION ANALYSIS
-apol, version 1.5
+apol, version 1.5.1
 November 04, 2004
 selinux@tresys.com
 
