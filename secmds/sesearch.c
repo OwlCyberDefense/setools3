@@ -76,7 +76,8 @@ Search Type Enforcement rules in an SELinux policy.\n\
   -i, --indirect         indirect; also search for the type's attributes\n\
   -n, --noregex          do not use regular expression to match type/attributes\n\
   -a, --all              show all rules regardless of type, class, or perms\n\
-  -l, --lineno           include line # in policy.conf for each rule\n\n\
+  -l, --lineno           include line # in policy.conf for each rule.\n\
+  			 This option is ignored if using a binary policy.\n\n\
   --policytype[=POLICYTYPE] \n\
   			 default to policy type (POLICYTYPE=source|binary)\n\
   -h, --help             display this help and exit\n\
@@ -357,7 +358,7 @@ int main (int argc, char **argv)
 		for(i = 0; i < r.num_av_access; i++) {
 			rule = re_render_av_rule(FALSE, r.av_access[i], FALSE, policy);
 			assert(rule);
-			if(lineno)
+			if(lineno && !is_binary_policy(policy))
 				printf("[%6d]  ", r.av_access_lineno[i]);
 			printf("%s\n", rule);
 			free(rule);
@@ -368,7 +369,7 @@ int main (int argc, char **argv)
 		for(i = 0; i < r.num_av_audit; i++) {
 			rule = re_render_av_rule(FALSE, r.av_audit[i], TRUE, policy);
 			assert(rule);
-			if(lineno)
+			if(lineno && !is_binary_policy(policy))
 				printf("[%6d]  ", r.av_audit_lineno[i]);
 			printf("%s\n", rule);
 			free(rule);
@@ -379,7 +380,7 @@ int main (int argc, char **argv)
 		for(i = 0; i < r.num_type_rules; i++) {
 			rule = re_render_tt_rule(FALSE, r.type_rules[i], policy);
 			assert(rule);
-			if(lineno)
+			if(lineno && !is_binary_policy(policy))
 				printf("[%6d]  ", r.type_lineno[i]);
 			printf("%s\n", rule);
 			free(rule);
