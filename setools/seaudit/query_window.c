@@ -148,14 +148,16 @@ static void display_policy_query_results(GladeXML *xml, GString *src_type, GStri
 							 "weight", "bold", NULL);
 	}
 	link_tag = gtk_text_tag_table_lookup(table, "policy-link-tag");
-	if (!link_tag) {
-		link_tag = gtk_text_buffer_create_tag(buffer, "policy-link-tag",
-						      "family", "monospace",
-						      "foreground", "blue", 
-						      "underline", PANGO_UNDERLINE_SINGLE, NULL);
-		g_signal_connect_after(G_OBJECT(link_tag), "event", GTK_SIGNAL_FUNC(on_policy_link_event), xml);
+	if (!is_binary_policy(seaudit_app->cur_policy)) {
+		if (!link_tag) {
+			link_tag = gtk_text_buffer_create_tag(buffer, "policy-link-tag",
+							      "family", "monospace",
+							      "foreground", "blue", 
+							      "underline", PANGO_UNDERLINE_SINGLE, NULL);
+			g_signal_connect_after(G_OBJECT(link_tag), "event", GTK_SIGNAL_FUNC(on_policy_link_event), xml);
+		}
+		glade_xml_signal_connect_data(xml, "on_text_view_motion", GTK_SIGNAL_FUNC(on_text_view_motion), link_tag);
 	}
-	glade_xml_signal_connect_data(xml, "on_text_view_motion", GTK_SIGNAL_FUNC(on_text_view_motion), link_tag);
 
 	rules_tag = gtk_text_tag_table_lookup(table, "rules-tag");
 	if (!rules_tag) {
@@ -286,6 +288,7 @@ void on_query_policy_button_clicked(GtkButton *button, GladeXML *xml)
 	gboolean src_on, tgt_on, obj_on;
 
 	window = GTK_WINDOW(glade_xml_get_widget(xml, "query_window"));
+		
 	src_type = g_string_new("");
 	tgt_type = g_string_new("");
 	obj_class = g_string_new("");
@@ -495,7 +498,7 @@ static void populate_query_window_widgets(GladeXML *xml)
 
 static void on_new_policy_opened(void *user_data);
 
-gboolean on_query_window_delete_event(GtkWidget *widget, GdkEvent *event, gpointer user_data)
+void query_window_remove_callbacks(GtkWidget *widget)
 {
 	policy_load_callback_remove(&on_new_policy_opened, widget);
 
@@ -504,13 +507,18 @@ gboolean on_query_window_delete_event(GtkWidget *widget, GdkEvent *event, gpoint
 	 * being executed after we delete the window.  This 
 	 * may happen if the window is closed during a search. */
 	while(g_idle_remove_by_data(widget));
+}
+
+gboolean on_query_window_delete_event(GtkWidget *widget, GdkEvent *event, gpointer user_data)
+{
+	query_window_remove_callbacks(widget);
 
 	return FALSE;
 }
 
 static void on_new_policy_opened(void *user_data)
 {
-	g_signal_emit_by_name((GtkWidget*)user_data, "delete_event");
+	query_window_remove_callbacks((GtkWidget*)user_data);
 	gtk_widget_destroy((GtkWidget*)user_data);
 }
 
@@ -541,6 +549,7 @@ int query_window_create(void)
 	GtkWidget *text, *button, *combo;
 	GtkWindow *window;
 	GString *path;
+	GtkNotebook *notebook;
 	char *dir;
 
 	if (!seaudit_app->cur_policy) {
@@ -560,7 +569,7 @@ int query_window_create(void)
 	g_string_free(path, TRUE);
 	window = GTK_WINDOW(glade_xml_get_widget(xml, "query_window"));
 	g_assert(window);
-
+		
 	/* connect functions to display selection as regular expression */
 	combo = glade_xml_get_widget(xml, "src_combo");
 	g_assert(combo);
@@ -580,11 +589,18 @@ int query_window_create(void)
 	
 	populate_query_window_widgets(xml);
 	
-	text = glade_xml_get_widget(xml, "policy_text");
-	g_assert(text);
-
-	gtk_text_view_set_buffer(GTK_TEXT_VIEW(text), seaudit_app->policy_text);
-	gtk_text_view_set_editable(GTK_TEXT_VIEW(text), FALSE);
+	if (is_binary_policy(seaudit_app->cur_policy)) {
+		/* Remove the policy.conf tab if this is a binary policy. */
+		notebook = GTK_NOTEBOOK(glade_xml_get_widget(xml, "query_policy_notebook"));
+		g_assert(notebook);
+		gtk_notebook_remove_page(notebook, 1);
+	} else {
+		text = glade_xml_get_widget(xml, "policy_text");
+		g_assert(text);
+	
+		gtk_text_view_set_buffer(GTK_TEXT_VIEW(text), seaudit_app->policy_text);
+		gtk_text_view_set_editable(GTK_TEXT_VIEW(text), FALSE);
+	}
 	
 	text = glade_xml_get_widget(xml, "query_results");
 	g_assert(text);
