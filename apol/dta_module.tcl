@@ -30,12 +30,16 @@ namespace eval Apol_Analysis_dta {
 	variable display_attribute		""
 	variable display_attrib_sel		0
 	variable display_direction		"forward"
+	variable endtype_sel			0
+	variable end_type			""
 	
 	# Options State Variables
 	variable type_state			""
 	variable attribute_state		""
 	variable attrib_selected_state 		0
 	variable direction_state		"forward"
+	variable endtype_sel_state		0
+	variable end_type_state			""
 	
 	# Current results display
 	variable dta_tree		""	
@@ -243,7 +247,7 @@ proc Apol_Analysis_dta::forward_options_exclude_types {remove_list_1 \
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_dta::forward_options_configure_combo_state {cb_selected_1 combo_box lbox which_list path_name} {
 	variable f_opts
-	
+
 	upvar #0 $cb_selected_1 cb_selected
 	if {$cb_selected} {
 		$combo_box configure -state normal -entrybg white
@@ -618,7 +622,7 @@ proc Apol_Analysis_dta::forward_options_initialize_vars {path_name} {
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_dta::forward_options_set_widgets_to_default_state {path_name} {
 	variable f_opts
-		
+	
 	$f_opts($path_name,combo_incl) configure -values $Apol_Types::attriblist
      	$f_opts($path_name,combo_excl) configure -values $Apol_Types::attriblist
      	$f_opts($path_name,combo_excl) configure -text $f_opts($path_name,excl_attrib_combo_value)
@@ -771,7 +775,8 @@ proc Apol_Analysis_dta::forward_options_destroy_object {path_name} {
 		unset f_opts($path_name,incl_attrib_cb_sel) 	
 		unset f_opts($path_name,excl_attrib_cb_sel) 	
 		unset f_opts($path_name,filter_vars_init) 	
-		unset f_opts($path_name,class_selected_idx) 	
+		unset f_opts($path_name,class_selected_idx)
+		unset f_opts($path_name,name)
 	}
      	return 0
 } 
@@ -848,9 +853,16 @@ proc Apol_Analysis_dta::forward_options_create_dialog {path_name title_txt} {
         pack $topf -fill both -expand yes -padx 10 -pady 10
       
    	# Main Titleframes
-   	set objs_frame  [TitleFrame [$pw1 getframe 0].objs_frame -text "Search by object class permissions:"]
-        set types_frame [TitleFrame [$pw1 getframe 1].types_frame -text "Search by object type(s):"]
+   	set objs_frame  [TitleFrame [$pw1 getframe 0].objs_frame -text "Filter target domains by object class permissions:"]
+        set types_frame [TitleFrame [$pw1 getframe 1].types_frame -text "Filter target domains by object type(s):"]
         
+        set top_lbl [Label [$objs_frame getframe].top_lbl -justify left -font $ApolTop::dialog_font \
+        	-text "Configure the query to search for transitions to domains with access to specific object classes:"]
+       	
+       	set bot_lbl [Label [$types_frame getframe].bot_lbl -justify left -font $ApolTop::dialog_font \
+        	-text "Configure the query to search for transitions to domains with access to specific object types:"]
+        pack $top_lbl $bot_lbl -side top -anchor nw -pady 3
+   	
         # Widgets for object classes frame
         set pw1   [PanedWindow [$objs_frame getframe].pw -side top -weights available]
         set pane  [$pw1 add]
@@ -1062,9 +1074,11 @@ proc Apol_Analysis_dta::close { } {
 	Apol_Analysis_dta::configure_widgets_for_dta_direction
         Apol_Analysis_dta::config_attrib_comboBox_state
 	$Apol_Analysis_dta::combo_domain configure -values ""
+	
+	Apol_Analysis_dta::forward_options_destroy_all_dialogs_on_open
+     	#Apol_Analysis_dta::forward_options_destroy_dialog $Apol_Analysis_dta::forward_options_Dlg
+	#Apol_Analysis_dta::forward_options_destroy_object $Apol_Analysis_dta::forward_options_Dlg
 
-     	Apol_Analysis_dta::forward_options_destroy_dialog $Apol_Analysis_dta::forward_options_Dlg
-	Apol_Analysis_dta::forward_options_destroy_object $Apol_Analysis_dta::forward_options_Dlg
      	return 0
 } 
 
@@ -1074,7 +1088,6 @@ proc Apol_Analysis_dta::close { } {
 proc Apol_Analysis_dta::open { } {  
 	variable display_attrib_sel
 	
-	Apol_Analysis_dta::forward_options_destroy_all_dialogs_on_open
 	Apol_Analysis_dta::populate_ta_list	
 	# Have the attributes checkbutton OFF by default
 	set display_attrib_sel	0
@@ -1837,7 +1850,7 @@ proc Apol_Analysis_dta::display_forward_advanced_button { } {
 				$Apol_Analysis_dta::forward_options_Dlg \
 				"Forward DTA Advanced Search Options"}]
 	} 
-	pack $b_forward_options -side left -anchor center -expand yes -fill x
+	pack $b_forward_options -side left -anchor nw -padx 4
 	return 0
 }
 
@@ -2257,10 +2270,10 @@ proc Apol_Analysis_dta::render_target_type_data { data dta_info_text dta_tree no
 		set end_idx [$dta_info_text index insert]
 		$dta_info_text tag add $Apol_Analysis_dta::subtitle_tag $start_idx $end_idx
 		set start_idx $end_idx
-		$dta_info_text insert end "$num_additional\n"
+		$dta_info_text insert end "$num_additional"
 		set end_idx [$dta_info_text index insert]
 		$dta_info_text tag add $Apol_Analysis_dta::counters_tag $start_idx $end_idx
-		
+		$dta_info_text insert end "rules\n"
 		for {set j 0 } { $j < $num_additional } { incr j }  {
 			incr idx
 			set rule [lindex $data $idx]
@@ -2277,7 +2290,7 @@ proc Apol_Analysis_dta::render_target_type_data { data dta_info_text dta_tree no
 				Apol_PolicyConf::insertHyperLink $dta_info_text "$start_idx wordstart + 1c" "$start_idx wordstart + [expr [string length $lineno] + 1]c"
 				set start_idx $end_idx
 			}
-			$dta_info_text insert end "$rule\n"
+			$dta_info_text insert end "$rule"
 			set end_idx [$dta_info_text index insert]
 			$dta_info_text tag add $Apol_Analysis_dta::rules_tag $start_idx $end_idx
 			
@@ -2381,6 +2394,19 @@ proc Apol_Analysis_dta::insert_src_type_node { dta_tree query_args } {
         return [$dta_tree nodes root]
 }
 
+# ------------------------------------------------------------------------------
+#  Command Apol_Analysis_dta::config_endtype_state
+# ------------------------------------------------------------------------------
+proc Apol_Analysis_dta::config_endtype_state {} {
+	variable entry_end
+	
+        if {$Apol_Analysis_dta::endtype_sel} {
+	        $entry_end configure -state normal -background white
+	} else {
+	        $entry_end configure -state disabled -background $ApolTop::default_bg_color
+	}
+        return 0
+}
 
 # ------------------------------------------------------------------------------
 #  Command Apol_Analysis_dta::create_options
@@ -2392,12 +2418,14 @@ proc Apol_Analysis_dta::create_options { options_frame } {
 	variable entry_frame
 	variable adv_frame
 	variable b_forward_options
+	variable entry_end
 	
 	set left_frame [frame $options_frame.left_frame]
 	set right_frame [frame $options_frame.right_frame]
 	set radio_frame [TitleFrame $left_frame.radio_frame -text "Select direction:"]
 	set entry_frame [TitleFrame $left_frame.entry_frame]
 	set adv_frame [frame $right_frame.adv_frame]
+	set endtype_frame [frame $right_frame.endtype_frame]
 	
 	# Domain transition section
     	set combo_domain [ComboBox [$entry_frame getframe].combo_domain -width 20 \
@@ -2427,12 +2455,20 @@ proc Apol_Analysis_dta::create_options { options_frame } {
 				-command {Apol_Analysis_dta::forward_options_create_dialog \
 					$Apol_Analysis_dta::forward_options_Dlg \
 					"Forward DTA Advanced Search Options"}]
-				
-	pack $left_frame -side top -anchor nw
-	pack $right_frame -side top -anchor nw  
+	set entry_end [Entry $endtype_frame.entry_end \
+		-helptext "You may enter a regular expression" \
+		-editable 1 -state disabled \
+		-textvariable Apol_Analysis_dta::end_type] 
+	set cb_endtype [checkbutton $endtype_frame.cb_endtype \
+	    	-text "Filter end types using regular expression:" \
+		-variable Apol_Analysis_dta::endtype_sel \
+		-command {Apol_Analysis_dta::config_endtype_state}]
+					
+	pack $left_frame -side left -anchor nw
+	pack $right_frame -side right -anchor nw -fill x -expand yes 
 	pack $radio_frame -side top -anchor nw -pady 5 -fill x -expand yes
 	pack $entry_frame -side top -anchor nw -pady 5 -fill x
-	pack $adv_frame -side top -anchor nw -pady 5 -fill x -padx 35
+	pack $endtype_frame $adv_frame -side top -anchor nw -pady 5 -padx 2
 	
 	pack $combo_domain -side top -anchor nw -fill x
     	pack $cb_attrib -padx 15 -side top -anchor nw
