@@ -1134,7 +1134,8 @@ char **sefs_filesystem_db_get_known(sefs_filesystem_db_t *fsd,int *count_in,int 
 			fprintf(stderr, "out of memory\n");
 			return NULL;
 		}
-	
+		memset(list, 0, list_size * sizeof(char *));
+		
 		rc = sqlite3_exec(db,select_stmt,sefs_search_types_callback,&count,&errmsg);
 		if (rc != SQLITE_OK) {
 			printf("unable to select because\n%s\n",errmsg);
@@ -1469,6 +1470,11 @@ int sefs_filesystem_db_load(sefs_filesystem_db_t* fsd, char *file)
 	
 	assert(file);
 	
+	rc = access(file, R_OK);
+	if (rc != 0) {
+		perror("access");
+		return -1;
+     	}
 	rc = sqlite3_open(file, &db);
 	if ( rc ) {
 		fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
