@@ -78,11 +78,13 @@ you cannot sort on is the 'Other' column.  Only one level of sorting
 can be performed at this time.
 
 
-Real-time log: 
+Log Monitoring: 
 ------------ 
-The 'Real-time log' button allows you to keep up to date with the current
-state of the system log.  Seaudit checks for new messages in the open 
-log file once every second.  If new messages are found they are applied
+The 'Monitor' button allows you to turn the real-time log monitoring feature
+on or off.  When the monitor is off the button displays a red icon and the 
+words 'Monitor off', when the monitor is on the button displays a green icon
+and the words 'Monitor on'.  When this feature is on, seaudit checks for new 
+messages once every second.  If new messages are found they are displayed 
 according to the current filter and sorting selections.
 
 
