@@ -1,6 +1,6 @@
 Audit Log Analysis Tool for Security Enhanced Linux
 seaudit, version 1.4
-February 09, 2005
+February 16, 2005
 selinux@tresys.com
 
 Overview:  
@@ -266,10 +266,10 @@ The character '!' must be the first character after '[' when one deisres to use 
 When using complementations the whole complement of the whole string enclosed in the brackets after 
 the '!' character is used.
 
-	example: a[!b-y]z matches all three character strings starting with a followed by any character not
-		 occuring after b and before y, and ending in z
-	example: a[!c-ik-y]z matches all all three character string starting with a followed by any character
-		 not occuring after b and before i or after k and before y, and ending in z 
+	example: a[!b-y]z matches all three-character strings starting with a followed by any character not
+		 occuring between b and y (inclusive), and ending in z
+	example: a[!c-ik-y]z matches all three-character string starting with a followed by any character
+		 not occuring between c and i (inclusive) or between k and y (inclusive), and ending in z 
 
 *** CAUTION ***
 SEAudit intersperses the use of regular expressions versus globbed expressions. So for example, the 'Edit 
