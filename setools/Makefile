@@ -4,9 +4,12 @@ MAKEFILE =  Makefile
 MAKE = make
 
 LIBS		= -lfl -lm 
-TCLVER		= 8.3
-TCL_INCLUDE	= -I/usr/include
-TCL_LIBINC	= -L/usr/lib
+TCLVER		= $(shell env tclsh tcl_vars version)
+TCL_LIBINC	= -L$(shell env tclsh tcl_vars pkgPath)
+TCL_INCLUDE	= -I$(shell echo $(shell env tclsh tcl_vars pkgPath) | sed -e "s/lib/include/g")
+#TCLVER		= 8.3
+#TCL_INCLUDE	= -I/usr/include
+#TCL_LIBINC	= -L/usr/lib
 TCL_LIBS	= -ltk$(TCLVER) -ltcl$(TCLVER) -ldl $(LIBS)
 
 LINKFLAGS	= 
