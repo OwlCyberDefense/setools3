@@ -1178,7 +1178,7 @@ proc ApolTop::create { } {
 	    {command "&General Help" {all option} "Show help" {} -command {ApolTop::helpDlg "Help" "apol_help.txt"}}
 	    {command "&Domain Transition Analysis" {all option} "Show help" {} -command {ApolTop::helpDlg "Domain Transition Analysis Help" "dta_help.txt"}}
 	    {command "&Information Flow Analysis" {all option} "Show help" {} -command {ApolTop::helpDlg "Information Flow Analysis Help" "iflow_help.txt"}}
-	    {command "&Information Flow Assertion Analysis" {all option} "Show help" {} -command {ApolTop::helpDlg "Information Flow Assertion Analysis Help" "flow_assertion_help.txt"}}
+	    #{command "&Information Flow Assertion Analysis" {all option} "Show help" {} -command {ApolTop::helpDlg "Information Flow Assertion Analysis Help" "flow_assertion_help.txt"}}
 	    {command "&File Relabel Analysis" {all option} "Show help" {} -command {ApolTop::helpDlg "File Relabel Analysis Help" "file_relabel_help.txt"}}
 	    {command "&Types Relationship Summary Analysis" {all option} "Show help" {} -command {ApolTop::helpDlg "Types Relationship Summary Analysis Help" "types_relation_help.txt"}}
 	    {separator}
