@@ -117,6 +117,11 @@ proc Apol_PolicyConf::close { } {
 	return 0
 }
 
+proc Apol_PolicyConf::free_call_back_procs { } {
+  
+	return 0
+}
+
 ###################################################################
 # Apol_PolicyConf::display_policy_conf
 #  	- Display the policy.conf file
