@@ -141,14 +141,16 @@ static int avl_grow(avl_tree_t *tree)
 {
 	tree->ptrs_len++;
 	tree->ptrs = (avl_ptrs_t *)realloc(tree->ptrs, tree->ptrs_len * sizeof(avl_ptrs_t));
-	tree->ptrs[tree->ptrs_len - 1].left = -1;
-	tree->ptrs[tree->ptrs_len - 1].right = -1;
-	tree->ptrs[tree->ptrs_len - 1].height = 0;
 
 	if (tree->ptrs == NULL) {
 		fprintf(stderr, "Out of memory!\n");
 		return -1;
 	}
+
+	tree->ptrs[tree->ptrs_len - 1].left = -1;
+	tree->ptrs[tree->ptrs_len - 1].right = -1;
+	tree->ptrs[tree->ptrs_len - 1].height = 0;
+
 	if (tree->grow(tree->user_data, tree->ptrs_len))
 		return -1;
 	return 0;
