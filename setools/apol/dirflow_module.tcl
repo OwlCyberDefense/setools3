@@ -1363,7 +1363,7 @@ proc Apol_Analysis_dirflow::create_options { options_frame } {
 		-exportselection 0] 
 
         set cb_objects [checkbutton $objcl_frame.cb_objects \
-        	-text "Filter results by object class:" \
+        	-text "Exclude rules with selected object classes:" \
 		-variable Apol_Analysis_dirflow::objects_sel \
 		-offvalue 0 -onvalue 1 \
 		-justify left \
