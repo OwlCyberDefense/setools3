@@ -527,8 +527,6 @@ static void avc_msg_destroy(avc_msg_t* tmp)
 		free(tmp->name);
 	if (tmp->ipaddr)
 		free(tmp->ipaddr);
-	if (tmp->audit_header)
-		free(tmp->audit_header);
 	free(tmp);
 	return;
 }
