@@ -40,6 +40,7 @@ namespace eval SEUser_Top {
 	# The version number is defined as a magical string here. This is later configured in the make environment.
 	variable gui_ver		SEUSER_GUI_VERSION
 	variable copyright_date		"2002-2004"
+	variable bwidget_version	""
 	variable progressMsg 		""
 	variable delete_user_ans 
 	variable tmpfile
@@ -54,7 +55,10 @@ namespace eval SEUser_Top {
     	variable trace_vars   ""
     	variable text_font		"Courier 10"
     	variable curr_sort_type		user_name	
-    	variable default_bg_color	
+    	variable default_bg_color
+    	
+    	# Notebook tab IDENTIFIER prefix;  Note that the prefix must end with an underscore.
+    	variable tabName_prefix		"SEUser_"
     	
     	# Get default bg color of toplevel window
 	set default_bg_color [. cget -background]
@@ -568,6 +572,40 @@ proc SEUser_Top::se_exit { } {
 	exit
 }
 
+################################################################################
+# ::get_tabname -- 
+#	args:	
+#		- tabID - the tabID provided from the Notebook::bindtabs command
+#
+# Description: 	There is a bug with the BWidgets 1.7.0 Notebook widget where the 
+#	  	tabname is stripped of its' first 2 characters AND an additional 
+#		string, consisting of a colon followed by an embedded widget name 
+#		from the tab, is appended. For example, the tab name will be 
+#		'sults1:text' instead of 'Results1".
+#
+proc SEUser_Top::get_tabname {tab} {	
+	variable tabName_prefix
+	
+	set idx [string last ":" $tab]
+	if {$idx != -1} {
+		# Strip off the last ':' and any following characters from the end of the string
+		set tab [string range $tab 0 [expr $idx - 1]]
+	}
+	set prefix_len [string length $tabName_prefix]
+	if {[string range $tab 0 $prefix_len] == $tabName_prefix} {
+		return $tab
+	}
+	
+	set tmp $tabName_prefix
+	set idx [string first "_" $tab]
+	if {$idx == -1} {
+		return $tab
+	}
+	set tab_fixed [append tmp [string range $tab [expr $idx + 1] end]]
+	return $tab_fixed
+}
+
+
 ##############################
 #  GUI Construction Methods  #
 ##############################
@@ -914,13 +952,14 @@ proc SEUser_Top::main {} {
 	global tcl_platform
 	global tk_version
 	global tk_patchLevel
+	variable bwidget_version
 	
 	# Prevent the application from responding to incoming send requests and sending 
 	# outgoing requests. This way any other applications that can connect to our X 
 	# server cannot send harmful scripts to our application. 
 	rename send {}
 
-	set rt [catch {set version [package require BWidget]} err]
+	set rt [catch {set bwidget_version [package require BWidget]} err]
 	if {$rt != 0 } {
 		tk_messageBox -icon error -type ok -title "Missing BWidgets package" \
 			-parent . \
@@ -930,7 +969,7 @@ proc SEUser_Top::main {} {
 			http://sourceforge.net/projects/tcllib"
 		exit
 	}
-	if {[package vcompare $version "1.4.1"] == -1} {
+	if {[package vcompare $bwidget_version "1.4.1"] == -1} {
 		tk_messageBox -icon warning -type ok -title "Package Version" -parent . \
 			-message \
 			"This tool requires BWidgets 1.4.1 or later. You may experience problems\
@@ -939,9 +978,9 @@ proc SEUser_Top::main {} {
 	}
 	
 	# Provide the user with a warning if incompatible Tk and BWidget libraries are being used.
-	if {[package vcompare $version "1.4.1"] && $tk_version == "8.3"} {
+	if {[package vcompare $bwidget_version "1.4.1"] && $tk_version == "8.3"} {
 		tk_messageBox -icon error -type ok -title "Warning" -parent . -message \
-			"Your installed Tk version $tk_version includes an incompatible BWidgets $version package version. \
+			"Your installed Tk version $tk_version includes an incompatible BWidgets $bwidget_version package version. \
 			This has been known to cause a tk application to crash.\n\nIt is recommended that you either upgrade your \
 			Tk library to version 8.4 or greater or use BWidgets 1.4.1 instead. See the README for more information."	
 		exit
