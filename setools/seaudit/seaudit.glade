@@ -480,7 +480,7 @@
 		      <property name="spacing">2</property>
 
 		      <child>
-			<widget class="GtkImage" id="image205">
+			<widget class="GtkImage" id="RealTimeImage">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-refresh</property>
 			  <property name="icon_size">4</property>
@@ -497,10 +497,10 @@
 		      </child>
 
 		      <child>
-			<widget class="GtkLabel" id="label4">
+			<widget class="GtkLabel" id="RealTimeLabel">
 			  <property name="visible">True</property>
 			  <property name="can_focus">True</property>
-			  <property name="label" translatable="yes">Real-time log</property>
+			  <property name="label" translatable="yes">label</property>
 			  <property name="use_underline">True</property>
 			  <property name="use_markup">False</property>
 			  <property name="justify">GTK_JUSTIFY_LEFT</property>
