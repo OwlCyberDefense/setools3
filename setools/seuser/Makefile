@@ -126,17 +126,13 @@ install-nogui: seuser policy-install
 	-install -m 755 $(SE_SHELL_SCRIPTS) $(BINDIR)
 
 install: install-nogui seuserx se_user.tcl
-	-install -d $(BINDIR); 
-	-@if [ -e $(BINDIR)/seuser ]; then \
-		if [ -e /etc/security/selinux/src/policy/policy.conf ]; then \
-			install -m 755 -Z system_u:object_r:seuser_exec_t seuserx $(BINDIR); \
-		else \
-			install -m 755 seuserx $(BINDIR); \
-		fi; \
-		install -m 644 se_user.tcl $(SEUSER_HELP_FILE) $(INSTALL_LIBDIR); \
+	install -d $(BINDIR); 
+	@if [ -e /etc/security/selinux/src/policy/policy.conf ]; then \
+		install -m 755 -Z system_u:object_r:seuser_exec_t seuserx $(BINDIR); \
 	else \
-		echo "ERROR: Unable to install seuserx; need seuser program to install."; \
+		install -m 755 seuserx $(BINDIR); \
 	fi
+	install -m 644 se_user.tcl $(SEUSER_HELP_FILE) $(INSTALL_LIBDIR)
 
 clean:
 	rm -f *.o  core* seuser seuserx *~ se_user.tcl tmp.tcl
