@@ -18,7 +18,9 @@ namespace eval Apol_File_Contexts {
 	set opts(user)			""
 	set opts(class)			""
 	set opts(type)			""
-	set opts(regEx)			0
+	set opts(regEx_user)		0
+	set opts(regEx_type)		0
+	set opts(regEx_path)		0
 	
 	# Other vars
 	variable attribute_selected	""
@@ -29,8 +31,8 @@ namespace eval Apol_File_Contexts {
 	variable progressmsg		""
 	variable progress_indicator	-1
 	variable db_loaded		0
-	variable show_ctxt		0
-	variable show_class		0
+	variable show_ctxt		1
+	variable show_class		1
 	
 	# Global Widgets
 	variable resultsbox
@@ -44,6 +46,7 @@ namespace eval Apol_File_Contexts {
 	variable entry_path
 	variable create_button
 	variable load_button
+	variable create_fc_dlg		.fc_db_create_Dlg
 	
 }
 
@@ -68,13 +71,19 @@ proc Apol_File_Contexts::set_Focus_to_Text {} {
 	return 0
 }
 
+proc Apol_File_Contexts::is_db_loaded {} {
+	return $Apol_File_Contexts::db_loaded
+}
+
 proc Apol_File_Contexts::init_vars {} {
 	variable opts
 	
 	set opts(user)			""
 	set opts(class)			""
 	set opts(type)			""
-	set opts(regEx)			0
+	set opts(regEx_user)		0
+	set opts(regEx_type)		0
+	set opts(regEx_path)		0
 	
 	# Other vars
 	set Apol_File_Contexts::attribute_selected	""
@@ -84,9 +93,9 @@ proc Apol_File_Contexts::init_vars {} {
 	set Apol_File_Contexts::progressmsg		""
 	set Apol_File_Contexts::progress_indicator	-1
 	set Apol_File_Contexts::db_loaded		0
-	set Apol_File_Contexts::show_ctxt		0
-	set Apol_File_Contexts::show_class		0
-	
+	set Apol_File_Contexts::show_ctxt		1
+	set Apol_File_Contexts::show_class		1
+	set Apol_File_Contexts::path_cb_value 		0
 	return 0
 }
 
@@ -137,22 +146,32 @@ proc Apol_File_Contexts::clear_combo_box_values { } {
 	variable objclass_combo_box
 	variable type_combo_box
 	
-	$user_combo_box configure -values ""
-	$type_combo_box configure -values ""
-	$objclass_combo_box configure -values ""
+	$user_combo_box configure -values "" -text ""
+	$type_combo_box configure -values "" -text ""
+	$objclass_combo_box configure -values "" -text ""
+}
+
+# ------------------------------------------------------------------------------
+#  Command Apol_File_Contexts::initialize
+# ------------------------------------------------------------------------------
+proc Apol_File_Contexts::initialize { } {
+	variable entry_path
+	Apol_File_Contexts::change_status_label ""
+	Apol_File_Contexts::init_vars
+	Apol_File_Contexts::clear_combo_box_values
+	ApolTop::change_comboBox_state $Apol_File_Contexts::user_cb_value $Apol_File_Contexts::user_combo_box
+	ApolTop::change_comboBox_state $Apol_File_Contexts::type_cb_value $Apol_File_Contexts::type_combo_box
+	ApolTop::change_comboBox_state $Apol_File_Contexts::class_cb_value $Apol_File_Contexts::objclass_combo_box
+	$entry_path delete 0 end
+	Apol_File_Contexts::configure_file_path_entry_widget $Apol_File_Contexts::path_cb_value
 }
 
 # ------------------------------------------------------------------------------
 #  Command Apol_File_Contexts::close
 # ------------------------------------------------------------------------------
-proc Apol_File_Contexts::close { } {
-	variable create_button
-	variable load_button
-		
+proc Apol_File_Contexts::close { } {		
 	Apol_File_Contexts::close_fc_db
-	Apol_File_Contexts::change_status_label ""
-	Apol_File_Contexts::init_vars
-	Apol_File_Contexts::clear_combo_box_values
+	Apol_File_Contexts::initialize
 	return 0
 }
 
@@ -187,9 +206,11 @@ proc Apol_File_Contexts::get_fc_files_for_ta {which ta} {
 	set sz [llength $results]
 	for {set i 0} {$i < $sz} {incr i} {
 		set path [lindex $results $i]
-		# Skip the context and object class items
-		incr i 2
-		set return_list [lappend return_list $path]
+		incr i
+		set ctxt [lindex $results $i]
+		incr i
+		set class [lindex $results $i]
+		set return_list [lappend return_list [list $ctxt $class $path]]
 	}
 	return $return_list
 }
@@ -208,22 +229,44 @@ proc Apol_File_Contexts::search_fc_database { } {
 	variable db_loaded
 	variable show_ctxt
 	variable show_class
-		
+	
+	if {$type_cb_value && $opts(type) == ""} {
+		tk_messageBox -icon error -type ok -title "Error" \
+			-message "You must specify a type!"
+		return
+	}	
+	if {$user_cb_value && $opts(user) == ""} {
+		tk_messageBox -icon error -type ok -title "Error" \
+			-message "You must specify a user!"
+		return
+	}	
+	if {$class_cb_value && $opts(class) == ""} {
+		tk_messageBox -icon error -type ok -title "Error" \
+			-message "You must specify a class!"
+		return
+	}
+	if {$path_cb_value && [$entry_path get] == ""} {
+		tk_messageBox -icon error -type ok -title "Error" \
+			-message "You must specify a path!"
+		return
+	}		
+	ApolTop::setBusyCursor
 	set rt [catch {set results [apol_Search_FC_Index_DB \
-		$opts(regEx) \
 		$type_cb_value [list $opts(type)] \
 		$user_cb_value [list $opts(user)] \
 		$class_cb_value [list $opts(class)] \
-		$path_cb_value [list [$entry_path get]]]} err]
+		$path_cb_value [list [$entry_path get]] \
+		$opts(regEx_user) $opts(regEx_type) $opts(regEx_path)]} err]
 	if {$rt != 0} {	
 		tk_messageBox -icon error -type ok -title "Error" -message "$err"
+		ApolTop::resetBusyCursor
 		return
 	} 
 
 	$resultsbox configure -state normal
 	$resultsbox delete 0.0 end
-		
 	set sz [llength $results]
+	$resultsbox insert end "FILES FOUND ($sz):\n\n"
 	for {set i 0} {$i < $sz} {incr i} {
 		set path [lindex $results $i]
 		incr i
@@ -231,12 +274,12 @@ proc Apol_File_Contexts::search_fc_database { } {
 		incr i
 		set class [lindex $results $i]
 		
-		$resultsbox insert end "$path"
-		if {$show_ctxt} {$resultsbox insert end " $ctxt"}
-		if {$show_class} {$resultsbox insert end " $class\n"}
-		$resultsbox insert end "\n"
+		if {$show_ctxt} {$resultsbox insert end "$ctxt\t     "}
+		if {$show_class} {$resultsbox insert end "$class\t     "}
+		$resultsbox insert end "$path\n"
 	}
 	ApolTop::makeTextBoxReadOnly $resultsbox 
+	ApolTop::resetBusyCursor
 	return 0
 }
 
@@ -246,8 +289,9 @@ proc Apol_File_Contexts::search_fc_database { } {
 proc Apol_File_Contexts::display_create_db_dlg {} {
 	variable entry_dir
 	variable entry_fn
+	variable create_fc_dlg
 	
-	set w .fc_db_create
+	set w $create_fc_dlg
 	set rt [catch {destroy $w} err]
 	if {$rt != 0} {
 		tk_messageBox -icon error -type ok -title "Error" -message "$err"
@@ -262,22 +306,24 @@ proc Apol_File_Contexts::display_create_db_dlg {} {
     	set f1 [frame $t_frame.f1]
     	set f2 [frame $t_frame.f2]
     	set f3 [frame $t_frame.f3]
-    	set lbl_fn 	[Label $f1.lbl_fn -text "Save file:"]
-    	set lbl_dir 	[Label $f1.lbl_dir -text "Start directory:" \
-    		-helptext "Directory to start indexing from"]
+    	set lbl_fn 	[Label $f1.lbl_fn -justify left -text "Save file:"]
+    	set lbl_dir 	[Label $f1.lbl_dir -justify left -text "Directory paths to index:" \
+    		-helptext "You may delimit each path with a colon in order to index multiple directories."]
 	set entry_dir 	[entry $f2.entry_path -width 30 -bg white]
-	set browse_dir 	[button $f3.button1 -text "Browse" -command {
+	set browse_dir 	[button $f3.button1 -text "Add" -width 8 -command {
 		set dir_n [tk_chooseDirectory \
-			-title "Select Directory to Start Indexing..." \
+			-title "Select Directory to Add..." \
 			-parent $ApolTop::mainframe \
 			-initialdir "/"]
 		if {$dir_n != ""} {
+			set tmp [$Apol_File_Contexts::entry_dir get]
+			set new_str [append tmp ":$dir_n"]
 			$Apol_File_Contexts::entry_dir delete 0 end
-			$Apol_File_Contexts::entry_dir insert end $dir_n
+			$Apol_File_Contexts::entry_dir insert end $new_str
 		}	
 	}]
 	set entry_fn 	[entry $f2.entry_fn -width 30 -bg white]
-	set browse_fn 	[button $f3.button2 -text "Browse" -command {
+	set browse_fn 	[button $f3.button2 -text "Browse" -width 8 -command {
 		set file_n [tk_getSaveFile \
 			-title "Select File to Save..." \
 			-parent $ApolTop::mainframe]
@@ -289,19 +335,24 @@ proc Apol_File_Contexts::display_create_db_dlg {} {
 	$entry_dir insert end "/"
 	
 	set b_frame [frame $w.b_frame]
-     	set b1 [button $b_frame.create -text Create -command "Apol_File_Contexts::create_fc_db $w" -width 10]
-     	set b2 [button $b_frame.close1 -text Cancel -command "catch {destroy $w}" -width 10]
+     	set b1 [button $b_frame.create -text Create \
+     		-command {Apol_File_Contexts::create_fc_db $Apol_File_Contexts::create_fc_dlg} \
+     		-width 10]
+     	set b2 [button $b_frame.close1 -text Cancel \
+     		-command {catch {destroy $Apol_File_Contexts::create_fc_dlg; grab release $Apol_File_Contexts::create_fc_dlg}} \
+     		-width 10]
      	
      	pack $b_frame -side bottom -expand yes -anchor center
      	pack $t_frame -side top -fill both -expand yes
      	pack $f1 $f2 $f3 -side left -anchor nw -padx 5 -pady 5
      	pack $b1 $b2 -side left -anchor nw -padx 5 -pady 5 
-	pack $lbl_fn $lbl_dir -anchor nw -side top -pady 3
+	pack $lbl_fn $lbl_dir -anchor nw -side top -pady 6
 	pack $entry_fn $entry_dir -anchor nw -side top -expand yes -pady 5
 	pack $browse_fn $browse_dir -anchor nw -side top -expand yes -pady 3
      
  	wm geometry $w +50+50
  	wm deiconify $w
+ 	grab $w
 }
 
 proc Apol_File_Contexts::destroy_progressDlg {} {
@@ -310,22 +361,42 @@ proc Apol_File_Contexts::destroy_progressDlg {} {
 	if {[winfo exists $progressDlg]} {
 		destroy $progressDlg
 	}
+	ApolTop::resetBusyCursor
      	return 0
 } 
 
 proc Apol_File_Contexts::display_progressDlg {} {
      	variable progressDlg
 	    		
-	set Apol_File_Contexts::progressmsg "Creating index file..."
+	set Apol_File_Contexts::progressmsg "Creating index file...This may take a while."
 	set progressBar [ProgressDlg $Apol_File_Contexts::progressDlg \
 		-parent $ApolTop::mainframe \
         	-textvariable Apol_File_Contexts::progressmsg \
         	-variable Apol_File_Contexts::progress_indicator \
         	-maximum 3 \
         	-width 45]
-
+	ApolTop::setBusyCursor
+	update
         return 0
 } 
+
+# ------------------------------------------------------------------------------
+#  Command Apol_File_Contexts::create_and_load_fc_db
+# ------------------------------------------------------------------------------
+proc Apol_File_Contexts::create_and_load_fc_db {fname dir_str} {
+	set rt [catch {apol_Create_FC_Index_File $fname $dir_str} err]
+	if {$rt != 0} {
+		return -code error $err
+	} 
+	set rt [catch {apol_Load_FC_Index_File $fname} err]
+	if {$rt != 0} {
+		return -code error $err
+	} 
+	Apol_File_Contexts::initialize
+	set Apol_File_Contexts::db_loaded 1
+	Apol_File_Contexts::change_status_label $fname
+	Apol_File_Contexts::populate_combo_boxes
+}
 
 # ------------------------------------------------------------------------------
 #  Command Apol_File_Contexts::create_fc_db
@@ -333,32 +404,24 @@ proc Apol_File_Contexts::display_progressDlg {} {
 proc Apol_File_Contexts::create_fc_db {dlg} {
 	variable entry_dir
 	variable entry_fn
-	variable db_loaded
 	
 	set fname [$entry_fn get]
 	set dir_str [$entry_dir get]
-	
+		
 	Apol_File_Contexts::display_progressDlg	
-	update
-	set rt [catch {apol_Create_FC_Index_File $fname $dir_str} err]
+	set rt [catch {Apol_File_Contexts::create_and_load_fc_db $fname $dir_str} err]
 	if {$rt != 0} {
-		tk_messageBox -icon error -type ok -title "Error" \
-			-message "Error creating index file: $err.\n"
 		Apol_File_Contexts::destroy_progressDlg
-		return
-	} 
-	set rt [catch {apol_Load_FC_Index_File $fname} err]
-	if {$rt != 0} {
 		tk_messageBox -icon error -type ok -title "Error" \
-			-message "Error loading file context database: $err.\n"
-		return
-	} 
-	set db_loaded 1
+			-message $err
+	}
+
 	Apol_File_Contexts::change_status_label $fname
 	Apol_File_Contexts::clear_combo_box_values
 	Apol_File_Contexts::populate_combo_boxes	
 	Apol_File_Contexts::destroy_progressDlg
 	catch {destroy $dlg} 
+	grab release $dlg
 	return 0
 }
 
@@ -377,9 +440,9 @@ proc Apol_File_Contexts::load_fc_db { } {
 				-message "Error loading file context database: $err.\n"
 			return
 		} 
+		Apol_File_Contexts::initialize
 		set db_loaded 1
 		Apol_File_Contexts::change_status_label $db_file
-		Apol_File_Contexts::clear_combo_box_values
 		Apol_File_Contexts::populate_combo_boxes
 		return 1
 	}
@@ -433,24 +496,26 @@ proc Apol_File_Contexts::goto_line { line_num } {
 # ----------------------------------------------------------------------------------------
 proc Apol_File_Contexts::on_modify_combo_box_value { which } {    
 	variable user_combo_box
-	variable objclass_combo_box
 	variable type_combo_box
 	
-	# Check to see if the "Enable Regular Expressions" checkbutton is ON. If not, then return.
-	if {$Apol_File_Contexts::opts(regEx)} {
-		if {$which == "user"} {
-        		set Apol_File_Contexts::opts(user) 	"^$Apol_File_Contexts::opts(user)$"
-        		set combo $user_combo_box
-		} elseif {$which == "type"} {
-			set Apol_File_Contexts::opts(type) 	"^$Apol_File_Contexts::opts(type)$"
-			set combo $type_combo_box
-		} elseif {$which == "class"} {
-			set Apol_File_Contexts::opts(class)	"^$Apol_File_Contexts::opts(class)$"
-			set combo $objclass_combo_box
-		} 
-		selection clear -displayof $combo
-        }
-   	    			
+	switch -exact -- $which \
+		"user" {
+			if {$Apol_File_Contexts::opts(regEx_user)} {
+	        		set Apol_File_Contexts::opts(user) 	"^$Apol_File_Contexts::opts(user)$"
+	        		selection clear -displayof $user_combo_box
+			} 
+			
+		} \
+		"type" {
+			if {$Apol_File_Contexts::opts(regEx_type)} {
+				set Apol_File_Contexts::opts(type) 	"^$Apol_File_Contexts::opts(type)$"
+				selection clear -displayof $type_combo_box
+			} 
+		} \
+		default {
+			puts "Invalid option $which.\n"
+		}
+	   	    			
    	return 0
 }
 
@@ -500,7 +565,7 @@ proc Apol_File_Contexts::create {nb} {
 	set l_innerFrame [LabelFrame $ofm.to -relief sunken -bd 1]
 	set c_innerFrame [LabelFrame $ofm.co -relief sunken -bd 1]
 	set r_innerFrame [LabelFrame $ofm.ro -relief sunken -bd 1]
-	set path_innerFrame [LabelFrame $ofm.po -relief sunken]
+	set path_innerFrame [LabelFrame $ofm.po -relief sunken -bd 1]
 	set buttons_f    [LabelFrame $ofm.buttons_f]
 	
 	# Placing inner frames
@@ -518,8 +583,7 @@ proc Apol_File_Contexts::create {nb} {
 	set objclass_combo_box [ComboBox [$r_innerFrame getframe].objclass_combo_box  \
 		-textvariable Apol_File_Contexts::opts(class) \
 		-helptext "Type or select an object class" \
-		-entrybg $ApolTop::default_bg_color \
-		-modifycmd {Apol_File_Contexts::on_modify_combo_box_value class}]
+		-entrybg $ApolTop::default_bg_color -editable 0]
 		
 	$user_combo_box configure -state disabled 
 	$type_combo_box configure -state disabled 
@@ -560,14 +624,25 @@ proc Apol_File_Contexts::create {nb} {
 		-onvalue 1 -offvalue 0 \
 		-command {Apol_File_Contexts::configure_file_path_entry_widget $Apol_File_Contexts::path_cb_value}]
 		
-	set cb_regEx [checkbutton [$s_optionsbox getframe].cb_regEx \
-		-variable Apol_File_Contexts::opts(regEx) -text "Enable regular expressions" \
+	set cb_regEx_user [checkbutton [$l_innerFrame getframe].cb_regEx_user \
+		-variable Apol_File_Contexts::opts(regEx_user) \
+		-text "Enable regular expressions" \
+		-onvalue 1 -offvalue 0]
+	set cb_regEx_type [checkbutton [$c_innerFrame getframe].cb_regEx_type \
+		-variable Apol_File_Contexts::opts(regEx_type) \
+		-text "Enable regular expressions" \
+		-onvalue 1 -offvalue 0]
+	set cb_regEx_path [checkbutton [$path_innerFrame getframe].cb_regEx_path \
+		-variable Apol_File_Contexts::opts(regEx_path) \
+		-text "Enable regular expressions" \
 		-onvalue 1 -offvalue 0]
 	set cb_show_ctxt [checkbutton [$s_optionsbox getframe].cb_show_ctxt \
-		-variable Apol_File_Contexts::show_ctxt -text "Show context" \
+		-variable Apol_File_Contexts::show_ctxt \
+		-text "Show context" \
 		-onvalue 1 -offvalue 0]
 	set cb_show_class [checkbutton [$s_optionsbox getframe].cb_show_class \
-		-variable Apol_File_Contexts::show_class -text "Show object class" \
+		-variable Apol_File_Contexts::show_class \
+		-text "Show object class" \
 		-onvalue 1 -offvalue 0]
 	
 	set status_frame [TitleFrame $options_pane.status_frame -text "File Context Index"]
@@ -610,14 +685,15 @@ proc Apol_File_Contexts::create {nb} {
 	pack $db_buttons_f $stat_frame -side left -anchor nw -padx 4 -pady 4
 	pack $ok_button $help_button -side top -anchor e -pady 2 -padx 5
 	pack $buttons_f -side right -expand yes -fill both -anchor nw -padx 4 -pady 4
-	pack $l_innerFrame $c_innerFrame -side left -fill both -anchor nw -padx 4 -pady 4
-	pack $r_innerFrame $path_innerFrame -side left -fill both -expand yes -anchor nw -padx 4 -pady 4
-	pack $cb_regEx $cb_show_ctxt $cb_show_class -side top -anchor nw -padx 4 -pady 4 
+	pack $l_innerFrame $r_innerFrame -side left -fill both -anchor nw -padx 4 -pady 4
+	pack $c_innerFrame $path_innerFrame -side left -fill both -expand yes -anchor nw -padx 4 -pady 4
+	pack $cb_show_ctxt $cb_show_class -side top -anchor nw -padx 4 -pady 4 
 	pack $create_button $load_button -side left -padx 2 -pady 2 -anchor nw
 	pack $lbl_stat_title $lbl_status -side left -anchor nw -padx 2 -pady 4
 	pack $cb_user $cb_type $cb_objclass $cb_path -side top -anchor nw
 	pack $entry_path -side top -anchor nw -padx 10 -pady 4
 	pack $user_combo_box $type_combo_box $objclass_combo_box -side top -fill x -anchor nw -padx 4
+	pack $cb_regEx_user $cb_regEx_type $cb_regEx_path -side top -anchor nw -padx 4 -pady 4 
 	pack $sw_d -side left -expand yes -fill both 
 		
 	return $frame	

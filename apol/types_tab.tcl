@@ -28,10 +28,15 @@ namespace eval Apol_Types {
 	set opts(attribtypes)		0
 	set opts(attribtypeattribs)	0
 	set opts(usesrchstr)		0
+	set opts(show_files)		0
+	set opts(incl_context)		0
+	set opts(incl_class)		0
 	variable srchstr ""
 	variable typelist ""
 	variable attriblist ""
-
+	variable progressmsg		""
+	variable progress_indicator	-1
+	
 	# Global Widgets
 	variable alistbox
 	variable tlistbox
@@ -44,7 +49,11 @@ namespace eval Apol_Types {
 	variable a_typeattribs
 	variable sString 
 	variable sEntry 
-	
+	variable fc_incl_context
+    	variable fc_incl_class
+    	variable fc_files_select
+    	variable progressDlg 		.progress_Dlg
+    	
 	# callback procedures for the listbox items menu. Each element in this list is an embedded list of 2 items.
 	# The 2 items consist of the command label and the function name. The tabname will be added as an
 	# argument to the callback procedure.
@@ -109,8 +118,9 @@ proc Apol_Types::init_options { } {
     set opts(usesrchstr)		0
 
     Apol_Types::enable_disable_incl_attribs $a_typeattribs
-    Apol_Types::enable_disable_ta $typeattribs $typealiases 1 
-    Apol_Types::enable_disable_ta $a_typeattribs $a_types 2
+    Apol_Types::enable_disable_checkbuttons $typeattribs $typealiases 1 
+    Apol_Types::enable_disable_checkbuttons $a_typeattribs $a_types 2
+    Apol_Types::enable_disable_checkbuttons $Apol_Types::fc_incl_class $Apol_Types::fc_incl_context 3
     Apol_Types::_useSearch $sEntry 
     
     return 0
@@ -126,74 +136,131 @@ proc Apol_Types::set_Focus_to_Text {} {
 	return 0
 }
 
+proc Apol_Types::on_show_more_info_button_clicked {which} {
+	if {$which == "type"} {
+		set lb $Apol_Types::tlistbox
+	} else {	
+		set lb $Apol_Types::alistbox
+	}
+	set sel [$lb curselection]
+	if {$sel != ""} {
+		Apol_Types::popupTypeInfo $which [$lb get $sel]
+	}
+}
+
 proc Apol_Types::popupTypeInfo {which ta} {
-	set rt [catch {set info [apol_GetSingleTypeInfo 0 0 $ta]} err]
+	if {$ta == ""} {
+		return
+	}
+	ApolTop::setBusyCursor
+	set info_fc ""
+	set index_file_loaded 0
+	set rt [catch {set info_ta [apol_GetSingleTypeInfo 0 0 $ta]} err]
 	if {$rt != 0} {
 		tk_messageBox -icon error -type ok -title "Error" -message "$err"
+		ApolTop::resetBusyCursor
 		return -1
 	}
-
+	if {[Apol_File_Contexts::is_db_loaded]} {
+		set rt [catch {set info_fc [Apol_File_Contexts::get_fc_files_for_ta $which $ta]} err]
+		if {$rt != 0} {
+			tk_messageBox -icon error -type ok -title "Error" \
+				-message "$err. \n\nIf you need to load an index file, go to the File Context tab."
+			ApolTop::resetBusyCursor
+			return -1
+		}
+		set index_file_loaded 1
+	} 
 	set w .ta_infobox
 	set rt [catch {destroy $w} err]
 	if {$rt != 0} {
 		tk_messageBox -icon error -type ok -title "Error" -message "$err"
+		ApolTop::resetBusyCursor
 		return -1
 	}
+
 	toplevel $w 
 	wm title $w "$ta"
 	wm protocol $w WM_DELETE_WINDOW "destroy $w"
     	wm withdraw $w
     	
-	set sf [ScrolledWindow $w.sf  -scrollbar both -auto both]
-	set f [text [$sf getframe].f -font {helvetica 10} -wrap none -width 35 -height 10]
-	$sf setwidget $f
-     	set b1 [button $w.close -text Close -command "catch {destroy $w}" -width 10]
-     	pack $b1 -side bottom -anchor s -padx 5 -pady 5 
-	pack $sf -fill both -expand yes
-     	$f insert 0.0 $info
- 	wm geometry $w +50+50
- 	wm deiconify $w
- 	$f configure -state disabled
-	return 0
-}
-
-proc Apol_Types::popup_files_from_fc_database {which ta} {
-	ApolTop::setBusyCursor
-	set rt [catch {set results [Apol_File_Contexts::get_fc_files_for_ta $which $ta]} err]
-	if {$rt != 0} {
-		tk_messageBox -icon error -type ok -title "Error" \
-			-message "$err. \n\nIf you need to load an index file, go to the File Context tab."
-		ApolTop::resetBusyCursor
-		return -1
-	}
-
-	set w .ta_fcbox
-	set rt [catch {destroy $w} err]
-	if {$rt != 0} {
-		tk_messageBox -icon error -type ok -title "Error" -message "$err"
-		ApolTop::resetBusyCursor
-		return -1
-	}
-	toplevel $w 
-	wm title $w "$ta"
-	wm protocol $w WM_DELETE_WINDOW "destroy $w"
-    	wm withdraw $w
+    	set top_f [frame $w.top_f]
+    	set bot_f [frame $w.bot_f]
+    	set notebook [NoteBook $top_f.nb]
     	
-	set sf [ScrolledWindow $w.sf  -scrollbar both -auto both]
-	set f [text [$sf getframe].f -font {helvetica 10} -wrap none -width 35 -height 10]
-	$sf setwidget $f
-     	set b1 [button $w.close -text Close -command "catch {destroy $w}" -width 10]
-     	pack $b1 -side bottom -anchor s -padx 5 -pady 5 
-	pack $sf -fill both -expand yes
-	foreach path $results {
-     		$f insert end "$path\n"
-     	}
- 	wm geometry $w +50+50
+    	set ta_info_tab [$notebook insert end ta_info_tab]
+	set fc_info_tab [$notebook insert end fc_info_tab -text "Files"]
+	
+	if {$which == "type"} {
+		$notebook itemconfigure ta_info_tab -text "Attributes"
+	} else {
+		$notebook itemconfigure ta_info_tab -text "Types"
+	}
+	set s_ta [ScrolledWindow [$notebook getframe ta_info_tab].s_ta  -scrollbar both -auto both]
+	set f_ta [text [$s_ta getframe].f -font {helvetica 10} -wrap none -width 35 -height 10 -bg white]
+	$s_ta setwidget $f_ta
+	
+	set s_fc [ScrolledWindow [$notebook getframe fc_info_tab].s_fc  -scrollbar both -auto both]
+	set f_fc [text [$s_fc getframe].f -font {helvetica 10} -wrap none -width 35 -height 10 -bg white]
+	$s_fc setwidget $f_fc
+	
+     	set b_close [Button $bot_f.b_close -text "Close" -command "catch {destroy $w}" -width 10]
+     	
+     	pack $top_f -side top -anchor nw -fill both -expand yes
+     	pack $bot_f -side bottom -anchor sw -fill x
+     	pack $b_close -side bottom -anchor center -fill x -expand yes -padx 2 -pady 2
+	pack $s_ta $s_fc -fill both -expand yes
+	$notebook compute_size
+	pack $notebook -fill both -expand yes -padx 4 -pady 4
+	$notebook raise [$notebook page 0]
+	
+     	$f_ta insert 0.0 $info_ta
+     	if {$index_file_loaded} {
+	     	if {$info_fc != ""} {
+	     		set num [llength $info_fc]
+	     		$f_fc insert end "Number of files: $num\n\n"
+		     	foreach {ctxt class path} $info_fc {
+		     		$f_fc insert end "$ctxt\t     $class\t     $path\n"
+		     	}
+		} else {
+			$f_fc insert end "No files found."
+		}
+	} else {
+		$f_fc insert 0.0 "No index file is loaded. If you would like to load an index file, go to the File Context tab."
+	}
+ 	$f_ta configure -state disabled
+ 	$f_fc configure -state disabled
+ 	
+ 	wm geometry $w +200+200
  	wm deiconify $w
- 	$f configure -state disabled
  	ApolTop::resetBusyCursor
 	return 0
 }
+
+proc Apol_Types::destroy_progressDlg {} {
+	variable progressDlg
+	
+	if {[winfo exists $progressDlg]} {
+		destroy $progressDlg
+	}
+	ApolTop::resetBusyCursor
+     	return 0
+} 
+
+proc Apol_Types::display_progressDlg {} {
+     	variable progressDlg
+	    		
+	set Apol_Types::progressmsg "Searching...This may take a while."
+	set progressBar [ProgressDlg $Apol_Types::progressDlg \
+		-parent $ApolTop::mainframe \
+        	-textvariable Apol_Types::progressmsg \
+        	-variable Apol_Types::progress_indicator \
+        	-maximum 3 \
+        	-width 45]
+	ApolTop::setBusyCursor
+	update
+        return 0
+} 
 
 ##############################################################
 # ::search
@@ -214,12 +281,15 @@ proc Apol_Types::searchTypes {} {
 		tk_messageBox -icon error -type ok -title "Error" -message "No regular expression provided!"
 		return
 	}
-	
+	Apol_Types::display_progressDlg
 	set rt [catch {set results [apol_GetTypeInfo $opts(types) $opts(typeattribs) \
 		$opts(attribs) $opts(attribtypes) $opts(attribtypeattribs) \
-		$opts(typealiases) $opts(usesrchstr) $srchstr]} err]	
+		$opts(typealiases) $opts(usesrchstr) $srchstr \
+		$opts(show_files) $opts(incl_context) $opts(incl_class)]} err]	
 	if {$rt != 0} {	
-		tk_messageBox -icon error -type ok -title "Error" -message "$err"
+		Apol_File_Contexts::destroy_progressDlg
+		tk_messageBox -icon error -type ok -title "Error" \
+			-message "$err \n\nNote:If you need to load an index file, go to the File Context tab."
 		return 
 	} else {
 	    $Apol_Types::resultsbox configure -state normal
@@ -227,6 +297,7 @@ proc Apol_Types::searchTypes {} {
 	    $Apol_Types::resultsbox insert end $results
 	    ApolTop::makeTextBoxReadOnly $Apol_Types::resultsbox
         }
+        Apol_File_Contexts::destroy_progressDlg
 	return 0
 }
 
@@ -239,30 +310,31 @@ proc Apol_Types::_useSearch { entry } {
     return 0
 }
 
-proc Apol_Types::enable_disable_ta { b1 b2 num } {
-   
-    if { $num == 1 } {
-	
-	if { $Apol_Types::opts(types) } {
+proc Apol_Types::enable_disable_checkbuttons { b1 b2 opt } {
+	switch $opt \
+		"1" {
+			set status $Apol_Types::opts(types)
+		} \
+		"2" {
+			set status $Apol_Types::opts(attribs)
+		} \
+		"3" {
+			set status $Apol_Types::opts(show_files)
+		} \
+		default { 
+			puts "Invalid option for num argument: $num\n"
+		}
+        
+	if {$status} {
 	    $b1 configure -state normal
 	    $b2 configure -state normal
 	} else {
-	    $b1 configure -state disabled
 	    $b1 deselect
-	    $b2 configure -state disabled
 	    $b2 deselect
-	}
-    } elseif { $num == 2 } {
-	if { $Apol_Types::opts(attribs) } {
-	    $b1 configure -state normal
-	} else {
 	    $b1 configure -state disabled
-	    $b1 deselect
 	    $b2 configure -state disabled
-	    $b2 deselect
 	}
-    }
-    return 0
+	return 0
 }
 
 proc Apol_Types::enable_disable_incl_attribs { cb } {
@@ -302,6 +374,9 @@ proc Apol_Types::create {nb} {
     variable opts
     variable types_menu_callbacks
     variable attribs_menu_callbacks
+    variable fc_incl_context
+    variable fc_incl_class
+    variable fc_files_select
     
     # Layout frames
     set frame [$nb insert end $ApolTop::types_tab -text "Types"]
@@ -335,20 +410,23 @@ proc Apol_Types::create {nb} {
     set tlistbox [listbox [$sw_t getframe].lb -height 18 -width 20 -highlightthickness 0 \
 		      -listvar Apol_Types::typelist -bg white] 
     $sw_t setwidget $tlistbox 
-    
+    set t_button [Button [$tbox getframe].t_button -text "Show Type Info" \
+    	-command {Apol_Types::on_show_more_info_button_clicked type} \
+    	-width 10]
     # Attributes listbox 
     set sw_a       [ScrolledWindow [$abox getframe].sw -auto both]
     set alistbox [listbox [$sw_a getframe].lb -height 7 -width 20 -highlightthickness 0 \
 		      -listvar Apol_Types::attriblist -bg white]        
     $sw_a setwidget $alistbox 
-    
+    set a_button [Button [$abox getframe].a_button -text "Show Attribute Info" \
+    	-command {Apol_Types::on_show_more_info_button_clicked attrib} \
+    	-width 10]
+    	
     # Popup menu widget
     menu .popupMenu_types
-    set types_menu_callbacks [lappend types_menu_callbacks {"Display Type Info" "Apol_Types::popupTypeInfo type"}]
-    set types_menu_callbacks [lappend types_menu_callbacks {"Display Files Labeled With This Type" "Apol_Types::popup_files_from_fc_database type"}]
+    set types_menu_callbacks [lappend types_menu_callbacks {"Show Type Info" "Apol_Types::popupTypeInfo type"}]
     menu .popupMenu_attribs
-    set attribs_menu_callbacks [lappend attribs_menu_callbacks {"Display Attribute Info" "Apol_Types::popupTypeInfo attrib"}]
-    set attribs_menu_callbacks [lappend attribs_menu_callbacks {"Display Files Labeled With Types For This Attribute" "Apol_Types::popup_files_from_fc_database attrib"}]
+    set attribs_menu_callbacks [lappend attribs_menu_callbacks {"Show Attribute Info" "Apol_Types::popupTypeInfo attrib"}]
     
     # Binding events to the both listboxes
     bindtags $tlistbox [linsert [bindtags $tlistbox] 3 tlist_Tag]  
@@ -369,13 +447,15 @@ proc Apol_Types::create {nb} {
     set ofm [$obox getframe]
     set fm_attribs_select [frame $ofm.ao -relief sunken -borderwidth 1]
     set fm_sString [frame $ofm.so -relief sunken -borderwidth 1]
+    set fm_fc_files [frame $ofm.fm_fc_files -relief sunken -borderwidth 1]
     set okbox [frame $ofm.okbox]
     set fm_types_select [frame $ofm.to -relief sunken -borderwidth 1]
         
     # Placing search options section frames
+    pack $t_button $a_button -side bottom -fill x -anchor sw -padx 2 -pady 2
     pack $okbox -side right -anchor n -fill both -expand yes -padx 5
     pack $fm_types_select -side left -anchor n  -padx 5 -fill y
-    pack $fm_attribs_select -side left -anchor n -fill y 
+    pack $fm_attribs_select $fm_fc_files -side left -anchor nw -fill y -padx 5
     pack $fm_sString -side left -anchor n -fill both -expand yes -padx 5
     
     # Placing types and attributes listboxes frame
@@ -387,7 +467,7 @@ proc Apol_Types::create {nb} {
     set typealiases [checkbutton $fm_types_select.typealiases -text "Use Aliases" \
 	-variable Apol_Types::opts(typealiases) -padx 10]
     set types_select [checkbutton $fm_types_select.type -text "Show Types" -variable Apol_Types::opts(types) \
-	-command "Apol_Types::enable_disable_ta $typeattribs $typealiases 1"]
+	-command "Apol_Types::enable_disable_checkbuttons $typeattribs $typealiases 1"]
 
     # Attributes search section
     set a_typeattribs [checkbutton $fm_attribs_select.typeattribs -text "Include Type Attribs" \
@@ -402,8 +482,16 @@ proc Apol_Types::create {nb} {
 	-onvalue 1]
     set attribs_select [checkbutton $fm_attribs_select.type -text "Show Attributes" \
 	-variable Apol_Types::opts(attribs) \
-	-command "Apol_Types::enable_disable_ta $a_types $a_typeattribs 2"]
-  
+	-command "Apol_Types::enable_disable_checkbuttons $a_types $a_typeattribs 2"]
+    
+    set fc_incl_context [checkbutton $fm_fc_files.fc_incl_context -text "Include Context" \
+	-variable Apol_Types::opts(incl_context)]
+    set fc_incl_class [checkbutton $fm_fc_files.fc_incl_class -text "Include Object Class" \
+	-variable Apol_Types::opts(incl_class)]	
+    set fc_files_select [checkbutton $fm_fc_files.fc_files_select -text "Show Files" \
+	-variable Apol_Types::opts(show_files) \
+	-command "Apol_Types::enable_disable_checkbuttons $fc_incl_context $fc_incl_class 3"]
+    
     # Search string section widgets
     set sEntry [Entry $fm_sString.entry -textvariable Apol_Types::srchstr -width 40 \
 		    -helptext "Enter a regular expression string for which to search"]
@@ -422,6 +510,8 @@ proc Apol_Types::create {nb} {
     # Placing search options section widgets
     pack $types_select $typeattribs $typealiases -anchor w  
     pack $attribs_select $a_types $a_typeattribs -anchor w  
+    pack $fc_files_select -side top -anchor nw -expand yes -padx 2
+    pack $fc_incl_context $fc_incl_class -side top -padx 6 -pady 2 -anchor nw -expand yes
     pack $sString -side top -anchor nw
     pack $sEntry -expand yes -padx 5 -pady 5 -fill x 
     pack $okbox.ok -side top -padx 5 -pady 5 -anchor se 
