@@ -15,8 +15,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <unistd.h>
 #include <assert.h>
 #include <errno.h>
@@ -27,7 +25,12 @@
 #include <ftw.h>
 #include <mntent.h>
 
-#include <fsdata.h>
+#include "fsdata.h"
+
+/* I believe this is necessary for portability */
+#define __USE_FILE_OFFSET64 1
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #define NFTW_FLAGS FTW_MOUNT | FTW_PHYS
 #define NFTW_DEPTH 1024
@@ -131,7 +134,7 @@ static int avl_add_type(void *user_data, const void *key, int idx)
 static int ftw_handler(const char *file, const struct stat *sb, int flag, struct FTW *s)
 {
 	inode_key_t key;
-	int idx = 0, rc = 0;
+	int idx, rc = 0;
 	sefs_fileinfo_t * pi = NULL;
 	char ** ptr = NULL; /*?*/
 	char *con = NULL;
@@ -149,15 +152,42 @@ static int ftw_handler(const char *file, const struct stat *sb, int flag, struct
 		}
 		
 		pi = &(fsdata->files[idx]);
-		memcpy(&(pi->mode), &(sb->st_mode), sizeof(mode_t));
-		pi->obj_class = sefs_get_file_class(sb);
+		(pi->num_links) = 0;
 
-		if ((pi->path_names = (char **)malloc(1 * sizeof(char *))) == NULL) {
-			fprintf(stderr, "out of memory\n");
-			return -1;
+		rc = getfilecon(file, &con);
+		/* extract the context parts */
+		tmp = strtok(con, ":");
+		if (tmp) {
+			/* FIXME heh, need to do something with user */
+			pi->context.user=0;
+		}
+		tmp = strtok(NULL, ":");
+		if (tmp) {
+			/* FIXME, do something with role */
+			pi->context.role=0;
+		}
+		tmp = strtok(NULL, ":");
+		if (tmp) {
+			rc = avl_get_idx(tmp, &fsdata->type_tree);
+			if (rc)
+				pi->context.type=rc;
+			else 
+				pi->context.type=0;
 		}
 		
-		(pi->num_links) = 0;
+	} else {
+		pi = &(fsdata->files[idx]);
+	
+
+	pi->obj_class = sefs_get_file_class(sb);
+		
+	if ((pi->path_names[pi->num_links] = (char *)malloc(strlen(file) + 1)) == NULL) {
+		fprintf(stderr, "out of memory\n");
+		return -1;
+	}
+
+	strncpy(pi->path_names[pi->num_links], file, strlen(file));
+	(pi->num_links)++;
 
 		/*check to see if file is a symlink and handle appropriately*/
 /* XXX temp. disabled not working right
@@ -179,36 +209,6 @@ static int ftw_handler(const char *file, const struct stat *sb, int flag, struct
 			pi->symlink_target = tmp;
 		}
 		else */
-			rc = getfilecon(file, &con);
-
-
-		if (rc == -1) {
-			pi->context = context_new("UNLABELED:UNLABELED:UNLABELED");
-		} else {
-			pi->context = context_new(con);
-		}
-
-		if ((pi->path_names[pi->num_links] = (char *)malloc(strlen(file) + 1)) == NULL) {
-			fprintf(stderr, "out of memory\n");
-			return -1;
-		}
-
-		strncpy(pi->path_names[pi->num_links], file, strlen(file));
-		(pi->num_links)++;
-		
-	} else {
-		pi = &(fsdata->files[idx]);
-		memcpy(&(pi->mode), &(sb->st_mode), sizeof(mode_t));
-		pi->obj_class = sefs_get_file_class(sb);
-		
-		if ((pi->path_names[pi->num_links] = (char *)malloc(strlen(file) + 1)) == NULL) {
-			fprintf(stderr, "out of memory\n");
-			return -1;
-		}
-
-		strncpy(pi->path_names[pi->num_links], file, strlen(file));
-		(pi->num_links)++;
-	}
 	
 	return 0;
 }
@@ -338,83 +338,84 @@ int sefs_filesystem_data_index(sefs_filesystem_data_t * fsd) {
 
 int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char *filename)
 {
-	int rc = 0, loop = 0, fd = -1, i = 0, len = 0;
-	int keysize = sizeof(dev_t) + sizeof(ino_t);
-	void * key = NULL;
+	int i, j, rc = 0;
+	FILE *fp;
+	uint32_t buf[32], len;
+	size_t items2, items = 0;
 	sefs_fileinfo_t * pinfo = NULL;
-	
-	if ((fd = open(filename, O_RDWR | O_CREAT | O_TRUNC)) == -1) {
+
+	fp = fopen(filename, "w");
+	if (!fp)
 		fprintf(stderr, "Error opening file %s\n", filename);
 		return -1;
 	}
 	
-	/* write out the total number of path info entries */
-	if ((rc = write(fd, &(fsd->num_files), sizeof(unsigned int))) != sizeof(unsigned int)) {
+	/* File magic number and version */
+	buf[items++] = cpu_to_le32(INDEX_DB_MAGIC);
+	buf[items++] = cpu_to_le32(INDEX_DB_VERSION);
+	/* number of dev/inodes */
+	buf[items++] = cpu_to_le32(&fsd->num_files);
+	
+	items = fwrite(buf, sizeof(uint32_t), items, fp) {
 		fprintf(stderr, "error writing file %s\n", filename);
 		return -1;
 	}
 	
-	if ((key = (void *)malloc(keysize)) == NULL) {
-		fprintf(stderr, "Out of memory\n");
-		return -1;
-	}
+	for (i = 0; i < fsd->num_files; i++) {
+
+		pinfo = &(fsd->files[i]);
 	
-	for (loop = 0; loop < fsd->num_files; loop++) {
-		pinfo = &(fsd->files[loop]);
-
-		memcpy(key, &(pinfo->key.inode), sizeof(ino_t));
-		memcpy(key + sizeof(ino_t), &(pinfo->key.device), sizeof(dev_t));
-
 		/* Write the key */
-		if ((rc = write(fd, key, keysize)) != keysize) {
+		items2 = fwrite(cpu_to_le32(pinfo->key.dev), sizeof(uint32_t), 1, fp);
+		if (!items2 != 1) {
+			fprintf(stderr, "error writing file %s\n", filename);
+			return -1;
+		}
+
+		items2 = fwrite(cpu_to_le64(pinfo->key.inode), sizeof(uint64_t), 1, fp);
+		if (items2 != 1) {
 			fprintf(stderr, "error writing file %s\n", filename);
 			return -1;
 		}
 		
-/* XXX kill line */ printf("DEBUG: adr:%p\tstr:%s\n",
-			(pinfo->context) ? (pinfo->context) : NULL,
-			(pinfo->context) ? (context_str(pinfo->context)) : "INVALID" );		
-			/* XXX problem in this general area */
-		len = strlen(context_str(pinfo->context));
-/* XXX kill line */ printf("DEBUG: len:%i\n",len);		
-
-		/* Write the context length */
-		if ((rc = write(fd, &len, sizeof(unsigned int))) != sizeof(unsigned int)) {
-			fprintf(stderr, "error writing file %s\n", filename);
-			return -1;
-		}
-/* XXX kill line */(context_str(pinfo->context) > 0) ? printf("made it this far\n"): printf("!!\n");
-		/* Write the context */
-		if ((rc = write(fd, context_str(pinfo->context), len)) != len) {
+		items = 0;
+		buf[items++] = cpu_to_le32(pinfo->context.user);
+		buf[items++] = cpu_to_le32(pinfo->context.role);
+		buf[items++] = cpu_to_le32(pinfo->context.type);
+		
+		items2 = fwrite(buf, sizeof(uint32_t), items, fp);
+		if (items2 != items) {
 			fprintf(stderr, "error writing file %s\n", filename);
 			return -1;
 		}
 		
 		/* Write the number of pathnames */
-		len = sizeof(unsigned int);
-		if ((rc = write(fd, &(pinfo->num_links), len)) != len) {
+		len = cpu_to_le32(pinfo->num_links);
+		items2 = fwrite(len, sizeof(uint32_t), 1, fp);
+		if (items2 != 1) {
 			fprintf(stderr, "error writing file %s\n", filename);
 			return -1;
 		}
 		
-		for (i = 0; i < pinfo->num_links;  i++) {
+		for (j = 0; j < pinfo->num_links;  j++) {
 			/* Write the pathname length */
 			len = strlen(pinfo->path_names[i]);
-			if ((rc = write(fd, &len, sizeof(unsigned int))) != sizeof(unsigned int)) {
+			items2 = fwrite(cpu_to_le32(len), sizeof(uint32_t), 1, fp);
+			if (items2 != 1) {
 				fprintf(stderr, "error writing file %s\n", filename);
 				return -1;
 			}
 			
 			/* Write the pathname */
-			if ((rc = write(fd, pinfo->path_names[i], len)) != len) {
+			items2 = fwrite(pinfo->path_names[i], sizeof(char), len, fp);
+			if (items2 != len) {
 				fprintf(stderr, "error writing file %s\n", filename);
 				return -1;
 			}
 		}
 		
 	}
-	
-	close(fd);
+	fclose(fp);
 	return 0;
 }
 
@@ -424,9 +425,9 @@ int sefs_filesystem_data_load(sefs_filesystem_data_t* fsd, char *filename)
 	int rc = 0, loop = 0, fd = -1, i = 0;
 	unsigned int len = 0;
 	int keysize = sizeof(dev_t) + sizeof(ino_t);
-	void * key = NULL;
+	inode_key_t *key = NULL;
 	sefs_fileinfo_t * pinfo = NULL;
-	security_context_t con = NULL;
+	sec_con_t con = NULL;
 	
 	if ((fd = open(filename, O_RDONLY)) == -1) {
 		fprintf(stderr, "Error opening file %s\n", filename);
@@ -445,7 +446,7 @@ int sefs_filesystem_data_load(sefs_filesystem_data_t* fsd, char *filename)
 	
 	fsd->files = pinfo;
 	
-	if ((key = (void *)malloc(keysize)) == NULL) {
+	if ((key = (inode_key_t *)malloc(sizeof(inode_key_t)) == NULL)) {
 		fprintf(stderr, "Out of memory\n");
 		return -1;
 	}
@@ -454,13 +455,12 @@ int sefs_filesystem_data_load(sefs_filesystem_data_t* fsd, char *filename)
 		pinfo = &(fsd->files[loop]);
 		
 		/* Read the key*/
-		if ((rc = read(fd, key, keysize)) != keysize) {
+		if ((rc = read(fd, key, sizeof(inode_key_t))) != sizeof(inode_key_t)) {
 			fprintf(stderr, "error reading file %s\n", filename);
 			return -1;
 		}
 		
-		memcpy(&(pinfo->key.inode), key,  sizeof(ino_t));
-		memcpy(&(pinfo->key.device), key + sizeof(ino_t), sizeof(dev_t));
+		memcpy(&(pinfo->key), key,  sizeof(inode_key_t));
 		
 		/* Read the context length */
 		if ((rc = read(fd, &len, sizeof(unsigned int))) != sizeof(unsigned int)) {
