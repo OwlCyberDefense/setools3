@@ -54,6 +54,7 @@ namespace eval Apol_TE {
 	variable ta2 			""
 	variable ta3 			""
 	variable allow_regex		1
+	variable show_enabled_rules	1
 	variable ta1_opt 		"both"
 	variable ta2_opt 		"both"
 
@@ -120,7 +121,11 @@ namespace eval Apol_TE {
 	variable results		""
 	variable tab_deleted_flag	0
 	variable optionsArray		
-	
+	# callback procedures for the tab menu. Each element in this list is an embedded list of 2 items.
+ 	# The 2 items consist of the command label and the function name. The tabname will be added as an
+ 	# argument to the callback procedure.
+ 	variable tab_menu_callbacks	""
+ 	
 	# GLOBAL VARIABLES FOR NAMING THE CLASSES/PERMISSIONS AND TYPES/ATTRIBUTES TABS
 	variable cp_TabID		"ClassPermsTab"
 	variable ta_TabID		"TypesAttibsTab"
@@ -191,6 +196,7 @@ proc Apol_TE::searchTErules { whichButton } {
     	variable currTabCount
 	variable notebook_results
 	variable allow_regex
+	variable show_enabled_rules
 	variable ta1_opt
 	variable ta2_opt
 			
@@ -225,7 +231,7 @@ proc Apol_TE::searchTErules { whichButton } {
 		$opts(tmember) $opts(tchange) $opts(use_1st_list) $opts(indirect_1) \
 		$ta1 $opts(which_1) $opts(use_2nd_list) $opts(indirect_2) \
 		$ta2 $opts(use_3rd_list) $opts(indirect_3) $ta3 $selObjectsList $selPermsList\
-		$allow_regex $ta1_opt $ta2_opt]} err]
+		$allow_regex $ta1_opt $ta2_opt $show_enabled_rules]} err]
 	
 	if {$rt != 0} {	
 		tk_messageBox -icon error -type ok -title "Error" -message "$err"
@@ -714,8 +720,7 @@ proc Apol_TE::open { } {
         if {$ApolTop::contents(classes) == 1} {
         	set rt [catch {set objectslist [apol_GetNames classes]} err]
 		if {$rt != 0} {	
-			tk_messageBox -icon error -type ok -title "Error" -message "$err"
-			return 
+			return -code error $err 
 		}
 		set objectslist [lsort $objectslist]
 		if {$objectslist != ""} {
@@ -726,8 +731,7 @@ proc Apol_TE::open { } {
 	if {$ApolTop::contents(perms) == 1} {
 		set rt [catch {set master_permlist [apol_GetNames perms]} err]
 		if {$rt != 0} {	
-			tk_messageBox -icon error -type ok -title "Error" -message "$err"
-			return 
+			return -code error $err 
 		} 
 		set master_permlist [lsort $master_permlist]
 		set permslist $master_permlist
@@ -755,7 +759,6 @@ proc Apol_TE::close { } {
 	
         # Close all results tabs.
         Apol_TE::close_All_ResultsTabs
-        
         # Reset objects/permissions lists
         set Apol_TE::objectslist 	""
 	set Apol_TE::permslist 		""
@@ -764,6 +767,13 @@ proc Apol_TE::close { } {
 	$Apol_TE::objslistbox configure -bg $ApolTop::default_bg_color
     	array unset ta_state_Array
      	
+	return 0
+}
+
+proc Apol_TE::free_call_back_procs { } {
+       	variable tab_menu_callbacks	
+    		
+	set tab_menu_callbacks ""
 	return 0
 }
 
@@ -1585,29 +1595,6 @@ proc Apol_TE::enable_RegExpr { which } {
    	return 0
 }
 
-# ------------------------------------------------------------------------------
-#  Command Apol_TE::popupResultsTab_Menu
-# ------------------------------------------------------------------------------
-proc Apol_TE::popupResultsTab_Menu { window x y popupMenu page } {
-	variable pageID
-	
-	set page [ApolTop::get_tabname $page]
-	set pageID $page
-        # Getting global coordinates of the application window (of position 0, 0)
-	set gx [winfo rootx $window]	
-	set gy [winfo rooty $window]
-	
-	# Add the global coordinates for the application window to the current mouse coordinates
-	# of %x & %y
-	set cmx [expr $gx + $x]
-	set cmy [expr $gy + $y]
-
-	# Posting the popup menu
-   	tk_popup $popupMenu $cmx $cmy
-   	
-   	return 0
-}
-
 # ----------------------------------------------------------------------------------------
 #  Command Apol_TE::createObjsClassesTab
 #
@@ -1922,7 +1909,8 @@ proc Apol_TE::create {nb} {
     variable popupTab_Menu
     variable updateButton
     variable cb_RegExp
-
+    variable tab_menu_callbacks
+    
     # Layout Frames
     set frame [$nb insert end $ApolTop::terules_tab -text "TE Rules"]
     set pw2 [PanedWindow $frame.pw2 -side left -weights available]
@@ -1960,7 +1948,7 @@ proc Apol_TE::create {nb} {
     # Placing major subframes
     pack $bBox -side right -anchor ne -fill both -expand yes -padx 5
     pack $obox -side right -anchor w -fill both -padx 5 -expand yes
-    pack $tbox -side top -anchor nw -fill both -expand yes -padx 5
+    pack $tbox -side top -anchor nw -fill both -padx 5 -expand yes
     pack $dbox -side left -fill both -expand yes -anchor e -padx 5 -pady 5
                
     # Rule types section subframes
@@ -1968,7 +1956,8 @@ proc Apol_TE::create {nb} {
     set optsfm [frame $fm_rules.optsfm]
     set tefm [frame $optsfm.tefm]
     set ttfm [frame $optsfm.ttfm]
-
+    set enabled_fm [frame $fm_rules.enabled_fm]
+    
     # First column of checkbuttons under rule selection subframe
     set teallow [checkbutton $tefm.teallow -text "allow" -variable Apol_TE::opts(teallow) \
 	    -command "Apol_TE::defaultType_Enable_Disable"]
@@ -1991,10 +1980,14 @@ proc Apol_TE::create {nb} {
     set clone [checkbutton $ttfm.clone -text "clone" -variable Apol_TE::opts(clone) \
             -command "Apol_TE::defaultType_Enable_Disable" ]
     
+    set cb_show_enabled_rules [checkbutton $enabled_fm.cb_show_enabled_rules -text "Only show enabled rules" \
+    		-variable Apol_TE::show_enabled_rules -onvalue 1 -offvalue 0]
+    		
+    set cb_fm [frame [$pw1 getframe 0].cb_fm]
     # Checkbutton to Enable/Disable Regular Expressions option.
-    set cb_RegExp [checkbutton [$pw1 getframe 0].cb_RegExp -text "Enable Regular Expressions" \
-    		-variable Apol_TE::allow_regex]
-            	    
+    set cb_RegExp [checkbutton $cb_fm.cb_RegExp -text "Enable Regular Expressions" \
+    		-variable Apol_TE::allow_regex -onvalue 1 -offvalue 0]
+                	    
     # NoteBook creation for search options subframe
     set notebook_searchOpts [NoteBook $frame_search.nb]
     set notebook_ta_tab [$notebook_searchOpts insert end $Apol_TE::ta_TabID -text $Apol_TE::m_ta_tab]
@@ -2010,12 +2003,12 @@ proc Apol_TE::create {nb} {
 	             
     # Popup menu widget
     set popupTab_Menu [menu .popupTab_Menu]
-    $popupTab_Menu add command -label "Delete Tab" \
-	-command { Apol_TE::delete_ResultsTab $Apol_TE::pageID }
-	
+    set tab_menu_callbacks [lappend tab_menu_callbacks {"Delete Tab" "Apol_TE::delete_ResultsTab"}]
+    		
     # Notebook creation for results
     set notebook_results [NoteBook [$dbox getframe].nb_results]
-    $notebook_results bindtabs <Button-3> {Apol_TE::popupResultsTab_Menu %W %x %y $Apol_TE::popupTab_Menu} 
+    $notebook_results bindtabs <Button-3> {ApolTop::popup_Tab_Menu \
+    	%W %x %y $Apol_TE::popupTab_Menu $Apol_TE::tab_menu_callbacks} 
     $notebook_results bindtabs <Button-1> {Apol_TE::set_Widget_SearchOptions}
     
     # Add button bar at bottom of results section for closing tabs.
@@ -2033,7 +2026,10 @@ proc Apol_TE::create {nb} {
     pack $teallow $neverallow $auallow $audeny $audont -anchor w 
     pack $ttrans $tmember $tchange $clone -anchor w 
     pack $tefm $ttfm -side left -anchor nw 
-    pack $cb_RegExp -side bottom -anchor center -pady 2
+    pack $enabled_fm -side top -pady 6 -anchor nw
+    pack $cb_fm -side bottom -anchor center -padx 4
+    pack $cb_RegExp -side top -anchor nw 
+    pack $cb_show_enabled_rules -side top -anchor nw
     pack $optsfm -side top -fill x -expand yes -anchor nw
     
     # Placing the search options notebook frame within the search options section    
