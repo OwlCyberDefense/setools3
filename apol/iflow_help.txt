@@ -1,6 +1,6 @@
 AN OVERVIEW OF INFORMATION FLOW ANALYSIS
 apol, version 1.4
-July 06, 2004
+July 07, 2004
 selinux@tresys.com
 
 
