@@ -30,7 +30,8 @@ install-libseuser-shared: libseuserso
 	
 install-libseuser-static: libseuser
 	install -m 644 libseuser.a $(STATIC_LIB_INSTALL_DIR)
-	install -m 644 *.h $(SETOOLS_INCLUDE)
+	install -d 755 -d $(SETOOLS_INCLUDE)/libseuser
+	install -m 644 *.h $(SETOOLS_INCLUDE)/libseuser
 
 install: install-libseuser-shared install-libseuser-static
 
