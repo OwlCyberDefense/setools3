@@ -1068,40 +1068,10 @@ static int apol_type_relabel(relabel_set_t *sets, int type, relabel_result_t *re
 
 static int apol_filter_rules_list(relabel_result_t *res, policy_t *policy, relabel_filter_t *filter)
 {
-	int i, j, k, retv, temp_array_size = 0, here;
-	int *temp_array = NULL;
-
-	if (!res || !policy || !filter || filter->num_perm_sets < 1)
-		return -1;
-	if (!res->rules)
-		return -1;
-
-	for (i = 0; i < res->num_rules; i++) {
-		here = 0;
-		for (j = 0; j < filter->num_perm_sets; j++) {
-			if (does_av_rule_use_classes(res->rules[i], 1, &(filter->perm_sets[j].obj_class), 1, policy)) {
-				for (k = 0; k < filter->perm_sets[j].num_perms; k++) {
-					if (does_av_rule_use_perms(res->rules[i], 1, &(filter->perm_sets[j].perms[k]), 1, policy)) {
-						here = 1;
-					}
-					if (here) 
-						break;
-				}
-			}
-			if (here) 
-				break;
-		}
-		if (here) {
-			retv = add_i_to_a(res->rules[i], &temp_array_size, &temp_array);
-			if (retv)
-				return -1;
-		}
-	}
-
-	free(res->rules);
-	res->rules = temp_array;
-	res->num_rules = temp_array_size;
-
+	int i, retv;
+	
+	
+	
 	return 0;
 }
 
