@@ -36,8 +36,8 @@ DEFAULT_LOG_FILE = /var/log/messages
 #
 CC_DEFINES	= -DCONFIG_SECURITY_SELINUX_CONDITIONAL_POLICY
 
-#CFLAGS		= -Wall -O2 $(TCL_INCLUDE) $(CC_DEFINES)
-CFLAGS		= -Wall -g $(TCL_INCLUDE) $(CC_DEFINES)
+CFLAGS		= -Wall -O2 $(TCL_INCLUDE) $(CC_DEFINES)
+#CFLAGS		= -Wall -g $(TCL_INCLUDE) $(CC_DEFINES)
 #CFLAGS		= -Wall -ansi -pedantic -g $(TCL_INCLUDE) $(CC_DEFINES)
 
 # Install directories
@@ -67,7 +67,7 @@ POLICYINSTALLDIRS = seuser
 export CFLAGS CC YACC LEX LINKFLAGS BINDIR INSTALL_LIBDIR LIBS TCL_LIBINC TCL_LIBS MAKE 
 export POLICY_SRC_DIR SRC_POLICY_DIR POLICY_SRC_FILE DEFAULT_LOG_FILE
 
-all:  all-libs apol awish seuserx sepcut seaudit secmds
+all:  all-libs apol awish seuser seuserx sepcut seaudit secmds
 
 all-nogui:  corelibs seuser secmds
 
@@ -216,9 +216,6 @@ test-apol: selinux_tool
 
 test-seuser: selinux_tool
 	cd libseuser/test; $(MAKE) $@
-	
-test-regression: selinux_tool
-	cd test; $(MAKE)
 
 test-clean: 
 	cd libapol/test; $(MAKE) clean
@@ -229,6 +226,9 @@ test-bare:
 	cd libapol/test; $(MAKE) bare
 	cd libseuser/test; $(MAKE) bare
 	cd test; $(MAKE) bare
+
+test-regression: selinux_tool
+	cd test; $(MAKE)
 
 clean: test-clean
 	cd apol; $(MAKE) clean
