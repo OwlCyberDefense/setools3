@@ -12,13 +12,14 @@
 
 const gchar *diff_labels[] = { "Classes and Permissions", 
 			       "Types", 
+			       "Attributes",
 			       "Roles", 
 			       "Users", 
 			       "Booleans", 
-			       "Initial SIDs", 
+//			       "Initial SIDs", 
 			       "TE Rules",
 			       "RBAC Rules",
-			       "Conditionals and Rules",
+//			       "Conditionals and Rules",
 			       NULL };
 			      			       
 /* Local static functions */
