@@ -2,7 +2,7 @@ SELinux Tools (setools), version 1.4
 by Tresys Technology, LLC
 (selinux@tresys.com, www.tresys.com/selinux)
 
-May 26, 2004
+May 27, 2004
 
 OVERVIEW
 
@@ -54,7 +54,7 @@ The tools and libraries in this release include:
    have the interpreter compiled within them).  One could conceivably 
    write one's own GUI tools using Tcl/Tk as extended via awish.
 
-8. libapol: The main policy.conf analysis library, which is the core 
+8. libapol: The main policy analysis library, which is the core 
    library for all of our tools.
 
 9. libseuser: The primary logic used for seuser.

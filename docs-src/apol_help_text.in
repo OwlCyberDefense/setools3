@@ -32,9 +32,9 @@ release. See setools/KNOWN_BUGS for a list of current bugs.
 
 1. MENUS:  
 
-Apol expects you to open a policy.conf file, and it expects that this 
-file can be successfully parsed using checkpolicy -d.  Only one 
-policy.conf file can be open at a time, so if you open another file, 
+Apol expects you to open a source or binary policy file, and it expects  
+that this file can be successfully parsed using checkpolicy -d.  Only  
+one policy file can be open at a time, so if you open another file, 
 the current one will be closed.
 
 The QUERY menu allows the user to save and/or load a query for a TE Rules
@@ -132,7 +132,7 @@ components of an SELinux policy.
 	the state of the boolean variable to TRUE or FALSE from this
 	tab. Changing the state of a variable will only be applied 
 	in memory and will not change the state within the actual 
-	policy.conf file.
+	policy file.
 
 
 3. POLICY RULES TAB 
@@ -222,11 +222,14 @@ a set of search criteria you select.
 	
 	
 	In the Results Tab for a given search, all rules that meet the 
-	search criteria will be displayed.  In addition, a hyperlink for 
+	search criteria will be displayed.  In addition, if the policy
+	that is opened is a source policy.conf file, a hyperlink for 
 	each rule is shown.  Clicking on this list will take you to the 
 	policy.conf tab and highlight where in the policy.conf file the 
 	rule was found.  This will allow you to trace the rule back to 
-	the ultimate source code.
+	the ultimate source code. If the policy is a binary policy, then 
+	the hyperlinks will not be provided and the policy.conf tab will
+	be disabled.
 	
 	The TE Rules Tab also allows you to have up to 10 results 
 	windows.  Each active window remembers the search options used 
@@ -413,6 +416,8 @@ analyses are:
 This tab provides a convenient display of the raw policy.conf source 
 file.  In addition, the TE rules tab and the Domain Transition analysis 
 (on the Analysis tab) currently support a hyperlink to the source 
-policy.conf file.
+policy.conf file, only if the policy is a source policy.conf file.
+Otherwise, this tab will be disabled and hyperlinks to this tab will
+not be provided.
 
 																																																																																                                                                                                                                                                                                                                                                                                                                                 
