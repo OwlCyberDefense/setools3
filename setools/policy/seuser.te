@@ -38,6 +38,9 @@ domain_auto_trans(sysadm_t, seuser_exec_t, seuser_t)
 # program. 
 allow seuser_t seuser_exec_t:file { execute_no_trans };
 
+# Allow seuser_t to run setfiles in the setfiles domain
+domain_auto_trans(seuser_t, setfiles_exec_t, setfiles_t)
+
 # Grant the new domain permissions to required operations
 allow seuser_t self:process { fork sigchld };
 allow seuser_t self:fifo_file { read getattr write };
