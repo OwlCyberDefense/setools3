@@ -468,6 +468,11 @@ unsigned char str_is_only_white_space(const char *str)
 	return TRUE;
 } 
 
+const char* libapol_get_version(void)
+{
+	return LIBAPOL_VERSION_STRING;
+}
+
 /* Find the file specified using our built-in search order for sysem config files.
  * This function returns a string of the directory; caller
  * must free the returned string.

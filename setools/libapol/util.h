@@ -80,6 +80,7 @@ typedef struct rbac_bool {
 } rbac_bool_t;
 
 /* prototypes */
+const char* libapol_get_version(void);
 char* find_file(const char *file_name);
 char* find_user_config_file(const char *file_name);
 bool_t getbool(const char *str);
