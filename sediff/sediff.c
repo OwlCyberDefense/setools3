@@ -758,6 +758,18 @@ static int print_te_rule(avh_node_t *cur, policy_t *policy, const char *string,
 		append_str(buf,sz,")"); 
 		free(rule); 
 	} 
+
+	if (cur->flags & AVH_FLAG_COND) {
+		if (get_cond_bool_name(cur->cond_expr,&rule,policy) < 0)
+			return -1;
+		append_str(buf,sz," [ ");
+		append_str(buf,sz,rule);
+		append_str(buf,sz," ] ");
+//		g_string_printf(string," [ %s ]",rule);
+//		gtk_text_buffer_insert_with_tags(txt, iter, string->str, -1, colortag, NULL); 
+		free(rule);
+	}	
+
 	append_str(buf,sz,"\n");
 	return 0;
 }
