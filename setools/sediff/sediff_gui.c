@@ -616,6 +616,7 @@ static void sediff_rename_policy_tabs(const char *p1,const char *p2)
 		gtk_widget_show (p2_label);
 		gtk_notebook_set_tab_label (notebook, gtk_notebook_get_nth_page (notebook, 2), p2_label);
 	}
+	g_string_free(string,TRUE);
 }
 
 /* 
