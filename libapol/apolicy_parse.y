@@ -1642,9 +1642,8 @@ static int define_role_types(void)
 	/* If this is the first role to be added, then add the hard-coded
 	 * default object role "object_r" as it will not show up in the policy */
 	if(parse_policy->num_roles < 1) {
-		#define OR_NAME "object_r"
-		or_name = (char *)malloc(strlen(OR_NAME) + 1);
-		strcpy(or_name, OR_NAME);
+		or_name = (char *)malloc(strlen(OBJECT_R_NAME) + 1);
+		strcpy(or_name, OBJECT_R_NAME);
 		role_idx = add_role(or_name, parse_policy);
 		if(role_idx < 0) {
 			yyerror("Problem adding object role object_r to policy");
@@ -1987,7 +1986,6 @@ static int define_user(void)
 	}
 		
 	while((id = queue_remove(id_queue))) {
-		ta_item_t *newitem;
 		idx = get_role_idx(id, parse_policy);
 		if(idx < 0) {
 			sprintf(errormsg, "%s is an invalid role name", id);
@@ -1996,15 +1994,7 @@ static int define_user(void)
 			return -1;
 		}
 		if(!existing || (existing && !does_user_have_role(ptr, idx, parse_policy))) {
-			newitem = (ta_item_t *)malloc(sizeof(ta_item_t));
-			if(newitem == NULL) {
-				yyerror("out of memory");
-				free(id);
-				return -1;
-			}
-			newitem->idx = idx;
-			newitem->type = IDX_ROLE;
-			rt = insert_ta_item(newitem, &(ptr->roles));
+			rt = add_role_to_user(ptr, idx, parse_policy);
 			if(rt != 0) {
 				yyerror("problem inserting role in user");
 				return -1;
@@ -2213,7 +2203,6 @@ static int
 {
 	char *id;
 	int idx;
-	role_item_t *role;
 	
 	id = queue_remove(id_queue);
 	if (!id) {
@@ -2239,24 +2228,9 @@ static int
 			yyerror(errormsg);
 			return -1;
 		}
-		/* Make sure role array is large enough */
-		if(parse_policy->num_roles >= parse_policy->list_sz[POL_LIST_ROLES]) {
-			/* grow the dynamic array */
-			role_item_t * ptr;		
-				ptr = (role_item_t *)realloc(parse_policy->roles, (LIST_SZ+parse_policy->list_sz[POL_LIST_ROLES]) * sizeof(role_item_t));
-			if(ptr == NULL) {
-				yyerror("out of memory\n");
-				return -1;
-			}
-			parse_policy->roles = ptr;
-			parse_policy->list_sz[POL_LIST_ROLES] += LIST_SZ;
-		}
-		/* take next available as new role */
-		role = &(parse_policy->roles[parse_policy->num_roles]);
-		role->name = id;	/* don't free id if new */
-		role->num_types = 0;
-		role->types = NULL;
-		(parse_policy->num_roles)++;
+		idx = add_role(id, parse_policy);
+		if(idx < 0)
+			return -1;
 	}
 	else {
 		/* already exists; we're done for now
