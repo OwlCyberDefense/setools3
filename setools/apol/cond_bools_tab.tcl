@@ -49,7 +49,19 @@ proc Apol_Cond_Bools::cond_bool_search_bools {} {
 	
 	if {[ApolTop::is_policy_open]} {
 		set results ""
+		set search_opts(boolean) [string trim $search_opts(boolean)]
+		if {$Apol_Cond_Bools::enable_bool_combo_box && $search_opts(boolean) == ""} {
+			tk_messageBox -icon error -type ok -title "Error" -message "No boolean variable provided!"
+			return -1
+		}
+				
 		if {$Apol_Cond_Bools::enable_bool_combo_box && $search_opts(boolean) != ""} {	
+			# validate the boolean exists in the array
+			if {![Apol_Cond_Bools::cond_bool_is_valid_boolean $search_opts(boolean)]} {
+				tk_messageBox -icon error -type ok -title "Error" -message "Invalid boolean variable!"
+				return -1
+			}
+			
 			set results [append results "$search_opts(boolean)"]
 			if {$search_opts(default_state)} {
 				if {$cond_bools_dflt_value_array($search_opts(boolean))} {
@@ -97,6 +109,19 @@ proc Apol_Cond_Bools::cond_bool_search_bools {} {
 	}
 	
 	return 0
+}
+
+###############################################################
+#  ::cond_bool_is_valid_boolean
+#
+proc Apol_Cond_Bools::cond_bool_is_valid_boolean {boolean} {
+	variable cond_bools_value_array
+	
+	if {[array get cond_bools_value_array "$boolean*"] != ""} {
+		return 1
+	}
+	
+	return 0	
 }
 
 ################################################################
@@ -372,6 +397,12 @@ proc Apol_Cond_Bools::create {nb} {
 		-variable Apol_Cond_Bools::enable_bool_combo_box \
 		-onvalue 1 -offvalue 0 -text "Search using boolean variable" \
 		-command {ApolTop::change_comboBox_state $Apol_Cond_Bools::enable_bool_combo_box $Apol_Cond_Bools::bool_combo_box}]
+	
+	# ComboBox is not a simple widget, it is a mega-widget, and bindings for mega-widgets are non-trivial.
+	# If bindtags is invoked with only one argument, then the current set of binding tags for window is 
+	# returned as a list.
+	bindtags $bool_combo_box.e [linsert [bindtags $bool_combo_box.e] 3 bool_vars_combo_box_Tag]
+	bind bool_vars_combo_box_Tag <KeyPress> { ApolTop::_create_popup $Apol_Cond_Bools::bool_combo_box %W %K }
 			
 	# Action Buttons
 	set ok_button [button [$buttons_f getframe].ok -text OK -width 6 -command {Apol_Cond_Bools::cond_bool_search_bools}]

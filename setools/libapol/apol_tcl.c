@@ -1993,7 +1993,7 @@ int Apol_SearchInitialSIDs(ClientData clientData, Tcl_Interp *interp, int argc, 
 	return TCL_OK;
 }
 
-void apol_cond_rules_append_cond_list(cond_rule_list_t *list, bool_t include_allow, bool_t include_audit, bool_t include_tt, 
+static void apol_cond_rules_append_cond_list(cond_rule_list_t *list, bool_t include_allow, bool_t include_audit, bool_t include_tt, 
 				     policy_t *policy, Tcl_DString *buf, Tcl_Interp *interp)
 {
 	int i;
@@ -2030,6 +2030,49 @@ void apol_cond_rules_append_cond_list(cond_rule_list_t *list, bool_t include_all
 			free(rule);
 		}
 	}
+}
+
+static void apol_cond_rules_append_expr(cond_expr_t *exp, policy_t *policy, Tcl_DString *buf, Tcl_Interp *interp)
+{
+	char tbuf[BUF_SZ];
+	cond_expr_t *cur;
+		
+	for (cur = exp; cur != NULL; cur = cur->next) {
+		switch (cur->expr_type) {
+		case COND_BOOL:
+			snprintf(tbuf, sizeof(tbuf)-1, "%s ", policy->cond_bools[cur->bool].name); 
+			Tcl_DStringAppend(buf, tbuf, -1);
+			break;
+		case COND_NOT:
+			snprintf(tbuf, sizeof(tbuf)-1, "! "); 
+			Tcl_DStringAppend(buf, tbuf, -1);
+			break;
+		case COND_OR:
+			snprintf(tbuf, sizeof(tbuf)-1, "|| "); 
+			Tcl_DStringAppend(buf, tbuf, -1);
+			break;
+		case COND_AND:
+			snprintf(tbuf, sizeof(tbuf)-1, "&& "); 
+			Tcl_DStringAppend(buf, tbuf, -1);
+			break;
+		case COND_XOR:
+			snprintf(tbuf, sizeof(tbuf)-1, "^ "); 
+			Tcl_DStringAppend(buf, tbuf, -1);
+			break;
+		case COND_EQ:
+			snprintf(tbuf, sizeof(tbuf)-1, "== "); 
+			Tcl_DStringAppend(buf, tbuf, -1);
+			break;
+		case COND_NEQ:
+			snprintf(tbuf, sizeof(tbuf)-1, "!= ");
+			Tcl_DStringAppend(buf, tbuf, -1);
+			break;
+		default:
+			break;
+		}
+	}
+	snprintf(tbuf, sizeof(tbuf)-1, "]\n\n"); 
+	Tcl_DStringAppend(buf, tbuf, -1);
 }
 
 /* 
@@ -2098,9 +2141,10 @@ int Apol_SearchConditionalRules(ClientData clientData, Tcl_Interp *interp, int a
 		
 	for (i = 0; i < policy->num_cond_exprs; i++) {
 		if (exprs_b[i]) {
-			snprintf(tbuf, sizeof(tbuf)-1, "\nconditional expression %d: [ %s ]\n\n", i, 
-				policy->cond_bools[policy->cond_exprs[i].expr->bool].name);
+			snprintf(tbuf, sizeof(tbuf)-1, "\nconditional expression %d: [ ", i); 
 			Tcl_DStringAppend(buf, tbuf, -1);
+	
+			apol_cond_rules_append_expr(policy->cond_exprs[i].expr, policy, buf, interp);
 			
 			if (show_rules) {
 				snprintf(tbuf, sizeof(tbuf)-1, "TRUE list:\n");
