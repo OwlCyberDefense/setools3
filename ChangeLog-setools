@@ -24,6 +24,24 @@ seaudit:
 	Changed policy defaults to use binary policy.
 
 =======================================================
+May 5, 2004 Version 1.3.1
+
+apol:
+	Fixed to properly exclude object classes and/or 
+	  permissions in information flow analysis.
+libapol:
+	Fixed to properly exclude object classes and/or 
+	  permissions in information flow analysis.
+seuser:
+	Changed default policy.conf location in seuser.conf
+	  to /etc/security/selinux/src/policy/policy.conf 
+	Minor bug fixes.
+sepcut:
+	Minor bug fixes.
+libseuser:
+	Minor fixes to parsing of the seuser.conf file.
+	
+=======================================================
 April 15, 2004 Version 1.3
 
 apol:
