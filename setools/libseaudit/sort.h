@@ -8,7 +8,7 @@
 #ifndef LIBAUDIT_SORT_H
 #define LIBAUDIT_SORT_H
 
-#include "auditlog.h"
+#include "auditlog_view.h"
 
 struct sort_action_node;
 typedef int (*sort_action_t)(const msg_t *a, const msg_t *b);
@@ -23,10 +23,10 @@ typedef struct sort_action_node {
 void sort_action_list_destroy(sort_action_node_t *cl);
 
 /* this is not reentrant! */
-int audit_log_sort(audit_log_t *log, int **new_order, int reverse);
+int audit_log_view_sort(audit_log_view_t *log, int **new_order, int reverse);
 
-int audit_log_append_sort(audit_log_t *log, sort_action_node_t *node);
-int audit_log_remove_sort(audit_log_t *log, sort_action_node_t *node);
+int audit_log_view_append_sort(audit_log_view_t *log, sort_action_node_t *node);
+int audit_log_view_remove_sort(audit_log_view_t *log, sort_action_node_t *node);
 
 /* main sort function for qsort */
 int msg_compare(const void *a, const void *b);
