@@ -1562,7 +1562,7 @@ static int txt_buffer_insert_te_line(GtkTextBuffer *txt, GtkTextIter *iter,
 			if (!is_binary_policy(policy)) { 
 				gtk_text_buffer_insert_with_tags(txt, iter, string->str, -1, linktag, NULL); 
 			} 
-			gtk_text_buffer_insert_with_tags(txt, iter, ")", -1, linktag, NULL); 
+			gtk_text_buffer_insert_with_tags(txt, iter, ")", -1, pangotag, NULL); 
 			j++; 
 		} 
 		free(rule); 
