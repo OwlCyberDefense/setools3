@@ -5548,7 +5548,6 @@ int Apol_Create_FC_Index_File(ClientData clientData, Tcl_Interp *interp, int arg
 	fsdata_local.dbh = NULL;
 	fsdata_local.fsdh = NULL;
  	if (sefs_filesystem_db_populate(&fsdata_local, argv[2]) == -1) {
-		fprintf(stderr, "fsdata_init failed\n");
 		Tcl_AppendResult(interp, "Error populating database.\n", (char *) NULL);
 		return TCL_ERROR;
 	}
