@@ -32,6 +32,7 @@ int audit_log_remove_sort(audit_log_t *log, sort_action_node_t *node);
 int msg_compare(const void *a, const void *b);
 
 sort_action_node_t *msg_sort_action_create(void);
+sort_action_node_t *host_sort_action_create(void);
 sort_action_node_t *perm_sort_action_create(void);
 sort_action_node_t *date_sort_action_create(void);
 sort_action_node_t *src_user_sort_action_create(void);
