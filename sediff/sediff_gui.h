@@ -42,6 +42,7 @@ typedef struct sediff_app {
 	GtkTextBuffer *policy2_text;
 	GList *callbacks;
 	gint progress_completed;
+	GtkTextBuffer *summary_buffer;
 	GtkTextBuffer *classes_buffer;
 	GtkTextBuffer *types_buffer;
 	GtkTextBuffer *roles_buffer;
@@ -50,6 +51,7 @@ typedef struct sediff_app {
 	GtkTextBuffer *attribs_buffer;
 	GtkTextBuffer *te_buffer;
 	GtkTextBuffer *rbac_buffer;
+	GtkTextBuffer *conditionals_buffer;
 
 	sediff_summary_t summary;
 
