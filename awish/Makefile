@@ -1,11 +1,19 @@
 # awish tool
+
+ifeq ($(DYNAMIC), 0)
 LIBAPOL-TCL	= ../libapol/libapol-tcl.a ../libapol/libapol.a
 LIBSEUSER-TCL	= ../libseuser/libseuser-tcl.a ../libseuser/libseuser.a
-AWISH_OBJ	= awish.o  $(LIBSEUSER-TCL) $(LIBAPOL-TCL)
+else
+LIBAPOL-TCL	= ../libapol/libapol-tcl.a ../libapol/libapol.so.$(shell cat ../libapol/VERSION)
+LIBSEUSER-TCL	= ../libseuser/libseuser-tcl.a ../libseuser/libseuser.so.$(shell cat ../libseuser/VERSION) 
+endif
 
+AWISH_OBJ	= awish.o $(LIBSEUSER-TCL) $(LIBAPOL-TCL)
+
+# awish is optionally linked to libselinux. The LIBSELINUX variable is 
+# set in the top-level Makefile.
 awish: $(AWISH_OBJ)
 	$(CC) $(TCL_LIBINC) -o $@ $(AWISH_OBJ) $(LINKFLAGS) $(TCL_LIBS) $(LIBSELINUX)
-
 
 %.o:  %.c 
 	$(CC) $(CFLAGS) -c $<
