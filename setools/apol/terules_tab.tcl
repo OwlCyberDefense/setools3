@@ -272,7 +272,7 @@ proc Apol_TE::searchTErules { whichButton } {
 #  Command Apol_TE::disable_te_rule {}
 # --------------------------------------
 proc Apol_TE::disable_te_rule {tb} {
-	$tb tag configure $Apol_TE::disabled_rule_tag -foreground gray 
+	$tb tag configure $Apol_TE::disabled_rule_tag -foreground red 
 	return 0
 }
 
@@ -310,7 +310,9 @@ proc Apol_TE::insertTERules { tb results } {
 		incr x
 		# The next element should be the enabled boolean flag.
 		if {[lindex $results $x] == 0} {
-			$tb insert end "   \[Disabled\]\n"
+			$tb insert end "   "
+			set cur_line_pos [$tb index insert]
+			$tb insert end "\[Disabled\]\n"
 			# NOTE: The character at index2 isn't tagged, so must add 1 to index2 argument.
 			Apol_TE::insert_disabled_rule_tag $tb $cur_line_pos $line_num.end
 		} else {
@@ -318,7 +320,7 @@ proc Apol_TE::insertTERules { tb results } {
 		}
 	}	
 	Apol_PolicyConf::configure_HyperLinks $tb
-	#Apol_TE::disable_te_rule $tb
+	Apol_TE::disable_te_rule $tb
 	update idletasks
 	
 	return 0
@@ -339,6 +341,7 @@ proc Apol_TE::set_OptionsArray { raisedPage selObjectsList selPermsList } {
 	variable src_list_type_2	
 	variable tgt_list_type_1	
 	variable tgt_list_type_2
+	variable show_enabled_rules
 		
 	# Unsets all of the elements in the array that match $raisedPage 
 	array unset optionsArray $raisedPage			
@@ -375,6 +378,7 @@ proc Apol_TE::set_OptionsArray { raisedPage selObjectsList selPermsList } {
 	set optionsArray($raisedPage,src_list_type_2) 	$src_list_type_2
 	set optionsArray($raisedPage,tgt_list_type_1) 	$tgt_list_type_1
 	set optionsArray($raisedPage,tgt_list_type_2) 	$tgt_list_type_2
+	set optionsArray($raisedPage,show_enabled_rules) $show_enabled_rules
 		
 	return 0
 }
@@ -602,7 +606,8 @@ proc Apol_TE::set_Widget_SearchOptions { pageID } {
 	variable tgt_list_type_1	
 	variable tgt_list_type_2
 	variable tab_deleted_flag
-
+	variable show_enabled_rules
+	
 	set pageID [ApolTop::get_tabname $pageID]
 	set raised [$notebook_results raise]
 	# First check flag to determine if the user has simply selected the 
@@ -644,6 +649,7 @@ proc Apol_TE::set_Widget_SearchOptions { pageID } {
 	set src_list_type_2	$optionsArray($pageID,src_list_type_2) 
 	set tgt_list_type_1	$optionsArray($pageID,tgt_list_type_1) 
 	set tgt_list_type_2	$optionsArray($pageID,tgt_list_type_2) 
+	set show_enabled_rules 	$optionsArray($pageID,show_enabled_rules)
 			
 	# Re-configure list items for type/attributes tab combo boxes
 	Apol_TE::populate_ta_list 1
@@ -848,7 +854,8 @@ proc Apol_TE::reinitialize_default_search_options { } {
 	set opts(indirect_3)	0
 	set opts(perm_union)	union
 	set opts(perm_select)	selected
-	set Apol_TE::allow_regex		1
+	set Apol_TE::allow_regex	1
+	set Apol_TE::show_enabled_rules	1
 	set Apol_TE::src_list_type_1	1
 	set Apol_TE::src_list_type_2	0
 	set Apol_TE::tgt_list_type_1	1
@@ -1307,7 +1314,8 @@ proc Apol_TE::load_query_options {file_channel parentDlg} {
 	variable permslist
 	variable selObjectsList
 	variable selPermsList
-
+	variable show_enabled_rules
+	
 	set query_options ""
         while {[eof $file_channel] != 1} {
 		gets $file_channel line
@@ -1323,7 +1331,7 @@ proc Apol_TE::load_query_options {file_channel parentDlg} {
 	}
 	# Re-format the query options list into a string where all elements are seperated
 	# by a single space. Then split this string into a list using the space as the delimeter.	
-	set query_options [split [join $query_options " "]]
+	set query_options [split [join $query_options " "] " :"]
 
 	# set search parameter options
         set opts(teallow)	[lindex $query_options 0]
@@ -1349,7 +1357,7 @@ proc Apol_TE::load_query_options {file_channel parentDlg} {
 	set tgt_list_type_1 	[lindex $query_options 20]
 	set tgt_list_type_2 	[lindex $query_options 21]
 	set allow_regex		[lindex $query_options 22]
-
+	
       	if {[lindex $query_options 23] != "\{\}"} {
 		set ta1	[string trim [lindex $query_options 23] "\{\}"]
 	}
@@ -1459,6 +1467,24 @@ proc Apol_TE::load_query_options {file_channel parentDlg} {
 		}
 	}
 	
+	incr i
+        while {$i != [llength $query_options]} {
+        	# This means that there are more saved options to parse. As of apol version 1.3, all newly 
+        	# added options are name:value pairs. This will make this proc more readable and easier to
+        	# extend should we add additional query options in future releases.
+        	switch -exact -- [lindex $query_options $i] {
+        		"show_enabled_rules" { 
+        			incr i
+				set show_enabled_rules [lindex $query_options $i]
+			}
+			default {
+				puts "Error: Unknown query option name encountered ([lindex $query_options $i])."
+				break
+			}
+        	}
+        	incr i
+        }
+        	
 	# Re-configure list items for type/attributes tab combo boxes
 	Apol_TE::populate_ta_list 1
 	Apol_TE::populate_ta_list 2
@@ -1495,6 +1521,7 @@ proc Apol_TE::save_query_options {file_channel query_file} {
         variable objslistbox
     	variable permslistbox
 	variable allow_regex
+	variable show_enabled_rules
 	variable permslist
 	variable src_list_type_1 
 	variable src_list_type_2 	
@@ -1534,8 +1561,9 @@ proc Apol_TE::save_query_options {file_channel query_file} {
 		$ta1 $ta2 $ta3 \
 		$permslist \
 		$selObjectsList \
-		$selPermsList]
-			
+		$selPermsList "show_enabled_rules:$show_enabled_rules"]
+		
+	# As of apol version 1.3, all newly added options are name:value pairs		
 	puts $file_channel "$options"
 	
      	return 0
