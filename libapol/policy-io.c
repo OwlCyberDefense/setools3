@@ -92,6 +92,8 @@ unsigned int validate_policy_options(unsigned int options)
 		opts |= POLOPT_ROLES;
 	if(POLOPT_ROLES & opts)
 		opts |= POLOPT_TYPES;
+	if(POLOPT_INITIAL_SIDS & opts)
+		opts |= (POLOPT_TYPES|POLOPT_ROLES|POLOPT_USERS);
 	
 	return opts;
 }
