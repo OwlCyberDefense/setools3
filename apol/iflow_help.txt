@@ -1,10 +1,10 @@
 AN OVERVIEW OF INFORMATION FLOW ANALYSIS
-apol, version 1.4.1
-October 21, 2004
+apol, version 1.5
+October 29, 2004
 selinux@tresys.com
 
 
-Apol now supports the ability to automate the search for overt
+Apol supports the ability to automate the search for overt
 information flows between two types.  The purpose  of this analysis is
 to identify undesirable or unexpected flows of  information allowed by
 a type enforcement (TE) policy.  For example, imagine that the type
@@ -183,10 +183,10 @@ The default permission maps that are installed with Apol have weights assigned
 for all of the permissions. The weights are in four general categories as 
 follows:
 
-	1 – 2		difficult to exploit covert flows (example: fd:use)
-	3 – 5		less difficult to exploit covert flows (example: process:signal)
-	6 – 7		difficult to use, noisy, or low-bandwidth overt flows (example: file:setattr)
-	8 – 10		high-bandwidth overt flows (example: file:write)
+	1 ï¿½ 2		difficult to exploit covert flows (example: fd:use)
+	3 ï¿½ 5		less difficult to exploit covert flows (example: process:signal)
+	6 ï¿½ 7		difficult to use, noisy, or low-bandwidth overt flows (example: file:setattr)
+	8 ï¿½ 10		high-bandwidth overt flows (example: file:write)
 
 These categories are loosely defined and the placement of the permissions into 
 these categories is subjective. Additional work needs to be done to verify the 

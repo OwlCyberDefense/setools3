@@ -1,10 +1,10 @@
 SELinux Policy Analysis Tool Help File
-apol, version 1.4.1
-October 21, 2004
+apol, version 1.5
+October 29, 2004
 selinux@tresys.com
 
 This file contains basic help information for using apol, version
-1.4.1 This version of apol allows you to:
+1.5 This version of apol allows you to:
 
 	+ examine, search, and relate policy components (types, type 
 	attributes, object classes, object permissions, roles, users,
@@ -17,7 +17,7 @@ This file contains basic help information for using apol, version
 	analyses, direct information flow analysis, and transitive 
 	(indirect) information flow analysis.
 
-New in this version is support for binary policies. This allows you to 
+This version also supports binary policies. This allows you to 
 load either a binary or source policy and use all of the features of 
 Apol as appropriate. Some features are incompatible with binary policies 
 (notably attributes, initial SIDs and the policy.conf display), so those 
