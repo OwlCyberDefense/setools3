@@ -809,7 +809,7 @@ int seaudit_open_log_file(seaudit_t *seaudit, const char *filename)
 	FILE *tmp_file;
 	int rt;
 	GString *msg = NULL;
-	audit_log_t *new_log;
+	audit_log_t *new_log = NULL;
 
 	if (filename == NULL)
 		return -1;
