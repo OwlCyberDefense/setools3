@@ -22,6 +22,8 @@ namespace eval Sepct_Test {
 	variable notebook
 	variable textbox_makeOutput
 	variable textbox_policyConf
+	variable progressDlg
+	set progressDlg .progress
 	# buttons
 	variable b_test
 	variable b_clean
@@ -454,9 +456,14 @@ proc Sepct_Test::test_Policy { which button } {
 	variable tmpfilename
 	variable saveall_choice
    	variable policy_conf_opened
+	variable progressDlg
 	
 	if { ![Sepct::isPolicyOpened] } {
 		return -1
+	}
+	if {[winfo exists $progressDlg]} {
+		# Already in process, so return
+		return	
 	}
 	set canceled [Sepct::checkAndSaveChanges]
 	if {$canceled < 0 } {
@@ -474,10 +481,10 @@ proc Sepct_Test::test_Policy { which button } {
                 	return -1
                 }
                 $button configure -state disabled
-		set progressBar [ ProgressDlg .progress -parent . -title "Making policy..."  \
+		set progressBar [ ProgressDlg $progressDlg -parent $Sepct::mainWindow -title "Making policy..."  \
                 	-textvariable Sepct_Test::progressmsg -variable Sepct_Test::indicator -maximum 6]
-                	
 		set Sepct_Test::indicator 0
+		
 		switch $which {
 			test {
 				# Clear policy.conf text and reset open status to 0 
