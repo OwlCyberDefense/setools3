@@ -81,8 +81,8 @@ namespace eval Sepct {
 	variable srch_Direction		"down"
 	variable saveChanges_Dialog_ans
 	variable tk_msgBox_Wait
-	# Identifies where the help file is located (also checks ."). 
-	variable help_file		"${sepcut_install_dir}sepcut_help.txt"
+	# Identifies where the help file is located. 
+	variable help_file		"${sepcut_install_dir}/sepcut_help.txt"
 	
 	# edit mode (0 read only, 1 edit mode)
 	variable read_only		0
