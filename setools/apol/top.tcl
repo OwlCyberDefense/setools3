@@ -179,6 +179,25 @@ proc ApolTop::configure_edit_pmap_menu_item {enable} {
 	return 0
 }
 
+########################################################################
+# ::strip_list_of_empty_items -- takes a tcl list and checks for empty
+#	list items. If empty list items are found, it will be removed
+#	from the list and a new formatted list will be returned.
+#
+proc ApolTop::strip_list_of_empty_items {list_1} {
+	global tcl_version
+	
+	set len [llength $list_1]
+	set items ""
+	for {set i 0} {$i < $len} {incr i} {
+		if {[lindex $list_1 $i] != ""} {
+			set items [lappend items [lindex $list_1 $i]]	
+		}
+	}
+	
+	return $items
+}
+	
 proc ApolTop::disable_tkListbox { my_list_box } {
         global tk_version
 
