@@ -297,11 +297,14 @@ analyses are:
 		FORWARD: The Forward Domain Transition (FDT) analysis takes a 
 		starting SOURCE domain and presents a tree of all the resulting 
 		TARGET 	domains that can be transitioned into from that starting 
-		domain. The tree can be walked to follow the FDT tree as deep as 
-		you like. The only restriction is that a subtree will not expand 
-		if its parent is the same as the node. Each node in the FDT tree 
-		represents a TARGET domain to which the parent domain can 
-		directly transition.  
+		domain. You can also select object classes, permissions, and 
+		object types to add to the query in order to to find transitions 
+		to domains that have specific privileges or that have access to 
+		a particular object type(s). The tree can be walked to follow the 
+		FDT tree as deep as you like. The only restriction is that a 
+		subtree will not expand if its parent is the same as the node. 
+		Each node in the FDT tree represents a TARGET domain to which the 
+		parent domain can directly transition.  
 	
 		REVERSE: As its name implies, the Reverse Domain Transition (RDT) 
 		analysis is the reverse of the FDT analysis.  The RDT takes a 
