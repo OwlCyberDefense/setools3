@@ -464,10 +464,11 @@ int main (int argc, char **argv)
 	  		open_opts |= POLOPT_ALL;
 	  		break;
 	  	case 'h': /* help */
+	  		printf("\n%s (Ver. %s)\n\n", COPYRIGHT_INFO, SEINFO_VERSION_NUM);
 	  		usage(argv[0], 0);
 	  		exit(0);
 	  	case 'v': /* version */
-	  		printf("\n%s (%s)\n\n", COPYRIGHT_INFO, SEINFO_VERSION_NUM);
+	  		printf("\n%s (Ver. %s)\n\n", COPYRIGHT_INFO, SEINFO_VERSION_NUM);
 	  		exit(0);
 	  	default:
 	  		usage(argv[0], 1);

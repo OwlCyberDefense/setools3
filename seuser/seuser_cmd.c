@@ -305,12 +305,13 @@ int main(int argc, char *argv[])
 		if(argv[1][1] == 'X' ) { 
 			rt = execlp(SEUSER_GUI_PROG, NULL);
 			if(rt == -1) {
-				perror(SEUSER_GUI_PROG);
+				fprintf(stderr, "Cannot execute the seuserx program. You may need to install the setools-gui package.");
 			}
   			exit(1);
   			/* otherwise execlp() won't ever return! */
 		}
 		else if(argv[1][1] == 'h') {
+			fprintf(stdout, "\n%s (Ver. %s)\n\n", COPYRIGHT_INFO, SEUSERCMD_VERSION_STRING);
 			usage(FALSE);
 			exit(0);
 		}
@@ -319,7 +320,7 @@ int main(int argc, char *argv[])
 	}
 	/* command line */
 	if(strcmp("version", argv[1]) == 0) {
-		fprintf(stdout, "\n%s (%s)\n\n", COPYRIGHT_INFO, SEUSERCMD_VERSION_STRING);
+		fprintf(stdout, "\n%s (Ver. %s)\n\n", COPYRIGHT_INFO, SEUSERCMD_VERSION_STRING);
 		exit(0);
 	}
 
