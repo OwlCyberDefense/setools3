@@ -667,13 +667,12 @@ int seuser_copy_user(const char *name, user_item_t **uitem, user_db_t *db)
 #define	CONF_ERR_SUCCESS	"Success"
 #define CONF_ERR_FIND_CONFIG	"Could not find seuser config file\n"
 #define CONF_ERR_OPEN_CONFIG	"Could not open seuser config file\n"
-#define CONF_ERR_FIND_POLICY	"Could not find policy.config file\n"
-#define CONF_ERR_OPEN_POLICY	"Could not open policy.config file\n"
-#define CONF_ERR_OPEN_DIR	"Could not find policy directory\n"
+#define CONF_ERR_FIND_POLICY	"Could not find policy.conf file parameter in seuser config file\n"
+#define CONF_ERR_OPEN_POLICY	"Could not open policy.conf file\n"
+#define CONF_ERR_OPEN_DIR	"Could not find policy directory parameter in seuser config file\n"
 #define CONF_ERR_ACCESS_DIR	"Could not access policy directory\n"
-#define CONF_ERR_OPEN_FCONTEXT	"Could not access file_contexts directory\n"
-#define CONF_ERR_FIND_FCONTEXT	"Could not find file_contexts directory\n"
-#define CONF_ERR_FIND_USER	"Could not find user file\n"
+#define CONF_ERR_FIND_FCONTEXT	"Could not find file_contexts parameter in seuser config file.\n"
+#define CONF_ERR_FIND_USER	"Could not find user file parameter in seuser config file\n"
 #define CONF_ERR_ERROR		"Error reading conf file\n"
 /* returns an error string based on a return error from seuser_read_conf_info() */
 const char* seuser_decode_read_conf_err(int err)
@@ -697,8 +696,6 @@ const char* seuser_decode_read_conf_err(int err)
 		return CONF_ERR_FIND_USER;
 	case 8:
 		return CONF_ERR_FIND_FCONTEXT;
-	case 9:
-		return CONF_ERR_OPEN_FCONTEXT;
 	default:
 		return CONF_ERR_ERROR;
 	}
@@ -719,7 +716,7 @@ const char* seuser_decode_read_conf_err(int err)
  */
 int seuser_read_conf_info(user_db_t *db)
 {
-	char *full_config = NULL;
+	char *full_config = NULL, *dir_tmp = NULL;
 	FILE *fp;
 	int rt;
 	
@@ -800,13 +797,7 @@ int seuser_read_conf_info(user_db_t *db)
 		init_conf_info(db);
 		return 8;
      	}
-	rt = access(db->file_contexts_file, R_OK);
-	if(rt != 0) {
-		fclose(fp);
-		free_conf_info(db);
-		init_conf_info(db);
-		return 9;
-     	}  
+     	/* file_contexts file may not exist which is ok, so we won't check read access. */  
      	
 	db->conf_init = TRUE; 
 	fclose(fp);
