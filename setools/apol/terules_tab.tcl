@@ -307,10 +307,14 @@ proc Apol_TE::insertTERules { tb results } {
 		set rule [lindex $results $x]
 		incr x
 		set lineno [lindex $results $x]
-		$tb insert end "($lineno"
-		# NOTE: The character at index2 isn't tagged, so must add 1 to index2 argument.
-		Apol_PolicyConf::insertHyperLink $tb $line_num.1 $line_num.end
-		$tb insert end ") "
+		
+		# Only display line number hyperlink if this is not a binary policy.
+		if {$ApolTop::policy_type != $ApolTop::binary_policy_type} {
+			$tb insert end "($lineno"
+			# NOTE: The character at index2 isn't tagged, so must add 1 to index2 argument.
+			Apol_PolicyConf::insertHyperLink $tb $line_num.1 $line_num.end
+			$tb insert end ") "
+		}
 		set cur_line_pos [$tb index insert]
 		$tb insert end "$rule"
 		incr x
