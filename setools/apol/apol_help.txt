@@ -35,18 +35,19 @@ file can be successfully parsed using checkpolicy -d.  Only one
 policy.conf file can be open at a time, so if you open another file, 
 the current one will be closed.
 
-The Analysis menu allows the user to save and/or load a query for an 
-analysis module listed on the Analysis tab. Saving an analysis query 
-involves saving the required query parameters as well as any specified
-filter settings to a file. Analysis query files are saved with a '.qf' 
-extension. Loading an analysis query involves parsing the specified 
-query file, selecting the specified analysis module and configuring 
-the query options for the analysis module with the specified query 
-parameters and filter settings. Currently, the save/load analysis 
-query items are only enabled when the Analysis tab is raised. The 
-Analysis menu also allows the user to display statistics about the 
-currently loaded policy. A shorthand version of these statistics is 
-always displayed on the status bar when a policy file is opened.
+The Query menu allows the user to save and/or load a query for a TE Rules
+search or for an analysis module listed on the Analysis tab. Saving a 
+query involves saving the required query parameters, as well as any 
+specified filter settings to a file. Query files are saved with a '.qf' 
+extension. Loading a query involves parsing the specified query file, 
+raising the correct notebook tab in apol and configuring the query options 
+with the specified query parameters and filter settings. Currently, the 
+save query menu item is only enabled when the ANALYSIS TAB or the 
+TE RULES TAB (see POLICY RULES TAB below) is raised. However, the load 
+query menu item is enabled across all tabs. The Analysis menu also allows 
+the user to display statistics about the currently loaded policy. A 
+shorthand version of these statistics is always displayed on the status 
+bar when a policy file is opened.
 
 The Advanced menu currently allows you to directly manage permission 
 mappings for apol's direct and transitive information flow analyses, 
