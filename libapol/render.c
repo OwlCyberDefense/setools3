@@ -141,10 +141,16 @@ char *re_render_av_rule(bool_t 	addlineno, 	/* add policy.conf line  */
 		}
 	
 	for(tptr = rule->src_types; tptr != NULL; tptr = tptr->next) {
-		if(tptr->type == IDX_TYPE) 
-			sprintf(tbuf, " %s", policy->types[tptr->idx].name);
-		else if(tptr->type == IDX_ATTRIB) 
-			sprintf(tbuf, " %s", policy->attribs[tptr->idx].name);
+		if ((tptr->type & IDX_TYPE))
+			if ((tptr->type & IDX_SUBTRACT))
+				sprintf(tbuf, " -%s", policy->types[tptr->idx].name);
+			else
+				sprintf(tbuf, " %s", policy->types[tptr->idx].name);
+		else if ((tptr->type & IDX_ATTRIB))
+			if ((tptr->type & IDX_SUBTRACT))
+				sprintf(tbuf, " -%s", policy->attribs[tptr->idx].name);
+			else
+				sprintf(tbuf, " %s", policy->attribs[tptr->idx].name);
 		else {
 			free(buf);
 			return NULL;
@@ -190,10 +196,16 @@ char *re_render_av_rule(bool_t 	addlineno, 	/* add policy.conf line  */
 		}
 				
 	for(tptr = rule->tgt_types; tptr != NULL; tptr = tptr->next) {
-		if(tptr->type == IDX_TYPE) 
-			sprintf(tbuf, " %s", policy->types[tptr->idx].name);
-		else if(tptr->type == IDX_ATTRIB) 
-			sprintf(tbuf, " %s", policy->attribs[tptr->idx].name);
+		if ((tptr->type & IDX_TYPE))
+			if ((tptr->type & IDX_SUBTRACT))
+				sprintf(tbuf, " -%s", policy->types[tptr->idx].name);
+			else
+				sprintf(tbuf, " %s", policy->types[tptr->idx].name);
+		else if ((tptr->type & IDX_ATTRIB))
+			if ((tptr->type & IDX_SUBTRACT))
+				sprintf(tbuf, " -%s", policy->attribs[tptr->idx].name);
+			else
+				sprintf(tbuf, " %s", policy->attribs[tptr->idx].name);
 		else {
 			free(buf);
 			return NULL;
