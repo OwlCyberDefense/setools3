@@ -1761,9 +1761,7 @@ proc ApolTop::closePolicy {} {
 	$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
 	$ApolTop::mainframe setmenustate Disable_LoadQuery_Tag disabled
 	$ApolTop::mainframe setmenustate Disable_Summary disabled
-	# We make sure tabs that were disabled are re-enabled
-	$ApolTop::components_nb itemconfigure $ApolTop::initial_sids_tab -state normal
-	$ApolTop::notebook itemconfigure $ApolTop::policy_conf_tab -state normal
+	ApolTop::enable_non_binary_tabs
 	ApolTop::enable_disable_conditional_widgets 1
 	
 	return 0
@@ -1825,7 +1823,8 @@ proc ApolTop::enable_disable_conditional_widgets {enable} {
 				if {$enable} {
 					$ApolTop::components_nb raise $ApolTop::cond_bools_tab
 				} else {
-					$ApolTop::components_nb raise [$ApolTop::components_nb pages 0]
+					set name [ApolTop::get_tabname [$ApolTop::components_nb pages 0]]
+					$ApolTop::components_nb raise $name
 				}
 			}				
 		} \
@@ -1834,7 +1833,8 @@ proc ApolTop::enable_disable_conditional_widgets {enable} {
 				if {$enable} {
 					$ApolTop::rules_nb raise $ApolTop::cond_rules_tab
 				} else {
-					$ApolTop::rules_nb raise [$ApolTop::rules_nb pages 0]
+					set name [ApolTop::get_tabname [$ApolTop::rules_nb pages 0]]
+					$ApolTop::rules_nb raise $name
 				}
 			}
 		} \
@@ -1853,6 +1853,22 @@ proc ApolTop::enable_disable_conditional_widgets {enable} {
 	return 0
 }
 
+proc ApolTop::enable_non_binary_tabs {} {
+	# We make sure tabs that were disabled are re-enabled
+	$ApolTop::components_nb itemconfigure $ApolTop::initial_sids_tab -state normal
+	$ApolTop::notebook itemconfigure $ApolTop::policy_conf_tab -state normal
+}
+
+proc ApolTop::disable_non_binary_tabs {} {
+   	if {[ApolTop::get_tabname [$ApolTop::notebook raise]] == $ApolTop::policy_conf_tab} {
+		set name [ApolTop::get_tabname [$ApolTop::notebook pages 0]]
+		$ApolTop::notebook raise $name
+	} 
+	$ApolTop::components_nb itemconfigure $ApolTop::initial_sids_tab -state disabled
+   	$ApolTop::notebook itemconfigure $ApolTop::policy_conf_tab -state disabled
+	return 0
+}
+
 proc ApolTop::set_initial_open_policy_state {} {
 	set rt [catch {set version_num [apol_GetPolicyVersionNumber]} err]
 	if {$rt != 0} {
@@ -1864,8 +1880,7 @@ proc ApolTop::set_initial_open_policy_state {} {
 	} 
 	
 	if {$ApolTop::policy_type == $ApolTop::binary_policy_type} {
-   		$ApolTop::components_nb itemconfigure $ApolTop::initial_sids_tab -state disabled
-   		$ApolTop::notebook itemconfigure $ApolTop::policy_conf_tab -state disabled
+   		ApolTop::disable_non_binary_tabs
    	}   	
    	
 	ApolTop::set_Focus_to_Text [$ApolTop::notebook raise]  
