@@ -890,7 +890,8 @@ static void txt_view_raise_policy_tab_goto_line(unsigned long line, int whichvie
 	GtkTextIter iter,end_iter;
 	GtkTextView *text_view = NULL;
 	GtkTextTagTable *table = NULL;
-	GtkTextTag *highlight_tag;
+	GtkLabel *lbl;
+	GString *string = g_string_new("");
 
 	main_notebook = GTK_NOTEBOOK(glade_xml_get_widget(sediff_app->window_xml, "main_notebook"));
 	g_assert(main_notebook);
@@ -914,19 +915,6 @@ static void txt_view_raise_policy_tab_goto_line(unsigned long line, int whichvie
 	g_assert(buffer);
 
 	table = gtk_text_buffer_get_tag_table(buffer);
-	highlight_tag = gtk_text_tag_table_lookup(table, "highlight-tag");
-	if(!highlight_tag) {
-		highlight_tag = gtk_text_buffer_create_tag (buffer, "highlight-tag",
-							 "family", "monospace",
-							 "style", PANGO_STYLE_ITALIC,
-							 "weight", PANGO_WEIGHT_BOLD, 
-							 NULL); 
-	}
-
-       	/* set everything back to mono font */
-	gtk_text_buffer_get_start_iter(buffer, &iter);
-	gtk_text_buffer_get_end_iter(buffer,&end_iter);
-	gtk_text_buffer_remove_tag(buffer,highlight_tag,&iter,&end_iter);
 
 	gtk_text_buffer_get_start_iter(buffer, &iter);
 	gtk_text_iter_set_line(&iter, line);
@@ -935,15 +923,21 @@ static void txt_view_raise_policy_tab_goto_line(unsigned long line, int whichvie
 	while (!gtk_text_iter_ends_line(&end_iter))	
 		gtk_text_iter_forward_char(&end_iter);
 
-	
 	gtk_text_view_scroll_to_iter(text_view, &iter, 0.0, TRUE, 0.0, 0.5);
 
 	gtk_text_view_set_cursor_visible(text_view, TRUE);
-//	gtk_text_iter_backward_line(&iter);
 	gtk_text_buffer_place_cursor(buffer, &iter);
-//	gtk_text_buffer_apply_tag(buffer,highlight_tag,&iter,&end_iter);
 	gtk_text_buffer_select_range(buffer,&iter,&end_iter);
 
+	gtk_container_set_focus_child(GTK_CONTAINER(tab_notebook),
+					 GTK_WIDGET(text_view));
+
+	g_string_printf(string,"Line: %d",gtk_text_iter_get_line(&iter)+1);
+	lbl = (GtkLabel*)glade_xml_get_widget(sediff_app->window_xml, "line_label");
+	gtk_label_set_text(lbl, string->str);
+
+	
+	g_string_free(string,TRUE);
 
 
 	return;
@@ -2693,14 +2687,54 @@ void sediff_open_dialog_on_p1browse_button_clicked(GtkButton *button, gpointer u
 	
 	entry = (GtkEntry *)glade_xml_get_widget(sediff_app->open_dlg_xml, "sediff_dialog_p1_entry");
 	entry2 = (GtkEntry *)glade_xml_get_widget(sediff_app->open_dlg_xml, "sediff_dialog_p2_entry");
+
 	g_assert(entry);
-	if ((g_ascii_strcasecmp(gtk_entry_get_text(entry),"") == 0) && gtk_entry_get_text(entry2) != NULL)
+
+	if ((g_ascii_strcasecmp(gtk_entry_get_text(entry),"") == 0) && (g_ascii_strcasecmp(gtk_entry_get_text(entry2),"") != 0))
 		filename = get_filename_from_user("Open Policy", gtk_entry_get_text(entry2));
 	else
 		filename = get_filename_from_user("Open Policy", gtk_entry_get_text(entry));
 	if (filename){
 		gtk_entry_set_text(entry,filename->str);
 	}
+}
+
+/*
+gboolean on_sediff_main_text_focus(GtkWidget *widget,
+				   GtkDirectionType arg1,
+				   gpointer user_data)
+{
+
+
+	return FALSE;
+}
+*/
+
+void on_sediff_main_p1_text_move_cursor(GtkTextView *widget,
+				       GtkMovementStep step,
+				       gint count,
+				       gboolean extend_selection,
+				       gpointer user_data)
+{
+	GtkTextMark *mark = NULL;
+	GtkTextBuffer *txt = NULL;
+	GtkTextIter iter;
+	GString *string = g_string_new("");
+	GtkLabel *lbl;
+
+	txt = gtk_text_view_get_buffer(widget);
+
+	assert(txt);
+	mark = gtk_text_buffer_get_insert(txt);
+	if (mark != NULL) {
+		gtk_text_buffer_get_iter_at_mark(txt,&iter,mark);
+		g_string_printf(string,"Line: %d",gtk_text_iter_get_line(&iter)+1);
+		lbl = (GtkLabel*)glade_xml_get_widget(sediff_app->window_xml, "line_label");
+	
+		gtk_label_set_text(lbl, string->str);
+
+	}
+	g_string_free(string,TRUE);
 }
 
 void sediff_open_dialog_on_p2browse_button_clicked(GtkButton *button, gpointer user_data)
@@ -2713,7 +2747,7 @@ void sediff_open_dialog_on_p2browse_button_clicked(GtkButton *button, gpointer u
 	entry1 = (GtkEntry*)glade_xml_get_widget(sediff_app->open_dlg_xml, "sediff_dialog_p1_entry");
 
 	g_assert(entry);
-	if ((g_ascii_strcasecmp(gtk_entry_get_text(entry),"") == 0) && gtk_entry_get_text(entry1) != NULL)
+	if ((g_ascii_strcasecmp(gtk_entry_get_text(entry),"") == 0) && (g_ascii_strcasecmp(gtk_entry_get_text(entry1),"") != 0))
 		filename = get_filename_from_user("Open Policy", gtk_entry_get_text(entry1));
 	else
 		filename = get_filename_from_user("Open Policy", gtk_entry_get_text(entry));
@@ -3070,8 +3104,6 @@ int main(int argc, char **argv)
 	GString *path; 
 	filename_data_t filenames;
 	bool_t havefiles = FALSE;
-
-
 	
 	filenames.p1_file = filenames.p2_file = NULL;
 
