@@ -515,7 +515,7 @@ proc Apol_TE::insertTERules { tb results } {
 		set is_conditional [lindex $results $x]
 		incr x
 		set enabled [lindex $results $x]
-				
+
 		# Only display line number hyperlink if this is not a binary policy.
 		if {![ApolTop::is_binary_policy]} {
 			$tb insert end "($lineno"
@@ -527,16 +527,17 @@ proc Apol_TE::insertTERules { tb results } {
 		$tb insert end "$rule"
 		set cur_line_pos [$tb index insert]
 		$tb insert end " "
-	
+		set end_line_pos [$tb index insert]
+		
 		# The next element should be the conditional and enabled boolean flags.
-		if {$is_conditional} {
+		if {$is_conditional >= 0} {
 			incr num_cond
 			if {!$enabled} {
 				incr num_disabled
-				$tb tag add $Apol_TE::disabled_rule_tag $cur_line_pos $line_num.end
+				$tb tag add $Apol_TE::disabled_rule_tag $cur_line_pos $end_line_pos
 			} else {
 				incr num_enabled
-				$tb tag add $Apol_TE::enabled_rule_tag $cur_line_pos $line_num.end
+				$tb tag add $Apol_TE::enabled_rule_tag $cur_line_pos $end_line_pos
 			}
 		}
 		$tb insert end "\n"
