@@ -1,6 +1,6 @@
 AN OVERVIEW OF DOMAIN TRANSITION ANALYSIS
 apol, version 1.2
-January 06, 2004
+January 12, 2004
 selinux@tresys.com
 
 A key feature of Type Enforcement (TE) security is the ability to 
@@ -77,7 +77,7 @@ point type).
    access to the file entrypoint type (passwd_exec_t).
 
 
-3. There must be a rule that allows the TARGET domain type 'execute' 
+3. There must be a rule that allows the TARGET domain type 'entrypoint' 
    access to the FILE ENTRYPOINT type for file objects.  As an example, 
    the rule:
    
