@@ -54,7 +54,6 @@ namespace eval Apol_Perms_Map {
 	variable warning_return_val	"-2"
 	variable saveChanges_Dialog_ans ""
 	variable selected_class_idx	"-1"
-	# Permission map filenames for selinux policy version 12 and 15
 	variable perm_map_id		"apol_perm_mapping_ver"
 	variable perm_map_dflt		"apol_perm_mapping"
 	# Tag variable 
