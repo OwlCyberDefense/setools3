@@ -1215,7 +1215,7 @@ void seaudit_on_create_standard_report_activate()
 	if (!seaudit_app->report_window) {
 		seaudit_app->report_window = report_window_create(seaudit_app->window,
 						&seaudit_app->seaudit_conf, 
-						"Create Standard Report");
+						"Create Report");
 		if (!seaudit_app->report_window) {
 			fprintf(stderr, "Error: Out of memory!");
 			return;
