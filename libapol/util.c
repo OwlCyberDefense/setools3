@@ -28,22 +28,68 @@ bool_t getbool(const char *str)
 		return TRUE;
 }
 
-/* replace \n with \0 or otherwise ensure str ends with \0 */
-void fix_string(char *str, int sz)
-{
-	int i;
-	for(i = 0; i < sz; i++) {
-		if(str[i] == '\0')
-			return;
-		else if(str[i] == '\n') {
-			str[i] = '\0';
-			return;
-		}
-	}
-	str[sz-1] = '\0';
-	return;	
+/* trim trailing and leading whitespace */
+int trim_string(char **str)
+{	
+	assert(str && *str != NULL);
+	if (trim_leading_whitespace(str) != 0)
+		return -1;
+	trim_trailing_whitespace(str);
+	return 0;	
 }
 
+/* Checks for leading whitespace and if whitespace is found, it will replace
+ * the string to exclude leading whitespace chars. */
+int trim_leading_whitespace(char **str)
+{
+	int length, idx = 0, i;
+	char *tmp = NULL;
+		
+	assert(str && *str != NULL);
+	/* Get the length of the original string */
+	length = strlen(*str);
+	/* Create a duplicate of the original string */
+	if ((tmp = strdup(*str)) == NULL) {
+		fprintf(stderr, "Out of memory.\n");
+		return -1;
+	}
+	/* Get index of first non-whitespace char in the duplicate string. */
+	while (idx < length && isspace(tmp[idx]))
+		idx++;
+				
+	/* Replace the string if leading whitespace found. */
+	if (idx && idx != length) {
+		/* Starting from the index of the first non-whitespace char 
+		 * in our tmp string, replace the original string starting 
+		 * from its' first index. The end result will be that
+		 * we have changed the original string so that it does
+		 * not contain any leading whitespace. */
+		for (i = 0; idx < length; i++) {	
+			(*str)[i] = tmp[idx];
+			idx++;
+		}
+		assert(i <= length);
+		(*str)[i] = '\0';
+		free(tmp);
+	}
+	/* else, no leading whitespace found */
+	return 0;	
+}
+
+/* replace trailing whitespace chars with \0 */
+void trim_trailing_whitespace(char **str)
+{
+	int length;
+	
+	assert(str && *str != NULL);
+	length = strlen(*str);
+	/* Trim any trailing whitespace. */
+	while (length > 0 && isspace((*str)[length - 1])){
+		(*str)[length - 1] = '\0';
+		length -=1;
+	}
+}
+			
 /****************************************
  * generic linked list functions
  *
@@ -595,12 +641,16 @@ char* find_user_config_file(const char *file_name)
 char *get_config_var(const char *var, FILE *fp)
 {
 	char line[LINE_SZ], t1[LINE_SZ], t2[LINE_SZ], *result = NULL;
-		
+	char *line_ptr = NULL;
+			
 	if(var == NULL)
 		return NULL;
 		
 	rewind(fp);
 	while(fgets(line, LINE_SZ, fp) != NULL) {
+		line_ptr = &line[0];
+		if (trim_string(&line_ptr) != 0)
+			return NULL;
 		if(line[0] == '#' || sscanf(line, "%s %s", t1, t2) != 2 || strcasecmp(var, t1) != 0) {
 			continue;
 		}
