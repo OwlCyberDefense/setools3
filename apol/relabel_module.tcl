@@ -49,32 +49,139 @@ proc Apol_Analysis_relabel::get_analysis_info {} {
 # is raised due to the most recent call
 # [set_display_to_results_state].
 proc Apol_Analysis_relabel::get_results_raised_tab {} {
-    variable most_recent_results
-    return $most_recent_results
+    variable most_recent_results_pw
+    return $most_recent_results_pw
 }
 
 # The GUI will call Apol_Analysis_relabel::do_analysis when the
 # module is to perform its analysis.  The module should know how to
 # get its own option information.  The options are displayed via
 # Apol_Analysis_relabel::display_mod_options.
-proc Apol_Analysis_relabel::do_analysis {results_frame} {  
-    tk_messageBox -icon error -type ok -title "File Relabeling Error" \
-        -message "Not done yet."
-    return -code error
-}
+proc Apol_Analysis_relabel::do_analysis {results_frame} {
+    # collate user options into a single relabel analysis query    
+    variable widget_vars
+    variable most_recent_results
 
+    # convert the object permissions list into Tcl lists
+    set objs_list ""
+    if $widget_vars(enable_filter_ch) {
+        foreach objs $widget_vars(objs_list) {
+            foreach {obj class} [split $objs ':'] {}
+            lappend objs_list [list $obj $class]
+        }
+    }
+    if [catch {apol_RelabelAnalysis $widget_vars(start_type) $widget_vars(mode) $objs_list} results] {
+        tk_messageBox -icon error -type ok \
+            -title "Relabel Analysis Error" -message $results
+        return -code error
+    }
+    set most_recent_results $results
+
+    # create widgets to display results
+    variable most_recent_results_pw
+    catch {destroy $results_frame.pw}
+    set pw [PanedWindow $results_frame.pw -side top]
+    set most_recent_results_pw $pw
+    set lf [$pw add]
+    set dtf [TitleFrame $lf.dtf]
+    switch -- $widget_vars(mode) {
+        to     {set text "Domains relabeling to $widget_vars(start_type)"}
+        from   {set text "Domains relabeling from $widget_vars(start_type)"}
+        domain {set text "Domain relabeling for $widget_vars(start_type)"}
+    }
+    $dtf configure -text $text
+    set dsw [ScrolledWindow [$dtf getframe].dsw -auto horizontal]
+    set dtree [Tree [$dsw getframe].dtree -relief flat -width 15 \
+                   -borderwidth 0  -highlightthickness 0 -redraw 1 \
+                   -bg white -showlines 1 -padx 0 \
+                  ]
+    $dsw setwidget $dtree
+    set widget_vars(current_dtree) $dtree
+    pack $dsw -expand 1 -fill both
+
+    set widget_vars(show) {0 t}
+    set doptsf [frame $lf.doptsf]
+    set show0_rb [radiobutton $doptsf.show0_rb -value {0 t} \
+                      -variable Apol_Analysis_relabel::widget_vars(show) \
+                      -command [namespace code set_show_type]]
+    set show1_rb [radiobutton $doptsf.show1_rb \
+                      -variable Apol_Analysis_relabel::widget_vars(show) \
+                      -command [namespace code set_show_type]]
+    pack $show0_rb $show1_rb -anchor w
+    switch $widget_vars(mode) {
+        to -
+        from   {
+            $show0_rb configure -text "show types"
+            $show1_rb configure -text "show rules" -value {1 r}
+        }
+        domain {
+            $show0_rb configure -text "show from domains"
+            $show1_rb configure -text "show to domains" -value {1 t}
+            set show2_rb [radiobutton $doptsf.show2_rb -value {2 r} \
+                              -variable Apol_Analysis_relabel::widget_vars(show) \
+                              -command [namespace code set_show_type] \
+                              -text "show rules"]
+            pack $show2_rb -anchor w
+        }
+    }
+    pack $doptsf -expand 0 -fill none -side right
+    pack $dtf -expand 1 -fill both -side left
+
+    set rf [$pw add]
+    set rtf [TitleFrame $rf.rtf -text "File Relabeling Results"]
+    set rsw [ScrolledWindow [$rtf getframe].rsw -auto horizontal]
+    set rtext [text $rsw.rtext -wrap none -bg white -font $ApolTop::text_font]
+    $rsw setwidget $rtext
+    Apol_PolicyConf::configure_HyperLinks $rtext
+    set widget_vars(current_rtext) $rtext
+    pack $rsw -expand 1 -fill both
+    pack $rtf -expand 1 -fill both
+    
+    pack $pw -expand 1 -fill both
+
+#    puts "results is $results"
+    # now fill the domain tree with results info
+    if {$results == ""} {
+        $dtree configure -state disabled
+        $show0_rb configure -state disabled
+        $show1_rb configure -state disabled
+        set text "$widget_vars(start_type) does not "
+        switch -- $widget_vars(mode) {
+            to     {append text "relabel to anything."}
+            from   {append text "relabel from anything."}
+            domain {
+                append text "relabel to or from any domains."
+                $show2_rb configure -state disabled
+            }
+        }
+        $rtext insert end $text
+    } else {
+        $rtext insert end "This tab provides the results of a file relabeling analysis."
+        foreach result_elem $results {
+            set domain [lindex $result_elem 0]
+            $dtree insert end root $domain -text $domain -open 1 \
+                -drawcross auto -data [lrange $result_elem 1 end]
+        }
+        $dtree configure -selectcommand [namespace code tree_select]
+    }
+    $rtext configure -state disabled
+}
 
 # Apol_Analysis_relabel::close must exist; it is called when a
 # policy is closed.  Typically you should reset any context or option
 # variables you have.
 proc Apol_Analysis_relabel::close { } {
     populate_lists 0
+    # flush the relabel sets cache
+    apol_RelabelFlushSets
 }
 
 # Apol_Analysis_relabel::open must exist; it is called when a
 # policy is opened.
 proc Apol_Analysis_relabel::open { } {
     populate_lists 1
+    # flush the relabel sets cache
+    apol_RelabelFlushSets
 }
 
 # Called whenever a user loads a query file.  Clear away the old
@@ -95,6 +202,8 @@ proc Apol_Analysis_relabel::save_query_options {module_name file_channel file_na
 # Captures the current set of options, which is then later restored by
 # [set_display_to_results_tab].
 proc Apol_Analysis_relabel::get_current_results_state { } {
+    variable widget_vars
+    return [array get widget_vars]
 }
 
 # Apol_Analysis_relabel::set_display_to_results_state is called to
@@ -102,6 +211,11 @@ proc Apol_Analysis_relabel::get_current_results_state { } {
 # GUI switches back to an existing analysis.  options is a list that
 # we created in a previous get_current_results_state() call.
 proc Apol_Analysis_relabel::set_display_to_results_state { query_options } {
+    variable widget_vars
+    array set widget_vars $query_options
+    toggle_attributes
+    toggle_permissions
+    set_show_type
 }
 
 # Apol_Analysis_relabel::free_results_data is called to handle any
@@ -270,18 +384,16 @@ proc Apol_Analysis_relabel::toggle_attributes {} {
 
 # Called whenever the user enters an attribute name (either by typing
 # it or selecting from a list).  Modify the list of available types if
-# the attribute is legal
+# the attribute is legal.
 proc Apol_Analysis_relabel::set_types_list {start_attrib} {
     variable widgets
     variable widget_vars
     if {$start_attrib == ""} {
         set start_attrib $widget_vars(start_attrib)
     }
-
     if [catch {apol_GetAttribTypesList $start_attrib} types_list] {
         set types_list ""
     }
-    $widgets(start_cb) configure -values [lsort -uniq $types_list]
     # check if the starting type is within the list of legal types; if
     # not then remove the entry.
     if {[lsearch $types_list $widget_vars(start_type)] == -1} {
@@ -289,7 +401,6 @@ proc Apol_Analysis_relabel::set_types_list {start_attrib} {
     }
     return 1
 }
-
 
 # Called whenever the user selects/deselects the 'Filter using
 # permissions' checkbox.
@@ -333,12 +444,7 @@ proc Apol_Analysis_relabel::set_perms_list {obj_name} {
             foreach {name id} $perm {}
             lappend permissions $name
         }
-        set widget_vars(perm_list) [lsort -uniq \
-                                        [concat [lindex $perm_list 0] \
-                                             [lindex $perm_list 2]]]
-        set widget_vars(perm_list) [concat {{<any permission> -1}} \
-                                        $widget_vars(perm_list)]
-        set permissions [concat {{<any permission>}} [lsort -uniq $permissions]]
+        set permissions [concat {{*}} [lsort -uniq $permissions]]
         $widgets(perms_cb) configure -state normal -values $permissions
         $widgets(perms_l) configure -state normal
         set widget_vars(perms) {}
@@ -362,8 +468,7 @@ proc Apol_Analysis_relabel::select_perms {perm_name} {
     }
     if {[$widgets(perms_cb) cget -state] == "normal" && \
             $perm_name != "" && \
-            [info exists widget_vars(perm_list)] && \
-            [lsearch $widget_vars(perm_list) "$perm_name *"] >= 0} {
+            [lsearch [$widgets(perms_cb) cget -values] $perm_name] >= 0} {
                 $widgets(opts_bb) itemconfigure 0 -state normal
     } else {
         # otherwise disable the 'Add' button
@@ -446,4 +551,51 @@ proc Apol_Analysis_relabel::populate_lists {add_items} {
         set widget_vars(start_type) {}
         set widget_vars(start_attrib) {}
     }
+}
+
+# Update the File Relabeling Results display with whatever the user
+# selected
+proc Apol_Analysis_relabel::tree_select {widget node} {
+    variable widget_vars
+    if {$node == ""} {
+        return
+    }
+    foreach {index type} $widget_vars(show) {}
+    set data [lindex [$widget itemcget $node -data] $index]
+    $widget_vars(current_rtext) configure -state normal
+    $widget_vars(current_rtext) delete 1.0 end
+    if {$type == "t"} {
+        foreach datum $data {
+            $widget_vars(current_rtext) insert end "$datum\n"
+        }
+    } else {
+        set policy_tags_list ""
+        set line ""
+        foreach datum $data {
+            foreach {rule rule_num} $datum {}
+            set start_index [expr {[string length $line] + 1}]
+            append line "($rule_num"
+            set end_index [string length $line]
+            append line ") $rule\n"
+            lappend policy_tags_list $start_index $end_index
+        }
+        $widget_vars(current_rtext) insert end $line
+        foreach {start_index end_index} $policy_tags_list {
+            Apol_PolicyConf::insertHyperLink $widget_vars(current_rtext) \
+                "1.0 + $start_index c" "1.0 + $end_index c"
+        }
+    }
+    $widget_vars(current_rtext) configure -state disabled    
+}
+
+# Change the File Relabeling Results to the radiobutton selected
+proc Apol_Analysis_relabel::set_show_type {} {
+    variable widget_vars
+    # auto select the first node if nothing has yet been selected
+    if {[$widget_vars(current_dtree) selection get] == ""} {
+        set first_node [$widget_vars(current_dtree) nodes root 0]
+        $widget_vars(current_dtree) selection set $first_node
+    }
+    tree_select $widget_vars(current_dtree) \
+        [$widget_vars(current_dtree) selection get]
 }
