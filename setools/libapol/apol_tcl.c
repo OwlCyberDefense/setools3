@@ -6426,7 +6426,7 @@ int Apol_RelabelAnalysis (ClientData clientData, Tcl_Interp *interp,
 	}
 
         /* Get the results of our query */
-        if (ap_relabel_query (start_type, mode, direction, &results, policy)) {
+        if (ap_relabel_query (start_type, mode, direction, NULL, 0, NULL, 0, &results, policy)) {
                 free(filter_types);
                 ap_relabel_result_destroy (&results);
                 Tcl_SetResult (interp, "Error doing analysis", TCL_STATIC);
