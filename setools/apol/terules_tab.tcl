@@ -461,13 +461,19 @@ proc ApolTE::resetObjsPerms_Selections { selObjectsList selPermsList } {
 	variable objslistbox
     	variable permslistbox
 	
-	# Clear the selections in the listboxes.
-	$objslistbox selection clear 0 end
-	$permslistbox selection clear 0 end
 	# Now get the number of elements in each listbox 
 	set objectsCount [$objslistbox index end]
 	set permsCount 	 [$permslistbox index end]
+	# Clear the selections in the listboxes.
+	$objslistbox selection clear 0 end
+	$permslistbox selection clear 0 end
 	
+	if {$selObjectsList != ""} {
+		$permslistbox configure -bg white
+	} else { 
+		$permslistbox configure -bg $ApolTop::default_bg_color
+	}
+		
 	# This loop goes through each element in the objects listbox and sets the selection 
 	# for any items that match an item from the selObjectsList.
     	for { set idx 0 } { $idx != $objectsCount} { incr idx } {	
