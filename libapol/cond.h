@@ -29,6 +29,7 @@
 typedef struct cond_bool {
 	char	*name;
 	bool_t	val;
+	bool_t  policy_val; /* the value from the policy */
 } cond_bool_t;
 
 
@@ -64,7 +65,10 @@ typedef struct cond_expr_item {
 
 /* prototypes */
 int cond_free_bool(cond_bool_t *b);
+int cond_free_expr(cond_expr_t *expr);
+int cond_free_rules_list(cond_rule_list_t *rl);
 int cond_free_expr_item(cond_expr_item_t *c);
 int cond_evaluate_expr(cond_expr_t *expr, struct policy *policy);
+bool_t cond_exprs_equal(cond_expr_t *a, cond_expr_t *b);
 
 #endif
