@@ -561,10 +561,9 @@ int main(int argc, char *argv[])
 		break;
 	}
 	case LABEL: 
-		/* We should only relabel after the policy has reloaded successfully. */
 		rt = seuser_label_home_dir(user, &db, policy, tmpmakeout);
 		if (rt != 0) {
-			fprintf(stderr, "Error relabeling users home directory files: %s", seuser_decode_labeling_err(rt));
+			fprintf(stderr, "%s\n", seuser_decode_labeling_err(rt));
 			break;
 		}
 		load = FALSE;
