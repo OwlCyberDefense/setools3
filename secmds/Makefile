@@ -56,13 +56,13 @@ searchcon.o: searchcon.c
 	$(CC) -c searchcon.c $(CFLAGS) $(INCLUDE)
 
 searchcon: searchcon.o $(LIBSEFS) $(LIBAPOL)
-	$(CC) -o $@ searchcon.o $(LINKFLAGS) $(LIBSEFS) $(LIBSELINUX) $(LIBAPOL) $(LIBS)
+	$(CC) -o $@ searchcon.o $(LINKFLAGS) $(LIBSEFS) $(LIBSELINUXSO) $(LIBAPOL) $(LIBS)
 
 findcon.o: replcon.c
 	$(CC) -c replcon.c -o findcon.o -DFINDCON $(CFLAGS) $(INCLUDE)
 
 findcon: findcon.o $(LIBSEFS) $(LIBAPOL)
-	$(CC) -o $@ findcon.o $(LINKFLAGS) $(LIBSELINUX) $(LIBSEFS) $(LIBAPOL) $(LIBS)
+	$(CC) -o $@ findcon.o $(LINKFLAGS) $(LIBSELINUXSO) $(LIBSEFS) $(LIBAPOL) $(LIBS)
 	
 install: $(SE_CMDS)
 	install -m 755 $(SE_CMDS) $(BINDIR);
