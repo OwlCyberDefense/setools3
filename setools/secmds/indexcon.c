@@ -47,7 +47,6 @@
 
 static struct option const longopts[] =
 {
-  {"outfile", required_argument, NULL, 'o'},
   {"directory", required_argument, NULL, 'd'},
   {"help", no_argument, NULL, 'h'},
   {"version", no_argument, NULL, 'v'},
