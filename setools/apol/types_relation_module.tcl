@@ -15,29 +15,35 @@
 ##############################################################
 namespace eval Apol_Analysis_tra {
 	# GUI variables
-	variable descriptive_text "The purpose of the Types Relationship Summary analysis is to summarize \
-				any associations between two types, namely TypeA and TypeB, and the elements \
-				in the policy that make up that relationship. This type of analysis may be useful in \
-				determining whether two policy types are completely isolated from each other or in determining \
-				the degree to which a particular type is unique to another. You can control the \
-				analysis to search for any of the following associations between two types:\n\n \
-				  - the attribute(s) to which both types are assigned (common attribs) \n \
-		 	          - the role(s) which have access to both TypeA and TypeB (common roles) \n \
-		 	          - the users which have access to both TypeA and TypeB through a common role. (common users) \n \
-		 	          - all type transition/change rules from TypeA to TypeB or vice versa. \n \
-		 	          - all allow rules that provide access between TypeA and TypeB (e.g., allow rules that allow TypeA \
-		 	          and TypeB to send signals to each other). \n \
-		 	          - types to which both TypeA and TypeB have common access. \n \
-		 	          - types to which TypeA and TypeB have dissimilar access. \n \
-		 	          - any direct information flows between TypeA and TypeB \n \
-		 	          - any transitive information flows between TypeA and TypeB \n \
-		 	          - any domain transitions from TypeA to TypeB or vice versa. \n \
-		 	          \n\n\This analysis may contain an overwhelming amount of information, so the results \
-				  are simplified by listing each aspect of the analysis as a separate child element \
-				  within a tree. This allows the user to select any aspect of the analysis \
-				  from the tree and have more specific results displayed within the \
-				  textbox. \n\nFor detailed information on using this module select \"Types Relationship \
-				  Summary Analysis\" from the help menu."
+	variable descriptive_text \
+		"The types relationship summary analysis in Apol is a convenience \
+		mechanism to allow a user to quickly do several queries and \
+		analyses already in present in Apol to understand the \
+		relationship between two types. This is meant to quickly display \
+		the relationship between two types and therefore doesn't include \
+		all of the options present in the standard queries and analyses. \
+		The analyses are grouped into two categories: Basic and Analysis.\n\n \
+		The basic group includes several rule searches that can be \n \
+		performed using the Policy Rules tab.\n\n \
+		\tCommon Attributes: the attributes common to both types.\n\n \
+		\tCommon Roles: the roles to which both types are assigned.\n\n \
+		\tCommon Users: the users allowed associate with roles to which\n \
+		\t\tboth types are assigned.\n\n \
+		\tCommon Access to Resources: object types to which both types \n \
+		\t\thave some access.\n\n \
+		\tDissimilar Access to Resources: object types to which one type\n \
+		\t\thas some access but the other type has none.\n\n \
+		The analysis group includes several other analyses that can be \n \
+		performed using the Analysis tab. \n\n \
+		\tDirect Flows Between A and B: direct information flow analysis\n \
+		\t\tbetween the two types.\n\n \
+		\tTransitive Flows A->B: transitive information flows from type A to B.\n\n \
+		\tTransitive Flows B->A: transitive information flows from type B to A.\n\n \
+		\tDomain Transitions A->B: domain transitions allowed from type A to B.\n\n \
+		\tDomain Transitions B->A: domain transitions allowed from type B to A.\n\n \
+		" 
+
+	
 	variable progressmsg		""
 	variable progress_indicator	-1
 					    	
