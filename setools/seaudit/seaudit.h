@@ -21,10 +21,23 @@
 #include <assert.h>
 
 #ifndef STR_SIZE
-  #define STR_SIZE  8192
+        #define STR_SIZE  8192
 #endif
+
 #ifndef TIME_SIZE
-  #define TIME_SIZE 64
+        #define TIME_SIZE 64
+#endif
+
+#ifndef ERROR_EXPORT_LOG_BAD_FILE
+        #define ERROR_EXPORT_LOG_BAD_FILE 1
+#endif
+
+#ifndef ERROR_EXPORT_LOG_OUT_OF_MEMORY
+        #define ERROR_EXPORT_LOG_OUT_OF_MEMORY 2
+#endif
+
+#ifndef ERROR_EXPORT_LOG_INVALID_LOG_VIEW
+        #define ERROR_EXPORT_LOG_INVALID_LOG_VIEW 3
 #endif
 
 #ifndef DEFAULT_LOG
