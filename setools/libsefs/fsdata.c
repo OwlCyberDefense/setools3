@@ -721,6 +721,7 @@ int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char *filename)
 	}
 
 	fclose(fp);
+	destroy_fsdata(fsd);
 	return 0;
 
 	bad:
@@ -987,4 +988,40 @@ void sefs_print_valid_object_classes( void )
 			printf("%s, ", sefs_object_classes[i]);
 		
 	}
+}
+
+void destroy_fsdata(sefs_filesystem_data_t * fsd) {
+	int i,j;
+
+	/* empty arrays */
+	for (i = 0; i < fsd->num_types; i++) {
+		free(fsd->types[i].name);
+		free(fsd->types[i].index_list);
+	}
+
+	for (i = 0; i < fsd->num_users; i++) {
+		free(fsd->users[i]);
+	}
+
+	for (i = 0; i < fsd->num_files; i++) {
+		for (j = 0; j < fsd->files[i].num_links; j++) {
+			free(fsd->files[i].path_names[j]);
+		}
+		free(fsd->files[i].path_names);
+		if(fsd->files[i].symlink_target)
+			free(fsd->files[i].symlink_target);
+	}
+
+	/* kill array pinters*/
+	free(fsd->users);
+	free(fsd->types);
+	free(fsd->files);
+
+	/* fell trees */
+	avl_free(&(fsd->file_tree));
+	avl_free(&(fsd->type_tree));
+	avl_free(&(fsd->user_tree));
+
+	/* destroy main structure */
+	free(fsd);
 }
