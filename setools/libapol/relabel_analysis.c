@@ -372,8 +372,10 @@ static unsigned char ap_relabel_determine_rule_direction(int rule_index, policy_
 		direction |= AP_RELABEL_DIR_FROM;
 	
 	/* does_av_rule_use_perms ignores ~ if found reverse direction */
-	if(policy->av_access[rule_index].flags & AVFLAG_PERM_TILDA)
+	if(policy->av_access[rule_index].flags & AVFLAG_PERM_TILDA) {
 		direction ^= AP_RELABEL_DIR_BOTH;
+		direction &= AP_RELABEL_DIR_BOTH;
+	}
 
 	return direction;
 };
