@@ -295,7 +295,7 @@ unsigned int load_perm_mappings(classes_perm_map_t **map, policy_t *policy, FILE
 						idx = get_obj_class_idx(id, policy);
 						if(idx < 0) {
 							/* An undefined object; need to add it */
-							fprintf(stderr, "Warning: object (%s) unknown to currenty policy; will be ignored\n", id);
+							fprintf(stderr, "Warning: object (%s) unknown to current policy; will be ignored\n", id);
 							ret |= PERMMAP_RET_UNKNOWN_OBJ;
 							/* skip to next record */
 							load_perm_map_for_object(-1, 0, NULL, NULL, fp);
