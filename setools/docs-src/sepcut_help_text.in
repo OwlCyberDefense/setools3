@@ -199,10 +199,6 @@ displayed.
 Known bugs
 ----------
 
-1. Unfortunately if you have a file name that is an integer, the tool
-will fail on the policy directory!  It's because of a simple way we
-manage file data and modification data...something we'll have to fix
-next time!
 
 
                       
