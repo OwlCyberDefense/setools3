@@ -19,5 +19,4 @@ rpm:
 clean:
 	rm -rf BWidget-1.4.1/
 
-bare:
-	clean
+bare:	clean
