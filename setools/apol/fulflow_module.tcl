@@ -32,6 +32,8 @@ namespace eval Apol_Analysis_fulflow {
 	set find_flows_Dlg .find_flows_Dlg
 	variable find_flows_results_Dlg
 	set find_flows_results_Dlg .find_flows_results_Dlg
+	variable progressDlg
+	set progressDlg .progress
 	
 	# Advanced filter variables
 	variable perm_status_array
@@ -97,6 +99,8 @@ namespace eval Apol_Analysis_fulflow {
 	variable orig_cursor		""
 	variable select_fg_orig		""
 	variable excluded_tag		" (Excluded)"
+	variable progressmsg		""
+	variable progress_indicator	
 	
 	## Within the namespace command for the module, you must call Apol_Analysis::register_analysis_modules,
 	## the first argument is the namespace name of the module, and the second is the
@@ -159,18 +163,19 @@ proc Apol_Analysis_fulflow::do_analysis { results_frame } {
       	variable spinbox_threshhold
       	variable threshhold_cb_value
       	variable threshhold_value
-      	
+	        
         # if a permap is not loaded then load the default permap
         # if an error occurs on open, then skip analysis
         set rt [catch {Apol_Analysis_fulflow::load_default_perm_map} err]
 	if {$rt != 0} {	
-		return -1
+		return -code error $err
 	}
+
 	set rt [catch {Apol_Analysis_fulflow::advanced_filters_initialize_filter_vars} err]
 	if {$rt != 0} {
-		return -1
+		return -code error $err
 	}	
-	
+	Apol_Analysis_fulflow::display_progressDlg	
 	# Initialize local variables
 	set num_object_classes 0
 	set perm_options ""
@@ -225,7 +230,6 @@ proc Apol_Analysis_fulflow::do_analysis { results_frame } {
 	if {$filtered_excl_types != ""} {   
 		set filter_types "1"
 	} 
-
 	set rt [catch {set results [apol_TransitiveFlowAnalysis \
 		$start_type \
 		$flow_direction \
@@ -235,8 +239,9 @@ proc Apol_Analysis_fulflow::do_analysis { results_frame } {
 		$end_type $perm_options $filter_types $filtered_excl_types]} err]
 	
 	if {$rt != 0} {	
+		Apol_Analysis_fulflow::destroy_progressDlg
 	        tk_messageBox -icon error -type ok -title "Error" -message "$err"
-		return -code error
+		return -code error $err
 	}
 	set query_args [list \
 		$start_type \
@@ -249,10 +254,11 @@ proc Apol_Analysis_fulflow::do_analysis { results_frame } {
 	set fulflow_tree [Apol_Analysis_fulflow::create_resultsDisplay $results_frame]
 	set rt [catch {Apol_Analysis_fulflow::create_result_tree_structure $fulflow_tree $results $query_args} err]
 	if {$rt != 0} {
+		Apol_Analysis_fulflow::destroy_progressDlg
 		tk_messageBox -icon error -type ok -title "Error" -message "$err"
-		return -code error
+		return -code error $err
 	}
-
+	Apol_Analysis_fulflow::destroy_progressDlg
      	return 0
 } 
 
@@ -824,6 +830,29 @@ proc Apol_Analysis_fulflow::free_results_data {query_options} {
 #################################################################################
 #################################################################################
 
+proc Apol_Analysis_fulflow::display_progressDlg {} {
+     	variable progressDlg
+	    		
+	set Apol_Analysis_fulflow::progressmsg "Performing transitive information flow analysis..."
+	set progressBar [ProgressDlg $progressDlg \
+		-parent $ApolTop::mainframe \
+        	-textvariable Apol_Analysis_fulflow::progressmsg \
+        	-variable Apol_Analysis_fulflow::progress_indicator \
+        	-maximum 0 \
+        	-width 45]
+        update
+        return 0
+} 
+
+proc Apol_Analysis_fulflow::destroy_progressDlg {} {
+	variable progressDlg
+	
+	if {[winfo exists $progressDlg]} {
+		destroy $progressDlg
+	}
+     	return 0
+} 
+
 proc Apol_Analysis_fulflow::treeSelect {fulflow_tree fulflow_info_text node} {
 	# Set the tree selection to the current node.
 	$fulflow_tree selection set $node
@@ -968,7 +997,7 @@ proc Apol_Analysis_fulflow::display_find_flows_results_Dlg {time_limit_str flow_
     	if {[winfo exists $find_flows_results_Dlg]} {
 		focus $find_flows_results_Dlg
     	}
-    	update idletasks
+    	update
 	return 0
 }
 
@@ -1581,6 +1610,7 @@ proc Apol_Analysis_fulflow::create_result_tree_structure { fulflow_tree results_
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_fulflow::do_child_analysis { fulflow_tree selected_node } {    
 	ApolTop::setBusyCursor
+	Apol_Analysis_fulflow::display_progressDlg	
 	if { [$fulflow_tree nodes $selected_node] == "" } {
 	    	# The last query arguments were stored in the data for the root node
 		set query_args [$fulflow_tree itemcget [$fulflow_tree nodes root] -data]
@@ -1597,11 +1627,13 @@ proc Apol_Analysis_fulflow::do_child_analysis { fulflow_tree selected_node } {
 			[lindex $query_args 8]]} err]
 			
 		if {$rt != 0} {	
+			Apol_Analysis_fulflow::destroy_progressDlg
 			tk_messageBox -icon error -type ok -title "Error" -message "$err"
 	    		return -code error
 		}
 		Apol_Analysis_fulflow::create_target_type_nodes $selected_node $fulflow_tree $results
 	}
+	Apol_Analysis_fulflow::destroy_progressDlg
 	ApolTop::resetBusyCursor
 	return 0
 }
@@ -2277,7 +2309,7 @@ proc Apol_Analysis_fulflow::advanced_filters_display_permissions {class_idx} {
 	set class_name [$Apol_Analysis_fulflow::class_listbox get $class_idx]
 	$permissions_title_frame configure -text "Permissions for $class_name:"
 	Apol_Analysis_fulflow::advanced_filters_clear_perms_text
-	update idletasks
+	update
 	# Make sure to strip out just the class name, as this may be an excluded class.
 	set idx [string first $Apol_Analysis_fulflow::excluded_tag $class_name]
 	if {$idx != -1} {
