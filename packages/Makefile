@@ -2,9 +2,9 @@
 # created September 22, 2003
 # by Kevin Carr kcarr@tresys.com
 
-# Make sure INSTALL_PATH is set properly for your system!
-INSTALL_PATH=/usr/share/tcl8.3/
-
+# INSTALL_PATH is set based upon your current 
+# version of tcl using the tcl_vars script.
+INSTALL_PATH=$(shell env tclsh ../tcl_vars pkgPath)
 
 install:
 	tar -zxvf BWidget-1.4.1.tar.gz
