@@ -165,6 +165,7 @@ typedef struct load_policy_msg {
 	unsigned int types;   /* number of types */
 	unsigned int classes; /* number of classes */
 	unsigned int rules;   /* number of rules */
+	unsigned int bools;   /* number of bools */
 	char *binary;         /* path for binary that was loaded */
 } load_policy_msg_t;
 
@@ -216,11 +217,20 @@ typedef struct strs {
 #define BOOL_TREE 6
 #define NUM_TREES 7
 
+typedef struct audit_log_malformed_msg_list {
+	char **list;
+	int size;
+} audit_log_malformed_msg_list_t;
 
 typedef struct audit_log {
 	msg_t **msg_list;    /* the array of messages */
 	int msg_list_sz;     /* the size of message list */
-	int num_msgs;        /* the number of messages */
+	int num_msgs;        /* the number of total messages */
+	int num_bool_msgs;
+	int num_load_msgs;
+	int num_allow_msgs;
+	int num_deny_msgs;
+	audit_log_malformed_msg_list_t *malformed_msgs;
 	avl_tree_t trees[NUM_TREES];
 	strs_t symbols[NUM_TREES];
 } audit_log_t;
@@ -239,6 +249,7 @@ int audit_log_add_msg (audit_log_t*, msg_t*);   /* add msg_t pointer to audit lo
 int audit_log_add_str(audit_log_t *log, char *string, int *id, int which);
 int audit_log_get_str_idx(audit_log_t *log, const char *str, int which);
 const char* audit_log_get_str(audit_log_t *log, int idx, int which);
+int audit_log_add_malformed_msg(char *line, audit_log_t **log);
 
 enum avc_msg_class_t which_avc_msg_class(msg_t *msg);
 
