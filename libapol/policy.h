@@ -315,9 +315,6 @@ typedef struct alias_item {
 #define POL_VER_COND		4	/* same */
 #define	POL_VER_MAX		4
 
-const char* policy_version_strings_get_str(int policy_version);
-#define is_valid_policy_version(version) (version >= POL_VER_UNKNOWN && version <= POL_VER_MAX)
-#define get_policy_version_string(version) policy_version_strings_get_str(version)
 			 	 
 /**************************************/
 /* This is an actual policy data base */
@@ -394,6 +391,11 @@ typedef struct policy {
 int init_policy( policy_t **policy_ptr);
 int free_policy(policy_t **policy_ptr);
 int set_policy_version(int ver, policy_t *policy);
+const char* get_policy_version_name(int policy_version);
+
+/* Policy version name macros */
+#define is_valid_policy_version(version) (version >= POL_VER_UNKNOWN && version <= POL_VER_MAX)
+#define get_policy_version_string(version) get_policy_version_name(version)
 
 /* DB updates/additions/changes */
 #define add_common_perm_to_class(cls_idx, cp_idx, policy) ((is_valid_obj_class_idx(cls_idx, policy) && is_valid_common_perm_idx(cp_idx, policy)) ? policy->obj_classes[cls_idx].common_perms = cp_idx: -1 )
