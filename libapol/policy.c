@@ -259,6 +259,8 @@ int init_policy(policy_t **p)
 		return -1;
 	}
 	
+	(void) memset (&(policy->avh), 0, sizeof (avh_t));
+
 	/* make certain that the self type is present - some code assumes the presence
 	 * of this 'special' type, so it must always be added */
 	key = (char *)malloc(5);
