@@ -1,15 +1,27 @@
 CHANGE LOG, SE Linux TOOLS (setools)
 =======================================================
-????? ??, 2004, Version 1.4
+May 19, 2004, Version 1.4
 
-liapol: 
+apol:
+	GUI changes to forward dta analysis for selecting 
+	  object classes, permissions, and object types. 
+	  This is useful for limiting a dta query to 
+	  find transitions to domains that have specific 
+	  privileges or that have access to a particular 
+	  object type(s).
+	Added new Tool Options dialog for opening pieces
+	  of the selinux policy.
+	Minor GUI fixes.
+libapol: 
 	Added support for using binary policy files (in 
-		addition to source policy files)
-		
+	  addition to source policy files).
+	Changed forward dta analysis to support selecting
+	  object classes, permissions, and object types.		
 secmds:
-	Added booleans to seinfo
-	TODO: changed policy defaults to use binary policy
-
+	Added booleans to seinfo.
+	Changed policy defaults to use binary policy.
+seaudit:
+	Changed policy defaults to use binary policy.
 
 =======================================================
 April 15, 2004 Version 1.3
