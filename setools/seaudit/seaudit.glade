@@ -14,6 +14,11 @@
   <property name="default_height">600</property>
   <property name="resizable">True</property>
   <property name="destroy_with_parent">True</property>
+  <property name="decorated">True</property>
+  <property name="skip_taskbar_hint">False</property>
+  <property name="skip_pager_hint">False</property>
+  <property name="type_hint">GDK_WINDOW_TYPE_HINT_NORMAL</property>
+  <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
   <signal name="destroy" handler="seaudit_on_TopWindow_destroy" last_modification_time="Fri, 23 Jan 2004 18:06:38 GMT"/>
 
   <child>
@@ -45,7 +50,7 @@
 		      <accelerator key="L" modifiers="GDK_CONTROL_MASK" signal="activate"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image946">
+			<widget class="GtkImage" id="image996">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-open</property>
 			  <property name="icon_size">1</property>
@@ -68,7 +73,36 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkMenuItem" id="separator3">
+		    <widget class="GtkSeparatorMenuItem" id="separator3">
+		      <property name="visible">True</property>
+		    </widget>
+		  </child>
+
+		  <child>
+		    <widget class="GtkImageMenuItem" id="ExportLog">
+		      <property name="visible">True</property>
+		      <property name="tooltip" translatable="yes">Export the log being displayed in the current tab to a file</property>
+		      <property name="label" translatable="yes">Export log</property>
+		      <property name="use_underline">True</property>
+		      <signal name="activate" handler="seaudit_on_ExportLog_activate" last_modification_time="Wed, 30 Jun 2004 18:59:20 GMT"/>
+		      <accelerator key="E" modifiers="GDK_CONTROL_MASK" signal="activate"/>
+
+		      <child internal-child="image">
+			<widget class="GtkImage" id="image997">
+			  <property name="visible">True</property>
+			  <property name="stock">gtk-save</property>
+			  <property name="icon_size">1</property>
+			  <property name="xalign">0.5</property>
+			  <property name="yalign">0.5</property>
+			  <property name="xpad">0</property>
+			  <property name="ypad">0</property>
+			</widget>
+		      </child>
+		    </widget>
+		  </child>
+
+		  <child>
+		    <widget class="GtkSeparatorMenuItem" id="separator6">
 		      <property name="visible">True</property>
 		    </widget>
 		  </child>
@@ -83,7 +117,7 @@
 		      <accelerator key="P" modifiers="GDK_CONTROL_MASK" signal="activate"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image947">
+			<widget class="GtkImage" id="image998">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-open</property>
 			  <property name="icon_size">1</property>
@@ -106,7 +140,7 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkMenuItem" id="separatormenuitem1">
+		    <widget class="GtkSeparatorMenuItem" id="separatormenuitem1">
 		      <property name="visible">True</property>
 		    </widget>
 		  </child>
@@ -121,7 +155,7 @@
 		      <accelerator key="P" modifiers="GDK_CONTROL_MASK | GDK_SHIFT_MASK" signal="activate"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image948">
+			<widget class="GtkImage" id="image999">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-preferences</property>
 			  <property name="icon_size">1</property>
@@ -135,7 +169,7 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkMenuItem" id="separator4">
+		    <widget class="GtkSeparatorMenuItem" id="separator4">
 		      <property name="visible">True</property>
 		    </widget>
 		  </child>
@@ -149,7 +183,7 @@
 		      <signal name="activate" handler="seaudit_on_FileQuit_activate" last_modification_time="Fri, 23 Jan 2004 18:08:36 GMT"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image949">
+			<widget class="GtkImage" id="image1000">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-quit</property>
 			  <property name="icon_size">1</property>
@@ -185,7 +219,7 @@
 		      <accelerator key="T" modifiers="GDK_CONTROL_MASK" signal="activate"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image950">
+			<widget class="GtkImage" id="image1001">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-new</property>
 			  <property name="icon_size">1</property>
@@ -208,7 +242,7 @@
 		      <accelerator key="v" modifiers="GDK_CONTROL_MASK" signal="activate"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image951">
+			<widget class="GtkImage" id="image1002">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-open</property>
 			  <property name="icon_size">1</property>
@@ -230,7 +264,7 @@
 		      <signal name="activate" handler="seaudit_on_save_view_clicked" last_modification_time="Mon, 01 Mar 2004 18:03:30 GMT"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image952">
+			<widget class="GtkImage" id="image1003">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-save</property>
 			  <property name="icon_size">1</property>
@@ -252,7 +286,7 @@
 		      <signal name="activate" handler="seaudit_on_saveas_view_clicked" last_modification_time="Mon, 01 Mar 2004 18:27:44 GMT"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image953">
+			<widget class="GtkImage" id="image1004">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-save-as</property>
 			  <property name="icon_size">1</property>
@@ -266,7 +300,7 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkMenuItem" id="separator5">
+		    <widget class="GtkSeparatorMenuItem" id="separator5">
 		      <property name="visible">True</property>
 		    </widget>
 		  </child>
@@ -281,7 +315,7 @@
 		      <accelerator key="M" modifiers="GDK_CONTROL_MASK" signal="activate"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image954">
+			<widget class="GtkImage" id="image1005">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-convert</property>
 			  <property name="icon_size">1</property>
@@ -317,7 +351,7 @@
 		      <accelerator key="Q" modifiers="GDK_CONTROL_MASK" signal="activate"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image955">
+			<widget class="GtkImage" id="image1006">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-find</property>
 			  <property name="icon_size">1</property>
@@ -352,7 +386,7 @@
 		      <accelerator key="H" modifiers="GDK_CONTROL_MASK" signal="activate"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image956">
+			<widget class="GtkImage" id="image1007">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-help</property>
 			  <property name="icon_size">1</property>
@@ -373,7 +407,7 @@
 		      <signal name="activate" handler="seaudit_on_about_seaudit_activate" last_modification_time="Fri, 23 Jan 2004 18:06:10 GMT"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image957">
+			<widget class="GtkImage" id="image1008">
 			  <property name="visible">True</property>
 			  <property name="stock">gnome-stock-about</property>
 			  <property name="icon_size">1</property>
@@ -409,6 +443,7 @@
 	      <property name="visible">True</property>
 	      <property name="tooltip" translatable="yes">Query the policy for TE rules</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
+	      <property name="focus_on_click">True</property>
 	      <signal name="clicked" handler="seaudit_on_top_window_query_button_clicked" last_modification_time="Fri, 23 Jan 2004 18:10:02 GMT"/>
 
 	      <child>
@@ -418,6 +453,10 @@
 		  <property name="yalign">0.5</property>
 		  <property name="xscale">0</property>
 		  <property name="yscale">0</property>
+		  <property name="top_padding">0</property>
+		  <property name="bottom_padding">0</property>
+		  <property name="left_padding">0</property>
+		  <property name="right_padding">0</property>
 
 		  <child>
 		    <widget class="GtkHBox" id="hbox2">
@@ -480,6 +519,7 @@
 	      <property name="tooltip" translatable="yes">Modify the view for the current tab</property>
 	      <property name="can_focus">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
+	      <property name="focus_on_click">True</property>
 	      <signal name="clicked" handler="seaudit_on_filter_log_button_clicked" last_modification_time="Fri, 23 Jan 2004 18:10:31 GMT"/>
 
 	      <child>
@@ -489,6 +529,10 @@
 		  <property name="yalign">0.5</property>
 		  <property name="xscale">0</property>
 		  <property name="yscale">0</property>
+		  <property name="top_padding">0</property>
+		  <property name="bottom_padding">0</property>
+		  <property name="left_padding">0</property>
+		  <property name="right_padding">0</property>
 
 		  <child>
 		    <widget class="GtkHBox" id="hbox7">
@@ -551,6 +595,7 @@
 	      <property name="tooltip" translatable="yes">Toggle the monitor log feature</property>
 	      <property name="can_focus">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
+	      <property name="focus_on_click">True</property>
 	      <signal name="pressed" handler="seaudit_on_real_time_button_pressed" last_modification_time="Mon, 26 Jan 2004 18:34:46 GMT"/>
 
 	      <child>
@@ -560,6 +605,10 @@
 		  <property name="yalign">0.5</property>
 		  <property name="xscale">0</property>
 		  <property name="yscale">0</property>
+		  <property name="top_padding">0</property>
+		  <property name="bottom_padding">0</property>
+		  <property name="left_padding">0</property>
+		  <property name="right_padding">0</property>
 
 		  <child>
 		    <widget class="GtkHBox" id="hbox6">
