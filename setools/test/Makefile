@@ -7,7 +7,7 @@ OBJS		= test.o $(LIBAPOL)
 INCLUDES	= -I../libapol/
 CFLAGS		+= $(INCLUDES)
 
-all:	partial_load transitive_flow obj_perms perm_map_reload template reload roles
+all:	partial_load transitive_flow obj_perms perm_map_reload template reload roles binpol
 
 %.o:	%.c
 	$(CC) $(CFLAGS) -c $<
@@ -17,6 +17,9 @@ partial_load: $(OBJS) partial_policy_loading.o
 
 transitive_flow: $(OBJS) transitive_flow.o
 	$(CC) transitive_flow.o $(CFLAGS) $(OBJS) $(LIBS) -o transitive_flow
+	
+binpol: $(OBJS) binpol.o
+	$(CC) binpol.o $(CFLAGS) $(OBJS) $(LIBS) -o binpol
 
 obj_perms: $(OBJS) obj_perms.o
 	$(CC) obj_perms.o $(CFLAGS) $(OBJS) $(LIBS) -o obj_perms
@@ -37,7 +40,7 @@ $(LIBAPOL):
 	cd ../libapol/ ; $(MAKE) libapol
 
 clean:
-	rm -f partial_load transitive_flow template reload perm_map_reload obj_perms
+	rm -f *.o partial_load transitive_flow template reload perm_map_reload obj_perms binpol
 
 bare: clean
-	rm -f *.o *~ core core.* a.out
+	rm -f *~ core core.* a.out
