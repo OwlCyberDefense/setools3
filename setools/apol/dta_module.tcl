@@ -673,9 +673,9 @@ proc Apol_Analysis_dta::forward_options_set_widgets_to_default_state {path_name}
 }
 
 # ------------------------------------------------------------------------------
-#  Command Apol_Analysis_dta::forward_options_destroy_all_dialogs_on_close
+#  Command Apol_Analysis_dta::forward_options_destroy_all_dialogs_on_open
 # ------------------------------------------------------------------------------
-proc Apol_Analysis_dta::forward_options_destroy_all_dialogs_on_close {} {
+proc Apol_Analysis_dta::forward_options_destroy_all_dialogs_on_open {} {
 	variable f_opts
 	
 	set dlgs [array get f_opts "*,name"]
@@ -779,10 +779,13 @@ proc Apol_Analysis_dta::forward_options_destroy_object {path_name} {
 # ------------------------------------------------------------------------------
 #  Command Apol_Analysis_dta::forward_options_refresh_dialog
 # ------------------------------------------------------------------------------
-proc Apol_Analysis_dta::forward_options_refresh_dialog {path_name} {   
-	Apol_Analysis_dta::forward_options_destroy_object $path_name	
-	Apol_Analysis_dta::forward_options_create_object $path_name	
-	Apol_Analysis_dta::forward_options_update_dialog $path_name
+proc Apol_Analysis_dta::forward_options_refresh_dialog {path_name} { 
+	if {[array exists f_opts] && \
+	    [array names f_opts "$path_name,name"] != ""} {  
+		Apol_Analysis_dta::forward_options_destroy_object $path_name	
+		Apol_Analysis_dta::forward_options_create_object $path_name	
+		Apol_Analysis_dta::forward_options_update_dialog $path_name
+	}
 	
 	return 0
 } 
@@ -1059,9 +1062,9 @@ proc Apol_Analysis_dta::close { } {
 	Apol_Analysis_dta::configure_widgets_for_dta_direction
         Apol_Analysis_dta::config_attrib_comboBox_state
 	$Apol_Analysis_dta::combo_domain configure -values ""
-	
-	Apol_Analysis_dta::forward_options_destroy_all_dialogs_on_close
-     	
+
+     	Apol_Analysis_dta::forward_options_destroy_dialog $Apol_Analysis_dta::forward_options_Dlg
+	Apol_Analysis_dta::forward_options_destroy_object $Apol_Analysis_dta::forward_options_Dlg
      	return 0
 } 
 
@@ -1071,6 +1074,7 @@ proc Apol_Analysis_dta::close { } {
 proc Apol_Analysis_dta::open { } {  
 	variable display_attrib_sel
 	
+	Apol_Analysis_dta::forward_options_destroy_all_dialogs_on_open
 	Apol_Analysis_dta::populate_ta_list	
 	# Have the attributes checkbutton OFF by default
 	set display_attrib_sel	0
