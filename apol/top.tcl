@@ -2215,6 +2215,14 @@ proc ApolTop::load_fonts { } {
 	return 0	
 }
 
+proc ApolTop::disable_DeleteWindow_event {} {
+	wm protocol . WM_DELETE_WINDOW { } 
+}
+
+proc ApolTop::enable_DeleteWindow_event {} {
+	wm protocol . WM_DELETE_WINDOW "ApolTop::apolExit"
+}
+
 proc ApolTop::main {} {
 	global tk_version
 	global tk_patchLevel
@@ -2268,7 +2276,7 @@ proc ApolTop::main {} {
 	
 	wm withdraw .
 	wm title . "SE Linux Policy Analysis"
-	wm protocol . WM_DELETE_WINDOW "ApolTop::apolExit"
+	ApolTop::enable_DeleteWindow_event
 	
 	set rt [catch {ApolTop::check_libsefs} err]
 	if {$rt != 0} {
