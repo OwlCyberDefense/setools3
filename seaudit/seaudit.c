@@ -380,8 +380,12 @@ void seaudit_save_log_file(bool_t selected_only)
 	GtkWidget *file_selector, *confirmation;
 	gint response, confirm;
 	const gchar *filename;
-
-        file_selector = gtk_file_selection_new("Export Log File");
+	
+	if (selected_only) {
+	        file_selector = gtk_file_selection_new("Export Selected Messages");
+	} else {
+		file_selector = gtk_file_selection_new("Export View");
+	}
 	gtk_file_selection_complete(GTK_FILE_SELECTION(file_selector), (*(seaudit_app->audit_log_file)).str);
 
 	g_signal_connect(GTK_OBJECT(file_selector), "response", 
@@ -985,7 +989,7 @@ void seaudit_on_LogFileOpen_activate(GtkWidget *widget, GdkEvent *event, gpointe
 }
 
 void
-seaudit_window_view_entire_message_in_textbox (GtkTreeView *treeview)
+seaudit_window_view_entire_message_in_textbox (void)
 {	
 	GtkWidget *view, *window, *scroll;
 	GtkTextBuffer *buffer;
@@ -999,8 +1003,10 @@ seaudit_window_view_entire_message_in_textbox (GtkTreeView *treeview)
 	msg_t *message = NULL;
 	audit_log_view_t *log_view;
 	audit_log_t *audit_log = NULL;
+	seaudit_filtered_view_t *seaudit_view;
 	
-	assert(treeview != NULL);
+	seaudit_view = seaudit_window_get_current_view(seaudit_app->window);
+	assert(seaudit_view != NULL);
 	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	scroll = gtk_scrolled_window_new(NULL, NULL);
 	view = gtk_text_view_new ();
@@ -1019,7 +1025,7 @@ seaudit_window_view_entire_message_in_textbox (GtkTreeView *treeview)
 	audit_log = log_view->my_log;
 	assert(audit_log != NULL);
 	
-	sel = gtk_tree_view_get_selection(treeview);
+	sel = gtk_tree_view_get_selection(seaudit_view->tree_view);
 	glist = gtk_tree_selection_get_selected_rows(sel, &model);
 	if (glist) {
 		/* Only grab the top-most selected item */
@@ -1065,10 +1071,7 @@ seaudit_window_view_entire_message_in_textbox (GtkTreeView *treeview)
 
 void seaudit_window_on_view_entire_msg_activated(GtkWidget *widget, GdkEvent *event, gpointer callback_data)
 {
-	seaudit_filtered_view_t *view;
-	
-	view = seaudit_window_get_current_view(seaudit_app->window);
-	seaudit_window_view_entire_message_in_textbox(view->tree_view);
+	seaudit_window_view_entire_message_in_textbox();
 }
 
 void seaudit_on_ExportLog_activate(GtkWidget *widget, GdkEvent *event, gpointer callback_data)
