@@ -1,6 +1,6 @@
 SELinux Policy Analysis Tool Help File
 apol, version 1.4
-May 27, 2004
+May 28, 2004
 selinux@tresys.com
 
 This file contains basic help information for using apol, version
