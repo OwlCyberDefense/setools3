@@ -106,6 +106,13 @@ static struct option const longopts[] = {
 };
 
 
+static void sefs_double_array_print(char **array,int size)
+{
+	int i;
+	for (i=0;i<size;i++){
+		printf("%s\n",array[i]);
+	}
+}
 
 /*
  * replcon_context_free
@@ -434,7 +441,7 @@ int replcon_info_has_object_class(replcon_info_t *info, sefs_classes_t obj_class
 	assert(info != NULL); 
 	for (i = 0; i < info->num_classes; i++)
 		if (info->obj_classes[i] == obj_class
-		    || replcon_info.obj_classes[i] == ALL_FILES)
+		    || replcon_info.obj_classes[i] == SEFS_ALL_FILES)
 			return TRUE;
 	return FALSE;
 }
@@ -481,28 +488,28 @@ int replcon_info_add_object_class(replcon_info_t *info, const char *str)
 	class_id = sefs_is_valid_object_class(str);
 	switch(class_id) {
 	case 0:
-		class_id = NORM_FILE;
+		class_id = SEFS_NORM_FILE;
 		break;
 	case 1:
-		class_id = DIR;
+		class_id = SEFS_DIR;
 		break;
 	case 2:
-		class_id = LNK_FILE;
+		class_id = SEFS_LNK_FILE;
 		break;
 	case 3:
-		class_id = CHR_FILE;
+		class_id = SEFS_CHR_FILE;
 		break;
 	case 4:
-		class_id = BLK_FILE;
+		class_id = SEFS_BLK_FILE;
 		break;
 	case 5:
-		class_id = SOCK_FILE;
+		class_id = SEFS_SOCK_FILE;
 		break;
 	case 6:
-		class_id = FIFO_FILE;
+		class_id = SEFS_FIFO_FILE;
 		break;
 	default:
-		class_id = ALL_FILES;
+		class_id = SEFS_ALL_FILES;
 		break;
  	}
 
