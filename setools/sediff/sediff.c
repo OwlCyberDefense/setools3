@@ -465,7 +465,6 @@ int print_iad(FILE *fp, int id, int_a_diff_t *iad_p1, int_a_diff_t *iad_p2,
 
 	/*handle memory before we quit from an error */
  print_iad_error:
-	fprintf(stderr,"error");
 	if (changed_buf)
 		free(changed_buf);
 	if (added_buf)
@@ -962,7 +961,6 @@ int print_te_diffs(FILE *fp, apol_diff_result_t *diff)
 
 	/*handle memory before we quit from an error */
  print_te_error:
-	fprintf(stderr,"error\n");
 	if (changed_buf)
 		free(changed_buf);
 	if (added_buf)
