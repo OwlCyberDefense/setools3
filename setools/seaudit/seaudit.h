@@ -54,6 +54,8 @@ typedef struct seaudit {
 } seaudit_t;
 
 extern seaudit_t *seaudit_app;
+#define SEAUDIT_VIEW_EXT ".vw"
+#define SEAUDIT_FILTER_EXT ".ftr"
 
 seaudit_t *seaudit_init(void);
 void seaudit_destroy(seaudit_t *seaudit_app);
