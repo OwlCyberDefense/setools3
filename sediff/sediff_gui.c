@@ -2699,22 +2699,9 @@ void sediff_open_dialog_on_p1browse_button_clicked(GtkButton *button, gpointer u
 	}
 }
 
-/*
-gboolean on_sediff_main_text_focus(GtkWidget *widget,
-				   GtkDirectionType arg1,
-				   gpointer user_data)
-{
-
-
-	return FALSE;
-}
-*/
-
-void on_sediff_main_p1_text_move_cursor(GtkTextView *widget,
-				       GtkMovementStep step,
-				       gint count,
-				       gboolean extend_selection,
-				       gpointer user_data)
+void on_sediff_main_text_event_after(GtkWidget *widget,
+			       GdkEvent *event,
+			       gpointer user_data)
 {
 	GtkTextMark *mark = NULL;
 	GtkTextBuffer *txt = NULL;
@@ -2722,7 +2709,7 @@ void on_sediff_main_p1_text_move_cursor(GtkTextView *widget,
 	GString *string = g_string_new("");
 	GtkLabel *lbl;
 
-	txt = gtk_text_view_get_buffer(widget);
+	txt = gtk_text_view_get_buffer(GTK_TEXT_VIEW(widget));
 
 	assert(txt);
 	mark = gtk_text_buffer_get_insert(txt);
