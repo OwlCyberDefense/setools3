@@ -133,7 +133,7 @@ proc Sepct_Customize::embed_checkbutton { te_file is_used } {
 		}
 		$cb_name configure -state disabled
 	}
-	
+
 	return $cb_name
 }
 
@@ -150,7 +150,17 @@ proc Sepct_Customize::insert_ListBox_Items { } {
 	variable show_Filenames
 	
 	# Now, we insert all sorted items into the listbox widget
-	foreach te_file $all_Modules {   
+	foreach te_file $all_Modules { 
+		if {[$list_b exists $te_file]} {
+			tk_messageBox \
+			     -icon warning \
+			     -type ok \
+			     -title "Duplicate modules!" \
+			     -message \
+				"The module $te_file already exists and will be ignored. Please be aware that \
+				this file will be overwritten when disabling the module."
+			continue   
+		}
 		# get descriptive name
 		set is_used [Sepct_Customize::is_module_used $te_file]
 		set dscp_name [Sepct_Customize::store_mod_descrptive_name $te_file $is_used]
@@ -282,22 +292,21 @@ proc Sepct_Customize::configure_ListBox { } {
 		puts stderr "Customize problem: getting all modules"
 		return -1
 	}
-	# hold off drawing the listbox until we finish initializing 
-	$list_b configure -redraw 0	
+	
 	# Insert items into the listbox 
 	set rt [Sepct_Customize::insert_ListBox_Items]
 	if { $rt == -1} {
 		puts stderr "Customize problem: getting all modules"
 		return -1
 	}	
-	
+
 	Sepct_Customize::label_and_order_list
 
 	# Adjust the view so that no part of the canvas is off-screen to the left.
     	# Finally, we display updates immediately.
 	$list_b configure -redraw 1
     	$list_b.c xview moveto 0
-	update idletasks
+	
 	return 0
 }
 
@@ -345,6 +354,7 @@ proc Sepct_Customize::initialize { policyDir } {
 		
 	}
 	set rt [Sepct_Customize::configure_ListBox]
+	
 	return $rt
 }
 
@@ -488,9 +498,7 @@ proc Sepct_Customize::displayModule { list_b text_te text_fc selected_module } {
 			or NO to continue leaving the problem."]
 		
 		if { $ans == "yes" } {
-			set poldir $Sepct::policyDir
-			Sepct::closePolicy
-			Sepct::openPolicyDir $poldir 0
+			Sepct::reloadPolicy
 		} else  {
 			# else NO (i.e., cancel) do nothing
 			return -1
@@ -1400,9 +1408,7 @@ proc Sepct_Customize::add_Module { } {
 						Press YES to re-load the policy directory or NO to continue."]
 					
 					if {$ans == "yes" } {
-						set poldir $Sepct::policyDir
-						Sepct::closePolicy
-						Sepct::openPolicyDir $poldir 0
+						Sepct::reloadPolicy
 					} 
 				}
 			}
@@ -1887,91 +1893,123 @@ proc Sepct_Customize::record_outstanding_changes { } {
 }
 
 ############################################################################
+# ::create_unUsed_Modules_Dir
+# 
+proc Sepct_Customize::create_unUsed_Modules_Dir {} {
+	# First, check to see if the unUsed directory exists. 
+	if { [file exists $Sepct_Customize::used_Modules_Dir] } {
+		set rt [catch {file mkdir $Sepct_Customize::unUsed_Modules_Dir} err]
+		if {rt != 0} {
+			return -code error $err
+		}
+		set rt [Sepct_db::addTree_node $Sepct_Customize::unUsed_Modules_Dir 0 0]
+		if {$rt != 0} {
+			return -code error "Problem adding unused directory node in tree."
+		}
+	} else { 
+		return -code error "$Sepct_Customize::used_Modules_Dir is not a directory"
+	}	
+		
+	return 0
+}
+
+############################################################################
+# ::move_file_on_disk
+# 
+proc Sepct_Customize::move_file_on_disk { source_Path target_dir overwrite } {
+	if {$overwrite} {
+		set rt [catch {file rename -force $source_Path $target_dir} err]
+	} else {
+		set rt [catch {file rename $source_Path $target_dir} err]
+	}
+	if { $rt != 0 } {
+		return -code $err
+	}
+	return 0
+}
+
+############################################################################
 # ::set_Module_As_Unused
-#  # TODO: need to check existance in the tree, not on disk
+# 
 proc Sepct_Customize::set_Module_As_Unused { module source_Path target_Path } {
 	variable list_b
 	variable curr_TE_file
-	   	
-	# First move the file on disk
-	if { [file exists $target_Path] } {
-		set ans [tk_messageBox -icon error \
-			-type yesno  \
-			-title "File Error" \
-			-message \
-			"File $target_Path already exists\n\
-			Press YES to re-load the policy directory\
-			or NO to continue"]
-		
+	
+	set cb [$list_b itemcget $module -window]
+	set overwrite 0		   	
+	# Handle target path already existing.
+	if { [file exists $target_Path] && ![file exists $source_Path]} {
+		set ans [tk_messageBox -icon error -type yesno -title "File Error" -message \
+				"File $target_Path already exists.\n\
+				Press YES to re-load the policy directory \
+				or NO to do nothing and continue."]
 		if {$ans == "yes" } {
-			set poldir $Sepct::policyDir
-			Sepct::closePolicy
-			Sepct::openPolicyDir $poldir 0
-		} 
-		# else do nothing
-	} else {
-		# First, check to see if the unUsed directory exists. 
-		# If so, then move the file to the unused directory.
-		if { ![file exists $Sepct_Customize::unUsed_Modules_Dir] } {
-			if { [file exists $Sepct_Customize::used_Modules_Dir] } {
-				set rt [catch {file mkdir $Sepct_Customize::unUsed_Modules_Dir} err]
-				if { $rt != 0 } {
-					tk_messageBox -icon error \
-						-type ok \
-						-title "Error" \
-						-message \
-						"$err"
-					$cb toggle
-					return -1
-				}
-				set rt [Sepct_db::addTree_node $Sepct_Customize::unUsed_Modules_Dir 0 0]
-				if { $rt == -1 } {
-					puts stderr "Problem adding unused directory node in tree."
-					return -1
-				}
-			} else { 
-				tk_messageBox -icon error \
-					-type ok \
-					-title "File Problem" \
-					-message \
-					"$Sepct_Customize::used_Modules_Dir is not a directory"
-				$cb toggle
-				return -1
-			}		
-		} 
-		set rt [catch {file rename $source_Path $Sepct_Customize::unUsed_Modules_Dir} err]
+			Sepct::reloadPolicy
+		} else {
+			# Reset the check button to its' original state. 
+			$cb toggle
+		}
+		return -1 
+	} 
+	
+	# Check for duplicate modules	
+	if { [file exists $target_Path] && [file exists $source_Path] } {
+		set ans [tk_messageBox -icon error -type yesno -title "File Error" -message \
+				"Duplicate $module modules exists.\n\n\
+				Press YES to overwrite $target_Path with $source_Path or NO to do nothing and continue."]
+		if {$ans != "yes" } {
+			# Reset the check button to its' original state.
+			$cb toggle
+			return -1 
+		} else {
+			set overwrite 1
+		}
+	} 
+	
+	# Create the unused directory if necessary.
+	if { ![file exists $Sepct_Customize::unUsed_Modules_Dir] } {
+		set rt [catch {Sepct_Customize::create_unUsed_Modules_Dir} err]
 		if { $rt != 0 } {
 			tk_messageBox -icon error \
 				-type ok \
 				-title "Error" \
 				-message \
-				"$err"
+				"Error creating unused modules directory: $err"
+				
+			# Reset the check button to its' original state.
 			$cb toggle
 			return -1
-		}	
+		}
 	}
-	
+			
+	set rt [catch {Sepct_Customize::move_file_on_disk $source_Path $Sepct_Customize::unUsed_Modules_Dir $overwrite} err]
+	if { $rt != 0 } {
+		tk_messageBox -icon error \
+			-type ok \
+			-title "Error" \
+			-message \
+			"Error moving $module: $err"
+			
+		# Reset the check button to its' original state.
+		$cb toggle
+		return -1
+	}
 	# Update the used_Modules and unUsed_Modules global list variables.
-    	Sepct_Customize::move_Module_to_Unused_List $module
-    	
-    	# Update our internal database to have these changes.
-    	set rt [Sepct_db::move_file $source_Path $target_Path]
-    	if { $rt == -1 } {
-    		set ans [tk_messageBox -icon error \
-				-type yesno \
-				-title "Error" \
-				-message \
+    	set rt [catch {Sepct_Customize::move_Module_to_Unused_List $module} err]
+	if {$rt == -1} {
+		set ans [tk_messageBox -icon error -type yesno -title "Error" -message \
 				"Problem moving file to new tree node.\n\
 				Press YES to re-load the policy directory\
 				or NO to continue"]
 				
 		if { $ans == "yes" } {
-			set poldir $Sepct::policyDir
-			Sepct::closePolicy
-			Sepct::openPolicyDir $poldir 0
-		} 			
-	}
-	
+			Sepct::reloadPolicy
+			return -1
+		} else {
+			# Reset the check button to its' original state.
+			$cb toggle	
+		}
+	}	    		
 	return 0
 }
 
@@ -1982,68 +2020,82 @@ proc Sepct_Customize::set_Module_As_Used { module source_Path target_Path } {
 	variable list_b
 	variable curr_TE_file
     	
-	# First move the file on disk
-	if { [file exists $target_Path] } {
-		set ans [tk_messageBox -icon error \
-			-type yesno  \
-			-title "File Error" \
-			-message \
-			"File $target_Path already exists\n\
-			Press YES to re-load the policy directory\
-			or NO to continue"]
-		
+    	set cb [$list_b itemcget $module -window]
+    	set overwrite 0
+    	# Handle target path already existing.
+	if { [file exists $target_Path] && ![file exists $source_Path] } {
+		set ans [tk_messageBox -icon error -type yesno -title "File Error" -message \
+				"File $target_Path already exists.\n\
+				Press YES to re-load the policy directory \
+				or NO to do nothing and continue."]
 		if {$ans == "yes" } {
-			set poldir $Sepct::policyDir
-			Sepct::closePolicy
-			Sepct::openPolicyDir $poldir 0
+			Sepct::reloadPolicy
+		} else {
+			# Reset the check button to its' original state. 
+			$cb toggle
 		}
-		# else do nothing
-	} else {
-		# First, check to see if the used directory exists.
-		# If so, then move the file to the unused directory.
-		if { ![file exists $Sepct_Customize::used_Modules_Dir] } {
-			tk_messageBox -icon error \
-				-type ok \
-				-title "Directory Problem" \
-				-message \
-				"The directory $Sepct_Customize::used_Modules_Dir\
-				DOES NOT exist. Cannot move $source_Path to this directory."
+		return -1 
+	} 
+	
+	# Check for duplicate modules 
+	if { [file exists $target_Path] && [file exists $source_Path] } {
+		set overwrite 0	
+		set ans [tk_messageBox -icon error -type yesno -title "File Error" -message \
+				"Duplicate $module modules exists.\n\n\
+				Press YES to overwrite $target_Path with $source_Path or NO to do nothing and continue."]
+		if {$ans != "yes" } {
+			# Reset the check button to its' original state.
 			$cb toggle
-			return	
-		} 
-		set rt [catch {file rename $source_Path $Sepct_Customize::used_Modules_Dir} err]
-		if { $rt != 0 } {
-			tk_messageBox -icon error \
-				-type ok \
-				-title "Error" \
-				-message \
-				"$err"
-			$cb toggle
-			return -1
-		}	
+			return -1 
+		} else {
+			set overwrite 1
+		}
+	} 
+
+	# First, check to see if the used directory exists.
+	# If so, then move the file to the unused directory.
+	if { ![file exists $Sepct_Customize::used_Modules_Dir] } {
+		tk_messageBox -icon error \
+			-type ok \
+			-title "Directory Problem" \
+			-message \
+			"The directory $Sepct_Customize::used_Modules_Dir\
+			DOES NOT exist. Cannot move $source_Path to this directory."
+			
+		# Reset the check button to its' original state.
+		$cb toggle
+		return	
+	} 
+	
+	set rt [catch {Sepct_Customize::move_file_on_disk $source_Path $Sepct_Customize::used_Modules_Dir $overwrite} err]
+	if { $rt != 0 } {
+		tk_messageBox -icon error \
+			-type ok \
+			-title "Error" \
+			-message \
+			"$err"
+		
+		# Reset the check button to its' original state.
+		$cb toggle
+		return -1
 	}
 	
 	# Update the used_Modules and unUsed_Modules global list variables.
-    	Sepct_Customize::move_Module_to_Used_List $module
-    	
-    	# Update our internal database to have these changes.
-    	set rt [Sepct_db::move_file $source_Path $target_Path]
-    	if { $rt == -1 } {
-    		set ans [tk_messageBox -icon error \
-			-type yesno \
-			-title "Error" \
-			-message \
+    	set rt [catch {Sepct_Customize::move_Module_to_Used_List $module} err]
+        if { $rt == -1 } {
+    		set ans [tk_messageBox -icon error -type yesno -title "Error" -message \
 			"Problem moving file to new tree node.\n\
 			Press YES to re-load the policy directory\
 			or NO to continue"]
 				
 		if { $ans == "yes" } {
-			set poldir $Sepct::policyDir
-			Sepct::closePolicy
-			Sepct::openPolicyDir $poldir 0
-		} 			
-	}
-    	
+			Sepct::reloadPolicy
+			return -1
+		} else {
+			# Reset the check button to its' original state.
+			$cb toggle			
+		}
+	}	
 	return 0
 }
 
@@ -2258,27 +2310,31 @@ proc Sepct_Customize::add_Module_to_List { moduleList module } {
 ############################################################################
 # ::move_Module_to_Unused_List
 # 
-proc Sepct_Customize::move_Module_to_Unused_List { module } {
+proc Sepct_Customize::move_Module_to_Unused_List { module source_Path target_Path } {
 	variable used_Modules 
 	variable unUsed_Modules
 	
 	set used_Modules   [Sepct_Customize::remove_Module_from_List $used_Modules $module]
 	set unUsed_Modules [Sepct_Customize::add_Module_to_List $unUsed_Modules $module]
 	
-	return 0
+	# Update our internal database to have these changes.
+    	set rt [Sepct_db::move_file $source_Path $target_Path]
+	return $rt
 }
 
 ############################################################################
 # ::move_Module_to_Used_List
 # 
-proc Sepct_Customize::move_Module_to_Used_List { module } {
+proc Sepct_Customize::move_Module_to_Used_List { module source_Path target_Path } {
 	variable used_Modules 
 	variable unUsed_Modules
 	
 	set unUsed_Modules [Sepct_Customize::remove_Module_from_List $unUsed_Modules $module]
 	set used_Modules   [Sepct_Customize::add_Module_to_List $used_Modules $module]
 	
-	return 0
+	# Update our internal database to have these changes.
+    	set rt [Sepct_db::move_file $source_Path $target_Path]	
+	return $rt
 }
 
 ############################################################################
