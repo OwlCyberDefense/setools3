@@ -15,6 +15,7 @@
 
 #include "filter_window.h"
 #include "seaudit.h"
+#include "utilgui.h"
 #include <libseaudit/filters.h>
 #include <libseaudit/auditlog.h>
 #include <string.h>

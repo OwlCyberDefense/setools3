@@ -7,6 +7,7 @@
  */
 
 #include "seaudit.h"
+#include "utilgui.h"
 #include <string.h>
 #include <libapol/render.h>
 #include <libapol/policy-query.h>
