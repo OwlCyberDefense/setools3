@@ -1971,157 +1971,46 @@ out:
 
 
 
-int does_tt_rule_use_type(int searchflags,
-			  int idx, 
-			  int type, 
-			  unsigned char whichlist, 
-			  bool_t do_indirect, 
-			  tt_item_t *rule,
-			  int *cnt, 
-			  policy_t *policy)
+int does_tt_rule_use_type(int idx, int type, unsigned char whichlist, bool_t do_indirect, tt_item_t *rule,
+	int *cnt, policy_t *policy)
 {
-	int ans = FALSE;
-	ta_item_t *item;
-
+	int ans;
 		
 	if(whichlist & SRC_LIST) {
-		if (searchflags & SEARCHFLAG_SYNTACTIC) {
-			if (searchflags & SEARCHFLAG_TILDA) {
-				if (!(rule->flags & (AVFLAG_SRC_TILDA)))
-					return FALSE;
-			}
-
-			if (searchflags & SEARCHFLAG_MINUS) {
-				for(item = rule->src_types; item != NULL; item = item->next) {
-					if ((type_list_match_by_idx(idx, type, do_indirect, item, policy)) &&
-					    (item->type == IDX_ATTRIB)) {
-						(*cnt)++;
-						return TRUE;
-					}
-				}
-				return FALSE;
-			}
-
-			ans = type_list_match_by_idx(idx, type, do_indirect, rule->src_types, policy);
-			if (ans == TRUE)
-				(*cnt)++;
-			
-			return(ans);
-		}
-
-		if (searchflags & SEARCHFLAG_TILDA) {
-			if (rule->flags & (AVFLAG_SRC_TILDA)) {
-				(*cnt)++;
-				return TRUE;
-			}
-				
-			return FALSE;
-		}
-		
-		if (searchflags & SEARCHFLAG_STAR) {
-			if (rule->flags & (AVFLAG_SRC_STAR)) {
-				*(cnt)++;
-				return TRUE;
-			}
-
-			return FALSE;
-		}
-
 		if(rule->flags & (AVFLAG_SRC_STAR)) {
 			if(do_indirect) {
 				(*cnt)++;
 				return TRUE;
 			}
 		}
-
-		if (rule->flags & (AVFLAG_SRC_TILDA)) {
+		else {
 			ans = type_list_match_by_idx(idx, type, do_indirect, rule->src_types, policy);
-			if (ans == TRUE) {
-				return FALSE;
-			}
-
-			(*cnt)++;
-			return TRUE;
+			if (ans == -1)
+				return -1;
+			if(ans) {
+				(*cnt)++;
+				 return TRUE;
+			}		
 		}
-
-		ans = type_list_match_by_idx(idx, type, do_indirect, rule->src_types, policy);
-		if (ans == -1)
-			return -1;
-		if(ans) {
-			(*cnt)++;
-			return TRUE;
-		}
-
 	}
 
 	if(whichlist & TGT_LIST) {
-		if (searchflags & SEARCHFLAG_SYNTACTIC) {
-			if (searchflags & SEARCHFLAG_TILDA) {
-				if (!(rule->flags & (AVFLAG_TGT_TILDA)))
-					return FALSE;
-			}
-
-			if (searchflags & SEARCHFLAG_MINUS) {
-				for(item = rule->tgt_types; item != NULL; item = item->next) {
-					if ((type_list_match_by_idx(idx, type, do_indirect, item, policy)) &&
-					    (item->type == IDX_ATTRIB)) {
-						(*cnt)++;
-						return TRUE;
-					}
-				}
-				return FALSE;
-			}
-
-			ans = type_list_match_by_idx(idx, type, do_indirect, rule->tgt_types, policy);
-			if (ans == TRUE)
-				(*cnt)++;
-
-			return(ans);
-		}
-
-		if (searchflags & SEARCHFLAG_TILDA) {
-			if (rule->flags & (AVFLAG_TGT_TILDA)) {
-				(*cnt)++;
-				return TRUE;
-			}
-			return FALSE;
-		}
-		
-		if (searchflags & SEARCHFLAG_STAR) {
-			if (rule->flags & (AVFLAG_TGT_STAR)) {
-				(*cnt)++;
-				return TRUE;
-			}
-			return FALSE;
-		}
-
 		if(rule->flags & (AVFLAG_TGT_STAR)) {
 			if(do_indirect) {
 				(*cnt)++;
 				return TRUE;
 			}
 		}
-
-		if (rule->flags & (AVFLAG_TGT_TILDA)){
+		else {
 			ans = type_list_match_by_idx(idx, type, do_indirect, rule->tgt_types, policy);
-			if (ans == TRUE)
-				return FALSE;
-
-			(*cnt)++;
-			return TRUE;
-
-		}
-
-		ans = type_list_match_by_idx(idx, type, do_indirect, rule->tgt_types, policy);
-		if (ans == -1)
-			return -1;
-		if(ans) {
-			(*cnt)++;
-			return TRUE;
-		}
-
+			if (ans == -1)
+				return -1;
+			if(ans) {
+				(*cnt)++;
+				 return TRUE;
+			}
+		}		
 	}
-
 	if(whichlist & DEFAULT_LIST) {
 		ans = type_list_match_by_idx(idx, type, do_indirect, &(rule->dflt_type), policy);
 		if (ans == -1)
@@ -2136,154 +2025,44 @@ int does_tt_rule_use_type(int searchflags,
 	return FALSE;
 }
 
-int does_av_rule_use_type(int searchflags, int idx, int type, unsigned char whichlist, bool_t do_indirect, 
-			  av_item_t *rule, int *cnt, policy_t *policy)
+int does_av_rule_use_type(int idx, int type, unsigned char whichlist, bool_t do_indirect, 
+	av_item_t *rule, int *cnt, policy_t *policy)
 {
 	int ans;
-	ta_item_t *item;
-
+	
 	if(whichlist & SRC_LIST) {
-		if (searchflags & SEARCHFLAG_SYNTACTIC) {
-			if (searchflags & SEARCHFLAG_TILDA) {
-				if (!(rule->flags & (AVFLAG_SRC_TILDA)))
-					return FALSE;
-			}
-			
-			if (searchflags & SEARCHFLAG_MINUS) {
-				for(item = rule->src_types; item != NULL; item = item->next) {
-					if ((type_list_match_by_idx(idx, type, do_indirect, item, policy)) &&
-					    (item->type == IDX_ATTRIB)) {
-						(*cnt)++;
-						return TRUE;
-					}
-				}
-				return FALSE;
-			}
-
-			ans = type_list_match_by_idx(idx, type, do_indirect, rule->src_types, policy);
-			if (ans == TRUE)
-				(*cnt)++;
-
-			return(ans);
-
-		}
-
-		if (searchflags & SEARCHFLAG_TILDA) {
-			if (rule->flags & (AVFLAG_SRC_TILDA)) {
-				(*cnt)++;
-				return TRUE;
-			}
-				
-			return FALSE;
-		}
-
-		if (searchflags & SEARCHFLAG_STAR) {
-			if (rule->flags & (AVFLAG_SRC_STAR)) {
-				*(cnt)++;
-				return TRUE;
-			}
-
-			return FALSE;
-		}
-
-
 		if(rule->flags & (AVFLAG_SRC_STAR)) {
 			if(do_indirect) {
 				(*cnt)++;
 				return TRUE;
 			}
-		} 
-
-		if (rule->flags & (AVFLAG_SRC_TILDA)){
+		}
+		else {
 			ans = type_list_match_by_idx(idx, type, do_indirect, rule->src_types, policy);
-			if (ans == TRUE)
-				return FALSE;
-
-			(*cnt)++;
-			return TRUE;
-
-		}
-
-		ans = type_list_match_by_idx(idx, type, do_indirect, rule->src_types, policy);
-		if (ans == -1)
-			return -1;
-
-		if(ans) {
-			(*cnt)++;
-			return TRUE;
-		}
+			if (ans == -1)
+				return -1;
+			if(ans) {
+				(*cnt)++;
+				return TRUE;
+			}
+		}		
 	}
 	
 	if(whichlist & TGT_LIST) {
-		if (searchflags & SEARCHFLAG_SYNTACTIC) {
-			if (searchflags & SEARCHFLAG_TILDA) {
-				if (!(rule->flags & (AVFLAG_TGT_TILDA)))
-					return FALSE;
-			}
-
-			if (searchflags & SEARCHFLAG_MINUS) {
-				for(item = rule->tgt_types; item != NULL; item = item->next) {
-					if ((type_list_match_by_idx(idx, type, do_indirect, item, policy)) &&
-					    (item->type == IDX_ATTRIB)) {
-						(*cnt)++;
-						return TRUE;
-					}
-				}
-				return FALSE;
-			}
-
-			ans = type_list_match_by_idx(idx, type, do_indirect, rule->tgt_types, policy);
-			if (ans == TRUE)
-				(*cnt)++;
-
-			return(ans);
-
-		}
-
-		if (searchflags & SEARCHFLAG_TILDA) {
-			if (rule->flags & (AVFLAG_TGT_TILDA)) {
-				(*cnt)++;
-				return TRUE;
-			}
-				
-			return FALSE;
-		}
-
-		if (searchflags & SEARCHFLAG_STAR) {
-			if (rule->flags & (AVFLAG_TGT_STAR)) {
-				*(cnt)++;
-				return TRUE;
-			}
-
-			return FALSE;
-		}
-
-
 		if(rule->flags & (AVFLAG_TGT_STAR)) {
 			if(do_indirect) {
 				(*cnt)++;
-				return TRUE;
-			}
+				return TRUE;			}
 		}
-
-		if (rule->flags & (AVFLAG_TGT_TILDA)){
+		else {
 			ans = type_list_match_by_idx(idx, type, do_indirect, rule->tgt_types, policy);
-			if (ans == TRUE)
-				return FALSE;
-
-			(*cnt)++;
-			return TRUE;
-
+			if (ans == -1)
+				return -1;
+			if(ans) {
+				(*cnt)++;
+				return TRUE;
+			}		
 		}
-
-		ans = type_list_match_by_idx(idx, type, do_indirect, rule->tgt_types, policy);
-		if (ans == -1)
-			return -1;
-		if(ans) {
-			(*cnt)++;
-			return TRUE;
-		}		
-
 	}	
 	
 	/* no match */
@@ -2291,10 +2070,11 @@ int does_av_rule_use_type(int searchflags, int idx, int type, unsigned char whic
 }
 
 
+
 /* wrapper for does_av_rule_use_type() that accepts a rule idx rather than a rule pointer 
  * This wrapper also does not expose the cnter incrementing feature.  For rule_type,
  * 0 = access rules, 1 = audit rules  */
-int does_av_rule_idx_use_type(int searchflags, int rule_idx, unsigned char rule_type, int type_idx, int ta_type, 
+int does_av_rule_idx_use_type(int rule_idx, unsigned char rule_type, int type_idx, int ta_type, 
 		unsigned char whichlist, bool_t do_indirect, policy_t *policy)
 {
 	int unused_cnt = 0;
@@ -2314,7 +2094,7 @@ int does_av_rule_idx_use_type(int searchflags, int rule_idx, unsigned char rule_
 	}
 	else
 		return FALSE;
-	return does_av_rule_use_type(searchflags, type_idx, ta_type, whichlist, do_indirect, rule, &unused_cnt, policy);
+	return does_av_rule_use_type(type_idx, ta_type, whichlist, do_indirect, rule, &unused_cnt, policy);
 }
 
 
@@ -2382,127 +2162,42 @@ bool_t does_role_use_type(int role, int type, policy_t *policy)
  * Use -1 for source and/or target role to not match against it.
  * At least one of src/tgt must be a valid role idx
  */
-bool_t does_role_allow_use_role(int searchflags, int idx, unsigned char whichlist, bool_t do_indirect, role_allow_t *rule, int *cnt)
+bool_t does_role_allow_use_role(int idx, unsigned char whichlist, bool_t do_indirect, role_allow_t *rule, int *cnt)
 {
 	ta_item_t *item;
 		
 	if(whichlist & SRC_LIST) {
-		if (searchflags & SEARCHFLAG_SYNTACTIC) {
-			if (searchflags & SEARCHFLAG_TILDA) {
-				if (!(rule->flags & (AVFLAG_SRC_TILDA)))
-					return FALSE;
-			}
-
-			for(item = rule->src_roles; item != NULL; item = item->next) {
-				assert(item->type == IDX_ROLE);
-				if(idx == item->idx) {
-					(*cnt)++;
-					return TRUE;
-				}
-			}
-			return FALSE;
-		}
-
-		if (searchflags & SEARCHFLAG_TILDA) {
-			if (!(rule->flags & (AVFLAG_SRC_TILDA)))
-				return FALSE;
-			(*cnt)++;
-			return TRUE;
-		}
-
-		if (searchflags & SEARCHFLAG_STAR) {
-			if (!(rule->flags & (AVFLAG_SRC_STAR)))
-				return FALSE;
-			(*cnt)++;
-			return TRUE;
-		}
-
-
 		if(rule->flags & (AVFLAG_SRC_STAR)) {
 			if(do_indirect) {
 				(*cnt)++;
 				return TRUE;
 			}
 		}
-
-		if (rule->flags & (AVFLAG_SRC_TILDA)) {
-			for(item = rule->src_roles; item != NULL; item = item->next) {
-				assert(item->type == IDX_ROLE);
-				if (item->idx == idx) {
-					return FALSE;
-				}
-
-			}
-			(*cnt)++;
-			return TRUE;
-		}
-
+		else {
 					
-		for(item = rule->src_roles; item != NULL; item = item->next) {
-			assert(item->type == IDX_ROLE);
-			if(idx == item->idx) {
-				(*cnt)++;
-				return TRUE;
-			}
-		}
-
-	}
-	if(whichlist & TGT_LIST) {
-		if (searchflags & SEARCHFLAG_SYNTACTIC) {
-			if (searchflags & SEARCHFLAG_TILDA) {
-				if (!(rule->flags & (AVFLAG_TGT_TILDA)))
-					return FALSE;
-			}
-
-			for(item = rule->tgt_roles; item != NULL; item = item->next) {
+			for(item = rule->src_roles; item != NULL; item = item->next) {
 				assert(item->type == IDX_ROLE);
 				if(idx == item->idx) {
 					(*cnt)++;
 					return TRUE;
 				}
 			}
-			return FALSE;
-		}
-
-
-		if (searchflags & SEARCHFLAG_TILDA) {
-			if (!(rule->flags & (AVFLAG_TGT_TILDA)))
-				return FALSE;
-			(*cnt)++;
-			return TRUE;
-		}
-
-		if (searchflags & SEARCHFLAG_STAR) {
-			if (!(rule->flags & (AVFLAG_TGT_STAR)))
-				return FALSE;
-			(*cnt)++;
-			return TRUE;
-		}
-
+		}	
+	}
+	if(whichlist & TGT_LIST) {
 		if(rule->flags & (AVFLAG_TGT_STAR)) {
 			if(do_indirect) {
 				(*cnt)++;
 				return TRUE;
 			}
-		}
-
-		if (rule->flags & (AVFLAG_TGT_TILDA)) {
+		}	
+		else {	
 			for(item = rule->tgt_roles; item != NULL; item = item->next) {
 				assert(item->type == IDX_ROLE);
-				if (item->idx == idx) {
-					return FALSE;
+				if(idx == item->idx) {
+					(*cnt)++;
+					return TRUE;
 				}
-
-			}
-			(*cnt)++;
-			return TRUE;
-		}
-	
-		for(item = rule->tgt_roles; item != NULL; item = item->next) {
-			assert(item->type == IDX_ROLE);
-			if(idx == item->idx) {
-				(*cnt)++;
-				return TRUE;
 			}
 		}
 	}
@@ -2511,17 +2206,18 @@ bool_t does_role_allow_use_role(int searchflags, int idx, unsigned char whichlis
 
 
 /* NOTE: role_transition rule only has roles in the source and default field. */
-bool_t does_role_trans_use_role(int searchflags, int idx, unsigned char whichlist, bool_t do_indirect, rt_item_t *rule, int *cnt)
+bool_t does_role_trans_use_role(int idx, unsigned char whichlist, bool_t do_indirect, rt_item_t *rule, int *cnt)
 {
 	ta_item_t *item;
 		
 	if(whichlist & SRC_LIST) {
-		if (searchflags & SEARCHFLAG_SYNTACTIC) {
-			if (searchflags & SEARCHFLAG_TILDA) {
-				if (!(rule->flags & (AVFLAG_SRC_TILDA)))
-					return FALSE;
+		if(rule->flags & (AVFLAG_SRC_STAR)) {
+			if(do_indirect) {
+				(*cnt)++;
+				return TRUE;
 			}
-
+		}
+		else {			
 			for(item = rule->src_roles; item != NULL; item = item->next) {
 				assert(item->type == IDX_ROLE);
 				if(idx == item->idx) {
@@ -2529,56 +2225,8 @@ bool_t does_role_trans_use_role(int searchflags, int idx, unsigned char whichlis
 					return TRUE;
 				}
 			}
-			return FALSE;
-		}
-
-		if (searchflags & SEARCHFLAG_TILDA) {
-			if (!(rule->flags & (AVFLAG_SRC_TILDA)))
-				return FALSE;
-
-			(*cnt)++;
-			return TRUE;
-		}
-
-		if (searchflags & SEARCHFLAG_STAR) {
-			if (!(rule->flags & (AVFLAG_SRC_STAR)))
-				return FALSE;
-
-			(*cnt)++;
-			return TRUE;
-		}
-
-
-		if(rule->flags & (AVFLAG_SRC_STAR)) {
-			if(do_indirect) {
-				(*cnt)++;
-				return TRUE;
-			}
-		}
-
-		if (rule->flags & (AVFLAG_SRC_TILDA)) {
-			for(item = rule->src_roles; item != NULL; item = item->next) {
-				assert(item->type == IDX_ROLE);
-				if (item->idx == idx) {
-					return FALSE;
-				}
-
-			}
-			(*cnt)++;
-			return TRUE;
-		}
-
-		for(item = rule->src_roles; item != NULL; item = item->next) {
-			assert(item->type == IDX_ROLE);
-			if(idx == item->idx) {
-				(*cnt)++;
-				return TRUE;
-			}
-		}
-		return FALSE;
-
+		}	
 	}
-
 	if(whichlist & DEFAULT_LIST) {
 		assert(rule->trans_role.type == IDX_ROLE);
 		if(idx == rule->trans_role.idx) {
@@ -2586,59 +2234,14 @@ bool_t does_role_trans_use_role(int searchflags, int idx, unsigned char whichlis
 			return TRUE;
 		}
 	}
-
 	return FALSE;
 }
 
 /* NOTE: role_transition rule only has types/attribs in the target field. */
-int does_role_trans_use_ta(int searchflags, int idx, int type, bool_t do_indirect, rt_item_t *rule, int *cnt, policy_t *policy)
+int does_role_trans_use_ta(int idx, int type, bool_t do_indirect, rt_item_t *rule, int *cnt, policy_t *policy)
 {
 	ta_item_t *item;
 	int ans;
-
-	if (searchflags & SEARCHFLAG_SYNTACTIC) {
-		if (searchflags & SEARCHFLAG_TILDA) {
-			if (!(rule->flags & (AVFLAG_TGT_TILDA)))
-				return FALSE;
-
-		}
-
-		if (searchflags & SEARCHFLAG_MINUS) {
-			for(item = rule->tgt_types; item != NULL; item = item->next) {
-				if ((type_list_match_by_idx(idx, type, do_indirect, item, policy)) &&
-				    (item->type == IDX_ATTRIB)) {
-					(*cnt)++;
-					return TRUE;
-				}
-			}
-			return FALSE;
-		}
-
-		ans = type_list_match_by_idx(idx, type, do_indirect, rule->tgt_types, policy);
-		if (ans == -1)
-			return -1;
-		if(ans) {
-			(*cnt)++;
-			return TRUE;
-		}
-		return FALSE;
-
-		
-	}
-
-	if (searchflags & SEARCHFLAG_TILDA) {
-		if (!(rule->flags & (AVFLAG_TGT_TILDA)))
-			return FALSE;
-		(*cnt++);
-		return TRUE;
-	}
-
-	if (searchflags & SEARCHFLAG_STAR) {
-		if (!(rule->flags & (AVFLAG_TGT_STAR)))
-			return FALSE;
-		(*cnt++);
-		return TRUE;
-	}
 
 	if(rule->flags & (AVFLAG_TGT_STAR)) {
 		if(do_indirect) {
@@ -2646,35 +2249,20 @@ int does_role_trans_use_ta(int searchflags, int idx, int type, bool_t do_indirec
 			return TRUE;
 		}
 	}
-
-	if(rule->flags & (AVFLAG_TGT_TILDA)) {
-		ans = type_list_match_by_idx(idx, type, do_indirect, rule->tgt_types, policy);
-		if (ans == TRUE) {
-			return FALSE;
+	else {			
+		for(item = rule->tgt_types; item != NULL; item = item->next) {
+			ans = type_list_match_by_idx(idx, type, do_indirect, rule->tgt_types, policy);
+			if (ans == -1)
+				return -1;
+			if(ans) {
+				(*cnt)++;
+				return TRUE;
+			}		
 		}
-		
-		(*cnt)++;
-		return TRUE;
-	}
-
-	/* 
-	   FIXME: Do we actually need this for loop? Since it seems to have no effect on
-		  the parameters to type_list_match_by_idx(), it looks like we only need
-		  the body.
-	*/
-	/* for(item = rule->tgt_types; item != NULL; item = item->next) { */
-	ans = type_list_match_by_idx(idx, type, do_indirect, rule->tgt_types, policy);
-	if (ans == -1)
-		return -1;
-	if(ans) {
-		(*cnt)++;
-		return TRUE;
-	}		
-	/* } */
+	}	
 	
 	return FALSE;
 }
-
 
 /* rule_type == 1 means access rules, otherwise audit rules */
 bool_t does_av_rule_use_classes(int rule_idx, int rule_type, int *cls_idxs, int num_cls_idxs, policy_t *policy)
@@ -2705,14 +2293,15 @@ bool_t does_av_rule_use_classes(int rule_idx, int rule_type, int *cls_idxs, int 
 
 	return FALSE;
 }
-/* rule_type == 1 means access rules, otherwise audit rules */
-bool_t does_av_rule_use_perms(int searchflags, int rule_idx, int rule_type, int *perm_idxs, int num_perm_idxs, policy_t *policy)
+
+/* rule_type == 1 means access rules, otherwise audit rules 
+ * FIX?: Doesn't address  ~  */
+bool_t does_av_rule_use_perms(int rule_idx, int rule_type, int *perm_idxs, int num_perm_idxs, policy_t *policy)
 {
 	int i;
 	av_item_t *rule;
 	ta_item_t *ptr;
-	ta_item_t *cptr;
-
+	
 	if(policy == NULL || !is_valid_av_rule_idx(rule_idx, rule_type, policy))
 		return FALSE;
 	if(perm_idxs == NULL || num_perm_idxs < 1)
@@ -2724,67 +2313,9 @@ bool_t does_av_rule_use_perms(int searchflags, int rule_idx, int rule_type, int 
 	else {
 		rule = &(policy->av_audit[rule_idx]);
 	}
-
-	if (searchflags & SEARCHFLAG_SYNTACTIC) {
-		if (searchflags & SEARCHFLAG_TILDA) {
-			if (!(rule->flags & AVFLAG_PERM_TILDA))
-				return FALSE;
-		}
-
-		for(ptr = rule->perms; ptr != NULL ; ptr = ptr->next) {
-			assert(ptr->type == IDX_PERM);
-			for(i = 0; i < num_perm_idxs; i++) {
-				if(perm_idxs[i] == ptr->idx)
-					return TRUE;
-			}
-		}
-
-		return FALSE;
-	}
-
-	if (searchflags & SEARCHFLAG_TILDA) {
-		if (rule->flags & AVFLAG_PERM_TILDA)
-			return TRUE;
-
-		return FALSE;
-	}
-
-	if (searchflags & SEARCHFLAG_STAR) {
-		if (rule->flags & AVFLAG_PERM_STAR)
-			return TRUE;
-
-		return FALSE;
-	}
-
-
 	if(rule->flags & AVFLAG_PERM_STAR) {
-		for (cptr = rule->classes; cptr != NULL; cptr = cptr->next) {
-			assert(cptr->type == IDX_OBJ_CLASS);
-			for(i = 0; i < num_perm_idxs; i++) {
-				if (is_valid_perm_for_obj_class(policy, cptr->idx, perm_idxs[i]))
-					return TRUE;
-			}
-		}
-		return FALSE;
-	}
-
-	if(rule->flags & AVFLAG_PERM_TILDA) {
-		for (cptr = rule->classes; cptr != NULL; cptr = cptr->next) {
-			for(ptr = rule->perms; ptr != NULL ; ptr = ptr->next) {
-				for(i = 0; i < num_perm_idxs; i++) {
-					if (!is_valid_perm_for_obj_class(policy, cptr->idx, perm_idxs[i])) {
-						return FALSE;
-					}
-					if(perm_idxs[i] == ptr->idx) {
-						return FALSE;
-					}
-				}
-			}
-		}
-
 		return TRUE;
 	}
-
 	for(ptr = rule->perms; ptr != NULL ; ptr = ptr->next) {
 		assert(ptr->type == IDX_PERM);
 		for(i = 0; i < num_perm_idxs; i++) {
@@ -2792,9 +2323,7 @@ bool_t does_av_rule_use_perms(int searchflags, int rule_idx, int rule_type, int 
 				return TRUE;
 		}
 	}
-
 	return FALSE;
-
 }
 
 
@@ -2880,23 +2409,22 @@ int get_rule_lineno(int rule_idx, int rule_type, policy_t *policy)
  *
  * NOTE: * in list will return all types; this indicated by return 2, types = NULL, 
  *	num_type = policy->num_types
+ * TODO?: ~ is ignored in this
  */
-int extract_types_from_te_rule(int rule_idx,
-			       int rule_type,
-			       unsigned char whichlist,
-			       int **types,
-			       int *num_types,
-			       policy_t *policy)
+int extract_types_from_te_rule(int rule_idx, int rule_type, unsigned char whichlist, int **types, 
+		int *num_types, bool_t *self, policy_t *policy)
 {
 	ta_item_t *tlist, *t;
 	unsigned char flags;
 	bool_t *b_types = NULL;
 	int i, ret = 0, num_subtracted_types, num_subtracted_attribs;
 	int *subtracted_types, *subtracted_attribs;
-	int *ltypes = NULL;
 	
 	if(policy == NULL || types == NULL || num_types == NULL || rule_idx < 0 || !(whichlist & SRC_LIST || whichlist &TGT_LIST))
 		return -1;
+		
+	if (self)
+		*self = FALSE;
 	
 	/* finish validation and get ptr to appropriate type list */
 	switch (rule_type) {
@@ -2941,14 +2469,12 @@ int extract_types_from_te_rule(int rule_idx,
 		return -1;
 		break;
 	}
-
 	
-
 	/* first look for subtracted types and attributes - collect these for use later */
 	if (collect_subtracted_types_attribs(&num_subtracted_types, &subtracted_types,
 			&num_subtracted_attribs, &subtracted_attribs, tlist, policy) == -1)
 		return -1;
-
+	
 	*types = NULL;
 	*num_types = 0;
 	/* handle star */
@@ -2994,7 +2520,12 @@ int extract_types_from_te_rule(int rule_idx,
 			/* handle self in the target list */
 			if (whichlist & TGT_LIST && t->idx == 0) {
 				int i, r, n, *l;
-				r = extract_types_from_te_rule(rule_idx, rule_type, SRC_LIST, &l, &n, policy);
+				
+				if (self) {
+					*self = TRUE;
+					continue;	
+				}
+				r = extract_types_from_te_rule(rule_idx, rule_type, SRC_LIST, &l, &n, NULL, policy);
 				if (r == -1) {
 					ret = -1;
 					goto out;
@@ -3049,27 +2580,6 @@ int extract_types_from_te_rule(int rule_idx,
 		}
 	}
 	
-	/* Get the complement, if necessary  */
-	if ((flags & AVFLAG_SRC_TILDA) ||
-	    (flags & AVFLAG_TGT_TILDA)) {
-		*num_types = 0;
-		for (i = 0; i < policy->num_types; i++) {
-			if (b_types[i] == FALSE) {
-				if (add_i_to_a(i, num_types, &ltypes) == -1) {
-					ret = -1;
-					goto out;
-				}
-			}
-		}
-
-		if (*types) {
-			free(*types);
-		}
-
-		*types = ltypes;
-	}
-
-
 out:
 	if (b_types)
 		free(b_types);
@@ -3086,6 +2596,7 @@ out:
  *
  * NOTE: * in list will return all object classes; this indicated by return 2, obj_classes = NULL, 
  *	num_obj_classes = policy->num_obj_classes
+ * TODO?: ~ is ignored in this
  */
 int extract_obj_classes_from_te_rule(int rule_idx, int rule_type, int **obj_classes, int *num_obj_classes, policy_t *policy)
 {
@@ -3144,16 +2655,12 @@ int extract_obj_classes_from_te_rule(int rule_idx, int rule_type, int **obj_clas
  *
  * NOTE: * in list will return 2, perms = NULL, and an undefined num_perms (which shouldn't be
  *       used. The caller must expand the perms for each object class in this case.
+ * TODO?: ~ is ignored in this
  */
 int extract_perms_from_te_rule(int rule_idx, int rule_type, int **perms, int *num_perms, policy_t *policy)
 {
 	ta_item_t* perm_ptr = NULL;
-	ta_item_t* class_ptr = NULL;
 	av_item_t* rule = NULL;
-	int i = 0, j = 0;
-	int num_obj_class_perms = 0, *obj_class_perms = NULL;
-	int num_out_perms = 0, *out_perms = NULL;
-	int perm = 0;
 
 	if (rule_idx >= policy->num_av_access || rule_idx < 0 || policy == NULL)
 		return -1;
@@ -3187,43 +2694,11 @@ int extract_perms_from_te_rule(int rule_idx, int rule_type, int **perms, int *nu
 		return 2;
 	}
 
-	if (rule->flags & AVFLAG_PERM_TILDA) {
-		for (class_ptr = rule->classes;
-			     class_ptr != NULL;
-			     class_ptr = class_ptr->next) {
-			
-			if (get_obj_class_perms(i, &num_obj_class_perms, &obj_class_perms, policy) == -1)
-				return -1;
-			
-			for (perm_ptr = rule->perms;
-			     perm_ptr != NULL;
-			     perm_ptr = perm_ptr->next) {
-				for (j = 0; j < num_obj_class_perms; j++) {
-					perm = obj_class_perms[j];
-					if (perm_ptr->idx != perm) {
-						/* don't add more than once */
-						if (find_int_in_array(perm, out_perms, num_out_perms) == -1) {
-							if (add_i_to_a(perm, &num_out_perms, &out_perms) == -1) {
-								return -1;
-							}
-						}
-					}
-				}
-			}
-		}
-
-		num_perms = &num_out_perms;
-		perms = &out_perms;
-		return(0);
-	}
-
-
 	for (perm_ptr = rule->perms; perm_ptr != NULL; perm_ptr = perm_ptr->next) {
 		if (add_i_to_a(perm_ptr->idx, num_perms, perms) != 0) {
 			return -1;
 		}
 	}
-
 	return 0;
 }
 
@@ -3477,29 +2952,3 @@ int get_cond_bool_name(int idx, char **name, policy_t *policy)
 	return 0;
 }
 
-
-int get_complement(ta_item_t *item,
-		   int trg_size,
-		   int *out_count,
-		   int **out_array)
-{
-	int i = 0;
-
-	int tmp_count = 0;
-	int *tmp_array = 0;
-
-	for (; item != NULL; item = item->next) {
-		if (add_i_to_a(item->idx, &tmp_count, &tmp_array) == -1)
-			return(-1);
-	}
-
-	for (i = 0; i < trg_size; i++) {
-		if (((find_int_in_array(i, tmp_array, tmp_count) == -1)) &&
-		    ((find_int_in_array(i, *out_array, *out_count) == -1)))
-			if (add_i_to_a(i, out_count, out_array) == -1) {
-				return -1;
-			}
-	}
-
-	return 0;
-}
