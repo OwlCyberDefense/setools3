@@ -81,6 +81,9 @@ unsigned int validate_policy_options(unsigned int options)
 {
 	unsigned int opts = options;
 
+	/* always include the basic conditional pieces */
+	opts |= (POLOPT_COND_BOOLS|POLOPT_COND_EXPR);
+
 	/* NOTE: The order of these is important */	
 	if(POLOPT_TE_RULES & opts)
 		opts |= (POLOPT_OBJECTS|POLOPT_TYPES);
