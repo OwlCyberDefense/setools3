@@ -397,7 +397,7 @@ void on_about_seaudit_activate(GtkWidget *widget, GdkEvent *event, gpointer call
 	g_string_append(str, "\nlibseaudit version ");
 	g_string_append(str, LIBSEAUDIT_VERSION_STRING);
 	g_string_append(str, "\nlibapol version ");
-	g_string_append(str, VERSION_STRING); /* the libapol version */
+	g_string_append(str, LIBAPOL_VERSION_STRING); /* the libapol version */
 	
 	dialog = gtk_message_dialog_new(seaudit_app->top_window,
 					GTK_DIALOG_DESTROY_WITH_PARENT,
@@ -930,7 +930,7 @@ static void print_version_info(void)
 {
 	printf("Audit Log analysis tool for Security Enhanced Linux\n\n");
 	printf("   GUI version %s\n", SEAUDIT_GUI_VERSION_STRING);
-	printf("   libapol version %s\n", VERSION_STRING);
+	printf("   libapol version %s\n", LIBAPOL_VERSION_STRING);
 	printf("   libseaudit version %s\n\n", LIBSEAUDIT_VERSION_STRING);
 }
 
