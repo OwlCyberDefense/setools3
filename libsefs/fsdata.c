@@ -1259,7 +1259,6 @@ int sefs_filesystem_db_populate(sefs_filesystem_db_t *fsd, char *dir)
 
 	int (*fn)(const char *file, const struct stat64 *sb, int flag, struct FTW *s) = ftw_handler;
 	for (i = 0; i < num_mounts; i++ ) {
-		fprintf(stderr,"mount[%d] is %s\n",i,mounts[i]);
 		if (nftw64(mounts[i],fn,NFTW_DEPTH,NFTW_FLAGS) == -1) {
 			fprintf(stderr, "Error scanning tree rooted at %s\n", dir);
 			return -1;
