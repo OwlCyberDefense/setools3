@@ -1,5 +1,9 @@
-/* Copyright (C) 2003-2005 Tresys Technology, LLC
+/* Copyright (C) 2004-2005 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
+
+/* 
+ * Author: Jeremy A. Mowery jmowery@tresys.com
+ */
 
 #include "policy.h"
 #include "policy-query.h"
@@ -738,7 +742,7 @@ static int apol_single_type_relabel(relabel_set_t *sets, int domain, int type, i
 		return -1;
 	*array = NULL;
 	*size = 0;
-	if(mode == MODE_TO){
+	if(mode == MODE_FROM){
 		if (!apol_is_type_in_list(&(sets[domain]), type, FROMLIST)) 
 			return NOTHERE;
 		for (i = 0; i < sets[domain].num_types; i++){
@@ -748,7 +752,7 @@ static int apol_single_type_relabel(relabel_set_t *sets, int domain, int type, i
 					return -1;
 			}
 		}
-	} else if (mode == MODE_FROM) {
+	} else if (mode == MODE_TO) {
 		if (!apol_is_type_in_list(&(sets[domain]), type, TOLIST))
 			return NOTHERE;
 		for (i = 0; i < sets[domain].num_types; i++){
