@@ -257,25 +257,29 @@ int init_rules_bool(bool_t include_audit, rules_bool_t *rules_b, policy_t *polic
 	return 0;
 }
 
-int init_rbac_bool(rbac_bool_t *b, policy_t *policy) 
+/* 20050106 Added roles to argument list since I may want to create 
+ * this with either the number of rules or the number of roles 
+ */
+
+int init_rbac_bool(rbac_bool_t *b, policy_t *policy, bool_t roles) 
 {
 	if(b == NULL)
 		return -1;
 		
-	b->allow = (bool_t *)malloc(policy->num_role_allow * sizeof(bool_t));
+	b->allow = (bool_t *)malloc(roles? policy->num_roles : policy->num_role_allow * sizeof(bool_t));
 	if(b->allow == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
 	}
-	memset(b->allow, 0, policy->num_role_allow * sizeof(bool_t));
+	memset(b->allow, 0, roles? policy->num_roles : policy->num_role_allow * sizeof(bool_t));
 	b->a_cnt = 0;
 	
-	b->trans = (bool_t *)malloc(policy->num_role_trans * sizeof(bool_t));
+	b->trans = (bool_t *)malloc(roles? policy->num_roles : policy->num_role_trans * sizeof(bool_t));
 	if(b->trans == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
 	}
-	memset(b->trans, 0, policy->num_role_trans * sizeof(bool_t));
+	memset(b->trans, 0, roles? policy->num_roles : policy->num_role_trans * sizeof(bool_t));
 	b->t_cnt = 0;
 	
 	return 0;
