@@ -1,4 +1,4 @@
-/* Copyright (C) 2001-2002 Tresys Technology, LLC
+/* Copyright (C) 2001-2004 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
  
 /* This file largley copied directly from SE Linux source */
@@ -11,6 +11,7 @@ unsigned int policydb_errors = 0;
 %array
 letter  [A-Za-z]
 digit   [0-9]
+hexval	[0-9A-Fa-f]
 %%
 CLONE |
 clone				{ return(CLONE); }
@@ -134,6 +135,7 @@ T2				{ return(T2); }
 {letter}({letter}|{digit}|_)*	{ return(IDENTIFIER); }
 {letter}({letter}|{digit}|_|"."|"-")*	{ return(USER_IDENTIFIER); }
 {digit}{digit}*                 { return(NUMBER); }
+{hexval}{0,4}":"{hexval}{0,4}":"({hexval}|":"|".")*	{ return(IPV6_ADDR); }
 #[^\n]*                         { /* delete comments */ }
 [ \t\f]+			{ /* delete whitespace */ }
 \n				{ /* delete whitespace */ policydb_lineno++; }
