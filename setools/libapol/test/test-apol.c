@@ -87,6 +87,8 @@ static int test_hash_table(policy_t *policy)
 		printf("     1)  Free Hash table\n");
 		printf("     2)  Display Hash Table stats\n");
 		printf("     3)  Render Hash table\n");
+		printf("     4)  Partial key search\n");
+		printf("     5)  Display type indexes\n");
 		printf("     q)  Exit Hash Table submenu\n");
 		printf("\nCommand (\'m\' for menu):  ");
 		fgets(ans, sizeof(ans), stdin);	
@@ -165,7 +167,99 @@ static int test_hash_table(policy_t *policy)
 				}
 			}
 			}
-			break;	
+			break;
+		case '4':
+			{
+				int i, type, tgt_type;
+				char typename[1024], *rule;
+				avh_idx_t *idx;
+				
+				if(!avh_hash_table_present(policy->avh)) {
+					printf("   You must first load the hash table\n");
+					break;
+				}
+				
+				printf("Enter key type: 1) source type 2) target type: ");
+				fgets(typename, sizeof(typename), stdin);
+				typename[strlen(typename) - 1] = '\0';
+				if (typename[0] == '1')
+					tgt_type = 0;
+				else
+					tgt_type = 1;
+				printf("Entery type name: ");
+				fgets(typename, sizeof(typename), stdin);
+				typename[strlen(typename) - 1] = '\0';
+				type = get_type_idx(typename, policy);
+				if (type <= 0) {
+					printf("invalid type\n");
+					break;
+				}
+				
+				if (!tgt_type) {
+					idx = avh_idx_find(policy->avh.src_type_idx, type);
+				} else {
+					idx = avh_idx_find(policy->avh.tgt_type_idx, type);
+				}
+				
+				if (idx == NULL || idx->num_nodes == 0) {
+					printf("no rules with type found\n");
+					break;
+				}
+				
+				for (i = 0; i < idx->num_nodes; i++) {
+					rule = re_render_avh_rule(idx->nodes[i], policy);
+					if(rule == NULL) {
+						assert(0);
+						return -1;
+					}
+					fprintf(outfile, "%s\n", rule);
+					free(rule);	
+				}
+			}
+			break;
+		case '5':
+			{
+				char *s, *rule;
+				avh_idx_t *cur;
+				int i;
+				
+				if(!avh_hash_table_present(policy->avh)) {
+					printf("   You must first load the hash table\n");
+					break;
+				}
+				
+				printf("SOURCE\n");
+				for (cur = policy->avh.src_type_idx; cur != NULL; cur = cur->next) {
+					assert(get_type_name(cur->data, &s, policy) == 0);
+					printf("rules for type %s[%d]:\n", s, cur->data);
+					free(s);
+					for (i = 0; i < cur->num_nodes; i++) {
+						rule = re_render_avh_rule(cur->nodes[i], policy);
+						if(rule == NULL) {
+							assert(0);
+							return -1;
+						}
+						fprintf(outfile, "\t%s\n", rule);
+						free(rule);
+					}
+				}
+				printf("TARGET\n");
+				for (cur = policy->avh.tgt_type_idx; cur != NULL; cur = cur->next) {
+					assert(get_type_name(cur->data, &s, policy) == 0);
+					printf("rules for type %s[%d]:\n", s, cur->data);
+					free(s);
+					for (i = 0; i < cur->num_nodes; i++) {
+						rule = re_render_avh_rule(cur->nodes[i], policy);
+						if(rule == NULL) {
+							assert(0);
+							return -1;
+						}
+						fprintf(outfile, "\t%s\n", rule);
+						free(rule);
+					}
+				}
+			}
+			break;
 		case 'q':
 		case 'x':
 			return 0;
