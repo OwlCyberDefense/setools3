@@ -1,6 +1,6 @@
 AN OVERVIEW OF DOMAIN TRANSITION ANALYSIS
 apol, version 1.4
-July 07, 2004
+August 10, 2004
 selinux@tresys.com
 
 A key feature of Type Enforcement (TE) security is the ability to 
@@ -40,7 +40,7 @@ analysis.  A forward analysis allows you to select a SOURCE type and
 determine all the TARGET types to which the source may transition. 
 You may also select object classes, permissions, and object types to 
 find transitions to domains that have specific privileges or that have
-access to a particular object type(s).A reverse analysis is the opposite; 
+access to a particular object type(s). A reverse analysis is the opposite; 
 you select a TARGET type and determine all the SOURCE types that may 
 transition to the target type.
 
@@ -89,10 +89,12 @@ point type).
    meets this criterion by allowing the target type (passwd_t) 
    'file entrypoint' access to the file entrypoint type (pass_exec_t).  
    
-
-
-In the analysis results, apol will list all the types that meet the above 
-three criteria.
+In the analysis results for a reverse domain transition analysis, apol 
+will list all the types that meet the above three criteria. On the other 
+hand, results for a forward domain transition analysis will be limited 
+to types that meet the above three criteria and that have the specified
+privileges or access to a particular object type(s). See 'General Help' 
+for the Forward DTA Advanced Search Options feature in apol.
 
 
 
