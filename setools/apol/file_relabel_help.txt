@@ -16,7 +16,7 @@ analysis as enumerated below (It should be noted that the cases presented are
 not intended to be an exhaustive list):
 
 Case 1:
-The fist case is the simplest and most common search desired - given a starting
+The first case is the simplest and most common search desired - given a starting
 type, in a single step, to what types can it be relabeled in which domains.  
 
 Case 2:
