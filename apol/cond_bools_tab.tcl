@@ -46,49 +46,55 @@ proc Apol_Cond_Bools::cond_bool_search_bools {} {
 	variable cond_bools_dflt_value_array
 	variable cond_bools_list
 	variable resultsbox
-		
-	if {$Apol_Cond_Bools::enable_bool_combo_box && $search_opts(boolean) != ""} {	
-		set results [append results "$search_opts(boolean)"]
-		if {$search_opts(default_state)} {
-			if {$cond_bools_dflt_value_array($search_opts(boolean))} {
-				set results [append results "  Default State: True"]
-			} else {
-				set results [append results "  Default State: False"]
-			}
-		} 
-		if {$search_opts(curr_state)} {
-			if {$cond_bools_value_array($search_opts(boolean))} {
-				set results [append results "  Current State: True"]
-			} else {
-				set results [append results "  Current State: False"]
-			}
-		}
-		set results [append results "\n"]
-	} else {
-		foreach bool $cond_bools_list {
-			set results [append results "$bool"]
+	
+	if {[ApolTop::is_policy_open]} {
+		set results ""
+		if {$Apol_Cond_Bools::enable_bool_combo_box && $search_opts(boolean) != ""} {	
+			set results [append results "$search_opts(boolean)"]
 			if {$search_opts(default_state)} {
-				if {$cond_bools_dflt_value_array($bool)} {
+				if {$cond_bools_dflt_value_array($search_opts(boolean))} {
 					set results [append results "  Default State: True"]
 				} else {
 					set results [append results "  Default State: False"]
 				}
 			} 
 			if {$search_opts(curr_state)} {
-				if {$cond_bools_value_array($bool)} {
+				if {$cond_bools_value_array($search_opts(boolean))} {
 					set results [append results "  Current State: True"]
 				} else {
 					set results [append results "  Current State: False"]
 				}
 			}
 			set results [append results "\n"]
+		} else {
+			foreach bool $cond_bools_list {
+				set results [append results "$bool"]
+				if {$search_opts(default_state)} {
+					if {$cond_bools_dflt_value_array($bool)} {
+						set results [append results "  Default State: True"]
+					} else {
+						set results [append results "  Default State: False"]
+					}
+				} 
+				if {$search_opts(curr_state)} {
+					if {$cond_bools_value_array($bool)} {
+						set results [append results "  Current State: True"]
+					} else {
+						set results [append results "  Current State: False"]
+					}
+				}
+				set results [append results "\n"]
+			}
 		}
+	
+		$resultsbox configure -state normal
+		$resultsbox delete 0.0 end
+		$resultsbox insert end $results
+		ApolTop::makeTextBoxReadOnly $resultsbox 
+	} else {
+		tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened!"
+		return -1
 	}
-
-	$resultsbox configure -state normal
-	$resultsbox delete 0.0 end
-	$resultsbox insert end $results
-	ApolTop::makeTextBoxReadOnly $resultsbox 
 	
 	return 0
 }
