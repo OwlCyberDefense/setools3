@@ -127,15 +127,30 @@ typedef struct types_relation_query {
 	iflow_query_t *trans_flow_query;   /* transitive flows */
 } types_relation_query_t;
 
+typedef struct types_relation_rules {
+	int num_rules;
+	int *rules;
+} types_relation_rules_t;
+
+/* This struct is basically a database for a particular type, which in the types relationship
+ * analysis would be considered the start type. This structure contains an array of 
+ * types_relation_rules_t structs, each of which maps 'allow' rules from the policy which 
+ * give a starting type access to a particular target type. So for example, this would 
+ * be used to store all 'allow' rule indices from the main policy database which allow typeA 
+ * access to let's say...passwd_t. By having seperate instances of this structure for a
+ * typeA and typeB, we can then determine the access to types that they have in common, 
+ * as well as any unique access. */
+typedef struct types_relation_type_access_pool {	
+	int num_types;				/* This corresponds to the number of types in the policy */
+	int *types;				
+	types_relation_rules_t **type_rules; 	/* each array index corresponds to a type index from the policy */
+} types_relation_type_access_pool_t;
+
 typedef struct types_relation_obj_access {
-	int num_objs_A;
+	int num_objs_A;	
 	int *objs_A;
 	int num_objs_B;
 	int *objs_B;
-	int *obj_type_rules_A;
-	int num_obj_type_rules_A;
-	int *obj_type_rules_B;
-	int num_obj_type_rules_B;
 } types_relation_obj_access_t;
 				  
 /*
@@ -162,6 +177,8 @@ typedef struct types_relation_results {
 	int *other_tt_rules_results;
 	int num_process_inter_rules;
 	int *process_inter_results;
+	types_relation_type_access_pool_t typeA_access_pool;
+	types_relation_type_access_pool_t typeB_access_pool;
 	types_relation_obj_access_t *common_obj_types_results;
 	types_relation_obj_access_t *unique_obj_types_results;
 } types_relation_results_t;
