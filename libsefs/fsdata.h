@@ -103,7 +103,7 @@ int sefs_filesystem_data_index(sefs_filesystem_data_t * fsd);
 int sefs_scan_tree(char * dir);
 int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char * filename);
 int sefs_filesystem_data_load(sefs_filesystem_data_t * fsd, char *filename);
-int sefs_get_file_class(const struct stat *statptr);
+int sefs_get_file_class(const struct stat64 *statptr);
 int sefs_is_valid_object_class(const char *class_name);
 void sefs_print_valid_object_classes(void);
 int add_uint_to_a(uint32_t i, uint32_t *cnt, uint32_t **a);
