@@ -339,6 +339,7 @@ static int dta_add_forward_process_trans_types_and_rules(dta_query_t *dta_query,
 				      		         policy_t *policy)
 {
 	int i, j, idx, rule_uses_type;
+	rules_bool_t b_target_types;
 		
 	/* Enhanced Forward dta_results: Once we have extracted the type from the process 
 	   transition rule, we need to see if this type has the specified permissions and 
@@ -347,6 +348,11 @@ static int dta_add_forward_process_trans_types_and_rules(dta_query_t *dta_query,
 	   have specific privileges or that have access to a particular object type(s). */
 	    	
 	for (i = 0; i < num_types; i++) {				
+		/* b_target_types (all rules that have the target domain as SOURCE. */
+		if (init_rules_bool(0, &b_target_types, policy) != 0) 
+			return -1;
+		
+
 		/* NOTE: We have a special case if types[i] == 0.  This is the pseudo
 		 *	type 'self'.  In this case we really don't want to add self, but
 		 *	rather the start_idx.  So in that case we'll change the idx
@@ -357,32 +363,43 @@ static int dta_add_forward_process_trans_types_and_rules(dta_query_t *dta_query,
 		else
 			idx = types[i];
 
+		/* Get all access rules that have this target type as the source field. */								
+		if (match_te_rules(FALSE, NULL, 0, idx, IDX_TYPE, FALSE, SRC_LIST, TRUE, TRUE,
+			&b_target_types, policy) != 0) {
+			free_rules_bool(&b_target_types);
+			return -1;
+		}
+	
+
 		/* Examine each of the rules to see if it meets the criteria. */					
 		for (j = 0; j < policy->num_av_access; j++) {
-			/* Skip neverallow rules */
-			if ((policy->av_access)[j].type != RULE_TE_ALLOW)
-				continue;
-			/* Get only access rules that have this target type as the source field. */	
-			rule_uses_type = does_av_rule_idx_use_type(j, 0, idx, 
-					      IDX_TYPE, SRC_LIST, TRUE, 
-					      policy);
-			if (rule_uses_type == -1)
-				return -1;
+			if (b_target_types.access[j] && (policy->av_access)[j].type == RULE_TE_ALLOW &&
+			    dta_query_does_av_rule_contain_obj_class_options(dta_query, j, policy)) {
+
+				/* Skip neverallow rules */
+				if ((policy->av_access)[j].type != RULE_TE_ALLOW)
+					continue;
+				/* Get only access rules that have this target type as the source field. */	
+				rule_uses_type = does_av_rule_idx_use_type(j, 0, idx, 
+						      IDX_TYPE, SRC_LIST, TRUE, 
+						      policy);
+				if (rule_uses_type == -1)
+					return -1;
 			
-			if (!rule_uses_type) 
-				continue;
+				if (!rule_uses_type) 
+					continue;
 			
-			if (dta_query_does_av_rule_contain_obj_class_options(dta_query, j, policy)) {
-				/* We have a special case if all object types are specified. If this is 
+				if (dta_query_does_av_rule_contain_obj_class_options(dta_query, j, policy)) {
+					/* We have a special case if all object types are specified. If this is 
 				 * the case, then we don't need to check rule for specific object types
 				 * access. */
-				if (!dta_query->all_obj_types && 
-				    !dta_query_does_av_rule_contain_obj_types(dta_query, j, policy)) {
-					continue; 		
-				}
-				/* We have a rule with the target domain as 
-				 * source and has the specified access. */					
-				if (!b_type[idx]) {
+					if (!dta_query->all_obj_types && 
+					    !dta_query_does_av_rule_contain_obj_types(dta_query, j, policy)) {
+						continue; 		
+					}
+					/* We have a rule with the target domain as 
+					 * source and has the specified access. */					
+					if (!b_type[idx]) {
 					/* add new trans type and record its rules */
 					if(dta_add_trans_type(dta_query->reverse, 
 							      dta_query->start_type, 
@@ -394,17 +411,21 @@ static int dta_add_forward_process_trans_types_and_rules(dta_query_t *dta_query,
 					}
 					b_type[idx] = TRUE;
 				}	
-				/* Record additional rule */
-				if(dta_add_rule_to_trans_type(dta_query->start_type, 
-							      idx, 
-							      OTHER_RULE, 
-							      j, 
-							      dta_results) != 0) {
-					if(types != NULL) free(types);
-					return -1;
+					/* Record additional rule */
+					if(dta_add_rule_to_trans_type(dta_query->start_type, 
+								      idx, 
+								      OTHER_RULE, 
+								      j, 
+								      dta_results) != 0) {
+						if(types != NULL) free(types);
+						free_rules_bool(&b_target_types);
+	
+						return -1;
+					}
 				}
 			}
 		}	
+		free_rules_bool(&b_target_types);
 	}
 	return 0;
 }
@@ -643,7 +664,8 @@ int determine_domain_trans(dta_query_t *dta_query,
 			   domain_trans_analysis_t **dta_results, 
 			   policy_t *policy)
 {
-	int start_idx, i, classes[1], perms[1], perms2[1], rt;
+	int start_idx, i, classes[1], perms[1], perms2[1], rt, ans;
+	rules_bool_t b_start, b_trans; 	/* structures are used for passing TE rule match booleans */
 	bool_t *b_type;			/* scratch pad arrays to keep track of types that have already been added */
 	trans_domain_t *t_ptr;
 	entrypoint_type_t *ep;
@@ -665,6 +687,15 @@ int determine_domain_trans(dta_query_t *dta_query,
 		return -1;
 	}
 	memset(b_type, 0, policy->num_types * sizeof(bool_t));
+	/* b_start (all rules that have start_type as SOURCE for a forward   
+	 * DT analysis or start_type as TARGET for a reverse DT analysis). 
+	 * This structure is set in step 1 below. 
+	 */
+	if(init_rules_bool(0, &b_start, policy) != 0) 
+		goto err_return;
+	/* b_trans (similar but used by t_ptr as SOURCE) */
+	if(init_rules_bool(0, &b_trans, policy) != 0) 
+		goto err_return;		
 	
 	/* initialize the results structure (caller must free if successful) */
 	*dta_results = new_domain_trans_analysis();
@@ -692,6 +723,16 @@ int determine_domain_trans(dta_query_t *dta_query,
 		- forward DT analysis - contain start_type in the SOURCE field
 	 	- reverse DT analysis - contain start_type in the TARGET field
 	  (keep this around; we use it later when down-selecting candidate entry point file types in step 3.c) */
+	if(reverse) {
+		if(match_te_rules(FALSE, NULL, 0, start_idx, IDX_TYPE, FALSE, TGT_LIST, TRUE, TRUE,
+			&b_start, policy) != 0)
+			goto err_return;
+	} 
+	else {
+		if(match_te_rules(FALSE, NULL, 0, start_idx, IDX_TYPE, FALSE, SRC_LIST, TRUE, TRUE,
+			&b_start, policy) != 0)
+			goto err_return;
+	}
 	
 	/* 1. Extract the trans domain types for process transition perm, and add to our result 
 	      keeping track if type already added in to b_type (i.e. our types scratch pad array)  */
@@ -762,12 +803,19 @@ int determine_domain_trans(dta_query_t *dta_query,
 	for(ll_node = (*dta_results)->trans_domains->head; ll_node != NULL; ) {
 		t_ptr = (trans_domain_t *)ll_node->data;
 		assert(t_ptr != NULL);
+		all_false_rules_bool(&b_trans, policy);
 		memset(b_type, 0, policy->num_types * sizeof(bool_t));
 		
 		/* 3.a Retrieve all rules that provide trans_type access as SOURCE
 		 * 	- forward DT analysis - then filter out rules that provide file execute access.
 		 * 	- reverse DT analysis - then filter our rules that provide file entrypoint access.
-		 *
+		
+		 */
+		if(match_te_rules(FALSE, NULL, 0, t_ptr->trans_type, IDX_TYPE, FALSE, SRC_LIST, TRUE,
+			TRUE, &b_trans, policy) != 0)
+			goto err_return;
+		
+		/*
 		 * 3.b Filter out rules that allow the current trans_type ...
 		 * 	- forward DT analysis - file entrypoint access.
 	 	 *	- reverse DT analysis - file execute access. 
@@ -794,6 +842,16 @@ int determine_domain_trans(dta_query_t *dta_query,
 			}
 		}
 		
+		/* If this is a reverse DT analysis, we need to re-run match_te_rules to  
+		 * retrieve all rules with start_idx in the SOURCE field. */						
+		if(reverse) {
+			all_false_rules_bool(&b_start, policy);
+			if(match_te_rules(FALSE, NULL, 0, start_idx, IDX_TYPE, FALSE, SRC_LIST, TRUE,
+				TRUE, &b_start, policy) != 0)
+				goto err_return;
+		} 
+				
+
 		/* 3.c for each candidate entrypoint file type, now look for rules that provide:
 		 * 	- forward DT analysis - the start_type with file execute access to the entrypoint file.
 	 	 *	- reverse DT analysis - the start_type with file entrypoint access to the entrypoint file.
@@ -822,6 +880,14 @@ int determine_domain_trans(dta_query_t *dta_query,
 								TRUE, policy);
 				if (rule_uses_type == -1)
 					return -1;
+				if(b_start.access[i] && policy->av_access[i].type == RULE_TE_ALLOW && ans &&
+				  does_av_rule_use_classes(i, 1, classes, 1, policy) &&
+				  does_av_rule_use_perms(i, 1, perms2, 1, policy)) {	
+					rt = dta_add_rule_to_entry_point_type(reverse, i, ep);
+					if(rt != 0)
+						goto err_return;
+				}
+
 				if (!rule_uses_type)
 					continue;
 						
@@ -884,11 +950,17 @@ int determine_domain_trans(dta_query_t *dta_query,
 		
 	}
 	
-	if(b_type != NULL) free(b_type);	
+	if(b_type != NULL) free(b_type);
+	free_rules_bool(&b_trans);	
+	free_rules_bool(&b_start);	
+	
 	return 0;	
 err_return:	
 	free_domain_trans_analysis(*dta_results);
 	if(b_type != NULL) free(b_type);
+	free_rules_bool(&b_trans);	
+	free_rules_bool(&b_start);	
+
 	return -1;
 }
 
@@ -1997,3 +2069,4 @@ int types_relation_determine_relationship(types_relation_query_t *tra_query,
 	
 	return 0;						 	
 }
+
