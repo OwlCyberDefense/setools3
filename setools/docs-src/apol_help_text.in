@@ -307,6 +307,39 @@ analyses are:
 		subtree will not expand if its parent is the same as the
 		node. Each node in the FDT tree represents a TARGET domain
 		to which the parent domain can directly transition.
+		
+		The Forward Domain Transition (FDT) analysis also allows you
+		to limit your query to find transitions only to domains that 
+		have specific privileges or that have access to a particular 
+		object type(s). The 'Advanced search options' dialog allows 
+		you to select object classes, permissions, and object types
+		in order to limit your query to this type of analysis. By 
+		default, all object types, object classes and permissions
+		are included in the query. Selecting an object class from the
+		listbox widget will display all permissions for that object
+		class. Upon selection, permissions will be displayed along 
+		with radiobuttons for including or excluding specific object 
+		class permissions in the query. Additionally, you can 
+		include or exclude entire object classes using either the 
+		"Include all perms" or "Exclude all perms" buttons. Configuring 
+		all permissions for an object class to be excluded will exclude 
+		the object class itself from the query. When an object class 
+		becomes excluded, its' label will change to indicate that the 
+		object class is to be excluded from the forward dta query. 
+		Lastly, you can also limit the query results by including or 
+		excluding object types. 
+		
+		A specific example where this advanced feature would be useful 
+		is when one is seeking to find transitions from 'user_t' to 
+		domains with write access to files in the shadow_t domain. In 
+		this case, the user should:
+		
+		   - Specify 'user_t' as the source domain.
+		   - Using the 'Advanced search options' dialog, exclude all 
+		     object classes and permissions EXCEPT write permission for 
+		     the file object class and only include 'shadow_t' under
+		     the 'Search by objet type(s)' section.
+		
 	
 		REVERSE: As its name implies, the Reverse Domain Transition
 		(RDT) analysis is the reverse of the FDT analysis. The RDT
