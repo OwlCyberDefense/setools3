@@ -60,8 +60,8 @@ namespace eval Sepct_Customize {
 	# Variables for Notebook widget
 	variable te_tabName			"Type Enforcement Rules"
 	variable fc_tabName			"File Context"
-	variable te_tabID			"TERules"
-	variable fc_tabID			"FileContext"
+	variable te_tabID			"Sepct_TERules"
+	variable fc_tabID			"Sepct_FileContext"
 	
 	# Global widgets
 	variable notebook
@@ -895,6 +895,7 @@ proc Sepct_Customize::switch_internal_tabs { tabID } {
 	variable text_te
 	variable text_fc		
 	
+	set tabID [Sepct::get_tabname $tabID]
 	if { $tabID == $te_tabID } {
 		focus $text_te
 		set file_displayed $Sepct_Customize::curr_TE_file

@@ -112,8 +112,9 @@ namespace eval ApolTE {
 	variable totalTabCount		10
 	variable currTabCount		0
 	variable pageNums		0
-	variable emptyTabID		"Emptytab"
-	variable tabName		"ResultsTab"
+	# We use the prefix 'Apol_' for all notebook tabnames. Also, tabnames may not have a colon.
+	variable emptyTabID		"Apol_Emptytab"
+	variable tabName		"Apol_ResultsTab"
 	variable tabText		"Results "
 	variable pageID			""	
 	variable results		""
@@ -564,9 +565,9 @@ proc ApolTE::set_Widget_SearchOptions { pageID } {
 	variable tgt_list_type_1	
 	variable tgt_list_type_2
 	variable tab_deleted_flag
-	
+
+	set pageID [ApolTop::get_tabname $pageID]
 	set raised [$notebook_results raise]
-	
 	# First check flag to determine if the user has simply selected the 
 	# currently raised tab and so just return without updating search options.
 	if { $raised == $pageID && $tab_deleted_flag == 0 } {
@@ -578,7 +579,7 @@ proc ApolTE::set_Widget_SearchOptions { pageID } {
 		return
 	}
 	$ApolTE::updateButton configure -state normal
-		    
+	    
         # reinitialize original options
         set opts(teallow)	$optionsArray($pageID,teallow)
 	set opts(neverallow)	$optionsArray($pageID,neverallow)

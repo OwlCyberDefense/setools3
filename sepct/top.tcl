@@ -17,6 +17,7 @@ namespace eval Sepct {
 	# The version number is defined as a magical string here. This is later configured in the make environment.
 	variable gui_ver		SEPCUT_GUI_VERSION
 	variable copyright_date		"2002-2004"
+	variable bwidget_version	""
 	variable helpFilename		""
 	# Global variable to hold name of root directory
 	variable policyDir		""	
@@ -31,7 +32,10 @@ namespace eval Sepct {
 	variable file_size		""
 	variable line_info		""
 	
-	# Notebook tab IDENTIFIERS
+	# Notebook tab IDENTIFIERS; NOTE: We name all tabs after their related namespace qualified names.
+	# We use the prefix 'Sepct_' for all notebook tabnames. Note that the prefix must end with an 
+	# underscore and that that tabnames may NOT have a colon.
+	variable tabName_prefix		"Sepct_"
 	variable browse_tab		"Sepct_Browse"
 	variable customize_tab		"Sepct_Customize"
 	variable test_tab		"Sepct_Test"
@@ -113,6 +117,39 @@ namespace eval Sepct {
 	set tool_settings_Dialog .tool_settings_Dialog
 	variable searchDlg_entryBox
 	variable gotoDlg_entryBox
+}
+
+################################################################################
+# ::get_tabname -- 
+#	args:	
+#		- tabID - the tabID provided from the Notebook::bindtabs command
+#
+# Description: 	There is a bug with the BWidgets 1.7.0 Notebook widget where the 
+#	  	tabname is stripped of its' first 2 characters AND an additional 
+#		string, consisting of a colon followed by an embedded widget name 
+#		from the tab, is appended. For example, the tab name will be 
+#		'sults1:text' instead of 'Results1".
+#
+proc Sepct::get_tabname {tab} {	
+	variable tabName_prefix
+	
+	set idx [string last ":" $tab]
+	if {$idx != -1} {
+		# Strip off the last ':' and any following characters from the end of the string
+		set tab [string range $tab 0 [expr $idx - 1]]
+	}
+	set prefix_len [string length $tabName_prefix]
+	if {[string range $tab 0 $prefix_len] == $tabName_prefix} {
+		return $tab
+	}
+	
+	set tmp $tabName_prefix
+	set idx [string first "_" $tab]
+	if {$idx == -1} {
+		return $tab
+	}
+	set tab_fixed [append tmp [string range $tab [expr $idx + 1] end]]
+	return $tab_fixed
 }
 
 ############################################################################
@@ -1686,20 +1723,20 @@ proc Sepct::clear_fileStatus { } {
 	return 0
 }
 
-
 ##############################################################
 # ::switch_tab
 #	 - called when a tab is selected...lets current
 #		tab do leaving processing and new tab
 #		do entering processing
 #
-proc Sepct::switch_tab { newPage } {
+proc Sepct::switch_tab { tabID } {
 	variable notebook
 	variable mainframe
 	
+	set tabID [Sepct::get_tabname $tabID]
 	set raisedPage [$notebook raise]
 	#if selecting same tab do nothing
-	if { $raisedPage == $newPage } {
+	if { $raisedPage == $tabID } {
     		return 0
     	}
     	
@@ -1709,7 +1746,7 @@ proc Sepct::switch_tab { newPage } {
  		${raisedPage}::leave_Tab
  	}
 	
-	if {[$notebook itemcget $newPage -state] == "disabled"} {
+	if {[$notebook itemcget $tabID -state] == "disabled"} {
 		return 
 	}
 	
@@ -1717,16 +1754,16 @@ proc Sepct::switch_tab { newPage } {
     	Sepct::clear_fileStatus
 	
 	# Second let the entering tab do its processing
-	${newPage}::enter_Tab
+	${tabID}::enter_Tab
 	
 	# enable/disable menu items	
- 	if { $newPage == $Sepct::browse_tab } {
+ 	if { $tabID == $Sepct::browse_tab } {
 		$mainframe setmenustate AddTag disabled
 		$mainframe setmenustate DeleteTag disabled
-	} elseif { $newPage == $Sepct::customize_tab } {
+	} elseif { $tabID == $Sepct::customize_tab } {
 		$mainframe setmenustate AddTag normal
 		$mainframe setmenustate DeleteTag normal
-	} elseif { $newPage== $Sepct::test_tab } {
+	} elseif { $tabID== $Sepct::test_tab } {
 		$mainframe setmenustate AddTag disabled
 		$mainframe setmenustate DeleteTag disabled
 	} else {
@@ -1734,7 +1771,7 @@ proc Sepct::switch_tab { newPage } {
 		exit
 	}
 	
-	$Sepct::notebook raise $newPage
+	$Sepct::notebook raise $tabID
 	return 0
 }
 
@@ -2158,6 +2195,7 @@ proc Sepct::main {} {
 	variable mainWindow
 	variable top_width
         variable top_height
+        variable bwidget_version
         
 	# Prevent the application from responding to incoming send requests and sending 
 	# outgoing requests. This way any other applications that can connect to our X 
@@ -2165,7 +2203,7 @@ proc Sepct::main {} {
 	rename send {}
 		
 	# Load BWidget package into the interpreter
-	set rt [catch {set version [package require BWidget]} err]
+	set rt [catch {set bwidget_version [package require BWidget]} err]
 	if {$rt != 0 } {
 		tk_messageBox -icon error -type ok -title "Missing BWidgets package" -message \
 			"Missing BWidgets package.  Ensure that your installed version of \n\
@@ -2173,7 +2211,7 @@ proc Sepct::main {} {
 			http://sourceforge.net/projects/tcllib"
 		exit
 	}
-	if {[package vcompare $version "1.4.1"] == -1} {
+	if {[package vcompare $bwidget_version "1.4.1"] == -1} {
 		tk_messageBox -icon warning -type ok -title "Package Version" -message \
 			"This tool requires BWidgets 1.4.1 or later. You may experience problems\
 			while running the application. It is recommended that you upgrade your BWidgets\
@@ -2181,9 +2219,9 @@ proc Sepct::main {} {
 	}
 	
 	# Provide the user with a warning if incompatible Tk and BWidget libraries are being used.
-	if {[package vcompare $version "1.4.1"] && $tk_version == "8.3"} {
+	if {[package vcompare $bwidget_version "1.4.1"] && $tk_version == "8.3"} {
 		tk_messageBox -icon error -type ok -title "Warning" -message \
-			"Your installed Tk version $tk_version includes an incompatible BWidgets $version package version. \
+			"Your installed Tk version $tk_version includes an incompatible BWidgets $bwidget_version package version. \
 			This has been known to cause a tk application to crash.\n\nIt is recommended that you either upgrade your \
 			Tk library to version 8.4 or greater or use BWidgets 1.4.1 instead. See the README for more information."	
 		exit
