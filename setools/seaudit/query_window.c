@@ -221,7 +221,6 @@ static int do_policy_query(GString *src_type, GString *tgt_type, GString *obj_cl
 	init_teq_query(&q);
 	q.rule_select = TEQ_ALLOW;
 	q.any = FALSE;
-
 	widget = glade_xml_get_widget(xml, "SrcTypeIndirectCheck");
 	g_assert(widget);
 	q.ta1.indirect = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
