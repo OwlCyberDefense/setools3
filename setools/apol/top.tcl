@@ -1204,9 +1204,9 @@ proc ApolTop::create { } {
 	# Create Top-level tab frames	
 	set components_frame [$notebook insert end $ApolTop::components_tab -text "Policy Components"]
 	set rules_frame [$notebook insert end $ApolTop::rules_tab -text "Policy Rules"]
+	Apol_File_Contexts::create $notebook
 	Apol_Analysis::create $notebook
 	Apol_PolicyConf::create $notebook
-	Apol_File_Contexts::create $notebook
 	
 	# Create subordinate tab frames
 	set components_nb [NoteBook $components_frame.components_nb]
