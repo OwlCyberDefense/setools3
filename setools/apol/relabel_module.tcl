@@ -300,6 +300,13 @@ proc Apol_Analysis_relabel::do_analysis {results_frame} {
 		    -message "You cannot exclude all object classes in the filter!"
 		return -code error
 	}
+
+	if {[llength $widget_vars($advanced_filter_Dlg,incl_subj_list)] == 0} {
+		tk_messageBox -icon error -type ok \
+		    -title "Relabel Analysis Error" \
+		    -message "You cannot exclude all subject types in the filter!"
+		return -code error
+	}
 	
 	if {$widget_vars(mode) == "object"} {
 		if {$widget_vars(to_mode) && $widget_vars(from_mode)} {
@@ -886,7 +893,7 @@ proc Apol_Analysis_relabel::adv_options_create_dialog {path_name title_txt} {
 			$Apol_Analysis_relabel::widgets($path_name,class_excl_lb) \
 			exclude"]
 	set b_incl_subj [Button $button_f2.b_incl_subj -text "<--" \
-		-helptext "Include the selected subject type in the results." \
+		-helptext "Include the selected subject types in the results." \
 		-command "Apol_Analysis_relabel::adv_options_incl_excl_classes \
 			$path_name \
 			Apol_Analysis_relabel::widget_vars($path_name,excl_subj_list) \
@@ -895,7 +902,7 @@ proc Apol_Analysis_relabel::adv_options_create_dialog {path_name title_txt} {
 			$Apol_Analysis_relabel::widgets($path_name,subj_incl_lb) \
 			include"]
 	set b_excl_subj [Button $button_f2.b_excl_subj -text "-->" \
-		-helptext "Exclude the selected subject type from the results." \
+		-helptext "Exclude the selected subject types from the results." \
 		-command "Apol_Analysis_relabel::adv_options_incl_excl_classes \
 			$path_name \
 			Apol_Analysis_relabel::widget_vars($path_name,incl_subj_list)  \
