@@ -880,7 +880,7 @@ static int get_tokens(char *line, int msgtype, audit_log_t *log, FILE *audit_fil
 }
 
 
-int parse_audit(FILE *syslog, audit_log_t *log, bool_t do_filter)
+int parse_audit(FILE *syslog, audit_log_t *log)
 {
 	FILE *audit_file = syslog;
 	char *line = NULL;
@@ -889,7 +889,6 @@ int parse_audit(FILE *syslog, audit_log_t *log, bool_t do_filter)
 	int result = 0;
 	int selinux_msg = 0;
 	int tmp;
-	int *results, num_results;
 
 	if (audit_file == NULL)
 		return PARSE_NO_PARSE;
@@ -931,15 +930,7 @@ int parse_audit(FILE *syslog, audit_log_t *log, bool_t do_filter)
 		}
 	}
 
-	
-	
-	if (do_filter) {
-		if (audit_log_do_filter(log, FALSE, &results, &num_results))
-			return PARSE_MEMORY_ERROR;
-		if (results)
-			free(results);
-	}
-	if(selinux_msg == 0)
+       	if(selinux_msg == 0)
 		return PARSE_NO_SELINUX_ERROR;
 	else
 		return result;
