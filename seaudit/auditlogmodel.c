@@ -740,13 +740,17 @@ int seaudit_log_store_open_log(SEAuditLogStore *store, FILE *file)
 
 void seaudit_log_store_refresh(SEAuditLogStore *store, FILE *file)
 {
+	int parsed;
+
 	g_assert(store->log != NULL);
 	g_assert(store != NULL);
 	g_assert(file != NULL);
 
 	if (file == NULL || store == NULL || store->log == NULL)
 		return;
-
-	if (parse_audit(file, store->log, FALSE) != PARSE_NO_PARSE)
-		seaudit_log_store_do_filter(store);
+	parsed = parse_audit(file, store->log, FALSE);
+	if (parsed == PARSE_NO_PARSE || parsed == PARSE_NO_SELINUX_ERROR)
+		return;
+	seaudit_log_store_do_filter(store);
+	printf("parsed\n");
 }
