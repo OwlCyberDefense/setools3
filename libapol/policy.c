@@ -893,6 +893,31 @@ int get_role_name(int idx, char **name, policy_t *policy)
 	return 0;
 }
 
+int get_role_types(int role, int *num_types, int **types, policy_t *policy)
+{
+	int i, rt;
+
+	if (policy == NULL || types == NULL)
+		return -1;
+	if (role < 0 || role >= policy->num_roles) 
+		return -1;
+	if (num_types == NULL)
+		return -1;
+	else
+		*num_types = 0;
+	*types = NULL;
+
+	for (i = 0; i < policy->roles[role].num_types; i++) {
+		rt = add_i_to_a(policy->roles[role].types[i], num_types, types);	
+		if (rt != 0)
+			goto bad;
+	}
+	return 0;
+bad:
+	if (*types != NULL)
+		free(*types);
+	return -1;
+}
 
 /* user names; allocates memory  */
 int get_user_name(user_item_t *user, char **name)
@@ -2694,7 +2719,7 @@ int add_cond_bool(char *name, bool_t state, policy_t *policy)
  * returns the index of the boolean on success.
  * returns -1 on error (including the boolean not existing).
  */
-int get_cond_bool_idx(char *name, policy_t *policy)
+int get_cond_bool_idx(const char *name, policy_t *policy)
 {
 	if(name == NULL || policy == NULL)
 		return -1;
