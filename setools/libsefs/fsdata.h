@@ -48,6 +48,10 @@
 #define SEFS_XATTR_UNLABELED "UNLABELED"
 #endif
 
+/* Predefined lables */
+#define XATTR_UNLABELED -1
+#define OBJECT_R 0
+
 typedef enum sefs_classes {
 	NORM_FILE,
 	DIR,
@@ -59,12 +63,6 @@ typedef enum sefs_classes {
 	ALL_FILES
 } sefs_classes_t;
 
-typedef struct sec_con {
-	uint32_t 	user;
-	uint32_t	role;
-	uint32_t	type;
-} sec_con_t;
-
 typedef struct inode_key {
 	ino_t			inode;
 	dev_t			device;
@@ -73,7 +71,7 @@ typedef struct inode_key {
 typedef struct sefs_fileinfo {
 	inode_key_t		key;
 	uint32_t		num_links;
-	sec_con_t		context;
+	security_con_t		context;
 	char **			path_names;
 	char * 			symlink_target;
 	sefs_classes_t		obj_class;
@@ -90,21 +88,21 @@ typedef struct sefs_typeinfo {
 typedef struct sefs_filesystem_data {
 	uint32_t 		num_files;
 	uint32_t 		num_types;
+	uint32_t		num_users;
 	sefs_fileinfo_t *	files;
 	sefs_typeinfo_t *	types;
-	char**			roles;
 	char**			users;
 
 	/* not stored in index file */
 	avl_tree_t		file_tree;
 	avl_tree_t		type_tree;
-	avl_tree_t		role_tree;
 	avl_tree_t		user_tree;
 } sefs_filesystem_data_t;
 
 
 /* Management and creation functions */
-int sefs_filesystem_data_init(sefs_filesystem_data_t * fsd);int sefs_filesystem_data_index(sefs_filesystem_data_t * fsd);
+int sefs_filesystem_data_init(sefs_filesystem_data_t * fsd);
+int sefs_filesystem_data_index(sefs_filesystem_data_t * fsd);
 int sefs_scan_tree(char * dir);
 int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char * filename);
 int sefs_filesystem_data_load(sefs_filesystem_data_t * fsd, char *filename);
