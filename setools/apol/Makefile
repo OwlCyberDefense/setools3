@@ -6,7 +6,7 @@ APOL_PERM_MAPS  = perm_maps/apol_perm_mapping_ver*
 APOL_DFLT_PMAP  = apol_perm_mapping_ver18
 
 # The modules must each be listed here.
-ANALYSIS-MODULES = dta_module.tcl dirflow_module.tcl fulflow_module.tcl
+ANALYSIS-MODULES = dta_module.tcl dirflow_module.tcl fulflow_module.tcl \
                    flowassert_module.tcl relabel_module.tcl \
 		   types_relation_module.tcl
 
