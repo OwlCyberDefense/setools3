@@ -445,8 +445,8 @@ static int call_make(const char *target, const char *output, const char *policy_
 	assert(target != NULL);
 	assert(output != NULL);
 	
-     	make_str = (char *)malloc(strlen(policy_dir) + strlen(MAKEFILE) + 
-     		strlen(target) + strlen(output) + 50);
+     	make_str = (char *)malloc((strlen(policy_dir) + strlen(MAKEFILE) + 
+     		strlen(target) + strlen(output) + 50) * sizeof(char));
      	if(make_str == NULL) {
      		fprintf(stderr, "out of memory\n");
      		return -1;
@@ -468,9 +468,33 @@ static int call_make(const char *target, const char *output, const char *policy_
  */
 static int seuser_call_make_file_contexts(user_db_t *db, const char *output_file)
 {
-	int rt; 
+	int rt, len; 
+	char *c;
 	
 	assert(db != NULL && db->policy_dir != NULL);
+	/* in order to force the file_contexts to be remade, we touch a file that
+	 * the file_contexts target lists as a dependency. The correct thing would
+	 * be to have the file_contexts target list the users file as a dependency.
+	 * FIXME */
+	len = (strlen("touch ") + strlen(db->policy_dir) + strlen("file_contexts/types.fc") + 3)
+		* sizeof(char);
+	c = (char*)malloc(len);
+	if (!c) {
+		fprintf(stderr, "Memory error!\n");
+		return -1;
+	}
+	
+	snprintf(c, len, "touch %s/file_contexts/types.fc", db->policy_dir);
+	
+	rt = system(c);
+	if (rt != 0) {
+		fprintf(stderr, "Error making system call: %s\n", c);
+		free(c);
+		return -1;
+	}
+	
+	free(c);
+	
 	/* Call make file_contexts/file_contexts to re-make the file_contexts file. */
 	rt = call_make(FILE_CONTEXTS_TARGET, output_file, db->policy_dir);	
      	if(rt != 0) {
