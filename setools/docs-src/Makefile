@@ -34,6 +34,10 @@ apol-doc:
 	sed -e 's/APOL_GUI_VERSION/$(shell cat ../apol/VERSION)/g' | \
 	sed -e 's/MOD_DATE/$(shell date '+%B %d, %G')/g' > ../apol/types_relation_help.txt
 	
+	cat file_relabel_help.in | \
+	sed -e 's/APOL_GUI_VERSION/$(shell cat ../apol/VERSION)/g' | \
+	sed -e 's/MOD_DATE/$(shell date '+%B %d, %G')/g' > ../apol/file_relabel_help.txt
+	
 sepcut-doc: 
 	rm -f ../sepct/*.txt; \
 	cat sepcut_help_text.in | \
