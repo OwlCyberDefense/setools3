@@ -758,12 +758,10 @@ static int print_te_rule(avh_node_t *cur, policy_t *policy, const char *string,
 		free(rule); 
 	} 
 
-	if (cur->flags & AVH_FLAG_COND && !is_binary_policy(policy)) {
-		if (get_cond_bool_name(cur->cond_expr,&rule,policy) < 0) {
-			return -1;
-		}
-		sprintf(tbuf," [ %s ] ",rule);
-		append_str(buf,sz,tbuf);
+
+	if (cur->flags & AVH_FLAG_COND) {
+		rule = re_render_avh_rule_cond_expr(cur,policy);
+		append_str(buf,sz,rule);
 		free(rule);
 	}	
 	append_str(buf,sz,"\n");
