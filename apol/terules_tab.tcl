@@ -1646,7 +1646,7 @@ proc Apol_TE::createObjsClassesTab {notebook_objects_tab} {
     # Define Object-Classes and Permissions section subframes
     set fm_objs [frame $notebook_objects_tab.objectsFrame -relief flat -borderwidth 1]
     set fm_objs_frame [TitleFrame $fm_objs.objs_frame -text "Object Classes"]
-    set fm_perms_frame [TitleFrame $fm_objs.perms_frame -text "Permissions"]
+    set fm_perms_frame [TitleFrame $fm_objs.perms_frame -text "Allow and Audit Rule Permissions"]
    
     # Define permissions section subframes
     set fm_perm_buttons [frame [$fm_perms_frame getframe].perm_buttonsFrame -relief flat -borderwidth 1]
