@@ -1394,6 +1394,7 @@ static int add_ttrule(int rule_type, bool_t enabled)
 	item = &(parse_policy->te_trans[parse_policy->num_te_trans]);
 	memset(item, 0, sizeof(tt_item_t));
 	item->type = rule_type;
+	item->cond_expr = -1;
 	item->lineno = policydb_lineno;
 	item->enabled = enabled;
 
