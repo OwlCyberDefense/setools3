@@ -959,12 +959,18 @@ proc ApolTop::display_options_Dlg { } {
 	set lframe [frame [$open_opts_f getframe].lframe]
 	set rframe [frame [$open_opts_f getframe].rframe]
 
-	set cb_all [radiobutton $lframe.cb_all -text "All" -variable ApolTop::policy_open_option -value 0]
-	set cb_pass1 [radiobutton $lframe.cb_pass1 -text "Pass 1 policy only" -variable ApolTop::policy_open_option -value 1]
-	set cb_te_only [radiobutton $lframe.cb_te_only -text "TE policy only" -variable ApolTop::policy_open_option -value 2]
-	set cb_types_roles [radiobutton $rframe.cb_types_roles -text "Types and roles only" -variable ApolTop::policy_open_option -value 3]
-	set cb_classes_perms [radiobutton $rframe.cb_classes_perms -text "Classes and permissions only" -variable ApolTop::policy_open_option -value 4]
-	set cb_rbac [radiobutton $rframe.cb_rbac -text "RBAC policy only" -variable ApolTop::policy_open_option -value 5]
+	set cb_all [radiobutton $lframe.cb_all -text "All" \
+		-variable ApolTop::policy_open_option -value 0]
+	set cb_pass1 [radiobutton $lframe.cb_pass1 -text "User, role, type, and boolean identifiers" \
+		-variable ApolTop::policy_open_option -value 1 -justify left]
+	set cb_te_only [radiobutton $lframe.cb_te_only -text "TE rules and type identifiers" \
+		-variable ApolTop::policy_open_option -value 2]
+	set cb_types_roles [radiobutton $rframe.cb_types_roles -text "Type and role identifiers" \
+		-variable ApolTop::policy_open_option -value 3]
+	set cb_classes_perms [radiobutton $rframe.cb_classes_perms -text "Classes and permissions only" \
+		-variable ApolTop::policy_open_option -value 4]
+	set cb_rbac [radiobutton $rframe.cb_rbac -text "Role-based rules and role identifiers" \
+		-variable ApolTop::policy_open_option -value 5]
 	
 	set b_ok  [button $options_Dialog.b_ok -text "OK" -width 6 -command { destroy $ApolTop::options_Dialog }]
 	
