@@ -75,7 +75,6 @@ typedef struct iflow_graph {
 } iflow_graph_t;
 
 /* iflow_query_t */
-
 iflow_query_t *iflow_query_create(void)
 {
 	iflow_query_t* q = (iflow_query_t*)malloc(sizeof(iflow_query_t));
@@ -90,7 +89,7 @@ iflow_query_t *iflow_query_create(void)
 	return q;
 }
 
-static int iflow_obj_options_copy(analysis_obj_options_t *dest, analysis_obj_options_t *src)
+static int iflow_obj_options_copy(policy_query_obj_options_t *dest, policy_query_obj_options_t *src)
 {
         dest->obj_class = src->obj_class;
         dest->num_perms = src->num_perms;
@@ -127,13 +126,13 @@ static int iflow_query_copy(iflow_query_t *dest, iflow_query_t *src)
 
         if (src->num_obj_options) {
                 assert(src->obj_options);
-                dest->obj_options = (analysis_obj_options_t*)malloc(sizeof(analysis_obj_options_t) * 
+                dest->obj_options = (policy_query_obj_options_t*)malloc(sizeof(policy_query_obj_options_t) * 
                                                                  src->num_obj_options);
                 if (!dest->obj_options) {
                         fprintf(stderr, "Memory error\n");
                         return -1;
                 }
-                memset(dest->obj_options, 0, sizeof(analysis_obj_options_t) * src->num_obj_options);
+                memset(dest->obj_options, 0, sizeof(policy_query_obj_options_t) * src->num_obj_options);
                 for (i = 0; i < src->num_obj_options; i++) {
                         if (iflow_obj_options_copy(dest->obj_options + i, src->obj_options + i))
                                 return -1;
@@ -161,51 +160,35 @@ void iflow_query_destroy(iflow_query_t *q)
 	free(q);
 }
 
+/* Object class filter macros.
+ *	Transitive information flow - if perms is non-NULL then only those 
+ *	permissions are ignored, otherwise the entire object class is ignored. 
+ */
 int iflow_query_add_obj_class(iflow_query_t *q, int obj_class)
 {
-	return analysis_query_add_obj_class(&q->obj_options, &q->num_obj_options, obj_class);
+	return policy_query_add_obj_class(&q->obj_options, &q->num_obj_options, obj_class);
 
 }
 
 int iflow_query_add_obj_class_perm(iflow_query_t *q, int obj_class, int perm)
 {
-	return analysis_query_add_obj_class_perm(&q->obj_options, &q->num_obj_options, obj_class, perm);
+	return policy_query_add_obj_class_perm(&q->obj_options, &q->num_obj_options, obj_class, perm);
 }
 
 int iflow_query_add_end_type(iflow_query_t *q, int end_type)
 {
-	return analysis_query_add_end_type(&q->end_types, &q->num_end_types, end_type);
+	return policy_query_add_type(&q->end_types, &q->num_end_types, end_type);
 }
 
 int iflow_query_add_type(iflow_query_t *q, int type)
 {
-	bool_t add = FALSE;
-
-	assert(q);
-	/* we can't do anymore checking without the policy */
-	if (type < 0) {
-		fprintf(stderr, "end type must be 0 or greater\n");
-		return -1;
-	}
-
-	if (q->types) {
-		if (find_int_in_array(type, q->types,
-				      q->num_types) < 0) {
-			add = TRUE;
-		}
-	} else {
-		add = TRUE;
-	}
-	if (add)
-		if (add_i_to_a(type, &q->num_types, &q->types) < 0)
-			return -1;
-	return 0;
+	return policy_query_add_type(&q->types, &q->num_types, type);
 }
 
 /*
  * Check that the iflow_obj_option_t is valid for the graph/policy.
  */
-bool_t iflow_obj_option_is_valid(analysis_obj_options_t *o, policy_t *policy)
+bool_t iflow_obj_option_is_valid(policy_query_obj_options_t *o, policy_t *policy)
 {
 	int i;
 
@@ -782,7 +765,7 @@ iflow_graph_t *iflow_graph_create(policy_t* policy, iflow_query_t *q)
 			}
 			
 			read_len = write_len = INT_MAX;
-			for (k = 0; k < num_perms; k++) {				
+			for (k = 0; k < num_perms; k++) {
 				cur_perm = perms[k];
 				/* Check to see if we should ignore this permission */
 				if (cur_obj_options >= 0) {
