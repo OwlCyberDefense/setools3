@@ -280,7 +280,7 @@ proc Apol_Analysis_relabel::do_analysis {results_frame} {
 			set mode "from"
 		}
 	} else {
-		set mode "domain"
+		set mode "subject"
 	} 
 	
 	if [catch {apol_RelabelAnalysis $widget_vars(start_type) $mode $objs_list \
@@ -298,8 +298,6 @@ proc Apol_Analysis_relabel::do_analysis {results_frame} {
 # policy is closed.  Typically you should reset any context or option
 # variables you have.
 proc Apol_Analysis_relabel::close { } {
-    # flush the relabel sets cache
-    apol_RelabelFlushSets
     Apol_Analysis_relabel::set_widgets_to_initial_open_state
 }
 
@@ -312,8 +310,6 @@ proc Apol_Analysis_relabel::set_widgets_to_initial_open_state { } {
 # Apol_Analysis_relabel::open must exist; it is called when a
 # policy is opened.
 proc Apol_Analysis_relabel::open { } {
-    # flush the relabel sets cache
-    apol_RelabelFlushSets
     Apol_Analysis_relabel::set_widgets_to_initial_open_state
 }
 
