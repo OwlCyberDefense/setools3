@@ -56,12 +56,6 @@ int main(int argc, char **argv, char **envp)
 	fsdata.fsdh = NULL;
 	fsdata.dbh = NULL;
 
-	outfilename = argv[1];
-	if (outfilename == NULL) {
-		usage(argv[0], 1);
-		exit(1);
-	}
-
 	while ((optc = getopt_long (argc, argv, "d:hv", longopts, NULL)) != -1)  {
 		switch (optc) {
 	  	case 'd': /* directory */
@@ -77,6 +71,16 @@ int main(int argc, char **argv, char **envp)
 	  		usage(argv[0], 1);
 	  		exit(1);
 		}
+	}
+	if (argc - optind > 1 || argc - optind < 1) {
+		usage(argv[0], 1);
+		exit(1);
+	} else 
+		outfilename = argv[optind];
+
+	if (outfilename == NULL) {
+		usage(argv[0], 1);
+		exit(1);
 	}
 	
 	if (sefs_filesystem_db_populate(&fsdata,dir) == -1) {
