@@ -197,6 +197,8 @@ static int append_common_perm_str(bool_t do_perms, bool_t do_classes, bool_t new
  * argv[7] - encoded list of object class/permissions to exclude in the query
  * argv[8] - flag (boolean value) for indicating whether or not to include intermediate types in the query.
  * argv[9] - TCL list of intermediate types
+ * argv[10] - flag (boolean value) whether or not to use minimum weight.
+ * argv[11] - minimum weight value
  *
  * NOTE: THIS FUNCTION EXPECTS PERMISSION MAPPINGS TO BE LOADED!! If, not it will throw an error.
  *
@@ -210,7 +212,7 @@ static iflow_query_t* set_transitive_query_args(Tcl_Interp *interp, char *argv[]
 	char *err, *name;
 	char tbuf[64];
 	CONST84 char **obj_class_perms = NULL, **inter_types = NULL;
-	bool_t filter_obj_classes, filter_end_types, filter_inter_types;
+	bool_t filter_obj_classes, filter_end_types, filter_inter_types, use_min_weight;
 	regex_t reg;
 	iflow_query_t *iflow_query = NULL;
 	
@@ -237,6 +239,7 @@ static iflow_query_t* set_transitive_query_args(Tcl_Interp *interp, char *argv[]
 	filter_obj_classes = getbool(argv[3]);
 	filter_end_types = getbool(argv[5]);
 	filter_inter_types = getbool(argv[8]);
+	use_min_weight = getbool(argv[10]);
 	rt = Tcl_GetInt(interp, argv[4], &num_objs);
 	if(rt == TCL_ERROR) {
 		Tcl_AppendResult(interp,"argv[4] apparently not an integer", (char *) NULL);
@@ -306,6 +309,14 @@ static iflow_query_t* set_transitive_query_args(Tcl_Interp *interp, char *argv[]
 		Tcl_AppendResult(interp, "Unknown flow direction provided:", argv[2], " Must be either 'in' or 'out'.", (char *) NULL);
 		iflow_query_destroy(iflow_query);
 		return NULL;
+	}
+	
+	if (use_min_weight) {
+		rt = Tcl_GetInt(interp, argv[11], &iflow_query->min_weight);
+		if (rt == TCL_ERROR) {
+			Tcl_AppendResult(interp,"argv[11] apparently is not an integer", (char *) NULL);
+			return NULL;
+		}
 	}
 
 	/* Set the start type for our query */ 					
@@ -5210,6 +5221,8 @@ int Apol_DirectInformationFlowAnalysis(ClientData clientData, Tcl_Interp *interp
  * argv[7] - encoded list of object class/permissions to exclude in the query
  * argv[8] - flag (boolean value) for indicatinf whether or not to include intermediate types in the query.
  * argv[9] - TCL list of intermediate types
+ * argv[10] - flag (boolean value) whether or not to use minimum weight.
+ * argv[11] - minimum weight value
  *
  * NOTE: THIS FUNCTION EXPECTS PERMISSION MAPPINGS TO BE LOADED!! If, not it will throw an error.
  *
@@ -5250,7 +5263,7 @@ int Apol_TransitiveFlowAnalysis(ClientData clientData, Tcl_Interp *interp, int a
 	int rt;
 	char tbuf[64];
 	
-	if(argc != 10) {
+	if(argc != 12) {
 		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
 		return TCL_ERROR;
 	}
@@ -5294,12 +5307,14 @@ int Apol_TransitiveFlowAnalysis(ClientData clientData, Tcl_Interp *interp, int a
  * argv[7] - encoded list of object class/permissions to exclude in the query
  * argv[8] - flag (boolean value) for indicating whether or not to include intermediate types in the query.
  * argv[9] - TCL list of intermediate types
+ * argv[10] - flag (boolean value) whether or not to use minimum weight.
+ * argv[11] - minimum weight value
  */
 int Apol_TransitiveFindPathsStart(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
 {		
 	iflow_query_t* iflow_query = NULL;
 	
-	if(argc != 10) {
+	if(argc != 12) {
 		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
 		return TCL_ERROR;
 	}
@@ -5507,11 +5522,10 @@ int Apol_Create_FC_Index_File(ClientData clientData, Tcl_Interp *interp, int arg
 		return TCL_ERROR;
 	}
 	if (sefs_filesystem_db_save(&fsdata_local, argv[1]) != 0) {
-		if (fsdata_local.fsdh != NULL) sefs_filesystem_db_close(&fsdata_local);
 		Tcl_AppendResult(interp, "Error writing file context paths database\n", (char *) NULL);
 		return TCL_ERROR;
 	}
-	if (fsdata_local.fsdh != NULL) sefs_filesystem_db_close(&fsdata_local);
+	/* sefs_filesystem_db_save() closes the database */
 	
 	return TCL_OK;
 #endif
