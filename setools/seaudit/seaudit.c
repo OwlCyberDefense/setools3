@@ -9,6 +9,7 @@
 #include "seaudit.h"
 #include "parse.h"
 #include "auditlog.h"
+#include "auditlogmodel.h"
 #include "query_window.h"
 #include "filter_window.h"
 #include "utilgui.h"
@@ -26,6 +27,7 @@
 #endif
 seaudit_t *seaudit_app = NULL;
 
+/* command line options */
 static struct option const opts[] =
 {
 	{"log", required_argument, NULL, 'l'},
@@ -43,18 +45,114 @@ static void set_real_time_log_toggle_button_state(bool_t state);
 static void set_recent_logs_submenu(seaudit_conf_t *conf_file);
 static void set_recent_policys_submenu(seaudit_conf_t *conf_file);
 static int read_policy_conf(const char *fname);
-static int create_list(GtkTreeView *view);
+static int create_list(GtkTreeView *view, bool_t visibility[]);
 static GtkTreeViewColumn *create_column(GtkTreeView *view, const char *name,
 					GtkCellRenderer *renderer, int field,
-					int max_width);
+					int max_width, bool_t visibility[]);
 static void seaudit_on_log_column_clicked(GtkTreeViewColumn *column, gpointer user_data);
+static void on_audit_log_row_activated(GtkTreeView *treeview, GtkTreePath *path, GtkTreeViewColumn *col, gpointer user_data);
 
+/* seaudit_window_t */
+seaudit_window_t* seaudit_window_create(audit_log_t *log, bool_t column_visibility[])
+{
+	seaudit_window_t *window;
+	GString *path; 
+	char *dir;
+
+	dir = find_file("seaudit.glade");
+	if (!dir){
+		fprintf(stderr, "could not find seaudit.glade\n");
+		return NULL;
+	}
+	path = g_string_new(dir);
+	free(dir);
+	g_string_append(path, "/seaudit.glade");
+
+	window = malloc(sizeof(seaudit_window_t));
+	if (!window) {
+		fprintf(stderr, "out of memory");
+		return NULL;
+	}
+	memset(window, 0, sizeof(seaudit_window_t));
+	window->xml = glade_xml_new(path->str, NULL, NULL);
+	window->window = GTK_WINDOW(glade_xml_get_widget(window->xml, "TopWindow"));
+	window->notebook = GTK_NOTEBOOK(glade_xml_get_widget(window->xml, "TopNotebook"));
+	seaudit_window_add_new_view(window, log, column_visibility, "default");
+	/* connect signal handlers */
+	glade_xml_signal_autoconnect(window->xml);
+	return window;
+}
+
+void seaudit_window_add_new_view(seaudit_window_t *window, audit_log_t *log, bool_t column_visibility[], const char *view_name)
+{
+	top_filters_view_t *view;
+	GtkWidget *scrolled_window, *tree_view;
+	gint page_index;
+
+	if (window == NULL)
+		return;
+	if (window->window == NULL || window->notebook == NULL || window->xml == NULL)
+		return;
+		
+	show_wait_cursor(GTK_WIDGET(window->window));
+	scrolled_window = gtk_scrolled_window_new(NULL, NULL);
+	tree_view = gtk_tree_view_new();
+	g_signal_connect(G_OBJECT(tree_view), "row_activated", G_CALLBACK(on_audit_log_row_activated), NULL);
+	gtk_container_add(GTK_CONTAINER(scrolled_window), tree_view);
+	create_list(GTK_TREE_VIEW(tree_view), column_visibility);
+	view = top_filters_view_create(log, GTK_TREE_VIEW(tree_view));
+	gtk_notebook_append_page(window->notebook, GTK_WIDGET(scrolled_window), NULL);
+	gtk_widget_show(scrolled_window);
+	gtk_widget_show(tree_view);
+	page_index = gtk_notebook_get_n_pages(window->notebook)-1;
+	top_filters_view_set_notebook_index(view, page_index);
+	window->views = g_list_append(window->views, view);
+	gtk_notebook_set_current_page(window->notebook, page_index);
+	clear_wait_cursor(GTK_WIDGET(window->window));
+}
+
+static int seaudit_window_view_matches_tab_index(gconstpointer data, gconstpointer index)
+{
+	top_filters_view_t *view;
+	if (!data) {
+		return -1;
+	}
+	view = (top_filters_view_t*) data;
+	if (view->notebook_index == GPOINTER_TO_INT(index))
+		return 0;
+	return 1;
+}
+
+top_filters_view_t* seaudit_window_get_current_view(seaudit_window_t *window)
+{
+	gint index;
+	GList *node;
+
+	index = gtk_notebook_get_current_page(window->notebook);
+	node = g_list_find_custom(window->views, GINT_TO_POINTER(index), &seaudit_window_view_matches_tab_index);
+	if (!node) {
+		return NULL;
+	}
+	return node->data;
+}
+
+void seaudit_window_filter_views(seaudit_window_t *window)
+{
+	g_list_foreach(window->views, &top_filters_view_do_filter, NULL);
+}
+
+void seaudit_new_tab_clicked(GtkMenuItem *menu_item, gpointer user_data)
+{
+	seaudit_window_add_new_view(seaudit_app->window, seaudit_app->cur_log, seaudit_app->seaudit_conf.column_visibility,
+				    NULL);
+
+}
 /* use to set the initial state of the real-time log toggle button */
 static void set_real_time_log_toggle_button_state(bool_t state)
 {
 	GtkWidget *widget;
 
-	widget = glade_xml_get_widget(seaudit_app->top_window_xml, "RealTimeToggleButton");
+	widget = glade_xml_get_widget(seaudit_app->window->xml, "RealTimeToggleButton");
 	g_assert(widget);
 	gtk_toggle_button_set_state(GTK_TOGGLE_BUTTON(widget), state);
 }
@@ -74,7 +172,7 @@ static gboolean real_time_update_log(gpointer callback_data)
 	rt = parse_audit(seaudit_app->log_file_ptr, seaudit_app->cur_log);
 	if (rt == PARSE_NO_PARSE || rt == PARSE_NO_SELINUX_ERROR)
 		return TRUE;
-	seaudit_log_view_store_do_filter(seaudit_app->log_store);
+	seaudit_window_filter_views(seaudit_app->window);
 	return TRUE;
 }
 
@@ -97,7 +195,7 @@ static void update_title_bar(void *user_data)
 		snprintf(policy_str, STR_SIZE, "[Policy file: No Policy]");
 	}
 	snprintf(str, STR_SIZE, "seAudit - %s %s", log_str, policy_str);	
-	gtk_window_set_title(seaudit_app->top_window, (gchar*) str);
+	gtk_window_set_title(seaudit_app->window->window, (gchar*) str);
 }
 
 static void update_status_bar(void *user_data)
@@ -106,10 +204,11 @@ static void update_status_bar(void *user_data)
 	char *ver_str = NULL;
 	int num_log_msgs, num_filtered_log_msgs;
 	char old_time[TIME_SIZE], recent_time[TIME_SIZE];
-       
-	GtkLabel *v_status_bar = (GtkLabel *) glade_xml_get_widget(seaudit_app->top_window_xml, "PolicyVersionLabel");
-	GtkLabel *l_status_bar = (GtkLabel *) glade_xml_get_widget(seaudit_app->top_window_xml, "LogNumLabel");
-	GtkLabel *d_status_bar = (GtkLabel *) glade_xml_get_widget(seaudit_app->top_window_xml, "LogDateLabel");
+	top_filters_view_t *view;
+
+	GtkLabel *v_status_bar = (GtkLabel *) glade_xml_get_widget(seaudit_app->window->xml, "PolicyVersionLabel");
+	GtkLabel *l_status_bar = (GtkLabel *) glade_xml_get_widget(seaudit_app->window->xml, "LogNumLabel");
+	GtkLabel *d_status_bar = (GtkLabel *) glade_xml_get_widget(seaudit_app->window->xml, "LogDateLabel");
 			
 	if (seaudit_app->cur_policy == NULL) {
 		ver_str = "Policy Version: No policy";
@@ -145,8 +244,9 @@ static void update_status_bar(void *user_data)
 		snprintf(str, STR_SIZE, "Dates: No log");
 		gtk_label_set_text(d_status_bar, str);
 	} else {
+		view = seaudit_window_get_current_view(seaudit_app->window);
 		num_log_msgs = seaudit_app->cur_log->num_msgs;
-		num_filtered_log_msgs = seaudit_app->log_store->log_view->num_fltr_msgs;
+		num_filtered_log_msgs = view->store->log_view->num_fltr_msgs;
 		snprintf(str, STR_SIZE, "Log Messages: %d/%d", num_filtered_log_msgs, num_log_msgs);
 		gtk_label_set_text(l_status_bar, str);
 		if (num_log_msgs > 0) {
@@ -169,7 +269,7 @@ static void set_recent_logs_submenu(seaudit_conf_t *conf_file)
 	GtkMenuItem *recent;
 	int i;
 
-	recent = GTK_MENU_ITEM(glade_xml_get_widget(seaudit_app->top_window_xml, "OpenRecentLog"));
+	recent = GTK_MENU_ITEM(glade_xml_get_widget(seaudit_app->window->xml, "OpenRecentLog"));
 	g_assert(recent);
 	gtk_menu_item_remove_submenu(recent);
 	submenu = gtk_menu_new();
@@ -190,7 +290,7 @@ static void set_recent_policys_submenu(seaudit_conf_t *conf_file)
 	GtkMenuItem *recent;
 	int i;
 
-	recent = GTK_MENU_ITEM(glade_xml_get_widget(seaudit_app->top_window_xml, "OpenRecentPolicy"));
+	recent = GTK_MENU_ITEM(glade_xml_get_widget(seaudit_app->window->xml, "OpenRecentPolicy"));
 	g_assert(recent);
 	submenu = gtk_menu_new();
 	for (i = 0; i < conf_file->num_recent_policy_files; i++) {
@@ -308,7 +408,12 @@ void on_FileQuit_activate(GtkWidget *widget, gpointer user_data)
 static void policy_file_open_from_recent_menu(GtkWidget *widget, gpointer user_data)
 {
 	const char *filename = (const char*)user_data;
-	seaudit_open_policy(seaudit_app, filename);
+	seaudit_open_policy(filename);
+}
+
+void seaudit_TopNotebook_switch_page(GtkNotebook *notebook, gint arg1, gpointer user_data)
+{
+	update_status_bar(NULL);
 }
 
 /* 
@@ -338,7 +443,7 @@ void on_PolicyFileOpen_activate(GtkWidget *widget, GdkEvent *event, gpointer cal
 		if (g_file_test(filename, G_FILE_TEST_IS_DIR))
 			gtk_file_selection_complete(GTK_FILE_SELECTION(file_selector), filename);
 	}
-	seaudit_open_policy(seaudit_app, filename);
+	seaudit_open_policy(filename);
 	gtk_widget_destroy(file_selector);
 	return;
 }
@@ -346,7 +451,7 @@ void on_PolicyFileOpen_activate(GtkWidget *widget, GdkEvent *event, gpointer cal
 static void log_file_open_from_recent_menu(GtkWidget *widget, gpointer user_data)
 {
 	const char *filename = (const char*)user_data;
-	seaudit_open_log_file(seaudit_app, filename);
+	seaudit_open_log_file(filename);
 }
 
 /*
@@ -377,7 +482,7 @@ void on_LogFileOpen_activate(GtkWidget *widget, GdkEvent *event, gpointer callba
 			gtk_file_selection_complete(GTK_FILE_SELECTION(file_selector), filename);
 	}
 	gtk_widget_destroy(file_selector);
-	seaudit_open_log_file(seaudit_app, filename);
+	seaudit_open_log_file(filename);
 	return;
 }
 
@@ -398,7 +503,7 @@ void on_about_seaudit_activate(GtkWidget *widget, GdkEvent *event, gpointer call
 	g_string_append(str, "\nlibapol version ");
 	g_string_append(str, libapol_get_version()); /* the libapol version */
 	
-	dialog = gtk_message_dialog_new(seaudit_app->top_window,
+	dialog = gtk_message_dialog_new(seaudit_app->window->window,
 					GTK_DIALOG_DESTROY_WITH_PARENT,
 					GTK_MESSAGE_INFO,
 					GTK_BUTTONS_CLOSE,
@@ -434,7 +539,7 @@ void on_seaudit_help_activate(GtkWidget *widget, GdkEvent *event, gpointer callb
 	if (!dir) {
 		string = g_string_new("");
 		g_string_assign(string, "Can not find help file");
-		message_display(seaudit_app->top_window, GTK_MESSAGE_ERROR, string->str);
+		message_display(seaudit_app->window->window, GTK_MESSAGE_ERROR, string->str);
 		g_string_free(string, TRUE);
 		return;
 	}
@@ -456,20 +561,20 @@ void on_seaudit_help_activate(GtkWidget *widget, GdkEvent *event, gpointer callb
 	return;
 }
 
+
 /* 
  * when the user clicks on filter log call this */
 void on_edit_filter_activate(GtkWidget *widget, GdkEvent *event, gpointer callback_data)
 {
+	top_filters_view_t *view;
+
 	if (seaudit_app->cur_log == NULL) {
-		message_display(seaudit_app->top_window, GTK_MESSAGE_ERROR, "There is no audit log loaded.");
+		message_display(seaudit_app->window->window, GTK_MESSAGE_ERROR, "There is no audit log loaded.");
 		return;
 	}
-	if (seaudit_app->filters->window != NULL) {
-		gtk_window_present(seaudit_app->filters->window); 
-		return;
-	}
-	/* Display filters window */
-	filters_display(seaudit_app->filters);
+
+	view = seaudit_window_get_current_view(seaudit_app->window);
+	top_filters_view_display(view);	
 	return;
 }
 
@@ -486,7 +591,7 @@ void on_realtime_toggled(GtkToggleButton *toggle, gpointer user_data)
 	gboolean active;
 	
 	active = gtk_toggle_button_get_active(toggle);
-	button = glade_xml_get_widget(seaudit_app->top_window_xml, "RealTimeToggleButton");
+	button = glade_xml_get_widget(seaudit_app->window->xml, "RealTimeToggleButton");
 	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), active);
 	/* set up a timeout function to update the log */
 	if (seaudit_app->timeout_key)
@@ -498,7 +603,7 @@ void on_realtime_toggled(GtkToggleButton *toggle, gpointer user_data)
 		seaudit_app->timeout_key = 0;
 }
 
-void on_audit_log_row_activated(GtkTreeView *treeview, GtkTreePath *path, GtkTreeViewColumn *col, gpointer user_data)
+static void on_audit_log_row_activated(GtkTreeView *treeview, GtkTreePath *path, GtkTreeViewColumn *col, gpointer user_data)
 {
 	on_top_window_query_button_clicked(NULL, NULL, NULL);
 }
@@ -538,12 +643,13 @@ static void seaudit_on_log_column_clicked(GtkTreeViewColumn *column, gpointer us
 				     path, NULL, FALSE, 0.0, 0.0);
 }
 
+/* field must be a valid index for visibility[] */
 static GtkTreeViewColumn *create_column(GtkTreeView *view, const char *name,
 					GtkCellRenderer *renderer, int field,
-					int max_width)
+					int max_width, bool_t visibility[])
 {
 	GtkTreeViewColumn *column;
-
+	
 	column = gtk_tree_view_column_new_with_attributes(name, renderer, "text", field, NULL);
 	gtk_tree_view_append_column(view, column);
 	gtk_tree_view_column_set_clickable (column, TRUE);
@@ -551,24 +657,19 @@ static GtkTreeViewColumn *create_column(GtkTreeView *view, const char *name,
 	gtk_tree_view_column_set_sort_column_id(column, field);
 	gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_FIXED);
 	gtk_tree_view_column_set_fixed_width(column, max_width);
-	gtk_tree_view_column_set_visible(column, seaudit_app->seaudit_conf.column_visibility[field]);
+	gtk_tree_view_column_set_visible(column, visibility[field]);
 	g_signal_connect_after(G_OBJECT(column), "clicked", G_CALLBACK(seaudit_on_log_column_clicked),
 			       view);
 	return column;
 }
 
-static int create_list(GtkTreeView *view)
+static int create_list(GtkTreeView *view, bool_t visibility[])
 {
-	SEAuditLogViewStore *list;
 	GtkCellRenderer *renderer;
 	PangoLayout *layout;
 	GtkTreeViewColumn *column;
 	int width;
 
-	list = seaudit_log_view_store_create();
-	gtk_tree_view_set_model(view, GTK_TREE_MODEL(list));
-	g_object_unref(G_OBJECT(list));
-	
 	gtk_tree_view_set_rules_hint(view, TRUE);
 	renderer = gtk_cell_renderer_text_new();
 	g_object_set(G_OBJECT(renderer), "xpad", 8, NULL);
@@ -577,81 +678,81 @@ static int create_list(GtkTreeView *view)
 	pango_layout_get_pixel_size(layout, &width, NULL);
 	g_object_unref(G_OBJECT(layout));
 	width += 12;
-	create_column(view, "Hostname", renderer, HOST_FIELD, width);
+	create_column(view, "Hostname", renderer, HOST_FIELD, width, visibility);
 
 	layout = gtk_widget_create_pango_layout(GTK_WIDGET(view), "Message");
 	pango_layout_get_pixel_size(layout, &width, NULL);
 	g_object_unref(G_OBJECT(layout));
 	width += 12;
-	create_column(view, "Message", renderer, AVC_MSG_FIELD, width);
+	create_column(view, "Message", renderer, AVC_MSG_FIELD, width, visibility);
 	
 	layout = gtk_widget_create_pango_layout(GTK_WIDGET(view), "Sep 16 10:51:20");
 	pango_layout_get_pixel_size(layout, &width, NULL);
 	g_object_unref(G_OBJECT(layout));
 	width += 12;
-	create_column(view, "Date", renderer, DATE_FIELD, width);
+	create_column(view, "Date", renderer, DATE_FIELD, width, visibility);
 
 	layout = gtk_widget_create_pango_layout(GTK_WIDGET(view), "Source");
 	pango_layout_get_pixel_size(layout, &width, NULL);
 	g_object_unref(G_OBJECT(layout));
 	width += 12;
-	create_column(view, "Source\nUser", renderer, AVC_SRC_USER_FIELD, width);
-	create_column(view, "Source\nRole", renderer, AVC_SRC_ROLE_FIELD, width);
+	create_column(view, "Source\nUser", renderer, AVC_SRC_USER_FIELD, width, visibility);
+	create_column(view, "Source\nRole", renderer, AVC_SRC_ROLE_FIELD, width, visibility);
 
 	layout = gtk_widget_create_pango_layout(GTK_WIDGET(view), "unlabeled_t");
 	pango_layout_get_pixel_size(layout, &width, NULL);
 	g_object_unref(G_OBJECT(layout));
 	width += 12;
-	create_column(view, "Source\nType", renderer, AVC_SRC_TYPE_FIELD, width);
+	create_column(view, "Source\nType", renderer, AVC_SRC_TYPE_FIELD, width, visibility);
 
 	layout = gtk_widget_create_pango_layout(GTK_WIDGET(view), "Source");
 	pango_layout_get_pixel_size(layout, &width, NULL);
 	g_object_unref(G_OBJECT(layout));
 	width += 12;
-	create_column(view, "Target\nUser", renderer, AVC_TGT_USER_FIELD, width);
-	create_column(view, "Target\nRole", renderer, AVC_TGT_ROLE_FIELD, width);
+	create_column(view, "Target\nUser", renderer, AVC_TGT_USER_FIELD, width, visibility);
+	create_column(view, "Target\nRole", renderer, AVC_TGT_ROLE_FIELD, width, visibility);
 
 	layout = gtk_widget_create_pango_layout(GTK_WIDGET(view), "unlabeled_t");
 	pango_layout_get_pixel_size(layout, &width, NULL);
 	g_object_unref(G_OBJECT(layout));
 	width += 12;
-	create_column(view, "Target\nType", renderer, AVC_TGT_TYPE_FIELD, width);
+	create_column(view, "Target\nType", renderer, AVC_TGT_TYPE_FIELD, width, visibility);
 
 	layout = gtk_widget_create_pango_layout(GTK_WIDGET(view), "Object  ");
 	pango_layout_get_pixel_size(layout, &width, NULL);
 	g_object_unref(G_OBJECT(layout));
 	width += 12;
-	create_column(view, "Object\nClass", renderer, AVC_OBJ_CLASS_FIELD, width);
+	create_column(view, "Object\nClass", renderer, AVC_OBJ_CLASS_FIELD, width, visibility);
 
 	layout = gtk_widget_create_pango_layout(GTK_WIDGET(view), "Permission");
 	pango_layout_get_pixel_size(layout, &width, NULL);
 	g_object_unref(G_OBJECT(layout));
 	width += 12;
-	create_column(view, "Permission", renderer, AVC_PERM_FIELD, width);
+	create_column(view, "Permission", renderer, AVC_PERM_FIELD, width, visibility);
 
 	layout = gtk_widget_create_pango_layout(GTK_WIDGET(view), "/usr/bin/cat");
 	pango_layout_get_pixel_size(layout, &width, NULL);
 	g_object_unref(G_OBJECT(layout));
 	width += 12;
-	create_column(view, "Executable", renderer, AVC_EXE_FIELD, width);
+	create_column(view, "Executable", renderer, AVC_EXE_FIELD, width, visibility);
 
 	layout = gtk_widget_create_pango_layout(GTK_WIDGET(view), "12345");
 	pango_layout_get_pixel_size(layout, &width, NULL);
 	g_object_unref(G_OBJECT(layout));
 	width += 12;
-	create_column(view, "PID", renderer, AVC_PID_FIELD, width);
+	create_column(view, "PID", renderer, AVC_PID_FIELD, width, visibility);
 
 	layout = gtk_widget_create_pango_layout(GTK_WIDGET(view), "123456");
 	pango_layout_get_pixel_size(layout, &width, NULL);
 	g_object_unref(G_OBJECT(layout));
 	width += 12;
-	create_column(view, "Inode", renderer, AVC_INODE_FIELD, width);
+	create_column(view, "Inode", renderer, AVC_INODE_FIELD, width, visibility);
 	
 	layout = gtk_widget_create_pango_layout(GTK_WIDGET(view), "/home/username/foo");
 	pango_layout_get_pixel_size(layout, &width, NULL);
 	g_object_unref(G_OBJECT(layout));
 	width += 12;
-	create_column(view, "Path", renderer, AVC_PATH_FIELD, width);
+	create_column(view, "Path", renderer, AVC_PATH_FIELD, width, visibility);
 
 	column = gtk_tree_view_column_new_with_attributes("Other", renderer, "text", AVC_MISC_FIELD, NULL);
 	gtk_tree_view_append_column(view, column);
@@ -660,7 +761,7 @@ static int create_list(GtkTreeView *view)
 	gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_GROW_ONLY);
 	gtk_tree_view_column_set_sort_column_id(column, AVC_MISC_FIELD );
 	gtk_tree_view_column_set_sort_indicator(column, FALSE);
-	gtk_tree_view_column_set_visible(column, seaudit_app->seaudit_conf.column_visibility[AVC_MISC_FIELD]);
+	gtk_tree_view_column_set_visible(column, visibility[AVC_MISC_FIELD]);
 
 	return 0;
 }
@@ -670,36 +771,19 @@ static int create_list(GtkTreeView *view)
 seaudit_t* seaudit_init(void)
 {
 	seaudit_t *seaudit;
-	GString *path; 
-	char *dir;
 
-	dir = find_file("seaudit.glade");
-	if (!dir){
-		fprintf(stderr, "could not find seaudit.glade\n");
-		return NULL;
-	}
-	path = g_string_new(dir);
-	free(dir);
-	g_string_append(path, "/seaudit.glade");
 	seaudit = (seaudit_t*)malloc(sizeof(seaudit_t));
 	if (!seaudit) {
 		fprintf(stderr, "memory error\n");
 		return NULL;
 	}
 	memset(seaudit, 0, sizeof(seaudit_t));
-	seaudit->top_window_xml = glade_xml_new(path->str, NULL, NULL);
-	g_string_free(path, TRUE);
-
-	g_assert(seaudit->top_window_xml);
-	seaudit->top_window = GTK_WINDOW(glade_xml_get_widget(seaudit->top_window_xml, "TopWindow"));
-	g_assert(seaudit->top_window);
-	seaudit->filters = filters_create();
-	if (!seaudit->filters) {
-		return NULL;
-	}
+	/* we load user configuration first so the window can be set up
+	 * set up properly on create */
+	load_seaudit_conf_file(&(seaudit->seaudit_conf));
+	seaudit->window = seaudit_window_create(NULL, seaudit->seaudit_conf.column_visibility);
 	seaudit->policy_file = g_string_new("");
 	seaudit->audit_log_file = g_string_new("");
-	
 	return seaudit;
 }
 
@@ -707,8 +791,6 @@ void seaudit_destroy(seaudit_t *seaudit_app)
 {
 	if (seaudit_app->cur_policy)
 		close_policy(seaudit_app->cur_policy);
-	seaudit_log_view_store_close_log(seaudit_app->log_store);
-	filters_destroy(seaudit_app->filters);
 	seaudit_callbacks_free();
 	if (seaudit_app->log_file_ptr)
 		fclose(seaudit_app->log_file_ptr);
@@ -719,7 +801,7 @@ void seaudit_destroy(seaudit_t *seaudit_app)
 	seaudit_app = NULL;
 }
 
-int seaudit_open_policy(seaudit_t *seaudit, const char *filename)
+int seaudit_open_policy(const char *filename)
 {
 	unsigned int opts;
 	FILE *file;
@@ -733,9 +815,9 @@ int seaudit_open_policy(seaudit_t *seaudit, const char *filename)
 	if (filename == NULL)
 		return -1;
 
-	show_wait_cursor(GTK_WIDGET(seaudit_app->top_window));
-	if (seaudit->cur_policy != NULL) {
-		dialog = gtk_message_dialog_new(seaudit->top_window,
+	show_wait_cursor(GTK_WIDGET(seaudit_app->window->window));
+	if (seaudit_app->cur_policy != NULL) {
+		dialog = gtk_message_dialog_new(seaudit_app->window->window,
 						GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 						GTK_MESSAGE_WARNING,
 						GTK_BUTTONS_YES_NO,
@@ -745,15 +827,15 @@ int seaudit_open_policy(seaudit_t *seaudit, const char *filename)
 		gtk_dialog_run(GTK_DIALOG(dialog));
 		gtk_widget_destroy(dialog);
 		if (response != GTK_RESPONSE_YES) {
-			clear_wait_cursor(GTK_WIDGET(seaudit_app->top_window));
+			clear_wait_cursor(GTK_WIDGET(seaudit_app->window->window));
 			return 0;
 		}
 	}
 	if (g_file_test(filename, G_FILE_TEST_IS_DIR)) {
 		msg = g_string_new("Error opening file: File is a directory!\n");
-		message_display(seaudit->top_window, GTK_MESSAGE_ERROR, msg->str);
+		message_display(seaudit_app->window->window, GTK_MESSAGE_ERROR, msg->str);
 		g_string_free(msg, TRUE);
-		clear_wait_cursor(GTK_WIDGET(seaudit_app->top_window));
+		clear_wait_cursor(GTK_WIDGET(seaudit_app->window->window));
 		return -1;
 	}
 	
@@ -771,9 +853,9 @@ int seaudit_open_policy(seaudit_t *seaudit, const char *filename)
 		}
 		g_string_append(msg, "!\n");
 		g_string_append(msg, strerror(errno));
-		message_display(seaudit->top_window, GTK_MESSAGE_ERROR, msg->str);
+		message_display(seaudit_app->window->window, GTK_MESSAGE_ERROR, msg->str);
 		g_string_free(msg, TRUE);
-		clear_wait_cursor(GTK_WIDGET(seaudit_app->top_window));
+		clear_wait_cursor(GTK_WIDGET(seaudit_app->window->window));
 		return -1;
 	} else 
 		fclose(file);
@@ -786,41 +868,41 @@ int seaudit_open_policy(seaudit_t *seaudit, const char *filename)
 			close_policy(tmp_policy);
 		msg = g_string_new("");
 		g_string_append(msg, "The specified file does not appear to be a valid\nSE Linux Policy\n\n");
-		message_display(seaudit->top_window, GTK_MESSAGE_ERROR, msg->str);
-		clear_wait_cursor(GTK_WIDGET(seaudit_app->top_window));
+		message_display(seaudit_app->window->window, GTK_MESSAGE_ERROR, msg->str);
+		clear_wait_cursor(GTK_WIDGET(seaudit_app->window->window));
 		return -1;
 	}
-	if (seaudit->cur_policy)
-		close_policy(seaudit->cur_policy);
-	seaudit->cur_policy = tmp_policy;
-	g_string_assign(seaudit->policy_file, filename);
+	if (seaudit_app->cur_policy)
+		close_policy(seaudit_app->cur_policy);
+	seaudit_app->cur_policy = tmp_policy;
+	g_string_assign(seaudit_app->policy_file, filename);
 	read_policy_conf(filename);
 	policy_load_signal_emit();
 
 	add_path_to_recent_policy_files(filename, &(seaudit_app->seaudit_conf));
 	set_recent_policys_submenu(&(seaudit_app->seaudit_conf));
 	save_seaudit_conf_file(&(seaudit_app->seaudit_conf));
-	clear_wait_cursor(GTK_WIDGET(seaudit_app->top_window));
+	clear_wait_cursor(GTK_WIDGET(seaudit_app->window->window));
 	return 0;
 }
 
-int seaudit_open_log_file(seaudit_t *seaudit, const char *filename)
+int seaudit_open_log_file(const char *filename)
 {
 	FILE *tmp_file;
-	int rt;
+	int rt, i;
 	GString *msg = NULL;
 	audit_log_t *new_log = NULL;
 
 	if (filename == NULL)
 		return -1;
-	show_wait_cursor(GTK_WIDGET(seaudit_app->top_window));
+	show_wait_cursor(GTK_WIDGET(seaudit_app->window->window));
     	tmp_file = fopen(filename, "r");
 	if (!tmp_file) {
 		msg = g_string_new("Error opening file ");
 		g_string_append(msg, filename);
 		g_string_append(msg, "!\n");
 		g_string_append(msg, strerror(errno));
-	   		message_display(seaudit_app->top_window, 
+	   		message_display(seaudit_app->window->window, 
 				GTK_MESSAGE_ERROR, 
 				msg->str);		
 		goto dont_load_log;
@@ -829,31 +911,31 @@ int seaudit_open_log_file(seaudit_t *seaudit, const char *filename)
 	new_log = audit_log_create();
 	rt = parse_audit(tmp_file, new_log);
 	if (rt == PARSE_MEMORY_ERROR) {
-		message_display(seaudit->top_window, 
+		message_display(seaudit_app->window->window, 
 				GTK_MESSAGE_ERROR, 
 				PARSE_MEMORY_ERROR_MSG);
 		goto dont_load_log;
 	}
 	else if (rt == PARSE_NO_SELINUX_ERROR) {
-		message_display(seaudit->top_window, 
+		message_display(seaudit_app->window->window, 
 				GTK_MESSAGE_ERROR, 
 				PARSE_NO_SELINUX_ERROR_MSG);
 		goto dont_load_log;
 	}
 	else if (rt == PARSE_INVALID_MSG_WARN) {
-		message_display(seaudit->top_window, 
+		message_display(seaudit_app->window->window, 
 				GTK_MESSAGE_WARNING, 
 				PARSE_INVALID_MSG_WARN_MSG);
 		goto load_log;
 	}
 	else if (rt == PARSE_MALFORMED_MSG_WARN) {
-		message_display(seaudit->top_window, 
+		message_display(seaudit_app->window->window, 
 				GTK_MESSAGE_WARNING, 
 				PARSE_MALFORMED_MSG_WARN_MSG);
 		goto load_log;
 	}
 	else if (rt == PARSE_BOTH_MSG_WARN) {
-		message_display(seaudit->top_window, 
+		message_display(seaudit_app->window->window, 
 				GTK_MESSAGE_WARNING, 
 				PARSE_BOTH_MSG_WARN_MSG);
 		goto load_log;
@@ -868,21 +950,23 @@ int seaudit_open_log_file(seaudit_t *seaudit, const char *filename)
 		fclose(tmp_file);
 	if (msg)
 		g_string_free(msg, TRUE);
-	gdk_window_set_cursor(GTK_WIDGET(seaudit_app->top_window)->window, NULL);
+	clear_wait_cursor(GTK_WIDGET(seaudit_app->window->window));
 	return -1;
 
  load_log:
 	audit_log_destroy(seaudit_app->cur_log);
 	seaudit_app->cur_log = new_log;
 	seaudit_app->log_file_ptr = tmp_file;
-	seaudit_log_view_store_close_log(seaudit_app->log_store);
-	seaudit_log_view_store_open_log(seaudit_app->log_store, new_log);
+	
+	for (i = 0; i < g_list_length(seaudit_app->window->views); i++)
+		top_filters_view_set_log(g_list_nth_data(seaudit_app->window->views, i), new_log);
+
 	g_string_assign(seaudit_app->audit_log_file, filename);
-	add_path_to_recent_log_files(filename, &(seaudit->seaudit_conf));
-	set_recent_logs_submenu(&(seaudit->seaudit_conf));
+	add_path_to_recent_log_files(filename, &(seaudit_app->seaudit_conf));
+	set_recent_logs_submenu(&(seaudit_app->seaudit_conf));
 	save_seaudit_conf_file(&(seaudit_app->seaudit_conf));
 	log_load_signal_emit();
-	clear_wait_cursor(GTK_WIDGET(seaudit_app->top_window));
+	clear_wait_cursor(GTK_WIDGET(seaudit_app->window->window));
 	return 0;
 }
 
@@ -902,11 +986,11 @@ gboolean delayed_main(gpointer data)
 	filename_data_t *filenames = (filename_data_t*)data;
 
 	if (filenames->log_filename) {
-		seaudit_open_log_file(seaudit_app, filenames->log_filename->str);
+		seaudit_open_log_file(filenames->log_filename->str);
 		g_string_free(filenames->log_filename, TRUE);
 	}
 	if (filenames->policy_filename) {
-		seaudit_open_policy(seaudit_app, filenames->policy_filename->str);
+		seaudit_open_policy(filenames->policy_filename->str);
 		g_string_free(filenames->policy_filename, TRUE);
 	}
 	return FALSE;
@@ -993,7 +1077,6 @@ void parse_command_line(int argc, char **argv, GString **policy_filename, GStrin
 
 int main(int argc, char **argv)
 {
-	GtkWidget *widget;
 	filename_data_t filenames;
 
 	filenames.policy_filename = filenames.log_filename = NULL; 			
@@ -1005,7 +1088,6 @@ int main(int argc, char **argv)
 	if (!seaudit_app)
 		exit(1);
 
-	load_seaudit_conf_file(&(seaudit_app->seaudit_conf));
 	set_recent_policys_submenu(&(seaudit_app->seaudit_conf));
 	set_recent_logs_submenu(&(seaudit_app->seaudit_conf));
 
@@ -1018,9 +1100,6 @@ int main(int argc, char **argv)
 		if (seaudit_app->seaudit_conf.default_policy_file)
 			filenames.policy_filename = g_string_new(seaudit_app->seaudit_conf.default_policy_file);
 
-	widget = glade_xml_get_widget(seaudit_app->top_window_xml, "LogListView");
-	create_list(GTK_TREE_VIEW(widget));
-	seaudit_app->log_store = (SEAuditLogViewStore*)gtk_tree_view_get_model(GTK_TREE_VIEW(widget));
 	update_status_bar(NULL);
 	update_title_bar(NULL);
 	
@@ -1031,9 +1110,6 @@ int main(int argc, char **argv)
 	log_filtered_callback_register(&update_status_bar, NULL);
 	/* finish loading later */
 	g_idle_add(&delayed_main, &filenames);
-
-	/* connect signal handlers */
-	glade_xml_signal_autoconnect(seaudit_app->top_window_xml);
 
 	/* must set the state of the button after signal autoconnect to catch the 
 	 * toggled signal */
