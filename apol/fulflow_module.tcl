@@ -2059,7 +2059,7 @@ proc Apol_Analysis_fulflow::change_obj_state_on_perm_select {} {
 	set items [$class_listbox get 0 end]
 	# If the total all permissions for the object have been excluded then inform the user. 
 	if {$num_excluded == $num_perms_for_class} {
-		$class_listbox itemconfigure $class_selected_idx -selectforeground gray -foreground gray
+		$class_listbox itemconfigure $class_selected_idx -selectforeground black -foreground gray
 		set [$class_listbox cget -listvar] [lreplace $items $class_selected_idx $class_selected_idx "$class_sel (Excluded)"]
 	} else {
 		$class_listbox itemconfigure $class_selected_idx -selectforeground black -foreground black
