@@ -686,7 +686,7 @@ static int apol_append_type_files(int ta_idx, bool_t is_attrib,
 		fprintf(stderr, "Memory error.\n");
 		goto err;
 	}
-	memset(type_strings, 0, sizeof(const char*));
+	memset(type_strings, 0, sizeof(const char*) * num_types);
 	for (i = 0; i < num_types; i++) {
 		if (get_type_name(types_indexes[i], &name, policy) != 0) {
 			Tcl_DStringFree(buf);
