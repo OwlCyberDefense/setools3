@@ -18,29 +18,97 @@ namespace eval Apol_Cond_Rules {
 	# 	boolean  	the name of the boolean
 	# 	show_rules  	whether to display rules along 
 	#		     	with conditional expression
+	#	allow_regex  	use regex
 	#
 	# Currently, only the following types of statements are  
       	# allowed inside of conditional policy blocks:
-	# 	teallow		type allow rules
-	# 	auallow		audit allow
-	# 	audont		dont audit 		
-	# 	ttrans		type trans
-	# 	tchange		type change
+	# 	incl_teallow	type allow rules
+	# 	incl_teaudit	audit rules
+	# 	incl_ttrans	type trans rules	
 	variable search_opts 
 	set search_opts(boolean)	""
-	set search_opts(show_rules)	""
-	set search_opts(teallow)	1
-	set search_opts(auallow)	0
-	set search_opts(tchange)	0
-	set search_opts(audont)		0
-	set search_opts(ttrans)		1
-		
+	set search_opts(show_rules)	1
+	set search_opts(incl_teallow)	1
+	set search_opts(incl_teaudit)	0
+	set search_opts(incl_ttrans)	0
+	set search_opts(allow_regex)	1	
+	
 	# other
 	variable enable_bool_combo_box	0
 	
 	# Global widgets
 	variable resultsbox
+	variable cond_bools_listbox
 	variable bool_combo_box
+}
+
+###############################################################
+#  ::cond_rules_search
+#
+proc Apol_Cond_Rules::cond_rules_search {} {
+	variable search_opts
+	variable cond_bools_list
+	variable resultsbox
+	variable enable_bool_combo_box
+	
+	if {$enable_bool_combo_box} {
+		set bool_name $search_opts(boolean)
+	} else {
+		set bool_name ""
+	}
+			
+	set rt [catch {set results [apol_SearchConditionalRules \
+		$bool_name \
+		$search_opts(allow_regex) \
+		$search_opts(show_rules) \
+		$search_opts(incl_teallow) \
+		$search_opts(incl_teaudit) \
+		$search_opts(incl_ttrans)]} err]
+		
+	if {$rt != 0} {	
+		tk_messageBox -icon error -type ok -title "Error" -message "$err"
+		return -1
+	} else {
+		$resultsbox configure -state normal
+		$resultsbox delete 0.0 end
+		$resultsbox insert end $results
+		ApolTop::makeTextBoxReadOnly $resultsbox 
+	}
+
+	return 0
+}
+
+################################################################
+#  ::cond_rules_reset_variables
+#
+proc Apol_Cond_Rules::cond_rules_reset_variables { } {
+	variable search_opts 
+	variable enable_bool_combo_box	
+	
+	set search_opts(boolean)	""
+	set search_opts(show_rules)	1
+	set search_opts(incl_teallow)	1
+	set search_opts(incl_teaudit)	0
+	set search_opts(incl_ttrans)	0
+	set search_opts(allow_regex)	1
+	set enable_bool_combo_box 0
+	
+	return 0	
+}
+
+################################################################
+#  ::cond_rules_enable_comboBox
+#
+proc Apol_Cond_Rules::cond_rules_enable_comboBox {cb_value combo_box} {
+	selection clear -displayof $combo_box
+
+	if {$cb_value} {
+		$combo_box configure -state normal -entrybg white
+	} else {
+		$combo_box configure -state disabled -entrybg $ApolTop::default_bg_color
+	}
+	
+	return 0
 }
 
 ################################################################
@@ -93,32 +161,13 @@ proc Apol_Cond_Rules::open { } {
 #  ::close
 #
 proc Apol_Cond_Rules::close { } {	
-	Apol_Cond_Rules::reset_variables
+	Apol_Cond_Rules::cond_rules_reset_variables
 	
 	$Apol_Cond_Rules::bool_combo_box configure -values ""
-	Apol_Initial_SIDS::enable_comboBox $Apol_Cond_Rules::enable_bool_combo_box $Apol_Cond_Rules::bool_combo_box
+	Apol_Cond_Rules::cond_rules_enable_comboBox $Apol_Cond_Rules::enable_bool_combo_box $Apol_Cond_Rules::bool_combo_box
 	$Apol_Cond_Rules::resultsbox configure -state normal
 	$Apol_Cond_Rules::resultsbox delete 0.0 end
 	ApolTop::makeTextBoxReadOnly $Apol_Cond_Rules::resultsbox 
-	
-	return 0	
-}
-
-################################################################
-#  ::reset_variables
-#
-proc Apol_Cond_Rules::reset_variables { } {
-	variable search_opts 
-	variable enable_bool_combo_box	
-	
-	set search_opts(boolean)	""
-	set search_opts(show_rules)	""
-	set search_opts(teallow)	1
-	set search_opts(auallow)	0
-	set search_opts(tchange)	0
-	set search_opts(audont)		0
-	set search_opts(ttrans)		1
-	set enable_bool_combo_box 0
 	
 	return 0	
 }
@@ -128,21 +177,6 @@ proc Apol_Cond_Rules::reset_variables { } {
 #
 proc Apol_Cond_Rules::free_call_back_procs { } {
      
-	return 0
-}
-
-################################################################
-#  ::enable_comboBox
-#
-proc Apol_Cond_Rules::enable_comboBox {cb_value combo_box} {
-	selection clear -displayof $combo_box
-
-	if {$cb_value} {
-		$combo_box configure -state normal -entrybg white
-	} else {
-		$combo_box configure -state disabled -entrybg $ApolTop::default_bg_color
-	}
-	
 	return 0
 }
 
@@ -189,18 +223,19 @@ proc Apol_Cond_Rules::create {nb} {
 	set buttons_f    [LabelFrame $ofm.buttons_f]
 	
 	set rules_inner_left_fm [frame $rules_fm.rules_inner_left_fm]
-	set rules_inner_right_fm [frame $rules_fm.rules_inner_right_fm]
-	 
-	set teallow [checkbutton $rules_inner_left_fm.teallow -text "allow" -variable Apol_Cond_Rules::search_opts(teallow) \
-	    -command "Apol_TE::defaultType_Enable_Disable"]
-	set auallow [checkbutton $rules_inner_left_fm.auallow -text "auditallow" -variable Apol_Cond_Rules::search_opts(auallow) \
-	    -command "Apol_TE::defaultType_Enable_Disable" ]
-	set audont [checkbutton $rules_inner_left_fm.audont -text "dontaudit"  -variable Apol_Cond_Rules::search_opts(audont) \
-	    -command "Apol_TE::defaultType_Enable_Disable" ]
-	set ttrans [checkbutton $rules_inner_right_fm.ttrans -text "type_trans" -variable Apol_Cond_Rules::search_opts(ttrans) \
-	    -command "Apol_TE::defaultType_Enable_Disable"]
-	set tchange [checkbutton $rules_inner_right_fm.tchange -text "type change" -variable Apol_Cond_Rules::search_opts(tchange) \
-	    -command "Apol_TE::defaultType_Enable_Disable" ]
+	set teallow [checkbutton $rules_inner_left_fm.teallow \
+		-text "Allow" \
+		-variable Apol_Cond_Rules::search_opts(incl_teallow) \
+	    	-onvalue 1 -offvalue 0]
+	set auallow [checkbutton $rules_inner_left_fm.auallow \
+		-text "Audit" \
+		-variable Apol_Cond_Rules::search_opts(incl_teaudit) \
+	    	-onvalue 1 -offvalue 0]
+	set ttrans [checkbutton $rules_inner_left_fm.ttrans \
+		-text "Transition" \
+		-variable Apol_Cond_Rules::search_opts(incl_ttrans) \
+	    	-onvalue 1 -offvalue 0]
+	
 	    
 	set bool_combo_box [ComboBox [$l_innerFrame getframe].bool_combo_box \
 		-textvariable Apol_Cond_Rules::search_opts(boolean) \
@@ -209,13 +244,22 @@ proc Apol_Cond_Rules::create {nb} {
 	set cb_enable_bool_combo_box [checkbutton [$l_innerFrame getframe].cb_enable_bool_combo_box \
 		-variable Apol_Cond_Rules::enable_bool_combo_box \
 		-onvalue 1 -offvalue 0 -text "Search using boolean variable" \
-		-command {Apol_Cond_Rules::enable_comboBox $Apol_Cond_Rules::enable_bool_combo_box $Apol_Cond_Rules::bool_combo_box}]
+		-command {Apol_Cond_Rules::cond_rules_enable_comboBox $Apol_Cond_Rules::enable_bool_combo_box $Apol_Cond_Rules::bool_combo_box}]
 	set cb_show_rules [checkbutton [$c_innerFrame getframe].cb_show_rules \
 		-variable Apol_Cond_Rules::search_opts(show_rules) \
 		-onvalue 1 -offvalue 0 -text "Display rules within conditional expression(s)"]
-		
+	set cb_regex [checkbutton [$c_innerFrame getframe].cb_regex \
+		-variable Apol_Cond_Rules::search_opts(allow_regex) \
+		-onvalue 1 -offvalue 0 -text "Use regular expression"]
+	
+	# ComboBox is not a simple widget, it is a mega-widget, and bindings for mega-widgets are non-trivial.
+	# If bindtags is invoked with only one argument, then the current set of binding tags for window is 
+	# returned as a list.
+	bindtags $bool_combo_box.e [linsert [bindtags $bool_combo_box.e] 3 bool_combo_box_Tag]
+	bind bool_combo_box_Tag <KeyPress> { ApolTop::_create_popup $Apol_Cond_Rules::bool_combo_box %W %K }
+    
 	# Action Buttons
-	set ok_button [button [$buttons_f getframe].ok -text OK -width 6 -command {ApolTop::unimplemented}]
+	set ok_button [button [$buttons_f getframe].ok -text OK -width 6 -command {Apol_Cond_Rules::cond_rules_search}]
 	#button $rfm.print -text Print -width 6 -command {ApolTop::unimplemented}
 	
 	# Display results window
@@ -229,11 +273,11 @@ proc Apol_Cond_Rules::create {nb} {
 	pack $l_innerFrame $c_innerFrame -side left -fill y -anchor nw -padx 4 -pady 4
 	
 	pack $cb_enable_bool_combo_box $bool_combo_box -side top -anchor nw -fill x
-	pack $cb_show_rules -side left -anchor nw 
+	pack $cb_show_rules $cb_regex -side top -anchor nw 
 	pack $sw_d -side left -expand yes -fill both 
 	pack $rules_fm -side left -anchor nw 
-	pack $rules_inner_left_fm $rules_inner_right_fm -side left -anchor nw -fill both -expand yes
-	pack $teallow $auallow $audont $ttrans $tchange -anchor nw -side top 
+	pack $rules_inner_left_fm -side left -anchor nw -fill both -expand yes
+	pack $teallow $auallow $ttrans -anchor nw -side top 
     
 	return $frame	
 }
