@@ -117,11 +117,7 @@ install-gui-policy:
 		chcon system_u:object_r:seuser_exec_t $(BINDIR)/seuserx; \
 	fi
 	
-install-nogui-policy:
-	-@if [ -e $(INSTALL_LIBDIR)/$(SEUSER_CONF_FILE) ]; then \
-		chcon system_u:object_r:seuser_conf_t $(INSTALL_LIBDIR)/$(SEUSER_CONF_FILE); \
-	fi
-	
+install-nogui-policy:	
 	-@if [ -e $(BINDIR)/seuser ]; then \
 		chcon system_u:object_r:seuser_exec_t $(BINDIR)/seuser; \
 	fi
@@ -139,8 +135,8 @@ install-nogui-policy:
 	fi
 
 install-policy: seuser-policy install-gui-policy install-nogui-policy
-	-@if [ -e $(SEUSER_CONF_FILE) ]; then \
-		chcon system_u:object_r:seuser_conf_t $(SEUSER_CONF_FILE); \
+	-@if [ -e $(INSTALL_LIBDIR)/$(SEUSER_CONF_FILE) ]; then \
+		chcon system_u:object_r:seuser_conf_t $(INSTALL_LIBDIR)/$(SEUSER_CONF_FILE); \
 	fi
 
 install-nogui: seuser 
