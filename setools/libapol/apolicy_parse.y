@@ -453,6 +453,7 @@ type_def		: TYPE identifier alias_def opt_attr_list ';'
 	                | TYPE identifier opt_attr_list ';'
                         {if (define_type(0)) return -1;}
     			;
+/* added feb 2004 */			
 typealias_def		: TYPEALIAS identifier alias_def ';'
 			{if (define_typealias()) return -1;}
 			;
@@ -815,7 +816,7 @@ tilde			: '~'
 			;
 asterisk		: '*'
                         ;
-exclude                : '-'
+exclude                 : '-'
 
 /* Jul 2002 nesting logic changed slightly */			;
 names           	: identifier
@@ -1371,7 +1372,7 @@ static int add_ttrule(int rule_type)
 			free(id);
 			continue;
 		}
-		if(strcmp(id, "-") == 0) {
+		if (strcmp(id, "-") == 0) {
 			subtract = TRUE;
 			free(id);
 			continue;
@@ -1419,6 +1420,11 @@ static int add_ttrule(int rule_type)
 			free(id);
 			continue;
 		}
+		if (strcmp(id, "-") == 0) {
+			subtract = TRUE;
+			free(id);
+			continue;
+		}
 		idx = get_type_or_attrib_idx(id, &idx_type, parse_policy);
 		if(idx < 0) {
 			sprintf(errormsg, "%s is neither a type or type attribute", id);
@@ -1431,10 +1437,9 @@ static int add_ttrule(int rule_type)
 			return -1;
 		}
 		titem->type = idx_type;
-		if(strcmp(id, "-") == 0) {
-			subtract = TRUE;
-			free(id);
-			continue;
+		if (subtract) {
+			titem->type |= IDX_SUBTRACT;
+			subtract = FALSE;
 		}
 		titem->idx = idx;
 		if(insert_ta_item(titem, &(item->tgt_types)) != 0) {
