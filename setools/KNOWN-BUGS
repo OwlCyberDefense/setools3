@@ -1,8 +1,8 @@
-SELinux Tools (setools), version 2.0
+SELinux Tools (setools), version 2.0-35
 by Tresys Technology, LLC
 (selinux@tresys.com, www.tresys.com/selinux)
 
-February 22, 2005
+February 28, 2005
 
 
 CURRENT BUGS AND ISSUES
@@ -37,7 +37,10 @@ APOL
    names will be lost (the root type name is used instead). 
    Therefore, aliases are not displayed and queries cannot use them 
    as parameters.
-  
+   
+6. Searching for specific permissions in AV rules will return 
+   rules that have '*' even if the listed object classes do not 
+   have the requested permissions.
 
 SEPCUT
 
@@ -50,6 +53,12 @@ LIBAPOL
 1. Lots of yacc shift/reduce errors in libapol that don't currently 
    impact operation (so it appears).
    
+2. Complements are not always correctly handled in type and 
+   permission lists.
+
+3. The direct file relabel analysis does not currently 
+   distinguish object classes, resulting in some false positives. 
+   This should not effect most well-written policies.
 
 SEAUDIT
 
@@ -63,12 +72,12 @@ SEAUDIT
 
 TESTING INFORMATION
 
-Operating Systems: Red Hat Linux 7.2/9.0/Fedora Core 1, 2 and 3 versions
+Operating Systems: Fedora Core 1, 2 and 3, RHEL 4, Gentoo 2004.3
 SELinux versions: 2.4, 2.6
 SELinux Policy versions: 12, 15, 16, 17 and 18 (with and without MLS support)
 TCL/TK versions: 8.3, 8.4
 BWidget versions: 1.4, 1.6, 1.7
-Desktops: Gnome, KDE, Ximiam Gnome, fvwm 
+Desktops: Gnome, KDE, Gnome, fvwm 
 
 These tools will likely have some bugs of which we are currently unaware.  
 Please report any new bugs or comments to selinux@tresys.com.  Thank you 
