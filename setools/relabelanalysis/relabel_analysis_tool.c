@@ -38,7 +38,7 @@ static struct option const longopts[] =
 
 void usage(const char *argv0, int long_version)
 {
-	printf("usage:\n%s -s <start type> -m \"to\"|\"from\"|\"both\"|\"domain\" [options]\n", argv0);
+	printf("usage:\n%s -s <start type> -m \"to\"|\"from\"|\"both\"|\"subject\" [options]\n", argv0);
 	if (long_version){
 		printf("\n"
 "Required Arguments:\n"
