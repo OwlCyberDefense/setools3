@@ -1656,6 +1656,7 @@ int seaudit_report_generate_report(seaudit_report_t *seaudit_report) {
 		if (seaudit_report_search_dflt_stylesheet(seaudit_report) < 0) {
 			return -1;
 		}
+		seaudit_report->use_stylesheet = TRUE;
 	} 
 	
 	/* Set/Open the output stream */	
@@ -1667,6 +1668,7 @@ int seaudit_report_generate_report(seaudit_report_t *seaudit_report) {
 			return -1;
 		}
 	}
+
 	/* Print report header */
 	if (seaudit_report_print_header(seaudit_report, outfile) != 0) {
 		fclose(outfile);
