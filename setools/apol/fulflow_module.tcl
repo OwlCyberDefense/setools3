@@ -167,18 +167,18 @@ proc Apol_Analysis_fulflow::do_analysis { results_frame } {
         variable flow_direction
 	variable advanced_filter_Dlg
 	variable f_opts
-		        
-        # If the advanced options object doesn't exist, then create it.
-	if {![array exists f_opts] || [array names f_opts "$advanced_filter_Dlg,name"] == ""} {
-		Apol_Analysis_fulflow::advanced_filters_create_object $advanced_filter_Dlg
-	} 
-	
+		        	
 	# if a permap is not loaded then load the default permap
         # if an error occurs on open, then skip analysis
         set rt [catch {Apol_Analysis_fulflow::load_default_perm_map} err]
 	if {$rt != 0} {	
 		return -code error $err
 	}
+	
+	# If the advanced options object doesn't exist, then create it.
+	if {![array exists f_opts] || [array names f_opts "$advanced_filter_Dlg,name"] == ""} {
+		Apol_Analysis_fulflow::advanced_filters_create_object $advanced_filter_Dlg
+	} 
 		
 	# Initialize local variables
 	set num_object_classes 0
@@ -297,7 +297,8 @@ proc Apol_Analysis_fulflow::close { } {
      	$Apol_Analysis_fulflow::combo_attribute configure -values ""
         set Apol_Analysis_fulflow::endtype_sel 0
         Apol_Analysis_fulflow::config_endtype_state
-        Apol_Analysis_fulflow::advanced_filters_destroy_all_dialogs_on_close
+        Apol_Analysis_fulflow::advanced_filters_destroy_dialog $Apol_Analysis_fulflow::advanced_filter_Dlg
+	Apol_Analysis_fulflow::advanced_filters_destroy_object $Apol_Analysis_fulflow::advanced_filter_Dlg
      	return 0
 } 
 
@@ -309,6 +310,7 @@ proc Apol_Analysis_fulflow::open { } {
         variable in_button
         variable cb_attrib
 	
+	Apol_Analysis_fulflow::advanced_filters_destroy_all_dialogs_on_open
         Apol_Analysis_fulflow::populate_ta_list
         set in_button_sel 1
         $in_button select
@@ -1952,10 +1954,13 @@ proc Apol_Analysis_fulflow::load_default_perm_map {} {
 # ------------------------------------------------------------------------------
 #  Command Apol_Analysis_fulflow::advanced_filters_refresh_dialog
 # ------------------------------------------------------------------------------
-proc Apol_Analysis_fulflow::advanced_filters_refresh_dialog {path_name} {   
-	Apol_Analysis_fulflow::advanced_filters_destroy_object $path_name	
-	Apol_Analysis_fulflow::advanced_filters_create_object $path_name	
-	Apol_Analysis_fulflow::advanced_filters_update_dialog $path_name
+proc Apol_Analysis_fulflow::advanced_filters_refresh_dialog {path_name} {  
+	if {[array exists f_opts] && \
+	    [array names f_opts "$path_name,name"] != ""} { 
+		Apol_Analysis_fulflow::advanced_filters_destroy_object $path_name	
+		Apol_Analysis_fulflow::advanced_filters_create_object $path_name	
+		Apol_Analysis_fulflow::advanced_filters_update_dialog $path_name
+	}
 	
 	return 0
 } 
@@ -2535,13 +2540,14 @@ proc Apol_Analysis_fulflow::advanced_filters_set_widgets_to_default_state {path_
 }
 
 # ------------------------------------------------------------------------------
-#  Command Apol_Analysis_fulflow::advanced_filters_destroy_all_dialogs_on_close
+#  Command Apol_Analysis_fulflow::advanced_filters_destroy_all_dialogs_on_open
 # ------------------------------------------------------------------------------
-proc Apol_Analysis_fulflow::advanced_filters_destroy_all_dialogs_on_close {} {
+proc Apol_Analysis_fulflow::advanced_filters_destroy_all_dialogs_on_open {} {
 	variable f_opts
 	
-	set dlgs [array get f_opts "*,name"]
+	set dlgs [array names f_opts "*,name"]
 	set length [llength $dlgs]
+
 	for {set i 0} {$i < $length} {incr i} {
 		# Skip the name of the element to the actual value of the element
 		incr i
@@ -2638,7 +2644,8 @@ proc Apol_Analysis_fulflow::advanced_filters_destroy_object {path_name} {
 		unset f_opts($path_name,threshhold_cb_value)
 		unset f_opts($path_name,threshhold_value)
 		unset f_opts($path_name,filter_vars_init) 	
-		unset f_opts($path_name,class_selected_idx) 	
+		unset f_opts($path_name,class_selected_idx) 
+		unset f_opts($path_name,name) 
 	}
      	return 0
 } 
@@ -2674,12 +2681,17 @@ proc Apol_Analysis_fulflow::advanced_filters_change_threshhold_value {path_name}
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_fulflow::advanced_filters_create_dialog {path_name title_txt} {
 	variable f_opts 
-	
+
 	if {![ApolTop::is_policy_open]} {
 	    tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened!"
 	    return -1
         } 
-        
+       
+   	set rt [catch {Apol_Analysis_fulflow::load_default_perm_map} err]
+	if {$rt != 0} {		
+		return -1
+	}
+	
 	# Check to see if object already exists.
 	if {[array exists f_opts] && \
 	    [array names f_opts "$path_name,name"] != ""} {
@@ -2689,16 +2701,12 @@ proc Apol_Analysis_fulflow::advanced_filters_create_dialog {path_name title_txt}
 		    	focus $f_opts($path_name,name)
 	    		return 0
 	    	} 
+	    	# else we need to display the dialog with the correct object settings
     	} else {
 	    	# Create a new options dialog object
     		Apol_Analysis_fulflow::advanced_filters_create_object $path_name
-    	}
-    	
-    	set rt [catch {Apol_Analysis_fulflow::load_default_perm_map} err]
-	if {$rt != 0} {		
-		return -1
-	}
-	
+    	}	
+   	
     	# Create the top-level dialog and subordinate widgets
     	toplevel $f_opts($path_name,name) 
      	wm withdraw $f_opts($path_name,name) 	
