@@ -56,9 +56,7 @@ and a red label indicating that an index file is not loaded is displayed at the 
 Buttons are presented for creating and loading an index file. Selecting the \
 'Load' button displays a file selection dialog from which you can choose a saved index \
 file to load. Selecting the 'Create and Load' button will display a dialog for you to specify \
-the save file and the directories from which to start the indexing. Here, you may add multiple \
-directories from which to index by using the 'Add' button or you may simply input a colon-delimited \
-list of directory path strings within the entrybox. Upon selecting the 'Create' button, an index \
+the save file and the directory from which to start the indexing. Upon selecting the 'Create' button, an index \
 file will be created and then loaded into apol.} \
 \
 "\n\nSearching an Index File\n\n" \
