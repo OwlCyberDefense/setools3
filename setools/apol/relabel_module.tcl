@@ -1391,7 +1391,8 @@ proc Apol_Analysis_relabel::tree_select {widget node} {
 					set start_index [string length $line]
 					append line "$obj:\n"
 					set end_index [string length $line]
-					lappend subtitle_type_tags $start_index $end_index
+					lappend title_tags $start_index $end_index
+					append line "\n"
 					foreach thing $obj_info {
 						foreach {direction subject rule_proof} $thing { 				
 							set start_index [string length $line]
