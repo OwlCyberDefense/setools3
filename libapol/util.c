@@ -70,8 +70,8 @@ int trim_leading_whitespace(char **str)
 		}
 		assert(i <= length);
 		(*str)[i] = '\0';
-		free(tmp);
 	}
+	free(tmp);
 	/* else, no leading whitespace found */
 	return 0;	
 }
