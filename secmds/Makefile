@@ -46,13 +46,13 @@ indexcon.o: indexcon.c
 	$(CC) -c indexcon.c -DSEFS_XATTR_LABELED_FILESYSTEMS=$(SEFS_XATTR_LABELED_FILESYSTEMS) $(CFLAGS) $(INCLUDE)
 
 indexcon: indexcon.o $(LIBAPOL) $(LIBSEFS)
-	$(CC) -o $@ indexcon.o $(LINKFLAGS) $(LIBSEFS) $(LIBSELINUX) $(LIBAPOL) $(LIBS)
+	$(CC) -static -o $@ indexcon.o $(LINKFLAGS) $(LIBSEFS) $(LIBSELINUX) $(LIBAPOL) $(LIBS)
 
 searchcon.o: searchcon.c
 	$(CC) -c searchcon.c -DSEFS_XATTR_LABELED_FILESYSTEMS=$(SEFS_XATTR_LABELED_FILESYSTEMS) $(CFLAGS) $(INCLUDE)
 
 searchcon: searchcon.o
-	$(CC) -o $@ searchcon.o $(LINKFLAGS) $(LIBSEFS) $(LIBSELINUX) $(LIBAPOL) $(LIBS)
+	$(CC) -static -o $@ searchcon.o $(LINKFLAGS) $(LIBSEFS) $(LIBSELINUX) $(LIBAPOL) $(LIBS)
 
 findcon.o: replcon.c
 	$(CC) -c replcon.c -o findcon.o -DFINDCON -DSEFS_XATTR_LABELED_FILESYSTEMS=$(SEFS_XATTR_LABELED_FILESYSTEMS) $(CFLAGS) $(INCLUDE)
