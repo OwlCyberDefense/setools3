@@ -321,6 +321,7 @@ int main(int argc, char *argv[])
 
 	/* GUI */
 	if(argv[1][0] == '-') {
+		snprintf(prog_path, PATH_MAX, "./%s", SEUSER_GUI_PROG);
 		/* replaced -g with less desireable -X because -g already used by
 		* one of the user[add|mod|del] commands */
 		if(argv[1][1] == 'X' ) { 
