@@ -259,26 +259,29 @@ static int ftw_handler(const char *file, const struct stat *sb, int flag, struct
 		tmp = strtok(con, ":");
 		if (tmp) {
 			rc = avl_get_idx(tmp, &fsdata->user_tree);
-			if(rc != -1)
-				pi->context.user=rc;
-			else 
-			{
+			if(rc == -1)
 				avl_insert(&(fsdata->user_tree),tmp, &rc);
-				pi->context.user=rc;
-			}
+
+			pi->context.user=rc;
 		}
-		else
-			pi->context.user = XATTR_UNLABELED;
+		else {
+			rc = avl_get_idx(SEFS_XATTR_UNLABELED, &fsdata->user_tree);
+                        if (rc == -1)
+				avl_insert(&(fsdata->user_tree), SEFS_XATTR_UNLABELED, &rc);
+
+			pi->context.user=rc;
+		}
 
 		tmp = strtok(NULL, ":");
 		if (tmp) {
 			if(strncmp(tmp, "object_r", 8) == 0)
 				pi->context.role = OBJECT_R;
 			else
-				pi->context.role = XATTR_UNLABELED;
-		}
-		else
-			pi->context.role = XATTR_UNLABELED;
+				pi->context.role = 0;
+				/* FIXME ^ this is bad */
+		} else
+			pi->context.role = 0;
+			/* FIXME ^ this is bad */
 
 		tmp = strtok(NULL, ":");
 		if (tmp) {
@@ -616,6 +619,7 @@ int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char *filename)
 		
 		if (pinfo->obj_class == LNK_FILE) {
 				/* write our symlink target */
+printf("%d:%d\n", pinfo->context.user, pinfo->context.type);
 printf("con %s:%s\n", fsd->users[pinfo->context.user], fsd->types[pinfo->context.type]);
 printf("trying to write symlink with target %s\n", pinfo->symlink_target);
 				len = strlen(pinfo->symlink_target);
@@ -810,8 +814,6 @@ printf("number of files: %d\n", fsd->num_files);
 
 		pinfo = &(fsd->files[i]);
 
-printf("on inode: %d\n",i);
-
 		key = (inode_key_t *)malloc(sizeof(inode_key_t));
 		if (!key) {
 			fprintf(stderr, "3Out of memory\n");
@@ -839,7 +841,7 @@ printf("on inode: %d\n",i);
 		}		
 
 		for (j = 0; j < 2; j++) 
-			sbuf[i]	= le32_to_cpu(sbuf[i]);
+			sbuf[j]	= le32_to_cpu(sbuf[j]);
 			
 		pinfo->context.user = sbuf[0];
 		pinfo->context.role = sbuf[1];
@@ -872,7 +874,6 @@ printf("on inode: %d\n",i);
 		}
 
 		/* add the type of this inode to the type index list */
-printf ("adding path %d to type %d\n",i,pinfo->context.type);
 		add_uint_to_a(i, &fsd->types[pinfo->context.type].num_inodes, &fsd->types[pinfo->context.type].index_list);
 		
 		/* Read the pathname count */
@@ -907,7 +908,6 @@ printf ("adding path %d to type %d\n",i,pinfo->context.type);
 				fprintf(stderr, "6error reading file %s\n", filename);
 				return -1;
 			}
-printf("adding path: %s\n", pinfo->path_names[j]);
 		}
 		
 	}
