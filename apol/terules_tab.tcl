@@ -436,9 +436,14 @@ proc Apol_TE::searchTErules { whichButton } {
 	
 	# Getting all selected objects. 
 	set selObjectsList [Apol_TE::get_Selected_ListItems $objslistbox]
-
-	# Getting all selected permissions
-	set selPermsList [Apol_TE::get_Selected_ListItems $permslistbox]
+	
+	if {!$opts(teallow) && !$opts(neverallow) && !$opts(auallow) && !$opts(audont)} {
+		# Selected permissions don't apply if only type rules selected 
+		set selPermsList ""
+	} else {
+		# Getting all selected permissions
+		set selPermsList [Apol_TE::get_Selected_ListItems $permslistbox]
+	}
 		
 	# Making the call to apol_GetTErules to search for rules with given options
 	ApolTop::setBusyCursor
@@ -2588,7 +2593,7 @@ proc Apol_TE::enable_disable_permissions_section {enable} {
     	variable b_reverseSel
     	
 	if {!$enable} { 
-		$permslistbox selection clear 0 end
+		#$permslistbox selection clear 0 end
 		ApolTop::disable_tkListbox $permslistbox
 		
 		$b_union configure -state disabled
