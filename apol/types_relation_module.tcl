@@ -351,7 +351,7 @@ proc Apol_Analysis_tra::do_analysis {results_frame} {
 	if {[expr (!$map_loaded && ($trans_flow_sel || $dir_flow_sel))]} {
 	    set rt [catch {Apol_Perms_Map::load_default_perm_map} err]
 	    if { $rt != 0 } {
-		if {$rt == $warning_return_val} {
+		if {$rt == $Apol_Perms_Map::warning_return_val} {
 			tk_messageBox -icon warning -type ok -title "Warning" -message "$err"
 		} else {
 			tk_messageBox -icon error -type ok -title "Error" -message "$err"
