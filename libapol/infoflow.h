@@ -53,7 +53,7 @@ typedef struct iflow_query {
 	int num_types; 				/* number of intermediate types */
 	int *types; 				/* indices of intermediate types in policy->types */
 	int num_obj_options; 			/* number of permission options */
-	policy_query_obj_options_t *obj_options; 	/* Allows the exclusion of individual permissions 
+	obj_perm_set_t *obj_options; 	/* Allows the exclusion of individual permissions 
 					      	 * or entire object classes. This struct is defined 
 					      	 * in analysis.h */
 } iflow_query_t;
