@@ -48,9 +48,6 @@ LIBAPOL
 1. Lots of yacc shift/reduce errors in libapol that don't currently 
    impact operation (so it appears).
    
-2. Once apol gets an error parsing a policy file, you must exit 
-   any program using this library and restart (sorry!).
-
 
 SEAUDIT
 
@@ -60,9 +57,6 @@ SEAUDIT
    by date January 2004 will come before December 2003 entire.  This 
    is because audit logs do not include a year so we assign the same 
    year to all dates.
-
-2. If an invalid policy.conf file is opened you will have to restart 
-   the tool.
 
 
 TESTING INFORMATION
