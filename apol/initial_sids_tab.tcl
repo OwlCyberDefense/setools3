@@ -303,13 +303,13 @@ proc Apol_Initial_SIDS::create {nb} {
 	pack $pw2 -fill both -expand yes
 	
 	# Placing title frames
-	pack $s_optionsbox -padx 2 -fill both
+	pack $s_optionsbox -padx 2 -fill both -expand yes
 	pack $sids_box -padx 2 -side left -fill both -expand yes
 	pack $rslts_frame -pady 2 -padx 2 -fill both -anchor n -side bottom -expand yes
 	
 	# Roles listbox widget
 	set sw_r [ScrolledWindow [$sids_box getframe].sw -auto both]
-	set init_sids_listbox [listbox [$sw_r getframe].lb -height 18 -width 20 -highlightthickness 0 \
+	set init_sids_listbox [listbox [$sw_r getframe].lb -height 18 -highlightthickness 0 \
 		 -listvar Apol_Initial_SIDS::sids_list -bg white] 
 	$sw_r setwidget $init_sids_listbox 
 	    
@@ -334,15 +334,15 @@ proc Apol_Initial_SIDS::create {nb} {
 	
 	# Placing inner frames
 	# Search options widget items
-	set user_combo_box [ComboBox [$l_innerFrame getframe].user_combo_box -width 30 \
+	set user_combo_box [ComboBox [$l_innerFrame getframe].user_combo_box  \
 		-textvariable Apol_Initial_SIDS::opts(user) \
 		-helptext "Type or select a user" \
 		-entrybg $ApolTop::default_bg_color]
-	set role_combo_box [ComboBox [$c_innerFrame getframe].role_combo_box -width 30 \
+	set role_combo_box [ComboBox [$c_innerFrame getframe].role_combo_box  \
 		-textvariable Apol_Initial_SIDS::opts(role) \
 		-helptext "Type or select a role" \
 		-entrybg $ApolTop::default_bg_color]
-	set type_combo_box [ComboBox [$r_innerFrame getframe].type_combo_box -width 30 \
+	set type_combo_box [ComboBox [$r_innerFrame getframe].type_combo_box  \
 		-textvariable Apol_Initial_SIDS::opts(type) \
 		-helptext "Type or select a type" \
 		-entrybg $ApolTop::default_bg_color]
@@ -411,7 +411,8 @@ proc Apol_Initial_SIDS::create {nb} {
 	# Placing all widget items
 	pack $ok_button -side top -anchor e -pady 5 -padx 5
 	pack $buttons_f -side right -expand yes -fill both -anchor nw -padx 4 -pady 4
-	pack $l_innerFrame $c_innerFrame $r_innerFrame -side left -fill y -anchor nw -padx 4 -pady 4
+	pack $r_innerFrame -side right -fill both -anchor nw -padx 4 -pady 4
+	pack $l_innerFrame $c_innerFrame -side left -fill both -anchor nw -padx 4 -pady 4
 	pack $cb_user $cb_role $cb_type -side top -anchor nw
 	pack $user_combo_box $role_combo_box $type_combo_box -side top -fill x -anchor nw -padx 4
 	pack $cb_attrib -side top -anchor nw -padx 15
