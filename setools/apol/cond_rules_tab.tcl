@@ -199,16 +199,8 @@ proc Apol_Cond_Rules::on_rule_buttons_selected {} {
 	# Disable 'Display rules within cond expression' if no rule selections  
 	if {!$search_opts(incl_teallow) && !$search_opts(incl_teaudit) && !$search_opts(incl_ttrans)} {
 		$cb_show_rules configure -state disabled
-		$cb_enable_bool_combo_box deselect
-		$cb_enable_bool_combo_box configure -state disabled
-		
-		Apol_Cond_Rules::cond_rules_enable_bool_combo_box
-		$bool_combo_box configure -state disabled
 	} else {
 		$cb_show_rules configure -state normal
-		$cb_enable_bool_combo_box configure -state normal
-		$bool_combo_box configure -state normal
-		Apol_Cond_Rules::cond_rules_enable_bool_combo_box
 	}
 	
 	return 0
