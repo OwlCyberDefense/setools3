@@ -652,7 +652,7 @@ void seaudit_log_view_store_do_filter(SEAuditLogViewStore *store)
 
 	sorted = gtk_tree_sortable_get_sort_column_id(GTK_TREE_SORTABLE(store), &sortId, &store->order);
 	old_sz = store->log_view->num_fltr_msgs;
-	audit_log_view_do_filter(store->log_view, TRUE, &deleted, &num_deleted);
+	audit_log_view_do_filter(store->log_view, &deleted, &num_deleted);
 	new_sz = store->log_view->num_fltr_msgs;
 	iter.stamp = store->stamp;
 	qsort(deleted, num_deleted, sizeof(int), &int_compare);
@@ -688,12 +688,14 @@ void seaudit_log_view_store_do_filter(SEAuditLogViewStore *store)
 	return;
 }
 
-static void seaudit_log_view_store_purge_fltr_msgs(SEAuditLogViewStore *store)
+void seaudit_log_view_store_close_log(SEAuditLogViewStore *store)
 {
 	GtkTreeIter iter;
 	GtkTreePath *path;
 	int i;
 	
+	if (!store->log_view)
+		return;
 	iter.stamp = store->stamp;
 	for (i = 0; i < store->log_view->num_fltr_msgs; i++) {
 		path = gtk_tree_path_new();
@@ -702,25 +704,28 @@ static void seaudit_log_view_store_purge_fltr_msgs(SEAuditLogViewStore *store)
 		gtk_tree_model_row_deleted(GTK_TREE_MODEL(store), path);
 		gtk_tree_path_free(path);
 	}
-	audit_log_view_purge_fltr_msgs(store->log_view);	
-	g_assert(gtk_tree_model_get_iter_first(GTK_TREE_MODEL(store), &iter) == FALSE);
-}
-
-void seaudit_log_view_store_close_log(SEAuditLogViewStore *store)
-{
-	if (!store->log_view)
-		return;
-	
-	seaudit_log_view_store_purge_fltr_msgs(store);
-	store->log_view->my_log = NULL;
+	audit_log_view_set_log(store->log_view, NULL);
 }
 
 int seaudit_log_view_store_open_log(SEAuditLogViewStore *store, audit_log_t *new_log)
 {
+	GtkTreeIter iter;
+	GtkTreePath *path;
+	int i;
+
 	if (!store->log_view)
 		return -1;
-	store->log_view->my_log = new_log;
-	seaudit_log_view_store_do_filter(store);
+	if (store->log_view->my_log)
+		seaudit_log_view_store_close_log(store);
+
+	audit_log_view_set_log(store->log_view, new_log);
+	for (i = 0; i < store->log_view->num_fltr_msgs; i++) {
+		path = gtk_tree_path_new();
+		iter.user_data = GINT_TO_POINTER(i);
+		path = log_view_store_get_path(GTK_TREE_MODEL(store), &iter);
+		gtk_tree_model_row_inserted(GTK_TREE_MODEL(store), path, &iter);
+		gtk_tree_path_free(path);
+	}
 	return 0;
 }
 
