@@ -1,6 +1,6 @@
-﻿Semantic Policy Difference Tool for Security Enhanced Linux
-sediff, Graphical User Interface version 
-February 8, 2005
+Semantic Policy Difference Tool for Security Enhanced Linux
+sediff, Graphical User Interface version 1.0
+February 15, 2005
 selinux@tresys.com
 
 Overview:
@@ -59,7 +59,7 @@ AV and Type Rules:
 
     In the case of binary policies, the rules are already condensed down to single source-target-class triples, with only one rule of a given rule type per triple (ignoring conditional policies for now). However, source policies are not so compact, and there may (and usually are) many rules that have many sources, targets, and object classes and many other rules that match these rules for some aspect. This is further complicated with the use of attributes. Indeed the simpler (but verbose) case of a binary policy is really just a simple case of the more general case represented by the source policy. Thus the first issue is a general solution for determining whether a given rule in policy_1 is semantically included in policy_2.
 
-Role Rules:
+Role Allow Rules:
     Role rules (role allow and transition) can be checked much in the same way as described above for TE rules.
 
 Conditional Policy:
