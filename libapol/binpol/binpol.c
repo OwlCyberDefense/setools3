@@ -1452,6 +1452,11 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 	
 	policy_ver = buf[0];
 	switch(policy_ver) {
+	case POLICYDB_VERSION_NLCLASS:
+		if(set_policy_version(POL_VER_18, policy) != 0)
+			{ rt = -4; goto err_return; }
+		num_syms = SYM_NUM;
+		break;
 	case POLICYDB_VERSION_IPV6 :
 		if(set_policy_version(POL_VER_17, policy) != 0)
 			{ rt = -4; goto err_return; }
