@@ -276,6 +276,7 @@ bool_t does_cond_match(avh_node_t *n1, policy_t *p1, avh_node_t *n2, policy_t *p
 	cond_free_expr(expr2);
 	if(!ans)
 		return FALSE;
+
 	/* At this point the conditionals match; next see if the rules are on the same T/F list */
 	if(*inverse) 
 		return (n1->cond_list != n2->cond_list);
