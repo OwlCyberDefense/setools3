@@ -151,7 +151,7 @@ static avh_idx_t *avh_index_create(void)
 	return n;
 }
 
-avh_idx_t *avh_idx_find(avh_idx_t *idx, int data)
+static avh_idx_t *avh_idx_find(avh_idx_t *idx, int data)
 {
 	avh_idx_t *cur, *active;
 	
@@ -167,6 +167,16 @@ avh_idx_t *avh_idx_find(avh_idx_t *idx, int data)
 	}
 	
 	return active;
+}
+
+avh_idx_t *avh_src_type_idx_find(avh_t* avh, int type)
+{
+	return avh_idx_find(avh->src_type_idx, type);
+}
+
+avh_idx_t *avh_tgt_type_idx_find(avh_t *avh, int type)
+{
+	return avh_idx_find(avh->tgt_type_idx, type);
 }
 
 /* inserts node into index - does not check for uniqueness */
