@@ -2480,7 +2480,7 @@ int add_cond_bool(char *name, bool_t val, policy_t *policy)
 		return rt;
 		
 	policy->cond_bools[idx].name = name;
-	policy->cond_bools[idx].val = val;
+	policy->cond_bools[idx].val = policy->cond_bools[idx].policy_val = val;
 
 	return idx;
 }
@@ -2587,34 +2587,50 @@ int add_cond_expr_item(cond_expr_t *expr, cond_rule_list_t *true_list, cond_rule
 	policy->cond_exprs[idx].true_list = true_list;
 	policy->cond_exprs[idx].false_list = false_list;
 	
-	if (update_cond_expr_item(idx, policy) != 0)
-		return -1;
 	return idx;
 }
 
-/*
- * Set the value of the condition bool. This will also update all of the conditional
- * expressions to reflect the change in value.
+/* Update all of the conditional expression items to reflect the current boolean values
  *
- * returns 0 on success.
- * returns -1 on error.
+ * RETURNS:
+ * 	0 on success
+ *	-1 on error
  */
-int set_cond_bool_val(int bool, bool_t val, policy_t *policy)
+int update_cond_expr_items(policy_t *policy)
 {
 	int i;
 	
-	if (!policy || !is_valid_cond_bool_idx(bool, policy))
-		return -1;
-	
-	/* short circuit to avoid unnecessary updates */
-	if (policy->cond_bools[bool].val == val)
-		return 0;
-	else
-		policy->cond_bools[bool].val = val;
-
 	for (i = 0; i < policy->num_cond_exprs; i++) {
 		if (update_cond_expr_item(i, policy) != 0)
 			return -1;
+	}
+	return 0;
+}
+
+/*
+ * Set the value of the condition bool. This will not update all of the conditional
+ * expressions to reflect the change in value.
+ *
+ * RETURNS:
+ * 	0 on success.
+ * 	-1 on error.
+ */
+int set_cond_bool_val(int bool, bool_t val, policy_t *policy)
+{
+	if (!policy || !is_valid_cond_bool_idx(bool, policy))
+		return -1;
+	
+	policy->cond_bools[bool].val = val;
+	
+	return 0;
+}
+
+int set_cond_bool_vals_to_default(policy_t *policy)
+{
+	int i;
+	
+	for (i = 0; i < policy->num_cond_bools; i++) {
+		policy->cond_bools[i].val = policy->cond_bools[i].policy_val;
 	}
 	return 0;
 }
