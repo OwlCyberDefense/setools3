@@ -18,6 +18,7 @@ Seaudit: Added real-time log monitoring capability.
 	 Added ability to select from values that appear in the 
 	 policy or the log, for filtering.  No longer need a policy
 	 open to filter a log.
+	 Some bug fixes.
 
 ========================================================
 December 18, 2003 Version 1.1
