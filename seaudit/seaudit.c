@@ -60,16 +60,21 @@ static void set_real_time_log_toggle_button_state(bool_t state)
 }
 
 /*
- * Timeout function used to keep the log up to date */
+ * Timeout function used to keep the log up to date, always
+ * return TRUE so we get called repeatedly */
 static gboolean real_time_update_log(gpointer callback_data)
 {
+	int rt;
 	#define MSG_SIZE 64 /* should be big enough */
-
+	
 	/* simply return if the log is not open */
 	if (!seaudit_app->log_file_ptr)
 		return TRUE;
 
-	seaudit_log_store_refresh(seaudit_app->log_store, seaudit_app->log_file_ptr);
+	rt = parse_audit(seaudit_app->log_file_ptr, seaudit_app->cur_log);
+	if (rt == PARSE_NO_PARSE || rt == PARSE_NO_SELINUX_ERROR)
+		return TRUE;
+	seaudit_log_view_store_do_filter(seaudit_app->log_store);
 	return TRUE;
 }
 
@@ -79,7 +84,7 @@ static void update_title_bar(void *user_data)
 	char log_str[STR_SIZE];
 	char policy_str[STR_SIZE];
 	
-	if (seaudit_app->log_store->log != NULL) {
+	if (seaudit_app->cur_log != NULL) {
 		g_assert(seaudit_app->audit_log_file->str);
 		snprintf(log_str, STR_SIZE, "[Log file: %s]", (const char*)seaudit_app->audit_log_file->str);
 	} else {
@@ -101,7 +106,7 @@ static void update_status_bar(void *user_data)
 	char *ver_str = NULL;
 	int num_log_msgs, num_filtered_log_msgs;
 	char old_time[TIME_SIZE], recent_time[TIME_SIZE];
-	
+       
 	GtkLabel *v_status_bar = (GtkLabel *) glade_xml_get_widget(seaudit_app->top_window_xml, "PolicyVersionLabel");
 	GtkLabel *l_status_bar = (GtkLabel *) glade_xml_get_widget(seaudit_app->top_window_xml, "LogNumLabel");
 	GtkLabel *d_status_bar = (GtkLabel *) glade_xml_get_widget(seaudit_app->top_window_xml, "LogDateLabel");
@@ -134,19 +139,21 @@ static void update_status_bar(void *user_data)
 		gtk_label_set_text(v_status_bar, str);
 	}
 
-	if (seaudit_app->log_store->log == NULL) {
+	if (seaudit_app->cur_log == NULL) {
 		snprintf(str, STR_SIZE, "Log Messages: No log");
 		gtk_label_set_text(l_status_bar, str);
 		snprintf(str, STR_SIZE, "Dates: No log");
 		gtk_label_set_text(d_status_bar, str);
 	} else {
-		num_log_msgs = seaudit_app->log_store->log->num_msgs;
-		num_filtered_log_msgs = seaudit_app->log_store->log->num_fltr_msgs;
+		num_log_msgs = seaudit_app->cur_log->num_msgs;
+		num_filtered_log_msgs = seaudit_app->log_store->log_view->num_fltr_msgs;
 		snprintf(str, STR_SIZE, "Log Messages: %d/%d", num_filtered_log_msgs, num_log_msgs);
 		gtk_label_set_text(l_status_bar, str);
 		if (num_log_msgs > 0) {
-			strftime(old_time, TIME_SIZE, "%b %d %H:%M:%S" , seaudit_app->log_store->log->msg_list[0]->date_stamp);
-			strftime(recent_time, TIME_SIZE, "%b %d %H:%M:%S", seaudit_app->log_store->log->msg_list[num_log_msgs-1]->date_stamp);
+			strftime(old_time, TIME_SIZE, "%b %d %H:%M:%S" , 
+				 seaudit_app->cur_log->msg_list[0]->date_stamp);
+			strftime(recent_time, TIME_SIZE, "%b %d %H:%M:%S", 
+				 seaudit_app->cur_log->msg_list[num_log_msgs-1]->date_stamp);
 			snprintf(str, STR_SIZE, "Dates: %s - %s", old_time, recent_time);
 			gtk_label_set_text(d_status_bar, str);
 		} else {
@@ -453,8 +460,8 @@ void on_seaudit_help_activate(GtkWidget *widget, GdkEvent *event, gpointer callb
  * when the user clicks on filter log call this */
 void on_edit_filter_activate(GtkWidget *widget, GdkEvent *event, gpointer callback_data)
 {
-	if (seaudit_app->log_store->log == NULL) {
-			message_display(seaudit_app->top_window, GTK_MESSAGE_ERROR, "There is no audit log loaded.");
+	if (seaudit_app->cur_log == NULL) {
+		message_display(seaudit_app->top_window, GTK_MESSAGE_ERROR, "There is no audit log loaded.");
 		return;
 	}
 	if (seaudit_app->filters->window != NULL) {
@@ -552,13 +559,13 @@ static GtkTreeViewColumn *create_column(GtkTreeView *view, const char *name,
 
 static int create_list(GtkTreeView *view)
 {
-	SEAuditLogStore *list;
+	SEAuditLogViewStore *list;
 	GtkCellRenderer *renderer;
 	PangoLayout *layout;
 	GtkTreeViewColumn *column;
 	int width;
 
-	list = seaudit_log_store_create();
+	list = seaudit_log_view_store_create();
 	gtk_tree_view_set_model(view, GTK_TREE_MODEL(list));
 	g_object_unref(G_OBJECT(list));
 	
@@ -700,7 +707,7 @@ void seaudit_destroy(seaudit_t *seaudit_app)
 {
 	if (seaudit_app->cur_policy)
 		close_policy(seaudit_app->cur_policy);
-	seaudit_log_store_close_log(seaudit_app->log_store);
+	seaudit_log_view_store_close_log(seaudit_app->log_store);
 	filters_destroy(seaudit_app->filters);
 	seaudit_callbacks_free();
 	if (seaudit_app->log_file_ptr)
@@ -799,11 +806,10 @@ int seaudit_open_policy(seaudit_t *seaudit, const char *filename)
 
 int seaudit_open_log_file(seaudit_t *seaudit, const char *filename)
 {
-	SEAuditLogStore *store;
 	FILE *tmp_file;
 	int rt;
 	GString *msg = NULL;
-	GtkWidget *widget;
+	audit_log_t *new_log;
 
 	if (filename == NULL)
 		return -1;
@@ -819,8 +825,9 @@ int seaudit_open_log_file(seaudit_t *seaudit, const char *filename)
 				msg->str);		
 		goto dont_load_log;
 	}
-	store = seaudit_log_store_create();
-	rt = seaudit_log_store_open_log(store, tmp_file);
+
+	new_log = audit_log_create();
+	rt = parse_audit(tmp_file, new_log);
 	if (rt == PARSE_MEMORY_ERROR) {
 		message_display(seaudit->top_window, 
 				GTK_MESSAGE_ERROR, 
@@ -855,6 +862,8 @@ int seaudit_open_log_file(seaudit_t *seaudit, const char *filename)
 		goto load_log;
 	
  dont_load_log:
+	if (new_log)
+		audit_log_destroy(new_log);
 	if (tmp_file)
 		fclose(tmp_file);
 	if (msg)
@@ -863,16 +872,12 @@ int seaudit_open_log_file(seaudit_t *seaudit, const char *filename)
 	return -1;
 
  load_log:
-	widget = glade_xml_get_widget(seaudit_app->top_window_xml, "LogListView");
-
-	/* close out the old log */
-	seaudit_log_store_close_log(seaudit_app->log_store);
-	/* open up the new log */
-	gtk_tree_view_set_model(GTK_TREE_VIEW(widget), GTK_TREE_MODEL(store));
-	seaudit_app->log_store = store;
+	audit_log_destroy(seaudit_app->cur_log);
+	seaudit_app->cur_log = new_log;
 	seaudit_app->log_file_ptr = tmp_file;
+	seaudit_log_view_store_close_log(seaudit_app->log_store);
+	seaudit_log_view_store_open_log(seaudit_app->log_store, new_log);
 	g_string_assign(seaudit_app->audit_log_file, filename);
-	seaudit_log_store_do_filter(seaudit_app->log_store);
 	add_path_to_recent_log_files(filename, &(seaudit->seaudit_conf));
 	set_recent_logs_submenu(&(seaudit->seaudit_conf));
 	save_seaudit_conf_file(&(seaudit_app->seaudit_conf));
@@ -1015,7 +1020,7 @@ int main(int argc, char **argv)
 
 	widget = glade_xml_get_widget(seaudit_app->top_window_xml, "LogListView");
 	create_list(GTK_TREE_VIEW(widget));
-	seaudit_app->log_store = (SEAuditLogStore*)gtk_tree_view_get_model(GTK_TREE_VIEW(widget));
+	seaudit_app->log_store = (SEAuditLogViewStore*)gtk_tree_view_get_model(GTK_TREE_VIEW(widget));
 	update_status_bar(NULL);
 	update_title_bar(NULL);
 	
