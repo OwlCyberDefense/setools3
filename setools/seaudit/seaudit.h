@@ -44,8 +44,6 @@ typedef struct seaudit {
 	GtkTextBuffer *policy_text;
 	GList *callbacks;
 	FILE *log_file_ptr;
-/* interval in milli seconds */
-#define LOG_UPDATE_INTERVAL 1000
 	bool_t real_time_state;
 	guint timeout_key;
 	seaudit_conf_t seaudit_conf;
