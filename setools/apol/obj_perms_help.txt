@@ -305,17 +305,17 @@ shm
                         create                                    Create shared memory segment
 
 security
-                        change_sid           v.12                 [ No longer appears to be in the source ]
-                        transition_sid       v.12                 [ No longer appears to be in the source ]
-                        sid_to_context       v.12                 [ No longer appears to be in the source ]
-                        member_sid           v.12                 [ No longer appears to be in the source ]
+                        change_sid           v.12                 Allows a query to the security server to determine the SID of an object given a source SID, target SID, and target class when relabeling an object
+                        transition_sid       v.12                 Determine sid for a new object
+                        sid_to_context       v.12                 Convert a SID to a context
+                        member_sid           v.12                 Determines SID to use "when selecting a member of a polyinstantiated object in a particular class based on a SID pair." [man 2 security_member_sid]
                         get_user_sids        v.12                 [ No longer appears to be in the source ]
-                        get_sids             v.12                 [ No longer appears to be in the source ]
-                        context_to_sid       v.12                 [ No longer appears to be in the source ]
+                        get_sids             v.12                 Get the list of active SIDs
+                        context_to_sid       v.12                 Convert a context to a SID
                         compute_user         v.15-16              Set user info in selinuxfs
                         compute_relabel      v.15-16              Set relabel info in selinuxfs
                         compute_create       v.15-16              Set create info in selinuxfs
-                        compute_av                            	  [ No longer appears to be in the source ]
+                        compute_av                            	  Compute an access vector given a source/target/class
                         compute_member       v.15-16              [ No longer appears to be in the source ]       
                         setenforce           v.15-16              Change the enforcement state of SELinux
                         check_context        v.15-16              Write context in selinuxfs
@@ -476,10 +476,10 @@ system
                         syslog_mod                                Perform syslog operation other than syslog_read or console logging
                         syslog_read                               Perform syslog read
                         syslog_console                            Perform syslog console
-                        nfsd_control         v.12                 [ Control the nfs server - no longer appears to be in the source ]
-                        avc_toggle           v.12                 [ Toggle between permissive and enforcing modes - no longer appears to be in the source ]
-                        bdflush              v.12                 [ no longer appears to be in the source ]
-                        ichsid               v.12                 [ no longer appears to be in the source ]
+                        nfsd_control         v.12                 Control the nfs server
+                        avc_toggle           v.12                 Toggle between permissive and enforcing modes
+                        bdflush              v.12                 Start, flush, or tune buffer-dirty-flush daemon [man 2 bdflush]
+                        ichsid               v.12
 
 sem
                         unix_read                                 Read; required by IPC operations
