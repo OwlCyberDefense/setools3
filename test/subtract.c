@@ -8,7 +8,7 @@ int main(int argc, char **argv)
 	int num_types;
 	int *types;
 	policy_t *policy = NULL;
-	bool_t ans;
+	int ans;
 
 	init_tests(argc, argv);
 
@@ -25,11 +25,9 @@ int main(int argc, char **argv)
 
 	/* match_te_rules */
 	TEST("does_av_rule_idx_use_type", does_av_rule_idx_use_type(0, RULE_TE_ALLOW, get_type_idx("sysadm_t", policy), IDX_TYPE,
-		SRC_LIST, TRUE, &ans, policy) != -1);
-	TEST("does_av_rule_idx_use_type results", ans == FALSE);
+		SRC_LIST, TRUE, policy) == FALSE);
 	TEST("does_av_rule_idx_use_type", does_av_rule_idx_use_type(0, RULE_TE_ALLOW, get_type_idx("user_t", policy), IDX_TYPE,
-		SRC_LIST, TRUE, &ans, policy) != -1);
-	TEST("does_av_rule_idx_use_type results", ans == TRUE);
+		SRC_LIST, TRUE, policy) == TRUE);
 
 	return 0;
 }

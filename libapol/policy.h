@@ -535,10 +535,10 @@ int extract_types_from_te_rule(int rule_idx, int rule_type, unsigned char whichl
 int extract_obj_classes_from_te_rule(int rule_idx, int rule_type, int **obj_classes, int *num_obj_classes, policy_t *policy);
 int extract_perms_from_te_rule(int rule_idx, int rule_type, int **perms, int *num_perms, policy_t *policy);
 int does_av_rule_idx_use_type(int rule_idx, unsigned char rule_type, int type_idx, int ta_type, 
-		unsigned char whichlist, bool_t do_indirect, bool_t *ret, policy_t *policy);
+		unsigned char whichlist, bool_t do_indirect, policy_t *policy);
 int does_av_rule_use_type(int idx, int type, unsigned char whichlist, bool_t do_indirect, 
-	av_item_t *rule, int *cnt, bool_t *ret, policy_t *policy);
-int does_tt_rule_use_type(int idx, int type, unsigned char whichlist, bool_t do_indirect, tt_item_t *rule, int *cnt, bool_t *ret, policy_t *policy);
+	av_item_t *rule, int *cnt, policy_t *policy);
+int does_tt_rule_use_type(int idx, int type, unsigned char whichlist, bool_t do_indirect, tt_item_t *rule, int *cnt, policy_t *policy);
 bool_t does_av_rule_use_classes(int rule_idx, int rule_type, int *cls_idxs, int num_cls_idxs, policy_t *policy);
 bool_t does_av_rule_use_perms(int rule_idx, int rule_type, int *perm_idxs, int num_perm_idxs, policy_t *policy);
 bool_t does_tt_rule_use_classes(int rule_idx, int *cls_idxs, int num_cls_idxs, policy_t *policy);
@@ -546,7 +546,7 @@ bool_t does_tt_rule_use_classes(int rule_idx, int *cls_idxs, int num_cls_idxs, p
 /* Role rules */
 bool_t does_role_trans_use_role(int idx, unsigned char whichlist, bool_t do_indirect, rt_item_t *rule, int *cnt);
 bool_t does_role_allow_use_role(int src, unsigned char whichlist,  bool_t do_indirect, role_allow_t *rule, int *cnt);
-int does_role_trans_use_ta(int idx, int type, bool_t do_indirect, rt_item_t *rule, int *cnt, bool_t * ret, policy_t *policy);
+int does_role_trans_use_ta(int idx, int type, bool_t do_indirect, rt_item_t *rule, int *cnt, policy_t *policy);
 
 
 /* misc */
