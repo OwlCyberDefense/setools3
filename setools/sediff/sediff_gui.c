@@ -1161,15 +1161,15 @@ static int txt_buffer_insert_perms_results(GtkTextBuffer *txt, GtkTextIter *txt_
 }
 
 static void txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_iter, 
-				    	 GString *string, apol_diff_t *diff, apol_diff_t *diff2,
-					 policy_t *policy,policy_t *policy2)
+				    	 GString *string, apol_diff_t *diff1, apol_diff_t *diff2,
+					 policy_t *policy1,policy_t *policy2)
 {
 	int i, j;
 	avh_node_t *cur;
 	avh_node_t *cur2;
 	avh_node_t *tmpcur;
 	char *rule;
-	avh_key_t p2key;
+	avh_key_t p2key,p1key;
 	avh_key_t tmpkey;
 	GtkTextMark *added_mark,*changed_mark;
 	GtkTextIter added_iter,changed_iter;
@@ -1179,10 +1179,10 @@ static void txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_it
 	char *name = NULL;
 	bool_t inverse,matched,polmatched;
 
-	g_return_if_fail(diff != NULL);
+	g_return_if_fail(diff1 != NULL);
 	table = gtk_text_buffer_get_tag_table(txt);
 	link_tag = gtk_text_tag_table_lookup(table, "policy-link-tag");
-	if (!is_binary_policy(policy)) {
+	if (!is_binary_policy(policy1)) {
 		if (!link_tag) {
 			link_tag = gtk_text_buffer_create_tag(txt, "policy-link-tag",
 							      "family", "monospace",
@@ -1220,7 +1220,7 @@ static void txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_it
 						       "family", "monospace", NULL);
 	}
 	
-	g_string_printf(string, "%d different TE RULES in policy.\n", diff->te.num);
+	g_string_printf(string, "%d different TE RULES in policy.\n", diff1->te.num);
 	gtk_text_buffer_insert(txt, txt_iter, string->str, -1);
 
 	gtk_text_buffer_get_end_iter(txt, txt_iter);
@@ -1233,16 +1233,16 @@ static void txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_it
 	g_string_printf(string, "\nTE RULES REMOVED \n");
 	gtk_text_buffer_insert_with_tags_by_name(txt, &changed_iter, string->str,-1, "rules-tag", NULL); 
  	for (i = 0; i < AVH_SIZE; i++) { 
- 		for (cur = diff2->te.tab[i];cur != NULL; cur = cur->next) { 
+ 		for (cur = diff1->te.tab[i];cur != NULL; cur = cur->next) { 
 			gtk_text_buffer_get_iter_at_mark(txt,&changed_iter,changed_mark);
- 			rule = re_render_avh_rule_linenos(cur, policy2); 
+ 			rule = re_render_avh_rule_linenos(cur, policy1); 
  			/* make the p1 key */
- 			make_p2_key(&cur->key,&p2key,policy2,policy); 
+ 			make_p2_key(&cur->key,&p2key,policy1,policy2); 
 
-			/* search for the key/cond in p1, at this point we do not want to print out changes */
+			/* search for the key/cond in p2, at this point we do not want to print out changes */
 			matched = FALSE;
-			for(cur2 = avh_find_first_node(&diff->te, &p2key); cur2 != NULL && !matched; cur2 = avh_find_next_node(cur2) )  {
-				if (does_cond_match(cur,policy2,cur2,policy,&inverse)) {
+			for(cur2 = avh_find_first_node(&diff2->te, &p2key); cur2 != NULL && !matched; cur2 = avh_find_next_node(cur2) )  {
+				if (does_cond_match(cur,policy1,cur2,policy2,&inverse)) {
 					matched = TRUE;
 				}
 			}
@@ -1254,7 +1254,7 @@ static void txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_it
 					while (split_line_array[j] != NULL) {   
 						gtk_text_buffer_insert_with_tags_by_name(txt, &changed_iter, "(", -1, "rules-tag", NULL); 
 						g_string_printf(string, "%s", split_line_array[j]); 
-						if (!is_binary_policy(policy2)) { 
+						if (!is_binary_policy(policy1)) { 
 							gtk_text_buffer_insert_with_tags_by_name(txt, &changed_iter, string->str, -1, "policy-link-tag", NULL); 
 						} 
 						gtk_text_buffer_insert_with_tags_by_name(txt, &changed_iter, ")", -1, "rules-tag", NULL); 
@@ -1265,7 +1265,7 @@ static void txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_it
 				} 
 			
 
-				rule = re_render_avh_rule(cur, policy2); 
+				rule = re_render_avh_rule(cur, policy1); 
 				if (rule == NULL) { 
 					g_return_if_reached(); 
 				} 
@@ -1277,7 +1277,7 @@ static void txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_it
  				free(rule); 
 			
  				if (cur->flags & AVH_FLAG_COND) { 
- 					rule = re_render_avh_rule_cond_state(cur, policy2); 
+ 					rule = re_render_avh_rule_cond_state(cur, policy1); 
  					if (rule == NULL) { 
  						g_return_if_reached(); 
  					} 
@@ -1305,16 +1305,16 @@ static void txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_it
 
 	/* find stuff added and changed*/
 	for (i = 0; i < AVH_SIZE; i++) {
-		for (cur = diff->te.tab[i];cur != NULL; cur = cur->next) {
+		for (cur = diff2->te.tab[i];cur != NULL; cur = cur->next) {
 			gtk_text_buffer_get_iter_at_mark(txt,&added_iter,added_mark);
-			rule = re_render_avh_rule_linenos(cur, policy);
-			/* make the p2 key */
-			make_p2_key(&cur->key,&p2key,policy,policy2);
+			rule = re_render_avh_rule_linenos(cur, policy2);
+			/* make the p1 key */
+			make_p2_key(&cur->key,&p1key,policy2,policy1);
 			/* now loop through list and find not only matching key but also matching 
 			   conditional */
 			matched = FALSE;
-			for(cur2 = avh_find_first_node(&diff2->te, &p2key); cur2 != NULL && !matched; cur2 = avh_find_next_node(cur2) )  {
-				if (does_cond_match(cur,policy,cur2,policy2,&inverse)) {
+			for(cur2 = avh_find_first_node(&diff1->te, &p1key); cur2 != NULL && !matched; cur2 = avh_find_next_node(cur2) )  {
+				if (does_cond_match(cur,policy2,cur2,policy1,&inverse)) {
 					matched = TRUE;
 					gtk_text_buffer_get_end_iter(txt, &changed_iter);
 					if (rule != NULL) {
@@ -1323,7 +1323,7 @@ static void txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_it
 						while (split_line_array[j] != NULL) {  
 							gtk_text_buffer_insert_with_tags_by_name(txt, &changed_iter, "(", -1, "rules-tag", NULL);
 							g_string_printf(string, "%s", split_line_array[j]);
-							if (!is_binary_policy(policy)) {
+							if (!is_binary_policy(policy2)) {
 								gtk_text_buffer_insert_with_tags_by_name(txt, &changed_iter, string->str, -1, "policy-link-tag", NULL);
 							}
 							gtk_text_buffer_insert_with_tags_by_name(txt, &changed_iter, ")", -1, "rules-tag", NULL);
@@ -1333,15 +1333,16 @@ static void txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_it
 						g_strfreev(split_line_array);
 					}
 					
-/*					polmatched = FALSE;
-					make_p2_key(&cur->key,&tmpkey,policy,policy);
-					for(tmpcur = avh_find_first_node(&policy->avh, &cur->key); tmpcur != NULL && !polmatched; tmpcur = avh_find_next_node(tmpcur) )  {
-						if (does_cond_match(tmpcur,policy,cur,policy,&inverse)) {
+					polmatched = FALSE;
+					for(tmpcur = avh_find_first_node(&policy2->avh, &cur->key); tmpcur != NULL && !polmatched; tmpcur = avh_find_next_node(tmpcur) )  {
+						fprintf(stderr,"there is a first node\n");
+						if (does_cond_match(tmpcur,policy2,cur,policy2,&inverse)) {
 							polmatched = TRUE;
 						}
 					}
 					if(tmpcur == NULL)fprintf(stderr,"tmpcur is null\n");
-*/				rule = re_render_avh_rule(cur2, policy);
+					else fprintf(stderr,"tmpcurr is not null\n");
+				rule = re_render_avh_rule(cur, policy2);
 					if (rule == NULL) {
 						g_return_if_reached();
 					}
@@ -1353,7 +1354,7 @@ static void txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_it
 	
 				
 					if (cur->flags & AVH_FLAG_COND) {
-						rule = re_render_avh_rule_cond_state(cur, policy);
+						rule = re_render_avh_rule_cond_state(cur, policy2);
 						if (rule == NULL) {
 							g_return_if_reached();
 						}
@@ -1369,7 +1370,7 @@ static void txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_it
 					gtk_text_buffer_insert(txt, &changed_iter, "\n", -1);
 					/* now print the diffs */
 					for (j = 0 ; j < cur->num_data; j++) {
-						if (get_perm_name(cur->data[j],&name,policy) == 0) {
+						if (get_perm_name(cur->data[j],&name,policy2) == 0) {
 							g_string_printf(string,"+        %s\n",name);
 							gtk_text_buffer_insert_with_tags_by_name(txt, &changed_iter, string->str, -1, "added-tag", NULL);
 							gtk_text_buffer_get_iter_at_offset(txt, &changed_iter, -1);
@@ -1377,7 +1378,7 @@ static void txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_it
 						}
 					}
 					for (j = 0 ; j < cur2->num_data; j++) {
-						if (get_perm_name(cur2->data[j],&name,policy2) == 0) {
+						if (get_perm_name(cur2->data[j],&name,policy1) == 0) {
 							g_string_printf(string,"-        %s\n",name);
 							gtk_text_buffer_insert_with_tags_by_name(txt, &changed_iter, string->str, -1, "removed-tag", NULL);
 							gtk_text_buffer_get_iter_at_offset(txt, &changed_iter, -1);
@@ -1398,7 +1399,7 @@ static void txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_it
 					while (split_line_array[j] != NULL) {  
 						gtk_text_buffer_insert_with_tags_by_name(txt, &added_iter, "(", -1, "rules-tag", NULL);
 						g_string_printf(string, "%s", split_line_array[j]);
-						if (!is_binary_policy(policy)) {
+						if (!is_binary_policy(policy2)) {
 							gtk_text_buffer_insert_with_tags_by_name(txt, &added_iter, string->str, -1, "policy-link-tag", NULL);
 						}
 						gtk_text_buffer_insert_with_tags_by_name(txt, &added_iter, ")", -1, "rules-tag", NULL);
@@ -1409,7 +1410,7 @@ static void txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_it
 				}
 			
 
-				rule = re_render_avh_rule(cur, policy);
+				rule = re_render_avh_rule(cur, policy2);
 				if (rule == NULL) {
 					g_return_if_reached();
 				}
@@ -1423,7 +1424,7 @@ static void txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_it
 	
 				
 				if (cur->flags & AVH_FLAG_COND) {
-					rule = re_render_avh_rule_cond_state(cur, policy);
+					rule = re_render_avh_rule_cond_state(cur, policy2);
 					if (rule == NULL) {
 						g_return_if_reached();
 					}
@@ -1638,7 +1639,7 @@ static void txt_view_populate_buffers(apol_diff_t *stuff_removed,
 	g_string_truncate(string,0);
 	gtk_text_buffer_get_end_iter(sediff_app->te_buffer, &end);
 	txt_buffer_insert_te_results(sediff_app->te_buffer, &end, 
-				     string, stuff_added,stuff_removed, policy_new,policy_old);
+				     string, stuff_removed,stuff_added, policy_old,policy_new);
 
 	/* case OPT_RBAC_RULES: */
 	g_string_truncate(string,0);
