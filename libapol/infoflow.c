@@ -86,7 +86,7 @@ iflow_query_t *iflow_query_create(void)
 	return q;
 }
 
-static int iflow_obj_options_copy(policy_query_obj_options_t *dest, policy_query_obj_options_t *src)
+static int iflow_obj_options_copy(obj_perm_set_t *dest, obj_perm_set_t *src)
 {
         dest->obj_class = src->obj_class;
         dest->num_perms = src->num_perms;
@@ -123,13 +123,13 @@ static int iflow_query_copy(iflow_query_t *dest, iflow_query_t *src)
 
         if (src->num_obj_options) {
                 assert(src->obj_options);
-                dest->obj_options = (policy_query_obj_options_t*)malloc(sizeof(policy_query_obj_options_t) * 
+                dest->obj_options = (obj_perm_set_t*)malloc(sizeof(obj_perm_set_t) * 
                                                                  src->num_obj_options);
                 if (!dest->obj_options) {
                         fprintf(stderr, "Memory error\n");
                         return -1;
                 }
-                memset(dest->obj_options, 0, sizeof(policy_query_obj_options_t) * src->num_obj_options);
+                memset(dest->obj_options, 0, sizeof(obj_perm_set_t) * src->num_obj_options);
                 for (i = 0; i < src->num_obj_options; i++) {
                         if (iflow_obj_options_copy(dest->obj_options + i, src->obj_options + i))
                                 return -1;
@@ -163,13 +163,13 @@ void iflow_query_destroy(iflow_query_t *q)
  */
 int iflow_query_add_obj_class(iflow_query_t *q, int obj_class)
 {
-	return policy_query_add_obj_class(&q->obj_options, &q->num_obj_options, obj_class);
+	return apol_add_class_to_obj_perm_set_list(&q->obj_options, &q->num_obj_options, obj_class);
 
 }
 
 int iflow_query_add_obj_class_perm(iflow_query_t *q, int obj_class, int perm)
 {
-	return policy_query_add_obj_class_perm(&q->obj_options, &q->num_obj_options, obj_class, perm);
+	return apol_add_perm_to_obj_perm_set_list(&q->obj_options, &q->num_obj_options, obj_class, perm);
 }
 
 int iflow_query_add_end_type(iflow_query_t *q, int end_type)
@@ -185,7 +185,7 @@ int iflow_query_add_type(iflow_query_t *q, int type)
 /*
  * Check that the iflow_obj_option_t is valid for the graph/policy.
  */
-bool_t iflow_obj_option_is_valid(policy_query_obj_options_t *o, policy_t *policy)
+bool_t iflow_obj_option_is_valid(obj_perm_set_t *o, policy_t *policy)
 {
 	int i;
 
