@@ -29,7 +29,8 @@ const char *audit_log_field_strs[] = { "msg_field", "exe_field", "path_field", "
 				       "saddr_field", "src_context", "tgt_context", "name_field",
 				       "other_field", "policy_usrs_field", "policy_roles_field",
 				       "policy_types_field", "policy_classes_field", 
-				       "policy_rules_field", "policy_binary_field" , "date_field" ,
+				       "policy_rules_field", "policy_binary_field" , 
+                                       "boolean_bool_field", "boolean_value_field", "date_field" ,
                                        "host_field" };
 
 int audit_log_field_strs_get_index(const char *str)
@@ -182,6 +183,21 @@ static int host_add(void *user_data, const void *key, int idx)
 	return strs_add(user_data, key, idx, HOST_TREE);
 }
 
+static int bool_compare(void *user_data, const void *key, int idx)
+{
+        return strs_compare(user_data, key, idx, BOOL_TREE);
+}
+
+static int bool_grow(void *user_data, int sz)
+{
+        return strs_grow(user_data, sz, BOOL_TREE);
+}
+
+static int bool_add(void *user_data, const void *key, int idx)
+{
+        return strs_add(user_data, key, idx, BOOL_TREE);
+}
+
 static int audit_log_str_init(audit_log_t *log, int which)
 {
 
@@ -236,7 +252,11 @@ audit_log_t* audit_log_create(void)
 	if (audit_log_str_init(new, HOST_TREE))
 		goto bad;
 	avl_init(&new->trees[HOST_TREE], new, host_compare, host_grow, host_add);
-	return new;
+	if (audit_log_str_init(new, BOOL_TREE))
+	        goto bad;
+	avl_init(&new->trees[BOOL_TREE], new, bool_compare, bool_grow, bool_add);
+
+	  return new;
 
 bad:
 	fprintf(stderr, "Out of memory");
@@ -332,6 +352,29 @@ msg_t* load_policy_msg_create(void)
 	return msg;
 }
 
+msg_t* boolean_msg_create(void)
+{
+        msg_t *msg;
+        boolean_msg_t *new;
+
+        msg = msg_create();
+        if (!msg) {
+                fprintf(stderr, "Out of memory,");
+                return NULL;
+        }
+
+        new = (boolean_msg_t*)malloc(sizeof(boolean_msg_t));
+        if(new == NULL) {
+                fprintf(stderr, "Out of memory.");
+                msg_destroy(msg);
+                return NULL;
+        }
+        memset (new, 0, sizeof(boolean_msg_t));
+        msg->msg_type = BOOLEAN_MSG;
+        msg->msg_data.boolean_msg = new;
+        return msg;
+}
+
 /*
  * destroy an audit log, previously created by audit_log_create */
 void audit_log_destroy(audit_log_t *tmp)
@@ -405,6 +448,18 @@ static void load_policy_msg_destroy(load_policy_msg_t* tmp)
 	return;
 }
 
+static void boolean_msg_destroy(boolean_msg_t* tmp)
+{
+        if (tmp == NULL)
+                return;
+        if (tmp->booleans)
+                free (tmp->booleans);
+        if (tmp->values)
+                free (tmp->values);
+	free(tmp);
+        return;
+}
+
 
 /*
  * destroy a message previosly created by msg_create */
@@ -421,6 +476,9 @@ void msg_destroy(msg_t* tmp)
  	case LOAD_POLICY_MSG:
  		load_policy_msg_destroy((load_policy_msg_t*)tmp->msg_data.load_policy_msg);
  		break;
+	case BOOLEAN_MSG:
+	        boolean_msg_destroy((boolean_msg_t*)tmp->msg_data.boolean_msg);
+	        break;
 	default:
 		/* this probably means that that we were called from *create funcs above */
 		break;
