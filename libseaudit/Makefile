@@ -3,7 +3,7 @@ INCLUDE        = -I..
 SEAUDIT_LIBS   = ../lib/libseaudit.a ../lib/libapol.a $(LIBS)
 CFLAGS		+= -D_GNU_SOURCE
 CFLAGS          += -DLIBSEAUDIT_VERSION_STRING='"$(shell cat VERSION)"'
-LIBXML_FLAGS   = `pkg-config --cflags libxml`
+LIBXML_FLAGS   = `pkg-config --cflags libxml-2.0`
 
 libseaudit: ../lib/libseaudit.a
 
