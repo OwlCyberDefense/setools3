@@ -89,6 +89,12 @@ int find_mount_points(char *dir, char **mounts, int *num_mounts, int rw)
 	
 	while ((entry = getmntent(mtab))) {
 
+		if (!strstr(entry->mnt_dir, dir) == entry->mnt_dir)
+			continue;
+				
+		if (strcmp(entry->mnt_dir, dir) == 0)
+			continue;
+
 		if (rw)
 			if (hasmntopt(entry, MNTOPT_RW) == NULL)
 				continue;
@@ -108,6 +114,7 @@ int find_mount_points(char *dir, char **mounts, int *num_mounts, int rw)
 			fclose(mtab);
 			return -1;
 		}
+
 		while((token = strtok(fs, " \t")) != NULL) {
 			if (fs) fs = NULL; /* for subsequent strtok calls */
 			if(!strcmp(token, entry->mnt_type)) {
@@ -124,6 +131,7 @@ int find_mount_points(char *dir, char **mounts, int *num_mounts, int rw)
 	fclose(mtab);
 	return 0;
 }
+
 static int avl_grow_path_array(void *user_data, int sz)
 {
 	sefs_fileinfo_t * ptr;
@@ -971,7 +979,7 @@ void destroy_fsdata(sefs_filesystem_data_t * fsd) {
 
 	/* empty arrays */
 	for (i = 0; i < fsd->num_types; i++) {
-//		free(fsd->types[i].name);
+		free(fsd->types[i].name);
 		free(fsd->types[i].index_list);
 	}
 
