@@ -18,6 +18,7 @@
 
 typedef struct teq_srch_type {
 	bool_t	indirect;	/* include matches for assoicated attributes (if type) */
+	unsigned int syntactic_search_flags;	
 	/* NOTE: Since the search can take a regex or type/attrib, we must have the 
 	 * ta specified as a string rather than an idx */
 	char	*ta;		/* type/attrib string, NULL if unused, can be regex*/
@@ -48,7 +49,7 @@ typedef struct teq_query {
 	teq_srch_type_t	ta3;			/* */
 	int		*classes;		/* array of class indexes */
 	int		num_classes;
-	int		*perms;			/* array of permission idexes */
+	int		*perms;			/* array of permission indexes */
 	int		num_perms;
 } teq_query_t;
 
@@ -105,9 +106,9 @@ bool_t validate_te_query(teq_query_t *q);
 int init_teq_results(teq_results_t *r);
 int init_teq_query(teq_query_t *q);
 
-int match_rbac_rules(int idx, int type, unsigned char whichlist, bool_t do_indirect,bool_t tgt_is_role, rbac_bool_t *b, policy_t *policy);
+int match_rbac_rules(int idx, int type, unsigned char whichlist, bool_t do_indirect,bool_t tgt_is_role, rbac_bool_t *b, policy_t *policy, int searchflag);
 int match_te_rules(bool_t allow_regex, regex_t *preg, int ta_opt,int idx, int idx_type, bool_t include_audit, unsigned char whichlists,	
-	bool_t do_indirect, bool_t only_enabled, rules_bool_t *rules_b, policy_t *policy);
+	bool_t do_indirect, bool_t only_enabled, rules_bool_t *rules_b, policy_t *policy, int searchflag);
 int search_te_rules(teq_query_t *q, teq_results_t *r, policy_t *policy);
 
 int search_conditional_expressions(char *bool, bool_t allow_regex, bool_t *exprs_b, char **error_msg, policy_t *policy);
