@@ -141,11 +141,13 @@ install-policy: seuser-policy install-gui-policy install-nogui-policy
 
 install-nogui: seuser 
 	install -d $(BINDIR)
+	install -m 755 seuser $(BINDIR)
 	install -m 755 $(SE_SHELL_SCRIPTS) $(BINDIR)
 	install -m 644 $(SEUSER_CONF_FILE) $(INSTALL_LIBDIR);
 
 install: install-nogui seuserx se_user.tcl
 	install -d $(BINDIR) 
+	install -m 755 seuserx $(BINDIR);
 	install -m 644 se_user.tcl $(SEUSER_HELP_FILE) $(INSTALL_LIBDIR)
 	install -m 644 $(SEUSER_CONF_FILE) $(INSTALL_LIBDIR);
 
