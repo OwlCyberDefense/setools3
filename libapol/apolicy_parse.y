@@ -1596,7 +1596,7 @@ static int define_te_clone(void)
 static int define_role_types(void)
 {
 	char *id, *or_name;
-	int role_idx, idx, rt;
+	int i, role_idx, idx, idx_type, num_types, *types, rt;
 
 	if (pass == 1 || (pass == 2 && !(parse_policy->opts & POLOPT_ROLES))) {
 		while ((id = queue_remove(id_queue))) 
@@ -1643,20 +1643,36 @@ static int define_role_types(void)
 			return -1;
 		}
 	}
-	else 
+	else {
 		/* get rid of the role name if it alrady exists */
 		free(id);
+	}
 		
 	while ((id = queue_remove(id_queue))) {
-		idx = get_type_idx(id, parse_policy);
+		idx = get_type_or_attrib_idx(id, &idx_type, parse_policy);
 		if(idx < 0) {
 			sprintf(errormsg, "Invalid type name (%s) in role definition", id);
 			yyerror(errormsg);
 			return -1;
 		}
-		rt = add_type_to_role(idx, role_idx, parse_policy);
-		if(rt != 0)
-			return rt;
+		if (idx_type == IDX_TYPE) {
+			rt = add_type_to_role(idx, role_idx, parse_policy);
+			if(rt != 0)
+				return rt;
+		} else {
+			rt = get_attrib_types(idx, &num_types, &types, parse_policy);
+			if (rt != 0)
+				return rt;
+			for (i = 0; i < num_types; i++) {
+				rt = add_type_to_role(types[i], role_idx, parse_policy);
+				if(rt != 0) { 
+					free(types);
+					return rt;
+				}
+				
+			}
+			free(types);
+		}
 		free(id);	
 	}
 
