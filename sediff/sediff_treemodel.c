@@ -20,7 +20,7 @@ const gchar *diff_labels[] = { "Difference Summary",
 //			       "Initial SIDs", 
 			       "TE Rules",
 			       "RBAC Rules",
-			       "Conditionals and Rules",
+			       "Conditionals",
 			       NULL };
 			      			       
 /* Local static functions */
