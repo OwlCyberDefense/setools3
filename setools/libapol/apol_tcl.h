@@ -11,8 +11,8 @@
  
 #ifndef _APOLICY_TCL_H_
 #define _APOLICY_TCL_H_
-#include<tcl.h>
-#include<tk.h>
+#include <tcl.h>
+#include <tk.h>
 
 /* The tcl functions to support the GUI using TK */
 int Apol_Init(Tcl_Interp *interp);
