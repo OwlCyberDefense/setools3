@@ -29,12 +29,43 @@ static void initialize(report_window_t *report_window)
 	else
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), FALSE);
 		
-	widget = glade_xml_get_widget(report_window->xml, "check_button_html_format");
-	g_assert(widget);
-	if (report_window->report_info->html)
+	if (report_window->report_info->html) {
+		widget = glade_xml_get_widget(report_window->xml, "radiobutton_html_format");
+		g_assert(widget);
 		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), TRUE);
-	else
-		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), FALSE);
+		widget = glade_xml_get_widget(report_window->xml, "checkbutton_use_stylesheet");
+		gtk_widget_set_sensitive(widget, TRUE);	
+		widget = glade_xml_get_widget(report_window->xml, "entry_stylesheet");
+		gtk_widget_set_sensitive(widget, TRUE);	
+		widget = glade_xml_get_widget(report_window->xml, "browse_css_button");
+		gtk_widget_set_sensitive(widget, TRUE);
+	} else {
+		widget = glade_xml_get_widget(report_window->xml, "radiobutton_plaintext_format");
+		g_assert(widget);
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), TRUE);
+		widget = glade_xml_get_widget(report_window->xml, "checkbutton_use_stylesheet");
+		gtk_widget_set_sensitive(widget, FALSE);	
+		widget = glade_xml_get_widget(report_window->xml, "entry_stylesheet");
+		gtk_widget_set_sensitive(widget, FALSE);	
+		widget = glade_xml_get_widget(report_window->xml, "browse_css_button");
+		gtk_widget_set_sensitive(widget, FALSE);
+	}
+	
+	widget = glade_xml_get_widget(report_window->xml, "checkbutton_use_stylesheet");
+	g_assert(widget);
+	if (report_window->report_info->use_stylesheet) {
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), TRUE);
+		widget = glade_xml_get_widget(report_window->xml, "entry_stylesheet");
+		gtk_widget_set_sensitive(widget, TRUE);	
+		widget = glade_xml_get_widget(report_window->xml, "browse_css_button");
+		gtk_widget_set_sensitive(widget, TRUE);
+	} else {
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), FALSE);	
+		widget = glade_xml_get_widget(report_window->xml, "entry_stylesheet");
+		gtk_widget_set_sensitive(widget, FALSE);	
+		widget = glade_xml_get_widget(report_window->xml, "browse_css_button");
+		gtk_widget_set_sensitive(widget, FALSE);		
+	}
 	
 	/* Configure radiobuttons and their state */
 	if (report_window->use_entire_log) {
@@ -58,6 +89,52 @@ static void initialize(report_window_t *report_window)
 		g_assert(widget);
 		gtk_entry_set_text(GTK_ENTRY(widget), report_window->report_info->stylesheet_file);
 	}
+}
+
+void on_help_activate(GtkButton *button, gpointer user_data)
+{
+	report_window_t *report_window = (report_window_t*)user_data;
+	GtkWidget *window;
+	GtkWidget *scroll;
+	GtkWidget *text_view;
+	GtkTextBuffer *buffer;
+	GString *string;
+	char *help_text = NULL;
+	int len, rt;
+	char *dir;
+
+	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	scroll = gtk_scrolled_window_new(NULL, NULL);
+	text_view = gtk_text_view_new();
+	gtk_window_set_title(GTK_WINDOW(window), "SEAudit Report Help");
+	gtk_window_set_default_size(GTK_WINDOW(window), 480, 300);
+	gtk_container_add(GTK_CONTAINER(window), scroll);
+	gtk_container_add(GTK_CONTAINER(scroll), text_view);
+	buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));	
+	dir = find_file("seaudit_report_help.txt");
+	if (!dir) {
+		string = g_string_new("");
+		g_string_assign(string, "Can not find help file");
+		message_display(report_window->parent->window, GTK_MESSAGE_ERROR, string->str);
+		g_string_free(string, TRUE);
+		return;
+	}
+	string = g_string_new(dir);
+	free(dir);
+	g_string_append(string, "/seaudit_report_help.txt");
+	rt = read_file_to_buffer(string->str, &help_text, &len);
+	g_string_free(string, TRUE);
+	if (rt != 0) {
+		if (help_text)
+			free(help_text);
+		return;
+	}
+	gtk_text_buffer_set_text(buffer, help_text, len);
+	gtk_text_view_set_editable(GTK_TEXT_VIEW(text_view), FALSE);
+	gtk_widget_show(text_view);
+	gtk_widget_show(scroll);
+	gtk_widget_show(window);
+	return;
 }
 
 static void update_values(report_window_t *report_window)
@@ -123,6 +200,50 @@ static void on_change_log_radio_button(GtkToggleButton *button, gpointer user_da
 	}
 }
 
+static void on_change_format_radio_button(GtkToggleButton *button, gpointer user_data) 
+{
+	report_window_t *report_window = (report_window_t*)user_data;
+	GtkWidget *widget;
+	
+	if (strcmp("radiobutton_plaintext_format", gtk_widget_get_name(GTK_WIDGET(button))) == 0) {
+		report_window->report_info->html = FALSE;
+		widget = glade_xml_get_widget(report_window->xml, "checkbutton_use_stylesheet");
+		gtk_widget_set_sensitive(widget, FALSE);	
+		widget = glade_xml_get_widget(report_window->xml, "entry_stylesheet");
+		gtk_widget_set_sensitive(widget, FALSE);	
+		widget = glade_xml_get_widget(report_window->xml, "browse_css_button");
+		gtk_widget_set_sensitive(widget, FALSE);	
+	} else if (strcmp("radiobutton_html_format", gtk_widget_get_name(GTK_WIDGET(button))) == 0) {
+		report_window->report_info->html = TRUE;
+		widget = glade_xml_get_widget(report_window->xml, "checkbutton_use_stylesheet");
+		gtk_widget_set_sensitive(widget, TRUE);	
+		widget = glade_xml_get_widget(report_window->xml, "entry_stylesheet");
+		gtk_widget_set_sensitive(widget, TRUE);	
+		widget = glade_xml_get_widget(report_window->xml, "browse_css_button");
+		gtk_widget_set_sensitive(widget, TRUE);		
+	}
+}
+
+static void on_click_stylesheet_checkbutton(GtkToggleButton *button, gpointer user_data) 
+{
+	report_window_t *report_window = (report_window_t*)user_data;
+	GtkWidget *widget;
+	
+	if (gtk_toggle_button_get_active(button)) {
+		report_window->report_info->use_stylesheet = TRUE;
+		widget = glade_xml_get_widget(report_window->xml, "entry_stylesheet");
+		gtk_widget_set_sensitive(widget, TRUE);	
+		widget = glade_xml_get_widget(report_window->xml, "browse_css_button");
+		gtk_widget_set_sensitive(widget, TRUE);
+	} else if (strcmp("radiotutton_html_format", gtk_widget_get_name(GTK_WIDGET(button))) == 0) {
+		report_window->report_info->use_stylesheet = FALSE;	
+		widget = glade_xml_get_widget(report_window->xml, "entry_stylesheet");
+		gtk_widget_set_sensitive(widget, FALSE);	
+		widget = glade_xml_get_widget(report_window->xml, "browse_css_button");
+		gtk_widget_set_sensitive(widget, FALSE);		
+	}
+}
+
 static void on_create_report_button_clicked(GtkButton *button, gpointer user_data)
 {
 	report_window_t *report_window = (report_window_t*)user_data;
@@ -178,26 +299,6 @@ static void on_incl_malformed_check_button_toggled(GtkToggleButton *button, gpoi
 		report_window->report_info->malformed = TRUE;
 	} else {
 		report_window->report_info->malformed = FALSE;
-	}	
-}
-
-static void on_use_html_check_button_toggled(GtkToggleButton *button, gpointer user_data)
-{
-	report_window_t *report_window = (report_window_t*)user_data;
-	GtkWidget *widget;
-	
-	if (gtk_toggle_button_get_active(button)) {
-		report_window->report_info->html = TRUE;
-		widget = glade_xml_get_widget(report_window->xml, "entry_stylesheet");
-		gtk_widget_set_sensitive(widget, TRUE);
-		widget = glade_xml_get_widget(report_window->xml, "browse_css_button");
-		gtk_widget_set_sensitive(widget, TRUE);
-	} else {
-		report_window->report_info->html = FALSE;
-		widget = glade_xml_get_widget(report_window->xml, "entry_stylesheet");
-		gtk_widget_set_sensitive(widget, FALSE);
-		widget = glade_xml_get_widget(report_window->xml, "browse_css_button");
-		gtk_widget_set_sensitive(widget, FALSE);
 	}	
 }
 
@@ -380,6 +481,14 @@ void report_window_display(report_window_t *report_window)
 	glade_xml_signal_connect_data(xml, "on_radiobutton_log_changed", 
 				      G_CALLBACK(on_change_log_radio_button),
 				      report_window);
+				     
+	glade_xml_signal_connect_data(xml, "on_radiobutton_format_changed", 
+				      G_CALLBACK(on_change_format_radio_button),
+				      report_window);
+				      
+	glade_xml_signal_connect_data(xml, "on_checkbutton_use_stylesheet_clicked", 
+				      G_CALLBACK(on_click_stylesheet_checkbutton),
+				      report_window);
 				      
 	widget = glade_xml_get_widget(xml, "browse_config_button");
 	gtk_signal_connect(GTK_OBJECT(widget), "clicked", GTK_SIGNAL_FUNC(on_browse_report_config_button_clicked), report_window);
@@ -387,13 +496,13 @@ void report_window_display(report_window_t *report_window)
 	gtk_signal_connect(GTK_OBJECT(widget), "clicked", GTK_SIGNAL_FUNC(on_browse_report_css_button_clicked), report_window);
 	widget = glade_xml_get_widget(xml, "create_report_button");
 	gtk_signal_connect(GTK_OBJECT(widget), "clicked", GTK_SIGNAL_FUNC(on_create_report_button_clicked), report_window);
+	widget = glade_xml_get_widget(xml, "help_button");
+	gtk_signal_connect(GTK_OBJECT(widget), "clicked", GTK_SIGNAL_FUNC(on_help_activate), report_window);
+	
 	
 	widget = glade_xml_get_widget(xml, "check_button_malformed_msgs");
 	gtk_signal_connect(GTK_OBJECT(widget), "toggled", GTK_SIGNAL_FUNC(on_incl_malformed_check_button_toggled), report_window);
-	
-	widget = glade_xml_get_widget(xml, "check_button_html_format");
-	gtk_signal_connect(GTK_OBJECT(widget), "toggled", GTK_SIGNAL_FUNC(on_use_html_check_button_toggled), report_window);
-	
+
 	/* Restore previous values and selections for the filter dialog */
 	initialize(report_window);
 }
