@@ -87,7 +87,6 @@ help:
 	@echo "   all:             build everything, but don't install"
 	@echo "   all-nogui:       only build non-GUI tools and libraries"
 	@echo ""
-	@echo "   rpm:             create a source and binary rpm - must be root"
 	@echo "   docs:            generate setools documentation"
 	@echo "   remove-docs:     remove setools documentation"
 	@echo "   apol:            build policy analysis tool"
@@ -235,13 +234,6 @@ sys-install: install-apol sysinstall-seuser install-sepcut
 sys-all: apol sysall-seuser sepcut
 
 VER=$(shell cat VERSION)
-
-rpm: bare
-	cd packages; make rpm
-	@if [ ! -e ../setools-$(VER) ]; then \
-		cd ..; mv setools setools-$(VER); \
-	fi
-	cd ..; tar cfz setools-$(VER).tgz setools-$(VER); rpmbuild -tb setools-$(VER).tgz; 
 
 # Make all setools documentation
 docs:
