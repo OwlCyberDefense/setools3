@@ -329,8 +329,8 @@ proc SEUser_Top::configure_ListBox { listbox_Users } {
 	
 	# Gather only system users and exclude policy users, except the special 
 	# users "user_u" and "system_u", if they exist in the policy.
-	set all_users_list "[SEUser_db::get_list sysUsers]"
-	set seUsers  "[SEUser_db::get_list seUsers]"
+	set all_users_list [SEUser_db::get_list sysUsers]
+	set seUsers  [SEUser_db::get_list seUsers]
 	if { [lsearch -exact $seUsers $generic_user] != -1 } {
 		lappend all_users_list $generic_user
 	} 
@@ -367,9 +367,11 @@ proc SEUser_Top::configure_ListBox { listbox_Users } {
 		#       .num2 -  For s conversions, specifies the maximum number of characters to be printed;
 		#	         if the string is longer than this then the trailing characters will be dropped.
 		##
-		$listbox_Users insert end "$user" \
-			-data $data_list \
-		  	-text  [eval format {"%-20.20s %-14.14s %-25.25s %-20.20s"} $data_list]
+		if { ![$listbox_Users exists $user] } {
+			$listbox_Users insert end "$user" \
+				-data $data_list \
+			  	-text  [eval format {"%-20.20s %-14.14s %-25.25s %-20.20s"} $data_list]
+		}
 	}    
 	# Redraw the tree and listbox
 	$listbox_Users configure -redraw 1
