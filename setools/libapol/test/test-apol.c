@@ -500,7 +500,7 @@ void test_print_cond_exprs(policy_t *policy)
 
         
         for (i = 0; i < policy->num_cond_exprs; i++) {
-// 	        fprintf(outfile, "\nconditional expression %d: [ ", policy->num_cond_exprs);
+ 	        fprintf(outfile, "\nconditional expression %d: [ ", i);
                 test_print_expr(policy->cond_exprs[i].expr, policy);
 		fprintf(outfile, "]\n");
 		fprintf(outfile, "TRUE list:\n");
