@@ -10,7 +10,10 @@ flowtool: $(OBJS) ../libapol/libapol.a
 	$(CC) -o $@ $(LDFLAGS) $(OBJS) $(LIBFLAGS)
 
 clean:
-	-rm *o flowtool core
+	-rm -f *.o flowtool core core.* y.tab.c y.tab.h lex.yy.c *~ 
+
+bare:
+	-rm -f *.o flowtool core core.* y.tab.c y.tab.h lex.yy.c *~ 
 
 test:	flowtool
 	./flowtool -p ~/policy.conf -m ~/apol_perm_mapping test_query

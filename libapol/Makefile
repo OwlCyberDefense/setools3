@@ -70,10 +70,12 @@ flowassert_parse.c: flowassert_parse.y
 	bison -o $@ -d -p flow $<
 
 clean:
-	rm -f $(LIB-OBJ) *.o core core.* y.tab.c y.tab.h lex.yy.c *~ 
+	rm -f $(LIB-OBJ) *.o core core.* y.tab.c y.tab.h lex.yy.c flowassert_parse.c \
+		flowassert_parse.h flowassert_scan.c *~ 
 
 bare:
-	rm -f $(LIB-OBJ) *.o  core core.* y.tab.c y.tab.h lex.yy.c *~ libapol.a libapol-tcl.a \
+	rm -f $(LIB-OBJ) *.o  core core.* y.tab.c y.tab.h lex.yy.c *~ \
+		flowassert_parse.c flowassert_parse.h flowassert_scan.c libapol.a libapol-tcl.a \
 		$(LIBSO) $(LIBSOTCL)
 
 
