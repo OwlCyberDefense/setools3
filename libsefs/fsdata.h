@@ -76,7 +76,17 @@ typedef struct sefs_fileinfo {
 	security_con_t		context;
 	char **			path_names;
 	char * 			symlink_target;
-	sefs_classes_t		obj_class;
+
+/* Using defines and a flag since enum isn't arch-safe */	
+#define NORM_FILE	1
+#define DIR			2
+#define LNK_FILE	4
+#define CHR_FILE	8
+#define BLK_FILE	16
+#define	SOCK_FILE	32
+#define FIFO_FILE	64
+#define ALL_FILES	NORM_FILE | DIR | LNK_FILE | CHR_FILE | BLK_FILE | SOCK_FILE | FIFO_FILE
+	uint32_t		obj_class;
 } sefs_fileinfo_t;
 
 
