@@ -14,7 +14,6 @@ test-apol: $(OBJS)
 %.o:  %.c 
 	$(CC) $(CFLAGS) -g -c $<
 
-	
 $(LIBAPOL): 
 	cd ../../ ; $(MAKE) libapol
 
