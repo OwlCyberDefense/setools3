@@ -142,7 +142,7 @@ proc Apol_Analysis_dirflow::do_analysis { results_frame } {
         variable list_objs
         variable objects_sel
 	
-        set selected_objects [Apol_Analysis_dirflow::get_selected_objects]
+        set selected_objects [Apol_Analysis_dirflow::get_unselected_objects]
         
         # if a permap is not loaded then load the default permap
         # if an error occurs on open, then skip analysis
@@ -963,21 +963,21 @@ proc Apol_Analysis_dirflow::create_resultsDisplay { results_frame } {
 	return $dirflow_tree
 }
 
-proc Apol_Analysis_dirflow::get_selected_objects { } {
+proc Apol_Analysis_dirflow::get_unselected_objects { } {
         variable list_objs
         variable objects_sel
 
-        set selected_objects ""
+        set unselected_objects ""
         set len [$list_objs size]
         
         if {$objects_sel} {
             for {set i 0} {$i < $len} {incr i} {
-	        if { [$list_objs selection includes $i] } {
-		    set selected_objects [lappend selected_objects [$list_objs get $i]]
+	        if {![$list_objs selection includes $i]} {
+		    set unselected_objects [lappend unselected_objects [$list_objs get $i]]
 	        }
             }
         }
-        return $selected_objects
+        return $unselected_objects
 }
 
 
@@ -1363,7 +1363,7 @@ proc Apol_Analysis_dirflow::create_options { options_frame } {
 		-exportselection 0] 
 
         set cb_objects [checkbutton $objcl_frame.cb_objects \
-        	-text "Exclude rules with selected object classes:" \
+        	-text "Only include rules with selected object classes:" \
 		-variable Apol_Analysis_dirflow::objects_sel \
 		-offvalue 0 -onvalue 1 \
 		-justify left \
