@@ -976,6 +976,7 @@ proc Sepct::closePolicyDir { } {
 	variable policyDir
 	variable policyOpened
 	variable disable_customize_tab
+	variable disable_test_tab
 	
 	# Need to ensure that any outstanding changes are recorded first
 	Sepct::record_outstanding_changes
@@ -996,8 +997,11 @@ proc Sepct::closePolicyDir { } {
 	
 	set policyDir ""		
 	set policyOpened 0
-	Sepct_Customize::change_tab_state $Sepct::notebook enable
+	Sepct::change_tab_state $Sepct::notebook $Sepct::customize_tab enable
+	Sepct::change_tab_state $Sepct::notebook $Sepct::test_tab enable
 	set disable_customize_tab 0
+	set disable_test_tab 0
+	
 	return 0
 }
 
@@ -1817,6 +1821,20 @@ proc Sepct::update_fileStatus { fn {do_pos 0 }} {
     	return 0
 }
 
+####################################################################
+# ::change_tab_state
+#
+#	Called to enable or disable customize tab
+#
+proc Sepct::change_tab_state { nb tab cmd } {
+	if {$cmd == "disable" } {
+		$nb itemconfigure  $tab -state disabled
+	} else {
+		$nb itemconfigure  $tab -state normal
+	}
+	return 0
+}
+
 
 ########################################################################
 # ::openPolicy
@@ -1824,6 +1842,7 @@ proc Sepct::update_fileStatus { fn {do_pos 0 }} {
 # 
 proc Sepct::openPolicyDir { policyDir recent_flag } {
 	variable disable_customize_tab
+	variable disable_test_tab
 	variable notebook
 	variable mainframe
 
@@ -1841,11 +1860,14 @@ proc Sepct::openPolicyDir { policyDir recent_flag } {
 				     -title "Disabling Tabs" \
 				     -message \
 					"The policy directory does not appear to be configured for customization (i.e., there\
-					is no policy/domains/program directory).  \n\nThis may because you are opening an older\
+					is no policy/domains/program directory).  \n\nThe cause may be that you are opening an older\
 					policy directory or a non-conventional policy directory.\n\nSePCuT will still\
 					work, but the Policy Modules tab and Test Policy tab will be disabled."
-				Sepct_Customize::change_tab_state $Sepct::notebook disable
+					
+				Sepct::change_tab_state $Sepct::notebook $Sepct::customize_tab disable
+				Sepct::change_tab_state $Sepct::notebook $Sepct::test_tab disable
 				set disable_customize_tab 1
+				set disable_test_tab 1
 			}
 			if { [Sepct::loadPolicy] != 0} {
 				# convince close that the policy is really opened so it will clean up
@@ -1888,13 +1910,14 @@ proc Sepct::openPolicyDir { policyDir recent_flag } {
 #
 proc Sepct::openPolicy { } {
 	variable notebook
-	set rt [Sepct::closePolicy]
-	if { $rt != 0 } {
-		return -1
-	}		
+		
 	set policyDir [tk_chooseDirectory -title "Choose Policy Directory" \
 		-mustexist 1 -initialdir $Sepct::inital_policy_dir]
-	if {$policyDir == "" } {
+	if {$policyDir == ""} {
+		return -1
+	}
+	set rt [Sepct::closePolicy]
+	if { $rt != 0 } {
 		return -1
 	}
 	set rt [Sepct::openPolicyDir $policyDir 1]
