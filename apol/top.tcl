@@ -972,17 +972,17 @@ proc ApolTop::display_options_Dlg { } {
 	set rframe [frame $b_frame.rframe]
 	
 	set lb_textInfo [label $t_frame.lb_textInfo -justify left \
-		-text "\
-		The following are policy options used for opening \
-		a policy to control which parts of the policy are \
-		loaded.\n"]
+		-text "The following are policy options used for opening\
+		 a policy in order to control which parts of the policy are\
+		 loaded.\nPlease note: Conditional booleans and expressions\
+		 will always be loaded. Also, attributes do not apply to a binary\npolicy file.\n"]
 	set cb_all [radiobutton $lframe.cb_all -text "All" \
 		-variable ApolTop::policy_open_option -value 0 \
 		-justify left]
-	set cb_users [radiobutton $lframe.cb_users -text "Users" \
+	set cb_users [radiobutton $lframe.cb_users -text "Users (includes roles, types and attributes)" \
 		-variable ApolTop::policy_open_option -value 1 \
 		-justify left]
-	set cb_roles [radiobutton $lframe.cb_roles -text "Roles" \
+	set cb_roles [radiobutton $lframe.cb_roles -text "Roles (types and attributes included)" \
 		-variable ApolTop::policy_open_option -value 2 \
 		-justify left]
 	set cb_ta [radiobutton $lframe.cb_ta -text "Types and attributes" \
@@ -995,18 +995,20 @@ proc ApolTop::display_options_Dlg { } {
 		-text "Classes and permissions only" \
 		-variable ApolTop::policy_open_option -value 5 \
 		-justify left]
-	set cb_rbac [radiobutton $rframe.cb_rbac -text "RBAC policy (includes roles and role rules)" \
+	set cb_rbac [radiobutton $rframe.cb_rbac -text "RBAC policy (includes roles, role rules,\n\
+		types, attributes, classes, permissions)" \
 		-variable ApolTop::policy_open_option -value 6 \
 		-justify left]
-	set cb_te [radiobutton $rframe.cb_te -text "TE policy (includes classes, permissions, types, \n\
+	set cb_te [radiobutton $rframe.cb_te -text "TE policy (includes classes, permissions, types,\n\
 		attributes and TE rules)" \
 		-variable ApolTop::policy_open_option -value 7 \
 		-justify left]
-	set cb_cond [radiobutton $rframe.cb_cond -text "Conditionals (includes conditional bools,\nconditional \
-		expressions and conditional \nTE rules)" \
+	set cb_cond [radiobutton $rframe.cb_cond -text "Conditionals (includes conditional TE rules,\
+		 types,\nattributes, classes and permissions)" \
 		-variable ApolTop::policy_open_option -value 8 \
 		-justify left]
-	set cb_sids [radiobutton $rframe.cb_sids -text "Initial SIDs" \
+	set cb_sids [radiobutton $rframe.cb_sids -text "Initial SIDs (includes types, attributes, roles, and\n\
+		users)" \
 		-variable ApolTop::policy_open_option -value 9 \
 		-justify left]
 	
