@@ -20,7 +20,9 @@ LEX		= flex -olex.yy.c
 
 # File location defaults; used in various places in code
 # Change these if you want different defaults
-POLICY_SRC_DIR	= $(DESTDIR)/etc/security/selinux/src
+SELINUX_DIR = $(DESTDIR)/selinux
+POLICY_INSTALL_DIR = $(DESTDIR)/etc/security/selinux
+POLICY_SRC_DIR	= $(DESTDIR)$(POLICY_INSTALL_DIR)/src/policy
 POLICY_SRC_FILE = $(POLICY_SRC_DIR)/policy.conf
 DEFAULT_LOG_FILE = /var/log/messages
 
@@ -60,7 +62,7 @@ POLICYINSTALLDIRS = seuser
 
 # exports
 export CFLAGS CC YACC LEX LINKFLAGS BINDIR INSTALL_LIBDIR LIBS TCL_LIBINC TCL_LIBS MAKE 
-export POLICY_SRC_DIR SRC_POLICY_DIR POLICY_SRC_FILE DEFAULT_LOG_FILE
+export SELINUX_DIR POLICY_INSTALL_DIR POLICY_SRC_DIR SRC_POLICY_DIR POLICY_SRC_FILE DEFAULT_LOG_FILE
 
 all:  all-libs apol awish seuser seuserx sepcut seaudit secmds
 
