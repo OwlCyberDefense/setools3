@@ -74,6 +74,7 @@ namespace eval ApolTop {
 	variable rbac_tab		"Apol_RBAC"
 	variable class_perms_tab	"Apol_Class_Perms"
 	variable users_tab		"Apol_Users"
+	variable initial_sids_tab	"Apol_Initial_SIDS"
 	variable policy_conf_tab	"Apol_PolicyConf"
 	variable analysis_tab		"Apol_Analysis"
 	 
@@ -818,6 +819,7 @@ proc ApolTop::create { } {
 	Apol_Class_Perms::create $components_nb
 	Apol_Roles::create $components_nb
 	Apol_Users::create $components_nb
+	Apol_Initial_SIDS::create $components_nb
 	ApolTE::create $rules_nb
 	Apol_RBAC::create $rules_nb
 	
@@ -1485,6 +1487,7 @@ proc ApolTop::closePolicy {} {
 	Apol_Roles::close
         Apol_RBAC::close
         Apol_Users::close
+        Apol_Initial_SIDS::close
         Apol_Analysis::close 
         Apol_PolicyConf::close      
 	ApolTop::set_Focus_to_Text [$ApolTop::notebook raise]
@@ -1587,6 +1590,7 @@ proc ApolTop::openPolicyFile {file recent_flag} {
 	Apol_Roles::open
 	Apol_RBAC::open
 	Apol_Users::open
+	Apol_Initial_SIDS::open
 	Apol_Analysis::open
 	Apol_PolicyConf::open $file
 	set policy_is_open 1
