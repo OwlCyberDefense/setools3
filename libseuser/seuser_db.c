@@ -127,13 +127,14 @@ const int seuser_copy_db_from_apol(user_db_t *db, policy_t *policy)
 			fprintf(stderr, "out of memory");
 			return -1;
 		}
-		memset(user, 0, sizeof(user_item_t));		
-		user->name = (char *)malloc(strlen(get_user_name_ptr(ptr)) + 1);
+		memset(user, 0, sizeof(user_item_t));	
+			
+		user->name = (char *)malloc((strlen(ptr->name) + 1) * sizeof(char));
 		if(user->name == NULL) {
 			fprintf(stderr, "out of memory");
 			return -1;
 		}
-		strcpy(user->name, get_user_name_ptr(ptr));
+		strcpy(user->name, ptr->name);
 		
 		for(taptr = get_user_first_role_ptr(ptr); taptr != NULL; taptr = get_user_next_role_ptr(taptr)) {
 			ta_item_t *newta;
@@ -675,12 +676,12 @@ int seuser_copy_user(const char *name, user_item_t **uitem, user_db_t *db)
 		return -1;
 	}
 	assert(ptr->name != NULL);
-	(*uitem)->name = (char *)malloc(strlen(get_user_name_ptr(ptr)) + 1);
+	(*uitem)->name = (char *)malloc((strlen(ptr->name) + 1) * sizeof(char));
 	if((*uitem)->name == NULL) {
 		fprintf(stderr, "out of memory");
 		return -1;
 	}
-	strcpy((*uitem)->name, get_user_name_ptr(ptr));
+	strcpy((*uitem)->name, ptr->name);
 	
 	for(taptr = get_user_first_role_ptr(ptr); taptr != NULL; taptr = get_user_next_role_ptr(taptr)) {
 		ta_item_t *newta;
