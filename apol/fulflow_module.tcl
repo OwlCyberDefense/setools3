@@ -308,8 +308,8 @@ proc Apol_Analysis_fulflow::load_query_options { file_channel parentDlg } {
         variable comment_text
         # Advanced filters variables
 	variable perm_status_array
-	variable incl_types 
-	variable excl_types    
+	variable filtered_incl_types 
+	variable filtered_excl_types    
 	variable incl_attrib_combo_value
 	variable excl_attrib_combo_value
 	variable class_listbox
@@ -362,8 +362,8 @@ proc Apol_Analysis_fulflow::load_query_options { file_channel parentDlg } {
      	# First initialize advanced filter variables
      	Apol_Analysis_fulflow::advanced_filters_initialize_objs_and_perm_filters
      	set filter_vars_init 1
-        set incl_types ""
-	set excl_types ""
+        set filtered_incl_types ""
+	set filtered_excl_types ""
         # Set our counter variable to the next element in the query options list, which is now the 8th element 
         # We need a counter variable at this point because we start to parse list elements.
 	set i 8
@@ -438,7 +438,7 @@ proc Apol_Analysis_fulflow::load_query_options { file_channel parentDlg } {
 	        if {[llength $split_list] == 1} {
 	        	# Validate that the type exists in the loaded policy.
      			if {[lsearch -exact $Apol_Types::typelist [lindex $query_options $i]] != -1} {
-	        		set excl_types [lindex $query_options $i]
+	        		set filtered_excl_types [lindex $query_options $i]
 	        	} else {
 	        		set invalid_types [lappend invalid_types [lindex $query_options $i]]
 	     		} 
@@ -447,7 +447,7 @@ proc Apol_Analysis_fulflow::load_query_options { file_channel parentDlg } {
 		        # is in splitChars, so we ignore the first element of the split list.
 		        # Validate that the type exists in the loaded policy.
      			if {[lsearch -exact $Apol_Types::typelist [lindex $split_list 1]] != -1} {
-		        	set excl_types [lappend excl_types [lindex $split_list 1]]
+		        	set filtered_excl_types [lappend filtered_excl_types [lindex $split_list 1]]
 		        } else {
 	     			set invalid_types [lappend invalid_types [lindex $split_list 1]]
 	     		} 
@@ -461,7 +461,7 @@ proc Apol_Analysis_fulflow::load_query_options { file_channel parentDlg } {
 		        while {[llength [split [lindex $query_options $i] "\}"]] == 1} {
 		        	# Validate that the type exists in the loaded policy.
      				if {[lsearch -exact $Apol_Types::typelist [lindex $query_options $i]] != -1} {
-		        		set excl_types [lappend excl_types [lindex $query_options $i]]
+		        		set filtered_excl_types [lappend filtered_excl_types [lindex $query_options $i]]
 		        	} else {
 		     			set invalid_types [lappend invalid_types [lindex $query_options $i]]
 		     		} 
@@ -473,13 +473,13 @@ proc Apol_Analysis_fulflow::load_query_options { file_channel parentDlg } {
 		        set end_element [lindex [split [lindex $query_options $i] "\}"] 0]
 		        # Validate that the type exists in the loaded policy.
      			if {[lsearch -exact $Apol_Types::typelist $end_element] != -1} {
-		        	set excl_types [lappend excl_types $end_element]
+		        	set filtered_excl_types [lappend filtered_excl_types $end_element]
 		        } else {
 	     			set invalid_types [lappend invalid_types $end_element]
 	     		} 
-	     		set idx [lsearch -exact $excl_types "self"]
+	     		set idx [lsearch -exact $filtered_excl_types "self"]
 			if {$idx != -1} {
-				set excl_types [lreplace $excl_types $idx $idx]
+				set filtered_excl_types [lreplace $filtered_excl_types $idx $idx]
 			}
 		}
       	}
@@ -496,14 +496,14 @@ proc Apol_Analysis_fulflow::load_query_options { file_channel parentDlg } {
 	
       	foreach type $Apol_Types::typelist {
 		if {$type != "self"} {
-			set idx [lsearch -exact $excl_types $type]
+			set idx [lsearch -exact $filtered_excl_types $type]
 			if {$idx == -1} {
-     				set incl_types [lappend incl_types $type]
+     				set filtered_incl_types [lappend filtered_incl_types $type]
      			}
      		}
 	}   
-	set Apol_Analysis_fulflow::master_incl_types_list $incl_types
-	set Apol_Analysis_fulflow::master_excl_types_list $excl_types 
+	set Apol_Analysis_fulflow::master_incl_types_list $filtered_incl_types
+	set Apol_Analysis_fulflow::master_excl_types_list $filtered_excl_types 
 			
       	# Update our counter variable to the next element in the query options list
       	incr i
