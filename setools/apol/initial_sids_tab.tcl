@@ -375,7 +375,7 @@ proc Apol_Initial_SIDS::create {nb} {
 		-onvalue 1 -offvalue 0 \
 		-command {ApolTop::change_comboBox_state $Apol_Initial_SIDS::role_cb_value $Apol_Initial_SIDS::role_combo_box}]
 	set cb_attrib [checkbutton [$r_innerFrame getframe].cb_attrib \
-		-text "Select type using attrib:" \
+		-text "Filter types to select using attribute:" \
 		-variable Apol_Initial_SIDS::attribute_cb_value \
 		-offvalue 0 -onvalue 1 \
 		-command {ApolTop::change_comboBox_state $Apol_Initial_SIDS::attribute_cb_value $Apol_Initial_SIDS::attribute_combo_box
