@@ -309,6 +309,7 @@ proc Apol_Analysis_flowassert::display_mod_options { opts_frame } {
     $assertfile_t tag configure assert_file_t_tag
     $assertfile_t tag configure assert_file_sel_tag -background gray
     $assertfile_t tag bind assert_file_t_tag <Button-1> [namespace code [list assertfile_click %W %x %y]]
+    $assertfile_t tag bind assert_file_t_tag <Double-Button-1> [namespace code edit_line]
     $sw setwidget $assertfile_t
     grid $tf -padx 10 -sticky nsew
     pack $sw -expand 1 -fill both
@@ -344,7 +345,6 @@ proc Apol_Analysis_flowassert::display_mod_options { opts_frame } {
 # buttons.
 proc Apol_Analysis_flowassert::assertfile_click {widget x y} {
     variable asserts
-    variable line_editing_buttons
     set newline [lindex [split [$widget index @$x,$y] .] 0]
     set selection [lindex [$widget tag ranges assert_file_sel_tag] 0]
     set oldline [lindex [split [lindex $selection 0] .] 0]
@@ -408,6 +408,7 @@ proc Apol_Analysis_flowassert::export_assert_file {} {
 # Prompts the user for a file name, then loads the contents of the
 # file into the assertion buffer.
 proc Apol_Analysis_flowassert::import_assert_file {} {
+    variable assertfile_t
     variable last_filename
     variable last_pathname
     set filename [tk_getOpenFile -title "Import Assertion File" \
@@ -421,14 +422,22 @@ proc Apol_Analysis_flowassert::import_assert_file {} {
             -message "Error loading from $filename" -parent $assertfile_t
         return
     }
-    set new_asserts [read $f]
+    variable asserts ""
+    foreach line [split [read $f] \n] {
+        if {[string index [string trimleft $line] 0] == "\#"} {
+            lappend asserts $line
+        } else {
+            foreach a [split $line ";"] {
+                if {$a != ""} {
+                    lappend asserts $a
+                }
+            }
+        }
+    }
     ::close $f
     set last_filename [file tail $filename]
     set last_pathname [file dirname $filename]
-    # FIX ME: parse $new_asserts and convert to asserts
-    variable assertfile_t
-    $assertfile_t delete 1.0 end
-    $assertfile_t insert end [read $f]
+    sync_asserts_to_text
 }
 
 # Creates the "assertion statement wizard" that allows a user to
@@ -508,7 +517,7 @@ proc Apol_Analysis_flowassert::create_assert_wizard_dlg {{origline {}}} {
         $assert_wizard_dlg add -text "Edit Line" \
             -command [namespace code add_assertion]
     }
-    $assert_wizard_dlg add -text "Close"
+    $assert_wizard_dlg add -text "Cancel"
     
     populate_lists 1
     reset_wizard $via_tf $origline
@@ -846,12 +855,13 @@ proc Apol_Analysis_flowassert::highlight_assert_line {widget x y} {
     $assertfile_t tag remove assert_file_sel_tag 1.0 end
     $assertfile_t tag add assert_file_sel_tag $linenum.0 [expr {$linenum + 1}].0
     $assertfile_t see $linenum.0
+    enable_line_editing
 }
 
-# Given an assertion (either a comment or a 5-tuple) return a string
-# that represents the line.
+# Given an assertion (either a comment or a 4-tuple/5-tuple) return a
+# string that represents the line.
 proc Apol_Analysis_flowassert::render_assertion {assertion} {
-    if {[string index $assertion 0] == "\#"} {
+    if {[string index [string trimleft $assertion] 0] == "\#"} {
         return $assertion
     } else {
         foreach {mode start to via weight} $assertion {}
@@ -862,9 +872,9 @@ proc Apol_Analysis_flowassert::render_assertion {assertion} {
             set to "*"
         }
         if {$via == {}} {
-            return [list $mode $start $to $weight]
+            return "[list $mode $start $to $weight];"
         } else {
-            return [list $mode $start $to $via $weight]
+            return "[list $mode $start $to $via $weight];"
         }
     }
 }
@@ -906,7 +916,7 @@ proc Apol_Analysis_flowassert::add_comment_dlg {{origcomment ""}} {
     pack $e -side right -fill x -expand 0
     if {[$d draw $e] == 0} {
         # user either clicked on okay or hit the enter key
-        add_line "\# [$e get]"
+        add_line "\#[$e get]"
         destroy $d
         return 1
     }
@@ -919,11 +929,14 @@ proc Apol_Analysis_flowassert::add_comment_dlg {{origcomment ""}} {
 proc Apol_Analysis_flowassert::edit_line {} {
     variable assertfile_t
     set selection [lindex [$assertfile_t tag ranges assert_file_sel_tag] 0]
+    if {[llength $selection] == 0} {
+        return
+    }
     set oldline [lindex [split [lindex $selection 0] .] 0]
     variable asserts
     set line [lindex $asserts [expr {$oldline - 1}]]
-    if {[string index $line 0] == "\#"} {
-        set result [add_comment_dlg [string range $line 2 end]]
+    if {[string index [string trimleft $line] 0] == "\#"} {
+        set result [add_comment_dlg [string range $line 1 end]]
     } else {
         set result [create_assert_wizard_dlg $line]
     }
@@ -941,6 +954,9 @@ proc Apol_Analysis_flowassert::edit_line {} {
 proc Apol_Analysis_flowassert::delete_line {} {
     variable assertfile_t
     set selection [lindex [$assertfile_t tag ranges assert_file_sel_tag] 0]
+    if {[llength $selection] == 0} {
+        return
+    }
     set oldline [lindex [split [lindex $selection 0] .] 0]
     incr oldline -1
     variable asserts
