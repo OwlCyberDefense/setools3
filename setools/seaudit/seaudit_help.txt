@@ -1,6 +1,6 @@
 Audit Log Analysis Tool for Security Enhanced Linux
-seaudit, version 1.3
-August 10, 2004
+seaudit, version 
+October 21, 2004
 selinux@tresys.com
 
 Overview:  
@@ -15,10 +15,11 @@ work in any Linux machine.  The tool parses a given syslog and
 extracts all load policy messages, AVC messages and change of boolean 
 messages from conditional policies.
 
-The tool has three main functions:
+The tool has the following main functions:
      1) Browse and sort SE Linux audit messages.
      2) Filter an audit log based on fields in the messages.
      3) Query the policy based on data from a given audit message.
+     4) Export SE Linux audit messages to a file.
 
 
 Log and Policy Files:
@@ -78,11 +79,26 @@ The VIEW menu allows you to display multiple views of a log. The
 default view is created automatically once an audit log is opened.
 Additional views can be created by selecting View->New under the 
 VIEW menu (or by pressing Ctrl + T). Each tab can be sorted and 
-filtered independently.
+filtered independently. The 'Save' and 'Save As..' menu items allow
+you to save the settings for the view to a file and the 'Export View' 
+menu item allows you yo export an entire view (i.e the audit messages 
+contained in the view) to a file. Alternatively, you can use the 
+'Export Selected Messages' menu item to export only selected messages
+to a file, instead of the entire view. Lastly, this menu provides the
+option of viewing an entire audit message within a seperate textbox
+window as it is rendered in the actual audit log. If multiple audit
+messages are selected, seaudit will use the top-most selected audit
+message in the current view.
 
 The SEARCH menu allows you to filter the audit log (See Log Views
 below) or query the policy (See Query Policy below).
 
+Additionally, right-clicking on an audit message entry will display
+a pop-up menu that allows you to:
+	- View the entire message within a seperate textbox.
+	- Query the policy using the message.
+	- Export all selected messages to a file.
+	
 Sorting:
 --------
 By default the messages are sorted in chronological order.  To sort by
@@ -110,7 +126,7 @@ criteria is filled in based on the message.  Otherwise, all the
 criteria is blank.  You may enter regular expressions into the
 source/target type dropdown boxes.  You may type a direct match for an
 object into the object class box.  You may also scroll down and pick a
-particular entry from the dropdown box.
+particular entry from the dropdown box. 
 
 The "Include Indirect Matches" checkbox alters the meaning of the
 search.  The search finds rules that have either the provided type
