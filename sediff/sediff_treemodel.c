@@ -10,8 +10,10 @@
 
 #include <stdlib.h>
 
-const gchar *diff_labels[] = { "Difference Summary",
-			       "Classes and Permissions", 
+gchar **diff_labels = NULL;
+/*
+gchar *diff_labels[] = { "Difference Summary",
+			       "Classes &Perms", 
 			       "Types", 
 			       "Attributes",
 			       "Roles", 
@@ -22,7 +24,7 @@ const gchar *diff_labels[] = { "Difference Summary",
 			       "RBAC Rules",
 			       "Conditionals",
 			       NULL };
-			      			       
+*/			      			       
 /* Local static functions */
 static void sediff_tree_view_store_init(SEDiffTreeViewStore *store);
 static void sediff_tree_view_store_class_init(SEDiffTreeViewStore *klass);
@@ -92,6 +94,10 @@ static void sediff_tree_view_store_finalize(GObject *object)
 	/* Free all memory */
   	if (store->diff_results)
   		apol_free_diff_result(1, store->diff_results);
+	/* free labels */
+	if (diff_labels)
+		g_strfreev(diff_labels);
+	diff_labels = NULL;
 
 	(*parent_class->finalize)(object);
 }
@@ -287,6 +293,18 @@ static void sediff_tree_store_append_item(SEDiffTreeViewStore *store, const gcha
 /* End of static funtion prototypes */
 
 /* Start of exported function prototypes */
+gchar **sediff_tree_store_get_labels()
+{
+	return diff_labels;
+}
+
+void sediff_tree_store_set_labels(gchar **labels)
+{
+	if (diff_labels != NULL)
+		g_strfreev(diff_labels);
+	diff_labels = g_strdupv(labels);
+}
+
 GType sediff_tree_view_store_get_type(void)
 {
 	static GType store_type = 0;
