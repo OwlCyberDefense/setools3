@@ -1,5 +1,6 @@
 # seuser tool
 
+SEUSER_STARTUP_SCRIPT = se_user.tcl
 TCL-FILES	= seuser_head.tcl tmp.tcl
 TCL-STRIP-FILES = seuser_db.tcl seuser_top.tcl seuser_advanced.tcl seuser_user_info.tcl seuser_generic_users.tcl seuser_selinux_users.tcl seuser_tail.tcl
 SEUSER_HELP_FILE = seuser_help.txt
@@ -15,7 +16,8 @@ SE_SHELL_SCRIPTS = seuseradd seuserdel seusermod
 TE_PROGS_DIR	= $(POLICY_SRC_DIR)/policy/domains/program
 FC_PROGS_DIR	= $(POLICY_SRC_DIR)/policy/file_contexts/program
 #POLICY_FULL_SRC = $(POLICY_SRC_DIR)/policy  
-CFLAGS  += -DSEUSERCMD_VERSION_STRING='"$(shell cat CMD_VERSION)"'
+GUI_CFLAGS  	+= -DSTARTUP_SCRIPT='"$(SEUSER_STARTUP_SCRIPT)"'
+CFLAGS  	+= -DSEUSERCMD_VERSION_STRING='"$(shell cat CMD_VERSION)"'
 
 SHELL = /bin/sh
 
@@ -23,7 +25,7 @@ seuser: $(CMD-OBJ)
 	$(CC) -o $@ $(CMD-OBJ) $(LINKFLAGS) $(LIBS)
 
 seuserx: $(GUI-OBJ) se_user.tcl
-	$(CC) $(TCL_LIBINC) -o $@ $(GUI-OBJ) $(LINKFLAGS) $(TCL_LIBS)
+	$(CC) $(GUI_CFLAGS) $(TCL_LIBINC) -o $@ $(GUI-OBJ) $(LINKFLAGS) $(TCL_LIBS)
 
 se_user.tcl: $(TCL-FILES)
 	cat $(TCL-FILES) | \
