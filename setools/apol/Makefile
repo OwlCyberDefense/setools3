@@ -11,7 +11,7 @@ APOL_PERM_MAPS	= apol_perm_mapping_ver12 apol_perm_mapping_ver15
 APOL_DFLT_PMAP  = apol_perm_mapping_ver15
 LIBAPOL		= ../lib/libapol-tcl.a ../lib/libapol.a
 GUI-OBJ		= apol_gui.o $(LIBAPOL)
-CFLAGS            += -DSTARTUP_SCRIPT='"$(APOL_STARTUP_SCRIPT)"'
+CFLAGS          += -DSTARTUP_SCRIPT='"$(APOL_STARTUP_SCRIPT)"'
 
 apol: $(GUI-OBJ) apol.tcl
 	$(CC) $(TCL_LIBINC) -o $@ $(GUI-OBJ) $(LINKFLAGS) $(TCL_LIBS)
@@ -19,7 +19,8 @@ apol: $(GUI-OBJ) apol.tcl
 
 apol.tcl: $(TCL-FILES)
 	cat $(TCL-FILES) | \
-	sed -e 's/APOL_GUI_VERSION/$(shell cat VERSION)/g' > $@
+	sed -e 's/APOL_GUI_VERSION/$(shell cat VERSION)/g' | \
+	sed -e 's|APOL_INSTALL_DIR|$(INSTALL_LIBDIR)|g' > $@ 
 
 tmp.tcl: $(TCL-STRIP-FILES)
 	cat $(TCL-STRIP-FILES) > $@
