@@ -301,7 +301,81 @@ int seaudit_open_log_file(seaudit_t *seaudit, const char *filename)
 	return 0;
 }
 
-void seaudit_save_log_file()
+static int seaudit_export_selected_msgs_to_file(const audit_log_view_t *log_view, const char *filename)
+{
+	msg_t *message = NULL;
+	audit_log_t *audit_log = NULL;
+	char *message_header = NULL;
+	GtkTreeSelection *sel = NULL;
+	GtkTreeModel *model = NULL;
+	GtkTreeIter iter;
+	int fltr_msg_idx, msg_list_idx;
+	GList *glist, *item = NULL;
+	GtkTreePath *path = NULL;
+	seaudit_filtered_view_t *view = NULL;
+	FILE *log_file = NULL;
+	
+	assert(log_view != NULL && filename != NULL && (strlen(filename) < PATH_MAX));
+	
+	view = seaudit_window_get_current_view(seaudit_app->window);
+	audit_log = log_view->my_log;
+	sel = gtk_tree_view_get_selection(view->tree_view);
+	glist = gtk_tree_selection_get_selected_rows(sel, &model);
+	if (!glist) {
+		message_display(seaudit_app->window->window, GTK_MESSAGE_ERROR, "You must select messages to export.");
+		return -1;
+	} else {
+		log_file = fopen(filename, "w+");
+		if (log_file == NULL) {
+			message_display(seaudit_app->window->window, 
+						GTK_MESSAGE_WARNING,
+						"Error: Could not open file for writing!");
+			return -1;
+		}
+	
+		for (item = glist; item != NULL; item = g_list_next(item)) {
+			path = item->data;
+			assert(path != NULL);
+			if (gtk_tree_model_get_iter(model, &iter, path) == 0) {
+				fprintf(stderr, "Could not get valid iterator for the selected path.\n");
+				g_list_foreach(glist, (GFunc) gtk_tree_path_free, NULL);
+				g_list_free (glist);
+				fclose(log_file);
+				return -1;	
+			}
+			fltr_msg_idx = seaudit_log_view_store_iter_to_idx((SEAuditLogViewStore*)model, &iter);
+			msg_list_idx = log_view->fltr_msgs[fltr_msg_idx];
+			message = audit_log->msg_list[msg_list_idx];
+			
+			message_header = (char*) malloc((TIME_SIZE + STR_SIZE) * sizeof(char));
+			if (message_header == NULL) {
+				fprintf(stderr, "memory error\n");
+				fclose(log_file);
+				g_list_foreach(glist, (GFunc) gtk_tree_path_free, NULL);
+				g_list_free (glist);
+				return -1;
+			}
+	
+			generate_message_header(message_header, audit_log, message->date_stamp, message->host);
+			if (message->msg_type == AVC_MSG)
+				write_avc_message_to_file(log_file, message->msg_data.avc_msg, message_header, audit_log);
+			else if (message->msg_type == LOAD_POLICY_MSG)
+				write_load_policy_message_to_file(log_file, message->msg_data.load_policy_msg, message_header);
+			else if (message->msg_type == BOOLEAN_MSG)
+				write_boolean_message_to_file(log_file, message->msg_data.boolean_msg, message_header, audit_log);
+		}
+		fclose(log_file);
+		if(message_header)
+			free(message_header);
+	}
+	
+	g_list_foreach(glist, (GFunc)gtk_tree_path_free, NULL);
+	g_list_free(glist);
+	
+	return 0;
+}
+
+void seaudit_save_log_file(bool_t selected_only)
 {
 	GtkWidget *file_selector, *confirmation;
 	gint response, confirm;
@@ -339,18 +413,22 @@ void seaudit_save_log_file()
 					break;
 			} else
 			    break;
-		} else if (strcmp(filename, DEFAULT_LOG) == 0)
+		} else if (strcmp(filename, DEFAULT_LOG) == 0) 
 			message_display(seaudit_app->window->window, 
 					GTK_MESSAGE_WARNING,
-                                        "Cannot Export Log File To The System Default Log File!");
+                                        "Cannot overwrite the system default log file!");
 	 	
 		if (g_file_test(filename, G_FILE_TEST_IS_DIR))
 		       	gtk_file_selection_complete(GTK_FILE_SELECTION(file_selector), filename);
         }
 	
 	gtk_widget_destroy(file_selector);
-
-	seaudit_write_log_file(seaudit_get_current_audit_log_view(), filename);
+	
+	if (selected_only) {
+		seaudit_export_selected_msgs_to_file(seaudit_get_current_audit_log_view(), filename);
+	} else {
+		seaudit_write_log_file(seaudit_get_current_audit_log_view(), filename);
+	}
 		
 	return;
 }
@@ -759,9 +837,14 @@ void seaudit_on_LogFileOpen_activate(GtkWidget *widget, GdkEvent *event, gpointe
 
 void seaudit_on_ExportLog_activate(GtkWidget *widget, GdkEvent *event, gpointer callback_data)
 {
-	seaudit_save_log_file();
+	seaudit_save_log_file(FALSE);
 
 	return;
+}
+
+void seaudit_window_on_export_selection_activated(GtkWidget *widget, GdkEvent *event, gpointer callback_data)
+{
+	seaudit_save_log_file(TRUE);
 }
 
 void seaudit_on_FileQuit_activate(GtkWidget *widget, gpointer user_data)
