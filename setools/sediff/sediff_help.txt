@@ -88,36 +88,51 @@ open policies, and to quit the application.
 The HELP menu opens this help dialog, and a dialog displaying the 
 current version of the sediff gui you are using.
 
-Difference Tab:
+Differences Tab:
 --------------
-When two policies are loaded, the sediff gui displays a list of selections
-on the left hand side.  Each of these selections represent a set of 
-differences between the policies.  
+    When two policies are loaded, the sediff gui displays a list of selections on the left hand side.  Each of these selections represent a set of differences between the policies as explained earlier.  The total number of differences in each of these sets in displayed in the status bar at the bottom of the main window.
 
-  Difference Summary - The statistics of the difference between the policies.
-  Classes and Permisssions - The difference between classes, permissions,
-    and common permissions in the policies.
-  Types - The difference between types in the policies.
-  Attributes - The difference between attributes in the policies.
-  Roles - The difference between roles in the policies.
-  Users - The difference between booleans in the policies.
-  Booleans - The difference between booleans in the policies.
-  TE Rules - The difference in the type enforcment rules in the policies.
-  RBAC Rules - The difference in the role allow rules in the policies.
-  Conditionals - This is not implemented in this version of the tool.
+    Differences:
+    ------------
+        Difference Summary - The statistics of the difference between the policies.
+        Classes and Permisssions - The difference between classes, permissions, and common permissions in the policies.
+        Types - The difference between types in the policies.
+        Attributes - The difference between attributes in the policies.
+        Roles - The difference between roles in the policies.
+        Users - The difference between booleans in the policies.
+        Booleans - The difference between booleans in the policies.
+        TE Rules - The difference in the type enforcment rules in the policies.
+        RBAC Rules - The difference in the role allow rules in the policies.
+        Conditionals - This is not implemented in this version of the tool.
 
-You can view the total number of differences in each of these sets
-at the status bar on the bottom of the main window.
+    Difference Window:
+    ------------------
+        When you make a selection from the list the right hand side will be populated by the differences for that set.  The differences are displayed in the following format:
+            Items added to Policy 1 in Policy 2 are in green, starting with a '+'.
+            Items removed from Policy 1 in Policy 2 are in red, starting with a '-'.
+            Changes of a major item from Policy 1 to Policy 2 are in blue, starting with a star '*' where the changes are represented using additions and subtractions.
 
-When you make a selection from the list the right hand side will be populated by the
-differences for that set.  The differences are displayed in 
-the format of the standard linux 'diff' command, i.e.:
-  Subtractions are in red, started with a '-'.
-  Additions are in green, started with a '+'.
-  Changes are in blue, started with a '*' where the changes are shown as additions
-    and subtractions.
+        When viewing differences in TE Rules the format of the line is:
+            [T|F]  [+|-|*] rule [ CONDITIONAL EXPRESSION] [ LINE NUMBER ] 
+            T|F: Used when the rule is inside of a TRUE/FALSE statement.
+            CONDITIONAL EXPRESSION: The conditional expression of the TRUE/FALSE statement
+	    LINE NUMBER: If the policy is a source policy, a link of the line number of that statement is shown in blue.
+    
+    Difference Key:
+    ---------------
+        The difference key is shown in the bottom left hand corner and explains what is displayed in the difference window.
 
-  
+Policy Tabs:
+------------
+        Each policy has a tab on the main window labeled Policy #: followed by the source file name.  Under each of these tabs are a policy statistics tab, and a source tab.
+
+    Policy Statistics Tab:
+    ----------------------
+        The policy statistics tab displays the statistics of that policy.
+    
+    Source Tab:
+    -----------
+        If the policy is a source policy, and not a binary policy this tab will display the source of that policy.  When viewing the source of either policy the bottom right hand corner of the main window will display your current line number.        
 
 In the bottom left hand corner of the difference tab is a key showing you
 
