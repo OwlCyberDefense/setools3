@@ -141,7 +141,7 @@ void print_relabel_result(relabel_result_t *res, int start_type, policy_t *polic
 	int temp_dom_list_size = 0;
 	char *str = NULL;
 	
-	if (res->mode == MODE_DOM){
+	if (res->mode == BOTHLIST){
 		retv = get_type_name(start_type, &str, policy);
 		if (retv) { 
 			fprintf(stderr, "out of memory\n");
