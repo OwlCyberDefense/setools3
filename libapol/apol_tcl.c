@@ -2529,8 +2529,13 @@ int Apol_SearchTErules(ClientData clientData, Tcl_Interp *interp, int argc, char
 			Tcl_DStringFree(buf);
 			sprintf(tmpbuf, "%lu", policy->av_access[results.av_access[i]].lineno);
 			Tcl_AppendElement(interp, tmpbuf);
-			/* Append a boolean value indicating whether this rule is enabled 
-			 * for conditional policy support */
+			
+			/* Append boolean values to indicate whether this is a conditional rule 
+			 * and whether it is enabled for conditional policy support */
+			if (policy->av_access[results.av_access[i]].cond_expr != -1)
+				Tcl_AppendElement(interp, "1");
+			else 
+				Tcl_AppendElement(interp, "0");
 			sprintf(tmpbuf, "%d", policy->av_access[results.av_access[i]].enabled);
 			Tcl_AppendElement(interp, tmpbuf);
 		}
@@ -2549,8 +2554,12 @@ int Apol_SearchTErules(ClientData clientData, Tcl_Interp *interp, int argc, char
 			Tcl_DStringFree(buf);
 			sprintf(tmpbuf, "%lu", policy->av_audit[results.av_audit[i]].lineno);
 			Tcl_AppendElement(interp, tmpbuf);
-			/* Append a boolean value indicating whether this rule is enabled 
-			 * for conditional policy support */
+			/* Append boolean values to indicate whether this is a conditional rule 
+			 * and whether it is enabled for conditional policy support */
+			if (policy->av_audit[results.av_audit[i]].cond_expr != -1)
+				Tcl_AppendElement(interp, "1");
+			else 
+				Tcl_AppendElement(interp, "0");
 			sprintf(tmpbuf, "%d", policy->av_audit[results.av_audit[i]].enabled);
 			Tcl_AppendElement(interp, tmpbuf);
 		}
@@ -2569,8 +2578,12 @@ int Apol_SearchTErules(ClientData clientData, Tcl_Interp *interp, int argc, char
 			Tcl_DStringFree(buf);
 			sprintf(tmpbuf, "%lu", policy->te_trans[results.type_rules[i]].lineno);
 			Tcl_AppendElement(interp, tmpbuf);
-			/* Append a boolean value indicating whether this rule is enabled 
-			 * for conditional policy support */
+			/* Append boolean values to indicate whether this is a conditional rule 
+			 * and whether it is enabled for conditional policy support */
+			if (policy->te_trans[results.type_rules[i]].cond_expr != -1)
+				Tcl_AppendElement(interp, "1");
+			else 
+				Tcl_AppendElement(interp, "0");
 			sprintf(tmpbuf, "%d", policy->te_trans[results.type_rules[i]].enabled);
 			Tcl_AppendElement(interp, tmpbuf);
 		}
@@ -2589,6 +2602,8 @@ int Apol_SearchTErules(ClientData clientData, Tcl_Interp *interp, int argc, char
 			Tcl_DStringFree(buf);
 			sprintf(tmpbuf, "%lu", policy->clones[results.clones[i]].lineno);
 			Tcl_AppendElement(interp, tmpbuf);
+			/* Append 0 to indicate this is not a conditional rule. */
+			Tcl_AppendElement(interp, "0");
 			/* Since the enabled flag member is only supported in access, audit and type 
 			 * transition rules, always append TRUE, so the returned list can be parsed 
 			 * correctly. */
