@@ -1,14 +1,16 @@
-OBJS	          = auditlogmodel.o seaudit.o query_window.o filter_window.o multifilter_window.o utilgui.o preferences.o seaudit_window.o seaudit_callback.o filtered_view.o
+OBJS	          = auditlogmodel.o seaudit.o query_window.o filter_window.o multifilter_window.o utilgui.o preferences.o seaudit_window.o seaudit_callback.o filtered_view.o report_window.o
 INCLUDE           = -I.. -I../libseaudit -I../libapol
 GTK_CFLAGS        = `pkg-config --cflags libglade-2.0`
 GTK_LIBS          = `pkg-config --libs libglade-2.0`
 SEAUDIT_LIBS      = ../libseaudit/libseaudit.a ../libapol/libapol.a $(LIBS)
-GLADE_FILES       = customize_filter_window.glade filter_window.glade prefer_window.glade query_window.glade multifilter_window.glade seaudit.glade
+GLADE_FILES       = customize_filter_window.glade filter_window.glade prefer_window.glade query_window.glade multifilter_window.glade report_window.glade seaudit.glade
 
 CFLAGS	          += -DDEFAULT_LOG='"$(DEFAULT_LOG_FILE)"' 
 CFLAGS            += -DINSTALL_LIBDIR='"$(INSTALL_LIBDIR)"'
 CFLAGS            += -DSEAUDIT_GUI_VERSION_STRING='"$(shell cat SEAUDIT_GUI_VERSION)"'
 CFLAGS            += -DSEREPORT_VERSION_NUM='"$(shell cat SEAUDIT_REPORT_VERSION)"'
+
+SEAUDIT_REPORT_BACKEND  = report.o
 
 LIBXML_FLAGS    = `pkg-config --cflags libxml-2.0`
 LIBXML_LIBS     = `pkg-config --libs libxml-2.0`
@@ -30,11 +32,11 @@ endif
 
 all: seaudit seaudit-report
 
-seaudit: $(OBJS) $(GTK-SOURCEVIEW-OBJS) $(SEAUDIT_LIBS)
-	$(CC) $(CFLAGS) $(INCLUDE) $(OBJS) -o $@ $(SEAUDIT_LIBS) $(LIBS) $(GTK_LIBS)
+seaudit: $(OBJS) $(SEAUDIT_LIBS) $(GTK-SOURCEVIEW-OBJS) $(SEAUDIT_REPORT_BACKEND)  
+	$(CC) $(CFLAGS) $(INCLUDE) $(OBJS) -o $@ $(SEAUDIT_LIBS) $(SEAUDIT_REPORT_BACKEND) $(LIBS) $(GTK_LIBS) 
 
-seaudit-report: seaudit-report.o $(LIBAPOL) $(LIBSEAUDIT)
-	$(CC) $(INCLUDE) -o $@ seaudit-report.o $(LINKFLAGS) $(SEAUDIT_LIBS) $(LIBXML_LIBS) $(LIBS)
+seaudit-report: $(SEAUDIT_REPORT_BACKEND) seaudit-report.o $(SEAUDIT_LIBS) 
+	$(CC) $(INCLUDE) $(LINKFLAGS) -o $@ $(SEAUDIT_REPORT_BACKEND) seaudit-report.o $(SEAUDIT_LIBS) $(LIBXML_LIBS) $(LIBS) 
 		
 ../libseaudit/libseaudit.a:
 	cd ../libseaudit; $(MAKE) libseaudit
