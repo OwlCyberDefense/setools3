@@ -903,6 +903,11 @@ static int apol_domain_relabel_types(relabel_set_t *sets, int domain, relabel_re
 				retv = add_i_to_a(clone->to_rules[i], &(temp->num_to_rules), &(temp->to_rules));
 				if (retv == -1)
 					return retv;
+				if (find_int_in_array(clone->to_rules[i], res->rules, res->num_rules) == -1) {
+					retv = add_i_to_a(clone->to_rules[i], &(res->num_rules), &(res->rules));
+					if (retv)
+						return -1;
+				}
 			}
 		}
 	}
@@ -921,6 +926,11 @@ static int apol_domain_relabel_types(relabel_set_t *sets, int domain, relabel_re
 				retv = add_i_to_a(clone->from_rules[i], &(temp->num_from_rules), &(temp->from_rules));
 				if (retv == -1)
 					return retv;
+				if (find_int_in_array(clone->from_rules[i], res->rules, res->num_rules) == -1) {
+					retv = add_i_to_a(clone->from_rules[i], &(res->num_rules), &(res->rules));
+					if (retv)
+						return -1;
+				}
 			}
 		}
 	}
@@ -1039,6 +1049,45 @@ static int apol_type_relabel(relabel_set_t *sets, int type, relabel_result_t *re
 	return 0;
 };
 
+static int apol_filter_rules_list(relabel_result_t *res, policy_t *policy, relabel_filter_t *filter)
+{
+	int i, j, k, retv, temp_array_size = 0, here;
+	int *temp_array = NULL;
+
+	if (!res || !policy || !filter)
+		return -1;
+	if (!res->rules)
+		return -1;
+
+	for (i = 0; i < res->num_rules; i++) {
+		here = 0;
+		for (j = 0; j < filter->num_perm_sets; j++) {
+			if (does_av_rule_use_classes(res->rules[i], RULE_TE_ALLOW, &(filter->perm_sets[j].obj_class), 1, policy)) {
+				for (k = 0; k < filter->perm_sets[j].num_perms; k++) {
+					if (does_av_rule_use_perms(res->rules[i], RULE_TE_ALLOW, &(filter->perm_sets[j].perms[k]), 1, policy)) {
+						here = 1;
+					}
+					if (here) 
+						break;
+				}
+			}
+			if (here) 
+				break;
+		}
+		if (here) {
+			retv = add_i_to_a(res->rules[i], &temp_array_size, &temp_array);
+			if (retv)
+				return -1;
+		}
+	}
+
+	free(res->rules);
+	res->rules = temp_array;
+	res->num_rules = temp_array_size;
+
+	return 0;
+}
+
 int apol_query_relabel_analysis(relabel_set_t *sets, int type, relabel_result_t *res, policy_t *policy, relabel_mode_t *mode, relabel_filter_t *filter)
 {
 	int retv;
@@ -1059,15 +1108,17 @@ int apol_query_relabel_analysis(relabel_set_t *sets, int type, relabel_result_t 
 		apol_free_relabel_result_data(res);
 	}
 	else {
-		res = (relabel_result_t*)malloc(1 * sizeof(relabel_result_t));
-		if (!res)
-			return -1;
+		return -1;
 	}
 	apol_relabel_result_init(res);
 
 	/* XXX there is currently no transitive analysis code
 	   XXX the trans flag is therefore ignored at this point */
 	retv = apol_type_relabel(sets, type, res, policy, mode->mode, filter);
+	if (retv)
+		return retv;
+
+	retv = apol_filter_rules_list(res, policy, filter);
 
 	return retv;
 }
