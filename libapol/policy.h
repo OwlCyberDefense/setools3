@@ -360,6 +360,17 @@ typedef struct policy {
 	struct classes_perm_map *pmap;	/* see perm-map.h */
 } policy_t;
 
+/*
+ * obj_perm_set_t allows the inclusion/exclusion 
+ * of individual permissions on object classes or entire object 
+ * classes. 
+ */
+typedef struct obj_perm_set {
+	int obj_class;   	/* index policy->obj_classes */
+	int num_perms;
+	int *perms;    		/* index of an object class' permission */
+} obj_perm_set_t;
+
 
 /* used for whichlist arguments */
 #define SRC_LIST	0x0001
@@ -534,6 +545,16 @@ bool_t does_tt_rule_use_classes(int rule_idx, int *cls_idxs, int num_cls_idxs, p
 bool_t does_role_trans_use_role(int idx, unsigned char whichlist, bool_t do_indirect, rt_item_t *rule, int *cnt);
 bool_t does_role_allow_use_role(int src, unsigned char whichlist,  bool_t do_indirect, role_allow_t *rule, int *cnt);
 int does_role_trans_use_ta(int idx, int type, bool_t do_indirect, rt_item_t *rule, int *cnt, policy_t *policy);
+
+/* Generic function prototypes for adding object class options and end types to a policy query. */
+int apol_obj_perm_set_init(obj_perm_set_t *it);
+void apol_free_obj_perm_set_data(obj_perm_set_t *it);
+int apol_add_class_to_obj_perm_set_list(obj_perm_set_t **obj_options, 
+				 int *num_obj_options, int obj_class);
+int apol_add_perm_to_obj_perm_set_list(obj_perm_set_t **obj_options, 
+				      int *num_obj_options, int obj_class, 
+				      int perm);
+
 
 
 /* misc */
