@@ -27,6 +27,7 @@
 #include "infoflow.h"
 #include "perm-map.h"
 #include "policy-query.h"
+#include "flowassert.h"
 #ifdef APOL_PERFORM_TEST
 #include <time.h>
 #endif
@@ -1734,6 +1735,77 @@ int Apol_GetClassPermInfo(ClientData clientData, Tcl_Interp *interp, int argc, c
 	return TCL_OK;
 }
 
+
+/* Given just the name of an object class, return a list of three
+   items.  The first element is a list of permissions, sans any common
+   permission.  The second is the class's common permission; if none
+   then this element is an empty list.  The final element is the
+   common permission expanded into a list; if no common permission
+   then this list is empty.  If the object class does not exist at all
+   then return an empty string.  All items are a 2-ple of the form
+   {name index_num}. */
+int Apol_GetClassPermList (ClientData clientData, Tcl_Interp *interp,
+                           int objc, Tcl_Obj * CONST objv []) {
+    char *objclass_name;
+    Tcl_Obj *result_list_obj = NULL;
+    int i;
+    if (policy == NULL) {
+        Tcl_SetResult (interp, "No current policy file is opened!",TCL_STATIC);
+        return TCL_ERROR;
+    }
+    if (objc != 2) {
+        Tcl_SetResult (interp, "wrong # of args", TCL_STATIC);
+        return TCL_ERROR;
+    }
+    objclass_name = Tcl_GetString (objv [1]);
+    for (i = 0; i < policy->num_obj_classes; i++) {
+        if (strcmp (objclass_name, policy->obj_classes [i].name) == 0) {
+            int j, k;
+            Tcl_Obj *perm_list [3];
+            Tcl_Obj *perm [2], *perm_elem;
+            perm_list [0] = Tcl_NewListObj (0, NULL);
+            perm_list [2] = Tcl_NewListObj (0, NULL);
+            for (j = 0; j < policy->obj_classes [i].num_u_perms; j++) {
+                int perm_index = policy->obj_classes [i].u_perms [j];
+                perm [0] = Tcl_NewStringObj (policy->perms [perm_index], -1);
+                perm [1] = Tcl_NewIntObj (perm_index);
+                perm_elem = Tcl_NewListObj (2, perm);
+                if (Tcl_ListObjAppendElement (interp, perm_list [0], perm_elem)
+                    != TCL_OK) {
+                    return TCL_ERROR;
+                }
+            }
+            if (policy->obj_classes [i].common_perms >= 0) {
+                int common_index = policy->obj_classes [i].common_perms;
+                common_perm_t *common_perm=policy->common_perms + common_index;
+                perm [0] = Tcl_NewStringObj (common_perm->name, -1);
+                perm [1] = Tcl_NewIntObj (common_index);
+                perm_list [1] = Tcl_NewListObj (2, perm);
+                for (k = 0; k < common_perm->num_perms; k++) {
+                    int class_perm_index = common_perm->perms [k];
+                    perm [0] = Tcl_NewStringObj (policy->perms [class_perm_index], -1);
+                    perm [1] = Tcl_NewIntObj (class_perm_index);
+                    perm_elem = Tcl_NewListObj (2, perm);
+                    if (Tcl_ListObjAppendElement (interp, perm_list [2],
+                                                  perm_elem) != TCL_OK) {
+                        return TCL_ERROR;
+                    }
+                }
+            }
+            else {
+                perm_list [1] = Tcl_NewListObj (0, NULL);
+            }
+            result_list_obj = Tcl_NewListObj (3, perm_list);
+        }
+    }
+    if (result_list_obj == NULL) {
+        /* object class was not found */
+        result_list_obj = Tcl_NewListObj (0, NULL);
+    }
+    Tcl_SetObjResult (interp, result_list_obj);
+    return TCL_OK;
+}
+
 /* Return the common perm for a given class (or an empty string if there is none).
  * argv[1]	class
  */
@@ -1943,7 +2015,7 @@ int Apol_GetNames(ClientData clientData, Tcl_Interp * interp, int argc, char *ar
 	bool_t use_regex = FALSE;
 	regex_t reg;
 	
-	if(argc > 3) {
+	if(argc > 3 || argc < 2) {
 		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
 		return TCL_ERROR;
 	}
@@ -5287,6 +5359,120 @@ int Apol_GetPermMap(ClientData clientData, Tcl_Interp *interp, int argc, char *a
 	return TCL_OK;
 }
 
+
+/* Flow Assertion Tcl <--> C interface
+ * This command should be invoked from Tcl like so:
+ *   apol_FlowAssertExecute assertion_contents ?abort?
+ * where:
+ *   assertion_contents - a Tcl string that holds the (hopefully
+ *     syntactically correct) assertion file
+ *
+ * An optional second parameter, if set to non-zero, aborts execution
+ * after the first time an assertion fails.
+ *
+ * If the assertion fails this function returns a list of results.
+ * Each result is a 4-ple:
+ *  - mode for the assertion (1 = NOFLOW, 2 = MUSTFLOW, 3 = ONLYFLOW)
+ *  - line number from assertion_contents
+ *  - integer result from executing (0 = VALID, 1 = FAIL, other values = error)
+ *  - another list of 5-ples describing all failures found
+ *      start_id   - type ID value for start of path
+ *      end_id     - type ID value for end of path
+ *      via_id     - type ID value of required element missing from path, or
+ *                   -1 if non-applicable
+ *      rule_line  - line number from policy.conf that breaks assertion
+ *      rule       - string representation of rule
+ *    * If rule_line >= 0 then a conflict to assertion, with path
+ *      beginning with rule_line.
+ *    * Else if via_id >= 0 then no path was found from start_id to
+ *      end_id by way of via_id.
+ *    * Otherwise no path found at all from start_id to end_id.
+ *    If no failures or result is an error then this is an empty list.
+ */
+int Apol_FlowAssertExecute (ClientData clientData, Tcl_Interp *interp,
+                            int objc, Tcl_Obj * CONST objv[]) {
+        char *assertion_contents;
+        bool_t abort_after_first_conflict = FALSE;
+        llist_t *assertion_results;
+        llist_node_t *result_node;
+        Tcl_Obj *result_list_obj;
+    
+        if (policy == NULL) {
+                Tcl_SetResult (interp, "No current policy file is opened!",
+                               TCL_STATIC);
+                return TCL_ERROR;
+        }
+        if (policy->pmap == NULL) {
+                Tcl_SetResult (interp, "No permission map loaded!",TCL_STATIC);
+                return TCL_ERROR;
+        }	
+        if (objc < 2 || objc > 3) {
+                Tcl_SetResult (interp, "wrong # of args", TCL_STATIC);
+                return TCL_ERROR;
+        }
+        assertion_contents = Tcl_GetString (objv [1]);
+        if (objc == 3) {
+                int abort_int;
+                if (Tcl_GetBooleanFromObj (NULL, objv [2], &abort_int)
+                    == TCL_OK && abort_int == 1) {
+                        abort_after_first_conflict = TRUE;
+                }
+        }
+        assertion_results = execute_flow_assertion (assertion_contents, policy,
+                                                   abort_after_first_conflict);
+        result_list_obj = Tcl_NewListObj (0, NULL);
+        for (result_node = assertion_results->head; result_node != NULL;
+             result_node = result_node->next) {
+                flow_assert_results_t *results =
+                        (flow_assert_results_t *) result_node->data;
+                Tcl_Obj *result_obj, *result_elem_obj [4];
+                int i;
+                result_elem_obj [0] = Tcl_NewIntObj (results->mode);
+                result_elem_obj [1] = Tcl_NewLongObj ((long) results->rule_lineno);
+                result_elem_obj [2] = Tcl_NewIntObj (results->assert_result);
+                result_elem_obj [3] = Tcl_NewListObj (0, NULL);
+                for (i = 0; i < results->num_rules; i++) {
+                        flow_assert_rule_t *assert_rule = results->rules + i;
+                        Tcl_Obj *rule_elem_obj [5], *rule_obj;
+                        int rule_idx = assert_rule->rule_idx;
+                        rule_elem_obj [0] = Tcl_NewIntObj (assert_rule->start_type);
+                        rule_elem_obj [1] = Tcl_NewIntObj (assert_rule->end_type);
+                        rule_elem_obj [2] = Tcl_NewIntObj (assert_rule->via_type);
+                        if (assert_rule->rule_idx >= 0) {
+                                char *rule;
+                                rule_elem_obj [3] = Tcl_NewIntObj
+                                    (get_rule_lineno (rule_idx, RULE_TE_ALLOW, policy));
+                                rule = re_render_av_rule
+                                 (FALSE, assert_rule->rule_idx, FALSE, policy);
+                                rule_elem_obj [4] = Tcl_NewStringObj(rule, -1);
+                                free (rule);
+                        }
+                        else {
+                                rule_elem_obj [3] = Tcl_NewIntObj (-1);
+                                rule_elem_obj [4] = Tcl_NewStringObj (NULL, 0);
+                        }
+                        rule_obj = Tcl_NewListObj (5, rule_elem_obj);
+                        if (Tcl_ListObjAppendElement (NULL, result_elem_obj [3], rule_obj)
+                            != TCL_OK) {
+                                Tcl_SetResult (interp, "Out of memory", TCL_STATIC);
+                                ll_free (assertion_results, flow_assert_results_destroy);
+                                return TCL_ERROR;
+                        }
+                }
+                result_obj = Tcl_NewListObj (4, result_elem_obj);
+                if (Tcl_ListObjAppendElement (NULL, result_list_obj,result_obj)
+                    != TCL_OK) {
+                        Tcl_SetResult (interp, "Out of memory", TCL_STATIC);
+                        ll_free (assertion_results, flow_assert_results_destroy);
+                        return TCL_ERROR;
+                }
+        }
+        ll_free (assertion_results, flow_assert_results_destroy);
+        Tcl_SetObjResult (interp, result_list_obj);
+        return TCL_OK;
+}
+
+
 /* Package initialization */
 int Apol_Init(Tcl_Interp *interp) 
 {
@@ -5312,6 +5498,7 @@ int Apol_Init(Tcl_Interp *interp)
 	Tcl_CreateCommand(interp, "apol_GetPolicyContents", (Tcl_CmdProc *) Apol_GetPolicyContents, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_GetPermsByClass", (Tcl_CmdProc *) Apol_GetPermsByClass, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_GetClassPermInfo", (Tcl_CmdProc *) Apol_GetClassPermInfo, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+	Tcl_CreateObjCommand(interp, "apol_GetClassPermList", (Tcl_ObjCmdProc *) Apol_GetClassPermList, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_GetSingleClassPermInfo", (Tcl_CmdProc *) Apol_GetSingleClassPermInfo, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_DomainTransitionAnalysis", (Tcl_CmdProc *) Apol_DomainTransitionAnalysis, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_GetAttribTypesList", (Tcl_CmdProc *) Apol_GetAttribTypesList, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
@@ -5335,7 +5522,7 @@ int Apol_Init(Tcl_Interp *interp)
 	Tcl_CreateCommand(interp, "apol_SearchConditionalRules", (Tcl_CmdProc *) Apol_SearchConditionalRules, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_GetPolicyType", (Tcl_CmdProc *) Apol_GetPolicyType, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_TypesRelationshipAnalysis", (Tcl_CmdProc *) Apol_TypesRelationshipAnalysis, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-	
+	Tcl_CreateObjCommand(interp, "apol_FlowAssertExecute", (Tcl_ObjCmdProc *) Apol_FlowAssertExecute, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);	
 	Tcl_PkgProvide(interp, "apol", (char*)libapol_get_version());
 
 	return TCL_OK;
