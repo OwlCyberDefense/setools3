@@ -77,7 +77,7 @@ point type).
    access to the file entrypoint type (passwd_exec_t).
 
 
-3. There must be a rule that allows the TARGET domain type 'execute' 
+3. There must be a rule that allows the TARGET domain type 'entrypoint' 
    access to the FILE ENTRYPOINT type for file objects.  As an example, 
    the rule:
    
