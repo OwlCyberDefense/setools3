@@ -44,18 +44,29 @@ namespace eval Apol_Types {
 	variable a_typeattribs
 	variable sString 
 	variable sEntry 
-
+	
+	# callback procedures for the listbox items menu. Each element in this list is an embedded list of 2 items.
+	# The 2 items consist of the command label and the function name. The tabname will be added as an
+	# argument to the callback procedure.
+	variable types_menu_callbacks	""
+    	variable attribs_menu_callbacks	""
 }
 
 proc Apol_Types::open { } {
 	variable typelist
 	variable attriblist
             
-	set typelist [apol_GetNames types]
+	set rt [catch {set typelist [apol_GetNames types]} err]
+	if {$rt != 0} {
+		return -code error $err
+	}
 	set typelist [lsort $typelist]
-	set attriblist [apol_GetNames attribs]
+	set rt [catch {set attriblist [apol_GetNames attribs]} err]
+	if {$rt != 0} {
+		return -code error $err
+	}
 	set attriblist [lsort $attriblist]
-	return
+	return 0
 }
 
 proc Apol_Types::close { } {
@@ -63,11 +74,19 @@ proc Apol_Types::close { } {
         set Apol_Types::srchstr ""
 	set Apol_Types::typelist ""
 	set Apol_Types::attriblist ""
-	
 	$Apol_Types::resultsbox configure -state normal
 	$Apol_Types::resultsbox delete 0.0 end
 	ApolTop::makeTextBoxReadOnly $Apol_Types::resultsbox
 	
+	return 0
+}
+
+proc Apol_Types::free_call_back_procs { } {
+       	variable types_menu_callbacks	
+    	variable attribs_menu_callbacks	
+	
+	set types_menu_callbacks ""
+	set attribs_menu_callbacks ""
 	return 0
 }
 
@@ -243,6 +262,8 @@ proc Apol_Types::create {nb} {
     variable sString 
     variable sEntry 
     variable opts
+    variable types_menu_callbacks
+    variable attribs_menu_callbacks
     
     # Layout frames
     set frame [$nb insert end $ApolTop::types_tab -text "Types"]
@@ -286,20 +307,25 @@ proc Apol_Types::create {nb} {
     
     # Popup menu widget
     menu .popupMenu_types
-    .popupMenu_types add command -label "Display Type Info" \
-	-command { Apol_Types::popupTypeInfo "type" [$Apol_Types::tlistbox get active] }
+    set types_menu_callbacks [lappend types_menu_callbacks {"Display Type Info" "Apol_Types::popupTypeInfo type"}]
     menu .popupMenu_attribs
-    .popupMenu_attribs add command -label "Display Attribute Info" \
-	-command { Apol_Types::popupTypeInfo "attrib" [$Apol_Types::alistbox get active] }
-
+    set attribs_menu_callbacks [lappend attribs_menu_callbacks {"Display Attribute Info" "Apol_Types::popupTypeInfo attrib"}]
+    
     # Binding events to the both listboxes
     bindtags $tlistbox [linsert [bindtags $tlistbox] 3 tlist_Tag]  
     bindtags $alistbox [linsert [bindtags $alistbox] 3 alist_Tag]  
     bind tlist_Tag <Double-ButtonPress-1>  { Apol_Types::popupTypeInfo "type" [$Apol_Types::tlistbox get active]}
     bind alist_Tag <Double-ButtonPress-1> { Apol_Types::popupTypeInfo "attrib" [$Apol_Types::alistbox get active]}
-    bind tlist_Tag <Button-3> { Apol_Roles::popupRoleInfoMenu %W %x %y .popupMenu_types }      
-    bind alist_Tag <Button-3> { Apol_Roles::popupRoleInfoMenu %W %x %y .popupMenu_attribs } 
+    bind tlist_Tag <Button-3> { ApolTop::popup_listbox_Menu \
+    	%W %x %y .popupMenu_types $Apol_Types::types_menu_callbacks \
+    	$Apol_Types::tlistbox}      
+    bind alist_Tag <Button-3> { ApolTop::popup_listbox_Menu \
+    	%W %x %y .popupMenu_attribs $Apol_Types::attribs_menu_callbacks \
+    	$Apol_Types::alistbox} 
     
+    bind tlist_Tag <<ListboxSelect>> { focus -force $Apol_Types::tlistbox}
+    bind alist_Tag <<ListboxSelect>> { focus -force $Apol_Types::alistbox}
+     
     # Search options section      
     set ofm [$obox getframe]
     set fm_attribs_select [frame $ofm.ao -relief sunken -borderwidth 1]
