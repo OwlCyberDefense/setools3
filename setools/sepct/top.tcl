@@ -1336,6 +1336,7 @@ proc Sepct::exitApp {} {
 		# cancel
 		return 1
 	}
+	Sepct::closePolicy
 	Sepct_db::close
 	Sepct::writeInitFile
 	exit
