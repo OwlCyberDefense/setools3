@@ -406,7 +406,7 @@ static int apol_add_domain_to_result(relabel_result_t *res, int domain, int *typ
 {
 	int i, retv, where;
 
-	if (!res || !types || !rules || !num_types || !num_rules) 
+	if (!res || !types || !rules) 
 		return -1;
 
 	/* add any new types */
@@ -424,6 +424,16 @@ static int apol_add_domain_to_result(relabel_result_t *res, int domain, int *typ
 			} else {
 				res->domains = (int**)calloc(1, sizeof(int*));
 				if (!res->domains)
+					return -1;
+			}
+			if (res->num_domains) {
+				res->num_domains = (int*)realloc(res->num_domains, res->num_types * sizeof(int));
+				if (!res->num_domains)
+					return -1;
+				res->num_domains[res->num_types - 1] = 0;
+			} else {
+				res->num_domains = (int*)calloc(1, sizeof(int));
+				if (!res->num_domains)
 					return -1;
 			}
 			where = res->num_types - 1;
@@ -719,7 +729,7 @@ bail_point:
 	return -1;
 }
 
-static int apol_single_type_relabel(relabel_set_t *sets, int domain, int type, int **array, int *size, policy_t *policy, int mode)
+static int apol_single_type_relabel(relabel_set_t *sets, int domain, int type, int **array, int *size, int **rules, int *num_rules, policy_t *policy, int mode)
 {
 	int i, retv;
 
@@ -739,6 +749,14 @@ static int apol_single_type_relabel(relabel_set_t *sets, int domain, int type, i
 			if (retv == -1) 
 				return -1;
 		}
+		for (i = 0; i < sets[domain].num_to_rules; i++) {
+			retv = does_av_rule_idx_use_type(sets[domain].to_rules[i], RULE_TE_ALLOW, type, IDX_TYPE, TGT_LIST, 1, policy);
+			if (retv) {
+				retv = add_i_to_a(sets[domain].to_rules[i], num_rules, rules);
+				if (retv == -1)
+					return -1;
+			}
+		}
 	} else {
 		if (!apol_is_type_in_list(&(sets[domain]), type, TOLIST))
 			return NOTHERE;
@@ -746,6 +764,14 @@ static int apol_single_type_relabel(relabel_set_t *sets, int domain, int type, i
 			retv = add_i_to_a(sets[domain].from_types[i].type, size, array);
 			if(retv == -1) 
 				return -1;
+		}
+		for (i = 0; i < sets[domain].num_from_types; i++) {
+			retv = does_av_rule_idx_use_type(sets[domain].from_rules[i], RULE_TE_ALLOW, type, IDX_TYPE, TGT_LIST, 1, policy);
+			if (retv) {
+				retv = add_i_to_a(sets[domain].from_rules[i], num_rules, rules);
+				if (retv == -1)
+					return -1;
+			}
 		}
 	}
 
@@ -914,6 +940,7 @@ static int apol_type_relabel(relabel_set_t *sets, int type, relabel_result_t *re
 
 	if (!sets || !policy)
 		return -1;
+
 	if (mode != MODE_TO && mode != MODE_FROM) {
 		if (mode != MODE_DOM) {
 			return -1;
@@ -930,7 +957,7 @@ static int apol_type_relabel(relabel_set_t *sets, int type, relabel_result_t *re
 	for (i = 1; i < policy->num_types; i++) { /* zero is self, skip */
 		size = 0;
 		temp_array = NULL;
-		retv = apol_single_type_relabel(sets, i, type, &temp_array, &size, policy, mode);
+		retv = apol_single_type_relabel(sets, i, type, &temp_array, &size, &rules, &num_rules, policy, mode);
 		if (retv && retv != NOTHERE) 
 			return retv;
 
@@ -975,6 +1002,7 @@ static int apol_type_relabel(relabel_set_t *sets, int type, relabel_result_t *re
 			temp_array2 = NULL;
 			size2 = 0;
 		}
+
 		
 		if (size) {
 			retv = apol_add_domain_to_result(res, i, temp_array, size, rules, num_rules);
@@ -1014,12 +1042,13 @@ static int apol_type_relabel(relabel_set_t *sets, int type, relabel_result_t *re
 int apol_query_relabel_analysis(relabel_set_t *sets, int type, relabel_result_t *res, policy_t *policy, relabel_mode_t *mode, relabel_filter_t *filter)
 {
 	int retv;
+
 	if ( !sets || !policy || !mode )
 		return -1;
 
 	if (!mode->mode)
 		return -1;
-
+ 
 	if (mode->filter && !filter)
 		return -1;
 
