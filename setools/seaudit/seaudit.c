@@ -37,8 +37,7 @@ static struct option const opts[] =
 	{"version", no_argument, NULL, 'v'},
 	{NULL, 0, NULL, 0}
 };
-
-static void seaudit_set_real_time_log_toggle_button_state(bool_t state);
+static void seaudit_set_real_time_log_button_state(bool_t state);
 static int seaudit_read_policy_conf(const char *fname);
 static void seaudit_print_version_info(void);
 static void seaudit_print_usage_info(const char *program_name, bool_t brief);
@@ -265,6 +264,7 @@ int main(int argc, char **argv)
 
 	seaudit_set_recent_policys_submenu(&(seaudit_app->seaudit_conf));
 	seaudit_set_recent_logs_submenu(&(seaudit_app->seaudit_conf));
+	seaudit_set_real_time_log_button_state(seaudit_app->seaudit_conf.real_time_log);
 
 	/* if no files were given on the command line then use the 
          * current user-saved default filenames */
@@ -285,10 +285,6 @@ int main(int argc, char **argv)
 	log_filtered_callback_register(&seaudit_update_status_bar, NULL);
 	/* finish loading later */
 	g_idle_add(&delayed_main, &filenames);
-
-	/* must set the state of the button after signal autoconnect to catch the 
-	 * toggled signal */
-	seaudit_set_real_time_log_toggle_button_state(seaudit_app->seaudit_conf.real_time_log);
 
 	/* go */
 	gtk_main();
@@ -484,25 +480,13 @@ void seaudit_on_top_window_query_button_clicked(GtkWidget *widget, GdkEvent *eve
 	query_window_create();
 }
 
-void seaudit_on_realtime_toggled(GtkToggleButton *toggle, gpointer user_data)
+
+void seaudit_on_real_time_button_pressed(GtkButton *button, gpointer user_data)
 {
-	GtkWidget *button;
-	gboolean active;
-	
-	active = gtk_toggle_button_get_active(toggle);
-	button = glade_xml_get_widget(seaudit_app->window->xml, "RealTimeToggleButton");
-	gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(button), active);
-	set_real_time_log_toggle_button_state(active);
-	
-	/* set up a timeout function to update the log */
-	if (seaudit_app->timeout_key)
-		gtk_timeout_remove(seaudit_app->timeout_key);
-	if (active)
-		seaudit_app->timeout_key = gtk_timeout_add(LOG_UPDATE_INTERVAL, 
-							   &seaudit_real_time_update_log, NULL);
-	else 
-		seaudit_app->timeout_key = 0;
+	bool_t state = seaudit_app->real_time_state;
+	seaudit_set_real_time_log_button_state(!state);
 }
+
 /*
  * Gtk callbacks registered by seaudit_t object
  */
@@ -581,13 +565,26 @@ static gboolean seaudit_real_time_update_log(gpointer callback_data)
 /*
  * Helper functions for seaudit_t
  */
-static void seaudit_set_real_time_log_toggle_button_state(bool_t state)
+static void seaudit_set_real_time_log_button_state(bool_t state)
 {
-	GtkWidget *widget;
+	GtkWidget *label, *image;
 
-	widget = glade_xml_get_widget(seaudit_app->window->xml, "RealTimeToggleButton");
-	g_assert(widget);
-	gtk_toggle_button_set_state(GTK_TOGGLE_BUTTON(widget), state);
+	label = glade_xml_get_widget(seaudit_app->window->xml, "RealTimeLabel");
+	g_assert(label);
+	image = glade_xml_get_widget(seaudit_app->window->xml, "RealTimeImage");
+	g_assert(image);
+	seaudit_app->real_time_state = state;
+	if (seaudit_app->timeout_key)
+		gtk_timeout_remove(seaudit_app->timeout_key);
+
+	if (state) {
+		gtk_label_set_text(GTK_LABEL(label), "Stop monitor");
+		gtk_image_set_from_stock(GTK_IMAGE(image), GTK_STOCK_STOP, GTK_ICON_SIZE_SMALL_TOOLBAR);
+		seaudit_app->timeout_key = g_timeout_add(LOG_UPDATE_INTERVAL, seaudit_real_time_update_log, NULL);
+	} else {
+		gtk_label_set_text(GTK_LABEL(label), "Start monitor");
+		gtk_image_set_from_stock(GTK_IMAGE(image), GTK_STOCK_REFRESH, GTK_ICON_SIZE_SMALL_TOOLBAR);
+	}
 }
 
 static int seaudit_read_policy_conf(const char *fname)
