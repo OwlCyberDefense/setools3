@@ -283,19 +283,19 @@ static int ftw_handler(const char *file, const struct stat *sb, int flag, struct
 printf("type %s didn't exist, inserted at %d\n", tmp, rc);
 			}
 			pi->context.type=(int32_t)rc;
+/*
+ * no need to add these indexes anymore during filesystem walking
 			if (add_uint_to_a((uint32_t)idx, &fsdata->types[rc].num_inodes, &fsdata->types[rc].index_list)) {
 				return -1;
 			}
-			
+*/
 		}
 		else
 			pi->context.type = XATTR_UNLABELED;
-
 		
 	} else {
 		pi = &(fsdata->files[idx]);
-	}
-	
+	}	
 
 	pi->obj_class = sefs_get_file_class(sb);
 
@@ -529,15 +529,15 @@ int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char *filename)
 		rc = fwrite(fsd->types[i].name, sizeof(char), len, fp);
 		if (rc != len)
 			goto bad;
-
-		/* write number of inodes */
+/*
+--Not doing this anymore --
 		len = fsd->types[i].num_inodes;
 		buf[0] = cpu_to_le32(len);
 		rc = fwrite(buf, sizeof(uint32_t), 1, fp);
 		if (rc != 1)
 			goto bad;
 
-		/* write list of inode indexes */
+	
 		for (j = 0; j < len; j++) {
 			buf[0] = cpu_to_le32(fsd->types[i].index_list[j]);
 			rc = fwrite(buf, sizeof(uint32_t), 1, fp);
@@ -545,7 +545,7 @@ int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char *filename)
 				goto bad;
 
 		}
-
+*/
 	}
 
 	buf[0] = cpu_to_le32(fsd->num_users);
@@ -591,7 +591,7 @@ int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char *filename)
 			fprintf(stderr, "2 error writing file %s\n", filename);
 			return -1;
 		}
-		
+
 		items = 0;
 		sbuf[items++] = cpu_to_le32(pinfo->context.user);
 		sbuf[items++] = cpu_to_le32(pinfo->context.role);
@@ -643,12 +643,11 @@ int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char *filename)
 int sefs_filesystem_data_load(sefs_filesystem_data_t* fsd, char *filename)
 {
 	int i, j;
-	unsigned int len = 0;
 	inode_key_t *key = NULL;
 	sefs_fileinfo_t * pinfo = NULL;
 	FILE *fp;
 	size_t items;
-	uint32_t buf[512];
+	uint32_t buf[512], *pbuf, len;
 	int32_t sbuf[3];
 	
 	fp = fopen(filename, "r");
@@ -685,20 +684,60 @@ int sefs_filesystem_data_load(sefs_filesystem_data_t* fsd, char *filename)
 	}
 
 	for (i = 0; i< fsd->num_types; i++) {
+printf("on type %d\t", i);
+	
 		items = fread(buf, sizeof(uint32_t), 1, fp);
 		if (items != 1)
 			goto bad;
 
 		len = le32_to_cpu(buf[0]);
-
+printf("of length %d\t",len);
 		items = fread(buf, sizeof(char), len, fp);
 		if (items != len)
 			goto bad;
 
+		fsd->types[i].name = (char *) malloc (sizeof(char) * (len + 1));
+		if (!fsd->types[i].name) 
+			goto bad;
+		bzero(fsd->types[i].name, sizeof(char) * (len + 1));	
+			
 		memcpy(fsd->types[i].name, buf, len);
-		printf("found type: %s\n", fsd->types[i].name);
+printf("type: %s \n", fsd->types[i].name);
+	
+	
+/*	
+		items = fread(buf, sizeof(uint32_t), 1, fp);
+		if (items != 1)
+			goto bad;
+	
+		len = le32_to_cpu(buf[0]);
+			
+printf("with %d inodes\n", len);
 
+		pbuf = (uint32_t *) malloc(sizeof(uint32_t) * len);
+		if (!pbuf)
+			goto bad;
+		bzero(pbuf, len);
+
+		items = fread(pbuf, sizeof(uint32_t), len, fp);
+		if (items != len)
+			goto bad;
+
+		for (j = 0; j < len; j++) {
+			len = le32_to_cpu(pbuf[j]);
+			add_uint_to_a(len, &fsd->types[i].num_inodes, &fsd->types[i].index_list);
+		}
+
+		free(pbuf);
+*/	
 	}
+
+	/* read the number of inodes */
+	items = fread(buf, sizeof(uint32_t), 1, fp);
+	if (items != 1)
+		goto bad;
+		
+	fsd->num_files = le32_to_cpu(buf[0]);
 
 	pinfo = (sefs_fileinfo_t *) malloc(fsd->num_files * sizeof(sefs_fileinfo_t));
 	if (!pinfo) {
@@ -711,7 +750,8 @@ int sefs_filesystem_data_load(sefs_filesystem_data_t* fsd, char *filename)
 		
 		pinfo = &(fsd->files[i]);
 
-		if ((key = (inode_key_t *)malloc(sizeof(inode_key_t)) == NULL)) {
+		key = (inode_key_t *)malloc(sizeof(inode_key_t));
+		if (!key) {
 			fprintf(stderr, "Out of memory\n");
 			return -1;
 		}
@@ -738,8 +778,11 @@ int sefs_filesystem_data_load(sefs_filesystem_data_t* fsd, char *filename)
 		
 		pinfo->context.user = sbuf[0];
 		pinfo->context.role = sbuf[1];
-		pinfo->context.role = sbuf[2];
-				
+		pinfo->context.type = sbuf[2];
+
+		/* add the type of this inode to the type index list */
+		add_uint_to_a(i, &fsd->types[pinfo->context.type].num_inodes, &fsd->types[pinfo->context.type].index_list);
+		
 		/* Read the pathname count */
 		items = fread(&(pinfo->num_links), sizeof(uint32_t), 1, fp);
 		if (items != 1) {
