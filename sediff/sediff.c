@@ -9,6 +9,7 @@
  */
  
 /* libapol */
+#include "util.h"
 #include <policy.h>
 #include <policy-io.h>
 #include <poldiff.h>
@@ -46,6 +47,7 @@ static struct option const longopts[] =
   {"rbacrules", no_argument, NULL, 'R'},
   {"conds", no_argument, NULL, 'C'},
   {"stats", no_argument, NULL, 's'},
+  {"gui", no_argument, NULL, 'X'},
   {"help", no_argument, NULL, 'h'},
   {"version", no_argument, NULL, 'v'},
   {NULL, 0, NULL, 0}
@@ -55,6 +57,7 @@ void usage(const char *program_name, int brief)
 {
 	printf("%s (sediff ver. %s)\n\n", COPYRIGHT_INFO, SEDIFF_VERSION_NUM);
 	printf("Usage: %s [OPTIONS] POLICY1 POLICY2\n", program_name);
+	printf("Usage: %s -X [POLICY1 POLICY2]\n",program_name);
 	if(brief) {
 		printf("\n   Try %s --help for more help.\n\n", program_name);
 		return;
@@ -72,6 +75,7 @@ policy elements are examined.  The following diff options are available:\n\
   -T, --terules    type enforcement rules\n\
   -R, --rbacrules  role rules\n\
   -C, --conds      conditionals and their rules\n\
+  -X, --gui        launch the sediff gtk gui\n\
  ", stdout);
 	fputs("\n\
   -s, --stats      print useful policy statics\n\
@@ -131,18 +135,55 @@ int print_diff_stats(FILE *fp, apol_diff_result_t *diff)
 
 typedef int(*get_iad_name_fn_t)(int idx, char **name, policy_t *policy);
 
-int print_iad(FILE *fp, int_a_diff_t *iad, int id, policy_t *p)
+static int print_iad_element(char **string,int *string_sz,
+			     int_a_diff_t *diff,policy_t *policy,bool_t added,
+			     char *adescrp,get_iad_name_fn_t get_a_name)
+{
+	int i;
+	char *tmp;
+	int rt;
+	char tbuf[APOL_STR_SZ+64];
+	for (i = 0; i < diff->numa; i++) {
+		rt = (*get_a_name)(diff->a[i], &tmp, policy);
+		if (rt < 0) {
+			fprintf(stderr, "Problem getting element name for %s %d\n", adescrp, diff->a[i]);
+			return -1;
+		}
+		if (added)
+			sprintf(tbuf, "\t\t\t+ %s\n", tmp);
+		else
+		        sprintf(tbuf, "\t\t\t- %s\n", tmp);
+		append_str(string,string_sz,tbuf);		
+		free(tmp);
+	}
+	return 0;
+}
+
+
+
+/* print out a difference, in this case we consider everything in the p1 diff to be removed
+   and everything in the p2 to be added, and everything in both to be changed*/
+int print_iad(FILE *fp, int id, int_a_diff_t *iad_p1, int_a_diff_t *iad_p2,
+		     policy_t *p1, policy_t *p2)
 {
 	get_iad_name_fn_t get_name, get_a_name;
-	char *name, *descrp = NULL, *adescrp = NULL;
+	char *name, *descrp = NULL, *adescrp = NULL, *name2 = NULL;
+	char *changed_buf = NULL, *added_buf = NULL, *removed_buf = NULL;
+	int changed_sz = 0, removed_sz = 0, added_sz = 0;
+	int num_removed = 0, num_added = 0, num_changed = 0;
 	bool_t missing;
-	int rt, i;
-	int_a_diff_t *t;
+	int rt;
+	int_a_diff_t *t,*u;
+	char tbuf[APOL_STR_SZ+64];
 	
-	if(iad == NULL)
-		return 0; /* indicates an empty list */
-	
-	if(fp == NULL || p == NULL || !(id & (IDX_TYPE|IDX_ATTRIB|IDX_ROLE|IDX_USER|IDX_OBJ_CLASS|IDX_COMMON_PERM|IDX_ROLE)))
+
+
+
+/* now we want stats at all times even if emtpy list 	
+  if(iad_p1 == NULL && iad_p2 == NULL ) 
+		return 0;  indicates an empty list */
+
+	if(fp == NULL || (p1 == NULL && p2 == NULL ) || !(id & (IDX_TYPE|IDX_ATTRIB|IDX_ROLE|IDX_USER|IDX_OBJ_CLASS|IDX_COMMON_PERM|IDX_ROLE)))
 		return -1;
 	
 	switch(id) {
@@ -161,8 +202,8 @@ int print_iad(FILE *fp, int_a_diff_t *iad, int id, policy_t *p)
 	case IDX_ROLE|IDX_PERM:
 		get_name = &get_role_name;
 		get_a_name = &get_role_name;
-		descrp = "Roles";
-		adescrp = "Roles";
+		descrp = "Role Allows";
+		adescrp = "Role Allows";
 		break;
 	case IDX_ROLE:
 		get_name = &get_role_name;
@@ -193,37 +234,236 @@ int print_iad(FILE *fp, int_a_diff_t *iad, int id, policy_t *p)
 		return -1; 
 		break;
 	}
-	for(t = iad; t != NULL; t = t->next) {
-		missing = (t->a == NULL);
-		rt = (*get_name)(t->idx, &name, p);
-		if(rt < 0) {
-			fprintf(stderr, "Problem getting name for %s %d\n", descrp, t->idx);
-			return -1;
-		}
-		fprintf(fp, "   %s (%s", name, (missing ? "missing" : "changed"));
-		if(!missing)
-			fprintf(fp, ", %d missing %s)\n", t->numa, adescrp);
-		else
-			fprintf(fp, ")\n");
-		free(name);
-		
-		if(!missing) {
-			/* do members not present in other policy */
-			for(i = 0; i < t->numa; i++) {
-				rt = (*get_a_name)(t->a[i], &name, p);
-				if(rt < 0) {
-					fprintf(stderr, "Problem getting element name for %s %d\n", adescrp, t->a[i]);
-					return -1;
-				}
-				fprintf(fp, "        %s\n", name);
-				free(name);
+
+	append_str(&added_buf,&added_sz,"\n");
+	append_str(&changed_buf,&changed_sz,"\n");
+	append_str(&removed_buf,&removed_sz,"\n");
+
+	/* Handle only removed items */
+	if (iad_p1 != NULL) {
+		for (t = iad_p1; t != NULL; t = t->next) {
+			rt = (*get_name)(t->idx, &name, p1);
+			if (rt < 0) {
+				fprintf(stderr, "Problem getting name for %s %d\n", descrp, t->idx);
+				goto print_iad_error;
+			}
+			missing = (t->a == NULL);
+			if (missing){
+				num_removed += 1;
+				sprintf(tbuf, "\t\t- %s\n", name);
+				append_str(&removed_buf,&removed_sz,tbuf);			     				 
 			}
 		}
-		
+		free(name);
 	}
-	
+
+	/* Handle added items */
+	/* Looking for items that are not in the old policy, hence indicating it was ADDED */
+	if (iad_p2 != NULL) {
+		/* Here we only take care of added items */
+		for (t = iad_p2; t != NULL; t = t->next) {
+			rt = (*get_name)(t->idx, &name, p2);
+			if (rt < 0) {
+				fprintf(stderr, "Problem getting name for %s %d\n", descrp, t->idx);
+				goto print_iad_error;
+			}
+			missing = (t->a == NULL);
+			/* This means that the item exists only in the new policy */
+			if (missing) {
+				num_added += 1;
+				sprintf(tbuf, "\t\t+ %s\n", name);
+				append_str(&added_buf,&added_sz,tbuf);
+			}	
+			free(name);
+		}
+	}
+
+	/* Handle Changed Items */
+	if (iad_p2 != NULL) {
+		t = iad_p2;
+		/* did we remove anything ? */
+		if (iad_p1 != NULL) {
+			u = iad_p1;
+			while (u != NULL || t != NULL) {
+				/* do we still have items on both lists */
+				if (t != NULL && u != NULL) {
+					rt = (*get_name)(t->idx, &name, p2);
+					if (rt < 0) {
+						fprintf(stderr, "Problem getting name for %s %d\n", descrp, t->idx);
+						goto print_iad_error;
+					}
+					rt = (*get_name)(u->idx, &name2, p1);
+					if (rt < 0) {
+						fprintf(stderr, "Problem getting name for %s %d\n", descrp, t->idx);
+						goto print_iad_error;
+					}
+					rt = strcmp(name,name2);
+					/* do both items have the same name(i.e. are they the same) */
+					if (rt == 0){
+						/* if the item is not missing, which would mean its in both policies */
+						missing = (t->a == NULL);
+						if (!missing) {
+							num_changed +=1 ;
+							sprintf(tbuf, "\t\t* %s (%d Added, %d Removed %s)\n", name,t->numa,u->numa, adescrp);
+							append_str(&changed_buf,&changed_sz,tbuf);
+							rt = print_iad_element(&changed_buf,&changed_sz,t,p2,TRUE,adescrp,get_a_name);
+							if (rt < 0)
+								goto print_iad_error;
+							rt = print_iad_element(&changed_buf,&changed_sz,u,p1,FALSE,adescrp,get_a_name);
+							if (rt < 0)
+								goto print_iad_error;
+						}
+						u = u->next;
+						t = t->next;
+					}
+					/* new goes first */
+					else if ( rt < 0 ) {
+						missing = (t->a == NULL);
+						if (!missing) {
+							num_changed +=1 ;
+							sprintf(tbuf, "\t\t* %s (%d Added %s)\n", name, t->numa, adescrp);
+							append_str(&changed_buf,&changed_sz,tbuf);
+							rt = print_iad_element(&changed_buf,&changed_sz,t,p2,TRUE,adescrp,get_a_name);
+							if (rt < 0)
+								goto print_iad_error;
+						}
+						t = t->next;
+					}
+					/* old goes first */
+					else {
+						missing = (u->a == NULL);
+						/* This means that the item exists in the new policy, so we indicate whether it has been changed. */
+						if (!missing) {
+							num_changed +=1 ;
+							sprintf(tbuf, "\t\t* %s (%d Removed %s)\n", name2, u->numa, adescrp);
+							append_str(&changed_buf,&changed_sz,tbuf);
+							rt = print_iad_element(&changed_buf,&changed_sz,u,p1,FALSE,adescrp,get_a_name);
+							if (rt < 0)
+								goto print_iad_error;
+						}						
+						u = u->next;
+					}					
+					
+				}
+				/* do we only have additions left? */
+				else if (t != NULL) {
+					rt = (*get_name)(t->idx, &name, p2);
+					if (rt < 0) {
+						fprintf(stderr, "Problem getting name for %s %d\n", descrp, t->idx);
+						goto print_iad_error;
+					}
+					missing = (t->a == NULL);
+					if (!missing) {
+						num_changed +=1 ;
+						sprintf(tbuf, "\t\t* %s (%d Added %s)\n", name, t->numa, adescrp);
+						append_str(&changed_buf,&changed_sz,tbuf);
+						rt = print_iad_element(&changed_buf,&changed_sz,t,p2,TRUE,adescrp,get_a_name);
+						if (rt < 0)
+							goto print_iad_error;
+					}
+					free(name);
+					t = t->next;
+				}
+				/* do we only have removes left? */
+				else {
+					rt = (*get_name)(u->idx, &name, p1);
+					if (rt < 0) {
+						fprintf(stderr, "Problem getting name for %s %d\n", descrp, u->idx);
+						goto print_iad_error;
+					}
+					missing = (u->a == NULL);
+					/* This means that the item exists in the new policy, so we indicate whether it has been changed. */
+					if (!missing) {
+						num_changed +=1 ;
+						sprintf(tbuf, "\t\t* %s (%d Removed %s)\n", name, u->numa, adescrp);
+						append_str(&changed_buf,&changed_sz,tbuf);
+						rt = print_iad_element(&changed_buf,&changed_sz,u,p1,FALSE,adescrp,get_a_name);
+						if (rt < 0)
+							goto print_iad_error;
+					}
+					free(name);
+					u = u->next;
+				}
+			}
+		}
+		/* we have no removes just put in additions */
+	        else {
+			for (t = iad_p2; t != NULL; t = t->next) {
+				rt = (*get_name)(t->idx, &name, p2);
+				if (rt < 0) {
+					fprintf(stderr, "Problem getting name for %s %d\n", descrp, t->idx);
+					goto print_iad_error;
+				}
+				missing = (t->a == NULL);
+				if (!missing) {
+					num_changed +=1 ;
+					sprintf(tbuf, "\t\t* %s (%d Added %s)\n", name, t->numa, adescrp);
+					append_str(&changed_buf,&changed_sz,tbuf);
+					rt = print_iad_element(&changed_buf,&changed_sz,t,p2,TRUE,adescrp,get_a_name);
+					if (rt < 0)
+						goto print_iad_error;
+
+				}
+			}
+
+		}
+			
+	}
+	/* did we only remove  ? */
+	else if (iad_p1 != NULL) {
+		for (u = iad_p1; u != NULL; u = u->next) {
+			rt = (*get_name)(u->idx, &name, p1);
+			if (rt < 0) {
+				fprintf(stderr, "Problem getting name for %s %d\n", descrp, u->idx);
+				goto print_iad_error;
+			}
+			missing = (u->a == NULL);
+			/* This means that the item exists in the new policy, so we indicate whether it has been changed.  */
+			if (!missing) {
+				num_changed +=1 ;
+				sprintf(tbuf, "\t\t* %s (%d Removed %s)\n", name, u->numa, adescrp);
+				append_str(&changed_buf,&changed_sz,tbuf);
+				rt = print_iad_element(&changed_buf,&changed_sz,u,p1,FALSE,adescrp,get_a_name);
+				if (rt < 0)
+					goto print_iad_error;
+
+			}
+			free(name);
+		}
+
+	}
+
+	fprintf(fp,"%s (%d Added, %d Removed, %d Changed)\n"
+		"\tAdded %s: %d%s"
+		"\tRemoved %s: %d%s"
+		"\tChanged %s: %d%s",
+		descrp,num_added,num_removed,num_changed,
+		descrp,num_added,added_buf,
+		descrp,num_removed,removed_buf,
+		descrp,num_changed,changed_buf);
+	/* now print to the file */
+	if (changed_buf)
+		free(changed_buf);
+	if (added_buf)
+		free(added_buf);
+	if (removed_buf)
+		free(removed_buf);
 	return 0;
+
+	/*handle memory before we quit from an error */
+ print_iad_error:
+	fprintf(stderr,"error");
+	if (changed_buf)
+		free(changed_buf);
+	if (added_buf)
+		free(added_buf);
+	if (removed_buf)
+		free(removed_buf);
+	return -1;
+
 }
+
+
 
 int print_type_diffs(FILE *fp, apol_diff_result_t *diff)
 {
@@ -231,16 +471,9 @@ int print_type_diffs(FILE *fp, apol_diff_result_t *diff)
 	if(diff == NULL || fp == NULL)
 		return -1;
 
-	fprintf(fp, "%d different TYPES in policy 1.\n", diff->diff1->num_types);
-	rt = print_iad(fp, diff->diff1->types, IDX_TYPE, diff->p1);
+	rt = print_iad(fp, IDX_TYPE, diff->diff1->types, diff->diff2->types,  diff->p1, diff->p2);
 	if(rt < 0) {
-		fprintf(stderr, "Problem printing types for p1.\n");
-		return -1;
-	}
-	fprintf(fp, "%d different TYPES in policy 2.\n", diff->diff2->num_types);
-	rt = print_iad(fp, diff->diff2->types, IDX_TYPE, diff->p2);
-	if(rt < 0) {
-		fprintf(stderr, "Problem printing types for p2.\n");
+		fprintf(stderr, "Problem printing types.\n");
 		return -1;
 	}
 	return 0;
@@ -255,19 +488,11 @@ int print_attrib_diffs(FILE *fp, apol_diff_result_t *diff)
 	if(diff->bindiff)
 		return 0; /* no attribs in a binary diff */
 	
-	fprintf(fp, "%d different ATTRIBS in policy 1.\n", diff->diff1->num_attribs);
-	rt = print_iad(fp, diff->diff1->attribs, IDX_ATTRIB, diff->p1);
+	rt = print_iad(fp, IDX_ATTRIB, diff->diff1->attribs, diff->diff2->attribs, diff->p1, diff->p2);
 	if(rt < 0) {
 		fprintf(stderr, "Problem printing attributes for p1.\n");
 		return -1;
 	}
-	fprintf(fp, "%d different ATTRIBS in policy 2.\n", diff->diff2->num_attribs);
-	rt = print_iad(fp, diff->diff2->attribs, IDX_ATTRIB, diff->p2);
-	if(rt < 0) {
-		fprintf(stderr, "Problem printing attributes for p2.\n");
-		return -1;
-	}
-	
 	return 0;
 }
 
@@ -278,19 +503,11 @@ int print_role_diffs(FILE *fp, apol_diff_result_t *diff)
 	if(diff == NULL || fp == NULL)
 		return -1;
 	
-	fprintf(fp, "%d different ROLES in policy 1.\n", diff->diff1->num_roles);
-	rt = print_iad(fp, diff->diff1->roles, IDX_ROLE, diff->p1);
+	rt = print_iad(fp, IDX_ROLE, diff->diff1->roles,diff->diff2->roles, diff->p1, diff->p2);
 	if(rt < 0){
 		fprintf(stderr, "Problem printing roles for p1.\n");
 		return -1;
 	}
-	fprintf(fp, "%d different ROLES in policy 2.\n", diff->diff2->num_roles);
-	rt = print_iad(fp, diff->diff2->roles, IDX_ROLE, diff->p2);
-	if(rt < 0){
-		fprintf(stderr, "Problem printing roles for p2.\n");
-		return -1;
-	}
-	
 	return 0;
 }
 
@@ -301,16 +518,10 @@ int print_rbac_diffs(FILE *fp, apol_diff_result_t *diff)
 	if(diff == NULL || fp == NULL)
 		return -1;
 	
-	fprintf(fp, "%d different ROLE ALLOWS in policy 1.\n", diff->diff1->num_role_allow);
-	rt = print_iad(fp, diff->diff1->role_allow, IDX_ROLE|IDX_PERM, diff->p1);
+	rt = print_iad(fp, IDX_ROLE|IDX_PERM, diff->diff1->role_allow,diff->diff2->role_allow, 
+		       diff->p1, diff->p2);
 	if(rt < 0){
 		fprintf(stderr, "Problem printing roles for p1.\n");
-		return -1;
-	}
-	fprintf(fp, "%d different ROLE ALLOWS in policy 2.\n", diff->diff2->num_role_allow);
-	rt = print_iad(fp, diff->diff2->role_allow, IDX_ROLE|IDX_PERM, diff->p2);
-	if(rt < 0){
-		fprintf(stderr, "Problem printing roles for p2.\n");
 		return -1;
 	}
 	
@@ -323,78 +534,119 @@ int print_user_diffs(FILE *fp, apol_diff_result_t *diff)
 	if(diff == NULL || fp == NULL)
 		return -1;
 
-	fprintf(fp, "%d different USERS in policy 1.\n", diff->diff1->num_users);
-	rt = print_iad(fp, diff->diff1->users, IDX_USER, diff->p1);
+	rt = print_iad(fp, IDX_USER, diff->diff1->users, diff->diff2->users, diff->p1, diff->p2);
 	if(rt < 0){
 		fprintf(stderr, "Problem printing users for p1.\n");
 		return -1;
 	}
-	fprintf(fp, "%d different USERS in policy 2.\n", diff->diff2->num_users);
-	rt = print_iad(fp, diff->diff2->users, IDX_USER, diff->p2);
-	if(rt < 0){
-		fprintf(stderr, "Problem printing users for p2.\n");
-		return -1;
-	}
-	return 0;
-}
-
-int print_boolean_diff(FILE *fp, bool_diff_t *bools, policy_t *p)
-{
-	bool_diff_t *t;
-	int rt;
-	char *name;
-	bool_t state;
-	
-	if(bools == NULL)
-		return 0; /* empty list */
-	
-	if(fp == NULL || p == NULL)
-		return -1;
-	
-	for(t = bools; t != NULL; t = t->next) {
-		rt = get_cond_bool_name(t->idx, &name, p);
-		if(rt < 0) {
-			fprintf(stderr, "Problem getting name for boolean %d\n", t->idx);
-			return -1;
-		}
-		fprintf(fp, "   %s (%s", name, (t->state_diff ? "changed" : "missing"));
-		if(t->state_diff) {
-			rt = get_cond_bool_default_val_idx(t->idx, &state, p);
-			if(rt < 0) {
-				fprintf(stderr, "Problem getting boolean state for %s\n", name);
-				free(name);
-				return -1;
-			}
-			fprintf(fp, " from %s to %s)\n", (state ? "TRUE" : "FALSE"), (state ? "FALSE" : "TRUE") );
-		}
-		else
-			fprintf(fp, ")\n");
-		free(name);
-	}
-	
 	return 0;
 }
 
 int print_boolean_diffs(FILE *fp, apol_diff_result_t *diff)
 {
 	int rt;
+	bool_diff_t *t;
+	char tbuf[APOL_STR_SZ+64];
+	int num_changed = 0, num_removed = 0, num_added = 0;
+	int changed_sz = 0, added_sz = 0, removed_sz = 0;
+	char *changed_buf = NULL, *added_buf = NULL, *removed_buf = NULL;
+	char *name = NULL;
+
 	if(diff == NULL || fp == NULL)
 		return -1;
-	
-	fprintf(fp, "%d different BOOLEANS in policy 1.\n", diff->diff1->num_booleans);
-	rt = print_boolean_diff(fp, diff->diff1->booleans, diff->p1);
-	if(rt < 0){
-		fprintf(stderr, "Problem printing booleans for p1.\n");
-		return -1;
+
+	bool_diff_t *bools_removed = diff->diff1->booleans;
+	bool_diff_t *bools_added = diff->diff2->booleans;
+	bool_t state;
+
+	append_str(&added_buf,&added_sz,"\n");
+	append_str(&changed_buf,&changed_sz,"\n");
+	append_str(&removed_buf,&removed_sz,"\n");
+
+
+
+	/* Changed booleans */
+	if (bools_removed != NULL) {
+		for (t = bools_removed; t != NULL; t = t->next) {
+			rt = get_cond_bool_name(t->idx, &name, diff->p1);
+			if (rt < 0) {
+				fprintf(stderr, "Problem getting name for boolean %d\n", t->idx);
+				goto print_boolean_error;
+			}
+			if (t->state_diff) {
+				num_changed += 1;
+				sprintf(tbuf,"\t\t* %s (changed",name);
+				append_str(&changed_buf,&changed_sz,tbuf);
+				rt = get_cond_bool_default_val_idx(t->idx, &state, diff->p1);
+				if (rt < 0) {
+					fprintf(stderr, "Problem getting boolean state for %s\n", name);
+					free(name);
+					goto print_boolean_error;
+				}
+				sprintf(tbuf, " from %s to %s)\n", (state ? "TRUE" : "FALSE"), (state ? "FALSE" : "TRUE") );
+				append_str(&changed_buf,&changed_sz,tbuf);
+			}
+			free(name);
+		}
 	}
-	fprintf(fp, "%d different BOOLEANS in policy 2.\n", diff->diff2->num_booleans);
-	rt = print_boolean_diff(fp, diff->diff2->booleans, diff->p2);
-	if(rt < 0){
-		fprintf(stderr, "Problem printing booleans for p2.\n");
-		return -1;
+	/* removed booleans */
+	if (bools_removed != NULL) {
+		for (t = bools_removed; t != NULL; t = t->next) {
+			rt = get_cond_bool_name(t->idx, &name, diff->p1);
+			if (rt < 0) {
+				fprintf(stderr, "Problem getting name for boolean %d\n", t->idx);
+				goto print_boolean_error;
+			}
+			if (!t->state_diff) {
+				num_removed += 1;
+				sprintf(tbuf, "\t\t- %s\n", name);
+				append_str(&removed_buf,&removed_sz,tbuf);
+			}
+			free(name);
+		}
+	}
+	/* added booleans */
+	if (bools_added != NULL) {
+		for (t = bools_added; t != NULL; t = t->next) {
+			rt = get_cond_bool_name(t->idx, &name, diff->p2);
+			if (rt < 0) {
+				fprintf(stderr, "Problem getting name for boolean %d\n", t->idx);
+				goto print_boolean_error;
+			}
+			if (!t->state_diff) {
+				num_added += 1;
+				sprintf(tbuf,  "\t\t+ %s\n", name);
+				append_str(&added_buf,&added_sz,tbuf);
+			}
+			free(name);
+		}
 	}
 	
+	fprintf(fp, "Booleans (%d Added, %d Removed, %d Changed)\n",num_added,num_removed,num_changed);
+	fprintf(fp,"\tAdded Booleans: %d%s"
+		"\tRemoved Booleans: %d%s"
+		"\tChanged Booleans: %d%s",
+		num_added,added_buf,
+		num_removed,removed_buf,
+		num_changed,changed_buf);
+
+	if (changed_buf)
+		free(changed_buf);
+	if (added_buf)
+		free(added_buf);
+	if (removed_buf)
+		free(removed_buf);
 	return 0;
+
+	/*handle memory before we quit from an error */
+ print_boolean_error:
+	if (changed_buf)
+		free(changed_buf);
+	if (added_buf)
+		free(added_buf);
+	if (removed_buf)
+		free(removed_buf);
+	return -1;
 }
 
 int print_classes_diffs(FILE *fp, apol_diff_result_t *diff)
@@ -403,17 +655,9 @@ int print_classes_diffs(FILE *fp, apol_diff_result_t *diff)
 	if(diff == NULL || fp == NULL)
 		return -1;
 		
-
-	fprintf(fp, "%d different CLASSES in policy 1.\n", diff->diff1->num_classes);
-	rt = print_iad(fp, diff->diff1->classes, IDX_OBJ_CLASS, diff->p1);
+	rt = print_iad(fp, IDX_OBJ_CLASS, diff->diff1->classes, diff->diff2->classes, diff->p1, diff->p2);
 	if(rt < 0){
 		fprintf(stderr, "Problem printing classes for p1.\n");
-		return -1;
-	}
-	fprintf(fp, "%d different CLASSES in policy 2.\n", diff->diff2->num_classes);
-	rt = print_iad(fp, diff->diff2->classes, IDX_OBJ_CLASS, diff->p2);
-	if(rt < 0){
-		fprintf(stderr, "Problem printing classes for p2.\n");
 		return -1;
 	}
 	return 0;	
@@ -425,18 +669,9 @@ int print_common_perms_diffs(FILE *fp, apol_diff_result_t *diff)
 	if(diff == NULL || fp == NULL)
 		return -1;
 		
-
-	fprintf(fp, "%d different COMMON PERMISSIONS in policy 1.\n", diff->diff1->num_common_perms);
-	rt = print_iad(fp, diff->diff1->common_perms, IDX_COMMON_PERM, diff->p1);
+	rt = print_iad(fp, IDX_COMMON_PERM, diff->diff1->common_perms, diff->diff2->common_perms, diff->p1, diff->p2);
 	if(rt < 0) {
 		fprintf(stderr, "Problem printing common permissions for p1.\n");
-		return -1;
-	}
-	
-	fprintf(fp, "%d different COMMON PERMISSIONS in policy 2.\n", diff->diff2->num_common_perms);
-	rt = print_iad(fp, diff->diff2->common_perms, IDX_COMMON_PERM, diff->p2);
-	if(rt < 0) {
-		fprintf(stderr, "Problem printing common permissions for p2.\n");
 		return -1;
 	}
 	return 0;	
@@ -450,28 +685,29 @@ int print_perms_diffs(FILE *fp, apol_diff_result_t *diff)
 	if(diff == NULL || fp == NULL)
 		return -1;
 		
-	fprintf(fp, "%d different PERMISSIONS in policy 1.\n", diff->diff1->num_perms);
-	for(i = 0; i < diff->diff1->num_perms; i++) {
-		rt = get_perm_name(diff->diff1->perms[i], &name, diff->p1);
-		if(rt < 0) {
-			fprintf(stderr, "Problem getting name for Permission %d in p1\n", diff->diff1->perms[i]);
-			return -1;
-		}
-		fprintf(fp, "   %s (missing)\n", name);
-		free(name);
-	}
-	
-	fprintf(fp, "%d different PERMISSIONS in policy 2.\n", diff->diff2->num_perms);
+	fprintf(fp, "Permissions (%d Added, %d Removed)\n",diff->diff2->num_perms,diff->diff1->num_perms);
+	fprintf(fp, "\tAdded Permissions: %d\n", diff->diff2->num_perms);
 	for(i = 0; i < diff->diff2->num_perms; i++) {
 		rt = get_perm_name(diff->diff2->perms[i], &name, diff->p2);
 		if(rt < 0) {
 			fprintf(stderr, "Problem getting name for Permission %d in p2\n", diff->diff2->perms[i]);
 			return -1;
 		}
-		fprintf(fp, "   %s (missing)\n", name);
+		fprintf(fp, "\t\t+ %s\n", name);
 		free(name);
 	}
-	
+
+
+	fprintf(fp, "\tRemoved Permissions: %d\n", diff->diff1->num_perms);
+	for(i = 0; i < diff->diff1->num_perms; i++) {
+		rt = get_perm_name(diff->diff1->perms[i], &name, diff->p1);
+		if(rt < 0) {
+			fprintf(stderr, "Problem getting name for Permission %d in p1\n", diff->diff1->perms[i]);
+			return -1;
+		}
+		fprintf(fp, "\t\t- %s\n", name);
+		free(name);
+	}
 	return 0;	
 }
 
