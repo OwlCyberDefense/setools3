@@ -5,7 +5,7 @@ LIBSEUSER-TCL	= ../../libseuser/libseuser-tcl.a ../../libseuser/libseuser.a
 OBJS		= test-seuser.o   $(LIBSEUSER-TCL)  $(LIBAPOL-TCL)
 
 test-seuser: $(OBJS)
-	$(CC) $(TCL_LIBINC) -o $@ $(OBJS) $(LINKFLAGS) $(TCL_LIBS)
+	$(CC) $(TCL_LIBINC) -o $@ $(OBJS) $(LINKFLAGS) $(TCL_LIBS) $(LIBSELINUX)
 
 %.o:  %.c 
 	$(CC) $(CFLAGS) -c $<
