@@ -3,7 +3,7 @@ CFLAGS = -I. -I../../libapol/ -Wall
 LIBAPOL = ../../libapol/libapol.a
 LINKFLAGS = -lm -lselinux -lfl
 
-OBJS = relabel_analysis_test.o ../relabel_analysis.o
+OBJS = relabel_analysis_test.o
 
 ra-test:  $(OBJS)
 	$(CC) $(CFLAGS) -o ra-test $(OBJS) $(LIBAPOL) $(LINKFLAGS)
