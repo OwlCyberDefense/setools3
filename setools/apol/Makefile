@@ -2,7 +2,10 @@
 
 APOL_STARTUP_SCRIPT = apol.tcl
 TCL-FILES	= head.tcl tmp.tcl
-TCL-STRIP-FILES = types_tab.tcl terules_tab.tcl roles_tab.tcl rbac_tab.tcl users_tab.tcl initial_sids_tab.tcl classes_perms_tab.tcl policyconf.tcl perms_map.tcl analysis_tab.tcl $(ANALYSIS-MODULES) top.tcl
+TCL-STRIP-FILES = types_tab.tcl terules_tab.tcl roles_tab.tcl rbac_tab.tcl \
+		  users_tab.tcl initial_sids_tab.tcl cond_bools_tab.tcl \
+		  classes_perms_tab.tcl policyconf.tcl perms_map.tcl \
+		  analysis_tab.tcl $(ANALYSIS-MODULES) top.tcl
 # The modules must each be listed here.
 ANALYSIS-MODULES = dta_module.tcl dirflow_module.tcl fulflow_module.tcl 
 
