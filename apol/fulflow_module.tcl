@@ -824,7 +824,8 @@ proc Apol_Analysis_fulflow::treeSelect {fulflow_tree fulflow_info_text node} {
 		Apol_Analysis_fulflow::display_root_type_info $node $fulflow_info_text $fulflow_tree
 	        Apol_Analysis_fulflow::formatInfoText $fulflow_info_text
 	} else {
-		Apol_Analysis_fulflow::render_target_type_data [$fulflow_tree itemcget $node -data] $fulflow_info_text $fulflow_tree $node
+		Apol_Analysis_fulflow::insert_transitive_flows_header $fulflow_info_text $fulflow_tree $node
+		Apol_Analysis_fulflow::render_information_flows $fulflow_info_text $fulflow_tree $node
 		Apol_Analysis_fulflow::formatInfoText $fulflow_info_text
 	}
 	return 0
@@ -936,13 +937,13 @@ proc Apol_Analysis_fulflow::display_find_flows_results_Dlg {time_limit_str flow_
         set button_f [frame $topf.button_f]
         set num_flows_f [frame $topf.num_flows_f]
         set main_lbl [label $topf.time_lbl1 -text "Finding more flows:"]
-        set time_lbl1 [label $time_f.time_lbl1 -text "Time limit: $time_limit_str"]
-        set time_lbl2 [label $time_f.time_lbl2 -text "Time elapsed: "]
+        set time_lbl1 [label $time_f.time_lbl1 -text "Time: "]
         set time_exp_lbl [label $time_f.time_exp_lbl]
-        set num_lbl1 [label $num_flows_f.num_lbl1 -text "Number of flows limit: $flow_limit_num"]
-        set num_lbl2 [label $num_flows_f.num_lbl2 -text "Number of flows found: "]
+        set time_lbl2 [label $time_f.time_lbl2 -text " elapsed out of $time_limit_str"]
+        set num_lbl1 [label $num_flows_f.num_lbl1 -text "Flows: found "]
         set num_found_lbl [label $num_flows_f.num_found_lbl]
-        set b_abort_transitive [button $button_f.b_abort_transitive -text "Abort" -width 6 \
+        set num_lbl2 [label $num_flows_f.num_lbl2 -text " out of $flow_limit_num"]
+        set b_abort_transitive [button $button_f.b_abort_transitive -text "Stop" -width 6 \
 		-command "set Apol_Analysis_fulflow::abort_trans_analysis 1"] 
 		
 	pack $button_f -side bottom -padx 2 -pady 2 -anchor center
@@ -950,10 +951,8 @@ proc Apol_Analysis_fulflow::display_find_flows_results_Dlg {time_limit_str flow_
 	pack $main_lbl -side top -anchor nw -pady 2
         pack $time_f $num_flows_f -side top -padx 15 -pady 2 -anchor nw
       	pack $b_abort_transitive -side left -fill both -expand yes -anchor center
-      	pack $time_lbl1 -side top -expand yes -anchor nw
-      	pack $time_lbl2 $time_exp_lbl -side left -expand yes -anchor nw
-      	pack $num_lbl1 -side top -expand yes -anchor nw
-      	pack $num_lbl2 $num_found_lbl -side left -expand yes -anchor nw
+      	pack $time_lbl1 $time_exp_lbl $time_lbl2 -side left -expand yes -anchor nw
+      	pack $num_lbl1 $num_found_lbl $num_lbl2 -side left -expand yes -anchor nw
 	wm deiconify $find_flows_results_Dlg
 	
 	wm transient $find_flows_results_Dlg $ApolTop::mainframe
@@ -1072,7 +1071,6 @@ proc Apol_Analysis_fulflow::find_more_flows {src_node tgt_node} {
 				destroy $find_flows_results_Dlg
 				catch {focus $old_focus}
 			}
-			tk_messageBox -icon info -type ok -title "Abort" -message "Transitive analysis was aborted!"
 			# If there were flows found, then break out of loop so we can display 
 			if {$curr_flows_num > 0} {break}
 			set rt [catch {apol_TransitiveFindPathsAbort} err]
@@ -1101,7 +1099,12 @@ proc Apol_Analysis_fulflow::find_more_flows {src_node tgt_node} {
 		set nextIdx [Apol_Analysis_fulflow::parseList_get_index_next_node 1 $results]
 		set data [lrange $results 1 [expr $nextIdx-1]]
 		$fulflow_tree itemconfigure $tgt_node -data $data
-		Apol_Analysis_fulflow::treeSelect $fulflow_tree $fulflow_info_text $tgt_node 
+		Apol_Analysis_fulflow::insert_more_flows_header $fulflow_info_text $fulflow_tree \
+			$src_node $tgt_node \
+			$time_limit_str $elapsed_time \
+			$flow_limit_num $curr_flows_num
+		Apol_Analysis_fulflow::render_information_flows $fulflow_info_text $fulflow_tree $tgt_node
+		Apol_Analysis_fulflow::formatInfoText $fulflow_info_text 
 	}
 	set find_flows_start 0
 	if {[winfo exists $find_flows_results_Dlg]} {
@@ -1116,41 +1119,121 @@ proc Apol_Analysis_fulflow::find_more_flows {src_node tgt_node} {
 # ::display_root_type_info
 #
 proc Apol_Analysis_fulflow::display_root_type_info { source_type fulflow_info_text fulflow_tree } {
-
-    $fulflow_info_text configure -state normal
-    $fulflow_info_text delete 0.0 end
-    set startIdx [$fulflow_info_text index insert]
-    $fulflow_info_text insert end "Transitive Information Flow Analysis: Starting type: "
-    set endIdx [$fulflow_info_text index insert]
-    $fulflow_info_text tag add $Apol_Analysis_fulflow::title_tag $startIdx $endIdx
-    set startIdx $endIdx
-    $fulflow_info_text insert end $source_type
-    set endIdx [$fulflow_info_text index insert]
-    $fulflow_info_text tag add $Apol_Analysis_fulflow::title_type_tag $startIdx $endIdx
-    set startIdx $endIdx
-    # now add the standard text
-    $fulflow_info_text configure -wrap word
-    set start_idx [$fulflow_info_text index insert]
-    $fulflow_info_text insert end $Apol_Analysis_fulflow::root_text
-    $fulflow_info_text tag add ROOT_TEXT $start_idx end
-    $fulflow_info_text tag configure ROOT_TEXT -font $ApolTop::text_font 
-    $fulflow_info_text configure -state disabled
-
-    return 0
+	$fulflow_info_text configure -state normal
+	$fulflow_info_text delete 0.0 end
+	set startIdx [$fulflow_info_text index insert]
+	$fulflow_info_text insert end "Transitive Information Flow Analysis: Starting type: "
+	set endIdx [$fulflow_info_text index insert]
+	$fulflow_info_text tag add $Apol_Analysis_fulflow::title_tag $startIdx $endIdx
+	set startIdx $endIdx
+	$fulflow_info_text insert end $source_type
+	set endIdx [$fulflow_info_text index insert]
+	$fulflow_info_text tag add $Apol_Analysis_fulflow::title_type_tag $startIdx $endIdx
+	set startIdx $endIdx
+	# now add the standard text
+	$fulflow_info_text configure -wrap word
+	set start_idx [$fulflow_info_text index insert]
+	$fulflow_info_text insert end $Apol_Analysis_fulflow::root_text
+	$fulflow_info_text tag add ROOT_TEXT $start_idx end
+	$fulflow_info_text tag configure ROOT_TEXT -font $ApolTop::text_font 
+	$fulflow_info_text see 1.0
+	$fulflow_info_text configure -state disabled
+	
+	return 0
 }
 
-proc Apol_Analysis_fulflow::render_target_type_data {data fulflow_info_text fulflow_tree node} {  
+###########################################################################
+# ::insert_more_flows_header
+#	- Called to insert the header text when displaying results from 
+#	  a find more flows search.
+proc Apol_Analysis_fulflow::insert_more_flows_header {fulflow_info_text fulflow_tree src_node tgt_node time_limit_str elapsed_time flow_limit_num curr_flows_num} {  
 	$fulflow_info_text configure -state normal	
 	$fulflow_info_text delete 0.0 end
 	$fulflow_info_text mark set insert 1.0
-	#destroy [$fulflow_info_text window names]
         $fulflow_info_text configure -wrap none
-
-	if { $data == "" } {
+	
+	set data [$fulflow_tree itemcget $tgt_node -data]
+	if {$data == ""} {
 	        $fulflow_info_text configure -state disabled
 		return ""	
 	}
+	# The flow direction is embedded in the data store of the root node at index 1.
+        set query_args [$fulflow_tree itemcget [$fulflow_tree nodes root] -data]
+        set flow_direction [lindex $query_args 1]
+	if {$flow_direction == "in"} {
+		set startIdx [$fulflow_info_text index insert]
+		$fulflow_info_text insert end "More Flows to "
+		set endIdx [$fulflow_info_text index insert]
+	    	$fulflow_info_text tag add $Apol_Analysis_fulflow::title_tag $startIdx $endIdx
+	    	set startIdx [$fulflow_info_text index insert]
+		$fulflow_info_text insert end " [$fulflow_tree itemcget $src_node -text]"
+		set endIdx [$fulflow_info_text index insert]
+		$fulflow_info_text tag add $Apol_Analysis_fulflow::title_type_tag $startIdx $endIdx
+		set startIdx [$fulflow_info_text index insert]
+		$fulflow_info_text insert end " from "
+		set endIdx [$fulflow_info_text index insert]
+		$fulflow_info_text tag add $Apol_Analysis_fulflow::title_tag $startIdx $endIdx
+		set startIdx [$fulflow_info_text index insert]
+		$fulflow_info_text insert end "[$fulflow_tree itemcget $tgt_node -text]"
+		set endIdx [$fulflow_info_text index insert]
+		$fulflow_info_text tag add $Apol_Analysis_fulflow::title_type_tag $startIdx $endIdx
+	} elseif {$flow_direction == "out"} { 
+		set startIdx [$fulflow_info_text index insert]
+		$fulflow_info_text insert end "More Flows from "
+		set endIdx [$fulflow_info_text index insert]
+	    	$fulflow_info_text tag add $Apol_Analysis_fulflow::title_tag $startIdx $endIdx
+	    	set startIdx [$fulflow_info_text index insert]
+		$fulflow_info_text insert end "[$fulflow_tree itemcget $src_node -text]"
+		set endIdx [$fulflow_info_text index insert]
+		$fulflow_info_text tag add $Apol_Analysis_fulflow::title_type_tag $startIdx $endIdx
+		set startIdx [$fulflow_info_text index insert]
+		$fulflow_info_text insert end " to "
+		set endIdx [$fulflow_info_text index insert]
+		$fulflow_info_text tag add $Apol_Analysis_fulflow::title_tag $startIdx $endIdx
+		set startIdx [$fulflow_info_text index insert]
+		$fulflow_info_text insert end "[$fulflow_tree itemcget $tgt_node -text]"
+		set endIdx [$fulflow_info_text index insert]
+		$fulflow_info_text tag add $Apol_Analysis_fulflow::title_type_tag $startIdx $endIdx
+	} else {
+		puts "Invalid flow direction ($flow_direction) specified!"
+		return 
+	}
+	# Insert find more flows link
+	set startIdx [$fulflow_info_text index insert]
+	$fulflow_info_text insert end "  ("
+	set startIdx [$fulflow_info_text index insert]
+	$fulflow_info_text insert end "Find more flows"
+	set endIdx [$fulflow_info_text index insert]
+	$fulflow_info_text tag add $Apol_Analysis_fulflow::find_flows_tag $startIdx $endIdx
+	$fulflow_info_text insert end ")"
+	
+	# Insert time/flows limit strings
+	set startIdx [$fulflow_info_text index insert]
+	$fulflow_info_text insert end "\n\nTime: $elapsed_time out of $time_limit_str\n"
+	$fulflow_info_text insert end "Flows: found $curr_flows_num out of $flow_limit_num"
+	set endIdx [$fulflow_info_text index insert]
+	$fulflow_info_text tag add $Apol_Analysis_fulflow::subtitle_tag $startIdx $endIdx
+	$fulflow_info_text configure -state disabled
+		
+	return 0
+}
 
+###########################################################################
+# ::insert_transitive_flows_header
+#	- Called to insert the header text when displaying results from 
+#	  a transitive flows search.
+proc Apol_Analysis_fulflow::insert_transitive_flows_header {fulflow_info_text fulflow_tree node} {  
+	$fulflow_info_text configure -state normal	
+	$fulflow_info_text delete 0.0 end
+	$fulflow_info_text mark set insert 1.0
+        $fulflow_info_text configure -wrap none
+	
+	set data [$fulflow_tree itemcget $node -data]
+	if {$data == ""} {
+	        $fulflow_info_text configure -state disabled
+		return 	
+	}
+	
 	set start_type [$fulflow_tree itemcget [$fulflow_tree parent $node] -text]
         set startIdx [$fulflow_info_text index insert]
         # Index 0 will be the end type 
@@ -1159,7 +1242,7 @@ proc Apol_Analysis_fulflow::render_target_type_data {data fulflow_info_text fulf
         # The flow direction is embedded in the data store of the root node at index 1.
         set query_args [$fulflow_tree itemcget [$fulflow_tree nodes root] -data]
         set flow_direction [lindex $query_args 1]
-  
+
 	if {$flow_direction == "in"} {
 	    $fulflow_info_text insert end "Information flows to "
 	    set endIdx [$fulflow_info_text index insert]
@@ -1177,8 +1260,7 @@ proc Apol_Analysis_fulflow::render_target_type_data {data fulflow_info_text fulf
 	    set endIdx [$fulflow_info_text index insert]
 	    $fulflow_info_text tag add $Apol_Analysis_fulflow::title_type_tag $startIdx $endIdx
 	    set startIdx $endIdx 
-	}
-	if {$flow_direction == "out"} {	
+	} elseif {$flow_direction == "out"} {	
 	    $fulflow_info_text insert end "Information flows from "
 	    set endIdx [$fulflow_info_text index insert]
 	    $fulflow_info_text tag add $Apol_Analysis_fulflow::title_tag $startIdx $endIdx
@@ -1195,21 +1277,44 @@ proc Apol_Analysis_fulflow::render_target_type_data {data fulflow_info_text fulf
 	    set endIdx [$fulflow_info_text index insert]
 	    $fulflow_info_text tag add $Apol_Analysis_fulflow::title_type_tag $startIdx $endIdx
  	    set startIdx $endIdx 
+	} else {
+		puts "Invalid flow direction ($flow_direction) specified!"
+		return 
 	}
-	# Embed a button for finding more flows
+	set startIdx [$fulflow_info_text index insert]
 	$fulflow_info_text insert end "  ("
 	set startIdx [$fulflow_info_text index insert]
 	$fulflow_info_text insert end "Find more flows"
 	set endIdx [$fulflow_info_text index insert]
 	$fulflow_info_text tag add $Apol_Analysis_fulflow::find_flows_tag $startIdx $endIdx
 	$fulflow_info_text insert end ")"
+	$fulflow_info_text configure -state disabled
+	return 0
+}
+
+###########################################################################
+# ::render_information_flows
+#	- This proc will insert any information flows found into the textbox.
+#	- NOTE: This procedure should be called after the header has been 
+#	  inserted using one of the two procs above. If these header procs
+# 	  are not called, the caller needs to  first delete and configure  
+#	  the textbox.
+proc Apol_Analysis_fulflow::render_information_flows {fulflow_info_text fulflow_tree node} {  
+	$fulflow_info_text configure -state normal
+	
+	set data [$fulflow_tree itemcget $node -data] 
+	if {$data == ""} {
+	        $fulflow_info_text configure -state disabled
+		return 	
+	}
+	
+	# Index 1 will be the number of paths 
+        set currentIdx 1 
 	set startIdx [$fulflow_info_text index insert]
 	$fulflow_info_text insert end "\n\nApol found the following number of information flows: "
 	set endIdx [$fulflow_info_text index insert]
 	$fulflow_info_text tag add $Apol_Analysis_fulflow::subtitle_tag $startIdx $endIdx
         set startIdx $endIdx
-	# Increment to the number of paths
-	incr currentIdx 
 	set num_paths [lindex $data $currentIdx]
 	$fulflow_info_text insert end $num_paths
         set endIdx [$fulflow_info_text index insert]
@@ -1297,8 +1402,10 @@ proc Apol_Analysis_fulflow::render_target_type_data {data fulflow_info_text fulf
 		}
 	    }
 	}
+	$fulflow_info_text see 1.0 
 	$fulflow_info_text configure -state disabled
-	return
+	
+	return 0
 }
 
 ###########################################################################
