@@ -406,7 +406,7 @@ static int dta_add_forward_process_trans_types_and_rules(dta_query_t *dta_query,
 				      		         domain_trans_analysis_t *dta_results, 
 				      		         policy_t *policy)
 {
-	int i, j, idx, l;
+	int i, j, idx;
 	rules_bool_t b_target_types;
 	
 	/* b_target_types (all rules that have the target domain as SOURCE. This struct is used only for 
