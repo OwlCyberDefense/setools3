@@ -1,4 +1,4 @@
-/* Copyright (C) 2003-2004 Tresys Technology, LLC
+/* Copyright (C) 2003-2005 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
 
 #include <policy.h>
@@ -12,10 +12,11 @@
 #define NOTHERE -6 /* could not find requested element */
 
 /* list choice codes */
-#define TOLIST   0
-#define FROMLIST 1
-#define BOTHLIST 2
-#define ANYLIST  3
+#define NOLIST   0
+#define TOLIST   1
+#define FROMLIST 2
+#define BOTHLIST 3
+#define ANYLIST  4
 
 /* name of relabeling permissions */
 #define RELABELTO "relabelto"
@@ -24,37 +25,23 @@
 /* search mode definitions */
 #define MODE_TO   1
 #define MODE_FROM 2
-#define MODE_DOM  3
+#define MODE_BOTH 3
+#define MODE_DOM  4
 
 typedef struct type_obj {
 	int type;
 	obj_perm_set_t *perm_sets;
 	int num_perm_sets;
+	int *rules;
+	int num_rules;
+	int list;
 } type_obj_t;
 
 typedef struct relabel_set {
-	int domain_type_idx;
-	type_obj_t *to_types;
-	type_obj_t *from_types;
-	int num_to_types;
-	int num_from_types;
-	int *to_rules;
-	int *from_rules;
-	int num_to_rules;
-	int num_from_rules;
-
-} relabel_set_t;
-
-typedef struct relabel_result {
-	int *types;
+	int subject_type;
+	type_obj_t *types;
 	int num_types;
-	int **domains;
-	int *num_domains; /* num_types is size */
-	int *rules;
-	int num_rules;
-	int mode;
-	relabel_set_t *set;
-} relabel_result_t;
+} relabel_set_t;
 
 typedef struct relabel_mode {
 	int mode; 
@@ -62,6 +49,15 @@ typedef struct relabel_mode {
 	bool_t transitive;
 	unsigned int trans_steps;
 } relabel_mode_t;
+
+typedef struct relabel_result {
+	int *types;
+	int num_types;
+	int **subjects;
+	int *num_subjects; /* num_types is size */
+	relabel_mode_t *mode;
+	relabel_set_t *set;
+} relabel_result_t;
 
 typedef struct relabel_filter {
 	obj_perm_set_t *perm_sets;
@@ -79,9 +75,10 @@ void apol_free_relabel_set_data(relabel_set_t *set);
 void apol_free_relabel_result_data(relabel_result_t *res);
 void apol_free_relabel_filter_data(relabel_filter_t *fltr);
 
+int apol_where_is_type_in_list(relabel_set_t *set, int type, int list);
+
 int apol_fill_filter_set (char *object_class, char *permission, relabel_filter_t *filter, policy_t *policy);
 int apol_do_relabel_analysis(relabel_set_t **sets, policy_t *policy);
 int apol_query_relabel_analysis(relabel_set_t *sets, int type, relabel_result_t *res, policy_t *policy, relabel_mode_t *mode, relabel_filter_t *filter);
-int apol_rules_per_domain(relabel_result_t *res, int domain, int **rules, int *num_rules, policy_t *policy) ;
 
 #endif /* __RELABEL_ANALYSIS_H_FILE__ */
