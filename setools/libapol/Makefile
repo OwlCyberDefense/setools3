@@ -7,11 +7,11 @@ LIB-OBJ +=  binpol/binpol.o binpol/bpmaps.o binpol/fbuf.o binpol/ebitmap.o
 LIB-OBJ-TCL = apol_tcl.o
 
 TARGET = libapol.so
-SONAME = $(TARGET).1.5
+SONAME = $(TARGET).1
 LIBSO  = $(TARGET).$(shell cat VERSION)
 
 TARGETTCL = libapol-tcl.so
-SONAMETCL = $(TARGETTCL).1.5
+SONAMETCL = $(TARGETTCL).1
 LIBSOTCL  = $(TARGETTCL).$(shell cat VERSION)
 
 CFLAGS  += -DLIBAPOL_VERSION_STRING='"$(shell cat VERSION)"'
@@ -39,7 +39,7 @@ libapol-tcl.a: $(LIB-OBJ-TCL)
 
 install-libapol-shared: libapolso
 	install -m 755 $(LIBSO) $(SHARED_LIB_INSTALL_DIR)
-	cd $(SHARED_LIB_INSTALL_DIR) && ln -sf $(LIBSO) $(TARGET)
+	cd $(SHARED_LIB_INSTALL_DIR) && ln -sf $(LIBSO) $(SONAME) && ln -sf $(SONAME) $(TARGET)
 
 install-libapol-static: libapol
 	install -m 644 libapol.a $(STATIC_LIB_INSTALL_DIR)
