@@ -20,6 +20,7 @@
 #include <libseaudit/filters.h>
 #include <libseaudit/auditlog.h>
 #include <libapol/policy.h>
+#include <libseuser/seuser_db.h>
 #include <string.h>
 
 enum {
@@ -326,8 +327,8 @@ static void filters_select_items_set_roles_list_stores_default_values(filters_se
 
 static void filters_select_items_set_users_list_stores_default_values(filters_select_items_t *filter_items_list)
 {
-	user_item_t *cur_user;
 	const char *user;
+	char *name;
 	int i;
 
 	switch (filter_items_list->items_source) {
@@ -338,10 +339,10 @@ static void filters_select_items_set_users_list_stores_default_values(filters_se
 									  user);
 		break;
 	case SEAUDIT_FROM_POLICY:
-		for (cur_user = seaudit_app->cur_policy->users.head;
-		     cur_user != NULL; cur_user = cur_user->next) {
-			filters_select_items_add_unselected_value(filter_items_list,
-								  cur_user->name);
+		for (i = 0; is_valid_user_idx(i, seaudit_app->cur_policy); i++) {
+			get_user_name2(i, &name, seaudit_app->cur_policy);
+			filters_select_items_add_unselected_value(filter_items_list, name);
+			free(name);
 		}
 		break;
 	case SEAUDIT_FROM_UNION:
@@ -349,10 +350,10 @@ static void filters_select_items_set_users_list_stores_default_values(filters_se
 			if (g_utf8_validate(user, -1, NULL))
 				filters_select_items_add_unselected_value(filter_items_list,
 									  user);
-		for (cur_user = seaudit_app->cur_policy->users.head;
-		     cur_user != NULL; cur_user = cur_user->next) {
-			filters_select_items_add_unselected_value(filter_items_list,
-								  cur_user->name);
+		for (i = 0; is_valid_user_idx(i, seaudit_app->cur_policy); i++) {
+			get_user_name2(i, &name, seaudit_app->cur_policy);
+			filters_select_items_add_unselected_value(filter_items_list, name);
+			free(name);
 		}
 		break;
 	default:
