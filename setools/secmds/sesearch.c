@@ -1,4 +1,4 @@
-/* Copyright (C) 2003 Tresys Technology, LLC
+/* Copyright (C) 2003-2005 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
 
 /* 
@@ -26,7 +26,7 @@
 	#define SESEARCH_VERSION_NUM "UNKNOWN"
 #endif
 
-#define COPYRIGHT_INFO "Copyright (C) 2003-2004 Tresys Technology, LLC"
+#define COPYRIGHT_INFO "Copyright (C) 2003-2005 Tresys Technology, LLC"
 
 char *policy_file = NULL;
 
