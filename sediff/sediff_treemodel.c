@@ -81,6 +81,7 @@ static void sediff_tree_view_store_finalize(GObject *object)
 	/* Free all memory */
   	if (store->diff_results)
   		apol_free_diff_result(1, store->diff_results);
+  	store->diff_results = NULL;
 	/* free labels */
 	if (diff_labels)
 		g_strfreev(diff_labels);

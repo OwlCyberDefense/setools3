@@ -735,9 +735,6 @@ static apol_diff_result_t *sediff_diff_policies(const char *p1_file, const char 
 		message_display(sediff_app->window,GTK_MESSAGE_ERROR,string->str);
 		goto err;
 	}
-	/* Store reference to the policy structs so we can free later. */
-	sediff_app->policy1 = p1;
-	sediff_app->policy2 = p2;
 	
 	if (new_files) {
 		/* now that the diff worked lets keep these files */
@@ -2535,10 +2532,6 @@ static void sediff_destroy(sediff_app_t *sediff_app)
 		g_string_free(sediff_app->p1_filename,TRUE);
 	if (sediff_app->p2_filename) 
 		g_string_free(sediff_app->p2_filename,TRUE);
-	if (sediff_app->policy1) 
-		close_policy(sediff_app->policy1);
-	if (sediff_app->policy1) 
-		close_policy(sediff_app->policy2);
 	
 	g_list_foreach(sediff_app->callbacks, &sediff_callbacks_free_elem_data, NULL);
 	g_list_free(sediff_app->callbacks);
@@ -3008,18 +3001,12 @@ static void sediff_initialize()
 	GtkWidget *container = NULL;
 	GtkLabel *label = NULL;
 	
-	/* Close previously opened policies */ 
-	if (sediff_app->policy1) 
-		close_policy(sediff_app->policy1);
-	if (sediff_app->policy2)
-		close_policy(sediff_app->policy2);
-	sediff_app->policy1 = sediff_app->policy2 = NULL;
-	
 	/* delete tree_view if it existed before */
 	if (sediff_app->tree_view) {
 		gtk_widget_destroy(GTK_WIDGET(sediff_app->tree_view));
 		sediff_app->tree_view = NULL;
 	}
+	
 	/* get the scrolled window and replace the tree_view with a blank dummy view */
 	container = glade_xml_get_widget(sediff_app->window_xml, "scrolledwindow_list");
 	g_assert(container);
