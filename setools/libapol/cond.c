@@ -191,7 +191,7 @@ static int count_and_get_unique_bools(cond_expr_t *e, int **bools)
 		return -1;
 	*bools = NULL;
 	
-	for(t = e; e != NULL; e = e->next) {
+	for(t = e; t != NULL; t = t->next) {
 		if(t->expr_type == COND_BOOL) {
 			rt = find_int_in_array(t->bool, *bools, num);
 			if(rt < 0) { /* means this is a new, unique bool */
