@@ -13,7 +13,7 @@ Seaudit:
 	Added multiple filters/views.
 
 Libseaudit: 
-	Updated to support new audit framework in 2.6.5
+	Updated to support new audit framework in the 2.6.5
 	  kernel.
 			
 Seuser:
