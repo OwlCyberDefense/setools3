@@ -44,6 +44,50 @@ typedef struct netif_criteria {
 	char *netif;
 } netif_criteria_t;
 
+
+const char *netif_criteria_get_str(seaudit_criteria_t *criteria)
+{
+	netif_criteria_t *netif_criteria;
+	
+	if (!criteria)
+		return NULL;
+	netif_criteria = (netif_criteria_t*)criteria->data;
+	return (const char*)netif_criteria->netif;
+}
+
+const char *glob_criteria_get_str(seaudit_criteria_t *criteria)
+{
+	glob_criteria_t *glob_criteria;
+	
+	if (!criteria)
+		return NULL;
+	glob_criteria = (glob_criteria_t*)criteria->data;
+	return (const char*)glob_criteria->globex;
+}
+
+const char **strs_criteria_get_strs(seaudit_criteria_t *criteria, int *size)
+{
+	strs_criteria_t *strs_criteria;
+
+	if (!criteria)
+		return NULL;
+
+	strs_criteria = (strs_criteria_t*)criteria->data;
+	*size = strs_criteria->num_strs;
+	return (const char**)strs_criteria->strs;
+}
+
+int ports_criteria_get_val(seaudit_criteria_t *criteria)
+{
+	ports_criteria_t *ports_criteria;
+	
+	if (!criteria)
+		return -1;
+	ports_criteria = (ports_criteria_t*)criteria->data;
+	assert(ports_criteria);
+	return ports_criteria->val;
+}
+
 static bool_t netif_criteria_action(msg_t *msg, seaudit_criteria_t *criteria, audit_log_t *log)
 {
 	netif_criteria_t *netif_criteria;
@@ -55,6 +99,19 @@ static bool_t netif_criteria_action(msg_t *msg, seaudit_criteria_t *criteria, au
 	if (!netif_criteria->netif || !msg->msg_data.avc_msg->netif)
 		return FALSE;
 	return strcmp(netif_criteria->netif, msg->msg_data.avc_msg->netif) == 0 ? TRUE : FALSE;
+}
+
+static void netif_criteria_print(seaudit_criteria_t *criteria, FILE *stream)
+{
+	netif_criteria_t *netif_criteria;
+
+	if (criteria == NULL || criteria->data == NULL || stream == NULL)
+		return;
+
+	netif_criteria = (netif_criteria_t*)criteria->data;
+	fprintf(stream, "<criteria type=\"netif\">\n");
+	fprintf(stream, "<item>%s</item>\n", netif_criteria->netif);
+	fprintf(stream, "</criteria>\n");
 }
 
 static bool_t ports_criteria_action(msg_t *msg, seaudit_criteria_t *criteria, audit_log_t *log)
@@ -76,6 +133,19 @@ static bool_t ports_criteria_action(msg_t *msg, seaudit_criteria_t *criteria, au
 	if (ports_criteria->val == msg->msg_data.avc_msg->lport)
 		return TRUE;
 	return FALSE;
+}
+
+static void ports_criteria_print(seaudit_criteria_t *criteria, FILE *stream)
+{
+	ports_criteria_t *ports_criteria;
+
+	if (criteria == NULL || criteria->data == NULL || stream == NULL)
+		return;
+
+	ports_criteria = (ports_criteria_t*)criteria->data;
+	fprintf(stream, "<criteria type=\"port\">\n");
+	fprintf(stream, "<item>%d</item>\n", ports_criteria->val);
+	fprintf(stream, "</criteria>\n");
 }
 
 static bool_t ipaddr_criteria_action(msg_t *msg, seaudit_criteria_t *criteria, audit_log_t *log)
@@ -103,6 +173,19 @@ static bool_t ipaddr_criteria_action(msg_t *msg, seaudit_criteria_t *criteria, a
 	return FALSE;
 }
 
+static void ipaddr_criteria_print(seaudit_criteria_t *criteria, FILE *stream)
+{
+	ipaddr_criteria_t *ipaddr_criteria;
+
+	if (criteria == NULL || criteria->data == NULL || stream == NULL)
+		return;
+
+	ipaddr_criteria = (ipaddr_criteria_t*)criteria->data;
+	fprintf(stream, "<criteria type=\"ipaddr\">\n");
+	fprintf(stream, "<item>%s</item>\n", ipaddr_criteria->globex);
+	fprintf(stream, "</criteria>\n");
+}
+
 static bool_t exe_criteria_action(msg_t *msg, seaudit_criteria_t *criteria, audit_log_t *log)  
 { 
 	exe_criteria_t *exe_criteria;
@@ -118,6 +201,19 @@ static bool_t exe_criteria_action(msg_t *msg, seaudit_criteria_t *criteria, audi
 	return FALSE;
 } 
 
+static void exe_criteria_print(seaudit_criteria_t *criteria, FILE *stream)
+{
+	exe_criteria_t *exe_criteria;
+
+	if (criteria == NULL || criteria->data == NULL || stream == NULL)
+		return;
+
+	exe_criteria = (exe_criteria_t*)criteria->data;
+	fprintf(stream, "<criteria type=\"exe\">\n");
+	fprintf(stream, "<item>%s</item>\n", exe_criteria->globex);
+	fprintf(stream, "</criteria>\n");
+}
+
 static bool_t path_criteria_action(msg_t *msg, seaudit_criteria_t *criteria, audit_log_t *log)  
 { 
 	path_criteria_t *path_criteria;
@@ -132,6 +228,19 @@ static bool_t path_criteria_action(msg_t *msg, seaudit_criteria_t *criteria, aud
 		return TRUE;
 	return FALSE;
 } 
+
+static void path_criteria_print(seaudit_criteria_t *criteria, FILE *stream)
+{
+	path_criteria_t *path_criteria;
+
+	if (criteria == NULL || criteria->data == NULL || stream == NULL)
+		return;
+
+	path_criteria = (path_criteria_t*)criteria->data;
+	fprintf(stream, "<criteria type=\"path\">\n");
+	fprintf(stream, "<item>%s</item>\n", path_criteria->globex);
+	fprintf(stream, "</criteria>\n");
+}
 
 static bool_t src_user_criteria_action(msg_t *msg, seaudit_criteria_t *criteria, audit_log_t *log)
 {
@@ -159,6 +268,29 @@ static bool_t src_user_criteria_action(msg_t *msg, seaudit_criteria_t *criteria,
 			return TRUE; 
 	} 
 	return FALSE;
+}
+
+static void strs_criteria_print(strs_criteria_t *strs_criteria, FILE *stream)
+{
+	int i;
+
+	if (!strs_criteria)
+		return;
+	for (i = 0; i < strs_criteria->num_strs; i++)
+		fprintf(stream, "<item>%s</item>\n", strs_criteria->strs[i]);
+}
+
+static void src_user_criteria_print(seaudit_criteria_t *criteria, FILE *stream)
+{
+	user_criteria_t *user_criteria;
+
+	if (criteria == NULL || criteria->data == NULL || stream == NULL)
+		return;
+
+	user_criteria = (user_criteria_t*)criteria->data;
+	fprintf(stream, "<criteria type=\"src_user\">\n");
+	strs_criteria_print(user_criteria, stream);
+	fprintf(stream, "</criteria>\n");
 }
 
 static bool_t tgt_user_criteria_action(msg_t *msg, seaudit_criteria_t *criteria, audit_log_t *log)
@@ -189,6 +321,19 @@ static bool_t tgt_user_criteria_action(msg_t *msg, seaudit_criteria_t *criteria,
 	return FALSE;
 }
 
+static void tgt_user_criteria_print(seaudit_criteria_t *criteria, FILE *stream)
+{
+	user_criteria_t *user_criteria;
+
+	if (criteria == NULL || criteria->data == NULL || stream == NULL)
+		return;
+
+	user_criteria = (user_criteria_t*)criteria->data;
+	fprintf(stream, "<criteria type=\"tgt_user\">\n");
+	strs_criteria_print(user_criteria, stream);
+	fprintf(stream, "</criteria>\n");
+}
+
 static bool_t src_role_criteria_action(msg_t *msg, seaudit_criteria_t *criteria, audit_log_t *log)
 {
 	int i; 
@@ -215,6 +360,19 @@ static bool_t src_role_criteria_action(msg_t *msg, seaudit_criteria_t *criteria,
 			return TRUE; 
 	} 
 	return FALSE;
+}
+
+static void src_role_criteria_print(seaudit_criteria_t *criteria, FILE *stream)
+{
+	role_criteria_t *role_criteria;
+
+	if (criteria == NULL || criteria->data == NULL || stream == NULL)
+		return;
+
+	role_criteria = (role_criteria_t*)criteria->data;
+	fprintf(stream, "<criteria type=\"src_role\">\n");
+	strs_criteria_print(role_criteria, stream);
+	fprintf(stream, "</criteria>\n");
 }
 
 static bool_t tgt_role_criteria_action(msg_t *msg, seaudit_criteria_t *criteria, audit_log_t *log)
@@ -245,6 +403,19 @@ static bool_t tgt_role_criteria_action(msg_t *msg, seaudit_criteria_t *criteria,
 	return FALSE;
 }
 
+static void tgt_role_criteria_print(seaudit_criteria_t *criteria, FILE *stream)
+{
+	role_criteria_t *role_criteria;
+
+	if (criteria == NULL || criteria->data == NULL || stream == NULL)
+		return;
+
+	role_criteria = (role_criteria_t*)criteria->data;
+	fprintf(stream, "<criteria type=\"tgt_role\">\n");
+	strs_criteria_print(role_criteria, stream);
+	fprintf(stream, "</criteria>\n");
+}
+
 static bool_t src_type_criteria_action(msg_t *msg, seaudit_criteria_t *criteria, audit_log_t *log)
 {
 	int i; 
@@ -271,6 +442,19 @@ static bool_t src_type_criteria_action(msg_t *msg, seaudit_criteria_t *criteria,
 			return TRUE;
 	} 
 	return FALSE;
+}
+
+static void src_type_criteria_print(seaudit_criteria_t *criteria, FILE *stream)
+{
+	type_criteria_t *type_criteria;
+
+	if (criteria == NULL || criteria->data == NULL || stream == NULL)
+		return;
+
+	type_criteria = (type_criteria_t*)criteria->data;
+	fprintf(stream, "<criteria type=\"src_type\">\n");
+	strs_criteria_print(type_criteria, stream);
+	fprintf(stream, "</criteria>\n");
 }
 
 static bool_t tgt_type_criteria_action(msg_t *msg, seaudit_criteria_t *criteria, audit_log_t *log)
@@ -301,6 +485,19 @@ static bool_t tgt_type_criteria_action(msg_t *msg, seaudit_criteria_t *criteria,
 	return FALSE;
 }
 
+static void tgt_type_criteria_print(seaudit_criteria_t *criteria, FILE *stream)
+{
+	type_criteria_t *type_criteria;
+
+	if (criteria == NULL || criteria->data == NULL || stream == NULL)
+		return;
+
+	type_criteria = (type_criteria_t*)criteria->data;
+	fprintf(stream, "<criteria type=\"tgt_type\">\n");
+	strs_criteria_print(type_criteria, stream);
+	fprintf(stream, "</criteria>\n");
+}
+
 static bool_t class_criteria_action(msg_t *msg, seaudit_criteria_t *criteria, audit_log_t *log) 
 { 
 	int i; 
@@ -329,6 +526,19 @@ static bool_t class_criteria_action(msg_t *msg, seaudit_criteria_t *criteria, au
 	return FALSE;	
 } 
 
+static void class_criteria_print(seaudit_criteria_t *criteria, FILE *stream)
+{
+	class_criteria_t *class_criteria;
+
+	if (criteria == NULL || criteria->data == NULL || stream == NULL)
+		return;
+
+	class_criteria = (class_criteria_t*)criteria->data;
+	fprintf(stream, "<criteria type=\"obj_class\">\n");
+	strs_criteria_print(class_criteria, stream);
+	fprintf(stream, "</criteria>\n");
+}
+
 /*
  * create the container struct */
 static seaudit_criteria_t* criteria_create(void)
@@ -352,6 +562,16 @@ void seaudit_criteria_destroy(seaudit_criteria_t *ftr)
 		ftr->destroy(ftr);
 	free(ftr);
 	return;
+}
+
+
+void seaudit_criteria_print(seaudit_criteria_t *criteria, FILE *stream)
+{
+	if (!criteria || !stream)
+		return;
+	if (criteria->print)
+		criteria->print(criteria, stream);
+
 }
 
 static void strs_criteria_destroy(strs_criteria_t *strs_criteria)
@@ -431,6 +651,7 @@ seaudit_criteria_t* src_type_criteria_create(char **types, int num_types)
 	if (!new_criteria)
 		return NULL;
 	d = strs_criteria_create(types, num_types);
+
 	if (!d) {
 		seaudit_criteria_destroy(new_criteria);
 		return NULL;
@@ -439,6 +660,7 @@ seaudit_criteria_t* src_type_criteria_create(char **types, int num_types)
 	/* set container variables */
 	new_criteria->msg_types |= AVC_MSG;
 	new_criteria->criteria_act = &src_type_criteria_action; 
+	new_criteria->print = &src_type_criteria_print;
 	new_criteria->destroy = &type_criteria_destroy; 
 	new_criteria->data = d; 
 	new_criteria->dirty = TRUE;
@@ -462,6 +684,7 @@ seaudit_criteria_t* tgt_type_criteria_create(char **types, int num_types)
 	/* set container variables */
 	new_criteria->msg_types |= AVC_MSG;
 	new_criteria->criteria_act = &tgt_type_criteria_action; 
+	new_criteria->print = &tgt_type_criteria_print;
 	new_criteria->destroy = &type_criteria_destroy; 
 	new_criteria->data = d; 
 	new_criteria->dirty = TRUE;
@@ -496,6 +719,7 @@ seaudit_criteria_t* src_role_criteria_create(char **roles, int num_roles)
 	/* set container variables */
 	new_criteria->msg_types |= AVC_MSG;
 	new_criteria->criteria_act = &src_role_criteria_action; 
+	new_criteria->print = &src_role_criteria_print;
 	new_criteria->destroy = &role_criteria_destroy; 
 	new_criteria->data = d; 
 	new_criteria->dirty = TRUE;
@@ -519,6 +743,7 @@ seaudit_criteria_t* tgt_role_criteria_create(char **roles, int num_roles)
 	/* set container variables */
 	new_criteria->msg_types |= AVC_MSG;
 	new_criteria->criteria_act = &tgt_role_criteria_action; 
+	new_criteria->print = &tgt_role_criteria_print;
 	new_criteria->destroy = &role_criteria_destroy; 
 	new_criteria->data = d; 
 	new_criteria->dirty = TRUE;
@@ -553,6 +778,7 @@ seaudit_criteria_t* src_user_criteria_create(char **users, int num_users)
 	/* set container variables */
 	new_criteria->msg_types |= AVC_MSG;
 	new_criteria->criteria_act = &src_user_criteria_action; 
+	new_criteria->print = &src_user_criteria_print;
 	new_criteria->destroy = &user_criteria_destroy; 
 	new_criteria->data = d; 
 	new_criteria->dirty = TRUE;
@@ -576,6 +802,7 @@ seaudit_criteria_t* tgt_user_criteria_create(char **users, int num_users)
 	/* set container variables */
 	new_criteria->msg_types |= AVC_MSG;
 	new_criteria->criteria_act = &tgt_user_criteria_action; 
+	new_criteria->print = &tgt_user_criteria_print;
 	new_criteria->destroy = &user_criteria_destroy; 
 	new_criteria->data = d; 
 	new_criteria->dirty = TRUE;
@@ -611,6 +838,7 @@ seaudit_criteria_t* class_criteria_create(char **classes, int num_classes)
 	/* set container variables */
 	new_criteria->msg_types |= AVC_MSG;
 	new_criteria->criteria_act = &class_criteria_action; 
+	new_criteria->print = &class_criteria_print;
 	new_criteria->destroy = &class_criteria_destroy; 
 	new_criteria->data = d; 
 	new_criteria->dirty = TRUE;
@@ -655,6 +883,7 @@ seaudit_criteria_t* exe_criteria_create(const char* exe)
 	/* set container variables */
 	new->msg_types |= AVC_MSG;
 	new->criteria_act = &exe_criteria_action; 
+	new->print = &exe_criteria_print;
 	new->destroy = &exe_criteria_destroy; 
 	new->data = d; 
 	/* set criteria variables */
@@ -704,6 +933,7 @@ seaudit_criteria_t* netif_criteria_create(const char *netif)
 	/* set container variables */
 	new->msg_types |= AVC_MSG;
 	new->criteria_act = &netif_criteria_action; 
+	new->print = &netif_criteria_print;
 	new->destroy = &netif_criteria_destroy;
 	new->data = d; 
 	/* set criteria variables */
@@ -753,6 +983,7 @@ seaudit_criteria_t* ipaddr_criteria_create(const char *ipaddr)
 	/* set container variables */
 	new->msg_types |= AVC_MSG;
 	new->criteria_act = &ipaddr_criteria_action; 
+	new->print = &ipaddr_criteria_print;
 	new->destroy = &ipaddr_criteria_destroy; 
 	new->data = d; 
 	/* set criteria variables */
@@ -803,6 +1034,7 @@ seaudit_criteria_t* path_criteria_create(const char *path)
 	/* set container variables */
 	new->msg_types |= AVC_MSG;
 	new->criteria_act = &path_criteria_action; 
+	new->print = &path_criteria_print;
 	new->destroy = &path_criteria_destroy; 
 	new->data = d; 
 	/* set criteria variables */
@@ -844,6 +1076,7 @@ seaudit_criteria_t* ports_criteria_create(int port)
 	/* set container variables */
 	new->msg_types |= AVC_MSG;
 	new->criteria_act = &ports_criteria_action; 
+	new->print = &ports_criteria_print;
 	new->destroy = &ports_criteria_destroy; 
 	new->data = d; 
 	/* set criteria variables */
@@ -856,3 +1089,5 @@ bad:
 	}
 	return NULL;
 }
+
+
