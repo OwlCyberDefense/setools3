@@ -55,8 +55,7 @@ namespace eval Apol_Perms_Map {
 	variable saveChanges_Dialog_ans ""
 	variable selected_class_idx	"-1"
 	# Permission map filenames for selinux policy version 12 and 15
-	variable perm_map_v12		"apol_perm_mapping_ver12"
-	variable perm_map_v15		"apol_perm_mapping_ver15"
+	variable perm_map_id		"apol_perm_mapping_ver"
 	variable perm_map_dflt		"apol_perm_mapping"
 	# Tag variable 
 	variable undefined_tag		UNDEFINED
@@ -1529,6 +1528,7 @@ proc Apol_Perms_Map::load_default_perm_map {} {
 		if {$rt != 0} {
 			return -code error $err
 		} 
+
 		# Flag used to indicate that we already tried to locate the default perm map (apol_perm_mapping)
 		# Flag used to indicate that we already tried to locate the default perm map (apol_perm_mapping)
 		set default_flg 0
