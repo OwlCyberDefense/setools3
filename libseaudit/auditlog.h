@@ -90,9 +90,12 @@
 
 #define DATE_FIELD		44
 #define HOST_FIELD              45
+#define TIME_STAMP_SEC		46
+#define TIME_STAMP_NANO		47
+#define TIME_STAMP_SERIAL	48
 
 #define MSG_MAX_NFIELDS AVC_NUM_FIELDS
-#define NUM_FIELDS		46
+#define NUM_FIELDS		49
 
 extern const char *audit_log_field_strs[NUM_FIELDS]; 
 int audit_log_field_strs_get_index(const char *str);
@@ -123,7 +126,9 @@ typedef struct avc_msg {
 	char *saddr;
 	char *name;
         char *ipaddr;
-	char *audit_header;
+        time_t tm_stmp_sec; 		/* audit header timestamp (seconds) */
+        long tm_stmp_nano;  		/* audit header timestamp (nanoseconds) */
+        unsigned int serial; 		/* audit header serial number */
         int *perms;	     /* object permissions */
 	int num_perms;	     /* num of object permissions */
 	int msg;             /* message ie. AVC_DENIED or AVC_GRANTED */
