@@ -149,10 +149,9 @@ starting permission map.  Under the Advanced menu, there is a tool that
 will allow you to take a policy mls file and convert it into the 
 permission mapping file format required by apol.
 
-As distributed, apol provides two default permission mappings (one based 
-on a sample policy for policy version 12, and one based on policy 
-version 15).  These files are directly converted from the policy mls 
-files.
+As distributed, apol provides default permission mappings (for policy 
+version 12 through policy version 16). These files are directly 
+converted from their respective policy mls files.
 
    NOTE: It has often been noted on the mail list that the mls file is 
    not necessarily a perfect, or even good permission map.  In addition, 
@@ -235,19 +234,29 @@ currently doing.  You can also take a 'mls' file and generate a
 permission map file.  In addition, you can manually load the default 
 permission map (see below).
 
-There are two ways to edit the mappings in a permission map : 1) edit a 
-map file directly, or 2) use the permission map editor under the 
-Advanced menu.  The editor will display all the object classes and 
+There are two ways to edit the mappings in a permission map: 
+1) edit a map file directly, or 2) use the permission map editor under 
+the Advanced menu.  The editor will display all the object classes and 
 permissions currently mapped (or unmapped) in the currently loaded 
-policy.  Since apol will adapt a permission map file to meet the needs 
+policy.  Additionally, the editor displays weight values for each
+permission. These values tell apol the importance of each permission
+to the analysis. The user can configure these weight values according 
+to the goals of his or her analysis. For example, the user may consider
+any read or write permissions of highest importance to the analysis, 
+whereas permission to use a file descriptor may be of least importance.
+A permission will default to a weight of 10, if a weight value is not
+provided for the permission in the permission map. 
+
+Since apol will adapt a permission map file to meet the needs 
 of a loaded policy, the loaded map may be different than the file on 
 disk.  If you save the loaded map, the on-disk file will be changed to 
 match the loaded map.
 
-If you make changes to the default permission map, a copy will be made 
-for you in $HOME/.apol_perm_mapping.  If .apol_perm_mapping exists, 
-it will be used as your default.  Otherwise the system default from 
-/usr/share/setools will be used as the default.
+If you make changes to the default permission map, you can choose to  
+save it as your default permission map (i.e. $HOME/.apol_perm_mapping).  
+If .apol_perm_mapping exists, it will be used as your default.  
+Otherwise the system default from /usr/share/setools will be used as 
+the default.
 
    NOTE: Only one permission map may be loaded at a time, and only if a 
    policy.conf file is opened.  If you have performed an information 
