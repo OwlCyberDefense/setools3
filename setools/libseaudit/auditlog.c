@@ -68,6 +68,54 @@ const char *audit_log_field_strs[] = { "msg_field",
 				       "date_field" ,
                                        "host_field" };
 
+static void audit_log_malformed_msg_list_free(audit_log_malformed_msg_list_t *list)
+{
+	int i;
+
+	if (!list->list)
+		return;
+	for (i = 0; i < list->size; i++)
+		if (list->list[i])
+			free(list->list[i]);
+	if (list->list)
+		free(list->list);
+	return;
+}
+
+int audit_log_add_malformed_msg(char *line, audit_log_t **log) {
+	int idx, new_sz, strsz;
+	
+	assert(line != NULL && log != NULL && *log != NULL);
+	strsz = strlen(line) + 1;
+	new_sz = (*log)->malformed_msgs->size + 1;
+	if ((*log)->malformed_msgs->list == NULL) {
+		(*log)->malformed_msgs->list = (char **)malloc(sizeof(char*));
+		if((*log)->malformed_msgs->list == NULL) {
+			fprintf(stderr, "out of memory\n");
+			return -1;
+		}
+	} else {
+		(*log)->malformed_msgs->list = (char **)realloc((*log)->malformed_msgs->list, new_sz * sizeof(char*));
+		if ((*log)->malformed_msgs->list == NULL) {
+			audit_log_malformed_msg_list_free((*log)->malformed_msgs);
+			fprintf(stderr, "out of memory\n");
+			return -1;
+		}
+	}
+	/* We subtract 1 from the new size to get the correct index */
+	idx = new_sz - 1;
+	(*log)->malformed_msgs->list[idx] = (char *)malloc(strlen((const char*)line) + 1);
+	if ((*log)->malformed_msgs->list[idx] == NULL) {
+		audit_log_malformed_msg_list_free((*log)->malformed_msgs);
+		fprintf(stderr, "out of memory\n");
+		return -1;
+	}
+	strncpy((*log)->malformed_msgs->list[idx], (const char*)line, strsz);
+	(*log)->malformed_msgs->size = new_sz;
+	
+	return 0;	
+}
+
 int audit_log_field_strs_get_index(const char *str)
 {
 	int i;
@@ -291,8 +339,15 @@ audit_log_t* audit_log_create(void)
 	if (audit_log_str_init(new, BOOL_TREE))
 	        goto bad;
 	avl_init(&new->trees[BOOL_TREE], new, bool_compare, bool_grow, bool_add);
-
-	  return new;
+	
+	/* New member to hold malformed messages as a list of strings */
+	new->malformed_msgs = (audit_log_malformed_msg_list_t *)malloc(sizeof(audit_log_malformed_msg_list_t));
+	if (new->malformed_msgs == NULL) {
+		goto bad;
+	}
+	memset(new->malformed_msgs, 0, sizeof(audit_log_malformed_msg_list_t));
+	
+	return new;
 
 bad:
 	fprintf(stderr, "Out of memory");
@@ -435,6 +490,10 @@ void audit_log_destroy(audit_log_t *tmp)
 	}
 	if (tmp->msg_list)
 		free(tmp->msg_list);
+	
+	if (tmp->malformed_msgs) 
+		audit_log_malformed_msg_list_free(tmp->malformed_msgs);
+	
 	free(tmp);
 }
 
