@@ -1,8 +1,8 @@
-/* Copyright (C) 2004 Tresys Technology, LLC
+/* Copyright (C) 2004-2005 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
 
 /* 
- * Author: jtang@tresys.com 
+ * Author: Jason Tang (jtang@tresys.com)
  */
 
 #include <stdio.h>
@@ -91,12 +91,15 @@ static int do_assertions (char *assertion_contents) {
                                 if ((get_type_name (rule->end_type, &to, policy)) != 0) {
                                         to = "<unknown type>";
                                 }
-                                if (rule->rule_idx >= 0) {
-                                        char *rule_string = re_render_av_rule (FALSE, rule->rule_idx, FALSE, policy);
-                                        int rule_lineno = get_rule_lineno (rule->rule_idx, RULE_TE_ALLOW, policy);
-                                        (void) printf ("  %s to %s via \"%s\" [line %d]\n",
-                                                       from, to, rule_string, rule_lineno);
-                                        free (rule_string);
+                                if (rule->num_rules > 0) {
+                                        int j;
+                                        (void) printf ("  %s to %s:\n", from, to);
+                                        for (j = 0; j < rule->num_rules; j++) {
+                                                char *rule_string = re_render_av_rule (FALSE, rule->rules [j], FALSE, policy);
+                                                int rule_lineno = get_rule_lineno (rule->rules [j], RULE_TE_ALLOW, policy);
+                                                (void) printf ("    [%d] %s\n", rule_lineno, rule_string);
+                                                free (rule_string);
+                                        }
                                 }
                                 else if (rule->via_type >= 0) {
                                         char * via;

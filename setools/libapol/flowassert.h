@@ -1,16 +1,16 @@
-/* Copyright (C) 2004 Tresys Technology, LLC
- *see file 'COPYING' for use and warranty information */
+/* Copyright (C) 2004-2005 Tresys Technology, LLC
+ * see file 'COPYING' for use and warranty information */
 
 /* 
- *Author: jtang@tresys.com 
+ * Author: Jason Tang (jtang@tresys.com)
  */
 
 /* A set of functions to perform information flow assertion analysis.
- *The user poses a series of assertions in the form of a struct
- *flow_assert_t.  The struct is then passed to flow_assert_execute(),
- *which determines if the assertions are valid or not.  The function
- *also populates a struct flow_assert_results_t with the specific
- *rules within the policy that break the assertions.
+ * The user poses a series of assertions in the form of a struct
+ * flow_assert_t.  The struct is then passed to flow_assert_execute(),
+ * which determines if the assertions are valid or not.  The function
+ * also populates a struct flow_assert_results_t with the specific
+ * rules within the policy that break the assertions.
  */
 
 #ifndef _FLOWASSERT_H_
@@ -53,7 +53,8 @@ typedef struct flow_assert_results {
 
 typedef struct flow_assert_rule {
         int start_type, end_type, via_type;
-        int rule_idx;               /* index suitable for get_rule_lineno() */
+        int num_rules;     /* number of rules in rule_indices */
+        int *rules;        /* list of indices suitable for get_rule_lineno() */
 } flow_assert_rule_t;
 
 /* codes allowed within a flow_assert_results_t->assert_result */

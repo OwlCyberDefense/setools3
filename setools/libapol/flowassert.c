@@ -1,8 +1,8 @@
-/* Copyright (C) 2004 Tresys Technology, LLC
+/* Copyright (C) 2004-2005 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
 
 /* 
- * Author: jtang@tresys.com 
+ * Author: Jason Tang (jtang@tresys.com)
  */
 
 #include <assert.h>
@@ -32,11 +32,11 @@ static int append_assert_id (llist_t *target_list,
                              flow_assert_id_t *source_id);
 static int add_assert_result (flow_assert_results_t *assert_results,
                               int start_type, int end_type, int via_type,
-                              iflow_t *iflow, policy_t *policy);
+                              iflow_path_t *iflow, policy_t *policy);
 
 /* Initializes a flow assert object by zeroing its field and
-   ll_new()ing the linked lists within.  Returns a pointer to the
-   assert object, NULL on failure. */
+ * ll_new()ing the linked lists within.  Returns a pointer to the
+ * assert object, NULL on failure. */
 flow_assert_t *flow_assert_create (void) {
         flow_assert_t *assert;
         if ((assert = calloc (1, sizeof (*assert))) == NULL) {
@@ -62,7 +62,7 @@ flow_assert_t *flow_assert_create (void) {
 
 
 /* Destroys a assert object by ll_free()ing all elements within as
-   well as free()ing the assert object itself. */
+ * well as free()ing the assert object itself. */
 void flow_assert_destroy (flow_assert_t *assert) {
         if (assert != NULL) {
                 ll_free (assert->from_list, flow_assert_id_destroy);
@@ -74,16 +74,18 @@ void flow_assert_destroy (flow_assert_t *assert) {
 
 
 /* Free a pointer to a flow_assert_id_t, including itself.  This
-   function is mainly used as the second parameter to ll_free().  */
+ * function is mainly used as the second parameter to ll_free().  */
 void flow_assert_id_destroy (void *ptr) {
         flow_assert_id_t *flow_assert_id = (flow_assert_id_t *) ptr;
-        free (flow_assert_id->obj_classes);
-        free (flow_assert_id);
+        if (flow_assert_id != NULL) {
+                free (flow_assert_id->obj_classes);
+                free (flow_assert_id);
+        }
 }
 
 
 /* Allocates space for a flow_assert_results_t and initializes the
-   structure.  Returns a pointer to the space.  */
+ * structure.  Returns a pointer to the space.  */
 flow_assert_results_t *flow_assert_results_create (void) {
         flow_assert_results_t *flow_assert_results;
         if ((flow_assert_results = calloc (1, sizeof (*flow_assert_results)))
@@ -94,11 +96,16 @@ flow_assert_results_t *flow_assert_results_create (void) {
 }
 
 /* Free a pointer to the results from an assert and the pointer
-   itself. */
+ * itself.  This function is mainly used as the second parameter to
+ * ll_free(). */
 void flow_assert_results_destroy (void *assert_results) {
         flow_assert_results_t *results =
                 (flow_assert_results_t *) assert_results;
         if (results != NULL) {
+                int i;
+                for (i = 0; i < results->num_rules; i++) {
+                        free (results->rules [i].rules);
+                }
                 free (results->rules);
                 free (results);
         }
@@ -106,10 +113,10 @@ void flow_assert_results_destroy (void *assert_results) {
 
 
 /* Returns FLOW_ASSERT_VALID if assert succeeds.  Returns
-   FLOW_ASSERT_FAIL if failed (e.g., noflow actually found a flow).
-   Returns FLOW_ASSERT_BAD_FORMAT if assert parameters are invalid.
-   Returns FLOW_ASSERT_ERROR on all other errors, such as out of
-   memory. */
+ * FLOW_ASSERT_FAIL if failed (e.g., noflow actually found a flow).
+ * Returns FLOW_ASSERT_BAD_FORMAT if assert parameters are invalid.
+ * Returns FLOW_ASSERT_ERROR on all other errors, such as out of
+ * memory. */
 int flow_assert_execute (flow_assert_t *assert,
                          policy_t *policy,
                          flow_assert_results_t *assert_results,
@@ -256,9 +263,9 @@ int flow_assert_execute (flow_assert_t *assert,
 
 
 /* Returns FLOW_ASSERT_VALID if there is no flow found,
-   FLOW_ASSERT_FAIL if flow found that was not listed as an exception,
-   FLOW_ASSERT_ERROR upon error.  Read this as "no flow from A to B
-   except through an element z in C". */
+ * FLOW_ASSERT_FAIL if flow found that was not listed as an exception,
+ * FLOW_ASSERT_ERROR upon error.  Read this as "no flow from A to B
+ * except through an element z in C". */
 static int check_noflow (flow_assert_t *assert, iflow_query_t *iflow_query,
                          iflow_transitive_t *trans,
                          flow_assert_results_t *assert_results,
@@ -271,22 +278,23 @@ static int check_noflow (flow_assert_t *assert, iflow_query_t *iflow_query,
                 iflow_path_t *path = trans->paths [end_type_index];
                 while (path != NULL) {
                         iflow_t *iflow = path->iflows;
-                        bool_t path_found = FALSE;
+                        bool_t illegal_path_found = TRUE;
                         llist_node_t *type_node = assert->via_list->head;
-                        while (type_node != NULL && path_found == FALSE) {
+                        while (type_node != NULL) {
                                 flow_assert_id_t *via_id =
                                         (flow_assert_id_t *)type_node->data;
                                 if (is_type_in_path
                                     (iflow, path->num_iflows, via_id, policy)
                                     == TRUE) {
-                                        path_found = TRUE;
+                                        illegal_path_found = FALSE;
+                                        break;
                                 }
                                 type_node = type_node->next;
                         }
-                        if (path_found == FALSE) {
+                        if (illegal_path_found == TRUE) {
                                 if (add_assert_result
                                     (assert_results, iflow_query->start_type,
-                                     end_type, -1, iflow, policy)) {
+                                     end_type, -1, path, policy) == -1) {
                                         return FLOW_ASSERT_ERROR;
                                 }
                                 result = FLOW_ASSERT_FAIL;
@@ -299,9 +307,9 @@ static int check_noflow (flow_assert_t *assert, iflow_query_t *iflow_query,
 
 
 /* Returns FLOW_ASSERT_VALID if all flows accounted found,
-   FLOW_ASSERT_FAIL if flow not found, FLOW_ASSERT_ERROR upon error.
-   Read this as "for all elements z in C, there must be a flow from A
-   to B through z".  B may not have an ASSERT_STAR within. */
+ * FLOW_ASSERT_FAIL if flow not found, FLOW_ASSERT_ERROR upon error.
+ * Read this as "for all elements z in C, there must be a flow from A
+ * to B through z".  B may not have an ASSERT_STAR within. */
 static int check_mustflow (flow_assert_t *assert, iflow_query_t *iflow_query,
                            iflow_transitive_t *trans,
                            flow_assert_results_t *assert_results,
@@ -361,7 +369,7 @@ static int check_mustflow (flow_assert_t *assert, iflow_query_t *iflow_query,
                                 if (add_assert_result
                                     (assert_results, iflow_query->start_type,
                                      end_type, via_id->type_id, NULL, policy)
-                                    != 0) {
+                                    == -1) {
                                         result = FLOW_ASSERT_ERROR;
                                 }
                         }
@@ -389,7 +397,7 @@ static int check_mustflow (flow_assert_t *assert, iflow_query_t *iflow_query,
                 if (path_found == FALSE) {
                         if (add_assert_result
                             (assert_results, iflow_query->start_type,
-                             to_id->type_id, -1, NULL, policy) != 0) {
+                             to_id->type_id, -1, NULL, policy) == -1) {
                                 return FLOW_ASSERT_ERROR;
                         }
                         result = FLOW_ASSERT_FAIL;
@@ -401,10 +409,10 @@ static int check_mustflow (flow_assert_t *assert, iflow_query_t *iflow_query,
 
 
 /* Returns FLOW_ASSERT_VALID if for every flow found it was through
-   one of the items in via_list, FLOW_ASSERT_FAIL if flow found that
-   was not listed as an exception, FLOW_ASSERT_ERROR upon error.  Read
-   this as "there must be a flow(s) from A to B, and that flow can
-   only be through an element z in C" */
+ * one of the items in via_list, FLOW_ASSERT_FAIL if flow found that
+ * was not listed as an exception, FLOW_ASSERT_ERROR upon error.  Read
+ * this as "there must be a flow(s) from A to B, and that flow can
+ * only be through an element z in C" */
 static int check_onlyflow (flow_assert_t *assert, iflow_query_t *iflow_query,
                            iflow_transitive_t *trans,
                            flow_assert_results_t *assert_results,
@@ -436,7 +444,7 @@ static int check_onlyflow (flow_assert_t *assert, iflow_query_t *iflow_query,
                         if (path_found == FALSE) {
                                 if (add_assert_result
                                     (assert_results, iflow_query->start_type,
-                                     end_type, -1, iflow, policy)) {
+                                     end_type, -1, path, policy) == -1) {
                                         return FLOW_ASSERT_ERROR;
                                 }
                                 result = FLOW_ASSERT_FAIL;
@@ -460,7 +468,7 @@ static int check_onlyflow (flow_assert_t *assert, iflow_query_t *iflow_query,
                 if (path_found == FALSE) {
                         if (add_assert_result
                             (assert_results, iflow_query->start_type,
-                             to_id->type_id, -1, NULL, policy) != 0) {
+                             to_id->type_id, -1, NULL, policy) == -1) {
                                 return FLOW_ASSERT_ERROR;
                         }
                         result = FLOW_ASSERT_FAIL;
@@ -471,7 +479,7 @@ static int check_onlyflow (flow_assert_t *assert, iflow_query_t *iflow_query,
 }
 
 /* Returns TRUE if assert_id is in any part of the flow iflow, FALSE
-   otherwise. */   
+ * otherwise. */   
 static bool_t is_type_in_path (iflow_t *iflow, int num_iflows,
                                flow_assert_id_t *assert_id,
                                policy_t *policy) {
@@ -502,7 +510,7 @@ static bool_t is_type_in_path (iflow_t *iflow, int num_iflows,
 
 
 /* Takes a flow_assert_id_t and appends a clone of it to the tail of
-   target_list.  Returns 0 on success, 1 on error. */
+ * target_list.  Returns 0 on success, 1 on error. */
 static int append_assert_id (llist_t *target_list,
                              flow_assert_id_t *source_id) {
         flow_assert_id_t *new_id = malloc (sizeof (*new_id));
@@ -528,44 +536,40 @@ static int append_assert_id (llist_t *target_list,
 
 
 /* A helper routine that appends a new assert result to to the current
-   results list.  Returns 0 on success, 1 on failure. */
+ * results list.  Returns 0 on success, -1 on failure. */
 static int add_assert_result (flow_assert_results_t *assert_results,
                               int start_type, int end_type, int via_type,
-                              iflow_t *iflow, policy_t *policy) {
+                              iflow_path_t *iflow_path, policy_t *policy) {
         int i;
-        if (iflow == NULL) {
-                flow_assert_rule_t *assert_rule;
-                if ((assert_rule = realloc (assert_results->rules,
-                                    (assert_results->num_rules+1) * sizeof(*assert_rule))) == NULL) {
-                        return 1;
-                }
-                assert_results->rules = assert_rule;
-                assert_rule = assert_results->rules + assert_results->num_rules;
-                assert_rule->start_type = start_type;
-                assert_rule->end_type = end_type;
-                assert_rule->via_type = via_type;
-                assert_rule->rule_idx = -1;
-                assert_results->num_rules++;
+        flow_assert_rule_t *assert_rule;
+        if ((assert_rule = realloc (assert_results->rules,
+                       (assert_results->num_rules + 1) * sizeof(*assert_rule)))
+            == NULL) {
+                return -1;
         }
-        for (i = 0; iflow != NULL && i < iflow->num_obj_classes; i++) {
-                iflow_obj_class_t *obj_class = iflow->obj_classes + i;
+        assert_results->rules = assert_rule;
+        assert_rule = assert_results->rules + assert_results->num_rules;
+        assert_rule->start_type = start_type;
+        assert_rule->end_type = end_type;
+        assert_rule->via_type = via_type;
+        assert_rule->num_rules = 0;
+        assert_rule->rules = NULL;
+        assert_results->num_rules++;
+        for (i = 0; iflow_path != NULL && i < iflow_path->num_iflows; i++) {
+                iflow_t *iflow = iflow_path->iflows + i;
                 int j;
-                for (j = 0; j < obj_class->num_rules; j++) {
-                        flow_assert_rule_t *assert_rule;
-                        int rule_idx = obj_class->rules [j];
-                        if ((assert_rule = realloc (assert_results->rules,
-                                            (assert_results->num_rules + 1) * sizeof(*assert_rule)))
-                            == NULL) {
-                                return 1;
+                /* just get the first rule from the first object with
+                 * rules */
+                for (j = 0; j < iflow->num_obj_classes; j++) {
+                        iflow_obj_class_t *obj_class = iflow->obj_classes + j;
+                        if (obj_class->num_rules > 0) {
+                                if (add_i_to_a (obj_class->rules [0],
+                                                &assert_rule->num_rules,
+                                                &assert_rule->rules) == -1) {
+                                        return -1;
+                                }
+                                break;
                         }
-                        assert_results->rules = assert_rule;
-                        assert_rule = assert_results->rules +
-                                assert_results->num_rules;
-                        assert_rule->start_type = start_type;
-                        assert_rule->end_type = end_type;
-                        assert_rule->via_type = via_type;
-                        assert_rule->rule_idx = rule_idx;
-                        assert_results->num_rules++;
                 }
         }
         return 0;
