@@ -38,6 +38,85 @@ namespace eval Apol_Cond_Bools {
 }
 
 ###############################################################
+#  ::cond_bool_search_bools
+#
+proc Apol_Cond_Bools::cond_bool_search_bools {} {
+	variable search_opts
+	variable cond_bools_value_array
+	variable cond_bools_dflt_value_array
+	variable cond_bools_list
+	variable resultsbox
+		
+	if {$Apol_Cond_Bools::enable_bool_combo_box && $search_opts(boolean) != ""} {	
+		set results [append results "$search_opts(boolean)"]
+		if {$search_opts(default_state)} {
+			if {$cond_bools_dflt_value_array($search_opts(boolean))} {
+				set results [append results "  Default State: True"]
+			} else {
+				set results [append results "  Default State: False"]
+			}
+		} 
+		if {$search_opts(curr_state)} {
+			if {$cond_bools_value_array($search_opts(boolean))} {
+				set results [append results "  Current State: True"]
+			} else {
+				set results [append results "  Current State: False"]
+			}
+		}
+		set results [append results "\n"]
+	} else {
+		foreach bool $cond_bools_list {
+			set results [append results "$bool"]
+			if {$search_opts(default_state)} {
+				if {$cond_bools_dflt_value_array($bool)} {
+					set results [append results "  Default State: True"]
+				} else {
+					set results [append results "  Default State: False"]
+				}
+			} 
+			if {$search_opts(curr_state)} {
+				if {$cond_bools_value_array($bool)} {
+					set results [append results "  Current State: True"]
+				} else {
+					set results [append results "  Current State: False"]
+				}
+			}
+			set results [append results "\n"]
+		}
+	}
+
+	$resultsbox configure -state normal
+	$resultsbox delete 0.0 end
+	$resultsbox insert end $results
+	ApolTop::makeTextBoxReadOnly $resultsbox 
+	
+	return 0
+}
+
+################################################################
+#  ::cond_bool_reset_variables
+#
+proc Apol_Cond_Bools::cond_bool_reset_variables { } {
+	variable search_opts 
+	variable cond_bools_list
+	variable enable_bool_combo_box	
+	variable cond_bools_value_array
+	variable cond_bools_dflt_value_array
+	
+	set search_opts(boolean)	""
+	set search_opts(show_rules)	""
+	set search_opts(default_state)	1
+	set search_opts(curr_state)	1
+	set cond_bools_list 		""
+	set enable_bool_combo_box 	0
+	# unset array variables
+	array unset cond_bools_value_array
+	array unset cond_bools_dflt_value_array
+	
+	return 0	
+}
+
+###############################################################
 #  ::cond_bool_set_bool_values_to_policy_defaults
 #
 proc Apol_Cond_Bools::cond_bool_set_bool_values_to_policy_defaults {} {
@@ -200,36 +279,13 @@ proc Apol_Cond_Bools::open { } {
 #  ::close
 #
 proc Apol_Cond_Bools::close { } {	
-	Apol_Cond_Bools::reset_variables
+	Apol_Cond_Bools::cond_bool_reset_variables
 	
 	Apol_Cond_Bools::cond_bool_remove_listbox_items
 	Apol_Initial_SIDS::enable_comboBox $Apol_Cond_Bools::enable_bool_combo_box $Apol_Cond_Bools::bool_combo_box
 	$Apol_Cond_Bools::resultsbox configure -state normal
 	$Apol_Cond_Bools::resultsbox delete 0.0 end
 	ApolTop::makeTextBoxReadOnly $Apol_Cond_Bools::resultsbox 
-	
-	return 0	
-}
-
-################################################################
-#  ::reset_variables
-#
-proc Apol_Cond_Bools::reset_variables { } {
-	variable search_opts 
-	variable cond_bools_list
-	variable enable_bool_combo_box	
-	variable cond_bools_value_array
-	variable cond_bools_dflt_value_array
-	
-	set search_opts(boolean)	""
-	set search_opts(show_rules)	""
-	set search_opts(default_state)	1
-	set search_opts(curr_state)	1
-	set cond_bools_list 		""
-	set enable_bool_combo_box 	0
-	# unset array variables
-	array unset cond_bools_value_array
-	array unset cond_bools_dflt_value_array
 	
 	return 0	
 }
@@ -327,7 +383,7 @@ proc Apol_Cond_Bools::create {nb} {
 		-command {Apol_Cond_Bools::enable_comboBox $Apol_Cond_Bools::enable_bool_combo_box $Apol_Cond_Bools::bool_combo_box}]
 			
 	# Action Buttons
-	set ok_button [button [$buttons_f getframe].ok -text OK -width 6 -command {ApolTop::unimplemented}]
+	set ok_button [button [$buttons_f getframe].ok -text OK -width 6 -command {Apol_Cond_Bools::cond_bool_search_bools}]
 	#button $rfm.print -text Print -width 6 -command {ApolTop::unimplemented}
 	
 	# Display results window
