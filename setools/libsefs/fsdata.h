@@ -1,10 +1,6 @@
 /* Copyright (C) 2004 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
 
-/* 
- * Author: tmitchem@tresys.com 
- */
-
 /* fsdata.h
  *
  * analysis policy database support header 
@@ -41,7 +37,7 @@
 #define INDEX_DB_VERSION 1
 
 #ifndef SEFS_XATTR_LABELED_FILESYSTEMS
-#define SEFS_XATTR_LABELED_FILESYSTEMS "ext2 ext3"
+#define SEFS_XATTR_LABELED_FILESYSTEMS "ext2 ext3 xfs"
 #endif
 
 #ifndef SEFS_XATTR_UNLABELED
@@ -113,6 +109,7 @@ void sefs_print_valid_object_classes(void);
 int add_uint_to_a(uint32_t i, uint32_t *cnt, uint32_t **a);
 void destroy_fsdata(sefs_filesystem_data_t * fsd);
 int find_mount_points(char *dir, char ***mounts, int *num_mounts, int rw);
+const char * sefs_get_class_string( int flag_val);
 
 #endif /* _FSDATA_H */
 
