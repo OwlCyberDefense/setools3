@@ -37,6 +37,10 @@ subdirectory and typing "make install". If you have BWidgets installed
 make certain that it is a compatible version. See BWIDGETS VERSIONS 
 below for more information.
 
+SECMDS BUILD REQUIREMENT: In order to successfully build and install 
+secmds onto your system you will need the libselinux-devel package 
+installed.  
+
 GTK RUNTIME AND BUILD REQUIREMENT: In order to successfully install 
 seaudit onto your system you will need libglade and GTK2.0 or above 
 installed.  It also requires the pkg-config program to be installed 
