@@ -1,3 +1,0 @@
-# seuser
-SEUSER_BINDIR/seuser -- system_u:object_r:seuser_exec_t
-SEUSER_INSTALL_LIBDIR/seuser.conf -- system_u:object_r:seuser_conf_t
