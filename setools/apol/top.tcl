@@ -1542,7 +1542,7 @@ proc ApolTop::openPolicyFile {file recent_flag} {
 		"$file is a directory."
 		return -1
  	}
- 	wm title . "SE Linux Policy Analysis - $file"
+ 
 	# Change the cursor
 	set orig_Cursor [. cget -cursor] 
 	. configure -cursor watch
@@ -1552,16 +1552,11 @@ proc ApolTop::openPolicyFile {file recent_flag} {
 		#set filename [file tail $file]
 		set filename $file
 	} else {
-		tk_messageBox -icon error -type ok -title "Error with policy file" -message \
-			"The selected file does not appear to be a valid SE Linux Policy \n\n\
-			WARNING: Apol has a bug that will causes it to work improperly once an\
-			invalid policy.conf was opened.  Therefore, apol WILL NOW EXIT so you can restart it." 
-		# TODO: When we figure out the bug in libapol that corrupts the lib when an invalid policy.conf
-		# file is read, we can uncomment the following and NOT exit the app.
-		#. configure -cursor $orig_Cursor 
-		#focus -force .
-		#return 
-		ApolTop::apolExit
+		tk_messageBox -icon error -type ok -title "Error with policy file" \
+			-message "The selected file does not appear to be a valid SE Linux Policy." 
+		. configure -cursor $orig_Cursor 
+		focus -force .
+		return -1
 	}
 	set rt [catch {set polversion [apol_GetPolicyVersionString]}]
 	if {$rt != 0} {
@@ -1608,6 +1603,7 @@ proc ApolTop::openPolicyFile {file recent_flag} {
 	$ApolTop::mainframe setmenustate Disable_Summary normal
 	$ApolTop::mainframe setmenustate Disable_SearchMenu_Tag normal	
 	ApolTop::configure_edit_pmap_menu_item 0
+	wm title . "SE Linux Policy Analysis - $file"
 	return 0
 }
 
