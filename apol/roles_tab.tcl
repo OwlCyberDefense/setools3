@@ -311,7 +311,7 @@ proc Apol_Roles::create {nb} {
 	# If bindtags is invoked with only one argument, then the current set of binding tags for window is 
 	# returned as a list.
 	bindtags $combo_types.e [linsert [bindtags $combo_types.e] 3 listTag]
-	bind listTag <KeyPress> { Apol_Users::_create_popup $Apol_Roles::combo_types %W %K }
+	bind listTag <KeyPress> { ApolTop::_create_popup $Apol_Roles::combo_types %W %K }
 	
 	set combo_attribute [ComboBox $cfm.combo_attribute  \
 		-textvariable Apol_Roles::selected_attribute \

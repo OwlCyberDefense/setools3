@@ -478,7 +478,7 @@ proc Apol_RBAC::create {nb} {
     # If bindtags is invoked with only one argument, then the current set of binding tags for window is 
     # returned as a list.
     bindtags $list_src.e [linsert [bindtags $list_src.e] 3 list_src_Tag]
-    bind list_src_Tag <KeyPress> { Apol_Users::_create_popup $Apol_RBAC::list_src %W %K }
+    bind list_src_Tag <KeyPress> { ApolTop::_create_popup $Apol_RBAC::list_src %W %K }
     set global_asSource [radiobutton $fm_src.source_1 -text "As source" \
 			 -variable Apol_RBAC::opts(which_1) \
 			 -value source  \
@@ -498,7 +498,7 @@ proc Apol_RBAC::create {nb} {
     # If bindtags is invoked with only one argument, then the current set of binding tags for window is 
     # returned as a list.
     bindtags $list_tgt.e [linsert [bindtags $list_tgt.e] 3 list_tgt_Tag]
-    bind list_tgt_Tag <KeyPress> { Apol_Users::_create_popup $Apol_RBAC::list_tgt %W %K }
+    bind list_tgt_Tag <KeyPress> { ApolTop::_create_popup $Apol_RBAC::list_tgt %W %K }
     set use_tgt_list [checkbutton $fm_tgt.use_3 -text $Apol_RBAC::m_disable_tgt \
 		-variable Apol_RBAC::opts(use_tgt_list) \
 		-command "Apol_RBAC::useSearch $list_tgt 2" ]
@@ -519,7 +519,7 @@ proc Apol_RBAC::create {nb} {
     # If bindtags is invoked with only one argument, then the current set of binding tags for window is 
     # returned as a list. 
     bindtags $list_dflt_role.e [linsert [bindtags $list_dflt_role.e] 3 list_dflt_role_Tag]
-    bind list_dflt_role_Tag <KeyPress> { Apol_Users::_create_popup $Apol_RBAC::list_dflt_role %W %K }
+    bind list_dflt_role_Tag <KeyPress> { ApolTop::_create_popup $Apol_RBAC::list_dflt_role %W %K }
     set use_dflt_role [checkbutton $fm_dflt_role.use_3 -text $Apol_RBAC::m_disable_dflt_role \
 		-variable Apol_RBAC::opts(use_dflt_list) \
 	        -command "Apol_RBAC::useSearch $list_dflt_role 3" ]
