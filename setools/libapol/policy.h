@@ -27,7 +27,6 @@
 #include <strings.h>
 #include <stdlib.h>
 #include <regex.h>
-#include <stdint.h>
 
 #define LIST_SZ 100	/* alloc size for all list arrays...
 			 * dynamically grow in this increments as necesary */
@@ -155,18 +154,10 @@ typedef struct obj_class {
 
 
 typedef struct security_context {
-	int32_t		user;	
-	int32_t		role;
-	int32_t		type;
+	int		user;	
+	int		role;
+	int		type;
 } security_con_t;
-
-
-typedef struct security_strcon {
-	char *user;
-	char *role;
-	char *type;
-} security_strcon_t;
-
 
 /* IDs of rules */
 #define RULE_TE_ALLOW		0 	/*AV rule */
@@ -198,13 +189,6 @@ typedef struct security_strcon {
 #define AVFLAG_TGT_STAR		0x08
 #define AVFLAG_PERM_TILDA	0x40
 #define AVFLAG_PERM_STAR	0x80
-
-#define SEARCHFLAG_NONE		0x00
-#define SEARCHFLAG_SYNTACTIC	0x01
-#define SEARCHFLAG_TILDA	0x02
-#define SEARCHFLAG_STAR		0x04
-#define SEARCHFLAG_MINUS	0x08
-
 
 /* a structure for a AV rule*/
 typedef struct av_item {
@@ -533,22 +517,22 @@ bool_t does_role_use_type(int role, int type, policy_t *policy);
 #define is_valid_av_rule_idx(idx, rule_type, policy) (idx >= 0 && ( (rule_type == 1) ? idx < policy->num_av_access : idx < policy->num_av_audit) )
 #define is_valid_tt_rule_idx(idx, policy) (idx >= 0 && idx < policy->num_te_trans)
 
-int extract_types_from_te_rule(int rule_idx, int rule_type, unsigned char whichlist, int **types, int *num_types, policy_t *policy);
+int extract_types_from_te_rule(int rule_idx, int rule_type, unsigned char whichlist, int **types, int *num_types, bool_t *self, policy_t *policy);
 int extract_obj_classes_from_te_rule(int rule_idx, int rule_type, int **obj_classes, int *num_obj_classes, policy_t *policy);
 int extract_perms_from_te_rule(int rule_idx, int rule_type, int **perms, int *num_perms, policy_t *policy);
-int does_av_rule_idx_use_type(int searchflags, int rule_idx, unsigned char rule_type, int type_idx, int ta_type, 
-		unsigned char whichlist, bool_t do_indirect, policy_t *policy);
-int does_av_rule_use_type(int searchflags, int idx, int type, unsigned char whichlist, bool_t do_indirect, 
+int does_av_rule_idx_use_type(int rule_idx, unsigned char rule_type, int type_idx, int ta_type, 
+			      unsigned char whichlist, bool_t do_indirect, policy_t *policy);
+int does_av_rule_use_type(int idx, int type, unsigned char whichlist, bool_t do_indirect, 
 	av_item_t *rule, int *cnt, policy_t *policy);
-int does_tt_rule_use_type(int searchflags, int idx, int type, unsigned char whichlist, bool_t do_indirect, tt_item_t *rule, int *cnt, policy_t *policy);
+int does_tt_rule_use_type(int idx, int type, unsigned char whichlist, bool_t do_indirect, tt_item_t *rule, int *cnt, policy_t *policy);
 bool_t does_av_rule_use_classes(int rule_idx, int rule_type, int *cls_idxs, int num_cls_idxs, policy_t *policy);
-bool_t does_av_rule_use_perms(int searchflags, int rule_idx, int rule_type, int *perm_idxs, int num_perm_idxs, policy_t *policy);
+bool_t does_av_rule_use_perms(int rule_idx, int rule_type, int *perm_idxs, int num_perm_idxs, policy_t *policy);
 bool_t does_tt_rule_use_classes(int rule_idx, int *cls_idxs, int num_cls_idxs, policy_t *policy);
 
 /* Role rules */
-bool_t does_role_trans_use_role(int searchflags, int idx, unsigned char whichlist, bool_t do_indirect, rt_item_t *rule, int *cnt);
-bool_t does_role_allow_use_role(int searchflags, int src, unsigned char whichlist,  bool_t do_indirect, role_allow_t *rule, int *cnt);
-int does_role_trans_use_ta(int searchflags, int idx, int type, bool_t do_indirect, rt_item_t *rule, int *cnt, policy_t *policy);
+bool_t does_role_trans_use_role(int idx, unsigned char whichlist, bool_t do_indirect, rt_item_t *rule, int *cnt);
+bool_t does_role_allow_use_role(int src, unsigned char whichlist,  bool_t do_indirect, role_allow_t *rule, int *cnt);
+int does_role_trans_use_ta(int idx, int type, bool_t do_indirect, rt_item_t *rule, int *cnt, policy_t *policy);
 
 
 /* misc */
