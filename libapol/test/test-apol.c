@@ -56,6 +56,324 @@ static int display_policy_stats(policy_t *p)
 	return 0;
 }
 
+static int types_relation_get_dta_options(dta_query_t *dta_query, policy_t *policy)
+{
+	char ans[1024];
+	int obj, type, i, j, num_perms, *perms = NULL;
+	
+	printf("\tSearch for ALL object classes and permissions (y/n)? ");
+	fgets(ans, sizeof(ans), stdin);
+	if (ans[0] == 'n' || ans[0] == 'N') {		
+		while (1) {
+			int object;
+			
+			printf("\tAdd object class or f to finish: ");
+			fgets(ans, sizeof(ans), stdin);
+			ans[strlen(ans)-1] = '\0';
+			if (strlen(ans) == 1 && ans[0] == 'f')
+				break;
+			object = get_obj_class_idx(ans, policy);
+			if (object < 0) {
+				fprintf(stderr, "Invalid object class\n");
+				continue;
+			} 
+			if (dta_query_add_obj_class(dta_query, object) == -1) {
+				fprintf(stderr, "error adding obj\n");
+				return -1;
+			}
+																		
+			printf("\tLimit specific permissions (y/n)? ");
+			fgets(ans, sizeof(ans), stdin);
+			if (ans[0] == 'y' || ans[0] == 'Y') {
+				while (1) {
+					int perm;
+					printf("\tAdd object class permission or f to finish: ");
+					fgets(ans, sizeof(ans), stdin);
+					ans[strlen(ans)-1] = '\0';
+					if (strlen(ans) == 1 && ans[0] == 'f') {
+						break;
+					}
+					perm = get_perm_idx(ans, policy);
+					if (perm < 0 || !is_valid_perm_for_obj_class(policy, object, perm)) {
+						fprintf(stderr, "Invalid object class permission\n");
+						continue;
+					}
+					if (dta_query_add_obj_class_perm(dta_query, object, perm) == -1) {
+						fprintf(stderr, "error adding perm to query\n");
+						return -1;
+					}
+				}
+			}
+		}
+	} else {
+		for (i = 0; i < policy->num_obj_classes; i++) {
+			obj = get_obj_class_idx(policy->obj_classes[i].name, policy);
+			if (obj < 0) {
+				fprintf(stderr, "Invalid object class\n");
+				continue;
+			}
+			if (get_obj_class_perms(obj, &num_perms, &perms, policy) == -1) {
+				fprintf(stderr, "Error getting class perms.");
+				return -1;	
+			}
+			for (j = 0; j < num_perms; j++) {
+				if (dta_query_add_obj_class_perm(dta_query, obj, perms[j]) == -1) {
+					fprintf(stderr, "error adding perm to query\n");
+					return -1;
+				}	
+			}
+			free(perms);
+		}
+	}
+	printf("\tSearch for ALL object types (y/n)? ");
+	fgets(ans, sizeof(ans), stdin);
+	if (ans[0] == 'n' || ans[0] == 'N') {		
+		while (1) {
+			printf("\tAdd object type or f to finish: ");
+			fgets(ans, sizeof(ans), stdin);
+			ans[strlen(ans)-1] = '\0';
+			if (strlen(ans) == 1 && ans[0] == 'f')
+				break;
+			type = get_type_idx(ans, policy);
+			if (type < 0) {
+				fprintf(stderr, "invalid type\n");
+				continue;
+			} 
+			if (dta_query_add_end_type(dta_query, type) != 0) {
+				fprintf(stderr, "Memory error!\n");
+				return -1;
+			}
+		}
+	} else {
+		for (i = 0; i < policy->num_types; i++) {
+			type = get_type_idx(policy->types[i].name, policy);
+			if (type < 0) {
+				/* This is an invalid ending type, so ignore */
+				continue;
+			}
+			if (dta_query_add_end_type(dta_query, type) != 0) {
+				fprintf(stderr, "Memory error!\n");
+				break;
+			}
+		}
+	}
+	return 0;
+}
+
+static int types_relation_get_dirflow_options(iflow_query_t *direct_flow_query, policy_t *policy)
+{
+	char ans[1024];
+	unsigned int m_ret;
+	FILE* pfp;
+	int object;
+	
+	while (1) {	
+		printf("\tAdd object class or f to finish: ");
+		fgets(ans, sizeof(ans), stdin);
+		ans[strlen(ans)-1] = '\0';
+		if (strlen(ans) == 1 && ans[0] == 'f')
+			break;
+		object = get_obj_class_idx(ans, policy);
+		if (object < 0) {
+			fprintf(stderr, "Invalid object class\n");
+			continue;
+		}
+		printf("\tLimit specific permissions (y/n)? ");
+		fgets(ans, sizeof(ans), stdin);
+		if (ans[0] == 'y' || ans[0] == 'Y') {
+			while (1) {
+				int perm;
+				printf("\tAdd object class permission or f to finish: ");
+				fgets(ans, sizeof(ans), stdin);
+				ans[strlen(ans)-1] = '\0';
+				if (strlen(ans) == 1 && ans[0] == 'f')
+					break;
+				perm = get_perm_idx(ans, policy);
+				if (perm < 0 || !is_valid_perm_for_obj_class(policy, object, perm)) {
+					fprintf(stderr, "Invalid object class permission\n");
+					continue;
+				}
+				if (iflow_query_add_obj_class_perm(direct_flow_query, 
+								   object, perm) != 0) {
+					fprintf(stderr, "error adding perm\n");
+					return -1;
+				}
+			}
+		} else {
+			if (iflow_query_add_obj_class(direct_flow_query, object) == -1) {
+				fprintf(stderr, "error adding object class\n");
+				return -1;
+			}
+		}
+	}
+
+	printf("\tPermission map file: ");
+	fgets(ans, sizeof(ans), stdin);
+	ans[strlen(ans)-1] = '\0';
+	pfp = fopen(ans, "r");
+	if(pfp == NULL) {
+		fprintf(stderr, "Cannot open perm map file %s\n", ans);
+		return -1;
+	}
+	m_ret = load_policy_perm_mappings(policy, pfp);
+	if(m_ret & PERMMAP_RET_ERROR) {
+		fprintf(stderr, "ERROR loading perm mappings from file: %s\n", ans);
+		return -1;
+	} 
+	else if(m_ret & PERMMAP_RET_WARNINGS) {
+		printf("There were warnings:\n");
+		if(m_ret & PERMMAP_RET_UNMAPPED_PERM) 
+			printf("     Some permissions were unmapped.\n");
+		if(m_ret & PERMMAP_RET_UNMAPPED_OBJ)
+			printf("     Some objects were unmapped.\n");
+		if(m_ret & PERMMAP_RET_UNKNOWN_PERM)
+			printf("     Map contains unknown permissions, or permission assoicated with wrong objects.\n");
+		if(m_ret & PERMMAP_RET_UNKNOWN_OBJ)
+			printf("     Map contains unknown objects\n");
+		if(m_ret & PERMMAP_RET_OBJ_REMMAPPED) 
+			printf("     Some permissions were mapped more than once.\n");
+	}
+	fclose(pfp);
+	printf("\n\tPermission map was loaded.....\n\n");
+	return 0;
+}
+
+static int types_relation_get_transflow_options(iflow_query_t *trans_flow_query, policy_t *policy)
+{
+	char ans[1024];
+	int type;
+	
+	while (1) {
+		printf("\tAdd intermediate type or f to finish: ");
+		fgets(ans, sizeof(ans), stdin);
+		ans[strlen(ans)-1] = '\0';
+		if (strlen(ans) == 1 && ans[0] == 'f')
+			break;
+		type = get_type_idx(ans, policy);
+		if (type < 0) {
+			fprintf(stderr, "Invalid ending type\n");
+			continue;
+		}
+		if (iflow_query_add_type(trans_flow_query, type) != 0)
+			return -1;
+	}
+	/* Use the direct flow function for setting object class/permission and perm map parameters */
+	if (types_relation_get_dirflow_options(trans_flow_query, policy) != 0) {
+		return -1;
+	}
+	return 0;
+}
+
+static int get_type_relation_options(types_relation_query_t **tr_query, policy_t *policy)
+{
+	char ans[1024];
+	bool_t finish = FALSE;
+	
+	assert(tr_query != NULL && *tr_query != NULL && policy != NULL);
+	printf("\n\tSelection load option:\n");
+	printf("\t     0)  Common attributes\n");
+	printf("\t     1)  Common roles\n");
+	printf("\t     2)  Common users\n");
+	printf("\t     3)  Domain transitions\n");
+	printf("\t     4)  Direct flows\n");
+	printf("\t     5)  Transitive flows\n");
+	printf("\t     6)  Additional type transitions\n");
+	printf("\t     7)  Common object type access\n");
+	printf("\t     8)  Process interactions\n");
+	printf("\t     9)  Unique access\n");
+	printf("\tPress \'o\' to see options\n\n");
+	while (1) {
+		printf("\tEnter option (\'s\' to start analysis):  ");
+		fgets(ans, sizeof(ans), stdin);	
+		switch(ans[0]) {
+		case '0':
+			(*tr_query)->options |= TYPES_REL_COMMON_ATTRIBS;
+			break;
+		case '1':
+			(*tr_query)->options |= TYPES_REL_COMMON_ROLES;
+			break;
+		case '2':
+			(*tr_query)->options |= TYPES_REL_COMMON_USERS;
+			break;
+		case '3':			
+			(*tr_query)->options |= TYPES_REL_DOMAINTRANS;
+			/* Create the query structure */
+			if (!(*tr_query)->dta_query) {
+				(*tr_query)->dta_query = dta_query_create();
+				if ((*tr_query)->dta_query == NULL) {
+					fprintf(stderr, "Memory error allocating dta query.\n");
+					return -1;
+				}
+			}
+			if (types_relation_get_dta_options((*tr_query)->dta_query, policy) != 0) {
+				return -1;
+			}
+			break;
+		case '4':
+			(*tr_query)->options |= TYPES_REL_DIRFLOWS;
+			/* Create the query structure */
+			if (!(*tr_query)->direct_flow_query) {
+				(*tr_query)->direct_flow_query = iflow_query_create();
+				if ((*tr_query)->direct_flow_query == NULL) {
+					fprintf(stderr, "Memory error allocating direct iflow query.\n");
+					return -1;
+				}
+			}
+			if (types_relation_get_dirflow_options((*tr_query)->direct_flow_query, policy) != 0) {
+				return -1;
+			}
+			break;
+		case '5':
+			(*tr_query)->options |= TYPES_REL_TRANSFLOWS;
+			/* Create the query structure */
+			if (!(*tr_query)->trans_flow_query) {
+				(*tr_query)->trans_flow_query = iflow_query_create();
+				if ((*tr_query)->trans_flow_query == NULL) {
+					fprintf(stderr, "Memory error allocating transitive iflow query.\n");
+					return -1;
+				}
+			}
+			if (types_relation_get_transflow_options((*tr_query)->trans_flow_query, policy) != 0) {
+				return -1;
+			}
+			break;
+		case '6':
+			(*tr_query)->options |= TYPES_REL_OTHER_TTRULES;
+			break;
+		case '7':
+			(*tr_query)->options |= TYPES_REL_COMMON_ACCESS;
+			break;
+		case '8':
+			(*tr_query)->options |= TYPES_REL_PROCESS_INTER;
+			break;
+		case '9':
+			(*tr_query)->options |= TYPES_REL_UNIQUE_ACCESS;
+			break;
+		case 'o':
+			printf("\n\tSelection load option:\n");
+			printf("\t     0)  Common attributes\n");
+			printf("\t     1)  Common roles\n");
+			printf("\t     2)  Common users\n");
+			printf("\t     3)  Domain transitions\n");
+			printf("\t     4)  Direct flows\n");
+			printf("\t     5)  Transitive flows\n");
+			printf("\t     6)  Additional type transitions\n");
+			printf("\t     7)  Common object type access\n");
+			printf("\t     8)  Process interactions\n");
+			printf("\t     9)  Unique access\n");
+			printf("\tPress \'o\' to see options\n\n");
+			break;
+		case 's':
+			finish = TRUE;
+			break;
+		default:
+			printf("Invalid choice: %s\n", ans);
+		}
+		if (finish) 
+			break;
+	}
+	return 0;
+}
 
 static int reload_with_options(policy_t **policy)
 {
@@ -212,6 +530,296 @@ int test_print_trans_dom(trans_domain_t *t, policy_t *policy)
 	return 0;
 }
 
+int test_print_direct_flow_analysis(policy_t *policy, int num_answers, iflow_t *answers)
+{
+	int i, j, k;
+
+	for (i = 0; i < num_answers; i++) {
+		fprintf(outfile, "%d ", i);
+
+		fprintf(outfile, "flow from %s to %s", policy->types[answers->start_type].name,
+			policy->types[answers[i].end_type].name);
+
+		if (answers[i].direction == IFLOW_BOTH)
+			fprintf(outfile, " [In/Out]\n");
+		else if (answers[i].direction == IFLOW_OUT)
+			fprintf(outfile, " [Out]\n");
+		else
+			fprintf(outfile, " [In]\n");
+
+		for (j = 0; j < answers[i].num_obj_classes; j++) {
+			if (answers[i].obj_classes[j].num_rules) {
+				fprintf(outfile, "%s\n", policy->obj_classes[j].name);
+				for (k = 0; k < answers[i].obj_classes[j].num_rules; k++) {
+					char *rule;
+					rule = re_render_av_rule(TRUE, answers[i].obj_classes[j].rules[k], FALSE, policy);
+					fprintf(outfile, "\t%s\n", rule);
+					free(rule);
+				}	
+			}
+		}
+	}
+	return 0;
+}
+
+void test_print_iflow_path(policy_t *policy, iflow_path_t *path)
+{
+	int i, j, k, path_num = 0;
+	iflow_path_t *cur;
+
+	for (cur = path; cur != NULL; cur = cur->next) {
+		fprintf(outfile, "\tPath %d length is %d\n", path_num++, cur->num_iflows);
+		for (i = 0; i < cur->num_iflows; i++) {
+			fprintf(outfile, "\t%s->%s\n", policy->types[cur->iflows[i].start_type].name,
+			       policy->types[cur->iflows[i].end_type].name);
+			for (j = 0; j < cur->iflows[i].num_obj_classes; j++) {
+				if (cur->iflows[i].obj_classes[j].num_rules) {
+					fprintf(outfile, "\t\tobject class %s\n", policy->obj_classes[j].name);
+					for (k = 0; k < cur->iflows[i].obj_classes[j].num_rules; k++) {
+						char *rule;
+						rule = re_render_av_rule(TRUE, cur->iflows[i].obj_classes[j].rules[k], FALSE,
+									 policy);
+						fprintf(outfile, "\t\t\t%s\n", rule);
+						free(rule);
+					}
+				}
+			}
+		}
+	}
+}
+
+int test_print_transitive_flow_analysis(iflow_query_t *q, iflow_transitive_t *a, policy_t *policy)
+{
+	int i;
+
+	if (q->direction == IFLOW_IN)
+		fprintf(outfile, "Found %d in flows\n", a->num_end_types);
+	else
+		fprintf(outfile, "Found %d out flows\n", a->num_end_types);
+
+	for (i = 0; i < a->num_end_types; i++) {
+		fprintf(outfile, "%s to %s\n", policy->types[a->start_type].name,
+			policy->types[a->end_types[i]].name);
+		test_print_iflow_path(policy, a->paths[i]);
+	}
+	return 0;
+}
+
+
+static int test_print_type_relation_results(types_relation_query_t *tr_query, 
+					    types_relation_results_t *tr_results, 
+					    policy_t *policy)
+{
+	char *name = NULL, *rule = NULL;
+	llist_node_t *x = NULL;
+	int i, rt;
+	
+	if (tr_query->options & TYPES_REL_COMMON_ATTRIBS) {
+		if (tr_results->num_common_attribs)
+			fprintf(outfile, "\nCommon Attributes:\n");
+		else
+			fprintf(outfile, "\nCommon Attributes: none\n");
+		for (i = 0; i < tr_results->num_common_attribs; i++) {
+			if (get_attrib_name(tr_results->common_attribs[i], &name, policy) != 0) {
+				fprintf(stderr, "Error getting attribute name.");
+				free(name);
+				types_relation_destroy_results(tr_results);
+				return -1;
+			}
+			fprintf(outfile, "%s\n", name);
+			free(name);
+		}
+	}
+	if (tr_query->options & TYPES_REL_COMMON_ROLES) {
+		if (tr_results->num_common_roles)
+			fprintf(outfile, "\nCommon Roles:\n");
+		else
+			fprintf(outfile, "\nCommon Roles: none\n");
+		for (i = 0; i < tr_results->num_common_roles; i++) {
+			if (get_role_name(tr_results->common_roles[i], &name, policy) != 0) {
+				fprintf(stderr, "Error getting role name.");
+				free(name);
+				types_relation_destroy_results(tr_results);
+				return -1;
+			}
+			fprintf(outfile, "%s\n", name);
+			free(name);
+		}
+	}
+	if (tr_query->options & TYPES_REL_COMMON_USERS) {
+		if (tr_results->num_common_users)
+			fprintf(outfile, "\nCommon Users:");
+		else
+			fprintf(outfile, "\nCommon Users: none\n");
+		for (i = 0; i < tr_results->num_common_users; i++) {
+			if (get_user_name2(tr_results->common_users[i], &name, policy) != 0) {
+				fprintf(stderr, "Error getting user name.");
+				free(name);
+				types_relation_destroy_results(tr_results);
+				return -1;
+			}
+			fprintf(outfile, "%s\n", name);
+			free(name);
+		}
+	}
+	
+	if (tr_query->options & TYPES_REL_DOMAINTRANS) {
+		if (tr_results->dta_results_A_to_B) {
+			fprintf(outfile, "\n\nDomain transitions (A->B):\n");
+			for(x = tr_results->dta_results_A_to_B->trans_domains->head; x != NULL; x = x->next) {
+				rt = test_print_trans_dom((trans_domain_t *)x->data, policy);
+				if (rt != 0) {
+					types_relation_destroy_results(tr_results);
+					return -1;
+				}
+			}
+		} 
+		if (tr_results->dta_results_B_to_A) {
+			fprintf(outfile, "\nDomain transitions (B->A):\n");
+			for(x = tr_results->dta_results_B_to_A->trans_domains->head; x != NULL; x = x->next) {
+				rt = test_print_trans_dom((trans_domain_t *)x->data, policy);
+				if (rt != 0) {
+					types_relation_destroy_results(tr_results);
+					return -1;
+				}
+			}
+		}
+	}
+	
+	if ((tr_query->options & TYPES_REL_DIRFLOWS) && tr_results->direct_flow_results) {
+		test_print_direct_flow_analysis(policy, tr_results->num_dirflows, tr_results->direct_flow_results);
+	}
+	if (tr_query->options & TYPES_REL_TRANSFLOWS) {
+		if (tr_results->trans_flow_results_A_to_B) {
+			test_print_transitive_flow_analysis(tr_query->trans_flow_query,
+							    tr_results->trans_flow_results_A_to_B, 
+							    policy);
+		}
+		if (tr_results->trans_flow_results_B_to_A) {
+			test_print_transitive_flow_analysis(tr_query->trans_flow_query,
+							    tr_results->trans_flow_results_B_to_A, 
+							    policy);
+		}
+	}
+	if ((tr_query->options & TYPES_REL_OTHER_TTRULES) && tr_results->other_tt_rules_results) {
+		fprintf(outfile, "\nAdditional type transition rules:\n");
+		for(i = 0; i < tr_results->num_other_tt_rules; i++) {
+			rule = re_render_tt_rule(1, tr_results->other_tt_rules_results[i], policy);
+			if (rule == NULL)
+				return -1;
+			fprintf(outfile, "%s\n", rule);
+			free(rule);
+		}
+		fprintf(outfile, "\n");
+	}
+
+	if ((tr_query->options & TYPES_REL_PROCESS_INTER) && tr_results->process_inter_results) {
+		fprintf(outfile, "\nProcess interaction rules:\n");
+		for(i = 0; i < tr_results->num_process_inter_rules; i++) {
+			rule = re_render_av_rule(1, tr_results->process_inter_results[i], 0, policy);
+			if (rule == NULL)
+				return -1;
+			fprintf(outfile, "%s\n", rule);
+			free(rule);
+		}
+		fprintf(outfile, "\n");
+	}
+	
+	if ((tr_query->options & TYPES_REL_COMMON_ACCESS) && tr_results->common_obj_types_results) {
+		fprintf(outfile, "\nCommon objects:");
+		fprintf(outfile, "\nTypeA common objects: %d\n", tr_results->common_obj_types_results->num_objs_A);
+		for(i = 0; i < tr_results->common_obj_types_results->num_objs_A; i++) {
+			if (get_type_name(tr_results->common_obj_types_results->objs_A[i], &name, policy) != 0) {
+				fprintf(stderr, "Error getting attribute name.");
+				free(name);
+				types_relation_destroy_results(tr_results);
+				return -1;
+			}
+			fprintf(outfile, "%s\n", name);
+			free(name);
+		}
+				
+		fprintf(outfile, "\nCommon object rules for type A: %d\n", 
+		        tr_results->common_obj_types_results->num_obj_type_rules_A);
+		for(i = 0; i < tr_results->common_obj_types_results->num_obj_type_rules_A; i++) {
+			rule = re_render_av_rule(1, tr_results->common_obj_types_results->obj_type_rules_A[i], 0, policy);
+			if (rule == NULL)
+				return -1;
+			fprintf(outfile, "%s\n", rule);
+			free(rule);
+		}
+		fprintf(outfile, "\nTypeB common objects: %d\n", tr_results->common_obj_types_results->num_objs_B);
+		for(i = 0; i < tr_results->common_obj_types_results->num_objs_B; i++) {
+			if (get_type_name(tr_results->common_obj_types_results->objs_B[i], &name, policy) != 0) {
+				fprintf(stderr, "Error getting attribute name.");
+				free(name);
+				types_relation_destroy_results(tr_results);
+				return -1;
+			}
+			fprintf(outfile, "%s\n", name);
+			free(name);
+		}
+		fprintf(outfile, "\n");
+		
+		fprintf(outfile, "\nCommon object rules for type B: %d\n",
+			tr_results->common_obj_types_results->num_obj_type_rules_B);
+		for(i = 0; i < tr_results->common_obj_types_results->num_obj_type_rules_B; i++) {
+			rule = re_render_av_rule(1, tr_results->common_obj_types_results->obj_type_rules_B[i], 0, policy);
+			if (rule == NULL)
+				return -1;
+			fprintf(outfile, "%s\n", rule);
+			free(rule);
+		}
+		fprintf(outfile, "\n");
+	}
+	if ((tr_query->options & TYPES_REL_UNIQUE_ACCESS) && tr_results->unique_obj_types_results) {
+		fprintf(outfile, "\nUnique objects:");
+		fprintf(outfile, "\nTypeA unique objects: %d\n", tr_results->unique_obj_types_results->num_objs_A);
+		for(i = 0; i < tr_results->unique_obj_types_results->num_objs_A; i++) {
+			if (get_type_name(tr_results->unique_obj_types_results->objs_A[i], &name, policy) != 0) {
+				fprintf(stderr, "Error getting attribute name.");
+				free(name);
+				types_relation_destroy_results(tr_results);
+				return -1;
+			}
+			fprintf(outfile, "%s\n", name);
+			free(name);
+		}		
+		fprintf(outfile, "\nUnique object rules for type A: %d\n",
+			tr_results->unique_obj_types_results->num_obj_type_rules_A);
+		for(i = 0; i < tr_results->unique_obj_types_results->num_obj_type_rules_A; i++) {
+			rule = re_render_av_rule(1, tr_results->unique_obj_types_results->obj_type_rules_A[i], 0, policy);
+			if (rule == NULL)
+				return -1;
+			fprintf(outfile, "%s\n", rule);
+			free(rule);
+		}		
+		fprintf(outfile, "\nTypeB unique objects: %d\n", tr_results->unique_obj_types_results->num_objs_B);
+		for(i = 0; i < tr_results->unique_obj_types_results->num_objs_B; i++) {
+			if (get_type_name(tr_results->unique_obj_types_results->objs_B[i], &name, policy) != 0) {
+				fprintf(stderr, "Error getting attribute name.");
+				free(name);
+				types_relation_destroy_results(tr_results);
+				return -1;
+			}
+			fprintf(outfile, "%s\n", name);
+			free(name);
+		}
+		fprintf(outfile, "\nUnique object rules for type B: %d\n",
+			tr_results->unique_obj_types_results->num_obj_type_rules_B);
+		for(i = 0; i < tr_results->unique_obj_types_results->num_obj_type_rules_B; i++) {
+			rule = re_render_av_rule(1, tr_results->unique_obj_types_results->obj_type_rules_B[i], 0, policy);
+			if (rule == NULL)
+				return -1;
+			fprintf(outfile, "%s\n", rule);
+			free(rule);
+		}
+		fprintf(outfile, "\n");
+	}
+	
+	return 0;
+}
+
 int test_disaply_perm_map(classes_perm_map_t *map, policy_t *p)
 {
 	int i, j;
@@ -243,81 +851,6 @@ int test_disaply_perm_map(classes_perm_map_t *map, policy_t *p)
 	return 0;
 }
 
-int test_print_direct_flow_analysis(policy_t *policy, iflow_query_t *q, int num_answers, iflow_t *answers)
-{
-	int i, j, k;
-
-	for (i = 0; i < num_answers; i++) {
-		fprintf(outfile, "%d ", i);
-
-		fprintf(outfile, "flow from %s to %s", policy->types[q->start_type].name,
-			policy->types[answers[i].end_type].name);
-
-		if (answers[i].direction == IFLOW_BOTH)
-			fprintf(outfile, " [In/Out]\n");
-		else if (answers[i].direction == IFLOW_OUT)
-			fprintf(outfile, " [Out]\n");
-		else
-			fprintf(outfile, " [In]\n");
-
-		for (j = 0; j < answers[i].num_obj_classes; j++) {
-			if (answers[i].obj_classes[j].num_rules) {
-				fprintf(outfile, "%s\n", policy->obj_classes[j].name);
-				for (k = 0; k < answers[i].obj_classes[j].num_rules; k++) {
-					char *rule;
-					rule = re_render_av_rule(TRUE, answers[i].obj_classes[j].rules[k], FALSE, policy);
-					fprintf(outfile, "\t%s\n", rule);
-					free(rule);
-				}	
-			}
-		}
-	}
-	return 0;
-}
-
-void test_print_iflow_path(policy_t *policy, iflow_query_t *q, iflow_path_t *path)
-{
-	int i, j, k, path_num = 0;
-	iflow_path_t *cur;
-
-	for (cur = path; cur != NULL; cur = cur->next) {
-		fprintf(outfile, "\tPath %d length is %d\n", path_num++, cur->num_iflows);
-		for (i = 0; i < cur->num_iflows; i++) {
-			fprintf(outfile, "\t%s->%s\n", policy->types[cur->iflows[i].start_type].name,
-			       policy->types[cur->iflows[i].end_type].name);
-			for (j = 0; j < cur->iflows[i].num_obj_classes; j++) {
-				if (cur->iflows[i].obj_classes[j].num_rules) {
-					fprintf(outfile, "\t\tobject class %s\n", policy->obj_classes[j].name);
-					for (k = 0; k < cur->iflows[i].obj_classes[j].num_rules; k++) {
-						char *rule;
-						rule = re_render_av_rule(TRUE, cur->iflows[i].obj_classes[j].rules[k], FALSE,
-									 policy);
-						fprintf(outfile, "\t\t\t%s\n", rule);
-						free(rule);
-					}
-				}
-			}
-		}
-	}
-}
-
-int test_print_transitive_flow_analysis(iflow_query_t *q, iflow_transitive_t* a, policy_t *policy)
-{
-	int i;
-
-	if (q->direction == IFLOW_IN)
-		fprintf(outfile, "Found %d in flows\n", a->num_end_types);
-	else
-		fprintf(outfile, "Found %d out flows\n", a->num_end_types);
-
-	for (i = 0; i < a->num_end_types; i++) {
-		fprintf(outfile, "%s to %s\n", policy->types[q->start_type].name,
-			policy->types[a->end_types[i]].name);
-		test_print_iflow_path(policy, q, a->paths[i]);
-	}
-	return 0;
-}
-
 int get_iflow_query(iflow_query_t *query, policy_t *policy)
 {
 	unsigned int m_ret;
@@ -345,7 +878,7 @@ int get_iflow_query(iflow_query_t *query, policy_t *policy)
 			fprintf(stderr, "Invalid ending type\n");
 			continue;
 		}
-		if (analysis_query_add_end_type(&query->end_types, &query->num_end_types, type) != 0)
+		if (iflow_query_add_end_type(query, type) != 0)
 			return -1;
 	}
 
@@ -392,13 +925,13 @@ int get_iflow_query(iflow_query_t *query, policy_t *policy)
 					fprintf(stderr, "Invalid object class permission\n");
 					continue;
 				}
-				if (analysis_query_add_obj_class_perm(&query->obj_options, &query->num_obj_options, object, perm) != 0) {
+				if (iflow_query_add_obj_class_perm(query, object, perm) != 0) {
 					fprintf(stderr, "error adding perm\n");
 					return -1;
 				}
 			}
 		} else {
-			if (analysis_query_add_obj_class(&query->obj_options, &query->num_obj_options, object) == -1) {
+			if (iflow_query_add_obj_class(query, object) == -1) {
 				fprintf(stderr, "error adding object class\n");
 				return -1;
 			}
@@ -554,6 +1087,7 @@ int menu() {
         printf("7)  display policy booleans and expressions\n");
 	printf("8)  set the value of a boolean\n");
 	printf("9)  search for conditional expressions\n");
+	printf("t)  analyze types relationship\n");
 	printf("\n");
 	printf("r)  re-load policy with options\n");
 	printf("s)  display policy statics\n");
@@ -599,21 +1133,21 @@ int main(int argc, char *argv[])
 	for(;;) {
 		printf("\nCommand (\'m\' for menu):  ");
 		fgets(ans, sizeof(ans), stdin);	
+		
 		switch(ans[0]) {
 
 		case '0':
 		{
 			domain_trans_analysis_t *dta = NULL;
 			dta_query_t *dta_query = NULL;
-			char *start_domain = NULL, buf[1024];
+			char *start_domain = NULL;
 			llist_node_t *x = NULL;
-			int obj, type, i, j, num_perms, *perms = NULL;
 			
 			/* Create the query structure */
 			dta_query = dta_query_create();
 			if (dta_query == NULL) {
 				fprintf(stderr, "Memory error allocating dta query.\n");
-				return -1;
+				break;
 			}
 			printf("\tenter starting domain type name:  ");
 			fgets(ans, sizeof(ans), stdin);
@@ -624,113 +1158,15 @@ int main(int argc, char *argv[])
 			if (dta_query->start_type < 0) {
 				dta_query_destroy(dta_query);
 				fprintf(stderr, "Invalid starting type.");
-				return -1;
+				break;
 			}
 			
 			/* determine if requesting a reverse DT analysis */
 			dta_query->reverse = FALSE;
 			
-			printf("\tSearch for ALL object classes and permissions (y/n)? ");
-			fgets(buf, sizeof(buf), stdin);
-			if (buf[0] == 'n' || buf[0] == 'N') {		
-				while (1) {
-					int object;
-					
-					printf("\tAdd object class or f to finish: ");
-					fgets(buf, sizeof(buf), stdin);
-					buf[strlen(buf)-1] = '\0';
-					if (strlen(buf) == 1 && buf[0] == 'f')
-						break;
-					object = get_obj_class_idx(buf, policy);
-					if (object < 0) {
-						fprintf(stderr, "Invalid object class\n");
-						continue;
-					} 
-					if (analysis_query_add_obj_class(&dta_query->obj_options, &dta_query->num_obj_options, object) == -1) {
-						dta_query_destroy(dta_query);
-						fprintf(stderr, "error adding obj\n");
-						return -1;
-					}
-																				
-					printf("\tLimit specific permissions (y/n)? ");
-					fgets(buf, sizeof(buf), stdin);
-					if (buf[0] == 'y' || buf[0] == 'Y') {
-						while (1) {
-							int perm;
-							printf("\tAdd object class permission or f to finish: ");
-							fgets(buf, sizeof(buf), stdin);
-							buf[strlen(buf)-1] = '\0';
-							if (strlen(buf) == 1 && buf[0] == 'f') {
-								break;
-							}
-							perm = get_perm_idx(buf, policy);
-							if (perm < 0 || !is_valid_perm_for_obj_class(policy, object, perm)) {
-								fprintf(stderr, "Invalid object class permission\n");
-								continue;
-							}
-							if (analysis_query_add_obj_class_perm(&dta_query->obj_options, &dta_query->num_obj_options, object, perm) == -1) {
-								dta_query_destroy(dta_query);
-								fprintf(stderr, "error adding perm to query\n");
-								return -1;
-							}
-						}
-					}
-				}
-			} else {
-				for (i = 0; i < policy->num_obj_classes; i++) {
-					obj = get_obj_class_idx(policy->obj_classes[i].name, policy);
-					if (obj < 0) {
-						fprintf(stderr, "Invalid object class\n");
-						continue;
-					}
-					if (get_obj_class_perms(obj, &num_perms, &perms, policy) == -1) {
-						dta_query_destroy(dta_query);
-						fprintf(stderr, "Error getting class perms.");
-						return -1;	
-					}
-					for (j = 0; j < num_perms; j++) {
-						if (analysis_query_add_obj_class_perm(&dta_query->obj_options, &dta_query->num_obj_options, obj, perms[j]) == -1) {
-							dta_query_destroy(dta_query);
-							fprintf(stderr, "error adding perm to query\n");
-							return -1;
-						}	
-					}
-					free(perms);
-				}
-			}
-			printf("\tSearch for ALL object types (y/n)? ");
-			fgets(buf, sizeof(buf), stdin);
-			if (buf[0] == 'n' || buf[0] == 'N') {		
-				while (1) {
-					printf("\tAdd object type or f to finish: ");
-					fgets(buf, sizeof(buf), stdin);
-					buf[strlen(buf)-1] = '\0';
-					if (strlen(buf) == 1 && buf[0] == 'f')
-						break;
-					type = get_type_idx(buf, policy);
-					if (type < 0) {
-						fprintf(stderr, "invalid type\n");
-						continue;
-					}
-					if (analysis_query_add_end_type(&dta_query->end_types, &dta_query->num_end_types, type) != 0) {
-						dta_query_destroy(dta_query);
-						fprintf(stderr, "Memory error!\n");
-						return -1;
-					}
-				}
-			} else {
-				for (i = 0; i < policy->num_types; i++) {
-					type = get_type_idx(policy->types[i].name, policy);
-					if (type < 0) {
-						/* This is an invalid ending type, so ignore */
-						continue;
-					}
-					if (analysis_query_add_end_type(&dta_query->end_types, &dta_query->num_end_types, type) != 0) {
-						dta_query_destroy(dta_query);
-						fprintf(stderr, "Memory error!\n");
-						return -1;
-					}
-				}
+			if (types_relation_get_dta_options(dta_query, policy) != 0) {
+				dta_query_destroy(dta_query);
+				return -1;
 			}
 			
 			/* Perform the analysis */
@@ -780,7 +1216,7 @@ int main(int argc, char *argv[])
 			dta_query = dta_query_create();
 			if (dta_query == NULL) {
 				fprintf(stderr, "Memory error allocating dta query.\n");
-				return -1;
+				break;
 			}
 			
 			printf("\tenter ending domain type name:  ");
@@ -792,7 +1228,7 @@ int main(int argc, char *argv[])
 			if (dta_query->start_type < 0) {
 				dta_query_destroy(dta_query);
 				fprintf(stderr, "Invalid starting type.");
-				return -1;
+				break;
 			}
 			
 			/* determine if requesting a reverse DT analysis */
@@ -927,8 +1363,7 @@ int main(int argc, char *argv[])
 			}
 			printf("\nAnalysis completed . . . \n\n");
 			if (display) {
-				test_print_direct_flow_analysis(policy, query,
-								num_answers, answers);
+				test_print_direct_flow_analysis(policy, num_answers, answers);
 			}
 
 			iflow_destroy(answers);
@@ -1182,6 +1617,57 @@ int main(int argc, char *argv[])
 			}
 			free(exprs_b);
 			
+			break;
+		}
+		case 't':
+		{
+			types_relation_query_t *tr_query = NULL;
+			types_relation_results_t *tr_results = NULL;
+											
+			tr_query = types_relation_query_create();
+			if (tr_query == NULL) {
+				fprintf(stderr, "Error creating query.");
+				break;
+			}
+			printf("\tenter type A:  ");
+			fgets(ans, sizeof(ans), stdin);
+			trim_trailing_whitespace(&ans_ptr);	
+			tr_query->type_name_A = (char *)malloc((strlen(ans) + 1) * sizeof(char));
+			if (tr_query->type_name_A == NULL) {
+				types_relation_query_destroy(tr_query);
+				fprintf(stderr, "out of memory");
+				break;
+			}
+			strcpy(tr_query->type_name_A, ans);	
+	
+			printf("\tenter type B:  ");
+			fgets(ans, sizeof(ans), stdin);
+			trim_trailing_whitespace(&ans_ptr);	
+			tr_query->type_name_B = (char *)malloc((strlen(ans) + 1) * sizeof(char));
+			if (tr_query->type_name_B == NULL) {
+				types_relation_query_destroy(tr_query);
+				fprintf(stderr, "out of memory");
+				break;
+			}
+			strcpy(tr_query->type_name_B, ans);
+			
+			if (get_type_relation_options(&tr_query, policy) != 0) {
+				types_relation_query_destroy(tr_query);
+				break;
+			}
+			
+			/* Perform the analysis */
+			rt = types_relation_determine_relationship(tr_query, &tr_results, policy);
+			if (rt != 0) {	
+				types_relation_query_destroy(tr_query);
+				fprintf(stderr, "\nAnalysis error.\n");
+				break;
+			}
+		
+			test_print_type_relation_results(tr_query, tr_results, policy); 
+			
+			types_relation_query_destroy(tr_query);	
+			if (tr_results) types_relation_destroy_results(tr_results);
 			break;
 		}
 		case 'f':
