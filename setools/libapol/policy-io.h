@@ -19,17 +19,12 @@
 	#define LIBAPOL_DEFAULT_POLICY "/etc/security/selinux/src/policy/policy.conf"
 #endif
 
-#define	SEARCH_BINARY 1
-#define SEARCH_SOURCE 2
-#define SEARCH_BOTH 3
-
 /* * Return codes for find_default_policy_file() function. */
 #define FIND_DEFAULT_SUCCESS 		0
 #define GENERAL_ERROR	 		-1
 #define BIN_POL_FILE_DOES_NOT_EXIST 	-2
 #define SRC_POL_FILE_DOES_NOT_EXIST 	-3
 #define NOT_SELINUX_AWARE		-4
-#define READ_POLICY_VER_FILE_ERROR	-5
 
 int close_policy(policy_t *policy);
 int open_policy(const char* filename, policy_t **policy);
