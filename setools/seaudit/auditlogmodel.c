@@ -7,6 +7,7 @@
  */
 
 #include "auditlogmodel.h"
+#include "seaudit_callback.h"
 #include "parse.h"
 #include "sort.h"
 #include "seaudit.h"
