@@ -1339,15 +1339,20 @@ int Apol_GetPolicyVersionNumber(ClientData clientData, Tcl_Interp *interp, int a
 	}
 	switch (policy->version) {
 	case POL_VER_PRE_11:
-		Tcl_AppendResult(interp, "1", (char *) NULL);
+		Tcl_AppendResult(interp, "10", (char *) NULL);
 		break;
 	case POL_VER_11:
 	/* case POL_VER_12: */ /* (currently synonmous with v.11 */
-		Tcl_AppendResult(interp, "2", (char *) NULL);
+		Tcl_AppendResult(interp, "12", (char *) NULL);
 		break;
 	case POL_VER_15:
-		Tcl_AppendResult(interp, "3", (char *) NULL);
+		Tcl_AppendResult(interp, "15", (char *) NULL);
 		break;
+#ifdef CONFIG_SECURITY_SELINUX_CONDITIONAL_POLICY
+	case POL_VER_16:
+		Tcl_AppendResult(interp, "16", (char *) NULL);
+		break;
+#endif
 	default:
 		Tcl_AppendResult(interp, "0", (char *) NULL);
 		break;
