@@ -123,9 +123,9 @@ int sefs_search_type(sefs_filesystem_data_t * fsd, char *type, int use_regex)
 			return -1;
 		}
 	
-	        for (i = 0; i < fsd->numtypes; i++) {
-			if (regexec(&reg, fsd->types[i].setypename, 0, NULL, 0) == 0) {
-				print_type_paths(&fsd->types[i], fsd->paths, 1);
+	        for (i = 0; i < fsd->num_types; i++) {
+			if (regexec(&reg, fsd->types[i].name, 0, NULL, 0) == 0) {
+				print_type_paths(&fsd->types[i], fsd->files, 1);
 				num++;
 			}
 		}
@@ -134,10 +134,10 @@ int sefs_search_type(sefs_filesystem_data_t * fsd, char *type, int use_regex)
 			return 0;
 		return 1;
 	} else {
-		rc = avl_get_idx(type, &(fsd->typetree));
+		rc = avl_get_idx(type, &(fsd->type_tree));
 		if (rc<0)
 			return 1;
-		print_type_paths(&fsd->types[rc], fsd->paths, 0);
+		print_type_paths(&fsd->types[rc], fsd->files, 0);
 	}
 
 	return 0;
@@ -171,19 +171,14 @@ XXX JAM add code here
 			regfree(&reg);
 			return -1;
 		}
-		for (i=0; i < fsd->numpaths; i++)
+		for (i=0; i < fsd->num_files; i++)
 		{
-/* XXX kill line	*/printf("\nfsd->numpaths: %x\npathlist", fsd->numpaths);	
-			for (j=0; j < fsd->paths[i].numpaths ; j++);
+			for (j=0; j < fsd->files[i].num_links ; j++);
 			{
-/* XXX kill line 		*/printf("%x,%x ", i, j); (i%8)? : printf("\n");
-/* XXX kill line	*/printf("fsd->paths[%x].numpaths: %i\n", i, fsd->paths[i].numpaths);
-/* XXX kill line		*/printf("%s\n", fsd->paths[i].pathnames[j]);
-				if(fsd->paths[i].pathnames[j])
-				if(regexec(&reg, fsd->paths[i].pathnames[j], 0, NULL, 0) == 0)
+				if(fsd->files[i].path_names[j]) /* XXX delete line later*/
+				if(regexec(&reg, fsd->files[i].path_names[j], 0, NULL, 0) == 0)
 				{
-					/*printf("%s\t\t%s\n", fsd->paths[i].pathnames[j],
-						context_str(fsd->paths[i].context)); /*working?*/
+					printf("%s\t%s:%s:%s\n", fsd->files[i].path_names[j], 	fsd->users[fsd->files[i].context.user], fsd->files[i].context.role == OBJECT_R ? "object_r": "UNLABELED", fsd->types[fsd->files[i].context.type].name); /*working?*/
 					num++;
 				} 
 
@@ -191,14 +186,9 @@ XXX JAM add code here
 		}
 		return num?0:1;
 	}
-	else 
+	else /* not using regex */
 	{
-		rc = avl_get_idx(path, &(fsd->pathtree))/* get path tree result */;
-		if (rc < 0)
-			return 1;
-		printf(/*"%s\t\t%s\n", fsd->paths[rc].pathnames[j],
-						context_str(fsd->paths[rc].context));*/
-/* XXX kill line	*/"dummy print\n");
+
 	}
 
 	return 0;
@@ -222,16 +212,16 @@ int sefs_search_user(sefs_filesystem_data_t * fsd, char * uname)
 		return -1;
 	}
 
-	for (i = 0; i < fsd->numpaths; i++) {
-		fileinfo = &(fsd->paths[i]);
-		u = context_user_get(fileinfo->context);
+	for (i = 0; i < fsd->num_files; i++) {
+		fileinfo = &(fsd->files[i]);
+		u = fsd->users[fileinfo->context.user];
 
 		if (u == NULL) continue;
 
 		if (strcmp(uname, u) == 0) {
 			match = 0;
-			for (j = 0; j < fileinfo->numpaths; j++) {
-				pathname = fileinfo->pathnames[j];
+			for (j = 0; j < fileinfo->num_links; j++) {
+				pathname = fileinfo->path_names[j];
 				printf("%s\n", pathname);
 			}
 		}
@@ -245,11 +235,11 @@ int sefs_list_types(sefs_filesystem_data_t * fsd)
 {
 	int i = 0;
 
-	for (i = 0; i < fsd->numtypes; i++) {
-		printf("%s\n", fsd->types[i].setypename);
+	for (i = 0; i < fsd->num_types; i++) {
+		printf("%s\n", fsd->types[i].name);
 	}
 
-	return 1;
+	return 0;
 }
 
 
