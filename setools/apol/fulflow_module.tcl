@@ -107,9 +107,6 @@ namespace eval Apol_Analysis_fulflow {
 	## the first argument is the namespace name of the module, and the second is the
 	## descriptive display name you want to be displayed in the GUI selection box.
     	Apol_Analysis::register_analysis_modules "Apol_Analysis_fulflow" "Transitive Information Flow"
-    	
-    	# Provided to tkwait to prevent multiple clicks on an object in the Advanced Search options dialog.
-    	variable rendering_finished	0
 }
 
 
@@ -2248,7 +2245,8 @@ proc Apol_Analysis_fulflow::advanced_filters_change_obj_state_on_perm_select {pa
 		set class_elements [array get f_opts "$path_name,perm_status_array,$class_sel,*"]
 		if {$class_elements != ""} {
 			set num_perms_for_class [expr {[llength $class_elements] / 2}]
-			for {set i 0} {$i < [llength $class_elements]} {incr i} {
+			set len [llength $class_elements]
+			for {set i 0} {$i < $len} {incr i} {
 				incr i
 				if {[string equal [lindex $class_elements $i] "exclude"]} {
 					incr num_excluded	
@@ -2290,7 +2288,6 @@ proc Apol_Analysis_fulflow::advanced_filters_change_obj_state_on_perm_select {pa
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_fulflow::advanced_filters_embed_perm_buttons {list_b class perm path_name} {
 	variable f_opts
-	variable rendering_finished
 	
  	# Frames
 	set frame [frame $list_b.f:$class:$perm -bd 0 -bg white]
@@ -2326,7 +2323,6 @@ proc Apol_Analysis_fulflow::advanced_filters_embed_perm_buttons {list_b class pe
 	pack $lbl1 $lbl2 -side left -anchor nw
 	pack $cb_include $cb_exclude $lbl_weight -side left -anchor nw
 	
-	set rendering_finished 1
 	# Return the pathname of the frame to embed.
  	return $frame
 }
@@ -2355,27 +2351,11 @@ proc Apol_Analysis_fulflow::advanced_filters_clear_perms_text {path_name} {
 		}
 	}
 	$f_opts($path_name,perms_box) delete 1.0 end
-	return 0
+	$f_opts($path_name,perms_box) configure -state disabled
 }
 
-# ------------------------------------------------------------------------------
-# Command Apol_Analysis_fulflow::advanced_filters_display_permissions 
-# 	- Displays permissions for the selected object class in the permissions 
-#	  text box.
-#	- Takes the selected object class index as the only argument. 
-#	  This proc also searches the class string for the sequence " (Excluded)"
-# 	  in order to process the class name only. This is because a Tk listbox
-# 	  is being used and does not provide a -text option for items in the 
-# 	  listbox.
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_fulflow::advanced_filters_display_permissions {path_name} {
+proc Apol_Analysis_fulflow::render_permissions {path_name} {
 	variable f_opts
-	
-	if {[$f_opts($path_name,class_listbox) get 0 end] == "" || \
-		[llength [$f_opts($path_name,class_listbox) curselection]] > 1} {
-		# Nothing in the listbox; return
-		return 0
-	}
 	
 	set class_idx [$f_opts($path_name,class_listbox) curselection]
 	if {$class_idx == ""} {
@@ -2400,7 +2380,7 @@ proc Apol_Analysis_fulflow::advanced_filters_display_permissions {path_name} {
 		return -1
 	}
 	set perms_list [lsort $perms_list]
-	
+	$f_opts($path_name,perms_box) configure -state normal
 	foreach perm $perms_list { 
 		# If this permission does not exist in our perm status array, this means
 		# that a saved query was loaded and the permission defined in the policy
@@ -2413,14 +2393,35 @@ proc Apol_Analysis_fulflow::advanced_filters_display_permissions {path_name} {
 			$f_opts($path_name,perms_box) $class_name $perm $path_name] 
 		$f_opts($path_name,perms_box) insert end "\n"
 	}
-	tkwait variable Apol_Analysis_fulflow::rendering_finished
-	set rendering_finished 0
-	update idletasks
-	
 	# Disable the text widget. 
 	$f_opts($path_name,perms_box) configure -state disabled
-	set f_opts($path_name,class_selected_idx) $class_idx
-	return 0
+}
+
+# ------------------------------------------------------------------------------
+# Command Apol_Analysis_fulflow::advanced_filters_display_permissions 
+# 	- Displays permissions for the selected object class in the permissions 
+#	  text box.
+#	- Takes the selected object class index as the only argument. 
+#	  This proc also searches the class string for the sequence " (Excluded)"
+# 	  in order to process the class name only. This is because a Tk listbox
+# 	  is being used and does not provide a -text option for items in the 
+# 	  listbox.
+# ------------------------------------------------------------------------------
+proc Apol_Analysis_fulflow::advanced_filters_display_permissions {path_name} {
+	variable f_opts
+	
+	if {[$f_opts($path_name,class_listbox) get 0 end] == "" || \
+		[llength [$f_opts($path_name,class_listbox) curselection]] > 1} {
+		# Nothing in the listbox; return
+		return 0
+	}
+	set bind_tag_id [string trim $path_name "."]
+	bind ${bind_tag_id}_fulflow_object_list_Tag <<ListboxSelect>> ""
+	set f_opts($path_name,class_selected_idx) [$f_opts($path_name,class_listbox) curselection]
+	Apol_Analysis_fulflow::render_permissions $path_name
+	update idletasks
+	bind ${bind_tag_id}_fulflow_object_list_Tag <<ListboxSelect>> \
+		"Apol_Analysis_fulflow::advanced_filters_display_permissions $path_name"
 }
 
 # ------------------------------------------------------------------------------
@@ -2533,8 +2534,9 @@ proc Apol_Analysis_fulflow::advanced_filters_set_widgets_to_default_state {path_
 	$f_opts($path_name,spinbox_threshhold) setvalue @$val
 	Apol_Analysis_fulflow::advanced_filters_change_spinbox_state \
 		$path_name
-	
-	return 0
+	# Select the top most item by default
+	$f_opts($path_name,class_listbox) selection set 0
+	Apol_Analysis_fulflow::advanced_filters_display_permissions $path_name
 }
 
 # ------------------------------------------------------------------------------
@@ -2761,7 +2763,7 @@ proc Apol_Analysis_fulflow::advanced_filters_create_dialog {path_name title_txt}
 		-command "Apol_Analysis_fulflow::advanced_filters_change_spinbox_state \
 			$path_name"]
 
-	set bframe [frame [$f_opts($path_name,classes_box) getframe].bframe]
+	set bframe [frame [$f_opts($path_name,permissions_title_frame) getframe].bframe]
 	set b_incl_all_perms [Button $bframe.b_incl_all_perms -text "Include All Perms" \
 		-helptext "Select this to include all permissions for the selected object in the query." \
 		-command "Apol_Analysis_fulflow::advanced_filters_include_exclude_permissions \

@@ -1,6 +1,6 @@
 AN OVERVIEW OF DOMAIN TRANSITION ANALYSIS
 apol, version 1.6
-February 09, 2005
+February 12, 2005
 selinux@tresys.com
 
 A key feature of Type Enforcement (TE) security is the ability to 
@@ -96,5 +96,25 @@ to types that meet the above three criteria and that have the specified
 privileges or access to a particular object type(s). See 'General Help' 
 for the Forward DTA Advanced Search Options feature in apol.
 
+FILTERING DOMAIN TRANSITION RESULTS IN APOL
 
-
+The domain transition analysis interface in apol provides the user with 
+the ability to further refine a domain transition query in order to find 
+transitions to a specific domain and/or transitions to domains which are 
+granted specific access to object types or classes. Filtering results types 
+using regular expression is enabled for both forward and reverse domain 
+transition queries, however, the access filters are only enabled for a 
+forward domain transition query. To enable and use the access filters, the 
+user needs to select the "Use access filters" checkbutton at which point, he 
+can display the Access Filters dialog. This dialog presents listboxes for 
+including object types in the access filter and also a textview where the 
+user can specify particular object class access. The object class/permissions 
+section is only enabled if an object type has been included. An access filter 
+may be particulary useful to a user if he or she is searching for transitions 
+to domains that have specific access to an object type and/or class. For 
+example, one could determine whether the type user_t is allowed to transition 
+to a domain that can write a file of type shadow_t. To run this query from 
+apol, the user simply needs to specify the starting type as user_t, go to the 
+Access Filters dialog, add shadow_t to the included object types listbox, 
+select 'file' from the Object Classes listbox and make sure that 'write' 
+permission has been included.

@@ -392,6 +392,7 @@ proc Apol_Analysis_tra::do_analysis {results_frame} {
 		}
 	    }
 	}
+	Apol_Analysis_tra::display_progressDlg	
 	set dta_object(x) "" 
 	if {$dta_AB_sel || $dta_BA_sel} {
 		Apol_Analysis_dta::forward_options_copy_object $forward_options_Dlg dta_object
@@ -432,7 +433,7 @@ proc Apol_Analysis_tra::do_analysis {results_frame} {
 				}	
 			}
 		}
-		set dta_types $dta_object($forward_options_Dlg,filtered_incl_types)
+		set dta_types $Apol_Types::typelist 
 		
 		if {$dta_num_object_classes} {	
 			set dta_objects_sel 1
@@ -441,7 +442,7 @@ proc Apol_Analysis_tra::do_analysis {results_frame} {
 			set dta_filter_types 1
 		} 
 	}
-
+	array unset dta_object
 	# Initialize transitive flow variables - These options are here for setting advanced options for DTA analysis.
 	set tif_num_object_classes 0
 	set tif_perm_options ""
@@ -451,8 +452,7 @@ proc Apol_Analysis_tra::do_analysis {results_frame} {
 	
 	# Initialize direct flow variables - These options are here for setting advanced options for DTA analysis.
 	set filter_dirflow_objs 0
-	
-	Apol_Analysis_tra::display_progressDlg			
+		
 	set rt [catch {set results [apol_TypesRelationshipAnalysis \
 		$typeA \
 		$typeB \
@@ -484,7 +484,7 @@ proc Apol_Analysis_tra::do_analysis {results_frame} {
 	        tk_messageBox -icon error -type ok -title "Error" -message "$err"
 		return -code error
 	} 
-	array unset dta_object
+
 	set tra_listbox [Apol_Analysis_tra::create_resultsDisplay $results_frame]
 	set rt [catch {Apol_Analysis_tra::create_results_list_structure $tra_listbox $results} err]
 	if {$rt != 0} {	
@@ -891,12 +891,6 @@ proc Apol_Analysis_tra::display_progressDlg {} {
         	-maximum 3 \
         	-width 45]
         update
-        bind $progressBar <<AnalysisStarted>> {
-        	set Apol_Analysis_fulflow::progress_indicator [expr $Apol_Analysis_fulflow::progress_indicator + 1]
-        }
-        # TODO: generate virtual events to place onto Tcl's event queue, to capture progress.
-	#event generate $Apol_Analysis_fulflow::progressDlg <<AnalysisStarted>> -when head
-
         return 0
 } 
 					
@@ -1372,7 +1366,7 @@ proc Apol_Analysis_tra::display_dta_info {tra_listbox tra_info_text data start_t
 				$tra_info_text insert end "   "
 				set startIdx [$tra_info_text index insert]
 				$tra_info_text insert end "\[Disabled\]\n"
-				set endIdx [$tra_info_text index insert]
+				set end_idx [$tra_info_text index insert]
 				$tra_info_text tag add $Apol_Analysis_tra::disabled_rule_tag $start_idx $end_idx
 			} else {
 				$tra_info_text insert end "\n"
@@ -1445,7 +1439,7 @@ proc Apol_Analysis_tra::display_dta_info {tra_listbox tra_info_text data start_t
 					$tra_info_text insert end "   "
 					set startIdx [$tra_info_text index insert]
 					$tra_info_text insert end "\[Disabled\]\n"
-					set endIdx [$tra_info_text index insert]
+					set end_idx [$tra_info_text index insert]
 					$tra_info_text tag add $Apol_Analysis_tra::disabled_rule_tag $start_idx $end_idx
 				} else {
 					$tra_info_text insert end "\n"
@@ -1493,60 +1487,11 @@ proc Apol_Analysis_tra::display_dta_info {tra_listbox tra_info_text data start_t
 					$tra_info_text insert end "   "
 					set startIdx [$tra_info_text index insert]
 					$tra_info_text insert end "\[Disabled\]\n"
-					set endIdx [$tra_info_text index insert]
+					set end_idx [$tra_info_text index insert]
 					$tra_info_text tag add $Apol_Analysis_tra::disabled_rule_tag $start_idx $end_idx
 				} else {
 					$tra_info_text insert end "\n"
 				}
-			}
-		}
-		incr idx
-		set num_additional [lindex $data $idx]
-		if {![string is integer $num_additional]} {
-			puts "Number of additional access rules is not an integer: $num_additional"
-			return
-		}
-		
-		set start_idx $end_idx
-		$tra_info_text insert end "\nAccess granted to this target domain:  "
-		set end_idx [$tra_info_text index insert]
-		$tra_info_text tag add $Apol_Analysis_tra::subtitle_tag $start_idx $end_idx
-		set start_idx $end_idx
-		$tra_info_text insert end "$num_additional"
-		set end_idx [$tra_info_text index insert]
-		$tra_info_text tag add $Apol_Analysis_tra::counters_tag $start_idx $end_idx
-		$tra_info_text insert end "rules\n"
-	
-		for {set j 0 } { $j < $num_additional } { incr j }  {
-			incr idx
-			set rule [lindex $data $idx]
-			incr idx
-			set lineno [lindex $data $idx]
-		
-			$tra_info_text insert end "\t"
-			set start_idx [$tra_info_text index insert]
-			
-			# Only display line number hyperlink if this is not a binary policy.
-			if {![ApolTop::is_binary_policy]} {
-				$tra_info_text insert end "($lineno) "
-				set end_idx [$tra_info_text index insert]
-				Apol_PolicyConf::insertHyperLink $tra_info_text "$start_idx wordstart + 1c" "$start_idx wordstart + [expr [string length $lineno] + 1]c"
-				set start_idx $end_idx
-			}
-			$tra_info_text insert end "$rule"
-			set end_idx [$tra_info_text index insert]
-			$tra_info_text tag add $Apol_Analysis_tra::rules_tag $start_idx $end_idx
-				
-			incr idx
-			# The next element should be the enabled boolean flag.
-			if {[lindex $data $idx] == 0} {
-				$tra_info_text insert end "   "
-				set startIdx [$tra_info_text index insert]
-				$tra_info_text insert end "\[Disabled\]\n"
-				set endIdx [$tra_info_text index insert]
-				$tra_info_text tag add $Apol_Analysis_tra::disabled_rule_tag $start_idx $end_idx
-			} else {
-				$tra_info_text insert end "\n"
 			}
 		}
 	}
@@ -1956,18 +1901,21 @@ proc Apol_Analysis_tra::parse_query_options_list {query_options curr_idx parentD
 	Apol_Analysis_tra::reset_variables
 	set i $curr_idx
 	while {$i != [llength $query_options]} {
+		set tmp [string trim [lindex $query_options $i] "\{\}"]
         	# name:value pairs. 
-        	switch -exact -- [lindex $query_options $i] {
+        	switch -exact -- $tmp {
         		"typeA" { 
         			incr i
 				if {[lindex $query_options $i] != "\{\}"} {
-					set typeA [lindex $query_options $i]      
+					set tmp [string trim [lindex $query_options $i] "\{\}"]
+					set typeA $tmp      
 				}
 			}
 			"typeB" {
 				incr i
 				if {[lindex $query_options $i] != "\{\}"} {
-			        	set typeB [lindex $query_options $i]    
+					set tmp [string trim [lindex $query_options $i] "\{\}"]
+			        	set typeB $tmp    
 			        }
 			}
 			"attribA_sel" {
@@ -1981,13 +1929,15 @@ proc Apol_Analysis_tra::parse_query_options_list {query_options curr_idx parentD
 			"attribA" {
 				incr i
 				if {[lindex $query_options $i] != "\{\}"} {
-			        	set attribA [lindex $query_options $i]    
+					set tmp [string trim [lindex $query_options $i] "\{\}"]
+			        	set attribA $tmp   
 			        }
 			}
 			"attribB" {
 				incr i
 				if {[lindex $query_options $i] != "\{\}"} {
-			        	set attribB [lindex $query_options $i]    
+					set tmp [string trim [lindex $query_options $i] "\{\}"]
+			        	set attribB $tmp   
 			        }
 			}		
 			"comm_attribs_sel" {

@@ -90,9 +90,12 @@ typedef struct domain_trans_analysis {
 typedef struct dta_query {
 	int start_type; 		/* index into policy->types */
 	bool_t	reverse;		/* reverse direction (0 is non-reverse, anything else is reverse) */
-	bool_t all_obj_types;		/* used to indicate that this is a list of all the object types */
+	bool_t use_object_filters;	/* indicates whether to filter the result types by object class access.*/
+	bool_t use_endtype_filters;	/* indicates whether to filter the result types by end type.*/
 	int num_end_types;
-	int *end_types; 		/* indices into policy->types */
+	int *end_types; 		/* indices into policy->types; this array is used for filtering object type access */
+	int num_filter_types;
+	int *filter_types; 		/* indices into policy->types; this array is used for filtering the result domains */
 	int num_obj_options; 		/* number of permission options */
 	obj_perm_set_t *obj_options;
 } dta_query_t;
