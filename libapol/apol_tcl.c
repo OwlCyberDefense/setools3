@@ -6099,7 +6099,7 @@ static int apol_relabel_fromto_results_append_subject_info(ap_relabel_result_t *
 	unsigned char direction = 0;
 	
 	assert(results != NULL && policy != NULL && subjects_list != NULL);
-/* XXX set subject_list[0] to direction of tgt */
+	/* set subject_list[0] to direction of tgt */
 	direction = (results->targets[tgt_idx].direction & (~AP_RELABEL_DIR_START));
 	if (direction == AP_RELABEL_DIR_TO) {
 		subject_list[0] = Tcl_NewStringObj("to", -1);
@@ -6127,7 +6127,6 @@ static int apol_relabel_fromto_results_append_subject_info(ap_relabel_result_t *
 		fprintf(stderr, "Tcl error while appending element to list.\n");
 	        return -1;
 	}
-        /* XXX stopped edit here for this func TODO resume */        
         subject_list[2] = Tcl_NewListObj (0, NULL); /* List of line_no/rules */
 	for (i = 0; i < results->targets[tgt_idx].num_objects; i++ ) {
 		for (j = 0; j < results->targets[tgt_idx].objects[i].num_subjects; j++) {
@@ -6318,8 +6317,7 @@ static Tcl_Obj *apol_relabel_domain_results(ap_relabel_result_t *results, int st
                 }
                 /* TCL list should look like { end_type1 rule_list end_type2 rule_list ... } */
 	}
-/* XXX repeat of above for to list
-*/        
+	/* repeat of above for to list*/        
         for (i = 0; i < results->num_targets; i++) {
 		results_list_ptr = results_list[1];
 		if (!(results->targets[i].direction & AP_RELABEL_DIR_TO))
@@ -6405,8 +6403,8 @@ int Apol_RelabelAnalysis (ClientData clientData, Tcl_Interp *interp,
 	unsigned char direction;
 	ap_relabel_result_t results;
 	char *mode_string, *end_type = NULL, *err; 
-	int start_type, /* num_perm_objs = 0, ??? */do_filter_types;
-	Tcl_Obj *results_list_obj /*, **perm_list ??? */; 
+	int start_type, do_filter_types;
+	Tcl_Obj *results_list_obj; 
 	regex_t reg;
 	int *filter_types = NULL, rt, sz, num_filter_types;
 	                
@@ -6444,38 +6442,6 @@ int Apol_RelabelAnalysis (ClientData clientData, Tcl_Interp *interp,
                 return TCL_ERROR;
         }
 
-/* XXX needed ???*/     /*
-	if (Tcl_ListObjGetElements(interp, objv [3], &num_perm_objs, &perm_list) == TCL_ERROR) {
-                return TCL_ERROR;
-        }
-        if (num_perm_objs) 
-        	mode.filter = 1;
-        for ( ; num_perm_objs > 0; num_perm_objs--, perm_list++) {
-                Tcl_Obj *object_obj, *perm_list_obj, **perms;
-                char *object_class, *permission;
-                int num_perms, i;
-                
-                if (Tcl_ListObjIndex(interp, *perm_list, 0, &object_obj) == TCL_ERROR) {
-                        return TCL_ERROR;
-                }
-                if (Tcl_ListObjIndex(interp, *perm_list, 1, &perm_list_obj) == TCL_ERROR) {
-                        return TCL_ERROR;
-                }
-                object_class = Tcl_GetString(object_obj);
-                if (Tcl_ListObjGetElements(interp, perm_list_obj, &num_perms, &perms) == TCL_ERROR) {
-	                return TCL_ERROR;
-	        }
-	        assert(num_perms > 0);
-	        for (i = 0; i < num_perms; i++) {
-	        	permission = Tcl_GetString(perms[i]);
-	                if (apol_fill_filter_set(object_class, permission, &filter, policy) != 0) {
-	                        Tcl_SetResult (interp, "Error while filling filter set", TCL_STATIC);
-	                        return TCL_ERROR;
-	                }
-	        }
-        }
-*/	
-/* XXX end needed ??? */
         if (Tcl_GetIntFromObj(interp, objv[4], &do_filter_types) != TCL_OK) {
         	 Tcl_SetResult (interp, "Error while geting integer from TCL object.", TCL_STATIC);
 	         return TCL_ERROR;
