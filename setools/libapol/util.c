@@ -537,7 +537,7 @@ char* find_file(const char *file_name)
 		fprintf(stderr, "out of memory");
 		return NULL;
 	}	
-	sprintf(file, "%s%s", APOL_INSTALL_DIR, file_name);
+	sprintf(file, "%s/%s", APOL_INSTALL_DIR, file_name);
 	rt = access(file, R_OK);
 	if(rt == 0) {
 		dir = (char *)malloc(strlen(APOL_INSTALL_DIR) +1);
