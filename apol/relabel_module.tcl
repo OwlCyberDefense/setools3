@@ -1264,11 +1264,15 @@ proc Apol_Analysis_relabel::tree_select {widget node} {
 			append line "\n\n"
 			
 			foreach item $data {
-			    set start_index [expr {[string length $line] + 1}]
-			    append line "([lindex $item 0]"
-			    set end_index [string length $line]
-			    append line ") [lindex $item 1]\n"
-			    lappend policy_tags_list $start_index $end_index
+				if {![ApolTop::is_binary_policy]} {
+				    append line "("
+				    set start_index [expr {[string length $line]}]
+				    append line "[lindex $item 0]"
+				    set end_index [string length $line]
+				    append line ") "
+				    lappend policy_tags_list $start_index $end_index
+				}
+				append line "[lindex $item 1]\n"
 			}
 		}
 		append line "\n"
@@ -1311,20 +1315,26 @@ proc Apol_Analysis_relabel::tree_select {widget node} {
 				
 				foreach {rule_num rule} $rule_proof {
 					append line "    "
-					set start_index [expr {[string length $line] + 1}]
-					append line "($rule_num"
-					set end_index [string length $line]
-					append line ") $rule\n"
-					lappend policy_tags_list $start_index $end_index
+					if {![ApolTop::is_binary_policy]} {
+						append line "("
+						set start_index [expr {[string length $line]}]
+						append line "$rule_num"
+						set end_index [string length $line]
+						append line ") "
+						lappend policy_tags_list $start_index $end_index
+					}
+					append line "$rule\n"
 				}
 				append line "\n"
 			}
 		}
 	}
 	$widget_vars(current_rtext) insert end $line
-	foreach {start_index end_index} $policy_tags_list {
-		Apol_PolicyConf::insertHyperLink $widget_vars(current_rtext) \
-			"1.0 + $start_index c" "1.0 + $end_index c"
+	if {![ApolTop::is_binary_policy]} {
+		foreach {start_index end_index} $policy_tags_list {
+			Apol_PolicyConf::insertHyperLink $widget_vars(current_rtext) \
+				"1.0 + $start_index c" "1.0 + $end_index c"
+		}
 	}
 	foreach {start_index end_index} $subtitle_type_tags {
 		$widget_vars(current_rtext) tag add $Apol_Analysis_relabel::subtitle_tag \
