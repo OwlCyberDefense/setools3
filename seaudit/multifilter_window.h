@@ -24,6 +24,8 @@ typedef struct multifilter_window {
 	gint num_filter_windows;
 	GList *filter_windows;
 	GString *name;
+	GString *match;
+	GString *show;
 	struct seaudit_filtered_view *parent;
 } multifilter_window_t;
 
@@ -32,6 +34,9 @@ void multifilter_window_init(multifilter_window_t *window, struct seaudit_filter
 void multifilter_window_display(multifilter_window_t *window);
 void multifilter_window_hide(multifilter_window_t *window);
 void multifilter_window_destroy(multifilter_window_t *window);
+void multifilter_window_save_multifilter(multifilter_window_t *window);
+int multifilter_window_load_multifilter(multifilter_window_t *window);
 void multifilter_window_set_filter_name_in_list(multifilter_window_t *window, struct filter_window *filter_window);
+void multifilter_window_apply_multifilter(multifilter_window_t *window);
 
 #endif
