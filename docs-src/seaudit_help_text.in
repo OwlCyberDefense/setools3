@@ -20,6 +20,8 @@ The tool has the following main functions:
      2) Filter an audit log based on fields in the messages.
      3) Query the policy based on data from a given audit message.
      4) Export SE Linux audit messages to a file.
+     5) Generate reports in HTML or plain-text format from an
+        entire log or an seaudit view.
 
 
 Log and Policy Files:
@@ -32,8 +34,9 @@ startup.  Zero, one, or both arguments will be accepted.
 Seaudit provides you with the option of opening either a source or 
 binary policy file. If you do not specify a policy to open at the 
 command line, seaudit will attempt to use the system default source 
-policy (/etc/security/selinux/src/policy/policy.conf), or if this is 
-unavailable, the system default binary policy will be opened. 
+policy location (e.g. /etc/security/selinux/src/policy/policy.conf).
+If this file is unavailable, seaudit will attempt to open the system 
+default binary policy instead. 
 
 Note that seaudit does not require you to open a policy file; in this 
 case your functionality will be limited. For example, you will not be 
@@ -98,7 +101,11 @@ a pop-up menu that allows you to:
 	- View the entire message within a seperate textbox.
 	- Query the policy using the message.
 	- Export all selected messages to a file.
-	
+
+The REPORT menu allows you to create report files in HTML or plain-text 
+format using an entire audit log or an seaudit view. (See Creating 
+Reports below).
+
 Sorting:
 --------
 By default the messages are sorted in chronological order.  To sort by
@@ -269,6 +276,47 @@ with the policy type (binary or source).  The middle displays the
 number of log messages displayed "/" the total number of SE Linux 
 messages in the audit log.  The right corner shows the span of the 
 dates in the audit log.
+
+Creating Reports: 
+-----------------
+The REPORT menu allows you to create report files in HTML or plain-text 
+format using an entire audit log or an seaudit view. Selecting the 
+'Create Report' menu item displays a dialog for making configurations 
+to the report and then saving the report to a file. There are two
+frames, one for specifying the input to the report and the other for
+specifying how the report is to be created. 
+
+The input frame consists of options for indicating whether to use the 
+entire audit report or to use the messages displayed in the current log
+view as input to the report. Also, there is an option for including 
+malformed messages within the report (see the previous 'Log and Policy 
+Files' heading for what makes up a malformed message in seaudit). This 
+option is only enabled when the radiobutton for using the entire audit 
+log is selected. 
+
+The output frame contains radiobuttons for specifying the format of the 
+report (i.e. HTML or plain-text). Additionally, an entrybox is provided 
+in this frame for specifying a stylesheet to use when creating an HTML 
+report. There also is an entrybox for specifying the configuration file 
+to use for creating the report. If the stylesheet or the configuration
+file is not specified, seaudit will attempt to use the appropriate system 
+default files. If a report configuration file cannot be located at this 
+point, an error will be generated. All settings will be saved when this 
+dialog is destroyed. The values for the entryboxes, however, are updated 
+once the user has clicked the 'Create Report' button; otherwise, the 
+default values are maintained. You may change the default values for the 
+stylesheet and configuration file from the Preferences dialog, which is 
+accessible from the File menu.
+
+You may configure an seaudit report configuration file to use for creating
+reports in seaudit. This file is used to configure information that is to 
+be presented in the report. The seaudit report feature is dependent upon 
+this file in order to successfully generate reports. From this file, one 
+can configure various sections for the report, as well as create custom 
+sections in the report through the use of saved seaudit view files. Review 
+the default seaudit-report.conf file that comes packaged with your setools 
+distribution for more information. This file can be located in the seaudit 
+subdirectory or within the standard /usr/share/setools directory.
 
 Known Bugs: 
 ----------- 
