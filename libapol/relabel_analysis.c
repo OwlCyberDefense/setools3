@@ -958,6 +958,7 @@ static int apol_type_relabel(relabel_set_t *sets, int type, relabel_result_t *re
 int apol_query_relabel_analysis(relabel_set_t *sets, int type, relabel_result_t *res, policy_t *policy, relabel_mode_t *mode, relabel_filter_t *filter)
 {
 	int retv;
+	relabel_filter_t *temp = NULL;
 
 	if ( !sets || !policy || !mode )
 		return -1;
@@ -967,6 +968,11 @@ int apol_query_relabel_analysis(relabel_set_t *sets, int type, relabel_result_t 
  
 	if (mode->filter && !filter)
 		return -1;
+
+	if(!mode->filter)
+		temp = NULL;
+	else
+		temp = filter;
 
 	if (mode->transitive && !mode->trans_steps)
 		mode->transitive = 0; /* if 0 steps of transitive, turn transitive off */
@@ -981,7 +987,7 @@ int apol_query_relabel_analysis(relabel_set_t *sets, int type, relabel_result_t 
 
 	/* XXX there is currently no transitive analysis code
 	   XXX the trans flag is therefore ignored at this point */
-	retv = apol_type_relabel(sets, type, res, policy, mode->mode, filter);
+	retv = apol_type_relabel(sets, type, res, policy, mode->mode, temp);
 
 	return retv;
 }
