@@ -53,6 +53,10 @@ static void audit_log_purge_fltr_msgs(audit_log_t *log)
 	return;
 }
 
+const char* libseaudit_get_version(void)
+{
+	return LIBSEAUDIT_VERSION_STRING;
+}
 
 /*
  * helper functions for the avl_tree in audit_log_t */

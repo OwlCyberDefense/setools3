@@ -113,7 +113,7 @@ char * determine_user_type(const char* user)
 
 int Seuser_GetVersion(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
 {
-	Tcl_AppendResult(interp, SEUSER_VERSION_STRING, (char *) NULL);
+	Tcl_AppendResult(interp, libseuser_get_version(), (char *) NULL);
 	return TCL_OK;
 }
 
@@ -667,7 +667,7 @@ int Seuser_Init(Tcl_Interp *interp)
 	Tcl_CreateCommand(interp, "seuser_Exit", (Tcl_CmdProc *) Seuser_Exit, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "seuser_CheckCommitAccess", (Tcl_CmdProc *) Seuser_CheckCommitAccess, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 
-	Tcl_PkgProvide(interp, "seuser", SEUSER_VERSION_STRING);
+	Tcl_PkgProvide(interp, "seuser", libseuser_get_version());
 
 	return TCL_OK;
 }
