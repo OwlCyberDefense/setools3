@@ -75,6 +75,8 @@ GString* get_filename_from_user(const char *title, const gchar *startfilename)
 			return NULL;
 		}
 		filename = g_string_new(gtk_file_selection_get_filename(GTK_FILE_SELECTION(file_selector)));
+		/* If the filename specified is a directory, then simply list the files in that directory
+		 * under the Files list. */
 		if (g_file_test(filename->str, G_FILE_TEST_IS_DIR))
 			gtk_file_selection_complete(GTK_FILE_SELECTION(file_selector), filename->str);
 		else 
