@@ -59,13 +59,9 @@ proc Apol_Cond_Bools::cond_bool_embed_checkbutton {bool_name} {
 proc Apol_Cond_Bools::cond_bool_insert_listbox_items { } {
 	variable cond_bools_listbox 
 	variable cond_bools_list
-	variable cond_bools_value_array
 	
 	foreach bool_name $cond_bools_list {
-		set cond_bools_value_array($bool_name) 1
 		# Insert item into listbox and a checkbox at the left of the label of the item.
-		# The module is set to used(1) as the default. User can change this later
-		# by deselecting the checkbutton next to the module in the listbox.
 		$cond_bools_listbox insert end $bool_name -text $bool_name \
 		 	 -window [Apol_Cond_Bools::cond_bool_embed_checkbutton $bool_name]  	
 	}
@@ -82,13 +78,22 @@ proc Apol_Cond_Bools::cond_bool_insert_listbox_items { } {
 #
 proc Apol_Cond_Bools::cond_bool_initialize_vars { } {
 	variable cond_bools_list
+	variable cond_bools_value_array
 	
 	set cond_bools_list [apol_GetNames cond_bools]
 	set rt [catch {set cond_bools_list [apol_GetNames cond_bools]} err]
 	if {$rt != 0} {
 		return -code error $err
 	}	
-	set cond_bools_list [lsort $cond_bools_list] 				 	 
+	set cond_bools_list [lsort $cond_bools_list] 	
+	
+	foreach bool_name $cond_bools_list {
+		set rt [catch {set cond_bools_value_array($bool_name) [apol_Cond_Bool_GetBoolValue $bool_name]} err]
+		if {$rt != 0} {
+			return -code error $err
+		}
+	}
+				 	 
 	return 0
 } 
 
