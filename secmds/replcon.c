@@ -55,16 +55,6 @@
 
 
 /* Data Structures */
-typedef enum replcon_classes {
-	NORM_FILE,
-	DIR,
-	LNK_FILE,
-	CHR_FILE,
-	BLK_FILE,
-	SOCK_FILE,
-	FIFO_FILE,
-	ALL_FILES
-} replcon_classes_t;
 
 const char *replcon_object_classes[] =
     { "file", "dir", "lnk_file", "chr_file", "blk_file", "sock_file",
@@ -87,7 +77,7 @@ typedef struct replcon_info {
 	unsigned char quiet;
 	unsigned char stdin;
 	unsigned char unlabeled;
-	replcon_classes_t *obj_classes;
+	sefs_classes_t *obj_classes;
 	int num_classes;
 #ifndef FINDCON
 	replcon_context_pair_t *pairs;
@@ -456,7 +446,7 @@ replcon_info_free(replcon_info_t *info)
  *
  * Check if replcon_info has an object class
  */
-int replcon_info_has_object_class(replcon_info_t *info, replcon_classes_t obj_class)
+int replcon_info_has_object_class(replcon_info_t *info, sefs_classes_t obj_class)
 {
 	int i;
 
@@ -512,11 +502,11 @@ int replcon_is_valid_context_format(const char *context_str)
 }
 
 /*
- * replcon_get_file_class
+ * sefs_get_file_class
  *
  * Determines the file's class, and returns it
  */
-int replcon_get_file_class(const struct stat *statptr)
+int sefs_get_file_class(const struct stat *statptr)
 {
 	assert(statptr != NULL);
 	if (S_ISREG(statptr->st_mode))
@@ -544,7 +534,7 @@ int replcon_get_file_class(const struct stat *statptr)
  */
 int replcon_info_add_object_class(replcon_info_t *info, const char *str)
 {
-	replcon_classes_t class_id;
+	sefs_classes_t class_id;
 
 	assert(info != NULL);
 	class_id = replcon_is_valid_object_class(str);
@@ -556,8 +546,8 @@ int replcon_info_add_object_class(replcon_info_t *info, const char *str)
 	}
 
 	info->obj_classes =
-	    (replcon_classes_t *) realloc(info->obj_classes,
-					  sizeof (replcon_classes_t) *
+	    (sefs_classes_t *) realloc(info->obj_classes,
+					  sizeof (sefs_classes_t) *
 					  (info->num_classes + 1));
 	if (!info->obj_classes) {
 		fprintf(stderr, "Error: Out of memory\n");
@@ -763,7 +753,7 @@ replcon_file_context_replace(const char *filename, const struct stat *statptr,
 
 	assert(filename != NULL && statptr != NULL);
 	info = &replcon_info;
-	file_class = replcon_get_file_class(statptr);
+	file_class = sefs_get_file_class(statptr);
 	if (!replcon_info_has_object_class(info, file_class))
 		return 0;
 
@@ -856,7 +846,7 @@ findcon(const char *filename, const struct stat *statptr,
 	security_context_t file_con;
 	
 	assert(filename != NULL && statptr != NULL);
-	file_class = replcon_get_file_class(statptr);
+	file_class = sefs_get_file_class(statptr);
 	if (!replcon_info_has_object_class(&replcon_info, file_class))
 		return 0;
 
