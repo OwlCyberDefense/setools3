@@ -102,10 +102,10 @@ proc Apol_Analysis_flowassert::do_analysis {results_frame} {
         if {[set rt [catch {Apol_Perms_Map::load_default_perm_map} err]] != 0} {
             if {$rt == $Apol_Perms_Map::warning_return_val} {
                 tk_messageBox -icon warning -type ok \
-                    -title "Warning" -message $err
+                    -title "Flow Assertion Analysis Warning" -message $err
             } else {
                 tk_messageBox -icon error -type ok \
-                    -title "Error" -message $err
+                    -title "Flow Assertion Analysis Error" -message $err
                 return -code error
             }
         }
@@ -421,14 +421,14 @@ proc Apol_Analysis_flowassert::export_assert_file {} {
     variable assertfile_t
     variable last_filename
     variable last_pathname
-    set filename [tk_getSaveFile -title "Export Assertion File" \
+    set filename [tk_getSaveFile -title "Export Flow Assertion File" \
                       -parent $assertfile_t -initialdir $last_pathname \
                       -initialfile $last_filename]
     if {$filename == ""} {
         return
     }
     if [catch {::open $filename w} f] {
-        tk_messageBox -icon error -type ok -title "Export Assertion File" \
+        tk_messageBox -icon error -type ok -title "Export Flow Assertion File" \
             -message "Error saving to $filename" -parent $assertfile_t
         return
     }
@@ -444,14 +444,14 @@ proc Apol_Analysis_flowassert::import_assert_file {} {
     variable assertfile_t
     variable last_filename
     variable last_pathname
-    set filename [tk_getOpenFile -title "Import Assertion File" \
+    set filename [tk_getOpenFile -title "Import Flow Assertion File" \
                       -parent $assertfile_t -initialdir $last_pathname \
                       -initialfile $last_filename]
     if {$filename == ""} {
         return
     }
     if [catch {::open $filename r} f] {
-        tk_messageBox -icon error -type ok -title "Import Assertion File" \
+        tk_messageBox -icon error -type ok -title "Import Flow Assertion File" \
             -message "Error loading from $filename" -parent $assertfile_t
         return
     }
@@ -493,7 +493,7 @@ proc Apol_Analysis_flowassert::import_assert_file {} {
     set last_pathname [file dirname $filename]
     if {$errors_found == 1} {
         tk_messageBox -icon warning -type ok \
-            -title "Import Warning" \
+            -title "Import Flow Assertion Warning" \
             -message "Some lines in $filename could not be safely imported into apol."
     }
     sync_asserts_to_text
@@ -512,9 +512,9 @@ proc Apol_Analysis_flowassert::create_assert_wizard_dlg {{origline {}}} {
     array unset wiz_var
 
     if {$origline == ""} {
-        set title "Insert Assertion"
+        set title "Insert Flow Assertion"
     } else {
-        set title "Edit Assertion"
+        set title "Edit Flow Assertion"
     }
     # create a modal dialog to hold the wizard
     variable assertfile_t
@@ -898,7 +898,8 @@ proc Apol_Analysis_flowassert::id_list_lb_click {id_lb type_name y} {
 }
 
 # Takes the current assertion line and adds it to the current
-# assertion file.  Then closes the assertion dialog
+# assertion file, but only if the required list boxes have been
+# selected.  Then closes the assertion dialog.
 proc Apol_Analysis_flowassert::add_assertion {} {
     variable assertfile_t
     # add the line if and only if the widget is still visible (which
@@ -909,9 +910,15 @@ proc Apol_Analysis_flowassert::add_assertion {} {
         foreach var {mode start to via weight} {
             set $var $wiz_var($var)
         }
-        add_line [list $mode $start $to $via $weight]
-        variable assert_wizard_dlg
-        $assert_wizard_dlg enddialog 1
+        if {$start == {} || $to == {} || ($mode == "onlyflow" && $via == {})} {
+            tk_messageBox -icon error -type ok \
+                -title "Flow Assertion Wizard Error" \
+                -message "A required type has not been added."
+        } else {
+            add_line [list $mode $start $to $via $weight]
+            variable assert_wizard_dlg
+            $assert_wizard_dlg enddialog 1
+        }
     }
 }
 
@@ -1014,9 +1021,9 @@ proc Apol_Analysis_flowassert::add_comment_dlg {{origcomment ""}} {
         return
     }
     if {$origcomment == ""} {
-        set title "Insert Comment"
+        set title "Insert Flow Assertion Comment"
     } else {
-        set title "Edit Comment"
+        set title "Edit Flow Assertion Comment"
     }
     variable assertfile_t
     set d [Dialog .assertfile_comment_dlg -homogeneous 1 -spacing 10 \
