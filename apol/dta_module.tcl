@@ -1660,26 +1660,43 @@ proc Apol_Analysis_dta::change_types_list { } {
 }
 
 # ------------------------------------------------------------------------------
+#  Command Apol_Analysis_dta::display_forward_advanced_button
+# ------------------------------------------------------------------------------
+proc Apol_Analysis_dta::display_forward_advanced_button { } {   
+	variable b_forward_options
+	variable adv_frame
+	
+	if {![winfo exists $b_forward_options]} {
+		set b_forward_options [button $adv_frame.b_forward_options \
+			-text "Advanced search options" \
+			-command {Apol_Analysis_dta::forward_options_create_dialog}]
+	} 
+	pack $b_forward_options -side left -anchor center -expand yes -fill x
+	return 0
+}
+
+# ------------------------------------------------------------------------------
+#  Command Apol_Analysis_dta::hide_forward_advanced_button
+# ------------------------------------------------------------------------------
+proc Apol_Analysis_dta::hide_forward_advanced_button { } {  
+	variable b_forward_options
+	  
+	if {[winfo exists $b_forward_options]} {
+		destroy $b_forward_options
+	}
+	return 0
+}
+
+# ------------------------------------------------------------------------------
 #  Command Apol_Analysis_dta::config_domain_label
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_dta::config_domain_label { } {    
      	variable entry_frame 	
-	variable forward_options_Dlg
-	variable adv_frame
-	variable b_forward_options
 	
 	if {$Apol_Analysis_dta::display_direction == "forward"} {
 		$entry_frame configure -text "Select source domain:"
-		if {![winfo exists $b_forward_options]} {
-			set b_forward_options [button $adv_frame.b_forward_options -text "Advanced search options" \
-				-command {Apol_Analysis_dta::forward_options_create_dialog}]
-		} 
-		pack $b_forward_options -side left -anchor center -expand yes -fill x
 	} else {
 		$entry_frame configure -text "Select target domain:"
-		if {[winfo exists $b_forward_options]} {
-			destroy $b_forward_options
-		}
 	}
      	return 0
 } 
@@ -2227,8 +2244,8 @@ proc Apol_Analysis_dta::create_options { options_frame } {
 		-value reverse \
 		-command {Apol_Analysis_dta::config_domain_label}]
 	
-	set b_forward_options [button $adv_frame.b_forward_options -text "Advanced search options" \
-				-command {Apol_Analysis_dta::forward_options_create_dialog}]
+	#set b_forward_options [button $adv_frame.b_forward_options -text "Advanced search options" \
+	#			-command {Apol_Analysis_dta::forward_options_create_dialog}]
 				
 	pack $left_frame -side top -anchor nw
 	pack $right_frame -side top -anchor nw  
