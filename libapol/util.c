@@ -547,7 +547,7 @@ char* find_file(const char *file_name)
 			fprintf(stderr, "out of memory");
 			return NULL;
 		}
-		sprintf(dir, "./");
+		sprintf(dir, ".");
 		free(file);
 		return dir;
 	}
