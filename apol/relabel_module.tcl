@@ -15,36 +15,36 @@
 ##############################################################
 
 namespace eval Apol_Analysis_relabel {
-	variable VERSION 1
+    variable VERSION 1
     
-     	variable info_button_text \
-		"This analysis checks the possible ways to relabel objects allowed by a policy. \
-	    	The permissions relabelto and relabelfrom are special in a type enforcement environment as they \
-	    	provide a method of changing type.  Relabel analysis is designed to fascilitate queries about \
-	    	the possible changes for a given type.\n\n\There are four modes for a query, each presenting a \
-	    	differnt perspective:\n\n\To mode - beginning at starting type lists all types to which relabeling \
-	    	is possible and the associated rules*. \n\From mode - beginning at starting type lists all types \
-	    	from which relabeling is possible and the associated rules*.\n\Both mode - beginning at starting \
-	    	type lists all types to or from which relabeling is possible and the associated rules*.\n\Subject mode - \
-	    	given a starting subject lists all types to and from which that subject can relabel and the \
-	    	associated rules*.\n\n\Optionally results may be filtered by object class and permission using the \
-	    	Advanced Filters button. Permissions may be enabled or disabled for each object class. \n\n\*A note \
-	    	on rules display and filtering: Rules are stored for each type found to have relabeling permission, \
-	    	therefore it is possible to specify a permission in a filter and still see a rule that does not contain \
-	    	that specific permission.  This is not an error rather it means that multiple rules grant permissions \
-	    	for that specific source-target-object triplet. To see all rules governing a particular triplet use the \
-	    	Policy Rules tab."
-    	
+    variable info_button_text \
+	"This analysis checks the possible ways to relabel objects allowed by a policy. \
+    	The permissions relabelto and relabelfrom are special in a type enforcement environment as they \
+    	provide a method of changing type.  Relabel analysis is designed to fascilitate queries about \
+    	the possible changes for a given type.\n\n\There are four modes for a query, each presenting a \
+    	differnt perspective:\n\n\To mode - beginning at starting type lists all types to which relabeling \
+    	is possible and the associated rules*. \n\From mode - beginning at starting type lists all types \
+    	from which relabeling is possible and the associated rules*.\n\Both mode - beginning at starting \
+    	type lists all types to or from which relabeling is possible and the associated rules*.\n\Subject mode - \
+    	given a starting subject lists all types to and from which that subject can relabel and the \
+    	associated rules*.\n\n\Optionally results may be filtered by object class and permission using the \
+    	Advanced Filters button. Permissions may be enabled or disabled for each object class. \n\n\*A note \
+    	on rules display and filtering: Rules are stored for each type found to have relabeling permission, \
+    	therefore it is possible to specify a permission in a filter and still see a rule that does not contain \
+    	that specific permission.  This is not an error rather it means that multiple rules grant permissions \
+    	for that specific source-target-object triplet. To see all rules governing a particular triplet use the \
+    	Policy Rules tab."
+
 	variable f_opts 
 	# name of widget holding most recently executed assertion
-	variable most_recent_results ""
+	variable most_recent_results 	""
 	# Advanced filter dialog widget
 	variable advanced_filter_Dlg
 	set advanced_filter_Dlg .advanced_filter_Dlg
 	
 	variable excluded_tag		" (Excluded)"	
 	# Provided to tkwait to prevent multiple clicks on an object in the Advanced Search options dialog.
-	variable rendering_finished		0
+	variable rendering_finished	0
 	
 	# defined tag names for output 
 	variable title_type_tag		TITLE_TYPE
@@ -55,8 +55,7 @@ namespace eval Apol_Analysis_relabel {
 	# the namespace name of the module, and the second is the
 	# descriptive display name you want to be displayed in the GUI
 	# selection box.
-	Apol_Analysis::register_analysis_modules "Apol_Analysis_relabel" \
-		"Direct File Relabel"
+	Apol_Analysis::register_analysis_modules "Apol_Analysis_relabel" "Direct File Relabel"
 }
 
 # Apol_Analysis_relabel::initialize is called when the tool first
@@ -104,16 +103,15 @@ proc Apol_Analysis_relabel::do_analysis {results_frame} {
 		
 	foreach class $f_opts($advanced_filter_Dlg,class_list) {
 		set perms_list ""
-		# Determine if entire class is to be excluded, which is indicated by
+		# Determine if entire class is to be included, which is indicated by
 		# the " (Excluded)" tag appended to its' name.
 		set idx [string first $Apol_Analysis_relabel::excluded_tag $class]
 		if {$idx == -1} {
 			set class_elements [array names f_opts "$advanced_filter_Dlg,perm_status_array,$class,*"]
-			set exclude_perm_added 0
 			foreach element $class_elements {
 				set perm [lindex [split $element ","] 3]
 				# These are manually set to be included, so skip.
-				if {![string equal $f_opts($element) "exclude"]} {
+				if {[string equal $f_opts($element) "exclude"]} {
 					continue
 				}
 				set perms_list [lappend perms_list $perm]
@@ -121,17 +119,16 @@ proc Apol_Analysis_relabel::do_analysis {results_frame} {
 			if {$perms_list != ""} {
 				set objs_list [lappend objs_list [list $class $perms_list]]
 			}	
-		} else {
-			set class [string range $class 0 [expr $idx - 1]]	
-			set rt [catch {set perms_list [apol_GetPermsByClass $class 1]} err]
-			if {$rt != 0} {
-				tk_messageBox -icon error -type ok -title "Error" -message "$err"
-				return -1
-			}
-			set objs_list [lappend objs_list [list $class $perms_list]]	
-		}
+		} 
 	}
-
+	
+	if ($objs_list == "") {
+		tk_messageBox -icon error -type ok \
+		    -title "Relabel Analysis Error" \
+		    -message "You cannot exclude all object classes and permissions in the filter!"
+		return -code error
+	}
+	
 	if [catch {apol_RelabelAnalysis $widget_vars(start_type) $widget_vars(mode) $objs_list} results] {
 		tk_messageBox -icon error -type ok \
 		    -title "Relabel Analysis Error" -message $results
@@ -150,7 +147,7 @@ proc Apol_Analysis_relabel::do_analysis {results_frame} {
 		to     {set text "Type $widget_vars(start_type) can be relabeled to:"}
 		from   {set text "Type $widget_vars(start_type) can be relabeled from:"}
 		both   {set text "Type $widget_vars(start_type) can be relabeled to/from:"}
-		domain {set text "Type $widget_vars(start_type) can relabel"}
+		domain {set text "Subject $widget_vars(start_type) can relabel:"}
 	}
 	$dtf configure -text $text
 	set dsw [ScrolledWindow [$dtf getframe].dsw -auto horizontal]
@@ -182,31 +179,32 @@ proc Apol_Analysis_relabel::do_analysis {results_frame} {
 		    to     {append text "relabel to anything."}
 		    from   {append text "relabel from anything."}
 		    both   {append text "relabel to/from anything."}
-		    domain {append text "relabel to or from any domains."}
+		    domain {append text "relabel to or from any subject."}
 		}
 		$rtext insert end $text
 	} else {
 		$rtext insert end "This tab provides the results of a file relabeling analysis."
 		if {$widget_vars(mode) == "domain"} {
+			$dtree insert end root TO_LIST -text "To" -open 0 \
+				-drawcross auto 
+		        $dtree insert end root FROM_LIST -text "From" -open 0 \
+				-drawcross auto 
+				
+			set to_list [lindex $results 0]
+			set from_list [lindex $results 1]
+
 			# From list
-			foreach datum [lindex $results 0] {
+			foreach datum $from_list {
 		            set domain [lindex $datum 0]
-		            $dtree insert end root $domain -text $domain -open 1 \
-		                -drawcross auto -data [lrange $datum 1 end]
+		            $dtree insert end FROM_LIST from_list:$domain -text $domain -open 1 \
+		                -drawcross auto -data [lindex $datum 1]
 		        }
-		  
+
 		        # To list
-		        foreach datum [lindex $results 1] {
+		        foreach datum $to_list {
 		        	set domain [lindex $datum 0]
-		        	if {[$dtree exists $domain]} {
-		        		set new_data [lrange $datum 1 end]
-		        		set old_data [$dtree itemcget $domain -data]
-		        		set data [concat $old_data $new_data ]
-		        		$dtree itemconfigure $domain -data $data
-		        	} else {
-			            $dtree insert end root $domain -text $domain -open 1 \
-			                -drawcross auto -data [lrange $datum 1 end]
-			        }
+				$dtree insert end TO_LIST to_list:$domain -text $domain -open 1 \
+					-drawcross auto -data [lindex $datum 1]
 		        }
 		} else {
 		        foreach result_elem $results {
@@ -614,7 +612,7 @@ proc Apol_Analysis_relabel::adv_options_display_permissions {path_name} {
 
 	foreach perm $perms_list { 
 		# If this permission does not exist in our perm status array, this means
-		# that a saved query was loaded and the permission defined in the policy
+		# that a saved query was loaded and the permefined in the policy
 		# is not defined in the saved query. So we default this to be included.
 		if {[array names f_opts "$path_name,perm_status_array,$class_name,$perm"] == ""} {
 			set f_opts($path_name,perm_status_array,$class_name,$perm) include
@@ -880,19 +878,19 @@ proc Apol_Analysis_relabel::display_mod_options { opts_frame } {
     set widget_vars(mode) "to"
     set mode_tf [TitleFrame $option_f.mode_tf -text "Mode"]
     set relabelto_rb [radiobutton [$mode_tf getframe].relabelto_rb \
-                          -text "to" -value "to" \
+                          -text "To" -value "to" \
                           -variable Apol_Analysis_relabel::widget_vars(mode) \
                           -command [namespace code set_mode_relabelto]]
     set relabelfrom_rb [radiobutton [$mode_tf getframe].relabelfrom_rb \
-                            -text "from" -value "from" \
+                            -text "From" -value "from" \
                             -variable Apol_Analysis_relabel::widget_vars(mode)\
                             -command [namespace code set_mode_relabelfrom]]
     set domain_rb [radiobutton [$mode_tf getframe].domain_rb \
-                       -text "domain" -value "domain" \
+                       -text "Subject" -value "domain" \
                        -variable Apol_Analysis_relabel::widget_vars(mode) \
                        -command [namespace code set_mode_domain]]
     set both_rb [radiobutton [$mode_tf getframe].both_rb \
-                       -text "both" -value "both" \
+                       -text "Both" -value "both" \
                        -variable Apol_Analysis_relabel::widget_vars(mode) \
                        -command [namespace code set_mode_relabelboth]]
     pack $relabelto_rb $relabelfrom_rb $both_rb $domain_rb -anchor w -side top
@@ -969,8 +967,8 @@ proc Apol_Analysis_relabel::set_mode_relabelboth {} {
 
 proc Apol_Analysis_relabel::set_mode_domain {} {
     variable widgets
-    $widgets(start_l) configure -text "Starting domain:"
-    $widgets(start_attrib_ch) configure -text "Select starting domain using attrib:"
+    $widgets(start_l) configure -text "Subject:"
+    $widgets(start_attrib_ch) configure -text "Select subject using attrib:"
 }
 
 proc Apol_Analysis_relabel::toggle_attributes {clear_types_list} {
@@ -1070,12 +1068,21 @@ proc Apol_Analysis_relabel::tree_select {widget node} {
 	set end_index [string length $line]
 	$widget_vars(current_rtext) tag add $Apol_Analysis_relabel::title_type_tag $start_idx $end_idx
 	if {$widget_vars(mode) == "domain"} {
-		append line "\n\n"
-		foreach {rule_num rule} $data {
+		if {$node == "TO_LIST" || $node == "FROM_LIST"} {
+			return
+		}
+		if {[$widget_vars(current_dtree) parent $node] == "TO_LIST"} {
+			set node [string trimleft $node "to_list:"]
+		} else {
+			set node [string trim $node "from_list:"]
+		}
+		append line " $node\n\n"
+		
+		foreach item $data {
 		    set start_index [expr {[string length $line] + 1}]
-		    append line "($rule_num"
+		    append line "([lindex $item 0]"
 		    set end_index [string length $line]
-		    append line ") $rule\n"
+		    append line ") [lindex $item 1]\n"
 		    lappend policy_tags_list $start_index $end_index
 		}
 		append line "\n"
