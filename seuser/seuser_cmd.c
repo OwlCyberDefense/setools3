@@ -13,6 +13,7 @@
 #include <errno.h>
 #include <string.h>
 #include <assert.h>
+#include <limits.h>
 #include "../libapol/util.h"
 #include "../libseuser/seuser_db.h"
 #include "../libapol/policy-io.h"
@@ -306,6 +307,7 @@ int main(int argc, char *argv[])
 	user_db_t db;
 	policy_t *policy = NULL;
 	char *tmpmakeout = NULL;
+	char prog_path[PATH_MAX];
 
 	if(argc < 2) 
 		goto usage_err;
@@ -322,8 +324,14 @@ int main(int argc, char *argv[])
 		/* replaced -g with less desireable -X because -g already used by
 		* one of the user[add|mod|del] commands */
 		if(argv[1][1] == 'X' ) { 
-			rt = execlp(SEUSER_GUI_PROG, NULL);
-			if(rt == -1) {
+			snprintf(prog_path, PATH_MAX, "./%s", SEUSER_GUI_PROG);
+			rt = access(prog_path, X_OK);
+			if (rt == 0) {
+				rt = execlp(prog_path, NULL);
+			} else {
+				rt = execlp(SEUSER_GUI_PROG, NULL);
+			}
+			if (rt == -1) {
 				fprintf(stderr, "Cannot execute the seuserx program. You may need to install the setools-gui package.");
 			}
   			exit(1);
