@@ -6120,16 +6120,13 @@ int Apol_RelabelAnalysis (ClientData clientData, Tcl_Interp *interp,
 	                return TCL_ERROR;
 	        }
 	        assert(num_perms > 0);
-fprintf(stderr, "%s ", object_class);
 	        for (i = 0; i < num_perms; i++) {
 	        	permission = Tcl_GetString(perms[i]);
-fprintf(stderr, "%s ", permission);
 	                if (apol_fill_filter_set(object_class, permission, &filter, policy) != 0) {
 	                        Tcl_SetResult (interp, "Error while filling filter set", TCL_STATIC);
 	                        return TCL_ERROR;
 	                }
 	        }
-fprintf(stderr, "\n");
         }
         
         /* Get the results of our query */
