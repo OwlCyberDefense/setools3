@@ -18,9 +18,10 @@
 #include "policy.h"
 #include "policy-avl.h"
 #include "avl-util.h"
-#include "util.h"
 #include "perm-map.h"
+#include "util.h"
 #include "cond.h"
+#include <asm/types.h>
 
 #include <stdlib.h>
 #include <assert.h>
@@ -78,6 +79,7 @@ int init_policy( policy_t **p)
 	}
 	policy->version = POL_VER_UNKNOWN;
 	policy->opts = POLOPT_NONE;
+	policy->binary = FALSE;
 
 	/* permissions */
 	policy->perms = (char **)malloc(sizeof(char*) * LIST_SZ);
@@ -496,6 +498,20 @@ int add_initial_sid(char *name, policy_t *policy)
 	return idx;
 }
 
+/* same as above but also stores the sid # */
+int add_initial_sid2(char *name, __u32 sid, policy_t *policy) 
+{
+	int idx;
+	
+	idx = add_initial_sid(name, policy);
+	if(idx < 0)
+		return idx;
+	
+	assert(idx < num_initial_sids(policy));
+	policy->initial_sids[idx].sid = sid;
+	return idx;
+}
+
 int add_initial_sid_context(int idx, security_context_t *scontext, policy_t *policy)
 {
 	if(!is_valid_initial_sid_idx(idx, policy))
@@ -611,6 +627,18 @@ bool_t is_valid_type(policy_t *policy, int type, bool_t self_allowed)
 	if (!self_allowed && type == 0)
 		return FALSE;
 	if (type < 0 || type >= policy->num_types)
+		return FALSE;
+	return TRUE;
+}
+
+/*
+ * Check that obj_class is valid for this policy.
+ */
+bool_t is_valid_obj_class(policy_t *policy, int obj_class)
+{
+	assert(policy);
+
+	if (obj_class < 0 || obj_class >= policy->num_obj_classes)
 		return FALSE;
 	return TRUE;
 }
@@ -949,8 +977,11 @@ int add_type_to_role(int type_idx, int role_idx, policy_t *policy)
 	if(policy == NULL || !is_valid_type_idx(type_idx, policy) || !is_valid_role_idx(role_idx, policy))
 		return -1;
 
+	if(does_role_use_type(role_idx, type_idx, policy))
+		return 0; 	/* type already added to role */
+
 	role = &(policy->roles[role_idx]);
-	return(add_type_to_attrib(type_idx, role));
+	return(add_i_to_a(type_idx, &(role->num_types), &(role->types)));
 }
 
 
@@ -983,6 +1014,7 @@ int add_attrib(bool_t with_type, int type_idx, policy_t *policy, char *attrib)
 
 int add_alias(int type_idx, char *alias, policy_t *policy)
 {
+	char *aname;
 	int idx;
 	if(!is_valid_type_idx(type_idx, policy) || alias == NULL || policy == NULL)
 		return -1;
@@ -990,7 +1022,7 @@ int add_alias(int type_idx, char *alias, policy_t *policy)
 	/* TODO: we have a problem with the way we handle aliases once AVL trees were added.
 	 *	since the AVL trees are sorted by type name, the alias search doesn't work
 	 *	(since an aliases is checked only if the type name doesn't match, but since we have
-	 * 	an efficient type name tree, not all types (and therefore aliases) are searched.
+	 * 	an efficient type name tree, not all types (and therefore aliases) are searched).
 	 *	What we've done for now is maintain a separate alias array while still maintaining
 	 *	the old alias name list attached to each type.  The alias array will allow us to search
 	 *	for a type using its alias name if it wasn't found via the AVL search using prime
@@ -1000,16 +1032,28 @@ int add_alias(int type_idx, char *alias, policy_t *policy)
 	 *	This is currently fragile as we don't check for syntax problems arising from the using
 	 * 	the same alias twice (checkpolicy would not allow this).
 	 */
+	 
+	/* We don't use caller's memory...allows for better error handling */
+	aname = (char *)malloc(strlen(alias) +1);
+	if(aname == NULL) {
+		fprintf(stderr, "out of memory\n");
+		return -1;
+	}
+	strcpy(aname, alias);
+	
 	/* first the simple name list */
-	if(add_name(alias, &(policy->types[type_idx].aliases)) != 0) {
+	if(add_name(aname, &(policy->types[type_idx].aliases)) != 0) {
+		free(aname);
 		return -1;			
 	}
-	/* and now the alias array; add_name also uses the memory for the name, so we need not free */
+	
+	/* and now the alias array
+	 * add_name also uses the memory for the name
+	 */
 	if(check_alias_array(policy) != 0) 
 		return -1;
-	
 	idx = policy->num_aliases;
-	policy->aliases[idx].name = alias;
+	policy->aliases[idx].name = aname;
 	policy->aliases[idx].type = type_idx;
 	(policy->num_aliases)++;
 
@@ -1080,6 +1124,33 @@ int get_num_perms_for_obj_class(int cls_idx, policy_t *policy)
 	if (policy->obj_classes[cls_idx].common_perms == -1)
 		return policy->obj_classes[cls_idx].num_u_perms;
 	return(policy->obj_classes[cls_idx].num_u_perms + policy->common_perms[policy->obj_classes[cls_idx].common_perms].num_perms);
+}
+
+/* This function treats the object class permission as a single array.
+ * So for example, if there is a common perm, then the 0th perm for
+ * the common perm is returned when n=0, otherwise the 0th unique perm
+ * is returned. */
+int get_obj_class_nth_perm_idx(int cls_idx, int n, policy_t *policy)
+{
+	int n2;
+	if(n >= get_num_perms_for_obj_class(cls_idx, policy) || n < 0) 
+		return -1;
+	
+	n2 = n;
+	/* first check if there is a common perm */
+	if (policy->obj_classes[cls_idx].common_perms != -1) {
+		/* if there is a common perm, see if n is in the unique perms */
+		if(n2 >= policy->common_perms[policy->obj_classes[cls_idx].common_perms].num_perms) {
+			n2 -= policy->common_perms[policy->obj_classes[cls_idx].common_perms].num_perms;
+			assert(n2 >= 0 && n2 < policy->obj_classes[cls_idx].num_u_perms);
+		}
+		else {
+			/* n is a common perm */
+			return(policy->common_perms[policy->obj_classes[cls_idx].common_perms].perms[n2]);
+		}
+	}
+	/* it's a unique perm, n2 will be adjusted if there is a common perm */
+	return(policy->obj_classes[cls_idx].u_perms[n2]);
 }
 
 int get_obj_class_common_perm_idx(int cls_idx,  policy_t *policy)
@@ -1184,7 +1255,9 @@ int get_perm_idx(const char *name, policy_t *policy)
 
 /*
  * get the perms for an object class - expands common perms.
- * Returns perm idxs in perms (caller must free) and # of perms in num_perms
+ * Returns perm idxs in perms (caller must free) and # of perms in num_perms.
+ * NOTE: The returned perms should be in order that they were parsed, thereby 
+ * allow association with permission bitmaps from the base policy.
  */
 int get_obj_class_perms(int obj_class, int *num_perms, int **perms, policy_t *policy)
 {
@@ -1610,7 +1683,45 @@ av_item_t *add_new_av_rule(int rule_type, policy_t *policy)
 	/* initialize */
 	memset(newitem, 0, sizeof(av_item_t));
 	newitem->type = rule_type;
-	newitem->cond_expr = -1;
+	newitem->lineno = 0;
+	(policy->rule_cnt[rule_type])++;
+	
+	return newitem;
+}
+
+/* Get the next available entry in TT rule list, ensuring list grows as necessary.
+ * We return a pointer to the new rule so that caller can complete its content. 
+ * On return, the new rule will be in the batabase, but initialized. */
+tt_item_t *add_new_tt_rule(int rule_type, policy_t *policy)
+{
+	int *sz, *num;
+	tt_item_t **rlist, *newitem;
+	
+	if(rule_type == RULE_TE_TRANS || rule_type == RULE_TE_MEMBER || rule_type == RULE_TE_CHANGE) {
+		sz = &(policy->list_sz[POL_LIST_TE_TRANS]);
+		num = &(policy->num_te_trans);
+		rlist = &(policy->te_trans);
+	}
+	else
+		return NULL;
+	
+	if (*num >= *sz) {
+		/* grow the dynamic array */
+		tt_item_t * ptr;		
+		ptr = (tt_item_t *)realloc(*rlist, (LIST_SZ + *sz) * sizeof(tt_item_t));
+		if(ptr == NULL) {
+			fprintf(stderr,"out of memory\n");
+			return NULL;
+		}
+		*rlist = ptr;
+		*sz += LIST_SZ;
+	}	
+	
+	newitem = &((*rlist)[*num]);
+	(*num)++;
+	/* initialize */
+	memset(newitem, 0, sizeof(tt_item_t));
+	newitem->type = rule_type;
 	newitem->lineno = 0;
 	(policy->rule_cnt[rule_type])++;
 	
@@ -2562,7 +2673,7 @@ int get_ta_item_name(ta_item_t *ta, char **name, policy_t *policy)
  * returns -2 if the boolean already exists.
  * return -1 on error.
  */
-int add_cond_bool(char *name, bool_t val, policy_t *policy)
+int add_cond_bool(char *name, bool_t state, policy_t *policy)
 {
 	int idx, rt;
 	
@@ -2571,7 +2682,7 @@ int add_cond_bool(char *name, bool_t val, policy_t *policy)
 		return rt;
 		
 	policy->cond_bools[idx].name = name;
-	policy->cond_bools[idx].val = policy->cond_bools[idx].policy_val = val;
+	policy->cond_bools[idx].state = policy->cond_bools[idx].default_state = state;
 
 	return idx;
 }
@@ -2606,10 +2717,10 @@ int get_cond_bool_val(char *name, policy_t *policy)
 	idx = avl_get_idx(name, &policy->tree[AVL_COND_BOOLS]);
 	if (idx < 0) 
 		return -1;
-	return policy->cond_bools[idx].val; 	
+	return policy->cond_bools[idx].state; 	
 }
 
-static void update_cond_rule_list(cond_rule_list_t *list, bool_t val, policy_t *policy)
+static void update_cond_rule_list(cond_rule_list_t *list, bool_t state, policy_t *policy)
 {
 	int i;
 	
@@ -2617,11 +2728,11 @@ static void update_cond_rule_list(cond_rule_list_t *list, bool_t val, policy_t *
 		return;
 	
 	for (i = 0; i < list->num_av_access; i++)
-		policy->av_access[list->av_access[i]].enabled = val;
+		policy->av_access[list->av_access[i]].enabled = state;
 	for (i = 0; i < list->num_av_audit; i++)
-		policy->av_audit[list->av_audit[i]].enabled = val;
+		policy->av_audit[list->av_audit[i]].enabled = state;
 	for (i = 0; i < list->num_te_trans; i++)
-		policy->te_trans[list->te_trans[i]].enabled = val;
+		policy->te_trans[list->te_trans[i]].enabled = state;
 }
 
 static int update_cond_expr_item(int idx, policy_t *policy)
@@ -2636,12 +2747,12 @@ static int update_cond_expr_item(int idx, policy_t *policy)
 		return -1;
 	}
 	if (rt)
-		policy->cond_exprs[idx].cur_val = TRUE;
+		policy->cond_exprs[idx].cur_state = TRUE;
 	else
-		policy->cond_exprs[idx].cur_val = FALSE;
+		policy->cond_exprs[idx].cur_state = FALSE;
 		
-	update_cond_rule_list(policy->cond_exprs[idx].true_list, policy->cond_exprs[idx].cur_val, policy);
-	update_cond_rule_list(policy->cond_exprs[idx].false_list, !policy->cond_exprs[idx].cur_val, policy);
+	update_cond_rule_list(policy->cond_exprs[idx].true_list, policy->cond_exprs[idx].cur_state, policy);
+	update_cond_rule_list(policy->cond_exprs[idx].false_list, !policy->cond_exprs[idx].cur_state, policy);
 
 	return 0;
 }
@@ -2730,12 +2841,12 @@ int update_cond_expr_items(policy_t *policy)
  * 	0 on success.
  * 	-1 on error.
  */
-int set_cond_bool_val(int bool, bool_t val, policy_t *policy)
+int set_cond_bool_val(int bool, bool_t state, policy_t *policy)
 {
 	if (!policy || !is_valid_cond_bool_idx(bool, policy))
 		return -1;
 	
-	policy->cond_bools[bool].val = val;
+	policy->cond_bools[bool].state = state;
 	
 	return 0;
 }
@@ -2745,7 +2856,7 @@ int set_cond_bool_vals_to_default(policy_t *policy)
 	int i;
 	
 	for (i = 0; i < policy->num_cond_bools; i++) {
-		policy->cond_bools[i].val = policy->cond_bools[i].policy_val;
+		policy->cond_bools[i].state = policy->cond_bools[i].default_state;
 	}
 	return 0;
 }
