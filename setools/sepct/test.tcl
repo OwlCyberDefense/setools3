@@ -2,7 +2,7 @@
 # sepct_test.tcl
 
 # -----------------------------------------------------------
-#  Copyright (C) 2002 Tresys Technology, LLC
+#  Copyright (C) 2002-2005 Tresys Technology, LLC
 #  see file 'COPYING' for use and warranty information 
 #
 #  Requires tcl and tk 8.3+, with BWidgets
