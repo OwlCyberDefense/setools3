@@ -2,8 +2,9 @@
  * see file 'COPYING' for use and warranty information */
 
 /*
- * Author: Karl MacMillan <kmacmillan@tresys.com> and 
+ * Author: Karl MacMillan <kmacmillan@tresys.com> 
  *         Kevin Carr <kcarr@tresys.com>
+ *         Jeremy Stitz <jstitz@tresys.com>
  */
 
 #include "auditlogmodel.h"
@@ -389,6 +390,8 @@ static void log_view_store_get_value(GtkTreeModel *tree_model, GtkTreeIter *iter
 			return;
 		if (cur_msg->dev)
 			g_string_append_printf(string, "dev=%s ", cur_msg->dev);
+		if (cur_msg->ipaddr)
+		        g_string_append_printf(string, "ipaddr=%s ", cur_msg->ipaddr);
 		if (cur_msg->laddr)
 			g_string_append_printf(string, "laddr=%s ", cur_msg->laddr);
 		if (cur_msg->lport!=0)
