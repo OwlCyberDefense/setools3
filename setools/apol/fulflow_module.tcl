@@ -426,6 +426,7 @@ proc Apol_Analysis_fulflow::load_query_options { file_channel parentDlg } {
       			set elements [split [lindex $perm_status_list $j] ","]
       			set class_name [lindex $elements 0]
       			if {[lsearch -exact $class_list $class_name] == -1} {
+      				puts "Invalid class: $class_name.....ignoring."
       				continue
       			}
       			set perm [lindex $elements 1]	
@@ -436,6 +437,7 @@ proc Apol_Analysis_fulflow::load_query_options { file_channel parentDlg } {
 					-parent $parentDlg
 			}
       			if {[lsearch -exact $perms_list $perm] == -1} {
+      				puts "Invalid permission: $perm.....ignoring."
       				continue	
       			}
       			# This is a valid class and permission for the currently loaded policy.
@@ -456,6 +458,7 @@ proc Apol_Analysis_fulflow::load_query_options { file_channel parentDlg } {
 
       	# Now we're ready to parse the excluded intermediate types list
       	incr i
+      	set invalid_types ""
       	# ignore an empty list, which is indicated by '{}'
         if {[lindex $query_options $i] != "\{\}"} {
         	# we have to pretend to parse a list here since this is a string and not a TCL list.
@@ -466,10 +469,7 @@ proc Apol_Analysis_fulflow::load_query_options { file_channel parentDlg } {
      			if {[lsearch -exact $ApolTypes::typelist [lindex $query_options $i]] != -1} {
 	        		set excl_types [lindex $query_options $i]
 	        	} else {
-	     			tk_messageBox -icon warning -type ok -title "Warning" \
-					-message "The specified excluded type [lindex $query_options $i] does not exist in the currently\
-					loaded policy. It will be ignored." \
-					-parent $parentDlg
+	        		set invalid_types [lappend invalid_types [lindex $query_options $i]]
 	     		} 
 		} else {
 		        # An empty list element will be generated because the first character '{' of string 
@@ -478,10 +478,7 @@ proc Apol_Analysis_fulflow::load_query_options { file_channel parentDlg } {
      			if {[lsearch -exact $ApolTypes::typelist [lindex $split_list 1]] != -1} {
 		        	set excl_types [lappend excl_types [lindex $split_list 1]]
 		        } else {
-	     			tk_messageBox -icon warning -type ok -title "Warning" \
-					-message "The specified excluded type [lindex $split_list 1] does not exist in the currently\
-					loaded policy. It will be ignored." \
-					-parent $parentDlg
+	     			set invalid_types [lappend invalid_types [lindex $split_list 1]]
 	     		} 
 		        # Update our counter variable to the next element in the query options list
 		        set i [expr $i + 1]
@@ -495,10 +492,7 @@ proc Apol_Analysis_fulflow::load_query_options { file_channel parentDlg } {
      				if {[lsearch -exact $ApolTypes::typelist [lindex $query_options $i]] != -1} {
 		        		set excl_types [lappend excl_types [lindex $query_options $i]]
 		        	} else {
-		     			tk_messageBox -icon warning -type ok -title "Warning" \
-						-message "The specified excluded type [lindex $query_options $i] does not exist in the currently\
-						loaded policy. It will be ignored." \
-						-parent $parentDlg
+		     			set invalid_types [lappend invalid_types [lindex $query_options $i]]
 		     		} 
 		        	# Increment to the next element in the query options list
 		        	incr i
@@ -510,10 +504,7 @@ proc Apol_Analysis_fulflow::load_query_options { file_channel parentDlg } {
      			if {[lsearch -exact $ApolTypes::typelist $end_element] != -1} {
 		        	set excl_types [lappend excl_types $end_element]
 		        } else {
-	     			tk_messageBox -icon warning -type ok -title "Warning" \
-					-message "The specified excluded type $end_element does not exist in the currently\
-					loaded policy. It will be ignored." \
-					-parent $parentDlg
+	     			set invalid_types [lappend invalid_types $end_element]
 	     		} 
 	     		set idx [lsearch -exact $excl_types "self"]
 			if {$idx != -1} {
@@ -521,6 +512,17 @@ proc Apol_Analysis_fulflow::load_query_options { file_channel parentDlg } {
 			}
 		}
       	}
+      	# Display a popup with a list of invalid types
+	if {$invalid_types != ""} {
+		foreach type $invalid_types {
+			set types_str [append types_str "$type\n"]	
+		}
+		tk_messageBox -icon warning -type ok -title "Invalid Types" \
+			-message "The following types do not exist in the currently \
+			loaded policy and were ignored.\n\n$types_str" \
+			-parent $parentDlg
+	}
+	
       	foreach type $ApolTypes::typelist {
 		if {$type != "self"} {
 			set idx [lsearch -exact $excl_types $type]
