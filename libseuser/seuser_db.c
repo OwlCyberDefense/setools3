@@ -666,15 +666,15 @@ int seuser_copy_user(const char *name, user_item_t **uitem, user_db_t *db)
 }
 
 #define	CONF_ERR_SUCCESS	"Success"
-#define CONF_ERR_FIND_CONFIG	"Could not find seuser config file\n"
-#define CONF_ERR_OPEN_CONFIG	"Could not open seuser config file\n"
-#define CONF_ERR_FIND_POLICY	"Could not find policy.conf file parameter in seuser config file\n"
-#define CONF_ERR_OPEN_POLICY	"Could not open policy.conf file\n"
-#define CONF_ERR_OPEN_DIR	"Could not find policy directory parameter in seuser config file\n"
-#define CONF_ERR_ACCESS_DIR	"Could not access policy directory\n"
+#define CONF_ERR_FIND_CONFIG	"Could not find seuser config file.\n"
+#define CONF_ERR_OPEN_CONFIG	"Could not open seuser config file.\n"
+#define CONF_ERR_FIND_POLICY	"Could not find policy.conf file parameter in seuser config file.\n"
+#define CONF_ERR_OPEN_POLICY	"Could not access policy.conf file. Verify the location is valid in the seuser.conf file.\n"
+#define CONF_ERR_OPEN_DIR	"Could not find policy directory parameter in seuser config file.\n"
+#define CONF_ERR_ACCESS_DIR	"Could not access policy directory. Verify the location is valid in the seuser.conf file.\n"
 #define CONF_ERR_FIND_FCONTEXT	"Could not find file_contexts parameter in seuser config file.\n"
-#define CONF_ERR_FIND_USER	"Could not find user file parameter in seuser config file\n"
-#define CONF_ERR_ERROR		"Error reading conf file\n"
+#define CONF_ERR_FIND_USER	"Could not find user file parameter in seuser config file.\n"
+#define CONF_ERR_ERROR		"Error reading conf file.\n"
 /* returns an error string based on a return error from seuser_read_conf_info() */
 const char* seuser_decode_read_conf_err(int err)
 {
@@ -768,7 +768,7 @@ int seuser_read_conf_info(user_db_t *db)
      	}
      			
 	db->policy_dir = get_config_var("policy_dir", fp);
-	if(rt != 0) {
+	if(db->policy_dir == NULL) {
 		fclose(fp);
 		free_conf_info(db);
 		init_conf_info(db);
@@ -783,16 +783,16 @@ int seuser_read_conf_info(user_db_t *db)
      	}  
      	   	
      	db->user_file = get_config_var("user_file", fp);
-     	rt = access(db->user_file, R_OK);
-     	if(rt != 0) {
+     	if(db->user_file == NULL) {
+     		fclose(fp);
 		free_conf_info(db);
 		init_conf_info(db);
 		return 7;
      	}
-	/* users file may not exist which is ok, so we won't check read access */  
-	
+	/* users file may not exist which is ok, so we won't check read access. */  
+		
 	db->file_contexts_file = get_config_var("file_contexts_file", fp);
-	if(rt != 0) {
+	if(db->file_contexts_file == NULL) {
 		fclose(fp);
 		free_conf_info(db);
 		init_conf_info(db);
@@ -852,7 +852,7 @@ int seuser_check_commit_perm(user_db_t *db)
 	int rt;
 	if(db ==NULL || !seuser_is_conf_loaded(db))
 		return -1;	
-	/* if user_file does exist, check whether we can in fact create it */
+	/* if user_file doesn't exist, check whether we can in fact create it */
 	rt = access(db->user_file, F_OK);
 	if(rt == 0) 
 		rt = access(db->user_file, W_OK);
