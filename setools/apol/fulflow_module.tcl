@@ -28,10 +28,10 @@ namespace eval Apol_Analysis_fulflow {
         variable cb_attrib
         variable advanced_filter_Dlg
 	set advanced_filter_Dlg .advanced_filter_Dlg
-	variable find_paths_Dlg
-	set find_paths_Dlg .find_paths_Dlg
-	variable find_paths_results_Dlg
-	set find_paths_results_Dlg .find_paths_results_Dlg
+	variable find_flows_Dlg
+	set find_flows_Dlg .find_flows_Dlg
+	variable find_flows_results_Dlg
+	set find_flows_results_Dlg .find_flows_results_Dlg
 	
 	# Advanced filter variables
 	variable perm_status_array
@@ -56,10 +56,10 @@ namespace eval Apol_Analysis_fulflow {
 	variable time_limit_hr	"0"
 	variable time_limit_min	"0"
 	variable time_limit_sec "30"
-	variable path_limit_num	"20"
-	variable time_lbl
-	variable num_lbl
-	variable find_paths_start 0
+	variable flow_limit_num	"20"
+	variable time_exp_lbl
+	variable num_found_lbl
+	variable find_flows_start 0
 	
     	# button variables
         variable endtype_sel        0
@@ -84,7 +84,7 @@ namespace eval Apol_Analysis_fulflow {
 	variable rules_tag		RULES
 	variable counters_tag		COUNTERS
 	variable types_tag		TYPE
-	variable find_paths_tag		PATHS
+	variable find_flows_tag		FLOWS
 	
 	variable progressmsg		""
 	variable abort_trans_analysis 	0
@@ -840,21 +840,21 @@ proc Apol_Analysis_fulflow::convert_seconds {sec} {
 
 
 ###########################################################################
-# ::display_find_more_paths_Dlg
+# ::display_find_more_flows_Dlg
 #
-proc Apol_Analysis_fulflow::display_find_more_paths_Dlg {} {
-	variable find_paths_Dlg
+proc Apol_Analysis_fulflow::display_find_more_flows_Dlg {} {
+	variable find_flows_Dlg
 	variable fulflow_tree
-	variable find_paths_start
-	variable find_paths_results_Dlg
+	variable find_flows_start
+	variable find_flows_results_Dlg
 	
-	if {$find_paths_start} {
+	if {$find_flows_start} {
     		tk_messageBox -icon error -type ok -title "Error" -message "You must first abort the current search."
-    		raise $find_paths_results_Dlg
+    		raise $find_flows_results_Dlg
     		return -1
     	}
-	if {[winfo exists $find_paths_Dlg]} {
-    		destroy $find_paths_Dlg
+	if {[winfo exists $find_flows_Dlg]} {
+    		destroy $find_flows_Dlg
     	}
 	
 	set src_node [$fulflow_tree parent [$fulflow_tree selection get]]
@@ -862,13 +862,13 @@ proc Apol_Analysis_fulflow::display_find_more_paths_Dlg {} {
 	set Apol_Analysis_fulflow::abort_trans_analysis 0
 	
 	# Create the top-level dialog and subordinate widgets
-    	toplevel $find_paths_Dlg 
-     	wm withdraw $find_paths_Dlg	
-    	wm title $find_paths_Dlg "Find more flows"
-    	wm protocol $find_paths_Dlg WM_DELETE_WINDOW "destroy $find_paths_Dlg"
+    	toplevel $find_flows_Dlg 
+     	wm withdraw $find_flows_Dlg	
+    	wm title $find_flows_Dlg "Find more flows"
+    	wm protocol $find_flows_Dlg WM_DELETE_WINDOW "destroy $find_flows_Dlg"
     		
 	# Create frames
-        set topf  [frame $find_paths_Dlg.topf]
+        set topf  [frame $find_flows_Dlg.topf]
         set nodes_f [frame $topf.nodes_f]
         set time_f [frame $topf.time_f]
         set path_limit_f [frame $topf.path_limit_f]
@@ -892,13 +892,13 @@ proc Apol_Analysis_fulflow::display_find_more_paths_Dlg {} {
 	# Create path limit widgets
 	set path_limit_lbl [label $path_limit_f.path_limit_lbl -text "Limit by these number of flows:"]
         set path_limit_entry [Entry $path_limit_f.path_limit_entry -editable 1 -width 5 \
-        	-textvariable Apol_Analysis_fulflow::path_limit_num -bg white]
+        	-textvariable Apol_Analysis_fulflow::flow_limit_num -bg white]
 		
 	# Create button widgets
 	set b_find [button $button_f.b_find -text "Find" -width 6 \
-		-command "Apol_Analysis_fulflow::find_more_paths $src_node $tgt_node"]
+		-command "Apol_Analysis_fulflow::find_more_flows $src_node $tgt_node"]
 	set b_cancel [button $button_f.b_cancel -text "Cancel" -width 6 \
-		-command "destroy $find_paths_Dlg"] 
+		-command "destroy $find_flows_Dlg"] 
 		
 	# Place widgets 
 	pack $topf -fill both -expand yes -padx 10 -pady 10
@@ -908,115 +908,119 @@ proc Apol_Analysis_fulflow::display_find_more_paths_Dlg {} {
         pack $time_lbl $time_entry_hour $hrs_lbl $time_entry_min $min_lbl $time_entry_sec $sec_lbl -side left -padx 1 -anchor nw
         pack $path_limit_lbl $path_limit_entry -side left -padx 2 -anchor nw
         pack $b_find $b_cancel -side left -padx 4 -anchor center
-	wm deiconify $find_paths_Dlg
-	focus $find_paths_Dlg
+	wm deiconify $find_flows_Dlg
+	focus $find_flows_Dlg
 	return 0
 }
 
 ###########################################################################
-# ::display_find_paths_results_Dlg
+# ::display_find_flows_results_Dlg
 #
-proc Apol_Analysis_fulflow::display_find_paths_results_Dlg {} {
-	variable find_paths_results_Dlg
-	variable time_lbl
-	variable num_lbl
+proc Apol_Analysis_fulflow::display_find_flows_results_Dlg {time_limit_str flow_limit_num} {
+	variable find_flows_results_Dlg
+	variable time_exp_lbl
+	variable num_found_lbl
 	
-	if {[winfo exists $find_paths_results_Dlg]} {
-    		destroy $find_paths_results_Dlg
+	if {[winfo exists $find_flows_results_Dlg]} {
+    		destroy $find_flows_results_Dlg
     	}
 	
 	# Create the top-level dialog and subordinate widgets
-    	toplevel $find_paths_results_Dlg 
-     	wm withdraw $find_paths_results_Dlg	
-    	wm title $find_paths_results_Dlg "Flow results"
+    	toplevel $find_flows_results_Dlg 
+     	wm withdraw $find_flows_results_Dlg	
+    	wm title $find_flows_results_Dlg "Flow results"
     	    		
 	# Create frames
-        set topf  [frame $find_paths_results_Dlg.topf]
+        set topf  [frame $find_flows_results_Dlg.topf]
         set time_f [frame $topf.time_f]
         set button_f [frame $topf.button_f]
-        set num_paths_f [frame $topf.num_paths_f]
+        set num_flows_f [frame $topf.num_flows_f]
         set main_lbl [label $topf.time_lbl1 -text "Finding more flows:"]
-        set time_lbl1 [label $time_f.time_lbl1 -text "Time Elapsed: "]
-        set time_lbl [label $time_f.time_lbl2]
-        set num_lbl1 [label $num_paths_f.num_lbl1 -text "Number of flows found: "]
-        set num_lbl [label $num_paths_f.num_lbl2]
+        set time_lbl1 [label $time_f.time_lbl1 -text "Time limit: $time_limit_str"]
+        set time_lbl2 [label $time_f.time_lbl2 -text "Time elapsed: "]
+        set time_exp_lbl [label $time_f.time_exp_lbl]
+        set num_lbl1 [label $num_flows_f.num_lbl1 -text "Number of flows limit: $flow_limit_num"]
+        set num_lbl2 [label $num_flows_f.num_lbl2 -text "Number of flows found: "]
+        set num_found_lbl [label $num_flows_f.num_found_lbl]
         set b_abort_transitive [button $button_f.b_abort_transitive -text "Abort" -width 6 \
 		-command "set Apol_Analysis_fulflow::abort_trans_analysis 1"] 
 		
 	pack $button_f -side bottom -padx 2 -pady 2 -anchor center
 	pack $topf -fill both -expand yes -padx 10 -pady 10
 	pack $main_lbl -side top -anchor nw -pady 2
-        pack $time_f $num_paths_f -side top -padx 15 -pady 2 -anchor nw
+        pack $time_f $num_flows_f -side top -padx 15 -pady 2 -anchor nw
       	pack $b_abort_transitive -side left -fill both -expand yes -anchor center
-      	pack $time_lbl1 $time_lbl -side left -expand yes -anchor nw
-      	pack $num_lbl1 $num_lbl -side left -expand yes -anchor nw
-	wm deiconify $find_paths_results_Dlg
+      	pack $time_lbl1 -side top -expand yes -anchor nw
+      	pack $time_lbl2 $time_exp_lbl -side left -expand yes -anchor nw
+      	pack $num_lbl1 -side top -expand yes -anchor nw
+      	pack $num_lbl2 $num_found_lbl -side left -expand yes -anchor nw
+	wm deiconify $find_flows_results_Dlg
 	
-	wm transient $find_paths_results_Dlg $ApolTop::mainframe
-        catch {grab $find_paths_results_Dlg}
-    	if {[winfo exists $find_paths_results_Dlg]} {
-		focus $find_paths_results_Dlg
+	wm transient $find_flows_results_Dlg $ApolTop::mainframe
+        catch {grab $find_flows_results_Dlg}
+    	if {[winfo exists $find_flows_results_Dlg]} {
+		focus $find_flows_results_Dlg
     	}
     	update idletasks
 	return 0
 }
 
 ###########################################################################
-# ::find_more_paths
+# ::find_more_flows
 #
-proc Apol_Analysis_fulflow::find_more_paths {src_node tgt_node} {
+proc Apol_Analysis_fulflow::find_more_flows {src_node tgt_node} {
 	variable fulflow_tree
 	variable time_limit_hr	
 	variable time_limit_min	
 	variable time_limit_sec 
-	variable path_limit_num
+	variable flow_limit_num
 	variable progressBar
         variable fulflow_info_text
-        variable time_lbl
-	variable num_lbl
-	variable find_paths_Dlg
-	variable find_paths_results_Dlg
-	variable find_paths_start
+        variable time_exp_lbl
+	variable num_found_lbl
+	variable find_flows_Dlg
+	variable find_flows_results_Dlg
+	variable find_flows_start
 	
 	set time_limit_str [format "%02s:%02s:%02s" $time_limit_hr $time_limit_min $time_limit_sec]
-	if {$path_limit_num == "" && $time_limit_str == "00:00:00"} {
+	if {$flow_limit_num == "" && $time_limit_str == "00:00:00"} {
 		tk_messageBox -icon error -type ok -title "Error" -message "You must specify a time limit."
-		raise $find_paths_Dlg
-		focus $find_paths_Dlg
+		raise $find_flows_Dlg
+		focus $find_flows_Dlg
 		return -1
-	} elseif {$path_limit_num < 1} {
-		tk_messageBox -icon error -type ok -title "Error" -message "Path limit cannot be less than 1."
-		raise $find_paths_Dlg
-		focus $find_paths_Dlg
+	} elseif {$flow_limit_num < 1} {
+		tk_messageBox -icon error -type ok -title "Error" -message "Number of flows cannot be less than 1."
+		raise $find_flows_Dlg
+		focus $find_flows_Dlg
 		return -1
 	}
 	if {$time_limit_hr != "" && [expr ($time_limit_hr > 24 || $time_limit_hr < 0)]} {
 		tk_messageBox -icon error -type ok -title "Error" -message "Invalid hours limit input. Must be between 0 and 24 inclusive."
-		raise $find_paths_Dlg
-		focus $find_paths_Dlg
+		raise $find_flows_Dlg
+		focus $find_flows_Dlg
 		return -1
 	}
 	if {$time_limit_min != "" && [expr ($time_limit_min > 59 || $time_limit_min < 0)]} {
 		tk_messageBox -icon error -type ok -title "Error" -message "Invalid minutes limit input. Must between 0-59 inclusive."
-		raise $find_paths_Dlg
-		focus $find_paths_Dlg
+		raise $find_flows_Dlg
+		focus $find_flows_Dlg
 		return -1
 	}	
 	if {$time_limit_sec != "" && [expr ($time_limit_sec > 59 || $time_limit_sec < 0)]} {
 		tk_messageBox -icon error -type ok -title "Error" -message "Invalid seconds limit input. Must be between 0-59 inclusive."
-		raise $find_paths_Dlg
-		focus $find_paths_Dlg
+		raise $find_flows_Dlg
+		focus $find_flows_Dlg
 		return -1
 	}
-	if {[winfo exists $find_paths_Dlg]} {
-    		destroy $find_paths_Dlg
+	if {[winfo exists $find_flows_Dlg]} {
+    		destroy $find_flows_Dlg
     	}
  	set old_focus [focus]
-        Apol_Analysis_fulflow::display_find_paths_results_Dlg 
+        Apol_Analysis_fulflow::display_find_flows_results_Dlg $time_limit_str $flow_limit_num
 	set Apol_Analysis_fulflow::abort_trans_analysis 0
         set src_data [$fulflow_tree itemcget [$fulflow_tree nodes root] -data]	
  	set src [$fulflow_tree itemcget $src_node -text]
-	wm protocol $find_paths_results_Dlg WM_DELETE_WINDOW "raise $find_paths_results_Dlg; focus $find_paths_results_Dlg"
+	wm protocol $find_flows_results_Dlg WM_DELETE_WINDOW "raise $find_flows_results_Dlg; focus $find_flows_results_Dlg"
 
 	# The last query arguments were stored in the data for the root node
 	set rt [catch {apol_TransitiveFindPathsStart \
@@ -1031,47 +1035,46 @@ proc Apol_Analysis_fulflow::find_more_paths {src_node tgt_node} {
 		[lindex $src_data 8]} err]
 			
 	if {$rt != 0} {
-		if {[winfo exists $find_paths_results_Dlg]} {
-			destroy $find_paths_results_Dlg
+		if {[winfo exists $find_flows_results_Dlg]} {
+			destroy $find_flows_results_Dlg
 		}
 		tk_messageBox -icon error -type ok -title "Error" -message "$err"
 		return -1
 	}
-	
 	set start_time [clock seconds]
-	set curr_paths_num 0
-	set find_paths_start 1
+	set curr_flows_num 0
+	set find_flows_start 1
 	while {1} {
 		# Current time - start time = elapsed time
 		set elapsed_time [Apol_Analysis_fulflow::convert_seconds [expr [clock seconds] - $start_time]]
-		$time_lbl configure -text $elapsed_time
+		$time_exp_lbl configure -text $elapsed_time
 		if {$time_limit_str != "00:00:00" && [string equal $time_limit_str $elapsed_time]} {
 			break
 		}
 		# apol_TransitiveFindPathsNext will always stay the same or return a value greater 
-		# than the current curr_paths_num value
-		set rt [catch {set curr_paths_num [apol_TransitiveFindPathsNext]} err]
+		# than the current curr_flows_num value
+		set rt [catch {set curr_flows_num [apol_TransitiveFindPathsNext]} err]
 		if {$rt == -1} {
 			    tk_messageBox -icon error -type ok -title "Error" -message $err
 			    return -1
 		}
-		$num_lbl configure -text $curr_paths_num
-		if {$path_limit_num != "" && $curr_paths_num >= $path_limit_num} {
+		$num_found_lbl configure -text $curr_flows_num
+		if {$flow_limit_num != "" && $curr_flows_num >= $flow_limit_num} {
 			break
 		}
 		update
 		# Check to see if the user has pressed the abort button
 		if {$Apol_Analysis_fulflow::abort_trans_analysis} {
-			set find_paths_start 0
+			set find_flows_start 0
 			# Destroy the dialog and release the grab
-			if {[winfo exists $find_paths_results_Dlg]} {
-				grab release $find_paths_results_Dlg
-				destroy $find_paths_results_Dlg
+			if {[winfo exists $find_flows_results_Dlg]} {
+				grab release $find_flows_results_Dlg
+				destroy $find_flows_results_Dlg
 				catch {focus $old_focus}
 			}
 			tk_messageBox -icon info -type ok -title "Abort" -message "Transitive analysis was aborted!"
-			# If there were paths found, then break out of loop so we can display 
-			if {$curr_paths_num > 0} {break}
+			# If there were flows found, then break out of loop so we can display 
+			if {$curr_flows_num > 0} {break}
 			set rt [catch {apol_TransitiveFindPathsAbort} err]
 			if {$rt != 0} {	
 				tk_messageBox -icon info -type ok -title "Abort Error" -message $err
@@ -1082,9 +1085,9 @@ proc Apol_Analysis_fulflow::find_more_paths {src_node tgt_node} {
 	} 		
 	set rt [catch {set results [apol_TransitiveFindPathsGetResults]} err]
 	if {$rt != 0} {	
-		set find_paths_start 0
-		if {[winfo exists $find_paths_results_Dlg]} {
-			destroy $find_paths_results_Dlg
+		set find_flows_start 0
+		if {[winfo exists $find_flows_results_Dlg]} {
+			destroy $find_flows_results_Dlg
 		}
 	        tk_messageBox -icon error -type ok -title "Error" -message "$err"
 		return -1
@@ -1100,10 +1103,10 @@ proc Apol_Analysis_fulflow::find_more_paths {src_node tgt_node} {
 		$fulflow_tree itemconfigure $tgt_node -data $data
 		Apol_Analysis_fulflow::treeSelect $fulflow_tree $fulflow_info_text $tgt_node 
 	}
-	set find_paths_start 0
-	if {[winfo exists $find_paths_results_Dlg]} {
-		grab release $find_paths_results_Dlg
-    		destroy $find_paths_results_Dlg
+	set find_flows_start 0
+	if {[winfo exists $find_flows_results_Dlg]} {
+		grab release $find_flows_results_Dlg
+    		destroy $find_flows_results_Dlg
     		catch {focus $old_focus}
     	}
 	return 0
@@ -1193,16 +1196,14 @@ proc Apol_Analysis_fulflow::render_target_type_data {data fulflow_info_text fulf
 	    $fulflow_info_text tag add $Apol_Analysis_fulflow::title_type_tag $startIdx $endIdx
  	    set startIdx $endIdx 
 	}
-	# Embed a button for finding more paths
+	# Embed a button for finding more flows
 	$fulflow_info_text insert end "  ("
 	set startIdx [$fulflow_info_text index insert]
 	$fulflow_info_text insert end "Find more flows"
 	set endIdx [$fulflow_info_text index insert]
-	$fulflow_info_text tag add $Apol_Analysis_fulflow::find_paths_tag $startIdx $endIdx
+	$fulflow_info_text tag add $Apol_Analysis_fulflow::find_flows_tag $startIdx $endIdx
 	$fulflow_info_text insert end ")"
 	set startIdx [$fulflow_info_text index insert]
-	#$fulflow_info_text window create end -window [button $fulflow_info_text.b_find_paths -text "Find More Paths" \
-	#	-width 10 -activeforeground white -bg blue -command "Apol_Analysis_fulflow::display_find_more_paths_Dlg"] 
 	$fulflow_info_text insert end "\n\nApol found the following number of information flows: "
 	set endIdx [$fulflow_info_text index insert]
 	$fulflow_info_text tag add $Apol_Analysis_fulflow::subtitle_tag $startIdx $endIdx
@@ -1310,11 +1311,11 @@ proc Apol_Analysis_fulflow::formatInfoText { tb } {
 	$tb tag configure $Apol_Analysis_fulflow::rules_tag -font $ApolTop::text_font
 	$tb tag configure $Apol_Analysis_fulflow::counters_tag -foreground blue -font {Helvetica 11 bold}
 	$tb tag configure $Apol_Analysis_fulflow::types_tag -font $ApolTop::text_font
-	$tb tag configure $Apol_Analysis_fulflow::find_paths_tag -font {Helvetica 14 bold} -foreground blue -underline 1
+	$tb tag configure $Apol_Analysis_fulflow::find_flows_tag -font {Helvetica 14 bold} -foreground blue -underline 1
 	
-	$tb tag bind $Apol_Analysis_fulflow::find_paths_tag <Button-1> "Apol_Analysis_fulflow::display_find_more_paths_Dlg"
-	$tb tag bind $Apol_Analysis_fulflow::find_paths_tag <Enter> { set Apol_Analysis_fulflow::orig_cursor [%W cget -cursor]; %W configure -cursor hand2 }
-	$tb tag bind $Apol_Analysis_fulflow::find_paths_tag <Leave> { %W configure -cursor $Apol_Analysis_fulflow::orig_cursor }
+	$tb tag bind $Apol_Analysis_fulflow::find_flows_tag <Button-1> "Apol_Analysis_fulflow::display_find_more_flows_Dlg"
+	$tb tag bind $Apol_Analysis_fulflow::find_flows_tag <Enter> { set Apol_Analysis_fulflow::orig_cursor [%W cget -cursor]; %W configure -cursor hand2 }
+	$tb tag bind $Apol_Analysis_fulflow::find_flows_tag <Leave> { %W configure -cursor $Apol_Analysis_fulflow::orig_cursor }
 	
 	# Configure hyperlinking to policy.conf file
 	Apol_PolicyConf::configure_HyperLinks $tb
