@@ -467,6 +467,8 @@ proc Apol_TE::insertTERules { tb results } {
 		incr x
 		set lineno [lindex $results $x]
 		incr x
+		set is_conditional [lindex $results $x]
+		incr x
 		set enabled [lindex $results $x]
 				
 		# Only display line number hyperlink if this is not a binary policy.
@@ -481,10 +483,10 @@ proc Apol_TE::insertTERules { tb results } {
 		set cur_line_pos [$tb index insert]
 		$tb insert end " "
 	
-		# The next element should be the enabled boolean flag.
-		if {!$enabled} {
+		# The next element should be the conditional and enabled boolean flags.
+		if {$is_conditional && !$enabled} {
 			$tb tag add $Apol_TE::disabled_rule_tag $cur_line_pos $line_num.end
-		} else {
+		} elseif {$is_conditional && $enabled} {
 			$tb tag add $Apol_TE::enabled_rule_tag $cur_line_pos $line_num.end
 		}
 		$tb insert end "\n"
@@ -2272,10 +2274,10 @@ proc Apol_TE::create {nb} {
     
     set cb_show_enabled_rules [checkbutton $enabled_fm.cb_show_enabled_rules -text "Only search for enabled rules" \
     		-variable Apol_TE::show_enabled_rules -onvalue 1 -offvalue 0]
-    set cb_tag_enabled_rules [checkbutton $enabled_fm.cb_tag_enabled_rules -text "Mark enabled rules in results" \
+    set cb_tag_enabled_rules [checkbutton $enabled_fm.cb_tag_enabled_rules -text "Mark enabled conditional rules" \
     		-variable Apol_TE::tag_enabled_rules -onvalue 1 -offvalue 0 \
     		-command Apol_TE::on_configure_enabled_rule_tags_checkbutton]
-    set cb_tag_disabled_rules [checkbutton $enabled_fm.cb_tag_disabled_rules -text "Mark disabled rules in results" \
+    set cb_tag_disabled_rules [checkbutton $enabled_fm.cb_tag_disabled_rules -text "Mark disabled conditional rules" \
     		-variable Apol_TE::tag_disabled_rules -onvalue 1 -offvalue 0 \
     		-command Apol_TE::on_configure_disabled_rule_tags_checkbutton]
     		
