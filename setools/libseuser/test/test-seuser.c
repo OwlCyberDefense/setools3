@@ -128,7 +128,7 @@ int main(int argc, char *argv[])
 			Tcl_Free((char *) vals);
 			break;
 		case 'v':
-			printf("\n%s\n", SEUSER_VERSION_STRING);
+			printf("\n%s\n", libseuser_get_version());
 			break;
 		case 'q':
 			Seuser_CloseDatabase(NULL, interp, ac, av);
