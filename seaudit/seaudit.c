@@ -47,8 +47,7 @@ static int create_list(GtkTreeView *view);
 static GtkTreeViewColumn *create_column(GtkTreeView *view, const char *name,
 					GtkCellRenderer *renderer, int field,
 					int max_width);
-static void on_log_store_rows_reordered(GtkTreeModel *model, GtkTreePath *arg1, GtkTreeIter *arg2, 
-					gpointer arg3, gpointer user_data);
+static void seaudit_on_log_column_clicked(GtkTreeViewColumn *column, gpointer user_data);
 
 /* use to set the initial state of the real-time log toggle button */
 static void set_real_time_log_toggle_button_state(bool_t state)
@@ -518,6 +517,23 @@ static int read_policy_conf(const char *fname)
 	return 0;
 }
 
+static void seaudit_on_log_column_clicked(GtkTreeViewColumn *column, gpointer user_data)
+{
+	GtkTreeSelection *selection;
+	GList *selected_rows;
+	GtkTreePath *path;
+	GtkTreeModel *model;
+
+	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(user_data));
+	model = gtk_tree_view_get_model(GTK_TREE_VIEW(user_data));
+	selected_rows = gtk_tree_selection_get_selected_rows(selection, &model);
+	if (selected_rows == NULL)
+		return;
+	path = selected_rows->data;
+	gtk_tree_view_scroll_to_cell(GTK_TREE_VIEW(user_data), 
+				     path, NULL, FALSE, 0.0, 0.0);
+}
+
 static GtkTreeViewColumn *create_column(GtkTreeView *view, const char *name,
 					GtkCellRenderer *renderer, int field,
 					int max_width)
@@ -532,7 +548,8 @@ static GtkTreeViewColumn *create_column(GtkTreeView *view, const char *name,
 	gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_FIXED);
 	gtk_tree_view_column_set_fixed_width(column, max_width);
 	gtk_tree_view_column_set_visible(column, seaudit_app->seaudit_conf.column_visibility[field]);
-
+	g_signal_connect_after(G_OBJECT(column), "clicked", G_CALLBACK(seaudit_on_log_column_clicked),
+			       view);
 	return column;
 }
 
@@ -855,7 +872,7 @@ int seaudit_open_log_file(seaudit_t *seaudit, const char *filename)
 
  load_log:
 	widget = glade_xml_get_widget(seaudit_app->top_window_xml, "LogListView");
-	g_signal_handlers_disconnect_by_func(G_OBJECT(seaudit_app->log_store), (gpointer)on_log_store_rows_reordered, widget);
+
 	/* close out the old log */
 	seaudit_log_store_close_log(seaudit_app->log_store);
 	/* open up the new log */
@@ -863,9 +880,6 @@ int seaudit_open_log_file(seaudit_t *seaudit, const char *filename)
 	seaudit_app->log_store = store;
 	seaudit_app->log_file_ptr = tmp_file;
 	g_string_assign(seaudit_app->audit_log_file, filename);
-	g_signal_connect(G_OBJECT(seaudit_app->log_store), "rows_reordered", 
-			 G_CALLBACK(on_log_store_rows_reordered),
-			 widget);
 	seaudit_log_store_do_filter(seaudit_app->log_store);
 	add_path_to_recent_log_files(filename, &(seaudit->seaudit_conf));
 	set_recent_logs_submenu(&(seaudit->seaudit_conf));
@@ -873,22 +887,6 @@ int seaudit_open_log_file(seaudit_t *seaudit, const char *filename)
 	log_load_signal_emit();
 	clear_wait_cursor(GTK_WIDGET(seaudit_app->top_window));
 	return 0;
-}
-
-/* When a row is selected and then log sorted, scroll to the selected row */
-static void on_log_store_rows_reordered(GtkTreeModel *model, GtkTreePath *arg1, GtkTreeIter *arg2, 
-					gpointer arg3, gpointer user_data)
-{
-	GtkTreeSelection *selection;
-	GList *selected_rows;
-	GtkTreePath *path;
-	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(user_data));
-	selected_rows = gtk_tree_selection_get_selected_rows(selection, &model);
-	if (selected_rows == NULL)
-		return;
-	path = selected_rows->data;
-	gtk_tree_view_scroll_to_cell(GTK_TREE_VIEW(user_data), 
-				     path, NULL, FALSE, 0.0, 0.0);
 }
 
 /*
