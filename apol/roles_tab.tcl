@@ -322,7 +322,7 @@ proc Apol_Roles::create {nb} {
 		-modifycmd {Apol_Roles::change_types_list} \
 		-exportselection 0] 
 		
-	set cb_attrib [checkbutton $cfm.cb_attrib -text "Select type using attrib:" \
+	set cb_attrib [checkbutton $cfm.cb_attrib -text "Filter types to select using attribute:" \
 		-variable Apol_Roles::attrib_sel \
 		-offvalue 0 -onvalue 1 \
 		-command {Apol_Roles::enable_attrib_list $Apol_Roles::combo_attribute $Apol_Roles::attrib_sel}]

@@ -1063,7 +1063,7 @@ proc Apol_Analysis_relabel::set_mode_relabelto {} {
 	Apol_Analysis_relabel::set_mode_relabelboth
     } elseif {$widget_vars(to_mode)} {
 	$widgets(start_l) configure -text "Starting type:"
-	$widgets(start_attrib_ch) configure -text "Select starting type using attrib:"
+	$widgets(start_attrib_ch) configure -text "Filter starting types to select using attribute:"
     } else {
     	Apol_Analysis_relabel::set_mode_relabelfrom
     }
@@ -1081,7 +1081,7 @@ proc Apol_Analysis_relabel::set_mode_relabelfrom {} {
 	Apol_Analysis_relabel::set_mode_relabelboth
     } elseif {$widget_vars(from_mode)} {
 	$widgets(start_l) configure -text "Ending type:"
-	$widgets(start_attrib_ch) configure -text "Select ending type using attrib:"
+	$widgets(start_attrib_ch) configure -text "Filter ending types to select using attribute:"
     } else {
 	Apol_Analysis_relabel::set_mode_relabelto
     }
@@ -1090,13 +1090,13 @@ proc Apol_Analysis_relabel::set_mode_relabelfrom {} {
 proc Apol_Analysis_relabel::set_mode_relabelboth {} {
     variable widgets
     $widgets(start_l) configure -text "Starting/ending type:"
-    $widgets(start_attrib_ch) configure -text "Select starting/ending type using attrib:"
+    $widgets(start_attrib_ch) configure -text "Filter starting/ending types to select using attribute:"
 }
 
 proc Apol_Analysis_relabel::set_mode_subject {} {
     variable widgets
     $widgets(start_l) configure -text "Subject:"
-    $widgets(start_attrib_ch) configure -text "Select subject using attrib:"
+    $widgets(start_attrib_ch) configure -text "Filter subjects to select using attribute:"
     $widgets(relabelto_rb) configure -state disabled
     $widgets(relabelfrom_rb) configure -state disabled
 }
