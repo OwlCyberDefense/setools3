@@ -62,10 +62,10 @@ file will be created and then loaded into apol.} \
 "\n\nSearching an Index File\n\n" \
 \
 {Searches on the index file can be done by specifying the user, type, object class, or path \
-search criteria to search for using the widgets provided. Drop down lists and entryboxes \
+search criteria to search for using the checkboxes. Drop down lists and entryboxes \
 are presented for specifying the search criteria, of which the drop down lists contain items from \
 the index file.  You can also use regular expressions, however, this option is not available for \
-the object class field.  Additionally, you may use the checkbuttons under the search options frame, \
+the object class field.  Additionally, you may use the checkboxes under the search options frame, \
 for indicating whether to include the object class and/or file context within the results. To \
 perform a search, click the 'OK' button. Once the search is finished, you should be presented with \
 a list of files that matched the criteria, along with their context and/or object type, if specified.}}
