@@ -37,22 +37,6 @@
 #define IFLOW_EITHER    	0x04
 
 /*
- * Nodes in the graph represent either a type used in the source
- * of an allow rule or the target: these defines are used to
- * represent which.
- */
-#define IFLOW_SOURCE_NODE 	0x0
-#define IFLOW_TARGET_NODE 	0x1
-
-/*
- * These defines are used to color nodes in the graph algorithms.
- */
-#define IFLOW_COLOR_WHITE 0
-#define IFLOW_COLOR_GREY  1
-#define IFLOW_COLOR_BLACK 2
-#define IFLOW_COLOR_RED   3
-
-/*
  * iflow_query_t encapsulates all of the paramaters of a query. It should
  * always be allocated with iflow_query_create and deallocated with
  * iflow_query_destroy. Limiting by ending_types, obj_classes, intermed types,
