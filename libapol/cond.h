@@ -21,7 +21,7 @@
 #define COND_NEQ	7 /* bool != bool */
 #define COND_LAST	8
 
-#ifdef CONFIG_SECURITY_SELINUX_CONDITIONAL_POLICY
+#define COND_EXPR_MAXDEPTH 10
 
 /* policy DB structures */
 
@@ -36,16 +36,16 @@ typedef struct cond_bool {
  * in reverse polish notation. */
 typedef struct cond_expr {
 	unsigned int expr_type;
-	bool_t bool;
+	int bool;
 	struct cond_expr *next;
 } cond_expr_t;
 
 /* Each conditional has a true and fals list of allow, audit,
  * and/or type rules */
 typedef struct cond_rule_list {
-	int	num_access;
-	int	num_audit;
-	int	num_te;
+	int	num_av_access;
+	int	num_av_audit;
+	int	num_te_trans;
 	int	*av_access;
 	int	*av_audit;
 	int	*te_trans;
@@ -53,7 +53,7 @@ typedef struct cond_rule_list {
 
 /* This is base conditional expression struct */
 typedef struct cond_expr_item {
-	bool_t cur_state;
+	bool_t cur_val;
 	cond_expr_t *expr;
 	cond_rule_list_t *true_list;
 	cond_rule_list_t *false_list;
@@ -65,8 +65,6 @@ typedef struct cond_expr_item {
 /* prototypes */
 int cond_free_bool(cond_bool_t *b);
 int cond_free_expr_item(cond_expr_item_t *c);
+int cond_evaluate_expr(cond_expr_t *expr, struct policy *policy);
 
 #endif
-#endif 
-
-

@@ -95,6 +95,17 @@ typedef struct constraint_expr {
 } constraint_expr_t;
 /* end from constraint.h */
 
+/* this is for passing around a rule (used in the conditional
+ * policy support.
+ */
+typedef struct rule_desc {
+	int rule_type;
+	int idx;
+} rule_desc_t;
+
+/* used to signify non-error but empty return */
+static rule_desc_t dummy_rule_desc;
+static cond_expr_t dummy_cond_expr;
 
 extern char yytext[];
 extern int yywarn(char *msg);
@@ -138,13 +149,27 @@ static int define_node_context(int ver);
 static int define_fs_use(int behavior, int ver);
 static int define_genfs_context(int has_type);
 static int define_nfs_context(void);
-static int define_bool();
-static int define_conditional();
-static int define_cond_expr(__u32 expr_type);
-static int define_cond_pol_list();
-static int define_cond_compute_type();
-static int define_cond_te_avtab();
+static int define_bool(void);
+static int define_conditional(cond_expr_t *expr, cond_rule_list_t *t_list, cond_rule_list_t *f_list);
+static cond_expr_t *define_cond_expr(__u32 expr_type, void *arg1, void *arg2);
+static cond_rule_list_t *define_cond_pol_list(cond_rule_list_t *list, rule_desc_t *rule);
+static rule_desc_t *define_cond_compute_type(int rule_type);
+static rule_desc_t *define_cond_te_avtab(int rule_type);
 %}
+
+%union {
+	int sval;
+	unsigned int val;
+	unsigned int *valptr;
+	void *ptr;
+}
+
+%type <ptr> cond_expr cond_expr_prim cond_pol_list
+%type <ptr> cond_allow_def cond_auditallow_def cond_auditdeny_def cond_dontaudit_def
+%type <ptr> cond_transition_def cond_te_avtab_def cond_rule_def
+%type <sval> role_def roles
+%type <sval> cexpr cexpr_prim op roleop
+%type <val> ipv4_addr_def number
 
 %token PATH
 %token CLONE
@@ -195,6 +220,7 @@ static int define_cond_te_avtab();
 %token NOTEQUAL
 
 %left OR
+%left XOR
 %left AND
 %right NOT
 %left EQUALS NOTEQUAL
@@ -356,65 +382,61 @@ bool_val                : CTRUE
  			{ if (insert_id("T",0)) return -1; }
                         | CFALSE
 			{ if (insert_id("F",0)) return -1; }
-			| NUMBER
-			{ if ($1 == 0) { if (insert_id("F",0)) return -1;  }
-			  else if($1 == 1) { if (insert_id("T",0)) return -1;  }
-			  else return -1 ; }
                         ;
 cond_stmt_def           : IF cond_expr '{' cond_pol_list '}'
-                        { if (define_conditional() < 0) return -1; }
+                        { if (define_conditional((cond_expr_t*)$2, (cond_rule_list_t*)$4, (cond_rule_list_t*)NULL) < 0) return -1; }
                         | IF cond_expr '{' cond_pol_list '}' ELSE '{' cond_pol_list '}'
-                        { if (define_conditional() < 0 ) return -1;  }
+                        { if (define_conditional((cond_expr_t*)$2, (cond_rule_list_t*)$4, (cond_rule_list_t*)$8) < 0 ) return -1;  }
                         ;
 cond_expr               : '(' cond_expr ')'
 			{ $$ = $2;}
 			| NOT cond_expr
-			{ $$ = define_cond_expr(COND_NOT);
-			  if ($$ == 0) return -1; }
+			{ $$ = define_cond_expr(COND_NOT, $2, NULL);
+			  if ($$ == NULL) return -1; }
 			| cond_expr AND cond_expr
-			{ $$ = define_cond_expr(COND_AND);
-			  if ($$ == 0) return -1; }
+			{ $$ = define_cond_expr(COND_AND, $1, $3);
+			  if ($$ == NULL) return -1; }
 			| cond_expr OR cond_expr
-			{ $$ = define_cond_expr(COND_OR);
-			  if ($$ == 0) return -1; }
+			{ $$ = define_cond_expr(COND_OR, $1, $3);
+			  if ($$ == NULL) return -1; }
 			| cond_expr XOR cond_expr
-			{ $$ = define_cond_expr(COND_XOR);
-			  if ($$ == 0) return -1; }
+			{ $$ = define_cond_expr(COND_XOR, $1, $3);
+			  if ($$ == NULL) return -1; }
 			| cond_expr EQUALS cond_expr
-			{ $$ = define_cond_expr(COND_EQ);
-			  if ($$ == 0) return -1; }
+			{ $$ = define_cond_expr(COND_EQ, $1, $3);
+			  if ($$ == NULL) return -1; }
 			| cond_expr NOTEQUAL cond_expr
-			{ $$ = define_cond_expr(COND_NEQ);
-			  if ($$ == 0) return -1; }
+			{ $$ = define_cond_expr(COND_NEQ, $1, $3);
+			  if ($$ == NULL) return -1; }
 			| cond_expr_prim
 			{ $$ = $1; }
 			;
 cond_expr_prim          : identifier
-                        { $$ = define_cond_expr(COND_BOOL);
-			  if ($$ == 0) return -1; }
+                        { $$ = define_cond_expr(COND_BOOL, NULL, NULL);
+			  if ($$ == NULL) return -1; }
                         ;
 cond_pol_list           : cond_rule_def
-                        { $$ = define_cond_pol_list();
+                        { $$ = define_cond_pol_list((cond_rule_list_t*)NULL, (rule_desc_t*)$1);
 			  if ($$ == 0) return -1; }
                         | cond_pol_list cond_rule_def 
-                        { $$ = define_cond_pol_list();
+                        { $$ = define_cond_pol_list((cond_rule_list_t*)$1, (rule_desc_t*)$2);
 			  if ($$ == 0) return -1; }
 			;
 cond_rule_def           : cond_transition_def
                         { $$ = $1;
-			  if ($$ == 0) return -1; }
+			  if ($$ == NULL) return -1; }
                         | cond_te_avtab_def
                         { $$ = $1;
-			  if ($$ == 0) return -1; }
+			  if ($$ == NULL) return -1; }
                         ;
 cond_transition_def	: TYPE_TRANSITION names names ':' names identifier ';'
-                        { $$ = define_cond_compute_type() ;
+                        { $$ = define_cond_compute_type(RULE_TE_TRANS) ;
                           if ($$ == 0) return -1;}
                         | TYPE_MEMBER names names ':' names identifier ';'
-                        { $$ = define_cond_compute_type() ;
+                        { $$ = define_cond_compute_type(RULE_TE_MEMBER) ;
                           if ($$ ==  0) return -1;}
                         | TYPE_CHANGE names names ':' names identifier ';'
-                        { $$ = define_cond_compute_type() ;
+                        { $$ = define_cond_compute_type(RULE_TE_CHANGE) ;
                           if ($$ ==  0) return -1;}
     			;
 cond_te_avtab_def	: cond_allow_def
@@ -427,19 +449,19 @@ cond_te_avtab_def	: cond_allow_def
 			  { $$ = $1; }
 			;
 cond_allow_def		: ALLOW names names ':' names names  ';'
-			{ $$ = define_cond_te_avtab() ;
+			{ $$ = define_cond_te_avtab(RULE_TE_ALLOW) ;
                           if ($$ == 0) return -1; }
 		        ;
 cond_auditallow_def	: AUDITALLOW names names ':' names names ';'
-			{ $$ = define_cond_te_avtab() ;
+			{ $$ = define_cond_te_avtab(RULE_AUDITALLOW) ;
                           if ($$ == 0) return -1; }
 		        ;
 cond_auditdeny_def	: AUDITDENY names names ':' names names ';'
-			{ $$ = define_cond_te_avtab() ;
+			{ $$ = define_cond_te_avtab(RULE_AUDITDENY) ;
                           if ($$ == 0) return -1; }
 		        ;
 cond_dontaudit_def	: DONTAUDIT names names ':' names names ';'
-			{ $$ = define_cond_te_avtab();
+			{ $$ = define_cond_te_avtab(RULE_DONTAUDIT);
                           if ($$ == 0) return -1; }
                         ;
 
@@ -507,9 +529,9 @@ roles			: role_def
 			{ /* do nothing */}
 			;
 role_def		: ROLE identifier_push ';'
-                        {$$ = (int) define_role_dom(); if ($$ == 0) return -1;}
+                        {$$ = define_role_dom(); if ($$ == 0) return -1;}
 			| ROLE identifier_push '{' roles '}'
-                        {$$ = (int) define_role_dom(); if ($$ == 0) return -1;}
+                        {$$ = define_role_dom(); if ($$ == 0) return -1;}
 			;
 /* added July 2002; made constraints optional */
 opt_constraints         : constraints
@@ -1091,7 +1113,7 @@ static int define_typealias(void)
 }
 
 /* add a rule to the provided av rule list */
-static int add_avrule(int type, av_item_t **rlist, int *list_num) {
+static int add_avrule(int type, av_item_t **rlist, int *list_num, bool_t enabled) {
 	int idx, idx_type, *sz;
 	char *id;
 	av_item_t *item;
@@ -1119,6 +1141,7 @@ static int add_avrule(int type, av_item_t **rlist, int *list_num) {
 	memset(item, 0, sizeof(av_item_t));
 	item->type = type;
 	item->lineno = policydb_lineno;
+	item->enabled = enabled;
 
 	/* source (domain) types/attribs */
 	subtract = FALSE;
@@ -1272,7 +1295,7 @@ static int add_avrule(int type, av_item_t **rlist, int *list_num) {
 	}	
 
 	(*list_num)++;
-	return 0;
+	return *list_num - 1;
 }
 
 /* store av rules */
@@ -1289,12 +1312,12 @@ static int define_te_avtab(int rule_type)
 	case RULE_TE_ALLOW:
 		if(!(parse_policy->opts & POLOPT_TE_ALLOW))
 			goto skip_avtab_rule;
-		rt = add_avrule(rule_type, &(parse_policy->av_access), &(parse_policy->num_av_access));
+		rt = add_avrule(rule_type, &(parse_policy->av_access), &(parse_policy->num_av_access), TRUE);
 		break;
 	case RULE_NEVERALLOW:
 		if(!(parse_policy->opts & POLOPT_TE_NEVERALLOW))
 			goto skip_avtab_rule;
-		rt = add_avrule(rule_type, &(parse_policy->av_access), &(parse_policy->num_av_access));
+		rt = add_avrule(rule_type, &(parse_policy->av_access), &(parse_policy->num_av_access), TRUE);
 		break;
 	
 	/* Jul 2002, added RULE_DONTAUDIT, which replaces RULE_NOTIFY */
@@ -1308,12 +1331,12 @@ static int define_te_avtab(int rule_type)
 	case RULE_AUDITDENY:
 		if(!(parse_policy->opts & POLOPT_TE_DONTAUDIT))
 			goto skip_avtab_rule;
-		rt = add_avrule(rule_type, &(parse_policy->av_audit), &(parse_policy->num_av_audit));
+		rt = add_avrule(rule_type, &(parse_policy->av_audit), &(parse_policy->num_av_audit), TRUE);
 		break;
 	case RULE_AUDITALLOW:
 		if(!(parse_policy->opts & POLOPT_TE_AUDITALLOW))
 			goto skip_avtab_rule;
-		rt = add_avrule(rule_type, &(parse_policy->av_audit), &(parse_policy->num_av_audit));
+		rt = add_avrule(rule_type, &(parse_policy->av_audit), &(parse_policy->num_av_audit), TRUE);
 		break;
 	
 	default:
@@ -1321,7 +1344,7 @@ static int define_te_avtab(int rule_type)
 		yyerror(errormsg);
 		return -1;
 	}
-	if(rt != 0) 
+	if(rt < 0) 
 		return rt;
 	(parse_policy->rule_cnt[rule_type])++;
 	return 0;
@@ -1495,7 +1518,7 @@ static int add_ttrule(int rule_type)
 	free(id);	
 
 	(parse_policy->num_te_trans)++;
-	return 0;
+	return parse_policy->num_te_trans - 1;
 }
 
 
@@ -1528,7 +1551,7 @@ static int define_compute_type(int rule_type)
 		return -1;
 	}
 	rt = add_ttrule(rule_type);
-	if(rt != 0) 
+	if(rt < 0) 
 		return rt;
 		
 	(parse_policy->rule_cnt[rule_type])++;
@@ -2245,10 +2268,10 @@ static int
 }
 
 
-static int define_bool()
+static int define_bool(void)
 {
-#ifdef CONFIG_SECURITY_SELINUX_CONDITIONAL_POLICY
-	char *id;
+	char *id, *name;
+	bool_t val;
 	int rt;
 	
 	rt = set_policy_version(POL_VER_COND, parse_policy);
@@ -2256,67 +2279,273 @@ static int define_bool()
 		yyerror("error setting policy version");
 		return -1;
 	}
-	/* TODO: Currently an empty stub */	
-	while ((id = queue_remove(id_queue)))
-		free(id);
-	return 0;
-#else
-	yyerror("Conditional BOOL definition not supported in this build version.");
-	return -1;
-#endif
-}
-
-static int define_conditional()
-{
-#ifdef CONFIG_SECURITY_SELINUX_CONDITIONAL_POLICY
-	int rt;
-
-	/* TODO: Currently an empty stub */	
-	rt = set_policy_version(POL_VER_COND, parse_policy);
-	if(rt != 0) {
-		yyerror("error setting policy version");
-		return -1;
-	}
-	return 0;
-#else
-	yyerror("Conditional statement definition not supported in this build version.");
-	return -1;
-#endif
-}
-
-static int define_cond_expr(__u32 expr_type)
-{
-#ifdef CONFIG_SECURITY_SELINUX_CONDITIONAL_POLICY
-	char *id;
 	
-	/* TODO: Currently an empty stub */	
-	if (expr_type == COND_BOOL) {
-		while ((id = queue_remove(id_queue))) {
+	if (!(parse_policy->opts & POLOPT_COND_BOOLS) || pass == 2) {
+		while ((id = (char*)queue_remove(id_queue)))
 			free(id);
-		}
+		return 0;
 	}
-	return 1; /* 0 (i.e., NULL) is fail */
-#else
-	yyerror("Conditional statement definition not supported in this build version.");
+	
+	name = (char*)queue_remove(id_queue);
+	if (!name) {
+		yyerror("No name for boolean declaration");
+		return -1;
+	}
+	
+	id = (char*)queue_remove(id_queue);
+	if (!id) {
+		yyerror("No value for boolean declaration");
+		return -1;
+	}
+	
+	if (strcmp(id, "T") == 0)
+		val = TRUE;
+	else
+		val = FALSE;
+	free(id);
+	
+	rt = add_cond_bool(name, val, parse_policy);
+	if (rt == -2) {
+		sprintf(errormsg, "Boolean %s already exists", name);
+		yyerror(errormsg);
+		return -1;
+	} else if (rt < 0) {
+		yyerror("Error adding boolean");
+		return -1;
+	}
+	
 	return 0;
-#endif
 }
 
-static int define_cond_pol_list()
+static int define_conditional(cond_expr_t *expr, cond_rule_list_t *t_list, cond_rule_list_t *f_list)
 {
-#ifdef CONFIG_SECURITY_SELINUX_CONDITIONAL_POLICY
+	int rt;
+	cond_expr_t *e;
+		
 	/* TODO: Currently an empty stub */	
-	return 1; /* 0 (i.e., NULL) is fail */
-#else
-	yyerror("Conditional statement definition not supported in this build version.");
+	rt = set_policy_version(POL_VER_COND, parse_policy);
+	if(rt != 0) {
+		yyerror("error setting policy version");
+		return -1;
+	}
+	
+	if (pass == 1)
+		return 0;
+	
+	if (expr == &dummy_cond_expr) {
+		yyerror("Received invalid expression in define_conditional");
+		return -1;
+	}
+		
+	if (add_cond_expr_item(e, t_list, f_list, parse_policy) < 0) {
+		yyerror("Error adding conditional expression item to the policy");
+		return -1;
+	}
+        
 	return 0;
-#endif
 }
 
-static int define_cond_compute_type()
+static cond_expr_t *define_cond_expr(__u32 expr_type, void *arg1, void *arg2)
 {
-#ifdef CONFIG_SECURITY_SELINUX_CONDITIONAL_POLICY
 	char *id;
+	cond_expr_t *expr, *e1 = NULL, *e2;
+	int bool_var;
+	
+	if (pass == 1) {
+		if (expr_type == COND_BOOL) {
+			while ((id = queue_remove(id_queue)))
+				free(id);
+		}
+		return &dummy_cond_expr;
+	}
+	
+	if (!(parse_policy->opts & POLOPT_COND_BOOLS))
+		return &dummy_cond_expr;
+	
+	/* create a new expression struct */
+	expr = malloc(sizeof(struct cond_expr));
+	if (!expr) {
+		yyerror("out of memory");
+		return NULL;
+	}
+	memset(expr, 0, sizeof(cond_expr_t));
+	expr->expr_type = expr_type;
+
+	/* create the type asked for */
+	switch (expr_type) {
+	case COND_NOT:
+		e1 = NULL;
+		e2 = (struct cond_expr *) arg1;
+		while (e2) {
+			e1 = e2;
+			e2 = e2->next;
+		}
+		if (!e1 || e1->next) {
+			yyerror("illegal conditional NOT expression");
+			free(expr);
+			return NULL;
+		}
+		e1->next = expr;
+		return (struct cond_expr *) arg1;
+	case COND_AND:
+	case COND_OR:
+	case COND_XOR:
+	case COND_EQ:
+	case COND_NEQ:
+		e1 = NULL;
+		e2 = (struct cond_expr *) arg1;
+		while (e2) {
+			e1 = e2;
+			e2 = e2->next;
+		}
+		if (!e1 || e1->next) {
+			yyerror("illegal left side of conditional binary op expression");
+			free(expr);
+			return NULL;
+		}
+		e1->next = (struct cond_expr *) arg2;
+
+		e1 = NULL;
+		e2 = (struct cond_expr *) arg2;
+		while (e2) {
+			e1 = e2;
+			e2 = e2->next;
+		}
+		if (!e1 || e1->next) {
+			yyerror("illegal right side of conditional binary op expression");
+			free(expr);
+			return NULL ;
+		}
+		e1->next = expr;
+		return (struct cond_expr *) arg1;
+	case COND_BOOL:
+		id = (char *) queue_remove(id_queue) ;
+		if (!id) {
+			yyerror("bad conditional; expected boolean id");
+			free(id);
+			free(expr);
+			return NULL;
+		}
+		
+		bool_var = get_cond_bool_idx(id, parse_policy);
+		
+		if (bool_var < 0) {
+			sprintf(errormsg, "unknown boolean %s in conditional expression", id);
+			yyerror(errormsg);
+			free(expr);
+			free(id);
+			return NULL ;
+		}
+		expr->bool = parse_policy->cond_bools[bool_var].val;
+                free(id);
+		return expr;
+	default:
+		yyerror("illegal conditional expression");
+		return NULL;
+	}
+}
+
+/* collect the type lists */
+static cond_rule_list_t *define_cond_pol_list(cond_rule_list_t *list, rule_desc_t *rule)
+{
+	cond_rule_list_t *rl;
+	
+	if (pass == 1)
+		return (cond_rule_list_t*)1;
+		
+	if (!list) {
+		rl = (cond_rule_list_t*)malloc(sizeof(cond_rule_list_t));
+		if (!rl) {
+			yyerror("Memory error");
+			free(rule);
+			return NULL;
+		}
+		memset(rl, 0, sizeof(cond_rule_list_t));
+	} else {
+		rl = list;
+	}
+	
+	if (!rule || rule == &dummy_rule_desc)
+		return rl;
+	
+	switch (rule->rule_type) {
+	case RULE_TE_ALLOW:
+	case RULE_NEVERALLOW:
+		if (add_i_to_a(rule->idx, &rl->num_av_access, &rl->av_access) != 0) {
+			yyerror("Memory error");
+			free(rule);
+			return NULL;
+		}
+		break;
+	case RULE_DONTAUDIT:
+	case RULE_AUDITDENY:
+	case RULE_AUDITALLOW:
+		if (add_i_to_a(rule->idx, &rl->num_av_audit, &rl->av_audit) != 0) {
+			yyerror("Memory error");
+			free(rule);
+			return NULL;
+		}
+		break;
+	case RULE_TE_TRANS:
+	case RULE_TE_MEMBER:
+	case RULE_TE_CHANGE:
+		if (add_i_to_a(rule->idx, &rl->num_te_trans, &rl->te_trans) != 0) {
+			yyerror("Memory error");
+			free(rule);
+			return NULL;
+		}
+		break;
+	default:
+		yyerror("Internal error: invalid type description.");
+		free(rule);
+		return NULL;
+	}
+	
+	free(rule);
+	return rl;
+}
+
+static rule_desc_t *define_cond_compute_type(int rule_type)
+{
+	char *id;
+	int rt;
+	rule_desc_t *rule;
+	
+	if (pass == 1)
+		goto skip_tt_rule;
+		
+	if (!(parse_policy->opts & POLOPT_COND_TE_RULES))
+		goto skip_tt_rule;
+				
+	rule = (rule_desc_t*)malloc(sizeof(rule_desc_t));
+	if (!rule) {
+		yyerror("Memory error");
+		return NULL;
+	}
+	memset(rule, 0, sizeof(rule_desc_t));
+	
+	switch(rule_type) {
+	case RULE_TE_TRANS:
+	case RULE_TE_MEMBER:
+	case RULE_TE_CHANGE:
+		break;
+	default:
+		sprintf(errormsg, "Invalid type transition|member|change rule type (%d)", rule_type);
+		yyerror(errormsg);
+		return NULL;
+	}
+	rt = add_ttrule(rule_type);
+	if(rt != 0) 
+		return NULL;
+		
+	(parse_policy->rule_cnt[rule_type])++;
+	
+	rule->rule_type = rule_type;
+	rule->idx = rt;
+		
+	return rule;
+	
+skip_tt_rule:
 	/* TODO: Currently an empty stub */	
 	while ((id = queue_remove(id_queue))) 
 		free(id);
@@ -2326,17 +2555,66 @@ static int define_cond_compute_type()
 		free(id);
 	id = queue_remove(id_queue);
 	free(id);
-	return 1; /* 0 (i.e., NULL) is fail */
-#else
-	yyerror("Conditional statement definition not supported in this build version.");
-	return 0;
-#endif
+	return &dummy_rule_desc;
 }
-static int define_cond_te_avtab()
+
+static rule_desc_t *define_cond_te_avtab(int rule_type)
 {
-#ifdef CONFIG_SECURITY_SELINUX_CONDITIONAL_POLICY
 	char *id;
-	/* TODO: Currently an empty stub */	
+        int rt;
+	rule_desc_t *rule;
+	        
+	if (pass == 1) {
+		goto skip_avtab_rule;
+	}
+	
+	if(!(parse_policy->opts & POLOPT_COND_TE_RULES))
+                goto skip_avtab_rule;	
+	
+	rule = (rule_desc_t*)malloc(sizeof(rule_desc_t));
+	if (!rule) {
+		yyerror("Memory error");
+		return NULL;
+	}
+	memset(rule, 0, sizeof(rule_desc_t));
+	
+	switch(rule_type) {
+	case RULE_TE_ALLOW:
+		rt = add_avrule(rule_type, &(parse_policy->av_access), &(parse_policy->num_av_access), TRUE);
+		break;
+	case RULE_NEVERALLOW:
+		rt = add_avrule(rule_type, &(parse_policy->av_access), &(parse_policy->num_av_access), TRUE);
+		break;
+	
+	/* Jul 2002, added RULE_DONTAUDIT, which replaces RULE_NOTIFY */
+	case RULE_DONTAUDIT:
+		rt = set_policy_version(POL_VER_JUL2002, parse_policy);
+		if(rt != 0) {
+			yyerror("error setting policy version");
+			return NULL;
+		}
+		/* fall thru */
+	case RULE_AUDITDENY:
+		rt = add_avrule(rule_type, &(parse_policy->av_audit), &(parse_policy->num_av_audit), TRUE);
+		break;
+	case RULE_AUDITALLOW:
+		rt = add_avrule(rule_type, &(parse_policy->av_audit), &(parse_policy->num_av_audit), TRUE);
+		break;
+	default:
+		sprintf(errormsg, "Invalid AV type (%d)", rule_type);
+		yyerror(errormsg);
+		return NULL;
+	}
+	if (rt < 0) 
+		return NULL;
+	(parse_policy->rule_cnt[rule_type])++;
+	
+	rule->rule_type = rule_type;
+	rule->idx = rt;
+	
+	return rule;
+
+skip_avtab_rule:                
 	while ((id = queue_remove(id_queue))) 
 		free(id);
 	while ((id = queue_remove(id_queue))) 
@@ -2345,11 +2623,7 @@ static int define_cond_te_avtab()
 		free(id);
 	while ((id = queue_remove(id_queue))) 
 		free(id);
-	return 1; /* 0 (i.e., NULL) is fail */
-#else
-	yyerror("Conditional statement definition not supported in this build version.");
-	return 0;
-#endif
+	return &dummy_rule_desc; /* 0 (i.e., NULL) is fail */
 }
 
 

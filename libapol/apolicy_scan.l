@@ -86,6 +86,8 @@ AND |
 and				{ return(AND);}
 NOT |
 not				{ return(NOT);}
+xor |
+XOR                             { return(XOR); }
 eq |
 EQ				{ return(EQUALS);}
 true |

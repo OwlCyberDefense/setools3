@@ -124,7 +124,6 @@ int init_policy( policy_t **p)
 	policy->list_sz[POL_LIST_ATTRIB] = LIST_SZ;
 	policy->num_attribs = 0;
 	
-#ifdef CONFIG_SECURITY_SELINUX_CONDITIONAL_POLICY
 	/* conditional booleans */
 	policy->cond_bools = (cond_bool_t *)malloc(sizeof(cond_bool_t) * LIST_SZ);
 	if(policy->cond_bools == NULL) {
@@ -142,8 +141,7 @@ int init_policy( policy_t **p)
 	}
 	policy->list_sz[POL_LIST_COND_EXPRS] = LIST_SZ;	
 	policy->num_cond_exprs = 0;	
-
-#endif
+	
 	/* av_access rules */
 	policy->av_access = (av_item_t *)malloc(sizeof(av_item_t) * LIST_SZ);
 	if(policy->av_access == NULL) {
@@ -375,7 +373,6 @@ int free_policy(policy_t **p)
 	/* type attributes list */
 	free_attrib_list(policy->attribs, policy->num_attribs);
 	
-#ifdef CONFIG_SECURITY_SELINUX_CONDITIONAL_POLICY
 	/* conditional bools list */
 	if(policy->cond_bools != NULL) {
 		for(i = 0; i < policy->num_cond_bools; i++) {
@@ -391,7 +388,7 @@ int free_policy(policy_t **p)
 		}
 		free(policy->cond_exprs);
 	}
-#endif
+	
 	/* av_access rules */
 	if(policy->av_access != NULL) {
 		free_av_list(policy->av_access, policy->num_av_access);
@@ -2462,4 +2459,143 @@ int get_ta_item_name(ta_item_t *ta, char **name, policy_t *policy)
 		return -1;
 	}
 	return rt;
+}
+
+/* Conditional policy support */
+
+/*
+ * Add a boolean to the policy. Will not add a boolean if another with the same
+ * name already exists.
+ *
+ * returns the index of the new boolean on success.
+ * returns -2 if the boolean already exists.
+ * return -1 on error.
+ */
+int add_cond_bool(char *name, bool_t val, policy_t *policy)
+{
+	int idx, rt;
+	
+	rt= avl_insert(&policy->tree[AVL_COND_BOOLS], name, &idx);
+	if(rt < 0)	/* error or already exists */
+		return rt;
+		
+	policy->cond_bools[idx].name = name;
+	policy->cond_bools[idx].val = val;
+
+	return idx;
+}
+
+/*
+ * Get the index of a boolean in the policy.
+ *
+ * returns the index of the boolean on success.
+ * returns -1 on error (including the boolean not existing).
+ */
+int get_cond_bool_idx(char *name, policy_t *policy)
+{
+	if(name == NULL || policy == NULL)
+		return -1;
+	
+	return avl_get_idx(name, &policy->tree[AVL_COND_BOOLS]);		
+}
+
+static void update_cond_rule_list(cond_rule_list_t *list, bool_t val, policy_t *policy)
+{
+	int i;
+	
+	if (!list)
+		return;
+	
+	for (i = 0; i < list->num_av_access; i++)
+		policy->av_access[list->av_access[i]].enabled = val;
+	for (i = 0; i < list->num_av_audit; i++)
+		policy->av_audit[list->av_audit[i]].enabled = val;
+	for (i = 0; i < list->num_te_trans; i++)
+		policy->te_trans[list->te_trans[i]].enabled = val;
+}
+
+static int update_cond_expr_item(int idx, policy_t *policy)
+{
+	int rt;
+	
+	assert(policy->cond_exprs[idx].expr);
+		
+	rt = cond_evaluate_expr(policy->cond_exprs[idx].expr, policy);
+	if (rt == -1) {
+		fprintf(stderr, "Invalid expression\n");
+		return -1;
+	}
+	if (rt)
+		policy->cond_exprs[idx].cur_val = TRUE;
+	else
+		policy->cond_exprs[idx].cur_val = FALSE;
+		
+	update_cond_rule_list(policy->cond_exprs[idx].true_list, policy->cond_exprs[idx].cur_val, policy);
+	update_cond_rule_list(policy->cond_exprs[idx].false_list, !policy->cond_exprs[idx].cur_val, policy);
+
+	return 0;
+}
+
+/*
+ * Add a conditional expression to the policy. The expression cannot be null but the conditional
+ * rule lists can.
+ *
+ * returns the index of the conditional expression on success.
+ * returns -1 on error.
+ */
+int add_cond_expr_item(cond_expr_t *expr, cond_rule_list_t *true_list, cond_rule_list_t *false_list, policy_t *policy)
+{
+	int idx;
+	
+	if (!policy || !expr)
+		return -1;
+		
+	if (policy->num_cond_exprs >= policy->list_sz[POL_LIST_COND_EXPRS]) {
+	
+		policy->cond_exprs = (cond_expr_item_t*)realloc(policy->cond_exprs,
+					     (LIST_SZ + policy->list_sz[POL_LIST_COND_EXPRS])
+					     * sizeof(cond_expr_item_t));
+		if(policy->cond_exprs == NULL) {
+			fprintf(stderr, "out of memory\n");
+			return -1;
+		}
+		policy->list_sz[POL_LIST_INITIAL_SIDS] += LIST_SZ;
+	}
+	idx = policy->num_cond_exprs;
+	policy->num_cond_exprs++;
+	
+	policy->cond_exprs[idx].expr = expr;
+	policy->cond_exprs[idx].true_list = true_list;
+	policy->cond_exprs[idx].false_list = false_list;
+	
+	if (update_cond_expr_item(idx, policy) != 0)
+		return -1;
+	return idx;
+}
+
+/*
+ * Set the value of the condition bool. This will also update all of the conditional
+ * expressions to reflect the change in value.
+ *
+ * returns 0 on success.
+ * returns -1 on error.
+ */
+int set_cond_bool_val(int bool, bool_t val, policy_t *policy)
+{
+	int i;
+	
+	if (!policy || !is_valid_cond_bool_idx(bool, policy))
+		return -1;
+	
+	/* short circuit to avoid unnecessary updates */
+	if (policy->cond_bools[bool].val == val)
+		return 0;
+	else
+		policy->cond_bools[bool].val = val;
+	
+	for (i = 0; i < policy->num_cond_exprs; i++) {
+		if (update_cond_expr_item(i, policy) != 0)
+			return -1;
+	}
+	return 0;
 }

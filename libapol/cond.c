@@ -11,10 +11,10 @@
  * some of this is borrowed directly from our work in conditional.c
  * for the checkpolicy extensions */
 
-#ifdef CONFIG_SECURITY_SELINUX_CONDITIONAL_POLICY
 
 #include "util.h"
 #include "cond.h"
+#include "policy.h"
 
 
 static int cond_free_expr(cond_expr_t *expr)
@@ -61,9 +61,65 @@ int cond_free_bool(cond_bool_t *b)
 	return 0;
 }
 
+/*
+ * cond_evaluate_expr evaluates a conditional expr
+ * in reverse polish notation. It returns true (1), false (0),
+ * or undefined (-1). Undefined occurs when the expression
+ * exceeds the stack depth of COND_EXPR_MAXDEPTH.
+ */
+int cond_evaluate_expr(cond_expr_t *expr, policy_t *policy)
+{
 
+	cond_expr_t *cur;
+	int s[COND_EXPR_MAXDEPTH];
+	int sp = -1;
 
-
-
-#endif
-
+	for (cur = expr; cur != NULL; cur = cur->next) {
+		switch (cur->expr_type) {
+		case COND_BOOL:
+			if (sp == (COND_EXPR_MAXDEPTH - 1))
+				return -1;
+			sp++;
+			s[sp] = policy->cond_bools[cur->bool].val;
+			break;
+		case COND_NOT:
+			if (sp < 0)
+				return -1;
+			s[sp] = !s[sp];
+			break;
+		case COND_OR:
+			if (sp < 1)
+				return -1;
+			sp--;
+			s[sp] |= s[sp + 1];
+			break;
+		case COND_AND:
+			if (sp < 1)
+				return -1;
+			sp--;
+			s[sp] &= s[sp + 1];
+			break;
+		case COND_XOR:
+			if (sp < 1)
+				return -1;
+			sp--;
+			s[sp] ^= s[sp + 1];
+			break;
+		case COND_EQ:
+			if (sp < 1)
+				return -1;
+			sp--;
+			s[sp] = (s[sp] == s[sp + 1]);
+			break;
+		case COND_NEQ:
+			if (sp < 1)
+				return -1;
+			sp--;
+			s[sp] = (s[sp] != s[sp + 1]);
+			break;
+		default:
+			return -1;
+		}
+	}
+	return s[0];
+}
