@@ -18,7 +18,7 @@ namespace eval Apol_Analysis_relabel {
     variable VERSION 1
     
     variable info_button_text \
-	"This analysis checks the possible ways to relabel objects allowed by a policy. \
+	"This analysis checks the possible ways to relabel objects as allowed by a policy. \
     	The permissions relabelto and relabelfrom are special in a type enforcement environment as they \
     	provide a method of changing type.  Relabel analysis is designed to fascilitate queries about \
     	the possible changes for a given type.\n\n\There are four modes for a query, each presenting a \
@@ -53,6 +53,9 @@ namespace eval Apol_Analysis_relabel {
 	
 	# Tree nodes
 	variable top_node		TOP_NODE
+	
+	variable relabelto_perm		"relabelto"
+	variable relabelfrom_perm	"relabelfrom"
 	
 	# Within the namespace command for the module, you must call
 	# Apol_Analysis::register_analysis_modules, the first argument is
@@ -185,6 +188,10 @@ proc Apol_Analysis_relabel::create_widgets_to_display_results {results results_f
 		        
 		        $dtree itemconfigure $Apol_Analysis_relabel::top_node \
 				-data [list [llength $from_items] [llength $to_items]]
+			$dtree itemconfigure TO_LIST \
+				-data [llength $to_items]
+			$dtree itemconfigure FROM_LIST \
+				-data [llength $from_items]
 		} else {
 		        foreach result_elem $results {
 		            set domain [lindex $result_elem 0]
@@ -602,20 +609,28 @@ proc Apol_Analysis_relabel::adv_options_set_widgets_to_default_state {path_name}
 proc Apol_Analysis_relabel::adv_options_initialize_objs_and_perm_filters {path_name} {
 	variable widget_vars
 	 
-	set Apol_Analysis_relabel::widget_vars($path_name,incl_class_list) $Apol_Class_Perms::class_list
 	set Apol_Analysis_relabel::widget_vars($path_name,excl_class_list) ""
+	set tmp_list ""
 	# Initialization for object classes section
-	foreach class $widget_vars($path_name,incl_class_list) {
+	foreach class $Apol_Class_Perms::class_list {
 		set rt [catch {set perms_list [apol_GetPermsByClass $class 1]} err]
 		if {$rt != 0} {
 			tk_messageBox -icon error -type ok -title "Error" -message "$err"
 			return -1
 		}
+		# Filter out object classes that do not have relabelto/relabelfrom permission
+		set idx1 [lsearch -exact $perms_list $Apol_Analysis_relabel::relabelto_perm]
+		set idx2 [lsearch -exact $perms_list $Apol_Analysis_relabel::relabelfrom_perm]
+		if {$idx1 == -1 && $idx2 == -1} {
+			continue
+		}
 		foreach perm $perms_list {
 			set widget_vars($path_name,perm_status_array,$class,$perm) include
 		}
+		set tmp_list [lappend tmp_list $class]
 	}
-
+	set Apol_Analysis_relabel::widget_vars($path_name,incl_class_list) $tmp_list
+	
 	return 0
 }
 
@@ -748,8 +763,13 @@ proc Apol_Analysis_relabel::adv_options_create_dialog {path_name title_txt} {
         pack $topf -fill both -expand yes -padx 10 -pady 10
         
    	# Main Titleframe
+   	set label_frame [frame $topf.label_frame]
    	set objs_frame  [TitleFrame $topf.objs_frame -text "Filter by object classes:"]
         
+        set top_lbl [Label $label_frame.top_lbl -justify left -font $ApolTop::dialog_font \
+        	-text "NOTE: The following list of object classes does not necessarily include all \
+        	object classes defined in the policy.\nThis list has been filtered to include \
+        	only object classes which have both 'relableto' and 'relabelfrom' permission."]
         # Widgets for object classes frame
         set search_pane [frame [$objs_frame getframe].search_pane]
         set button_f [frame [$objs_frame getframe].button_f]
@@ -802,8 +822,9 @@ proc Apol_Analysis_relabel::adv_options_create_dialog {path_name title_txt} {
         pack $incl_classes_box $excl_classes_box -side left -pady 2 -padx 2 -fill both -expand yes
 	pack $widgets($path_name,class_incl_lb) $widgets($path_name,class_excl_lb) \
 		-padx 2 -side left -fill both -expand yes	
-        pack $objs_frame -side top -anchor nw -padx 5 -pady 2 -expand yes -fill both 	  
-        
+        pack $objs_frame -side bottom -anchor nw -padx 5 -pady 2 -expand yes -fill both 	  
+        pack $label_frame -side top -anchor center
+        pack $top_lbl -side left -anchor nw -fill x -pady 2 -padx 2
 	# Create and pack close button for the dialog
   	set close_bttn [Button $close_frame.close_bttn -text "Close" -width 8 \
 		-command "Apol_Analysis_relabel::adv_options_destroy_dialog $path_name"]
@@ -987,9 +1008,9 @@ proc Apol_Analysis_relabel::display_mod_options { opts_frame } {
     bindtags $widgets(start_attrib_cb).e [linsert [bindtags $widgets(start_attrib_cb).e] 3 start_attrib_cb_tag]
     bind start_attrib_cb_tag <KeyPress> [list ApolTop::_create_popup $widgets(start_attrib_cb) %W %K]
     
-    set filter_f [frame $option_f.filter_f]
-    set endtype_frame [frame $filter_f.endtype_frame]
-    set adv_frame [frame $filter_f.adv_frame]
+    set filter_f [TitleFrame $option_f.filter_f -text "Optional result filters:"]
+    set endtype_frame [frame [$filter_f getframe].endtype_frame]
+    set adv_frame [frame [$filter_f getframe].adv_frame]
     set widgets(entry_end) [Entry $endtype_frame.entry_end \
 	-helptext "You may enter a regular expression" \
 	-editable 1 -state disabled \
@@ -1194,18 +1215,18 @@ proc Apol_Analysis_relabel::tree_select {widget node} {
 			lappend subtitle_type_tags $start_index $end_index
 			append line "types. Open the subtree of this item to view the list of types."
 		} else {
-			append line "can relabel to "
+			append line "can relabel "
 			set start_index [string length $line]
-			append line "[lindex $data 1] "
+			append line "to [lindex $data 1] "
 			set end_index [string length $line]
 			lappend subtitle_type_tags $start_index $end_index
 			
-			append line "types and relabel from "
+			append line "type(s) and relabel "
 			set start_index [string length $line]
-			append line "[lindex $data 0] "
+			append line "from [lindex $data 0] "
 			set end_index [string length $line]
 			lappend subtitle_type_tags $start_index $end_index
-			append line "types. Open the subtree of this item to view the lists of To/From types."
+			append line "type(s). Open the subtree of this item to view the lists of To/From types."
 		}
 	} elseif {$widget_vars(mode) == "subject"} {
 		append line "$widget_vars(start_type)"
@@ -1214,33 +1235,41 @@ proc Apol_Analysis_relabel::tree_select {widget node} {
 		
 		append line " can relabel "
 		set start_index [string length $line]	
-		if {$node == "TO_LIST" || $node == "FROM_LIST"} {
-			return
-		}
-		set parent [$widget parent $node]
-		if {$parent == "TO_LIST"} {
-			append line "to"
-			set node [string trimleft $node "to_list:"]
+		if {$node == "TO_LIST"} {
+			append line "to $data"
+			set end_index [string length $line]
+			lappend subtitle_type_tags $start_index $end_index
+			append line " type(s). Open the subtree of this item to view the list of types."
+		} elseif {$node == "FROM_LIST"} {
+			append line "from $data"
+			set end_index [string length $line]
+			lappend subtitle_type_tags $start_index $end_index
+			append line " type(s). Open the subtree of this item to view the list of types."
 		} else {
-			append line "from"
-			set node [string trim $node "from_list:"]
-		}
-		set end_index [string length $line]
-		lappend subtitle_type_tags $start_index $end_index
+			set parent [$widget parent $node]
+			if {$parent == "TO_LIST"} {
+				append line "to"
+				set node [string trimleft $node "to_list:"]
+			} else {
+				append line "from"
+				set node [string trim $node "from_list:"]
+			}
+			set end_index [string length $line]
+			lappend subtitle_type_tags $start_index $end_index
+				
+			set start_index [string length $line]
+			append line " $node"
+			set end_index [string length $line]
+			lappend title_type_tags $start_index $end_index
+			append line "\n\n"
 			
-			
-		set start_index [string length $line]
-		append line " $node"
-		set end_index [string length $line]
-		lappend title_type_tags $start_index $end_index
-		append line "\n\n"
-		
-		foreach item $data {
-		    set start_index [expr {[string length $line] + 1}]
-		    append line "([lindex $item 0]"
-		    set end_index [string length $line]
-		    append line ") [lindex $item 1]\n"
-		    lappend policy_tags_list $start_index $end_index
+			foreach item $data {
+			    set start_index [expr {[string length $line] + 1}]
+			    append line "([lindex $item 0]"
+			    set end_index [string length $line]
+			    append line ") [lindex $item 1]\n"
+			    lappend policy_tags_list $start_index $end_index
+			}
 		}
 		append line "\n"
 	} else {	
