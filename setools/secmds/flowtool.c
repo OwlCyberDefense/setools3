@@ -236,13 +236,17 @@ int main (int argc, char *argv []) {
         char *flowfile, *s;
         char buf [1024];
         size_t amount_read, flowfile_size;
-        int results, ret;
+        int results, ret, retv;
         FILE *pfp;
     
         /* gather options */
         parse_command_line (argc, argv);
         if (policy_conf_file == NULL) {
-                policy_conf_file = LIBAPOL_DEFAULT_POLICY;
+                retv = find_default_policy_file(POL_TYPE_BINARY|POL_TYPE_SOURCE, &policy_conf_file);
+		if (!policy_conf_file || retv) {
+			fprintf(stderr, "error finding default policy\n");
+			return retv;
+		}
         }
         if (permission_map_file == NULL) {
                 permission_map_file = APOL_DEFAULT_PERM_MAP;
