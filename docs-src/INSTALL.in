@@ -45,10 +45,10 @@ distribution. It can be installed by going to the packages subdirectory and
 typing "make install". If you have BWidgets installed make certain that it
 is a compatible version. See BWIDGETS VERSIONS below for more information.
 
-LIBSELINUX:In order to successfully build and install secmds
+LIBSELINUX: In order to successfully build and install secmds
 onto your system you will need libselinux and the associated headers. A
 package may be available for your distribution - on Fedora Core it is called
-libselinux-devel.
+libselinux-devel. 
 
 GTK: In order to successfully install seaudit onto your system you will need
 libglade and GTK2.0 or above installed. It also requires the pkg-config
@@ -67,11 +67,25 @@ Short version: make all; su root; make install; make install-policy
 
 Long version follows:
 
-0. Review the ./setools/Makefile. When running 'make', the TCLVER,
-TCL_INCLUDE and TCL_LIBINC variables should be automatically set
-appropriately for your installation of Tcl/Tk; however, if you need to
-it is possible to manually these variables in the Makefile.
-   
+0. Review the ./setools/Makefile. The following is information on important
+variables in this Makefile.
+
+	- TCLVER : When running 'make', the TCLVER should be automatically set 
+	      for your installation of Tcl/Tk. 
+	- TCL_INCLUDE : This variable is commented out by default and should 
+	      only be changed if your Tcl/Tk header files cannot be located  
+	      using your default search path.
+	- TCL_LIBINC : This variable is commented out by default and should 
+	      only be changed if your Tcl/Tk libraries cannot be located
+	      using the default search path.
+	- DEBUG : If set to 0, this will create an optimized version
+	- DYNAMIC : If set to 1, this will dynamically link with internal 
+	     libraries.
+	- USE_LIBSELINUX : This determines whether libapol and libseuser use 
+	     libselinux to find the default policies. Useful to create a 
+	     verion of apol that runs on non-selinux machines. Set this to 0 
+	     for non-selinux machines.
+      
 1. If you are installing seuser and have a version of SELinux based
 on an LSM kernel earlier than 2.4.19 (prior to August 2002 or so): 
 
