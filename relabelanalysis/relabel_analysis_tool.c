@@ -1,4 +1,4 @@
-/* Copyright (C) 2003-2004 Tresys Technology, LLC
+/* Copyright (C) 2003-2005 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
 
 #include <stdio.h>
@@ -28,12 +28,13 @@ static struct option const longopts[] =
 	{"output",	required_argument,	NULL, 'o'},
 	{"help", 	no_argument,		NULL, 'h'},
 	{"version", 	no_argument, 		NULL, 'v'},
+	{"rules",	required_argument,	NULL, 'r'},
 	{NULL, 0, NULL, 0}
 };
 
 void usage(const char *argv0, int long_version)
 {
-	printf("usage:\n%s -s <start type> -m \"to\"|\"from\"|\"domain\" [options]\n", argv0);
+	printf("usage:\n%s -s <start type> -m \"to\"|\"from\"|\"both\"|\"domain\" [options]\n", argv0);
 	if (long_version){
 		printf("\n"
 "Required Arguments:\n"
@@ -42,6 +43,7 @@ void usage(const char *argv0, int long_version)
 "Mode Strings:\n"
 "   to        list types to which starting type can be relabeled\n"
 "   from      list types from which starting type can be relabeled\n"
+"   both      list types as with both to and from mode\n"
 "   domain    list all types to and from which starting type can relabel\n\n"
 "Additional Options:\n"
 "   -p, --policy <policy file> specify the policy file to load\n"
@@ -52,6 +54,11 @@ void usage(const char *argv0, int long_version)
 "Transitive Analysis Options (currently not available)\n"
 "   -t, --trans [trans target] include type transition for multi-step relabeling\n"
 "   -x, --trans_steps <int n>  analyze paths upto at most n steps\n\n"
+"Output of rules\n"
+"   -r, --rules <int n>        sets display level of rules\n"
+"                              0 = off (only list types), 1 = list types & paths\n"
+"                              2 = only one way (if bi-directional), \n"
+"                              3 = all (default)\n\n"
 );
 	} else {
 		printf("try %s --help for more information.\n", argv0);
@@ -125,23 +132,27 @@ bool_t is_relabel_result_empty(relabel_result_t *res)
 	bool_t retv = 1;
 	int i, temp = 0;
 
-	if (res->num_domains)
+	if (res->num_subjects)
 		for (i = 0; i < res->num_types; i++)
-			temp += res->num_domains[i];
+			temp += res->num_subjects[i];
 	
 	if (temp) retv = 0;
 
 	return retv;
 };
 
-void print_relabel_result(relabel_result_t *res, int start_type, policy_t *policy, FILE *out)
+/* rules_lvl 0=none 1=only directions 2=to or from only not back 3=all*/
+void print_relabel_result(relabel_set_t *sets, relabel_result_t *res, relabel_filter_t *filter, int start_type, policy_t *policy, FILE *out, int rules_lvl)
 {
-	int i, j, retv;
-	int *temp_dom_list = NULL;
-	int temp_dom_list_size = 0;
-	char *str = NULL;
+	int i, j, k, x, retv, dummy = 0, where, list = 0, skip_filter;
+	char *str = NULL, *str2 = NULL, *str3 = NULL;
 	
-	if (res->mode == BOTHLIST){
+	if (filter)
+		skip_filter = 0;
+	else
+		skip_filter = 1;
+
+	if (res->mode->mode == MODE_DOM){
 		retv = get_type_name(start_type, &str, policy);
 		if (retv) { 
 			fprintf(stderr, "out of memory\n");
@@ -150,18 +161,25 @@ void print_relabel_result(relabel_result_t *res, int start_type, policy_t *polic
 		fprintf(out ,"%s can relabel from:\n", str);
 		free(str);
 		str = NULL;
-		for(i = 0; i < res->set->num_from_types; i++) {
-			retv = get_type_name(res->set->from_types[i].type, &str, policy);
+		for(i = 0; i < res->set->num_types; i++) {
+			if (res->set->types[i].list == TOLIST)
+				continue;
+			retv = get_type_name(res->set->types[i].type, &str, policy);
 			if (retv) {
 				fprintf(stderr, "out of memory\n");
 				return;
 			}
-			fprintf(out, "   %s\n", str);
+			fprintf(out, "%s %s\n", (i&&rules_lvl)?"\n ":" ",  str);
 			free(str);
 			str = NULL;
+			dummy++;
+			for (j = 0; j < res->set->types[i].num_rules; j++) {
+				if (rules_lvl > 1) 
+					fprintf(out, "    %s\n", re_render_av_rule((is_binary_policy(policy))?0:1, res->set->types[i].rules[j], 0, policy));
+			}
 		}
-		if (!res->set->num_from_types)
-			fprintf(out, "   <none>\n");
+		if (!dummy)
+			fprintf(out, "  <none>\n");
 
 		retv = get_type_name(start_type, &str, policy);
 		if (retv) { 
@@ -171,78 +189,130 @@ void print_relabel_result(relabel_result_t *res, int start_type, policy_t *polic
 		fprintf(out ,"\n%s can relabel to:\n", str);
 		free(str);
 		str = NULL;
-		for(i = 0; i < res->set->num_to_types; i++) {
-			retv = get_type_name(res->set->to_types[i].type, &str, policy);
+		dummy = 0;
+		for(i = 0; i < res->set->num_types; i++) {
+			if (res->set->types[i].type == FROMLIST)
+				continue;
+			retv = get_type_name(res->set->types[i].type, &str, policy);
 			if (retv) {
 				fprintf(stderr, "out of memory\n");
 				return;
 			}
-			fprintf(out, "   %s\n", str);
+			fprintf(out, "%s %s\n", (i&&rules_lvl)?"\n ":" ", str);
 			free(str);
 			str = NULL;
+			dummy++;
+			for (j = 0; j < res->set->types[i].num_rules; j++) {
+				if (rules_lvl > 1) 
+					fprintf(out, "    %s\n", re_render_av_rule((is_binary_policy(policy))?0:1, res->set->types[i].rules[j], 0, policy));
+			}
 		}
-		if (!res->set->num_to_types)
+		if (!dummy)
 			fprintf(out, "   <none>\n");
 	} else {
+		if (str2) {
+			free(str2);
+			str2 = NULL;
+		}
+		retv = get_type_name(start_type, &str2, policy);
+		if (retv) {
+			fprintf(stderr, "out of memory\n");
+			return;
+		}
+		if (res->mode->mode == MODE_TO) {
+			list = TOLIST;
+			fprintf(out, "Type %s can be relabeled to:\n", str2);
+		} else if (res->mode->mode == MODE_FROM) {
+			list = FROMLIST;
+			fprintf(out, "Type %s can be relabled from:\n", str2);
+		} else if (res->mode->mode == MODE_BOTH) {
+			list = BOTHLIST;
+			fprintf(out, "Type %s can be relabeled to/from:\n", str2);
+		}
 		for (i = 0; i < res->num_types; i++) {
-			for (j = 0; j < res->num_domains[i]; j++) {
-				if (find_int_in_array(res->domains[i][j], temp_dom_list, temp_dom_list_size) == -1) {
-					retv = add_i_to_a(res->domains[i][j], &temp_dom_list_size, &temp_dom_list);
-					if (retv) {
-						fprintf(stderr, "out of memory\n");
-						return;
+			if (str) {
+				free(str);
+				str = NULL;
+			}
+			retv = get_type_name(res->types[i], &str, policy);
+			if (retv) {
+				fprintf(stderr, "out of memory\n");
+				return;
+			}
+			fprintf(out, "%s %s\n", (i&&rules_lvl)?"\n ":" ", str);
+			for (j = 0; j < res->num_subjects[i]; j++) {
+				if (str3) {
+					free(str3);
+					str3 = NULL;
+				}
+				retv = get_type_name(res->subjects[i][j], &str3, policy);
+				if (retv) {
+					fprintf(stderr, "out of memory\n");
+					return;
+				}
+				where = apol_where_is_type_in_list(&(sets[res->subjects[i][j]]), res->types[i], list);
+				if (where == NOTHERE) {
+					fprintf(stderr, "fatal internal error\n");
+					return;
+				}
+				if (sets[res->subjects[i][j]].types[where].list == TOLIST) {
+					if (rules_lvl > 0) 
+						fprintf(out, "    %s -> %s by %s\n", str2, str, str3);
+				} else if (sets[res->subjects[i][j]].types[where].list == FROMLIST) {
+					if (rules_lvl > 0)
+						fprintf(out, "    %s <- %s by %s\n", str2, str, str3);
+				} else if (sets[res->subjects[i][j]].types[where].list == BOTHLIST) {
+					if (rules_lvl > 0)
+						fprintf(out, "    %s <-> %s by %s\n", str2, str, str3);
+				} else {
+					fprintf(stderr, "something is foobar .list=%i i=%i j=%i where=%i\n", sets[res->subjects[i][j]].types[where].list, i, j, where);
+					return;
+				}
+				for (k = 0; k < sets[res->subjects[i][j]].types[where].num_rules; k++) {
+					if (rules_lvl > 1) {
+						if (skip_filter) {
+							fprintf(out, "      %s\n", re_render_av_rule((is_binary_policy(policy))?0:1, sets[res->subjects[i][j]].types[where].rules[k], 0, policy));
+						} else {
+							for (x = 0; x < filter->num_perm_sets; x++) {
+								dummy = 0;
+								if (does_av_rule_use_classes(sets[res->subjects[i][j]].types[where].rules[k], 1, &(filter->perm_sets[x].obj_class), 1, policy))
+									dummy = 1;
+								if (dummy) 
+									break;
+							}
+							if (dummy)
+								fprintf(out, "      %s\n", re_render_av_rule((is_binary_policy(policy))?0:1, sets[res->subjects[i][j]].types[where].rules[k], 0, policy));
+						}
 					}
 				}
-			}
-		}
-		for (i = 0; i < temp_dom_list_size; i++) {
-			retv = get_type_name(temp_dom_list[i], &str, policy);
-			if (retv) {
-				fprintf(stderr, "out of memory\n");
-				return;
-			}
-			fprintf(out, "%s can relabel %s ", str, (res->mode == TOLIST ? "from" : "to"));
-			retv = get_type_name(start_type, &str, policy);
-			if (retv) {
-				fprintf(stderr, "out of memory\n");
-				return;
-			}
-			fprintf(out, "%s %s:\n", str, (res->mode == TOLIST ? "to" : "from"));
-			for (j = 0; j < res->num_types; j++) {
-				if (find_int_in_array(temp_dom_list[i], res->domains[j], res->num_domains[j]) > -1) {
-					retv = get_type_name(res->types[j], &str, policy);
-					if (retv) {
-						fprintf(stderr, "out of memory\n");
+				if (sets[res->subjects[i][j]].types[where].list == BOTHLIST) {
+					where = apol_where_is_type_in_list(&(sets[res->subjects[i][j]]), start_type, ANYLIST);
+					if (where == NOTHERE) {
+						fprintf(stderr, "fatal internal error\n");
 						return;
 					}
-					fprintf(out, "   %s \n", str);
-
+					for (k = 0; k < sets[res->subjects[i][j]].types[where].num_rules; k++) {
+						if (rules_lvl > 2) {
+							if (skip_filter) {
+								fprintf(out, "      %s\n", re_render_av_rule((is_binary_policy(policy))?0:1, sets[res->subjects[i][j]].types[where].rules[k], 0, policy));
+							} else {
+								for (x = 0; x < filter->num_perm_sets; x++) {
+									dummy = 0;
+									if (does_av_rule_use_classes(sets[res->subjects[i][j]].types[where].rules[k], 1, &(filter->perm_sets[x].obj_class), 1, policy))
+										dummy = 1;
+									if (dummy) 
+										break;
+								}
+								if (dummy)
+									fprintf(out, "      %s\n", re_render_av_rule((is_binary_policy(policy))?0:1, sets[res->subjects[i][j]].types[where].rules[k], 0, policy));
+							}
+						}
+					}
 				}
 			}
 		}
 	}
 
-	/* print rules */
-	fprintf(out, "\nResults generated by the following %i rules:\n", res->num_rules);
-	if (!res->num_rules)
-		fprintf(out, "  <none> \n");
-	for (i = 0; i < res->num_rules; i++) {
-		if (str) {
-			free(str);
-			str = NULL;
-		}
-
-		str = re_render_av_rule(1, res->rules[i], 0, policy);
-		if (!str)
-			fprintf(out, "Could not render rule number %i\n", res->rules[i]);
-		else
-			fprintf(out, "%s\n", str);
-	}
-
-	if (temp_dom_list)
-		free(temp_dom_list);
-	if (str)
-		free(str);
 };
 
 int main (int argc, char** argv)
@@ -263,7 +333,7 @@ int main (int argc, char** argv)
 	FILE *out;
 	FILE *filter_file;
 
-	int retv, optc, start_type;
+	int retv, optc, start_type, rules_lvl = 100;
 
 	if (!( dummy = (char*)calloc(2000, sizeof(char)) )) {
 		fprintf(stderr, "out of memory\n");
@@ -279,7 +349,7 @@ int main (int argc, char** argv)
 		return -1;
 
 
-	while ( (optc = getopt_long(argc, argv, "s:m:p:t::x:f:o:hv", longopts, NULL)) != -1 ) {
+	while ( (optc = getopt_long(argc, argv, "s:m:p:t::x:f:o:hvr:", longopts, NULL)) != -1 ) {
 		switch (optc) {
 		case 's':
 			start_type_name = optarg;
@@ -287,6 +357,7 @@ int main (int argc, char** argv)
 		case 'm':
 			if(!strcmp(optarg, "to")) mode->mode = MODE_TO;
 			else if (!strcmp(optarg, "from")) mode->mode = MODE_FROM;
+			else if (!strcmp(optarg, "both")) mode->mode = MODE_BOTH;
 			else if (!strcmp(optarg, "domain")) mode->mode = MODE_DOM;
 			break;
 		case 'p':
@@ -313,6 +384,9 @@ int main (int argc, char** argv)
 		case 'v':
 			printf("relabel analysis tool %s version: %s\n", argv[0], RELABEL_ANALYSIS_TOOL_VERSION_INFO);
 			exit(0);
+			break;
+		case 'r':
+			rules_lvl = atoi(optarg);
 			break;
 		default:
 			break;
@@ -383,6 +457,12 @@ int main (int argc, char** argv)
 		exit(1);
 	}
 
+	start_type = get_type_idx(start_type_name, policy);
+	if (!is_valid_type(policy, start_type, 0)) { 
+		fprintf(stderr, "invalid type\n");
+		return -1;
+	}
+
 	retv = apol_do_relabel_analysis(&sets, policy);
 	if (retv) { 
 		fprintf(stderr," fill relabel sets error %i\n", retv);
@@ -398,19 +478,12 @@ int main (int argc, char** argv)
 		fclose(filter_file);
 	}
 	
-	start_type = get_type_idx(start_type_name, policy);
-	if (!is_valid_type(policy, start_type, 0)) { 
-		fprintf(stderr, "invalid type\n");
-		return -1;
-	}
-
 	retv = apol_query_relabel_analysis(sets, start_type, res, policy, mode, filter);
 	if (retv) {
 		fprintf(stderr, "analysis error %i\n", retv);
 		return retv;
 	}
-
-	print_relabel_result(res, start_type, policy, out);
+	print_relabel_result(sets, res, filter, start_type, policy, out, rules_lvl);
 
 	if (output_filename)
 		fclose(out);
