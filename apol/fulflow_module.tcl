@@ -2501,8 +2501,8 @@ proc Apol_Analysis_fulflow::advanced_filters_create_dialog {} {
    	set close_frame [frame $advanced_filter_Dlg.close_frame -relief sunken -bd 1]
    	set topf  [frame $advanced_filter_Dlg.topf]
         set pw1 [PanedWindow $topf.pw1 -side left -weights available]
-        $pw1 add -weight 2
-        $pw1 add -weight 2
+        $pw1 add -weight 2 -minsize 225
+        $pw1 add -weight 2 -minsize 225
         pack $close_frame -side bottom -anchor center -pady 2
         pack $pw1 -fill both -expand yes	
         pack $topf -fill both -expand yes -padx 10 -pady 10
@@ -2560,16 +2560,15 @@ proc Apol_Analysis_fulflow::advanced_filters_create_dialog {} {
 	bindtags $class_listbox [linsert [bindtags $Apol_Analysis_fulflow::class_listbox] 3 object_list_Tag]  
         bind object_list_Tag <<ListboxSelect>> {Apol_Analysis_fulflow::advanced_filters_display_permissions [$Apol_Analysis_fulflow::class_listbox curselection]}
         
-	pack $classes_box -padx 2 -side left -fill both -expand yes
-        pack $permissions_title_frame -pady 2 -padx 2 -fill both -expand yes
+        pack $pw2 -fill both -expand yes
         pack $pw1 -fill both -expand yes
-        pack $pw2 -fill both -expand yes	
-        pack $topf -fill both -expand yes -padx 10 -pady 10   
+        pack $bframe -side bottom -fill both -anchor sw -pady 2
+        pack $permissions_title_frame -pady 2 -padx 2 -fill both -expand yes
+        pack $b_incl_all_perms $b_excl_all_perms -side left -anchor center -pady 2 -expand yes -fill x
         pack $threshhold_frame -fill x -anchor nw -side bottom -pady 2
         pack $cbutton_threshhold $spinbox_threshhold -side left -anchor nw 
+	pack $classes_box -padx 2 -side left -fill both -expand yes	   
         pack $sw_class -fill both -expand yes -side top
-        pack $bframe -side bottom -fill both -anchor sw -pady 2
-        pack $b_incl_all_perms $b_excl_all_perms -side left -anchor center -pady 2 -expand yes -fill x
 	pack $sw_list -fill both -expand yes -side top
         	
         # Widgets for types frame
@@ -2676,14 +2675,14 @@ proc Apol_Analysis_fulflow::advanced_filters_create_dialog {} {
 					  	
 	# pack all subframes and widgets for the types frame
 	pack $b_excl_f -side bottom -anchor center -pady 2 
+	pack $b_incl_f -side bottom -anchor center -pady 2 
 	pack $buttons_excl_f -side bottom -anchor center -pady 2
+	pack $buttons_incl_f -side bottom -anchor center -pady 2
 	pack $b_excl_all_sel $b_excl_all_clear -side left -anchor center -expand yes -pady 2
 	pack $sw_excl -side top -anchor nw -fill both -expand yes -pady 2 -padx 6
 	pack $cb_excl_attrib -side top -anchor center -padx 6
 	pack $combo_excl -side top -anchor center -pady 2 -padx 15 
-	
-	pack $b_incl_f -side bottom -anchor center -pady 2 
-	pack $buttons_incl_f -side bottom -anchor center -pady 2
+
 	pack $b_incl_all_sel $b_incl_all_clear -side left -anchor center -expand yes -pady 2
 	pack $sw_incl -side top -anchor nw -fill both -expand yes -pady 2 -padx 6
 	pack $cb_incl_attrib -side top -anchor center -padx 6
@@ -2692,7 +2691,7 @@ proc Apol_Analysis_fulflow::advanced_filters_create_dialog {} {
 	pack $include_bttn $exclude_bttn -side top -pady 2 -anchor center
 	pack $include_f $exclude_f -side left -anchor nw -fill both -expand yes
 	pack $middle_f -side left -anchor center -after $include_f -padx 5 -expand yes
-	pack $objs_frame $types_frame -side top -anchor nw -padx 5 -pady 2 -expand yes -fill both
+	pack $types_frame $objs_frame -side top -anchor nw -padx 5 -pady 2 -expand yes -fill both
 	
 	wm protocol $advanced_filter_Dlg WM_DELETE_WINDOW "Apol_Analysis_fulflow::advanced_filters_destroy_dialog"
     	
