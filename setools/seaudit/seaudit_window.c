@@ -87,6 +87,7 @@ void seaudit_window_add_new_view(seaudit_window_t *window, audit_log_t *log, boo
 	view = seaudit_filtered_view_create(log, GTK_TREE_VIEW(tree_view), view_name);
 	hbox = gtk_hbox_new(FALSE, 5);
 	button = gtk_button_new();
+	g_object_set_data(G_OBJECT(button), "view", view);
 	image = gtk_image_new_from_stock(GTK_STOCK_CLOSE, GTK_ICON_SIZE_MENU);
 	gtk_container_add(GTK_CONTAINER(button), image);
 	gtk_widget_set_size_request(image, 8, 8);
