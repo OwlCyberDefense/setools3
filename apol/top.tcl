@@ -234,6 +234,21 @@ proc ApolTop::enable_tkListbox { my_list_box } {
 }
 
 # ------------------------------------------------------------------------------
+#  Command ApolTop::change_comboBox_state
+# ------------------------------------------------------------------------------
+proc ApolTop::change_comboBox_state {cb_value combo_box} {
+	selection clear -displayof $combo_box
+
+	if {$cb_value} {
+		$combo_box configure -state normal -entrybg white
+	} else {
+		$combo_box configure -state disabled -entrybg $ApolTop::default_bg_color
+	}
+	
+	return 0
+}
+
+# ------------------------------------------------------------------------------
 #  Command ApolTop::popup_listbox_Menu
 # ------------------------------------------------------------------------------
 proc ApolTop::popup_listbox_Menu { global x y popup callbacks list_box} {
