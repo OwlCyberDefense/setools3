@@ -95,6 +95,8 @@ static int search_binary_policy_file(char *policy_file_path)
 	snprintf(buf, sizeof(buf)-1, "%s/policy.%s", LIBAPOL_POLICY_INSTALL_DIR, version);
 	rt = access(buf, R_OK);
 	if (rt != 0) {
+		if (version)
+			free(version);
 		return POLICY_FILE_DOES_NOT_EXIST;
      	}
 	free(version);
