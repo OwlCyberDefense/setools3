@@ -26,10 +26,12 @@
  * msg_type_t defines the different types of audit messages this library will
  * handle.  AVC_MSG is a standard 'allowed' or 'denied' type message.  
  * LOAD_POLICY_MSG is the message that results when a policy is loaded into the
- * system.
+ * system  BOOLEAN_MSG is the message that results when changing booleans in a 
+ * conditional policy..
  */
 #define AVC_MSG 	0x00000001
 #define	LOAD_POLICY_MSG 0x00000002
+#define BOOLEAN_MSG     0x00000003
 
 /* defines for the fields in the message types */
 #define AVC_MSG_FIELD 		0
@@ -75,11 +77,15 @@
 #define LOAD_POLICY_BINARY_FIELD  38
 #define LOAD_POLICY_NUM_FIELDS    6
 
-#define DATE_FIELD		39
-#define HOST_FIELD              40
+#define BOOLEAN_NUM_BOOLS         39
+#define BOOLEAN_BOOLS             40
+#define BOOLEAN_VALUES            41
+
+#define DATE_FIELD		42
+#define HOST_FIELD              43
 
 #define MSG_MAX_NFIELDS AVC_NUM_FIELDS
-#define NUM_FIELDS		41
+#define NUM_FIELDS		44
 
 extern const char *audit_log_field_strs[NUM_FIELDS]; 
 int audit_log_field_strs_get_index(const char *str);
@@ -149,16 +155,27 @@ typedef struct load_policy_msg {
 
 
 /*
+ * boolean_msg contains all fields unique to a conditional boolean message.
+ */
+typedef struct boolean_msg {
+  int num_bools;    /* number of booleans */
+  int *booleans;    /* ordered array of ints refering to boolean name */
+  bool_t *values;      /* ordered array 0 or 1 depending on boolean value */
+} boolean_msg_t;
+
+
+/*
  * msg_t is the type for all audit log messages.  It will contain either 
- * avc_msg_t or load_policy_msg_t, but not both.
+ * avc_msg_t OR load_policy_msg_t OR boolean_msg_t.
  */
 typedef struct msg {
 	struct tm *date_stamp; /* audit message datestamp */
-	unsigned int msg_type; /* audit message type..AVC_MSG or LOAD_POLICY_MSG */
+	unsigned int msg_type; /* audit message type..AVC_MSG, LOAD_POLICY_MSG or BOOLEAN_MSG */
 	int host;              /* key for the hostname that generated the message */
 	union {
 		avc_msg_t *avc_msg;                 /* if msg_type = AVC_MSG */
 		load_policy_msg_t *load_policy_msg; /* if msg_type = LOAD_POLICY_MSG */
+       	        boolean_msg_t *boolean_msg;         /* if msg_type = BOOLEAN_MSG */ 
 	} msg_data;
 } msg_t;
 
@@ -181,7 +198,9 @@ typedef struct strs {
 #define OBJ_TREE  3
 #define PERM_TREE 4
 #define HOST_TREE 5
-#define NUM_TREES 6
+#define BOOL_TREE 6
+#define NUM_TREES 7
+
 
 typedef struct audit_log {
 	msg_t **msg_list;    /* the array of messages */
@@ -194,8 +213,10 @@ typedef struct audit_log {
 audit_log_t* audit_log_create(void);
 msg_t* avc_msg_create(void);
 msg_t* load_policy_msg_create(void);
+msg_t* boolean_msg_create(void);
 #define msg_get_avc_data(msg) msg->msg_data.avc_msg
 #define msg_get_load_policy_data(msg) msg->msg_data.load_policy_msg
+#define msg_get_boolean_data(msg) msg->msg_data.boolean_msg
 void audit_log_destroy(audit_log_t *tmp);
 void msg_print(msg_t *msg, FILE *file);
 void msg_destroy(msg_t *tmp);/* Free all memory associated with a message */
@@ -212,6 +233,7 @@ enum avc_msg_class_t which_avc_msg_class(msg_t *msg);
 #define audit_log_add_obj(log, str, id)  audit_log_add_str(log, str, id, OBJ_TREE)
 #define audit_log_add_perm(log, str, id) audit_log_add_str(log, str, id, PERM_TREE)
 #define audit_log_add_host(log, str, id) audit_log_add_str(log, str, id, HOST_TREE)
+#define audit_log_add_bool(log, str, id) audit_log_add_str(log, str, id, BOOL_TREE)
 
 #define audit_log_get_type_idx(log, str) audit_log_get_str_idx(log, str, TYPE_TREE)
 #define audit_log_get_user_idx(log, str) audit_log_get_str_idx(log, str, USER_TREE)
@@ -219,6 +241,7 @@ enum avc_msg_class_t which_avc_msg_class(msg_t *msg);
 #define audit_log_get_obj_idx(log, str)  audit_log_get_str_idx(log, str, OBJ_TREE)
 #define audit_log_get_perm_idx(log, str) audit_log_get_str_idx(log, str, PERM_TREE)
 #define audit_log_get_host_idx(log, str) audit_log_get_str_idx(log, str, HOST_TREE)
+#define audit_log_get_bool_idx(log, str) audit_log_get_str_idx(log, str, BOOL_TREE)
 
 #define audit_log_get_type(log, idx) audit_log_get_str(log, idx, TYPE_TREE)
 #define audit_log_get_user(log, idx) audit_log_get_str(log, idx, USER_TREE)
@@ -226,6 +249,7 @@ enum avc_msg_class_t which_avc_msg_class(msg_t *msg);
 #define audit_log_get_obj(log, idx)  audit_log_get_str(log, idx, OBJ_TREE)
 #define audit_log_get_perm(log, idx) audit_log_get_str(log, idx, PERM_TREE)
 #define audit_log_get_host(log, idx) audit_log_get_str(log, idx, HOST_TREE)
+#define audit_log_get_bool(log, idx) audit_log_get_str(log, idx, BOOL_TREE)
 
 const char* libseaudit_get_version(void);
 
