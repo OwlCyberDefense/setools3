@@ -557,7 +557,7 @@ int main (int argc, char **argv)
 		exit(1);
 	} else if (argc - optind < 1) {
 		rt = find_default_policy_file(search_opts, &policy_file);
-		if (rt != 0) {
+		if (rt != FIND_DEFAULT_SUCCESS) {
 			printf("Error while searching for default policy: %s\n", find_default_policy_file_strerr(rt));
 			exit(1);
 		}
