@@ -2592,16 +2592,16 @@ static void apol_cond_rules_append_expr(cond_expr_t *exp, policy_t *policy, Tcl_
  * argv[3] include allow rules
  * argv[4] include audit rules
  * argv[5] include type transition rules
+ * argv[6] use boolean for search
  */
 int Apol_SearchConditionalRules(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
 {
 	char *error_msg = NULL;
-	char tbuf[BUF_SZ];
-	bool_t regex, *exprs_b;
+	bool_t regex, *exprs_b, use_bool;
 	bool_t include_allow, include_audit, include_tt;
 	int i;
 	
-	if (argc != 6) {
+	if (argc != 7) {
 		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
 		return TCL_ERROR;
 	}
@@ -2619,17 +2619,16 @@ int Apol_SearchConditionalRules(ClientData clientData, Tcl_Interp *interp, int a
 	include_allow = getbool(argv[3]);
 	include_audit = getbool(argv[4]);
 	include_tt = getbool(argv[5]);
-	
+	use_bool = getbool(argv[6]);
+	if (use_bool && str_is_only_white_space(argv[1])) {
+		Tcl_AppendResult(interp, "You umust provide a boolean!", (char *) NULL);
+		return TCL_ERROR;
+	}
 	/* If regex is turned OFF, then validate that the boolean exists. */
-	if (!regex && !str_is_only_white_space(argv[1]) && get_cond_bool_idx(argv[1], policy) < 0) {
+	if (use_bool && !regex && get_cond_bool_idx(argv[1], policy) < 0) {
 		Tcl_AppendResult(interp, "Invalid boolean name provided. You may need to turn on the regular expression option.", (char *) NULL);
 		return TCL_ERROR;
-	} 
-	/* In order to handle when no bool name is provided and regex is turned OFF, we turn regex ON for this special case. */
-	if (!regex && str_is_only_white_space(argv[1])) {
-		regex = 1;
 	}
-	
 	exprs_b = (bool_t*)malloc(sizeof(bool_t) * policy->num_cond_exprs);
 	if (!exprs_b) {
 		Tcl_AppendResult(interp, "Memory error\n", (char *) NULL);
@@ -2637,14 +2636,11 @@ int Apol_SearchConditionalRules(ClientData clientData, Tcl_Interp *interp, int a
 	}
 	memset(exprs_b, FALSE, sizeof(bool_t) * policy->num_cond_exprs);
 	
-	if (search_conditional_expressions(argv[1], regex, exprs_b, &error_msg, policy) != 0) {
+	if (search_conditional_expressions(use_bool, argv[1], regex, exprs_b, &error_msg, policy) != 0) {
 		Tcl_AppendResult(interp, "Error searching conditional expressions: ", error_msg, (char *) NULL);
 		free(error_msg);
 		return TCL_ERROR;
 	}
-	/* Append number of conditional expressions */
-	snprintf(tbuf, sizeof(tbuf)-1, "%d", policy->num_cond_exprs);
-	Tcl_AppendElement(interp, tbuf);				
 	for (i = 0; i < policy->num_cond_exprs; i++) {
 		if (exprs_b[i]) {
 			apol_cond_rules_append_expr(policy->cond_exprs[i].expr, policy, interp);

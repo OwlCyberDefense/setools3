@@ -99,7 +99,8 @@ proc Apol_Cond_Rules::cond_rules_search {} {
 		$search_opts(allow_regex) \
 		$search_opts(incl_teallow) \
 		$search_opts(incl_teaudit) \
-		$search_opts(incl_ttrans)]} err]
+		$search_opts(incl_ttrans) \
+		$enable_bool_combo_box]} err]
 		
 	if {$rt != 0} {	
 		tk_messageBox -icon error -type ok -title "Error" -message "$err"
@@ -108,15 +109,15 @@ proc Apol_Cond_Rules::cond_rules_search {} {
 		$resultsbox configure -state normal
 		$resultsbox delete 0.0 end
 		$resultsbox insert end "Found the following expressions in Reverse Polish Notation:\n"
-		set list_idx 0
 		set rule_selected [expr ($search_opts(incl_teallow) || \
 					 $search_opts(incl_teaudit) || \
 					 $search_opts(incl_ttrans))]
-		set num_cond_exprs [lindex $results $list_idx]
-		for {set i 0} {$i < $num_cond_exprs} {incr i} {
-			incr list_idx
+		set len [llength $results]
+		set counter 0
+		# List should look like {expr1 num_av_rules avrule1_lineno avrule1_string avrule1_status num_audit_rules ... }
+		for {set list_idx 0} {$list_idx < $len} {incr list_idx} {
 			set cond_expr [lindex $results $list_idx]
-			$resultsbox insert end "\nconditional expression $i: \[ $cond_expr \]\n\n"
+			$resultsbox insert end "\nconditional expression $counter: \[ $cond_expr \]\n\n"
 			
 			if {$rule_selected} {
 				$resultsbox insert end "TRUE list:\n"
@@ -162,7 +163,8 @@ proc Apol_Cond_Rules::cond_rules_search {} {
 				Apol_Cond_Rules::cond_rules_render_rules \
 					$resultsbox $results $num_ttrans list_idx
 			}
-			$resultsbox insert end "\n"		
+			$resultsbox insert end "\n"	
+			incr counter	
 		}
 		Apol_PolicyConf::configure_HyperLinks $resultsbox
 		ApolTop::makeTextBoxReadOnly $resultsbox 
@@ -280,7 +282,6 @@ proc Apol_Cond_Rules::create {nb} {
 	variable bool_combo_box
 	variable resultsbox 
 	variable cb_regex
-	variable bool_combo_box
 	variable cb_enable_bool_combo_box
 	
 	# Layout frames

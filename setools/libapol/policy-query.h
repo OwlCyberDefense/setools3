@@ -99,7 +99,7 @@ int match_te_rules(bool_t allow_regex, regex_t *preg, int ta_opt,int idx, int id
 	bool_t do_indirect, bool_t only_enabled, rules_bool_t *rules_b, policy_t *policy);
 int search_te_rules(teq_query_t *q, teq_results_t *r, policy_t *policy);
 
-int search_conditional_expressions(char *bool, bool_t allow_regex, bool_t *exprs_b, char **error_msg, policy_t *policy);
+int search_conditional_expressions(bool_t use_bool, char *bool, bool_t allow_regex, bool_t *exprs_b, char **error_msg, policy_t *policy);
 
 int policy_query_add_type(int **end_types, int *num_end_types, int end_type);
 #endif /*_APOLICY_POLICY_QUERY_H_*/
