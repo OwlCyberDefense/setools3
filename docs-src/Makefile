@@ -25,6 +25,10 @@ apol-doc:
 	sed -e 's/APOL_GUI_VERSION/$(shell cat ../apol/VERSION)/g' | \
 	sed -e 's/MOD_DATE/$(shell date '+%B %d, %G')/g' > ../apol/iflow_help.txt
 	
+	cat obj_perms_help.in | \
+	sed -e 's/APOL_GUI_VERSION/$(shell cat ../apol/VERSION)/g' | \
+	sed -e 's/MOD_DATE/$(shell date '+%B %d, %G')/g' > ../apol/obj_perms_help.txt
+	
 sepcut-doc: 
 	rm -f ../sepct/*.txt; \
 	cat sepcut_help_text.in | \
