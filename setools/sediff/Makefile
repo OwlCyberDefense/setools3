@@ -32,6 +32,6 @@ $(LIBAPOL):
 	cd ../ ; $(MAKE) libapol
 
 clean:
-	rm -f *.o core* sediff sediffx *~
-bare:
-	rm -f *.o core* sediff sediffx *~
+	rm -f *.o core* sediff sediffx *~ *.bak *.gladep
+	
+bare: clean
