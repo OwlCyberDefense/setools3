@@ -43,9 +43,6 @@
 #define INDEXCON_VERSION_NUM "UNKNOWN"
 #endif
 
-/* Reasonable default filename */
-#define INDEX_FILE "conindex.db"
-
 #define COPYRIGHT_INFO "Copyright (C) 2004 Tresys Technology, LLC"
 
 static struct option const longopts[] =
@@ -61,7 +58,7 @@ static struct option const longopts[] =
 void usage(const char *program_name, int brief)
 {
 	printf("%s (indexcon ver. %s)\n\n", COPYRIGHT_INFO, INDEXCON_VERSION_NUM);
-	printf("Usage: %s [OPTIONS]\n", program_name);
+	printf("Usage: %s <filename> [OPTIONS]\n", program_name);
 	if(brief) {
 		printf("\n   Try %s --help for more help.\n\n", program_name);
 		return;
@@ -69,7 +66,6 @@ void usage(const char *program_name, int brief)
 	fprintf(stdout, "\n\
 Index SELinux contexts on the filesystem\n\
   -d directory, --directory=directory 	Start scanning at directory\n\
-  -o filename, --outfile=filename   	Save the filesystem data in filename\n\
   -h, --help                 display this help and exit\n\
   -v, --version              output version information and exit\n");
 	return;
@@ -78,17 +74,14 @@ Index SELinux contexts on the filesystem\n\
 
 int main(int argc, char **argv, char **envp)
 {
-	char *outfilename = INDEX_FILE, *dir = "/";
+	char *outfilename = NULL, *dir = "/";
 	int optc = 0;
 	sefs_filesystem_data_t fsdata;
 	
-	while ((optc = getopt_long (argc, argv, "d:o:hv", longopts, NULL)) != -1)  {
+	while ((optc = getopt_long (argc, argv, "d:hv", longopts, NULL)) != -1)  {
 		switch (optc) {
 	  	case 'd': /* directory */
 	  		dir = optarg;
-	  		break;
-		case 'o': /* outfile */
-	  		outfilename = optarg;
 	  		break;
 		case 'h': /* help */
 	  		usage(argv[0], 0);
@@ -101,6 +94,13 @@ int main(int argc, char **argv, char **envp)
 	  		exit(1);
 		}
 	}
+
+	outfilename = argv[1];
+	if (outfilename == NULL) {
+		usage(argv[0], 1);
+		exit(1);
+	}
+
 
 	if (sefs_filesystem_data_init(&fsdata) == -1) {
 		fprintf(stderr, "fsdata_init failed\n");
