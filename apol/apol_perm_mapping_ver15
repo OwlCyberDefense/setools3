@@ -20,6 +20,10 @@
 #	n   =	None
 #	b   =	Both
 #
+# Additionally, you can choose to follow the mapping with an optional  
+# permission weight value from 1 (less importance) to 10 (higher importance). 
+# 10 is the default weight value if one is not provided.
+#
 # Look to the examples below for further clarification.
 #
 # Number of object classes.
