@@ -1248,6 +1248,7 @@ static unsigned int get_tokens(char *line, int msgtype, audit_log_t *log, FILE *
 		} else if (ret == LOAD_POLICY_NEXT_LINE) {
 			/* Don't add the message to the log yet, but hold the pointer to the message. */
 			ret = LOAD_POLICY_NEXT_LINE;
+			log->num_load_msgs++;
 		} else {
 			if (audit_log_add_msg(log, *msg) == -1) {
 				free_field_tokens(*(&fields), num_tokens);
