@@ -236,7 +236,7 @@ proc Apol_Types::popupTypeInfo {which ta} {
 		pack $s_fc -fill both -expand yes -side top
 	     	if {$index_file_loaded} {
 		     	if {$info_fc != ""} {
-		     		set num [llength $info_fc]
+		     		set num [expr [llength $info_fc] / 3]
 		     		$f_fc insert end "Number of files: $num\n\n"
 		     		foreach item $info_fc {
 				     	foreach {ctxt class path} $item {}
