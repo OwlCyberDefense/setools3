@@ -46,12 +46,12 @@ typedef struct types_relation_type_access_pool {
  */
 int dta_query_add_obj_class(dta_query_t *q, int obj_class)
 {
-	return policy_query_add_obj_class(&q->obj_options, &q->num_obj_options, obj_class);
+	return apol_add_class_to_obj_perm_set_list(&q->obj_options, &q->num_obj_options, obj_class);
 }
 
 int dta_query_add_obj_class_perm(dta_query_t *q, int obj_class, int perm)
 {
-	return policy_query_add_obj_class_perm(&q->obj_options, &q->num_obj_options, obj_class, perm);
+	return apol_add_perm_to_obj_perm_set_list(&q->obj_options, &q->num_obj_options, obj_class, perm);
 }
 
 /* Select by object type.	
