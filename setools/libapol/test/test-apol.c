@@ -26,6 +26,7 @@
 #include "../infoflow.h"
 #include "../semantic/avhash.h"
 #include "../semantic/avsemantics.h"
+#include "../relabel_analysis.h"
 
 FILE *outfile;
 char *policy_file = NULL;
@@ -73,6 +74,216 @@ static int render_hash_table(policy_t *p)
 	return 0;
 }
 
+static char *ap_relabel_dir_str(unsigned char dir) 
+{
+	switch (dir & (~AP_RELABEL_DIR_START)) {
+	case AP_RELABEL_DIR_TO:
+		return "To";
+	case AP_RELABEL_DIR_FROM:
+		return "From";
+	case AP_RELABEL_DIR_BOTH:
+		return "To and From";
+	default:
+		return "ERROR";
+	}
+	return NULL;
+}
+
+static int render_relabel_result (ap_relabel_result_t * res, policy_t * policy, int type, bool_t list_only)
+{
+	char *str = NULL, *str2 = NULL;
+	int i, j, k, x, loop_start, loop_stop;
+
+	if (!policy)
+		return -1;
+	if (!res || !res->num_targets) {
+		fprintf(stderr, "empty result set\n");
+		return 0;
+	}
+
+	if (type < -1 || type > res->num_targets || type == 0)
+		type = 1;
+	if (type == -1) {
+		loop_start = 0;
+		loop_stop = res->num_targets;
+	} else {
+		loop_start = type - 1;
+		loop_stop = type;
+	}
+
+	fprintf(outfile, "\nRelabel Analysis for ");
+	if (get_type_name(res->start_type, &str, policy))
+		return -1;
+	fprintf(outfile, "%s:\n", str);
+	if (res->mode == AP_RELABEL_MODE_OBJ) {
+		fprintf(outfile, "%s can be relabeled ", str);
+		if (res->requested_direction == AP_RELABEL_DIR_TO) {
+			fprintf(outfile, "to ");
+		} else if (res->requested_direction == AP_RELABEL_DIR_FROM) {
+			fprintf(outfile, "from ");
+		} else if (res->requested_direction == AP_RELABEL_DIR_BOTH) {
+			fprintf(outfile, "either to or from ");
+		}
+	} else {
+		fprintf(outfile, "%s can relabel ", str);
+	}
+	free(str);
+	fprintf(outfile, "%i types.\n", res->num_targets);
+	for (i = loop_start; i < loop_stop; i++) {
+		if (!(res->requested_direction & res->targets[i].direction))
+			continue;
+		if (get_type_name(res->targets[i].target_type, &str2, policy))
+			return -1;
+		fprintf(outfile, "\n    %i: %s (%i object classes)", 
+			(i + 1), str2, res->targets[i].num_objects);
+		if (list_only)
+			continue;
+		for (j = 0; j < res->targets[i].num_objects; j++) {
+			if(!(res->targets[i].objects[j].direction & res->requested_direction))
+				continue;
+			if(get_obj_class_name(res->targets[i].objects[j].object_class, &str, policy))
+				return -1;
+			fprintf(outfile, "\n        %s (by %i subjects)\n", 
+				str, res->targets[i].objects[j].num_subjects);
+			free(str);
+			for (k = 0; k < res->targets[i].objects[j].num_subjects; k++) {
+				if (!(res->requested_direction & res->targets[i].objects[j].subjects[k].direction))
+					continue;
+				if (get_type_name(res->targets[i].objects[j].subjects[k].source_type, &str, policy))
+					return -1;
+				fprintf(outfile, "    %s %s by %s\n",
+					ap_relabel_dir_str(res->targets[i].objects[j].subjects[k].direction), 
+					str2, str);
+				free(str);
+				for (x = 0; x < res->targets[i].objects[j].subjects[k].num_rules; x++) {
+					if (!(res->requested_direction & res->targets[i].objects[j].subjects[k].rules[x].direction) 
+						&& !(AP_RELABEL_DIR_START & res->targets[i].objects[j].subjects[k].rules[x].direction))
+						continue;
+					fprintf(outfile, "%s\n", re_render_av_rule((policy->policy_type == POL_TYPE_SOURCE),
+						res->targets[i].objects[j].subjects[k].rules[x].rule_index,
+						0, policy));
+				}
+			}
+		}
+		free(str2);
+	}
+	return 0;
+}
+
+static int test_relabel_analysis(policy_t *policy) 
+{
+	char ans[81], *temp = NULL;
+	int retv;
+	ap_relabel_result_t *res = NULL;
+	int start_type = -1;
+	unsigned char mode = 0, direction = 0;
+
+	if (!(res = (ap_relabel_result_t*)calloc(1, sizeof(ap_relabel_result_t)) ))
+		return -1;
+
+	for(;;) {
+		printf("\nActions:\n");
+		printf("    0)  Perform New Query\n");
+		printf("    1)  (Re)Print Results\n");
+		printf("    2)  Print List of Result Types\n");
+		printf("    3)  Print Results for One Target Only\n");
+		printf("    q)  Exit Relabel Analysis Submenu\n");
+		printf("\nCommand (\'m\' for menu): ");
+		fgets(ans, sizeof(ans), stdin);
+		switch (ans[0]) {
+		case '0':
+			ap_relabel_result_destroy(res);
+			printf("Enter start type: \n");
+			fgets(ans, sizeof(ans), stdin);
+			temp = strstr(ans, "\n");
+			if (temp)
+				*temp = '\0';
+			start_type = get_type_idx(ans, policy);
+			if (start_type == -1) {
+				printf("Invalid type\n");
+				break;
+			}
+			printf("Choose mode:\n");
+			printf("    1)  Object\n");
+			printf("    2)  Subject\n");
+			printf("Choice: ");
+			fgets(ans, sizeof(ans), stdin);
+			if (ans[0] == '1' || ans[0] == 'o' || ans[0] == 'O')
+				mode = AP_RELABEL_MODE_OBJ;
+			else if (ans[0] == '2' || ans[0] == 's' ||ans[0] == 'S')
+				mode = AP_RELABEL_MODE_SUBJ;
+			else {
+				printf("Invalid mode\n");
+				break;
+			}
+			if (mode == AP_RELABEL_MODE_OBJ) {
+				printf("Choose direction:\n");
+				printf("    1)  To\n");
+				printf("    2)  From\n");
+				printf("    3)  Both\n");
+				printf("Choice: ");
+				fgets(ans, sizeof(ans), stdin);
+				if (ans[0] == '1' || ans[0] == 'T' || ans[0] == 't')
+					direction = AP_RELABEL_DIR_TO;
+				else if (ans[0] == '2' || ans[0] == 'F' || ans[0] == 'f')
+					direction = AP_RELABEL_DIR_FROM;
+				else if(ans[0] == '3' || ans[0] == 'B' || ans[0] == 'b')
+					direction = AP_RELABEL_DIR_BOTH;
+				else {
+					printf("Invalid direction\n");
+					break;
+				}
+			}
+			printf("Performing Query ...\n");
+			retv = ap_relabel_query(start_type, mode, direction, res, policy);
+			if (retv)
+				printf("Error!\n");
+			else 
+				printf("Query Complete.\nFound %i types.", res->num_targets);
+			break;
+		case '1':
+			retv = render_relabel_result (res, policy, -1, 0);
+			if (retv) 
+				printf("Error printing results!\n");
+			break;
+		case '2':
+			retv = render_relabel_result (res, policy, -1, 1);
+			if (retv) 
+				printf("Error printing results!\n");
+			break;
+		case '3':
+			printf("Enter type number [1-%i]: \n", res->num_targets);
+			fgets(ans, sizeof(ans), stdin);
+			temp = strstr(ans, "\n");
+			if (temp)
+				*temp = '\0';
+			retv = atoi(ans);
+			if (retv < 0 || retv > res->num_targets) {
+				printf("Invalid type\n");
+				break;
+			}
+
+			retv = render_relabel_result (res, policy, retv, 0);
+			if (retv) 
+				printf("Error printing results!\n");
+			break;
+		case 'q':
+		case 'Q':
+		case 'x':
+		case 'X':
+			ap_relabel_result_destroy(res);
+			free(res);
+			return 0;
+		case 'm':
+		case 'M':
+			break;
+		default:
+			printf("Invalid choice\n");
+			break;
+		}
+	}
+	return 0;
+}
 
 static int test_hash_table(policy_t *policy)
 {
@@ -1323,6 +1534,7 @@ int menu() {
 	printf("9)  search for conditional expressions\n");
 	printf("t)  analyze types relationship\n");
 	printf("h)  (re)load hash table, and print table eval stats\n");
+	printf("l)  test relabel analysis\n");
 	printf("\n");
 	printf("r)  re-load policy with options\n");
 	printf("s)  display policy statics\n");
@@ -2017,6 +2229,10 @@ int main(int argc, char *argv[])
 		}
 		case 'h': 
 			test_hash_table(policy);
+			menu();
+			break;
+		case 'l':
+			test_relabel_analysis(policy);
 			menu();
 			break;
 		case 'f':
