@@ -374,7 +374,7 @@ proc Apol_Perms_Map::init_perms_mappings_vars { } {
 				set undefined_flg 1
 				set undefined_perm_classes [lappend undefined_perm_classes $class]
 			}
-			# Set the perm weight value. Set weight to 0 for any unmapped permissions.
+			# Set the perm weight value. Set weight to default_weight for any unmapped permissions.
 			if {[Apol_Perms_Map::is_mls_perm_undefined $mls_base_perms_array($class,$se_perm)]} {
 				set perm_weights_array($class,$se_perm) $default_weight
 			} else {
