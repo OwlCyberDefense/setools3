@@ -8,7 +8,6 @@ INSTALL_PATH=$(shell env tclsh ../tcl_vars tcl_library)
 
 install:
 	tar -zxvf BWidget-1.4.1.tar.gz
-	@echo $(INSTALL_PATH)
 	mv BWidget-1.4.1 $(INSTALL_PATH)
 
 remove:
