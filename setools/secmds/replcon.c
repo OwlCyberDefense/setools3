@@ -352,10 +352,10 @@ void
 replcon_usage(const char *program_name, int brief)
 {
 #ifndef FINDCON
-	printf("%s (tool ver. %s)\n\n", COPYRIGHT_INFO, FINDCON_VERSION_NUM);
+	printf("%s (replcon ver. %s)\n\n", COPYRIGHT_INFO, REPLCON_VERSION_NUM);
 	printf("Usage: %s [OPTIONS] -c OLD NEW FILENAMES\n", program_name);
 #else
-	printf("%s (tool ver. %s)\n\n", COPYRIGHT_INFO, REPLCON_VERSION_NUM);
+	printf("%s (findcon ver. %s)\n\n", COPYRIGHT_INFO, FINDCON_VERSION_NUM);
 	printf("Usage: %s [OPTIONS] -c CONTEXT FILENAMES\n", program_name);
 #endif
 	if (brief) {
@@ -1055,8 +1055,14 @@ replcon_parse_command_line(int argc, char **argv)
 			replcon_info.verbose = TRUE;
 			break;
 		case 'v':	/* version */
-			printf("\n%s (tool ver. %s)\n\n", COPYRIGHT_INFO,
-			       REPLCON_VERSION_NUM);
+#ifndef FINDCON
+				printf("\n%s (replcon ver. %s)\n\n", COPYRIGHT_INFO,
+       					REPLCON_VERSION_NUM);
+#else
+				printf("\n%s (findcon ver. %s)\n\n", COPYRIGHT_INFO,
+       					FINDCON_VERSION_NUM);
+#endif
+			
 			replcon_info_free(&replcon_info);
 			exit(0);
 		case 'h':	/* help */
