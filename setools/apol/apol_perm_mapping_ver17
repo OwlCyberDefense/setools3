@@ -74,7 +74,7 @@ class system 4
 
 class capability 29
   net_bind_service     n	1
-        sys_module     n	0
+        sys_module     n	1
          sys_admin     n	3
             fowner     n	1
            net_raw     n	1
@@ -117,7 +117,7 @@ class filesystem 10
 
 class file 19
             setattr     w	7
-            swapon     b	0
+            swapon     b	1
              write     w	10
               lock     n	1
             create     w	1
@@ -126,13 +126,13 @@ class file 19
            quotaon     b	1
        relabelfrom     b	1
               link     w	1
-        entrypoint     r	0
+        entrypoint     r	1
            getattr     r	7
          relabelto     w	5
             unlink     w	1
-  execute_no_trans     r	0
+  execute_no_trans     r	1
              ioctl     n	1
-           execute     r	0
+           execute     r	1
             append     w	1
               read     r	10
 
@@ -142,7 +142,7 @@ class dir 22
               link     w	1
            quotaon     b	1
             append     w	1
-            swapon     b	0
+            swapon     b	1
              rmdir     b	1
             create     w	1
              ioctl     n	1
@@ -152,7 +152,7 @@ class dir 22
               read     r	10
              write     w	10
        relabelfrom     b	3
-           execute     r	0
+           execute     r	1
          relabelto     w	3
               lock     n	1
            setattr     w	7
@@ -167,7 +167,7 @@ class lnk_file 17
        relabelfrom     b	3
             append     w	1
              ioctl     n	1
-            swapon     b	0
+            swapon     b	1
             create     w	1
               read     r	10
              write     w	10
@@ -178,13 +178,13 @@ class lnk_file 17
          relabelto     w	3
            getattr     r	7
             unlink     w	1
-           execute     r	0
+           execute     r	1
               link     w	1
            setattr     w	7
 
 class chr_file 17
             append     w	1
-            swapon     b	0
+            swapon     b	1
            mounton     b	1
            quotaon     b	1
             create     w	1
@@ -193,7 +193,7 @@ class chr_file 17
            getattr     r	7
               link     w	1
              write     w	10
-           execute     r	0
+           execute     r	1
          relabelto     w	3
            setattr     w	7
        relabelfrom     b	3
@@ -206,11 +206,11 @@ class blk_file 17
          relabelto     w	3
             unlink     w	1
              ioctl     n	1
-           execute     r	0
+           execute     r	1
             append     w	1
               read     r	10
            setattr     w	7
-            swapon     b	0
+            swapon     b	1
              write     w	10
               lock     n	1
             create     w	1
@@ -234,22 +234,22 @@ class sock_file 17
             append     w	1
               lock     n	1
            getattr     r	7
-            swapon     b	0
+            swapon     b	1
        relabelfrom     b	3
-           execute     r	0
+           execute     r	1
             create     w	1
 
 class fifo_file 17
          relabelto     w	3
            getattr     r	7
               lock     n	1
-           execute     r	0
+           execute     r	1
             unlink     w	1
              ioctl     n	1
            setattr     w	7
             append     w	1
              write     w	10
-            swapon     b	0
+            swapon     b	1
             create     w	1
               link     w	1
             rename     w	5
@@ -274,7 +274,7 @@ class socket 22
              write     w	10
             setopt     w	1
             getopt     r	1
-            listen     r	0
+            listen     r	1
            setattr     w	7
           shutdown     w	1
          relabelto     w	3
@@ -527,7 +527,7 @@ class msgq 10
            getattr     r	1
         unix_write     w	10
          unix_read     r	10
-         associate     n	0
+         associate     n	1
            setattr     w	1
 
 class shm 10
@@ -538,7 +538,7 @@ class shm 10
         unix_write     w	10
          unix_read     r	10
               lock     w	1
-         associate     n	0
+         associate     n	1
            setattr     w	1
             create     w	1
 
