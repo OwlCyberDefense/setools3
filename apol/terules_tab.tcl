@@ -117,7 +117,6 @@ namespace eval ApolTE {
 	variable tabText		"Results "
 	variable pageID			""	
 	variable results		""
-	variable enableUpdate		0
 	variable tab_deleted_flag	0
 	variable optionsArray		
 	
@@ -188,7 +187,6 @@ proc ApolTE::searchTErules { whichButton } {
     	variable totalTabCount
     	variable currTabCount
 	variable notebook_results
-	variable enableUpdate
 	variable allow_regex
 	variable ta1_opt
 	variable ta2_opt
@@ -234,11 +232,9 @@ proc ApolTE::searchTErules { whichButton } {
 
 	switch $whichButton {
 		newTab {
-			# If the update button is disabled, then enable it.
-			if { $enableUpdate == 0 } {
-				$ApolTE::updateButton configure -state normal
-				set enableUpdate 1
-			}
+			# Enable the update button.
+			$ApolTE::updateButton configure -state normal
+			
 			# Create the new results tab and set optionsArray.
 			set raisedPage [ApolTE::create_New_ResultsTab $results]
 			ApolTE::set_OptionsArray $raisedPage $selObjectsList $selPermsList
@@ -444,6 +440,7 @@ proc ApolTE::delete_ResultsTab { pageID } {
 		}
 		if {$raisedPage == $ApolTE::emptyTabID} {
 			ApolTE::reset_search_criteria
+			$ApolTE::updateButton configure -state disabled
 		} else {
 			# Set the search option widgets according to the now raised results tab.
 			ApolTE::set_Widget_SearchOptions $raisedPage
@@ -577,9 +574,11 @@ proc ApolTE::set_Widget_SearchOptions { pageID } {
 	}
 	if { $pageID == $ApolTE::emptyTabID } {
 		ApolTE::reset_search_criteria
+		$ApolTE::updateButton configure -state disabled
 		return
 	}
-	    
+	$ApolTE::updateButton configure -state normal
+		    
         # reinitialize original options
         set opts(teallow)	$optionsArray($pageID,teallow)
 	set opts(neverallow)	$optionsArray($pageID,neverallow)
@@ -851,7 +850,6 @@ proc ApolTE::close_All_ResultsTabs { } {
 	set ApolTE::currTabCount	0
 	set ApolTE::pageID		""	
 	set ApolTE::results		""
-	set ApolTE::enableUpdate 	0
 			
         return 0
 }
