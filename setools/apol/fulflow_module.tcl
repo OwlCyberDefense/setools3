@@ -2998,7 +2998,7 @@ proc Apol_Analysis_fulflow::create_options { options_frame } {
 		-offvalue 0 -onvalue 1 \
 		-command { Apol_Analysis_fulflow::out_button_press }]
 
-         set cb_attrib [checkbutton $attrib_frame.cb_attrib -text "Select starting type using attrib:" \
+         set cb_attrib [checkbutton $attrib_frame.cb_attrib -text "Filter starting types to select using attribute:" \
 		-variable Apol_Analysis_fulflow::display_attrib_sel \
 		-offvalue 0 -onvalue 1 \
 		-command { Apol_Analysis_fulflow::config_attrib_comboBox_state }]
