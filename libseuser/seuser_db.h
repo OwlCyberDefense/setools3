@@ -23,20 +23,6 @@
 
 #include "../libapol/policy.h"
 
-/* The following should be defined in the make environment */
-#ifndef LIBSEUSER_VERSION_STRING
-	#define LIBSEUSER_VERSION_STRING "UNKNOWN"
-#endif
-
-#ifndef SETFILES_PROG
-	#define SETFILES_PROG	"/usr/sbin/setfiles"
-#endif
-
-#define CONFIG_FILE	"seuser.conf"
-#define FC_FILE		"file_contexts"
-/* Policy makefile target for re-making the file_contexts file */
-#define FILE_CONTEXTS_TARGET	"file_contexts/file_contexts"
-
 /* user database structure; based in part on APOL's structures */
 typedef struct user_db {
 	int		num_users;
@@ -47,7 +33,7 @@ typedef struct user_db {
 	char 		*policy_conf;
 	char 		*user_file;
 	char 		*policy_dir;
-	char 		*file_contexts_dir;
+	char 		*file_contexts_file;
 } user_db_t;
 
 /* macros */
