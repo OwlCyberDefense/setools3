@@ -4,7 +4,7 @@
 /*
  * Author: Kevin Carr <kcarr@tresys.com>
  * Date : January 22, 2004
- *
+ * Modified: don.patterson@tresys.com 10-2004
  */
 
 #include "seaudit_window.h"
