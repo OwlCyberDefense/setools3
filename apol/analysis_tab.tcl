@@ -21,6 +21,7 @@ namespace eval Apol_Analysis {
 	variable opts_frame
 	variable newButton
 	variable updateButton
+	# Global widget variable for the close button located beneath results notebook.
 	variable bClose
 	variable popupTab_Menu
 	variable descrp_text
@@ -31,8 +32,6 @@ namespace eval Apol_Analysis {
 	variable analysis_modules	""
 	variable curr_analysis_module	""
 	variable raised_tab_analysis_type ""
-	variable apol_analysis_query_id "Apol_Analysis"
-	variable query_file_ext ".qf"
 	
 	# VARIABLES FOR INSERTING AND DELETING RESULTS TABS
 	variable totalTabCount		10
@@ -451,127 +450,53 @@ proc Apol_Analysis::get_current_results_state { } {
 } 
 
 # ------------------------------------------------------------------------------
-#  Command Apol_Analysis::save_query_info
-#	- This procedure will:
-#		1. Ask the user for a filename to which to save the query
-#		2. Retrieve the query parameters from the current analysis module
-#		3. Save these parameters to a file
+#  Command Apol_Analysis::save_query_options
+#	- 
 # ------------------------------------------------------------------------------
-proc Apol_Analysis::save_query_info {parentDlg} {
+proc Apol_Analysis::save_query_options {file_channel query_file} {
 	variable curr_analysis_module
 	variable apol_analysis_query_id
 	
-	set query_file ""
-        set types {
-		{"Query files"		{$Apol_Analysis::query_file_ext}}
-    	}
-    	set query_file [tk_getSaveFile -title "Save Query As?" \
-    		-defaultextension $Apol_Analysis::query_file_ext \
-    		-filetypes $types -parent $parentDlg]
-	if {$query_file != ""} {
-		set rt [catch {set f [::open $query_file w+]} err]
-		if {$rt != 0} {
-			return -code error $err
-		}
-		puts $f "$apol_analysis_query_id"
-		set rt [catch {${curr_analysis_module}::save_query_options $curr_analysis_module $f $query_file} err]
-		if {$rt != 0} {
-			::close $f
-			tk_messageBox -icon error -type ok -title "Save Query Error" \
-				-parent $ApolTop::mainframe -message $err
-			return -1
-		}
-		::close $f
-	}	     
+	set rt [catch {${curr_analysis_module}::save_query_options $curr_analysis_module $file_channel $query_file} err]
+	if {$rt != 0} {
+		return -code error $err
+	}
      	return 0
 } 
 
 # ------------------------------------------------------------------------------
-#  Command Apol_Analysis::load_query_info
+#  Command Apol_Analysis::load_query_options
 # ------------------------------------------------------------------------------
-proc Apol_Analysis::load_query_info {parentDlg} {  
-	variable apol_analysis_query_id
+proc Apol_Analysis::load_query_options {file_channel parentDlg} {  
 	variable curr_analysis_module
 	variable analysis_listbox
 	
-	set query_file ""
-        set types {
-		{"Query files"		{$Apol_Analysis::query_file_ext}}
-    	}
-	set query_file [tk_getOpenFile -filetypes $types -title "Select Query to Load..." \
-		-defaultextension $Apol_Analysis::query_file_ext -parent $parentDlg]
-	if {$query_file != ""} {
-		if {[file exists $query_file] == 0 } {
-			tk_messageBox -icon error -type ok -title "Error" \
-				-message "File $query_file does not exist." -parent $parentDlg
-			return -1
-		}
-		set rt [catch {set f [::open $query_file]} err]
-		if {$rt != 0} {
-			tk_messageBox -icon error -type ok -title "Error" \
-				-message "Cannot open $query_file: $err"
-			return -1
-		}
-		# Search for the analysis type line
-		gets $f line
+	# Search for the module name 
+	while {[eof $file_channel] != 1} {
+		gets $file_channel line
 		set tline [string trim $line]
-		if {$tline != "" && [string compare -length 1 $tline "#"] != 0} {
-			# Set the analysis type
-			set analysis_id $tline
-		} else {
-			while {[eof $f] != 1} {
-				gets $f line
-				set tline [string trim $line]
-				# Skip empty lines and comments
-				if {$tline == "" || [string compare -length 1 $tline "#"] == 0} {
-					continue
-				}
-				break
-			}
-			# Set the analysis type
-			set analysis_id $tline
+		# Skip empty lines and comments
+		if {[string compare -length 1 $tline "#"] == 0 || $tline == ""} {
+			continue
 		}
-		# Check the analysis type to make sure it is indeed an apol analysis query.
-		if {[string equal $analysis_id $apol_analysis_query_id] == 0} {
-			tk_messageBox -icon error -type ok -title "Error" \
-				-message "This is not an analysis query for this tool."
-			return -1
+		break
+	}
+	# Set the analysis module name and verify that this is a valid analysis module name 
+	set module_name $tline
+	# Search to see if this analysis module exists. 
+	if {[lsearch -exact [$analysis_listbox items] $module_name] != -1} {
+		# If the module is not the currently selected module, then select it.
+		if {![string equal $curr_analysis_module $module_name]}  {
+			Apol_Analysis::mod_select $module_name
 		}
-		# Search for the module name 
-		while {[eof $f] != 1} {
-			gets $f line
-			set tline [string trim $line]
-			# Skip empty lines and comments
-			if {[string compare -length 1 $tline "#"] == 0 || $tline == ""} {
-				continue
-			}
-			break
+		set rt [catch {${module_name}::load_query_options $file_channel $parentDlg} err]
+		if {$rt != 0} {
+			return -code error $err
 		}
-		# Set the analysis module name and verify that this is a valid analysis module name 
-		set module_name $tline
-		# Search to see if this analysis module exists. 
-		if {[lsearch -exact [$analysis_listbox items] $module_name] != -1} {
-			# If the module is not the currently selected module, then select it.
-			if {![string equal $curr_analysis_module $module_name]}  {
-				Apol_Analysis::mod_select $module_name
-			}
-			set rt [catch {${module_name}::load_query_options $f $parentDlg} err]
-			if {$rt != 0} {
-				::close $f
-				tk_messageBox -icon error -type ok -title "Error" -message $err -parent $parentDlg
-				return -1
-			}
-			::close $f
-		} else {
-			::close $f
-			tk_messageBox -icon error -type ok -title "Error" \
-				-message "The specified query is not valid for\
-				the currently selected analysis module." \
-				-parent $parentDlg
-			return -1
-		}
-	} 
-    	# else the user hit cancel
+	} else {
+		return -code error "The specified query is not a valid analysis module."
+	}
+		
      	return 0
 } 
 
