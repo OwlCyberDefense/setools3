@@ -694,7 +694,7 @@ void seaudit_log_view_store_close_log(SEAuditLogViewStore *store)
 	GtkTreePath *path;
 	int i;
 	
-	if (!store->log_view)
+	if (!store || !store->log_view)
 		return;
 	iter.stamp = store->stamp;
 	for (i = 0; i < store->log_view->num_fltr_msgs; i++) {
@@ -713,11 +713,10 @@ int seaudit_log_view_store_open_log(SEAuditLogViewStore *store, audit_log_t *new
 	GtkTreePath *path;
 	int i;
 
-	if (!store->log_view)
+	if (!store || !store->log_view)
 		return -1;
-	if (store->log_view->my_log)
-		seaudit_log_view_store_close_log(store);
 
+	iter.stamp = store->stamp;
 	audit_log_view_set_log(store->log_view, new_log);
 	for (i = 0; i < store->log_view->num_fltr_msgs; i++) {
 		path = gtk_tree_path_new();
