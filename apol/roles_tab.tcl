@@ -110,7 +110,7 @@ proc Apol_Roles::popupRoleInfo {which role} {
 	}
 	toplevel $w 
 	wm title $w "$role"
-	wm protocol $w WM_DELETE_WINDOW "destroy $w"
+	wm protocol $w WM_DELETE_WINDOW " "
     	wm withdraw $w
 	set sf [ScrolledWindow $w.sf  -scrollbar both -auto both]
 	set f [text [$sf getframe].f -font {helvetica 10} -wrap none -width 35 -height 10]
@@ -122,6 +122,7 @@ proc Apol_Roles::popupRoleInfo {which role} {
  	wm geometry $w +50+50
  	wm deiconify $w
  	$f configure -state disabled
+ 	wm protocol $w WM_DELETE_WINDOW "destroy $w"
 	return 0
 }
 

@@ -136,7 +136,7 @@ proc Apol_Users::popupUserInfo {which user} {
 	catch {destroy $w}
 	toplevel $w 
 	wm title $w "$user"
-	wm protocol $w WM_DELETE_WINDOW "destroy $w"
+	wm protocol $w WM_DELETE_WINDOW " "
     	wm withdraw $w
     	
 	set sf [ScrolledWindow $w.sf  -scrollbar both -auto both]
@@ -152,7 +152,8 @@ proc Apol_Users::popupUserInfo {which user} {
 	}
 	wm geometry $w +50+50
 	wm deiconify $w
-	$f configure -state disabled	
+	$f configure -state disabled
+	wm protocol $w WM_DELETE_WINDOW "destroy $w"	
 	return 0
 }
 

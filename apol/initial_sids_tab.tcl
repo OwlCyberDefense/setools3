@@ -178,7 +178,7 @@ proc Apol_Initial_SIDS::popupSIDInfo {sid} {
 	catch {destroy $w}
 	toplevel $w 
 	wm title $w "$sid Context"
-	wm protocol $w WM_DELETE_WINDOW "destroy $w"
+	wm protocol $w WM_DELETE_WINDOW " "
     	wm withdraw $w
     	
 	set sf [ScrolledWindow $w.sf  -scrollbar both -auto both]
@@ -194,6 +194,7 @@ proc Apol_Initial_SIDS::popupSIDInfo {sid} {
 	wm geometry $w +50+50
 	wm deiconify $w
 	$f configure -state disabled	
+	wm protocol $w WM_DELETE_WINDOW "destroy $w"
 	return 0
 }
 

@@ -659,6 +659,8 @@ proc Apol_Perms_Map::render_pmap_Dlg { } {
     	toplevel $perm_mappings_Dlg 
      	wm withdraw $perm_mappings_Dlg	
     	wm title $perm_mappings_Dlg "Edit Permissions Mappings: $Apol_Perms_Map::title_display"
+    	wm protocol $perm_mappings_Dlg WM_DELETE_WINDOW " "
+    	
         set topf  [frame $perm_mappings_Dlg.topf]
         set pw1   [PanedWindow $topf.pw -side top]
         set pane  [$pw1 add ]
@@ -703,15 +705,14 @@ proc Apol_Perms_Map::render_pmap_Dlg { } {
 	pack $sw_list -fill both -expand yes 
         pack $b_save $b_saveas $b_saveas_Dflt $b_exit -side left -padx 5 -pady 5 -anchor center -expand yes
         pack $botf -side left -expand yes -anchor center 
-        
-        wm protocol $perm_mappings_Dlg WM_DELETE_WINDOW "Apol_Perms_Map::close_Dlg"
-   	
+           	
         # Configure top-level dialog specifications
         set width 800
 	set height 600
 	wm geom $perm_mappings_Dlg ${width}x${height}
 	wm deiconify $perm_mappings_Dlg
 	focus $perm_mappings_Dlg
+	wm protocol $perm_mappings_Dlg WM_DELETE_WINDOW "Apol_Perms_Map::close_Dlg"
 	return 0
 }
 
