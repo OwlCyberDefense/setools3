@@ -957,6 +957,9 @@ static void filter_window_set_values(filter_window_t *filter_window)
 	buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(widget));
 	gtk_text_buffer_set_text(buffer, filter_window->notes->str, strlen(filter_window->notes->str));
 
+	widget = glade_xml_get_widget(filter_window->xml, "HostEntry");
+	gtk_entry_set_text(GTK_ENTRY(widget), filter_window->host->str);
+
 }
 
 static void filter_window_update_values(filter_window_t *filter_window)
@@ -999,6 +1002,9 @@ static void filter_window_update_values(filter_window_t *filter_window)
 
 	widget = glade_xml_get_widget(filter_window->xml, "MatchEntry");
 	filter_window->match = g_string_assign(filter_window->match, gtk_entry_get_text(GTK_ENTRY(widget)));
+
+	widget = glade_xml_get_widget(filter_window->xml, "HostEntry");
+	filter_window->host = g_string_assign(filter_window->host, gtk_entry_get_text(GTK_ENTRY(widget)));
 
 	widget = glade_xml_get_widget(filter_window->xml, "NotesTextView");
 	buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(widget));
@@ -1216,6 +1222,7 @@ filter_window_t* filter_window_create(multifilter_window_t *parent, gint parent_
 	filter_window->path = g_string_new("");
 	filter_window->match = g_string_new("All");
 	filter_window->notes = g_string_new("");
+	filter_window->host = g_string_new("");
 	
 	filter_window->window = NULL;
 	filter_window->xml = NULL;
@@ -1257,6 +1264,8 @@ void filter_window_destroy(filter_window_t *filter_window)
 		g_string_free(filter_window->match, TRUE);
 	if (filter_window->notes)
 		g_string_free(filter_window->notes, TRUE);
+	if (filter_window->host)
+		g_string_free(filter_window->host, TRUE);
 	
 	if (filter_window->window != NULL)
 		gtk_widget_destroy(GTK_WIDGET(filter_window->window));
@@ -1547,6 +1556,14 @@ seaudit_filter_t* filter_window_get_filter(filter_window_t *filter_window)
 		seaudit_filter_set_name(rt, text);
 
 	if (filter_window->window) {
+		widget = glade_xml_get_widget(filter_window->xml, "HostEntry");
+		text = (char*)gtk_entry_get_text(GTK_ENTRY(widget));
+	} else
+		text = filter_window->host->str;
+	if (strcmp(text, "") != 0)
+		rt->host_criteria = host_criteria_create(text);
+
+	if (filter_window->window) {
 		widget = glade_xml_get_widget(filter_window->xml, "NotesTextView");
 		buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(widget));
 		gtk_text_buffer_get_start_iter(buffer, &start);
@@ -1623,5 +1640,7 @@ void filter_window_set_values_from_filter(filter_window_t *filter_window, seaudi
 		filter_window->path = g_string_assign(filter_window->path, path_criteria_get_str(filter->path_criteria));
 	if (filter->exe_criteria) 
 		filter_window->executable = g_string_assign(filter_window->executable, exe_criteria_get_str(filter->exe_criteria));
+	if (filter->host_criteria)
+		filter_window->host = g_string_assign(filter_window->host, host_criteria_get_str(filter->host_criteria));
 
 }

@@ -39,6 +39,7 @@ typedef struct filter_window {
 	GString *name;
 	GString *match;
 	GString *notes;
+	GString *host;
 	GtkWindow *window;
 	GladeXML *xml;
 	multifilter_window_t *parent;

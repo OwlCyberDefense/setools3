@@ -36,6 +36,7 @@ typedef struct glob_criteria {
 typedef glob_criteria_t exe_criteria_t;
 typedef glob_criteria_t path_criteria_t;
 typedef glob_criteria_t ipaddr_criteria_t;
+typedef glob_criteria_t host_criteria_t;
 
 typedef struct ports_criteria {
 	int val;
@@ -211,6 +212,46 @@ static void ipaddr_criteria_print(seaudit_criteria_t *criteria, FILE *stream, in
 	for (i = 0; i < tabs; i++)
 		fprintf(stream, "\t");
 	fprintf(stream, "<criteria type=\"ipaddr\">\n");
+	for (i = 0; i < tabs+1; i++)
+		fprintf(stream, "\t");
+	fprintf(stream, "<item>%s</item>\n", escaped);
+	for (i = 0; i < tabs; i++)
+		fprintf(stream, "\t");
+	fprintf(stream, "</criteria>\n");
+	free(escaped);
+}
+
+static bool_t host_criteria_action(msg_t *msg, seaudit_criteria_t *criteria, audit_log_t *log)
+{
+	host_criteria_t *host_criteria;
+	const char *host;
+
+	if (msg == NULL || criteria == NULL || criteria->data == NULL)
+		return FALSE;
+
+	host_criteria = (host_criteria_t*)criteria->data;
+	host = audit_log_get_host(log, msg->host);
+	if (!host)
+		return FALSE;
+	return (fnmatch(host_criteria->globex, host, 0)==0);
+}
+
+static void host_criteria_print(seaudit_criteria_t *criteria, FILE *stream, int tabs)
+{
+	host_criteria_t *host_criteria;
+	xmlChar *escaped;
+	int i;
+
+	if (criteria == NULL || criteria->data == NULL || stream == NULL)
+		return;
+
+	if (tabs < 0)
+		tabs = 0;
+	host_criteria = (host_criteria_t*)criteria->data;
+	escaped = xmlURIEscapeStr(host_criteria->globex, NULL);
+	for (i = 0; i < tabs; i++)
+		fprintf(stream, "\t");
+	fprintf(stream, "<criteria type=\"host\">\n");
 	for (i = 0; i < tabs+1; i++)
 		fprintf(stream, "\t");
 	fprintf(stream, "<item>%s</item>\n", escaped);
@@ -1083,6 +1124,55 @@ seaudit_criteria_t* ipaddr_criteria_create(const char *ipaddr)
 	new->data = d; 
 	/* set criteria variables */
 	strcpy(d->globex, ipaddr);
+	return new;
+bad:
+	fprintf(stdout, "Out of memory");
+	if (d) {
+		if (d->globex)
+			free(d->globex);
+		free(d);
+	}
+	return NULL;
+}
+
+static void host_criteria_destroy(seaudit_criteria_t *ftr)
+{
+	host_criteria_t *d;
+	if (ftr == NULL)
+		return;
+	d = (host_criteria_t*)ftr->data;
+	if (d == NULL)
+		return;
+	if (d->globex != NULL)
+		free(d->globex);
+	free(d);	
+}
+
+seaudit_criteria_t* host_criteria_create(const char *hostname)
+{
+        seaudit_criteria_t *new;
+	host_criteria_t *d;
+	int i;
+	d = (host_criteria_t*)malloc(sizeof(host_criteria_t));
+	if (d == NULL) 
+		goto bad;
+	memset(d, 0, sizeof(host_criteria_t));
+	i = strlen(hostname);
+	d->globex = (char*)malloc(sizeof(char) * (i+1));
+	if (d->globex == NULL) 
+		goto bad;
+	new = criteria_create();
+	if (new == NULL) {
+		goto bad;
+	}
+	/* set container variables */
+	new->msg_types |= AVC_MSG | LOAD_POLICY_MSG | BOOLEAN_MSG;
+	new->criteria_act = &host_criteria_action; 
+	new->print = &host_criteria_print;
+	new->destroy = &host_criteria_destroy; 
+	new->data = d; 
+	/* set criteria variables */
+	strcpy(d->globex, hostname);
 	return new;
 bad:
 	fprintf(stdout, "Out of memory");
