@@ -1367,7 +1367,7 @@ proc Apol_Analysis_fulflow::render_information_flows {fulflow_info_text fulflow_
 	    $fulflow_info_text tag add $Apol_Analysis_fulflow::subtitle_tag $startIdx $endIdx
 	    for {set j 0} {$j<$num_flows} {incr j} {
 		# First print the flow number
-		$fulflow_info_text insert end "\n\tStep "
+		$fulflow_info_text insert end "\n\n\tStep "
 		set endIdx [$fulflow_info_text index insert]
 		$fulflow_info_text tag add $Apol_Analysis_fulflow::subtitle_tag $startIdx $endIdx
 		set startIdx $endIdx
@@ -1414,8 +1414,12 @@ proc Apol_Analysis_fulflow::render_information_flows {fulflow_info_text fulflow_
 			set lineno [string range [string trim [string range $rule 0 $end_link_idx]] 1 end-1]
 			set lineno [string trim $lineno]
 			set rule [string range $rule [expr $end_link_idx + 1] end]
-			$fulflow_info_text insert end "\[$lineno\]"
-			Apol_PolicyConf::insertHyperLink $fulflow_info_text "$startIdx wordstart + 1c" "$startIdx wordstart + [expr [string length $lineno] + 1]c"
+			
+			# Only display line number hyperlink if this is not a binary policy.
+			if {$ApolTop::policy_type != $ApolTop::binary_policy_type} {
+				$fulflow_info_text insert end "\[$lineno\]"
+				Apol_PolicyConf::insertHyperLink $fulflow_info_text "$startIdx wordstart + 1c" "$startIdx wordstart + [expr [string length $lineno] + 1]c"
+			}
 			set startIdx [$fulflow_info_text index insert]
 			$fulflow_info_text insert end " $rule"
 			set endIdx [$fulflow_info_text index insert]
