@@ -1,10 +1,6 @@
 /* Copyright (C) 2001-2004 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
 
-/* 
- * Author: tmitchem@tresys.com 
- */
-
 /* fsdata.c
  *
  * analysis policy database filesystem functions 
