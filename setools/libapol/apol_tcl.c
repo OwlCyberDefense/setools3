@@ -3021,6 +3021,12 @@ int Apol_Cond_Bool_SetBoolValue(ClientData clientData, Tcl_Interp *interp, int a
 	if (rt != 0) {
 		Tcl_AppendResult(interp, "Error setting value for ", argv[1], (char *) NULL);
 		return TCL_ERROR;
+	}
+	
+	rt = update_cond_expr_items(policy);
+	if (rt != 0) {
+		Tcl_AppendResult(interp, "Error updating conditional expressions.",  (char *)NULL);
+		return TCL_ERROR;
 	}	
 	
 	return TCL_OK;
