@@ -1,5 +1,15 @@
 CHANGE LOG, SE Linux TOOLS (setools)
 =======================================================
+????? ??, 2004, Version 1.5
+
+libapol: 
+	Fixed to handle new libapol user structs
+		
+libseuser: 
+	General clean up of the policy components
+	Fixed handling of users to be consistent with rest
+
+=======================================================
 July 7, 2004, Version 1.4.1
 
 setools:
@@ -15,7 +25,7 @@ libapol:
 libseaudit:
 	Fix timezone related bug that resulted in incorrect
 	  dates displayed in seaudit.
-	
+
 =======================================================
 June 2, 2004, Version 1.4
 
@@ -24,13 +34,13 @@ setools:
 	  makefile target to better support non-default policies
 	  like the 'targeted' policy included in Fedora Core 2.
 apol:
-	GUI changes to correctly support binary policies.
-	Enhanced display of conditional rules in TE rule
-	  search results.
 	Added support for the user to change the name of
 	 result tabs.
 	Added new Tool Options dialog for opening limited
 	  portions of the selinux policy.
+	GUI changes to correctly support binary policies.
+	Enhanced display of conditional rules in TE rule
+	  search results.
 libapol: 
 	Added support for loading binary policy files (in 
 	  addition to source policy files).
@@ -43,13 +53,8 @@ secmds:
 seaudit:
 	Changed to use libapol default policy logic.
 	Gui changes to correctly support binary policies.
-seuser:
-	Various bug fixes and policy updates to enable seuser
-	  to work correctly under Fedora Core 2.
 libseuser:
-	Various bug fixes.
-sepcut:
-	Minor bug fixes.
+	Changed to use libapol default policy logic.
 
 =======================================================
 May 5, 2004 Version 1.3.1
