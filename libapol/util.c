@@ -666,16 +666,15 @@ char *get_config_var(const char *var, FILE *fp)
 		line_ptr = &line[0];
 		if (trim_string(&line_ptr) != 0)
 			return NULL;
-		if(line[0] == '#' || sscanf(line, "%s %s", t1, t2) != 2 || strcasecmp(var, t1) != 0) {
+		if (line[0] == '#' || sscanf(line, "%s %[^\n]", t1, t2) != 2 || strcasecmp(var, t1) != 0) {
 			continue;
 		}
 		else {
-			result = (char *)malloc(strlen(t2) + 1);
-			if(result == NULL) {
+			result = (char *)malloc(sizeof(char) * (strlen(t2) + 1));
+			if (result == NULL) {
 				fprintf(stderr, "out of memory\n");
 				return NULL;
-			} 
-			else {
+			} else {
 				strcpy(result, t2);
 				return result;
 			}
@@ -713,22 +712,49 @@ char *config_var_list_to_string(const char **list, int size)
 char **get_config_var_list(const char *var, FILE *file, int *list_sz)
 {
 	char *values, *token;
-	char ** results = NULL;
-
+	char **results = NULL, **ptr = NULL;
+	int i; 
+	
+	assert(var != NULL || file != NULL || list_sz != NULL);
 	*list_sz = 0;
-	if ((values = get_config_var(var, file)) != NULL) {
-		token = strtok(values, ":");
-		while (token) {
-			(*list_sz)++;
-			results = (char**)realloc(results, sizeof(char*) * (*list_sz));
-			results[(*list_sz)-1] = (char*)malloc(sizeof(char) * (1+strlen(token)));
-			strcpy(results[(*list_sz)-1], token);
-			token = strtok(NULL, ":");
-		}
+	values = get_config_var(var, file);
+	if (values != NULL) {
+		while ((token = strsep(&values, ":")) != NULL) {
+		       	if (strcmp(token, "") && !str_is_only_white_space(token)) {
+		       		ptr = (char**)realloc(results, sizeof(char*) * (*list_sz + 1));
+				if (ptr == NULL) {
+					fprintf(stderr, "Out of memory.\n");
+					free(values);
+					/* If realloc fails, it will not free the 
+					 * original pointer, so we handle this here. */
+					if (results) {
+						for (i = 0; i < *list_sz; i++) 
+							free(results[i]);
+						free(results);
+					}
+					return NULL;
+				}
+				results = ptr;
+				(*list_sz)++;
+				/* Add 1 to include enough space for terminating null char */
+				results[(*list_sz) - 1] = (char*)malloc(sizeof(char) * (1 + strlen(token)));
+				if (results[(*list_sz) - 1] == NULL) {
+					fprintf(stderr, "Out of memory.\n");
+					free(values);
+					if (results) {
+						/* Free list up to the previous list item */
+						for (i = 0; i < list_sz - 1; i++) 
+							free(results[i]);
+						free(results);
+					}
+					return NULL;
+				}
+				strcpy(results[(*list_sz) - 1], token);
+	       	       	}
+	        }
 		free(values);
-		return results;
 	}
-	return NULL;
+	return results;
 }
 
 /* append a string to an existing string, expanding the target string if 

@@ -4,6 +4,7 @@
 /*
  * Author: Kevin Carr <kcarr@tresys.com>
  * Date: December 31, 2003
+ * Modified: don.patterson@tresys.com 10-2004
  */
 
 #include <libapol/util.h>
@@ -28,8 +29,8 @@ typedef struct seaudit_conf {
 int load_seaudit_conf_file(seaudit_conf_t *conf_file);
 int save_seaudit_conf_file(seaudit_conf_t *conf_file);
 void free_seaudit_conf(seaudit_conf_t *conf_file);
-void add_path_to_recent_log_files(const char *path, seaudit_conf_t *conf_file);
-void add_path_to_recent_policy_files(const char *path, seaudit_conf_t *conf_file);
+int add_path_to_recent_log_files(const char *path, seaudit_conf_t *conf_file);
+int add_path_to_recent_policy_files(const char *path, seaudit_conf_t *conf_file);
 void set_seaudit_conf_default_policy(seaudit_conf_t *conf_file, const char *filename);
 void set_seaudit_conf_default_log(seaudit_conf_t *conf_file, const char *filename);
 
