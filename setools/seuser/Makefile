@@ -127,7 +127,7 @@ install-nogui: seuser policy-install
 
 install: install-nogui seuserx se_user.tcl
 	install -d $(BINDIR); 
-	@if [ -e /etc/security/selinux/src/policy/policy.conf ]; then \
+	-@if [ -e /etc/security/selinux/src/policy/policy.conf ]; then \
 		install -m 755 -Z system_u:object_r:seuser_exec_t seuserx $(BINDIR); \
 	else \
 		install -m 755 seuserx $(BINDIR); \
