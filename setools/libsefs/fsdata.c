@@ -41,16 +41,13 @@ static int avl_grow_path_array(void *user_data, int sz)
 	fsdata = (sefs_filesystem_data_t *)user_data;
 	assert(fsdata != NULL);
 
-	if (sz > fsdata->pathlistsize) {
-		ptr = (sefs_fileinfo_t *)realloc(fsdata->paths,
-						      (LIST_SZ + fsdata->pathlistsize)
-						      * sizeof(sefs_fileinfo_t));
+	if (sz > fsdata->num_files) {
+		ptr = (sefs_fileinfo_t *)realloc(fsdata->files, sz * sizeof(sefs_fileinfo_t));
 		if(ptr == NULL) {
 			fprintf(stderr, "out of memory\n");
 			return -1;
 		}
-		fsdata->paths = ptr;
-		fsdata->pathlistsize += LIST_SZ;
+		fsdata->files = ptr;
 	}
 
 	return 0;
@@ -68,8 +65,8 @@ static int avl_path_compare(void *user_data, const void *key, int idx)
 		return -1;
 	}
 	
-	memcpy(tmp, &(fsdata->paths[idx].sb.st_ino), sizeof(ino_t));
-	memcpy(tmp + sizeof(ino_t), &(fsdata->paths[idx].sb.st_dev), sizeof(dev_t));
+	memcpy(tmp, &(fsdata->files[idx].key.inode), sizeof(ino_t));
+	memcpy(tmp + sizeof(ino_t), &(fsdata->files[idx].key.device), sizeof(dev_t));
 
 	rc = memcmp((char*)key, (char *)tmp, sizeof(ino_t) + sizeof(dev_t));
 	free(tmp);
@@ -80,12 +77,12 @@ static int avl_path_compare(void *user_data, const void *key, int idx)
 static int avl_add_path(void *user_data, const void *key, int idx)
 {
 	fsdata = (sefs_filesystem_data_t *)user_data;
-	char *path = (char*)key;
-	
-	assert(fsdata != NULL && path != NULL);
-	
-	(fsdata->numpaths)++;
-		
+	inode_key_t * ikey = (inode_key_t *) key;
+
+	assert(fsdata != NULL && ikey != NULL);
+
+	fsdata->files[idx].key = *ikey;
+	(fsdata->num_files)++;
 	return 0;
 }
 
@@ -96,16 +93,13 @@ static int avl_grow_type_array(void * user_data, int sz)
 	fsdata = (sefs_filesystem_data_t *)user_data;
 	assert(fsdata != NULL);
 
-	if (sz > fsdata->typelistsize) {
-		ptr = (sefs_typeinfo_t *)realloc(fsdata->types,
-					         (LIST_SZ + fsdata->typelistsize)
-						 * sizeof(sefs_typeinfo_t));
+	if (sz > fsdata->num_types) {
+		ptr = (sefs_typeinfo_t *)realloc(fsdata->types, sz * sizeof(sefs_typeinfo_t));
 		if(ptr == NULL) {
 			fprintf(stderr, "out of memory\n");
 			return -1;
 		}
 		fsdata->types = ptr;
-		fsdata->typelistsize += LIST_SZ;
 	}
 
 	return 0;	
@@ -116,7 +110,7 @@ static int avl_type_compare(void *user_data, const void *key, int idx)
 {
 	fsdata = (sefs_filesystem_data_t *)user_data;
 
-	return strcmp((char*)key, fsdata->types[idx].setypename);
+	return strcmp((char*)key, fsdata->types[idx].name);
 }
 
 
@@ -127,8 +121,8 @@ static int avl_add_type(void *user_data, const void *key, int idx)
 	
 	assert(fsdata != NULL && path != NULL);
 	
-	fsdata->types[idx].setypename = (char *)key;
-	(fsdata->numtypes)++;
+	fsdata->types[idx].name = (char *)key;
+	(fsdata->num_types)++;
 		
 	return 0;
 }
@@ -136,77 +130,84 @@ static int avl_add_type(void *user_data, const void *key, int idx)
 
 static int ftw_handler(const char *file, const struct stat *sb, int flag, struct FTW *s)
 {
-	void *key = NULL;
+	inode_key_t key;
 	int idx = 0, rc = 0;
 	sefs_fileinfo_t * pi = NULL;
-	char ** ptr = NULL;
+	char ** ptr = NULL; /*?*/
 	char *con = NULL;
+	char *tmp = NULL;
 		
-	if ((key = (void *)malloc(12)) == NULL) {
-		fprintf(stderr, "out of memory\n");
-		return -1;
-	}
+	key.inode = sb->st_ino;
+	key.device = sb->st_dev;
 	
-	memcpy(key, &(sb->st_ino), sizeof(ino_t));
-	memcpy(key + sizeof(ino_t), &(sb->st_dev), sizeof(dev_t));
-	
-	idx = avl_get_idx(key, &(fsdata->pathtree));
+	idx = avl_get_idx(&key, &(fsdata->file_tree));
 	
 	if (idx == -1) {
-		if ((rc = avl_insert(&(fsdata->pathtree), key, &idx)) == -1) {
+		if ((rc = avl_insert(&(fsdata->file_tree), &key, &idx)) == -1) {
 			fprintf(stderr, "avl error\n");
 			return -1;
 		}
 		
-		pi = &(fsdata->paths[idx]);
-		memcpy(&(pi->sb), sb, sizeof(struct stat));
-		if ((pi->pathnames = (char **)malloc(LIST_SZ * sizeof(char *))) == NULL) {
+		pi = &(fsdata->files[idx]);
+		memcpy(&(pi->mode), &(sb->st_mode), sizeof(mode_t));
+		pi->obj_class = sefs_get_file_class(sb);
+
+		if ((pi->path_names = (char **)malloc(1 * sizeof(char *))) == NULL) {
 			fprintf(stderr, "out of memory\n");
 			return -1;
 		}
 		
-		pi->pathlistsize = LIST_SZ;
-		pi->numpaths = 0;
-		
-		if ((pi->pathnames[pi->numpaths] = (char *)malloc(strlen(file) + 1)) == NULL) {
-			fprintf(stderr, "out of memory\n");
-			return -1;
+		(pi->num_links) = 0;
+
+		/*check to see if file is a symlink and handle appropriately*/
+/* XXX temp. disabled not working right
+		if (S_ISLNK(sb->st_mode))
+		{
+			rc = lgetfilecon(file, &con);
+			if(!(tmp = (char*)calloc(4000, sizeof(char)) ))
+			{
+				fprintf(stderr, "out of memory\n");
+				return -1;
+			}
+			readlink(file, tmp, 4000 * sizeof(char)); */
+			/*             13                22                5   */
+/*			if(errno == EACCES || errno == EINVAL || errno == EIO)
+			{
+				fprintf(stderr, "error reading link %i \n", errno);
+				return -1;
+			}
+			pi->symlink_target = tmp;
 		}
-	
-		strncpy(pi->pathnames[pi->numpaths], file, strlen(file));
-		
-		rc = getfilecon(file, &con);
+		else */
+			rc = getfilecon(file, &con);
+
 
 		if (rc == -1) {
 			pi->context = context_new("UNLABELED:UNLABELED:UNLABELED");
 		} else {
 			pi->context = context_new(con);
 		}
-		
-		pi->numpaths++;
-		
-	} else {
-		pi = &(fsdata->paths[idx]);
-		memcpy(&(pi->sb), sb, sizeof(struct stat));
-		
-		if (pi->numpaths > pi->pathlistsize) {
-			if ((ptr = (char **)realloc(pi->pathnames,
-					            (LIST_SZ + pi->pathlistsize)
-						     * sizeof(char *))) == NULL) {
-				fprintf(stderr, "out of memory\n");
-				return -1;
-			}
-			pi->pathnames = ptr;
-			pi->pathlistsize += LIST_SZ;
-		}
 
-		if ((pi->pathnames[pi->numpaths] = (char *)malloc(strlen(file) + 1)) == NULL) {
+		if ((pi->path_names[pi->num_links] = (char *)malloc(strlen(file) + 1)) == NULL) {
 			fprintf(stderr, "out of memory\n");
 			return -1;
 		}
 
-		strncpy(pi->pathnames[pi->numpaths], file, strlen(file));
-		pi->numpaths++;
+		strncpy(pi->path_names[pi->num_links], file, strlen(file));
+		(pi->num_links)++;
+		
+	} else {
+		pi = &(fsdata->files[idx]);
+		memcpy(&(pi->mode), &(sb->st_mode), sizeof(mode_t));
+		pi->obj_class = sefs_get_file_class(sb);
+		
+		if ((pi->path_names[pi->num_links] = (char *)malloc(strlen(file) + 1)) == NULL) {
+			fprintf(stderr, "out of memory\n");
+			return -1;
+		}
+
+		strncpy(pi->path_names[pi->num_links], file, strlen(file));
+		(pi->num_links)++;
 	}
 	
 	return 0;
@@ -215,16 +216,16 @@ static int ftw_handler(const char *file, const struct stat *sb, int flag, struct
 
 static int sefs_init_pathtree(sefs_filesystem_data_t * fsd)
 {
-	if ((fsd->paths = (sefs_fileinfo_t *)malloc(sizeof(sefs_fileinfo_t) * LIST_SZ)) == NULL) {
+	if ((fsd->files = (sefs_fileinfo_t *)malloc(sizeof(sefs_fileinfo_t) * 1)) == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
 	}
 	
-	memset(fsd->paths, 0, sizeof(sefs_fileinfo_t) * LIST_SZ);
-	fsd->pathlistsize = LIST_SZ;
-	fsd->numpaths = 0;
+	memset(fsd->files, 0, sizeof(sefs_fileinfo_t) * 1);
 
-	avl_init(&(fsd->pathtree),
+	fsd->num_files = 0;
+
+	avl_init(&(fsd->file_tree),
 		 (void *)fsd,
 		 avl_path_compare,
 		 avl_grow_path_array,
@@ -236,17 +237,16 @@ static int sefs_init_pathtree(sefs_filesystem_data_t * fsd)
 
 static int sefs_init_typetree(sefs_filesystem_data_t * fsd)
 {
-
-	if ((fsd->types = (sefs_typeinfo_t *)malloc(sizeof(sefs_typeinfo_t) * LIST_SZ)) == NULL) {
+	if ((fsd->types = (sefs_typeinfo_t *)malloc(sizeof(sefs_typeinfo_t) * 1)) == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
 	}
 	
-	memset(fsd->types, 0, sizeof(sefs_typeinfo_t) * LIST_SZ);
-	fsd->typelistsize = LIST_SZ;
-	fsd->numtypes = 0;
+	memset(fsd->types, 0, sizeof(sefs_typeinfo_t) * 1);
 
-	avl_init(&(fsd->typetree),
+	fsd->num_types = 0;
+
+	avl_init(&(fsd->type_tree),
 		 (void *)fsd,
 		 avl_type_compare,
 		 avl_grow_type_array,
@@ -264,11 +264,9 @@ int sefs_filesystem_data_init(sefs_filesystem_data_t * fsd)
 	}
 	
 	fsdata = fsd;
-	fsd->numpaths = 0;
-	fsd->numtypes = 0;
-	fsd->pathlistsize = 0;
-	fsd->typelistsize = 0;
-	fsd->paths = NULL;
+	fsd->num_files = 0;
+	fsd->num_types = 0;
+	fsd->files = NULL;
 	fsd->types = NULL;
 	
 	if (sefs_init_pathtree(fsd) == -1) {
@@ -281,7 +279,7 @@ int sefs_filesystem_data_init(sefs_filesystem_data_t * fsd)
 		return -1;
 	}
 	
-	return 1;
+	return 0;
 }
 
 
@@ -294,7 +292,7 @@ int sefs_scan_tree(char * dir)
 		return -1;
 	}
 		
-	return 1;	
+	return 0;	
 }
 
 
@@ -303,43 +301,33 @@ int sefs_filesystem_data_index(sefs_filesystem_data_t * fsd) {
 	sefs_fileinfo_t * pi = NULL;
 	sefs_typeinfo_t * ti = NULL;
 
-	for(loop = 0; loop < fsd->numpaths; loop++) {
-		unsigned int * ptr;
+	for(loop = 0; loop < fsd->num_files; loop++) {
+		unsigned int * ptr; /*?*/
 		
-		pi = &(fsd->paths[loop]);
-		idx = avl_get_idx(context_type_get(pi->context), &(fsd->typetree));
+		pi = &(fsd->files[loop]);
+		idx = avl_get_idx(context_type_get(pi->context), &(fsd->type_tree));
 		
 		if (idx == -1) {
-			if ((rc = avl_insert(&(fsd->typetree), (char *)context_type_get(pi->context), &idx)) == -1) {
+			if ((rc = avl_insert(&(fsd->type_tree), (char *)context_type_get(pi->context), &idx)) == -1) {
 				fprintf(stderr, "avl error\n");
 				return -1;
 			}
 
 			ti = &(fsd->types[idx]);
-			if ((ti->pathitems = (int *)malloc(LIST_SZ * sizeof(unsigned int))) == NULL) {
+
+			if ((ti->index_list = (int *)malloc(1 * sizeof(uint32_t))) == NULL) {
 				fprintf(stderr, "out of memory\n");
 				return -1;
 			}
-			memset(ti->pathitems, 0, LIST_SZ * sizeof(unsigned int));
+			memset(ti->index_list, 0, 1 * sizeof(uint32_t));
 			
-			ti->pathlistsize = LIST_SZ;
-			ti->numpaths = 0;
-			ti->pathitems[ti->numpaths] = loop;
+			ti->num_inodes = 0;
+			ti->index_list[ti->num_inodes] = loop;
 		} else {
 			ti = &(fsd->types[idx]);
-			ti->numpaths++;
-			
-			if (ti->numpaths > ti->pathlistsize) {
-				if ((ptr = (int *)realloc(ti->pathitems, (LIST_SZ + ti->pathlistsize)
-							     	        * sizeof(unsigned int))) == NULL) {
-					fprintf(stderr, "out of memory\n");
-					return -1;
-				}
-				ti->pathitems = ptr;
-				ti->pathlistsize += LIST_SZ;
-			}
-			
-			ti->pathitems[ti->numpaths] = loop;
+			ti->num_inodes++;
+		
+			ti->index_list[ti->num_inodes] = loop;
 		}
 		
 	}
@@ -361,7 +349,7 @@ int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char *filename)
 	}
 	
 	/* write out the total number of path info entries */
-	if ((rc = write(fd, &(fsd->numpaths), sizeof(unsigned int))) != sizeof(unsigned int)) {
+	if ((rc = write(fd, &(fsd->num_files), sizeof(unsigned int))) != sizeof(unsigned int)) {
 		fprintf(stderr, "error writing file %s\n", filename);
 		return -1;
 	}
@@ -371,11 +359,11 @@ int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char *filename)
 		return -1;
 	}
 	
-	for (loop = 0; loop < fsd->numpaths; loop++) {
-		pinfo = &(fsd->paths[loop]);
+	for (loop = 0; loop < fsd->num_files; loop++) {
+		pinfo = &(fsd->files[loop]);
 
-		memcpy(key, &(pinfo->sb.st_ino), sizeof(ino_t));
-		memcpy(key + sizeof(ino_t), &(pinfo->sb.st_dev), sizeof(dev_t));
+		memcpy(key, &(pinfo->key.inode), sizeof(ino_t));
+		memcpy(key + sizeof(ino_t), &(pinfo->key.device), sizeof(dev_t));
 
 		/* Write the key */
 		if ((rc = write(fd, key, keysize)) != keysize) {
@@ -383,15 +371,19 @@ int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char *filename)
 			return -1;
 		}
 		
-		/* Get the context length */
+/* XXX kill line */ printf("DEBUG: adr:%p\tstr:%s\n",
+			(pinfo->context) ? (pinfo->context) : NULL,
+			(pinfo->context) ? (context_str(pinfo->context)) : "INVALID" );		
+			/* XXX problem in this general area */
 		len = strlen(context_str(pinfo->context));
-		
+/* XXX kill line */ printf("DEBUG: len:%i\n",len);		
+
 		/* Write the context length */
 		if ((rc = write(fd, &len, sizeof(unsigned int))) != sizeof(unsigned int)) {
 			fprintf(stderr, "error writing file %s\n", filename);
 			return -1;
 		}
-		
+/* XXX kill line */(context_str(pinfo->context) > 0) ? printf("made it this far\n"): printf("!!\n");
 		/* Write the context */
 		if ((rc = write(fd, context_str(pinfo->context), len)) != len) {
 			fprintf(stderr, "error writing file %s\n", filename);
@@ -400,21 +392,21 @@ int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char *filename)
 		
 		/* Write the number of pathnames */
 		len = sizeof(unsigned int);
-		if ((rc = write(fd, &(pinfo->numpaths), len)) != len) {
+		if ((rc = write(fd, &(pinfo->num_links), len)) != len) {
 			fprintf(stderr, "error writing file %s\n", filename);
 			return -1;
 		}
 		
-		for (i = 0; i < pinfo->numpaths;  i++) {
+		for (i = 0; i < pinfo->num_links;  i++) {
 			/* Write the pathname length */
-			len = strlen(pinfo->pathnames[i]);
+			len = strlen(pinfo->path_names[i]);
 			if ((rc = write(fd, &len, sizeof(unsigned int))) != sizeof(unsigned int)) {
 				fprintf(stderr, "error writing file %s\n", filename);
 				return -1;
 			}
 			
 			/* Write the pathname */
-			if ((rc = write(fd, pinfo->pathnames[i], len)) != len) {
+			if ((rc = write(fd, pinfo->path_names[i], len)) != len) {
 				fprintf(stderr, "error writing file %s\n", filename);
 				return -1;
 			}
@@ -441,36 +433,36 @@ int sefs_filesystem_data_load(sefs_filesystem_data_t* fsd, char *filename)
 		return -1;
 	}
 
-	if ((rc = read(fd, &(fsd->numpaths), sizeof(unsigned int))) != sizeof(unsigned int)) {
+	if ((rc = read(fd, &(fsd->num_files), sizeof(unsigned int))) != sizeof(unsigned int)) {
 		fprintf(stderr, "error reading file %s\n", filename);
 		return -1;
 	}
 	
-	if ((pinfo = (sefs_fileinfo_t *)malloc(fsd->numpaths * sizeof(sefs_fileinfo_t))) == NULL) {
+	if ((pinfo = (sefs_fileinfo_t *)malloc(fsd->num_files * sizeof(sefs_fileinfo_t))) == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
 	}
 	
-	fsd->paths = pinfo;
+	fsd->files = pinfo;
 	
 	if ((key = (void *)malloc(keysize)) == NULL) {
 		fprintf(stderr, "Out of memory\n");
 		return -1;
 	}
 	
-	for(loop = 0; loop < fsd->numpaths; loop++) {
-		pinfo = &(fsd->paths[loop]);
+	for(loop = 0; loop < fsd->num_files; loop++) {
+		pinfo = &(fsd->files[loop]);
 		
-		// Read the key
+		/* Read the key*/
 		if ((rc = read(fd, key, keysize)) != keysize) {
 			fprintf(stderr, "error reading file %s\n", filename);
 			return -1;
 		}
 		
-		memcpy(&(pinfo->sb.st_ino), key,  sizeof(ino_t));
-		memcpy(&(pinfo->sb.st_dev), key + sizeof(ino_t), sizeof(dev_t));
+		memcpy(&(pinfo->key.inode), key,  sizeof(ino_t));
+		memcpy(&(pinfo->key.device), key + sizeof(ino_t), sizeof(dev_t));
 		
-		// Read the context length		
+		/* Read the context length */
 		if ((rc = read(fd, &len, sizeof(unsigned int))) != sizeof(unsigned int)) {
 			fprintf(stderr, "error reading file %s\n", filename);
 			return -1;
@@ -483,7 +475,7 @@ int sefs_filesystem_data_load(sefs_filesystem_data_t* fsd, char *filename)
 		
 		bzero(con, len + 1);
 		
-		// Read the context
+		/* Read the context */
 		if ((rc = read(fd, con, len)) != len) {
 			fprintf(stderr, "error reading file %s\n", filename);
 			return -1;
@@ -494,34 +486,32 @@ int sefs_filesystem_data_load(sefs_filesystem_data_t* fsd, char *filename)
 			return -1;
 		}
 		
-		// Read the pathname count
+		/* Read the pathname count */
 		len = sizeof(unsigned int);
-		if ((rc = read(fd, &(pinfo->numpaths), len)) != len) {
+		if ((rc = read(fd, &(pinfo->num_links), len)) != len) {
 			fprintf(stderr, "error reading file %s\n", filename);
 			return -1;
 		}
 
-		pinfo->pathlistsize = pinfo->numpaths;
-		
-		if ((pinfo->pathnames = (char **)malloc(pinfo->numpaths * sizeof(char *))) == NULL) {
+		if ((pinfo->path_names = (char **)malloc(pinfo->num_links * sizeof(char *))) == NULL) {
 			fprintf(stderr, "Out of memory\n");
 			return -1;
 		}
 		
-		for (i = 0; i < pinfo->numpaths; i++) {
+		for (i = 0; i < pinfo->num_links; i++) {
 			if ((rc = read(fd, &len, sizeof(unsigned int))) != sizeof(unsigned int)) {
 				fprintf(stderr, "error reading file %s\n", filename);
 				return -1;
 			}
 			
-			if ((pinfo->pathnames[i] = (char *)malloc((len + 1) * sizeof(char))) == NULL) {
+			if ((pinfo->path_names[i] = (char *)malloc((len + 1) * sizeof(char))) == NULL) {
 				fprintf(stderr, "Out of memory\n");
 				return -1;
 			}
 			
-			bzero(pinfo->pathnames[i], len + 1);
+			bzero(pinfo->path_names[i], len + 1);
 			
-			if ((rc = read(fd, pinfo->pathnames[i], len)) != len) {
+			if ((rc = read(fd, pinfo->path_names[i], len)) != len) {
 				fprintf(stderr, "error reading file %s\n", filename);
 				return -1;
 			}
@@ -533,3 +523,27 @@ int sefs_filesystem_data_load(sefs_filesystem_data_t* fsd, char *filename)
 	return 1;
 }
 
+/*
+ * sefs_get_file_class
+ *
+ * Determines the file's class, and returns it
+ */
+int sefs_get_file_class(const struct stat *statptr)
+{
+	assert(statptr != NULL);
+	if (S_ISREG(statptr->st_mode))
+		return NORM_FILE;
+	if (S_ISDIR(statptr->st_mode))
+		return DIR;
+	if (S_ISLNK(statptr->st_mode))
+		return LNK_FILE;
+	if (S_ISCHR(statptr->st_mode))
+		return CHR_FILE;
+	if (S_ISBLK(statptr->st_mode))
+		return BLK_FILE;
+	if (S_ISSOCK(statptr->st_mode))
+		return SOCK_FILE;
+	if (S_ISFIFO(statptr->st_mode))
+		return FIFO_FILE;
+	return ALL_FILES;
+}
