@@ -7,6 +7,9 @@
 #include "y.tab.h"
 unsigned long policydb_lineno = 1;
 unsigned int policydb_errors = 0;
+int yyerror(char *msg);
+int yywarn(char *msg);
+#define YY_NO_UNPUT
 %}
 %array
 letter  [A-Za-z]
