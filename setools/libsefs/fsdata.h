@@ -65,7 +65,7 @@ typedef enum sefs_classes {
 
 typedef struct inode_key {
 	ino_t			inode;
-	dev_t			device;
+	dev_t			dev;
 } inode_key_t;
 
 typedef struct sefs_fileinfo {
