@@ -5,6 +5,7 @@ LIB-OBJ += y.tab.o lex.yy.o avl-util.o policy-avl.o render.o analysis.o
 LIB-OBJ += perm-map.o cond.o 
 LIB-OBJ-TCL = apol_tcl.o
 CFLAGS  += -DLIBAPOL_VERSION_STRING='"$(shell cat VERSION)"'
+CFLAGS  += -DAPOL_INSTALL_DIR='"$(INSTALL_LIBDIR)"'
 
 libapol: ../lib/libapol.a
 
