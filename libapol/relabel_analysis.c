@@ -379,7 +379,9 @@ static unsigned char ap_relabel_determine_rule_direction(int rule_index, policy_
 };
 
 /* query mode functions */
-static int ap_relabel_object_mode_query(int start_type, unsigned char requested_direction, ap_relabel_result_t *res, policy_t *policy)
+static int ap_relabel_object_mode_query(int start_type, unsigned char requested_direction, 
+	ap_relabel_result_t *res, int *excluded_types, int num_excluded_types, 
+	int *class_filter, int class_filter_sz, policy_t *policy)
 {
 	unsigned char direction_flag = AP_RELABEL_DIR_NONE;
 	ap_relabel_possible_start_t *starting_points = NULL;
@@ -397,6 +399,12 @@ static int ap_relabel_object_mode_query(int start_type, unsigned char requested_
 	for (i = 0; i < index->num_nodes; i++) {
 		direction_flag = AP_RELABEL_DIR_NONE;
 		if(index->nodes[i]->key.rule_type != RULE_TE_ALLOW)
+			continue;
+		if (class_filter && class_filter_sz > 0 && 
+			find_int_in_array(index->nodes[i]->key.cls, class_filter, class_filter_sz) == -1)
+			continue;
+		if (excluded_types && num_excluded_types > 0 &&
+			find_int_in_array(index->nodes[i]->key.src, excluded_types, num_excluded_types) != -1)
 			continue;
 		for (j = 0; j < index->nodes[i]->num_data; j++) {
 			if(index->nodes[i]->data[j] == relabelto_index)
@@ -465,7 +473,8 @@ static int ap_relabel_object_mode_query(int start_type, unsigned char requested_
 	return 0;
 };
 
-static int ap_relabel_subject_mode_query(int start_type, ap_relabel_result_t *res, policy_t *policy)
+static int ap_relabel_subject_mode_query(int start_type, ap_relabel_result_t *res, 
+	int *class_filter, int class_filter_sz, policy_t *policy)
 {
 	avh_idx_t *index = NULL;
 	int i, j, relabelto_index = -1, relabelfrom_index = -1;
@@ -479,7 +488,10 @@ static int ap_relabel_subject_mode_query(int start_type, ap_relabel_result_t *re
 	if(!index)
 		return 0;
 	for (i = 0; i < index->num_nodes; i++) {
-		if(index->nodes[i]->key.rule_type != RULE_TE_ALLOW)
+		if (index->nodes[i]->key.rule_type != RULE_TE_ALLOW)
+			continue;
+		if (class_filter && class_filter_sz > 0 && 
+			find_int_in_array(index->nodes[i]->key.cls, class_filter, class_filter_sz) == -1)
 			continue;
 		for (j = 0; j < index->nodes[i]->num_data; j++) {
 			if(index->nodes[i]->data[j] == relabelto_index)
@@ -501,7 +513,9 @@ static int ap_relabel_subject_mode_query(int start_type, ap_relabel_result_t *re
 };
 
 /* main query function */
-int ap_relabel_query(int start_type, unsigned char mode, unsigned char direction, ap_relabel_result_t *res, policy_t *policy)
+int ap_relabel_query(int start_type, unsigned char mode, unsigned char direction, 
+	int *excluded_types, int num_excluded_types, int *class_filter, int class_filter_sz, 
+	ap_relabel_result_t *res, policy_t *policy)
 {
 	if (!policy || !res)
 		return -1;
@@ -524,15 +538,18 @@ int ap_relabel_query(int start_type, unsigned char mode, unsigned char direction
 			return -1;
 		res->requested_direction = direction;
 		if (direction == AP_RELABEL_DIR_BOTH) {
-			if (ap_relabel_object_mode_query(start_type, AP_RELABEL_DIR_TO, res, policy))
+			if (ap_relabel_object_mode_query(start_type, AP_RELABEL_DIR_TO, res, 
+				excluded_types, num_excluded_types, class_filter, class_filter_sz, policy))
 				return -1;
-			return ap_relabel_object_mode_query(start_type, AP_RELABEL_DIR_FROM, res, policy);
+			return ap_relabel_object_mode_query(start_type, AP_RELABEL_DIR_FROM, res, 
+				excluded_types, num_excluded_types, class_filter, class_filter_sz, policy);
 		} else {
-			return ap_relabel_object_mode_query(start_type, direction, res, policy);
+			return ap_relabel_object_mode_query(start_type, direction, res, 
+				excluded_types, num_excluded_types, class_filter, class_filter_sz, policy);
 		}
 	} else if (mode == AP_RELABEL_MODE_SUBJ) { 
 		res->requested_direction = AP_RELABEL_DIR_BOTH;
-		return ap_relabel_subject_mode_query(start_type, res, policy);
+		return ap_relabel_subject_mode_query(start_type, res, class_filter, class_filter_sz, policy);
 	} else {
 		return -1;
 	}
