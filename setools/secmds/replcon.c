@@ -1066,8 +1066,10 @@ main(int argc, char **argv)
 	rw = 1;
 #endif
 
-	if (find_mount_points("/", mounts, &num_mounts, rw))
+	if (find_mount_points("/", &mounts, &num_mounts, rw)) {
+		fprintf(stderr, "Could not enumerate mountpoints.\n");
 		goto err;
+	}
 
 	if (replcon_info.stdin) {
 		while (fgets(stream_input, (MAX_INPUT_SIZE - 1), stdin)) {
