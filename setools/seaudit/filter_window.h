@@ -1,4 +1,4 @@
-/* Copyright (C) 2003 Tresys Technology, LLC
+/* Copyright (C) 2003-2004 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
 
 /*
@@ -15,6 +15,7 @@
 #define SEAUDIT_FILTER_WINDOW_H
 
 #include "auditlogmodel.h"
+#include "multifilter_window.h"
 #include <glib.h>
 #include <gtk/gtk.h>
 #include <glade/glade.h>
@@ -45,23 +46,19 @@ typedef struct  seaudit_filter_list {
 	int size;
 } seaudit_filter_list_t;
 
-void filters_seaudit_filter_list_free(seaudit_filter_list_t *list);
+struct filter_window;
 
-struct filters;
-
-typedef struct filters_select_items {
+typedef struct filter_window_select_items {
 	GtkListStore *selected_items;
 	GtkListStore *unselected_items;
 	enum items_list_types_t items_list_type;
         enum select_values_source_t items_source;
 	GtkWindow *window;
 	GladeXML *xml;
-	struct filters *parent;
+	struct filter_window *parent;
 } filters_select_items_t;
 
-void filters_select_items_parse_entry(filters_select_items_t *s);
-
-typedef struct filters {
+typedef struct filter_window {
 	filters_select_items_t *src_types_items;
 	filters_select_items_t *src_users_items;
 	filters_select_items_t *src_roles_items;
@@ -74,16 +71,21 @@ typedef struct filters {
 	GString *interface;
 	GString *executable;
 	GString *path;
+	GString *name;
+	GString *match;
 	GtkWindow *window;
 	GladeXML *xml;
-} filters_t;
+	multifilter_window_t *parent;
+	gint parent_index;
+} filter_window_t;
 
 /***************************
  * Public member functions *
  ***************************/
-filters_t* filters_create(void);
-void filters_destroy(filters_t* filters);
-void filters_display(filters_t* filters);
-seaudit_filter_list_t* filters_seaudit_filter_list_get(filters_select_items_t *filters_select_item);
+filter_window_t* filter_window_create(multifilter_window_t *parent, gint parent_index, const char *name);
+void filter_window_destroy(filter_window_t* filter_window);
+void filter_window_display(filter_window_t* filter_window);
+void filter_window_hide(filter_window_t *filter_window);
+seaudit_filter_t* filter_window_get_filter(filter_window_t *filter_window);
 
 #endif
