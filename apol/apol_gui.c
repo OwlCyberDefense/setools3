@@ -2,7 +2,7 @@
  * see file 'COPYING' for use and warranty information */
 
 /* 
- * Author: mayerf@tresys.com 
+ * Author: mayerf@tresys.com and Don Patterson <don.patterson@tresys.com>
  */
 
 /* This file contains the tcl/tk initialization code for apol
@@ -170,4 +170,4 @@ int main(int argc, char *argv[])
 	
 	/* Exit after the event loop returns. */
   	exit(0);
-}                          
+}
