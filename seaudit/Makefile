@@ -7,6 +7,7 @@ GLADE_FILES       = customize_filter_window.glade filter_window.glade prefer_win
 CFLAGS	          += -DDEFAULT_POLICY='"$(POLICY_SRC_FILE)"'
 CFLAGS	          += -DDEFAULT_LOG='"$(DEFAULT_LOG_FILE)"' 
 CFLAGS            += -DINSTALL_LIBDIR='"$(INSTALL_LIBDIR)"'
+CFLAGS            += -DSEAUDIT_GUI_VERSION_STRING='"$(shell cat VERSION)"'
 
 seaudit: $(OBJS) $(GTK-SOURCEVIEW-OBJS) ../lib/libseaudit.a ../lib/libapol.a
 	$(CC) $(CFLAGS) $(INCLUDE) $(OBJS) -o $@ $(SEAUDIT_LIBS) $(GTK_LIBS)
