@@ -70,29 +70,6 @@ int sefs_get_file_class(const struct stat *statptr)
 	return ALL_FILES;
 }
 
-int add_uint_to_a(uint32_t i, uint32_t *cnt, uint32_t **a)
-{
-        if(cnt == NULL || a == NULL)
-                return -1;
-
-        /* FIX: This is not very elegant! We use an array that we
-         * grow as new int are added to an array.  But rather than be smart
-         * about it, for now we realloc() the array each time a new int is added! */
-        if(*a != NULL) {
-                *a = (uint32_t *) realloc(*a, (*cnt + 1) * sizeof(uint32_t));
-        } else /* empty list */ {
-                *cnt = 0;
-                *a = (uint32_t *) malloc(sizeof(uint32_t));
-        }
-        if(*a == NULL) {
-                fprintf(stderr, "out of memory\n");
-                return -1;
-        }
-        (*a)[*cnt] = i;
-        (*cnt)++;
-        return 0;
-}
-
 int find_mount_points(char *dir, char **mounts, int *num_mounts, int rw) 
 {
 	FILE *mtab = NULL;
@@ -147,7 +124,6 @@ int find_mount_points(char *dir, char **mounts, int *num_mounts, int rw)
 	fclose(mtab);
 	return 0;
 }
-
 static int avl_grow_path_array(void *user_data, int sz)
 {
 	sefs_fileinfo_t * ptr;
