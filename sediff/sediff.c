@@ -1194,6 +1194,7 @@ int main (int argc, char **argv)
 	}
 	if(stats || all) {
 		print_diff_stats(stdout, diff);
+		printf("\n");
 	}
 
 	apol_free_diff_result(1, diff);
