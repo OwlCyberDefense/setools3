@@ -1,4 +1,4 @@
-/* Copyright (C) 2003 Tresys Technology, LLC
+/* Copyright (C) 2003-2004 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
 
 /* 
@@ -12,7 +12,7 @@
 /* libapol */
 #include <policy.h>
 #include <policy-io.h>
-
+#include <render.h>
 /* other */
 #include <stdlib.h>
 #include <stdio.h>
@@ -39,6 +39,7 @@ static struct option const longopts[] =
   {"attribs", optional_argument, NULL, 'a'},
   {"roles", optional_argument, NULL, 'r'},
   {"users", optional_argument, NULL, 'u'},
+  {"initialsids", optional_argument, NULL, 'i'},
   {"stats", no_argument, NULL, 's'},
   {"all", no_argument, NULL, 'A'},
   {"expand", no_argument, NULL, 'x'},
@@ -61,14 +62,15 @@ Print requested information about an SELinux policy.\n\
   -a[NAME], --attribs[=NAME] print a list of type attributes\n\
   -r[NAME], --roles[=NAME]   print a list of roles\n\
   -u[NAME], --users[=NAME]   print a list of users\n\
+  -i[NAME], --initialsid[=NAME] print a list of initial SIDs\n\
   -A, --all                  print all of the above\n\
-  -x, --expand               show additional info for -ctaruA\n\
+  -x, --expand               show additional info for -ctaruiA\n\
   -s, --stats                print useful policy statics\n\
   -h, --help                 display this help and exit\n\
   -v, --version              output version information and exit\n\
 ", stdout);
   	fputs("\n\
-For -ctaru, if NAME is provided, then only show info for NAME.\n\
+For -ctarui, if NAME is provided, then only show info for NAME.\n\
 Specifying a name is most useful when used with the -x option.\n\
 If no option is provided, display useful policy statics (-s).\n\n\
 If no POLICY_FILE is provided, the default policy will be used:\n\
@@ -82,14 +84,15 @@ If no POLICY_FILE is provided, the default policy will be used:\n\
 int print_stats(FILE *fp, policy_t *policy)
 {
 	fprintf(fp, "\nStatistics for policy file: %s\n", policy_file);
-	fprintf(fp, "   Classes:    %7d    Permissions:  %7d\n", policy->num_obj_classes, policy->num_perms);
+	fprintf(fp, "   Classes:      %7d    Permissions:  %7d\n", policy->num_obj_classes, policy->num_perms);
 	/* subtract 1 from types to remove the pseudo type "self" */
-	fprintf(fp, "   Types:      %7d    Attributes:   %7d\n", policy->num_types-1, policy->num_attribs);
-	fprintf(fp, "   Users:      %7d    Roles:        %7d\n", policy->rule_cnt[RULE_USER], policy->num_roles);
-	fprintf(fp, "   Allow:      %7d    Neverallow:   %7d\n", policy->rule_cnt[RULE_TE_ALLOW], policy->rule_cnt[RULE_NEVERALLOW]);
-	fprintf(fp, "   Auditallow: %7d    Dontaudit:    %7d\n", policy->rule_cnt[RULE_AUDITALLOW], policy->rule_cnt[RULE_AUDITDENY] + policy->rule_cnt[RULE_DONTAUDIT]);
-	fprintf(fp, "   Type_trans: %7d    Type_change:  %7d\n", policy->rule_cnt[RULE_TE_TRANS], policy->rule_cnt[RULE_TE_CHANGE]);
-	fprintf(fp, "   Role allow: %7d    Role trans:   %7d\n", policy->rule_cnt[RULE_ROLE_ALLOW], policy->rule_cnt[RULE_ROLE_TRANS]);
+	fprintf(fp, "   Types:        %7d    Attributes:   %7d\n", policy->num_types-1, policy->num_attribs);
+	fprintf(fp, "   Users:        %7d    Roles:        %7d\n", policy->rule_cnt[RULE_USER], policy->num_roles);
+	fprintf(fp, "   Allow:        %7d    Neverallow:   %7d\n", policy->rule_cnt[RULE_TE_ALLOW], policy->rule_cnt[RULE_NEVERALLOW]);
+	fprintf(fp, "   Auditallow:   %7d    Dontaudit:    %7d\n", policy->rule_cnt[RULE_AUDITALLOW], policy->rule_cnt[RULE_AUDITDENY] + policy->rule_cnt[RULE_DONTAUDIT]);
+	fprintf(fp, "   Type_trans:   %7d    Type_change:  %7d\n", policy->rule_cnt[RULE_TE_TRANS], policy->rule_cnt[RULE_TE_CHANGE]);
+	fprintf(fp, "   Role allow:   %7d    Role trans:   %7d\n", policy->rule_cnt[RULE_ROLE_ALLOW], policy->rule_cnt[RULE_ROLE_TRANS]);
+	fprintf(fp, "   Initial SIDs: %7d\n", policy->num_initial_sids);
 	fprintf(fp, "\n");
 		
 	return 0;
@@ -350,17 +353,63 @@ int print_users(FILE *fp, const char *name, int expand, policy_t *policy)
 	return 0;
 }
 
+int print_isids(FILE *fp, const char *name, int expand, policy_t *policy)
+{
+	char *isid_name = NULL, *scontext = NULL;
+	int idx, i, rt;
+	
+	if(name != NULL) {
+		idx = get_initial_sid_idx(name, policy);
+		if(idx < 0) {
+			fprintf(fp, "Provided initial SID name (%s) is not a valid name.\n", name);
+			return -1;
+		}
+	}
+	else 
+		idx = 0;
+		
+	if(name == NULL)
+		fprintf(fp, "\nInitial SID: %d\n", num_initial_sids(policy));
+		
+	for(i = idx; is_valid_initial_sid_idx(i, policy); i++) {
+		rt = get_initial_sid_name(i, &isid_name, policy);
+		if(rt != 0) {
+			fprintf(fp, "Unexpected error getting initial SID name\n\n");
+			return -1;
+		}
+		if(expand) {
+			fprintf(fp, "%20s:  ", isid_name);
+			scontext = re_render_initial_sid_security_context(i, policy);
+			if(scontext == NULL) {
+				fprintf(fp, "Problem getting security context for %dth initial SID\n\n", i);
+				return -1;
+			}
+			fprintf(fp, "%s", scontext);
+			free(scontext);
+		}
+		else {
+			fprintf(fp, "  %s", isid_name);
+		}
+		free(isid_name);
+		fprintf(fp, "\n");
+		/* if a name was provided, return as we only print the one asked for */
+		if(name != NULL)
+			break;
+	}
+	return 0;
+}
+
 
 int main (int argc, char **argv)
 {
-	int classes, types, attribs, roles, users, all, expand, stats, rt, optc;
+	int classes, types, attribs, roles, users, all, expand, stats, rt, optc, isids;
 	unsigned int open_opts = 0;
 	policy_t *policy;
-	char *class_name, *type_name, *attrib_name, *role_name, *user_name;
+	char *class_name, *type_name, *attrib_name, *role_name, *user_name, *isid_name;
 	
-	class_name = type_name = attrib_name = role_name = user_name = NULL;
-	classes = types = attribs = roles = users = all = expand = stats = 0;
-	while ((optc = getopt_long (argc, argv, "c::t::a::r::u::sAxhv", longopts, NULL)) != -1)  {
+	class_name = type_name = attrib_name = role_name = user_name = isid_name= NULL;
+	classes = types = attribs = roles = users = all = expand = stats = isids = 0;
+	while ((optc = getopt_long (argc, argv, "c::t::a::r::u::i::sAxhv", longopts, NULL)) != -1)  {
 		switch (optc) {
 		case 0:
 	  		break;
@@ -394,6 +443,12 @@ int main (int argc, char **argv)
 	  		if(optarg != 0) 
 	  			user_name = optarg;
 	  		break;
+	  	case 'i': /* initial SIDs */
+	  		isids = 1;
+	  		open_opts |= POLOPT_INITIAL_SIDS;
+	  		if(optarg != 0)
+	  			isid_name = optarg;
+	  		break;
 	  	case 'A': /* all */
 	  		all = 1;
 	  		open_opts = POLOPT_ALL;
@@ -418,7 +473,7 @@ int main (int argc, char **argv)
 		}
 	}
 	/* if no options, then show stats */
-	if(classes + types + attribs + roles + users + all < 1) {
+	if(classes + types + attribs + roles + users + isids + all < 1) {
 		open_opts |= POLOPT_ALL;
 		stats = 1;
 	}
@@ -450,6 +505,8 @@ int main (int argc, char **argv)
 		print_roles(stdout, role_name, expand, policy);
 	if(users || all)
 		print_users(stdout, user_name, expand, policy);
+	if(isids || all)
+		print_isids(stdout, isid_name, expand, policy);
 			
 	close_policy(policy);
 	exit(0);
