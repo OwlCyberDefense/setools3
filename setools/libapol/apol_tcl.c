@@ -423,12 +423,7 @@ static iflow_query_t* set_transitive_query_args(Tcl_Interp *interp, char *argv[]
 				return NULL;
 			}
 			free(name);
-		} 
-		if(iflow_query->num_end_types == 0) {
-			iflow_query_destroy(iflow_query);
-			Tcl_AppendResult(interp, "No end type matches found for the regular expression you specified!", (char *) NULL);
-			return NULL;
-		}			
+		} 		
 	}
 	if (filter_inter_types && inter_types != NULL) {
 		/* Set intermediate type info */
@@ -5182,49 +5177,53 @@ int Apol_DirectInformationFlowAnalysis(ClientData clientData, Tcl_Interp *interp
 				return TCL_ERROR;
 			}
 			free(name);
-		} 	
-		if(iflow_query->num_end_types == 0) {
+		} 		
+	}
+	
+	/* Don't run the analysis call if the user has specified to filter end types by reg exp  
+	 * and we've determined in the call to set_transitive_query_args() that there are no
+	 * matching end types. */	
+	if (!(filter_end_types && iflow_query->num_end_types == 0)) {
+		/* Initialize iflow analysis structure, which holds the results of query */									
+		if (iflow_direct_flows(policy, iflow_query, &num_answers, &answers) < 0) {
 			iflow_query_destroy(iflow_query);
-			Tcl_AppendResult(interp, "No end type matches found for the regular expression you specified!", (char *) NULL);
+			Tcl_AppendResult(interp, "There were errors in the information flow analysis\n", (char *) NULL);
 			return TCL_ERROR;
-		}			
-	}
-
-	/* Initialize iflow analysis structure, which holds the results of query */									
-	if (iflow_direct_flows(policy, iflow_query, &num_answers, &answers) < 0) {
-		iflow_query_destroy(iflow_query);
-		Tcl_AppendResult(interp, "There were errors in the information flow analysis\n", (char *) NULL);
-		return TCL_ERROR;
-	}
+		}
+	} 
 
 	/* Append the start type to our encoded TCL list */
 	sprintf(tbuf, "%s", start_type);
 	Tcl_AppendElement(interp, tbuf);
-
-	/* Append the number of answers from the query */
-	sprintf(tbuf, "%d", num_answers);
-	Tcl_AppendElement(interp, tbuf);
-	for (i = 0; i < num_answers; i++) {
-		/* Append the ending type name to the TCL list */ 
-		sprintf(tbuf, "%s", policy->types[answers[i].end_type].name);
-		Tcl_AppendElement(interp, tbuf);
-		/* Append the direction of the information flow for each ending type to the TCL list */ 
-		if (answers[i].direction == IFLOW_BOTH)
-			Tcl_AppendElement(interp, "both");
-		else if (answers[i].direction == IFLOW_OUT)
-			Tcl_AppendElement(interp, "out");
-		else
-			Tcl_AppendElement(interp, "in");
 		
-		rt = append_direct_edge_to_results(policy, iflow_query, &answers[i], interp);
-		if (rt != 0) {
-			free(answers);
-			iflow_query_destroy(iflow_query);
-			Tcl_AppendResult(interp, "Error appending edge information!\n", (char *) NULL);
-			return TCL_ERROR;
+	if (!(filter_end_types && iflow_query->num_end_types == 0)) {
+		/* Append the number of answers from the query */
+		sprintf(tbuf, "%d", num_answers);
+		Tcl_AppendElement(interp, tbuf);
+		for (i = 0; i < num_answers; i++) {
+			/* Append the ending type name to the TCL list */ 
+			sprintf(tbuf, "%s", policy->types[answers[i].end_type].name);
+			Tcl_AppendElement(interp, tbuf);
+			/* Append the direction of the information flow for each ending type to the TCL list */ 
+			if (answers[i].direction == IFLOW_BOTH)
+				Tcl_AppendElement(interp, "both");
+			else if (answers[i].direction == IFLOW_OUT)
+				Tcl_AppendElement(interp, "out");
+			else
+				Tcl_AppendElement(interp, "in");
+			
+			rt = append_direct_edge_to_results(policy, iflow_query, &answers[i], interp);
+			if (rt != 0) {
+				free(answers);
+				iflow_query_destroy(iflow_query);
+				Tcl_AppendResult(interp, "Error appending edge information!\n", (char *) NULL);
+				return TCL_ERROR;
+			}
 		}
+		free(answers);
+	} else {
+		Tcl_AppendElement(interp, "0");
 	}
-	free(answers);
 	/* Free any reserved memory */
 	iflow_query_destroy(iflow_query);
 
@@ -5284,6 +5283,7 @@ int Apol_TransitiveFlowAnalysis(ClientData clientData, Tcl_Interp *interp, int a
 	char *start_type = NULL;
 	int rt;
 	char tbuf[64];
+	bool_t filter_end_types;
 	
 	if(argc != 12) {
 		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
@@ -5292,11 +5292,17 @@ int Apol_TransitiveFlowAnalysis(ClientData clientData, Tcl_Interp *interp, int a
 	iflow_query = set_transitive_query_args(interp, argv);
 	if (iflow_query == NULL) {
 		return TCL_ERROR;
-	}	
-	if ((answers = iflow_transitive_flows(policy, iflow_query)) == NULL) {
-		iflow_query_destroy(iflow_query);
-		Tcl_AppendResult(interp, "There were errors in the information flow analysis\n", (char *) NULL);
-		return TCL_ERROR;
+	}
+	filter_end_types = getbool(argv[5]);
+	/* Don't run the analysis call if the user has specified to filter end types by reg exp  
+	 * and we've determined in the call to set_transitive_query_args() that there are no
+	 * matching end types. */	
+	if (!(filter_end_types && iflow_query->num_end_types == 0)) {
+		if ((answers = iflow_transitive_flows(policy, iflow_query)) == NULL) {
+			iflow_query_destroy(iflow_query);
+			Tcl_AppendResult(interp, "There were errors in the information flow analysis\n", (char *) NULL);
+			return TCL_ERROR;
+		}
 	}
 	/* Append the start type to our encoded TCL list */
 	rt = get_type_name(iflow_query->start_type, &start_type, policy);				
@@ -5307,15 +5313,18 @@ int Apol_TransitiveFlowAnalysis(ClientData clientData, Tcl_Interp *interp, int a
 	}
 	sprintf(tbuf, "%s", start_type);
 	Tcl_AppendElement(interp, tbuf);
-			
-	rt = append_transitive_iflow_results(policy, answers, interp);
-	if(rt != 0) {
+	if (!(filter_end_types && iflow_query->num_end_types == 0)) {			
+		rt = append_transitive_iflow_results(policy, answers, interp);
+		if(rt != 0) {
+			iflow_transitive_destroy(answers);
+			iflow_query_destroy(iflow_query);
+			Tcl_AppendResult(interp, "Error appending edge information!\n", (char *) NULL);
+			return TCL_ERROR;
+		}	
 		iflow_transitive_destroy(answers);
-		iflow_query_destroy(iflow_query);
-		Tcl_AppendResult(interp, "Error appending edge information!\n", (char *) NULL);
-		return TCL_ERROR;
-	}	
-	iflow_transitive_destroy(answers);
+	} else {
+		Tcl_AppendElement(interp, "0");
+	}
 	iflow_query_destroy(iflow_query);
 	return TCL_OK;		
 }

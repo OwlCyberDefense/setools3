@@ -35,7 +35,7 @@ namespace eval Apol_Analysis_relabel {
 	variable most_recent_results 	""
 	# Advanced filter dialog widget
 	variable advanced_filter_Dlg
-	set advanced_filter_Dlg .advanced_filter_Dlg
+	set advanced_filter_Dlg .apol_relabel_advanced_filter_Dlg
 	
 	variable excluded_tag		" (Excluded)"	
 
@@ -299,6 +299,7 @@ proc Apol_Analysis_relabel::close { } {
 }
 
 proc Apol_Analysis_relabel::set_widgets_to_initial_open_state { } {
+    Apol_Analysis_relabel::adv_options_destroy_dialog $Apol_Analysis_relabel::advanced_filter_Dlg
     Apol_Analysis_relabel::init_widget_vars
     Apol_Analysis_relabel::init_widget_state
 }
@@ -368,13 +369,9 @@ proc Apol_Analysis_relabel::free_results_data {query_options} {
 #  Command Apol_Analysis_relabel::adv_options_destroy_dialog
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_relabel::adv_options_destroy_dialog {path_name} {
-	variable widget_vars
-	variable widgets
-	
+
     	if {[winfo exists $path_name]} {	
-    		destroy $path_name	 		
-		unset widgets($path_name,class_incl_lb) 
-		unset widgets($path_name,class_excl_lb)
+    		destroy $path_name	 
 	}
 	return 0
 }
@@ -423,13 +420,14 @@ proc Apol_Analysis_relabel::adv_options_update_dialog {path_name} {
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_relabel::adv_options_change_obj_state_on_perm_select {path_name} {
 	variable widget_vars 
+	variable widgets 
 	
 	set num_excluded 0	
 	# There may be multiple selected items, but we need the object class that is 
 	# currently displayed in the text box. We have this index stored in our global 
 	# class_selected_idx variable.
 	if {$widget_vars($path_name,class_selected_idx) != "-1"} {
-		set class_sel [$widget_vars($path_name,class_incl_lb) get \
+		set class_sel [$widgets($path_name,class_incl_lb) get \
 			$widget_vars($path_name,class_selected_idx)]
 		set idx [string first $Apol_Analysis_relabel::excluded_tag $class_sel]
 		if {$idx != -1} {
@@ -444,28 +442,28 @@ proc Apol_Analysis_relabel::adv_options_change_obj_state_on_perm_select {path_na
 					incr num_excluded	
 				}
 			}
-			set items [$widget_vars($path_name,class_incl_lb) get 0 end]
+			set items [$widgets($path_name,class_incl_lb) get 0 end]
 			# If the total all permissions for the object have been 
 			# excluded then inform the user. 
 			if {$num_excluded == $num_perms_for_class} {
-				$widget_vars($path_name,class_incl_lb) itemconfigure \
+				$widgets($path_name,class_incl_lb) itemconfigure \
 					$widget_vars($path_name,class_selected_idx) \
 					-foreground gray
-				set [$widget_vars($path_name,class_incl_lb) cget -listvar] \
+				set [$widgets($path_name,class_incl_lb) cget -listvar] \
 					[lreplace $items $widget_vars($path_name,class_selected_idx) \
 					$widget_vars($path_name,class_selected_idx) \
 					"$class_sel$Apol_Analysis_relabel::excluded_tag"]
 			} else {
-				$widget_vars($path_name,class_incl_lb) itemconfigure \
+				$widgets($path_name,class_incl_lb) itemconfigure \
 					$widget_vars($path_name,class_selected_idx) \
 					-foreground $widget_vars($path_name,select_fg_orig)
-				set [$widget_vars($path_name,class_incl_lb) cget -listvar] \
+				set [$widgets($path_name,class_incl_lb) cget -listvar] \
 					[lreplace $items $widget_vars($path_name,class_selected_idx) \
 					$widget_vars($path_name,class_selected_idx) \
 					"$class_sel"]
 			}
   			$widget_vars($path_name,permissions_title_frame) configure \
-  				-text "Permissions for [$widget_vars($path_name,class_incl_lb) get \
+  				-text "Permissions for [$widgets($path_name,class_incl_lb) get \
   					$widget_vars($path_name,class_selected_idx)]:"
 		}
 	}
@@ -545,14 +543,15 @@ proc Apol_Analysis_relabel::adv_options_clear_perms_text {path_name} {
 
 proc Apol_Analysis_relabel::render_permissions {path_name} {
 	variable widget_vars
+	variable widgets 
 	
-	set class_idx [$widget_vars($path_name,class_incl_lb) curselection]
+	set class_idx [$widgets($path_name,class_incl_lb) curselection]
 	if {$class_idx == ""} {
 		# Something was simply deselected.
 		return 0
 	} 
-	focus -force $widget_vars($path_name,class_incl_lb)
-	set class_name [$widget_vars($path_name,class_incl_lb) get $class_idx]
+	focus -force $widgets($path_name,class_incl_lb)
+	set class_name [$widgets($path_name,class_incl_lb) get $class_idx]
 	$widget_vars($path_name,permissions_title_frame) configure -text "Permissions for $class_name:"
 	Apol_Analysis_relabel::adv_options_clear_perms_text $path_name
 	update
@@ -598,17 +597,18 @@ proc Apol_Analysis_relabel::render_permissions {path_name} {
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_relabel::adv_options_display_permissions {path_name} {
 	variable widget_vars
+	variable widgets 
 	
-	if {[$widget_vars($path_name,class_incl_lb) get 0 end] == "" || \
-		[llength [$widget_vars($path_name,class_incl_lb) curselection]] > 1} {
+	if {[$widgets($path_name,class_incl_lb) get 0 end] == "" || \
+		[llength [$widgets($path_name,class_incl_lb) curselection]] > 1} {
 		# Nothing in the listbox; return
 		return 0
 	}
-	bind $widget_vars($path_name,class_incl_lb) <<ListboxSelect>> ""
-	set widget_vars($path_name,class_selected_idx) [$widget_vars($path_name,class_incl_lb) curselection]]
+	bind $widgets($path_name,class_incl_lb) <<ListboxSelect>> ""
+	set widget_vars($path_name,class_selected_idx) [$widgets($path_name,class_incl_lb) curselection]]
 	Apol_Analysis_relabel::render_permissions $path_name
 	update idletasks
-	bind $widget_vars($path_name,class_incl_lb) <<ListboxSelect>> "Apol_Analysis_dta::forward_options_display_permissions $path_name"
+	bind $widgets($path_name,class_incl_lb) <<ListboxSelect>> "Apol_Analysis_dta::forward_options_display_permissions $path_name"
 }
 
 # ------------------------------------------------------------------------------
@@ -689,10 +689,7 @@ proc Apol_Analysis_relabel::adv_options_destroy_object {path_name} {
 	variable widget_vars
 	
 	if {[array exists widget_vars] && [array names widget_vars "$path_name,name"] != ""} {
-		array unset widget_vars "$path_name,perm_status_array,*"
-		unset widget_vars($path_name,filter_vars_init) 	
-		unset widget_vars($path_name,class_selected_idx) 
-		unset widget_vars($path_name,name) 
+		array unset widget_vars "$path_name,*"
 	}
      	return 0
 } 
@@ -971,10 +968,8 @@ proc Apol_Analysis_relabel::init_widget_vars { } {
 # packed.
 proc Apol_Analysis_relabel::display_mod_options { opts_frame } {    
     variable widgets
-   
-    Apol_Analysis_relabel::adv_options_destroy_dialog $Apol_Analysis_relabel::advanced_filter_Dlg
+
     array unset widgets
-    
     Apol_Analysis_relabel::init_widget_vars
     set option_f [frame $opts_frame.option_f]
     set mode_tf [TitleFrame $option_f.mode_tf -text "Mode"]
