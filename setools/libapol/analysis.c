@@ -32,6 +32,65 @@
  * pointer, which can also cause run-time errors since someone could
  * mistakenly pass the wrong data type!  BE CAREFUL!.
  */
+ 
+dta_query_t *dta_query_create(void)
+{
+	dta_query_t* q = (dta_query_t*)malloc(sizeof(dta_query_t));
+	if (q == NULL) {
+		fprintf(stderr, "Memory error!\n");
+		return NULL;
+	}
+	memset(q, 0, sizeof(dta_query_t));
+	q->start_type = -1;
+	q->reverse = FALSE;
+	
+	return q;
+}
+
+void dta_query_destroy(dta_query_t *q)
+{
+	int i;
+
+	if (q->end_types)
+		free(q->end_types);
+	
+	for (i = 0; i < q->num_obj_options; i++) {
+		if (q->obj_options[i].perms)
+			free(q->obj_options[i].perms);
+	}
+	if (q->obj_options)
+		free(q->obj_options);
+	free(q);
+}
+
+static bool_t dta_query_does_av_rule_contain_obj_class_options(dta_query_t *q, int rule_idx, policy_t *policy)
+{
+	int i;
+
+	assert(q && is_valid_av_rule_idx(rule_idx, 1, policy));
+	
+	for (i = 0; i < q->num_obj_options; i++) {
+		/* To pass, the rule must contain one of the specified classes 
+		 * and any of the specified permissions for that class. */
+		if (does_av_rule_use_classes(rule_idx, 1, &q->obj_options[i].obj_class, 1, policy) &&
+		    does_av_rule_use_perms(rule_idx, 1, q->obj_options[i].perms, q->obj_options[i].num_perms, policy))
+			return TRUE;
+	}		
+	return FALSE;
+}
+
+static bool_t dta_query_does_av_rule_contain_end_type(dta_query_t *q, int rule_idx, policy_t *policy)
+{
+	int i;
+	
+	assert(q && is_valid_av_rule_idx(rule_idx, 1, policy));
+	for (i = 0; i < q->num_end_types; i++) {
+		if (does_av_rule_idx_use_type(i, 0, q->end_types[i], IDX_TYPE, TGT_LIST, TRUE, policy))
+			return TRUE;
+	}		
+	return FALSE;
+}
+
 void free_entrypoint_type(void *t)
 {
 	entrypoint_type_t *p = (entrypoint_type_t *)t;
@@ -53,6 +112,8 @@ void free_trans_domain(void *t)
 	ll_free(p->entry_types, free_entrypoint_type);
 	if(p->pt_rules != NULL) 
 		free(p->pt_rules);
+	if(p->other_rules != NULL) 
+		free(p->other_rules);
 	free(p);
 	return;
 }
@@ -105,32 +166,38 @@ domain_trans_analysis_t *new_domain_trans_analysis(void)
 	return t;
 }
 
-
+#define PROCESS_TRANS_RULE 	1
+#define OTHER_RULE 		2
 /* INTERNAL */
-static int dta_add_rule_to_trans_type(int start_idx, int trans_idx, int rule_idx, 
-		domain_trans_analysis_t *dta)
+static int dta_add_rule_to_trans_type(int start_idx, int trans_idx, int which_rule_type, int rule_idx, 
+		domain_trans_analysis_t *dta_results)
 {	
 	llist_node_t *t;
 	trans_domain_t *t_data = NULL;
-	/* 1. find the type in the dta->trans_domains list */
+	/* 1. find the type in the dta_results->trans_domains list */
 	/*TODO: Need to fix the list; right now unsorted so this will can become painful*/
-	for(t = dta->trans_domains->head; t != NULL; t = t->next) {
+	for(t = dta_results->trans_domains->head; t != NULL; t = t->next) {
 		t_data = (trans_domain_t *) t->data;
 		assert(t_data->start_type == start_idx);
 		if(t_data->trans_type == trans_idx)
 			break;
 	}
 	if(t == NULL)
-		return -1; /* trans_idx doesn't currently exist in the dta! */
+		return -1; /* trans_idx doesn't currently exist in the dta_results! */
 	assert(t_data != NULL);
 	
 	/* 2. add the rule to pt_rules list for that t_ptr type */
-	return add_i_to_a(rule_idx ,&(t_data->num_pt_rules), &(t_data->pt_rules));
+	if (which_rule_type == PROCESS_TRANS_RULE) 
+		return add_i_to_a(rule_idx ,&(t_data->num_pt_rules), &(t_data->pt_rules));
+	else if (which_rule_type == OTHER_RULE) 
+		return add_i_to_a(rule_idx ,&(t_data->num_other_rules), &(t_data->other_rules));
+	else 
+		return -1;
 }
 
 /* INTERNAL */
 static int dta_add_trans_type(bool_t reverse, int start_idx, int trans_idx, int rule_idx, 
-		domain_trans_analysis_t *dta)
+		domain_trans_analysis_t *dta_results)
 {
 	trans_domain_t *t;
 	
@@ -147,9 +214,9 @@ static int dta_add_trans_type(bool_t reverse, int start_idx, int trans_idx, int 
 		free_trans_domain(t);
 		return -1;
 	}
-	/* and link the target into the dta struct */
+	/* and link the target into the dta_results struct */
 	/* TODO: need to do an insertion sort */
-	if(ll_append_data(dta->trans_domains, t) != 0 ) {
+	if(ll_append_data(dta_results->trans_domains, t) != 0 ) {
 		free_trans_domain(t);
 		return -1;
 	}
@@ -157,79 +224,174 @@ static int dta_add_trans_type(bool_t reverse, int start_idx, int trans_idx, int 
 	return 0;
 }
 
-/* INTERNAL: add process trans allowed trans types to dta result */
-static int dta_add_process_trans_rule(bool_t reverse, int start_idx, int rule_idx, bool_t *b_type, domain_trans_analysis_t *dta, 
-		policy_t *policy)
+static int dta_add_reverse_process_trans_types_and_rules(dta_query_t *dta_query, 
+				      		         int rule_idx,
+				      		         int num_types, 
+				      		         int *types, 
+				      		         bool_t *b_type, 
+				      		         domain_trans_analysis_t *dta_results, 
+				      		         policy_t *policy)
 {
-	int *types = NULL, num_types, rt, i, idx;
-	assert(b_type != NULL && dta != NULL && policy != NULL && is_valid_av_rule_idx(rule_idx, 1, policy));
+	int i, idx;
 	
+	/* add types and rules returned in list to trans_domains list*/
+	for (i = 0; i < num_types; i++) {
+		/* NOTE: We have a special case if types[i] == 0.  This is the pseudo
+		 *	type 'self'.  In this case we really don't want to add self, but
+		 *	rather the start_idx.  So in that case we'll change the idx
+		 * 	the start_idx.
+		 */
+		if (types[i] == 0)
+			idx = dta_query->start_type;
+		else
+			idx = types[i];
+
+		if (!b_type[idx]) {
+			/* add new trans type and record its rules */
+			if (dta_add_trans_type(dta_query->reverse, dta_query->start_type, idx, rule_idx, dta_results) != 0) {
+				if (types != NULL) free(types);
+					return -1;;
+			}
+			b_type[idx] = TRUE;
+		} else {
+			/* type already added just added, include this pt rule */
+			if (dta_add_rule_to_trans_type(dta_query->start_type, idx, PROCESS_TRANS_RULE, rule_idx, dta_results) != 0) {
+				if (types != NULL) free(types);
+					return -1;;
+			}
+		}
+	}
+	return 0;	
+}
+
+/* Used for a forward dta_results analysis query to limit the query to find transitions 
+ * to domains that have specific privileges or that have access to a particular 
+ * object type(s) */
+static int dta_add_forward_process_trans_types_and_rules(dta_query_t *dta_query, 
+				      		         int rule_idx,
+				      		         int num_types, 
+				      		         int *types, 
+				      		         bool_t *b_type, 
+				      		         domain_trans_analysis_t *dta_results, 
+				      		         policy_t *policy)
+{
+	int i, j, idx;
+	rules_bool_t b_target_types;
+	
+	/* b_target_types (all rules that have the target domain as SOURCE. This struct is used only for 
+	   a forward dta_results analysis, to limit the query to find transitions to domains that have specific 
+	   privileges or that have access to a particular object type(s). */
+	if (init_rules_bool(0, &b_target_types, policy) != 0) 
+		return -1;;
+	
+	/* Enhanced Forward dta_results: Once we have extracted the type from the process transition rule, we need 
+	   to see if this type has the specified permissions and access to specified object classes. */
+	for (i = 0; i < num_types; i++) {				
+		/* NOTE: We have a special case if types[i] == 0.  This is the pseudo
+		 *	type 'self'.  In this case we really don't want to add self, but
+		 *	rather the start_idx.  So in that case we'll change the idx
+		 * 	the start_idx.
+		 */
+		if (types[i] == 0)
+			idx = dta_query->start_type;
+		else
+			idx = types[i];
+		
+		/* See if this is a target type that we care about. */
+		if (find_int_in_array(idx, dta_query->end_types, dta_query->num_end_types) == -1) {
+			continue;	
+		}
+							
+		if (match_te_rules(FALSE, NULL, 0, idx, IDX_TYPE, FALSE, SRC_LIST, TRUE, TRUE,
+			&b_target_types, policy) != 0) {
+			free_rules_bool(&b_target_types);
+			return -1;
+		}
+					
+		for (j = 0; j < policy->num_av_access; j++) {
+			if (b_target_types.access[j] && (policy->av_access)[j].type == RULE_TE_ALLOW &&
+			    dta_query_does_av_rule_contain_obj_class_options(dta_query, j, policy)) {
+				/* We have a rule with the target domain as source and uses the specified permissions. */					
+				if (!b_type[idx]) {
+					/* add new trans type and record its rules */
+					if(dta_add_trans_type(dta_query->reverse, dta_query->start_type, idx, rule_idx, dta_results) != 0) {
+						if(types != NULL) free(types);
+						free_rules_bool(&b_target_types);
+						return -1;
+					}
+					b_type[idx] = TRUE;
+					
+					/* Record additional rule */
+					if(dta_add_rule_to_trans_type(dta_query->start_type, idx, OTHER_RULE, j, dta_results) != 0) {
+						if(types != NULL) free(types);
+						free_rules_bool(&b_target_types);
+						return -1;
+					}
+				} else {
+					/* type already added, so record additional rule */
+					if(dta_add_rule_to_trans_type(dta_query->start_type, idx, OTHER_RULE, j, dta_results) != 0) {
+						if(types != NULL) free(types);
+						free_rules_bool(&b_target_types);
+						return -1;
+					}
+				}
+			}
+		}	
+	}	
+	free_rules_bool(&b_target_types);	
+	return 0;
+}
+
+/* INTERNAL: add process trans allowed trans types to dta_results result */
+static int dta_add_process_trans_data(dta_query_t *dta_query, 
+				      int rule_idx,
+				      bool_t *b_type, 
+				      domain_trans_analysis_t *dta_results, 
+				      policy_t *policy)
+{
+	int *types = NULL, num_types = 0;
+	int rt, i;
+	
+	assert(dta_query != NULL && b_type != NULL && dta_results != NULL && policy != NULL && is_valid_av_rule_idx(rule_idx, 1, policy));
+				
 	/* Check to see if this is a reverse DT analysis and if so, then extract the type from the SOURCE field. */ 
 	/* Otherwise, extract the type from the TARGET field */
-	if(reverse) {
+	if(dta_query->reverse) {
 		rt = extract_types_from_te_rule(rule_idx, RULE_TE_ALLOW, SRC_LIST, &types, &num_types, policy);
-	} 
-	else {
+	} else {
 		rt = extract_types_from_te_rule(rule_idx, RULE_TE_ALLOW, TGT_LIST, &types, &num_types, policy);
 	}
 	
-	if(rt < 0)
+	if (rt < 0)
 		return -1;
-	if(rt == 2) {
+	if (rt == 2) {
 		/* add all types 
 		 * NOTE: Start from i = 1 since we know that type index 0 is 'self' and
 		 * 	we don't want to include the pdeudo type self
 		 */
 		for(i = 1; i < policy->num_types; i++) {
-			if(!b_type[i]) {
+			if (!b_type[i]) {
 				/* add new trans type and record its rules */
-				if(dta_add_trans_type(reverse, start_idx, i, rule_idx, dta) != 0) 
-					return -1;
+				if (dta_add_trans_type(dta_query->reverse, dta_query->start_type, i, rule_idx, dta_results) != 0) 
+					return -1;;
 				b_type[i] = TRUE;
-			}
-			else {
+			} else {
 				/* type already added just added, include this pt rule */
-				if(dta_add_rule_to_trans_type(start_idx, i, rule_idx, dta) != 0)
+				if (dta_add_rule_to_trans_type(dta_query->start_type, i, PROCESS_TRANS_RULE, rule_idx, dta_results) != 0)
 					return -1;
 			}
 		}
-	} 
-	else {
-		/* add types and rules returned in list to trans_domains list*/
-		for(i = 0; i < num_types; i++) {
-			/* NOTE: We have a special case if types[i] == 0.  This is the pseudo
-			 *	type 'self'.  In this case we really don't want to add self, but
-			 *	rather the start_idx.  So in that case we'll change the idx
-			 * 	the start_idx.
-			 */
-			if(types[i] == 0)
-				idx = start_idx;
-			else
-				idx = types[i];
-
-			if(!b_type[idx]) {
-				/* add new trans type and record its rules */
-				if(dta_add_trans_type(reverse, start_idx, idx, rule_idx, dta) != 0) {
-					if(types != NULL) free(types);
-					return -1;
-				}
-				b_type[idx] = TRUE;
-			}
-			else {
-				/* type already added just added, include this pt rule */
-				if(dta_add_rule_to_trans_type(start_idx, idx, rule_idx, dta) != 0) {
-					if(types != NULL) free(types);
-					return -1;
-				}
-			}
-		}
-		if(types != NULL) free(types);
+	} else if (dta_query->reverse) {
+		if (dta_add_reverse_process_trans_types_and_rules(dta_query, rule_idx, num_types, types, b_type, dta_results, policy))
+			return -1;
+	} else {
+		if (dta_add_forward_process_trans_types_and_rules(dta_query, rule_idx, num_types, types, b_type, dta_results, policy))
+			return -1;			
 	}
+	if(types != NULL) free(types);	
 	
 	return 0;
 }
-
-
 
 /* INTERNAL */
 static int dta_add_rule_to_entry_point_type(bool_t reverse, int rule_idx, entrypoint_type_t *ep)
@@ -310,7 +472,7 @@ static int dta_add_ep_type(bool_t reverse, int file_idx, int rule_idx, trans_dom
 
 
 /* INTERNAL */ 
-/* TODO: This is very similar to dta_add_process_trans_rule(); should consolidate */
+/* TODO: This is very similar to dta_add_process_trans_data(); should consolidate */
 static int dta_add_file_entrypoint_type(bool_t reverse, int rule_idx, bool_t *b_types, trans_domain_t *t_ptr, policy_t *policy)
 {
 	int rt, i, idx, *types, num_types; 
@@ -377,14 +539,16 @@ static int dta_add_file_entrypoint_type(bool_t reverse, int rule_idx, bool_t *b_
 
 
 /* main domain trans analysis function.
- * 	dta must be allocated and initialized
+ * 	dta_results must be allocated and initialized
  *
  *	returns:	
  *		-1 general error
  *		-2 start_domain invalid type
  */
 
-int determine_domain_trans(bool_t reverse, char *start_domain, domain_trans_analysis_t **dta, policy_t *policy)
+int determine_domain_trans(dta_query_t *dta_query, 
+			   domain_trans_analysis_t **dta_results, 
+			   policy_t *policy)
 {
 	int start_idx, i, classes[1], perms[1], perms2[1], rt;
 	rules_bool_t b_start, b_trans; 	/* structures are used for passing TE rule match booleans */
@@ -393,13 +557,14 @@ int determine_domain_trans(bool_t reverse, char *start_domain, domain_trans_anal
 	entrypoint_type_t *ep;
 	llist_node_t *ll_node, *ll_node2;
 	int ans;
-
-	if(policy == NULL || dta == NULL)
+	bool_t reverse;
+	
+	if(policy == NULL || dta_query == NULL)
 		return -1;
-	/* Retrieve the index of the specified starting domain from our policy database. */
-	if((start_idx = get_type_idx(start_domain, policy)) < 0)
-		return -2;
-	*dta = NULL;
+	/* Retrieve the index of the specified starting domain from the query. */
+	start_idx = dta_query->start_type;
+	reverse = dta_query->reverse;
+	*dta_results = NULL;
 	
 	/* initialize our bool rule structures...free before leaving function */
 	b_type = (bool_t *)malloc(sizeof(bool_t) * policy->num_types);
@@ -419,18 +584,18 @@ int determine_domain_trans(bool_t reverse, char *start_domain, domain_trans_anal
 		goto err_return;		
 	
 	/* initialize the results structure (caller must free if successful) */
-	*dta = new_domain_trans_analysis();
-	if(*dta == NULL) {
+	*dta_results = new_domain_trans_analysis();
+	if(*dta_results == NULL) {
 		fprintf(stderr, "out of memory");
 		goto err_return;
 	}
-	(*dta)->start_type = start_idx;
-	(*dta)->reverse = reverse;
-	if((*dta)->trans_domains == NULL)
+	(*dta_results)->start_type = start_idx;
+	(*dta_results)->reverse = reverse;
+	if((*dta_results)->trans_domains == NULL)
 		goto err_return;
 		
 	/* At this point, we begin our domain transition analysis. 
-	 * Based upon the type of DT analysis (forward or reverse), populate dta structure  
+	 * Based upon the type of DT analysis (forward or reverse), populate dta_results structure  
 	 * with candidate trans domains by collecting all allow rules that give process 
 	 * transition access and that:
 	 * 	- forward DT analysis - contain start_type in the SOURCE field
@@ -452,7 +617,7 @@ int determine_domain_trans(bool_t reverse, char *start_domain, domain_trans_anal
 	else {
 		if(match_te_rules(FALSE, NULL, 0, start_idx, IDX_TYPE, FALSE, SRC_LIST, TRUE, TRUE,
 			&b_start, policy) != 0)
-			goto err_return;	
+			goto err_return;
 	}
 	
 	
@@ -466,13 +631,13 @@ int determine_domain_trans(bool_t reverse, char *start_domain, domain_trans_anal
 		if(b_start.access[i] && (policy->av_access)[i].type == RULE_TE_ALLOW && 
 				does_av_rule_use_classes(i, 1, classes, 1, policy) &&
 				does_av_rule_use_perms(i, 1, perms, 1, policy)) {
-			/* 2.a we have a rule that allows process tran access, add it for now */
-			rt = dta_add_process_trans_rule(reverse, start_idx, i, b_type, *dta, policy);
+			/* 2.a we have a rule that allows process tran access, add its' data to pur results for now */
+			rt = dta_add_process_trans_data(dta_query, i, b_type, *dta_results, policy);
 			if(rt != 0)
 				goto err_return;
 		}
 	}
-	
+
 	/* At this point, we have a list of all trans types (and associated list of rules) that
 	 * allow process transition permission ...
 	 * 	- reverse DT analysis - to the start_domain
@@ -502,7 +667,7 @@ int determine_domain_trans(bool_t reverse, char *start_domain, domain_trans_anal
 	 *	- forward DT analysis - the start_domain file execute and the trans type file entrypoint access.
 	 *	- reverse DT analysis - the start_domain file entrypoint and the trans type file execute access.
 	 */
-	for(ll_node = (*dta)->trans_domains->head; ll_node != NULL; ) {
+	for(ll_node = (*dta_results)->trans_domains->head; ll_node != NULL; ) {
 		t_ptr = (trans_domain_t *)ll_node->data;
 		assert(t_ptr != NULL);
 		all_false_rules_bool(&b_trans, policy);
@@ -602,7 +767,7 @@ int determine_domain_trans(bool_t reverse, char *start_domain, domain_trans_anal
 		/* 3.e at this point, if a candidate trans_types do not have any entrypoint file types,
 		 *	remove it since it fails the criteria */
 		if(t_ptr->entry_types->num < 1) {
-			if(ll_unlink_node((*dta)->trans_domains, ll_node) !=0)
+			if(ll_unlink_node((*dta_results)->trans_domains, ll_node) !=0)
 				goto err_return;
 			ll_node = ll_node_free(ll_node, free_trans_domain);
 		}
@@ -618,7 +783,7 @@ int determine_domain_trans(bool_t reverse, char *start_domain, domain_trans_anal
 	free_rules_bool(&b_start);	
 	return 0;	
 err_return:	
-	free_domain_trans_analysis(*dta);
+	free_domain_trans_analysis(*dta_results);
 	if(b_type != NULL) free(b_type);
 	free_rules_bool(&b_trans);
 	free_rules_bool(&b_start);
