@@ -3068,6 +3068,9 @@ static void sediff_initialize()
 	
 	label = (GtkLabel*)glade_xml_get_widget(sediff_app->window_xml, "line_label");
 	gtk_label_set_text(label, "");
+
+	label = (GtkLabel *)(glade_xml_get_widget(sediff_app->window_xml, "label_stats"));
+	gtk_label_set_text(label, "");
 }
 
 /* diff p1_file and p2_file and load gui with the resulting data, return -1 if
@@ -3086,6 +3089,7 @@ static int sediff_diff_and_load_policies(const char *p1_file, const char *p2_fil
 	GString *string = g_string_new("");
 	GdkCursor *cursor = NULL;
 	GtkNotebook *notebook1, *notebook2;
+	GdkEvent *event = NULL;
 	
 	sediff_initialize();
 	/* show our loading dialog while we load */
@@ -3186,7 +3190,11 @@ static int sediff_diff_and_load_policies(const char *p1_file, const char *p2_fil
 	if (gtk_tree_model_get_iter_first(tree_model,&iter)) {
 		gtk_tree_selection_select_iter(sel,&iter);
 	}
-
+	event = gdk_event_get();
+	while (event) {
+		gdk_event_free(event);
+	event = gdk_event_get();
+	}	
 	/* get rid of the loading when done */
 	sediff_load_dlg_destroy();
 
