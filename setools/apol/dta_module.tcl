@@ -2241,7 +2241,7 @@ proc Apol_Analysis_dta::render_target_type_data { data dta_info_text dta_tree no
 		set num_additional [lindex $data $idx]
 		
 		set start_idx $end_idx
-		$dta_info_text insert end "\nPrivileges for this target domain:  "
+		$dta_info_text insert end "\nAccess granted to this target domain:  "
 		set end_idx [$dta_info_text index insert]
 		$dta_info_text tag add $Apol_Analysis_dta::subtitle_tag $start_idx $end_idx
 		set start_idx $end_idx
