@@ -2391,7 +2391,7 @@ static int define_initial_sid_context(void)
 	int idx;
 	security_context_t *scontext;
 
-	if (pass == 1) {
+	if (pass == 1 || (pass == 2 && !(parse_policy->opts & POLOPT_INITIAL_SIDS))){
 		id = (char *) queue_remove(id_queue); 
 		parse_security_context(1);
 		free(id);
