@@ -118,6 +118,13 @@ proc Apol_Analysis_dirflow::get_analysis_info {} {
      	return $Apol_Analysis_dirflow::info_button_text
 } 
 
+# ------------------------------------------------------------------------------
+#  Command Apol_Analysis_dirflow::get_results_raised_tab
+# ------------------------------------------------------------------------------
+proc Apol_Analysis_dirflow::get_results_raised_tab {} {
+     	return $Apol_Analysis_dirflow::dirflow_info_text
+} 
+
 ## Command Apol_Analysis_dirflow::do_analysis is the principal interface command.
 ## The GUI will call this when the module is to perform it's analysis.  The
 ## module should know how to get its own option information (the options
@@ -178,7 +185,10 @@ proc Apol_Analysis_dirflow::do_analysis { results_frame } {
 		$Apol_Analysis_dirflow::end_type]
 
 	set dirflow_tree [Apol_Analysis_dirflow::create_resultsDisplay $results_frame]
-	set rt [catch {Apol_Analysis_dirflow::create_result_tree_structure $dirflow_tree $results $query_args} err]
+	set rt [catch {Apol_Analysis_dirflow::create_result_tree_structure \
+		$dirflow_tree \
+		$results \
+		$query_args} err]
 	if {$rt != 0} {
 		tk_messageBox -icon error -type ok -title "Error" -message "$err"
 		return -code error
@@ -515,17 +525,19 @@ proc Apol_Analysis_dirflow::free_results_data {query_options} {
 #################################################################################
 #################################################################################
 proc Apol_Analysis_dirflow::treeSelect {dirflow_tree dirflow_info_text node} {
-# Set the tree selection to the current node.
-	
+	# Set the tree selection to the current node.
 	$dirflow_tree selection set $node
-
         if {$node ==  [$dirflow_tree nodes root]} {
-		Apol_Analysis_dirflow::display_root_type_info $node $dirflow_info_text $dirflow_tree
-	        Apol_Analysis_dirflow::formatInfoText $dirflow_info_text
-		return
+		Apol_Analysis_dirflow::display_root_type_info $node \
+			$dirflow_info_text $dirflow_tree
+	} else {
+		Apol_Analysis_dirflow::render_target_type_data \
+			[$dirflow_tree itemcget $node -data] \
+			$dirflow_info_text $dirflow_tree $node
 	}
-	Apol_Analysis_dirflow::render_target_type_data [$dirflow_tree itemcget $node -data] $dirflow_info_text $dirflow_tree $node
 	Apol_Analysis_dirflow::formatInfoText $dirflow_info_text
+	ApolTop::makeTextBoxReadOnly $dirflow_info_text
+	
 	return 0
 
 }
@@ -551,7 +563,6 @@ proc Apol_Analysis_dirflow::display_root_type_info { source_type dirflow_info_te
     $dirflow_info_text insert end $Apol_Analysis_dirflow::root_text
     $dirflow_info_text tag add ROOT_TEXT $start_idx end
     $dirflow_info_text tag configure ROOT_TEXT -font $ApolTop::text_font 
-    $dirflow_info_text configure -state disabled
 
     return 0
 }
@@ -562,7 +573,6 @@ proc Apol_Analysis_dirflow::render_target_type_data {data dirflow_info_text dirf
         $dirflow_info_text configure -wrap none
 
 	if { $data == "" } {
-	        $dirflow_info_text configure -state disabled
 		return ""
 	}
         set cur_end_type [lindex $data 0]
@@ -751,7 +761,6 @@ proc Apol_Analysis_dirflow::render_target_type_data {data dirflow_info_text dirf
 		incr curIdx
 	    }
 	}
-	$dirflow_info_text configure -state disabled
 	return
 }
 
@@ -868,12 +877,17 @@ proc Apol_Analysis_dirflow::parseList_get_index_next_node { currentIdx results_l
 }
 
 proc Apol_Analysis_dirflow::create_result_tree_structure { dirflow_tree results_list query_args} {
-        set home_node [Apol_Analysis_dirflow::insert_src_type_node $dirflow_tree $query_args]
-	set rt [catch {Apol_Analysis_dirflow::create_target_type_nodes $home_node $dirflow_tree $results_list} err]
+        set home_node [Apol_Analysis_dirflow::insert_src_type_node $dirflow_tree \
+        	$query_args]
+	set rt [catch {Apol_Analysis_dirflow::create_target_type_nodes $home_node \
+		$dirflow_tree $results_list} err]
 	if {$rt != 0} {
 		return -code error $err
 	}
-	Apol_Analysis_dirflow::treeSelect $Apol_Analysis_dirflow::dirflow_tree $Apol_Analysis_dirflow::dirflow_info_text $home_node
+	Apol_Analysis_dirflow::treeSelect \
+		$Apol_Analysis_dirflow::dirflow_tree \
+		$Apol_Analysis_dirflow::dirflow_info_text \
+		$home_node
         return 0
 }
 
@@ -924,10 +938,14 @@ proc Apol_Analysis_dirflow::create_resultsDisplay { results_frame } {
 		   -redraw 0 -bg white -showlines 1 -padx 0 \
 		   -opencmd  {Apol_Analysis_dirflow::do_child_analysis $Apol_Analysis_dirflow::dirflow_tree}]
 	$sw_tree setwidget $dirflow_tree 
-
+		
 	# info window
-	set dirflow_info_text [text [$sw_info getframe].dirflow_info_text -wrap none -bg white -font $ApolTop::text_font]
+	set dirflow_info_text [text [$sw_info getframe].dirflow_info_text \
+		-wrap none \
+		-bg white \
+		-font $ApolTop::text_font]
 	$sw_info setwidget $dirflow_info_text
+	bind $dirflow_info_text <Enter> {focus %W}
 	
 	pack $pw -fill both -expand yes -anchor nw 
 	pack $frm_tree -fill both -expand yes -anchor nw
@@ -935,11 +953,15 @@ proc Apol_Analysis_dirflow::create_resultsDisplay { results_frame } {
 	pack $sw_tree -fill both -expand yes
 	pack $sw_info -fill both -expand yes 
 	
-	$dirflow_tree bindText  <ButtonPress-1> {Apol_Analysis_dirflow::treeSelect \
-		$Apol_Analysis_dirflow::dirflow_tree $Apol_Analysis_dirflow::dirflow_info_text}
+	$dirflow_tree bindText  <ButtonPress-1> {
+		Apol_Analysis_dirflow::treeSelect \
+		$Apol_Analysis_dirflow::dirflow_tree \
+		$Apol_Analysis_dirflow::dirflow_info_text}
 
-    	$dirflow_tree bindText  <Double-ButtonPress-1> {Apol_Analysis_dirflow::treeSelect \
-		$Apol_Analysis_dirflow::dirflow_tree $Apol_Analysis_dirflow::dirflow_info_text}
+    	$dirflow_tree bindText  <Double-ButtonPress-1> {
+    		Apol_Analysis_dirflow::treeSelect \
+		$Apol_Analysis_dirflow::dirflow_tree \
+		$Apol_Analysis_dirflow::dirflow_info_text}
     
 	return $dirflow_tree
 }
