@@ -105,18 +105,16 @@ int main(int argc, char **argv, char **envp)
 		fprintf(stderr, "fsdata_init failed\n");
 		return -1;
 	}
-printf("1\n");
-	if (find_mount_points(dir, mounts, &num_mounts, 0))
+
+	if (find_mount_points(dir, &mounts, &num_mounts, 0))
 		return -1;
-printf("2\n");
+
 	if (sefs_scan_tree(dir) == -1) {
 		fprintf(stderr, "fsdata_scan_tree failed\n");
 		return -1;
 	}
-printf("3: %d\n", num_mounts);	
 
 	for (i = 0; i < num_mounts; i++ ){
-		printf("4: %d %s\n", i, mounts[i]);
 		if (sefs_scan_tree(mounts[i]) == -1) {
 			fprintf(stderr, "fsdata_scan_tree failed\n");
 			return -1;
