@@ -31,17 +31,17 @@ libapol-tcl.a: $(LIB-OBJ-TCL)
 	 ar cr $@ $(LIB-OBJ-TCL) 
 
 install-libapol-shared: libapolso
-	test -d $(SHARED_LIB_INSTALL_DIR) || install -m 755 -d $(SHARED_LIB_INSTALL_DIR)
 	install -m 755 $(LIBSO) $(SHARED_LIB_INSTALL_DIR)
 	cd $(SHARED_LIB_INSTALL_DIR) && ln -sf $(LIBSO) $(TARGET)
 
 install-libapol-static: libapol
-	test -d $(STATIC_LIB_INSTALL_DIR) || install -m 755 -d $(STATIC_LIB_INSTALL_DIR)
 	install -m 644 libapol.a $(STATIC_LIB_INSTALL_DIR)
-	test -d $(SETOOLS_INCLUDE)/libapol || install -m 755 -d $(SETOOLS_INCLUDE)/libapol
-	install -m 644 *.h $(SETOOLS_INCLUDE)/libapol
+	install -m 644 *.h $(SETOOLS_INCLUDE)
 
 install: install-libapol-shared install-libapol-static
+
+install-policy:
+	chcon system_u:object_r:shlib_t $(SHARED_LIB_INSTALL_DIR)/$(LIBSO)
 	
 %.o:  %.c 
 	$(CC) $(CFLAGS) -o $@ -c $<
