@@ -1281,6 +1281,15 @@ int Apol_GetVersion(ClientData clientData, Tcl_Interp *interp, int argc, char *a
 	return TCL_OK;
 }
 
+int Apol_GetPolicyType(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
+{
+	if(is_binary_policy(policy) )
+		Tcl_AppendResult(interp, "binary", (char *) NULL);
+	else
+		Tcl_AppendResult(interp, "source", (char *) NULL);
+	return TCL_OK;
+}
+
 /* Return flags indicating what data is in the current policy.  Following data types:
  *     	classes		object classes
  *	perms		permissions (including common perms)
@@ -4290,6 +4299,7 @@ int Apol_Init(Tcl_Interp *interp)
 	Tcl_CreateCommand(interp, "apol_Cond_Bool_SetBoolValue", (Tcl_CmdProc *) Apol_Cond_Bool_SetBoolValue, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_Cond_Bool_GetBoolValue", (Tcl_CmdProc *) Apol_Cond_Bool_GetBoolValue, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_SearchConditionalRules", (Tcl_CmdProc *) Apol_SearchConditionalRules, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+	Tcl_CreateCommand(interp, "apol_GetPolicyType", (Tcl_CmdProc *) Apol_GetPolicyType, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	
 	Tcl_PkgProvide(interp, "apol", (char*)libapol_get_version());
 
