@@ -15,7 +15,36 @@
 ##############################################################
 
 namespace eval Apol_Analysis_relabel {
-    variable info_button_text "Foxy nymphs grab quick-lived waltz."
+    variable info_button_text {This analysis checks the possible ways to relabel objects allowed by a policy.  The permissions relabelto
+and relabelfrom are special in a type enforcement environment as they provide a method of changing type.
+Relable analysis is designed to fascilitate queries about the possible changes for a given type.
+
+There are three modes for a query, each presenting a differnt perspective.
+
+relabelto mode -
+        from starting type lists the types to which relabeling is possible for each domain with apropriate
+        permissions and the associated rules granting this permission*.
+        
+relabelfrom mode -
+        lists types from which each domain with the apropriate permissions can relabel to the selected end
+        type and the associated rules*.  This mode can be considered the same as perfroming a query under
+        relabelto mode in the opposite direction.
+        
+domain mode -
+        given a starting domain lists all types to and from which that domain can relabel and the associated
+        rules*.
+
+Optionally results may be filtered by object class and permission (select * for permissions to filter by
+object class only). When selected any number of lines may be added to the filter (each line displayed has
+the format class:permission).  The filter shows only those results which have at least one of the specified
+classes and if specified at least one of the permissions for that class.
+
+*A note on rules display and filtering:
+
+Rules are stored for each type found to have relabeling permission, therefore it is possible to specify a
+permission in a filter and still see a rule that does not contain that specific permission.  This is not an
+error rather it means that multiple rules grant permissions for that specific source-target-object triplet.
+To see all rules governing a particular triplet use the Policy Rules tab.}
 
     # name of widget holding most recently executed assertion
     variable most_recent_results ""
@@ -150,7 +179,7 @@ proc Apol_Analysis_relabel::do_analysis {results_frame} {
             to     {append text "relabel to anything."}
             from   {append text "relabel from anything."}
             domain {
-                append text "relabel to or from any domains."
+                append text "relabel to or from any types."
                 $show2_rb configure -state disabled
             }
         }
