@@ -154,7 +154,7 @@ static int get_iad_buffer(GtkTextBuffer *txt, GtkTextIter *txt_iter,GString *str
 	GtkTextTag *added_tag, *removed_tag, *changed_tag;
 	GtkTextTag *header_added_tag,*header_removed_tag,*header_changed_tag,*header_tag;		
 	GtkTextTagTable *table;
-	//GtkTextIter start,end;
+
 	GtkTextMark *mark;
 
 
@@ -452,7 +452,7 @@ static int get_iad_buffer(GtkTextBuffer *txt, GtkTextIter *txt_iter,GString *str
 				return -1;
 			}
 			missing = (u->a == NULL);
-			// This means that the item exists in the new policy, so we indicate whether it has been changed. 
+			/* This means that the item exists in the new policy, so we indicate whether it has been changed.  */
 			if (!missing) {
 				summary_node->changed += 1;
 				num_changed +=1 ;
@@ -1116,7 +1116,6 @@ static void sediff_populate_key_buffer()
 	if (!added_tag) {
 		added_tag = gtk_text_buffer_create_tag(txt, "added-tag",
 						       "family", "monospace",
-						       "pixels-below-lines", 10,
 						       "foreground", "dark green", 
 						       NULL);
 	      
@@ -1125,7 +1124,6 @@ static void sediff_populate_key_buffer()
 	if (!removed_tag) {
 		removed_tag = gtk_text_buffer_create_tag(txt, "removed-tag",
 							 "family", "monospace",
-							 "pixels-below-lines", 10,
 							 "foreground", "red",
 							 NULL);
 	}
@@ -1133,29 +1131,27 @@ static void sediff_populate_key_buffer()
 	if (!changed_tag) {
 		changed_tag = gtk_text_buffer_create_tag(txt, "changed-tag",
 							 "family", "monospace", 
-							 "pixels-below-lines", 10,
 							 "foreground", "dark blue",
 							 NULL);
 	}
 	mono_tag = gtk_text_tag_table_lookup(table, "mono-tag");
 	if (!mono_tag) {
 		mono_tag = gtk_text_buffer_create_tag(txt, "mono-tag",
-						      "pixels-below-lines", 10,
 						      "family", "monospace", 
 						      NULL);
 	}
 	gtk_text_buffer_get_start_iter(txt,&iter);
-	g_string_printf(string,"Added(+): Items added in policy 2.\n");
+	g_string_printf(string," Added(+):\n  Items added\n  in policy 2.\n\n");
 	gtk_text_buffer_insert_with_tags_by_name(txt, &iter, string->str, 
 						 -1, "added-tag", NULL);
 
-	g_string_printf(string,"Removed(-): Items removed in policy 2.\n");
+	g_string_printf(string," Removed(-):\n  Items removed\n  in policy 2.\n\n");
 	gtk_text_buffer_insert_with_tags_by_name(txt, &iter, string->str, 
 						 -1, "removed-tag", NULL);
-	g_string_printf(string,"Changed(*): Items changed in policy 2.\n");
+	g_string_printf(string," Changed(*):\n  Items changed\n  in policy 2.\n\n");
 	gtk_text_buffer_insert_with_tags_by_name(txt, &iter, string->str, 
 						 -1, "changed-tag", NULL);
-	g_string_printf(string,"T: A TRUE conditional rule.\nF: A FALSE conditional rule.\n");
+	g_string_printf(string," T:\n  A TRUE\n  conditional\n  rule.\n\n F:\n  A FALSE\n  conditional\n  rule.\n");
 	gtk_text_buffer_insert_with_tags_by_name(txt, &iter, string->str, 
 						 -1, "mono-tag", NULL);
 
@@ -1343,7 +1339,6 @@ static int txt_buffer_insert_classes_results(GtkTextBuffer *txt, GtkTextIter *tx
 	
 	g_return_val_if_fail(stuff_removed != NULL, -1);
 	g_return_val_if_fail(stuff_added != NULL, -1);
-	//gtk_text_buffer_get_end_iter(txt, txt_iter);
 	rt = get_iad_buffer(txt,txt_iter,string, IDX_OBJ_CLASS, stuff_removed->classes, 
 			    stuff_added->classes, policy_old, policy_new,&sediff_app->summary.classes);
 	if (rt < 0){
@@ -1595,7 +1590,7 @@ static int txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_ite
 
 			/* search for the key/cond in p2, at this point we do not want to print out changes */
 			matched = FALSE;
-			for(cur2 = avh_find_first_node(&diff2->te, &p2key); cur2 != NULL && !matched; cur2 = avh_find_next_node(cur2) )  {
+			for(cur2 = avh_find_first_node(&policy2->avh, &p2key); cur2 != NULL && !matched; cur2 = avh_find_next_node(cur2) )  {
 				if (does_cond_match(cur,policy1,cur2,policy2,&inverse)) {
 					matched = TRUE;
 				}
@@ -1649,7 +1644,6 @@ static int txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_ite
 
  				gtk_text_buffer_insert(txt, &changed_iter, "\n", -1); 
 				gtk_text_buffer_get_iter_at_mark(txt,&changed_iter,changed_mark);
- 				//gtk_text_buffer_get_iter_at_offset(txt, txt_iter, -1); 
  			} 
  		} 
  	} 
@@ -1672,7 +1666,7 @@ static int txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_ite
 			/* now loop through list and find not only matching key but also matching 
 			   conditional */
 			matched = FALSE;
-			for(cur2 = avh_find_first_node(&diff1->te, &p1key); cur2 != NULL && !matched; cur2 = avh_find_next_node(cur2) )  {
+			for(cur2 = avh_find_first_node(&policy1->avh, &p1key); cur2 != NULL && !matched; cur2 = avh_find_next_node(cur2) )  {
 				if (does_cond_match(cur,policy2,cur2,policy1,&inverse)) {
 					sediff_app->summary.te_rules.changed += 1;
 					matched = TRUE;
@@ -1695,7 +1689,6 @@ static int txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_ite
 					    tmpcur != NULL && !polmatched; tmpcur = avh_find_next_node(tmpcur) )  {
 						/* look for this match in policy 2 */
 						if (does_cond_match(tmpcur,policy1,cur2,policy1,&inverse)) {
-							//fprintf(stderr,"true\n");
 							rule = re_render_avh_rule(tmpcur, policy1);
 							polmatched = TRUE;
 						}
@@ -1746,7 +1739,6 @@ static int txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_ite
 					    tmpcur != NULL && !polmatched; tmpcur = avh_find_next_node(tmpcur) )  {
 						/* look for this match in policy 2 */
 						if (does_cond_match(tmpcur,policy2,cur,policy2,&inverse)) {
-							//fprintf(stderr,"true\n");
 							rule = re_render_avh_rule(tmpcur, policy2);
 							polmatched = TRUE;
 						}
@@ -2132,7 +2124,7 @@ static void txt_view_populate_buffers(apol_diff_t *stuff_removed,
 	rt = txt_buffer_insert_classes_results(sediff_app->classes_buffer, &end,
 					       string, stuff_removed, 
 					       stuff_added, policy_old, policy_new);
-	//gtk_text_buffer_get_end_iter(sediff_app->classes_buffer, &end);
+
 	rt = txt_buffer_insert_common_perms_results(sediff_app->classes_buffer, &end,
 						    string, stuff_removed, stuff_added, 
 						    policy_old, policy_new);
@@ -2355,7 +2347,7 @@ static gboolean txt_buffer_insert_results(gpointer data)
 	/* Configure text_view */
 	gtk_text_view_set_editable(GTK_TEXT_VIEW (textview1), FALSE);
 	gtk_text_view_set_cursor_visible(GTK_TEXT_VIEW (textview1), FALSE);
-//	gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW (textview1), GTK_WRAP_WORD);
+
 			
 	txt_view_switch_buffer(textview1,option,1);
 
@@ -2467,7 +2459,7 @@ static GtkWidget *sediff_tree_view_create_from_store(SEDiffTreeViewStore *tree_s
 	col = gtk_tree_view_column_new();
 	gtk_tree_view_column_pack_start (col, renderer, TRUE);
 	gtk_tree_view_column_add_attribute (col, renderer, "text", SEDIFF_LABEL_COLUMN);
-//	gtk_tree_view_column_set_title (col, "Policy Components");
+
 	gtk_tree_view_append_column(GTK_TREE_VIEW(tree_view),col);
 	
 	renderer = gtk_cell_renderer_text_new();
@@ -2528,7 +2520,7 @@ static void sediff_policy_stats_textview_populate(policy_t *p1, GtkTextView *tex
 				   "\tdontaudit %d\n\n"
 
 				   "Number of Roles: %d\n\n"
-//				   "\tRoles: %d\n\n"
+
 				   
 				   "Number of RBAC Rules:\n"
 				   "\tallow: %d\n"
