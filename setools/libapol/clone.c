@@ -103,7 +103,7 @@ int match_cloned_rules(int  idx,
                              )
 {
 	int i, cnt;
-	bool_t ans;
+	int ans;
 	cln_item_t *ptr;
 	if(rules_b == NULL || policy == NULL || idx >= policy->num_types)
 		return -1;
@@ -121,10 +121,11 @@ int match_cloned_rules(int  idx,
 				 * src is in the src type/attrib list for all rules, and if so and if special
 				 * checks don't say otherwise, we record that rule as being "cloned" for the 
 				 * provided type 'idx' */
-				if (does_av_rule_use_type(ptr->src, IDX_TYPE, SRC_LIST, 1, &(policy->av_access[i]),
-						&cnt, &ans, policy) == -1)
+				ans = does_av_rule_use_type(ptr->src, IDX_TYPE, SRC_LIST, 1, &(policy->av_access[i]),
+						&cnt, policy);
+				if (ans == -1)
 					return -1;
-				if(ans) {
+				else if(ans) {
 					ans = check_clone_specials_av(ptr->src, ptr->tgt, &(policy->av_access[i]), policy);
 					if(ans) {
 						rules_b->access[i] = 1;
@@ -136,10 +137,11 @@ int match_cloned_rules(int  idx,
 			for(i = 0; i < policy->num_te_trans; i++) {
 				if(rules_b->ttrules[i])
 					break;
-				if (does_tt_rule_use_type(ptr->src, IDX_TYPE, SRC_LIST, 1,
-						&(policy->te_trans[i]), &cnt, &ans, policy) == -1)
+				ans = does_tt_rule_use_type(ptr->src, IDX_TYPE, SRC_LIST, 1,
+						&(policy->te_trans[i]), &cnt, policy);
+				if (ans == -1)
 					return -1;
-				if(ans) {
+				else if(ans) {
 					ans = check_clone_specials_tt(ptr->src, ptr->tgt, &(policy->te_trans[i]), policy);
 					if(ans) {
 						rules_b->ttrules[i] = 1;
@@ -157,10 +159,11 @@ int match_cloned_rules(int  idx,
 					 * src is in the src type/attrib list for all rules, and if so and if special
 					 * checks don't say otherwise, we record that rule as being "cloned" for the 
 					 * provided type 'idx' */
-					if (does_av_rule_use_type(ptr->src, IDX_TYPE, SRC_LIST, 1, &(policy->av_audit[i]),
-							&cnt, &ans, policy) == -1)
+					ans = does_av_rule_use_type(ptr->src, IDX_TYPE, SRC_LIST, 1, &(policy->av_audit[i]),
+							&cnt, policy);
+					if (ans == -1)
 						return -1;
-					if(ans) {
+					else if (ans) {
 						ans = check_clone_specials_av(ptr->src, ptr->tgt, &(policy->av_audit[i]), policy);
 						if(ans) {
 							rules_b->audit[i] = 1;
