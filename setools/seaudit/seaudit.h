@@ -36,7 +36,7 @@
 #endif
 
 #ifndef INSTALL_LIBDIR
-        #define INSTALL_LIBDIR "/usr/lib/apol"
+        #define INSTALL_LIBDIR "/usr/share/setools"
 #endif
 
 typedef struct seaudit {
