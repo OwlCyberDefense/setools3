@@ -95,7 +95,11 @@ static int do_assertions (char *assertion_contents) {
                                         for (j = 0; j < rule->num_rules; j++) {
                                                 char *rule_string = re_render_av_rule (FALSE, rule->rules [j], FALSE, policy);
                                                 int rule_lineno = get_rule_lineno (rule->rules [j], RULE_TE_ALLOW, policy);
-                                                (void) printf ("    [%d] %s\n", rule_lineno, rule_string);
+                                                (void) printf ("    ");
+                                                if (is_binary_policy (policy) == 0) {
+                                                        (void) printf ("[%d] ", rule_lineno);
+                                                }
+                                                (void) printf ("%s\n", rule_string);
                                                 free (rule_string);
                                         }
                                 }
