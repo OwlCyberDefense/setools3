@@ -1595,12 +1595,22 @@ static bool_t type_list_match_by_idx(	int idx,		/* idx of type/or attribure bein
 	ta_item_t *ptr;
 	int i;
 
+	/*
+	 * If a type/attrib is in the subtract list then we know that the
+	 * the rule doesn't use the type, so we can return immediately.
+	 */
+	for (ptr = list; ptr != NULL; ptr = ptr->next) {
+		if ((ptr->type & IDX_SUBTRACT) && idx == ptr->idx) {
+			return FALSE;
+		}
+	}
+	
 	/* check for direct matches; the fast check if we aren't looking for indirect matches,
 	 * or if we don't have a TYPE (Attributes don't have indirect matches).
 	 */
 	for(ptr = list; ptr != NULL; ptr = ptr->next) {
 		if(type == ptr->type && idx == ptr->idx) {
-			return 1;
+			return TRUE;
 		}
 	}
 	
@@ -1611,11 +1621,11 @@ static bool_t type_list_match_by_idx(	int idx,		/* idx of type/or attribure bein
 				continue;
 			for(i = 0; i < policy->types[idx].num_attribs; i++) {
 				if(ptr->idx == policy->types[idx].attribs[i])
-					return 1;
+					return TRUE;
 			}
 		}
 	}
-	return 0;
+	return FALSE;
 }
 
 
@@ -2042,6 +2052,20 @@ int get_rule_lineno(int rule_idx, int rule_type, policy_t *policy)
 	}
 }
 
+static int append_attrib_types_to_array(int attrib, int *array_len, int **array, policy_t *policy)
+{
+	int i;
+	
+	if (attrib >= policy->num_attribs)
+		return -1;
+
+	for (i = 0; i < policy->attribs[attrib].num_types; i++) {
+		if (add_i_to_a(policy->attribs[attrib].types[i], array_len, array) == -1)
+					return -1;
+	}
+	return 0;
+}
+
 /* extract indicies of all types for selected rule, expanding attributes 
  * types is returned as an allocated array of ints num_types in sz, caller must free types 
  *
@@ -2055,8 +2079,12 @@ int extract_types_from_te_rule(int rule_idx, int rule_type, unsigned char whichl
 	ta_item_t *tlist, *t;
 	unsigned char flags;
 	bool_t *b_types;
+	int i, ret = 0, num_subtracted_types, num_subtracted_attribs;
+	int *subtracted_types, *subtracted_attribs;
+	
 	if(policy == NULL || types == NULL || num_types == NULL || rule_idx < 0 || !(whichlist & SRC_LIST || whichlist &TGT_LIST))
 		return -1;
+	
 	/* finish validation and get ptr to appropriate type list */
 	switch (rule_type) {
 	case RULE_TE_ALLOW:
@@ -2100,14 +2128,45 @@ int extract_types_from_te_rule(int rule_idx, int rule_type, unsigned char whichl
 		return -1;
 		break;
 	}
-	/* build the list */
-	*types = NULL;
-	if(((whichlist & SRC_LIST) && (flags & AVFLAG_SRC_STAR)) ||
-			((whichlist & TGT_LIST) && (flags & AVFLAG_TGT_STAR))) {
-		*num_types = policy->num_types;
-		return  2;	/* indicate that all types via '*' */
+	
+	/* first look for subtracted types and attributes - collect these for use later */
+	subtracted_types = subtracted_attribs = NULL;
+	num_subtracted_types = num_subtracted_attribs = 0;
+	for (t = tlist; t != NULL; t = t->next) {
+		if ((t->type & IDX_SUBTRACT) && (t->type & IDX_TYPE)) {
+			printf("adding subtracted type %s\n", policy->types[t->idx].name);
+			if (add_i_to_a(t->idx, &num_subtracted_types, &subtracted_types) == -1)
+				return -1;
+		} else if ((t->type & IDX_SUBTRACT) && (t->type & IDX_ATTRIB)) {
+			if (append_attrib_types_to_array(t->idx, &num_subtracted_attribs,
+				&subtracted_attribs, policy) == -1)
+				return -1;
+			if (add_i_to_a(t->idx, &num_subtracted_attribs, &subtracted_attribs) == -1)
+				return -1;
+		}
 	}
+	
+	*types = NULL;
 	*num_types = 0;
+	/* handle star */
+	if (((whichlist & SRC_LIST) && (flags & AVFLAG_SRC_STAR)) ||
+				((whichlist & TGT_LIST) && (flags & AVFLAG_TGT_STAR))) {
+		if (num_subtracted_types || num_subtracted_attribs) {
+			for (i = 0; i < policy->num_types; i++) {
+				if (find_int_in_array(i, subtracted_types, num_subtracted_types) == -1)
+					if (add_i_to_a(i, num_types, types) == -1) {
+						ret = -1;
+						goto out;
+					}
+			}
+			ret = 0;
+			goto out;
+		} else {
+			*num_types = policy->num_types;
+			ret = 2;	/* indicate that all types via '*' */
+			goto out;
+		}
+	}
 
 	/* since there's a probability that more than one type will show up for a given rule
 	 * (e.g., due to multiple attributes for which a given type may have), we're going
@@ -2118,34 +2177,45 @@ int extract_types_from_te_rule(int rule_idx, int rule_type, unsigned char whichl
 	b_types = (bool_t *)malloc(sizeof(bool_t) * policy->num_types);
 	if(b_types == NULL) {
 		fprintf(stderr, "out of memory");
-		return -1;
+		ret = -1;
+		goto out;
 	}
 	memset(b_types, 0, policy->num_types * sizeof(bool_t));
 	for(t = tlist; t != NULL; t = t->next) {
 		if(t->type == IDX_TYPE) {
 			if (b_types[t->idx])
 				continue;
+			printf("num subtracted types %d %d\n", num_subtracted_types, subtracted_types[0]);
+			if (find_int_in_array(t->idx, subtracted_types, num_subtracted_types) != -1) {
+				printf("skipping type %s\n", policy->types[t->idx].name);
+				continue;
+			}
 			/* handle self in the target list */
 			if (whichlist & TGT_LIST && t->idx == 0) {
 				int i, r, n, *l;
 				r = extract_types_from_te_rule(rule_idx, rule_type, SRC_LIST, &l, &n, policy);
 				if (r == -1) {
-					free(b_types);
-					return -1;
+					ret = -1;
+					goto out;
 				}
 				if (r == 2) {
-					free(b_types);
-					if (*types != NULL)
+					if (*types != NULL) {
 						free(*types);
+						*types = NULL;
+					}
 					*num_types = policy->num_types;
-					return 2;
+					ret = 2;
+					goto out;
 				}
 				for (i = 0; i < n; i++) {
 					if (b_types[l[i]])
 						continue;
+					if (find_int_in_array(t->idx, subtracted_types, num_subtracted_types) != -1)
+						continue;
 					if(add_i_to_a(l[i], num_types, types) != 0) {
-						free(b_types);
-						return -1;
+						ret = -1;
+						free(l);
+						goto out;
 					}
 					b_types[l[i]] = TRUE;
 				}
@@ -2154,30 +2224,37 @@ int extract_types_from_te_rule(int rule_idx, int rule_type, unsigned char whichl
 			} else {
 				/* new type...add to list */
 				if(add_i_to_a(t->idx, num_types, types) != 0) {
-					free(b_types);
-					return -1;
+					ret = -1;
+					goto out;
 				}
 				b_types[t->idx] = TRUE;
 			}
-		}
-		else {
+		} else if (t->type == IDX_ATTRIB) {
 			/* attribute; need to enumerate all the assoicated types */
 			int i, tidx;
-			assert(t->type == IDX_ATTRIB);
-			for(i = 0; i < policy->attribs[t->idx].num_types; i++) {
+			
+			if (find_int_in_array(t->idx, subtracted_attribs, num_subtracted_attribs) != -1)
+				continue;
+			for (i = 0; i < policy->attribs[t->idx].num_types; i++) {
 				tidx = policy->attribs[t->idx].types[i];
-				if(!b_types[t->idx]) {
+				if(!b_types[t->idx] && !(find_int_in_array(tidx, subtracted_types, num_subtracted_types) == -1)) {
 					if(add_i_to_a(tidx, num_types, types) != 0) {
-						free(b_types);
-						return -1;
+						ret = -1;
+						goto out;
 					}
 				}
 				b_types[tidx] = TRUE;	
 			}
 		}
 	}
+	
+out:
 	free(b_types);
-	return 0;
+	if (subtracted_types)
+		free(subtracted_types);
+	if (subtracted_attribs)
+		free(subtracted_attribs);
+	return ret;
 }
 
 /*
@@ -2333,4 +2410,3 @@ int get_ta_item_name(ta_item_t *ta, char **name, policy_t *policy)
 	}
 	return rt;
 }
-

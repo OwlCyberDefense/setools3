@@ -7,7 +7,7 @@ OBJS		= test.o $(LIBAPOL)
 INCLUDES	= -I../libapol/
 CFLAGS		= -Wall -g $(INCLUDES)
 
-all:	partial_load transitive_flow obj_perms perm_map_reload template reload
+all:	partial_load transitive_flow obj_perms perm_map_reload template reload subtract
 
 %.o:	%.c
 	$(CC) $(CFLAGS) -c $<
@@ -27,11 +27,14 @@ perm_map_reload: $(OBJS) perm_map_reload.o
 reload: $(OBJS) reload.o
 	$(CC) reload.o $(CFLAGS) $(OBJS) $(LIBS) -o reload
 
+subtract: $(OBJS) subtract.o
+	$(CC) subtract.o $(CFLAGS) $(OBJS) $(LIBS) -o subtract
+
 template: $(OBJS) template.o
 	$(CC) template.o $(CFLAGS) $(OBJS) $(LIBS) -o template
 
 $(LIBAPOL): 
-	cd ../libapol/ ; $(MAKE) libapol
+	cd .. ; $(MAKE) libapol
 
 clean:
 	rm -f partial_load
