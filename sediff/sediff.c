@@ -47,6 +47,7 @@ static struct option const longopts[] =
   {"conds", no_argument, NULL, 'C'},
   {"stats", no_argument, NULL, 's'},
   {"gui", no_argument, NULL, 'X'},
+  {"quiet", no_argument, NULL, 'q'},
   {"help", no_argument, NULL, 'h'},
   {"version", no_argument, NULL, 'v'},
   {NULL, 0, NULL, 0}
@@ -61,26 +62,25 @@ void usage(const char *program_name, int brief)
 		printf("\n   Try %s --help for more help.\n\n", program_name);
 		return;
 	}
-	fputs("\n\
-Semantically differentiate two policies.  The policies can be either source\n\
-or binary policy files, version 15 or later.  By default, all supported\n\
-policy elements are examined.  The following diff options are available:\n\
-  -c, --classes    object class and permission definitions\n\
-  -t, --types      type and attribute definitions\n\
-  -r, --roles      role definitions\n\
-  -u, --users      user definitions\n\
-  -b, --booleans   boolean definitions and default values\n\
-  -i, --initialsids initial SIDs (not currently supported)\n\
-  -T, --terules    type enforcement rules\n\
-  -R, --rbacrules  role rules\n\
-  -C, --conds      conditionals and their rules\n\
-  -X, --gui        launch the sediff gtk gui\n\
- ", stdout);
-	fputs("\n\
-  -s, --stats      print useful policy statics\n\
-  -h, --help       display this help and exit\n\
-  -v, --version    output version information and exit\n\n\
-", stdout);
+	fputs("\n"
+"Semantically differentiate two policies.  The policies can be either source\n"
+"or binary policy files, version 15 or later.  By default, all supported\n"
+"policy elements are examined.  The following diff options are available:\n"
+"  -c, --classes    object class and permission definitions\n"
+"  -t, --types      type and attribute definitions\n"
+"  -r, --roles      role definitions\n"
+"  -u, --users      user definitions\n"
+"  -b, --booleans   boolean definitions and default values\n"
+"  -i, --initialsids initial SIDs (not currently supported)\n"
+"  -T, --terules    type enforcement rules\n"
+"  -R, --rbacrules  role rules\n"
+"  -C, --conds      conditionals and their rules\n\n"
+"  -X, --gui        launch the sediff gtk gui\n"
+"  -q, --quiet      only print different definitions\n"
+"  -s, --stats      print useful policy statics\n"
+"  -h, --help       display this help and exit\n"
+"  -v, --version    output version information and exit\n\n"
+, stdout);
 	return;
 }
 
@@ -141,8 +141,8 @@ int print_diff_stats(FILE *fp, apol_diff_result_t *diff)
 		(diff->diff1->num_roles + diff->diff2->num_roles),
 		(diff->diff1->num_users + diff->diff2->num_users),
 		(diff->diff1->num_booleans + diff->diff2->num_booleans),
-		(diff->diff1->te.num + diff->diff2->te.num),
-		(diff->diff1->num_role_allow + diff->diff2->num_role_allow));
+		(diff->diff1->num_role_allow + diff->diff2->num_role_allow),
+		(diff->diff1->te.num + diff->diff2->te.num));
 	return 0;
 }
 
@@ -973,7 +973,7 @@ int print_te_diffs(FILE *fp, apol_diff_result_t *diff)
 
 int main (int argc, char **argv)
 {
-	int classes, types, roles, users, all, stats, optc, isids, conds, terules, rbac, bools, rt,gui;
+	int classes, types, roles, users, all, stats, optc, isids, conds, terules, rbac, bools, rt,gui, quiet;
 	policy_t *p1, *p2;
 	char *p1_file, *p2_file;
 	apol_diff_result_t *diff;
@@ -981,8 +981,8 @@ int main (int argc, char **argv)
 	char prog_path[PATH_MAX];
 
 	
-	classes = types = roles = users = bools = all = stats = isids = conds = terules = rbac = gui = 0;
-	while ((optc = getopt_long (argc, argv, "XctrubiTRCshv", longopts, NULL)) != -1)  {
+	classes = types = roles = users = bools = all = stats = isids = conds = terules = rbac = gui = quiet = 0;
+	while ((optc = getopt_long (argc, argv, "qXctrubiTRCshv", longopts, NULL)) != -1)  {
 		switch (optc) {
 		case 0:
 	  		break;
@@ -1038,6 +1038,9 @@ int main (int argc, char **argv)
 	  		printf("\n%s (sediff ver. %s)\n\n", COPYRIGHT_INFO, SEDIFF_VERSION_NUM);
 	  		exit(0);
 	  		break;
+		case 'q': /* quite */
+			quiet = 1;
+			break;
 	  	default:
 	  		usage(argv[0], 1);
 	  		exit(1);
@@ -1128,26 +1131,26 @@ int main (int argc, char **argv)
 	printf("   p1 (%6s, ver: %2d): %s\n", policy_type(diff->p1), get_policy_version_num(diff->p1), p1_file);
 	printf("   p2 (%6s, ver: %2d): %s\n\n", policy_type(diff->p2), get_policy_version_num(diff->p2), p2_file);
 	
-	if(types || all) {
+	if((types || all) && !(quiet && (diff->diff1->num_types == 0 && diff->diff2->num_types == 0))) {
 		print_type_diffs(stdout, diff);
 		printf("\n");
 		print_attrib_diffs(stdout, diff);
 		if(!apol_is_bindiff(diff))
 			printf("\n");
 	}
-	if(roles || all) {
+	if((roles || all) && !(quiet && (diff->diff1->num_roles == 0 && diff->diff2->num_roles == 0))) {
 		print_role_diffs(stdout, diff);
 		printf("\n");
 	}
-	if(users || all) {
+	if((users || all) && !(quiet && (diff->diff1->num_users == 0 && diff->diff2->num_users == 0))) {
 		print_user_diffs(stdout, diff);
 		printf("\n");
 	}
-	if(bools || all) {
+	if((bools || all) && !(quiet && (diff->diff1->num_booleans == 0 && diff->diff2->num_booleans == 0))) {
 		print_boolean_diffs(stdout, diff);
 		printf("\n");
 	}
-	if(classes || all) {
+	if((classes || all) && !(quiet && (diff->diff1->num_classes == 0 && diff->diff2->num_classes == 0))) {
 		print_classes_diffs(stdout, diff);
 		printf("\n");
 		print_perms_diffs(stdout, diff);
@@ -1155,15 +1158,15 @@ int main (int argc, char **argv)
 		print_common_perms_diffs(stdout, diff);
 		printf("\n");
 	}
-	if(terules || all) {
-		print_te_diffs(stdout, diff);
-		printf("\n");
-	}
-	if(rbac || all) {
+	if((rbac || all) && !(quiet && (diff->diff1->num_role_allow == 0 && diff->diff2->num_role_allow == 0))) {
 		print_rbac_diffs(stdout, diff);
 		printf("\n");
 	}
-	if(stats || all) {
+	if((terules || all) && !(quiet && (diff->diff1->te.num == 0 && diff->diff2->te.num == 0))) {
+		print_te_diffs(stdout, diff);
+		printf("\n");
+	}
+	if((stats || all) && !quiet) {
 		print_diff_stats(stdout, diff);
 		printf("\n");
 	}
