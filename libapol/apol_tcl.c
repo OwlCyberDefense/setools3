@@ -67,6 +67,15 @@ static int load_perm_map_file(char *pmap_file, Tcl_Interp *interp);
 static char* find_perm_map_file(char *perm_map_fname);
 static char* find_tcl_script(char *script_name);
 
+static Tcl_Obj *apol_relabel_fromto_results (relabel_result_t *results,
+                                             policy_t *policy);
+static Tcl_Obj *apol_relabel_domain_results (relabel_result_t *results,
+                                             int start_type,
+                                             policy_t *policy);
+static relabel_set_t *relabel_sets_cache = NULL;
+static int relabel_sets_num_types = 0;
+
+
 /* We look for the TCL files in the following order:
  * 	1. If we find apol.tcl in the cur directory, we then assume
  *	   the TCL files are there, else
@@ -5473,38 +5482,54 @@ int Apol_FlowAssertExecute (ClientData clientData, Tcl_Interp *interp,
         return TCL_OK;
 }
 
-/* objv [1] = starting type (string)
+
+/* File Relabeling Analysis Tcl<->C interface
+ * objv [1] = starting type (string)
  * objv [2] = mode ("to", "from", "domain")
+ * objv [3] = list of object class permissions
+ *
+ * Returns a list of results.  For relabelto / relabelfrom each result
+ * is a 3-ple; for domains each is a 4-ple.
+ *
+ * For relabelto / relabelfrom:
+ *   - domain type
+ *   - list of domains it can relabelto/from
+ *   - list of rules for that domain type
+ *
+ * For domain relabeling:
+ *   - domain type
+ *   - list of domains it can relabel from
+ *   - list of domains it can relabel to
+ *   - list of rules that relabel
+ *
+ # Each rule is a 2-ple of the form {rule_text rule_num}
  */
 int Apol_RelabelAnalysis (ClientData clientData, Tcl_Interp *interp,
                           int objc, Tcl_Obj * CONST objv[]) {
-        static relabel_set_t *sets = NULL;         /* cache this value */
-        static policy_t *last_policy = NULL;       /* policy which built this set */
-        /* FIX ME: call explicit function whenever policy changes */
+        relabel_set_t *sets;
         relabel_mode_t mode;
         relabel_result_t results;
         relabel_filter_t filter;
         char *mode_string;
-        int start_type;
-        Tcl_Obj *results_list_obj;
+        int start_type, num_perm_objs;
+        Tcl_Obj *results_list_obj, **perm_list;
         if (policy == NULL) {
                 Tcl_SetResult (interp, "No current policy file is opened!",
                                TCL_STATIC);
                 return TCL_ERROR;
         }
-        if (objc < 3) {
+        if (objc < 4) {
                 Tcl_SetResult (interp, "wrong # of args", TCL_STATIC);
                 return TCL_ERROR;
         }
-        if (last_policy != policy) {
-                apol_free_relabel_set_data (sets);
-                free (sets);
-                if (apol_do_relabel_analysis (&sets, policy)) {
+        if (relabel_sets_cache == NULL) {
+                if (apol_do_relabel_analysis (&relabel_sets_cache, policy)) {
                         Tcl_SetResult (interp, "Error while fill relabel", TCL_STATIC);
                         return TCL_ERROR;
                 }
-                last_policy = policy;
+                relabel_sets_num_types = num_types (policy);
         }
+        sets = relabel_sets_cache;
         if (apol_relabel_mode_init (&mode)) {
                 Tcl_SetResult (interp, "Error while initializing mode", TCL_STATIC);
                 return TCL_ERROR;
@@ -5528,20 +5553,199 @@ int Apol_RelabelAnalysis (ClientData clientData, Tcl_Interp *interp,
                 Tcl_SetResult (interp, "Invalid relabel mode", TCL_STATIC);
                 return TCL_ERROR;
         }
+        if (apol_relabel_filter_init (&filter)) {
+                Tcl_SetResult (interp, "Error while initializing filter", TCL_STATIC);
+                return TCL_ERROR;
+        }
+        if (Tcl_ListObjGetElements (interp, objv [3], &num_perm_objs, &perm_list) == TCL_ERROR) {
+                return TCL_ERROR;
+        }
+        for ( ; num_perm_objs > 0; num_perm_objs--, perm_list++) {
+                Tcl_Obj *object_obj, *perm_obj;
+                char *object_class, *permission;
+                if (Tcl_ListObjIndex (interp, *perm_list, 0, &object_obj) == TCL_ERROR) {
+                        return TCL_ERROR;
+                }
+                if (Tcl_ListObjIndex (interp, *perm_list, 1, &perm_obj) == TCL_ERROR) {
+                        return TCL_ERROR;
+                }
+                object_class = Tcl_GetString (object_obj);
+                permission = Tcl_GetString (perm_obj);
+                if (apol_fill_filter_set (object_class, permission, &filter,
+                                          policy) != 0) {
+                        Tcl_SetResult (interp, "Error while filling filter set", TCL_STATIC);
+                        return TCL_ERROR;
+                }
+                mode.filter = 1;
+        }
+        
         if (apol_relabel_result_init (&results)) {
                 Tcl_SetResult (interp, "Error while initializing results", TCL_STATIC);
                 return TCL_ERROR;
         }
+        
         if (apol_query_relabel_analysis (sets, start_type, &results,
                                          policy, &mode, &filter)) {
                 apol_free_relabel_result_data (&results);
                 Tcl_SetResult (interp, "Error doing analysis", TCL_STATIC);
                 return TCL_ERROR;
         }
-        Tcl_SetObjResult (interp, Tcl_NewIntObj (results.num_types));
+        switch (mode.mode) {
+        case MODE_FROM:
+        case MODE_TO: {
+                results_list_obj = apol_relabel_fromto_results (&results, policy);
+                break;
+        }
+        default: {
+                results_list_obj = apol_relabel_domain_results (&results, start_type, policy);
+                break;
+        }
+        }
+        apol_free_relabel_result_data (&results);
+        if (results_list_obj == NULL) {
+                Tcl_SetResult (interp, "Error processing relabeling results", TCL_STATIC);
+                return TCL_ERROR;
+        }
+        Tcl_SetObjResult (interp, results_list_obj);
         return TCL_OK;
 }
 
+
+/* free() all space allocated to the relabel_sets_cache data, if any
+ * such exists */
+int Apol_RelabelFlushSets (ClientData clientData, Tcl_Interp *interp,
+                           int objc, Tcl_Obj * CONST objv[]) {
+    if (relabel_sets_cache != NULL) {
+        int i;
+        for (i = 0; i < relabel_sets_num_types; i++) {
+            apol_free_relabel_set_data (relabel_sets_cache + i);
+        }
+        free (relabel_sets_cache);
+        relabel_sets_cache = NULL;
+    }
+    return TCL_OK;
+}
+
+
+/* Generates and returns the actual results list structure for a file
+   relabeling to or relabeling from query. */
+static Tcl_Obj *apol_relabel_fromto_results (relabel_result_t *results,
+                                             policy_t *policy) {
+        Tcl_Obj *results_list_obj = Tcl_NewListObj (0, NULL);
+        int *temp_dom_list = NULL;
+        int temp_dom_list_size = -1;
+        int i, j;
+        /* collect all possible domain names (i.e., Smalltalk's set) */
+        for (i = 0; i < results->num_types; i++) {
+                for (j = 0; j < results->num_domains [i]; j++) {
+                        if (find_int_in_array (results->domains [i][j], temp_dom_list, temp_dom_list_size) == -1 &&
+                            add_i_to_a (results->domains [i][j], &temp_dom_list_size, &temp_dom_list) != 0) {
+                                free (temp_dom_list);
+                                return NULL;
+                        }
+                }
+        }
+        /* iterate through all possible [unsorted] domains */
+        for (i = 0; i < temp_dom_list_size; i++) {
+                Tcl_Obj *domain_list [3];
+                Tcl_Obj *domain_elem;
+                char *s;
+                if (get_type_name (temp_dom_list [i], &s, policy)) {
+                        free (temp_dom_list);
+                        return NULL;
+                }
+                domain_list [0] = Tcl_NewStringObj (s, -1);
+                free (s);                /* remove the ".*" from the end before storing */
+
+                domain_list [1] = Tcl_NewListObj (0, NULL);
+                domain_list [2] = Tcl_NewListObj (0, NULL);
+                for (j = 0; j < results->num_types; j++) {
+                        if (find_int_in_array (temp_dom_list [i], results->domains [j], results->num_domains [j]) > -1) {
+                                Tcl_Obj *type_name;
+                                if (get_type_name (results->types [j], &s, policy)) {
+                                        free (temp_dom_list);
+                                        return NULL;
+                                }
+                                type_name = Tcl_NewStringObj (s, -1);
+                                free (s);
+                                if (Tcl_ListObjAppendElement (NULL, domain_list [1], type_name)) {
+                                        free (temp_dom_list);
+                                        return NULL;
+                                }
+                        }
+                }
+                /* FIX ME: append rules info here */
+                domain_elem = Tcl_NewListObj (3, domain_list);
+                if (Tcl_ListObjAppendElement (NULL, results_list_obj, domain_elem)) {
+                        free (temp_dom_list);
+                        return NULL;
+                }
+        }
+        free (temp_dom_list);
+        return results_list_obj;
+}
+
+/* Generates and returns the actual results list structure for a file
+   domain relabeling query. */
+static Tcl_Obj *apol_relabel_domain_results (relabel_result_t *results,
+                                             int start_type,
+                                             policy_t *policy) {
+        Tcl_Obj *results_list_elem, *results_list_obj;
+        Tcl_Obj *results_list [4];
+        Tcl_Obj *rule_list [2], *rule_elem;
+        Tcl_Obj *temp_obj;
+        relabel_set_t *set = results->set;
+        char *s;
+        int i;
+
+        if (set->num_from_types == 0 && set->num_to_types == 0) {
+                /* no results from domain relabel analysis */
+                return Tcl_NewListObj (0, NULL);
+        }
+        if (get_type_name (start_type, &s, policy)) {
+                return NULL;
+        }
+        results_list [0] = Tcl_NewStringObj (s, -1);
+        free (s);
+        results_list [1] = Tcl_NewListObj (0, NULL);
+        results_list [2] = Tcl_NewListObj (0, NULL);
+        results_list [3] = Tcl_NewListObj (0, NULL);
+        for (i = 0; i < set->num_from_types; i++) {
+                if (get_type_name (set->from_types [i].type, &s, policy)) {
+                        return NULL;
+                }
+                temp_obj = Tcl_NewStringObj (s, -1);
+                free (s);
+                if (Tcl_ListObjAppendElement (NULL, results_list [1], temp_obj)) {
+                        return NULL;
+                }
+        }
+        for (i = 0; i < set->num_to_types; i++) {
+                if (get_type_name (set->to_types [i].type, &s, policy)) {
+                        return NULL;
+                }
+                temp_obj = Tcl_NewStringObj (s, -1);
+                free (s);
+                if (Tcl_ListObjAppendElement (NULL, results_list [2], temp_obj)) {
+                        return NULL;
+                }
+        }
+        for (i = 0; i < results->num_rules; i++) {
+                s = re_render_av_rule (FALSE, results->rules [i], FALSE,
+                                       policy);
+                rule_list [0] = Tcl_NewStringObj (s, -1);
+                free (s);
+                rule_list [1] = Tcl_NewIntObj (get_rule_lineno (results->rules [i], RULE_TE_ALLOW, policy));
+                rule_elem = Tcl_NewListObj (2, rule_list);
+                if (Tcl_ListObjAppendElement (NULL, results_list [3], rule_elem)) {
+                        return NULL;
+                }
+        }
+        results_list_elem = Tcl_NewListObj (4, results_list);
+        /* wrap the entire list inside another, to be like relabelto/from */
+        results_list_obj = Tcl_NewListObj (1, &results_list_elem);
+        return results_list_obj;
+}
 
 /* Package initialization */
 int Apol_Init(Tcl_Interp *interp) 
@@ -5594,6 +5798,7 @@ int Apol_Init(Tcl_Interp *interp)
 	Tcl_CreateCommand(interp, "apol_TypesRelationshipAnalysis", (Tcl_CmdProc *) Apol_TypesRelationshipAnalysis, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateObjCommand(interp, "apol_FlowAssertExecute", (Tcl_ObjCmdProc *) Apol_FlowAssertExecute, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);	
 	Tcl_CreateObjCommand(interp, "apol_RelabelAnalysis", (Tcl_ObjCmdProc *) Apol_RelabelAnalysis, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);	
+	Tcl_CreateObjCommand(interp, "apol_RelabelFlushSets", (Tcl_ObjCmdProc *) Apol_RelabelFlushSets, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);	
 	Tcl_PkgProvide(interp, "apol", (char*)libapol_get_version());
 
 	return TCL_OK;
