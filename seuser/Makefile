@@ -13,9 +13,9 @@ LIBSEUSER	= ../libseuser/libseuser.a
 LIBSEUSER-TCL	= ../libseuser/libseuser-tcl.a
 else
 LIBAPOL		= ../libapol/libapol.so.$(shell cat ../libapol/VERSION)
-LIBAPOL-TCL	= ../libapol/libapol-tcl.so.$(shell cat ../libapol/VERSION)
+LIBAPOL-TCL	= ../libapol/libapol-tcl.a
 LIBSEUSER	= ../libseuser/libseuser.so.$(shell cat ../libseuser/VERSION)
-LIBSEUSER-TCL	= ../libseuser/libseuser-tcl.so.$(shell cat ../libseuser/VERSION)
+LIBSEUSER-TCL	= ../libseuser/libseuser-tcl.a
 endif
 
 LIBSELINUX      = -lselinux
@@ -32,10 +32,10 @@ CFLAGS  	+= -DSEUSERCMD_VERSION_STRING='"$(shell cat CMD_VERSION)"'
 SHELL = /bin/sh
 
 seuser: $(CMD-OBJ) 
-	$(CC) -o $@ $(CMD-OBJ) $(LINKFLAGS) $(LIBS) 
+	$(CC) -o $@ $(CMD-OBJ) $(LINKFLAGS) $(LIBS) $(LIBSELINUX)
 
 seuserx: $(GUI-OBJ) se_user.tcl
-	$(CC) $(GUI_CFLAGS) $(TCL_LIBINC) -o $@ $(GUI-OBJ) $(LINKFLAGS) $(TCL_LIBS) 
+	$(CC) $(GUI_CFLAGS) $(TCL_LIBINC) -o $@ $(GUI-OBJ) $(LINKFLAGS) $(TCL_LIBS) $(LIBSELINUX)
 
 se_user.tcl: $(TCL-FILES)
 	cat $(TCL-FILES) | \
