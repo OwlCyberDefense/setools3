@@ -241,4 +241,6 @@ enum avc_msg_class_t which_avc_msg_class(msg_t *msg);
 #define audit_log_get_perm(log, idx) audit_log_get_str(log, idx, PERM_TREE)
 #define audit_log_get_host(log, idx) audit_log_get_str(log, idx, HOST_TREE)
 
+const char* libseaudit_get_version(void);
+
 #endif
