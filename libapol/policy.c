@@ -34,9 +34,9 @@ const char *policy_version_strings[] = { "Unkown version",
 			 	 
 /* get a policy version string from the global array of constant strings. 
  * We use the defined policy version numbers as indices into this array.*/
-const char* get_policy_ver_name(int policy_version)
+const char* get_policy_version_name(int policy_version)
 {
-	if (!is_valid_policy_ver(policy_version)) 
+	if (!is_valid_policy_version(policy_version)) 
 		return policy_version_strings[POL_VER_UNKNOWN];
 	else 
 		return policy_version_strings[policy_version];
