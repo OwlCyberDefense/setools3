@@ -26,6 +26,7 @@ static void multifilter_window_on_import_button_pressed(GtkButton *button, multi
 static void multifilter_window_on_export_button_pressed(GtkButton *button, multifilter_window_t *window);
 static gboolean multifilter_window_on_delete_event(GtkWidget *widget, GdkEvent *event, multifilter_window_t *window);
 static void multifilter_window_add_filter_window(multifilter_window_t *window, filter_window_t *filter_window);
+static void multifilter_window_on_row_activated(GtkTreeView *treeview, GtkTreePath *path, GtkTreeViewColumn *column, multifilter_window_t *window);
 
 multifilter_window_t* multifilter_window_create(seaudit_filtered_view_t *parent, const gchar *view_name)
 {
@@ -113,6 +114,9 @@ void multifilter_window_display(multifilter_window_t *window)
 	gtk_tree_view_column_set_visible(column, TRUE);
 	gtk_tree_view_set_model(window->treeview, GTK_TREE_MODEL(window->liststore));
 
+	g_signal_connect(G_OBJECT(window->treeview), "row-activated", 
+			 G_CALLBACK(multifilter_window_on_row_activated), window);
+
 	widget = glade_xml_get_widget(window->xml, "CloseButton");
 	g_signal_connect(G_OBJECT(widget), "pressed", 
 			 G_CALLBACK(multifilter_window_on_close_button_pressed), window);
@@ -166,6 +170,25 @@ void multifilter_window_set_filter_name_in_list(multifilter_window_t *window, fi
 	if (!gtk_tree_model_get_iter(GTK_TREE_MODEL(window->liststore), &iter, path))
 		return;
 	gtk_list_store_set(window->liststore, &iter, 0, name, -1);
+}
+
+
+static void multifilter_window_add_filter_window(multifilter_window_t *window, filter_window_t *filter_window)
+{
+	GtkTreeIter iter;
+	GtkWidget *widget;
+
+	gtk_list_store_append(window->liststore, &iter);
+	window->filter_windows = g_list_append(window->filter_windows, filter_window);
+	window->num_filter_windows++;
+	multifilter_window_set_filter_name_in_list(window, filter_window);
+	widget = glade_xml_get_widget(window->xml, "EditButton");
+	gtk_widget_set_sensitive(widget, TRUE);
+	widget = glade_xml_get_widget(window->xml, "RemoveButton");
+	gtk_widget_set_sensitive(widget, TRUE);	
+	widget = glade_xml_get_widget(window->xml, "ApplyButton");
+	gtk_widget_set_sensitive(widget, TRUE);
+
 }
 
 static void multifilter_window_on_add_button_pressed(GtkButton *button, multifilter_window_t *window)
@@ -374,20 +397,10 @@ static gboolean multifilter_window_on_delete_event(GtkWidget *widget, GdkEvent *
 	return TRUE;
 }
 
-static void multifilter_window_add_filter_window(multifilter_window_t *window, filter_window_t *filter_window)
-{
-	GtkTreeIter iter;
-	GtkWidget *widget;
+static void multifilter_window_on_row_activated(GtkTreeView *treeview, GtkTreePath *path, GtkTreeViewColumn *column, multifilter_window_t *window) 
+{	
+	GtkWidget *button;
 
-	gtk_list_store_append(window->liststore, &iter);
-	window->filter_windows = g_list_append(window->filter_windows, filter_window);
-	window->num_filter_windows++;
-	multifilter_window_set_filter_name_in_list(window, filter_window);
-	widget = glade_xml_get_widget(window->xml, "EditButton");
-	gtk_widget_set_sensitive(widget, TRUE);
-	widget = glade_xml_get_widget(window->xml, "RemoveButton");
-	gtk_widget_set_sensitive(widget, TRUE);	
-	widget = glade_xml_get_widget(window->xml, "ApplyButton");
-	gtk_widget_set_sensitive(widget, TRUE);
-
+	button = glade_xml_get_widget(window->xml, "EditButton");
+	multifilter_window_on_edit_button_pressed(GTK_BUTTON(button), window);
 }
