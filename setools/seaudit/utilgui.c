@@ -56,13 +56,15 @@ void clear_wait_cursor(GtkWidget *widget)
 	g_idle_add(&pointer_reset, widget);
 }
 
-GString* get_filename_from_user(const char *title)
+GString* get_filename_from_user(const char *title, const gchar *startfilename)
 {
 	GtkWidget *file_selector;
 	gint response;
 	GString *filename;
 
 	file_selector = gtk_file_selection_new(title);
+	if (startfilename)
+		gtk_file_selection_set_filename(GTK_FILE_SELECTION(file_selector), startfilename);
 
 	g_signal_connect(GTK_OBJECT(file_selector), "response", 
 			 G_CALLBACK(get_dialog_response), &response);
