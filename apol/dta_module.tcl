@@ -1938,9 +1938,10 @@ proc Apol_Analysis_dta::do_child_analysis { dta_tree selected_node } {
 	ApolTop::setBusyCursor
 	if { [$dta_tree nodes $selected_node] == "" } {
 		set query_args [$dta_tree itemcget [$dta_tree nodes root] -data]
+		set start_type [file tail $selected_node]
 		set rt [catch {set results [apol_DomainTransitionAnalysis \
 			[lindex $query_args 0] \
-			[lindex $query_args 1] \
+			$start_type \
 			[lindex $query_args 2] \
 			[lindex $query_args 3] \
 			[lindex $query_args 4] \
