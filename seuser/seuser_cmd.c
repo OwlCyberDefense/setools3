@@ -285,11 +285,6 @@ int main(int argc, char *argv[])
 
 	seuser_init_db(&db, TRUE);
 
-	rt = seuser_read_conf_info(&db);
-	if(rt != 0) {
-		fprintf(stderr, seuser_decode_read_conf_err(rt));
-		return -1;
-	}
 	/* we use this file name for our temporary make output */
 	/* tmpmakeout is a global variable */
 	tmpmakeout = tempnam("/tmp", "seuser_tmp.");
@@ -318,8 +313,15 @@ int main(int argc, char *argv[])
 	if(strcmp("version", argv[1]) == 0) {
 		fprintf(stdout, "\n%s\n\n", VERSION_INFO);
 		exit(0);
-
 	}
+
+	/* load the policy */
+	rt = seuser_read_conf_info(&db);
+	if(rt != 0) {
+		fprintf(stderr, seuser_decode_read_conf_err(rt));
+		return -1;
+	}
+
 	if(strcmp("delete", argv[1]) == 0) {
 		cmd = DELETE;
 	}
