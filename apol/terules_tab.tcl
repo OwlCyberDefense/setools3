@@ -291,8 +291,12 @@ proc Apol_TE::insert_disabled_rule_tag { tb start end } {
 #	a provided text box
 # ------------------------------------------------------------------------------
 proc Apol_TE::insertTERules { tb results } {	
-	# Determine number of rules returned (1/2 size of llength)
-	set num [expr { [llength $results] / 2 }]
+	# Determine number of rules returned (1/3 size of llength). 
+	# This is because each rule returned consists of:
+	#	1. rule
+	#	2. line number
+	#	3. enabled flag
+	set num [expr { [llength $results] / 3 }]
 	$tb insert end "$num rules match the search criteria\n\n"
 		
 	for {set x 0} {$x < [llength $results]} {incr x} { 
