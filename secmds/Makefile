@@ -13,6 +13,11 @@ LIBSEFS		= ../libsefs/libsefs.so.$(shell cat ../libsefs/VERSION)
 LIBSEUSER	= ../libseuser/libseuser.so.$(shell cat ../libseuser/VERSION)
 endif
 
+# These are for searchcon so it's usable on non-selinux machines
+STATICAPOL = ../libapol/libapol.a
+STATICSEFS = ../libsefs/libsefs.a
+
+
 LIBSELINUX      = -lselinux
 
 INCLUDE		= -I.. -I../libapol -I../libsefs
@@ -40,25 +45,25 @@ replcon.o: replcon.c
 	$(CC) -c replcon.c -DSEFS_XATTR_LABELED_FILESYSTEMS=$(SEFS_XATTR_LABELED_FILESYSTEMS) $(CFLAGS) $(INCLUDE)
 
 replcon: replcon.o $(LIBSEFS) $(LIBAPOL)
-	$(CC) -o $@ replcon.o $(LINKFLAGS) $(LIBSELINUX) $(LIBSEFS) $(LIBAPOL)
+	$(CC) -o $@ replcon.o $(LINKFLAGS) $(LIBSELINUX) $(LIBSEFS) $(LIBAPOL) $(LIBS)
 
 indexcon.o: indexcon.c
 	$(CC) -c indexcon.c -DSEFS_XATTR_LABELED_FILESYSTEMS=$(SEFS_XATTR_LABELED_FILESYSTEMS) $(CFLAGS) $(INCLUDE)
 
 indexcon: indexcon.o $(LIBAPOL) $(LIBSEFS)
-	$(CC) -static -o $@ indexcon.o $(LINKFLAGS) $(LIBSEFS) $(LIBSELINUX) $(LIBAPOL) $(LIBS)
+	$(CC) -o $@ indexcon.o $(LINKFLAGS) $(LIBSEFS) $(LIBSELINUX) $(LIBAPOL) $(LIBS)
 
 searchcon.o: searchcon.c
 	$(CC) -c searchcon.c -DSEFS_XATTR_LABELED_FILESYSTEMS=$(SEFS_XATTR_LABELED_FILESYSTEMS) $(CFLAGS) $(INCLUDE)
 
 searchcon: searchcon.o $(LIBSEFS) $(LIBAPOL)
-	$(CC) -static -o $@ searchcon.o $(LINKFLAGS) $(LIBSEFS) $(LIBSELINUX) $(LIBAPOL) $(LIBS)
+	$(CC) -static -o $@ searchcon.o $(LINKFLAGS) $(STATICSEFS) $(LIBSELINUX) $(STATICAPOL) $(LIBS)
 
 findcon.o: replcon.c
 	$(CC) -c replcon.c -o findcon.o -DFINDCON -DSEFS_XATTR_LABELED_FILESYSTEMS=$(SEFS_XATTR_LABELED_FILESYSTEMS) $(CFLAGS) $(INCLUDE)
 
 findcon: findcon.o $(LIBSEFS) $(LIBAPOL)
-	$(CC) -o $@ findcon.o $(LINKFLAGS) $(LIBSELINUX) $(LIBSEFS) $(LIBAPOL)
+	$(CC) -o $@ findcon.o $(LINKFLAGS) $(LIBSELINUX) $(LIBSEFS) $(LIBAPOL) $(LIBS)
 	
 install: $(SE_CMDS)
 	install -m 755 $(SE_CMDS) $(BINDIR);
