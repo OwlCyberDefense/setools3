@@ -20,7 +20,7 @@ namespace eval Apol_Analysis_relabel {
     variable info_button_text \
 	"This analysis checks the possible ways to relabel objects as allowed by the policy. \
     	The permissions relabelto and relabelfrom are special in a type enforcement environment as they \
-    	provide a method of changing the context of an object.  Relabel analysis is designed to fascilitate queries \ 
+    	provide a method of changing the context of an object.  Relabel analysis is designed to fascilitate queries \
 	about the possible changes for a given type.\n\n\There are two modes for a query, each presenting a \
     	different perspective:\n\nObject mode - given a starting type, treat it as an object to be \
     	relabeled and display one or both of the following result sets:\n\
