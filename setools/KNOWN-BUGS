@@ -48,10 +48,6 @@ LIBAPOL
 1. Lots of yacc shift/reduce errors in libapol that don't currently 
    impact operation (so it appears).
    
-2. Once apol gets an error parsing a policy file, you must exit 
-   any program using this library and restart (sorry!).
-
-
 SEAUDIT
 
 1. Sorting by date will not work correctly if your audit log spans 
