@@ -38,6 +38,11 @@
 
 static sefs_filesystem_data_t *fsdata = NULL;
 
+const char *sefs_object_classes[] =
+    { "file", "dir", "lnk_file", "chr_file", "blk_file", "sock_file",
+"fifo_file", "all_files" };
+
+
 /*
  * sefs_get_file_class
  *
@@ -280,7 +285,6 @@ static int ftw_handler(const char *file, const struct stat *sb, int flag, struct
 			rc = avl_get_idx(tmp, &fsdata->type_tree);
 			if (rc == -1) {
 				avl_insert(&(fsdata->type_tree), tmp, &rc);
-printf("type %s didn't exist, inserted at %d\n", tmp, rc);
 			}
 			pi->context.type=(int32_t)rc;
 /*
@@ -315,26 +319,30 @@ printf("type %s didn't exist, inserted at %d\n", tmp, rc);
 	(pi->num_links)++;
 
 		/*check to see if file is a symlink and handle appropriately*/
-/* XXX temp. disabled not working right
 		if (S_ISLNK(sb->st_mode))
 		{
 			rc = lgetfilecon(file, &con);
-			if(!(tmp = (char*)calloc(4000, sizeof(char)) ))
+			if(!(tmp = (char*)calloc((PATH_MAX + 1), sizeof(char)) ))
 			{
 				fprintf(stderr, "out of memory\n");
 				return -1;
 			}
-			readlink(file, tmp, 4000 * sizeof(char)); */
-			/*             13                22                5   */
-/*			if(errno == EACCES || errno == EINVAL || errno == EIO)
+			readlink(file, tmp, (PATH_MAX + 1) * sizeof(char)); 
+			if(errno == EINVAL || errno == EIO)
 			{
-				fprintf(stderr, "error reading link %i \n", errno);
+				fprintf(stderr, "error reading link\n");
 				return -1;
 			}
-			pi->symlink_target = tmp;
+			else if (errno == EACCES)
+			{
+				fprintf(stderr, "Access denied to link at %s\n", file);
+			}
+			else
+			{
+				pi->symlink_target = tmp;
+			}
 		}
-		else */
-	
+
 	return 0;
 
 }
@@ -827,3 +835,44 @@ printf("with %d inodes\n", len);
 		return -1;
 }
 
+/*
+ * sefs_is_valid_object_class
+ *
+ * Determines if class_name is a valid object class.  Return -1 if invalid
+ * otherwise the index of the valid object class
+ */
+int sefs_is_valid_object_class(const char *class_name)
+{
+	int i;
+	
+	assert(class_name != NULL);
+	for (i = 0; i < NUM_OBJECT_CLASSES; i++)
+		if (strcmp(class_name, sefs_object_classes[i]) == 0)
+			return i;
+	return -1;
+}
+
+/*
+ * sefs_print_valid_object_classes
+ *
+ * Prints out the valid object classes to specify for the search.
+ */
+void sefs_print_valid_object_classes( void )
+{
+	int i, num_objs_on_line = 0, obj_max = 8;
+	
+	assert(sefs_object_classes != NULL);
+	printf("   ");
+	for (i = 0; i < NUM_OBJECT_CLASSES; i++) {
+		num_objs_on_line++;
+		if (i == (NUM_OBJECT_CLASSES - 1))
+			printf("%s\n", sefs_object_classes[i]);
+		else if (num_objs_on_line == obj_max) {
+			printf("%s,\n", sefs_object_classes[i]);
+			printf("   ");
+		}
+		else 
+			printf("%s, ", sefs_object_classes[i]);
+		
+	}
+}
