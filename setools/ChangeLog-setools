@@ -2,8 +2,16 @@ CHANGE LOG, SE Linux TOOLS (setools)
 =======================================================
 June 25, 2004, Version 1.4.1
 
-lipapol:
-	Added support for policy version 18.
+setools:
+	Added the install target install-dev to install the
+	  setools headers and libraries for third party
+	  developers (libapol, libseuser, libseaudit).
+
+libapol:
+	Added support for parsing policy version 18 (source
+	  and binary).
+	Added a permission map for version 18 policies.
+	
 =======================================================
 June 2, 2004, Version 1.4
 
