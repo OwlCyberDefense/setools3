@@ -14,9 +14,12 @@
 # ::Sepct (top-level namespace)
 ##############################################################
 namespace eval Sepct {
+	# All capital letters is the convention for variables defined via the Makefile.
 	# The version number is defined as a magical string here. This is later configured in the make environment.
 	variable gui_ver		SEPCUT_GUI_VERSION
 	variable copyright_date		"2002-2004"
+	# install_dir is a magical string to be defined via the makefile!
+	variable sepcut_install_dir	SEPCUT_INSTALL_DIR
 	variable bwidget_version	""
 	variable helpFilename		""
 	# Global variable to hold name of root directory
@@ -42,7 +45,7 @@ namespace eval Sepct {
 	variable disable_customize_tab	0
 	variable disable_test_tab	0
 	
-	# Variables for recent policy directories  
+	# Variables for recent policy directories - env array element HOME is an environment variable
 	variable dot_sepcut_file 	"[file join "$::env(HOME)" ".sepcut"]"
 	# Temporary list to hold all directories read in after the call to ::readInitFile
 	# This variable will be removed once all tool_settings have been configured.
@@ -78,9 +81,8 @@ namespace eval Sepct {
 	variable srch_Direction		"down"
 	variable saveChanges_Dialog_ans
 	variable tk_msgBox_Wait
-	# Identifies where the help file is located (also checks .")
-	# TODO: really need to set this via the makefile!
-	variable help_file		"/usr/lib/apol/sepcut_help.txt"
+	# Identifies where the help file is located (also checks ."). 
+	variable help_file		"${sepcut_install_dir}sepcut_help.txt"
 	
 	# edit mode (0 read only, 1 edit mode)
 	variable read_only		0
