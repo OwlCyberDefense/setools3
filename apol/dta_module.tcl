@@ -1691,6 +1691,7 @@ proc Apol_Analysis_dta::create_target_type_nodes { parent dta_tree results_list 
 #  Command Apol_Analysis_dta::do_child_analysis
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_dta::do_child_analysis { dta_tree selected_node } {
+	ApolTop::setBusyCursor
 	if { [$dta_tree nodes $selected_node] == "" } {
 		set query_args [$dta_tree itemcget [$dta_tree nodes root] -data]
 		set rt [catch {set results [apol_DomainTransitionAnalysis \
@@ -1710,6 +1711,7 @@ proc Apol_Analysis_dta::do_child_analysis { dta_tree selected_node } {
 			tk_messageBox -icon error -type ok -title "Error" -message $err
 		}
 	}
+	ApolTop::resetBusyCursor
 	return 0
 }
 
