@@ -1,50 +1,25 @@
 /*
- *  Copyright (C) 2004-2005 Tresys Technology, LLC
+ *  Copyright (C) 2003-2005 Tresys Technology, LLC
  *  see file 'COPYING' for use and warranty information
  *
- */
-
-/*
  *  indexcon: a tool for indexing the security contexts of filesystem entities
  */
 
+/* libsefs */
 #include <fsdata.h>
-
-/* SE Linux includes*/
-#include <selinux/selinux.h>
-#include <selinux/context.h>
 /* standard library includes */
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <assert.h>
-#include <errno.h>
-#include <limits.h>
-#include <fnmatch.h>
+/* command line parsing commands */
 #define _GNU_SOURCE
 #include <getopt.h>
-/* file tree walking commands */
-#define __USE_XOPEN_EXTENDED 1
-#include <ftw.h>
-#include <mntent.h>
-/* AVL Tree Handling */
-#include <avl-util.h>
-#include <policy.h>
 
-
-
-
-#include <time.h>
 /* INDEXCON_VERSION_NUM should be defined in the make environment */
 #ifndef INDEXCON_VERSION_NUM
 #define INDEXCON_VERSION_NUM "UNKNOWN"
 #endif
 
-#define COPYRIGHT_INFO "Copyright (C) 2005 Tresys Technology, LLC"
+#define COPYRIGHT_INFO "Copyright (C) 2003-2005 Tresys Technology, LLC"
 
 static struct option const longopts[] =
 {
@@ -103,10 +78,7 @@ int main(int argc, char **argv, char **envp)
 	  		exit(1);
 		}
 	}
-
-
 	
-
 	if (sefs_filesystem_db_populate(&fsdata,dir) == -1) {
 		fprintf(stderr, "fsdata_init failed\n");
 		return -1;
