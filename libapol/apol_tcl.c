@@ -3691,7 +3691,7 @@ static int types_relation_append_results(types_relation_query_t *tr_query,
 {
 	char tbuf[BUF_SZ], *name = NULL, *rule = NULL;
 	int i, j, rt;
-	int rule_idx; 
+	int rule_idx, type_idx; 
 	
 	assert(tr_query != NULL && tr_results != NULL);
 	/* Append typeA string */
@@ -3769,7 +3769,8 @@ static int types_relation_append_results(types_relation_query_t *tr_query,
 		snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->common_obj_types_results->num_objs_A);
 		Tcl_AppendElement(interp, tbuf);
 		for (i = 0; i < tr_results->common_obj_types_results->num_objs_A; i++) {
-			if (get_type_name(tr_results->common_obj_types_results->objs_A[i], &name, policy) != 0) {
+			type_idx = tr_results->common_obj_types_results->objs_A[i];
+			if (get_type_name(type_idx, &name, policy) != 0) {
 				free(name);
 				Tcl_AppendResult(interp, "Error getting attribute name!", (char *) NULL);
 				return TCL_ERROR;
@@ -3778,23 +3779,23 @@ static int types_relation_append_results(types_relation_query_t *tr_query,
 			Tcl_AppendElement(interp, tbuf);
 			free(name);
 			
-			snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->tgt_type_access_pool_A->type_rules[i]->num_rules);
+			snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->typeA_access_pool->type_rules[type_idx]->num_rules);
 			Tcl_AppendElement(interp, tbuf);
-			for (j = 0; j < tr_results->tgt_type_access_pool_A->type_rules[i]->num_rules; j++) {
-				rule_idx = tr_results->tgt_type_access_pool_A->type_rules[i]->rules[j];
+			for (j = 0; j < tr_results->typeA_access_pool->type_rules[type_idx]->num_rules; j++) {
+				rule_idx = tr_results->typeA_access_pool->type_rules[type_idx]->rules[j];
 				rule = re_render_av_rule(1, rule_idx, 0, policy);
 				if (rule == NULL)
-					return -1;
+					return TCL_ERROR;
 				Tcl_AppendElement(interp, rule);
 				free(rule);
 			}
-			snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->tgt_type_access_pool_B->type_rules[i]->num_rules);
+			snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->typeB_access_pool->type_rules[type_idx]->num_rules);
 			Tcl_AppendElement(interp, tbuf);
-			for (j = 0; j < tr_results->tgt_type_access_pool_B->type_rules[i]->num_rules; j++) {
-				rule_idx = tr_results->tgt_type_access_pool_B->type_rules[i]->rules[j];
+			for (j = 0; j < tr_results->typeB_access_pool->type_rules[type_idx]->num_rules; j++) {
+				rule_idx = tr_results->typeB_access_pool->type_rules[type_idx]->rules[j];
 				rule = re_render_av_rule(1, rule_idx, 0, policy);
 				if (rule == NULL)
-					return -1;
+					return TCL_ERROR;
 				Tcl_AppendElement(interp, rule);
 				free(rule);
 			}
@@ -3802,13 +3803,14 @@ static int types_relation_append_results(types_relation_query_t *tr_query,
 	} else {
 		Tcl_AppendElement(interp, "0");
 	}
-	
+
 	/* Append unique object type access information for type A */
 	if (tr_results->unique_obj_types_results != NULL) {
 		snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->unique_obj_types_results->num_objs_A);
 		Tcl_AppendElement(interp, tbuf);
-		for(i = 0; i < tr_results->unique_obj_types_results->num_objs_A; i++) {
-			if (get_type_name(tr_results->unique_obj_types_results->objs_A[i], &name, policy) != 0) {
+		for (i = 0; i < tr_results->unique_obj_types_results->num_objs_A; i++) {
+			type_idx = tr_results->unique_obj_types_results->objs_A[i];
+			if (get_type_name(type_idx, &name, policy) != 0) {
 				free(name);
 				Tcl_AppendResult(interp, "Error getting attribute name!", (char *) NULL);
 				return TCL_ERROR;
@@ -3817,23 +3819,23 @@ static int types_relation_append_results(types_relation_query_t *tr_query,
 			Tcl_AppendElement(interp, tbuf);
 			free(name);
 			
-			snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->tgt_type_access_pool_A->type_rules[type_idx]->num_rules);
+			snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->typeA_access_pool->type_rules[type_idx]->num_rules);
 			Tcl_AppendElement(interp, tbuf);
-			for (j = 0; j < tr_results->tgt_type_access_pool_A->type_rules[type_idx]->num_rules; j++) {
-				rule_idx = tr_results->tgt_type_access_pool_A->type_rules[i]->rules[j];
+			for (j = 0; j < tr_results->typeA_access_pool->type_rules[type_idx]->num_rules; j++) {
+				rule_idx = tr_results->typeA_access_pool->type_rules[type_idx]->rules[j];
 				rule = re_render_av_rule(1, rule_idx, 0, policy);
 				if (rule == NULL)
-					return -1;
+					return TCL_ERROR;
 				Tcl_AppendElement(interp, rule);
 				free(rule);
 			}
-		}
-		
+		}	
 		/* Append unique object type access information for type B */
 		snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->unique_obj_types_results->num_objs_B);
 		Tcl_AppendElement(interp, tbuf);
 		for(i = 0; i < tr_results->unique_obj_types_results->num_objs_B; i++) {
-			if (get_type_name(tr_results->unique_obj_types_results->objs_B[i], &name, policy) != 0) {
+			type_idx = tr_results->unique_obj_types_results->objs_B[i];
+			if (get_type_name(type_idx, &name, policy) != 0) {
 				free(name);
 				Tcl_AppendResult(interp, "Error getting attribute name!", (char *) NULL);
 				return TCL_ERROR;
@@ -3842,13 +3844,13 @@ static int types_relation_append_results(types_relation_query_t *tr_query,
 			Tcl_AppendElement(interp, tbuf);
 			free(name);
 			
-			snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->tgt_type_access_pool_B->type_rules[type_idx]->num_rules);
+			snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->typeB_access_pool->type_rules[type_idx]->num_rules);
 			Tcl_AppendElement(interp, tbuf);
-			for (j = 0; j < tr_results->tgt_type_access_pool_B->type_rules[type_idx]->num_rules; j++) {
-				rule_idx = tr_results->tgt_type_access_pool_B->type_rules[i]->rules[j];
+			for (j = 0; j < tr_results->typeB_access_pool->type_rules[type_idx]->num_rules; j++) {
+				rule_idx = tr_results->typeB_access_pool->type_rules[type_idx]->rules[j];
 				rule = re_render_av_rule(1, rule_idx, 0, policy);
 				if (rule == NULL)
-					return -1;
+					return TCL_ERROR;
 				Tcl_AppendElement(interp, rule);
 				free(rule);
 			}
