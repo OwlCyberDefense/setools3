@@ -711,7 +711,7 @@ proc Apol_Analysis_tra::display_rules {tra_listbox tra_info_text header_txt data
 	$tra_info_text tag add $Apol_Analysis_tra::title_tag $start_idx $end_idx
 	set curr_idx [expr $i + 1]
 	for {set x 0} {$x < $num} {incr x} {
-		Apol_Analysis_tra::print_rule $tra_info_text $data $curr_idx
+		Apol_Analysis_tra::print_rule $tra_info_text $data $curr_idx 0
 		incr curr_idx
 	} 
 	return 0
@@ -720,7 +720,7 @@ proc Apol_Analysis_tra::display_rules {tra_listbox tra_info_text header_txt data
 # ------------------------------------------------------------------------------
 #  Command Apol_Analysis_tra::print_rule
 # ------------------------------------------------------------------------------
-proc Apol_Analysis_tra::print_rule {tra_info_text data curr_idx} {	
+proc Apol_Analysis_tra::print_rule {tra_info_text data curr_idx indent} {	
 	set startIdx [$tra_info_text index insert]
 	set rule [lindex $data $curr_idx]
 	# Get the line number only
@@ -730,6 +730,9 @@ proc Apol_Analysis_tra::print_rule {tra_info_text data curr_idx} {
 
 	set rule [string range $rule [expr $end_link_idx + 1] end]
 	
+	if {$indent} {
+		$tra_info_text insert end "    "
+	}
 	# Only display line number hyperlink if this is not a binary policy.
 	if {![ApolTop::is_binary_policy]} {
 		$tra_info_text insert end "\[$lineno\]"
@@ -760,51 +763,32 @@ proc Apol_Analysis_tra::display_common_object_info {tra_listbox tra_info_text da
 	set num_comm_objs [lindex $data $i]
 	
 	set start_idx [$tra_info_text index insert]
-	$tra_info_text insert end "Common Object Types ($num_comm_objs):\n\n"   
+	$tra_info_text insert end "Shared access to $num_comm_objs types:\n\n"   
 	set end_idx [$tra_info_text index insert]
 	$tra_info_text tag add $Apol_Analysis_tra::title_tag $start_idx $end_idx
 		
-	# Get next element index
-	set curr_idx [expr $i + 1]
 	if {$num_comm_objs} { 
 		for { set x 0 } { $x < $num_comm_objs } { incr x } { 
-			$tra_info_text insert end "[lindex $data $curr_idx]\n"
-			incr curr_idx
-		}
-		set i $curr_idx
-		
-		# Get common rules
-		set num_comm_rules_A [lindex $data $i]
-		set start_idx [$tra_info_text index insert]
-		$tra_info_text insert end "\n$typeA "   
-		set end_idx [$tra_info_text index insert]
-		$tra_info_text tag add $Apol_Analysis_tra::title_type_tag $start_idx $end_idx
+			incr i
+			# Insert the type string
+			set start_idx [$tra_info_text index insert]
+			$tra_info_text insert end "[lindex $data $i]\n"   
+			set end_idx [$tra_info_text index insert]
+			$tra_info_text tag add $Apol_Analysis_tra::subtitle_tag $start_idx $end_idx
 	
-		set start_idx [$tra_info_text index insert] 
-		$tra_info_text insert end "Common Object Type Rules ($num_comm_rules_A):\n\n"
-		set end_idx [$tra_info_text index insert]
-		$tra_info_text tag add $Apol_Analysis_tra::title_tag $start_idx $end_idx 
-		set curr_idx [expr $i + 1]
-		for { set x 0 } { $x < $num_comm_rules_A } { incr x } { 
-		    	Apol_Analysis_tra::print_rule $tra_info_text $data $curr_idx
-			incr curr_idx
+			incr i
+			set num_comm_rules_A [lindex $data $i]
+			for { set p 0 } { $p < $num_comm_rules_A } { incr p } { 
+				incr i
+				Apol_Analysis_tra::print_rule $tra_info_text $data $i 1
+			}
+			incr i
+			set num_comm_rules_B [lindex $data $i]
+			for { set p 0 } { $p < $num_comm_rules_B } { incr p } { 
+				incr i
+				Apol_Analysis_tra::print_rule $tra_info_text $data $i 1
+			}
 		}
-	}
-	set i $curr_idx
-	set start_idx [$tra_info_text index insert]
-	$tra_info_text insert end "\n$typeB "   
-	set end_idx [$tra_info_text index insert]
-	$tra_info_text tag add $Apol_Analysis_tra::title_type_tag $start_idx $end_idx
-		
-	set start_idx [$tra_info_text index insert]
-	set num_comm_rules_B [lindex $data $i]
-	$tra_info_text insert end "Common Object Type Rules ($num_comm_rules_B):\n\n" 
-	set end_idx [$tra_info_text index insert]
-	$tra_info_text tag add $Apol_Analysis_tra::title_tag $start_idx $end_idx
-	set curr_idx [expr $i + 1]
-	for { set x 0 } { $x < $num_comm_rules_B } { incr x } { 
-		Apol_Analysis_tra::print_rule $tra_info_text $data $curr_idx
-		incr curr_idx
 	}
 
 	return 0
@@ -856,76 +840,63 @@ proc Apol_Analysis_tra::display_unique_object_info {tra_listbox tra_info_text da
 	set num_unique_objs_A [lindex $data $i]
 	
 	set start_idx [$tra_info_text index insert]
-	$tra_info_text insert end "$typeA "   
+	$tra_info_text insert end "$typeA has "   
 	set end_idx [$tra_info_text index insert]
 	$tra_info_text tag add $Apol_Analysis_tra::title_type_tag $start_idx $end_idx
 				
 	set start_idx [$tra_info_text index insert]
-	$tra_info_text insert end "Unique Object Types ($num_unique_objs_A):\n\n" 
+	$tra_info_text insert end "special access to $num_unique_objs_A types:\n\n" 
 	set end_idx [$tra_info_text index insert]
 	$tra_info_text tag add $Apol_Analysis_tra::title_tag $start_idx $end_idx
 		
 	# Get next element index
-	set curr_idx [expr $i + 1]
 	if {$num_unique_objs_A} { 
 		for { set x 0 } { $x < $num_unique_objs_A } { incr x } { 
-			$tra_info_text insert end "[lindex $data $curr_idx]\n"
-			incr curr_idx
-		}
-		set i $curr_idx
-		
-		# Get Unique rules
-		set num_unique_rules_A [lindex $data $i]
-		set start_idx [$tra_info_text index insert]
-		$tra_info_text insert end "\n$typeA "   
-		set end_idx [$tra_info_text index insert]
-		$tra_info_text tag add $Apol_Analysis_tra::title_type_tag $start_idx $end_idx
-	
-		set start_idx [$tra_info_text index insert]
-		$tra_info_text insert end "Unique Object Type Rules ($num_unique_rules_A):\n\n" 
-		set end_idx [$tra_info_text index insert]
-		$tra_info_text tag add $Apol_Analysis_tra::title_tag $start_idx $end_idx
-		set curr_idx [expr $i + 1]
-		for { set x 0 } { $x < $num_unique_rules_A } { incr x } { 
-			Apol_Analysis_tra::print_rule $tra_info_text $data $curr_idx
-			incr curr_idx
+			incr i
+			# Insert the type string
+			set start_idx [$tra_info_text index insert]
+			$tra_info_text insert end "[lindex $data $i]\n"   
+			set end_idx [$tra_info_text index insert]
+			$tra_info_text tag add $Apol_Analysis_tra::subtitle_tag $start_idx $end_idx
+			
+			incr i
+			set num_rules_A [lindex $data $i]
+			for { set p 0 } { $p < $num_rules_A } { incr p } { 
+				incr i
+				Apol_Analysis_tra::print_rule $tra_info_text $data $i 1
+			}
 		}
 	} 
-	set i $curr_idx
+	incr i
 	set num_unique_objs_B [lindex $data $i]
 	set start_idx [$tra_info_text index insert]
-	$tra_info_text insert end "\n\n$typeB "   
+	$tra_info_text insert end "\n\n$typeB has "   
 	set end_idx [$tra_info_text index insert]
 	$tra_info_text tag add $Apol_Analysis_tra::title_type_tag $start_idx $end_idx
 		
 	set start_idx [$tra_info_text index insert]
-	$tra_info_text insert end "Unique Object Types ($num_unique_objs_B):\n\n"  
+	$tra_info_text insert end "special access to $num_unique_objs_B types:\n\n"  
 	set end_idx [$tra_info_text index insert]
 	$tra_info_text tag add $Apol_Analysis_tra::title_tag $start_idx $end_idx
-	if {$num_unique_objs_B} { 	
-		set curr_idx [expr $i + 1]
-		for { set x 0 } { $x < $num_unique_objs_B } { incr x } { 
-			$tra_info_text insert end "[lindex $data $curr_idx]\n"
-			incr curr_idx
-		}
-		set i $curr_idx
-		
-		set num_unique_rules_B [lindex $data $i]
-		set start_idx [$tra_info_text index insert]
-		$tra_info_text insert end "\n$typeB "   
-		set end_idx [$tra_info_text index insert]
-		$tra_info_text tag add $Apol_Analysis_tra::title_type_tag $start_idx $end_idx
 	
-		set start_idx [$tra_info_text index insert]
-		$tra_info_text insert end "Unique Object Type Rules ($num_unique_rules_B):\n\n" 
-		set end_idx [$tra_info_text index insert]
-		$tra_info_text tag add $Apol_Analysis_tra::title_tag $start_idx $end_idx
-		set curr_idx [expr $i + 1]
-		for { set x 0 } { $x < $num_unique_rules_B } { incr x } { 
-			Apol_Analysis_tra::print_rule $tra_info_text $data $curr_idx
-			incr curr_idx
+	# Get next element index
+	if {$num_unique_objs_B} { 
+		for { set x 0 } { $x < $num_unique_objs_B } { incr x } { 
+			incr i
+			# Insert the type string
+			set start_idx [$tra_info_text index insert]
+			$tra_info_text insert end "[lindex $data $i]\n"   
+			set end_idx [$tra_info_text index insert]
+			$tra_info_text tag add $Apol_Analysis_tra::subtitle_tag $start_idx $end_idx
+			
+			incr i
+			set num_rules_A [lindex $data $i]
+			for { set p 0 } { $p < $num_rules_A } { incr p } { 
+				incr i
+				Apol_Analysis_tra::print_rule $tra_info_text $data $i 1
+			}
 		}
-	}
+	} 
 	
 	return 0
 }
@@ -1642,52 +1613,50 @@ proc Apol_Analysis_tra::create_results_list_structure {tra_listbox results_list}
 	set num_comm_objs [lindex $results_list $i]
 	set start_idx $i
 	for { set x 0 } { $x < $num_comm_objs } { incr x } { 
+		# Skip object type string
 		incr i
+		# Next item should be number of rules 
+		set num_rules_A [lindex $results_list $i]
+		incr i $num_rules_A
+		# Increment to number of rules for type B
+		incr i 
+		set num_rules_b [lindex $results_list $i]
+		incr i $num_rules_b
+		# Move to next object type
+		incr i		
 	}
-	
-	# Get common rules
-	incr i
-	set num_comm_rules_A [lindex $results_list $i]
-	for { set x 0 } { $x < $num_comm_rules_A } { incr x } { 
-		incr i
-	}
-	
-	incr i
-	set num_comm_rules_B [lindex $results_list $i]
-	for { set x 0 } { $x < $num_comm_rules_B } { incr x } { 
-		incr i
-	}
-	
+
 	# Insert item into listbox 
 	if {$comm_access_sel} {
 		$tra_listbox insert end common_objects \
 			-text "Shared access to resources" \
 			-data [lrange $results_list $start_idx $i] 
 	}
-	# Get # uniqe objects
+	# Get # uniqe objects types for A
 	incr i
 	set num_uniqe_objs_A [lindex $results_list $i]
 	set start_idx $i
 	for { set x 0 } { $x < $num_uniqe_objs_A } { incr x } { 
+		# Skip object type string
 		incr i
+		# Next item should be number of rules 
+		set num_rules_A [lindex $results_list $i]
+		incr i $num_rules_A
+		# Increment to next object type
+		incr i 	
 	}
 	
 	# Get unique rules
 	incr i
-	set num_uniqe_rules_A [lindex $results_list $i]
-	for { set x 0 } { $x < $num_uniqe_rules_A } { incr x } { 
-		incr i
-	}
-	
-	incr i
 	set num_uniqe_objs_B [lindex $results_list $i]
 	for { set x 0 } { $x < $num_uniqe_objs_B } { incr x } { 
+		# Skip object type string
 		incr i
-	}
-	incr i
-	set num_uniqe_rules_B [lindex $results_list $i]
-	for { set x 0 } { $x < $num_uniqe_rules_B } { incr x } { 
-		incr i
+		# Next item should be number of rules 
+		set num_rules_B [lindex $results_list $i]
+		incr i $num_rules_B
+		# Increment to next object type
+		incr i 	
 	}
 	
 	# Insert item into listbox
