@@ -1816,11 +1816,21 @@ iflow_transitive_t *iflow_find_paths_end(void *state)
 {
 	bfs_random_state_t *s = (bfs_random_state_t*)state;
 	iflow_transitive_t *a;
+	int i;
 	
 	a = s->a;
 	bfs_random_state_destroy(s);
 	free(s);
-		
+	
+	/* sort the paths by length */
+	for (i = 0; i < a->num_end_types; i++) {
+		/* sort the paths by length */
+		a->paths[i] = iflow_sort_paths(a->paths[i]);
+		if (a->paths[i] == NULL) {
+			return NULL;
+		}
+	}
+	
 	return a;
 }
 
