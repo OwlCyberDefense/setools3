@@ -8,6 +8,7 @@
  */
 
 #include "seaudit_window.h"
+#include "seaudit.h"
 #include "utilgui.h"
 #include "query_window.h"
 #include <string.h>
@@ -20,6 +21,9 @@ static GtkTreeViewColumn *seaudit_window_create_column(GtkTreeView *view, const 
 static void seaudit_window_on_log_column_clicked(GtkTreeViewColumn *column, gpointer user_data);
 static void seaudit_window_on_log_row_activated(GtkTreeView *treeview, GtkTreePath *path, GtkTreeViewColumn *col, gpointer user_data);
 static void seaudit_window_close_view(GtkButton *button, seaudit_window_t *window);
+static void seaudit_window_on_notebook_switch_page(GtkNotebook *notebook, GtkNotebookPage *page, guint pagenum, seaudit_window_t *window);
+
+extern seaudit_t *seaudit_app;
 
 /*
  * seaudit_window_t public functions
@@ -49,6 +53,8 @@ seaudit_window_t* seaudit_window_create(audit_log_t *log, bool_t column_visibili
 	window->xml = glade_xml_new(path->str, NULL, NULL);
 	window->window = GTK_WINDOW(glade_xml_get_widget(window->xml, "TopWindow"));
 	window->notebook = GTK_NOTEBOOK(gtk_notebook_new());
+	g_signal_connect_after(G_OBJECT(window->notebook), "switch-page", 
+			 G_CALLBACK(seaudit_window_on_notebook_switch_page), window);
 	vbox = glade_xml_get_widget(window->xml, "NotebookVBox");
 	gtk_container_add(GTK_CONTAINER(vbox), GTK_WIDGET(window->notebook));
 	gtk_widget_show(GTK_WIDGET(window->notebook));
@@ -65,7 +71,7 @@ void seaudit_window_add_new_view(seaudit_window_t *window, audit_log_t *log, boo
 	GtkWidget *scrolled_window, *tree_view, *button, *label;
 	gint page_index;
 	GtkWidget *hbox;
- 
+
 	if (window == NULL)
 		return;
 	if (window->window == NULL || window->notebook == NULL || window->xml == NULL)
@@ -78,7 +84,7 @@ void seaudit_window_add_new_view(seaudit_window_t *window, audit_log_t *log, boo
 	gtk_container_add(GTK_CONTAINER(scrolled_window), tree_view);
 	seaudit_window_create_list(GTK_TREE_VIEW(tree_view), column_visibility);
 
-	view = seaudit_filtered_view_create(log, GTK_TREE_VIEW(tree_view));
+	view = seaudit_filtered_view_create(log, GTK_TREE_VIEW(tree_view), view_name);
 	hbox = gtk_hbox_new(FALSE, 5);
 	button = gtk_button_new_with_label("x");
 	g_signal_connect(G_OBJECT(button), "pressed", G_CALLBACK(seaudit_window_close_view), window);
@@ -307,4 +313,10 @@ static int seaudit_window_create_list(GtkTreeView *view, bool_t visibility[])
 	gtk_tree_view_column_set_visible(column, visibility[AVC_MISC_FIELD]);
 
 	return 0;
+}
+
+static void seaudit_window_on_notebook_switch_page(GtkNotebook *notebook, GtkNotebookPage *page, guint pagenum, seaudit_window_t *window)
+{
+	seaudit_update_status_bar(seaudit_app);
+
 }
