@@ -790,7 +790,7 @@ char **get_config_var_list(const char *var, FILE *file, int *list_sz)
  */
 int append_str(char **tgt, int *tgt_sz, const char *str)
 {
-	int str_len, tgt_len;
+	int str_len;
 	if(str == NULL || (str_len = strlen(str)) == 0)
 		return 0;
 	if(tgt == NULL)
