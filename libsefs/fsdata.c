@@ -678,7 +678,7 @@ int sefs_filesystem_data_load(sefs_filesystem_data_t* fsd, char *filename)
 	fsd->num_types = buf[2];
 	
 	fsd->types = (sefs_typeinfo_t *)malloc(fsd->num_types * sizeof(sefs_typeinfo_t));
-	if (!fsd->types) {
+	if (!fsd->types) { 
 		fprintf(stderr, "out of memory\n");
 		return -1;
 	}
@@ -790,7 +790,8 @@ printf("with %d inodes\n", len);
 			return -1;
 		}
 
-		if ((pinfo->path_names = (char **)malloc(pinfo->num_links * sizeof(char *))) == NULL) {
+		pinfo->path_names = (char **)malloc(pinfo->num_links * sizeof(char *));
+		if (!pinfo->path_names) {
 			fprintf(stderr, "Out of memory\n");
 			return -1;
 		}
