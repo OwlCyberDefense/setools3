@@ -1344,11 +1344,8 @@ proc ApolTop::readInitFile { } {
 						continue
 					}
 					
-					# Make sure file is a .conf file before adding to recent files list.
-					if { [file extension $tline] == ".conf" } {
-						set temp_recent_files [lappend temp_recent_files $tline]
-						#ApolTop::addRecent $tline
-					}
+					# Add to recent files list.
+					set temp_recent_files [lappend temp_recent_files $tline]
 				}
 			}
 			default {
