@@ -8,7 +8,7 @@
 #  Author: <jtang@tresys.com>
 # -----------------------------------------------------------
 #
-# This is the implementation of the interface for File
+# This is the implementation of the interface for 
 # Relabeling Analysis
 ##############################################################
 # ::Apol_Analysis_relabel module namespace
@@ -18,7 +18,7 @@ namespace eval Apol_Analysis_relabel {
     variable VERSION 1
     
     variable info_button_text \
-	"Direct file relabel analysis is designed to facilitate querying a \
+	"Direct relabel analysis is designed to facilitate querying a \
 	policy for both potential changes to object labels and relabel \
 	privileges granted to a subject. These two modes are respectively \
 	called Object Mode and Subject Mode.\n\n \
@@ -61,7 +61,7 @@ namespace eval Apol_Analysis_relabel {
 	# the namespace name of the module, and the second is the
 	# descriptive display name you want to be displayed in the GUI
 	# selection box.
-	Apol_Analysis::register_analysis_modules "Apol_Analysis_relabel" "Direct File Relabel"
+	Apol_Analysis::register_analysis_modules "Apol_Analysis_relabel" "Direct Relabel"
 }
 
 # Apol_Analysis_relabel::initialize is called when the tool first
@@ -123,7 +123,7 @@ proc Apol_Analysis_relabel::create_widgets_to_display_results {results results_f
 	pack $dtf -expand 1 -fill both -side left
 	
 	set rf [$pw add -weight 3]
-	set rtf [TitleFrame $rf.rtf -text "File Relabeling Results"]
+	set rtf [TitleFrame $rf.rtf -text "Relabeling Results"]
 	set rsw [ScrolledWindow [$rtf getframe].rsw -auto horizontal]
 	set rtext [text $rsw.rtext -wrap none -bg white -font $ApolTop::text_font]
 	$rsw setwidget $rtext
@@ -144,7 +144,7 @@ proc Apol_Analysis_relabel::create_widgets_to_display_results {results results_f
 		set text_s ""
 		$widget_vars(current_rtext) configure -wrap word
 		set start_index [string length $text_s]
-		append text_s "Direct File Relabel Analysis: "
+		append text_s "Direct Relabel Analysis: "
 		if {$widget_vars(mode) == "object"} {
 			if {$widget_vars(to_mode) && $widget_vars(from_mode)} {
 				append text_s "Starting/Ending Type: "
@@ -206,7 +206,7 @@ proc Apol_Analysis_relabel::create_widgets_to_display_results {results results_f
 		}
 		Apol_Analysis_relabel::formatInfoText $rtext
 	} else {
-		$rtext insert end "This tab provides the results of a file relabeling analysis."
+		$rtext insert end "This tab provides the results of a relabeling analysis."
 		if {$widget_vars(mode) == "subject"} {
 			$dtree insert end $Apol_Analysis_relabel::top_node TO_LIST \
 				-text "To" -open 1 \
@@ -1068,7 +1068,7 @@ proc Apol_Analysis_relabel::display_mod_options { opts_frame } {
     set widgets(b_adv_options) [button $adv_frame.b_adv_options -text "Advanced Filters" \
 		-command {Apol_Analysis_relabel::adv_options_create_dialog \
 			$Apol_Analysis_relabel::advanced_filter_Dlg \
-			"Direct File Relabel Advanced Filters"}]
+			"Direct Relabel Advanced Filters"}]
     
     pack $widgets(objectMode_cb) -anchor w -side top
     pack $widgets(relabelto_rb) $widgets(relabelfrom_rb) -side top -padx 10 -pady 3 -anchor nw
@@ -1221,7 +1221,7 @@ proc Apol_Analysis_relabel::formatInfoText { tb } {
 	$tb tag configure $Apol_Analysis_relabel::type_tag -foreground blue -font {Helvetica 12 bold}
 }
 
-# Update the File Relabeling Results display with whatever the user
+# Update the Relabeling Results display with whatever the user
 # selected
 proc Apol_Analysis_relabel::tree_select {widget node} {
 	variable widget_vars
@@ -1244,7 +1244,7 @@ proc Apol_Analysis_relabel::tree_select {widget node} {
 	if {$node == $Apol_Analysis_relabel::top_node} {
 		$widget_vars(current_rtext) configure -wrap word
 		set start_index [string length $line]
-		append line "Direct File Relabel Analysis: "
+		append line "Direct Relabel Analysis: "
 		if {$widget_vars(mode) == "object"} {
 			if {$widget_vars(to_mode) && $widget_vars(from_mode)} {
 				append line "Starting/Ending Type: "
@@ -1302,7 +1302,7 @@ proc Apol_Analysis_relabel::tree_select {widget node} {
 			lappend subtitle_type_tags $start_index $end_index
 			append line "type(s).\n\n"
 		}
-		append line "This tab provides the results of a Direct File Relabel Analysis "
+		append line "This tab provides the results of a Direct Relabel Analysis "
 		if {$widget_vars(mode) == "object"} {
 			append line "beginning with the "
 			if {$widget_vars(to_mode) && $widget_vars(from_mode)} {
