@@ -1,8 +1,10 @@
 # libseuser and libseuser-tcl
 
+SETFILES_PROG = /usr/sbin/setfiles
 LIB-OBJ		= seuser_db.o 
 LIB-OBJ-TCL = $(LIB-OBJ) seuser_tcl.o
 CFLAGS      += -DLIBSEUSER_VERSION_STRING='"$(shell cat VERSION)"'
+CFLAGS      += -DSETFILES_PROG='"$(SETFILES_PROG)"'
 
 
 libseuser: ../lib/libseuser.a
