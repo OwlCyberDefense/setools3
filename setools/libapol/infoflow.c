@@ -74,7 +74,7 @@ iflow_query_t *iflow_query_create(void)
 	return q;
 }
 
-static int iflow_obj_options_copy(iflow_obj_options_t *dest, iflow_obj_options_t *src)
+static int iflow_obj_options_copy(analysis_obj_options_t *dest, analysis_obj_options_t *src)
 {
         dest->obj_class = src->obj_class;
         dest->num_perms = src->num_perms;
@@ -111,13 +111,13 @@ static int iflow_query_copy(iflow_query_t *dest, iflow_query_t *src)
 
         if (src->num_obj_options) {
                 assert(src->obj_options);
-                dest->obj_options = (iflow_obj_options_t*)malloc(sizeof(iflow_obj_options_t) * 
+                dest->obj_options = (analysis_obj_options_t*)malloc(sizeof(analysis_obj_options_t) * 
                                                                  src->num_obj_options);
                 if (!dest->obj_options) {
                         fprintf(stderr, "Memory error\n");
                         return -1;
                 }
-                memset(dest->obj_options, 0, sizeof(iflow_obj_options_t) * src->num_obj_options);
+                memset(dest->obj_options, 0, sizeof(analysis_obj_options_t) * src->num_obj_options);
                 for (i = 0; i < src->num_obj_options; i++) {
                         if (iflow_obj_options_copy(dest->obj_options + i, src->obj_options + i))
                                 return -1;
@@ -143,131 +143,6 @@ void iflow_query_destroy(iflow_query_t *q)
 	if (q->obj_options)
 		free(q->obj_options);
 	free(q);
-}
-
-static int iflow_query_find_obj_class(iflow_query_t *q, int obj_class)
-{
-	int i;
-
-	assert(q);
-	assert(obj_class >= 0);
-
-	for (i = 0; i < q->num_obj_options; i++) {
-		if (q->obj_options[i].obj_class == obj_class) {
-			return i;
-		}
-	}
-	return -1;
-}
-
-/*
- * Add an object class to ignore to an iflow_query_t - returns the index of
- * the iflow_obj_options_t on success or -1 on failure. Checks to
- * prevent the addition of duplicate or contradictory object classes.
- */
-int iflow_query_add_obj_class(iflow_query_t *q, int obj_class)
-{
-	int obj_idx, cur;
-
-	assert(q);
-	assert(obj_class >= 0);
-
-	/* find an existing entry for the object class */
-	obj_idx = iflow_query_find_obj_class(q, obj_class);
-	if (obj_idx != -1) {
-			/* make certain that the entire object class is ignored */
-			if (q->obj_options[obj_idx].perms) {
-				free(q->obj_options[obj_idx].perms);	
-				q->obj_options[obj_idx].perms = NULL;
-				q->obj_options[obj_idx].num_perms = 0;
-			}
-			return obj_idx;
-	}
-
-	/* add a new entry */
-	cur = q->num_obj_options;
-	q->num_obj_options++;
-	q->obj_options = (iflow_obj_options_t*)realloc(q->obj_options,
-						      sizeof(iflow_obj_options_t)
-						      * q->num_obj_options);
-	if (!q->obj_options) {
-		fprintf(stderr, "Memory error!\n");
-		return -1;
-	}
-	memset(&q->obj_options[cur], 0, sizeof(iflow_obj_options_t));
-	q->obj_options[cur].obj_class = obj_class;
-
-	return cur;
-}
-
-/*
- * Add an object class and perm to ignore to an iflow_query_t - returns the index of
- * the iflow_obj_options_t on success or -1 on failure. Checks to
- * prevent the addition of duplicate or contradictory object classes.
- */
-int iflow_query_add_obj_class_perm(iflow_query_t *q, int obj_class, int perm)
-{
-	int cur;
-	bool_t add = FALSE;
-
-	/* find an existing entry for the object class */
-	cur = iflow_query_find_obj_class(q, obj_class);
-
-        /* add a new entry */
-	if (cur == -1) {
-		cur = q->num_obj_options;
-		q->num_obj_options++;
-		q->obj_options = (iflow_obj_options_t*)realloc(q->obj_options,
-							       sizeof(iflow_obj_options_t)
-							       * q->num_obj_options);
-		if (!q->obj_options) {
-			fprintf(stderr, "Memory error!\n");
-			return -1;
-		}
-		memset(&q->obj_options[cur], 0, sizeof(iflow_obj_options_t));
-		q->obj_options[cur].obj_class = obj_class;
-		
-	}
-
-	if (!q->obj_options[cur].perms) {
-		add = TRUE;
-	} else {
-		if (find_int_in_array(perm, q->obj_options[cur].perms,
-				      q->obj_options[cur].num_perms) == -1)
-			add = TRUE;
-	}
-
-	if (add) {
-		if (add_i_to_a(perm, &q->obj_options[cur].num_perms,
-			       &q->obj_options[cur].perms) == -1)
-			return -1;
-	}
-	return 0;
-}
-
-int iflow_query_add_end_type(iflow_query_t *q, int end_type)
-{
-	bool_t add = FALSE;
-
-	assert(q);
-	/* we can't do anymore checking without the policy */
-	if (end_type < 0) {
-		fprintf(stderr, "end type must be 0 or greater\n");
-		return -1;
-	}
-
-	if (q->end_types) {
-		if (find_int_in_array(end_type, q->end_types,
-				      q->num_end_types) < 0) {
-			add = TRUE;
-		}
-	} else {
-		add = TRUE;
-	}
-	if (add)
-		if (add_i_to_a(end_type, &q->num_end_types, &q->end_types) < 0)
-			return -1;
-	return 0;
 }
 
 int iflow_query_add_type(iflow_query_t *q, int type)
@@ -298,7 +173,7 @@ int iflow_query_add_type(iflow_query_t *q, int type)
 /*
  * Check that the iflow_obj_option_t is valid for the graph/policy.
  */
-bool_t iflow_obj_option_is_valid(iflow_obj_options_t *o, policy_t *policy)
+bool_t iflow_obj_option_is_valid(analysis_obj_options_t *o, policy_t *policy)
 {
 	int i;
 

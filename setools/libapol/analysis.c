@@ -23,6 +23,132 @@
 #include "policy-query.h"
 #include "queue.h"
 
+static int analysis_query_find_obj_class(analysis_obj_options_t *obj_options, int num_obj_options, int obj_class)
+{
+	int i;
+
+	if (obj_options == NULL)
+		return -1;
+		
+	assert(obj_class >= 0);
+
+	for (i = 0; i < num_obj_options; i++) {
+		if (obj_options[i].obj_class == obj_class) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+/*
+ * Add an object class to a query - returns the index of
+ * the analysis_obj_options_t on success or -1 on failure. Checks to
+ * prevent the addition of duplicate or contradictory object classes.
+ */
+int analysis_query_add_obj_class(analysis_obj_options_t **obj_options, int *num_obj_options, int obj_class)
+{
+	int obj_idx, cur;
+
+	assert(obj_class >= 0);
+
+	/* find an existing entry for the object class */
+	obj_idx = analysis_query_find_obj_class(*obj_options, *num_obj_options, obj_class);
+	if (obj_idx != -1) {
+			/* make certain that the entire object class is ignored */
+			if ((*obj_options)[obj_idx].perms) {
+				free((*obj_options)[obj_idx].perms);	
+				(*obj_options)[obj_idx].perms = NULL;
+				(*obj_options)[obj_idx].num_perms = 0;
+			}
+			return obj_idx;
+	}
+
+	/* add a new entry */
+	cur = *num_obj_options;
+	(*num_obj_options)++;
+	*obj_options = (analysis_obj_options_t*)realloc(*obj_options,
+						      sizeof(analysis_obj_options_t)
+						      * (*num_obj_options));
+	if (!(*obj_options)) {
+		fprintf(stderr, "Memory error!\n");
+		return -1;
+	}
+	memset(&(*obj_options)[cur], 0, sizeof(analysis_obj_options_t));
+	(*obj_options)[cur].obj_class = obj_class;
+
+	return cur;
+}
+
+/*
+ * Add an object class and perm to a query - returns the index of
+ * the analysis_obj_options_t on success or -1 on failure. Checks to
+ * prevent the addition of duplicate or contradictory object classes.
+ */
+int analysis_query_add_obj_class_perm(analysis_obj_options_t **obj_options, int *num_obj_options, int obj_class, int perm)
+{
+	int cur;
+	bool_t add = FALSE;
+	
+	assert(obj_class >= 0 && perm >= 0);
+	/* find an existing entry for the object class */
+	cur = analysis_query_find_obj_class(*obj_options, *num_obj_options, obj_class);
+
+        /* add a new entry */
+	if (cur == -1) {
+		cur = *num_obj_options;
+		(*num_obj_options)++;
+		*obj_options = (analysis_obj_options_t*)realloc(*obj_options,
+							       sizeof(analysis_obj_options_t)
+							       * (*num_obj_options));
+		if (!(*obj_options)) {
+			fprintf(stderr, "Memory error!\n");
+			return -1;
+		}
+		memset(&(*obj_options)[cur], 0, sizeof(analysis_obj_options_t));
+		(*obj_options)[cur].obj_class = obj_class;
+		
+	}
+
+	if (!(*obj_options)[cur].perms) {
+		add = TRUE;
+	} else {
+		if (find_int_in_array(perm, (*obj_options)[cur].perms,
+				      (*obj_options)[cur].num_perms) == -1)
+			add = TRUE;
+	}
+
+	if (add) {
+		if (add_i_to_a(perm, &(*obj_options)[cur].num_perms,
+			       &(*obj_options)[cur].perms) == -1)
+			return -1;
+	}
+	return 0;
+}
+
+int analysis_query_add_end_type(int **end_types, int *num_end_types, int end_type)
+{
+	bool_t add = FALSE;
+
+	/* we can't do anymore checking without the policy */
+	if (end_type < 0) {
+		fprintf(stderr, "end type must be 0 or greater\n");
+		return -1;
+	}
+
+	if (*end_types) {
+		if (find_int_in_array(end_type, *end_types,
+				      *num_end_types) < 0) {
+			add = TRUE;
+		}
+	} else {
+		add = TRUE;
+	}
+	if (add)
+		if (add_i_to_a(end_type, &(*num_end_types), &(*end_types)) < 0)
+			return -1;
+	return 0;
+}
+
 /*************************************************************************
  * domain transition analysis
  */
@@ -62,6 +188,7 @@ void dta_query_destroy(dta_query_t *q)
 		free(q->obj_options);
 	free(q);
 }
+
 
 static bool_t dta_query_does_av_rule_contain_obj_class_options(dta_query_t *q, int rule_idx, policy_t *policy)
 {
