@@ -8,6 +8,7 @@ CFLAGS      += -DLIBSEUSER_VERSION_STRING='"$(shell cat VERSION)"'
 CFLAGS      += -DSETFILES_PROG='"$(SETFILES_PROG)"'
 
 TARGET 	    = libseuser.so
+SONAME 	    = $(TARGET).1.2
 LIBSO	    = $(TARGET).$(shell cat VERSION)
 
 all: libseuser libseuser-tcl libseuserso
@@ -15,7 +16,7 @@ all: libseuser libseuser-tcl libseuserso
 libseuser: libseuser.a
 libseuser-tcl: libseuser-tcl.a
 libseuserso: $(LIB-OBJ)
-	$(CC) $(LDFLAGS) -shared -o $(LIBSO) $(LIB-OBJ) -Wl,-soname,$(LIBSO)
+	$(CC) $(LDFLAGS) -shared -o $(LIBSO) $(LIB-OBJ) -Wl,-soname,$(SONAME)
 	
 libseuser.a: $(LIB-OBJ) 
 	 ar cr $@ $(LIB-OBJ) 
@@ -31,8 +32,8 @@ install-libseuser-shared: libseuserso
 install-libseuser-static: libseuser
 	test -d $(STATIC_LIB_INSTALL_DIR) || install -m 755 -d $(STATIC_LIB_INSTALL_DIR)
 	install -m 644 libseuser.a $(STATIC_LIB_INSTALL_DIR)
-	test -d $(SETOOLS_INCLUDE) || install -m 755 -d $(SETOOLS_INCLUDE)
-	install -m 644 *.h $(SETOOLS_INCLUDE)
+	test -d $(SETOOLS_INCLUDE)/libseuser || install -m 755 -d $(SETOOLS_INCLUDE)/libseuser
+	install -m 644 *.h $(SETOOLS_INCLUDE)/libseuser
 
 install: install-libseuser-shared install-libseuser-static
 	
