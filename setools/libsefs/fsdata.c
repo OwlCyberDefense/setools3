@@ -617,23 +617,6 @@ int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char *filename)
 		rc = fwrite(fsd->types[i].name, sizeof(char), len, fp);
 		if (rc != len)
 			goto bad;
-/*
---Not doing this anymore --
-		len = fsd->types[i].num_inodes;
-		buf[0] = cpu_to_le32(len);
-		rc = fwrite(buf, sizeof(uint32_t), 1, fp);
-		if (rc != 1)
-			goto bad;
-
-	
-		for (j = 0; j < len; j++) {
-			buf[0] = cpu_to_le32(fsd->types[i].index_list[j]);
-			rc = fwrite(buf, sizeof(uint32_t), 1, fp);
-			if (rc != 1)
-				goto bad;
-
-		}
-*/
 	}
 
 	buf[0] = cpu_to_le32(fsd->num_users);
