@@ -58,7 +58,7 @@ int Tcl_AppInit(Tcl_Interp *interp)
      	}
      	sprintf(script, "%s/%s", interp->result, STARTUP_SCRIPT);
 	if(Tcl_EvalFile(interp, script) != TCL_OK) {
-		fprintf(stderr, "Error in StartScript (%s): %s\n", script, interp->result);
+		fprintf(stderr, "Error in StartScript (%s): %s on line %d\n\nIf %s is set, make sure directory is correct\n", script, interp->result, interp->errorLine, APOL_ENVIRON_VAR_NAME);
 	  	Tcl_DeleteInterp(interp);
 	  	Tcl_Exit(1);
 	}
