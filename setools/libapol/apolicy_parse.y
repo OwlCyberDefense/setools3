@@ -1068,7 +1068,7 @@ static int define_typealias(void)
 	char *id;
 	int idx, idx_type;
 	
-	if (pass == 2) {
+	if (pass == 2 || (pass == 1 && !(parse_policy->opts & POLOPT_TYPES))) {
 		while ((id = queue_remove(id_queue)))
 			free(id);
 		return 0;
