@@ -85,6 +85,7 @@ namespace eval Apol_Analysis_fulflow {
 	variable counters_tag		COUNTERS
 	variable types_tag		TYPE
 	variable find_flows_tag		FLOWS
+	variable disabled_rule_tag     	DISABLE_RULE
 	
 	variable progressmsg		""
 	variable abort_trans_analysis 	0
@@ -1427,6 +1428,14 @@ proc Apol_Analysis_fulflow::render_information_flows {fulflow_info_text fulflow_
 			$fulflow_info_text insert end " $rule"
 			set endIdx [$fulflow_info_text index insert]
 			$fulflow_info_text tag add $Apol_Analysis_fulflow::rules_tag $startIdx $endIdx
+			
+			incr currentIdx
+			# The next element should be the enabled boolean flag.
+			if {[lindex $data $currentIdx] == 0} {
+				$fulflow_info_text tag add $Apol_Analysis_fulflow::disabled_rule_tag $startIdx $endIdx
+				$fulflow_info_text insert end "   \[Disabled\]"
+			} 
+			set startIdx [$fulflow_info_text index insert]
 		    } 
 		}
 	    }
@@ -1448,6 +1457,7 @@ proc Apol_Analysis_fulflow::formatInfoText { tb } {
 	$tb tag configure $Apol_Analysis_fulflow::counters_tag -foreground blue -font {Helvetica 11 bold}
 	$tb tag configure $Apol_Analysis_fulflow::types_tag -font $ApolTop::text_font
 	$tb tag configure $Apol_Analysis_fulflow::find_flows_tag -font {Helvetica 14 bold} -foreground blue -underline 1
+	$tb tag configure $Apol_Analysis_dirflow::disabled_rule_tag -foreground gray 
 	
 	$tb tag bind $Apol_Analysis_fulflow::find_flows_tag <Button-1> "Apol_Analysis_fulflow::display_find_more_flows_Dlg"
 	$tb tag bind $Apol_Analysis_fulflow::find_flows_tag <Enter> { set Apol_Analysis_fulflow::orig_cursor [%W cget -cursor]; %W configure -cursor hand2 }
@@ -1507,37 +1517,37 @@ proc Apol_Analysis_fulflow::create_target_type_nodes { parent fulflow_tree resul
 }
 
 proc Apol_Analysis_fulflow::parseList_get_index_next_node { currentIdx results_list } {
-
 	# Increment to # paths
 	incr currentIdx
-        set num_paths [lindex $results_list $currentIdx]
+	set num_paths [lindex $results_list $currentIdx]
 	if {![string is integer $num_paths]} {
-	    return -1;
-	}
-        # for each flow in each path parse by all the types, objects, and rules
-        for {set i 0} {$i < $num_paths} {incr i} {
-	    incr currentIdx
-	    set num_flows [lindex $results_list $currentIdx]
-	    if {![string is integer $num_flows]} {
 		return -1;
-	    }	    
-	    for {set j 0} {$j < $num_flows} {incr j} {
-		incr currentIdx 3
-		set num_objs [lindex $results_list $currentIdx]
-		if {![string is integer $num_objs]} {
-		    return -1;
-		}
-		for {set k 0} {$k < $num_objs} {incr k} {
-		    incr currentIdx 2
-		    set num_rules [lindex $results_list $currentIdx]
-		    if {![string is integer $num_rules]} {
+	}
+	# for each flow in each path parse by all the types, objects, and rules
+	for {set i 0} {$i < $num_paths} {incr i} {
+		incr currentIdx
+		set num_flows [lindex $results_list $currentIdx]
+		if {![string is integer $num_flows]} {
 			return -1;
-		    }
-		    for {set l 0} {$l < $num_rules} {incr l} {
-			incr currentIdx
-		    }
+		}	    
+		for {set j 0} {$j < $num_flows} {incr j} {
+			incr currentIdx 3
+			set num_objs [lindex $results_list $currentIdx]
+			if {![string is integer $num_objs]} {
+				return -1;
+			}
+			for {set k 0} {$k < $num_objs} {incr k} {
+				incr currentIdx 2
+				set num_rules [lindex $results_list $currentIdx]
+				if {![string is integer $num_rules]} {
+					return -1;
+				}
+				# We multiply the number of rules by 2 because each rule consists of:
+				# 	1. rule string (includes line number)
+				#	2. enabled flag
+				incr currentIdx [expr $num_rules * 2]
+			}
 		}
-	    }
 	}
 	incr currentIdx
 	return $currentIdx
