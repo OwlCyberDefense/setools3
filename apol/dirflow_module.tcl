@@ -76,9 +76,6 @@ namespace eval Apol_Analysis_dirflow {
 	variable counters_tag		COUNTERS
 	variable types_tag		TYPE
 	variable disabled_rule_tag     	DISABLE_RULE
-
-    	# Return value to indicate that perm map loaded successfully, but there were warnings
-	variable warning_return_val	"-2"
 	
 ## Within the namespace command for the module, you must call Apol_Analysis::register_analysis_modules,
 ## the first argument is the namespace name of the module, and the second is the
@@ -137,7 +134,6 @@ proc Apol_Analysis_dirflow::do_analysis { results_frame } {
         variable flow_direction
         variable list_objs
         variable objects_sel
-	variable warning_return_val
 	
         set selected_objects [Apol_Analysis_dirflow::get_selected_objects]
         
@@ -151,7 +147,7 @@ proc Apol_Analysis_dirflow::do_analysis { results_frame } {
 	if { !$map_loaded } {
 	    set rt [catch {Apol_Perms_Map::load_default_perm_map} err]
 	    if { $rt != 0 } {
-		if {$rt == $warning_return_val} {
+		if {$rt == $Apol_Perms_Map::warning_return_val} {
 			tk_messageBox -icon warning -type ok -title "Warning" -message "$err"
 		} else {
 			tk_messageBox -icon error -type ok -title "Error" -message "$err"
