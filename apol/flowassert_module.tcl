@@ -1,7 +1,7 @@
 #############################################################
 #  flowassert_module.tcl  
 # -----------------------------------------------------------
-#  Copyright (C) 2004 Tresys Technology, LLC
+#  Copyright (C) 2004-2005 Tresys Technology, LLC
 #  see file 'COPYING' for use and warranty information 
 #
 #  Requires tcl and tk 8.3+, with BWidgets
@@ -17,8 +17,12 @@
 namespace eval Apol_Analysis_flowassert {
     variable VERSION 1
 
-    # widget variables
-    variable assertfile_t    
+    # internal representation of assertions (model)
+    variable asserts [list [list "\# Place your assertion statements here"] \
+                          [list noflow foo_t bar_t {} 1]]
+
+    # widget variables (view)
+    variable assertfile_t
     variable assert_wizard_dlg ""
 
     # name of widget holding most recently executed assertion
@@ -236,12 +240,13 @@ proc Apol_Analysis_flowassert::open { } {
 # from $file_channel.
 proc Apol_Analysis_flowassert::load_query_options {file_channel parentDlg} {
     variable VERSION
+    variable asserts
     variable assertfile_t
     if {[gets $file_channel] > $VERSION} {
         return -code error "The specified query version is not allowed."
     }
-    $assertfile_t delete 1.0 end
-    $assertfile_t insert end "[string trim [read $file_channel]]\n"
+    set asserts [read $file_channel]
+    sync_asserts_to_text $asserts $assertfile_t
     return 0
 }
 
@@ -251,29 +256,30 @@ proc Apol_Analysis_flowassert::load_query_options {file_channel parentDlg} {
 #	- file_name - name of the query file
 proc Apol_Analysis_flowassert::save_query_options {module_name file_channel file_name} {
     variable VERSION
-    variable assertfile_t
+    variable asserts
     puts $file_channel $module_name
     puts $file_channel $VERSION
-    puts -nonewline $file_channel [$assertfile_t get 1.0 end]
+    puts -nonewline $file_channel $asserts
     return 0
 }
 
 # Captures the current set of options, which is then later restored by
 # [set_display_to_results_tab].
 proc Apol_Analysis_flowassert::get_current_results_state { } {
+    variable asserts
     variable assertfile_t
-    return [list $assertfile_t [$assertfile_t get 1.0 end]]
+    return [list $assertfile_t $asserts]
 }
 
 # Apol_Analysis_flowassert::set_display_to_results_state is called to
 # reset the options or any other context that analysis needs when the
 # GUI switches back to an existing analysis.  options is a list that
 # we created in a previous get_current_results_state() call.
-proc Apol_Analysis_flowassert::set_display_to_results_state { query_options } {
+proc Apol_Analysis_flowassert::set_display_to_results_state {query_options} {
     variable most_recent_results
     foreach {assertfile_t assertcontents} $query_options {}
-    $assertfile_t delete 1.0 end
-    $assertfile_t insert 1.0 $assertcontents
+    variable asserts $assertcontents
+    sync_asserts_to_text $asserts $assertfile_t
     set most_recent_results $assertfile_t
 }
 
@@ -295,24 +301,34 @@ proc Apol_Analysis_flowassert::free_results_data {query_options} {
 # is the name of a frame in which the options GUI interface is to be
 # packed.
 proc Apol_Analysis_flowassert::display_mod_options { opts_frame } {
+    variable asserts
     variable assertfile_t
     set tf [TitleFrame $opts_frame.assertfile -text "Assertion File"]
     set sw [ScrolledWindow [$tf getframe].sw -auto horizontal]
     set assertfile_t [text $sw.assertfile_t -wrap none -state normal \
-                          -bg white -font $ApolTop::text_font]
+                          -bg white -font $ApolTop::text_font -cursor arrow]
+    $assertfile_t tag configure assert_file_t_tag
+    $assertfile_t tag configure assert_file_sel_tag -background gray
+    $assertfile_t tag bind assert_file_t_tag <Button-1> [namespace code [list assertfile_click %W %x %y]]
     $sw setwidget $assertfile_t
-    $assertfile_t insert end "\# Place your assertion statements here\n"
-    pack $sw -expand 1 -fill both
-    set bb [ButtonBox $opts_frame.bb -homogeneous 1 -spacing 30]
-    $bb add -text "Add..." -command [namespace code create_assert_wizard_dlg]
-    $bb add -text "Clear File" -command [namespace code clear_assert_file]
-    $bb add -text "Export..." -command [namespace code export_assert_file]
-    $bb add -text "Import..." -command [namespace code import_assert_file]
     grid $tf -padx 10 -sticky nsew
-    grid $bb -sticky {}
+    pack $sw -expand 1 -fill both
+    set bb1 [ButtonBox $opts_frame.bb1 -homogeneous 1 -spacing 20]
+    $bb1 add -text "Add Assertion..." -command [namespace code create_assert_wizard_dlg]
+    $bb1 add -text "Add Comment..." -command [namespace code add_comment_dlg]
+    $bb1 add -text "Edit Line..." -command [namespace code edit_line]
+    $bb1 add -text "Delete Line" -command [namespace code delete_line]
+    set bb2 [ButtonBox $opts_frame.bb2 -homogeneous 1 -spacing 20]
+    $bb2 add -text "Clear All" -command [namespace code clear_assert_file]
+    $bb2 add -text "Export Assertions..." -command [namespace code export_assert_file]
+    $bb2 add -text "Import Assertions..." -command [namespace code import_assert_file]
+    grid $bb1 -sticky {}
+    grid $bb2 -sticky {}
     grid rowconfigure $opts_frame 0 -weight 1
     grid rowconfigure $opts_frame 1 -weight 0 -pad 20
     grid columnconfigure $opts_frame 0 -weight 1
+    variable line_editing_buttons [list $bb1 2 3]
+    sync_asserts_to_text $asserts $assertfile_t
 }
 
 
@@ -323,11 +339,42 @@ proc Apol_Analysis_flowassert::display_mod_options { opts_frame } {
 ##########################################################################
 ##########################################################################
 
+# Called whenever the user clicks on the assertion file text field.
+# Select the line clicked and enable the line editing buttons.  If the
+# click was on an already selected line, deselect it and disable the
+# buttons.
+proc Apol_Analysis_flowassert::assertfile_click {widget x y} {
+    variable asserts
+    variable line_editing_buttons
+    set newline [lindex [split [$widget index @$x,$y] .] 0]
+    set selection [lindex [$widget tag ranges assert_file_sel_tag] 0]
+    set oldline [lindex [split [lindex $selection 0] .] 0]
+    puts "new = $newline, old = $oldline"
+    variable line_editing_buttons
+    set parent [lindex $line_editing_buttons 0]
+    # remove old selection
+    if {$oldline != ""} {
+        $widget tag remove assert_file_sel_tag $oldline.0 [expr {$oldline + 1}].0
+    }
+    if {$newline >= 1 && $newline <= [llength $asserts] && $newline != $oldline} {
+        # add a selection
+        $widget tag add assert_file_sel_tag $newline.0 [expr {$newline + 1}].0
+        foreach button [lrange $line_editing_buttons 1 end] {
+            $parent itemconfigure $button -state normal
+        }
+    } else {
+        foreach button [lrange $line_editing_buttons 1 end] {
+            $parent itemconfigure $button -state disabled
+        }
+    }
+}
+
 # Deletes the contents of the assertion file text box, and thus
 # consequently clearing the file.
 proc Apol_Analysis_flowassert::clear_assert_file {} {
+    variable asserts ""
     variable assertfile_t
-    $assertfile_t delete 1.0 end
+    sync_asserts_to_text $asserts $assertfile_t
 }
 
 # Prompts the user for a file name, then saves the contents of the
@@ -356,7 +403,6 @@ proc Apol_Analysis_flowassert::export_assert_file {} {
 # Prompts the user for a file name, then loads the contents of the
 # file into the assertion buffer.
 proc Apol_Analysis_flowassert::import_assert_file {} {
-    variable assertfile_t
     variable last_filename
     variable last_pathname
     set filename [tk_getOpenFile -title "Import Assertion File" \
@@ -370,11 +416,14 @@ proc Apol_Analysis_flowassert::import_assert_file {} {
             -message "Error loading from $filename" -parent $assertfile_t
         return
     }
-    $assertfile_t delete 1.0 end
-    $assertfile_t insert end [read $f]
+    set new_asserts [read $f]
     ::close $f
     set last_filename [file tail $filename]
     set last_pathname [file dirname $filename]
+    # FIX ME: parse $new_asserts and convert to asserts
+    variable assertfile_t
+    $assertfile_t delete 1.0 end
+    $assertfile_t insert end [read $f]
 }
 
 # Creates the "assertion statement wizard" that allows a user to
@@ -393,11 +442,13 @@ proc Apol_Analysis_flowassert::create_assert_wizard_dlg {} {
     variable assert_wiz_mode
     variable assert_wiz_line
     variable assert_wiz_weight
-    
+
+    # create a modal dialog
     set assert_wizard_dlg [toplevel .assertfile_wizard_dlg]
+    grab $assert_wizard_dlg
     wm title $assert_wizard_dlg "Add Assertion Statements"
-    wm protocol $assert_wizard_dlg WM_DELETE_WINDOW \
-        [list destroy $assert_wizard_dlg]
+    wm protocol $assert_wizard_dlg WM_DELETE_WINDOW [namespace code [list destroy_wizard_dlg $assert_wizard_dlg]]
+    wm transient $assert_wizard_dlg .
 
     set f [frame $assert_wizard_dlg.f]
 
@@ -534,6 +585,12 @@ proc Apol_Analysis_flowassert::create_type_panel {type_panel type_name type_var}
     variable assert_wiz_objclass_lbs
     lappend assert_wiz_objclass_lbs $objs_lb
     populate_lists 1
+}
+
+# Safely destroys a modal dialog.
+proc Apol_Analysis_flowassert::destroy_wizard_dlg {dlg} {
+    grab release $dlg
+    destroy $dlg
 }
 
 # Called to populate the ComboBox/listbox holding the type names +
@@ -776,4 +833,57 @@ proc Apol_Analysis_flowassert::highlight_assert_line {widget x y} {
     $assertfile_t tag remove sel 1.0 end
     $assertfile_t tag add sel $linenum.0 [expr {$linenum + 1}].0
     $assertfile_t see $linenum.0
+}
+
+# Given an assertion (either a comment or a 5-tuple) return a string
+# that represents the line.
+proc Apol_Analysis_flowassert::render_assertion {assertion} {
+    if {[llength $assertion] == 1} {
+        return [lindex $assertion 0]
+    } else {
+        foreach {mode start end via weight} $assertion {}
+        if {$start == {}} {
+            set start "*"
+        }
+        if {$end == {}} {
+            set end "*"
+        }
+        return "$mode $start $end $via $weight"
+    }
+}
+
+# Resynchronize the assertions (model) to its view (assertfile_t text
+# field).
+proc Apol_Analysis_flowassert::sync_asserts_to_text {asserts text} {
+    $text configure -state normal
+    $text delete 1.0 end
+    foreach line $asserts {
+        $text insert end "[render_assertion $line]\n"
+    }
+    $text tag add assert_file_t_tag 1.0 end
+    $text configure -state disabled
+    variable line_editing_buttons
+    set parent [lindex $line_editing_buttons 0]
+    foreach button [lrange $line_editing_buttons 1 end] {
+        $parent itemconfigure $button -state disabled
+    }    
+}
+
+
+proc Apol_Analysis_flowassert::add_comment_dlg {} {
+
+}
+
+proc Apol_Analysis_flowassert::edit_line {} {
+
+}
+
+proc Apol_Analysis_flowassert::delete_line {} {
+    variable assertfile_t
+    set selection [lindex [$assertfile_t tag ranges assert_file_sel_tag] 0]
+    set oldline [lindex [split [lindex $selection 0] .] 0]
+    incr oldline -1
+    variable asserts
+    set asserts [lreplace $asserts $oldline $oldline]
+    sync_asserts_to_text $asserts $assertfile_t
 }
