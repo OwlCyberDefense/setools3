@@ -3,11 +3,19 @@
 
 /* 
  * Author: mayerf@tresys.com 
+ * Modified: don.patterson@tresys.com
+ *
  */
 
 /* seuser_db.h
  *
  * The user database functions for seuser.
+ * 
+ * NOTE: As of version 1.0, we completely remove all support for the older
+ * default_context and cron_context; which greatly simplified the code.
+ * Also structure lib so that it no longer requires the TCL interface
+ * to be used.
+ *
  *
  */
 #ifndef _SEUSER_DB_H_
@@ -19,13 +27,15 @@
 #ifndef LIBSEUSER_VERSION_STRING
 	#define LIBSEUSER_VERSION_STRING "UNKNOWN"
 #endif
-/* NOTE: As of version 1.0, we completely remove all support for the older
- * default_context and cron_context; which greatly simplified the code.
- * Also structure lib so that it no longer requires the TCL interface
- * to be used.
- */
+
+#ifndef SETFILES_PROG
+	#define SETFILES_PROG	"/usr/sbin/setfiles"
+#endif
 
 #define CONFIG_FILE	"seuser.conf"
+#define FC_FILE		"file_contexts"
+/* Policy makefile target for re-making the file_contexts file */
+#define FILE_CONTEXTS_TARGET	"file_contexts/file_contexts"
 
 /* user database structure; based in part on APOL's structures */
 typedef struct user_db {
@@ -37,6 +47,7 @@ typedef struct user_db {
 	char 		*policy_conf;
 	char 		*user_file;
 	char 		*policy_dir;
+	char 		*file_contexts_dir;
 } user_db_t;
 
 /* macros */
@@ -61,6 +72,8 @@ int seuser_reinstall_policy(const char *tmpfile, user_db_t *db);
 int seuser_check_commit_perm(user_db_t *db);
 const char* seuser_decode_read_conf_err(int err);
 int seuser_add_change_user(bool_t new_user, const char *user, char ** roles, int num_roles, user_db_t *db, policy_t *policy);
+int seuser_label_home_dir(const char *user, user_db_t *db, policy_t *policy, const char *output_file);
+const char* seuser_decode_labeling_err(int err);
 const char* libseuser_get_version(void);
 
 #endif /*_SEUSER_DB_H_ */
