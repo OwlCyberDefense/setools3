@@ -196,9 +196,9 @@ static int test_hash_table(policy_t *policy)
 				}
 				
 				if (!tgt_type) {
-					idx = avh_idx_find(policy->avh.src_type_idx, type);
+					idx = avh_src_type_idx_find(policy->avh, type);
 				} else {
-					idx = avh_idx_find(policy->avh.tgt_type_idx, type);
+					idx = avh_tgt_type_idx_find(policy->avh, type);
 				}
 				
 				if (idx == NULL || idx->num_nodes == 0) {
