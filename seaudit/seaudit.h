@@ -15,6 +15,7 @@
 #include "seaudit_window.h"
 #include "filter_window.h"
 #include "preferences.h"
+#include "report_window.h"
 #include <libapol/policy.h>
 #include <gtk/gtk.h>
 #include <glade/glade.h>
@@ -51,6 +52,7 @@ typedef struct seaudit {
 	GString *policy_file;
 	GString *audit_log_file;
 	bool_t column_visibility_changed;
+	report_window_t *report_window;
 } seaudit_t;
 
 extern seaudit_t *seaudit_app;
