@@ -162,13 +162,13 @@ seuser: selinux_tool
 
 seuserx: selinux_tool
 	cd seuser; $(MAKE) seuserx;
-	
+
 sediff: selinux_tool
 	cd sediff; $(MAKE) sediff;
 
 sediffx: selinux_tool
 	cd sediff; $(MAKE) sediffx
-	
+
 sepcut: selinux_tool
 	cd sepct; $(MAKE) sepcut
 
@@ -177,13 +177,14 @@ seaudit: selinux_tool
 
 secmds: selinux_tool
 	cd secmds; $(MAKE) all
+	cd flowtool; $(MAKE) all
 
 libapol: selinux_tool
 	cd libapol; $(MAKE) libapol libapolso
 
 libapol-tcl: selinux_tool
 	cd libapol; $(MAKE) libapol-tcl libapol-tclso; 
-	
+
 libsefs: selinux_tool
 	cd libsefs; $(MAKE) libsefs libsefsso
 
@@ -204,7 +205,7 @@ $(BINDIR):
 
 install-apol: $(INSTALL_LIBDIR) $(BINDIR)
 	cd apol; $(MAKE) install; 
-	
+
 install-awish: $(INSTALL_LIBDIR) $(BINDIR)
 	cd awish; $(MAKE) install; 
 
@@ -214,7 +215,7 @@ install-seuserx: $(INSTALL_LIBDIR) $(BINDIR)
 
 install-sediffx: $(INSTALL_LIBDIR) $(BINDIR)
 	cd sediff; $(MAKE) install; 
-	
+
 # Non-GUI version only
 install-seuser: $(INSTALL_LIBDIR) $(BINDIR)
 	cd seuser; $(MAKE) install-nogui
@@ -224,7 +225,7 @@ install-sepcut: $(INSTALL_LIBDIR) $(BINDIR)
 
 install-secmds: $(INSTALL_LIBDIR) $(BINDIR)
 	cd secmds; $(MAKE) install
-	
+
 install-sediff: $(INSTALL_LIBDIR) $(BINDIR)
 	cd sediff; $(MAKE) install-nogui
 
@@ -252,7 +253,7 @@ install-libsefs: $(SHARED_LIB_INSTALL_DIR)
 	cd libsefs; $(MAKE) install
 
 install-dev: install-libseuser install-libapol install-libseaudit install-libsefs
-	
+
 # Install the policy - this is a separate step to better support systems with
 # non-standard policies.
 install-seuser-policy: $(INSTALL_LIBDIR)
@@ -284,7 +285,7 @@ install-bwidget:
 # Install LogWatch config files to plug-in seaudit-report to LogWatch
 install-logwatch-files:
 	cd seaudit; $(MAKE) install-logwatch-service
-	
+
 # Re-generate all setools documentation in source tree
 docs:
 	cd docs-src; $(MAKE) docs
