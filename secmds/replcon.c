@@ -1054,59 +1054,20 @@ int
 main(int argc, char **argv)
 {
 	char stream_input[MAX_INPUT_SIZE];
-	int i, len=10;
-	FILE *mtab = NULL;
-	struct mntent *entry;
-	char *token, *fs, *fs_orig = NULL;
+	int i, rw;
 
 	replcon_info_init(&replcon_info);
 	replcon_parse_command_line(argc, argv);
 	num_mounts = 0;
 
-	if ((mtab = fopen("/etc/mtab", "r")) == NULL) {
-		fprintf(stderr, "Could not open /etc/mtab for reading.\n");
-		goto err;
-	}
-
-	if ((mounts = malloc(sizeof(char*) * len)) == NULL) {
-		fprintf(stderr, "Out of memory.\n");
-		goto err;
-	}
-
-	while ((entry = getmntent(mtab))) {
 #ifndef FINDCON
-		if (hasmntopt(entry, MNTOPT_RW) == NULL)
-			continue;
+	rw = 0;
+#else
+	rw = 1;
 #endif
-		if(num_mounts >= len) {
-			len *= 2;
-			mounts = realloc(mounts, sizeof(char*) * len);
-			if (mounts == NULL) {
-				fprintf(stderr, "Out of memory.\n");
-				fclose(mtab);
-				goto err;
-			}
-		}
-		fs_orig = fs = strdup(SEFS_XATTR_LABELED_FILESYSTEMS);
-		if (fs_orig == NULL) {
-			fprintf(stderr, "Out of memory.\n");
-			fclose(mtab);
-			goto err;
-		}
-		while((token = strtok(fs, " \t")) != NULL) {
-			if (fs) fs = NULL; /* for subsequent strtok calls */
-			if(!strcmp(token, entry->mnt_type)) {
-				if ((mounts[num_mounts++] = strdup(entry->mnt_dir)) == NULL) {
-					fprintf(stderr, "Out of memory.\n");
-					fclose(mtab);
-					goto err;
-				}
-				break;
-			}
-		}
-		free(fs_orig);
-	}
-	fclose(mtab);
+
+	if (find_mount_points("/", mounts, &num_mounts, rw))
+		goto err;
 
 	if (replcon_info.stdin) {
 		while (fgets(stream_input, (MAX_INPUT_SIZE - 1), stdin)) {
@@ -1129,6 +1090,5 @@ main(int argc, char **argv)
 err:
 	replcon_info_free(&replcon_info);
 	if (mounts) free(mounts);
-	if (fs_orig) free(fs_orig);
 	return -1;
 }

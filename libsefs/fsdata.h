@@ -111,6 +111,7 @@ int sefs_get_file_class(const struct stat *statptr);
 int sefs_is_valid_object_class(const char *class_name);
 void sefs_print_valid_object_classes( void );
 int add_uint_to_a(uint32_t i, uint32_t *cnt, uint32_t **a);
+int find_mount_points(char *dir, char **mounts, int *num_mounts, int rw);
 
 #endif /* _FSDATA_H */
 
