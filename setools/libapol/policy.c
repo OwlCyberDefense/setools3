@@ -303,10 +303,8 @@ int free_ta_list(ta_item_t *list)
 static int free_av_list(av_item_t *list, int num)
 {
 	int i;
-	
 	if(list == NULL)
 		return 0;
-
 	for(i = 0; i < num; i++) {
 		free_ta_list(list[i].src_types);
 		free_ta_list(list[i].tgt_types);
@@ -422,7 +420,7 @@ int free_policy(policy_t **p)
 		}
 		free(policy->cond_exprs);
 	}
-
+	
 	/* av_access rules */
 	if(policy->av_access != NULL) {
 		free_av_list(policy->av_access, policy->num_av_access);
@@ -444,7 +442,7 @@ int free_policy(policy_t **p)
 		}
 		free(policy->te_trans);
 	}
-	
+
 	/* clone rules */
 	{
 		cln_item_t *ptr, *ptr2;
@@ -1664,7 +1662,7 @@ int add_class(char *classname, policy_t *policy)
 /* insert a ta_item_t into a list; this is a completely unsorted list! */
 int insert_ta_item(ta_item_t *newitem, ta_item_t **list)
 {
-	ta_item_t *ptr = NULL;
+	ta_item_t *ptr;
 
 	if(newitem == NULL)
 		return -1;
@@ -1697,13 +1695,12 @@ int add_user(char *user, policy_t *policy)
 			fprintf(stderr, "out of memory\n");
 			return -1;
 		}
-		memset(policy->users, 0, sizeof(name_a_t) * sz);
 		policy->list_sz[POL_LIST_USERS] = sz;
 	}
 	/* next user available */
 	new_user = &(policy->users[policy->num_users]);
 	new_user->name = user;	/* use the memory passed in */
-	new_user->num = 0; 
+	new_user->num= 0; 
 	new_user->a = NULL;
 	(policy->rule_cnt[RULE_USER])++;	
 	policy->num_users++;
@@ -1751,7 +1748,7 @@ int add_name(char *name, name_item_t **list)
 av_item_t *add_new_av_rule(int rule_type, policy_t *policy)
 {
 	int *sz, *num;
-	av_item_t **rlist = NULL, *newitem = NULL;
+	av_item_t **rlist, *newitem;
 	
 	if(rule_type == RULE_TE_ALLOW || rule_type == RULE_NEVERALLOW) {
 		sz = &(policy->list_sz[POL_LIST_AV_ACC]);
@@ -1768,14 +1765,12 @@ av_item_t *add_new_av_rule(int rule_type, policy_t *policy)
 	
 	if (*num >= *sz) {
 		/* grow the dynamic array */
-		av_item_t *ptr;		
+		av_item_t * ptr;		
 		ptr = (av_item_t *)realloc(*rlist, (LIST_SZ + *sz) * sizeof(av_item_t));
-		if (ptr == NULL) {
+		if(ptr == NULL) {
 			fprintf(stderr,"out of memory\n");
 			return NULL;
 		}
-		/* initialize */
-		memset(ptr, 0, (LIST_SZ + *sz) * sizeof(av_item_t));
 		*rlist = ptr;
 		*sz += LIST_SZ;
 	}	
@@ -1798,7 +1793,7 @@ av_item_t *add_new_av_rule(int rule_type, policy_t *policy)
 tt_item_t *add_new_tt_rule(int rule_type, policy_t *policy)
 {
 	int *sz, *num;
-	tt_item_t **rlist = NULL, *newitem = NULL;
+	tt_item_t **rlist, *newitem;
 	
 	if(rule_type == RULE_TE_TRANS || rule_type == RULE_TE_MEMBER || rule_type == RULE_TE_CHANGE) {
 		sz = &(policy->list_sz[POL_LIST_TE_TRANS]);
@@ -1810,14 +1805,12 @@ tt_item_t *add_new_tt_rule(int rule_type, policy_t *policy)
 	
 	if (*num >= *sz) {
 		/* grow the dynamic array */
-		tt_item_t *ptr;		
+		tt_item_t * ptr;		
 		ptr = (tt_item_t *)realloc(*rlist, (LIST_SZ + *sz) * sizeof(tt_item_t));
-		if (ptr == NULL) {
+		if(ptr == NULL) {
 			fprintf(stderr,"out of memory\n");
 			return NULL;
 		}
-		/* initialize */
-		memset(ptr, 0, (LIST_SZ + *sz) * sizeof(tt_item_t));
 		*rlist = ptr;
 		*sz += LIST_SZ;
 	}	
@@ -1844,7 +1837,6 @@ int add_clone_rule(int src, int tgt, unsigned long lineno, policy_t *policy)
 		fprintf(stderr, "out of memory\n");
 		return -1;
 	}
-	memset(newptr, 0, sizeof(cln_item_t));
 
 	newptr->next = NULL;
 	newptr->src = src;
@@ -2361,8 +2353,6 @@ int add_role(char *role, policy_t *policy)
 			fprintf(stderr, "out of memory\n");
 			return -1;
 		}
-		/* initialize */
-		memset(policy->roles, 0, sizeof(name_a_t) * sz);
 		policy->list_sz[POL_LIST_ROLES] = sz;
 	}
 	
@@ -3408,9 +3398,6 @@ int add_cond_expr_item(cond_expr_t *expr, cond_rule_list_t *true_list, cond_rule
 			fprintf(stderr, "out of memory\n");
 			return -1;
 		}
-		/* initialize */
-		memset(policy->cond_exprs, 0, (LIST_SZ + policy->list_sz[POL_LIST_COND_EXPRS])
-					     * sizeof(cond_expr_item_t));
 		policy->list_sz[POL_LIST_INITIAL_SIDS] += LIST_SZ;
 	}
 	idx = policy->num_cond_exprs;

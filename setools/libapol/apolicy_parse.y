@@ -942,10 +942,9 @@ static int insert_separator(int push)
 static int insert_id(char *id, int push)
 {
 	char *newid = 0;
-	int error, str_len;
-	
-	str_len = strlen(id) + 1;
-	newid = (char *) malloc(str_len * sizeof(char));
+	int error;
+
+	newid = (char *) malloc(strlen(id) + 1);
 	if (!newid) {
 		yyerror("out of memory");
 		return -1;
@@ -1114,11 +1113,10 @@ static int define_typealias(void)
 static int add_avrule(int type, av_item_t **rlist, int *list_num, bool_t enabled) {
 	int idx, idx_type;
 	char *id;
-	av_item_t *item = NULL;
-	ta_item_t *src_titem, *tgt_titem, *obj_titem, *perm_titem;
+	av_item_t *item;
+	ta_item_t *titem;
 	bool_t subtract;
-	
-	src_titem = tgt_titem = obj_titem = perm_titem = NULL;
+		
 	item = add_new_av_rule(type, parse_policy);
 	if(item == NULL) {
 		yyerror("Problem adding AV rule to policy database");
@@ -1153,20 +1151,21 @@ static int add_avrule(int type, av_item_t **rlist, int *list_num, bool_t enabled
 			yyerror(errormsg);
 			return -1;				
 		}
-		src_titem = (ta_item_t *)malloc(sizeof(ta_item_t));
-		if(src_titem == NULL) {
+		titem = (ta_item_t *)malloc(sizeof(ta_item_t));
+		if(titem == NULL) {
 			yyerror("out of memory");
 			return -1;
 		}
-		src_titem->type = idx_type;
+		titem->type = idx_type;
 		if (subtract) {
-			src_titem->type |= IDX_SUBTRACT;
+			titem->type |= IDX_SUBTRACT;
 			subtract = FALSE;
 		}
-		src_titem->idx = idx;
-		if(insert_ta_item(src_titem, &(item->src_types)) != 0) {
+		titem->idx = idx;
+		if(insert_ta_item(titem, &(item->src_types)) != 0) {
 			snprintf(errormsg, sizeof(errormsg), "failed ta_item insetion for source type id %s", id);
-			goto err;
+			yyerror(errormsg);
+			return -1;
 		}
 		free(id);
 	}
@@ -1192,22 +1191,24 @@ static int add_avrule(int type, av_item_t **rlist, int *list_num, bool_t enabled
 		idx = get_type_or_attrib_idx(id, &idx_type, parse_policy);
 		if(idx < 0) {
 			snprintf(errormsg, sizeof(errormsg), "%s is neither a type or type attribute", id);
-			goto err;				
+			yyerror(errormsg);
+			return -1;				
 		}
-		tgt_titem = (ta_item_t *)malloc(sizeof(ta_item_t));
-		if(tgt_titem == NULL) {
+		titem = (ta_item_t *)malloc(sizeof(ta_item_t));
+		if(titem == NULL) {
 			yyerror("out of memory");
-			goto err;
+			return -1;
 		}
-		tgt_titem->type = idx_type;
+		titem->type = idx_type;
 		if (subtract) {
-			tgt_titem->type |= IDX_SUBTRACT;
+			titem->type |= IDX_SUBTRACT;
 			subtract = FALSE;
 		}
-		tgt_titem->idx = idx;
-		if(insert_ta_item(tgt_titem, &(item->tgt_types)) != 0) {
+		titem->idx = idx;
+		if(insert_ta_item(titem, &(item->tgt_types)) != 0) {
 			snprintf(errormsg, sizeof(errormsg), "failed ta_item insetion for target type id %s", id);
-			goto err;
+			yyerror(errormsg);
+			return -1;
 		}
 		free(id);
 	}		
@@ -1215,27 +1216,29 @@ static int add_avrule(int type, av_item_t **rlist, int *list_num, bool_t enabled
 	while ((id = queue_remove(id_queue))) {
 		if(strcmp(id, "*") == 0) {
 			yyerror("'*' operator cannot be applied to object classes");
-			goto err;
+			return -1;
 		}
 		if(strcmp(id, "~") == 0) {
 			yyerror("'~' operator cannot be applied to object classes");
-			goto err;
+			return -1;
 		}
 		idx = get_obj_class_idx(id, parse_policy);
 		if(idx < 0) {
 			snprintf(errormsg, sizeof(errormsg), "%s is not a valid object class name", id);
-			goto err;
+			yyerror(errormsg);
+			return -1;
 		}
-		obj_titem = (ta_item_t *)malloc(sizeof(ta_item_t));
-		if(obj_titem == NULL) {
+		titem = (ta_item_t *)malloc(sizeof(ta_item_t));
+		if(titem == NULL) {
 			yyerror("out of memory");
-			goto err;
+			return -1;
 		}
-		obj_titem->type = IDX_OBJ_CLASS;
-		obj_titem->idx = idx;
-		if(insert_ta_item(obj_titem, &(item->classes)) != 0) {
+		titem->type = IDX_OBJ_CLASS;
+		titem->idx = idx;
+		if(insert_ta_item(titem, &(item->classes)) != 0) {
 			snprintf(errormsg, sizeof(errormsg), "failed ta_item insetion for classes id %s", id);
-			goto err;
+			yyerror(errormsg);
+			return -1;
 		}
 		free(id);
 	}
@@ -1255,29 +1258,24 @@ static int add_avrule(int type, av_item_t **rlist, int *list_num, bool_t enabled
 		idx = get_perm_idx(id, parse_policy);
 		if(idx < 0) {
 			snprintf(errormsg, sizeof(errormsg), "%s is not a valid permission name", id);
-			goto err;
+			yyerror(errormsg);
+			return -1;
 		}
-		perm_titem = (ta_item_t *)malloc(sizeof(ta_item_t));
-		if(perm_titem == NULL) {
+		titem = (ta_item_t *)malloc(sizeof(ta_item_t));
+		if(titem == NULL) {
 			yyerror("out of memory");
-			goto err;
+			return -1;
 		}
-		perm_titem->type = IDX_PERM;
-		perm_titem->idx = idx;
-		if(insert_ta_item(perm_titem, &(item->perms)) != 0) {
+		titem->type = IDX_PERM;
+		titem->idx = idx;
+		if(insert_ta_item(titem, &(item->perms)) != 0) {
 			snprintf(errormsg, sizeof(errormsg), "failed ta_item insetion for classes id %s", id);
-			goto err;
+			yyerror(errormsg);
+			return -1;
 		}
 		free(id);
 	}	
 	return *list_num - 1;
-err:
-	if (src_titem) free(src_titem);
-	if (tgt_titem) free(tgt_titem);
-	if (obj_titem) free(obj_titem);
-	if (perm_titem) free(perm_titem);
-	yyerror(errormsg);
-	return -1;
 }
 
 /* store av rules */
@@ -1346,11 +1344,10 @@ static int add_ttrule(int rule_type, bool_t enabled)
 {
 	int idx, idx_type;
 	char *id;
-	tt_item_t *item = NULL;
-	ta_item_t *src_titem, *tgt_titem, *obj_titem;
+	tt_item_t *item;
+	ta_item_t *titem;
 	bool_t subtract;
 		
-	src_titem = tgt_titem = obj_titem = NULL;		
 	item = add_new_tt_rule(rule_type, parse_policy);
 	if(item == NULL) {
 		yyerror("Problem adding TT rule to policy database");
@@ -1387,20 +1384,21 @@ static int add_ttrule(int rule_type, bool_t enabled)
 			yyerror(errormsg);
 			return -1;				
 		}
-		src_titem = (ta_item_t *)malloc(sizeof(ta_item_t));
-		if(src_titem == NULL) {
+		titem = (ta_item_t *)malloc(sizeof(ta_item_t));
+		if(titem == NULL) {
 			yyerror("out of memory");
 			return -1;
 		}
-		src_titem->type = idx_type;
+		titem->type = idx_type;
 		if (subtract) {
-			src_titem->type |= IDX_SUBTRACT;
+			titem->type |= IDX_SUBTRACT;
 			subtract = FALSE;
 		}
-		src_titem->idx = idx;
-		if(insert_ta_item(src_titem, &(item->src_types)) != 0) {
+		titem->idx = idx;
+		if(insert_ta_item(titem, &(item->src_types)) != 0) {
 			snprintf(errormsg, sizeof(errormsg), "failed ta_item insetion for source type id %s\n", id);
-			goto err;
+			yyerror(errormsg);
+			return -1;
 		}
 		free(id);
 	}
@@ -1427,22 +1425,24 @@ static int add_ttrule(int rule_type, bool_t enabled)
 		idx = get_type_or_attrib_idx(id, &idx_type, parse_policy);
 		if(idx < 0) {
 			snprintf(errormsg, sizeof(errormsg), "%s is neither a type or type attribute", id);
-			goto err;				
+			yyerror(errormsg);
+			return -1;				
 		}
-		tgt_titem = (ta_item_t *)malloc(sizeof(ta_item_t));
-		if(tgt_titem == NULL) {
+		titem = (ta_item_t *)malloc(sizeof(ta_item_t));
+		if(titem == NULL) {
 			yyerror("out of memory");
-			goto err;
+			return -1;
 		}
-		tgt_titem->type = idx_type;
+		titem->type = idx_type;
 		if (subtract) {
-			tgt_titem->type |= IDX_SUBTRACT;
+			titem->type |= IDX_SUBTRACT;
 			subtract = FALSE;
 		}
-		tgt_titem->idx = idx;
-		if(insert_ta_item(tgt_titem, &(item->tgt_types)) != 0) {
+		titem->idx = idx;
+		if(insert_ta_item(titem, &(item->tgt_types)) != 0) {
 			snprintf(errormsg, sizeof(errormsg), "failed ta_item insetion for target type id %s\n", id);
-			goto err;
+			yyerror(errormsg);
+			return -1;
 		}
 		free(id);
 	}		
@@ -1451,29 +1451,31 @@ static int add_ttrule(int rule_type, bool_t enabled)
 	while ((id = queue_remove(id_queue))) {
 		if(strcmp(id, "*") == 0) {
 			yyerror("'*' operator cannot be applied to object classes");
-			goto err;
+			return -1;
 		}
 
 		if(strcmp(id, "~") == 0) {
 			yyerror("'~' operator cannot be applied to object classes");
-			goto err;
+			return -1;
 		}
 
 		idx = get_obj_class_idx(id, parse_policy);
 		if(idx < 0) {
 			snprintf(errormsg, sizeof(errormsg), "%s is not a valid object class name", id);
-			goto err;
+			yyerror(errormsg);
+			return -1;
 		}
-		obj_titem = (ta_item_t *)malloc(sizeof(ta_item_t));
-		if(obj_titem == NULL) {
+		titem = (ta_item_t *)malloc(sizeof(ta_item_t));
+		if(titem == NULL) {
 			yyerror("out of memory");
-			goto err;
+			return -1;
 		}
-		obj_titem->type = IDX_OBJ_CLASS;
-		obj_titem->idx = idx;
-		if(insert_ta_item(obj_titem, &(item->classes)) != 0) {
+		titem->type = IDX_OBJ_CLASS;
+		titem->idx = idx;
+		if(insert_ta_item(titem, &(item->classes)) != 0) {
 			snprintf(errormsg, sizeof(errormsg), "failed ta_item insetion for classes id %s", id);
-			goto err;
+			yyerror(errormsg);
+			return -1;
 		}
 		free(id);
 	}
@@ -1483,19 +1485,14 @@ static int add_ttrule(int rule_type, bool_t enabled)
 	idx = get_type_or_attrib_idx(id, &idx_type, parse_policy);
 	if(idx < 0 || idx_type != IDX_TYPE) {
 		snprintf(errormsg, sizeof(errormsg), "default type %s is NOT a defined type.", id);
-		goto err;				
+		yyerror(errormsg);
+		return -1;				
 	}
 	item->dflt_type.type = idx_type;
 	item->dflt_type.idx = idx;
 	free(id);	
 
 	return parse_policy->num_te_trans - 1;
-err:
-	if (src_titem) free(src_titem);
-	if (tgt_titem) free(tgt_titem);
-	if (obj_titem) free(obj_titem);
-	yyerror(errormsg);
-	return -1;
 }
 
 
@@ -1667,7 +1664,7 @@ static int define_role_allow(void)
 {
 	char *id;
 	int idx;
-	ta_item_t *src_role = NULL, *tgt_role = NULL;
+	ta_item_t *role = NULL;
 	role_allow_t *rule = NULL;
 	
 	if(pass == 1 || (pass == 2 && !(parse_policy-> opts & POLOPT_ROLE_RULES))) {
@@ -1708,18 +1705,24 @@ static int define_role_allow(void)
 		idx = get_role_idx(id, parse_policy);
 		if(idx < 0) {
 			snprintf(errormsg, sizeof(errormsg), "%s is an invalid role attribute", id);
-			goto err;				
+			yyerror(errormsg);
+			free(id);
+			return -1;				
 		}
-		src_role = (ta_item_t *)malloc(sizeof(ta_item_t));
-		if(src_role == NULL) {
+		role = (ta_item_t *)malloc(sizeof(ta_item_t));
+		if(role == NULL) {
 			yyerror("out of memory");
-			goto err;
+			free(id);
+			return -1;
 		}
-		src_role->type = IDX_ROLE;
-		src_role->idx = idx;
-		if(insert_ta_item(src_role, &(rule->src_roles)) != 0) {
+		role->type = IDX_ROLE;
+		role->idx = idx;
+		if(insert_ta_item(role, &(rule->src_roles)) != 0) {
 			snprintf(errormsg, sizeof(errormsg), "failed ta_item insetion for source rule id %s\n", id);
-			goto err;
+			yyerror(errormsg);
+			free(id);
+			free(role);
+			return -1;
 		}
 		free(id);
 	}
@@ -1729,6 +1732,7 @@ static int define_role_allow(void)
 		if(strcmp(id, "*") == 0) {
 			rule->flags |= AVFLAG_TGT_STAR;
 			free(id);
+			free(role);
 			continue;
 		}
 		if(strcmp(id, "~") == 0) {
@@ -1739,18 +1743,24 @@ static int define_role_allow(void)
 		idx = get_role_idx(id, parse_policy);
 		if(idx < 0) {
 			snprintf(errormsg, sizeof(errormsg), "%s is not a valid role", id);
-			goto err;				
+			yyerror(errormsg);
+			free(id);
+			return -1;				
 		}
-		tgt_role = (ta_item_t *)malloc(sizeof(ta_item_t));
-		if(tgt_role == NULL) {
+		role = (ta_item_t *)malloc(sizeof(ta_item_t));
+		if(role == NULL) {
 			yyerror("out of memory");
-			goto err;
+			free(id);
+			return -1;
 		}
-		tgt_role->type = IDX_ROLE;
-		tgt_role->idx = idx;
-		if(insert_ta_item(tgt_role, &(rule->tgt_roles)) != 0) {
+		role->type = IDX_ROLE;
+		role->idx = idx;
+		if(insert_ta_item(role, &(rule->tgt_roles)) != 0) {
 			snprintf(errormsg, sizeof(errormsg), "failed ta_item insetion for target role id %s\n", id);
-			goto err;
+			yyerror(errormsg);
+			free(id);
+			free(role);
+			return -1;
 		}
 		free(id);
 	}
@@ -1758,12 +1768,6 @@ static int define_role_allow(void)
 	(parse_policy->num_role_allow)++;	
 	(parse_policy->rule_cnt[RULE_ROLE_ALLOW])++;		
 	return 0;
-err:
-	if (src_role) free(src_role);
-	if (tgt_role) free(tgt_role);
-	free(id);
-	yyerror(errormsg);
-	return -1;
 }
 
 
@@ -1771,7 +1775,7 @@ static int define_role_trans(void)
 {
 	char *id;
 	int idx, idx_type;
-	rt_item_t *rule = NULL;
+	rt_item_t *rule;
 	ta_item_t *role = NULL, *type = NULL;
 	
 	if(pass == 1 || (pass == 2 && !(parse_policy-> opts & POLOPT_ROLE_RULES))) {
@@ -2443,7 +2447,6 @@ static cond_expr_t *define_cond_expr(__u32 expr_type, void *arg1, void *arg2)
 		return expr;
 	default:
 		yyerror("illegal conditional expression");
-		free(expr);
 		return NULL;
 	}
 }
@@ -2592,7 +2595,6 @@ static rule_desc_t *define_cond_te_avtab(int rule_type)
 		rt = set_policy_version(POL_VER_JUL2002, parse_policy);
 		if(rt != 0) {
 			yyerror("error setting policy version");
-			free(rule);
 			return NULL;
 		}
 		/* fall thru */
@@ -2605,13 +2607,10 @@ static rule_desc_t *define_cond_te_avtab(int rule_type)
 	default:
 		snprintf(errormsg, sizeof(errormsg), "Invalid AV type (%d)", rule_type);
 		yyerror(errormsg);
-		free(rule);
 		return NULL;
 	}
-	if (rt < 0) {
-		free(rule);
+	if (rt < 0) 
 		return NULL;
-	}
 	(parse_policy->rule_cnt[rule_type])++;
 	
 	rule->rule_type = rule_type;
