@@ -35,7 +35,7 @@ int close_policy(policy_t *policy)
 
 static int read_policy(policy_t *policy)
 {
-	//yydebug = 1;
+	/*yydebug = 1; */
 	parse_policy = policy; /* setting the parser's global parse policy */
 	/* assumed yyin is opened to policy file */
 	id_queue = queue_create();
