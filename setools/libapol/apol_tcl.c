@@ -27,6 +27,9 @@
 #include "infoflow.h"
 #include "perm-map.h"
 #include "policy-query.h"
+#ifdef APOL_PERFORM_TEST
+#include <time.h>
+#endif
 
 /* 
  * Several of the public C functions provided by the Tcl/Tk 8.4 libraries 
@@ -39,7 +42,7 @@
 #ifndef CONST84
 #define CONST84
 #endif
-    
+
 extern char *rulenames[]; /* in render.c*/
 policy_t *policy; /* local global for policy DB */
 void* state = NULL; /* local global variable to support step-by-step transitive information flow analysis */
@@ -187,7 +190,7 @@ static iflow_query_t* set_transitive_query_args(Tcl_Interp *interp, char *argv[]
 	char *start_type = NULL, *end_type = NULL;
 	char *err, *name;
 	char tbuf[64];
-	CONST84 char **obj_class_perms, **inter_types;
+	CONST84 char **obj_class_perms = NULL, **inter_types = NULL;
 	bool_t filter_obj_classes, filter_end_types, filter_inter_types;
 	regex_t reg;
 	iflow_query_t *iflow_query = NULL;
@@ -398,7 +401,7 @@ static iflow_query_t* set_transitive_query_args(Tcl_Interp *interp, char *argv[]
 			return NULL;
 		}			
 	}
-	if (filter_inter_types) {
+	if (filter_inter_types && inter_types != NULL) {
 		/* Set intermediate type info */
 		for (i = 0; i < num_inter_types; i++) {
 			type = get_type_idx(inter_types[i], policy);
@@ -575,16 +578,16 @@ static int append_attrib_str(bool_t do_types, bool_t do_type_attribs, bool_t use
 		Tcl_DStringAppend(buf, policy->attribs[idx].name, -1);
 		
 	if(do_types) {
-		sprintf(tbuf, " (%d types)\n", policy->attribs[idx].num_types);
+		sprintf(tbuf, " (%d types)\n", policy->attribs[idx].num);
 		Tcl_DStringAppend(buf, tbuf, -1);
-		for(j = 0; j < policy->attribs[idx].num_types; j++) {
+		for(j = 0; j < policy->attribs[idx].num; j++) {
 			Tcl_DStringAppend(buf, "\t", -1);
-			Tcl_DStringAppend(buf, policy->types[policy->attribs[idx].types[j]].name, -1);
+			Tcl_DStringAppend(buf, policy->types[policy->attribs[idx].a[j]].name, -1);
 			/* aliases */
-			if(use_aliases && policy->types[policy->attribs[idx].types[j]].aliases != NULL) {
+			if(use_aliases && policy->types[policy->attribs[idx].a[j]].aliases != NULL) {
 				name_item_t *ptr;
 				Tcl_DStringAppend(buf, ":", -1);
-				for(ptr = policy->types[policy->attribs[idx].types[j]].aliases; ptr != NULL; ptr = ptr->next) {
+				for(ptr = policy->types[policy->attribs[idx].a[j]].aliases; ptr != NULL; ptr = ptr->next) {
 					Tcl_DStringAppend(buf, " ", -1);
 					Tcl_DStringAppend(buf, ptr->name, -1);
 					if(ptr->next != NULL)
@@ -593,9 +596,9 @@ static int append_attrib_str(bool_t do_types, bool_t do_type_attribs, bool_t use
 			}			
 			if(do_type_attribs) {
 				Tcl_DStringAppend(buf, " { ", -1);
-				for(k = 0; k < policy->types[policy->attribs[idx].types[j]].num_attribs; k++) {
-					if(strcmp(policy->attribs[idx].name, policy->attribs[policy->types[policy->attribs[idx].types[j]].attribs[k]].name) != 0)
-						Tcl_DStringAppend(buf, policy->attribs[policy->types[policy->attribs[idx].types[j]].attribs[k]].name, -1);
+				for(k = 0; k < policy->types[policy->attribs[idx].a[j]].num_attribs; k++) {
+					if(strcmp(policy->attribs[idx].name, policy->attribs[policy->types[policy->attribs[idx].a[j]].attribs[k]].name) != 0)
+						Tcl_DStringAppend(buf, policy->attribs[policy->types[policy->attribs[idx].a[j]].attribs[k]].name, -1);
 						Tcl_DStringAppend(buf, " ", -1);
 				}
 				Tcl_DStringAppend(buf, "}", -1);
@@ -720,21 +723,18 @@ static int append_av_rule(bool_t addnl, bool_t addlineno, int idx, bool_t is_au,
 	return 0;
 }
 
-static int append_user_str(user_item_t *user, bool_t name_only,  policy_t *policy, Tcl_DString *buf)
+static int append_user_str(int idx, bool_t name_only,  policy_t *policy, Tcl_DString *buf)
 {
 	char *name;
-	ta_item_t *ptr;
 	int rt;
+	int i;
 		
-	if(user == NULL || buf == NULL || policy == NULL)
-		return -1;
-	
-	Tcl_DStringAppend(buf, user->name, -1);
+	assert(is_valid_user_idx(idx, policy));
+	Tcl_DStringAppend(buf, policy->users[idx].name, -1);
 	if(!name_only) {
 		Tcl_DStringAppend(buf, " { ", -1);
-		for(ptr = user->roles; ptr != NULL; ptr = ptr->next) {
-			assert(ptr->type == IDX_ROLE);
-			rt = get_role_name(ptr->idx, &name, policy);
+		for(i = 0; i < policy->users[idx].num; i++) {
+			rt = get_role_name(policy->users[idx].a[i], &name, policy);
 			if(rt != 0) {
 				return -1;
 			}
@@ -850,6 +850,134 @@ static int append_transitive_iflow_objects_to_results(policy_t *policy, iflow_tr
 	return 0;
 }
 
+static int append_dta_results(policy_t *policy, domain_trans_analysis_t *dta_results, Tcl_Interp *interp)
+{
+	llist_node_t *x, *y;
+	char *tmp, tbuf[BUF_SZ];
+	int i, rt;
+	trans_domain_t *t;
+	entrypoint_type_t *ep;
+	
+	assert(dta_results != NULL);
+	/* # of target types */
+	sprintf(tbuf, "%d", dta_results->trans_domains->num);
+	Tcl_AppendElement(interp, tbuf);
+	
+	/* all target types */
+	for (x = dta_results->trans_domains->head; x != NULL; x = x->next) {
+		t = (trans_domain_t *)x->data;
+		/* target type */
+		assert(dta_results->start_type == t->start_type);
+		rt = get_type_name(t->trans_type, &tmp, policy);
+		if (rt != 0) {
+			Tcl_ResetResult(interp);
+			Tcl_AppendResult(interp, "analysis error (looking up target name)", (char *) NULL);
+			return TCL_ERROR;
+		}
+		Tcl_AppendElement(interp, tmp);
+		free(tmp);
+		/* # of pt rules */
+		sprintf(tbuf, "%d", t->num_pt_rules);
+		Tcl_AppendElement(interp, tbuf);
+		/* all the pt rules */
+		for (i = 0; i < t->num_pt_rules; i++) {
+			tmp = re_render_av_rule(0,t->pt_rules[i], 0, policy);
+			if (tmp == NULL) {
+				Tcl_ResetResult(interp);
+				Tcl_AppendResult(interp, "analysis error (rendering process transition rule)",  (char *) NULL);
+				return TCL_ERROR;
+			}
+			Tcl_AppendElement(interp, tmp);
+			free(tmp);
+			sprintf(tbuf, "%d", get_rule_lineno(t->pt_rules[i],RULE_TE_ALLOW, policy));
+			Tcl_AppendElement(interp, tbuf);
+			/* Append a boolean value indicating whether this rule is enabled 
+			 * for conditional policy support */
+			sprintf(tbuf, "%d", policy->av_access[t->pt_rules[i]].enabled);
+			Tcl_AppendElement(interp, tbuf);
+		}
+		/* # of entrypoint file types */
+		sprintf(tbuf, "%d", t->entry_types->num);
+		Tcl_AppendElement(interp, tbuf);
+		/* all the entrypoint file types */
+		for (y = t->entry_types->head; y != NULL; y = y->next) {
+			ep = (entrypoint_type_t *)y->data;
+			assert(t->trans_type == ep->trans_type);
+			/* file type */
+			rt = get_type_name(ep->file_type, &tmp, policy);
+			if (rt != 0) {
+				Tcl_ResetResult(interp);
+				Tcl_AppendResult(interp, "analysis error (looking up entry file name)", (char *) NULL);
+				return TCL_ERROR;
+			}
+			Tcl_AppendElement(interp, tmp);
+			free(tmp);			
+			/* # of file entrypoint rules */
+			sprintf(tbuf, "%d", ep->num_ep_rules);
+			Tcl_AppendElement(interp, tbuf);
+			/* all entrypoint rules */
+			for (i = 0; i < ep->num_ep_rules; i++) {
+				tmp = re_render_av_rule(0, ep->ep_rules[i], 0, policy);
+				if (tmp == NULL) {
+					Tcl_ResetResult(interp);
+					Tcl_AppendResult(interp, "analysis error (rendering file entrypoint rule)",  (char *) NULL);
+					return TCL_ERROR;
+				}
+				Tcl_AppendElement(interp, tmp);
+				free(tmp);
+				sprintf(tbuf, "%d", get_rule_lineno(ep->ep_rules[i],RULE_TE_ALLOW, policy));
+				Tcl_AppendElement(interp, tbuf);
+				/* Append a boolean value indicating whether this rule is enabled 
+				 * for conditional policy support */
+				sprintf(tbuf, "%d", policy->av_access[ep->ep_rules[i]].enabled);
+				Tcl_AppendElement(interp, tbuf);				
+			}
+			/* # of file execute rules */
+			sprintf(tbuf, "%d", ep->num_ex_rules);
+			Tcl_AppendElement(interp, tbuf);
+			/* all execute rules */
+			for (i = 0; i < ep->num_ex_rules; i++) {
+				tmp = re_render_av_rule(0,ep->ex_rules[i], 0, policy);
+				if (tmp == NULL) {
+					Tcl_ResetResult(interp);
+					Tcl_AppendResult(interp, "analysis error (rendering file execute rule)",  (char *) NULL);
+					return TCL_ERROR;
+				}
+				Tcl_AppendElement(interp, tmp);
+				free(tmp);
+				sprintf(tbuf, "%d", get_rule_lineno(ep->ex_rules[i],RULE_TE_ALLOW, policy));
+				Tcl_AppendElement(interp, tbuf);
+				/* Append a boolean value indicating whether this rule is enabled 
+				 * for conditional policy support */
+				sprintf(tbuf, "%d", policy->av_access[ep->ex_rules[i]].enabled);
+				Tcl_AppendElement(interp, tbuf);
+			}
+		}
+		/* # of additional rules */
+		sprintf(tbuf, "%d", t->num_other_rules);
+		Tcl_AppendElement(interp, tbuf);
+		/* all additional rules */
+		for (i = 0; i < t->num_other_rules; i++) {
+			tmp = re_render_av_rule(0, t->other_rules[i], 0, policy);
+			if (tmp == NULL) {
+				Tcl_ResetResult(interp);
+				Tcl_AppendResult(interp, "analysis error rendering additional rules",  (char *) NULL);
+				return TCL_ERROR;
+			}
+			Tcl_AppendElement(interp, tmp);
+			free(tmp);
+			sprintf(tbuf, "%d", get_rule_lineno(t->other_rules[i], RULE_TE_ALLOW, policy));
+			Tcl_AppendElement(interp, tbuf);
+			/* Append a boolean value indicating whether this rule is enabled 
+			 * for conditional policy support */
+			sprintf(tbuf, "%d", policy->av_access[t->other_rules[i]].enabled);
+			Tcl_AppendElement(interp, tbuf);
+		}
+	}
+	
+	return 0;
+}
+
 static int append_transitive_iflows_to_results(policy_t *policy, iflow_transitive_t* answers, iflow_path_t *cur, Tcl_Interp *interp)
 {
 	char tbuf[BUF_SZ];
@@ -892,7 +1020,7 @@ static int append_transitive_iflow_paths_to_results(policy_t *policy, iflow_tran
 	return 0;
 }
 
-static int append_transitive_iflow_results(policy_t *policy, iflow_transitive_t* answers, Tcl_Interp *interp)
+static int append_transitive_iflow_results(policy_t *policy, iflow_transitive_t *answers, Tcl_Interp *interp)
 {
 	char tbuf[BUF_SZ];
 	int i, rt;
@@ -999,9 +1127,9 @@ static int append_role(int idx, bool_t name_only, int numperline, policy_t *poli
 	
 	Tcl_DStringAppend(buf, policy->roles[idx].name, -1);
 	if(!name_only) {
-		sprintf(tmpbuf, " (%d types)\n     ", policy->roles[idx].num_types);
+		sprintf(tmpbuf, " (%d types)\n     ", policy->roles[idx].num);
 		Tcl_DStringAppend(buf, tmpbuf, -1);
-		for(j = 0; j < policy->roles[idx].num_types; j++) {
+		for(j = 0; j < policy->roles[idx].num; j++) {
 			/* control # of types per line */
 			if(j != 0) {
 				x = div(j, numperline);
@@ -1010,7 +1138,7 @@ static int append_role(int idx, bool_t name_only, int numperline, policy_t *poli
 					Tcl_DStringAppend(buf, tmpbuf, -1);
 				}
 			}
-			sprintf(tmpbuf, "%s  ", policy->types[policy->roles[idx].types[j]].name);
+			sprintf(tmpbuf, "%s  ", policy->types[policy->roles[idx].a[j]].name);
 			Tcl_DStringAppend(buf, tmpbuf, -1);
 		}
 		Tcl_DStringAppend(buf, "\n", -1); /* extra line if we're exploding role types */	
@@ -1397,6 +1525,9 @@ int Apol_GetPolicyVersionNumber(ClientData clientData, Tcl_Interp *interp, int a
 	case POL_VER_17:
 		Tcl_AppendResult(interp, "17", (char *) NULL);
 		break;
+	case POL_VER_18:
+		Tcl_AppendResult(interp, "18", (char *) NULL);
+		break;
 	default:
 		Tcl_AppendResult(interp, "0", (char *) NULL);
 		break;
@@ -1750,10 +1881,8 @@ int Apol_GetPermsByClass(ClientData clientData, Tcl_Interp * interp, int argc, c
 		return TCL_ERROR;
 	}
 	rt = Tcl_SplitList(interp, argv[1], &num_classes, &classes);
-	if(rt != TCL_OK) {
-		Tcl_AppendResult(interp,"Error splitting list.", (char *) NULL);
-		return TCL_ERROR;
-	}
+	if(rt != TCL_OK)
+		return rt;
 	if(num_classes < 1)  {
 		Tcl_AppendResult(interp, "No object classes were provided!", (char *) NULL);
 		return TCL_ERROR;
@@ -1890,10 +2019,8 @@ int Apol_GetNames(ClientData clientData, Tcl_Interp * interp, int argc, char *ar
 			free(name);
 		}
 	}
-	/* user list is a linked list and not an array like the other lists */
 	else if(strcmp("users", argv[1]) == 0) {
-		user_item_t *ptr;
-		for(ptr = policy->users.head; get_user_name(ptr, &name) == 0; ptr = ptr->next) {
+		for(i = 0; get_user_name2(i, &name, policy) == 0; i++) {
 			Tcl_AppendElement(interp, name);
 			free(name);
 		}
@@ -2715,8 +2842,8 @@ int Apol_RoleTypes(ClientData clientData, Tcl_Interp *interp, int argc, char *ar
 		return TCL_ERROR;
 	}
 	assert(strcmp(argv[1], policy->roles[idx].name) == 0);
-	for(i = 0; i < policy->roles[idx].num_types; i++) {
-		rt = get_type_name(policy->roles[idx].types[i], &name, policy);
+	for(i = 0; i < policy->roles[idx].num; i++) {
+		rt = get_type_name(policy->roles[idx].a[i], &name, policy);
 		if(rt != 0) {
 			Tcl_ResetResult(interp);
 			Tcl_AppendResult(interp, "Problem finding a role name", (char *) NULL);
@@ -2734,9 +2861,7 @@ int Apol_RoleTypes(ClientData clientData, Tcl_Interp *interp, int argc, char *ar
 int Apol_UserRoles(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
 {
 	char tmpbuf[APOL_STR_SZ+64], *name;
-	user_item_t *user;
-	ta_item_t *ptr;
-	int rt;
+	int rt, idx, i;
 	
 	if(argc != 2) {
 		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
@@ -2750,16 +2875,15 @@ int Apol_UserRoles(ClientData clientData, Tcl_Interp *interp, int argc, char *ar
 		Tcl_AppendResult(interp, "User string too large", (char *) NULL);
 		return TCL_ERROR;
 	}	
-	rt = get_user_by_name(argv[1], &user, policy);
-	if(rt != 0) {
+	idx = get_user_idx(argv[1], policy);
+	if(idx < 0) {
 		sprintf(tmpbuf, "Invalid user name (%s)", argv[1]);
 		Tcl_AppendResult(interp, tmpbuf, (char *) NULL);
 		return TCL_ERROR;		
 	}
 	
-	for(ptr = user->roles; ptr != NULL; ptr = ptr->next) {
-		assert(ptr->type == IDX_ROLE);
-		rt = get_role_name(ptr->idx, &name, policy);
+	for(i = 0; i < policy->users[idx].num; i++) {
+		rt = get_role_name(policy->users[idx].a[i], &name, policy);
 		if(rt != 0) {
 			Tcl_ResetResult(interp);
 			Tcl_AppendResult(interp, "error getting role name", (char *) NULL);			
@@ -2780,11 +2904,10 @@ int Apol_UserRoles(ClientData clientData, Tcl_Interp *interp, int argc, char *ar
  */
 int Apol_GetUsersByRole(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
 {
-	int rt, idx = -1;
+	int rt, idx = -1, i;
 	char tmpbuf[APOL_STR_SZ+64];
 	bool_t name_only, use_role;
 	Tcl_DString *buf, buffer;
-	user_item_t *user;
 	
 	if(argc < 3 || argc > 4) {
 		Tcl_AppendResult(interp, "apol_GetUsersByRole: wrong # of args", (char *) NULL);
@@ -2816,9 +2939,9 @@ int Apol_GetUsersByRole(ClientData clientData, Tcl_Interp *interp, int argc, cha
 	buf = &buffer;	
 	Tcl_DStringInit(buf);
 	
-	for(user = get_first_user_ptr(policy); user != NULL; user = get_next_user_ptr(user)) {
-		if(!use_role || does_user_have_role(user, idx, policy)) {
-			rt = append_user_str(user, name_only, policy, buf);
+	for(i = 0; i < policy->num_users; i++) {
+		if(!use_role || does_user_have_role(i, idx, policy)) {
+			rt = append_user_str(i, name_only, policy, buf);
 			if(rt != 0){
 				Tcl_DStringFree(buf);
 				Tcl_ResetResult(interp);
@@ -3163,8 +3286,8 @@ int Apol_GetAttribTypesList(ClientData clientData, Tcl_Interp *interp, int argc,
 		return TCL_ERROR;			
 	}	
 	
-	for(j = 0; j < policy->attribs[idx].num_types; j++) {
-		Tcl_AppendElement(interp, policy->types[policy->attribs[idx].types[j]].name);
+	for(j = 0; j < policy->attribs[idx].num; j++) {
+		Tcl_AppendElement(interp, policy->types[policy->attribs[idx].a[j]].name);
 	}	
 	
 	return TCL_OK;
@@ -3394,7 +3517,7 @@ int Apol_GetTypeInfo(ClientData clientData, Tcl_Interp *interp, int argc, char *
 	Tcl_DStringInit(buf);	
 	if(!use_srchstr) {	
 		if(do_types) {
-			sprintf(tmpbuf, "TYPES (%d):\n", policy->num_types);
+			sprintf(tmpbuf, "\n\nTYPES (%d):\n", policy->num_types);
 			Tcl_DStringAppend(buf, tmpbuf, -1);
 			for(i = 0; i < policy->num_types; i++) {
 				rt = append_type_str(type_attribs, use_aliases, 1, i, policy, buf);
@@ -3408,11 +3531,7 @@ int Apol_GetTypeInfo(ClientData clientData, Tcl_Interp *interp, int argc, char *
 		}
 		
 		if(do_attribs) {
-			if(do_types) 
-				sprintf(tmpbuf, "\n\nTYPE ATTRIBUTES (%d):\n", policy->num_attribs);
-			else 
-				sprintf(tmpbuf, "TYPE ATTRIBUTES (%d):\n", policy->num_attribs);
-				
+			sprintf(tmpbuf, "\n\nTYPE ATTRIBUTES (%d):\n", policy->num_attribs);
 			Tcl_DStringAppend(buf, tmpbuf, -1);
 			for(i = 0; i < policy->num_attribs; i++) {
 				sprintf(tmpbuf, "%d: ", i+1);
@@ -3466,6 +3585,832 @@ int Apol_GetTypeInfo(ClientData clientData, Tcl_Interp *interp, int argc, char *
 	return TCL_OK;
 }
 
+static int types_relation_append_results(types_relation_query_t *tr_query, 
+					     		types_relation_results_t *tr_results,
+					     		Tcl_Interp *interp, 
+					     		policy_t *policy)
+{
+	char tbuf[BUF_SZ], *name = NULL, *rule = NULL;
+	int i, rt;
+	
+	assert(tr_query != NULL && tr_results != NULL);
+	/* Append typeA string */
+	snprintf(tbuf, sizeof(tbuf)-1, "%s", tr_query->type_name_A);
+	Tcl_AppendElement(interp, tbuf);
+	/* Append the number of common attributes */
+	snprintf(tbuf, sizeof(tbuf)-1, "%s", tr_query->type_name_B);
+	Tcl_AppendElement(interp, tbuf);
+	
+	/* Append the number of common attributes */
+	snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->num_common_attribs);
+	Tcl_AppendElement(interp, tbuf);
+	for (i = 0; i < tr_results->num_common_attribs; i++) {
+		if (get_attrib_name(tr_results->common_attribs[i], &name, policy) != 0) {
+			Tcl_AppendResult(interp, "Error getting attribute name.", (char *) NULL);
+			free(name);
+			return TCL_ERROR;
+		}
+		/* Append the attribute string */
+		snprintf(tbuf, sizeof(tbuf)-1, "%s", name);
+		Tcl_AppendElement(interp, tbuf);
+		free(name);
+	}
+	/* Append the number of common roles */
+	snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->num_common_roles);
+	Tcl_AppendElement(interp, tbuf);
+	for (i = 0; i < tr_results->num_common_roles; i++) {
+		if (get_role_name(tr_results->common_roles[i], &name, policy) != 0) {
+			Tcl_AppendResult(interp, "Error getting role name.", (char *) NULL);
+			free(name);
+			return TCL_ERROR;
+		}
+		/* Append the role string */
+		snprintf(tbuf, sizeof(tbuf)-1, "%s", name);
+		Tcl_AppendElement(interp, tbuf);
+		free(name);
+	}
+	/* Append the number of common users */
+	snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->num_common_users);
+	Tcl_AppendElement(interp, tbuf);
+	for (i = 0; i < tr_results->num_common_users; i++) {
+		if (get_user_name2(tr_results->common_users[i], &name, policy) != 0) {
+			Tcl_AppendResult(interp, "Error getting user name.", (char *) NULL);
+			free(name);
+			return TCL_ERROR;
+		}
+		/* Append the user string */
+		snprintf(tbuf, sizeof(tbuf)-1, "%s", name);
+		Tcl_AppendElement(interp, tbuf);
+		free(name);
+	}
+	/* Append the number of other type transition rules */
+	snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->num_other_tt_rules);
+	Tcl_AppendElement(interp, tbuf);
+	for (i = 0; i < tr_results->num_other_tt_rules; i++) {
+		rule = re_render_tt_rule(1, tr_results->other_tt_rules_results[i], policy);
+		if (rule == NULL)
+			return TCL_ERROR;
+		snprintf(tbuf, sizeof(tbuf)-1, "%s", rule);
+		Tcl_AppendElement(interp, tbuf);
+		free(rule);
+	}
+	/* Append the number of process rules */
+	snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->num_process_inter_rules);
+	Tcl_AppendElement(interp, tbuf);
+	for (i = 0; i < tr_results->num_process_inter_rules; i++) {
+		rule = re_render_av_rule(1, tr_results->process_inter_results[i], 0, policy);
+		if (rule == NULL)
+			return TCL_ERROR;
+		snprintf(tbuf, sizeof(tbuf)-1, "%s", rule);
+		Tcl_AppendElement(interp, tbuf);
+		free(rule);
+	}
+	
+	/* Append common object type access information for type A */
+	if (tr_results->common_obj_types_results != NULL) {
+		snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->common_obj_types_results->num_objs_A);
+		Tcl_AppendElement(interp, tbuf);
+		for(i = 0; i < tr_results->common_obj_types_results->num_objs_A; i++) {
+			if (get_type_name(tr_results->common_obj_types_results->objs_A[i], &name, policy) != 0) {
+				free(name);
+				Tcl_AppendResult(interp, "Error getting attribute name!", (char *) NULL);
+				return TCL_ERROR;
+			}
+			snprintf(tbuf, sizeof(tbuf)-1, "%s", name);
+			Tcl_AppendElement(interp, tbuf);
+			free(name);
+		}
+		/* Append common object type access rules for type A */
+		snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->common_obj_types_results->num_obj_type_rules_A);
+		Tcl_AppendElement(interp, tbuf);
+		for(i = 0; i < tr_results->common_obj_types_results->num_obj_type_rules_A; i++) {
+			rule = re_render_av_rule(1, tr_results->common_obj_types_results->obj_type_rules_A[i], 0, policy);
+			if (rule == NULL)
+				return -1;
+			snprintf(tbuf, sizeof(tbuf)-1, "%s", rule);
+			Tcl_AppendElement(interp, tbuf);
+			free(rule);
+		}
+		
+		/* Append common object type access information for type B */
+		snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->common_obj_types_results->num_objs_B);
+		Tcl_AppendElement(interp, tbuf);
+		for(i = 0; i < tr_results->common_obj_types_results->num_objs_B; i++) {
+			if (get_type_name(tr_results->common_obj_types_results->objs_B[i], &name, policy) != 0) {
+				free(name);
+				Tcl_AppendResult(interp, "Error getting attribute name!", (char *) NULL);
+				return TCL_ERROR;
+			}
+			snprintf(tbuf, sizeof(tbuf)-1, "%s", name);
+			Tcl_AppendElement(interp, tbuf);
+			free(name);
+		}
+		/* Append common object type access rules for type B */
+		snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->common_obj_types_results->num_obj_type_rules_B);
+		Tcl_AppendElement(interp, tbuf);
+		for(i = 0; i < tr_results->common_obj_types_results->num_obj_type_rules_B; i++) {
+			rule = re_render_av_rule(1, tr_results->common_obj_types_results->obj_type_rules_B[i], 0, policy);
+			if (rule == NULL)
+				return -1;
+			snprintf(tbuf, sizeof(tbuf)-1, "%s", rule);
+			Tcl_AppendElement(interp, tbuf);
+			free(rule);
+		}
+	} else {
+		Tcl_AppendElement(interp, "0");
+		Tcl_AppendElement(interp, "0");
+		Tcl_AppendElement(interp, "0");
+		Tcl_AppendElement(interp, "0");
+	}
+	
+	/* Append unique object type access information for type A */
+	if (tr_results->unique_obj_types_results != NULL) {
+		snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->unique_obj_types_results->num_objs_A);
+		Tcl_AppendElement(interp, tbuf);
+		for(i = 0; i < tr_results->unique_obj_types_results->num_objs_A; i++) {
+			if (get_type_name(tr_results->unique_obj_types_results->objs_A[i], &name, policy) != 0) {
+				free(name);
+				Tcl_AppendResult(interp, "Error getting attribute name!", (char *) NULL);
+				return TCL_ERROR;
+			}
+			snprintf(tbuf, sizeof(tbuf)-1, "%s", name);
+			Tcl_AppendElement(interp, tbuf);
+			free(name);
+		}
+		/* Append unique object type access rules for type A */
+		snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->unique_obj_types_results->num_obj_type_rules_A);
+		Tcl_AppendElement(interp, tbuf);
+		for(i = 0; i < tr_results->unique_obj_types_results->num_obj_type_rules_A; i++) {
+			rule = re_render_av_rule(1, tr_results->unique_obj_types_results->obj_type_rules_A[i], 0, policy);
+			if (rule == NULL)
+				return -1;
+			snprintf(tbuf, sizeof(tbuf)-1, "%s", rule);
+			Tcl_AppendElement(interp, tbuf);
+			free(rule);
+		}
+		
+		/* Append unique object type access information for type B */
+		snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->unique_obj_types_results->num_objs_B);
+		Tcl_AppendElement(interp, tbuf);
+		for(i = 0; i < tr_results->unique_obj_types_results->num_objs_B; i++) {
+			if (get_type_name(tr_results->unique_obj_types_results->objs_B[i], &name, policy) != 0) {
+				free(name);
+				Tcl_AppendResult(interp, "Error getting attribute name!", (char *) NULL);
+				return TCL_ERROR;
+			}
+			snprintf(tbuf, sizeof(tbuf)-1, "%s", name);
+			Tcl_AppendElement(interp, tbuf);
+			free(name);
+		}
+		/* Append unique object type access rules for type B */
+		snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->unique_obj_types_results->num_obj_type_rules_B);
+		Tcl_AppendElement(interp, tbuf);
+		for(i = 0; i < tr_results->unique_obj_types_results->num_obj_type_rules_B; i++) {
+			rule = re_render_av_rule(1, tr_results->unique_obj_types_results->obj_type_rules_B[i], 0, policy);
+			if (rule == NULL)
+				return -1;
+			snprintf(tbuf, sizeof(tbuf)-1, "%s", rule);
+			Tcl_AppendElement(interp, tbuf);
+			free(rule);
+		}
+	} else {
+		Tcl_AppendElement(interp, "0");
+		Tcl_AppendElement(interp, "0");
+		Tcl_AppendElement(interp, "0");
+		Tcl_AppendElement(interp, "0");
+	}
+	
+	/* Append direct information flow information */
+	snprintf(tbuf, sizeof(tbuf)-1, "%d", tr_results->num_dirflows);
+	Tcl_AppendElement(interp, tbuf);
+	for (i = 0; i < tr_results->num_dirflows; i++) {
+		/* Append the ending type name to the TCL list */ 
+		snprintf(tbuf, sizeof(tbuf)-1, "%s", policy->types[tr_results->direct_flow_results[i].end_type].name);
+		Tcl_AppendElement(interp, tbuf);
+		/* Append the direction of the information flow for each ending type to the TCL list */ 
+		if (tr_results->direct_flow_results[i].direction == IFLOW_BOTH)
+			Tcl_AppendElement(interp, "both");
+		else if (tr_results->direct_flow_results[i].direction == IFLOW_OUT)
+			Tcl_AppendElement(interp, "out");
+		else
+			Tcl_AppendElement(interp, "in");
+		
+		rt = append_direct_edge_to_results(policy, tr_query->direct_flow_query, &tr_results->direct_flow_results[i], interp);
+		if (rt != 0) {
+			Tcl_AppendResult(interp, "Error appending direct flow edge information!\n", (char *) NULL);
+			return TCL_ERROR;
+		}
+	}
+				
+	/* Append transitive information flow information for typeA->typeB */
+	if (tr_results->trans_flow_results_A_to_B != NULL) {
+		rt = append_transitive_iflow_results(policy, tr_results->trans_flow_results_A_to_B, interp);
+		if (rt != 0) {
+			Tcl_AppendResult(interp, "Error appending transitive flow results!\n", (char *) NULL);
+			return TCL_ERROR;
+		} 
+	} else {
+		Tcl_AppendElement(interp, "0");
+	}
+	/* Append transitive information flow information for typeB->typeA */
+	if (tr_results->trans_flow_results_B_to_A != NULL) {
+		rt = append_transitive_iflow_results(policy, tr_results->trans_flow_results_B_to_A, interp);
+		if (rt != 0) {
+			Tcl_AppendResult(interp, "Error appending transitive flow results!\n", (char *) NULL);
+			return TCL_ERROR;
+		} 
+	} else {
+		Tcl_AppendElement(interp, "0");
+	}
+	
+	/* Append DTA information for typeA->typeB */
+	if (tr_results->dta_results_A_to_B != NULL) {
+		if (append_dta_results(policy, tr_results->dta_results_A_to_B, interp) != TCL_OK) {
+			Tcl_AppendResult(interp, "Error appending domain transition analysis results!", (char *) NULL);
+			return TCL_ERROR;
+		} 
+	} else {
+		Tcl_AppendElement(interp, "0");
+	}
+	/* Append DTA information for typeB->typeA */
+	if (tr_results->dta_results_B_to_A != NULL) {
+		if (append_dta_results(policy, tr_results->dta_results_B_to_A, interp) != TCL_OK) {
+			Tcl_AppendResult(interp, "Error appending domain transition analysis results!", (char *) NULL);
+			return TCL_ERROR;
+		} 
+	} else {
+		Tcl_AppendElement(interp, "0");
+	}
+	
+	return 0;
+}
+
+/* argv[18] - flag (boolean value) for indicating that a list of object classes are being provided to the DTA query.
+ * argv[19] - number of object classes that are to be included in the DTA query.
+ * argv[20] - list of object classes/permissions for the DTA query.
+ * argv[21] - flag (boolean value) for selecting object type(s) in the DTA query.
+ * argv[22] - list of object types for the DTA query.
+ */
+static int types_relation_get_dta_options(dta_query_t *dta_query, Tcl_Interp *interp, char *argv[], policy_t *policy)
+{
+	int rt, num_objs, num_objs_options, num_end_types, i, j;
+	int total_num_perms, cur, type;
+	int num_obj_perms, obj, perm;
+	CONST84 char **obj_class_perms, **end_types;
+	bool_t filter_obj_classes, filter_end_types;
+	
+	assert(dta_query != NULL);		
+	filter_obj_classes = getbool(argv[18]);
+	filter_end_types = getbool(argv[21]);
+	rt = Tcl_GetInt(interp, argv[19], &num_objs);
+	if (rt == TCL_ERROR) {
+		Tcl_AppendResult(interp, "argv[19] apparently not an integer", (char *) NULL);
+		return TCL_ERROR;
+	}
+	
+	if(filter_obj_classes) {
+		/* Second, disassemble list of object class permissions, returning an array of pointers to the elements. */
+		rt = Tcl_SplitList(interp, argv[20], &num_objs_options, &obj_class_perms);
+		if (rt != TCL_OK) {
+			Tcl_AppendResult(interp, "Error splitting TCL list.", (char *) NULL);
+			return TCL_ERROR;
+		}
+		
+		if (num_objs_options < 1) {
+			Tcl_AppendResult(interp, "Must provide object class permissions.", (char *) NULL);
+			Tcl_Free((char *) obj_class_perms);
+			return TCL_ERROR;
+		}
+	}
+	
+	if (filter_end_types) {
+		/* First, disassemble TCL intermediate types list, returning an array of pointers to the elements. */
+		rt = Tcl_SplitList(interp, argv[22], &num_end_types, &end_types);
+		if (rt != TCL_OK) {
+			Tcl_AppendResult(interp, "Error splitting TCL list.", (char *) NULL);
+			return TCL_ERROR;
+		}
+		
+		if (num_end_types < 1) {
+			Tcl_AppendResult(interp, "Must provide at least one end type.", (char *) NULL);
+			Tcl_Free((char *) end_types);
+			return TCL_ERROR;
+		}
+	}		
+						
+	if(filter_obj_classes && obj_class_perms != NULL) {		
+		assert(num_objs > 0);
+		cur = 0;
+		/* Set the object classes permission info */
+		/* Keep in mind that this is an encoded TCL list in the form "class1 num_perms perm1 ... permN ... classN num_perms perm1 ... permN" */
+		for (i = 0; i < num_objs; i++) {
+			obj = get_obj_class_idx(obj_class_perms[cur], policy);
+			if (obj < 0) {
+				Tcl_AppendResult(interp, "Invalid object class:\n", obj_class_perms[cur], (char *) NULL);
+				Tcl_Free((char *) obj_class_perms);
+				return TCL_ERROR;
+			}
+			/* Increment to next element, which should be the number of specified permissions for the class */
+			cur++;
+			rt = Tcl_GetInt(interp, obj_class_perms[cur], &num_obj_perms);
+			if (rt == TCL_ERROR) {
+				Tcl_AppendResult(interp, "Item in obj_class_perms list apparently is not an integer\n", (char *) NULL);
+				return TCL_ERROR;
+			}
+			if (num_obj_perms == 0) {
+				fprintf(stderr, "No permissions for object: %s. Skipping...\n", obj_class_perms[cur - 1]);
+				continue;	
+			}
+			
+			/* Get the total number of permissions for the class from the policy. */
+			total_num_perms = get_num_perms_for_obj_class(obj, policy);
+			if (!total_num_perms) {
+				Tcl_AppendResult(interp, "Object class without any permissions!\n", (char *) NULL);
+				return TCL_ERROR;
+			}
+			
+			for (j = 0; j < num_obj_perms; j++) {
+				cur++;
+				perm = get_perm_idx(obj_class_perms[cur], policy);
+				if (perm < 0 || !is_valid_perm_for_obj_class(policy, obj, perm)) {
+					fprintf(stderr, "Invalid object class permission\n");
+					continue;
+				}
+				if (dta_query_add_obj_class_perm(dta_query, obj, j) == -1) {
+					Tcl_AppendResult(interp, "error adding perm\n", (char *) NULL);
+					return TCL_ERROR;
+				}
+			}
+			cur++;
+		}
+		Tcl_Free((char *) obj_class_perms);
+	}
+
+	if (filter_end_types) {
+		/* Set intermediate type info */
+		for (i = 0; i < num_end_types; i++) {
+			type = get_type_idx(end_types[i], policy);
+			if (type < 0) {
+				/* This is an invalid ending type, so ignore */
+				continue;
+			}
+			if (dta_query_add_end_type(dta_query, type) != 0) {
+				Tcl_AppendResult(interp, "Memory error!\n", (char *) NULL);
+				return TCL_ERROR;
+			}
+		}
+		Tcl_Free((char *) end_types);
+	}
+	
+	return TCL_OK;
+}
+
+/* argv[23] - flag (boolean value) for indicating that a list of object classes are being provided to the DIF query.
+ * argv[24] - object classes for DIF query (a TCL list string). At least one object class must be given or 
+ * 	     an error is thrown.
+ * NOTE: IF SEARCHING DIRECT FLOWS, THIS FUNCTION EXPECTS PERMISSION MAPPINGS TO BE LOADED!! 
+ * 	 If, not it will throw an error.
+ */
+static int types_relation_get_dirflow_options(iflow_query_t *direct_flow_query, Tcl_Interp *interp, char *argv[], policy_t *policy)
+{
+	int num_objs, obj;
+	int i, rt;
+	CONST84 char **obj_classes;
+	bool_t filter_obj_classes;
+	
+	assert(direct_flow_query != NULL);	
+	if (policy->pmap == NULL) {
+		Tcl_AppendResult(interp,"No permission map loaded for Direct Flow Analysis!", (char *) NULL);
+		return TCL_ERROR;
+	}	
+	
+	filter_obj_classes = getbool(argv[23]);
+	if (filter_obj_classes) {
+		/* First, disassemble TCL object classes list, returning an array of pointers to the elements. */
+		rt = Tcl_SplitList(interp, argv[24], &num_objs, &obj_classes);
+		if (rt != TCL_OK) {
+			Tcl_AppendResult(interp, "Error splitting TCL list.", (char *) NULL);
+			return TCL_ERROR;
+		}
+		
+		if (num_objs < 1) {
+			Tcl_AppendResult(interp, "Must provide at least one object class to Direct Flow query.", (char *) NULL);
+			Tcl_Free((char *) obj_classes);
+			return TCL_ERROR;
+		}
+	}
+	
+	if (filter_obj_classes && obj_classes != NULL) {
+		/* Set the object classes info */
+		for (i = 0; i < num_objs; i++) {
+			obj = get_obj_class_idx(obj_classes[i], policy);
+			if (obj < 0) {
+				Tcl_AppendResult(interp, "Invalid object class provided to Direct Flow query:\n", obj_classes[i], (char *) NULL);
+				Tcl_Free((char *) obj_classes);
+				return TCL_ERROR;
+			}
+			if (iflow_query_add_obj_class(direct_flow_query, obj) == -1) {
+				Tcl_AppendResult(interp, "Error adding object class to direct flow query!\n", (char *) NULL);
+				return TCL_ERROR;
+			}
+		}
+		Tcl_Free((char *) obj_classes);
+	} 
+	
+	return TCL_OK;
+}
+
+/* argv[13] - (boolean value) for indicating that a list of transitive flow object classes are being provided to the TIF query.
+ * argv[14] - number of object classes that are to be included in the transitive flow query.
+ * argv[15] - encoded list of object class/permissions to include in the the transitive flow query.
+ * argv[16] - flag (boolean value) for indicating whether or not to include intermediate types in the 
+ *	      the transitive flow query.
+ * argv[17] - TCL list of intermediate types for the transitive flow analysis
+ * NOTE: IF SEARCHING TRANSITIVE FLOWS, THIS FUNCTION EXPECTS PERMISSION MAPPINGS TO BE LOADED!! 
+ * 	 If, not it will throw an error.
+ */
+static int types_relation_get_transflow_options(iflow_query_t *trans_flow_query, Tcl_Interp *interp, char *argv[], policy_t *policy)
+{
+	int num_objs, num_obj_perms, num_objs_options, obj, perm, total_num_perms;
+	int num_inter_types, type;
+	int i, j, rt, cur;
+	CONST84 char **obj_class_perms = NULL, **inter_types = NULL;
+	bool_t filter_obj_classes, filter_inter_types;
+	
+	assert(trans_flow_query != NULL);
+	if(policy->pmap == NULL) {
+		Tcl_AppendResult(interp,"No permission map loaded for Transitive Flow Analysis!", (char *) NULL);
+		return TCL_ERROR;
+	}	
+	
+	filter_obj_classes = getbool(argv[13]);
+	filter_inter_types = getbool(argv[16]);
+	rt = Tcl_GetInt(interp, argv[14], &num_objs);
+	if (rt == TCL_ERROR) {
+		Tcl_AppendResult(interp,"argv[14] apparently not an integer", (char *) NULL);
+		return TCL_ERROR;
+	}
+	
+	if (filter_obj_classes) {
+		/* Second, disassemble list of object class permissions, returning an array of pointers to the elements. */
+		rt = Tcl_SplitList(interp, argv[15], &num_objs_options, &obj_class_perms);
+		if (rt != TCL_OK) {
+			Tcl_AppendResult(interp, "Error splitting TCL list.", (char *) NULL);
+			return TCL_ERROR;
+		}
+		
+		if (num_objs_options < 1) {
+			Tcl_AppendResult(interp, "Must provide object class permissions.", (char *) NULL);
+			Tcl_Free((char *) obj_class_perms);
+			return TCL_ERROR;
+		}
+	}
+	
+	if (filter_inter_types) {
+		/* First, disassemble TCL intermediate types list, returning an array of pointers to the elements. */
+		rt = Tcl_SplitList(interp, argv[17], &num_inter_types, &inter_types);
+		if (rt != TCL_OK) {
+			Tcl_AppendResult(interp, "Error splitting TCL list.", (char *) NULL);
+			return TCL_ERROR;
+		}
+		
+		if (num_inter_types < 1) {
+			Tcl_AppendResult(interp, "Must provide at least one intermediate type.", (char *) NULL);
+			Tcl_Free((char *) inter_types);
+			return TCL_ERROR;
+		}
+	}			
+	
+	if (filter_obj_classes && obj_class_perms != NULL) {
+		assert(num_objs > 0);
+		cur = 0;
+		/* Set the object classes permission info */
+		/* Keep in mind that this is an encoded TCL list in the form "class1 num_perms perm1 ... permN ... classN num_perms perm1 ... permN" */
+		for (i = 0; i < num_objs; i++) {
+			obj = get_obj_class_idx(obj_class_perms[cur], policy);
+			if (obj < 0) {
+				Tcl_AppendResult(interp, "Invalid object class:\n", obj_class_perms[cur], (char *) NULL);
+				Tcl_Free((char *) obj_class_perms);
+				return TCL_ERROR;
+			}
+			/* Increment to next element, which should be the number of permissions for the class */
+			cur++;
+			rt = Tcl_GetInt(interp, obj_class_perms[cur], &num_obj_perms);
+			if (rt == TCL_ERROR) {
+				Tcl_AppendResult(interp, "Item in obj_class_perms list apparently is not an integer\n", (char *) NULL);
+				return TCL_ERROR;
+			}
+			total_num_perms = get_num_perms_for_obj_class(obj, policy);
+			if (!total_num_perms) {
+				Tcl_AppendResult(interp, "Object class without any permissions!\n", (char *) NULL);
+				return TCL_ERROR;
+			}
+			/* If this there are no permissions given then exclude the entire object class. */
+			if (num_obj_perms == 0) {
+				if (iflow_query_add_obj_class(trans_flow_query, obj) == -1) {
+					Tcl_AppendResult(interp, "error adding obj\n", (char *) NULL);
+					return TCL_ERROR;
+				}
+			} else {
+				for (j = 0; j < num_obj_perms; j++) {
+					cur++;
+					perm = get_perm_idx(obj_class_perms[cur], policy);
+					if (perm < 0 || !is_valid_perm_for_obj_class(policy, obj, perm)) {
+						fprintf(stderr, "Invalid object class permission\n");
+						continue;
+					}
+					if (iflow_query_add_obj_class_perm(trans_flow_query, obj, j) == -1) {
+						Tcl_AppendResult(interp, "error adding perm\n", (char *) NULL);
+						return TCL_ERROR;
+					}
+				}
+			} 
+			cur++;
+		}
+		Tcl_Free((char *) obj_class_perms);
+	}
+	if (filter_inter_types && inter_types != NULL) {
+		/* Set intermediate type info */
+		for (i = 0; i < num_inter_types; i++) {
+			type = get_type_idx(inter_types[i], policy);
+			if (type < 0) {
+				/* This is an invalid ending type, so ignore */
+				continue;
+			}
+			if (iflow_query_add_type(trans_flow_query, type) != 0) {
+				Tcl_AppendResult(interp, "Memory error!\n", (char *) NULL);
+				return TCL_ERROR;
+			}
+		}
+		Tcl_Free((char *) inter_types);
+	}
+	
+	return TCL_OK;
+}
+
+/* 
+ * Types Relationship Analysis (QUERY ARGUMENTS):
+ * argv[1]  - typeA (string)
+ * argv[2]  - typeB (string)
+ * argv[3]  - comm_attribs_sel (boolean value)	 
+ * argv[4]  - comm_roles_sel (boolean value)	
+ * argv[5]  - comm_users_sel (boolean value)	
+ * argv[6]  - comm_access_sel (boolean value)	
+ * argv[7]  - unique_access_sel (boolean value)
+ * argv[8]  - dta_sel (boolean value)		
+ * argv[9]  - trans_flow_sel (boolean value)
+ * argv[10] - dir_flow_sel (boolean value)
+ * argv[11] - other_ttrules_sel	(boolean value)
+ * argv[12] - process_sel (boolean value)
+ *
+ * argv[13] - (boolean value) for indicating that a list of transitive flow object classes are being provided to the TIF query.
+ * argv[14] - number of object classes that are to be included in the transitive flow query.
+ * argv[15] - encoded list of object class/permissions to include in the the transitive flow query.
+ * argv[16] - flag (boolean value) for indicating whether or not to include intermediate types in the 
+ *	      the transitive flow query.
+ * argv[17] - TCL list of intermediate types for the transitive flow analysis
+ * NOTE: IF SEARCHING TRANSITIVE FLOWS, THIS FUNCTION EXPECTS PERMISSION MAPPINGS TO BE LOADED!! 
+ * 	 If, not it will throw an error.
+ *
+ * argv[18] - flag (boolean value) for indicating that a list of object classes are being provided to the DTA query.
+ * argv[19] - number of object classes that are to be included in the DTA query.
+ * argv[20] - list of object classes/permissions for the DTA query.
+ * argv[21] - flag (boolean value) for selecting object type(s) in the DTA query.
+ * argv[22] - list of object types for the DTA query.
+ *
+ * argv[23] - flag (boolean value) for indicating that a list of object classes are being provided to the DIF query.
+ * argv[24] - object classes for DIF query (a TCL list string). At least one object class must be given or 
+ * 	     an error is thrown.
+ * NOTE: IF SEARCHING DIRECT FLOWS, THIS FUNCTION EXPECTS PERMISSION MAPPINGS TO BE LOADED!! 
+ * 	 If, not it will throw an error.
+ * 
+ *
+ * Types Relationship Analysis (RESULTS FORMAT):
+ * 	Returns a list organized to represent the tree structure that results from a types relationship 
+ * 	analysis.  The TCL list looks like the following:
+ *
+ *	INDEX			CONTENTS
+ *	0			typeA string
+ *	1			typeB string
+ *	2 			Number of common attributes (Na)
+ *   		3		attribute 1
+ *		....
+ * 		Na		attribute Na
+ *	next			Number of common roles (Nr)
+ * 		next		role 1
+ *		...
+ *		Nr		role Nr
+ *	next			Number of common users (Nu)
+ *		next		user 1
+ *		...
+ *		Nu		user Nu
+ *	next			Number of other type transition rules
+ *		next
+ *		...
+ *		N		tt rule N
+ *	next			Number of other process rules
+ *		next	
+ *		...
+ *		Np		process rule Np
+ * 	next			Number of common objects for typeA
+ *		next		object 1
+ *		...
+ *		N		typeA common object N
+ * 				Number of common object rules for typeA
+ *				Number of common objects for typeB
+ *				Number of common object rules for typeB
+ * 	next			Number of unique objects for typeA
+ * 				Number of unique object rules for typeA
+ *				Number of unique objects for typeB
+ *				Number of unique object rules for typeB
+ *	next 			Number of Direct Information flows
+ *			Follows the format for the Apol_DirectInformationFlowAnalysis()
+ *	next			Number of Transitive Information flows from typeA->typeB
+ *			Follows the format for the Apol_TransitiveFlowAnalysis()
+ *	next			Number of Transitive Information flows from typeB->typeA
+ *			Follows the format for the Apol_TransitiveFlowAnalysis()
+ *	next			Number of Forward Domain Transitions from typeA->typeB
+ *	next		N, # of target domain types (if none, then no other results returned)
+ *	  next		name first target type (if any)
+ *	  next		X, # of process transition rules
+ *	  next X*2	pt rule1, lineno1, ....
+ *	  next		Y, # of entry point file types for first target type
+ *	    next	first file type
+ *	    next	A, # of file entrypoint rules
+ *	    next A*2	ep rule 1, lineno1,....
+ *	    next	B, # of file execute rules
+ *	    next B*2	ex rule1, lineno1, ...
+ *
+ *	    next	(repeat next file type record as above Y times)
+ *
+ *	next		(repeat target type record N times)
+ *				Number of Forward Domain Transitions from typeB->typeA
+ *		Follows the preceding format.
+ *
+ */
+int Apol_TypesRelationshipAnalysis(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
+{
+	types_relation_query_t *tr_query = NULL;
+	types_relation_results_t *tr_results = NULL;
+	int rt, i;
+	bool_t option_selected;
+	
+	if(argc != 25) {
+		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
+		return TCL_ERROR;
+	}
+	if (policy == NULL) {
+		Tcl_AppendResult(interp, "No current policy file is opened!", (char *) NULL);
+		return TCL_ERROR;
+	}
+	
+	if(!is_valid_str_sz(argv[1])) {
+		Tcl_AppendResult(interp, "TypeA string is too large.", (char *) NULL);
+		return TCL_ERROR;
+	}
+	if(!is_valid_str_sz(argv[2])) {
+		Tcl_AppendResult(interp, "TypeB string is too large.", (char *) NULL);
+		return TCL_ERROR;
+	}
+											
+	tr_query = types_relation_query_create();
+	if (tr_query == NULL) {
+		Tcl_AppendResult(interp, "Error creating query.", (char *) NULL);
+		return TCL_ERROR;
+	}
+		
+	tr_query->type_name_A = (char *)malloc((strlen(argv[1]) + 1) * sizeof(char));
+	if (tr_query->type_name_A == NULL) {
+		types_relation_query_destroy(tr_query);
+		Tcl_AppendResult(interp, "out of memory", (char *) NULL);
+		return TCL_ERROR;
+	}
+	strcpy(tr_query->type_name_A, argv[1]);	
+	
+	tr_query->type_name_B = (char *)malloc((strlen(argv[2]) + 1) * sizeof(char));
+	if (tr_query->type_name_B == NULL) {
+		types_relation_query_destroy(tr_query);
+		Tcl_AppendResult(interp, "out of memory", (char *) NULL);
+		return TCL_ERROR;
+	}
+	strcpy(tr_query->type_name_B, argv[2]);
+	
+	for (i = 3; i < 13; i++) {
+		option_selected = getbool(argv[i]);
+		if (option_selected) {
+			switch(i) {
+			case 3:
+				tr_query->options |= TYPES_REL_COMMON_ATTRIBS;
+				break;
+			case 4:
+				tr_query->options |= TYPES_REL_COMMON_ROLES;
+				break;
+			case 5:
+				tr_query->options |= TYPES_REL_COMMON_USERS;
+				break;
+			case 6:	
+				tr_query->options |= TYPES_REL_COMMON_ACCESS;
+				break;	
+			case 7:
+				tr_query->options |= TYPES_REL_UNIQUE_ACCESS;
+				break;
+			case 8:
+				tr_query->options |= TYPES_REL_DOMAINTRANS;
+				/* Create the query structure */
+				if (!tr_query->dta_query) {
+					tr_query->dta_query = dta_query_create();
+					if (tr_query->dta_query == NULL) {
+						Tcl_AppendResult(interp, "Memory error allocating dta query.\n", 
+							(char *) NULL);
+						types_relation_query_destroy(tr_query);
+						return TCL_ERROR;
+					}
+				}
+				/* Gather DTA options */
+				if (types_relation_get_dta_options(tr_query->dta_query, interp, argv, policy) != 0) {
+					types_relation_query_destroy(tr_query);
+					return TCL_ERROR;
+				}
+				break;
+			case 9:
+				tr_query->options |= TYPES_REL_TRANSFLOWS;	
+				/* Create the query structure */
+				if (!tr_query->trans_flow_query) {
+					tr_query->trans_flow_query = iflow_query_create();
+					if (tr_query->trans_flow_query == NULL) {
+						Tcl_AppendResult(interp, "Memory error allocating transitive iflow query.\n",
+							(char *) NULL);
+						types_relation_query_destroy(tr_query);
+						return TCL_ERROR;
+					}
+				}
+				/* Gather TRANSFLOW options*/
+				if (types_relation_get_transflow_options(tr_query->trans_flow_query, interp, argv, policy) != 0) {
+					types_relation_query_destroy(tr_query);
+					return TCL_ERROR;
+				}
+				break;
+			case 10:
+				tr_query->options |= TYPES_REL_DIRFLOWS;
+				/* Create the query structure */
+				if (!tr_query->direct_flow_query) {
+					tr_query->direct_flow_query = iflow_query_create();
+					if (tr_query->direct_flow_query == NULL) {
+						Tcl_AppendResult(interp, "Memory error allocating direct iflow query.\n",
+							(char *) NULL);
+						types_relation_query_destroy(tr_query);
+						return TCL_ERROR;
+					}
+				}
+				/* Gather DIRFLOW options*/
+				if (types_relation_get_dirflow_options(tr_query->direct_flow_query, interp, argv, policy) != 0) {
+					types_relation_query_destroy(tr_query);
+					return TCL_ERROR;
+				}
+				break;
+			case 11:
+				tr_query->options |= TYPES_REL_OTHER_TTRULES;
+				break;
+			case 12:
+				tr_query->options |= TYPES_REL_PROCESS_INTER;
+				break;
+			default:
+				fprintf(stderr, "Invalid option index: %d\n", i);
+			}
+		}
+	}
+#ifdef APOL_PERFORM_TEST
+		/*  test performance; it's an undocumented feature only in test builds */
+		{
+		clock_t start,  stop;
+		double time;
+		start = clock();	
+		rt = types_relation_determine_relationship(tr_query, &tr_results, policy);
+		stop = clock();
+		time = ((double) (stop - start)) / CLOCKS_PER_SEC;
+		fprintf(stdout, "\nTime to complete types relationship analysis: %f\n\n", time);
+		}
+#else
+	/* Perform the analysis */
+	rt = types_relation_determine_relationship(tr_query, &tr_results, policy);
+#endif
+	if (rt != 0) {	
+		types_relation_query_destroy(tr_query);
+		Tcl_AppendResult(interp, "Analysis error!", (char *) NULL);
+		return TCL_ERROR;
+	}
+	if (types_relation_append_results(tr_query, tr_results, interp, policy) != TCL_OK) {
+		types_relation_query_destroy(tr_query);	
+		if (tr_results) types_relation_destroy_results(tr_results);
+		return TCL_ERROR;
+	}
+	 
+	types_relation_query_destroy(tr_query);	
+	if (tr_results) types_relation_destroy_results(tr_results);
+	
+	return TCL_OK;		
+}
+
 /* 
  * argv[1] - boolean value (0 for a forward DT analysis; otherwise, reverse DT analysis)
  * argv[2] - specified domain type used to start the analysis
@@ -3474,6 +4419,7 @@ int Apol_GetTypeInfo(ClientData clientData, Tcl_Interp *interp, int argc, char *
  * argv[5] - list of object classes/permissions
  * argv[6] - flag (boolean value) for selecting end type(s).
  * argv[7] - list of end types
+ * argv[8] - boolean value for special case where the list of end types is really all of the types in the policy.
  *
  * Given a domain type, this function determines what new domains the given domain can transition to/from.
  * and returns those domains, as well as the entrypoint type that allows that transition and all
@@ -3532,8 +4478,9 @@ int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *interp, int
 	dta_query_t *dta_query = NULL;
 	domain_trans_analysis_t *dta_results;
 	bool_t filter_obj_classes, filter_end_types;
+	char *tmp = NULL;
 	
-	if (argc != 8) {
+	if (argc != 9) {
 		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
 		return TCL_ERROR;
 	}
@@ -3555,12 +4502,18 @@ int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *interp, int
 		return TCL_ERROR;
 	}
 	
+	/* Create the query structure */
+	dta_query = dta_query_create();
+	if (dta_query == NULL) {
+		Tcl_AppendResult(interp,"Memory error allocating dta query.\n", (char *) NULL);
+		return TCL_ERROR;
+	}
+	
 	if(filter_obj_classes) {
 		/* Second, disassemble list of object class permissions, returning an array of pointers to the elements. */
 		rt = Tcl_SplitList(interp, argv[5], &num_objs_options, &obj_class_perms);
 		if(rt != TCL_OK) {
 			Tcl_AppendResult(interp, "Error splitting TCL list.", (char *) NULL);
-			Tcl_Free((char *) obj_class_perms);
 			return TCL_ERROR;
 		}
 		
@@ -3571,12 +4524,11 @@ int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *interp, int
 		}
 	}
 	
-	if (filter_end_types) {
+	if (filter_end_types && !dta_query->all_obj_types) {
 		/* First, disassemble TCL intermediate types list, returning an array of pointers to the elements. */
 		rt = Tcl_SplitList(interp, argv[7], &num_end_types, &end_types);
 		if(rt != TCL_OK) {
 			Tcl_AppendResult(interp, "Error splitting TCL list.", (char *) NULL);
-			Tcl_Free((char *) end_types);
 			return TCL_ERROR;
 		}
 		
@@ -3586,14 +4538,7 @@ int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *interp, int
 			return TCL_ERROR;
 		}
 	}		
-						
-	/* Create the query structure */
-	dta_query = dta_query_create();
-	if (dta_query == NULL) {
-		Tcl_AppendResult(interp,"Memory error allocating dta query.\n", (char *) NULL);
-		return TCL_ERROR;
-	}
-	
+							
 	/* Set the start type for our query */ 					
 	dta_query->start_type = get_type_idx(argv[2], policy);
 	if (dta_query->start_type < 0) {
@@ -3604,6 +4549,7 @@ int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *interp, int
 	
 	/* determine if requesting a reverse DT analysis */
 	dta_query->reverse = getbool(argv[1]);
+	dta_query->all_obj_types = getbool(argv[8]);
 	
 	if(filter_obj_classes && obj_class_perms != NULL) {		
 		assert(num_objs > 0);
@@ -3654,7 +4600,7 @@ int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *interp, int
 		Tcl_Free((char *) obj_class_perms);
 	}
 
-	if (filter_end_types) {
+	if (filter_end_types && !dta_query->all_obj_types) {
 		/* Set intermediate type info */
 		for (i = 0; i < num_end_types; i++) {
 			type = get_type_idx(end_types[i], policy);
@@ -3688,140 +4634,21 @@ int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *interp, int
 	}
 	dta_query_destroy(dta_query);
 	
-	/* format the result into a tcl list (yuk!) */
-	{
-	llist_node_t *x, *y;
-	char *tmp, tbuf[64];
-	int i;
-	trans_domain_t *t;
-	entrypoint_type_t *ep;
 	/* source type */
 	rt = get_type_name(dta_results->start_type, &tmp, policy);
-	if(rt != 0) {
+	if (rt != 0) {
 		Tcl_ResetResult(interp);
 		Tcl_AppendResult(interp, "analysis error (looking up starting type name)", (char *) NULL);
 		return TCL_ERROR;
 	}
 	Tcl_AppendElement(interp, tmp);
 	free(tmp);
-	/* # of target types */
-	sprintf(tbuf, "%d", dta_results->trans_domains->num);
-	Tcl_AppendElement(interp, tbuf);
-	
-	/* all target types */
-	for(x = dta_results->trans_domains->head; x != NULL; x = x->next) {
-		t = (trans_domain_t *)x->data;
-		/* target type */
-		assert(dta_results->start_type == t->start_type);
-		rt = get_type_name(t->trans_type, &tmp, policy);
-		if(rt != 0) {
-			Tcl_ResetResult(interp);
-			Tcl_AppendResult(interp, "analysis error (looking up target name)", (char *) NULL);
-			return TCL_ERROR;
-		}
-		Tcl_AppendElement(interp, tmp);
-		free(tmp);
-		/* # of pt rules */
-		sprintf(tbuf, "%d", t->num_pt_rules);
-		Tcl_AppendElement(interp, tbuf);
-		/* all the pt rules */
-		for(i = 0; i < t->num_pt_rules; i++) {
-			tmp = re_render_av_rule(0,t->pt_rules[i], 0, policy);
-			if(tmp == NULL) {
-				Tcl_ResetResult(interp);
-				Tcl_AppendResult(interp, "analysis error (rendering process transition rule)",  (char *) NULL);
-				return TCL_ERROR;
-			}
-			Tcl_AppendElement(interp, tmp);
-			free(tmp);
-			sprintf(tbuf, "%d", get_rule_lineno(t->pt_rules[i],RULE_TE_ALLOW, policy));
-			Tcl_AppendElement(interp, tbuf);
-			/* Append a boolean value indicating whether this rule is enabled 
-			 * for conditional policy support */
-			sprintf(tbuf, "%d", policy->av_access[t->pt_rules[i]].enabled);
-			Tcl_AppendElement(interp, tbuf);
-		}
-		/* # of entrypoint file types */
-		sprintf(tbuf, "%d", t->entry_types->num);
-		Tcl_AppendElement(interp, tbuf);
-		/* all the entrypoint file types */
-		for(y = t->entry_types->head; y != NULL; y = y->next) {
-			ep = (entrypoint_type_t *)y->data;
-			assert(t->trans_type == ep->trans_type);
-			/* file type */
-			rt = get_type_name(ep->file_type, &tmp, policy);
-			if(rt != 0) {
-				Tcl_ResetResult(interp);
-				Tcl_AppendResult(interp, "analysis error (looking up entry file name)", (char *) NULL);
-				return TCL_ERROR;
-			}
-			Tcl_AppendElement(interp, tmp);
-			free(tmp);			
-			/* # of file entrypoint rules */
-			sprintf(tbuf, "%d", ep->num_ep_rules);
-			Tcl_AppendElement(interp, tbuf);
-			/* all entrypoint rules */
-			for(i = 0; i < ep->num_ep_rules; i++) {
-				tmp = re_render_av_rule(0, ep->ep_rules[i], 0, policy);
-				if(tmp == NULL) {
-					Tcl_ResetResult(interp);
-					Tcl_AppendResult(interp, "analysis error (rendering file entrypoint rule)",  (char *) NULL);
-					return TCL_ERROR;
-				}
-				Tcl_AppendElement(interp, tmp);
-				free(tmp);
-				sprintf(tbuf, "%d", get_rule_lineno(ep->ep_rules[i],RULE_TE_ALLOW, policy));
-				Tcl_AppendElement(interp, tbuf);
-				/* Append a boolean value indicating whether this rule is enabled 
-				 * for conditional policy support */
-				sprintf(tbuf, "%d", policy->av_access[ep->ep_rules[i]].enabled);
-				Tcl_AppendElement(interp, tbuf);				
-			}
-			/* # of file execute rules */
-			sprintf(tbuf, "%d", ep->num_ex_rules);
-			Tcl_AppendElement(interp, tbuf);
-			/* all execute rules */
-			for(i = 0; i < ep->num_ex_rules; i++) {
-				tmp = re_render_av_rule(0,ep->ex_rules[i], 0, policy);
-				if(tmp == NULL) {
-					Tcl_ResetResult(interp);
-					Tcl_AppendResult(interp, "analysis error (rendering file execute rule)",  (char *) NULL);
-					return TCL_ERROR;
-				}
-				Tcl_AppendElement(interp, tmp);
-				free(tmp);
-				sprintf(tbuf, "%d", get_rule_lineno(ep->ex_rules[i],RULE_TE_ALLOW, policy));
-				Tcl_AppendElement(interp, tbuf);
-				/* Append a boolean value indicating whether this rule is enabled 
-				 * for conditional policy support */
-				sprintf(tbuf, "%d", policy->av_access[ep->ex_rules[i]].enabled);
-				Tcl_AppendElement(interp, tbuf);
-			}
-		}
-		/* # of additional rules */
-		sprintf(tbuf, "%d", t->num_other_rules);
-		Tcl_AppendElement(interp, tbuf);
-		/* all additional rules */
-		for(i = 0; i < t->num_other_rules; i++) {
-			tmp = re_render_av_rule(0, t->other_rules[i], 0, policy);
-			if(tmp == NULL) {
-				Tcl_ResetResult(interp);
-				Tcl_AppendResult(interp, "analysis error rendering additional rules",  (char *) NULL);
-				return TCL_ERROR;
-			}
-			Tcl_AppendElement(interp, tmp);
-			free(tmp);
-			sprintf(tbuf, "%d", get_rule_lineno(t->other_rules[i], RULE_TE_ALLOW, policy));
-			Tcl_AppendElement(interp, tbuf);
-			/* Append a boolean value indicating whether this rule is enabled 
-			 * for conditional policy support */
-			sprintf(tbuf, "%d", policy->av_access[t->other_rules[i]].enabled);
-			Tcl_AppendElement(interp, tbuf);
-		}
+	if (append_dta_results(policy, dta_results, interp) != TCL_OK) {
+		free_domain_trans_analysis(dta_results);
+		Tcl_AppendResult(interp, "Error appending domain transition analysis results!", (char *) NULL);
+		return TCL_ERROR;
 	}
-	
-	} /* formal result block */
-	
+		
 	free_domain_trans_analysis(dta_results);
 	return TCL_OK;
 
@@ -4531,6 +5358,7 @@ int Apol_Init(Tcl_Interp *interp)
 	Tcl_CreateCommand(interp, "apol_Cond_Bool_GetBoolValue", (Tcl_CmdProc *) Apol_Cond_Bool_GetBoolValue, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_SearchConditionalRules", (Tcl_CmdProc *) Apol_SearchConditionalRules, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_GetPolicyType", (Tcl_CmdProc *) Apol_GetPolicyType, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+	Tcl_CreateCommand(interp, "apol_TypesRelationshipAnalysis", (Tcl_CmdProc *) Apol_TypesRelationshipAnalysis, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	
 	Tcl_PkgProvide(interp, "apol", (char*)libapol_get_version());
 
