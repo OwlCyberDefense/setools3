@@ -28,7 +28,7 @@
 	#define SEUSERCMD_VERSION_STRING "UNKNOWN"
 #endif
 
-#define COPYRIGHT_INFO "Copyright (C) 2002-2004 Tresys Technology, LLC"
+#define COPYRIGHT_INFO "Copyright (C) 2002-2005 Tresys Technology, LLC"
 
 /* command line commands */
 #define ADD		0
