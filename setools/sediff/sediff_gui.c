@@ -667,6 +667,16 @@ static apol_diff_result_t *diff_policies(const char *p1_file, const char *p2_fil
 		goto err;
 	}
 
+	/* now that the diff worked lets keep these files */
+	if (sediff_app->p1_filename) 
+		g_string_free(sediff_app->p1_filename,TRUE);
+	if (sediff_app->p2_filename) 
+		g_string_free(sediff_app->p2_filename,TRUE);
+	sediff_app->p1_filename = g_string_new(p1_file);
+	sediff_app->p2_filename = g_string_new(p2_file);
+
+
+
 	/* load up the buffers */
 	txt_view_populate_buffers(diff->diff1,diff->diff2,diff->p1,diff->p2);
 
@@ -1061,30 +1071,34 @@ static void sediff_populate_key_buffer()
 	added_tag = gtk_text_tag_table_lookup(table, "added-tag");
 	if (!added_tag) {
 		added_tag = gtk_text_buffer_create_tag(txt, "added-tag",
-						      "family", "monospace",
-						      "foreground", "dark green", 
-						      NULL);
+						       "family", "monospace",
+						       "pixels-below-lines", 10,
+						       "foreground", "dark green", 
+						       NULL);
 	      
 	}
 	removed_tag = gtk_text_tag_table_lookup(table, "removed-tag");
 	if (!removed_tag) {
 		removed_tag = gtk_text_buffer_create_tag(txt, "removed-tag",
 							 "family", "monospace",
+							 "pixels-below-lines", 10,
 							 "foreground", "red",
 							 NULL);
 	}
 	changed_tag = gtk_text_tag_table_lookup(table, "changed-tag");
 	if (!changed_tag) {
 		changed_tag = gtk_text_buffer_create_tag(txt, "changed-tag",
-						       "family", "monospace", 
-						       "foreground", "dark blue",
-						       NULL);
+							 "family", "monospace", 
+							 "pixels-below-lines", 10,
+							 "foreground", "dark blue",
+							 NULL);
 	}
 	mono_tag = gtk_text_tag_table_lookup(table, "mono-tag");
 	if (!mono_tag) {
 		mono_tag = gtk_text_buffer_create_tag(txt, "mono-tag",
-						       "family", "monospace", 
-						       NULL);
+						      "pixels-below-lines", 10,
+						      "family", "monospace", 
+						      NULL);
 	}
 	gtk_text_buffer_get_start_iter(txt,&iter);
 	g_string_printf(string,"Added(+): Items added in policy 2.\n");
@@ -1117,9 +1131,9 @@ static void sediff_update_status_bar()
 	rt = gtk_statusbar_get_context_id(statusbar,"Difference Summary");
 	gtk_statusbar_pop(statusbar,rt);
 	rt = gtk_statusbar_get_context_id(statusbar,"Difference Summary");
-	g_string_printf(string,"Total Differences: Classes & Permissions %d "
-			"Types %d Attributes %d Roles %d Users %d Booleans %d"
-			" TE Rules %d Rbac %d",
+	g_string_printf(string,"Total Differences:  Classes & Permissions %d | "
+			"Types %d  |  Attributes %d  |  Roles %d  |  Users %d  |  Booleans %d"
+			" |  TE Rules %d  |  Rbac %d  ",
 			(sediff_app->summary.classes.added + sediff_app->summary.classes.removed + sediff_app->summary.classes.changed +
 			sediff_app->summary.permissions.added + sediff_app->summary.permissions.removed + sediff_app->summary.permissions.changed +
 			 sediff_app->summary.commons.added + sediff_app->summary.commons.removed + sediff_app->summary.commons.changed),
@@ -1985,6 +1999,14 @@ static void txt_buffer_insert_summary_results()
 	g_string_printf(string,"Policy Difference Statistics\n\n");
 	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_tag,NULL);
 	
+	g_string_printf(string,"Policy Filenames:\n");
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_tag,NULL);
+	g_string_printf(string,"\tPolicy 1: %s\n",sediff_app->p1_filename->str);
+	gtk_text_buffer_insert(txt,&iter,string->str,-1);
+	g_string_printf(string,"\tPolicy 2: %s\n\n",sediff_app->p2_filename->str);
+	gtk_text_buffer_insert(txt,&iter,string->str,-1);
+
+
 
 	g_string_printf(string,"Classes and Permissions:\n");
 	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_tag,NULL);
@@ -2421,7 +2443,7 @@ static GtkWidget *sediff_tree_view_create_from_store(SEDiffTreeViewStore *tree_s
 	return tree_view;
 }
 
-static void sediff_policy_stats_textview_populate(policy_t *p1, GtkTextView *textview)
+static void sediff_policy_stats_textview_populate(policy_t *p1, GtkTextView *textview,const char *filename)
 {
 	GtkTextBuffer *txt;
 	GtkTextIter iter, start, end;
@@ -2439,7 +2461,8 @@ static void sediff_policy_stats_textview_populate(policy_t *p1, GtkTextView *tex
 	gtk_text_view_set_cursor_visible (GTK_TEXT_VIEW (textview), FALSE);
 
 
-	contents = g_strdup_printf("Version: %s\n"
+	contents = g_strdup_printf("Filename: %s\n"
+				   "Version: %s\n"
 				   "Policy Type: %s\n\n"
 
 				   "Number of Classes and Permissions:\n"
@@ -2470,6 +2493,7 @@ static void sediff_policy_stats_textview_populate(policy_t *p1, GtkTextView *tex
 
 				   "Number of Booleans: %d\n\n",
 
+				   filename,
 				   get_policy_version_name(p1->version),
                                    is_binary_policy(p1) == 0 ? "source" : "binary", 
 				   p1->num_obj_classes,
@@ -2762,14 +2786,6 @@ static int sediff_diff_and_load_policies(const char *p1_file,const char *p2_file
 		return -1;
 	}
 
-	/* now that the diff worked lets keep these files */
-	if (sediff_app->p1_filename) 
-		g_string_free(sediff_app->p1_filename,TRUE);
-	if (sediff_app->p2_filename) 
-		g_string_free(sediff_app->p2_filename,TRUE);
-	sediff_app->p1_filename = g_string_new(p1_file);
-	sediff_app->p2_filename = g_string_new(p2_file);
-
 
 	/* create a new tree_store */
 	tree_store = sediff_tree_store_new();
@@ -2785,10 +2801,10 @@ static int sediff_diff_and_load_policies(const char *p1_file,const char *p2_file
 
 	/* populate the 2 stat buffers */
 	stats = (GtkTextView *)glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p1_stats_text");
-	sediff_policy_stats_textview_populate(tree_store->diff_results->p1, stats);
+	sediff_policy_stats_textview_populate(tree_store->diff_results->p1, stats,sediff_app->p1_filename->str);
 
 	stats = (GtkTextView *)glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p2_stats_text");
-	sediff_policy_stats_textview_populate(tree_store->diff_results->p2, stats);
+	sediff_policy_stats_textview_populate(tree_store->diff_results->p2, stats,sediff_app->p2_filename->str);
 
 	/* create the tree_view */
 	sediff_app->tree_view = sediff_tree_view_create_from_store(tree_store);
