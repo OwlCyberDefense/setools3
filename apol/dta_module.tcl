@@ -1729,7 +1729,7 @@ proc Apol_Analysis_dta::destroy_progressDlg {} {
 proc Apol_Analysis_dta::display_progressDlg {} {
      	variable progressDlg
 	    		
-	set Apol_Analysis_dta::progressmsg "Performing types relationship analysis..."
+	set Apol_Analysis_dta::progressmsg "Performing domain transition analysis..."
 	set progressBar [ProgressDlg $progressDlg \
 		-parent $ApolTop::mainframe \
         	-textvariable Apol_Analysis_dta::progressmsg \
