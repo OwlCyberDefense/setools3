@@ -99,7 +99,7 @@ make reload
 chcon system_u:object_r:policy_src_t /etc/security/selinux/src/policy/domains/program/seuser.te
 chcon system_u:object_r:policy_src_t /etc/security/selinux/src/policy/file_contexts/program/seuser.fc
 chcon system_u:object_r:seuser_exec_t /usr/bin/seuser
-chcon system_u:object_r:seuser_conf_t /usr/lib/apol/seuser.conf
+chcon system_u:object_r:seuser_conf_t /usr/share/setools/seuser.conf
 
 %postun
 cd /etc/security/selinux/src/policy
