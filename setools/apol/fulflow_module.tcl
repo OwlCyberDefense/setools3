@@ -2726,11 +2726,11 @@ proc Apol_Analysis_fulflow::advanced_filters_create_dialog {path_name title_txt}
         set types_frame [TitleFrame [$pw1 getframe 1].types_frame -text "Filter by intermediate types:"]
         
         # Widgets for object classes frame
-        set pw1   [PanedWindow [$objs_frame getframe].pw -side top]
+        set pw1   [PanedWindow [$objs_frame getframe].pw -side top -weights available]
         set pane  [$pw1 add]
-        set search_pane [$pw1 add -weight 3]
+        set search_pane [$pw1 add]
         set pw2   [PanedWindow $pane.pw -side left -weights available]
-        set class_pane 	[$pw2 add -weight 2]
+        set class_pane 	[$pw2 add]
         set f_opts($path_name,classes_box) [TitleFrame $class_pane.tbox -text "Object Classes:" -bd 0]
         set f_opts($path_name,permissions_title_frame) [TitleFrame $search_pane.rbox \
         	-text "Permissions:" -bd 0]
