@@ -32,6 +32,7 @@ CFLAGS          += -DSEARCHCON_VERSION_NUM='"$(shell cat SEARCHCON_VERSION)"'
 CFLAGS          += -DSEREPORT_VERSION_NUM='"$(shell cat SEREPORT_VERSION)"'
 
 SEAUDIT_REPORT_CONF_FILE = seaudit-report.conf
+SEAUDIT_REPORT_STYLESHEET = seaudit-report.css
 SEAUDIT_REPORT_CONF_INSTALL_DIR = $(DESTDIR)/etc
 SHELL = /bin/sh
 
@@ -76,6 +77,8 @@ seaudit-report: seaudit-report.o $(LIBAPOL) $(LIBSEAUDIT)
 install: $(SE_CMDS)
 	install -m 755 $(SE_CMDS) $(BINDIR);
 	install -m 644 $(SEAUDIT_REPORT_CONF_FILE) $(SEAUDIT_REPORT_CONF_INSTALL_DIR)
+	install -m 755 -d $(INSTALL_LIBDIR)/secmds
+	install -m 644 $(SEAUDIT_REPORT_STYLESHEET) $(INSTALL_LIBDIR)/secmds
 
 install-policy:
 	-@if [ -e $(BINDIR)/replcon ]; then \
