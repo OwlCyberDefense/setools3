@@ -634,6 +634,8 @@ static int load_role_trans(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int
 	for (i = 0; i < nel; i++) {
 		buf = ap_read_fbuf(fb, sizeof(__u32)*3, fp);
 		if(buf == NULL) return fb->err;
+		if(!keep)
+			continue;
 		rval = le32_to_cpu(buf[0]);
 		if(rval > bm->r_num) {
 			assert(FALSE);
@@ -1098,7 +1100,7 @@ static int add_binary_avrule(avtab_datum_t *avdatum, avtab_key_t *avkey, ap_bmap
 				assert(FALSE); /* debug aide */
 				return -7;
 			}
-			dflt = bm->t_map[avtab_transition(avdatum)];
+			dflt = bm->t_map[avtab_transition(avdatum)-1];
 			assert(is_valid_type(policy, dflt, 1));
 			rule_idx = insert_into_new_tt_item(RULE_TE_TRANS, src, tgt, cls, dflt,
 					enabled, policy);
@@ -1114,7 +1116,7 @@ static int add_binary_avrule(avtab_datum_t *avdatum, avtab_key_t *avkey, ap_bmap
 				assert(FALSE); /* debug aide */
 				return -7;
 			}
-			dflt = bm->t_map[avtab_change(avdatum)];
+			dflt = bm->t_map[avtab_change(avdatum)-1];
 			assert(is_valid_type(policy, dflt, 1));
 			rule_idx = insert_into_new_tt_item(RULE_TE_CHANGE, src, tgt, cls, dflt,
 					enabled, policy);
@@ -1130,7 +1132,7 @@ static int add_binary_avrule(avtab_datum_t *avdatum, avtab_key_t *avkey, ap_bmap
 				assert(FALSE); /* debug aide */
 				return -7;
 			}
-			dflt = bm->t_map[avtab_member(avdatum)];
+			dflt = bm->t_map[avtab_member(avdatum)-1];
 			assert(is_valid_type(policy, dflt, 1));
 			rule_idx = insert_into_new_tt_item(RULE_TE_MEMBER, src, tgt, cls, dflt,
 					enabled, policy);
@@ -1431,12 +1433,17 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 	
 	policy_ver = buf[0];
 	switch(policy_ver) {
-	case  POLICYDB_VERSION:
+	case POLICYDB_VERSION_IPV6 :
+		if(set_policy_version(POL_VER_17, policy) != 0)
+			{ rt = -4; goto err_return; }
+		num_syms = SYM_NUM;
+		break;
+	case POLICYDB_VERSION_BOOL:
 		if(set_policy_version(POL_VER_16, policy) != 0)
 			{ rt = -4; goto err_return; }
 		num_syms = SYM_NUM;
 		break;
-	case POLICYDB_VERSION_COMPAT:
+	case POLICYDB_VERSION_BASE:
 		if(set_policy_version(POL_VER_15, policy) != 0)
 			{ rt = -4; goto err_return; }
 		num_syms = SYM_NUM - 1;
@@ -1447,8 +1454,11 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 	}
 	
 	/* symbol table size check (skip OCON num check)*/
-	if (buf[2] != num_syms)
-		{ rt = -4; goto err_return; }		
+	if (buf[2] != num_syms)	{ 
+		assert(FALSE);
+		rt = -4; 
+		goto err_return; 
+	}
 
 	/* check for MLS stuff and skip over the # of levels */
 	if(buf[1] != mls_config)
@@ -1627,15 +1637,13 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 		}
 	}
 	
-	//if(
-
 	/* AV tables */
 	rt = load_avtab(fb, fp, bm, opts, NULL, policy);
 	if(rt != 0) 
 		return rt;
 
 	/* conditional list */
-	if (policy_ver == POLICYDB_VERSION) {
+	if (policy_ver >= POLICYDB_VERSION_BOOL) {
 		rt = load_cond_list(fb, fp, bm, opts, policy);
 		if(rt != 0) 
 			return rt;
@@ -1657,7 +1665,7 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 		return rt;
 	
 	/* Rest is unsupported at this time */
-	
+
 	rt = 0;
 err_return:
 	ap_free_fbuf(&fb); 

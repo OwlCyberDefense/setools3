@@ -52,9 +52,9 @@
 	#define CEXPR_NAMES	5 /* attr op names */	
 #endif
 
-#define POLICYDB_VERSION 16
-#define POLICYDB_VERSION_COMPAT 15
-
+#define POLICYDB_VERSION_IPV6	17
+#define POLICYDB_VERSION_BOOL 	16
+#define POLICYDB_VERSION_BASE 	15
 
 #define POLICYDB_CONFIG_MLS    1
 
