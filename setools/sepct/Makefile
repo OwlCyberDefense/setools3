@@ -6,7 +6,8 @@ SEPCUT_HELP_FILE	= sepcut_help.txt
 
 sepcut: $(TCL-FILES)
 	cat $(TCL-FILES) | \
-	sed -e 's/SEPCUT_GUI_VERSION/$(shell cat VERSION)/g' > $@ 
+	sed -e 's/SEPCUT_GUI_VERSION/$(shell cat VERSION)/g' | \
+	sed -e 's|SEPCUT_INSTALL_DIR|$(INSTALL_LIBDIR)|g' > $@ 
 	chmod 755 $@
 
 tmp.tcl: $(TCL-STRIP_FILES)
