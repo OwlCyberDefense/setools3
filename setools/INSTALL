@@ -2,7 +2,7 @@ SELinux Tools (setools), version 1.2
 by Tresys Technology, LLC
 (selinux@tresys.com, www.tresys.com/selinux)
 
-February 04, 2004
+April 13, 2004
 
 BUILDING AND INSTALLING NOTES AND WARNINGS
 
@@ -37,6 +37,10 @@ subdirectory and typing "make install". If you have BWidgets installed
 make certain that it is a compatible version. See BWIDGETS VERSIONS 
 below for more information.
 
+SECMDS BUILD REQUIREMENT: In order to successfully build and install 
+secmds onto your system you will need the libselinux-devel package 
+installed.  
+
 GTK RUNTIME AND BUILD REQUIREMENT: In order to successfully install 
 seaudit onto your system you will need libglade and GTK2.0 or above 
 installed.  It also requires the pkg-config program to be installed 
@@ -66,7 +70,7 @@ Long version follows:
 TCL_INCLUDE and TCL_LIBINC variables should be set appropriately 
 for your installation of Tcl/Tk; however, if you wish to change 
 these variables, you may do so using the commented lines below 
-this section. 
+this section.
    
 1. If you are installing seuser and have a version of SELinux based
 on an LSM kernel earlier than 2.4.19 (prior to August 2002 or so): 
