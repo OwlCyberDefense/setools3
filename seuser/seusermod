@@ -233,9 +233,9 @@ fi
 if [ -n "${susermodopts}" -o -n "${comment}" ]; then
     # need to handle comment like this because of possible spaces
     if [ -n "${comment}" ]; then
-	${USERMOD} ${susermodopts} -c "${comment}" ${USERNAME} 2> /dev/null
+	${USERMOD} ${susermodopts} -c "${comment}" ${USERNAME} 2>&1
     else
-	${USERMOD} ${susermodopts} ${USERNAME} 2> /dev/null
+	${USERMOD} ${susermodopts} ${USERNAME} 2>&1
     fi
 fi
 
