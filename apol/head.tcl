@@ -4,7 +4,7 @@
 #
 # apol: SE Linux Policy Analysis Tools
 #
-# Copyright (C) 2002-2003 Tresys Technology, LLC
+# Copyright (C) 2002-2005 Tresys Technology, LLC
 # see file 'COPYING' for use and warranty information 
 #
 # 

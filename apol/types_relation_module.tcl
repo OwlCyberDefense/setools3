@@ -1,7 +1,7 @@
 #############################################################
 #  types_relation_module.tcl  
 # -----------------------------------------------------------
-#  Copyright (C) 2004 Tresys Technology, LLC
+#  Copyright (C) 2004-2005 Tresys Technology, LLC
 #  see file 'COPYING' for use and warranty information 
 #
 #  Requires tcl and tk 8.3+, with BWidgets
