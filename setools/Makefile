@@ -237,6 +237,7 @@ install-libseaudit:
 	cd libseaudit; $(MAKE) install
 	
 install-dev: install-libseuser install-libapol install-libseaudit
+	/sbin/ldconfig $(SHARED_LIB_INSTALL_DIR)
 	
 # Install the policy - this is a separate step to better support systems with
 # non-standard policies.
