@@ -119,7 +119,7 @@ proc Apol_Analysis::delete_ResultsTab { pageID } {
 		
         if { [$results_notebook index $Apol_Analysis::emptyTabID] != [$results_notebook index $pageID] } {
         	$bClose configure -state disabled
-        	update idletasks
+        	update
 		# Get previous page index.
 		set prevPageIdx [expr [$results_notebook index $pageID] - 1]
 		set results_frame [Apol_Analysis::get_results_frame $pageID]
@@ -158,7 +158,7 @@ proc Apol_Analysis::delete_ResultsTab { pageID } {
     		set tab_deleted_flag 0
     		$bClose configure -state normal
 	} 
-     	update idletasks		
+     	update
     	return 0
 }
 
@@ -671,7 +671,7 @@ proc Apol_Analysis::do_analysis { which } {
 	switch $which {
 		new_analysis {
 			$Apol_Analysis::newButton configure -state disabled
-			update idletasks			
+			update			
 		        # If the update button is disabled, then enable it.
 			if { $enableUpdate == 0 } {
 				$Apol_Analysis::updateButton configure -state normal
@@ -682,7 +682,7 @@ proc Apol_Analysis::do_analysis { which } {
 		}
 		update_analysis {
 			$Apol_Analysis::updateButton configure -state disabled
-			update idletasks
+			update
 			# Destroy results tab subwidgets and free any data associated with them.
 			set results_frame [Apol_Analysis::get_results_frame [ $results_notebook raise ]]
 			set parent [winfo parent $results_frame]
@@ -695,10 +695,10 @@ proc Apol_Analysis::do_analysis { which } {
 	} 
 	if { $results_frame != "" } {
 		set rt [catch {${curr_analysis_module}::do_analysis $results_frame} err] 
-		set raised_tab_analysis_type $curr_analysis_module
+		ApolTop::resetBusyCursor
+		
 		# Handle an error.
 		if { $rt != 0 && $which == "new_analysis" } { 	
-			ApolTop::resetBusyCursor
 			# Re-enable buttons
 			$Apol_Analysis::newButton configure -state normal
 			$Apol_Analysis::updateButton configure -state disabled
@@ -711,7 +711,7 @@ proc Apol_Analysis::do_analysis { which } {
 			return -1
 		}
 	}
-        ApolTop::resetBusyCursor
+    	set raised_tab_analysis_type $curr_analysis_module
 	# Re-enable buttons
 	$Apol_Analysis::newButton configure -state normal
 	$Apol_Analysis::updateButton configure -state normal
