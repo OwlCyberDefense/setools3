@@ -1444,7 +1444,9 @@ proc ApolTop::addRecent {file} {
  			return
  		}
 	}
-
+	if {![file exists $file]} {
+		return
+	}
 	if {$num_recent_files < $max_recent_files} {
 		# list not full, just add to list and insert into menu
 		set recent_files($num_recent_files) $file
