@@ -33,44 +33,44 @@ startup.  Zero, one, or both arguments will be accepted.
 	-l[FILE], --log[=FILE]	       open log file named FILE
 	-p[FILE], --policy[=FILE]      open policy file named FILE
 
-Seaudit does not require you to open a policy.conf file; in this case 
-you will not be able to use the query policy features of the tool. If 
-a policy.conf file is opened it must be syntactically correct (i.e., 
-it must not generate errors when run through checkpolicy).  If you 
-choose not to open a policy.conf file your functionality will be 
-limited. Only one policy.conf file and one audit log can be open at a 
-time, so if you open another one of these files the current one will 
-be closed.
+Seaudit does not require you to open a policy file; in this case 
+you will not be able to use the query policy features of the tool. 
+If a policy file is opened it must be syntactically correct (i.e., 
+it must not generate errors when run through checkpolicy).  Seaudit 
+will open both binary and source policy files. If you choose not to 
+open a policy file, your functionality will be limited. Only one policy
+file and one audit log can be open at a time, so if you open another 
+one of these files the current one will be closed.
 
 If you get a warning when opening a log file that says "Warning! One
-or more malformed messages found in audit log.", that means one or
-more of the SE Linux audit messages either included unknown fields or
-one of the required fields (source context, target context, and target
-class) was missing.  But the remaining data from SE Linux audit
-message in question will still be displayed with all the other SE
-Linux messages in the log.
-
-You can also receive a warning that states "Warning! One or more
-invalid messages found in audit log."  You could receive this message
-for several reasons:
+or more invalid messages found in audit log.", that means one or more
+of the SE Linux audit messages either was missing a standard message 
+field (e.g. time, hostname, access type, etc.) or:
     1) A message had an unrecognized time stamp.
     2) An AVC message didn't contain permissions.
     3) An AVC message wasn't labeled as denied or granted.
     4) A load policy message was not in the correct form, (i.e.,
        missing a line or a data field).
     5) A boolean message did not contain a list of booleans.
-These messages will not be extracted from the SE Linux audit log.
-
+Seaudit will still attempt to display the remaining data from the SE 
+Linux audit message in question along with all the other SE Linux 
+messages in the log, only if one of the following substrings is found 
+within in the message:
+    "avc:" - indicates an access denied or granted message
+    "security:" - indicates a load policy message
+    "committed booleans" - indicates a committed boolean(s) message.
+Otherwise, these messages will not be extracted from the SE Linux 
+audit log.
 
 Menus:
 ------
-The File menu allows you to change the current policy.conf file and 
-audit log.  It also shows a list of recently opened files.  The file 
+The File menu allows you to change the current policy file and 
+audit log. It also shows a list of recently opened files. The file 
 menu also allows you to change certain preferences including your 
 default log and policy files. You can also set which columns (audit 
 log data fields) you would like present when you view an audit log. 
-Both of these settings will be saved and reloaded each time seaudit is 
-started.
+Both of these settings will be saved and reloaded each time seaudit 
+is started.
 
 The search menu allows you to filter the audit log (See Filter Log
 below) or query the policy (See Query Policy below).
@@ -109,13 +109,15 @@ The "Include Indirect Matches" checkbox alters the meaning of the
 search.  The search finds rules that have either the provided type
 or any of the type's attributes in the appropriate field.
 
-Clicking on 'Query Policy' displays a hyperlinked list of all rules
-fitting your criteria.  Clicking on any of the hyperlinks takes you to
-the appropriate line in the policy.conf tab.
+Clicking on 'Query Policy' displays a list of all rules fitting your 
+criteria.  If the policy file you have opened is NOT a binary policy, 
+then this list will contain hyperlinks to take you to the appropriate 
+line in the policy.conf tab.
 
 The second tab, 'policy.conf', provides a convenient display of the
-raw policy.conf source file.  The 'Query Policy' tab supports a
-hyperlink to the source policy.conf file.
+raw  policy.conf source file and is only available when opening a 
+policy.conf file.  The 'Query Policy' tab will contain hyperlinks to 
+the source policy.conf file. 
 
 Doubling clicking on a message is another way to get to the query
 policy dialog box that is populated with the data.
@@ -249,10 +251,11 @@ the '!' character is used.
 Status Bar: 
 ----------- 
 At the bottom of seaudit is a status bar.  In the left corner it
-displays the approximate version of the policy you have loaded.  The
-middle displays the number of log messages displayed "/" the total
-number of SE Linux messages in the audit log.  The right corner shows
-the span of the dates in the audit log.
+displays the approximate version of the policy you have loaded along 
+with the policy type (binary or source).  The middle displays the 
+number of log messages displayed "/" the total number of SE Linux 
+messages in the audit log.  The right corner shows the span of the 
+dates in the audit log.
 
 Known Bugs: 
 ----------- 
