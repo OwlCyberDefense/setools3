@@ -10,7 +10,8 @@
 
 #include <stdlib.h>
 
-const gchar *diff_labels[] = { "Classes and Permissions", 
+const gchar *diff_labels[] = { "Difference Summary",
+			       "Classes and Permissions", 
 			       "Types", 
 			       "Attributes",
 			       "Roles", 
@@ -19,7 +20,7 @@ const gchar *diff_labels[] = { "Classes and Permissions",
 //			       "Initial SIDs", 
 			       "TE Rules",
 			       "RBAC Rules",
-//			       "Conditionals and Rules",
+			       "Conditionals and Rules",
 			       NULL };
 			      			       
 /* Local static functions */
