@@ -24,7 +24,7 @@ seaudit_filtered_view_t* seaudit_filtered_view_create(audit_log_t *log, GtkTreeV
 		fprintf(stderr, "out of memory");
 		return NULL;
 	}
-
+	memset(filtered_view, 0, sizeof(seaudit_filtered_view_t));
 	if ((filtered_view->multifilter_window = multifilter_window_create(filtered_view, view_name)) == NULL) {
 		fprintf(stderr, "out of memory");
 		free(filtered_view);
