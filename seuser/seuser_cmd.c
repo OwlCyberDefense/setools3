@@ -174,7 +174,7 @@ const int seu_show_roles(char **outstr, user_db_t *db, policy_t *policy)
 
 void usage(bool_t brief)
 {
-	fprintf(stdout, "%s (tool ver. %s)\n\n", COPYRIGHT_INFO, SEUSERCMD_VERSION_STRING);
+	fprintf(stdout, "%s (seuser ver. %s)\n", COPYRIGHT_INFO, SEUSERCMD_VERSION_STRING);
 	fprintf(stdout, "\nUsage:\n");
 	fprintf(stdout, "  seuser -X\n");
 	fprintf(stdout, "  seuser delete [-N] username\n");
@@ -320,7 +320,7 @@ int main(int argc, char *argv[])
 	}
 	/* command line */
 	if(strcmp("version", argv[1]) == 0) {
-		fprintf(stdout, "\n%s (tool ver. %s)\n\n", COPYRIGHT_INFO, SEUSERCMD_VERSION_STRING);
+		fprintf(stdout, "\n%s (seuser ver. %s)\n\n", COPYRIGHT_INFO, SEUSERCMD_VERSION_STRING);
 		exit(0);
 	}
 
