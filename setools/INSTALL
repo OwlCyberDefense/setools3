@@ -2,7 +2,7 @@ SELinux Tools (setools), version 1.5
 by Tresys Technology, LLC
 (selinux@tresys.com, www.tresys.com/selinux)
 
-October 21, 2004
+October 29, 2004
 
 BUILDING AND INSTALLING NOTES AND WARNINGS
 
@@ -22,7 +22,7 @@ libseuser       The seuser support library
 libsefs		The selinux filesystem database library	
 seaudit 	The audit log analysis tool (seaudit)
 secmds		The setools command line tools (seinfo, sesearch, 
-		findcon, replcon)
+		findcon, replcon, indexcon, searchcon)
 sepct           The policy configuration/editing tool (sepcut)
 seuser          The user management tool and shell scripts
 packages	External packages required by setools
@@ -121,6 +121,25 @@ libapol, libseuser, and libseaudit. This is provided as a convenience to third
 party developers, but is not otherwise supported. These libraries are in 
 constant development and interfaces can and will change, sometimes 
 substantially.
+
+INSTALLING SEAUDIT-REPORT AS A LOGWATCH PLUG-IN
+
+Support for installing seaudit-report as a plug-in to the LogWatch program,
+which comes standard with Red Hat Linux, is provided using the 
+'make install-logwatch-files' target. This target installs and labels the 
+configuration files for LogWatch necessary for having seaudit-report run as 
+a service to LogWatch. These configuration files are provided with the setools
+source distribution and are located in the seaudit subdirectory. They are as 
+follows:
+	- seaudit-report-group.conf: the logfile group configuration file
+	- seaudit-report-service.conf: the service filter config file
+	- seaudit-report-service: the service filter script
+	
+Integrating the seaudit-report tool with LogWatch can provide an 
+effective IDS solution by automating customized audit reports and having them 
+e-mailed to a specific recipient(s) for further analysis. You should make sure 
+that the LogWatch program is installed, before proceeding with using this 
+install target. 
 
 BWIDGETS VERSIONS
 
