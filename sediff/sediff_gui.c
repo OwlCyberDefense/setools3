@@ -2146,15 +2146,12 @@ static GtkWidget *sediff_tree_view_create_from_store(SEDiffTreeViewStore *tree_s
 	return tree_view;
 }
 
-static void sediff_policy_stats_textview_populate(apol_diff_result_t *diff, GtkTextView *textview)
+static void sediff_policy_stats_textview_populate(policy_t *p1, GtkTextView *textview)
 {
 	GtkTextBuffer *txt;
 	GtkTextIter iter, start, end;
 	gchar *contents = NULL;
-	policy_t *p1 = NULL, *p2 = NULL; 
 
-	p1 = diff->p1;
-	p2 = diff->p2;
 	/* grab the text buffer for our tree_view */
 	txt = gtk_text_view_get_buffer (GTK_TEXT_VIEW (textview));
 
@@ -2165,53 +2162,70 @@ static void sediff_policy_stats_textview_populate(apol_diff_result_t *diff, GtkT
 	/* set some variables up */
 	gtk_text_view_set_editable (GTK_TEXT_VIEW (textview), FALSE);
 	gtk_text_view_set_cursor_visible (GTK_TEXT_VIEW (textview), FALSE);
-//	gtk_text_view_set_wrap_mode (GTK_TEXT_VIEW (textview), GTK_WRAP_WORD);
 
-	contents = g_strdup_printf("Policy 1\n"
-				   "Version: %d\n"
-				   "Number of Types: %d\n"
-				   "Number of Attributes: %d\n"
-				   "Number of AV Access: %d\n"
-				   "Number of AV Audit: %d\n"
-				   "Number of TE Transition: %d\n"
-				   "Number of Conditional Booleans: %d\n"
-				   "Number of Conditional Expressions: %d\n"
-				   "Number of Roles: %d\n"
-				   "Number of Roles allowed: %d\n"
-				   "Number of Users: %d\n"
-				   "Number of Role Transitions: %d\n"
-				   "Number of Permissions: %d\n"
-				   "Number of Common Permissions: %d\n"
-				   "Number of Object Classes: %d\n"
-				   "Number of Aliases: %d\n"
-				   "Number of Initial SIDS: %d\n"
-				   "\nPolicy 2 \n"
-				   "Version: %d\n"
-				   "Number of Types: %d\n"
-				   "Number of Attributes: %d\n"
-				   "Number of AV Access: %d\n"
-				   "Number of AV Audit: %d\n"
-				   "Number of TE Transition: %d\n"
-				   "Number of Conditional Booleans: %d\n"
-				   "Number of Conditional Expressions: %d\n"
-				   "Number of Roles: %d\n"
-				   "Number of Roles allowed: %d\n"
-				   "Number of Use: %d\n"
-				   "Number of Role Transitions: %d\n"
-				   "Number of Permissions: %d\n"
-				   "Number of Common Permissions: %d\n"
-				   "Number of Object Classes: %d\n"
-				   "Number of Aliases: %d\n"
-				   "Number of Initial SIDS: %d\n",
-				   p1->version,p1->num_types,p1->num_attribs,p1->num_av_access,p1->num_av_audit,
-				   p1->num_te_trans,p1->num_cond_bools,p1->num_cond_exprs,p1->num_roles,p1->num_role_allow,
-				   p1->num_users,p1->num_role_trans,p1->num_perms,p1->num_common_perms,p1->num_obj_classes,
-				   p1->num_aliases,p1->num_initial_sids,
-				   p2->version,p2->num_types,p2->num_attribs,p2->num_av_access,p2->num_av_audit,
-				   p2->num_te_trans,p2->num_cond_bools,p2->num_cond_exprs,p2->num_roles,p2->num_role_allow,
-				   p2->num_users,p2->num_role_trans,p2->num_perms,p2->num_common_perms,p2->num_obj_classes,
-				   p2->num_aliases,p2->num_initial_sids
-		);
+
+	contents = g_strdup_printf("Version: %s\n"
+				   "Policy Type: %s\n\n"
+
+				   "Number of Classes and Permissions:\n"
+				   "\tObject Classes: %d\n"
+				   "\tCommon Permissions: %d\n"
+				   "\tPermissions: %d\n\n"
+
+				   "Number of Types and Attributes:\n"
+				   "\tTypes: %d\n"
+				   "\tAttributes: %d\n\n"
+
+				   "Number of Type Enforcement Rules:\n"
+				   "\tallow: %d\n"
+				   "\tneverallow: %d\n"
+				   "\tcone (pre v.11): %d\n"
+				   "\ttype_transition: %d\n"
+				   "\ttype_change: %d\n"
+				   "\ttype_member: %d\n"
+				   "\tauditallow: %d\n"
+				   "\tauditdeny: %d\n"
+				   "\tdontaudit %d\n"
+
+				   "Number of Roles:\n"
+				   "\tRoles: %d\n\n"
+				   
+				   "Number of RBAC Rules:\n"
+				   "\tallow: %d\n"
+				   "\trole_transition %d\n\n"
+
+				   "Number of Users:\n"
+				   "\tusers: %d\n\n"
+
+				   "Number of Initial SIDs:\n"
+				   "\tSIDs: %d\n\n"
+
+				   "Number of Booleans:\n"
+				   "\tBools: %d\n\n",
+
+				   get_policy_version_name(p1->version),
+                                   is_binary_policy(p1) == 0 ? "source" : "binary", 
+				   p1->num_obj_classes,
+				   p1->num_common_perms,
+				   p1->num_perms,
+				   p1->num_types,
+				   p1->num_attribs,
+				   p1->rule_cnt[RULE_TE_ALLOW],
+				   p1->rule_cnt[RULE_NEVERALLOW],
+				   p1->rule_cnt[RULE_CLONE],
+				   p1->rule_cnt[RULE_TE_TRANS],
+				   p1->rule_cnt[RULE_TE_CHANGE],
+				   p1->rule_cnt[RULE_TE_MEMBER],
+				   p1->rule_cnt[RULE_AUDITALLOW],
+				   p1->rule_cnt[RULE_AUDITDENY],
+				   p1->rule_cnt[RULE_DONTAUDIT],
+				   p1->num_roles,
+				   p1->rule_cnt[RULE_ROLE_ALLOW],
+				   p1->rule_cnt[RULE_ROLE_TRANS],
+				   p1->rule_cnt[RULE_USER],
+				   p1->num_initial_sids,
+				   p1->num_cond_bools
+				   );
 	gtk_text_buffer_get_iter_at_offset(txt, &iter, 0);
 	gtk_text_buffer_insert(txt, &iter, contents,-1);
 	g_free(contents);
@@ -2430,8 +2444,12 @@ static int sediff_diff_and_load_policies(const char *p1_file,const char *p2_file
 	sediff_policy_file_textview_populate(p1_file, p1_textview);
 	sediff_policy_file_textview_populate(p2_file, p2_textview);
 
-	stats = (GtkTextView *)glade_xml_get_widget(sediff_app->window_xml, "sediff_main_pstats_text");
-	sediff_policy_stats_textview_populate(tree_store->diff_results, stats);
+	stats = (GtkTextView *)glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p1_stats_text");
+	sediff_policy_stats_textview_populate(tree_store->diff_results->p1, stats);
+
+	stats = (GtkTextView *)glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p2_stats_text");
+	sediff_policy_stats_textview_populate(tree_store->diff_results->p2, stats);
+
 
 	/* create the tree_view */
 	sediff_app->tree_view = sediff_tree_view_create_from_store(tree_store);
