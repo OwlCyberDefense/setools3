@@ -8,7 +8,7 @@ Source: http://www.tresys.com/Downloads/selinux-tools/setools-1.2.tgz
 Prefix: %{_prefix}
 BuildRoot: %{_tmppath}/%{name}-buildroot
 BuildRequires: perl, tcl, policycoreutils
-Requires: tcl, tk, checkpolicy, policycoreutils, policy, policy-sources, bwidget
+Requires: tcl, tk, checkpolicy, policycoreutils, policy, policy-sources, libselinux-devel, bwidget
 BuildArch: i386
 
 %description
