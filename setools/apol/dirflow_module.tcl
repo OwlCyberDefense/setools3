@@ -1181,7 +1181,7 @@ proc Apol_Analysis_dirflow::change_types_list { } {
 		set rt [catch {set attrib_typesList [apol_GetAttribTypesList $display_attribute]} err]	
 		if {$rt != 0} {
 			tk_messageBox -icon error -type ok -title "Error" -message "$err"
-			return -code error
+			return
 		} 
 		set attrib_typesList [lsort $attrib_typesList]
 		set idx [lsearch -exact $attrib_typesList "self"]

@@ -874,7 +874,7 @@ proc Apol_Analysis_relabel::change_types_list {type_cmbox attrib_cmbox clear_typ
 		set rt [catch {set attrib_typesList [apol_GetAttribTypesList $attrib]} err]	
 		if {$rt != 0} {
 			tk_messageBox -icon error -type ok -title "Error" -message "$err"
-			return -code error
+			return
 		} 
 		set attrib_typesList [lsort $attrib_typesList]
 		set idx [lsearch -exact $attrib_typesList "self"]
