@@ -53,9 +53,8 @@ namespace eval Apol_Perms_Map {
 	variable warning_return_val	"-2"
 	variable saveChanges_Dialog_ans ""
 	variable selected_class_idx	"-1"
-	# Permission map filenames for selinux policy version 12 and 15
-	variable perm_map_v12		"apol_perm_mapping_ver12"
-	variable perm_map_v15		"apol_perm_mapping_ver15"
+	# Permission map id. The policy version will implictly be appended when needed according to the loaded policy version.
+	variable perm_map_id		"apol_perm_mapping_ver"
 	variable perm_map_dflt		"apol_perm_mapping"
 	# Tag variable 
 	variable undefined_tag		UNDEFINED
@@ -324,18 +323,20 @@ proc Apol_Perms_Map::load_default_perm_map {} {
 		} 
 		# Flag used to indicate that we already tried to locate the default perm map (apol_perm_mapping)
 		set default_flg 0
-		if {$policy_version == "2"} {
-			# Get the system default perm map location.
-			set rt [catch {set pmap_file [apol_GetDefault_PermMap $Apol_Perms_Map::perm_map_v12]} err]
-		} elseif {$policy_version == "3"} {
-			set rt [catch {set pmap_file [apol_GetDefault_PermMap $Apol_Perms_Map::perm_map_v15]} err]
+		# The only perm maps we are implicitly loading are perm maps starting from policy ver12 onward. 
+		# For any other policies, we try to load the default user perm map. If any of this fails, an
+		# error is returned.
+		if {$policy_version && $policy_version >= 12} {
+			set rt [catch {set pmap_file [apol_GetDefault_PermMap "$Apol_Perms_Map::perm_map_id$policy_version"]} err]
 		} else {
 			set rt [catch {set pmap_file [apol_GetDefault_PermMap $Apol_Perms_Map::perm_map_dflt]} err]
 			set default_flg 1
 		}
+		
 		if {$rt != 0} {
 			return -code error $err
-		} 	
+		} 
+			
 		if {$pmap_file == ""} {
 			if {!$default_flg} {
 				set rt [catch {set pmap_file [apol_GetDefault_PermMap $Apol_Perms_Map::perm_map_dflt]} err]
