@@ -192,7 +192,7 @@ install-awish: $(INSTALL_LIBDIR)
 install-seuserx: $(INSTALL_LIBDIR)
 	cd seuser;
 	@if [ "${shell env tclsh tcl_vars search_tcl_libs}" != "none" ]; then \
-		cd seuser; $(MAKE) install \
+		cd seuser; $(MAKE) install; \
 	else \
 		echo "Could not install seuserx."; \
 		echo "Tcl library is not built or not in expected location(s)."; \
