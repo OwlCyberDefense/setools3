@@ -46,7 +46,7 @@
 		      <signal name="activate" handler="sediff_menu_on_open_clicked" last_modification_time="Thu, 27 Jan 2005 20:38:14 GMT"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image1">
+			<widget class="GtkImage" id="image5">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-open</property>
 			  <property name="icon_size">1</property>
@@ -67,7 +67,7 @@
 		      <signal name="activate" handler="sediff_menu_on_reload_clicked" last_modification_time="Fri, 04 Feb 2005 17:15:24 GMT"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image2">
+			<widget class="GtkImage" id="image6">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-refresh</property>
 			  <property name="icon_size">1</property>
@@ -77,6 +77,12 @@
 			  <property name="ypad">0</property>
 			</widget>
 		      </child>
+		    </widget>
+		  </child>
+
+		  <child>
+		    <widget class="GtkSeparatorMenuItem" id="separator1">
+		      <property name="visible">True</property>
 		    </widget>
 		  </child>
 
