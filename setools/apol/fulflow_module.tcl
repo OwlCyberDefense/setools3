@@ -100,7 +100,7 @@ namespace eval Apol_Analysis_fulflow {
 	variable select_fg_orig		""
 	variable excluded_tag		" (Excluded)"
 	variable progressmsg		""
-	variable progress_indicator	0
+	variable progress_indicator	-1
 	variable start_time
 	
 	## Within the namespace command for the module, you must call Apol_Analysis::register_analysis_modules,
@@ -261,7 +261,7 @@ proc Apol_Analysis_fulflow::do_analysis { results_frame } {
 		return -code error $err
 	}
 	Apol_Analysis_fulflow::destroy_progressDlg
-	set Apol_Analysis_fulflow::progress_indicator 0
+	set Apol_Analysis_fulflow::progress_indicator -1
      	return 0
 } 
 
@@ -847,10 +847,9 @@ proc Apol_Analysis_fulflow::display_progressDlg {} {
         bind $progressBar <<AnalysisStarted>> {
         	set Apol_Analysis_fulflow::progress_indicator [expr $Apol_Analysis_fulflow::progress_indicator + 1]
         }
-        # generate 3 virtual events to place onto Tcl's event queue.
-	event generate $Apol_Analysis_fulflow::progressDlg <<AnalysisStarted>> -when head
-	event generate $Apol_Analysis_fulflow::progressDlg <<AnalysisStarted>> -when head
-	event generate $Apol_Analysis_fulflow::progressDlg <<AnalysisStarted>> -when head
+        # TODO: generate virtual events to place onto Tcl's event queue, to capture progress.
+	#event generate $Apol_Analysis_fulflow::progressDlg <<AnalysisStarted>> -when head
+
         return 0
 } 
 
@@ -1012,6 +1011,22 @@ proc Apol_Analysis_fulflow::display_find_flows_results_Dlg {time_limit_str flow_
 }
 
 ###########################################################################
+# ::find_more_flows_generate_virtual_events
+#
+proc Apol_Analysis_fulflow::find_more_flows_generate_virtual_events {} {
+	variable find_flows_results_Dlg
+	
+	bind $find_flows_results_Dlg <<FindMoreFlowsStarted>> {
+		set elapsed_time [Apol_Analysis_fulflow::convert_seconds \
+			[expr [clock seconds] - $Apol_Analysis_fulflow::start_time]]
+		$Apol_Analysis_fulflow::time_exp_lbl configure -text $elapsed_time
+       	}
+        # TODO: generate virtual events to place onto Tcl's event queue, to capture progress.
+	#event generate $find_flows_results_Dlg <<FindMoreFlowsStarted>> -when head
+	return 0
+}
+
+###########################################################################
 # ::find_more_flows
 #
 proc Apol_Analysis_fulflow::find_more_flows {src_node tgt_node} {
@@ -1075,15 +1090,7 @@ proc Apol_Analysis_fulflow::find_more_flows {src_node tgt_node} {
 		
 	# Current time - start time = elapsed time
 	$time_exp_lbl configure -text [Apol_Analysis_fulflow::convert_seconds [expr [clock seconds] - $start_time]]
-	bind $find_flows_results_Dlg <<FindMoreFlowsStarted>> {
-		set elapsed_time [Apol_Analysis_fulflow::convert_seconds \
-			[expr [clock seconds] - $Apol_Analysis_fulflow::start_time]]
-		$Apol_Analysis_fulflow::time_exp_lbl configure -text $elapsed_time
-       	}
-        # generate 3 virtual events to place onto Tcl's event queue.
-	event generate $find_flows_results_Dlg <<FindMoreFlowsStarted>> -when head
-	event generate $find_flows_results_Dlg <<FindMoreFlowsStarted>> -when head
-	event generate $find_flows_results_Dlg <<FindMoreFlowsStarted>> -when head
+	#Apol_Analysis_fulflow::find_more_flows_generate_virtual_events
 	
 	# The last query arguments were stored in the data for the root node
 	set rt [catch {apol_TransitiveFindPathsStart \
@@ -1106,8 +1113,8 @@ proc Apol_Analysis_fulflow::find_more_flows {src_node tgt_node} {
 	}
 	
 	while {1} {
-		event generate $find_flows_results_Dlg <<FindMoreFlowsStarted>> -when head
-		event generate $find_flows_results_Dlg <<FindMoreFlowsStarted>> -when head
+		# TODO: generate virtual events to place onto Tcl's event queue, to capture progress.
+		#event generate $find_flows_results_Dlg <<FindMoreFlowsStarted>> -when head
 		# Current time - start time = elapsed time
 		set elapsed_time [Apol_Analysis_fulflow::convert_seconds [expr [clock seconds] - $start_time]]
 		$time_exp_lbl configure -text $elapsed_time
