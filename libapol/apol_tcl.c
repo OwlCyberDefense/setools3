@@ -626,11 +626,173 @@ static int append_attrib_str(bool_t do_types, bool_t do_type_attribs, bool_t use
 	return 0;
 }
 
+/* This function expects an index file to be loaded already. If one is not loaded it will return an error. */
+static int apol_append_type_files(int ta_idx, bool_t is_attrib, 
+				  bool_t include_cxt, bool_t include_class, 
+				  Tcl_DString *buf, policy_t *policy, 
+				  Tcl_Interp *interp)
+{
+	/* Append files */
+	sefs_search_keys_t search_keys;
+	sefs_search_ret_t *curr;
+	const char **type_strings = NULL;
+	char *name = NULL, *t_buf = NULL;
+	int i, num_types = 0, t_buf_sz = 0;
+	int *types_indexes = NULL;
+	
+	if (fsdata.dbh == NULL) {
+		Tcl_DStringFree(buf);
+		Tcl_ResetResult(interp);
+		Tcl_AppendResult(interp, "No Index File Loaded!", (char *) NULL);
+		return -1;
+	}
+	assert(policy != NULL);				
+	if (is_attrib) {
+		if (get_attrib_types(ta_idx, &num_types, &types_indexes, policy) != 0) {
+			Tcl_DStringFree(buf);
+			Tcl_ResetResult(interp);
+			Tcl_AppendResult(interp, "Error getting type indexes for attribute!", (char *) NULL);
+			return -1;
+		}
+		assert(types_indexes != NULL && num_types > 0);
+	} else {
+		if (add_i_to_a(ta_idx, &num_types, &types_indexes) != 0) {
+			Tcl_DStringFree(buf);
+			Tcl_ResetResult(interp);
+			Tcl_AppendResult(interp, "Error adding type idx to array!", (char *) NULL);
+			return -1;
+		}
+		assert(types_indexes != NULL && num_types > 0);
+	}
+	assert(types_indexes != NULL && num_types > 0);
+	type_strings = (const char**)malloc(sizeof(char*) * num_types);
+	if (type_strings == NULL) {
+		fprintf(stderr, "Memory error.\n");
+		goto err;
+	}
+	memset(type_strings, 0, sizeof(const char*));
+	for (i = 0; i < num_types; i++) {
+		if (get_type_name(types_indexes[i], &name, policy) != 0) {
+			Tcl_DStringFree(buf);
+			Tcl_ResetResult(interp);
+			Tcl_AppendResult(interp, "Error getting type name!", (char *) NULL);
+			goto err;
+		}
+		assert(name != NULL);
+		if ((type_strings[i] = (const char*)strdup((const char*)name)) == NULL) {
+			fprintf(stderr, "Memory error.\n");
+			goto err;
+		}
+		free(name);
+	}
+	assert(type_strings != NULL);	
+		
+	search_keys.user = NULL;
+	search_keys.path = NULL;
+	search_keys.type = type_strings;
+	search_keys.object_class = NULL;
+	search_keys.num_type = num_types;
+	search_keys.num_user = 0;
+	search_keys.num_object_class = 0;
+	search_keys.num_path = 0;
+	search_keys.do_user_regEx = 0;
+	search_keys.do_type_regEx = 0;
+	search_keys.do_path_regEx = 0;
+	
+	if (sefs_filesystem_db_search(&fsdata, &search_keys) != 0) {
+		Tcl_DStringFree(buf);
+		Tcl_ResetResult(interp);
+		Tcl_AppendResult(interp, "File search failed\n", (char *) NULL);
+		goto err;
+	}
+			
+	curr = search_keys.search_ret;
+	if (curr == NULL) {
+		if (append_str(&t_buf, &t_buf_sz, "\nFiles: None\n") != 0)  {
+			fprintf(stderr, "Error appending to string!\n");
+			goto err;
+		}
+	} else {
+		if (append_str(&t_buf, &t_buf_sz, "\nFiles:\n") != 0)  {
+			fprintf(stderr, "Error appending to string!\n");
+			goto err;
+		}
+		/* walk the linked list */
+		while (curr) {
+			/* Print "context class file_path" per newline */
+			if (include_cxt && curr->context) {
+				if (append_str(&t_buf, &t_buf_sz, "\t   ") != 0)  {
+					fprintf(stderr, "Error appending to string!\n");
+					goto err;
+				}
+				if (append_str(&t_buf, &t_buf_sz, curr->context) != 0)  {
+					fprintf(stderr, "Error appending to string!\n");
+					goto err;
+				}
+			}
+			if (include_class && curr->object_class) {
+				if (append_str(&t_buf, &t_buf_sz, "\t   ") != 0)  {
+					fprintf(stderr, "Error appending to string!\n");
+					goto err;
+				}
+				if (append_str(&t_buf, &t_buf_sz, curr->object_class) != 0)  {
+					fprintf(stderr, "Error appending to string!\n");
+					goto err;
+				}
+			}
+			if (curr->path) {
+				if (append_str(&t_buf, &t_buf_sz, "\t   ") != 0)  {
+					fprintf(stderr, "Error appending to string!\n");
+					goto err;
+				}
+				if (append_str(&t_buf, &t_buf_sz, curr->path) != 0)  {
+					fprintf(stderr, "Error appending to string!\n");
+					goto err;
+				}
+			}
+			if (append_str(&t_buf, &t_buf_sz, "\n") != 0)  {
+				fprintf(stderr, "Error appending to string!\n");
+				goto err;
+			}
+			curr = curr->next;
+		}
+	}
+	if (append_str(&t_buf, &t_buf_sz, "\n") != 0)  {
+		fprintf(stderr, "Error appending to string!\n");
+		goto err;
+	}
+	sefs_search_keys_ret_destroy(search_keys.search_ret);
+	Tcl_DStringAppend(buf, t_buf, -1);
+	
+	if (type_strings) {
+		for (i = 0; i < num_types; i++) {
+			if (type_strings[i]) free((char*)type_strings[i]);
+		}
+		free(type_strings);
+	}
+	if (types_indexes) free(types_indexes);
+	if (name) free(name);
+	if (t_buf) free(t_buf);
+	
+	return 0;
+err:
+	if (type_strings) {
+		for (i = 0; i < num_types; i++) {
+			if (type_strings[i]) free((char*)type_strings[i]);
+		}
+		free(type_strings);
+	}
+	if (types_indexes) free(types_indexes);
+	if (name) free(name);
+	if (t_buf) free(t_buf);
+	return -1;
+}
 
 /* searches using regular expressions */
 static int append_all_ta_using_regex(regex_t *preg, const char *regexp, bool_t do_types, bool_t do_attribs, bool_t use_aliases,
 			bool_t type_attribs, bool_t attrib_types, bool_t attrib_type_attribs, policy_t *policy,
-			Tcl_DString *buf)
+			Tcl_DString *buf, bool_t show_files, bool_t include_cxt, bool_t include_class, 
+			Tcl_Interp *interp)
 {
 	int i, rt;
 	char tbuf[APOL_STR_SZ+64];
@@ -659,7 +821,7 @@ static int append_all_ta_using_regex(regex_t *preg, const char *regexp, bool_t d
 		for(i = 0; i < policy->num_types; i++) {
 			rt = regexec(preg, policy->types[i].name, 0, NULL, 0);
 			if(rt == 0) {
-				rt = append_type_str(type_attribs, use_aliases, 1, i, policy, buf);
+				rt = append_type_str(type_attribs, use_aliases, 0, i, policy, buf);
 				if(rt != 0) {
 					return -1;
 				}
@@ -669,11 +831,16 @@ static int append_all_ta_using_regex(regex_t *preg, const char *regexp, bool_t d
 				for(ptr = policy->types[i].aliases; ptr != NULL; ptr = ptr->next) {
 					rt = regexec(preg, ptr->name, 0, NULL, 0);
 					if(rt == 0) {
-						rt = append_type_str(type_attribs, use_aliases, 1, i, policy, buf);
+						rt = append_type_str(type_attribs, use_aliases, 0, i, policy, buf);
 						if(rt != 0) {
 							return -1;
 						}
 					}
+				}
+			}
+			if (show_files) {
+				if (apol_append_type_files(i, FALSE, include_cxt, include_class, buf, policy, interp) != 0) {
+					return TCL_ERROR;
 				}
 			}		
 		}
@@ -683,13 +850,17 @@ static int append_all_ta_using_regex(regex_t *preg, const char *regexp, bool_t d
 		Tcl_DStringAppend(buf, "\n\nTYPE ATTRIBUTES:\n", -1);
 		for(i = 0; i < policy->num_attribs; i++) {
 			if(regexec(preg, policy->attribs[i].name, 0,NULL,0) == 0) {
-				rt = append_attrib_str(attrib_types, attrib_type_attribs, use_aliases, 1, 0, i, policy, buf);
+				rt = append_attrib_str(attrib_types, attrib_type_attribs, use_aliases, 0, 0, i, policy, buf);
 				if(rt != 0) {
 					return -1;
 				}
 
 			}
-									
+			if (show_files) {
+				if (apol_append_type_files(i, TRUE, include_cxt, include_class, buf, policy, interp) != 0) {
+					return TCL_ERROR;
+				}
+			}							
 		}
 	}
 
@@ -3585,6 +3756,9 @@ int Apol_GetInitialSIDInfo(ClientData clientData, Tcl_Interp *interp, int argc, 
  * argv[6]	use_aliases
  * argv[7]	use search string (regexp)
  * argv[8]	search string
+ * argv[9]	show files
+ * argv[10]	include context
+ * argv[11]	include class
  */
 int Apol_GetTypeInfo(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
 {
@@ -3595,9 +3769,10 @@ int Apol_GetTypeInfo(ClientData clientData, Tcl_Interp *interp, int argc, char *
 	
 	bool_t do_types, type_attribs, do_attribs, attrib_types, attrib_type_attribs, 
 		use_aliases, use_srchstr;
-
+	bool_t show_files, include_cxt, include_class;
+	
 	buf = &buffer;
-	if(argc != 9) {
+	if(argc != 12) {
 		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
 		return TCL_ERROR;
 	}
@@ -3613,6 +3788,9 @@ int Apol_GetTypeInfo(ClientData clientData, Tcl_Interp *interp, int argc, char *
 	attrib_type_attribs = getbool(argv[5]);
 	use_aliases = getbool(argv[6]);
 	use_srchstr = getbool(argv[7]);
+	show_files = getbool(argv[9]);
+	include_cxt = getbool(argv[10]);
+	include_class = getbool(argv[11]);
 		
 	Tcl_DStringInit(buf);	
 	if(!use_srchstr) {	
@@ -3620,12 +3798,17 @@ int Apol_GetTypeInfo(ClientData clientData, Tcl_Interp *interp, int argc, char *
 			sprintf(tmpbuf, "\n\nTYPES (%d):\n", policy->num_types);
 			Tcl_DStringAppend(buf, tmpbuf, -1);
 			for(i = 0; i < policy->num_types; i++) {
-				rt = append_type_str(type_attribs, use_aliases, 1, i, policy, buf);
+				rt = append_type_str(type_attribs, use_aliases, 0, i, policy, buf);
 				if(rt != 0) {
 					Tcl_DStringFree(buf);
 					Tcl_ResetResult(interp);
 					Tcl_AppendResult(interp, "error appending types", (char *) NULL);
 					return TCL_ERROR;
+				}
+				if (show_files) {
+					if (apol_append_type_files(i, FALSE, include_cxt, include_class, buf, policy, interp) != 0) {
+						return TCL_ERROR;
+					}
 				}
 			}
 		}
@@ -3636,7 +3819,7 @@ int Apol_GetTypeInfo(ClientData clientData, Tcl_Interp *interp, int argc, char *
 			for(i = 0; i < policy->num_attribs; i++) {
 				sprintf(tmpbuf, "%d: ", i+1);
 				Tcl_DStringAppend(buf, tmpbuf, -1);
-				rt = append_attrib_str(attrib_types, attrib_type_attribs, use_aliases, 1, 0, i,
+				rt = append_attrib_str(attrib_types, attrib_type_attribs, use_aliases, 0, 0, i,
 					policy, buf);
 				if(rt != 0){
 					Tcl_DStringFree(buf);
@@ -3644,7 +3827,11 @@ int Apol_GetTypeInfo(ClientData clientData, Tcl_Interp *interp, int argc, char *
 					Tcl_AppendResult(interp, "error appending attributes", (char *) NULL);
 					return TCL_ERROR;
 				}
-	
+				if (show_files) {
+					if (apol_append_type_files(i, TRUE, include_cxt, include_class, buf, policy, interp) != 0) {
+						return TCL_ERROR;
+					}
+				}
 			}
 		}	
 	}
@@ -3670,7 +3857,9 @@ int Apol_GetTypeInfo(ClientData clientData, Tcl_Interp *interp, int argc, char *
 			return TCL_ERROR;
 			
 		}
-		rt = append_all_ta_using_regex(&reg, argv[8], do_types, do_attribs, use_aliases, type_attribs, attrib_types, attrib_type_attribs, policy, buf);
+		rt = append_all_ta_using_regex(&reg, argv[8], do_types, do_attribs, use_aliases, type_attribs, 
+						attrib_types, attrib_type_attribs, policy, buf,
+						show_files, include_cxt, include_class, interp);
 		if(rt != 0) {
 			Tcl_DStringFree(buf);
 			Tcl_ResetResult(interp);
@@ -3772,7 +3961,6 @@ static int types_relation_append_results(types_relation_query_t *tr_query,
 		for (i = 0; i < tr_results->common_obj_types_results->num_objs_A; i++) {
 			type_idx = tr_results->common_obj_types_results->objs_A[i];
 			if (get_type_name(type_idx, &name, policy) != 0) {
-				free(name);
 				Tcl_AppendResult(interp, "Error getting attribute name!", (char *) NULL);
 				return TCL_ERROR;
 			}
@@ -3812,7 +4000,6 @@ static int types_relation_append_results(types_relation_query_t *tr_query,
 		for (i = 0; i < tr_results->unique_obj_types_results->num_objs_A; i++) {
 			type_idx = tr_results->unique_obj_types_results->objs_A[i];
 			if (get_type_name(type_idx, &name, policy) != 0) {
-				free(name);
 				Tcl_AppendResult(interp, "Error getting attribute name!", (char *) NULL);
 				return TCL_ERROR;
 			}
@@ -3837,7 +4024,6 @@ static int types_relation_append_results(types_relation_query_t *tr_query,
 		for(i = 0; i < tr_results->unique_obj_types_results->num_objs_B; i++) {
 			type_idx = tr_results->unique_obj_types_results->objs_B[i];
 			if (get_type_name(type_idx, &name, policy) != 0) {
-				free(name);
 				Tcl_AppendResult(interp, "Error getting attribute name!", (char *) NULL);
 				return TCL_ERROR;
 			}
@@ -5260,6 +5446,7 @@ int Apol_Create_FC_Index_File(ClientData clientData, Tcl_Interp *interp, int arg
 	fsdata_local.fsdh = NULL;
  	if (sefs_filesystem_db_populate(&fsdata_local, argv[2]) == -1) {
 		fprintf(stderr, "fsdata_init failed\n");
+		Tcl_AppendResult(interp, "Error populating database.\n", (char *) NULL);
 		return TCL_ERROR;
 	}
 	if (sefs_filesystem_db_save(&fsdata_local, argv[1]) != 0) {
@@ -5323,19 +5510,21 @@ static void apol_search_fc_index_append_results(sefs_search_ret_t *key, Tcl_Inte
 /* 
  * This function expects a file context index to be loaded into memory.
  * Arguments:
- *	argv[1] - use regular expressions
- *	argv[2] - use_type [bool]
- * 	argv[3] - type [TCL list of strings]
- * 	argv[4] - use_user [bool]
- *	argv[5] - user [TCL list of strings]
- * 	argv[6] - use_class [bool]
- * 	argv[7] - object class [TCL list of strings]
- * 	argv[8] - use_path [bool]
- * 	argv[9] - path [Tcl list of strings]
+ *	argv[1] - use_type [bool]
+ * 	argv[2] - type [TCL list of strings]
+ * 	argv[3] - use_user [bool]
+ *	argv[4] - user [TCL list of strings]
+ * 	argv[5] - use_class [bool]
+ * 	argv[6] - object class [TCL list of strings]
+ * 	argv[7] - use_path [bool]
+ * 	argv[8] - path [Tcl list of strings]
+ * 	argv[9] - use regular expressions for user
+ * 	argv[10] - use regular expressions for type
+ *	argv[11] - use regular expressions for path
  */
 int Apol_Search_FC_Index_DB(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
 {	
-	if(argc != 10) {
+	if(argc != 12) {
 		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
 		return TCL_ERROR;
 	}
@@ -5343,7 +5532,7 @@ int Apol_Search_FC_Index_DB(ClientData clientData, Tcl_Interp *interp, int argc,
 	Tcl_AppendResult(interp, "You need to build apol with libsefs!", (char *) NULL);
 	return TCL_ERROR;
 #else		
-	int rt, use_regex;
+	int rt;
 	int num_types, num_users, num_classes, num_paths;
 	sefs_search_keys_t search_keys;
 	CONST84 char **object_classes, **types, **users, **paths;
@@ -5353,11 +5542,7 @@ int Apol_Search_FC_Index_DB(ClientData clientData, Tcl_Interp *interp, int argc,
 		return TCL_ERROR;
 	}
 	object_classes = types = users = paths = NULL;
-	rt = Tcl_GetInt(interp, argv[1], &use_regex);
-	if (rt == TCL_ERROR) {
-		Tcl_AppendResult(interp, "argv[1] apparently is not an integer", (char *) NULL);
-		return TCL_ERROR;
-	}
+
 	search_keys.user = NULL;
 	search_keys.path = NULL;
 	search_keys.type = NULL;
@@ -5367,8 +5552,8 @@ int Apol_Search_FC_Index_DB(ClientData clientData, Tcl_Interp *interp, int argc,
 	search_keys.num_object_class = 0;
 	search_keys.num_path = 0;
 	
-	if (getbool(argv[2])) {
-		rt = Tcl_SplitList(interp, argv[3], &num_types, &types);
+	if (getbool(argv[1])) {
+		rt = Tcl_SplitList(interp, argv[2], &num_types, &types);
 		if (rt != TCL_OK) {
 			Tcl_AppendResult(interp, "Error splitting TCL list.", (char *) NULL);
 			goto err;
@@ -5381,8 +5566,8 @@ int Apol_Search_FC_Index_DB(ClientData clientData, Tcl_Interp *interp, int argc,
 		search_keys.num_type = num_types;
 		search_keys.type = types;
 	}
-	if (getbool(argv[4])) {
-		rt = Tcl_SplitList(interp, argv[5], &num_users, &users);
+	if (getbool(argv[3])) {
+		rt = Tcl_SplitList(interp, argv[4], &num_users, &users);
 		if (rt != TCL_OK) {
 			Tcl_AppendResult(interp, "Error splitting TCL list.", (char *) NULL);
 			goto err;
@@ -5395,8 +5580,8 @@ int Apol_Search_FC_Index_DB(ClientData clientData, Tcl_Interp *interp, int argc,
 		search_keys.num_user = num_users;
 		search_keys.user = users;
 	}
-	if (getbool(argv[6])) {
-		rt = Tcl_SplitList(interp, argv[7], &num_classes, &object_classes);
+	if (getbool(argv[5])) {
+		rt = Tcl_SplitList(interp, argv[6], &num_classes, &object_classes);
 		if (rt != TCL_OK) {
 			Tcl_AppendResult(interp, "Error splitting TCL list.", (char *) NULL);
 			goto err;
@@ -5409,8 +5594,8 @@ int Apol_Search_FC_Index_DB(ClientData clientData, Tcl_Interp *interp, int argc,
 		search_keys.num_object_class = num_classes;
 		search_keys.object_class = object_classes;
 	}
-	if (getbool(argv[8])) {
-		rt = Tcl_SplitList(interp, argv[9], &num_paths, &paths);
+	if (getbool(argv[7])) {
+		rt = Tcl_SplitList(interp, argv[8], &num_paths, &paths);
 		if (rt != TCL_OK) {
 			Tcl_AppendResult(interp, "Error splitting TCL list.", (char *) NULL);
 			goto err;
@@ -5423,12 +5608,28 @@ int Apol_Search_FC_Index_DB(ClientData clientData, Tcl_Interp *interp, int argc,
 		search_keys.num_path = num_paths;
 		search_keys.path = paths;
 	}
+	rt = Tcl_GetInt(interp, argv[9], &search_keys.do_user_regEx);
+	if (rt == TCL_ERROR) {
+		Tcl_AppendResult(interp, "argv[9] apparently is not an integer", (char *) NULL);
+		return TCL_ERROR;
+	}
+	rt = Tcl_GetInt(interp, argv[10], &search_keys.do_type_regEx);
+	if (rt == TCL_ERROR) {
+		Tcl_AppendResult(interp, "argv[10] apparently is not an integer", (char *) NULL);
+		return TCL_ERROR;
+	}
+	rt = Tcl_GetInt(interp, argv[11], &search_keys.do_path_regEx);
+	if (rt == TCL_ERROR) {
+		Tcl_AppendResult(interp, "argv[11] apparently is not an integer", (char *) NULL);
+		return TCL_ERROR;
+	}
+	
 	if (!search_keys.type && !search_keys.user && !search_keys.object_class && !search_keys.path) {
 		Tcl_AppendResult(interp, "You must specify search criteria!", (char *) NULL);
 		goto err;
 	}
 	
-	rt = sefs_filesystem_db_search(&fsdata, &search_keys, use_regex);
+	rt = sefs_filesystem_db_search(&fsdata, &search_keys);
 	if (rt != 0) {
 		Tcl_AppendResult(interp, "Search failed\n", (char *) NULL);
 		goto err;
