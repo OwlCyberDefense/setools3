@@ -77,6 +77,12 @@ int main(int argc, char **argv, char **envp)
 	int optc = 0;
 	sefs_filesystem_data_t fsdata;
 	
+	outfilename = argv[1];
+	if (outfilename == NULL) {
+		usage(argv[0], 1);
+		exit(1);
+	}
+
 	while ((optc = getopt_long (argc, argv, "d:hv", longopts, NULL)) != -1)  {
 		switch (optc) {
 	  	case 'd': /* directory */
@@ -92,12 +98,6 @@ int main(int argc, char **argv, char **envp)
 	  		usage(argv[0], 1);
 	  		exit(1);
 		}
-	}
-
-	outfilename = argv[1];
-	if (outfilename == NULL) {
-		usage(argv[0], 1);
-		exit(1);
 	}
 
 
