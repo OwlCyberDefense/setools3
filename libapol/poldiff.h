@@ -46,6 +46,8 @@ typedef struct apol_diff {
 	int		num_common_perms;
 	int		num_perms;
 	int		num_booleans;
+	int		num_role_allow;
+	int		num_role_trans;
 	int_a_diff_t	*types;	
 	int_a_diff_t	*attribs;
 	int_a_diff_t	*roles;
@@ -54,6 +56,8 @@ typedef struct apol_diff {
 	int_a_diff_t	*common_perms;	/* common perms and/or perm mapping */
 	int		*perms;		/* any type of missing individual perm */
 	bool_diff_t	*booleans;
+	int_a_diff_t	*role_allow;   /* rbac differences */
+	int_a_diff_t	*role_trans;	/* role transitions */
 	avh_t		te;		/* hash table contains missing TE rule semantics */
 } apol_diff_t;
 
