@@ -7,11 +7,11 @@
 
 
 ##############################################################
-# ::ApolTypes
+# ::Apol_Types
 #  
 # The Types page
 ##############################################################
-namespace eval ApolTypes {
+namespace eval Apol_Types {
 # opts(opt), where opt =
 # types			use types
 # typeattribs		if types, also include attribs
@@ -47,7 +47,7 @@ namespace eval ApolTypes {
 
 }
 
-proc ApolTypes::open { } {
+proc Apol_Types::open { } {
 	variable typelist
 	variable attriblist
             
@@ -58,20 +58,20 @@ proc ApolTypes::open { } {
 	return
 }
 
-proc ApolTypes::close { } {
-        ApolTypes::init_options
-        set ApolTypes::srchstr ""
-	set ApolTypes::typelist ""
-	set ApolTypes::attriblist ""
+proc Apol_Types::close { } {
+        Apol_Types::init_options
+        set Apol_Types::srchstr ""
+	set Apol_Types::typelist ""
+	set Apol_Types::attriblist ""
 	
-	$ApolTypes::resultsbox configure -state normal
-	$ApolTypes::resultsbox delete 0.0 end
-	ApolTop::makeTextBoxReadOnly $ApolTypes::resultsbox
+	$Apol_Types::resultsbox configure -state normal
+	$Apol_Types::resultsbox delete 0.0 end
+	ApolTop::makeTextBoxReadOnly $Apol_Types::resultsbox
 	
 	return 0
 }
 
-proc ApolTypes::init_options { } {
+proc Apol_Types::init_options { } {
     variable types_select 
     variable typeattribs 
     variable typealiases 
@@ -89,25 +89,25 @@ proc ApolTypes::init_options { } {
     set opts(attribtypeattribs)	        0
     set opts(usesrchstr)		0
 
-    ApolTypes::enable_disable_incl_attribs $a_typeattribs
-    ApolTypes::enable_disable_ta $typeattribs $typealiases 1 
-    ApolTypes::enable_disable_ta $a_typeattribs $a_types 2
-    ApolTypes::_useSearch $sEntry 
+    Apol_Types::enable_disable_incl_attribs $a_typeattribs
+    Apol_Types::enable_disable_ta $typeattribs $typealiases 1 
+    Apol_Types::enable_disable_ta $a_typeattribs $a_types 2
+    Apol_Types::_useSearch $sEntry 
     
     return 0
 }
 
 # ----------------------------------------------------------------------------------------
-#  Command ApolTypes::set_Focus_to_Text
+#  Command Apol_Types::set_Focus_to_Text
 #
 #  Description: 
 # ----------------------------------------------------------------------------------------
-proc ApolTypes::set_Focus_to_Text {} {
-	focus $ApolTypes::resultsbox
+proc Apol_Types::set_Focus_to_Text {} {
+	focus $Apol_Types::resultsbox
 	return 0
 }
 
-proc ApolTypes::popupTypeInfo {which ta} {
+proc Apol_Types::popupTypeInfo {which ta} {
 	set rt [catch {set info [apol_GetSingleTypeInfo 0 0 $ta]} err]
 	if {$rt != 0} {
 		tk_messageBox -icon error -type ok -title "Error" -message "$err"
@@ -142,14 +142,14 @@ proc ApolTypes::popupTypeInfo {which ta} {
 # ::search
 #  	- Search text widget for a string
 # 
-proc ApolTypes::search { str case_Insensitive regExpr srch_Direction } {
+proc Apol_Types::search { str case_Insensitive regExpr srch_Direction } {
 	variable resultsbox
 	
 	ApolTop::textSearch $resultsbox $str $case_Insensitive $regExpr $srch_Direction
 	return 0
 }
 
-proc ApolTypes::searchTypes {} {
+proc Apol_Types::searchTypes {} {
 	variable opts
 	variable srchstr
 	
@@ -165,16 +165,16 @@ proc ApolTypes::searchTypes {} {
 		tk_messageBox -icon error -type ok -title "Error" -message "$err"
 		return 
 	} else {
-	    $ApolTypes::resultsbox configure -state normal
-	    $ApolTypes::resultsbox delete 0.0 end
-	    $ApolTypes::resultsbox insert end $results
-	    ApolTop::makeTextBoxReadOnly $ApolTypes::resultsbox
+	    $Apol_Types::resultsbox configure -state normal
+	    $Apol_Types::resultsbox delete 0.0 end
+	    $Apol_Types::resultsbox insert end $results
+	    ApolTop::makeTextBoxReadOnly $Apol_Types::resultsbox
         }
 	return 0
 }
 
-proc ApolTypes::_useSearch { entry } {
-    if { $ApolTypes::opts(usesrchstr) } {
+proc Apol_Types::_useSearch { entry } {
+    if { $Apol_Types::opts(usesrchstr) } {
     	$entry config -state normal   -background white
     } else {
     	$entry config -state disabled  -background  $ApolTop::default_bg_color
@@ -182,11 +182,11 @@ proc ApolTypes::_useSearch { entry } {
     return 0
 }
 
-proc ApolTypes::enable_disable_ta { b1 b2 num } {
+proc Apol_Types::enable_disable_ta { b1 b2 num } {
    
     if { $num == 1 } {
 	
-	if { $ApolTypes::opts(types) } {
+	if { $Apol_Types::opts(types) } {
 	    $b1 configure -state normal
 	    $b2 configure -state normal
 	} else {
@@ -196,7 +196,7 @@ proc ApolTypes::enable_disable_ta { b1 b2 num } {
 	    $b2 deselect
 	}
     } elseif { $num == 2 } {
-	if { $ApolTypes::opts(attribs) } {
+	if { $Apol_Types::opts(attribs) } {
 	    $b1 configure -state normal
 	} else {
 	    $b1 configure -state disabled
@@ -208,9 +208,9 @@ proc ApolTypes::enable_disable_ta { b1 b2 num } {
     return 0
 }
 
-proc ApolTypes::enable_disable_incl_attribs { cb } {
+proc Apol_Types::enable_disable_incl_attribs { cb } {
      
-     if { $ApolTypes::opts(attribtypes) } {
+     if { $Apol_Types::opts(attribtypes) } {
 	$cb configure -state normal
      } else {
 	$cb configure -state disabled
@@ -222,14 +222,14 @@ proc ApolTypes::enable_disable_incl_attribs { cb } {
 # ::goto_line
 #  	- goes to indicated line in text box
 # 
-proc ApolTypes::goto_line { line_num } {
+proc Apol_Types::goto_line { line_num } {
 	variable resultsbox
 	
 	ApolTop::goto_line $line_num $resultsbox
 	return 0
 }
 
-proc ApolTypes::create {nb} {
+proc Apol_Types::create {nb} {
     variable tlistbox 
     variable alistbox 
     variable resultsbox 
@@ -275,28 +275,28 @@ proc ApolTypes::create {nb} {
     # Types listbox
     set sw_t       [ScrolledWindow [$tbox getframe].sw -auto both]
     set tlistbox [listbox [$sw_t getframe].lb -height 18 -width 20 -highlightthickness 0 \
-		      -listvar ApolTypes::typelist -bg white] 
+		      -listvar Apol_Types::typelist -bg white] 
     $sw_t setwidget $tlistbox 
     
     # Attributes listbox 
     set sw_a       [ScrolledWindow [$abox getframe].sw -auto both]
     set alistbox [listbox [$sw_a getframe].lb -height 7 -width 20 -highlightthickness 0 \
-		      -listvar ApolTypes::attriblist -bg white]        
+		      -listvar Apol_Types::attriblist -bg white]        
     $sw_a setwidget $alistbox 
     
     # Popup menu widget
     menu .popupMenu_types
     .popupMenu_types add command -label "Display Type Info" \
-	-command { ApolTypes::popupTypeInfo "type" [$ApolTypes::tlistbox get active] }
+	-command { Apol_Types::popupTypeInfo "type" [$Apol_Types::tlistbox get active] }
     menu .popupMenu_attribs
     .popupMenu_attribs add command -label "Display Attribute Info" \
-	-command { ApolTypes::popupTypeInfo "attrib" [$ApolTypes::alistbox get active] }
+	-command { Apol_Types::popupTypeInfo "attrib" [$Apol_Types::alistbox get active] }
 
     # Binding events to the both listboxes
     bindtags $tlistbox [linsert [bindtags $tlistbox] 3 tlist_Tag]  
     bindtags $alistbox [linsert [bindtags $alistbox] 3 alist_Tag]  
-    bind tlist_Tag <Double-ButtonPress-1>  { ApolTypes::popupTypeInfo "type" [$ApolTypes::tlistbox get active]}
-    bind alist_Tag <Double-ButtonPress-1> { ApolTypes::popupTypeInfo "attrib" [$ApolTypes::alistbox get active]}
+    bind tlist_Tag <Double-ButtonPress-1>  { Apol_Types::popupTypeInfo "type" [$Apol_Types::tlistbox get active]}
+    bind alist_Tag <Double-ButtonPress-1> { Apol_Types::popupTypeInfo "attrib" [$Apol_Types::alistbox get active]}
     bind tlist_Tag <Button-3> { Apol_Roles::popupRoleInfoMenu %W %x %y .popupMenu_types }      
     bind alist_Tag <Button-3> { Apol_Roles::popupRoleInfoMenu %W %x %y .popupMenu_attribs } 
     
@@ -318,35 +318,35 @@ proc ApolTypes::create {nb} {
     pack $sw_a -fill both -expand yes
 
     set typeattribs [checkbutton $fm_types_select.typeattribs -text "Include Attribs" \
-	-variable ApolTypes::opts(typeattribs) -padx 10] 
+	-variable Apol_Types::opts(typeattribs) -padx 10] 
     set typealiases [checkbutton $fm_types_select.typealiases -text "Use Aliases" \
-	-variable ApolTypes::opts(typealiases) -padx 10]
-    set types_select [checkbutton $fm_types_select.type -text "Show Types" -variable ApolTypes::opts(types) \
-	-command "ApolTypes::enable_disable_ta $typeattribs $typealiases 1"]
+	-variable Apol_Types::opts(typealiases) -padx 10]
+    set types_select [checkbutton $fm_types_select.type -text "Show Types" -variable Apol_Types::opts(types) \
+	-command "Apol_Types::enable_disable_ta $typeattribs $typealiases 1"]
 
     # Attributes search section
     set a_typeattribs [checkbutton $fm_attribs_select.typeattribs -text "Include Type Attribs" \
-	-variable ApolTypes::opts(attribtypeattribs) -padx 10 \
+	-variable Apol_Types::opts(attribtypeattribs) -padx 10 \
 	-offvalue 0 \
         -onvalue 1]
     set a_types [checkbutton $fm_attribs_select.types -text "Include Types" \
-	-variable ApolTypes::opts(attribtypes) \
+	-variable Apol_Types::opts(attribtypes) \
 	-padx 10 \
 	-offvalue 0 \
-	-command "ApolTypes::enable_disable_incl_attribs $a_typeattribs" \
+	-command "Apol_Types::enable_disable_incl_attribs $a_typeattribs" \
 	-onvalue 1]
     set attribs_select [checkbutton $fm_attribs_select.type -text "Show Attributes" \
-	-variable ApolTypes::opts(attribs) \
-	-command "ApolTypes::enable_disable_ta $a_types $a_typeattribs 2"]
+	-variable Apol_Types::opts(attribs) \
+	-command "Apol_Types::enable_disable_ta $a_types $a_typeattribs 2"]
   
     # Search string section widgets
-    set sEntry [Entry $fm_sString.entry -textvariable ApolTypes::srchstr -width 40 \
+    set sEntry [Entry $fm_sString.entry -textvariable Apol_Types::srchstr -width 40 \
 		    -helptext "Enter a regular expression string for which to search"]
-    set sString [checkbutton $fm_sString.cb -variable ApolTypes::opts(usesrchstr) -text "Search Using Regular Expression" \
-		     -command "ApolTypes::_useSearch $sEntry"] 
+    set sString [checkbutton $fm_sString.cb -variable Apol_Types::opts(usesrchstr) -text "Search Using Regular Expression" \
+		     -command "Apol_Types::_useSearch $sEntry"] 
 
     # Action buttons
-    button $okbox.ok -text OK -width 6 -command { ApolTypes::searchTypes }
+    button $okbox.ok -text OK -width 6 -command { Apol_Types::searchTypes }
     #button $okbox.print -text Print -width 6 -command {ApolTop::unimplemented}
         
     # Display results window
@@ -364,7 +364,7 @@ proc ApolTypes::create {nb} {
     # Placing display widgets
     pack $sw -side left -expand yes -fill both 
     
-    ApolTypes::init_options
+    Apol_Types::init_options
 
     return $frame	
 }

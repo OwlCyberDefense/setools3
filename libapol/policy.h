@@ -483,11 +483,6 @@ int search_initial_sids_context(int **isids, int *num_isids, const char *user, c
 
 bool_t is_valid_type(policy_t *policy, int type, bool_t self_allowed);
 bool_t is_valid_obj_class(policy_t *policy, int obj_class);
-int add_type(char *type, policy_t *policy);
-int add_alias(int type_idx, char *alias, policy_t *policy);
-int add_attrib_to_type(int type_idx, char *token, policy_t *policy);
-int init_policy( policy_t **policy_ptr);
-int free_policy(policy_t **policy_ptr);
 
 int get_type_idx(const char *name, policy_t *policy);
 int get_type_idx_by_alias_name(const char *alias, policy_t *policy);

@@ -16,6 +16,7 @@
 #include <pwd.h>
 #include <grp.h>
 #include <sys/types.h>
+#include <stdio.h>
 #include "seuser_tcl.h"
 #include "seuser_db.h"
 
@@ -672,5 +673,3 @@ int Seuser_Init(Tcl_Interp *interp)
 
 	return TCL_OK;
 }
-
-

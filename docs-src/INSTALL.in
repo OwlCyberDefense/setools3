@@ -117,9 +117,9 @@ using are:
 
 NOTE: You may run the tools using a pre-1.4.1 BWidgets package, 
 however, you may experience problems. These tools have been tested 
-using BWidgets 1.4.1 and 1.6.0. See TESTING INFORMATION in KNOWN-BUGS for
-more  information on what platforms and configurations these tools have
-been tested against.
+using the latest BWidgets packages starting from version 1.4.1. 
+See TESTING INFORMATION in KNOWN-BUGS for more information on what 
+platforms and configurations these tools have been tested against.
 
 Once you  have downloaded the correct version of BWidgets, then you 
 can install it in your TCL directory. For instance, if you have 

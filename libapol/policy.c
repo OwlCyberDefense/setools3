@@ -519,7 +519,8 @@ int get_initial_sid_name(int idx, char **name, policy_t *policy)
 int search_initial_sids_context(int **isids, int *num_isids, const char *user, const char *role, const char *type, policy_t *policy)
 {
 	user_item_t *uidx = NULL;
-	int ridx, tidx, i;
+	/* initialize ridx and tidx so to avoid compile warnings when compiled with optimized flag */
+	int ridx = -1, tidx = -1, i;
 	
 	if(policy == NULL || isids == NULL || num_isids == NULL) {
 		return -1;
@@ -648,7 +649,7 @@ int get_type_idx_by_alias_name(const char *alias, policy_t *policy)
  * types is the returned array and num the # of elements in the array (types==NULL
  * if num <= 0).
  */
-int get_type_idxs_by_regex(int **types, int *num, regex_t *preg, policy_t *policy)
+int get_type_idxs_by_regex(int **types, int *num, regex_t *preg, bool_t include_self, policy_t *policy)
 {
 	int i, j;
 	char *name;
@@ -665,7 +666,11 @@ int get_type_idxs_by_regex(int **types, int *num, regex_t *preg, policy_t *polic
 	memset(bools, 0, sizeof(bool_t) * policy->num_types);
 	
 	*num = 0;
-	for(i = 0; i < policy->num_types; i++) {
+	if (include_self)
+		i = 0;
+	else
+		i = 1;
+	for(; i < policy->num_types; i++) {
 		/* DO NOT FREE name*/
 		_get_type_name_ptr(i, &name, policy);
 		if(regexec(preg, name, 0, NULL, 0) == 0) {
@@ -2139,7 +2144,7 @@ int extract_types_from_te_rule(int rule_idx, int rule_type, unsigned char whichl
 {
 	ta_item_t *tlist, *t;
 	unsigned char flags;
-	bool_t *b_types;
+	bool_t *b_types = NULL;
 	int i, ret = 0, num_subtracted_types, num_subtracted_attribs;
 	int *subtracted_types, *subtracted_attribs;
 	
@@ -2296,7 +2301,8 @@ int extract_types_from_te_rule(int rule_idx, int rule_type, unsigned char whichl
 	}
 	
 out:
-	free(b_types);
+	if (b_types)
+		free(b_types);
 	if (subtracted_types)
 		free(subtracted_types);
 	if (subtracted_attribs)
