@@ -76,7 +76,7 @@ classes_perm_map_t *new_perm_mapping(policy_t *policy)
 			if(j < policy->obj_classes[i].num_u_perms) {
 				t->maps[i].perm_maps[j].perm_idx = policy->obj_classes[i].u_perms[j];
 				t->maps[i].perm_maps[j].map = PERMMAP_UNMAPPED;
-				t->maps[i].perm_maps[j].weight = '1';
+				t->maps[i].perm_maps[j].weight = (char) PERMMAP_MIN_WEIGHT;
 			} 
 			else {
 				/* If we're here, then there must be common perms */
@@ -85,7 +85,7 @@ classes_perm_map_t *new_perm_mapping(policy_t *policy)
 					assert(k < policy->common_perms[policy->obj_classes[i].common_perms].num_perms);
 					t->maps[i].perm_maps[j+k].perm_idx = policy->common_perms[policy->obj_classes[i].common_perms].perms[k];
 					t->maps[i].perm_maps[j+k].map = PERMMAP_UNMAPPED;
-					t->maps[i].perm_maps[j+k].weight = '1';
+					t->maps[i].perm_maps[j+k].weight = (char) PERMMAP_MIN_WEIGHT;
 				} 
 				assert(k == policy->common_perms[policy->obj_classes[i].common_perms].num_perms);
 				assert(j == policy->obj_classes[i].num_u_perms);
@@ -123,6 +123,8 @@ static unsigned char pmap_convert_map_char(char mapid)
 	case 'B':	return PERMMAP_BOTH;
 	case 'n':
 	case 'N':	return PERMMAP_NONE;
+	case 'u':
+	case 'U':	return PERMMAP_UNMAPPED;
 	default:	fprintf(stderr, "Warning: invalid map character (%c); permission will be unmapped\n", mapid);
 			return PERMMAP_UNMAPPED;
 	} 
@@ -150,6 +152,7 @@ static unsigned int load_perm_map_for_object(int obj_idx, int num_perms, classes
 	unsigned char skip;
 	int i, idx, pm_idx, perm_weight;
 	char line[LINE_SZ], perm[LINE_SZ], mapid;
+	char *line_ptr = NULL;
 	
 	fpos_t fpos;
 	
@@ -173,12 +176,15 @@ static unsigned int load_perm_map_for_object(int obj_idx, int num_perms, classes
 	} 
 	i = 0;
 	while((fgetpos(fp, &fpos) == 0) && fgets(line, LINE_SZ, fp) != NULL) {
-		if(line[0] == '#' || str_is_only_white_space(line))
+		line_ptr = &line[0];
+		if (trim_string(&line_ptr) != 0)
+			return PERMMAP_RET_ERROR;
+		if(line_ptr[0] == '#' || str_is_only_white_space(line_ptr))
 			continue;
-		if(sscanf(line, "%s %c %d", perm, &mapid, &perm_weight) != 3) {
+		if(sscanf(line_ptr, "%s %c %d", perm, &mapid, &perm_weight) != 3) {
 			/* This may be a perm map file w/o perm weigthing. */
-			if(sscanf(line, "%s %c", perm, &mapid) != 2) {
-				fprintf(stderr, "Error loading object map object index %d (%s); invalid format for line: \"%s\"\n", obj_idx, policy->obj_classes[obj_idx].name, line);
+			if(sscanf(line_ptr, "%s %c", perm, &mapid) != 2) {
+				fprintf(stderr, "Error loading object map object index %d (%s); invalid format for line: \"%s\"\n", obj_idx, policy->obj_classes[obj_idx].name, line_ptr);
 				return PERMMAP_RET_ERROR;
 			}
 			perm_weight = PERMMAP_MAX_WEIGHT;
@@ -186,7 +192,7 @@ static unsigned int load_perm_map_for_object(int obj_idx, int num_perms, classes
 
 		i++;
 		if(strcmp(perm, "class") == 0) {
-			/* means we've moved onto next object before we've read num_perms # of permissions*/
+			/* means we've moved onto next object or encountered EOF, before we've read num_perms # of permissions*/
 			fprintf(stderr, "Warning: there were less than %d permissions recorded for object index %d\n", num_perms, obj_idx);
 			/* reset the file position so that the next obj class will be read correctly */
 			fsetpos(fp, &fpos);
@@ -220,7 +226,7 @@ static unsigned int load_perm_map_for_object(int obj_idx, int num_perms, classes
 				continue;		} 
 		obj_map->perm_maps[pm_idx].map = pmap_convert_map_char(mapid);
 	
-		/* weight must be between 0 - 10 to be valid. If less than 0, set to minimum; if greater than 10, set to max */
+		/* weight must be between 1 - 10 to be valid. If less than 1, set to minimum; if greater than 10, set to max */
 		if (perm_weight > 10) {
 			fprintf(stderr, "Weight value (%d) for permission %s in object %s is invalid. Setting to default maximum weight.\n", perm_weight, perm, policy->obj_classes[obj_idx].name);
 			perm_weight = 10;
@@ -235,10 +241,13 @@ static unsigned int load_perm_map_for_object(int obj_idx, int num_perms, classes
 		if(i == num_perms)
 			break;
 	}	
-	if(i < num_perms) {
-		fprintf(stderr, "Error: unexpected EOF reading perms for object %d\n", obj_idx);
-		return PERMMAP_RET_ERROR;
+	
+	if(i < num_perms && feof(fp)) {
+		/* means we've encountered EOF, before we've read num_perms # of permissions for the last object class */
+		fprintf(stderr, "Warning: there were less than %d permissions recorded for object index %d\n", num_perms, obj_idx);
+		ret |= PERMMAP_RET_UNMAPPED_PERM;
 	}
+	
 	if(!skip && pmap_unmapped_perms(obj_map)) {
 		fprintf(stderr, "Warning: some permission were unmapped for object index %d (%s)\n", obj_idx, policy->obj_classes[obj_idx].name);
 		ret |= PERMMAP_RET_UNMAPPED_PERM;
@@ -253,8 +262,9 @@ static unsigned int load_perm_map_for_object(int obj_idx, int num_perms, classes
 unsigned int load_perm_mappings(classes_perm_map_t **map, policy_t *policy, FILE *fp)
 {
 	unsigned int ret = PERMMAP_RET_SUCCESS;
-	int num_objs, num_perms, i, idx;
+	int num_objs, num_perms, i = 0, idx;
 	char line[LINE_SZ], id[LINE_SZ];
+	char *line_ptr = NULL;
 	
 	if(policy == NULL || map == NULL) {
 		return PERMMAP_RET_ERROR;
@@ -267,12 +277,19 @@ unsigned int load_perm_mappings(classes_perm_map_t **map, policy_t *policy, FILE
 	}
 	
 	while(fgets(line, LINE_SZ, fp) != NULL) {
-		if(line[0] == '#' || (sscanf(line, "%d", &num_objs) != 1 ))  
+		line_ptr = &line[0];
+		if (trim_string(&line_ptr) != 0)
+			return PERMMAP_RET_ERROR;
+		
+		if(line_ptr[0] == '#' || (sscanf(line_ptr, "%d", &num_objs) != 1 ))  
 			continue;
 		else {
 			for(i = 0; i < num_objs; i++) {
 				while(fgets(line, LINE_SZ, fp) != NULL) {
-					if(line[0] == '#' || (sscanf(line, "%*s %s %d", id, &num_perms) != 2 ))  
+					line_ptr = &line[0];
+					if (trim_string(&line_ptr) != 0)
+						return PERMMAP_RET_ERROR;
+					if(line_ptr[0] == '#' || (sscanf(line_ptr, "%*s %s %d", id, &num_perms) != 2 ))  
 						continue;
 					else {
 						idx = get_obj_class_idx(id, policy);
