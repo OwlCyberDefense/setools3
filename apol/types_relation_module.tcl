@@ -41,7 +41,9 @@ namespace eval Apol_Analysis_tra {
 		 	          displayed at once. If desired, all results can be displayed at once as well by selecting the \
 		 	          listbox item labeled 'Show All Results'.\n\nFor additional help on \
     				  this topic select \"Types Relationship Analysis\" from the help menu."
-				    	
+	variable progressmsg		""
+	variable progress_indicator	-1
+					    	
     	# Query variables
     	variable typeA			""
     	variable typeB			""
@@ -69,6 +71,8 @@ namespace eval Apol_Analysis_tra {
 	variable cb_attribB
 	variable tra_listbox
 	variable tra_info_text
+	variable progressDlg
+	set progressDlg .progress
 	
 	# Advanced options dialogs
 	variable forward_options_Dlg
@@ -440,24 +444,29 @@ proc Apol_Analysis_tra::do_analysis {results_frame} {
 				set class_elements [array names tif_object "$transflow_options_Dlg,perm_status_array,$class,*"]
 				set exclude_perm_added 0
 				foreach element $class_elements {
-					set perm [lindex [split $element ","] 1]
-					# If threshhold is enabled, the skip any permissions that fall below threshhold.
-					if {$tif_object($transflow_options_Dlg,threshhold_cb_value)} {
-						if {[Apol_Perms_Map::get_weight_for_class_perm $class $perm] < \
+					set perm [lindex [split $element ","] 3]
+					# These are manually set to be included, so skip.
+					if {![string equal $tif_object($element) "exclude"] &&
+					    !$tif_object($transflow_options_Dlg,threshhold_cb_value)} {
+						continue	
+					} elseif {![string equal $tif_object($element) "exclude"] &&
+					    $tif_object($transflow_options_Dlg,threshhold_cb_value)} {
+						# If threshhold is enabled, then skip any permissions that are >=  
+						# to the threshhold since these are to be included in the results.
+						if {[Apol_Perms_Map::get_weight_for_class_perm $class $perm] >= \
 							$tif_object($transflow_options_Dlg,threshhold_value)} {
 							# Skip this permisssion
 							continue
 						}
-					}
-			
-					if {[string equal $tif_object($element) "exclude"]} {
-						if {$exclude_perm_added == 0} {
-							incr tif_num_object_classes 
-							set tif_perm_options [lappend tif_perm_options $class]
-							set exclude_perm_added 1
-						}	
-						set perms [lappend perms $perm]
-					}
+					}				
+					# If we get to this point, then the permission was either manually excluded,
+					# excluded because it's weight falls below the threshhold value, or both.
+					if {$exclude_perm_added == 0} {
+						incr tif_num_object_classes 
+						set tif_perm_options [lappend tif_perm_options $class]
+						set exclude_perm_added 1
+					}	
+					set perms [lappend perms $perm]
 				}
 				if {$perms != ""} {
 					set tif_perm_options [lappend tif_perm_options [llength $perms]]
@@ -484,7 +493,8 @@ proc Apol_Analysis_tra::do_analysis {results_frame} {
 	set filter_dirflow_objs 0
 	if {$excluded_dirflow_objs != ""} {
 		set filter_dirflow_objs 1
-	}				
+	}	
+	Apol_Analysis_tra::display_progressDlg			
 	set rt [catch {set results [apol_TypesRelationshipAnalysis \
 		$typeA \
 		$typeB \
@@ -511,6 +521,7 @@ proc Apol_Analysis_tra::do_analysis {results_frame} {
 		$filter_dirflow_objs \
 		$excluded_dirflow_objs]} err]
 		
+	Apol_Analysis_fulflow::destroy_progressDlg	
      	if {$rt != 0} {	
 	        tk_messageBox -icon error -type ok -title "Error" -message "$err"
 		return -code error
@@ -914,7 +925,27 @@ proc Apol_Analysis_tra::display_common_object_info {tra_listbox tra_info_text da
 
 	return 0
 }
-						
+
+proc Apol_Analysis_tra::display_progressDlg {} {
+     	variable progressDlg
+	    		
+	set Apol_Analysis_tra::progressmsg "Performing types relationship analysis..."
+	set progressBar [ProgressDlg $progressDlg \
+		-parent $ApolTop::mainframe \
+        	-textvariable Apol_Analysis_tra::progressmsg \
+        	-variable Apol_Analysis_tra::progress_indicator \
+        	-maximum 3 \
+        	-width 45]
+        update
+        bind $progressBar <<AnalysisStarted>> {
+        	set Apol_Analysis_fulflow::progress_indicator [expr $Apol_Analysis_fulflow::progress_indicator + 1]
+        }
+        # TODO: generate virtual events to place onto Tcl's event queue, to capture progress.
+	#event generate $Apol_Analysis_fulflow::progressDlg <<AnalysisStarted>> -when head
+
+        return 0
+} 
+					
 # ------------------------------------------------------------------------------
 #  Command Apol_Analysis_tra::display_unique_object_info
 # ------------------------------------------------------------------------------
