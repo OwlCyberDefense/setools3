@@ -37,8 +37,9 @@ namespace eval SEUser_Top {
 	variable b_lbl_groups
 	
 	# Miscellaneous variables
-	variable gui_ver		"0.5.4"
-	variable copyright_date		"2003"
+	# The version number is defined as a magical string here. This is later configured in the make environment.
+	variable gui_ver		SEUSER_GUI_VERSION
+	variable copyright_date		"2002-2004"
 	variable progressMsg 		""
 	variable delete_user_ans 
 	variable tmpfile

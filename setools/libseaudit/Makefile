@@ -2,6 +2,7 @@ LIB-OBJ        = auditlog.o filters.o sort.o parse.o
 INCLUDE        = -I..
 SEAUDIT_LIBS   = ../lib/libseaudit.a ../lib/libapol.a $(LIBS)
 CFLAGS		+= -D_GNU_SOURCE
+CFLAGS          += -DLIBSEAUDIT_VERSION_STRING='"$(shell cat VERSION)"'
 
 libseaudit: ../lib/libseaudit.a
 

@@ -16,7 +16,8 @@ apol: $(GUI-OBJ) apol.tcl
 
 
 apol.tcl: $(TCL-FILES)
-	cat $(TCL-FILES) > $@
+	cat $(TCL-FILES) | \
+	sed -e 's/APOL_GUI_VERSION/$(shell cat VERSION)/g' > $@
 
 tmp.tcl: $(TCL-STRIP-FILES)
 	cat $(TCL-STRIP-FILES) > $@

@@ -5,7 +5,8 @@ TCL-FILES	= head.tcl tmp.tcl
 SEPCUT_HELP_FILE	= sepcut_help.txt
 
 sepcut: $(TCL-FILES)
-	cat $(TCL-FILES) > $@ 
+	cat $(TCL-FILES) | \
+	sed -e 's/SEPCUT_GUI_VERSION/$(shell cat VERSION)/g' > $@ 
 	chmod 755 $@
 
 tmp.tcl: $(TCL-STRIP_FILES)
