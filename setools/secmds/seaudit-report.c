@@ -10,8 +10,8 @@
  * generating a concide report containing standard information as well as 
  * customized information using seaudit views. Reports are rendered in either
  * HTML or plain text. Future support will provide rendering into XML. The 
- * HTML report style can be configured by providing an alternate html template
- * or configuring the default style template. This tool also provides the 
+ * HTML report can be formatted by providing an alternate stylesheet file
+ * or by configuring the default stylesheet. This tool also provides the 
  * option for including malformed strings within the report, which a security 
  * expert would want to see.
  */
@@ -41,6 +41,7 @@
 
 #define COPYRIGHT_INFO "Copyright (C) 2004 Tresys Technology, LLC"
 #define CONFIG_FILE "seaudit-report.conf"
+#define STYLESHEET_FILE "seaudit-report.css"
 #define DATE_STR_SIZE 256
 
 /* seaudit_report valid node names */
@@ -64,7 +65,7 @@ typedef struct seaudit_report_info {
 	unsigned char malformed;
 	char *configPath;
 	char *outFile;
-	char *html_templateFile;
+	char *stylesheet_file;
 	char **logfiles;
 	int num_logfiles;
 	audit_log_t *log;
@@ -74,7 +75,7 @@ static struct option const longopts[] = {
 	{"html", no_argument, NULL, 'H'},
 	{"malformed", no_argument, NULL, 'm'},
 	{"output", required_argument, NULL, 'o'},
-	{"template", required_argument, NULL, 't'},
+	{"stylesheet", required_argument, NULL, 'S'},
 	{"stdin", no_argument, NULL, 's'},
 	{"config", no_argument, NULL, 'c'},
 	{"help", no_argument, NULL, 'h'},
@@ -95,10 +96,10 @@ void seaudit_report_info_usage(const char *program_name, bool_t brief)
 	printf("  -m,  --malformed     		Include malformed log messages.\n");
 	printf("  -o <file>, --output <file>  	Output to file.\n");
 	printf("  -c <file>, --config <file>	Use alternate config file.\n");
-	printf("  -t <file>, --template <file>	HTML style template to be used for formatting an html report.\n");
-	printf("  				Only used if --html option is provided. See the source of the\n");
-	printf("				default template for the format used.\n");
-	printf("  --html          		Set the output to format to html. Plain text is the default.\n");
+	printf("  --html          		Set the output to format to HTML. Plain text is the default.\n");
+	printf("  --stylesheet <file>		HTML stylesheet to be used for formatting an HTML report.\n");
+	printf("  				This option is only used if --html option is also provided.\n");
+	printf("				See %s/%s for example of stylesheet source to use.\n", APOL_INSTALL_DIR, STYLESHEET_FILE);
 	printf("  -v,  --version        	Display version information and exit.\n");
 	printf("  -h,  --help           	Display this help and exit.\n");
 	printf("\n");
@@ -121,8 +122,8 @@ void seaudit_report_info_free(seaudit_report_info_t *report_info) {
 		free(report_info->configPath);
 	if (report_info->outFile) 
 		free(report_info->outFile);
-	if (report_info->html_templateFile) 
-		free(report_info->html_templateFile);	
+	if (report_info->stylesheet_file) 
+		free(report_info->stylesheet_file);	
 	/* Free log file path strings */
 	if (report_info->logfiles) {
 		for (i = 0; i < report_info->num_logfiles; i++) {
@@ -245,6 +246,53 @@ static int seaudit_report_search_dflt_config_file(seaudit_report_info_t *report_
 	return 0;
 }
 
+static int seaudit_report_search_dflt_stylesheet(seaudit_report_info_t *report_info) {
+	int len;
+	
+	assert(report_info != NULL);
+	if (report_info->stylesheet_file == NULL) {
+		/* a. Look in current dir */
+		len = strlen(STYLESHEET_FILE) + 3;
+		report_info->stylesheet_file = (char *)malloc(len * sizeof(char));
+		if (report_info->stylesheet_file == NULL) {
+			fprintf(stderr, "out of memory");
+			return -1;
+		}	
+		snprintf(report_info->stylesheet_file, len, "./%s", STYLESHEET_FILE);
+		if (access(report_info->stylesheet_file, R_OK) == 0) {
+			return 0;
+		}
+		free(report_info->stylesheet_file);
+		
+		/* b. Look in home directory */ 
+	     	report_info->stylesheet_file = (char *)malloc(len * sizeof(char));
+		if (report_info->stylesheet_file == NULL) {
+			fprintf(stderr, "out of memory");
+			return -1;
+		}
+		snprintf(report_info->stylesheet_file, len, "~/%s", STYLESHEET_FILE);
+		if (access(report_info->stylesheet_file, R_OK) == 0) {
+			return 0;
+		}
+		free(report_info->stylesheet_file);
+		
+		/* c. Look in /etc directory */ 
+		len = strlen(APOL_INSTALL_DIR) + strlen("secmds") + strlen(STYLESHEET_FILE) + 3;
+	     	if ((report_info->stylesheet_file = (char *)malloc(len * sizeof(char))) == NULL) {
+			fprintf(stderr, "out of memory\n");
+			return -1;
+		} 
+		snprintf(report_info->stylesheet_file, len, "%s/secmds/%s", APOL_INSTALL_DIR, STYLESHEET_FILE);
+		if (access(report_info->stylesheet_file, R_OK) == 0) {
+			return 0;
+		}
+		free(report_info->stylesheet_file);
+		return -1;
+	}
+
+	return 0;
+}
+
 static int seaudit_report_load_audit_messages(seaudit_report_info_t *report_info) {
 	int i, rt;
 	FILE *tmp_file = NULL;
@@ -333,7 +381,7 @@ err:
 	return -1;
 }
 
-static int seaudit_report_print_view_results_txt(seaudit_report_info_t report_info,
+static int seaudit_report_print_view_results(seaudit_report_info_t report_info,
 					     	 xmlChar *view_filePath,
 					     	 audit_log_view_t *log_view,
 					     	 FILE *outfile) {
@@ -379,15 +427,22 @@ static int seaudit_report_print_view_results_txt(seaudit_report_info_t report_in
 				fprintf(outfile, "} ");
 			}
 		} else if (log_view->my_log->msg_list[indx]->msg_type == LOAD_POLICY_MSG) {
-			fprintf(outfile, "Load ");
 			policy_msg = log_view->my_log->msg_list[indx]->msg_data.load_policy_msg;
-			fprintf(outfile, "%d users, %d roles, %d types, %d bools, %d classes, %d rules",
-						policy_msg->users, policy_msg->roles, policy_msg->types,
-						policy_msg->bools, policy_msg->classes, policy_msg->rules);
+			fprintf(outfile, "kernel: security: %d users, %d roles, %d types, %d bools\n",
+						policy_msg->users, policy_msg->roles, 
+						policy_msg->types, policy_msg->bools);
+			fprintf(outfile, "%s ", date);
+			fprintf(outfile, "%s ", audit_log_get_host(log_view->my_log, log_view->my_log->msg_list[indx]->host));
+			fprintf(outfile, "kernel: security: %d classes, %d rules",
+						policy_msg->classes, policy_msg->rules);
 		} else if (log_view->my_log->msg_list[indx]->msg_type == AVC_MSG) {
 			cur_msg = log_view->my_log->msg_list[indx]->msg_data.avc_msg;
 			
 			fprintf(outfile, "kernel: ");
+			fprintf(outfile, "audit(%lu.%03lu:%u): ", 
+				cur_msg->tm_stmp_sec, 
+				cur_msg->tm_stmp_nano, 
+				cur_msg->serial);
 			fprintf(outfile, "avc: ");
 			if (cur_msg->msg == AVC_DENIED)
 				fprintf(outfile, "denied ");
@@ -456,20 +511,30 @@ static int seaudit_report_print_view_results_txt(seaudit_report_info_t report_in
 	return 0;
 }
 
-static int seaudit_report_import_html_template_style(seaudit_report_info_t report_info, FILE *outfile) {
-	char *buf = NULL;
-	int len;
+static int seaudit_report_import_html_stylesheet(seaudit_report_info_t report_info, FILE *outfile) {
+	char line[LINE_MAX], *line_ptr = NULL;
+	FILE *fp;
 	
 	assert(outfile != NULL);	
-	if (report_info.html_templateFile != NULL) {
-		if (read_file_to_buffer(report_info.html_templateFile, &buf, &len) != 0) {
-			if (buf) 
-				free(buf);
+	if (report_info.stylesheet_file != NULL) {
+		fp = fopen(report_info.stylesheet_file, "r");
+		if (fp == NULL) {
+			fprintf(stderr, "Cannot open stylesheet file %s", report_info.stylesheet_file);
 			return -1;
 		}
-		if (buf != NULL)
-			fprintf(outfile, "%s\n", buf);
-	}
+	
+		while(fgets(line, LINE_MAX, fp) != NULL) {
+			line_ptr = &line[0];
+			if (trim_string(&line_ptr) != 0) {
+				fclose(fp);
+				return -1;
+			}
+			if (line_ptr[0] == '#' || str_is_only_white_space(line_ptr))  
+				continue;
+			fprintf(outfile, "%s\n", line_ptr);
+		}
+		fclose(fp);
+	} 
 	
 	return 0;					      	  
 }
@@ -482,7 +547,7 @@ static int seaudit_report_print_header(seaudit_report_info_t report_info, FILE *
 	if (report_info.html) {
 		fprintf(outfile, "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 3.2 Final//EN\">\n");
 		fprintf(outfile, "<html>\n<head>\n");
-		rt = seaudit_report_import_html_template_style(report_info, outfile);
+		rt = seaudit_report_import_html_stylesheet(report_info, outfile);
 		if (rt != 0) {
 			fclose(outfile);
 			return -1;
@@ -499,7 +564,7 @@ static int seaudit_report_print_header(seaudit_report_info_t report_info, FILE *
 	return 0;					      	  
 }
 
-static int seaudit_report_print_footer_txt(seaudit_report_info_t report_info, FILE *outfile) {
+static int seaudit_report_print_footer(seaudit_report_info_t report_info, FILE *outfile) {
 	if (report_info.html) {
 		fprintf(outfile, "</body>\n</html>\n");
 	} else {
@@ -508,7 +573,7 @@ static int seaudit_report_print_footer_txt(seaudit_report_info_t report_info, FI
 	return 0;					      	  
 }
 
-static int seaudit_report_print_print_policy_loads_txt(seaudit_report_info_t report_info, FILE *outfile) {
+static int seaudit_report_print_print_policy_loads(seaudit_report_info_t report_info, FILE *outfile) {
 	int indx;
 	load_policy_msg_t *policy_msg;
 	char date[DATE_STR_SIZE];
@@ -525,14 +590,15 @@ static int seaudit_report_print_print_policy_loads_txt(seaudit_report_info_t rep
 			fprintf(outfile, "%s ", date);
 			fprintf(outfile, "%s ", audit_log_get_host(report_info.log, report_info.log->msg_list[indx]->host));
 			
-			fprintf(outfile, "kernel: ");
-			fprintf(outfile, "security: ");
-			
-			policy_msg = report_info.log->msg_list[indx]->msg_data.load_policy_msg;
-			fprintf(outfile, "%d users, %d roles, %d types, %d bools, %d classes, %d rules",
-						policy_msg->users, policy_msg->roles, policy_msg->types,
-						policy_msg->bools, policy_msg->classes, policy_msg->rules);
-						
+			policy_msg = report_info.log->msg_list[indx]->msg_data.load_policy_msg;						
+			fprintf(outfile, "kernel: security: %d users, %d roles, %d types, %d bools\n",
+						policy_msg->users, policy_msg->roles, 
+						policy_msg->types, policy_msg->bools);
+			fprintf(outfile, "%s ", date);
+			fprintf(outfile, "%s ", audit_log_get_host(report_info.log, report_info.log->msg_list[indx]->host));
+			fprintf(outfile, "kernel: security: %d classes, %d rules",
+						policy_msg->classes, policy_msg->rules);
+												
 			if (report_info.html) 
 				fprintf(outfile, "<br>\n");
 			else
@@ -589,7 +655,7 @@ static int seaudit_report_enforce_toggles_view_do_filter(seaudit_report_info_t r
 	return 0;
 }
 
-static int seaudit_report_print_enforce_toggles_txt(seaudit_report_info_t report_info, FILE *outfile) {
+static int seaudit_report_print_enforce_toggles(seaudit_report_info_t report_info, FILE *outfile) {
 	audit_log_view_t *log_view = NULL;
 	int rt, indx, i, j, actual_num = 0; 
 	avc_msg_t *cur_msg = NULL;
@@ -659,6 +725,10 @@ static int seaudit_report_print_enforce_toggles_txt(seaudit_report_info_t report
 			fprintf(outfile, "%s ", date);
 			fprintf(outfile, "%s ", audit_log_get_host(log_view->my_log, log_view->my_log->msg_list[indx]->host));
 			fprintf(outfile, "kernel: ");
+			fprintf(outfile, "audit(%lu.%03lu:%u): ", 
+				cur_msg->tm_stmp_sec, 
+				cur_msg->tm_stmp_nano, 
+				cur_msg->serial);
 			fprintf(outfile, "avc: ");			
 			fprintf(outfile, "granted ");
 			
@@ -724,7 +794,7 @@ static int seaudit_report_print_enforce_toggles_txt(seaudit_report_info_t report
 	return 0;					      	  	
 }
 
-static int seaudit_report_print_policy_booleans_txt(seaudit_report_info_t report_info, FILE *outfile) {
+static int seaudit_report_print_policy_booleans(seaudit_report_info_t report_info, FILE *outfile) {
 	int j, indx;
 	boolean_msg_t *boolean_msg;
 	const char *cur_bool;
@@ -768,7 +838,7 @@ static int seaudit_report_print_policy_booleans_txt(seaudit_report_info_t report
 	return 0;					      					      	  	
 }
 
-static int seaudit_report_print_allow_listing_txt(seaudit_report_info_t report_info, FILE *outfile) {
+static int seaudit_report_print_allow_listing(seaudit_report_info_t report_info, FILE *outfile) {
 	
 	int j, indx;
 	avc_msg_t *cur_msg;
@@ -792,6 +862,10 @@ static int seaudit_report_print_allow_listing_txt(seaudit_report_info_t report_i
 			fprintf(outfile, "%s ", date);
 			fprintf(outfile, "%s ", audit_log_get_host(report_info.log, report_info.log->msg_list[indx]->host));
 			fprintf(outfile, "kernel: ");
+			fprintf(outfile, "audit(%lu.%03lu:%u): ", 
+				cur_msg->tm_stmp_sec, 
+				cur_msg->tm_stmp_nano, 
+				cur_msg->serial);
 			fprintf(outfile, "avc: ");
 			fprintf(outfile, "granted ");
 			
@@ -857,7 +931,7 @@ static int seaudit_report_print_allow_listing_txt(seaudit_report_info_t report_i
 	return 0;					      	  	
 }
 
-static int seaudit_report_print_deny_listing_txt(seaudit_report_info_t report_info, FILE *outfile) {
+static int seaudit_report_print_deny_listing(seaudit_report_info_t report_info, FILE *outfile) {
 	int j, indx;
 	avc_msg_t *cur_msg;
 	const char *cur_perm;
@@ -879,6 +953,10 @@ static int seaudit_report_print_deny_listing_txt(seaudit_report_info_t report_in
 			fprintf(outfile, "%s ", date);
 			fprintf(outfile, "%s ", audit_log_get_host(report_info.log, report_info.log->msg_list[indx]->host));
 			fprintf(outfile, "kernel: ");
+			fprintf(outfile, "audit(%lu.%03lu:%u): ", 
+				cur_msg->tm_stmp_sec, 
+				cur_msg->tm_stmp_nano, 
+				cur_msg->serial);
 			fprintf(outfile, "avc: ");
 			fprintf(outfile, "denied ");
 			
@@ -950,7 +1028,7 @@ static int seaudit_report_print_deny_listing_txt(seaudit_report_info_t report_in
 	return 0;									      	  	
 }
 
-static int seaudit_report_print_stats_txt(seaudit_report_info_t report_info, FILE *outfile) {
+static int seaudit_report_print_stats(seaudit_report_info_t report_info, FILE *outfile) {
 	assert(outfile != NULL);
 	if (report_info.html) {
 		fprintf(outfile, "Number of total messages: %d<br>\n", report_info.log->num_msgs);
@@ -991,17 +1069,17 @@ static int seaudit_report_print_standard_section(seaudit_report_info_t report_in
 		}	
 	}
 	if (strncasecmp(id, "PolicyLoads", sz) == 0) {
-		rt = seaudit_report_print_print_policy_loads_txt(report_info, outfile);
+		rt = seaudit_report_print_print_policy_loads(report_info, outfile);
 	} else if (strncasecmp(id, "EnforcementToggles", sz) == 0) {
-		rt = seaudit_report_print_enforce_toggles_txt(report_info, outfile);
+		rt = seaudit_report_print_enforce_toggles(report_info, outfile);
 	} else if (strncasecmp(id, "PolicyBooleans", sz) == 0) {
-		rt = seaudit_report_print_policy_booleans_txt(report_info, outfile);
+		rt = seaudit_report_print_policy_booleans(report_info, outfile);
 	} else if (strncasecmp(id, "AllowListing", sz) == 0) {
-		rt = seaudit_report_print_allow_listing_txt(report_info, outfile);
+		rt = seaudit_report_print_allow_listing(report_info, outfile);
 	} else if (strncasecmp(id, "DenyListing", sz) == 0) {
-		rt = seaudit_report_print_deny_listing_txt(report_info, outfile); 
+		rt = seaudit_report_print_deny_listing(report_info, outfile); 
 	} else if (strncasecmp(id, "Statistics", sz) == 0) {
-		rt = seaudit_report_print_stats_txt(report_info, outfile);
+		rt = seaudit_report_print_stats(report_info, outfile);
 	}
 	if (rt != 0) 
 		return -1;
@@ -1014,7 +1092,7 @@ static int seaudit_report_print_standard_section(seaudit_report_info_t report_in
 	return 0;
 }
 
-static int seaudit_report_print_custom_section_info_txt(seaudit_report_info_t report_info,
+static int seaudit_report_print_custom_section_info(seaudit_report_info_t report_info,
 							xmlTextReaderPtr reader,  
 						        xmlChar *title, 
 						        FILE *outfile) {
@@ -1064,7 +1142,7 @@ static int seaudit_report_print_custom_section_info_txt(seaudit_report_info_t re
 			if (rt != 0) {
 				goto err;
 			}
-			rt = seaudit_report_print_view_results_txt(report_info, view_filePath, log_view, outfile);
+			rt = seaudit_report_print_view_results(report_info, view_filePath, log_view, outfile);
 			if (rt != 0) {
 				goto err;
 			}
@@ -1234,7 +1312,7 @@ static int seaudit_report_process_xmlNode(seaudit_report_info_t report_info, xml
 			if (rt != 0)
 				goto err;
 			/* NOTE: If a title wasn't provided, we still continue. */
-			rt = seaudit_report_print_custom_section_info_txt(report_info, 
+			rt = seaudit_report_print_custom_section_info(report_info, 
 										  reader, 
 									     	  title_attr, 
 									     	  outfile);
@@ -1327,7 +1405,7 @@ static int seaudit_report_generate_report(seaudit_report_info_t report_info) {
 	if (report_info.malformed) {
 		seaudit_report_print_malformed_msgs(report_info, outfile);
 	}
-	seaudit_report_print_footer_txt(report_info, outfile);
+	seaudit_report_print_footer(report_info, outfile);
 	fclose(outfile);
 	
 	return 0;	
@@ -1356,10 +1434,10 @@ static void seaudit_report_parse_command_line_args(int argc, char **argv, seaudi
 	  				goto err;
 	  		}
 			break;
-		case 't':
-			/* HTML template file path */ 
+		case 'S':
+			/* HTML style sheet file path */ 
 			if (optarg != 0) {
-	  			if (seaudit_report_add_file_path(optarg, &report_info->html_templateFile) != 0)
+	  			if (seaudit_report_add_file_path(optarg, &report_info->stylesheet_file) != 0)
 	  				goto err;
 	  		}
 			break;
@@ -1397,7 +1475,20 @@ static void seaudit_report_parse_command_line_args(int argc, char **argv, seaudi
 			goto err;
 		}
 	}
+	
+	/* Throw warning if a stylesheet was specified, but the --html option was not. */
+	if (report_info->stylesheet_file != NULL && !report_info->html) {
+		fprintf(stderr, "Warning: The --html option was not specified...ignoring the stylesheet argument.\n\n");
+	} 
 		
+	if (report_info->stylesheet_file == NULL && report_info->html) {
+		/* Use default stylesheet in /usr/share/setools directory. If the default  
+		 * stylesheet is not found just continue. This is not an application error. */
+		if (seaudit_report_search_dflt_stylesheet(report_info) < 0) {
+			goto err;
+		}
+	} 
+	
 	/* Add required filenames */
 	for (i = (argc - 1); i >= optind; i--) {
 		if (seaudit_report_add_logfile_to_list(report_info, argv[i])) {
