@@ -8,11 +8,11 @@ CFLAGS      += -DLIBSEUSER_VERSION_STRING='"$(shell cat VERSION)"'
 CFLAGS      += -DSETFILES_PROG='"$(SETFILES_PROG)"'
 
 TARGET 	    = libseuser.so
-SONAME 	    = $(TARGET).1.3
+SONAME 	    = $(TARGET).1
 LIBSO	    = $(TARGET).$(shell cat VERSION)
 
 TARGETTCL   = libseuser-tcl.so
-SONAMETCL   = $(TARGETTCL).1.3
+SONAMETCL   = $(TARGETTCL).1
 LIBSOTCL    = $(TARGETTCL).$(shell cat VERSION)
 
 all: libseuser libseuser-tcl libseuserso libseuser-tclso
@@ -34,7 +34,7 @@ libseuser-tclso: $(LIB-OBJ-TCL)
 
 install-libseuser-shared: libseuserso
 	install -m 755 $(LIBSO) $(SHARED_LIB_INSTALL_DIR)
-	cd $(SHARED_LIB_INSTALL_DIR) && ln -sf $(LIBSO) $(TARGET)
+	cd $(SHARED_LIB_INSTALL_DIR) && ln -sf $(LIBSO) $(SONAME) && ln -sf $(SONAME) $(TARGET)
 
 install-libseuser-static: libseuser
 	install -m 644 libseuser.a $(STATIC_LIB_INSTALL_DIR)
