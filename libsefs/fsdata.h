@@ -10,41 +10,19 @@
 #ifndef _FSDATA_H
 #define _FSDATA_H
 
+
+
 #include <stdint.h>
 
-/* Endian conversion for reading and writing binary index */
+#include <sys/types.h>
+/* we need this to handle large files */
+#define __USE_LARGEFILE64 1
+/* I believe this is necessary for portability */
+#define __USE_FILE_OFFSET64 1
+#include <sys/stat.h>
 
-#include <byteswap.h>
-#include <endian.h>
 
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-#define cpu_to_le32(x) (x)
-#define le32_to_cpu(x) (x)
-#define cpu_to_le64(x) (x)
-#define le64_to_cpu(x) (x)
-#else
-#define cpu_to_le32(x) bswap_32(x)
-#define le32_to_cpu(x) bswap_32(x)
-#define cpu_to_le64(x) bswap_64(x)
-#define le64_to_cpu(x) bswap_64(x)
-#endif
-
-/* AVL Tree Handling */
-#include <policy.h>
-#include <avl-util.h>
-
-#define INDEX_DB_MAGIC 0xf97cff8f
-#define INDEX_DB_VERSION 1
-
-#ifndef SEFS_XATTR_LABELED_FILESYSTEMS
-#define SEFS_XATTR_LABELED_FILESYSTEMS "ext2 ext3 xfs"
-#endif
-
-#ifndef SEFS_XATTR_UNLABELED
-#define SEFS_XATTR_UNLABELED "UNLABELED"
-#endif
-
-/* Predefined lables */
+/* Predefined labels */
 #define OBJECT_R 0
 
 #define NUM_OBJECT_CLASSES 8
@@ -56,60 +34,81 @@
 #define	SOCK_FILE	32
 #define FIFO_FILE	64
 #define ALL_FILES	(NORM_FILE | DIR | LNK_FILE | CHR_FILE | BLK_FILE | SOCK_FILE | FIFO_FILE)
+#define SEFS_TYPES      1
+#define SEFS_USERS      2
+#define SEFS_OBJECTCLASS 3
+#define SEFS_PATHS       4
+
 
 typedef int32_t sefs_classes_t;
 
-typedef struct inode_key {
-	ino_t			inode;
-	dev_t			dev;
-} inode_key_t;
+typedef struct sefs_search_ret {
+	char                  *context;
+	char                  *path;
+	char                  *object_class;
+	struct sefs_search_ret     *next;
 
-typedef struct sefs_fileinfo {
-	inode_key_t		key;
-	uint32_t		num_links;
-	security_con_t		context;
-	char **			path_names;
-	char * 			symlink_target;
-/* this uses defines from above */
-	uint32_t		obj_class;
-} sefs_fileinfo_t;
+} sefs_search_ret_t;
 
 
-typedef struct sefs_typeinfo {
-	char*			name;
-	uint32_t 		num_inodes;
-	uint32_t *		index_list;
-} sefs_typeinfo_t;
-	
+/*
+  the caller is in charge of allocated these 2d arrays, and
+  making sure they are deleted when done
+*/
+typedef struct sefs_search_keys {
+	/* this are are search keys */
+	const char **type;
+	const char **user;
+	const char **path;
+	const char **object_class;
 
-typedef struct sefs_filesystem_data {
-	uint32_t 		num_types;
-	uint32_t		num_users;
-	uint32_t 		num_files;
-	sefs_typeinfo_t *	types;
-	sefs_fileinfo_t *	files;
-	char**			users;
+	/* number of types in array */
+	int num_type;                 
+	/* number of users in array */              
+	int num_user;
+	/* number of paths in array */
+	int num_path;
+	/* number of object classes in array */
+	int num_object_class;
+	/* this is a linked list of returned matches */
+	sefs_search_ret_t      *search_ret;
 
-	/* not stored in index file */
-	avl_tree_t		file_tree;
-	avl_tree_t		type_tree;
-	avl_tree_t		user_tree;
-} sefs_filesystem_data_t;
+} sefs_search_keys_t;
 
 
-/* Management and creation functions */
-int sefs_filesystem_data_init(sefs_filesystem_data_t * fsd);
-int sefs_filesystem_data_index(sefs_filesystem_data_t * fsd);
-int sefs_scan_tree(char * dir);
-int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char * filename);
-int sefs_filesystem_data_load(sefs_filesystem_data_t * fsd, char *filename);
-int sefs_get_file_class(const struct stat64 *statptr);
-int sefs_is_valid_object_class(const char *class_name);
-void sefs_print_valid_object_classes(void);
-int add_uint_to_a(uint32_t i, uint32_t *cnt, uint32_t **a);
-void destroy_fsdata(sefs_filesystem_data_t * fsd);
+typedef struct sefs_filesystem_db {
+	void *fsdh;
+	void **dbh;
+} sefs_filesystem_db_t;
+
+
+/* SEARCHING THE DB??? use db_load to load a created file fsd allocated by caller*/
+int sefs_filesystem_db_load(sefs_filesystem_db_t *fsd,char *filename);
+/*  close an open db */
+int sefs_filesystem_db_close(sefs_filesystem_db_t *fsd);
+/* SAVING AN INDEXFILE?? fsd allocated by caller*/
+int sefs_filesystem_db_save(sefs_filesystem_db_t *fsd,char *filename);
+/* CREATING AN INDEXFILE??? fsd allocated by caller*/
+int sefs_filesystem_db_populate(sefs_filesystem_db_t *fsd,char *dir);
+/* SEARCH THE LOADED FILE fsd,search_keys allocated by caller search_keys->search_ret is not!!!*/
+int sefs_filesystem_db_search(sefs_filesystem_db_t *fsd,sefs_search_keys_t *search_keys, int use_regex);
+/* destroy the dynamically allocated return data from search */
+int sefs_search_keys_ret_destroy(sefs_search_ret_t *key);
+/* print the return data from a search */
+void sefs_search_keys_ret_print(sefs_search_ret_t *key);
+/* this will return all the known types in the context parameter */
+char **sefs_filesystem_db_get_known(sefs_filesystem_db_t *fsd,int *count,int request_type);
+
+int sefs_double_array_destroy(char **array,int size);
+void sefs_double_array_print(char **array,int size);
+
+/* find the mount points */
 int find_mount_points(char *dir, char ***mounts, int *num_mounts, int rw);
-const char * sefs_get_class_string( int flag_val);
+
+/* object classes */
+int sefs_get_file_class(const struct stat64 *statptr);
+char **sefs_get_valid_object_classes(int *size);
+int sefs_is_valid_object_class(const char *class_name);
 
 #endif /* _FSDATA_H */
 
