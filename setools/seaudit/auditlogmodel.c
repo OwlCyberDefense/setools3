@@ -667,21 +667,6 @@ static gboolean seaudit_log_view_store_has_default_sort_func (GtkTreeSortable *s
 	return FALSE;
 }
 
-static int int_compare(const void *aptr, const void *bptr)
-{
-	int *a = (int*)aptr;
-	int *b = (int*)bptr;
-	
-	assert(a);
-	assert(b);
-
-	if (*a < *b)
-		return -1;
-	if (*a > *b)
-		return 1;
-	return 0;
-}
-
 void seaudit_log_view_store_do_filter(SEAuditLogViewStore *store)
 {
 	int *deleted=NULL, num_deleted, num_kept, old_sz, new_sz, cnt=0, i;
