@@ -34,8 +34,8 @@ The tools and libraries in this release include:
    load messages, enforcement toggles messages, policy boolean messages,
    etc. A key feature of the tool is that reports can be further customized 
    through the use of saved seaudit view files. This tool can effectively 
-   be used as a plugin to other audit log analysis tools,  such as Redhats' 
-   LogWatch application. 
+   be used as a plugin to other audit log analysis tools,  such as the 
+   LogWatch application, which comes standard with Red Hat Linux. 
 
 6. secmds: Command line tools for policy manipulation and SE Linux system
    administration. Includes:
