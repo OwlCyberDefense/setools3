@@ -600,6 +600,34 @@ proc ApolTop::_create_popup { path entryBox key } {
     return 0
 }
 
+######################################################################
+#  Command: ApolTop::tklistbox_select_on_key_callback
+#  Arguments: Takes a tk listbox widget, its' associated list, and 
+#	      the key pressed. Handles lowercase and uppercase key
+#	      values.
+#
+proc ApolTop::tklistbox_select_on_key_callback { path list_items key } {     
+	if {$path == ""} {
+		tk_messageBox \
+			-icon error \
+			-type ok \
+			-title "Error" \
+			-message "No listbox pathname provided." \
+			-parent $mainframe
+	}
+	if {[string is alpha $key]} {
+		set low_key_str [string tolower $key]
+		set matches [lsearch -regexp $list_items "^\[$key$low_key_str\]"]
+		if {$matches != -1} {
+			$path selection clear 0 end
+			$path selection set [lindex $matches 0]
+			$path see [lindex $matches 0]
+		}
+	}
+	
+	return 0
+}
+
 # ------------------------------------------------------------------------------
 #  Command ApolTop::setSelection
 # ------------------------------------------------------------------------------
@@ -956,9 +984,8 @@ proc ApolTop::create { } {
 	variable mainframe  
 	variable components_nb
 	variable rules_nb
-	
-	#    SelectFont::loadfont
-	
+        variable bwidget_version
+       
 	# Menu description
 	set descmenu {
 	"&File" {} file 0 {
@@ -1057,8 +1084,8 @@ proc ApolTop::create { } {
 	$notebook raise [$notebook page 0]
 	$notebook bindtabs <Button-1> { ApolTop::set_Focus_to_Text }	
 	pack $mainframe -fill both -expand yes
-		
-	return
+	
+	return 0
 }
 
 # Saves user data in their $HOME/.apol file
@@ -1970,6 +1997,7 @@ proc ApolTop::main {} {
 	variable top_width
         variable top_height
 	variable bwidget_version
+	variable notebook
 	
 	# Prevent the application from responding to incoming send requests and sending 
 	# outgoing requests. This way any other applications that can connect to our X 
@@ -2031,8 +2059,17 @@ proc ApolTop::main {} {
 	#    set height [ expr $y - ($y/4)  ]
 	#    BWidget::place . $width $height center
 
-	# Set the default window dimensions. 
+	# BWidgets packages 1.6+ correctly computes the size of the largest Notebook
+	# page when calling its' compute_size command. So, we can use our main notebook 
+	# widgets dimensions to set our default size. This should make the widgets display 
+	# without obscuring widgets.
+	if {[package vcompare $bwidget_version "1.6"] >= 0} {
+		set ApolTop::top_width [$notebook cget -width]	
+		set ApolTop::top_height [$notebook cget -height]
+	} 
         wm geom . ${top_width}x${top_height}
+        
+     	update idletasks   
 	wm deiconify .
 	raise .
 	focus -force .
