@@ -35,7 +35,7 @@ seuser: $(CMD-OBJ)
 	$(CC) -o $@ $(CMD-OBJ) $(LINKFLAGS) $(LIBS) $(LIBSELINUX)
 
 seuserx: $(GUI-OBJ) se_user.tcl
-	$(CC) $(GUI_CFLAGS) $(TCL_LIBINC) -o $@ $(GUI-OBJ) $(LINKFLAGS) $(TCL_LIBS) $(LIBSELINUX)
+	$(CC) $(GUI_CFLAGS) $(TCL_LIBINC) -o $@ $(GUI-OBJ) $(LINKFLAGS) $(TCL_LIBS) $(LIBSELINUX) $(LIBS)
 
 se_user.tcl: $(TCL-FILES)
 	cat $(TCL-FILES) | \
