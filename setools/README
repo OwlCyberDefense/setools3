@@ -64,7 +64,7 @@ The tools and libraries in this release include:
 
 Apol, sepcut, seuser, seaudit, secmds, and the seuser* shell scripts 
 are the primary tools in this package.  The other tool (awish) and the 
-two libraries can serve as building blocks for the development of 
+three libraries can serve as building blocks for the development of 
 additional tools.  All of these tools and libraries are early 
 generation, with little maturity, and should be used with care.
 
