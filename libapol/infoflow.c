@@ -1198,9 +1198,9 @@ static int iflow_path_compare(const void *a, const void *b)
 	path_a = *((iflow_path_t**)a);
 	path_b = *((iflow_path_t**)b);
 	
-	if (path_a->length == path_b->length)
+	if (path_a->num_iflows == path_b->num_iflows)
 		return 0;
-	else if (path_a->length < path_b->length)
+	else if (path_a->num_iflows < path_b->num_iflows)
 		return -1;
 	else
 		return 1;
@@ -1472,6 +1472,7 @@ iflow_transitive_t *iflow_transitive_flows(policy_t *policy, iflow_query_t *q)
 
 	/* sort the paths by length */
 	for (i = 0; i < a->num_end_types; i++) {
+		/* sort the paths by length */
 		a->paths[i] = iflow_sort_paths(a->paths[i]);
 		if (a->paths[i] == NULL) {
 			goto err;
@@ -1783,10 +1784,20 @@ iflow_transitive_t *iflow_find_paths_end(void *state)
 {
 	bfs_random_state_t *s = (bfs_random_state_t*)state;
 	iflow_transitive_t *a;
-
+	int i;
+	
 	a = s->a;
 	bfs_random_state_destroy(s);
 	free(s);
+	/* sort the paths by length */
+	for (i = 0; i < a->num_end_types; i++) {
+		/* sort the paths by length */
+		a->paths[i] = iflow_sort_paths(a->paths[i]);
+		if (a->paths[i] == NULL) {
+			return NULL;
+		}
+	}
+	
 	return a;
 }
 
