@@ -35,7 +35,8 @@ namespace eval Apol_Analysis_relabel {
     	for that specific source-target-object triplet. To see all rules governing a particular triplet use the \
     	Policy Rules tab."
 
-	variable f_opts 
+	variable widget_vars 
+	variable widgets
 	# name of widget holding most recently executed assertion
 	variable most_recent_results 	""
 	# Advanced filter dialog widget
@@ -50,6 +51,9 @@ namespace eval Apol_Analysis_relabel {
 	variable title_type_tag		TITLE_TYPE
 	variable subtitle_tag		SUBTITLES
 	
+	# Tree nodes
+	variable top_node		TOP_NODE
+	
 	# Within the namespace command for the module, you must call
 	# Apol_Analysis::register_analysis_modules, the first argument is
 	# the namespace name of the module, and the second is the
@@ -63,7 +67,10 @@ namespace eval Apol_Analysis_relabel {
 # initialization it must do that wasn't done in the initial namespace
 # eval command.
 proc Apol_Analysis_relabel::initialize { } {
-    return 0
+	set widget_vars(mode) "to"
+	set widget_vars(to_mode) 1
+	set widget_vars(from_mode) 1
+    	return 0
 }
 
 # Returns the text to display whenever the user hits the 'Info'
@@ -82,79 +89,32 @@ proc Apol_Analysis_relabel::get_results_raised_tab {} {
     return $most_recent_results_pw
 }
 
-# The GUI will call Apol_Analysis_relabel::do_analysis when the
-# module is to perform its analysis.  The module should know how to
-# get its own option information.  The options are displayed via
-# Apol_Analysis_relabel::display_mod_options.
-proc Apol_Analysis_relabel::do_analysis {results_frame} {
-	# collate user options into a single relabel analysis query    
+proc Apol_Analysis_relabel::create_widgets_to_display_results {results results_frame} {
 	variable widget_vars
-	variable most_recent_results
-	variable advanced_filter_Dlg
-	variable f_opts
-	
-	# convert the object permissions list into Tcl lists
-	set objs_list ""
-	
-	# If the advanced options object doesn't exist, then create it.
-	if {![array exists f_opts] || [array names f_opts "$advanced_filter_Dlg,name"] == ""} {
-		Apol_Analysis_relabel::adv_options_create_object $advanced_filter_Dlg
-	} 
-		
-	foreach class $f_opts($advanced_filter_Dlg,class_list) {
-		set perms_list ""
-		# Determine if entire class is to be included, which is indicated by
-		# the " (Excluded)" tag appended to its' name.
-		set idx [string first $Apol_Analysis_relabel::excluded_tag $class]
-		if {$idx == -1} {
-			set class_elements [array names f_opts "$advanced_filter_Dlg,perm_status_array,$class,*"]
-			foreach element $class_elements {
-				set perm [lindex [split $element ","] 3]
-				# These are manually set to be included, so skip.
-				if {[string equal $f_opts($element) "exclude"]} {
-					continue
-				}
-				set perms_list [lappend perms_list $perm]
-			}
-			if {$perms_list != ""} {
-				set objs_list [lappend objs_list [list $class $perms_list]]
-			}	
-		} 
-	}
-	
-	if {$objs_list == ""} {
-		tk_messageBox -icon error -type ok \
-		    -title "Relabel Analysis Error" \
-		    -message "You cannot exclude all object classes and permissions in the filter!"
-		return -code error
-	}
-	
-	if [catch {apol_RelabelAnalysis $widget_vars(start_type) $widget_vars(mode) $objs_list} results] {
-		tk_messageBox -icon error -type ok \
-		    -title "Relabel Analysis Error" -message $results
-		return -code error
-	}
-	set most_recent_results $results
-
-	# create widgets to display results
 	variable most_recent_results_pw
+	
 	catch {destroy $results_frame.pw}
 	set pw [PanedWindow $results_frame.pw -side top -weights available]
 	set most_recent_results_pw $pw
 	set lf [$pw add -minsize 150 -weight 1]
 	set dtf [TitleFrame $lf.dtf]
-	switch -- $widget_vars(mode) {
-		to     {set text "Type $widget_vars(start_type) can be relabeled to:"}
-		from   {set text "Type $widget_vars(start_type) can be relabeled from:"}
-		both   {set text "Type $widget_vars(start_type) can be relabeled to/from:"}
-		domain {set text "Subject $widget_vars(start_type) can relabel:"}
+	
+	if {$widget_vars(mode) == "object"} {
+		if {$widget_vars(to_mode) && $widget_vars(from_mode)} {
+			set text "Type $widget_vars(start_type) can be relabeled to/from:"
+		} elseif {$widget_vars(to_mode)} {
+			set text "Type $widget_vars(start_type) can be relabeled to:"
+		} else {
+			set text "Type $widget_vars(start_type) can be relabeled from:"
+		}
+	} else {
+		set text "Subject $widget_vars(start_type) can relabel:"
 	}
 	$dtf configure -text $text
 	set dsw [ScrolledWindow [$dtf getframe].dsw -auto horizontal]
 	set dtree [Tree [$dsw getframe].dtree -relief flat -width 15 \
 	           -borderwidth 0  -highlightthickness 0 -redraw 1 \
-	           -bg white -showlines 1 -padx 0 \
-	          ]
+	           -bg white -showlines 1 -padx 0]
 	$dsw setwidget $dtree
 	set widget_vars(current_dtree) $dtree
 	pack $dsw -expand 1 -fill both
@@ -170,24 +130,37 @@ proc Apol_Analysis_relabel::do_analysis {results_frame} {
 	pack $rsw -expand 1 -fill both
 	pack $rtf -expand 1 -fill both
 	pack $pw -expand 1 -fill both
-
+	
+	$dtree insert end root $Apol_Analysis_relabel::top_node \
+		-text $widget_vars(start_type) -open 1 \
+		-drawcross auto 
+				
 	# now fill the domain tree with results info
 	if {$results == ""} {
 		$dtree configure -state disabled
 		set text "$widget_vars(start_type) does not "
-		switch -- $widget_vars(mode) {
-		    to     {append text "relabel to anything."}
-		    from   {append text "relabel from anything."}
-		    both   {append text "relabel to/from anything."}
-		    domain {append text "relabel to or from any subject."}
+		if {$widget_vars(mode) == "object"} {
+			if {$widget_vars(to_mode) && $widget_vars(from_mode)} {
+				append text "relabel to/from anything."
+			} elseif {$widget_vars(to_mode)} {
+				append text "relabel to anything."
+			} else {
+				append text "relabel from anything."
+			}
+		} else {
+			append text "relabel to or from any subject."
 		}
 		$rtext insert end $text
+		$dtree itemconfigure $Apol_Analysis_relabel::top_node \
+			-data 0
 	} else {
 		$rtext insert end "This tab provides the results of a file relabeling analysis."
-		if {$widget_vars(mode) == "domain"} {
-			$dtree insert end root TO_LIST -text "To" -open 0 \
+		if {$widget_vars(mode) == "subject"} {
+			$dtree insert end $Apol_Analysis_relabel::top_node TO_LIST \
+				-text "To" -open 1 \
 				-drawcross auto 
-		        $dtree insert end root FROM_LIST -text "From" -open 0 \
+		        $dtree insert end $Apol_Analysis_relabel::top_node FROM_LIST \
+		        	-text "From" -open 1 \
 				-drawcross auto 
 				
 			set to_list [lindex $results 0]
@@ -196,47 +169,118 @@ proc Apol_Analysis_relabel::do_analysis {results_frame} {
 			# From list
 			foreach datum $from_list {
 		            set domain [lindex $datum 0]
-		            $dtree insert end FROM_LIST from_list:$domain -text $domain -open 1 \
+		            $dtree insert end FROM_LIST from_list:$domain \
+		            	-text $domain -open 1 \
 		                -drawcross auto -data [lindex $datum 1]
 		        }
-
+			set from_items [$dtree nodes FROM_LIST]
 		        # To list
 		        foreach datum $to_list {
 		        	set domain [lindex $datum 0]
-				$dtree insert end TO_LIST to_list:$domain -text $domain -open 1 \
+				$dtree insert end TO_LIST to_list:$domain \
+					-text $domain -open 1 \
 					-drawcross auto -data [lindex $datum 1]
 		        }
+		        set to_items [$dtree nodes TO_LIST]
+		        
+		        $dtree itemconfigure $Apol_Analysis_relabel::top_node \
+				-data [list [llength $from_items] [llength $to_items]]
 		} else {
 		        foreach result_elem $results {
 		            set domain [lindex $result_elem 0]
-		            $dtree insert end root $domain -text $domain -open 1 \
+		            $dtree insert end $Apol_Analysis_relabel::top_node $domain \
+		            	-text $domain -open 1 \
 		                -drawcross auto -data [lrange $result_elem 1 end]
 		        }
+		        # Sort types list
+		        set items [lsort -dictionary [$dtree nodes $Apol_Analysis_relabel::top_node]]
+		        $dtree reorder $Apol_Analysis_relabel::top_node $items
+		        $dtree itemconfigure $Apol_Analysis_relabel::top_node \
+				-data [llength $items]
 		}
         	$dtree configure -selectcommand [namespace code tree_select]
 	}
+	$dtree selection set $Apol_Analysis_relabel::top_node
 	$rtext configure -state disabled
+}
+
+# The GUI will call Apol_Analysis_relabel::do_analysis when the
+# module is to perform its analysis.  The module should know how to
+# get its own option information.  The options are displayed via
+# Apol_Analysis_relabel::do_analysis.
+proc Apol_Analysis_relabel::do_analysis {results_frame} {
+	# collate user options into a single relabel analysis query    
+	variable widget_vars
+	variable most_recent_results
+	variable advanced_filter_Dlg
+	
+	# convert the object permissions list into Tcl lists
+	set objs_list ""
+	
+	# If the advanced options object doesn't exist, then create it.
+	if {![array exists widget_vars] || [array names widget_vars "$advanced_filter_Dlg,name"] == ""} {
+		Apol_Analysis_relabel::adv_options_create_object $advanced_filter_Dlg
+	} 
+		
+	foreach class $widget_vars($advanced_filter_Dlg,incl_class_list) {
+		set perms_list ""
+		set class_elements [array names widget_vars "$advanced_filter_Dlg,perm_status_array,$class,*"]
+		foreach element $class_elements {
+			set perm [lindex [split $element ","] 3]
+			set perms_list [lappend perms_list $perm]
+		}
+		if {$perms_list != ""} {
+			set objs_list [lappend objs_list [list $class $perms_list]]
+		}
+	}
+
+	if {$objs_list == ""} {
+		tk_messageBox -icon error -type ok \
+		    -title "Relabel Analysis Error" \
+		    -message "You cannot exclude all object classes and permissions in the filter!"
+		return -code error
+	}
+	
+	if {$widget_vars(mode) == "object"} {
+		if {$widget_vars(to_mode) && $widget_vars(from_mode)} {
+			set mode "both"
+		} elseif {$widget_vars(to_mode)} {
+			set mode "to"
+		} else {
+			set mode "from"
+		}
+	} else {
+		set mode "domain"
+	} 
+	
+	if [catch {apol_RelabelAnalysis $widget_vars(start_type) $mode $objs_list \
+		$widget_vars(endtype_sel) $widget_vars(end_type)} results] {
+		tk_messageBox -icon error -type ok \
+		    -title "Relabel Analysis Error" -message $results
+		return -code error
+	}
+	set most_recent_results $results
+	Apol_Analysis_relabel::create_widgets_to_display_results $results $results_frame
+	return 0
 }
 
 # Apol_Analysis_relabel::close must exist; it is called when a
 # policy is closed.  Typically you should reset any context or option
 # variables you have.
 proc Apol_Analysis_relabel::close { } {
-    populate_lists 0
     # flush the relabel sets cache
     apol_RelabelFlushSets
+    Apol_Analysis_relabel::set_widgets_to_initial_open_state
 }
 
 proc Apol_Analysis_relabel::set_widgets_to_initial_open_state { } {
-    variable widgets
-    
-    toggle_attributes 0
+    Apol_Analysis_relabel::init_widget_vars
+    Apol_Analysis_relabel::init_widget_state
 }
 
 # Apol_Analysis_relabel::open must exist; it is called when a
 # policy is opened.
 proc Apol_Analysis_relabel::open { } {
-    populate_lists 1
     # flush the relabel sets cache
     apol_RelabelFlushSets
     Apol_Analysis_relabel::set_widgets_to_initial_open_state
@@ -251,7 +295,7 @@ proc Apol_Analysis_relabel::load_query_options {file_channel parentDlg} {
         return -code error "The specified query version is not allowed."
     }
     array set widget_vars [read $file_channel]
-    toggle_attributes 0
+    Apol_Analysis_relabel::init_widget_state
     return 0
 }
 
@@ -281,7 +325,7 @@ proc Apol_Analysis_relabel::get_current_results_state { } {
 proc Apol_Analysis_relabel::set_display_to_results_state { query_options } {
     variable widget_vars
     array set widget_vars $query_options
-    toggle_attributes 0
+    Apol_Analysis_relabel::init_widget_state
 }
 
 # Apol_Analysis_relabel::free_results_data is called to handle any
@@ -294,36 +338,18 @@ proc Apol_Analysis_relabel::set_display_to_results_state { query_options } {
 proc Apol_Analysis_relabel::free_results_data {query_options} {  
 }
 
-# ------------------------------------------------------------------------------
-#  Command Apol_Analysis_relabel::adv_options_destroy_all_dialogs_on_open
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_relabel::adv_options_destroy_all_dialogs_on_open {} {
-	variable f_opts
-	
-	set dlgs [array names f_opts "*,name"]
-	set length [llength $dlgs]
-
-	for {set i 0} {$i < $length} {incr i} {
-		# Skip the name of the element to the actual value of the element
-		incr i
-		Apol_Analysis_relabel::adv_options_destroy_dialog [lindex $dlgs $i]
-		Apol_Analysis_relabel::adv_options_destroy_object [lindex $dlgs $i]
-	}
-	array unset f_opts
-	return 0
-}
 
 # ------------------------------------------------------------------------------
 #  Command Apol_Analysis_relabel::adv_options_destroy_dialog
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_relabel::adv_options_destroy_dialog {path_name} {
-	variable f_opts
+	variable widget_vars
+	variable widgets
 	
     	if {[winfo exists $path_name]} {	
     		destroy $path_name	 		
-		unset f_opts($path_name,class_listbox) 
-		unset f_opts($path_name,perms_box) 
-		unset f_opts($path_name,permissions_title_frame) 
+		unset widgets($path_name,class_incl_lb) 
+		unset widgets($path_name,class_excl_lb)
 	}
 	return 0
 }
@@ -332,8 +358,8 @@ proc Apol_Analysis_relabel::adv_options_destroy_dialog {path_name} {
 #  Command Apol_Analysis_relabel::adv_options_refresh_dialog
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_relabel::adv_options_refresh_dialog {path_name} {  
-	if {[array exists f_opts] && \
-	    [array names f_opts "$path_name,name"] != ""} { 
+	if {[array exists widget_vars] && \
+	    [array names widget_vars "$path_name,name"] != ""} { 
 		Apol_Analysis_relabel::adv_options_destroy_object $path_name	
 		Apol_Analysis_relabel::adv_options_create_object $path_name	
 		Apol_Analysis_relabel::adv_options_update_dialog $path_name
@@ -346,96 +372,23 @@ proc Apol_Analysis_relabel::adv_options_refresh_dialog {path_name} {
 #  Command Apol_Analysis_relabel::adv_options_update_dialog
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_relabel::adv_options_update_dialog {path_name} {
-	variable f_opts
+	variable widget_vars
 			
 	# If the advanced filters dialog is displayed, then we need to update its' state.
-	if {[array exists f_opts] && \
-	    [array names f_opts "$path_name,name"] != "" &&
-	    [winfo exists $f_opts($path_name,name)]} {
+	if {[array exists widget_vars] && \
+	    [array names widget_vars "$path_name,name"] != "" &&
+	    [winfo exists $widget_vars($path_name,name)]} {
 		set rt [catch {Apol_Analysis_relabel::adv_options_set_widgets_to_default_state \
 			$path_name} err]
 		if {$rt != 0} {
 			tk_messageBox -icon error -type ok -title "Error" -message "$err"
 			return -1
 		}
-		raise $f_opts($path_name,name)
-		focus -force $f_opts($path_name,name)
-		
-		# Reset the selection in the listbox
-		if {$f_opts($path_name,class_selected_idx) != "-1"} {
-			$f_opts($path_name,class_listbox) selection set \
-				[$f_opts($path_name,class_listbox) index \
-				$f_opts($path_name,class_selected_idx)]
-			Apol_Analysis_relabel::adv_options_display_permissions $path_name
-		}
+		raise $widget_vars($path_name,name)
+		focus -force $widget_vars($path_name,name)
 	} 
 
 	return 0
-}
-
-# ------------------------------------------------------------------------------
-#  Command Apol_Analysis_relabel::adv_options_include_exclude_permissions
-#	- perms_box - the specified attribute
-#	- which - include or exclude
-#
-#	- This proc will change a list item in the class listbox. When all perms 
-#	  are excluded, the object class is grayed out in the listbox and the 
-# 	  class label is changed to "object_class (Exluded)". This is a visual 
-# 	  representation to the user that the object class itself is being  
-# 	  implicitly excluded from the query as a result of all of its' 
-#	  permissions being excluded. When any or all permissions are included, 
-#	  the class label is reset to the class name itself and is then un-grayed.
-#	  Any other functions that then take a selected listbox element as an 
-#	  argument MUST first search the class string for the sequence " (Excluded)"
-# 	  before processing the class name.
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_relabel::adv_options_include_exclude_permissions {which path_name} {	
-	variable f_opts
-	
-	if {[ApolTop::is_policy_open]} {
-		if {[string equal $which "include"] == 0 && [string equal $which "exclude"] == 0} {
-			puts "Tcl error: wrong 'which' argument sent to Apol_Analysis_relabel::adv_options_include_exclude_permissions. Must be either 'include' or 'exclude'."	
-			return -1
-		}
-		set objs [$f_opts($path_name,class_listbox) curselection]
- 		foreach object_class_idx $objs {
- 			set object_class [$f_opts($path_name,class_listbox) get $object_class_idx]
- 			set idx [string first $Apol_Analysis_relabel::excluded_tag $object_class]
- 			if {$idx != -1} {
- 				set object_class [string range $object_class 0 [expr $idx - 1]]
- 			}
- 			set rt [catch {set perms_list [apol_GetPermsByClass $object_class 1]} err]
- 			if {$rt != 0} {
- 				tk_messageBox -icon error -type ok -title "Error" -message "$err"
- 				return -1
- 			}
- 			foreach perm $perms_list {
- 				set f_opts($path_name,perm_status_array,$object_class,$perm) $which
- 			}
- 			if {$object_class_idx != ""} {
- 				set items [$f_opts($path_name,class_listbox) get 0 end]
-				if {[string equal $which "exclude"]} {
-					$f_opts($path_name,class_listbox) itemconfigure $object_class_idx \
-						-foreground gray
-					set [$f_opts($path_name,class_listbox) cget -listvar] \
-						[lreplace $items $object_class_idx $object_class_idx \
-						"$object_class$Apol_Analysis_relabel::excluded_tag"]
-				} else {
-					$f_opts($path_name,class_listbox) itemconfigure $object_class_idx \
-						-foreground $f_opts($path_name,select_fg_orig)
-					set [$f_opts($path_name,class_listbox) cget -listvar] \
-						[lreplace $items $object_class_idx $object_class_idx \
-						"$object_class"]
-				}
-  			}
-  			if {$f_opts($path_name,class_selected_idx) == $object_class_idx} {
-  				$f_opts($path_name,permissions_title_frame) configure \
-  					-text "Permissions for [$f_opts($path_name,class_listbox) get \
-  						$object_class_idx]:"
-  			}
-  		}
-	}
-	return 0	
 }
 
 # ------------------------------------------------------------------------------
@@ -444,20 +397,20 @@ proc Apol_Analysis_relabel::adv_options_include_exclude_permissions {which path_
 # 	   in order to process the class name only. 
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_relabel::adv_options_change_obj_state_on_perm_select {path_name} {
-	variable f_opts 
+	variable widget_vars 
 	
 	set num_excluded 0	
 	# There may be multiple selected items, but we need the object class that is 
 	# currently displayed in the text box. We have this index stored in our global 
 	# class_selected_idx variable.
-	if {$f_opts($path_name,class_selected_idx) != "-1"} {
-		set class_sel [$f_opts($path_name,class_listbox) get \
-			$f_opts($path_name,class_selected_idx)]
+	if {$widget_vars($path_name,class_selected_idx) != "-1"} {
+		set class_sel [$widget_vars($path_name,class_incl_lb) get \
+			$widget_vars($path_name,class_selected_idx)]
 		set idx [string first $Apol_Analysis_relabel::excluded_tag $class_sel]
 		if {$idx != -1} {
 			set class_sel [string range $class_sel 0 [expr $idx - 1]]
 		}
-		set class_elements [array get f_opts "$path_name,perm_status_array,$class_sel,*"]
+		set class_elements [array get widget_vars "$path_name,perm_status_array,$class_sel,*"]
 		if {$class_elements != ""} {
 			set num_perms_for_class [expr {[llength $class_elements] / 2}]
 			for {set i 0} {$i < [llength $class_elements]} {incr i} {
@@ -466,29 +419,29 @@ proc Apol_Analysis_relabel::adv_options_change_obj_state_on_perm_select {path_na
 					incr num_excluded	
 				}
 			}
-			set items [$f_opts($path_name,class_listbox) get 0 end]
+			set items [$widget_vars($path_name,class_incl_lb) get 0 end]
 			# If the total all permissions for the object have been 
 			# excluded then inform the user. 
 			if {$num_excluded == $num_perms_for_class} {
-				$f_opts($path_name,class_listbox) itemconfigure \
-					$f_opts($path_name,class_selected_idx) \
+				$widget_vars($path_name,class_incl_lb) itemconfigure \
+					$widget_vars($path_name,class_selected_idx) \
 					-foreground gray
-				set [$f_opts($path_name,class_listbox) cget -listvar] \
-					[lreplace $items $f_opts($path_name,class_selected_idx) \
-					$f_opts($path_name,class_selected_idx) \
+				set [$widget_vars($path_name,class_incl_lb) cget -listvar] \
+					[lreplace $items $widget_vars($path_name,class_selected_idx) \
+					$widget_vars($path_name,class_selected_idx) \
 					"$class_sel$Apol_Analysis_relabel::excluded_tag"]
 			} else {
-				$f_opts($path_name,class_listbox) itemconfigure \
-					$f_opts($path_name,class_selected_idx) \
-					-foreground $f_opts($path_name,select_fg_orig)
-				set [$f_opts($path_name,class_listbox) cget -listvar] \
-					[lreplace $items $f_opts($path_name,class_selected_idx) \
-					$f_opts($path_name,class_selected_idx) \
+				$widget_vars($path_name,class_incl_lb) itemconfigure \
+					$widget_vars($path_name,class_selected_idx) \
+					-foreground $widget_vars($path_name,select_fg_orig)
+				set [$widget_vars($path_name,class_incl_lb) cget -listvar] \
+					[lreplace $items $widget_vars($path_name,class_selected_idx) \
+					$widget_vars($path_name,class_selected_idx) \
 					"$class_sel"]
 			}
-  			$f_opts($path_name,permissions_title_frame) configure \
-  				-text "Permissions for [$f_opts($path_name,class_listbox) get \
-  					$f_opts($path_name,class_selected_idx)]:"
+  			$widget_vars($path_name,permissions_title_frame) configure \
+  				-text "Permissions for [$widget_vars($path_name,class_incl_lb) get \
+  					$widget_vars($path_name,class_selected_idx)]:"
 		}
 	}
 	
@@ -501,7 +454,7 @@ proc Apol_Analysis_relabel::adv_options_change_obj_state_on_perm_select {path_na
 #	  each permission label.
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_relabel::adv_options_embed_perm_buttons {list_b class perm path_name} {
-	variable f_opts
+	variable widget_vars
 	variable rendering_finished
 	
  	# Frames
@@ -519,13 +472,13 @@ proc Apol_Analysis_relabel::adv_options_embed_perm_buttons {list_b class perm pa
 	set cb_include [radiobutton $cb_frame.cb_include:$class:$perm -bg white \
 		-value include -text "Include" \
 		-highlightthickness 0 \
-		-variable Apol_Analysis_relabel::f_opts($path_name,perm_status_array,$class,$perm) \
+		-variable Apol_Analysis_relabel::widget_vars($path_name,perm_status_array,$class,$perm) \
 		-command "Apol_Analysis_relabel::adv_options_change_obj_state_on_perm_select \
 			$path_name"]	
 	set cb_exclude [radiobutton $cb_frame.cb_exclude:$class:$perm -bg white \
 		-value exclude -text "Exclude" \
 		-highlightthickness 0 \
-		-variable Apol_Analysis_relabel::f_opts($path_name,perm_status_array,$class,$perm) \
+		-variable Apol_Analysis_relabel::widget_vars($path_name,perm_status_array,$class,$perm) \
 		-command "Apol_Analysis_relabel::adv_options_change_obj_state_on_perm_select \
 			$path_name"]
 	
@@ -544,12 +497,12 @@ proc Apol_Analysis_relabel::adv_options_embed_perm_buttons {list_b class perm pa
 # Command Apol_Analysis_relabel::adv_options_clear_perms_text 
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_relabel::adv_options_clear_perms_text {path_name} {
-	variable f_opts
+	variable widget_vars
 	
 	# Enable the text widget. 
-	$f_opts($path_name,perms_box) configure -state normal
+	$widget_vars($path_name,perms_box) configure -state normal
 	# Clear the text widget and any embedded windows
-	set names [$f_opts($path_name,perms_box) window names]
+	set names [$widget_vars($path_name,perms_box) window names]
 	foreach emb_win $names {
 		if { [winfo exists $emb_win] } {
 			set rt [catch {destroy $emb_win} err]
@@ -563,7 +516,7 @@ proc Apol_Analysis_relabel::adv_options_clear_perms_text {path_name} {
 			}
 		}
 	}
-	$f_opts($path_name,perms_box) delete 1.0 end
+	$widget_vars($path_name,perms_box) delete 1.0 end
 	return 0
 }
 
@@ -578,22 +531,22 @@ proc Apol_Analysis_relabel::adv_options_clear_perms_text {path_name} {
 # 	  listbox.
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_relabel::adv_options_display_permissions {path_name} {
-	variable f_opts
+	variable widget_vars
 	
-	if {[$f_opts($path_name,class_listbox) get 0 end] == "" || \
-		[llength [$f_opts($path_name,class_listbox) curselection]] > 1} {
+	if {[$widget_vars($path_name,class_incl_lb) get 0 end] == "" || \
+		[llength [$widget_vars($path_name,class_incl_lb) curselection]] > 1} {
 		# Nothing in the listbox; return
 		return 0
 	}
 	
-	set class_idx [$f_opts($path_name,class_listbox) curselection]
+	set class_idx [$widget_vars($path_name,class_incl_lb) curselection]
 	if {$class_idx == ""} {
 		# Something was simply deselected.
 		return 0
 	} 
-	focus -force $f_opts($path_name,class_listbox)
-	set class_name [$f_opts($path_name,class_listbox) get $class_idx]
-	$f_opts($path_name,permissions_title_frame) configure -text "Permissions for $class_name:"
+	focus -force $widget_vars($path_name,class_incl_lb)
+	set class_name [$widget_vars($path_name,class_incl_lb) get $class_idx]
+	$widget_vars($path_name,permissions_title_frame) configure -text "Permissions for $class_name:"
 	Apol_Analysis_relabel::adv_options_clear_perms_text $path_name
 	update
 	# Make sure to strip out just the class name, as this may be an excluded class.
@@ -614,21 +567,21 @@ proc Apol_Analysis_relabel::adv_options_display_permissions {path_name} {
 		# If this permission does not exist in our perm status array, this means
 		# that a saved query was loaded and the permefined in the policy
 		# is not defined in the saved query. So we default this to be included.
-		if {[array names f_opts "$path_name,perm_status_array,$class_name,$perm"] == ""} {
-			set f_opts($path_name,perm_status_array,$class_name,$perm) include
+		if {[array names widget_vars "$path_name,perm_status_array,$class_name,$perm"] == ""} {
+			set widget_vars($path_name,perm_status_array,$class_name,$perm) include
 		}
-		$f_opts($path_name,perms_box) window create end -window \
+		$widget_vars($path_name,perms_box) window create end -window \
 			[Apol_Analysis_relabel::adv_options_embed_perm_buttons \
-			$f_opts($path_name,perms_box) $class_name $perm $path_name] 
-		$f_opts($path_name,perms_box) insert end "\n"
+			$widget_vars($path_name,perms_box) $class_name $perm $path_name] 
+		$widget_vars($path_name,perms_box) insert end "\n"
 	}
 	tkwait variable Apol_Analysis_relabel::rendering_finished
 	set rendering_finished 0
 	update 
 	
 	# Disable the text widget. 
-	$f_opts($path_name,perms_box) configure -state disabled
-	set f_opts($path_name,class_selected_idx) $class_idx
+	$widget_vars($path_name,perms_box) configure -state disabled
+	set widget_vars($path_name,class_selected_idx) $class_idx
 	return 0
 }
 
@@ -636,60 +589,30 @@ proc Apol_Analysis_relabel::adv_options_display_permissions {path_name} {
 #  Command Apol_Analysis_relabel::adv_options_set_widgets_to_default_state
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_relabel::adv_options_set_widgets_to_default_state {path_name} {
-	variable f_opts
+	variable widget_vars
+	variable widgets
 	
-	set f_opts($path_name,select_fg_orig) [$f_opts($path_name,class_listbox) cget -foreground]
-	
-	# Configure the class listbox items to indicate excluded/included object classes.
+	set widget_vars($path_name,select_fg_orig) [$widgets($path_name,class_incl_lb) cget -foreground]
         set class_lbox_idx 0
-        foreach class $f_opts($path_name,class_list) {
-        	# Make sure to strip out just the class name, as this may be an excluded class.
-		set idx [string first $Apol_Analysis_relabel::excluded_tag $class]
-		if {$idx != -1} {
-			set class [string range $class 0 [expr $idx - 1]]
-		}	
-		set num_excluded 0
-		set class_perms [array names f_opts "$path_name,perm_status_array,$class,*"]
-		foreach element $class_perms {
-			if {[string equal $f_opts($element) "exclude"]} {
-				incr num_excluded
-			}
-		}
-		if {$num_excluded == [llength $class_perms]} {
-			set [$f_opts($path_name,class_listbox) cget -listvar] \
-				[lreplace $f_opts($path_name,class_list) $class_lbox_idx \
-				$class_lbox_idx "$class$Apol_Analysis_relabel::excluded_tag"]
-			$f_opts($path_name,class_listbox) itemconfigure $class_lbox_idx \
-				-foreground gray
-		} else {
-			set [$f_opts($path_name,class_listbox) cget -listvar] \
-				[lreplace $f_opts($path_name,class_list) $class_lbox_idx \
-				$class_lbox_idx "$class"]
-			$f_opts($path_name,class_listbox) itemconfigure $class_lbox_idx \
-				-foreground $f_opts($path_name,select_fg_orig)
-		}
-		incr class_lbox_idx
-	}
-
-	return 0
 }
 
 # ------------------------------------------------------------------------------
 #  Command Apol_Analysis_relabel::adv_options_initialize_objs_and_perm_filters
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_relabel::adv_options_initialize_objs_and_perm_filters {path_name} {
-	variable f_opts
-	
-	set f_opts($path_name,class_list) $Apol_Class_Perms::class_list
+	variable widget_vars
+	 
+	set Apol_Analysis_relabel::widget_vars($path_name,incl_class_list) $Apol_Class_Perms::class_list
+	set Apol_Analysis_relabel::widget_vars($path_name,excl_class_list) ""
 	# Initialization for object classes section
-	foreach class $f_opts($path_name,class_list) {
+	foreach class $widget_vars($path_name,incl_class_list) {
 		set rt [catch {set perms_list [apol_GetPermsByClass $class 1]} err]
 		if {$rt != 0} {
 			tk_messageBox -icon error -type ok -title "Error" -message "$err"
 			return -1
 		}
 		foreach perm $perms_list {
-			set f_opts($path_name,perm_status_array,$class,$perm) include
+			set widget_vars($path_name,perm_status_array,$class,$perm) include
 		}
 	}
 
@@ -700,31 +623,27 @@ proc Apol_Analysis_relabel::adv_options_initialize_objs_and_perm_filters {path_n
 #  Command Apol_Analysis_relabel::adv_options_create_object
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_relabel::adv_options_create_object {path_name} {
-	variable f_opts
+	variable widget_vars
+	variable widgets
 	
-	set f_opts($path_name,name) 			$path_name
-	set f_opts($path_name,threshhold_cb_value) 	0
-	set f_opts($path_name,threshhold_value) 	1
-	set f_opts($path_name,class_selected_idx) 	-1
-	
+	set widget_vars($path_name,name) 			$path_name
+	set widget_vars($path_name,class_selected_idx) 	-1
+	set widget_vars($path_name,filter_vars_init) 1
 	# Initialize all object classes/permissions and related information to default values
 	Apol_Analysis_relabel::adv_options_initialize_objs_and_perm_filters $path_name
-        set f_opts($path_name,filter_vars_init) 1
- 
-	return 0
 }
 
 # ------------------------------------------------------------------------------
 #  Command Apol_Analysis_relabel::adv_options_copy_object
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_relabel::adv_options_copy_object {path_name new_object} {
-	variable f_opts
+	variable widget_vars
 	upvar 1 $new_object object 
 	
-	if {![array exists f_opts] || [array names f_opts "$path_name,name"] == ""} {
+	if {![array exists widget_vars] || [array names widget_vars "$path_name,name"] == ""} {
 		Apol_Analysis_relabel::adv_options_create_object $path_name
 	}
-	array set object [array get f_opts "$path_name,*"]
+	array set object [array get widget_vars "$path_name,*"]
 	
 	return 0
 }
@@ -733,37 +652,83 @@ proc Apol_Analysis_relabel::adv_options_copy_object {path_name new_object} {
 #  Command Apol_Analysis_relabel::adv_options_destroy_object
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_relabel::adv_options_destroy_object {path_name} { 
-	variable f_opts
+	variable widget_vars
 	
-	if {[array exists f_opts] && [array names f_opts "$path_name,name"] != ""} {
-		array unset f_opts "$path_name,perm_status_array,*"
-		unset f_opts($path_name,threshhold_cb_value)
-		unset f_opts($path_name,threshhold_value)
-		unset f_opts($path_name,filter_vars_init) 	
-		unset f_opts($path_name,class_selected_idx) 
-		unset f_opts($path_name,name) 
+	if {[array exists widget_vars] && [array names widget_vars "$path_name,name"] != ""} {
+		array unset widget_vars "$path_name,perm_status_array,*"
+		unset widget_vars($path_name,filter_vars_init) 	
+		unset widget_vars($path_name,class_selected_idx) 
+		unset widget_vars($path_name,name) 
 	}
      	return 0
 } 
 
 # ------------------------------------------------------------------------------
+#  Command Apol_Analysis_relabel::adv_options_incl_excl_classes
+#	- path_name - name of the object
+#	- remove_list - the list displayed inside the listbox from which the 
+#			type is being removed.
+#	- add_list - the list displayed inside the listbox to which the type 
+#		     being added. 
+#	- remove_lbox - listbox widget from which the type is being removed.
+#	- add_lbox - listbox widget to which the type is being added.
+#	- perm_value - include | exclude each permission for the object class 
+# ------------------------------------------------------------------------------
+proc Apol_Analysis_relabel::adv_options_incl_excl_classes {path_name remove_list_1 \
+							    	add_list_1 \
+							    	remove_lbox \
+							    	add_lbox \
+							    	perm_value} {
+	upvar #0 $remove_list_1 remove_list
+	upvar #0 $add_list_1 add_list
+	
+	set obj_indices [$remove_lbox curselection]		
+	if {$obj_indices != ""} {
+		set tmp_list ""
+		foreach idx $obj_indices {
+			set tmp_list [lappend tmp_list [$remove_lbox get $idx]]	
+		}
+		foreach class $tmp_list {
+			set idx  [lsearch -exact $remove_list $class]
+			if {$idx != -1} {
+				set remove_list [lreplace $remove_list $idx $idx]
+				# put in add list
+				set add_list [lappend add_list $class]
+				set add_list [lsort $add_list]
+			}
+			set rt [catch {set perms_list [apol_GetPermsByClass $class 1]} err]
+			if {$rt != 0} {
+				tk_messageBox -icon error -type ok -title "Error" -message "$err"
+				return -1
+			}
+			foreach perm $perms_list {
+				set widget_vars($path_name,perm_status_array,$class,$perm) $perm_value
+			}
+		}
+		$remove_lbox selection clear 0 end
+	}  
+	return 0	
+}
+
+# ------------------------------------------------------------------------------
 #  Command Apol_Analysis_relabel::adv_options_create_dialog
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_relabel::adv_options_create_dialog {path_name title_txt} {
-	variable f_opts 
-
+	variable widget_vars 
+	variable widgets
+	
 	if {![ApolTop::is_policy_open]} {
 	    tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened!"
 	    return -1
         } 
        	
 	# Check to see if object already exists.
-	if {[array exists f_opts] && \
-	    [array names f_opts "$path_name,name"] != ""} {
+	if {[array exists widget_vars] && \
+	    [array names widget_vars "$path_name,name"] != ""} {
 	    	# Check to see if the dialog already exists.
-	    	if {[winfo exists $f_opts($path_name,name)]} {
-		    	raise $f_opts($path_name,name)
-		    	focus $f_opts($path_name,name)
+	    	if {[winfo exists $widget_vars($path_name,name)]} {
+		    	raise $widget_vars($path_name,name)
+		    	focus $widget_vars($path_name,name)
 	    		return 0
 	    	} 
 	    	# else we need to display the dialog with the correct object settings
@@ -773,73 +738,70 @@ proc Apol_Analysis_relabel::adv_options_create_dialog {path_name title_txt} {
     	}	
    	
     	# Create the top-level dialog and subordinate widgets
-    	toplevel $f_opts($path_name,name) 
-     	wm withdraw $f_opts($path_name,name) 	
-    	wm title $f_opts($path_name,name) $title_txt 
+    	toplevel $widget_vars($path_name,name) 
+     	wm withdraw $widget_vars($path_name,name)	
+    	wm title $widget_vars($path_name,name) $title_txt 
     	   	
-   	set close_frame [frame $f_opts($path_name,name).close_frame -relief sunken -bd 1]
-   	set topf  [frame $f_opts($path_name,name).topf]
-        #set pw1 [PanedWindow $topf.pw1 -side left -weights available]
-        #$pw1 add -weight 2 -minsize 225
-        #$pw1 add -weight 2 -minsize 225
+   	set close_frame [frame $widget_vars($path_name,name).close_frame -relief sunken -bd 1]
+   	set topf  [frame $widget_vars($path_name,name).topf]
         pack $close_frame -side bottom -anchor center -pady 2
-        #pack $pw1 -fill both -expand yes	
         pack $topf -fill both -expand yes -padx 10 -pady 10
         
    	# Main Titleframe
-   	set objs_frame  [TitleFrame $topf.objs_frame -text "Filter by object class permissions:"]
+   	set objs_frame  [TitleFrame $topf.objs_frame -text "Filter by object classes:"]
         
         # Widgets for object classes frame
-        set pw1   [PanedWindow [$objs_frame getframe].pw -side top -weights available]
-        set pane  [$pw1 add]
-        set search_pane [$pw1 add]
-        set pw2   [PanedWindow $pane.pw -side left -weights available]
-        set class_pane 	[$pw2 add]
-        set f_opts($path_name,classes_box) [TitleFrame $class_pane.tbox -text "Object Classes:" -bd 0]
-        set f_opts($path_name,permissions_title_frame) [TitleFrame $search_pane.rbox \
-        	-text "Permissions:" -bd 0]
-          
-        set sw_class [ScrolledWindow [$f_opts($path_name,classes_box) getframe].sw -auto none]
-        set f_opts($path_name,class_listbox) [listbox [$sw_class getframe].lb \
+        set search_pane [frame [$objs_frame getframe].search_pane]
+        set button_f [frame [$objs_frame getframe].button_f]
+        set class_pane 	[frame [$objs_frame getframe].class_pane]
+        set incl_classes_box [TitleFrame $class_pane.tbox \
+        	-text "Included Object Classes:" -bd 0]
+        set excl_classes_box [TitleFrame $search_pane.rbox \
+        	-text "Excluded Object Classes:" -bd 0]
+        
+        set sw_incl_class [ScrolledWindow [$incl_classes_box getframe].sw_incl_class -auto none]
+        set widgets($path_name,class_incl_lb) [listbox [$sw_incl_class getframe].lb1 \
         	-height 10 -highlightthickness 0 \
         	-bg white -selectmode extended \
-        	-listvar Apol_Analysis_relabel::f_opts($path_name,class_list) \
+        	-listvar Apol_Analysis_relabel::widget_vars($path_name,incl_class_list) \
         	-exportselection 0]
-        $sw_class setwidget $f_opts($path_name,class_listbox)  
+        $sw_incl_class setwidget $widgets($path_name,class_incl_lb)  
       	     	
-	set sw_list [ScrolledWindow [$f_opts($path_name,permissions_title_frame) getframe].sw_c -auto none]
-	set f_opts($path_name,perms_box) [text [$f_opts($path_name,permissions_title_frame) getframe].perms_box \
-		-cursor $ApolTop::prevCursor \
-		-bg white -font $ApolTop::text_font]
-	$sw_list setwidget $f_opts($path_name,perms_box)
+	set sw_excl_class [ScrolledWindow [$excl_classes_box getframe].sw_excl_class  -auto none]
+	set widgets($path_name,class_excl_lb) [listbox [$sw_excl_class getframe].lb2 \
+        	-height 10 -highlightthickness 0 \
+        	-bg white -selectmode extended \
+        	-listvar Apol_Analysis_relabel::widget_vars($path_name,excl_class_list) \
+        	-exportselection 0]
+	$sw_excl_class setwidget $widgets($path_name,class_excl_lb)
 	
-	set bframe [frame [$f_opts($path_name,classes_box) getframe].bframe]
-	set b_incl_all_perms [Button $bframe.b_incl_all_perms -text "Include All Perms" \
-		-helptext "Select this to include all permissions for the selected object in the query." \
-		-command "Apol_Analysis_relabel::adv_options_include_exclude_permissions \
-			include $path_name"]
-	set b_excl_all_perms [Button $bframe.b_excl_all_perms -text "Exclude All Perms" \
-		-helptext "Select this to exclude all permissions for the selected object from the query." \
-		-command "Apol_Analysis_relabel::adv_options_include_exclude_permissions \
-			exclude $path_name"]
-		
-	# Bindings
-	set bind_tag_id [string trim $path_name "."]
-	bindtags $f_opts($path_name,class_listbox) \
-		[linsert [bindtags $f_opts($path_name,class_listbox)] 3 \
-		${bind_tag_id}_f_relabel_object_list_Tag]  
-        bind ${bind_tag_id}_f_relabel_object_list_Tag \
-        	<<ListboxSelect>> "Apol_Analysis_relabel::adv_options_display_permissions $path_name"
-        
-        pack $b_excl_all_perms -side right -anchor nw -pady 2 -expand yes -fill x -ipadx 1
-        pack $b_incl_all_perms -side left -anchor nw -pady 2 -expand yes -fill x -ipadx 2
-        pack $bframe -side bottom -fill both -anchor sw -pady 2
-        pack $f_opts($path_name,permissions_title_frame) -pady 2 -padx 2 -fill both -expand yes
-	pack $f_opts($path_name,classes_box) -padx 2 -side left -fill both -expand yes	   
-        pack $sw_class -fill both -expand yes -side top
-	pack $sw_list -fill both -expand yes -side top
-	pack $pw2 -fill both -expand yes
-        pack $pw1 -fill both -expand yes
+	set b_incl_classes [Button $button_f.b_incl_classes -text "<--"  \
+		-helptext "Include the selected object classes in the results." \
+		-command "Apol_Analysis_relabel::adv_options_incl_excl_classes \
+			$path_name \
+			Apol_Analysis_relabel::widget_vars($path_name,excl_class_list) \
+			Apol_Analysis_relabel::widget_vars($path_name,incl_class_list) \
+			$Apol_Analysis_relabel::widgets($path_name,class_excl_lb) \
+			$Apol_Analysis_relabel::widgets($path_name,class_incl_lb) \
+			include"]
+	set b_excl_classes [Button $button_f.b_excl_classes -text "-->" \
+		-helptext "Exclude the selected object classes from the results." \
+		-command "Apol_Analysis_relabel::adv_options_incl_excl_classes \
+			$path_name \
+			Apol_Analysis_relabel::widget_vars($path_name,incl_class_list)  \
+			Apol_Analysis_relabel::widget_vars($path_name,excl_class_list) \
+			$Apol_Analysis_relabel::widgets($path_name,class_incl_lb) \
+			$Apol_Analysis_relabel::widgets($path_name,class_excl_lb) \
+			exclude"]
+	
+        pack $b_excl_classes $b_incl_classes -side top -anchor nw -pady 2 -fill x
+        pack $class_pane -fill both -expand yes -side left -anchor nw
+        pack $button_f -anchor center -fill x -expand yes -side left -pady 20
+        pack $sw_incl_class $sw_excl_class -fill both -expand yes -side left -anchor nw 
+        pack $search_pane -fill both -expand yes -side left -anchor nw
+        pack $incl_classes_box $excl_classes_box -side left -pady 2 -padx 2 -fill both -expand yes
+	pack $widgets($path_name,class_incl_lb) $widgets($path_name,class_excl_lb) \
+		-padx 2 -side left -fill both -expand yes	
         pack $objs_frame -side top -anchor nw -padx 5 -pady 2 -expand yes -fill both 	  
         
 	# Create and pack close button for the dialog
@@ -847,54 +809,157 @@ proc Apol_Analysis_relabel::adv_options_create_dialog {path_name title_txt} {
 		-command "Apol_Analysis_relabel::adv_options_destroy_dialog $path_name"]
 	pack $close_bttn -side left -anchor center
 					  
-	wm protocol $f_opts($path_name,name) WM_DELETE_WINDOW \
+	wm protocol $widget_vars($path_name,name) WM_DELETE_WINDOW \
 		"Apol_Analysis_relabel::adv_options_destroy_dialog $path_name"
     	
         # Configure top-level dialog specifications
         set width 780
 	set height 750
-	wm geom $f_opts($path_name,name) ${width}x${height}
-	wm deiconify $f_opts($path_name,name)
-	focus $f_opts($path_name,name)
+	wm geom $widget_vars($path_name,name) ${width}x${height}
+	wm deiconify $widget_vars($path_name,name)
+	focus $widget_vars($path_name,name)
 	
 	Apol_Analysis_relabel::adv_options_set_widgets_to_default_state $path_name
 	return 0
 }
 
-# Apol_Analysis_dirflow::display_mod_options is called by the GUI to
+
+# ------------------------------------------------------------------------------
+#  Command Apol_Analysis_relabel::change_types_list
+# ------------------------------------------------------------------------------
+proc Apol_Analysis_relabel::change_types_list {type_cmbox attrib_cmbox clear_type} { 
+	upvar #0 [$attrib_cmbox cget -textvariable] attrib
+	
+	if {$attrib != ""} {
+		if {$clear_type} {
+			$type_cmbox configure -text ""		   
+		}
+		set rt [catch {set attrib_typesList [apol_GetAttribTypesList $attrib]} err]	
+		if {$rt != 0} {
+			tk_messageBox -icon error -type ok -title "Error" -message "$err"
+			return -code error
+		} 
+		set attrib_typesList [lsort $attrib_typesList]
+		set idx [lsearch -exact $attrib_typesList "self"]
+		if {$idx != -1} {
+			set attrib_typesList [lreplace $attrib_typesList $idx $idx]
+		}
+		$type_cmbox configure -values $attrib_typesList
+        } else {
+        	set attrib_typesList $Apol_Types::typelist
+		set idx [lsearch -exact $attrib_typesList "self"]
+		if {$idx != -1} {
+			set attrib_typesList [lreplace $attrib_typesList $idx $idx]
+		}
+        	$type_cmbox configure -values $attrib_typesList
+        }
+     	return 0
+}
+
+# ------------------------------------------------------------------------------
+#  Command Apol_Analysis_relabel::config_attrib_comboBox_state
+# ------------------------------------------------------------------------------
+proc Apol_Analysis_relabel::config_attrib_comboBox_state {checkbttn attrib_cbox type_cbox change_list} { 
+	upvar #0 [$checkbttn cget -variable] cb_val
+	upvar #0 [$attrib_cbox cget -textvariable] attrib_val
+	upvar #0 [$type_cbox cget -textvariable] type_val
+	
+	if {$cb_val} {
+		$attrib_cbox configure -state normal -entrybg white
+		if {$change_list} {
+			Apol_Analysis_tra::change_types_list $type_cbox $attrib_cbox 1
+		}
+	} else {
+		$attrib_cbox configure -state disabled -entrybg $ApolTop::default_bg_color
+		set attrib_typesList $Apol_Types::typelist
+        	set idx [lsearch -exact $attrib_typesList "self"]
+		if {$idx != -1} {
+			set attrib_typesList [lreplace $attrib_typesList $idx $idx]
+		}
+        	$type_cbox configure -values $attrib_typesList
+	}
+	
+     	return 0
+}
+
+# ------------------------------------------------------------------------------
+#  Command Apol_Analysis_relabel::config_endtype_state
+# ------------------------------------------------------------------------------
+proc Apol_Analysis_relabel::config_endtype_state {} {
+	variable widgets
+	variable widget_vars
+	
+        if {$widget_vars(endtype_sel)} {
+	        $widgets(entry_end) configure -state normal -background white
+	} else {
+	        $widgets(entry_end) configure -state disabled -background $ApolTop::default_bg_color
+	}
+        return 0
+}
+
+proc Apol_Analysis_relabel::init_widget_state { } {
+	variable widgets
+	variable widget_vars
+	
+	# set initial widget states
+	populate_lists 
+	toggle_attributes
+	Apol_Analysis_relabel::config_endtype_state
+	if {$widget_vars(mode) ==  "object"} {
+		set_mode_object
+	} else {
+		set_mode_subject
+	}
+}
+
+proc Apol_Analysis_relabel::init_widget_vars { } {
+	variable widget_vars
+	array unset widget_vars
+	
+	set widget_vars(mode) 		"object"
+	set widget_vars(to_mode) 	1
+	set widget_vars(from_mode) 	1
+	set widget_vars(endtype_sel) 	0
+	set widget_vars(end_type) 	""
+	set widget_vars(start_attrib_ch) 0
+	set widget_vars(start_attrib)	""
+	set widget_vars(start_type)	""
+}
+
+# Apol_Analysis_relabel::display_mod_options is called by the GUI to
 # display the analysis options interface the analysis needs.  Each
 # module must know how to display their own options, as well bind
 # appropriate commands and variables with the options GUI.  opts_frame
 # is the name of a frame in which the options GUI interface is to be
 # packed.
-proc Apol_Analysis_relabel::display_mod_options { opts_frame } {
+proc Apol_Analysis_relabel::display_mod_options { opts_frame } {    
     variable widgets
+   
+    Apol_Analysis_relabel::adv_options_destroy_dialog $Apol_Analysis_relabel::advanced_filter_Dlg
     array unset widgets
-    variable widget_vars
-    array unset widget_vars
-
+    
+    Apol_Analysis_relabel::init_widget_vars
     set option_f [frame $opts_frame.option_f]
-
-    set widget_vars(mode) "to"
     set mode_tf [TitleFrame $option_f.mode_tf -text "Mode"]
-    set relabelto_rb [radiobutton [$mode_tf getframe].relabelto_rb \
-                          -text "To" -value "to" \
-                          -variable Apol_Analysis_relabel::widget_vars(mode) \
+    set mode_obj_f [frame [$mode_tf getframe].mode_obj_f]
+    set mode_subj_f [frame [$mode_tf getframe].mode_subj_f]
+    set widgets(objectMode_cb)  [radiobutton $mode_obj_f.objectMode_cb \
+                            -text "Object Mode" -value "object" \
+                            -variable Apol_Analysis_relabel::widget_vars(mode) \
+                            -command [namespace code set_mode_object]]
+    set widgets(subjectMode_cb) [radiobutton $mode_subj_f.subjectMode_cb \
+                       -text "Subject Mode" -value "subject" \
+                       -variable Apol_Analysis_relabel::widget_vars(mode) \
+                       -command [namespace code set_mode_subject]]
+    set widgets(relabelto_rb) [checkbutton $mode_obj_f.relabelto_rb \
+                          -text "To" \
+                          -variable Apol_Analysis_relabel::widget_vars(to_mode) \
                           -command [namespace code set_mode_relabelto]]
-    set relabelfrom_rb [radiobutton [$mode_tf getframe].relabelfrom_rb \
-                            -text "From" -value "from" \
-                            -variable Apol_Analysis_relabel::widget_vars(mode)\
+    set widgets(relabelfrom_rb) [checkbutton $mode_obj_f.relabelfrom_rb \
+                            -text "From"  \
+                            -variable Apol_Analysis_relabel::widget_vars(from_mode)\
                             -command [namespace code set_mode_relabelfrom]]
-    set domain_rb [radiobutton [$mode_tf getframe].domain_rb \
-                       -text "Subject" -value "domain" \
-                       -variable Apol_Analysis_relabel::widget_vars(mode) \
-                       -command [namespace code set_mode_domain]]
-    set both_rb [radiobutton [$mode_tf getframe].both_rb \
-                       -text "Both" -value "both" \
-                       -variable Apol_Analysis_relabel::widget_vars(mode) \
-                       -command [namespace code set_mode_relabelboth]]
-    pack $relabelto_rb $relabelfrom_rb $both_rb $domain_rb -anchor w -side top
-
+   
     set req_tf [TitleFrame $option_f.req_tf -text "Required parameters"]
     set start_f [frame [$req_tf getframe].start_f]
     set attrib_f [frame [$req_tf getframe].attrib_frame]
@@ -904,39 +969,57 @@ proc Apol_Analysis_relabel::display_mod_options { opts_frame } {
                                -textvariable Apol_Analysis_relabel::widget_vars(start_type)]
     bindtags $widgets(start_cb).e [linsert [bindtags $widgets(start_cb).e] 3 start_cb_tag]
     bind start_cb_tag <KeyPress> [list ApolTop::_create_popup $widgets(start_cb) %W %K]
-    pack $widgets(start_l) $widgets(start_cb) -side top -expand 0 -fill x
-
-    set widgets(start_attrib_ch) \
-        [checkbutton $attrib_f.start_attrib_ch -anchor w -width 36 \
-             -variable Apol_Analysis_relabel::widget_vars(start_attrib_ch) \
-             -command [namespace code [list toggle_attributes 1]]]
+    	
     set widgets(start_attrib_cb) [ComboBox $attrib_f.start_attrib_cb \
                 -editable 1 -entrybg white -width 16 -state disabled \
-                -modifycmd [namespace code [list set_types_list ""]] \
                 -vcmd [namespace code [list set_types_list %P]] -validate key \
                 -textvariable Apol_Analysis_relabel::widget_vars(start_attrib)]
+    $widgets(start_attrib_cb) configure -modifycmd {Apol_Analysis_tra::change_types_list \
+			$Apol_Analysis_relabel::widgets(start_cb) $Apol_Analysis_relabel::widgets(start_attrib_cb) 1}  
+			
+    set widgets(start_attrib_ch) \
+        [checkbutton $attrib_f.start_attrib_ch -anchor w -width 36 \
+             -variable Apol_Analysis_relabel::widget_vars(start_attrib_ch)]
+    $widgets(start_attrib_ch) configure \
+		-command "Apol_Analysis_relabel::config_attrib_comboBox_state \
+			$widgets(start_attrib_ch) $widgets(start_attrib_cb) $widgets(start_cb) 1"
+ 
     bindtags $widgets(start_attrib_cb).e [linsert [bindtags $widgets(start_attrib_cb).e] 3 start_attrib_cb_tag]
     bind start_attrib_cb_tag <KeyPress> [list ApolTop::_create_popup $widgets(start_attrib_cb) %W %K]
     
     set filter_f [frame $option_f.filter_f]
-    set widgets(b_adv_options) [button $filter_f.b_adv_options -text "Advanced Filters" \
+    set endtype_frame [frame $filter_f.endtype_frame]
+    set adv_frame [frame $filter_f.adv_frame]
+    set widgets(entry_end) [Entry $endtype_frame.entry_end \
+	-helptext "You may enter a regular expression" \
+	-editable 1 -state disabled \
+	-textvariable Apol_Analysis_relabel::widget_vars(end_type)] 
+    set widgets(cb_endtype) [checkbutton $endtype_frame.cb_endtype \
+    	-text "Filter end types using regular expression:" \
+	-variable Apol_Analysis_relabel::widget_vars(endtype_sel) \
+	-command {Apol_Analysis_relabel::config_endtype_state}]
+    set widgets(b_adv_options) [button $adv_frame.b_adv_options -text "Advanced Filters" \
 		-command {Apol_Analysis_relabel::adv_options_create_dialog \
 			$Apol_Analysis_relabel::advanced_filter_Dlg \
 			"Direct File Relabel Advanced Filters"}]
     
+    pack $widgets(objectMode_cb) -anchor w -side top
+    pack $widgets(relabelto_rb) $widgets(relabelfrom_rb) -side top -padx 10 -pady 3 -anchor nw
+    pack $widgets(subjectMode_cb) -anchor w -side top
+    pack $widgets(start_l) $widgets(start_cb) -side top -expand 0 -fill x
     pack $widgets(start_attrib_ch) -expand 0 -fill x
     pack $widgets(start_attrib_cb) -padx 15 -expand 0 -fill x
+    pack $widgets(cb_endtype) -side top -anchor nw
+    pack $widgets(entry_end) -anchor nw -fill x -expand yes 
     pack $widgets(b_adv_options) -anchor nw 
     pack $start_f -expand 0 -fill x
     pack $attrib_f -pady 20 -expand 0 -fill x
-    
     pack $option_f -fill both -anchor nw -side left -padx 5 -expand 1
     pack $mode_tf $req_tf $filter_f -side left -anchor nw -padx 5 -expand 1 -fill both
-
-    # set initial widget states
-    set_mode_relabelto
-    populate_lists 1
-    toggle_attributes 1
+    pack $mode_obj_f $mode_subj_f -side top -anchor nw -fill both 
+    pack $endtype_frame $adv_frame -side top -anchor nw -fill both -pady 4
+    
+    Apol_Analysis_relabel::init_widget_state
 }
 
 
@@ -949,36 +1032,74 @@ proc Apol_Analysis_relabel::display_mod_options { opts_frame } {
 
 proc Apol_Analysis_relabel::set_mode_relabelto {} {
     variable widgets
-    $widgets(start_l) configure -text "Starting type:"
-    $widgets(start_attrib_ch) configure -text "Select starting type using attrib:"
+    variable widget_vars
+  
+    if {!$widget_vars(to_mode) && !$widget_vars(from_mode)} {
+    	set widget_vars(to_mode) 1
+    	return
+    } 
+    if {$widget_vars(to_mode) && $widget_vars(from_mode)} {
+	Apol_Analysis_relabel::set_mode_relabelboth
+    } elseif {$widget_vars(to_mode)} {
+	$widgets(start_l) configure -text "Starting type:"
+	$widgets(start_attrib_ch) configure -text "Select starting type using attrib:"
+    } else {
+    	Apol_Analysis_relabel::set_mode_relabelfrom
+    }
 }
 
 proc Apol_Analysis_relabel::set_mode_relabelfrom {} {
     variable widgets
-    $widgets(start_l) configure -text "Ending type:"
-    $widgets(start_attrib_ch) configure -text "Select starting type using attrib:"
+    variable widget_vars
+    
+    if {!$widget_vars(to_mode) && !$widget_vars(from_mode)} {
+    	set widget_vars(from_mode) 1
+    	return
+    } 
+    if {$widget_vars(to_mode) && $widget_vars(from_mode)} {
+	Apol_Analysis_relabel::set_mode_relabelboth
+    } elseif {$widget_vars(from_mode)} {
+	$widgets(start_l) configure -text "Ending type:"
+	$widgets(start_attrib_ch) configure -text "Select ending type using attrib:"
+    } else {
+	Apol_Analysis_relabel::set_mode_relabelto
+    }
 }
 
 proc Apol_Analysis_relabel::set_mode_relabelboth {} {
     variable widgets
-  $widgets(start_l) configure -text "Starting type:"
-    $widgets(start_attrib_ch) configure -text "Select starting type using attrib:"
+    $widgets(start_l) configure -text "Starting/ending type:"
+    $widgets(start_attrib_ch) configure -text "Select starting/ending type using attrib:"
 }
 
-proc Apol_Analysis_relabel::set_mode_domain {} {
+proc Apol_Analysis_relabel::set_mode_subject {} {
     variable widgets
     $widgets(start_l) configure -text "Subject:"
     $widgets(start_attrib_ch) configure -text "Select subject using attrib:"
+    $widgets(relabelto_rb) configure -state disabled
+    $widgets(relabelfrom_rb) configure -state disabled
 }
 
-proc Apol_Analysis_relabel::toggle_attributes {clear_types_list} {
+proc Apol_Analysis_relabel::set_mode_object {} {
+    variable widgets
+    variable widget_vars
+    	  
+    $widgets(relabelto_rb) configure -state normal
+    $widgets(relabelfrom_rb) configure -state normal
+    if {$widget_vars(to_mode) && $widget_vars(from_mode)} {
+    	Apol_Analysis_relabel::set_mode_relabelboth
+    } elseif {$widget_vars(to_mode) && !$widget_vars(from_mode)} {
+    	Apol_Analysis_relabel::set_mode_relabelto
+    } else {
+    	Apol_Analysis_relabel::set_mode_relabelfrom
+    }
+}
+
+proc Apol_Analysis_relabel::toggle_attributes {} {
     variable widgets
     variable widget_vars
     if $widget_vars(start_attrib_ch) {
         $widgets(start_attrib_cb) configure -state normal -entrybg white
-        if $clear_types_list {
-            set_types_list ""
-        }
     } else {
         $widgets(start_attrib_cb) configure -state disabled -entrybg  $ApolTop::default_bg_color
         $widgets(start_cb) configure -values $Apol_Types::typelist
@@ -1009,24 +1130,18 @@ proc Apol_Analysis_relabel::set_types_list {start_attrib} {
 # names/attributes/object classes.  This is done in one of three
 # places: upon wizard dialog creation, when opening a policy, and when
 # closing a policy.
-proc Apol_Analysis_relabel::populate_lists {add_items} {
-    variable widgets
-    variable widget_vars
-    if $add_items {
-        $widgets(start_cb) configure -values $Apol_Types::typelist
-        $widgets(start_attrib_cb) configure -values $Apol_Types::attriblist
-        if {[lsearch -exact $Apol_Types::typelist $widget_vars(start_type)] == -1} {
-            set widget_vars(start_type) {}
-        }
-        if {[lsearch -exact $Apol_Types::attriblist $widget_vars(start_attrib)] == -1} {
-            set widget_vars(start_attrib) {}
-        }
-    } else {
-        $widgets(start_cb) configure -values {}
-        $widgets(start_attrib_cb) configure -values {}
-        set widget_vars(start_type) {}
-        set widget_vars(start_attrib) {}
-    }
+proc Apol_Analysis_relabel::populate_lists {} {
+	variable widgets
+	variable widget_vars
+  
+	$widgets(start_cb) configure -values $Apol_Types::typelist
+	$widgets(start_attrib_cb) configure -values $Apol_Types::attriblist
+	if {[lsearch -exact $Apol_Types::typelist $widget_vars(start_type)] == -1} {
+	    set widget_vars(start_type) {}
+	}
+	if {[lsearch -exact $Apol_Types::attriblist $widget_vars(start_attrib)] == -1} {
+	    set widget_vars(start_attrib) {}
+	}
 }
 
 ##########################################################################
@@ -1054,30 +1169,68 @@ proc Apol_Analysis_relabel::tree_select {widget node} {
 	set policy_tags_list ""
 	set line ""
 	set start_index 0
-	append line "$widget_vars(start_type)"
-	set end_index [string length $line]
-	lappend title_type_tags $start_index $end_index
-	append line " can "
 	
-	switch -- $widget_vars(mode) {
-	    to     {append line "relabel to "}
-	    from   {append line "relabel from "}
-	    both   {append line "both relabel to and from "}
-	    domain {append line "relabel to or from "}
-	} 
-	
-	if {$widget_vars(mode) == "domain"} {
+	if {$node == $Apol_Analysis_relabel::top_node} {
+		set start_index [string length $line]
+		append line "$widget_vars(start_type) "
+		set end_index [string length $line]
+		lappend title_type_tags $start_index $end_index
+		
+		if {$widget_vars(mode) == "object"} {
+			append line "can be relabeled "
+			if {$widget_vars(to_mode) && $widget_vars(from_mode)} {
+				append line "to and from "
+			} elseif {$widget_vars(to_mode) && !$widget_vars(from_mode)} {
+				append line "to "
+			} elseif {!$widget_vars(to_mode) && $widget_vars(from_mode)} {
+				append line "from "
+			} else {
+				puts "Direction must be to, from or both for object mode."
+				return
+			}
+			set start_index [string length $line]
+			append line "$data "
+			set end_index [string length $line]
+			lappend subtitle_type_tags $start_index $end_index
+			append line "types. Open the subtree of this item to view the list of types."
+		} else {
+			append line "can relabel to "
+			set start_index [string length $line]
+			append line "[lindex $data 1] "
+			set end_index [string length $line]
+			lappend subtitle_type_tags $start_index $end_index
+			
+			append line "types and relabel from "
+			set start_index [string length $line]
+			append line "[lindex $data 0] "
+			set end_index [string length $line]
+			lappend subtitle_type_tags $start_index $end_index
+			append line "types. Open the subtree of this item to view the lists of To/From types."
+		}
+	} elseif {$widget_vars(mode) == "subject"} {
+		append line "$widget_vars(start_type)"
+		set end_index [string length $line]
+		lappend title_type_tags $start_index $end_index
+		
+		append line " can relabel "
+		set start_index [string length $line]	
 		if {$node == "TO_LIST" || $node == "FROM_LIST"} {
 			return
 		}
-		
-		if {[$widget_vars(current_dtree) parent $node] == "TO_LIST"} {
+		set parent [$widget parent $node]
+		if {$parent == "TO_LIST"} {
+			append line "to"
 			set node [string trimleft $node "to_list:"]
 		} else {
+			append line "from"
 			set node [string trim $node "from_list:"]
 		}
+		set end_index [string length $line]
+		lappend subtitle_type_tags $start_index $end_index
+			
+			
 		set start_index [string length $line]
-		append line "$node"
+		append line " $node"
 		set end_index [string length $line]
 		lappend title_type_tags $start_index $end_index
 		append line "\n\n"
@@ -1090,26 +1243,50 @@ proc Apol_Analysis_relabel::tree_select {widget node} {
 		    lappend policy_tags_list $start_index $end_index
 		}
 		append line "\n"
-	} else {
+	} else {	
 		set start_index [string length $line]
-		append line "$node"
+		append line "$widget_vars(start_type)"
 		set end_index [string length $line]
 		lappend title_type_tags $start_index $end_index
-		append line " by:\n\n"
+		append line " can be relabeled:\n\n"
 		foreach datum $data {
-			foreach {subject rule_proof} $datum {
+			foreach {direction subject rule_proof} $datum { 				
+				set start_index [string length $line]
+				if {$widget_vars(to_mode) && $widget_vars(from_mode)} {
+					if {$direction == "both"} {
+						append line "to and from "
+					} elseif {$direction == "to"} {
+						append line "to "
+					} else {
+						append line "from "
+					}
+				} elseif {$widget_vars(to_mode)} {
+					append line "to "
+				} else {
+					append line "from "
+				}
+				set end_index [string length $line]
+				lappend subtitle_type_tags $start_index $end_index
+				
+				set start_index [string length $line]
+				append line "$node "
+				set end_index [string length $line]
+				lappend title_type_tags $start_index $end_index
+				
+				append line "by "
+				
 				set start_index [string length $line]
 				append line "$subject\n"
 				set end_index [string length $line]
-				lappend subtitle_type_tags $start_index $end_index
-				append line "\n"
+				lappend title_type_tags $start_index $end_index
+				
 				foreach {rule_num rule} $rule_proof {
-				    append line "    "
-				    set start_index [expr {[string length $line] + 1}]
-				    append line "($rule_num"
-				    set end_index [string length $line]
-				    append line ") $rule\n"
-				    lappend policy_tags_list $start_index $end_index
+					append line "    "
+					set start_index [expr {[string length $line] + 1}]
+					append line "($rule_num"
+					set end_index [string length $line]
+					append line ") $rule\n"
+					lappend policy_tags_list $start_index $end_index
 				}
 				append line "\n"
 			}
