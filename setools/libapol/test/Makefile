@@ -19,9 +19,9 @@ $(LIBAPOL):
 	cd ../../ ; $(MAKE) libapol
 
 clean:
-	rm -f *.o  core *~ test-apol
+	rm -f *.o  core.* *~ test-apol
 
 bare:
-	rm -f *.o  core *~ test-apol
+	rm -f *.o  core.* *~ test-apol
 
 
