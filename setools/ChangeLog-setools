@@ -1,31 +1,30 @@
 CHANGE LOG, SE Linux TOOLS (setools)
 
 =======================================================
-April 13, 2004 Version 1.3
+April 15, 2004 Version 1.3
 
-Apol:
+apol:
 	Added conditional policy support.
 	Added permission weighting for information flows.
-
-Seaudit:
+libapol: 
+	Added full support for conditional policies.
+	Included support for policy version 17
+	Various fixes and updates
+seaudit:
 	Added support for audit messages from changing  
 	  booleans in a conditional policy.
 	Added multiple filters/views.
-
-Libseaudit: 
+libseaudit: 
 	Updated to support new audit framework in the 2.6.5
 	  kernel.
-			
-Seuser:
+seuser:
 	Added home directory labeling command as command 
 	  line option.
-	  
-Libseuser:
+libseuser:
 	Updated to support home directory labeling.
-	  
 secmds:
-	New context swap tool (replcon).
-	New context search tool (findcon).
+	Added new context swap tool (replcon).
+	Added new context search tool (findcon).
 
 	  
 ========================================================
