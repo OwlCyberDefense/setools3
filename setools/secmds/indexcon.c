@@ -106,8 +106,10 @@ int main(int argc, char **argv, char **envp)
 		return -1;
 	}
 
-	if (find_mount_points(dir, &mounts, &num_mounts, 0))
+	if (find_mount_points(dir, &mounts, &num_mounts, 0)) {
+		fprintf(stderr, "Could not enumerate mountpoints.\n");
 		return -1;
+	}
 
 	if (sefs_scan_tree(dir) == -1) {
 		fprintf(stderr, "fsdata_scan_tree failed\n");
