@@ -480,6 +480,8 @@ int get_cond_bool_idx(char *name, policy_t *policy);
 int set_cond_bool_val(int bool, bool_t val, policy_t *policy);
 int get_cond_bool_val(char *name, policy_t *policy);
 int get_cond_bool_name(int idx, char **name, policy_t *policy);
+int update_cond_expr_items(policy_t *policy);
+int set_cond_bool_vals_to_default(policy_t *policy);
 
 /* users */
 #define get_first_user_ptr(policy) ((policy != NULL) ? policy->users.head : NULL)
