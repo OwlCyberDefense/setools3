@@ -91,41 +91,9 @@ static void initialize(report_window_t *report_window)
 	}
 }
 
-static void update_values(report_window_t *report_window)
-{
-	GtkEntry *entry_config, *entry_stylesheet;
-	const char *text;
-	
-	if (report_window) {
-		entry_config = GTK_ENTRY(glade_xml_get_widget(report_window->xml, "entry_report_config"));
-		g_assert(entry_config);
-		entry_stylesheet = GTK_ENTRY(glade_xml_get_widget(report_window->xml, "entry_stylesheet"));
-		g_assert(entry_stylesheet);
-		
-		text = gtk_entry_get_text(entry_config);
-		if (strcmp(text, "") != 0) {
-			free(report_window->report_info->configPath);
-			report_window->report_info->configPath = NULL;
-			
-			if (seaudit_report_add_configFile_path(text, report_window->report_info) != 0)
-	  			return;	
-		}
-		
-		text = gtk_entry_get_text(entry_stylesheet);		
-		if (strcmp(text, "") != 0) {
-			free(report_window->report_info->stylesheet_file);
-			report_window->report_info->stylesheet_file = NULL;
-			
-			if (seaudit_report_add_stylesheet_path(text, report_window->report_info) != 0)
-	  			return;	
-		}
-	}
-}
-
 static void hide_window(report_window_t *report_window)
 {
 	if (report_window->window) {
-		update_values(report_window);
 		gtk_widget_destroy(GTK_WIDGET(report_window->window));
 		report_window->window = NULL;
 	}
@@ -212,6 +180,7 @@ static void on_create_report_button_clicked(GtkButton *button, gpointer user_dat
 	seaudit_filtered_view_t *filtered_view;
 	audit_log_view_t *log_view;
 	GtkEntry *entry;
+	char *file_path = NULL;
 			
 	assert(report_window != NULL);
 	filename = get_filename_from_user("Save Report to File", NULL);
@@ -244,7 +213,9 @@ static void on_create_report_button_clicked(GtkButton *button, gpointer user_dat
 		free(report_window->report_info->stylesheet_file);
 		report_window->report_info->stylesheet_file = NULL;
 	}
-	seaudit_report_add_stylesheet_path(gtk_entry_get_text(GTK_ENTRY(entry)), report_window->report_info);
+	file_path = gtk_entry_get_text(GTK_ENTRY(entry));
+	if (!str_is_only_white_space(file_path))
+		seaudit_report_add_stylesheet_path(file_path, report_window->report_info);
 	
 	entry = GTK_ENTRY(glade_xml_get_widget(report_window->xml, "entry_report_config"));
 	g_assert(entry);
@@ -252,9 +223,10 @@ static void on_create_report_button_clicked(GtkButton *button, gpointer user_dat
 		free(report_window->report_info->configPath);
 		report_window->report_info->configPath = NULL;
 	}
-	
-	seaudit_report_add_configFile_path(gtk_entry_get_text(GTK_ENTRY(entry)), report_window->report_info);
-	
+	file_path = gtk_entry_get_text(GTK_ENTRY(entry));
+	if (!str_is_only_white_space(file_path))
+		seaudit_report_add_configFile_path(file_path, report_window->report_info);
+		
 	/* Generate the report */
 	if (seaudit_report_generate_report(report_window->report_info) != 0) {
 		msg = g_string_new("Error generating report!\n");
