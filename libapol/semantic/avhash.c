@@ -15,7 +15,6 @@
 #include <assert.h>
 #include <stdio.h>
 
-// #define AVH_HASH(key) (((key->rule_type) + (key->cls << 2) + (key->tgt << 3) + (key->cls << 9)) & AVH_MASK)
 #define AVH_HASH(key) ((key->cls + (key->tgt << 2) + (key->src << 9)) & AVH_MASK)
 
 
