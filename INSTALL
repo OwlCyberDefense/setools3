@@ -2,7 +2,7 @@ SELinux Tools (setools), version 1.4
 by Tresys Technology, LLC
 (selinux@tresys.com, www.tresys.com/selinux)
 
-May 26, 2004
+May 27, 2004
 
 BUILDING AND INSTALLING NOTES AND WARNINGS
 
@@ -17,7 +17,7 @@ will create a directory with the following subdirectories:
 apol            The policy analysis tool
 awish           Our customized version of the Tk wish interpreter
 docs-src	Repository for generating setools documentation.
-libapol         The main policy (policy.conf) analysis library
+libapol         The main policy analysis library
 libseaudit	The seaudit support library 
 libseuser       The seuser support library	
 seaudit 	The audit log analysis tool (seaudit)
