@@ -42,6 +42,21 @@ void audit_log_view_destroy(audit_log_view_t* view)
 	return;
 }
 
+void audit_log_view_set_log(audit_log_view_t *view, audit_log_t *log)
+{
+	int num_deleted, *deleted = NULL;
+
+	audit_log_view_purge_fltr_msgs(view);
+	view->my_log = log;
+
+	if (log != NULL) {
+		audit_log_view_do_filter(view, &deleted, &num_deleted);
+		if(deleted)
+			free(deleted);
+	}	
+	
+}
+
 void audit_log_view_purge_fltr_msgs(audit_log_view_t *view)
 {
 	if (view->fltr_msgs) {
@@ -91,7 +106,7 @@ void audit_log_view_purge_filters(audit_log_view_t *view)
 }
 
 /* filter the log into the view */
-int audit_log_view_do_filter(audit_log_view_t *view, bool_t details, int **deleted, int *num_deleted) 
+int audit_log_view_do_filter(audit_log_view_t *view, int **deleted, int *num_deleted) 
 {
 	int i, j, msg, *kept=NULL, num_kept=0, *added=NULL, num_added=0, *ptr=NULL, *delptr=NULL;
 	bool_t err, all_match, any_match, match, found; 
