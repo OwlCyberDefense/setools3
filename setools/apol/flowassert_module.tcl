@@ -21,13 +21,6 @@ namespace eval Apol_Analysis_flowassert {
     variable assertfile_t    
     variable assert_wizard_dlg ""
 
-    # these three are lists of valid type names, attributes, and
-    # object classes, which are used to see the
-    # ComboBox/ComboBox/listbox in the assertion rule wizard
-    variable assert_wizard_types ""
-    variable assert_wizard_attribs ""
-    variable assert_wizard_objclasses ""
-
     # name of widget holding most recently executed assertion
     variable most_recent_results ""
 
@@ -242,7 +235,8 @@ proc Apol_Analysis_flowassert::open { } {
 # contents of the assertion file and replace it with the remainder
 # from $file_channel.
 proc Apol_Analysis_flowassert::load_query_options {file_channel parentDlg} {
-    variable VERSION assertfile_t
+    variable VERSION
+    variable assertfile_t
     if {[gets $file_channel] > $VERSION} {
         return -code error "The specified query version is not allowed."
     }
@@ -256,7 +250,8 @@ proc Apol_Analysis_flowassert::load_query_options {file_channel parentDlg} {
 #	- file_channel - file channel identifier of the query file to write to.
 #	- file_name - name of the query file
 proc Apol_Analysis_flowassert::save_query_options {module_name file_channel file_name} {
-    variable VERSION assertfile_t
+    variable VERSION
+    variable assertfile_t
     puts $file_channel $module_name
     puts $file_channel $VERSION
     puts -nonewline $file_channel [$assertfile_t get 1.0 end]
@@ -311,8 +306,8 @@ proc Apol_Analysis_flowassert::display_mod_options { opts_frame } {
     set bb [ButtonBox $opts_frame.bb -homogeneous 1 -spacing 30]
     $bb add -text "Add..." -command [namespace code create_assert_wizard_dlg]
     $bb add -text "Clear File" -command [namespace code clear_assert_file]
-    $bb add -text "Save..." -command [namespace code save_assert_file]
-    $bb add -text "Load..." -command [namespace code load_assert_file]
+    $bb add -text "Export..." -command [namespace code export_assert_file]
+    $bb add -text "Import..." -command [namespace code import_assert_file]
     grid $tf -padx 10 -sticky nsew
     grid $bb -sticky {}
     grid rowconfigure $opts_frame 0 -weight 1
@@ -337,18 +332,18 @@ proc Apol_Analysis_flowassert::clear_assert_file {} {
 
 # Prompts the user for a file name, then saves the contents of the
 # assertion buffer to it.
-proc Apol_Analysis_flowassert::save_assert_file {} {
+proc Apol_Analysis_flowassert::export_assert_file {} {
     variable assertfile_t
     variable last_filename
     variable last_pathname
-    set filename [tk_getSaveFile -title "Save Assertion File" \
+    set filename [tk_getSaveFile -title "Export Assertion File" \
                       -parent $assertfile_t -initialdir $last_pathname \
                       -initialfile $last_filename]
     if {$filename == ""} {
         return
     }
     if [catch {::open $filename w} f] {
-        tk_messageBox -icon error -type ok -title "Save Assertion File" \
+        tk_messageBox -icon error -type ok -title "Export Assertion File" \
             -message "Error saving to $filename" -parent $assertfile_t
         return
     }
@@ -360,18 +355,18 @@ proc Apol_Analysis_flowassert::save_assert_file {} {
 
 # Prompts the user for a file name, then loads the contents of the
 # file into the assertion buffer.
-proc Apol_Analysis_flowassert::load_assert_file {} {
+proc Apol_Analysis_flowassert::import_assert_file {} {
     variable assertfile_t
     variable last_filename
     variable last_pathname
-    set filename [tk_getOpenFile -title "Load Assertion File" \
+    set filename [tk_getOpenFile -title "Import Assertion File" \
                       -parent $assertfile_t -initialdir $last_pathname \
                       -initialfile $last_filename]
     if {$filename == ""} {
         return
     }
     if [catch {::open $filename r} f] {
-        tk_messageBox -icon error -type ok -title "Load Assertion File" \
+        tk_messageBox -icon error -type ok -title "Import Assertion File" \
             -message "Error loading from $filename" -parent $assertfile_t
         return
     }
@@ -384,7 +379,7 @@ proc Apol_Analysis_flowassert::load_assert_file {} {
 
 # Creates the "assertion statement wizard" that allows a user to
 # easily add assertions lines to the current file.  The wizard is a
-# non-modal dialog that presents all available types / attributes /
+# non-modal dialog that presents all available types + attributes /
 # options.  It does not validate entries for syntactical correctness.
 proc Apol_Analysis_flowassert::create_assert_wizard_dlg {} {
     variable assertfile_t
@@ -407,7 +402,6 @@ proc Apol_Analysis_flowassert::create_assert_wizard_dlg {} {
     set f [frame $assert_wizard_dlg.f]
 
     variable assert_wiz_type_cbs ""
-    variable assert_wiz_attrib_cbs ""
     variable assert_wiz_objclass_lbs ""
     set start_tf [TitleFrame $f.start_tf -text "Starting Types"]
     create_type_panel [$start_tf getframe] start assert_wiz_start_type
@@ -478,7 +472,6 @@ proc Apol_Analysis_flowassert::create_type_panel {type_panel type_name type_var}
                           -variable Apol_Analysis_flowassert::assert_wiz_${type_name}_type_rb]
     pack $type_star_rb -anchor w -side top
     
-    variable assert_wizard_types
     set type_names_f [frame $type_panel.type_names_f]
     set type_names_l [label $type_names_f.names_l -text "Type Names:"]
     set type_names_cb [ComboBox $type_names_f.names_cb -width 24 \
@@ -490,26 +483,11 @@ proc Apol_Analysis_flowassert::create_type_panel {type_panel type_name type_var}
     pack $type_names_cb -expand 1 -fill both -side top
     pack $type_names_f -expand 1 -fill both -side top -pady 2
 
-    variable assert_wizard_attribs
-    set type_attribs_f [frame $type_panel.type_attribs_f]
-    set type_attribs_l [label $type_attribs_f.attribs_l \
-                            -text "Type Attributes:"]
-    set type_attribs_cb [ComboBox $type_attribs_f.attribs_cb -width 24 \
-                             -editable 1 -entrybg white -exportselection 0 \
-                             -textvariable Apol_Analysis_flowassert::assert_wiz_${type_name}_type_attrib]
-    bindtags $type_attribs_cb.e [linsert [bindtags $type_attribs_cb.e] 3 ${type_name}_attribs_tags]
-    bind ${type_name}_attribs_tags <KeyPress> [list ApolTop::_create_popup $type_attribs_cb %W %K]
-    pack $type_attribs_l -expand 0 -side top
-    pack $type_attribs_cb -expand 1 -fill both -side top
-    pack $type_attribs_f -expand 1 -fill both -side top -pady 2
-
-    # add bindings between these so that modifying one clears the other two
-    set bindcmd [namespace code [list set_type $type_star_rb $type_names_cb $type_attribs_cb $type_var star ""]]
+    # add bindings between these so that modifying one clears the other
+    set bindcmd [namespace code [list set_type $type_star_rb $type_names_cb $type_var star ""]]
     $type_star_rb configure -command $bindcmd
-    set bindcmd [namespace code [list set_type $type_star_rb $type_names_cb $type_attribs_cb $type_var name %P]]
+    set bindcmd [namespace code [list set_type $type_star_rb $type_names_cb $type_var name %P]]
     $type_names_cb configure -modifycmd $bindcmd -vcmd $bindcmd -validate key
-    set bindcmd [namespace code [list set_type $type_star_rb $type_names_cb $type_attribs_cb $type_var attrib %P]]
-    $type_attribs_cb configure -modifycmd $bindcmd -vcmd $bindcmd -validate key
 
     pack [Separator $type_panel.strut0 -orient horizontal] \
         -expand 1 -fill x -side top -pady 10
@@ -553,27 +531,21 @@ proc Apol_Analysis_flowassert::create_type_panel {type_panel type_name type_var}
     # add the widgets' paths list
     variable assert_wiz_type_cbs
     lappend assert_wiz_type_cbs $type_names_cb
-    variable assert_wiz_attrib_cbs
-    lappend assert_wiz_attrib_cbs $type_attribs_cb
     variable assert_wiz_objclass_lbs
     lappend assert_wiz_objclass_lbs $objs_lb
     populate_lists 1
 }
 
-# Called to populate the ComboBox/ComboBox/listbox holding the type
-# names/attributes/object classes.  This is done in one of three
-# places: upon wizard dialog creation, when opening a policy, and when
-# closing a policy.
+# Called to populate the ComboBox/listbox holding the type names +
+# attributes/object classes.  This is done in one of three places:
+# upon wizard dialog creation, when opening a policy, and when closing
+# a policy.
 proc Apol_Analysis_flowassert::populate_lists {add_items} {
     variable assert_wiz_type_cbs
-    variable assert_wiz_attrib_cbs
     variable assert_wiz_objclass_lbs
     if $add_items {
         foreach type_cb $assert_wiz_type_cbs {
-            $type_cb configure -values $Apol_Types::typelist
-        }
-        foreach attrib_cb $assert_wiz_attrib_cbs {
-            $attrib_cb configure -values $Apol_Types::attriblist
+            $type_cb configure -values [lsort [concat $Apol_Types::typelist $Apol_Types::attriblist]]
         }
         foreach objclass_lb $assert_wiz_objclass_lbs {
             set var [$objclass_lb cget -listvariable]
@@ -582,9 +554,6 @@ proc Apol_Analysis_flowassert::populate_lists {add_items} {
     } else {
         foreach type_cb $assert_wiz_type_cbs {
             $type_cb configure -values {}
-        }
-        foreach attrib_cb $assert_wiz_attrib_cbs {
-            $attrib_cb configure -values {}
         }
         foreach objclass_lb $assert_wiz_objclass_lbs {
             set var [$objclass_lb cget -listvariable]
@@ -621,31 +590,21 @@ proc Apol_Analysis_flowassert::set_weight {} {
     }
 }
 
-# Callback whenever the user selects a type.  Disables the other two
+# Callback whenever the user selects a type.  Disables the other
 # widgets.  Sets the internal variable to be equal to the name of the
 # type.
-proc Apol_Analysis_flowassert::set_type {star_rb names_cb attribs_cb type_var which newvalue} {
+proc Apol_Analysis_flowassert::set_type {star_rb names_cb type_var which newvalue} {
     variable $type_var
     switch -- $which {
         star {
-            $names_cb configure -text ""
-            $attribs_cb configure -text ""
             $star_rb select
+            $names_cb configure -text ""
             set $type_var "*"
         }
         name {
             $star_rb deselect
-            $attribs_cb configure -text ""
             if {$newvalue == "%P"} {
                 set newvalue [$names_cb cget -text]
-            }
-            set $type_var $newvalue
-        }
-        attrib {
-            $star_rb deselect
-            $names_cb configure -text ""
-            if {$newvalue == "%P"} {
-                set newvalue [$attribs_cb cget -text]
             }
             set $type_var $newvalue
         }
@@ -799,7 +758,6 @@ proc Apol_Analysis_flowassert::reset_type {name} {
     # handlers, do the radiobutton last so that its display dominates
     # the other two
     variable assert_wiz_${name}_type_name ""
-    variable assert_wiz_${name}_type_attrib ""
     variable assert_wiz_${name}_type_rb "*"
     variable assert_wiz_${name}_type "*"
     variable assert_wiz_${name}_class ""
