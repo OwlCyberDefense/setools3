@@ -167,25 +167,25 @@ more on this topic below).
 PERMISSION WEIGHTING
 
 In addition to mapping each permission to read, write, both, or none it is 
-possible to assign the permission a weight between 1 and 10. This weight is used 
-to rate the importance of the information flow this permission represents and 
-allows the user to make fine-grained distinctions between high-bandwidth, overt 
-information flows and low-bandwidth or difficult to use covert information 
-flows. For example, the permissions read and write on the file object could be 
-given a weight of 10 because it is a very high-bandwidth information flow. 
-Additionally, the use permission on the fd object (file descriptor) would 
-probably be given a weight of 1 because it is a very low-bandwidth covert flow. 
-Note that a permission might be important for security, like fd use, but be 
-given a low weight for information flow because it cannot be used to pass large 
-amounts of information.
+possible to assign the permission a weight between 1 and 10 (the default is 10). 
+This weight is used to rate the importance of the information flow this 
+permission represents and allows the user to make fine-grained distinctions 
+between high-bandwidth, overt information flows and low-bandwidth, or difficult 
+to use covert information flows. For example, the permissions "read" and "write" 
+on the file object could be given a weight of 10 because it is a very high-
+bandwidth information flow. Additionally, the "use" permission on the fd object 
+(file descriptor) would probably be given a weight of 1 because it is a very 
+low-bandwidth covert flow at best. Note that a permission might be important for 
+access control, like fd use, but be given a low weight for information flow 
+because it cannot be used to pass large amounts of information.
 
 The default permission maps that are installed with Apol have weights assigned 
 for all of the permissions. The weights are in four general categories as 
 follows:
 
-	1 – 2		low-bandwidth covert flows (example: fd:use)
-	3 – 5		high-bandwidth covert flows (example: process:signal)
-	6 – 7		low-bandwidth overt flows (example: file:setattr)
+	1 – 2		difficult to exploit covert flows (example: fd:use)
+	3 – 5		less difficult to exploit covert flows (example: process:signal)
+	6 – 7		difficult to use, noisy, or low-bandwidth overt flows (example: file:setattr)
 	8 – 10		high-bandwidth overt flows (example: file:write)
 
 These categories are loosely defined and the placement of the permissions into 
