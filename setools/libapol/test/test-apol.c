@@ -489,13 +489,13 @@ static int get_type_relation_options(types_relation_query_t **tr_query, policy_t
 			}
 			break;
 		case '6':
-			(*tr_query)->options |= TYPES_REL_OTHER_TTRULES;
+			(*tr_query)->options |= TYPES_REL_TTRULES;
 			break;
 		case '7':
 			(*tr_query)->options |= TYPES_REL_COMMON_ACCESS;
 			break;
 		case '8':
-			(*tr_query)->options |= TYPES_REL_PROCESS_INTER;
+			(*tr_query)->options |= TYPES_REL_ALLOW_RULES;
 			break;
 		case '9':
 			(*tr_query)->options |= TYPES_REL_UNIQUE_ACCESS;
@@ -853,10 +853,10 @@ static int test_print_type_relation_results(types_relation_query_t *tr_query,
 							    policy);
 		}
 	}
-	if ((tr_query->options & TYPES_REL_OTHER_TTRULES) && tr_results->other_tt_rules_results) {
-		fprintf(outfile, "\nAdditional type transition rules:\n");
-		for(i = 0; i < tr_results->num_other_tt_rules; i++) {
-			rule = re_render_tt_rule(1, tr_results->other_tt_rules_results[i], policy);
+	if ((tr_query->options & TYPES_REL_TTRULES) && tr_results->tt_rules_results) {
+		fprintf(outfile, "\nType transition/change rules:\n");
+		for(i = 0; i < tr_results->num_tt_rules; i++) {
+			rule = re_render_tt_rule(1, tr_results->tt_rules_results[i], policy);
 			if (rule == NULL)
 				return -1;
 			fprintf(outfile, "%s\n", rule);
@@ -865,10 +865,10 @@ static int test_print_type_relation_results(types_relation_query_t *tr_query,
 		fprintf(outfile, "\n");
 	}
 
-	if ((tr_query->options & TYPES_REL_PROCESS_INTER) && tr_results->process_inter_results) {
-		fprintf(outfile, "\nProcess interaction rules:\n");
-		for(i = 0; i < tr_results->num_process_inter_rules; i++) {
-			rule = re_render_av_rule(1, tr_results->process_inter_results[i], 0, policy);
+	if ((tr_query->options & TYPES_REL_ALLOW_RULES) && tr_results->allow_rules_results) {
+		fprintf(outfile, "\nAllow rules:\n");
+		for(i = 0; i < tr_results->num_allow_rules; i++) {
+			rule = re_render_av_rule(1, tr_results->allow_rules_results[i], 0, policy);
 			if (rule == NULL)
 				return -1;
 			fprintf(outfile, "%s\n", rule);
@@ -879,7 +879,7 @@ static int test_print_type_relation_results(types_relation_query_t *tr_query,
 	
 	if ((tr_query->options & TYPES_REL_COMMON_ACCESS) && tr_results->common_obj_types_results) {
 		fprintf(outfile, "\nCommon objects:");
-		fprintf(outfile, "\nShared access to %d common objects:\n", tr_results->common_obj_types_results->num_objs_A);
+		fprintf(outfile, "\Common access to %d common objects:\n", tr_results->common_obj_types_results->num_objs_A);
 		
 		for (i = 0; i < tr_results->common_obj_types_results->num_objs_A; i++) {
 			type_idx = tr_results->common_obj_types_results->objs_A[i];
@@ -911,7 +911,7 @@ static int test_print_type_relation_results(types_relation_query_t *tr_query,
 	}
 	if ((tr_query->options & TYPES_REL_UNIQUE_ACCESS) && tr_results->unique_obj_types_results) {
 		fprintf(outfile, "\nUnique objects:");
-		fprintf(outfile, "\nTypeA has special access to %d objects:\n", 
+		fprintf(outfile, "\nTypeA has unique access to %d objects:\n", 
 			tr_results->unique_obj_types_results->num_objs_A);
 		
 		for (i = 0; i < tr_results->unique_obj_types_results->num_objs_A; i++) {
@@ -934,7 +934,7 @@ static int test_print_type_relation_results(types_relation_query_t *tr_query,
 			fprintf(outfile, "\n\n");
 		}	
 		/* Append unique object type access information for type B */
-		fprintf(outfile, "\nTypeB has special access to %d objects:\n", 
+		fprintf(outfile, "\nTypeB has unique access to %d objects:\n", 
 			tr_results->unique_obj_types_results->num_objs_B);
 		for(i = 0; i < tr_results->unique_obj_types_results->num_objs_B; i++) {
 			type_idx = tr_results->unique_obj_types_results->objs_B[i];
