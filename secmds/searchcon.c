@@ -329,20 +329,24 @@ int sefs_search_object_class(sefs_filesystem_data_t * fsd, int object, uint32_t*
 void print_list (sefs_filesystem_data_t* fsd, uint32_t* list, uint32_t list_size)
 {
 	int i;
+	char con[100];
+	
 
 	if (!fsd || !list || !list_size) {
 		fprintf(stderr, "invalid search results\n");
 		return;
 	}
-
+	
+	
 	for (i = 0; i < list_size; i++) {
-		printf("%s\t%s\t%s:%s:%s\n", 
-			fsd->files[list[i]].path_names[0],
-			sefs_object_classes[fsd->files[list[i]].obj_class],
-			fsd->users[fsd->files[list[i]].context.user],
+		snprintf(con, sizeof(con), "%s:%s:%s", fsd->users[fsd->files[list[i]].context.user],
 			fsd->files[list[i]].context.role == OBJECT_R ? "object_r": "UNLABLED",
-			fsd->types[fsd->files[list[i]].context.type].name
-		);
+			fsd->types[fsd->files[list[i]].context.type].name);
+
+		printf("%-40s %-10s %s\n", con, 
+			sefs_object_classes[fsd->files[list[i]].obj_class],
+			fsd->files[list[i]].path_names[0]);
+			
 	}	
 }
 
