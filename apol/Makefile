@@ -1,23 +1,37 @@
 # apol tool
 
 APOL_STARTUP_SCRIPT = apol.tcl
+APOL_HELP_FILES	= apol_help.txt dta_help.txt iflow_help.txt obj_perms_help.txt \
+		  types_relation_help.txt
+APOL_PERM_MAPS  = perm_maps/apol_perm_mapping_ver*
+APOL_DFLT_PMAP  = apol_perm_mapping_ver18
+
+# The modules must each be listed here.
+ANALYSIS-MODULES = dta_module.tcl dirflow_module.tcl fulflow_module.tcl \
+		   types_relation_module.tcl
+
 TCL-FILES	= head.tcl tmp.tcl
 TCL-STRIP-FILES = types_tab.tcl terules_tab.tcl roles_tab.tcl rbac_tab.tcl \
 		  users_tab.tcl initial_sids_tab.tcl cond_bools_tab.tcl \
 		  cond_rules_tab.tcl classes_perms_tab.tcl policyconf.tcl \
 		  perms_map.tcl analysis_tab.tcl $(ANALYSIS-MODULES) top.tcl
-# The modules must each be listed here.
-ANALYSIS-MODULES = dta_module.tcl dirflow_module.tcl fulflow_module.tcl 
-APOL_HELP_FILES	= apol_help.txt dta_help.txt iflow_help.txt obj_perms_help.txt
-APOL_PERM_MAPS = perm_maps/apol_perm_mapping_ver*
-	
-APOL_DFLT_PMAP  = apol_perm_mapping_ver18
+
+ifeq ($(DEBUG), 1)
 LIBAPOL		= ../libapol/libapol-tcl.a ../libapol/libapol.a
 GUI-OBJ		= apol_gui.o $(LIBAPOL)
+else
+LIBAPOL		= ../libapol/libapol.so.$(shell cat ../libapol/VERSION) ../libapol/libapol-tcl.a
+GUI-OBJ		= apol_gui.o $(LIBAPOL)
+endif
+
 CFLAGS          += -DSTARTUP_SCRIPT='"$(APOL_STARTUP_SCRIPT)"'
 
 apol: $(GUI-OBJ) apol.tcl
+ifeq ($(DEBUG), 1)
 	$(CC) $(TCL_LIBINC) -o $@ $(GUI-OBJ) $(LINKFLAGS) $(TCL_LIBS)
+else
+	$(CC) $(TCL_LIBINC) -o $@ $(GUI-OBJ) $(LINKFLAGS) $(TCL_LIBS)
+endif
 
 
 apol.tcl: $(TCL-FILES)
@@ -36,6 +50,9 @@ tmp.tcl: $(TCL-STRIP-FILES)
 
 ../libapol/libapol-tcl.a:
 	cd ../; $(MAKE) libapol-tcl
+
+../libapol/libapol.so.1.5 ../libapol/libapol-tcl.so.1.5:
+	cd ../; $(MAKE) libapol libapol-tcl
 
 %.o:  %.c 
 	$(CC) $(CFLAGS) -c $<
