@@ -1,29 +1,48 @@
 AN OVERVIEW OF TYPES RELATIONSHIP SUMMARY ANALYSIS
 apol, version 1.6
-February 02, 2005
+February 03, 2005
 selinux@tresys.com
 
+UNDERSTANDING TYPES RELATIONSHIP SUMMARY ANALYSIS
 
-Apol allows one to analyze an SELinux policy in order to understand the relationship 
-between two specific types that are defined in the policy. Policy developers 
+Apol allows one to analyze an SELinux policy in order to understand the relation-
+ship between two specific types that are defined in the policy. Policy developers 
 may want to know if there exists any relationship (or interactions) between 
-typeA and typeB and exactly what makes up that relationship (i.e., what rules, 
+Type A and Type B and exactly what makes up that relationship (i.e., what rules, 
 permissions, attributes, roles, etc. exist that cause or allow interactions 
 between the two types). Or they may want to determine whether a particular 
 type is completely isolated from another. This analysis can also be used as a 
-stepping stone to analyzing dependencies within a policy. For example, one may 
-want to determine whether typeA is dependent upon typeB or vice versa. Does typeA 
-need to write to typeB or read from typeB to perform its' duties? What happens 
-if typeA is removed from the policy?
+stepping stone to analyzing dependencies within a policy. 
 
-Additional questions that this type of analysis may answer include: Are both 
-types assigned to a common attribute or role? What users have access to this 
-type/attribute through a common role? What common object types do the types in 
-question access? What makes them similar? What makes them unique, thus needing 
-a separate type defined? How do the types, particularly domains, interact with 
-each other; through process signaling or through a more complex interprocess 
-communication (IPC) mechanism? Do the two types share any data and if so, how 
-does information move from one domain to another?
+In view of the foregoing, the following use cases have been devised, however, 
+they in no way, represent all possible uses or scenarios in which this sort of 
+analysis may be used:
+
+Case 1
+The user may want a quick way to determine whether a particular type is dependent 
+upon another type in some manner. In particular, he may want to know whether a 
+domain type needs some particular access to another type in order to process 
+successfully? For example, what happens if a particular SELinux package labeled
+with Type A was removed from the system? Will an application labeled with Type B
+be affected by the removal of all instances of this type? 
+
+Case 2
+The user may want to determine whether both types are assigned to a common 
+attribute or a common role. What users have access to this attribute and under 
+what roles and should this be the case?
+
+Case 3
+The user may want to determine whether both types have common access to any
+object type(s).  What aspects make them similar (e.g. do they both write to 
+user_home_dir_t)? What access makes them unique, thus needing a separate type 
+defined? 
+
+Case 4
+The user may want to know how the types, particularly domains, interact with each 
+other (e.g. through process signaling or through a more complex interprocess 
+communication (IPC) mechanism). Do the two types share any data and if so, how 
+does information move from one domain to the other, directly and indirectly?
+
 
 USING THE TYPES RELATIONSHIP SUMMARY ANALYSIS INTERFACE IN APOL
 
@@ -69,7 +88,9 @@ modules and other queries provided in apol using the two specified types as
 input. A more experienced apol user, should be able to perform the analyses 
 on his or her own, However, this module is available to provide a convenient 
 and efficient way to summarize the relationship between two types. The results
-of this analysis consist of:
+are represented by a tree whereby the user may select an item from the tree
+in order to display a subset of the results. The results of this analysis 
+consist of:
 
 	- the attribute(s) to which both types are assigned (common attribs) 
 	- the role(s) which have access to both TypeA and TypeB (common roles) 
@@ -78,11 +99,14 @@ of this analysis consist of:
 	- all type transition/change rules from TypeA to TypeB or vice versa
 	- all allow rules that provide access between TypeA and TypeB 
 	  (e.g., allow rules that allow TypeA and TypeB to send signals to each other)
-	- types to which both TypeA and TypeB have common access 
-	- types to which TypeA and TypeB have dissimilar access
+	- types to which both TypeA and TypeB have common access. These will be
+	  rendered as a subtree within the main results tree widget.
+	- types to which TypeA and TypeB have dissimilar access. These will be
+	  rendered as a subtree within the main results tree widget.
 	- any direct information flows between TypeA and TypeB
 	- any transitive information flows between TypeA and TypeB
 	- any domain transitions from TypeA to TypeB or vice versa 
 	 
     
 	
+                                                
