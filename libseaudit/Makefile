@@ -6,11 +6,12 @@ CFLAGS          += -DLIBSEAUDIT_VERSION_STRING='"$(shell cat VERSION)"'
 LIBXML_FLAGS   = `pkg-config --cflags libxml-2.0`
 
 TARGET = libseaudit.so
+SONAME = $(TARGET).1.2
 LIBSO  = $(TARGET).$(shell cat VERSION)
 
 libseaudit: libseaudit.a
 libseauditso: $(LIB-OBJ)
-	$(CC) $(LDFLAGS) -shared -o $(LIBSO) $(LIB-OBJ) -Wl,-soname,$(LIBSO) 
+	$(CC) $(LDFLAGS) -shared -o $(LIBSO) $(LIB-OBJ) -Wl,-soname,$(SONAME) 
 	
 libseaudit.a: $(LIB-OBJ)
 	ar cr $@ $(LIB-OBJ)
@@ -26,8 +27,8 @@ install-libapol-shared: libseauditso
 install-libapol-static: libseaudit
 	test -d $(STATIC_LIB_INSTALL_DIR) || install -m 755 -d $(STATIC_LIB_INSTALL_DIR)
 	install -m 644 libseaudit.a $(STATIC_LIB_INSTALL_DIR)
-	test -d $(SETOOLS_INCLUDE) || install -m 755 -d $(SETOOLS_INCLUDE)
-	install -m 644 *.h $(SETOOLS_INCLUDE)
+	test -d $(SETOOLS_INCLUDE)/libseaudit || install -m 755 -d $(SETOOLS_INCLUDE)/libseaudit
+	install -m 644 *.h $(SETOOLS_INCLUDE)/libseaudit
 
 install: install-libapol-shared install-libapol-static
 
