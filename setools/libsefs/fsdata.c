@@ -619,9 +619,6 @@ int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char *filename)
 		
 		if (pinfo->obj_class == LNK_FILE) {
 				/* write our symlink target */
-printf("%d:%d\n", pinfo->context.user, pinfo->context.type);
-printf("con %s:%s\n", fsd->users[pinfo->context.user], fsd->types[pinfo->context.type]);
-printf("trying to write symlink with target %s\n", pinfo->symlink_target);
 				len = strlen(pinfo->symlink_target);
 				buf[0] = cpu_to_le32(len);
 				items = fwrite(buf, sizeof(uint32_t), 1, fp);
@@ -715,14 +712,12 @@ int sefs_filesystem_data_load(sefs_filesystem_data_t* fsd, char *filename)
 	}
 
 	for (i = 0; i< fsd->num_types; i++) {
-printf("on type %d\t", i);
 	
 		items = fread(buf, sizeof(uint32_t), 1, fp);
 		if (items != 1)
 			goto bad;
 
 		len = le32_to_cpu(buf[0]);
-printf("of length %d\t",len);
 		items = fread(buf, sizeof(char), len, fp);
 		if (items != len)
 			goto bad;
@@ -733,34 +728,7 @@ printf("of length %d\t",len);
 		bzero(fsd->types[i].name, sizeof(char) * (len + 1));	
 			
 		memcpy(fsd->types[i].name, buf, len);
-printf("type: %s \n", fsd->types[i].name);
 	
-	
-/*	
-		items = fread(buf, sizeof(uint32_t), 1, fp);
-		if (items != 1)
-			goto bad;
-	
-		len = le32_to_cpu(buf[0]);
-			
-printf("with %d inodes\n", len);
-
-		pbuf = (uint32_t *) malloc(sizeof(uint32_t) * len);
-		if (!pbuf)
-			goto bad;
-		bzero(pbuf, len);
-
-		items = fread(pbuf, sizeof(uint32_t), len, fp);
-		if (items != len)
-			goto bad;
-
-		for (j = 0; j < len; j++) {
-			len = le32_to_cpu(pbuf[j]);
-			add_uint_to_a(len, &fsd->types[i].num_inodes, &fsd->types[i].index_list);
-		}
-
-		free(pbuf);
-*/	
 	}
 
 	/* read the number of users */
@@ -792,7 +760,6 @@ printf("with %d inodes\n", len);
 		
 		memcpy(fsd->users[i], buf, len);
 
-printf("got me a user! %s\n", fsd->users[i]);
 	}
 
 	/* read the number of inodes */
@@ -809,7 +776,6 @@ printf("got me a user! %s\n", fsd->users[i]);
 	}
 	fsd->files = pinfo;
 
-printf("number of files: %d\n", fsd->num_files);	
 	for(i = 0; i < fsd->num_files; i++) {
 
 		pinfo = &(fsd->files[i]);
