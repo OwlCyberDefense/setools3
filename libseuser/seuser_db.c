@@ -43,8 +43,6 @@
  */
 #define POLICY_CONF_TARGET	"install"
 #define INSTALL_TARGET		"load"
-/* Policy makefile target for re-making the file_contexts file */
-#define FILE_CONTEXTS_TARGET	"file_contexts/file_contexts"
 
 
 /* frees conf info in db  */
@@ -495,12 +493,11 @@ static int seuser_call_make_file_contexts(user_db_t *db, const char *output_file
 	
 	free(c);
 	
-	/* Call make file_contexts/file_contexts to re-make the file_contexts file. */
-	rt = call_make(FILE_CONTEXTS_TARGET, output_file, db->policy_dir);	
-     	if(rt != 0) {
-     		return -1;
-     	} 
-     	return 0;
+	/* reinstall the policy - this will remake the file contexts and install */
+	rt = seuser_reinstall_policy(output_file, db);
+	if (rt != 0)
+		return -1;
+	return 0;
 }
 
 static int call_set_files_on_home_dir(const char *home_dir, user_db_t *db)
