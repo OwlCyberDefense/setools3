@@ -35,19 +35,13 @@ else
 	endif
 endif
 
-ifeq ($(USE_LIBSEFS), 1)
-	LIBSQLITE  = -lsqlite3
-else
-	LIBSQLITE  =
-endif
-	
 GUI-OBJ 	= apol_gui.o $(LIBAPOL) $(LIBSEFS)
 CFLAGS          += -DSTARTUP_SCRIPT='"$(APOL_STARTUP_SCRIPT)"'
 
 # apol is optionally linked to libselinux. The LIBSELINUX variable 
 # is set in the top-level Makefile.
 apol: $(GUI-OBJ) apol.tcl
-	$(CC) $(TCL_LIBINC) -o $@ $(LINKFLAGS) $(GUI-OBJ) $(TCL_LIBS) $(LIBSELINUX) $(LIBSQLITE) 
+	$(CC) $(TCL_LIBINC) -o $@ $(LINKFLAGS) $(GUI-OBJ) $(TCL_LIBS) $(LIBSELINUX)
 
 
 apol.tcl: $(TCL-FILES)
