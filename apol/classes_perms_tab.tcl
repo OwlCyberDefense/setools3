@@ -94,6 +94,16 @@ proc Apol_Class_Perms::close { } {
 	return 0
 }
 
+# ----------------------------------------------------------------------------------------
+#  Command Apol_Class_Perms::set_Focus_to_Text
+#
+#  Description: 
+# ----------------------------------------------------------------------------------------
+proc Apol_Class_Perms::set_Focus_to_Text {} {
+	focus $Apol_Class_Perms::resultsbox
+	return 0
+}
+
 proc Apol_Class_Perms::enable_disable_widgets { } {
 	variable opts
      	variable show_classes1

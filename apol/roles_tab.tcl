@@ -70,6 +70,16 @@ proc Apol_Roles::close { } {
 	return	
 }
 
+# ----------------------------------------------------------------------------------------
+#  Command Apol_Roles::set_Focus_to_Text
+#
+#  Description: 
+# ----------------------------------------------------------------------------------------
+proc Apol_Roles::set_Focus_to_Text {} {
+	focus $Apol_Roles::resultsbox
+	return 0
+}
+
 proc Apol_Roles::popupRoleInfo {which role} {
 	set rt [catch {set info [apol_GetSingleRoleInfo $role 1]} err]
 	if {$rt != 0} {

@@ -97,6 +97,16 @@ proc ApolTypes::init_options { } {
     return 0
 }
 
+# ----------------------------------------------------------------------------------------
+#  Command ApolTypes::set_Focus_to_Text
+#
+#  Description: 
+# ----------------------------------------------------------------------------------------
+proc ApolTypes::set_Focus_to_Text {} {
+	focus $ApolTypes::resultsbox
+	return 0
+}
+
 proc ApolTypes::popupTypeInfo {which ta} {
 	set rt [catch {set info [apol_GetSingleTypeInfo 0 0 $ta]} err]
 	if {$rt != 0} {
