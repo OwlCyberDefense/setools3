@@ -125,6 +125,22 @@ int analysis_query_add_obj_class_perm(analysis_obj_options_t **obj_options, int 
 	return 0;
 }
 
+int dta_query_add_obj_class(dta_query_t *q, int obj_class)
+{
+	return analysis_query_add_obj_class(&q->obj_options, &q->num_obj_options, obj_class);
+
+}
+
+int dta_query_add_obj_class_perm(dta_query_t *q, int obj_class, int perm)
+{
+	return analysis_query_add_obj_class_perm(&q->obj_options, &q->num_obj_options, obj_class, perm);
+}
+
+int dta_query_add_end_type(dta_query_t *q, int end_type)
+{
+	return analysis_query_add_end_type(&q->end_types, &q->num_end_types, end_type);
+}
+
 int analysis_query_add_end_type(int **end_types, int *num_end_types, int end_type)
 {
 	bool_t add = FALSE;
@@ -390,7 +406,7 @@ static int dta_add_forward_process_trans_types_and_rules(dta_query_t *dta_query,
 				      		         domain_trans_analysis_t *dta_results, 
 				      		         policy_t *policy)
 {
-	int i, j, idx;
+	int i, j, idx, l;
 	rules_bool_t b_target_types;
 	
 	/* b_target_types (all rules that have the target domain as SOURCE. This struct is used only for 
