@@ -879,7 +879,7 @@ static int test_print_type_relation_results(types_relation_query_t *tr_query,
 	
 	if ((tr_query->options & TYPES_REL_COMMON_ACCESS) && tr_results->common_obj_types_results) {
 		fprintf(outfile, "\nCommon objects:");
-		fprintf(outfile, "\Common access to %d common objects:\n", tr_results->common_obj_types_results->num_objs_A);
+		fprintf(outfile, "Common access to %d common objects:\n", tr_results->common_obj_types_results->num_objs_A);
 		
 		for (i = 0; i < tr_results->common_obj_types_results->num_objs_A; i++) {
 			type_idx = tr_results->common_obj_types_results->objs_A[i];
