@@ -2,7 +2,7 @@
 
 LIB-OBJ		= seuser_db.o 
 LIB-OBJ-TCL = $(LIB-OBJ) seuser_tcl.o
-CFLAGS      += -DSEUSER_VERSION_STRING='"$(shell cat VERSION)"'
+CFLAGS      += -DLIBSEUSER_VERSION_STRING='"$(shell cat VERSION)"'
 
 
 libseuser: ../lib/libseuser.a
