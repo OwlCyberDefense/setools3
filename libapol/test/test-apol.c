@@ -83,7 +83,7 @@ static int reload_with_options(policy_t **policy)
 		opts = POLOPT_TE_POLICY;
 		break;
 	case '3':
-		opts = POLOPT_TYPES;
+		opts = (POLOPT_TYPES|POLOPT_ROLES);
 		break;
 	case '4':
 		opts = POLOPT_OBJECTS;
