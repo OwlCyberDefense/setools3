@@ -7,10 +7,11 @@ MAKE = make
 
 # If debug is zero, an optimized version that is dynamically
 # linked is created
-DEBUG			= 0
+DEBUG			= 1
 # This determines whether libapol and libseuser use libselinux
 # to find the default policies. Useful to create a verion of
-# apol that runs on non-selinux machines.
+# apol that runs on non-selinux machines. Set this to 0 for
+# non-selinux machines
 USE_LIBSELINUX 	= 1
 
 LIBS		= -lfl -lm
@@ -21,9 +22,9 @@ TCLVER		= $(shell env tclsh tcl_vars)
 TCL_LIBS	= -ltk$(TCLVER) -ltcl$(TCLVER) -ldl $(LIBS)
 INCLUDE_DIR	= $(DESTDIR)/usr/include
 ifeq ($(USE_LIBSELINUX), 1)
-export LIBSELINUX  = -lselinux
+LIBSELINUX  = -lselinux
 else
-export LIBSELINUX = 
+LIBSELINUX = 
 endif
 
 LINKFLAGS	= 
@@ -31,7 +32,7 @@ CC		= gcc
 YACC		= bison -y
 LEX		= flex -olex.yy.c
 
-SHARED_LIB_INSTALL_DIR = /usr/lib
+SHARED_LIB_INSTALL_DIR = $(DESTDIR)/usr/lib
 STATIC_LIB_INSTALL_DIR = $(SHARED_LIB_INSTALL_DIR)
 SETOOLS_INCLUDE = $(DESTDIR)$(INCLUDE_DIR)/setools
 
@@ -89,7 +90,7 @@ POLICYINSTALLDIRS = seuser
 # exports
 export CFLAGS CC YACC LEX LINKFLAGS BINDIR INSTALL_LIBDIR INSTALL_HELPDIR LIBS TCL_LIBINC TCL_LIBS MAKE 
 export SELINUX_DIR POLICY_INSTALL_DIR POLICY_SRC_DIR SRC_POLICY_DIR POLICY_SRC_FILE DEFAULT_LOG_FILE
-export TOPDIR SHARED_LIB_INSTALL_DIR STATIC_LIB_INSTALL_DIR SETOOLS_INCLUDE DEBUG
+export TOPDIR SHARED_LIB_INSTALL_DIR STATIC_LIB_INSTALL_DIR SETOOLS_INCLUDE DEBUG LIBSELINUX
 
 all:  all-libs apol awish seuser seuserx sepcut seaudit secmds
 
@@ -177,45 +178,50 @@ libseaudit: selinux_tool
 $(INSTALL_LIBDIR):
 	install -m 755 -d $(INSTALL_LIBDIR)
 
-install-apol: $(INSTALL_LIBDIR)
+$(BINDIR):
+	install -m 755 -d $(BINDIR)
+
+install-apol: $(INSTALL_LIBDIR) $(BINDIR)
 	cd apol; $(MAKE) install; 
 	
-install-awish: $(INSTALL_LIBDIR)
+install-awish: $(INSTALL_LIBDIR) $(BINDIR)
 	cd awish; $(MAKE) install; 
 
 # installs both GUI and non-GUI versions
-install-seuserx: $(INSTALL_LIBDIR)
+install-seuserx: $(INSTALL_LIBDIR) $(BINDIR)
 	cd seuser; $(MAKE) install; 
 
 # Non-GUI version only
-install-seuser: $(INSTALL_LIBDIR)
+install-seuser: $(INSTALL_LIBDIR) $(BINDIR)
 	cd seuser; $(MAKE) install-nogui
 
-install-sepcut: $(INSTALL_LIBDIR)
+install-sepcut: $(INSTALL_LIBDIR) $(BINDIR)
 	cd sepct; $(MAKE) install
 
-install-secmds: $(INSTALL_LIBDIR)
+install-secmds: $(INSTALL_LIBDIR) $(BINDIR)
 	cd secmds; $(MAKE) install
 
-install-seaudit: $(INSTALL_LIBDIR)
+install-seaudit: $(INSTALL_LIBDIR) $(BINDIR)
 	 cd seaudit; $(MAKE) install
 
 install-nogui: $(INSTALL_LIBDIR) install-seuser install-secmds
 
-install: install-dev install-apol install-seuserx install-sepcut \
+install: $(BINDIR) $(SHARED_LIB_INSTALL_DIR) install-dev install-apol install-seuserx install-sepcut \
 	 install-awish install-secmds install-seaudit install-docs
 
+$(SHARED_LIB_INSTALL_DIR):
+	install -m 755 -d $(SHARED_LIB_INSTALL_DIR)
 # Install the libraries
-install-libseuser:
+install-libseuser: $(SHARED_LIB_INSTALL_DIR)
 	cd libseuser; $(MAKE) install
 
-install-libapol:
+install-libapol: $(SHARED_LIB_INSTALL_DIR)
 	cd libapol; $(MAKE) install
 
-install-libseaudit:
+install-libseaudit: $(SHARED_LIB_INSTALL_DIR)
 	cd libseaudit; $(MAKE) install
 
-install-libsefs:
+install-libsefs: $(SHARED_LIB_INSTALL_DIR)
 	cd libsefs; $(MAKE) install
 
 install-dev: install-libseuser install-libapol install-libseaudit install-libsefs
