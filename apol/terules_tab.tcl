@@ -480,7 +480,7 @@ proc Apol_TE::insertTERules { tb results } {
 	set num_cond 	 0
 	set num_disabled 0
 	set num_enabled  0
-puts "\n\n$results"
+
 	for {set x 0} {$x < [llength $results]} {incr x} { 
 		set start_line_pos [$tb index insert]
 		set line_num [lindex [split $start_line_pos "."] 0]
