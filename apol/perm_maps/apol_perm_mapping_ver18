@@ -75,7 +75,7 @@ class system 4
         syslog_mod     n           1
     syslog_console     n           1
 
-class capability 29
+class capability 31
              chown     n           3
       dac_override     n           1
    dac_read_search     n           1
@@ -105,6 +105,8 @@ class capability 29
     sys_tty_config     n           1
              mknod     n           1
              lease     n           1
+       audit_write     n           3
+     audit_control     n           1
 
 class filesystem 10
              mount     w           1
