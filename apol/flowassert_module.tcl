@@ -18,7 +18,7 @@ namespace eval Apol_Analysis_flowassert {
     variable VERSION 1
 
     # internal representation of assertions (model)
-    variable asserts [list "\# Place your assertion statements here"]
+    variable asserts ""
 
     # widget variables (view)
     variable assertfile_t
@@ -55,8 +55,7 @@ between two different types. The third type is onlyflow, which says that
 there must be a flow AND that flow must be through specific intermediary 
 type(s). All three modes allow for any number of source, destination, 
 and exception types. Types may be specified through the use of attributes.
-Limiting types by object classes is disabled for this release; Finally, 
-each assertion can have a minimum weight to limiting searches."
+Finally, each assertion can have a minimum weight to limiting searches."
 
     # Within the namespace command for the module, you must call
     # Apol_Analysis::register_analysis_modules, the first argument is
@@ -115,7 +114,7 @@ proc Apol_Analysis_flowassert::do_analysis {results_frame} {
     set sw [ScrolledWindow $results_frame.sw -auto horizontal]
     set t [text $sw.t -wrap none -bg white -font $ApolTop::text_font]
     Apol_PolicyConf::configure_HyperLinks $t
-    $t tag configure assert_file_tag -underline 1
+    $t tag configure assert_file_tag -underline 1 -foreground blue
     $t tag bind assert_file_tag <Button-1> [namespace code [list highlight_assert_line  %W %x %y]]
     $t tag bind assert_file_tag <Enter> { set Apol_PolicyConf::orig_cursor [%W cget -cursor]; %W configure -cursor hand2 }
     $t tag bind assert_file_tag <Leave> { %W configure -cursor $Apol_PolicyConf::orig_cursor }
@@ -159,10 +158,11 @@ proc Apol_Analysis_flowassert::do_analysis {results_frame} {
                         }
                         if {$rule_num >= 0} {
                             if {$ApolTop::policy_type != $ApolTop::binary_policy_type} {
-                                append line "  $from to $to via \"$rule\" \["
+                                append line "  \["
                                 set start_index [string length $line]
-                                append line "$rule_num]\n"
-                                set end_index [expr {[string length $line] - 2}]
+                                append line $rule_num
+                                set end_index [string length $line]
+                                append line "\] $from to $to via \"$rule\"\n"
                                 lappend policy_tags_list $start_index $end_index
                             } else {
                                 append line "  $from to $to\n"
@@ -300,30 +300,33 @@ proc Apol_Analysis_flowassert::free_results_data {query_options} {
 # is the name of a frame in which the options GUI interface is to be
 # packed.
 proc Apol_Analysis_flowassert::display_mod_options { opts_frame } {
-    variable asserts
+    variable asserts ""
     variable assertfile_t
-    set tf [TitleFrame $opts_frame.assertfile -text "Assertion File"]
+    set tf [TitleFrame $opts_frame.assertfile -text "Assertions"]
     set sw [ScrolledWindow [$tf getframe].sw -auto horizontal]
     set assertfile_t [text $sw.assertfile_t -wrap none -state normal \
-                          -bg white -font $ApolTop::text_font -cursor arrow]
+                          -fg black -bg white -font $ApolTop::text_font \
+                          -cursor arrow \
+                          -exportselection 0 -selectbackground white \
+                          -selectforeground black -selectborderwidth 0]
     $assertfile_t tag configure assert_file_t_tag
     $assertfile_t tag configure assert_file_sel_tag -background gray
     $assertfile_t tag bind assert_file_t_tag <Button-1> [namespace code [list assertfile_click %W %x %y]]
     $assertfile_t tag bind assert_file_t_tag <Double-Button-1> [namespace code edit_line]
     $sw setwidget $assertfile_t
-    grid $tf -padx 10 -sticky nsew
+    grid $tf -row 0 -column 0 -padx 10 -sticky nsew
     pack $sw -expand 1 -fill both
     set bb1 [ButtonBox $opts_frame.bb1 -homogeneous 1 -spacing 20]
-    $bb1 add -text "Add Assertion..." -command [namespace code create_assert_wizard_dlg]
-    $bb1 add -text "Add Comment..." -command [namespace code add_comment_dlg]
-    $bb1 add -text "Edit Line..." -command [namespace code edit_line]
-    $bb1 add -text "Delete Line" -command [namespace code delete_line]
-    set bb2 [ButtonBox $opts_frame.bb2 -homogeneous 1 -spacing 20]
+    $bb1 add -text "Insert Assertion..." -command [namespace code create_assert_wizard_dlg]
+    $bb1 add -text "Insert Comment..." -command [namespace code add_comment_dlg]
+    $bb1 add -text "Edit..." -command [namespace code edit_line]
+    $bb1 add -text "Delete" -command [namespace code delete_line]
+    grid $bb1 -sticky {}
+    set bb2 [ButtonBox $opts_frame.bb2 -homogeneous 1 -spacing 20 -orient vertical]
     $bb2 add -text "Clear All" -command [namespace code clear_assert_file]
     $bb2 add -text "Export Assertions..." -command [namespace code export_assert_file]
     $bb2 add -text "Import Assertions..." -command [namespace code import_assert_file]
-    grid $bb1 -sticky {}
-    grid $bb2 -sticky {}
+    grid $bb2 -row 0 -column 1 -padx 5 -sticky ns
     grid rowconfigure $opts_frame 0 -weight 1
     grid rowconfigure $opts_frame 1 -weight 0 -pad 20
     grid columnconfigure $opts_frame 0 -weight 1
@@ -423,13 +426,34 @@ proc Apol_Analysis_flowassert::import_assert_file {} {
         return
     }
     variable asserts ""
+    set errors_found 0
     foreach line [split [read $f] \n] {
         if {[string index [string trimleft $line] 0] == "\#"} {
             lappend asserts $line
         } else {
             foreach a [split $line ";"] {
-                if {$a != ""} {
-                    lappend asserts $a
+                if {$a == ""} {
+                    continue
+                } elseif {[llength $a] < 3 || [llength $a] > 5} {
+                    set errors_found 1
+                } else {
+                    foreach {mode start to via weight} $a {}
+                    if {$mode != "noflow" && $mode != "onlyflow" && $mode != "mustflow"} {
+                        set errors_found 1
+                    } else {
+                        if {[llength $a] == 3} {
+                            set weight 1
+                        } elseif {[llength $a] == 4} {
+                            set weight $via
+                            set via {}
+                        }
+                        if {[string is integer -strict $weight] == 0 || \
+                                $weight < 1 || $weight > 10} {
+                            set errors_found 1
+                        } else {
+                            lappend asserts [list $mode $start $to $via $weight]
+                        }
+                    }
                 }
             }
         }
@@ -437,6 +461,11 @@ proc Apol_Analysis_flowassert::import_assert_file {} {
     ::close $f
     set last_filename [file tail $filename]
     set last_pathname [file dirname $filename]
+    if {$errors_found == 1} {
+        tk_messageBox -icon warning -type ok \
+            -title "Import Warning" \
+            -message "Some lines in $filename could not be safely imported into apol."
+    }
     sync_asserts_to_text
 }
 
@@ -497,21 +526,9 @@ proc Apol_Analysis_flowassert::create_assert_wizard_dlg {{origline {}}} {
     pack $start_tf $end_tf $wiz(via_tf) -expand 1 -fill both -side left
     pack $topf -side top -expand 1 -fill both
     
-    set rule_e [LabelEntry $f.rule_e -width 80 \
-                   -font $ApolTop::text_font -entrybg white \
-                    -label "Assertion Line: " -editable 0 \
-                    -textvariable Apol_Analysis_flowassert::wiz_var(line)]
-    pack $rule_e -side top -expand 0 -fill x -padx 20 -pady 20 -anchor center
-
-    $assert_wizard_dlg add -text "Reset Line" \
+    $assert_wizard_dlg add -text "Reset" \
         -command [namespace code [list reset_wizard $origline]]
-    if {$origline == ""} { 
-        $assert_wizard_dlg add -text "Add Line" \
-            -command [namespace code add_assertion]
-    } else {
-        $assert_wizard_dlg add -text "Replace Line" \
-            -command [namespace code add_assertion]
-    }
+    $assert_wizard_dlg add -text "Ok" -command [namespace code add_assertion]
     $assert_wizard_dlg add -text "Cancel"
     
     populate_lists 1
