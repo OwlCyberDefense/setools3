@@ -1179,7 +1179,7 @@ proc Apol_Analysis_fulflow::insert_more_flows_header {fulflow_info_text fulflow_
 		$fulflow_info_text tag add $Apol_Analysis_fulflow::title_type_tag $startIdx $endIdx
 	} elseif {$flow_direction == "out"} { 
 		set startIdx [$fulflow_info_text index insert]
-		$fulflow_info_text insert end "More Flows from "
+		$fulflow_info_text insert end "More Information Flows from "
 		set endIdx [$fulflow_info_text index insert]
 	    	$fulflow_info_text tag add $Apol_Analysis_fulflow::title_tag $startIdx $endIdx
 	    	set startIdx [$fulflow_info_text index insert]
