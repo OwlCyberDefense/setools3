@@ -15,56 +15,48 @@
 ##############################################################
 
 namespace eval Apol_Analysis_relabel {
-    variable VERSION 1
+	variable VERSION 1
     
-    variable info_button_text {This analysis checks the possible ways to relabel objects allowed by a policy.  The permissions relabelto
-and relabelfrom are special in a type enforcement environment as they provide a method of changing type.
-Relable analysis is designed to fascilitate queries about the possible changes for a given type.
-
-There are three modes for a query, each presenting a differnt perspective.
-
-relabelto mode -
-        from starting type lists the types to which relabeling is possible for each domain with apropriate
-        permissions and the associated rules granting this permission*.
-        
-relabelfrom mode -
-        lists types from which each domain with the apropriate permissions can relabel to the selected end
-        type and the associated rules*.  This mode can be considered the same as perfroming a query under
-        relabelto mode in the opposite direction.
-        
-domain mode -
-        given a starting domain lists all types to and from which that domain can relabel and the associated
-        rules*.
-
-Optionally results may be filtered by object class and permission (select * for permissions to filter by
-object class only). When selected any number of lines may be added to the filter (each line displayed has
-the format class:permission).  The filter shows only those results which have at least one of the specified
-classes and if specified at least one of the permissions for that class.
-
-*A note on rules display and filtering:
-
-Rules are stored for each type found to have relabeling permission, therefore it is possible to specify a
-permission in a filter and still see a rule that does not contain that specific permission.  This is not an
-error rather it means that multiple rules grant permissions for that specific source-target-object triplet.
-To see all rules governing a particular triplet use the Policy Rules tab.}
-    variable f_opts 
-    # name of widget holding most recently executed assertion
-    variable most_recent_results ""
-    # Advanced filter dialog widget
-    variable advanced_filter_Dlg
-    set advanced_filter_Dlg .advanced_filter_Dlg
-    
-    variable excluded_tag		" (Excluded)"	
-    # Provided to tkwait to prevent multiple clicks on an object in the Advanced Search options dialog.
-    variable rendering_finished		0
+     	variable info_button_text \
+		"This analysis checks the possible ways to relabel objects allowed by a policy. \
+	    	The permissions relabelto and relabelfrom are special in a type enforcement environment as they \
+	    	provide a method of changing type.  Relabel analysis is designed to fascilitate queries about \
+	    	the possible changes for a given type.\n\n\There are four modes for a query, each presenting a \
+	    	differnt perspective:\n\n\To mode - beginning at starting type lists all types to which relabeling \
+	    	is possible and the associated rules*. \n\From mode - beginning at starting type lists all types \
+	    	from which relabeling is possible and the associated rules*.\n\Both mode - beginning at starting \
+	    	type lists all types to or from which relabeling is possible and the associated rules*.\n\Subject mode - \
+	    	given a starting subject lists all types to and from which that subject can relabel and the \
+	    	associated rules*.\n\n\Optionally results may be filtered by object class and permission using the \
+	    	Advanced Filters button. Permissions may be enabled or disabled for each object class. \n\n\*A note \
+	    	on rules display and filtering: Rules are stored for each type found to have relabeling permission, \
+	    	therefore it is possible to specify a permission in a filter and still see a rule that does not contain \
+	    	that specific permission.  This is not an error rather it means that multiple rules grant permissions \
+	    	for that specific source-target-object triplet. To see all rules governing a particular triplet use the \
+	    	Policy Rules tab."
     	
-    # Within the namespace command for the module, you must call
-    # Apol_Analysis::register_analysis_modules, the first argument is
-    # the namespace name of the module, and the second is the
-    # descriptive display name you want to be displayed in the GUI
-    # selection box.
-    Apol_Analysis::register_analysis_modules "Apol_Analysis_relabel" \
-        "Direct File Relabel"
+	variable f_opts 
+	# name of widget holding most recently executed assertion
+	variable most_recent_results ""
+	# Advanced filter dialog widget
+	variable advanced_filter_Dlg
+	set advanced_filter_Dlg .advanced_filter_Dlg
+	
+	variable excluded_tag		" (Excluded)"	
+	# Provided to tkwait to prevent multiple clicks on an object in the Advanced Search options dialog.
+	variable rendering_finished		0
+	
+	# defined tag names for output 
+	variable title_type_tag		TITLE_TYPE
+	variable subtitle_tag		SUBTITLES
+	
+	# Within the namespace command for the module, you must call
+	# Apol_Analysis::register_analysis_modules, the first argument is
+	# the namespace name of the module, and the second is the
+	# descriptive display name you want to be displayed in the GUI
+	# selection box.
+	Apol_Analysis::register_analysis_modules "Apol_Analysis_relabel" \
+		"Direct File Relabel"
 }
 
 # Apol_Analysis_relabel::initialize is called when the tool first
@@ -1039,6 +1031,14 @@ proc Apol_Analysis_relabel::populate_lists {add_items} {
     }
 }
 
+##########################################################################
+# ::formatInfoText
+#
+proc Apol_Analysis_relabel::formatInfoText { tb } {
+	$tb tag configure $Apol_Analysis_relabel::title_type_tag -foreground blue -font {Helvetica 12 bold}
+	$tb tag configure $Apol_Analysis_relabel::subtitle_tag -font {Helvetica 11 bold}
+}
+
 # Update the File Relabeling Results display with whatever the user
 # selected
 proc Apol_Analysis_relabel::tree_select {widget node} {
@@ -1053,15 +1053,24 @@ proc Apol_Analysis_relabel::tree_select {widget node} {
 	
 	set policy_tags_list ""
 	set line ""
-	append line "$widget_vars(start_type) can "
+	set start_index [expr {[string length $line] + 1}]
+	append line "$widget_vars(start_type)"
+	set end_index [string length $line]
+	$widget_vars(current_rtext) tag add $Apol_Analysis_relabel::title_type_tag $start_idx $end_idx
+	append line " can "
+	
 	switch -- $widget_vars(mode) {
-	    to     {append line "relabel to"}
-	    from   {append line "relabel from"}
-	    both   {append line "both relabel to and from"}
-	    domain {append line "relabel to or from"}
+	    to     {append line "relabel to "}
+	    from   {append line "relabel from "}
+	    both   {append line "both relabel to and from "}
+	    domain {append line "relabel to or from "}
 	} 
+	set start_index [expr {[string length $line] + 1}]
+	append line "$node"
+	set end_index [string length $line]
+	$widget_vars(current_rtext) tag add $Apol_Analysis_relabel::title_type_tag $start_idx $end_idx
 	if {$widget_vars(mode) == "domain"} {
-		append line "$node\n\n"
+		append line "\n\n"
 		foreach {rule_num rule} $data {
 		    set start_index [expr {[string length $line] + 1}]
 		    append line "($rule_num"
@@ -1071,10 +1080,14 @@ proc Apol_Analysis_relabel::tree_select {widget node} {
 		}
 		append line "\n"
 	} else {
-		append line " $node by:\n\n"
+		append line " by:\n\n"
 		foreach datum $data {
 			foreach {subject rule_proof} $datum {
+				set start_index [expr {[string length $line] + 1}]
 				append line "$subject\n"
+				set end_index [string length $line]
+				$widget_vars(current_rtext) tag add $Apol_Analysis_relabel::subtitle_tag $start_idx $end_idx
+				append line "\n"
 				foreach {rule_num rule} $rule_proof {
 				    append line "    "
 				    set start_index [expr {[string length $line] + 1}]
@@ -1092,5 +1105,6 @@ proc Apol_Analysis_relabel::tree_select {widget node} {
 		Apol_PolicyConf::insertHyperLink $widget_vars(current_rtext) \
 			"1.0 + $start_index c" "1.0 + $end_index c"
 	}
+	Apol_Analysis_relabel::formatInfoText $widget_vars(current_rtext)
 	$widget_vars(current_rtext) configure -state disabled    
 }
