@@ -368,23 +368,16 @@ proc Apol_File_Contexts::display_create_db_dlg {} {
     	set f2 [frame $t_frame.f2]
     	set f3 [frame $t_frame.f3]
     	set lbl_fn 	[Label $f1.lbl_fn -justify left -text "Save file:"]
-    	set lbl_dir 	[Label $f1.lbl_dir -justify left -text "Directory paths to index:" \
-    		-helptext "You may delimit each path with a colon in order to index multiple directories."]
+    	set lbl_dir 	[Label $f1.lbl_dir -justify left -text "Directory to index:"]
 	set entry_dir 	[entry $f2.entry_path -width 30 -bg white]
-	set browse_dir 	[button $f3.button1 -text "Add" -width 8 -command {
+	set browse_dir 	[button $f3.button1 -text "Browse" -width 8 -command {
 		set dir_n [tk_chooseDirectory \
-			-title "Select Directory to Add..." \
+			-title "Select Directory to Index..." \
 			-parent $ApolTop::mainframe \
 			-initialdir "/"]
 		if {$dir_n != ""} {
-			set tmp [$Apol_File_Contexts::entry_dir get]
-			if {$tmp != "" && ![string is space $tmp]} {
-				set new_str [append tmp ":$dir_n"]
-				$Apol_File_Contexts::entry_dir delete 0 end
-				$Apol_File_Contexts::entry_dir insert end $new_str
-			} else {
-				$Apol_File_Contexts::entry_dir insert end $dir_n
-			}
+			$Apol_File_Contexts::entry_dir delete 0 end
+			$Apol_File_Contexts::entry_dir insert end $dir_n
 		}	
 	}]
 	set entry_fn 	[entry $f2.entry_fn -width 30 -bg white]
