@@ -112,6 +112,15 @@ above libapol files.
    
 Send comments/questions to selinux@tresys.com.
 
+DEVELOPMENT SUPPORT INSTALLATION
+
+Support for developing using the setools libraries can be installed using the 
+'make install-dev' target. This target installs the headers and libraries for 
+libapol, libseuser, and libseaudit. This is provided as a convenience to third 
+party developers, but is not otherwise supported. These libraries are in 
+constant development and interfaces can and will change, sometimes 
+substantially.
+
 BWIDGETS VERSIONS
 
 The BWidgets package can be found at 
