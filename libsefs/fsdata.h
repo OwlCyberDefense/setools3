@@ -16,9 +16,29 @@
 
 #include <stdint.h>
 
+/* Endian conversion for reading and writing binary index */
+
+#include <byteswap.h>
+#include <endian.h>
+
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+#define cpu_to_le32(x) (x)
+#define le32_to_cpu(x) (x)
+#define cpu_to_le64(x) (x)
+#define le64_to_cpu(x) (x)
+#else
+#define cpu_to_le32(x) bswap_32(x)
+#define le32_to_cpu(x) bswap_32(x)
+#define cpu_to_le64(x) bswap_64(x)
+#define le64_to_cpu(x) bswap_64(x)
+#endif
+
 /* AVL Tree Handling */
 #include <policy.h>
 #include <avl-util.h>
+
+#define INDEX_DB_MAGIC 0xf97cff8f
+#define INDEX_DB_VERSION 1
 
 #ifndef SEFS_XATTR_LABELED_FILESYSTEMS
 #define SEFS_XATTR_LABELED_FILESYSTEMS "ext2 ext3"
@@ -39,8 +59,13 @@ typedef enum sefs_classes {
 	ALL_FILES
 } sefs_classes_t;
 
-typedef struct inode_key
-{
+typedef struct sec_con {
+	uint32_t 	user;
+	uint32_t	role;
+	uint32_t	type;
+} sec_con_t;
+
+typedef struct inode_key {
 	ino_t			inode;
 	dev_t			device;
 } inode_key_t;
@@ -48,10 +73,9 @@ typedef struct inode_key
 typedef struct sefs_fileinfo {
 	inode_key_t		key;
 	uint32_t		num_links;
-	context_t 		context;
+	sec_con_t		context;
 	char **			path_names;
 	char * 			symlink_target;
-	mode_t			mode;
 	sefs_classes_t		obj_class;
 } sefs_fileinfo_t;
 
@@ -74,8 +98,7 @@ typedef struct sefs_filesystem_data {
 
 
 /* Management and creation functions */
-int sefs_filesystem_data_init(sefs_filesystem_data_t * fsd);
-int sefs_filesystem_data_index(sefs_filesystem_data_t * fsd);
+int sefs_filesystem_data_init(sefs_filesystem_data_t * fsd);int sefs_filesystem_data_index(sefs_filesystem_data_t * fsd);
 int sefs_scan_tree(char * dir);
 int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char * filename);
 int sefs_filesystem_data_load(sefs_filesystem_data_t * fsd, char *filename);
