@@ -109,7 +109,9 @@ int main(int argc, char **argv, char **envp)
 		fprintf(stderr, "fsdata_scan_tree failed\n");
 		return(-1);
 	}
-	
+
+	printf("types: %d inodes: %d \n", fsdata.num_types, fsdata.num_files);
+
 	if (sefs_filesystem_data_save(&fsdata, outfilename) != 0) {
 		fprintf(stderr, "Error writing path database\n");
 		return(-1);
