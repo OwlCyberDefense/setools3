@@ -632,6 +632,38 @@ err_return:
 /*************************************************************************
  * Information flow analysis */
 
+typedef struct iflow_edge {
+	int num_rules;
+	int *rules;
+	int start_node; /* index into iflow_graph->nodes */
+	int end_node; /* index into iflow_graph->nodes */
+	int length;
+} iflow_edge_t;
+
+typedef struct iflow_node {
+	int type;
+	int node_type;
+	int obj_class;
+	int num_in_edges;
+	int *in_edges;
+	int num_out_edges;
+	int *out_edges;
+	unsigned char color;
+	int parent;
+	int distance;
+} iflow_node_t;
+
+typedef struct iflow_graph {
+	int num_nodes; /* the number of slots used in nodes */
+	iflow_node_t *nodes;
+	int *src_index;
+	int *tgt_index;
+	int num_edges;
+	iflow_edge_t *edges;
+	policy_t *policy;
+	iflow_query_t *query;
+} iflow_graph_t;
+
 /* iflow_query_t */
 
 iflow_query_t *iflow_query_create(void)
@@ -1157,7 +1189,7 @@ static int iflow_graph_get_nodes_for_type(iflow_graph_t *g, int type, int *len, 
 	return 0;
 }
 
-static int iflow_graph_connect(iflow_graph_t *g, int start_node, int end_node)
+static int iflow_graph_connect(iflow_graph_t *g, int start_node, int end_node, int length)
 {
 
 	iflow_node_t* start, *end;
@@ -1167,8 +1199,11 @@ static int iflow_graph_connect(iflow_graph_t *g, int start_node, int end_node)
 	end = &g->nodes[end_node];
 
 	for (i = 0; i < start->num_out_edges; i++) {
-		if (g->edges[start->out_edges[i]].end_node == end_node)
+		if (g->edges[start->out_edges[i]].end_node == end_node) {
+			if (g->edges[start->out_edges[i]].length < length)
+				g->edges[start->out_edges[i]].length = length;
 			return start->out_edges[i];
+		}
 	}
 
 	g->edges = (iflow_edge_t*)realloc(g->edges, (g->num_edges + 1)
@@ -1182,6 +1217,7 @@ static int iflow_graph_connect(iflow_graph_t *g, int start_node, int end_node)
 	
 	g->edges[g->num_edges].start_node = start_node;
 	g->edges[g->num_edges].end_node = end_node;
+	g->edges[g->num_edges].length = length;
 	
 	if (add_i_to_a(g->num_edges, &start->num_out_edges, &start->out_edges) != 0) {
 		return -1;
@@ -1229,7 +1265,8 @@ static int iflow_graph_add_node(iflow_graph_t *g, int type, int node_type, int o
 }
 
 /* helper for iflow_graph_create */
-static int add_edges(iflow_graph_t* g, int obj_class, int rule_idx, bool_t found_read, bool_t found_write) {
+static int add_edges(iflow_graph_t* g, int obj_class, int rule_idx, bool_t found_read, int read_len,
+	bool_t found_write, int write_len) {
 	int i, j, k, ret;
 	int src_node, tgt_node;
 
@@ -1311,7 +1348,7 @@ static int add_edges(iflow_graph_t* g, int obj_class, int rule_idx, bool_t found
 				return -1;
 			
 			if (found_read) {
-				edge = iflow_graph_connect(g, tgt_node, src_node);
+				edge = iflow_graph_connect(g, tgt_node, src_node, read_len);
 				if (edge < 0) {
 					fprintf(stderr, "Could not add edge!\n");
 					return -1;
@@ -1324,7 +1361,7 @@ static int add_edges(iflow_graph_t* g, int obj_class, int rule_idx, bool_t found
 				}
 			}
 			if (found_write) {
-				edge = iflow_graph_connect(g, src_node, tgt_node);
+				edge = iflow_graph_connect(g, src_node, tgt_node, write_len);
 				if (edge < 0) {
 					fprintf(stderr, "Could not add edge!\n");
 					return -1;
@@ -1405,6 +1442,7 @@ iflow_graph_t *iflow_graph_create(policy_t* policy, iflow_query_t *q)
 			class_perm_map_t* cur_pmap;
 			bool_t found_read = FALSE, found_write = FALSE;
 			int cur_obj_options = -1;
+			int len = 0, read_len, write_len;
 
 			if (all_obj_classes)
 				cur_obj_class = j;
@@ -1441,10 +1479,10 @@ iflow_graph_t *iflow_graph_create(policy_t* policy, iflow_query_t *q)
 					return NULL;
 				}
 			}
-
-			for (k = 0; k < num_perms; k++) {
+			
+			read_len = write_len = INT_MAX;
+			for (k = 0; k < num_perms; k++) {				
 				cur_perm = perms[k];
-
 				/* Check to see if we should ignore this permission */
 				if (cur_obj_options >= 0) {
 					bool_t filter_perm = FALSE;
@@ -1463,6 +1501,11 @@ iflow_graph_t *iflow_graph_create(policy_t* policy, iflow_query_t *q)
 				for (l = 0; l < cur_pmap->num_perms; l++) {
 					if (cur_pmap->perm_maps[l].perm_idx == cur_perm) {
 						map = cur_pmap->perm_maps[l].map;
+						len = PERMMAP_MAX_WEIGHT - cur_pmap->perm_maps[l].weight + 1;
+						if (len < PERMMAP_MIN_WEIGHT)
+							len = PERMMAP_MIN_WEIGHT;
+						else if (len > PERMMAP_MAX_WEIGHT)
+							len = PERMMAP_MAX_WEIGHT;
 						break;
 					}
 				}
@@ -1470,12 +1513,16 @@ iflow_graph_t *iflow_graph_create(policy_t* policy, iflow_query_t *q)
 					perm_error = TRUE;
 					continue;
 				}
-				if (map & PERMMAP_READ)
+				if (map & PERMMAP_READ) {
 					found_read = TRUE;
-				if (map & PERMMAP_WRITE)
+					if (len < read_len)
+						read_len = len;
+				}
+				if (map & PERMMAP_WRITE) {
 					found_write = TRUE;
-				if (found_read && found_write)
-					break;
+					if (len < write_len)
+						write_len = len;
+				}
 			}
 			if (all_perms)
 				free(perms);
@@ -1485,7 +1532,7 @@ iflow_graph_t *iflow_graph_create(policy_t* policy, iflow_query_t *q)
 			}
 
 			/* if we have found any flows add the edge */
-			if (add_edges(g, cur_obj_class, i, found_read, found_write) != 0) {
+			if (add_edges(g, cur_obj_class, i, found_read, read_len, found_write, write_len) != 0) {
 				iflow_graph_destroy(g);
 				if (!all_perms)
 					free(perms);
@@ -1845,105 +1892,186 @@ static int transitive_answer_append(iflow_graph_t *g, iflow_query_t *q, iflow_tr
 	return 0;
 }
 
-static int breadth_first_find_path(iflow_graph_t *g, int node, int *path)
+static int shortest_path_find_path(iflow_graph_t *g, int start_node, int end_node, int *path)
 {
-	int next_node = node;
-	int path_len = g->nodes[node].distance + 1;
-	int i = path_len - 1;
+	int next_node = end_node;
+	int i, tmp, path_len = 0;
 	
-	while (i >= 0) {
-		path[i] = next_node;
+	while (1) {
+		path[path_len++] = next_node;
+		if (next_node == start_node)
+			break;
+		if (path_len >= g->num_nodes) {
+			fprintf(stderr, "Infinite loop in shortest_path_find_path\n");
+			return -1;
+		}
 		next_node = g->nodes[next_node].parent;
-		i--;
+		if (next_node >= g->num_nodes) {
+			fprintf(stderr, "Something strange in shortest_path_find_path\n");
+			return -1;
+		}
+	}
+	
+	/* reverse the path */
+	for (i = 0; i < path_len / 2; i++) {
+		tmp = path[i];
+		path[i] = path[(path_len - 1) - i];
+		path[(path_len - 1) - i] = tmp;
 	}
 
 	return path_len;
 }
 
-static int do_breadth_first_search(iflow_graph_t *g, queue_t queue, iflow_query_t *q,
-				   iflow_transitive_t *a)
+/* This is a label correcting shortest path algorithm
+ * see Bertsekas, D. P., "A Simple and Fast Label Correcting Algorithm for Shortest Paths,"
+ * Networks, Vol. 23, pp. 703-709, 1993. for more information. A label correct algorithm is
+ * needed instead of the more common Dijkstra label setting algorithm to correctly handle the
+ * the cycles that are possible in these graphs.
+ *
+ * This algorithm finds the shortest path between a given start node and all other nodes in
+ * the graph. Any paths that it finds it appends to the iflow_transitive_t structure. This
+ * is a basic label correcting algorithm with 1 optimization. It uses the D'Esopo-Pape method
+ * for node selection in the node queue. Why is this faster? The paper referenced above says
+ * "No definitive explanation has been given." They have fancy graphs to show that it is faster
+ * though and the important part is that the worst case isn't much worse that N^2 - much better
+ * than an n^3 transitive closure. Additionally, most normal sparse graphs are significantly better
+ * than the worst case.
+ */
+int iflow_graph_shortest_path(iflow_graph_t *g, int start_node, iflow_transitive_t *a, iflow_query_t *q)
 {
-	int i, ret = 0, path_len, *path;
-	int num_edges;
-	bool_t skip_node;
-
-	path = (int*)malloc(g->num_nodes * sizeof(int));
-	if (!path) {
-		ret = -1;
+	int i, rc = 0;
+	int *path = NULL;
+	queue_t queue = NULL;
+	
+	queue = queue_create();
+	if (!queue) {
+		fprintf(stderr, "Error creating queue\n");
+		rc = -1;
 		goto out;
 	}
-
+	
+	path = (int*)malloc(g->num_nodes * sizeof(int));
+	if (!path) {
+		rc = -1;
+		goto out;
+	}
+	
+	/* initialization */
+	g->nodes[start_node].distance = 0;
+	g->nodes[start_node].parent = -1;
+	g->nodes[start_node].color = IFLOW_COLOR_RED;
+	
+	for (i = 0; i < g->num_nodes; i++) {
+		if (i == start_node)
+			continue;
+		g->nodes[i].distance = INT_MAX;
+		g->nodes[i].parent = -1;
+		g->nodes[i].color = IFLOW_COLOR_WHITE;
+	}
+	
+	if (queue_insert(queue, (void*)(start_node + 1)) < 0) {
+		fprintf(stderr, "Error inserting into queue\n");
+		rc = -1;
+		goto out;
+	}
+	
 	while (queue_head(queue)) {
 		void *cur_ptr;
 		int cur;
+		int num_edges;
+		
 		cur_ptr = queue_remove(queue);
 		if (cur_ptr == NULL) {
-			ret = -1;
+			rc = -1;
 			goto out;
 		}
 		cur = ((int)cur_ptr) - 1;
 		
-		if (g->nodes[cur].color == IFLOW_COLOR_RED) {
-			skip_node = FALSE;
-			if (q->num_end_types) {
-				if (find_int_in_array(g->nodes[cur].type, q->end_types, q->num_end_types) == -1) {
-					skip_node = TRUE;
-				}
-			}
-			if (!skip_node) {
-				path_len = breadth_first_find_path(g, cur, path);
-				if (path_len == -1) {
-					ret = -1;
-					goto out;
-				}
-				if (transitive_answer_append(g, q, a, cur, path_len, path) == -1) {
-					ret = -1;
-					goto out;
-				}
-			}
-		}
-			
-		g->nodes[cur].color = IFLOW_COLOR_BLACK;
+		g->nodes[cur].color = IFLOW_COLOR_GREY;
+		
 		if (q->direction == IFLOW_OUT)
 			num_edges = g->nodes[cur].num_out_edges;
 		else
 			num_edges = g->nodes[cur].num_in_edges;
+		
 		for (i = 0; i < num_edges; i++) {
-			int cur_edge, cur_node;
+			int edge, node;
+			
 			if (q->direction == IFLOW_OUT) {
-				cur_edge = g->nodes[cur].out_edges[i];
-				cur_node = g->edges[cur_edge].end_node;
+				edge = g->nodes[cur].out_edges[i];
+				node = g->edges[edge].end_node;
 			} else {
-				cur_edge = g->nodes[cur].in_edges[i];
-				cur_node = g->edges[cur_edge].start_node;
+				edge = g->nodes[cur].in_edges[i];
+				node = g->edges[edge].start_node;
 			}
-			if (g->nodes[cur_node].color == IFLOW_COLOR_WHITE) {
-				if (g->nodes[cur_node].distance == -1)
-					g->nodes[cur_node].color = IFLOW_COLOR_RED;
-				else
-					g->nodes[cur_node].color = IFLOW_COLOR_GREY;
-				g->nodes[cur_node].distance = g->nodes[cur].distance + 1;
-				g->nodes[cur_node].parent = cur;
-				if (queue_insert(queue, (void*)(cur_node + 1)) < 0) {
-					fprintf(stderr, "Error inserting into queue\n");
-					ret = -1;
-					goto out;
+			
+			if (start_node == node)
+				continue;
+			
+			if (g->nodes[node].distance > (g->nodes[cur].distance + g->edges[edge].length)) {
+				g->nodes[node].distance = g->nodes[cur].distance + g->edges[edge].length;
+				g->nodes[node].parent = cur;
+				if (g->nodes[node].color != IFLOW_COLOR_RED) {
+					/* If this node has been inserted into the queue before insert
+					 * it at the beginning, otherwise it goes to the end. See the
+					 * comment at the beginning of the function for why. */
+					if (g->nodes[node].color == IFLOW_COLOR_GREY) {
+						if (queue_push(queue, (void*)(node + 1)) < 0) {
+							fprintf(stderr, "Error inserting into queue\n");
+							rc = -1;
+							goto out;
+						}
+					} else {
+						if (queue_insert(queue, (void*)(node + 1)) < 0) {
+							fprintf(stderr, "Error inserting into queue\n");
+							rc = -1;
+							goto out;
+						}
+					}
+					g->nodes[node].color = IFLOW_COLOR_RED;
 				}
+				
 			}
 		}
 	}
+	
+	/* Find all of the paths and stick them in the iflow_transitive_t struct */
+	for (i = 0; i < g->num_nodes; i++) {
+		int path_len;
+		
+		if (g->nodes[i].parent == -1)
+			continue;
+		if (i == start_node)
+			continue;
 
+		if (q->num_end_types) {
+			if (find_int_in_array(g->nodes[i].type, q->end_types, q->num_end_types) == -1) {
+				continue;
+			}
+		}
+
+		path_len = shortest_path_find_path(g, start_node, i, path);
+		if (path_len < 0) {
+			rc = -1;
+			goto out;
+		}
+		if (transitive_answer_append(g, q, a, i, path_len, path) == -1) {
+			rc = -1;
+			goto out;
+		}
+	}
 out:
+	if (queue)
+		queue_destroy(queue);
 	if (path)
 		free(path);
-	return ret;
+	return rc;
 }
 
 iflow_transitive_t *iflow_transitive_flows(policy_t *policy, iflow_query_t *q)
 {
-	queue_t queue = NULL;
 	int num_nodes, *nodes;
-	int i, j, start_node;
+	int i;
 	iflow_transitive_t *a;
 	iflow_graph_t *g;
 
@@ -1968,68 +2096,23 @@ iflow_transitive_t *iflow_transitive_flows(policy_t *policy, iflow_query_t *q)
 	}
 	memset(a, 0, sizeof(iflow_transitive_t));
 
-	queue = queue_create();
-	if (!queue) {
-		fprintf(stderr, "Error creating queue\n");
-		goto err;
-	}
-
 	if (iflow_graph_get_nodes_for_type(g, q->start_type, &num_nodes, &nodes) < 0)
 		return NULL;
 
 	if (num_nodes == 0) {
 		goto out;
 	}
-
-	/* paint all nodes white */
-	for (i = 0; i < g->num_nodes; i++) {
-		g->nodes[i].color = IFLOW_COLOR_WHITE;
-		g->nodes[i].parent = -1;
-		g->nodes[i].distance = -1;
-	}
-
-	start_node = nodes[0];
-
-	g->nodes[start_node].color = IFLOW_COLOR_GREY;
-	g->nodes[start_node].distance = 0;
-	g->nodes[start_node].parent = -1;
-
-	if (queue_insert(queue, (void*)(start_node + 1)) < 0) {
-		fprintf(stderr, "Error inserting into queue\n");
-		goto err;
-	}
-
-	if (do_breadth_first_search(g, queue, q, a) < 0)
-		goto err;
-
-	for (i = 1; i < num_nodes; i++) {
-
-		/* paint all nodes white */
-		for (j = 0; j < g->num_nodes; j++) {
-			g->nodes[j].color = IFLOW_COLOR_WHITE;
-			g->nodes[j].parent = -1;
-		}
-
-		start_node = nodes[i];
-
-		g->nodes[start_node].color = IFLOW_COLOR_GREY;
-		g->nodes[start_node].distance = 0;
-		g->nodes[start_node].parent = -1;
-
-		if (queue_insert(queue, (void*)(start_node + 1)) < 0) {
-			fprintf(stderr, "Error inserting into queue\n");
-			goto err;
-		}
-
-		if (do_breadth_first_search(g, queue, q, a) < 0)
+	
+	for (i = 0; i < num_nodes; i++) {
+		if (iflow_graph_shortest_path(g, nodes[0], a, q) != 0)
 			goto err;
 	}
+
 out:
 	iflow_graph_destroy(g);
 	free(g);
 	if (nodes)
 		free(nodes);
-	queue_destroy(queue);
 	return a;
 err:
 	iflow_transitive_destroy(a);
@@ -2165,7 +2248,20 @@ err:
 	return -1;
 }
 
+static int breadth_first_find_path(iflow_graph_t *g, int node, int *path)
+{
+	int next_node = node;
+	int path_len = g->nodes[node].distance + 1;
+	int i = path_len - 1;
+	
+	while (i >= 0) {
+		path[i] = next_node;
+		next_node = g->nodes[next_node].parent;
+		i--;
+	}
 
+	return path_len;
+}
 
 static int do_breadth_first_search_random(bfs_random_state_t *s)
 {
