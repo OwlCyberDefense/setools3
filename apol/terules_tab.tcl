@@ -111,7 +111,6 @@ namespace eval ApolTE {
 	variable cb_RegExp
 	variable notebook_searchOpts
 	variable notebook_results
-	variable notebook_resultsTabs
 	variable popupTab_Menu
 	variable updateButton
 			
@@ -119,12 +118,12 @@ namespace eval ApolTE {
 	variable totalTabCount		10
 	variable currTabCount		0
 	variable pageNums		0
+	variable emptyTabID		"Emptytab"
 	variable tabName		"ResultsTab"
 	variable tabText		"Results "
 	variable pageID			""	
 	variable results		""
 	variable enableUpdate		0
-	variable initTab		0
 	variable tab_deleted_flag	0
 	variable optionsArray		
 	
@@ -142,7 +141,6 @@ namespace eval ApolTE {
 	variable m_incl_indirect       "Include Indirect Matches"
 	variable m_ta_tab	       "Types/Attributes"
 	variable m_obj_perms_tab       "Classes/Permissions" 
-	
 }
 
 ########################################################################
@@ -161,9 +159,8 @@ proc ApolTE::goto_line { line_num } {
 			return 0
 		}
 		set raisedPage 	[ $notebook_results raise ]
-		set pagePath 	[ $notebook_results getframe $raisedPage ]
 		
-		ApolTop::goto_line $line_num $pagePath.sw.resultsbox
+		ApolTop::goto_line $line_num $ApolTE::optionsArray($raisedPage,textbox)
 	}
 	return 0
 }
@@ -177,8 +174,7 @@ proc ApolTE::search { str case_Insensitive regExpr srch_Direction } {
 	
 	if { [$notebook_results pages] != "" } {
 		set raisedPage 	[ $notebook_results raise ]
-		set pagePath 	[ $notebook_results getframe $raisedPage ]
-		ApolTop::textSearch $pagePath.sw.resultsbox $str $case_Insensitive $regExpr $srch_Direction
+		ApolTop::textSearch $ApolTE::optionsArray($raisedPage,textbox) $str $case_Insensitive $regExpr $srch_Direction
 	}
 	return 0
 }
@@ -220,7 +216,7 @@ proc ApolTE::searchTErules { whichButton } {
 		tk_messageBox -icon error -type ok -title "Error" -message "No regular expression provided for Default Type!"
 		return
 	}
-	update idletasks
+	
 	# Getting all selected objects. 
 	set selObjectsList [ApolTE::get_Selected_ListItems $objslistbox]
 
@@ -255,13 +251,12 @@ proc ApolTE::searchTErules { whichButton } {
 		}
 		updateTab {
 			set raisedPage 	[ $notebook_results raise ]
-			set pagePath 	[ $notebook_results getframe $raisedPage ]
-			$pagePath.sw.resultsbox configure -state normal
+			$ApolTE::optionsArray($raisedPage,textbox) configure -state normal
 			# Remove any custom tags.
-			Apol_PolicyConf::remove_HyperLink_tags $pagePath.sw.resultsbox
-    			$pagePath.sw.resultsbox delete 0.0 end
-			ApolTE::insertTERules $pagePath.sw.resultsbox $results 
-    			ApolTop::makeTextBoxReadOnly $pagePath.sw.resultsbox 
+			Apol_PolicyConf::remove_HyperLink_tags $ApolTE::optionsArray($raisedPage,textbox)
+    			$ApolTE::optionsArray($raisedPage,textbox) delete 0.0 end
+			ApolTE::insertTERules $ApolTE::optionsArray($raisedPage,textbox) $results 
+    			ApolTop::makeTextBoxReadOnly $ApolTE::optionsArray($raisedPage,textbox)
 			ApolTE::set_OptionsArray $raisedPage $selObjectsList $selPermsList
 		}
 		default {
@@ -300,8 +295,6 @@ proc ApolTE::insertTERules { tb results } {
 	
 	return 
 }
-
-
 
 # ------------------------------------------------------------------------------
 #  Command ApolTE::set_OptionsArray
@@ -356,8 +349,40 @@ proc ApolTE::set_OptionsArray { raisedPage selObjectsList selPermsList } {
 	set optionsArray($raisedPage,src_list_type_2) 	$src_list_type_2
 	set optionsArray($raisedPage,tgt_list_type_1) 	$tgt_list_type_1
 	set optionsArray($raisedPage,tgt_list_type_2) 	$tgt_list_type_2
-	
+		
 	return 0
+}
+
+#----------------------------------------------------------------------------------
+# ApolTE::create_empty_resultsTab
+#----------------------------------------------------------------------------------
+proc ApolTE::create_empty_resultsTab { } {
+        variable notebook_results
+	variable currTabCount
+	variable pageNums
+	variable totalTabCount
+	
+	if {$currTabCount >= $totalTabCount} {		
+		tk_messageBox -icon error -type ok -title "Attention" \
+			-message "You have reached the maximum amount of tabs. Please delete a tab and try again."
+		return -1
+	}
+	
+	# Increment the global tab count and pageNum variables
+	incr currTabCount
+    	incr pageNums
+
+	# Create tab and its' widgets
+	$notebook_results insert end $ApolTE::emptyTabID -text "Empty Tab"
+    	    	
+    	# Set the NoteBook size
+    	$notebook_results compute_size
+    				
+    	# Raise the new tab
+    	set raisedPage 	[$notebook_results raise $ApolTE::emptyTabID]
+	
+    	return 0
+
 }
 
 # ------------------------------------------------------------------------------
@@ -365,40 +390,36 @@ proc ApolTE::set_OptionsArray { raisedPage selObjectsList selPermsList } {
 # ------------------------------------------------------------------------------
 proc ApolTE::create_New_ResultsTab { results } {
 	variable notebook_results
-	variable notebook_resultsTabs
 	variable currTabCount
 	variable pageNums
 	variable tabName
 	variable tabText
-    	variable selObjectsList
-    	variable selPermsList
+	variable totalTabCount
+	
+	if {$currTabCount >= $totalTabCount} {		
+		tk_messageBox -icon error -type ok -title "Attention" \
+			-message "You have reached the maximum amount of tabs. Please delete a tab and try again."
+		return -1
+	}
 	
 	# Increment the global tab count and pageNum variables
 	incr currTabCount
     	incr pageNums
 
 	# Create tab and its' widgets
-	set notebook_resultsTabs($currTabCount) [$notebook_results insert end $tabName$pageNums -text $tabText$pageNums]
-    	set sw [ScrolledWindow $notebook_resultsTabs($currTabCount).sw -auto none]
+	$notebook_results insert end $tabName$pageNums -text $tabText$pageNums
+    	set sw [ScrolledWindow [$notebook_results getframe $tabName$pageNums].sw -auto none]
     	set resultsbox [text [$sw getframe].resultsbox -bg white -wrap none -font $ApolTop::text_font]
     	$sw setwidget $resultsbox
     	pack $sw -side left -expand yes -fill both 
-    	
-    	# Here we use a flag variable to determine if this is the first tab created.
-    	# If it is, then we can set the NoteBook size here, instead of repeatedly
-    	# computing the notebook size every time ApolTE::create_New_ResultsTab is called.
-    	if { $ApolTE::initTab == 0 } {	
-    		$notebook_results compute_size
-    		set ApolTE::initTab 1
-    	}   
-    					
+        					
     	# Raise the new tab; get its' pathname and then insert the results data into the resultsbox
-    	set newPageIdx 	[expr $currTabCount - 1]
-    	set raisedPage 	[$notebook_results raise [$notebook_results page $newPageIdx]]
-	set pagePath 	[$notebook_results getframe $raisedPage]
-	$pagePath.sw.resultsbox delete 0.0 end
-	ApolTE::insertTERules $pagePath.sw.resultsbox $results
-	ApolTop::makeTextBoxReadOnly $pagePath.sw.resultsbox 
+    	set raisedPage 	[$notebook_results raise $tabName$pageNums]
+	$resultsbox delete 0.0 end
+	ApolTE::insertTERules $resultsbox $results
+	ApolTop::makeTextBoxReadOnly $resultsbox 
+	# Hold a reference to the results tab text widget
+	set ApolTE::optionsArray($raisedPage,textbox) $resultsbox
 	
     	return $raisedPage
 }
@@ -411,37 +432,31 @@ proc ApolTE::delete_ResultsTab { pageID } {
 	variable currTabCount
 	variable tab_deleted_flag
 	variable optionsArray
-	variable notebook_resultsTabs
 	
-	# If there are tabs available ...
-	if { $currTabCount > 0 } {
-		# If this is the last tab ...
-		if { $currTabCount == 1 } {
-			ApolTE::close_All_ResultsTabs
+	# Do not delete the emtpy tab!!
+	if { [$notebook_results index $ApolTE::emptyTabID] != [$notebook_results index $pageID]} {
+		# Get Previous page index
+		set prevPageIdx [expr [$notebook_results index $pageID] - 1]
+		# Remove tab and its' widgets; then decrement current tab counter 
+		$notebook_results delete $pageID 
+		array unset optionsArray($pageID)
+		set currTabCount [expr $currTabCount - 1]
+		# ::set_Widget_SearchOptions uses this flag
+		set tab_deleted_flag 1
+		
+		if { $prevPageIdx >= 0} { 
+			set raisedPage [$notebook_results raise [$notebook_results page $prevPageIdx]]
+		} else {
+			set raisedPage [$notebook_results raise [$notebook_results page 0]]
+		}
+		if {$raisedPage == $ApolTE::emptyTabID} {
 			ApolTE::reset_search_criteria
 		} else {
-			# Get Previous page index
-			set prevPageIdx [expr [$notebook_results index $pageID] - 1]
-			# Remove tab and its' widgets; then decrement current tab counter 
-    			$notebook_results delete $pageID 
-    			array unset optionsArray($pageID)
-    			# Remove tab from notebook_resultsTabs then remove the tab from notebook
-			array unset notebook_resultsTabs([$notebook_results index $pageID])
-    			set currTabCount [expr $currTabCount - 1]
-    			# ::set_Widget_SearchOptions uses this flag
-    			set tab_deleted_flag 1
-    			
-			if { $prevPageIdx >= 0} { 
-				set raisedPage [$notebook_results raise [$notebook_results page $prevPageIdx]]
-			} else {
-				set raisedPage [$notebook_results raise [$notebook_results page 0]]
-			}
-		
-    			# Set the search option widgets according to the now raised results tab.
-    			ApolTE::set_Widget_SearchOptions $raisedPage
-    			set tab_deleted_flag 0
-    		}
-	} 
+			# Set the search option widgets according to the now raised results tab.
+			ApolTE::set_Widget_SearchOptions $raisedPage
+			set tab_deleted_flag 0
+		}
+	}
      		
     	return 0
 }
@@ -561,7 +576,11 @@ proc ApolTE::set_Widget_SearchOptions { pageID } {
 	if { $raised == $pageID && $tab_deleted_flag == 0 } {
 		return
 	}
-	        
+	if { $pageID == $ApolTE::emptyTabID } {
+		ApolTE::reset_search_criteria
+		return
+	}
+	    
         # reinitialize original options
         set opts(teallow)	$optionsArray($pageID,teallow)
 	set opts(neverallow)	$optionsArray($pageID,neverallow)
@@ -706,28 +725,7 @@ proc ApolTE::close { } {
 	variable results
 	variable ta_state_Array
 	        
-	ApolTE::reinitialize_default_search_options
-        
-        # check enable/disable status
-        ApolTE::enable_listbox $source_list 1 $list_types_1 $list_attribs_1 $list_both_1
-        ApolTE::enable_listbox $target_list 2 $list_types_2 $list_attribs_2 $list_both_2
-        ApolTE::defaultType_Enable_Disable
-        ApolTE::change_tgt_dflt_state
-    	$ApolTE::b_union configure -state disabled
-    	$ApolTE::b_intersection configure -state disabled
-	$ApolTE::source_list configure -values ""
-	$ApolTE::target_list configure -values ""
-        $ApolTE::dflt_type_list configure -values ""
-        
-        # Reset Classes/Permissions and Types/Attributes tabs text to the initial value.
-        set objText 	[$ApolTE::notebook_searchOpts itemcget $ApolTE::cp_TabID -text]
-        set taText  	[$ApolTE::notebook_searchOpts itemcget $ApolTE::ta_TabID -text]
-	if { $objText != $ApolTE::m_obj_perms_tab } {
-		$ApolTE::notebook_searchOpts itemconfigure $ApolTE::cp_TabID -text $ApolTE::m_obj_perms_tab
-	}
-	if { $taText != $ApolTE::m_ta_tab } {
-		$ApolTE::notebook_searchOpts itemconfigure $ApolTE::ta_TabID -text $ApolTE::m_ta_tab
-	}
+	ApolTE::reset_search_criteria
 	
         # Close all results tabs.
         ApolTE::close_All_ResultsTabs
@@ -744,7 +742,7 @@ proc ApolTE::close { } {
 }
 
 # ------------------------------------------------------------------------------
-#  Command ApolTE::reinitialize_search_criteria
+#  Command ApolTE::reset_search_criteria
 # ------------------------------------------------------------------------------
 proc ApolTE::reset_search_criteria { } {
 	variable source_list
@@ -842,20 +840,20 @@ proc ApolTE::reinitialize_default_search_options { } {
 proc ApolTE::close_All_ResultsTabs { } {
 	variable optionsArray
 	variable notebook_results
-	variable notebook_resultsTabs
 	variable currTabCount
 		
 	# 1. Unset the entire optionsArray, which is used to gather the options for each search result.
         # 2. Retrieve all existing tabs and set it to our local tabList variable.
 	array unset optionsArray
-        set tabList [$notebook_results pages 0 [expr $currTabCount - 1]]
-        
+	# Get tabs 1 - currentTabCount in order to skip the empty tab.
+        set tabList [$notebook_results pages 1 $currTabCount]
+
         # The following 'for loop' goes through each tab in the local tabList variable
         # and deletes each tab.
         foreach tab $tabList {
 	    	$notebook_results delete $tab
 	} 
-	
+	$notebook_results raise $ApolTE::emptyTabID
 	# Disable the update button.
 	$ApolTE::updateButton configure -state disabled
 				
@@ -864,9 +862,7 @@ proc ApolTE::close_All_ResultsTabs { } {
 	set ApolTE::currTabCount	0
 	set ApolTE::pageID		""	
 	set ApolTE::results		""
-	set ApolTE::initTab		0
 	set ApolTE::enableUpdate 	0
-	array unset notebook_resultsTabs
 			
         return 0
 }
@@ -1275,6 +1271,277 @@ proc ApolTE::reverseSelection {listname} {
 	return 0
 }
 
+# ------------------------------------------------------------------------------
+#  Command ApolTE::load_query_options
+# ------------------------------------------------------------------------------
+proc ApolTE::load_query_options {file_channel parentDlg} {
+	# search parameter variables to save
+        variable opts
+	variable ta1
+	variable ta2
+        variable ta3
+        variable objslistbox
+    	variable permslistbox
+	variable allow_regex
+	variable permslist
+	variable selObjectsList
+	variable selPermsList
+
+	set query_options ""
+        while {[eof $file_channel] != 1} {
+		gets $file_channel line
+		set tline [string trim $line]
+		# Skip empty lines and comments
+		if {$tline == "" || [string compare -length 1 $tline "#"] == 0} {
+			continue
+		}
+		set query_options [lappend query_options $tline]
+	}
+	if {$query_options == ""} {
+		return -code error "No query parameters were found."
+	}
+	# Re-format the query options list into a string where all elements are seperated
+	# by a single space. Then split this string into a list using the space as the delimeter.	
+	set query_options [split [join $query_options " "]]
+	
+	# set search parameter options
+        set opts(teallow)	[lindex $query_options 0]
+	set opts(neverallow)	[lindex $query_options 1]
+	set opts(clone)		[lindex $query_options 2]
+	set opts(auallow)	[lindex $query_options 3]
+	set opts(audeny)	[lindex $query_options 4]
+	set opts(audont)        [lindex $query_options 5]
+	set opts(ttrans)	[lindex $query_options 6]
+	set opts(tmember)	[lindex $query_options 7]
+	set opts(tchange)	[lindex $query_options 8]
+	set opts(use_1st_list)	[lindex $query_options 9]
+	set opts(indirect_1)	[lindex $query_options 10]
+	set opts(which_1)	[lindex $query_options 11]
+        set opts(use_2nd_list)	[lindex $query_options 12]
+        set opts(indirect_2)	[lindex $query_options 13]
+        set opts(use_3rd_list)  [lindex $query_options 14]
+	set opts(indirect_3)	[lindex $query_options 15]
+	set opts(list_type_1)   [lindex $query_options 16] 	
+	set opts(list_type_2)	[lindex $query_options 17] 
+	set opts(perm_union)	[lindex $query_options 18] 	
+	set opts(perm_select)	[lindex $query_options 19]
+	
+	set i 20
+	set invalid_perms ""
+	# Parse the list of permissions
+	if {[lindex $query_options $i] != "\{\}"} {
+	        # we have to pretend to parse a list here since this is a string and not a TCL list.
+	        set split_list [split [lindex $query_options $i] "\{"]
+	        # If this is not a list of elements, then just get the single element
+	        if {[llength $split_list] == 1} {
+	        	# Validate that the permission exists in the loaded policy.
+     			if {[lsearch -exact $ApolTE::master_permlist [lindex $query_options $i]] != -1} {
+	        		set permslist [lappend permslist [lindex $query_options $i]]
+	        	} else {
+	        		set invalid_perms [lappend invalid_perms [lindex $query_options $i]]
+	        	}
+	        } else {
+		        # An empty list element will be generated because the first character of string 
+		        # is in splitChars, so we ignore the first element of the split list.
+		        # Validate that the permission exists in the loaded policy.
+     			if {[lsearch -exact $ApolTE::master_permlist [lindex $split_list 1]] != -1} {
+		        	set permslist [lappend permslist [lindex $split_list 1]]
+		        } else {
+	        		set invalid_perms [lappend invalid_perms [lindex $split_list 1]]
+	        	}
+		        incr i
+		        while {[llength [split [lindex $query_options $i] "\}"]] == 1} {
+		        	if {[lsearch -exact $ApolTE::master_permlist [lindex $query_options $i]] != -1} {
+		        		set permslist [lappend permslist [lindex $query_options $i]]
+		        	} else {
+		        		set invalid_perms [lappend invalid_perms [lindex $query_options $i]]
+		        	}
+		        	incr i
+		        }
+		        # This is the end of the list, so grab the first element of the split list, since the last 
+		        # element of split list is an empty list element. See Previous comment.
+			set end_element [lindex [split [lindex $query_options $i] "\}"] 0]
+			if {[lsearch -exact $ApolTE::master_permlist $end_element] != -1} {
+				set permslist [lappend permslist $end_element]
+			} else {
+				set invalid_perms [lappend invalid_perms $end_element]
+			}
+		}
+	}
+	# Display a popup with a list of invalid permissions
+	if {$invalid_perms != ""} {
+		foreach perm $invalid_perms {
+			set perm_str [append perm_str "$perm\n"]	
+		}
+		tk_messageBox -icon warning -type ok -title "Invalid Permissions" \
+			-message "The following permissions do not exist in the currently \
+			loaded policy and were ignored.\n\n$perm_str" \
+			-parent $parentDlg
+	}
+	# Now we're ready to parse the selected objects list
+      	incr i
+	if {[lindex $query_options $i] != "\{\}"} {
+	        # we have to pretend to parse a list here since this is a string and not a TCL list.
+	        set split_list [split [lindex $query_options $i] "\{"]
+	        # If this is not a list of elements, then just get the single element
+	        if {[llength $split_list] == 1} {
+	        	set selObjectsList [lappend selObjectsList [lindex $query_options $i]]
+	        } else {
+		        # An empty list element will be generated because the first character of string 
+		        # is in splitChars, so we ignore the first element of the split list.
+		        set selObjectsList [lappend selObjectsList [lindex $split_list 1]]
+		        incr i
+		        while {[llength [split [lindex $query_options $i] "\}"]] == 1} {
+		        	set selObjectsList [lappend selObjectsList [lindex $query_options $i]]
+		        	incr i
+		        }
+		        # This is the end of the list, so grab the first element of the split list, since the last 
+		        # element of split list is an empty list element. See Previous comment.
+			set end_element [lindex [split [lindex $query_options $i] "\}"] 0]
+			set selObjectsList [lappend selObjectsList $end_element]
+		}
+	}
+	# Now we're ready to parse the selected objects list
+      	incr i
+	if {[lindex $query_options $i] != "\{\}"} {
+	        # we have to pretend to parse a list here since this is a string and not a TCL list.
+	        set split_list [split [lindex $query_options $i] "\{"]
+	        # If this is not a list of elements, then just get the single element
+	        if {[llength $split_list] == 1} {
+	        	set selPermsList [lappend selPermsList [lindex $query_options $i]]
+	        } else {
+		        # An empty list element will be generated because the first character of string 
+		        # is in splitChars, so we ignore the first element of the split list.
+		        set selPermsList [lappend selPermsList [lindex $split_list 1]]
+		        incr i
+		        while {[llength [split [lindex $query_options $i] "\}"]] == 1} {
+		        	set selPermsList [lappend selPermsList [lindex $query_options $i]]
+		        	incr i
+		        }
+		        # This is the end of the list, so grab the first element of the split list, since the last 
+		        # element of split list is an empty list element. See Previous comment.
+			set end_element [lindex [split [lindex $query_options $i] "\}"] 0]
+			set selPermsList [lappend selPermsList $end_element]
+		}
+	}
+	
+	# Now we're ready to parse the selected objects list
+      	incr i
+      	if {[lindex $query_options $i] != "\{\}"} {
+		set allow_regex	[string trim [lindex $query_options $i] "\{\}"]
+	}
+	incr i
+	if {[lindex $query_options $i] != "\{\}"} {
+		set src_list_type_1 [string trim [lindex $query_options $i] "\{\}"] 
+	}
+	incr i
+	if {[lindex $query_options $i] != "\{\}"} {
+		set src_list_type_2 [string trim [lindex $query_options $i] "\{\}"] 
+	}
+	incr i
+	if {[lindex $query_options $i] != "\{\}"} {
+		set tgt_list_type_1 [string trim [lindex $query_options $i] "\{\}"]
+	}
+	incr i
+	if {[lindex $query_options $i] != "\{\}"} {
+		set tgt_list_type_2 [string trim [lindex $query_options $i] "\{\}"]
+	}
+	
+	# Re-configure list items for type/attributes tab combo boxes
+	ApolTE::populate_ta_list 1
+	ApolTE::populate_ta_list 2
+	incr i
+      	if {[lindex $query_options $i] != "\{\}"} {
+		set ta1	[string trim [lindex $query_options $i] "\{\}"]
+	}
+	incr i
+      	if {[lindex $query_options $i] != "\{\}"} {
+		set ta2	[string trim [lindex $query_options $i] "\{\}"]
+	}
+	incr i
+      	if {[lindex $query_options $i] != "\{\}"} {
+		set ta3	[string trim [lindex $query_options $i] "\{\}"]
+	}
+	
+	# Reset Objects and Permissions selections 
+	ApolTE::resetObjsPerms_Selections $selObjectsList $selPermsList
+    		
+	# check enable/disable status
+        ApolTE::enable_listbox $ApolTE::source_list 1 $ApolTE::list_types_1 $ApolTE::list_attribs_1 $ApolTE::list_both_1
+        ApolTE::enable_listbox $ApolTE::target_list 2 $ApolTE::list_types_2 $ApolTE::list_attribs_2 $ApolTE::list_both_2
+        ApolTE::defaultType_Enable_Disable
+        ApolTE::change_tgt_dflt_state
+          
+        # Check the search criteria for the Classes/Permissions and Types/Attributes tabs
+        # and then set the indicator  accordingly.
+        ApolTE::set_Indicator [$ApolTE::notebook_searchOpts page 0]
+        ApolTE::set_Indicator [$ApolTE::notebook_searchOpts page 1]
+        
+	return 0
+} 
+
+# ------------------------------------------------------------------------------
+#  Command ApolTE::save_query_options
+#	- module_name - name of the analysis module
+#	- file_channel - file channel identifier of the query file to write to.
+#	- file_name - name of the query file
+# ------------------------------------------------------------------------------
+proc ApolTE::save_query_options {file_channel query_file} {
+        # search parameter variables to save
+        variable opts
+	variable ta1
+	variable ta2
+        variable ta3
+        variable objslistbox
+    	variable permslistbox
+	variable allow_regex
+	variable permslist
+	variable src_list_type_1 
+	variable src_list_type_2 	
+	variable tgt_list_type_1 	
+	variable tgt_list_type_2
+				
+	# Getting all selected objects. 
+	set selObjectsList [ApolTE::get_Selected_ListItems $objslistbox]
+
+	# Getting all selected permissions
+	set selPermsList [ApolTE::get_Selected_ListItems $permslistbox]
+	
+	set options [list \
+		$opts(teallow) \
+		$opts(neverallow) \
+		$opts(clone) \
+		$opts(auallow) \
+		$opts(audeny) \
+		$opts(audont) \
+		$opts(ttrans) \
+		$opts(tmember) \
+		$opts(tchange) \
+		$opts(use_1st_list) \
+		$opts(indirect_1) \
+		$opts(which_1) \
+	        $opts(use_2nd_list) \
+	        $opts(indirect_2) \
+	        $opts(use_3rd_list) \
+		$opts(indirect_3) \
+		$opts(list_type_1) \
+		$opts(list_type_2) \
+		$opts(perm_union) \
+		$opts(perm_select) \
+		$permslist \
+		$selObjectsList \
+		$selPermsList \
+		$allow_regex \
+		$src_list_type_1 \
+		$src_list_type_2 \
+		$tgt_list_type_1 \
+		$tgt_list_type_2 $ta1 $ta2 $ta3]
+			
+	puts $file_channel "$options"
+	
+     	return 0
+} 
+
 # ----------------------------------------------------------------------------------------
 #  Command ApolTE::set_Focus_to_Text
 #
@@ -1283,9 +1550,11 @@ proc ApolTE::reverseSelection {listname} {
 proc ApolTE::set_Focus_to_Text { tab } {
 	variable notebook_results
 	
-	set pagePath 	[$notebook_results getframe $tab]
-	if { [winfo exists $pagePath.sw.resultsbox] } {
-		focus $pagePath.sw.resultsbox
+	if {$tab == $ApolTE::emptyTabID} {
+		return	
+	}
+	if {[array exists ApolTE::optionsArray] && [winfo exists $ApolTE::optionsArray($tab,textbox)] } {
+		focus $ApolTE::optionsArray($tab,textbox)
 	}
 	
 	return 0
@@ -1790,11 +2059,10 @@ proc ApolTE::create {nb} {
     pack $notebook_searchOpts -fill both -expand yes -padx 4
     set raisedPage [$notebook_searchOpts raise [$notebook_searchOpts page 0]]
     ApolTE::set_Indicator $raisedPage
+    ApolTE::create_empty_resultsTab
            
     # Placing the results notebook frame within the results section    
-    $notebook_results compute_size
     pack $notebook_results -fill both -expand yes -padx 4
-    
+       
     return $frame	
 }
-
