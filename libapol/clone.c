@@ -121,7 +121,9 @@ int match_cloned_rules(int  idx,
 				 * src is in the src type/attrib list for all rules, and if so and if special
 				 * checks don't say otherwise, we record that rule as being "cloned" for the 
 				 * provided type 'idx' */
-				ans = does_av_rule_use_type(ptr->src, IDX_TYPE, SRC_LIST, 1, &(policy->av_access[i]), &cnt, policy);
+				if (does_av_rule_use_type(ptr->src, IDX_TYPE, SRC_LIST, 1, &(policy->av_access[i]),
+						&cnt, &ans, policy) == -1)
+					return -1;
 				if(ans) {
 					ans = check_clone_specials_av(ptr->src, ptr->tgt, &(policy->av_access[i]), policy);
 					if(ans) {
@@ -134,7 +136,9 @@ int match_cloned_rules(int  idx,
 			for(i = 0; i < policy->num_te_trans; i++) {
 				if(rules_b->ttrules[i])
 					break;
-				ans = does_tt_rule_use_type(ptr->src, IDX_TYPE, SRC_LIST, 1, &(policy->te_trans[i]), &cnt, policy);
+				if (does_tt_rule_use_type(ptr->src, IDX_TYPE, SRC_LIST, 1,
+						&(policy->te_trans[i]), &cnt, &ans, policy) == -1)
+					return -1;
 				if(ans) {
 					ans = check_clone_specials_tt(ptr->src, ptr->tgt, &(policy->te_trans[i]), policy);
 					if(ans) {
@@ -153,7 +157,9 @@ int match_cloned_rules(int  idx,
 					 * src is in the src type/attrib list for all rules, and if so and if special
 					 * checks don't say otherwise, we record that rule as being "cloned" for the 
 					 * provided type 'idx' */
-					ans = does_av_rule_use_type(ptr->src, IDX_TYPE, SRC_LIST, 1, &(policy->av_audit[i]), &cnt, policy);
+					if (does_av_rule_use_type(ptr->src, IDX_TYPE, SRC_LIST, 1, &(policy->av_audit[i]),
+							&cnt, &ans, policy) == -1)
+						return -1;
 					if(ans) {
 						ans = check_clone_specials_av(ptr->src, ptr->tgt, &(policy->av_audit[i]), policy);
 						if(ans) {
@@ -168,4 +174,3 @@ int match_cloned_rules(int  idx,
 	
 	return 0;
 }
-    
