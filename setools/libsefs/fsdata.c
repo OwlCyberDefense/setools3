@@ -362,7 +362,7 @@ int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char *filename)
 	}
 	
 	/* write out the total number of path info entries */
-	if ((rc = write(fd, &(fsd->numpaths), sizeof(int))) != sizeof(int)) {
+	if ((rc = write(fd, &(fsd->numpaths), sizeof(unsigned int))) != sizeof(unsigned int)) {
 		fprintf(stderr, "error writing file %s\n", filename);
 		return(-1);
 	}
@@ -388,7 +388,7 @@ int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char *filename)
 		len = strlen(context_str(pinfo->context));
 		
 		/* Write the context length */
-		if ((rc = write(fd, &len, sizeof(int))) != sizeof(int)) {
+		if ((rc = write(fd, &len, sizeof(unsigned int))) != sizeof(unsigned int)) {
 			fprintf(stderr, "error writing file %s\n", filename);
 			return(-1);
 		}
@@ -430,7 +430,8 @@ int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char *filename)
 
 int sefs_filesystem_data_load(sefs_filesystem_data_t* fsd, char *filename)
 {
-	int rc = 0, loop = 0, fd = -1, i = 0, len = 0;
+	int rc = 0, loop = 0, fd = -1, i = 0;
+	unsigned int len = 0;
 	int keysize = sizeof(dev_t) + sizeof(ino_t);
 	void * key = NULL;
 	sefs_fileinfo_t * pinfo = NULL;
@@ -441,7 +442,7 @@ int sefs_filesystem_data_load(sefs_filesystem_data_t* fsd, char *filename)
 		return(-1);
 	}
 
-	if ((rc = read(fd, &(fsd->numpaths), sizeof(int))) != sizeof(int)) {
+	if ((rc = read(fd, &(fsd->numpaths), sizeof(unsigned int))) != sizeof(unsigned int)) {
 		fprintf(stderr, "error reading file %s\n", filename);
 		return(-1);
 	}
@@ -471,7 +472,7 @@ int sefs_filesystem_data_load(sefs_filesystem_data_t* fsd, char *filename)
 		memcpy(&(pinfo->sb.st_dev), key + sizeof(ino_t), sizeof(dev_t));
 		
 		// Read the context length		
-		if ((rc = read(fd, &len, sizeof(int))) != sizeof(int)) {
+		if ((rc = read(fd, &len, sizeof(unsigned int))) != sizeof(unsigned int)) {
 			fprintf(stderr, "error reading file %s\n", filename);
 			return(-1);
 		}
