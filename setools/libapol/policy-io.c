@@ -342,7 +342,7 @@ static int search_policy_src_file(char **policy_file_path)
 		free(path);
 		return SRC_POL_FILE_DOES_NOT_EXIST;
      	}
-     	if ((*policy_file_path = (char *)malloc(strlen(LIBAPOL_DEFAULT_POLICY)+1)) == NULL) {
+     	if ((*policy_file_path = (char *)malloc(strlen(path)+1)) == NULL) {
 		fprintf(stderr, "out of memory\n");
 		free(path);
 		return GENERAL_ERROR;
