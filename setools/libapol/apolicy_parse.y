@@ -131,6 +131,7 @@ static int define_level(void);
 static int define_common_base(void);
 static int define_av_base(void);
 static int define_attrib(void);
+static int define_typeattribute(void);
 static int define_typealias(void);
 static int define_type(int alias);
 static int define_compute_type(int rule_type);
@@ -186,6 +187,7 @@ static rule_desc_t *define_cond_te_avtab(int rule_type);
 %token SID
 %token ROLE
 %token ROLES
+%token TYPEATTRIBUTE
 %token TYPEALIAS
 %token TYPE
 %token TYPES
@@ -361,6 +363,7 @@ rbac_decl		: role_type_def
 te_decl			: attribute_def
 			| cond_def
 			| type_def
+			| typeattribute_def
 			| typealias_def
                         | transition_def
                         | te_avtab_def
@@ -475,6 +478,9 @@ type_def		: TYPE identifier alias_def opt_attr_list ';'
 	                | TYPE identifier opt_attr_list ';'
                         {if (define_type(0)) return -1;}
     			;
+/* added jan 2005 */
+typeattribute_def	: TYPEATTRIBUTE identifier id_comma_list ';'
+			{if (define_typeattribute()) return -1; }
 /* added feb 2004 */			
 typealias_def		: TYPEALIAS identifier alias_def ';'
 			{if (define_typealias()) return -1;}
@@ -1043,6 +1049,52 @@ static int define_type(int alias)
 	}
 	return 0;
 }	
+
+static int define_typeattribute(void)
+{
+	char *id;
+	int rt, idx, idx_type;
+	
+	if (pass == 2 || (pass == 1 && !(parse_policy->opts & POLOPT_TYPES))) {
+		while ((id = queue_remove(id_queue)))
+			free(id);
+		return 0;
+	}
+	
+	rt = set_policy_version(POL_VER_18, parse_policy);
+	if(rt != 0) {
+		yyerror("error setting policy version");
+		return -1;
+	}
+	
+	id = (char*)queue_remove(id_queue);
+	if (!id) {
+		yyerror("type name required for typeattribute declaration");
+		return -1;
+	}
+	idx = get_type_or_attrib_idx(id, &idx_type, parse_policy);
+	if (idx < 0) {
+		snprintf(errormsg, sizeof(errormsg), "unknown type %s in typeattribute definitition.", id);
+		yyerror(errormsg);
+		return -1;
+	}
+	if (idx_type != IDX_TYPE) {
+		snprintf(errormsg, sizeof(errormsg), "%s is not a type. Illegal typeattribute definitition.", id);
+		yyerror(errormsg);
+		return -1;
+	}
+	
+	while ((id = queue_remove(id_queue))) {
+		if(!is_valid_str_sz(id)) {
+			snprintf(errormsg, sizeof(errormsg), "string \"%s\" exceeds APOL_SZ_SIZE", id);
+			yyerror(errormsg);
+			return -1;
+		}
+		if(add_attrib_to_type(idx, id, parse_policy) != 0)
+			return -1;
+	}
+	return 0;
+}
 
 static int define_typealias(void)
 {
