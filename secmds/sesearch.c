@@ -82,7 +82,7 @@ Search Type Enforcement rules in an SELinux policy.\n\
 ", stdout);
   	fputs("\n\
 If none of -s, -t, -c, -p are specified, then all rules are shown\n\
-You specify -a (--all), or one of more of --allow, --neverallow, \n\
+You must specify -a (--all), or one of more of --allow, --neverallow, \n\
 --audit, or --type.\
 \n\n\
 The default source policy, or if that is unavailable the default binary\n\
