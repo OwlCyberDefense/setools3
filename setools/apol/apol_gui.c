@@ -16,7 +16,10 @@
 #include <getopt.h>
 #include "../libapol/apol_tcl.h"
 #include "../libapol/util.h"
-#define STARTUP_SCRIPT "apol.tcl"
+
+#ifndef STARTUP_SCRIPT
+	#define STARTUP_SCRIPT "apol.tcl"
+#endif
 
 /* internal global */
 char* policy_conf_file;
