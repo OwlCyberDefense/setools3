@@ -2952,3 +2952,128 @@ int get_cond_bool_name(int idx, char **name, policy_t *policy)
 	return 0;
 }
 
+static int apol_find_class_in_obj_perm_set_list(obj_perm_set_t *obj_options, int num_obj_options, int obj_class)
+{
+	int i;
+
+	if (obj_options == NULL)
+		return -1;
+		
+	assert(obj_class >= 0);
+
+	for (i = 0; i < num_obj_options; i++) {
+		if (obj_options[i].obj_class == obj_class) {
+			return i;
+		}
+	}
+	return -1;
+}
+
+int apol_obj_perm_set_init(obj_perm_set_t *it)
+{
+	if (!it) 
+		return -1;
+	
+	it->obj_class = -1;
+	it->num_perms = 0;
+	it->perms = NULL;
+	return 0;
+}
+
+
+void apol_free_obj_perm_set_data(obj_perm_set_t *it)
+{
+	if (!it) 
+		return;
+	if (it->perms) 
+		free(it->perms);
+	apol_obj_perm_set_init(it);
+}
+
+
+/*
+ * Add an object class to a query - returns the index of
+ * the obj_perm_set_t on success or -1 on failure. Checks to
+ * prevent the addition of duplicate or contradictory object classes.
+ */
+int apol_add_class_to_obj_perm_set_list(obj_perm_set_t **obj_options, int *num_obj_options, int obj_class)
+{
+	int obj_idx, cur;
+
+	assert(obj_class >= 0);
+
+	/* find an existing entry for the object class */
+	obj_idx = apol_find_class_in_obj_perm_set_list(*obj_options, *num_obj_options, obj_class);
+	if (obj_idx != -1) {
+			/* make certain that the entire object class is ignored */
+			if ((*obj_options)[obj_idx].perms) {
+				free((*obj_options)[obj_idx].perms);	
+				(*obj_options)[obj_idx].perms = NULL;
+				(*obj_options)[obj_idx].num_perms = 0;
+			}
+			return obj_idx;
+	}
+
+	/* add a new entry */
+	cur = *num_obj_options;
+	(*num_obj_options)++;
+	*obj_options = (obj_perm_set_t*)realloc(*obj_options,
+						      sizeof(obj_perm_set_t)
+						      * (*num_obj_options));
+	if (!(*obj_options)) {
+		fprintf(stderr, "Memory error!\n");
+		return -1;
+	}
+	memset(&(*obj_options)[cur], 0, sizeof(obj_perm_set_t));
+	(*obj_options)[cur].obj_class = obj_class;
+
+	return cur;
+}
+
+
+/*
+ * Add an object class and perm to a query - returns the index of
+ * the obj_perm_set_t on success or -1 on failure. Checks to
+ * prevent the addition of duplicate or contradictory object classes.
+ */
+int apol_add_perm_to_obj_perm_set_list(obj_perm_set_t **obj_options, int *num_obj_options, int obj_class, int perm)
+{
+	int cur;
+	bool_t add = FALSE;
+	
+	assert(obj_class >= 0 && perm >= 0);
+	/* find an existing entry for the object class */
+	cur = apol_find_class_in_obj_perm_set_list(*obj_options, *num_obj_options, obj_class);
+
+        /* add a new entry */
+	if (cur == -1) {
+		cur = *num_obj_options;
+		(*num_obj_options)++;
+		*obj_options = (obj_perm_set_t*)realloc(*obj_options,
+							       sizeof(obj_perm_set_t)
+							       * (*num_obj_options));
+		if (!(*obj_options)) {
+			fprintf(stderr, "Memory error!\n");
+			return -1;
+		}
+		memset(&(*obj_options)[cur], 0, sizeof(obj_perm_set_t));
+		(*obj_options)[cur].obj_class = obj_class;
+		
+	}
+
+	if (!(*obj_options)[cur].perms) {
+		add = TRUE;
+	} else {
+		if (find_int_in_array(perm, (*obj_options)[cur].perms,
+				      (*obj_options)[cur].num_perms) == -1)
+			add = TRUE;
+	}
+
+	if (add) {
+		if (add_i_to_a(perm, &(*obj_options)[cur].num_perms,
+			       &(*obj_options)[cur].perms) == -1)
+			return -1;
+	}
+	return 0;
+}
+
