@@ -5,9 +5,6 @@
  */
 
 /*
- *  Authors: Terrence Mitchem <tmitchem@tresys.com>
- *	     Karl Macmillan <kmacmillan@tresys.com>
- *
  *  indexcon: a tool for indexing the security contexts of filesystem entities
  */
 
