@@ -32,7 +32,6 @@
 #define COPYRIGHT_INFO "Copyright (C) 2004 Tresys Technology, LLC"
 #define SEDIFF_GUI_PROG	"sediffx"
 
-
 char *p1_file, *p2_file;
 
 static struct option const longopts[] =
@@ -130,6 +129,20 @@ const char *policy_type(policy_t *p)
 
 int print_diff_stats(FILE *fp, apol_diff_result_t *diff)
 {
+	if (fp == NULL || diff == NULL)
+		return -1;
+	fprintf(fp,"Total Differences:\n\tClasses & Permissions %d \n "
+		"\tTypes %d \n\tAttributes %d \n\tRoles %d  \n\tUsers %d  \n\tBooleans %d"
+		" \n\tTE Rules %d  \n\tRbac %d  \n",
+		(diff->diff1->num_classes + diff->diff1->num_common_perms + diff->diff1->num_perms +
+		 diff->diff2->num_classes + diff->diff2->num_common_perms + diff->diff2->num_perms),
+		(diff->diff1->num_types + diff->diff2->num_types),
+		(diff->diff1->num_attribs + diff->diff2->num_attribs),
+		(diff->diff1->num_roles + diff->diff2->num_roles),
+		(diff->diff1->num_users + diff->diff2->num_users),
+		(diff->diff1->num_booleans + diff->diff2->num_booleans),
+		(diff->diff1->te.num + diff->diff2->te.num),
+		(diff->diff1->num_role_allow + diff->diff2->num_role_allow));
 	return 0;
 }
 
@@ -1178,6 +1191,9 @@ int main (int argc, char **argv)
 	if(rbac || all) {
 		print_rbac_diffs(stdout, diff);
 		printf("\n");
+	}
+	if(stats || all) {
+		print_diff_stats(stdout, diff);
 	}
 
 	apol_free_diff_result(1, diff);
