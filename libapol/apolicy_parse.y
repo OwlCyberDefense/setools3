@@ -2276,7 +2276,7 @@ static int cond_rule_add_helper(int **list, int *list_len, int *add, int add_len
 				return -1;
 		}
 	}
-
+	
 	return 0;
 }
 
@@ -2319,6 +2319,7 @@ static int define_conditional(cond_expr_t *expr, cond_rule_list_t *t_list, cond_
 					t_list->te_trans, t_list->num_te_trans) == -1)
 						return -1;
 			}	
+			add_cond_expr_item_helper(idx, t_list, parse_policy);
 		}
 		if (f_list) {
 			if (!cur->false_list) {
@@ -2334,6 +2335,7 @@ static int define_conditional(cond_expr_t *expr, cond_rule_list_t *t_list, cond_
 					f_list->te_trans, f_list->num_te_trans) == -1)
 						return -1;
 			}
+			add_cond_expr_item_helper(idx, f_list, parse_policy);
 		}
 	} else {
 		if (add_cond_expr_item(expr, t_list, f_list, parse_policy) < 0) {
