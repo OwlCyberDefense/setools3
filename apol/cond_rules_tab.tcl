@@ -176,7 +176,7 @@ proc Apol_Cond_Rules::create {nb} {
 	variable resultsbox 
 	
 	# Layout frames
-	set frame [$nb insert end $ApolTop::cond_rules_tab -text "Conditional Rules"]
+	set frame [$nb insert end $ApolTop::cond_rules_tab -text "Conditional Expressions"]
 	set pw1 [PanedWindow $frame.pw1 -side left -weights available]
 	$pw1 add -minsize 110 
 	$pw1 add -weight 3
@@ -195,7 +195,7 @@ proc Apol_Cond_Rules::create {nb} {
 	
 	set obox [TitleFrame [$pw2 getframe 1].obox -text "Search Options"]
 	set rules_box [TitleFrame [$pw2 getframe 0].rules_box -text "Rule Selection"]
-	set dbox [TitleFrame $bottomf.dbox -text "Conditional Rules Display"]
+	set dbox [TitleFrame $bottomf.dbox -text "Conditional Expressions Display"]
 	
 	# Placing major subframes
 	pack $pw2 -fill both -expand yes
