@@ -3014,7 +3014,11 @@ int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *interp, int
 	/*perform the analysis */
 	rt = determine_domain_trans(reverse, source_type, &dta, policy);
 	if(rt == -2) {
-		Tcl_AppendResult(interp, "invalid source type name", (char *) NULL);
+		if (reverse) {
+			Tcl_AppendResult(interp, "invalid target type name", (char *) NULL);
+		} else {
+			Tcl_AppendResult(interp, "invalid source type name", (char *) NULL);
+		}
 		return TCL_ERROR;
 	}
 	else if(rt < 0) {
