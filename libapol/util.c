@@ -688,3 +688,47 @@ int append_str(char **tgt, int *tgt_sz, const char *str)
 	strcat(*tgt, str);
 	return 0;	
 }
+
+/* allocate a buffer with contents of the file.  the caller must free
+ * the buffer afterwards. */
+int read_file_to_buffer(const char *fname, char **buf, int *len)
+{
+	FILE *file = NULL;
+	const int BUF_SIZE = 1024;
+	size_t size = 0, r;
+	char *bufp;
+	
+	assert(*buf == NULL);
+	assert(len);
+	*len = 0;
+	while (1) {
+		size += BUF_SIZE;
+		r = 0;
+		*buf = (char*)realloc(*buf, size * sizeof(char));
+		if (!*buf) {
+			if (file)
+				fclose(file);
+			return -1;
+		}
+		if (!file) {
+			file = fopen(fname, "r");
+			if (!file) {
+				return -1;
+			}
+		}
+		bufp = &((*buf)[size - BUF_SIZE]);
+		r = fread(bufp, sizeof(char), BUF_SIZE, file);
+		*len += r;
+		if (r < BUF_SIZE) {
+			if (feof(file)) {
+				fclose(file);
+				break;
+			} else {
+				fprintf(stderr, strerror(ferror(file)));
+				fclose(file);
+				return -1;
+			}
+		}
+	}
+	return 0;
+}
