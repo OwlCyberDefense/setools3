@@ -20,6 +20,8 @@
 #include <assert.h>
 #define _GNU_SOURCE
 #include <getopt.h>
+#include <limits.h>
+#include <unistd.h>
 
 /* The following should be defined in the make environment */
 #ifndef SEDIFF_VERSION_NUM
@@ -27,6 +29,8 @@
 #endif
 
 #define COPYRIGHT_INFO "Copyright (C) 2004 Tresys Technology, LLC"
+#define SEDIFF_GUI_PROG	"sediffx"
+
 
 char *p1_file, *p2_file;
 
@@ -554,17 +558,22 @@ int print_te_diffs(FILE *fp, apol_diff_result_t *diff)
 
 int main (int argc, char **argv)
 {
-	int classes, types, roles, users, all, stats, optc, isids, conds, terules, rbac, bools, rt;
+	int classes, types, roles, users, all, stats, optc, isids, conds, terules, rbac, bools, rt,gui;
 	policy_t *p1, *p2;
 	char *p1_file, *p2_file;
 	apol_diff_result_t *diff;
 	unsigned int opts = POLOPT_NONE;
+	char prog_path[PATH_MAX];
+	char prog_options[PATH_MAX];
 	
-	classes = types = roles = users = bools = all = stats = isids = conds = terules = rbac = 0;
-	while ((optc = getopt_long (argc, argv, "ctrubiTRCshv", longopts, NULL)) != -1)  {
+	classes = types = roles = users = bools = all = stats = isids = conds = terules = rbac = gui = 0;
+	while ((optc = getopt_long (argc, argv, "XctrubiTRCshv", longopts, NULL)) != -1)  {
 		switch (optc) {
 		case 0:
 	  		break;
+		case 'X': /* gui */
+			gui = 1;
+			break;
 	  	case 'c': /* classes */
 	  		opts |= POLOPT_OBJECTS;
 	  		classes = 1;
@@ -619,15 +628,59 @@ int main (int argc, char **argv)
 	  		exit(1);
 		}
 	}
+
 	/* if no options, then show stats */
 	if(classes + bools + types + roles + users + isids + terules + rbac + conds + stats < 1) {
 		opts = POLOPT_ALL;
 		all = 1;
 	}
-	if (argc - optind > 2 || argc - optind < 1) {
+
+	if (gui == 0 && (argc - optind > 2 || argc - optind < 1)) {
 		usage(argv[0], 1);
 		exit(1);
 	}
+	/* are we going to use the gui */
+	else if (gui == 1) {
+		if (argc - optind != 0 && argc - optind != 2) {
+			usage(argv[0], 1);
+			exit(1);
+		}
+		snprintf(prog_path, PATH_MAX, "./%s", SEDIFF_GUI_PROG);
+		if (argc - optind == 0) {
+			rt = access(prog_path, X_OK);
+			if (rt == 0) {
+				rt = execvp(prog_path,NULL);
+//			rt = execlp(prog_path, prog_options);
+			} else {
+				rt = execvp(SEDIFF_GUI_PROG,NULL);
+//			rt = execlp(SEDIFF_GUI_PROG, prog_options);
+			}
+			if (rt == -1) {
+				fprintf(stderr, "Cannot execute the seuserx program. You may need to install the setools-gui package.");
+			}
+		}
+		else {
+			rt = access(prog_path, X_OK);
+			if (rt == 0) {
+				rt = execvp(prog_path,&argv[--optind]);
+//			rt = execlp(prog_path, prog_options);
+			} else {
+				rt = execvp(SEDIFF_GUI_PROG,&argv[--optind]);
+//			rt = execlp(SEDIFF_GUI_PROG, prog_options);
+			}
+			if (rt == -1) {
+				fprintf(stderr, "Cannot execute the seuserx program. You may need to install the setools-gui package.");
+			}
+
+			p1_file = argv[optind++];
+			p2_file = argv[optind];		
+			snprintf(prog_options, PATH_MAX, "%s %s", p1_file,p2_file);
+		}
+		exit(1);
+		/* otherwise execlp() won't ever return! */
+
+	}
+
 	else {
 		p1_file = argv[optind++];
 		p2_file = argv[optind];
