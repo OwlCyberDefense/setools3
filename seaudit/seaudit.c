@@ -627,6 +627,155 @@ void write_boolean_message_to_file(FILE *log_file, const boolean_msg_t *message,
 	return;
 }
 
+static void 
+write_avc_message_to_gtk_text_buf(GtkTextBuffer *buffer, const avc_msg_t *message, const char *message_header, audit_log_t *audit_log)
+{
+	int i;
+	GString *str;
+	
+	assert(buffer != NULL && message != NULL && message_header != NULL && audit_log != NULL);
+	str = g_string_new("");
+	if (str == NULL) {
+		fprintf(stderr, "Unable to create string buffer.\n");
+		return;
+	}
+	g_string_append_printf(str, "%s", message_header);
+	g_string_append_printf(str, "audit(%lu.%03lu:%u): ", message->tm_stmp_sec, message->tm_stmp_nano, message->serial);
+		
+	g_string_append_printf(str, "avc:  %s  {", ((message->msg == AVC_GRANTED) ? "granted" : "denied"));
+
+	for (i = 0; i < message->num_perms; i++)
+		g_string_append_printf(str, " %s", audit_log_get_perm(audit_log, message->perms[i]));
+
+	g_string_append_printf(str, " } for ");
+
+	if (message->is_pid)
+		g_string_append_printf(str, " pid=%i", message->pid);
+
+	if (message->exe)
+		g_string_append_printf(str, " exe=%s", message->exe);
+
+	if (message->comm)
+		g_string_append_printf(str, " comm=%s", message->comm);
+
+	if (message->path)
+		g_string_append_printf(str, " path=%s", message->path);
+
+	if (message->name)
+		g_string_append_printf(str, " name=%s", message->name);
+
+	if (message->dev)
+		g_string_append_printf(str, " dev=%s", message->dev);
+
+	if (message->is_inode)
+		g_string_append_printf(str, " ino=%li", message->inode);
+
+	if (message->ipaddr)
+		g_string_append_printf(str, " ipaddr=%s", message->ipaddr);
+
+	if (message->saddr)
+		g_string_append_printf(str, " saddr=%s", message->saddr);
+
+	if (message->source != 0)
+		g_string_append_printf(str, " src=%i", message->source);
+
+	if (message->daddr)
+		g_string_append_printf(str, " daddr=%s", message->daddr);
+
+	if (message->dest != 0)
+		g_string_append_printf(str, " dest=%i", message->dest);
+
+	if (message->netif)
+		g_string_append_printf(str, " netif=%s", message->netif);
+
+	if (message->laddr)
+		g_string_append_printf(str, " laddr=%s", message->laddr);
+
+	if (message->lport != 0)
+		g_string_append_printf(str, " lport=%i", message->lport);
+
+	if (message->faddr)
+		g_string_append_printf(str, " faddr=%s", message->faddr);
+
+	if (message->fport != 0)
+		g_string_append_printf(str, " fport=%i", message->fport);
+
+	if (message->port != 0)
+		g_string_append_printf(str, " port=%i", message->port);
+
+	if (message->is_src_sid)
+		g_string_append_printf(str, " ssid=%i", message->src_sid);
+
+	if (message->is_tgt_sid)
+		g_string_append_printf(str, " tsid=%i", message->tgt_sid);
+
+	if (message->is_capability)
+		g_string_append_printf(str, " capability=%i", message->capability);
+
+	if (message->is_key)
+		g_string_append_printf(str, " key=%i", message->key);
+
+	if (message->is_src_con)
+		g_string_append_printf(str, " scontext=%s:%s:%s", audit_log_get_user(audit_log, message->src_user),
+			                                audit_log_get_role(audit_log, message->src_role), 
+			                                audit_log_get_type(audit_log, message->src_type));
+
+	if (message->is_tgt_con)
+		g_string_append_printf(str, " tcontext=%s:%s:%s", audit_log_get_user(audit_log, message->tgt_user),
+			                                audit_log_get_role(audit_log, message->tgt_role), 
+			                                audit_log_get_type(audit_log, message->tgt_type));
+
+	if (message->is_obj_class)
+		g_string_append_printf(str, " tclass=%s", audit_log_get_obj(audit_log, message->obj_class));
+
+	g_string_append_printf(str, "\n");	
+	gtk_text_buffer_set_text(buffer, str->str, str->len);
+	g_string_free(str, TRUE);
+}
+
+static void 
+write_load_policy_message_to_gtk_text_buf(GtkTextBuffer *buffer, const load_policy_msg_t *message, const char *message_header)
+{
+	GString *str;
+	
+	assert(buffer != NULL && message != NULL && message_header != NULL);
+	str = g_string_new("");
+	if (str == NULL) {
+		fprintf(stderr, "Unable to create string buffer.\n");
+		return;
+	}
+	
+	g_string_append_printf(str, "%ssecurity:  %i users, %i roles, %i types, %i bools\n", message_header, message->users, message->roles, message->types, message->bools);
+	g_string_append_printf(str, "%ssecurity:  %i classes, %i rules\n", message_header, message->classes, message->rules);
+	gtk_text_buffer_set_text(buffer, str->str, str->len);
+	g_string_free(str, TRUE);
+}
+
+static void 
+write_boolean_message_to_gtk_text_buf(GtkTextBuffer *buffer, const boolean_msg_t *message, const char *message_header, audit_log_t *audit_log)
+{
+        int i;        
+        GString *str;
+
+	assert(buffer != NULL && message != NULL && message_header != NULL && audit_log != NULL);
+	str = g_string_new("");
+	if (str == NULL) {
+		fprintf(stderr, "Unable to create string buffer.\n");
+		return;
+	}
+        g_string_append_printf(str, "%ssecurity: committed booleans { ", message_header);
+
+        for (i = 0; i < message->num_bools; i++) {
+               g_string_append_printf(str, "%s:%i", audit_log_get_bool(audit_log, message->booleans[i]), message->values[i]);
+
+                if ((i + 1) < message->num_bools) 
+                        g_string_append_printf(str, ", ");
+        }
+        g_string_append_printf(str, " }\n");
+	gtk_text_buffer_set_text(buffer, str->str, str->len);
+	g_string_free(str, TRUE);
+}
+
 audit_log_view_t* seaudit_get_current_audit_log_view()
 {
 	seaudit_filtered_view_t *filtered_view;
@@ -833,6 +982,93 @@ void seaudit_on_LogFileOpen_activate(GtkWidget *widget, GdkEvent *event, gpointe
 	gtk_widget_destroy(file_selector);
 	seaudit_open_log_file(seaudit_app, filename);
 	return;
+}
+
+void
+seaudit_window_view_entire_message_in_textbox (GtkTreeView *treeview)
+{	
+	GtkWidget *view, *window, *scroll;
+	GtkTextBuffer *buffer;
+	GtkTreeSelection *sel;
+	GList *glist = NULL, *item = NULL;
+	GtkTreeModel *model;
+	GtkTreeIter iter;
+	GtkTreePath *path = NULL;
+	int fltr_msg_idx, msg_list_idx;
+	char *message_header = NULL;
+	msg_t *message = NULL;
+	audit_log_view_t *log_view;
+	audit_log_t *audit_log = NULL;
+	
+	assert(treeview != NULL);
+	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	scroll = gtk_scrolled_window_new(NULL, NULL);
+	view = gtk_text_view_new ();
+	gtk_window_set_title(GTK_WINDOW(window), "View Entire Message");
+	gtk_window_set_default_size(GTK_WINDOW(window), 480, 300);
+	gtk_container_add(GTK_CONTAINER(window), scroll);
+	gtk_container_add(GTK_CONTAINER(scroll), view);
+                                            
+	buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (view));
+	
+	log_view = seaudit_get_current_audit_log_view();
+	if (log_view == NULL) {
+		fprintf(stderr, "Unable to obtain current audit log view.\n");
+		return;
+	}
+	audit_log = log_view->my_log;
+	assert(audit_log != NULL);
+	
+	sel = gtk_tree_view_get_selection(treeview);
+	glist = gtk_tree_selection_get_selected_rows(sel, &model);
+	if (glist) {
+		/* Only grab the top-most selected item */
+		item = glist;
+		path = item->data;
+		assert(path != NULL);
+		if (gtk_tree_model_get_iter(model, &iter, path) == 0) {
+			fprintf(stderr, "Could not get valid iterator for the selected path.\n");
+			g_list_foreach(glist, (GFunc) gtk_tree_path_free, NULL);
+			g_list_free (glist);
+			return;	
+		}
+		fltr_msg_idx = seaudit_log_view_store_iter_to_idx((SEAuditLogViewStore*)model, &iter);
+		msg_list_idx = log_view->fltr_msgs[fltr_msg_idx];
+		message = audit_log->msg_list[msg_list_idx];
+		
+		message_header = (char*) malloc((TIME_SIZE + STR_SIZE) * sizeof(char));
+		if (message_header == NULL) {
+			fprintf(stderr, "memory error\n");
+			g_list_foreach(glist, (GFunc) gtk_tree_path_free, NULL);
+			g_list_free (glist);
+			return;
+		}
+
+		generate_message_header(message_header, audit_log, message->date_stamp, message->host);
+		if (message->msg_type == AVC_MSG)
+			write_avc_message_to_gtk_text_buf(buffer, message->msg_data.avc_msg, message_header, audit_log);
+		else if (message->msg_type == LOAD_POLICY_MSG)
+			write_load_policy_message_to_gtk_text_buf(buffer, message->msg_data.load_policy_msg, message_header);
+		else if (message->msg_type == BOOLEAN_MSG)
+			write_boolean_message_to_gtk_text_buf(buffer, message->msg_data.boolean_msg, message_header, audit_log);
+		
+		if(message_header)
+			free(message_header);
+		g_list_foreach(glist, (GFunc) gtk_tree_path_free, NULL);
+		g_list_free (glist);			
+	}
+	gtk_text_view_set_editable(GTK_TEXT_VIEW(view), FALSE);
+        gtk_widget_show(view);
+	gtk_widget_show(scroll);
+	gtk_widget_show(window);                     	
+}
+
+void seaudit_window_on_view_entire_msg_activated(GtkWidget *widget, GdkEvent *event, gpointer callback_data)
+{
+	seaudit_filtered_view_t *view;
+	
+	view = seaudit_window_get_current_view(seaudit_app->window);
+	seaudit_window_view_entire_message_in_textbox(view->tree_view);
 }
 
 void seaudit_on_ExportLog_activate(GtkWidget *widget, GdkEvent *event, gpointer callback_data)
