@@ -12,7 +12,7 @@ LIBSO  = $(TARGET).$(shell cat VERSION)
 libseaudit: libseaudit.a
 libseauditso: $(LIB-OBJ)
 	$(CC) $(LDFLAGS) -shared -o $(LIBSO) $(LIB-OBJ) -Wl,-soname,$(SONAME) 
-	
+
 libseaudit.a: $(LIB-OBJ)
 	ar cr $@ $(LIB-OBJ)
 
