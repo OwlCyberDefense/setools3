@@ -316,7 +316,7 @@ proc Apol_Analysis::display_rename_tab_Dlg {pageID} {
 		return -1
 	}
     	set rename_tab_Dlg [toplevel .rename_tab_Dlg]
-   	wm protocol $rename_tab_Dlg WM_DELETE_WINDOW "destroy $rename_tab_Dlg"
+   	wm protocol $rename_tab_Dlg WM_DELETE_WINDOW " "
     	wm withdraw $rename_tab_Dlg
     	wm title $rename_tab_Dlg "Rename results tab"
     	
@@ -341,7 +341,7 @@ proc Apol_Analysis::display_rename_tab_Dlg {pageID} {
 	wm deiconify $rename_tab_Dlg
 	focus $rename_tab_entryBox
 	bind $rename_tab_Dlg <Return> "Apol_Analysis::rename_ResultsTab $pageID; destroy $rename_tab_Dlg"
-	
+	wm protocol $rename_tab_Dlg WM_DELETE_WINDOW "destroy $rename_tab_Dlg"
 	return 0
 }
 
@@ -634,7 +634,7 @@ proc Apol_Analysis::display_analysis_info {} {
 	set descriptive_text [Apol_Analysis::get_analysis_info $curr_analysis_module]
 	# Create the top-level dialog and subordinate widgets
     	toplevel $info_Dlg 
-   	wm protocol $info_Dlg WM_DELETE_WINDOW "destroy $Apol_Analysis::info_Dlg"
+   	wm protocol $info_Dlg WM_DELETE_WINDOW " "
     	wm withdraw $info_Dlg
     	wm title $info_Dlg "Analysis Description"
     	set topf  [frame $info_Dlg.topf]
@@ -657,7 +657,7 @@ proc Apol_Analysis::display_analysis_info {} {
 	set height 440
 	wm geom $info_Dlg ${width}x${height}
 	wm deiconify $info_Dlg
-	
+	wm protocol $info_Dlg WM_DELETE_WINDOW "destroy $Apol_Analysis::info_Dlg"
      	return 0
 } 
 

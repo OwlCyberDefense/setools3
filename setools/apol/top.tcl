@@ -884,7 +884,7 @@ proc ApolTop::display_searchDlg {} {
 	
 	# Create the toplevel dialog window and set its' properties.
 	toplevel $searchDlg
-	wm protocol $searchDlg WM_DELETE_WINDOW "destroy $searchDlg"
+	wm protocol $searchDlg WM_DELETE_WINDOW " "
 	wm withdraw $searchDlg
 	wm title $searchDlg "Find"
 	
@@ -938,7 +938,7 @@ proc ApolTop::display_searchDlg {} {
 	focus $searchDlg_entryBox 
 	$searchDlg_entryBox selection range 0 end
 	bind $ApolTop::searchDlg <Return> { ApolTop::search }
-	
+	wm protocol $searchDlg WM_DELETE_WINDOW "destroy $searchDlg"
 	return 0
 }	
 
@@ -1013,7 +1013,7 @@ proc ApolTop::display_options_Dlg { } {
     		return 0
     	}
     	toplevel $options_Dialog
-   	wm protocol $options_Dialog WM_DELETE_WINDOW "destroy $options_Dialog"
+   	wm protocol $options_Dialog WM_DELETE_WINDOW " "
     	wm withdraw $options_Dialog
     	wm title $options_Dialog "Open Options"
     	
@@ -1076,7 +1076,7 @@ proc ApolTop::display_options_Dlg { } {
 	# Place a toplevel at a particular position
     	#::tk::PlaceWindow $options_Dialog widget center
 	wm deiconify $options_Dialog
-	
+	wm protocol $options_Dialog WM_DELETE_WINDOW "destroy $options_Dialog"
 	return 0
 }
 
@@ -1099,7 +1099,7 @@ proc ApolTop::display_goto_line_Dlg { } {
     		return 0
     	}
     	toplevel $goto_Dialog
-   	wm protocol $goto_Dialog WM_DELETE_WINDOW "destroy $goto_Dialog"
+   	wm protocol $goto_Dialog WM_DELETE_WINDOW " "
     	wm withdraw $goto_Dialog
     	wm title $goto_Dialog "Goto"
     	
@@ -1123,7 +1123,7 @@ proc ApolTop::display_goto_line_Dlg { } {
 	wm deiconify $goto_Dialog
 	focus $gotoDlg_entryBox
 	bind $ApolTop::goto_Dialog <Return> { ApolTop::call_tabs_goto_line_cmd; destroy $ApolTop::goto_Dialog }
-	
+	wm protocol $goto_Dialog WM_DELETE_WINDOW "destroy $goto_Dialog"
 	return 0
 }
 
@@ -1601,7 +1601,7 @@ proc ApolTop::helpDlg {title file_name} {
     	destroy $helpDlg
     }
     toplevel $helpDlg
-    wm protocol $helpDlg WM_DELETE_WINDOW "destroy $helpDlg"
+    wm protocol $helpDlg WM_DELETE_WINDOW " "
     wm withdraw $helpDlg
     wm title $helpDlg "$title"
 
@@ -1633,7 +1633,7 @@ proc ApolTop::helpDlg {title file_name} {
     	close $f
     }
     ApolTop::makeTextBoxReadOnly $resultsbox
-   	 
+    wm protocol $helpDlg WM_DELETE_WINDOW "destroy $helpDlg"
     return
 }
 

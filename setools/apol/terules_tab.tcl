@@ -730,10 +730,9 @@ proc Apol_TE::display_rename_tab_Dlg {pageID} {
 		return -1
 	}
     	set rename_tab_Dlg [toplevel .rename_tab_Dlg]
-   	wm protocol $rename_tab_Dlg WM_DELETE_WINDOW "destroy $rename_tab_Dlg"
     	wm withdraw $rename_tab_Dlg
     	wm title $rename_tab_Dlg "Rename results tab"
-    	
+    	wm protocol $rename_tab_Dlg WM_DELETE_WINDOW " "
     	if {$tcl_platform(platform) == "windows"} {
 		wm resizable $rename_tab_Dlg 0 0
 	} else {
@@ -757,7 +756,7 @@ proc Apol_TE::display_rename_tab_Dlg {pageID} {
 	bind $rename_tab_Dlg <Return> "Apol_TE::rename_ResultsTab $pageID; destroy $rename_tab_Dlg"
 	wm transient $rename_tab_Dlg $ApolTop::mainframe
         grab $rename_tab_Dlg
-        
+        wm protocol $rename_tab_Dlg WM_DELETE_WINDOW "destroy $rename_tab_Dlg"
 	return 0
 }
 

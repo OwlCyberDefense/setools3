@@ -927,7 +927,7 @@ proc Apol_Analysis_fulflow::display_find_more_flows_Dlg {} {
     	toplevel $find_flows_Dlg 
      	wm withdraw $find_flows_Dlg	
     	wm title $find_flows_Dlg "Find more flows"
-    	wm protocol $find_flows_Dlg WM_DELETE_WINDOW "destroy $find_flows_Dlg"
+    	wm protocol $find_flows_Dlg WM_DELETE_WINDOW " "
     		
 	# Create frames
         set topf  [frame $find_flows_Dlg.topf]
@@ -972,6 +972,7 @@ proc Apol_Analysis_fulflow::display_find_more_flows_Dlg {} {
         pack $b_find $b_cancel -side left -padx 4 -anchor center
 	wm deiconify $find_flows_Dlg
 	focus $find_flows_Dlg
+	wm protocol $find_flows_Dlg WM_DELETE_WINDOW "destroy $find_flows_Dlg"
 	return 0
 }
 
@@ -2711,7 +2712,8 @@ proc Apol_Analysis_fulflow::advanced_filters_create_dialog {path_name title_txt}
     	toplevel $f_opts($path_name,name) 
      	wm withdraw $f_opts($path_name,name) 	
     	wm title $f_opts($path_name,name) $title_txt 
-    	   	
+	wm protocol $f_opts($path_name,name) WM_DELETE_WINDOW  " "
+		    	   	
    	set close_frame [frame $f_opts($path_name,name).close_frame -relief sunken -bd 1]
    	set topf  [frame $f_opts($path_name,name).topf]
         set pw1 [PanedWindow $topf.pw1 -side left -weights available]
@@ -2933,9 +2935,6 @@ proc Apol_Analysis_fulflow::advanced_filters_create_dialog {path_name title_txt}
 	pack $middle_f -side left -anchor center -after $include_f -padx 5 -expand yes
 	pack $types_frame $objs_frame -side top -anchor nw -padx 5 -pady 2 -expand yes -fill both
 	
-	wm protocol $f_opts($path_name,name) WM_DELETE_WINDOW \
-		"Apol_Analysis_fulflow::advanced_filters_destroy_dialog $path_name"
-    	
         # Configure top-level dialog specifications
         set width 780
 	set height 750
@@ -2944,6 +2943,9 @@ proc Apol_Analysis_fulflow::advanced_filters_create_dialog {path_name title_txt}
 	focus $f_opts($path_name,name)
 	
 	Apol_Analysis_fulflow::advanced_filters_set_widgets_to_default_state $path_name
+	wm protocol $f_opts($path_name,name) WM_DELETE_WINDOW \
+		"Apol_Analysis_fulflow::advanced_filters_destroy_dialog $path_name"
+    	
 	return 0
 }
 
