@@ -105,10 +105,17 @@ typedef struct dta_query {
 	analysis_obj_options_t *obj_options;
 } dta_query_t;
 
-/*
- * Information Flow Analysis
- */
+/* exported prototypes */
 
+/* Generic function prototypes for adding object class options and end types to an analysis query. */
+int analysis_query_add_obj_class(analysis_obj_options_t **obj_options, 
+				 int *num_obj_options, int obj_class);
+int analysis_query_add_obj_class_perm(analysis_obj_options_t **obj_options, 
+				      int *num_obj_options, int obj_class, 
+				      int perm);
+int analysis_query_add_end_type(int **end_types, int *num_end_types, int end_type);
+
+/* dta_query_t */
 void free_entrypoint_type(void *t);
 void free_trans_domain(void *t);
 void free_domain_trans_analysis(domain_trans_analysis_t *p);
@@ -121,5 +128,5 @@ domain_trans_analysis_t *new_domain_trans_analysis(void);
 trans_domain_t *new_trans_domain(void); 
 int determine_domain_trans(dta_query_t *dta_query, 
 			   domain_trans_analysis_t **dta, 
-
+			   policy_t *policy);
 #endif /*_APOLICY_ANALYSIS_H_*/

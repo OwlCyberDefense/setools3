@@ -3865,7 +3865,7 @@ int Apol_DirectInformationFlowAnalysis(ClientData clientData, Tcl_Interp *interp
 	CONST84 char **obj_classes;
 	bool_t filter_obj_classes, filter_end_types;
 	regex_t reg;
-	iflow_query_t* iflow_query = NULL;
+	iflow_query_t *iflow_query = NULL;
 	
 	/* Handle case if ending type regular expression is specified. */ 
 	if(argc != 7) {
