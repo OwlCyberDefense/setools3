@@ -74,6 +74,34 @@ static int re_append_cls_perms(ta_item_t *list,
 	return 0;	
 }
  
+static int append_type_attrib(char **buf, int *buf_sz, ta_item_t *tptr, policy_t *policy)
+{
+	if (append_str(buf, buf_sz, " ") != 0)  {
+		free(buf);
+		return -1;
+	}
+	if ((tptr->type & IDX_SUBTRACT)) {
+		if (append_str(buf, buf_sz, "-") != 0)  {
+			free(buf);
+			return -1;
+		}
+	}
+	if ((tptr->type & IDX_TYPE)) {
+		if (append_str(buf, buf_sz, policy->types[tptr->idx].name) != 0)  {
+			free(buf);
+			return -1;
+		}
+	} else if(tptr->type & IDX_ATTRIB) {
+		if (append_str(buf, buf_sz,  policy->attribs[tptr->idx].name) != 0)  {
+			free(buf);
+			return -1;
+		}
+	} else {
+		free(buf);
+		return -1;
+	}
+	return 0;
+}
  
 /* return NULL for error, mallocs memory, caller must free */
 char *re_render_av_rule(bool_t 	addlineno, 	/* add policy.conf line  */
@@ -141,25 +169,8 @@ char *re_render_av_rule(bool_t 	addlineno, 	/* add policy.conf line  */
 		}
 	
 	for(tptr = rule->src_types; tptr != NULL; tptr = tptr->next) {
-		if ((tptr->type & IDX_TYPE))
-			if ((tptr->type & IDX_SUBTRACT))
-				sprintf(tbuf, " -%s", policy->types[tptr->idx].name);
-			else
-				sprintf(tbuf, " %s", policy->types[tptr->idx].name);
-		else if ((tptr->type & IDX_ATTRIB))
-			if ((tptr->type & IDX_SUBTRACT))
-				sprintf(tbuf, " -%s", policy->attribs[tptr->idx].name);
-			else
-				sprintf(tbuf, " %s", policy->attribs[tptr->idx].name);
-		else {
-			free(buf);
+		if (append_type_attrib(&buf, &buf_sz, tptr, policy) == -1)
 			return NULL;
-		}
-
-		if(append_str(&buf, &buf_sz, tbuf) != 0) {
-			free(buf);
-			return NULL;
-		}
 	}
 	if(multiple) {
 		if(append_str(&buf, &buf_sz, " }") != 0) {
@@ -196,24 +207,8 @@ char *re_render_av_rule(bool_t 	addlineno, 	/* add policy.conf line  */
 		}
 				
 	for(tptr = rule->tgt_types; tptr != NULL; tptr = tptr->next) {
-		if ((tptr->type & IDX_TYPE))
-			if ((tptr->type & IDX_SUBTRACT))
-				sprintf(tbuf, " -%s", policy->types[tptr->idx].name);
-			else
-				sprintf(tbuf, " %s", policy->types[tptr->idx].name);
-		else if ((tptr->type & IDX_ATTRIB))
-			if ((tptr->type & IDX_SUBTRACT))
-				sprintf(tbuf, " -%s", policy->attribs[tptr->idx].name);
-			else
-				sprintf(tbuf, " %s", policy->attribs[tptr->idx].name);
-		else {
-			free(buf);
+		if (append_type_attrib(&buf, &buf_sz, tptr, policy) == -1)
 			return NULL;
-		}
-		if(append_str(&buf, &buf_sz, tbuf) != 0) {
-			free(buf);
-			return NULL;			
-		}
 	}
 	if(multiple) {
 		if(append_str(&buf, &buf_sz, " }") != 0) {
@@ -306,19 +301,8 @@ char *re_render_tt_rule(bool_t addlineno, int idx, policy_t *policy)
 		}
 	
 	for(tptr = rule->src_types; tptr != NULL; tptr = tptr->next) {
-		if(tptr->type == IDX_TYPE) 
-			sprintf(tbuf, " %s", policy->types[tptr->idx].name);
-		else if(tptr->type == IDX_ATTRIB) 
-			sprintf(tbuf, " %s", policy->attribs[tptr->idx].name);
-		else {
-			free(buf);
+		if (append_type_attrib(&buf, &buf_sz, tptr, policy) == -1)
 			return NULL;
-		}
-
-		if(append_str(&buf, &buf_sz, tbuf) != 0)  {
-			free(buf);
-			return NULL;
-		}
 	}
 	if(multiple) {
 		if(append_str(&buf, &buf_sz, " }") != 0) {
@@ -355,18 +339,8 @@ char *re_render_tt_rule(bool_t addlineno, int idx, policy_t *policy)
 		}
 	
 	for(tptr = rule->tgt_types; tptr != NULL; tptr = tptr->next) {
-		if(tptr->type == IDX_TYPE) 
-			sprintf(tbuf, " %s", policy->types[tptr->idx].name);
-		else if(tptr->type == IDX_ATTRIB) 
-			sprintf(tbuf, " %s", policy->attribs[tptr->idx].name);
-		else  {
-			free(buf);
+		if (append_type_attrib(&buf, &buf_sz, tptr, policy) == -1)
 			return NULL;
-		}
-		if(append_str(&buf, &buf_sz, tbuf) != 0) {
-			free(buf);
-			return NULL;			
-		}
 	}
 	if(multiple) {
 		if(append_str(&buf, &buf_sz, " }") != 0) {
@@ -471,4 +445,3 @@ char * re_render_initial_sid_security_context(int idx, policy_t *policy)
 	}
 	return(re_render_security_context(policy->initial_sids[idx].scontext, policy));
 }
-
