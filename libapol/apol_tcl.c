@@ -312,23 +312,29 @@ static iflow_query_t* set_transitive_query_args(Tcl_Interp *interp, char *argv[]
 			rt = Tcl_GetInt(interp, obj_class_perms[cur], &num_obj_perms);
 			if(rt == TCL_ERROR) {
 				Tcl_AppendResult(interp, "Item in obj_class_perms list apparently is not an integer\n", (char *) NULL);
+				Tcl_Free((char *) obj_class_perms);
+				iflow_query_destroy(iflow_query);
 				return NULL;
 			}
 			total_num_perms = get_num_perms_for_obj_class(obj, policy);
 			if (!total_num_perms) {
 				Tcl_AppendResult(interp, "Object class without any permissions!\n", (char *) NULL);
+				Tcl_Free((char *) obj_class_perms);
+				iflow_query_destroy(iflow_query);
 				return NULL;
 			}
 
 			if (num_obj_perms == 0) {
-				if (iflow_query_add_obj_class(iflow_query, obj) == -1) {
-					Tcl_AppendResult(interp, "error adding obj\n", (char *) NULL);
-					return NULL;
-				}
-			} else if (num_obj_perms != total_num_perms) {
+				Tcl_AppendResult(interp, "Permissions must be provided for a class.\n", (char *) NULL);
+				Tcl_Free((char *) obj_class_perms);
+				iflow_query_destroy(iflow_query);
+				return NULL;
+			} else {
 				bool_t *perms_used = (bool_t*)malloc(sizeof(bool_t) * policy->num_perms);
 				if (!perms_used) {
 					Tcl_AppendResult(interp, "Memory error\n", (char *) NULL);
+					Tcl_Free((char *) obj_class_perms);
+					iflow_query_destroy(iflow_query);
 					return NULL;
 				}
 				memset(perms_used, FALSE, sizeof(bool_t) * policy->num_perms);
@@ -346,15 +352,16 @@ static iflow_query_t* set_transitive_query_args(Tcl_Interp *interp, char *argv[]
 					if (perms_used[j] || !is_valid_perm_for_obj_class(policy, obj, j)) {
 						continue;
 					}
-					if (iflow_query_add_obj_class_perm(iflow_query, obj, j) == -1) {
+					if (analysis_query_add_obj_class_perm(&iflow_query->obj_options, &iflow_query->num_obj_options, obj, j) == -1) {
 						Tcl_AppendResult(interp, "error adding perm\n", (char *) NULL);
+						Tcl_Free((char *) obj_class_perms);
+						free(perms_used);
+						iflow_query_destroy(iflow_query);
 						return NULL;
 					}
 				}
 				free(perms_used);
-			} else {
-				cur += num_obj_perms;
-			}
+			} 
 			cur++;
 		}
 		Tcl_Free((char *) obj_class_perms);
@@ -400,7 +407,7 @@ static iflow_query_t* set_transitive_query_args(Tcl_Interp *interp, char *argv[]
 				free(name);
 				continue;
 			}
-			if (iflow_query_add_end_type(iflow_query, type) != 0) {
+			if (analysis_query_add_end_type(&iflow_query->end_types, &iflow_query->num_end_types, type) != 0) {
 				free(name);
 				iflow_query_destroy(iflow_query);
 				Tcl_AppendResult(interp, "Error adding end type to query!\n", (char *) NULL);
@@ -3452,6 +3459,11 @@ int Apol_GetTypeInfo(ClientData clientData, Tcl_Interp *interp, int argc, char *
 /* 
  * argv[1] - boolean value (0 for a forward DT analysis; otherwise, reverse DT analysis)
  * argv[2] - specified domain type used to start the analysis
+ * argv[3] - flag (boolean value) for indicating that a list of object classes are being provided.
+ * argv[4] - number of object classes that are to be included in the query.
+ * argv[5] - list of object classes/permissions
+ * argv[6] - flag (boolean value) for selecting end type(s).
+ * argv[7] - list of end types
  *
  * Given a domain type, this function determines what new domains the given domain can transition to/from.
  * and returns those domains, as well as the entrypoint type that allows that transition and all
@@ -3503,48 +3515,168 @@ int Apol_GetTypeInfo(ClientData clientData, Tcl_Interp *interp, int argc, char *
 
 int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
 {
-	domain_trans_analysis_t *dta;
-	int rt;
-	bool_t reverse;
-	char *source_type;
+	int rt, num_objs, num_objs_options, num_end_types, i, j;
+	int total_num_perms, cur, type;
+	int num_obj_perms, obj, perm;
+	CONST84 char **obj_class_perms, **end_types;
+	dta_query_t *dta_query = NULL;
+	domain_trans_analysis_t *dta_results;
+	bool_t filter_obj_classes, filter_end_types;
 	
-	if(argc == 2) {
-		/* determine if requesting a reverse DT analysis */
-		reverse = getbool("0");
-		source_type = argv[1];
-	} 
-	else if(argc == 3) {
-		/* determine if requesting a reverse DT analysis */
-		reverse = getbool(argv[1]);
-		source_type = argv[2];
-	}
-	else {
+	if (argc != 8) {
 		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
 		return TCL_ERROR;
 	}
+		
 	if(policy == NULL) {
-		Tcl_AppendResult(interp,"No current policy file is opened!", (char *) NULL);
+		Tcl_AppendResult(interp, "No current policy file is opened!", (char *) NULL);
 		return TCL_ERROR;
 	}	
-	if(!is_valid_str_sz(source_type)) {
+	if(!is_valid_str_sz(argv[2])) {
 		Tcl_AppendResult(interp, "The provided domain type string is too large.", (char *) NULL);
 		return TCL_ERROR;
 	}
 	
-	/*perform the analysis */
-	rt = determine_domain_trans(reverse, source_type, &dta, policy);
-	if(rt == -2) {
-		if (reverse) {
+	filter_obj_classes = getbool(argv[3]);
+	filter_end_types = getbool(argv[6]);
+	rt = Tcl_GetInt(interp, argv[4], &num_objs);
+	if(rt == TCL_ERROR) {
+		Tcl_AppendResult(interp,"argv[4] apparently not an integer", (char *) NULL);
+		return TCL_ERROR;
+	}
+	
+	if(filter_obj_classes) {
+		/* Second, disassemble list of object class permissions, returning an array of pointers to the elements. */
+		rt = Tcl_SplitList(interp, argv[5], &num_objs_options, &obj_class_perms);
+		if(rt != TCL_OK) {
+			Tcl_AppendResult(interp, "Error splitting TCL list.", (char *) NULL);
+			Tcl_Free((char *) obj_class_perms);
+			return TCL_ERROR;
+		}
+		
+		if(num_objs_options < 1) {
+			Tcl_AppendResult(interp, "Must provide object class permissions.", (char *) NULL);
+			Tcl_Free((char *) obj_class_perms);
+			return TCL_ERROR;
+		}
+	}
+	
+	if (filter_end_types) {
+		/* First, disassemble TCL intermediate types list, returning an array of pointers to the elements. */
+		rt = Tcl_SplitList(interp, argv[7], &num_end_types, &end_types);
+		if(rt != TCL_OK) {
+			Tcl_AppendResult(interp, "Error splitting TCL list.", (char *) NULL);
+			Tcl_Free((char *) end_types);
+			return TCL_ERROR;
+		}
+		
+		if(num_end_types < 1) {
+			Tcl_AppendResult(interp, "Must provide at least one end type.", (char *) NULL);
+			Tcl_Free((char *) end_types);
+			return TCL_ERROR;
+		}
+	}		
+						
+	/* Create the query structure */
+	dta_query = dta_query_create();
+	if (dta_query == NULL) {
+		Tcl_AppendResult(interp,"Memory error allocating dta query.\n", (char *) NULL);
+		return TCL_ERROR;
+	}
+	
+	/* Set the start type for our query */ 					
+	dta_query->start_type = get_type_idx(argv[2], policy);
+	if (dta_query->start_type < 0) {
+		dta_query_destroy(dta_query);
+		Tcl_AppendResult(interp, "Invalid starting type ", argv[2], (char *) NULL);
+		return TCL_ERROR;
+	}
+	
+	/* determine if requesting a reverse DT analysis */
+	dta_query->reverse = getbool(argv[1]);
+	
+	if(filter_obj_classes && obj_class_perms != NULL) {		
+		assert(num_objs > 0);
+		cur = 0;
+		/* Set the object classes permission info */
+		/* Keep in mind that this is an encoded TCL list in the form "class1 num_perms perm1 ... permN ... classN num_perms perm1 ... permN" */
+		for (i = 0; i < num_objs; i++) {
+			obj = get_obj_class_idx(obj_class_perms[cur], policy);
+			if (obj < 0) {
+				Tcl_AppendResult(interp, "Invalid object class:\n", obj_class_perms[cur], (char *) NULL);
+				Tcl_Free((char *) obj_class_perms);
+				dta_query_destroy(dta_query);
+				return TCL_ERROR;
+			}
+			/* Increment to next element, which should be the number of specified permissions for the class */
+			cur++;
+			rt = Tcl_GetInt(interp, obj_class_perms[cur], &num_obj_perms);
+			if(rt == TCL_ERROR) {
+				Tcl_AppendResult(interp, "Item in obj_class_perms list apparently is not an integer\n", (char *) NULL);
+				return TCL_ERROR;
+			}
+			if (num_obj_perms == 0) {
+				fprintf(stderr, "No permissions for object: %s. Skipping...\n", obj_class_perms[cur - 1]);
+				continue;	
+			}
+			
+			/* Get the total number of permissions for the class from the policy. */
+			total_num_perms = get_num_perms_for_obj_class(obj, policy);
+			if (!total_num_perms) {
+				Tcl_AppendResult(interp, "Object class without any permissions!\n", (char *) NULL);
+				return TCL_ERROR;
+			}
+			
+			for (j = 0; j < num_obj_perms; j++) {
+				cur++;
+				perm = get_perm_idx(obj_class_perms[cur], policy);
+				if (perm < 0 || !is_valid_perm_for_obj_class(policy, obj, perm)) {
+					fprintf(stderr, "Invalid object class permission\n");
+					continue;
+				}
+				if (analysis_query_add_obj_class_perm(&dta_query->obj_options, &dta_query->num_obj_options, obj, j) == -1) {
+					Tcl_AppendResult(interp, "error adding perm\n", (char *) NULL);
+					return TCL_ERROR;
+				}
+			}
+			cur++;
+		}
+		Tcl_Free((char *) obj_class_perms);
+	}
+
+	if (filter_end_types) {
+		/* Set intermediate type info */
+		for (i = 0; i < num_end_types; i++) {
+			type = get_type_idx(end_types[i], policy);
+			if (type < 0) {
+				/* This is an invalid ending type, so ignore */
+				continue;
+			}
+			if (analysis_query_add_end_type(&dta_query->end_types, &dta_query->num_end_types, type) != 0) {
+				dta_query_destroy(dta_query);
+				Tcl_AppendResult(interp, "Memory error!\n", (char *) NULL);
+				return TCL_ERROR;
+			}
+		}
+		Tcl_Free((char *) end_types);
+	}
+	
+	/* Perform the analysis */
+	rt = determine_domain_trans(dta_query, &dta_results, policy);
+	if (rt == -2) {
+		if (dta_query->reverse) {
 			Tcl_AppendResult(interp, "invalid target type name", (char *) NULL);
 		} else {
 			Tcl_AppendResult(interp, "invalid source type name", (char *) NULL);
 		}
+		dta_query_destroy(dta_query);
 		return TCL_ERROR;
-	}
-	else if(rt < 0) {
+	} else if(rt < 0) {
+		dta_query_destroy(dta_query);
 		Tcl_AppendResult(interp, "error with domain transition anaysis", (char *) NULL);
 		return TCL_ERROR;
 	}
+	dta_query_destroy(dta_query);
 	
 	/* format the result into a tcl list (yuk!) */
 	{
@@ -3554,7 +3686,7 @@ int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *interp, int
 	trans_domain_t *t;
 	entrypoint_type_t *ep;
 	/* source type */
-	rt = get_type_name(dta->start_type, &tmp, policy);
+	rt = get_type_name(dta_results->start_type, &tmp, policy);
 	if(rt != 0) {
 		Tcl_ResetResult(interp);
 		Tcl_AppendResult(interp, "analysis error (looking up starting type name)", (char *) NULL);
@@ -3563,14 +3695,14 @@ int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *interp, int
 	Tcl_AppendElement(interp, tmp);
 	free(tmp);
 	/* # of target types */
-	sprintf(tbuf, "%d", dta->trans_domains->num);
+	sprintf(tbuf, "%d", dta_results->trans_domains->num);
 	Tcl_AppendElement(interp, tbuf);
 	
 	/* all target types */
-	for(x = dta->trans_domains->head; x != NULL; x = x->next) {
+	for(x = dta_results->trans_domains->head; x != NULL; x = x->next) {
 		t = (trans_domain_t *)x->data;
 		/* target type */
-		assert(dta->start_type == t->start_type);
+		assert(dta_results->start_type == t->start_type);
 		rt = get_type_name(t->trans_type, &tmp, policy);
 		if(rt != 0) {
 			Tcl_ResetResult(interp);
@@ -3656,11 +3788,31 @@ int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *interp, int
 				Tcl_AppendElement(interp, tbuf);
 			}
 		}
+		/* # of additional rules */
+		sprintf(tbuf, "%d", t->num_other_rules);
+		Tcl_AppendElement(interp, tbuf);
+		/* all additional rules */
+		for(i = 0; i < t->num_other_rules; i++) {
+			tmp = re_render_av_rule(0, t->other_rules[i], 0, policy);
+			if(tmp == NULL) {
+				Tcl_ResetResult(interp);
+				Tcl_AppendResult(interp, "analysis error rendering additional rules",  (char *) NULL);
+				return TCL_ERROR;
+			}
+			Tcl_AppendElement(interp, tmp);
+			free(tmp);
+			sprintf(tbuf, "%d", get_rule_lineno(t->other_rules[i], RULE_TE_ALLOW, policy));
+			Tcl_AppendElement(interp, tbuf);
+			/* Append a boolean value indicating whether this rule is enabled 
+			 * for conditional policy support */
+			sprintf(tbuf, "%d", policy->av_access[t->other_rules[i]].enabled);
+			Tcl_AppendElement(interp, tbuf);
+		}
 	}
 	
 	} /* formal result block */
 	
-	free_domain_trans_analysis(dta);
+	free_domain_trans_analysis(dta_results);
 	return TCL_OK;
 
 }
@@ -3814,7 +3966,7 @@ int Apol_DirectInformationFlowAnalysis(ClientData clientData, Tcl_Interp *interp
 				iflow_query_destroy(iflow_query);
 				return TCL_ERROR;
 			}
-			if (iflow_query_add_obj_class(iflow_query, obj) == -1) {
+			if (analysis_query_add_obj_class(&iflow_query->obj_options, &iflow_query->num_obj_options, obj) == -1) {
 				Tcl_AppendResult(interp, "error adding object class\n", (char *) NULL);
 				iflow_query_destroy(iflow_query);
 				return TCL_ERROR;
@@ -3863,7 +4015,7 @@ int Apol_DirectInformationFlowAnalysis(ClientData clientData, Tcl_Interp *interp
 				free(name);
 				continue;
 			}
-			if (iflow_query_add_end_type(iflow_query, type) != 0) {
+			if (analysis_query_add_end_type(&iflow_query->end_types, &iflow_query->num_end_types, type) != 0) {
 				free(name);
 				iflow_query_destroy(iflow_query);
 				Tcl_AppendResult(interp, "Error adding end type to query!\n", (char *) NULL);
