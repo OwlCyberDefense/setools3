@@ -503,6 +503,19 @@ proc SEUser_Top::load_policy {} {
 }
 
 # ------------------------------------------------------------------------------
+#  Command SEUser_Top::update_environment_vars
+# ------------------------------------------------------------------------------ 
+proc SEUser_Top::update_environment_vars { } {
+	# Append /sbin and /usr/sbin to path for exec commands
+	set new_value [append ::env(PATH) ":/sbin"] 
+	set ::env(PATH) $new_value
+	set new_value [append ::env(PATH) ":/usr/sbin"]
+	set ::env(PATH) $new_value
+
+	return 0
+}
+
+# ------------------------------------------------------------------------------
 #  Command SEUser_Top::initialize
 #
 #  Description: Performs application initialization 
@@ -512,6 +525,8 @@ proc SEUser_Top::initialize { } {
 	
 	# Reset flag for indicating policy changes.		
 	set SEUser_Top::policy_changes_flag 0
+	SEUser_Top::update_environment_vars
+	
 	set rt [catch {SEUser_db::init_db} err]
 	if { $rt != 0 } {
 		tk_messageBox -icon error -type ok -title "Error" \
