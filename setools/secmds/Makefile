@@ -18,7 +18,7 @@ LIBSELINUXSO      = -lselinux
 
 INCLUDE		= -I.. -I../libapol -I../libsefs 
 
-SE_CMDS		= seinfo sesearch relabel-analysis-tool flowtool
+SE_CMDS		= seinfo sesearch 
 SELINUX_TOOLS   = replcon findcon indexcon searchcon 
 
 CFLAGS  	+= -DSEINFO_VERSION_NUM='"$(shell cat SEINFO_VERSION)"'
@@ -44,12 +44,6 @@ seinfo: seinfo.o $(LIBAPOL)
 
 sesearch: sesearch.o $(LIBAPOL)
 	$(CC) -o $@ sesearch.o $(LIBAPOL) $(LIBS) $(LINKFLAGS) $(LIBSELINUX)
-
-flowtool: flowtool.o $(LIBAPOL)
-	$(CC) -o $@ flowtool.o $(LIBAPOL) $(LIBS) $(LINKFLAGS) $(LIBSELINUX)
-
-relabel-analysis-tool: relabel-analysis-tool.o $(LIBAPOL)
-	$(CC) -o $@ relabel-analysis-tool.o $(LIBAPOL) $(LIBS) $(LINKFLAGS) $(LIBSELINUX)
 
 # replcon, findcon, indexcon, and searchcon must always be linked to libselinux.  
 # We use the LIBSELINUXSO variable (defined above) to do this. 
