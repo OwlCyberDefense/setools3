@@ -80,7 +80,8 @@ int avh_add_rule(avh_node_t *node, int ridx, unsigned char hint);
 avh_node_t *avh_find_next_node(avh_node_t *node);
 avh_node_t *avh_insert(avh_t *avh, avh_key_t *key);
 int avh_eval(avh_t *avh, int *max, int *num_entries, int *num_buckets, int *num_used);
-avh_idx_t *avh_idx_find(avh_idx_t *idx, int data);
+avh_idx_t *avh_src_type_idx_find(avh_t *avh, int type);
+avh_idx_t *avh_tgt_type_idx_find(avh_t *avh, int type);
 
 #endif /* _APOLICY_AVHASH_H_ */
 
