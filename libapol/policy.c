@@ -2715,7 +2715,7 @@ int extract_obj_classes_from_te_rule(int rule_idx, int rule_type, int **obj_clas
 	ta_item_t* obj_class_ptr = NULL;
 	unsigned char flags = 0;
 	
-	if (rule_idx >= policy->num_av_access || rule_idx < 0 || policy == NULL)
+	if (rule_idx >= (policy->num_av_access + policy->num_av_audit + policy->num_te_trans) || rule_idx < 0 || policy == NULL)
 		return -1;
 
 	*obj_classes = NULL;
@@ -2774,7 +2774,7 @@ int extract_perms_from_te_rule(int rule_idx, int rule_type, int **perms, int *nu
 	ta_item_t* perm_ptr = NULL;
 	av_item_t* rule = NULL;
 
-	if (rule_idx >= policy->num_av_access || rule_idx < 0 || policy == NULL)
+	if (rule_idx >= (policy->num_av_access + policy->num_av_audit + policy->num_te_trans) || rule_idx < 0 || policy == NULL)
 		return -1;
 
 	*perms = NULL;
