@@ -263,13 +263,18 @@ int main (int argc, char **argv)
 	q.perms = perms;
 	
 	if(class_name != NULL) {
-		cls = get_obj_class_idx(class_name, policy);
-		if(cls < 0) {
+		q.classes = (int *)malloc(sizeof(int)*1);
+		if (q.classes == NULL) {
+			printf("out of memory\n");
+			free_teq_query_contents(&q);
+			exit(1);
+		}
+		q.classes[0] = get_obj_class_idx(class_name, policy);
+		if (q.classes[0] < 0) {
 			printf("Invalid class name: %s\n", class_name);
 			free_teq_query_contents(&q);
 			exit(1);
 		}
-		q.classes = &cls;
 		q.num_classes = 1;
 	}
 
