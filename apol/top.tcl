@@ -1029,9 +1029,10 @@ proc ApolTop::create { } {
 	    {cascad "&Permission Mappings" {Perm_Map_Tag} pmap_menu 0 {}}
         }
 	"&Help" {} helpmenu 0 {
-	    {command "&General Help" {all option} "Show help" {} -command ApolTop::helpDlg}
-	    {command "&Domain Transition Analysis" {all option} "Show help" {} -command ApolTop::dtaHelpDlg}
-	    {command "&Information Flow Analysis" {all option} "Show help" {} -command ApolTop::iflowHelpDlg}
+	    {command "&General Help" {all option} "Show help" {} -command {ApolTop::helpDlg "Help" "apol_help.txt"}}
+	    {command "&Domain Transition Analysis" {all option} "Show help" {} -command {ApolTop::helpDlg "Domain Transition Analysis Help" "dta_help.txt"}}
+	    {command "&Information Flow Analysis" {all option} "Show help" {} -command {ApolTop::helpDlg "Information Flow Analysis Help" "iflow_help.txt"}}
+	    {command "&Object Classes and Permissions" {all option} "Show help" {} -command {ApolTop::helpDlg "Object Classes/Permissions Help" "obj_perms_help.txt"}}
 	    {command "&About" {all option} "Show about box" {} -command ApolTop::aboutBox}
 	}
 	}
@@ -1405,7 +1406,7 @@ proc ApolTop::addRecent {file} {
 	return	
 }
 
-proc ApolTop::helpDlg {} {
+proc ApolTop::helpDlg {title file_name} {
     variable contents
     variable helpDlg
     set helpDlg .apol_helpDlg
@@ -1417,7 +1418,7 @@ proc ApolTop::helpDlg {} {
     toplevel $helpDlg
     wm protocol $helpDlg WM_DELETE_WINDOW "destroy $helpDlg"
     wm withdraw $helpDlg
-    wm title $helpDlg "Help"
+    wm title $helpDlg "$title"
 
     set hbox [frame $helpDlg.hbox ]
     # Display results window
@@ -1427,49 +1428,8 @@ proc ApolTop::helpDlg {} {
     set okButton [Button $hbox.okButton -text "OK" \
 		      -command "destroy $helpDlg"]
     # go to the script dir to find the help file
-    set script_dir  [apol_GetScriptDir "apol_help.txt"]
-    set helpfile "$script_dir/apol_help.txt"
-    
-    # Placing display widgets
-    pack $hbox -expand yes -fill both -padx 5 -pady 5
-    pack $okButton -side bottom
-    pack $sw -side left -expand yes -fill both 
-    # Place a toplevel at a particular position
-    #::tk::PlaceWindow $helpDlg widget center
-    wm deiconify $helpDlg
-    
-    $resultsbox delete 1.0 end
-    set f [open $helpfile]
-    $resultsbox insert end [read $f]
-    close $f
-    $resultsbox configure -state disabled
-   	 
-    return
-}
-proc ApolTop::dtaHelpDlg {} {
-    variable contents
-    variable helpDlg
-    set helpDlg .apol_helpDlg
-    
-    # Checking to see if output window already exists. If so, it is destroyed.
-    if { [winfo exists $helpDlg] } {
-    	destroy $helpDlg
-    }
-    toplevel $helpDlg
-    wm protocol $helpDlg WM_DELETE_WINDOW "destroy $helpDlg"
-    wm withdraw $helpDlg
-    wm title $helpDlg "Domain Transition Analysis Help"
-
-    set hbox [frame $helpDlg.hbox ]
-    # Display results window
-    set sw [ScrolledWindow $hbox.sw -auto none]
-    set resultsbox [text [$sw getframe].text -bg white -wrap none]
-    $sw setwidget $resultsbox
-    set okButton [Button $hbox.okButton -text "OK" \
-		      -command "destroy $helpDlg"]
-    # go to the script dir to find the help file
-    set script_dir  [apol_GetScriptDir "dta_help.txt"]
-    set helpfile "$script_dir/dta_help.txt"
+    set script_dir  [apol_GetScriptDir "$file_name"]
+    set helpfile "$script_dir/$file_name"
     
     # Placing display widgets
     pack $hbox -expand yes -fill both -padx 5 -pady 5
@@ -1488,47 +1448,6 @@ proc ApolTop::dtaHelpDlg {} {
     return
 }
 
-proc ApolTop::iflowHelpDlg {} {
-    variable contents
-    variable helpDlg
-    set helpDlg .apol_helpDlg
-    
-    # Checking to see if output window already exists. If so, it is destroyed.
-    if { [winfo exists $helpDlg] } {
-    	destroy $helpDlg
-    }
-    toplevel $helpDlg
-    wm protocol $helpDlg WM_DELETE_WINDOW "destroy $helpDlg"
-    wm withdraw $helpDlg
-    wm title $helpDlg "Information Flow Analysis Help"
-
-    set hbox [frame $helpDlg.hbox ]
-    # Display results window
-    set sw [ScrolledWindow $hbox.sw -auto none]
-    set resultsbox [text [$sw getframe].text -bg white -wrap none]
-    $sw setwidget $resultsbox
-    set okButton [Button $hbox.okButton -text "OK" \
-		      -command "destroy $helpDlg"]
-    # go to the script dir to find the help file
-    set script_dir  [apol_GetScriptDir "iflow_help.txt"]
-    set helpfile "$script_dir/iflow_help.txt"
-    
-    # Placing display widgets
-    pack $hbox -expand yes -fill both -padx 5 -pady 5
-    pack $okButton -side bottom
-    pack $sw -side left -expand yes -fill both 
-    # Place a toplevel at a particular position
-    #::tk::PlaceWindow $helpDlg widget center
-    wm deiconify $helpDlg
-    
-    $resultsbox delete 1.0 end
-    set f [open $helpfile]
-    $resultsbox insert end [read $f]
-    close $f
-    $resultsbox configure -state disabled
-   	 
-    return
-}
 proc ApolTop::makeTextBoxReadOnly {w} {
 	    $w configure -state disabled
 	    $w mark set insert 0.0
