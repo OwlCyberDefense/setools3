@@ -367,9 +367,12 @@ replcon_usage(const char *program_name, int brief)
 	printf("  -h,  --help             Display this help and exit.\n");
 	printf("\n");
 	printf("A context may be specified as a colon separated list of user, role, and type\n");
-	printf("as follows - user_u:object_r:user_t.  replcon will automatically match a user,\n");
+	printf("as follows - user_u:object_r:user_t. The tool will automatically match a user,\n");
 	printf("role, or type that is not specified, with any other user, role, or type.\n");
-	printf("For example ::user_t specifies any context that has user_t as the type.\n\n");
+	printf("For example ::user_t specifies any context that has user_t as the type.\n");
+	printf("\nThe special string 'unlabeled' can be provided to the -c option in order\n");
+	printf("to find or replace files that have no label.\n\n");
+	
 	printf("Valid OBJECT classes to specify include: \n");
 	replcon_print_valid_object_classes();
 	printf("\n");
