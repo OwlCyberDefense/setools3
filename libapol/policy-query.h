@@ -42,7 +42,7 @@ typedef struct teq_query {
 	unsigned int	rule_select;		/* indicate which rules to include */
 	bool_t		any;			/* if true, than use ta1 for any and ignore ta2-3 */
 	bool_t		use_regex;		/* if true, ta* are regex */
-	bool_t  only_enabled; 			/* include only rules that are enabled by the conditional policy */
+	bool_t		only_enabled; 		/* include only rules that are enabled by the conditional policy */
 	teq_srch_type_t	ta1;			/* */
 	teq_srch_type_t	ta2;			/* */
 	teq_srch_type_t	ta3;			/* */
@@ -83,6 +83,17 @@ typedef struct teq_results {
 	char		*errmsg;	/* used to communicate error messsage (optional) */
 } teq_results_t;
 
+/*
+ * policy_query_obj_options_t allows the inclusion/exclusion 
+ * of individual permissions on object classes or entire object 
+ * classes. 
+ */
+typedef struct policy_query_obj_options {
+	int obj_class;   	/* index policy->obj_classes */
+	int num_perms;
+	int *perms;    		/* index of an object class' permission */
+} policy_query_obj_options_t;
+
 
 /* macros */
 #define is_ta_used(ta_src_type) (ta_src_type.ta != NULL)
@@ -100,6 +111,14 @@ int match_te_rules(bool_t allow_regex, regex_t *preg, int ta_opt,int idx, int id
 int search_te_rules(teq_query_t *q, teq_results_t *r, policy_t *policy);
 
 int search_conditional_expressions(char *bool, bool_t allow_regex, bool_t *exprs_b, char **error_msg, policy_t *policy);
+
+/* Generic function prototypes for adding object class options and end types to a policy query. */
+int policy_query_add_obj_class(policy_query_obj_options_t **obj_options, 
+				 int *num_obj_options, int obj_class);
+int policy_query_add_obj_class_perm(policy_query_obj_options_t **obj_options, 
+				      int *num_obj_options, int obj_class, 
+				      int perm);
+int policy_query_add_type(int **end_types, int *num_end_types, int end_type);
 
 #endif /*_APOLICY_POLICY_QUERY_H_*/
 
