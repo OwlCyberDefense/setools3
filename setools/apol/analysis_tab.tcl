@@ -435,10 +435,8 @@ proc Apol_Analysis::switch_results_tab { tabID } {
 	}
 	set raised_tab_analysis_type $curr_analysis_module
    	$results_notebook raise $tabID
-   	Apol_Analysis::set_Focus_to_Text $tabID
 	Apol_Analysis::set_display_to_results_state $curr_analysis_module $analysis_results_array($tabID,query)
-   	
-     	return 0
+   	Apol_Analysis::set_Focus_to_Text $tabID
 } 
 
 # ----------------------------------------------------------------------------------------
@@ -453,7 +451,8 @@ proc Apol_Analysis::set_Focus_to_Text { tab } {
 	}
 	if {[array exists analysis_results_array]} {
 		set curr_analysis_module $analysis_results_array($tab,mod_name)
-	   	focus -force [${curr_analysis_module}::get_results_raised_tab]
+	   	set txt [${curr_analysis_module}::get_results_raised_tab]
+	   	focus $txt
 	}
 		
 	return 0
