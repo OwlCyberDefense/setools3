@@ -2818,11 +2818,23 @@ void sediff_open_dialog_on_cancel_button_clicked(GtkButton *button, gpointer use
 void sediff_menu_on_open_clicked(GtkMenuItem *menuitem, gpointer user_data)
 {	
 	GtkEntry *entry = NULL;
+	char *dir;
+	GString *path; 
 
 	if (sediff_app->open_dlg) {
 		gtk_window_present(sediff_app->open_dlg);
 	} else {
-		sediff_app->open_dlg_xml = glade_xml_new(GLADEFILE, OPEN_DIALOG_ID, NULL);
+		
+		dir = find_file(GLADEFILE);
+		if (!dir){
+			fprintf(stderr, "Could not find sediff.glade!");
+			return -1;
+		}
+
+		path = g_string_new(dir);
+		free(dir);
+
+		sediff_app->open_dlg_xml = glade_xml_new(path->str, OPEN_DIALOG_ID, NULL);
 		g_assert(sediff_app->open_dlg_xml != NULL);
 		sediff_app->open_dlg = GTK_WINDOW(glade_xml_get_widget(sediff_app->open_dlg_xml, OPEN_DIALOG_ID));
 		g_assert(sediff_app->open_dlg);
@@ -3299,7 +3311,7 @@ int main(int argc, char **argv)
 
 	gtk_set_locale();
 	gtk_init(&argc, &argv);
-	sediff_app->window_xml = glade_xml_new(GLADEFILE, MAIN_WINDOW_ID, NULL);
+	sediff_app->window_xml = glade_xml_new(path->str, MAIN_WINDOW_ID, NULL);
 	if (!sediff_app->window_xml) {
 		free(sediff_app);
 		g_warning("Unable to create interface");
