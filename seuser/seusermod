@@ -7,17 +7,8 @@
 
     SEUSER=/usr/bin/seuser
     GREP=/bin/grep
-    # determine if usermod knows selinux
-    /usr/bin/ldd /usr/sbin/usermod | $GREP selinux > /dev/null 2>&1
-    RC=$?
-    if [ $RC -eq 0 ] ;
-    then
-	# usermod is selinux aware
-	USERMOD=/usr/sbin/usermod
-    else
-	# useradd living in past
-	USERMOD=/usr/local/selinux/bin/susermod
-    fi
+    USERMOD=/usr/sbin/usermod
+   
     seuseropts=""
     seuserrenopts=""
     susermodopts=""
