@@ -2197,7 +2197,7 @@ iflow_transitive_t *iflow_transitive_flows(policy_t *policy, iflow_query_t *q)
 	}
 	
 	for (i = 0; i < num_nodes; i++) {
-		if (iflow_graph_shortest_path(g, nodes[0], a, q) != 0)
+		if (iflow_graph_shortest_path(g, nodes[i], a, q) != 0)
 			goto err;
 	}
 
