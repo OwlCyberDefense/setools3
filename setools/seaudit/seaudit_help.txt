@@ -15,11 +15,6 @@ work in any Linux machine.  The tool parses a given syslog and
 extracts all load policy messages, AVC messages and change of boolean 
 messages from conditional policies.
 
-As of version 1.2 the tool now has the ability to display multiple views of 
-a log. The default view is created automatically once an audit log is opened.
-Additional views can be created by selecting New -> Tab under the File menu 
-(or by pressing Ctrl + T). Each tab can be sorted and filtered independently.
-
 The tool has three main functions:
      1) Browse and sort SE Linux audit messages.
      2) Filter an audit log based on fields in the messages.
@@ -33,29 +28,35 @@ startup.  Zero, one, or both arguments will be accepted.
 	-l[FILE], --log[=FILE]	       open log file named FILE
 	-p[FILE], --policy[=FILE]      open policy file named FILE
 
-Seaudit does not require you to open a policy file; in this case 
-you will not be able to use the query policy features of the tool. 
-If a policy file is opened it must be syntactically correct (i.e., 
-it must not generate errors when run through checkpolicy).  Seaudit 
-will open both binary and source policy files. If you choose not to 
-open a policy file, your functionality will be limited. Only one policy
-file and one audit log can be open at a time, so if you open another 
-one of these files the current one will be closed.
+Seaudit provides you with the option of opening either a source or 
+binary policy file. If you do not specify a policy to open at the 
+command line, seaudit will attempt to use the system default source 
+policy (/etc/security/selinux/src/policy/policy.conf), or if this is 
+unavailable, the system default binary policy will be opened. 
 
-If you get a warning when opening a log file that says "Warning! One
-or more invalid messages found in audit log.", that means one or more
-of the SE Linux audit messages either was missing a standard message 
-field (e.g. time, hostname, access type, etc.) or:
+Note that seaudit does not require you to open a policy file; in this 
+case your functionality will be limited. For example, you will not be 
+able to use the query policy features of the tool. If a policy file is 
+opened it must be syntactically correct (i.e., it must not generate 
+errors when run through checkpolicy). Only one policy file and one 
+audit log can be open at a time, so if you open another one of these 
+files the current one will be closed.
+
+If you get a warning when opening a log file that says: "Warning! One
+or more invalid messages found in audit log.", this means that one or 
+more of the SE Linux audit messages either was missing a standard 
+message field (e.g. time, hostname, access type, etc.) or:
     1) A message had an unrecognized time stamp.
     2) An AVC message didn't contain permissions.
     3) An AVC message wasn't labeled as denied or granted.
     4) A load policy message was not in the correct form, (i.e.,
        missing a line or a data field).
     5) A boolean message did not contain a list of booleans.
+    
 Seaudit will still attempt to display the remaining data from the SE 
 Linux audit message in question along with all the other SE Linux 
 messages in the log, only if one of the following substrings is found 
-within in the message:
+within the message:
     "avc:" - indicates an access denied or granted message
     "security:" - indicates a load policy message
     "committed booleans" - indicates a committed boolean(s) message.
@@ -64,15 +65,22 @@ audit log.
 
 Menus:
 ------
-The File menu allows you to change the current policy file and 
+The FILE menu allows you to change the current policy file and/or 
 audit log. It also shows a list of recently opened files. The file 
 menu also allows you to change certain preferences including your 
 default log and policy files. You can also set which columns (audit 
-log data fields) you would like present when you view an audit log. 
-Both of these settings will be saved and reloaded each time seaudit 
-is started.
+log data fields) you would like present when you view an audit log,
+as well as specify whether you would like seaudit to enable real-time
+log monitoring on startup. All of these settings will be saved and 
+reloaded each time seaudit is started.
 
-The search menu allows you to filter the audit log (See Filter Log
+The VIEW menu allows you to display multiple views of a log. The 
+default view is created automatically once an audit log is opened.
+Additional views can be created by selecting View->New under the 
+VIEW menu (or by pressing Ctrl + T). Each tab can be sorted and 
+filtered independently.
+
+The SEARCH menu allows you to filter the audit log (See Log Views
 below) or query the policy (See Query Policy below).
 
 Sorting:
@@ -80,8 +88,8 @@ Sorting:
 By default the messages are sorted in chronological order.  To sort by
 a particular field click on the column heading.  The only column that
 you cannot sort on is the 'Other' column.  Only one level of sorting
-can be performed at this time.
-
+can be performed at this time. See Known Bugs below for additional
+sorting limitations.
 
 Log Monitoring: 
 ------------ 
@@ -90,8 +98,7 @@ on or off.  When the monitor is off the button displays a red icon and the
 words 'Monitor off', when the monitor is on the button displays a green icon
 and the words 'Monitor on'.  When this feature is on, seaudit checks for new 
 messages once every second.  If new messages are found they are displayed 
-according to the current filter and sorting selections.
-
+according to the filter and sorting selections for the current view.
 
 Query Policy:
 ------------- 
@@ -112,88 +119,78 @@ or any of the type's attributes in the appropriate field.
 Clicking on 'Query Policy' displays a list of all rules fitting your 
 criteria.  If the policy file you have opened is NOT a binary policy, 
 then this list will contain hyperlinks to take you to the appropriate 
-line in the policy.conf tab.
+line in the policy.conf tab. Otherwise, hyperlinks will not be provided.
+Double-clicking on a message is another way to get to the query policy 
+dialog box that is populated with the data.
 
 The second tab, 'policy.conf', provides a convenient display of the
 raw  policy.conf source file and is only available when opening a 
-policy.conf file.  The 'Query Policy' tab will contain hyperlinks to 
-the source policy.conf file. 
-
-Doubling clicking on a message is another way to get to the query
-policy dialog box that is populated with the data.
+policy.conf file.  
 
 For more extensive policy searches and analysis, use our companion 
 policy analysis tool (apol).
 
-Filter Log: 
+Log Views: 
 ----------- 
-The 'Filter Log' button opens a dialog box that allows you to filter
-messages in the audit log.  At the top of the dialog box is a dropdown
-menu that has four different ways to filter.  You may choose to either
-show or hide messages which match all or any of the criteria.
+The 'Modify View' button opens a dialog box that allows you to modify
+the a list of filters for the current view of the audit log.  At the top 
+of the dialog box is a dropdown menu that has four different ways to apply 
+the list of filters.  You may choose to either show or hide log entries 
+that match any or all of the filters in the current filter set. The View 
+window presents you with the option to add new filters, edit or remove 
+any defined filters (see Create/Edit Filters below). You also have the 
+option to save settings for the view to a file. Additiionally, the View 
+window allows you to import/export filters to a file.
 
-The 'Context' tab allows you to enter values for part or all of the
-source and target context, as well as the object class.  Only exact
-matches are accepted, no regular expressions.  You can either enter
-the values manually with a comma between entries or click on the
-button (i.e., Types:) and get another dialog that has a list of all
-valid entries.  This list can be populated by values from the log, the 
-policy, or the union of the log and policy, by selecting the appropriate
-radio button specification.
+To export a filter click on the name of the desired filter and press the 
+'Export' button. You are now presented with a window where you can indicate 
+where you want the filter saved, and the name for it to be saved as. Once 
+you have selected a destination and name for the filter click 'OK' button 
+to save the filter to disk.
 
-The 'Other' tab allows you to filter by networking criteria and/or
-executable and path.  You can filter IP addresses by regular
-expression but Port and Interface are by exact match only.
+To import a filter click on the 'Import' button in the filter list window. 
+Navigate to the directory where the stored filter is located, and select 
+it. Now, click on the 'OK' button to add the saved filter to your list of 
+filters that were previously available for the current view. 
 
-When you click on the 'Filter Log' button it performs a search on
-all of the audit messages (not just those displayed) based on the
-criteria you entered.  Clicking on the 'Clear Values' button at the
-bottom of either tab clears the values in the current tab only.
-Click on "Clear Values" on both tabs and then "Filter log" to show all
-the SE Linux messages.
+When you click on the 'Apply' button it will apply the filters for the 
+associated view. 
 
-As of version 1.2 the ability to use multiple filters is now available. Now 
-upon clicking the 'Filer Log' button you are presented with a window which 
-displays a list of all filters that have been created for the current view. 
-You have the option to add a new filter, edit or remove any defined filters
-and apply the filters to the current view. The list of filters can be applied 
-in various ways. They can be configured to show or hide log entries that match 
-any or all of the filters in the current filter set by making the appropriate 
-selections from the two drop down boxes. 
+Create/Edit Filters: 
+-------------------------
+To add a new filter, first select the view for which the filter is needed, 
+by clicking on the corresponding tab. Then, click on the 'Modify View' 
+button near the top of the main window. You are now preseneted with a View 
+window which contains a list of filters for the view that was selected. 
+Now click on the 'Add' button to create a new filter. You are now presented 
+with a window in which you can edit the various properties of a filter such 
+as: its name, description, source context, target context, object type, etc.
 
-With the addition of support for multiple filters the processes used to manipulate 
-filters have changed slightly. The following is an explanation on how to use the
-new various functions of filters.
+The 'Context' tab allows you to enter values for part or all of the source 
+and target context, as well as the object class.  Only exact matches are 
+accepted, no regular expressions.  You can either enter the values manually 
+with a comma between entries or click on the button (i.e., Types:) and get 
+another dialog that has a list of all valid entries.  This list can be 
+populated by values from the log, the policy, or the union of the log and 
+policy, by selecting the appropriate radio button specification.
 
-To add a new filter first select the view for which the filter is needed, by clicking 
-on the corresponding tab. Then, click on the 'Filter Log' button near the top of the 
-window. You are now preseneted with a window with a list of all filters that have been 
-created for the view that was selected. Now click on the 'Add' button to create a new 
-filter. You are now shown a window in which you can edit the various properties of a 
-filter such as: its name, description, source context, target context, object type, etc.
-The information that you provide is saved automatically, so you can just close the window 
-when you are done creating the filter to return to the filter list window. You can now 
-click the 'apply' button to apply the filter to its associated view.
+The 'Other' tab allows you to filter by networking criteria and/or executable 
+and path.  You can filter IP addresses by regular expression but Port and 
+Interface are by exact match only.
 
-To edit a previously created filter simply select the filter that needs to be
-changed and press the 'Edit' button. All the information that had been previously
-added to the filter is now displayed in a window where you can edit any of the
-properties of the filter that need to be changed. The changes are saved automatically,
-so you can just close the window once you are done editing the filter. The 'Apply'
-button must be clicked in order to apply the changes made to the filter to the view.
+The information that you provide is saved automatically, so you can just 
+close the window when you are done creating the filter in order to return 
+to the previous View window. 
 
-To export a filter click on the name of the desired filter and press the 'Export'
-button. You are now presented with a window where you can indicate where you want
-the filter saved, and the name for it to be saved as. Once you have selected a 
-destination and name for the filter click 'OK' button to save the filter to disk.
+To edit a previously created filter simply select the filter that needs to 
+be changed and press the 'Edit' button. All the information that had been 
+previously added to the filter is now displayed in a window where you can 
+edit any of the properties of the filter that need to be changed. The changes 
+are saved automatically, so you can just close the window once you are done 
+editing the filter. 
 
-To import a filter click on the 'Import' button in the filter list window. Navigate
-to the directory where the stored filter is located, and select it. Now, click on the
-'OK' button to add the saved filter to your list of filters that were previously
-available for the current view. 
-
-Also in version 1.2 is the ability to use shell globbing expressions in 
-filters. This functionality is described below.
+Clicking on the 'Clear Values' button at the bottom of either tab clears the 
+values in the current tab only. 
 
 Globbing Expressions:
 ---------------------
