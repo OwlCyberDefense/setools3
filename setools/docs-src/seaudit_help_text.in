@@ -116,11 +116,13 @@ sorting limitations.
 
 Log Monitoring: 
 ------------ 
-The 'Monitor' button allows you to turn the real-time log monitoring feature
-on or off.  When the monitor is off the button displays a red icon and the 
-words 'Monitor off', when the monitor is on the button displays a green icon
-and the words 'Monitor on'.  When this feature is on, seaudit checks for new 
-messages once every second.  If new messages are found they are displayed 
+The 'Toggle Monitor' button allows you to turn the real-time log monitoring 
+feature on or off.  When the monitor is off, the monitor status label in the 
+lower right-hand corner of the status bar will display the word 'OFF', in 
+red; however, when the monitor is on, the label will display the word 'ON' 
+in green.  When this feature is on, seaudit checks for new messages at a 
+regular interval (per second by default). This interval can be configured 
+from the Preferences dialog. If new messages are found they are displayed 
 according to the filter and sorting selections for the current view.
 
 Query Policy:
@@ -183,27 +185,30 @@ Create|Edit Filters Within A View:
 ----------------------------------
 To add a new filter, first select the view for which the filter is needed, 
 by clicking on the corresponding tab. Then, click on the 'Modify View' 
-button near the top of the main window. You are now preseneted with a View 
+button near the top of the main window. You are now presented with a View 
 window which contains a list of filters for the view that was selected. 
 Now click on the 'Add' button to create a new filter. You are now presented 
 with a window in which you can edit the various properties of a filter such 
 as: its name, description, source context, target context, object type, etc.
 
 The 'Context' tab allows you to enter values for part or all of the source 
-and target context, as well as the object class.  Only exact matches are 
-accepted, no regular expressions.  You can either enter the values manually 
+and target context, as well as the object class.  Only exact matches and/or 
+globbed expressions (see Globbing Expressions below) are accepted for fields 
+on this tab, no regular expressions. You can either enter the values manually 
 with a comma between entries or click on the button (i.e., Types:) and get 
-another dialog that has a list of all valid entries.  This list can be 
-populated by values from the log, the policy, or the union of the log and 
-policy, by selecting the appropriate radio button specification.
+another dialog that has a list of all valid entries.  This list can be populated 
+by values from the log, the policy, or the union of the log and policy, by 
+selecting the appropriate radiobutton specification.
 
-The 'Other' tab allows you to filter by networking criteria and/or executable 
-and path.  You can filter IP addresses by regular expression but Port and 
-Interface are by exact match only.
+The 'Other' tab allows you to filter by networking criteria (i.e IP address,
+port and/or interface). The IP addresses requires an exact match or a regular 
+expression; however, Port and Interface are by exact match only. You can also 
+filter by executable, path, and/or hostname from this tab. These fields accept 
+either an exact match or a globbed expression (see Globbing Expressions below).
 
-The information that you provide is saved automatically, so you can just 
-close the window when you are done creating the filter in order to return 
-to the previous View window. 
+The information that you provide is saved automatically, so you can just close 
+the window when you are done creating the filter in order to return to the 
+previous View window. 
 
 To edit a previously created filter simply select the filter that needs to 
 be changed and press the 'Edit' button. All the information that had been 
@@ -266,7 +271,12 @@ the '!' character is used.
 	example: a[!c-ik-y]z matches all all three character string starting with a followed by any character
 		 not occuring after b and before i or after k and before y, and ending in z 
 
-*** Note: all charcters used in globbing expressions are case sensitive ***
+*** CAUTION ***
+SEAudit intersperses the use of regular expressions versus globbed expressions. So for example, the 'Edit 
+Filter' dialog may allow only regular expressions for certain criteria, whereas for other criteria, it may 
+only allow exact matches or the use of a globbed expression. The 'Query Policy' dialog only allows the use
+of regular expressions or an exact match for search criteria, not globbed expressions. Additionally, note 
+that all characters used in globbing expressions are case sensitive. 
 
 Status Bar: 
 ----------- 
@@ -274,8 +284,9 @@ At the bottom of seaudit is a status bar.  In the left corner it
 displays the approximate version of the policy you have loaded along 
 with the policy type (binary or source).  The middle displays the 
 number of log messages displayed "/" the total number of SE Linux 
-messages in the audit log.  The right corner shows the span of the 
-dates in the audit log.
+messages in the audit log.  The next label shows the span of the 
+dates in the audit log and the right-most label shows the status
+of the real-time log monitor.
 
 Creating Reports: 
 -----------------
@@ -321,3 +332,4 @@ subdirectory or within the standard /usr/share/setools directory.
 Known Bugs: 
 ----------- 
 See setools/KNOWN-BUGS for a list of current bugs.
+        
