@@ -85,7 +85,9 @@ help:
 	@echo "   install-seuserx: build and install seuser and seuserx (selinux required)"
 	@echo "   install-secmds:  build and install command line tools (selinux not required)"
 	@echo "   install-seaudit: build and install seaudit (selinux not required)"
-	@echo "   install-policy:  install target policies"
+	@echo ""
+	@echo "   install-seuser-policy:  install seuser target policy"
+	@echo "   install-secmds-policy:  install secmds target policy"
 	@echo " "
 	@echo "   all:             build everything, but don't install"
 	@echo "   all-nogui:       only build non-GUI tools and libraries"
@@ -98,8 +100,8 @@ help:
 	@echo "   seaudit:         built audit log analysis tool"
 	@echo "   awish:           build TCL/TK wish interpreter with SE Linux tools extensions"
 	@echo " "
-	@echo "   clean:          clean up interim files"
-	@echo "   bare:           more extensive clean up"
+	@echo "   clean:           clean up interim files"
+	@echo "   bare:            more extensive clean up"
 
 
 apol: selinux_tool
@@ -203,8 +205,11 @@ install-seuserx: $(INSTALL_LIBDIR)
 install-seuser: $(INSTALL_LIBDIR)
 	cd seuser; $(MAKE) install-nogui
 	
-install-policy: $(INSTALL_LIBDIR)
+install-seuser-policy: $(INSTALL_LIBDIR)
 	cd seuser; $(MAKE) install-policy
+	
+install-secmds-policy: $(INSTALL_LIBDIR)
+	cd secmds; $(MAKE) install-policy
 
 install-sepcut: $(INSTALL_LIBDIR)
 	cd sepct; $(MAKE) install
