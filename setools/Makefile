@@ -139,13 +139,8 @@ seaudit: selinux_tool
 	cd seaudit; $(MAKE)	
 
 secmds: selinux_tool
-	-@if [ ${shell test -d /usr/include/selinux && echo 1} ]; then \
-		cd secmds; $(MAKE) all; \
-	else \
-		cd secmds; $(MAKE) seinfo; $(MAKE) sesearch; \
-	fi
+	cd secmds; $(MAKE) all
 	
-
 libapol: selinux_tool
 	cd libapol; $(MAKE) libapol
 
