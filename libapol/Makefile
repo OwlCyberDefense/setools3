@@ -6,6 +6,9 @@ LIB-OBJ +=  binpol/binpol.o binpol/bpmaps.o binpol/fbuf.o binpol/ebitmap.o
 LIB-OBJ-TCL = apol_tcl.o
 CFLAGS  += -DLIBAPOL_VERSION_STRING='"$(shell cat VERSION)"'
 CFLAGS  += -DAPOL_INSTALL_DIR='"$(INSTALL_LIBDIR)"'
+CFLAGS  += -DLIBAPOL_POLICY_INSTALL_DIR='"$(POLICY_INSTALL_DIR)"'
+CFLAGS  += -DLIBAPOL_SELINUX_DIR='"$(SELINUX_DIR)"'
+CFLAGS	+= -DLIBAPOL_DEFAULT_POLICY='"$(POLICY_SRC_FILE)"'
 
 libapol: ../lib/libapol.a
 
