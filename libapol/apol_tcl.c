@@ -4097,6 +4097,7 @@ static int types_relation_append_results(types_relation_query_t *tr_query,
 		}
 	} else {
 		Tcl_AppendElement(interp, "0");
+		Tcl_AppendElement(interp, "0");
 	}
 	
 	/* Append direct information flow information */
