@@ -27,34 +27,34 @@ void sort_action_list_destroy(sort_action_node_t *cl)
 	}
 }
 
-int audit_log_append_sort(audit_log_t *log, sort_action_node_t *node)
+int audit_log_view_append_sort(audit_log_view_t *view, sort_action_node_t *node)
 {
-	if (!log->sort_actions) {
-		log->sort_actions = node;
-		log->last_sort_action = node;
+	if (!view->sort_actions) {
+		view->sort_actions = node;
+		view->last_sort_action = node;
 		return 0;
 	}
-	log->last_sort_action->next = node;
-	node->prev = log->last_sort_action->next;
-	log->last_sort_action = node;
+	view->last_sort_action->next = node;
+	node->prev = view->last_sort_action->next;
+	view->last_sort_action = node;
 	return 0;
 }
 
-int audit_log_remove_sort(audit_log_t *log, sort_action_node_t *node)
+int audit_log_view_remove_sort(audit_log_view_t *view, sort_action_node_t *node)
 {
 	sort_action_node_t *cur;
 
-	for (cur = log->sort_actions; cur; cur = cur->next) {
+	for (cur = view->sort_actions; cur; cur = cur->next) {
 		if (cur == node) {
-			if (cur == log->last_sort_action) {
-				log->last_sort_action = cur->prev;
+			if (cur == view->last_sort_action) {
+				view->last_sort_action = cur->prev;
 				cur->prev->next = NULL;
-			} else if (cur == log->sort_actions) {
+			} else if (cur == view->sort_actions) {
 				if (cur->next) {
-					log->sort_actions = cur->next;
+					view->sort_actions = cur->next;
 					cur->next->prev = NULL;
 				} else {
-					log->sort_actions = NULL;
+					view->sort_actions = NULL;
 				}
 			} else {
 				cur->prev->next = cur->next;
@@ -75,24 +75,24 @@ typedef struct sort_data {
 /*
  * Sort an audit log returning the new positions of the items.
  */
-int audit_log_sort(audit_log_t *log, int **new_order, int reverse)
+int audit_log_view_sort(audit_log_view_t *view, int **new_order, int reverse)
 {
 	int i, rc, sort_len, len, indx;
 	sort_data_t *sort_data;
 	sort_action_node_t *cur;
 	bool_t found;
 
-	if (!log->fltr_msgs || !log->sort_actions)
+	if (!view->fltr_msgs || !view->sort_actions)
 		return -1;
 
-	if (log->num_fltr_msgs == 1) {
+	if (view->num_fltr_msgs == 1) {
 		*new_order = NULL;
 		return 0;
 	}
-	sort_data = (sort_data_t*)malloc(sizeof(sort_data_t) * log->num_fltr_msgs);
+	sort_data = (sort_data_t*)malloc(sizeof(sort_data_t) * view->num_fltr_msgs);
 	if (!sort_data)
 		return -1;
-	memset(sort_data, 0, sizeof(sort_data_t) * log->num_fltr_msgs);
+	memset(sort_data, 0, sizeof(sort_data_t) * view->num_fltr_msgs);
 
 	/* We push the msgs of types that the sort actions don't support to the
 	 * end of the list. This allows us to not sort them at all but leave
@@ -100,24 +100,24 @@ int audit_log_sort(audit_log_t *log, int **new_order, int reverse)
 	 */
 	len = 0;
 	sort_len = 0;
-	for (i = 0; i < log->num_fltr_msgs; i++) {
+	for (i = 0; i < view->num_fltr_msgs; i++) {
 		found = FALSE;
-		for (cur = log->sort_actions; cur != NULL; cur = cur->next) {
-			indx = log->fltr_msgs[i];
-			if (!(log->msg_list[indx]->msg_type & cur->msg_types)) {
+		for (cur = view->sort_actions; cur != NULL; cur = cur->next) {
+			indx = view->fltr_msgs[i];
+			if (!(view->my_log->msg_list[indx]->msg_type & cur->msg_types)) {
 				len++;
-				sort_data[log->num_fltr_msgs - len].offset = i;
-				sort_data[log->num_fltr_msgs - len].msg_indx = indx;
-				sort_data[log->num_fltr_msgs - len].msg = log->msg_list[indx];
+				sort_data[view->num_fltr_msgs - len].offset = i;
+				sort_data[view->num_fltr_msgs - len].msg_indx = indx;
+				sort_data[view->num_fltr_msgs - len].msg = view->my_log->msg_list[indx];
 				found = TRUE;
 				break;
 			}
 		}
 		if (!found) {
 			sort_data[sort_len].offset = i;
-			indx = log->fltr_msgs[i];
+			indx = view->fltr_msgs[i];
 			sort_data[sort_len].msg_indx = indx;
-			sort_data[sort_len].msg = log->msg_list[indx];
+			sort_data[sort_len].msg = view->my_log->msg_list[indx];
 			sort_len++;
 		}
 	}
@@ -126,21 +126,20 @@ int audit_log_sort(audit_log_t *log, int **new_order, int reverse)
 		goto out;
 	}
 
-	current_list = log->sort_actions;
+	current_list = view->sort_actions;
 	reverse_sort = reverse;
-	audit_log = log;
 	qsort(sort_data, sort_len, sizeof(sort_data_t), &msg_compare);
-	for (i = 0; i < log->num_fltr_msgs; i++) {
-		log->fltr_msgs[i] = sort_data[i].msg_indx;
+	for (i = 0; i < view->num_fltr_msgs; i++) {
+		view->fltr_msgs[i] = sort_data[i].msg_indx;
 	}
 
-	*new_order = (int*)malloc(sizeof(int) * log->num_fltr_msgs);
+	*new_order = (int*)malloc(sizeof(int) * view->num_fltr_msgs);
 	if (!*new_order) {
 		rc = -1;
 		goto out;
 	}
 
-	for (i = 0; i < log->num_fltr_msgs; i++) {
+	for (i = 0; i < view->num_fltr_msgs; i++) {
 		(*new_order)[i] = sort_data[i].offset;
 	}	
 
