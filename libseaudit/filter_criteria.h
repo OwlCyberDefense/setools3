@@ -46,6 +46,7 @@ seaudit_criteria_t* src_user_criteria_create(char **users, int num_users);
 seaudit_criteria_t* tgt_user_criteria_create(char **users, int num_users);
 seaudit_criteria_t* class_criteria_create(char **classes, int num_classes);
 seaudit_criteria_t* exe_criteria_create(const char *exe);
+seaudit_criteria_t* host_criteria_create(const char *host);
 seaudit_criteria_t* path_criteria_create(const char *path);
 seaudit_criteria_t* netif_criteria_create(const char *netif);
 seaudit_criteria_t* ipaddr_criteria_create(const char *ipaddr); /* a generic match-any IP criteria */
@@ -64,6 +65,7 @@ const char *glob_criteria_get_str(seaudit_criteria_t *criteria);
 #define exe_criteria_get_str(criteria) glob_criteria_get_str(criteria)
 #define path_criteria_get_str(criteria) glob_criteria_get_str(criteria)
 #define ipaddr_criteria_get_str(criteria) glob_criteria_get_str(criteria)
+#define host_criteria_get_str(criteria) glob_criteria_get_str(criteria)
 
 const char *netif_criteria_get_str(seaudit_criteria_t *criteria);
 int ports_criteria_get_val(seaudit_criteria_t *criteria);
