@@ -406,38 +406,25 @@ static int apol_add_domain_to_result(relabel_result_t *res, int domain, int *typ
 {
 	int i, retv;
 
-	for (i = 0; i < num_rules; i++) {
-		retv = add_i_to_a(rules[i], &(res->num_rules), &(res->rules));
-		if (retv == -1)
-			return -1;
-	}
+	if (!res || !types || !rules || !num_types || !num_rules) 
+		return -1;
+
+	/* add any new types */
 	for (i = 0; i < num_types; i++) {
-		if ((retv = find_int_in_array(types[i], res->types, res->num_types)) == -1) {
+		retv = find_int_in_array(types[i], res->types, res->num_types);
+		if (retv == -1) {
 			retv = add_i_to_a(types[i], &(res->num_types), &(res->types));
-			if (retv == -1)
+			if (retv)
 				return -1;
+		}
+	}
 
-			if (res->domains) {
-				res->domains = (int**)realloc(res->domains, num_types * sizeof(int*));
-			} else {
-				res->domains = (int**)malloc(1 * sizeof(int*));
-			}
-			if (!res->domains) 
-				return -1;
-
-			(res->num_types)--;
-			retv = add_i_to_a(0, &(res->num_types), &(res->num_domains));
-			if (retv == -1)
-				return -1;
-
-			res->domains[res->num_types - 1] = NULL;
-			retv = add_i_to_a(domain, &(res->num_domains[res->num_types -1]), &(res->domains[res->num_types - 1]));
-			if (retv == -1)
-				return -1;
-
-		} else {
-			retv = add_i_to_a(domain, &(res->num_domains[retv]), &(res->domains[retv]));
-			if(retv == -1)
+	/* do rules */
+	for (i = 0; i < num_rules; i++) {
+		retv = find_int_in_array(rules[i], res->rules, res->num_rules);
+		if (retv == -1) {
+			retv = add_i_to_a(rules[i], &(res->num_rules), &(res->rules));
+			if (retv)
 				return -1;
 		}
 	}
@@ -907,7 +894,7 @@ static int apol_type_relabel(relabel_set_t *sets, int type, relabel_result_t *re
 {
 	int i, j, k, x, retv, size = 0, size2 = 0, num_rules = 0, here;
 	int *temp_array = NULL, *temp_array2 = NULL;
-	int *rules;
+	int *rules = NULL;
 	type_obj_t *it = NULL;
 
 	if (!sets || !policy)
@@ -925,8 +912,9 @@ static int apol_type_relabel(relabel_set_t *sets, int type, relabel_result_t *re
 	}
 	apol_relabel_result_init(res);
 
-	for (i = 1; i < policy->num_types; i++) {
+	for (i = 1; i < policy->num_types; i++) { /* zero is self, skip */
 		size = 0;
+		temp_array = NULL;
 		retv = apol_single_type_relabel(sets, i, type, &temp_array, &size, policy, mode);
 		if (retv && retv != NOTHERE) 
 			return retv;
@@ -948,7 +936,7 @@ static int apol_type_relabel(relabel_set_t *sets, int type, relabel_result_t *re
 				for (k = 0; k < filter->num_perm_sets; k++) {
 					if (apol_does_type_obj_have_class(it, filter->perm_sets[k].obj_class))
 						here = 1;
-					if (filter->perm_sets[k].num_perms) {
+					if (here && filter->perm_sets[k].num_perms) {
 						here = 0;
 						for (x = 0; x < filter->perm_sets[k].num_perms; x++) {
 							if (apol_does_type_obj_have_perm(it, filter->perm_sets[k].obj_class, filter->perm_sets[k].perms[x]))
