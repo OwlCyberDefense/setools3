@@ -2,7 +2,7 @@
  * see file 'COPYING' for use and warranty information */
 
 /* 
- * Author: mayerf@tresys.com 
+ * Author: mayerf@tresys.com and Don Patterson <don.patterson@tresys.com>
  */
 
 /* apol_tcl.c
@@ -2162,68 +2162,98 @@ int Apol_SearchInitialSIDs(ClientData clientData, Tcl_Interp *interp, int argc, 
 }
 
 static void apol_cond_rules_append_cond_list(cond_rule_list_t *list, bool_t include_allow, bool_t include_audit, bool_t include_tt, 
-				     policy_t *policy, Tcl_DString *buf, Tcl_Interp *interp)
+				     	     policy_t *policy, Tcl_Interp *interp)
 {
 	int i;
 	char tbuf[BUF_SZ], *rule = NULL;
 	
-	if (!list)
+	if (!list) {
+		/* Indicate that there are no rules, since the list is empty. */
+		Tcl_AppendElement(interp, "0");
+		Tcl_AppendElement(interp, "0");
+		Tcl_AppendElement(interp, "0");
 		return;
+	}
 	assert(policy != NULL);
 	
+	snprintf(tbuf, sizeof(tbuf)-1, "%d", list->num_av_access);
+	Tcl_AppendElement(interp, tbuf);
 	if (include_allow) {
 		for (i = 0; i < list->num_av_access; i++) {
+			/* Append the line number for the rule */
+			sprintf(tbuf, "%lu", policy->av_access[list->av_access[i]].lineno);
+			Tcl_AppendElement(interp, tbuf);
+			
+			/* Append the rule string */
 			rule = re_render_av_rule(FALSE, list->av_access[i], FALSE, policy);
 			assert(rule);
-			if (policy->av_access[list->av_access[i]].enabled)
-				snprintf(tbuf, sizeof(tbuf)-1, "\t[enabled] ");
-			else 
-				snprintf(tbuf, sizeof(tbuf)-1, "\t[disabled] ");
-			Tcl_DStringAppend(buf, tbuf, -1);
-
-				
-			snprintf(tbuf, sizeof(tbuf)-1, "%s\n", rule);
-			Tcl_DStringAppend(buf, tbuf, -1);
+			snprintf(tbuf, sizeof(tbuf)-1, "%s", rule);
+			Tcl_AppendElement(interp, tbuf);
 			free(rule);
+			
+			/* Append flag indicating if this is a disabled or enabled rule */
+			if (policy->av_access[list->av_access[i]].enabled)
+				Tcl_AppendElement(interp, "1"); 
+			else 
+				Tcl_AppendElement(interp, "0"); 
 		}
 	}
+	
+	snprintf(tbuf, sizeof(tbuf)-1, "%d", list->num_av_audit);
+	Tcl_AppendElement(interp, tbuf);
 	if (include_audit) {
 		for (i = 0; i < list->num_av_audit; i++) {
+			/* Append the line number for the rule */
+			sprintf(tbuf, "%lu", policy->av_audit[list->av_audit[i]].lineno);
+			Tcl_AppendElement(interp, tbuf);
+			
+			/* Append the rule string */
 			rule = re_render_av_rule(FALSE, list->av_audit[i], TRUE, policy);
 			assert(rule);
-			if (policy->av_audit[list->av_audit[i]].enabled)
-				snprintf(tbuf, sizeof(tbuf)-1, "\t[enabled] ");
-			else 
-				snprintf(tbuf, sizeof(tbuf)-1, "\t[disabled] ");
-			Tcl_DStringAppend(buf, tbuf, -1);
-			
-			snprintf(tbuf, sizeof(tbuf)-1, "%s\n", rule);
-			Tcl_DStringAppend(buf, tbuf, -1);
+			snprintf(tbuf, sizeof(tbuf)-1, "%s", rule);
+			Tcl_AppendElement(interp, tbuf);
 			free(rule);
+			
+			/* Append flag indicating if this is a disabled or enabled rule */
+			if (policy->av_audit[list->av_audit[i]].enabled)
+				Tcl_AppendElement(interp, "1"); 
+			else 
+				Tcl_AppendElement(interp, "0"); 
 		}
 	}
+	
+	snprintf(tbuf, sizeof(tbuf)-1, "%d", list->num_te_trans);
+	Tcl_AppendElement(interp, tbuf);
 	if (include_tt) {
 		for (i = 0; i < list->num_te_trans; i++) {
+			/* Append the line number for the rule */
+			sprintf(tbuf, "%lu", policy->te_trans[list->te_trans[i]].lineno);
+			Tcl_AppendElement(interp, tbuf);
+			
+			/* Append the rule string */
 			rule = re_render_tt_rule(FALSE, list->te_trans[i], policy);
 			assert(rule);
-			if (policy->te_trans[list->te_trans[i]].enabled)
-				snprintf(tbuf, sizeof(tbuf)-1, "\t[enabled] ");
-			else 
-				snprintf(tbuf, sizeof(tbuf)-1, "\t[disabled] ");
-			Tcl_DStringAppend(buf, tbuf, -1);
-			
-			snprintf(tbuf, sizeof(tbuf)-1, "%s\n", rule);
-			Tcl_DStringAppend(buf, tbuf, -1);
+			snprintf(tbuf, sizeof(tbuf)-1, "%s", rule);
+			Tcl_AppendElement(interp, tbuf);
 			free(rule);
+			
+			/* Append flag indicating if this is a disabled or enabled rule */
+			if (policy->te_trans[list->te_trans[i]].enabled)
+				Tcl_AppendElement(interp, "1"); 
+			else 
+				Tcl_AppendElement(interp, "0"); 
 		}
 	}
 }
 
-static void apol_cond_rules_append_expr(cond_expr_t *exp, policy_t *policy, Tcl_DString *buf, Tcl_Interp *interp)
+static void apol_cond_rules_append_expr(cond_expr_t *exp, policy_t *policy, Tcl_Interp *interp)
 {
 	char tbuf[BUF_SZ];
 	cond_expr_t *cur;
-		
+	Tcl_DString buffer, *buf = &buffer;
+	
+	Tcl_DStringInit(buf);
+			
 	for (cur = exp; cur != NULL; cur = cur->next) {
 		switch (cur->expr_type) {
 		case COND_BOOL:
@@ -2258,14 +2288,14 @@ static void apol_cond_rules_append_expr(cond_expr_t *exp, policy_t *policy, Tcl_
 			break;
 		}
 	}
-	snprintf(tbuf, sizeof(tbuf)-1, "]\n\n"); 
-	Tcl_DStringAppend(buf, tbuf, -1);
+	/* Append the conditional expression to our tcl list */
+	Tcl_AppendElement(interp, buf->string);
+	Tcl_DStringFree(buf);
 }
 
 /* 
  * argv[1] boolean name
  * argv[2] use reg expression
- * argv[3] show rules
  * argv[3] include allow rules
  * argv[4] include audit rules
  * argv[5] include type transition rules
@@ -2274,16 +2304,15 @@ int Apol_SearchConditionalRules(ClientData clientData, Tcl_Interp *interp, int a
 {
 	char *error_msg = NULL;
 	char tbuf[BUF_SZ];
-	bool_t regex, show_rules, *exprs_b;
+	bool_t regex, *exprs_b;
 	bool_t include_allow, include_audit, include_tt;
 	int i;
-	Tcl_DString *buf, buffer; 
 	
-	if(argc != 7) {
+	if (argc != 6) {
 		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
 		return TCL_ERROR;
 	}
-	if(policy == NULL) {
+	if (policy == NULL) {
 		Tcl_AppendResult(interp,"No current policy file is opened!", (char *) NULL);
 		return TCL_ERROR;
 	}
@@ -2292,12 +2321,11 @@ int Apol_SearchConditionalRules(ClientData clientData, Tcl_Interp *interp, int a
 		Tcl_AppendResult(interp, "The provided user string is too large.", (char *) NULL);
 		return TCL_ERROR;
 	}
-	buf = &buffer;	
+	
 	regex = getbool(argv[2]);
-	show_rules = getbool(argv[3]);
-	include_allow = getbool(argv[4]);
-	include_audit = getbool(argv[5]);
-	include_tt = getbool(argv[6]);
+	include_allow = getbool(argv[3]);
+	include_audit = getbool(argv[4]);
+	include_tt = getbool(argv[5]);
 	
 	/* If regex is turned OFF, then validate that the boolean exists. */
 	if (!regex && !str_is_only_white_space(argv[1]) && get_cond_bool_idx(argv[1], policy) < 0) {
@@ -2321,39 +2349,24 @@ int Apol_SearchConditionalRules(ClientData clientData, Tcl_Interp *interp, int a
 		free(error_msg);
 		return TCL_ERROR;
 	}
-			
-	Tcl_DStringInit(buf);
-	snprintf(tbuf, sizeof(tbuf)-1, "Found the following expressions in Reverse Polish Notation:\n");
-	Tcl_DStringAppend(buf, tbuf, -1);
-		
+	/* Append number of conditional expressions */
+	snprintf(tbuf, sizeof(tbuf)-1, "%d", policy->num_cond_exprs);
+	Tcl_AppendElement(interp, tbuf);				
 	for (i = 0; i < policy->num_cond_exprs; i++) {
 		if (exprs_b[i]) {
-			snprintf(tbuf, sizeof(tbuf)-1, "\nconditional expression %d: [ ", i); 
-			Tcl_DStringAppend(buf, tbuf, -1);
-	
-			apol_cond_rules_append_expr(policy->cond_exprs[i].expr, policy, buf, interp);
+			apol_cond_rules_append_expr(policy->cond_exprs[i].expr, policy, interp);
+		
+			apol_cond_rules_append_cond_list(policy->cond_exprs[i].true_list, 
+							include_allow, include_audit, include_tt, 
+							policy, interp);
 			
-			if (show_rules) {
-				snprintf(tbuf, sizeof(tbuf)-1, "TRUE list:\n");
-				Tcl_DStringAppend(buf, tbuf, -1);
-				
-				apol_cond_rules_append_cond_list(policy->cond_exprs[i].true_list, 
-								include_allow, include_audit, include_tt, 
-								policy, buf, interp);
-								
-				snprintf(tbuf, sizeof(tbuf)-1, "FALSE list:\n");
-				Tcl_DStringAppend(buf, tbuf, -1);
-				
-				apol_cond_rules_append_cond_list(policy->cond_exprs[i].false_list, 
-								include_allow, include_audit, include_tt, 
-								policy, buf, interp);
-			}
+			apol_cond_rules_append_cond_list(policy->cond_exprs[i].false_list, 
+							include_allow, include_audit, include_tt, 
+							policy, interp);
 		}
 	}
 	free(exprs_b);
-			
-	Tcl_DStringResult(interp, buf);
-								
+										
 	return TCL_OK;
 }
 
