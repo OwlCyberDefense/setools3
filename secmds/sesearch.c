@@ -27,12 +27,8 @@
 #endif
 
 #define COPYRIGHT_INFO "Copyright (C) 2003-2004 Tresys Technology, LLC"
-/* DEFAULT_POLICY should be defined in the make environment */
-#ifndef DEFAULT_POLICY
-	#define DEFAULT_POLICY "/etc/security/selinux/src/policy.conf"
-#endif
 
-char *policy_file;
+char policy_file[BUF_SZ];
 
 static struct option const longopts[] =
 {
@@ -40,6 +36,7 @@ static struct option const longopts[] =
   {"target", required_argument, NULL, 't'},
   {"class", required_argument, NULL, 'c'},
   {"perms", required_argument, NULL, 'p'},
+  {"defaultto", required_argument, NULL, 'd'},
   {"allow", no_argument, NULL, 'A'},
   {"neverallow", no_argument, NULL, 'N'},
   {"audit", no_argument, NULL, 'U'},
@@ -79,7 +76,9 @@ Search Type Enforcement rules in an SELinux policy.\n\
   -i, --indirect         indirect; also search for the type's attributes\n\
   -n, --noregex          do not use regular expression to match type/attributes\n\
   -a, --all              show all rules regardless of type, class, or perms\n\
-  -l, --lineno           include line # in policy.conf for each rule\n\
+  -l, --lineno           include line # in policy.conf for each rule\n\n\
+  -d[POLICYTYPE], --defaultto[=POLICYTYPE] \n\
+  			 default to policy type (POLICYTYPE=source|binary)\n\
   -h, --help             display this help and exit\n\
   -v, --version          output version information and exit\n\
 ", stdout);
@@ -87,10 +86,14 @@ Search Type Enforcement rules in an SELinux policy.\n\
 If none of -s, -t, -c, -p are specified, then all rules are shown\n\
 You specify -a (--all), or one of more of --allow, --neverallow, \n\
 --audit, or --type.\
-\n\
-If no POLICY_FILE is provided, the default policy will be used:\n\
+\n\n\
+For -d, if no POLICY_FILE is provided, sesearch will attempt to use the \n\
+specified system default policy type. Without the -d option, if no \n\
+POLICY_FILE is provided, sesearch will attempt to use the installed \n\
+binary policy and if this cannot be found, it will attempt to \n\
+use the default source policy:\n\
 ", stdout);
-	printf("      %s\n\n", DEFAULT_POLICY);
+	printf("      %s\n\n", LIBAPOL_DEFAULT_POLICY);
 
 	return;
 }
@@ -105,6 +108,7 @@ int main (int argc, char **argv)
 	char *src_name, *tgt_name, *class_name, *permlist, *tok, *rule;
 	teq_query_t q;
 	teq_results_t r;
+	bool_t try_binary = FALSE, try_source = FALSE;
 	
 	all = lineno = allow = nallow = audit = type = indirect = FALSE;
 	useregex = TRUE;
@@ -115,7 +119,7 @@ int main (int argc, char **argv)
 	
 	open_opts = POLOPT_TE_POLICY | POLOPT_OBJECTS;
 	
-	while ((optc = getopt_long (argc, argv, "s:t:c:p:alhvni", longopts, NULL)) != -1)  {
+	while ((optc = getopt_long (argc, argv, "s:t:c:p:d:alhvni", longopts, NULL)) != -1)  {
 		switch (optc) {
 		case 0:
 	  		break;
@@ -167,6 +171,14 @@ int main (int argc, char **argv)
 	  			exit(1);	
 	  		}
 	  		break;
+	  	case 'd': /* default to policy type */
+	  		if(optarg != 0) {
+	 			if (strcasecmp("source", optarg) == 0) 
+	  				try_source = TRUE;
+	  			else if (strcasecmp("binary", optarg) == 0) 
+	  				try_binary = TRUE;
+	  		}
+	  		break;
 	  	case 'i': /* indirect search */
 	  		indirect = TRUE;
 	  		break;
@@ -212,11 +224,20 @@ int main (int argc, char **argv)
 	if (argc - optind > 1) {
 		usage(argv[0], 1);
 		exit(1);
-	}
-	else if(argc - optind < 1) 
-		policy_file = DEFAULT_POLICY;
-	else
-		policy_file = argv[optind];
+	} else if(argc - optind < 1) {
+		if (try_binary) {
+			rt = find_default_policy_file(SEARCH_BINARY, policy_file);
+		} else if (try_source) {
+			rt = find_default_policy_file(SEARCH_SOURCE, policy_file);
+		} else {
+			rt = find_default_policy_file(SEARCH_BOTH, policy_file);
+		}
+		if (rt != 0) {
+			printf("Error while searching for default policy: %s\n", decode_find_default_policy_file_err(rt));
+			exit(1);
+		}
+	} else 
+		snprintf(policy_file, sizeof(policy_file)-1, "%s", argv[optind]);
 
 	/* attempt to open the policy */
 	rt = open_partial_policy(policy_file, open_opts, &policy);
