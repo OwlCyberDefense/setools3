@@ -207,6 +207,11 @@ proc Apol_Types::popupTypeInfo {which ta} {
 	$s_ta setwidget $f_ta
 	
 	if {$ApolTop::libsefs == 1} {
+		if {$which != "type"} {
+			set lbl [Label [$notebook getframe fc_info_tab].lbl \
+				-text "Files labeled with types that are members of this attribute:" \
+				-justify left]
+		}
 		set s_fc [ScrolledWindow [$notebook getframe fc_info_tab].s_fc  -scrollbar both -auto both]
 		set f_fc [text [$s_fc getframe].f -font {helvetica 10} -wrap none -width 35 -height 10 -bg white]
 		$s_fc setwidget $f_fc
@@ -225,7 +230,10 @@ proc Apol_Types::popupTypeInfo {which ta} {
 	$f_ta configure -state disabled 
 	
 	if {$ApolTop::libsefs == 1} {
-		pack $s_fc -fill both -expand yes
+		if {$which != "type"} {
+			pack $lbl -side top -side top -anchor nw
+		}
+		pack $s_fc -fill both -expand yes -side top
 	     	if {$index_file_loaded} {
 		     	if {$info_fc != ""} {
 		     		set num [llength $info_fc]
