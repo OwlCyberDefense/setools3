@@ -2,6 +2,7 @@
 
 LIB-OBJ	= policy.o policy-query.o policy-io.o queue.o util.o clone.o y.tab.o lex.yy.o
 LIB-OBJ +=  avl-util.o policy-avl.o render.o analysis.o perm-map.o cond.o infoflow.o poldiff.o
+LIB-OBJ += flowassert.o flowassert_scan.o flowassert_parse.o symtable.o
 LIB-OBJ +=  binpol/binpol.o binpol/bpmaps.o binpol/fbuf.o binpol/ebitmap.o
 LIB-OBJ +=  semantic/avhash.o semantic/avsemantics.o
 
@@ -60,6 +61,12 @@ y.tab.c: apolicy_parse.y
 
 lex.yy.c: apolicy_scan.l
 	$(LEX) apolicy_scan.l
+
+flowassert_scan.c: flowassert_scan.l flowassert_parse.c
+	flex -o$@ -Pflow $<
+
+flowassert_parse.c: flowassert_parse.y
+	bison -o $@ -d -p flow $<
 
 clean:
 	rm -f $(LIB-OBJ) *.o core core.* y.tab.c y.tab.h lex.yy.c *~ 
