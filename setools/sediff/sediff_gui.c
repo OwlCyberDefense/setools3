@@ -2796,7 +2796,6 @@ gboolean sediff_load_dlg_show()
 	return FALSE;
 }
 
-
 /* diff p1_file and p2_file and load gui with the resulting data, return -1 if
    fail on any dependencies */
 static int sediff_diff_and_load_policies(const char *p1_file,const char *p2_file)
@@ -2805,6 +2804,7 @@ static int sediff_diff_and_load_policies(const char *p1_file,const char *p2_file
 	GtkTextView *p2_textview;
 	GtkTextView *stats;
 	GtkWidget *container = NULL;
+	GtkWidget *dummy_view = NULL;
 	SEDiffTreeViewStore *tree_store = NULL;
 	apol_diff_result_t *diff_results = NULL;
 	GtkTreeModel *tree_model;
@@ -2820,6 +2820,10 @@ static int sediff_diff_and_load_policies(const char *p1_file,const char *p2_file
 
 	/* get the scrolled window we are going to put the tree_store in */
 	container = glade_xml_get_widget(sediff_app->window_xml, "scrolledwindow_list");
+
+	dummy_view = glade_xml_get_widget(sediff_app->window_xml, "textview3");
+	if (dummy_view)
+		gtk_container_remove(GTK_CONTAINER(container),dummy_view);
 
 	/* delete tree_view if it existed before */
 	if (sediff_app->tree_view) {
