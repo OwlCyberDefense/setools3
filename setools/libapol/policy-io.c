@@ -76,7 +76,6 @@ static bool_t is_binpol_valid(const char *policy_fname, const char *version)
 	policy_fp = fopen(policy_fname, "r");
 	if (policy_fp == NULL) {
 		fprintf(stderr, "Could not open policy %s!\n", policy_fname);
-		fclose(policy_fp);
 		return FALSE;
 	}
 	if(!ap_is_file_binpol(policy_fp)) {
@@ -330,6 +329,7 @@ int close_policy(policy_t *policy)
 
 static int read_policy(policy_t *policy)
 {
+	policy->policy_type = POL_TYPE_SOURCE;
 	/*yydebug = 1; */
 	parse_policy = policy; /* setting the parser's global parse policy */
 	/* assumed yyin is opened to policy file */
