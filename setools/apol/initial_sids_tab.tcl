@@ -143,6 +143,10 @@ proc Apol_Initial_SIDS::close { } {
 	$Apol_Initial_SIDS::resultsbox configure -state normal
 	$Apol_Initial_SIDS::resultsbox delete 0.0 end
 	ApolTop::makeTextBoxReadOnly $Apol_Initial_SIDS::resultsbox 
+	Apol_Initial_SIDS::enable_comboBox $Apol_Initial_SIDS::user_cb_value $Apol_Initial_SIDS::user_combo_box
+	Apol_Initial_SIDS::enable_comboBox $Apol_Initial_SIDS::role_cb_value $Apol_Initial_SIDS::role_combo_box
+	Apol_Initial_SIDS::enable_comboBox $Apol_Initial_SIDS::type_cb_value $Apol_Initial_SIDS::type_combo_box
+	Apol_Initial_SIDS::enable_comboBox $Apol_Initial_SIDS::attribute_cb_value $Apol_Initial_SIDS::attribute_combo_box
 	
 	return 0	
 }
@@ -332,15 +336,19 @@ proc Apol_Initial_SIDS::create {nb} {
 	# Search options widget items
 	set user_combo_box [ComboBox [$l_innerFrame getframe].user_combo_box -width 30 \
 		-textvariable Apol_Initial_SIDS::opts(user) \
-		-helptext "Type or select a user"]
+		-helptext "Type or select a user" \
+		-entrybg $ApolTop::default_bg_color]
 	set role_combo_box [ComboBox [$c_innerFrame getframe].role_combo_box -width 30 \
 		-textvariable Apol_Initial_SIDS::opts(role) \
-		-helptext "Type or select a role"]
+		-helptext "Type or select a role" \
+		-entrybg $ApolTop::default_bg_color]
 	set type_combo_box [ComboBox [$r_innerFrame getframe].type_combo_box -width 30 \
 		-textvariable Apol_Initial_SIDS::opts(type) \
-		-helptext "Type or select a type"]
+		-helptext "Type or select a type" \
+		-entrybg $ApolTop::default_bg_color]
 	set attribute_combo_box [ComboBox [$r_innerFrame getframe].attribute_combo_box  \
     		-textvariable Apol_Initial_SIDS::attribute_selected \
+    		-entrybg $ApolTop::default_bg_color \
     		-modifycmd {Apol_Initial_SIDS::change_types_list}]  
 		
 	$user_combo_box configure -state disabled 
