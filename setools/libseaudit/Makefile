@@ -6,7 +6,7 @@ CFLAGS          += -DLIBSEAUDIT_VERSION_STRING='"$(shell cat VERSION)"'
 LIBXML_FLAGS   = `pkg-config --cflags libxml-2.0`
 
 TARGET = libseaudit.so
-SONAME = $(TARGET).1.2
+SONAME = $(TARGET).1
 LIBSO  = $(TARGET).$(shell cat VERSION)
 
 libseaudit: libseaudit.a
@@ -21,7 +21,7 @@ libseaudit.a: $(LIB-OBJ)
 
 install-libapol-shared: libseauditso
 	install -m 755 $(LIBSO) $(SHARED_LIB_INSTALL_DIR)
-	cd $(SHARED_LIB_INSTALL_DIR) && ln -sf $(LIBSO) $(TARGET)
+	cd $(SHARED_LIB_INSTALL_DIR) && ln -sf $(LIBSO) $(SONAME) && ln -sf $(SONAME) $(TARGET)
 
 install-libapol-static: libseaudit
 	install -m 644 libseaudit.a $(STATIC_LIB_INSTALL_DIR)

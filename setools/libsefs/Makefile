@@ -20,7 +20,7 @@ libsefs.a:  $(LIB-OBJ)
 
 install-libsefs-shared: libsefsso
 	install -m 755 $(LIBSO) $(SHARED_LIB_INSTALL_DIR)
-	cd $(SHARED_LIB_INSTALL_DIR) && ln -sf $(LIBSO) $(TARGET)
+	cd $(SHARED_LIB_INSTALL_DIR) && ln -sf $(LIBSO) $(SONAME) && ln -sf $(SONAME) $(TARGET)
 
 install-libsefs-static: libsefs
 	install -m 644 libsefs.a $(STATIC_LIB_INSTALL_DIR)
