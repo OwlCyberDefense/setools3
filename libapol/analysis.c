@@ -206,18 +206,6 @@ static bool_t dta_query_does_av_rule_contain_obj_class_options(dta_query_t *q, i
 	return FALSE;
 }
 
-static bool_t dta_query_does_av_rule_contain_end_type(dta_query_t *q, int rule_idx, policy_t *policy)
-{
-	int i;
-	
-	assert(q && is_valid_av_rule_idx(rule_idx, 1, policy));
-	for (i = 0; i < q->num_end_types; i++) {
-		if (does_av_rule_idx_use_type(i, 0, q->end_types[i], IDX_TYPE, TGT_LIST, TRUE, policy))
-			return TRUE;
-	}		
-	return FALSE;
-}
-
 void free_entrypoint_type(void *t)
 {
 	entrypoint_type_t *p = (entrypoint_type_t *)t;
