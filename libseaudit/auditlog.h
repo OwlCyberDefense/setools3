@@ -17,7 +17,7 @@
 #include "../libapol/util.h"
 #include "../libapol/avl-util.h"
 
-#define LIBSEAUDIT_VERSION_STRING "1.0"
+#define LIBSEAUDIT_VERSION_STRING "1.1"
 
 /* 
  * msg_type_t defines the different types of audit messages this library will
