@@ -247,14 +247,14 @@ fi
 if [ "${USERNAME}" != "user_u" ]; then 
     # comments with spaces make life difficult so we need this
     if [ -n "${comment}" ]; then
-	${USERADD} ${suseraddopts} -c "${comment}" ${USERNAME} 2> /dev/null
+	${USERADD} ${suseraddopts} -c "${comment}" ${USERNAME} 2>&1
     else
-	${USERADD} ${suseraddopts} ${USERNAME} 2> /dev/null
+	${USERADD} ${suseraddopts} ${USERNAME} 2>&1
     fi
     RC=$?
     # if adding user to system failed, remove from policy if we added it
     if [ $RC -ne 0 ]; then
-	echo >&2 "Failed adding $USERNAME to system."
+	echo >&2 "Failed adding $USERNAME to system...Removing from policy."
 	if [ $ROLES -eq 1 ]; then 
 	    ${SEUSERDEL} -N ${USERNAME} 2> /dev/null
 	fi
