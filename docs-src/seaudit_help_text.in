@@ -79,9 +79,9 @@ can be performed at this time.
 Real-time log: 
 ------------ 
 The 'Real-time log' button allows you to keep up to date with the current
-state of the system log.  Seaudit checks for new messages in the opened 
-log file in once every second.  If new messages are found they are applied
-according to the current filter and sorting.
+state of the system log.  Seaudit checks for new messages in the open 
+log file once every second.  If new messages are found they are applied
+according to the current filter and sorting selections.
 
 
 Query Policy:
