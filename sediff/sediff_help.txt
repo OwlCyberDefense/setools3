@@ -3,42 +3,42 @@ sediff, Graphical User Interface version
 February 8, 2005
 selinux@tresys.com
 
-Overview:  
+Overview:
 --------- 
 This File contains basic help information for using the sediff gui, a
-tool  to compare two Security Enhanced Linux (SE Linux) policies.
+tool to compare two Security Enhanced Linux (SE Linux) policies.
 
 The tool does not need to be installed on an SE Linux system; it will
-work  on any Linux machine.  The tool parses two given policy files and 
+work on any Linux machine. The tool parses two given policy files and 
 compares them showing a list of the differences.
 
 
 Understanding a Policy Semantic DIFF: 
 ------------------------------------
-In this section, we analyze the various  aspects of a policy and discuss what a diff means.  Where meaningful, we also  discuss the differences between handling a policy source and a policy binary file.
+In this section, we analyze the various aspects of a policy and discuss what a diff means. Where meaningful, we also discuss the differences between handling a policy source and a policy binary file.
 
 Policy Components: 
     The base policy components (i.e., the identifiers) are the easiest part of the policy on which to perform a diff.
 
-    In the case of a source policy, we maintain line references back  to the associated policy.conf (there are no line references for binary  policy as there is no policy source file to reference).  For  binary policies, currently there are no attributes.
+    In the case of a source policy, we maintain line references back to the associated policy.conf (there are no line references for binary policy as there is no policy source file to reference). For binary policies, currently there are no attributes.
 
-Types:  
-    Determining the difference between two lists of types might be easiest, as long as we keep our definition of  “difference” simple. In  this case, we would compare both list of types using a string compare, and  identify any types not in both policies.  We will not attempt  to recognize any difference in semantic meaning of the type string identifier (not even sure that is possible!).
+Types:
+    Determining the difference between two lists of types might be easiest, as long as we keep our definition of difference simple. In this case, we would compare both list of types using a string compare, and identify any types not in both policies. We will not attempt to recognize any difference in semantic meaning of the type string identifier (not even sure that is possible!).
 
-Attributes:  
+Attributes:
     Attributes are a little more difficult than types, yet
-still fairly simple.  First we need to identify any attributes that
-are not present in both policies.  Second we must determine whether
-the list of types for an attribute differ between policies.  
+still fairly simple. First we need to identify any attributes that
+are not present in both policies. Second we must determine whether
+the list of types for an attribute differ between policies.
 
-Classes and Permissions:  
-    To date, difference in classes and permissions generally also mean a different policy version.  However that coupling will likely change in the future as user-mode object servers are added.  
+Classes and Permissions:
+    To date, difference in classes and permissions generally also mean a different policy version. However that coupling will likely change in the future as user-mode object servers are added.
 
 Objects: There are two issues to examine: 
     1) whether the list of object classes are the same
     2) whether the assignment of permissions are the same.
 
-Permissions & Common Permissions :  
+Permissions & Common Permissions :
     We determine whether the list of specific permission names is the same. Next we determine whether the list of common permissions are the same, and whether the assignment of permissions to common permission is also the same.
 
 Roles:  There are two issues with roles: 
@@ -55,17 +55,17 @@ Booleans: There are two issues with Booleans:
 
 
 AV and Type Rules: 
-    The TE rules are the most difficult aspect of diff’ing two policies.  
+    The TE rules are the most difficult aspect of diffing two policies.
 
-    In the case of binary policies, the rules are already condensed down to single source-target-class triples, with only one rule of a given rule type per triple (ignoring conditional policies for now).  However, source policies are not so compact, and there may (and usually are) many rules that have many sources, targets, and object classes and many other rules that match these rules for some aspect.  This is further complicated with the use of attributes.  Indeed the simpler (but verbose) case of a binary policy is really just a simple case of the more general case represented by the source policy.  Thus the first issue is a general solution for determining whether a given rule in policy_1 is semantically included in policy_2.
+    In the case of binary policies, the rules are already condensed down to single source-target-class triples, with only one rule of a given rule type per triple (ignoring conditional policies for now). However, source policies are not so compact, and there may (and usually are) many rules that have many sources, targets, and object classes and many other rules that match these rules for some aspect. This is further complicated with the use of attributes. Indeed the simpler (but verbose) case of a binary policy is really just a simple case of the more general case represented by the source policy. Thus the first issue is a general solution for determining whether a given rule in policy_1 is semantically included in policy_2.
 
-Role Rules:  
-    Role rules (role allow and transition) can be checked much in the same way as described above for TE rules.  
+Role Rules:
+    Role rules (role allow and transition) can be checked much in the same way as described above for TE rules.
 
-Conditional Policy:  
-    Conditional policies are a little more involved.  First we must check for differences in conditional expressions.  If an entire expression is missing within one policy or the other, then we need to identify the missing expression.
+Conditional Policy:
+    Conditional policies are a little more involved. First we must check for differences in conditional expressions. If an entire expression is missing within one policy or the other, then we need to identify the missing expression.
 
-    Second, for expressions that are the same in both policies, we need to check the true and false lists in both expressions, and ensure that there are no changes in rule sets.  This can be done in a manner similar as described for the AV rules above.  Note, we can ignore the enabled stated in this analysis as that would be reflected by a change in default Boolean state.
+    Second, for expressions that are the same in both policies, we need to check the true and false lists in both expressions, and ensure that there are no changes in rule sets. This can be done in a manner similar as described for the AV rules above. Note, we can ignore the enabled stated in this analysis as that would be reflected by a change in default Boolean state.
 
 
 
@@ -90,7 +90,7 @@ current version of the sediff gui you are using.
 
 Differences Tab:
 --------------
-    When two policies are loaded, the sediff gui displays a list of selections on the left hand side.  Each of these selections represent a set of differences between the policies as explained earlier.  The total number of differences in each of these sets in displayed in the status bar at the bottom of the main window.
+    When two policies are loaded, the sediff gui displays a list of selections on the left hand side. Each of these selections represent a set of differences between the policies as explained earlier. The total number of differences in each of these sets in displayed in the status bar at the bottom of the main window.
 
     Differences:
     ------------
@@ -107,7 +107,7 @@ Differences Tab:
 
     Difference Window:
     ------------------
-        When you make a selection from the list the right hand side will be populated by the differences for that set.  The differences are displayed in the following format:
+        When you make a selection from the list the right hand side will be populated by the differences for that set. The differences are displayed in the following format:
             Items added to Policy 1 in Policy 2 are in green, starting with a '+'.
             Items removed from Policy 1 in Policy 2 are in red, starting with a '-'.
             Changes of a major item from Policy 1 to Policy 2 are in blue, starting with a star '*' where the changes are represented using additions and subtractions.
@@ -124,7 +124,7 @@ Differences Tab:
 
 Policy Tabs:
 ------------
-        Each policy has a tab on the main window labeled Policy #: followed by the source file name.  Under each of these tabs are a policy statistics tab, and a source tab.
+        Each policy has a tab on the main window labeled Policy #: followed by the source file name. Under each of these tabs are a policy statistics tab, and a source tab.
 
     Policy Statistics Tab:
     ----------------------
@@ -132,7 +132,7 @@ Policy Tabs:
     
     Source Tab:
     -----------
-        If the policy is a source policy, and not a binary policy this tab will display the source of that policy.  When viewing the source of either policy the bottom right hand corner of the main window will display your current line number.        
+        If the policy is a source policy, and not a binary policy this tab will display the source of that policy. When viewing the source of either policy the bottom right hand corner of the main window will display your current line number.
 
 In the bottom left hand corner of the difference tab is a key showing you
 
