@@ -565,6 +565,14 @@ static void filters_select_items_on_remove_button_clicked(GtkButton *button, fil
 static void filters_select_on_policy_opened(void *filter_items_list)
 {
 	filters_select_items_t *s = (filters_select_items_t*)filter_items_list;
+	GtkWidget *widget;
+
+	widget = glade_xml_get_widget(s->xml, "PolicyRadioButton");
+	g_assert(widget);
+	gtk_widget_set_sensitive(widget, TRUE);
+	widget = glade_xml_get_widget(s->xml, "UnionRadioButton");
+	g_assert(widget);
+	gtk_widget_set_sensitive(widget, TRUE);
 
 	if (s->items_source == SEAUDIT_FROM_LOG)
 		return;
