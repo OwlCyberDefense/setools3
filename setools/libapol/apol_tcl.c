@@ -3423,7 +3423,8 @@ int Apol_Cond_Bool_SetBoolValue(ClientData clientData, Tcl_Interp *interp, int a
  */
 int Apol_Cond_Bool_GetBoolValue(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
 {
-	int bool_val;
+	bool_t bool_val;
+	int rt;
 	char tbuf[64];	
 	
 	if(argc != 2) {
@@ -3439,8 +3440,8 @@ int Apol_Cond_Bool_GetBoolValue(ClientData clientData, Tcl_Interp *interp, int a
 		return TCL_ERROR;
 	}
 		
-	bool_val = get_cond_bool_val(argv[1], policy);
-	if (bool_val < 0) {
+	rt = get_cond_bool_val(argv[1], &bool_val, policy);
+	if (rt < 0) {
 		Tcl_AppendResult(interp, "Error getting conditional boolean value for ", argv[1], (char *) NULL);
 		return TCL_ERROR;
 	}
