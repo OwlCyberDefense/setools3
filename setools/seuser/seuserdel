@@ -3,7 +3,7 @@
 # command line shell to run seuser delete/suseradd
 #
 # David Caplan, Tresys Technology, LLC (dac@tresys.com)
-# Last update: 17 September 2003
+# Last update: 17 September 2003-2005
 
 
     SEUSER="/usr/bin/seuser "

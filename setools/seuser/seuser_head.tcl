@@ -4,7 +4,7 @@
 #
 # SEUser: SE Linux user management tool
 #
-# Copyright (C) 2003 Tresys Technology, LLC
+# Copyright (C) 2003-2005 Tresys Technology, LLC
 # see file 'COPYING' for use and warranty information 
 #
 # Question/comments to: selinux@tresys.com 
