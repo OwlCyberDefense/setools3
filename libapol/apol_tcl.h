@@ -2,7 +2,7 @@
  * see file 'COPYING' for use and warranty information */
 
 /* 
- * Author: mayerf@tresys.com 
+ * Author: mayerf@tresys.com and Don Patterson <don.patterson@tresys.com>
  */
 
 /* apol_tcl.h
