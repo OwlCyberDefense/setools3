@@ -1759,9 +1759,10 @@ static int txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_ite
 	gtk_text_buffer_insert_with_tags_by_name(txt, &added_iter, string->str,-1, "header-tag", NULL); 
 
 	/* create a mark that goes after removed, but before changed */
-	if (polmatched == FALSE)
+	if (polmatched == FALSE) {
+		gtk_text_buffer_get_iter_at_mark(txt,&changed_iter,changed_mark);		
 		holder_mark = gtk_text_buffer_create_mark (txt,"holder-mark",&changed_iter,TRUE);
-	
+	}
 	/* find added and changed rules*/
 	for (i = 0; i < AVH_SIZE; i++) {
 		for (diffcur2 = diff2->te.tab[i];diffcur2 != NULL; diffcur2 = diffcur2->next) {
@@ -2693,7 +2694,10 @@ void sediff_open_dialog_on_p1browse_button_clicked(GtkButton *button, gpointer u
 	entry = (GtkEntry *)glade_xml_get_widget(sediff_app->open_dlg_xml, "sediff_dialog_p1_entry");
 	entry2 = (GtkEntry *)glade_xml_get_widget(sediff_app->open_dlg_xml, "sediff_dialog_p2_entry");
 	g_assert(entry);
-	filename = get_filename_from_user("Open Policy", gtk_entry_get_text(entry));
+	if ((g_ascii_strcasecmp(gtk_entry_get_text(entry),"") == 0) && gtk_entry_get_text(entry2) != NULL)
+		filename = get_filename_from_user("Open Policy", gtk_entry_get_text(entry2));
+	else
+		filename = get_filename_from_user("Open Policy", gtk_entry_get_text(entry));
 	if (filename){
 		gtk_entry_set_text(entry,filename->str);
 	}
@@ -2706,12 +2710,12 @@ void sediff_open_dialog_on_p2browse_button_clicked(GtkButton *button, gpointer u
 	GtkEntry *entry1 = NULL;
 
 	entry = (GtkEntry*)glade_xml_get_widget(sediff_app->open_dlg_xml, "sediff_dialog_p2_entry");
-//	entry1 = (GtkEntry*)glade_xml_get_widget(sediff_app->open_dlg_xml, "sediff_dialog_p1_entry");
+	entry1 = (GtkEntry*)glade_xml_get_widget(sediff_app->open_dlg_xml, "sediff_dialog_p1_entry");
 
 	g_assert(entry);
-//	if (gtk_entry_get_text(entry) == NULL && gtk_entry_get_text(entry1) != NULL)
-//		filename = get_filename_from_user("Open Policy", gtk_entry_get_text(entry1));
-//	else
+	if ((g_ascii_strcasecmp(gtk_entry_get_text(entry),"") == 0) && gtk_entry_get_text(entry1) != NULL)
+		filename = get_filename_from_user("Open Policy", gtk_entry_get_text(entry1));
+	else
 		filename = get_filename_from_user("Open Policy", gtk_entry_get_text(entry));
 	if (filename){
 		gtk_entry_set_text(entry, filename->str);
