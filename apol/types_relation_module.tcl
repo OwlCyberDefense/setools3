@@ -537,7 +537,7 @@ proc Apol_Analysis_tra::do_analysis {results_frame} {
 		$filter_dirflow_objs \
 		$excluded_dirflow_objs]} err]
 		
-	Apol_Analysis_fulflow::destroy_progressDlg	
+	Apol_Analysis_tra::destroy_progressDlg	
      	if {$rt != 0} {	
 	        tk_messageBox -icon error -type ok -title "Error" -message "$err"
 		return -code error
@@ -918,6 +918,15 @@ proc Apol_Analysis_tra::display_common_object_info {tra_listbox tra_info_text da
 
 	return 0
 }
+
+proc Apol_Analysis_tra::destroy_progressDlg {} {
+	variable progressDlg
+	
+	if {[winfo exists $progressDlg]} {
+		destroy $progressDlg
+	}
+     	return 0
+} 
 
 proc Apol_Analysis_tra::display_progressDlg {} {
      	variable progressDlg
