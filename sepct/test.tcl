@@ -497,7 +497,7 @@ proc Sepct_Test::test_Policy { which } {
 				set Sepct_Test::indicator 1
 				set Sepct_Test::progressmsg "Cleaning policy"
 				update idletasks
-				set rt [catch [exec make clean >&@ $of] ]				
+				set rt [catch {exec make clean >&@ $of} ]
 				if {$rt != 0} {
 					set msg "Problem cleaning policy"
 				}
