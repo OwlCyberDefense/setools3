@@ -464,8 +464,10 @@ static void populate_query_window_widgets(GladeXML *xml, int *tree_item_idx)
 			return;	
 		}
 		fltr_msg_idx = seaudit_log_view_store_iter_to_idx((SEAuditLogViewStore*)model, &iter);
+		selected = TRUE;
 	} else {
 		fltr_msg_idx = *tree_item_idx;	
+		selected = TRUE;
 	}
 	
 	msg_list_idx = view->store->log_view->fltr_msgs[fltr_msg_idx];
@@ -497,7 +499,7 @@ static void populate_query_window_widgets(GladeXML *xml, int *tree_item_idx)
 	obj_entry = glade_xml_get_widget(xml, "obj_combo_entry");
 	g_assert(obj_entry);	
 
-	if (fltr_msg_idx >= 0) {
+	if (selected) {
 		str = g_string_new("");
 		g_string_assign(str, audit_log_get_type(seaudit_app->cur_log, avc_msg->src_type));
 		g_string_prepend(str, "^");
