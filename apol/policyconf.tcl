@@ -132,7 +132,7 @@ proc Apol_PolicyConf::display_policy_conf { path } {
    	
    	set mod_disabled 0
    	$textbox_policyConf delete 0.0 end
-   	if {$ApolTop::policy_type == $ApolTop::binary_policy_type} {
+   	if {[ApolTop::is_binary_policy]} {
    		$textbox_policyConf insert end "<Binary policy is not available>"
    	} else {
 		# Make sure the "policy.conf" file exists and is readable by the user.

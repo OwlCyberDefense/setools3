@@ -517,7 +517,7 @@ proc Apol_TE::insertTERules { tb results } {
 		set enabled [lindex $results $x]
 				
 		# Only display line number hyperlink if this is not a binary policy.
-		if {$ApolTop::policy_type != $ApolTop::binary_policy_type} {
+		if {![ApolTop::is_binary_policy]} {
 			$tb insert end "($lineno"
 			set endIdx [$tb index insert]
 			Apol_PolicyConf::insertHyperLink $tb $line_num.1 $endIdx
