@@ -1276,7 +1276,6 @@ int Apol_OpenPolicy(ClientData clientData, Tcl_Interp *interp, int argc, char *a
 		Tcl_AppendResult(interp, "Invalid option:", argv[2], (char) NULL);
 		return TCL_ERROR;
 	}
-	opts = validate_policy_options(opts);
 
 	/* open_policy will actually open the file for reading - it is done here so that a
 	 * descriptive error message can be returned if the file cannot be read.
