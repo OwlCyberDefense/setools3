@@ -137,10 +137,14 @@ static bool_t src_user_criteria_action(msg_t *msg, seaudit_criteria_t *criteria,
 {
 	int i;
 	user_criteria_t *user_criteria;
+	const char *user;
 
 	if (msg == NULL || criteria == NULL || criteria->data == NULL)
 		return FALSE;
 
+	user = audit_log_get_user(log, msg->msg_data.avc_msg->src_user);
+	if (!user)
+		return FALSE;
 	user_criteria = (user_criteria_t*)criteria->data;
 	if (criteria->dirty == TRUE) {
 		for (i = 0; i < user_criteria->num_strs; i++)
@@ -149,7 +153,8 @@ static bool_t src_user_criteria_action(msg_t *msg, seaudit_criteria_t *criteria,
 	criteria->dirty = FALSE;
 	for (i = 0; i < user_criteria->num_strs; i++) { 
 		if (user_criteria->indexes[i] == -1)
-			continue;
+			if (fnmatch(user_criteria->strs[i], user, 0) == 0)
+				return TRUE;			
 		if (user_criteria->indexes[i] == msg->msg_data.avc_msg->src_user)
 			return TRUE; 
 	} 
@@ -160,10 +165,14 @@ static bool_t tgt_user_criteria_action(msg_t *msg, seaudit_criteria_t *criteria,
 {
 	int i;
 	user_criteria_t *user_criteria;
+	const char *user;
 
 	if (msg == NULL || criteria == NULL || criteria->data == NULL)
 		return FALSE;
 
+	user = audit_log_get_user(log, msg->msg_data.avc_msg->tgt_user);
+	if (!user)
+		return FALSE;
 	user_criteria = (user_criteria_t*)criteria->data;
 	if (criteria->dirty == TRUE) {
 		for (i = 0; i < user_criteria->num_strs; i++)
@@ -172,7 +181,8 @@ static bool_t tgt_user_criteria_action(msg_t *msg, seaudit_criteria_t *criteria,
 	criteria->dirty = FALSE;
 	for (i = 0; i < user_criteria->num_strs; i++) { 
 		if (user_criteria->indexes[i] == -1)
-			continue;
+			if (fnmatch(user_criteria->strs[i], user, 0) == 0)
+				return TRUE;
 		if (user_criteria->indexes[i] == msg->msg_data.avc_msg->tgt_user)
 			return TRUE; 
 	} 
@@ -183,10 +193,14 @@ static bool_t src_role_criteria_action(msg_t *msg, seaudit_criteria_t *criteria,
 {
 	int i; 
 	role_criteria_t *role_criteria;
+	const char *role;
 
 	if (msg == NULL || criteria == NULL || criteria->data == NULL)
 		return FALSE;
 
+	role = audit_log_get_role(log, msg->msg_data.avc_msg->src_role);
+	if (!role)
+		return FALSE;
 	role_criteria = (role_criteria_t*)criteria->data;
 	if (criteria->dirty == TRUE) {
 		for (i = 0; i < role_criteria->num_strs; i++)
@@ -195,7 +209,8 @@ static bool_t src_role_criteria_action(msg_t *msg, seaudit_criteria_t *criteria,
 	criteria->dirty = FALSE;
 	for (i = 0; i < role_criteria->num_strs; i++) { 
 		if (role_criteria->indexes[i] == -1)
-			continue;
+			if (fnmatch(role_criteria->strs[i], role, 0) == 0)
+				return TRUE;		       
 		if (role_criteria->indexes[i] == msg->msg_data.avc_msg->src_role) 
 			return TRUE; 
 	} 
@@ -206,10 +221,14 @@ static bool_t tgt_role_criteria_action(msg_t *msg, seaudit_criteria_t *criteria,
 {
 	int i; 
 	role_criteria_t *role_criteria;
+	const char *role;
 
 	if (msg == NULL || criteria == NULL || criteria->data == NULL)
 		return FALSE;
 
+	role = audit_log_get_role(log, msg->msg_data.avc_msg->tgt_role);
+	if (!role)
+		return FALSE;
 	role_criteria = (role_criteria_t*)criteria->data;
 	if (criteria->dirty == TRUE) {
 		for (i = 0; i < role_criteria->num_strs; i++)
@@ -218,7 +237,8 @@ static bool_t tgt_role_criteria_action(msg_t *msg, seaudit_criteria_t *criteria,
 	criteria->dirty = FALSE;
 	for (i = 0; i < role_criteria->num_strs; i++) { 
 		if (role_criteria->indexes[i] == -1)
-			continue;
+			if (fnmatch(role_criteria->strs[i], role, 0) == 0)
+				return TRUE;
 		if (role_criteria->indexes[i] == msg->msg_data.avc_msg->tgt_role) 
 			return TRUE; 
 	} 
@@ -229,10 +249,14 @@ static bool_t src_type_criteria_action(msg_t *msg, seaudit_criteria_t *criteria,
 {
 	int i; 
 	type_criteria_t *type_criteria;
-	
+	const char *type;
+
 	if (msg == NULL || criteria == NULL || criteria->data == NULL)
 		return FALSE;
 
+	type = audit_log_get_type(log, msg->msg_data.avc_msg->src_type);
+	if (!type)
+		return FALSE;
 	type_criteria = (type_criteria_t*)criteria->data;
 	if (criteria->dirty == TRUE) {
 		for (i = 0; i < type_criteria->num_strs; i++)
@@ -241,7 +265,8 @@ static bool_t src_type_criteria_action(msg_t *msg, seaudit_criteria_t *criteria,
 	criteria->dirty = FALSE;
 	for (i = 0; i < type_criteria->num_strs; i++) { 
 		if (type_criteria->indexes[i] == -1)
-			continue;
+			if (fnmatch(type_criteria->strs[i], type, 0) == 0)
+				return TRUE;
 		if (type_criteria->indexes[i] == msg->msg_data.avc_msg->src_type)
 			return TRUE;
 	} 
@@ -252,10 +277,14 @@ static bool_t tgt_type_criteria_action(msg_t *msg, seaudit_criteria_t *criteria,
 {
 	int i; 
 	type_criteria_t *type_criteria;
-	
+	const char *type;
+
 	if (msg == NULL || criteria == NULL || criteria->data == NULL)
 		return FALSE;
 
+	type = audit_log_get_type(log, msg->msg_data.avc_msg->tgt_type);
+	if (!type)
+		return FALSE;
 	type_criteria = (type_criteria_t*)criteria->data;
 	if (criteria->dirty == TRUE) {
 		for (i = 0; i < type_criteria->num_strs; i++)
@@ -264,7 +293,8 @@ static bool_t tgt_type_criteria_action(msg_t *msg, seaudit_criteria_t *criteria,
 	criteria->dirty = FALSE;
 	for (i = 0; i < type_criteria->num_strs; i++) { 
 		if (type_criteria->indexes[i] == -1)
-			continue;
+			if (fnmatch(type_criteria->strs[i], type, 0) == 0)
+				return TRUE;
 		if (type_criteria->indexes[i] == msg->msg_data.avc_msg->tgt_type)
 			return TRUE;
 	} 
@@ -275,10 +305,14 @@ static bool_t class_criteria_action(msg_t *msg, seaudit_criteria_t *criteria, au
 { 
 	int i; 
 	class_criteria_t *class_criteria;
+	const char *class;
 
 	if (msg == NULL || criteria == NULL || criteria->data == NULL)
 		return FALSE;
 
+	class = audit_log_get_obj(log, msg->msg_data.avc_msg->obj_class);
+	if (!class)
+		return FALSE;
 	class_criteria = (class_criteria_t*)criteria->data;
 	if (criteria->dirty == TRUE) {
 		for (i = 0; i < class_criteria->num_strs; i++)
@@ -287,7 +321,8 @@ static bool_t class_criteria_action(msg_t *msg, seaudit_criteria_t *criteria, au
 	criteria->dirty = FALSE;
 	for (i = 0; i < class_criteria->num_strs; i++) { 
 		if (class_criteria->indexes[i] == -1)
-			continue;
+			if (fnmatch(class_criteria->strs[i], class, 0) == 0)
+				return TRUE;
 		if (class_criteria->indexes[i] == msg->msg_data.avc_msg->obj_class) 
 			return TRUE; 
 	} 
