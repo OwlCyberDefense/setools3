@@ -2195,16 +2195,19 @@ proc ApolTop::load_fonts { } {
 	# First set all fonts in general; then change specific fonts
 	if {$general_font == ""} {
 		option add *Font "Helvetica 10"
+		set general_font "Helvetica 10"
 	} else {
 		option add *Font $general_font
 	}
 	if {$title_font == ""} {
 		option add *TitleFrame.l.font "Helvetica 10 bold italic" 
+		set title_font "Helvetica 10 bold italic"
 	} else {
 		option add *TitleFrame.l.font $title_font  
 	}
 	if {$dialog_font == ""} {
 		option add *Dialog*font "Helvetica 10" 
+		set dialog_font "Helvetica 10"
 	} else {
 		option add *Dialog*font $dialog_font
 	}
