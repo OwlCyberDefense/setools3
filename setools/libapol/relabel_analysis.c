@@ -819,7 +819,7 @@ static int apol_domain_relabel_types(relabel_set_t *sets, int domain, relabel_re
 	next = 0;
 	for (i = 0; i < clone->num_to_types; i++) {
 		here = 1;
-		if (filter) {
+		if (filter && filter->num_perm_sets > 0) {
 			has_class = 0; /* must include at least one of the specified object classes */ 
 			for (j = 0; j < filter->num_perm_sets; j++) {
 				if (apol_does_type_obj_have_class(&(clone->to_types[i]), filter->perm_sets[j].obj_class)) {
@@ -855,7 +855,7 @@ static int apol_domain_relabel_types(relabel_set_t *sets, int domain, relabel_re
 	next = 0;
 	for (i = 0; i < clone->num_from_types; i++) {
 		here = 1;
-		if (filter) {
+		if (filter && filter->num_perm_sets > 0) {
 			has_class = 0;
 			for (j = 0; j < filter->num_perm_sets; j++) {
 				if (apol_does_type_obj_have_class(&(clone->from_types[i]), filter->perm_sets[j].obj_class)) {
@@ -971,7 +971,7 @@ static int apol_type_relabel(relabel_set_t *sets, int type, relabel_result_t *re
 		if (retv && retv != NOTHERE) 
 			return retv;
 
-		if (filter) {
+		if (filter && filter->num_perm_sets > 0) {
 			for (j = 0; j < size; j++) {
 				here = 0;
 				if (mode == MODE_TO) {
@@ -1118,7 +1118,8 @@ int apol_query_relabel_analysis(relabel_set_t *sets, int type, relabel_result_t 
 	if (retv)
 		return retv;
 
-	retv = apol_filter_rules_list(res, policy, filter);
+	if (filter && filter->num_perm_sets > 0)
+		retv = apol_filter_rules_list(res, policy, filter);
 
 	return retv;
 }
