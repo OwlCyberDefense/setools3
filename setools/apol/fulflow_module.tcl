@@ -316,9 +316,9 @@ proc Apol_Analysis_fulflow::open { } {
 } 
 
 # ------------------------------------------------------------------------------
-#  Command Apol_Analysis_fulflow::load_advanced_filters_object_query_options
+#  Command Apol_Analysis_fulflow::load_advanced_filters_options
 # ------------------------------------------------------------------------------
-proc Apol_Analysis_fulflow::load_advanced_filters_object_query_options {query_options curr_idx path_name parentDlg} {
+proc Apol_Analysis_fulflow::load_advanced_filters_options {query_options curr_idx path_name parentDlg} {
 	variable f_opts
 	 
 	# Destroy the current advanced options object    	
@@ -396,7 +396,7 @@ proc Apol_Analysis_fulflow::load_advanced_filters_object_query_options {query_op
 	        if {[llength $split_list] == 1} {
 	        	# Validate that the type exists in the loaded policy.
      			if {[lsearch -exact $Apol_Types::typelist [lindex $query_options $i]] != -1} {
-	        		set f_opts($path_name,filtered_excl_types) [lindex $query_options $i]
+	        		set f_opts($path_name,master_excl_types_list) [lindex $query_options $i]
 	        	} else {
 	        		set invalid_types [lappend invalid_types [lindex $query_options $i]]
 	     		} 
@@ -405,7 +405,7 @@ proc Apol_Analysis_fulflow::load_advanced_filters_object_query_options {query_op
 		        # is in splitChars, so we ignore the first element of the split list.
 		        # Validate that the type exists in the loaded policy.
      			if {[lsearch -exact $Apol_Types::typelist [lindex $split_list 1]] != -1} {
-		        	set f_opts($path_name,filtered_excl_types) [lappend f_opts($path_name,filtered_excl_types) \
+		        	set f_opts($path_name,master_excl_types_list) [lappend f_opts($path_name,master_excl_types_list) \
 		        		[lindex $split_list 1]]
 		        } else {
 	     			set invalid_types [lappend invalid_types [lindex $split_list 1]]
@@ -420,7 +420,7 @@ proc Apol_Analysis_fulflow::load_advanced_filters_object_query_options {query_op
 		        while {[llength [split [lindex $query_options $i] "\}"]] == 1} {
 		        	# Validate that the type exists in the loaded policy.
      				if {[lsearch -exact $Apol_Types::typelist [lindex $query_options $i]] != -1} {
-		        		set f_opts($path_name,filtered_excl_types) [lappend f_opts($path_name,filtered_excl_types) \
+		        		set f_opts($path_name,master_excl_types_list) [lappend f_opts($path_name,master_excl_types_list) \
 		        			[lindex $query_options $i]]
 		        	} else {
 		     			set invalid_types [lappend invalid_types [lindex $query_options $i]]
@@ -433,14 +433,14 @@ proc Apol_Analysis_fulflow::load_advanced_filters_object_query_options {query_op
 		        set end_element [lindex [split [lindex $query_options $i] "\}"] 0]
 		        # Validate that the type exists in the loaded policy.
      			if {[lsearch -exact $Apol_Types::typelist $end_element] != -1} {
-		        	set f_opts($path_name,filtered_excl_types) [lappend f_opts($path_name,filtered_excl_types) \
+		        	set f_opts($path_name,master_excl_types_list) [lappend f_opts($path_name,master_excl_types_list) \
 		        		$end_element]
 		        } else {
 	     			set invalid_types [lappend invalid_types $end_element]
 	     		} 
-	     		set idx [lsearch -exact $f_opts($path_name,filtered_excl_types) "self"]
+	     		set idx [lsearch -exact $f_opts($path_name,master_excl_types_list) "self"]
 			if {$idx != -1} {
-				set f_opts($path_name,filtered_excl_types) [lreplace $f_opts($path_name,filtered_excl_types) \
+				set f_opts($path_name,master_excl_types_list) [lreplace $f_opts($path_name,master_excl_types_list) \
 					$idx $idx]
 			}
 		}
@@ -453,18 +453,30 @@ proc Apol_Analysis_fulflow::load_advanced_filters_object_query_options {query_op
 			puts "$type\n"	
 		}
 	}
-	
-      	foreach type $Apol_Types::typelist {
+	# We now have populated both master types list. We now need to remove 
+	# items from the included list that exist in the excluded list.
+	# The master include intermeditate types list has already been initialized 
+	# when we created the object.
+	set tmp_list $f_opts($path_name,master_incl_types_list)
+      	foreach type $tmp_list {
 		if {$type != "self"} {
-			set idx [lsearch -exact $f_opts($path_name,filtered_excl_types) $type]
-			if {$idx == -1} {
-     				set f_opts($path_name,filtered_incl_types) [lappend f_opts($path_name,filtered_incl_types) $type]
+			# Search the master excluded inter types list to see if we need 
+			# to remove this type from the master included inter types list.
+			set idx [lsearch -exact $f_opts($path_name,master_excl_types_list) $type]
+			if {$idx != -1} {
+				# Type was found in the excluded list, so remove from master included list
+				set idx [lsearch -exact $f_opts($path_name,master_incl_types_list) $type]
+				# We don't check if the idx is -1 because we know it exists in the list
+     				set f_opts($path_name,master_incl_types_list) \
+     					[lreplace $f_opts($path_name,master_incl_types_list) \
+     					$idx $idx]
      			}
      		}
 	}   
-	set f_opts($path_name,master_incl_types_list) $f_opts($path_name,filtered_incl_types)
-	set f_opts($path_name,master_excl_types_list) $f_opts($path_name,filtered_excl_types) 
-			
+	# We will filter the list that is displayed later based upon the attribute settings when we update the dialog.
+	set f_opts($path_name,filtered_incl_types) $f_opts($path_name,master_incl_types_list) 
+	set f_opts($path_name,filtered_excl_types) $f_opts($path_name,master_excl_types_list) 
+
       	# Update our counter variable to the next element in the query options list
       	incr i
       	if {[lindex $query_options $i] != "\{\}"} {
@@ -582,7 +594,7 @@ proc Apol_Analysis_fulflow::load_query_options { file_channel parentDlg } {
         }
         set flow_direction [string trim [lindex $query_options 7] "\{\}"]
      	set i 8
-     	set i [Apol_Analysis_fulflow::load_advanced_filters_object_query_options $query_options \
+     	set i [Apol_Analysis_fulflow::load_advanced_filters_options $query_options \
      		$i $path_name $parentDlg]
                
 	Apol_Analysis_fulflow::config_endtype_state
@@ -1953,7 +1965,7 @@ proc Apol_Analysis_fulflow::advanced_filters_refresh_dialog {path_name} {
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_fulflow::advanced_filters_update_dialog {path_name} {
 	variable f_opts
-		
+			
 	# If the advanced filters dialog is displayed, then we need to update its' state.
 	if {[array exists f_opts] && \
 	    [array names f_opts "$path_name,name"] != "" &&
@@ -2096,7 +2108,7 @@ proc Apol_Analysis_fulflow::advanced_filters_configure_adv_combo_state {cb_selec
 				Apol_Analysis_fulflow::f_opts($path_name,master_excl_types_list)
 		}
 	} else {
-		$combo_box configure -state disabled -entrybg  $ApolTop::default_bg_color
+		$combo_box configure -state disabled -entrybg $ApolTop::default_bg_color
 		if {$which_list == "incl"} {
 			set [$lbox cget -listvar] \
 				[lsort $f_opts($path_name,master_incl_types_list)]
@@ -2133,7 +2145,8 @@ proc Apol_Analysis_fulflow::advanced_filters_filter_types_using_attrib {attribut
 			return -1
 		}
 		if {$non_filtered_types != ""} {
-			for {set i 0} {$i < [llength $non_filtered_types]} {incr i} { 
+			set len [llength $non_filtered_types]
+			for {set i 0} {$i < $len} {incr i} { 
 				# Check if this is a filtered type
 				set idx [lsearch -exact $attrib_types [lindex $non_filtered_types $i]]
 				if {$idx != -1} {
@@ -2430,19 +2443,20 @@ proc Apol_Analysis_fulflow::advanced_filters_initialize_vars {path_name} {
 	variable f_opts
 
 	if {$f_opts($path_name,filter_vars_init) == 0} {
+		# Initialize all object classes/permissions and related information to default values
 		Apol_Analysis_fulflow::advanced_filters_initialize_objs_and_perm_filters $path_name
-  		# Initialization for types section
- 	        set f_opts($path_name,filtered_excl_types) $Apol_Types::typelist
- 		set idx [lsearch -exact $f_opts($path_name,filtered_excl_types) "self"]
+		
+  		# Initialize included/excluded intermediate types section to default values
+ 		set f_opts($path_name,master_incl_types_list) $Apol_Types::typelist 
+ 		set idx [lsearch -exact $f_opts($path_name,master_incl_types_list) "self"]
   		if {$idx != -1} {
- 			set f_opts($path_name,filtered_excl_types) \
- 				[lreplace $f_opts($path_name,filtered_excl_types) $idx $idx]
+ 			set f_opts($path_name,master_incl_types_list) \
+ 				 [lreplace $f_opts($path_name,master_incl_types_list) \
+ 				  $idx $idx]
   		}   
- 		set f_opts($path_name,filtered_incl_types) \
- 			[lsort $f_opts($path_name,filtered_excl_types)]
- 	        set f_opts($path_name,filtered_excl_types) ""
- 		set f_opts($path_name,master_incl_types_list) $f_opts($path_name,filtered_incl_types)
  	        set f_opts($path_name,master_excl_types_list) $f_opts($path_name,filtered_excl_types)
+ 	        set f_opts($path_name,filtered_incl_types) $f_opts($path_name,master_incl_types_list)
+ 	        set f_opts($path_name,filtered_excl_types) $f_opts($path_name,master_excl_types_list)
   	        set f_opts($path_name,filter_vars_init) 1
 	}
 	
@@ -2492,12 +2506,14 @@ proc Apol_Analysis_fulflow::advanced_filters_set_widgets_to_default_state {path_
 		}
 		incr class_lbox_idx
 	}
+
 	Apol_Analysis_fulflow::advanced_filters_configure_adv_combo_state \
 		Apol_Analysis_fulflow::f_opts($path_name,incl_attrib_cb_sel) \
 		$f_opts($path_name,combo_incl) \
 		$f_opts($path_name,lbox_incl) \
 		incl \
 		$path_name
+
 	Apol_Analysis_fulflow::advanced_filters_configure_adv_combo_state \
 		Apol_Analysis_fulflow::f_opts($path_name,excl_attrib_cb_sel) \
 		$f_opts($path_name,combo_excl) \
@@ -2511,23 +2527,6 @@ proc Apol_Analysis_fulflow::advanced_filters_set_widgets_to_default_state {path_
 		$path_name
 	
 	return 0
-}
-
-# ------------------------------------------------------------------------------
-#  Command Apol_Analysis_fulflow::advanced_filters_update_widgets_state
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_fulflow::advanced_filters_update_widgets_state {} {	
-	set rt [catch {Apol_Analysis_fulflow::load_default_perm_map} err]
-	if {$rt != 0} {	
-		return -1
-	}
-	set rt [catch {Apol_Analysis_fulflow::advanced_filters_initialize_vars} err]
-	if {$rt != 0} {
-		return -1
-	}	
-	Apol_Analysis_fulflow::advanced_filters_set_widgets_to_default_state
-				
-	return 0	
 }
 
 # ------------------------------------------------------------------------------
@@ -2646,9 +2645,9 @@ proc Apol_Analysis_fulflow::advanced_filters_change_spinbox_state {path_name} {
 	variable f_opts
 
 	if {$f_opts($path_name,threshhold_cb_value)} {
-		$f_opts($path_name,spinbox_threshhold) configure -state normal
+		$f_opts($path_name,spinbox_threshhold) configure -state normal -entrybg white
 	} else {
-		$f_opts($path_name,spinbox_threshhold) configure -state disabled
+		$f_opts($path_name,spinbox_threshhold) configure -state disabled -entrybg $ApolTop::default_bg_color
 	}
 	return 0
 }
