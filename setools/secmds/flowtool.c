@@ -267,9 +267,14 @@ int main (int argc, char *argv []) {
                 (void) fprintf (stderr, "%s: Error while loading permission map file %s.\n", argv [0], permission_map_file);
                 exit (2);
         }
-        if (assert_file != NULL && (flowin = fopen (assert_file, "r")) == NULL) {
-                (void) fprintf (stderr, "%s: Could not open assertion file %s for reading.\n", argv [0], assert_file);
-                exit (2);
+        if (assert_file == NULL) {
+                flowin = stdin;
+        }
+        else {
+                if ((flowin = fopen (assert_file, "r")) == NULL) {
+                        (void) fprintf (stderr, "%s: Could not open assertion file %s for reading.\n", argv [0], assert_file);
+                        exit (2);
+                }
         }
         /* read in contents of file */
         flowfile_size = 0;
