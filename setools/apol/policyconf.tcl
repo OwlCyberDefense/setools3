@@ -53,6 +53,18 @@ proc Apol_PolicyConf::wrap_proc_policy_conf { cmd args } {
 	uplevel "::${Apol_PolicyConf::textbox_policyConf}_" $cmd $args
 }
 
+# ----------------------------------------------------------------------------------------
+#  Command Apol_PolicyConf::set_Focus_to_Text
+#
+#  Description: 
+# ----------------------------------------------------------------------------------------
+proc Apol_PolicyConf::set_Focus_to_Text {} {
+	focus $Apol_PolicyConf::textbox_policyConf
+	set ApolTop::policyConf_lineno "Line [$Apol_PolicyConf::textbox_policyConf index insert]"
+	
+	return 0
+}
+
 ############################################################################
 # ::update_positionStatus
 #  	- updates cursor position status infor
