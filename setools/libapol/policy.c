@@ -67,6 +67,20 @@ int _get_type_name_ptr(int idx, char **name, policy_t *policy)
 	*name = policy->types[idx].name;
 	return 0;
 }
+int _get_role_name_ptr(int idx, char **name, policy_t *policy)
+{
+	if(!is_valid_role_idx(idx, policy))
+		return -1;
+	*name = policy->roles[idx].name;
+	return 0;
+}
+int _get_user_name_ptr(int idx, char **name, policy_t *policy)
+{
+	if(!is_valid_user_idx(idx, policy))
+		return -1;
+	*name = policy->users[idx].name;
+	return 0;
+}
 /**************/
 
 
@@ -273,6 +287,14 @@ int set_policy_version(int ver, policy_t *policy)
 		return 0; /* already set the same or higher version */
 	policy->version = ver;
 	return 0;
+}
+
+int pol_ver[] = {0,10,12,15,16,17};
+int get_policy_version_num(policy_t *policy)
+{
+	if(policy == NULL || !is_valid_policy_version(policy->version))
+		return -1;
+	return pol_ver[policy->version]; 
 }
 
 
@@ -982,6 +1004,77 @@ int get_type_or_attrib_idx(const char *name, int *idx_type, policy_t *policy) {
 	return idx;
 }
 
+bool_t is_attrib_in_type(const char *attrib, int type_idx, policy_t *policy) {
+	
+	int i;
+	char *name;
+	if(attrib == NULL || !is_valid_type_idx(type_idx, policy)) 
+		return FALSE;
+		
+	for(i = 0; i < policy->types[type_idx].num_attribs; i++) {
+		/* NEVER free name!!!; _get_attrib_name_ptr() in an internal fn returning actual pointer */
+		_get_attrib_name_ptr(policy->types[type_idx].attribs[i], &name, policy);
+		if(strcmp(attrib, name) == 0)
+			return TRUE;
+	}
+	return FALSE;
+}
+
+typedef int (*_get_name_ptr_t)(int idx, char **name, policy_t *policy);
+static bool_t is_name_in_namea(const char *name, int idx_type, int idx, policy_t *policy) {
+	int i, rt;
+	name_a_t *list;
+	_get_name_ptr_t _get_name;
+	char *n;
+	
+	switch(idx_type) {
+	case IDX_ATTRIB:
+		if(!is_valid_attrib_idx(idx, policy))
+			return FALSE;
+		list = policy->attribs;
+		_get_name = &_get_type_name_ptr;
+		break;
+	case IDX_ROLE:
+		if(!is_valid_role_idx(idx, policy))
+			return FALSE;
+		list = policy->roles;
+		_get_name = &_get_type_name_ptr;
+		break;
+	case IDX_USER:
+		if(!is_valid_user_idx(idx, policy))
+			return FALSE;
+		list = policy->users;
+		_get_name = &_get_role_name_ptr;
+		break;
+	default:
+		return FALSE;
+	}
+		
+	for(i = 0; i < list[idx].num; i++) {
+		/* DO NOT free() n; it's an internal ptr */
+		rt = _get_name(list[idx].a[i], &n, policy);
+		if(rt < 0) {
+			assert(FALSE); /* shouldn't get this error */
+			return FALSE;
+		}
+		if(strcmp(n, name) == 0)
+			return TRUE;
+	}
+	return FALSE;
+}
+
+bool_t is_type_in_attrib(const char *type, int attrib_idx, policy_t *policy) {
+	return(is_name_in_namea(type, IDX_ATTRIB, attrib_idx, policy));
+}
+
+bool_t is_type_in_role(const char *type, int role_idx, policy_t *policy) {
+	return(is_name_in_namea(type, IDX_ROLE, role_idx, policy));
+}
+
+bool_t is_role_in_user(const char *role, int user_idx, policy_t *policy) {
+	return(is_name_in_namea(role, IDX_USER, user_idx, policy));
+}
+
 int get_role_idx(const char *name, policy_t *policy) 
 {
 	int i;
@@ -993,6 +1086,7 @@ int get_role_idx(const char *name, policy_t *policy)
 	}
 	return -1;
 }
+
 
 
 /* allocates space for name, release memory with free() */
@@ -2778,22 +2872,53 @@ int get_cond_bool_idx(const char *name, policy_t *policy)
 }
 
 /*
- * Get the value of the conditional boolean in the policy.
+ * Get the current value of the conditional boolean in the policy.
  *
  * returns the value of the boolean on success.
  * returns -1 on error.
  */
-int get_cond_bool_val(char *name, policy_t *policy)
+int get_cond_bool_val(const char *name, bool_t *val, policy_t *policy)
 {
 	int idx;
 	
-	if(name == NULL || policy == NULL)
+	if(name == NULL || policy == NULL || val == NULL)
 		return -1;
 	
 	idx = avl_get_idx(name, &policy->tree[AVL_COND_BOOLS]);
 	if (idx < 0) 
 		return -1;
-	return policy->cond_bools[idx].state; 	
+	*val = policy->cond_bools[idx].state; 
+	return 0;
+}
+
+int get_cond_bool_default_val(const char *name, bool_t *val, policy_t *policy)
+{
+	int idx;
+	
+	if(name == NULL || policy == NULL || val == NULL)
+		return -1;
+	
+	idx = avl_get_idx(name, &policy->tree[AVL_COND_BOOLS]);
+	if (idx < 0) 
+		return -1;
+	*val = policy->cond_bools[idx].default_state; 	
+	return 0;
+}
+
+int get_cond_bool_val_idx(int idx, bool_t *val, policy_t *policy) {
+	if(val == NULL || is_valid_cond_bool_idx(idx, policy))
+		return -1;
+	
+	*val = policy->cond_bools[idx].state; 
+	return 0;
+}
+
+int get_cond_bool_default_val_idx(int idx, bool_t *val, policy_t *policy) {
+	if(val == NULL || is_valid_cond_bool_idx(idx, policy))
+		return -1;
+	
+	*val = policy->cond_bools[idx].default_state; 
+	return 0;
 }
 
 static void update_cond_rule_list(cond_rule_list_t *list, bool_t state, policy_t *policy)
