@@ -28,21 +28,11 @@ typedef struct sediff_app {
 	GtkTextBuffer *roles_buffer;
 	GtkTextBuffer *users_buffer;
 	GtkTextBuffer *booleans_buffer;
-	GtkTextBuffer *sids_buffer;
+	GtkTextBuffer *attribs_buffer;
 	GtkTextBuffer *te_buffer;
 	GtkTextBuffer *rbac_buffer;
-	GtkTextBuffer *cond_buffer;
 
-	GtkTextBuffer *classes_buffer2;
-	GtkTextBuffer *types_buffer2;
-	GtkTextBuffer *roles_buffer2;
-	GtkTextBuffer *users_buffer2;
-	GtkTextBuffer *booleans_buffer2;
-	GtkTextBuffer *sids_buffer2;
-	GtkTextBuffer *te_buffer2;
-	GtkTextBuffer *rbac_buffer2;
-	GtkTextBuffer *cond_buffer2;
-	
+
 
 } sediff_app_t;
 
