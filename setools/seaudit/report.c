@@ -423,14 +423,19 @@ static void seaudit_report_write_policy_load_msg(seaudit_report_t *seaudit_repor
 }
 
 static int seaudit_report_print_policy_loads(seaudit_report_t *seaudit_report, FILE *outfile) {
-	int i, indx;
+	int i, indx, num = 0;
 	msg_t *cur_msg = NULL;
 	
 	assert(outfile != NULL);
-	if (seaudit_report->html) 
-		fprintf(outfile, "<font class=\"message_count_label\">Number of messages:</font> <b class=\"message_count\">%d</b><br>\n<br>\n", seaudit_report->log->num_load_msgs);
+	if (seaudit_report->log_view != NULL) 
+		num = seaudit_report->log_view->num_fltr_msgs;
 	else
-		fprintf(outfile, "Number of messages: %d\n\n", seaudit_report->log->num_load_msgs);
+		num = seaudit_report->log->num_load_msgs;
+		
+	if (seaudit_report->html) 
+		fprintf(outfile, "<font class=\"message_count_label\">Number of messages:</font> <b class=\"message_count\">%d</b><br>\n<br>\n", num);
+	else
+		fprintf(outfile, "Number of messages: %d\n\n", num);
 	
 	if (seaudit_report->log_view != NULL) {
 		for (i = 0; i < seaudit_report->log_view->num_fltr_msgs; i++) {
@@ -530,6 +535,11 @@ static int seaudit_report_print_enforce_toggles(seaudit_report_t *seaudit_report
 	/* Loop through and get the number of avc allow messages with the setenforce permission */
 	for (i = 0; i < log_view->num_fltr_msgs; i++) {		
 		indx = log_view->fltr_msgs[i];
+		if (seaudit_report->log_view != NULL && 
+		    find_int_in_array(indx, seaudit_report->log_view->fltr_msgs, seaudit_report->log_view->num_fltr_msgs) < 0) {
+		    	/* Skip any messages that are not in the global view (i.e. seaudit_report->log_view) */
+			continue;	
+		}	
 		if (log_view->my_log->msg_list[indx]->msg_type == AVC_MSG) {
 			cur_msg = log_view->my_log->msg_list[indx]->msg_data.avc_msg;
 			if (cur_msg->msg == AVC_DENIED)
@@ -745,14 +755,19 @@ static void seaudit_report_write_boolean_msg(seaudit_report_t *seaudit_report, m
 }
 
 static int seaudit_report_print_policy_booleans(seaudit_report_t *seaudit_report, FILE *outfile) {
-	int i, indx;
+	int i, indx, num = 0;
 	msg_t *cur_msg = NULL;
 	
 	assert(outfile != NULL);
-	if (seaudit_report->html)
-		fprintf(outfile, "<font class=\"message_count_label\">Number of messages:</font> <b class=\"message_count\">%d</b><br>\n<br>\n", seaudit_report->log->num_bool_msgs);
+	if (seaudit_report->log_view != NULL) 
+		num = seaudit_report->log_view->num_fltr_msgs;
 	else 
-		fprintf(outfile, "Number of messages: %d\n\n", seaudit_report->log->num_bool_msgs);
+		num = seaudit_report->log->num_bool_msgs;
+		
+	if (seaudit_report->html)
+		fprintf(outfile, "<font class=\"message_count_label\">Number of messages:</font> <b class=\"message_count\">%d</b><br>\n<br>\n", num);
+	else 
+		fprintf(outfile, "Number of messages: %d\n\n", num);
 	
 	if (seaudit_report->log_view != NULL) {
 		for (i = 0; i < seaudit_report->log_view->num_fltr_msgs; i++) {
@@ -906,22 +921,28 @@ static void seaudit_report_write_allow_msg(seaudit_report_t *seaudit_report, msg
 
 static int seaudit_report_print_allow_listing(seaudit_report_t *seaudit_report, FILE *outfile) {
 	
-	int i, indx;
+	int i, indx, num = 0;
 	msg_t *cur_msg = NULL;
 	
 	assert(outfile != NULL);
+	
+	if (seaudit_report->log_view != NULL) 	
+		num = seaudit_report->log_view->num_fltr_msgs;
+	else 
+		num = seaudit_report->log->num_allow_msgs;
+		
 	if (seaudit_report->html) 
-		fprintf(outfile, "<font class=\"message_count_label\">Number of messages:</font> <b class=\"message_count\">%d</b><br>\n<br>\n", seaudit_report->log->num_allow_msgs);
+		fprintf(outfile, "<font class=\"message_count_label\">Number of messages:</font> <b class=\"message_count\">%d</b><br>\n<br>\n", num);
 	else
-		fprintf(outfile, "Number of messages: %d\n\n", seaudit_report->log->num_allow_msgs);
-
-	if (seaudit_report->log_view != NULL) {
+		fprintf(outfile, "Number of messages: %d\n\n", num);
+			
+	if (seaudit_report->log_view != NULL) {		
 		for (i = 0; i < seaudit_report->log_view->num_fltr_msgs; i++) {
 			indx = seaudit_report->log_view->fltr_msgs[i];
 			cur_msg = seaudit_report->log_view->my_log->msg_list[indx];
 			seaudit_report_write_allow_msg(seaudit_report, cur_msg, outfile);
 		}	
-	} else {				
+	} else {	
 		for (indx = 0; indx < seaudit_report->log->num_msgs; indx++) {		
 			cur_msg	= seaudit_report->log->msg_list[indx];
 			seaudit_report_write_allow_msg(seaudit_report, cur_msg, outfile);
@@ -1065,14 +1086,19 @@ static void seaudit_report_write_deny_msg(seaudit_report_t *seaudit_report, msg_
 }
 
 static int seaudit_report_print_deny_listing(seaudit_report_t *seaudit_report, FILE *outfile) {
-	int i, indx;
+	int i, indx, num = 0;
 	msg_t *cur_msg = NULL;
 	
 	assert(outfile != NULL);
+	if (seaudit_report->log_view != NULL) 
+		num = seaudit_report->log_view->num_fltr_msgs;
+	else 
+		num = seaudit_report->log->num_deny_msgs;
+		
 	if (seaudit_report->html) 
-		fprintf(outfile, "<font class=\"message_count_label\">Number of messages:</font> <b class=\"message_count\">%d</b><br>\n<br>\n", seaudit_report->log->num_deny_msgs);
+		fprintf(outfile, "<font class=\"message_count_label\">Number of messages:</font> <b class=\"message_count\">%d</b><br>\n<br>\n", num);
 	else
-		fprintf(outfile, "Number of messages: %d\n\n", seaudit_report->log->num_deny_msgs);
+		fprintf(outfile, "Number of messages: %d\n\n", num);
 	
 	if (seaudit_report->log_view != NULL) {
 		for (i = 0; i < seaudit_report->log_view->num_fltr_msgs; i++) {
