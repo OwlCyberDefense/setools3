@@ -3,7 +3,7 @@
 MAKEFILE =  Makefile
 MAKE = make
 
-LIBS		= -lfl -lm 
+LIBS		= -lfl -lm
 TCLVER		= $(shell env tclsh tcl_vars version)
 TCL_LIBINC	= -L$(shell env tclsh tcl_vars pkgPath)
 TCL_INCLUDE	= -I$(shell echo $(shell env tclsh tcl_vars pkgPath) | sed -e "s/lib/include/g")
@@ -11,18 +11,23 @@ TCL_INCLUDE	= -I$(shell echo $(shell env tclsh tcl_vars pkgPath) | sed -e "s/lib
 #TCL_INCLUDE	= -I/usr/include
 #TCL_LIBINC	= -L/usr/lib
 TCL_LIBS	= -ltk$(TCLVER) -ltcl$(TCLVER) -ldl $(LIBS)
+INCLUDE_DIR	= /usr/include
 
 LINKFLAGS	= 
 CC		= gcc 
 YACC		= bison -y
 LEX		= flex -olex.yy.c
 
+SHARED_LIB_INSTALL_DIR = /usr/lib
+STATIC_LIB_INSTALL_DIR = $(SHARED_LIB_INSTALL_DIR)
+SETOOLS_INCLUDE = $(INCLUDE_DIR)/setools
 
 # File location defaults; used in various places in code
 # Change these if you want different defaults
 SELINUX_DIR = $(DESTDIR)/selinux
-POLICY_INSTALL_DIR = $(DESTDIR)/etc/security/selinux
-POLICY_SRC_DIR	= $(DESTDIR)$(POLICY_INSTALL_DIR)/src/policy
+SELINUX_POLICY_DIR = $(DESTDIR)/etc/security/selinux
+POLICY_INSTALL_DIR = $(DESTDIR)$(SELINUX_POLICY_DIR)
+POLICY_SRC_DIR	= $(DESTDIR)$(SELINUX_POLICY_DIR)/src/policy
 POLICY_SRC_FILE = $(POLICY_SRC_DIR)/policy.conf
 DEFAULT_LOG_FILE = /var/log/messages
 
@@ -30,9 +35,19 @@ DEFAULT_LOG_FILE = /var/log/messages
 # -DAPOL_PERFORM_TEST	
 ##		simple performance measure tests (shouldn't normally use)
 # -DCONFIG_SECURITY_SELINUX_MLS 
-##		compiles library to be compatible with MLS 
-#		in the policy (experimental, see Readme)
+#		compiles library to be compatible with MLS 
+##		in the policy (experimental, see Readme)
+# -DLIBSELINUX 
+#		compiles libapol and libseuser libraries to use the
+#		libselinux helper functions for locating system default 
+#		policy resources, instead of the logic from libapol or 
+#		the locations defined in the seuser.conf file.
 #
+#		NOTE: When using this compile option, you will need to   
+#		link in the libselinux library for the following 
+#		programs: 
+#		  seaudit, seinfo, sesearch, seuser, seuserx
+##
 CC_DEFINES	= 
 
 CFLAGS		= -Wall -O2 $(TCL_INCLUDE) $(CC_DEFINES)
@@ -53,6 +68,7 @@ INSTALL_LIBDIR	= $(DESTDIR)/usr/share/setools
 #
 # END NOTE
 
+INSTALL_HELPDIR = $(INSTALL_LIBDIR)
 
 # This should be imported from tools/Makefile (deprecated)
 SRC_POLICY_DIR = ../../
@@ -61,8 +77,9 @@ SRC_POLICY_DIR = ../../
 POLICYINSTALLDIRS = seuser
 
 # exports
-export CFLAGS CC YACC LEX LINKFLAGS BINDIR INSTALL_LIBDIR LIBS TCL_LIBINC TCL_LIBS MAKE 
+export CFLAGS CC YACC LEX LINKFLAGS BINDIR INSTALL_LIBDIR INSTALL_HELPDIR LIBS TCL_LIBINC TCL_LIBS MAKE 
 export SELINUX_DIR POLICY_INSTALL_DIR POLICY_SRC_DIR SRC_POLICY_DIR POLICY_SRC_FILE DEFAULT_LOG_FILE
+export SHARED_LIB_INSTALL_DIR STATIC_LIB_INSTALL_DIR SETOOLS_INCLUDE
 
 all:  all-libs apol awish seuser seuserx sepcut seaudit secmds
 
@@ -86,7 +103,9 @@ help:
 	@echo "   install-secmds:  build and install command line tools (selinux not required)"
 	@echo "   install-seaudit: build and install seaudit (selinux not required)"
 	@echo ""
+	@echo "   install-docs:    install setools documentation"
 	@echo "   install-policy:  install SELinux policy and label files"
+	@echo "   install-bwidget: install BWidgets-1.4.1 package (requires Tcl/Tk)"
 	@echo " "
 	@echo "   all:             build everything, but don't install"
 	@echo "   all-nogui:       only build non-GUI tools and libraries"
@@ -215,9 +234,15 @@ install-seaudit: $(INSTALL_LIBDIR)
 
 install-nogui: $(INSTALL_LIBDIR) install-seuser install-secmds
 
-
 install: install-apol install-seuserx install-sepcut install-awish install-secmds install-seaudit
 
+# Install the libraries
+install-libseuser:
+	cd libseuser; $(MAKE) bare; $(MAKE) install
+
+install-libapol:
+	cd libapol; $(MAKE) bare; $(MAKE) install
+	
 # Install the policy - this is a separate step to better support systems with
 # non-standard policies.
 install-seuser-policy: $(INSTALL_LIBDIR)
@@ -228,6 +253,10 @@ install-secmds-policy: $(INSTALL_LIBDIR)
 	
 install-policy: install-seuser-policy install-secmds-policy
 
+# Install the BWidgets package
+install-bwidget:
+	cd packages; $(MAKE) install
+	
 # Next four targets are to support installation as part of a system
 # install. These targets are deprecated.
 #
@@ -245,16 +274,17 @@ sys-install: install-apol sysinstall-seuser install-sepcut
 
 sys-all: apol sysall-seuser sepcut
 
-VER=$(shell cat VERSION)
-
-# Make all setools documentation
+# Re-generate all setools documentation in source tree
 docs:
-	cd docs-src; make docs
+	cd docs-src; $(MAKE) docs
 
-# Remove all generated setools documentation 
+# Remove all generated setools documentation from source tree
 remove-docs:
-	cd docs-src; make remove-docs
+	cd docs-src; $(MAKE) remove-docs
 
+install-docs:
+	cd docs-src; $(MAKE) install
+	
 # test targets
 tests: test-seuser test-apol test-regression
 
