@@ -58,9 +58,10 @@ variable in the top-level Makefile to 0, which is set to 1 by default. Setting
 this variable to 0 will only build seinfo and sesearch, as well as exclude the 
 file context interface from apol.
 
-GTK: In order to successfully install seaudit onto your system you will need
-libglade and GTK2.0 or above installed. It also requires the pkg-config
-program to be installed before you can build.
+GTK: In order to successfully install seaudit and sediffx onto your system you 
+will need libglade and GTK2.0 or above installed. GTK2.4 is specifically required 
+for Fedora Core 1 systems. It also requires the pkg-config program to be installed 
+before you can build. 
 
 INSTALLATION
 
