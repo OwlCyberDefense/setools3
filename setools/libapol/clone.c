@@ -39,9 +39,9 @@
  */
 
 /* return 1 on match, 0 otherwise */ 
-static bool_t attrib_has_single_matching_type(int idx, attrib_item_t *attrib)
+static bool_t attrib_has_single_matching_type(int idx, name_a_t *attrib)
 {
-	if(attrib->num_types == 1 && attrib->types[0] == idx)
+	if(attrib->num == 1 && attrib->a[0] == idx)
 		return 1;
 	else
 		return 0;
