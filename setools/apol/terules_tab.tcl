@@ -505,14 +505,15 @@ proc Apol_TE::insertTERules { tb results } {
 		$tb insert end " "
 	
 		# The next element should be the conditional and enabled boolean flags.
-		if {$is_conditional && !$enabled} {
+		if {$is_conditional} {
 			incr num_cond
-			incr num_disabled
-			$tb tag add $Apol_TE::disabled_rule_tag $cur_line_pos $line_num.end
-		} elseif {$is_conditional && $enabled} {
-			incr num_cond
-			incr num_enabled
-			$tb tag add $Apol_TE::enabled_rule_tag $cur_line_pos $line_num.end
+			if {!$enabled} {
+				incr num_disabled
+				$tb tag add $Apol_TE::disabled_rule_tag $cur_line_pos $line_num.end
+			} else {
+				incr num_enabled
+				$tb tag add $Apol_TE::enabled_rule_tag $cur_line_pos $line_num.end
+			}
 		}
 		$tb insert end "\n"
 	}
@@ -945,6 +946,7 @@ proc Apol_TE::set_Widget_SearchOptions { pageID } {
         Apol_TE::enable_listbox $Apol_TE::target_list 2 $Apol_TE::list_types_2 $Apol_TE::list_attribs_2
         Apol_TE::defaultType_Enable_Disable
         Apol_TE::change_tgt_dflt_state
+        Apol_TE::enable_disable_tag_disabled_rules_cb
           
         # Check the search criteria for the Classes/Permissions and Types/Attributes tabs
         # and then set the indicator  accordingly.
