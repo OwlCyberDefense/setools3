@@ -1094,6 +1094,13 @@ proc Apol_Analysis_dta::get_analysis_info { } {
 } 
 
 # ------------------------------------------------------------------------------
+#  Command Apol_Analysis_dta::get_results_raised_tab
+# ------------------------------------------------------------------------------
+proc Apol_Analysis_dta::get_results_raised_tab {} {
+     	return $Apol_Analysis_dta::dta_info_text
+} 
+
+# ------------------------------------------------------------------------------
 #  Command Apol_Analysis_dta::display_mod_options
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_dta::display_mod_options { opts_frame } {
@@ -2338,6 +2345,7 @@ proc Apol_Analysis_dta::treeSelect { dta_tree dta_info_text node } {
 	}
 	Apol_Analysis_dta::render_target_type_data [$dta_tree itemcget $node -data] $dta_info_text $dta_tree $node
 	Apol_Analysis_dta::formatInfoText $dta_info_text
+	ApolTop::makeTextBoxReadOnly $dta_info_text
 	return 0
 }
 
@@ -2454,6 +2462,7 @@ proc Apol_Analysis_dta::create_resultsDisplay {results_frame reverse} {
 	# info window
 	set dta_info_text [text [$sw_info getframe].dta_info_text -wrap none -bg white -font $ApolTop::text_font]
 	$sw_info setwidget $dta_info_text
+	bind $dta_info_text <Enter> {focus %W}
 	
 	pack $pw -fill both -expand yes -anchor nw 
 	pack $frm_tree -fill both -expand yes -anchor nw

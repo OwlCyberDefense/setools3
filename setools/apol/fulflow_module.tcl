@@ -141,6 +141,13 @@ proc Apol_Analysis_fulflow::get_analysis_info {} {
      	return $Apol_Analysis_fulflow::info_button_text
 } 
 
+# ------------------------------------------------------------------------------
+#  Command Apol_Analysis_fulflow::get_results_raised_tab
+# ------------------------------------------------------------------------------
+proc Apol_Analysis_fulflow::get_results_raised_tab {} {
+     	return $Apol_Analysis_fulflow::fulflow_info_text
+} 
+
 ## Command Apol_Analysis_fulflow::do_analysis is the principal interface command.
 ## The GUI will call this when the module is to perform it's analysis.  The
 ## module should know how to get its own option information (the options
@@ -868,6 +875,7 @@ proc Apol_Analysis_fulflow::treeSelect {fulflow_tree fulflow_info_text node} {
 		Apol_Analysis_fulflow::render_information_flows $fulflow_info_text $fulflow_tree $node
 		Apol_Analysis_fulflow::formatInfoText $fulflow_info_text
 	}
+	ApolTop::makeTextBoxReadOnly $fulflow_info_text
 	return 0
 }
 
@@ -1685,6 +1693,7 @@ proc Apol_Analysis_fulflow::create_resultsDisplay { results_frame } {
 	# info window
 	set fulflow_info_text [text [$sw_info getframe].fulflow_info_text -wrap none -bg white -font $ApolTop::text_font]
 	$sw_info setwidget $fulflow_info_text
+	bind $fulflow_info_text <Enter> {focus %W}
 	
 	pack $pw -fill both -expand yes -anchor nw 
 	pack $frm_tree -fill both -expand yes -anchor nw
