@@ -866,7 +866,7 @@ proc Apol_TE::resetObjsPerms_Selections {selObjectsList selPermsList} {
 	Apol_TE::resetObjs_Selections $selObjectsList
     	Apol_TE::resetPerms_Selections $selPermsList
     	
-    	if {$selObjectsList != ""} {
+    	if {$selObjectsList != "" || $Apol_TE::opts(perm_select) == "all"} {
 		$permslistbox configure -bg white
 	} else { 
 		$permslistbox configure -bg $ApolTop::default_bg_color
@@ -1997,15 +1997,16 @@ proc Apol_TE::load_query_options {file_channel parentDlg} {
 	Apol_TE::populate_ta_list 1
 	Apol_TE::populate_ta_list 2
 	
-	# Reset Objects and Permissions selections 
-	Apol_TE::resetObjsPerms_Selections $selObjectsList $selPermsList
-    		
 	# check enable/disable status
         Apol_TE::enable_listbox $Apol_TE::source_list 1 $Apol_TE::list_types_1 $Apol_TE::list_attribs_1
         Apol_TE::enable_listbox $Apol_TE::target_list 2 $Apol_TE::list_types_2 $Apol_TE::list_attribs_2
         Apol_TE::defaultType_Enable_Disable
         Apol_TE::change_tgt_dflt_state
-          
+        Apol_TE::on_rule_selection
+        # Reset Objects and Permissions selections 
+	Apol_TE::resetObjsPerms_Selections $selObjectsList $selPermsList
+        Apol_TE::configure_perms_section
+    		
         # Check the search criteria for the Classes/Permissions and Types/Attributes tabs
         # and then set the indicator  accordingly.
         Apol_TE::set_Indicator [$Apol_TE::notebook_searchOpts page 0]
