@@ -93,6 +93,7 @@ namespace eval ApolTop {
 	variable class_perms_tab	"Apol_Class_Perms"
 	variable users_tab		"Apol_Users"
 	variable initial_sids_tab	"Apol_Initial_SIDS"
+	variable file_contexts_tab	"Apol_File_Contexts"
 	variable cond_bools_tab		"Apol_Cond_Bools"
 	variable cond_rules_tab		"Apol_Cond_Rules"
 	variable policy_conf_tab	"Apol_PolicyConf"
@@ -133,6 +134,19 @@ proc ApolTop::is_binary_policy {} {
 	if {$ApolTop::policy_type == $ApolTop::binary_policy_type} {
 		return 1
 	}
+	return 0
+}
+
+proc ApolTop::load_fc_index_file {} {
+	set rt [Apol_File_Contexts::load_fc_db]
+	if {$rt == 1} {
+		ApolTop::configure_load_index_menu_item 1
+	}
+	return 0
+}
+
+proc ApolTop::create_fc_index_file {} {
+	Apol_File_Contexts::display_create_db_dlg
 	return 0
 }
 
@@ -182,6 +196,17 @@ proc ApolTop::configure_edit_pmap_menu_item {enable} {
 		[$mainframe getmenu pmap_menu] entryconfigure last -state normal -label "Edit perm map..."
 	} else {
 		[$mainframe getmenu pmap_menu] entryconfigure last -state disabled -label "Edit perm map... (Not loaded)"	     
+	}
+	return 0
+}
+
+proc ApolTop::configure_load_index_menu_item {enable} {
+	variable mainframe
+	
+	if {$enable} {
+		[$mainframe getmenu fc_index_menu] entryconfigure last -label "Load Index..."
+	} else {
+		[$mainframe getmenu fc_index_menu] entryconfigure last -label "Load Index... (Not loaded)"	     
 	}
 	return 0
 }
@@ -1112,8 +1137,6 @@ proc ApolTop::create { } {
 	set descmenu {
 	"&File" {} file 0 {
 	    {command "&Open..." {} "Open a new policy"  {}  -command ApolTop::openPolicy}
-	    {command "Open O&ptions..." {} "Open options"  \
-	    	{} -command "ApolTop::display_options_Dlg" }
 	    {command "&Close" {} "Close an opened polocy"  {} -command ApolTop::closePolicy}
 	    {separator}
 	    {command "E&xit" {} "Exit policy analysis tool" {} -command ApolTop::apolExit}
@@ -1137,6 +1160,9 @@ proc ApolTop::create { } {
 	}
 	"&Advanced" all options 0 {
 	    {cascad "&Permission Mappings" {Perm_Map_Tag} pmap_menu 0 {}}
+	    {command "Open O&ptions..." {} "Open options"  \
+	    	{} -command "ApolTop::display_options_Dlg" }
+	    #{cascad "&File Context Indexing" {FC_Index_Tag} fc_index_menu 0 {}}
         }
 	"&Help" {} helpmenu 0 {
 	    {command "&General Help" {all option} "Show help" {} -command {ApolTop::helpDlg "Help" "apol_help.txt"}}
@@ -1155,6 +1181,10 @@ proc ApolTop::create { } {
 	[$mainframe getmenu pmap_menu] insert 0 command -label "Load Perm Map from file..." -command "ApolTop::load_perm_map_fileDlg"
 	[$mainframe getmenu pmap_menu] insert 0 separator
 	[$mainframe getmenu pmap_menu] insert 0 command -label "Load Default Perm Map" -command "ApolTop::load_default_perm_map_Dlg"
+	
+	#[$mainframe getmenu fc_index_menu] insert 0 command -label "Load Index... (Not loaded)" -command "ApolTop::load_fc_index_file"
+	#[$mainframe getmenu fc_index_menu] insert 0 command -label "Create Index" -command "ApolTop::create_fc_index_file"
+		
 	$mainframe addindicator -textvariable ApolTop::policyConf_lineno -width 14
 	$mainframe addindicator -textvariable ApolTop::polstats -width 88
 	$mainframe addindicator -textvariable ApolTop::polversion -width 19 
@@ -1162,6 +1192,7 @@ proc ApolTop::create { } {
 	# Disable menu items since a policy is not yet loaded.
 	$ApolTop::mainframe setmenustate Disable_SearchMenu_Tag disabled
 	$ApolTop::mainframe setmenustate Perm_Map_Tag disabled
+	$ApolTop::mainframe setmenustate FC_Index_Tag normal
 	$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
 	$ApolTop::mainframe setmenustate Disable_LoadQuery_Tag disabled
 	$ApolTop::mainframe setmenustate Disable_Summary disabled
@@ -1175,6 +1206,7 @@ proc ApolTop::create { } {
 	set rules_frame [$notebook insert end $ApolTop::rules_tab -text "Policy Rules"]
 	Apol_Analysis::create $notebook
 	Apol_PolicyConf::create $notebook
+	Apol_File_Contexts::create $notebook
 	
 	# Create subordinate tab frames
 	set components_nb [NoteBook $components_frame.components_nb]
@@ -1819,7 +1851,8 @@ proc ApolTop::closePolicy {} {
         Apol_Cond_Bools::close
         Apol_Cond_Rules::close
         Apol_Analysis::close 
-        Apol_PolicyConf::close      
+        Apol_PolicyConf::close    
+        
 	ApolTop::set_Focus_to_Text [$ApolTop::notebook raise]
 	set rt [catch {apol_ClosePolicy} err]
 	if {$rt != 0} {
@@ -1829,12 +1862,14 @@ proc ApolTop::closePolicy {} {
 	set policy_is_open 0
 	$ApolTop::mainframe setmenustate Disable_SearchMenu_Tag disabled
 	# Disable Edit perm map menu item since a perm map is not yet sloaded.
-	$ApolTop::mainframe setmenustate Perm_Map_Tag disabled	
+	$ApolTop::mainframe setmenustate Perm_Map_Tag disabled
 	$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
 	$ApolTop::mainframe setmenustate Disable_LoadQuery_Tag disabled
 	$ApolTop::mainframe setmenustate Disable_Summary disabled
 	ApolTop::enable_non_binary_tabs
 	ApolTop::enable_disable_conditional_widgets 1
+	ApolTop::configure_edit_pmap_menu_item 0
+	#ApolTop::configure_load_index_menu_item 0
 	
 	return 0
 }
@@ -1960,7 +1995,6 @@ proc ApolTop::set_initial_open_policy_state {} {
 	$ApolTop::mainframe setmenustate Perm_Map_Tag normal
 	$ApolTop::mainframe setmenustate Disable_Summary normal
 	$ApolTop::mainframe setmenustate Disable_SearchMenu_Tag normal	
-	ApolTop::configure_edit_pmap_menu_item 0
 	
    	return 0
 }
@@ -2112,6 +2146,7 @@ proc ApolTop::apolExit { } {
 	if {$policy_is_open} {
 		ApolTop::closePolicy
 	}
+	Apol_File_Contexts::close  
 	ApolTop::free_call_back_procs
 	ApolTop::writeInitFile
 	exit
