@@ -873,7 +873,7 @@ static int append_all_ta_using_regex(regex_t *preg, const char *regexp, bool_t d
 		Tcl_DStringAppend(buf, "\n\nTYPE ATTRIBUTES:\n", -1);
 		for(i = 0; i < policy->num_attribs; i++) {
 			if(regexec(preg, policy->attribs[i].name, 0,NULL,0) == 0) {
-				rt = append_attrib_str(attrib_types, attrib_type_attribs, use_aliases, 0, 0, i, policy, buf);
+				rt = append_attrib_str(attrib_types, attrib_type_attribs, use_aliases, 1, 0, i, policy, buf);
 				if(rt != 0) {
 					return -1;
 				}
