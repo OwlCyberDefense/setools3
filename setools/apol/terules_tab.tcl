@@ -107,7 +107,6 @@ namespace eval Apol_TE {
 	# OTHER GLOBAL WIDGETS AND VARIABLES
 	variable cb_RegExp
 	variable cb_show_enabled_rules
-	variable cb_show_enabled_rules
 	variable notebook_searchOpts
 	variable notebook_results
 	variable popupTab_Menu
