@@ -8,6 +8,8 @@
  *  indexcon: a tool for indexing the security contexts of filesystem entities
  */
 
+#include <fsdata.h>
+
 /* SE Linux includes*/
 #include <selinux/selinux.h>
 #include <selinux/context.h>
@@ -33,8 +35,10 @@
 #include <avl-util.h>
 #include <policy.h>
 
-#include <fsdata.h>
 
+
+
+#include <time.h>
 /* INDEXCON_VERSION_NUM should be defined in the make environment */
 #ifndef INDEXCON_VERSION_NUM
 #define INDEXCON_VERSION_NUM "UNKNOWN"
@@ -70,10 +74,13 @@ Index SELinux contexts on the filesystem\n\
 
 int main(int argc, char **argv, char **envp)
 {
-	char *outfilename = NULL, *dir = "/", **mounts = NULL;
-	int optc = 0, num_mounts = 0, i;
-	sefs_filesystem_data_t fsdata;
-	
+	char *outfilename = NULL, *dir = "/";
+	int optc = 0;
+	sefs_filesystem_db_t fsdata;
+
+	fsdata.fsdh = NULL;
+	fsdata.dbh = NULL;
+
 	outfilename = argv[1];
 	if (outfilename == NULL) {
 		usage(argv[0], 1);
@@ -98,36 +105,17 @@ int main(int argc, char **argv, char **envp)
 	}
 
 
-	if (sefs_filesystem_data_init(&fsdata) == -1) {
+	
+
+	if (sefs_filesystem_db_populate(&fsdata,dir) == -1) {
 		fprintf(stderr, "fsdata_init failed\n");
 		return -1;
 	}
-
-	if (find_mount_points(dir, &mounts, &num_mounts, 0)) {
-		fprintf(stderr, "Could not enumerate mountpoints.\n");
-		return -1;
-	}
-
-	if (sefs_scan_tree(dir) == -1) {
-		fprintf(stderr, "fsdata_scan_tree failed\n");
-		return -1;
-	}
-
-	for (i = 0; i < num_mounts; i++ ){
-		if (sefs_scan_tree(mounts[i]) == -1) {
-			fprintf(stderr, "fsdata_scan_tree failed\n");
-			return -1;
-		}
-	}
-
-	printf("types: %d inodes: %d \n", fsdata.num_types, fsdata.num_files);
-
-	if (sefs_filesystem_data_save(&fsdata, outfilename) != 0) {
+	if (sefs_filesystem_db_save(&fsdata, outfilename) != 0) {
 		fprintf(stderr, "Error writing path database\n");
 		return -1;
 	}
-
-	free(mounts);
+	sefs_filesystem_db_close(&fsdata);
 
 	return 0;	
 }
