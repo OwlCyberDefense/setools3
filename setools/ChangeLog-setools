@@ -1,5 +1,49 @@
 CHANGE LOG, SE Linux TOOLS (setools)
 =======================================================
+February 16, 2005, Version 1.6
+
+setools:
+	
+libsefs:
+	Converted to use an on-disk SQLite database backend and 
+	  re-designed API to provide the functionality to other 
+	  applications, such as apol.
+libapol:
+	Added support for analyzing direct file relabels.
+	Added support for analyzing relationship between two types.
+	Integrated use of hashtable structures for easily analyzing
+	  differences between policies.
+	Minor bug fixes.
+	
+libseuser:
+	Minor bug fixes.
+	
+apol:
+	New analysis module for performing direct file relabel
+	  analysis.
+	New analysis module for analyzing the relationship be-
+	  tween two types.
+	New interface added for viewing file contexts from an
+	  SELinux filesystem.
+        Improvements to domain transition analysis interface.
+        Minor bug fixes and GUI tweaks.
+        
+secmds:
+	Updated indexcon/searchcon to use an on-disk SQLite database 
+	  in order to decrease memory use. These changes are not
+	  backwards-compatible.
+	  
+seaudit:
+	Integrated reporting functionality into GUI.
+	Minor GUI tweaks.
+
+sediff:
+	New gtk GUI and command-line tools for analyzing the semantic 
+	  differences between two policies. The semantic difference 
+	  of a policy is different from the syntactic difference in 
+	  that it shows the cumulative effect of rules rather than 
+	  doing a line-by-line comparison.
+=======================================================
 November 4, 2004, Version 1.5.1
 
 apol:
