@@ -1312,7 +1312,7 @@ static gboolean seaudit_real_time_update_log(gpointer callback_data)
  */
 static void seaudit_set_real_time_log_button_state(bool_t state)
 {
-	GtkWidget *widget, *image, *text;
+	GtkWidget *widget, *image, *text, *lbl;
 
 	widget = glade_xml_get_widget(seaudit_app->window->xml, "RealTimeButton");
 	g_assert(widget);
@@ -1320,20 +1320,24 @@ static void seaudit_set_real_time_log_button_state(bool_t state)
 	g_assert(text);
 	image = glade_xml_get_widget(seaudit_app->window->xml, "RealTimeImage");
 	g_assert(image);
-			
+	lbl = glade_xml_get_widget(seaudit_app->window->xml, "monitor_lbl");
+	g_assert(lbl);
+	gtk_label_set_text(GTK_LABEL(text), "Toggle Monitor");
+	gtk_image_set_from_stock(GTK_IMAGE(image), GTK_STOCK_REFRESH, GTK_ICON_SIZE_SMALL_TOOLBAR);
+	
 	/* remove timeout function if exists */
 	if (seaudit_app->timeout_key)
 		gtk_timeout_remove(seaudit_app->timeout_key);
-
+	
 	if (!state) {
-		gtk_image_set_from_stock(GTK_IMAGE(image), GTK_STOCK_STOP, GTK_ICON_SIZE_SMALL_TOOLBAR);
-		gtk_label_set_text(GTK_LABEL(text), "Monitor off");
+		/*gtk_image_set_from_stock(GTK_IMAGE(image), GTK_STOCK_STOP, GTK_ICON_SIZE_SMALL_TOOLBAR);*/
+		gtk_label_set_markup(GTK_LABEL(lbl), "Monitor status: <span foreground=\"red\">OFF</span>");
 		/* make inactive */
 		seaudit_app->timeout_key = 0;
 		seaudit_app->real_time_state = state;
 	} else {
 		gtk_image_set_from_stock(GTK_IMAGE(image), GTK_STOCK_REFRESH, GTK_ICON_SIZE_SMALL_TOOLBAR);
-		gtk_label_set_text(GTK_LABEL(text), "Monitor on");
+		gtk_label_set_markup(GTK_LABEL(lbl), "Monitor status: <span foreground=\"green\">ON</span>");
 		/* make active */
 		seaudit_app->timeout_key = gtk_timeout_add(LOG_UPDATE_INTERVAL, 
 							   &seaudit_real_time_update_log, NULL);
