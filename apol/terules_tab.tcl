@@ -106,6 +106,8 @@ namespace eval Apol_TE {
 	
 	# OTHER GLOBAL WIDGETS AND VARIABLES
 	variable cb_RegExp
+	variable cb_show_enabled_rules
+	variable cb_show_enabled_rules
 	variable notebook_searchOpts
 	variable notebook_results
 	variable popupTab_Menu
@@ -180,6 +182,16 @@ proc Apol_TE::search { str case_Insensitive regExpr srch_Direction } {
 		ApolTop::textSearch $Apol_TE::optionsArray($raisedPage,textbox) $str $case_Insensitive $regExpr $srch_Direction
 	}
 	return 0
+}
+
+proc Apol_TE::enable_disable_conditional_widgets {enable} {
+	variable cb_show_enabled_rules
+	
+	if {!$enable} {
+		$cb_show_enabled_rules configure -state disabled
+	} else {
+		$cb_show_enabled_rules configure -state normal
+	}
 }
 
 # ------------------------------------------------------------------------------
@@ -1948,6 +1960,7 @@ proc Apol_TE::create {nb} {
     variable updateButton
     variable cb_RegExp
     variable tab_menu_callbacks
+    variable cb_show_enabled_rules
     
     # Layout Frames
     set frame [$nb insert end $ApolTop::terules_tab -text "TE Rules"]

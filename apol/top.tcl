@@ -1767,6 +1767,7 @@ proc ApolTop::closePolicy {} {
 	# We make sure that the initial SIDs tab is re-enabled, b/c a binary policy may have been opened
 	# and this tab would have been disabled. 
 	$ApolTop::components_nb itemconfigure $ApolTop::initial_sids_tab -state normal
+	ApolTop::enable_disable_conditional_widgets 1
 	
 	return 0
 }
@@ -1774,61 +1775,86 @@ proc ApolTop::closePolicy {} {
 proc ApolTop::open_apol_modules {file} {
 	set rt [catch {Apol_Class_Perms::open} err]
 	if {$rt != 0} {
-		tk_messageBox -icon error -type ok -title "Error" -message "$err"
-		return -1
+		return -code error $err
 	}
 	set rt [catch {Apol_Types::open} err]
 	if {$rt != 0} {
-		tk_messageBox -icon error -type ok -title "Error" -message "$err"
-		return -1
+		return -code error $err
 	}	
 	set rt [catch {Apol_TE::open} err]
 	if {$rt != 0} {
-		tk_messageBox -icon error -type ok -title "Error" -message "$err"
-		return -1
+		return -code error $err
 	}
 	set rt [catch {Apol_Roles::open} err]
 	if {$rt != 0} {
-		tk_messageBox -icon error -type ok -title "Error" -message "$err"
-		return -1
+		return -code error $err
 	}
 	set rt [catch {Apol_RBAC::open} err]
 	if {$rt != 0} {
-		tk_messageBox -icon error -type ok -title "Error" -message "$err"
-		return -1
+		return -code error $err
 	}
 	set rt [catch {Apol_Users::open} err]
 	if {$rt != 0} {
-		tk_messageBox -icon error -type ok -title "Error" -message "$err"
-		return -1
+		return -code error $err
 	}
 	set rt [catch {Apol_Initial_SIDS::open} err]
 	if {$rt != 0} {
-		tk_messageBox -icon error -type ok -title "Error" -message "$err"
-		return -1
+		return -code error $err
 	}
 	set rt [catch {Apol_Cond_Bools::open} err]
 	if {$rt != 0} {
-		tk_messageBox -icon error -type ok -title "Error" -message "$err"
-		return -1
+		return -code error $err
 	}
 	set rt [catch {Apol_Cond_Rules::open} err]
 	if {$rt != 0} {
-		tk_messageBox -icon error -type ok -title "Error" -message "$err"
-		return -1
+		return -code error $err
 	}
 	set rt [catch {Apol_Analysis::open} err]
 	if {$rt != 0} {
-		tk_messageBox -icon error -type ok -title "Error" -message "$err"
-		return -1
+		return -code error $err
 	}
 	set rt [catch {Apol_PolicyConf::open $file} err]
 	if {$rt != 0} {
-		tk_messageBox -icon error -type ok -title "Error" -message "$err"
-		return -1
+		return -code error $err
 	}
  	return 0
  }
+ 
+proc ApolTop::enable_disable_conditional_widgets {enable} {
+	if {$enable} {
+		$ApolTop::components_nb itemconfigure $ApolTop::cond_bools_tab -state normal
+		$ApolTop::rules_nb itemconfigure $ApolTop::cond_rules_tab -state normal
+	} else {
+		$ApolTop::components_nb itemconfigure $ApolTop::cond_bools_tab -state disabled
+		$ApolTop::rules_nb itemconfigure $ApolTop::cond_rules_tab -state disabled
+	}
+	Apol_TE::enable_disable_conditional_widgets $enable
+	return 0
+}
+
+proc ApolTop::set_initial_open_policy_state {} {
+	set rt [catch {set version_num [apol_GetPolicyVersionNumber]} err]
+	if {$rt != 0} {
+		return -code error $err
+	}
+	
+	if {$version_num < 16} {
+		ApolTop::enable_disable_conditional_widgets 0
+	}
+	
+	if {$ApolTop::policy_type == $ApolTop::binary_policy_type} {
+   		$ApolTop::components_nb itemconfigure $ApolTop::initial_sids_tab -state disabled
+   	}   	
+   	
+	ApolTop::set_Focus_to_Text [$ApolTop::notebook raise]  
+	# Enable perm map menu items since a policy is now open.
+	$ApolTop::mainframe setmenustate Perm_Map_Tag normal
+	$ApolTop::mainframe setmenustate Disable_Summary normal
+	$ApolTop::mainframe setmenustate Disable_SearchMenu_Tag normal	
+	ApolTop::configure_edit_pmap_menu_item 0
+	
+   	return 0
+}
  
 # Do the work to open a policy file:
 # file is file name, and recent_flag indicates whether to add this file to list of
@@ -1913,7 +1939,13 @@ proc ApolTop::openPolicyFile {file recent_flag} {
 	ApolTop::showPolicyStats
 	set rt [catch {ApolTop::open_apol_modules $file} err]
  	if {$rt != 0} {
- 		return $rt	
+ 		tk_messageBox -icon error -type ok -title "Error" -message "$err"
+		return $rt	
+ 	}
+ 	set rt [catch {ApolTop::set_initial_open_policy_state} err]
+	if {$rt != 0} {
+		tk_messageBox -icon error -type ok -title "Error" -message "$err"
+ 		return $rt
  	}
 	set policy_is_open 1
 	
@@ -1924,19 +1956,8 @@ proc ApolTop::openPolicyFile {file recent_flag} {
 	# Change the cursor back to the original and then set the focus to the toplevel.
 	. configure -cursor $orig_Cursor 
 	focus -force .
-	ApolTop::set_Focus_to_Text [$ApolTop::notebook raise]  
-	# Enable perm map menu items since a policy is now open.
-	$ApolTop::mainframe setmenustate Perm_Map_Tag normal
-	$ApolTop::mainframe setmenustate Disable_Summary normal
-	$ApolTop::mainframe setmenustate Disable_SearchMenu_Tag normal	
-	ApolTop::configure_edit_pmap_menu_item 0
-	if {$ApolTop::policy_type == $ApolTop::binary_policy_type} {
-   		$ApolTop::components_nb itemconfigure $ApolTop::initial_sids_tab -state disabled
-   	} else {
-   		$ApolTop::components_nb itemconfigure $ApolTop::initial_sids_tab -state normal
-   	}
-
 	wm title . "SE Linux Policy Analysis - $file"
+	
 	return 0
 }
 
