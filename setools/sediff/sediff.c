@@ -29,7 +29,7 @@
 	#define SEDIFF_VERSION_NUM "UNKNOWN"
 #endif
 
-#define COPYRIGHT_INFO "Copyright (C) 2004 Tresys Technology, LLC"
+#define COPYRIGHT_INFO "Copyright (C) 2004,2005 Tresys Technology, LLC"
 #define SEDIFF_GUI_PROG	"sediffx"
 
 char *p1_file, *p2_file;
@@ -71,7 +71,7 @@ void usage(const char *program_name, int brief)
 "  -r, --roles      role definitions\n"
 "  -u, --users      user definitions\n"
 "  -b, --booleans   boolean definitions and default values\n"
-"  -i, --initialsids initial SIDs (not currently supported)\n"
+/* "  -i, --initialsids initial SIDs (not currently supported)\n" */
 "  -T, --terules    type enforcement rules\n"
 "  -R, --rbacrules  role rules\n"
 "  -C, --conds      conditionals and their rules\n\n"
