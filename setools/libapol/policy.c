@@ -2499,6 +2499,25 @@ int get_cond_bool_idx(char *name, policy_t *policy)
 	return avl_get_idx(name, &policy->tree[AVL_COND_BOOLS]);		
 }
 
+/*
+ * Get the value of the conditional boolean in the policy.
+ *
+ * returns the value of the boolean on success.
+ * returns -1 on error.
+ */
+int get_cond_bool_val(char *name, policy_t *policy)
+{
+	int idx;
+	
+	if(name == NULL || policy == NULL)
+		return -1;
+	
+	idx = avl_get_idx(name, &policy->tree[AVL_COND_BOOLS]);
+	if (idx < 0) 
+		return -1;
+	return policy->cond_bools[idx].val; 	
+}
+
 static void update_cond_rule_list(cond_rule_list_t *list, bool_t val, policy_t *policy)
 {
 	int i;
@@ -2592,7 +2611,7 @@ int set_cond_bool_val(int bool, bool_t val, policy_t *policy)
 		return 0;
 	else
 		policy->cond_bools[bool].val = val;
-	
+
 	for (i = 0; i < policy->num_cond_exprs; i++) {
 		if (update_cond_expr_item(i, policy) != 0)
 			return -1;
