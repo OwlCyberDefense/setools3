@@ -1287,7 +1287,6 @@ static int add_avrule(int type, av_item_t **rlist, int *list_num, bool_t enabled
 		}
 		free(id);
 	}	
-
 	return 0;
 }
 
@@ -1371,7 +1370,7 @@ static int add_ttrule(int rule_type, bool_t enabled)
 	item->cond_expr = -1;
 	item->lineno = policydb_lineno;
 	item->enabled = enabled;
-
+	
 	/* source (domain) types/attribs */
 	subtract = FALSE;
 	while ((id = queue_remove(id_queue))) {
@@ -1390,6 +1389,7 @@ static int add_ttrule(int rule_type, bool_t enabled)
 			free(id);
 			continue;
 		}
+
 		idx = get_type_or_attrib_idx(id, &idx_type, parse_policy);
 		if(idx < 0) {
 			sprintf(errormsg, "%s is neither a type or type attribute", id);
@@ -1433,6 +1433,7 @@ static int add_ttrule(int rule_type, bool_t enabled)
 			free(id);
 			continue;
 		}
+
 		idx = get_type_or_attrib_idx(id, &idx_type, parse_policy);
 		if(idx < 0) {
 			sprintf(errormsg, "%s is neither a type or type attribute", id);
@@ -1470,6 +1471,7 @@ static int add_ttrule(int rule_type, bool_t enabled)
 			free(id);
 			continue;
 		}
+
 		idx = get_obj_class_idx(id, parse_policy);
 		if(idx < 0) {
 			sprintf(errormsg, "%s is not a valid object class name", id);
@@ -1503,8 +1505,7 @@ static int add_ttrule(int rule_type, bool_t enabled)
 	item->dflt_type.idx = idx;
 	free(id);	
 
-	(parse_policy->num_te_trans)++;
-	return parse_policy->num_te_trans - 1;
+	return 0;
 }
 
 
