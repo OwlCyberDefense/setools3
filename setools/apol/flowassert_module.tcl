@@ -31,6 +31,12 @@ namespace eval Apol_Analysis_flowassert {
     variable last_filename ""
     variable last_pathname ""
     
+    # Progress Dialog variables
+    variable progressmsg		""
+    variable progress_indicator		-1
+    variable progressDlg
+    set progressDlg .progress
+		
     variable info_button_text \
 "Information flow in an access control policy refers to the ability for
 information to flow from one process or object into another process or
@@ -98,6 +104,7 @@ proc Apol_Analysis_flowassert::get_results_raised_tab {} {
 proc Apol_Analysis_flowassert::do_analysis {results_frame} {  
     # if a permission map is not loaded then load the default one
     # if an error occurs on open then skip analysis
+    Apol_Analysis_flowassert::display_progressDlg
     if {[catch {Apol_Perms_Map::is_pmap_loaded} err] || $err == 0} {
         if {[set rt [catch {Apol_Perms_Map::load_default_perm_map} err]] != 0} {
             if {$rt == $Apol_Perms_Map::warning_return_val} {
@@ -106,6 +113,7 @@ proc Apol_Analysis_flowassert::do_analysis {results_frame} {
             } else {
                 tk_messageBox -icon error -type ok \
                     -title "Flow Assertion Analysis Error" -message $err
+                Apol_Analysis_flowassert::destroy_progressDlg
                 return -code error
             }
         }
@@ -127,8 +135,7 @@ proc Apol_Analysis_flowassert::do_analysis {results_frame} {
     
     variable assertfile_t
     set assert_contents [string trim [$assertfile_t get 1.0 end]]
-    $t insert end "Executing:\n$assert_contents"
-    update idletasks
+    #$t insert end "Executing:\n$assert_contents"
 
     if [catch {apol_FlowAssertExecute $assert_contents 0} assert_results] {
         set retval -1
@@ -233,6 +240,7 @@ proc Apol_Analysis_flowassert::do_analysis {results_frame} {
         }
         set retval 0
     }
+    Apol_Analysis_flowassert::destroy_progressDlg
     if {$assert_results == ""} {
         $t insert end "<success>"
     }
@@ -567,7 +575,7 @@ proc Apol_Analysis_flowassert::create_assert_wizard_dlg {{origline {}}} {
     
     $assert_wizard_dlg add -text "Reset" \
         -command [namespace code [list reset_wizard $origline]]
-    $assert_wizard_dlg add -text "Ok" -command [namespace code add_assertion]
+    $assert_wizard_dlg add -text "OK" -command [namespace code add_assertion]
     $assert_wizard_dlg add -text "Cancel"
     
     populate_lists 1
@@ -596,7 +604,7 @@ proc Apol_Analysis_flowassert::create_type_panel {type_panel type_name} {
                           -variable Apol_Analysis_flowassert::wiz_var($type_name,type,rb)]
     pack $type_star_rb -anchor w -side top
     set type_names_f [frame $type_panel.type_names_f]
-    set type_names_l [label $type_names_f.names_l -text "Type Names:"]
+    set type_names_l [label $type_names_f.names_l -text "Type/Attribute Names:"]
     set type_names_cb [ComboBox $type_names_f.names_cb -width 24 \
                            -editable 1 -entrybg white -exportselection 0 \
                            -textvariable Apol_Analysis_flowassert::wiz_var($type_name,type,name)]
@@ -1018,6 +1026,35 @@ proc Apol_Analysis_flowassert::sync_asserts_to_text {} {
     enable_line_editing
 }
 
+proc Apol_Analysis_flowassert::destroy_progressDlg {} {
+	variable progressDlg
+	
+	if {[winfo exists $progressDlg]} {
+		destroy $progressDlg
+	}
+     	return 0
+} 
+
+proc Apol_Analysis_flowassert::display_progressDlg {} {
+     	variable progressDlg
+	    		
+	set Apol_Analysis_flowassert::progressmsg "Executing assertion statements..."
+	set progressBar [ProgressDlg $progressDlg \
+		-parent $ApolTop::mainframe \
+        	-textvariable Apol_Analysis_flowassert::progressmsg \
+        	-variable Apol_Analysis_flowassert::progress_indicator \
+        	-maximum 3 \
+        	-width 45]
+        update
+        bind $progressBar <<AnalysisStarted>> {
+        	set Apol_Analysis_fulflow::progress_indicator [expr $Apol_Analysis_fulflow::progress_indicator + 1]
+        }
+        # TODO: generate virtual events to place onto Tcl's event queue, to capture progress.
+	#event generate $Apol_Analysis_fulflow::progressDlg <<AnalysisStarted>> -when head
+
+        return 0
+} 
+
 # Displays a dialog box to allow user to add a comment to the
 # assertion file.  Returns 1 if something was added, 0 otherwise.
 proc Apol_Analysis_flowassert::add_comment_dlg {{origcomment ""}} {
@@ -1035,7 +1072,7 @@ proc Apol_Analysis_flowassert::add_comment_dlg {{origcomment ""}} {
                -anchor e -cancel 1 -default 0 -modal global \
                -parent $assertfile_t -separator 0 -side bottom \
                -title $title]
-    $d add -text "Ok"
+    $d add -text "OK"
     $d add -text "Cancel"
     set f [$d getframe]
     set l [label $f.l -text "Comment: "]
