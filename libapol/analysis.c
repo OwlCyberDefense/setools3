@@ -1806,12 +1806,13 @@ static iflow_path_t *ta_build_path(iflow_graph_t *g, iflow_query_t *q, int path_
 	}
 	memset(p, 0, sizeof(iflow_path_t));
 	
-	p->iflows = (iflow_t*)realloc(p->iflows, sizeof(iflow_t) * path_len);
+	p->iflows = (iflow_t*)malloc(sizeof(iflow_t) * path_len);
 	if (!p->iflows) {
 		fprintf(stderr, "Memory error\n");
 		return NULL;
 	}
 	p->num_iflows = path_len;
+	memset(p->iflows, 0, sizeof(iflow_t) * path_len);
 
 	/* build the path */
 	length = 0;
@@ -1866,9 +1867,10 @@ static int transitive_answer_append(iflow_graph_t *g, iflow_query_t *q, iflow_tr
 		if (a->end_types[i] != cur_type)
 			continue;
 		/* find the last path while checking for duplicates */
-		for (last_path = a->paths[i]; last_path; last_path = last_path->next) {
+		last_path = a->paths[i];
+		while (1) {
 			if (last_path->num_iflows != p->num_iflows)
-				continue;
+				goto next;
 			found_dup = TRUE;
 			for (j = 0; j < last_path->num_iflows; j++) {
 				if (!ta_iflow_equal(&last_path->iflows[j], &p->iflows[j])) {
@@ -1881,6 +1883,10 @@ static int transitive_answer_append(iflow_graph_t *g, iflow_query_t *q, iflow_tr
 				iflow_path_destroy(p);
 				return 0;
 			}
+		next:
+			if (!last_path->next)
+				break;
+			last_path = last_path->next;
 		}
 		new_path = TRUE;
 		a->num_paths[i]++;
@@ -1965,15 +1971,16 @@ static iflow_path_t *iflow_sort_paths(iflow_path_t *path)
 		paths[i++] = cur;
 		cur = cur->next;
 	}
-	
+
 	qsort(paths, num_paths, sizeof(iflow_path_t*), iflow_path_compare);
-	
+
 	cur = start = paths[0];
 	for (i = 1; i < num_paths; i++) {
 		cur->next = paths[i];
 		cur = cur->next;
 	}
-	
+	cur->next = NULL;
+
 	return start;
 }
 
@@ -2146,14 +2153,6 @@ int iflow_graph_shortest_path(iflow_graph_t *g, int start_node, iflow_transitive
 		}
 	}
 	
-	/* sort the paths by length */
-	for (i = 0; i < a->num_end_types; i++) {
-		a->paths[i] = iflow_sort_paths(a->paths[i]);
-		if (a->paths[i] == NULL) {
-			rc = -1;
-			goto out;
-		}
-	}
 out:
 	if (queue)
 		queue_destroy(queue);
@@ -2200,6 +2199,14 @@ iflow_transitive_t *iflow_transitive_flows(policy_t *policy, iflow_query_t *q)
 	for (i = 0; i < num_nodes; i++) {
 		if (iflow_graph_shortest_path(g, nodes[0], a, q) != 0)
 			goto err;
+	}
+
+	/* sort the paths by length */
+	for (i = 0; i < a->num_end_types; i++) {
+		a->paths[i] = iflow_sort_paths(a->paths[i]);
+		if (a->paths[i] == NULL) {
+			goto err;
+		}
 	}
 
 out:
