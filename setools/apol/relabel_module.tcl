@@ -155,10 +155,10 @@ proc Apol_Analysis_relabel::do_analysis {results_frame} {
 	set lf [$pw add -minsize 150 -weight 1]
 	set dtf [TitleFrame $lf.dtf]
 	switch -- $widget_vars(mode) {
-		to     {set text "Domains relabeling to $widget_vars(start_type)"}
-		from   {set text "Domains relabeling from $widget_vars(start_type)"}
-		both   {set text "Domains relabeling to/from $widget_vars(start_type)"}
-		domain {set text "Domain relabeling for $widget_vars(start_type)"}
+		to     {set text "Type $widget_vars(start_type) can be relabeled to:"}
+		from   {set text "Type $widget_vars(start_type) can be relabeled from:"}
+		both   {set text "Type $widget_vars(start_type) can be relabeled to/from:"}
+		domain {set text "Type $widget_vars(start_type) can relabel"}
 	}
 	$dtf configure -text $text
 	set dsw [ScrolledWindow [$dtf getframe].dsw -auto horizontal]
@@ -538,15 +538,12 @@ proc Apol_Analysis_relabel::adv_options_embed_perm_buttons {list_b class perm pa
 		-variable Apol_Analysis_relabel::f_opts($path_name,perm_status_array,$class,$perm) \
 		-command "Apol_Analysis_relabel::adv_options_change_obj_state_on_perm_select \
 			$path_name"]
-	set lbl_weight [Label $cb_frame.lbl_weight:$class:$perm -bg white \
-		-text "Perm map weight: [Apol_Perms_Map::get_weight_for_class_perm $class $perm]" \
-		-padx 10]
 	
 	# Placing widgets
 	pack $frame -side left -anchor nw -expand yes -pady 10
 	pack $lbl_frame $cb_frame -side left -anchor nw -expand yes
 	pack $lbl1 $lbl2 -side left -anchor nw
-	pack $cb_include $cb_exclude $lbl_weight -side left -anchor nw
+	pack $cb_include $cb_exclude -side left -anchor nw
 	
 	set rendering_finished 1
 	# Return the pathname of the frame to embed.
@@ -891,11 +888,11 @@ proc Apol_Analysis_relabel::display_mod_options { opts_frame } {
     set widget_vars(mode) "to"
     set mode_tf [TitleFrame $option_f.mode_tf -text "Mode"]
     set relabelto_rb [radiobutton [$mode_tf getframe].relabelto_rb \
-                          -text "relabelto" -value "to" \
+                          -text "to" -value "to" \
                           -variable Apol_Analysis_relabel::widget_vars(mode) \
                           -command [namespace code set_mode_relabelto]]
     set relabelfrom_rb [radiobutton [$mode_tf getframe].relabelfrom_rb \
-                            -text "relabelfrom" -value "from" \
+                            -text "from" -value "from" \
                             -variable Apol_Analysis_relabel::widget_vars(mode)\
                             -command [namespace code set_mode_relabelfrom]]
     set domain_rb [radiobutton [$mode_tf getframe].domain_rb \
