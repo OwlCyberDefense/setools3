@@ -518,14 +518,14 @@ proc Apol_Analysis_flowassert::create_type_panel {type_panel type_name type_var}
                      -setgrid 1 -background white \
                      -listvariable Apol_Analysis_flowassert::assert_wizard_objclasses]
     $objs_sw setwidget $objs_lb
-    pack $objs_sw -expand 1 -fill both
+#    pack $objs_sw -expand 1 -fill both
     set objs_e [Entry $type_panel.objs_e -background white -validate key \
                     -textvariable Apol_Analysis_flowassert::${class_var}]
     $objs_e configure -vcmd [namespace code [list select_class $objs_lb $class_var $objs_e %P]]
-    pack $objs_e -expand 1 -fill x -pady 2
+#    pack $objs_e -expand 1 -fill x -pady 2
     bind $objs_lb <<ListboxSelect>> [namespace code [list select_class $objs_lb $class_var $objs_lb ""]]
     
-    pack [Separator $type_panel.strut1 -orient horizontal] \
+#    pack [Separator $type_panel.strut1 -orient horizontal] \
         -expand 1 -fill x -side top -pady 10
 
     # add the include / exclude radio buttons
@@ -536,8 +536,11 @@ proc Apol_Analysis_flowassert::create_type_panel {type_panel type_name type_var}
     set exclude_rb [radiobutton $type_panel.exclude_rb -value "exclude" \
                         -text "Exclude Type/Object" \
                         -variable Apol_Analysis_flowassert::$include_var]
-    pack $include_rb $exclude_rb -anchor w -side top
+#    pack $include_rb $exclude_rb -anchor w -side top
 
+    # FIX ME: temporary patch for now for lack of object classes
+    pack [label $type_panel.nobj -text "Object classes are\ncurrently disabled." -bd 1 -relief sunken -padx 5 -pady 5] -pady 5
+    
     pack [button $type_panel.add_b -text "Add" \
               -command [namespace code [list add_type $type_var $type_name $class_var $include_var]]] \
         -expand 0 -pady 10 -side bottom
