@@ -63,7 +63,7 @@ bool_t avh_is_enabled(avh_node_t *node, policy_t *p)
  * same conditional BUT on the opposite true/false list */
 static bool_t avh_is_valid_cond_type_rule(avh_key_t *key, int cond_expr, bool_t cond_list, policy_t *p) 
 {
-	//TODO:
+	/* TODO: This needs to be done */
 	return TRUE;	
 }
 

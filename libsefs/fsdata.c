@@ -1508,7 +1508,6 @@ int sefs_filesystem_db_load(sefs_filesystem_db_t* fsd, char *file)
 		sqlite3_close(db);
 		return -1;
 	}
-	
         fsd->dbh = (void *)&db;
 
 	return 0;
