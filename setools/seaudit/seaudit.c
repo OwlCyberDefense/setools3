@@ -236,7 +236,8 @@ int seaudit_open_policy(seaudit_t *seaudit, const char *filename)
 int seaudit_open_log_file(seaudit_t *seaudit, const char *filename)
 {
 	FILE *tmp_file;
-	int rt, i;
+	unsigned int rt = 0;
+	int i;
 	GString *msg = NULL;
 	audit_log_t *new_log = NULL;
 
@@ -256,26 +257,26 @@ int seaudit_open_log_file(seaudit_t *seaudit, const char *filename)
 	}
 
 	new_log = audit_log_create();
-	rt = parse_audit(tmp_file, new_log);
-	if (rt == PARSE_RET_MEMORY_ERROR) {
+	rt |= parse_audit(tmp_file, new_log);
+	if (rt & PARSE_RET_MEMORY_ERROR) {
 		message_display(seaudit->window->window, 
 				GTK_MESSAGE_ERROR, 
 				PARSE_MEMORY_ERROR_MSG);
 		goto dont_load_log;
 	}
-	else if (rt == PARSE_RET_NO_SELINUX_ERROR) {
+	else if (rt & PARSE_RET_NO_SELINUX_ERROR) {
 		message_display(seaudit->window->window, 
 				GTK_MESSAGE_ERROR, 
 				PARSE_NO_SELINUX_ERROR_MSG);
 		goto dont_load_log;
 	}
-	else if (rt == PARSE_RET_INVALID_MSG_WARN) {
+	else if (rt & PARSE_RET_INVALID_MSG_WARN) {
 		message_display(seaudit->window->window, 
 				GTK_MESSAGE_WARNING, 
 				PARSE_INVALID_MSG_WARN_MSG);
 		goto load_log;
 	}
-	else if (rt == PARSE_RET_SUCCESS)
+	else 
 		goto load_log;
 	
  dont_load_log:
@@ -1275,15 +1276,15 @@ static void seaudit_log_file_open_from_recent_menu(GtkWidget *widget, gpointer u
  * return TRUE so we get called repeatedly */
 static gboolean seaudit_real_time_update_log(gpointer callback_data)
 {
-	int rt;
+	unsigned int rt = 0;
 	#define MSG_SIZE 64 /* should be big enough */
 	
 	/* simply return if the log is not open */
 	if (!seaudit_app->log_file_ptr)
 		return TRUE;
 
-	rt = parse_audit(seaudit_app->log_file_ptr, seaudit_app->cur_log);
-	if (rt == PARSE_RET_NO_SELINUX_ERROR)
+	rt |= parse_audit(seaudit_app->log_file_ptr, seaudit_app->cur_log);
+	if (rt & PARSE_RET_NO_SELINUX_ERROR)
 		return TRUE;
 	seaudit_window_filter_views(seaudit_app->window);
 	return TRUE;
