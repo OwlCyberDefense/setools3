@@ -138,7 +138,7 @@ int print_iad(FILE *fp, int_a_diff_t *iad, int id, policy_t *p)
 	if(iad == NULL)
 		return 0; /* indicates an empty list */
 	
-	if(fp == NULL || p == NULL || !(id & (IDX_TYPE|IDX_ATTRIB|IDX_ROLE|IDX_USER|IDX_OBJ_CLASS|IDX_COMMON_PERM)))
+	if(fp == NULL || p == NULL || !(id & (IDX_TYPE|IDX_ATTRIB|IDX_ROLE|IDX_USER|IDX_OBJ_CLASS|IDX_COMMON_PERM|IDX_ROLE)))
 		return -1;
 	
 	switch(id) {
@@ -153,6 +153,12 @@ int print_iad(FILE *fp, int_a_diff_t *iad, int id, policy_t *p)
 		get_a_name = &get_type_name;
 		descrp = "Attributes";
 		adescrp = "Types";
+		break;
+	case IDX_ROLE|IDX_PERM:
+		get_name = &get_role_name;
+		get_a_name = &get_role_name;
+		descrp = "Roles";
+		adescrp = "Roles";
 		break;
 	case IDX_ROLE:
 		get_name = &get_role_name;
@@ -276,6 +282,29 @@ int print_role_diffs(FILE *fp, apol_diff_result_t *diff)
 	}
 	fprintf(fp, "%d different ROLES in policy 2.\n", diff->diff2->num_roles);
 	rt = print_iad(fp, diff->diff2->roles, IDX_ROLE, diff->p2);
+	if(rt < 0){
+		fprintf(stderr, "Problem printing roles for p2.\n");
+		return -1;
+	}
+	
+	return 0;
+}
+
+int print_rbac_diffs(FILE *fp, apol_diff_result_t *diff)
+{
+	int rt;
+	
+	if(diff == NULL || fp == NULL)
+		return -1;
+	
+	fprintf(fp, "%d different ROLE ALLOWS in policy 1.\n", diff->diff1->num_role_allow);
+	rt = print_iad(fp, diff->diff1->role_allow, IDX_ROLE|IDX_PERM, diff->p1);
+	if(rt < 0){
+		fprintf(stderr, "Problem printing roles for p1.\n");
+		return -1;
+	}
+	fprintf(fp, "%d different ROLE ALLOWS in policy 2.\n", diff->diff2->num_role_allow);
+	rt = print_iad(fp, diff->diff2->role_allow, IDX_ROLE|IDX_PERM, diff->p2);
 	if(rt < 0){
 		fprintf(stderr, "Problem printing roles for p2.\n");
 		return -1;
@@ -484,7 +513,7 @@ int print_te_diffs(FILE *fp, apol_diff_result_t *diff)
 		}
 	}
 	
-	fprintf(fp, "%d different TE RULES  in policy 2.\n", diff->diff2->te.num);
+	fprintf(fp, "%d different TE RULES in policy 2.\n", diff->diff2->te.num);
 	for(i = 0; i < AVH_SIZE; i++) {
 		for(cur = diff->diff2->te.tab[i]; cur != NULL; cur = cur->next) {
 			rule = re_render_avh_rule_cond_state(cur, diff->p2);
@@ -591,7 +620,7 @@ int main (int argc, char **argv)
 		}
 	}
 	/* if no options, then show stats */
-	if(classes + types + roles + users + isids + terules + rbac + conds + stats < 1) {
+	if(classes + bools + types + roles + users + isids + terules + rbac + conds + stats < 1) {
 		opts = POLOPT_ALL;
 		all = 1;
 	}
@@ -612,7 +641,8 @@ int main (int argc, char **argv)
 	if(fn_is_binpol(p2_file) && fn_binpol_ver(p2_file) < 15 ) {
 		printf("Policy 2:  Binary policies are only supported for version 15 or higer.\n");
 		exit(1);
-	}	rt = open_partial_policy(p1_file, opts, &p1);
+	}
+	rt = open_partial_policy(p1_file, opts, &p1);
 	if(rt != 0) {
 		printf("Problem opening first policy file: %s\n", p1_file);
 		exit(1);
@@ -671,6 +701,10 @@ int main (int argc, char **argv)
 	}
 	if(terules || all) {
 		print_te_diffs(stdout, diff);
+		printf("\n");
+	}
+	if(rbac || all) {
+		print_rbac_diffs(stdout, diff);
 		printf("\n");
 	}
 
