@@ -178,7 +178,7 @@ void usage(bool_t brief)
 	fprintf(stdout, "\nUsage:\n");
 	fprintf(stdout, "  seuser -X\n");
 	fprintf(stdout, "  seuser delete [-N] username\n");
-	fprintf(stdout, "  seuser add | change [f] [-N] -R role1[,...] username\n");
+	fprintf(stdout, "  seuser add | change [-f] [-N] -R role1[,...] username\n");
 	fprintf(stdout, "  seuser rename [-f] [-N] oldname newname\n");
 	fprintf(stdout, "  seuser label username\n");
 	fprintf(stdout, "  seuser show users [username] | roles\n");
