@@ -2,27 +2,24 @@ OBJS	          = auditlogmodel.o seaudit.o query_window.o filter_window.o multif
 INCLUDE           = -I.. -I../libseaudit
 GTK_CFLAGS        = `pkg-config --cflags libglade-2.0`
 GTK_LIBS          = `pkg-config --libs libglade-2.0`
-SEAUDIT_LIBS      = ../lib/libseaudit.a ../lib/libapol.a $(LIBS)
+SEAUDIT_LIBS      = ../libseaudit/libseaudit.a ../libapol/libapol.a $(LIBS)
 GLADE_FILES       = customize_filter_window.glade filter_window.glade prefer_window.glade query_window.glade multifilter_window.glade seaudit.glade
 
 CFLAGS	          += -DDEFAULT_LOG='"$(DEFAULT_LOG_FILE)"' 
 CFLAGS            += -DINSTALL_LIBDIR='"$(INSTALL_LIBDIR)"'
 CFLAGS            += -DSEAUDIT_GUI_VERSION_STRING='"$(shell cat VERSION)"'
 
-seaudit: $(OBJS) $(GTK-SOURCEVIEW-OBJS) ../lib/libseaudit.a ../lib/libapol.a
+seaudit: $(OBJS) $(GTK-SOURCEVIEW-OBJS) ../libseaudit/libseaudit.a ../libapol/libapol.a
 	$(CC) $(CFLAGS) $(INCLUDE) $(OBJS) -o $@ $(SEAUDIT_LIBS) $(GTK_LIBS)
 
-../lib/libseaudit.a:
+../libseaudit/libseaudit.a:
 	cd ../; $(MAKE) libseaudit
 
-../lib/libapol.a: 
+../libapol/libapol.a: 
 	cd ../; $(MAKE) libapol
 
 %.o:  %.c 
 	$(CC) $(CFLAGS) $(GTK_CFLAGS) $(INCLUDE) -c $<
-
-../lib:
-	mkdir -p $@
 
 install: seaudit
 	install -m 755 seaudit $(BINDIR)
@@ -34,4 +31,4 @@ clean:
 	rm -f *.o seaudit *~ core* *.bak *.gladep
 
 bare: clean
-	rm -f ../lib/libseaudit.a
+	

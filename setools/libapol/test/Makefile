@@ -3,7 +3,7 @@
 
 # libapol test
 
-LIBAPOL		= ../../lib/libapol.a
+LIBAPOL		= ../../libapol/libapol.a
 OBJS		= test-apol.o  $(LIBAPOL)
 
 
