@@ -57,7 +57,7 @@ seuser-doc:
 seaudit-doc: 
 	rm -f ../seaudit/*.txt; \
 	cat seaudit_help_text.in | \
-	sed -e 's/SEAUDIT_GUI_VERSION/$(shell cat ../seaudit/VERSION)/g' | \
+	sed -e 's/SEAUDIT_GUI_VERSION/$(shell cat ../seaudit/SEAUDIT_GUI_VERSION)/g' | \
 	sed -e 's/MOD_DATE/$(shell date '+%B %d, %G')/g' > ../seaudit/seaudit_help.txt
 
 remove-docs :
