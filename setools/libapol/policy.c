@@ -2634,6 +2634,11 @@ int extract_types_from_te_rule(int rule_idx, int rule_type, unsigned char whichl
 				int i, r, n, *l;
 				
 				if (self) {
+					/* self is fixed to be idx 0 */
+					if(add_i_to_a(0, num_types, types) != 0) {
+						ret = -1;
+						goto out;
+					}
 					*self = TRUE;
 					continue;	
 				}
