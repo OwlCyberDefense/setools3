@@ -2933,6 +2933,8 @@ int Apol_GetInitialSIDInfo(ClientData clientData, Tcl_Interp *interp, int argc, 
 {
 	int idx, rt;
 	char *scontext = NULL, *isid_name = NULL;
+	Tcl_DString *buf, buffer;
+	char tbuf[APOL_STR_SZ+64];
 	
 	if(argc != 2) {
 		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
@@ -2946,18 +2948,21 @@ int Apol_GetInitialSIDInfo(ClientData clientData, Tcl_Interp *interp, int argc, 
 		Tcl_AppendResult(interp, "SID string is too large", (char *) NULL);
 		return TCL_ERROR;
 	}
-	
+	buf = &buffer;
+	Tcl_DStringInit(buf);
 	idx = get_initial_sid_idx(argv[1], policy);
 	if(is_valid_initial_sid_idx(idx, policy)) {
 		rt = get_initial_sid_name(idx, &isid_name, policy);
 		if(rt != 0) {
+			Tcl_DStringFree(buf);
 			Tcl_AppendResult(interp, "Unexpected error getting initial SID name\n\n", (char *) NULL);
 			return TCL_ERROR;
 		}
-		scontext = re_render_initial_sid_security_context(idx, policy);
-		Tcl_AppendElement(interp, scontext);			
+		scontext = re_render_initial_sid_security_context(idx, policy);	
+		sprintf(tbuf, "%s", scontext);		
+		Tcl_DStringAppend(buf, tbuf, -1);
 	}	
-
+	Tcl_DStringResult(interp, buf);
 	return TCL_OK;
 }
 
