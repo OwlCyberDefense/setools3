@@ -76,6 +76,7 @@ classes_perm_map_t *new_perm_mapping(policy_t *policy)
 			if(j < policy->obj_classes[i].num_u_perms) {
 				t->maps[i].perm_maps[j].perm_idx = policy->obj_classes[i].u_perms[j];
 				t->maps[i].perm_maps[j].map = PERMMAP_UNMAPPED;
+				t->maps[i].perm_maps[j].weight = '1';
 			} 
 			else {
 				/* If we're here, then there must be common perms */
@@ -84,6 +85,7 @@ classes_perm_map_t *new_perm_mapping(policy_t *policy)
 					assert(k < policy->common_perms[policy->obj_classes[i].common_perms].num_perms);
 					t->maps[i].perm_maps[j+k].perm_idx = policy->common_perms[policy->obj_classes[i].common_perms].perms[k];
 					t->maps[i].perm_maps[j+k].map = PERMMAP_UNMAPPED;
+					t->maps[i].perm_maps[j+k].weight = '1';
 				} 
 				assert(k == policy->common_perms[policy->obj_classes[i].common_perms].num_perms);
 				assert(j == policy->obj_classes[i].num_u_perms);
@@ -146,8 +148,9 @@ static unsigned int load_perm_map_for_object(int obj_idx, int num_perms, classes
 	unsigned int ret = PERMMAP_RET_SUCCESS;
 	class_perm_map_t *obj_map = NULL;
 	unsigned char skip;
-	int i, idx, pm_idx;
+	int i, idx, pm_idx, perm_weight;
 	char line[LINE_SZ], perm[LINE_SZ], mapid;
+	
 	fpos_t fpos;
 	
 	if(obj_idx < 0) {
@@ -168,15 +171,19 @@ static unsigned int load_perm_map_for_object(int obj_idx, int num_perms, classes
 			ret |= PERMMAP_RET_OBJ_REMMAPPED;
 		skip = FALSE;
 	} 
-
 	i = 0;
 	while((fgetpos(fp, &fpos) == 0) &&fgets(line, LINE_SZ, fp) != NULL) {
 		if(line[0] == '#' || str_is_only_white_space(line))
 			continue;
-		if(sscanf(line, "%s %c", perm, &mapid) != 2) {
-			fprintf(stderr, "Error loading object map object index %d (%s); invalid format for line: \"%s\"\n", obj_idx, policy->obj_classes[obj_idx].name, line);
-			return PERMMAP_RET_ERROR;
+		if(sscanf(line, "%s %c %d", perm, &mapid, &perm_weight) != 3) {
+			/* This may be a perm map file w/o perm weigthing. */
+			if(sscanf(line, "%s %c", perm, &mapid) != 2) {
+				fprintf(stderr, "Error loading object map object index %d (%s); invalid format for line: \"%s\"\n", obj_idx, policy->obj_classes[obj_idx].name, line);
+				return PERMMAP_RET_ERROR;
+			}
+			perm_weight = PERMMAP_MAX_WEIGHT;
 		}
+
 		i++;
 		if(strcmp(perm, "class") == 0) {
 			/* means we've moved onto next object before we've read num_perms # of permissions*/
@@ -196,7 +203,7 @@ static unsigned int load_perm_map_for_object(int obj_idx, int num_perms, classes
 		} 
 		idx = get_perm_idx(perm, policy);
 		if(idx < 0) {
-			fprintf(stderr, "Warning: unknown permission (%s) for current policy; it will be ignored\n", perm);
+			fprintf(stderr, "Warning: unknown permission (%s) for object class %s; it will be ignored\n", perm, policy->obj_classes[obj_idx].name);
 			ret |= PERMMAP_RET_UNKNOWN_PERM;
 			if(i == num_perms)
 				break;
@@ -212,6 +219,19 @@ static unsigned int load_perm_map_for_object(int obj_idx, int num_perms, classes
 			else
 				continue;		} 
 		obj_map->perm_maps[pm_idx].map = pmap_convert_map_char(mapid);
+	
+		/* weight must be between 0 - 10 to be valid. If less than 0, set to minimum; if greater than 10, set to max */
+		if (perm_weight > 10) {
+			fprintf(stderr, "Weight value (%d) for permission %s in object %s is invalid. Setting to default maximum weight.\n", perm_weight, perm, policy->obj_classes[obj_idx].name);
+			perm_weight = 10;
+		} else if (perm_weight < 0) {
+			fprintf(stderr, "Weight value (%d) for permission %s in object %s is invalid. Setting to default minimum weight.\n", perm_weight, perm, policy->obj_classes[obj_idx].name);
+			perm_weight = 1;
+		}
+		
+		/* By default, if there is no weight provided, weight will be set to PERMMAP_MAX_WEIGHT. */
+		obj_map->perm_maps[pm_idx].weight = (char) perm_weight;
+			
 		if(i == num_perms)
 			break;
 	}	
@@ -339,20 +359,21 @@ int write_perm_map_file(classes_perm_map_t *map, policy_t *policy, FILE *outfile
 				fprintf(outfile, "%18s     ", policy->perms[cls->perm_maps[j].perm_idx]);
 			}
 			if((cls->perm_maps[j].map & PERMMAP_BOTH) == PERMMAP_BOTH) {
-				fprintf(outfile, "b\n");
+				fprintf(outfile, "b  ");
 			}  else {
 				switch(cls->perm_maps[j].map & (PERMMAP_READ|PERMMAP_WRITE|PERMMAP_NONE|PERMMAP_UNMAPPED)) {
-				case PERMMAP_READ: 	fprintf(outfile, "r\n");
+				case PERMMAP_READ: 	fprintf(outfile, "r  ");
 							break;
-				case PERMMAP_WRITE: 	fprintf(outfile, "w\n");
+				case PERMMAP_WRITE: 	fprintf(outfile, "w  ");
 							break;	
-				case PERMMAP_NONE: 	fprintf(outfile, "n\n");
+				case PERMMAP_NONE: 	fprintf(outfile, "n  ");
 							break;
-				case PERMMAP_UNMAPPED: 	fprintf(outfile, "u\n");
+				case PERMMAP_UNMAPPED: 	fprintf(outfile, "u  ");
 							break;	
-				default:		fprintf(outfile, "?\n");
+				default:		fprintf(outfile, "?  ");
 				} 
 			} 
+			fprintf(outfile, "%10d\n", cls->perm_maps[j].weight);
 		} 
 	} 
 	

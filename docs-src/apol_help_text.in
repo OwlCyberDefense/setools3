@@ -36,12 +36,12 @@ file can be successfully parsed using checkpolicy -d.  Only one
 policy.conf file can be open at a time, so if you open another file, 
 the current one will be closed.
 
-The Query menu allows the user to save and/or load a query for a TE Rules
+The QUERY menu allows the user to save and/or load a query for a TE Rules
 search or for an analysis module listed on the Analysis tab. Saving a TE
 Rules query involves saving the required query parameters, whereas saving 
 an analysis query involves saving the required query parameters as well 
 as any specified filter settings to a file. Query files are saved with a 
-'.qf' extension. Loading a query will parsing the specified query file, 
+'.qf' extension. Loading a query involves parsing the specified query file, 
 raising the correct notebook tab in apol and configuring the query options 
 with the specified query parameters and/or filter settings. Currently, the 
 save query menu item is only enabled when the ANALYSIS TAB or the 
@@ -51,7 +51,7 @@ the user to display statistics about the currently loaded policy. A
 shorthand version of these statistics is always displayed on the status 
 bar when a policy file is opened.
 
-The Advanced menu currently allows you to directly manage permission 
+The ADVANCED menu currently allows you to directly manage permission 
 mappings for apol's direct and transitive information flow analyses, 
 which are new features in this version of the tool. You do not need to 
 use this dialog in order to perform an information flow analysis. However 
@@ -335,17 +335,19 @@ analyses are:
 	and/or types. Selecting an object class in the Advanced Filters	
 	dialog will display a list of permissions for that object class, 
 	whereby you can then choose to include or exclude certain 
-	permissions. By default, all permissions for an object class are 
-	included in the query, unless you exlude a permission(s) by 
-	selecting its' 'Exclude' radiobutton. Configuring all permissions 
-	for an object class to be excluded will exclude the object class 
-	itself from the query. When an object class becomes excluded, its' 
-	label will change to indicate that the object class is to be 
-	excluded from the analysis query. You can also filter the query 
-	results by including or excluding intermediate types. Comboboxes 
-	are provided for filtering these lists by attribute. The TIF 
-	analysis also includes a text widget for providing comments. 
-				
+	permissions, as well as specify a weight for a permission(s). 
+	By default, all permissions for an object class are included in 
+	the query, unless you exlude a permission(s) by selecting its' 
+	'Exclude' radiobutton. Additionally, all permissions are given a
+	weight of 1 by default. Configuring all permissions for an object 
+	class to be excluded will exclude the object class itself from 
+	the query. When an object class becomes excluded, its' label will 
+	change to indicate that the object class is to be excluded from 
+	the analysis query. You can also filter the query results by 
+	including or excluding intermediate types. Comboboxes are 
+	provided for filtering these lists by attribute. The TIF analysis 
+	also includes a text widget for providing comments. 
+			
 	See the separate help file on information flow for more 
 	information about transitive information flow.	
 
