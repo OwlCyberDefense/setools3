@@ -40,7 +40,7 @@ install-libsefs-static: libsefs
 	install -m 755 -d $(SETOOLS_INCLUDE)/libsefs
 	install -m 644 *.h $(SETOOLS_INCLUDE)/libsefs
 
-install: install-libsefs-shared install-libsefs-static
+install: install-libsefs-static install-libsefs-shared
 
 install-policy:
 	chcon system_u:object_r:shlib_t $(SHARED_LIB_INSTALL_DIR)/$(LIBSO)
