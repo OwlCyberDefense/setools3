@@ -13,6 +13,25 @@
 #include <gtk/gtk.h>
 #include <glade/glade.h>
 
+typedef struct summary_node {
+	int added;
+	int removed;
+	int changed;
+} summary_node_t;
+
+typedef struct sediff_summary {
+	summary_node_t permissions;
+	summary_node_t commons;
+	summary_node_t classes;
+	summary_node_t types;
+	summary_node_t attributes;
+	summary_node_t users;
+	summary_node_t roles;
+	summary_node_t booleans;
+	summary_node_t rbac;
+	summary_node_t te_rules;
+} sediff_summary_t;
+
 typedef struct sediff_app {
 	GtkWindow *window;		/* the main window */
 	GtkWindow *open_dlg;
@@ -32,7 +51,7 @@ typedef struct sediff_app {
 	GtkTextBuffer *te_buffer;
 	GtkTextBuffer *rbac_buffer;
 
-
+	sediff_summary_t summary;
 
 } sediff_app_t;
 
