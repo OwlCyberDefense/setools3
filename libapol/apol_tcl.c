@@ -1,8 +1,9 @@
-/* Copyright (C) 2002-2003 Tresys Technology, LLC
+/* Copyright (C) 2002-2005 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
 
 /* 
  * Author: mayerf@tresys.com and Don Patterson <don.patterson@tresys.com>
+ *         Jason Tang (tang@jtang.org) - added flow assertion routines
  */
 
 /* apol_tcl.c
@@ -5671,9 +5672,9 @@ int Apol_GetPermMap(ClientData clientData, Tcl_Interp *interp, int argc, char *a
  *      end_id     - type ID value for end of path
  *      via_id     - type ID value of required element missing from path, or
  *                   -1 if non-applicable
- *      rule_line  - line number from policy.conf that breaks assertion
- *      rule       - string representation of rule
- *    * If rule_line >= 0 then a conflict to assertion, with path
+ *      rule_list  - list of {line number, rule} from policy.conf that breaks
+ *                   assertion
+ *    * If line_list != {} then a conflict to assertion, with path
  *      beginning with rule_line.
  *    * Else if via_id >= 0 then no path was found from start_id to
  *      end_id by way of via_id.
@@ -5724,28 +5725,30 @@ int Apol_FlowAssertExecute (ClientData clientData, Tcl_Interp *interp,
                 result_elem_obj [3] = Tcl_NewListObj (0, NULL);
                 for (i = 0; i < results->num_rules; i++) {
                         flow_assert_rule_t *assert_rule = results->rules + i;
-                        Tcl_Obj *rule_elem_obj [5], *rule_obj;
-                        int rule_idx = assert_rule->rule_idx;
+                        Tcl_Obj *rule_elem_obj [4], *rule_obj;
+                        int j;
                         rule_elem_obj [0] = Tcl_NewIntObj (assert_rule->start_type);
                         rule_elem_obj [1] = Tcl_NewIntObj (assert_rule->end_type);
                         rule_elem_obj [2] = Tcl_NewIntObj (assert_rule->via_type);
-                        if (assert_rule->rule_idx >= 0) {
-                                char *rule;
-                                rule_elem_obj [3] = Tcl_NewIntObj
-                                    (get_rule_lineno (rule_idx, RULE_TE_ALLOW, policy));
-                                rule = re_render_av_rule
-                                 (FALSE, assert_rule->rule_idx, FALSE, policy);
-                                rule_elem_obj [4] = Tcl_NewStringObj(rule, -1);
+                        rule_elem_obj [3] = Tcl_NewListObj (0, NULL);
+                        for (j = 0; j < assert_rule->num_rules; j++) {
+                                int rule_idx = assert_rule->rules [j];
+                                char *rule = re_render_av_rule
+                                        (FALSE, rule_idx, FALSE, policy);
+                                Tcl_Obj *rule_list_elem_obj [2], *rule_list_obj;
+                                rule_list_elem_obj [0] = Tcl_NewIntObj
+                                        (get_rule_lineno (rule_idx, RULE_TE_ALLOW, policy));
+                                rule_list_elem_obj [1] = Tcl_NewStringObj (rule, -1);
                                 free (rule);
+                                rule_list_obj = Tcl_NewListObj (2, rule_list_elem_obj);
+                                if (Tcl_ListObjAppendElement (interp, rule_elem_obj [3], rule_list_obj) != TCL_OK) {
+                                        ll_free (assertion_results, flow_assert_results_destroy);
+                                        return TCL_ERROR;
+                                }
                         }
-                        else {
-                                rule_elem_obj [3] = Tcl_NewIntObj (-1);
-                                rule_elem_obj [4] = Tcl_NewStringObj (NULL, 0);
-                        }
-                        rule_obj = Tcl_NewListObj (5, rule_elem_obj);
-                        if (Tcl_ListObjAppendElement (NULL, result_elem_obj [3], rule_obj)
+                        rule_obj = Tcl_NewListObj (4, rule_elem_obj);
+                        if (Tcl_ListObjAppendElement (interp, result_elem_obj [3], rule_obj)
                             != TCL_OK) {
-                                Tcl_SetResult (interp, "Out of memory", TCL_STATIC);
                                 ll_free (assertion_results, flow_assert_results_destroy);
                                 return TCL_ERROR;
                         }
