@@ -2,7 +2,10 @@
  * see file 'COPYING' for use and warranty information */
 
 /* 
- * Author: kcarr@tresys.com and Karl MacMillan <kmacmillan@tresys.com>
+ * Author: Kevin Carr kcarr@tresys.com
+ *         Karl MacMillan <kmacmillan@tresys.com>
+ *         Jeremy Stitz <jstitz@tresys.com>
+ *
  * Date: October 1, 2003
  * 
  * This file contains the data structure definitions for storing
@@ -49,45 +52,47 @@
 #define AVC_OBJ_CLASS_FIELD	10
 #define AVC_PERM_FIELD		11
 #define AVC_INODE_FIELD		12
-#define AVC_PID_FIELD		13
-#define AVC_SRC_SID_FIELD       14
-#define AVC_TGT_SID_FIELD       15
-#define AVC_COMM_FIELD          16
-#define AVC_NETIF_FIELD         17
-#define AVC_KEY_FIELD           18
-#define AVC_CAPABILITY_FIELD    19
-#define AVC_PORT_FIELD          20
-#define AVC_LPORT_FIELD         21
-#define AVC_FPORT_FIELD         22
-#define AVC_DEST_FIELD          23
-#define AVC_SOURCE_FIELD        24
-#define AVC_LADDR_FIELD         25
-#define AVC_FADDR_FIELD         26
-#define AVC_DADDR_FIELD         27
-#define AVC_SADDR_FIELD         28
-#define AVC_SRC_CONTEXT         29
-#define AVC_TGT_CONTEXT         30
-#define AVC_NAME_FIELD          31
-#define AVC_MISC_FIELD          32
-#define AVC_NUM_FIELDS		33
+#define AVC_IPADDR_FIELD        13
+#define AVC_AUDIT_HEADER_FIELD  14
+#define AVC_PID_FIELD		15
+#define AVC_SRC_SID_FIELD       16
+#define AVC_TGT_SID_FIELD       17
+#define AVC_COMM_FIELD          18
+#define AVC_NETIF_FIELD         19
+#define AVC_KEY_FIELD           20
+#define AVC_CAPABILITY_FIELD    21
+#define AVC_PORT_FIELD          22
+#define AVC_LPORT_FIELD         23
+#define AVC_FPORT_FIELD         24
+#define AVC_DEST_FIELD          25
+#define AVC_SOURCE_FIELD        26
+#define AVC_LADDR_FIELD         27
+#define AVC_FADDR_FIELD         28
+#define AVC_DADDR_FIELD         29
+#define AVC_SADDR_FIELD         30
+#define AVC_SRC_CONTEXT         31
+#define AVC_TGT_CONTEXT         32
+#define AVC_NAME_FIELD          33
+#define AVC_MISC_FIELD          34
+#define AVC_NUM_FIELDS		35
 
-#define LOAD_POLICY_USERS_FIELD   33
-#define LOAD_POLICY_ROLES_FIELD   34
-#define LOAD_POLICY_TYPES_FIELD   35
-#define LOAD_POLICY_CLASSES_FIELD 36
-#define LOAD_POLICY_RULES_FIELD   37
-#define LOAD_POLICY_BINARY_FIELD  38
+#define LOAD_POLICY_USERS_FIELD   35
+#define LOAD_POLICY_ROLES_FIELD   36
+#define LOAD_POLICY_TYPES_FIELD   37
+#define LOAD_POLICY_CLASSES_FIELD 38
+#define LOAD_POLICY_RULES_FIELD   39
+#define LOAD_POLICY_BINARY_FIELD  40
 #define LOAD_POLICY_NUM_FIELDS    6
 
-#define BOOLEAN_NUM_BOOLS         39
-#define BOOLEAN_BOOLS             40
-#define BOOLEAN_VALUES            41
+#define BOOLEAN_NUM_BOOLS         41
+#define BOOLEAN_BOOLS             42
+#define BOOLEAN_VALUES            43
 
-#define DATE_FIELD		42
-#define HOST_FIELD              43
+#define DATE_FIELD		44
+#define HOST_FIELD              45
 
 #define MSG_MAX_NFIELDS AVC_NUM_FIELDS
-#define NUM_FIELDS		44
+#define NUM_FIELDS		46
 
 extern const char *audit_log_field_strs[NUM_FIELDS]; 
 int audit_log_field_strs_get_index(const char *str);
@@ -117,6 +122,8 @@ typedef struct avc_msg {
 	char *daddr;
 	char *saddr;
 	char *name;
+        char *ipaddr;
+	char *audit_header;
         int *perms;	     /* object permissions */
 	int num_perms;	     /* num of object permissions */
 	int msg;             /* message ie. AVC_DENIED or AVC_GRANTED */
@@ -132,13 +139,19 @@ typedef struct avc_msg {
 	int src_user;         /* source user */
 	int src_role;         /* source role */
 	int src_type;         /* source type */
+	bool_t is_src_con;
 	int tgt_user;         /* target user */
 	int tgt_role;         /* target role */
 	int tgt_type;         /* target type */
+	bool_t is_tgt_con;
 	int obj_class;        /* object class */
+	bool_t is_obj_class;
         unsigned int src_sid; /* source sid */
+	bool_t is_src_sid;    
 	unsigned int tgt_sid; /* target sid */
+	bool_t is_tgt_sid;
 	unsigned int pid;     /* process ID of the subject */
+	bool_t is_pid;
 	unsigned long inode;  /* inode of the object */
 	bool_t is_inode;
 } avc_msg_t;
