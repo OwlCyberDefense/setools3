@@ -9,14 +9,32 @@ CFLAGS	          += -DDEFAULT_LOG='"$(DEFAULT_LOG_FILE)"'
 CFLAGS            += -DINSTALL_LIBDIR='"$(INSTALL_LIBDIR)"'
 CFLAGS            += -DSEAUDIT_GUI_VERSION_STRING='"$(shell cat VERSION)"'
 
-seaudit: $(OBJS) $(GTK-SOURCEVIEW-OBJS) ../libseaudit/libseaudit.a ../libapol/libapol.a
-	$(CC) $(CFLAGS) $(INCLUDE) $(OBJS) -o $@ $(SEAUDIT_LIBS) $(GTK_LIBS)
+LIBSELINUX      = -lselinux
+
+
+
+ifeq ($(DEBUG), 1)
+SEAUDIT_LIBS	= ../libseaudit/libseaudit.a ../libapol/libapol.a 
+seaudit: $(OBJS) $(GTK-SOURCEVIEW-OBJS) $(SEAUDIT_LIBS)
+	$(CC) $(CFLAGS) $(INCLUDE) $(OBJS) -o $@ $(SEAUDIT_LIBS) $(LIBS) $(GTK_LIBS)
+else
+SEAUDIT_LIBS	= ../libseaudit/libseaudit.so.$(shell cat ../libseaudit/VERSION) \
+		  ../libapol/libapol.so.$(shell cat ../libapol/VERSION) $(LIBS)
+seaudit: $(OBJS) $(GTK-SOURCEVIEW-OBJS) $(SEAUDIT_LIBS)
+	$(CC) $(CFLAGS) $(INCLUDE) $(OBJS) -o $@ $(SEAUDIT_LIBS) $(LIBS) $(GTK_LIBS)
+endif
 
 ../libseaudit/libseaudit.a:
-	cd ../; $(MAKE) libseaudit
+	cd ../libseaudit; $(MAKE) libseaudit
+
+../libseaudit/libseaudit.so.$(shell cat ../libseaudit/VERSION):
+	cd ../libseaudit; $(MAKE) libseauditso
 
 ../libapol/libapol.a: 
-	cd ../; $(MAKE) libapol
+	cd ../libapol; $(MAKE) libapol
+
+../libapol/libapol.so.$(shell cat ../libapol/VERSION): 
+	cd ../libapol; $(MAKE) libapolso
 
 %.o:  %.c 
 	$(CC) $(CFLAGS) $(GTK_CFLAGS) $(INCLUDE) -c $<
