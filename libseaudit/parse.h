@@ -15,12 +15,13 @@
 
 
 #include "auditlog.h"
-#define PARSE_MEMORY_ERROR -2
-#define PARSE_NO_SELINUX_ERROR -4
-#define PARSE_SUCCESS 0
-#define PARSE_INVALID_MSG_WARN 2 /* message NOT added to audit log */
-#define PARSE_MALFORMED_MSG_WARN 3 /* message added to audit log anyway */
-#define PARSE_BOTH_MSG_WARN 4 /* invalid and malformed messages found in log */
+#define PARSE_MEMORY_ERROR       -2
+#define PARSE_NO_SELINUX_ERROR   -4
+#define PARSE_SUCCESS             0
+#define PARSE_INVALID_MSG_WARN    2 /* message NOT added to audit log */
+#define PARSE_MALFORMED_MSG_WARN  3 /* message added to audit log anyway */
+#define PARSE_BOTH_MSG_WARN       4 /* invalid and malformed messages found in log */
+#define PARSE_NO_PARSE            5 /* file was eof */
 
 
 #define PARSE_MEMORY_ERROR_MSG "Memory error while parsing the log!"
