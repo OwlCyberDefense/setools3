@@ -112,7 +112,8 @@ proc Apol_Analysis_flowassert::do_analysis {results_frame} {
     }
 
     set sw [ScrolledWindow $results_frame.sw -auto horizontal]
-    set t [text $sw.t -wrap none -bg white -font $ApolTop::text_font]
+    set t [text $sw.t -wrap none -bg white -font $ApolTop::text_font \
+              -exportselection 1]
     Apol_PolicyConf::configure_HyperLinks $t
     $t tag configure assert_file_tag -underline 1 -foreground blue
     $t tag bind assert_file_tag <Button-1> [namespace code [list highlight_assert_line  %W %x %y]]
@@ -126,28 +127,51 @@ proc Apol_Analysis_flowassert::do_analysis {results_frame} {
     
     variable assertfile_t
     set assert_contents [string trim [$assertfile_t get 1.0 end]]
-    $t insert end "-- Executing --\n$assert_contents"
+    $t insert end "Executing:\n$assert_contents"
     update idletasks
 
     if [catch {apol_FlowAssertExecute $assert_contents 0} assert_results] {
         set retval -1
     } else {
         $t delete 1.0 end
-        $t insert end "--- Results ---\n"
+        # build summary statement
+        set num_passed 0
+        set num_failed 0
+        set num_illegal 0
+        foreach result $assert_results {
+            switch -- [lindex $result 2] {
+                0 { incr num_passed }
+                1 { incr num_failed }
+                default { incr num_illegal }
+            }
+        }
+        set summary "Results: "
+        if {$num_passed == 1} {
+            append summary "1 assertion passed"
+        } else {
+            append summary "$num_passed assertions passed"
+        }
+        append summary ", $num_failed failed"
+        if {$num_illegal == 1} {
+            append summary ", and 1 statement could not be evaluated."
+        } elseif {$num_illegal > 1} {
+            append summary ", and $num_illegal statements could not be evaluated."
+        } else {
+            append summary "."
+        }
+        $t insert end "$summary\n\n"
         set typeslist [apol_GetNames types]
         foreach result $assert_results {
             foreach {mode lineno result rules_list} $result {}
-            set line "line $lineno: "
-            set line_end_index [expr {[string length $line] - 2}]
+            set orig_line [$assertfile_t get $lineno.0 "$lineno.0 lineend - 1c"]
+            set line "$orig_line"
+            set line_end_index [string length $line]
+            append line ": "
             set policy_tags_list ""
             switch -- $result {
                 0 { append line "Passed.\n" }
                 1 {
-                    set s ""
-                    if {[llength $rules_list] > 1} {
-                        set s "s"
-                    }
-                    append line "Assertion failed, conflict$s found:\n"
+                    append line "Failed.\n"
                     foreach rules $rules_list {
                         foreach {start_type end_type via_type rule_num rule} $rules {}
                         if {[set from [lindex $typeslist $start_type]] == ""} {
@@ -189,8 +213,9 @@ proc Apol_Analysis_flowassert::do_analysis {results_frame} {
             }
 
             set offset [$t index "end - 1c"]
-            $t insert end $line
+            $t insert end "$line\n"
             $t tag add assert_file_tag $offset "$offset + $line_end_index c"
+            $t tag add l$lineno $offset "$offset + $line_end_index c"
             foreach {start_index end_index} $policy_tags_list {
                 Apol_PolicyConf::insertHyperLink $t \
                     "$offset + $start_index c" "$offset + $end_index c"
@@ -316,13 +341,13 @@ proc Apol_Analysis_flowassert::display_mod_options { opts_frame } {
     $sw setwidget $assertfile_t
     grid $tf -row 0 -column 0 -padx 10 -sticky nsew
     pack $sw -expand 1 -fill both
-    set bb1 [ButtonBox $opts_frame.bb1 -homogeneous 1 -spacing 20]
+    set bb1 [ButtonBox $opts_frame.bb1 -homogeneous 1 -spacing 10]
     $bb1 add -text "Insert Assertion..." -command [namespace code create_assert_wizard_dlg]
     $bb1 add -text "Insert Comment..." -command [namespace code add_comment_dlg]
     $bb1 add -text "Edit..." -command [namespace code edit_line]
     $bb1 add -text "Delete" -command [namespace code delete_line]
     grid $bb1 -sticky {}
-    set bb2 [ButtonBox $opts_frame.bb2 -homogeneous 1 -spacing 20 -orient vertical]
+    set bb2 [ButtonBox $opts_frame.bb2 -homogeneous 1 -spacing 10 -orient vertical]
     $bb2 add -text "Clear All" -command [namespace code clear_assert_file]
     $bb2 add -text "Export Assertions..." -command [namespace code export_assert_file]
     $bb2 add -text "Import Assertions..." -command [namespace code import_assert_file]
@@ -474,20 +499,24 @@ proc Apol_Analysis_flowassert::import_assert_file {} {
 # non-modal dialog that presents all available types + attributes /
 # options.  It does not validate entries for syntactical correctness.
 proc Apol_Analysis_flowassert::create_assert_wizard_dlg {{origline {}}} {
-    variable assertfile_t
-    variable assert_wizard_dlg
-    
+    # destroy old wizard items
+    destroy .assertfile_wizard_dlg
     variable wiz
     array unset wiz
     variable wiz_var
     array unset wiz_var
 
+    if {$origline == ""} {
+        set title "Insert Assertion"
+    } else {
+        set title "Edit Assertion"
+    }
     # create a modal dialog to hold the wizard
-    destroy .assertfile_wizard_dlg
-    set assert_wizard_dlg [Dialog .assertfile_wizard_dlg -homogeneous 1 \
-                               -spacing 20 -anchor c -cancel 2 -modal global \
-                               -parent $assertfile_t -separator 0 \
-                               -side bottom -title "Add Assertion Statements"]
+    variable assertfile_t
+    variable assert_wizard_dlg [Dialog .assertfile_wizard_dlg -homogeneous 1 \
+                                    -spacing 20 -anchor c -cancel 2 \
+                                    -modal global -parent $assertfile_t \
+                                    -separator 0 -side bottom -title $title]
     set f [$assert_wizard_dlg getframe]
     set topf [frame $f.topf]
 
@@ -924,8 +953,11 @@ proc Apol_Analysis_flowassert::reset_type {type_name} {
 # assumes that the assertion file contents have not changed since
 # executing the file.
 proc Apol_Analysis_flowassert::highlight_assert_line {widget x y} {
-    set line [eval $widget get [$widget tag prevrange assert_file_tag "@$x,$y + 1 char"]]
-    foreach {foo linenum} [split $line] {}
+    foreach tag [$widget tag names "@$x,$y"] {
+        if {[string index $tag 0] == "l"} {
+            set linenum [string range $tag 1 end]
+        }
+    }
     variable assertfile_t
     $assertfile_t tag remove assert_file_sel_tag 1.0 end
     $assertfile_t tag add assert_file_sel_tag $linenum.0 [expr {$linenum + 1}].0
@@ -976,12 +1008,17 @@ proc Apol_Analysis_flowassert::add_comment_dlg {{origcomment ""}} {
         raise .assertfile_comment_dlg
         return
     }
+    if {$origcomment == ""} {
+        set title "Insert Comment"
+    } else {
+        set title "Edit Comment"
+    }
     variable assertfile_t
     set d [Dialog .assertfile_comment_dlg -homogeneous 1 -spacing 10 \
                -anchor e -cancel 1 -default 0 -modal global \
                -parent $assertfile_t -separator 0 -side bottom \
-               -title "Add Comment"]
-    $d add -text "Okay"
+               -title $title]
+    $d add -text "Ok"
     $d add -text "Cancel"
     set f [$d getframe]
     set l [label $f.l -text "Comment: "]
