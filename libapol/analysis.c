@@ -644,7 +644,7 @@ int determine_domain_trans(dta_query_t *dta_query,
 			   domain_trans_analysis_t **dta_results, 
 			   policy_t *policy)
 {
-	int start_idx, i, classes[1], perms[1], perms2[1], rt, ans=0;
+	int start_idx, i, classes[1], perms[1], perms2[1], rt;
 	rules_bool_t b_start, b_trans; 	/* structures are used for passing TE rule match booleans */
 	bool_t *b_type;			/* scratch pad arrays to keep track of types that have already been added */
 	trans_domain_t *t_ptr;
@@ -860,7 +860,7 @@ int determine_domain_trans(dta_query_t *dta_query,
 								TRUE, policy);
 				if (rule_uses_type == -1)
 					return -1;
-				if(b_start.access[i] && policy->av_access[i].type == RULE_TE_ALLOW && ans &&
+				if(b_start.access[i] && policy->av_access[i].type == RULE_TE_ALLOW  &&
 				  does_av_rule_use_classes(i, 1, classes, 1, policy) &&
 				  does_av_rule_use_perms(i, 1, perms2, 1, policy)) {	
 					rt = dta_add_rule_to_entry_point_type(reverse, i, ep);
@@ -1056,10 +1056,10 @@ void types_relation_destroy_results(types_relation_results_t *tra)
 	if (tra->trans_flow_results_B_to_A)
 		iflow_transitive_destroy(tra->trans_flow_results_B_to_A);
 		
-	if (tra->other_tt_rules_results)
-		free(tra->other_tt_rules_results);
-	if (tra->process_inter_results)
-		free(tra->process_inter_results);
+	if (tra->tt_rules_results)
+		free(tra->tt_rules_results);
+	if (tra->allow_rules_results)
+		free(tra->allow_rules_results);
 			
 	if (tra->common_obj_types_results)
 		types_relation_obj_access_destroy(tra->common_obj_types_results);
@@ -1368,7 +1368,7 @@ static int types_relation_find_trans_flows(types_relation_query_t *tra_query,
 
 static int types_relation_search_te_rules(teq_query_t *query, 
 					  teq_results_t *results, 
-			   		  char *ta1, char *ta2, char *ta3,
+			   		  char *ta1, char *ta2,
 			   		  policy_t *policy) 
 {
 	int rt;
@@ -1391,14 +1391,7 @@ static int types_relation_search_te_rules(teq_query_t *query,
 		}
 		strcpy((*query).ta2.ta, ta2);	/* The ta2 string */ 
 	}
-	if (ta3 != NULL) {
-		(*query).ta3.ta = (char *)malloc((strlen(ta3) + 1) * sizeof(char));
-		if ((*query).ta3.ta == NULL) {
-			fprintf(stderr, "out of memory");
-			return -1;
-		}
-		strcpy((*query).ta3.ta, ta3);	/* The ta3 string */ 
-	}
+	
 	/* search rules */
 	rt = search_te_rules(query, results, policy);
 	if (rt < 0) {
@@ -1414,32 +1407,17 @@ static int types_relation_search_te_rules(teq_query_t *query,
 	return 0;
 }
 
-static bool_t types_relation_is_tt_rule_in_domain_trans_list(int rule_idx, domain_trans_analysis_t *dt_list)
-{
-	trans_domain_t *t_ptr;
-	llist_node_t *ll_node;
-	
-	if (dt_list != NULL) {
-		for (ll_node = dt_list->trans_domains->head; ll_node != NULL; ) {
-			t_ptr = (trans_domain_t *)ll_node->data;
-			assert(t_ptr != NULL);
-			if (find_int_in_array(rule_idx, t_ptr->other_rules, t_ptr->num_other_rules) < 0) 
-				return TRUE;
-		}
-	}
-	return FALSE;
-}
-
-/* This function finds any additonal type transition rules from typeA->typeB and from 
- * typeB->typeA. It will filter out those tt rules that are already included in the DTA 
- * results. */
+/* This function finds all type transition rules that relate typeA<->typeB.
+ * It starts by searching type transition/change/member rules with typeA as
+ * the source and then flips the query to search for typeB as the source*/
 static int types_relation_find_type_trans_rules(types_relation_query_t *tra_query, 
 			   		     	types_relation_results_t **tra_results,
 			   		   	policy_t *policy) 
 {	
 	teq_query_t query;
 	teq_results_t results;
-	int i, rt;
+	int i, rt, tt_rule_idx, rule_pass, is_typeA_rule, is_typeB_rule;
+	int cnt = 0; 	/* Variable needed for the does_tt_rule_use_type() function we will call. */
 		
 	assert(tra_query != NULL && tra_results != NULL 
 	       && *tra_results != NULL && policy != NULL);
@@ -1447,77 +1425,66 @@ static int types_relation_find_type_trans_rules(types_relation_query_t *tra_quer
 	init_teq_query(&query);
 	init_teq_results(&results);	
 	query.rule_select |= TEQ_TYPE_TRANS;
-	query.use_regex = 0;
+	query.rule_select |= TEQ_TYPE_MEMBER;
+	query.rule_select |= TEQ_TYPE_CHANGE;
+	query.use_regex = FALSE;
 	query.only_enabled = 1;
-	query.ta1.indirect = 1;
-	query.ta2.indirect = 1;
-	query.ta3.indirect = 0;
-	query.any = FALSE;
-	query.ta1.t_or_a = IDX_TYPE;
-	query.ta2.t_or_a = IDX_TYPE;
-	query.ta3.t_or_a = IDX_TYPE;
 	
-	/* search using all classes */
-	query.num_classes = policy->num_obj_classes;
-	query.classes = (int *)malloc(sizeof(int) * query.num_classes);
-	if (query.classes == NULL) {
-		fprintf(stderr, "out of memory");
-		goto err;
-	}
-	for(i = 0; i < query.num_classes; i++) {
-		query.classes[i] = i;
-	}
-	
-	/* First, query with type_A as the source type and type_B as the target type or default type */				
-	rt = types_relation_search_te_rules(&query, &results, 
-					    tra_query->type_name_A,
-					    tra_query->type_name_B, 
-					    tra_query->type_name_B, 
-					    policy);
+	/* Query for all type trans/change/member rules */				
+	rt = types_relation_search_te_rules(&query, &results, NULL, NULL, policy);
 	if (rt != 0) {
 		fprintf(stderr, "Problem searching TE rules");
 		goto err;
 	}
-	if (results.num_type_rules > 0) { 
-		for(i = 0; i < results.num_type_rules; i++) {
-			/* Ignore those tt rules that are already included in the DTA results. */
-			if (!types_relation_is_tt_rule_in_domain_trans_list(results.type_rules[i], (*tra_results)->dta_results_A_to_B)) {
-				/* Append indices into type relationship results structure */
-				if (add_i_to_a(results.type_rules[i], 
-					       &(*tra_results)->num_other_tt_rules, 
-					       &(*tra_results)->other_tt_rules_results) != 0) {
-					goto err;
+	free_teq_query_contents(&query);
+	for (i = 0; i < results.num_type_rules; i++) {	
+		tt_rule_idx = results.type_rules[i];
+		/* Does this rule have typeA in its' source types list? */					
+		is_typeA_rule = does_tt_rule_use_type(tra_query->type_A, IDX_TYPE, SRC_LIST, 
+						      TRUE, &(policy->te_trans[tt_rule_idx]), 
+						      &cnt, policy);
+		if (is_typeA_rule == -1)
+			goto err;
+		/* Does this rule have typeB in its' source types list? */
+		is_typeB_rule = does_tt_rule_use_type(tra_query->type_B, IDX_TYPE, SRC_LIST, 
+					      	      TRUE, &(policy->te_trans[tt_rule_idx]), 
+					      	      &cnt, policy);
+		if (is_typeB_rule == -1)
+			goto err;
+		/* Skip this rule if it contains neither typeA or typeB in source list */
+		if (!is_typeA_rule && !is_typeB_rule) 
+			continue;
+		if (is_typeA_rule) {
+			/* Does this rule have typeB in its' target or default type list? */					
+			rule_pass = does_tt_rule_use_type(tra_query->type_B, IDX_TYPE, (TGT_LIST | DEFAULT_LIST), 
+								    TRUE, &(policy->te_trans[tt_rule_idx]), 
+								    &cnt, policy);
+			if (rule_pass == -1)
+				goto err;
+			if (rule_pass) {
+				if (find_int_in_array(tt_rule_idx, (*tra_results)->tt_rules_results, 
+				    (*tra_results)->num_tt_rules) < 0) {
+					if (add_i_to_a(tt_rule_idx, &(*tra_results)->num_tt_rules, 
+						       &(*tra_results)->tt_rules_results) != 0) {
+						goto err;
+					}
 				}
 			}
-		}
-	}
-	/* Free intermediate results, since we have copied the rule indices */
-	free_teq_results_contents(&results);
-	/* Flip the query to have type_B as the source type and type_A as the target type or default type */
-	if (query.ta1.ta != NULL) free(query.ta1.ta);
-	if (query.ta2.ta != NULL) free(query.ta2.ta);
-	if (query.ta3.ta != NULL) free(query.ta3.ta);
-	rt = types_relation_search_te_rules(&query, &results, 
-					    tra_query->type_name_B,
-					    tra_query->type_name_A,
-					    tra_query->type_name_A, 
-					    policy);
-	if (rt != 0) {
-		fprintf(stderr, "Problem searching TE rules");
-		goto err;
-	}
-	/* We're done with our local te query struct, so free up memory */
-	free_teq_query_contents(&query);
-	
-	if (results.num_type_rules > 0) { 
-		for(i = 0; i < results.num_type_rules; i++) {
-			/* Ignore those tt rules that are already included in the DTA results. */
-			if (!types_relation_is_tt_rule_in_domain_trans_list(results.type_rules[i], (*tra_results)->dta_results_B_to_A)) {
-				/* Append indices into type relationship results structure */
-				if (add_i_to_a(results.type_rules[i], 
-					       &(*tra_results)->num_other_tt_rules, 
-					       &(*tra_results)->other_tt_rules_results) != 0) {
-					goto err;
+		} 
+		if (is_typeB_rule) {
+			/* Does this rule have typeA in its' target or default type list? */					
+			rule_pass = does_tt_rule_use_type(tra_query->type_A, IDX_TYPE, (TGT_LIST | DEFAULT_LIST), 
+								    TRUE, &(policy->te_trans[tt_rule_idx]), 
+								    &cnt, policy);
+			if (rule_pass == -1)
+				goto err;
+			if (rule_pass) {
+				if (find_int_in_array(tt_rule_idx, (*tra_results)->tt_rules_results, 
+				    (*tra_results)->num_tt_rules) < 0) {
+					if (add_i_to_a(tt_rule_idx, &(*tra_results)->num_tt_rules, 
+						       &(*tra_results)->tt_rules_results) != 0) {
+						goto err;
+					}
 				}
 			}
 		}
@@ -1531,102 +1498,73 @@ err:
 	return -1;
 }
 
-/* This function finds all process allow rules between TypeA and TypeB. */
-static int types_relation_find_process_interactions(types_relation_query_t *tra_query, 
-			   		     	    types_relation_results_t **tra_results,
-			   		   	    policy_t *policy) 
+/* This function finds all te rules that relate TypeA and TypeB. */
+static int types_relation_find_te_rules(types_relation_query_t *tra_query, 
+	   		     	        types_relation_results_t **tra_results,
+	   		   	        policy_t *policy) 
 {		
-	teq_query_t query;
-	teq_results_t results;
-	int i, rt;
+	int rule_idx, rule_pass, is_typeA_rule, is_typeB_rule; 
 		
 	assert(tra_query != NULL && tra_results != NULL 
 	       && *tra_results != NULL && policy != NULL);
-	       
-	init_teq_query(&query);
-	init_teq_results(&results);	
-	query.rule_select |= TEQ_ALLOW;
-	query.only_enabled = 1;
-	query.use_regex = 0;
-	query.ta1.indirect = 1;
-	query.ta2.indirect = 1;
-	query.any = FALSE;
-	query.ta1.t_or_a = IDX_TYPE;
-	query.ta2.t_or_a = IDX_TYPE;
-	
-	/* search using process class */
-	query.num_classes = 1;
-	query.classes = (int *)malloc(sizeof(int) * query.num_classes);
-	if (query.classes == NULL) {
-		fprintf(stderr, "out of memory");
-		goto err;
-	}
-	query.classes[0] = get_obj_class_idx("process", policy);
-	if (query.classes[0] < 0) {
-		fprintf(stderr, "Invalid object class\n");
-		goto err;
-	}
-
-	/* search using all perms */
-	if (get_obj_class_perms(query.classes[0], &query.num_perms, &query.perms, policy) == -1) {
-		fprintf(stderr, "Error getting class perms.");
-		goto err;	
-	}
-	
-	/* First, query with type_A as the source type and type_B as the target type */				
-	rt = types_relation_search_te_rules(&query, &results, 
-					    tra_query->type_name_A, 
-					    tra_query->type_name_B, 
-					    NULL,
-					    policy);
-	if (rt != 0) {
-		fprintf(stderr, "Problem searching TE rules");
-		goto err;
-	}
-	if (results.num_av_access > 0) { 
-		for(i = 0; i < results.num_av_access; i++) {
-			/* Append indices into type relationship results structure */
-			if (add_i_to_a(results.av_access[i], 
-				       &(*tra_results)->num_process_inter_rules, 
-				       &(*tra_results)->process_inter_results) != 0) {
-				goto err;
+	/* Loop throough all av access rules and check for a rule that has typeA or typeB as source.
+	 * If so, the perform further analysis on the target type of the rule. */
+	for (rule_idx = 0; rule_idx < policy->num_av_access; rule_idx++) {	
+		/* Skip neverallow rules */
+		if ((policy->av_access)[rule_idx].type != RULE_TE_ALLOW)
+			continue;	
+		/* Does this rule have typeA in its' source types list? */					
+		is_typeA_rule = does_av_rule_idx_use_type(rule_idx, 0, tra_query->type_A, 
+					      		  IDX_TYPE, SRC_LIST, TRUE, 
+					      		  policy);
+		if (is_typeA_rule == -1)
+			return -1;
+		/* Does this rule have typeB in its' source types list? */
+		is_typeB_rule = does_av_rule_idx_use_type(rule_idx, 0, tra_query->type_B, 
+					      		  IDX_TYPE, SRC_LIST, TRUE, 
+					      		  policy);
+		if (is_typeB_rule == -1)
+			return -1;
+		/* Skip this rule if it contains neither typeA or typeB in source list */
+		if (!(is_typeA_rule || is_typeB_rule)) 
+			continue;
+		if (is_typeA_rule) {
+			/* Does this rule have typeB in its' target list? */					
+			rule_pass = does_av_rule_idx_use_type(rule_idx, 0, tra_query->type_B, 
+					      		  IDX_TYPE, TGT_LIST, TRUE, 
+					      		  policy);
+			if (rule_pass == -1)
+				return -1;
+			if (rule_pass) {
+				if (find_int_in_array(rule_idx, (*tra_results)->allow_rules_results, 
+				    (*tra_results)->num_allow_rules) < 0) {
+					if (add_i_to_a(rule_idx, &(*tra_results)->num_allow_rules, 
+						       &(*tra_results)->allow_rules_results) != 0) {
+						return -1;
+					}
+				}
+			}
+		} 
+		if (is_typeB_rule) {
+			/* Does this rule have typeA in its' target list? */					
+			rule_pass = does_av_rule_idx_use_type(rule_idx, 0, tra_query->type_A, 
+					      		  IDX_TYPE, TGT_LIST, TRUE, 
+					      		  policy);
+			if (rule_pass == -1)
+				return -1;
+			if (rule_pass) {
+				if (find_int_in_array(rule_idx, (*tra_results)->allow_rules_results, 
+				    (*tra_results)->num_allow_rules) < 0) {
+					if (add_i_to_a(rule_idx, &(*tra_results)->num_allow_rules, 
+						       &(*tra_results)->allow_rules_results) != 0) {
+						return -1;
+					}
+				}
 			}
 		}
-	}
-	/* Free intermediate results, since we have copied the rule indices */
-	free_teq_results_contents(&results);
-	/* Flip the query to have type_B as the source type and type_A as the target type */
-	if (query.ta1.ta != NULL) free(query.ta1.ta);
-	if (query.ta2.ta != NULL) free(query.ta2.ta);
-	rt = types_relation_search_te_rules(&query, &results, 
-					    tra_query->type_name_B, 
-					    tra_query->type_name_A, 
-					    NULL,
-					    policy);
-	if (rt != 0) {
-		fprintf(stderr, "Problem searching TE rules");
-		goto err;
-	}
-	/* We're done with our local te query struct, so free up memory */
-	free_teq_query_contents(&query);
-	
-	if (results.num_av_access > 0) { 
-		for(i = 0; i < results.num_av_access; i++) {
-			/* Append indices into type relationship results structure */
-			if (add_i_to_a(results.av_access[i], 
-				       &(*tra_results)->num_process_inter_rules, 
-				       &(*tra_results)->process_inter_results) != 0) {
-				goto err;
-			}
-		}
-	}
-	free_teq_results_contents(&results);
+	}		
 	
 	return 0;
-err:
-	free_teq_query_contents(&query);
-	free_teq_results_contents(&results);
-	return -1;
 }
 			
 static types_relation_type_access_pool_t *types_relation_create_type_access_pool(policy_t *policy)
@@ -1985,19 +1923,21 @@ int types_relation_determine_relationship(types_relation_query_t *tra_query,
 	    	types_relation_destroy_results(*tra_results);
 		return -1;
 	}
-	/* Find any additional type transition rules between the 2 types. */
-	if ((tra_query->options & TYPES_REL_OTHER_TTRULES) && 
+	
+	/* This function finds all te rules that relate TypeA and TypeB. */
+	if ((tra_query->options & TYPES_REL_ALLOW_RULES) && 
+	    types_relation_find_te_rules(tra_query, tra_results, policy) != 0) {
+	    	types_relation_destroy_results(*tra_results);
+		return -1;
+	}
+	
+	/* This function finds all type transition/member/change rules that relate TypeA and TypeB. */
+	if ((tra_query->options & TYPES_REL_TTRULES) && 
 	    types_relation_find_type_trans_rules(tra_query, tra_results, policy) != 0) {
 	    	types_relation_destroy_results(*tra_results);
 		return -1;
 	}
-	/* This function finds all process rules between TypeA and TypeB. */
-	if ((tra_query->options & TYPES_REL_PROCESS_INTER) && 
-	    types_relation_find_process_interactions(tra_query, tra_results, policy) != 0) {
-	    	types_relation_destroy_results(*tra_results);
-		return -1;
-	}
-
+	
 	/* Find either common or unique object types to which typeA and typeB have access. */
 	if (types_relation_find_obj_types_access(tra_query, tra_results, policy) != 0) {
 	    	types_relation_destroy_results(*tra_results);
@@ -2006,4 +1946,3 @@ int types_relation_determine_relationship(types_relation_query_t *tra_query,
 	
 	return 0;						 	
 }
-
