@@ -27,11 +27,13 @@
  * handle.  AVC_MSG is a standard 'allowed' or 'denied' type message.  
  * LOAD_POLICY_MSG is the message that results when a policy is loaded into the
  * system  BOOLEAN_MSG is the message that results when changing booleans in a 
- * conditional policy..
+ * conditional policy. Message types are put in alphabetical order to make 
+ * msg_field_compare() in sort.c easier.
  */
-#define AVC_MSG 	0x00000001
-#define	LOAD_POLICY_MSG 0x00000002
-#define BOOLEAN_MSG     0x00000003
+#define BOOLEAN_MSG     0x00000001
+#define AVC_MSG 	0x00000002
+#define	LOAD_POLICY_MSG 0x00000004
+
 
 /* defines for the fields in the message types */
 #define AVC_MSG_FIELD 		0
@@ -158,9 +160,9 @@ typedef struct load_policy_msg {
  * boolean_msg contains all fields unique to a conditional boolean message.
  */
 typedef struct boolean_msg {
-  int num_bools;    /* number of booleans */
-  int *booleans;    /* ordered array of ints refering to boolean name */
-  bool_t *values;      /* ordered array 0 or 1 depending on boolean value */
+        int num_bools;    /* number of booleans */
+        int *booleans;    /* ordered array of ints refering to boolean name */
+        bool_t *values;      /* ordered array 0 or 1 depending on boolean value */
 } boolean_msg_t;
 
 
