@@ -3,7 +3,7 @@
 
 # libapol test
 
-LIBAPOL		= ../../libapol/libapol.a
+LIBAPOL		= ../../libapol/libapol.a -lselinux -lfl
 OBJS		= test-apol.o  $(LIBAPOL)
 
 
