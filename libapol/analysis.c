@@ -1108,7 +1108,7 @@ static iflow_graph_t *iflow_graph_alloc(policy_t *policy)
 
 void iflow_graph_destroy(iflow_graph_t *g)
 {
-	int i, j;
+	int i;
 
 	if (!g)
 		return;
@@ -1125,12 +1125,8 @@ void iflow_graph_destroy(iflow_graph_t *g)
 		free(g->nodes);
 	if (g->edges) {
 		for (i = 0; i < g->num_edges; i++) {
-			for (j = 0; j < g->edges[i].num_obj_classes; j++) {
-				if (g->edges[i].obj_classes[j].rules)
-					free(g->edges[i].obj_classes[j].rules);
-			}
-			if (g->edges[i].obj_classes)
-				free(g->edges[i].obj_classes);
+			if (g->edges[i].rules)
+				free(g->edges[i].rules);
 		}
 		free(g->edges);
 	}
@@ -1177,14 +1173,6 @@ static int iflow_graph_connect(iflow_graph_t *g, int start_node, int end_node)
 
 	memset(&g->edges[g->num_edges], 0, sizeof(iflow_edge_t));
 	
-	g->edges[g->num_edges].num_obj_classes = g->policy->num_obj_classes;
-	g->edges[g->num_edges].obj_classes = (iflow_obj_class_t*)malloc(sizeof(iflow_obj_class_t)
-		* g->policy->num_obj_classes);
-	if (!g->edges[g->num_edges].obj_classes) {
-		fprintf(stderr, "Memory Error\n");
-		return -1;
-	}
-	memset(g->edges[g->num_edges].obj_classes, 0, sizeof(iflow_obj_class_t) * g->policy->num_obj_classes);
 	g->edges[g->num_edges].start_node = start_node;
 	g->edges[g->num_edges].end_node = end_node;
 	
@@ -1322,8 +1310,8 @@ static int add_edges(iflow_graph_t* g, int obj_class, int rule_idx, bool_t found
 					return -1;
 				}
 				
-				if (add_i_to_a(rule_idx, &g->edges[edge].obj_classes[obj_class].num_rules,
-					       &g->edges[edge].obj_classes[obj_class].rules) != 0) {
+				if (add_i_to_a(rule_idx, &g->edges[edge].num_rules,
+					       &g->edges[edge].rules) != 0) {
 					fprintf(stderr, "Could not add rule!\n");
 					return -1;
 				}
@@ -1334,8 +1322,8 @@ static int add_edges(iflow_graph_t* g, int obj_class, int rule_idx, bool_t found
 					fprintf(stderr, "Could not add edge!\n");
 					return -1;
 				}
-				if (add_i_to_a(rule_idx, &g->edges[edge].obj_classes[obj_class].num_rules,
-					       &g->edges[edge].obj_classes[obj_class].rules) != 0) {
+				if (add_i_to_a(rule_idx, &g->edges[edge].num_rules,
+					       &g->edges[edge].rules) != 0) {
 					fprintf(stderr, "Could not add rule!\n");
 					return -1;
 				}
@@ -1535,7 +1523,7 @@ static bool_t edge_matches_query(iflow_graph_t* g, iflow_query_t* q, int edge)
 
 static int iflow_define_flow(iflow_graph_t *g, iflow_t *flow, int direction, int start_node, int edge)
 {
-	int i, j, end_node;
+	int i, end_node, obj_class;
 	iflow_edge_t *edge_ptr;
 	
 	edge_ptr = &g->edges[edge];
@@ -1549,16 +1537,16 @@ static int iflow_define_flow(iflow_graph_t *g, iflow_t *flow, int direction, int
 	flow->direction |= direction;
 	flow->start_type = g->nodes[start_node].type;
 	flow->end_type = g->nodes[end_node].type;
-
-	for (i = 0; i < edge_ptr->num_obj_classes; i++) {
-		for (j = 0; j < edge_ptr->obj_classes[i].num_rules; j++) {
-			if (find_int_in_array(edge_ptr->obj_classes[i].rules[j], flow->obj_classes[i].rules,
-					      flow->obj_classes[i].num_rules) == -1) {
-				if (add_i_to_a(edge_ptr->obj_classes[i].rules[j],
-					       &flow->obj_classes[i].num_rules,
-					       &flow->obj_classes[i].rules) < 0) {
+	
+	obj_class = g->nodes[edge_ptr->start_node].obj_class;
+	if (obj_class == -1)
+		obj_class = g->nodes[edge_ptr->end_node].obj_class;
+	for (i = 0; i < edge_ptr->num_rules; i++) {
+		if (find_int_in_array(edge_ptr->rules[i], flow->obj_classes[obj_class].rules,
+				      flow->obj_classes[obj_class].num_rules) == -1) {
+			if (add_i_to_a(edge_ptr->rules[i], &flow->obj_classes[obj_class].num_rules,
+				       &flow->obj_classes[obj_class].rules) < 0) {
 					return 	-1;
-				}
 			}
 		}
 	}
