@@ -31,7 +31,7 @@
 #define PARSE_MALFORMED_MSG_WARN_MSG "Warning! One or more malformed messages found in audit log.  See help file for more information."
 #define PARSE_BOTH_MSG_WARN_MSG "Warning! Invalid and malformed messages found in audit log.  See help file for more information."
 
-int parse_audit(FILE *syslog, audit_log_t *log, bool_t do_filter);
+int parse_audit(FILE *syslog, audit_log_t *log);
 /* parses the file specified by syslog and puts all selinux audit messages into log 
    it is assumed that log will be created before this function
 */
