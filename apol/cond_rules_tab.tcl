@@ -41,6 +41,9 @@ namespace eval Apol_Cond_Rules {
 	variable cond_bools_listbox
 	variable bool_combo_box
 	variable cb_regex
+	variable cb_show_rules
+	variable bool_combo_box
+	variable cb_enable_bool_combo_box
 }
 
 ###############################################################
@@ -60,7 +63,13 @@ proc Apol_Cond_Rules::cond_rules_search {} {
 	} else {
 		set bool_name ""
 	}
-					
+	if {!$search_opts(incl_teallow) && !$search_opts(incl_teaudit) && !$search_opts(incl_ttrans)} {
+		$resultsbox configure -state normal
+		$resultsbox delete 0.0 end
+		ApolTop::makeTextBoxReadOnly $resultsbox 
+		return 0
+	}
+						
 	set rt [catch {set results [apol_SearchConditionalRules \
 		$bool_name \
 		$search_opts(allow_regex) \
@@ -142,7 +151,7 @@ proc Apol_Cond_Rules::open { } {
 	set cond_bools_list [lsort $cond_bools_list] 
 	
 	$Apol_Cond_Rules::bool_combo_box configure -values $cond_bools_list
-	
+	Apol_Cond_Rules::on_rule_buttons_selected
 	return 0
 } 
 
@@ -181,7 +190,33 @@ proc Apol_Cond_Rules::cond_rules_enable_bool_combo_box {} {
      		$cb_regex configure -state normal
      	} else {
      		$cb_regex configure -state disabled
+     		$cb_regex deselect
      	}
+	return 0
+}
+
+proc Apol_Cond_Rules::on_rule_buttons_selected {} {
+	variable search_opts
+	variable cb_show_rules
+	variable bool_combo_box
+	variable cb_enable_bool_combo_box
+	variable cb_regex
+
+	# Disable 'Display rules within cond expression' if no rule selections  
+	if {!$search_opts(incl_teallow) && !$search_opts(incl_teaudit) && !$search_opts(incl_ttrans)} {
+		$cb_show_rules configure -state disabled
+		$cb_enable_bool_combo_box deselect
+		$cb_enable_bool_combo_box configure -state disabled
+		
+		Apol_Cond_Rules::cond_rules_enable_bool_combo_box
+		$bool_combo_box configure -state disabled
+	} else {
+		$cb_show_rules configure -state normal
+		$cb_enable_bool_combo_box configure -state normal
+		$bool_combo_box configure -state normal
+		Apol_Cond_Rules::cond_rules_enable_bool_combo_box
+	}
+	
 	return 0
 }
 
@@ -192,6 +227,9 @@ proc Apol_Cond_Rules::create {nb} {
 	variable bool_combo_box
 	variable resultsbox 
 	variable cb_regex
+	variable cb_show_rules
+	variable bool_combo_box
+	variable cb_enable_bool_combo_box
 	
 	# Layout frames
 	set frame [$nb insert end $ApolTop::cond_rules_tab -text "Conditional Expressions"]
@@ -232,16 +270,18 @@ proc Apol_Cond_Rules::create {nb} {
 	set teallow [checkbutton $rules_inner_left_fm.teallow \
 		-text "Allow" \
 		-variable Apol_Cond_Rules::search_opts(incl_teallow) \
-	    	-onvalue 1 -offvalue 0]
+	    	-onvalue 1 -offvalue 0 \
+	    	-command {Apol_Cond_Rules::on_rule_buttons_selected}]
 	set auallow [checkbutton $rules_inner_left_fm.auallow \
 		-text "Auditallow and dontaudit" \
 		-variable Apol_Cond_Rules::search_opts(incl_teaudit) \
-	    	-onvalue 1 -offvalue 0]
+	    	-onvalue 1 -offvalue 0 \
+	    	-command {Apol_Cond_Rules::on_rule_buttons_selected}]
 	set ttrans [checkbutton $rules_inner_left_fm.ttrans \
 		-text "Type transition and type change" \
 		-variable Apol_Cond_Rules::search_opts(incl_ttrans) \
-	    	-onvalue 1 -offvalue 0]
-	
+	    	-onvalue 1 -offvalue 0 \
+	    	-command {Apol_Cond_Rules::on_rule_buttons_selected}]
 	    
 	set bool_combo_box [ComboBox [$l_innerFrame getframe].bool_combo_box \
 		-textvariable Apol_Cond_Rules::search_opts(boolean) \
