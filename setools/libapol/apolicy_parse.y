@@ -54,6 +54,7 @@
  
 
 %{
+#include <stdio.h>
 #include "queue.h"
 #include "policy.h"
 #include "cond.h"
@@ -141,7 +142,7 @@ static int define_role_allow(void);
 static int define_constraint(void);
 static constraint_expr_t *define_cexpr(__u32 expr_type, __u32 arg1, __u32 arg2);
 static int define_user(void);
-static security_context_t *parse_security_context(int dontsave);
+static security_con_t *parse_security_context(int dontsave);
 static int define_initial_sid_context(void);
 static int define_devfs_context(int has_type);
 static int define_fs_context(int ver);
@@ -981,12 +982,12 @@ static int define_attrib(void)
 	/* check whether already exists */
 	rt = get_attrib_idx(id, parse_policy);
 	if(rt >=0){
-		sprintf(errormsg, "duplicate class decalaration (%s)\n", id);
+		snprintf(errormsg,sizeof(errormsg), "duplicate class decalaration (%s)\n", id);
 		yyerror(errormsg);
 		return -1;
 	}
 	if(!is_valid_str_sz(id)) {
-		sprintf(errormsg, "string \"%s\" exceeds APOL_SZ_SIZE", id);
+		snprintf(errormsg,sizeof(errormsg), "string \"%s\" exceeds APOL_SZ_SIZE", id);
 		yyerror(errormsg);
 		return -1;
 	}
@@ -1023,13 +1024,13 @@ static int define_type(int alias)
 		return -1;
 	}
 	if(!is_valid_str_sz(id)) {
-		sprintf(errormsg, "string \"%s\" exceeds APOL_SZ_SIZE", id);
+		snprintf(errormsg, sizeof(errormsg), "string \"%s\" exceeds APOL_SZ_SIZE", id);
 		yyerror(errormsg);
 		return -1;
 	}
 	idx = add_type(id, parse_policy);
 	if(idx == -2) {
-		sprintf(errormsg, "duplicate type decalaration (%s)\n", id);
+		snprintf(errormsg, sizeof(errormsg), "duplicate type decalaration (%s)\n", id);
 		yyerror(errormsg);
 		return -1;
 	}
@@ -1040,12 +1041,12 @@ static int define_type(int alias)
 	if (alias) { 
 		while ((id = queue_remove(id_queue))) {
 			if(!is_valid_str_sz(id)) {
-				sprintf(errormsg, "string \"%s\" exceeds APOL_SZ_SIZE", id);
+				snprintf(errormsg, sizeof(errormsg), "string \"%s\" exceeds APOL_SZ_SIZE", id);
 				yyerror(errormsg);
 				return -1;
 			}
 			if(add_alias(idx, id, parse_policy) != 0) {
-				sprintf(errormsg, "failed add_name for alias %s\n", id);
+				snprintf(errormsg, sizeof(errormsg), "failed add_name for alias %s\n", id);
 				yyerror(errormsg);
 				return -1;			
 			}
@@ -1056,7 +1057,7 @@ static int define_type(int alias)
 	/*  attribs */
 	while ((id = queue_remove(id_queue))) {
 		if(!is_valid_str_sz(id)) {
-			sprintf(errormsg, "string \"%s\" exceeds APOL_SZ_SIZE", id);
+			snprintf(errormsg, sizeof(errormsg), "string \"%s\" exceeds APOL_SZ_SIZE", id);
 			yyerror(errormsg);
 			return -1;
 		}
@@ -1084,23 +1085,23 @@ static int define_typealias(void)
 	}
 	idx = get_type_or_attrib_idx(id, &idx_type, parse_policy);
 	if (idx < 0) {
-		sprintf(errormsg, "unknown type %s in typealias definitition.", id);
+		snprintf(errormsg, sizeof(errormsg), "unknown type %s in typealias definitition.", id);
 		yyerror(errormsg);
 		return -1;
 	}
 	if (idx_type != IDX_TYPE) {
-		sprintf(errormsg, "%s is not a type. Illegal typealias definitition.", id);
+		snprintf(errormsg, sizeof(errormsg), "%s is not a type. Illegal typealias definitition.", id);
 		yyerror(errormsg);
 		return -1;
 	}
 	while ((id = queue_remove(id_queue))) {
 		if(!is_valid_str_sz(id)) {
-			sprintf(errormsg, "string \"%s\" exceeds APOL_SZ_SIZE", id);
+			snprintf(errormsg, sizeof(errormsg), "string \"%s\" exceeds APOL_SZ_SIZE", id);
 			yyerror(errormsg);
 			return -1;
 		}
 		if(add_alias(idx, id, parse_policy) != 0) {
-			sprintf(errormsg, "failed add_alias for alias %s\n", id);
+			snprintf(errormsg, sizeof(errormsg), "failed add_alias for alias %s\n", id);
 			yyerror(errormsg);
 			return -1;			
 		}
@@ -1146,7 +1147,7 @@ static int add_avrule(int type, av_item_t **rlist, int *list_num, bool_t enabled
 		}
 		idx = get_type_or_attrib_idx(id, &idx_type, parse_policy);
 		if(idx < 0) {
-			sprintf(errormsg, "%s is neither a type nor type attribute", id);
+			snprintf(errormsg, sizeof(errormsg), "%s is neither a type nor type attribute", id);
 			yyerror(errormsg);
 			return -1;				
 		}
@@ -1162,7 +1163,7 @@ static int add_avrule(int type, av_item_t **rlist, int *list_num, bool_t enabled
 		}
 		titem->idx = idx;
 		if(insert_ta_item(titem, &(item->src_types)) != 0) {
-			sprintf(errormsg, "failed ta_item insetion for source type id %s", id);
+			snprintf(errormsg, sizeof(errormsg), "failed ta_item insetion for source type id %s", id);
 			yyerror(errormsg);
 			return -1;
 		}
@@ -1189,7 +1190,7 @@ static int add_avrule(int type, av_item_t **rlist, int *list_num, bool_t enabled
 		}	
 		idx = get_type_or_attrib_idx(id, &idx_type, parse_policy);
 		if(idx < 0) {
-			sprintf(errormsg, "%s is neither a type or type attribute", id);
+			snprintf(errormsg, sizeof(errormsg), "%s is neither a type or type attribute", id);
 			yyerror(errormsg);
 			return -1;				
 		}
@@ -1205,7 +1206,7 @@ static int add_avrule(int type, av_item_t **rlist, int *list_num, bool_t enabled
 		}
 		titem->idx = idx;
 		if(insert_ta_item(titem, &(item->tgt_types)) != 0) {
-			sprintf(errormsg, "failed ta_item insetion for target type id %s", id);
+			snprintf(errormsg, sizeof(errormsg), "failed ta_item insetion for target type id %s", id);
 			yyerror(errormsg);
 			return -1;
 		}
@@ -1225,7 +1226,7 @@ static int add_avrule(int type, av_item_t **rlist, int *list_num, bool_t enabled
 		}
 		idx = get_obj_class_idx(id, parse_policy);
 		if(idx < 0) {
-			sprintf(errormsg, "%s is not a valid object class name", id);
+			snprintf(errormsg, sizeof(errormsg), "%s is not a valid object class name", id);
 			yyerror(errormsg);
 			return -1;
 		}
@@ -1237,7 +1238,7 @@ static int add_avrule(int type, av_item_t **rlist, int *list_num, bool_t enabled
 		titem->type = IDX_OBJ_CLASS;
 		titem->idx = idx;
 		if(insert_ta_item(titem, &(item->classes)) != 0) {
-			sprintf(errormsg, "failed ta_item insetion for classes id %s", id);
+			snprintf(errormsg, sizeof(errormsg), "failed ta_item insetion for classes id %s", id);
 			yyerror(errormsg);
 			return -1;
 		}
@@ -1258,7 +1259,7 @@ static int add_avrule(int type, av_item_t **rlist, int *list_num, bool_t enabled
 		}
 		idx = get_perm_idx(id, parse_policy);
 		if(idx < 0) {
-			sprintf(errormsg, "%s is not a valid permission name", id);
+			snprintf(errormsg, sizeof(errormsg), "%s is not a valid permission name", id);
 			yyerror(errormsg);
 			return -1;
 		}
@@ -1270,7 +1271,7 @@ static int add_avrule(int type, av_item_t **rlist, int *list_num, bool_t enabled
 		titem->type = IDX_PERM;
 		titem->idx = idx;
 		if(insert_ta_item(titem, &(item->perms)) != 0) {
-			sprintf(errormsg, "failed ta_item insetion for classes id %s", id);
+			snprintf(errormsg, sizeof(errormsg), "failed ta_item insetion for classes id %s", id);
 			yyerror(errormsg);
 			return -1;
 		}
@@ -1321,7 +1322,7 @@ static int define_te_avtab(int rule_type)
 		break;
 	
 	default:
-		sprintf(errormsg, "Invalid AV type (%d)", rule_type);
+		snprintf(errormsg, sizeof(errormsg), "Invalid AV type (%d)", rule_type);
 		yyerror(errormsg);
 		return -1;
 	}
@@ -1381,7 +1382,7 @@ static int add_ttrule(int rule_type, bool_t enabled)
 
 		idx = get_type_or_attrib_idx(id, &idx_type, parse_policy);
 		if(idx < 0) {
-			sprintf(errormsg, "%s is neither a type or type attribute", id);
+			snprintf(errormsg, sizeof(errormsg), "%s is neither a type or type attribute", id);
 			yyerror(errormsg);
 			return -1;				
 		}
@@ -1397,7 +1398,7 @@ static int add_ttrule(int rule_type, bool_t enabled)
 		}
 		titem->idx = idx;
 		if(insert_ta_item(titem, &(item->src_types)) != 0) {
-			sprintf(errormsg, "failed ta_item insetion for source type id %s\n", id);
+			snprintf(errormsg, sizeof(errormsg), "failed ta_item insetion for source type id %s\n", id);
 			yyerror(errormsg);
 			return -1;
 		}
@@ -1425,7 +1426,7 @@ static int add_ttrule(int rule_type, bool_t enabled)
 
 		idx = get_type_or_attrib_idx(id, &idx_type, parse_policy);
 		if(idx < 0) {
-			sprintf(errormsg, "%s is neither a type or type attribute", id);
+			snprintf(errormsg, sizeof(errormsg), "%s is neither a type or type attribute", id);
 			yyerror(errormsg);
 			return -1;				
 		}
@@ -1441,7 +1442,7 @@ static int add_ttrule(int rule_type, bool_t enabled)
 		}
 		titem->idx = idx;
 		if(insert_ta_item(titem, &(item->tgt_types)) != 0) {
-			sprintf(errormsg, "failed ta_item insetion for target type id %s\n", id);
+			snprintf(errormsg, sizeof(errormsg), "failed ta_item insetion for target type id %s\n", id);
 			yyerror(errormsg);
 			return -1;
 		}
@@ -1463,7 +1464,7 @@ static int add_ttrule(int rule_type, bool_t enabled)
 
 		idx = get_obj_class_idx(id, parse_policy);
 		if(idx < 0) {
-			sprintf(errormsg, "%s is not a valid object class name", id);
+			snprintf(errormsg, sizeof(errormsg), "%s is not a valid object class name", id);
 			yyerror(errormsg);
 			return -1;
 		}
@@ -1475,7 +1476,7 @@ static int add_ttrule(int rule_type, bool_t enabled)
 		titem->type = IDX_OBJ_CLASS;
 		titem->idx = idx;
 		if(insert_ta_item(titem, &(item->classes)) != 0) {
-			sprintf(errormsg, "failed ta_item insetion for classes id %s", id);
+			snprintf(errormsg, sizeof(errormsg), "failed ta_item insetion for classes id %s", id);
 			yyerror(errormsg);
 			return -1;
 		}
@@ -1486,7 +1487,7 @@ static int add_ttrule(int rule_type, bool_t enabled)
 	id = queue_remove(id_queue);
 	idx = get_type_or_attrib_idx(id, &idx_type, parse_policy);
 	if(idx < 0 || idx_type != IDX_TYPE) {
-		sprintf(errormsg, "default type %s is NOT a defined type.", id);
+		snprintf(errormsg, sizeof(errormsg), "default type %s is NOT a defined type.", id);
 		yyerror(errormsg);
 		return -1;				
 	}
@@ -1522,7 +1523,7 @@ static int define_compute_type(int rule_type)
 			goto skip_tt_rule;
 		break;
 	default:
-		sprintf(errormsg, "Invalid type transition|member|change rule type (%d)", rule_type);
+		snprintf(errormsg, sizeof(errormsg), "Invalid type transition|member|change rule type (%d)", rule_type);
 		yyerror(errormsg);
 		return -1;
 	}
@@ -1562,7 +1563,7 @@ static int define_te_clone(void)
 	id = queue_remove(id_queue);
 	src = get_type_idx(id, parse_policy);
 	if(src < 0) {
-		sprintf(errormsg, "Invalid source type (%s)", id);
+		snprintf(errormsg, sizeof(errormsg), "Invalid source type (%s)", id);
 		yyerror(errormsg);
 		return -1;
 	}
@@ -1571,7 +1572,7 @@ static int define_te_clone(void)
 	id = queue_remove(id_queue);
 	tgt = get_type_idx(id, parse_policy);
 	if(tgt < 0) {
-		sprintf(errormsg, "Invalid target type (%s)", id);
+		snprintf(errormsg, sizeof(errormsg), "Invalid target type (%s)", id);
 		yyerror(errormsg);
 		return -1;
 	}
@@ -1608,7 +1609,7 @@ static int define_role_types(void)
 		return -1;
 	}
 	if(!is_valid_str_sz(id) ) {
-		sprintf(errormsg, "string \"%s\" is too large", id);
+		snprintf(errormsg, sizeof(errormsg), "string \"%s\" is too large", id);
 		yyerror(errormsg);
 		return -1;
 	}
@@ -1634,7 +1635,7 @@ static int define_role_types(void)
 		role_idx = add_role(id, parse_policy);
 		/* don't free id if we added it; the add_role type uses the memory */
 		if(role_idx < 0) {
-			sprintf(errormsg, "Problem adding role %s to policy", id);
+			snprintf(errormsg, sizeof(errormsg), "Problem adding role %s to policy", id);
 			yyerror(errormsg);
 			free(id);
 			return -1;
@@ -1648,7 +1649,7 @@ static int define_role_types(void)
 	while ((id = queue_remove(id_queue))) {
 		idx = get_type_or_attrib_idx(id, &idx_type, parse_policy);
 		if(idx < 0) {
-			sprintf(errormsg, "Invalid type name (%s) in role definition", id);
+			snprintf(errormsg, sizeof(errormsg), "Invalid type name (%s) in role definition", id);
 			yyerror(errormsg);
 			return -1;
 		}
@@ -1706,7 +1707,7 @@ static int define_role_allow(void)
 		}
 		idx = get_role_idx(id, parse_policy);
 		if(idx < 0) {
-			sprintf(errormsg, "%s is an invalid role attribute", id);
+			snprintf(errormsg, sizeof(errormsg), "%s is an invalid role attribute", id);
 			yyerror(errormsg);
 			free(id);
 			return -1;				
@@ -1720,7 +1721,7 @@ static int define_role_allow(void)
 		role->type = IDX_ROLE;
 		role->idx = idx;
 		if(insert_ta_item(role, &(rule->src_roles)) != 0) {
-			sprintf(errormsg, "failed ta_item insetion for source rule id %s\n", id);
+			snprintf(errormsg, sizeof(errormsg), "failed ta_item insetion for source rule id %s\n", id);
 			yyerror(errormsg);
 			free(id);
 			free(role);
@@ -1744,7 +1745,7 @@ static int define_role_allow(void)
 		}	
 		idx = get_role_idx(id, parse_policy);
 		if(idx < 0) {
-			sprintf(errormsg, "%s is not a valid role", id);
+			snprintf(errormsg, sizeof(errormsg), "%s is not a valid role", id);
 			yyerror(errormsg);
 			free(id);
 			return -1;				
@@ -1758,7 +1759,7 @@ static int define_role_allow(void)
 		role->type = IDX_ROLE;
 		role->idx = idx;
 		if(insert_ta_item(role, &(rule->tgt_roles)) != 0) {
-			sprintf(errormsg, "failed ta_item insetion for target role id %s\n", id);
+			snprintf(errormsg, sizeof(errormsg), "failed ta_item insetion for target role id %s\n", id);
 			yyerror(errormsg);
 			free(id);
 			free(role);
@@ -1820,7 +1821,7 @@ static int define_role_trans(void)
 		}
 		idx = get_role_idx(id, parse_policy);
 		if(idx < 0) {
-			sprintf(errormsg, "%s is an invalid role name", id);
+			snprintf(errormsg, sizeof(errormsg), "%s is an invalid role name", id);
 			yyerror(errormsg);
 			free(id);
 			return -1;				
@@ -1834,7 +1835,7 @@ static int define_role_trans(void)
 		role->type = IDX_ROLE;
 		role->idx = idx;
 		if(insert_ta_item(role, &(rule->src_roles)) != 0) {
-			sprintf(errormsg, "failed ta_item insetion for source rule id %s\n", id);
+			snprintf(errormsg, sizeof(errormsg), "failed ta_item insetion for source rule id %s\n", id);
 			yyerror(errormsg);
 			free(role);
 			free(id);
@@ -1857,7 +1858,7 @@ static int define_role_trans(void)
 		}
 		idx = get_type_or_attrib_idx(id, &idx_type, parse_policy);
 		if(idx < 0) {
-			sprintf(errormsg, "%s is neither a type or type attribute", id);
+			snprintf(errormsg, sizeof(errormsg), "%s is neither a type or type attribute", id);
 			yyerror(errormsg);
 			free(id);
 			free(role);
@@ -1873,7 +1874,7 @@ static int define_role_trans(void)
 		type->type = idx_type;
 		type->idx = idx;
 		if(insert_ta_item(type, &(rule->tgt_types)) != 0) {
-			sprintf(errormsg, "failed ta_item insetion for target type %s\n", id);
+			snprintf(errormsg, sizeof(errormsg), "failed ta_item insetion for target type %s\n", id);
 			yyerror(errormsg);
 			free(id);
 			free(role);
@@ -1888,7 +1889,7 @@ static int define_role_trans(void)
 	rule->trans_role.idx = get_role_idx(id, parse_policy);
 	rule->trans_role.type = IDX_ROLE;
 	if(rule->trans_role.idx < 0) {
-		sprintf(errormsg, "%s is an invalid role name", id);
+		snprintf(errormsg, sizeof(errormsg), "%s is an invalid role name", id);
 		yyerror(errormsg);
 		free(role);
 		free(type);
@@ -1907,9 +1908,9 @@ static int define_role_trans(void)
 static int define_user(void)
 {
 	char *id;
-	int idx, rt;
-	user_item_t *ptr;
+	int idx, ridx, rt;
 	bool_t existing;
+
 	if(pass == 1 || (pass == 2 && !(parse_policy-> opts & POLOPT_USERS))) {
 		while ((id = queue_remove(id_queue))) 
 			free(id);
@@ -1922,12 +1923,13 @@ static int define_user(void)
 		return -1;
 	}
 	if(!is_valid_str_sz(id)) {
-		sprintf(errormsg, "string \"%s\" exceeds APOL_SZ_SIZE", id);
+		snprintf(errormsg, sizeof(errormsg), "string \"%s\" exceeds APOL_SZ_SIZE", id);
 		yyerror(errormsg);
 		return -1;
 	}
 	/* check if existing user; if so treat as union of roles */
-	if(get_user_by_name(id, &ptr, parse_policy) == 0) {
+	idx = get_user_idx(id, parse_policy);
+	if(idx >= 0) {
 		/* existing; ptr now points to existing user record */
 		existing = TRUE;
 		free(id);
@@ -1935,41 +1937,31 @@ static int define_user(void)
 	else {
 		/* new user */
 		existing = FALSE;
-		ptr = (user_item_t *)malloc(sizeof(user_item_t));
-		if(ptr == NULL) {
-			yyerror("out of memory");
+		idx = add_user(id, parse_policy);
+		if(idx < 0) {
+			snprintf(errormsg, sizeof(errormsg), "problem adding user \"%s\" to policy", id);
+			yyerror(errormsg);
 			return -1;
 		}
-		memset(ptr, 0, sizeof(user_item_t));
-		ptr->name = id;
+		/* don't free id (user name)*/
 	}
 		
 	while((id = queue_remove(id_queue))) {
-		idx = get_role_idx(id, parse_policy);
-		if(idx < 0) {
-			sprintf(errormsg, "%s is an invalid role name", id);
+		ridx = get_role_idx(id, parse_policy);
+		if(ridx < 0) {
+			snprintf(errormsg, sizeof(errormsg), "%s is an invalid role name", id);
 			yyerror(errormsg);
 			free(id);
 			return -1;
 		}
-		if(!existing || (existing && !does_user_have_role(ptr, idx, parse_policy))) {
-			rt = add_role_to_user(ptr, idx, parse_policy);
-			if(rt != 0) {
-				yyerror("problem inserting role in user");
-				return -1;
-			}
+		rt = add_role_to_user(ridx, idx, parse_policy);
+		if(rt != 0) {
+			yyerror("problem inserting role in user");
+			return -1;
 		}
 		free(id);		 
 	}
 	
-	if(!existing) {
-		rt = append_user(ptr, &(parse_policy->users));
-		if(rt != 0) {
-			yyerror("problem inserting user in policy ");
-			return -1;
-		}		
-		(parse_policy->rule_cnt[RULE_USER])++;
-	}
 	return 0;
 }
 
@@ -1993,13 +1985,13 @@ static int define_class(void)
 		return -1;
 	}
 	if(!is_valid_str_sz(id)) {
-		sprintf(errormsg, "string \"%s\" exceeds APOL_SZ_SIZE", id);
+		snprintf(errormsg, sizeof(errormsg), "string \"%s\" exceeds APOL_SZ_SIZE", id);
 		yyerror(errormsg);
 		return -1;
 	}
 	idx = add_class(id, parse_policy);
 	if(idx == -2) {
-		sprintf(errormsg, "duplicate class decalaration (%s)\n", id);
+		snprintf(errormsg, sizeof(errormsg), "duplicate class decalaration (%s)\n", id);
 		yyerror(errormsg);
 		return -1;
 	}
@@ -2028,7 +2020,7 @@ static int define_av_perms(int inherits)
 	}
 	cls_idx = get_obj_class_idx(id, parse_policy);
 	if(cls_idx < 0) {
-		sprintf(errormsg, "%s is not a valid object class name", id);
+		snprintf(errormsg, sizeof(errormsg), "%s is not a valid object class name", id);
 		yyerror(errormsg);
 		return -1;
 	}
@@ -2041,7 +2033,7 @@ static int define_av_perms(int inherits)
 		}
 		cp_idx = get_common_perm_idx(id, parse_policy);
 		if(cp_idx < 0) {
-			sprintf(errormsg, "%s is not a valid object class name", id);
+			snprintf(errormsg, sizeof(errormsg), "%s is not a valid object class name", id);
 			yyerror(errormsg);
 			return -1;
 		}
@@ -2056,7 +2048,7 @@ static int define_av_perms(int inherits)
 	while ((id = queue_remove(id_queue))) {
 		p_idx = add_perm(id, parse_policy);
 		if(p_idx < 0) {
-			sprintf(errormsg, "problem adding permisions %s", id);
+			snprintf(errormsg, sizeof(errormsg), "problem adding permisions %s", id);
 			yyerror(errormsg);
 			return -1;
 		}
@@ -2069,19 +2061,19 @@ static int define_av_perms(int inherits)
 			 */
 			
 			if(strcasecmp(id, tname) == 0) {
-				sprintf(errormsg, "class-specific permission (%s) conflicts with common permission", id);
+				snprintf(errormsg, sizeof(errormsg), "class-specific permission (%s) conflicts with common permission", id);
 				yyerror(errormsg);
 				return -1;
 			}
 		}
 		if(!is_valid_str_sz(id)) {
-			sprintf(errormsg, "string \"%s\" exceeds APOL_SZ_SIZE", id);
+			snprintf(errormsg, sizeof(errormsg), "string \"%s\" exceeds APOL_SZ_SIZE", id);
 			yyerror(errormsg);
 			return -1;
 		}
 		rt = add_perm_to_class(cls_idx, p_idx, parse_policy);
 		if(rt != 0) {
-			sprintf(errormsg, "problem adding permission (%s) to object class", id);
+			snprintf(errormsg, sizeof(errormsg), "problem adding permission (%s) to object class", id);
 			yyerror(errormsg);
 			return -1;
 		}
@@ -2115,13 +2107,13 @@ static int define_common_perms(void)
 	
 	/* add new common perm */
 	if(!is_valid_str_sz(id)) {
-		sprintf(errormsg, "string \"%s\" exceeds APOL_SZ_SIZE", id);
+		snprintf(errormsg, sizeof(errormsg), "string \"%s\" exceeds APOL_SZ_SIZE", id);
 		yyerror(errormsg);
 		return -1;
 	}
 	idx = add_common_perm(id, parse_policy);
 	if(idx == -2) {
-		sprintf(errormsg, "Duplicate common permission name (%s)", id);
+		snprintf(errormsg, sizeof(errormsg), "Duplicate common permission name (%s)", id);
 		yyerror(errormsg);
 		return -1;
 	}
@@ -2131,14 +2123,14 @@ static int define_common_perms(void)
 	/* add permissions to common perm */
 	while ((id = queue_remove(id_queue))) {	
 		if(!is_valid_str_sz(id)) {
-			sprintf(errormsg, "string \"%s\" exceeds APOL_SZ_SIZE", id);
+			snprintf(errormsg, sizeof(errormsg), "string \"%s\" exceeds APOL_SZ_SIZE", id);
 			yyerror(errormsg);
 			return -1;
 		}
 		permidx = add_perm(id, parse_policy);
 		if(permidx < 0) {
 			free(id); /* add_perm() allocates its own memory */
-			sprintf(errormsg, "Problem adding permission name (%s)", id);
+			snprintf(errormsg, sizeof(errormsg), "Problem adding permission name (%s)", id);
 			yyerror(errormsg);
 			return -1;
 		}
@@ -2183,7 +2175,7 @@ static int
 		 * TODO: Finish this!
 		 */
 		if(!is_valid_str_sz(id) ) {
-			sprintf(errormsg, "string \"%s\" exceeds APOL_SZ_SIZE", id);
+			snprintf(errormsg, sizeof(errormsg), "string \"%s\" exceeds APOL_SZ_SIZE", id);
 			yyerror(errormsg);
 			return -1;
 		}
@@ -2240,7 +2232,7 @@ static int define_bool(void)
 	
 	rt = add_cond_bool(name, state, parse_policy);
 	if (rt == -2) {
-		sprintf(errormsg, "Boolean %s already exists", name);
+		snprintf(errormsg, sizeof(errormsg), "Boolean %s already exists", name);
 		yyerror(errormsg);
 		return -1;
 	} else if (rt < 0) {
@@ -2447,7 +2439,7 @@ static cond_expr_t *define_cond_expr(__u32 expr_type, void *arg1, void *arg2)
 		bool_var = get_cond_bool_idx(id, parse_policy);
 		
 		if (bool_var < 0) {
-			sprintf(errormsg, "unknown boolean %s in conditional expression", id);
+			snprintf(errormsg, sizeof(errormsg), "unknown boolean %s in conditional expression", id);
 			yyerror(errormsg);
 			free(expr);
 			free(id);
@@ -2547,7 +2539,7 @@ static rule_desc_t *define_cond_compute_type(int rule_type)
 	case RULE_TE_CHANGE:
 		break;
 	default:
-		sprintf(errormsg, "Invalid type transition|member|change rule type (%d)", rule_type);
+		snprintf(errormsg, sizeof(errormsg), "Invalid type transition|member|change rule type (%d)", rule_type);
 		yyerror(errormsg);
 		return NULL;
 	}
@@ -2616,7 +2608,7 @@ static rule_desc_t *define_cond_te_avtab(int rule_type)
 		rt = add_avrule(rule_type, &(parse_policy->av_audit), &(parse_policy->num_av_audit), TRUE);
 		break;
 	default:
-		sprintf(errormsg, "Invalid AV type (%d)", rule_type);
+		snprintf(errormsg, sizeof(errormsg), "Invalid AV type (%d)", rule_type);
 		yyerror(errormsg);
 		return NULL;
 	}
@@ -2662,7 +2654,7 @@ static int define_initial_sid(void)
 		return -1;
 	}
 	if(!is_valid_str_sz(id)) {
-		sprintf(errormsg, "string \"%s\" exceeds APOL_SZ_SIZE", id);
+		snprintf(errormsg, sizeof(errormsg), "string \"%s\" exceeds APOL_SZ_SIZE", id);
 		yyerror(errormsg);
 		free(id);
 		return -1;
@@ -2670,9 +2662,9 @@ static int define_initial_sid(void)
 	sid = num_initial_sids(parse_policy)+1;	/* from the src parse, the enxt SID # is always the
 						 * number of SIDs plus one (SIDs start from 1) */
 	idx = add_initial_sid2(id, sid, parse_policy);
-	//idx = add_initial_sid(id, parse_policy);
+	/*idx = add_initial_sid(id, parse_policy);*/
 	if(idx == -2) {
-		sprintf(errormsg, "duplicate initial SID decalaration (%s)\n", id);
+		snprintf(errormsg, sizeof(errormsg), "duplicate initial SID decalaration (%s)\n", id);
 		yyerror(errormsg);
 		return -1;
 	}
@@ -2686,12 +2678,11 @@ static int define_initial_sid(void)
  * should be ignored in this case).  Otherwise, allocate a context
  * structure and return it, or NULL for error
  */
-static security_context_t *parse_security_context(int dontsave)
+static security_con_t *parse_security_context(int dontsave)
 {
 	char *id;
-	user_item_t *user;
 	int rt; 
-	security_context_t *scontext;
+	security_con_t *scontext;
 	
 	if (pass == 1 || dontsave) {
 		id = queue_remove(id_queue);  /* user  */
@@ -2714,7 +2705,7 @@ static security_context_t *parse_security_context(int dontsave)
 	return NULL; /* In this case this is not an error */
 	}
 	
-	scontext = (security_context_t *)malloc(sizeof(security_context_t));
+	scontext = (security_con_t *)malloc(sizeof(security_con_t));
 	if(scontext == NULL) {
 		yyerror("out of memory");
 		return NULL;
@@ -2726,16 +2717,16 @@ static security_context_t *parse_security_context(int dontsave)
 		free(scontext);
 		return NULL;
 	}
-	rt = get_user_by_name(id, &user, parse_policy);
-	if(rt != 0) {
-		sprintf(errormsg, "User %s is not defined in policy.", id);
+	rt = get_user_idx(id, parse_policy);
+	if(rt < 0) {
+		snprintf(errormsg, sizeof(errormsg), "User %s is not defined in policy.", id);
 		yyerror(errormsg);
 		free(id);
 		free(scontext);
 		return NULL;
 	}
 	free(id);
-	scontext->user = user;
+	scontext->user = rt;
 	
 	/* role */
 	id = queue_remove(id_queue);
@@ -2746,7 +2737,7 @@ static security_context_t *parse_security_context(int dontsave)
 	}			
 	rt = get_role_idx(id, parse_policy);
 	if(rt < 0) {
-		sprintf(errormsg, "Role %s is not defined in policy.", id);
+		snprintf(errormsg, sizeof(errormsg), "Role %s is not defined in policy.", id);
 		yyerror(errormsg);
 		free(id);
 		free(scontext);
@@ -2764,7 +2755,7 @@ static security_context_t *parse_security_context(int dontsave)
 	}			
 	rt = get_type_idx(id, parse_policy);
 	if(rt < 0) {
-		sprintf(errormsg, "Type %s is not defined in policy.", id);
+		snprintf(errormsg, sizeof(errormsg), "Type %s is not defined in policy.", id);
 		yyerror(errormsg);
 		free(id);
 		free(scontext);
@@ -2792,7 +2783,7 @@ static int define_initial_sid_context(void)
 {
 	char *id;
 	int idx;
-	security_context_t *scontext;
+	security_con_t *scontext;
 
 	if (pass == 1 || (pass == 2 && !(parse_policy->opts & POLOPT_INITIAL_SIDS))){
 		id = (char *) queue_remove(id_queue); 
@@ -2807,14 +2798,14 @@ static int define_initial_sid_context(void)
 		return -1;
 	}
 	if(!is_valid_str_sz(id)) {
-		sprintf(errormsg, "string \"%s\" exceeds APOL_SZ_SIZE", id);
+		snprintf(errormsg, sizeof(errormsg), "string \"%s\" exceeds APOL_SZ_SIZE", id);
 		yyerror(errormsg);
 		free(id);
 		return -1;
 	}
 	idx = get_initial_sid_idx(id, parse_policy);
 	if(idx < 0) {
-		sprintf(errormsg, "%s is not a valid initial SID name", id);
+		snprintf(errormsg, sizeof(errormsg), "%s is not a valid initial SID name", id);
 		yyerror(errormsg);
 		free(id);
 		return -1;
