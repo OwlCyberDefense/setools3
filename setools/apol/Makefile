@@ -10,8 +10,8 @@ TCL-STRIP-FILES = types_tab.tcl terules_tab.tcl roles_tab.tcl rbac_tab.tcl \
 ANALYSIS-MODULES = dta_module.tcl dirflow_module.tcl fulflow_module.tcl 
 
 APOL_HELP_FILES	= apol_help.txt dta_help.txt iflow_help.txt
-APOL_PERM_MAPS	= apol_perm_mapping_ver12 apol_perm_mapping_ver15
-APOL_DFLT_PMAP  = apol_perm_mapping_ver15
+APOL_PERM_MAPS	= apol_perm_mapping_ver12 apol_perm_mapping_ver15 apol_perm_mapping_ver16
+APOL_DFLT_PMAP  = apol_perm_mapping_ver16
 LIBAPOL		= ../lib/libapol-tcl.a ../lib/libapol.a
 GUI-OBJ		= apol_gui.o $(LIBAPOL)
 CFLAGS          += -DSTARTUP_SCRIPT='"$(APOL_STARTUP_SCRIPT)"'
