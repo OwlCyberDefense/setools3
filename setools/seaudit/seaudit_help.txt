@@ -1,6 +1,6 @@
 Audit Log Analysis Tool for Security Enhanced Linux
 seaudit, version 1.2.1
-May 27, 2004
+May 28, 2004
 selinux@tresys.com
 
 Overview:  
@@ -132,14 +132,14 @@ policy analysis tool (apol).
 
 Log Views: 
 ----------- 
-The 'Modify View' button opens a dialog box that allows you to modify
-the a list of filters for the current view of the audit log.  At the top 
+The 'Modify View' button opens a dialog box that allows you to modify 
+a list of filters for the current view of the audit log.  At the top 
 of the dialog box is a dropdown menu that has four different ways to apply 
 the list of filters.  You may choose to either show or hide log entries 
 that match any or all of the filters in the current filter set. The View 
 window presents you with the option to add new filters, edit or remove 
-any defined filters (see Create/Edit Filters below). You also have the 
-option to save settings for the view to a file. Additiionally, the View 
+any defined filters (see Create|Edit Filters below). You also have the 
+option to save settings for the view to a file. Additionally, the View 
 window allows you to import/export filters to a file.
 
 To export a filter click on the name of the desired filter and press the 
@@ -156,8 +156,8 @@ filters that were previously available for the current view.
 When you click on the 'Apply' button it will apply the filters for the 
 associated view. 
 
-Create/Edit Filters: 
--------------------------
+Create|Edit Filters Within A View: 
+----------------------------------
 To add a new filter, first select the view for which the filter is needed, 
 by clicking on the corresponding tab. Then, click on the 'Modify View' 
 button near the top of the main window. You are now preseneted with a View 
