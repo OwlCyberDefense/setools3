@@ -28,12 +28,6 @@ else
 endif
 endif
 
-ifeq ($(USE_LIBSEFS), 1)
-	LIBSQLITE  = -lsqlite3
-else
-	LIBSQLITE  =
-endif
-
 CMD-OBJ		= seuser_cmd.o $(LIBSEUSER) $(LIBAPOL)
 GUI-OBJ		= seuser_gui.o $(LIBAPOL-TCL) $(LIBSEUSER-TCL) $(LIBSEUSER) $(LIBAPOL) $(LIBSEFS)
 SE_SHELL_SCRIPTS = seuseradd seuserdel seusermod
@@ -49,7 +43,7 @@ seuser: $(CMD-OBJ)
 	$(CC) -o $@ $(CMD-OBJ) $(LINKFLAGS) $(LIBS) $(LIBSELINUX)
 
 seuserx: $(GUI-OBJ) se_user.tcl
-	$(CC) $(GUI_CFLAGS) $(TCL_LIBINC) -o $@ $(GUI-OBJ) $(LINKFLAGS) $(TCL_LIBS) $(LIBSELINUX) $(LIBS) $(LIBSQLITE)
+	$(CC) $(GUI_CFLAGS) $(TCL_LIBINC) -o $@ $(GUI-OBJ) $(LINKFLAGS) $(TCL_LIBS) $(LIBSELINUX) $(LIBS)
 
 se_user.tcl: $(TCL-FILES)
 	cat $(TCL-FILES) | \
