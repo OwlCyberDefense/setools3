@@ -39,6 +39,7 @@ static struct option const longopts[] =
   {"attribs", optional_argument, NULL, 'a'},
   {"roles", optional_argument, NULL, 'r'},
   {"users", optional_argument, NULL, 'u'},
+  {"booleans", optional_argument, NULL, 'b'},
   {"initialsids", optional_argument, NULL, 'i'},
   {"stats", no_argument, NULL, 's'},
   {"all", no_argument, NULL, 'A'},
@@ -63,11 +64,12 @@ Print requested information about an SELinux policy.\n\
   -a[NAME], --attribs[=NAME] print a list of type attributes\n\
   -r[NAME], --roles[=NAME]   print a list of roles\n\
   -u[NAME], --users[=NAME]   print a list of users\n\
+  -b[NAME], --boolean[=NAME] print a lits of conditional boolens\n\
   -i[NAME], --initialsid[=NAME] print a list of initial SIDs\
  ", stdout);
 	fputs("\n\
   -A, --all                  print all of the above\n\
-  -x, --expand               show additional info for -ctaruiA\n\
+  -x, --expand               show additional info for -ctarbuiA\n\
   -s, --stats                print useful policy statics\n\
   -h, --help                 display this help and exit\n\
   -v, --version              output version information and exit\n\
@@ -87,15 +89,17 @@ If no POLICY_FILE is provided, the default policy will be used:\n\
 int print_stats(FILE *fp, policy_t *policy)
 {
 	fprintf(fp, "\nStatistics for policy file: %s\n", policy_file);
-	fprintf(fp, "   Classes:      %7d    Permissions:  %7d\n", policy->num_obj_classes, policy->num_perms);
-	/* subtract 1 from types to remove the pseudo type "self" */
-	fprintf(fp, "   Types:        %7d    Attributes:   %7d\n", policy->num_types-1, policy->num_attribs);
-	fprintf(fp, "   Users:        %7d    Roles:        %7d\n", policy->rule_cnt[RULE_USER], policy->num_roles);
+	fprintf(fp, "   Classes:      %7d    Permissions:  %7d\n", num_obj_classes(policy), num_perms(policy));
+	/* subtract 1 from types to remove the pseudo type "self" if non-binary policy */
+	fprintf(fp, "   Types:        %7d    Attributes:   %7d\n", (is_binary_policy(policy) ? num_types(policy)-1 : num_types(policy)),
+									num_attribs(policy));
+	fprintf(fp, "   Users:        %7d    Roles:        %7d\n", num_users(policy), num_roles(policy));
+	fprintf(fp, "   Booleans:     %7d    Cond. Expr.:  %7d\n", num_cond_bools(policy), num_cond_exprs(policy));
 	fprintf(fp, "   Allow:        %7d    Neverallow:   %7d\n", policy->rule_cnt[RULE_TE_ALLOW], policy->rule_cnt[RULE_NEVERALLOW]);
 	fprintf(fp, "   Auditallow:   %7d    Dontaudit:    %7d\n", policy->rule_cnt[RULE_AUDITALLOW], policy->rule_cnt[RULE_AUDITDENY] + policy->rule_cnt[RULE_DONTAUDIT]);
 	fprintf(fp, "   Type_trans:   %7d    Type_change:  %7d\n", policy->rule_cnt[RULE_TE_TRANS], policy->rule_cnt[RULE_TE_CHANGE]);
 	fprintf(fp, "   Role allow:   %7d    Role trans:   %7d\n", policy->rule_cnt[RULE_ROLE_ALLOW], policy->rule_cnt[RULE_ROLE_TRANS]);
-	fprintf(fp, "   Initial SIDs: %7d\n", policy->num_initial_sids);
+	fprintf(fp, "   Initial SIDs: %7d\n", num_initial_sids(policy));
 	fprintf(fp, "\n");
 		
 	return 0;
@@ -165,12 +169,15 @@ int print_types(FILE *fp, const char *name, int expand, policy_t *policy)
 		}
 	}
 	else 
-		/* If we're looking for all, we start at 1 since idx==0 is the pseudo type "self" */
-		idx = 1;
+		/* If we're looking for all and not binary, we start at 1 since idx==0 is the pseudo type "self" */
+		if(is_binary_policy(policy))
+			idx = 0;
+		else
+			idx = 1;
 	
 	if(name == NULL)
-		/* use num_types(policy)-1 to factor out the pseudo type "self" */
-		fprintf(fp, "\nTypes: %d\n", num_types(policy)-1);
+		/* use num_types(policy)-1 to factor out the pseudo type "self" if not binary*/
+		fprintf(fp, "\nTypes: %d\n", is_binary_policy(policy) ? num_types(policy) - 1 : num_types(policy));
 	
 	for(i = idx; is_valid_type_idx(i, policy); i++)  {
 		rt = get_type_name(i, &type_name, policy);
@@ -308,10 +315,44 @@ int print_roles(FILE *fp, const char *name, int expand, policy_t *policy)
 	return 0;
 }
 
+int print_booleans(FILE *fp, const char *name, int expand, policy_t *policy)
+{
+	int i, idx, rt;
+	char *bool_name;
+	
+	if(name != NULL) {
+		idx = get_cond_bool_idx(name, policy);
+		if(idx < 0) {
+			fprintf(fp, "Provided boolean (%s) is not a valid boolean name.\n", name);
+			return -1;
+		}
+	}
+	else 
+		idx = 0;
+		
+	if(name == NULL)
+		fprintf(fp, "\nConditional Booleans: %d\n", num_cond_bools(policy));
+		
+	for(i = idx; is_valid_cond_bool_idx(i, policy); i++) {
+		rt = get_cond_bool_name(i, &bool_name, policy);
+		if(rt != 0) {
+			fprintf(fp, "Unexpected error getting boolean name\n\n");
+			return -1;
+		}
+		fprintf(fp, "   %s", bool_name);
+		free(bool_name);
+		if(expand) 
+			fprintf(fp, ": %s", get_cond_bool_default_state(i, policy) ? "TRUE" : "FALSE");
+		fprintf(fp, "\n");
+		if(name != NULL)
+			break;
+	}
+	return 0;
+}
 
 int print_users(FILE *fp, const char *name, int expand, policy_t *policy)
 {
-	int rt, *roles= NULL;
+	int rt;
 	char *user_name = NULL, *role_name = NULL;
 	user_item_t *user = NULL, *u;
 	ta_item_t *role;
@@ -341,7 +382,6 @@ int print_users(FILE *fp, const char *name, int expand, policy_t *policy)
 			for(role = get_user_first_role_ptr(u); role != NULL; role = get_user_next_role_ptr(role)) {
 				rt = get_ta_item_name(role, &role_name, policy);
 				if(rt != 0) {
-					free(roles);
 					fprintf(fp, "Unexpected error getting role name\n\n");
 					return -1;
 				}
@@ -405,14 +445,14 @@ int print_isids(FILE *fp, const char *name, int expand, policy_t *policy)
 
 int main (int argc, char **argv)
 {
-	int classes, types, attribs, roles, users, all, expand, stats, rt, optc, isids;
+	int classes, types, attribs, roles, users, all, expand, stats, rt, optc, isids, bools;
 	unsigned int open_opts = 0;
 	policy_t *policy;
-	char *class_name, *type_name, *attrib_name, *role_name, *user_name, *isid_name;
+	char *class_name, *type_name, *attrib_name, *role_name, *user_name, *isid_name, *bool_name;
 	
-	class_name = type_name = attrib_name = role_name = user_name = isid_name= NULL;
-	classes = types = attribs = roles = users = all = expand = stats = isids = 0;
-	while ((optc = getopt_long (argc, argv, "c::t::a::r::u::i::sAxhv", longopts, NULL)) != -1)  {
+	class_name = type_name = attrib_name = role_name = user_name = isid_name = bool_name = NULL;
+	classes = types = attribs = roles = users = all = expand = stats = isids = bools = 0;
+	while ((optc = getopt_long (argc, argv, "c::t::a::r::u::b::i::sAxhv", longopts, NULL)) != -1)  {
 		switch (optc) {
 		case 0:
 	  		break;
@@ -446,6 +486,12 @@ int main (int argc, char **argv)
 	  		if(optarg != 0) 
 	  			user_name = optarg;
 	  		break;
+	  	case 'b': /* conditional booleans */
+	  		bools = 1;
+	  		open_opts |= POLOPT_COND_BOOLS;
+	  		if(optarg != 0) 
+	  			bool_name = optarg;
+	  		break;
 	  	case 'i': /* initial SIDs */
 	  		isids = 1;
 	  		open_opts |= POLOPT_INITIAL_SIDS;
@@ -476,7 +522,7 @@ int main (int argc, char **argv)
 		}
 	}
 	/* if no options, then show stats */
-	if(classes + types + attribs + roles + users + isids + all < 1) {
+	if(classes + types + attribs + roles + users + isids + bools + all < 1) {
 		open_opts |= POLOPT_ALL;
 		stats = 1;
 	}
@@ -508,6 +554,8 @@ int main (int argc, char **argv)
 		print_roles(stdout, role_name, expand, policy);
 	if(users || all)
 		print_users(stdout, user_name, expand, policy);
+	if(bools || all)
+		print_booleans(stdout, bool_name, expand, policy);
 	if(isids || all)
 		print_isids(stdout, isid_name, expand, policy);
 			
