@@ -79,6 +79,8 @@ if {[string equal [lindex $argv 0] "version"]} {
 	puts $tcl_pkgPath
 } elseif {[string equal [lindex $argv 0] "search_tcl_libs"]} {
 	puts [search_libs]
+} elseif {[string equal [lindex $argv 0] "tcl_library"]} {
+	puts $tcl_library
 } else {
 	puts ""
 }
