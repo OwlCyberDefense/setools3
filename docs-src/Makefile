@@ -59,6 +59,12 @@ seaudit-doc:
 	cat seaudit_help_text.in | \
 	sed -e 's/SEAUDIT_GUI_VERSION/$(shell cat ../seaudit/SEAUDIT_GUI_VERSION)/g' | \
 	sed -e 's/MOD_DATE/$(shell date '+%B %d, %G')/g' > ../seaudit/seaudit_help.txt
+	
+sediff-doc: 
+	rm -f ../sediff/*.txt; \
+	cat sediff_help_text.in | \
+	sed -e 's/SEDIFF_GUI_VERSION/$(shell cat ../sediff/SEDIFF_GUI_VERSION)/g' | \
+	sed -e 's/MOD_DATE/$(shell date '+%B %d, %G')/g' > ../sediff/sediff_help.txt
 
 remove-docs :
 	rm -f ../apol/*.txt; \
