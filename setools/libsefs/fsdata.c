@@ -71,7 +71,6 @@ int add_uint_to_a(uint32_t i, uint32_t *cnt, uint32_t **a)
         /* FIX: This is not very elegant! We use an array that we
          * grow as new int are added to an array.  But rather than be smart
          * about it, for now we realloc() the array each time a new int is added! */
-printf("adding %d, at %d to %p\n",i,*cnt, *a);
         if(*a != NULL) {
                 *a = (uint32_t *) realloc(*a, (*cnt + 1) * sizeof(uint32_t));
         } else /* empty list */ {
@@ -180,6 +179,8 @@ static int avl_add_type(void *user_data, const void *key, int idx)
 	assert(fsdata != NULL && path != NULL);
 	
 	fsdata->types[idx].name = (char *)key;
+	fsdata->types[idx].num_inodes=0;
+	fsdata->types[idx].index_list = NULL;
 	(fsdata->num_types)++;
 		
 	return 0;
@@ -647,8 +648,8 @@ int sefs_filesystem_data_load(sefs_filesystem_data_t* fsd, char *filename)
 	sefs_fileinfo_t * pinfo = NULL;
 	FILE *fp;
 	size_t items;
-	uint32_t *buf;
-	int32_t *sbuf;
+	uint32_t buf[512];
+	int32_t sbuf[3];
 	
 	fp = fopen(filename, "r");
 	if (!fp) {
@@ -662,6 +663,9 @@ int sefs_filesystem_data_load(sefs_filesystem_data_t* fsd, char *filename)
 		return -1;
 	}
 
+	for (i = 0; i < 2; i++) 
+		buf[i] = le32_to_cpu(buf[i]);
+
 	if (buf[0] != INDEX_DB_MAGIC) {
 			fprintf(stderr, "invalid file type\n");
 			return -1;
@@ -672,14 +676,35 @@ int sefs_filesystem_data_load(sefs_filesystem_data_t* fsd, char *filename)
 			return -1;
 	}
 	
-	fsd->num_files = buf[2];
+	fsd->num_types = buf[2];
 	
+	fsd->types = (sefs_typeinfo_t *)malloc(fsd->num_types * sizeof(sefs_typeinfo_t));
+	if (!fsd->types) {
+		fprintf(stderr, "out of memory\n");
+		return -1;
+	}
+
+	for (i = 0; i< fsd->num_types; i++) {
+		items = fread(buf, sizeof(uint32_t), 1, fp);
+		if (items != 1)
+			goto bad;
+
+		len = le32_to_cpu(buf[0]);
+
+		items = fread(buf, sizeof(char), len, fp);
+		if (items != len)
+			goto bad;
+
+		memcpy(fsd->types[i].name, buf, len);
+		printf("found type: %s\n", fsd->types[i].name);
+
+	}
+
 	pinfo = (sefs_fileinfo_t *) malloc(fsd->num_files * sizeof(sefs_fileinfo_t));
 	if (!pinfo) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
 	}
-	
 	fsd->files = pinfo;
 	
 	for(i = 0; i < fsd->num_files; i++) {
@@ -749,8 +774,12 @@ int sefs_filesystem_data_load(sefs_filesystem_data_t* fsd, char *filename)
 		}
 		
 	}
-	
+
 	fclose(fp);
-	return 1;
+	return 0;
+
+	bad:
+		fclose(fp);
+		return -1;
 }
 
