@@ -312,11 +312,10 @@ typedef struct alias_item {
 #define POL_VER_COND		4	/* same */
 #define	POL_VER_MAX		4
 
-#define POL_VER_STRING_PRE_11 	"prior to v. 11"
-#define POL_VER_STRING_11	"v.11 -- v.12"
-#define POL_VER_STRING_15	"v.13 -- v.15"
-#define POL_VER_STRING_16	"v.16"
-
+const char* policy_version_strings_get_str(int policy_version);
+#define is_valid_policy_version(version) (version >= POL_VER_UNKNOWN && version <= POL_VER_MAX)
+#define get_policy_version_string(version) policy_version_strings_get_str(version)
+			 	 
 /**************************************/
 /* This is an actual policy data base */
 typedef struct policy {
