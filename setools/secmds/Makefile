@@ -9,7 +9,8 @@ SE_CMDS		= seinfo sesearch
 
 
 CFLAGS		+= -DDEFAULT_POLICY='"$(POLICY_SRC_FILE)"'
-CFLAGS  	+= -DSECMDS_VERSION_NUM='"$(shell cat VERSION)"'
+CFLAGS  	+= -DSEINFO_VERSION_NUM='"$(shell cat SEINFO_VERSION)"'
+CFLAGS  	+= -DSESEARCH_VERSION_NUM='"$(shell cat SESEARCH_VERSION)"'
 
 SHELL = /bin/sh
 
