@@ -24,6 +24,10 @@
 #ifdef APOL_PERFORM_TEST
 #include <time.h>
 #endif
+#ifdef LIBSELINUX
+#include <limits.h>
+#include <selinux/selinux.h>
+#endif
 
 #ifndef LIBAPOL_POLICY_INSTALL_DIR
 	#define LIBAPOL_POLICY_INSTALL_DIR "/etc/security/selinux"
@@ -34,12 +38,15 @@
 #endif
 
 #define POLICY_VER_FILE_NAME "policyvers"
+#define BIN_POLICY_ROOTNAME  "policy."
 
 /* Error TEXT definitions for decoding the above error definitions. */
 #define TEXT_BIN_POL_FILE_DOES_NOT_EXIST	"Could not locate a default binary policy file.\n"
 #define TEXT_SRC_POL_FILE_DOES_NOT_EXIST	"Could not locate default source policy file.\n"
+#define TEXT_BOTH_POL_FILE_DO_NOT_EXIST		"Could not locate a default source policy or binary file.\n"
 #define TEXT_NOT_SELINUX_AWARE			"This is not an selinux system.\n"
 #define TEXT_READ_POLICY_FILE_ERROR		"Cannot read default policy file.\n"
+#define TEXT_INVALID_SEARCH_OPTIONS		"Invalid search options provided to find_default_policy_file().\n"
 #define TEXT_GENERAL_ERROR_TEXT			"Error in find_default_policy_file().\n"
 
 /* externs mostly with yacc parser */
@@ -62,6 +69,10 @@ const char* find_default_policy_file_strerr(int err)
 		return TEXT_SRC_POL_FILE_DOES_NOT_EXIST;
 	case NOT_SELINUX_AWARE:
 		return TEXT_NOT_SELINUX_AWARE;
+	case BOTH_POL_FILE_DO_NOT_EXIST:
+		return TEXT_BOTH_POL_FILE_DO_NOT_EXIST;
+	case INVALID_SEARCH_OPTIONS:
+		return TEXT_INVALID_SEARCH_OPTIONS;
 	default:
 		return TEXT_GENERAL_ERROR_TEXT;
 	}
@@ -94,21 +105,24 @@ static int search_for_policyfile_with_ver(const char *binpol_install_dir, char *
 {
 	glob_t glob_buf;
 	struct stat fstat;
-	int len, i, num_matches = 0;
+	int len, i, num_matches = 0, rt;
 	char *pattern = NULL;
 	
 	assert(binpol_install_dir != NULL && policy_path_tmp && version != NULL);
 	/* a. allocate pattern string to use for our call to glob() */
-	len = strlen(binpol_install_dir) + strlen("policy.*") + 1;
+	len = strlen(binpol_install_dir) + strlen(BIN_POLICY_ROOTNAME) + 2;
      	if((pattern = (char *)malloc(len+1)) == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return GENERAL_ERROR;
 	} 
-	sprintf(pattern, "%s/policy.*", binpol_install_dir);
+	sprintf(pattern, "%s/%s*", binpol_install_dir, BIN_POLICY_ROOTNAME);
 	
-	/* Call glob() to get a list of filenames matching pattern. We glob for 'policy.*' */
+	/* Call glob() to get a list of filenames matching pattern. */
 	glob_buf.gl_offs = 1;
-	if (glob(pattern, GLOB_DOOFFS, NULL, &glob_buf) != 0) {
+	glob_buf.gl_pathc = 0;
+	rt = glob(pattern, GLOB_DOOFFS, NULL, &glob_buf);
+	if (rt != 0 && rt != GLOB_NOMATCH) {
+		fprintf(stderr, "Error globbing %s for %s*", binpol_install_dir, BIN_POLICY_ROOTNAME);
 		perror("search_for_policyfile_with_ver");
 		return GENERAL_ERROR;
 	}
@@ -143,20 +157,23 @@ static int search_for_policyfile_with_highest_ver(const char *binpol_install_dir
 {
 	glob_t glob_buf;
 	struct stat fstat;
-	int len, i, num_matches = 0;
+	int len, i, num_matches = 0, rt;
 	char *pattern = NULL;
 	
 	assert(binpol_install_dir != NULL && policy_path_tmp);
 	/* a. allocate pattern string */
-	len = strlen(binpol_install_dir) + strlen("policy.*") + 1;
+	len = strlen(binpol_install_dir) + strlen(BIN_POLICY_ROOTNAME) + 2;
      	if((pattern = (char *)malloc(len+1)) == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return GENERAL_ERROR;
 	} 
-	sprintf(pattern, "%s/policy.*", binpol_install_dir);
+	sprintf(pattern, "%s/%s*", binpol_install_dir, BIN_POLICY_ROOTNAME);
 	glob_buf.gl_offs = 0;
+	glob_buf.gl_pathc = 0;
 	/* Call glob() to get a list of filenames matching pattern */
-	if (glob(pattern, GLOB_DOOFFS, NULL, &glob_buf) != 0) {
+	rt = glob(pattern, GLOB_DOOFFS, NULL, &glob_buf);
+	if (rt != 0 && rt != GLOB_NOMATCH) {
+		fprintf(stderr, "Error globbing %s for %s*", binpol_install_dir, BIN_POLICY_ROOTNAME);
 		perror("search_for_policyfile_with_highest_ver");
 		return GENERAL_ERROR;
 	}
@@ -195,11 +212,36 @@ static int search_for_policyfile_with_highest_ver(const char *binpol_install_dir
 
 static int search_binary_policy_file(char **policy_file_path)
 {
-	int rt, len;
-	char *version = NULL, *policy_version_file = NULL, *policy_path_tmp = NULL;
+#ifdef LIBSELINUX
+	int ver;
+#else
+	int len;
+	char *policy_version_file = NULL;
+#endif	
+	int rt = 0;
+	char *version = NULL, *policy_path_tmp = NULL;
 	bool_t is_valid;
-		
-     	/* a. Check /selinux/policyvers for the currently loaded policy version */
+
+     	/* A. Get the path for the currently loaded policy version. */
+#ifdef LIBSELINUX
+	ver = security_policyvers();
+	if (ver < 0) {
+		fprintf(stderr, "SELinux error getting policy version.");
+		return GENERAL_ERROR;
+	}
+	if ((version = (char *)malloc(sizeof(char) * LINE_SZ)) == NULL) {
+		fprintf(stderr, "out of memory\n");
+		return GENERAL_ERROR;
+	}
+	snprintf(version, LINE_SZ - 1, "%d", ver);
+	assert(version);
+	if ((policy_path_tmp = (char *)malloc(sizeof(char) * PATH_MAX)) == NULL) {
+		fprintf(stderr, "out of memory\n");
+		if (version) free(version);
+		return GENERAL_ERROR;
+	}
+	snprintf(policy_path_tmp, PATH_MAX - 1, "%s/%s%s", selinux_binary_policy_path(), BIN_POLICY_ROOTNAME, version);
+#else	
      	len = strlen(LIBAPOL_SELINUX_DIR) + strlen(POLICY_VER_FILE_NAME) + 1;
      	if((policy_version_file = (char *)malloc(len+1)) == NULL) {
 		fprintf(stderr, "out of memory\n");
@@ -208,30 +250,17 @@ static int search_binary_policy_file(char **policy_file_path)
 	sprintf(policy_version_file, "%s/%s", LIBAPOL_SELINUX_DIR, POLICY_VER_FILE_NAME);
 	rt = access(policy_version_file, F_OK);
 	if (rt == 0) {
-	     	/* 1. Read in the loaded policy version number. */
+	     	/* Read in the loaded policy version number. */
 		rt = read_file_to_buffer(policy_version_file, &version, &len);
 		free(policy_version_file);
 		if (rt == 0) {
-			/* 2. See if policy.VERSION exists in the policy install directory. */
-			len = strlen(LIBAPOL_POLICY_INSTALL_DIR) + strlen("policy.") + strlen(version) + 1;
+			len = strlen(LIBAPOL_POLICY_INSTALL_DIR) + strlen(BIN_POLICY_ROOTNAME) + strlen(version) + 2;
 		     	if((policy_path_tmp = (char *)malloc(len+1)) == NULL) {
 		     		if (version) free(version);
 				fprintf(stderr, "out of memory\n");
 				return GENERAL_ERROR;
 			} 
-			sprintf(policy_path_tmp, "%s/policy.%s", LIBAPOL_POLICY_INSTALL_DIR, version);
-			
-			/* 3. make sure the actual binary policy version matches the policy version from  /selinux/policyvers. 
-			 * If it does not, then search the policy install directory for a binary file of the correct version. */
-			is_valid = is_binpol_valid(policy_path_tmp, version);
-		     	if (!is_valid) {
-		     		free(policy_path_tmp);
-		     		policy_path_tmp = NULL;
-		     		rt = search_for_policyfile_with_ver(LIBAPOL_POLICY_INSTALL_DIR, &policy_path_tmp, version);
-		     	}
-		     	if (version) free(version);
-		     	if (rt == GENERAL_ERROR)
-		     		return GENERAL_ERROR;
+			sprintf(policy_path_tmp, "%s/%s%s", LIBAPOL_POLICY_INSTALL_DIR, BIN_POLICY_ROOTNAME, version);
 		} else {
 			/* Cannot read policy_vers file, so move on an step b. */
 			if (version) free(version);
@@ -239,42 +268,88 @@ static int search_binary_policy_file(char **policy_file_path)
 	} else {
 		free(policy_version_file);
 	}
+#endif
+	assert(policy_path_tmp);
+	/* B. make sure the actual binary policy version matches the policy version. 
+	 * If it does not, then search the policy install directory for a binary file 
+	 * of the correct version. */
+	is_valid = is_binpol_valid(policy_path_tmp, version);
+     	if (!is_valid) {
+     		free(policy_path_tmp);
+     		policy_path_tmp = NULL;
+     		fprintf(stderr, "Attempting to search for another valid policy file...\n");
+#ifdef LIBSELINUX
+		rt = search_for_policyfile_with_ver(selinux_binary_policy_path(), &policy_path_tmp, version);
+#else
+     		rt = search_for_policyfile_with_ver(LIBAPOL_POLICY_INSTALL_DIR, &policy_path_tmp, version);
+#endif
+     	}
+     	if (version) free(version);
+     	if (rt == GENERAL_ERROR)
+     		return GENERAL_ERROR;		
 		
-	/* b. If we have not found a valid binary policy file, then try to use the highest version we find */
+	/* C. If we have not found a valid binary policy file,  
+	 * then try to use the highest version we find. */
 	if (!policy_path_tmp) {
+#ifdef LIBSELINUX
+		rt = search_for_policyfile_with_highest_ver(selinux_binary_policy_path(), &policy_path_tmp);
+#else
 		rt = search_for_policyfile_with_highest_ver(LIBAPOL_POLICY_INSTALL_DIR, &policy_path_tmp);
+#endif
 		if (rt == GENERAL_ERROR)
      			return GENERAL_ERROR;
      	}
-	/* c. If the following case is true, then we were not able to locate a binary policy within the policy install dir */
+	/* If the following case is true, then we were not able to locate a binary 
+	 * policy within the policy install dir */
 	if (!policy_path_tmp) {
 		return BIN_POL_FILE_DOES_NOT_EXIST;
 	} 
-	/* d. Set the policy file path */
+	/* D. Set the policy file path */
      	if((*policy_file_path = (char *)malloc(strlen(policy_path_tmp)+1)) == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return GENERAL_ERROR;
 	} 
 	strcpy(*policy_file_path, policy_path_tmp);
 	free(policy_path_tmp);
+	assert(*policy_file_path);
+	
 	return FIND_DEFAULT_SUCCESS;
 }
 
 static int search_policy_src_file(char **policy_file_path)
 {	
 	int rt;
+	char *path = NULL;
 	
 	/* Check if the default policy source file exists. */
-	rt = access(LIBAPOL_DEFAULT_POLICY, F_OK);
-	if (rt != 0) {
-		return SRC_POL_FILE_DOES_NOT_EXIST;
-     	}
-     	if((*policy_file_path = (char *)malloc(strlen(LIBAPOL_DEFAULT_POLICY)+1)) == NULL) {
+#ifdef LIBSELINUX
+	if ((path = (char *)malloc(sizeof(char) * PATH_MAX)) == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return GENERAL_ERROR;
 	}
-	strcpy(*policy_file_path, LIBAPOL_DEFAULT_POLICY);
-
+	snprintf(path, PATH_MAX - 1, "%s/src/policy/policy.conf", 
+		 selinux_policy_root());
+#else	
+	if ((path = (char *)malloc(sizeof(char) * (strlen(LIBAPOL_DEFAULT_POLICY) + 1))) == NULL) {
+		fprintf(stderr, "out of memory\n");
+		return GENERAL_ERROR;
+	}
+	strcpy(path, LIBAPOL_DEFAULT_POLICY);
+#endif
+	assert(path != NULL);
+	rt = access(path, F_OK);
+	if (rt != 0) {
+		free(path);
+		return SRC_POL_FILE_DOES_NOT_EXIST;
+     	}
+     	if ((*policy_file_path = (char *)malloc(strlen(LIBAPOL_DEFAULT_POLICY)+1)) == NULL) {
+		fprintf(stderr, "out of memory\n");
+		free(path);
+		return GENERAL_ERROR;
+	}
+	strcpy(*policy_file_path, path);
+	free(path);
+	
 	return FIND_DEFAULT_SUCCESS;
 }
 
@@ -288,10 +363,10 @@ static int search_policy_src_file(char **policy_file_path)
  */
 int find_default_policy_file(unsigned int search_opt, char **policy_file_path)
 {
-	int rt;
+	int rt, src_not_found = 0;
 	
 	assert(policy_file_path != NULL);
-
+	
 	/* See if selinux-aware. */ 
 	rt = access(LIBAPOL_POLICY_INSTALL_DIR, F_OK);
 	if (rt != 0) {
@@ -309,17 +384,19 @@ int find_default_policy_file(unsigned int search_opt, char **policy_file_path)
 	     	if (rt != SRC_POL_FILE_DOES_NOT_EXIST) {
 	     		return rt;	
 	     	}  
+	     	src_not_found = 1;
 	}
 	
 	/* Try a binary policy */
         if (search_opt & POL_TYPE_BINARY) {
 	     	rt = search_binary_policy_file(policy_file_path);
-	     	if (rt != FIND_DEFAULT_SUCCESS) {
-	     		return rt;
-	     	}	
+	     	if (rt == BIN_POL_FILE_DOES_NOT_EXIST && src_not_found) {
+	     		return BOTH_POL_FILE_DO_NOT_EXIST;	
+	     	} 
+	     	return rt;	
 	} 
-	
-	return rt;
+	/* Only get here if invalid search options was provided. */
+	return INVALID_SEARCH_OPTIONS;
 }
 
 int close_policy(policy_t *policy)
