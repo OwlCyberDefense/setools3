@@ -875,7 +875,6 @@ static int apol_domain_relabel_types(relabel_set_t *sets, int domain, relabel_re
 	}
 	
 	/* check rules */
-	here = 0;
 	for (i = 0; i < clone->num_to_rules; i++) {
 		here = 0;
 		for (j = 0; j < clone->num_to_types; j++) {
@@ -896,13 +895,9 @@ static int apol_domain_relabel_types(relabel_set_t *sets, int domain, relabel_re
 		}
 	}
 
-	here = 0;
 	for (i = 0; i < clone->num_from_rules; i++) {
-		for (j = 0; j < temp->num_to_types; j++) {
-			if (here) {
-				here = 0;
-				break;
-			}
+		here = 0;
+		for (j = 0; j < clone->num_from_types; j++) {
 			if (does_av_rule_idx_use_type(clone->from_rules[i], RULE_TE_ALLOW, temp->from_types[j].type, IDX_TYPE, TGT_LIST, 1, policy)) {
 				here = 1;
 			}
@@ -915,6 +910,7 @@ static int apol_domain_relabel_types(relabel_set_t *sets, int domain, relabel_re
 					if (retv)
 						return -1;
 				}
+				break;
 			}
 		}
 	}
