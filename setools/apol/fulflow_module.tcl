@@ -1457,7 +1457,6 @@ proc Apol_Analysis_fulflow::formatInfoText { tb } {
 	$tb tag configure $Apol_Analysis_fulflow::counters_tag -foreground blue -font {Helvetica 11 bold}
 	$tb tag configure $Apol_Analysis_fulflow::types_tag -font $ApolTop::text_font
 	$tb tag configure $Apol_Analysis_fulflow::find_flows_tag -font {Helvetica 14 bold} -foreground blue -underline 1
-	$tb tag configure $Apol_Analysis_dirflow::disabled_rule_tag -foreground gray 
 	
 	$tb tag bind $Apol_Analysis_fulflow::find_flows_tag <Button-1> "Apol_Analysis_fulflow::display_find_more_flows_Dlg"
 	$tb tag bind $Apol_Analysis_fulflow::find_flows_tag <Enter> { set Apol_Analysis_fulflow::orig_cursor [%W cget -cursor]; %W configure -cursor hand2 }
