@@ -329,7 +329,7 @@ gboolean delayed_main(gpointer data)
 int main(int argc, char **argv)
 {
 	filename_data_t filenames;
-	char policy_file[BUF_SZ];
+	char *policy_file = NULL;
         GString *msg = NULL;
 
 	filenames.policy_filename = filenames.log_filename = NULL; 			
@@ -355,16 +355,20 @@ int main(int argc, char **argv)
 			filenames.policy_filename = g_string_new(seaudit_app->seaudit_conf.default_policy_file);
 		} else {
                         /* There was no default policy file specified at the command-line or
-                         * in the users .seaudit file, so attempt the policy default logic from libapol. */
-                        if (find_default_policy_file(SEARCH_BOTH, policy_file) == 0) {
-                                filenames.policy_filename = g_string_new(policy_file);
-                        } else {
-                                /* no policy to use, so warn the user and then start up without a default policy. */
-                                msg = g_string_new("Could not find system default policy to open. Use the File menu to open a policy");
+                         * in the users .seaudit file, so use the policy default logic from 
+                         * libapol. With seaudit we prefer the source policy over binary. */
+                        if (find_default_policy_file(POL_TYPE_SOURCE, &policy_file) == SRC_POL_FILE_DOES_NOT_EXIST && 
+                            find_default_policy_file(POL_TYPE_BINARY, &policy_file) == BIN_POL_FILE_DOES_NOT_EXIST) {
+                        	/* no policy to use, so warn the user and then start up without a default policy. */
+                                msg = g_string_new("Could not find system default policy to open. Use the \
+                                		    File menu to open a policy");
                                 message_display(seaudit_app->window->window,
                                         GTK_MESSAGE_WARNING,
                                         msg->str);
-                        }
+                        } else if (policy_file) {
+                        	filenames.policy_filename = g_string_new(policy_file);
+                        	free(policy_file);
+                        } 
                }	
 	}
 
