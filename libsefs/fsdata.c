@@ -309,6 +309,7 @@ static int ftw_handler(const char *file, const struct stat *sb, int flag, struct
 	char *tmp2 = NULL; 
 	char** ptr = NULL;
 		
+	
 	key.inode = sb->st_ino;
 	key.dev = sb->st_dev;
 	
@@ -421,7 +422,6 @@ static int ftw_handler(const char *file, const struct stat *sb, int flag, struct
 	} else {
 		pi->symlink_target = NULL;
 	}
-
 	return 0;
 
 }
@@ -582,6 +582,7 @@ int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char *filename)
 	int i, j, rc = 0;
 	FILE *fp;
 	uint32_t buf[3], len;
+	uint64_t buf64[1];
 	int32_t sbuf[3];
 	size_t items2, items = 0;
 	sefs_fileinfo_t * pinfo = NULL;
@@ -666,7 +667,8 @@ int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char *filename)
 		pinfo = &(fsd->files[i]);
 	
 		/* Write the key */
-		items2 = fwrite(cpu_to_le64(&pinfo->key.inode), sizeof(uint64_t), 1, fp);
+		buf64[0] = cpu_to_le64(pinfo->key.inode);
+		items2 = fwrite(buf64, sizeof(uint64_t), 1, fp);
 		if (items2 != 1) {
 			fprintf(stderr, "error writing file %s\n", filename);
 			return -1;
