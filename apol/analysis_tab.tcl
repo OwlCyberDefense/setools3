@@ -865,7 +865,7 @@ proc Apol_Analysis::create { nb } {
 	# Layout frames
         set frame [$nb insert end $ApolTop::analysis_tab -text "Analysis"]
         set pw1 [PanedWindow $frame.pw1 -side left -weights extra]
-        $pw1 add -weight 1 -minsize 225
+        $pw1 add -weight 1 -minsize 260
         $pw1 add -weight 1
 	set topf  [frame [$pw1 getframe 0].topf]
 	set botf  [frame [$pw1 getframe 1].botf]
