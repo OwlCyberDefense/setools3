@@ -305,6 +305,7 @@ void seaudit_save_log_file()
 	GtkWidget *file_selector, *confirmation;
 	gint response, confirm;
 	const gchar *filename;
+	int rt;
 
         file_selector = gtk_file_selection_new("Export Log File");
 	gtk_file_selection_complete(GTK_FILE_SELECTION(file_selector), (*(seaudit_app->audit_log_file)).str);
@@ -348,9 +349,22 @@ void seaudit_save_log_file()
         }
 	
 	gtk_widget_destroy(file_selector);
-	
-	if (seaudit_write_log_file(seaudit_get_current_audit_log_view(), filename) != 0) {
-		/* ERROR*/
+
+	if ((rt = seaudit_write_log_file(seaudit_get_current_audit_log_view(), filename)) != 0) {
+		if (rt == ERROR_EXPORT_LOG_BAD_FILE)
+			message_display(seaudit_app->window->window, 
+					GTK_MESSAGE_WARNING,
+					"Log Export Failed!\n\nThe Target File Could Not Be Opened For Writing!");
+
+                if (rt == ERROR_EXPORT_LOG_OUT_OF_MEMORY)
+			message_display(seaudit_app->window->window, 
+					GTK_MESSAGE_WARNING,
+					"Log Export Failed!\n\nOut Of Memory!");
+
+                if (rt == ERROR_EXPORT_LOG_INVALID_LOG_VIEW)
+			message_display(seaudit_app->window->window, 
+					GTK_MESSAGE_WARNING,
+					"Log Export Failed!\n\nThe Log You Are Trying To Export Is Invalid!");
 	}
 
 	return;
@@ -365,6 +379,11 @@ int seaudit_write_log_file(const audit_log_view_t *log_view, const char *filenam
 	seaudit_multifilter_t *multifilter;
 	char *message_header;
 
+	assert(log_view != NULL && filename != NULL && (strlen(filename) < PATH_MAX));
+
+	if (log_view == NULL)
+		return ERROR_EXPORT_LOG_INVALID_LOG_VIEW;
+
 	audit_log = log_view->my_log;
 
 	multifilter = log_view->multifilter;
@@ -375,12 +394,12 @@ int seaudit_write_log_file(const audit_log_view_t *log_view, const char *filenam
 	log_file = fopen(filename, "w+");
 
 	if (log_file == NULL)
-		return 1;
+		return ERROR_EXPORT_LOG_BAD_FILE;
 
 	message_header = (char*) malloc((TIME_SIZE + STR_SIZE) * sizeof(char));
 
-	if(message_header == NULL)
-		return 1;
+	if (message_header == NULL)
+		return ERROR_EXPORT_LOG_OUT_OF_MEMORY;
 
 	for (i = 0; i < audit_log->num_msgs; i++) {	
 		message = audit_log->msg_list[i];
@@ -408,6 +427,8 @@ int seaudit_write_log_file(const audit_log_view_t *log_view, const char *filenam
 
 void generate_message_header(char *message_header, audit_log_t *audit_log, struct tm *date_stamp, int host)
 {
+	assert(message_header != NULL && audit_log != NULL && date_stamp != NULL);
+
 	strftime(message_header, TIME_SIZE, "%b %d %T", date_stamp);
 	strcat(message_header, " ");
 	strcat(message_header, audit_log_get_host(audit_log, host));
@@ -420,10 +441,12 @@ void write_avc_message_to_file(FILE *log_file, const avc_msg_t *message, const c
 {
 	int i;
 
+	assert(log_file != NULL && message != NULL && message_header != NULL && audit_log != NULL);
+
 	fprintf(log_file, "%s", message_header);
 
 	if (message->audit_header)
-		fprintf(log_file, "audit(%s): ", message->audit_header);
+		fprintf(log_file, "%s: ", message->audit_header);
 
 	fprintf(log_file, "avc:  %s  {", ((message->msg == AVC_GRANTED) ? "granted" : "denied"));
 
@@ -518,7 +541,10 @@ void write_avc_message_to_file(FILE *log_file, const avc_msg_t *message, const c
 
 void write_load_policy_message_to_file(FILE *log_file, const load_policy_msg_t *message, const char *message_header)
 {
-	fprintf(log_file, "%ssecurity:  %i users, %i roles, %i types\n", message_header, message->users, message->roles, message->types);
+
+	assert(log_file != NULL && message != NULL && message_header != NULL);
+
+	fprintf(log_file, "%ssecurity:  %i users, %i roles, %i types, %i bools\n", message_header, message->users, message->roles, message->types, message->bools);
 	fprintf(log_file, "%ssecurity:  %i classes, %i rules\n", message_header, message->classes, message->rules);
 
 	return;
@@ -527,6 +553,8 @@ void write_load_policy_message_to_file(FILE *log_file, const load_policy_msg_t *
 void write_boolean_message_to_file(FILE *log_file, const boolean_msg_t *message, const char *message_header, audit_log_t *audit_log)
 {
         int i;        
+
+	assert(log_file != NULL && message != NULL && message_header != NULL && audit_log != NULL);
 
         fprintf(log_file, "%ssecurity: committed booleans { ", message_header);
 
@@ -548,7 +576,14 @@ audit_log_view_t* seaudit_get_current_audit_log_view()
 	SEAuditLogViewStore *log_view_store;
 
         filtered_view = seaudit_window_get_current_view(seaudit_app->window);
+	
+	if (filtered_view == NULL)
+		return 0;
+
 	log_view_store = filtered_view->store;
+
+	if (log_view_store == NULL)
+		return 0;
 
 	return log_view_store->log_view;
 }
