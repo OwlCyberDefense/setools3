@@ -808,6 +808,8 @@ id_comma_list           : identifier
 tilde			: '~'
 			;
 asterisk		: '*'
+                        ;
+exclude                : '-'
 
 /* Jul 2002 nesting logic changed slightly */			;
 names           	: identifier
@@ -820,6 +822,8 @@ names           	: identifier
 			| tilde identifier
                         { if (insert_id("~", 0)) return -1;
 			  if (insert_separator(0)) return -1; }
+                        | identifier exclude { if (insert_id("-", 0)) return -1; } identifier
+                        { if (insert_separator(0)) return -1; }
 			| tilde nested_id_set
 	 		{ if (insert_id("~", 0)) return -1; 
 			  if (insert_separator(0)) return -1; }
@@ -850,7 +854,7 @@ nested_id_set           : '{' nested_id_list '}'
                         ;
 nested_id_list          : nested_id_element | nested_id_list nested_id_element
                         ;
-nested_id_element       : identifier | nested_id_set
+nested_id_element       : identifier | '-' { if (insert_id("-", 0)) return -1; } identifier | nested_id_set
 			;
 /* end add */
 identifier		: IDENTIFIER
@@ -1044,6 +1048,7 @@ static int add_avrule(int type, av_item_t **rlist, int *list_num) {
 	char *id;
 	av_item_t *item;
 	ta_item_t *titem;
+	bool_t subtract;
 
 	if(type == RULE_TE_ALLOW ||type == RULE_NEVERALLOW) 
 		sz = &(parse_policy->list_sz[POL_LIST_AV_ACC]);
@@ -1068,9 +1073,15 @@ static int add_avrule(int type, av_item_t **rlist, int *list_num) {
 	item->lineno = policydb_lineno;
 
 	/* source (domain) types/attribs */
+	subtract = FALSE;
 	while ((id = queue_remove(id_queue))) {
 		if(strcmp(id, "*") == 0) {
 			item->flags |= AVFLAG_SRC_STAR;
+			free(id);
+			continue;
+		}
+		if(strcmp(id, "-") == 0) {
+			subtract = TRUE;
 			free(id);
 			continue;
 		}
@@ -1091,6 +1102,10 @@ static int add_avrule(int type, av_item_t **rlist, int *list_num) {
 			return -1;
 		}
 		titem->type = idx_type;
+		if (subtract) {
+			titem->type |= IDX_SUBTRACT;
+			subtract = FALSE;
+		}
 		titem->idx = idx;
 		if(insert_ta_item(titem, &(item->src_types)) != 0) {
 			sprintf(errormsg, "failed ta_item insetion for source type id %s", id);
@@ -1101,9 +1116,15 @@ static int add_avrule(int type, av_item_t **rlist, int *list_num) {
 	}
 	
 	/* target object types/attribs */
+	subtract = FALSE;
 	while ((id = queue_remove(id_queue))) {
 		if(strcmp(id, "*") == 0) {
 			item->flags |= AVFLAG_TGT_STAR;
+			free(id);
+			continue;
+		}
+		if(strcmp(id, "-") == 0) {
+			subtract = TRUE;
 			free(id);
 			continue;
 		}
@@ -1124,6 +1145,10 @@ static int add_avrule(int type, av_item_t **rlist, int *list_num) {
 			return -1;
 		}
 		titem->type = idx_type;
+		if (subtract) {
+			titem->type |= IDX_SUBTRACT;
+			subtract = FALSE;
+		}
 		titem->idx = idx;
 		if(insert_ta_item(titem, &(item->tgt_types)) != 0) {
 			sprintf(errormsg, "failed ta_item insetion for target type id %s", id);
@@ -1271,6 +1296,7 @@ static int add_ttrule(int rule_type)
 	char *id;
 	tt_item_t *item;
 	ta_item_t *titem;
+	bool_t subtract;
 		
 	if (parse_policy->num_te_trans >= (parse_policy->list_sz[POL_LIST_TE_TRANS])) {
 		/* grow the dynamic array */
@@ -1290,9 +1316,15 @@ static int add_ttrule(int rule_type)
 	item->lineno = policydb_lineno;
 
 	/* source (domain) types/attribs */
+	subtract = FALSE;
 	while ((id = queue_remove(id_queue))) {
 		if(strcmp(id, "*") == 0) {
 			item->flags |= AVFLAG_SRC_STAR;
+			free(id);
+			continue;
+		}
+		if(strcmp(id, "-") == 0) {
+			subtract = TRUE;
 			free(id);
 			continue;
 		}
@@ -1313,6 +1345,10 @@ static int add_ttrule(int rule_type)
 			return -1;
 		}
 		titem->type = idx_type;
+		if (subtract) {
+			titem->type |= IDX_SUBTRACT;
+			subtract = FALSE;
+		}
 		titem->idx = idx;
 		if(insert_ta_item(titem, &(item->src_types)) != 0) {
 			sprintf(errormsg, "failed ta_item insetion for source type id %s\n", id);
@@ -1323,6 +1359,7 @@ static int add_ttrule(int rule_type)
 	}
 	
 	/* target object types/attribs */
+	subtract = FALSE;
 	while ((id = queue_remove(id_queue))) {
 		if(strcmp(id, "*") == 0) {
 			item->flags |= AVFLAG_TGT_STAR;
@@ -1346,6 +1383,11 @@ static int add_ttrule(int rule_type)
 			return -1;
 		}
 		titem->type = idx_type;
+		if(strcmp(id, "-") == 0) {
+			subtract = TRUE;
+			free(id);
+			continue;
+		}
 		titem->idx = idx;
 		if(insert_ta_item(titem, &(item->tgt_types)) != 0) {
 			sprintf(errormsg, "failed ta_item insetion for target type id %s\n", id);
