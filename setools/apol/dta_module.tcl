@@ -24,7 +24,12 @@ namespace eval Apol_Analysis_dta {
 	set forward_options_Dlg .forward_options_Dlg
 	variable adv_frame
 	variable b_forward_options
-					
+	variable cb_filters
+	variable progressDlg
+	set progressDlg .progress
+	variable progressmsg		""
+	variable progress_indicator	-1
+							
     	# Options Display Variables
 	variable display_type			""
 	variable display_attribute		""
@@ -32,6 +37,7 @@ namespace eval Apol_Analysis_dta {
 	variable display_direction		"forward"
 	variable endtype_sel			0
 	variable end_type			""
+	variable use_filters			0
 	
 	# Options State Variables
 	variable type_state			""
@@ -40,6 +46,7 @@ namespace eval Apol_Analysis_dta {
 	variable direction_state		"forward"
 	variable endtype_sel_state		0
 	variable end_type_state			""
+	variable use_filters_state		0
 	
 	# Current results display
 	variable dta_tree		""	
@@ -47,7 +54,10 @@ namespace eval Apol_Analysis_dta {
 	
 	# Array to hold multiple instances of the forward DTA advanced options dialog
 	variable f_opts
-	   	
+	# Result type filters dialog widgets
+	variable b_incl_all_perms
+	variable b_excl_all_perms
+	
     	# Defined Tag Names
 	variable title_tag		TITLE
 	variable title_type_tag		TITLE_TYPE
@@ -60,9 +70,6 @@ namespace eval Apol_Analysis_dta {
 	
     	# Register ourselves
     	Apol_Analysis::register_analysis_modules "Apol_Analysis_dta" "Domain Transition"
-    	
-    	# Provided to tkwait to prevent multiple clicks on an object in the Advanced Search options dialog.
-    	variable rendering_finished	0
     	
     	variable descriptive_text	"\n\nA forward domain transition analysis will determine all (target) \
     		domains to which a given (source) domain may transition.  For a forward domain \
@@ -132,11 +139,7 @@ proc Apol_Analysis_dta::forward_options_update_dialog {path_name} {
 	if {[array exists f_opts] && \
 	    [array names f_opts "$path_name,name"] != "" &&
 	    [winfo exists $f_opts($path_name,name)]} {
-		set rt [catch {Apol_Analysis_dta::forward_options_set_widgets_to_default_state $path_name} err]
-		if {$rt != 0} {
-			tk_messageBox -icon error -type ok -title "Error" -message "$err"
-			return -1
-		}
+		Apol_Analysis_dta::forward_options_set_widgets_to_default_state $path_name
 		raise $f_opts($path_name,name)
 		focus -force $f_opts($path_name,name)
 		
@@ -148,8 +151,35 @@ proc Apol_Analysis_dta::forward_options_update_dialog {path_name} {
 			Apol_Analysis_dta::forward_options_display_permissions $path_name
 		}
 	}
+}
 
-	return 0
+proc Apol_Analysis_dta::forward_options_disable_perms_textbox {path_name} {
+	variable f_opts
+	Apol_Analysis_dta::forward_options_clear_perms_text $path_name
+	$f_opts($path_name,perms_box) configure -state disabled
+}
+
+proc Apol_Analysis_dta::forward_options_configure_class_perms_section {path_name} {
+	variable f_opts
+	variable b_incl_all_perms
+	variable b_excl_all_perms
+	
+	if {[$f_opts($path_name,lbox_incl) get 0 end] == ""} {
+		$f_opts($path_name,class_listbox) selection clear 0 end
+		ApolTop::disable_tkListbox $f_opts($path_name,class_listbox) 
+	 	bind $f_opts($path_name,class_listbox) <<ListboxSelect>> ""
+		Apol_Analysis_dta::forward_options_disable_perms_textbox $path_name
+		$b_incl_all_perms configure -state disabled
+		$b_excl_all_perms configure -state disabled
+	} else {
+		ApolTop::enable_tkListbox $f_opts($path_name,class_listbox) 
+	 	bind $f_opts($path_name,class_listbox) <<ListboxSelect>> "Apol_Analysis_dta::forward_options_display_permissions $path_name"
+		$b_incl_all_perms configure -state normal
+		$b_excl_all_perms configure -state normal
+		# Select the top most item by default
+		$f_opts($path_name,class_listbox) selection set 0
+		Apol_Analysis_dta::forward_options_display_permissions $path_name
+	}
 }
 
 # ------------------------------------------------------------------------------
@@ -165,7 +195,8 @@ proc Apol_Analysis_dta::forward_options_include_types {remove_list_1 \
 						       remove_lbox \
 						       add_lbox \
 						       master_incl_types_list_1 \
-						       master_excl_types_list_1} {
+						       master_excl_types_list_1 \
+						       path_name} {
 	upvar #0 $remove_list_1 remove_list
 	upvar #0 $add_list_1 add_list
 	upvar #0 $master_incl_types_list_1 master_incl_types_list
@@ -193,8 +224,8 @@ proc Apol_Analysis_dta::forward_options_include_types {remove_list_1 \
 			}
 		    }
 		$remove_lbox selection clear 0 end
-	}  
-	return 0	
+	}  	
+	Apol_Analysis_dta::forward_options_configure_class_perms_section $path_name
 }
 
 # ------------------------------------------------------------------------------
@@ -210,7 +241,8 @@ proc Apol_Analysis_dta::forward_options_exclude_types {remove_list_1 \
 						       remove_lbox \
 						       add_lbox \
 						       master_incl_types_list_1 \
-						       master_excl_types_list_1} {
+						       master_excl_types_list_1 \
+						       path_name} {
 	upvar #0 $remove_list_1 remove_list
 	upvar #0 $add_list_1 add_list
 	upvar #0 $master_incl_types_list_1 master_incl_types_list
@@ -239,7 +271,7 @@ proc Apol_Analysis_dta::forward_options_exclude_types {remove_list_1 \
 		    }
 		    $remove_lbox selection clear 0 end
 	}  
-	return 0	
+	Apol_Analysis_dta::forward_options_configure_class_perms_section $path_name	
 }
 
 # ------------------------------------------------------------------------------
@@ -389,25 +421,36 @@ proc Apol_Analysis_dta::forward_options_include_exclude_permissions {which path_
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_dta::forward_options_change_obj_state_on_perm_select {path_name} {
 	variable f_opts
-	
+
 	set num_excluded 0	
 	# There may be multiple selected items, but we need the object class that is currently displayed in
 	# the text box. We have this index stored in our global class_selected_idx variable.
 	if {$f_opts($path_name,class_selected_idx) != "-1"} {
+		# Get the selected class string from the listbox
 		set class_sel [$f_opts($path_name,class_listbox) get $f_opts($path_name,class_selected_idx)]
+		# Check the string to see if it contains the special excluded tag
 		set idx [string first $Apol_Analysis_dta::excluded_tag $class_sel]
 		if {$idx != -1} {
+			# If the excluded tag was found, extract just the class name portion from the string
 			set class_sel [string range $class_sel 0 [expr $idx - 1]]
 		}
+
+		# Extract the class/value pairs from the array
 		set class_elements [array get f_opts "$path_name,perm_status_array,$class_sel,*"]
+
 		if {$class_elements != ""} {
-			set num_perms_for_class [expr {[llength $class_elements] / 2}]
-			for {set i 0} {$i < [llength $class_elements]} {incr i} {
+			# The number of permissions for the class is equal to the number of pairs of elements
+			set num_perms_for_class [expr [llength $class_elements] / 2]
+			set len [llength $class_elements]
+			for {set i 0} {$i < $len} {incr i} {
+				# Skip the class string element
 				incr i
 				if {[string equal [lindex $class_elements $i] "exclude"]} {
 					incr num_excluded	
 				}
 			}
+
+			# Get a copy of the list class items from the listbox
 			set items [$f_opts($path_name,class_listbox) get 0 end]
 			# If the total all permissions for the object have been excluded then inform the user. 
 			if {$num_excluded == $num_perms_for_class} {
@@ -426,7 +469,8 @@ proc Apol_Analysis_dta::forward_options_change_obj_state_on_perm_select {path_na
 					$f_opts($path_name,class_selected_idx) "$class_sel"]
 			}
 			$f_opts($path_name,permissions_title_frame) configure \
-				-text "Permissions for [$f_opts($path_name,class_listbox) get $f_opts($path_name,class_selected_idx)]:"
+				-text "Permissions for [$f_opts($path_name,class_listbox) get \
+					$f_opts($path_name,class_selected_idx)]:"
 		}
 	}
 	
@@ -440,7 +484,6 @@ proc Apol_Analysis_dta::forward_options_change_obj_state_on_perm_select {path_na
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_dta::forward_options_embed_perm_buttons {list_b class perm path_name} {
 	variable f_opts
-	variable rendering_finished
 	
  	# Frames
 	set frame [frame $list_b.f:$class:$perm -bd 0 -bg white]
@@ -473,7 +516,6 @@ proc Apol_Analysis_dta::forward_options_embed_perm_buttons {list_b class perm pa
 	pack $lbl1 $lbl2 -side left -anchor nw
 	pack $cb_include $cb_exclude -side left -anchor nw
 	
-	set rendering_finished 1
 	# Return the pathname of the frame to embed.
  	return $frame
 }
@@ -502,27 +544,13 @@ proc Apol_Analysis_dta::forward_options_clear_perms_text {path_name} {
 		}
 	}
 	$f_opts($path_name,perms_box) delete 1.0 end
+	$f_opts($path_name,perms_box) configure -state disabled
 	return 0
 }
 
-# ------------------------------------------------------------------------------
-# Command Apol_Analysis_dta::forward_options_display_permissions 
-# 	- Displays permissions for the selected object class in the permissions 
-#	  text box.
-#	- Takes the selected object class index as the only argument. 
-#	  This proc also searches the class string for the sequence " (Excluded)"
-# 	  in order to process the class name only. This is because a Tk listbox
-# 	  is being used and does not provide a -text option for items in the 
-# 	  listbox.
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_dta::forward_options_display_permissions {path_name} {
+proc Apol_Analysis_dta::render_permissions {path_name} {
 	variable f_opts
-		
-	if {[$f_opts($path_name,class_listbox) get 0 end] == "" || \
-	    [llength [$f_opts($path_name,class_listbox) curselection]] > 1} {
-		# Nothing in the listbox; return
-		return 0
-	}
+	
 	set class_idx [$f_opts($path_name,class_listbox) curselection]
 	if {$class_idx == ""} {
 		# Something was simply deselected.
@@ -546,7 +574,7 @@ proc Apol_Analysis_dta::forward_options_display_permissions {path_name} {
 		return -1
 	}
 	set perms_list [lsort $perms_list]
-	
+	$f_opts($path_name,perms_box) configure -state normal
 	foreach perm $perms_list { 
 		# If this permission does not exist in our perm status array, this means
 		# that a saved query was loaded and the permission defined in the policy
@@ -559,14 +587,33 @@ proc Apol_Analysis_dta::forward_options_display_permissions {path_name} {
 			$f_opts($path_name,perms_box) $class_name $perm $path_name] 
 		$f_opts($path_name,perms_box) insert end "\n"
 	}
-	tkwait variable Apol_Analysis_dta::rendering_finished
-	set rendering_finished 0
-	update idletasks
 	# Disable the text widget. 
 	$f_opts($path_name,perms_box) configure -state disabled
-	set f_opts($path_name,class_selected_idx) $class_idx
+}
+
+# ------------------------------------------------------------------------------
+# Command Apol_Analysis_dta::forward_options_display_permissions 
+# 	- Displays permissions for the selected object class in the permissions 
+#	  text box.
+#	- Takes the selected object class index as the only argument. 
+#	  This proc also searches the class string for the sequence " (Excluded)"
+# 	  in order to process the class name only. This is because a Tk listbox
+# 	  is being used and does not provide a -text option for items in the 
+# 	  listbox.
+# ------------------------------------------------------------------------------
+proc Apol_Analysis_dta::forward_options_display_permissions {path_name} {
+	variable f_opts
 	
-	return 0
+	if {[$f_opts($path_name,class_listbox) get 0 end] == "" || \
+	    [llength [$f_opts($path_name,class_listbox) curselection]] > 1} {
+		# Nothing in the listbox; return
+		return 
+	}
+	bind $f_opts($path_name,class_listbox) <<ListboxSelect>> ""
+	set f_opts($path_name,class_selected_idx) [$f_opts($path_name,class_listbox) curselection]
+	event generate $f_opts($path_name,perms_box) <<Rendering>> -when now 
+	update idletasks
+	bind $f_opts($path_name,class_listbox) <<ListboxSelect>> "Apol_Analysis_dta::forward_options_display_permissions $path_name"
 }
 
 # ------------------------------------------------------------------------------
@@ -602,14 +649,14 @@ proc Apol_Analysis_dta::forward_options_initialize_vars {path_name} {
 		Apol_Analysis_dta::forward_options_initialize_objs_and_perm_filters $path_name
 		
   	        # Initialize included/excluded intermediate types section to default values
- 		set f_opts($path_name,master_incl_types_list) $Apol_Types::typelist 
- 		set idx [lsearch -exact $f_opts($path_name,master_incl_types_list) "self"]
+ 		set f_opts($path_name,master_excl_types_list) $Apol_Types::typelist 
+ 		set idx [lsearch -exact $f_opts($path_name,master_excl_types_list) "self"]
   		if {$idx != -1} {
- 			set f_opts($path_name,master_incl_types_list) \
- 				 [lreplace $f_opts($path_name,master_incl_types_list) \
+ 			set f_opts($path_name,master_excl_types_list) \
+ 				 [lreplace $f_opts($path_name,master_excl_types_list) \
  				  $idx $idx]
   		}   
- 	        set f_opts($path_name,master_excl_types_list) $f_opts($path_name,filtered_excl_types)
+ 	        set f_opts($path_name,master_incl_types_list) ""
  	        set f_opts($path_name,filtered_incl_types) $f_opts($path_name,master_incl_types_list)
  	        set f_opts($path_name,filtered_excl_types) $f_opts($path_name,master_excl_types_list)
   	        set f_opts($path_name,filter_vars_init) 1
@@ -659,7 +706,7 @@ proc Apol_Analysis_dta::forward_options_set_widgets_to_default_state {path_name}
 		}
 		incr class_lbox_idx
 	}
-
+	update
 	Apol_Analysis_dta::forward_options_configure_combo_state \
 		Apol_Analysis_dta::f_opts($path_name,incl_attrib_cb_sel) \
 		$f_opts($path_name,combo_incl) \
@@ -672,8 +719,7 @@ proc Apol_Analysis_dta::forward_options_set_widgets_to_default_state {path_name}
 		$f_opts($path_name,lbox_excl) \
 		excl \
 		$path_name
-	
-	return 0
+	Apol_Analysis_dta::forward_options_configure_class_perms_section $path_name
 }
 
 # ------------------------------------------------------------------------------
@@ -749,7 +795,7 @@ proc Apol_Analysis_dta::forward_options_copy_object {path_name new_object} {
 	variable f_opts
 	upvar 1 $new_object object 
 	
-	if {![array exists f_opts] && [array names f_opts "$path_name,name"] == ""} {
+	if {![array exists f_opts] || [array names f_opts "$path_name,name"] == ""} {
 		Apol_Analysis_dta::forward_options_create_object $path_name
 	}
 	array set object [array get f_opts "$path_name,*"]
@@ -791,8 +837,6 @@ proc Apol_Analysis_dta::forward_options_refresh_dialog {path_name} {
 		Apol_Analysis_dta::forward_options_create_object $path_name	
 		Apol_Analysis_dta::forward_options_update_dialog $path_name
 	}
-	
-	return 0
 } 
 
 # ------------------------------------------------------------------------------
@@ -818,6 +862,8 @@ proc Apol_Analysis_dta::forward_options_clear_all_lbox_items {lbox} {
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_dta::forward_options_create_dialog {path_name title_txt} {
 	variable f_opts 
+	variable b_incl_all_perms
+	variable b_excl_all_perms
 	
 	if {![ApolTop::is_policy_open]} {
 	    tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened!"
@@ -837,7 +883,7 @@ proc Apol_Analysis_dta::forward_options_create_dialog {path_name title_txt} {
 	    	# Create a new options dialog object
     		Apol_Analysis_dta::forward_options_create_object $path_name
     	}
-
+	
     	# Create the top-level dialog and subordinate widgets
     	toplevel $f_opts($path_name,name)
      	wm withdraw $f_opts($path_name,name)	
@@ -853,8 +899,8 @@ proc Apol_Analysis_dta::forward_options_create_dialog {path_name title_txt} {
         pack $topf -fill both -expand yes -padx 10 -pady 10
       
    	# Main Titleframes
-   	set objs_frame  [TitleFrame [$pw1 getframe 0].objs_frame -text "Filter target domains by object class permissions:"]
-        set types_frame [TitleFrame [$pw1 getframe 1].types_frame -text "Filter target domains by object type(s):"]
+   	set objs_frame  [TitleFrame [$pw1 getframe 1].objs_frame -text "Filter target domains by object class access:"]
+        set types_frame [TitleFrame [$pw1 getframe 0].types_frame -text "Filter target domains by object type(s) access:"]
         
         set top_lbl [Label [$objs_frame getframe].top_lbl -justify left -font $ApolTop::dialog_font \
         	-text "Configure the query to search for transitions to domains with access to specific object classes:"]
@@ -885,8 +931,10 @@ proc Apol_Analysis_dta::forward_options_create_dialog {path_name title_txt} {
 		-cursor $ApolTop::prevCursor \
 		-bg white -font $ApolTop::text_font]
 	$sw_list setwidget $f_opts($path_name,perms_box)
-
-	set bframe [frame [$classes_box getframe].bframe]
+	bind $f_opts($path_name,perms_box) <<Rendering>> \
+		"Apol_Analysis_dta::render_permissions $path_name"
+		
+	set bframe [frame [$f_opts($path_name,permissions_title_frame) getframe].bframe]
 	set b_incl_all_perms [Button $bframe.b_incl_all_perms -text "Include All Perms" \
 		-helptext "Select this to include all permissions for the selected object in the query." \
 		-command "Apol_Analysis_dta::forward_options_include_exclude_permissions \
@@ -897,12 +945,12 @@ proc Apol_Analysis_dta::forward_options_create_dialog {path_name title_txt} {
 				exclude $path_name"]
 		
 	# Bindings
-	set bind_tag_id [string trim $path_name "."]
-	bindtags $f_opts($path_name,class_listbox) \
-		[linsert [bindtags $Apol_Analysis_dta::f_opts($path_name,class_listbox)] 3 ${bind_tag_id}_dta_object_list_Tag]  
-        bind ${bind_tag_id}_dta_object_list_Tag <<ListboxSelect>> "Apol_Analysis_dta::forward_options_display_permissions \
-        						$path_name"
-           
+	bind $f_opts($path_name,class_listbox) <<ListboxSelect>> \
+        	"Apol_Analysis_dta::forward_options_display_permissions $path_name"
+	bind $f_opts($path_name,class_listbox) <Double-Button-1> ""
+	bind $f_opts($path_name,class_listbox) <Triple-Button-1> ""
+	bind $f_opts($path_name,class_listbox) <Quadruple-Button-1> ""	
+        		           
 	pack $classes_box -padx 2 -side left -fill both -expand yes
         pack $f_opts($path_name,permissions_title_frame) -pady 2 -padx 2 -fill both -expand yes
         pack $pw1 -fill both -expand yes
@@ -934,19 +982,14 @@ proc Apol_Analysis_dta::forward_options_create_dialog {path_name title_txt} {
 	$sw_incl setwidget $f_opts($path_name,lbox_incl)
 	$sw_excl setwidget $f_opts($path_name,lbox_excl)
 	
-	bindtags $f_opts($path_name,lbox_incl) \
-		[linsert [bindtags $Apol_Analysis_dta::f_opts($path_name,lbox_incl)] 3 ${bind_tag_id}_lbox_incl_Tag]
-	bindtags $f_opts($path_name,lbox_excl) \
-		[linsert [bindtags $Apol_Analysis_dta::f_opts($path_name,lbox_excl)] 3 ${bind_tag_id}_lbox_excl_Tag]
+	bind $f_opts($path_name,lbox_incl) <<ListboxSelect>> "focus -force $f_opts($path_name,lbox_incl)"
+	bind $f_opts($path_name,lbox_excl) <<ListboxSelect>> "focus -force $f_opts($path_name,lbox_excl)"
 	
-	bind ${bind_tag_id}_lbox_incl_Tag <<ListboxSelect>> "focus -force $f_opts($path_name,lbox_incl)"
-	bind ${bind_tag_id}_lbox_excl_Tag <<ListboxSelect>> "focus -force $f_opts($path_name,lbox_excl)"
-	
-	bind ${bind_tag_id}_lbox_incl_Tag <KeyPress> "ApolTop::tklistbox_select_on_key_callback \
+	bind $f_opts($path_name,lbox_incl) <KeyPress> "ApolTop::tklistbox_select_on_key_callback \
 			$Apol_Analysis_dta::f_opts($path_name,lbox_incl) \
 			Apol_Analysis_dta::f_opts($path_name,filtered_incl_types) \
 			%K"
-	bind ${bind_tag_id}_lbox_excl_Tag <KeyPress> "ApolTop::tklistbox_select_on_key_callback \
+	bind $f_opts($path_name,lbox_excl) <KeyPress> "ApolTop::tklistbox_select_on_key_callback \
 			$Apol_Analysis_dta::f_opts($path_name,lbox_excl) \
 			Apol_Analysis_dta::f_opts($path_name,filtered_excl_types) \
 			%K"
@@ -959,7 +1002,8 @@ proc Apol_Analysis_dta::forward_options_create_dialog {path_name title_txt} {
 			$Apol_Analysis_dta::f_opts($path_name,lbox_excl) \
 			$Apol_Analysis_dta::f_opts($path_name,lbox_incl) \
 			Apol_Analysis_dta::f_opts($path_name,master_incl_types_list) \
-			Apol_Analysis_dta::f_opts($path_name,master_excl_types_list)"]
+			Apol_Analysis_dta::f_opts($path_name,master_excl_types_list) \
+			$path_name"]
 	set exclude_bttn [Button $middle_f.exclude_bttn -text "-->" \
 		-helptext "Exclude this type from the query" -width 8 \
 		-command "Apol_Analysis_dta::forward_options_exclude_types \
@@ -968,7 +1012,8 @@ proc Apol_Analysis_dta::forward_options_create_dialog {path_name title_txt} {
 			$Apol_Analysis_dta::f_opts($path_name,lbox_incl) \
 			$Apol_Analysis_dta::f_opts($path_name,lbox_excl) \
 			Apol_Analysis_dta::f_opts($path_name,master_incl_types_list) \
-			Apol_Analysis_dta::f_opts($path_name,master_excl_types_list)"]
+			Apol_Analysis_dta::f_opts($path_name,master_excl_types_list) \
+			$path_name"]
 	set b_incl_all_sel [Button $buttons_incl_f.b_incl_all_sel -text "Select All" \
 		-command "Apol_Analysis_dta::forward_options_select_all_lbox_items \
 			$Apol_Analysis_dta::f_opts($path_name,lbox_incl)"]
@@ -1069,30 +1114,23 @@ proc Apol_Analysis_dta::forward_options_create_dialog {path_name title_txt} {
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_dta::close { } {   
 	Apol_Analysis_dta::reset_variables
+	
      	$Apol_Analysis_dta::combo_attribute configure -values ""
+     	$Apol_Analysis_dta::combo_domain configure -values ""
 	$Apol_Analysis_dta::combo_attribute configure -state disabled -entrybg $ApolTop::default_bg_color
+	
 	Apol_Analysis_dta::configure_widgets_for_dta_direction
         Apol_Analysis_dta::config_attrib_comboBox_state
-	$Apol_Analysis_dta::combo_domain configure -values ""
+	Apol_Analysis_dta::config_endtype_state
 	
 	Apol_Analysis_dta::forward_options_destroy_all_dialogs_on_open
-     	#Apol_Analysis_dta::forward_options_destroy_dialog $Apol_Analysis_dta::forward_options_Dlg
-	#Apol_Analysis_dta::forward_options_destroy_object $Apol_Analysis_dta::forward_options_Dlg
-
-     	return 0
 } 
 
 # ------------------------------------------------------------------------------
 #  Command Apol_Analysis_dta::open
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_dta::open { } {  
-	variable display_attrib_sel
-	
 	Apol_Analysis_dta::populate_ta_list	
-	# Have the attributes checkbutton OFF by default
-	set display_attrib_sel	0
-	Apol_Analysis_dta::configure_widgets_for_dta_direction
-	Apol_Analysis_dta::config_attrib_comboBox_state
 	Apol_Analysis_dta::change_types_list	
      	return 0
 } 
@@ -1101,14 +1139,7 @@ proc Apol_Analysis_dta::open { } {
 #  Command Apol_Analysis_dta::initialize
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_dta::initialize { } { 	
-	Apol_Analysis_dta::reset_variables
-	if {[ApolTop::is_policy_open]} {
-	     	# Have the attributes checkbutton OFF by default
-		set Apol_Analysis_dta::display_attrib_sel	0
-		Apol_Analysis_dta::configure_widgets_for_dta_direction
-		Apol_Analysis_dta::config_attrib_comboBox_state
-		Apol_Analysis_dta::change_types_list	
-	}
+	
      	return 0
 } 
 
@@ -1134,13 +1165,13 @@ proc Apol_Analysis_dta::display_mod_options { opts_frame } {
 	
 	# Selecting a new module will reset current values
 	Apol_Analysis_dta::reset_variables
-	
 	Apol_Analysis_dta::forward_options_refresh_dialog \
 		$Apol_Analysis_dta::forward_options_Dlg	
      	
      	Apol_Analysis_dta::create_options $opts_frame
      	Apol_Analysis_dta::configure_widgets_for_dta_direction
      	Apol_Analysis_dta::populate_ta_list
+     	Apol_Analysis_dta::config_endtype_state
      	
      	if {[ApolTop::is_policy_open]} {
 	     	# Have the attributes checkbutton OFF by default
@@ -1161,7 +1192,8 @@ proc Apol_Analysis_dta::load_dta_advanced_query_options {query_options curr_idx 
 	Apol_Analysis_dta::forward_options_destroy_object $path_name
 	# Create a new forward DTA options object
 	Apol_Analysis_dta::forward_options_create_object $path_name
-	
+	# Clear our list
+	set f_opts($path_name,master_excl_types_list) ""
 	# Now we begin our gory parsing! Hold onto your seat!
         # Set our counter variable to the next element in the query options list, which is now the 8th element 
         # We need a counter variable at this point because we start to parse list elements.
@@ -1292,19 +1324,14 @@ proc Apol_Analysis_dta::load_dta_advanced_query_options {query_options curr_idx 
 			puts "$type\n"	
 		}
 	}
-	set tmp_list $f_opts($path_name,master_incl_types_list)
-      	foreach type $tmp_list {
+      	foreach type $Apol_Types::typelist {
 		if {$type != "self"} {
-			# Search the master excluded inter types list to see if we need 
-			# to remove this type from the master included inter types list.
+			# Search the master excluded inter types list
 			set idx [lsearch -exact $f_opts($path_name,master_excl_types_list) $type]
-			if {$idx != -1} {
-				# Type was found in the excluded list, so remove from master included list
-				set idx [lsearch -exact $f_opts($path_name,master_incl_types_list) $type]
-				# We don't check if the idx is -1 because we know it exists in the list
+			if {$idx == -1} {
+				# Type was not found in the excluded list, so add to master included list
      				set f_opts($path_name,master_incl_types_list) \
-     					[lreplace $f_opts($path_name,master_incl_types_list) \
-     					$idx $idx]
+     					[lappend f_opts($path_name,master_incl_types_list) $type]
      			}
      		}
 	}   
@@ -1345,6 +1372,41 @@ proc Apol_Analysis_dta::load_dta_advanced_query_options {query_options curr_idx 
 	return $i	
 }
 
+proc Apol_Analysis_dta::parse_name_value_pairs {query_options curr_idx} { 
+	variable endtype_sel_state			
+	variable end_type_state			
+	variable use_filters_state
+	
+	set i $curr_idx
+	while {$i != [llength $query_options]} {
+		set tmp [string trim [lindex $query_options $i] "\{\}"]
+        	# name:value pairs. 
+        	switch -exact -- $tmp {
+        		"End_Type_Bool" { 
+        			incr i
+				set endtype_sel_state [lindex $query_options $i]    
+			}
+			"End_Type_String" {
+				incr i
+				if {[lindex $query_options $i] != "\{\}"} {
+					set tmp [string trim [lindex $query_options $i] "\{\}"]
+			        	set end_type_state $tmp  
+			        }
+			}
+			"Use_Filters_Bool" {
+				incr i
+			        set use_filters_state [lindex $query_options $i] 
+			}
+			default {
+				puts "Error: Unknown query option name encountered ([lindex $query_options $i])."
+			}
+        	}
+        	incr i
+        }
+     
+	return $i
+} 
+
 # ------------------------------------------------------------------------------
 #  Command Apol_Analysis_dta::load_query_options
 # ------------------------------------------------------------------------------
@@ -1374,9 +1436,8 @@ proc Apol_Analysis_dta::load_query_options { file_channel parentDlg } {
 	}
 	
 	# Re-format the query options list into a string where all elements are seperated
-	# by a single space. Then split this string into a list using space and colon characters
-	# as the delimeters.	
-	set query_options_tmp [split [join $query_options_tmp " "] " :"]
+	# by a single space. Then split this string into a list using whitespace as the delimeter.	
+	set query_options_tmp [split [join $query_options_tmp " "] " "]
 	set query_options [ApolTop::strip_list_of_empty_items $query_options_tmp]
 	if {$query_options == ""} {
 		return -code error "No query parameters were found."
@@ -1416,11 +1477,16 @@ proc Apol_Analysis_dta::load_query_options { file_channel parentDlg } {
      		set i 5
      		set i [Apol_Analysis_dta::load_dta_advanced_query_options $query_options $i $path_name $parentDlg]
      	}
-  								 	
+  	incr i
+  	
+  	# As of version 1.6 we parse name:value pairs
+	Apol_Analysis_dta::parse_name_value_pairs $query_options $i 
+								 	
 	# After updating any display variables, must configure widgets accordingly
 	Apol_Analysis_dta::update_display_variables 
 	Apol_Analysis_dta::configure_widgets_for_dta_direction
 	Apol_Analysis_dta::config_attrib_comboBox_state	
+	Apol_Analysis_dta::config_endtype_state
 	
 	if {[lindex $query_options 4]} { 
 		Apol_Analysis_dta::forward_options_update_dialog $path_name
@@ -1446,6 +1512,9 @@ proc Apol_Analysis_dta::save_query_options {module_name file_channel file_name} 
 	variable display_attribute		
 	variable display_attrib_sel
 	variable display_direction
+	variable endtype_sel			
+	variable end_type			
+	variable use_filters			   	
 	# Forward DTA advanced search variables
 	variable f_opts
 	variable forward_options_Dlg
@@ -1477,16 +1546,28 @@ proc Apol_Analysis_dta::save_query_options {module_name file_channel file_name} 
 			$f_opts($forward_options_Dlg,incl_attrib_combo_value) \
 			$f_opts($forward_options_Dlg,excl_attrib_combo_value) \
 			$f_opts($forward_options_Dlg,incl_attrib_cb_sel) \
-			$f_opts($forward_options_Dlg,excl_attrib_cb_sel)]
+			$f_opts($forward_options_Dlg,excl_attrib_cb_sel) \
+	     		"End_Type_Bool" \
+	     		$endtype_sel \
+	     		"End_Type_String" \
+	     		$end_type \
+	     		"Use_Filters_Bool" \
+	     		$use_filters]
 	} else {
 		set options [list \
 	     		$display_type \
 	     		$display_attribute \
 	     		$display_attrib_sel \
 	     		$display_direction \
-	     		0]
+	     		0 \
+	     		"End_Type_Bool" \
+	     		$endtype_sel \
+	     		"End_Type_String" \
+	     		$end_type \
+	     		"Use_Filters_Bool" \
+	     		$use_filters]
 	}
-		     	
+		 
      	puts $file_channel "$module_name"
 	puts $file_channel "$options"
      	return 0
@@ -1500,6 +1581,9 @@ proc Apol_Analysis_dta::get_current_results_state { } {
 	variable display_attribute		
 	variable display_attrib_sel
 	variable display_direction
+	variable endtype_sel			
+	variable end_type			
+	variable use_filters	
 	variable dta_tree
 	variable dta_info_text
 	# Advanced foward options DTA variables
@@ -1527,7 +1611,11 @@ proc Apol_Analysis_dta::get_current_results_state { } {
 		$f_opts($forward_options_Dlg,incl_attrib_combo_value) \
 		$f_opts($forward_options_Dlg,excl_attrib_combo_value) \
 		$f_opts($forward_options_Dlg,incl_attrib_cb_sel) \
-		$f_opts($forward_options_Dlg,excl_attrib_cb_sel)]
+		$f_opts($forward_options_Dlg,excl_attrib_cb_sel) \
+		$f_opts($forward_options_Dlg,class_selected_idx) \
+		$endtype_sel \
+		$end_type \
+		$use_filters]
      	return $options
 } 
 
@@ -1539,6 +1627,9 @@ proc Apol_Analysis_dta::set_display_to_results_state { query_options } {
 	variable attribute_state		
 	variable attrib_selected_state 
 	variable direction_state
+	variable endtype_sel_state			
+	variable end_type_state			
+	variable use_filters_state	
 	variable dta_tree
 	variable dta_info_text
 	# Advanced foward options DTA variables
@@ -1579,12 +1670,18 @@ proc Apol_Analysis_dta::set_display_to_results_state { query_options } {
         set f_opts($forward_options_Dlg,excl_attrib_combo_value) 	[lindex $query_options 12]
         set f_opts($forward_options_Dlg,incl_attrib_cb_sel) 		[lindex $query_options 13]
         set f_opts($forward_options_Dlg,excl_attrib_cb_sel) 		[lindex $query_options 14]
+        set f_opts($forward_options_Dlg,class_selected_idx)		[lindex $query_options 15]
+        set endtype_sel_state	[lindex $query_options 16]		
+	set end_type_state	[lindex $query_options 17]	 	
+	set use_filters_state	[lindex $query_options 18]
         set f_opts($forward_options_Dlg,filter_vars_init) 		1
     
 	# After updating any display variables, must configure widgets accordingly
 	Apol_Analysis_dta::update_display_variables 
 	Apol_Analysis_dta::configure_widgets_for_dta_direction
 	Apol_Analysis_dta::config_attrib_comboBox_state	
+	Apol_Analysis_dta::config_endtype_state
+	
 	if { $attribute_state != "" } {
 		# Need to change the types list to reflect the currently selected attrib and then reset the 
 		# currently selected type in the types combo box. 
@@ -1593,15 +1690,11 @@ proc Apol_Analysis_dta::set_display_to_results_state { query_options } {
 	}
 	
 	if {[winfo exists $Apol_Analysis_dta::forward_options_Dlg]} {
-		set rt [catch {Apol_Analysis_dta::forward_options_update_dialog $forward_options_Dlg} err]
-		if {$rt != 0} {
-			tk_messageBox -icon error -type ok -title "Error" -message "$err"
-			return -1
-		}
+		Apol_Analysis_dta::forward_options_update_dialog $forward_options_Dlg
 		raise $Apol_Analysis_dta::forward_options_Dlg
 		focus $Apol_Analysis_dta::forward_options_Dlg
 	}
-	
+
      	return 0
 } 
 
@@ -1623,8 +1716,28 @@ proc Apol_Analysis_dta::free_results_data {query_options} {
 		$dta_info_text delete 0.0 end
 		destroy $dta_info_text
 	}
-	return 0
 }
+
+proc Apol_Analysis_dta::destroy_progressDlg {} {
+	variable progressDlg
+	
+	if {[winfo exists $progressDlg]} {
+		destroy $progressDlg
+	}
+} 
+
+proc Apol_Analysis_dta::display_progressDlg {} {
+     	variable progressDlg
+	    		
+	set Apol_Analysis_dta::progressmsg "Performing types relationship analysis..."
+	set progressBar [ProgressDlg $progressDlg \
+		-parent $ApolTop::mainframe \
+        	-textvariable Apol_Analysis_dta::progressmsg \
+        	-variable Apol_Analysis_dta::progress_indicator \
+        	-maximum 3 \
+        	-width 45]
+        update
+} 
 
 # ------------------------------------------------------------------------------
 #  Command Apol_Analysis_dta::do_analysis
@@ -1633,6 +1746,8 @@ proc Apol_Analysis_dta::do_analysis { results_frame } {
 	variable display_type		
 	variable display_attribute		
 	variable display_attrib_sel 
+	variable endtype_sel		
+	variable end_type
 	variable dta_tree
 	variable dta_info_text
 	# Advanced foward options DTA variables
@@ -1643,79 +1758,68 @@ proc Apol_Analysis_dta::do_analysis { results_frame } {
 	    tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened!"
 	    return -code error
         } 
+        Apol_Analysis_dta::display_progressDlg
+        
         # Initialize local variables
         set reverse 0
 	set num_object_classes 0
 	set perm_options ""
-        set filter_types 0
         set types ""
-	set objects_sel 0
-        set all_obj_types 0
-        	
+	set use_filters 0
+	
         # Only parse advanced options if this is a forward DTA analysis 
       	if {$Apol_Analysis_dta::display_direction == "forward"} {
-		# At this point we need to handle the data used by the advanced foward DTA options dialog.
-	        # If the advanced options object doesn't exist, then create it.
-		if {![array exists f_opts] || [array names f_opts "$forward_options_Dlg,name"] == ""} {
-			Apol_Analysis_dta::forward_options_create_object $forward_options_Dlg
-		}
-
-		foreach class $f_opts($forward_options_Dlg,class_list) {
-			set perms ""
-			# Make sure to strip out just the class name, as this may be an excluded class.
-			set idx [string first $Apol_Analysis_dta::excluded_tag $class]
-			if {$idx == -1} {
-				set class_elements [array names f_opts "$forward_options_Dlg,perm_status_array,$class,*"]
-				set class_added 0
-				foreach element $class_elements {
-					set perm [lindex [split $element ","] 3]
-					if {[string equal $f_opts($element) "include"]} {
-						if {$class_added == 0} {
-							incr num_object_classes 
-							set perm_options [lappend perm_options $class]
-							set class_added 1
-						}	
-						set perms [lappend perms $perm]
-					}
-				}
-				if {$perms != ""} {
-					set perm_options [lappend perm_options [llength $perms]]
-					foreach perm $perms {
-						set perm_options [lappend perm_options $perm]
-					}
-				}	
+      		if {$Apol_Analysis_dta::use_filters} {
+			set types $f_opts($forward_options_Dlg,filtered_incl_types)
+		     	
+			# At this point we need to handle the data used by the advanced foward DTA options dialog.
+		        # If the advanced options object doesn't exist, then create it.
+			if {![array exists f_opts] || [array names f_opts "$forward_options_Dlg,name"] == ""} {
+				Apol_Analysis_dta::forward_options_create_object $forward_options_Dlg
 			}
-		}
-		set tmp_list [lsort $Apol_Types::typelist]
-		set idx [lsearch -exact $tmp_list "self"]
-		if {$idx != -1} {
-			set tmp_list [lreplace $tmp_list $idx $idx]
-		}
-		if {$tmp_list == [lsort $f_opts($forward_options_Dlg,filtered_incl_types)]} {
-			set all_obj_types 1
-		}
-		set types $f_opts($forward_options_Dlg,filtered_incl_types)
+	
+			foreach class $f_opts($forward_options_Dlg,class_list) {
+				set perms ""
+				# Make sure to strip out just the class name, as this may be an excluded class.
+				set idx [string first $Apol_Analysis_dta::excluded_tag $class]
+				if {$idx == -1} {
+					set class_elements [array names f_opts "$forward_options_Dlg,perm_status_array,$class,*"]
+					set class_added 0
+					foreach element $class_elements {
+						set perm [lindex [split $element ","] 3]
+						if {[string equal $f_opts($element) "include"]} {
+							if {$class_added == 0} {
+								incr num_object_classes 
+								set perm_options [lappend perm_options $class]
+								set class_added 1
+							}	
+							set perms [lappend perms $perm]
+						}
+					}
+					if {$perms != ""} {
+						set perm_options [lappend perm_options [llength $perms]]
+						foreach perm $perms {
+							set perm_options [lappend perm_options $perm]
+						}
+					}	
+				}
+			}
+			set use_filters 1
+		} 
 	} else {
 		set reverse 1
 	}
-		
-	if {$num_object_classes} {	
-		set objects_sel 1
-	} 
-	if {$types != ""} {   
-		set filter_types 1
-	} 
 
      	set rt [catch {set results [apol_DomainTransitionAnalysis \
      		$reverse \
      		$display_type \
-     		$objects_sel \
+     		$use_filters \
      		$num_object_classes \
      		$perm_options \
-		$filter_types \
 		$types \
-		$all_obj_types]} err]
-		
+		$endtype_sel \
+		$end_type]} err]
+	Apol_Analysis_dta::destroy_progressDlg	
      	if {$rt != 0} {	
 	        tk_messageBox -icon error -type ok -title "Error" -message "$err"
 		return -code error
@@ -1724,12 +1828,12 @@ proc Apol_Analysis_dta::do_analysis { results_frame } {
 	set query_args [list \
 		$reverse \
      		$display_type \
-     		$objects_sel \
+     		$use_filters \
      		$num_object_classes \
      		$perm_options \
-		$filter_types \
 		$types \
-		$all_obj_types]
+		$endtype_sel \
+		$end_type]
 
 	set dta_tree [Apol_Analysis_dta::create_resultsDisplay $results_frame $reverse]
 	set rt [catch {Apol_Analysis_dta::create_result_tree_structure $dta_tree $results $query_args} err]
@@ -1758,12 +1862,18 @@ proc Apol_Analysis_dta::reset_variables { } {
 	set Apol_Analysis_dta::display_attribute	""
 	set Apol_Analysis_dta::display_attrib_sel 	0
 	set Apol_Analysis_dta::display_direction	"forward"
+	set Apol_Analysis_dta::endtype_sel	0
+	set Apol_Analysis_dta::end_type		""
+	set Apol_Analysis_dta::use_filters	0
 	
 	# Reset state vars
 	set Apol_Analysis_dta::type_state		""
 	set Apol_Analysis_dta::attribute_state		""
 	set Apol_Analysis_dta::attrib_selected_state 	0
 	set Apol_Analysis_dta::direction_state		"forward"
+	set Apol_Analysis_dta::endtype_sel_state	0
+	set Apol_Analysis_dta::end_type_state		""
+	set Apol_Analysis_dta::use_filters_state	0
 	
 	# Reset results display variables
 	set Apol_Analysis_dta::dta_tree		""	
@@ -1779,12 +1889,17 @@ proc Apol_Analysis_dta::update_display_variables {  } {
 	variable display_attribute		
 	variable display_attrib_sel	
 	variable display_direction
+	variable endtype_sel			
+	variable end_type			
+	variable use_filters			
 	
 	set display_type $Apol_Analysis_dta::type_state	
 	set display_attribute $Apol_Analysis_dta::attribute_state
 	set display_attrib_sel $Apol_Analysis_dta::attrib_selected_state
 	set display_direction $Apol_Analysis_dta::direction_state
-	return 0
+	set endtype_sel	$Apol_Analysis_dta::endtype_sel_state
+	set end_type	$Apol_Analysis_dta::end_type_state
+	set use_filters	$Apol_Analysis_dta::use_filters_state
 }
 
 # ------------------------------------------------------------------------------
@@ -1811,8 +1926,7 @@ proc Apol_Analysis_dta::change_types_list { } {
 	variable combo_domain
 	variable display_attribute
 	
-	if { $display_attribute != "" } {
-		$combo_domain configure -text ""	  
+	if { $display_attribute != "" } {	  
 		set rt [catch {set attrib_typesList [apol_GetAttribTypesList $display_attribute]} err]		
 		if {$rt != 0} {
 			tk_messageBox -icon error -type ok -title "Error" -message "$err"
@@ -1823,7 +1937,6 @@ proc Apol_Analysis_dta::change_types_list { } {
 		if {$idx != -1} {
 			set attrib_typesList [lreplace $attrib_typesList $idx $idx]
 		}
-
 		$combo_domain configure -values $attrib_typesList
         } else {
         	set attrib_typesList $Apol_Types::typelist
@@ -1837,33 +1950,19 @@ proc Apol_Analysis_dta::change_types_list { } {
 }
 
 # ------------------------------------------------------------------------------
-#  Command Apol_Analysis_dta::display_forward_advanced_button
+#  Command Apol_Analysis_dta::enable_forward_advanced_button
 # ------------------------------------------------------------------------------
-proc Apol_Analysis_dta::display_forward_advanced_button { } {   
+proc Apol_Analysis_dta::enable_forward_advanced_button { } {  
 	variable b_forward_options
-	variable adv_frame
-	
-	if {![winfo exists $b_forward_options]} {
-		set b_forward_options [button $adv_frame.b_forward_options \
-			-text "Advanced search options" \
-			-command {Apol_Analysis_dta::forward_options_create_dialog \
-				$Apol_Analysis_dta::forward_options_Dlg \
-				"Forward DTA Advanced Search Options"}]
-	} 
-	pack $b_forward_options -side left -anchor nw -padx 4
-	return 0
+	$b_forward_options configure -state normal
 }
 
 # ------------------------------------------------------------------------------
-#  Command Apol_Analysis_dta::hide_forward_advanced_button
+#  Command Apol_Analysis_dta::disable_forward_advanced_button
 # ------------------------------------------------------------------------------
-proc Apol_Analysis_dta::hide_forward_advanced_button { } {  
+proc Apol_Analysis_dta::disable_forward_advanced_button { } {  
 	variable b_forward_options
-	  
-	if {[winfo exists $b_forward_options]} {
-		destroy $b_forward_options
-	}
-	return 0
+	$b_forward_options configure -state disabled
 }
 
 # ------------------------------------------------------------------------------
@@ -1872,15 +1971,20 @@ proc Apol_Analysis_dta::hide_forward_advanced_button { } {
 proc Apol_Analysis_dta::configure_widgets_for_dta_direction { } {    
      	variable entry_frame 	
 	variable cb_attrib
-	
+	variable cb_filters
+	variable forward_options_Dlg
 	if {$Apol_Analysis_dta::display_direction == "forward"} {
 		$entry_frame configure -text "Select source domain:"
 		$cb_attrib configure -text "Filter source domains to select using attribute:"
-		Apol_Analysis_dta::display_forward_advanced_button
+		$cb_filters configure -state normal
+		Apol_Analysis_dta::on_use_filters_button_selected
 	} else {
 		$entry_frame configure -text "Select target domain:"
 		$cb_attrib configure -text "Filter target domains to select using attribute:"
-		Apol_Analysis_dta::hide_forward_advanced_button
+		$cb_filters deselect
+		$cb_filters configure -state disabled
+		Apol_Analysis_dta::disable_forward_advanced_button
+		Apol_Analysis_dta::forward_options_destroy_dialog $forward_options_Dlg
 	}
      	return 0
 } 
@@ -1895,8 +1999,6 @@ proc Apol_Analysis_dta::config_attrib_comboBox_state { } {
 	
 	if { $display_attrib_sel } {
 		$combo_attribute configure -state normal -entrybg white
-		# Clear the starting domain value
-		set Apol_Analysis_dta::display_type ""
 		Apol_Analysis_dta::change_types_list
 	} else {
 		$combo_attribute configure -state disabled -entrybg  $ApolTop::default_bg_color
@@ -1980,7 +2082,7 @@ proc Apol_Analysis_dta::do_child_analysis { dta_tree selected_node } {
 			[lindex $query_args 4] \
 			[lindex $query_args 5] \
 			[lindex $query_args 6] \
-			[lindex $query_args 7]]} err]
+			[lindex $query_args 7]} err]
 			
 	     	if {$rt != 0} {	
 			tk_messageBox -icon error -type ok -title "Error" -message $err
@@ -2061,7 +2163,6 @@ proc Apol_Analysis_dta::get_target_type_data_end_idx { results_list idx } {
 #
 # ------------------------------------------------------------------------------
 proc Apol_Analysis_dta::render_target_type_data { data dta_info_text dta_tree node} {
-
 	$dta_info_text configure -state normal
         $dta_info_text delete 0.0 end
 	$dta_info_text configure -wrap none
@@ -2261,19 +2362,25 @@ proc Apol_Analysis_dta::render_target_type_data { data dta_info_text dta_tree no
 		}
 	}
 	set reverse [lindex [$dta_tree itemcget [$dta_tree nodes root] -data] 0]
-	if {!$reverse} {
+	if {!$reverse && $Apol_Analysis_dta::use_filters} {
 		incr idx
 		set num_additional [lindex $data $idx]
 		
-		set start_idx $end_idx
-		$dta_info_text insert end "\nAccess granted to this target domain:  "
+		$dta_info_text insert end "\n"
+		set start_idx [$dta_info_text index insert]
+		$dta_info_text insert end "The access filters you specified returned the following rules"
 		set end_idx [$dta_info_text index insert]
 		$dta_info_text tag add $Apol_Analysis_dta::subtitle_tag $start_idx $end_idx
-		set start_idx $end_idx
-		$dta_info_text insert end "$num_additional"
+		#set start_idx [$dta_info_text index insert]
+		#$dta_info_text insert end $target
+		#set end_idx [$dta_info_text index insert] 
+		#$dta_info_text tag add $Apol_Analysis_dta::title_type_tag $start_idx $end_idx
+		$dta_info_text insert end ": "
+		set start_idx [$dta_info_text index insert] 
+		$dta_info_text insert end "$num_additional\n"
 		set end_idx [$dta_info_text index insert]
 		$dta_info_text tag add $Apol_Analysis_dta::counters_tag $start_idx $end_idx
-		$dta_info_text insert end "rules\n"
+		#$dta_info_text insert end " rules\n"
 		for {set j 0 } { $j < $num_additional } { incr j }  {
 			incr idx
 			set rule [lindex $data $idx]
@@ -2408,6 +2515,14 @@ proc Apol_Analysis_dta::config_endtype_state {} {
         return 0
 }
 
+proc Apol_Analysis_dta::on_use_filters_button_selected {} {
+        if {$Apol_Analysis_dta::use_filters} {
+	       Apol_Analysis_dta::enable_forward_advanced_button
+	} else {
+	       Apol_Analysis_dta::disable_forward_advanced_button
+	}
+}
+
 # ------------------------------------------------------------------------------
 #  Command Apol_Analysis_dta::create_options
 # ------------------------------------------------------------------------------
@@ -2419,13 +2534,14 @@ proc Apol_Analysis_dta::create_options { options_frame } {
 	variable adv_frame
 	variable b_forward_options
 	variable entry_end
+	variable cb_filters
 	
 	set left_frame [frame $options_frame.left_frame]
-	set right_frame [frame $options_frame.right_frame]
+	set right_frame [TitleFrame $options_frame.right_frame -text "Optional result filters"]
 	set radio_frame [TitleFrame $left_frame.radio_frame -text "Select direction:"]
 	set entry_frame [TitleFrame $left_frame.entry_frame]
-	set adv_frame [frame $right_frame.adv_frame]
-	set endtype_frame [frame $right_frame.endtype_frame]
+	set adv_frame [frame [$right_frame getframe].adv_frame]
+	set endtype_frame [frame [$right_frame getframe].endtype_frame]
 	
 	# Domain transition section
     	set combo_domain [ComboBox [$entry_frame getframe].combo_domain -width 20 \
@@ -2451,24 +2567,31 @@ proc Apol_Analysis_dta::create_options { options_frame } {
 		-value reverse \
 		-command {Apol_Analysis_dta::configure_widgets_for_dta_direction}]
 	
-	set b_forward_options [button $adv_frame.b_forward_options -text "Advanced search options" \
+	set b_forward_options [button $adv_frame.b_forward_options -text "Access filters" \
 				-command {Apol_Analysis_dta::forward_options_create_dialog \
 					$Apol_Analysis_dta::forward_options_Dlg \
-					"Forward DTA Advanced Search Options"}]
+					"Access Filters"}]
 	set entry_end [Entry $endtype_frame.entry_end \
 		-helptext "You may enter a regular expression" \
 		-editable 1 -state disabled \
 		-textvariable Apol_Analysis_dta::end_type] 
 	set cb_endtype [checkbutton $endtype_frame.cb_endtype \
-	    	-text "Filter end types using regular expression:" \
+	    	-text "Filter result types using regular expression:" \
 		-variable Apol_Analysis_dta::endtype_sel \
 		-command {Apol_Analysis_dta::config_endtype_state}]
-					
-	pack $left_frame -side left -anchor nw
-	pack $right_frame -side right -anchor nw -fill x -expand yes 
-	pack $radio_frame -side top -anchor nw -pady 5 -fill x -expand yes
-	pack $entry_frame -side top -anchor nw -pady 5 -fill x
-	pack $endtype_frame $adv_frame -side top -anchor nw -pady 5 -padx 2
+	set cb_filters [checkbutton $adv_frame.cb_filters \
+	    	-text "Use access filters:" \
+		-variable Apol_Analysis_dta::use_filters \
+		-command {Apol_Analysis_dta::on_use_filters_button_selected}]
+	
+	pack $cb_endtype -side top -anchor nw
+    	pack $entry_end -anchor nw -fill x -expand yes 
+    	pack $cb_filters $b_forward_options -side left -anchor nw 				
+	pack $left_frame -side left -anchor nw -fill y
+	pack $right_frame -side right -anchor nw -fill both -expand yes -pady 5 -padx 3
+	pack $radio_frame -side top -anchor nw -pady 5 -fill x 
+	pack $entry_frame -side top -anchor nw -pady 5 -fill both -expand yes
+	pack $endtype_frame $adv_frame -side top -anchor nw -pady 5 -padx 2 -fill x 
 	
 	pack $combo_domain -side top -anchor nw -fill x
     	pack $cb_attrib -padx 15 -side top -anchor nw
