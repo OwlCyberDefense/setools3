@@ -1865,7 +1865,7 @@ int add_role(char *role, policy_t *policy)
 	new_role->num_types = 0;
 	new_role->types = NULL;
 	policy->num_roles++;
-	return 0;
+	return policy->num_roles - 1;
 }
 
 /* determine whether a role contains a given type (by idx) */
