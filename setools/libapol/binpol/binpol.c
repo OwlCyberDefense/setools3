@@ -1698,7 +1698,7 @@ int ap_read_binpol_file(FILE *fp, unsigned int options, policy_t *policy)
 		return -1;
 		
 	rt = load_binpol(fp, options, policy);
-	policy->binary = TRUE;
+	policy->policy_type = POL_TYPE_BINARY;
 	
 	return rt;
 }
