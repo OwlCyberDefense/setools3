@@ -14,7 +14,10 @@
  * Below is our record of the versions we track, and what we think distinguishes them.
  * This is not a complete version determiner; just key issues.
  *
- * Policy Version 16? (POL_VER_16):
+ * Policy Version 17 (POL_VER_17_
+ *	Added support for IPv6
+ *
+ * Policy Version 16 (POL_VER_16):
  *	Added conditional policy syntax
  *		if-else statement
  *		bool declarations
@@ -145,7 +148,8 @@ static int define_devfs_context(int has_type);
 static int define_fs_context(int ver);
 static int define_port_context(int ver);
 static int define_netif_context(int ver);
-static int define_node_context(int ver);
+static int define_ipv4_node_context(int ver);
+static int define_ipv6_node_context(int ver);
 static int define_fs_use(int behavior, int ver);
 static int define_genfs_context(int has_type);
 static int define_nfs_context(void);
@@ -218,6 +222,7 @@ static rule_desc_t *define_cond_te_avtab(int rule_type);
 %token NUMBER
 %token EQUALS
 %token NOTEQUAL
+%token IPV6_ADDR
 
 %left OR
 %left XOR
@@ -774,17 +779,19 @@ opt_node_contexts_11   	: node_contexts_11
 node_contexts_11	: node_context_def_11
 			| node_contexts_11 node_context_def_11
 			;
-/* changed Jul 2002 to add NODECON keyword */
+/* changed Jul 2002 to add NODECON keyword (v 11) or later version changes (e.g., 17 w/ IPv6) */
 node_context_def_11	: NODECON ipv4_addr_def ipv4_addr_def security_context_def
-			{if (define_node_context(POL_VER_JUL2002)) return -1;}
-			;
+			{if (define_ipv4_node_context(POL_VER_JUL2002)) return -1;}
+			| NODECON ipv6_addr ipv6_addr security_context_def
+			{if (define_ipv6_node_context(POL_VER_17)) return -1;}
+ 			;
 /* Jul 2002, allow for old form for backwards compatability */
 node_contexts_pre11	: node_context_def_pre11
 			| node_contexts_pre11 node_context_def_pre11 
 			;
 /* removed in Jul 2002; keep to allow old form for backwards compatability */
 node_context_def_pre11	: ipv4_addr_def ipv4_addr_def security_context_def
-			{if (define_node_context(POL_VER_PREJUL2002)) return -1;}
+			{if (define_ipv4_node_context(POL_VER_PREJUL2002)) return -1;}
 			;
 /* all NFS remove Jul 2002 */
 opt_nfs_contexts        : nfs_contexts
@@ -815,7 +822,10 @@ ipv4_addr_def		: number '.' number '.' number '.' number
 			{ 
 			  /*do nothing*/
 			}
-    			;
+			;	
+ipv6_addr		: IPV6_ADDR
+			{ if (insert_id(yytext,0)) return -1; }
+			;
 security_context_def	: user_id ':' identifier ':' identifier opt_mls_range_def
 	                ;
 opt_mls_range_def	: ':' mls_range_def
@@ -2593,7 +2603,7 @@ static rule_desc_t *define_cond_compute_type(int rule_type)
 		return NULL;
 	}
 	rt = add_ttrule(rule_type, TRUE);
-	if(rt != 0) 
+	if(rt < 0) 
 		return NULL;
 		
 	(parse_policy->rule_cnt[rule_type])++;
@@ -3050,7 +3060,7 @@ static int define_netif_context(int ver)
 	return 0;
 }
 
-static int define_node_context(int ver)
+static int define_ipv4_node_context(int ver)
 {
 	int rt;
 	
@@ -3063,8 +3073,23 @@ static int define_node_context(int ver)
 	return 0;
 }
 
-/* removed Jul 2002 */
+static int define_ipv6_node_context(int ver)
+{
+	int rt;
+	
+	rt = set_policy_version(ver, parse_policy);
+	if(rt != 0) {
+		yyerror("error setting policy version");
+		return -1;
+	}
 
+	free(queue_remove(id_queue));
+	free(queue_remove(id_queue));
+	parse_security_context(1);
+	return 0;	
+}
+
+/* removed Jul 2002 */
 static int define_devfs_context(int has_type)
 {
 	int rt;
