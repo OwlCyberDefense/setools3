@@ -507,7 +507,8 @@ void write_avc_message_to_file(FILE *log_file, const avc_msg_t *message, const c
 	assert(log_file != NULL && message != NULL && message_header != NULL && audit_log != NULL);
 
 	fprintf(log_file, "%s", message_header);
-	fprintf(log_file, "audit(%lu.%03lu:%u): ", message->tm_stmp_sec, message->tm_stmp_nano, message->serial);
+	if (!(message->tm_stmp_sec == 0 && message->tm_stmp_nano == 0 && message->serial == 0))  
+		fprintf(log_file, "audit(%lu.%03lu:%u): ", message->tm_stmp_sec, message->tm_stmp_nano, message->serial);
 		
 	fprintf(log_file, "avc:  %s  {", ((message->msg == AVC_GRANTED) ? "granted" : "denied"));
 
@@ -644,7 +645,8 @@ write_avc_message_to_gtk_text_buf(GtkTextBuffer *buffer, const avc_msg_t *messag
 		return;
 	}
 	g_string_append_printf(str, "%s", message_header);
-	g_string_append_printf(str, "audit(%lu.%03lu:%u): ", message->tm_stmp_sec, message->tm_stmp_nano, message->serial);
+	if (!(message->tm_stmp_sec == 0 && message->tm_stmp_nano == 0 && message->serial == 0))  
+		g_string_append_printf(str, "audit(%lu.%03lu:%u): ", message->tm_stmp_sec, message->tm_stmp_nano, message->serial);
 		
 	g_string_append_printf(str, "avc:  %s  {", ((message->msg == AVC_GRANTED) ? "granted" : "denied"));
 

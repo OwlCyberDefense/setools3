@@ -414,16 +414,18 @@ static int seaudit_report_print_view_results(seaudit_report_info_t report_info,
 			cur_msg = log_view->my_log->msg_list[indx]->msg_data.avc_msg;
 			
 			fprintf(outfile, "kernel: ");
-			if (report_info.html) {
-				fprintf(outfile, "<font class=\"syscall_timestamp\">audit(%lu.%03lu:%u): </font>", 
-					cur_msg->tm_stmp_sec, 
-					cur_msg->tm_stmp_nano, 
-					cur_msg->serial);
-			} else {
-				fprintf(outfile, "audit(%lu.%03lu:%u): ", 
-					cur_msg->tm_stmp_sec, 
-					cur_msg->tm_stmp_nano, 
-					cur_msg->serial);
+			if (!(cur_msg->tm_stmp_sec == 0 && cur_msg->tm_stmp_nano == 0 && cur_msg->serial == 0)) {
+				if (report_info.html) {
+					fprintf(outfile, "<font class=\"syscall_timestamp\">audit(%lu.%03lu:%u): </font>", 
+						cur_msg->tm_stmp_sec, 
+						cur_msg->tm_stmp_nano, 
+						cur_msg->serial);
+				} else {
+					fprintf(outfile, "audit(%lu.%03lu:%u): ", 
+						cur_msg->tm_stmp_sec, 
+						cur_msg->tm_stmp_nano, 
+						cur_msg->serial);
+				}
 			}
 			fprintf(outfile, "avc: ");
 			if (report_info.html) {
@@ -488,33 +490,38 @@ static int seaudit_report_print_view_results(seaudit_report_info_t report_info,
 			if (cur_msg->is_capability)
 				fprintf(outfile, "capability=%d ", cur_msg->capability);	
 			
-			if (report_info.html) {								
-				fprintf(outfile, "<font class=\"src_context\">scontext=%s:%s:%s </font>", 
-					audit_log_get_user(log_view->my_log, cur_msg->src_user), 
-					audit_log_get_role(log_view->my_log, cur_msg->src_role),
-					audit_log_get_type(log_view->my_log, cur_msg->src_type));
-			} else {
-				fprintf(outfile, "scontext=%s:%s:%s ", 
-					audit_log_get_user(log_view->my_log, cur_msg->src_user), 
-					audit_log_get_role(log_view->my_log, cur_msg->src_role),
-					audit_log_get_type(log_view->my_log, cur_msg->src_type));
+			if (cur_msg->is_src_con) {
+				if (report_info.html) {								
+					fprintf(outfile, "<font class=\"src_context\">scontext=%s:%s:%s </font>", 
+						audit_log_get_user(log_view->my_log, cur_msg->src_user), 
+						audit_log_get_role(log_view->my_log, cur_msg->src_role),
+						audit_log_get_type(log_view->my_log, cur_msg->src_type));
+				} else {
+					fprintf(outfile, "scontext=%s:%s:%s ", 
+						audit_log_get_user(log_view->my_log, cur_msg->src_user), 
+						audit_log_get_role(log_view->my_log, cur_msg->src_role),
+						audit_log_get_type(log_view->my_log, cur_msg->src_type));
+				}
 			}
-			if (report_info.html) {
-				fprintf(outfile, "<font class=\"tgt_context\">tcontext=%s:%s:%s </font>", 
-					audit_log_get_user(log_view->my_log, cur_msg->tgt_user),
-					audit_log_get_role(log_view->my_log, cur_msg->tgt_role),
-					audit_log_get_type(log_view->my_log, cur_msg->tgt_type));
-			} else {
-				fprintf(outfile, "tcontext=%s:%s:%s ", 
-					audit_log_get_user(log_view->my_log, cur_msg->tgt_user),
-					audit_log_get_role(log_view->my_log, cur_msg->tgt_role),
-					audit_log_get_type(log_view->my_log, cur_msg->tgt_type));
+			if (cur_msg->is_tgt_con) {
+				if (report_info.html) {
+					fprintf(outfile, "<font class=\"tgt_context\">tcontext=%s:%s:%s </font>", 
+						audit_log_get_user(log_view->my_log, cur_msg->tgt_user),
+						audit_log_get_role(log_view->my_log, cur_msg->tgt_role),
+						audit_log_get_type(log_view->my_log, cur_msg->tgt_type));
+				} else {
+					fprintf(outfile, "tcontext=%s:%s:%s ", 
+						audit_log_get_user(log_view->my_log, cur_msg->tgt_user),
+						audit_log_get_role(log_view->my_log, cur_msg->tgt_role),
+						audit_log_get_type(log_view->my_log, cur_msg->tgt_type));
+				}
 			}
-			
-			if (report_info.html) 
-				fprintf(outfile, "<font class=\"obj_class\">tclass=%s </font>", audit_log_get_obj(log_view->my_log, cur_msg->obj_class));
-			else
-				fprintf(outfile, "tclass=%s ", audit_log_get_obj(log_view->my_log, cur_msg->obj_class));
+			if (cur_msg->is_obj_class) {
+				if (report_info.html) 
+					fprintf(outfile, "<font class=\"obj_class\">tclass=%s </font>", audit_log_get_obj(log_view->my_log, cur_msg->obj_class));
+				else
+					fprintf(outfile, "tclass=%s ", audit_log_get_obj(log_view->my_log, cur_msg->obj_class));
+			}
 		}
 		if (report_info.html) 
 			fprintf(outfile, "<br>\n<br>\n");
@@ -781,16 +788,18 @@ static int seaudit_report_print_enforce_toggles(seaudit_report_info_t report_inf
 				fprintf(outfile, "%s ", audit_log_get_host(log_view->my_log, log_view->my_log->msg_list[indx]->host));
 				
 			fprintf(outfile, "kernel: ");
-			if (report_info.html) {
-				fprintf(outfile, "<font class=\"syscall_timestamp\">audit(%lu.%03lu:%u): </font>", 
-					cur_msg->tm_stmp_sec, 
-					cur_msg->tm_stmp_nano, 
-					cur_msg->serial);
-			} else {
-				fprintf(outfile, "audit(%lu.%03lu:%u): ", 
-					cur_msg->tm_stmp_sec, 
-					cur_msg->tm_stmp_nano, 
-					cur_msg->serial);
+			if (!(cur_msg->tm_stmp_sec == 0 && cur_msg->tm_stmp_nano == 0 && cur_msg->serial == 0)) {
+				if (report_info.html) {
+					fprintf(outfile, "<font class=\"syscall_timestamp\">audit(%lu.%03lu:%u): </font>", 
+						cur_msg->tm_stmp_sec, 
+						cur_msg->tm_stmp_nano, 
+						cur_msg->serial);
+				} else {
+					fprintf(outfile, "audit(%lu.%03lu:%u): ", 
+						cur_msg->tm_stmp_sec, 
+						cur_msg->tm_stmp_nano, 
+						cur_msg->serial);
+				}
 			}
 			fprintf(outfile, "avc: ");
 			if (report_info.html)			
@@ -848,32 +857,38 @@ static int seaudit_report_print_enforce_toggles(seaudit_report_info_t report_inf
 			if (cur_msg->is_capability)
 				fprintf(outfile, "capability=%d ", cur_msg->capability);	
 			
-			if (report_info.html) {
-				fprintf(outfile, "<font class=\"src_context\">scontext=%s:%s:%s </font>", 
-					audit_log_get_user(log_view->my_log, cur_msg->src_user), 
-					audit_log_get_role(log_view->my_log, cur_msg->src_role),
-					audit_log_get_type(log_view->my_log, cur_msg->src_type));
-			} else {
-				fprintf(outfile, "scontext=%s:%s:%s ", 
-					audit_log_get_user(log_view->my_log, cur_msg->src_user), 
-					audit_log_get_role(log_view->my_log, cur_msg->src_role),
-					audit_log_get_type(log_view->my_log, cur_msg->src_type));
+			if (cur_msg->is_src_con) {
+				if (report_info.html) {
+					fprintf(outfile, "<font class=\"src_context\">scontext=%s:%s:%s </font>", 
+						audit_log_get_user(log_view->my_log, cur_msg->src_user), 
+						audit_log_get_role(log_view->my_log, cur_msg->src_role),
+						audit_log_get_type(log_view->my_log, cur_msg->src_type));
+				} else {
+					fprintf(outfile, "scontext=%s:%s:%s ", 
+						audit_log_get_user(log_view->my_log, cur_msg->src_user), 
+						audit_log_get_role(log_view->my_log, cur_msg->src_role),
+						audit_log_get_type(log_view->my_log, cur_msg->src_type));
+				}
 			}
-			if (report_info.html) {
-				fprintf(outfile, "<font class=\"tgt_context\">tcontext=%s:%s:%s </font>", 
-					audit_log_get_user(log_view->my_log, cur_msg->tgt_user),
-					audit_log_get_role(log_view->my_log, cur_msg->tgt_role),
-					audit_log_get_type(log_view->my_log, cur_msg->tgt_type));
-			} else {
-				fprintf(outfile, "tcontext=%s:%s:%s ", 
-					audit_log_get_user(log_view->my_log, cur_msg->tgt_user),
-					audit_log_get_role(log_view->my_log, cur_msg->tgt_role),
-					audit_log_get_type(log_view->my_log, cur_msg->tgt_type));
+			if (cur_msg->is_tgt_con) {
+				if (report_info.html) {
+					fprintf(outfile, "<font class=\"tgt_context\">tcontext=%s:%s:%s </font>", 
+						audit_log_get_user(log_view->my_log, cur_msg->tgt_user),
+						audit_log_get_role(log_view->my_log, cur_msg->tgt_role),
+						audit_log_get_type(log_view->my_log, cur_msg->tgt_type));
+				} else {
+					fprintf(outfile, "tcontext=%s:%s:%s ", 
+						audit_log_get_user(log_view->my_log, cur_msg->tgt_user),
+						audit_log_get_role(log_view->my_log, cur_msg->tgt_role),
+						audit_log_get_type(log_view->my_log, cur_msg->tgt_type));
+				}
 			}
-			if (report_info.html) 
-				fprintf(outfile, "<font class=\"obj_class\">tclass=%s </font>", audit_log_get_obj(log_view->my_log, cur_msg->obj_class));
-			else 
-				fprintf(outfile, "tclass=%s ", audit_log_get_obj(log_view->my_log, cur_msg->obj_class));
+			if (cur_msg->is_obj_class) {
+				if (report_info.html) 
+					fprintf(outfile, "<font class=\"obj_class\">tclass=%s </font>", audit_log_get_obj(log_view->my_log, cur_msg->obj_class));
+				else 
+					fprintf(outfile, "tclass=%s ", audit_log_get_obj(log_view->my_log, cur_msg->obj_class));
+			}
 		}
 		if (report_info.html) 
 			fprintf(outfile, "<br>\n");
@@ -966,16 +981,19 @@ static int seaudit_report_print_allow_listing(seaudit_report_info_t report_info,
 			else 
 				fprintf(outfile, "%s ", audit_log_get_host(report_info.log, report_info.log->msg_list[indx]->host));
 			fprintf(outfile, "kernel: ");
-			if (report_info.html) {
-				fprintf(outfile, "<font class=\"syscall_timestamp\">audit(%lu.%03lu:%u): </font>", 
-					cur_msg->tm_stmp_sec, 
-					cur_msg->tm_stmp_nano, 
-					cur_msg->serial);
-			} else {
-				fprintf(outfile, "audit(%lu.%03lu:%u): ", 
-					cur_msg->tm_stmp_sec, 
-					cur_msg->tm_stmp_nano, 
-					cur_msg->serial);
+			
+			if (!(cur_msg->tm_stmp_sec == 0 && cur_msg->tm_stmp_nano == 0 && cur_msg->serial == 0)) {
+				if (report_info.html) {
+					fprintf(outfile, "<font class=\"syscall_timestamp\">audit(%lu.%03lu:%u): </font>", 
+						cur_msg->tm_stmp_sec, 
+						cur_msg->tm_stmp_nano, 
+						cur_msg->serial);
+				} else {
+					fprintf(outfile, "audit(%lu.%03lu:%u): ", 
+						cur_msg->tm_stmp_sec, 
+						cur_msg->tm_stmp_nano, 
+						cur_msg->serial);
+				}
 			}
 			fprintf(outfile, "avc: ");
 			if (report_info.html) 
@@ -1034,32 +1052,38 @@ static int seaudit_report_print_allow_listing(seaudit_report_info_t report_info,
 			if (cur_msg->is_capability)
 				fprintf(outfile, "capability=%d ", cur_msg->capability);	
 			
-			if (report_info.html) {					
-				fprintf(outfile, "<font class=\"src_context\">scontext=%s:%s:%s </font>", 
-					audit_log_get_user(report_info.log, cur_msg->src_user), 
-					audit_log_get_role(report_info.log, cur_msg->src_role),
-					audit_log_get_type(report_info.log, cur_msg->src_type));
-			} else {
-				fprintf(outfile, "scontext=%s:%s:%s ", 
-					audit_log_get_user(report_info.log, cur_msg->src_user), 
-					audit_log_get_role(report_info.log, cur_msg->src_role),
-					audit_log_get_type(report_info.log, cur_msg->src_type));
+			if (cur_msg->is_src_con) {
+				if (report_info.html) {					
+					fprintf(outfile, "<font class=\"src_context\">scontext=%s:%s:%s </font>", 
+						audit_log_get_user(report_info.log, cur_msg->src_user), 
+						audit_log_get_role(report_info.log, cur_msg->src_role),
+						audit_log_get_type(report_info.log, cur_msg->src_type));
+				} else {
+					fprintf(outfile, "scontext=%s:%s:%s ", 
+						audit_log_get_user(report_info.log, cur_msg->src_user), 
+						audit_log_get_role(report_info.log, cur_msg->src_role),
+						audit_log_get_type(report_info.log, cur_msg->src_type));
+				}
 			}
-			if (report_info.html) {	
-				fprintf(outfile, "<font class=\"tgt_context\">tcontext=%s:%s:%s </font>", 
-					audit_log_get_user(report_info.log, cur_msg->tgt_user),
-					audit_log_get_role(report_info.log, cur_msg->tgt_role),
-					audit_log_get_type(report_info.log, cur_msg->tgt_type));
-			} else {
-				fprintf(outfile, "tcontext=%s:%s:%s ", 
-					audit_log_get_user(report_info.log, cur_msg->tgt_user),
-					audit_log_get_role(report_info.log, cur_msg->tgt_role),
-					audit_log_get_type(report_info.log, cur_msg->tgt_type));
+			if (cur_msg->is_tgt_con) {
+				if (report_info.html) {	
+					fprintf(outfile, "<font class=\"tgt_context\">tcontext=%s:%s:%s </font>", 
+						audit_log_get_user(report_info.log, cur_msg->tgt_user),
+						audit_log_get_role(report_info.log, cur_msg->tgt_role),
+						audit_log_get_type(report_info.log, cur_msg->tgt_type));
+				} else {
+					fprintf(outfile, "tcontext=%s:%s:%s ", 
+						audit_log_get_user(report_info.log, cur_msg->tgt_user),
+						audit_log_get_role(report_info.log, cur_msg->tgt_role),
+						audit_log_get_type(report_info.log, cur_msg->tgt_type));
+				}
 			}
-			if (report_info.html) 
-				fprintf(outfile, "<font class=\"obj_class\">tclass=%s </font>", audit_log_get_obj(report_info.log, cur_msg->obj_class));
-			else 
-				fprintf(outfile, "tclass=%s ", audit_log_get_obj(report_info.log, cur_msg->obj_class));
+			if (cur_msg->is_obj_class) {
+				if (report_info.html) 
+					fprintf(outfile, "<font class=\"obj_class\">tclass=%s </font>", audit_log_get_obj(report_info.log, cur_msg->obj_class));
+				else 
+					fprintf(outfile, "tclass=%s ", audit_log_get_obj(report_info.log, cur_msg->obj_class));
+			}
 				
 			if (report_info.html) 
 				fprintf(outfile, "<br>\n");
@@ -1099,16 +1123,18 @@ static int seaudit_report_print_deny_listing(seaudit_report_info_t report_info, 
 			else 
 				fprintf(outfile, "%s ", audit_log_get_host(report_info.log, report_info.log->msg_list[indx]->host));
 			fprintf(outfile, "kernel: ");
-			if (report_info.html) {
-				fprintf(outfile, "<font class=\"syscall_timestamp\">audit(%lu.%03lu:%u): </font>", 
-					cur_msg->tm_stmp_sec, 
-					cur_msg->tm_stmp_nano, 
-					cur_msg->serial);
-			} else {
-				fprintf(outfile, "audit(%lu.%03lu:%u): ", 
-					cur_msg->tm_stmp_sec, 
-					cur_msg->tm_stmp_nano, 
-					cur_msg->serial);
+			if (!(cur_msg->tm_stmp_sec == 0 && cur_msg->tm_stmp_nano == 0 && cur_msg->serial == 0)) {
+				if (report_info.html) {
+					fprintf(outfile, "<font class=\"syscall_timestamp\">audit(%lu.%03lu:%u): </font>", 
+						cur_msg->tm_stmp_sec, 
+						cur_msg->tm_stmp_nano, 
+						cur_msg->serial);
+				} else {
+					fprintf(outfile, "audit(%lu.%03lu:%u): ", 
+						cur_msg->tm_stmp_sec, 
+						cur_msg->tm_stmp_nano, 
+						cur_msg->serial);
+				}
 			}
 			fprintf(outfile, "avc: ");
 			if (report_info.html)
@@ -1168,7 +1194,7 @@ static int seaudit_report_print_deny_listing(seaudit_report_info_t report_info, 
 			if (cur_msg->is_capability)
 				fprintf(outfile, "capability=%d ", cur_msg->capability);	
 			
-			if (cur_msg->src_user && cur_msg->src_role && cur_msg->src_type) {
+			if (cur_msg->is_src_con) {
 				if (report_info.html) {							
 					fprintf(outfile, "<font class=\"src_context\">scontext=%s:%s:%s </font>", 
 						audit_log_get_user(report_info.log, cur_msg->src_user), 
@@ -1181,7 +1207,7 @@ static int seaudit_report_print_deny_listing(seaudit_report_info_t report_info, 
 						audit_log_get_type(report_info.log, cur_msg->src_type));
 				}
 			}
-			if (cur_msg->tgt_user && cur_msg->tgt_role && cur_msg->tgt_type) {
+			if (cur_msg->is_tgt_con) {
 				if (report_info.html) {	
 					fprintf(outfile, "<font class=\"tgt_context\">tcontext=%s:%s:%s </font>", 
 						audit_log_get_user(report_info.log, cur_msg->tgt_user),
@@ -1194,7 +1220,7 @@ static int seaudit_report_print_deny_listing(seaudit_report_info_t report_info, 
 						audit_log_get_type(report_info.log, cur_msg->tgt_type));
 				}
 			}
-			if (cur_msg->obj_class) {
+			if (cur_msg->is_obj_class) {
 				if (report_info.html) {	
 					fprintf(outfile, "<font class=\"obj_class\">tclass=%s </font>", audit_log_get_obj(report_info.log, cur_msg->obj_class));
 				} else {
