@@ -180,7 +180,7 @@ static void on_create_report_button_clicked(GtkButton *button, gpointer user_dat
 	seaudit_filtered_view_t *filtered_view;
 	audit_log_view_t *log_view;
 	GtkEntry *entry;
-	char *file_path = NULL;
+	const gchar *file_path = NULL;
 			
 	assert(report_window != NULL);
 	filename = get_filename_from_user("Save Report to File", NULL);
