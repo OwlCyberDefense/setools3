@@ -614,8 +614,11 @@ proc Apol_Analysis_dirflow::render_target_type_data {data dirflow_info_text dirf
 			incr curIdx
 			# The next element should be the enabled boolean flag.
 			if {[lindex $data $curIdx] == 0} {
+				$dirflow_info_text insert end "   "
+				set startIdx [$dirflow_info_text index insert]
+				$dirflow_info_text insert end "\[Disabled\]"
+				set endIdx [$dirflow_info_text index insert]
 				$dirflow_info_text tag add $Apol_Analysis_dirflow::disabled_rule_tag $startIdx $endIdx
-				$dirflow_info_text insert end "   \[Disabled\]"
 			} 
 			set startIdx [$dirflow_info_text index insert]
 		    }
@@ -707,8 +710,11 @@ proc Apol_Analysis_dirflow::render_target_type_data {data dirflow_info_text dirf
 			incr curIdx
 			# The next element should be the enabled boolean flag.
 			if {[lindex $data $curIdx] == 0} {
+				$dirflow_info_text insert end "   "
+				set startIdx [$dirflow_info_text index insert]
+				$dirflow_info_text insert end "\[Disabled\]"
+				set endIdx [$dirflow_info_text index insert]
 				$dirflow_info_text tag add $Apol_Analysis_dirflow::disabled_rule_tag $startIdx $endIdx
-				$dirflow_info_text insert end "   \[Disabled\]"
 			}
 			set startIdx [$dirflow_info_text index insert]
 		    }
@@ -730,6 +736,7 @@ proc Apol_Analysis_dirflow::formatInfoText { tb } {
 	$tb tag configure $Apol_Analysis_dirflow::rules_tag -font $ApolTop::text_font
 	$tb tag configure $Apol_Analysis_dirflow::counters_tag -foreground blue -font {Helvetica 11 bold}
 	$tb tag configure $Apol_Analysis_dirflow::types_tag -font $ApolTop::text_font
+	$tb tag configure $Apol_Analysis_dirflow::disabled_rule_tag -foreground red
 	
 	# Configure hyperlinking to policy.conf file
 	Apol_PolicyConf::configure_HyperLinks $tb
