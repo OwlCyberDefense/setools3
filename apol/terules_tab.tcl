@@ -1670,7 +1670,7 @@ proc Apol_TE::createObjsClassesTab {notebook_objects_tab} {
     		      		Apol_TE::configure_perms 
     		      		Apol_TE::set_Indicator [$Apol_TE::notebook_searchOpts raise]}]
     set sw_objs       [ScrolledWindow [$fm_objs_frame getframe].sw -auto both]
-    set objslistbox [listbox [$sw_objs getframe].lb -height 5 -width 20 -highlightthickness 0 \
+    set objslistbox [listbox [$sw_objs getframe].lb -height 5 -highlightthickness 0 \
 		      -listvar Apol_TE::objectslist -selectmode multiple -exportselection 0] 
     $sw_objs setwidget $objslistbox
     
@@ -1694,7 +1694,7 @@ proc Apol_TE::createObjsClassesTab {notebook_objects_tab} {
     			-variable Apol_TE::opts(perm_union) -value intersection -state disabled \
     			-command { Apol_TE::configure_perms }]
     set sw_perms       [ScrolledWindow $fm_permissions_mid.sw -auto both]
-    set permslistbox [listbox [$sw_perms getframe].lb -height 5 -width 20 -highlightthickness 0 \
+    set permslistbox [listbox [$sw_perms getframe].lb -height 5 -highlightthickness 0 \
 		      -listvar Apol_TE::permslist -selectmode multiple -exportselection 0] 
     $sw_perms setwidget $permslistbox
     
@@ -1746,7 +1746,7 @@ proc Apol_TE::createTypesAttribsTab {notebook_ta_tab} {
     variable global_any
     
     # Search options section subframes used to group the widget items under the Source Type/Attrib section
-    set fm_src [frame $notebook_ta_tab.1st_ta_1ist -relief flat -borderwidth 1]
+    set fm_src [frame $notebook_ta_tab.ta1 -relief flat -borderwidth 1]
     set fm_top1 [frame $fm_src.top -relief flat -borderwidth 1]
     set fm_bottom1 [frame $fm_src.bottom -relief sunken -borderwidth 2]
 
@@ -1812,7 +1812,7 @@ proc Apol_TE::createTypesAttribsTab {notebook_ta_tab} {
     pack $fm_comboBox3 -side bottom -padx 5 -pady 5 -expand yes -fill x
 
     # Widget items for Source Type/Attrib section          
-    set source_list [ComboBox $fm_comboBox.cb -width 22 \
+    set source_list [ComboBox $fm_comboBox.cb \
     	-textvariable Apol_TE::ta1 -helptext "Type or select a type or attribute" \
     	-modifycmd {Apol_TE::enable_RegExpr 1} ]  
     	 
@@ -1846,7 +1846,7 @@ proc Apol_TE::createTypesAttribsTab {notebook_ta_tab} {
 			 -offvalue 0]
 	     
     # Widget items for Target Type/Attrib section
-    set target_list [ComboBox $fm_comboBox2.cb -width 22 \
+    set target_list [ComboBox $fm_comboBox2.cb \
     	-textvariable Apol_TE::ta2 -helptext "Type or select a type or attribute" \
     	-modifycmd {Apol_TE::enable_RegExpr 2} ] 
     	
@@ -1875,7 +1875,7 @@ proc Apol_TE::createTypesAttribsTab {notebook_ta_tab} {
 			    -offvalue 0]
     
     # Widget items for Default Type section
-    set dflt_type_list [ComboBox $fm_comboBox3.cb -width 22 -helptext "Third type search parameter"  \
+    set dflt_type_list [ComboBox $fm_comboBox3.cb -helptext "Third type search parameter"  \
     	-textvariable Apol_TE::ta3 -helptext "Type or select a type" \
     	-modifycmd {Apol_TE::enable_RegExpr 3} ]
     	
@@ -1892,23 +1892,23 @@ proc Apol_TE::createTypesAttribsTab {notebook_ta_tab} {
 			     -onvalue  1 \
 			     -command "Apol_TE::defaultType_Enable_Disable" ]
 
+    # Placing Default Type widget items
+    pack $use_3rd_list -side top -anchor nw 
+    pack $dflt_type_list -anchor w -fill x -expand yes
+
+    # Placing Target Type/Attrib widget items
+    pack $use_2nd_list -side top -anchor nw 
+    pack $incl_indirect2 -side top -anchor w 
+    pack $list_types_2  $list_attribs_2 -side left
+    pack $target_list -anchor w -expand yes -fill x
+        
     # Placing Source Type/Attrib widget items 
     pack $use_1st_list -side top -anchor nw 
     pack $incl_indirect1 -side top -anchor w 
     pack $global_asSource $global_any -side left -anchor center 
     pack $list_types_1 $list_attribs_1 -side left -anchor center
     pack $source_list -anchor w -expand yes -fill x -side bottom
-
-    # Placing Target Type/Attrib widget items
-    pack $use_2nd_list -side top -anchor nw
-    pack $incl_indirect2 -side top -anchor w 
-    pack $list_types_2  $list_attribs_2 -side left
-    pack $target_list -anchor w -expand yes -fill x
-
-    # Placing Default Type widget items
-    pack $use_3rd_list -side top -anchor w
-    pack $dflt_type_list -anchor w -fill x -expand yes
-    
+   
     # Check enable/disable status
     Apol_TE::enable_listbox $source_list 1 $list_types_1 $list_attribs_1
     Apol_TE::enable_listbox $target_list 2 $list_types_2 $list_attribs_2
