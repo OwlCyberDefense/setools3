@@ -1190,7 +1190,7 @@ static int free_field_tokens(char **fields, int num_tokens)
 
 static unsigned int get_tokens(char *line, int msgtype, audit_log_t *log, FILE *audit_file, msg_t **msg)
 {
-	char *tokens = NULL, *tmp = NULL, **fields = NULL;
+	char *tokens = NULL, *tmp = NULL, **fields = NULL, **fields_ptr = NULL;
 	int idx = 0, num_tokens = 0;
 	unsigned int ret = PARSE_RET_SUCCESS;
 	
@@ -1200,10 +1200,12 @@ static unsigned int get_tokens(char *line, int msgtype, audit_log_t *log, FILE *
 	/* Tokenize line while ignoring any adjacent whitespace chars. */ 
         while ((tmp = strsep(&tokens, " ")) != NULL) {
 	       	if (strcmp(tmp, "") && !str_is_only_white_space(tmp)) {
-	       		num_tokens++;
-	         	if ((fields = (char**)realloc(fields, num_tokens * sizeof(char*))) == NULL) {
+	         	if ((fields_ptr = (char**)realloc(fields, (num_tokens + 1) * sizeof(char*))) == NULL) {
+	         		free_field_tokens(*(&fields), num_tokens);
 				return PARSE_RET_MEMORY_ERROR;
 			}
+			fields = fields_ptr;
+			num_tokens++;
 			if((fields[idx] = (char*)malloc((strlen(tmp) + 1) * sizeof(char))) == NULL) {
 				/* Free all tokens up to the previous token, which is number of tokens - 1. */
 				free_field_tokens(*(&fields), num_tokens - 1);	
