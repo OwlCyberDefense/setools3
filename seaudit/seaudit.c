@@ -600,23 +600,32 @@ static gboolean seaudit_real_time_update_log(gpointer callback_data)
  */
 static void seaudit_set_real_time_log_button_state(bool_t state)
 {
-	GtkWidget *label, *image;
+	GtkWidget *widget, *image, *text;
 
-	label = glade_xml_get_widget(seaudit_app->window->xml, "RealTimeLabel");
-	g_assert(label);
+	widget = glade_xml_get_widget(seaudit_app->window->xml, "RealTimeButton");
+	g_assert(widget);
+	text = glade_xml_get_widget(seaudit_app->window->xml, "RealTimeLabel");
+	g_assert(text);
 	image = glade_xml_get_widget(seaudit_app->window->xml, "RealTimeImage");
 	g_assert(image);
-	seaudit_app->real_time_state = state;
+			
+	/* remove timeout function if exists */
 	if (seaudit_app->timeout_key)
 		gtk_timeout_remove(seaudit_app->timeout_key);
 
-	if (state) {
-		gtk_label_set_text(GTK_LABEL(label), "Stop monitor");
+	if (!state) {
 		gtk_image_set_from_stock(GTK_IMAGE(image), GTK_STOCK_STOP, GTK_ICON_SIZE_SMALL_TOOLBAR);
-		seaudit_app->timeout_key = g_timeout_add(LOG_UPDATE_INTERVAL, seaudit_real_time_update_log, NULL);
+		gtk_label_set_text(GTK_LABEL(text), "Monitor off");
+		/* make inactive */
+		seaudit_app->timeout_key = 0;
+		seaudit_app->real_time_state = state;
 	} else {
-		gtk_label_set_text(GTK_LABEL(label), "Start monitor");
 		gtk_image_set_from_stock(GTK_IMAGE(image), GTK_STOCK_REFRESH, GTK_ICON_SIZE_SMALL_TOOLBAR);
+		gtk_label_set_text(GTK_LABEL(text), "Monitor on");
+		/* make active */
+		seaudit_app->timeout_key = gtk_timeout_add(LOG_UPDATE_INTERVAL, 
+							   &seaudit_real_time_update_log, NULL);
+		seaudit_app->real_time_state = state;
 	}
 }
 
