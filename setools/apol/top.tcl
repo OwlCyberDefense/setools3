@@ -1459,7 +1459,9 @@ Number of RBAC Rules:\n\
      \tallow:\n\
      \trole_transition:\n\n\
 Number of Users:\n\
-     \tusers:\n"
+     \tusers:\n\n\
+Number of Initial SIDs:\n\
+     \tSIDs:\n"
      
      	set right_text "\
 $polversion\n\n\
@@ -1486,7 +1488,9 @@ $stats(roles)\n\n\
 $stats(roleallow)\n\
 $stats(roletrans)\n\n\
 \n\
-$stats(users)\n"
+$stats(users)\n\n\
+\n\
+$stats(sids)\n"
 
 	set left_label  [label $labelf.left -justify left -text $left_text]
 	set right_label [label $labelf.right -justify left -text $right_text]
