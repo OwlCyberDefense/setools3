@@ -646,14 +646,14 @@ int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char *filename)
 		/* Write the key */
 		items2 = fwrite(cpu_to_le64(&pinfo->key.inode), sizeof(uint64_t), 1, fp);
 		if (items2 != 1) {
-			fprintf(stderr, "2 error writing file %s\n", filename);
+			fprintf(stderr, "error writing file %s\n", filename);
 			return -1;
 		}
 		
 		buf[0] = cpu_to_le32(pinfo->key.dev);
 		items2 = fwrite(buf, sizeof(uint32_t), 1, fp);
 		if (items2 != 1) {
-			fprintf(stderr, "1 error writing file %s\n", filename);
+			fprintf(stderr, "error writing file %s\n", filename);
 			return -1;
 		}
 		
@@ -664,7 +664,7 @@ int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char *filename)
 
 		items2 = fwrite(sbuf, sizeof(int32_t), items, fp);
 		if (items2 != items) {
-			fprintf(stderr, "3 error writing file %s\n", filename);
+			fprintf(stderr, "error writing file %s\n", filename);
 			return -1;
 		}
 
@@ -696,7 +696,7 @@ int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char *filename)
 		buf[0] = cpu_to_le32(pinfo->num_links);
 		items2 = fwrite(buf, sizeof(uint32_t), 1, fp);
 		if (items2 != 1) {
-			fprintf(stderr, "4 error writing file %s\n", filename);
+			fprintf(stderr, "error writing file %s\n", filename);
 			return -1;
 		}
 		
@@ -706,14 +706,14 @@ int sefs_filesystem_data_save(sefs_filesystem_data_t * fsd, char *filename)
 			buf[0] = cpu_to_le32(len);
 			items2 = fwrite(buf, sizeof(uint32_t), 1, fp);
 			if (items2 != 1) {
-				fprintf(stderr, "5 error writing file %s\n", filename);
+				fprintf(stderr, "error writing file %s\n", filename);
 				return -1;
 			}
 			
 			/* Write the pathname */
 			items2 = fwrite(pinfo->path_names[j], sizeof(char), len, fp);
 			if (items2 != len) {
-				fprintf(stderr, "6 error writing file %s\n", filename);
+				fprintf(stderr, "error writing file %s\n", filename);
 				return -1;
 			}
 		}
@@ -833,7 +833,7 @@ int sefs_filesystem_data_load(sefs_filesystem_data_t* fsd, char *filename)
 
 	pinfo = (sefs_fileinfo_t *) malloc(fsd->num_files * sizeof(sefs_fileinfo_t));
 	if (!pinfo) {
-		fprintf(stderr, "4out of memory\n");
+		fprintf(stderr, "out of memory\n");
 		return -1;
 	}
 	fsd->files = pinfo;
@@ -844,27 +844,27 @@ int sefs_filesystem_data_load(sefs_filesystem_data_t* fsd, char *filename)
 
 		key = (inode_key_t *)malloc(sizeof(inode_key_t));
 		if (!key) {
-			fprintf(stderr, "3Out of memory\n");
+			fprintf(stderr, "Out of memory\n");
 			return -1;
 		}
 		
 		/* Read the key*/
 		items = fread(&(key->inode), sizeof(uint64_t), 1, fp);
 		if (items != 1) {
-			fprintf(stderr, "1error reading file %s\n", filename);
+			fprintf(stderr, "error reading file %s\n", filename);
 			return -1;
 		}
 		
 		items = fread(&(key->dev), sizeof(uint32_t), 1, fp);
 		if (items != 1) {
-			fprintf(stderr, "2error reading file %s\n", filename);
+			fprintf(stderr, "error reading file %s\n", filename);
 			return -1;
 		}
 		
 		/* Read the context */
 		items = fread(sbuf, sizeof(int32_t), 3, fp);
 		if (items != 3) {
-			fprintf(stderr, "3error reading file %s\n", filename);
+			fprintf(stderr, "error reading file %s\n", filename);
 			return -1;
 		}		
 
@@ -877,7 +877,7 @@ int sefs_filesystem_data_load(sefs_filesystem_data_t* fsd, char *filename)
 
 		items = fread(buf, sizeof(uint32_t), 1, fp);
 		if (items != 1) {
-			fprintf(stderr, "4error reading file %s\n", filename);
+			fprintf(stderr, "error reading file %s\n", filename);
 			return -1;
 		}		
 			
@@ -907,25 +907,25 @@ int sefs_filesystem_data_load(sefs_filesystem_data_t* fsd, char *filename)
 		/* Read the pathname count */
 		items = fread(&(pinfo->num_links), sizeof(uint32_t), 1, fp);
 		if (items != 1) {
-			fprintf(stderr, "4error reading file %s\n", filename);
+			fprintf(stderr, "error reading file %s\n", filename);
 			return -1;
 		}
 
 		pinfo->path_names = (char **)malloc(pinfo->num_links * sizeof(char *));
 		if (!pinfo->path_names) {
-			fprintf(stderr, "1 %d %d Out of memory\n", pinfo->num_links, pinfo->key.inode);
+			fprintf(stderr, "Out of memory\n");
 			return -1;
 		}
 		
 		for (j = 0; j < pinfo->num_links; j++) {
 			items = fread(&len, sizeof(uint32_t), 1, fp);
 			if (items != 1) {
-				fprintf(stderr, "5error reading file %s\n", filename);
+				fprintf(stderr, "error reading file %s\n", filename);
 				return -1;
 			}
 			
 			if ((pinfo->path_names[j] = (char *)malloc((len + 1) * sizeof(char))) == NULL) {
-				fprintf(stderr, "2Out of memory\n");
+				fprintf(stderr, "Out of memory\n");
 				return -1;
 			}
 			
@@ -933,7 +933,7 @@ int sefs_filesystem_data_load(sefs_filesystem_data_t* fsd, char *filename)
 			
 			items = fread(pinfo->path_names[j], sizeof(char), len, fp);
 			if (items != len) {
-				fprintf(stderr, "6error reading file %s\n", filename);
+				fprintf(stderr, "error reading file %s\n", filename);
 				return -1;
 			}
 		}
@@ -995,7 +995,7 @@ void destroy_fsdata(sefs_filesystem_data_t * fsd) {
 
 	/* empty arrays */
 	for (i = 0; i < fsd->num_types; i++) {
-		free(fsd->types[i].name);
+//		free(fsd->types[i].name);
 		free(fsd->types[i].index_list);
 	}
 
