@@ -79,6 +79,7 @@ void apol_free_relabel_set_data(relabel_set_t *set);
 void apol_free_relabel_result_data(relabel_result_t *res);
 void apol_free_relabel_filter_data(relabel_filter_t *fltr);
 
+int apol_fill_filter_set (char *object_class, char *permission, relabel_filter_t *filter, policy_t *policy);
 int apol_do_relabel_analysis(relabel_set_t **sets, policy_t *policy);
 int apol_query_relabel_analysis(relabel_set_t *sets, int type, relabel_result_t *res, policy_t *policy, relabel_mode_t *mode, relabel_filter_t *filter);
 
