@@ -1,6 +1,6 @@
 AN OVERVIEW OF FILE RELABEL ANALYSIS
 apol, version 1.6
-February 03, 2005
+February 09, 2005
 selinux@tresys.com
 
 UNDERSTANDING FILE RELABEL ANALYSIS

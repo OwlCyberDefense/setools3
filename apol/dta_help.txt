@@ -1,6 +1,6 @@
 AN OVERVIEW OF DOMAIN TRANSITION ANALYSIS
 apol, version 1.6
-December 18, 2004
+February 09, 2005
 selinux@tresys.com
 
 A key feature of Type Enforcement (TE) security is the ability to 
