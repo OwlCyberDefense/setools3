@@ -664,7 +664,7 @@ int determine_domain_trans(dta_query_t *dta_query,
 			   domain_trans_analysis_t **dta_results, 
 			   policy_t *policy)
 {
-	int start_idx, i, classes[1], perms[1], perms2[1], rt, ans;
+	int start_idx, i, classes[1], perms[1], perms2[1], rt;
 	rules_bool_t b_start, b_trans; 	/* structures are used for passing TE rule match booleans */
 	bool_t *b_type;			/* scratch pad arrays to keep track of types that have already been added */
 	trans_domain_t *t_ptr;
@@ -880,7 +880,7 @@ int determine_domain_trans(dta_query_t *dta_query,
 								TRUE, policy);
 				if (rule_uses_type == -1)
 					return -1;
-				if(b_start.access[i] && policy->av_access[i].type == RULE_TE_ALLOW && ans &&
+				if(b_start.access[i] && policy->av_access[i].type == RULE_TE_ALLOW  &&
 				  does_av_rule_use_classes(i, 1, classes, 1, policy) &&
 				  does_av_rule_use_perms(i, 1, perms2, 1, policy)) {	
 					rt = dta_add_rule_to_entry_point_type(reverse, i, ep);
