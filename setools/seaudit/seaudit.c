@@ -1023,7 +1023,8 @@ seaudit_window_view_entire_message_in_textbox(int *tree_item_idx)
 	gtk_window_set_default_size(GTK_WINDOW(window), 480, 300);
 	gtk_container_add(GTK_CONTAINER(window), scroll);
 	gtk_container_add(GTK_CONTAINER(scroll), view);
-                                            
+	gtk_text_view_set_wrap_mode((GtkTextView*)view, GTK_WRAP_WORD);
+	                                            
 	buffer = gtk_text_view_get_buffer (GTK_TEXT_VIEW (view));
 	
 	log_view = seaudit_get_current_audit_log_view();
