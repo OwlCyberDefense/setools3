@@ -11,8 +11,6 @@ INCLUDE		= -I.. -I../libapol
 
 SE_CMDS		= seinfo sesearch replcon findcon
 
-
-CFLAGS		+= -DDEFAULT_POLICY='"$(POLICY_SRC_FILE)"'
 CFLAGS  	+= -DSEINFO_VERSION_NUM='"$(shell cat SEINFO_VERSION)"'
 CFLAGS  	+= -DSESEARCH_VERSION_NUM='"$(shell cat SESEARCH_VERSION)"'
 CFLAGS          += -DREPLCON_VERSION_NUM='"$(shell cat REPLCON_VERSION)"'
