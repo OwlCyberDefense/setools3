@@ -7,8 +7,7 @@ APOL_DFLT_PMAP  = apol_perm_mapping_ver18
 
 # The modules must each be listed here.
 ANALYSIS-MODULES = dta_module.tcl dirflow_module.tcl fulflow_module.tcl \
-                   flowassert_module.tcl relabel_module.tcl \
-		   types_relation_module.tcl
+                   relabel_module.tcl types_relation_module.tcl
 
 TCL-FILES	= head.tcl tmp.tcl
 TCL-STRIP-FILES = types_tab.tcl terules_tab.tcl roles_tab.tcl rbac_tab.tcl \
