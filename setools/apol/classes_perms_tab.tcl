@@ -53,6 +53,13 @@ namespace eval Apol_Class_Perms {
     	variable resultsbox 
     	variable sString 
     	variable sEntry
+    	
+    	# callback procedures for the listbox items menu. Each element in this list is an embedded list of 2 items.
+    	# The 2 items consist of the command label and the function name. The tabname will be added as an
+	# argument to the callback procedure.
+	variable objs_menu_callbacks		""
+	variable common_perms_menu_callbacks	""
+	variable perms_menu_callbacks		""
 }
 
 proc Apol_Class_Perms::open { } {
@@ -62,14 +69,23 @@ proc Apol_Class_Perms::open { } {
 	
 	# Check whether "classes" are included in the current opened policy file
 	if {$ApolTop::contents(classes) == 1} {
-		set class_list [apol_GetNames classes]
+		set rt [catch {set class_list [apol_GetNames classes]} err]
+		if {$rt != 0} {
+			return -code error $err
+		}
 		set class_list [lsort $class_list]
 	} 	
 	# Check whether "perms" are included in the current opened policy file		
 	if {$ApolTop::contents(perms) == 1} {
-		set common_perms_list [apol_GetNames common_perms]
+		set rt [catch {set common_perms_list [apol_GetNames common_perms]} err]
+		if {$rt != 0} {
+			return -code error $err
+		}
 		set common_perms_list [lsort $common_perms_list]
-		set perms_list [apol_GetNames perms]
+		set rt [catch {set perms_list [apol_GetNames perms]} err]
+		if {$rt != 0} {
+			return -code error $err
+		}
 		set perms_list [lsort $perms_list]
 	} 	
 	
@@ -91,6 +107,17 @@ proc Apol_Class_Perms::close { } {
 	$Apol_Class_Perms::resultsbox delete 0.0 end
 	ApolTop::makeTextBoxReadOnly $Apol_Class_Perms::resultsbox 
 	      
+	return 0
+}
+
+proc Apol_Class_Perms::free_call_back_procs { } {
+       	variable objs_menu_callbacks	
+    	variable common_perms_menu_callbacks	
+    	variable perms_menu_callbacks
+	
+	set objs_menu_callbacks ""
+	set common_perms_menu_callbacks ""
+	set perms_menu_callbacks ""
 	return 0
 }
 
@@ -289,6 +316,9 @@ proc Apol_Class_Perms::create {nb} {
         variable sEntry 
         variable resultsbox 
         variable opts
+        variable objs_menu_callbacks		
+	variable common_perms_menu_callbacks	
+	variable perms_menu_callbacks	
         
         # Layout frames
         set frame [$nb insert end $ApolTop::class_perms_tab -text "Classes/Perms"]
@@ -341,15 +371,14 @@ proc Apol_Class_Perms::create {nb} {
         
         # Popup menu widget
         menu .popupMenu_classes
-        .popupMenu_classes add command -label "Display Object Class Info" \
-    	-command { Apol_Class_Perms::popupInfo "class" [$Apol_Class_Perms::class_listbox get active] }
+        set objs_menu_callbacks [lappend objs_menu_callbacks {"Display Object Class Info" "Apol_Class_Perms::popupInfo class"}]
+        
         menu .popupMenu_common_perms
-        .popupMenu_common_perms add command -label "Display Common Permission Info" \
-    	-command { Apol_Class_Perms::popupInfo "common_perm" [$Apol_Class_Perms::common_listbox get active] }
+        set common_perms_menu_callbacks [lappend common_perms_menu_callbacks {"Display Common Permission Info" "Apol_Class_Perms::popupInfo common_perm"}]
+      
         menu .popupMenu_perms
-        .popupMenu_perms add command -label "Display Permission Info" \
-    	-command { Apol_Class_Perms::popupInfo "perm" [$Apol_Class_Perms::perms_listbox get active] }
-    
+        set perms_menu_callbacks [lappend perms_menu_callbacks {"Display Permission Info" "Apol_Class_Perms::popupInfo perm"}]
+        
         # Binding events to the both listboxes
         bindtags $class_listbox [linsert [bindtags $class_listbox] 3 classlist_Tag]  
     	bindtags $common_listbox [linsert [bindtags $common_listbox] 3 comlist_Tag]  
@@ -357,9 +386,19 @@ proc Apol_Class_Perms::create {nb} {
         bind classlist_Tag <Double-Button-1> { Apol_Class_Perms::popupInfo "class" [$Apol_Class_Perms::class_listbox get active]}
         bind comlist_Tag <Double-Button-1> { Apol_Class_Perms::popupInfo "common_perm" [$Apol_Class_Perms::common_listbox get active]}
         bind permlist_Tag <Double-Button-1> { Apol_Class_Perms::popupInfo "perm" [$Apol_Class_Perms::perms_listbox get active]}
-        bind classlist_Tag <Button-3> { Apol_Roles::popupRoleInfoMenu %W %x %y .popupMenu_classes }      
-        bind comlist_Tag <Button-3> { Apol_Roles::popupRoleInfoMenu %W %x %y .popupMenu_common_perms } 
-        bind permlist_Tag <Button-3> { Apol_Roles::popupRoleInfoMenu %W %x %y .popupMenu_perms }
+        bind classlist_Tag <Button-3> { ApolTop::popup_listbox_Menu \
+        	%W %x %y .popupMenu_classes $Apol_Class_Perms::objs_menu_callbacks \
+        	$Apol_Class_Perms::class_listbox}      
+        bind comlist_Tag <Button-3> { ApolTop::popup_listbox_Menu \
+        	%W %x %y .popupMenu_common_perms $Apol_Class_Perms::common_perms_menu_callbacks \
+        	$Apol_Class_Perms::common_listbox} 
+        bind permlist_Tag <Button-3> { ApolTop::popup_listbox_Menu \
+        	%W %x %y .popupMenu_perms $Apol_Class_Perms::perms_menu_callbacks \
+        	$Apol_Class_Perms::perms_listbox}
+        	
+        bind classlist_Tag <<ListboxSelect>> { focus -force $Apol_Class_Perms::class_listbox}
+        bind comlist_Tag   <<ListboxSelect>> { focus -force $Apol_Class_Perms::common_listbox}
+        bind permlist_Tag  <<ListboxSelect>> { focus -force $Apol_Class_Perms::perms_listbox}
            
         # Placing object classes, common permissions and permissions listboxe frames
         pack $sw_class -fill both -expand yes

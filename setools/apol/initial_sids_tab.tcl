@@ -33,6 +33,11 @@ namespace eval Apol_Initial_SIDS {
 	variable type_combo_box
 	variable attribute_combo_box
 	variable cb_attrib
+	
+	# callback procedures for the listbox items menu. Each element in this list is an embedded list of 2 items.
+	# The 2 items consist of the command label and the function name. The tabname will be added as an
+	# argument to the callback procedure.
+	variable menu_callbacks		""
 }
 
 ##############################################################
@@ -104,7 +109,10 @@ proc Apol_Initial_SIDS::searchSIDs {} {
 proc Apol_Initial_SIDS::open { } {
 	variable sids_list
 	
-	set sids_list [apol_GetNames initial_sids] 
+        set rt [catch {set sids_list [apol_GetNames initial_sids]} err]
+        if {$rt != 0} {
+	    return -code error $err
+        }
 	set sids_list [lsort $sids_list]
 	$Apol_Initial_SIDS::user_combo_box configure -values $Apol_Users::users_list
 	$Apol_Initial_SIDS::role_combo_box configure -values $Apol_Roles::role_list
@@ -137,6 +145,13 @@ proc Apol_Initial_SIDS::close { } {
 	ApolTop::makeTextBoxReadOnly $Apol_Initial_SIDS::resultsbox 
 	
 	return 0	
+}
+
+proc Apol_Initial_SIDS::free_call_back_procs { } {
+       variable menu_callbacks
+       
+       set menu_callbacks ""
+       return 0
 }
 
 # ------------------------------------------------------------------------------
@@ -175,25 +190,6 @@ proc Apol_Initial_SIDS::popupSIDInfo {sid} {
 	wm geometry $w +50+50
 	wm deiconify $w
 	$f configure -state disabled	
-	return 0
-}
-
-# ------------------------------------------------------------------------------
-#  Command Apol_Initial_SIDS::popupSIDInfoMenu
-# ------------------------------------------------------------------------------
-proc Apol_Initial_SIDS::popupSIDInfoMenu { global x y popup } {
-	# Getting global coordinates of the application window (of position 0, 0)
-	set gx [winfo rootx $global]	
-	set gy [winfo rooty $global]
-	
-	# Add the global coordinates for the application window to the current mouse coordinates
-	# of %x & %y
-	set cmx [expr $gx + $x]
-	set cmy [expr $gy + $y]
-	
-	# Posting the popup menu
-	tk_popup $popup $cmx $cmy
-	
 	return 0
 }
 
@@ -281,6 +277,7 @@ proc Apol_Initial_SIDS::create {nb} {
 	variable type_combo_box
 	variable attribute_combo_box
 	variable cb_attrib
+	variable menu_callbacks
 	
 	# Layout frames
 	set frame [$nb insert end $ApolTop::initial_sids_tab -text "Initial SIDs"]
@@ -314,14 +311,16 @@ proc Apol_Initial_SIDS::create {nb} {
 	    
 	# Popup menu widget
 	menu .popupMenu_sids
-	.popupMenu_sids add command -label "Display Initial SID Context" \
-		-command {Apol_Initial_SIDS::popupSIDInfo [$Apol_Initial_SIDS::init_sids_listbox get active]}
-	    
+	set menu_callbacks [lappend menu_callbacks {"Display Initial SID Context" "Apol_Initial_SIDS::popupSIDInfo"}]
+		    
 	# Event binding on the users list box widget
-	bindtags $init_sids_listbox [linsert [bindtags $init_sids_listbox] 3 ulist_Tag]  
-	bind ulist_Tag <Double-Button-1> {Apol_Initial_SIDS::popupSIDInfo [$Apol_Initial_SIDS::init_sids_listbox get active]}
-	bind ulist_Tag <Button-3> {Apol_Initial_SIDS::popupSIDInfoMenu %W %x %y .popupMenu_sids}
-	
+	bindtags $init_sids_listbox [linsert [bindtags $init_sids_listbox] 3 sidlist_Tag]  
+	bind sidlist_Tag <Double-Button-1> {Apol_Initial_SIDS::popupSIDInfo [$Apol_Initial_SIDS::init_sids_listbox get active]}
+	bind sidlist_Tag <Button-3> {ApolTop::popup_listbox_Menu \
+		%W %x %y .popupMenu_sids $Apol_Initial_SIDS::menu_callbacks \
+		$Apol_Initial_SIDS::init_sids_listbox}
+        bind sidlist_Tag <<ListboxSelect>> {focus -force $Apol_Initial_SIDS::init_sids_listbox}
+
 	# Search options subframes
 	set ofm [$s_optionsbox getframe]
 	set l_innerFrame [LabelFrame $ofm.to -relief sunken -bd 1]
