@@ -4137,18 +4137,15 @@ int Apol_TransitiveFlowAnalysis(ClientData clientData, Tcl_Interp *interp, int a
 		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
 		return TCL_ERROR;
 	}
-	Tcl_DoOneEvent(TCL_WINDOW_EVENTS);
 	iflow_query = set_transitive_query_args(interp, argv);
 	if (iflow_query == NULL) {
 		return TCL_ERROR;
 	}	
-	Tcl_DoOneEvent(TCL_WINDOW_EVENTS);
 	if ((answers = iflow_transitive_flows(policy, iflow_query)) == NULL) {
 		iflow_query_destroy(iflow_query);
 		Tcl_AppendResult(interp, "There were errors in the information flow analysis\n", (char *) NULL);
 		return TCL_ERROR;
 	}
-	Tcl_DoOneEvent(TCL_WINDOW_EVENTS);
 	/* Append the start type to our encoded TCL list */
 	rt = get_type_name(iflow_query->start_type, &start_type, policy);				
 	if (rt != 0) {
@@ -4189,7 +4186,6 @@ int Apol_TransitiveFindPathsStart(ClientData clientData, Tcl_Interp *interp, int
 		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
 		return TCL_ERROR;
 	}
-	Tcl_DoOneEvent(TCL_WINDOW_EVENTS);
 	iflow_query = set_transitive_query_args(interp, argv);
 	if (iflow_query == NULL) {
 		return TCL_ERROR;
@@ -4197,15 +4193,13 @@ int Apol_TransitiveFindPathsStart(ClientData clientData, Tcl_Interp *interp, int
 	if(iflow_query == NULL) {
 		Tcl_AppendResult(interp, "Query is empty!", (char *) NULL);
 		return TCL_ERROR;
-	}
-	Tcl_DoOneEvent(TCL_WINDOW_EVENTS);	
+	}	
 	/* Start finding additional iflow paths */
 	state = iflow_find_paths_start(policy, iflow_query);	
 	if (state == NULL) {
 		Tcl_AppendResult(interp, "Could not start iflow paths search.", (char *) NULL);
 		return TCL_ERROR;
 	}
-	Tcl_DoOneEvent(TCL_WINDOW_EVENTS);
 	iflow_query_destroy(iflow_query);
 	return TCL_OK;
 }
@@ -4231,7 +4225,6 @@ int Apol_TransitiveFindPathsNext(ClientData clientData, Tcl_Interp *interp, int 
 		Tcl_AppendResult(interp,"Analysis not started!", (char *) NULL);
 		return TCL_ERROR;
 	}
-	Tcl_DoOneEvent(TCL_WINDOW_EVENTS);
 	num_paths = iflow_find_paths_next(state);
 	if (num_paths == -1) {
 		iflow_find_paths_abort(state);
@@ -4240,7 +4233,7 @@ int Apol_TransitiveFindPathsNext(ClientData clientData, Tcl_Interp *interp, int 
 	} 
 	sprintf(tbuf, "%d", num_paths);
 	Tcl_AppendResult(interp, tbuf, (char *) NULL);
-	Tcl_DoOneEvent(TCL_WINDOW_EVENTS);
+	
 	return TCL_OK;		
 }
 
