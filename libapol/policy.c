@@ -2663,7 +2663,7 @@ int extract_types_from_te_rule(int rule_idx, int rule_type, unsigned char whichl
 				continue;
 			for (i = 0; i < policy->attribs[t->idx].num; i++) {
 				tidx = policy->attribs[t->idx].a[i];
-				if(!b_types[t->idx] && (find_int_in_array(tidx, subtracted_types, num_subtracted_types) == -1)) {
+				if(!b_types[tidx] && (find_int_in_array(tidx, subtracted_types, num_subtracted_types) == -1)) {
 					if(add_i_to_a(tidx, num_types, types) != 0) {
 						ret = -1;
 						goto out;
