@@ -33,6 +33,23 @@ int main(int argc, char **argv)
 									      POLOPT_AV_RULES | POLOPT_USERS | POLOPT_ROLES, &policy) == 0);
 	free_policy(&policy);
 	
+	/* Do the same with the binary policy */
+	TEST("partial loading NONE of a policy", open_partial_policy("policy/binary_small.17", POLOPT_NONE, &policy) == 0);
+	free_policy(&policy);
+	TEST("partial loading ALL of a policy", open_partial_policy("policy/binary_small.17", POLOPT_ALL, &policy) == 0);
+	free_policy(&policy);
+	TEST("partial loading TYPES in a policy", open_partial_policy("policy/binary_small.17", POLOPT_TYPES, &policy) == 0);
+	free_policy(&policy);
+	TEST("partial loading only CLASSES in a policy", open_partial_policy("policy/binary_small.17", POLOPT_CLASSES, &policy) == 0);
+	free_policy(&policy);
+	TEST("partial loading CLASSES/PERMS in a policy", open_partial_policy("policy/binary_small.17", POLOPT_OBJECTS, &policy) == 0);
+	free_policy(&policy);
+	TEST("partial loading EVERYTHING ELSE in a policy", open_partial_policy("policy/binary_small.17", POLOPT_OTHER, &policy) == 0);
+	free_policy(&policy);
+	TEST("partial loading AVRULES, USERS, and ROLES", open_partial_policy("policy/binary_small.17", 
+									      POLOPT_AV_RULES | POLOPT_USERS | POLOPT_ROLES, &policy) == 0);
+	free_policy(&policy);
+	
 	/* TODO: The following policy options need a function for re-validating the specified option flag recursively. */
 	/*TEST("partial loading RBAC of a policy", open_partial_policy("policy/default-v12-policy.conf", POLOPT_RBAC, &policy) == 0);
 	free_policy(&policy);
