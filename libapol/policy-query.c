@@ -139,7 +139,7 @@ static int match_te_rules_idx(int  idx,
                            ) 		
 {
 	int i;
-	bool_t ans;
+	int ans;
 	
 	if(rules_b == NULL || policy == NULL)
 		return -1;
@@ -149,10 +149,11 @@ static int match_te_rules_idx(int  idx,
 		for(i = 0; i < policy->num_av_access; i++) {
 			if(rules_b->access[i])
 				continue;
-			if (does_av_rule_use_type(idx, idx_type, whichlists, do_indirect, 
-					&(policy->av_access[i]), &(rules_b->ac_cnt), &ans, policy) == -1)
-			return -1;
-			if (ans) {
+			ans = does_av_rule_use_type(idx, idx_type, whichlists, do_indirect, 
+					&(policy->av_access[i]), &(rules_b->ac_cnt), policy);
+			if (ans == -1)
+				return -1;
+			else if (ans) {
 				rules_b->access[i] = TRUE;
 			}
 		}
@@ -160,10 +161,11 @@ static int match_te_rules_idx(int  idx,
 	for(i = 0; i < policy->num_te_trans; i++) {
 		if (rules_b->ttrules[i])
 			continue;
-		if (does_tt_rule_use_type(idx, idx_type, whichlists, do_indirect, 
-				&(policy->te_trans[i]), &(rules_b->tt_cnt), &ans, policy) == -1)
+		ans = does_tt_rule_use_type(idx, idx_type, whichlists, do_indirect, 
+				&(policy->te_trans[i]), &(rules_b->tt_cnt), policy);
+		if (ans == -1)
 			return -1;
-		if (ans) {
+		else if (ans) {
 			rules_b->ttrules[i] = TRUE;
 		}
 	}
@@ -181,10 +183,11 @@ static int match_te_rules_idx(int  idx,
 		for(i = 0; i < policy->num_av_audit; i++) {
 			if (rules_b->audit[i])
 				continue;
-			if (does_av_rule_use_type(idx, idx_type, whichlists, do_indirect, 
-					&(policy->av_audit[i]), &(rules_b->au_cnt), &ans, policy) == -1)
+			ans = does_av_rule_use_type(idx, idx_type, whichlists, do_indirect, 
+					&(policy->av_audit[i]), &(rules_b->au_cnt), policy);
+			if (ans == -1)
 				return -1;
-			if (ans) {
+			else if (ans) {
 				rules_b->audit[i] = TRUE;
 			}
 		}
@@ -275,7 +278,7 @@ int match_rbac_rules(int	idx,
                     )
 {
 	int i;
-	bool_t ans;
+	int ans;
 	
 	if(b == NULL)
 		return -1;
@@ -294,8 +297,9 @@ int match_rbac_rules(int	idx,
 					&(policy->role_trans[i]), &(b->t_cnt));
 			}
 			if(!(b->trans[i]) && (whichlist & TGT_LIST) && !tgt_is_role) {
-				if (does_role_trans_use_ta(idx, type, do_indirect, &(policy->role_trans[i]), 
-						&(b->t_cnt), &ans, policy) == -1)
+				ans = does_role_trans_use_ta(idx, type, do_indirect, &(policy->role_trans[i]), 
+						&(b->t_cnt), policy);
+				if (ans == -1)
 					return -1;
 				b->trans[i] = ans;
 			}
