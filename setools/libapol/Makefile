@@ -1,4 +1,4 @@
-# libapol and lipapol-tcl
+# libapol and libapol-tcl
 
 LIB-OBJ	= policy.o policy-query.o policy-io.o queue.o util.o clone.o y.tab.o lex.yy.o
 LIB-OBJ +=  avl-util.o policy-avl.o render.o analysis.o perm-map.o cond.o infoflow.o
@@ -36,7 +36,7 @@ libapolso: ../lib/$(LIBSO)
 install-libapol-shared: libapolso
 	test -d $(SHARED_LIB_INSTALL_DIR) || install -m 755 -d $(SHARED_LIB_INSTALL_DIR)
 	install -m 755 ../lib/$(LIBSO) $(SHARED_LIB_INSTALL_DIR)
-	/sbin/ldconfig 
+	/sbin/ldconfig $(SHARED_LIB_INSTALL_DIR)
 	cd $(SHARED_LIB_INSTALL_DIR) && ln -sf ./`basename $(SHARED_LIB_INSTALL_DIR)`/$(LIBSO) $(TARGET)
 
 install-libapol-static: libapol
