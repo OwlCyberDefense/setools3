@@ -185,13 +185,19 @@ void multifilter_window_save_multifilter(multifilter_window_t *window, gboolean 
 
 	if (!window)
 		return;
-
+	
+	/* If this is not a 'Save As' request and the multifilter is a loaded saved multifilter,
+	 * then just save using it's original filename. Otherwise, it has no filename and so get 
+	 * the filename from the user, while appending the default seaudit view extension. */
 	if (!saveas && strcmp(window->filename->str, "") != 0)
 		filename = g_string_new(window->filename->str);
 	else {
 		filename = get_filename_from_user("Save View", window->name->str);
 		if (filename == NULL)
 			return;
+		/* Append the default seaudit view extension (defined in seaudit.h). */
+		g_string_append(filename, SEAUDIT_VIEW_EXT);
+		
 		if (g_file_test(filename->str, G_FILE_TEST_EXISTS)) {
 			message = g_string_new("");
 			g_string_printf(message, "The file %s\nalready exists.  Are you sure you wish to continue?", filename->str);
@@ -530,6 +536,9 @@ static void multifilter_window_on_export_button_pressed(GtkButton *button, multi
 	filename = get_filename_from_user("Export filter", filter->name);
 	if (filename == NULL)
 		return;
+	/* Append the default seaudit filter extension (defined in seaudit.h). */
+	g_string_append(filename, SEAUDIT_FILTER_EXT);
+		
 	if (g_file_test(filename->str, G_FILE_TEST_EXISTS)) {
 		message = g_string_new("");
 		g_string_printf(message, "The file %s\nalready exists.  Are you sure you wish to continue?", filename->str);
