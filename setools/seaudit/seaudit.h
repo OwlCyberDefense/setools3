@@ -65,7 +65,7 @@ void seaudit_update_status_bar(seaudit_t *seaudit);
 
 /* Functions related to exporting log files */
 
-void seaudit_save_log_file();
+void seaudit_save_log_file(bool_t selected_only);
 int  seaudit_write_log_file(const audit_log_view_t *log_view, const char *filename);
 audit_log_view_t* seaudit_get_current_audit_log_view();
 void generate_message_header(char *message_header, audit_log_t *audit_log, struct tm *date_stamp, int host);
