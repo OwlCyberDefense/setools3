@@ -5,23 +5,31 @@ TOPDIR		= $(shell pwd)
 MAKEFILE =  Makefile
 MAKE = make
 
+# If debug is zero, an optimized version that is dynamically
+# linked is created
+DEBUG			= 0
+# This determines whether libapol and libseuser use libselinux
+# to find the default policies. Useful to create a verion of
+# apol that runs on non-selinux machines.
+USE_LIBSELINUX 	= 1
+
 LIBS		= -lfl -lm
-TCLVER		= $(shell env tclsh tcl_vars version)
-TCL_LIBINC	= -L$(shell env tclsh tcl_vars pkgPath)
-TCL_INCLUDE	= -I$(shell echo $(shell env tclsh tcl_vars pkgPath) | sed -e "s/lib/include/g")
+TCLVER		= $(shell env tclsh tcl_vars)
 #TCLVER		= 8.3
 #TCL_INCLUDE	= -I/usr/include
 #TCL_LIBINC	= -L/usr/lib
 TCL_LIBS	= -ltk$(TCLVER) -ltcl$(TCLVER) -ldl $(LIBS)
 INCLUDE_DIR	= $(DESTDIR)/usr/include
+ifeq ($(USE_LIBSELINUX), 1)
+export LIBSELINUX  = -lselinux
+else
+export LIBSELINUX = 
+endif
 
 LINKFLAGS	= 
 CC		= gcc 
 YACC		= bison -y
 LEX		= flex -olex.yy.c
-
-DEBUG		= 1
-DYNAMIC		= 0
 
 SHARED_LIB_INSTALL_DIR = /usr/lib
 STATIC_LIB_INSTALL_DIR = $(SHARED_LIB_INSTALL_DIR)
@@ -42,21 +50,14 @@ DEFAULT_LOG_FILE = /var/log/messages
 # -DCONFIG_SECURITY_SELINUX_MLS 
 #		compiles library to be compatible with MLS 
 ##		in the policy (experimental, see Readme)
-# -DLIBSELINUX 
-#		compiles libapol and libseuser libraries to use the
-#		libselinux helper functions for locating system default 
-#		policy resources, instead of the logic from libapol or 
-#		the locations defined in the seuser.conf file.
-#
-#		NOTE: When using this compile option, you will need to   
-#		link in the libselinux library for the following 
-#		programs: 
-#		  seaudit, seinfo, sesearch, seuser, seuserx
-##
-CC_DEFINES	= -fPIC
+CC_DEFINES	=
+
+ifeq ($(USE_LIBSELINUX), 1)
+CC_DEFINES += -DLIBSELINUX
+endif
 
 ifeq ($(DEBUG), 0)
-CFLAGS		= -Wall -O2 $(TCL_INCLUDE) $(CC_DEFINES)
+CFLAGS		= -Wall -O2 -fPIC $(TCL_INCLUDE) $(CC_DEFINES)
 else
 CFLAGS		= -Wall -g $(TCL_INCLUDE) $(CC_DEFINES)
 #CFLAGS		= -Wall -ansi -pedantic -g $(TCL_INCLUDE) $(CC_DEFINES)
@@ -102,67 +103,49 @@ all-libs: corelibs guilibs
 
 help:
 	@echo "Make targets for setools: "
-	@echo "   install:           build and install everything (selinux required)"
-	@echo "   install-nogui:     build and install all non-GUI tools (selinux required)"
+	@echo "   install:           		build and install everything (selinux required)"
+	@echo "   install-nogui:     		build and install all non-GUI tools (selinux required)"
 	@echo ""
-	@echo "   install-apol:      build and install apol (selinux not required)"
-	@echo "   install-sepcut:    build and install sepct (selinux not required)"
-	@echo "   install-seuser:    build and install command line seuser (selinux required)"
-	@echo "   install-seuserx:   build and install seuser and seuserx (selinux required)"
-	@echo "   install-secmds:    build and install command line tools (selinux not required)"
-	@echo "   install-seaudit:   build and install seaudit and seaudit-report (selinux not required)"
+	@echo "   install-apol:      		build and install apol (selinux not required)"
+	@echo "   install-sepcut:    		build and install sepct (selinux not required)"
+	@echo "   install-seuser:    		build and install command line seuser (selinux required)"
+	@echo "   install-seuserx:   		build and install seuser and seuserx (selinux required)"
+	@echo "   install-secmds:    		build and install command line tools (selinux not required)"
+	@echo "   install-seaudit:   		build and install seaudit and seaudit-report (selinux not required)"
 	@echo ""
-	@echo "   install-dev:       build and install headers and libraries"
-	@echo "   install-docs:      install setools documentation"
-	@echo "   install-policy:    install SELinux policy and label files"
-	@echo "   install-bwidget:   install BWidgets-1.4.1 package (requires Tcl/Tk)"
+	@echo "   install-dev:       		build and install headers and libraries"
+	@echo "   install-docs:      		install setools documentation"
+	@echo "   install-policy:    		install SELinux policy and label files"
+	@echo "   install-bwidget:   		install BWidgets-1.4.1 package (requires Tcl/Tk)"
 	@echo ""
-	@echo "   install-service:   install seaudit-report as a plug-in to LogWatch (LogWatch required)"
+	@echo "   install-logwatch-files:   	install LogWatch config files for seaudit-report (LogWatch required)"
 	@echo " "
-	@echo "   all:               build everything, but don't install"
-	@echo "   all-nogui:         only build non-GUI tools and libraries"
+	@echo "   all:               		build everything, but don't install"
+	@echo "   all-nogui:         		only build non-GUI tools and libraries"
 	@echo ""
-	@echo "   apol:              build policy analysis tool"
-	@echo "   seuser:            build SE Linux command line user tool"
-	@echo "   seuserx:           build SE Linux GUI user tool"
-	@echo "   sepcut             build policy customization/browsing tool"
-	@echo "   secmds:            build setools command line tools"
-	@echo "   seaudit:           built audit log analysis tools"
-	@echo "   awish:             build TCL/TK wish interpreter with SE Linux tools extensions"
+	@echo "   apol:              		build policy analysis tool"
+	@echo "   seuser:            		build SE Linux command line user tool"
+	@echo "   seuserx:           		build SE Linux GUI user tool"
+	@echo "   sepcut             		build policy customization/browsing tool"
+	@echo "   secmds:            		build setools command line tools"
+	@echo "   seaudit:           		built audit log analysis tools"
+	@echo "   awish:             		build TCL/TK wish interpreter with SE Linux tools extensions"
 	@echo " "
-	@echo "   clean:             clean up interim files"
-	@echo "   bare:              more extensive clean up"
+	@echo "   clean:             		clean up interim files"
+	@echo "   bare:              		more extensive clean up"
 
 
 apol: selinux_tool
-	cd apol;
-	@if [ "${shell env tclsh tcl_vars search_tcl_libs}" != "none" ]; then \
-		cd apol; $(MAKE) apol; \
-	else \
-		echo "Could not build apol."; \
-		echo "Tcl library is not built or not in expected location(s)."; \
-	fi
+	cd apol; $(MAKE) apol; 
 
 awish: selinux_tool
-	cd awish;
-	@if [ "${shell env tclsh tcl_vars search_tcl_libs}" != "none" ]; then \
-		cd awish; $(MAKE) awish; \
-	else \
-		echo "Could not build awish."; \
-		echo "Tcl library is not built or not in expected location(s)."; \
-	fi
+	cd awish; $(MAKE) awish;
 
 seuser: selinux_tool
 	cd seuser; $(MAKE) seuser 	
 
 seuserx: selinux_tool
-	cd seuser;
-	@if [ "${shell env tclsh tcl_vars search_tcl_libs}" != "none" ]; then \
-		cd seuser; $(MAKE) seuserx; \
-	else \
-		echo "Could not build seuserx."; \
-		echo "Tcl library is not built or not in expected location(s)."; \
-	fi
+	cd seuser; $(MAKE) seuserx;
 
 sepcut: selinux_tool
 	cd sepct; $(MAKE) sepcut
@@ -177,14 +160,8 @@ libapol: selinux_tool
 	cd libapol; $(MAKE) libapol libapolso
 
 libapol-tcl: selinux_tool
-	cd libapol;
-	@if [ "${shell env tclsh tcl_vars search_tcl_libs}" != "none" ]; then \
-		cd libapol; $(MAKE) libapol-tcl libapol-tclso; \
-	else \
-		echo "Could not build libapol-tcl."; \
-		echo "Tcl library is not built or not in expected location(s)."; \
-	fi
-
+	cd libapol; $(MAKE) libapol-tcl libapol-tclso; 
+	
 libsefs: selinux_tool
 	cd libsefs; $(MAKE) libsefs libsefsso
 
@@ -192,13 +169,7 @@ libseuser: selinux_tool
 	cd libseuser; $(MAKE) libseuser libseuserso
 
 libseuser-tcl: selinux_tool
-	cd libseuser;
-	@if [ "${shell env tclsh tcl_vars search_tcl_libs}" != "none" ]; then \
-		cd libseuser; $(MAKE) libseuser-tcl libseuser-tclso; \
-	else \
-		echo "Could not build libseuser-tcl."; \
-		echo "Tcl library is not built or not in expected location(s)."; \
-	fi
+	cd libseuser; $(MAKE) libseuser-tcl libseuser-tclso;
 
 libseaudit: selinux_tool
 	cd libseaudit; $(MAKE) libseaudit libseauditso
@@ -207,32 +178,14 @@ $(INSTALL_LIBDIR):
 	install -m 755 -d $(INSTALL_LIBDIR)
 
 install-apol: $(INSTALL_LIBDIR)
-	cd apol;
-	@if [ "${shell env tclsh tcl_vars search_tcl_libs}" != "none" ]; then \
-		cd apol; $(MAKE) install; \
-	else \
-		echo "Could not install apol."; \
-		echo "Tcl library is not built or not in expected location(s)."; \
-	fi
-
+	cd apol; $(MAKE) install; 
+	
 install-awish: $(INSTALL_LIBDIR)
-	cd awish;
-	@if [ "${shell env tclsh tcl_vars search_tcl_libs}" != "none" ]; then \
-		cd awish; $(MAKE) install; \
-	else \
-		echo "Could not install awish."; \
-		echo "Tcl library is not built or not in expected location(s)."; \
-	fi	
+	cd awish; $(MAKE) install; 
 
 # installs both GUI and non-GUI versions
 install-seuserx: $(INSTALL_LIBDIR)
-	cd seuser;
-	@if [ "${shell env tclsh tcl_vars search_tcl_libs}" != "none" ]; then \
-		cd seuser; $(MAKE) install; \
-	else \
-		echo "Could not install seuserx."; \
-		echo "Tcl library is not built or not in expected location(s)."; \
-	fi	
+	cd seuser; $(MAKE) install; 
 
 # Non-GUI version only
 install-seuser: $(INSTALL_LIBDIR)
@@ -250,8 +203,7 @@ install-seaudit: $(INSTALL_LIBDIR)
 install-nogui: $(INSTALL_LIBDIR) install-seuser install-secmds
 
 install: install-dev install-apol install-seuserx install-sepcut \
-	 install-awish install-secmds install-seaudit install-docs \
-	 install-policy install-bwidget
+	 install-awish install-secmds install-seaudit install-docs
 
 # Install the libraries
 install-libseuser:
@@ -267,7 +219,7 @@ install-libsefs:
 	cd libsefs; $(MAKE) install
 
 install-dev: install-libseuser install-libapol install-libseaudit install-libsefs
-
+	
 # Install the policy - this is a separate step to better support systems with
 # non-standard policies.
 install-seuser-policy: $(INSTALL_LIBDIR)
@@ -297,7 +249,7 @@ install-bwidget:
 	cd packages; $(MAKE) install
 
 # Install LogWatch config files to plug-in seaudit-report to LogWatch
-install-service:
+install-logwatch-files:
 	cd seaudit; $(MAKE) install-logwatch-service
 	
 # Re-generate all setools documentation in source tree
