@@ -1,50 +1,25 @@
 /*
- *  Copyright (C) 2003-2004 Tresys Technology, LLC
+ *  Copyright (C) 2003-2005 Tresys Technology, LLC
  *  see file 'COPYING' for use and warranty information
  *
- */
-
-/*
  *  searchcon: a tool for searching SELinux filesystem databases
  */
-
+ 
+/* libsefs */
 #include <fsdata.h>
-
-/* SE Linux includes*/
-#include <selinux/selinux.h>
-#include <selinux/context.h>
 /* standard library includes */
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <assert.h>
-#include <errno.h>
-#include <limits.h>
-#include <fnmatch.h>
+/* command line parsing commands */
 #define _GNU_SOURCE
 #include <getopt.h>
-#include <regex.h>
-/* file tree walking commands */
-#define __USE_XOPEN_EXTENDED 1
-#include <ftw.h>
-#include <mntent.h>
-/* AVL Tree Handling */
-#include <avl-util.h>
-#include <policy.h>
-
-/* libapol helpers */
-#include <util.h>
 
 /* LISTCON_VERSION_NUM should be defined in the make environment */
 #ifndef SEARCHCON_VERSION_NUM
 #define SEARCHCON_VERSION_NUM "UNKNOWN"
 #endif
 
-#define COPYRIGHT_INFO "Copyright (C) 2004 Tresys Technology, LLC"
+#define COPYRIGHT_INFO "Copyright (C) 2003-2005 Tresys Technology, LLC"
 
 static struct option const longopts[] =
 {
@@ -58,8 +33,6 @@ static struct option const longopts[] =
   {"version", no_argument, NULL, 'v'},
   {NULL, 0, NULL, 0}
 };
-
-extern const char *sefs_object_classes[];
 
 void usage(const char *program_name, int brief)
 {
@@ -93,32 +66,14 @@ Valid object classes include:\n\
 	return;
 }
 
-void print_list (sefs_filesystem_db_t* fsd, uint32_t* list, uint32_t list_size)
-{
-}
-
-int sefs_list_types(sefs_filesystem_db_t * fsd)
-{
-
-	return 0;
-}
-
-
 int main(int argc, char **argv, char **envp)
 {
 	char *filename = NULL, *tname = NULL, *uname = NULL, *path = NULL, *object = NULL;
-	int optc = 0, rc = 0, list = 0;
+	int optc = 0, list_sz = 0, list = 0;
 	sefs_filesystem_db_t fsdata;
 	sefs_search_keys_t search_keys;
 	char **list_ret = NULL;
 	const char **holder = NULL;
-
-
-        filename = argv[1];
-	if (filename == NULL) {
-		usage(argv[0], 0);
-		return -1;
-	}
 
 	search_keys.user = NULL;
 	search_keys.path = NULL;
@@ -141,7 +96,6 @@ int main(int argc, char **argv, char **envp)
 			}
 			search_keys.type = holder;
 			search_keys.type[search_keys.num_type] = optarg;
-//			search_keys.type = optarg;
 			search_keys.num_type++;
 	  		tname = optarg;
 	  		break;
@@ -152,7 +106,6 @@ int main(int argc, char **argv, char **envp)
 			}
 			search_keys.user = holder;
 			search_keys.user[search_keys.num_user] = optarg;
-//			search_keys.user = optarg;
 			search_keys.num_user++;
 	  		uname = optarg;
 	  		break;
@@ -163,7 +116,6 @@ int main(int argc, char **argv, char **envp)
 			}
 			search_keys.path = holder;
 			search_keys.path[search_keys.num_path] = optarg;
-//			search_keys.path = optarg;
 			search_keys.num_path++;
 	  		path = optarg;
 	  		break;
@@ -174,7 +126,6 @@ int main(int argc, char **argv, char **envp)
 			}
 			search_keys.object_class = holder;
 			search_keys.object_class[search_keys.num_object_class] = optarg;
-//			search_keys.object_class = optarg;
 			search_keys.num_object_class++;
 			object = optarg;
 			break;
@@ -197,7 +148,11 @@ int main(int argc, char **argv, char **envp)
 	  		exit(1);
 		}
 	}
-
+	if (argc - optind > 1 || argc - optind < 1) {
+		usage(argv[0], 1);
+		exit(-1);
+	} else 
+		filename = argv[optind];
 
 	if ((tname == NULL) && (uname == NULL) && (path == NULL) && (object == NULL) && !list) {
 		fprintf(stderr, "\nYou must specify one of -t|-u|-p|-o\n\n");
@@ -205,18 +160,15 @@ int main(int argc, char **argv, char **envp)
 		return -1;
 	}
 	
-	
 	if (sefs_filesystem_db_load(&fsdata,filename) == -1 ){
 		fprintf(stderr, "sefs_filesystem_data_load failed\n");
 		return -1;
 	}
 	
 	if (list == 1) {
-		if ((list_ret = sefs_filesystem_db_get_known(&fsdata,&rc,SEFS_TYPES)) != NULL) {
-			sefs_double_array_print(list_ret,rc);
-			sefs_double_array_destroy(list_ret,rc);
-			/*sefs_search_keys_ret_print(ret);
-			 sefs_search_keys_ret_destroy(ret);*/
+		if ((list_ret = sefs_filesystem_db_get_known(&fsdata, &list_sz, SEFS_TYPES)) != NULL) {
+			sefs_double_array_print(list_ret, list_sz);
+			sefs_double_array_destroy(list_ret, list_sz);
 		} 
 	}
 	else {
@@ -234,17 +186,6 @@ int main(int argc, char **argv, char **envp)
 	if (search_keys.object_class)
 		free(search_keys.object_class);
 
-
-/*	if (list) {
-		if (sefs_list_types(&fsdata) == -1) {
-			fprintf(stderr, "list_types() returned error\n");
-			return -1;
-		}
-		return 0;
-	}
-
-	print_list(&fsdata, index_list, index_list_size);
-*/
 	return 0;
 }
 
