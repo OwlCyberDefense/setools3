@@ -568,7 +568,10 @@ int apol_do_relabel_analysis(relabel_set_t **sets, policy_t *policy)
 				for (k = 0; k < num_subjects; k++) {
 					for (x = 0; x < num_targets; x++) {
 						/* add tgt x to to_list of k */
-						retv = apol_add_type_to_list(&((*sets)[subjects[k]]), targets[x], TOLIST);
+						if (!targets[x]) 
+							retv = apol_add_type_to_list(&((*sets)[subjects[k]]), subjects[k], TOLIST);
+						else
+							retv = apol_add_type_to_list(&((*sets)[subjects[k]]), targets[x], TOLIST);
 						if (retv)
 							goto bail_point;
 						for (y = 0; y < num_objects; y++) {
@@ -587,7 +590,10 @@ int apol_do_relabel_analysis(relabel_set_t **sets, policy_t *policy)
 				for (k = 0; k < num_subjects; k++) {
 					for (x = 0; x < num_targets; x++) {
 						/* add tgt x to from_list of k */
-						retv = apol_add_type_to_list(&((*sets)[subjects[k]]), targets[x], FROMLIST);
+						if (!targets[x])
+							retv = apol_add_type_to_list(&((*sets)[subjects[k]]), subjects[k], FROMLIST);
+						else
+							retv = apol_add_type_to_list(&((*sets)[subjects[k]]), targets[x], FROMLIST);
 						if (retv)
 							goto bail_point;
 						for (y = 0; y < num_objects; y++) {
