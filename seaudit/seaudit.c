@@ -331,7 +331,8 @@ int main(int argc, char **argv)
 	filename_data_t filenames;
 	char *policy_file = NULL;
         GString *msg = NULL;
-
+        int rt;
+        
 	filenames.policy_filename = filenames.log_filename = NULL; 			
 	seaudit_parse_command_line(argc, argv, &filenames.policy_filename, &filenames.log_filename);
 	gtk_init(&argc, &argv);
@@ -357,8 +358,10 @@ int main(int argc, char **argv)
                         /* There was no default policy file specified at the command-line or
                          * in the users .seaudit file, so use the policy default logic from 
                          * libapol. With seaudit we prefer the source policy over binary. */
-                        if (find_default_policy_file(POL_TYPE_SOURCE, &policy_file) == SRC_POL_FILE_DOES_NOT_EXIST && 
-                            find_default_policy_file(POL_TYPE_BINARY, &policy_file) == BIN_POL_FILE_DOES_NOT_EXIST) {
+                        rt = find_default_policy_file((POL_TYPE_SOURCE | POL_TYPE_BINARY), &policy_file);
+                        if (rt == GENERAL_ERROR) {
+                        	exit(1);	
+                        } else if (rt != FIND_DEFAULT_SUCCESS) {
                         	/* no policy to use, so warn the user and then start up without a default policy. */
                                 msg = g_string_new("Could not find system default policy to open. Use the \
                                 		    File menu to open a policy");
