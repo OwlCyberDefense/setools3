@@ -27,6 +27,7 @@
 #include <strings.h>
 #include <stdlib.h>
 #include <regex.h>
+#include <stdint.h>
 
 #define LIST_SZ 100	/* alloc size for all list arrays...
 			 * dynamically grow in this increments as necesary */
@@ -154,9 +155,9 @@ typedef struct obj_class {
 
 
 typedef struct security_context {
-	int		user;	
-	int		role;
-	int		type;
+	int32_t		user;	
+	int32_t		role;
+	int32_t		type;
 } security_con_t;
 
 
