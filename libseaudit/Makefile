@@ -20,17 +20,17 @@ libseaudit.a: $(LIB-OBJ)
 	cd ../; $(MAKE) libapol
 
 install-libapol-shared: libseauditso
-	test -d $(SHARED_LIB_INSTALL_DIR) || install -m 755 -d $(SHARED_LIB_INSTALL_DIR)
 	install -m 755 $(LIBSO) $(SHARED_LIB_INSTALL_DIR)
 	cd $(SHARED_LIB_INSTALL_DIR) && ln -sf $(LIBSO) $(TARGET)
 
 install-libapol-static: libseaudit
-	test -d $(STATIC_LIB_INSTALL_DIR) || install -m 755 -d $(STATIC_LIB_INSTALL_DIR)
 	install -m 644 libseaudit.a $(STATIC_LIB_INSTALL_DIR)
-	test -d $(SETOOLS_INCLUDE)/libseaudit || install -m 755 -d $(SETOOLS_INCLUDE)/libseaudit
-	install -m 644 *.h $(SETOOLS_INCLUDE)/libseaudit
+	install -m 644 *.h $(SETOOLS_INCLUDE)
 
 install: install-libapol-shared install-libapol-static
+
+install-policy:
+	chcon system_u:object_r:shlib_t $(SHARED_LIB_INSTALL_DIR)/$(LIBSO)
 
 %.o:  %.c 
 	$(CC) $(CFLAGS) $(LIBXML_FLAGS) $(INCLUDE) -c $<
