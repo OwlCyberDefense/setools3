@@ -8,6 +8,7 @@
 
 #include "seaudit.h"
 #include "utilgui.h"
+#include "seaudit_callback.h"
 #include <string.h>
 #include <libapol/render.h>
 #include <libapol/policy-query.h>
@@ -434,7 +435,7 @@ static void populate_query_window_widgets(GladeXML *xml)
 	msg_t *msg = NULL;
 	avc_msg_t *avc_msg = NULL;
 	int fltr_msg_idx, msg_list_idx;
-	top_filters_view_t *view;
+	seaudit_filtered_view_t *view;
 
 	g_assert(seaudit_app->cur_policy);
 	view = seaudit_window_get_current_view(seaudit_app->window);
