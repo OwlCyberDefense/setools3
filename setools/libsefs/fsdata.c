@@ -32,12 +32,10 @@
 #include <policy.h>
 #include <avl-util.h>
 
-
 /* file tree walking commands */
 #define __USE_XOPEN_EXTENDED 1
 #include <ftw.h>
 #include <mntent.h>
-#include <policy.h>
 
 #include <time.h>
 
@@ -194,7 +192,6 @@ static void sefs_stmt_populate(char *stmt,sefs_search_keys_t *search_keys,int *o
 	char stmt_holder[100000];
 	int stmt_length = stmt_size/sizeof(char);
 	int stmt_curr_length = 0;
-	int have_started = 0;
 	/* at this point stmt should be empty but better make sure */
 	bzero(stmt,stmt_size);	
 	/* first put the starting statement */
@@ -1136,7 +1133,7 @@ char **sefs_filesystem_db_get_known(sefs_filesystem_db_t *fsd,int *count_in,int 
 	unsigned char select_stmt[1000];
 	int rc=0;
 	char *errmsg=NULL;
-	int count=0, num_classes;
+	int count=0;
 
 	db = (sqlite3 *)(*fsd->dbh);
 
