@@ -171,11 +171,12 @@ proc Apol_Types::popupTypeInfo {which ta} {
 		}
 		set index_file_loaded 1
 	} 
+
+	ApolTop::resetBusyCursor
 	set w .ta_infobox
 	set rt [catch {destroy $w} err]
 	if {$rt != 0} {
 		tk_messageBox -icon error -type ok -title "Error" -message "$err"
-		ApolTop::resetBusyCursor
 		return -1
 	}
 
@@ -219,9 +220,10 @@ proc Apol_Types::popupTypeInfo {which ta} {
 	     	if {$info_fc != ""} {
 	     		set num [llength $info_fc]
 	     		$f_fc insert end "Number of files: $num\n\n"
-		     	foreach {ctxt class path} $info_fc {
-		     		$f_fc insert end "$ctxt\t     $class\t     $path\n"
-		     	}
+	     		foreach item $info_fc {
+			     	foreach {ctxt class path} $item {}
+			     	$f_fc insert end "$ctxt\t     $class\t     $path\n"
+			}
 		} else {
 			$f_fc insert end "No files found."
 		}
@@ -231,9 +233,9 @@ proc Apol_Types::popupTypeInfo {which ta} {
  	$f_ta configure -state disabled
  	$f_fc configure -state disabled
  	
- 	wm geometry $w +200+200
+ 	wm geometry $w 400x400
  	wm deiconify $w
- 	ApolTop::resetBusyCursor
+ 	
 	return 0
 }
 
