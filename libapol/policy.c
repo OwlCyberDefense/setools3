@@ -30,9 +30,7 @@
 const char *policy_version_strings[] = { "Unkown version", 
 			 	 	 "prior to v. 11", 
 			 	 	 "v.11 -- v.12", 
-			 	 	 "v.15", 
-			 	 	 "v.16", 
-			 	 	 "v.17" };
+			 	 	 "v.15", "v.16", "v.17" };
 			 	 
 /* get a policy version string from the global array of constant strings. 
  * We use the defined policy version numbers as indices into this array.*/
@@ -71,6 +69,9 @@ int _get_type_name_ptr(int idx, char **name, policy_t *policy)
 
 int init_policy(policy_t **p)
 {
+	char *key;
+	int idx;
+	
 	policy_t *policy;
 	assert(*p == NULL);
 	policy = (policy_t *)malloc(sizeof(policy_t));
@@ -233,7 +234,21 @@ int init_policy(policy_t **p)
 	if(init_avl_trees(policy) != 0) {
 		return -1;
 	}
-
+	
+	/* make certain that the self type is present - some code assumes the presence
+	 * of this 'special' type, so it must always be added */
+	key = (char *)malloc(5);
+	if(key == NULL) {
+		fprintf(stderr, "Memory error\n");
+		return -1;
+	}
+	strcpy(key, "self");
+	idx = add_type(key, policy);
+	if (idx < 0) {
+		fprintf(stderr, "Error adding self type\n");
+		return -1;
+	}
+	
 	*p = policy;
 	return 0;
 }
