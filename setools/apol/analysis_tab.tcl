@@ -33,7 +33,8 @@ namespace eval Apol_Analysis {
 	variable curr_analysis_module	""
 	variable raised_tab_analysis_type ""
 	
-	# VARIABLES FOR INSERTING AND DELETING RESULTS TABS
+	# VARIABLES FOR INSERTING, DELETING AND RENAMING RESULTS TABS
+	variable new_tab_name		""
 	variable totalTabCount		10
 	variable currTabCount		0
 	variable pageNums		0
@@ -260,7 +261,7 @@ proc Apol_Analysis::create_New_ResultsTab { } {
     	set results_frame [Apol_Analysis::create_results_frame $tab_frame]
     	# Here we use a flag variable to determine if this is the first tab created.
     	# If it is, then we can set the NoteBook size here, instead of repeatedly
-    	# computing the notebook size every time Apol_TE::create_New_ResultsTab is called.
+    	# computing the notebook size every time Apol_Analysis::create_New_ResultsTab is called.
     	if { $Apol_Analysis::initTab == 0 } {	
     		$results_notebook compute_size
     		set Apol_Analysis::initTab 1
@@ -303,7 +304,7 @@ proc Apol_Analysis::create_empty_resultsTab { } {
     	set results_frame [Apol_Analysis::create_results_frame $tab_frame]
     	# Here we use a flag variable to determine if this is the first tab created.
     	# If it is, then we can set the NoteBook size here, instead of repeatedly
-    	# computing the notebook size every time Apol_TE::create_New_ResultsTab is called.
+    	# computing the notebook size every time Apol_Analysis::create_New_ResultsTab is called.
     	if { $Apol_Analysis::initTab == 0 } {	
     		$results_notebook compute_size
     		set Apol_Analysis::initTab 1
@@ -317,7 +318,69 @@ proc Apol_Analysis::create_empty_resultsTab { } {
     	return $results_frame
 
 }
- 
+
+##############################################################
+# Apol_Analysis::display_rename_tab_Dlg
+#  	-  
+proc Apol_Analysis::display_rename_tab_Dlg {pageID} {
+	variable new_tab_name
+	global tcl_platform
+	
+	if {$pageID == $Apol_Analysis::emptyTabID} {
+		tk_messageBox -icon error -type ok -title "Rename Error" -message "Cannot rename the empty tab."
+		return -1
+	}
+    	set rename_tab_Dlg [toplevel .rename_tab_Dlg]
+   	wm protocol $rename_tab_Dlg WM_DELETE_WINDOW "destroy $rename_tab_Dlg"
+    	wm withdraw $rename_tab_Dlg
+    	wm title $rename_tab_Dlg "Rename results tab"
+    	
+    	if {$tcl_platform(platform) == "windows"} {
+		wm resizable $rename_tab_Dlg 0 0
+	} else {
+		bind $rename_tab_Dlg <Configure> "wm geometry $rename_tab_Dlg {}"
+	}
+	# Clear the previous line number
+	set new_tab_name ""
+	set rename_tab_entryBox [entry $rename_tab_Dlg.gotoDlg_entryBox -bg white -textvariable Apol_Analysis::new_tab_name -width 10 ]
+	set lbl_goto  [label $rename_tab_Dlg.lbl_goto -text "Tab name:"]
+	set b_ok      [button $rename_tab_Dlg.ok -text "OK" -width 6 \
+		-command "Apol_Analysis::rename_ResultsTab $pageID; destroy $rename_tab_Dlg"]
+	set b_cancel  [button $rename_tab_Dlg.cancel -text "Cancel" -width 6 -command "destroy $rename_tab_Dlg"]
+	
+	pack $lbl_goto $rename_tab_entryBox -side left -padx 5 -pady 5 -anchor nw
+	pack $b_ok $b_cancel -side left -padx 5 -pady 5 -anchor ne
+	
+	# Place a toplevel at a particular position
+    	#::tk::PlaceWindow $rename_tab_Dlg widget center
+	wm deiconify $rename_tab_Dlg
+	focus $rename_tab_entryBox
+	bind $rename_tab_Dlg <Return> "Apol_Analysis::rename_ResultsTab $pageID; destroy $rename_tab_Dlg"
+	
+	return 0
+}
+
+# ------------------------------------------------------------------------------
+#  Command Apol_Analysis::rename_ResultsTab
+# ------------------------------------------------------------------------------
+proc Apol_Analysis::rename_ResultsTab {pageID} {
+	variable results_notebook
+	variable new_tab_name
+	
+	if {$pageID == ""} {
+		return -1	
+	} elseif {$new_tab_name == ""} {
+		tk_messageBox -icon error -type ok -title "Rename Error" -message "Must provide a tab name."
+		return -1
+	} elseif {$pageID == $Apol_Analysis::emptyTabID} {
+		tk_messageBox -icon error -type ok -title "Rename Error" -message "Cannot rename the empty tab."
+		return -1
+	}
+	$results_notebook itemconfigure $pageID -text $new_tab_name
+	return 0
+}
+
+
 # ------------------------------------------------------------------------------
 #  Command Apol_Analysis::create_options_frame
 # ------------------------------------------------------------------------------
@@ -855,6 +918,8 @@ proc Apol_Analysis::create { nb } {
     	# Popup menu widget
 	set popupTab_Menu [menu .analysis_popup_Menu]
 	set tab_menu_callbacks [lappend tab_menu_callbacks {"Delete Tab" "Apol_Analysis::delete_ResultsTab"}]
+	set tab_menu_callbacks [lappend tab_menu_callbacks {"Rename Tab" "Apol_Analysis::display_rename_tab_Dlg"}]
+	 
 	# Results notebook
 	set results_notebook [NoteBook $b_topf.nb_results]
 	# All callbacks will take the tab id as an argument. This argument is added in the callback procedure.
