@@ -644,6 +644,7 @@ int determine_domain_trans(dta_query_t *dta_query,
 			   domain_trans_analysis_t **dta_results, 
 			   policy_t *policy)
 {
+	int start_idx, i, classes[1], perms[1], perms2[1], rt, ans=0;
 	rules_bool_t b_start, b_trans; 	/* structures are used for passing TE rule match booleans */
 	bool_t *b_type;			/* scratch pad arrays to keep track of types that have already been added */
 	trans_domain_t *t_ptr;
