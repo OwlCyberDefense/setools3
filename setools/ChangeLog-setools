@@ -1,6 +1,25 @@
 CHANGE LOG, SE Linux TOOLS (setools)
 
 ========================================================
+January 14, 2004 Version 1.2
+
+Apol:    Added saving and loading queries from the TE rules tab.
+	 Added a tab for referencing initial SIDs in the policy.
+	 Fixed some memory usage problems in information flow.
+	 Combined Forward and Reverse domain transitions into one
+	 analysis module.
+	 Small modification to GUI for Information flow.
+
+Seuser:  Some minor changes to command line parsing for better use on 
+	 non selinux machines.
+
+Seaudit: Added real-time log monitoring capability.  
+	 Added support for hostname recognition in logs.
+	 Added ability to select from values that appear in the 
+	 policy or the log, for filtering.  No longer need a policy
+	 open to filter a log.
+
+========================================================
 December 18, 2003 Version 1.1
 
 Apol:	
