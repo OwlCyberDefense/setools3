@@ -15,8 +15,8 @@ namespace eval ApolTop {
 	variable filename 		""
 	variable policyConf_lineno	""
 	variable polstats 		""
-	variable gui_ver 		"1.1" 
-	variable copyright_date		"2001-2003"
+	variable gui_ver 		"1.1.1-WORKING" 
+	variable copyright_date		"2001-2004"
 	variable recent_files
 	variable num_recent_files 	0
 	variable most_recent_file 	-1
@@ -32,6 +32,7 @@ namespace eval ApolTop {
 	variable dialog_font		""
 	variable general_font		""
 	variable temp_recent_files	""
+	variable query_file_ext 	".qf"
 	# Main window dimension defaults
         variable top_width             1000
         variable top_height            700
@@ -63,7 +64,7 @@ namespace eval ApolTop {
 	variable srch_Direction		"down"
 	variable policy_is_open		0
 	
-	# Notebook tab IDENTIFIERS
+	# Notebook tab IDENTIFIERS; NOTE: We name all tabs after their related namespace qualified names.
 	variable components_tab 	"Components"
     	variable rules_tab 		"Rules"
 	variable types_tab		"ApolTypes"
@@ -222,52 +223,55 @@ proc ApolTop::set_Focus_to_Text { tab } {
 	variable rules_nb
 	
 	$ApolTop::mainframe setmenustate Disable_SearchMenu_Tag normal
+	# The load query menu option should be enabled across all tabs. 
+	# However, we disable the save query menu option if it this is not the Analysis or TE Rules tab.
+	# Currently, these are the only tabs providing the ability to save queries. It would be too trivial
+	# to allow saving queries for the other tabs.
+	$ApolTop::mainframe setmenustate Disable_LoadQuery_Tag normal
 	set ApolTop::policyConf_lineno ""
 	switch $tab \
 		$ApolTop::components_tab {
+			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
 			ApolTop::set_Focus_to_Text [$components_nb raise]
-			$ApolTop::mainframe setmenustate Disable_Query_Tag disabled
 		} \
 		$ApolTop::rules_tab {
 			ApolTop::set_Focus_to_Text [$rules_nb raise]
-			$ApolTop::mainframe setmenustate Disable_Query_Tag disabled
 		} \
 		$ApolTop::types_tab {
-			focus $ApolTypes::resultsbox
+			ApolTypes::set_Focus_to_Text
 		} \
-		$ApolTop::terules_tab {    
-			set raisedPage  [$ApolTE::notebook_results raise]
-			if { $raisedPage != "" } {
-				set pagePath 	[$ApolTE::notebook_results getframe $raisedPage]
-				if { [winfo exists $pagePath.sw.resultsbox] } {
-					focus $pagePath.sw.resultsbox
-				}
+		$ApolTop::terules_tab {
+			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag normal 
+			set raisedPage [$ApolTE::notebook_results raise]
+			if {$raisedPage != ""} {
+				ApolTE::set_Focus_to_Text $raisedPage
 			} else {
 				focus [$ApolTop::rules_nb getframe $ApolTop::terules_tab]
 			}
 		} \
 		$ApolTop::roles_tab {
-			focus $Apol_Roles::resultsbox
+			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
+			Apol_Roles::set_Focus_to_Text
 		} \
 		$ApolTop::rbac_tab {
-			focus $Apol_RBAC::resultsbox
+			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
+			Apol_RBAC::set_Focus_to_Text
 		} \
 		$ApolTop::class_perms_tab {
-			focus $Apol_Class_Perms::resultsbox
+			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
+			Apol_Class_Perms::set_Focus_to_Text
 		} \
 		$ApolTop::users_tab {
-			focus $Apol_Users::resultsbox
+			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
+			Apol_Users::set_Focus_to_Text
 		} \
 		$ApolTop::analysis_tab {
-			 $ApolTop::mainframe setmenustate Disable_SearchMenu_Tag disabled
-			 if {[ApolTop::is_policy_open]} {
-			 	$ApolTop::mainframe setmenustate Disable_Query_Tag normal
-			 }
+			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag normal
+			$ApolTop::mainframe setmenustate Disable_SearchMenu_Tag disabled
 		} \
 		$ApolTop::policy_conf_tab {
-			focus $Apol_PolicyConf::textbox_policyConf
-			set ApolTop::policyConf_lineno "Line [$Apol_PolicyConf::textbox_policyConf index insert]"
-			$ApolTop::mainframe setmenustate Disable_Query_Tag disabled
+			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
+			Apol_PolicyConf::set_Focus_to_Text
 		} \
 		default { 
 			return 
@@ -392,10 +396,162 @@ proc ApolTop::search {} {
     			[$components_nb raise]::search $searchString $case_Insensitive $regExpr $srch_Direction
     		} \
     		default {
-    			return -code error
+    			puts "Invalid raised tab!"
     		}  
 	
 	return 0
+}
+
+##############################################################
+# ::load_query_info
+#  	- Call load_query proc for valid tab
+# 
+proc ApolTop::load_query_info {} {
+	variable notebook 
+	variable rules_tab
+	variable terules_tab
+	variable analysis_tab
+	variable rules_nb
+	variable mainframe
+	
+	set query_file ""
+        set types {
+		{"Query files"		{$ApolTop::query_file_ext}}
+    	}
+	set query_file [tk_getOpenFile -filetypes $types -title "Select Query to Load..." \
+		-defaultextension $ApolTop::query_file_ext -parent $mainframe]
+	if {$query_file != ""} {
+		if {[file exists $query_file] == 0 } {
+			tk_messageBox -icon error -type ok -title "Error" \
+				-message "File $query_file does not exist." -parent $mainframe
+			return -1
+		}
+		set rt [catch {set f [::open $query_file]} err]
+		if {$rt != 0} {
+			tk_messageBox -icon error -type ok -title "Error" \
+				-message "Cannot open $query_file: $err"
+			return -1
+		}
+		# Search for the analysis type line
+		gets $f line
+		set query_id [string trim $line]
+		while {[eof $f] != 1} {
+			# Skip empty lines and comments
+			if {$query_id == "" || [string compare -length 1 $query_id "#"] == 0} {
+				gets $f line
+				set query_id [string trim $line]
+				continue
+			}
+			break
+		}
+	
+		switch -- $query_id \
+	    		$analysis_tab {
+	    			set rt [catch {${analysis_tab}::load_query_options $f $mainframe} err]
+	    			if {$rt != 0} {
+	    				tk_messageBox -icon error -type ok -title "Error" \
+						-message "$err"
+					return -1
+				}
+	    			$notebook raise $analysis_tab
+	    		} \
+	    		$terules_tab {
+	    			if {[string equal [$rules_nb raise] $ApolTop::terules_tab]} {
+	    				set rt [catch {${ApolTop::terules_tab}::load_query_options $f $mainframe} err]
+	    				if {$rt != 0} {
+		    				tk_messageBox -icon error -type ok -title "Error" \
+							-message "$err"
+						return -1
+					}
+	    				$notebook raise $rules_tab
+	    				$rules_nb raise $ApolTop::terules_tab
+	    			}
+	    		} \
+	    		default {
+	    			tk_messageBox -icon error -type ok -title "Error" \
+					-message "Invalid query ID."
+	    		}
+	    	
+	    	::close $f
+	}
+    	return 0  
+}
+
+##############################################################
+# ::save_query_info
+#  	- Call save_query proc for valid tab
+# 
+proc ApolTop::save_query_info {} {
+	variable notebook 
+	variable rules_tab
+	variable terules_tab
+	variable analysis_tab
+	variable rules_nb
+	variable mainframe
+	
+	# Make sure we only allow saving from the Analysis and TERules tabs
+	set raised_tab [$notebook raise]
+
+	if {![string equal $raised_tab $analysis_tab] && ![string equal $raised_tab $rules_tab]} {
+		tk_messageBox -icon error -type ok -title "Save Query Error" \
+			-message "You cannot save a query from this tab! \
+			You can only save from the Policy Rules->TE Rules tab and the Analysis tab."
+		return -1
+    	} 
+    	if {[string equal $raised_tab $rules_tab] && ![string equal [$rules_nb raise] $terules_tab]} {
+		tk_messageBox -icon error -type ok -title "Save Query Error" \
+			-message "You cannot save a query from this tab! \
+			You can only save from the Policy Rules->TE Rules tab and the Analysis tab."
+		return -1
+	}
+			    		
+	set query_file ""
+        set types {
+		{"Query files"		{$ApolTop::query_file_ext}}
+    	}
+    	set query_file [tk_getSaveFile -title "Save Query As?" \
+    		-defaultextension $ApolTop::query_file_ext \
+    		-filetypes $types -parent $mainframe]
+	if {$query_file != ""} {
+		set rt [catch {set f [::open $query_file w+]} err]
+		if {$rt != 0} {
+			return -code error $err
+		}	
+		switch -- $raised_tab \
+	    		$analysis_tab {
+	    			puts $f "$analysis_tab"
+	    			set rt [catch {${analysis_tab}::save_query_options $f $query_file} err]
+	    			if {$rt != 0} {
+	    				::close $f
+	    				tk_messageBox -icon error -type ok -title "Save Query Error" \
+						-message "$err"
+					return -1
+				}
+	    		} \
+	    		$rules_tab {
+	    			if {[string equal [$rules_nb raise] $terules_tab]} {
+	    				puts $f "$terules_tab"	
+	    				set rt [catch {${terules_tab}::save_query_options $f $query_file} err]
+	    				if {$rt != 0} {
+	    					::close $f
+		    				tk_messageBox -icon error -type ok -title "Save Query Error" \
+							-message "$err"
+						return -1
+					}
+	    			}
+	    		} \
+	    		default {
+	    			::close $f
+	    			tk_messageBox -icon error -type ok -title "Save Query Error" \
+					-message "You cannot save a query from this tab!"
+				return -1
+	    		}  
+	    	::close $f
+	}	  
+	
+	
+    		
+    	return 0
 }
 
 ##############################################################
@@ -609,10 +765,10 @@ proc ApolTop::create { } {
 	    	{} -command ApolTop::display_goto_line_Dlg }
 	}
 	"&Analysis" {} analysis 0 {
-	    {command "&Load analysis query..." {Disable_Query_Tag} "Load analysis query"  \
-	    	{} -command "Apol_Analysis::load_query_info $ApolTop::mainframe" }
-	    {command "&Save analysis query..." {Disable_Query_Tag} "Save analysis query"  \
-	    	{} -command "Apol_Analysis::save_query_info $ApolTop::mainframe" }
+	    {command "&Load analysis query..." {Disable_LoadQuery_Tag} "Load analysis query"  \
+	    	{} -command "ApolTop::load_query_info" }
+	    {command "&Save analysis query..." {Disable_SaveQuery_Tag} "Save analysis query"  \
+	    	{} -command "ApolTop::save_query_info" }
 	    {command "&Policy Summary" {Disable_Summary} "Display summary statics" {} -command ApolTop::popupPolicyStats }
 	}
 	"&Advanced" all options 0 {
@@ -636,10 +792,11 @@ proc ApolTop::create { } {
 	$mainframe addindicator -textvariable ApolTop::polstats -width 88
 	$mainframe addindicator -textvariable ApolTop::polversion -width 19 
 	
-	# Disable  menu items since a policy is not yet loaded.
+	# Disable menu items since a policy is not yet loaded.
 	$ApolTop::mainframe setmenustate Disable_SearchMenu_Tag disabled
 	$ApolTop::mainframe setmenustate Perm_Map_Tag disabled
-	$ApolTop::mainframe setmenustate Disable_Query_Tag disabled
+	$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
+	$ApolTop::mainframe setmenustate Disable_LoadQuery_Tag disabled
 	$ApolTop::mainframe setmenustate Disable_Summary disabled
 		
 	# NoteBook creation
@@ -1339,7 +1496,8 @@ proc ApolTop::closePolicy {} {
 	$ApolTop::mainframe setmenustate Disable_SearchMenu_Tag disabled
 	# Disable Edit perm map menu item since a perm map is not yet sloaded.
 	$ApolTop::mainframe setmenustate Perm_Map_Tag disabled	
-	$ApolTop::mainframe setmenustate Disable_Query_Tag disabled
+	$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
+	$ApolTop::mainframe setmenustate Disable_LoadQuery_Tag disabled
 	$ApolTop::mainframe setmenustate Disable_Summary disabled
 	return 0
 }
@@ -1443,6 +1601,7 @@ proc ApolTop::openPolicyFile {file recent_flag} {
 	# Enable perm map menu items since a policy is now open.
 	$ApolTop::mainframe setmenustate Perm_Map_Tag normal
 	$ApolTop::mainframe setmenustate Disable_Summary normal
+	$ApolTop::mainframe setmenustate Disable_SearchMenu_Tag normal	
 	ApolTop::configure_edit_pmap_menu_item 0
 	return 0
 }
@@ -1460,7 +1619,6 @@ proc ApolTop::openPolicy {} {
         
         if {$file != ""} {
 		ApolTop::openPolicyFile $file 1
-		$ApolTop::mainframe setmenustate Disable_SearchMenu_Tag normal	
 	}
 	return
 }
@@ -1594,7 +1752,3 @@ proc ApolTop::main {} {
 # Start script here
 ApolTop::main
 wm geom . [wm geom .]
-
-  
-  
-                                                                                                                                                                                             
