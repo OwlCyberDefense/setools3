@@ -366,7 +366,8 @@ bad:
 
 static msg_t* msg_create(void)
 {
-	msg_t *new;
+	msg_t *new = NULL;
+	
 	new = (msg_t*)malloc(sizeof(msg_t));
 	if (new == NULL) {
 		fprintf(stderr, "Out of memory");
