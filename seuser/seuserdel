@@ -8,17 +8,8 @@
 
     SEUSER="/usr/bin/seuser "
     GREP=/bin/grep
-    # determine if userdel knows selinux
-    /usr/bin/ldd /usr/sbin/userdel | $GREP selinux > /dev/null 2>&1
-    RC=$?
-    if [ $RC -eq 0 ] ;
-    then
-	# userdel is selinux aware
-	USERDEL=/usr/sbin/userdel
-    else
-	# userdel living in past
-	USERDEL=/usr/local/selinux/bin/suserdel
-    fi
+    USERDEL=/usr/sbin/userdel
+    
     seuseropts=""
     suserdelopts=""
 
