@@ -65,6 +65,89 @@ seaudit_window_t* seaudit_window_create(audit_log_t *log, bool_t column_visibili
 	return window;
 }
 
+static void
+seaudit_window_popup_menu_onSelect_ViewEntireMsg (GtkWidget *menuitem, gpointer userdata)
+{
+	/* we passed the view as userdata when we connected the signal */
+	seaudit_window_view_entire_message_in_textbox(GTK_TREE_VIEW(userdata));
+}
+
+static void
+seaudit_window_popup_menu (GtkWidget *treeview, GdkEventButton *event, gpointer userdata)
+{
+	GtkWidget *menu, *menuitem;
+	
+	menu = gtk_menu_new();
+	if (menu == NULL) {
+		fprintf(stderr, "Unable to create menu widget.\n");
+		return;
+	} 
+	menuitem = gtk_menu_item_new_with_label("View Entire Message");
+	if (menuitem == NULL) {
+		fprintf(stderr, "Unable to create menuitem widget.\n");
+		return;
+	}
+		
+	g_signal_connect(menuitem, "activate",
+	             (GCallback) seaudit_window_popup_menu_onSelect_ViewEntireMsg, treeview);
+	
+	gtk_menu_shell_append(GTK_MENU_SHELL(menu), menuitem);
+	
+	gtk_widget_show_all(menu);
+	
+	/* Note: event can be NULL here when called from seaudit_window_onPopupMenu;
+	*  gdk_event_get_time() accepts a NULL argument */
+	gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL,
+	           (event != NULL) ? event->button : 0,
+	           gdk_event_get_time((GdkEvent*)event));
+}
+
+static gboolean
+seaudit_window_onButtonPressed (GtkWidget *treeview, GdkEventButton *event, gpointer userdata)
+{
+	GtkTreePath *path = NULL;
+	GtkTreeSelection *selection = NULL;
+	
+	/* single click with the right mouse button? */
+	if (event->type == GDK_BUTTON_PRESS  &&  event->button == 3) {
+		/* optional: select row if no row is selected or only
+		*  one other row is selected (will only do something
+		*  if you set a tree selection mode as described later
+		*  in the tutorial) */
+		if (1) {
+			selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(treeview));
+			
+			/* Note: gtk_tree_selection_count_selected_rows() does not
+			 *   exist in gtk+-2.0, only in gtk+ >= v2.2 ! */
+			if (gtk_tree_selection_count_selected_rows(selection)  <= 1) {			
+				/* Get tree path for row that was clicked */
+				if (gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(treeview),
+				                             event->x, event->y,
+				                             &path, NULL, NULL, NULL)) {
+					gtk_tree_selection_unselect_all(selection);
+					gtk_tree_selection_select_path(selection, path);
+					gtk_tree_path_free(path);
+				}
+			}
+		} /* end of optional bit */
+		
+		seaudit_window_popup_menu(treeview, event, userdata);
+		
+		return TRUE; /* we handled this */
+	}
+	
+	return FALSE; /* we did not handle this */
+}
+
+static gboolean
+seaudit_window_onPopupMenu (GtkWidget *treeview, gpointer userdata)
+{
+	seaudit_window_popup_menu(treeview, NULL, userdata);
+	
+	return TRUE; /* we handled this */
+}
+
+
 seaudit_filtered_view_t* seaudit_window_add_new_view(seaudit_window_t *window, audit_log_t *log, bool_t *column_visibility, const char *view_name)
 {
 	seaudit_filtered_view_t *view;
@@ -87,7 +170,13 @@ seaudit_filtered_view_t* seaudit_window_add_new_view(seaudit_window_t *window, a
 	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(tree_view));
 	gtk_tree_selection_set_mode(selection, GTK_SELECTION_MULTIPLE);
 	
+	/* Connect callback to double-click event on tree view item */
 	g_signal_connect(G_OBJECT(tree_view), "row_activated", G_CALLBACK(seaudit_window_on_log_row_activated), NULL);
+	/* Connect callback to right-click event on tree view item */
+	g_signal_connect(G_OBJECT(tree_view), "button-press-event", (GCallback) seaudit_window_onButtonPressed, NULL);
+	/* Connect to the "popup-menu" signal, so users can access your context menu without a mouse */
+    	g_signal_connect(G_OBJECT(tree_view), "popup-menu", (GCallback) seaudit_window_onPopupMenu, NULL);
+
 	gtk_container_add(GTK_CONTAINER(scrolled_window), tree_view);
 	seaudit_window_create_list(GTK_TREE_VIEW(tree_view), column_visibility);
 	                  
