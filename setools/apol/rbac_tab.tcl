@@ -549,12 +549,12 @@ proc Apol_RBAC::create {nb} {
     # Placing widgets in src role section
     pack $use_src_list -anchor w
     pack $list_src -anchor w -expand yes -fill x -padx 5
-    pack $global_asSource $global_any -side left -ipady 5
+    pack $global_asSource $global_any -side left -ipady 5 -fill y -expand yes
     
     # Placing widgets in tgt section
     pack $use_tgt_list -anchor w -side top
     pack $list_tgt -anchor w -expand yes -fill x -padx 5 
-    pack $list_types $list_attribs $list_roles -side left -pady 7
+    pack $list_types $list_attribs $list_roles -side left -pady 7 -fill y -expand yes
     # Placing widget items for default role section
     pack $use_dflt_role -anchor w
     pack $list_dflt_role -anchor w -expand yes -fill x -padx 5
