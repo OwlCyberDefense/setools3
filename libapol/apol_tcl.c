@@ -1135,12 +1135,15 @@ static int append_role_trans_rule(rt_item_t *rule, policy_t *policy, Tcl_DString
 		Tcl_DStringAppend(buf, "*", -1);
 
 	for(tptr = rule->tgt_types; tptr != NULL; tptr = tptr->next) {
-		if(tptr->type == IDX_TYPE) {
+		if ((tptr->type & IDX_SUBTRACT)) {
+			Tcl_DStringAppend(buf, "-", -1);
+		}
+		if ((tptr->type & IDX_TYPE)) {
 			Tcl_DStringAppend(buf, " ", -1);
 			if(append_type_str(0, 0, 0, tptr->idx, policy, buf) != 0)
 				return -1;
 		}
-		else if(tptr->type == IDX_ATTRIB) {
+		else if ((tptr->type & IDX_ATTRIB)) {
 			Tcl_DStringAppend(buf, " ", -1);
 			if(append_attrib_str(0, 0, 0, 0, 0, tptr->idx, policy, buf) != 0)
 				return -1;
@@ -2898,7 +2901,10 @@ int Apol_GetSingleTypeInfo(ClientData clientData, Tcl_Interp *interp, int argc, 
 	}	
 	Tcl_DStringInit(buf);
 	
-	if(ta_type == IDX_TYPE) {
+	if ((ta_type & IDX_SUBTRACT)) {
+		Tcl_DStringAppend(buf, "-", -1);
+	}
+	if ((ta_type & IDX_TYPE)) {
 		rt = append_type_str(!name_only, !name_only, 0, ta_idx, policy, buf);
 		if(rt != 0) {
 			Tcl_DStringFree(buf);
@@ -2907,7 +2913,7 @@ int Apol_GetSingleTypeInfo(ClientData clientData, Tcl_Interp *interp, int argc, 
 			return TCL_ERROR;
 		}		
 	}
-	else if (ta_type == IDX_ATTRIB) {
+	else if ((ta_type & IDX_ATTRIB)) {
 		rt = append_attrib_str(!name_only, (!name_only ? attr_type_attribs : FALSE),
 			!name_only, 0, 0, ta_idx, policy, buf);
 		if(rt != 0) {
