@@ -1718,7 +1718,7 @@ proc Apol_Analysis_tra::create_results_list_structure {tra_listbox results_list}
 	for { set x 0 } { $x < $num_dirflow_target_types } { incr x } { 
 		set nextIdx [Apol_Analysis_dirflow::parseList_get_index_next_node $currentIdx $results_list]
 		if {$nextIdx == -1} {
-			return -code error "Error parsing results"
+			return -code error "Error parsing results. See stdout for more information."
 		}
 		set currentIdx $nextIdx
 	}
@@ -1780,7 +1780,7 @@ proc Apol_Analysis_tra::create_results_list_structure {tra_listbox results_list}
 		set end_idx [Apol_Analysis_dta::get_target_type_data_end_idx $results_list $currentIdx]
 		if {$end_idx == -1} {
 			# Print error 
-			return -code error "Error parsing results for type [lindex $results_list $currentIdx].\n"
+			return -code error "Error parsing results for type [lindex $results_list $currentIdx].\nSee stdout for more information."
 		}
 	        set currentIdx [expr $end_idx + 1]
 	}
@@ -1802,7 +1802,7 @@ proc Apol_Analysis_tra::create_results_list_structure {tra_listbox results_list}
 		set end_idx [Apol_Analysis_dta::get_target_type_data_end_idx $results_list $currentIdx]
 		if {$end_idx == -1} {
 			# Print error 
-			return -code error "Error parsing results for type [lindex $results_list $currentIdx].\n"
+			return -code error "Error parsing results for type [lindex $results_list $currentIdx].\nSee stdout for more information."
 		}
 	        set currentIdx [expr $end_idx + 1]
 	}

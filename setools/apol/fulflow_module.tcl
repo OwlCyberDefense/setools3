@@ -1586,7 +1586,7 @@ proc Apol_Analysis_fulflow::create_target_type_nodes { parent fulflow_tree resul
 			
 			set nextIdx [Apol_Analysis_fulflow::parseList_get_index_next_node $curentIdx $results_list]
 			if {$nextIdx == -1} {
-				return -code error "Error parsing results"
+				return -code error "Error parsing results. See stdout for more information."
 			}
 			
 			set target_node "${parent}/${target_name}/"
