@@ -1211,7 +1211,7 @@ static int load_avtab(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts
 	
 	INTERNAL_ASSERTION
 
-	keep = (opts & POLOPT_TE_RULES) == POLOPT_TE_RULES;
+	keep = (opts & POLOPT_TE_RULES);
 
 	buf = ap_read_fbuf(fb, sizeof(__u32), fp); 
 	if(buf == NULL) return fb->err;
