@@ -31,13 +31,11 @@ typedef struct audit_log_view {
 	struct sort_action_node *sort_actions;     /* sort functions */
 	struct sort_action_node *last_sort_action; 
 	seaudit_multifilter_t *multifilter;
-	bool_t show_matches;
 } audit_log_view_t;
 
 audit_log_view_t* audit_log_view_create(void);
 void audit_log_view_destroy(audit_log_view_t* view);
 void audit_log_view_set_log(audit_log_view_t *view, audit_log_t *log);
-void audit_log_view_set_show_matches(audit_log_view_t *view, bool_t show);
 void audit_log_view_purge_fltr_msgs(audit_log_view_t *view);
 int audit_log_view_do_filter(audit_log_view_t *log, int **deleted, int *num_deleted);
 void audit_log_view_set_multifilter(audit_log_view_t *view, seaudit_multifilter_t *multifilter);

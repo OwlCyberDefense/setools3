@@ -41,14 +41,6 @@ void audit_log_view_destroy(audit_log_view_t* view)
 	return;
 }
 
-void audit_log_view_set_show_matches(audit_log_view_t *view, bool_t show)
-{
-	if (view == NULL)
-		return;
-	
-	view->show_matches = show;
-}
-
 void audit_log_view_set_log(audit_log_view_t *view, audit_log_t *log)
 {
 	int num_deleted, *deleted = NULL;
@@ -85,7 +77,7 @@ void audit_log_view_purge_fltr_msgs(audit_log_view_t *view)
 int audit_log_view_do_filter(audit_log_view_t *view, int **deleted, int *num_deleted) 
 {
 	filter_info_t *info;
-	bool_t found, match;
+	bool_t found, show;
 	int i, j, msg_index, *kept, num_kept, *added, num_added;
 
 	if (!view || !view->my_log)
@@ -145,10 +137,8 @@ int audit_log_view_do_filter(audit_log_view_t *view, int **deleted, int *num_del
 	audit_log_view_purge_fltr_msgs(view);
         seaudit_multifilter_make_dirty_filters(view->multifilter);
 	for (i = 0; i < view->my_log->num_msgs; i++) {
-		match = seaudit_multifilter_does_message_match(view->multifilter, view->my_log->msg_list[i], view->my_log);
-		if (view->show_matches == FALSE)
-			match = !match;
-		if (match) {
+		show = seaudit_multifilter_should_message_show(view->multifilter, view->my_log->msg_list[i], view->my_log);
+		if (show) {
 			if (info[i].filtered == TRUE) {
 				kept[num_kept] = i;
 				num_kept++;
