@@ -1,5 +1,6 @@
 # apol tool
 
+APOL_STARTUP_SCRIPT = apol.tcl
 TCL-FILES	= head.tcl tmp.tcl
 TCL-STRIP-FILES = types_tab.tcl terules_tab.tcl roles_tab.tcl rbac_tab.tcl users_tab.tcl initial_sids_tab.tcl classes_perms_tab.tcl policyconf.tcl perms_map.tcl analysis_tab.tcl $(ANALYSIS-MODULES) top.tcl
 # The modules must each be listed here.
@@ -10,6 +11,7 @@ APOL_PERM_MAPS	= apol_perm_mapping_ver12 apol_perm_mapping_ver15
 APOL_DFLT_PMAP  = apol_perm_mapping_ver15
 LIBAPOL		= ../lib/libapol-tcl.a ../lib/libapol.a
 GUI-OBJ		= apol_gui.o $(LIBAPOL)
+CFLAGS            += -DSTARTUP_SCRIPT='"$(APOL_STARTUP_SCRIPT)"'
 
 apol: $(GUI-OBJ) apol.tcl
 	$(CC) $(TCL_LIBINC) -o $@ $(GUI-OBJ) $(LINKFLAGS) $(TCL_LIBS)
