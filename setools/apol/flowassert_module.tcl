@@ -134,6 +134,11 @@ proc Apol_Analysis_flowassert::do_analysis {results_frame} {
         set retval -1
     } else {
         $t delete 1.0 end
+        if {$ApolTop::policy_type == $ApolTop::binary_policy_type} {
+            set bin_policy 1
+        } else {
+            set bin_policy 0
+        }
         # build summary statement
         set num_passed 0
         set num_failed 0
@@ -181,20 +186,16 @@ proc Apol_Analysis_flowassert::do_analysis {results_frame} {
                             set to "<unknown type>"
                         }
                         if {$rule_list != {}} {
-                            if {$ApolTop::policy_type != $ApolTop::binary_policy_type} {
-                                append line "  $from to $to:\n"
-                                foreach rule $rule_list {
-                                    set rule_num [lindex $rule 0]
-                                    set rule_str [lindex $rule 1]
-                                    append line "    \["
-                                    set start_index [string length $line]
-                                    append line $rule_num
-                                    set end_index [string length $line]
-                                    append line "\] $rule_str\n"
-                                    lappend policy_tags_list $start_index $end_index
-                                }
-                            } else {
-                                append line "  $from to $to\n"
+                            append line "  $from to $to:\n"
+                            foreach rule $rule_list {
+                                set rule_num [lindex $rule 0]
+                                set rule_str [lindex $rule 1]
+                                append line "    \["
+                                set start_index [string length $line]
+                                append line $rule_num
+                                set end_index [string length $line]
+                                append line "\] $rule_str\n"
+                                lappend policy_tags_list $start_index $end_index
                             }
                         } elseif {$via_type >= 0} {
                             if {[set via [lindex $Apol_Types::typelist $via_type]] == ""} {
@@ -221,9 +222,13 @@ proc Apol_Analysis_flowassert::do_analysis {results_frame} {
             $t insert end "$line\n"
             $t tag add assert_file_tag $offset "$offset + $line_end_index c"
             $t tag add l$lineno $offset "$offset + $line_end_index c"
-            foreach {start_index end_index} $policy_tags_list {
-                Apol_PolicyConf::insertHyperLink $t \
-                    "$offset + $start_index c" "$offset + $end_index c"
+            
+            # hyperlink to policy.conf if policy is not binary
+            if {$bin_policy == 0} {
+                foreach {start_index end_index} $policy_tags_list {
+                    Apol_PolicyConf::insertHyperLink $t \
+                        "$offset + $start_index c" "$offset + $end_index c"
+                }
             }
         }
         set retval 0
