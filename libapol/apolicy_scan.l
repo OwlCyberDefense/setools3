@@ -34,6 +34,8 @@ ROLES |
 roles				{ return(ROLES); }
 TYPES |
 types				{ return(TYPES); }
+TYPEATTRIBUTE |
+typeattribute			{ return(TYPEATTRIBUTE); }
 TYPEALIAS |
 typealias			{ return(TYPEALIAS); }
 BOOL |
