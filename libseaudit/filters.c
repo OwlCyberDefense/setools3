@@ -20,10 +20,10 @@ static void dummy_free(void *foo) {  }
 
 seaudit_filter_t* seaudit_filter_create(void)
 {
-	seaudit_filter_t *rt;
+	seaudit_filter_t *rt = NULL;
 
 	rt = (seaudit_filter_t*)malloc(sizeof(seaudit_filter_t));
-	if (!rt) {
+	if (rt == NULL) {
 		fprintf(stderr, "out of memory");
 		return NULL;
 	}
@@ -51,7 +51,8 @@ void seaudit_filter_destroy(seaudit_filter_t *seaudit_filter)
 	for (node = list->head; node != NULL;)
 		/* free current and return next */
 		node = ll_node_free(node, (void (*)(void*))seaudit_criteria_destroy);
-
+	
+	free(list);
 }
 
 void seaudit_filter_set_match(seaudit_filter_t *seaudit_filter, enum seaudit_filter_match_t match)
@@ -96,15 +97,18 @@ void seaudit_filter_make_dirty_criterias(seaudit_filter_t *seaudit_filter)
 
 bool_t seaudit_filter_does_message_match(seaudit_filter_t *filter, msg_t *message, audit_log_t *log)
 {
-	llist_node_t *node;
-	llist_t *list;
-	seaudit_criteria_t *criteria;
+	llist_node_t *node = NULL;
+	llist_t *list = NULL;
+	seaudit_criteria_t *criteria = NULL;
 	bool_t match = TRUE;
 
 	if (filter == NULL || message == NULL || log == NULL)
 		return FALSE;
 
 	list = seaudit_filter_get_list(filter);
+	if (list == NULL) {
+		return FALSE;
+	}
 	for (node = list->head; node != NULL; node = node->next) {
 		if (!node->data)
 			continue;
@@ -134,8 +138,12 @@ bool_t seaudit_filter_does_message_match(seaudit_filter_t *filter, msg_t *messag
 
 llist_t* seaudit_filter_get_list(seaudit_filter_t *filter)
 {
-	llist_t* list;
+	llist_t* list = NULL;
+	
 	list = ll_new();
+	if (list == NULL) {
+		return NULL;
+	}
 	ll_append_data(list, filter->src_type_criteria);
 	ll_append_data(list, filter->tgt_type_criteria);
 	ll_append_data(list, filter->src_role_criteria);
