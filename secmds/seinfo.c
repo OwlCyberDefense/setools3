@@ -22,7 +22,7 @@
 
 /* The following should be defined in the make environment */
 #ifndef SEINFO_VERSION_NUM
-	#define SEINFO_VERSION_NUM "UNKNOWN"
+#define SEINFO_VERSION_NUM "UNKNOWN" 
 #endif
 
 #define COPYRIGHT_INFO "Copyright (C) 2003-2004 Tresys Technology, LLC"
@@ -355,26 +355,24 @@ int print_booleans(FILE *fp, const char *name, int expand, policy_t *policy)
 
 int print_users(FILE *fp, const char *name, int expand, policy_t *policy)
 {
-	int rt;
+	int i, j, idx, rt, num_roles = 0, *roles = NULL;
 	char *user_name = NULL, *role_name = NULL;
-	user_item_t *user = NULL, *u;
-	ta_item_t *role;
 	
 	if(name != NULL) {
-		rt = get_user_by_name(name, &user, policy);
-		if(rt < 0) {
+		idx = get_user_idx(name, policy);
+		if(idx < 0) {
 			fprintf(fp, "Provided user (%s) is not a valid user name.\n", name);
 			return -1;
 		}
 	}
 	else 
-		user = get_first_user_ptr(policy);
+		idx = 0;
 	
 	if(name == NULL)
 		fprintf(fp, "\nUsers: %d\n", num_users(policy));
 	
-	for(u = user; u != NULL; u = u->next)  {
-		rt = get_user_name(u, &user_name);
+	for(i = idx; is_valid_user_idx(i, policy); i++)  {
+		rt = get_user_name2(i, &user_name, policy);
 		if(rt != 0) {
 			fprintf(fp, "Unexpected error getting user name\n\n");
 			return -1;
@@ -382,15 +380,22 @@ int print_users(FILE *fp, const char *name, int expand, policy_t *policy)
 		fprintf(fp, "   %s\n", user_name);
 		free(user_name);
 		if(expand) {
-			for(role = get_user_first_role_ptr(u); role != NULL; role = get_user_next_role_ptr(role)) {
-				rt = get_ta_item_name(role, &role_name, policy);
+			rt = get_user_roles(i, &num_roles, &roles, policy);
+			if(rt != 0) {
+				fprintf(fp, "Unexpected error expanding roles\n\n");
+				return -1;
+			}
+			for(j = 0; j < num_roles; j++) {
+				rt = get_role_name(roles[j], &role_name, policy);
 				if(rt != 0) {
-					fprintf(fp, "Unexpected error getting role name\n\n");
+					free(roles);
+					fprintf(fp, "Unexpected error getting type name\n\n");
 					return -1;
 				}
 				fprintf(fp, "      %s\n", role_name);
 				free(role_name);
 			}
+			free(roles);
 		}
 		/* if a name was provided, return as we only print the one asked for */
 		if(name != NULL)
@@ -539,7 +544,7 @@ int main (int argc, char **argv)
 	} else if (argc - optind < 1) {
 		rt = find_default_policy_file(search_opts, &policy_file);
 		if (rt != FIND_DEFAULT_SUCCESS) {
-			printf("Error while searching for default policy: %s\n", find_default_policy_file_strerr(rt));
+			printf("Default policy search failed: %s\n", find_default_policy_file_strerr(rt));
 			exit(1);
 		}
 	} else
