@@ -91,52 +91,6 @@ static void initialize(report_window_t *report_window)
 	}
 }
 
-void on_help_activate(GtkButton *button, gpointer user_data)
-{
-	report_window_t *report_window = (report_window_t*)user_data;
-	GtkWidget *window;
-	GtkWidget *scroll;
-	GtkWidget *text_view;
-	GtkTextBuffer *buffer;
-	GString *string;
-	char *help_text = NULL;
-	int len, rt;
-	char *dir;
-
-	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-	scroll = gtk_scrolled_window_new(NULL, NULL);
-	text_view = gtk_text_view_new();
-	gtk_window_set_title(GTK_WINDOW(window), "SEAudit Report Help");
-	gtk_window_set_default_size(GTK_WINDOW(window), 480, 300);
-	gtk_container_add(GTK_CONTAINER(window), scroll);
-	gtk_container_add(GTK_CONTAINER(scroll), text_view);
-	buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));	
-	dir = find_file("seaudit_report_help.txt");
-	if (!dir) {
-		string = g_string_new("");
-		g_string_assign(string, "Can not find help file");
-		message_display(report_window->parent->window, GTK_MESSAGE_ERROR, string->str);
-		g_string_free(string, TRUE);
-		return;
-	}
-	string = g_string_new(dir);
-	free(dir);
-	g_string_append(string, "/seaudit_report_help.txt");
-	rt = read_file_to_buffer(string->str, &help_text, &len);
-	g_string_free(string, TRUE);
-	if (rt != 0) {
-		if (help_text)
-			free(help_text);
-		return;
-	}
-	gtk_text_buffer_set_text(buffer, help_text, len);
-	gtk_text_view_set_editable(GTK_TEXT_VIEW(text_view), FALSE);
-	gtk_widget_show(text_view);
-	gtk_widget_show(scroll);
-	gtk_widget_show(window);
-	return;
-}
-
 static void update_values(report_window_t *report_window)
 {
 	GtkEntry *entry_config, *entry_stylesheet;
@@ -175,6 +129,12 @@ static void hide_window(report_window_t *report_window)
 		gtk_widget_destroy(GTK_WIDGET(report_window->window));
 		report_window->window = NULL;
 	}
+}
+
+void on_cancel_activate(GtkButton *button, gpointer user_data)
+{
+	report_window_t *report_window = (report_window_t*)user_data;
+	hide_window(report_window);
 }
 
 static void on_destroy(GtkWidget *widget, GdkEvent *event, report_window_t *report_window)
@@ -496,8 +456,8 @@ void report_window_display(report_window_t *report_window)
 	gtk_signal_connect(GTK_OBJECT(widget), "clicked", GTK_SIGNAL_FUNC(on_browse_report_css_button_clicked), report_window);
 	widget = glade_xml_get_widget(xml, "create_report_button");
 	gtk_signal_connect(GTK_OBJECT(widget), "clicked", GTK_SIGNAL_FUNC(on_create_report_button_clicked), report_window);
-	widget = glade_xml_get_widget(xml, "help_button");
-	gtk_signal_connect(GTK_OBJECT(widget), "clicked", GTK_SIGNAL_FUNC(on_help_activate), report_window);
+	widget = glade_xml_get_widget(xml, "cancel_button");
+	gtk_signal_connect(GTK_OBJECT(widget), "clicked", GTK_SIGNAL_FUNC(on_cancel_activate), report_window);
 	
 	
 	widget = glade_xml_get_widget(xml, "check_button_malformed_msgs");
