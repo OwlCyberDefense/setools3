@@ -297,10 +297,10 @@ static void my_parse_endElement(void *user_data, const xmlChar *name)
 
 seaudit_multifilter_t* seaudit_multifilter_create(void)
 {
-	seaudit_multifilter_t *rt;
+	seaudit_multifilter_t *rt = NULL;
 
 	rt = (seaudit_multifilter_t*)malloc(sizeof(seaudit_multifilter_t));
-	if (!rt) {
+	if (rt == NULL) {
 		fprintf(stderr, "out of memory");
 		return NULL;
 	}
@@ -331,6 +331,8 @@ void seaudit_multifilter_destroy(seaudit_multifilter_t *multifilter)
 		for (node = list->head; node != NULL; )
 			/* free current and return next */
 			node = ll_node_free(node, (void (*)(void*))seaudit_filter_destroy);
+	free(list);
+	
 	if (multifilter->name)
 		free(multifilter->name);
 
