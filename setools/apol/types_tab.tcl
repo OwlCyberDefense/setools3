@@ -170,7 +170,7 @@ proc ApolTypes::searchTypes {} {
 	    $ApolTypes::resultsbox insert end $results
 	    ApolTop::makeTextBoxReadOnly $ApolTypes::resultsbox
         }
-	return
+	return 0
 }
 
 proc ApolTypes::_useSearch { entry } {
