@@ -65,14 +65,14 @@ insert-policy:
 sys-all: seuser seuserx
 
 sys-install: seuser seuserx se_user.tcl
-	-install -m 755 seuser $(SE_SHELL_SCRIPTS) $(BINDIR)
-	-install -m 644 $(SEUSER_CONF_FILE) $(INSTALL_LIBDIR)
-	-install -m 644 se_user.tcl $(SEUSER_HELP_FILE) $(INSTALL_LIBDIR)
+	install -m 755 seuser $(SE_SHELL_SCRIPTS) $(BINDIR)
+	install -m 644 $(SEUSER_CONF_FILE) $(INSTALL_LIBDIR)
+	install -m 644 se_user.tcl $(SEUSER_HELP_FILE) $(INSTALL_LIBDIR)
 
 # Installation
 # This process is complicated by the fact that we have 3 scenarios for
-# installation: installation on a standard linux box, installation
-# on an selinux box, and installation during rpm building.
+# installation: installation on a standard linux box and installation
+# on an selinux box.
 #
 # NOTE:	The following targets assume selinux and the chcon utility.
 #      	To ignore install errors in a command line, we use `-' at  
@@ -115,7 +115,7 @@ policy-install: seuser-policy
 	fi 
 
 install-nogui: seuser policy-install
-	-install -d $(BINDIR); 
+	install -d $(BINDIR); 
 	-@if [ -e $(POLICY_SRC_DIR)/policy/Makefile ]; then \
 		install -m 755 -Z system_u:object_r:seuser_exec_t seuser $(BINDIR); \
 		install -m 644 -Z system_u:object_r:seuser_conf_t $(SEUSER_CONF_FILE) $(INSTALL_LIBDIR); \
@@ -123,7 +123,7 @@ install-nogui: seuser policy-install
 		install -m 755 seuser $(BINDIR); \
 		install -m 644 $(SEUSER_CONF_FILE) $(INSTALL_LIBDIR); \
 	fi
-	-install -m 755 $(SE_SHELL_SCRIPTS) $(BINDIR)
+	install -m 755 $(SE_SHELL_SCRIPTS) $(BINDIR)
 
 install: install-nogui seuserx se_user.tcl
 	install -d $(BINDIR); 

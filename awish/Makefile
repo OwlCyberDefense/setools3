@@ -23,7 +23,7 @@ awish: $(AWISH_OBJ)
 	cd ../ ; $(MAKE) libseuser
 	
 install: awish
-	-install -m 755 awish $(BINDIR)
+	install -m 755 awish $(BINDIR)
 
 clean:
 	rm -f *.o  core awish *~

@@ -103,7 +103,7 @@ help:
 
 apol: selinux_tool
 	cd apol;
-	-@if [ "${shell env tclsh tcl_vars search_tcl_libs}" != "none" ]; then \
+	@if [ "${shell env tclsh tcl_vars search_tcl_libs}" != "none" ]; then \
 		cd apol; $(MAKE) apol; \
 	else \
 		echo "Could not build apol."; \
@@ -112,7 +112,7 @@ apol: selinux_tool
 
 awish: selinux_tool
 	cd awish;
-	-@if [ "${shell env tclsh tcl_vars search_tcl_libs}" != "none" ]; then \
+	@if [ "${shell env tclsh tcl_vars search_tcl_libs}" != "none" ]; then \
 		cd awish; $(MAKE) awish; \
 	else \
 		echo "Could not build awish."; \
@@ -124,7 +124,7 @@ seuser: selinux_tool
 
 seuserx: selinux_tool
 	cd seuser;
-	-@if [ "${shell env tclsh tcl_vars search_tcl_libs}" != "none" ]; then \
+	@if [ "${shell env tclsh tcl_vars search_tcl_libs}" != "none" ]; then \
 		cd seuser; $(MAKE) seuserx; \
 	else \
 		echo "Could not build seuserx."; \
@@ -145,7 +145,7 @@ libapol: selinux_tool
 
 libapol-tcl: selinux_tool
 	cd libapol;
-	-@if [ "${shell env tclsh tcl_vars search_tcl_libs}" != "none" ]; then \
+	@if [ "${shell env tclsh tcl_vars search_tcl_libs}" != "none" ]; then \
 		cd libapol; $(MAKE) libapol-tcl; \
 	else \
 		echo "Could not build libapol-tcl."; \
@@ -157,7 +157,7 @@ libseuser: selinux_tool
 
 libseuser-tcl: selinux_tool
 	cd libseuser;
-	-@if [ "${shell env tclsh tcl_vars search_tcl_libs}" != "none" ]; then \
+	@if [ "${shell env tclsh tcl_vars search_tcl_libs}" != "none" ]; then \
 		cd libseuser; $(MAKE) libseuser-tcl; \
 	else \
 		echo "Could not build libseuser-tcl."; \
@@ -172,7 +172,7 @@ $(INSTALL_LIBDIR):
 
 install-apol: $(INSTALL_LIBDIR)
 	cd apol;
-	-@if [ "${shell env tclsh tcl_vars search_tcl_libs}" != "none" ]; then \
+	@if [ "${shell env tclsh tcl_vars search_tcl_libs}" != "none" ]; then \
 		cd apol; $(MAKE) install; \
 	else \
 		echo "Could not install apol."; \
@@ -181,7 +181,7 @@ install-apol: $(INSTALL_LIBDIR)
 
 install-awish: $(INSTALL_LIBDIR)
 	cd awish;
-	-@if [ "${shell env tclsh tcl_vars search_tcl_libs}" != "none" ]; then \
+	@if [ "${shell env tclsh tcl_vars search_tcl_libs}" != "none" ]; then \
 		cd awish; $(MAKE) install; \
 	else \
 		echo "Could not install awish."; \
@@ -191,7 +191,7 @@ install-awish: $(INSTALL_LIBDIR)
 # installs both GUI and non-GUI versions
 install-seuserx: $(INSTALL_LIBDIR)
 	cd seuser;
-	-@if [ "${shell env tclsh tcl_vars search_tcl_libs}" != "none" ]; then \
+	@if [ "${shell env tclsh tcl_vars search_tcl_libs}" != "none" ]; then \
 		cd seuser; $(MAKE) install \
 	else \
 		echo "Could not install seuserx."; \
