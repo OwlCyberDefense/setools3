@@ -1,635 +1,1041 @@
-#include <policy.h>
-#include <policy-query.h>
+/* Copyright (C) 2003-2004 Tresys Technology, LLC
+ * see file 'COPYING' for use and warranty information */
+
+#include "policy.h"
+#include "policy-query.h"
 #include "relabel_analysis.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <util.h>
 
-int init_obj_perm_set(obj_perm_set_t *it)
+int apol_type_obj_init(type_obj_t *obj)
 {
-	if(!it) return INVNULL;
-	
-	it->obj_class = -1;
-	it->num_perms = 0;
-	it->perms = NULL;
-	return NOERROR;
-}
-
-int init_type_obj(type_obj_t *obj)
-{
-	if(!obj) return INVNULL;
-	obj->idx = -1;
+	if (!obj) return -1;
+	obj->type = -1;
 	obj->perm_sets = NULL;
 	obj->num_perm_sets = 0;
-	return NOERROR;
+	return 0;
 }
 
-int init_relabel_set(relabel_set_t *set)
+int apol_relabel_set_init(relabel_set_t *set)
 {
-	if(!set) return INVNULL;
+	if (!set) 
+		return -1;
 	set->domain_type_idx = -1;
 	set->to_types = NULL;
 	set->from_types = NULL;
-	set->num_to = 0;
-	set->num_from = 0;
-	return NOERROR;
+	set->num_to_types = 0;
+	set->num_from_types = 0;
+	set->to_rules = NULL;
+	set->from_rules = NULL;
+	set->num_to_rules = 0;
+	set->num_from_rules = 0;
+	return 0;
 }
 
-int init_relabel_result(relabel_result_t *res)
+int apol_relabel_result_init(relabel_result_t *res)
 {
-	if(!res) return INVNULL;
-	res->domains = NULL;
+	if (!res) 
+		return -1;
+
 	res->types = NULL;
-	res->num_domains = 0;
-	res->num_types = NULL;
-	res->to_from = 0; /* use TOLIST, FROMLIST, and BOTHLIST for domain's to and from */ 
-	return NOERROR;
+	res->num_types = 0;
+	res->domains = NULL;
+	res->num_domains = NULL; 
+	res->rules = NULL;
+	res->num_rules = 0;
+	res->mode = 0;
+	res->set = NULL;
+
+	return 0;
 }
 
-void free_obj_perm_set_data(obj_perm_set_t *it)
+int apol_relabel_mode_init(relabel_mode_t *mode) 
 {
-	if(!it) return;
-	if(it->perms) free(it->perms);
-	init_obj_perm_set(it);
+	if (!mode)
+		return -1;
+
+	mode->mode = 0; /* NOTE: must set mode later 0 is not valid */
+	mode->filter = 0;
+	mode->transitive = 0;
+	mode->trans_steps = 0;
+
+	return 0;
 }
 
-void free_type_obj_data(type_obj_t *obj)
+int apol_relabel_filter_init(relabel_filter_t *fltr)
 {
-	if(!obj) return;
-	if(obj->perm_sets) free(obj->perm_sets);
-	obj->idx = -1;
+	if (!fltr)
+		return -1;
+
+	fltr->perm_sets = NULL;
+	fltr->num_perm_sets = 0;
+
+	return 0;
+}
+
+void apol_free_type_obj_data(type_obj_t *obj)
+{
+	if (!obj) 
+		return;
+	if (obj->perm_sets) 
+		free(obj->perm_sets);
+	obj->type = -1;
 	obj->perm_sets = NULL;
 	obj->num_perm_sets = 0;
 }
 
-void free_relabel_set_data(relabel_set_t *set)
+void apol_free_relabel_set_data(relabel_set_t *set)
 {
-	if(!set) return;
-	if(set->to_types) free(set->to_types);
-	if(set->from_types) free(set->from_types);
+	if (!set) 
+		return;
+	if (set->to_types) 
+		free(set->to_types);
+	if (set->from_types) 
+		free(set->from_types);
+	if (set->to_rules)
+		free(set->to_rules);
+	if (set->from_rules)
+		free(set->from_rules);
 	set->domain_type_idx = -1;
-	set->num_to = 0;
-	set->num_from = 0;
+	set->num_to_types = 0;
+	set->num_from_types = 0;
+	set->num_to_rules = 0;
+	set->num_from_rules = 0;
 }
 
-void free_relabel_result_data(relabel_result_t *res)
+void apol_free_relabel_result_data(relabel_result_t *res)
 {
 	int i;
-	if(!res) return;
+	if (!res) 
+		return;
 
-	if(res->domains) free(res->domains);
-	if(res->types){
-		for(i = 0; i < res->num_domains; i++){
-			if(res->types[i]) free(res->types[i]);
-		}
+	if (res->types)
 		free(res->types);
+	res->types = NULL;
+
+	if (res->domains) {
+		for (i = 0; i < res->num_types; i++) {
+			if (res->domains[i])
+				free(res->domains[i]);
+		}
+		free(res->domains);
 	}
-	if(res->num_types) free(res->num_types);
+	res->domains = NULL;
+
+	if (res->num_domains)
+		free(res->num_domains);
+	res->num_domains = NULL; 
+
+	if (res->rules)
+		free(res->rules);
+	res->rules = NULL;
+	
+	if(res->set)
+		free(res->set);
+
+	res->num_rules = 0;
+	res->mode = 0;
+	res->num_types = 0;
+
+}
+
+void apol_free_relabel_filter_data(relabel_filter_t *fltr)
+{
+	int i;
+	
+	if (!fltr)
+		return;
+
+	for(i = 0; i < fltr->num_perm_sets; i++) {
+		apol_free_obj_perm_set_data(&(fltr->perm_sets[i]));
+	}
+
+	if (fltr->perm_sets)
+		free(fltr->perm_sets);
+	fltr->num_perm_sets = 0;
 }
 
 /* where is type in list returns index in list for found or a number < 0 on error or not found*/
 /* only TOLIST and FROMLIST are valid */
-int where_is_type_in_list(relabel_set_t *set, int type, int list)
+static int apol_where_is_type_in_list(relabel_set_t *set, int type, int list)
 {
 	int i;
 
-	if(!set) return INVNULL;
-	if(list != TOLIST && list != FROMLIST) return INVLIST;
+	if (!set) 
+		return -1;
+	if (list != TOLIST && list != FROMLIST) 
+		return -1;
 
-	switch(list){
+	switch (list){
 	case TOLIST:
-		for(i = 0; i < set->num_to; i++){
-			if(set->to_types[i].idx == type) return i;
+		for (i = 0; i < set->num_to_types; i++){
+			if(set->to_types[i].type == type) return i;
 		}
 		break;
 	case FROMLIST:
-		for(i = 0; i < set->num_from; i++){
-			if(set->from_types[i].idx == type) return i;
+		for (i = 0; i < set->num_from_types; i++){
+			if(set->from_types[i].type == type) return i;
 		}
 		break;
 	default:
-		return INVLIST;
+		return -1;
 		break;
 	}	
 	return NOTHERE;
-}
+};
 
-int where_is_obj_in_type(type_obj_t *type, int obj_idx)
+static int apol_where_is_obj_in_type(type_obj_t *type, int obj_idx)
 {
 	int i;
 
-	for(i = 0; i < type->num_perm_sets; i++){
-		if(type->perm_sets[i].obj_class == obj_idx)
+	for (i = 0; i < type->num_perm_sets; i++){
+		if (type->perm_sets[i].obj_class == obj_idx)
 			return i;
 	}
 
 	return NOTHERE;
-}
+};
 
-bool_t is_type_in_list(relabel_set_t *set, int idx, int list)
+static bool_t apol_is_type_in_list(relabel_set_t *set, int idx, int list)
 {
 	int i;
-	if(!set) return 0;
-	switch(list){
+	if (!set) 
+		return 0;
+	switch (list){
 	case TOLIST:
-		for(i = 0; i < set->num_to; i++){
-			if(set->to_types[i].idx == idx) return 1;
+		for (i = 0; i < set->num_to_types; i++){
+			if (set->to_types[i].type == idx) 
+				return 1;
 		}
 		break;
 	case FROMLIST:
-		for(i = 0; i < set->num_from; i++){
-			if(set->from_types[i].idx == idx) return 1;
+		for (i = 0; i < set->num_from_types; i++){
+			if (set->from_types[i].type == idx) 
+				return 1;
 		}
 		break;
 	case BOTHLIST:
-		return (is_type_in_list(set, idx, TOLIST) && is_type_in_list(set, idx, FROMLIST));
+		return (apol_is_type_in_list(set, idx, TOLIST) && apol_is_type_in_list(set, idx, FROMLIST));
 		break;
 	case ANYLIST:
-		return (is_type_in_list(set, idx, TOLIST) || is_type_in_list(set, idx, FROMLIST));
+		return (apol_is_type_in_list(set, idx, TOLIST) || apol_is_type_in_list(set, idx, FROMLIST));
 		break;
 	default:
 		return 0;
 		break;
 	}
 	return 0;
-}
+};
+
+static bool_t apol_does_type_obj_have_class(type_obj_t *type, int obj_idx)
+{
+	int i;
+
+	if (!type) 
+		return 0;
+	
+	for (i = 0; i < type->num_perm_sets; i++){
+		if (obj_idx == type->perm_sets[i].obj_class) 
+			return 1;
+	}
+
+	return 0;
+};
+
+static bool_t apol_does_type_obj_have_perm(type_obj_t *type, int obj_idx, int perm)
+{
+	int i, j;
+
+	if (!type) 
+		return 0;
+	if (!apol_does_type_obj_have_class(type, obj_idx)) 
+		return 0;
+
+	for (i = 0; i < type->num_perm_sets; i++) {
+		if (type->perm_sets[i].obj_class == obj_idx){
+			for (j = 0; j < type->perm_sets[i].num_perms; j++){
+				if (perm == type->perm_sets[i].perms[j]) 
+					return 1;
+			}
+		}
+	}
+
+	return 0;
+};
 
 /* the ANYLIST option is not used for this function */
-int add_type_to_list(relabel_set_t *set, int idx, int list)
-{	
+static int apol_add_type_to_list(relabel_set_t *set, int idx, int list)
+{
 	type_obj_t *temp;
 	int retv;
 
-	if(!set) return INVNULL;
-	if(list != TOLIST && list != FROMLIST && list != BOTHLIST) return INVLIST;
+	if (!set) 
+		return -1;
+	if (list != TOLIST && list != FROMLIST && list != BOTHLIST) 
+		return -1;
 
-	switch(list){
+	switch (list){
 	case TOLIST:
-		if(is_type_in_list(set, idx, TOLIST)) return NOERROR;
-		temp = (type_obj_t *)realloc(set->to_types, (set->num_to + 1) * sizeof(type_obj_t));
-		if(temp)
+		if (apol_is_type_in_list(set, idx, TOLIST)) 
+			return 0;
+		temp = (type_obj_t *)realloc(set->to_types, (set->num_to_types + 1) * sizeof(type_obj_t));
+		if (temp)
 			set->to_types = temp;
 		else
-			return OOMEMER;
-		retv = init_type_obj(&( set->to_types[set->num_to] ));
-		if(retv != NOERROR) return retv;
-		set->to_types[set->num_to].idx = idx;
-		(set->num_to)++;
-		return NOERROR;
+			return -1;
+		retv = apol_type_obj_init(&( set->to_types[set->num_to_types] ));
+		if (retv != 0) 
+			return retv;
+		set->to_types[set->num_to_types].type = idx;
+		(set->num_to_types)++;
+		return 0;
 		break;
 	case FROMLIST:
-		if(is_type_in_list(set, idx, FROMLIST)) return NOERROR;
-		temp = (type_obj_t *)realloc(set->from_types, (set->num_from + 1) * sizeof(type_obj_t));
-		if(temp)
+		if (apol_is_type_in_list(set, idx, FROMLIST)) return 0;
+		temp = (type_obj_t *)realloc(set->from_types, (set->num_from_types + 1) * sizeof(type_obj_t));
+		if (temp)
 			set->from_types = temp;
 		else
-			return OOMEMER;
-		retv = init_type_obj(&( set->from_types[set->num_from] ));
-		if(retv != NOERROR) return retv;
-		set->from_types[set->num_from].idx = idx;
-		(set->num_from)++;
-		return NOERROR;
+			return -1;
+		retv = apol_type_obj_init(&( set->from_types[set->num_from_types] ));
+		if (retv) 
+			return retv;
+		set->from_types[set->num_from_types].type = idx;
+		(set->num_from_types)++;
+		return 0;
 		break;
 	case BOTHLIST:
-		retv = add_type_to_list(set, idx, TOLIST);
-		if(retv != NOERROR) return retv;
-		retv = add_type_to_list(set, idx, FROMLIST);
-		if(retv != NOERROR) return retv;
-		return NOERROR;
+		retv = apol_add_type_to_list(set, idx, TOLIST);
+		if (retv) 
+			return retv;
+		retv = apol_add_type_to_list(set, idx, FROMLIST);
+		if(retv) 
+			return retv;
+		return 0;
 		break;
 	default:
-		return INVLIST;
+		return -1;
 		break;
 	}
-	return UNEXPTD;
-}
+	return -1;
+};
 
-int add_obj_to_set_member(relabel_set_t *set, int type_idx, int obj_idx)
+static int apol_add_obj_to_set_member(relabel_set_t *set, int type_idx, int obj_idx)
 {
 	int to_idx, from_idx;
 	obj_perm_set_t *temp = NULL;
 
-	if(!set) return INVNULL;
-	if(!is_type_in_list(set, type_idx, ANYLIST)) return NOTHERE;
+	if (!set) 
+		return -1;
+	if (!apol_is_type_in_list(set, type_idx, ANYLIST)) 
+		return NOTHERE;
 
-	to_idx = where_is_type_in_list(set, type_idx, TOLIST);
-	from_idx = where_is_type_in_list(set, type_idx, FROMLIST);
+	to_idx = apol_where_is_type_in_list(set, type_idx, TOLIST);
+	from_idx = apol_where_is_type_in_list(set, type_idx, FROMLIST);
 
-	if(to_idx != NOTHERE && to_idx >= 0){
+	if (to_idx != NOTHERE && to_idx >= 0){
 		temp = (obj_perm_set_t*)realloc(set->to_types[to_idx].perm_sets, (set->to_types[to_idx].num_perm_sets + 1) * sizeof(obj_perm_set_t));
-		if(!temp) return OOMEMER;
+		if (!temp) 
+			return -1;
 		set->to_types[to_idx].perm_sets = temp;
-		init_obj_perm_set(&(set->to_types[to_idx].perm_sets[set->to_types[to_idx].num_perm_sets]));
+		apol_obj_perm_set_init(&(set->to_types[to_idx].perm_sets[set->to_types[to_idx].num_perm_sets]));
 		set->to_types[to_idx].perm_sets[(set->to_types[to_idx].num_perm_sets)++].obj_class = obj_idx;
 	}
-	if(from_idx != NOTHERE && from_idx >= 0){
+	if (from_idx != NOTHERE && from_idx >= 0){
 		temp = (obj_perm_set_t*)realloc(set->from_types[from_idx].perm_sets, (set->from_types[from_idx].num_perm_sets + 1) * sizeof(obj_perm_set_t));
-		if(!temp) return OOMEMER;
+		if (!temp) return -1;
 		set->from_types[from_idx].perm_sets = temp;
-		init_obj_perm_set(&(set->from_types[from_idx].perm_sets[set->from_types[from_idx].num_perm_sets]));
+		apol_obj_perm_set_init(&(set->from_types[from_idx].perm_sets[set->from_types[from_idx].num_perm_sets]));
 		set->from_types[from_idx].perm_sets[(set->from_types[from_idx].num_perm_sets)++].obj_class = obj_idx;
 	}
 
-	return NOERROR;
-}
+	return 0;
+};
 
-int add_perm_to_set_member(relabel_set_t *set, int type_idx, int obj_idx, int perm)
+/* if object class is not present calls add obj to set */
+static int apol_add_perm_to_set_member(relabel_set_t *set, int type_idx, int obj_idx, int perm)
 {
 	int to_idx, from_idx, retv, where;
 
-	if(!set) return INVNULL;
-	if(!is_type_in_list(set, type_idx, ANYLIST)) return NOTHERE;
+	if (!set) 
+		return -1;
+	if (!apol_is_type_in_list(set, type_idx, ANYLIST)) 
+		return NOTHERE;
 
-	to_idx = where_is_type_in_list(set, type_idx, TOLIST);
-	from_idx = where_is_type_in_list(set, type_idx, FROMLIST);
+	to_idx = apol_where_is_type_in_list(set, type_idx, TOLIST);
+	from_idx = apol_where_is_type_in_list(set, type_idx, FROMLIST);
 
-	if(to_idx != NOTHERE && to_idx >= 0){
-		if(!does_type_obj_have_perm(&(set->to_types[to_idx]), obj_idx, perm)){
-			where = where_is_obj_in_type(&(set->to_types[to_idx]), obj_idx);
-			if(where < 0 && where != NOTHERE) return where;
-			if(where == NOTHERE) {
-				retv = add_obj_to_set_member(set, type_idx, obj_idx);
-				if(retv != NOERROR) return retv;
+	if (to_idx != NOTHERE && to_idx >= 0){
+		if (!apol_does_type_obj_have_perm(&(set->to_types[to_idx]), obj_idx, perm)){
+			where = apol_where_is_obj_in_type(&(set->to_types[to_idx]), obj_idx);
+			if (where < 0 && where != NOTHERE) 
+				return where;
+			if (where == NOTHERE) {
+				retv = apol_add_obj_to_set_member(set, type_idx, obj_idx);
+				if (retv) 
+					return retv;
 				where = set->to_types[to_idx].num_perm_sets - 1;
 			}
 			retv = add_i_to_a(perm, &(set->to_types[to_idx].perm_sets[where].num_perms), &(set->to_types[to_idx].perm_sets[where].perms));
-			if(retv == -1) return OOMEMER;
+			if (retv == -1) 
+				return -1;
 		}
 	}
-	if(from_idx != NOTHERE && from_idx >= 0){
-		if(!does_type_obj_have_perm(&(set->from_types[from_idx]), obj_idx, perm)){	
-			where = where_is_obj_in_type(&(set->from_types[from_idx]), obj_idx);
-			if(where < 0 && where != NOTHERE) return where;
-			if(where == NOTHERE) {
-				retv = add_obj_to_set_member(set, type_idx, obj_idx);
-				if(retv != NOERROR) return retv;
+	if (from_idx != NOTHERE && from_idx >= 0){
+		if (!apol_does_type_obj_have_perm(&(set->from_types[from_idx]), obj_idx, perm)){	
+			where = apol_where_is_obj_in_type(&(set->from_types[from_idx]), obj_idx);
+			if (where < 0 && where != NOTHERE) 
+				return where;
+			if (where == NOTHERE) {
+				retv = apol_add_obj_to_set_member(set, type_idx, obj_idx);
+				if (retv) 
+					return retv;
 				where = set->from_types[from_idx].num_perm_sets - 1;
 			}
 			retv = add_i_to_a(perm, &(set->from_types[from_idx].perm_sets[where].num_perms), &(set->from_types[from_idx].perm_sets[where].perms));
-			if(retv == -1) return OOMEMER;
+			if (retv == -1) 
+				return -1;
 		}
 	}
 
-	return NOERROR;
-}
+	return 0;
+};
 
-int add_domain_to_result(relabel_result_t *res, int domain, int *types, int num_types)
+static int apol_add_domain_to_result(relabel_result_t *res, int domain, int *types, int num_types, int *rules, int num_rules)
 {
-	int retv;
-	int **temp = NULL;
+	int i, retv;
 
-	retv = find_int_in_array(domain, res->domains, res->num_domains);
-	if(retv != -1) return NOERROR; /* already inserted, do nothing */
-
-	if(!res || !types) return INVNULL;
-	
-	retv = add_i_to_a(domain, &(res->num_domains), &(res->domains));
-	if(retv == -1) return OOMEMER;
-
-	(res->num_domains)--;
-	retv = add_i_to_a(num_types, &(res->num_domains), &(res->num_types));
-	if(retv == -1) return OOMEMER;
-	
-	if(res->types){
-		temp = (int**)realloc(res->types, sizeof(int*) * res->num_domains);
-		if(!temp) return OOMEMER;
-		res->types = temp;
-	} else {
-		temp = (int**)calloc(1, sizeof(int*));
-		if(!temp) return OOMEMER;
-		res->types = temp;
+	for (i = 0; i < num_rules; i++) {
+		retv = add_i_to_a(rules[i], &(res->num_rules), &(res->rules));
+		if (retv == -1)
+			return -1;
 	}
-	res->types[res->num_domains -1] = types;
+	for (i = 0; i < num_types; i++) {
+		if ((retv = find_int_in_array(types[i], res->types, res->num_types)) == -1) {
+			retv = add_i_to_a(types[i], &(res->num_types), &(res->types));
+			if (retv == -1)
+				return -1;
 
-	return NOERROR;
-}
+			if (res->domains) {
+				res->domains = (int**)realloc(res->domains, num_types * sizeof(int*));
+			} else {
+				res->domains = (int**)malloc(1 * sizeof(int*));
+			}
+			if (!res->domains) 
+				return -1;
 
-int fill_relabel_sets(relabel_set_t **sets, policy_t *policy)
+			(res->num_types)--;
+			retv = add_i_to_a(0, &(res->num_types), &(res->num_domains));
+			if (retv == -1)
+				return -1;
+
+			res->domains[res->num_types - 1] = NULL;
+			retv = add_i_to_a(domain, &(res->num_domains[res->num_types -1]), &(res->domains[res->num_types - 1]));
+			if (retv == -1)
+				return -1;
+
+		} else {
+			retv = add_i_to_a(domain, &(res->num_domains[retv]), &(res->domains[retv]));
+			if(retv == -1)
+				return -1;
+		}
+	}
+
+	return 0;
+};
+
+#define ALL_TYPES 1
+#define ALL_OBJS  2
+#define ALL_PERMS 3
+static int apol_fill_array_with_all(int **array, int content, policy_t *policy) 
 {
-	int i, j, retv, relabelto_idx, relabelfrom_idx, num_classes;
-	int *classes = NULL;
-	ta_item_t *cur = NULL;
-	if(!sets || !policy) return INVNULL;
-	if(!( *sets = (relabel_set_t *)malloc(sizeof(relabel_set_t) * policy->num_types) )) {
-		return OOMEMER;
+	int i, max;
+	
+	switch (content) {
+	case ALL_TYPES:
+		max = policy->num_types;
+		break;
+	case ALL_OBJS:
+		max = policy->num_obj_classes;
+		break;
+	case ALL_PERMS:
+		max = policy->num_perms;
+		break;
+	default:
+		return -1;
 	}
-	relabelto_idx = get_perm_idx("relabelto", policy);
-	relabelfrom_idx = get_perm_idx("relabelfrom", policy);
+	
+	*array = (int*)malloc(max * sizeof(int));
+	if (!( *array ))
+		return -1;
 
-	for(i = 0; i < policy->num_types; i++){
-		retv = init_relabel_set(&((*sets)[i]));
-		if(retv != NOERROR) return retv;
+	for (i = 0; i < max; i++) {
+		(*array)[i] = i;
+	}
+	if (content == ALL_TYPES)
+		(*array)[0] = 1; // 0 is for self duplicates handled elsewhere
+	
+	return 0;
+};
+
+int apol_do_relabel_analysis(relabel_set_t **sets, policy_t *policy) 
+{
+	int i, j, k, x, y, retv, relabelto_idx, relabelfrom_idx;  
+	int num_subjects, num_targets, num_objects, num_perms;
+	int *subjects = NULL, *targets = NULL, *objects = NULL, *perms = NULL;
+	bool_t dummy[1] = {0};
+
+	if (!sets || !policy) 
+		return -1;
+
+	/* ititialize sets */
+	if (!( *sets = (relabel_set_t *)malloc(sizeof(relabel_set_t) * policy->num_types) )) {
+		return -1;
+	}
+	for (i = 0; i < policy->num_types; i++){
+		retv = apol_relabel_set_init(&((*sets)[i]));
+		if (retv) 
+			return retv;
 		(*sets)[i].domain_type_idx = i;
 	}
-	for(i = 0; i < policy->num_av_access; i++){
-		/* is allow && does permit relabel*/
-		if(policy->av_access[i].type == RULE_TE_ALLOW) {
-			cur = policy->av_access[i].perms;
-			while(cur){
-				if(cur->idx == relabelto_idx){
-					retv = add_type_to_list(&((*sets)[policy->av_access[i].src_types->idx]),
-								policy->av_access[i].tgt_types->idx, TOLIST);
-					if(retv != NOERROR) return retv;
-					retv = extract_obj_classes_from_te_rule(i, RULE_TE_ALLOW, &(classes), &(num_classes), policy);
-					if(retv != 0) return retv;
-					for(j = 0; j < num_classes; j++){
-						retv = add_perm_to_set_member(&((*sets)[policy->av_access[i].src_types->idx]), policy->av_access[i].tgt_types->idx, classes[j], cur->idx);
-						if(retv != NOERROR) return retv;
+
+	/* get indices of relabeling permissions */
+	relabelto_idx = get_perm_idx(RELABELTO, policy);
+	relabelfrom_idx = get_perm_idx(RELABELFROM, policy);
+
+	/* the following two loops loop over the number of accesss rules populate the relabel sets */
+
+	/* LOOP 1 : add all types with relabel permissions */
+	for (i = 0; i < policy->num_av_access; i++) {
+		if (!policy->av_access[i].type == RULE_TE_ALLOW) 
+			continue; /* only allow rules matter, skip all others */
+
+		/* extract rule parts to arrays */
+		/* if any of these fail, abort */
+		retv = extract_types_from_te_rule(i, RULE_TE_ALLOW, SRC_LIST, &subjects, &num_subjects, dummy, policy);
+		if (retv) {
+			if(retv == 2){
+				retv = apol_fill_array_with_all(&subjects, ALL_TYPES, policy);
+				if (retv)
+					return -1;
+			} else
+				goto bail_point;
+		}
+		retv = extract_types_from_te_rule(i, RULE_TE_ALLOW, TGT_LIST, &targets, &num_targets, dummy, policy);
+		if (retv) {
+			if(retv == 2){
+				retv = apol_fill_array_with_all(&targets, ALL_TYPES, policy);
+				if (retv)
+					return -1;
+			} else
+				goto bail_point;
+		}
+		retv = extract_obj_classes_from_te_rule(i, RULE_TE_ALLOW, &objects, &num_objects, policy);
+		if (retv) {
+			if(retv == 2){
+				retv = apol_fill_array_with_all(&objects, ALL_OBJS, policy);
+				if (retv)
+					return -1;
+			} else
+				goto bail_point;
+		}
+		retv = extract_perms_from_te_rule(i, RULE_TE_ALLOW, &perms, &num_perms, policy);
+		if (retv) {
+			if(retv == 2){
+				retv = apol_fill_array_with_all(&perms, ALL_PERMS, policy);
+				if (retv)
+					return -1;
+			} else
+				goto bail_point;
+		}
+
+		for (j = 0; j < num_perms; j++) {
+			if (perms[j] == relabelto_idx) {
+				for (k = 0; k < num_subjects; k++) {
+					for (x = 0; x < num_targets; x++) {
+						/* add tgt x to to_list of k */
+						retv = apol_add_type_to_list(&((*sets)[subjects[k]]), targets[x], TOLIST);
+						if (retv)
+							goto bail_point;
+						for (y = 0; y < num_objects; y++) {
+							apol_add_perm_to_set_member(&((*sets)[subjects[k]]), targets[x], objects[y], perms[j]);
+						}
 					}
-				} else if(cur->idx == relabelfrom_idx){
-					retv = add_type_to_list(&((*sets)[policy->av_access[i].src_types->idx]),
-								policy->av_access[i].tgt_types->idx, FROMLIST);
-					if(retv != NOERROR) return retv;
-					retv = extract_obj_classes_from_te_rule(i, RULE_TE_ALLOW, &(classes), &(num_classes), policy);
-					if(retv != 0) return retv;
-					for(j = 0; j< num_classes; j++){
-						retv = add_perm_to_set_member(&((*sets)[policy->av_access[i].src_types->idx]), policy->av_access[i].tgt_types->idx, classes[j], cur->idx);
-						if(retv != NOERROR) return retv;
+					/* if rule not here add it */
+					retv = find_int_in_array(i, (*sets)[subjects[k]].to_rules, (*sets)[subjects[k]].num_to_rules);
+					if (retv == -1){
+						retv = add_i_to_a(i, &((*sets)[subjects[k]].num_to_rules), &((*sets)[subjects[k]].to_rules));
+						if (retv)
+							goto bail_point;
+					}
+					
+				}
+			} else if (perms[j] == relabelfrom_idx) {
+				for (k = 0; k < num_subjects; k++) {
+					for (x = 0; x < num_targets; x++) {
+						/* add tgt x to from_list of k */
+						retv = apol_add_type_to_list(&((*sets)[subjects[k]]), targets[x], FROMLIST);
+						if (retv)
+							goto bail_point;
+						for (y = 0; y < num_objects; y++) {
+							apol_add_perm_to_set_member(&((*sets)[subjects[k]]), targets[x], objects[y], perms[j]);
+						}
+					}
+					/* if rule not here add it */
+					retv = find_int_in_array(i, (*sets)[subjects[k]].from_rules, (*sets)[subjects[k]].num_from_rules);
+					if (retv == -1){
+						retv = add_i_to_a(i, &((*sets)[subjects[k]].num_from_rules), &((*sets)[subjects[k]].from_rules));
+						if (retv)
+							goto bail_point;
 					}
 				}
-				cur = cur->next;
-				if(classes) free(classes);
-				classes = NULL;
-				num_classes = 0;
-			}
+			} /* no else */
 		}
+		
+		/* free and reset rule part arrays */
+		if (subjects) {
+			free(subjects);
+			subjects = NULL;
+		}
+		num_subjects = 0;
+
+		if (targets) {
+			free(targets);
+			targets = NULL;
+		}
+		num_targets = 0;
+
+		if (objects) {
+			free(objects);
+			objects = NULL;
+		}
+		num_objects = 0;
+
+		if (perms) {
+			free(perms);
+			perms = NULL;
+		}
+		num_perms = 0;
 	}
-	for(i = 0; i < policy->num_av_access; i++){
-		if(policy->av_access[i].type == RULE_TE_ALLOW) {
-			cur = policy->av_access[i].perms;
-			while(cur){
-				if(is_type_in_list( &((*sets)[policy->av_access[i].src_types->idx]),
-						    policy->av_access[i].tgt_types->idx, ANYLIST)) {
-					retv = extract_obj_classes_from_te_rule(i, RULE_TE_ALLOW, &(classes), &(num_classes), policy);
-					if(retv != 0) return retv;
-					for(j = 0; j< num_classes; j++){
-						retv = add_perm_to_set_member(&((*sets)[policy->av_access[i].src_types->idx]), policy->av_access[i].tgt_types->idx, classes[j], cur->idx);
-						if(retv != NOERROR) return retv;
+
+	/* LOOP 2 : add all permissions given to any type from previous loop */
+	for (i = 0; i < policy->num_av_access; i++) {
+		if (!policy->av_access[i].type == RULE_TE_ALLOW)
+			continue;
+
+		/* extract rule parts to arrays */
+		/* if any of these fail, abort */
+		retv = extract_types_from_te_rule(i, RULE_TE_ALLOW, SRC_LIST, &subjects, &num_subjects, dummy, policy);
+		if (retv) {
+			if(retv == 2){
+				retv = apol_fill_array_with_all(&subjects, ALL_TYPES, policy);
+				if (retv)
+					return -1;
+			} else
+				goto bail_point;
+		}
+		retv = extract_types_from_te_rule(i, RULE_TE_ALLOW, TGT_LIST, &targets, &num_targets, dummy, policy);
+		if (retv) {
+			if(retv == 2){
+				retv = apol_fill_array_with_all(&targets, ALL_TYPES, policy);
+				if (retv)
+					return -1;
+			} else
+				goto bail_point;
+		}
+		retv = extract_obj_classes_from_te_rule(i, RULE_TE_ALLOW, &objects, &num_objects, policy);
+		if (retv) {
+			if(retv == 2){
+				retv = apol_fill_array_with_all(&objects, ALL_OBJS, policy);
+				if (retv)
+					return -1;
+			} else
+				goto bail_point;
+		}
+		retv = extract_perms_from_te_rule(i, RULE_TE_ALLOW, &perms, &num_perms, policy);
+		if (retv) {
+			if(retv == 2){
+				retv = apol_fill_array_with_all(&perms, ALL_PERMS, policy);
+				if (retv)
+					return -1;
+			} else
+				goto bail_point;
+		}
+
+		for (j = 0; j < num_perms; j++) {
+			for (k = 0; k < num_subjects; k++) {
+				for (x = 0; x < num_targets; x++) {
+					if (apol_is_type_in_list(&((*sets)[subjects[k]]), targets[x], ANYLIST)) {
+						for (y = 0; y < num_objects; y++) {
+							apol_add_perm_to_set_member(&((*sets)[subjects[k]]), targets[x], objects[y], perms[j]);
+						}
 					}
-
 				}
-				cur = cur->next;
-				if(classes) free(classes);
-				classes = NULL;
-				num_classes = 0;
 			}
 		}
-	}
-	return NOERROR;
-}
 
-bool_t does_type_obj_have_class(type_obj_t *type, int obj_idx)
-{
-	int i;
+		/* free and reset rule part arrays */
+		if (subjects) {
+			free(subjects);
+			subjects = NULL;
+		}
+		num_subjects = 0;
 
-	if(!type) return 0;
-	
-	for(i = 0; i < type->num_perm_sets; i++){
-		if(obj_idx == type->perm_sets[i].obj_class) return 1;
+		if (targets) {
+			free(targets);
+			targets = NULL;
+		}
+		num_targets = 0;
+
+		if (objects) {
+			free(objects);
+			objects = NULL;
+		}
+		num_objects = 0;
+
+		if (perms) {
+			free(perms);
+			perms = NULL;
+		}
+		num_perms = 0;
 	}
 
 	return 0;
+
+bail_point:
+		/* free and reset rule part arrays */
+		if (subjects)
+			free(subjects);
+		if (targets) 
+			free(targets);
+		if (objects) 
+			free(objects);
+		if (perms) 
+			free(perms);
+	
+	return -1;
 }
 
-bool_t does_type_obj_have_perm(type_obj_t *type, int obj_idx, int perm)
-{	
-	int i, j;
+static int apol_single_type_relabel(relabel_set_t *sets, int domain, int type, int **array, int *size, policy_t *policy, int mode)
+{
+	int i, retv;
 
-	if(!type) return 0;
-	if(!does_type_obj_have_class(type, obj_idx)) return 0;
-
-	for (i = 0; i < type->num_perm_sets; i++) {
-		if(type->perm_sets[i].obj_class == obj_idx){
-			for(j = 0; j < type->perm_sets[i].num_perms; j++){
-				if(perm == type->perm_sets[i].perms[j]) return 1;
-			}
+	if (!array || !size || !policy || !sets) 
+		return -1;
+	if (!is_valid_type(policy, domain, 0) || !is_valid_type(policy, type, 0)) 
+		return -1;
+	if (mode != MODE_TO && mode != MODE_FROM)
+		return -1;
+	*array = NULL;
+	*size = 0;
+	if(mode == MODE_TO){
+		if (!apol_is_type_in_list(&(sets[domain]), type, FROMLIST)) 
+			return NOTHERE;
+		for (i = 0; i < sets[domain].num_to_types; i++){
+			retv = add_i_to_a(sets[domain].to_types[i].type, size, array);
+			if (retv == -1) 
+				return -1;
+		}
+	} else {
+		if (!apol_is_type_in_list(&(sets[domain]), type, TOLIST))
+			return NOTHERE;
+		for (i = 0; i < sets[domain].num_from_types; i++){
+			retv = add_i_to_a(sets[domain].from_types[i].type, size, array);
+			if(retv == -1) 
+				return -1;
 		}
 	}
 
+
 	return 0;
-}
+};
 
-int single_type_relabel_to(relabel_set_t *sets, int domain, int type, int **array, int *size, policy_t *policy)
+static int apol_type_relabels_what(relabel_set_t *sets, int domain, relabel_set_t **result, policy_t *policy)
 {
-	int i, retv;
-
-	if(!array || !size || !policy || !sets) return INVNULL;
-	if(!is_valid_type(policy, domain, 0) || !is_valid_type(policy, type, 0)) return INVAIDX;
-
-	*array = NULL;
-	*size = 0;
-	
-	if(!is_type_in_list(&(sets[domain]), type, FROMLIST)) return NOTHERE;
-	for(i = 0; i < sets[domain].num_to; i++){
-		retv = add_i_to_a(sets[domain].to_types[i].idx, size, array);
-		if(retv == -1) return OOMEMER;
-	}
-
-	return NOERROR;
-}
-
-int single_type_relabel_from(relabel_set_t *sets, int domain, int type, int **array, int *size, policy_t *policy)
-{
-	int i, retv;
-
-	if(!array || !size || !policy || !sets) return INVNULL;
-	if(!is_valid_type(policy, domain, 0) || !is_valid_type(policy, type, 0)) return INVAIDX;
-
-	*array = NULL;
-	*size = 0;
-	
-	if(!is_type_in_list(&(sets[domain]), type, TOLIST)) return NOTHERE;
-	for(i = 0; i < sets[domain].num_from; i++){
-		retv = add_i_to_a(sets[domain].from_types[i].idx, size, array);
-		if(retv == -1) return OOMEMER;
-	}
-
-	return NOERROR;
-}
-
-int type_relabels_what(relabel_set_t *sets, int domain, relabel_set_t **result, policy_t *policy)
-{
-	if(!result || !policy || !sets) return INVNULL;
-	if(!is_valid_type(policy, domain, 0)) return INVAIDX;
+	if (!result || !policy || !sets) 
+		return -1;
+	if (!is_valid_type(policy, domain, 0)) 
+		return -1;
 
 	*result = &(sets[domain]);
 
-	return NOERROR;
-}
+	return 0;
+};
 
-int type_relabel_to(relabel_set_t *sets, int type, relabel_result_t *res, policy_t *policy)
+static int apol_domain_relabel_types(relabel_set_t *sets, int domain, relabel_result_t *res, policy_t *policy, relabel_filter_t *filter)
 {
-	int i, retv, size = 0;
-	int *temp_array = NULL;
+	int retv, here, i, j, k, next, has_class;
+	relabel_set_t *temp, *clone;
 
-	if(!sets || !policy) return INVNULL;
-	if(res){
-		free_relabel_result_data(res);
+	if (!sets || !policy) 
+		return -1;
+	if (res){
+		apol_free_relabel_result_data(res);
 	}
-	init_relabel_result(res);
-
-	for(i = 1; i < policy->num_types; i++){
-		size = 0;
-		retv = single_type_relabel_to(sets, i, type, &temp_array, &size, policy);
-		if(retv != NOERROR && retv != NOTHERE) return retv;
-		if(size){
-			retv = add_domain_to_result(res, i, temp_array, size);
-			if(retv != NOERROR) return retv;
-		}
-	}
-	res->to_from = TOLIST;
-
-	return NOERROR;
-}
-
-int type_relabel_from(relabel_set_t *sets, int type, relabel_result_t *res, policy_t *policy)
-{
-	int i, retv, size = 0;
-	int *temp_array = NULL;
-
-	if(!sets || !policy) return INVNULL;
-	if(res){
-		free_relabel_result_data(res);
-	}
-	init_relabel_result(res);
-
-	for(i = 1; i < policy->num_types; i++){
-		size = 0;
-		retv = single_type_relabel_from(sets, i, type, &temp_array, &size, policy);
-		if(retv != NOERROR && retv != NOTHERE) return retv;
-		if(size){
-			retv = add_domain_to_result(res, i, temp_array, size);
-			if(retv != NOERROR) return retv;
-		}
-	}
-
-	res->to_from = FROMLIST;
-
-	return NOERROR;
-
-}
-
-int domain_relabel_types(relabel_set_t *sets, int domain, relabel_result_t *res, policy_t *policy)
-{
-	int retv, i;
-	relabel_set_t *temp;
-
-	if(!sets || !policy) return INVNULL;
-	if(res){
-		free_relabel_result_data(res);
-	}
-	init_relabel_result(res);
+	apol_relabel_result_init(res);
 
 	temp = (relabel_set_t*)malloc(1 * sizeof(relabel_set_t));
-	if(!temp) return OOMEMER;
-	init_relabel_set(temp);
+	if (!temp) 
+		return -1;
+	apol_relabel_set_init(temp);
 
-	retv = type_relabels_what(sets, domain, &temp, policy);
-	if(retv != NOERROR) return retv;
+	retv = apol_type_relabels_what(sets, domain, &clone, policy);
+	if (retv) 
+		return retv;
 
-	res->to_from = BOTHLIST;
-	res->types = (int **)calloc(2, sizeof(int*));
-	if(!(res->types)) return OOMEMER;
-	res->num_types = (int*)calloc(2, sizeof(int));
-	if(!(res->num_types)) return OOMEMER;
-	res->domains = (int*)malloc(1 * sizeof(int));
-	if(!(res->domains)) return OOMEMER;
-	res->domains[0] = domain;
+	res->mode = MODE_DOM;
 	
-	for(i = 0; i < temp->num_to; i++){
-		retv = add_i_to_a(sets[domain].to_types[i].idx, &(res->num_types[0]), &(res->types[0]));
-		if(retv == -1) return OOMEMER;
+
+	/* do filtering */ 
+	next = 0;
+	for (i = 0; i < clone->num_to_types; i++) {
+		here = 1;
+		if (filter) {
+			has_class = 0; /* must include at least one of the specified object classes */ 
+			for (j = 0; j < filter->num_perm_sets; j++) {
+				if (apol_does_type_obj_have_class(&(clone->to_types[i]), filter->perm_sets[j].obj_class)) {
+					has_class = 1;
+					if (filter->perm_sets[j].num_perms) { 
+						here = 0;
+						for (k = 0; k < filter->perm_sets[j].num_perms; k++) {
+							if( !apol_does_type_obj_have_perm(&(clone->to_types[i]), filter->perm_sets[j].obj_class, filter->perm_sets[j].perms[k]))
+								here = 1; /* must include at least specified permissions */
+						}
+					}
+				}
+			}
+		} else {
+			has_class = 1; /* not filtering include all object classes*/
+		}
+		if (here && has_class) {
+			++(temp->num_to_types);
+			if (temp->to_types) {
+				temp->to_types = (type_obj_t*) realloc(temp->to_types, temp->num_to_types * sizeof(type_obj_t));
+				if (!temp)
+					return -1;
+			} else {
+				temp->to_types = (type_obj_t*) malloc(1 * sizeof(type_obj_t));
+				if (!temp)
+					return -1;
+			}
+			temp->to_types[next] = clone->to_types[i];
+			next++;
+		}
+	}
+
+	next = 0;
+	for (i = 0; i < clone->num_from_types; i++) {
+		here = 1;
+		if (filter) {
+			has_class = 0;
+			for (j = 0; j < filter->num_perm_sets; j++) {
+				if (apol_does_type_obj_have_class(&(clone->from_types[i]), filter->perm_sets[j].obj_class)) {
+					has_class = 1;
+					if (filter->perm_sets[j].num_perms) {
+						here = 0;
+						for (k = 0; k < filter->perm_sets[j].num_perms; k++) {
+							if( !apol_does_type_obj_have_perm(&(clone->from_types[i]), filter->perm_sets[j].obj_class, filter->perm_sets[j].perms[k]))
+								here = 1;
+						}
+					}
+				}
+			}
+		} else {
+			has_class = 1;
+		}
+		if (here && has_class) {
+			++(temp->num_from_types);
+			if (temp->from_types) {
+				temp->from_types = (type_obj_t*) realloc(temp->from_types, temp->num_from_types * sizeof(type_obj_t));
+				if (!temp)
+					return -1;
+			} else {
+				temp->from_types = (type_obj_t*) malloc(1 * sizeof(type_obj_t));
+				if (!temp)
+					return -1;
+			}
+			temp->from_types[next] = clone->from_types[i];
+			next++;
+		}
 	}
 	
-	for(i = 0; i < temp->num_from; i++){
-		retv = add_i_to_a(sets[domain].from_types[i].idx, &(res->num_types[1]), &(res->types[1]));
-		if(retv == -1) return OOMEMER;
+	/* check rules */
+	here = 0;
+	for (i = 0; i < clone->num_to_rules; i++) {
+		for (j = 0; j < temp->num_to_types; j++) {
+			if (here) {
+				here = 0;
+				break;
+			}
+			if (does_av_rule_idx_use_type(clone->to_rules[i], RULE_TE_ALLOW, temp->to_types[j].type, IDX_TYPE, TGT_LIST, 1, policy)) {
+				here = 1;
+			}
+			if (here) {
+				retv = add_i_to_a(clone->to_rules[i], &(temp->num_to_rules), &(temp->to_rules));
+				if (retv == -1)
+					return retv;
+			}
+		}
 	}
 
-	return NOERROR;
-}
+	here = 0;
+	for (i = 0; i < clone->num_from_rules; i++) {
+		for (j = 0; j < temp->num_to_types; j++) {
+			if (here) {
+				here = 0;
+				break;
+			}
+			if (does_av_rule_idx_use_type(clone->from_rules[i], RULE_TE_ALLOW, temp->from_types[j].type, IDX_TYPE, TGT_LIST, 1, policy)) {
+				here = 1;
+			}
+			if (here) {
+				retv = add_i_to_a(clone->from_rules[i], &(temp->num_from_rules), &(temp->from_rules));
+				if (retv == -1)
+					return retv;
+			}
+		}
+	}
 
-int perm_filter(relabel_set_t *sets, obj_perm_set_t *perm_sets, int num_perm_sets, relabel_result_t *res, policy_t *policy)
+	temp->domain_type_idx = clone->domain_type_idx;
+
+	res->set = temp;
+	return 0;
+};
+
+static int apol_type_relabel(relabel_set_t *sets, int type, relabel_result_t *res, policy_t *policy, int mode, relabel_filter_t *filter)
 {
-	int i, j, k, x, retv, temp_size = 0, there = 1;
-	int *temp_array = NULL;
+	int i, j, k, x, retv, size = 0, size2 = 0, num_rules = 0, here;
+	int *temp_array = NULL, *temp_array2 = NULL;
+	int *rules;
+	type_obj_t *it = NULL;
 
-	if(!sets || !perm_sets || !res || !policy) return INVNULL;
-	if(res->to_from == BOTHLIST){
-		for(i = 0; i < num_perm_sets; i++){
-			for(j = 0; j < res->num_types[0]; j++){
-				temp_size = 0;	
-				temp_array = NULL;
-				there = 1;
-				for(k = 0; k < perm_sets[i].num_perms; k++){
-					if(!there) break;
-					retv = where_is_type_in_list(&(sets[res->domains[0]]),res->types[0][j], TOLIST);
-					if(retv < 0) return retv;
-					if(!does_type_obj_have_perm(&(sets[res->domains[0]].to_types[retv]), perm_sets[i].obj_class, perm_sets[i].perms[k])){
-						there = 0;
-					}
-				}
-				if(there && find_int_in_array(res->types[j][k], temp_array, temp_size) == -1){
-					retv = add_i_to_a(res->types[0][j], &temp_size, &temp_array);
-					if(retv == -1) return OOMEMER;
-				}
-
-				free(res->types[0]);
-				res->types[0] = temp_array;
-				res->num_types[0] = temp_size;
-			}
-			for(j = 0; j < res->num_types[1]; j++){
-				temp_size = 0;	
-				temp_array = NULL;
-				there = 1;
-				for(k = 0; k < perm_sets[i].num_perms; k++){
-					if(!there) break;
-					retv = where_is_type_in_list(&(sets[res->domains[0]]),res->types[0][j], FROMLIST);
-					if(retv < 0) return retv;
-					if(!does_type_obj_have_perm(&(sets[res->domains[0]].from_types[retv]), perm_sets[i].obj_class, perm_sets[i].perms[k])){
-						there = 0;
-					}
-				}
-				if(there && find_int_in_array(res->types[j][k], temp_array, temp_size) == -1){
-					retv = add_i_to_a(res->types[0][j], &temp_size, &temp_array);
-					if(retv == -1) return OOMEMER;
-				}
-
-				free(res->types[1]);
-				res->types[1] = temp_array;
-				res->num_types[1] = temp_size;
-			}
-
-			if(res->num_types[0] == 0 && res->num_types[1] == 0) break;
+	if (!sets || !policy)
+		return -1;
+	if (mode != MODE_TO && mode != MODE_FROM) {
+		if (mode != MODE_DOM) {
+			return -1;
+		} else { 
+			retv = apol_domain_relabel_types(sets, type, res, policy, filter);
+			return retv;
 		}
-	} else {
-		if(res->to_from != TOLIST && res->to_from != FROMLIST) return INVLIST;
-		for(i = 0; i < num_perm_sets; i++){
-			for(j = 0; j < res->num_domains; j++){
-				for(k = 0; k < res->num_types[j]; k++){
-					temp_size = 0;
-					temp_array = NULL;
-					there = 1;
-					for(x = 0; x < perm_sets[i].num_perms; x++){
-						if(!does_type_obj_have_perm(res->to_from == TOLIST ? 
-&(sets[res->domains[j]].to_types[where_is_type_in_list(&(sets[res->domains[j]]), res->types[j][k], TOLIST)]) : 
-&(sets[res->domains[j]].from_types[where_is_type_in_list(&(sets[res->domains[j]]), res->types[j][k], FROMLIST)]), 
-perm_sets[i].obj_class, perm_sets[i].perms[x])){
-							there = 0;
-						}
-						if(there && find_int_in_array(res->types[j][k], temp_array, temp_size) == -1){
-							retv = add_i_to_a(res->types[j][k], &temp_size, &temp_array);
-							if(retv == -1) return OOMEMER;
+	}
+	if (res){
+		apol_free_relabel_result_data(res);
+	}
+	apol_relabel_result_init(res);
+
+	for (i = 1; i < policy->num_types; i++) {
+		size = 0;
+		retv = apol_single_type_relabel(sets, i, type, &temp_array, &size, policy, mode);
+		if (retv && retv != NOTHERE) 
+			return retv;
+
+		if (filter) {
+			for (j = 0; j < size; j++) {
+				here = 0;
+				if (mode == MODE_TO) {
+					retv = apol_where_is_type_in_list(&(sets[i]), temp_array[j], TOLIST);
+					if (retv < 0)
+						return -1;
+					it = &(sets[i].to_types[retv]);
+				} else {
+					retv = apol_where_is_type_in_list(&(sets[i]), temp_array[j], FROMLIST);
+					if (retv < 0)
+						return -1;
+					it = &(sets[i].from_types[retv]);
+				}
+				for (k = 0; k < filter->num_perm_sets; k++) {
+					if (apol_does_type_obj_have_class(it, filter->perm_sets[k].obj_class))
+						here = 1;
+					if (filter->perm_sets[k].num_perms) {
+						here = 0;
+						for (x = 0; x < filter->perm_sets[k].num_perms; x++) {
+							if (apol_does_type_obj_have_perm(it, filter->perm_sets[k].obj_class, filter->perm_sets[k].perms[x]))
+								here = 1;
+							if (here) 
+								break;
 						}
 					}
-					free(res->types[j]);
-					res->types[j] = temp_array;
-					res->num_types[j] = temp_size;
+					if (here) 
+						break;
+				}
+				if (here) {
+					retv = add_i_to_a(temp_array[j], &size2, &temp_array2);
+					if (retv == -1)
+						return -1;
+				}
+			}
+			free(temp_array);	
+			temp_array = temp_array2;
+			size = size2;
+			temp_array2 = NULL;
+			size2 = 0;
+		}
+		
+		if (size) {
+			retv = apol_add_domain_to_result(res, i, temp_array, size, rules, num_rules);
+			if (retv) 
+				return retv;
+			if (mode == MODE_TO) {
+				for (j = 0; j < sets[i].num_to_rules; j++) {
+					for (k = 0; k < res->num_types; k++) {
+						if (does_av_rule_idx_use_type(sets[i].to_rules[j], RULE_TE_ALLOW, res->types[k], IDX_TYPE, TGT_LIST, 1, policy)) {
+							retv = add_i_to_a(sets[i].to_rules[j], &(res->num_rules), &(res->rules));
+							if (retv == -1)
+								return -1;
+							break;
+						}
+					}
+				}
+			} else {
+				for (j = 0; j < sets[i].num_from_rules; j++) {
+					for (k = 0; k < res->num_types; k++) {
+						if (does_av_rule_idx_use_type(sets[i].from_rules[j], RULE_TE_ALLOW, res->types[k], IDX_TYPE, TGT_LIST, 1, policy)) {
+							retv = add_i_to_a(sets[i].from_rules[j], &(res->num_rules), &(res->rules));
+							if (retv == -1)
+								return -1;
+							break;
+						}
+					}
 				}
 			}
 		}
 	}
 
-	return NOERROR;
-}
+	res->mode = (mode == MODE_TO ? TOLIST : FROMLIST);
 
+	return 0;
+};
+
+int apol_query_relabel_analysis(relabel_set_t *sets, int type, relabel_result_t *res, policy_t *policy, relabel_mode_t *mode, relabel_filter_t *filter)
+{
+	int retv;
+	if ( !sets || !policy || !mode )
+		return -1;
+
+	if (!mode->mode)
+		return -1;
+
+	if (mode->filter && !filter)
+		return -1;
+
+	if (mode->transitive && !mode->trans_steps)
+		mode->transitive = 0; /* if 0 steps of transitive, turn transitive off */
+
+	if (res) {
+		apol_free_relabel_result_data(res);
+	}
+	else {
+		res = (relabel_result_t*)malloc(1 * sizeof(relabel_result_t));
+		if (!res)
+			return -1;
+	}
+	apol_relabel_result_init(res);
+
+	/* XXX there is currently no transitive analysis code
+	   XXX the trans flag is therefore ignored at this point */
+	retv = apol_type_relabel(sets, type, res, policy, mode->mode, filter);
+
+	return retv;
+}
