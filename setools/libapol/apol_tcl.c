@@ -57,6 +57,9 @@ void* state = NULL; /* local global variable to support step-by-step transitive 
 
 #ifdef LIBSEFS
 sefs_filesystem_db_t fsdata; /* local global for file context DB */
+bool_t is_libsefs_builtin = TRUE;
+#else
+bool_t is_libsefs_builtin = FALSE;
 #endif
 
 /**************************************************************************
@@ -626,6 +629,7 @@ static int append_attrib_str(bool_t do_types, bool_t do_type_attribs, bool_t use
 	return 0;
 }
 
+#ifdef LIBSEFS
 /* This function expects an index file to be loaded already. If one is not loaded it will return an error. */
 static int apol_append_type_files(int ta_idx, bool_t is_attrib, 
 				  bool_t include_cxt, bool_t include_class, 
@@ -787,6 +791,7 @@ err:
 	if (t_buf) free(t_buf);
 	return -1;
 }
+#endif
 
 /* searches using regular expressions */
 static int append_all_ta_using_regex(regex_t *preg, const char *regexp, bool_t do_types, bool_t do_attribs, bool_t use_aliases,
@@ -839,10 +844,19 @@ static int append_all_ta_using_regex(regex_t *preg, const char *regexp, bool_t d
 				}
 			}
 			if (show_files) {
+#ifdef LIBSEFS
 				if (apol_append_type_files(i, FALSE, include_cxt, include_class, buf, policy, interp) != 0) {
 					return TCL_ERROR;
 				}
-			}		
+#else
+				Tcl_DStringFree(buf);
+				Tcl_ResetResult(interp);
+				Tcl_AppendResult(interp, "Error: You need to build apol with libsefs! Please deselect the 'Show Files' checkbutton and run the search again.", (char *) NULL);
+				return TCL_ERROR;
+#endif
+			} else {
+				Tcl_DStringAppend(buf, "\n", -1);
+			}	
 		}
 	}
 	
@@ -857,9 +871,18 @@ static int append_all_ta_using_regex(regex_t *preg, const char *regexp, bool_t d
 
 			}
 			if (show_files) {
+#ifdef LIBSEFS
 				if (apol_append_type_files(i, TRUE, include_cxt, include_class, buf, policy, interp) != 0) {
 					return TCL_ERROR;
 				}
+#else
+				Tcl_DStringFree(buf);
+				Tcl_ResetResult(interp);
+				Tcl_AppendResult(interp, "Error: You need to build apol with libsefs! Please deselect the 'Show Files' checkbutton and run the search again.", (char *) NULL);
+				return TCL_ERROR;
+#endif
+			} else {
+				Tcl_DStringAppend(buf, "\n", -1);
 			}							
 		}
 	}
@@ -3806,9 +3829,18 @@ int Apol_GetTypeInfo(ClientData clientData, Tcl_Interp *interp, int argc, char *
 					return TCL_ERROR;
 				}
 				if (show_files) {
+#ifdef LIBSEFS
 					if (apol_append_type_files(i, FALSE, include_cxt, include_class, buf, policy, interp) != 0) {
 						return TCL_ERROR;
 					}
+#else
+					Tcl_DStringFree(buf);
+					Tcl_ResetResult(interp);
+					Tcl_AppendResult(interp, "Error: You need to build apol with libsefs! Please deselect the 'Show Files' checkbutton and run the search again.", (char *) NULL);
+					return TCL_ERROR;
+#endif
+				} else {
+					Tcl_DStringAppend(buf, "\n", -1);
 				}
 			}
 		}
@@ -3828,9 +3860,18 @@ int Apol_GetTypeInfo(ClientData clientData, Tcl_Interp *interp, int argc, char *
 					return TCL_ERROR;
 				}
 				if (show_files) {
+#ifdef LIBSEFS
 					if (apol_append_type_files(i, TRUE, include_cxt, include_class, buf, policy, interp) != 0) {
 						return TCL_ERROR;
 					}
+#else
+					Tcl_DStringFree(buf);
+					Tcl_ResetResult(interp);
+					Tcl_AppendResult(interp, "Error: You need to build apol with libsefs! Please deselect the 'Show Files' checkbutton and run the search again.", (char *) NULL);
+					return TCL_ERROR;
+#endif
+				} else {
+					Tcl_DStringAppend(buf, "\n", -1);
 				}
 			}
 		}	
@@ -5386,6 +5427,22 @@ int Apol_IsPermMapLoaded(ClientData clientData, Tcl_Interp *interp, int argc, ch
 	return TCL_OK;
 }
 
+int Apol_IsLibsefs_BuiltIn(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
+{
+	char tbuf[64];
+	
+	if(argc != 1) {
+		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
+		return TCL_ERROR;
+	}
+	if (is_libsefs_builtin) 
+		sprintf(tbuf, "%d", 1);
+	else 
+		sprintf(tbuf, "%d", 0);
+	Tcl_AppendElement(interp, tbuf);
+	return TCL_OK;
+}
+
 /* 
  * argv[1] - policy map file name (optional) - if one is not specified then apol will search for default
  */
@@ -5429,7 +5486,7 @@ int Apol_Create_FC_Index_File(ClientData clientData, Tcl_Interp *interp, int arg
 		return TCL_ERROR;
 	}	
 #ifndef LIBSEFS
-	Tcl_AppendResult(interp, "You need to build apol with libsefs!", (char *) NULL);
+	Tcl_AppendResult(interp, "You need to build apol with libsefs to use this feature!", (char *) NULL);
 	return TCL_ERROR;
 #else	
 	sefs_filesystem_db_t fsdata_local;
@@ -5470,7 +5527,7 @@ int Apol_Load_FC_Index_File(ClientData clientData, Tcl_Interp *interp, int argc,
 		return TCL_ERROR;
 	}
 #ifndef LIBSEFS
-	Tcl_AppendResult(interp, "You need to build apol with libsefs!", (char *) NULL);
+	Tcl_AppendResult(interp, "You need to build apol with libsefs to use this feature!", (char *) NULL);
 	return TCL_ERROR;
 #else		
 	if(!is_valid_str_sz(argv[1])) {
@@ -5529,7 +5586,7 @@ int Apol_Search_FC_Index_DB(ClientData clientData, Tcl_Interp *interp, int argc,
 		return TCL_ERROR;
 	}
 #ifndef LIBSEFS
-	Tcl_AppendResult(interp, "You need to build apol with libsefs!", (char *) NULL);
+	Tcl_AppendResult(interp, "You need to build apol with libsefs to use this feature!", (char *) NULL);
 	return TCL_ERROR;
 #else		
 	int rt;
@@ -6428,6 +6485,7 @@ int Apol_Init(Tcl_Interp *interp)
 	Tcl_CreateCommand(interp, "apol_UpdatePermMap", (Tcl_CmdProc *) Apol_UpdatePermMap, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_GetPermMap", (Tcl_CmdProc *) Apol_GetPermMap, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_IsPermMapLoaded", (Tcl_CmdProc *) Apol_IsPermMapLoaded, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+	Tcl_CreateCommand(interp, "apol_IsLibsefs_BuiltIn", (Tcl_CmdProc *) Apol_IsLibsefs_BuiltIn, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_GetDefault_PermMap", (Tcl_CmdProc *) Apol_GetDefault_PermMap, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_TransitiveFlowAnalysis", (Tcl_CmdProc *) Apol_TransitiveFlowAnalysis, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_TransitiveFindPathsStart", (Tcl_CmdProc *) Apol_TransitiveFindPathsStart, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
