@@ -2517,7 +2517,7 @@ static void sediff_callbacks_free_elem_data(gpointer data, gpointer user_data)
 static void sediff_destroy(sediff_app_t *sediff_app)
 {
 	g_assert(sediff_app != NULL);
-	if (sediff_app->dummy_view) 
+	if (sediff_app->dummy_view && !GTK_WIDGET_MAPPED(sediff_app->dummy_view)) 
 		gtk_widget_unref(sediff_app->dummy_view);
 	if (sediff_app->tree_view != NULL) 
 		gtk_widget_destroy(GTK_WIDGET(sediff_app->tree_view));
@@ -2808,7 +2808,7 @@ void sediff_menu_on_open_clicked(GtkMenuItem *menuitem, gpointer user_data)
 		dir = find_file(GLADEFILE);
 		if (!dir){
 			fprintf(stderr, "Could not find sediff.glade!");
-			return NULL;
+			return;
 		}
 
 		path = g_string_new(dir);
