@@ -11,6 +11,7 @@
  
 #include "poldiff.h"
 #include "policy.h"
+#include "policy-query.h"
 #include "policy-io.h"
 #include "semantic/avhash.h"
 #include "semantic/avsemantics.h"
@@ -196,6 +197,9 @@ static int make_p2_cond_expr(int idx1, policy_t *p1, cond_expr_t **expr2, policy
 	*expr2 = cur2 = NULL;
 	
 	for(cur1 = p1->cond_exprs[idx1].expr; cur1 != NULL; cur1  = cur1->next) {
+		if (cur1->bool >= p1->num_cond_bools || cur1->bool < 0) {
+			continue;
+		}
 		idx2 = get_cond_bool_idx(p1->cond_bools[cur1->bool].name, p2);
 		if(idx2 < 0) {
 			cond_free_expr(*expr2); 
@@ -264,10 +268,11 @@ static bool_t does_cond_match(avh_node_t *n1, policy_t *p1, avh_node_t *n2, poli
 static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t *p2, bool_t isbin) 
 {
 	int i, j, idx, idx2, rt;
-	apol_diff_t *t;
+	apol_diff_t *t = NULL;
 	char *name;
 	bool_t added;
 	int *pmap = NULL;
+	rbac_bool_t rb, rb2;
 	
 	if(p1 == NULL || p2 == NULL)
 		return NULL;
@@ -279,8 +284,9 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 	/* TODO: There's potential for less code here, but creating ingenous functions that can be called
 	 * multiple times for various policy elements....future work */
 	
+
 	/* types */
-	if(opts | POLOPT_TYPES) {
+	if(opts & POLOPT_TYPES) {
 		for(i = 0; i < p1->num_types; i++) {
 			idx2 = find_type_in_p2(p1->types[i].name, p1->types[i].aliases, p2);
 			if(idx2 < 0) {
@@ -321,7 +327,7 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 	}
 	/* attributes */
 	/* Skip attributes for binary policies */
-	if((opts | POLOPT_TYPES) && !isbin) {
+	if((opts & POLOPT_TYPES) && !isbin) {
 		for(i = 0; i < p1->num_attribs; i++ ) {
 			idx2 = get_attrib_idx(p1->attribs[i].name, p2);
 			if(idx2 < 0) {
@@ -402,7 +408,7 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 	}
 	
 	/* users */
-	if(opts & POLOPT_USERS)	{
+	if(opts & POLOPT_USERS) {
 		for(i = 0; i < p1->num_users; i++) {
 			idx2 = get_user_idx(p1->users[i].name, p2);
 			if(idx2 < 0) {
@@ -442,8 +448,7 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 	}
 	
 	/* booleans */
-	if(opts & POLOPT_COND_BOOLS) 
-	{
+	if(opts & POLOPT_COND_BOOLS) {
 		for(i = 0; i < p1->num_cond_bools; i++) {
 			idx2 = get_cond_bool_idx(p1->cond_bools[i].name, p2);
 			if(idx2 < 0) {
@@ -561,6 +566,60 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 			}
 		}		
 	}
+
+	/* rbac */
+	if(opts & POLOPT_RBAC)	{
+		for(i = 0; i < p1->num_roles; i++) {
+			idx = get_role_idx(p1->roles[i].name, p2);
+			if(idx < 0) 
+				continue;
+				/* Role isn't in p2 */
+
+			if (init_rbac_bool(&rb, p1, TRUE) != 0) 
+				goto err_return;
+			
+			if (init_rbac_bool(&rb2, p2, TRUE) != 0) 
+				goto err_return;
+	
+			rt = match_rbac_roles(i, IDX_ROLE, SRC_LIST, FALSE, TRUE, &rb, p1);
+			if (rt < 0) 
+				goto err_return;
+
+			rt = match_rbac_roles(idx, IDX_ROLE, SRC_LIST, FALSE, TRUE, &rb2, p2);
+			if (rt < 0)
+				goto err_return;
+
+			added = FALSE;
+			
+			for (j = 0; j < p1->num_roles; j++) {
+				if (rb.allow[j]) {
+					
+					idx2 = get_role_idx(p1->roles[j].name, p2);
+					if (idx2 < 0)
+						continue;
+						/* role j is missing from p2 */
+
+					if (rb2.allow[idx2]) {
+						continue;
+						/* it's in both, continue */
+					}
+					if(!added) {
+						/* add the role to the diff, and then note the first missing role */
+						added = TRUE;
+						rt  = add_i_to_inta(i, &t->num_role_allow, &t->role_allow);
+						if(rt  < 0) 
+							goto err_return;
+					}
+					/* note the missing role */
+					rt = add_i_to_a(j, &t->role_allow->numa, &t->role_allow->a);
+					if(rt < 0) 
+						goto err_return;
+				}
+			}
+			free_rbac_bool(&rb);
+			free_rbac_bool(&rb2);
+		}
+	}
 	
 	/* AV and Type Rules */
 	if(opts & POLOPT_TE_RULES) {
@@ -616,43 +675,41 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 				missing = TRUE;
 				add = FALSE;
 				make_p2_key(&p1cur->key, &key, p1, p2);
-				for(p2node = avh_find_first_node(&p2->avh, &key); 
-					  		p2node != NULL;
-					  		p2node = avh_find_next_node(p2node) )  {
-					  data = NULL;
-					  num_data = 0;
-					 /* see if there is a match; assume that only one rule in hash tab
-					  * would ever match so once we match key and conditional attributes
-					  * we need search no more.  If this assumption fails, check 
-					  * the hash table contruction function */
-					 if(does_cond_match(p1cur, p1, p2node, p2, &inverse)) {
-					 	missing = FALSE;
-					 	if(is_av_rule_type(p1cur->key.rule_type)) {
-					 		/* Have an av rule, use the pmap created above
-					 		 * and note which permission are missing */
-					 		for(j = 0; j < p1cur->num_data; j++) {
-					 			assert(pmap[p1cur->data[j]] < 0 || is_valid_perm_idx(pmap[p1cur->data[j]], p2));
-					 			idx2 = find_int_in_array(pmap[p1cur->data[j]], p2node->data, p2node->num_data);
-					 			if(idx2 < 0) {
-					 				/* the perm is missing from p2 node */
-					 				rt = add_i_to_a(p1cur->data[j], &num_data, &data);
-					 				if(rt < 0)
+				for(p2node = avh_find_first_node(&p2->avh, &key);  p2node != NULL; p2node = avh_find_next_node(p2node) )  {
+					data = NULL;
+					num_data = 0;
+					/* see if there is a match; assume that only one rule in hash tab
+					 * would ever match so once we match key and conditional attributes
+					 * we need search no more.  If this assumption fails, check 
+					 * the hash table contruction function */
+					if(does_cond_match(p1cur, p1, p2node, p2, &inverse)) {
+						missing = FALSE;
+						if(is_av_rule_type(p1cur->key.rule_type)) {
+							/* Have an av rule, use the pmap created above
+							 * and note which permission are missing */
+							for(j = 0; j < p1cur->num_data; j++) {
+								assert(pmap[p1cur->data[j]] < 0 || is_valid_perm_idx(pmap[p1cur->data[j]], p2));
+								idx2 = find_int_in_array(pmap[p1cur->data[j]], p2node->data, p2node->num_data);
+								if(idx2 < 0) {
+									/* the perm is missing from p2 node */
+									rt = add_i_to_a(p1cur->data[j], &num_data, &data);
+									if(rt < 0)
 										goto err_return;
-					 			}
-					 		}
-					 	}
-					 	else {
-					 		assert(is_type_rule_type(p1cur->key.rule_type));
-					 		/* have a type rule, with same key and conditional...
-					 		 * now just need to check whether the  default types
-					 		 * are the same */
-					 		assert(p1cur->num_data == 1);
-					 		assert(p2node->num_data == 1);
-					 		idx = p1cur->data[0];
-					 		assert(is_valid_type_idx(idx, p1));
-					 		/* get the idx in p2 of p1's deflt type */
-					 		idx2 = find_type_in_p2(p1->types[idx].name, p1->types[idx].aliases, p2);
-					 		/* now see if this p2 idx (idx2) is in the p2 node that matched */
+								}
+							}
+						}
+						else {
+							assert(is_type_rule_type(p1cur->key.rule_type));
+							/* have a type rule, with same key and conditional...
+							 * now just need to check whether the  default types
+							 * are the same */
+							assert(p1cur->num_data == 1);
+							assert(p2node->num_data == 1);
+							idx = p1cur->data[0];
+							assert(is_valid_type_idx(idx, p1));
+							/* get the idx in p2 of p1's deflt type */
+							idx2 = find_type_in_p2(p1->types[idx].name, p1->types[idx].aliases, p2);
+							/* now see if this p2 idx (idx2) is in the p2 node that matched */
 							if(p2node->data[0] != idx2) {
 								/* not a match! */
 								rt = add_i_to_a(idx, &num_data, &data);
@@ -664,8 +721,8 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 								 * an invalid idx in it! */
 								 assert(idx2 >= 0);
 							}
-					 	}
-					 	break;
+						}
+						break;
 					}
 				}
 				if(missing || num_data > 0) {
