@@ -26,7 +26,7 @@ static int check_onlyflow (flow_assert_t *assert, iflow_query_t *iflow_query,
                            flow_assert_results_t *assert_results,
                            policy_t *policy);
 static bool_t is_type_in_path (iflow_t *iflow, int num_iflows,
-                               flow_assert_id_t *type_id, int min_weight,
+                               flow_assert_id_t *type_id,
                                policy_t *policy);
 static int append_assert_id (llist_t *target_list,
                              flow_assert_id_t *source_id);
@@ -198,6 +198,8 @@ int flow_assert_execute (flow_assert_t *assert,
                         via_pointer = via_pointer->next;
                 }
 
+                iflow_query->min_weight = assert->min_weight;
+                
                 /* execute it */
                 if ((iflow_trans = iflow_transitive_flows(policy, iflow_query))
                     == NULL) {
@@ -275,8 +277,8 @@ static int check_noflow (flow_assert_t *assert, iflow_query_t *iflow_query,
                                 flow_assert_id_t *via_id =
                                         (flow_assert_id_t *)type_node->data;
                                 if (is_type_in_path
-                                    (iflow, path->num_iflows, via_id,
-                                     assert->min_weight, policy) == TRUE) {
+                                    (iflow, path->num_iflows, via_id, policy)
+                                    == TRUE) {
                                         path_found = TRUE;
                                 }
                                 type_node = type_node->next;
@@ -338,8 +340,8 @@ static int check_mustflow (flow_assert_t *assert, iflow_query_t *iflow_query,
                                 flow_assert_id_t *via_id =
                                         (flow_assert_id_t *)via_pointer->data;
                                 if (is_type_in_path
-                                    (iflow, path->num_iflows, via_id,
-                                     assert->min_weight, policy) == TRUE) {
+                                    (iflow, path->num_iflows, via_id, policy)
+                                    == TRUE) {
                                         via_id->flags = 1;
                                 }
                                 via_pointer = via_pointer->next;
@@ -425,8 +427,8 @@ static int check_onlyflow (flow_assert_t *assert, iflow_query_t *iflow_query,
                                 flow_assert_id_t *via_id =
                                         (flow_assert_id_t *)type_node->data;
                                 if (is_type_in_path
-                                    (iflow, path->num_iflows, via_id,
-                                     assert->min_weight, policy) == TRUE) {
+                                    (iflow, path->num_iflows, via_id, policy)
+                                    == TRUE) {
                                         path_found = TRUE;
                                 }
                                 type_node = type_node->next;
@@ -471,7 +473,7 @@ static int check_onlyflow (flow_assert_t *assert, iflow_query_t *iflow_query,
 /* Returns TRUE if assert_id is in any part of the flow iflow, FALSE
    otherwise. */   
 static bool_t is_type_in_path (iflow_t *iflow, int num_iflows,
-                               flow_assert_id_t *assert_id, int min_weight,
+                               flow_assert_id_t *assert_id,
                                policy_t *policy) {
         int flow_num;
         int type_id = assert_id->type_id;
@@ -485,36 +487,15 @@ static bool_t is_type_in_path (iflow_t *iflow, int num_iflows,
                         if (assert_id->num_obj_classes == 0) {
                                 maybe_match = TRUE;
                         }
-                        for (i = 0; i < flow->num_obj_classes&&maybe_match == FALSE; i++) {
+                        for (i = 0; i < flow->num_obj_classes &&
+                                     maybe_match == FALSE; i++) {
                                 if ((flow->obj_classes + i)->num_rules > 0 &&
                                     find_int_in_array(i,assert_id->obj_classes,
                                             assert_id->num_obj_classes) >= 0) {
                                         maybe_match = TRUE;
                                 }
                         }
-                        /* check to see if the rule meets the minimum
-                         * weight requirement */
-                        for (i = 0; maybe_match == TRUE &&
-                                     i < flow->num_obj_classes; i++){
-                                if ((flow->obj_classes + i)->num_rules > 0) {
-                                        int num_perms, *perms, j;
-                                        int rule_num = (flow->obj_classes + i)->rules [0];
-                                        class_perm_map_t *cmap = pmap->maps+i;
-                                        if (extract_perms_from_te_rule
-                                            (rule_num, RULE_TE_ALLOW, &perms, &num_perms, policy)
-                                            != 0) {
-                                                return FALSE;
-                                        }
-                                        for (j = 0; j < num_perms; j++) {
-                                                perm_map_t *perm_map = cmap->perm_maps + j;
-                                                if (perm_map->weight >= min_weight) {
-                                                        free (perms);
-                                                        return TRUE;
-                                                }
-                                        }
-                                        free (perms);
-                                }
-                        }
+                        return TRUE;
                 }
         }
         return FALSE;
