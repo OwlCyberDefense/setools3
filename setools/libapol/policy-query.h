@@ -94,6 +94,7 @@ int init_teq_results(teq_results_t *r);
 int init_teq_query(teq_query_t *q);
 
 int match_rbac_rules(int idx, int type, unsigned char whichlist, bool_t do_indirect,bool_t tgt_is_role, rbac_bool_t *b, policy_t *policy);
+int match_rbac_roles(int idx, int type, unsigned char whichlist, bool_t	do_indirect, bool_t tgt_is_role, rbac_bool_t *b, policy_t *policy);
 int match_te_rules(bool_t allow_regex, regex_t *preg, int ta_opt,int idx, int idx_type, bool_t include_audit, unsigned char whichlists,	
 	bool_t do_indirect, bool_t only_enabled, rules_bool_t *rules_b, policy_t *policy);
 int search_te_rules(teq_query_t *q, teq_results_t *r, policy_t *policy);
