@@ -390,6 +390,7 @@ proc ApolTop::get_tabname {tab} {
 proc ApolTop::set_Focus_to_Text { tab } {
 	variable components_nb
 	variable rules_nb
+	variable file_contexts_tab
 	
 	$ApolTop::mainframe setmenustate Disable_SearchMenu_Tag normal
 	# The load query menu option should be enabled across all tabs. 
@@ -407,6 +408,9 @@ proc ApolTop::set_Focus_to_Text { tab } {
 		} \
 		$ApolTop::rules_tab {
 			ApolTop::set_Focus_to_Text [$rules_nb raise]
+		} \
+		$ApolTop::file_contexts_tab {
+			Apol_File_Contexts::set_Focus_to_Text
 		} \
 		$ApolTop::types_tab {
 			Apol_Types::set_Focus_to_Text
@@ -567,6 +571,7 @@ proc ApolTop::search {} {
     	variable rules_tab 		
 	variable policy_conf_tab	
 	variable analysis_tab	
+	variable file_contexts_tab
 	
 	set raised_tab [$notebook raise]	
 	switch -- $raised_tab \
@@ -581,6 +586,9 @@ proc ApolTop::search {} {
     		} \
     		$components_tab {
     			[$components_nb raise]::search $searchString $case_Insensitive $regExpr $srch_Direction
+    		} \
+    		$file_contexts_tab {
+    			${file_contexts_tab}::search $searchString $case_Insensitive $regExpr $srch_Direction
     		} \
     		default {
     			puts "Invalid raised tab!"
@@ -978,6 +986,7 @@ proc ApolTop::call_tabs_goto_line_cmd { } {
     	variable rules_tab 		
 	variable policy_conf_tab	
 	variable analysis_tab		
+	variable file_contexts_tab
 	
 	set raised_tab [$notebook raise]	
 	switch -- $raised_tab \
@@ -992,6 +1001,9 @@ proc ApolTop::call_tabs_goto_line_cmd { } {
     		} \
     		$components_tab {
     			[$components_nb raise]::goto_line $goto_line_num
+    		} \
+    		$file_contexts_tab {
+    			${file_contexts_tab}::goto_line $goto_line_num
     		} \
     		default {
     			return -code error
