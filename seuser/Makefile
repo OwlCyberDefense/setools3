@@ -70,7 +70,7 @@ sys-install: seuser seuserx se_user.tcl
 	install -m 644 se_user.tcl $(SEUSER_HELP_FILE) $(INSTALL_LIBDIR)
 
 # Installation
-# This process is complicated by the fact that we have 3 scenarios for
+# This process is complicated by the fact that we have 2 scenarios for
 # installation: installation on a standard linux box and installation
 # on an selinux box.
 #
