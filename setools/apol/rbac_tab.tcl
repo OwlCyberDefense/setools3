@@ -478,7 +478,7 @@ proc Apol_RBAC::create {nb} {
 	-command "Apol_RBAC::enable_disable_tgt_dflt_sections" -offvalue 0 -onvalue 1
            
     # Widgets for src role section
-    set list_src [ComboBox $fm_src.cb -width 25 -helptext "First role search parameter"  \
+    set list_src [ComboBox $fm_src.cb -helptext "First role search parameter"  \
     	-textvariable Apol_RBAC::src_role -helptext "Type or select a role" ]   
     # ComboBox is not a simple widget, it is a mega-widget, and bindings for mega-widgets are non-trivial.
     # If bindtags is invoked with only one argument, then the current set of binding tags for window is 
@@ -498,7 +498,7 @@ proc Apol_RBAC::create {nb} {
         -command "Apol_RBAC::useSearch $list_src 1"]
    
     # Widgets for tgt role/type/attrib section 
-    set list_tgt [ComboBox $fm_tgt.cb2 -width 25 -helptext "Target search parameter"  \
+    set list_tgt [ComboBox $fm_tgt.cb2 -helptext "Target search parameter"  \
     	-textvariable Apol_RBAC::tgt_selection -helptext "Type or select a type/attribute/role" ]
     # ComboBox is not a simple widget, it is a mega-widget, and bindings for mega-widgets are non-trivial.
     # If bindtags is invoked with only one argument, then the current set of binding tags for window is 
@@ -519,7 +519,7 @@ proc Apol_RBAC::create {nb} {
         -command {Apol_RBAC::populate_listbox $Apol_RBAC::list_tgt} ]
    
     # Widget items for use default role section
-    set list_dflt_role [ComboBox $fm_dflt_role.cb3 -width 25 -helptext "First role search parameter"  \
+    set list_dflt_role [ComboBox $fm_dflt_role.cb3 -helptext "First role search parameter"  \
 		-textvariable Apol_RBAC::dflt_role -helptext "Type or select a role" ]   
     # ComboBox is not a simple widget, it is a mega-widget, and bindings for mega-widgets are non-trivial.
     # If bindtags is invoked with only one argument, then the current set of binding tags for window is 
