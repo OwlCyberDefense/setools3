@@ -506,7 +506,7 @@ char *re_render_avh_rule_cond_expr(avh_node_t *node, policy_t *p)
 /* conditional states */
 char *re_render_avh_rule_cond_state(avh_node_t *node, policy_t *p)
 {
-	char *t = NULL;//, *u = NULL;
+	char *t = NULL;
 	int sz = 0, rt;
 	
 	if(node == NULL || p == NULL)

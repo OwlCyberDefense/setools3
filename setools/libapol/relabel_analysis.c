@@ -445,7 +445,7 @@ static int apol_fill_array_with_all(int **array, int content, policy_t *policy)
 		(*array)[i] = i;
 	}
 	if (content == ALL_TYPES)
-		(*array)[0] = 1; // 0 is for self duplicates handled elsewhere
+		(*array)[0] = 1; /* 0 is for self duplicates handled elsewhere */
 	
 	return 0;
 };
