@@ -51,7 +51,7 @@ indexcon: indexcon.o $(LIBAPOL) $(LIBSEFS)
 searchcon.o: searchcon.c
 	$(CC) -c searchcon.c -DSEFS_XATTR_LABELED_FILESYSTEMS=$(SEFS_XATTR_LABELED_FILESYSTEMS) $(CFLAGS) $(INCLUDE)
 
-searchcon: searchcon.o
+searchcon: searchcon.o $(LIBSEFS) $(LIBAPOL)
 	$(CC) -static -o $@ searchcon.o $(LINKFLAGS) $(LIBSEFS) $(LIBSELINUX) $(LIBAPOL) $(LIBS)
 
 findcon.o: replcon.c
