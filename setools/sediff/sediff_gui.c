@@ -2808,7 +2808,7 @@ void sediff_menu_on_open_clicked(GtkMenuItem *menuitem, gpointer user_data)
 		dir = find_file(GLADEFILE);
 		if (!dir){
 			fprintf(stderr, "Could not find sediff.glade!");
-			return -1;
+			return NULL;
 		}
 
 		path = g_string_new(dir);
