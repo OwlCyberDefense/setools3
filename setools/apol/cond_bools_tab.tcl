@@ -15,9 +15,9 @@
 namespace eval Apol_Cond_Bools {
 	# Search options
 	# search_opts(opt), where opt =
-	# 	boolean - the name of the boolean
-	#	default_state - display default state 
-	#	curr_state - display current state 
+	# 	boolean  	the name of the boolean
+	#	default_state  	display default state 
+	#	curr_state  	display current state 
 	variable search_opts 
 	set search_opts(boolean)	""
 	set search_opts(default_state)	1
@@ -27,6 +27,7 @@ namespace eval Apol_Cond_Bools {
 	variable cond_bools_list	""
 	# array variables
 	variable cond_bools_value_array
+	variable cond_bools_dflt_value_array
 	# other
 	variable enable_bool_combo_box	0
 	
@@ -35,6 +36,18 @@ namespace eval Apol_Cond_Bools {
 	variable cond_bools_listbox
 	variable bool_combo_box
 }
+
+###############################################################
+#  ::cond_bool_set_bool_values_to_policy_defaults
+#
+proc Apol_Cond_Bools::cond_bool_set_bool_values_to_policy_defaults {} {
+	variable cond_bools_dflt_value_array
+	variable cond_bools_value_array
+	
+	array set cond_bools_value_array [array get cond_bools_dflt_value_array]
+				
+	return 0	
+} 
 
 ###############################################################
 #  ::cond_bool_set_bool_value
@@ -117,6 +130,7 @@ proc Apol_Cond_Bools::cond_bool_insert_listbox_items { } {
 proc Apol_Cond_Bools::cond_bool_initialize_vars { } {
 	variable cond_bools_list
 	variable cond_bools_value_array
+	variable cond_bools_dflt_value_array
 	
 	set cond_bools_list [apol_GetNames cond_bools]
 	set rt [catch {set cond_bools_list [apol_GetNames cond_bools]} err]
@@ -130,6 +144,7 @@ proc Apol_Cond_Bools::cond_bool_initialize_vars { } {
 		if {$rt != 0} {
 			return -code error $err
 		}
+		set cond_bools_dflt_value_array($bool_name) $cond_bools_value_array($bool_name)
 	}
 					 	 
 	return 0
@@ -204,14 +219,17 @@ proc Apol_Cond_Bools::reset_variables { } {
 	variable cond_bools_list
 	variable enable_bool_combo_box	
 	variable cond_bools_value_array
+	variable cond_bools_dflt_value_array
 	
 	set search_opts(boolean)	""
 	set search_opts(show_rules)	""
 	set search_opts(default_state)	1
 	set search_opts(curr_state)	1
-	set cond_bools_list 	""
-	set enable_bool_combo_box 0
+	set cond_bools_list 		""
+	set enable_bool_combo_box 	0
+	# unset array variables
 	array unset cond_bools_value_array
+	array unset cond_bools_dflt_value_array
 	
 	return 0	
 }
@@ -279,6 +297,10 @@ proc Apol_Cond_Bools::create {nb} {
 	          -width 25 -highlightthickness 0 \
 	          -redraw 0]
 	$sw_r setwidget $cond_bools_listbox 
+	
+	set button_defaults [button [$cond_bools_box getframe].button_defaults \
+		-text "Set to policy defaults" \
+		-command {Apol_Cond_Bools::cond_bool_set_bool_values_to_policy_defaults}]
 	    	
 	# Search options subframes
 	set ofm [$s_optionsbox getframe]
@@ -314,6 +336,7 @@ proc Apol_Cond_Bools::create {nb} {
 	$sw_d setwidget $resultsbox
 	
 	# Placing all widget items
+	pack $button_defaults -side bottom -pady 2 -anchor center
 	pack $ok_button -side top -anchor e -pady 5 -padx 5
 	pack $buttons_f -side right -expand yes -fill both -anchor nw -padx 4 -pady 4
 	pack $l_innerFrame $c_innerFrame -side left -fill y -anchor nw -padx 4 -pady 4
