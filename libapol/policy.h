@@ -395,7 +395,6 @@ const char* get_policy_version_name(int policy_version);
 
 /* Policy version name macros */
 #define is_valid_policy_version(version) (version >= POL_VER_UNKNOWN && version <= POL_VER_MAX)
-#define get_policy_version_string(version) get_policy_version_name(version)
 
 /* DB updates/additions/changes */
 #define add_common_perm_to_class(cls_idx, cp_idx, policy) ((is_valid_obj_class_idx(cls_idx, policy) && is_valid_common_perm_idx(cp_idx, policy)) ? policy->obj_classes[cls_idx].common_perms = cp_idx: -1 )
@@ -416,6 +415,7 @@ int add_perm_to_common(int comm_perm_idx, int perm_idx, policy_t *policy);
 int add_perm(char *perm, policy_t *policy);
 int add_cond_bool(char *name, bool_t val, policy_t *policy);
 int add_cond_expr_item(cond_expr_t *expr, cond_rule_list_t *true_list, cond_rule_list_t *false_list, policy_t *policy);
+av_item_t *add_new_av_rule(int rule_type, policy_t *policy);
 
 /* Object Classes */
 #define num_obj_classes(policy) (policy != NULL ? policy->num_obj_classes : -1)
