@@ -769,16 +769,14 @@ int print_te_diffs(FILE *fp, apol_diff_result_t *diff)
 	avh_node_t *cur2 = NULL;
 	avh_node_t *diffcur1 = NULL;
 	avh_node_t *diffcur2 = NULL;
-	avh_node_t *tmpcur = NULL;
 	avh_key_t p2key,p1key;
-	char *rule = NULL, *cond = NULL, *name=NULL;;
-	char tbuf[APOL_STR_SZ+64];
+	char *cond = NULL, *name=NULL;;
 	int num_changed = 0, num_removed = 0, num_added = 0;
 	int changed_sz = 0, added_sz = 0, removed_sz = 0;
 	char *changed_buf = NULL, *added_buf = NULL, *removed_buf = NULL;
 	apol_diff_t *diff1 = NULL, *diff2 = NULL;
 	policy_t *policy1 = NULL, *policy2 = NULL;
-	bool_t inverse,matched,polmatched;
+	bool_t inverse,matched;
 	
 	if(diff == NULL || fp == NULL)
 		goto print_te_error;
