@@ -8,6 +8,6 @@
 #ifndef QUERY_WINDOW_H
 #define QUERY_WINDOW_H
 
-int query_window_create(void);
+int query_window_create(int *tree_item_idx);
 
 #endif
