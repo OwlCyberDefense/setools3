@@ -122,6 +122,7 @@ void free_domain_trans_analysis(domain_trans_analysis_t *p);
 dta_query_t* dta_query_create(void);
 void dta_query_destroy(dta_query_t *q);
 int dta_query_add_type(dta_query_t *q, int type);
+int dta_query_add_end_type(dta_query_t *q, int end_type);
 int dta_query_add_obj_class(dta_query_t *q, int obj_class);
 int dta_query_add_obj_class_perm(dta_query_t *q, int obj_class, int perm);
 domain_trans_analysis_t *new_domain_trans_analysis(void);
