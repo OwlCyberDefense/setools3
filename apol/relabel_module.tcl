@@ -789,7 +789,7 @@ proc Apol_Analysis_relabel::adv_options_create_dialog {path_name title_txt} {
         set top_lbl [Label $label_frame.top_lbl -justify left -font $ApolTop::dialog_font \
         	-text "NOTE: The following list of object classes does not necessarily include all \
         	object classes defined in the policy.\nThis list has been filtered to include \
-        	only object classes which have both 'relableto' and 'relabelfrom' permission."]
+        	only object classes which have both 'relabelto' and 'relabelfrom' permission."]
         # Widgets for object classes frame
         set search_pane [frame [$objs_frame getframe].search_pane]
         set button_f [frame [$objs_frame getframe].button_f]
@@ -840,8 +840,6 @@ proc Apol_Analysis_relabel::adv_options_create_dialog {path_name title_txt} {
         pack $sw_incl_class $sw_excl_class -fill both -expand yes -side left -anchor nw 
         pack $search_pane -fill both -expand yes -side left -anchor nw
         pack $incl_classes_box $excl_classes_box -side left -pady 2 -padx 2 -fill both -expand yes
-	pack $widgets($path_name,class_incl_lb) $widgets($path_name,class_excl_lb) \
-		-padx 2 -side left -fill both -expand yes	
         pack $objs_frame -side bottom -anchor nw -padx 5 -pady 2 -expand yes -fill both 	  
         pack $label_frame -side top -anchor center
         pack $top_lbl -side left -anchor nw -fill x -pady 2 -padx 2
