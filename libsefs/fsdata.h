@@ -52,18 +52,16 @@
 #define OBJECT_R 0
 
 #define NUM_OBJECT_CLASSES 8
+#define NORM_FILE	1
+#define DIR		2
+#define LNK_FILE	4
+#define CHR_FILE	8
+#define BLK_FILE	16
+#define	SOCK_FILE	32
+#define FIFO_FILE	64
+#define ALL_FILES	(NORM_FILE | DIR | LNK_FILE | CHR_FILE | BLK_FILE | SOCK_FILE | FIFO_FILE)
 
-/* this is what replcon currently uses and needs to be fixed */
-typedef enum sefs_classes {
-	NORM_FILE,
-	DIR,
-	LNK_FILE,
-	CHR_FILE,
-	BLK_FILE,
-	SOCK_FILE,
-	FIFO_FILE,
-	ALL_FILES
-} sefs_classes_t;
+typedef int32_t sefs_classes_t;
 
 typedef struct inode_key {
 	ino_t			inode;
@@ -77,14 +75,6 @@ typedef struct sefs_fileinfo {
 	char **			path_names;
 	char * 			symlink_target;
 /* this uses defines from above */
-#define NORM_FILE	1
-#define DIR			2
-#define LNK_FILE	4
-#define CHR_FILE	8
-#define BLK_FILE	16
-#define	SOCK_FILE	32
-#define FIFO_FILE	64
-#define ALL_FILES	(NORM_FILE | DIR | LNK_FILE | CHR_FILE | BLK_FILE | SOCK_FILE | FIFO_FILE)
 	uint32_t		obj_class;
 } sefs_fileinfo_t;
 
