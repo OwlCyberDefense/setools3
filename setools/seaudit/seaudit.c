@@ -617,9 +617,9 @@ int main(int argc, char **argv)
                         if (rt == GENERAL_ERROR) {
                         	exit(1);	
                         } else if (rt != FIND_DEFAULT_SUCCESS) {
+                        	printf("Default policy search failed: %s\n", find_default_policy_file_strerr(rt));
                         	/* no policy to use, so warn the user and then start up without a default policy. */
-                                msg = g_string_new("Could not find system default policy to open. Use the \
-                                		    File menu to open a policy");
+                                msg = g_string_new("Could not find system default policy to open. \nUse the File menu to open a policy");
                                 message_display(seaudit_app->window->window,
                                         GTK_MESSAGE_WARNING,
                                         msg->str);
