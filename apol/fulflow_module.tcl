@@ -1508,7 +1508,7 @@ proc Apol_Analysis_fulflow::render_information_flows {fulflow_info_text fulflow_
 			set rule [string range $rule [expr $end_link_idx + 1] end]
 			
 			# Only display line number hyperlink if this is not a binary policy.
-			if {$ApolTop::policy_type != $ApolTop::binary_policy_type} {
+			if {![ApolTop::is_binary_policy]} {
 				$fulflow_info_text insert end "\[$lineno\]"
 				Apol_PolicyConf::insertHyperLink $fulflow_info_text "$startIdx wordstart + 1c" "$startIdx wordstart + [expr [string length $lineno] + 1]c"
 			}
