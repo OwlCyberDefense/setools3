@@ -13,11 +13,12 @@ DEBUG			= 0
 # how the setools applications link.
 DYNAMIC 		= 0
 # This determines: 
-# 	1. whether libapol and libseuser use libselinux
-# 	   to find the default policies. 
+# 	1. whether libapol and libseuser use libselinux 
+# 	   to find the default policies. NOTE: libselinux must
+#	   be version 1.18 or greater.
 # 	2. whether libsefs will be built into apol, awish 
 #	   and seuserx. 
-# Useful to create a verion of apol that runs on non-selinux machines. 
+# Useful to create a version of apol that runs on non-selinux machines. 
 # Set this to 0 for non-selinux machines.
 USE_LIBSELINUX 		= 1
 
@@ -28,17 +29,9 @@ TCLVER		= $(shell env tclsh tcl_vars)
 #TCL_LIBINC	= -L/usr/lib
 TCL_LIBS	= -ltk$(TCLVER) -ltcl$(TCLVER) -ldl $(LIBS)
 INCLUDE_DIR	= $(DESTDIR)/usr/include
-ifeq ($(USE_LIBSELINUX), 1)
-LIBSELINUX  = -lselinux
-# Build libsefs into programs: apol, awish and seuserx
-USE_LIBSEFS 		= 1
-else
-LIBSELINUX = 
-USE_LIBSEFS 		= 0
-endif
 
 LINKFLAGS	= 
-CC		= gcc 
+CC		?= gcc 
 YACC		= bison -y
 LEX		= flex -olex.yy.c
 
@@ -63,6 +56,31 @@ DEFAULT_LOG_FILE = /var/log/messages
 ##		in the policy (experimental, see Readme)
 CC_DEFINES	=
 
+# Install directories
+# Binaries go here
+BINDIR		= $(DESTDIR)/usr/bin
+
+# The code uses the specified path below. If you change this, DO NOT add 
+# a trailing path seperator ("/"). For example, use "/usr/share/setools" 
+# instead of "/usr/share/setools/". This probably needs to become more 
+# robust in the future.
+#
+INSTALL_LIBDIR	= $(DESTDIR)/usr/share/setools
+#
+# END NOTE
+
+# all apps that have a te/fc file need to be listed here
+POLICYINSTALLDIRS = seuser
+
+# You should not need to edit anything after this point.
+ifeq ($(USE_LIBSELINUX), 1)
+LIBSELINUX  = -lselinux
+USE_LIBSEFS 		= 1
+else
+LIBSELINUX = 
+USE_LIBSEFS 		= 0
+endif
+
 ifeq ($(USE_LIBSELINUX), 1)
 CC_DEFINES += -DLIBSELINUX
 endif
@@ -78,28 +96,10 @@ CFLAGS		= -Wall -g $(TCL_INCLUDE) $(CC_DEFINES)
 #CFLAGS		= -Wall -ansi -pedantic -g $(TCL_INCLUDE) $(CC_DEFINES)
 endif
 
-
-# Install directories
-# Binaries go here
-BINDIR		= $(DESTDIR)/usr/bin
-
-
-# The code uses the specified path below. If you change this, DO NOT add 
-# a trailing path seperator ("/"). For example, use "/usr/share/setools" 
-# instead of "/usr/share/setools/". This probably needs to become more 
-# robust in the future.
-#
-INSTALL_LIBDIR	= $(DESTDIR)/usr/share/setools
-#
-# END NOTE
-
 INSTALL_HELPDIR = $(INSTALL_LIBDIR)
 
 # This should be imported from tools/Makefile (deprecated)
 SRC_POLICY_DIR = ../../
-
-# all apps that have a te/fc file need to be listed here
-POLICYINSTALLDIRS = seuser
 
 # exports
 export CFLAGS CC YACC LEX LINKFLAGS BINDIR INSTALL_LIBDIR INSTALL_HELPDIR LIBS TCL_LIBINC TCL_LIBS MAKE 
@@ -188,7 +188,9 @@ libapol-tcl: selinux_tool
 	cd libapol; $(MAKE) libapol-tcl libapol-tclso; 
 	
 libsefs: selinux_tool
+ifeq ($(USE_LIBSEFS), 1)
 	cd libsefs; $(MAKE) libsefs libsefsso
+endif
 
 libseuser: selinux_tool
 	cd libseuser; $(MAKE) libseuser libseuserso
@@ -252,7 +254,9 @@ install-libseaudit: $(SHARED_LIB_INSTALL_DIR)
 	cd libseaudit; $(MAKE) install
 
 install-libsefs: $(SHARED_LIB_INSTALL_DIR)
+ifeq ($(USE_LIBSEFS), 1)
 	cd libsefs; $(MAKE) install
+endif
 
 install-dev: install-libseuser install-libapol install-libseaudit install-libsefs
 	
@@ -274,7 +278,9 @@ install-libseaudit-policy:
 	cd libseaudit; $(MAKE) install-policy
 
 install-libsefs-policy:
+ifeq ($(USE_LIBSEFS), 1)
 	cd libsefs; $(MAKE) install-policy
+endif
 
 install-policy: install-seuser-policy install-secmds-policy \
 		install-libapol-policy install-libseuser-policy \
