@@ -2,10 +2,7 @@
  * see file 'COPYING' for use and warranty information */
 
 /* 
- * Author: mayerf@tresys.com 
- * Modified by: don.patterson@tresys.com (6-17-2003)
- * Modified by: kmacmillan@tresys.com (7-18-2003) - added
- *   information flow analysis.
+ * Author: kmacmillan@tresys.com
  * Modified by: mayerf@tresys.com (Apr 2004) - separated information
  *   flow from main analysis.c file, and added noflow/onlyflow batch
  *   capabilitiy.
