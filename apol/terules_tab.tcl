@@ -2582,7 +2582,7 @@ proc Apol_TE::enable_disable_permissions_section {enable} {
 			$b_intersection configure -state disabled
 			$cb_perms_tilda configure -state disabled
 		} else {
-			SEUser_Top::enable_tkListbox $permslistbox
+			ApolTop::enable_tkListbox $permslistbox
 			$b_union configure -state normal
 			$b_intersection configure -state normal
 			$cb_perms_tilda configure -state normal
