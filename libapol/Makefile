@@ -32,7 +32,7 @@ libapol-tcl.a: $(LIB-OBJ-TCL)
 install-libapol-shared: libapolso
 	test -d $(SHARED_LIB_INSTALL_DIR) || install -m 755 -d $(SHARED_LIB_INSTALL_DIR)
 	install -m 755 $(LIBSO) $(SHARED_LIB_INSTALL_DIR)
-	cd $(SHARED_LIB_INSTALL_DIR) && ln -sf ./$(LIBSO) $(TARGET)
+	cd $(SHARED_LIB_INSTALL_DIR) && ln -sf $(LIBSO) $(TARGET)
 
 install-libapol-static: libapol
 	test -d $(STATIC_LIB_INSTALL_DIR) || install -m 755 -d $(STATIC_LIB_INSTALL_DIR)
