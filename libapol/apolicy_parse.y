@@ -1114,7 +1114,7 @@ static int define_typealias(void)
 static int add_avrule(int type, av_item_t **rlist, int *list_num, bool_t enabled) {
 	int idx, idx_type;
 	char *id;
-	av_item_t *item;
+	av_item_t *item = NULL;
 	ta_item_t *src_titem, *tgt_titem, *obj_titem, *perm_titem;
 	bool_t subtract;
 	
@@ -1346,7 +1346,7 @@ static int add_ttrule(int rule_type, bool_t enabled)
 {
 	int idx, idx_type;
 	char *id;
-	tt_item_t *item;
+	tt_item_t *item = NULL;
 	ta_item_t *src_titem, *tgt_titem, *obj_titem;
 	bool_t subtract;
 		
@@ -1771,7 +1771,7 @@ static int define_role_trans(void)
 {
 	char *id;
 	int idx, idx_type;
-	rt_item_t *rule;
+	rt_item_t *rule = NULL;
 	ta_item_t *role = NULL, *type = NULL;
 	
 	if(pass == 1 || (pass == 2 && !(parse_policy-> opts & POLOPT_ROLE_RULES))) {
