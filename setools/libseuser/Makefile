@@ -8,7 +8,7 @@ LOBJS		= $(patsubst %.o,%.lo,$(LIB-OBJ))
 CFLAGS      += -DLIBSEUSER_VERSION_STRING='"$(shell cat VERSION)"'
 CFLAGS      += -DSETFILES_PROG='"$(SETFILES_PROG)"'
 
-TARGET 	    = libapol.so
+TARGET 	    = libseuser.so
 LIBSO	    = $(TARGET).$(shell cat VERSION)
 
 all: libseuser libseuser-tcl libseuserso
