@@ -5536,18 +5536,20 @@ int Apol_Create_FC_Index_File(ClientData clientData, Tcl_Interp *interp, int arg
 		Tcl_AppendResult(interp, "Directory string too large", (char *) NULL);
 		return TCL_ERROR;
 	}
+	
 	fsdata_local.dbh = NULL;
 	fsdata_local.fsdh = NULL;
  	if (sefs_filesystem_db_populate(&fsdata_local, argv[2]) == -1) {
-		fprintf(stderr, "fsdata_init failed\n");
 		Tcl_AppendResult(interp, "Error populating database.\n", (char *) NULL);
 		return TCL_ERROR;
 	}
 	if (sefs_filesystem_db_save(&fsdata_local, argv[1]) != 0) {
-		Tcl_AppendResult(interp, "Error writing file context paths database\n", (char *) NULL);
+		/* Make sure the database is closed and memory freed. */
+		sefs_filesystem_db_close(&fsdata_local);
+		Tcl_AppendResult(interp, "Error creating index file\n", (char *) NULL);
 		return TCL_ERROR;
 	}
-	/* sefs_filesystem_db_save() closes the database */
+	sefs_filesystem_db_close(&fsdata_local);
 	
 	return TCL_OK;
 #endif
@@ -5574,10 +5576,10 @@ int Apol_Load_FC_Index_File(ClientData clientData, Tcl_Interp *interp, int argc,
 		sefs_filesystem_db_close(&fsdata);
 	}
  	if (sefs_filesystem_db_load(&fsdata, argv[1]) == -1) {
- 		Tcl_AppendResult(interp, "sefs_filesystem_data_load failed\n", (char *) NULL);
+ 		Tcl_AppendResult(interp, "sefs_filesystem_data_load failed.\n", (char *) NULL);
 		return TCL_ERROR;
 	}
-	/* Need to close the database */
+	
 	return TCL_OK;
 #endif
 }
