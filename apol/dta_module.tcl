@@ -586,19 +586,20 @@ proc Apol_Analysis_dta::forward_options_initialize_vars {path_name} {
 	variable f_opts
 	
 	if {$f_opts($path_name,filter_vars_init) == 0} {
+		# Initialize all object classes/permissions and related information to default values
 		Apol_Analysis_dta::forward_options_initialize_objs_and_perm_filters $path_name
-  		# Initialization for types section
- 	        set f_opts($path_name,filtered_excl_types) $Apol_Types::typelist
- 		set idx [lsearch -exact $f_opts($path_name,filtered_excl_types) "self"]
+		
+  	        # Initialize included/excluded intermediate types section to default values
+ 		set f_opts($path_name,master_incl_types_list) $Apol_Types::typelist 
+ 		set idx [lsearch -exact $f_opts($path_name,master_incl_types_list) "self"]
   		if {$idx != -1} {
- 			set f_opts($path_name,filtered_excl_types) \
- 				 [lreplace $f_opts($path_name,filtered_excl_types) \
+ 			set f_opts($path_name,master_incl_types_list) \
+ 				 [lreplace $f_opts($path_name,master_incl_types_list) \
  				  $idx $idx]
   		}   
- 		set f_opts($path_name,filtered_incl_types) [lsort $f_opts($path_name,filtered_excl_types)]
- 	        set f_opts($path_name,filtered_excl_types) ""
- 		set f_opts($path_name,master_incl_types_list) $f_opts($path_name,filtered_incl_types)
  	        set f_opts($path_name,master_excl_types_list) $f_opts($path_name,filtered_excl_types)
+ 	        set f_opts($path_name,filtered_incl_types) $f_opts($path_name,master_incl_types_list)
+ 	        set f_opts($path_name,filtered_excl_types) $f_opts($path_name,master_excl_types_list)
   	        set f_opts($path_name,filter_vars_init) 1
 	}
 	return 0
@@ -1126,9 +1127,9 @@ proc Apol_Analysis_dta::display_mod_options { opts_frame } {
 } 
 
 # ------------------------------------------------------------------------------
-#  Command Apol_Analysis_dta::load_dta_advanced_opts_object_query_options
+#  Command Apol_Analysis_dta::load_dta_advanced_query_options
 # ------------------------------------------------------------------------------
-proc Apol_Analysis_dta::load_dta_advanced_opts_object_query_options {query_options curr_idx path_name parentDlg} {
+proc Apol_Analysis_dta::load_dta_advanced_query_options {query_options curr_idx path_name parentDlg} {
 	variable f_opts
 
 	# Destroy the current forward DTA options object    	
@@ -1210,7 +1211,7 @@ proc Apol_Analysis_dta::load_dta_advanced_opts_object_query_options {query_optio
 	        if {[llength $split_list] == 1} {
 	        	# Validate that the type exists in the loaded policy.
      			if {[lsearch -exact $Apol_Types::typelist [lindex $query_options $i]] != -1} {
-	        		set f_opts($path_name,filtered_excl_types) [lindex $query_options $i]
+	        		set f_opts($path_name,master_excl_types_list) [lindex $query_options $i]
 	        	} else {
 	        		set invalid_types [lappend invalid_types [lindex $query_options $i]]
 	     		} 
@@ -1219,7 +1220,7 @@ proc Apol_Analysis_dta::load_dta_advanced_opts_object_query_options {query_optio
 		        # is in splitChars, so we ignore the first element of the split list.
 		        # Validate that the type exists in the loaded policy.
      			if {[lsearch -exact $Apol_Types::typelist [lindex $split_list 1]] != -1} {
-		        	set f_opts($path_name,filtered_excl_types) [lappend f_opts($path_name,filtered_excl_types) \
+		        	set f_opts($path_name,master_excl_types_list) [lappend f_opts($path_name,master_excl_types_list) \
 		        		[lindex $split_list 1]]
 		        } else {
 	     			set invalid_types [lappend invalid_types [lindex $split_list 1]]
@@ -1234,7 +1235,7 @@ proc Apol_Analysis_dta::load_dta_advanced_opts_object_query_options {query_optio
 		        while {[llength [split [lindex $query_options $i] "\}"]] == 1} {
 		        	# Validate that the type exists in the loaded policy.
      				if {[lsearch -exact $Apol_Types::typelist [lindex $query_options $i]] != -1} {
-		        		set f_opts($path_name,filtered_excl_types) [lappend f_opts($path_name,filtered_excl_types) \
+		        		set f_opts($path_name,master_excl_types_list) [lappend f_opts($path_name,master_excl_types_list) \
 		        			[lindex $query_options $i]]
 		        	} else {
 		     			set invalid_types [lappend invalid_types [lindex $query_options $i]]
@@ -1247,13 +1248,13 @@ proc Apol_Analysis_dta::load_dta_advanced_opts_object_query_options {query_optio
 		        set end_element [lindex [split [lindex $query_options $i] "\}"] 0]
 		        # Validate that the type exists in the loaded policy.
      			if {[lsearch -exact $Apol_Types::typelist $end_element] != -1} {
-		        	set f_opts($path_name,filtered_excl_types) [lappend f_opts($path_name,filtered_excl_types) $end_element]
+		        	set f_opts($path_name,master_excl_types_list) [lappend f_opts($path_name,master_excl_types_list) $end_element]
 		        } else {
 	     			set invalid_types [lappend invalid_types $end_element]
 	     		} 
-	     		set idx [lsearch -exact $f_opts($path_name,filtered_excl_types) "self"]
+	     		set idx [lsearch -exact $f_opts($path_name,master_excl_types_list) "self"]
 			if {$idx != -1} {
-				set f_opts($path_name,filtered_excl_types) [lreplace $f_opts($path_name,filtered_excl_types) \
+				set f_opts($path_name,master_excl_types_list) [lreplace $f_opts($path_name,master_excl_types_list) \
 					$idx $idx]
 			}
 		}
@@ -1266,19 +1267,26 @@ proc Apol_Analysis_dta::load_dta_advanced_opts_object_query_options {query_optio
 			puts "$type\n"	
 		}
 	}
-	set f_opts($path_name,filtered_incl_types) ""
-      	foreach type $Apol_Types::typelist {
+	set tmp_list $f_opts($path_name,master_incl_types_list)
+      	foreach type $tmp_list {
 		if {$type != "self"} {
-			set idx [lsearch -exact $f_opts($path_name,filtered_excl_types) $type]
-			if {$idx == -1} {
-     				set f_opts($path_name,filtered_incl_types) [lappend f_opts($path_name,filtered_incl_types) $type]
+			# Search the master excluded inter types list to see if we need 
+			# to remove this type from the master included inter types list.
+			set idx [lsearch -exact $f_opts($path_name,master_excl_types_list) $type]
+			if {$idx != -1} {
+				# Type was found in the excluded list, so remove from master included list
+				set idx [lsearch -exact $f_opts($path_name,master_incl_types_list) $type]
+				# We don't check if the idx is -1 because we know it exists in the list
+     				set f_opts($path_name,master_incl_types_list) \
+     					[lreplace $f_opts($path_name,master_incl_types_list) \
+     					$idx $idx]
      			}
      		}
 	}   
-
-	set f_opts($path_name,master_incl_types_list) $f_opts($path_name,filtered_incl_types)
-	set f_opts($path_name,master_excl_types_list) $f_opts($path_name,filtered_excl_types)
-			
+	# We will filter the list that is displayed later based upon the attribute settings when we update the dialog.
+	set f_opts($path_name,filtered_incl_types) $f_opts($path_name,master_incl_types_list) 
+	set f_opts($path_name,filtered_excl_types) $f_opts($path_name,master_excl_types_list) 
+		
       	# Update our counter variable to the next element in the query options list
       	incr i
       	if {[lindex $query_options $i] != "\{\}"} {
@@ -1384,7 +1392,7 @@ proc Apol_Analysis_dta::load_query_options { file_channel parentDlg } {
      	set i 4
      	if {[lindex $query_options $i]} { 
      		set i 5
-     		set i [Apol_Analysis_dta::load_dta_advanced_opts_object_query_options $query_options $i $path_name $parentDlg]
+     		set i [Apol_Analysis_dta::load_dta_advanced_query_options $query_options $i $path_name $parentDlg]
      	}
   								 	
 	# After updating any display variables, must configure widgets accordingly
