@@ -1043,7 +1043,7 @@ proc Apol_Analysis_relabel::display_mod_options { opts_frame } {
     pack $widgets(start_attrib_cb) -padx 15 -expand 0 -fill x
     pack $widgets(cb_endtype) -side top -anchor nw
     pack $widgets(entry_end) -anchor nw -fill x -expand yes 
-    pack $widgets(b_adv_options) -anchor nw 
+    #pack $widgets(b_adv_options) -anchor nw 
     pack $start_f -expand 0 -fill x
     pack $attrib_f -pady 20 -expand 0 -fill x
     pack $option_f -fill both -anchor nw -side left -padx 5 -expand 1
