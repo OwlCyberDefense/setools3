@@ -58,26 +58,10 @@ void usage(const char *argv0, int long_version)
 	}
 };
 
-int find_obj_in_array(obj_perm_set_t *perm_sets, int num_perm_sets, int obj_idx)
-{
-	int i;
-
-	if (!perm_sets) return -1;
-	if (obj_idx < 0) return -1;
-
-	for (i = 0; i < num_perm_sets; i++) {
-		if (perm_sets[i].obj_class == obj_idx) {
-			return i;
-		}
-	}
-
-	return NOTHERE;
-};
-
-int apol_fill_filter_sets(FILE *infile, relabel_filter_t *filter, policy_t *policy)
+int apol_parse_filter_file(FILE *infile, relabel_filter_t *filter, policy_t *policy)
 {
         char str [300], *object, *perm, *s;
-        int obj_idx, perm_idx, retv = 0;
+        int retv;
 
         if (!infile){
                 fprintf(stderr, "bad filter file\n");
@@ -122,52 +106,17 @@ int apol_fill_filter_sets(FILE *infile, relabel_filter_t *filter, policy_t *poli
                         }
                 }
 
-
                 /* double check that something remains for both object
                  * and permission */
                 if (strlen (object) == 0 || strlen (perm) == 0) {
                         fprintf(stderr,"BAKA!\n");
                         return -42;
                 }
-                obj_idx = get_obj_class_idx(object, policy);
-                if (*perm == '*')
-                        perm_idx = -2;
-                else
-                        perm_idx = get_perm_idx(perm, policy);
 
-                if (!is_valid_obj_class_idx(obj_idx, policy) )
-                        return -1;
-                if (perm_idx >= 0) {
-                        if (!(is_valid_perm_idx(perm_idx, policy) && is_valid_perm_for_obj_class(policy, obj_idx, perm_idx)))
-                                return -1;
-                } else {
-                        if (perm_idx != -2)
-                                return -1;
-                }
-                if (filter->perm_sets)
-                        retv = find_obj_in_array(filter->perm_sets, filter->num_perm_sets, obj_idx);
-                if (retv == NOTHERE) {
-                        retv = apol_add_class_to_obj_perm_set_list(&(filter->perm_sets), &(filter->num_perm_sets), obj_idx);
-                        if (retv == -1)
-                                return -1;
-                } else if (retv < 0) {
+                retv = apol_fill_filter_set (object, perm, filter, policy);
+                if (retv)
                         return retv;
-                }
-		
-		if (perm_idx >= 0) {
-			retv = apol_add_perm_to_obj_perm_set_list(&(filter->perm_sets), &(filter->num_perm_sets), obj_idx, perm_idx);
-			if (retv == -1) 
-				return -1;
-		} else {
-			retv = find_obj_in_array(filter->perm_sets, filter->num_perm_sets, obj_idx);
-			if (filter->perm_sets[retv].perms) {
-				free(filter->perm_sets[retv].perms);
-				filter->perm_sets[retv].perms = NULL;
-			}
-			filter->perm_sets[retv].num_perms = 0;
-		}
-	}
-
+        }
 	return 0;
 };
 
@@ -441,7 +390,7 @@ int main (int argc, char** argv)
 	}
 
 	if (filter_filename) {
-		retv = apol_fill_filter_sets(filter_file, filter, policy);
+		retv = apol_parse_filter_file(filter_file, filter, policy);
 		if (retv) {
 			fprintf(stderr,"fill filter sets error %i\n", retv);
  			return retv;
