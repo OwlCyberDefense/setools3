@@ -487,7 +487,6 @@ proc Apol_Analysis::display_new_content { } {
 # ------------------------------------------------------------------------------
 proc Apol_Analysis::display_mod_options { mod_name opts_frame } { 
      	${mod_name}::display_mod_options $opts_frame
-     	return 0
 } 
 
 # ------------------------------------------------------------------------------
@@ -709,8 +708,9 @@ proc Apol_Analysis::do_analysis { which } {
 		}
 	} 
 	if {$results_frame != ""} {
+		ApolTop::disable_DeleteWindow_event
 		set rt [catch {${curr_analysis_module}::do_analysis $results_frame} err] 
-		
+		ApolTop::enable_DeleteWindow_event
 		# Handle an error.
 		if {$rt != 0 && $which == "new_analysis"} { 
 			puts $err
@@ -726,7 +726,12 @@ proc Apol_Analysis::do_analysis { which } {
 			Apol_Analysis::switch_results_tab $prev_raisedTab
 			return -1
 		} elseif {$rt != 0} {
-			puts $err
+			# Remove the bad tab since the results frame has been cleared
+	    		set prev_Tab [$results_notebook pages \
+	    			[expr [$results_notebook index $prev_raisedTab] - 1]]
+			$results_notebook delete $prev_raisedTab
+	    		set currTabCount [expr $currTabCount - 1]
+			Apol_Analysis::switch_results_tab $prev_Tab
 		}
 	    	set raised_tab_analysis_type $curr_analysis_module
 	    	# Here store the current content of the new tab.
@@ -830,7 +835,7 @@ proc Apol_Analysis::open { } {
 proc Apol_Analysis::close { } {	
 	variable analysis_modules
     	variable analysis_listbox 
-
+	
      	foreach mod_name $analysis_modules {
 	       set mod_name [lindex $mod_name 0]
 	       if {[$analysis_listbox selection get] == $mod_name} {
@@ -881,27 +886,27 @@ proc Apol_Analysis::create { nb } {
  	
 	# Layout frames
         set frame [$nb insert end $ApolTop::analysis_tab -text "Analysis"]
-        set pw1 [PanedWindow $frame.pw1 -side left -weights extra]
-        $pw1 add -weight 1 -minsize 280
-        $pw1 add -weight 1
-	set topf  [frame [$pw1 getframe 0].topf]
-	set botf  [frame [$pw1 getframe 1].botf]
-        set pw2   [PanedWindow $topf.pw -side top -weights available]
-	$pw2 add -weight 1 -minsize 225
+        set analysis_top_pane [PanedWindow $frame.pw1 -side left -weights extra]
+        $analysis_top_pane add -weight 1
+        $analysis_top_pane add -weight 2
+	set analysis_top_f  [frame [$analysis_top_pane getframe 0].topf]
+	set botf  [frame [$analysis_top_pane getframe 1].botf]
+        set pw2   [PanedWindow $analysis_top_f.pw -side top -weights available]
+	$pw2 add -weight 1 
         $pw2 add -weight 3
 	# Major subframes
 	set t_left_f [TitleFrame [$pw2 getframe 0].t_left_f -text "Analysis Type"]
 	set title_opts_f [TitleFrame [$pw2 getframe 1].opts_frame -text "Analysis Options"]
-	set buttons_f [frame $topf.buttons_f]
+	set buttons_f [frame $analysis_top_f.buttons_f]
 	set b_title_f [TitleFrame $botf.b_title_f -text "Analysis Results"]
 	set b_topf [frame [$b_title_f getframe].b_topf]
 	set b_botf [frame [$b_title_f getframe].b_botf -relief sunken -bd 1]
 	
 	# Placing layout frames and major subframes
 	pack $buttons_f -side right -fill y -anchor ne -padx 2 -pady 2
-        pack $pw1 -fill both -expand yes
-        pack $pw2 -fill both -expand yes
-	pack $topf -side top -fill both -expand yes
+        pack $analysis_top_pane -fill both -expand yes
+        pack $pw2 -fill both -expand 1
+	pack $analysis_top_f -side top -fill both -expand 1
 	pack $botf -side top -fill both -expand yes 
 	pack $title_opts_f -side right -fill both -anchor ne -expand yes -padx 2
 	pack $t_left_f -side left -anchor nw -fill both -expand yes
@@ -925,7 +930,6 @@ proc Apol_Analysis::create { nb } {
 	pack $newButton $updateButton $infoButton -side top -pady 5 -anchor ne 
 		
 	set opts_frame [Apol_Analysis::create_options_frame [$title_opts_f getframe]]
-	
 	# Analysis type listbox
 	set sw_t     [ScrolledWindow [$t_left_f getframe].sw -auto none]
 	set analysis_listbox [ListBox $sw_t.analysis_listbox \
