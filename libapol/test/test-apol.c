@@ -778,7 +778,7 @@ int main(int argc, char *argv[])
 			display_policy_stats(policy);
 			break;
 		case 'v':
-			printf("\n%s\n", VERSION_STRING);
+			printf("\n%s\n", LIBAPOL_VERSION_STRING);
 			break;
 		case 'q':
 			close_policy(policy);
