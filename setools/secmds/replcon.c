@@ -1048,11 +1048,13 @@ replcon_parse_command_line(int argc, char **argv)
 			replcon_info.verbose = TRUE;
 			break;
 		case 'v':	/* version */
-			printf("\n%s (%s)\n\n", COPYRIGHT_INFO,
+			printf("\n%s (Ver. %s)\n\n", COPYRIGHT_INFO,
 			       REPLCON_VERSION_NUM);
 			replcon_info_free(&replcon_info);
 			exit(0);
 		case 'h':	/* help */
+			printf("\n%s (Ver. %s)\n\n", COPYRIGHT_INFO,
+			       REPLCON_VERSION_NUM);
 			replcon_usage(argv[0], 0);
 			replcon_info_free(&replcon_info);
 			exit(0);
