@@ -6356,14 +6356,17 @@ int Apol_RelabelAnalysis (ClientData clientData, Tcl_Interp *interp,
 	int start_type, do_filter_types;
 	Tcl_Obj *results_list_obj; 
 	regex_t reg;
-	int *filter_types = NULL, rt, sz, num_filter_types;
+	int *filter_types = NULL, rt, sz, num_filter_types, i;
+	CONST84 char **class_filter_names, **subj_filter_names;
+	int class_filter_sz = 0, subj_filter_sz  = 0;
+	int *class_filter = NULL, *subj_filter = NULL;
 	                
         if (policy == NULL) {
                 Tcl_SetResult (interp, "No current policy file is opened!",
                                TCL_STATIC);
                 return TCL_ERROR;
         }
-        if (objc < 6) {
+        if (objc < 7) {
                 Tcl_SetResult (interp, "wrong # of args", TCL_STATIC);
                 return TCL_ERROR;
         }
@@ -6392,11 +6395,35 @@ int Apol_RelabelAnalysis (ClientData clientData, Tcl_Interp *interp,
                 return TCL_ERROR;
         }
 
-        if (Tcl_GetIntFromObj(interp, objv[4], &do_filter_types) != TCL_OK) {
+	rt = Tcl_SplitList(interp, Tcl_GetString(objv[3]), &class_filter_sz, &class_filter_names);
+	if (rt != TCL_OK) {
+		Tcl_SetResult(interp, "Error splitting TCL list.", TCL_STATIC);
+		return TCL_ERROR;
+	}
+	if (class_filter_sz > 0) {
+		class_filter = (int*)malloc(class_filter_sz * sizeof(int));
+		for (i = 0; i < class_filter_sz; i++) {
+			class_filter[i] = get_obj_class_idx(class_filter_names[i], policy);
+		}
+	}
+
+	rt = Tcl_SplitList(interp, Tcl_GetString(objv[4]), &subj_filter_sz, &subj_filter_names);
+	if (rt != TCL_OK) {
+		Tcl_SetResult(interp, "Error splitting TCL list.", TCL_STATIC);
+		return TCL_ERROR;
+	}
+	if (subj_filter_sz > 0) {
+		subj_filter = (int*)malloc(subj_filter_sz * sizeof(int));
+		for (i = 0; i < subj_filter_sz; i++) {
+			subj_filter[i] = get_type_idx(subj_filter_names[i], policy);
+		}
+	}
+
+        if (Tcl_GetIntFromObj(interp, objv[5], &do_filter_types) != TCL_OK) {
         	 Tcl_SetResult (interp, "Error while geting integer from TCL object.", TCL_STATIC);
 	         return TCL_ERROR;
 	}
-	end_type = Tcl_GetString(objv[5]);
+	end_type = Tcl_GetString(objv[6]);
         if (do_filter_types) {
         	if (str_is_only_white_space(end_type)) {
 			Tcl_SetResult (interp, "Please provide a regular expression for filtering the end types.", TCL_STATIC);
@@ -6426,7 +6453,10 @@ int Apol_RelabelAnalysis (ClientData clientData, Tcl_Interp *interp,
 	}
 
         /* Get the results of our query */
-        if (ap_relabel_query (start_type, mode, direction, NULL, 0, NULL, 0, &results, policy)) {
+        if (ap_relabel_query (start_type, mode, direction, 
+				subj_filter, subj_filter_sz, 
+				class_filter, class_filter_sz, 
+				&results, policy)) {
                 free(filter_types);
                 ap_relabel_result_destroy (&results);
                 Tcl_SetResult (interp, "Error doing analysis", TCL_STATIC);
