@@ -55,6 +55,8 @@ namespace eval Apol_TE {
 	variable ta3 			""
 	variable allow_regex		1
 	variable show_enabled_rules	1
+	variable tag_enabled_rules	0
+	variable tag_disabled_rules	0
 	variable ta1_opt 		"both"
 	variable ta2_opt 		"both"
 
@@ -107,6 +109,8 @@ namespace eval Apol_TE {
 	# OTHER GLOBAL WIDGETS AND VARIABLES
 	variable cb_RegExp
 	variable cb_show_enabled_rules
+	variable cb_tag_enabled_rules
+    	variable cb_tag_disabled_rules
 	variable notebook_searchOpts
 	variable notebook_results
 	variable popupTab_Menu
@@ -144,7 +148,15 @@ namespace eval Apol_TE {
 	variable m_ta_tab	       "Types/Attributes"
 	variable m_obj_perms_tab       "Classes/Permissions" 
 	
-	variable disabled_rule_tag     DISABLE_RULE
+	# Global text widget tags
+	variable disabled_rule_tag     	DISABLE_RULE
+	variable enabled_rule_tag	ENABLE_RULE
+	variable disabled_cond_expr_tag D_COND_EXPR
+	variable enabled_cond_expr_tag	E_COND_EXPR
+	
+	variable disabled_rule_tag_text	"Disabled"
+	variable enabled_rule_tag_text	"Enabled"
+	variable orig_cursor		""
 }
 
 ########################################################################
@@ -185,12 +197,159 @@ proc Apol_TE::search { str case_Insensitive regExpr srch_Direction } {
 
 proc Apol_TE::enable_disable_conditional_widgets {enable} {
 	variable cb_show_enabled_rules
-	
+	variable cb_tag_enabled_rules
+    	variable cb_tag_disabled_rules
+    	
 	if {!$enable} {
 		$cb_show_enabled_rules configure -state disabled
+		$cb_show_enabled_rules deselect 
+		$cb_tag_enabled_rules configure -state disabled
+		$cb_tag_disabled_rules configure -state disabled
 	} else {
 		$cb_show_enabled_rules configure -state normal
+		$cb_tag_enabled_rules configure -state normal
+		$cb_tag_disabled_rules configure -state normal
 	}
+}
+
+proc Apol_TE::on_configure_enabled_rule_tags_checkbutton {} {	
+	ApolTop::setBusyCursor
+	Apol_TE::configure_enabled_rule_tags
+	ApolTop::resetBusyCursor
+	return 0
+}
+
+proc Apol_TE::on_configure_disabled_rule_tags_checkbutton {} {	
+	ApolTop::setBusyCursor
+	Apol_TE::configure_disabled_rule_tags
+	ApolTop::resetBusyCursor
+	return 0
+}
+
+# ------------------------------------------------------------------------------
+#  Command Apol_TE::insert_disabled_cond_expr_HyperLink {tb start end}
+# 		start and end are l.c line positions
+proc Apol_TE::insert_disabled_cond_expr_HyperLink { tb start end } {
+	$tb tag add $Apol_TE::disabled_cond_expr_tag $start $end
+	return 0
+}
+
+# ------------------------------------------------------------------------------
+#  Command Apol_TE::insert_enabled_cond_expr_HyperLink {tb start end}
+# 		start and end are l.c line positions
+proc Apol_TE::insert_enabled_cond_expr_HyperLink { tb start end } {
+	$tb tag add $Apol_TE::enabled_cond_expr_tag $start $end
+	return 0
+}
+
+# ------------------------------------------------------------------------------
+#  Command Apol_TE::configure_disabled_cond_expr_HyperLinks
+proc Apol_TE::configure_disabled_cond_expr_HyperLinks {tb} {
+	# Change the color and underline so that it looks like a common hyperlink. Also, change
+	# the cursor when the mouse is over the hyperlink.
+	$tb tag configure $Apol_TE::disabled_cond_expr_tag -foreground red -underline 1
+	#$tb tag bind $Apol_TE::disabled_cond_expr_tag <Button-1> "puts HI"
+	#$tb tag bind $Apol_TE::disabled_cond_expr_tag <Enter> { set Apol_TE::orig_cursor [%W cget -cursor]; %W configure -cursor hand2 }
+	#$tb tag bind $Apol_TE::disabled_cond_expr_tag <Leave> { %W configure -cursor $Apol_TE::orig_cursor }
+	
+	return 0
+}
+
+# ------------------------------------------------------------------------------
+#  Command Apol_TE::configure_enabled_cond_expr_HyperLinks
+proc Apol_TE::configure_enabled_cond_expr_HyperLinks {tb} {
+	# Change the color and underline so that it looks like a common hyperlink. Also, change
+	# the cursor when the mouse is over the hyperlink.
+	$tb tag configure $Apol_TE::enabled_cond_expr_tag -foreground green -underline 1
+	#$tb tag bind $Apol_TE::enabled_cond_expr_tag <Button-1> "puts HI"
+	#$tb tag bind $Apol_TE::enabled_cond_expr_tag <Enter> { set Apol_TE::orig_cursor [%W cget -cursor]; %W configure -cursor hand2 }
+	#$tb tag bind $Apol_TE::enabled_cond_expr_tag <Leave> { %W configure -cursor $Apol_TE::orig_cursor }
+	
+	return 0
+}
+
+proc Apol_TE::configure_enabled_rule_tags {} {	
+	variable notebook_results
+	
+	set raised_Page [$notebook_results raise]
+	if {$raised_Page == $Apol_TE::emptyTabID} {
+		return -1
+	}
+	set tb $Apol_TE::optionsArray($raised_Page,textbox)
+	set tag_ranges [$tb tag ranges $Apol_TE::enabled_rule_tag]
+	$tb configure -state normal
+	
+	if {$Apol_TE::tag_enabled_rules} {
+		for {set i 0} {$i < [llength $tag_ranges]} {incr i} {	
+			incr i
+			$tb insert [lindex $tag_ranges $i] " \["
+			set startIdx [$tb index "[lindex $tag_ranges $i] + 2 char"]
+			$tb insert $startIdx "$Apol_TE::enabled_rule_tag_text"
+			set endIdx [$tb index "$startIdx + [string length $Apol_TE::enabled_rule_tag_text] char"]
+			$tb insert $endIdx "\]"
+			Apol_TE::insert_enabled_cond_expr_HyperLink $tb $startIdx $endIdx
+		}
+		Apol_TE::configure_enabled_cond_expr_HyperLinks $tb
+	} else {
+		for {set i 0} {$i < [llength $tag_ranges]} {incr i} {
+			set line [lindex [split [lindex $tag_ranges $i] "."] 0]
+			$tb delete [lindex $tag_ranges $i] $line.end
+			$tb insert [lindex $tag_ranges $i] " "
+			$tb tag add $Apol_TE::enabled_rule_tag [lindex $tag_ranges $i] $line.end
+			incr i
+		}
+	} 
+	$tb configure -state disabled
+	
+	return 0
+}
+
+proc Apol_TE::configure_disabled_rule_tags {} {	
+	variable notebook_results
+	
+	set raised_Page [$notebook_results raise]
+	if {$raised_Page == $Apol_TE::emptyTabID} {
+		return 
+	}
+	set tb $Apol_TE::optionsArray($raised_Page,textbox)
+	set tag_ranges [$tb tag ranges $Apol_TE::disabled_rule_tag]
+	$tb configure -state normal
+	
+	if {$Apol_TE::tag_disabled_rules} {
+		for {set i 0} {$i < [llength $tag_ranges]} {incr i} {	
+			incr i
+			$tb insert [lindex $tag_ranges $i] " \["
+			set startIdx [$tb index "[lindex $tag_ranges $i] + 2 char"]
+			$tb insert $startIdx "$Apol_TE::disabled_rule_tag_text"
+			set endIdx [$tb index "$startIdx + [string length $Apol_TE::disabled_rule_tag_text] char"]
+			$tb insert $endIdx "\]"
+			Apol_TE::insert_disabled_cond_expr_HyperLink $tb $startIdx $endIdx
+		}
+		Apol_TE::configure_disabled_cond_expr_HyperLinks $tb
+	} else {
+		for {set i 0} {$i < [llength $tag_ranges]} {incr i} {			
+			set line [lindex [split [lindex $tag_ranges $i] "."] 0]
+			$tb delete [lindex $tag_ranges $i] $line.end
+			$tb tag remove $Apol_TE::disabled_rule_tag [lindex $tag_ranges $i] $line.end
+			$tb insert [lindex $tag_ranges $i] " "
+			$tb tag add $Apol_TE::disabled_rule_tag [lindex $tag_ranges $i] $line.end
+			incr i
+		}
+	}
+	$tb configure -state disabled
+	
+	return 0
+}
+
+# -------------------------------------------------------
+#  Command Apol_TE::remove_conditional_tags { tb }
+# -------------------------------------------------------
+proc Apol_TE::remove_conditional_tags { tb } {
+	$tb tag remove $Apol_TE::disabled_rule_tag 0.0 end
+	$tb tag remove $Apol_TE::enabled_rule_tag 0.0 end
+	$tb tag remove $Apol_TE::disabled_cond_expr_tag 0.0 end
+	$tb tag remove $Apol_TE::enabled_cond_expr_tag 0.0 end
+	return 0
 }
 
 # ------------------------------------------------------------------------------
@@ -265,6 +424,7 @@ proc Apol_TE::searchTErules { whichButton } {
 			set raisedPage 	[ $notebook_results raise ]
 			$Apol_TE::optionsArray($raisedPage,textbox) configure -state normal
 			# Remove any custom tags.
+			Apol_TE::remove_conditional_tags $Apol_TE::optionsArray($raisedPage,textbox)
 			Apol_PolicyConf::remove_HyperLink_tags $Apol_TE::optionsArray($raisedPage,textbox)
     			$Apol_TE::optionsArray($raisedPage,textbox) delete 0.0 end
 			Apol_TE::insertTERules $Apol_TE::optionsArray($raisedPage,textbox) $results 
@@ -281,69 +441,68 @@ proc Apol_TE::searchTErules { whichButton } {
         return 0
 }
 
-# --------------------------------------
-#  Command Apol_TE::disable_te_rule {}
-# --------------------------------------
-proc Apol_TE::disable_te_rule {tb} {
-	$tb tag configure $Apol_TE::disabled_rule_tag -foreground red 
-	return 0
-}
-
-# -----------------------------------------------------------
-#  Command Apol_TE::insert_disabled_rule_tag { tb start end}
-# 		- start and end are l.c line positions
-# -----------------------------------------------------------
-proc Apol_TE::insert_disabled_rule_tag { tb start end } {
-	$tb tag add $Apol_TE::disabled_rule_tag $start $end
-	return 0
-}
-
 # ------------------------------------------------------------------------------
 #  Command Apol_TE::insertTERules
 #	takes a results list (from apol_SearchTERules) and explodes it into
 #	a provided text box
 # ------------------------------------------------------------------------------
 proc Apol_TE::insertTERules { tb results } {	
+	variable show_enabled_rules
+	variable tag_enabled_rules
+	variable tag_disabled_rules
+	
 	# Determine number of rules returned (1/3 size of llength). 
 	# This is because each rule returned consists of:
 	#	1. rule
 	#	2. line number
 	#	3. enabled flag
 	set num [expr { [llength $results] / 3 }]
-	$tb insert end "$num rules match the search criteria\n\n"
 		
 	for {set x 0} {$x < [llength $results]} {incr x} { 
-		set cur_line_pos [$tb index insert]
-		set line_num [lindex [split $cur_line_pos "."] 0]
+		set start_line_pos [$tb index insert]
+		set line_num [lindex [split $start_line_pos "."] 0]
 		set rule [lindex $results $x]
 		incr x
 		set lineno [lindex $results $x]
+		incr x
+		set enabled [lindex $results $x]
+		
+		# If the Show Only Enabled rules button is selected, then skip disabled rules. 
+		#if {$show_enabled_rules && !$enabled} 
+		#	set num [expr $num - 1]
+		#	continue
+		#
 		
 		# Only display line number hyperlink if this is not a binary policy.
 		if {$ApolTop::policy_type != $ApolTop::binary_policy_type} {
 			$tb insert end "($lineno"
-			# NOTE: The character at index2 isn't tagged, so must add 1 to index2 argument.
-			Apol_PolicyConf::insertHyperLink $tb $line_num.1 $line_num.end
+			set endIdx [$tb index insert]
+			Apol_PolicyConf::insertHyperLink $tb $line_num.1 $endIdx
 			$tb insert end ") "
 		}
-		set cur_line_pos [$tb index insert]
+		set start_line_pos [$tb index insert]
 		$tb insert end "$rule"
-		incr x
-		# The next element should be the enabled boolean flag.
-		if {[lindex $results $x] == 0} {
-			$tb insert end "   "
-			set cur_line_pos [$tb index insert]
-			$tb insert end "\[Disabled\]\n"
-			# NOTE: The character at index2 isn't tagged, so must add 1 to index2 argument.
-			Apol_TE::insert_disabled_rule_tag $tb $cur_line_pos $line_num.end
-		} else {
-			$tb insert end "\n"
-		}
-	}	
-	Apol_PolicyConf::configure_HyperLinks $tb
-	Apol_TE::disable_te_rule $tb
-	update idletasks
+		set cur_line_pos [$tb index insert]
+		$tb insert end " "
 	
+		# The next element should be the enabled boolean flag.
+		if {!$enabled} {
+			$tb tag add $Apol_TE::disabled_rule_tag $cur_line_pos $line_num.end
+		} else {
+			$tb tag add $Apol_TE::enabled_rule_tag $cur_line_pos $line_num.end
+		}
+		$tb insert end "\n"
+	}	
+	
+	$tb insert 0.0 "$num rules match the search criteria\n\n"
+	Apol_PolicyConf::configure_HyperLinks $tb
+	
+	if {$tag_enabled_rules} {
+		Apol_TE::configure_enabled_rule_tags
+	} 
+	if {$tag_disabled_rules} {
+		Apol_TE::configure_disabled_rule_tags
+	}
 	return 0
 }
 
@@ -1960,11 +2119,13 @@ proc Apol_TE::create {nb} {
     variable cb_RegExp
     variable tab_menu_callbacks
     variable cb_show_enabled_rules
+    variable cb_tag_enabled_rules
+    variable cb_tag_disabled_rules
     
     # Layout Frames
     set frame [$nb insert end $ApolTop::terules_tab -text "TE Rules"]
     set pw2 [PanedWindow $frame.pw2 -side left -weights available]
-    $pw2 add -minsize 200
+    $pw2 add -minsize 230
     $pw2 add
     set topf  [frame [$pw2 getframe 0].topf]
     set bottomf [frame [$pw2 getframe 1].bottomf]
@@ -1979,7 +2140,7 @@ proc Apol_TE::create {nb} {
     # dbox - holds display window widgets
     # bBox - holds action buttons widgets
     set tbox [TitleFrame [$pw1 getframe 0].tbox -text "Rule Selection"]
-    set other_opts_box [TitleFrame [$pw1 getframe 0].other_opts_box -text "Options"]
+    set other_opts_box [TitleFrame [$pw1 getframe 0].other_opts_box -text "Search Options"]
     set obox [frame [$pw1 getframe 1].obox]
     set dbox [TitleFrame $bottomf.dbox -text "Type Enforcement Rules Display"]
     
@@ -1989,7 +2150,6 @@ proc Apol_TE::create {nb} {
     pack $topf -fill both -expand yes
     pack $bottomf -fill both -expand yes
 
-    
     # Search options section subframe
     set frame_search $obox
     
@@ -1999,7 +2159,8 @@ proc Apol_TE::create {nb} {
     # Placing major subframes
     pack $bBox -side right -anchor ne -fill both -expand yes -padx 5
     pack $obox -side right -anchor w -fill both -padx 5 -expand yes
-    pack $tbox $other_opts_box -side top -anchor nw -fill both -padx 5 -expand yes
+    pack $other_opts_box -side bottom -anchor nw -fill both -padx 5 -expand yes
+    pack $tbox -side top -anchor nw -fill both -padx 5 -expand yes
     pack $dbox -side left -fill both -expand yes -anchor e -padx 5 -pady 5
                
     # Rule types section subframes
@@ -2008,6 +2169,8 @@ proc Apol_TE::create {nb} {
     set tefm [frame $optsfm.tefm]
     set ttfm [frame $optsfm.ttfm]
     set enabled_fm [frame [$other_opts_box getframe].enabled_fm]
+    # Add button bar at bottom of results section for closing tabs.
+    set bFrame [frame [$dbox getframe].bFrame -relief sunken -bd 1]
     
     # First column of checkbuttons under rule selection subframe
     set teallow [checkbutton $tefm.teallow -text "allow" -variable Apol_TE::opts(teallow) \
@@ -2031,8 +2194,14 @@ proc Apol_TE::create {nb} {
     set clone [checkbutton $ttfm.clone -text "clone" -variable Apol_TE::opts(clone) \
             -command "Apol_TE::defaultType_Enable_Disable" ]
     
-    set cb_show_enabled_rules [checkbutton $enabled_fm.cb_show_enabled_rules -text "Only show enabled rules" \
+    set cb_show_enabled_rules [checkbutton $enabled_fm.cb_show_enabled_rules -text "Only search for enabled rules" \
     		-variable Apol_TE::show_enabled_rules -onvalue 1 -offvalue 0]
+    set cb_tag_enabled_rules [checkbutton $enabled_fm.cb_tag_enabled_rules -text "Mark enabled rules in results" \
+    		-variable Apol_TE::tag_enabled_rules -onvalue 1 -offvalue 0 \
+    		-command Apol_TE::on_configure_enabled_rule_tags_checkbutton]
+    set cb_tag_disabled_rules [checkbutton $enabled_fm.cb_tag_disabled_rules -text "Mark disabled rules in results" \
+    		-variable Apol_TE::tag_disabled_rules -onvalue 1 -offvalue 0 \
+    		-command Apol_TE::on_configure_disabled_rule_tags_checkbutton]
     		
     set cb_fm [frame $enabled_fm.cb_fm]
     # Checkbutton to Enable/Disable Regular Expressions option.
@@ -2062,8 +2231,6 @@ proc Apol_TE::create {nb} {
     	%W %x %y $Apol_TE::popupTab_Menu $Apol_TE::tab_menu_callbacks} 
     $notebook_results bindtabs <Button-1> {Apol_TE::set_Widget_SearchOptions}
     
-    # Add button bar at bottom of results section for closing tabs.
-    set bFrame [frame [$dbox getframe].bFrame -relief sunken -bd 1]
     set bClose [button $bFrame.bClose -text "Close Tab" -command { 
     		set raisedPage [$Apol_TE::notebook_results raise]
     		Apol_TE::delete_ResultsTab $raisedPage }]
@@ -2074,13 +2241,13 @@ proc Apol_TE::create {nb} {
     pack $newButton $updateButton -side top -pady 5 -anchor se 
     
     # Placing rule selection section widgets
+    pack $cb_fm -side bottom -anchor nw
+    pack $cb_RegExp -side top -anchor nw 
+    pack $cb_show_enabled_rules $cb_tag_enabled_rules $cb_tag_disabled_rules -side top -anchor nw
     pack $teallow $neverallow $auallow $audont -anchor w 
     pack $ttrans $tmember $tchange $clone -anchor w 
     pack $tefm $ttfm -side left -anchor nw 
     pack $enabled_fm -side top -pady 6 -anchor nw -fill both 
-    pack $cb_fm -side bottom -anchor nw
-    pack $cb_RegExp -side top -anchor nw 
-    pack $cb_show_enabled_rules -side top -anchor nw
     pack $optsfm -side top -fill x -expand yes -anchor nw
     
     # Placing the search options notebook frame within the search options section    
