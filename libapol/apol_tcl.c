@@ -1915,7 +1915,7 @@ int Apol_SearchInitialSIDs(ClientData clientData, Tcl_Interp *interp, int argc, 
 	}
 	
 	/* Set role parameter for the query and guard against buffer overflows */	
-	if(argv[2] != NULL && !str_is_only_white_space(argv[2])) {
+	if(!str_is_only_white_space(argv[2])) {
 		sz = strlen(argv[2]) + 1;
  	        role = (char *)malloc(sz);
 	        if(role == NULL) {
@@ -1931,7 +1931,7 @@ int Apol_SearchInitialSIDs(ClientData clientData, Tcl_Interp *interp, int argc, 
 	}
 	
 	/* Set type parameter for the query and guard against buffer overflows */	
-	if(argv[3] != NULL && !str_is_only_white_space(argv[3])) {
+	if(!str_is_only_white_space(argv[3])) {
 		sz = strlen(argv[3]) + 1;
  	        type = (char *)malloc(sz);
 	        if(type == NULL) {
