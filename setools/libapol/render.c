@@ -17,6 +17,9 @@
 
 #include "util.h"
 #include "policy.h"
+#include "semantic/avhash.h"
+#include "semantic/avsemantics.h"
+
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -448,3 +451,203 @@ char * re_render_initial_sid_security_context(int idx, policy_t *policy)
 	}
 	return(re_render_security_context(policy->initial_sids[idx].scontext, policy));
 }
+
+/* render a AV/Type rule from av hash table; caller must free memory.
+ * Return NULL on error. */
+
+/* conditional states */
+char *re_render_avh_rule_cond_state(avh_node_t *node, policy_t *p)
+{
+	char *t = NULL;
+	int sz = 0, rt;
+	
+	if(node == NULL || p == NULL)
+		return NULL;
+	if(node->flags & AVH_FLAG_COND) {
+		if(node->cond_list) {
+			rt = append_str(&t, &sz, "CT");
+		}
+		else {
+			rt = append_str(&t, &sz, "CF");
+		}
+	}
+	else {
+		rt = append_str(&t, &sz, "  ");
+	}
+	if(rt < 0)
+		goto err_return;
+	
+	if(avh_is_enabled(node, p))
+		rt = append_str(&t, &sz, " E: ");
+	else
+		rt = append_str(&t, &sz, " D: ");
+	if(rt < 0)
+		goto err_return;
+
+		
+	return t;
+err_return:
+	if(t != NULL)
+		free(t);
+	return NULL;	
+}
+
+/* source line numbers if not binary */
+char *re_render_avh_rule_linenos(avh_node_t *node, policy_t *p)
+{
+	char *t = NULL;
+	int rt, sz;
+	avh_rule_t *r;
+	static char buf[128];
+	bool_t is_av;
+	void *rlist;
+	int rlist_num;
+	unsigned long lineno;
+	
+	if(node == NULL || p == NULL)
+		return NULL;
+	
+	if(is_binary_policy(p))
+		return NULL;  /* no linenos to render */
+	
+	if(is_av_access_rule_type(node->key.rule_type)) {
+		is_av = TRUE;
+		rlist = p->av_access;
+		rlist_num = p->num_av_access;
+	}
+	else if(is_av_audit_rule_type(node->key.rule_type)) {
+		is_av = TRUE;
+		rlist = p->av_audit;
+		rlist_num = p->num_av_audit;
+	}
+	else if(is_type_rule_type(node->key.rule_type)) {
+		is_av = FALSE;
+		rlist = p->te_trans;
+		rlist_num = p->num_te_trans;
+	}
+	else {
+		assert(0);
+		return NULL;
+	}
+
+	for(r = node->rules; r != NULL; r = r->next) {
+		assert(r->rule < rlist_num);
+		if(is_av) 
+			lineno = ((av_item_t *)rlist)[r->rule].lineno;
+		else
+			lineno = ((tt_item_t *)rlist)[r->rule].lineno;
+		sprintf(buf, "%ld", lineno);
+		rt = append_str(&t, &sz, buf);
+		if(rt < 0)
+			goto err_return;
+		if(r->next != NULL) {
+			rt = append_str(&t, &sz, " ");
+			if(rt < 0)
+				goto err_return;
+		}
+	}
+
+	return t;
+err_return:
+	if(t != NULL)
+		free(t);
+	return NULL;	
+}
+
+/* rule itself as it is in the hash */
+char *re_render_avh_rule(avh_node_t *node, policy_t *p)
+{
+	char *t = NULL, *name;
+	int sz = 0, rt, i;
+	
+	/* rule identifier */
+	assert(node->key.rule_type >= RULE_TE_ALLOW && node->key.rule_type <= RULE_TE_CHANGE);
+	if(append_str(&t, &sz, rulenames[node->key.rule_type]) != 0) 
+		goto err_return;
+	rt = append_str(&t, &sz, " ");
+	if(rt < 0)
+		goto err_return;
+	
+	/* source */
+	assert(is_valid_type(p, node->key.src, FALSE));
+	rt = get_type_name(node->key.src, &name, p);
+	if(rt < 0)
+		goto err_return;
+	rt = append_str(&t, &sz, name);
+	free(name);
+	if(rt < 0)
+		goto err_return;
+	rt = append_str(&t, &sz, " ");
+	if(rt < 0)
+		goto err_return;
+	
+	/* target */
+	assert(is_valid_type(p, node->key.tgt, FALSE));
+	rt = get_type_name(node->key.tgt, &name, p);
+	if(rt < 0)
+		goto err_return;
+	rt = append_str(&t, &sz, name);
+	free(name);
+	if(rt < 0)
+		goto err_return;
+	rt = append_str(&t, &sz, " : ");
+	if(rt < 0)
+		goto err_return;
+	
+	/* class */
+	assert(is_valid_obj_class(p, node->key.cls));
+	rt = get_obj_class_name(node->key.cls, &name, p);
+	if(rt < 0)
+		goto err_return;
+	rt = append_str(&t, &sz, name);
+	free(name);
+	if(rt < 0)
+		goto err_return;
+
+	/* permissions (AV rules) or default type (Type rules) */
+	if(node->key.rule_type <= RULE_MAX_AV) {
+		/* permissions */
+	/* TODO: skip this assertion for now; there is a bug in binpol */
+	/*	assert(node->num_data > 0); */
+		rt = append_str(&t, &sz, " { ");
+		if(rt < 0)
+			goto err_return;
+		for(i = 0; i < node->num_data; i++) {
+			rt = get_perm_name(node->data[i], &name, p);
+			if(rt < 0)
+				goto err_return;
+			rt = append_str(&t, &sz, name);
+			free(name);
+			if(rt < 0)
+				goto err_return;
+			rt = append_str(&t, &sz, " ");
+			if(rt < 0)
+				goto err_return;
+		}
+		rt = append_str(&t, &sz, "};");
+		if(rt < 0)
+			goto err_return;
+	}
+	else {
+		/* default type */
+		assert(node->num_data == 1);
+		rt = append_str(&t, &sz, " ");
+		if(rt < 0)
+			goto err_return;
+		rt = get_type_name(node->data[0], &name, p);
+		if(rt < 0)
+			goto err_return;
+		rt = append_str(&t, &sz, name);
+		free(name);	
+		rt = append_str(&t, &sz, " ;");
+		if(rt < 0)
+			goto err_return;
+	}
+				
+	return t;
+err_return:
+	if(t != NULL)
+		free(t);
+	return NULL;
+}
+
