@@ -66,15 +66,18 @@ seaudit_t* seaudit_init(void)
 		return NULL;
 	}
 	memset(seaudit, 0, sizeof(seaudit_t));
+	
 	/* we load user configuration first so the window can be set up
 	 * set up properly on create */
 	if (load_seaudit_conf_file(&(seaudit->seaudit_conf)) != 0) {
 		free(seaudit);
 		return NULL;
 	}
+
 	seaudit->window = seaudit_window_create(NULL, seaudit->seaudit_conf.column_visibility);
 	seaudit->policy_file = g_string_new("");
 	seaudit->audit_log_file = g_string_new("");
+	
 	return seaudit;
 }
 
@@ -1339,7 +1342,7 @@ static void seaudit_set_real_time_log_button_state(bool_t state)
 		gtk_image_set_from_stock(GTK_IMAGE(image), GTK_STOCK_REFRESH, GTK_ICON_SIZE_SMALL_TOOLBAR);
 		gtk_label_set_markup(GTK_LABEL(lbl), "Monitor status: <span foreground=\"green\">ON</span>");
 		/* make active */
-		seaudit_app->timeout_key = gtk_timeout_add(LOG_UPDATE_INTERVAL, 
+		seaudit_app->timeout_key = g_timeout_add(seaudit_app->seaudit_conf.real_time_interval, 
 							   &seaudit_real_time_update_log, NULL);
 		seaudit_app->real_time_state = state;
 	}
