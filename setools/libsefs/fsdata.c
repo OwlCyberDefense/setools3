@@ -44,6 +44,29 @@ const char *sefs_object_classes[] =
     { "file", "dir", "lnk_file", "chr_file", "blk_file", "sock_file",
 "fifo_file", "all_files" };
 
+/* returns string from above array */
+const char * sefs_get_class_string( int flag_val)
+{
+	switch (flag_val) {
+		case  NORM_FILE:
+			return sefs_object_classes[0];
+		case  DIR:
+			return sefs_object_classes[1];
+		case  LNK_FILE:
+			return sefs_object_classes[2];
+		case  CHR_FILE:
+			return sefs_object_classes[3];
+		case  BLK_FILE:
+			return sefs_object_classes[4];
+		case  SOCK_FILE:
+			return sefs_object_classes[5];
+		case  FIFO_FILE:
+			return sefs_object_classes[6];
+		default:
+			return sefs_object_classes[7];
+	}
+}
+
 
 /*
  * sefs_get_file_class
@@ -1023,3 +1046,5 @@ void destroy_fsdata(sefs_filesystem_data_t * fsd)
 	avl_free(&(fsd->user_tree));
 
 }
+
+
