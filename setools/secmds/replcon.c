@@ -37,6 +37,11 @@
 #define REPLCON_VERSION_NUM "UNKNOWN"
 #endif
 
+/* FINDCON_VERSION_NUM should be defined in the make environment */
+#ifndef FINDCON_VERSION_NUM
+#define FINDCON_VERSION_NUM "UNKNOWN"
+#endif
+
 #define COPYRIGHT_INFO "Copyright (C) 2004 Tresys Technology, LLC"
 
 #define DEBUG 0
@@ -347,8 +352,10 @@ void
 replcon_usage(const char *program_name, int brief)
 {
 #ifndef FINDCON
+	printf("%s (tool ver. %s)\n\n", COPYRIGHT_INFO, FINDCON_VERSION_NUM);
 	printf("Usage: %s [OPTIONS] -c OLD NEW FILENAMES\n", program_name);
 #else
+	printf("%s (tool ver. %s)\n\n", COPYRIGHT_INFO, REPLCON_VERSION_NUM);
 	printf("Usage: %s [OPTIONS] -c CONTEXT FILENAMES\n", program_name);
 #endif
 	if (brief) {
@@ -1048,13 +1055,11 @@ replcon_parse_command_line(int argc, char **argv)
 			replcon_info.verbose = TRUE;
 			break;
 		case 'v':	/* version */
-			printf("\n%s (Ver. %s)\n\n", COPYRIGHT_INFO,
+			printf("\n%s (tool ver. %s)\n\n", COPYRIGHT_INFO,
 			       REPLCON_VERSION_NUM);
 			replcon_info_free(&replcon_info);
 			exit(0);
 		case 'h':	/* help */
-			printf("\n%s (Ver. %s)\n\n", COPYRIGHT_INFO,
-			       REPLCON_VERSION_NUM);
 			replcon_usage(argv[0], 0);
 			replcon_info_free(&replcon_info);
 			exit(0);
@@ -1077,8 +1082,7 @@ replcon_parse_command_line(int argc, char **argv)
 	if ((replcon_info.num_contexts == 0)
 #endif
 	    || (((!replcon_info.stdin) && (argc == optind)))) {
-		fprintf(stderr, "Error: Missing required arguments.\n");
-		goto err;
+			goto err;
 	}
 
 	/* Ensure that locations were not specified in addition to the standard in option */
