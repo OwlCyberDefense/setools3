@@ -162,7 +162,7 @@ proc Apol_Analysis_dirflow::do_analysis { results_frame } {
 		}
 	    }
 	}
-	
+	update idletasks
      	set rt [catch {set results [apol_DirectInformationFlowAnalysis \
 		$Apol_Analysis_dirflow::start_type \
 		$Apol_Analysis_dirflow::flow_direction \
