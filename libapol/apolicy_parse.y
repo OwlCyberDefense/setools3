@@ -1287,7 +1287,7 @@ static int add_avrule(int type, av_item_t **rlist, int *list_num, bool_t enabled
 		}
 		free(id);
 	}	
-	return 0;
+	return *list_num - 1;
 }
 
 /* store av rules */
@@ -1505,7 +1505,7 @@ static int add_ttrule(int rule_type, bool_t enabled)
 	item->dflt_type.idx = idx;
 	free(id);	
 
-	return 0;
+	return parse_policy->num_te_trans - 1;
 }
 
 
@@ -1541,7 +1541,6 @@ static int define_compute_type(int rule_type)
 	if(rt < 0) 
 		return rt;
 		
-	(parse_policy->rule_cnt[rule_type])++;
 	return 0;
 	
 skip_tt_rule:
@@ -2567,8 +2566,6 @@ static rule_desc_t *define_cond_compute_type(int rule_type)
 	if(rt < 0) 
 		return NULL;
 		
-	(parse_policy->rule_cnt[rule_type])++;
-	
 	rule->rule_type = rule_type;
 	rule->idx = rt;
 		
