@@ -1,5 +1,5 @@
 AN OVERVIEW OF FILE RELABEL ANALYSIS
-apol, version 1.6
+apol, version 2.0
 February 09, 2005
 selinux@tresys.com
 
@@ -33,14 +33,6 @@ is whether there exists the ability to relabel a file to and/or from one type to
 another type associated with a particular object class. This is essentially a 
 filtering of case 1, 2 and 3. 
 
-Case 5:
-Heretofore all cases have involved only a single domain. The fifth case is much 
-more complex - is it possible for a file of a given type in a given starting 
-domain to be relabeled to an given end type through a series of relabel and domain 
-transitions.  This case requires a transitive analysis and is not currently 
-implemented, however, the transitive analysis will be available in the near future
-making this type of search available.
-
 USING THE DIRECT FILE RELABEL ANALYSIS INTERFACE IN APOL
 
 File relabel analysis in apol is designed to facilitate querying an SELinux 
@@ -72,10 +64,10 @@ the direction is set to Both, which is indicated by both checkbuttons being
 selected. Also, upon selecting the checkbuttons, the labels within the 'Required
 parameters' frame will change accordingly. 
 
-Within the 'Required parameters' frame are comboboxes, the top-most of which is 
-for specifying the starting/ending type to the query. The combobox below is only 
+Within the 'Required parameters' frame are checkboxes, the top-most of which is 
+for specifying the starting/ending type to the query. The checkbox below is only 
 used to filter the list of types from which to choose in the starting/ending type 
-combobox and has no affect on the query.
+checkbox and has no affect on the query.
 
 Within the 'Optional result filters' frame are options for filtering the results
 of the query by end type using a regular expression and/or filtering the results
