@@ -12,6 +12,8 @@
  *  replcon: a tool for replacing file contexts in SE Linux
  */
 
+#include <fsdata.h>
+
 /* SE Linux includes*/
 #include <selinux/selinux.h>
 #include <selinux/context.h>
@@ -33,7 +35,8 @@
 #include <mntent.h>
 
 #include <policy.h>
-#include <fsdata.h>
+
+
 
 /* REPLCON_VERSION_NUM should be defined in the make environment */
 #ifndef REPLCON_VERSION_NUM
@@ -101,6 +104,8 @@ static struct option const longopts[] = {
 	{"help", no_argument, NULL, 'h'},
 	{NULL, 0, NULL, 0}
 };
+
+
 
 /*
  * replcon_context_free
@@ -300,6 +305,8 @@ get_security_context(const replcon_context_t *context)
 void
 replcon_usage(const char *program_name, int brief)
 {
+	char **array=NULL;
+	int size;
 #ifndef FINDCON
 	printf("%s (replcon ver. %s)\n\n", COPYRIGHT_INFO, REPLCON_VERSION_NUM);
 	printf("Usage: %s [OPTIONS] -c OLD NEW FILENAMES\n", program_name);
@@ -335,7 +342,10 @@ replcon_usage(const char *program_name, int brief)
 	printf("to find or replace files that have no label.\n\n");
 	
 	printf("Valid OBJECT classes to specify include: \n");
-	sefs_print_valid_object_classes();
+	array = sefs_get_valid_object_classes(&size);
+	sefs_double_array_print(array,size);
+	sefs_double_array_destroy(array,size);
+				
 	printf("\n");
 }
 
@@ -699,7 +709,7 @@ replcon_context_equal(const replcon_context_t *context, const replcon_context_t 
  * The caller must pass a valid filename and statptr
  */
 int
-replcon_file_context_replace(const char *filename, const struct stat *statptr,
+replcon_file_context_replace(const char *filename, const struct stat64 *statptr,
 			     int fileflags, struct FTW *pfwt)
 {
 	int file_class, i;
@@ -795,7 +805,7 @@ replcon_file_context_replace(const char *filename, const struct stat *statptr,
  * The caller must pass a valid filename and statptr
  */
 int
-findcon(const char *filename, const struct stat *statptr,
+findcon(const char *filename, const struct stat64 *statptr,
 			     int fileflags, struct FTW *pfwt)
 {
 	int file_class, i;
@@ -849,14 +859,14 @@ findcon(const char *filename, const struct stat *statptr,
 void
 replcon_stat_file_replace_context(const char *filename)
 {
-	struct stat file_status;
+	struct stat64 file_status;
 	/* Use path length limit defined in limits.h */
 	char actual_path[PATH_MAX+1];
 	char *ptr = NULL;
 	int i;
 
 	assert(filename != NULL);
-	if (stat(filename, &file_status) != 0) {
+	if (stat64(filename, &file_status) != 0) {
 		fprintf(stderr,
 			"Warning: Can not stat \'%s\'.  Skipping this file.\n",
 			filename);
@@ -869,13 +879,13 @@ replcon_stat_file_replace_context(const char *filename)
 			return;
 		}
 #ifndef FINDCON
-		if (nftw(actual_path, replcon_file_context_replace, NFTW_DEPTH, NFTW_FLAGS)) {
+		if (nftw64(actual_path, replcon_file_context_replace, NFTW_DEPTH, NFTW_FLAGS)) {
 			fprintf(stderr,
 				"Error walking directory tree: %s\n", actual_path);
 			return;
 		}
 #else
-		if (nftw(actual_path, findcon, NFTW_DEPTH, NFTW_FLAGS)) {
+		if (nftw64(actual_path, findcon, NFTW_DEPTH, NFTW_FLAGS)) {
 			fprintf(stderr,
 				"Error walking directory tree: %s\n", actual_path);
 			return;
@@ -884,13 +894,13 @@ replcon_stat_file_replace_context(const char *filename)
 		for(i = 0; i < num_mounts; i++) {
 			if (strstr(mounts[i], actual_path) == mounts[i])
 #ifndef FINDCON
-				if (nftw(mounts[i], replcon_file_context_replace, NFTW_DEPTH, NFTW_FLAGS)) {
+				if (nftw64(mounts[i], replcon_file_context_replace, NFTW_DEPTH, NFTW_FLAGS)) {
 					fprintf(stderr,
 						"Error walking directory tree: %s\n", mounts[i]);
 					return;
 				}
 #else
-				if (nftw(mounts[i], findcon, NFTW_DEPTH, NFTW_FLAGS)) {
+				if (nftw64(mounts[i], findcon, NFTW_DEPTH, NFTW_FLAGS)) {
 					fprintf(stderr,
 						"Error walking directory tree: %s\n", mounts[i]);
 					return;
