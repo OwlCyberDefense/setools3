@@ -239,5 +239,14 @@ if [ -n "${susermodopts}" -o -n "${comment}" ]; then
     fi
 fi
 
-# when we're done make the policy changes effective
-${SEUSER} load 2> /dev/null
+# Only reload policy and perform labeling if role(s) were successfully
+# added to the policy.
+if [ "${ROLES}" -eq 1 ]; then
+	# if we were successful with everything we reach here and load the policy
+	${SEUSER} load 2> /dev/null
+	RC=$?	
+	if [ $RC -eq 0 ]; then
+		${SEUSER} label ${USERNAME}
+	fi
+fi
+
