@@ -5650,6 +5650,7 @@ static Tcl_Obj *apol_relabel_fromto_results (relabel_result_t *results,
                 Tcl_Obj *domain_list [3];
                 Tcl_Obj *domain_elem;
                 char *s;
+                int *rules_list = NULL, num_rules = 0;
                 if (get_type_name (temp_dom_list [i], &s, policy)) {
                         free (temp_dom_list);
                         return NULL;
@@ -5674,7 +5675,24 @@ static Tcl_Obj *apol_relabel_fromto_results (relabel_result_t *results,
                                 }
                         }
                 }
-                /* FIX ME: append rules info here */
+                if (apol_rules_per_domain (results, temp_dom_list [i],
+                                           &rules_list, &num_rules, policy) != 0) {
+                        free (temp_dom_list);
+                        return NULL;
+                }
+                for (j = 0; j < num_rules; j++) {
+                        Tcl_Obj *rule_list [2], *rule_elem;
+                        s = re_render_av_rule (FALSE, rules_list [j], FALSE,
+                                               policy);
+                        rule_list [0] = Tcl_NewStringObj (s, -1);
+                        free (s);
+                        rule_list [1] = Tcl_NewIntObj (get_rule_lineno (rules_list [j], RULE_TE_ALLOW, policy));
+                        rule_elem = Tcl_NewListObj (2, rule_list);
+                        if (Tcl_ListObjAppendElement (NULL, domain_list [2], rule_elem)) {
+                                free (temp_dom_list);
+                                return NULL;
+                        }
+                }
                 domain_elem = Tcl_NewListObj (3, domain_list);
                 if (Tcl_ListObjAppendElement (NULL, results_list_obj, domain_elem)) {
                         free (temp_dom_list);
