@@ -1124,7 +1124,6 @@ static void filters_on_do_filter_button_clicked(GtkButton *button, filters_t *fi
 
 	/* do the filter on the model */
  	seaudit_log_store_do_filter(store);
- 	log_filtered_signal_emit();
 	clear_wait_cursor(window);
 }
 
