@@ -16,11 +16,13 @@ namespace eval Apol_Cond_Bools {
 	# Search options
 	# search_opts(opt), where opt =
 	# 	boolean - the name of the boolean
-	# 	show_rules - whether to display rules along 
-	#		     with conditional expression
+	#	default_state - display default state 
+	#	curr_state - display current state 
 	variable search_opts 
-	set search_opts(boolean)		""
-	set search_opts(show_rules)		""
+	set search_opts(boolean)	""
+	set search_opts(default_state)	1
+	set search_opts(curr_state)	1
+	
 	# list variables
 	variable cond_bools_list	""
 	# array variables
@@ -129,7 +131,7 @@ proc Apol_Cond_Bools::cond_bool_initialize_vars { } {
 			return -code error $err
 		}
 	}
-				 	 
+					 	 
 	return 0
 } 
 
@@ -175,6 +177,7 @@ proc Apol_Cond_Bools::open { } {
 	if {$Apol_Cond_Bools::cond_bools_list != ""} {
 		Apol_Cond_Bools::cond_bool_insert_listbox_items
 	}
+	
 	return 0
 } 
 
@@ -200,14 +203,15 @@ proc Apol_Cond_Bools::reset_variables { } {
 	variable search_opts 
 	variable cond_bools_list
 	variable enable_bool_combo_box	
-	variable bool_combo_box
 	variable cond_bools_value_array
 	
 	set search_opts(boolean)	""
 	set search_opts(show_rules)	""
+	set search_opts(default_state)	1
+	set search_opts(curr_state)	1
 	set cond_bools_list 	""
 	set enable_bool_combo_box 0
-	array unset cond_bools_value_array 
+	array unset cond_bools_value_array
 	
 	return 0	
 }
@@ -282,6 +286,15 @@ proc Apol_Cond_Bools::create {nb} {
 	set c_innerFrame [LabelFrame $ofm.c_innerFrame]
 	set buttons_f    [LabelFrame $ofm.buttons_f]
 	
+	set cb_bools_default_state [checkbutton $c_innerFrame.default_state \
+		-variable Apol_Cond_Bools::search_opts(default_state) \
+		-text "Show default state" \
+		-onvalue 1 -offvalue 0]
+	set cb_bools_curr_state [checkbutton $c_innerFrame.curr_state \
+		-variable Apol_Cond_Bools::search_opts(curr_state) \
+		-text "Show current state" \
+		-onvalue 1 -offvalue 0]
+    
 	set bool_combo_box [ComboBox [$l_innerFrame getframe].bool_combo_box \
 		-textvariable Apol_Cond_Bools::search_opts(boolean) \
 		-helptext "Type or select a boolean variable" \
@@ -290,10 +303,7 @@ proc Apol_Cond_Bools::create {nb} {
 		-variable Apol_Cond_Bools::enable_bool_combo_box \
 		-onvalue 1 -offvalue 0 -text "Search using boolean variable" \
 		-command {Apol_Cond_Bools::enable_comboBox $Apol_Cond_Bools::enable_bool_combo_box $Apol_Cond_Bools::bool_combo_box}]
-	set cb_show_rules [checkbutton [$c_innerFrame getframe].cb_show_rules \
-		-variable Apol_Cond_Bools::search_opts(show_rules) \
-		-onvalue 1 -offvalue 0 -text "Display rules within conditional expression(s)"]
-		
+			
 	# Action Buttons
 	set ok_button [button [$buttons_f getframe].ok -text OK -width 6 -command {ApolTop::unimplemented}]
 	#button $rfm.print -text Print -width 6 -command {ApolTop::unimplemented}
@@ -309,7 +319,7 @@ proc Apol_Cond_Bools::create {nb} {
 	pack $l_innerFrame $c_innerFrame -side left -fill y -anchor nw -padx 4 -pady 4
 	
 	pack $cb_enable_bool_combo_box $bool_combo_box -side top -anchor nw -fill x
-	pack $cb_show_rules -side left -anchor nw 
+	pack $cb_bools_default_state $cb_bools_curr_state -side top -anchor nw 
 	pack $sw_r -fill both -expand yes
 	pack $sw_d -side left -expand yes -fill both 
 	
