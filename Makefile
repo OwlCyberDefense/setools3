@@ -37,7 +37,7 @@ DEFAULT_LOG_FILE = /var/log/messages
 # -DCONFIG_SECURITY_SELINUX_MLS 
 #		compiles library to be compatible with MLS 
 ##		in the policy (experimental, see Readme)
-CC_DEFINES	= 
+CC_DEFINES	= -fPIC
 
 CFLAGS		= -Wall -O2 $(TCL_INCLUDE) $(CC_DEFINES)
 #CFLAGS		= -Wall -g $(TCL_INCLUDE) $(CC_DEFINES)
