@@ -314,7 +314,7 @@ proc Apol_Initial_SIDS::create {nb} {
 	    
 	# Popup menu widget
 	menu .popupMenu_sids
-	.popupMenu_sids add command -label "Display Initial SIDs Context" \
+	.popupMenu_sids add command -label "Display Initial SID Context" \
 		-command {Apol_Initial_SIDS::popupSIDInfo [$Apol_Initial_SIDS::init_sids_listbox get active]}
 	    
 	# Event binding on the users list box widget
@@ -403,12 +403,12 @@ proc Apol_Initial_SIDS::create {nb} {
 	
 	# Placing all widget items
 	pack $ok_button -side top -anchor e -pady 5 -padx 5
-	pack $l_innerFrame $c_innerFrame $r_innerFrame $buttons_f -side left -fill both -anchor nw -padx 4 -pady 4
-	pack $buttons_f -side left -expand yes -fill both -anchor nw -padx 4 -pady 4
+	pack $buttons_f -side right -expand yes -fill both -anchor nw -padx 4 -pady 4
+	pack $l_innerFrame $c_innerFrame $r_innerFrame -side left -fill y -anchor nw -padx 4 -pady 4
 	pack $cb_user $cb_role $cb_type -side top -anchor nw
-	pack $user_combo_box $role_combo_box $type_combo_box -side top -anchor nw -padx 4
-	pack $cb_attrib -side top -expand yes -anchor nw -padx 15
-	pack $attribute_combo_box -side top -fill x -expand yes -anchor nw -padx 25
+	pack $user_combo_box $role_combo_box $type_combo_box -side top -fill x -anchor nw -padx 4
+	pack $cb_attrib -side top -anchor nw -padx 15
+	pack $attribute_combo_box -side top -fill x -anchor nw -padx 25
 	pack $sw_r -fill both -expand yes
 	pack $sw_d -side left -expand yes -fill both 
 	
