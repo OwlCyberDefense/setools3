@@ -1049,6 +1049,8 @@ proc Apol_Analysis_relabel::tree_select {widget node} {
 	$widget_vars(current_rtext) configure -state normal
 	$widget_vars(current_rtext) delete 1.0 end
 	
+	set subtitle_type_tags ""
+	set title_type_tags ""
 	set policy_tags_list ""
 	set line ""
 	set start_index 0
@@ -1074,7 +1076,7 @@ proc Apol_Analysis_relabel::tree_select {widget node} {
 		} else {
 			set node [string trim $node "from_list:"]
 		}
-		set start_index [expr {[string length $line] + 1}]
+		set start_index [string length $line]
 		append line "$node"
 		set end_index [string length $line]
 		lappend title_type_tags $start_index $end_index
@@ -1089,14 +1091,14 @@ proc Apol_Analysis_relabel::tree_select {widget node} {
 		}
 		append line "\n"
 	} else {
-		set start_index [expr {[string length $line] + 1}]
+		set start_index [string length $line]
 		append line "$node"
 		set end_index [string length $line]
 		lappend title_type_tags $start_index $end_index
 		append line " by:\n\n"
 		foreach datum $data {
 			foreach {subject rule_proof} $datum {
-				set start_index [expr {[string length $line] + 1}]
+				set start_index [string length $line]
 				append line "$subject\n"
 				set end_index [string length $line]
 				lappend subtitle_type_tags $start_index $end_index
