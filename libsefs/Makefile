@@ -39,5 +39,5 @@ clean:
 	rm -f *.o core *~
 
 bare: clean
-	rm -f *.o core *~ libsefs.a $(LIBSO)
+	rm -f *.o core *~ libsefs.a $(LIBSO) $(SONAME)
 
