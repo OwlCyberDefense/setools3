@@ -18,7 +18,7 @@ LIBSELINUXSO      = -lselinux
 
 INCLUDE		= -I.. -I../libapol -I../libsefs 
 
-SE_CMDS		= seinfo sesearch replcon findcon indexcon searchcon
+SE_CMDS		= seinfo sesearch replcon findcon indexcon searchcon relabel-analysis-tool flowtool
 
 CFLAGS  	+= -DSEINFO_VERSION_NUM='"$(shell cat SEINFO_VERSION)"'
 CFLAGS  	+= -DSESEARCH_VERSION_NUM='"$(shell cat SESEARCH_VERSION)"'
@@ -26,12 +26,11 @@ CFLAGS          += -DREPLCON_VERSION_NUM='"$(shell cat REPLCON_VERSION)"'
 CFLAGS          += -DFINDCON_VERSION_NUM='"$(shell cat FINDCON_VERSION)"'
 CFLAGS          += -DINDEXCON_VERSION_NUM='"$(shell cat INDEXCON_VERSION)"'
 CFLAGS          += -DSEARCHCON_VERSION_NUM='"$(shell cat SEARCHCON_VERSION)"'
+CFLAGS          += -DAPOL_DEFAULT_PERM_MAP="\"/usr/share/setools/apol_perm_mapping\""
 
 SHELL = /bin/sh
 
 all: $(SE_CMDS)
-	cd flowtool; $(MAKE) all
-	cd relabelanalysis; $(MAKE) all
 
 # seinfo and sesearch are optionally linked to libselinux.  
 # The LIBSELINUX variable is set in the top-level Makefile. 
@@ -40,6 +39,12 @@ seinfo: seinfo.o $(LIBAPOL)
 
 sesearch: sesearch.o $(LIBAPOL)
 	$(CC) -o $@ sesearch.o $(LIBAPOL) $(LIBS) $(LINKFLAGS) $(LIBSELINUX)
+
+flowtool: flowtool.o $(LIBAPOL)
+	$(CC) -o $@ flowtool.o $(LIBAPOL) $(LIBS) $(LINKFLAGS) $(LIBSELINUX)
+
+relabel-analysis-tool: relabel-analysis-tool.o $(LIBAPOL)
+	$(CC) -o $@ relabel-analysis-tool.o $(LIBAPOL) $(LIBS) $(LINKFLAGS) $(LIBSELINUX)
 
 # replcon, findcon, indexcon, and searchcon must always be linked to libselinux.  
 # We use the LIBSELINUXSO variable (defined above) to do this. 
@@ -95,10 +100,6 @@ $(LIBSEUSER-TCL):
 
 clean:
 	rm -f *.o core* $(SE_CMDS) *~
-	cd flowtool; $(MAKE) clean
-	cd relabelanalysis; $(MAKE) clean
 
 bare: clean
 	rm -f *.o core* $(SE_CMDS) *~
-	cd flowtool; $(MAKE) bare
-	cd relabelanalysis; $(MAKE) bare
