@@ -25,7 +25,7 @@ namespace eval ApolTop {
 	variable polstats 		""
 	# The version number is defined as a magical string here. This is later configured in the make environment.
 	variable gui_ver 		APOL_GUI_VERSION 
-	variable copyright_date		"2001-2004"
+	variable copyright_date		"2001-2005"
 	# install_dir is a magical string to be defined via the makefile!
 	variable apol_install_dir	APOL_INSTALL_DIR
 	variable recent_files
