@@ -18,6 +18,8 @@
 #include <assert.h>
 #include <string.h>
 
+static int make_p2_cond_expr(int idx1, policy_t *p1, cond_expr_t **expr2, policy_t *p2);
+
 static apol_diff_t *apol_new_diff()
 {
 	apol_diff_t *t;
@@ -50,6 +52,35 @@ static void free_inta_diff(int_a_diff_t *nad)
 	return;
 }
 
+static void free_cond_diff(ap_cond_expr_diff_t *ced)
+{
+	ap_cond_expr_diff_t *t, *n;
+	if(ced == NULL)
+		return;
+		
+	for(t = ced; t != NULL; ) {
+		n = t->next;
+		free(t);
+		t = n;
+	}
+	return;
+}
+
+static void free_rtrans_diff(ap_rtrans_diff_t *rtd)
+{
+	ap_rtrans_diff_t *t, *n;
+	if(rtd == NULL)
+		return;
+		
+	for(t = rtd; t != NULL; ) {
+		n = t->next;
+		free(t);
+		t = n;
+	}
+	return;
+}
+
+
 static void free_bool_diff(bool_diff_t *bd)
 {
 	bool_diff_t *t, *n;
@@ -79,7 +110,10 @@ static void apol_free_diff(apol_diff_t *ad)
 	free_inta_diff(ad->users);
 	free_inta_diff(ad->classes);
 	free_inta_diff(ad->common_perms);
+	free_inta_diff(ad->role_allow);
 	free_bool_diff(ad->booleans);
+	free_rtrans_diff(ad->role_trans);
+	free_cond_diff(ad->cond_exprs);
 	avh_free(&ad->te);
 	
 	return;
@@ -126,43 +160,156 @@ static int find_type_in_p2(const char *name, name_item_t *aliases, policy_t *p2)
 }
 
 
-static int add_i_to_inta(int i, int *num, int_a_diff_t **inta,char **str_id)
+static int_a_diff_t *add_i_to_inta(int i, int *num, int_a_diff_t **inta,char **str_id)
 {
 	int_a_diff_t *t;
-	int_a_diff_t *p,*q = NULL;
+	int_a_diff_t *p = NULL,*q = NULL;
 	if(num == NULL || inta == NULL)
-		return -1;
+		return NULL;
 		
-	/* since we don't care about ordering, and we have only single linked lists,
-	 * we always PREpend new nodes into an int_a_diff struct */
-
-	/* now we do care(for showing the diff in the gui) about ordering, so now we
+	/* we do care(for showing the diff in the gui) about ordering, so now we
 	   are going to do an in order insert based on str_id */
 
 	t = (int_a_diff_t *)malloc(sizeof(int_a_diff_t));
 	if(t == NULL) {
 		fprintf(stderr, "out of memory\n");
-		return -1;
+		return NULL;
 	}
 	memset(t, 0, sizeof(int_a_diff_t));
 	t->idx = i;
 	t->str_id = *str_id;
+	t->missing = FALSE;
 	t->next = NULL;
 	/* is the list empty? just shove it on there*/
-	if (inta != NULL) {
-		t->next = *inta;
+	if (*inta == NULL) {
 		*inta = t;
 	}
 	else {
 		for(p = *inta; p !=NULL && (strcmp(p->str_id,*str_id) < 0);p = p->next)
 			q = p;
-		q->next = t;
-		t->next = p;
+		/* if q is null then t should go first */
+		if (q == NULL) {
+			t->next = p;
+			*inta = t;
+		} else {
+			q->next = t;
+			t->next = p;
+		}
 	}
 	(*num)++;
 
-	return 0;
+	return t;
 }
+
+static ap_cond_expr_diff_t *find_cond_expr_diff(int idx,apol_diff_t *diff)
+{
+	ap_cond_expr_diff_t *curr;
+	for (curr = diff->cond_exprs;curr != NULL;curr = curr->next){
+		if (idx == curr->idx)
+			return curr;
+	}
+	return NULL;
+}
+
+static int add_rule_to_cond_expr_diff(ap_cond_expr_diff_t *cond_diff,avh_node_t *rule)
+{
+	if (cond_diff == NULL)
+		return -1;
+
+	if (rule->cond_list == TRUE) {
+		if (cond_diff->true_list_diffs == NULL) {
+			cond_diff->true_list_diffs = (avh_node_t **) malloc(sizeof(avh_node_t *));
+			if (cond_diff->true_list_diffs == NULL) {
+				fprintf(stderr, "out of memory\n");
+				return -1;
+			}
+		}
+		else
+			cond_diff->true_list_diffs = (avh_node_t **) realloc(cond_diff->true_list_diffs,
+									     (cond_diff->num_true_list_diffs + 1) * sizeof(avh_node_t *));
+		cond_diff->true_list_diffs[cond_diff->num_true_list_diffs] = rule;
+		cond_diff->num_true_list_diffs++;
+	}
+	else {
+		if (cond_diff->false_list_diffs == NULL) {
+			cond_diff->false_list_diffs = (avh_node_t **) malloc(sizeof(avh_node_t *));
+			if (cond_diff->false_list_diffs == NULL) {
+				fprintf(stderr, "out of memory\n");
+				return -1;
+			}
+		}
+		else
+			cond_diff->false_list_diffs = (avh_node_t **) realloc(cond_diff->false_list_diffs,
+									      (cond_diff->num_false_list_diffs + 1) *sizeof(avh_node_t *));
+		cond_diff->false_list_diffs[cond_diff->num_false_list_diffs] = rule;
+		cond_diff->num_false_list_diffs++;
+	}
+}
+
+/* here we just prepend a new node to the diff list of cond exprs and return a pointer to it */
+ap_cond_expr_diff_t *new_cond_diff(int idx,apol_diff_t *diff,policy_t *p1,policy_t *p2)
+{
+	ap_cond_expr_diff_t *t;
+	cond_expr_t *p2exp = NULL;
+	int i;
+	bool_t inverse;
+	int rt;
+
+	t = (ap_cond_expr_diff_t *)malloc(sizeof(ap_cond_expr_diff_t));
+	if(t == NULL) {
+		fprintf(stderr, "out of memory\n");
+		return NULL;
+	}
+	memset(t, 0, sizeof(ap_cond_expr_diff_t));
+	t->idx = idx;
+	t->missing = TRUE;
+	t->true_list_diffs = NULL;
+	t->false_list_diffs = NULL;
+	t->num_true_list_diffs = 0;
+	t->num_false_list_diffs = 0;
+	t->next = diff->cond_exprs;
+	diff->cond_exprs = t;
+
+	/* in order to fully realize if this new cond exp is in p2 we create a p2 cond expr
+	   and go through its lists comparing them */
+	rt = make_p2_cond_expr(idx,p1,&p2exp,p2);
+	if ( rt == 0 && p2exp != NULL) {
+		for ( i = 0; i < p2->num_cond_exprs; i++){
+			if (cond_exprs_semantic_equal(p2exp, p2->cond_exprs[i].expr, p2, &inverse) && inverse == FALSE) {
+				t->missing = FALSE;
+				break;
+			}
+		}
+		cond_free_expr(p2exp);
+	}
+	return t;
+}
+
+
+static int add_rtrans_diff(int rs_idx,int t_idx,int rt_idx, bool_t missing, apol_diff_t *diff)
+{
+	ap_rtrans_diff_t *t;
+
+	if(diff == NULL)
+		return -1;
+	
+	t = (ap_rtrans_diff_t *)malloc(sizeof(ap_rtrans_diff_t));
+	if(t == NULL) {
+		fprintf(stderr, "out of memory\n");
+		return -1;
+	}
+	memset(t, 0, sizeof(ap_rtrans_diff_t));
+	t->rs_idx = rs_idx;
+	t->t_idx = t_idx;
+	t->rt_idx = rt_idx;
+	t->missing = missing;
+	t->next = diff->role_trans;
+	diff->role_trans = t;
+	diff->num_role_trans++;
+	return 0;
+
+}
+
 
 static int add_bool_diff(int idx, bool_t state_diff, apol_diff_t *diff)
 {
@@ -199,6 +346,7 @@ int make_p2_key(avh_key_t *p1key, avh_key_t *p2key, policy_t *p1, policy_t *p2)
 	
 	return 0;
 }
+
 
 /* return 0 on success completion.  If expr2 == NULL on a 0 return, means could
  * not make the p2 expr because something in p1 expr (e.g., a boolean) was not
@@ -289,17 +437,23 @@ bool_t does_cond_match(avh_node_t *n1, policy_t *p1, avh_node_t *n2, policy_t *p
 		return (n1->cond_list == n2->cond_list);	
 }
 
+
 /* find things in p1 that are different than in p2; this fun is from the perspective of p1 */
 static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t *p2, bool_t isbin) 
 {
-	int i, j, idx, idx2, rt=0;
+	int i, j, k,idx, idx2, rt=0;
 	apol_diff_t *t = NULL;
 	char *name;
 	char *str_name;
-	bool_t added;
+	bool_t added,missing;
 	int *pmap = NULL;
 	rbac_bool_t rb, rb2;
-	
+	int rt1,rt2;
+	ta_item_t *tgt_types;
+	int_a_diff_t *iad_node = NULL;
+	ap_cond_expr_diff_t *cond_expr;	
+	avh_node_t *p1cur, *p2node, *newnode = NULL;
+
 	if(p1 == NULL || p2 == NULL)
 		return NULL;
 	
@@ -317,10 +471,11 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 			idx2 = find_type_in_p2(p1->types[i].name, p1->types[i].aliases, p2);
 			if(idx2 < 0) {
 				/* type i is missing from p2 */
-				if (get_type_name(i,&str_name,p1) >= 0)
-					rt = add_i_to_inta(i, &t->num_types, &t->types,&str_name);
-				if(rt < 0)
-					goto err_return;
+				if (get_type_name(i,&str_name,p1) >= 0) {
+					iad_node = add_i_to_inta(i, &t->num_types, &t->types,&str_name);
+					if(iad_node == NULL)
+						goto err_return;
+				}
 			}
 			else if(!isbin) {
 				/* type i is in p2; make sure it's defined the same in p2 */
@@ -334,15 +489,16 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 						if(!added) {
 							/* add the type to the diff, and then note the first missing attrib */
 							added = TRUE;
-							if (get_type_name(i,&str_name,p1) >= 0)
-								rt = add_i_to_inta(i, &t->num_types, &t->types,&str_name);
-							if(rt < 0) {
-								free(name);
-								goto err_return;
+							if (get_type_name(i,&str_name,p1) >= 0) {
+								iad_node = add_i_to_inta(i, &t->num_types, &t->types,&str_name);
+								if(iad_node == NULL) {
+									free(name);
+									goto err_return;
+								}
 							}
 						}
 						/* note the missing attribute */
-						rt = add_i_to_a(p1->types[i].attribs[j], &t->types->numa, &t->types->a);
+						rt = add_i_to_a(p1->types[i].attribs[j], &iad_node->numa, &iad_node->a);
 						if(rt < 0) {
 							free(name);
 							goto err_return;
@@ -353,6 +509,7 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 			}
 		}
 	}
+
 	/* attributes */
 	/* Skip attributes for binary policies */
 	if((opts & POLOPT_TYPES) && !isbin) {
@@ -360,10 +517,11 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 			idx2 = get_attrib_idx(p1->attribs[i].name, p2);
 			if(idx2 < 0) {
 				/* attrib i is missing from p2 */
-				if (get_attrib_name(i,&str_name,p1) >= 0)
-					rt = add_i_to_inta(i, &t->num_attribs, &t->attribs,&str_name);
-				if(rt < 0)
-					goto err_return;
+				if (get_attrib_name(i,&str_name,p1) >= 0) {
+					iad_node = add_i_to_inta(i, &t->num_attribs, &t->attribs,&str_name);
+					if(iad_node == NULL)
+						goto err_return;
+				}
 			}
 			else {
 				/* attrib i is in p2; make sure it has the same types assigned in p2 */
@@ -376,15 +534,16 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 						if(!added) {
 							/* add the attrib to the diff, and then note the first missing type */
 							added = TRUE;
-							if (get_attrib_name(i,&str_name,p1) >= 0)
-								rt = add_i_to_inta(i, &t->num_attribs, &t->attribs,&str_name);
-							if(rt < 0) {
-								free(name);
-								goto err_return;
+							if (get_attrib_name(i,&str_name,p1) >= 0) {
+								iad_node = add_i_to_inta(i, &t->num_attribs, &t->attribs,&str_name);
+								if(rt < 0) {
+									free(name);
+									goto err_return;
+								}
 							}
 						}
 						/* note the missing type*/
-						rt = add_i_to_a(p1->attribs[i].a[j], &t->attribs->numa, &t->attribs->a);
+						rt = add_i_to_a(p1->attribs[i].a[j], &iad_node->numa, &iad_node->a);
 						if(rt < 0) {
 							free(name);
 							goto err_return;
@@ -403,10 +562,11 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 			idx2 = get_role_idx(p1->roles[i].name, p2);
 			if(idx2 < 0) {
 				/* role i is missing from p2 */
-				if (get_role_name(i,&str_name,p1) >= 0)
-					rt = add_i_to_inta(i, &t->num_roles, &t->roles,&str_name);
-				if(rt  < 0)
-					goto err_return;
+				if (get_role_name(i,&str_name,p1) >= 0) {
+					iad_node = add_i_to_inta(i, &t->num_roles, &t->roles,&str_name);
+					if(iad_node == NULL)
+						goto err_return;
+				}
 			}
 			else {
 				/* role i is in p2; make sure it has the same types assigned in p2 */
@@ -419,15 +579,16 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 						if(!added) {
 							/* add the role to the diff, and then note the first missing type */
 							added = TRUE;
-							if (get_role_name(i,&str_name,p1) >= 0)
-								rt  = add_i_to_inta(i, &t->num_roles, &t->roles,&str_name);
-							if(rt  < 0) {
-								free(name);
-								goto err_return;
+							if (get_role_name(i,&str_name,p1) >= 0) {
+								iad_node  = add_i_to_inta(i, &t->num_roles, &t->roles,&str_name);
+								if(iad_node == NULL) {
+									free(name);
+									goto err_return;
+								}
 							}
 						}
 						/* note the missing type */
-						rt = add_i_to_a(p1->roles[i].a[j], &t->roles->numa, &t->roles->a);
+						rt = add_i_to_a(p1->roles[i].a[j], &iad_node->numa, &iad_node->a);
 						if(rt < 0) {
 							free(name);
 							goto err_return;
@@ -446,8 +607,8 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 			if(idx2 < 0) {
 				/* user i is missing from p2 */
 				if (get_user_name2(i,&str_name,p1) >= 0)
-					rt  = add_i_to_inta(i, &t->num_users, &t->users,&str_name);
-				if(rt  < 0)
+					iad_node  = add_i_to_inta(i, &t->num_users, &t->users,&str_name);
+				if(iad_node == NULL)
 					goto err_return;
 			}
 			else {
@@ -461,15 +622,16 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 						if(!added) {
 							/* add the user to the diff, and then note the first missing role*/
 							added = TRUE;
-							if (get_user_name2(i,&str_name,p1) >= 0)
-								rt  = add_i_to_inta(i, &t->num_users, &t->users,&str_name);
-							if(rt  < 0) {
-								free(name);
-								goto err_return;
+							if (get_user_name2(i,&str_name,p1) >= 0) {
+								iad_node  = add_i_to_inta(i, &t->num_users, &t->users,&str_name);
+								if(iad_node == NULL) {
+									free(name);
+									goto err_return;
+								}
 							}
 						}
 						/* note the missing role */
-						rt = add_i_to_a(p1->users[i].a[j], &t->users->numa, &t->users->a);
+						rt = add_i_to_a(p1->users[i].a[j], &iad_node->numa, &iad_node->a);
 						if(rt < 0) {
 							free(name);
 							goto err_return;
@@ -509,8 +671,8 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 			if(idx2 < 0) {
 				/* class i is missing from p2 */
 				if (get_obj_class_name(i,&str_name,p1) >= 0)
-					rt  = add_i_to_inta(i, &t->num_classes, &t->classes,&str_name);
-				if(rt  < 0)
+					iad_node  = add_i_to_inta(i, &t->num_classes, &t->classes,&str_name);
+				if(iad_node == NULL)
 					goto err_return;
 			}
 			else {
@@ -533,13 +695,14 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 						if(!added) {
 							/* add the class to the diff, and then note the first missing perm */
 							added = TRUE;
-							if (get_obj_class_name(i,&str_name,p1) >= 0)
-							rt  = add_i_to_inta(i, &t->num_classes, &t->classes,&str_name);
-							if(rt  < 0) 
-								goto err_return;
+							if (get_obj_class_name(i,&str_name,p1) >= 0) {
+								iad_node  = add_i_to_inta(i, &t->num_classes, &t->classes,&str_name);
+								if(iad_node == NULL) 
+									goto err_return;
+							}
 						}
 						/* note the missing permission */
-						rt = add_i_to_a(idx, &t->classes->numa, &t->classes->a);
+						rt = add_i_to_a(idx, &iad_node->numa, &iad_node->a);
 						if(rt < 0) 
 							goto err_return;
 					}
@@ -567,8 +730,8 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 			if(idx2 < 0) {
 				/* common perm i is missing from p2 */
 				if (get_common_perm_name(i,&str_name,p1) >= 0)
-					rt  = add_i_to_inta(i, &t->num_common_perms, &t->common_perms,&str_name);
-				if(rt  < 0)
+					iad_node  = add_i_to_inta(i, &t->num_common_perms, &t->common_perms,&str_name);
+				if(iad_node == NULL)
 					goto err_return;
 			}
 			else {
@@ -589,13 +752,14 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 						if(!added) {
 							/* add the common perm to the diff, and then note the first missing perm */
 							added = TRUE;
-							if (get_common_perm_name(i,&str_name,p1) >= 0)
-								rt  = add_i_to_inta(i, &t->num_common_perms, &t->common_perms,&str_name);
-							if(rt  < 0) 
-								goto err_return;
+							if (get_common_perm_name(i,&str_name,p1) >= 0) {
+								iad_node = add_i_to_inta(i, &t->num_common_perms, &t->common_perms,&str_name);
+								if(iad_node == NULL) 
+									goto err_return;
+							}
 						}
 						/* note the missing permission */
-						rt = add_i_to_a(idx, &t->common_perms->numa, &t->common_perms->a);
+						rt = add_i_to_a(idx, &iad_node->numa, &iad_node->a);
 						if(rt < 0) 
 							goto err_return;
 					}
@@ -606,62 +770,201 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 
 	/* rbac */
 	if(opts & POLOPT_RBAC)	{
+		int num_found;  /* if 0 then there will be no matching rules at all */
 		for(i = 0; i < p1->num_roles; i++) {
+			/* missing will tell is if role is missing in p2 */
+			missing = FALSE;
 			idx = get_role_idx(p1->roles[i].name, p2);
 			if(idx < 0) 
-				continue;
+				missing = TRUE;
 				/* Role isn't in p2 */
 
 			if (init_rbac_bool(&rb, p1, TRUE) != 0) 
 				goto err_return;
 			
-			if (init_rbac_bool(&rb2, p2, TRUE) != 0) 
+			if (!missing && init_rbac_bool(&rb2, p2, TRUE) != 0) 
 				goto err_return;
 	
-			rt = match_rbac_roles(i, IDX_ROLE, SRC_LIST, FALSE, TRUE, &rb, p1);
+			rt = match_rbac_roles(i, IDX_ROLE, SRC_LIST, FALSE, TRUE, &rb, &num_found, p1);
 			if (rt < 0) 
 				goto err_return;
 
-			rt = match_rbac_roles(idx, IDX_ROLE, SRC_LIST, FALSE, TRUE, &rb2, p2);
-			if (rt < 0)
-				goto err_return;
-
+			if (!missing) {
+				rt = match_rbac_roles(idx, IDX_ROLE, SRC_LIST, FALSE, TRUE, &rb2, &num_found, p2);
+				if (rt < 0)
+					goto err_return;
+			}
 			added = FALSE;
-			
+
 			for (j = 0; j < p1->num_roles; j++) {
 				if (rb.allow[j]) {
-					
-					idx2 = get_role_idx(p1->roles[j].name, p2);
-					if (idx2 < 0)
-						continue;
+					if (!missing) {
+						idx2 = get_role_idx(p1->roles[j].name, p2);
 						/* role j is missing from p2 */
-
-					if (rb2.allow[idx2]) {
-						continue;
-						/* it's in both, continue */
-					}
-					if(!added) {
+						if (idx2 < 0) {
+							if(!added) {
+								/* add the role to the diff, and then note the first missing role */
+								added = TRUE;
+								if (get_role_name(i,&str_name,p1) >= 0)
+									iad_node = add_i_to_inta(i, &t->num_role_allow, &t->role_allow,&str_name);
+								if(iad_node == NULL) 
+									goto err_return;
+							}
+						}
+						else if (rb2.allow[idx2]) {
+							continue;
+							/* it's in both, continue */
+						}
+						if(!added) {
+							/* add the role to the diff, and then note the first missing role */
+							added = TRUE;
+							if (get_role_name(i,&str_name,p1) >= 0)
+								iad_node = add_i_to_inta(i, &t->num_role_allow, &t->role_allow,&str_name);
+							if(iad_node == NULL) 
+								goto err_return;
+						}
+						
+					} else {
+						/* if the role is missing from policy 2 */
 						/* add the role to the diff, and then note the first missing role */
-						added = TRUE;
-						if (get_role_name(i,&str_name,p1) >= 0)
-							rt  = add_i_to_inta(i, &t->num_role_allow, &t->role_allow,&str_name);
-						if(rt  < 0) 
-							goto err_return;
+						if (!added) {
+							added = TRUE;
+							if (get_role_name(i,&str_name,p1) >= 0)
+								iad_node = add_i_to_inta(i, &t->num_role_allow, &t->role_allow,&str_name);
+							if(iad_node == NULL) 
+								goto err_return;
+						}
 					}
 					/* note the missing role */
-					rt = add_i_to_a(j, &t->role_allow->numa, &t->role_allow->a);
+					rt = add_i_to_a(j, &iad_node->numa, &iad_node->a);
 					if(rt < 0) 
 						goto err_return;
+					/* if the source role is missing in p2 or there are no rules in p2 with that 
+					   role in the source then we mark it as a missing rule */
+					if (missing || num_found == 0) {
+						iad_node->missing = TRUE;
+					}
 				}
 			}
 			free_rbac_bool(&rb);
-			free_rbac_bool(&rb2);
+			if (!missing)
+				free_rbac_bool(&rb2);
+
+
+			/* 
+			   Current FIND ROLE TRANSITION DIFF ALGORITHM 
+			   for all role indexs R1 in policy 1 P1
+			       R2 = index of R1 in P2
+			       if R2 is valid
+			           for all trans rules TR1 with R1 in the source
+				       for all types T1 in TR1
+				           T2 = index of T1 in P2
+				           RT1 = role target of TR1
+					   RT2 = index of the role target of trans rule in P2 with key R2,T2
+					   if RT2 is valid
+					       if RT2 != index of RT1 in p2
+					           add to diff (they have differing targets)   
+					   else
+					       add to diff (in this case the rule does not exist in P2)
+			*/		       
+
+			/* create a boolean array the size of the number of rules in the policy */
+			if (init_rbac_bool(&rb, p1, FALSE) != 0) 
+				goto err_return;
+
+			/* first find all the rules in policy 1 so that we have not only the 
+			   role, but also the types */
+			rt = match_rbac_rules(i, IDX_ROLE, SRC_LIST, TRUE, FALSE, &rb, p1);
+			if (rt < 0) 
+				goto err_return;
+
+			/* for all trans rules TR1 with R1 in src */ 
+			/* we know that if missing = true then role is not in p2 and idx has no meaning */
+			for (j = 0; j < p1->num_role_trans; j++) {
+				/* does this this trans rule have R1 in it? */
+				if (rb.trans[j]) {
+					if (missing) {
+						rt1 = p1->role_trans[j].trans_role.idx;
+						/* for all types T1 in TR1 */
+						tgt_types = p1->role_trans[j].tgt_types;
+						while (tgt_types) {
+							/* tgt_types can be an attribute, if it is we will need to 
+							   expand it */
+							/* if the target is just a type */
+							if (tgt_types->type & IDX_TYPE) {
+								add_rtrans_diff(i,tgt_types->idx,rt1,TRUE,t);					
+							} else if (tgt_types->type & IDX_ATTRIB) {
+								/* walk the types for this attribute */
+								for(k = 0; k < p1->attribs[tgt_types->idx].num; k++) {
+									add_rtrans_diff(i,p1->attribs[tgt_types->idx].a[k],rt1,TRUE,t);
+								}
+							}
+							tgt_types = tgt_types->next;
+						}
+					} else {
+						rt1 = p1->role_trans[j].trans_role.idx;
+						/* for all types T1 in TR1 */
+						tgt_types = p1->role_trans[j].tgt_types;
+						while (tgt_types) {
+							/* tgt_types can be an attribute, if it is we will need to 
+							   expand it */
+							/* if p2 has this type(if it doesn't than we don't
+							   diff this, its a missing type */
+							/* if the target is just a type */
+							if (tgt_types->type & IDX_TYPE) {
+								idx2 = get_type_idx(p1->types[tgt_types->idx].name, p2);
+								if (0 <= idx2) {
+									/* first try to match the key(srole,type),
+									   and get the role target in p2 */
+									if (match_rbac_role_ta(idx,idx2,&rt2,p2)){
+										/* if the role targets are not the same we have a diff! */
+										if (rt2 != get_role_idx(p1->roles[rt1].name,p2)) {
+											rt = add_rtrans_diff(i,tgt_types->idx,rt1,FALSE,t);		
+											if (rt < 0)
+												goto err_return;
+										}
+									}
+									/* if the trans key is not in p2 */
+									else
+										add_rtrans_diff(i,tgt_types->idx,rt1,TRUE,t);					
+								} else {
+									add_rtrans_diff(i,tgt_types->idx,rt1,TRUE,t);					
+								}
+							} else if (tgt_types->type & IDX_ATTRIB) {
+								/* walk the types for this attribute */
+								for(k = 0; k < p1->attribs[tgt_types->idx].num; k++) {
+									idx2 = get_type_idx(p1->types[p1->attribs[tgt_types->idx].a[k]].name, p2);
+									if (idx2 >= 0) {
+										/* first try to match the key(srole,type),
+										   and get the role target in p2 */
+										if (match_rbac_role_ta(idx,idx2,&rt2,p2)){
+											/* if the role targets are not the same we have a diff! */
+											if (rt2 != get_role_idx(p1->roles[rt1].name,p2)) {
+												rt = add_rtrans_diff(i,p1->attribs[tgt_types->idx].a[k],rt1,FALSE,t);		
+												if (rt < 0)
+													goto err_return;
+											}
+										}
+										/* if the trans key is not in p2 */
+										else
+											add_rtrans_diff(i,p1->attribs[tgt_types->idx].a[k],rt1,TRUE,t);		
+									} else {
+										add_rtrans_diff(i,p1->attribs[tgt_types->idx].a[k],rt1,TRUE,t);
+									}
+								}
+								
+							}
+							tgt_types = tgt_types->next;
+						} 
+					}
+				}
+			}
+			free_rbac_bool(&rb);
 		}
 	}
-	
-	/* AV and Type Rules */
+	/* AV and Type Rules and Conditionals Part1 Conditionals with rules in them*/
 	if(opts & POLOPT_TE_RULES) {
-		avh_node_t *p1cur, *p2node, *newnode;
+
 		int *data = NULL, num_data = 0;
 		avh_rule_t *r;
 		bool_t missing, add, inverse;
@@ -778,6 +1081,16 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 					newnode->cond_expr = p1cur->cond_expr;
 					newnode->cond_list = p1cur->cond_list;
 					
+					/* here we do a conditional diff check */
+					if (newnode->flags & AVH_FLAG_COND) {
+						cond_expr = find_cond_expr_diff(newnode->cond_expr,t);
+						if (cond_expr == NULL) {
+							cond_expr = new_cond_diff(newnode->cond_expr,t,p1,p2);
+						}
+						add_rule_to_cond_expr_diff(cond_expr,newnode);
+					}
+
+
 					/* we handle the data (perms or deflt type) differently.
 					 * If the rule was missing, then we just copy everything
 					 * from the p1 cur node.  However, if it wasn't missing, then
@@ -816,8 +1129,24 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 		}
 		if(pmap != NULL) free(pmap);
 	}
-	
-	
+
+	/* Conditionals Part 2 - The empty conditional*/
+	for (i = 0; i < p1->num_cond_exprs; i++){
+
+		if (p1->cond_exprs[i].true_list->num_av_access == 0 &&
+		    p1->cond_exprs[i].true_list->num_av_audit == 0 &&
+		    p1->cond_exprs[i].true_list->num_te_trans == 0 &&
+		    p1->cond_exprs[i].false_list->num_av_access == 0 &&
+		    p1->cond_exprs[i].false_list->num_av_audit == 0 &&
+		    p1->cond_exprs[i].false_list->num_te_trans == 0) {
+			cond_expr = find_cond_expr_diff(newnode->cond_expr,t);
+			if (cond_expr == NULL) {
+				cond_expr = new_cond_diff(newnode->cond_expr,t,p1,p2);
+			}
+		}			
+	}
+
+
 	return t;
 err_return:
 	apol_free_diff(t);
