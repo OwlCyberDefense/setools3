@@ -7,7 +7,7 @@ OBJS		= test.o $(LIBAPOL)
 INCLUDES	= -I../libapol/
 CFLAGS		+= $(INCLUDES)
 
-all:	partial_load transitive_flow obj_perms perm_map_reload template reload roles binpol relabel
+all:	partial_load transitive_flow obj_perms perm_map_reload template reload roles binpol relabel role_rules
 
 %.o:	%.c
 	$(CC) $(CFLAGS) -c $<
@@ -38,6 +38,9 @@ roles: $(OBJS) roles.o
 
 relabel: $(OBJS) relabel.o $(LIBAPOL)
 	$(CC) relabel.o $(CFLAGS) $(OBJS) $(LIBS) $(LIBAPOL) -o relabel
+
+role_rules: $(OBJS) role_rules.o $(LIBAPOL)
+	$(CC) role_rules.o $(CFLAGS) $(OBJS) $(LIBS) $(LIBAPOL) -o role_rules
 
 $(LIBAPOL): 
 	cd ../ ; $(MAKE) libapol
