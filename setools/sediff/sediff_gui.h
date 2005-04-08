@@ -29,7 +29,8 @@ typedef struct sediff_summary {
 	summary_node_t users;
 	summary_node_t roles;
 	summary_node_t booleans;
-	summary_node_t rbac;
+	summary_node_t rallow;
+	summary_node_t rtrans;
 	summary_node_t te_rules;
 } sediff_summary_t;
 
