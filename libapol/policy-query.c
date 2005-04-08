@@ -352,6 +352,7 @@ int match_rbac_roles(int	idx,
                      bool_t	do_indirect,
                      bool_t	tgt_is_role,
                      rbac_bool_t *b,
+		     int *num_matched,
                      policy_t	*policy)
 {
 	int i;
@@ -360,10 +361,11 @@ int match_rbac_roles(int	idx,
 
 	if(b == NULL)
 		return -1;
-	
+	*num_matched = 0;
 	if((whichlist & (SRC_LIST ^ TGT_LIST)) && !((whichlist & TGT_LIST) && !tgt_is_role) ) {
 		for(i = 0; i < policy->num_role_allow; i++) {
 			if (does_role_allow_use_role(idx, whichlist, do_indirect, &(policy->role_allow[i]), &(b->a_cnt))) {
+				*num_matched += 1;
                                 if (whichlist & TGT_LIST)
                                         ta = policy->role_allow[i].src_roles;
 				else
@@ -405,6 +407,37 @@ int match_rbac_roles(int	idx,
 	}
 	
 	return 0;
+}
+
+
+/* this function takes in the source role idx, the type/attribute idx
+   and searches the role transitions in policy using those two items as
+   the key.  If found it assigns rt_idx to the target role idx in policy and
+   returns true.  If not found rt_idx is not modified and false is returned
+*/
+bool_t match_rbac_role_ta(int	rs_idx,
+			  int	ta_idx,
+			  int   *rt_idx,
+			  policy_t	*policy)
+{
+	int cnt = 0;
+	int i;
+	int ans;
+	/* got through all role trans in policy */
+	for(i = 0; i < policy->num_role_trans; i++) {
+		/* does this role trans use this role in the src */
+		if (does_role_trans_use_role(rs_idx, SRC_LIST, TRUE, &(policy->role_trans[i]), &cnt)) {
+			/* does this role trans use this type  */
+			ans = does_role_trans_use_ta(ta_idx, IDX_TYPE, TRUE, &(policy->role_trans[i]), 
+					     &cnt, policy);		        
+			/* if the role trans uses this type */
+			if (ans == TRUE) {
+				*rt_idx = policy->role_trans[i].trans_role.idx;
+				return TRUE;
+			}
+		}
+	}
+	return FALSE;
 }
 
 /* search and return type enforcement rules based on provided query critiera.  Results are return
