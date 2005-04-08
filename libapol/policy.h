@@ -34,7 +34,7 @@
 
 
 #define OBJECT_R_NAME "object_r"
-
+#define EOLDMLS -6	/* same MLS error number as returned by binpol */
 
 /* policy options used for opening a policy; controls which part of the
  * policy were loaded. 
@@ -300,8 +300,12 @@ typedef struct alias_item {
 #define	POL_VER_16		4	/* conditional policy extensions */
 #define POL_VER_COND		4	/* same */
 #define POL_VER_17		5
-#define POL_VER_18		6
-#define	POL_VER_MAX		6
+#define POL_VER_18		6	/* for v 18 binary */
+#define POL_VER_18_19		7	/* for source w/o MLS */
+#define POL_VER_19		8	/* for binary w/o MLS */
+#define POL_VER_19MLS		9
+#define POL_VER_MLS		9	/* minimum policy version for MLS support */
+#define	POL_VER_MAX		9
 
 /* Policy type macros */
 #define POL_TYPE_UNKNOWN 	0x00000000
