@@ -24,6 +24,12 @@ CLASS |
 class				{ return(CLASS); }
 CONSTRAIN |
 constrain			{ return(CONSTRAIN); }
+VALIDATETRANS |
+validatetrans			{ return(VALIDATETRANS); }
+MLSCONSTRAIN |
+mlsconstrain			{ return(MLSCONSTRAIN); }
+MLSVALIDATETRANS |
+mlsvalidatetrans		{ return(MLSVALIDATETRANS); }
 INHERITS |
 inherits			{ return(INHERITS); }
 SID |
@@ -66,8 +72,10 @@ CATEGORY |
 category			{ return(CATEGORY); }
 LEVEL |
 level				{ return(LEVEL); }
-RANGES |
-ranges				{ return(RANGES); }
+RANGE |
+range				{ return(RANGE); }
+RANGE_TRANSITION |
+range_transition		{ return(RANGE_TRANSITION); }
 USER |
 user				{ return(USER); }
 NEVERALLOW |
@@ -136,6 +144,20 @@ t1 |
 T1				{ return(T1); }
 t2 |
 T2				{ return(T2); }
+r3 |
+R3				{ return (R3); }
+u3 |
+U3				{ return (U3); }
+t3 |
+T3				{ return (T3); }
+l1 |
+L1				{ return (L1); }
+l2 |
+L2				{ return (L2); }
+h1 |
+H1				{ return (H1); }
+h2 |
+H2				{ return (H2); }
 "/"({letter}|{digit}|_|"."|"-"|"/")*	{ return(PATH); }
 {letter}({letter}|{digit}|_|".")*("*")?	{ return(IDENTIFIER); }
 {digit}{digit}*                 { return(NUMBER); }
