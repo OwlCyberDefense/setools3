@@ -22,8 +22,19 @@ typedef struct int_a_diff {
 	int	*a;	/* types (roles/attribs), roles (users), perms (class/common perm),
 			 * attribs (types)
 			 * not associated with this idx in the other policy; if this */
+	bool_t  missing; /* used by rallows, and possibly more in future to tell if this item is missing
+			    from the other policy */
 	struct int_a_diff *next;
 } int_a_diff_t;
+
+
+typedef struct ap_rtrans_diff {
+	int rs_idx;    /* the idx of the role source */
+	int t_idx;      /* the idx of the type */
+	int rt_idx;   /* the idx of role target */
+	bool_t missing; /* is the trans key not in the other policy */
+	struct ap_rtrans_diff *next;
+} ap_rtrans_diff_t;
 
 typedef struct bool_diff {
 	int	idx;
@@ -32,6 +43,16 @@ typedef struct bool_diff {
 				 * does not exist in the other policy */
 	struct bool_diff *next;
 } bool_diff_t;
+
+typedef struct ap_cond_expr_diff {
+	int idx;                       /* index of conditional in policy */
+	bool_t missing;                /* if the conditional is missing in other policy */
+	avh_node_t **true_list_diffs;  /* the list of true list differences */
+	avh_node_t **false_list_diffs; /* the list of false list differences */
+	int num_true_list_diffs;       /* number in true list diff */
+	int num_false_list_diffs;      /* number in false list diff */
+	struct ap_cond_expr_diff *next;/* the next cond expr diff */
+} ap_cond_expr_diff_t;
 
 /* Contains those components of a policy that are not contained in another policy
  * This is one side of the differences between the two policies.  The policies
@@ -49,6 +70,7 @@ typedef struct apol_diff {
 	int		num_booleans;
 	int		num_role_allow;
 	int		num_role_trans;
+	int             num_cond_exprs;
 	int_a_diff_t	*types;	
 	int_a_diff_t	*attribs;
 	int_a_diff_t	*roles;
@@ -58,8 +80,9 @@ typedef struct apol_diff {
 	int		*perms;		/* any type of missing individual perm */
 	bool_diff_t	*booleans;
 	int_a_diff_t	*role_allow;   /* rbac differences */
-	int_a_diff_t	*role_trans;	/* role transitions */
+       	ap_rtrans_diff_t   *role_trans;	/* role transitions */
 	avh_t		te;		/* hash table contains missing TE rule semantics */
+	ap_cond_expr_diff_t *cond_exprs; /* the conditional exprs diff */
 } apol_diff_t;
 
 typedef struct apol_diff_result {
