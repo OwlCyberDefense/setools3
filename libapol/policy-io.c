@@ -417,12 +417,12 @@ static int read_policy(policy_t *policy)
 	}
 	policydb_lineno = 1;
 	pass = 1;
-	if (yyparse()) {
+	if ((rt = yyparse())) {
 		fprintf(stderr, "error(s) encountered while parsing configuration (first pass, line: %d)\n", policydb_lineno);
 		queue_destroy(id_queue);
 		rewind(yyin);
 		yyrestart(yyin);	
-		return -1;
+		return rt;
 	}
 	
 	/* If we don't need anything from pass 2, just return and save the time */
@@ -435,12 +435,12 @@ static int read_policy(policy_t *policy)
 	pass = 2;
 	rewind(yyin);
 	yyrestart(yyin);	
-	if (yyparse()) {
+	if ((rt = yyparse())) {
 		fprintf(stderr, "error(s) encountered while parsing configuration (second pass, line: %d)\n", policydb_lineno);
 		queue_destroy(id_queue);
 		rewind(yyin);
 		yyrestart(yyin);	
-		return -1;
+		return rt;
 	}
 		
 	queue_destroy(id_queue);
@@ -450,7 +450,7 @@ static int read_policy(policy_t *policy)
 	#define OPEN_PERM_CHECK_18 "nlmsg_write"
 	rt = get_perm_idx(OPEN_PERM_CHECK_18, policy);
 	if(rt >= 0) { /* permission does exists; at least a version 18 policy */
-		rt = set_policy_version(POL_VER_18, policy);
+		rt = set_policy_version(POL_VER_18_19, policy);
 		if(rt < 0) {
 			fprintf(stderr, "error setting policy version to version 18.\n");
 			return -1;
@@ -540,7 +540,7 @@ int open_partial_policy(const char* filename, unsigned int options, policy_t **p
 		if(rt != 0) {
 			fprintf(stderr, "error reading policy\n");
 			fclose(yyin);
-			return -1;	
+			return rt;	
 		}
 	}
 	fclose(yyin);
