@@ -17,7 +17,6 @@
 #include "policy.h"
 #include <assert.h>
 #include <string.h>
-#include <sys/capability.h>
 
 int cond_free_expr(cond_expr_t *expr)
 {
