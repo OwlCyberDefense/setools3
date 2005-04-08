@@ -12,6 +12,7 @@
 #include "util.h"
 #include <policy.h>
 #include <policy-io.h>
+#include <policy-query.h>
 #include <poldiff.h>
 #include <render.h>
 #include <binpol/binpol.h>
@@ -33,6 +34,8 @@
 #define SEDIFF_GUI_PROG	"sediffx"
 
 char *p1_file, *p2_file;
+
+static int print_rtrans_diffs(FILE *fp, apol_diff_result_t *diff);
 
 static struct option const longopts[] =
 {
@@ -141,7 +144,8 @@ int print_diff_stats(FILE *fp, apol_diff_result_t *diff)
 		(diff->diff1->num_roles + diff->diff2->num_roles),
 		(diff->diff1->num_users + diff->diff2->num_users),
 		(diff->diff1->num_booleans + diff->diff2->num_booleans),
-		(diff->diff1->num_role_allow + diff->diff2->num_role_allow),
+		(diff->diff1->num_role_allow + diff->diff2->num_role_allow
+			+ diff->diff1->num_role_trans + diff->diff2->num_role_trans),
 		(diff->diff1->te.num + diff->diff2->te.num));
 	return 0;
 }
@@ -172,6 +176,111 @@ static int print_iad_element(char **string,int *string_sz,
 	return 0;
 }
 
+static int print_rallow_rules(char **string,int *string_sz,
+				policy_t *p1,policy_t *p2,char *name,
+				char *adescrp)
+{
+	rbac_bool_t rb, rb2;
+	int rt,idx1,idx2,i;
+	char *rname = NULL;
+	int num_found;
+	char tbuf[APOL_STR_SZ+64];
+
+	/* find index of both roles in policies */
+	idx1 = get_role_idx(name,p1);
+	if (idx1 < 0)
+		return -1;
+	idx2 = get_role_idx(name, p2);
+	if (idx2 < 0)
+		return -1;
+
+	if (init_rbac_bool(&rb, p1, TRUE) != 0) 
+		goto print_rallow_keys_error;
+	
+	if (init_rbac_bool(&rb2, p2, TRUE) != 0) 
+		goto print_rallow_keys_error;
+	
+
+	/* find all target roles that have that role in the source of a role allow rule */
+	rt = match_rbac_roles(idx1, IDX_ROLE, SRC_LIST, FALSE, TRUE, &rb, &num_found, p1);
+	if (rt < 0) 
+		return -1;
+	rt = match_rbac_roles(idx2, IDX_ROLE, SRC_LIST, FALSE, TRUE, &rb2, &num_found, p2);
+	if (rt < 0) {
+		free_rbac_bool(&rb);
+		return -1;
+	}
+	/* print that stuff out */
+	sprintf(tbuf,"\t\t* Policy 1: allow %s { ",name);
+	append_str(string,string_sz,tbuf);		
+	for (i = 0; i < p1->num_roles; i++) {
+		if (!rb.allow[i])
+			continue;
+		rt = get_role_name(i,&rname,p1);
+		if (rt < 0)
+			goto print_rallow_keys_error;
+		sprintf(tbuf,"%s ",rname);
+		append_str(string,string_sz,tbuf);		
+		free(rname);
+		rname = NULL;		
+	}
+	sprintf(tbuf,"}\n");
+	append_str(string,string_sz,tbuf);		
+
+	sprintf(tbuf,"\t\t* Policy 2: allow %s { ",name);
+	append_str(string,string_sz,tbuf);		
+	for (i = 0; i < p2->num_roles; i++) {
+		if (!rb2.allow[i])
+			continue;
+		rt = get_role_name(i,&rname,p2);
+		if (rt < 0)
+			goto print_rallow_keys_error;
+		sprintf(tbuf,"%s ",rname);
+		append_str(string,string_sz,tbuf);		
+		free(rname);
+		rname = NULL;		
+	}
+	sprintf(tbuf,"}\n");
+	append_str(string,string_sz,tbuf);		
+
+	free_rbac_bool(&rb);
+	free_rbac_bool(&rb2);
+	return 0;
+ print_rallow_keys_error:
+	if (rname)
+		free(rname);
+	free_rbac_bool(&rb);
+	free_rbac_bool(&rb2);
+	return -1;
+
+
+
+}
+
+static int print_rallow_element(char **string,int *string_sz,
+			     int_a_diff_t *diff,policy_t *policy,bool_t added,
+			     char *adescrp,get_iad_name_fn_t get_a_name,char *str)
+{
+	int i;
+	char *tmp;
+	int rt;
+	char tbuf[APOL_STR_SZ+64];
+	sprintf(tbuf, "%s{", str);
+	append_str(string,string_sz,tbuf);		
+	for (i = 0; i < diff->numa; i++) {
+		rt = (*get_a_name)(diff->a[i], &tmp, policy);
+		if (rt < 0) {
+			fprintf(stderr, "Problem getting element name for %s %d\n", adescrp, diff->a[i]);
+			return -1;
+		}
+		sprintf(tbuf, " %s", tmp);
+		append_str(string,string_sz,tbuf);		
+		free(tmp);
+	}
+	sprintf(tbuf, " }\n");
+	append_str(string,string_sz,tbuf);		
+	return 0;
+}
 
 
 /* print out a difference, in this case we consider everything in the p1 diff to be removed
@@ -475,6 +584,277 @@ int print_iad(FILE *fp, int id, int_a_diff_t *iad_p1, int_a_diff_t *iad_p2,
 
 }
 
+/* print out a difference, in this case we consider everything in the p1 diff to be removed
+   and everything in the p2 to be added, and everything in both to be changed*/
+int print_rallow(FILE *fp, int id, int_a_diff_t *iad_p1, int_a_diff_t *iad_p2,
+		     policy_t *p1, policy_t *p2)
+{
+	get_iad_name_fn_t get_name, get_a_name;
+	char *name, *descrp = NULL, *adescrp = NULL, *name2 = NULL;
+	char *changed_buf = NULL, *added_buf = NULL, *removed_buf = NULL;
+	int changed_sz = 0, removed_sz = 0, added_sz = 0;
+	int num_removed = 0, num_added = 0, num_changed = 0;
+	bool_t missing;
+	int rt;
+	int_a_diff_t *t = NULL, *u = NULL;
+	char tbuf[APOL_STR_SZ+64];
+	
+
+
+
+/* now we want stats at all times even if emtpy list 	
+  if(iad_p1 == NULL && iad_p2 == NULL ) 
+		return 0;  indicates an empty list */
+
+	if(fp == NULL || (p1 == NULL && p2 == NULL ) || !(id & (IDX_TYPE|IDX_ATTRIB|IDX_ROLE|IDX_USER|IDX_OBJ_CLASS|IDX_COMMON_PERM|IDX_ROLE)))
+		return -1;
+	
+	switch(id) {
+	case IDX_ROLE|IDX_PERM:
+		get_name = &get_role_name;
+		get_a_name = &get_role_name;
+		descrp = "Role Allows";
+		adescrp = "Role Allows";
+		break;
+	default:
+		assert(0); /* shouldn't get here */
+		return -1; 
+		break;
+	}
+
+	append_str(&added_buf,&added_sz,"\n");
+	append_str(&changed_buf,&changed_sz,"\n");
+	append_str(&removed_buf,&removed_sz,"\n");
+
+	/* Handle only removed items */
+	if (iad_p1 != NULL) {
+		for (t = iad_p1; t != NULL; t = t->next) {
+			rt = (*get_name)(t->idx, &name, p1);
+			if (rt < 0) {
+				fprintf(stderr, "Problem getting name for %s %d\n", descrp, t->idx);
+				goto print_rallow_error;
+			}
+			missing = (get_role_idx(name, p2) >= 0 ? FALSE : TRUE);
+			if (missing || t->missing){
+				num_removed += t->numa;
+				sprintf(tbuf, "\t\t- %s ", name);
+				rt = print_rallow_element(&removed_buf,&removed_sz,t,p1,FALSE,adescrp,get_a_name,tbuf);
+				if (rt < 0)
+					goto print_rallow_error;
+			}
+		}
+		free(name);
+	}
+
+	/* Handle added items */
+	/* Looking for items that are not in the old policy, hence indicating it was ADDED */
+	if (iad_p2 != NULL) {
+		/* Here we only take care of added items */
+		for (t = iad_p2; t != NULL; t = t->next) {
+			rt = (*get_name)(t->idx, &name, p2);
+			if (rt < 0) {
+				fprintf(stderr, "Problem getting name for %s %d\n", descrp, t->idx);
+				goto print_rallow_error;
+			}
+			missing = (get_role_idx(name, p1) >= 0 ? FALSE : TRUE);
+			/* This means that the item exists only in the new policy */
+			if (missing || t->missing) {
+				num_added += t->numa;
+				sprintf(tbuf, "\t\t+ %s ", name);
+				rt = print_rallow_element(&added_buf,&added_sz,t,p1,FALSE,adescrp,get_a_name,tbuf);
+				if (rt < 0)
+					goto print_rallow_error;
+			}	
+			free(name);
+		}
+	}
+
+	/* Handle Changed Items */
+	if (iad_p2 != NULL) {
+		t = iad_p2;
+		/* did we remove anything ? */
+		if (iad_p1 != NULL) {
+			u = iad_p1;
+			while (u != NULL || t != NULL) {
+				/* do we still have items on both lists */
+				if (t != NULL && u != NULL) {
+					rt = (*get_name)(t->idx, &name, p2);
+					if (rt < 0) {
+						fprintf(stderr, "Problem getting name for %s %d\n", descrp, t->idx);
+						goto print_rallow_error;
+					}
+					rt = (*get_name)(u->idx, &name2, p1);
+					if (rt < 0) {
+						fprintf(stderr, "Problem getting name for %s %d\n", descrp, t->idx);
+						goto print_rallow_error;
+					}
+					rt = strcmp(name,name2);
+					/* do both items have the same name(i.e. are they the same) */
+					if (rt == 0){
+						num_changed +=1 ;
+						rt = print_rallow_rules(&changed_buf,&changed_sz,p1,p2,name,adescrp);
+						if (rt < 0)
+							goto print_rallow_error;
+						rt = print_iad_element(&changed_buf,&changed_sz,t,p2,TRUE,adescrp,get_a_name);
+						if (rt < 0)
+							goto print_rallow_error;
+						rt = print_iad_element(&changed_buf,&changed_sz,u,p1,FALSE,adescrp,get_a_name);
+						if (rt < 0)
+							goto print_rallow_error;
+						u = u->next;
+						t = t->next;
+					}
+					/* new goes first */
+					else if ( rt < 0 ) {
+						missing = (get_role_idx(name, p1) >= 0 ? FALSE : TRUE);
+						if (!missing && !t->missing) {
+							num_changed +=1 ;
+							rt = print_rallow_rules(&changed_buf,&changed_sz,p1,p2,name,adescrp);
+							if (rt < 0)
+								goto print_rallow_error;
+							rt = print_iad_element(&changed_buf,&changed_sz,t,p2,TRUE,adescrp,get_a_name);
+							if (rt < 0)
+								goto print_rallow_error;
+						}
+						t = t->next;
+					}
+					/* old goes first */
+					else {
+						missing = (get_role_idx(name2, p2) >= 0 ? FALSE : TRUE);
+						/* This means that the item exists in the new policy, so we indicate whether it has been changed. */
+						if (!missing && !u->missing) {
+							num_changed +=1 ;
+							rt = print_rallow_rules(&changed_buf,&changed_sz,p1,p2,name,adescrp);
+							if (rt < 0)
+								goto print_rallow_error;
+							rt = print_iad_element(&changed_buf,&changed_sz,u,p1,FALSE,adescrp,get_a_name);
+							if (rt < 0)
+								goto print_rallow_error;
+						}						
+						u = u->next;
+					}					
+					
+				}
+				/* do we only have additions left? */
+				else if (t != NULL) {
+					rt = (*get_name)(t->idx, &name, p2);
+					if (rt < 0) {
+						fprintf(stderr, "Problem getting name for %s %d\n", descrp, t->idx);
+						goto print_rallow_error;
+					}
+					missing = (get_role_idx(name, p1) >= 0 ? FALSE : TRUE);
+					if (!missing && !t->missing) {
+						num_changed +=1 ;
+						rt = print_rallow_rules(&changed_buf,&changed_sz,p1,p2,name,adescrp);
+						if (rt < 0)
+							goto print_rallow_error;
+						rt = print_iad_element(&changed_buf,&changed_sz,t,p2,TRUE,adescrp,get_a_name);
+						if (rt < 0)
+							goto print_rallow_error;
+					}
+					free(name);
+					t = t->next;
+				}
+				/* do we only have removes left? */
+				else {
+					rt = (*get_name)(u->idx, &name, p1);
+					if (rt < 0) {
+						fprintf(stderr, "Problem getting name for %s %d\n", descrp, u->idx);
+						goto print_rallow_error;
+					}
+					missing = (get_role_idx(name, p2) >= 0 ? FALSE : TRUE);
+					/* This means that the item exists in the new policy, so we indicate whether it has been changed. */
+					if (!missing && !u->missing) {
+						num_changed +=1 ;
+						rt = print_rallow_rules(&changed_buf,&changed_sz,p1,p2,name,adescrp);
+						if (rt < 0)
+							goto print_rallow_error;
+						rt = print_iad_element(&changed_buf,&changed_sz,u,p1,FALSE,adescrp,get_a_name);
+						if (rt < 0)
+							goto print_rallow_error;
+					}
+					free(name);
+					u = u->next;
+				}
+			}
+		}
+		/* we have no removes just put in additions */
+	        else {
+			for (t = iad_p2; t != NULL; t = t->next) {
+				rt = (*get_name)(t->idx, &name, p2);
+				if (rt < 0) {
+					fprintf(stderr, "Problem getting name for %s %d\n", descrp, t->idx);
+					goto print_rallow_error;
+				}
+				missing = (get_role_idx(name, p1) >= 0 ? FALSE : TRUE);
+				if (!missing && !t->missing) {
+					num_changed +=1 ;
+					rt = print_rallow_rules(&changed_buf,&changed_sz,p1,p2,name,adescrp);
+					if (rt < 0)
+						goto print_rallow_error;
+					rt = print_iad_element(&changed_buf,&changed_sz,t,p2,TRUE,adescrp,get_a_name);
+					if (rt < 0)
+						goto print_rallow_error;
+
+				}
+			}
+
+		}
+			
+	}
+	/* did we only remove  ? */
+	else if (iad_p1 != NULL) {
+		for (u = iad_p1; u != NULL; u = u->next) {
+			rt = (*get_name)(u->idx, &name, p1);
+			if (rt < 0) {
+				fprintf(stderr, "Problem getting name for %s %d\n", descrp, u->idx);
+				goto print_rallow_error;
+			}
+			missing = (get_role_idx(name, p2) >= 0 ? FALSE : TRUE);
+			/* This means that the item exists in the new policy, so we indicate whether it has been changed.  */
+			if (!missing && !u->missing) {
+				num_changed +=1 ;
+				rt = print_rallow_rules(&changed_buf,&changed_sz,p1,p2,name,adescrp);
+				if (rt < 0)
+					goto print_rallow_error;
+				rt = print_iad_element(&changed_buf,&changed_sz,u,p1,FALSE,adescrp,get_a_name);
+				if (rt < 0)
+					goto print_rallow_error;
+
+			}
+			free(name);
+		}
+
+	}
+
+	fprintf(fp,"%s (%d Added, %d Removed, %d Changed)\n"
+		"\tAdded %s: %d%s"
+		"\tRemoved %s: %d%s"
+		"\tChanged %s: %d%s",
+		descrp,num_added,num_removed,num_changed,
+		descrp,num_added,added_buf,
+		descrp,num_removed,removed_buf,
+		descrp,num_changed,changed_buf);
+	/* now print to the file */
+	if (changed_buf)
+		free(changed_buf);
+	if (added_buf)
+		free(added_buf);
+	if (removed_buf)
+		free(removed_buf);
+	return 0;
+
+	/*handle memory before we quit from an error */
+ print_rallow_error:
+	if (changed_buf)
+		free(changed_buf);
+	if (added_buf)
+		free(added_buf);
+	if (removed_buf)
+		free(removed_buf);
+	return -1;
+
+}
 
 
 int print_type_diffs(FILE *fp, apol_diff_result_t *diff)
@@ -530,13 +910,18 @@ int print_rbac_diffs(FILE *fp, apol_diff_result_t *diff)
 	if(diff == NULL || fp == NULL)
 		return -1;
 	
-	rt = print_iad(fp, IDX_ROLE|IDX_PERM, diff->diff1->role_allow,diff->diff2->role_allow, 
+	rt = print_rallow(fp, IDX_ROLE|IDX_PERM, diff->diff1->role_allow,diff->diff2->role_allow, 
 		       diff->p1, diff->p2);
 	if(rt < 0){
 		fprintf(stderr, "Problem printing roles for p1.\n");
 		return -1;
 	}
-	
+	printf("\n");
+	rt = print_rtrans_diffs(fp,diff);
+	if(rt < 0){
+		fprintf(stderr, "Problem printing roles for p1.\n");
+		return -1;
+	}
 	return 0;
 }
 
@@ -552,6 +937,147 @@ int print_user_diffs(FILE *fp, apol_diff_result_t *diff)
 		return -1;
 	}
 	return 0;
+}
+
+static int print_rtrans_diffs(FILE *fp, apol_diff_result_t *diff)
+{
+	ap_rtrans_diff_t *t,*u;
+	int num_changed = 0, num_removed = 0, num_added = 0;
+	int changed_sz = 0, added_sz = 0, removed_sz = 0;
+	char *changed_buf = NULL, *added_buf = NULL, *removed_buf = NULL;
+	char *srole = NULL,*trole = NULL,*type = NULL, *name = NULL, *trole2 = NULL;
+	int rt;
+	int r2,t2;
+	char tbuf[APOL_STR_SZ+64];
+
+	if(diff == NULL || fp == NULL)
+		return -1;
+
+	ap_rtrans_diff_t *rtrans_removed = diff->diff1->role_trans;
+	ap_rtrans_diff_t *rtrans_added = diff->diff2->role_trans;
+
+	append_str(&added_buf,&added_sz,"\n");
+	append_str(&changed_buf,&changed_sz,"\n");
+	append_str(&removed_buf,&removed_sz,"\n");
+
+	/* Changed rtrans */
+	if (rtrans_removed != NULL) {
+		for (t = rtrans_removed; t != NULL; t = t->next) {
+			/* if the trans rule is in both policies */
+			if (!t->missing) {
+				num_changed++;
+				/* find the matching rule */
+				rt = get_role_name(t->rs_idx,&name,diff->p1);
+				if (rt < 0)
+					goto print_rtrans_error;
+				r2 = get_type_idx(name,diff->p2);
+				free(name);
+				rt = get_type_name(t->t_idx,&name,diff->p1);
+				if (rt < 0)
+					goto print_rtrans_error;
+				t2 = get_type_idx(name,diff->p2);
+				free(name);
+				u = rtrans_added;
+				while (u && u->rs_idx != r2 && u->t_idx != t2)
+					u = u->next;
+				if (u == NULL)
+					goto print_rtrans_error;
+				rt = get_role_name(t->rs_idx,&srole,diff->p1);
+				if (rt < 0)
+					goto print_rtrans_error;
+				rt = get_type_name(t->t_idx,&type,diff->p1);
+				if (rt < 0)
+					goto print_rtrans_error;
+				rt = get_role_name(t->rt_idx,&trole,diff->p1);
+				if (rt < 0)
+					goto print_rtrans_error;
+				rt = get_role_name(u->rt_idx,&trole2,diff->p2);
+				if (rt < 0)
+					goto print_rtrans_error;
+
+				sprintf(tbuf,"\t\t* role_transition %s %s\n\t\t\t+ %s\n\t\t\t- %s\n",srole,type,trole2,trole);
+				free(srole);
+				free(type);
+				free(trole);
+				free(trole2);
+				append_str(&changed_buf,&changed_sz,tbuf);				
+                        }
+		}
+	}
+	/* removed rtrans */
+	if (rtrans_removed != NULL) {
+		for (t = rtrans_removed; t != NULL; t = t->next) {
+			if (t->missing) {
+				num_removed++;
+				rt = get_role_name(t->rs_idx,&srole,diff->p1);
+				if (rt < 0)
+					goto print_rtrans_error;
+				rt = get_type_name(t->t_idx,&type,diff->p1);
+				if (rt < 0)
+					goto print_rtrans_error;
+				rt = get_role_name(t->rt_idx,&trole,diff->p1);
+				if (rt < 0)
+					goto print_rtrans_error;
+				sprintf(tbuf,"\t\t- role_transition %s %s %s\n",srole,type,trole);
+				free(srole);
+				free(type);
+				free(trole);
+				append_str(&removed_buf,&removed_sz,tbuf);
+			}
+		}
+	}
+	/* added booleans */
+	if (rtrans_added != NULL) {
+		for (t = rtrans_added; t != NULL; t = t->next) {
+			if (t->missing) {
+				num_added++;
+				rt = get_role_name(t->rs_idx,&srole,diff->p2);
+				if (rt < 0)
+					goto print_rtrans_error;
+				rt = get_type_name(t->t_idx,&type,diff->p2);
+				if (rt < 0)
+					goto print_rtrans_error;
+				rt = get_role_name(t->rt_idx,&trole,diff->p2);
+				if (rt < 0)
+					goto print_rtrans_error;
+				sprintf(tbuf,"\t\t+ role_transition %s %s %s\n",srole,type,trole);
+				free(srole);
+				free(type);
+				free(trole);
+				append_str(&added_buf,&added_sz,tbuf);
+
+			}
+		}
+	}
+	
+	fprintf(fp, "Role Transitions (%d Added, %d Removed, %d Changed)\n",num_added,num_removed,num_changed);
+	fprintf(fp,"\tAdded Role Transition: %d%s"
+		"\tRemoved Role Transition: %d%s"
+		"\tChanged Role Transition: %d%s",
+		num_added,added_buf,
+		num_removed,removed_buf,
+		num_changed,changed_buf);
+
+	if (changed_buf)
+		free(changed_buf);
+	if (added_buf)
+		free(added_buf);
+	if (removed_buf)
+		free(removed_buf);
+	return 0;
+
+	/*handle memory before we quit from an error */
+ print_rtrans_error:
+	if (changed_buf)
+		free(changed_buf);
+	if (added_buf)
+		free(added_buf);
+	if (removed_buf)
+		free(removed_buf);
+	return -1;
+
+
+
 }
 
 int print_boolean_diffs(FILE *fp, apol_diff_result_t *diff)
@@ -1127,8 +1653,8 @@ int main (int argc, char **argv)
 	}
 	
 	printf("Difference between policy 1 and policy 2: \n");
-	printf("   p1 (%6s, ver: %2d): %s\n", policy_type(diff->p1), get_policy_version_num(diff->p1), p1_file);
-	printf("   p2 (%6s, ver: %2d): %s\n\n", policy_type(diff->p2), get_policy_version_num(diff->p2), p2_file);
+	printf("   p1 (%6s, ver: %s): %s\n", policy_type(diff->p1), get_policy_version_name(diff->p1->version), p1_file);
+	printf("   p2 (%6s, ver: %s): %s\n\n", policy_type(diff->p2), get_policy_version_name(diff->p2->version), p2_file);
 	
 	if(types || all) {
 		if (!(quiet && (diff->diff1->num_types == 0 && diff->diff2->num_types == 0))) {
