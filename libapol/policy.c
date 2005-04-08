@@ -33,7 +33,10 @@
 const char *policy_version_strings[] = { "Unkown version", 
 			 	 	 "prior to v. 11", 
 			 	 	 "v.11 -- v.12", 
-			 	 	 "v.15", "v.16", "v.17", "v.18"};
+			 	 	 "v.15", "v.16", 
+					 "v.17", "v.18",
+					 "v.18 -- v.19",
+					 "v.19", "v.19mls"};
 			 	 
 /* get a policy version string from the global array of constant strings. 
  * We use the defined policy version numbers as indices into this array.*/
@@ -296,7 +299,7 @@ int set_policy_version(int ver, policy_t *policy)
 	return 0;
 }
 
-int pol_ver[] = {0,10,12,15,16,17,18};
+int pol_ver[] = {0,10,12,15,16,17,18,19,19,19};
 int get_policy_version_num(policy_t *policy)
 {
 	if(policy == NULL || !is_valid_policy_version(policy->version))
