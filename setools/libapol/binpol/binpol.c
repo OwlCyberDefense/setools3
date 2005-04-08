@@ -34,7 +34,6 @@
 
 __u32 mls_config = 0;
 
-
 static int skip_ebitmap(ap_fbuf_t *fb, FILE *fp)
 {
 	__u32 *buf, count, highbit, i;
@@ -90,11 +89,6 @@ static int load_perm(ap_fbuf_t *fb, FILE *fp, __u32 *val, unsigned int opts, pol
 	len = le32_to_cpu(buf[0]);
 	*val = le32_to_cpu(buf[1]);
 
-	if(mls_config) {
-		buf = ap_read_fbuf(fb, sizeof(__u32), fp); /* mls perm ignore */
-		if(buf == NULL)	return fb->err;
-	}
-	
 	/* perm name */
 	kbuf = ap_read_fbuf(fb, len, fp);
 	if(kbuf == NULL) return fb->err;
@@ -246,7 +240,7 @@ static int load_common_perm(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned in
 
 static int load_class(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
 {
-	size_t len, len2, nel, ncons, nexpr;
+	size_t len, len2, nel, ncons, nexpr, nvaltrans;
 	unsigned char *kbuf, *key, *cbuf;
 	__u32 *buf, expr_type, val, i, j, num_cp = 0, cp_val = -1;
 	int rt, idx = -1, idx2 = -1;		/* idx2 (common perm idx) must ne init'd to -1 for load_perms */
@@ -371,12 +365,45 @@ static int load_class(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts
 		}
 	}
 	
-	/* skip over class MLS info if any */
-	if(mls_config) {
-		if(fseek(fp, sizeof(__u32)*4, SEEK_CUR) != 0)  
-			 return -3;
+	if (policy->version >= POL_VER_19) {
+		buf = ap_read_fbuf(fb, sizeof(__u32), fp);
+		nvaltrans = le32_to_cpu(buf[0]);
+		/* ignore validatetrans constraints */
+		for(i = 0; i < nvaltrans; i++) {
+			buf = ap_read_fbuf(fb, sizeof(__u32)*2, fp); 
+			if(buf == NULL)	return fb->err;
+			/* buf[0] permissions (ignore)
+			 * buf[1] num expressions */
+			nexpr = le32_to_cpu(buf[1]);
+			/* all expressions */
+			for (j = 0; j < nexpr; j++) {
+				buf = ap_read_fbuf(fb, sizeof(__u32)*3, fp); 
+				if(buf == NULL)	return fb->err; 
+				/* buf[0] expression type
+				 * buf[1] attr (ignore)
+				 * buf[2] op (ignore) */
+				expr_type = le32_to_cpu(buf[0]);
+				switch (expr_type) {
+				case CEXPR_NOT:
+				case CEXPR_AND:
+				case CEXPR_OR:
+				case CEXPR_ATTR:
+					/* all of these expression types do not have additional data 
+					 * in file so we can ignore them */
+					break;
+				case CEXPR_NAMES:
+					rt = skip_ebitmap(fb, fp);
+					if(rt != 0)
+						return rt;
+					break;
+				default:
+					return -3;
+					break;
+				}
+			}
+		}
 	}
-	
+
 	if(keep)
 		return idx;
 	else
@@ -563,20 +590,11 @@ static int load_user(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts,
 	
 	ebitmap_destroy(&e);
 	
-	/* discard any unsupported MLS stuff */
-	if(mls_config) {
-		__u32 nel, items, i;
-		__u32 *buf;
-		buf = ap_read_fbuf(fb, sizeof(__u32), fp); 
-		nel = le32_to_cpu(buf[0]);
-		for (i = 0; i < nel; i++) {
-			buf = ap_read_fbuf(fb, sizeof(__u32), fp); 
-			items = le32_to_cpu(buf[0]);
-			buf = ap_read_fbuf(fb, sizeof(__u32)*items, fp);
-		}
-
+	if (policy->version >= POL_VER_19) {
+		skip_mls_range(fb, fp, bm, opts, policy);
+		skip_mls_level(fb, fp, bm, opts, policy);
 	}
-	
+
 	return 0;
 }
 
@@ -1361,8 +1379,41 @@ static int load_cond_list(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int 
 }
 
 
-#ifdef CONFIG_SECURITY_SELINUX_MLS
-static int skip_mls_levels(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
+static int skip_mls_range(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
+{
+	__u32 *buf, nlvl;
+
+	INTERNAL_ASSERTION
+
+	buf = ap_read_fbuf(fb, sizeof(__u32), fp);
+	if(buf == NULL) return fb->err;
+	
+	nlvl = le32_to_cpu(buf[0]);
+	if (fseek(fp, sizeof(__u32)*nlvl, SEEK_CUR))
+		return -3;
+	if (skip_ebitmap(fb,fp))
+		return -3;
+	if (nlvl > 1){
+		if (skip_ebitmap(fb,fp))
+			return -3;
+	} 
+	return 0;
+}
+
+static int skip_mls_level(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
+{
+	__u32 *buf;
+	
+	INTERNAL_ASSERTION
+
+	buf = ap_read_fbuf(fb, sizeof(__u32), fp);
+	if (buf == NULL)
+		return fb->err;
+
+	return skip_ebitmap(fb,fp);
+}
+
+static int skip_mls_sens(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
 {
 	/* see sens_read() */
 	__u32 *buf, len;
@@ -1374,17 +1425,14 @@ static int skip_mls_levels(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int
 	/* buf[0] len
 	 * buf[1] isalias
 	 */
-	 
+	
 	/* name */
 	len = le32_to_cpu(buf[0]);
-	if(fseek(fp, sizeof(__u32)*len, SEEK_CUR) != 0)  
+	if(fseek(fp, len, SEEK_CUR) != 0)  
 			 return -3;
 	
-	/* mls_read_level() */
-	/* sens */
-	if(fseek(fp, sizeof(__u32)*len, SEEK_CUR) != 0)  
-			 return -3;
-	
+	buf = ap_read_fbuf(fb, sizeof(__u32), fp);
+
 	/* ebitmap */
 	return skip_ebitmap(fb, fp);
 }
@@ -1404,12 +1452,12 @@ static int skip_mls_cats(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int o
 	  */
 	 len = le32_to_cpu(buf[0]);
 	
-	if(fseek(fp, sizeof(__u32)*len, SEEK_CUR) != 0)  
+	if(fseek(fp, len, SEEK_CUR) != 0)  
 			 return -3;
 
 	return 0;
 }
-#endif
+
 
 
 /* main policy load function */
@@ -1424,12 +1472,7 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 	ebitmap_t *e;
 	ap_alias_bmap_t *a;
 
-#ifdef CONFIG_SECURITY_SELINUX_MLS
-	mls_config = POLICYDB_CONFIG_MLS;
-#else
-	mls_config = 0;
-#endif
-	
+
 	if(ap_init_fbuf(&fb) != 0)
 		return -1;
 	bm = ap_new_bmaps();
@@ -1454,25 +1497,32 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 	
 	policy_ver = buf[0];
 	switch(policy_ver) {
+	case POLICYDB_VERSION_MLS:
+		if (set_policy_version(POL_VER_19, policy) != 0) {
+			rt = -4;goto err_return;
+		}
+		mls_config = 1;
+		num_syms = SYM_NUM;
+		break;
 	case POLICYDB_VERSION_NLCLASS:
 		if(set_policy_version(POL_VER_18, policy) != 0)
 			{ rt = -4; goto err_return; }
-		num_syms = SYM_NUM;
+		num_syms = SYM_NUM - 2;
 		break;
 	case POLICYDB_VERSION_IPV6 :
 		if(set_policy_version(POL_VER_17, policy) != 0)
 			{ rt = -4; goto err_return; }
-		num_syms = SYM_NUM;
+		num_syms = SYM_NUM - 2;
 		break;
 	case POLICYDB_VERSION_BOOL:
 		if(set_policy_version(POL_VER_16, policy) != 0)
 			{ rt = -4; goto err_return; }
-		num_syms = SYM_NUM;
+		num_syms = SYM_NUM - 2;
 		break;
 	case POLICYDB_VERSION_BASE:
 		if(set_policy_version(POL_VER_15, policy) != 0)
 			{ rt = -4; goto err_return; }
-		num_syms = SYM_NUM - 1;
+		num_syms = SYM_NUM - 3;
 		break;
 	default: /* unsupported version */
 		return -5;
@@ -1487,11 +1537,12 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 	}
 
 	/* check for MLS stuff and skip over the # of levels */
-	if(buf[1] != mls_config)
-		{ rt = -6; goto err_return; }
-	if(mls_config) {
-		buf = ap_read_fbuf(fb, sizeof(__u32), fp); /* nlevels; ignore */
-		if(buf == NULL) { rt = fb->err; goto err_return; }
+	if(mls_config && buf[1]) {
+		set_policy_version(POL_VER_19MLS, policy);
+	}
+	if(buf[1] && policy->version < POL_VER_MLS) { 
+		rt = -6;
+		goto err_return; 
 	}
 			
 	/* read in symbol tables */
@@ -1575,12 +1626,10 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 			}
 			bm->bool_num = nprim;
 			break;
-#ifdef CONFIG_SECURITY_SELINUX_MLS
-		case 6:		/* MLS levels */
+		case 6:		/* MLS sensitivities */
 		case 7:		/* MLS categories */
 			/* we don't save any MLS stuff yet */
 			break;
-#endif			
 		default:	/* shouldn't get here */
 			rt = -1; 
 			goto err_return;
@@ -1612,16 +1661,14 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 				rt = load_bool(fb, fp, bm, opts, policy);
 				if(rt < 0 && rt != LOAD_SUCCESS_NO_SAVE) goto err_return;
 				break;
-#ifdef CONFIG_SECURITY_SELINUX_MLS
 			case 6:		/* MLS levels */
-				rt = skip_mls_levels(fb, fp, bm, opts, policy);
+				rt = skip_mls_sens(fb, fp, bm, opts, policy);
 				if(rt < 0) return rt;
 				break;
 			case 7:		/* MLS categories */
 				rt = skip_mls_cats(fb, fp, bm, opts, policy);
 				if(rt < 0) goto err_return;
 				break;
-#endif			
 			default:	/* shouldn't get here */
 				{ rt = -1; goto err_return; };
 				break;
