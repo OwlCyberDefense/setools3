@@ -1,5 +1,13 @@
-/* Copyright (C) 2004 Tresys Technology, LLC
+/* Copyright (C) 2004-2005 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
+
+/* This file runs a regression test for the relabel analysis
+ * module for Apol. All tests are run with the test file
+ * <setools top dir>/test/policy/relabel-corner.conf
+ * test file last updated as of 2005.04.08
+ * Order of the tests here is important only for use of 
+ * variables internal to this test the results and queries
+ * are destroyed and reinitialized by each test. */
 
 #include "policy.h"
 #include "policy-io.h"
@@ -39,7 +47,10 @@ int main(int argc, char **argv)
 	
 	printf("\nRunning Queries\n\n");
 
-	/* run the query */
+	/* The first two tests are checking for the false positive for start and end types
+	 * of different object classes. The type domC cannot really relabel anything because
+	 * it has only relabelfrom permission for dir and only relabelto for file.  */
+
 	TEST("querying typC mode=obj dir=to", !ap_relabel_query(type1_idx, mode, direction, NULL, 0, NULL, 0, res, policy));
 	retv = 0;
 	for (i = 0; i < res->num_targets; i++) {
@@ -67,6 +78,10 @@ int main(int argc, char **argv)
 	}
 	TEST("whether domC was incorrectly found", !retv);
 
+	/* Relabel analysis finds all rules that contribute to the relabeling optration
+	 * even if they are redundant rules that would be combined in binary policies
+	 * This test checks that these are found. */
+
 	ap_relabel_result_destroy(res);
 	mode = AP_RELABEL_MODE_SUBJ;
 	type3_idx = get_type_idx("domF", policy);
@@ -84,6 +99,8 @@ int main(int argc, char **argv)
 		}
 	}
 	TEST("whether the correct number of rules (2) were found for file", !retv);
+
+	/* This test checks the case of a type being relabeled to itself */
 
 	ap_relabel_result_destroy(res);
 	mode = AP_RELABEL_MODE_OBJ;
@@ -103,6 +120,8 @@ int main(int argc, char **argv)
 	}
 	TEST("whether subject domD was found for target typD", retv);
 
+	/* This test checks that rules with '*' as the target are expanded properly */
+
 	ap_relabel_result_destroy(res);
 	direction = AP_RELABEL_DIR_TO;
 	type3_idx = get_type_idx("typF", policy);
@@ -121,16 +140,25 @@ int main(int argc, char **argv)
 		}
 	}
 	TEST("whether non-star rules were incorrectly found", !retv);
+
+	/* This test checks that types w/o permission to relabel as subjects
+	 * do not casuse problems and properly return an empty result set */
 	
 	ap_relabel_result_destroy(res);
 	mode = AP_RELABEL_MODE_SUBJ;
 	TEST("querying typD mode=subj", !ap_relabel_query(type1_idx, mode, direction, NULL, 0, NULL, 0, res, policy));
 	TEST("whether results are empty", res->num_targets == 0);
 
+	/* This test checks the expansion of attributes in the source of a rule
+ 	 * to be sure that all sources are treated as subjects */
+
 	ap_relabel_result_destroy(res);
 	type1_idx = get_type_idx("typA", policy);
 	TEST("querying typA mode=subj", !ap_relabel_query(type1_idx, mode, direction, NULL, 0, NULL, 0, res, policy));
 	TEST("whether results are non-empty", res->num_targets > 0);
+
+	/* This test checks that subjects with permission 
+	 * to relabel '*' are listed in all targets */
 
 	ap_relabel_result_destroy(res);
 	mode = AP_RELABEL_MODE_OBJ;
@@ -150,6 +178,9 @@ int main(int argc, char **argv)
 	}
 	TEST("whether domF is in all file results", retv == 12);
 
+	/* This test check that filtering to include only one object class
+	 * produces results with one object class per target */
+
 	ap_relabel_result_destroy(res);
 	direction = AP_RELABEL_DIR_TO;
 	obj1_idx = get_obj_class_idx("dir", policy);
@@ -162,6 +193,8 @@ int main(int argc, char **argv)
 	}
 	TEST("whether one object was found for each target",retv != 1);
 
+	/* Test checks for the ability to find a specific operation correctly */
+
 	ap_relabel_result_destroy(res);
 	type2_idx = get_type_idx("domB", policy);
 	add_i_to_a(type2_idx, &subj_filter_sz, &subj_filter);
@@ -170,11 +203,18 @@ int main(int argc, char **argv)
 	TEST("querying typA mode=obj dir=to filter=dir,domB", !ap_relabel_query(type1_idx, mode, direction, subj_filter, subj_filter_sz, obj_filter, obj_filter_sz, res, policy));
 	TEST("whether correct result was found", res->num_targets == 1 && res->targets[0].target_type == type3_idx && res->targets[0].num_objects == 1 && res->targets[0].objects[0].object_class == obj1_idx && res->targets[0].objects[0].num_subjects == 1 && res->targets[0].objects[0].subjects[0].source_type == type2_idx);
 
+	/* As an extension of empty result handling checking, this test
+	 * checks for proper handling when a filter excludes all results
+	 * but is still a valid filter */
+
 	ap_relabel_result_destroy(res);
 	type1_idx = get_type_idx("domE", policy);
 	mode = AP_RELABEL_MODE_SUBJ;
 	TEST("querying domE mode=subj filter=dir", !ap_relabel_query(type1_idx, mode, direction, NULL, 0, obj_filter, obj_filter_sz, res, policy));
 	TEST("whether results are empty", res->num_targets == 0); 
+
+	/* This test checks that multiple subjects performing the same 
+	 * operation are reported correctly */
 
 	ap_relabel_result_destroy(res);
 	mode = AP_RELABEL_MODE_OBJ;
@@ -197,6 +237,10 @@ int main(int argc, char **argv)
 		res->targets[0].objects[0].subjects[1].source_type == type3_idx) && \
 		res->targets[0].objects[0].subjects[0].source_type != res->targets[0].objects[0].subjects[1].source_type);
 
+
+	/* This test checks that no targets are removed by a filter 
+	 * that is not relevant to the query */
+
 	ap_relabel_result_destroy(res);
 	free(subj_filter);
 	subj_filter = NULL; 
@@ -208,6 +252,8 @@ int main(int argc, char **argv)
 	TEST("querying typA mode=obj dir=from filter=file,dir,domC", !ap_relabel_query(type1_idx, mode, direction, subj_filter, subj_filter_sz, obj_filter, obj_filter_sz, res, policy));
 	TEST("whether correct number of targets were found (12)", res->num_targets == 12);
 
+	/* This test checks the correct function of filtering in subject mode */
+
 	ap_relabel_result_destroy(res);
 	free(obj_filter);
 	obj_filter = NULL;
@@ -217,6 +263,9 @@ int main(int argc, char **argv)
 	add_i_to_a(get_obj_class_idx("dir", policy), &obj_filter_sz, &obj_filter);
 	TEST("querying domD mode=subj filter=dir", !ap_relabel_query(type1_idx, mode, direction, subj_filter, subj_filter_sz, obj_filter, obj_filter_sz, res, policy));
 	TEST("whether correct number of targets were found (4)", res->num_targets == 4);
+
+	/* This test checks that when a rule permits therelabeling of multiple 
+	 * targets that the same rules are found for each target */
 
 	ap_relabel_result_destroy(res);
 	obj_filter[0] = get_obj_class_idx("file", policy);
