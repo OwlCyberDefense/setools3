@@ -14,6 +14,9 @@
  * Below is our record of the versions we track, and what we think distinguishes them.
  * This is not a complete version determiner; just key issues.
  *
+ * Policy Version 19 (POL_VER_19)
+ * 	Added MLS satements for constraints
+ *
  * Policy Version 18 (POL_VER_18)
  *	Added new netlink permission
  *
@@ -51,9 +54,10 @@
  *		formats removed
  *
  */
- 
+
 
 %{
+
 #include <stdio.h>
 #include "queue.h"
 #include "policy.h"
@@ -66,28 +70,33 @@ unsigned int pass;
 /* our GLOBAL policy structure */
 policy_t *parse_policy = NULL;
 
-/* from originial constraint.h */
-/* Needed by apolicy_parse.y for "borrowed" code */
 typedef struct constraint_expr {
-#define CEXPR_NOT		1 /* not expr */
-#define CEXPR_AND		2 /* expr and expr */
-#define CEXPR_OR		3 /* expr or expr */
-#define CEXPR_ATTR		4 /* attr op attr */
-#define CEXPR_NAMES		5 /* attr op names */	
-	__u32 expr_type;	/* expression type */
+#define AP_CEXPR_NOT   1 	/* not expr */
+#define AP_CEXPR_AND   2 	/* expr and expr */
+#define AP_CEXPR_OR    3 	/* expr or expr */
+#define AP_CEXPR_ATTR  4 	/* attr op attr */
+#define AP_CEXPR_NAMES 5 	/* attr op names */	
+	uint32_t expr_type;	/* expression type */
 
-#define CEXPR_USER 1		/* user */
-#define CEXPR_ROLE 2		/* role */
-#define CEXPR_TYPE 4		/* type */
-#define CEXPR_TARGET 8		/* target if set, source otherwise */
-	__u32 attr;		/* attribute */
+#define AP_CEXPR_USER    1	/* user */
+#define AP_CEXPR_ROLE    2	/* role */
+#define AP_CEXPR_TYPE    4	/* type */
+#define AP_CEXPR_TARGET  8	/* target if set, source otherwise */
+#define AP_CEXPR_L1_L2  16	/* low1 op low2 */
+#define AP_CEXPR_L1_H2  32	/* low1 op high2 */
+#define AP_CEXPR_H1_L2  64	/* high1 op low2 */
+#define AP_CEXPR_H1_H2 128	/* high1 op high2 */
+#define AP_CEXPR_L1_H1 256	/* low1 op high1 */
+#define AP_CEXPR_L2_H2 512	/* low2 op high2 */
+#define AP_CEXPR_XTGT 1024	/* [urt]3 op names */
+	uint32_t attr;		/* attribute */
 
-#define CEXPR_EQ     1		/* == or eq */
-#define CEXPR_NEQ    2		/* != */
-#define CEXPR_DOM    3		/* dom */
-#define CEXPR_DOMBY  4		/* domby  */
-#define CEXPR_INCOMP 5		/* incomp */
-	__u32 op;		/* operator */
+#define AP_CEXPR_EQ     1	/* == or eq */
+#define AP_CEXPR_NEQ    2	/* != */
+#define AP_CEXPR_DOM    3	/* dom */
+#define AP_CEXPR_DOMBY  4	/* domby  */
+#define AP_CEXPR_INCOMP 5	/* incomp */
+	uint32_t op;		/* operator */
 	
 /*	ebitmap_t names;*/	/* names */
 
@@ -128,8 +137,6 @@ static int define_sens(void);
 static int define_dominance(void);
 static int define_category(void);
 static int define_level(void);
-static int define_common_base(void);
-static int define_av_base(void);
 static int define_attrib(void);
 static int define_typeattribute(void);
 static int define_typealias(void);
@@ -143,6 +150,10 @@ static int define_role_dom(void);
 static int define_role_trans(void);
 static int define_role_allow(void);
 static int define_constraint(void);
+static int define_mls(void);
+static int mls_valid(void);
+static int define_validatetrans(void);
+static int define_range_trans(void);
 static constraint_expr_t *define_cexpr(__u32 expr_type, __u32 arg1, __u32 arg2);
 static int define_user(void);
 static security_con_t *parse_security_context(int dontsave);
@@ -175,7 +186,8 @@ static rule_desc_t *define_cond_te_avtab(int rule_type);
 %type <ptr> cond_allow_def cond_auditallow_def cond_auditdeny_def cond_dontaudit_def
 %type <ptr> cond_transition_def cond_te_avtab_def cond_rule_def
 %type <sval> role_def roles
-%type <sval> cexpr cexpr_prim op roleop
+%type <sval> cexpr_prim op roleop mls_cexpr mls_trans_cexpr
+%type <sval> trans_prim mls_prim trans_cexpr_prim mls_cexpr_prim mls_trans_cexpr_prim
 %type <val> ipv4_addr_def number
 
 %token PATH
@@ -183,6 +195,9 @@ static rule_desc_t *define_cond_te_avtab(int rule_type);
 %token COMMON
 %token CLASS
 %token CONSTRAIN
+%token VALIDATETRANS
+%token MLSCONSTRAIN
+%token MLSVALIDATETRANS
 %token INHERITS
 %token SID
 %token ROLE
@@ -205,7 +220,8 @@ static rule_desc_t *define_cond_te_avtab(int rule_type);
 %token DOM DOMBY INCOMP
 %token CATEGORY
 %token LEVEL
-%token RANGES
+%token RANGE
+%token RANGE_TRANSITION
 %token USER
 %token NEVERALLOW
 %token ALLOW
@@ -218,7 +234,7 @@ static rule_desc_t *define_cond_te_avtab(int rule_type);
 %token FSCON PORTCON NETIFCON NODECON 
 %token FSUSEPSID FSUSETASK FSUSETRANS FSUSEXATTR
 %token GENFSCON
-%token U1 U2 R1 R2 T1 T2
+%token U1 U2 R1 R2 T1 T2 U3 R3 T3 L1 L2 H1 H2 
 %token NOT AND OR XOR
 %token CTRUE CFALSE
 %token IDENTIFIER
@@ -280,7 +296,14 @@ av_perms_def		: CLASS identifier '{' identifier_list '}'
 opt_mls			: mls
                         | 
 			;
-mls			: sensitivities dominance opt_categories levels base_perms
+mls			: sensitivities dominance opt_categories 
+			levels opt_old_commons opt_mls_constraints
+			;
+opt_old_commons		: old_common_def
+			|
+			;
+old_common_def		: COMMON identifier
+			{ yyerror("Old (pre-v.19) MLS not supported."); return EOLDMLS; }
 			;
 sensitivities	 	: sensitivity_def 
 			| sensitivities sensitivity_def
@@ -292,9 +315,7 @@ sensitivity_def		: SENSITIVITY identifier alias_def ';'
 	                ;
 alias_def		: ALIAS names
 			;
-dominance		: DOMINANCE identifier 
-			{if (define_dominance()) return -1;}
-                        | DOMINANCE '{' identifier_list '}' 
+dominance		: DOMINANCE '{' identifier_list '}' 
 			{if (define_dominance()) return -1;}
 			;
 /* added Jul 2002 */
@@ -316,43 +337,19 @@ level_def		: LEVEL identifier ':' id_comma_list ';'
 			{if (define_level()) return -1;}
 			| LEVEL identifier ';' 
 			{if (define_level()) return -1;}
-			;
-base_perms		: opt_common_base av_base
-			;
-/* added Jul 2002 */
-opt_common_base         : common_base
-                        |
-                        ;
-common_base		: common_base_def
-			| common_base common_base_def
-			;
-common_base_def	        : COMMON identifier '{' perm_base_list '}'
-	                {if (define_common_base()) return -1;}
-			;
-av_base		        : av_base_def
-			| av_base av_base_def
-			;
-av_base_def		: CLASS identifier '{' perm_base_list '}'
-	                {if (define_av_base()) return -1;}
-                        | CLASS identifier
-	                {if (define_av_base()) return -1;}
-			;
-perm_base_list		: perm_base
-			| perm_base_list perm_base
-			;
-perm_base		: identifier ':' identifier
-			{if (insert_separator(0)) return -1;}
-                        | identifier ':' '{' identifier_list '}'
-			{if (insert_separator(0)) return -1;}
+			| LEVEL identifier ':' identifier '.' identifier ';'
+			{if (define_level()) return -1;} 
 			;
 te_rbac			: te_rbac_decl
 			| te_rbac te_rbac_decl
 			;
 te_rbac_decl		: te_decl
 			| rbac_decl
+			| range_trans_decl
 			| ';'
                         ;
-
+range_trans_decl	:range_transition_def
+			;
 rbac_decl		: role_type_def
                         | role_dominance
                         | role_trans_def
@@ -495,6 +492,9 @@ transition_def		: TYPE_TRANSITION names names ':' names identifier ';'
                         | TYPE_CHANGE names names ':' names identifier ';'
                         {if (define_compute_type(RULE_TE_CHANGE)) return -1;}
     			;
+range_transition_def	:  RANGE_TRANSITION names names mls_range_def ';'
+			{ if (define_range_trans() | define_mls()) return -1; }
+			;
 te_avtab_def		: allow_def
 			| auditallow_def
 			| auditdeny_def
@@ -543,103 +543,188 @@ role_def		: ROLE identifier_push ';'
 opt_constraints         : constraints
                         |
                         ;
-
-constraints		: constraint_def
-			| constraints constraint_def
+opt_mls_constraints	: mls_constraints
+			|
 			;
-constraint_def		: CONSTRAIN names names cexpr ';'
+
+constraints		: constraint_def 
+			| constraints constraint_def
+			| validatetrans_def
+			| constraints validatetrans_def
+			;
+mls_constraints		: mls_constraint_def 
+			| mls_constraints mls_constraint_def
+			| mlsvalidatetrans_def
+			| mls_constraints mlsvalidatetrans_def
+			;
+constraint_def		: CONSTRAIN names names mls_cexpr ';'
 			{ if (define_constraint()) return -1; }
 			;
-cexpr			: '(' cexpr ')'
+mls_constraint_def	: MLSCONSTRAIN names names mls_cexpr ';'
+			{ if (define_constraint() | define_mls()) return -1; } 
+			;
+validatetrans_def	: VALIDATETRANS names mls_trans_cexpr ';'
+			{ if (define_validatetrans()) return -1; }
+			;
+mlsvalidatetrans_def	: MLSVALIDATETRANS names mls_trans_cexpr ';'
+			{ if (define_validatetrans() | define_mls()) return -1; }
+			;
+mls_cexpr		: '(' mls_cexpr ')'
 			{ $$ = $2; }
-			| NOT cexpr
-			{ $$ = (int) define_cexpr(CEXPR_NOT, $2, 0);
+			| NOT mls_cexpr
+			{ $$ = (int) define_cexpr(AP_CEXPR_NOT, $2, 0);
 			  if ($$ == 0) return -1; }
-			| cexpr AND cexpr
-			{ $$ = (int) define_cexpr(CEXPR_AND, $1, $3);
+			| mls_cexpr AND mls_cexpr
+			{ $$ = (int) define_cexpr(AP_CEXPR_AND, $1, $3);
 			  if ($$ == 0) return -1; }
-			| cexpr OR cexpr
-			{ $$ = (int) define_cexpr(CEXPR_OR, $1, $3);
+			| mls_cexpr OR mls_cexpr
+			{ $$ = (int) define_cexpr(AP_CEXPR_OR, $1, $3);
 			  if ($$ == 0) return -1; }
-			| cexpr_prim
+			| mls_cexpr_prim
+			{ $$ = $1; }
+			;
+mls_trans_cexpr		: '(' mls_trans_cexpr ')'
+			{ $$ = $2; }
+			| NOT mls_trans_cexpr
+			{ $$ = (int) define_cexpr(AP_CEXPR_NOT, $2, 0);
+			  if ($$ == 0) return -1; }
+			| mls_trans_cexpr AND mls_trans_cexpr
+			{ $$ = (int) define_cexpr(AP_CEXPR_AND, $1, $3);
+			  if ($$ == 0) return -1; }
+			| mls_trans_cexpr OR mls_trans_cexpr
+			{ $$ = (int) define_cexpr(AP_CEXPR_OR, $1, $3);
+			  if ($$ == 0) return -1; }
+			| mls_trans_cexpr_prim
 			{ $$ = $1; }
 			;
 cexpr_prim		: U1 op U2
-			{ $$ = (int) define_cexpr(CEXPR_ATTR, CEXPR_USER, $2);
+			{ $$ = (int) define_cexpr(AP_CEXPR_ATTR, AP_CEXPR_USER, $2);
 			  if ($$ == 0) return -1; }
 			| R1 roleop R2
-			{ $$ = (int) define_cexpr(CEXPR_ATTR, CEXPR_ROLE, $2);
+			{ $$ = (int) define_cexpr(AP_CEXPR_ATTR, AP_CEXPR_ROLE, $2);
 			  if ($$ == 0) return -1; }
 			| T1 op T2
-			{ $$ = (int) define_cexpr(CEXPR_ATTR, CEXPR_TYPE, $2);
+			{ $$ = (int) define_cexpr(AP_CEXPR_ATTR, AP_CEXPR_TYPE, $2);
 			  if ($$ == 0) return -1; }
 			| U1 op { if (insert_separator(1)) return -1; } names_push
-			{ $$ = (int) define_cexpr(CEXPR_NAMES, CEXPR_USER, $2);
+			{ $$ = (int) define_cexpr(AP_CEXPR_NAMES, AP_CEXPR_USER, $2);
 			  if ($$ == 0) return -1; }
 			| U2 op { if (insert_separator(1)) return -1; } names_push
-			{ $$ = (int) define_cexpr(CEXPR_NAMES, CEXPR_USER | CEXPR_TARGET, $2);
+			{ $$ = (int) define_cexpr(AP_CEXPR_NAMES, AP_CEXPR_USER | AP_CEXPR_TARGET, $2);
 			  if ($$ == 0) return -1; }
 			| R1 op { if (insert_separator(1)) return -1; } names_push
-			{ $$ = (int) define_cexpr(CEXPR_NAMES, CEXPR_ROLE, $2);
+			{ $$ = (int) define_cexpr(AP_CEXPR_NAMES, AP_CEXPR_ROLE, $2);
 			  if ($$ == 0) return -1; }
 			| R2 op { if (insert_separator(1)) return -1; } names_push
-			{ $$ = (int) define_cexpr(CEXPR_NAMES, CEXPR_ROLE | CEXPR_TARGET, $2);
+			{ $$ = (int) define_cexpr(AP_CEXPR_NAMES, AP_CEXPR_ROLE | AP_CEXPR_TARGET, $2);
 			  if ($$ == 0) return -1; }
 			| T1 op { if (insert_separator(1)) return -1; } names_push
-			{ $$ = (int) define_cexpr(CEXPR_NAMES, CEXPR_TYPE, $2);
+			{ $$ = (int) define_cexpr(AP_CEXPR_NAMES, AP_CEXPR_TYPE, $2);
 			  if ($$ == 0) return -1; }
 			| T2 op { if (insert_separator(1)) return -1; } names_push
-			{ $$ = (int) define_cexpr(CEXPR_NAMES, CEXPR_TYPE | CEXPR_TARGET, $2);
+			{ $$ = (int) define_cexpr(AP_CEXPR_NAMES, AP_CEXPR_TYPE | AP_CEXPR_TARGET, $2);
 			  if ($$ == 0) return -1; }
 			| SAMEUSER
-			{ $$ = (int) define_cexpr(CEXPR_ATTR, CEXPR_USER, CEXPR_EQ);
+			{ $$ = (int) define_cexpr(AP_CEXPR_ATTR, AP_CEXPR_USER, AP_CEXPR_EQ);
 			  if ($$ == 0) return -1; }
 			| SOURCE ROLE { if (insert_separator(1)) return -1; } names_push
-			{ $$ = (int) define_cexpr(CEXPR_NAMES, CEXPR_ROLE, CEXPR_EQ);
+			{ $$ = (int) define_cexpr(AP_CEXPR_NAMES, AP_CEXPR_ROLE, AP_CEXPR_EQ);
 			  if ($$ == 0) return -1; }
 			| TARGET ROLE { if (insert_separator(1)) return -1; } names_push
-			{ $$ = (int) define_cexpr(CEXPR_NAMES, CEXPR_ROLE | CEXPR_TARGET, CEXPR_EQ);
+			{ $$ = (int) define_cexpr(AP_CEXPR_NAMES, AP_CEXPR_ROLE | AP_CEXPR_TARGET, AP_CEXPR_EQ);
 			  if ($$ == 0) return -1; }
 			| ROLE roleop
-			{ $$ = (int) define_cexpr(CEXPR_ATTR, CEXPR_ROLE, $2);
+			{ $$ = (int) define_cexpr(AP_CEXPR_ATTR, AP_CEXPR_ROLE, $2);
 			  if ($$ == 0) return -1; }
 			| SOURCE TYPE { if (insert_separator(1)) return -1; } names_push
-			{ $$ = (int) define_cexpr(CEXPR_NAMES, CEXPR_TYPE, CEXPR_EQ);
+			{ $$ = (int) define_cexpr(AP_CEXPR_NAMES, AP_CEXPR_TYPE, AP_CEXPR_EQ);
 			  if ($$ == 0) return -1; }
 			| TARGET TYPE { if (insert_separator(1)) return -1; } names_push
-			{ $$ = (int) define_cexpr(CEXPR_NAMES, CEXPR_TYPE | CEXPR_TARGET, CEXPR_EQ);
+			{ $$ = (int) define_cexpr(AP_CEXPR_NAMES, AP_CEXPR_TYPE | AP_CEXPR_TARGET, AP_CEXPR_EQ);
 			  if ($$ == 0) return -1; }
 			;
+trans_prim		: U3 op { if (insert_separator(1)) return -1; } names_push
+			{ $$ = (int) define_cexpr(AP_CEXPR_NAMES, AP_CEXPR_USER | AP_CEXPR_XTGT, $2);
+			  if ($$ == 0) return -1; }
+			| R3 op { if (insert_separator(1)) return -1; } names_push
+			{ $$ = (int) define_cexpr(AP_CEXPR_NAMES, AP_CEXPR_ROLE | AP_CEXPR_XTGT, $2);
+			  if ($$ == 0) return -1; }
+			| T3 op { if (insert_separator(1)) return -1; } names_push
+			{ $$ = (int) define_cexpr(AP_CEXPR_NAMES, AP_CEXPR_TYPE | AP_CEXPR_XTGT, $2);
+			  if ($$ == 0) return -1; }
+			;
+mls_prim		: L1 roleop L2
+			{ if (!mls_valid()) YYABORT;
+			  $$ = (int) define_cexpr(AP_CEXPR_ATTR, AP_CEXPR_L1_L2, $2);
+			  if ($$ == 0) return -1; }
+			| L1 roleop H2
+			{ if (!mls_valid()) YYABORT;
+			  $$ = (int) define_cexpr(AP_CEXPR_ATTR, AP_CEXPR_L1_H2, $2);
+			  if ($$ == 0) return -1; }
+			| H1 roleop L2
+			{ if (!mls_valid()) YYABORT;
+			  $$ = (int) define_cexpr(AP_CEXPR_ATTR, AP_CEXPR_H1_L2, $2);
+			  if ($$ == 0) return -1; }
+			| H1 roleop H2
+			{ if (!mls_valid()) YYABORT;
+			  $$ = (int) define_cexpr(AP_CEXPR_ATTR, AP_CEXPR_H1_H2, $2);
+			  if ($$ == 0) return -1; }
+			| L1 roleop H1
+			{ if (!mls_valid()) YYABORT;
+			  $$ = (int) define_cexpr(AP_CEXPR_ATTR, AP_CEXPR_L1_H1, $2);
+			  if ($$ == 0) return -1; }
+			| L2 roleop H2
+			{ if (!mls_valid()) YYABORT;
+			  $$ = (int) define_cexpr(AP_CEXPR_ATTR, AP_CEXPR_L2_H2, $2);
+			  if ($$ == 0) return -1; }
+			;
+trans_cexpr_prim	: trans_prim
+			{ $$ = $1; }
+			| cexpr_prim
+			{ $$ = $1; }
+			;
+mls_cexpr_prim		: mls_prim
+			{ $$ = $1; }
+			| cexpr_prim
+			{ $$ = $1; }
+			;
+mls_trans_cexpr_prim	: trans_cexpr_prim
+			{ $$ = $1; }
+			| mls_prim
+			{ $$ = $1; }
+			;
 op			: EQUALS
-			{ $$ = CEXPR_EQ; }
+			{ $$ = AP_CEXPR_EQ; }
 			| NOTEQUAL
-			{ $$ = CEXPR_NEQ; }
+			{ $$ = AP_CEXPR_NEQ; }
 			;
 roleop			: op 
 			{ $$ = $1; }
 			| DOM
-			{ $$ = CEXPR_DOM; }
+			{ $$ = AP_CEXPR_DOM; }
 			| DOMBY
-			{ $$ = CEXPR_DOMBY; }
+			{ $$ = AP_CEXPR_DOMBY; }
 			| INCOMP
-			{ $$ = CEXPR_INCOMP; }
+			{ $$ = AP_CEXPR_INCOMP; }
 			;
 users			: user_def
 			| users user_def
 			;
 user_id			: identifier
 			;
-user_def		: USER user_id ROLES names opt_user_ranges ';'
+user_def		: USER user_id ROLES names opt_mls_components ';'
 	                {if (define_user()) return -1;}
 			;
-opt_user_ranges		: RANGES user_ranges 
-			|
+opt_mls_components	: LEVEL dflt_lvl RANGE user_range 
+			| 
 			;
-user_ranges		: mls_range_def
-			| '{' user_range_def_list '}' 
+user_range		: mls_range_def
 			;
-user_range_def_list	: mls_range_def
-			| user_range_def_list mls_range_def
+dflt_lvl		: identifier opt_cat_list
+			;
+opt_cat_list		: ':' id_comma_list
+			| ':' identifier '.' identifier
+			| 
 			;
 initial_sid_contexts	: initial_sid_context_def
 			| initial_sid_contexts initial_sid_context_def
@@ -840,7 +925,9 @@ mls_level_def		: identifier ':' id_comma_list
 			{if (insert_separator(0)) return -1;}
 	                | identifier 
 			{if (insert_separator(0)) return -1;}
-	                ;
+			| identifier ':' identifier '.' identifier
+			{ if (insert_separator(0)) return -1; }
+			;
 id_comma_list           : identifier
 			| id_comma_list ',' identifier
 			;
@@ -1061,7 +1148,7 @@ static int define_typeattribute(void)
 		return 0;
 	}
 	
-	rt = set_policy_version(POL_VER_18, parse_policy);
+	rt = set_policy_version(POL_VER_18_19, parse_policy);
 	if(rt != 0) {
 		yyerror("error setting policy version");
 		return -1;
@@ -1988,6 +2075,18 @@ static int define_user(void)
 		free(id);		 
 	}
 	
+
+	/* strip any MLS level/range definitions*/
+	while ((id = queue_remove(id_queue))) { /* sensitivity */
+		free(id);
+	}
+	while ((id = queue_remove(id_queue))) { /* category */
+		free(id);
+	}
+	while ((id = queue_remove(id_queue))) { /* category */
+		free(id);
+	}
+
 	return 0;
 }
 
@@ -2715,17 +2814,16 @@ static security_con_t *parse_security_context(int dontsave)
 		free(id);
 		id = queue_remove(id_queue);  /* type  */
 		free(id);
-#ifdef CONFIG_SECURITY_SELINUX_MLS
-		{
+
+
 		int l;
-		id = queue_remove(id_queue); free(id); 
-		for (l = 0; l < 2; l++) {
+		for (l = 0; l < 4; l++) {
 			while ((id = queue_remove(id_queue))) {
 				free(id);
 			}
 		}
-		}
-#endif 
+
+
 	return NULL; /* In this case this is not an error */
 	}
 	
@@ -2788,17 +2886,13 @@ static security_con_t *parse_security_context(int dontsave)
 	free(id);
 	scontext->type = rt;	
 	
-#ifdef CONFIG_SECURITY_SELINUX_MLS
-	{
+
 	int l;
-	id = queue_remove(id_queue); free(id); 
-	for (l = 0; l < 2; l++) {
+	for (l = 0; l < 4; l++) {
 		while ((id = queue_remove(id_queue))) {
 			free(id);
 		}
 	}
-	}
-#endif 	
 	return scontext;
 }
 
@@ -2857,103 +2951,54 @@ static int define_initial_sid_context(void)
 
 static int define_sens(void)
 {
-#ifdef CONFIG_SECURITY_SELINUX_MLS
 	char *id;
+	int rt;
 	while ((id = queue_remove(id_queue))) 
 		free(id);
+	rt = set_policy_version(POL_VER_MLS, parse_policy);
+	if(rt != 0) {
+		yyerror("error setting policy version");
+		return -1;
+	}
 	return 0;
-#else
-	yyerror("sensitivity definition in non-MLS configuration");
-	return -1;
-#endif
 }
 
 static int define_dominance(void)
 {
-#ifdef CONFIG_SECURITY_SELINUX_MLS
 	char *id;
+	int rt;
 	while ((id = queue_remove(id_queue))) 
 		free(id);
 	return 0;
-#else
-	yyerror("dominance definition in non-MLS configuration");
-	return -1;
-#endif
+	rt = set_policy_version(POL_VER_MLS, parse_policy);
+	if(rt != 0) {
+		yyerror("error setting policy version");
+		return -1;
+	}
 }
 
 static int define_category(void)
 {
-#ifdef CONFIG_SECURITY_SELINUX_MLS
 	char *id;
 	while ((id = queue_remove(id_queue))) 
 		free(id);
 	return 0;
-#else
-	yyerror("category definition in non-MLS configuration");
-	return -1;
-#endif
+	set_policy_version(POL_VER_MLS,parse_policy);
 }
 
 static int define_level(void)
 {
-#ifdef CONFIG_SECURITY_SELINUX_MLS
 	char *id;
+	int rt;
 	while ((id = queue_remove(id_queue))) 
 		free(id);
 	return 0;
-#else
-	yyerror("level definition in non-MLS configuration");
-	return -1;
-#endif
-}
-
-static int define_common_base(void)
-{
-#ifdef CONFIG_SECURITY_SELINUX_MLS
-	char *id;
-	id = queue_remove(id_queue); free(id);
-	while ((id = queue_remove(id_queue))) {
-		free(id);
-		while ((id = queue_remove(id_queue))) {
-			free(id);
-		}
+	rt = set_policy_version(POL_VER_MLS, parse_policy);
+	if(rt != 0) {
+		yyerror("error setting policy version");
+		return -1;
 	}
-	return 0;
-#else
-	yyerror("MLS base permission definition in non-MLS configuration");
-	return -1;
-#endif
 }
-
-
-/* #ifdef CONFIG_SECURITY_SELINUX_MLS*/
-#if 0
-static int common_base_set(hashtab_key_t key, hashtab_datum_t datum, void *p)
-{
-	return 0;
-}
-#endif
-
-static int define_av_base(void)
-{
-#ifdef CONFIG_SECURITY_SELINUX_MLS
-	char *id;
-	id = queue_remove(id_queue); free(id);
-	while ((id = queue_remove(id_queue))) {
-		free(id);
-		while ((id = queue_remove(id_queue))) {
-			free(id);
-		}
-	}
-	return 0;
-#else
-	yyerror("MLS base permission definition in non-MLS configuration");
-	return -1;
-#endif
-}
-
-
-
 
 static int define_constraint(void)
 {
@@ -2965,12 +3010,52 @@ static int define_constraint(void)
 	return 0;
 }
 
+static int define_mls(void)
+{
+	return set_policy_version(POL_VER_MLS, parse_policy);
+}
+
+static int mls_valid(void)
+{
+	if (parse_policy->version >= POL_VER_MLS) {
+		return 1;
+	} else {
+		yyerror("MLS detected in non-MLS policy");
+		return 0;
+	}
+}
+
+static int define_validatetrans(void)
+{
+	char *id;
+	while ((id = queue_remove(id_queue)))
+		free(id);
+	while ((id = queue_remove(id_queue)))
+		free(id);
+	return  0;
+}
+
+static int define_range_trans(void)
+{
+	char *id;
+	int rt;
+	while ((id = queue_remove(id_queue)))
+		free(id);
+	while ((id = queue_remove(id_queue)))
+		free(id);
+	rt = set_policy_version(POL_VER_MLS, parse_policy);
+	if(rt != 0) {
+		yyerror("error setting policy version");
+		return -1;
+	}
+	return 0;
+}
 
 static constraint_expr_t *
  define_cexpr(__u32 expr_type, __u32 arg1, __u32 arg2)
 {
 	char *id;
-	if (expr_type == CEXPR_NAMES) {
+	if (expr_type == AP_CEXPR_NAMES) {
 		while ((id = queue_remove(id_queue))) 
 			free(id);
 	}
