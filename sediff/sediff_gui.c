@@ -14,6 +14,7 @@
 /* libapol */
 #include <policy.h>
 #include <policy-io.h>
+#include <policy-query.h>
 #include <poldiff.h>
 #include <render.h>
 #include <binpol/binpol.h>
@@ -197,6 +198,460 @@ static int print_iad_element(GtkTextBuffer *txt, GtkTextIter *txt_iter, GString 
 		gtk_text_buffer_get_end_iter(txt, txt_iter);		
 		free(tmp);
 	}
+	return 0;
+}
+
+static int print_rallow_element(GtkTextBuffer *txt, GtkTextIter *txt_iter, GString *string,
+			     GtkTextTag *tag,int_a_diff_t *diff,policy_t *policy,bool_t added,
+			     char *adescrp,get_iad_name_fn_t get_a_name)
+{
+	int i;
+	char *tmp;
+	int rt;
+	GString *local_string = g_string_new("");
+
+	gtk_text_buffer_insert_with_tags(txt, txt_iter, string->str, 
+					 -1, tag, NULL);
+	g_string_printf(local_string, " {");	       
+	gtk_text_buffer_insert_with_tags(txt, txt_iter, local_string->str, 
+							 -1, tag, NULL);
+	for (i = 0; i < diff->numa; i++) {
+		rt = (*get_a_name)(diff->a[i], &tmp, policy);
+		if (rt < 0) {
+			fprintf(stderr, "Problem getting element name for %s %d\n", adescrp, diff->a[i]);
+			return -1;
+		}
+		g_string_printf(local_string, " %s", tmp);	       
+		gtk_text_buffer_insert_with_tags(txt, txt_iter, local_string->str, 
+							 -1, tag, NULL);
+		free(tmp);
+	}
+	g_string_printf(local_string, " }\n");	       
+	gtk_text_buffer_insert_with_tags(txt, txt_iter, local_string->str, 
+							 -1, tag, NULL);
+
+	g_string_free(local_string,TRUE);
+	return 0;
+}
+
+static int print_rallow_rules(GtkTextBuffer *txt, GtkTextIter *txt_iter, GString *string,
+			      GtkTextTag *tag,policy_t *p1, policy_t *p2,char *name,char *adescrip)
+{
+	rbac_bool_t rb, rb2;
+	int rt,idx1,idx2,i;
+	char *rname = NULL;
+	int num_found;
+	/* find index of both roles in policies */
+	idx1 = get_role_idx(name,p1);
+	idx2 = get_role_idx(name, p2);
+
+	if (init_rbac_bool(&rb, p1, TRUE) != 0) 
+		goto print_rallow_rules_error;
+	
+	if (init_rbac_bool(&rb2, p2, TRUE) != 0) 
+		goto print_rallow_rules_error;
+	
+
+	/* find all target roles that have that role in the source of a role allow rule */
+	rt = match_rbac_roles(idx1, IDX_ROLE, SRC_LIST, FALSE, TRUE, &rb, &num_found, p1);
+	if (rt < 0) 
+		return -1;
+	rt = match_rbac_roles(idx2, IDX_ROLE, SRC_LIST, FALSE, TRUE, &rb2, &num_found, p2);
+	if (rt < 0) {
+		free_rbac_bool(&rb);
+		return -1;
+	}
+	/* print that stuff out */
+	g_string_printf(string, "\t\t* Policy 1: allow %s",name);
+	g_string_append(string," { ");
+	for (i = 0; i < p1->num_roles; i++) {
+		if (!rb.allow[i])
+			continue;
+		rt = get_role_name(i,&rname,p1);
+		if (rt < 0)
+			goto print_rallow_rules_error;
+		g_string_append_printf(string,"%s ",rname);
+		free(rname);
+		rname = NULL;		
+	}
+	g_string_append(string,"}\n");
+	g_string_append_printf(string, "\t\t* Policy 2: allow %s", name);
+	g_string_append(string," { ");
+	for (i = 0; i < p2->num_roles; i++) {
+		if (!rb2.allow[i])
+			continue;
+		rt = get_role_name(i,&rname,p2);
+		if (rt < 0)
+			goto print_rallow_rules_error;
+		g_string_append_printf(string,"%s ",rname);
+		free(rname);
+		rname = NULL;		
+	}
+	g_string_append(string,"}\n");
+	gtk_text_buffer_insert_with_tags(txt, txt_iter, string->str, 
+							 -1, tag, NULL);
+	free_rbac_bool(&rb);
+	free_rbac_bool(&rb2);
+	return 0;
+ print_rallow_rules_error:
+	if (rname)
+		free(rname);
+	free_rbac_bool(&rb);
+	free_rbac_bool(&rb2);
+	return -1;
+}
+
+static int print_rallow_buffer(GtkTextBuffer *txt, GtkTextIter *txt_iter,GString *string, 
+			  int id, int_a_diff_t *iad_removed, int_a_diff_t *iad_added, 
+			  policy_t *p_old, policy_t *p_new,summary_node_t *summary_node)
+{
+	get_iad_name_fn_t get_name, get_a_name;
+	char *name, *name2, *descrp = NULL, *adescrp = NULL;
+	int rt, num_new, num_old,num_added,num_removed,num_changed;
+	int_a_diff_t *t,*u;
+	bool_t missing;      /* in this case missing will tell us if the role exits in p_new */
+	GtkTextTag *added_tag, *removed_tag, *changed_tag;
+	GtkTextTag *header_added_tag,*header_removed_tag,*header_changed_tag,*header_tag;		
+	GtkTextTagTable *table;
+
+	GtkTextMark *mark;
+
+
+	/* create a mark that always goes to the left..urr top */ 	
+	mark = gtk_text_buffer_get_mark(txt,"added-mark");
+	if (!mark)
+		mark = gtk_text_buffer_create_mark (txt,"added-mark",txt_iter,TRUE);
+	gtk_text_buffer_get_iter_at_mark(txt,txt_iter,mark);
+
+
+
+	/* create the tags so we can add color to our buffer */
+	table = gtk_text_buffer_get_tag_table(txt);
+	added_tag = gtk_text_tag_table_lookup(table, "added-tag");
+	if (!added_tag) {
+		added_tag = gtk_text_buffer_create_tag(txt, "added-tag",
+						      "family", "monospace",
+						      "foreground", "dark green", 
+						      NULL);
+	      
+	}
+	removed_tag = gtk_text_tag_table_lookup(table, "removed-tag");
+	if (!removed_tag) {
+		removed_tag = gtk_text_buffer_create_tag(txt, "removed-tag",
+							 "family", "monospace",
+							 "foreground", "red",
+							 NULL);
+	}
+	changed_tag = gtk_text_tag_table_lookup(table, "changed-tag");
+	if (!changed_tag) {
+		changed_tag = gtk_text_buffer_create_tag(txt, "changed-tag",
+						       "family", "monospace",
+						       "foreground", "dark blue",
+						       NULL);
+	}
+	header_removed_tag = gtk_text_tag_table_lookup(table, "header-removed-tag");
+	if(!header_removed_tag) {
+		header_removed_tag = gtk_text_buffer_create_tag (txt, "header-removed-tag",
+						      "family", "monospace",
+								 "foreground", "red",
+								 "weight", PANGO_WEIGHT_BOLD, NULL); 
+	}
+	header_added_tag = gtk_text_tag_table_lookup(table, "header-added-tag");
+	if(!header_added_tag) {
+		header_added_tag = gtk_text_buffer_create_tag (txt, "header-added-tag",
+						      "family", "monospace",
+							       "foreground", "dark green",
+							       "weight", PANGO_WEIGHT_BOLD, NULL); 
+	}
+	header_changed_tag = gtk_text_tag_table_lookup(table, "header-changed-tag");
+	if(!header_changed_tag) {
+		header_changed_tag = gtk_text_buffer_create_tag (txt, "header-changed-tag",
+						      "family", "monospace",
+								 "foreground", "dark blue",
+								 "weight", PANGO_WEIGHT_BOLD, NULL); 
+	}
+	header_tag = gtk_text_tag_table_lookup(table, "header-tag");
+	if(!header_tag) {
+		header_tag = gtk_text_buffer_create_tag (txt, "header-tag",
+						      "family", "monospace",
+							 "weight", PANGO_WEIGHT_BOLD,
+							 "underline", PANGO_UNDERLINE_SINGLE,
+							 NULL); 
+	}
+	
+	assert(string != NULL && p_old != NULL && p_new != NULL);
+	assert((id & (IDX_TYPE|IDX_ATTRIB|IDX_ROLE|IDX_USER|IDX_OBJ_CLASS|IDX_COMMON_PERM|IDX_PERM)) != 0);
+
+	/* reset counters */
+	num_added = num_removed = num_changed = 0;
+	summary_node->added = 0;
+	summary_node->removed = 0;
+	summary_node->changed = 0;
+	
+	switch(id) {
+	case IDX_ROLE|IDX_PERM:
+		get_name = &get_role_name;
+		get_a_name = &get_role_name;
+		descrp = "Role Allows";
+		adescrp = "Role Allows";
+		num_new = p_new->num_roles;
+		num_old = p_old->num_roles;
+		break;
+	default:
+		g_return_val_if_reached(-1);
+		break;
+	}
+
+
+
+
+	/* Handle changes */
+	/* iad_added and iad_removed our linked lists ordered by their "names" 
+	   so we walk down the lists comparing names, placing the diffs in alpha
+	   order.  We do this so we can more easily find nodes with like names and 
+	   present them correctly to the user */
+	/* set the iterator up at the current mark, don't reassign iterator until done adding */
+	gtk_text_buffer_get_iter_at_mark(txt,txt_iter,mark);
+	/* did we add anything? */
+	if (iad_added != NULL) {
+		t = iad_added;
+		/* did we remove anything ? */
+		if (iad_removed != NULL) {
+			u = iad_removed;
+			while (u != NULL || t != NULL) {
+				/* do we still have items on both lists */
+				if (t != NULL && u != NULL) {
+					rt = (*get_name)(t->idx, &name, p_new);
+					if (rt < 0) {
+						fprintf(stderr, "Problem getting name for %s %d\n", descrp, t->idx);
+						return -1;
+					}
+					rt = (*get_name)(u->idx, &name2, p_old);
+					if (rt < 0) {
+						fprintf(stderr, "Problem getting name for %s %d\n", descrp, t->idx);
+						return -1;						
+					}
+					rt = strcmp(name,name2);
+					/* do both items have the same name(i.e. are they the same) */
+					if (rt == 0){		
+						/* we know they both have the same name so both rules must exist */
+						summary_node->changed += 1;
+						num_changed +=1 ;
+						print_rallow_rules(txt, txt_iter, string,changed_tag,p_old,p_new,name,adescrp);			
+						rt = print_iad_element(txt,txt_iter,string,added_tag,t,p_new,TRUE,adescrp,get_a_name);
+						if (rt < 0)
+							return -1;
+						rt = print_iad_element(txt,txt_iter,string,removed_tag,u,p_old,FALSE,adescrp,get_a_name);
+						if (rt < 0)
+							return -1;
+						free(name);
+						free(name2);
+						u = u->next;
+						t = t->next;
+					}
+					/* new */
+					else if ( rt < 0 ) {
+						missing = (get_role_idx(name, p_old) >= 0 ? FALSE : TRUE);
+						if (!missing && !t->missing) {
+							summary_node->changed += 1;
+							num_changed +=1 ;
+							print_rallow_rules(txt, txt_iter, string,changed_tag,p_old,p_new,name,adescrp);
+							rt = print_iad_element(txt,txt_iter,string,added_tag,t,p_new,TRUE,adescrp,get_a_name);
+							if (rt < 0)
+								return -1;
+						}
+						t = t->next;
+					}
+					/* old  */
+					else {
+						missing = (get_role_idx(name2, p_new) >= 0 ? FALSE : TRUE);
+						/* This means that the item exists in the new policy, so we indicate whether it has been changed. */
+						if (!missing && !u->missing) {
+							summary_node->changed += 1;
+							num_changed +=1; 
+							print_rallow_rules(txt, txt_iter, string,changed_tag,p_old,p_new,name2,adescrp);
+							rt = print_iad_element(txt,txt_iter,string,removed_tag,u,p_old,FALSE,adescrp,get_a_name);
+							if (rt < 0)
+								return -1;
+						}						
+						u = u->next;
+					}					
+					
+				}
+				/* do we only have additions left? */
+				else if (t != NULL) {
+					rt = (*get_name)(t->idx, &name, p_new);
+					if (rt < 0) {
+						fprintf(stderr, "Problem getting name for %s %d\n", descrp, t->idx);
+						return -1;
+					}
+					missing = (get_role_idx(name, p_old) >= 0 ? FALSE : TRUE);
+					if (!missing && !t->missing) {
+						summary_node->changed += 1;
+						num_changed +=1 ;
+						print_rallow_rules(txt, txt_iter, string,changed_tag,p_old,p_new,name,adescrp);
+						rt = print_iad_element(txt,txt_iter,string,added_tag,t,p_new,TRUE,adescrp,get_a_name);
+						if (rt < 0)
+							return -1;
+					}
+					free(name);
+					t = t->next;
+				}
+				/* do we only have removes left? */
+				else {
+					rt = (*get_name)(u->idx, &name, p_old);
+					if (rt < 0) {
+						fprintf(stderr, "Problem getting name for %s %d\n", descrp, u->idx);
+						return -1;
+					}
+					missing = (get_role_idx(name, p_new) >= 0 ? FALSE : TRUE);
+					/* This means that the item exists in the new policy, so we indicate whether it has been changed. */
+					if (!missing && !u->missing) {
+						summary_node->changed += 1;
+						num_changed +=1 ;
+						print_rallow_rules(txt, txt_iter, string,changed_tag,p_old,p_new,name,adescrp);
+						rt = print_iad_element(txt,txt_iter,string,removed_tag,u,p_old,FALSE,adescrp,get_a_name);
+						if (rt < 0)
+							return -1;
+					}
+					free(name);
+					u = u->next;
+				}
+			}
+		}
+		/* we have no removes just put in additions */
+	        else {
+			for (t = iad_added; t != NULL; t = t->next) {
+				rt = (*get_name)(t->idx, &name, p_new);
+				if (rt < 0) {
+					fprintf(stderr, "Problem getting name for %s %d\n", descrp, t->idx);
+					return -1;
+				}
+				missing = (get_role_idx(name, p_old) >= 0 ? FALSE : TRUE);
+				if (!missing) {
+					summary_node->changed += 1;
+					num_changed +=1 ;
+					print_rallow_rules(txt, txt_iter, string,changed_tag,p_old,p_new,name,adescrp);
+					rt = print_iad_element(txt,txt_iter,string,added_tag,t,p_new,TRUE,adescrp,get_a_name);
+					if (rt < 0)
+						return -1;
+
+				}
+			}
+
+		}
+			
+	}
+	/* did we only remove  ? */
+	else if (iad_removed != NULL) {
+		for (u = iad_removed; u != NULL; u = u->next) {
+			rt = (*get_name)(u->idx, &name, p_old);
+			if (rt < 0) {
+				fprintf(stderr, "Problem getting name for %s %d\n", descrp, u->idx);
+				return -1;
+			}
+			missing = (get_role_idx(name, p_new) >= 0 ? FALSE : TRUE);
+			/* This means that the item exists in the new policy, so we indicate whether it has been changed.  */
+			if (!missing && !u->missing) {
+				summary_node->changed += 1;
+				num_changed +=1 ;
+				print_rallow_rules(txt, txt_iter, string,changed_tag,p_old,p_new,name,adescrp);
+				rt = print_iad_element(txt,txt_iter,string,removed_tag,u,p_old,FALSE,adescrp,get_a_name);
+				if (rt < 0)
+					return -1;
+
+			}
+			free(name);
+		}
+
+	}
+	g_string_printf(string,"\n");
+	gtk_text_buffer_insert(txt,txt_iter,string->str,-1);
+
+	/* put the changed header on */
+	gtk_text_buffer_get_iter_at_mark(txt,txt_iter,mark);
+	g_string_printf(string, "\tChanged %s: %d\n",descrp,summary_node->changed);
+	gtk_text_buffer_insert_with_tags_by_name(txt, txt_iter, string->str, 
+						 -1, "header-changed-tag", NULL);
+
+
+
+
+	/* Handle only removed items */
+	/* set the iterator up at the current mark, don't reassign iterator until done adding */
+	gtk_text_buffer_get_iter_at_mark(txt,txt_iter,mark);
+	if (iad_removed != NULL) {
+		for (t = iad_removed; t != NULL; t = t->next) {
+			rt = (*get_name)(t->idx, &name, p_old);
+			if (rt < 0) {
+				fprintf(stderr, "Problem getting name for %s %d\n", descrp, t->idx);
+				return -1;
+			}
+			missing = (get_role_idx(name, p_new) >= 0 ? FALSE : TRUE);
+			if (missing || t->missing){
+				summary_node->removed += 1;
+				num_removed += 1;
+				g_string_printf(string, "\t\t- allow %s", name);
+				rt = print_rallow_element(txt,txt_iter,string,removed_tag,t,p_old,TRUE,adescrp,get_a_name);
+				if (rt < 0)
+					return -1;
+
+			 
+			}
+		}
+		free(name);
+	}
+	/* Put in removed header */
+	gtk_text_buffer_get_iter_at_mark(txt,txt_iter,mark);
+	g_string_printf(string, "\tRemoved %s: %d\n",descrp,summary_node->removed);
+	gtk_text_buffer_insert_with_tags_by_name(txt, txt_iter, string->str, 
+						 -1, "header-removed-tag", NULL);
+
+
+	/* Handle added items */
+	gtk_text_buffer_get_iter_at_mark(txt,txt_iter,mark);
+	/* Looking for items that are not in the old policy, hence indicating it was ADDED */
+	if (iad_added != NULL) {
+		/* Here we only take care of added items */
+		for (t = iad_added; t != NULL; t = t->next) {
+			rt = (*get_name)(t->idx, &name, p_new);
+			if (rt < 0) {
+				fprintf(stderr, "Problem getting name for %s %d\n", descrp, t->idx);
+				return -1;
+			}
+			missing = (get_role_idx(name, p_old) >= 0 ? FALSE : TRUE);
+			/* This means that the item exists only in the new policy */
+			if (missing || t->missing) {
+				summary_node->added += 1;
+				num_added += 1;
+				g_string_printf(string, "\t\t+ allow %s", name);
+				//gtk_text_buffer_insert_with_tags_by_name(txt, txt_iter, string->str, 
+				//					 -1, "added-tag", NULL);
+				rt = print_rallow_element(txt,txt_iter,string,added_tag,t,p_new,TRUE,adescrp,get_a_name);
+				if (rt < 0)
+					return -1;
+
+
+			}	
+			free(name);
+		}
+	}
+	/* Put added header on */
+	gtk_text_buffer_get_iter_at_mark(txt,txt_iter,mark);
+	g_string_printf(string, "\tAdded %s: %d\n",descrp,summary_node->added);
+	gtk_text_buffer_insert_with_tags_by_name(txt, txt_iter, string->str, 
+						 -1, "header-added-tag", NULL);
+
+
+
+	/* Put the Major header on */
+	gtk_text_buffer_get_iter_at_mark(txt,txt_iter,mark);
+	g_string_printf(string, "%s\n",descrp);
+	gtk_text_buffer_insert_with_tags_by_name(txt, txt_iter, string->str, 
+						 -1, "header-tag", NULL);
+
+
+	gtk_text_buffer_delete_mark(txt,mark);
 	return 0;
 }
 
@@ -396,6 +851,8 @@ static int get_iad_buffer(GtkTextBuffer *txt, GtkTextIter *txt_iter,GString *str
 							if (rt < 0)
 								return -1;
 						}
+						free(name);
+						free(name2);
 						u = u->next;
 						t = t->next;
 					}
@@ -1240,7 +1697,8 @@ static void sediff_update_status_bar()
 			(sediff_app->summary.users.added + sediff_app->summary.users.removed + sediff_app->summary.users.changed),
 			(sediff_app->summary.booleans.added + sediff_app->summary.booleans.removed + sediff_app->summary.booleans.changed),	       
 			(sediff_app->summary.te_rules.added + sediff_app->summary.te_rules.removed + sediff_app->summary.te_rules.changed),	       
-			(sediff_app->summary.rbac.added + sediff_app->summary.rbac.removed + sediff_app->summary.rbac.changed));
+			(sediff_app->summary.rallow.added + sediff_app->summary.rallow.removed + sediff_app->summary.rallow.changed +
+			 sediff_app->summary.rtrans.added + sediff_app->summary.rtrans.removed + sediff_app->summary.rtrans.changed));
 	gtk_label_set_text(statusbar, string->str);
 	g_string_free(string, TRUE);
 }
@@ -1282,9 +1740,11 @@ static void sediff_populate_buffer_hdrs()
 			sediff_app->summary.booleans.removed, sediff_app->summary.booleans.changed);
 	sediff_add_hdr(sediff_app->booleans_buffer,string);
 	/* rbac */
-	g_string_printf(string, "Role Allows (%d Added, %d Removed, %d Changed)\n",sediff_app->summary.rbac.added,
-			sediff_app->summary.rbac.removed, sediff_app->summary.rbac.changed);
-	g_string_append_printf(string, "Role Transitions will be available in the upcoming releases\n\n");
+	g_string_printf(string, "Role Transitions (%d Added, %d Removed, %d Changed)\n\n",sediff_app->summary.rtrans.added,
+			sediff_app->summary.rtrans.removed, sediff_app->summary.rtrans.changed);
+	sediff_add_hdr(sediff_app->rbac_buffer,string);
+	g_string_printf(string, "Role Allows (%d Added, %d Removed, %d Changed)\n",sediff_app->summary.rallow.added,
+			sediff_app->summary.rallow.removed, sediff_app->summary.rallow.changed);
 	sediff_add_hdr(sediff_app->rbac_buffer,string);
 	/* te rules */
 	g_string_printf(string, "TE Rules (%d Added, %d Removed, %d Changed)\n",sediff_app->summary.te_rules.added,
@@ -1919,6 +2379,231 @@ static int txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_ite
 
 }
 
+static int txt_buffer_insert_rtrans_results(GtkTextBuffer *txt, GtkTextIter *txt_iter,
+					  GString *string, apol_diff_t *stuff_removed, apol_diff_t *stuff_added,
+				    	  policy_t *policy_old, policy_t *policy_new)
+{
+	int rt;
+	ap_rtrans_diff_t *t,*u;
+	int r2,t2;
+	char *srole = NULL,*trole = NULL,*type = NULL, *name = NULL, *trole2 = NULL;
+	summary_node_t *summary = &sediff_app->summary.rtrans;
+
+	GtkTextTag *added_tag, *removed_tag, *changed_tag;
+	GtkTextTag *header_added_tag,*header_removed_tag,*header_changed_tag,*header_tag;		
+	GtkTextTagTable *table;
+	GtkTextMark *mark;
+
+	g_return_val_if_fail(stuff_removed != NULL, -1);
+	g_return_val_if_fail(stuff_added != NULL, -1);
+
+	summary->added = summary->removed = summary-> changed = 0;
+	
+
+	/* create a mark that always goes to the left..urr top */ 	
+	mark = gtk_text_buffer_get_mark(txt,"mark");
+	if (!mark)
+		mark = gtk_text_buffer_create_mark (txt,"added-mark",txt_iter,TRUE);
+	gtk_text_buffer_get_iter_at_mark(txt,txt_iter,mark);
+
+	/* create the tags so we can add color to our buffer */
+	table = gtk_text_buffer_get_tag_table(txt);
+	added_tag = gtk_text_tag_table_lookup(table, "added-tag");
+	if (!added_tag) {
+		added_tag = gtk_text_buffer_create_tag(txt, "added-tag",
+						      "family", "monospace",
+						      "foreground", "dark green", 
+						      NULL);
+	      
+	}
+	removed_tag = gtk_text_tag_table_lookup(table, "removed-tag");
+	if (!removed_tag) {
+		removed_tag = gtk_text_buffer_create_tag(txt, "removed-tag",
+							 "family", "monospace",
+							 "foreground", "red",
+							 NULL);
+	}
+	changed_tag = gtk_text_tag_table_lookup(table, "changed-tag");
+	if (!changed_tag) {
+		changed_tag = gtk_text_buffer_create_tag(txt, "changed-tag",
+						       "family", "monospace",
+						       "foreground", "dark blue",
+						       NULL);
+	}
+	header_removed_tag = gtk_text_tag_table_lookup(table, "header-removed-tag");
+	if(!header_removed_tag) {
+		header_removed_tag = gtk_text_buffer_create_tag (txt, "header-removed-tag",
+						      "family", "monospace",
+								 "foreground", "red",
+								 "weight", PANGO_WEIGHT_BOLD, NULL); 
+	}
+	header_added_tag = gtk_text_tag_table_lookup(table, "header-added-tag");
+	if(!header_added_tag) {
+		header_added_tag = gtk_text_buffer_create_tag (txt, "header-added-tag",
+						      "family", "monospace",
+							       "foreground", "dark green",
+							       "weight", PANGO_WEIGHT_BOLD, NULL); 
+	}
+	header_changed_tag = gtk_text_tag_table_lookup(table, "header-changed-tag");
+	if(!header_changed_tag) {
+		header_changed_tag = gtk_text_buffer_create_tag (txt, "header-changed-tag",
+						      "family", "monospace",
+								 "foreground", "dark blue",
+								 "weight", PANGO_WEIGHT_BOLD, NULL); 
+	}
+	header_tag = gtk_text_tag_table_lookup(table, "header-tag");
+	if(!header_tag) {
+		header_tag = gtk_text_buffer_create_tag (txt, "header-tag",
+						      "family", "monospace",
+							 "weight", PANGO_WEIGHT_BOLD,
+							 "underline", PANGO_UNDERLINE_SINGLE,
+							 NULL); 
+	}
+
+	ap_rtrans_diff_t *rtrans_removed = stuff_removed->role_trans;
+	ap_rtrans_diff_t *rtrans_added = stuff_added->role_trans;
+
+	/* go to the end(because we're going in after allows 
+	   and move the mark there as well */
+	gtk_text_buffer_get_end_iter(txt,txt_iter);
+	gtk_text_buffer_move_mark(txt,mark,txt_iter);
+
+	/* Changed rtrans */
+	if (rtrans_removed != NULL) {
+		for (t = rtrans_removed; t != NULL; t = t->next) {
+			/* if the trans rule is in both policies */
+			if (!t->missing) {
+				summary->changed++;
+				/* find the matching rule */
+				rt = get_role_name(t->rs_idx,&name,policy_old);
+				if (rt < 0)
+					goto print_rtrans_error;
+				r2 = get_role_idx(name,policy_new);
+				free(name);
+				rt = get_type_name(t->t_idx,&name,policy_old);
+				if (rt < 0)
+					goto print_rtrans_error;
+				t2 = get_type_idx(name,policy_new);
+				free(name);
+				u = rtrans_added;
+				while (u && (u->rs_idx != r2 || u->t_idx != t2))
+					u = u->next;
+				if (u == NULL)
+					goto print_rtrans_error;
+				rt = get_role_name(t->rs_idx,&srole,policy_old);
+				if (rt < 0)
+					goto print_rtrans_error;
+				rt = get_type_name(t->t_idx,&type,policy_old);
+				if (rt < 0)
+					goto print_rtrans_error;
+				rt = get_role_name(t->rt_idx,&trole,policy_old);
+				if (rt < 0)
+					goto print_rtrans_error;
+				rt = get_role_name(u->rt_idx,&trole2,policy_new);
+				if (rt < 0)
+					goto print_rtrans_error;
+
+				g_string_printf(string,"\t\t* role_transition %s %s\n",srole,type);
+				gtk_text_buffer_insert_with_tags_by_name(txt, txt_iter, string->str, 
+									 -1, "changed-tag", NULL);
+				g_string_printf(string,"\t\t\t+ %s\n",trole2);
+				gtk_text_buffer_insert_with_tags_by_name(txt, txt_iter, string->str, 
+									 -1, "added-tag", NULL);
+				g_string_printf(string,"\t\t\t- %s\n",trole);
+				gtk_text_buffer_insert_with_tags_by_name(txt, txt_iter, string->str, 
+									 -1, "removed-tag", NULL);
+
+				free(srole);
+				free(type);
+				free(trole);
+				free(trole2);
+                        }
+		}
+	}
+	/* Put changed header on */
+	gtk_text_buffer_get_iter_at_mark(txt,txt_iter,mark);
+	g_string_printf(string, "\tChanged Role Transitions: %d\n",summary->changed);
+	gtk_text_buffer_insert_with_tags_by_name(txt, txt_iter, string->str, 
+						 -1, "header-changed-tag", NULL);
+
+
+	gtk_text_buffer_get_iter_at_mark(txt,txt_iter,mark);
+	/* removed rtrans */
+	if (rtrans_removed != NULL) {
+		for (t = rtrans_removed; t != NULL; t = t->next) {
+			if (t->missing) {
+				summary->removed++;
+				rt = get_role_name(t->rs_idx,&srole,policy_old);
+				if (rt < 0)
+					goto print_rtrans_error;
+				rt = get_type_name(t->t_idx,&type,policy_old);
+				if (rt < 0)
+					goto print_rtrans_error;
+				rt = get_role_name(t->rt_idx,&trole,policy_old);
+				if (rt < 0)
+					goto print_rtrans_error;
+				g_string_printf(string,"\t\t- role_transition %s %s %s\n",srole,type,trole);
+				gtk_text_buffer_insert_with_tags_by_name(txt, txt_iter, string->str, 
+									 -1, "removed-tag", NULL);
+
+				free(srole);
+				free(type);
+				free(trole);
+			}
+		}
+	}
+	/* Put changed header on */
+	gtk_text_buffer_get_iter_at_mark(txt,txt_iter,mark);
+	g_string_printf(string, "\tRemoved Role Transitions: %d\n",summary->removed);
+	gtk_text_buffer_insert_with_tags_by_name(txt, txt_iter, string->str, 
+						 -1, "header-removed-tag", NULL);
+
+
+
+
+	/* added rtrans */
+	gtk_text_buffer_get_iter_at_mark(txt,txt_iter,mark);
+	if (rtrans_added != NULL) {
+		for (t = rtrans_added; t != NULL; t = t->next) {
+			if (t->missing) {
+				summary->added++;
+				rt = get_role_name(t->rs_idx,&srole,policy_new);
+				if (rt < 0)
+					goto print_rtrans_error;
+				rt = get_type_name(t->t_idx,&type,policy_new);
+				if (rt < 0)
+					goto print_rtrans_error;
+				rt = get_role_name(t->rt_idx,&trole,policy_new);
+				if (rt < 0)
+					goto print_rtrans_error;
+				g_string_printf(string,"\t\t+ role_transition %s %s %s\n",srole,type,trole);
+				gtk_text_buffer_insert_with_tags_by_name(txt, txt_iter, string->str, 
+									 -1, "added-tag", NULL);
+
+				free(srole);
+				free(type);
+				free(trole);
+			}
+		}
+	}
+	/* Put added header on */
+	gtk_text_buffer_get_iter_at_mark(txt,txt_iter,mark);
+	g_string_printf(string, "\tAdded Role Transitions: %d\n",summary->added);
+	gtk_text_buffer_insert_with_tags_by_name(txt, txt_iter, string->str, 
+						 -1, "header-added-tag", NULL);
+
+	gtk_text_buffer_get_iter_at_mark(txt,txt_iter,mark);
+	g_string_printf(string,"Role Transitions\n");
+	gtk_text_buffer_insert_with_tags_by_name(txt, txt_iter, string->str, 
+						 -1, "header-tag", NULL);
+
+
+
+	return 0;
+ print_rtrans_error:
+	return -1;
+}
+
 static int txt_buffer_insert_rbac_results(GtkTextBuffer *txt, GtkTextIter *txt_iter,
 					  GString *string, apol_diff_t *stuff_removed, apol_diff_t *stuff_added,
 				    	  policy_t *policy_old, policy_t *policy_new)
@@ -1928,13 +2613,19 @@ static int txt_buffer_insert_rbac_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 	g_return_val_if_fail(stuff_removed != NULL, -1);
 	g_return_val_if_fail(stuff_added != NULL, -1);
 	gtk_text_buffer_get_end_iter(txt, txt_iter);
-	rt = get_iad_buffer(txt,txt_iter,string, IDX_ROLE|IDX_PERM, stuff_removed->role_allow, 
-			    stuff_added->role_allow, policy_old, policy_new,&sediff_app->summary.rbac);
+	rt = print_rallow_buffer(txt,txt_iter,string, IDX_ROLE|IDX_PERM, stuff_removed->role_allow, 
+			    stuff_added->role_allow, policy_old, policy_new,&sediff_app->summary.rallow);
 	if (rt < 0) {
 		fprintf(stderr, "Problem printing rbac for policy.\n");
 		return -1;
 	}
+	rt = txt_buffer_insert_rtrans_results(txt,txt_iter,string, stuff_removed, 
+			    stuff_added, policy_old, policy_new);
 
+	if (rt < 0) {
+		fprintf(stderr, "Problem printing rbac for policy.\n");
+		return -1;
+	}
 	return 0;
 }
 
@@ -1942,9 +2633,133 @@ static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 					  GString *string, apol_diff_t *stuff_removed, apol_diff_t *stuff_added,
 				    	  policy_t *policy_old, policy_t *policy_new)
 {
+	GtkTextTag *added_tag, *removed_tag, *changed_tag;
+	GtkTextTag *header_added_tag,*header_removed_tag,*header_changed_tag,*header_tag;		
+	GtkTextTagTable *table;
+	GtkTextMark *mark;
+	ap_cond_expr_diff_t *t;
+	char *rule = NULL;
 
-	g_string_printf(string,"Conditionals will be available in the upcoming releases\n");
-	sediff_add_hdr(txt,string);
+	g_return_val_if_fail(stuff_removed != NULL, -1);
+	g_return_val_if_fail(stuff_added != NULL, -1);
+
+
+	/* create a mark that always goes to the left..urr top */ 	
+	mark = gtk_text_buffer_get_mark(txt,"mark");
+	if (!mark)
+		mark = gtk_text_buffer_create_mark (txt,"added-mark",txt_iter,TRUE);
+	gtk_text_buffer_get_iter_at_mark(txt,txt_iter,mark);
+
+	/* create the tags so we can add color to our buffer */
+	table = gtk_text_buffer_get_tag_table(txt);
+	added_tag = gtk_text_tag_table_lookup(table, "added-tag");
+	if (!added_tag) {
+		added_tag = gtk_text_buffer_create_tag(txt, "added-tag",
+						      "family", "monospace",
+						      "foreground", "dark green", 
+						      NULL);
+	      
+	}
+	removed_tag = gtk_text_tag_table_lookup(table, "removed-tag");
+	if (!removed_tag) {
+		removed_tag = gtk_text_buffer_create_tag(txt, "removed-tag",
+							 "family", "monospace",
+							 "foreground", "red",
+							 NULL);
+	}
+	changed_tag = gtk_text_tag_table_lookup(table, "changed-tag");
+	if (!changed_tag) {
+		changed_tag = gtk_text_buffer_create_tag(txt, "changed-tag",
+						       "family", "monospace",
+						       "foreground", "dark blue",
+						       NULL);
+	}
+	header_removed_tag = gtk_text_tag_table_lookup(table, "header-removed-tag");
+	if(!header_removed_tag) {
+		header_removed_tag = gtk_text_buffer_create_tag (txt, "header-removed-tag",
+						      "family", "monospace",
+								 "foreground", "red",
+								 "weight", PANGO_WEIGHT_BOLD, NULL); 
+	}
+	header_added_tag = gtk_text_tag_table_lookup(table, "header-added-tag");
+	if(!header_added_tag) {
+		header_added_tag = gtk_text_buffer_create_tag (txt, "header-added-tag",
+						      "family", "monospace",
+							       "foreground", "dark green",
+							       "weight", PANGO_WEIGHT_BOLD, NULL); 
+	}
+	header_changed_tag = gtk_text_tag_table_lookup(table, "header-changed-tag");
+	if(!header_changed_tag) {
+		header_changed_tag = gtk_text_buffer_create_tag (txt, "header-changed-tag",
+						      "family", "monospace",
+								 "foreground", "dark blue",
+								 "weight", PANGO_WEIGHT_BOLD, NULL); 
+	}
+	header_tag = gtk_text_tag_table_lookup(table, "header-tag");
+	if(!header_tag) {
+		header_tag = gtk_text_buffer_create_tag (txt, "header-tag",
+						      "family", "monospace",
+							 "weight", PANGO_WEIGHT_BOLD,
+							 "underline", PANGO_UNDERLINE_SINGLE,
+							 NULL); 
+	}
+
+	ap_cond_expr_diff_t *conds_removed = stuff_removed->cond_exprs;
+	ap_cond_expr_diff_t *conds_added = stuff_added->cond_exprs;
+
+	
+	/* changed conds */
+	gtk_text_buffer_get_end_iter(txt,txt_iter);
+	gtk_text_buffer_move_mark(txt,mark,txt_iter);
+	if (conds_added != NULL) {
+		for (t = conds_added; t != NULL; t = t->next) {
+			rule = re_render_cond_expr(t->idx,policy_new);
+			if (!t->missing) {
+				g_string_printf(string,"%s\n",rule);
+				free(rule);
+				gtk_text_buffer_insert_with_tags_by_name(txt, txt_iter, string->str, 
+									 -1, "changed-tag", NULL);
+			}
+		}
+	}
+
+
+	gtk_text_buffer_get_iter_at_mark(txt,txt_iter,mark);
+//	g_string_printf(string, "\tChanged Conditionals: %d\n",summary->changed);
+//	gtk_text_buffer_insert_with_tags_by_name(txt, txt_iter, string->str, 
+//						 -1, "header-changed-tag", NULL);
+
+	/* removed conds */
+	gtk_text_buffer_get_iter_at_mark(txt,txt_iter,mark);
+	if (conds_removed != NULL) {
+		for (t = conds_removed; t != NULL; t = t->next) {
+			rule = re_render_cond_expr(t->idx,policy_old);
+			if (t->missing) {
+				g_string_printf(string,"%s\n",rule);
+				free(rule);
+				gtk_text_buffer_insert_with_tags_by_name(txt, txt_iter, string->str, 
+									 -1, "removed-tag", NULL);
+
+			}
+		}
+	}
+
+
+	/* added conds */
+	gtk_text_buffer_get_iter_at_mark(txt,txt_iter,mark);
+	if (conds_added != NULL) {
+		for (t = conds_added; t != NULL; t = t->next) {
+			rule = re_render_cond_expr(t->idx,policy_new);
+			if (t->missing) {
+				g_string_printf(string,"%s\n",rule);
+				free(rule);
+				gtk_text_buffer_insert_with_tags_by_name(txt, txt_iter, string->str, 
+									 -1, "added-tag", NULL);
+
+			}
+		}
+	}
+
 
        	return 0;
 }
@@ -2268,13 +3083,22 @@ static void txt_buffer_insert_summary_results()
 	g_string_printf(string,"\tChanged: %d\n",sediff_app->summary.te_rules.changed);
 	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_changed_tag,NULL);
 
-	g_string_printf(string,"RBAC:\n");
+	g_string_printf(string,"Role Allows:\n");
 	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_tag,NULL);
-	g_string_printf(string,"\tAdded: %d\n",sediff_app->summary.rbac.added);
+	g_string_printf(string,"\tAdded: %d\n",sediff_app->summary.rallow.added);
 	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_added_tag,NULL);
-	g_string_printf(string,"\tRemoved: %d\n",sediff_app->summary.rbac.removed);
+	g_string_printf(string,"\tRemoved: %d\n",sediff_app->summary.rallow.removed);
 	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_removed_tag,NULL);
-	g_string_printf(string,"\tChanged: %d\n",sediff_app->summary.rbac.changed);
+	g_string_printf(string,"\tChanged: %d\n",sediff_app->summary.rallow.changed);
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_changed_tag,NULL);
+
+	g_string_printf(string,"Role Transitions:\n");
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_tag,NULL);
+	g_string_printf(string,"\tAdded: %d\n",sediff_app->summary.rtrans.added);
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_added_tag,NULL);
+	g_string_printf(string,"\tRemoved: %d\n",sediff_app->summary.rtrans.removed);
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_removed_tag,NULL);
+	g_string_printf(string,"\tChanged: %d\n",sediff_app->summary.rtrans.changed);
 	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_changed_tag,NULL);
 
 	g_string_free(string,TRUE);
@@ -3227,7 +4051,8 @@ static int sediff_diff_and_load_policies(const char *p1_file, const char *p2_fil
 			(sediff_app->summary.users.added + sediff_app->summary.users.removed + sediff_app->summary.users.changed),
 			(sediff_app->summary.booleans.added + sediff_app->summary.booleans.removed + sediff_app->summary.booleans.changed),	       
 			(sediff_app->summary.te_rules.added + sediff_app->summary.te_rules.removed + sediff_app->summary.te_rules.changed),	       
-			(sediff_app->summary.rbac.added + sediff_app->summary.rbac.removed + sediff_app->summary.rbac.changed));
+			(sediff_app->summary.rallow.added + sediff_app->summary.rallow.removed + sediff_app->summary.rallow.changed +
+			 sediff_app->summary.rtrans.added + sediff_app->summary.rtrans.removed + sediff_app->summary.rtrans.changed));
 			
   
 	labels = g_strsplit(string->str,"|",-1);
