@@ -451,51 +451,59 @@ char *re_render_avh_rule_enabled_state(avh_node_t *node, policy_t *p)
 	return t;
 }
 
-/* print the cond expr in rpn for a rule */
-char *re_render_avh_rule_cond_expr(avh_node_t *node, policy_t *p)
+char *re_render_cond_expr(int idx,policy_t *p)
 {
 	cond_expr_t *cond;
 	char *rt = NULL;
 	int sz;
 	char tbuf[BUF_SZ];
-	if (node->flags & AVH_FLAG_COND) {
-		append_str(&rt,&sz," [ ");
-		for(cond = p->cond_exprs[node->cond_expr].expr; cond != NULL; cond  = cond->next) {
-			switch (cond->expr_type) {
-			case COND_BOOL:
-				snprintf(tbuf, sizeof(tbuf)-1, "%s ", p->cond_bools[cond->bool].name); 
-				append_str(&rt,&sz,tbuf);
-				break;
-			case COND_NOT:
-				snprintf(tbuf, sizeof(tbuf)-1, "! "); 
-				append_str(&rt,&sz,tbuf);
-				break;
-			case COND_OR:
-				snprintf(tbuf, sizeof(tbuf)-1, "|| "); 
-				append_str(&rt,&sz,tbuf);
-				break;
-			case COND_AND:
-				snprintf(tbuf, sizeof(tbuf)-1, "&& "); 
-				append_str(&rt,&sz,tbuf);
-				break;
-			case COND_XOR:
-				snprintf(tbuf, sizeof(tbuf)-1, "^ "); 
-				append_str(&rt,&sz,tbuf);
-				break;
-			case COND_EQ:
-				append_str(&rt,&sz,tbuf);
-				snprintf(tbuf, sizeof(tbuf)-1, "== "); 
-				break;
-			case COND_NEQ:
-				append_str(&rt,&sz,tbuf);
-				snprintf(tbuf, sizeof(tbuf)-1, "!= ");
-				break;
-			default:
-				break;
-			}
 
+	append_str(&rt,&sz," [ ");
+	for(cond = p->cond_exprs[idx].expr; cond != NULL; cond  = cond->next) {
+		switch (cond->expr_type) {
+		case COND_BOOL:
+			snprintf(tbuf, sizeof(tbuf)-1, "%s ", p->cond_bools[cond->bool].name); 
+			append_str(&rt,&sz,tbuf);
+			break;
+		case COND_NOT:
+			snprintf(tbuf, sizeof(tbuf)-1, "! "); 
+			append_str(&rt,&sz,tbuf);
+			break;
+		case COND_OR:
+			snprintf(tbuf, sizeof(tbuf)-1, "|| "); 
+			append_str(&rt,&sz,tbuf);
+			break;
+		case COND_AND:
+			snprintf(tbuf, sizeof(tbuf)-1, "&& "); 
+			append_str(&rt,&sz,tbuf);
+			break;
+		case COND_XOR:
+			snprintf(tbuf, sizeof(tbuf)-1, "^ "); 
+			append_str(&rt,&sz,tbuf);
+			break;
+		case COND_EQ:
+			append_str(&rt,&sz,tbuf);
+			snprintf(tbuf, sizeof(tbuf)-1, "== "); 
+			break;
+		case COND_NEQ:
+			append_str(&rt,&sz,tbuf);
+			snprintf(tbuf, sizeof(tbuf)-1, "!= ");
+			break;
+		default:
+			break;
 		}
-		append_str(&rt,&sz," ] ");			
+		
+	}
+	append_str(&rt,&sz," ] ");			
+	return rt;
+}
+
+/* print the cond expr in rpn for a rule */
+char *re_render_avh_rule_cond_expr(avh_node_t *node, policy_t *p)
+{
+	char *rt = NULL;
+	if (node->flags & AVH_FLAG_COND) {
+		rt = re_render_cond_expr(node->cond_expr,p);
 	}
 	return rt;
 }
