@@ -32,7 +32,15 @@ namespace eval Apol_Analysis_relabel {
 	In subject mode the user specifies only a subject type. Two lists \
 	of types will be displayed corresponding to all of the types To \
 	which the subject can relabel and From which the subject can \
-	relabel. "
+	relabel.\n\n \
+	OPTIONAL RESULT FILTERS\n \
+	Results may be filtered in several ways. The end types resulting \
+	from a query may be filtered by regular expression. The Advanced \
+	Filters provide the option of selecting which object classes to \
+	include in the analysis and which types to include as subjects \
+	of relabeling operations. Note, excluded subjects are ignored in \
+	subject mode because only the selected subject type is used as \
+	a subject."
     
 	variable widget_vars 
 	variable widgets
