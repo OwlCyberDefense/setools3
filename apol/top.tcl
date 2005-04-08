@@ -2073,6 +2073,12 @@ proc ApolTop::openPolicyFile {file recent_flag} {
 	if {$rt == 0} {
 		#set filename [file tail $file]
 		set filename $file
+	} elseif {$rt == -6} {
+		tk_messageBox -icon error -type ok -title "Error with policy file" \
+			-message "Pre-version 19 MLS is not supported.\n\n$err" 
+		. configure -cursor $orig_Cursor 
+		focus -force .
+		return -1
 	} else {
 		tk_messageBox -icon error -type ok -title "Error with policy file" \
 			-message "The selected file does not appear to be a valid SE Linux Policy.\n\n$err" 
