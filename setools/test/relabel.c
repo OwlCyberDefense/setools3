@@ -302,5 +302,6 @@ int main(int argc, char **argv)
 
 	ap_relabel_result_destroy(res);
 	free(res);
+	TEST("end of tests",1);
 	return retv;
 }
