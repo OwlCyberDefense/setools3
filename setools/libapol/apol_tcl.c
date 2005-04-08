@@ -1642,7 +1642,7 @@ int Apol_OpenPolicy(ClientData clientData, Tcl_Interp *interp, int argc, char *a
 		free_policy(&policy);
 		sprintf(tbuf, "open_policy error (%d)", rt);
 		Tcl_AppendResult(interp, tbuf, (char *) NULL);
-		return TCL_ERROR;
+		return rt;
 	}
 	return TCL_OK;	
 }
@@ -1734,6 +1734,11 @@ int Apol_GetPolicyVersionNumber(ClientData clientData, Tcl_Interp *interp, int a
 		break;
 	case POL_VER_18:
 		Tcl_AppendResult(interp, "18", (char *) NULL);
+		break;
+	case POL_VER_18_19:
+	case POL_VER_19:
+	case POL_VER_19MLS:
+		Tcl_AppendResult(interp, "19", (char *) NULL);
 		break;
 	default:
 		Tcl_AppendResult(interp, "0", (char *) NULL);
