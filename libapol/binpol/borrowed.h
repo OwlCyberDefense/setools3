@@ -52,6 +52,7 @@
 	#define CEXPR_NAMES	5 /* attr op names */	
 #endif
 
+#define POLICYDB_VERSION_MLS		19
 #define POLICYDB_VERSION_NLCLASS	18
 #define POLICYDB_VERSION_IPV6		17
 #define POLICYDB_VERSION_BOOL 		16
@@ -59,11 +60,7 @@
 
 #define POLICYDB_CONFIG_MLS    1
 
-#ifdef CONFIG_SECURITY_SELINUX_MLS
 #define SYM_NUM     8
-#else
-#define SYM_NUM     6
-#endif
 
 
 /* avtab.h */
