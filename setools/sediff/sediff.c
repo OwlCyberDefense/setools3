@@ -1261,15 +1261,20 @@ static int print_te_rule(avh_node_t *cur, policy_t *policy, const char *string,
 		return -1; 
 
 	}
-	if (show_cond && cur->flags & AVH_FLAG_COND) {
-		cond = re_render_avh_rule_cond_state(cur,policy);
-	}
 	/* print the rule */
 	rule = re_render_avh_rule(cur, policy); 
 	if (rule == NULL) { 
 		return -1;
 	} 
-	snprintf(tbuf, APOL_STR_SZ+256,"%s%s%s",cond == NULL ? " " : cond,string,rule);
+	if (show_cond && cur->flags & AVH_FLAG_COND) {
+		cond = re_render_avh_rule_cond_state(cur,policy);	
+		snprintf(tbuf, APOL_STR_SZ+256,"%s%s%s",cond == NULL ? " " : cond,string,rule);
+	}
+	else if (!show_cond && cur->flags & AVH_FLAG_COND) {
+		snprintf(tbuf, APOL_STR_SZ+256,"\t %s%s",string,rule);
+	}
+	else
+		snprintf(tbuf, APOL_STR_SZ+256," %s%s",string,rule);
 	append_str(buf,sz,tbuf);
 	free(rule); 
 	if (cond != NULL) {
