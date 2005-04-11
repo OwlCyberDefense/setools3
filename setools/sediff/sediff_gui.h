@@ -32,6 +32,7 @@ typedef struct sediff_summary {
 	summary_node_t rallow;
 	summary_node_t rtrans;
 	summary_node_t te_rules;
+	summary_node_t conds;
 } sediff_summary_t;
 
 typedef struct sediff_app {
