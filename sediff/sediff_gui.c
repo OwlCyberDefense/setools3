@@ -2000,6 +2000,10 @@ static int txt_buffer_insert_te_line(GtkTextBuffer *txt, GtkTextIter *iter,
 		g_string_printf(string,"%s%s",rule,condtab);
 		free(rule);
 	}
+	/* in this case we are hiding conds(so we're printing in conditionals we need to double tab these */
+	else if (!show_conds && cur->flags & AVH_FLAG_COND) {
+		g_string_printf(string,"%s%s",fulltab,fulltab);
+	}
 	else
 		g_string_printf(string,"%s",fulltab);
 	gtk_text_buffer_insert_with_tags(txt, iter, string->str, -1, pangotag, NULL);  
