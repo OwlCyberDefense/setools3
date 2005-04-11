@@ -625,8 +625,6 @@ static int print_rallow_buffer(GtkTextBuffer *txt, GtkTextIter *txt_iter,GString
 				summary_node->added += 1;
 				num_added += 1;
 				g_string_printf(string, "\t\t+ allow %s", name);
-				//gtk_text_buffer_insert_with_tags_by_name(txt, txt_iter, string->str, 
-				//					 -1, "added-tag", NULL);
 				rt = print_rallow_element(txt,txt_iter,string,added_tag,t,p_new,TRUE,adescrp,get_a_name);
 				if (rt < 0)
 					return -1;
@@ -1687,7 +1685,7 @@ static void sediff_update_status_bar()
 	g_assert(statusbar);
 	g_string_printf(string,"Classes & Perms: %d "
 			"Types: %d Attributes: %d Roles: %d Users: %d Booleans: %d "
-			"TE Rules: %d Rbac: %d",
+			"TE Rules: %d Rbac: %d, Conds: %d",
 			(sediff_app->summary.classes.added + sediff_app->summary.classes.removed + sediff_app->summary.classes.changed +
 			sediff_app->summary.permissions.added + sediff_app->summary.permissions.removed + sediff_app->summary.permissions.changed +
 			 sediff_app->summary.commons.added + sediff_app->summary.commons.removed + sediff_app->summary.commons.changed),
@@ -1698,7 +1696,8 @@ static void sediff_update_status_bar()
 			(sediff_app->summary.booleans.added + sediff_app->summary.booleans.removed + sediff_app->summary.booleans.changed),	       
 			(sediff_app->summary.te_rules.added + sediff_app->summary.te_rules.removed + sediff_app->summary.te_rules.changed),	       
 			(sediff_app->summary.rallow.added + sediff_app->summary.rallow.removed + sediff_app->summary.rallow.changed +
-			 sediff_app->summary.rtrans.added + sediff_app->summary.rtrans.removed + sediff_app->summary.rtrans.changed));
+			 sediff_app->summary.rtrans.added + sediff_app->summary.rtrans.removed + sediff_app->summary.rtrans.changed),
+			(sediff_app->summary.conds.added + sediff_app->summary.conds.removed + sediff_app->summary.conds.changed));
 	gtk_label_set_text(statusbar, string->str);
 	g_string_free(string, TRUE);
 }
@@ -1750,6 +1749,12 @@ static void sediff_populate_buffer_hdrs()
 	g_string_printf(string, "TE Rules (%d Added, %d Removed, %d Changed)\n",sediff_app->summary.te_rules.added,
 			sediff_app->summary.te_rules.removed, sediff_app->summary.te_rules.changed);
 	sediff_add_hdr(sediff_app->te_buffer,string);
+	/* Conditionals  */
+	g_string_printf(string, "Conditionals (%d Added, %d Removed, %d Changed)\n",sediff_app->summary.conds.added,
+			sediff_app->summary.conds.removed, sediff_app->summary.conds.changed);
+	sediff_add_hdr(sediff_app->conditionals_buffer,string);
+
+	
 
 }
 
@@ -1981,7 +1986,7 @@ static int txt_buffer_insert_perms_results(GtkTextBuffer *txt, GtkTextIter *txt_
 static int txt_buffer_insert_te_line(GtkTextBuffer *txt, GtkTextIter *iter, 
 				     GString *string,avh_node_t *cur,policy_t *policy,
 				     GtkTextTag *colortag,GtkTextTag *linktag,
-				     GtkTextTag *pangotag, const char *str)
+				     GtkTextTag *pangotag, const char *str,bool_t show_conds)
 {
 	char *fulltab = sediff_get_tab_spaces(TABSIZE);
 	char *condtab = sediff_get_tab_spaces(TABSIZE-2);
@@ -1990,7 +1995,7 @@ static int txt_buffer_insert_te_line(GtkTextBuffer *txt, GtkTextIter *iter,
 	int j;
 
 	/* are there conditionals */
-	if (cur->flags & AVH_FLAG_COND) {
+	if (show_conds && cur->flags & AVH_FLAG_COND) {
 		rule = re_render_avh_rule_cond_state(cur,policy);
 		g_string_printf(string,"%s%s",rule,condtab);
 		free(rule);
@@ -2029,7 +2034,7 @@ static int txt_buffer_insert_te_line(GtkTextBuffer *txt, GtkTextIter *iter,
 		g_strfreev(split_line_array); 
 	} 		
 	/* get the conditional expression */
-	if (cur->flags & AVH_FLAG_COND) {
+	if (show_conds && cur->flags & AVH_FLAG_COND) {
 		rule = re_render_avh_rule_cond_expr(cur,policy);
 		gtk_text_buffer_insert_with_tags(txt, iter, rule, -1, colortag, NULL); 		
 		free(rule);
@@ -2040,17 +2045,331 @@ static int txt_buffer_insert_te_line(GtkTextBuffer *txt, GtkTextIter *iter,
 	
 }
 
+static int txt_buffer_insert_te_added_changed(GtkTextBuffer *txt,GtkTextMark *changed_mark,
+					GtkTextMark *added_mark,GtkTextMark *holder_mark,			       
+					GString *string, apol_diff_t *diff1, apol_diff_t *diff2,
+					policy_t *policy1,policy_t *policy2,avh_node_t *diffcur2,
+					int *num_changed,int *num_added,bool_t show_conds)
+{
+	avh_node_t *cur2 = NULL;
+	avh_node_t *diffcur1 = NULL;
+	avh_node_t *cur = NULL;
+	avh_key_t p1key;
+	int j;
+	bool_t inverse,matched;
+	char *fulltab = sediff_get_tab_spaces(TABSIZE);
+	char *name = NULL;
+	GtkTextTag *link1_tag = NULL,*link2_tag = NULL, *rules_tag,*added_tag,*changed_tag,*removed_tag,*header_tag;
+	GtkTextTagTable *table = NULL;
+	GtkTextIter added_iter,changed_iter;
+
+	table = gtk_text_buffer_get_tag_table(txt);
+	link1_tag = gtk_text_tag_table_lookup(table, "policy1-link-tag");
+	link2_tag = gtk_text_tag_table_lookup(table, "policy2-link-tag");
+
+	if (!is_binary_policy(policy1)) {
+		if (!link1_tag) {
+			link1_tag = gtk_text_buffer_create_tag(txt, "policy1-link-tag",
+							      "family", "monospace",
+							      "foreground", "blue", 
+							      "underline", PANGO_UNDERLINE_SINGLE, NULL);
+		}
+	}
+	if (!is_binary_policy(policy2)) {
+		if (!link2_tag) {
+			link2_tag = gtk_text_buffer_create_tag(txt, "policy2-link-tag",
+							      "family", "monospace",
+							      "foreground", "blue", 
+							      "underline", PANGO_UNDERLINE_SINGLE, NULL);
+		}
+ 	}
+	added_tag = gtk_text_tag_table_lookup(table, "added-tag");	
+	if (!added_tag) {
+		added_tag = gtk_text_buffer_create_tag(txt, "added-tag",
+						      "family", "monospace",
+						      "foreground", "dark green", 
+						      NULL);
+	      
+	}
+	changed_tag = gtk_text_tag_table_lookup(table, "changed-tag");
+	if (!changed_tag) {
+		changed_tag = gtk_text_buffer_create_tag(txt, "changed-tag",
+							 "family", "monospace",
+							 "foreground", "dark blue",
+							 NULL);
+	}
+	removed_tag = gtk_text_tag_table_lookup(table, "removed-tag");
+	if (!removed_tag) {
+		removed_tag = gtk_text_buffer_create_tag(txt, "removed-tag",
+							 "family", "monospace",
+							 "foreground", "red",
+							 NULL);
+	}
+	header_tag = gtk_text_tag_table_lookup(table, "header-tag");
+	if(!header_tag) {
+		header_tag = gtk_text_buffer_create_tag (txt, "header-tag",
+							 "weight", PANGO_WEIGHT_BOLD,
+							 "underline", PANGO_UNDERLINE_SINGLE,
+							 NULL); 
+	}
+	rules_tag = gtk_text_tag_table_lookup(table, "rules-tag");
+	if (!rules_tag) {
+		rules_tag = gtk_text_buffer_create_tag(txt, "rules-tag",
+						       "family", "monospace", NULL);
+	}
+
+	gtk_text_buffer_get_iter_at_mark(txt,&added_iter,added_mark);
+	
+	/* make the p1 key */
+	make_p2_key(&diffcur2->key,&p1key,policy2,policy1);
+	/* now loop through list and find not only matching key but also matching 
+	   conditional */
+	matched = FALSE;
+	cur = avh_find_first_node(&policy1->avh, &p1key);
+	while (cur != NULL && does_cond_match(cur,policy1,diffcur2,policy2,&inverse) == FALSE)
+		cur = avh_find_next_node(cur);
+	
+	/* if the rule is in policy 1 this is a changed rule*/
+	if (cur != NULL) {
+		*num_changed += 1;
+		/* get the entire rule from policy 2 */
+		cur2 = avh_find_first_node(&policy2->avh, &diffcur2->key);
+		while (cur2 != NULL && does_cond_match(cur2,policy2,diffcur2,policy2,&inverse) == FALSE)
+			cur2 = avh_find_next_node(cur2);
+		if (cur2 == NULL)
+			return -1;
+		
+		/* try to find the key in diff1 */
+		diffcur1 = avh_find_first_node(&diff1->te, &p1key);
+		while (diffcur1 != NULL && does_cond_match(diffcur1,policy1,diffcur2,policy2,&inverse) == FALSE)
+			diffcur1 = avh_find_next_node(diffcur1);
+		
+		gtk_text_buffer_get_iter_at_mark(txt,&changed_iter,changed_mark);
+		txt_buffer_insert_te_line(txt, &changed_iter, string, 
+					  cur, policy1, changed_tag,link1_tag,
+					  rules_tag,"* Policy 1: ",show_conds);
+		txt_buffer_insert_te_line(txt, &changed_iter, string, 
+					  cur2, policy2, changed_tag,link2_tag,
+					  rules_tag,"* Policy 2: ",show_conds);
+		
+		
+		/* now print the diffs */
+		/* at this point we know that both diffcur1 and diffcur2 have the same key so we don't need
+		   to check if diffcur1 is a type transition rule, we can just go with what diffcur2 is 
+		*/
+		if (diffcur2->key.rule_type <= RULE_MAX_AV) {
+			for (j = 0 ; j < diffcur2->num_data; j++) {
+				if (get_perm_name(diffcur2->data[j],&name,policy2) == 0) {
+					g_string_printf(string,"%s%s+ %s\n",fulltab,fulltab,name);
+					gtk_text_buffer_insert_with_tags_by_name(txt, &changed_iter, string->str, -1, "added-tag", NULL);
+					gtk_text_buffer_get_iter_at_mark(txt,&changed_iter,changed_mark);
+					free(name);
+				}
+			}
+			if (diffcur1) {
+				for (j = 0 ; j < diffcur1->num_data; j++) {
+					if (get_perm_name(diffcur1->data[j],&name,policy1) == 0) {
+						g_string_printf(string,"%s%s- %s\n",fulltab,fulltab,name);
+						gtk_text_buffer_insert_with_tags_by_name(txt, &changed_iter, string->str, -1, "removed-tag", NULL);
+						gtk_text_buffer_get_iter_at_mark(txt,&changed_iter,changed_mark);
+						free(name);
+					}
+				}
+			}
+		}
+		else {
+			if (diffcur2->num_data == 1) {
+				if (get_type_name(diffcur2->data[0],&name,policy2) == 0) {
+					g_string_printf(string,"%s%s+ %s\n",fulltab,fulltab,name);
+					gtk_text_buffer_insert_with_tags_by_name(txt, &changed_iter, string->str, -1, "added-tag", NULL);
+					gtk_text_buffer_get_iter_at_mark(txt,&changed_iter,changed_mark);
+					free(name);
+				}
+			}
+			if(diffcur1) {
+				if (get_type_name(diffcur1->data[0],&name,policy1) == 0) {
+					g_string_printf(string,"%s%s- %s\n",fulltab,fulltab,name);
+					gtk_text_buffer_insert_with_tags_by_name(txt, &changed_iter, string->str, -1, "removed-tag", NULL);
+					gtk_text_buffer_get_iter_at_mark(txt,&changed_iter,changed_mark);
+					free(name);
+				}
+			}
+		}
+		
+		gtk_text_buffer_get_iter_at_mark(txt,&changed_iter,changed_mark);
+		
+	}
+	/* if the rule is not in policy 1 */
+	else if (cur == NULL ) {
+		*num_added += 1;
+		gtk_text_buffer_get_iter_at_mark(txt,&added_iter,added_mark);
+		txt_buffer_insert_te_line(txt, &added_iter, string, 
+					  diffcur2, policy2, added_tag,link2_tag,
+					  rules_tag,"+ ",show_conds);
+	}
+	return 0;
+
+}
+static int txt_buffer_insert_te_missing(GtkTextBuffer *txt,GtkTextMark *changed_mark,
+					GtkTextMark *added_mark,GtkTextMark **holder_mark,			       
+					GString *string, apol_diff_t *diff1, apol_diff_t *diff2,
+					policy_t *policy1,policy_t *policy2,avh_node_t *diffcur1,
+					int *num_changed,int *num_removed,bool_t *polmatched,bool_t show_conds)
+{
+	avh_node_t *cur2 = NULL;
+	avh_node_t *diffcur2 = NULL;
+	avh_node_t *cur = NULL;
+	avh_key_t p2key;
+	int j;
+	bool_t inverse,matched;
+	char *fulltab = sediff_get_tab_spaces(TABSIZE);
+	char *name = NULL;
+	GtkTextTag *link1_tag = NULL,*link2_tag = NULL, *rules_tag,*added_tag,*changed_tag,*removed_tag,*header_tag;
+	GtkTextTagTable *table = NULL;
+	GtkTextIter added_iter,changed_iter, holder_iter;
+
+	table = gtk_text_buffer_get_tag_table(txt);
+	link1_tag = gtk_text_tag_table_lookup(table, "policy1-link-tag");
+	link2_tag = gtk_text_tag_table_lookup(table, "policy2-link-tag");
+
+	if (!is_binary_policy(policy1)) {
+		if (!link1_tag) {
+			link1_tag = gtk_text_buffer_create_tag(txt, "policy1-link-tag",
+							      "family", "monospace",
+							      "foreground", "blue", 
+							      "underline", PANGO_UNDERLINE_SINGLE, NULL);
+		}
+	}
+	if (!is_binary_policy(policy2)) {
+		if (!link2_tag) {
+			link2_tag = gtk_text_buffer_create_tag(txt, "policy2-link-tag",
+							      "family", "monospace",
+							      "foreground", "blue", 
+							      "underline", PANGO_UNDERLINE_SINGLE, NULL);
+		}
+ 	}
+	added_tag = gtk_text_tag_table_lookup(table, "added-tag");	
+	if (!added_tag) {
+		added_tag = gtk_text_buffer_create_tag(txt, "added-tag",
+						      "family", "monospace",
+						      "foreground", "dark green", 
+						      NULL);
+	      
+	}
+	changed_tag = gtk_text_tag_table_lookup(table, "changed-tag");
+	if (!changed_tag) {
+		changed_tag = gtk_text_buffer_create_tag(txt, "changed-tag",
+							 "family", "monospace",
+							 "foreground", "dark blue",
+							 NULL);
+	}
+	removed_tag = gtk_text_tag_table_lookup(table, "removed-tag");
+	if (!removed_tag) {
+		removed_tag = gtk_text_buffer_create_tag(txt, "removed-tag",
+							 "family", "monospace",
+							 "foreground", "red",
+							 NULL);
+	}
+	header_tag = gtk_text_tag_table_lookup(table, "header-tag");
+	if(!header_tag) {
+		header_tag = gtk_text_buffer_create_tag (txt, "header-tag",
+							 "weight", PANGO_WEIGHT_BOLD,
+							 "underline", PANGO_UNDERLINE_SINGLE,
+							 NULL); 
+	}
+	rules_tag = gtk_text_tag_table_lookup(table, "rules-tag");
+	if (!rules_tag) {
+		rules_tag = gtk_text_buffer_create_tag(txt, "rules-tag",
+						       "family", "monospace", NULL);
+	}
+
+	gtk_text_buffer_get_iter_at_mark(txt,&changed_iter,changed_mark);
+
+
+
+	/* make the p1 key */
+	make_p2_key(&diffcur1->key,&p2key,policy1,policy2); 
+	
+	/* search for the key/cond in p2, */			
+	matched = FALSE;
+	cur2 = avh_find_first_node(&policy2->avh, &p2key);
+	while (cur2 != NULL && does_cond_match(diffcur1,policy1,cur2,policy2,&inverse) == FALSE)
+		cur2 = avh_find_next_node(cur2);
+	/* the rule is in policy 2 */
+	if (cur2 != NULL) {
+		/* is the rule in diff2, if so then it will be handled in the adds,
+		   if not that we need to treat this as a change now */
+		diffcur2 = avh_find_first_node(&diff2->te, &p2key);
+		while (diffcur2 != NULL && does_cond_match(diffcur1,policy1,diffcur2,policy2,&inverse) == FALSE)
+			diffcur2 = avh_find_next_node(diffcur2);
+		if (diffcur2 == NULL) {
+			/* update counter */
+			*num_changed += 1;
+			
+			/* find the complete rule in p1 */
+			cur = avh_find_first_node(&policy1->avh, &diffcur1->key);
+			while (cur != NULL && does_cond_match(diffcur1,policy1,cur,policy1,&inverse) == FALSE)
+				cur = avh_find_next_node(cur);
+			if (cur == NULL)
+				g_return_val_if_reached(-1);
+			/* print the p1 rule */
+			gtk_text_buffer_get_iter_at_mark(txt,&changed_iter,changed_mark);
+			txt_buffer_insert_te_line(txt, &changed_iter, string, cur, 
+						  policy1, changed_tag,link1_tag,
+						  rules_tag,"* Policy 1: ",show_conds);
+			/* print the p2 rule */
+			txt_buffer_insert_te_line(txt, &changed_iter, string, cur2, 
+						  policy2, changed_tag,link2_tag,
+						  rules_tag,"* Policy 2: ",show_conds);	
+			/* now print the diffs */
+			if (diffcur1->key.rule_type <= RULE_MAX_AV) {
+				for (j = 0 ; j < diffcur1->num_data; j++) {
+					if (get_perm_name(diffcur1->data[j],&name,policy1) == 0) {
+						g_string_printf(string,"%s%s- %s\n",fulltab,fulltab,name);
+						gtk_text_buffer_insert_with_tags(txt, &changed_iter, string->str, -1,removed_tag, NULL);
+								free(name);
+					}
+				}
+			}
+			else {
+				if (diffcur1->num_data == 1) {
+					if (get_type_name(diffcur1->data[0],&name,policy1) == 0) {
+						g_string_printf(string,"%s%s- %s\n",fulltab,fulltab,name);
+						gtk_text_buffer_insert_with_tags(txt, &changed_iter, string->str, -1,removed_tag, NULL);
+						free(name);
+					}
+				}
+			}
+			
+		}
+		
+	}
+	/* if the rule is not in policy 2 at all */
+	if (cur2 == NULL) {
+		/* update the number removed */
+		*num_removed += 1;
+		gtk_text_buffer_get_iter_at_mark(txt,&added_iter,added_mark);
+		txt_buffer_insert_te_line(txt, &added_iter, string, 
+					  diffcur1, policy1, removed_tag,link1_tag,
+							  rules_tag,"- ",show_conds);
+		if (*polmatched == FALSE) {
+			gtk_text_buffer_get_iter_at_mark(txt,&holder_iter,changed_mark);
+			*holder_mark = gtk_text_buffer_create_mark (txt,"holder-mark",&holder_iter,TRUE);
+			*polmatched = TRUE;
+		}
+		
+	}
+	return 0;
+} 
+
 
 static int txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_iter, 
 				    	 GString *string, apol_diff_t *diff1, apol_diff_t *diff2,
 					 policy_t *policy1,policy_t *policy2)
 {
-	int i, j;
-	avh_node_t *cur;
-	avh_node_t *cur2;
+	int i;
 	avh_node_t *diffcur1;
 	avh_node_t *diffcur2;
-	avh_key_t p2key,p1key;
 	char cond_on[TABSIZE+1];
 	char cond_off[TABSIZE+1];
 	char cond_none[TABSIZE+1];
@@ -2058,11 +2377,10 @@ static int txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_ite
 	char *condtab = sediff_get_tab_spaces(TABSIZE-2);
 
 	GtkTextMark *added_mark = NULL, *changed_mark = NULL, *holder_mark = NULL;
-	GtkTextIter added_iter,changed_iter, holder_iter;
+	GtkTextIter added_iter,changed_iter;
 	GtkTextTag *link1_tag,*link2_tag, *rules_tag,*added_tag,*changed_tag,*removed_tag,*header_tag;
 	GtkTextTagTable *table;
-	char *name = NULL;
-	bool_t inverse,matched,polmatched;
+	bool_t polmatched;
 
 	snprintf(cond_on,TABSIZE,"D:\t");
 	snprintf(cond_off,TABSIZE,"E:\t");
@@ -2172,86 +2490,10 @@ static int txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_ite
  	/* find removed */
  	for (i = 0; i < AVH_SIZE; i++) { 
  		for (diffcur1 = diff1->te.tab[i];diffcur1 != NULL; diffcur1 = diffcur1->next) { 
-			gtk_text_buffer_get_iter_at_mark(txt,&changed_iter,changed_mark);
- 
- 			/* make the p1 key */
- 			make_p2_key(&diffcur1->key,&p2key,policy1,policy2); 
-
-			/* search for the key/cond in p2, */			
-			matched = FALSE;
-			cur2 = avh_find_first_node(&policy2->avh, &p2key);
-			while (cur2 != NULL && does_cond_match(diffcur1,policy1,cur2,policy2,&inverse) == FALSE)
-				cur2 = avh_find_next_node(cur2);
-			/* the rule is in policy 2 */
-			if (cur2 != NULL) {
-				/* is the rule in diff2, if so then it will be handled in the adds,
-				   if not that we need to treat this as a change now */
-				diffcur2 = avh_find_first_node(&diff2->te, &p2key);
-				while (diffcur2 != NULL && does_cond_match(diffcur1,policy1,diffcur2,policy2,&inverse) == FALSE)
-					diffcur2 = avh_find_next_node(diffcur2);
-				if (diffcur2 == NULL) {
-					/* update counter */
-					sediff_app->summary.te_rules.changed += 1;
-
-					/* find the complete rule in p1 */
-					cur = avh_find_first_node(&policy1->avh, &diffcur1->key);
-					while (cur != NULL && does_cond_match(diffcur1,policy1,cur,policy1,&inverse) == FALSE)
-						cur = avh_find_next_node(cur);
-					if (cur == NULL)
-						g_return_val_if_reached(-1);
-					/* print the p1 rule */
-					gtk_text_buffer_get_iter_at_mark(txt,&changed_iter,changed_mark);
-					txt_buffer_insert_te_line(txt, &changed_iter, string, cur, 
-								  policy1, changed_tag,link1_tag,
-								  rules_tag,"* Policy 1: ");
-					/* print the p2 rule */
-					txt_buffer_insert_te_line(txt, &changed_iter, string, cur2, 
-								  policy2, changed_tag,link2_tag,
-								  rules_tag,"* Policy 2: ");	
-					/* now print the diffs */
-					if (diffcur1->key.rule_type <= RULE_MAX_AV) {
-						for (j = 0 ; j < diffcur1->num_data; j++) {
-							if (get_perm_name(diffcur1->data[j],&name,policy1) == 0) {
-								g_string_printf(string,"%s%s- %s\n",fulltab,fulltab,name);
-								gtk_text_buffer_insert_with_tags_by_name(txt, &changed_iter, string->str, -1, "removed-tag", NULL);
-								free(name);
-							}
-						}
-					}
-					else {
-						if (diffcur1->num_data == 1) {
-							if (get_type_name(diffcur1->data[0],&name,policy1) == 0) {
-								g_string_printf(string,"%s%s- %s\n",fulltab,fulltab,name);
-								gtk_text_buffer_insert_with_tags_by_name(txt, &changed_iter, string->str, -1, "removed-tag", NULL);
-								free(name);
-							}
-						}
-					}
-
-					if (polmatched == FALSE) {
-
-						gtk_text_buffer_get_iter_at_mark(txt,&holder_iter,added_mark);
-						holder_mark = gtk_text_buffer_create_mark(txt,"holder-mark",&holder_iter,FALSE);
-						polmatched = TRUE;
-					}					
-				}
-
-			}
-			/* if the rule is not in policy 2 at all */
-			if (cur2 == NULL) {
-				/* update the number removed */
-				sediff_app->summary.te_rules.removed += 1;
-				gtk_text_buffer_get_iter_at_mark(txt,&added_iter,added_mark);
-				txt_buffer_insert_te_line(txt, &added_iter, string, 
-							  diffcur1, policy1, removed_tag,link1_tag,
-							  rules_tag,"- ");
-				if (polmatched == FALSE) {
-					gtk_text_buffer_get_iter_at_mark(txt,&holder_iter,changed_mark);
-					holder_mark = gtk_text_buffer_create_mark (txt,"holder-mark",&holder_iter,TRUE);
-					polmatched = TRUE;
-				}
-
-			}
+			txt_buffer_insert_te_missing(txt,changed_mark,added_mark,&holder_mark,			       
+						     string, diff1, diff2, policy1, policy2,diffcur1,
+						     &(sediff_app->summary.te_rules.changed),
+						     &(sediff_app->summary.te_rules.removed), &polmatched,TRUE);
 
  		} 
  	} 
@@ -2262,101 +2504,15 @@ static int txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_ite
 
 	/* create a mark that goes after removed, but before changed */
 	if (polmatched == FALSE) {
-		gtk_text_buffer_get_iter_at_mark(txt,&changed_iter,changed_mark);		
-		holder_mark = gtk_text_buffer_create_mark (txt,"holder-mark",&changed_iter,TRUE);
+		holder_mark = gtk_text_buffer_create_mark (txt,"holder-mark",&added_iter,TRUE);
 	}
 	/* find added and changed rules*/
 	for (i = 0; i < AVH_SIZE; i++) {
 		for (diffcur2 = diff2->te.tab[i];diffcur2 != NULL; diffcur2 = diffcur2->next) {
-			gtk_text_buffer_get_iter_at_mark(txt,&added_iter,added_mark);
-
-			/* make the p1 key */
-			make_p2_key(&diffcur2->key,&p1key,policy2,policy1);
-			/* now loop through list and find not only matching key but also matching 
-			   conditional */
-			matched = FALSE;
-			cur = avh_find_first_node(&policy1->avh, &p1key);
-			while (cur != NULL && does_cond_match(cur,policy1,diffcur2,policy2,&inverse) == FALSE)
-				cur = avh_find_next_node(cur);
-
-			/* if the rule is in policy 1 this is a changed rule*/
-			if (cur != NULL) {
-				sediff_app->summary.te_rules.changed += 1;
-				/* get the entire rule from policy 2 */
-				cur2 = avh_find_first_node(&policy2->avh, &diffcur2->key);
-				while (cur2 != NULL && does_cond_match(cur2,policy2,diffcur2,policy2,&inverse) == FALSE)
-					cur2 = avh_find_next_node(cur2);
-				if (cur2 == NULL)
-					return -1;
-
-				/* try to find the key in diff1 */
-				diffcur1 = avh_find_first_node(&diff1->te, &p1key);
-				while (diffcur1 != NULL && does_cond_match(diffcur1,policy1,diffcur2,policy2,&inverse) == FALSE)
-					diffcur1 = avh_find_next_node(diffcur1);
-
-				gtk_text_buffer_get_iter_at_mark(txt,&changed_iter,changed_mark);
-				txt_buffer_insert_te_line(txt, &changed_iter, string, 
-							  cur, policy1, changed_tag,link1_tag,
-							  rules_tag,"* Policy 1: ");
-				txt_buffer_insert_te_line(txt, &changed_iter, string, 
-							  cur2, policy2, changed_tag,link2_tag,
-							  rules_tag,"* Policy 2: ");
-
-
-				/* now print the diffs */
-				/* at this point we know that both diffcur1 and diffcur2 have the same key so we don't need
-				   to check if diffcur1 is a type transition rule, we can just go with what diffcur2 is 
-				*/
-				if (diffcur2->key.rule_type <= RULE_MAX_AV) {
-					for (j = 0 ; j < diffcur2->num_data; j++) {
-						if (get_perm_name(diffcur2->data[j],&name,policy2) == 0) {
-							g_string_printf(string,"%s%s+ %s\n",fulltab,fulltab,name);
-							gtk_text_buffer_insert_with_tags_by_name(txt, &changed_iter, string->str, -1, "added-tag", NULL);
-							gtk_text_buffer_get_iter_at_mark(txt,&changed_iter,changed_mark);
-							free(name);
-						}
-					}
-					if (diffcur1) {
-						for (j = 0 ; j < diffcur1->num_data; j++) {
-							if (get_perm_name(diffcur1->data[j],&name,policy1) == 0) {
-								g_string_printf(string,"%s%s- %s\n",fulltab,fulltab,name);
-								gtk_text_buffer_insert_with_tags_by_name(txt, &changed_iter, string->str, -1, "removed-tag", NULL);
-							gtk_text_buffer_get_iter_at_mark(txt,&changed_iter,changed_mark);
-							free(name);
-							}
-						}
-					}
-				}
-				else {
-					if (diffcur2->num_data == 1) {
-						if (get_type_name(diffcur2->data[0],&name,policy2) == 0) {
-							g_string_printf(string,"%s%s+ %s\n",fulltab,fulltab,name);
-							gtk_text_buffer_insert_with_tags_by_name(txt, &changed_iter, string->str, -1, "added-tag", NULL);
-							gtk_text_buffer_get_iter_at_mark(txt,&changed_iter,changed_mark);
-							free(name);
-						}
-					}
-					if(diffcur1) {
-						if (get_type_name(diffcur1->data[0],&name,policy1) == 0) {
-							g_string_printf(string,"%s%s- %s\n",fulltab,fulltab,name);
-							gtk_text_buffer_insert_with_tags_by_name(txt, &changed_iter, string->str, -1, "removed-tag", NULL);
-							gtk_text_buffer_get_iter_at_mark(txt,&changed_iter,changed_mark);
-							free(name);
-						}
-					}
-				}
-				
-				gtk_text_buffer_get_iter_at_mark(txt,&changed_iter,changed_mark);
-		       
-			}
-			/* if the rule is not in policy 1 */
-			else if (cur == NULL ) {
-				sediff_app->summary.te_rules.added += 1;
-				gtk_text_buffer_get_iter_at_mark(txt,&added_iter,added_mark);
-				txt_buffer_insert_te_line(txt, &added_iter, string, 
-							  diffcur2, policy2, added_tag,link2_tag,
-							  rules_tag,"+ ");
-			}
+			txt_buffer_insert_te_added_changed(txt,changed_mark,added_mark,holder_mark,			       
+							   string,diff1,diff2,policy1,policy2,diffcur2,
+							   &(sediff_app->summary.te_rules.changed),
+							   &(sediff_app->summary.te_rules.added),TRUE);
 
 		}
 
@@ -2365,7 +2521,6 @@ static int txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_ite
 	gtk_text_buffer_get_start_iter(txt,&added_iter);
 	g_string_printf(string, "\nTE RULES ADDED: %d\n",sediff_app->summary.te_rules.added);
 	gtk_text_buffer_insert_with_tags_by_name(txt, &added_iter, string->str,-1, "header-tag", NULL); 
-
 	gtk_text_buffer_get_iter_at_mark(txt,&added_iter,holder_mark);
 	g_string_printf(string, "\nTE RULES CHANGED: %d \n",sediff_app->summary.te_rules.changed);
 	gtk_text_buffer_insert_with_tags_by_name(txt, &added_iter, string->str,-1, "header-tag", NULL); 
@@ -2630,25 +2785,52 @@ static int txt_buffer_insert_rbac_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 }
 
 static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_iter,
-					  GString *string, apol_diff_t *stuff_removed, apol_diff_t *stuff_added,
-				    	  policy_t *policy_old, policy_t *policy_new)
+					  GString *string, apol_diff_t *diff1, apol_diff_t *diff2,
+				    	  policy_t *policy1, policy_t *policy2)
 {
 	GtkTextTag *added_tag, *removed_tag, *changed_tag;
 	GtkTextTag *header_added_tag,*header_removed_tag,*header_changed_tag,*header_tag;		
 	GtkTextTagTable *table;
-	GtkTextMark *mark;
-	ap_cond_expr_diff_t *t;
+	GtkTextMark *added_mark,*changed_mark,*holder_mark = NULL;              /* these are for the conditionals */
+	GtkTextMark *local_added_mark = NULL,*local_changed_mark = NULL,*local_holder_mark = NULL;  /* these are for the te rules */
+	GtkTextIter added_iter,changed_iter,holder_iter;
+	ap_cond_expr_diff_t *t = NULL,*cdiff2 = NULL;
 	char *rule = NULL;
+	bool_t polmatched = FALSE,local_polmatched = FALSE;
+	g_return_val_if_fail(diff1 != NULL, -1);
+	g_return_val_if_fail(diff2 != NULL, -1);
+	int i,j,k;
+	
 
-	g_return_val_if_fail(stuff_removed != NULL, -1);
-	g_return_val_if_fail(stuff_added != NULL, -1);
+	/* reset the te summary counters */
+	sediff_app->summary.conds.added = 0;
+	sediff_app->summary.conds.removed = 0;
+	sediff_app->summary.conds.changed = 0;
 
 
-	/* create a mark that always goes to the left..urr top */ 	
-	mark = gtk_text_buffer_get_mark(txt,"mark");
-	if (!mark)
-		mark = gtk_text_buffer_create_mark (txt,"added-mark",txt_iter,TRUE);
-	gtk_text_buffer_get_iter_at_mark(txt,txt_iter,mark);
+
+
+	gtk_text_buffer_get_end_iter(txt, txt_iter);
+
+	/* create the global marks */
+	changed_mark = gtk_text_buffer_get_mark(txt,"changed-mark");
+	if (changed_mark == NULL)
+		changed_mark = gtk_text_buffer_create_mark (txt,"changed-mark",txt_iter,FALSE);
+	added_mark = gtk_text_buffer_get_mark(txt,"added-mark");
+	if (added_mark == NULL)
+		added_mark = gtk_text_buffer_create_mark (txt,"added-mark",txt_iter,TRUE);
+
+	/* create the local marks */
+	local_changed_mark = gtk_text_buffer_get_mark(txt,"local-changed-mark");
+	if (local_changed_mark == NULL)
+		local_changed_mark = gtk_text_buffer_create_mark (txt,"local-changed-mark",txt_iter,FALSE);
+	local_added_mark = gtk_text_buffer_get_mark(txt,"local-added-mark");
+	if (local_added_mark == NULL)
+		local_added_mark = gtk_text_buffer_create_mark (txt,"local-added-mark",txt_iter,TRUE);
+
+
+	gtk_text_buffer_get_iter_at_mark(txt,&added_iter,added_mark);
+	gtk_text_buffer_get_iter_at_mark(txt,&changed_iter,changed_mark);
 
 	/* create the tags so we can add color to our buffer */
 	table = gtk_text_buffer_get_tag_table(txt);
@@ -2704,62 +2886,222 @@ static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 							 NULL); 
 	}
 
-	ap_cond_expr_diff_t *conds_removed = stuff_removed->cond_exprs;
-	ap_cond_expr_diff_t *conds_added = stuff_added->cond_exprs;
+	ap_cond_expr_diff_t *cd = diff1->cond_exprs;
+	ap_cond_expr_diff_t *cd2 = diff2->cond_exprs;
 
-	
-	/* changed conds */
-	gtk_text_buffer_get_end_iter(txt,txt_iter);
-	gtk_text_buffer_move_mark(txt,mark,txt_iter);
-	if (conds_added != NULL) {
-		for (t = conds_added; t != NULL; t = t->next) {
-			rule = re_render_cond_expr(t->idx,policy_new);
-			if (!t->missing) {
-				g_string_printf(string,"%s\n",rule);
+	j = k = 0;
+
+	/* missing/changed */
+	if (cd != NULL) {
+		for (t = cd; t != NULL; t = t->next) {
+			rule = re_render_cond_expr(t->idx,policy1);
+			if (t->missing) {
+				sediff_app->summary.conds.removed += 1;
+				gtk_text_buffer_get_iter_at_mark(txt,&added_iter,added_mark);
+				g_string_printf(string,"-%s\n",rule);
 				free(rule);
-				gtk_text_buffer_insert_with_tags_by_name(txt, txt_iter, string->str, 
+				gtk_text_buffer_insert_with_tags(txt, &added_iter, string->str, 
+								 -1, removed_tag, NULL);
+
+				j = k = 0;
+				/* print true list */
+				g_string_printf(string,"    TRUE list:\n");
+				gtk_text_buffer_insert_with_tags(txt, &added_iter, string->str, 
+								 -1, removed_tag, NULL);
+				gtk_text_buffer_move_mark(txt,local_changed_mark,&added_iter);
+				gtk_text_buffer_move_mark(txt,local_added_mark,&added_iter);
+				for (i = 0; i < t->num_true_list_diffs; i++) {
+					txt_buffer_insert_te_missing(txt,local_changed_mark,local_added_mark,&local_holder_mark,		       
+								     string, diff1, diff2, policy1, policy2,t->true_list_diffs[i],
+								     &j,&k,&local_polmatched,FALSE);	
+				}
+
+				/* print false list */
+				g_string_printf(string,"    FALSE list:\n");
+				gtk_text_buffer_get_iter_at_mark(txt,&added_iter,local_changed_mark);
+				gtk_text_buffer_insert_with_tags(txt, &added_iter, string->str, 
+								 -1, removed_tag, NULL);
+				gtk_text_buffer_move_mark(txt,local_changed_mark,&added_iter);
+				gtk_text_buffer_move_mark(txt,local_added_mark,&added_iter);
+				for (i = 0; i < t->num_false_list_diffs; i++) {
+					txt_buffer_insert_te_missing(txt,local_changed_mark,local_added_mark,&local_holder_mark,		       
+								     string, diff1, diff2, policy1, policy2,t->false_list_diffs[i],
+								     &j,&k,&local_polmatched,FALSE);	
+				}
+				if (local_holder_mark)
+					gtk_text_buffer_delete_mark(txt,local_holder_mark);
+				local_holder_mark = NULL;
+				if (polmatched == FALSE) {
+					gtk_text_buffer_get_iter_at_mark(txt,&holder_iter,changed_mark);
+					holder_mark = gtk_text_buffer_create_mark (txt,"holder-mark",&holder_iter,TRUE);
+					polmatched = TRUE;
+				}
+			}
+			else {
+				sediff_app->summary.conds.changed += 1;
+				cdiff2 = find_cdiff_in_policy(t,diff2,policy1,policy2);				
+				gtk_text_buffer_get_iter_at_mark(txt,&changed_iter,changed_mark);
+				g_string_printf(string,"*%s\n",rule);
+				free(rule);
+				gtk_text_buffer_insert_with_tags_by_name(txt, &changed_iter, string->str, 
 									 -1, "changed-tag", NULL);
+				
+
+				/* print true lists */
+				g_string_printf(string,"    TRUE list:\n");
+				gtk_text_buffer_insert_with_tags(txt, &changed_iter, string->str, 
+								 -1, changed_tag, NULL);
+				gtk_text_buffer_move_mark(txt,local_changed_mark,&changed_iter);
+				gtk_text_buffer_move_mark(txt,local_added_mark,&changed_iter);
+				for (i = 0; i < t->num_true_list_diffs; i++) {
+					txt_buffer_insert_te_missing(txt,local_changed_mark,local_added_mark,&local_holder_mark,		       
+								     string, diff1, diff2, policy1, policy2,t->true_list_diffs[i],
+								     &j,&k,&local_polmatched,FALSE);	
+				}
+				if (cdiff2) {
+					for (i = 0; i < cdiff2->num_true_list_diffs; i++) {
+						txt_buffer_insert_te_added_changed(txt,local_changed_mark,local_added_mark,local_holder_mark,
+										   string,diff1,diff2,policy1,policy2,cdiff2->true_list_diffs[i],
+										   &(sediff_app->summary.te_rules.changed),
+										   &(sediff_app->summary.te_rules.added),TRUE);
+					}
+					
+					
+				}
+				/* print false lists */
+				g_string_printf(string,"    FALSE list:\n");
+				gtk_text_buffer_get_iter_at_mark(txt,&changed_iter,changed_mark);
+				gtk_text_buffer_insert_with_tags(txt, &changed_iter, string->str, 
+								 -1, changed_tag, NULL);
+				gtk_text_buffer_move_mark(txt,local_changed_mark,&changed_iter);
+				gtk_text_buffer_move_mark(txt,local_added_mark,&changed_iter);
+				for (i = 0; i < t->num_false_list_diffs; i++) {
+					txt_buffer_insert_te_missing(txt,local_changed_mark,local_added_mark,&local_holder_mark,		       
+								     string, diff1, diff2, policy1, policy2,t->false_list_diffs[i],
+								     &j,&k,&local_polmatched,FALSE);	
+				}
+				if (cdiff2) {
+					for (i = 0; i < cdiff2->num_false_list_diffs; i++) {
+						txt_buffer_insert_te_added_changed(txt,local_changed_mark,local_added_mark,local_holder_mark,
+										   string,diff1,diff2,policy1,policy2,cdiff2->false_list_diffs[i],
+										   &j,&k,FALSE);
+					}
+					
+				}
+				if (local_holder_mark)
+					gtk_text_buffer_delete_mark(txt,local_holder_mark);
+				local_holder_mark = NULL;
+
+				if (polmatched == FALSE) {				
+					gtk_text_buffer_get_iter_at_mark(txt,&holder_iter,added_mark);
+					holder_mark = gtk_text_buffer_create_mark(txt,"global-holder-mark",&holder_iter,FALSE);
+					polmatched = TRUE;
+				}					
+								
 			}
 		}
 	}
 
+	gtk_text_buffer_get_iter_at_mark(txt,&added_iter,added_mark);
+	g_string_printf(string, "\nCONDITIONALS REMOVED: %d\n",sediff_app->summary.conds.removed);
+	gtk_text_buffer_insert_with_tags_by_name(txt, &added_iter, string->str,-1, "header-tag", NULL); 
+	
+	if (local_holder_mark)
+		gtk_text_buffer_delete_mark(txt,local_holder_mark);
+	local_holder_mark = NULL;
+	
+	if (polmatched == FALSE) {				
+		gtk_text_buffer_get_iter_at_mark(txt,&holder_iter,added_mark);
+		holder_mark = gtk_text_buffer_create_mark(txt,"holder-mark",&holder_iter,FALSE);
+		polmatched = TRUE;
+	}					
 
-	gtk_text_buffer_get_iter_at_mark(txt,txt_iter,mark);
-//	g_string_printf(string, "\tChanged Conditionals: %d\n",summary->changed);
-//	gtk_text_buffer_insert_with_tags_by_name(txt, txt_iter, string->str, 
-//						 -1, "header-changed-tag", NULL);
 
-	/* removed conds */
-	gtk_text_buffer_get_iter_at_mark(txt,txt_iter,mark);
-	if (conds_removed != NULL) {
-		for (t = conds_removed; t != NULL; t = t->next) {
-			rule = re_render_cond_expr(t->idx,policy_old);
+
+	if (cd2 != NULL) {
+		for (t = cd2; t != NULL; t = t->next) {
+			rule = re_render_cond_expr(t->idx,policy2);
 			if (t->missing) {
-				g_string_printf(string,"%s\n",rule);
+				sediff_app->summary.conds.added += 1;	
+				gtk_text_buffer_get_iter_at_mark(txt,&added_iter,added_mark);
+				g_string_printf(string,"+%s\n",rule);
 				free(rule);
-				gtk_text_buffer_insert_with_tags_by_name(txt, txt_iter, string->str, 
-									 -1, "removed-tag", NULL);
+				gtk_text_buffer_insert_with_tags(txt, &added_iter, string->str, 
+								 -1, added_tag, NULL);
 
+				/* print true list */
+				g_string_printf(string,"    TRUE list:\n");
+				gtk_text_buffer_insert_with_tags(txt, &added_iter, string->str, 
+								 -1, added_tag, NULL);
+				gtk_text_buffer_move_mark(txt,local_changed_mark,&added_iter);
+				gtk_text_buffer_move_mark(txt,local_added_mark,&added_iter);
+				j = k = 0;
+				/* print true list */
+				for (i = 0; i < t->num_true_list_diffs; i++) {
+					txt_buffer_insert_te_added_changed(txt,local_changed_mark,local_added_mark,local_holder_mark,
+									   string,diff1,diff2,policy1,policy2,cd2->true_list_diffs[i],
+									   &j,&k,FALSE);
+
+				}
+				/* print false list */
+				g_string_printf(string,"    FALSE list:\n");
+				gtk_text_buffer_get_iter_at_mark(txt,&added_iter,local_changed_mark);
+				gtk_text_buffer_insert_with_tags(txt, &added_iter, string->str, 
+								 -1, added_tag, NULL);
+				gtk_text_buffer_move_mark(txt,local_changed_mark,&added_iter);
+				gtk_text_buffer_move_mark(txt,local_added_mark,&added_iter);
+				for (i = 0; i < t->num_false_list_diffs; i++) {
+					txt_buffer_insert_te_added_changed(txt,local_changed_mark,local_added_mark,local_holder_mark,
+									   string,diff1,diff2,policy1,policy2,cd2->false_list_diffs[i],
+									   &j,&k,FALSE);
+				}
+
+				sediff_app->summary.conds.changed += j;
+			}
+			else if (find_cdiff_in_policy(t,diff1,policy2,policy1) == NULL) {				
+				gtk_text_buffer_get_iter_at_mark(txt,&changed_iter,changed_mark);
+				g_string_printf(string,"*%s\n",rule);
+				free(rule);
+				gtk_text_buffer_insert_with_tags(txt, &changed_iter, string->str, 
+								 -1, changed_tag, NULL);
+
+				j = k = 0;
+				/* print true list */
+				g_string_printf(string,"    TRUE list:\n");
+				gtk_text_buffer_insert_with_tags(txt, &changed_iter, string->str, 
+								 -1, changed_tag, NULL);
+				gtk_text_buffer_move_mark(txt,local_changed_mark,&changed_iter);
+				gtk_text_buffer_move_mark(txt,local_added_mark,&changed_iter);
+				for (i = 0; i < t->num_true_list_diffs; i++) {
+					txt_buffer_insert_te_added_changed(txt,local_changed_mark,local_added_mark,local_holder_mark,
+									   string,diff1,diff2,policy1,policy2,cd2->true_list_diffs[i],
+									   &j,&k,FALSE);
+
+				}
+				sediff_app->summary.conds.changed += j;
+				j = k = 0;
+				/* print false list */
+				gtk_text_buffer_get_iter_at_mark(txt,&changed_iter,changed_mark);
+				g_string_printf(string,"    FALSE list:\n");
+				gtk_text_buffer_insert_with_tags(txt, &changed_iter, string->str, 
+								 -1, changed_tag, NULL);
+				gtk_text_buffer_move_mark(txt,local_changed_mark,&changed_iter);
+				gtk_text_buffer_move_mark(txt,local_added_mark,&changed_iter);
+				for (i = 0; i < t->num_false_list_diffs; i++) {
+					txt_buffer_insert_te_added_changed(txt,local_changed_mark,local_added_mark,local_holder_mark,
+									   string,diff1,diff2,policy1,policy2,cd2->false_list_diffs[i],
+									   &j,&k,FALSE);
+				}
+				sediff_app->summary.conds.changed += j;				
 			}
 		}
 	}
-
-
-	/* added conds */
-	gtk_text_buffer_get_iter_at_mark(txt,txt_iter,mark);
-	if (conds_added != NULL) {
-		for (t = conds_added; t != NULL; t = t->next) {
-			rule = re_render_cond_expr(t->idx,policy_new);
-			if (t->missing) {
-				g_string_printf(string,"%s\n",rule);
-				free(rule);
-				gtk_text_buffer_insert_with_tags_by_name(txt, txt_iter, string->str, 
-									 -1, "added-tag", NULL);
-
-			}
-		}
-	}
-
+	gtk_text_buffer_get_start_iter(txt,&added_iter);
+	g_string_printf(string, "\nCONDITIONALS ADDED: %d\n",sediff_app->summary.conds.added);
+	gtk_text_buffer_insert_with_tags_by_name(txt, &added_iter, string->str,-1, "header-tag", NULL); 
+	gtk_text_buffer_get_iter_at_mark(txt,&added_iter,holder_mark);
+	g_string_printf(string, "\nCONDITIONALS CHANGED: %d \n",sediff_app->summary.conds.changed);
+	gtk_text_buffer_insert_with_tags_by_name(txt, &added_iter, string->str,-1, "header-tag", NULL); 
 
        	return 0;
 }
@@ -3101,6 +3443,15 @@ static void txt_buffer_insert_summary_results()
 	g_string_printf(string,"\tChanged: %d\n",sediff_app->summary.rtrans.changed);
 	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_changed_tag,NULL);
 
+	g_string_printf(string,"Conditionals:\n");
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_tag,NULL);
+	g_string_printf(string,"\tAdded: %d\n",sediff_app->summary.conds.added);
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_added_tag,NULL);
+	g_string_printf(string,"\tRemoved: %d\n",sediff_app->summary.conds.removed);
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_removed_tag,NULL);
+	g_string_printf(string,"\tChanged: %d\n",sediff_app->summary.conds.changed);
+	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_changed_tag,NULL);
+
 	g_string_free(string,TRUE);
 }
 
@@ -3284,6 +3635,24 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 			gtk_text_view_set_buffer(textview,sediff_app->rbac_buffer);
 			break;
 		case OPT_CONDITIONALS:
+			table = gtk_text_buffer_get_tag_table(sediff_app->conditionals_buffer);
+			link1_tag = gtk_text_tag_table_lookup(table, "policy1-link-tag");
+			link2_tag = gtk_text_tag_table_lookup(table, "policy2-link-tag");
+			/* the tags will not exist if the policies are binary */
+			if (link1_tag) {
+				g_signal_connect_after(G_OBJECT(link1_tag), "event", GTK_SIGNAL_FUNC(txt_view_on_policy1_link_event), 
+						       textview);
+				g_object_set_data (G_OBJECT (link1_tag), "page", GINT_TO_POINTER (page));
+				glade_xml_signal_connect_data(sediff_app->window_xml, "txt_view_on_text_view_motion", 
+							      GTK_SIGNAL_FUNC(txt_view_on_text_view_motion), link1_tag);
+			}
+			if (link2_tag) {
+				g_signal_connect_after(G_OBJECT(link2_tag), "event", GTK_SIGNAL_FUNC(txt_view_on_policy2_link_event), 
+						       textview);
+				g_object_set_data (G_OBJECT (link2_tag), "page", GINT_TO_POINTER (page));
+				glade_xml_signal_connect_data(sediff_app->window_xml, "txt_view_on_text_view_motion", 
+							      GTK_SIGNAL_FUNC(txt_view_on_text_view_motion), link2_tag);
+			}
 			gtk_text_view_set_buffer(textview,sediff_app->conditionals_buffer);
 			break;
 		default:
@@ -4041,7 +4410,7 @@ static int sediff_diff_and_load_policies(const char *p1_file, const char *p2_fil
 	
 	/* create the string to store in treeview */
 	g_string_printf(string,"Difference Summary|Classes & Perms %d|Types %d|Attributes %d|"
-			"Roles %d|Users %d|Booleans %d|TE Rules %d|RBAC Rules %d|Conditionals 0",
+			"Roles %d|Users %d|Booleans %d|TE Rules %d|RBAC Rules %d|Conditionals %d",
 			(sediff_app->summary.classes.added + sediff_app->summary.classes.removed + sediff_app->summary.classes.changed +
 			sediff_app->summary.permissions.added + sediff_app->summary.permissions.removed + sediff_app->summary.permissions.changed +
 			 sediff_app->summary.commons.added + sediff_app->summary.commons.removed + sediff_app->summary.commons.changed),
@@ -4052,7 +4421,8 @@ static int sediff_diff_and_load_policies(const char *p1_file, const char *p2_fil
 			(sediff_app->summary.booleans.added + sediff_app->summary.booleans.removed + sediff_app->summary.booleans.changed),	       
 			(sediff_app->summary.te_rules.added + sediff_app->summary.te_rules.removed + sediff_app->summary.te_rules.changed),	       
 			(sediff_app->summary.rallow.added + sediff_app->summary.rallow.removed + sediff_app->summary.rallow.changed +
-			 sediff_app->summary.rtrans.added + sediff_app->summary.rtrans.removed + sediff_app->summary.rtrans.changed));
+			 sediff_app->summary.rtrans.added + sediff_app->summary.rtrans.removed + sediff_app->summary.rtrans.changed),
+			(sediff_app->summary.conds.added + sediff_app->summary.conds.removed + sediff_app->summary.conds.changed));
 			
   
 	labels = g_strsplit(string->str,"|",-1);
