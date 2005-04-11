@@ -254,7 +254,7 @@ ap_cond_expr_diff_t *new_cond_diff(int idx,apol_diff_t *diff,policy_t *p1,policy
 	int i;
 	bool_t inverse;
 	int rt;
-
+	
 	t = (ap_cond_expr_diff_t *)malloc(sizeof(ap_cond_expr_diff_t));
 	if(t == NULL) {
 		fprintf(stderr, "out of memory\n");
@@ -267,8 +267,14 @@ ap_cond_expr_diff_t *new_cond_diff(int idx,apol_diff_t *diff,policy_t *p1,policy
 	t->false_list_diffs = NULL;
 	t->num_true_list_diffs = 0;
 	t->num_false_list_diffs = 0;
+
+	
+
 	t->next = diff->cond_exprs;
 	diff->cond_exprs = t;
+	diff->num_cond_exprs += 1;
+
+		
 
 	/* in order to fully realize if this new cond exp is in p2 we create a p2 cond expr
 	   and go through its lists comparing them */
@@ -282,6 +288,9 @@ ap_cond_expr_diff_t *new_cond_diff(int idx,apol_diff_t *diff,policy_t *p1,policy
 		}
 		cond_free_expr(p2exp);
 	}
+
+
+
 	return t;
 }
 
@@ -355,7 +364,6 @@ static int make_p2_cond_expr(int idx1, policy_t *p1, cond_expr_t **expr2, policy
 {
 	int idx2;
 	cond_expr_t *cur1, *cur2, *t;
-	
 	assert(p1 != NULL && p2 != NULL && expr2 != NULL);
 	if(!is_valid_cond_expr_idx(idx1, p1)) {
 		assert(0);
@@ -399,6 +407,39 @@ static int make_p2_cond_expr(int idx1, policy_t *p1, cond_expr_t **expr2, policy
 	return 0;	
 }
 
+
+ap_cond_expr_diff_t *find_cdiff_in_policy(ap_cond_expr_diff_t *cond_expr_diff,apol_diff_t *diff2,policy_t *p1,policy_t *p2)
+{
+	int rt;
+	cond_expr_t *expr2=NULL;
+	bool_t inverse;
+	ap_cond_expr_diff_t *ced;
+	
+	if (cond_expr_diff == NULL || diff2 == NULL || p1 == NULL || p2 == NULL)
+		return NULL;
+
+
+	if (diff2->num_cond_exprs == 0)
+		return NULL;
+	rt = make_p2_cond_expr(cond_expr_diff->idx, p1, &expr2, p2);
+	if(rt < 0) {
+		assert(0);
+		return NULL;
+	}
+	if(expr2 == NULL) {
+		return NULL; /* couldn't construct p2 expr dur to bool differences*/
+	}
+
+	for (ced = diff2->cond_exprs;ced != NULL;ced = ced->next){
+		if (cond_exprs_semantic_equal(expr2, p2->cond_exprs[ced->idx].expr, p2, &inverse) 
+		    && inverse == FALSE) {
+			cond_free_expr(expr2);
+			return ced;
+		}
+	}
+	cond_free_expr(expr2);
+	return NULL;
+}
 
 bool_t does_cond_match(avh_node_t *n1, policy_t *p1, avh_node_t *n2, policy_t *p2, bool_t *inverse)
 {
@@ -913,7 +954,7 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 							/* if the target is just a type */
 							if (tgt_types->type & IDX_TYPE) {
 								idx2 = get_type_idx(p1->types[tgt_types->idx].name, p2);
-								if (0 <= idx2) {
+								if (idx2 >= 0) {
 									/* first try to match the key(srole,type),
 									   and get the role target in p2 */
 									if (match_rbac_role_ta(idx,idx2,&rt2,p2)){
@@ -934,7 +975,7 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 								/* walk the types for this attribute */
 								for(k = 0; k < p1->attribs[tgt_types->idx].num; k++) {
 									idx2 = get_type_idx(p1->types[p1->attribs[tgt_types->idx].a[k]].name, p2);
-									if (idx2 >= 0) {
+									if (0 <= idx2) {
 										/* first try to match the key(srole,type),
 										   and get the role target in p2 */
 										if (match_rbac_role_ta(idx,idx2,&rt2,p2)){
@@ -1081,7 +1122,7 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 					newnode->cond_expr = p1cur->cond_expr;
 					newnode->cond_list = p1cur->cond_list;
 					
-					/* here we do a conditional diff check */
+					/* Conditionals Part 1: conditionals with rules */
 					if (newnode->flags & AVH_FLAG_COND) {
 						cond_expr = find_cond_expr_diff(newnode->cond_expr,t);
 						if (cond_expr == NULL) {
@@ -1129,23 +1170,16 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 		}
 		if(pmap != NULL) free(pmap);
 	}
-
 	/* Conditionals Part 2 - The empty conditional*/
 	for (i = 0; i < p1->num_cond_exprs; i++){
-
-		if (p1->cond_exprs[i].true_list->num_av_access == 0 &&
-		    p1->cond_exprs[i].true_list->num_av_audit == 0 &&
-		    p1->cond_exprs[i].true_list->num_te_trans == 0 &&
-		    p1->cond_exprs[i].false_list->num_av_access == 0 &&
-		    p1->cond_exprs[i].false_list->num_av_audit == 0 &&
-		    p1->cond_exprs[i].false_list->num_te_trans == 0) {
-			cond_expr = find_cond_expr_diff(newnode->cond_expr,t);
+		if (p1->cond_exprs[i].true_list == NULL &&
+		    p1->cond_exprs[i].false_list == NULL){
+			cond_expr = find_cond_expr_diff(i,t);
 			if (cond_expr == NULL) {
-				cond_expr = new_cond_diff(newnode->cond_expr,t,p1,p2);
+				cond_expr = new_cond_diff(i,t,p1,p2);
 			}
 		}			
 	}
-
 
 	return t;
 err_return:
