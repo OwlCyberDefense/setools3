@@ -1540,8 +1540,6 @@ static int print_cond_diffs(FILE *fp, apol_diff_result_t *diff)
 	int local_num_changed = 0, local_num_removed = 0, local_num_added = 0;
 	int changed_sz = 0, added_sz = 0, removed_sz = 0;
 	char *changed_buf = NULL, *added_buf = NULL, *removed_buf = NULL;
-	int l_changed_sz = 0, l_added_sz = 0, l_removed_sz = 0;
-	char *l_changed_buf = NULL, *l_added_buf = NULL, *l_removed_buf = NULL;
 	apol_diff_t *diff1 = NULL, *diff2 = NULL;
 	policy_t *policy1 = NULL, *policy2 = NULL;
 	char tbuf[APOL_STR_SZ*10];
