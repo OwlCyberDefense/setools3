@@ -528,7 +528,7 @@ static int print_rallow_buffer(GtkTextBuffer *txt, GtkTextIter *txt_iter,GString
 					return -1;
 				}
 				missing = (get_role_idx(name, p_old) >= 0 ? FALSE : TRUE);
-				if (!missing) {
+				if (!missing && !t->missing) {
 					summary_node->changed += 1;
 					num_changed +=1 ;
 					print_rallow_rules(txt, txt_iter, string,changed_tag,p_old,p_new,name,adescrp);
