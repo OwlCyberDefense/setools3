@@ -136,7 +136,7 @@ int print_diff_stats(FILE *fp, apol_diff_result_t *diff)
 		return -1;
 	fprintf(fp,"Total Differences:\n\tClasses & Permissions %d \n "
 		"\tTypes %d \n\tAttributes %d \n\tRoles %d  \n\tUsers %d  \n\tBooleans %d"
-		" \n\tRbac %d  \n\tTE Rules %d  \n",
+		" \n\tRbac %d  \n\tTE Rules %d  \n\tConditionals %d  \n",
 		(diff->diff1->num_classes + diff->diff1->num_common_perms + diff->diff1->num_perms +
 		 diff->diff2->num_classes + diff->diff2->num_common_perms + diff->diff2->num_perms),
 		(diff->diff1->num_types + diff->diff2->num_types),
@@ -145,8 +145,9 @@ int print_diff_stats(FILE *fp, apol_diff_result_t *diff)
 		(diff->diff1->num_users + diff->diff2->num_users),
 		(diff->diff1->num_booleans + diff->diff2->num_booleans),
 		(diff->diff1->num_role_allow + diff->diff2->num_role_allow
-			+ diff->diff1->num_role_trans + diff->diff2->num_role_trans),
-		(diff->diff1->te.num + diff->diff2->te.num));
+		 + diff->diff1->num_role_trans + diff->diff2->num_role_trans),
+		(diff->diff1->te.num + diff->diff2->te.num),
+		(diff->diff1->num_cond_exprs + diff->diff2->num_cond_exprs));
 	return 0;
 }
 
