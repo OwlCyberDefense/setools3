@@ -59,6 +59,39 @@ static int skip_ebitmap(ap_fbuf_t *fb, FILE *fp)
 	return 0;
 }
 
+static int skip_mls_range(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
+{
+	__u32 *buf, nlvl;
+
+	INTERNAL_ASSERTION
+
+	buf = ap_read_fbuf(fb, sizeof(__u32), fp);
+	if(buf == NULL) return fb->err;
+	
+	nlvl = le32_to_cpu(buf[0]);
+	if (fseek(fp, sizeof(__u32)*nlvl, SEEK_CUR))
+		return -3;
+	if (skip_ebitmap(fb,fp))
+		return -3;
+	if (nlvl > 1){
+		if (skip_ebitmap(fb,fp))
+			return -3;
+	} 
+	return 0;
+}
+
+static int skip_mls_level(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
+{
+	__u32 *buf;
+	
+	INTERNAL_ASSERTION
+
+	buf = ap_read_fbuf(fb, sizeof(__u32), fp);
+	if (buf == NULL)
+		return fb->err;
+
+	return skip_ebitmap(fb,fp);
+}
 
 /*********************************************************************
  * NOTE: for all these internal load functions, the following define
@@ -1376,41 +1409,6 @@ static int load_cond_list(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int 
 	}
 
 	return 0;
-}
-
-
-static int skip_mls_range(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
-{
-	__u32 *buf, nlvl;
-
-	INTERNAL_ASSERTION
-
-	buf = ap_read_fbuf(fb, sizeof(__u32), fp);
-	if(buf == NULL) return fb->err;
-	
-	nlvl = le32_to_cpu(buf[0]);
-	if (fseek(fp, sizeof(__u32)*nlvl, SEEK_CUR))
-		return -3;
-	if (skip_ebitmap(fb,fp))
-		return -3;
-	if (nlvl > 1){
-		if (skip_ebitmap(fb,fp))
-			return -3;
-	} 
-	return 0;
-}
-
-static int skip_mls_level(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
-{
-	__u32 *buf;
-	
-	INTERNAL_ASSERTION
-
-	buf = ap_read_fbuf(fb, sizeof(__u32), fp);
-	if (buf == NULL)
-		return fb->err;
-
-	return skip_ebitmap(fb,fp);
 }
 
 static int skip_mls_sens(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)

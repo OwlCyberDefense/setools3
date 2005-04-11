@@ -401,7 +401,6 @@ int init_policy( policy_t **policy_ptr);
 int free_policy(policy_t **policy_ptr);
 int set_policy_version(int ver, policy_t *policy);
 const char* get_policy_version_name(int policy_version);
-int get_policy_version_num(policy_t *policy);
 
 #define is_binary_policy(policy) (policy != NULL ? (policy->policy_type & POL_TYPE_BINARY) : 0)
 #define is_valid_policy_version(version) (version >= POL_VER_UNKNOWN && version <= POL_VER_MAX)
