@@ -299,15 +299,6 @@ int set_policy_version(int ver, policy_t *policy)
 	return 0;
 }
 
-int pol_ver[] = {0,10,12,15,16,17,18,19,19,19};
-int get_policy_version_num(policy_t *policy)
-{
-	if(policy == NULL || !is_valid_policy_version(policy->version))
-		return -1;
-	return pol_ver[policy->version]; 
-}
-
-
 static int free_name_list(name_item_t *list)
 {
 	name_item_t *ptr, *old;
