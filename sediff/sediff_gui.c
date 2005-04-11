@@ -3039,7 +3039,7 @@ static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 				/* print true list */
 				for (i = 0; i < t->num_true_list_diffs; i++) {
 					txt_buffer_insert_te_added_changed(txt,local_changed_mark,local_added_mark,local_holder_mark,
-									   string,diff1,diff2,policy1,policy2,cd2->true_list_diffs[i],
+									   string,diff1,diff2,policy1,policy2,t->true_list_diffs[i],
 									   &j,&k,FALSE);
 
 				}
@@ -3052,7 +3052,7 @@ static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 				gtk_text_buffer_move_mark(txt,local_added_mark,&added_iter);
 				for (i = 0; i < t->num_false_list_diffs; i++) {
 					txt_buffer_insert_te_added_changed(txt,local_changed_mark,local_added_mark,local_holder_mark,
-									   string,diff1,diff2,policy1,policy2,cd2->false_list_diffs[i],
+									   string,diff1,diff2,policy1,policy2,t->false_list_diffs[i],
 									   &j,&k,FALSE);
 				}
 
@@ -3074,7 +3074,7 @@ static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 				gtk_text_buffer_move_mark(txt,local_added_mark,&changed_iter);
 				for (i = 0; i < t->num_true_list_diffs; i++) {
 					txt_buffer_insert_te_added_changed(txt,local_changed_mark,local_added_mark,local_holder_mark,
-									   string,diff1,diff2,policy1,policy2,cd2->true_list_diffs[i],
+									   string,diff1,diff2,policy1,policy2,t->true_list_diffs[i],
 									   &j,&k,FALSE);
 
 				}
@@ -3089,7 +3089,7 @@ static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 				gtk_text_buffer_move_mark(txt,local_added_mark,&changed_iter);
 				for (i = 0; i < t->num_false_list_diffs; i++) {
 					txt_buffer_insert_te_added_changed(txt,local_changed_mark,local_added_mark,local_holder_mark,
-									   string,diff1,diff2,policy1,policy2,cd2->false_list_diffs[i],
+									   string,diff1,diff2,policy1,policy2,t->false_list_diffs[i],
 									   &j,&k,FALSE);
 				}
 				sediff_app->summary.conds.changed += j;				
