@@ -1331,7 +1331,7 @@ static int get_boolean_diff(GtkTextBuffer *txt, GtkTextIter *txt_iter,
 		}
 	}
 	/* Changed Booleans header */
-	gtk_text_buffer_get_end_iter(txt, txt_iter);
+	gtk_text_buffer_get_start_iter(txt, txt_iter);
 	g_string_printf(string, "\tChanged Booleans: %d\n",summary_node->changed);
 	gtk_text_buffer_insert_with_tags_by_name(txt, txt_iter, string->str, 
 						 -1, "header-changed-tag", NULL);
@@ -2963,7 +2963,7 @@ static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 						txt_buffer_insert_te_added_changed(txt,local_changed_mark,local_added_mark,local_holder_mark,
 										   string,diff1,diff2,policy1,policy2,cdiff2->true_list_diffs[i],
 										   &(sediff_app->summary.te_rules.changed),
-										   &(sediff_app->summary.te_rules.added),TRUE);
+										   &(sediff_app->summary.te_rules.added),FALSE);
 					}
 					
 					
@@ -3011,8 +3011,7 @@ static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 	local_holder_mark = NULL;
 	
 	if (polmatched == FALSE) {				
-		gtk_text_buffer_get_iter_at_mark(txt,&holder_iter,added_mark);
-		holder_mark = gtk_text_buffer_create_mark(txt,"holder-mark",&holder_iter,FALSE);
+		holder_mark = gtk_text_buffer_create_mark(txt,"holder-mark",&added_iter,FALSE);
 		polmatched = TRUE;
 	}					
 
