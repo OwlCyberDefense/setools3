@@ -478,6 +478,7 @@ type_def		: TYPE identifier alias_def opt_attr_list ';'
 /* added jan 2005 */
 typeattribute_def	: TYPEATTRIBUTE identifier id_comma_list ';'
 			{if (define_typeattribute()) return -1; }
+			;
 /* added feb 2004 */			
 typealias_def		: TYPEALIAS identifier alias_def ';'
 			{if (define_typealias()) return -1;}
@@ -716,6 +717,7 @@ user_def		: USER user_id ROLES names opt_mls_components ';'
 	                {if (define_user()) return -1;}
 			;
 opt_mls_components	: LEVEL dflt_lvl RANGE user_range 
+			{ if (!mls_valid()) YYABORT; }
 			| 
 			;
 user_range		: mls_range_def
