@@ -138,10 +138,14 @@ policy elements are examined.  The following diff options are available:\n\
    user in charge of freeing */
 static char *sediff_get_tab_spaces(int numspaces)
 {
-	char *c;
+	char *c = NULL;
 	int i;
 
 	c = (char *)malloc(sizeof(char)*(numspaces+1));
+	if (!c) {
+		g_warning("Out of memory!");
+		exit(-1);
+	}
 	for (i = 0; i<numspaces; i++) {
 		c[i] = ' ';
 	}
