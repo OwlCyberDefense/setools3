@@ -1722,11 +1722,16 @@ proc Apol_Analysis_relabel::tree_select {widget node} {
 			lappend type_tags $start_index $end_index
 			append line "\n\n"
 			
+			set rlist ""
+
 			foreach item $data {
 				if {![ApolTop::is_binary_policy]} {
+				    set check [lsearch $rlist [expr [lindex $item 0]]]
+				    if {$check > -1} continue
 				    append line "("
 				    set start_index [expr {[string length $line]}]
 				    append line "[lindex $item 0]"
+				    lappend rlist "[lindex $item 0]"
 				    set end_index [string length $line]
 				    append line ") "
 				    lappend policy_tags_list $start_index $end_index
