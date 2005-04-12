@@ -282,9 +282,6 @@ int find_cond_in_policy(int p1_idx,policy_t *p1,policy_t *p2)
 ap_cond_expr_diff_t *new_cond_diff(int idx,apol_diff_t *diff,policy_t *p1,policy_t *p2)
 {
 	ap_cond_expr_diff_t *t;
-	cond_expr_t *p2exp = NULL;
-	int i;
-	bool_t inverse;
 	int rt;
 	
 	t = (ap_cond_expr_diff_t *)malloc(sizeof(ap_cond_expr_diff_t));
