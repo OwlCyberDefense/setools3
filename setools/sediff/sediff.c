@@ -177,6 +177,9 @@ static int print_iad_element(char **string,int *string_sz,
 	return 0;
 }
 
+/* given the role name(name) this will find all rules with name as the source
+   in both policies and print out those rules concatenating the targets together 
+   for easier reading */
 static int print_rallow_rules(char **string,int *string_sz,
 				policy_t *p1,policy_t *p2,char *name,
 				char *adescrp)
@@ -638,7 +641,7 @@ int print_rallow(FILE *fp, int id, int_a_diff_t *iad_p1, int_a_diff_t *iad_p2,
 			missing = (get_role_idx(name, p2) >= 0 ? FALSE : TRUE);
 			if (missing || t->missing){
 				num_removed += t->numa;
-				sprintf(tbuf, "\t\t- %s ", name);
+				sprintf(tbuf, "\t\t- allow %s ", name);
 				rt = print_rallow_element(&removed_buf,&removed_sz,t,p1,FALSE,adescrp,get_a_name,tbuf);
 				if (rt < 0)
 					goto print_rallow_error;
@@ -661,7 +664,7 @@ int print_rallow(FILE *fp, int id, int_a_diff_t *iad_p1, int_a_diff_t *iad_p2,
 			/* This means that the item exists only in the new policy */
 			if (missing || t->missing) {
 				num_added += t->numa;
-				sprintf(tbuf, "\t\t+ %s ", name);
+				sprintf(tbuf, "\t\t+ allow %s ", name);
 				rt = print_rallow_element(&added_buf,&added_sz,t,p1,FALSE,adescrp,get_a_name,tbuf);
 				if (rt < 0)
 					goto print_rallow_error;
