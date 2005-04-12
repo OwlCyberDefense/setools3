@@ -1056,6 +1056,9 @@ proc Apol_Analysis_relabel::adv_options_create_dialog {path_name title_txt} {
 		-bg white -selectmode extended \
 		-listvar Apol_Analysis_relabel::widget_vars($path_name,incl_subj_list) \
 		-exportselection 0]
+	if {$widget_vars(mode) == "subject"} {
+		$widgets($path_name,subj_incl_lb) configure -state disabled
+	}
 	$sw_incl_subj setwidget $widgets($path_name,subj_incl_lb)
 
 	set sw_excl_subj [ScrolledWindow [$excl_subj_box getframe].sw_excl_subj -auto none]
@@ -1064,24 +1067,40 @@ proc Apol_Analysis_relabel::adv_options_create_dialog {path_name title_txt} {
 		-bg white -selectmode extended \
 		-listvar Apol_Analysis_relabel::widget_vars($path_name,excl_subj_list) \
 		-exportselection 0]
+	if {$widget_vars(mode) == "subject"} {
+		$widgets($path_name,subj_excl_lb) configure -state disabled
+	}
 	$sw_excl_subj setwidget $widgets($path_name,subj_excl_lb)
 
 	set attrib_incl_cbox [ComboBox $attrib_incl_f.attrib_incl_cbox -editable 1 \
-		-entrybg white -width 16 -state disabled \
+		-entrybg white -width 16 -state disabled -autocomplete 1 \
 		-textvariable Apol_Analysis_relabel::widget_vars($path_name,incl_attrib) \
 		-modifycmd "Apol_Analysis_relabel::adv_options_filter_list_by_attrib \
 			Apol_Analysis_relabel::widget_vars($path_name,incl_subj_list) \
 			Apol_Analysis_relabel::widget_vars($path_name,master_incl_subj_list) \
 			Apol_Analysis_relabel::widget_vars($path_name,incl_attrib) \
 			$widgets($path_name,subj_incl_lb)"]
+	bindtags $attrib_incl_cbox.e [linsert [bindtags $attrib_incl_cbox.e] 3 incl_attrib_cb_tag]
+	bind incl_attrib_cb_tag <KeyPress> [list ApolTop::_create_popup $attrib_incl_cbox %W %K]
+
+	if {$Apol_Analysis_relabel::widget_vars($path_name,filter_incl_subj)} {
+		$attrib_incl_cbox configure -state normal
+	}
+
 	set attrib_excl_cbox [ComboBox $attrib_excl_f.attrib_excl_cbox -editable 1 \
-		-entrybg white -width 16 -state disabled \
+		-entrybg white -width 16 -state disabled -autocomplete 1 \
 		-textvariable Apol_Analysis_relabel::widget_vars($path_name,excl_attrib) \
 		-modifycmd "Apol_Analysis_relabel::adv_options_filter_list_by_attrib \
 			Apol_Analysis_relabel::widget_vars($path_name,excl_subj_list) \
 			Apol_Analysis_relabel::widget_vars($path_name,master_excl_subj_list) \
 			Apol_Analysis_relabel::widget_vars($path_name,excl_attrib) \
 			$widgets($path_name,subj_excl_lb)"]
+	bindtags $attrib_excl_cbox.e [linsert [bindtags $attrib_excl_cbox.e] 3 excl_attrib_cb_tag]
+	bind excl_attrib_cb_tag <KeyPress> [list ApolTop::_create_popup $attrib_excl_cbox %W %K]
+
+	if {$Apol_Analysis_relabel::widget_vars($path_name,filter_excl_subj)} {
+		$attrib_excl_cbox configure -state normal
+	}
 
 	set cb_incl_attrib_filter [checkbutton $attrib_incl_f.cb_incl_attrib_filter  \
 		-text "Filter included subject types by attribute" -offvalue 0 -onvalue 1 \
@@ -1169,6 +1188,21 @@ proc Apol_Analysis_relabel::adv_options_create_dialog {path_name title_txt} {
 		-command "Apol_Analysis_relabel::clear_all_lbox_items \
 			$Apol_Analysis_relabel::widgets($path_name,class_excl_lb)"]
 
+	if {$widget_vars(mode) == "subject"} {
+		$subj_frame configure -state disabled
+		$b_incl_subj_clear_all configure -state disabled
+		$b_excl_subj_clear_all configure -state disabled
+		$b_incl_subj_sel_all configure -state disabled
+		$b_excl_subj_sel_all configure -state disabled
+		$cb_incl_attrib_filter configure -state disabled
+		$cb_excl_attrib_filter configure -state disabled
+		$attrib_incl_cbox configure -state disabled
+		$attrib_excl_cbox configure -state disabled
+		$b_incl_subj configure -state disabled
+		$b_excl_subj configure -state disabled
+		$incl_subj_box configure -state disabled
+		$excl_subj_box configure -state disabled
+	}
 	
         pack $b_excl_classes $b_incl_classes -side top -anchor nw -pady 2 -fill x
 	pack $b_excl_subj $b_incl_subj -side top -anchor nw -pady 2 -fill x
