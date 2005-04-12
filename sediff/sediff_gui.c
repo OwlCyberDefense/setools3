@@ -106,7 +106,10 @@ static void txt_buffer_insert_summary_results();
 static char *sediff_get_tab_spaces(int numspaces);
 static void sediff_loading_dialog_on_window_destroy(GtkWidget *widget, GdkEvent *event, gpointer user_data);
 void sediff_menu_on_reload_clicked(GtkMenuItem *menuitem, gpointer user_data);
-
+static gboolean txt_view_on_cond_link_event(GtkTextTag *tag, GObject *event_object, 
+					      GdkEvent *event, const GtkTextIter *iter, 
+					    gpointer user_data);
+gboolean txt_view_on_text_view_motion(GtkWidget *widget, GdkEventMotion *event, gpointer user_data);
 
 void usage(const char *program_name, int brief)
 {
@@ -1462,16 +1465,17 @@ static void txt_view_raise_policy_tab_goto_line(unsigned long line, int whichvie
    returns true when user clicks line number we are able to get it, and 
    raise the correct tab 
 */
-static gboolean txt_view_on_policy1_link_event(GtkTextTag *tag, GObject *event_object, 
+static gboolean txt_view_on_policy_link_event(GtkTextTag *tag, GObject *event_object, 
 					      GdkEvent *event, const GtkTextIter *iter, 
 					      gpointer user_data)
 {
-	int offset;
+	int offset,page;
 	unsigned long line;
 	GtkTextBuffer *buffer;
 	GtkTextIter *start, *end;
 
 	if (event->type == GDK_BUTTON_PRESS) {
+		page = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(tag),"page"));
 		buffer = gtk_text_iter_get_buffer(iter);
 		start = gtk_text_iter_copy(iter);
 		offset = gtk_text_iter_get_line_offset(start);
@@ -1487,7 +1491,7 @@ static gboolean txt_view_on_policy1_link_event(GtkTextTag *tag, GObject *event_o
 		   starts at 0 */
 		line = atoi(gtk_text_iter_get_slice(start, end)) - 1;
 
-		txt_view_raise_policy_tab_goto_line(line,1);
+		txt_view_raise_policy_tab_goto_line(line,page);
 		return TRUE;
 	}
 
@@ -1498,32 +1502,71 @@ static gboolean txt_view_on_policy1_link_event(GtkTextTag *tag, GObject *event_o
    returns true when user clicks line number we are able to get it, and 
    raise the correct tab 
 */
-static gboolean txt_view_on_policy2_link_event(GtkTextTag *tag, GObject *event_object, 
+static gboolean txt_view_on_cond_link_event(GtkTextTag *tag, GObject *event_object, 
 					      GdkEvent *event, const GtkTextIter *iter, 
 					      gpointer user_data)
 {
 	int offset;
 	unsigned long line;
-	GtkTextBuffer *buffer;
-	GtkTextIter *start, *end;
+	GtkTextBuffer *buffer = sediff_app->conditionals_buffer;
+	GtkTextIter start, end;
+	gchar *my_str = NULL;
+	GtkTextView *textview = GTK_TEXT_VIEW(user_data);
+	GtkTextMark *mark;
+	GtkTreeModel *tree_model;
+	GtkTreeIter tree_iter;
+	GtkTreeIter tree_iter_next;
+	GtkTreeSelection *sel;
 
+	if (buffer == NULL || textview == NULL)
+		return FALSE;
 	if (event->type == GDK_BUTTON_PRESS) {
-		buffer = gtk_text_iter_get_buffer(iter);
-		start = gtk_text_iter_copy(iter);
-		offset = gtk_text_iter_get_line_offset(start);
+		/* get the id to find the mark */
+		my_str = (char *)g_object_get_data (G_OBJECT (tag), "id");
+		if (my_str == NULL)
+			return FALSE;
 
-		/* testing a new way */
-		while (!gtk_text_iter_starts_word(start))
-			gtk_text_iter_backward_char(start);
-		end = gtk_text_iter_copy(start);
-		while (!gtk_text_iter_ends_word(end))
-			gtk_text_iter_forward_char(end);
-				
-		/* the line # in policy starts with 1, in the buffer it 
-		   starts at 0 */
-		line = atoi(gtk_text_iter_get_slice(start, end)) - 1;
+		/* select the last element in the tree */
+		tree_model = gtk_tree_view_get_model((GtkTreeView*)sediff_app->tree_view);
+		sel = gtk_tree_view_get_selection((GtkTreeView*)sediff_app->tree_view);
+		if (gtk_tree_model_get_iter_first(tree_model,&tree_iter)) {
+			while (gtk_tree_model_iter_next(tree_model,&tree_iter))
+				tree_iter_next = tree_iter;
+			gtk_tree_selection_select_iter(sel,&tree_iter_next);
+		}
 
-		txt_view_raise_policy_tab_goto_line(line,2);
+		/* switch the textview to show the cond buffer */
+		txt_view_switch_buffer(textview,OPT_CONDITIONALS,1);
+
+		/* find the mark */
+		mark = gtk_text_buffer_get_mark(buffer,my_str);
+		if (!mark) {
+			return FALSE;
+		}
+		/* set the iterators to our mark which is right after the newline
+		   char  of the conditional */
+		gtk_text_buffer_get_iter_at_mark(buffer,&end,mark);
+		gtk_text_buffer_get_iter_at_mark(buffer,&start,mark);
+
+		/* move the end iterator to the end of the cond expr */
+		while (!gtk_text_iter_ends_sentence(&end))	
+			gtk_text_iter_backward_char(&end);
+		
+		/* move the start iter to the start of the line */
+		gtk_text_iter_backward_char(&start);
+		while (!gtk_text_iter_starts_line(&start))	
+			gtk_text_iter_backward_char(&start);
+
+		/* set the viewable part to be the conditional */
+		/* have to scroll to mark to avoid issues with drawing */
+		gtk_text_view_scroll_to_mark(textview, mark, 0.0, TRUE, 0.0, 0.5);			
+		gtk_text_view_set_cursor_visible(textview, TRUE);
+		gtk_text_buffer_place_cursor(buffer, &start);
+		/* highlight */
+		gtk_text_buffer_select_range(buffer,&start,&end);
+		
+
+
 		return TRUE;
 	}
 
@@ -1982,17 +2025,57 @@ static int txt_buffer_insert_perms_results(GtkTextBuffer *txt, GtkTextIter *txt_
 	return 0;	
 }
 
+/* this function given a policy #(1 or 2) and the idx of the conditional in that
+   policy will create a hyperlinked tag with the id "cond-link-policynum-idx", will
+   associate that id to the tag, and will connect that tag to a callback fcn in the
+   main textview. That will link us to the mark with the matching id in conditionals */
+GtkTextTag *txt_buffer_create_cond_tag(GtkTextBuffer *txt,int policy_num,int idx)
+{
+	GtkTextTag *tag = NULL;
+	GtkTextTagTable *table = NULL;
+	GString *string = g_string_new("");
+	GtkTextView *textview = NULL;
+
+	table = gtk_text_buffer_get_tag_table(txt);
+	if (table == NULL)
+		return NULL;
+
+	g_string_printf(string,"cond-link-%d-%d",policy_num,idx);
+	tag = gtk_text_tag_table_lookup(table, string->str);
+
+	if (!tag) {
+		tag = gtk_text_buffer_create_tag(txt, string->str,
+						 "family", "monospace",
+						 "foreground", "blue", 
+						 "underline", PANGO_UNDERLINE_SINGLE, NULL);
+		g_object_set_data (G_OBJECT (tag), "id", string->str);		
+		g_object_set_data (G_OBJECT (tag), "page", GINT_TO_POINTER (1));
+		/* grab the text buffers for our text views */
+		textview = GTK_TEXT_VIEW(glade_xml_get_widget(sediff_app->window_xml, "sediff_p1_results_txt_view"));
+		g_assert(textview);
+		g_signal_connect_after(G_OBJECT(tag), "event", GTK_SIGNAL_FUNC(txt_view_on_cond_link_event), 
+				       textview);
+		glade_xml_signal_connect_data(sediff_app->window_xml, "txt_view_on_text_view_motion", 
+					      GTK_SIGNAL_FUNC(txt_view_on_text_view_motion), tag);
+
+
+	}
+	g_string_free(string,FALSE);
+	return tag;
+}
+
 /* insert a full te rule line, with colors, and spacing */
 static int txt_buffer_insert_te_line(GtkTextBuffer *txt, GtkTextIter *iter, 
 				     GString *string,avh_node_t *cur,policy_t *policy,
 				     GtkTextTag *colortag,GtkTextTag *linktag,
-				     GtkTextTag *pangotag, const char *str,bool_t show_conds)
+				     GtkTextTag *pangotag, const char *str,bool_t show_conds,int policy_num)
 {
 	char *fulltab = sediff_get_tab_spaces(TABSIZE);
 	char *condtab = sediff_get_tab_spaces(TABSIZE-2);
 	char *rule = NULL;
 	gchar **split_line_array = NULL;
 	int j;
+	GtkTextTag *cond_tag;
 
 	/* are there conditionals */
 	if (show_conds && cur->flags & AVH_FLAG_COND) {
@@ -2040,7 +2123,8 @@ static int txt_buffer_insert_te_line(GtkTextBuffer *txt, GtkTextIter *iter,
 	/* get the conditional expression */
 	if (show_conds && cur->flags & AVH_FLAG_COND) {
 		rule = re_render_avh_rule_cond_expr(cur,policy);
-		gtk_text_buffer_insert_with_tags(txt, iter, rule, -1, colortag, NULL); 		
+		cond_tag = txt_buffer_create_cond_tag(txt,policy_num,cur->cond_expr);
+		gtk_text_buffer_insert_with_tags(txt, iter, rule, -1, cond_tag, NULL); 		
 		free(rule);
 	}
        	gtk_text_buffer_insert(txt, iter, "\n", -1); 
@@ -2151,10 +2235,10 @@ static int txt_buffer_insert_te_added_changed(GtkTextBuffer *txt,GtkTextMark *ch
 		gtk_text_buffer_get_iter_at_mark(txt,&changed_iter,changed_mark);
 		txt_buffer_insert_te_line(txt, &changed_iter, string, 
 					  cur, policy1, changed_tag,link1_tag,
-					  rules_tag,"* Policy 1: ",show_conds);
+					  rules_tag,"* Policy 1: ",show_conds,1);
 		txt_buffer_insert_te_line(txt, &changed_iter, string, 
 					  cur2, policy2, changed_tag,link2_tag,
-					  rules_tag,"* Policy 2: ",show_conds);
+					  rules_tag,"* Policy 2: ",show_conds,2);
 		
 		
 		/* now print the diffs */
@@ -2209,7 +2293,7 @@ static int txt_buffer_insert_te_added_changed(GtkTextBuffer *txt,GtkTextMark *ch
 		gtk_text_buffer_get_iter_at_mark(txt,&added_iter,added_mark);
 		txt_buffer_insert_te_line(txt, &added_iter, string, 
 					  diffcur2, policy2, added_tag,link2_tag,
-					  rules_tag,"+ ",show_conds);
+					  rules_tag,"+ ",show_conds,2);
 	}
 	return 0;
 
@@ -2320,11 +2404,11 @@ static int txt_buffer_insert_te_missing(GtkTextBuffer *txt,GtkTextMark *changed_
 			gtk_text_buffer_get_iter_at_mark(txt,&changed_iter,changed_mark);
 			txt_buffer_insert_te_line(txt, &changed_iter, string, cur, 
 						  policy1, changed_tag,link1_tag,
-						  rules_tag,"* Policy 1: ",show_conds);
+						  rules_tag,"* Policy 1: ",show_conds,1);
 			/* print the p2 rule */
 			txt_buffer_insert_te_line(txt, &changed_iter, string, cur2, 
 						  policy2, changed_tag,link2_tag,
-						  rules_tag,"* Policy 2: ",show_conds);	
+						  rules_tag,"* Policy 2: ",show_conds,2);	
 			/* now print the diffs */
 			if (diffcur1->key.rule_type <= RULE_MAX_AV) {
 				for (j = 0 ; j < diffcur1->num_data; j++) {
@@ -2355,7 +2439,7 @@ static int txt_buffer_insert_te_missing(GtkTextBuffer *txt,GtkTextMark *changed_
 		gtk_text_buffer_get_iter_at_mark(txt,&added_iter,added_mark);
 		txt_buffer_insert_te_line(txt, &added_iter, string, 
 					  diffcur1, policy1, removed_tag,link1_tag,
-							  rules_tag,"- ",show_conds);
+							  rules_tag,"- ",show_conds,1);
 		if (*polmatched == FALSE) {
 			gtk_text_buffer_get_iter_at_mark(txt,&holder_iter,changed_mark);
 			*holder_mark = gtk_text_buffer_create_mark (txt,"holder-mark",&holder_iter,TRUE);
@@ -2788,6 +2872,19 @@ static int txt_buffer_insert_rbac_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 	return 0;
 }
 
+GtkTextMark *txt_buffer_insert_cond_mark(GtkTextBuffer *txt,GtkTextIter *iter,GString *string,
+					int policy,int idx,bool_t goes_left)
+{
+	GtkTextMark *mark = NULL;
+	if (!txt || !iter || !string)
+		return NULL;
+	g_string_printf(string,"cond-link-%d-%d",policy,idx);
+	mark = gtk_text_buffer_get_mark(txt,string->str);
+	if (!mark) 
+		mark = gtk_text_buffer_create_mark (txt,string->str,iter,goes_left);	
+	return mark;
+}
+
 static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_iter,
 					  GString *string, apol_diff_t *diff1, apol_diff_t *diff2,
 				    	  policy_t *policy1, policy_t *policy2)
@@ -2795,6 +2892,7 @@ static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 	GtkTextTag *added_tag, *removed_tag, *changed_tag;
 	GtkTextTag *header_added_tag,*header_removed_tag,*header_changed_tag,*header_tag;		
 	GtkTextTagTable *table;
+	GtkTextMark *curr_cond_mark = NULL;
 	GtkTextMark *added_mark,*changed_mark,*holder_mark = NULL;              /* these are for the conditionals */
 	GtkTextMark *local_added_mark = NULL,*local_changed_mark = NULL,*local_holder_mark = NULL;  /* these are for the te rules */
 	GtkTextIter added_iter,changed_iter,holder_iter;
@@ -2805,14 +2903,10 @@ static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 	g_return_val_if_fail(diff2 != NULL, -1);
 	int i,j,k;
 	
-
 	/* reset the te summary counters */
 	sediff_app->summary.conds.added = 0;
 	sediff_app->summary.conds.removed = 0;
 	sediff_app->summary.conds.changed = 0;
-
-
-
 
 	gtk_text_buffer_get_end_iter(txt, txt_iter);
 
@@ -2906,7 +3000,7 @@ static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 				free(rule);
 				gtk_text_buffer_insert_with_tags(txt, &added_iter, string->str, 
 								 -1, removed_tag, NULL);
-
+				curr_cond_mark = txt_buffer_insert_cond_mark(txt,&added_iter,string,1,t->idx,TRUE);
 				j = k = 0;
 				/* print true list */
 				g_string_printf(string,"    TRUE list:\n");
@@ -2950,7 +3044,12 @@ static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 				gtk_text_buffer_insert_with_tags_by_name(txt, &changed_iter, string->str, 
 									 -1, "changed-tag", NULL);
 				
-
+				/* now we find create our conditional marks for use with hyper links! */
+				i = find_cond_in_policy(t->idx,policy1,policy2);
+				if (i < 0)
+					return -1;				
+				curr_cond_mark = txt_buffer_insert_cond_mark(txt,&changed_iter,string,1,t->idx,TRUE);
+				curr_cond_mark = txt_buffer_insert_cond_mark(txt,&changed_iter,string,2,i,TRUE);
 				/* print true lists */
 				g_string_printf(string,"    TRUE list:\n");
 				gtk_text_buffer_insert_with_tags(txt, &changed_iter, string->str, 
@@ -3020,7 +3119,9 @@ static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 	}					
 
 
-
+	/* now we handle differences in policy 2, since we already dealt with things conditionals
+	   that are different in both policies, in this we deal with conditionals not in policy 1
+	   or conditionals that have more things than policy 1 */
 	if (cd2 != NULL) {
 		for (t = cd2; t != NULL; t = t->next) {
 			rule = re_render_cond_expr(t->idx,policy2);
@@ -3032,6 +3133,7 @@ static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 				gtk_text_buffer_insert_with_tags(txt, &added_iter, string->str, 
 								 -1, added_tag, NULL);
 
+				curr_cond_mark = txt_buffer_insert_cond_mark(txt,&added_iter,string,2,t->idx,TRUE);
 				/* print true list */
 				g_string_printf(string,"    TRUE list:\n");
 				gtk_text_buffer_insert_with_tags(txt, &added_iter, string->str, 
@@ -3067,6 +3169,13 @@ static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 				free(rule);
 				gtk_text_buffer_insert_with_tags(txt, &changed_iter, string->str, 
 								 -1, changed_tag, NULL);
+
+				/* now we find create our conditional marks for use with hyper links! */
+				i = find_cond_in_policy(t->idx,policy2,policy1);
+				if (i < 0)
+					return -1;				
+				curr_cond_mark = txt_buffer_insert_cond_mark(txt,&changed_iter,string,2,t->idx,TRUE);
+				curr_cond_mark = txt_buffer_insert_cond_mark(txt,&changed_iter,string,1,i,TRUE);
 
 				j = k = 0;
 				/* print true list */
@@ -3619,16 +3728,16 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 			link2_tag = gtk_text_tag_table_lookup(table, "policy2-link-tag");
 			/* the tags will not exist if the policies are binary */
 			if (link1_tag) {
-				g_signal_connect_after(G_OBJECT(link1_tag), "event", GTK_SIGNAL_FUNC(txt_view_on_policy1_link_event), 
+				g_signal_connect_after(G_OBJECT(link1_tag), "event", GTK_SIGNAL_FUNC(txt_view_on_policy_link_event), 
 						       textview);
-				g_object_set_data (G_OBJECT (link1_tag), "page", GINT_TO_POINTER (page));
+				g_object_set_data (G_OBJECT (link1_tag), "page", GINT_TO_POINTER (1));
 				glade_xml_signal_connect_data(sediff_app->window_xml, "txt_view_on_text_view_motion", 
 							      GTK_SIGNAL_FUNC(txt_view_on_text_view_motion), link1_tag);
 			}
 			if (link2_tag) {
-				g_signal_connect_after(G_OBJECT(link2_tag), "event", GTK_SIGNAL_FUNC(txt_view_on_policy2_link_event), 
+				g_signal_connect_after(G_OBJECT(link2_tag), "event", GTK_SIGNAL_FUNC(txt_view_on_policy_link_event), 
 						       textview);
-				g_object_set_data (G_OBJECT (link2_tag), "page", GINT_TO_POINTER (page));
+				g_object_set_data (G_OBJECT (link2_tag), "page", GINT_TO_POINTER (2));
 				glade_xml_signal_connect_data(sediff_app->window_xml, "txt_view_on_text_view_motion", 
 							      GTK_SIGNAL_FUNC(txt_view_on_text_view_motion), link2_tag);
 			}
@@ -3643,16 +3752,16 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 			link2_tag = gtk_text_tag_table_lookup(table, "policy2-link-tag");
 			/* the tags will not exist if the policies are binary */
 			if (link1_tag) {
-				g_signal_connect_after(G_OBJECT(link1_tag), "event", GTK_SIGNAL_FUNC(txt_view_on_policy1_link_event), 
+				g_signal_connect_after(G_OBJECT(link1_tag), "event", GTK_SIGNAL_FUNC(txt_view_on_policy_link_event), 
 						       textview);
-				g_object_set_data (G_OBJECT (link1_tag), "page", GINT_TO_POINTER (page));
+				g_object_set_data (G_OBJECT (link1_tag), "page", GINT_TO_POINTER (1));
 				glade_xml_signal_connect_data(sediff_app->window_xml, "txt_view_on_text_view_motion", 
 							      GTK_SIGNAL_FUNC(txt_view_on_text_view_motion), link1_tag);
 			}
 			if (link2_tag) {
-				g_signal_connect_after(G_OBJECT(link2_tag), "event", GTK_SIGNAL_FUNC(txt_view_on_policy2_link_event), 
+				g_signal_connect_after(G_OBJECT(link2_tag), "event", GTK_SIGNAL_FUNC(txt_view_on_policy_link_event), 
 						       textview);
-				g_object_set_data (G_OBJECT (link2_tag), "page", GINT_TO_POINTER (page));
+				g_object_set_data (G_OBJECT (link2_tag), "page", GINT_TO_POINTER (2));
 				glade_xml_signal_connect_data(sediff_app->window_xml, "txt_view_on_text_view_motion", 
 							      GTK_SIGNAL_FUNC(txt_view_on_text_view_motion), link2_tag);
 			}
