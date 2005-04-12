@@ -246,6 +246,38 @@ static int add_rule_to_cond_expr_diff(ap_cond_expr_diff_t *cond_diff,avh_node_t 
 	}
 }
 
+/* search policy 2 for a matching conditional */
+int find_cond_in_policy(int p1_idx,policy_t *p1,policy_t *p2)
+{
+	int rt;
+	cond_expr_t *expr2=NULL;
+	bool_t inverse;
+	int i;
+	
+	if (p1 == NULL || p2 == NULL)
+		return -1;
+
+	rt = make_p2_cond_expr(p1_idx, p1, &expr2, p2);
+	if(rt < 0) {
+		assert(0);
+		return -1;
+	}
+	if(expr2 == NULL) {
+		return -1; /* couldn't construct p2 expr dur to bool differences*/
+	}
+
+	for (i = 0; i < p2->num_cond_exprs;i++) {
+		if (cond_exprs_semantic_equal(expr2, p2->cond_exprs[i].expr, p2, &inverse) 
+		    && inverse == FALSE) {
+			cond_free_expr(expr2);
+			return i;
+		}
+	}
+	cond_free_expr(expr2);
+	return -1;
+}
+
+
 /* here we just prepend a new node to the diff list of cond exprs and return a pointer to it */
 ap_cond_expr_diff_t *new_cond_diff(int idx,apol_diff_t *diff,policy_t *p1,policy_t *p2)
 {
@@ -273,24 +305,12 @@ ap_cond_expr_diff_t *new_cond_diff(int idx,apol_diff_t *diff,policy_t *p1,policy
 	t->next = diff->cond_exprs;
 	diff->cond_exprs = t;
 	diff->num_cond_exprs += 1;
-
 		
-
 	/* in order to fully realize if this new cond exp is in p2 we create a p2 cond expr
 	   and go through its lists comparing them */
-	rt = make_p2_cond_expr(idx,p1,&p2exp,p2);
-	if ( rt == 0 && p2exp != NULL) {
-		for ( i = 0; i < p2->num_cond_exprs; i++){
-			if (cond_exprs_semantic_equal(p2exp, p2->cond_exprs[i].expr, p2, &inverse) && inverse == FALSE) {
-				t->missing = FALSE;
-				break;
-			}
-		}
-		cond_free_expr(p2exp);
-	}
-
-
-
+	rt = find_cond_in_policy(idx,p1,p2);
+	if (rt >= 0)
+		t->missing = FALSE;
 	return t;
 }
 
@@ -407,7 +427,8 @@ static int make_p2_cond_expr(int idx1, policy_t *p1, cond_expr_t **expr2, policy
 	return 0;	
 }
 
-
+/* search diff2's conditional differences and try to find a match for cond_expr_diff,
+   the conditional expr in policy 1 */
 ap_cond_expr_diff_t *find_cdiff_in_policy(ap_cond_expr_diff_t *cond_expr_diff,apol_diff_t *diff2,policy_t *p1,policy_t *p2)
 {
 	int rt;
@@ -440,6 +461,8 @@ ap_cond_expr_diff_t *find_cdiff_in_policy(ap_cond_expr_diff_t *cond_expr_diff,ap
 	cond_free_expr(expr2);
 	return NULL;
 }
+
+
 
 bool_t does_cond_match(avh_node_t *n1, policy_t *p1, avh_node_t *n2, policy_t *p2, bool_t *inverse)
 {

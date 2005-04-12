@@ -101,6 +101,7 @@ apol_diff_result_t *apol_diff_policies(unsigned int opts, policy_t *p1, policy_t
 int make_p2_key(avh_key_t *p1key, avh_key_t *p2key, policy_t *p1, policy_t *p2);
 bool_t does_cond_match(avh_node_t *n1, policy_t *p1, avh_node_t *n2, policy_t *p2, bool_t *inverse);
 ap_cond_expr_diff_t *find_cdiff_in_policy(ap_cond_expr_diff_t *cond_expr_diff,apol_diff_t *diff2,policy_t *p1,policy_t *p2);
+int find_cond_in_policy(int p1_idx,policy_t *p1,policy_t *p2);
 #endif /* _APOLICY_POLDIFF_H_ */
 
 
