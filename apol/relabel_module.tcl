@@ -366,7 +366,7 @@ proc Apol_Analysis_relabel::load_query_options {file_channel parentDlg} {
     if {[gets $file_channel] > $VERSION} {
         return -code error "The specified query version is not allowed."
     }
-    array set widget_vars [read $file_channel]
+    array set Apol_Analysis_relabel::widget_vars [read $file_channel]
     Apol_Analysis_relabel::init_widget_state
     return 0
 }
@@ -376,11 +376,14 @@ proc Apol_Analysis_relabel::load_query_options {file_channel parentDlg} {
 #	- file_channel - file channel identifier of the query file to write to.
 #	- file_name - name of the query file
 proc Apol_Analysis_relabel::save_query_options {module_name file_channel file_name} {
-    variable VERSION widget_vars
-    puts $file_channel $module_name
-    puts $file_channel $VERSION
-    puts $file_channel [array get widget_vars]
-    return 0
+	variable VERSION 
+	variable widget_vars
+
+	puts $file_channel $module_name
+	puts $file_channel $VERSION
+	puts $file_channel [array get Apol_Analysis_relabel::widget_vars] 
+
+	return 0
 }
 
 # Captures the current set of options, which is then later restored by
