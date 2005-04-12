@@ -1510,8 +1510,6 @@ static gboolean txt_view_on_cond_link_event(GtkTextTag *tag, GObject *event_obje
 					      GdkEvent *event, const GtkTextIter *iter, 
 					      gpointer user_data)
 {
-	int offset;
-	unsigned long line;
 	GtkTextBuffer *buffer = sediff_app->conditionals_buffer;
 	GtkTextIter start, end;
 	gchar *my_str = NULL;
@@ -3683,7 +3681,6 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 	GtkTextTag *link2_tag;
 	GtkTextTagTable *table;
 	GtkTextAttributes *attr;
-	gint page = 1;
 	gint size;
 	PangoTabArray *tabs;
 
