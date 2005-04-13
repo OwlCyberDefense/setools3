@@ -390,7 +390,7 @@ proc Apol_Analysis_relabel::save_query_options {module_name file_channel file_na
 # [set_display_to_results_tab].
 proc Apol_Analysis_relabel::get_current_results_state { } {
     variable widget_vars
-    return [array get widget_vars]
+    return [array get Apol_Analysis_relabel::widget_vars]
 }
 
 # Apol_Analysis_relabel::set_display_to_results_state is called to
@@ -399,7 +399,7 @@ proc Apol_Analysis_relabel::get_current_results_state { } {
 # we created in a previous get_current_results_state() call.
 proc Apol_Analysis_relabel::set_display_to_results_state { query_options } {
     variable widget_vars
-    array set widget_vars $query_options
+    array set Apol_Analysis_relabel::widget_vars $query_options
     Apol_Analysis_relabel::init_widget_state
 }
 
