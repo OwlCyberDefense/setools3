@@ -49,7 +49,7 @@ namespace eval Apol_Analysis_relabel {
 	# Advanced filter dialog widget
 	variable advanced_filter_Dlg
 	set advanced_filter_Dlg .apol_relabel_advanced_filter_Dlg
-	
+
 	variable excluded_tag		" (Excluded)"	
 
 	# defined tag names for output 
@@ -95,8 +95,8 @@ proc Apol_Analysis_relabel::get_analysis_info {} {
 # is raised due to the most recent call
 # [set_display_to_results_state].
 proc Apol_Analysis_relabel::get_results_raised_tab {} {
-    variable most_recent_results_pw
-    return $most_recent_results_pw
+    variable widget_vars
+    return $widget_vars(rtext)
 }
 
 proc Apol_Analysis_relabel::create_widgets_to_display_results {results results_frame} {
@@ -133,10 +133,10 @@ proc Apol_Analysis_relabel::create_widgets_to_display_results {results results_f
 	set rf [$pw add -weight 3]
 	set rtf [TitleFrame $rf.rtf -text "Relabeling Results"]
 	set rsw [ScrolledWindow [$rtf getframe].rsw -auto horizontal]
-	set rtext [text $rsw.rtext -wrap none -bg white -font $ApolTop::text_font]
-	$rsw setwidget $rtext
-	Apol_PolicyConf::configure_HyperLinks $rtext
-	set widget_vars(current_rtext) $rtext
+	set widget_vars(rtext) [text $rsw.rtext -wrap none -bg white -font $ApolTop::text_font]
+	$rsw setwidget $widget_vars(rtext)
+	Apol_PolicyConf::configure_HyperLinks $widget_vars(rtext)
+	set widget_vars(current_rtext) $widget_vars(rtext)
 	pack $rsw -expand 1 -fill both
 	pack $rtf -expand 1 -fill both
 	pack $pw -expand 1 -fill both
@@ -199,22 +199,22 @@ proc Apol_Analysis_relabel::create_widgets_to_display_results {results results_f
 			lappend subtitle_type_tags $start_index $end_index
 			append text_s " any type as a subject."
 		}
-		$rtext insert end $text_s
+		$widget_vars(rtext) insert end $text_s
 		foreach {start_index end_index} $title_type_tags {
-			$rtext tag add $Apol_Analysis_relabel::title_type_tag \
+			$widget_vars(rtext) tag add $Apol_Analysis_relabel::title_type_tag \
 				"1.0 + $start_index c" "1.0 + $end_index c"
 		}
 		foreach {start_index end_index} $subtitle_type_tags {
-			$rtext tag add $Apol_Analysis_relabel::subtitle_tag \
+			$widget_vars(rtext) tag add $Apol_Analysis_relabel::subtitle_tag \
 				"1.0 + $start_index c" "1.0 + $end_index c"
 		}
 		foreach {start_index end_index} $title_tags {
-			$rtext tag add $Apol_Analysis_relabel::title_tag \
+			$widget_vars(rtext) tag add $Apol_Analysis_relabel::title_tag \
 				"1.0 + $start_index c" "1.0 + $end_index c"
 		}
-		Apol_Analysis_relabel::formatInfoText $rtext
+		Apol_Analysis_relabel::formatInfoText $widget_vars(rtext)
 	} else {
-		$rtext insert end "This tab provides the results of a relabeling analysis."
+		$widget_vars(rtext) insert end "This tab provides the results of a relabeling analysis."
 		if {$widget_vars(mode) == "subject"} {
 			$dtree insert end $Apol_Analysis_relabel::top_node TO_LIST \
 				-text "To" -open 1 \
@@ -267,7 +267,7 @@ proc Apol_Analysis_relabel::create_widgets_to_display_results {results results_f
         	$dtree configure -selectcommand [namespace code tree_select]
 	}
 	$dtree selection set $Apol_Analysis_relabel::top_node
-	$rtext configure -state disabled
+	$widget_vars(rtext) configure -state disabled
 }
 
 # The GUI will call Apol_Analysis_relabel::do_analysis when the
