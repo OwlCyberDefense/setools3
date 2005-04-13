@@ -3527,7 +3527,7 @@ static void txt_buffer_insert_summary_results()
 
 	g_string_printf(string,"Roles:\n");
 	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_tag,NULL);
-	g_string_printf(string,"\tAdded: %d\n",sediff_app->summary.roles.changed);
+	g_string_printf(string,"\tAdded: %d\n",sediff_app->summary.roles.added);
 	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_added_tag,NULL);
 	g_string_printf(string,"\tRemoved: %d\n",sediff_app->summary.roles.removed);
 	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_removed_tag,NULL);
