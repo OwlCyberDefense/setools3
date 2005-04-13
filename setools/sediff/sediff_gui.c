@@ -2250,7 +2250,7 @@ static int txt_buffer_insert_te_added_changed(GtkTextBuffer *txt,GtkTextMark *ch
 		if (diffcur2->key.rule_type <= RULE_MAX_AV) {
 			for (j = 0 ; j < diffcur2->num_data; j++) {
 				if (get_perm_name(diffcur2->data[j],&name,policy2) == 0) {
-					g_string_printf(string,"%s%s+ %s\n",fulltab,fulltab,name);
+					g_string_printf(string,"%s%s%s+ %s\n",show_conds ? "" : fulltab,fulltab,fulltab,name);
 					gtk_text_buffer_insert_with_tags_by_name(txt, &changed_iter, string->str, -1, "added-tag", NULL);
 					gtk_text_buffer_get_iter_at_mark(txt,&changed_iter,changed_mark);
 					free(name);
@@ -2259,7 +2259,7 @@ static int txt_buffer_insert_te_added_changed(GtkTextBuffer *txt,GtkTextMark *ch
 			if (diffcur1) {
 				for (j = 0 ; j < diffcur1->num_data; j++) {
 					if (get_perm_name(diffcur1->data[j],&name,policy1) == 0) {
-						g_string_printf(string,"%s%s- %s\n",fulltab,fulltab,name);
+						g_string_printf(string,"%s%s%s- %s\n",show_conds ? "" : fulltab,fulltab,fulltab,name);
 						gtk_text_buffer_insert_with_tags_by_name(txt, &changed_iter, string->str, -1, "removed-tag", NULL);
 						gtk_text_buffer_get_iter_at_mark(txt,&changed_iter,changed_mark);
 						free(name);
@@ -2270,7 +2270,7 @@ static int txt_buffer_insert_te_added_changed(GtkTextBuffer *txt,GtkTextMark *ch
 		else {
 			if (diffcur2->num_data == 1) {
 				if (get_type_name(diffcur2->data[0],&name,policy2) == 0) {
-					g_string_printf(string,"%s%s+ %s\n",fulltab,fulltab,name);
+					g_string_printf(string,"%s%s%s+ %s\n",show_conds ? "" : fulltab,fulltab,fulltab,name);
 					gtk_text_buffer_insert_with_tags_by_name(txt, &changed_iter, string->str, -1, "added-tag", NULL);
 					gtk_text_buffer_get_iter_at_mark(txt,&changed_iter,changed_mark);
 					free(name);
@@ -2278,7 +2278,7 @@ static int txt_buffer_insert_te_added_changed(GtkTextBuffer *txt,GtkTextMark *ch
 			}
 			if(diffcur1) {
 				if (get_type_name(diffcur1->data[0],&name,policy1) == 0) {
-					g_string_printf(string,"%s%s- %s\n",fulltab,fulltab,name);
+					g_string_printf(string,"%s%s%s- %s\n",show_conds ? "" : fulltab,fulltab,fulltab,name);
 					gtk_text_buffer_insert_with_tags_by_name(txt, &changed_iter, string->str, -1, "removed-tag", NULL);
 					gtk_text_buffer_get_iter_at_mark(txt,&changed_iter,changed_mark);
 					free(name);
@@ -2377,7 +2377,7 @@ static int txt_buffer_insert_te_missing(GtkTextBuffer *txt,GtkTextMark *changed_
 
 
 
-	/* make the p1 key */
+	/* make the p2 key */
 	make_p2_key(&diffcur1->key,&p2key,policy1,policy2); 
 	
 	/* search for the key/cond in p2, */			
@@ -2415,7 +2415,7 @@ static int txt_buffer_insert_te_missing(GtkTextBuffer *txt,GtkTextMark *changed_
 			if (diffcur1->key.rule_type <= RULE_MAX_AV) {
 				for (j = 0 ; j < diffcur1->num_data; j++) {
 					if (get_perm_name(diffcur1->data[j],&name,policy1) == 0) {
-						g_string_printf(string,"%s%s- %s\n",fulltab,fulltab,name);
+						g_string_printf(string,"%s%s%s- %s\n",show_conds ? "" : fulltab,fulltab,fulltab,name);
 						gtk_text_buffer_insert_with_tags(txt, &changed_iter, string->str, -1,removed_tag, NULL);
 								free(name);
 					}
@@ -2424,7 +2424,7 @@ static int txt_buffer_insert_te_missing(GtkTextBuffer *txt,GtkTextMark *changed_
 			else {
 				if (diffcur1->num_data == 1) {
 					if (get_type_name(diffcur1->data[0],&name,policy1) == 0) {
-						g_string_printf(string,"%s%s- %s\n",fulltab,fulltab,name);
+						g_string_printf(string,"%s%s%s- %s\n",show_conds ? "" : fulltab,fulltab,fulltab,name);
 						gtk_text_buffer_insert_with_tags(txt, &changed_iter, string->str, -1,removed_tag, NULL);
 						free(name);
 					}
@@ -2900,7 +2900,7 @@ static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 	GtkTextIter added_iter,changed_iter,holder_iter;
 	ap_cond_expr_diff_t *t = NULL,*cdiff2 = NULL;
 	char *rule = NULL;
-	bool_t polmatched = FALSE,local_polmatched = FALSE;
+	bool_t polmatched = FALSE,local_polmatched = FALSE,inverse = FALSE;
 	g_return_val_if_fail(diff1 != NULL, -1);
 	g_return_val_if_fail(diff2 != NULL, -1);
 	int i,j,k;
@@ -3047,7 +3047,8 @@ static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 			}
 			else {
 				sediff_app->summary.conds.changed += 1;
-				cdiff2 = find_cdiff_in_policy(t,diff2,policy1,policy2);				
+				inverse = FALSE;
+				cdiff2 = find_cdiff_in_policy(t,diff2,policy1,policy2,&inverse);				
 				gtk_text_buffer_get_iter_at_mark(txt,&changed_iter,changed_mark);
 				g_string_printf(string,"*%s\n",rule);
 				free(rule);
@@ -3055,7 +3056,7 @@ static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 									 -1, "changed-tag", NULL);
 				
 				/* now we find create our conditional marks for use with hyper links! */
-				i = find_cond_in_policy(t->idx,policy1,policy2);
+				i = find_cond_in_policy(t->idx,policy1,policy2,FALSE);
 				if (i < 0)
 					return -1;				
 				curr_cond_mark = txt_buffer_insert_cond_mark(txt,&changed_iter,string,1,t->idx,TRUE);
@@ -3072,13 +3073,20 @@ static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 								     &j,&k,&local_polmatched,FALSE);	
 				}
 				if (cdiff2) {
-					for (i = 0; i < cdiff2->num_true_list_diffs; i++) {
-						txt_buffer_insert_te_added_changed(txt,local_changed_mark,local_added_mark,local_holder_mark,
-										   string,diff1,diff2,policy1,policy2,cdiff2->true_list_diffs[i],
-										   &(sediff_app->summary.te_rules.changed),
-										   &(sediff_app->summary.te_rules.added),FALSE);
+					if (inverse == FALSE) { 
+						for (i = 0; i < cdiff2->num_true_list_diffs; i++) {
+							txt_buffer_insert_te_added_changed(txt,local_changed_mark,local_added_mark,local_holder_mark,
+											   string,diff1,diff2,policy1,policy2,cdiff2->true_list_diffs[i],
+											   &j,&k,FALSE);
+						}
 					}
-					
+					else {
+						for (i = 0; i < cdiff2->num_false_list_diffs; i++) {
+							txt_buffer_insert_te_added_changed(txt,local_changed_mark,local_added_mark,local_holder_mark,
+											   string,diff1,diff2,policy1,policy2,cdiff2->false_list_diffs[i],
+											   &j,&k,FALSE);
+						}
+					}
 					
 				}
 				/* print false lists */
@@ -3094,12 +3102,20 @@ static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 								     &j,&k,&local_polmatched,FALSE);	
 				}
 				if (cdiff2) {
-					for (i = 0; i < cdiff2->num_false_list_diffs; i++) {
-						txt_buffer_insert_te_added_changed(txt,local_changed_mark,local_added_mark,local_holder_mark,
-										   string,diff1,diff2,policy1,policy2,cdiff2->false_list_diffs[i],
-										   &j,&k,FALSE);
+					if (inverse == TRUE) { 
+						for (i = 0; i < cdiff2->num_true_list_diffs; i++) {
+							txt_buffer_insert_te_added_changed(txt,local_changed_mark,local_added_mark,local_holder_mark,
+											   string,diff1,diff2,policy1,policy2,cdiff2->true_list_diffs[i],
+											   &j,&k,FALSE);
+						}
 					}
-					
+					else {
+						for (i = 0; i < cdiff2->num_false_list_diffs; i++) {
+							txt_buffer_insert_te_added_changed(txt,local_changed_mark,local_added_mark,local_holder_mark,
+											   string,diff1,diff2,policy1,policy2,cdiff2->false_list_diffs[i],
+											   &j,&k,FALSE);
+						}
+					}
 				}
 				if (local_holder_mark)
 					gtk_text_buffer_delete_mark(txt,local_holder_mark);
@@ -3135,6 +3151,7 @@ static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 	if (cd2 != NULL) {
 		for (t = cd2; t != NULL; t = t->next) {
 			rule = re_render_cond_expr(t->idx,policy2);
+			inverse = FALSE;
 			if (t->missing) {
 				sediff_app->summary.conds.added += 1;	
 				gtk_text_buffer_get_iter_at_mark(txt,&added_iter,added_mark);
@@ -3173,7 +3190,7 @@ static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 
 				sediff_app->summary.conds.changed += j;
 			}
-			else if (find_cdiff_in_policy(t,diff1,policy2,policy1) == NULL) {
+			else if (find_cdiff_in_policy(t,diff1,policy2,policy1,&inverse) == NULL) {
 				sediff_app->summary.conds.changed += 1;	
 				gtk_text_buffer_get_iter_at_mark(txt,&changed_iter,changed_mark);
 				g_string_printf(string,"*%s\n",rule);
@@ -3182,7 +3199,7 @@ static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 								 -1, changed_tag, NULL);
 
 				/* now we find create our conditional marks for use with hyper links! */
-				i = find_cond_in_policy(t->idx,policy2,policy1);
+				i = find_cond_in_policy(t->idx,policy2,policy1,FALSE);
 				if (i < 0)
 					return -1;				
 				curr_cond_mark = txt_buffer_insert_cond_mark(txt,&changed_iter,string,2,t->idx,TRUE);
