@@ -1352,7 +1352,7 @@ int print_te_added_changed(char **changed_buf,char **added_buf,int *changed_sz,i
 		if (diffcur2->key.rule_type <= RULE_MAX_AV) {
 			for (j = 0 ; j < diffcur2->num_data; j++) {
 				if (get_perm_name(diffcur2->data[j],&name,policy2) == 0) {
-					sprintf(tbuf," \t\t\t+ %s\n",name);
+					sprintf(tbuf," %s\t\t\t+ %s\n",show_conds ? "" : "\t",name);
 					append_str(changed_buf,changed_sz,tbuf);
 					free(name);
 				}
@@ -1360,7 +1360,7 @@ int print_te_added_changed(char **changed_buf,char **added_buf,int *changed_sz,i
 			if (diffcur1 != NULL) {
 				for (j = 0 ; j < diffcur1->num_data; j++) {
 					if (get_perm_name(diffcur1->data[j],&name,policy1) == 0) {
-						sprintf(tbuf," \t\t\t- %s\n",name);
+						sprintf(tbuf," %s\t\t\t- %s\n",show_conds ? "" : "\t",name);
 						append_str(changed_buf,changed_sz,tbuf);
 						free(name);
 					}
@@ -1370,7 +1370,7 @@ int print_te_added_changed(char **changed_buf,char **added_buf,int *changed_sz,i
 		else {
 			if (diffcur2->num_data == 1) {
 				if (get_type_name(diffcur2->data[0],&name,policy2) == 0) {
-					sprintf(tbuf," \t\t\t+ %s\n",name);
+					sprintf(tbuf," %s\t\t\t+ %s\n",show_conds ? "" : "\t",name);
 					append_str(changed_buf,changed_sz,tbuf);
 					free(name);
 				}
@@ -1378,7 +1378,7 @@ int print_te_added_changed(char **changed_buf,char **added_buf,int *changed_sz,i
 			if (diffcur1 != NULL) {
 				if(diffcur1->num_data == 1) {
 					if (get_type_name(diffcur1->data[0],&name,policy1) == 0) {
-						sprintf(tbuf," \t\t\t- %s\n",name);
+						sprintf(tbuf," %s\t\t\t- %s\n",show_conds ? "" : "\t",name);
 						append_str(changed_buf,changed_sz,tbuf);
 						free(name);
 					}
@@ -1440,7 +1440,7 @@ int print_te_removed(char **changed_buf,char **removed_buf,int *changed_sz,int *
 			if (diffcur1->key.rule_type <= RULE_MAX_AV) {
 				for (j = 0 ; j < diffcur1->num_data; j++) {
 					if (get_perm_name(diffcur1->data[j],&name,policy1) == 0) {
-						sprintf(tbuf," \t\t\t- %s\n",name);
+						sprintf(tbuf," %s\t\t\t- %s\n",show_conds ? "" : "\t",name);
 						append_str(changed_buf,changed_sz,tbuf);
 						free(name);
 					}
@@ -1449,7 +1449,7 @@ int print_te_removed(char **changed_buf,char **removed_buf,int *changed_sz,int *
 			else {
 				if (diffcur1->num_data == 1) {
 					if (get_type_name(diffcur1->data[0],&name,policy1) == 0) {
-						sprintf(tbuf," \t\t\t- %s\n",name);
+						sprintf(tbuf," %s\t\t\t- %s\n",show_conds ? "" : "\t",name);
 						append_str(changed_buf,changed_sz,tbuf);
 						free(name);
 					}
@@ -1552,7 +1552,7 @@ static int print_cond_diffs(FILE *fp, apol_diff_result_t *diff)
 	apol_diff_t *diff1 = NULL, *diff2 = NULL;
 	policy_t *policy1 = NULL, *policy2 = NULL;
 	char tbuf[APOL_STR_SZ*10];
-	
+	bool_t inverse;
 
 	if(diff == NULL || fp == NULL)
 		goto print_cond_error;
@@ -1576,6 +1576,7 @@ static int print_cond_diffs(FILE *fp, apol_diff_result_t *diff)
 	if (cd != NULL) {
 		for (t = cd; t != NULL; t = t->next) {
 			rule = re_render_cond_expr(t->idx,policy1);
+			inverse = FALSE;
 			if (t->missing) {
 				num_removed += 1;
 				sprintf(tbuf,"\t-%s\n\t\tTRUE list:\n",rule);
@@ -1602,7 +1603,7 @@ static int print_cond_diffs(FILE *fp, apol_diff_result_t *diff)
 				sprintf(tbuf,"\t*%s\n\t\tTRUE list:\n",rule);
 				free(rule);
 				append_str(&changed_buf,&changed_sz,tbuf);
-				cdiff2 = find_cdiff_in_policy(t,diff2,policy1,policy2);				
+				cdiff2 = find_cdiff_in_policy(t,diff2,policy1,policy2,&inverse);				
 		       			
 				for (i = 0; i < t->num_true_list_diffs; i++) {
 					print_te_removed(&changed_buf,&changed_buf,&changed_sz,&changed_sz,
@@ -1610,10 +1611,19 @@ static int print_cond_diffs(FILE *fp, apol_diff_result_t *diff)
 							 &local_num_changed,&local_num_removed,FALSE);
 				}
 				if (cdiff2) {
-					for (i = 0; i < cdiff2->num_true_list_diffs; i++) {
-						print_te_added_changed(&changed_buf,&changed_buf,&changed_sz,&changed_sz,
-								       diff1,diff2,policy1,policy2,cdiff2->true_list_diffs[i],
-								       &local_num_changed,&local_num_added,FALSE);
+					if (inverse == FALSE) {
+						for (i = 0; i < cdiff2->num_true_list_diffs; i++) {
+							print_te_added_changed(&changed_buf,&changed_buf,&changed_sz,&changed_sz,
+									       diff1,diff2,policy1,policy2,cdiff2->true_list_diffs[i],
+									       &local_num_changed,&local_num_added,FALSE);
+						}
+					}
+					else {
+						for (i = 0; i < cdiff2->num_false_list_diffs; i++) {
+							print_te_added_changed(&changed_buf,&changed_buf,&changed_sz,&changed_sz,
+									       diff1,diff2,policy1,policy2,cdiff2->false_list_diffs[i],
+									       &local_num_changed,&local_num_added,FALSE);
+						}
 					}
 				}
 				sprintf(tbuf,"\t\tFALSE list:\n");
@@ -1626,19 +1636,29 @@ static int print_cond_diffs(FILE *fp, apol_diff_result_t *diff)
 					
 				}
 				if (cdiff2) {
-					for (i = 0; i < cdiff2->num_false_list_diffs; i++) {
-						print_te_added_changed(&changed_buf,&changed_buf,&changed_sz,&changed_sz,
-								       diff1,diff2,policy1,policy2,cdiff2->false_list_diffs[i],
-								       &local_num_changed,&local_num_added,FALSE);
-					}					
+					if (inverse == TRUE) {
+						for (i = 0; i < cdiff2->num_true_list_diffs; i++) {
+							print_te_added_changed(&changed_buf,&changed_buf,&changed_sz,&changed_sz,
+									       diff1,diff2,policy1,policy2,cdiff2->true_list_diffs[i],
+									       &local_num_changed,&local_num_added,FALSE);
+						}
+					}
+					else {
+						for (i = 0; i < cdiff2->num_false_list_diffs; i++) {
+							print_te_added_changed(&changed_buf,&changed_buf,&changed_sz,&changed_sz,
+									       diff1,diff2,policy1,policy2,cdiff2->false_list_diffs[i],
+									       &local_num_changed,&local_num_added,FALSE);
+						}
+					}
+					
 				}
 			}
 		}
 	}
-
 	if (cd2 != NULL) {
 		for (t = cd2; t != NULL; t = t->next) {
 			rule = re_render_cond_expr(t->idx,policy2);
+			inverse = FALSE;
 			if (t->missing) {
 				num_added += 1;	
 				sprintf(tbuf,"\t+%s\n\t\tTRUE list:\n",rule);
@@ -1660,7 +1680,7 @@ static int print_cond_diffs(FILE *fp, apol_diff_result_t *diff)
 							       &local_num_changed,&local_num_added,FALSE);
 				}
 			}
-			else if (find_cdiff_in_policy(t,diff1,policy2,policy1) == NULL) {				
+			else if (find_cdiff_in_policy(t,diff1,policy2,policy1,&inverse) == NULL) {				
 				sprintf(tbuf,"\t*%s\n\t\tTRUE list:\n",rule);
 				free(rule);
 				append_str(&changed_buf,&changed_sz,tbuf);

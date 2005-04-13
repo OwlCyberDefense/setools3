@@ -247,7 +247,7 @@ static int add_rule_to_cond_expr_diff(ap_cond_expr_diff_t *cond_diff,avh_node_t 
 }
 
 /* search policy 2 for a matching conditional */
-int find_cond_in_policy(int p1_idx,policy_t *p1,policy_t *p2)
+int find_cond_in_policy(int p1_idx,policy_t *p1,policy_t *p2,bool_t noinverse)
 {
 	int rt;
 	cond_expr_t *expr2=NULL;
@@ -268,7 +268,7 @@ int find_cond_in_policy(int p1_idx,policy_t *p1,policy_t *p2)
 
 	for (i = 0; i < p2->num_cond_exprs;i++) {
 		if (cond_exprs_semantic_equal(expr2, p2->cond_exprs[i].expr, p2, &inverse) 
-		    && inverse == FALSE) {
+		    && !(noinverse && inverse == FALSE)) {
 			cond_free_expr(expr2);
 			return i;
 		}
@@ -305,7 +305,7 @@ ap_cond_expr_diff_t *new_cond_diff(int idx,apol_diff_t *diff,policy_t *p1,policy
 		
 	/* in order to fully realize if this new cond exp is in p2 we create a p2 cond expr
 	   and go through its lists comparing them */
-	rt = find_cond_in_policy(idx,p1,p2);
+	rt = find_cond_in_policy(idx,p1,p2,FALSE);
 	if (rt >= 0)
 		t->missing = FALSE;
 	return t;
@@ -426,11 +426,11 @@ static int make_p2_cond_expr(int idx1, policy_t *p1, cond_expr_t **expr2, policy
 
 /* search diff2's conditional differences and try to find a match for cond_expr_diff,
    the conditional expr in policy 1 */
-ap_cond_expr_diff_t *find_cdiff_in_policy(ap_cond_expr_diff_t *cond_expr_diff,apol_diff_t *diff2,policy_t *p1,policy_t *p2)
+ap_cond_expr_diff_t *find_cdiff_in_policy(ap_cond_expr_diff_t *cond_expr_diff,apol_diff_t *diff2,policy_t *p1,policy_t *p2,bool_t *inverse)
 {
 	int rt;
 	cond_expr_t *expr2=NULL;
-	bool_t inverse;
+	bool_t noinverse = *inverse;
 	ap_cond_expr_diff_t *ced;
 	
 	if (cond_expr_diff == NULL || diff2 == NULL || p1 == NULL || p2 == NULL)
@@ -449,8 +449,8 @@ ap_cond_expr_diff_t *find_cdiff_in_policy(ap_cond_expr_diff_t *cond_expr_diff,ap
 	}
 
 	for (ced = diff2->cond_exprs;ced != NULL;ced = ced->next){
-		if (cond_exprs_semantic_equal(expr2, p2->cond_exprs[ced->idx].expr, p2, &inverse) 
-		    && inverse == FALSE) {
+		if (cond_exprs_semantic_equal(expr2, p2->cond_exprs[ced->idx].expr, p2, inverse) 
+		    && !(noinverse && *inverse == FALSE)) {
 			cond_free_expr(expr2);
 			return ced;
 		}
