@@ -1076,7 +1076,7 @@ proc Apol_Analysis_relabel::adv_options_create_dialog {path_name title_txt} {
 	$sw_excl_subj setwidget $widgets($path_name,subj_excl_lb)
 
 	set attrib_incl_cbox [ComboBox $attrib_incl_f.attrib_incl_cbox -editable 1 \
-		-entrybg white -width 16 -state disabled -autocomplete 1 \
+		-entrybg white -width 16 -state disabled \
 		-textvariable Apol_Analysis_relabel::widget_vars($path_name,incl_attrib) \
 		-modifycmd "Apol_Analysis_relabel::adv_options_filter_list_by_attrib \
 			Apol_Analysis_relabel::widget_vars($path_name,incl_subj_list) \
@@ -1091,7 +1091,7 @@ proc Apol_Analysis_relabel::adv_options_create_dialog {path_name title_txt} {
 	}
 
 	set attrib_excl_cbox [ComboBox $attrib_excl_f.attrib_excl_cbox -editable 1 \
-		-entrybg white -width 16 -state disabled -autocomplete 1 \
+		-entrybg white -width 16 -state disabled \
 		-textvariable Apol_Analysis_relabel::widget_vars($path_name,excl_attrib) \
 		-modifycmd "Apol_Analysis_relabel::adv_options_filter_list_by_attrib \
 			Apol_Analysis_relabel::widget_vars($path_name,excl_subj_list) \
