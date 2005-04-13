@@ -728,10 +728,12 @@ proc Apol_Analysis::do_analysis { which } {
 		} elseif {$rt != 0} {
 			# Remove the bad tab since the results frame has been cleared
 	    		set prev_Tab [$results_notebook pages \
-	    			[expr [$results_notebook index $prev_raisedTab] - 1]]
-			$results_notebook delete $prev_raisedTab
-	    		set currTabCount [expr $currTabCount - 1]
-			Apol_Analysis::switch_results_tab $prev_Tab
+				[expr [$results_notebook index $prev_raisedTab] - 1]]
+			if {$prev_raisedTab != $Apol_Analysis::emptyTabID} {
+					$results_notebook delete $prev_raisedTab
+	    				set currTabCount [expr $currTabCount - 1]
+					Apol_Analysis::switch_results_tab $prev_Tab
+			}
 		}
 	    	set raised_tab_analysis_type $curr_analysis_module
 	    	# Here store the current content of the new tab.
