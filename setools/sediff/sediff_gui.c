@@ -2457,7 +2457,7 @@ static int txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_ite
 				    	 GString *string, apol_diff_t *diff1, apol_diff_t *diff2,
 					 policy_t *policy1,policy_t *policy2)
 {
-	int i;
+	int i,rt;
 	avh_node_t *diffcur1;
 	avh_node_t *diffcur2;
 	char cond_on[TABSIZE+1];
@@ -2580,11 +2580,12 @@ static int txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_ite
  	/* find removed */
  	for (i = 0; i < AVH_SIZE; i++) { 
  		for (diffcur1 = diff1->te.tab[i];diffcur1 != NULL; diffcur1 = diffcur1->next) { 
-			txt_buffer_insert_te_missing(txt,changed_mark,added_mark,&holder_mark,			       
+			rt = txt_buffer_insert_te_missing(txt,changed_mark,added_mark,&holder_mark,			       
 						     string, diff1, diff2, policy1, policy2,diffcur1,
 						     &(sediff_app->summary.te_rules.changed),
 						     &(sediff_app->summary.te_rules.removed), &polmatched,TRUE);
-
+			if (rt < 0)
+				goto insert_te_results_error;
  		} 
  	} 
 
@@ -2599,11 +2600,12 @@ static int txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_ite
 	/* find added and changed rules*/
 	for (i = 0; i < AVH_SIZE; i++) {
 		for (diffcur2 = diff2->te.tab[i];diffcur2 != NULL; diffcur2 = diffcur2->next) {
-			txt_buffer_insert_te_added_changed(txt,changed_mark,added_mark,holder_mark,			       
+			rt = txt_buffer_insert_te_added_changed(txt,changed_mark,added_mark,holder_mark,			       
 							   string,diff1,diff2,policy1,policy2,diffcur2,
 							   &(sediff_app->summary.te_rules.changed),
 							   &(sediff_app->summary.te_rules.added),TRUE);
-
+			if (rt < 0)
+				goto insert_te_results_error;
 		}
 
 	}
@@ -2621,7 +2623,12 @@ static int txt_buffer_insert_te_results(GtkTextBuffer *txt, GtkTextIter *txt_ite
 		free(condtab);
 	return 0;
 
-
+ insert_te_results_error:
+	if (fulltab)
+		free(fulltab);
+	if (condtab)		
+		free(condtab);
+	return -1;
 }
 
 static int txt_buffer_insert_rtrans_results(GtkTextBuffer *txt, GtkTextIter *txt_iter,
@@ -2903,7 +2910,7 @@ static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 	bool_t polmatched = FALSE,local_polmatched = FALSE,inverse = FALSE;
 	g_return_val_if_fail(diff1 != NULL, -1);
 	g_return_val_if_fail(diff2 != NULL, -1);
-	int i,j,k;
+	int i,j,k,rt;
 	
 	/* reset the te summary counters */
 	sediff_app->summary.conds.added = 0;
@@ -3019,9 +3026,11 @@ static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 				gtk_text_buffer_move_mark(txt,local_changed_mark,&added_iter);
 				gtk_text_buffer_move_mark(txt,local_added_mark,&added_iter);
 				for (i = 0; i < t->num_true_list_diffs; i++) {
-					txt_buffer_insert_te_missing(txt,local_changed_mark,local_added_mark,&local_holder_mark,		       
+					rt = txt_buffer_insert_te_missing(txt,local_changed_mark,local_added_mark,&local_holder_mark,		       
 								     string, diff1, diff2, policy1, policy2,t->true_list_diffs[i],
 								     &j,&k,&local_polmatched,FALSE);	
+					if (rt < 0)
+						goto insert_cond_results_error;
 				}
 
 				/* print false list */
@@ -3032,9 +3041,11 @@ static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 				gtk_text_buffer_move_mark(txt,local_changed_mark,&added_iter);
 				gtk_text_buffer_move_mark(txt,local_added_mark,&added_iter);
 				for (i = 0; i < t->num_false_list_diffs; i++) {
-					txt_buffer_insert_te_missing(txt,local_changed_mark,local_added_mark,&local_holder_mark,		       
+					rt = txt_buffer_insert_te_missing(txt,local_changed_mark,local_added_mark,&local_holder_mark,		       
 								     string, diff1, diff2, policy1, policy2,t->false_list_diffs[i],
 								     &j,&k,&local_polmatched,FALSE);	
+					if (rt < 0)
+						goto insert_cond_results_error;
 				}
 				if (local_holder_mark)
 					gtk_text_buffer_delete_mark(txt,local_holder_mark);
@@ -3071,20 +3082,26 @@ static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 					txt_buffer_insert_te_missing(txt,local_changed_mark,local_added_mark,&local_holder_mark,		       
 								     string, diff1, diff2, policy1, policy2,t->true_list_diffs[i],
 								     &j,&k,&local_polmatched,FALSE);	
+					if (rt < 0)
+						goto insert_cond_results_error;
 				}
 				if (cdiff2) {
 					if (inverse == FALSE) { 
 						for (i = 0; i < cdiff2->num_true_list_diffs; i++) {
-							txt_buffer_insert_te_added_changed(txt,local_changed_mark,local_added_mark,local_holder_mark,
+							rt = txt_buffer_insert_te_added_changed(txt,local_changed_mark,local_added_mark,local_holder_mark,
 											   string,diff1,diff2,policy1,policy2,cdiff2->true_list_diffs[i],
 											   &j,&k,FALSE);
+							if (rt < 0)
+								goto insert_cond_results_error;
 						}
 					}
 					else {
 						for (i = 0; i < cdiff2->num_false_list_diffs; i++) {
-							txt_buffer_insert_te_added_changed(txt,local_changed_mark,local_added_mark,local_holder_mark,
+							rt = txt_buffer_insert_te_added_changed(txt,local_changed_mark,local_added_mark,local_holder_mark,
 											   string,diff1,diff2,policy1,policy2,cdiff2->false_list_diffs[i],
 											   &j,&k,FALSE);
+							if (rt < 0)
+								goto insert_cond_results_error;
 						}
 					}
 					
@@ -3100,20 +3117,26 @@ static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 					txt_buffer_insert_te_missing(txt,local_changed_mark,local_added_mark,&local_holder_mark,		       
 								     string, diff1, diff2, policy1, policy2,t->false_list_diffs[i],
 								     &j,&k,&local_polmatched,FALSE);	
+					if (rt < 0)
+						goto insert_cond_results_error;
 				}
 				if (cdiff2) {
 					if (inverse == TRUE) { 
 						for (i = 0; i < cdiff2->num_true_list_diffs; i++) {
-							txt_buffer_insert_te_added_changed(txt,local_changed_mark,local_added_mark,local_holder_mark,
+							rt = txt_buffer_insert_te_added_changed(txt,local_changed_mark,local_added_mark,local_holder_mark,
 											   string,diff1,diff2,policy1,policy2,cdiff2->true_list_diffs[i],
 											   &j,&k,FALSE);
+							if (rt < 0)
+								goto insert_cond_results_error;
 						}
 					}
 					else {
 						for (i = 0; i < cdiff2->num_false_list_diffs; i++) {
-							txt_buffer_insert_te_added_changed(txt,local_changed_mark,local_added_mark,local_holder_mark,
+							rt = txt_buffer_insert_te_added_changed(txt,local_changed_mark,local_added_mark,local_holder_mark,
 											   string,diff1,diff2,policy1,policy2,cdiff2->false_list_diffs[i],
 											   &j,&k,FALSE);
+							if (rt < 0)
+								goto insert_cond_results_error;
 						}
 					}
 				}
@@ -3170,9 +3193,11 @@ static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 				j = k = 0;
 				/* print true list */
 				for (i = 0; i < t->num_true_list_diffs; i++) {
-					txt_buffer_insert_te_added_changed(txt,local_changed_mark,local_added_mark,local_holder_mark,
+					rt = txt_buffer_insert_te_added_changed(txt,local_changed_mark,local_added_mark,local_holder_mark,
 									   string,diff1,diff2,policy1,policy2,t->true_list_diffs[i],
 									   &j,&k,FALSE);
+					if (rt < 0)
+						goto insert_cond_results_error;
 
 				}
 				/* print false list */
@@ -3183,9 +3208,11 @@ static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 				gtk_text_buffer_move_mark(txt,local_changed_mark,&added_iter);
 				gtk_text_buffer_move_mark(txt,local_added_mark,&added_iter);
 				for (i = 0; i < t->num_false_list_diffs; i++) {
-					txt_buffer_insert_te_added_changed(txt,local_changed_mark,local_added_mark,local_holder_mark,
+					rt = txt_buffer_insert_te_added_changed(txt,local_changed_mark,local_added_mark,local_holder_mark,
 									   string,diff1,diff2,policy1,policy2,t->false_list_diffs[i],
 									   &j,&k,FALSE);
+					if (rt < 0)
+						goto insert_cond_results_error;
 				}
 
 				sediff_app->summary.conds.changed += j;
@@ -3213,10 +3240,12 @@ static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 				gtk_text_buffer_move_mark(txt,local_changed_mark,&changed_iter);
 				gtk_text_buffer_move_mark(txt,local_added_mark,&changed_iter);
 				for (i = 0; i < t->num_true_list_diffs; i++) {
-					txt_buffer_insert_te_added_changed(txt,local_changed_mark,local_added_mark,local_holder_mark,
+					rt = txt_buffer_insert_te_added_changed(txt,local_changed_mark,local_added_mark,local_holder_mark,
 									   string,diff1,diff2,policy1,policy2,t->true_list_diffs[i],
 									   &j,&k,FALSE);
 
+					if (rt < 0)
+						goto insert_cond_results_error;
 				}
 				/* print false list */
 				gtk_text_buffer_get_iter_at_mark(txt,&changed_iter,changed_mark);
@@ -3226,9 +3255,11 @@ static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 				gtk_text_buffer_move_mark(txt,local_changed_mark,&changed_iter);
 				gtk_text_buffer_move_mark(txt,local_added_mark,&changed_iter);
 				for (i = 0; i < t->num_false_list_diffs; i++) {
-					txt_buffer_insert_te_added_changed(txt,local_changed_mark,local_added_mark,local_holder_mark,
+					rt = txt_buffer_insert_te_added_changed(txt,local_changed_mark,local_added_mark,local_holder_mark,
 									   string,diff1,diff2,policy1,policy2,t->false_list_diffs[i],
 									   &j,&k,FALSE);
+					if (rt < 0)
+						goto insert_cond_results_error;
 				}
 			}
 		}
@@ -3241,6 +3272,10 @@ static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 	gtk_text_buffer_insert_with_tags_by_name(txt, &added_iter, string->str,-1, "header-tag", NULL); 
 
        	return 0;
+
+
+ insert_cond_results_error:
+	return -1;
 }
 
 /*
