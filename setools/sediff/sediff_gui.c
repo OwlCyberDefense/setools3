@@ -3270,11 +3270,50 @@ static void sediff_clear_stored_buffer(GtkTextBuffer *txt)
 	mark = gtk_text_buffer_get_mark(txt,"added-mark");
 	if (mark)
 		gtk_text_buffer_delete_mark(txt,mark);
+	mark = gtk_text_buffer_get_mark(txt,"holder-mark");
+	if (mark)
+		gtk_text_buffer_delete_mark(txt,mark);
 }
 
+void cond_tag_foreach(GtkTextTag *tag,gpointer data)
+{
+	GtkTextBuffer *te_txt = NULL;
+	char *str = NULL;
+	GtkTextMark *mark = NULL;
+
+	if(data == NULL)
+		return;
+	te_txt = GTK_TEXT_BUFFER(data);
+	str = (char *)g_object_get_data (G_OBJECT (tag), "id");		
+	
+	
+	if (str) {
+		mark = gtk_text_buffer_get_mark(te_txt,str);
+		if (mark)
+			gtk_text_buffer_delete_mark(te_txt,mark);
+	}
+}
+
+/* clear the marks in the conditional diff text buffer */
+static void sediff_clear_cond_marks()
+{
+	GtkTextBuffer *cond_txt = sediff_app->conditionals_buffer;
+	GtkTextBuffer *te_txt = sediff_app->te_buffer;
+	GtkTextTagTable *table = NULL;
+
+
+	if (cond_txt == NULL || te_txt == NULL)
+		return;
+	table = gtk_text_buffer_get_tag_table(te_txt);		
+	if (table == NULL)
+		return;
+	gtk_text_tag_table_foreach(table,cond_tag_foreach,cond_txt);
+}
 
 static void sediff_clear_stored_buffers()
 {
+
+	sediff_clear_cond_marks();
 
 	if (sediff_app->summary_buffer) {
 		sediff_clear_stored_buffer(GTK_TEXT_BUFFER(sediff_app->summary_buffer));
@@ -3308,9 +3347,6 @@ static void sediff_clear_stored_buffers()
 	}
 
 }
-
-
-
 
 /*
   clear the text buffers 
