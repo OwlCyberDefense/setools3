@@ -1681,6 +1681,7 @@ static int print_cond_diffs(FILE *fp, apol_diff_result_t *diff)
 				}
 			}
 			else if (find_cdiff_in_policy(t,diff1,policy2,policy1,&inverse) == NULL) {				
+				num_changed += 1;	
 				sprintf(tbuf,"\t*%s\n\t\tTRUE list:\n",rule);
 				free(rule);
 				append_str(&changed_buf,&changed_sz,tbuf);
