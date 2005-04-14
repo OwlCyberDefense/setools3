@@ -1514,9 +1514,9 @@ int print_te_diffs(FILE *fp, apol_diff_result_t *diff)
 	}
 	fprintf(fp,"TE Rules (%d Added, %d Removed, %d Changed)\n",
 		num_added,num_removed,num_changed);
-	fprintf(fp,"\tAdded TE Rules %d:%s"
-		"\tRemoved TE Rules %d:%s"
-		"\tChanged TE Rules %d:%s",
+	fprintf(fp,"\tAdded TE Rules: %d%s"
+		"\tRemoved TE Rules: %d%s"
+		"\tChanged TE Rules: %d%s",
 		num_added,added_buf,num_removed,removed_buf,num_changed,changed_buf);
 
 	if (changed_buf)
@@ -1707,9 +1707,9 @@ static int print_cond_diffs(FILE *fp, apol_diff_result_t *diff)
 
 	fprintf(fp,"Conditionals (%d Added, %d Removed, %d Changed)\n",
 		num_added,num_removed,num_changed);
-	fprintf(fp,"\tAdded Conditionals %d:%s"
-		"\tRemoved Conditionals %d:%s"
-		"\tChanged Conditionals %d:%s\n",
+	fprintf(fp,"\tAdded Conditionals: %d%s"
+		"\tRemoved Conditionals: %d%s"
+		"\tChanged Conditionals: %d%s\n",
 		num_added,added_buf,num_removed,removed_buf,num_changed,changed_buf);
 
 	if (changed_buf)
