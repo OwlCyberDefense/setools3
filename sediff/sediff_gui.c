@@ -2910,7 +2910,7 @@ static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 	bool_t polmatched = FALSE,local_polmatched = FALSE,inverse = FALSE;
 	g_return_val_if_fail(diff1 != NULL, -1);
 	g_return_val_if_fail(diff2 != NULL, -1);
-	int i,j,k,rt;
+	int i,j,k,rt = 0;
 	
 	/* reset the te summary counters */
 	sediff_app->summary.conds.added = 0;
@@ -3308,14 +3308,31 @@ static void sediff_clear_stored_buffer(GtkTextBuffer *txt)
 	mark = gtk_text_buffer_get_mark(txt,"holder-mark");
 	if (mark)
 		gtk_text_buffer_delete_mark(txt,mark);
+	mark = gtk_text_buffer_get_mark(txt,"local-changed-mark");
+	if (mark)
+		gtk_text_buffer_delete_mark(txt,mark);
+	mark = gtk_text_buffer_get_mark(txt,"local-added-mark");
+	if (mark)
+		gtk_text_buffer_delete_mark(txt,mark);
+	mark = gtk_text_buffer_get_mark(txt,"local-holder-mark");
+	if (mark)
+		gtk_text_buffer_delete_mark(txt,mark);
+	
 }
 
+/* Deletes the marks associated with tag ids
+   Each tag in the te rules buffer table, if its a 
+   cond_link_tag has an associated id, that we can
+   use to find the mark in the cond buffer and to destroy
+   them.  This allows find these marks since gtk has no
+   generic destroy all marks 
+*/
 void cond_tag_foreach(GtkTextTag *tag,gpointer data)
 {
 	GtkTextBuffer *te_txt = NULL;
 	char *str = NULL;
 	GtkTextMark *mark = NULL;
-
+	
 	if(data == NULL)
 		return;
 	te_txt = GTK_TEXT_BUFFER(data);
@@ -3339,9 +3356,11 @@ static void sediff_clear_cond_marks()
 
 	if (cond_txt == NULL || te_txt == NULL)
 		return;
+	/* get the tag table */
 	table = gtk_text_buffer_get_tag_table(te_txt);		
 	if (table == NULL)
 		return;
+	/* loop through the tags in the table */
 	gtk_text_tag_table_foreach(table,cond_tag_foreach,cond_txt);
 }
 
