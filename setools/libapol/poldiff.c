@@ -425,7 +425,7 @@ static int make_p2_cond_expr(int idx1, policy_t *p1, cond_expr_t **expr2, policy
 }
 
 /* search diff2's conditional differences and try to find a match for cond_expr_diff,
-   the conditional expr in policy 1 */
+   the conditional expr in policy 1 return NULL if not found */
 ap_cond_expr_diff_t *find_cdiff_in_policy(ap_cond_expr_diff_t *cond_expr_diff,apol_diff_t *diff2,policy_t *p1,policy_t *p2,bool_t *inverse)
 {
 	int rt;
