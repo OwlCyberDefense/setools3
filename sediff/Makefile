@@ -25,6 +25,7 @@ install-nogui: sediff
 install: all
 	install -m 755 sediff sediffx $(BINDIR);
 	install -m 644 $(GLADE_FILES) $(INSTALL_LIBDIR)
+	install -m 644 sediff_help.txt $(INSTALL_LIBDIR)
 
 %.o:  %.c
 	$(CC) $(CFLAGS) $(GTK_CFLAGS) $(INCLUDE) -c $<
