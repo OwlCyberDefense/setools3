@@ -13,7 +13,7 @@ all : $(TESTS)
 	
 
 run : $(foreach test,$(TESTS),$(test).res)
-	cat $^ > tests-$(DATE).results
+	cat $^ > results/tests-$(DATE).results
 
 %.res : %.o $(OBJS)
 	@echo $* > $*.res0
