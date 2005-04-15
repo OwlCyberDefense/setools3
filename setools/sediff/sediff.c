@@ -1930,10 +1930,11 @@ int main (int argc, char **argv)
 		printf("\n");
 		}
 	}
-	if((conds || all)) {
+	if((conds || all) && !(quiet && (diff->diff1->num_cond_exprs == 0 && diff->diff2->num_cond_exprs == 0))) {
 		print_cond_diffs(stdout,diff);
 	}
-	if((rbac || all) && !(quiet && (diff->diff1->num_role_allow == 0 && diff->diff2->num_role_allow == 0))) {
+	if((rbac || all) && !(quiet && (diff->diff1->num_role_allow == 0 && diff->diff2->num_role_allow == 0) &&
+				      (diff->diff1->num_role_trans == 0 && diff->diff2->num_role_trans == 0))) {
 		print_rbac_diffs(stdout, diff);
 		printf("\n");
 	}
