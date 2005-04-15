@@ -1,5 +1,18 @@
 CHANGE LOG, SE Linux TOOLS (setools)
 =======================================================
+April 15, 2005, Version 2.1.0
+
+apol: 
+	improved direct relabel analysis algorithm
+
+libapol: 
+	added policy version 19 support
+	
+sediff:
+	added role transitions, improved role allow
+	added conditional expression differences
+
+=======================================================
 February 16, 2005, Version 2.0
 
 setools:
