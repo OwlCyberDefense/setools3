@@ -1,4 +1,3 @@
-
 MAKE 		= make
 CC		= gcc
 LIBAPOL		= ../libapol/libapol.a
@@ -7,7 +6,14 @@ OBJS		= test.o $(LIBAPOL)
 INCLUDES	= -I../libapol/
 CFLAGS		+= $(INCLUDES)
 
-all:	partial_load transitive_flow obj_perms perm_map_reload template reload roles binpol relabel role_rules
+TESTS		= partial_load transitive_flow obj_perms perm_map_reload template reload roles binpol relabel role_rules
+
+
+all:	$(foreach test,$(TESTS), $(TEST).res)
+	
+
+%.res : %
+	$* > $@
 
 %.o:	%.c
 	$(CC) $(CFLAGS) -c $<
@@ -46,7 +52,7 @@ $(LIBAPOL):
 	cd ../ ; $(MAKE) libapol
 
 clean:
-	rm -f *.o partial_load transitive_flow template reload perm_map_reload obj_perms binpol roles relabel
+	rm -f *.o *.res $(TESTS)
 
 bare: clean
 	rm -f *~ core core.* a.out
