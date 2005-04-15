@@ -9,7 +9,7 @@ int main(int argc, char **argv)
 
 	init_tests(argc, argv);
 
-	TEST("loading a policy", open_policy("policy/bad-policy.conf", &policy) == -1);
+	TEST("loading a policy", open_policy("policy/bad-policy.conf", &policy) == 1);
 
 	/* this used to fail even though the policy was good */
 	TEST("loading a policy", open_policy("policy/default-v12-policy.conf", &policy) == 0);
