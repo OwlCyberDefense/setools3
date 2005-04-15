@@ -1,8 +1,8 @@
-SELinux Tools (setools), version 2.0
+SELinux Tools (setools), version 2.1.0
 by Tresys Technology, LLC
 (selinux@tresys.com, www.tresys.com/selinux)
 
-February 28, 2005
+April 15, 2005
 
 
 CURRENT BUGS AND ISSUES
@@ -69,25 +69,6 @@ SEAUDIT
    is because audit logs do not include a year so we assign the same 
    year to all dates.
 
-
-SEDIFF
-
-1. If a policy in a diff has 2 conditional formatted such as
-
-   	if (foo) {
-		rule 1
-   	}
-   	else {
-	}
-	if (!foo) {
-	}
-	else
-		rule 2
-	}
-
-Where one conditional is the inverse of the other conditional.  If compared
-to a policy with only one of these conditionals SEDiff will currently give 
-undefined results, more than likely only matching to one of these conditionals.
 
 TESTING INFORMATION
 
