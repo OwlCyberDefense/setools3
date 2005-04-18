@@ -1,6 +1,6 @@
 Semantic Policy Difference Tool for Security Enhanced Linux
 sediff, Graphical User Interface version 1.1
-April 15, 2005
+April 18, 2005
 selinux@tresys.com
 
 Overview:
@@ -17,8 +17,6 @@ Sediff currently compares only the following policy elements:
         + booleans
         + type enforcement rules (allow, type_transitions, etc.)
         + role allow rules
-	+ role transition rules
-	+ conditionals
         
 Other elements will be added as the core libraries support them.
 
@@ -100,11 +98,11 @@ Below is an explanation of the difference for each supported policy area:
 
    RBAC Rules:
    ----------
-   RBAC includes role allow and role_transition rules.  Role transition rules tell what role to transition to when a process role acts on a type.  Diffing a role transition rule is done by using the source role and type as a key and looking for that key in the other policy, if found a comparison of the target role is done to determine if the rules are the same.  If any part of the key or the whole key is missing from the first policy it is an add, if any part of the key or the whole key is missing from policy 2 it is a remove, if both keys exist in both policies but the target roles differ it is considered a change.  Role allow rules determine if a role is allowed to transition (either explicitly or through a role_transition) to another. Diffing a role allow involves taking the source role and checking to see if there are corresponding rules in the other policy. If there is no rule with this source in the first policy it is an add, likewise if there is none in the second policy it is a remove. If role allows with the same source exist in both policies then the target roles are shown as a change.
+   RBAC includes role allow and role_transition rules. Currently role_transition rules are not supported in sediff. Role allow rules determine if a role is allowed to transition (either explicitly or through a role_transition) to another. Diffing a role allow involves taking the source role and checking to see if there are corresponding rules in the other policy. If there is no rule with this source in the first policy it is an add, likewise if there is none in the second policy it is a remove. If role allows with the same source exist in both policies then the target roles are shown as a change.
    
    Conditional Expressions:
    -----------------------
-   Diffing conditional expressions is performed by comparing the expressions to see if they are semantically equal, and if so, comparing their true and false lists to see if any rules have changed, been added or removed.  If a TE rule is listed in the true list in policy 1 and the false list in policy 2 it is currently considered removed from the false true list and added to the false list.  The difference will also correctly compare inverse conditional expressions in most cases, see the KNOWN-BUGS file for information on when the comparison will not perform as expected.
+   While conditional expressions are compared when analyzing conditional TE rules as described above, sediff does not currently support comparing conditional expressions directly.
 
 
 Policy Tabs:
