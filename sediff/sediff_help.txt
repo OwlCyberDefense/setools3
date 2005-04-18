@@ -17,6 +17,7 @@ Sediff currently compares only the following policy elements:
         + booleans
         + type enforcement rules (allow, type_transitions, etc.)
         + role allow rules
+	+ conditionals
         
 Other elements will be added as the core libraries support them.
 
@@ -102,7 +103,7 @@ Below is an explanation of the difference for each supported policy area:
    
    Conditional Expressions:
    -----------------------
-   While conditional expressions are compared when analyzing conditional TE rules as described above, sediff does not currently support comparing conditional expressions directly.
+   Diffing conditional expressions is performed by comparing the expressions to see if they are semantically equal, and if so, comparing their true and false lists to see if any rules have changed, been added or removed.  If a TE rule is listed in the true list in policy 1 and the false list in policy 2 it is currently considered removed from the false true list and added to the false list.  The difference will also correctly compare inverse conditional expressions in most cases, see the KNOWN-BUGS file for information on when the comparison will not perform as expected.
 
 
 Policy Tabs:
