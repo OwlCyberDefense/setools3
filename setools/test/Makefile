@@ -7,7 +7,7 @@ INCLUDES	= -I../libapol/
 CFLAGS		+= $(INCLUDES)
 
 TESTS		= partial_policy_loading transitive_flow obj_perms perm_map_reload template reload roles binpol relabel role_rules
-DATE 		:= $(shell date +%Y%m%d%k%M)
+DATE 		:= $(shell date +%Y%m%d%H%M)
 
 all : $(TESTS)
 	
