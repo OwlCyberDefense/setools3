@@ -71,7 +71,7 @@ static int check_str_sz(char **str, int *sz, int needed)
  * 1	provided user does not exists
  * -1	other error
  */
-const int seu_show_users(const char *user, char **outstr, user_db_t *db, policy_t *policy)
+int seu_show_users(const char *user, char **outstr, user_db_t *db, policy_t *policy)
 {
 	char *name = NULL, *role_name = NULL, *tmp = NULL;
 	int sz, i, j, rt;
@@ -152,7 +152,7 @@ err:
 }
 
 /* display all roles */
-const int seu_show_roles(char **outstr, user_db_t *db, policy_t *policy)
+int seu_show_roles(char **outstr, user_db_t *db, policy_t *policy)
 {
 	char *tmp, *role;
 	int i, sz;
