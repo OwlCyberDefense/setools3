@@ -224,9 +224,14 @@ static int add_rule_to_cond_expr_diff(ap_cond_expr_diff_t *cond_diff,avh_node_t 
 				return -1;
 			}
 		}
-		else
+		else {
 			cond_diff->true_list_diffs = (avh_node_t **) realloc(cond_diff->true_list_diffs,
 									     (cond_diff->num_true_list_diffs + 1) * sizeof(avh_node_t *));
+			if (cond_diff->true_list_diffs == NULL) {
+				fprintf(stderr, "out of memory\n");
+				return -1;
+			}	
+		}
 		cond_diff->true_list_diffs[cond_diff->num_true_list_diffs] = rule;
 		cond_diff->num_true_list_diffs++;
 	}
@@ -238,12 +243,19 @@ static int add_rule_to_cond_expr_diff(ap_cond_expr_diff_t *cond_diff,avh_node_t 
 				return -1;
 			}
 		}
-		else
+		else {
 			cond_diff->false_list_diffs = (avh_node_t **) realloc(cond_diff->false_list_diffs,
 									      (cond_diff->num_false_list_diffs + 1) *sizeof(avh_node_t *));
+			if (cond_diff->false_list_diffs == NULL) {
+				fprintf(stderr, "out of memory\n");
+				return -1;
+			}
+
+		}
 		cond_diff->false_list_diffs[cond_diff->num_false_list_diffs] = rule;
 		cond_diff->num_false_list_diffs++;
 	}
+	return 0;
 }
 
 /* search policy 2 for a matching conditional */
@@ -1148,7 +1160,9 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 						if (cond_expr == NULL) {
 							cond_expr = new_cond_diff(newnode->cond_expr,t,p1,p2);
 						}
-						add_rule_to_cond_expr_diff(cond_expr,newnode);
+						rt = add_rule_to_cond_expr_diff(cond_expr,newnode);
+						if (rt < 0)
+							goto err_return;
 					}
 
 

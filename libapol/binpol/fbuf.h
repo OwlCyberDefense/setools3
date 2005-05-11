@@ -28,11 +28,11 @@ static inline void *ap_read_fbuf(ap_fbuf_t *fb, size_t bytes,  FILE *fp)
 	assert(!(fb->sz > 0 && fb->buf == NULL));
 	
 	if(fb->sz == 0) {
-		fb->buf = (unsigned char *)malloc(bytes + 1);
+		fb->buf = (char *)malloc(bytes + 1);
 		fb->sz = bytes + 1;
 	}
 	else if(bytes+1 > fb->sz) {
-		fb->buf = (unsigned char *)realloc(fb->buf, bytes+1);
+		fb->buf = (char *)realloc(fb->buf, bytes+1);
 		fb->sz = bytes + 1;
 	}
 
