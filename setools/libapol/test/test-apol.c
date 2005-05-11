@@ -91,7 +91,7 @@ static char *ap_relabel_dir_str(unsigned char dir)
 
 static int render_relabel_result (ap_relabel_result_t * res, policy_t * policy, int type, bool_t list_only)
 {
-	char *str = NULL, *str2 = NULL;
+	char *str = NULL, *str2 = NULL, *tmp = NULL;
 	int i, j, k, x, loop_start, loop_stop;
 
 	if (!policy)
@@ -136,8 +136,10 @@ static int render_relabel_result (ap_relabel_result_t * res, policy_t * policy, 
 			return -1;
 		fprintf(outfile, "\n    %i: %s (%i object classes)", 
 			(i + 1), str2, res->targets[i].num_objects);
-		if (list_only)
+		if (list_only) {
+			free(str2);
 			continue;
+		}
 		for (j = 0; j < res->targets[i].num_objects; j++) {
 			if(!(res->targets[i].objects[j].direction & res->requested_direction))
 				continue;
@@ -159,9 +161,10 @@ static int render_relabel_result (ap_relabel_result_t * res, policy_t * policy, 
 					if (!(res->requested_direction & res->targets[i].objects[j].subjects[k].rules[x].direction) 
 						&& !(AP_RELABEL_DIR_START & res->targets[i].objects[j].subjects[k].rules[x].direction))
 						continue;
-					fprintf(outfile, "%s\n", re_render_av_rule((policy->policy_type == POL_TYPE_SOURCE),
+					fprintf(outfile, "%s\n", (tmp = re_render_av_rule((policy->policy_type == POL_TYPE_SOURCE),
 						res->targets[i].objects[j].subjects[k].rules[x].rule_index,
-						0, policy));
+						0, policy)));
+					free(tmp);
 				}
 			}
 		}
