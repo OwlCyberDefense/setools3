@@ -2977,6 +2977,7 @@ static int define_dominance(void)
 		yyerror("error setting policy version");
 		return -1;
 	}
+	return 0;
 }
 
 static int define_category(void)

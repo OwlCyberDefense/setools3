@@ -104,7 +104,7 @@ int avl_get_idx(const void *key, avl_tree_t *tree)
 	return do_avl_get_idx(key, tree->head, tree);
 }
 
-static const bool_t avl_check_balance(int idx, int dir, avl_tree_t *tree)
+static bool_t avl_check_balance(int idx, int dir, avl_tree_t *tree)
 {
 	int l, r;
 
