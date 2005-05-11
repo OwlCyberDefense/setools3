@@ -1116,7 +1116,7 @@ static unsigned int boolean_msg_insert_field_data(char **tokens, msg_t **msg, au
         int i, num_bools = 0, num_bools_valid = 0, bool, start_bools_pos;
 	int *booleans = NULL, position = 0, bool_idx = 0;
 	unsigned int ret = 0, tmp_ret = 0;
-	bool_t *values = NULL, val;
+	bool_t *values = NULL, val = FALSE;
 	
 	assert(tokens != NULL && msg != NULL && *msg != NULL && log != NULL && num_tokens > 0);
 

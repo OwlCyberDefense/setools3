@@ -81,7 +81,7 @@ static int seaudit_report_load_saved_view(seaudit_report_t *seaudit_report,
 	assert(view_filePath != NULL && log_view != NULL && *log_view != NULL);
 	num_deleted = num_kept = old_sz = new_sz = 0;
 	
-	rt = seaudit_multifilter_load_from_file(&multifilter, &is_multi, view_filePath);
+	rt = seaudit_multifilter_load_from_file(&multifilter, &is_multi, (char *)view_filePath);
 	if (rt < 0) {
 		fprintf(stderr, "Unable to import from %s\n%s", view_filePath, strerror(errno));
 		goto err;
@@ -1188,34 +1188,34 @@ static int seaudit_report_print_standard_section(seaudit_report_t *seaudit_repor
 	int sz, len, i, rt = 0;
 	
 	assert(id != NULL && outfile != NULL);
-	if (!seaudit_report_is_valid_section_name(id)) {
+	if (!seaudit_report_is_valid_section_name((char *)id)) {
 		fprintf(stderr, "Invalid standard section ID.\n");
 		return -1;
 	}
-	sz = strlen(id);
+	sz = strlen((char *)id);
 	if (title != NULL) {
 		if (seaudit_report->html) {
 			fprintf(outfile, "<h2 class=\"standard_section_title\"><u>%s</h2></u>\n", title);
 		} else {		
 			fprintf(outfile, "%s\n", title);
-			len = strlen(title);
+			len = strlen((char *)title);
 			for (i = 0; i < len; i++) {
 				fprintf(outfile, "-");	
 			}
 			fprintf(outfile, "\n");
 		}	
 	}
-	if (strncasecmp(id, "PolicyLoads", sz) == 0) {
+	if (strncasecmp((char *)id, "PolicyLoads", sz) == 0) {
 		rt = seaudit_report_print_policy_loads(seaudit_report, outfile);
-	} else if (strncasecmp(id, "EnforcementToggles", sz) == 0) {
+	} else if (strncasecmp((char *)id, "EnforcementToggles", sz) == 0) {
 		rt = seaudit_report_print_enforce_toggles(seaudit_report, outfile);
-	} else if (strncasecmp(id, "PolicyBooleans", sz) == 0) {
+	} else if (strncasecmp((char *)id, "PolicyBooleans", sz) == 0) {
 		rt = seaudit_report_print_policy_booleans(seaudit_report, outfile);
-	} else if (strncasecmp(id, "AllowListing", sz) == 0) {
+	} else if (strncasecmp((char *)id, "AllowListing", sz) == 0) {
 		rt = seaudit_report_print_allow_listing(seaudit_report, outfile);
-	} else if (strncasecmp(id, "DenyListing", sz) == 0) {
+	} else if (strncasecmp((char *)id, "DenyListing", sz) == 0) {
 		rt = seaudit_report_print_deny_listing(seaudit_report, outfile); 
-	} else if (strncasecmp(id, "Statistics", sz) == 0) {
+	} else if (strncasecmp((char *)id, "Statistics", sz) == 0) {
 		rt = seaudit_report_print_stats(seaudit_report, outfile);
 	}
 	if (rt != 0) 
@@ -1243,7 +1243,7 @@ static int seaudit_report_print_custom_section(seaudit_report_t *seaudit_report,
 			fprintf(outfile, "<h2 class=\"custom_section_title\"><u>%s</h2></u>\n", title);
 		} else {		
 			fprintf(outfile, "%s\n", title);
-			len = strlen(title);
+			len = strlen((char *)title);
 			for (i = 0; i < len; i++) {
 				fprintf(outfile, "-");	
 			}
@@ -1263,14 +1263,14 @@ static int seaudit_report_print_custom_section(seaudit_report_t *seaudit_report,
 			goto err;
 		}
 		/* We have reached the end-of-element for the custom-section node (indicated by 15) */
-		if (strcmp(name, "custom-section") == 0 && xmlTextReaderNodeType(reader) == 15) {
+		if (strcmp((char *)name, "custom-section") == 0 && xmlTextReaderNodeType(reader) == 15) {
 			xmlFree(name);
 			end_of_element = TRUE;
 			break; 
 		}		
-		if (strcmp(name, "view") == 0 && xmlTextReaderNodeType(reader) == 1 && 
+		if (strcmp((char *)name, "view") == 0 && xmlTextReaderNodeType(reader) == 1 && 
 		    xmlTextReaderHasAttributes(reader)) {
-			view_filePath = xmlTextReaderGetAttribute(reader, "file");
+			view_filePath = xmlTextReaderGetAttribute(reader, (const xmlChar *)"file");
 			if (view_filePath == NULL) {
 				fprintf(stderr, "Error getting file attribute for view node.\n");
 				goto err;
@@ -1357,7 +1357,7 @@ static int seaudit_report_parse_seaudit_report_node(seaudit_report_t *seaudit_re
 				fprintf(stderr, "Attribute name unavailable\n");
 				return -1;
 			}
-			if (strcmp(name, "title") == 0) {
+			if (strcmp((char *)name, "title") == 0) {
 				*title_value = xmlTextReaderValue(reader);	
 			}
 			
@@ -1388,9 +1388,9 @@ static int seaudit_report_parse_standard_section_attributes(seaudit_report_t *se
 				fprintf(stderr, "Attribute name unavailable\n");
 				return -1;
 			}
-			if (strcmp(name, "id") == 0) {
+			if (strcmp((char *)name, "id") == 0) {
 				*id_value = xmlTextReaderValue(reader);
-			} else if (strcmp(name, "title") == 0) {
+			} else if (strcmp((char *)name, "title") == 0) {
 				*title_value = xmlTextReaderValue(reader);	
 			}
 			
@@ -1420,7 +1420,7 @@ static int seaudit_report_parse_custom_section_attributes(seaudit_report_t *seau
 				fprintf(stderr, "Attribute name unavailable\n");
 				return -1;
 			}
-			if (strcmp(name, "title") == 0) {
+			if (strcmp((char *)name, "title") == 0) {
 				*title_value = xmlTextReaderValue(reader);	
 			}
 			
@@ -1446,8 +1446,8 @@ static int seaudit_report_process_xmlNode(seaudit_report_t *seaudit_report, xmlT
 		return -1;
 	}
 
-	if (seaudit_report_is_valid_node_name(name)) {
-		if (strcmp(name, "seaudit-report") == 0 && xmlTextReaderNodeType(reader) == 1) {
+	if (seaudit_report_is_valid_node_name((char *)name)) {
+		if (strcmp((char *)name, "seaudit-report") == 0 && xmlTextReaderNodeType(reader) == 1) {
 			rt = seaudit_report_parse_seaudit_report_node(seaudit_report, reader, 
 								      &id_attr, &title_attr);
 			if (rt != 0)
@@ -1457,7 +1457,7 @@ static int seaudit_report_process_xmlNode(seaudit_report_t *seaudit_report, xmlT
 			} else {
 				fprintf(outfile, "Title: %s\n", title_attr);
 			}
-		} else if (strcmp(name, "standard-section") == 0 && xmlTextReaderNodeType(reader) == 1) {
+		} else if (strcmp((char *)name, "standard-section") == 0 && xmlTextReaderNodeType(reader) == 1) {
 			rt = seaudit_report_parse_standard_section_attributes(seaudit_report, reader, 
 								              &id_attr, &title_attr);
 			if (rt != 0)
@@ -1473,7 +1473,7 @@ static int seaudit_report_process_xmlNode(seaudit_report_t *seaudit_report, xmlT
 										    outfile);
 			if (rt != 0)
 				goto err;
-		} else if (strcmp(name, "custom-section") == 0 && xmlTextReaderNodeType(reader) == 1) {
+		} else if (strcmp((char *)name, "custom-section") == 0 && xmlTextReaderNodeType(reader) == 1) {
 			rt = seaudit_report_parse_custom_section_attributes(seaudit_report, reader, &title_attr);
 			if (rt != 0)
 				goto err;
