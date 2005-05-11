@@ -117,7 +117,7 @@ static void netif_criteria_print(seaudit_criteria_t *criteria, FILE *stream, int
 		tabs = 0;
 	for (i = 0; i < tabs; i++)
 		fprintf(stream, "\t");
-	escaped = xmlURIEscapeStr(netif_criteria->netif, NULL);
+	escaped = xmlURIEscapeStr((const xmlChar *)netif_criteria->netif, NULL);
 	fprintf(stream, "<criteria type=\"netif\">\n");
 	for (i = 0; i < tabs+1; i++)
 		fprintf(stream, "\t");
@@ -208,7 +208,7 @@ static void ipaddr_criteria_print(seaudit_criteria_t *criteria, FILE *stream, in
 	if (tabs < 0)
 		tabs = 0;
 	ipaddr_criteria = (ipaddr_criteria_t*)criteria->data;
-	escaped = xmlURIEscapeStr(ipaddr_criteria->globex, NULL);
+	escaped = xmlURIEscapeStr((const xmlChar *)ipaddr_criteria->globex, NULL);
 	for (i = 0; i < tabs; i++)
 		fprintf(stream, "\t");
 	fprintf(stream, "<criteria type=\"ipaddr\">\n");
@@ -248,7 +248,7 @@ static void host_criteria_print(seaudit_criteria_t *criteria, FILE *stream, int 
 	if (tabs < 0)
 		tabs = 0;
 	host_criteria = (host_criteria_t*)criteria->data;
-	escaped = xmlURIEscapeStr(host_criteria->globex, NULL);
+	escaped = xmlURIEscapeStr((const xmlChar *)host_criteria->globex, NULL);
 	for (i = 0; i < tabs; i++)
 		fprintf(stream, "\t");
 	fprintf(stream, "<criteria type=\"host\">\n");
@@ -286,7 +286,7 @@ static void exe_criteria_print(seaudit_criteria_t *criteria, FILE *stream, int t
 		return;
 
 	exe_criteria = (exe_criteria_t*)criteria->data;
-	escaped = xmlURIEscapeStr(exe_criteria->globex, NULL);
+	escaped = xmlURIEscapeStr((const xmlChar *)exe_criteria->globex, NULL);
 	for (i = 0; i < tabs; i++)
 		fprintf(stream, "\t");
 	fprintf(stream, "<criteria type=\"exe\">\n");
@@ -324,7 +324,7 @@ static void path_criteria_print(seaudit_criteria_t *criteria, FILE *stream, int 
 		return;
 
 	path_criteria = (path_criteria_t*)criteria->data;
-	escaped = xmlURIEscapeStr(path_criteria->globex, NULL);
+	escaped = xmlURIEscapeStr((const xmlChar *)path_criteria->globex, NULL);
 	for (i = 0; i < tabs; i++)
 		fprintf(stream, "\t");
 	fprintf(stream, "<criteria type=\"path\">\n");
@@ -373,7 +373,7 @@ static void strs_criteria_print(strs_criteria_t *strs_criteria, FILE *stream, in
 	if (!strs_criteria)
 		return;
 	for (i = 0; i < strs_criteria->num_strs; i++) {
-		escaped = xmlURIEscapeStr(strs_criteria->strs[i], NULL);
+		escaped = xmlURIEscapeStr((const xmlChar *)strs_criteria->strs[i], NULL);
 		for (j = 0; j < tabs; j++)
 			fprintf(stream, "\t");
 		fprintf(stream, "<item>%s</item>\n", escaped);

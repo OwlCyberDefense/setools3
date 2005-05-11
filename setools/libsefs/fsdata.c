@@ -415,7 +415,7 @@ static int sefs_search_callback(void *NotUsed, int argc, char **argv, char **azC
 void sefs_types_compare(sqlite3_context *context, int argc, sqlite3_value **argv)
 {
 	int retVal=0;
-	const unsigned char *text;
+        const char *text;
 	regmatch_t pm;
 
       	/* make sure we got the arguments */
@@ -423,7 +423,7 @@ void sefs_types_compare(sqlite3_context *context, int argc, sqlite3_value **argv
 
 	/* make sure we got the right kind of argument */
 	if (sqlite3_value_type(argv[0]) == SQLITE_TEXT) {
-		text = sqlite3_value_text(argv[0]);	
+		text = (const char *)sqlite3_value_text(argv[0]);	
 		if (regexec (&types_re,text, 1, &pm, 0) == 0) 
 			retVal = 1;
 	}
@@ -434,14 +434,14 @@ void sefs_types_compare(sqlite3_context *context, int argc, sqlite3_value **argv
 void sefs_users_compare(sqlite3_context *context, int argc, sqlite3_value **argv)
 {
 	int retVal=0;
- 	const unsigned char *text;
+ 	const char *text;
 	regmatch_t pm;
       	/* make sure we got the arguments */
 	assert(argc == 2);
 
 	/* make sure we got the right kind of argument */
 	if (sqlite3_value_type(argv[0]) == SQLITE_TEXT) {
-		text = sqlite3_value_text(argv[0]);
+		text = (const char *)sqlite3_value_text(argv[0]);
 		/* if we aren't using regular expressions just match them up */
 		if (regexec (&users_re,text, 1, &pm, 0) == 0){
 			retVal = 1;
@@ -454,7 +454,7 @@ void sefs_users_compare(sqlite3_context *context, int argc, sqlite3_value **argv
 void sefs_paths_compare(sqlite3_context *context, int argc, sqlite3_value **argv)
 {
 	int retVal=0;
-	const unsigned char *text;
+	const char *text;
 	regmatch_t pm;
 
       	/* make sure we got the arguments */
@@ -462,7 +462,7 @@ void sefs_paths_compare(sqlite3_context *context, int argc, sqlite3_value **argv
 
 	/* make sure we got the right kind of argument */
 	if (sqlite3_value_type(argv[0]) == SQLITE_TEXT) {
-		text = sqlite3_value_text(argv[0]);
+		text = (const char *)sqlite3_value_text(argv[0]);
 		if (regexec (&paths_re,text, 1, &pm, 0) == 0)
 			retVal = 1;
 	}
@@ -541,7 +541,7 @@ int sefs_get_file_class(const struct stat64 *statptr)
 	return SEFS_ALL_FILES;
 }
 
-int find_mount_points(char *dir, char ***mounts, int *num_mounts, int rw) 
+int find_mount_points(char *dir, char ***mounts, unsigned int *num_mounts, int rw) 
 {
 	FILE *mtab = NULL;
 	int nel = 0, len = 10;
@@ -1078,8 +1078,8 @@ char **sefs_get_valid_object_classes(int *size)
 
 char **sefs_filesystem_db_get_known(sefs_filesystem_db_t *fsd,int *count_in,int request_type)
 {
-	unsigned char count_stmt[1000];
-	unsigned char select_stmt[1000];
+	char count_stmt[1000];
+	char select_stmt[1000];
 	int rc=0;
 	char *errmsg=NULL;
 	int count=0;
@@ -1133,7 +1133,7 @@ char **sefs_filesystem_db_get_known(sefs_filesystem_db_t *fsd,int *count_in,int 
 int sefs_filesystem_db_search(sefs_filesystem_db_t *fsd,sefs_search_keys_t *search_keys)
 {
 	
-	unsigned char *stmt = NULL;
+	char *stmt = NULL;
 	int *object_class = NULL;
 	int rc, sz, i, ret_val=0;
 	int stmt_size = 0;
@@ -1260,7 +1260,7 @@ int sefs_filesystem_db_populate(sefs_filesystem_db_t *fsd, char *dir)
 {
 
 	char **mounts = NULL;
-	int num_mounts=0;
+	unsigned int num_mounts=0;
 	int i;
 	sefs_filesystem_data_t *fsdh;
 	struct stat fstat;

@@ -11,13 +11,14 @@ CFLAGS  	+= -DSEDIFF_VERSION_NUM='"$(shell cat SEDIFF_VERSION)"'
 CFLAGS  	+= -DSEDIFF_GUI_VERSION_NUM='"$(shell cat SEDIFF_GUI_VERSION)"'
 CFLAGS  	+= -DSEDIFF_GUI_VERSION_NUM='"$(shell cat SEDIFF_GUI_VERSION)"'
 
+
 all: sediff sediffx
 
 sediff: sediff.o $(LIBAPOL)
-	$(CC) -o $@ sediff.o $(LIBAPOL) $(LIBS) $(LINKFLAGS) $(LIBSELINUX)
+	$(CC) -o $@ sediff.o $(LIBAPOL) $(LIBS) $(LINKFLAGS) $(LIBSELINUX) 
 
 sediffx: $(LIBAPOL) $(GUI-OBJS)
-	$(CC) $(GUI-OBJS) -o $@ $(LIBAPOL) $(LINKFLAGS) $(LIBSELINUX) $(LIBS) $(GTK_LIBS) 
+	$(CC) $(GUI-OBJS) -o $@ -export-dynamic $(LIBAPOL) $(LINKFLAGS) $(LIBSELINUX) $(LIBS) $(GTK_LIBS)  
 
 install-nogui: sediff 
 	install -m 755 sediff $(BINDIR);

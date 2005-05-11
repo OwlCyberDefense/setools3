@@ -96,7 +96,7 @@ static void my_parse_characters(void *user_data, const xmlChar *ch, int len)
 			break;
 	case PARSING_DESC:
 		data->strs = (char**)realloc(data->strs, sizeof(char*)*((data->num_strs)+2));
-		data->strs[data->num_strs] = xmlURIUnescapeString(ch, len, NULL);
+		data->strs[data->num_strs] = xmlURIUnescapeString((const char *)ch, len, NULL);
 		data->strs[data->num_strs+1] = NULL;
 		data->num_strs++;
 		break;
@@ -108,84 +108,84 @@ static void my_parse_startElement(void *user_data, const xmlChar *name, const xm
 	seaudit_multifilter_parser_data_t *data = (seaudit_multifilter_parser_data_t *)user_data;	
 	char *unescaped;
 
-	if (!seaudit_multifilter_parser_is_valid_name(name))
+	if (!seaudit_multifilter_parser_is_valid_name((const char *)name))
 		data->invalid_names = TRUE;
         /* set state and process attributes.
 	 * attributes are passed in by name value pairs. */
-	if (strcmp(name, "view") == 0) {
+	if (strcmp((char *)name, "view") == 0) {
 		data->multifilter = seaudit_multifilter_create();
 		if (!attrs[0] || !attrs[1]) /* xmlns= */
 			return;
 		if (!attrs[2] || !attrs[3]) /* name= */
 			return;
-		if (strcmp(attrs[2], "name") == 0)
-			seaudit_multifilter_set_name(data->multifilter, attrs[3]);
+		if (strcmp((char *)attrs[2], "name") == 0)
+			seaudit_multifilter_set_name(data->multifilter, (const char *)attrs[3]);
 		if (!attrs[4] || !attrs[4]) /* match= */
 			return;
-		if (strcmp(attrs[4], "match") == 0)
+		if (strcmp((char *)attrs[4], "match") == 0)
 			seaudit_multifilter_set_match(data->multifilter, 
-						      (strcmp(attrs[5], "all") == 0)? SEAUDIT_FILTER_MATCH_ALL : SEAUDIT_FILTER_MATCH_ANY);
+						      (strcmp((char *)attrs[5], "all") == 0)? SEAUDIT_FILTER_MATCH_ALL : SEAUDIT_FILTER_MATCH_ANY);
 		if (!attrs[6] || !attrs[7]) /* show= */
 			return;
-		if (strcmp(attrs[6], "show") == 0)
+		if (strcmp((char *)attrs[6], "show") == 0)
 			seaudit_multifilter_set_show_matches(data->multifilter, 
-							     (strcmp(attrs[7], "true") == 0)? TRUE : FALSE);
+							     (strcmp((char *)attrs[7], "true") == 0)? TRUE : FALSE);
 		data->is_multi = TRUE;
-	} else if (strcmp(name, "filter") == 0) {
+	} else if (strcmp((char *)name, "filter") == 0) {
 		data->cur_filter = seaudit_filter_create();
 		if (!attrs[0] || !attrs[1])
 			return;
-		if (strcmp(attrs[0], "name") == 0) {
-			unescaped = xmlURIUnescapeString(attrs[1], -1, NULL);
+		if (strcmp((char *)attrs[0], "name") == 0) {
+			unescaped = xmlURIUnescapeString((char *)attrs[1], -1, NULL);
 			seaudit_filter_set_name(data->cur_filter, unescaped);
 			free(unescaped);
 		}
 
 		if (!attrs[2] || !attrs[3])
 			return;
-		if (strcmp(attrs[2], "match") == 0) {
-			if (strcmp(attrs[3], "all") == 0)
+		if (strcmp((char *)attrs[2], "match") == 0) {
+			if (strcmp((char *)attrs[3], "all") == 0)
 				data->cur_filter->match = SEAUDIT_FILTER_MATCH_ALL;
 			else 
 				data->cur_filter->match = SEAUDIT_FILTER_MATCH_ANY;
 		}
 
-	} else if (strcmp(name, "desc") == 0) {
+	} else if (strcmp((char *)name, "desc") == 0) {
 		data->state = PARSING_DESC;
 
-	} else if (strcmp(name, "criteria") == 0) {
-		if (!attrs[0] || !attrs[1] || strcmp(attrs[0], "type") != 0)
+	} else if (strcmp((char *)name, "criteria") == 0) {
+		if (!attrs[0] || !attrs[1] || strcmp((char *)attrs[0], "type") != 0)
 			data->state = PARSING_NONE;
-		else if (strcmp(attrs[1], "src_type") == 0)
+		else if (strcmp((char *)attrs[1], "src_type") == 0)
 			data->state = PARSING_SRC_TYPES;
-		else if (strcmp(attrs[1], "tgt_type") == 0)
+		else if (strcmp((char *)attrs[1], "tgt_type") == 0)
 			data->state = PARSING_TGT_TYPES;
-		else if (strcmp(attrs[1], "src_user") == 0)
+		else if (strcmp((char *)attrs[1], "src_user") == 0)
 			data->state = PARSING_SRC_USERS;
-		else if (strcmp(attrs[1], "tgt_user") == 0)
+		else if (strcmp((char *)attrs[1], "tgt_user") == 0)
 			data->state = PARSING_TGT_USERS;
-		else if (strcmp(attrs[1], "src_role") == 0)
+		else if (strcmp((char *)attrs[1], "src_role") == 0)
 			data->state = PARSING_SRC_ROLES;
-		else if (strcmp(attrs[1], "tgt_role") == 0)
+		else if (strcmp((char *)attrs[1], "tgt_role") == 0)
 			data->state = PARSING_TGT_ROLES;
-		else if (strcmp(attrs[1], "obj_class") == 0)
+		else if (strcmp((char *)attrs[1], "obj_class") == 0)
 			data->state = PARSING_CLASSES;
-		else if (strcmp(attrs[1], "exe") == 0)
+		else if (strcmp((char *)attrs[1], "exe") == 0)
 			data->state = PARSING_EXE;
-		else if (strcmp(attrs[1], "path") == 0)
+		else if (strcmp((char *)attrs[1], "path") == 0)
 			data->state = PARSING_PATH;
-		else if (strcmp(attrs[1], "netif") == 0)
+		else if (strcmp((char *)attrs[1], "netif") == 0)
 			data->state = PARSING_NETIF;
-		else if (strcmp(attrs[1], "ipaddr") == 0)
+		else if (strcmp((char *)attrs[1], "ipaddr") == 0)
 			data->state = PARSING_IPADDR;
-		else if (strcmp(attrs[1], "port") == 0)
+		else if (strcmp((char *)attrs[1], "port") == 0)
 			data->state = PARSING_PORTS;
-		else if (strcmp(attrs[1], "host") == 0)
+		else if (strcmp((char *)attrs[1], "host") == 0)
 			data->state = PARSING_HOST;
 		else
 			data->state = PARSING_NONE;
 
-        } else if (strcmp(name, "item") == 0) {
+        } else if (strcmp((char *)name, "item") == 0) {
 		data->parsing_item = TRUE;
 	}
 }
@@ -194,10 +194,10 @@ static void my_parse_endElement(void *user_data, const xmlChar *name)
 {
 	seaudit_multifilter_parser_data_t *data = (seaudit_multifilter_parser_data_t *)user_data;
 
-	if (!seaudit_multifilter_parser_is_valid_name(name))
+	if (!seaudit_multifilter_parser_is_valid_name((const char *)name))
 		data->invalid_names = TRUE;
 
-	if (strcmp(name, "desc") == 0) {
+	if (strcmp((char *)name, "desc") == 0) {
 		if (data->strs[0])
 			seaudit_filter_set_desc(data->cur_filter, data->strs[0]);
 		seaudit_multifilter_parser_data_free(data);
@@ -205,17 +205,17 @@ static void my_parse_endElement(void *user_data, const xmlChar *name)
 		return;
 	}
 
-	if (strcmp(name, "item") == 0) {
+	if (strcmp((char *)name, "item") == 0) {
 		data->parsing_item = FALSE;
 		return;
 	}
 	
-	if (strcmp(name, "filter") == 0) {
+	if (strcmp((char *)name, "filter") == 0) {
 		seaudit_multifilter_add_filter(data->multifilter, data->cur_filter);
 		data->cur_filter = NULL;
 	}
 
-	if (strcmp(name, "criteria") == 0) {
+	if (strcmp((char *)name, "criteria") == 0) {
 		switch (data->state) {
 		case PARSING_NONE:
 		case PARSING_DESC: /* should never get here */

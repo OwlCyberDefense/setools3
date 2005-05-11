@@ -190,7 +190,7 @@ void seaudit_filter_append_to_file(seaudit_filter_t *filter, FILE *file, int tab
 	if (!filter || !file)
 		return;
 
-	escaped = xmlURIEscapeStr(filter->name, NULL);
+	escaped = (char *)xmlURIEscapeStr((const xmlChar *)filter->name, NULL);
 	for (i = 0; i < tabs; i++)
 		fprintf(file, "\t");
 	fprintf(file, "<filter name=\"%s\" match=\"%s\">\n", escaped, 
@@ -198,7 +198,7 @@ void seaudit_filter_append_to_file(seaudit_filter_t *filter, FILE *file, int tab
 	free(escaped);
 
 	if (filter->desc) {
-		escaped = xmlURIEscapeStr(filter->desc, NULL);
+		escaped = (char *)xmlURIEscapeStr((const xmlChar *)filter->desc, NULL);
 		for (i = 0; i < tabs+1; i++)
 			fprintf(file, "\t");
 		fprintf(file, "<desc>%s</desc>\n", escaped);

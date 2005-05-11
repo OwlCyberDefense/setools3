@@ -153,7 +153,7 @@ static int load_perms(ap_fbuf_t *fb, FILE *fp, bool_t is_cp, __u32 cval, int cid
 	int i, idx, rt = 0;
 	bool_t keep = FALSE;
 	ap_permission_bmap_t *pmap = NULL;
-	__u32 val, num_cp = 0;
+	__u32 val = 0, num_cp = 0;
 	
 	if(nel == 0)
 		return 0;
@@ -218,7 +218,8 @@ static int load_perms(ap_fbuf_t *fb, FILE *fp, bool_t is_cp, __u32 cval, int cid
 static int load_common_perm(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
 {
 	size_t len, nel;
-	unsigned char *kbuf, *key;
+	unsigned char *kbuf;
+	char *key;
 	__u32 *buf, val;
 	int rt, idx = -1;
 	bool_t keep = FALSE;
@@ -274,7 +275,8 @@ static int load_common_perm(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned in
 static int load_class(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
 {
 	size_t len, len2, nel, ncons, nexpr, nvaltrans;
-	unsigned char *kbuf, *key, *cbuf;
+	unsigned char *kbuf;
+	char *key, *cbuf;
 	__u32 *buf, expr_type, val, i, j, num_cp = 0, cp_val = -1;
 	int rt, idx = -1, idx2 = -1;		/* idx2 (common perm idx) must ne init'd to -1 for load_perms */
 	bool_t keep = FALSE;
@@ -327,7 +329,7 @@ static int load_class(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts
 		if(cbuf == NULL) return fb->err;
 		if(keep) {
 			cbuf[len2] = '\0';
-			idx2 = get_common_perm_idx(cbuf, policy);
+			idx2 = get_common_perm_idx((const char *)cbuf, policy);
 			if(idx2 < 0) {
 				assert(FALSE); /* debug aide */
 				return -4;
@@ -447,7 +449,8 @@ static int load_role(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts,
 {
 	__u32 *buf, val;
 	size_t len;
-	unsigned char *kbuf, *key;
+	unsigned char *kbuf;
+	char *key;
 	int idx = -1, rt; 
 	bool_t keep = FALSE;
 
@@ -507,7 +510,8 @@ static int load_type(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts,
 {
 	__u32 *buf, val;
 	size_t len;
-	unsigned char *kbuf, *key;
+	unsigned char *kbuf;
+	char *key;
 	int idx = 0, rt;
 	bool_t keep = FALSE, primary;
 	
@@ -570,7 +574,8 @@ static int load_user(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts,
 {
 	__u32 *buf, val;
 	size_t len;
-	unsigned char *kbuf, *key;
+	unsigned char *kbuf;
+	char *key;
 	bool_t keep = FALSE;
 	int i, rt, idx = -1;
 	ebitmap_t e;
@@ -635,7 +640,7 @@ static int load_bool(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts,
 {
 	__u32 len, *buf, val;
 	bool_t keep = FALSE, state;
-	unsigned char *key;
+	char *key;
 	int idx;
 	
 	INTERNAL_ASSERTION
@@ -1557,7 +1562,7 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 				rt = -1;
 				goto err_return;
 			}
-			bm->rev_cp_map = (int *)malloc(sizeof(int) * nprim);
+			bm->rev_cp_map = (__u32 *)malloc(sizeof(__u32) * nprim);
 			if(bm->rev_cp_map == NULL) {
 				rt = -1;
 				goto err_return;
