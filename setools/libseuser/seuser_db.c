@@ -158,7 +158,7 @@ const char* libseuser_get_version(void)
 	return LIBSEUSER_VERSION_STRING;
 }
 
-const int seuser_copy_db_from_apol(user_db_t *db, policy_t *policy)
+int seuser_copy_db_from_apol(user_db_t *db, policy_t *policy)
 {
 	int rt, i, j, *roles, num_roles;
 	user_item_t *user;
