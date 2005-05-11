@@ -6463,6 +6463,8 @@ int Apol_RelabelAnalysis (ClientData clientData, Tcl_Interp *interp,
 				class_filter, class_filter_sz, 
 				&results, policy)) {
                 free(filter_types);
+		free(subj_filter);
+		free(class_filter);
                 ap_relabel_result_destroy (&results);
                 Tcl_SetResult (interp, "Error doing analysis", TCL_STATIC);
                 return TCL_ERROR;
@@ -6483,7 +6485,9 @@ int Apol_RelabelAnalysis (ClientData clientData, Tcl_Interp *interp,
         }
         }
         free(filter_types);
-        ap_relabel_result_destroy (&results);
+       	free(subj_filter);
+	free(class_filter); 
+	ap_relabel_result_destroy (&results);
         if (results_list_obj == NULL) {
                 Tcl_SetResult (interp, "Error processing relabeling results", TCL_STATIC);
                 return TCL_ERROR;

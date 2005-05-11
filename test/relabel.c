@@ -302,6 +302,10 @@ int main(int argc, char **argv)
 
 	ap_relabel_result_destroy(res);
 	free(res);
+	free(obj_filter);
+	free(subj_filter);
+	avh_free(&(policy->avh));
+	free_policy(&policy);
 	TEST("end of tests",1);
 	return retv;
 }
