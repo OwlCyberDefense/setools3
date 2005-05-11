@@ -507,6 +507,9 @@ int free_policy(policy_t **p)
 	if(free_avl_trees(policy) != 0)
 		return -1;
 
+	if(policy->avh.tab)
+		avh_free(&(policy->avh));
+
 	free(policy);
 	*p = NULL;
 	return 0;
