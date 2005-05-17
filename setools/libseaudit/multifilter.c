@@ -110,18 +110,6 @@ static void my_parse_characters(void *user_data, const xmlChar *ch, int len)
 	}
 }
 
-int my_xmlChar_char_compare(const xmlChar *xml,char *chr)
-{
-	int ret;
-	if (xml == NULL || chr == NULL)
-		return -1;
-	xmlChar *chr_xml = xmlCharStrdup(chr);
-	ret = xmlStrcmp(xml,chr_xml);
-	free(chr_xml);
-	return ret;
-}
-
-
 static void my_parse_startElement(void *user_data, const xmlChar *name, const xmlChar **attrs)
 {
 	seaudit_multifilter_parser_data_t *data = (seaudit_multifilter_parser_data_t *)user_data;	
@@ -131,30 +119,30 @@ static void my_parse_startElement(void *user_data, const xmlChar *name, const xm
 		data->invalid_names = TRUE;
         /* set state and process attributes.
 	 * attributes are passed in by name value pairs. */
-	if (my_xmlChar_char_compare(name, "view") == 0) {
+	if (xmlStrcmp(name,(unsigned char*)"view") == 0) {
 		data->multifilter = seaudit_multifilter_create();
 		if (!attrs[0] || !attrs[1]) /* xmlns= */
 			return;
 		if (!attrs[2] || !attrs[3]) /* name= */
 			return;
-		if (my_xmlChar_char_compare(attrs[2], "name") == 0)
+		if (xmlStrcmp(attrs[2], (unsigned char*)"name") == 0)
 			seaudit_multifilter_set_name(data->multifilter, (const char *)attrs[3]);
 		if (!attrs[4] || !attrs[4]) /* match= */
 			return;
-		if (my_xmlChar_char_compare(attrs[4], "match") == 0)
+		if (xmlStrcmp(attrs[4], (unsigned char*)"match") == 0)
 			seaudit_multifilter_set_match(data->multifilter, 
 						      (strcmp((char *)attrs[5], "all") == 0)? SEAUDIT_FILTER_MATCH_ALL : SEAUDIT_FILTER_MATCH_ANY);
 		if (!attrs[6] || !attrs[7]) /* show= */
 			return;
-		if (my_xmlChar_char_compare(attrs[6], "show") == 0)
+		if (xmlStrcmp(attrs[6],(unsigned char*) "show") == 0)
 			seaudit_multifilter_set_show_matches(data->multifilter, 
 							     (strcmp((char *)attrs[7], "true") == 0)? TRUE : FALSE);
 		data->is_multi = TRUE;
-	} else if (my_xmlChar_char_compare(name, "filter") == 0) {
+	} else if (xmlStrcmp(name, (unsigned char*)"filter") == 0) {
 		data->cur_filter = seaudit_filter_create();
 		if (!attrs[0] || !attrs[1])
 			return;
-		if (my_xmlChar_char_compare(attrs[0], "name") == 0) {
+		if (xmlStrcmp(attrs[0],(unsigned char*) "name") == 0) {
 			unescaped = xmlURIUnescapeString((char *)attrs[1], -1, NULL);
 			seaudit_filter_set_name(data->cur_filter, unescaped);
 			free(unescaped);
@@ -162,49 +150,49 @@ static void my_parse_startElement(void *user_data, const xmlChar *name, const xm
 
 		if (!attrs[2] || !attrs[3])
 			return;
-		if (my_xmlChar_char_compare(attrs[2], "match") == 0) {
-			if (strcmp((char *)attrs[3], "all") == 0)
+		if (xmlStrcmp(attrs[2], (unsigned char*)"match") == 0) {
+			if (xmlStrcmp(attrs[3],(unsigned char*) "all") == 0)
 				data->cur_filter->match = SEAUDIT_FILTER_MATCH_ALL;
 			else 
 				data->cur_filter->match = SEAUDIT_FILTER_MATCH_ANY;
 		}
 
-	} else if (my_xmlChar_char_compare(name, "desc") == 0) {
+	} else if (xmlStrcmp(name, (unsigned char*)"desc") == 0) {
 		data->state = PARSING_DESC;
 
-	} else if (my_xmlChar_char_compare(name, "criteria") == 0) {
-		if (!attrs[0] || !attrs[1] || strcmp((char *)attrs[0], "type") != 0)
+	} else if (xmlStrcmp(name, (unsigned char*)"criteria") == 0) {
+		if (!attrs[0] || !attrs[1] || xmlStrcmp(attrs[0], (unsigned char*)"type") != 0)
 			data->state = PARSING_NONE;
-		else if (my_xmlChar_char_compare(attrs[1], "src_type") == 0)
+		else if (xmlStrcmp(attrs[1],(unsigned char*)"src_type") == 0)
 			data->state = PARSING_SRC_TYPES;
-		else if (my_xmlChar_char_compare(attrs[1], "tgt_type") == 0)
+		else if (xmlStrcmp(attrs[1], (unsigned char*)"tgt_type") == 0)
 			data->state = PARSING_TGT_TYPES;
-		else if (my_xmlChar_char_compare(attrs[1], "src_user") == 0)
+		else if (xmlStrcmp(attrs[1], (unsigned char*)"src_user") == 0)
 			data->state = PARSING_SRC_USERS;
-		else if (my_xmlChar_char_compare(attrs[1], "tgt_user") == 0)
+		else if (xmlStrcmp(attrs[1], (unsigned char*)"tgt_user") == 0)
 			data->state = PARSING_TGT_USERS;
-		else if (my_xmlChar_char_compare(attrs[1], "src_role") == 0)
+		else if (xmlStrcmp(attrs[1], (unsigned char*)"src_role") == 0)
 			data->state = PARSING_SRC_ROLES;
-		else if (my_xmlChar_char_compare(attrs[1], "tgt_role") == 0)
+		else if (xmlStrcmp(attrs[1],(unsigned char*) "tgt_role") == 0)
 			data->state = PARSING_TGT_ROLES;
-		else if (my_xmlChar_char_compare(attrs[1], "obj_class") == 0)
+		else if (xmlStrcmp(attrs[1], (unsigned char*)"obj_class") == 0)
 			data->state = PARSING_CLASSES;
-		else if (my_xmlChar_char_compare(attrs[1], "exe") == 0)
+		else if (xmlStrcmp(attrs[1], (unsigned char*)"exe") == 0)
 			data->state = PARSING_EXE;
-		else if (my_xmlChar_char_compare(attrs[1], "path") == 0)
+		else if (xmlStrcmp(attrs[1], (unsigned char*)"path") == 0)
 			data->state = PARSING_PATH;
-		else if (my_xmlChar_char_compare(attrs[1], "netif") == 0)
+		else if (xmlStrcmp(attrs[1], (unsigned char*)"netif") == 0)
 			data->state = PARSING_NETIF;
-		else if (my_xmlChar_char_compare(attrs[1], "ipaddr") == 0)
+		else if (xmlStrcmp(attrs[1], (unsigned char*)"ipaddr") == 0)
 			data->state = PARSING_IPADDR;
-		else if (my_xmlChar_char_compare(attrs[1], "port") == 0)
+		else if (xmlStrcmp(attrs[1], (unsigned char*)"port") == 0)
 			data->state = PARSING_PORTS;
-		else if (my_xmlChar_char_compare(attrs[1], "host") == 0)
+		else if (xmlStrcmp(attrs[1], (unsigned char*)"host") == 0)
 			data->state = PARSING_HOST;
 		else
 			data->state = PARSING_NONE;
 
-        } else if (my_xmlChar_char_compare(name, "item") == 0) {
+        } else if (xmlStrcmp(name, (unsigned char*)"item") == 0) {
 		data->parsing_item = TRUE;
 	}
 }
@@ -216,7 +204,7 @@ static void my_parse_endElement(void *user_data, const xmlChar *name)
 	if (!seaudit_multifilter_parser_is_valid_name(name))
 		data->invalid_names = TRUE;
 
-	if (my_xmlChar_char_compare(name, "desc") == 0) {
+	if (xmlStrcmp(name, (unsigned char*)"desc") == 0) {
 		if (data->strs[0])
 			seaudit_filter_set_desc(data->cur_filter, data->strs[0]);
 		seaudit_multifilter_parser_data_free(data);
@@ -224,17 +212,17 @@ static void my_parse_endElement(void *user_data, const xmlChar *name)
 		return;
 	}
 
-	if (my_xmlChar_char_compare(name, "item") == 0) {
+	if (xmlStrcmp(name, (unsigned char*)"item") == 0) {
 		data->parsing_item = FALSE;
 		return;
 	}
 	
-	if (my_xmlChar_char_compare(name, "filter") == 0) {
+	if (xmlStrcmp(name, (unsigned char*)"filter") == 0) {
 		seaudit_multifilter_add_filter(data->multifilter, data->cur_filter);
 		data->cur_filter = NULL;
 	}
 
-	if (my_xmlChar_char_compare(name, "criteria") == 0) {
+	if (xmlStrcmp(name, (unsigned char*)"criteria") == 0) {
 		switch (data->state) {
 		case PARSING_NONE:
 		case PARSING_DESC: /* should never get here */
