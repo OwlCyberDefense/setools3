@@ -1,5 +1,28 @@
 CHANGE LOG, SE Linux TOOLS (setools)
 =======================================================
+May 17, 2005, Version 2.1.1
+
+libseaudit:
+	updated code to compile with gcc-4.0.0
+	minor bug fixes
+
+sediff:
+	updated code to compile with gcc-4.0.0
+
+seaudit:
+	updated code to compile with gcc-4.0.0
+
+libsefs:
+	updated code to compile with gcc-4.0.0
+
+libapol:
+	updated code to compile with gcc-4.0.0
+	minor bug fixes
+
+seuser:
+	updated code to compile with gcc-4.0.0
+
+======================================================
 April 18, 2005, Version 2.1.0
 
 apol: 
