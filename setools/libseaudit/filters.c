@@ -184,25 +184,30 @@ void seaudit_filter_append_to_file(seaudit_filter_t *filter, FILE *file, int tab
 	seaudit_criteria_t *criteria;
 	llist_t *list;
 	llist_node_t *node;
-	char *escaped;
+	xmlChar *escaped;
+	xmlChar *str_xml;
 	int i;
 
 	if (!filter || !file)
 		return;
 
-	escaped = (char *)xmlURIEscapeStr((const xmlChar *)filter->name, NULL);
+	str_xml = xmlCharStrdup(filter->name);
+	escaped = xmlURIEscapeStr(str_xml, NULL);
 	for (i = 0; i < tabs; i++)
 		fprintf(file, "\t");
 	fprintf(file, "<filter name=\"%s\" match=\"%s\">\n", escaped, 
 		filter->match == SEAUDIT_FILTER_MATCH_ALL? "all" : "any");
 	free(escaped);
+	free(str_xml);
 
 	if (filter->desc) {
-		escaped = (char *)xmlURIEscapeStr((const xmlChar *)filter->desc, NULL);
+		str_xml = xmlCharStrdup(filter->desc);
+		escaped = xmlURIEscapeStr(str_xml, NULL);
 		for (i = 0; i < tabs+1; i++)
 			fprintf(file, "\t");
 		fprintf(file, "<desc>%s</desc>\n", escaped);
 		free(escaped);
+		free(str_xml);
 	}
 	list = seaudit_filter_get_list(filter);
 	for (node = list->head; node != NULL; node = node->next) {

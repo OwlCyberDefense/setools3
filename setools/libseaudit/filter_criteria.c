@@ -107,6 +107,7 @@ static void netif_criteria_print(seaudit_criteria_t *criteria, FILE *stream, int
 {
 	netif_criteria_t *netif_criteria;
 	xmlChar *escaped;
+	xmlChar *str_xml;
 	int i;
 
 	if (criteria == NULL || criteria->data == NULL || stream == NULL)
@@ -117,7 +118,8 @@ static void netif_criteria_print(seaudit_criteria_t *criteria, FILE *stream, int
 		tabs = 0;
 	for (i = 0; i < tabs; i++)
 		fprintf(stream, "\t");
-	escaped = xmlURIEscapeStr((const xmlChar *)netif_criteria->netif, NULL);
+	str_xml = xmlCharStrdup(netif_criteria->netif);
+	escaped = xmlURIEscapeStr(str_xml, NULL);
 	fprintf(stream, "<criteria type=\"netif\">\n");
 	for (i = 0; i < tabs+1; i++)
 		fprintf(stream, "\t");
@@ -126,6 +128,7 @@ static void netif_criteria_print(seaudit_criteria_t *criteria, FILE *stream, int
 		fprintf(stream, "\t");
 	fprintf(stream, "</criteria>\n");
 	free(escaped);
+	free(str_xml);
 }
 
 static bool_t ports_criteria_action(msg_t *msg, seaudit_criteria_t *criteria, audit_log_t *log)
@@ -200,6 +203,7 @@ static void ipaddr_criteria_print(seaudit_criteria_t *criteria, FILE *stream, in
 {
 	ipaddr_criteria_t *ipaddr_criteria;
 	xmlChar *escaped;
+	xmlChar *str_xml;
 	int i;
 
 	if (criteria == NULL || criteria->data == NULL || stream == NULL)
@@ -208,7 +212,8 @@ static void ipaddr_criteria_print(seaudit_criteria_t *criteria, FILE *stream, in
 	if (tabs < 0)
 		tabs = 0;
 	ipaddr_criteria = (ipaddr_criteria_t*)criteria->data;
-	escaped = xmlURIEscapeStr((const xmlChar *)ipaddr_criteria->globex, NULL);
+	str_xml = xmlCharStrdup(ipaddr_criteria->globex); 
+	escaped = xmlURIEscapeStr(str_xml, NULL);
 	for (i = 0; i < tabs; i++)
 		fprintf(stream, "\t");
 	fprintf(stream, "<criteria type=\"ipaddr\">\n");
@@ -219,6 +224,7 @@ static void ipaddr_criteria_print(seaudit_criteria_t *criteria, FILE *stream, in
 		fprintf(stream, "\t");
 	fprintf(stream, "</criteria>\n");
 	free(escaped);
+	free(str_xml);
 }
 
 static bool_t host_criteria_action(msg_t *msg, seaudit_criteria_t *criteria, audit_log_t *log)
@@ -240,6 +246,7 @@ static void host_criteria_print(seaudit_criteria_t *criteria, FILE *stream, int 
 {
 	host_criteria_t *host_criteria;
 	xmlChar *escaped;
+	xmlChar *str_xml;
 	int i;
 
 	if (criteria == NULL || criteria->data == NULL || stream == NULL)
@@ -248,7 +255,8 @@ static void host_criteria_print(seaudit_criteria_t *criteria, FILE *stream, int 
 	if (tabs < 0)
 		tabs = 0;
 	host_criteria = (host_criteria_t*)criteria->data;
-	escaped = xmlURIEscapeStr((const xmlChar *)host_criteria->globex, NULL);
+	str_xml = xmlCharStrdup(host_criteria->globex);
+	escaped = xmlURIEscapeStr(str_xml, NULL);
 	for (i = 0; i < tabs; i++)
 		fprintf(stream, "\t");
 	fprintf(stream, "<criteria type=\"host\">\n");
@@ -259,6 +267,7 @@ static void host_criteria_print(seaudit_criteria_t *criteria, FILE *stream, int 
 		fprintf(stream, "\t");
 	fprintf(stream, "</criteria>\n");
 	free(escaped);
+	free(str_xml);
 }
 
 static bool_t exe_criteria_action(msg_t *msg, seaudit_criteria_t *criteria, audit_log_t *log)  
@@ -280,13 +289,15 @@ static void exe_criteria_print(seaudit_criteria_t *criteria, FILE *stream, int t
 {
 	exe_criteria_t *exe_criteria;
 	xmlChar *escaped;
+	xmlChar *str_xml;
 	int i;
 
 	if (criteria == NULL || criteria->data == NULL || stream == NULL)
 		return;
 
 	exe_criteria = (exe_criteria_t*)criteria->data;
-	escaped = xmlURIEscapeStr((const xmlChar *)exe_criteria->globex, NULL);
+	str_xml = xmlCharStrdup(exe_criteria->globex);
+	escaped = xmlURIEscapeStr(str_xml, NULL);
 	for (i = 0; i < tabs; i++)
 		fprintf(stream, "\t");
 	fprintf(stream, "<criteria type=\"exe\">\n");
@@ -297,6 +308,7 @@ static void exe_criteria_print(seaudit_criteria_t *criteria, FILE *stream, int t
 		fprintf(stream, "\t");
 	fprintf(stream, "</criteria>\n");
 	free(escaped);
+	free(str_xml);
 }
 
 static bool_t path_criteria_action(msg_t *msg, seaudit_criteria_t *criteria, audit_log_t *log)  
@@ -318,13 +330,15 @@ static void path_criteria_print(seaudit_criteria_t *criteria, FILE *stream, int 
 {
 	path_criteria_t *path_criteria;
 	xmlChar *escaped;
+	xmlChar *str_xml;
 	int i;
 
 	if (criteria == NULL || criteria->data == NULL || stream == NULL)
 		return;
 
 	path_criteria = (path_criteria_t*)criteria->data;
-	escaped = xmlURIEscapeStr((const xmlChar *)path_criteria->globex, NULL);
+	str_xml = xmlCharStrdup(path_criteria->globex);
+	escaped = xmlURIEscapeStr(str_xml, NULL);
 	for (i = 0; i < tabs; i++)
 		fprintf(stream, "\t");
 	fprintf(stream, "<criteria type=\"path\">\n");
@@ -335,6 +349,7 @@ static void path_criteria_print(seaudit_criteria_t *criteria, FILE *stream, int 
 		fprintf(stream, "\t");
 	fprintf(stream, "</criteria>\n");
 	free(escaped);
+	free(str_xml);
 }
 
 static bool_t src_user_criteria_action(msg_t *msg, seaudit_criteria_t *criteria, audit_log_t *log)
@@ -369,15 +384,18 @@ static void strs_criteria_print(strs_criteria_t *strs_criteria, FILE *stream, in
 {
 	int i, j;
 	xmlChar *escaped;
+	xmlChar *str_xml;
 
 	if (!strs_criteria)
 		return;
 	for (i = 0; i < strs_criteria->num_strs; i++) {
-		escaped = xmlURIEscapeStr((const xmlChar *)strs_criteria->strs[i], NULL);
+		str_xml = xmlCharStrdup(strs_criteria->strs[i]);
+		escaped = xmlURIEscapeStr(str_xml, NULL);
 		for (j = 0; j < tabs; j++)
 			fprintf(stream, "\t");
 		fprintf(stream, "<item>%s</item>\n", escaped);
 		free(escaped);
+		free(str_xml);
 	}
 }
 
