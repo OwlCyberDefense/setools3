@@ -319,27 +319,16 @@ static int parse_context(char *token, char *user, char *role, char *type)
 {
 	/* Parse user:role:type */
 	int i = 0;
-	char *new_token = strdup(token);
-	char *curr = NULL;
-	assert(new_token != NULL);
-
-	/* copy over the user */
-	curr = new_token;
-	i = strcspn(new_token,":");
-	strncpy(user,curr,i);
-	user[i] = '\0';
-	/* copy over the role */
-	curr = &new_token[i+2];
-	i = strcspn(curr,":");
-	strncpy(role,curr,i);
-	role[i] = '\0';
-	/* copy over the type */
-	curr = &new_token[i+2];
-	i = strcspn(curr,":");
-	strncpy(type,curr,i);
-	type[i] = '\0';
-
-	free(new_token);
+	char *fields[PARSE_NUM_CONTEXT_FIELDS];
+	assert(token != NULL);
+	while (i < PARSE_NUM_CONTEXT_FIELDS && (fields[i] = strsep(&token,":")) != NULL){
+		i++;
+	}
+	if (i != PARSE_NUM_CONTEXT_FIELDS)
+		return -1;
+	strcpy(user,fields[0]);
+	strcpy(role,fields[1]);
+	strcpy(type,fields[2]);
 	return PARSE_RET_SUCCESS;
        
 }
