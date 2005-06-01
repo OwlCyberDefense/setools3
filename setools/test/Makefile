@@ -6,7 +6,7 @@ OBJS		= test.o $(LIBAPOL)
 INCLUDES	= -I../libapol/
 CFLAGS		+= $(INCLUDES)
 
-TESTS		= partial_policy_loading transitive_flow obj_perms perm_map_reload template reload roles binpol relabel role_rules
+TESTS		= partial_policy_loading transitive_flow obj_perms perm_map_reload template reload roles binpol relabel role_rules subtract
 DATE 		:= $(shell date +%Y%m%d%H%M)
 
 all : $(TESTS)
@@ -63,6 +63,8 @@ relabel : relabel.o $(OBJS) $(LIBAPOL)
 role_rules : role_rules.o $(OBJS) $(LIBAPOL) 
 	$(CC) $< $(CFLAGS) $(OBJS) $(LIBS) -o $@
 
+subtract : subtract.o $(OBJS) $(LIBAPOL) 
+	$(CC) $< $(CFLAGS) $(OBJS) $(LIBS) -o $@
 
 .PHONY : clean bare
 
