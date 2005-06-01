@@ -32,7 +32,7 @@ int main(int argc, char **argv)
 	init_tests(argc, argv);
 
 	/* load policy*/
-	TEST("load policy", open_policy("policy/relabel-corner.conf", &policy) == 0);
+	TEST("load policy", open_policy("policy/relabel-analysis-test.conf", &policy) == 0);
 
 	/* get type indices */
 	type1_idx = get_type_idx("typC", policy);
