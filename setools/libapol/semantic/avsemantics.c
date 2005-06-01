@@ -72,8 +72,8 @@ static bool_t avh_is_valid_cond_type_rule(avh_key_t *key, int cond_expr, bool_t 
 static int avh_load_avrules( void *r, int num, bool_t is_av, policy_t *p)
 {
 	int i, j, k, x, y, rt, start;
-	int num_src, num_tgt, num_src_tilda = 0, num_tgt_tilda = 0, num_cls, num_perm, num_perm_tilda = 0, pidx, *src_a, *tgt_a, *cls_a, *perm_a, dflt = -1, cond_expr = -1;
-	bool_t all_src, all_tgt, all_cls, all_perms = FALSE, is_cond, cond_list = FALSE, src_tilda, tgt_tilda, perm_tilda = FALSE;
+	int num_src, num_tgt, num_cls, num_perm, pidx, *src_a, *tgt_a, *cls_a, *perm_a, dflt = -1, cond_expr = -1;
+	bool_t all_src, all_tgt, all_cls, all_perms = FALSE, is_cond, cond_list = FALSE;
 	avh_key_t  key;
 	avh_node_t *node;
 	
@@ -93,12 +93,6 @@ static int avh_load_avrules( void *r, int num, bool_t is_av, policy_t *p)
 			if(((av_item_t *)r)[i].type ==  RULE_NEVERALLOW)
 				continue;
 			
-			src_tilda = (((av_item_t *)r)[i].flags & AVFLAG_SRC_TILDA);
-			tgt_tilda = (((av_item_t *)r)[i].flags & AVFLAG_TGT_TILDA);
-			perm_tilda =(((av_item_t *)r)[i].flags & AVFLAG_PERM_TILDA);
-
-			assert(!(perm_tilda && (p->policy_type & POL_TYPE_BINARY)));
-
 			if(is_cond_rule(((av_item_t *)r)[i]) ) {
 				is_cond = TRUE;
 				cond_expr = ((av_item_t *)r)[i].cond_expr;
@@ -109,8 +103,6 @@ static int avh_load_avrules( void *r, int num, bool_t is_av, policy_t *p)
 			}
 		}
 		else {
-			src_tilda = (((tt_item_t *)r)[i].flags & AVFLAG_SRC_TILDA);
-			tgt_tilda = (((tt_item_t *)r)[i].flags & AVFLAG_TGT_TILDA);
 			if(is_cond_rule(((tt_item_t *)r)[i]) ) {
 				is_cond = TRUE;
 				cond_expr = ((tt_item_t *)r)[i].cond_expr;
@@ -141,10 +133,6 @@ static int avh_load_avrules( void *r, int num, bool_t is_av, policy_t *p)
 		}
 		else {
 			all_src = FALSE;
-			if(src_tilda) {
-				num_src_tilda = num_src;
-				num_src = num_types(p);
-			}
 		}
 			
 		rt = extract_types_from_te_rule(i, key.rule_type, TGT_LIST, &tgt_a, &num_tgt, p);
@@ -155,10 +143,6 @@ static int avh_load_avrules( void *r, int num, bool_t is_av, policy_t *p)
 		}
 		else {
 			all_tgt = FALSE;
-			if(tgt_tilda) {
-				num_tgt_tilda = num_tgt;
-				num_tgt = num_types(p);
-			}
 		}
 
 		rt = extract_obj_classes_from_te_rule(i, key.rule_type, &cls_a, &num_cls, p);
@@ -177,8 +161,6 @@ static int avh_load_avrules( void *r, int num, bool_t is_av, policy_t *p)
 				all_perms = TRUE;
 			else
 				all_perms = FALSE;
-			if (perm_tilda)
-				num_perm_tilda = num_perm;
 		}
 		else {
 			dflt = ((tt_item_t *)r)[i].dflt_type.idx;
@@ -186,35 +168,25 @@ static int avh_load_avrules( void *r, int num, bool_t is_av, policy_t *p)
 		}
 		
 		/* iterate thru all rule key combinations and perms */
-		if(all_src || src_tilda) 
+		if(all_src) 
 			start = 1; /* skip over self type */
 		else
 			start = 0;
 		for(j = start; j < num_src; j++) {
-			if(all_src)
+			if(all_src) {
 				key.src = j;
-			else if(src_tilda) {
-				if(find_int_in_array(j, src_a, num_src_tilda) < 0) 
-					key.src = j; /* a type not in the src */
-				else
-					continue;
 			}
 			else
 				key.src = src_a[j];
 			assert(is_valid_type_idx(key.src, p));
 			
-			if(all_tgt || tgt_tilda) 
+			if(all_tgt) 
 				start = 1; /* skip over self type */
 			else
 				start = 0;
 			for(k = start; k < num_tgt; k++) {
-				if(all_tgt)
+				if(all_tgt) {
 					key.tgt = k;
-				else if(tgt_tilda) {
-					if(find_int_in_array(k, tgt_a, num_tgt_tilda) < 0) 
-						key.tgt = k; /* a type not in the tgt */
-					else
-						continue;
 				}
 				else {
 					if(tgt_a[k]==0)
@@ -279,18 +251,13 @@ static int avh_load_avrules( void *r, int num, bool_t is_av, policy_t *p)
 						}
 					}
 					if(is_av) {
-						if(all_perms | perm_tilda) {
+						if(all_perms) {
 							num_perm = get_num_perms_for_obj_class(key.cls, p);
 						} 
 						/* add our perm list */
 						for(y = 0; y < num_perm; y++) {
-							if(all_perms)
+							if(all_perms) {
 								pidx = get_obj_class_nth_perm_idx(key.cls, y, p);
-							else if (perm_tilda) {
-								pidx = get_obj_class_nth_perm_idx(key.cls, y, p);
-
-								if(find_int_in_array(pidx, perm_a, num_perm_tilda) >= 0) 
-									continue;
 							} else 
 								pidx = perm_a[y];
 
