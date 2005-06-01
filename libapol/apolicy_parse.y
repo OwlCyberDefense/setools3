@@ -1710,7 +1710,10 @@ static int define_te_clone(void)
 static int define_role_types(void)
 {
 	char *id, *or_name;
-	int role_idx, idx, idx_type, rt;
+	int role_idx, idx, idx_type, rt, i;
+	bool_t tilde_found = FALSE, subtract = FALSE;
+	int *list_types = NULL, *tmp = NULL, *subtracted = NULL; 
+	int num_list_types = 0, num_tmp = 0, num_subtracted = 0;
 
 	if (pass == 1 || (pass == 2 && !(parse_policy->opts & POLOPT_ROLES))) {
 		while ((id = queue_remove(id_queue))) 
@@ -1762,18 +1765,99 @@ static int define_role_types(void)
 	}
 	/* add the types or attributes */	
 	while ((id = queue_remove(id_queue))) {
+		if (!strcmp(id, "*")) {
+			/* skip type 0 it is "self" */
+			for (i = 1; i < parse_policy->num_types; i++) {
+				rt = add_type_to_role(i, role_idx, parse_policy);
+				if(rt != 0)
+					return rt;
+			}
+			free(id);
+			break;
+		}
+		if (!strcmp(id, "~")) {
+			tilde_found = TRUE;
+			free(id);
+			continue;
+		} 
+		if (!strcmp(id, "-")) {
+			subtract = TRUE;
+			free(id);
+			continue;
+		}
 		idx = get_type_or_attrib_idx(id, &idx_type, parse_policy);
 		if(idx < 0) {
-			snprintf(errormsg, sizeof(errormsg), "Invalid type name (%s) in role definition", id);
+			snprintf(errormsg, sizeof(errormsg), "Invalid type or attribute name (%s) in role definition", id);
 			yyerror(errormsg);
 			return -1;
 		}
-		rt = add_type_to_role(idx, role_idx, parse_policy);
-		if(rt != 0)
-			return rt;
+		if (idx_type == IDX_ATTRIB) {
+			rt = get_attrib_types(idx, &num_tmp, &tmp, parse_policy);
+			if (rt != 0) {
+				free(tmp);
+				return rt;
+			}
+			for (i = 0; i < num_tmp; i++) {
+				if (subtract) {
+					rt = add_i_to_a(tmp[i], &num_subtracted, &subtracted);
+					if (rt != 0)
+						return rt;
+				} else {
+					rt = add_i_to_a(tmp[i], &num_list_types, &list_types);
+					if (rt != 0)
+						return rt;
+				}
+			}
+			subtract = FALSE;
+			free(tmp);
+			tmp = NULL;
+			num_tmp = 0;
+		} else {
+			if (subtract) {
+				rt = add_i_to_a(idx, &num_subtracted, &subtracted);
+				if (rt != 0)
+					return rt;
+				subtract = FALSE;
+			} else {
+				rt = add_i_to_a(idx, &num_list_types, &list_types);
+				if (rt != 0)
+					return rt;
+			}
+		}
 		free(id);	
 	}
+	for (i = 0; i < num_list_types; i++) {
+		if (find_int_in_array(list_types[i], subtracted, num_subtracted) == -1) {
+			rt = add_i_to_a(list_types[i], &num_tmp, &tmp);
+			if (rt != 0)
+				return rt;
+		}
+	}
+	if (tilde_found) {
+		/* skip type 0 it is "self" */
+		for (i = 1; i < parse_policy->num_types; i++) {
+			if (find_int_in_array(i, tmp, num_tmp) == -1) {
+				rt = add_type_to_role(i, role_idx, parse_policy);
+				if (rt != 0) {
+					snprintf(errormsg, sizeof(errormsg), "error adding types to role (%s)", parse_policy->roles[role_idx].name);
+					yyerror(errormsg);
+					return rt;
+				}
+			}
+		}
+	} else {
+		for (i = 0; i < num_tmp; i++) {
+			rt = add_type_to_role(tmp[i], role_idx, parse_policy);
+			if (rt != 0) {
+				snprintf(errormsg, sizeof(errormsg), "error adding types to role (%s)", parse_policy->roles[role_idx].name);
+				yyerror(errormsg);
+				return rt;
+			}
+		}
+	}
 
+	free(list_types);
+	free(subtracted);
 	return 0;
 }
 
@@ -2023,8 +2107,9 @@ static int define_role_trans(void)
 static int define_user(void)
 {
 	char *id;
-	int idx, ridx, rt;
-	bool_t existing;
+	int idx, ridx, rt, i;
+	bool_t existing, tilde = FALSE;
+	int *tmp = NULL, num_tmp = 0;
 
 	if(pass == 1 || (pass == 2 && !(parse_policy-> opts & POLOPT_USERS))) {
 		while ((id = queue_remove(id_queue))) 
@@ -2062,6 +2147,20 @@ static int define_user(void)
 	}
 		
 	while((id = queue_remove(id_queue))) {
+		if (!strcmp("*", id)) {
+			for (i = 0; i < parse_policy->num_roles; i++) {
+				rt = add_i_to_a(i, &num_tmp, &tmp);
+				if (rt != 0)
+					return -1;
+			}
+			free(id);
+			break;
+		}
+		if (!strcmp("~", id)) {
+			tilde = TRUE;
+			free(id);
+			continue;
+		}
 		ridx = get_role_idx(id, parse_policy);
 		if(ridx < 0) {
 			snprintf(errormsg, sizeof(errormsg), "%s is an invalid role name", id);
@@ -2069,12 +2168,29 @@ static int define_user(void)
 			free(id);
 			return -1;
 		}
-		rt = add_role_to_user(ridx, idx, parse_policy);
-		if(rt != 0) {
-			yyerror("problem inserting role in user");
+		rt = add_i_to_a(ridx, &num_tmp, &tmp);
+		if (rt != 0)
 			return -1;
-		}
 		free(id);		 
+	}
+	if (tilde) {
+		for (i = 0; i < parse_policy->num_roles; i++) {
+			if (find_int_in_array(i, tmp, num_tmp) == -1) {
+				rt = add_role_to_user(i, idx, parse_policy);
+				if(rt != 0) {
+					yyerror("problem inserting role in user");
+					return -1;
+				}
+			}
+		}
+	} else {
+		for (i = 0; i < num_tmp; i++) {
+			rt = add_role_to_user(tmp[i], idx, parse_policy);
+			if(rt != 0) {
+				yyerror("problem inserting role in user");
+				return -1;
+			}
+		}
 	}
 	
 
@@ -2089,6 +2205,7 @@ static int define_user(void)
 		free(id);
 	}
 
+	free(tmp);
 	return 0;
 }
 
