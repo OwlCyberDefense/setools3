@@ -98,7 +98,6 @@ static void txt_view_populate_buffers(apol_diff_t *stuff_removed,
 
 /* internal fcns */
 static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy_option);
-static int sediff_diff_and_load_policies(const char *p1_file,const char *p2_file, bool_t new_files);
 static void sediff_populate_buffer_hdrs();
 static void sediff_update_status_bar();
 static void sediff_rename_policy_tabs(const char *p1,const char *p2) ;
@@ -110,6 +109,17 @@ static gboolean txt_view_on_cond_link_event(GtkTextTag *tag, GObject *event_obje
 					      GdkEvent *event, const GtkTextIter *iter, 
 					    gpointer user_data);
 gboolean txt_view_on_text_view_motion(GtkWidget *widget, GdkEventMotion *event, gpointer user_data);
+gboolean sediff_load_dlg_destroy();
+static GtkWidget* sediff_tree_view_create_from_store(SEDiffTreeViewStore *tree_store);
+static int sediff_policy_file_textview_populate(const char *filename,GtkTextView *textview);
+static void sediff_policy_stats_textview_populate(policy_t *p1, GtkTextView *textview,const char *filename);
+static void sediff_initialize_diff();
+static void sediff_initialize_policies();
+gboolean sediff_load_dlg_show();
+static void sediff_free_stored_buffers();
+static void sediff_open_button_clicked();
+void sediff_on_policy1_notebook_event_after(GtkWidget *widget, GdkEvent *event, gpointer user_data);
+void sediff_on_policy2_notebook_event_after(GtkWidget *widget, GdkEvent *event, gpointer user_data);
 
 void usage(const char *program_name, int brief)
 {
@@ -1140,20 +1150,28 @@ static void sediff_rename_policy_tabs(const char *p1,const char *p2)
 	g_string_free(string,TRUE);
 }
 
-/* 
-   returns the result of diffing p1_file and p2_file 2 policy files 
-   also sets up the buffers used in gui so we can switch faster
-*/
-static apol_diff_result_t *sediff_diff_policies(const char *p1_file, const char *p2_file, bool_t new_files)
+static int sediff_load_policies(const char *p1_file, const char *p2_file)
 {
-	policy_t *p1 = NULL, *p2 = NULL;
-	apol_diff_result_t *diff = NULL;
+	GtkTextView *p1_textview, *p2_textview, *stats1, *stats2;
+	GString *string = g_string_new("");
+	GdkCursor *cursor = NULL;
+	GtkNotebook *notebook1, *notebook2;
 	unsigned int opts = POLOPT_ALL;
 	int rt;
-	GdkCursor *cursor = NULL;
-	GString *string = g_string_new("");
-	
+	policy_t *p1;
+	policy_t *p2;
 
+	sediff_initialize_policies();
+
+	/* set the cursor to a hourglass */
+	cursor = gdk_cursor_new(GDK_WATCH);
+	gdk_window_set_cursor(GTK_WIDGET(sediff_app->window)->window, cursor);
+	gdk_cursor_unref(cursor);
+	gdk_flush();
+	
+	while (gtk_events_pending ())
+		gtk_main_iteration ();
+		
 	/* attempt to open the policies */
 	if (fn_is_binpol(p1_file) && fn_binpol_ver(p1_file) < 15) {
 		g_string_printf(string,"Policy 1:  Binary policies are only supported for version 15 or higher.");
@@ -1189,6 +1207,97 @@ static apol_diff_result_t *sediff_diff_policies(const char *p1_file, const char 
 		message_display(sediff_app->window,GTK_MESSAGE_ERROR,string->str);
 		goto err;
 	}
+
+	/* save a reference to the loaded p1 and p2 */
+	if (sediff_app->p1_filename)
+		g_string_free(sediff_app->p1_filename,TRUE);
+	if (sediff_app->p2_filename)
+		g_string_free(sediff_app->p2_filename,TRUE);
+	sediff_app->p1_filename = g_string_new(p1_file);
+	sediff_app->p2_filename = g_string_new(p2_file);
+	sediff_app->p1 = p1;
+	sediff_app->p2 = p2;
+	
+	sediff_rename_policy_tabs(p1_file, p2_file);
+	
+	/* Grab the 2 policy textviews */
+	p1_textview = (GtkTextView *)glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p1_text");
+	g_assert(p1_textview);
+	p2_textview = (GtkTextView *)glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p2_text");
+	g_assert(p2_textview);
+	
+	stats1 = (GtkTextView *)glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p1_stats_text");
+	g_assert(stats1);
+	stats2 = (GtkTextView *)glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p2_stats_text");
+	g_assert(stats2);
+	
+	notebook1 = (GtkNotebook *)glade_xml_get_widget(sediff_app->window_xml, "notebook1");
+	g_assert(notebook1);
+	notebook2 = (GtkNotebook *)glade_xml_get_widget(sediff_app->window_xml, "notebook2");
+	g_assert(notebook2);
+	g_signal_connect_after(G_OBJECT(notebook1), "event-after", 
+			 G_CALLBACK(sediff_on_policy1_notebook_event_after), notebook1);
+	g_signal_connect_after(G_OBJECT(notebook2), "event-after", 
+			 G_CALLBACK(sediff_on_policy2_notebook_event_after), notebook2);
+	
+	/* now lets populate the textviews with our new policies */
+	sediff_policy_file_textview_populate(p1_file, p1_textview);
+	sediff_policy_file_textview_populate(p2_file, p2_textview);
+
+	/* populate the 2 stat buffers */
+	sediff_policy_stats_textview_populate(p1, stats1, p1_file);
+	sediff_policy_stats_textview_populate(p2, stats2, p2_file);
+	
+	/* open is done set cursor back to a ptr */
+	gdk_window_set_cursor(GTK_WIDGET(sediff_app->window)->window, NULL);
+
+	return 0;
+	
+	err:
+	gdk_window_set_cursor(GTK_WIDGET(sediff_app->window)->window, NULL);
+	g_string_free(string,TRUE);
+	if (p1)
+		close_policy(p1);
+	if (p2)
+		close_policy(p2);
+	p1 = p2 = NULL;
+	return -1;
+}
+
+/* 
+   diff p1 and p2
+   also sets up the buffers used in gui so we can switch faster
+   returns -1 on error otherwise 0
+*/
+static int sediff_diff_policies(policy_t *p1, policy_t *p2)
+{
+	apol_diff_result_t *diff = NULL;
+	unsigned int opts = POLOPT_ALL;
+	GdkCursor *cursor = NULL;
+	GString *string = g_string_new("");
+	GtkWidget *container = NULL;
+	SEDiffTreeViewStore *tree_store = NULL;
+	GtkTreeModel *tree_model;
+	GtkTreeSelection *sel;
+	GtkTreeIter iter;
+	GtkNotebook *notebook1, *notebook2;
+	gchar **labels = NULL;
+	
+	if (p1 == NULL || p2 == NULL)
+		goto err;
+	
+	sediff_initialize_diff();
+	/* show our loading dialog */
+	sediff_load_dlg_show();
+	
+	/* set the cursor to a hourglass */
+	cursor = gdk_cursor_new(GDK_WATCH);
+	gdk_window_set_cursor(GTK_WIDGET(sediff_app->window)->window, cursor);
+	gdk_cursor_unref(cursor);
+	gdk_flush();
+	
+	while (gtk_events_pending ())
+		gtk_main_iteration ();
 	
 	/* diff and display requested info */
 	diff = apol_diff_policies(opts, p1, p2);
@@ -1197,40 +1306,80 @@ static apol_diff_result_t *sediff_diff_policies(const char *p1_file, const char 
 		message_display(sediff_app->window,GTK_MESSAGE_ERROR,string->str);
 		goto err;
 	}
-	
-	if (new_files) {
-		/* now that the diff worked lets keep these files */
-		if (sediff_app->p1_filename)
-			g_string_free(sediff_app->p1_filename,TRUE);
-		if (sediff_app->p2_filename) 
-			g_string_free(sediff_app->p2_filename,TRUE);
-		
-		sediff_app->p1_filename = g_string_new(p1_file);
-		sediff_app->p2_filename = g_string_new(p2_file);
-	}
 
 	/* load up the buffers */
 	txt_view_populate_buffers(diff->diff1,diff->diff2,diff->p1,diff->p2);
-
-	/* rename the policy tabs */
-	sediff_rename_policy_tabs(p1_file,p2_file);
-
-	g_string_free(string,TRUE);
 	
-	return diff;
+	/* get the scrolled window we are going to put the tree_store in */
+	container = glade_xml_get_widget(sediff_app->window_xml, "scrolledwindow_list");
+	g_assert(container);
+	if (sediff_app->dummy_view != NULL) {
+		/* Add a reference to the dummy view widget before removing it from the container so we can add it later */
+		sediff_app->dummy_view = gtk_widget_ref(sediff_app->dummy_view);
+		gtk_container_remove(GTK_CONTAINER(container), sediff_app->dummy_view);
+	}
+	
+	/* create the string to store in treeview */
+	g_string_printf(string,"Difference Summary|Classes & Perms %d|Types %d|Attributes %d|"
+			"Roles %d|Users %d|Booleans %d|TE Rules %d|RBAC Rules %d|Conditionals %d",
+			(sediff_app->summary.classes.added + sediff_app->summary.classes.removed + sediff_app->summary.classes.changed +
+			sediff_app->summary.permissions.added + sediff_app->summary.permissions.removed + sediff_app->summary.permissions.changed +
+			 sediff_app->summary.commons.added + sediff_app->summary.commons.removed + sediff_app->summary.commons.changed),
+			(sediff_app->summary.types.added + sediff_app->summary.types.removed + sediff_app->summary.types.changed),
+			(sediff_app->summary.attributes.added + sediff_app->summary.attributes.removed + sediff_app->summary.attributes.changed),
+			(sediff_app->summary.roles.added + sediff_app->summary.roles.removed + sediff_app->summary.roles.changed),
+			(sediff_app->summary.users.added + sediff_app->summary.users.removed + sediff_app->summary.users.changed),
+			(sediff_app->summary.booleans.added + sediff_app->summary.booleans.removed + sediff_app->summary.booleans.changed),	       
+			(sediff_app->summary.te_rules.added + sediff_app->summary.te_rules.removed + sediff_app->summary.te_rules.changed),	       
+			(sediff_app->summary.rallow.added + sediff_app->summary.rallow.removed + sediff_app->summary.rallow.changed +
+			 sediff_app->summary.rtrans.added + sediff_app->summary.rtrans.removed + sediff_app->summary.rtrans.changed),
+			(sediff_app->summary.conds.added + sediff_app->summary.conds.removed + sediff_app->summary.conds.changed));
+			
+	labels = g_strsplit(string->str,"|",-1);
+	sediff_tree_store_set_labels(labels);
+
+	g_strfreev(labels);
+	g_string_free(string,TRUE);
+
+	/* create a new tree_store */
+	tree_store = sediff_tree_store_new();
+	tree_store->diff_results = diff;
+	/* create the tree_view */
+	sediff_app->tree_view = sediff_tree_view_create_from_store(tree_store);
+		
+	notebook1 = (GtkNotebook *)glade_xml_get_widget(sediff_app->window_xml, "notebook1");
+	g_assert(notebook1);
+	notebook2 = (GtkNotebook *)glade_xml_get_widget(sediff_app->window_xml, "notebook2");
+	g_assert(notebook2);
+	
+	/* make it viewable */
+	gtk_container_add(GTK_CONTAINER(container), sediff_app->tree_view);
+	gtk_widget_show_all(container);
+	
+	/* select the first element in the tree */
+	tree_model = gtk_tree_view_get_model((GtkTreeView*)sediff_app->tree_view);
+	sel = gtk_tree_view_get_selection((GtkTreeView*)sediff_app->tree_view);
+	if (gtk_tree_model_get_iter_first(tree_model,&iter)) {
+		gtk_tree_selection_select_iter(sel,&iter);
+	}
+	/* get rid of the loading when done */
+	sediff_load_dlg_destroy();
+
+	/* diff is done set cursor back to a ptr */
+	cursor = gdk_cursor_new(GDK_LEFT_PTR);
+	if (sediff_app->window != NULL)
+		gdk_window_set_cursor(GTK_WIDGET(sediff_app->window)->window, cursor);
+	
+	return 0;
 err:
 	cursor = gdk_cursor_new(GDK_LEFT_PTR);
 	if (sediff_app->window != NULL)
-	gdk_window_set_cursor(GTK_WIDGET(sediff_app->window)->window, cursor);
+		gdk_window_set_cursor(GTK_WIDGET(sediff_app->window)->window, cursor);
 	gdk_cursor_unref(cursor);
 	gdk_flush();
 	g_string_free(string,TRUE);
-	if (p1)
-		close_policy(p1);
-	if (p2)
-		close_policy(p2);
-	p1 = p2 = NULL;
-	return NULL;
+	sediff_load_dlg_destroy();
+	return -1;
 }
 
 
@@ -2099,7 +2248,7 @@ static int txt_buffer_insert_te_line(GtkTextBuffer *txt, GtkTextIter *iter,
 	if (rule == NULL) { 
 		g_return_val_if_reached(-1); 
 	} 
-	g_string_printf(string, "%s%s", str,rule); 
+	g_string_printf(string, "%s%s", str, rule); 
 	gtk_text_buffer_insert_with_tags(txt, iter, string->str, -1, colortag, NULL);  
 	
 	free(rule); 
@@ -3271,7 +3420,7 @@ static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_i
 	g_string_printf(string, "\nCONDITIONALS CHANGED: %d \n",sediff_app->summary.conds.changed);
 	gtk_text_buffer_insert_with_tags_by_name(txt, &added_iter, string->str,-1, "header-tag", NULL); 
 
-       	return 0;
+	return 0;
 
 
  insert_cond_results_error:
@@ -3288,37 +3437,6 @@ static int txt_buffer_insert_sid_results(GtkTextBuffer *txt, GtkTextIter *txt_it
 }
 */
 
-
-/* in clearing buffers we need to remove the marks and the iters
-   but not the tags */
-static void sediff_clear_stored_buffer(GtkTextBuffer *txt)
-{
-	GtkTextMark *mark = NULL;
-
-	/* clear the text buffer of any data */
-	sediff_clear_text_buffer(txt);
-
-	/* remove the marks */
-	mark = gtk_text_buffer_get_mark(txt,"changed-mark");
-	if (mark)
-		gtk_text_buffer_delete_mark(txt,mark);
-	mark = gtk_text_buffer_get_mark(txt,"added-mark");
-	if (mark)
-		gtk_text_buffer_delete_mark(txt,mark);
-	mark = gtk_text_buffer_get_mark(txt,"holder-mark");
-	if (mark)
-		gtk_text_buffer_delete_mark(txt,mark);
-	mark = gtk_text_buffer_get_mark(txt,"local-changed-mark");
-	if (mark)
-		gtk_text_buffer_delete_mark(txt,mark);
-	mark = gtk_text_buffer_get_mark(txt,"local-added-mark");
-	if (mark)
-		gtk_text_buffer_delete_mark(txt,mark);
-	mark = gtk_text_buffer_get_mark(txt,"local-holder-mark");
-	if (mark)
-		gtk_text_buffer_delete_mark(txt,mark);
-	
-}
 
 /* Deletes the marks associated with tag ids
    Each tag in the te rules buffer table, if its a 
@@ -3344,62 +3462,6 @@ void cond_tag_foreach(GtkTextTag *tag,gpointer data)
 		if (mark)
 			gtk_text_buffer_delete_mark(te_txt,mark);
 	}
-}
-
-/* clear the marks in the conditional diff text buffer */
-static void sediff_clear_cond_marks()
-{
-	GtkTextBuffer *cond_txt = sediff_app->conditionals_buffer;
-	GtkTextBuffer *te_txt = sediff_app->te_buffer;
-	GtkTextTagTable *table = NULL;
-
-
-	if (cond_txt == NULL || te_txt == NULL)
-		return;
-	/* get the tag table */
-	table = gtk_text_buffer_get_tag_table(te_txt);		
-	if (table == NULL)
-		return;
-	/* loop through the tags in the table */
-	gtk_text_tag_table_foreach(table,cond_tag_foreach,cond_txt);
-}
-
-static void sediff_clear_stored_buffers()
-{
-
-	sediff_clear_cond_marks();
-
-	if (sediff_app->summary_buffer) {
-		sediff_clear_stored_buffer(GTK_TEXT_BUFFER(sediff_app->summary_buffer));
-	}
-	if (sediff_app->classes_buffer) {
-		sediff_clear_stored_buffer(GTK_TEXT_BUFFER(sediff_app->classes_buffer));
-	}
-	if (sediff_app->types_buffer) {
-		sediff_clear_stored_buffer(GTK_TEXT_BUFFER(sediff_app->types_buffer));
-	}
-	if (sediff_app->roles_buffer) {
-		sediff_clear_stored_buffer(GTK_TEXT_BUFFER(sediff_app->roles_buffer));
-	}
-	if (sediff_app->users_buffer) {
-		sediff_clear_stored_buffer(GTK_TEXT_BUFFER(sediff_app->users_buffer));
-	}
-	if (sediff_app->booleans_buffer) {
-		sediff_clear_stored_buffer(GTK_TEXT_BUFFER(sediff_app->booleans_buffer));
-	}
-	if (sediff_app->attribs_buffer) {
-		sediff_clear_stored_buffer(GTK_TEXT_BUFFER(sediff_app->attribs_buffer));
-	}
-	if (sediff_app->te_buffer) {
-		sediff_clear_stored_buffer(GTK_TEXT_BUFFER(sediff_app->te_buffer));
-	}
-	if (sediff_app->rbac_buffer) {
-		sediff_clear_stored_buffer(GTK_TEXT_BUFFER(sediff_app->rbac_buffer));
-	}
-	if (sediff_app->conditionals_buffer) {
-		sediff_clear_stored_buffer(GTK_TEXT_BUFFER(sediff_app->conditionals_buffer));
-	}
-
 }
 
 /*
@@ -3695,7 +3757,10 @@ static void txt_view_populate_buffers(apol_diff_t *stuff_removed,
 	GString *string = g_string_new("");
 	GtkTextIter end;
 
-	sediff_clear_stored_buffers();
+	/* first free any existing buffers */
+	sediff_free_stored_buffers();
+	
+	sediff_create_buffers();
 
  	/* case OPT_CLASSES: */
 	gtk_text_buffer_get_start_iter(sediff_app->classes_buffer, &end);
@@ -3739,7 +3804,6 @@ static void txt_view_populate_buffers(apol_diff_t *stuff_removed,
 	rt = txt_buffer_insert_boolean_results(sediff_app->booleans_buffer, &end,
 					       string, stuff_removed, stuff_added, 
 					       policy_old, policy_new);
-
 
 	/* case OPT_TE_RULES: */
 	g_string_truncate(string,0);
@@ -4203,20 +4267,22 @@ static int sediff_policy_file_textview_populate(const char *filename,GtkTextView
 	return 0;
 }
 
-void sediff_menu_on_reload_clicked(GtkMenuItem *menuitem, gpointer user_data)
+static void run_diff_clicked()
 {
-	GString *p1 = NULL;
-	GString *p2 = NULL;
-	if (sediff_app->p1_filename && sediff_app->p2_filename) {
-		p1 = g_string_new(sediff_app->p1_filename->str);
-		p2 = g_string_new(sediff_app->p2_filename->str);		
-		/* diff and load into GUI */ 
-		sediff_diff_and_load_policies(p1->str, p2->str, FALSE);
-		g_string_free(p1,TRUE);
-		g_string_free(p2,TRUE);
-	} else {
-		message_display(sediff_app->window, GTK_MESSAGE_ERROR, "A policy filename is empty! Could not reload.");	
-	}
+	if (sediff_app->p1_filename && sediff_app->p2_filename)	
+		sediff_diff_policies(sediff_app->p1, sediff_app->p2);
+	else
+		message_display(sediff_app->window, GTK_MESSAGE_ERROR, "A policy filename is empty! Could not reload.");		
+}
+
+void sediff_menu_on_rundiff_clicked(GtkMenuItem *menuitem, gpointer user_data)
+{
+	run_diff_clicked();
+}
+
+void sediff_toolbar_on_rundiff_button_clicked(GtkButton *button, gpointer user_data)
+{
+	run_diff_clicked();
 }
 
 void sediff_open_dialog_on_p1browse_button_clicked(GtkButton *button, gpointer user_data)
@@ -4281,8 +4347,8 @@ void sediff_open_dialog_on_cancel_button_clicked(GtkButton *button, gpointer use
 	sediff_app->open_dlg_xml = NULL;
 }
 
-void sediff_menu_on_open_clicked(GtkMenuItem *menuitem, gpointer user_data)
-{	
+static void sediff_open_button_clicked()
+{
 	GtkEntry *entry = NULL;
 	char *dir;
 	GString *path; 
@@ -4317,6 +4383,16 @@ void sediff_menu_on_open_clicked(GtkMenuItem *menuitem, gpointer user_data)
 			G_CALLBACK(sediff_open_dialog_on_window_destroy), sediff_app);
 		glade_xml_signal_autoconnect(sediff_app->open_dlg_xml);
 	}
+}
+
+void sediff_toolbar_on_open_button_clicked(GtkButton *button, gpointer user_data)
+{
+	sediff_open_button_clicked();
+}
+
+void sediff_menu_on_open_clicked(GtkMenuItem *menuitem, gpointer user_data)
+{	
+	sediff_open_button_clicked();
 }
 
 void sediff_menu_on_quit_clicked(GtkMenuItem *menuitem, gpointer user_data)
@@ -4420,6 +4496,8 @@ gboolean sediff_load_dlg_show()
 				   label);
 
 		gtk_widget_show_all (sediff_app->loading_dlg);
+		while (gtk_events_pending ())
+			gtk_main_iteration ();
 	}
 		g_signal_connect(G_OBJECT(sediff_app->loading_dlg), "delete_event", 
 			G_CALLBACK(sediff_loading_dialog_on_window_destroy), sediff_app);
@@ -4487,25 +4565,25 @@ void sediff_on_policy2_notebook_event_after(GtkWidget *widget, GdkEvent *event, 
 	}
 }
 
-static void sediff_initialize()
+static void sediff_initialize_diff()
 {
 	GtkTextView *textview;
 	GtkTextBuffer *txt;
 	GtkWidget *container = NULL;
 	GtkLabel *label = NULL;
-	
-	/* create our stored buffers this function will check to see if
-	      they already exist
-	*/
-	sediff_create_buffers();
+	GtkTreeSelection *selection = NULL;
 
-	/* delete tree_view if it existed before */
 	if (sediff_app->tree_view) {
+		/* unselect the selected items */
+		selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sediff_app->tree_view));
+		gtk_tree_selection_unselect_all(selection);
+
+		/* delete tree_view */
 		gtk_widget_destroy(GTK_WIDGET(sediff_app->tree_view));
 		sediff_app->tree_view = NULL;
 	}
 	
-	/* get the scrolled window and replace the tree_view with a blank dummy view */
+	/* get the scrolled window and replace the text_view with a blank dummy view */
 	container = glade_xml_get_widget(sediff_app->window_xml, "scrolledwindow_list");
 	g_assert(container);
 	if (sediff_app->dummy_view == NULL) {
@@ -4519,6 +4597,37 @@ static void sediff_initialize()
 		gtk_container_add(GTK_CONTAINER(container), sediff_app->dummy_view);
 		gtk_widget_show_all(container);					
 	}
+	
+	/* recreate our stored buffers */
+	sediff_free_stored_buffers();
+	sediff_create_buffers();
+	
+	
+	textview = GTK_TEXT_VIEW((glade_xml_get_widget(sediff_app->window_xml, "sediff_key_txt_view")));
+	g_assert(textview);
+	txt = gtk_text_view_get_buffer(textview);
+	g_assert(txt);
+	sediff_clear_text_buffer(txt);
+	
+	textview = GTK_TEXT_VIEW((glade_xml_get_widget(sediff_app->window_xml, "sediff_p1_results_txt_view")));
+	g_assert(textview);
+	txt = gtk_text_view_get_buffer(textview);
+	g_assert(txt);
+	sediff_clear_text_buffer(txt);
+	
+	label = (GtkLabel*)glade_xml_get_widget(sediff_app->window_xml, "line_label");
+	gtk_label_set_text(label, "");
+
+	label = (GtkLabel *)(glade_xml_get_widget(sediff_app->window_xml, "label_stats"));
+	gtk_label_set_text(label, "");
+}
+
+static void sediff_initialize_policies()
+{
+	GtkTextView *textview;
+	GtkTextBuffer *txt;
+	
+	sediff_initialize_diff();
 	
 	/* Grab the 2 policy textviews */
 	textview = (GtkTextView *)glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p1_text");
@@ -4552,154 +4661,7 @@ static void sediff_initialize()
 	txt = gtk_text_view_get_buffer(textview);
 	g_assert(txt);
 	sediff_clear_text_buffer(txt);
-	
-	textview = GTK_TEXT_VIEW((glade_xml_get_widget(sediff_app->window_xml, "sediff_key_txt_view")));
-	g_assert(textview);
-	txt = gtk_text_view_get_buffer(textview);
-	g_assert(txt);
-	sediff_clear_text_buffer(txt);
-	
-	textview = GTK_TEXT_VIEW((glade_xml_get_widget(sediff_app->window_xml, "sediff_p1_results_txt_view")));
-	g_assert(textview);
-	txt = gtk_text_view_get_buffer(textview);
-	g_assert(txt);
-	sediff_clear_text_buffer(txt);
-	
-	label = (GtkLabel*)glade_xml_get_widget(sediff_app->window_xml, "line_label");
-	gtk_label_set_text(label, "");
-
-	label = (GtkLabel *)(glade_xml_get_widget(sediff_app->window_xml, "label_stats"));
-	gtk_label_set_text(label, "");
 }
-
-/* diff p1_file and p2_file and load gui with the resulting data, return -1 if
-   fail on any dependencies */
-static int sediff_diff_and_load_policies(const char *p1_file, const char *p2_file, bool_t new_files)
-{
-	GtkTextView *p1_textview, *p2_textview;
-	GtkTextView *stats1, *stats2;
-	GtkWidget *container = NULL;
-	SEDiffTreeViewStore *tree_store = NULL;
-	apol_diff_result_t *diff_results = NULL;
-	GtkTreeModel *tree_model;
-	GtkTreeSelection *sel;
-	GtkTreeIter iter;
-	gchar **labels = NULL;
-	GString *string = g_string_new("");
-	GdkCursor *cursor = NULL;
-	GtkNotebook *notebook1, *notebook2;
-
-
-	sediff_initialize();
-	/* show our loading dialog while we load */
-	sediff_load_dlg_show();
-	
-	/* set the cursor to a hand */
-	cursor = gdk_cursor_new(GDK_WATCH);
-	gdk_window_set_cursor(GTK_WIDGET(sediff_app->loading_dlg)->window, cursor);	
-	gdk_window_set_cursor(GTK_WIDGET(sediff_app->window)->window, cursor);	
-	gdk_cursor_unref(cursor);
-	gdk_flush();
-
-	while (gtk_events_pending ())
-		gtk_main_iteration ();
-
-	/* diff the two policies */
-	diff_results = sediff_diff_policies(p1_file, p2_file, new_files);
-	if (!diff_results) {
-		/* get rid of the loading dialog on error */
-		sediff_load_dlg_destroy();
-		/* diff is done set cursor back to a ptr */
-		gdk_window_set_cursor(GTK_WIDGET(sediff_app->window)->window, NULL);	
-		return -1;
-	}
-	
-	/* get the scrolled window we are going to put the tree_store in */
-	container = glade_xml_get_widget(sediff_app->window_xml, "scrolledwindow_list");
-	g_assert(container);
-	if (sediff_app->dummy_view != NULL) {
-		/* Add a reference to the dummy view widget before removing it from the container so we can add it later */
-		sediff_app->dummy_view = gtk_widget_ref(sediff_app->dummy_view);
-		gtk_container_remove(GTK_CONTAINER(container), sediff_app->dummy_view);
-	}
-	
-	/* Grab the 2 policy textviews */
-	p1_textview = (GtkTextView *)glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p1_text");
-	g_assert(p1_textview);
-	p2_textview = (GtkTextView *)glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p2_text");
-	g_assert(p2_textview);
-	
-	stats1 = (GtkTextView *)glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p1_stats_text");
-	g_assert(stats1);
-	stats2 = (GtkTextView *)glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p2_stats_text");
-	g_assert(stats2);
-	
-	/* create the string to store in treeview */
-	g_string_printf(string,"Difference Summary|Classes & Perms %d|Types %d|Attributes %d|"
-			"Roles %d|Users %d|Booleans %d|TE Rules %d|RBAC Rules %d|Conditionals %d",
-			(sediff_app->summary.classes.added + sediff_app->summary.classes.removed + sediff_app->summary.classes.changed +
-			sediff_app->summary.permissions.added + sediff_app->summary.permissions.removed + sediff_app->summary.permissions.changed +
-			 sediff_app->summary.commons.added + sediff_app->summary.commons.removed + sediff_app->summary.commons.changed),
-			(sediff_app->summary.types.added + sediff_app->summary.types.removed + sediff_app->summary.types.changed),
-			(sediff_app->summary.attributes.added + sediff_app->summary.attributes.removed + sediff_app->summary.attributes.changed),
-			(sediff_app->summary.roles.added + sediff_app->summary.roles.removed + sediff_app->summary.roles.changed),
-			(sediff_app->summary.users.added + sediff_app->summary.users.removed + sediff_app->summary.users.changed),
-			(sediff_app->summary.booleans.added + sediff_app->summary.booleans.removed + sediff_app->summary.booleans.changed),	       
-			(sediff_app->summary.te_rules.added + sediff_app->summary.te_rules.removed + sediff_app->summary.te_rules.changed),	       
-			(sediff_app->summary.rallow.added + sediff_app->summary.rallow.removed + sediff_app->summary.rallow.changed +
-			 sediff_app->summary.rtrans.added + sediff_app->summary.rtrans.removed + sediff_app->summary.rtrans.changed),
-			(sediff_app->summary.conds.added + sediff_app->summary.conds.removed + sediff_app->summary.conds.changed));
-			
-  
-	labels = g_strsplit(string->str,"|",-1);
-	sediff_tree_store_set_labels(labels);
-
-	g_strfreev(labels);
-	g_string_free(string,TRUE);
-
-	/* create a new tree_store */
-	tree_store = sediff_tree_store_new();
-	tree_store->diff_results = diff_results;
-		
-	notebook1 = (GtkNotebook *)glade_xml_get_widget(sediff_app->window_xml, "notebook1");
-	g_assert(notebook1);
-	notebook2 = (GtkNotebook *)glade_xml_get_widget(sediff_app->window_xml, "notebook2");
-	g_assert(notebook2);
-	g_signal_connect_after(G_OBJECT(notebook1), "event-after", 
-			 G_CALLBACK(sediff_on_policy1_notebook_event_after), notebook1);
-	g_signal_connect_after(G_OBJECT(notebook2), "event-after", 
-			 G_CALLBACK(sediff_on_policy2_notebook_event_after), notebook2);
-				 
-	/* now lets populate the textviews with our new policies */
-	sediff_policy_file_textview_populate(p1_file, p1_textview);
-	sediff_policy_file_textview_populate(p2_file, p2_textview);
-
-	/* populate the 2 stat buffers */
-	sediff_policy_stats_textview_populate(tree_store->diff_results->p1, stats1,sediff_app->p1_filename->str);
-	sediff_policy_stats_textview_populate(tree_store->diff_results->p2, stats2,sediff_app->p2_filename->str);
-
-	/* create the tree_view */
-	sediff_app->tree_view = sediff_tree_view_create_from_store(tree_store);
-	
-	/* make it viewable */
-	gtk_container_add(GTK_CONTAINER(container), sediff_app->tree_view);
-	gtk_widget_show_all(container);
-	
-	/* select the first element in the tree */
-	tree_model = gtk_tree_view_get_model((GtkTreeView*)sediff_app->tree_view);
-	sel = gtk_tree_view_get_selection((GtkTreeView*)sediff_app->tree_view);
-	if (gtk_tree_model_get_iter_first(tree_model,&iter)) {
-		gtk_tree_selection_select_iter(sel,&iter);
-	}
-	/* get rid of the loading when done */
-	sediff_load_dlg_destroy();
-
-	/* diff is done set cursor back to a ptr */
-	gdk_window_set_cursor(GTK_WIDGET(sediff_app->window)->window, NULL);	
-
-	return 0;
-}
-
 
 void sediff_open_dialog_on_diff_button_clicked(GtkButton *button, gpointer user_data)
 {
@@ -4739,9 +4701,9 @@ void sediff_open_dialog_on_diff_button_clicked(GtkButton *button, gpointer user_
 	gdk_cursor_unref(cursor);
 	gdk_flush();
 
-	rt = sediff_diff_and_load_policies((const char*)p1_file, (const char*)p2_file, TRUE);
+	rt = sediff_load_policies((const char*)p1_file, (const char*)p2_file);
 
-	/* diff is done set cursor back to a ptr */
+	/* load is done set cursor back to a ptr */
 	cursor = gdk_cursor_new(GDK_LEFT_PTR);
 	gdk_window_set_cursor(GTK_WIDGET(sediff_app->open_dlg)->window, cursor);	
 	gdk_cursor_unref(cursor);
@@ -4775,7 +4737,7 @@ gboolean delayed_main(gpointer data)
 	const char *p1_file = filenames->p1_file->str;
 	const char *p2_file = filenames->p2_file->str;
 
-	sediff_diff_and_load_policies(p1_file,p2_file, TRUE);
+	sediff_load_policies(p1_file, p2_file);
 	g_string_free(filenames->p1_file,TRUE);
 	g_string_free(filenames->p2_file,TRUE);
 	return FALSE;
@@ -4930,6 +4892,7 @@ int main(int argc, char **argv)
 
 	gtk_set_locale();
 	gtk_init(&argc, &argv);
+	printf(path->str);
 	sediff_app->window_xml = glade_xml_new(path->str, MAIN_WINDOW_ID, NULL);
 	if (!sediff_app->window_xml) {
 		free(sediff_app);
@@ -4946,7 +4909,7 @@ int main(int argc, char **argv)
 		
 	glade_xml_signal_autoconnect(sediff_app->window_xml);
 	
-	sediff_initialize();
+	sediff_initialize_policies();
 	if (havefiles) 
 		g_idle_add(&delayed_main,&filenames);
 
@@ -4964,4 +4927,3 @@ int main(int argc, char **argv)
 	
 	return 0;
 }
-                          
