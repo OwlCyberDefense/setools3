@@ -6,7 +6,9 @@ MAKEFILE =  Makefile
 MAKE = make
 
 # If debug is zero, an optimized version is created
-DEBUG			= 0
+DEBUG			= 1
+# If GPROF is not zero, compile and link with gprof profiling data
+USEGPROF		= 1
 # Determine whether setools is linked dynamically with
 # internal libraries - the dynamic versions of the setools
 # libraries are always created and installed, this just determines
@@ -30,7 +32,7 @@ TCLVER		= $(shell env tclsh tcl_vars)
 TCL_LIBS	= -ltk$(TCLVER) -ltcl$(TCLVER) -ldl $(LIBS)
 INCLUDE_DIR	= $(DESTDIR)/usr/include
 
-LINKFLAGS	= 
+LINKFLAGS	=
 CC		?= gcc 
 YACC		= bison -y
 LEX		= flex -olex.yy.c
@@ -94,6 +96,11 @@ CFLAGS		= -Wall -O2 -fPIC $(TCL_INCLUDE) $(CC_DEFINES)
 else
 CFLAGS		= -Wall -g $(TCL_INCLUDE) $(CC_DEFINES)
 #CFLAGS		= -Wall -ansi -pedantic -g $(TCL_INCLUDE) $(CC_DEFINES)
+endif
+
+ifneq ($(USEGPROF), 0)
+CFLAGS 		+= -pg
+LINKFLAGS 	+= -pg
 endif
 
 INSTALL_HELPDIR = $(INSTALL_LIBDIR)
@@ -166,13 +173,13 @@ seuser: selinux_tool
 
 seuserx: selinux_tool
 	cd seuser; $(MAKE) seuserx;
-	
+
 sediff: selinux_tool
 	cd sediff; $(MAKE) sediff;
 
 sediffx: selinux_tool
 	cd sediff; $(MAKE) sediffx
-	
+
 sepcut: selinux_tool
 	cd sepct; $(MAKE) sepcut
 
@@ -187,7 +194,7 @@ libapol: selinux_tool
 
 libapol-tcl: selinux_tool
 	cd libapol; $(MAKE) libapol-tcl libapol-tclso; 
-	
+
 libsefs: selinux_tool
 ifeq ($(USE_LIBSEFS), 1)
 	cd libsefs; $(MAKE) libsefs libsefsso
@@ -210,7 +217,7 @@ $(BINDIR):
 
 install-apol: $(INSTALL_LIBDIR) $(BINDIR)
 	cd apol; $(MAKE) install; 
-	
+
 install-awish: $(INSTALL_LIBDIR) $(BINDIR)
 	cd awish; $(MAKE) install; 
 
@@ -220,7 +227,7 @@ install-seuserx: $(INSTALL_LIBDIR) $(BINDIR)
 
 install-sediffx: $(INSTALL_LIBDIR) $(BINDIR)
 	cd sediff; $(MAKE) install; 
-	
+
 # Non-GUI version only
 install-seuser: $(INSTALL_LIBDIR) $(BINDIR)
 	cd seuser; $(MAKE) install-nogui
@@ -230,7 +237,7 @@ install-sepcut: $(INSTALL_LIBDIR) $(BINDIR)
 
 install-secmds: $(INSTALL_LIBDIR) $(BINDIR)
 	cd secmds; $(MAKE) install
-	
+
 install-sediff: $(INSTALL_LIBDIR) $(BINDIR)
 	cd sediff; $(MAKE) install
 
@@ -263,7 +270,7 @@ ifeq ($(USE_LIBSEFS), 1)
 endif
 
 install-dev: install-libseuser install-libapol install-libseaudit install-libsefs
-	
+
 # Install the policy - this is a separate step to better support systems with
 # non-standard policies.
 install-seuser-policy: $(INSTALL_LIBDIR)
@@ -297,7 +304,7 @@ install-bwidget:
 # Install LogWatch config files to plug-in seaudit-report to LogWatch
 install-logwatch-files:
 	cd seaudit; $(MAKE) install-logwatch-service
-	
+
 # Re-generate all setools documentation in source tree
 docs:
 	cd docs-src; $(MAKE) docs
