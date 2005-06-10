@@ -8,7 +8,7 @@ MAKE = make
 # If debug is zero, an optimized version is created
 DEBUG			= 1
 # If GPROF is not zero, compile and link with gprof profiling data
-USEGPROF		= 1
+USEGPROF		= 0
 # Determine whether setools is linked dynamically with
 # internal libraries - the dynamic versions of the setools
 # libraries are always created and installed, this just determines
@@ -22,7 +22,7 @@ DYNAMIC 		= 0
 #	   and seuserx. 
 # Useful to create a version of apol that runs on non-selinux machines. 
 # Set this to 0 for non-selinux machines.
-USE_LIBSELINUX 		= 1
+USE_LIBSELINUX 		= 0
 
 LIBS		= -lfl -lm
 TCLVER		= $(shell env tclsh tcl_vars)
