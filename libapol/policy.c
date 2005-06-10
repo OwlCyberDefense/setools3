@@ -2146,8 +2146,10 @@ int does_av_rule_use_type(int idx, int type, unsigned char whichlist, bool_t do_
 	int ans;
 	
 	if(whichlist & SRC_LIST) {
+		if (type == 0) /* self not valid */
+			return FALSE;
 		if(rule->flags & (AVFLAG_SRC_STAR)) {
-			if(do_indirect) {
+			if(do_indirect ) {
 				(*cnt)++;
 				return TRUE;
 			}
@@ -2625,7 +2627,6 @@ int extract_types_from_te_rule(int rule_idx, int rule_type, unsigned char whichl
 	
 	*types = NULL;
 	*num_types = 0;
-	/* index 0 is self so need one more entry in array */
 	b_types = (bool_t *)calloc(policy->num_types,  sizeof(bool_t));
 	if(b_types == NULL) {
 		fprintf(stderr, "out of memory");
@@ -2637,6 +2638,8 @@ int extract_types_from_te_rule(int rule_idx, int rule_type, unsigned char whichl
 	if (((whichlist & SRC_LIST) && (flags & AVFLAG_SRC_STAR)) ||
 				((whichlist & TGT_LIST) && (flags & AVFLAG_TGT_STAR))) {
 		memset(b_types, TRUE, (policy->num_types) * sizeof(bool_t));
+		if ((whichlist & SRC_LIST) && (flags & AVFLAG_SRC_STAR))
+			b_types[0] = FALSE; /* self not valid*/
 	}
 
 	for(t = tlist; t != NULL; t = t->next) {
@@ -2664,7 +2667,8 @@ int extract_types_from_te_rule(int rule_idx, int rule_type, unsigned char whichl
 		for (i = 0; i < (policy->num_types); i++) 
 			b_types[i] = !b_types[i];
 	}
-
+	if ((whichlist & SRC_LIST) && (flags & AVFLAG_SRC_STAR))
+		b_types[0] = FALSE; /* self not valid*/
 	for (i = 0; i < (policy->num_types); i++) {
 		if (b_types[i]) {
 			if (add_i_to_a(i, num_types, types)){
