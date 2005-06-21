@@ -11,8 +11,15 @@
 #define SEDIFF_GUI_H
 
 #include "sediff_treemodel.h"
+#include "sediff_rename_types.h"
 #include <gtk/gtk.h>
 #include <glade/glade.h>
+
+#define GLADEFILE "sediff.glade"
+
+#define MAIN_WINDOW_ID 	       "sediff_main_window"
+#define OPEN_DIALOG_ID 	       "sediff_policies_dialog"
+#define RENAME_TYPES_DIALOG_ID "sediff_rename_types_dialog"
 
 typedef struct summary_node {
 	int added;
@@ -37,7 +44,7 @@ typedef struct sediff_summary {
 
 typedef struct sediff_app {
 	GtkWindow *window;		/* the main window */
-	GtkWindow *open_dlg;
+	GtkWindow *open_dlg; 
 	GtkWidget *loading_dlg;
 	GtkWidget *dummy_view;
 	GladeXML *window_xml;
@@ -59,6 +66,7 @@ typedef struct sediff_app {
 	GtkTextBuffer *conditionals_buffer;
 	GString *p1_filename;
 	GString *p2_filename;
+	struct sediff_rename_types *rename_types;
 	policy_t *p1;
 	policy_t *p2;
 	sediff_summary_t summary;

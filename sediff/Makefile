@@ -2,7 +2,7 @@
 
 LIBAPOL		= ../libapol/libapol.a
 INCLUDE		= -I.. -I../libapol
-GUI-OBJS	= sediff_gui.o sediff_treemodel.o utilgui.o
+GUI-OBJS	= sediff_gui.o sediff_treemodel.o utilgui.o sediff_rename_types.o
 GTK_CFLAGS      = `pkg-config --cflags libglade-2.0`
 GTK_LIBS        = `pkg-config --libs libglade-2.0`
 GLADE_FILES     = sediff.glade

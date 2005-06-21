@@ -22,7 +22,7 @@ DYNAMIC 		= 0
 #	   and seuserx. 
 # Useful to create a version of apol that runs on non-selinux machines. 
 # Set this to 0 for non-selinux machines.
-USE_LIBSELINUX 		= 0
+USE_LIBSELINUX 		= 1
 
 LIBS		= -lfl -lm
 TCLVER		= $(shell env tclsh tcl_vars)

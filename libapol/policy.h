@@ -410,7 +410,7 @@ const char* get_policy_version_name(int policy_version);
 #define add_common_perm_to_class(cls_idx, cp_idx, policy) ((is_valid_obj_class_idx(cls_idx, policy) && is_valid_common_perm_idx(cp_idx, policy)) ? policy->obj_classes[cls_idx].common_perms = cp_idx: -1 )
 
 int add_type(char *type, policy_t *policy);
-int add_alias(int type_idx, char *alias, policy_t *policy);
+int add_alias(int type_idx, const char *alias, policy_t *policy);
 int add_attrib_to_type(int type_idx, char *token, policy_t *policy);
 int insert_ta_item(ta_item_t *newitem, ta_item_t **list);
 int add_name(char *name, name_item_t **list);
@@ -485,9 +485,10 @@ bool_t is_valid_type(policy_t *policy, int type, bool_t self_allowed);
 bool_t is_valid_obj_class(policy_t *policy, int obj_class);
 
 int add_type(char *type, policy_t *policy);
-int add_alias(int type_idx, char *alias, policy_t *policy);
+int add_alias(int type_idx, const char *alias, policy_t *policy);
+int remove_alias(int type_idx, const char *alias, policy_t *policy);
 int add_attrib_to_type(int type_idx, char *token, policy_t *policy);
-int init_policy( policy_t **policy_ptr);
+int init_policy(policy_t **policy_ptr);
 int free_policy(policy_t **policy_ptr);
 
 int get_type_idx(const char *name, policy_t *policy);
