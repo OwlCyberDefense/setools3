@@ -36,16 +36,11 @@
 #ifndef COPYRIGHT_INFO
         #define COPYRIGHT_INFO "Copyright (C) 2004-2005 Tresys Technology, LLC"
 #endif
+
 #define SEDIFF_GUI_PROG	"sediffx"
-
-
-#define GLADEFILE 	"sediff.glade"
-#define MAIN_WINDOW_ID 	"sediff_main_window"
-#define OPEN_DIALOG_ID 	"sediff_dialog"
-#define LOADING_DIALOG_ID "sediff_loading"
+#define LOADING_DIALOG_ID      "sediff_loading"
 #define MAXMYFILELEN     100
 #define TABSIZE          4
-
 
 sediff_app_t *sediff_app = NULL;
 
@@ -100,7 +95,7 @@ static void txt_view_populate_buffers(apol_diff_t *stuff_removed,
 static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy_option);
 static void sediff_populate_buffer_hdrs();
 static void sediff_update_status_bar();
-static void sediff_rename_policy_tabs(const char *p1,const char *p2) ;
+static void sediff_rename_policy_tabs(GString *p1, GString *p2) ;
 static void txt_buffer_insert_summary_results();
 static char *sediff_get_tab_spaces(int numspaces);
 static void sediff_loading_dialog_on_window_destroy(GtkWidget *widget, GdkEvent *event, gpointer user_data);
@@ -1122,7 +1117,7 @@ static int fn_binpol_ver(const char *fn)
 }
 
 
-static void sediff_rename_policy_tabs(const char *p1,const char *p2) 
+static void sediff_rename_policy_tabs(GString *p1, GString *p2) 
 {
 	const char *fname1; 
 	const char *fname2; 
@@ -1132,22 +1127,50 @@ static void sediff_rename_policy_tabs(const char *p1,const char *p2)
 
 	notebook = GTK_NOTEBOOK(glade_xml_get_widget(sediff_app->window_xml, "main_notebook"));
 
-	if (rindex(p1,'/')) {
-		fname1 = rindex(p1,'/')+1;
+	if (p1 == NULL || p1->str == NULL) {
+		p1_label = gtk_label_new("Policy 1");
+		gtk_widget_show(p1_label);
+		gtk_notebook_set_tab_label(notebook, gtk_notebook_get_nth_page(notebook, 1), p1_label);
+	} else if (rindex(p1->str,'/')) {
+		fname1 = rindex(p1->str,'/')+1;
 		g_string_printf(string,"Policy 1: %s",fname1);
 		p1_label = gtk_label_new (string->str);
 		gtk_widget_show (p1_label);
 		gtk_notebook_set_tab_label (notebook, gtk_notebook_get_nth_page (notebook, 1), p1_label);
 	}
-
-	if (rindex(p2,'/')) {
-		fname2 = rindex(p2,'/')+1;
+	
+	if (p2 == NULL || p2->str == NULL) {
+		p2_label = gtk_label_new("Policy 2");
+		gtk_widget_show(p2_label);
+		gtk_notebook_set_tab_label(notebook, gtk_notebook_get_nth_page(notebook, 2), p2_label);
+	} else if (rindex(p2->str,'/')) {
+		fname2 = rindex(p2->str,'/')+1;
 		g_string_printf(string,"Policy 2: %s",fname2);
 		p2_label = gtk_label_new (string->str);
 		gtk_widget_show (p2_label);
 		gtk_notebook_set_tab_label (notebook, gtk_notebook_get_nth_page (notebook, 2), p2_label);
 	}
 	g_string_free(string,TRUE);
+}
+
+static void sediff_set_open_policies_gui_state(gboolean open)
+{
+	GtkWidget *widget = NULL;
+
+	widget = glade_xml_get_widget(sediff_app->window_xml, "toolbutton_rename_types");
+	g_assert(widget);
+	gtk_widget_set_sensitive(widget, open);
+	widget = glade_xml_get_widget(sediff_app->window_xml, "toolbutton_run_diff");
+	g_assert(widget);
+	gtk_widget_set_sensitive(widget, open);
+	widget = glade_xml_get_widget(sediff_app->window_xml, "menu_rename_types");
+	g_assert(widget);
+	gtk_widget_set_sensitive(widget, open);
+	widget = glade_xml_get_widget(sediff_app->window_xml, "menu_run_diff");
+	g_assert(widget);
+	gtk_widget_set_sensitive(widget, open);
+
+	sediff_rename_policy_tabs(sediff_app->p1_filename, sediff_app->p2_filename);
 }
 
 static int sediff_load_policies(const char *p1_file, const char *p2_file)
@@ -1161,14 +1184,14 @@ static int sediff_load_policies(const char *p1_file, const char *p2_file)
 	policy_t *p1;
 	policy_t *p2;
 
-	sediff_initialize_policies();
-
 	/* set the cursor to a hourglass */
 	cursor = gdk_cursor_new(GDK_WATCH);
 	gdk_window_set_cursor(GTK_WIDGET(sediff_app->window)->window, cursor);
 	gdk_cursor_unref(cursor);
 	gdk_flush();
-	
+
+	sediff_initialize_policies();
+
 	while (gtk_events_pending ())
 		gtk_main_iteration ();
 		
@@ -1217,9 +1240,7 @@ static int sediff_load_policies(const char *p1_file, const char *p2_file)
 	sediff_app->p2_filename = g_string_new(p2_file);
 	sediff_app->p1 = p1;
 	sediff_app->p2 = p2;
-	
-	sediff_rename_policy_tabs(p1_file, p2_file);
-	
+		
 	/* Grab the 2 policy textviews */
 	p1_textview = (GtkTextView *)glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p1_text");
 	g_assert(p1_textview);
@@ -1251,6 +1272,7 @@ static int sediff_load_policies(const char *p1_file, const char *p2_file)
 	/* open is done set cursor back to a ptr */
 	gdk_window_set_cursor(GTK_WIDGET(sediff_app->window)->window, NULL);
 
+	sediff_set_open_policies_gui_state(TRUE);
 	return 0;
 	
 	err:
@@ -1261,6 +1283,7 @@ static int sediff_load_policies(const char *p1_file, const char *p2_file)
 	if (p2)
 		close_policy(p2);
 	p1 = p2 = NULL;
+	sediff_set_open_policies_gui_state(FALSE);
 	return -1;
 }
 
@@ -4066,11 +4089,11 @@ static void sediff_callbacks_free_elem_data(gpointer data, gpointer user_data)
 static void sediff_destroy(sediff_app_t *sediff_app)
 {
 
-	g_assert(sediff_app != NULL);
+	if (sediff_app == NULL)
+		return;
 	
-	if (sediff_app->dummy_view && gtk_widget_get_parent(GTK_WIDGET(sediff_app->dummy_view)) == NULL) {
+	if (sediff_app->dummy_view && gtk_widget_get_parent(GTK_WIDGET(sediff_app->dummy_view)) == NULL)
 		gtk_widget_unref(sediff_app->dummy_view);
-	}
 	if (sediff_app->tree_view != NULL) 
 		gtk_widget_destroy(GTK_WIDGET(sediff_app->tree_view));
 	if (sediff_app->window != NULL)
@@ -4087,7 +4110,15 @@ static void sediff_destroy(sediff_app_t *sediff_app)
 		g_string_free(sediff_app->p1_filename,TRUE);
 	if (sediff_app->p2_filename) 
 		g_string_free(sediff_app->p2_filename,TRUE);
-	
+	if (sediff_app->rename_types) {
+		sediff_rename_types_unref_members(sediff_app->rename_types);
+		free(sediff_app->rename_types);
+	}
+	if (sediff_app->p1)
+		close_policy(sediff_app->p1);
+	if (sediff_app->p2)
+		close_policy(sediff_app->p2);
+
 	g_list_foreach(sediff_app->callbacks, &sediff_callbacks_free_elem_data, NULL);
 	g_list_free(sediff_app->callbacks);
 
@@ -4359,7 +4390,7 @@ static void sediff_open_button_clicked()
 		
 		dir = find_file(GLADEFILE);
 		if (!dir){
-			fprintf(stderr, "Could not find sediff.glade!");
+			fprintf(stderr, "Could not find %s!", GLADEFILE);
 			return;
 		}
 
@@ -4385,7 +4416,25 @@ static void sediff_open_button_clicked()
 	}
 }
 
-void sediff_toolbar_on_open_button_clicked(GtkButton *button, gpointer user_data)
+static void sediff_rename_types_window_show()
+{
+	if (sediff_app->rename_types == NULL)
+		sediff_app->rename_types = sediff_rename_types_new(sediff_app);
+	g_assert(sediff_app->rename_types);
+	sediff_rename_types_display_window(sediff_app->rename_types);
+}
+
+void sediff_menu_on_renametypes_clicked(GtkMenuItem *menuitem, gpointer user_data)
+{
+	sediff_rename_types_window_show();
+}
+
+void sediff_toolbar_on_renametypes_button_clicked(GtkToolButton *button, gpointer user_data)
+{
+	sediff_rename_types_window_show();
+}
+
+void sediff_toolbar_on_open_button_clicked(GtkToolButton *button, gpointer user_data)
 {
 	sediff_open_button_clicked();
 }
@@ -4628,7 +4677,15 @@ static void sediff_initialize_policies()
 	GtkTextBuffer *txt;
 	
 	sediff_initialize_diff();
+	sediff_rename_types_unref_members(sediff_app->rename_types);
 	
+	if (sediff_app->p1)
+		close_policy(sediff_app->p1);
+	if (sediff_app->p2)
+		close_policy(sediff_app->p2);
+	sediff_app->p1 = NULL;
+	sediff_app->p2 = NULL;
+
 	/* Grab the 2 policy textviews */
 	textview = (GtkTextView *)glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p1_text");
 	g_assert(textview);
@@ -4875,7 +4932,7 @@ int main(int argc, char **argv)
 	glade_init();
 	dir = find_file(GLADEFILE);
 	if (!dir){
-		fprintf(stderr, "Could not find sediff.glade!");
+		fprintf(stderr, "Could not find %s!", GLADEFILE);
 		return -1;
 	}
 
@@ -4912,6 +4969,8 @@ int main(int argc, char **argv)
 	sediff_initialize_policies();
 	if (havefiles) 
 		g_idle_add(&delayed_main,&filenames);
+	else
+		sediff_set_open_policies_gui_state(FALSE);
 
 	/* grab the text buffers for our text views */
 	textview = GTK_TEXT_VIEW(glade_xml_get_widget(sediff_app->window_xml, "sediff_p1_results_txt_view"));
