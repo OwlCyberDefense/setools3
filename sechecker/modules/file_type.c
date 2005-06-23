@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <semantic/avsemantics.h>
 
 static sechk_lib_t *library;
 
@@ -234,7 +235,6 @@ int file_type_init(sechk_module_t *mod, policy_t *policy)
 int file_type_run(sechk_module_t *mod, policy_t *policy) 
 {
 	file_type_data_t *datum;
-	char *fc_file_path = NULL;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
 	sechk_result_t *res = NULL;
