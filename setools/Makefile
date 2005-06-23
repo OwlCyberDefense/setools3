@@ -1,9 +1,9 @@
 # SE Tools Main makefile
 
-TOPDIR		= $(shell pwd)
+TOPDIR	 = $(shell pwd)
 
-MAKEFILE =  Makefile
-MAKE = make
+MAKEFILE = Makefile
+MAKE 	 = make
 
 # If debug is zero, an optimized version is created
 DEBUG			= 1
@@ -186,6 +186,9 @@ sepcut: selinux_tool
 seaudit: selinux_tool
 	cd seaudit; $(MAKE) all	
 
+sechecker: selinux_tool
+	cd sechecker; $(MAKE) sechecker
+
 secmds: selinux_tool
 	cd secmds; $(MAKE) all
 
@@ -354,6 +357,7 @@ clean: test-clean
 	cd secmds; $(MAKE) clean
 	cd libseaudit; $(MAKE) clean
 	cd sediff; $(MAKE) clean
+	cd sechecker; $(MAKE) clean
 	rm -f *~
 	rm -f lib/*.a lib/*.so lib/*.so.1
 
@@ -369,6 +373,7 @@ bare: test-bare
 	cd secmds; $(MAKE) bare
 	cd libseaudit; $(MAKE) bare
 	cd sediff; $(MAKE) bare
+	cd sechecker; $(MAKE) bare
 	rm -f *~
 	rm -rf ./lib
 	cd libseaudit; $(MAKE) bare
