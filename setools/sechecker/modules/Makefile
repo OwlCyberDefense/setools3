@@ -1,11 +1,12 @@
-MODS = $(patsubst %.c, %.o, $(wildcard ./*.c))
-INCLUDES+= -I../../libapol -I..
+MODS		= $(patsubst %.c, %.o, $(wildcard ./*.c))
+LIBXML_FLAGS    = `pkg-config --cflags libxml-2.0`
+INCLUDES	+= -I../../libapol -I..
+
 
 all: $(MODS)
-	
 
 %.o: %.c %.h
-	$(CC) $(CFLAGS) $(INCLUDES) -c $<
+	$(CC) $(CFLAGS) $(INCLUDES) $(LIBXML_FLAGS) -c $<
 
 clean: 
 	rm -f *.o 
