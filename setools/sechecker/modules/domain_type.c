@@ -13,6 +13,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <semantic/avsemantics.h>
 
 static sechk_lib_t *library;
 
