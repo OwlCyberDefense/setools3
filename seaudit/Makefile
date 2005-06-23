@@ -37,7 +37,7 @@ seaudit: $(OBJS) $(SEAUDIT_LIBS) $(GTK-SOURCEVIEW-OBJS) $(SEAUDIT_REPORT_BACKEND
 
 seaudit-report: $(SEAUDIT_REPORT_BACKEND) seaudit-report.o $(SEAUDIT_LIBS) 
 	$(CC) $(INCLUDE) $(LINKFLAGS) -o $@ $(SEAUDIT_REPORT_BACKEND) seaudit-report.o $(SEAUDIT_LIBS) $(LIBXML_LIBS) $(LIBS) 
-		
+
 ../libseaudit/libseaudit.a:
 	cd ../libseaudit; $(MAKE) libseaudit
 
@@ -71,4 +71,4 @@ clean:
 	rm -f *.o seaudit seaudit-report *~ core* *.bak *.gladep
 
 bare: clean
-	
+

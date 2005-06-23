@@ -16,7 +16,6 @@
 #include <stdio.h>
 #include <string.h> 
 
-
 sechk_lib_t *new_sechk_lib(char *policyfilelocation, char *conffilelocation, unsigned char output_override) 
 {
 	sechk_lib_t *lib = NULL;
