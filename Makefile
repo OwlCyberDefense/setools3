@@ -23,6 +23,9 @@ DYNAMIC 		= 0
 # Useful to create a version of apol that runs on non-selinux machines. 
 # Set this to 0 for non-selinux machines.
 USE_LIBSELINUX 		= 1
+# if PERFORM_TEST is 1 libraries will be compiled with performance tests
+# this is for testing only 
+PERFORM_TEST            = 0
 
 LIBS		= -lfl -lm
 TCLVER		= $(shell env tclsh tcl_vars)
@@ -53,6 +56,7 @@ DEFAULT_LOG_FILE = /var/log/messages
 # Compile options
 # -DAPOL_PERFORM_TEST	
 ##		simple performance measure tests (shouldn't normally use)
+##              set PERFORM_TEST above to 1 to use
 # -DCONFIG_SECURITY_SELINUX_MLS 
 #		compiles library to be compatible with MLS 
 ##		in the policy (experimental, see Readme)
@@ -89,6 +93,10 @@ endif
 
 ifeq ($(USE_LIBSEFS), 1)
 CC_DEFINES += -DLIBSEFS
+endif
+
+ifeq ($(PERFORM_TEST), 1)
+CC_DEFINES += -DAPOL_PERFORM_TEST
 endif
 
 ifeq ($(DEBUG), 0)
