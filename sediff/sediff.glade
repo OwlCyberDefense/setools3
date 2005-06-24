@@ -174,7 +174,6 @@
 
 	  <child>
 	    <widget class="GtkToolButton" id="toolbutton4">
-	      <property name="width_request">82</property>
 	      <property name="visible">True</property>
 	      <property name="label" translatable="yes">_Open Policies</property>
 	      <property name="use_underline">True</property>
@@ -192,7 +191,6 @@
 
 	  <child>
 	    <widget class="GtkToolButton" id="toolbutton_rename_types">
-	      <property name="width_request">82</property>
 	      <property name="visible">True</property>
 	      <property name="label" translatable="yes">Rename _Types</property>
 	      <property name="use_underline">True</property>
@@ -210,7 +208,6 @@
 
 	  <child>
 	    <widget class="GtkToolButton" id="toolbutton_run_diff">
-	      <property name="width_request">82</property>
 	      <property name="visible">True</property>
 	      <property name="label" translatable="yes">_Run Diff</property>
 	      <property name="use_underline">True</property>
