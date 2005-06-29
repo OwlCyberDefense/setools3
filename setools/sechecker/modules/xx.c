@@ -115,6 +115,7 @@ int xx_init(sechk_module_t *mod, policy_t *policy)
 	sechk_opt_t *opt = NULL;
 	xx_data_t *datum = NULL;
 	bool_t header = TRUE;
+	int pol_ver = POL_VER_UNKNOWN;
 
 	if (!mod || !policy) {
 		fprintf(stderr, "xx_init failed: invalid parameters\n");
@@ -132,7 +133,7 @@ int xx_init(sechk_module_t *mod, policy_t *policy)
 	}
 	mod->data = datum;
 
-	datum->outformat = library->conf->outformat;
+	datum->outformat = library->outformat;
 	datum->mod_header = strdup("");/* TODO: add header text */
 
 	opt = mod->options;
@@ -146,6 +147,29 @@ int xx_init(sechk_module_t *mod, policy_t *policy)
 					fprintf(stderr, "xx_init Warning: module required binary policy but was given source, results may not be complete\n");
 			} else {
 				fprintf(stderr, "xx_init failed: invalid policy type specification %s\n", opt->value);
+				return -1;
+			}
+		} else if (!strcmp(opt->name, "pol_ver")) {
+			pol_ver = atoi(opt->value);
+			if (pol_ver < 11)
+				pol_ver = POL_VER_PRE_11;
+			else if (pol_ver < 15)
+				pol_ver = POL_VER_12;
+			else if (pol_ver < 16)
+				pol_ver = POL_VER_15;
+			else if (pol_ver == 16)
+				pol_ver = POL_VER_16;
+			else if (pol_ver == 17)
+				pol_ver = POL_VER_17;
+			else if (pol_ver == 18)
+				pol_ver = POL_VER_18;
+			else if (pol_ver > 18)
+				pol_ver = POL_VER_19;
+			else
+				pol_ver = POL_VER_UNKNOWN;
+			if (policy->version < pol_ver) {
+				fprintf(stderr, "xx_init failed: module requires newer policy version\n");
+				return -1;
 			}
 		} else if (!strcmp(opt->name, "output_type")) {
 			if (!strcmp(opt->value, "full")) {

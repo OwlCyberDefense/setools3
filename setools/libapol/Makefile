@@ -3,7 +3,7 @@
 LIB-OBJ	= policy.o policy-query.o policy-io.o queue.o util.o clone.o y.tab.o lex.yy.o
 LIB-OBJ +=  avl-util.o policy-avl.o render.o analysis.o perm-map.o cond.o infoflow.o poldiff.o
 LIB-OBJ +=  flowassert.o flowassert_scan.o flowassert_parse.o symtable.o
-LIB-OBJ +=  relabel_analysis.o
+LIB-OBJ +=  relabel_analysis.o file_contexts.o
 LIB-OBJ +=  binpol/binpol.o binpol/bpmaps.o binpol/fbuf.o binpol/ebitmap.o
 LIB-OBJ +=  semantic/avhash.o semantic/avsemantics.o
 
