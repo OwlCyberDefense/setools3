@@ -13,7 +13,6 @@ typedef struct file_type_data {
 	char		*mod_header;
 	int		*file_type_attribs;
 	int		num_file_type_attribs;
-	char		*fc_path;
 	unsigned char	outformat;
 } file_type_data_t;
 
