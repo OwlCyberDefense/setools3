@@ -10,6 +10,7 @@
 #include "policy.h"
 #include "file_type.h"
 #include "render.h"
+#include "file_contexts.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -131,6 +132,7 @@ int file_type_init(sechk_module_t *mod, policy_t *policy)
 	file_type_data_t *datum = NULL;
 	bool_t header = TRUE;
 	int attr = -1, retv;
+	int pol_ver = POL_VER_UNKNOWN;
 
 	if (!mod || !policy) {
 		fprintf(stderr, "file_type_init failed: invalid parameters\n");
@@ -148,7 +150,7 @@ int file_type_init(sechk_module_t *mod, policy_t *policy)
 	}
 	mod->data = datum;
 
-	datum->outformat = library->conf->outformat;
+	datum->outformat = library->outformat;
 	datum->mod_header = strdup("Finds all types in the policy treated as a file type\nA type is considered a file type if any of the following is true:\n   It has an attribute associated with file types\n   It is the source of a rule to allow filesystem associate\n   It is the default type of a type transition rule for an object class other than process\n   It is specified in a context in the file_contexts file\n\n");
 
 	opt = mod->options;
@@ -162,6 +164,29 @@ int file_type_init(sechk_module_t *mod, policy_t *policy)
 					fprintf(stderr, "file_type_init Warning: module required binary policy but was given source, results may not be complete\n");
 			} else {
 				fprintf(stderr, "file_type_init failed: invalid policy type specification %s\n", opt->value);
+				return -1;
+			}
+		} else if (!strcmp(opt->name, "pol_ver")) {
+			pol_ver = atoi(opt->value);
+			if (pol_ver < 11)
+				pol_ver = POL_VER_PRE_11;
+			else if (pol_ver < 15)
+				pol_ver = POL_VER_12;
+			else if (pol_ver < 16)
+				pol_ver = POL_VER_15;
+			else if (pol_ver == 16)
+				pol_ver = POL_VER_16;
+			else if (pol_ver == 17)
+				pol_ver = POL_VER_17;
+			else if (pol_ver == 18)
+				pol_ver = POL_VER_18;
+			else if (pol_ver > 18)
+				pol_ver = POL_VER_19;
+			else
+				pol_ver = POL_VER_UNKNOWN;
+			if (policy->version < pol_ver) {
+				fprintf(stderr, "file_type_init failed: module requires newer policy version\n");
+				return -1;
 			}
 		} else if (!strcmp(opt->name, "output_type")) {
 			if (!strcmp(opt->value, "full")) {
@@ -188,46 +213,11 @@ int file_type_init(sechk_module_t *mod, policy_t *policy)
 			} else {
 				fprintf(stderr, "file_type_init Warning: attribute %s not defined, ignoring\n", opt->value);
 			}
-		} else if (!strcmp(opt->name, "file_contexts_path")) {
-			datum->fc_path = strdup(opt->value);
 		}
 		opt = opt->next;
 	}
 	if (!header)
 		datum->outformat &= ~(SECHK_OUT_HEADER);
-	if (!datum->fc_path) {
-		if (library->conf->policy_src_tree_path) {
-			datum->fc_path = (char*)calloc(1+strlen("/src/policy/file_contexts/file_contexts")+strlen(library->conf->policy_src_tree_path), sizeof(char));
-			if (!datum->fc_path) {
-				fprintf(stderr, "file_type_init failed: out of memory\n");
-				return -1;
-			}
-			strcat(datum->fc_path, library->conf->policy_src_tree_path);
-			strcat(datum->fc_path, "/src/policy/file_contexts/file_contexts");
-			if (access(datum->fc_path, F_OK)) {
-				free(datum->fc_path);
-				datum->fc_path = (char*)calloc(1+strlen("/contexts/files/file_contexts")+strlen(library->conf->policy_src_tree_path), sizeof(char));
-				if (!datum->fc_path) {
-					fprintf(stderr, "file_type_init failed: out of memory\n");
-					return -1;
-				}
-				strcat(datum->fc_path, library->conf->policy_src_tree_path);
-				strcat(datum->fc_path, "/contexts/files/file_contexts");
-				if (access(datum->fc_path, F_OK)) {
-					fprintf(stderr, "file_type_init Warning: unable to locate file_contexts file, results may not be complete\n");
-					free(datum->fc_path);
-					datum->fc_path = NULL;
-				}
-			}
-		} else {
-			fprintf(stderr, "file_type_init Warning: policy tree root not specified\n   Try running with -p option.\n");
-		}
-	}
-	if (datum->fc_path && access(datum->fc_path, R_OK)) {
-		fprintf(stderr, "file_type_init Warning: permission to read file_contexts file denied for\n   %s\n   results may not be complete\n", datum->fc_path);
-		free(datum->fc_path);
-		datum->fc_path = NULL;
-	}
 
 	return 0;
 }
@@ -247,7 +237,6 @@ int file_type_run(sechk_module_t *mod, policy_t *policy)
 	avh_rule_t *hash_rule = NULL;
 	char *buff = NULL;
 	int buff_sz;
-	FILE *fc_file = NULL;
 	int *attribs = NULL, num_attribs = 0;
 
 	/* TODO: vars */
@@ -290,14 +279,17 @@ int file_type_run(sechk_module_t *mod, policy_t *policy)
 		}
 	}
 
-	if (datum->fc_path) {
-		fc_file = fopen(datum->fc_path, "r");
-		if (!fc_file) {
-			fprintf(stderr, "file_type_run Warning: error opening file_contexts file,\n   this portion of the module will be skipped\n");
+	if (!library->fc_entries) {
+		if (library->fc_path) {
+			retv = parse_file_contexts_file(library->fc_path, &(library->fc_entries), &(library->num_fc_entries), policy);
+			if (retv) {
+				fprintf(stderr, "file_type_run Warning: unable to process file_contexts file\n");
+			}
 		} else {
-			retv = 0;
+			fprintf(stderr, "file_type_run Warning: unable to find file_contexts file\n");
 		}
 	}
+
 
 	/* head insert for item LL so walk backward to preserve order */
 	for (i = policy->num_types - 1; i; i--) {
@@ -420,8 +412,102 @@ int file_type_run(sechk_module_t *mod, policy_t *policy)
 		}
 
 		/* assigned in fc check */
-		if (fc_file) {
-			i=i;
+		if (library->fc_entries) {
+			for (j=0; j < library->num_fc_entries; j++) {
+				if (library->fc_entries[j].context && library->fc_entries[j].context->type == i) {
+					buff_sz = 1;
+					buff_sz += strlen(library->fc_entries[j].path);
+					switch (library->fc_entries[j].filetype) {
+					case FILETYPE_DIR: /* Directory */
+					case FILETYPE_CHR: /* Character device */
+					case FILETYPE_BLK: /* Block device */
+					case FILETYPE_REG: /* Regular file */
+					case FILETYPE_FIFO: /* FIFO */
+					case FILETYPE_LNK: /* Symbolic link */
+					case FILETYPE_SOCK: /* Socket */
+						buff_sz += 4;
+						break;
+					case FILETYPE_ANY: /* any type */
+						buff_sz += 2;
+						break;
+					case FILETYPE_NONE: /* none */
+					default:
+						fprintf(stderr, "file_type_run failed: error processing file context entries\n");
+						goto file_type_run_fail;
+						break;
+					}
+					if (library->fc_entries[j].context) {
+						buff_sz += (strlen(policy->users[library->fc_entries[j].context->user].name) + 1);
+						buff_sz += (strlen(policy->roles[library->fc_entries[j].context->role].name) + 1);
+						buff_sz += strlen(policy->types[library->fc_entries[j].context->type].name);
+					} else {
+						buff_sz += strlen("<<none>>");
+					}
+					buff = (char*)calloc(buff_sz, sizeof(char));
+					strcat(buff, library->fc_entries[j].path);
+					switch (library->fc_entries[j].filetype) {
+					case FILETYPE_DIR: /* Directory */
+						strcat(buff, "\t-d\t");
+						break;
+					case FILETYPE_CHR: /* Character device */
+						strcat(buff, "\t-c\t");
+						break;
+					case FILETYPE_BLK: /* Block device */
+						strcat(buff, "\t-b\t");
+						break;
+					case FILETYPE_REG: /* Regular file */
+						strcat(buff, "\t--\t");
+						break;
+					case FILETYPE_FIFO: /* FIFO */
+						strcat(buff, "\t-p\t");
+						break;
+					case FILETYPE_LNK: /* Symbolic link */
+						strcat(buff, "\t-l\t");
+						break;
+					case FILETYPE_SOCK: /* Socket */
+						strcat(buff, "\t-s\t");
+						break;
+					case FILETYPE_ANY: /* any type */
+						strcat(buff, "\t\t");
+						break;
+					case FILETYPE_NONE: /* none */
+					default:
+						fprintf(stderr, "file_type_run failed: error processing file context entries\n");
+						goto file_type_run_fail;
+						break;
+					}
+					if (library->fc_entries[j].context) {
+						strcat(buff, policy->users[library->fc_entries[j].context->user].name);
+						strcat(buff, ":");
+						strcat(buff, policy->roles[library->fc_entries[j].context->role].name);
+						strcat(buff, ":");
+						strcat(buff, policy->types[library->fc_entries[j].context->type].name);
+					} else {
+						strcat(buff, "<<none>>");
+					}
+					proof = new_sechk_proof();
+					if (!proof) {
+						fprintf(stderr, "file_type_run failed: out of memory\n");
+						goto file_type_run_fail;
+					}
+					proof->idx = j;
+					proof->type = POL_LIST_FCENT;
+					proof->text = buff;
+					proof->severity = SECHK_SEV_MOD;
+					if (!item) {
+						item = new_sechk_item();
+						if (!item) {
+							fprintf(stderr, "file_type_run failed: out of memory\n");
+							goto file_type_run_fail;
+						}
+						item->item_id = i;
+						item->test_result = 1;
+					}
+					proof->next = item->proof;
+					item->proof = proof;
+
+				}
+			}
 		}
 
 		/* insert any resutls for this type */

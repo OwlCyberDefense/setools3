@@ -25,6 +25,10 @@ $(LIBAPOL):
 $(MODULES): $(wildcard ./modules/*.c)
 	$(MAKE) -C ./modules $(notdir $@)
 
+install: all
+	install -m 755 sechecker $(BINDIR)
+	install -m 644 dot_sechecker $(INSTALL_LIBDIR)
+
 clean:
 	rm -f sechecker *.o; $(MAKE) -C ./modules clean
 

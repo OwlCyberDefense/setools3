@@ -23,13 +23,15 @@
 
 static struct option const longopts[] = 
 {
-	{"config", required_argument, NULL, 'c'},
-	{"polsrcdir", required_argument, NULL, 'p'},
-	{"short", no_argument, NULL, 's'},
+	{"policy", required_argument, NULL, 'p'},
+	{"file_contexts", required_argument, NULL, 'p'},
+	{"short", no_argument, NULL, 'S'},
+	{"long", no_argument, NULL, 'L'},
 	{"quiet", no_argument, NULL, 'q'},
 	{"verbose", no_argument, NULL, 'V'},
-	{"system", no_argument, NULL, 'y'},
+	{"system", no_argument, NULL, 's'},
 	{"develop", no_argument, NULL, 'd'},
+	{"both", no_argument, NULL, 'b'},
 	{"module", required_argument, NULL, 'm'},
 	{"list", no_argument, NULL, 'l'},
 	{"help", no_argument, NULL, 'h'},
@@ -46,19 +48,19 @@ void usage(const char *arg0, bool_t brief)
 	} else {
 		printf("Perform modular checks on a SELinux policy\n");
 		printf("\nConfiguration Options\n");
-		printf("   -c conffile, --config=conffile  The location of the config file to load\n");
-		printf("   -p dir, --polsrcdir=dir         The top directory of a policy source tree\n");
-		printf("                                   e.g. /etc/selinux/strict  \n");
-		printf("                                   Default: loads default policy\n");
+		printf("   -f file, --file_contexts=file   The location of the file_contexts file to load\n");
+		printf("   -p file, --policy=file          The location of the policy file\n");
 		printf("\nOutput Options (only one may be specified)\n");
-		printf("   -s, --short                     Use short output format for all modules\n");
+		printf("   -S, --short                     Use short output format for all modules\n");
+		printf("   -L, --long                      Use long output format for all modules\n");
 		printf("   -V, --verbose                   Use verbose output format for all modules\n");
 		printf("   -q, --quiet                     Output only module name and statistics\n");
 		printf("\nModule Options\n");
 		printf("   -m module, --module=mod_name    Run only specified module (with dependencies)\n");
 		printf("   -l, --list                      Print a list of available modules and exit\n");
 		printf("   -d, --develop                   Run development mode modules\n");
-		printf("   -y, --system                    Run system check mode modules\n");
+		printf("   -s, --system                    Run system check mode modules\n");
+		printf("   -b, --both                      Run all modules (both modes)\n");
 		printf("\nOther Options\n");
 		printf("   -h, --help                      Print this help message and exit\n");
 		printf("   -v, --version                   Print version information and exit\n");
@@ -68,22 +70,24 @@ void usage(const char *arg0, bool_t brief)
 int main(int argc, char **argv) 
 {
 	int optc = 0, retv = 0, i;
-	char *confpath = NULL, *polpath = NULL, *modname = NULL;
+	char *fcpath = NULL, *polpath = NULL, *modname = NULL;
 	unsigned char output_override = 0, run_mode = SECHK_MOD_TYPE_NONE;
 	sechk_lib_t *module_library;
 	bool_t list_stop = FALSE;
-/* XXX temporary */sechk_get_output_str_fn_t print_me = NULL;sechk_module_t *mod = NULL;
+	sechk_get_output_str_fn_t print_me = NULL;
+	sechk_module_t *mod = NULL;
+	sechk_run_fn_t run_fn = NULL;
 
 fprintf(stderr, "parse cmd line\n");
-	while ((optc = getopt_long(argc, argv, "c:p:sVqm:ldyhv", longopts, NULL)) != -1) {
+	while ((optc = getopt_long(argc, argv, "f:p:SVLqm:ldsbhv", longopts, NULL)) != -1) {
 		switch (optc) {
-		case 'c':
-			confpath = optarg;
+		case 'f':
+			fcpath = optarg;
 			break;
 		case 'p':
 			polpath = optarg;
 			break;
-		case 's':
+		case 'S':
 			if (output_override) {
 				fprintf(stderr, "Error: Multiple output specifications.\n");
 				usage(argv[0], 1);
@@ -99,6 +103,15 @@ fprintf(stderr, "parse cmd line\n");
 				exit(1);
 			} else {
 				output_override =(SECHK_OUT_LONG|SECHK_OUT_LIST|SECHK_OUT_STATS|SECHK_OUT_HEADER);
+			}
+			break;
+		case 'L':
+			if (output_override) {
+				fprintf(stderr, "Error: Multiple output specifications.\n");
+				usage(argv[0], 1);
+				exit(1);
+			} else {
+				output_override =(SECHK_OUT_LONG|SECHK_OUT_STATS|SECHK_OUT_HEADER);
 			}
 			break;
 		case 'q':
@@ -119,8 +132,11 @@ fprintf(stderr, "parse cmd line\n");
 		case 'd':
 			run_mode |= SECHK_MOD_TYPE_DEV;
 			break;
-		case 'y':
+		case 's':
 			run_mode |= SECHK_MOD_TYPE_SYS;
+			break;
+		case 'b':
+			run_mode |= (SECHK_MOD_TYPE_SYS | SECHK_MOD_TYPE_DEV);
 			break;
 		case 'h':
 			usage(argv[0], 0);
@@ -137,7 +153,7 @@ fprintf(stderr, "parse cmd line\n");
 	if (!run_mode)
 		run_mode = SECHK_MOD_TYPE_DEV;
 fprintf(stderr, "new lib\n");
-	module_library = new_sechk_lib(polpath, confpath, output_override);
+	module_library = new_sechk_lib(polpath, fcpath, output_override);
 	if (!module_library) {
 		fprintf(stderr, "Error: undable to create module library\n");
 		exit(1);
@@ -165,12 +181,12 @@ fprintf(stderr, "hacked parse\n");
 	module_library->modules[2].options = new_sechk_opt();
 	module_library->modules[2].options->name = strdup("file_type_attribute");
 	module_library->modules[2].options->value = strdup("file_type");
-	module_library->conf->outformat = (output_override ? output_override : 0x0F);
-	module_library->conf->selinux_config_path = strdup("/etc/selinux/config");
-	module_library->conf->module_selection = (bool_t*)calloc(2, sizeof(bool_t));
-	module_library->conf->module_selection[0] = TRUE;
-	module_library->conf->module_selection[1] = FALSE;
-	module_library->conf->module_selection[2] = FALSE;
+	module_library->outformat = (output_override ? output_override : 0x0F);
+	module_library->selinux_config_path = strdup("/etc/selinux/config");
+	module_library->module_selection = (bool_t*)calloc(2, sizeof(bool_t));
+	module_library->module_selection[0] = TRUE;
+	module_library->module_selection[1] = FALSE;
+	module_library->module_selection[2] = FALSE;
 /* XXX hack end XXX */
 
 fprintf(stderr, "register\n");
@@ -199,11 +215,32 @@ fprintf(stderr, "init\n");
 	}
 
 fprintf(stderr, "run\n");
-	retv = run_modules(run_mode, module_library);
-	if (retv) {
-		fprintf(stderr, "Error: failed running modules\n");
-		free_sechk_lib(&module_library);
-		exit(1);
+	if (modname) {
+		mod = get_module(modname, module_library);
+		if (!mod) {
+			fprintf(stderr, "Error: cannot find module %s\n", modname);
+			free_sechk_lib(&module_library);
+			exit(1);
+		}
+		run_fn = get_module_function(modname, "run", module_library);
+		if (!run_fn) {
+			fprintf(stderr, "Error: cannot run module %s\n", modname);
+			free_sechk_lib(&module_library);
+			exit(1);
+		}
+		retv = run_fn(mod, module_library->policy);
+		if (retv) {
+			fprintf(stderr, "Error: failed running module %s\n", modname);
+			free_sechk_lib(&module_library);
+			exit(1);
+		}
+	} else {
+		retv = run_modules(run_mode, module_library);
+		if (retv) {
+			fprintf(stderr, "Error: failed running modules\n");
+			free_sechk_lib(&module_library);
+			exit(1);
+		}
 	}
 	
 	/* XXX TODO output */
