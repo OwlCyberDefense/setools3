@@ -16,57 +16,38 @@
 #include <stdio.h>
 #include <string.h> 
 
-sechk_lib_t *new_sechk_lib(char *policyfilelocation, char *conffilelocation, unsigned char output_override) 
+sechk_lib_t *new_sechk_lib(char *policyfilelocation, char *fcfilelocation, unsigned char output_override) 
 {
 	sechk_lib_t *lib = NULL;
-	char *default_policy_path = NULL, *confpath = NULL, *confdir = NULL, *tmp = NULL;
-	int retv, size;
+	char *default_policy_path = NULL, *confpath = NULL, *confdir = NULL;
+	int retv;
 	FILE *conffile = NULL;
 
 	/* if conffile path is not given, check default locations */
-	if (!conffilelocation) {
-		confdir = find_user_config_file(".sechecker.conf");
-		if (!confdir) {
-			confpath = find_file("sechecker.conf");
-			if (!confpath) {
-				fprintf(stderr, "Error: could not find config file\n");
-				goto new_lib_fail;
-			}
-		} else {
-			confpath = (char*)calloc(1 + strlen(confdir) + strlen("/.sechecker.conf"), sizeof(char));
-			if (!confpath) {
-				fprintf(stderr, "Error: out of memory\n");
-				goto new_lib_fail;
-			}
-			strcat(confpath, confdir);
-			strcat(confpath, "/.sechecker.conf");
-			free(confdir);
-			confdir = NULL;
+	confdir = find_user_config_file(".sechecker.conf");
+	if (!confdir) {
+		confpath = find_file("dot_sechecker.conf");
+		if (!confpath) {
+			fprintf(stderr, "Error: could not find config file\n");
+			goto new_lib_fail;
 		}
 	} else {
-		confpath = strdup(conffilelocation);
+		confpath = (char*)calloc(1 + strlen(confdir) + strlen("/.sechecker.conf"), sizeof(char));
+		if (!confpath) {
+			fprintf(stderr, "Error: out of memory\n");
+			goto new_lib_fail;
+		}
+		strcat(confpath, confdir);
+		strcat(confpath, "/.sechecker.conf");
+		free(confdir);
+		confdir = NULL;
 	}
 	
-	/* open conf file */
-	conffile = fopen(confpath, "r");
-	if (!conffile) {
-		fprintf(stderr, "Error: could not open config file (%s)\n", confpath);
-		goto new_lib_fail;
-	}
-	free(confpath);
-	confpath = NULL;
-
 	lib = (sechk_lib_t*)calloc(1, sizeof(sechk_lib_t));
 	if (!lib) {
 		fprintf(stderr, "Error: out of memory\n");
 		goto new_lib_fail;
 	}
-	lib->conf = new_sechk_conf();
-	if (!(lib->conf)) {
-		fprintf(stderr, "Error: out of memory\n");
-		goto new_lib_fail;
-	}
-
 
 	/* if no policy is given, attempt to find default */
 	if (!policyfilelocation) {
@@ -80,44 +61,27 @@ sechk_lib_t *new_sechk_lib(char *policyfilelocation, char *conffilelocation, uns
 			fprintf(stderr, "Error: failed opening default polciy\n");
 			goto new_lib_fail;
 		}
-		tmp = strstr(default_policy_path, "/src/policy/policy.");
-		if (!tmp) {
-			tmp = strstr(default_policy_path, "/policy/policy.");
-		}
-		if (!tmp) {
-			tmp = strstr(default_policy_path, "/policy.");
-		}
-		if (tmp) {
-			size = strlen(default_policy_path) - strlen(tmp);
-			policyfilelocation = (char*)strndup(default_policy_path, size);
-		}
-		lib->conf->policy_src_tree_path = policyfilelocation;
+		lib->policy_path = strdup(default_policy_path);
 	} else {
-		if (policyfilelocation[strlen(policyfilelocation)-1] == '/')
-			policyfilelocation[strlen(policyfilelocation)-1] = '\0';
-		default_policy_path = (char*)calloc(1+strlen(policyfilelocation)+strlen("/src/policy/policy.conf"), sizeof(char));
-		if (!default_policy_path) {
-			fprintf(stderr, "Error: out of memory\n");
-			goto new_lib_fail;
-		}
-		strcat(default_policy_path, policyfilelocation);
-		strcat(default_policy_path, "/src/policy/policy.conf");
-		retv = open_policy(default_policy_path, &(lib->policy));
+		retv = open_policy(policyfilelocation, &(lib->policy));
 		if (retv) {
-			fprintf(stderr, "Error: failed to open policy %s\n", policyfilelocation);
+			fprintf(stderr, "Error: failed opening polciy %s\n", policyfilelocation);
 			goto new_lib_fail;
 		}
-		lib->conf->policy_src_tree_path = strdup(policyfilelocation);
+		lib->policy_path = strdup(policyfilelocation);
 	}
 
-fprintf(stderr, "loc: %s\n", lib->conf->policy_src_tree_path);
-	retv = parse_config_file(conffile, output_override, lib);
+	retv = parse_config_file(confpath, output_override, lib);
 	if (retv) {
 		fprintf(stderr, "Error: config file parsing failed\n");
 		goto new_lib_fail;
 	}
 
-	fclose(conffile);
+	/* set file_contexts file location */
+	if (fcfilelocation)
+		lib->fc_path = strdup(fcfilelocation);
+
+	free(confpath);
 	free(default_policy_path);
 	return lib;
 
@@ -131,9 +95,9 @@ new_lib_fail:
 	return NULL;
 }
 
-int parse_config_file(FILE *conffile, unsigned char output_override, sechk_lib_t *lib) 
+int parse_config_file(char *confpath, unsigned char output_override, sechk_lib_t *lib) 
 {
-	if (!conffile || !lib) {
+	if (!confpath || !lib) {
 		fprintf(stderr, "parse_config_file failed: invalid parameters\n");
 		return -1;
 	}
@@ -148,10 +112,15 @@ void free_sechk_lib(sechk_lib_t **lib)
 	if (!lib || !(*lib))
 		return;
 
-	free_sechk_conf(&((*lib)->conf));
 	free_policy(&((*lib)->policy));
 	free_modules(*lib);
 	free((*lib)->modules);
+	/* TODO fscon freeing call */
+	free((*lib)->fc_entries);
+	free((*lib)->selinux_config_path);
+	free((*lib)->policy_path);
+	free((*lib)->fc_path);
+	free((*lib)->module_selection);
 	free(*lib);
 	*lib = NULL;
 }
@@ -230,19 +199,6 @@ void free_sechk_proof(sechk_proof_t **proof)
 	}
 }
 
-void free_sechk_conf(sechk_conf_t **conf) 
-{
-	if (!conf || !(*conf))
-		return;
-
-	free((*conf)->selinux_config_path);
-	free((*conf)->policy_src_tree_path);
-	free((*conf)->module_selection);
-
-	free(*conf);
-	*conf = NULL;
-}
-
 sechk_fn_t *new_sechk_fn(void) 
 {
 	/* no initialization needed here */
@@ -279,12 +235,6 @@ sechk_proof_t *new_sechk_proof(void)
 		return NULL;
 	proof->idx = -1;
 	return proof;
-}
-
-sechk_conf_t *new_sechk_conf(void) 
-{
-	/* zero initilization is sufficient */
-	return (sechk_conf_t*)calloc(1, sizeof(sechk_conf_t));
 }
 
 int register_modules(sechk_register_fn_t *register_fns, sechk_lib_t *lib) 
@@ -389,7 +339,7 @@ int run_modules(unsigned char run_mode, sechk_lib_t *lib)
 	for (i = 0; i < lib->num_modules; i++) {
 fprintf(stderr, "run %i\n", i);
 		/* if module is "off" do not run unless requested by another module */
-		if (!lib->conf->module_selection[i])
+		if (!lib->module_selection[i])
 			continue;
 		if (!(lib->modules[i].type & run_mode))
 			continue;
@@ -400,7 +350,7 @@ fprintf(stderr, "run %i\n", i);
 		}
 		retv = run_fn(&(lib->modules[i]), lib->policy);
 		if (retv)
-			return retv;
+			fprintf(stderr, "Error: module %s failed\n", lib->modules[i].name);
 	}
 
 	return 0;
