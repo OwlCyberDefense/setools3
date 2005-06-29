@@ -146,7 +146,7 @@ int domain_type_init(sechk_module_t *mod, policy_t *policy)
 	}
 	mod->data = datum;
 
-	datum->outformat = library->conf->outformat;
+	datum->outformat = library->outformat;
 	datum->mod_header = strdup("Finds all types in policy treated as a domain.\nA type is considered a domain if any of the following is true:\n   It has an attribute associated with domains\n   It is the source of a te rule for object class process\n   It is the default type in a type_transition rule for object class process\n   It is associated with a role other than object_r\n\n");
 
 	opt = mod->options;
@@ -171,6 +171,7 @@ int domain_type_init(sechk_module_t *mod, policy_t *policy)
 					fprintf(stderr, "domain_type_init Warning: module required binary policy but was given source, results may not be complete\n");
 			} else {
 				fprintf(stderr, "domain_type_init failed: invalid policy type specification %s\n", opt->value);
+				return -1;
 			}
 		} else if (!strcmp(opt->name, "output_type")) {
 			if (!strcmp(opt->value, "full")) {

@@ -129,7 +129,7 @@ int empty_user_init(sechk_module_t *mod, policy_t *policy)
 	}
 	mod->data = datum;
 
-	datum->outformat = library->conf->outformat;
+	datum->outformat = library->outformat;
 	datum->mod_header = strdup("Finds empty users in the policy.\nA user is considered empty if no roles are assigned to that user.\n\n");
 
 	opt = mod->options;

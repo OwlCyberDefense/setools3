@@ -112,6 +112,7 @@ int empty_attribute_init(sechk_module_t *mod, policy_t *policy)
 	sechk_opt_t *opt = NULL;
 	empty_attribute_data_t *datum = NULL;
 	bool_t header = TRUE;
+	int pol_ver = POL_VER_UNKNOWN;
 
 	if (!mod || !policy) {
 		fprintf(stderr, "empty_attribute_init failed: invalid parameters\n");
@@ -129,7 +130,7 @@ int empty_attribute_init(sechk_module_t *mod, policy_t *policy)
 	}
 	mod->data = datum;
 
-	datum->outformat = library->conf->outformat;
+	datum->outformat = library->outformat;
 	datum->mod_header = strdup("Finds empty attributes in the policy.\nAn attribute is considered empty if no type has that attribute.\n\n");
 
 	opt = mod->options;
@@ -143,6 +144,28 @@ int empty_attribute_init(sechk_module_t *mod, policy_t *policy)
 					fprintf(stderr, "empty_attribute_init Warning: module required binary policy but was given source, results may not be complete\n");
 			} else {
 				fprintf(stderr, "empty_attribute_init failed: invalid policy type specification %s\n", opt->value);
+			}
+		} else if (!strcmp(opt->name, "pol_ver")) {
+			pol_ver = atoi(opt->value);
+			if (pol_ver < 11)
+				pol_ver = POL_VER_PRE_11;
+			else if (pol_ver < 15)
+				pol_ver = POL_VER_12;
+			else if (pol_ver < 16)
+				pol_ver = POL_VER_15;
+			else if (pol_ver == 16)
+				pol_ver = POL_VER_16;
+			else if (pol_ver == 17)
+				pol_ver = POL_VER_17;
+			else if (pol_ver == 18)
+				pol_ver = POL_VER_18;
+			else if (pol_ver > 18)
+				pol_ver = POL_VER_19;
+			else
+				pol_ver = POL_VER_UNKNOWN;
+			if (policy->version < pol_ver) {
+				fprintf(stderr, "empty_attribute_init failed: module requires newer policy version\n");
+				return -1;
 			}
 		} else if (!strcmp(opt->name, "output_type")) {
 			if (!strcmp(opt->value, "full")) {

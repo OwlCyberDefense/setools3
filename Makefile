@@ -3,7 +3,7 @@
 TOPDIR	 = $(shell pwd)
 
 MAKEFILE = Makefile
-MAKE 	 = make
+MAKE 	 ?= make
 
 # If debug is zero, an optimized version is created
 DEBUG			= 1

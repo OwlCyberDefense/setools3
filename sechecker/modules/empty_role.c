@@ -129,7 +129,7 @@ int empty_role_init(sechk_module_t *mod, policy_t *policy)
 	}
 	mod->data = datum;
 
-	datum->outformat = library->conf->outformat;
+	datum->outformat = library->outformat;
 	datum->mod_header = strdup("Finds empty roles in the policy.\nA role is empty if no types are associted with it.\n\n");/* TODO: add header text */
 
 	opt = mod->options;
