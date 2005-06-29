@@ -130,7 +130,7 @@ int domain_and_file_type_init(sechk_module_t *mod, policy_t *policy)
 	}
 	mod->data = datum;
 
-	datum->outformat = library->conf->outformat;
+	datum->outformat = library->outformat;
 	datum->mod_header = strdup("Finds all types in the policy treated as both a domain and a file type\nSee domain_type and file_type modules for details about\nhow types are placed in these categories\n\n");
 
 	opt = mod->options;
@@ -144,6 +144,7 @@ int domain_and_file_type_init(sechk_module_t *mod, policy_t *policy)
 					fprintf(stderr, "domain_and_file_type_init Warning: module required binary policy but was given source, results may not be complete\n");
 			} else {
 				fprintf(stderr, "domain_and_file_type_init failed: invalid policy type specification %s\n", opt->value);
+				return -1;
 			}
 		} else if (!strcmp(opt->name, "output_type")) {
 			if (!strcmp(opt->value, "full")) {
