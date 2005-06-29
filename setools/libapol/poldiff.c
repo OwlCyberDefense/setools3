@@ -95,6 +95,122 @@ static void free_bool_diff(bool_diff_t *bd)
 	return;
 }
 
+void apol_free_single_iad(ap_single_iad_diff_t **siad,bool_t use_types) 
+{
+	if ((*siad)->add != NULL)
+		free((*siad)->add);
+	if ((*siad)->rem != NULL)
+		free((*siad)->rem);
+
+	if (use_types) {
+		if ((*siad)->chg != NULL) {
+			if ((*siad)->chg->add != NULL)
+				free((*siad)->chg->add);
+			if ((*siad)->chg->rem != NULL)
+				free((*siad)->chg->rem);
+			free((*siad)->chg);
+		}
+		if ((*siad)->chg_add != NULL) {
+			if ((*siad)->chg_add->add != NULL)
+				free((*siad)->chg_add->add);
+			if ((*siad)->chg_add->rem != NULL)
+				free((*siad)->chg_add->rem);
+			free((*siad)->chg_add);
+		}
+		if ((*siad)->chg_rem != NULL) {
+			if ((*siad)->chg_rem->add != NULL)
+				free((*siad)->chg_rem->add);
+			if ((*siad)->chg_rem->rem != NULL)
+				free((*siad)->chg_rem->rem);
+			free((*siad)->chg_rem);
+		}
+	} else {
+		if ((*siad)->chg != NULL)
+			free((*siad)->chg);
+	}
+	free(*siad);
+
+}
+
+void apol_free_single_diff(ap_single_view_diff_t *svd)
+{
+	if (svd->types != NULL) {
+		apol_free_single_iad(&(svd->types),FALSE);
+	}
+	if (svd->roles != NULL) {
+		apol_free_single_iad(&(svd->roles),FALSE);
+	}
+	if (svd->users != NULL) {
+		apol_free_single_iad(&(svd->users),FALSE);
+	}
+	if (svd->attribs != NULL) {
+		apol_free_single_iad(&(svd->attribs),TRUE);
+	}
+	if (svd->classes != NULL) {
+		apol_free_single_iad(&(svd->classes),FALSE);
+	}
+	if (svd->perms != NULL) {
+		apol_free_single_iad(&(svd->perms),FALSE);
+	}
+	if (svd->common_perms != NULL) {
+		apol_free_single_iad(&(svd->common_perms),FALSE);
+	}
+	if (svd->rallows != NULL) {
+		apol_free_single_iad(&(svd->rallows),TRUE);
+	}
+	if (svd->bools != NULL) {
+		if (svd->bools->add)
+			free(svd->bools->add);
+		if (svd->bools->rem)
+			free(svd->bools->rem);
+		if (svd->bools->chg)
+			free(svd->bools->chg);
+		free(svd->bools);
+	}
+	if (svd->rtrans != NULL) {
+		if (svd->rtrans->add)
+			free(svd->rtrans->add);
+		if (svd->rtrans->rem)
+			free(svd->rtrans->rem);
+		if (svd->rtrans->chg_add)
+			free(svd->rtrans->chg_add);
+		if (svd->rtrans->chg_rem)
+			free(svd->rtrans->chg_rem);
+		if (svd->rtrans->add_type)
+			free(svd->rtrans->add_type);
+		if (svd->rtrans->rem_type)
+			free(svd->rtrans->rem_type);
+		free(svd->rtrans);
+	}
+	if (svd->te != NULL) {
+		if (svd->te->add)
+			free(svd->te->add);
+		if (svd->te->rem)
+			free(svd->te->rem);
+		if (svd->te->add_type)
+			free(svd->te->add_type);
+		if (svd->te->rem_type)
+			free(svd->te->rem_type);
+		if (svd->te->chg)
+			free(svd->te->chg);
+		free(svd->te);
+	}
+	if (svd->conds != NULL) {
+		if (svd->conds->add != NULL)
+			free(svd->conds->add);
+		if (svd->conds->rem != NULL)
+			free(svd->conds->rem);
+		if (svd->conds->chg_add != NULL)
+			free(svd->conds->chg_add);
+		if (svd->conds->chg_rem != NULL)
+			free(svd->conds->chg_rem);
+		free(svd->conds);
+	}
+		
+	free(svd);
+
+}
+
 static void apol_free_diff(apol_diff_t *ad)
 {
 	if(ad == NULL)
@@ -1221,7 +1337,848 @@ err_return:
 	if(pmap != NULL) free(pmap);
 	return NULL;
 }
+
+typedef int(*get_iad_name_fn_t)(int idx, char **name, policy_t *policy);		
+typedef int(*get_iad_idx_fn_t)(const char *name,policy_t *policy);
+/* if the item exists first check to see if the item exists in the policy using get_name, if the item exists than this
+   is a change */
+int ap_iad_new_addrem(int_a_diff_t *iad,int_a_diff_t ***addrem,ap_single_iad_chg_t **chg,policy_t *p,
+		      get_iad_name_fn_t get_name,get_iad_idx_fn_t get_idx,int *addremcnt,int *chgcnt,bool_t add)
+{
+	int rt;
+	char *name = NULL;   
+	rt = (*get_name)(iad->idx, &name, p);
+	if (rt < 0)
+		return -1;
+	rt = (*get_idx)(name,p);
+	free(name);
+	/* if the name does not exist in the other policy this is a
+	   new item */
+	if (rt < 0 && iad->missing) {
+		*addrem = (int_a_diff_t **)realloc(*addrem,sizeof(int_a_diff_t *)*(*addremcnt+1));
+		*addrem[*addremcnt] = iad;
+		*addremcnt++;
+	}
+	/* they have the same name this is a change */
+	else {
+		*chg = (ap_single_iad_chg_t *)realloc(*chg,sizeof(ap_single_iad_chg_t)*(*chgcnt+1));
+		if (add) 
+			(*chg)[*chgcnt].add_iad = iad;
+		else
+			(*chg)[*chgcnt].rem_iad = iad;
+		*chgcnt++;
+	}
+	return 0;
+}
+
+/* handle changes for roles/attribs where some missing things are because a type is gone */
+int ap_iad_new_type_chg(ap_single_iad_diff_t *siad,int_a_diff_t *add,int_a_diff_t *rem,policy_t *p1,policy_t *p2)
+{
+	int curr;
+	char *name;
+	bool_t incremented_chg = FALSE,incremented_add = FALSE,incremented_rem = FALSE; 
+	int rt;
+	if (siad == NULL || add == NULL || rem == NULL)
+		return -1;
+	/* In order to handle a change with something that could have changed because of an added or removed type
+	   we have to go through all the sub elements of the iads(i.e. the types) and check them against the 
+	   opposite policy to see if they exist, if they do they get added to the chg array, if they don't
+	   they get added to chg_add or chg_rem depending on the starting list */
+	curr = 0;
+	for (curr = 0;curr < add->numa;curr ++) {
+		rt = get_type_name(add->a[curr],&name,p2);
+		if (rt < 0)
+			goto _error;
+		rt = get_type_idx(name,p1);
+		free(name);
+		/* this is an add because of a new type */
+		if (rt < 0) {
+			if (incremented_add == FALSE) {
+				siad->chg_add = (ap_single_iad_chg_t *)realloc(siad->chg_add,sizeof(ap_single_iad_chg_t)*(siad->num_chg_add+1));
+				if (siad->chg_add == NULL)
+					goto _error;
+				siad->chg_add[siad->num_chg_add].p1_idx = rem->idx;
+				siad->num_chg_add++;
+				incremented_add = TRUE;
+			}
+			siad->chg_add[siad->num_chg_add-1].add = (int *)realloc(siad->chg_add[siad->num_chg_add-1].add,
+									  sizeof(int)*(siad->chg_add[siad->num_chg_add-1].num_add+1));
+			siad->chg_add[siad->num_chg_add-1].add[siad->chg_add[siad->num_chg_add-1].num_add] = add->a[curr];
+			siad->chg_add[siad->num_chg_add-1].num_add++;			
+		} else {
+			/* this is an add because of a changed type */
+			if (incremented_chg == FALSE) {
+				siad->chg = (ap_single_iad_chg_t *)realloc(siad->chg,sizeof(ap_single_iad_chg_t)*(siad->num_chg+1));
+				if (siad->chg == NULL)
+					goto _error;
+				siad->chg[siad->num_chg].p1_idx = rem->idx;
+				siad->num_chg++;
+				incremented_chg = TRUE;
+			}
+			siad->chg[siad->num_chg-1].add = (int *)realloc(siad->chg[siad->num_chg-1].add,
+									sizeof(int)*(siad->chg[siad->num_chg-1].num_add+1));
+			siad->chg[siad->num_chg-1].add[siad->chg[siad->num_chg-1].num_add] = add->a[curr];
+			siad->chg[siad->num_chg-1].num_add++;			
+		}
+	}
+	for (curr = 0;curr < rem->numa;curr ++) {
+		rt = get_type_name(rem->a[curr],&name,p1);
+		if (rt < 0)
+			goto _error;
+		rt = get_type_idx(name,p2);
+		free(name);
+		/* this is an rem because of a rem type */
+		if (rt < 0) {
+			if (incremented_rem == FALSE) {
+				siad->chg_rem = (ap_single_iad_chg_t *)realloc(siad->chg_rem,sizeof(ap_single_iad_chg_t)*(siad->num_chg_rem+1));
+				if (siad->chg_rem == NULL)
+					goto _error;
+				siad->chg_rem[siad->num_chg_rem].p1_idx = rem->idx;
+				siad->num_chg_rem++;
+				incremented_rem = TRUE;
+			}
+			siad->chg_rem[siad->num_chg_rem-1].rem = (int *)realloc(siad->chg_rem[siad->num_chg_rem-1].add,
+									  sizeof(int)*(siad->chg_rem[siad->num_chg_rem-1].num_rem+1));
+			siad->chg_rem[siad->num_chg_rem-1].rem[siad->chg_rem[siad->num_chg_rem-1].num_rem] = rem->a[curr];
+			siad->chg_rem[siad->num_chg_rem-1].num_rem++;			
+			
+
+		} else {
+			/* this is an add because of a changed type */
+			if (incremented_chg == FALSE) {
+				siad->chg = (ap_single_iad_chg_t *)realloc(siad->chg,sizeof(ap_single_iad_chg_t)*(siad->num_chg+1));
+				if (siad->chg == NULL)
+					goto _error;
+				siad->chg[siad->num_chg].p1_idx = rem->idx;
+				siad->num_chg++;
+				incremented_chg = TRUE;
+			}
+			siad->chg[siad->num_chg-1].rem = (int *)realloc(siad->chg[siad->num_chg-1].rem,
+									  sizeof(int)*(siad->chg[siad->num_chg-1].num_rem+1));
+			siad->chg[siad->num_chg-1].rem[siad->chg[siad->num_chg-1].num_rem] = add->a[curr];
+			siad->chg[siad->num_chg-1].num_rem++;			
+		}
+	}
+
+_error:
+	return -1;
+}
+
+/* handle changes for everything but roles/attribs which have more complex
+   differences that can exist */
+int ap_iad_new_chg(ap_single_iad_diff_t *siad,int_a_diff_t *add,int_a_diff_t *rem)
+{
+	if (siad == NULL || add == NULL || rem == NULL)
+		return -1;
+	siad->chg = (ap_single_iad_chg_t *)realloc(siad->chg,sizeof(ap_single_iad_chg_t )*(siad->num_chg+1));
+	if (siad->chg == NULL) {
+		fprintf(stderr,"out of memory\n");
+		return -1;
+	}
+	siad->chg[siad->num_chg].add_iad = add;
+	siad->chg[siad->num_chg].rem_iad = rem;
+	siad->num_chg++;
+	return 0;
+}
+
+ap_single_iad_diff_t *ap_new_iad_diff(apol_diff_result_t *diff,unsigned int option,policy_t *p1,policy_t *p2)
+{
+
+	int_a_diff_t *add = NULL,*rem = NULL;
+	ap_single_iad_diff_t *siad = NULL;
+	char *name = NULL,*name2 = NULL;
+	int rt;
+	get_iad_name_fn_t get_name;
+	get_iad_idx_fn_t get_idx;
+	bool_t has_types_diff = FALSE;
+	if (diff == NULL || diff->p1 == NULL || diff->p2 == NULL)
+		return NULL;
+       
+	p1 = diff->p1;
+	p2 = diff->p2;
+
+	switch (option) {
+	case IDX_OBJ_CLASS:
+		get_name = &get_obj_class_name;
+		get_idx = &get_obj_class_idx;
+		add = diff->diff2->classes;
+		rem = diff->diff1->classes;
+		break;
+	case IDX_TYPE:
+		get_name = &get_type_name;
+		get_idx = &get_type_idx;
+		add = diff->diff2->types;
+		rem = diff->diff1->types;
+		break;
+	case IDX_ROLE|IDX_PERM:
+		get_name = &get_role_name;
+		get_idx = &get_role_idx;
+		add = diff->diff2->role_allow;
+		rem = diff->diff1->role_allow;
+		break;
+	case IDX_ROLE:
+		get_name = &get_role_name;
+		get_idx = &get_role_idx;
+		add = diff->diff2->roles;
+		rem = diff->diff1->roles;
+		has_types_diff = TRUE;
+		break;
+	case IDX_USER:
+		get_name = &get_user_name2;
+		get_idx = &get_user_idx;
+		add = diff->diff2->users;
+		rem = diff->diff1->users;
+		break;
+	case IDX_ATTRIB:
+		get_name = &get_attrib_name;
+		get_idx = &get_attrib_idx;
+		add = diff->diff2->attribs;
+		rem = diff->diff1->attribs;
+		has_types_diff = TRUE;
+		break;
+	case IDX_PERM:
+		get_name = &get_perm_name;
+		get_idx = &get_perm_idx;
+		add = diff->diff2->perms;
+		rem = diff->diff1->perms;		
+		break;
+	case IDX_COMMON_PERM:
+		get_name = &get_common_perm_name;
+		get_idx = &get_common_perm_idx;
+		add = diff->diff2->common_perms;
+		rem = diff->diff1->common_perms;		
+		break;
+	default:
+		break;
+	}
+
+	if (add == NULL && rem == NULL)
+		return NULL;
+
+	/* set up result structure */
+	siad = (ap_single_iad_diff_t *)malloc(sizeof(ap_single_iad_diff_t));
+	if(siad == NULL) {
+		fprintf(stderr, "out of memory\n");
+		goto siad_error_return;
+	}
+	memset(siad, 0, sizeof(ap_single_iad_diff_t));
+
+	siad->type = option;
+
+	/* here we remember that these lists are ordered, and we want to find matching items
+	   so as long as we have two lists, we compare the names, if they're equal we know this is
+	   just a change, if they're not than we strip out the name that comes first, so we can compare correctly
+	   the next time around.  Then we test to see if that name is in the other policy at all, if its not than 
+	   its an add/rem, it is is than this is a change with nothing in the other diff.  , than this might be a 
+	   change we're not sure yet, we have to check to see if the item exists in the other policy, if it does, 
+	   then we just add it */ 
+	while (add != NULL || rem != NULL) {
+		if (add != NULL && rem != NULL) {
+			rt = (*get_name)(add->idx, &name2, p2);
+			if (rt < 0) {
+				//fprintf(stderr, "Problem getting name for %s %d\n", descrp, add->idx);
+				goto siad_error_return;
+			}
+			rt = (*get_name)(rem->idx, &name, p1);
+			if (rt < 0) {
+				//fprintf(stderr, "Problem getting name for %s %d\n", descrp, rem->idx);
+				goto siad_error_return;
+			}
+			
+			rt = strcmp(name,name2);
+			if (rt == 0) {
+				/* here we have a change with adds and removes*/
+				if (has_types_diff) {
+					rt = ap_iad_new_type_chg(siad,add,rem,p1,p2);
+				} else {
+					rt = ap_iad_new_chg(siad,add,rem);
+					if (rt < 0)
+						goto siad_error_return;
+				}
+				rem = rem->next;
+				add = add->next;
+				
+			} else if (rt < 0) {
+				/* rem goes first */
+				rt = ap_iad_new_addrem(rem,&(siad->rem),&(siad->chg),p2,get_name,
+						       get_idx,&(siad->num_rem),&(siad->num_chg),FALSE);
+				rem = rem->next;
+			} else if (rt > 0) {
+				/* add goes first */
+				rt = ap_iad_new_addrem(add,&(siad->add),&(siad->chg),p1,get_name,
+						       get_idx,&(siad->num_add),&(siad->num_chg),TRUE);
+				add = add->next;
+			}
+		} else if (add != NULL) {
+			rt = (*get_name)(add->idx, &name2, p2);
+			if (rt < 0) {
+				//fprintf(stderr, "Problem getting name for %s %d\n", descrp, add->idx);
+				goto siad_error_return;	
+			}   
+			rt = ap_iad_new_addrem(add,&(siad->add),&(siad->chg),p1,get_name,
+					       get_idx,&(siad->num_add),&(siad->num_chg),TRUE);
+			add = add->next;
+		} else if (rem != NULL) {
+			rt = (*get_name)(rem->idx, &name2, p1);
+			if (rt < 0) {
+				//fprintf(stderr, "Problem getting name for %s %d\n", descrp, rem->idx);
+				goto siad_error_return;
+			}
+			rt = ap_iad_new_addrem(rem,&(siad->rem),&(siad->chg),p2,get_name,
+					       get_idx,&(siad->num_rem),&(siad->num_chg),FALSE);
+			rem = rem->next;
+		}		
+	}
+
+	return siad;
+
+siad_error_return:
+	if (siad != NULL)
+		free(siad);
+	return NULL;
+}
+
+/* given p1 key, find node in p2 that matches */
+avh_node_t *find_avh_full_match(avh_node_t *p1_node,policy_t *p1,policy_t *p2,avh_t *hash)
+{
+	avh_node_t *cur = NULL;
+	bool_t inverse;
+	avh_key_t key;
+
+	make_p2_key(&(p1_node->key),&key,p1,p2);
+	cur = avh_find_first_node(hash, &key);
+	while (cur != NULL && does_cond_match(cur,p2,cur,p2,&inverse) == FALSE)
+		cur = avh_find_next_node(cur);
+	return cur;
+}
+
+/* add a single te change, this can be a change with only added permissions,
+   a change with only removed permissions, a chang with both */
+int ap_new_single_te_chg(ap_single_te_diff_t *std,avh_node_t *d1,avh_node_t *d2,
+			 avh_node_t *p1,avh_node_t *p2)
+{
+//        fprintf(stderr,"in te_chg\n");
+	if (std == NULL || p1 == NULL || p2 == NULL || (d1 == NULL && d2 == NULL))
+		return -1;
+	std->chg = (ap_single_te_chg_t *)realloc(std->chg,sizeof(ap_single_te_chg_t)*(std->num_chg + 1));
+	if (std->chg == NULL) {
+		fprintf(stderr, "out of memory\n");
+		return -1;
+	}	
+	std->chg[std->num_chg].add = p2;
+	std->chg[std->num_chg].rem = p1;
+	std->chg[std->num_chg].add_diff = d2;
+	std->chg[std->num_chg].rem_diff = d1;
+	std->num_chg++;
+
+	return 0;
+}
+
+int ap_new_single_te_addrem(ap_single_te_diff_t *std,avh_node_t *diff,bool_t add,bool_t type)
+{
+	if (std == NULL || diff == NULL)
+		return -1;
+
+	if (add && type) {
+		std->add_type = (avh_node_t **)realloc(std->add_type,sizeof(avh_node_t *)*(std->num_add_type + 1));
+		if (std->add_type == NULL) {
+			fprintf(stderr, "out of memory\n");
+			return -1;
+		}
+		std->add_type[std->num_add_type] = diff;
+		std->num_add_type++;
+	} else if (add) {
+		std->add = (avh_node_t **)realloc(std->add,sizeof(avh_node_t *)*(std->num_add + 1));
+		if (std->add == NULL) {
+			fprintf(stderr, "out of memory\n");
+			return -1;
+		}	
+		std->add[std->num_add] = diff;
+		std->num_add++;
+	} else if (type) {
+		std->rem_type = (avh_node_t **)realloc(std->rem_type,sizeof(avh_node_t *)*(std->num_rem_type + 1));
+		if (std->rem_type == NULL) {
+			fprintf(stderr, "out of memory\n");
+			return -1;
+		}	
+		std->rem_type[std->num_rem_type] = diff;
+		std->num_rem_type++;
+	} else {
+		std->rem = (avh_node_t **)realloc(std->rem,sizeof(avh_node_t *)*(std->num_rem + 1));
+		if (std->rem == NULL) {
+			fprintf(stderr, "out of memory\n");
+			return -1;
+		}	
+		std->rem[std->num_rem] = diff;
+		std->num_rem++;
+	}
+	return 0;		
+}
+
+ap_single_te_diff_t *ap_new_single_te_diff(apol_diff_result_t *diff)
+
+{
+	avh_node_t *diffcur1 = NULL;
+	avh_node_t *diffcur2 = NULL;
+	avh_node_t *d_cur = NULL;
+	avh_node_t *p1_node,*p2_node;
+	int src_idx,tgt_idx,rt,i;
+	apol_diff_t *diff1 = NULL;
+	apol_diff_t *diff2 = NULL;
+	policy_t *p1 = NULL;
+	policy_t *p2 = NULL;
+
+	p1 = diff->p1;
+	p2 = diff->p2;
+
+	ap_single_te_diff_t *std = NULL;
+
+	if ( p1 == NULL || p2 == NULL)
+		return NULL;
+	diff1 = diff->diff1;
+	diff2 = diff->diff2;
+
+	/* set up result structure */
+	std = (ap_single_te_diff_t *)malloc(sizeof(ap_single_te_diff_t));
+	if(std == NULL) {
+		fprintf(stderr, "out of memory\n");
+		goto ap_new_single_te_diff_error;
+	}
+	memset(std, 0, sizeof(ap_single_te_diff_t));
+
+	/* first go the p1 diff and look for missing(i.e the rule is not in p2 at all
+	   , changes only because of removed perms and for changes because of added/removed perms
+	   and fill everything up */
+ 	for (i = 0; i < AVH_SIZE; i++) { 
+ 		for (diffcur1 = diff1->te.tab[i];diffcur1 != NULL; diffcur1 = diffcur1->next) {
+			/* find the node in p1 */
+			p1_node = find_avh_full_match(diffcur1,p1,p1,&p1->avh);
+			/* find if there is a node in p2 */
+			p2_node = find_avh_full_match(diffcur1,p1,p2,&p2->avh);
+			if (p2_node != NULL) {
+				/* find if there is a node in d2 */
+				d_cur = find_avh_full_match(diffcur1,p1,p2,&diff2->te);
+				if (d_cur != NULL) {
+					rt = ap_new_single_te_chg(std,diffcur1,d_cur,p1_node,p2_node);
+					if (rt < 0)
+						goto ap_new_single_te_diff_error;
+				} else {
+					rt = ap_new_single_te_chg(std,diffcur1,NULL,p1_node,p2_node);
+					if (rt < 0)
+						goto ap_new_single_te_diff_error;
+				}
+			} else {
+				src_idx = find_type_in_p2(p1->types[diffcur1->key.src].name, p1->types[diffcur1->key.src].aliases, p2);
+				tgt_idx = find_type_in_p2(p1->types[diffcur1->key.src].name, p1->types[diffcur1->key.src].aliases, p2);
+				if (src_idx == -1 || tgt_idx == -1)
+					ap_new_single_te_addrem(std,diffcur1,FALSE,TRUE);
+				else
+					ap_new_single_te_addrem(std,diffcur1,FALSE,FALSE);
+				
+			}
+		}
+		/* now since we have already handled changes for added and removed perms in the first while loop
+	   in this while loop we only have to look for changes only because of adds, or for just a completely
+	   new rule */
+	}
+	for (i = 0; i < AVH_SIZE; i++) {
+		for (diffcur2 = diff2->te.tab[i];diffcur2 != NULL; diffcur2 = diffcur2->next) {
+			/* find the node in p2 */
+			p2_node = find_avh_full_match(diffcur2,p2,p2,&p2->avh);
+			/* find if there is a node in p1 */
+			p1_node = find_avh_full_match(diffcur2,p2,p1,&p1->avh);
+			if (p1_node != NULL) {
+				/* find if there is a node in d1 */
+				d_cur = find_avh_full_match(diffcur2,p2,p1,&diff1->te);
+				if (d_cur == NULL) {
+					rt = ap_new_single_te_chg(std,NULL,diffcur2,p1_node,p2_node);
+					if (rt < 0)
+						goto ap_new_single_te_diff_error;
+				}
+			} else {
+				src_idx = find_type_in_p2(p2->types[diffcur2->key.src].name, p2->types[diffcur2->key.src].aliases, p1);
+				tgt_idx = find_type_in_p2(p2->types[diffcur2->key.src].name, p2->types[diffcur2->key.src].aliases, p1);
+				if (src_idx == -1 || tgt_idx == -1)
+					ap_new_single_te_addrem(std,diffcur2,TRUE,TRUE);			
+				else
+					ap_new_single_te_addrem(std,diffcur2,TRUE,FALSE);
+				if (rt < 0)
+					goto ap_new_single_te_diff_error;
+			}
+
+		}
+	}
+ap_new_single_te_diff_error:
+	if (std != NULL)
+		free(std);
+	return NULL;
+}
+
+int ap_new_single_cond_addrem(ap_single_cond_diff_t *scd,ap_cond_expr_diff_t *diff,bool_t add)
+{
+	if (scd == NULL || diff == NULL)
+		return -1;
+
+	if (add) {
+		scd->add = (ap_cond_expr_diff_t **)realloc(scd->add,sizeof(ap_cond_expr_diff_t *)*(scd->num_add + 1));
+		if (scd->add == NULL) {
+			fprintf(stderr, "out of memory\n");
+			return -1;
+		}
+		scd->add[scd->num_add] = diff;
+		scd->num_add++;
+	} else {
+		scd->rem = (ap_cond_expr_diff_t **)realloc(scd->rem,sizeof(ap_cond_expr_diff_t *)*(scd->num_rem + 1));
+		if (scd->rem == NULL) {
+			fprintf(stderr, "out of memory\n");
+			return -1;
+		}	
+		scd->rem[scd->num_rem] = diff;
+		scd->num_rem++;
+	}
+	return 0;		
+}
+
+ap_single_cond_diff_t *ap_new_single_cond_diff(apol_diff_result_t *diff)
+{
+	apol_diff_t *diff1 = NULL;
+	apol_diff_t *diff2 = NULL;
+	policy_t *p1 = NULL;
+	policy_t *p2 = NULL;	
+	ap_cond_expr_diff_t *cd = NULL;
+	ap_single_cond_diff_t *scd = NULL;
+	int rt;
+
+	p1 = diff->p1;
+	p2 = diff->p2;
+	diff1 = diff->diff1;
+	diff2 = diff->diff2;
+
+	if (diff == NULL || p1 == NULL || p2 == NULL || diff1 == NULL || diff2 == NULL)
+		return NULL;
+
+	/* set up result structure */
+	scd = (ap_single_cond_diff_t *)malloc(sizeof(ap_single_cond_diff_t));
+	if(scd == NULL) {
+		fprintf(stderr, "out of memory\n");
+		goto ap_new_single_cond_diff_error;
+	}
+	memset(scd, 0, sizeof(ap_single_cond_diff_t));
+
+
+	cd = diff1->cond_exprs;
+	while (cd != NULL) {
+		/* if the rule is not in the other policy */
+		if (cd->missing)
+			rt = ap_new_single_cond_addrem(scd,cd,FALSE);
+		else {
+
+		}
+		cd = cd->next;
+	}
+	cd = diff2->cond_exprs;
+	while (cd != NULL) {
+		/* if the rule is not in the other policy */
+		if (cd->missing)
+			rt = ap_new_single_cond_addrem(scd,cd,TRUE);
+		else {
+
+		}
+		cd = cd->next;
+	}
+
 		
+ap_new_single_cond_diff_error:
+	if (scd != NULL)
+		free(scd);
+	return NULL;
+}
+
+
+int ap_new_single_bool_node(ap_single_bool_diff_t *sbd,bool_diff_t *bd,int which)
+{
+	if (which == 0) {
+		sbd->add = (bool_diff_t **)realloc(sbd->add,sizeof(bool_diff_t *)*(sbd->num_add + 1));
+		if (sbd->add == NULL) {
+			fprintf(stderr, "out of memory\n");
+			return -1;
+		}
+		sbd->add[sbd->num_add] = bd;
+		sbd->num_add++;
+	} else if (which == 1){
+		sbd->rem = (bool_diff_t **)realloc(sbd->rem,sizeof(bool_diff_t *)*(sbd->num_rem + 1));
+		if (sbd->rem == NULL) {
+			fprintf(stderr, "out of memory\n");
+			return -1;
+		}
+		sbd->rem[sbd->num_rem] = bd;
+		sbd->num_rem++;
+	} else if (which == 2){
+		sbd->chg = (bool_diff_t **)realloc(sbd->chg,sizeof(bool_diff_t *)*(sbd->num_chg + 1));
+		if (sbd->chg == NULL) {
+			fprintf(stderr, "out of memory\n");
+			return -1;
+		}
+		sbd->chg[sbd->num_chg] = bd;
+		sbd->num_chg++;
+	} 
+	return 0;
+}
+
+ap_single_bool_diff_t *ap_new_single_bool_diff(apol_diff_result_t *diff)
+{
+	apol_diff_t *diff1 = NULL;
+	apol_diff_t *diff2 = NULL;
+	policy_t *p1 = NULL;
+	policy_t *p2 = NULL;	
+	bool_diff_t *bd = NULL;
+	ap_single_bool_diff_t *sbd = NULL;
+	int rt;
+
+	p1 = diff->p1;
+	p2 = diff->p2;
+	diff1 = diff->diff1;
+	diff2 = diff->diff2;
+
+	if (diff == NULL || p1 == NULL || p2 == NULL || diff1 == NULL || diff2 == NULL)
+		return NULL;
+
+	/* set up result structure */
+	sbd = (ap_single_bool_diff_t *)malloc(sizeof(ap_single_bool_diff_t));
+	if(sbd == NULL) {
+		fprintf(stderr, "out of memory\n");
+		goto ap_new_single_bool_diff_error;
+	}
+	memset(sbd, 0, sizeof(ap_single_bool_diff_t));
+
+
+	bd = diff1->booleans;
+	while (bd != NULL) {
+		/* is this a change? */
+		if (bd->state_diff)
+			rt = ap_new_single_bool_node(sbd,bd,0);
+		else
+			rt = ap_new_single_bool_node(sbd,bd,1);
+		bd = bd->next;
+	}
+	bd = diff2->booleans;
+	while (bd != NULL) {
+		/* is this a change? */
+		if (!bd->state_diff)
+			rt = ap_new_single_bool_node(sbd,bd,2);
+		bd = bd->next;
+	}
+	return sbd;
+		
+ap_new_single_bool_diff_error:
+	if (sbd != NULL)
+		free(sbd);
+	return NULL;
+}
+
+int ap_new_single_rtrans_chg(ap_single_rtrans_diff_t *srd,ap_rtrans_diff_t *add,ap_rtrans_diff_t *rem) 
+{
+
+	if (srd == NULL || add == NULL || rem == NULL)
+		return -1;
+	srd->chg_add = (ap_rtrans_diff_t **)realloc(srd->chg_add,sizeof(ap_single_rtrans_diff_t *)*(srd->num_chg + 1));
+	if (srd->chg_add == NULL) {
+		fprintf(stderr, "out of memory\n");
+		return -1;
+	}
+	srd->chg_rem = (ap_rtrans_diff_t **)realloc(srd->chg_rem,sizeof(ap_single_rtrans_diff_t *)*(srd->num_chg + 1));
+	if (srd->chg_rem == NULL) {
+		fprintf(stderr, "out of memory\n");
+		return -1;
+	}
+	srd->chg_add[srd->num_chg] = add;
+	srd->chg_rem[srd->num_chg] = rem;
+	srd->num_chg++;
+	return 0;
+}
+
+int ap_new_single_rtrans_addrem(ap_single_rtrans_diff_t *srd,ap_rtrans_diff_t *diff,bool_t add,bool_t type) 
+{
+	if (srd == NULL || diff == NULL)
+		return -1;
+	if (add && type) {
+		srd->add_type = (ap_rtrans_diff_t **)realloc(srd->add_type,sizeof(ap_single_rtrans_diff_t *)*(srd->num_add_type + 1));
+		if (srd->add_type == NULL) {
+			fprintf(stderr, "out of memory\n");
+			return -1;
+		}
+		srd->num_add_type++;
+	} else if (add) {
+		srd->add = (ap_rtrans_diff_t **)realloc(srd->add,sizeof(ap_single_rtrans_diff_t *)*(srd->num_add + 1));
+		if (srd->add == NULL) {
+			fprintf(stderr, "out of memory\n");
+			return -1;
+		}
+		srd->num_add++;
+	} else if (type) {
+		srd->rem_type = (ap_rtrans_diff_t **)realloc(srd->rem_type,sizeof(ap_single_rtrans_diff_t *)*(srd->num_rem_type + 1));
+		if (srd->rem_type == NULL) {
+			fprintf(stderr, "out of memory\n");
+			return -1;
+		}
+		srd->num_rem_type++;
+	} else {
+		srd->rem = (ap_rtrans_diff_t **)realloc(srd->rem,sizeof(ap_single_rtrans_diff_t *)*(srd->num_rem + 1));
+		if (srd->rem == NULL) {
+			fprintf(stderr, "out of memory\n");
+			return -1;
+		}
+		srd->num_rem++;
+	}
+		
+	return 0;
+
+}
+
+ap_single_rtrans_diff_t *ap_new_single_rtrans_diff(apol_diff_result_t *diff)
+{
+	apol_diff_t *diff1 = NULL;
+	apol_diff_t *diff2 = NULL;
+	policy_t *p1 = NULL;
+	policy_t *p2 = NULL;	
+	ap_rtrans_diff_t *rd = NULL;
+	ap_rtrans_diff_t *rd_cur = NULL;
+	ap_single_rtrans_diff_t *srd = NULL;
+	int rt,r2,t2;
+	char *name = NULL;
+
+	p1 = diff->p1;
+	p2 = diff->p2;
+	diff1 = diff->diff1;
+	diff2 = diff->diff2;
+
+	if (diff == NULL || p1 == NULL || p2 == NULL || diff1 == NULL || diff2 == NULL)
+		return NULL;
+
+	/* set up result structure */
+	srd = (ap_single_rtrans_diff_t *)malloc(sizeof(ap_single_rtrans_diff_t));
+	if(srd == NULL) {
+		fprintf(stderr, "out of memory\n");
+		goto ap_new_single_rtrans_diff_error;
+	}
+	memset(srd, 0, sizeof(ap_single_rtrans_diff_t));
+
+	rd = diff1->role_trans;
+	while (rd != NULL) {
+		/* is this a change? */
+		if (!rd->missing){
+			rt = get_role_name(rd->rs_idx,&name,p1);
+			if (rt < 0)
+				goto ap_new_single_rtrans_diff_error;
+			r2 = get_role_idx(name,p2);
+			free(name);
+			rt = get_type_name(rd->t_idx,&name,p1);
+			if (rt < 0)
+				goto ap_new_single_rtrans_diff_error;
+			t2 = get_type_idx(name,p2);
+			free(name);
+			rd_cur = diff2->role_trans;
+			while (rd_cur && (rd_cur->rs_idx != r2 || rd_cur->t_idx != t2))
+				rd_cur = rd_cur->next;
+			if(rd_cur ==NULL)
+				goto ap_new_single_rtrans_diff_error;
+			rt = ap_new_single_rtrans_chg(srd,rd,rd_cur);
+			if (rt < 0)
+				goto ap_new_single_rtrans_diff_error;
+		} else {
+			/* lets find out if this is because of a type not
+			   being in p2 */
+			rt = get_type_name(rd->t_idx,&name,p1);
+			if (rt < 0)
+				goto ap_new_single_rtrans_diff_error;
+			t2 = get_type_idx(name,p2);
+			free(name);
+			if (t2 < 0) {
+				ap_new_single_rtrans_addrem(srd,rd,FALSE,TRUE);
+			} else {
+				ap_new_single_rtrans_addrem(srd,rd,FALSE,FALSE);
+			}
+		}
+		rd = rd->next;
+	}
+	rd = diff1->role_trans;
+	while (rd != NULL) {
+		if (rd->missing) {
+			/* lets find out if this is because of a type not
+			   in p1 */
+			rt = get_type_name(rd->t_idx,&name,p2);
+			if (rt < 0)
+				goto ap_new_single_rtrans_diff_error;
+			t2 = get_type_idx(name,p1);
+			free(name);
+			if (t2 < 0) {
+				ap_new_single_rtrans_addrem(srd,rd,TRUE,TRUE);
+			} else {
+				ap_new_single_rtrans_addrem(srd,rd,TRUE,FALSE);
+			}
+
+		}
+		rd = rd->next;
+	}
+	return srd;
+		
+ap_new_single_rtrans_diff_error:
+	if (srd != NULL)
+		free(srd);
+	return NULL;
+
+
+}
+
+
+ap_single_view_diff_t *ap_new_single_diff(apol_diff_result_t *diff)
+{
+	ap_single_view_diff_t *svd = NULL;
+
+	if (diff == NULL)
+		return NULL;
+
+	/* set up result structure */
+	svd = (ap_single_view_diff_t *)malloc(sizeof(ap_single_view_diff_t));
+	if(svd == NULL) {
+		fprintf(stderr, "out of memory\n");
+		goto svd_error_return;
+	}
+	memset(svd, 0, sizeof(ap_single_view_diff_t));
+
+	/*** types ***/
+	svd->types = ap_new_iad_diff(diff,IDX_TYPE,NULL,NULL);
+	/*** attribs ***/
+	svd->attribs = ap_new_iad_diff(diff,IDX_ATTRIB,diff->p1,diff->p2);
+	/*** roles ***/
+	svd->roles = ap_new_iad_diff(diff,IDX_ROLE,diff->p1,diff->p2);
+	/*** users ***/
+	svd->users = ap_new_iad_diff(diff,IDX_USER,NULL,NULL);
+	/*** classes ***/
+	svd->classes = ap_new_iad_diff(diff,IDX_OBJ_CLASS,NULL,NULL);
+	/*** permissions ***/
+	svd->perms = ap_new_iad_diff(diff,IDX_PERM,NULL,NULL);
+	/*** common permissions ***/
+	svd->common_perms = ap_new_iad_diff(diff,IDX_COMMON_PERM,NULL,NULL);
+	/*** booleans ***/
+	svd->bools = ap_new_single_bool_diff(diff);
+	/*** role allows ***/
+	svd->rallows = ap_new_iad_diff(diff,IDX_ROLE|IDX_PERM,NULL,NULL);
+	/*** role transitions ***/
+	svd->rtrans = ap_new_single_rtrans_diff(diff);
+	/*** te rules ***/
+	svd->te = ap_new_single_te_diff(diff);
+	/*** conditionals ***/
+	svd->conds = ap_new_single_cond_diff(diff);
+
+	return svd;
+svd_error_return:
+
+
+	return NULL;
+
+}
+
 
 /* opts are policy open options (see policy.h).  They indicate to apol_get_pol_diffs()
  * what parts of the policy to differntiate.  Policies p1 and p2 must be opened with
@@ -1255,6 +2212,10 @@ apol_diff_result_t *apol_diff_policies(unsigned int opts, policy_t *p1, policy_t
 	t->diff2 = apol_get_pol_diffs(opts, p2, p1, t->bindiff);
 	if(t->diff2 == NULL)
 		goto err_return;
+
+	ap_single_view_diff_t *svd = ap_new_single_diff(t);
+	apol_free_single_diff(svd);
+//	free(svd);
 	
 	return t;
 	
