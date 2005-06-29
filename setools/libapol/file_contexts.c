@@ -8,14 +8,19 @@
 
 #include "file_contexts.h"
 #include "policy.h"
+#include <ctype.h>
+#define _GNU_SOURCE
 #include <stdio.h>
+
+/* for some reason we have to define this here to remove compile warnings */
+ssize_t getline(char **lineptr, size_t *n, FILE *stream);
 
 int parse_file_contexts_file(char *fc_path, fscon_t **contexts, int *num_contexts, policy_t *policy) 
 {
 	int array_sz = 0; /* actual size of array */
 	char *line = NULL, *tmp = NULL, *context = NULL;
-	int line_len = 0, tmp_len = 0;
-	int i = 0, retv, j, k;
+	size_t line_len = 0;
+	int i = 0, retv, j;
 	FILE *fc_file = NULL;
 
 	if (!fc_path || !contexts || !num_contexts || !policy)
