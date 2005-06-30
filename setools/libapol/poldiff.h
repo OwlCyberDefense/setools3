@@ -191,6 +191,13 @@ typedef struct ap_single_cond_diff {
         int num_chg_rem;
 } ap_single_cond_diff_t;
 
+typedef struct ap_single_perm_diff {
+	int *add;
+	int *rem;
+	int num_add;
+	int num_rem;
+} ap_single_perm_diff_t;
+
 
 typedef struct ap_single_view {
 	ap_single_iad_diff_t *types;         /* single view of the type differences */
@@ -198,7 +205,7 @@ typedef struct ap_single_view {
 	ap_single_iad_diff_t *users;         /* single view of the user differences */
 	ap_single_iad_diff_t *attribs;       /* single view of the attribute differences */
 	ap_single_iad_diff_t *classes;       /* single view of the object class differences */
-	ap_single_iad_diff_t *perms;         /* single view of the permissions differences */
+	ap_single_perm_diff_t *perms;         /* single view of the permissions differences */
 	ap_single_iad_diff_t *common_perms;  /* single view of the common permissions differences */
 	ap_single_iad_diff_t *rallows;       /* single view of the role allow differences */
 	ap_single_bool_diff_t *bools;        /* single view of the boolean differences */
@@ -207,6 +214,7 @@ typedef struct ap_single_view {
 	ap_single_cond_diff_t *conds;    /* single view of the conditional differences */
 } ap_single_view_diff_t;
 
+/* for perms we just need the ints stored in d1/d2 */
 typedef struct apol_diff_result {
 	policy_t        *p1;	/* First policy */
 	policy_t	*p2;	/* Second policy */
