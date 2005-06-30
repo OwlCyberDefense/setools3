@@ -150,7 +150,7 @@ void apol_free_single_diff(ap_single_view_diff_t *svd)
 		apol_free_single_iad(&(svd->classes),FALSE);
 	}
 	if (svd->perms != NULL) {
-		apol_free_single_iad(&(svd->perms),FALSE);
+		free(svd->perms);
 	}
 	if (svd->common_perms != NULL) {
 		apol_free_single_iad(&(svd->common_perms),FALSE);
@@ -1536,12 +1536,6 @@ ap_single_iad_diff_t *ap_new_iad_diff(apol_diff_result_t *diff,unsigned int opti
 		rem = diff->diff1->attribs;
 		has_types_diff = TRUE;
 		break;
-	case IDX_PERM:
-		get_name = &get_perm_name;
-		get_idx = &get_perm_idx;
-		add = diff->diff2->perms;
-		rem = diff->diff1->perms;		
-		break;
 	case IDX_COMMON_PERM:
 		get_name = &get_common_perm_name;
 		get_idx = &get_common_perm_idx;
@@ -2131,6 +2125,19 @@ ap_new_single_rtrans_diff_error:
 }
 
 
+ap_single_perm_diff_t *ap_new_single_perm_diff(apol_diff_result_t *diff)
+{
+	ap_single_perm_diff_t *pd;
+	if (diff == NULL)
+		return NULL;
+	pd = (ap_single_perm_diff_t*)malloc(sizeof(ap_single_perm_diff_t));
+	pd->add = diff->diff2->perms;
+	pd->num_add = diff->diff2->num_perms;
+	pd->rem = diff->diff1->perms;
+	pd->num_rem = diff->diff1->num_perms;
+	return pd;
+}
+
 ap_single_view_diff_t *ap_new_single_diff(apol_diff_result_t *diff)
 {
 	ap_single_view_diff_t *svd = NULL;
@@ -2157,7 +2164,7 @@ ap_single_view_diff_t *ap_new_single_diff(apol_diff_result_t *diff)
 	/*** classes ***/
 	svd->classes = ap_new_iad_diff(diff,IDX_OBJ_CLASS,NULL,NULL);
 	/*** permissions ***/
-	svd->perms = ap_new_iad_diff(diff,IDX_PERM,NULL,NULL);
+	svd->perms = ap_new_single_perm_diff(diff);
 	/*** common permissions ***/
 	svd->common_perms = ap_new_iad_diff(diff,IDX_COMMON_PERM,NULL,NULL);
 	/*** booleans ***/
