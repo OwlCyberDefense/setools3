@@ -55,11 +55,11 @@ typedef struct sechk_result {
 	int		num_items;
 } sechk_result_t;
 
-typedef struct sechk_opt {
+typedef struct sechk_name_value {
 	char		 *name;
 	char		 *value;
-	struct sechk_opt *next;
-} sechk_opt_t;
+	struct sechk_name_value *next;
+} sechk_name_value_t;
 
 typedef struct sechk_fn {
 	char		*name;
@@ -70,7 +70,9 @@ typedef struct sechk_fn {
 typedef struct sechk_module {
 	char		*name;                /* unique module name */
 	sechk_result_t	*result;              /* test results */
-	sechk_opt_t	*options;             /* test inputs */ 
+	sechk_name_value_t	*options;             /* test inputs */ 
+	sechk_name_value_t *requirements;
+	sechk_name_value_t *dependencies;
 	sechk_fn_t	*functions;           /* register/init/run/free/print */
 	void		*data;
 } sechk_module_t;
@@ -95,13 +97,13 @@ typedef int (*sechk_register_fn_t)(sechk_lib_t *lib);
 typedef int (*sechk_init_fn_t)(sechk_module_t *mod, policy_t *policy);
 typedef int (*sechk_run_fn_t)(sechk_module_t *mod, policy_t *policy);
 typedef void (*sechk_free_fn_t)(sechk_module_t *mod);
-typedef char *(*sechk_get_output_str_fn_t)(sechk_module_t *mod, policy_t *policy);
+typedef int (*sechk_print_output_fn_t)(sechk_module_t *mod, policy_t *policy);
 typedef sechk_result_t *(*sechk_get_result_fn_t)(sechk_module_t *mod);
 
 /* alloc methods */
 sechk_lib_t *sechk_lib_new(const char *policyfilelocation, const char *fcfilelocation);
 sechk_fn_t *sechk_fn_new(void);
-sechk_opt_t *sechk_opt_new(void);
+sechk_name_value_t *sechk_name_value_new(void);
 sechk_result_t *sechk_result_new(void);
 sechk_item_t *sechk_item_new(void);
 sechk_proof_t *sechk_proof_new(void);
@@ -109,7 +111,7 @@ sechk_proof_t *sechk_proof_new(void);
 /* free methods */
 void sechk_lib_free(sechk_lib_t *lib);
 void sechk_fn_free(sechk_fn_t *fn_struct);
-void sechk_opt_free(sechk_opt_t *opt);
+void sechk_name_value_free(sechk_name_value_t *opt);
 void sechk_result_free(sechk_result_t *res);
 void sechk_item_free(sechk_item_t *item);
 void sechk_proof_free(sechk_proof_t *proof);
@@ -125,7 +127,6 @@ sechk_module_t *sechk_lib_get_module(const char *module_name, sechk_lib_t *lib);
 void *sechk_lib_get_module_function(const char *module_name, const char *function_name, sechk_lib_t *lib);
 
 /* utility functions */
-int intlen(int n);
 int sechk_item_sev(sechk_item_t *item);
 sechk_item_t *get_sechk_item_from_result(int item_id, unsigned char item_type, sechk_result_t *res);
 sechk_proof_t *copy_sechk_proof(sechk_proof_t *orig);
