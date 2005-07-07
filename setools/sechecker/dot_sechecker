@@ -1,35 +1,35 @@
 <sechecker version="1.0">
-<sechecker version="1.0">
-	<!-- TODO: some good explanations go here
-
-	-->
+<!-- TODO: some good explanations go here -->
 	<module name="domain_type">
+		<output value="short"/>
 		<require name="pol_type" value="source"/>
-		<option name="domain_attribute" value="domain"></option>
+		<option name="domain_attribute" value="domain"/>
 	</module>
 
 	<module name="file_type">
+		<output value="short"/>
 		<require name="pol_type" value="source"/>
-		<option name="file_type_attribute" value="file_type"></option>
+		<option name="file_type_attribute" value="file_type"/>
 	</module>
 
 	<module name="domain_and_file_type">
+		<output value="short"/>
 		<require name="pol_type" value="source"/>
 		<dependency name="module" value="domain_type"/>
 		<dependency name="module" value="file_type"/>
 	</module>
-<!--
-	<module name="empty_role" status="on" mode="development">
-		<output type="short"/>
+
+<!--	<module name="empty_role" status="on" mode="development">
+		<output value="short"/>
 	</module>
 
 	<module name="empty_user" status="on" mode="development">
-		<output type="short"/>
+		<output value="short"/>
 	</module>
 
 	<module name="empty_attribute" status="on" mode="development">
 		<require pol_type="source"/>
-		<output type="short"/>
+		<output value="short"/>
 	</module> -->
 
 </sechecker>

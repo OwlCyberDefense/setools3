@@ -653,6 +653,30 @@ static int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib)
 			}
 			nv->next = current_module->dependencies;
 			current_module->dependencies = nv;
+		} else if (xmlStrEqual(xmlTextReaderConstName(reader), PARSE_OUTPUT_TAG) == 1) {
+			if (!current_module) {
+				fprintf(stderr, "Error: 'output' specified outside the scope of a module.\n");
+				goto exit_err;
+			}
+			attrib = xmlTextReaderGetAttribute(reader, PARSE_VALUE_ATTRIB);
+			if (attrib) {
+				if (xmlStrEqual(attrib, PARSE_OUTPUT_STATS) == 1) {
+					current_module->outputformat |= SECHK_OUT_STATS;
+				} else if (xmlStrEqual(attrib, PARSE_OUTPUT_LIST) == 1) {
+					current_module->outputformat |= SECHK_OUT_LIST;
+				} else if (xmlStrEqual(attrib, PARSE_OUTPUT_LONG) == 1) {
+					current_module->outputformat |= SECHK_OUT_LONG;
+				} else if (xmlStrEqual(attrib, PARSE_OUTPUT_HEADER) == 1) {
+					current_module->outputformat |= SECHK_OUT_HEADER;
+				} else if (xmlStrEqual(attrib, PARSE_OUTPUT_FULL) == 1) {
+					current_module->outputformat |= SECHK_OUT_FULL;
+				}
+				free(attrib);
+				attrib = NULL;
+			} else {
+				fprintf(stderr, "Error: dependency value is not specified in configuration file.\n");
+				goto exit_err;
+			}
 		}
 		break;
 	}
