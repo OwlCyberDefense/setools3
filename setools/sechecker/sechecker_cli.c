@@ -8,7 +8,7 @@
 
 #include "sechecker.h" 
 #include "policy.h"
-#include "modules/register_list.h"
+#include "register_list.h"
 
 #include <stdio.h>
 #include <string.h>
