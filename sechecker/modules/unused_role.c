@@ -27,14 +27,14 @@ int unused_role_register(sechk_lib_t *lib)
 
 	library = lib;
 
-	mod = get_module("unused_role", lib);
+	mod = sechk_lib_get_module("unused_role", lib);
 	if (!mod) {
 		fprintf(stderr, "unused_role_register failed: module unknown\n");
 		return -1;
 	}
 	
 	/* register functions */
-	fn_struct = new_sechk_fn();
+	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		fprintf(stderr, "unused_role_register failed: out of memory\n");
 		return -1;
@@ -48,7 +48,7 @@ int unused_role_register(sechk_lib_t *lib)
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
-	fn_struct = new_sechk_fn();
+	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		fprintf(stderr, "unused_role_register failed: out of memory\n");
 		return -1;
@@ -62,7 +62,7 @@ int unused_role_register(sechk_lib_t *lib)
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
-	fn_struct = new_sechk_fn();
+	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		fprintf(stderr, "unused_role_register failed: out of memory\n");
 		return -1;
@@ -76,7 +76,7 @@ int unused_role_register(sechk_lib_t *lib)
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
-	fn_struct = new_sechk_fn();
+	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		fprintf(stderr, "unused_role_register failed: out of memory\n");
 		return -1;
@@ -90,7 +90,7 @@ int unused_role_register(sechk_lib_t *lib)
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
-	fn_struct = new_sechk_fn();
+	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		fprintf(stderr, "unused_role_register failed: out of memory\n");
 		return -1;
@@ -104,7 +104,7 @@ int unused_role_register(sechk_lib_t *lib)
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
-	fn_struct = new_sechk_fn();
+	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		fprintf(stderr, "unused_role_register failed: out of memory\n");
 		return -1;
@@ -229,7 +229,7 @@ int unused_role_run(sechk_module_t *mod, policy_t *policy)
 		return 0;
 
 	datum = (unused_role_data_t*)mod->data;
-	res = new_sechk_result();
+	res = sechk_result_new();
 	if (!res) {
 		fprintf(stderr, "unused_role_run failed: out of memory\n");
 		return -1;
@@ -250,9 +250,9 @@ int unused_role_run(sechk_module_t *mod, policy_t *policy)
 
 unused_role_run_fail:
 	/* TODO: free any allocations */
-	free_sechk_proof(&proof);
-	free_sechk_item(&item);
-	free_sechk_result(&res);
+	sechk_proof_free(proof);
+	sechk_item_free(item);
+	sechk_result_free(res);
 	return -1;
 }
 
@@ -269,9 +269,9 @@ void unused_role_free(sechk_module_t *mod)
 	
 	free(mod->name);
 	mod->name = NULL;
-	free_sechk_result(&(mod->result));
-	free_sechk_opt(&(mod->options));
-	free_sechk_fn(&(mod->functions));
+	sechk_result_free(mod->result);
+	sechk_opt_free(mod->options);
+	sechk_fn_free(mod->functions);
 	free_unused_role_data((unused_role_data_t**)&(mod->data));
 }
 
