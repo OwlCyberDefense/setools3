@@ -29,14 +29,14 @@ int unused_type_register(sechk_lib_t *lib)
 
 	library = lib;
 
-	mod = get_module("unused_type", lib);
+	mod = sechk_lib_get_module("unused_type", lib);
 	if (!mod) {
 		fprintf(stderr, "unused_type_register failed: module unknown\n");
 		return -1;
 	}
 	
 	/* register functions */
-	fn_struct = new_sechk_fn();
+	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		fprintf(stderr, "unused_type_register failed: out of memory\n");
 		return -1;
@@ -50,7 +50,7 @@ int unused_type_register(sechk_lib_t *lib)
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
-	fn_struct = new_sechk_fn();
+	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		fprintf(stderr, "unused_type_register failed: out of memory\n");
 		return -1;
@@ -64,7 +64,7 @@ int unused_type_register(sechk_lib_t *lib)
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
-	fn_struct = new_sechk_fn();
+	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		fprintf(stderr, "unused_type_register failed: out of memory\n");
 		return -1;
@@ -78,7 +78,7 @@ int unused_type_register(sechk_lib_t *lib)
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
-	fn_struct = new_sechk_fn();
+	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		fprintf(stderr, "unused_type_register failed: out of memory\n");
 		return -1;
@@ -92,7 +92,7 @@ int unused_type_register(sechk_lib_t *lib)
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
-	fn_struct = new_sechk_fn();
+	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		fprintf(stderr, "unused_type_register failed: out of memory\n");
 		return -1;
@@ -106,7 +106,7 @@ int unused_type_register(sechk_lib_t *lib)
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
-	fn_struct = new_sechk_fn();
+	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		fprintf(stderr, "unused_type_register failed: out of memory\n");
 		return -1;
@@ -236,7 +236,7 @@ int unused_type_run(sechk_module_t *mod, policy_t *policy)
 		return 0;
 
 	datum = (unused_type_data_t*)mod->data;
-	res = new_sechk_result();
+	res = sechk_result_new();
 	if (!res) {
 		fprintf(stderr, "unused_type_run failed: out of memory\n");
 		return -1;
@@ -296,7 +296,7 @@ int unused_type_run(sechk_module_t *mod, policy_t *policy)
 					break;
 				}
 				if (buff) {
-					proof = new_sechk_proof();
+					proof = sechk_proof_new();
 					if (!proof) {
 						fprintf(stderr, "unused_type_run failed: out of memory\n");
 						goto unused_type_run_fail;
@@ -306,7 +306,7 @@ int unused_type_run(sechk_module_t *mod, policy_t *policy)
 					proof->text = buff;
 					proof->severity = SECHK_SEV_LOW;
 					if (!item) {
-						item = new_sechk_item();
+						item = sechk_item_new();
 						if (!item) {
 							fprintf(stderr, "unused_type_run failed: out of memory\n");
 							goto unused_type_run_fail;
@@ -323,8 +323,8 @@ int unused_type_run(sechk_module_t *mod, policy_t *policy)
 				break;
 		}
 		if (used) {
-			free_sechk_proof(&proof);
-			free_sechk_item(&item);
+			sechk_proof_free(proof);
+			sechk_item_free(item);
 			continue;
 		}
 
@@ -365,7 +365,7 @@ int unused_type_run(sechk_module_t *mod, policy_t *policy)
 					break;
 				}
 				if (buff) {
-					proof = new_sechk_proof();
+					proof = sechk_proof_new();
 					if (!proof) {
 						fprintf(stderr, "unused_type_run failed: out of memory\n");
 						goto unused_type_run_fail;
@@ -375,7 +375,7 @@ int unused_type_run(sechk_module_t *mod, policy_t *policy)
 					proof->text = buff;
 					proof->severity = SECHK_SEV_LOW;
 					if (!item) {
-						item = new_sechk_item();
+						item = sechk_item_new();
 						if (!item) {
 							fprintf(stderr, "unused_type_run failed: out of memory\n");
 							goto unused_type_run_fail;
@@ -392,8 +392,8 @@ int unused_type_run(sechk_module_t *mod, policy_t *policy)
 				break;
 		}
 		if (used) {
-			free_sechk_proof(&proof);
-			free_sechk_item(&item);
+			sechk_proof_free(proof);
+			sechk_item_free(item);
 			continue;
 		}
 
@@ -439,7 +439,7 @@ int unused_type_run(sechk_module_t *mod, policy_t *policy)
 				strcat(buff, policy->roles[policy->role_trans[j].trans_role.idx].name);
 				strcat(buff, ";");
 
-				proof = new_sechk_proof();
+				proof = sechk_proof_new();
 				if (!proof) {
 					fprintf(stderr, "unused_type_run failed: out of memory\n");
 					goto unused_type_run_fail;
@@ -449,7 +449,7 @@ int unused_type_run(sechk_module_t *mod, policy_t *policy)
 				proof->text = buff;
 				proof->severity = SECHK_SEV_LOW;
 				if (!item) {
-					item = new_sechk_item();
+					item = sechk_item_new();
 					if (!item) {
 						fprintf(stderr, "unused_type_run failed: out of memory\n");
 						goto unused_type_run_fail;
@@ -472,7 +472,7 @@ int unused_type_run(sechk_module_t *mod, policy_t *policy)
 					fprintf(stderr, "unused_type_run failed: out of memory\n");
 					goto unused_type_run_fail;
 				}
-				proof = new_sechk_proof();
+				proof = sechk_proof_new();
 				if (!proof) {
 					fprintf(stderr, "unused_type_run failed: out of memory\n");
 					goto unused_type_run_fail;
@@ -482,7 +482,7 @@ int unused_type_run(sechk_module_t *mod, policy_t *policy)
 				proof->text = buff;
 				proof->severity = SECHK_SEV_LOW;
 				if (!item) {
-					item = new_sechk_item();
+					item = sechk_item_new();
 					if (!item) {
 						fprintf(stderr, "unused_type_run failed: out of memory\n");
 						goto unused_type_run_fail;
@@ -507,7 +507,7 @@ int unused_type_run(sechk_module_t *mod, policy_t *policy)
 					goto unused_type_run_fail;
 				}
 				retv = POL_LIST_AV_ACC;
-				proof = new_sechk_proof();
+				proof = sechk_proof_new();
 				if (!proof) {
 					fprintf(stderr, "unused_type_run failed: out of memory\n");
 					goto unused_type_run_fail;
@@ -517,7 +517,7 @@ int unused_type_run(sechk_module_t *mod, policy_t *policy)
 				proof->text = buff;
 				proof->severity = SECHK_SEV_LOW;
 				if (!item) {
-					item = new_sechk_item();
+					item = sechk_item_new();
 					if (!item) {
 						fprintf(stderr, "unused_type_run failed: out of memory\n");
 						goto unused_type_run_fail;
@@ -533,7 +533,7 @@ int unused_type_run(sechk_module_t *mod, policy_t *policy)
 
 		/* not used anywhere*/
 		if (!item) {
-			proof = new_sechk_proof();
+			proof = sechk_proof_new();
 			if (!proof) {
 				fprintf(stderr, "unused_type_run failed: out of memory\n");
 				goto unused_type_run_fail;
@@ -543,7 +543,7 @@ int unused_type_run(sechk_module_t *mod, policy_t *policy)
 			proof->text = strdup("This type does not appear in any rules.");
 			proof->severity = SECHK_SEV_MIN;
 			if (!item) {
-				item = new_sechk_item();
+				item = sechk_item_new();
 				if (!item) {
 					fprintf(stderr, "unused_type_run failed: out of memory\n");
 					goto unused_type_run_fail;
@@ -563,9 +563,9 @@ int unused_type_run(sechk_module_t *mod, policy_t *policy)
 
 unused_type_run_fail:
 	free(buff);
-	free_sechk_proof(&proof);
-	free_sechk_item(&item);
-	free_sechk_result(&res);
+	sechk_proof_free(proof);
+	sechk_item_free(item);
+	sechk_result_free(res);
 	return -1;
 }
 
@@ -582,9 +582,9 @@ void unused_type_free(sechk_module_t *mod)
 	
 	free(mod->name);
 	mod->name = NULL;
-	free_sechk_result(&(mod->result));
-	free_sechk_opt(&(mod->options));
-	free_sechk_fn(&(mod->functions));
+	sechk_result_free(mod->result);
+	sechk_opt_free(mod->options);
+	sechk_fn_free(mod->functions);
 	free_unused_type_data((unused_type_data_t**)&(mod->data));
 }
 

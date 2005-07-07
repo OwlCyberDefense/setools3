@@ -1,15 +1,15 @@
 <sechecker version="1.0">
 
-<global>
-	<!--output type options are full, long, short, stats -->
-	<output type="full"/>
-	<selinux_config path="/etc/selinux/config"/>
-</global>
+<!-- Specify the output type. possible values - full, long, short, stats -->
+<output_type value="full"/>
+
+<!-- Specify the selinux configuration file -->
+<selinux_config value="/etc/selinux/config"/>
 
 <!-- Sample Module Block
-declaration: all three attributes are required
-name = name of module
-status = {"on", "off"} 
+  declaration: all three attributes are required
+  name: name of module
+  status = {"on", "off"} 
 when on run automatically when off run only if needed for another module
 mode = {"system","development", "both"}
 system mode means the module requires an actively running selinux system

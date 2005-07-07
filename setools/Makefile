@@ -23,9 +23,6 @@ DYNAMIC 		= 0
 # Useful to create a version of apol that runs on non-selinux machines. 
 # Set this to 0 for non-selinux machines.
 USE_LIBSELINUX 		= 1
-# if PERFORM_TEST is 1 libraries will be compiled with performance tests
-# this is for testing only 
-PERFORM_TEST            = 0
 
 LIBS		= -lfl -lm
 TCLVER		= $(shell env tclsh tcl_vars)

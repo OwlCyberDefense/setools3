@@ -31,14 +31,14 @@ int file_type_register(sechk_lib_t *lib)
 
 	library = lib;
 
-	mod = get_module("file_type", lib);
+	mod = sechk_lib_get_module("file_type", lib);
 	if (!mod) {
 		fprintf(stderr, "file_type_register failed: module unknown\n");
 		return -1;
 	}
 	
 	/* register functions */
-	fn_struct = new_sechk_fn();
+	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		fprintf(stderr, "file_type_register failed: out of memory\n");
 		return -1;
@@ -52,7 +52,7 @@ int file_type_register(sechk_lib_t *lib)
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
-	fn_struct = new_sechk_fn();
+	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		fprintf(stderr, "file_type_register failed: out of memory\n");
 		return -1;
@@ -66,7 +66,7 @@ int file_type_register(sechk_lib_t *lib)
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
-	fn_struct = new_sechk_fn();
+	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		fprintf(stderr, "file_type_register failed: out of memory\n");
 		return -1;
@@ -80,7 +80,7 @@ int file_type_register(sechk_lib_t *lib)
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
-	fn_struct = new_sechk_fn();
+	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		fprintf(stderr, "file_type_register failed: out of memory\n");
 		return -1;
@@ -94,7 +94,7 @@ int file_type_register(sechk_lib_t *lib)
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
-	fn_struct = new_sechk_fn();
+	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		fprintf(stderr, "file_type_register failed: out of memory\n");
 		return -1;
@@ -108,7 +108,7 @@ int file_type_register(sechk_lib_t *lib)
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
-	fn_struct = new_sechk_fn();
+	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		fprintf(stderr, "file_type_register failed: out of memory\n");
 		return -1;
@@ -259,7 +259,7 @@ int file_type_run(sechk_module_t *mod, policy_t *policy)
 	associate_perm_idx = get_perm_idx("associate", policy);
 
 	datum = (file_type_data_t*)mod->data;
-	res = new_sechk_result();
+	res = sechk_result_new();
 	if (!res) {
 		fprintf(stderr, "file_type_run failed: out of memory\n");
 		return -1;
@@ -303,7 +303,7 @@ int file_type_run(sechk_module_t *mod, policy_t *policy)
 			for (j = 0; j < datum->num_file_type_attribs; j++) {
 				buff = NULL;
 				if (find_int_in_array(datum->file_type_attribs[j], attribs, num_attribs) != -1) {
-					proof = new_sechk_proof();
+					proof = sechk_proof_new();
 					if (!proof) {
 						fprintf(stderr, "file_type_run failed: out of memory\n");
 						goto file_type_run_fail;
@@ -324,7 +324,7 @@ int file_type_run(sechk_module_t *mod, policy_t *policy)
 					}
 					snprintf(proof->text, buff_sz, "type %s has attribute %s", policy->types[i].name, policy->attribs[datum->file_type_attribs[j]].name);
 					if (!item) {
-						item = new_sechk_item();
+						item = sechk_item_new();
 						if (!item) {
 							fprintf(stderr, "file_type_run failed: out of memory\n");
 							goto file_type_run_fail;
@@ -352,7 +352,7 @@ int file_type_run(sechk_module_t *mod, policy_t *policy)
 					buff = NULL;
 					if (does_av_rule_use_perms(hash_rule->rule, 1, &associate_perm_idx, 1, policy)) {
 						buff = re_render_av_rule(!is_binary_policy(policy), hash_rule->rule, 0, policy);
-						proof = new_sechk_proof();
+						proof = sechk_proof_new();
 						if (!proof) {
 							fprintf(stderr, "file_type_run failed: out of memory\n");
 							goto file_type_run_fail;
@@ -362,7 +362,7 @@ int file_type_run(sechk_module_t *mod, policy_t *policy)
 						proof->text = buff;
 						proof->severity = SECHK_SEV_LOW;
 						if (!item) {
-							item = new_sechk_item();
+							item = sechk_item_new();
 							if (!item) {
 								fprintf(stderr, "file_type_run failed: out of memory\n");
 								goto file_type_run_fail;
@@ -385,7 +385,7 @@ int file_type_run(sechk_module_t *mod, policy_t *policy)
 					fprintf(stderr, "file_type_run failed: out of memory\n");
 					goto file_type_run_fail;
 				}
-				proof = new_sechk_proof();
+				proof = sechk_proof_new();
 				if (!proof) {
 					fprintf(stderr, "file_type_run failed: out of memory\n");
 					goto file_type_run_fail;
@@ -395,7 +395,7 @@ int file_type_run(sechk_module_t *mod, policy_t *policy)
 				proof->text = buff;
 				proof->severity = SECHK_SEV_LOW;
 				if (!item) {
-					item = new_sechk_item();
+					item = sechk_item_new();
 					if (!item) {
 						fprintf(stderr, "file_type_run failed: out of memory\n");
 						goto file_type_run_fail;
@@ -485,7 +485,7 @@ int file_type_run(sechk_module_t *mod, policy_t *policy)
 					} else {
 						strcat(buff, "<<none>>");
 					}
-					proof = new_sechk_proof();
+					proof = sechk_proof_new();
 					if (!proof) {
 						fprintf(stderr, "file_type_run failed: out of memory\n");
 						goto file_type_run_fail;
@@ -495,7 +495,7 @@ int file_type_run(sechk_module_t *mod, policy_t *policy)
 					proof->text = buff;
 					proof->severity = SECHK_SEV_MOD;
 					if (!item) {
-						item = new_sechk_item();
+						item = sechk_item_new();
 						if (!item) {
 							fprintf(stderr, "file_type_run failed: out of memory\n");
 							goto file_type_run_fail;
@@ -526,29 +526,15 @@ int file_type_run(sechk_module_t *mod, policy_t *policy)
 
 file_type_run_fail:
 	/* TODO: free any allocations */
-	free_sechk_proof(&proof);
-	free_sechk_item(&item);
-	free_sechk_result(&res);
+	sechk_proof_free(proof);
+	sechk_item_free(item);
+	sechk_result_free(res);
 	free(buff);
 	return -1;
 }
 
 void file_type_free(sechk_module_t *mod) 
 {
-	if (!mod) {
-		fprintf(stderr, "file_type_free failed: invalid parameters\n");
-		return;
-	}
-	if (strcmp("file_type", mod->name)) {
-		fprintf(stderr, "file_type_free failed: wrong module (%s)\n", mod->name);
-		return;
-	}
-	
-	free(mod->name);
-	mod->name = NULL;
-	free_sechk_result(&(mod->result));
-	free_sechk_opt(&(mod->options));
-	free_sechk_fn(&(mod->functions));
 	free_file_type_data((file_type_data_t**)&(mod->data));
 }
 
