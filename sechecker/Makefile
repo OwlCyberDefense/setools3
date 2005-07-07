@@ -10,10 +10,10 @@ CFLAGS 		  += -D_GNU_SOURCE
 
 all: sechecker
 
-sechecker:$(LIBAPOL) $(MODULES) $(OBJS) sechecker_cli.o
-	$(CC) $(CFLAGS) -o $@ sechecker_cli.o $(OBJS) $(LIBXML_LIBS) $(MODULES) $(LIBAPOL) $(LIBSELINUX) $(LINKFLAGS)
+sechecker:$(LIBAPOL) $(MODULES) $(OBJS) sechecker_cli.o register_list.o
+	$(CC) $(CFLAGS) -o $@ sechecker_cli.o register_list.o $(OBJS) $(LIBXML_LIBS) $(MODULES) $(LIBAPOL) $(LIBSELINUX) $(LINKFLAGS)
 
-sechecker_cli.o: sechecker_cli.c modules/register_list.h
+sechecker_cli.o: sechecker_cli.c register_list.o
 	$(CC) $(CFLAGS) $(INCLUDE) $(LIBXML_FLAGS) -DSECHECKER_VERSION=$(SECHECKER_VERSION) -c $<
 
 %.o: %.c
