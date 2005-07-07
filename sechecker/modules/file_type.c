@@ -85,12 +85,12 @@ int file_type_register(sechk_lib_t *lib)
 		fprintf(stderr, "file_type_register failed: out of memory\n");
 		return -1;
 	}
-	fn_struct->name = strdup("get_output_str");
+	fn_struct->name = strdup("print_output");
 	if (!fn_struct->name) {
 		fprintf(stderr, "file_type_register failed: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &file_type_get_output_str;
+	fn_struct->fn = &file_type_print_output;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -128,7 +128,7 @@ int file_type_register(sechk_lib_t *lib)
 
 int file_type_init(sechk_module_t *mod, policy_t *policy) 
 {
-	sechk_opt_t *opt = NULL;
+	sechk_name_value_t *opt = NULL;
 	file_type_data_t *datum = NULL;
 	bool_t header = TRUE;
 	int attr = -1, retv;
@@ -143,7 +143,7 @@ int file_type_init(sechk_module_t *mod, policy_t *policy)
 		return -1;
 	}
 
-	datum = new_file_type_data();
+	datum = file_type_data_new();
 	if (!datum) {
 		fprintf(stderr, "file_type_init failed: out of memory\n");
 		return -1;
@@ -238,8 +238,6 @@ int file_type_run(sechk_module_t *mod, policy_t *policy)
 	char *buff = NULL;
 	int buff_sz;
 	int *attribs = NULL, num_attribs = 0;
-
-	/* TODO: vars */
 
 	if (!mod || !policy) {
 		fprintf(stderr, "file_type_run failed: invalid parameters\n");
@@ -525,7 +523,6 @@ int file_type_run(sechk_module_t *mod, policy_t *policy)
 	return 0;
 
 file_type_run_fail:
-	/* TODO: free any allocations */
 	sechk_proof_free(proof);
 	sechk_item_free(item);
 	sechk_result_free(res);
@@ -535,13 +532,12 @@ file_type_run_fail:
 
 void file_type_free(sechk_module_t *mod) 
 {
-	free_file_type_data((file_type_data_t**)&(mod->data));
+	file_type_data_free((file_type_data_t*)(mod->data));
+	free(mod->data);
 }
 
-char *file_type_get_output_str(sechk_module_t *mod, policy_t *policy) 
+int file_type_print_output(sechk_module_t *mod, policy_t *policy) 
 {
-	char *buff = NULL, *tmp = NULL;
-	unsigned long buff_sz = 0L;
 	file_type_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
@@ -550,82 +546,50 @@ char *file_type_get_output_str(sechk_module_t *mod, policy_t *policy)
 
 
 	if (!mod || !policy) {
-		fprintf(stderr, "file_type_get_output_str failed: invalid parameters\n");
-		return NULL;
+		fprintf(stderr, "file_type_print_output failed: invalid parameters\n");
+		return -1;
 	}
 	if (strcmp("file_type", mod->name)) {
-		fprintf(stderr, "file_type_get_output_str failed: wrong module (%s)\n", mod->name);
-		return NULL;
+		fprintf(stderr, "file_type_print_output failed: wrong module (%s)\n", mod->name);
+		return -1;
 	}
 	if (!mod->result) {
-		fprintf(stderr, "file_type_get_output_str failed: module has not been run\n");
-		return NULL;
+		fprintf(stderr, "file_type_print_output failed: module has not been run\n");
+		return -1;
 	}
 
 	datum = (file_type_data_t*)mod->data;
 	outformat = datum->outformat;
 	if (!outformat)
-		return NULL; /* not an error - no output is requested */
+		return 0; /* not an error - no output is requested */
 
-	buff_sz += strlen("Module: File Type\n");
+	printf("Module: File Type\n");
 	if (outformat & SECHK_OUT_HEADER) {
-		buff_sz += strlen(datum->mod_header);
+		printf("%s", datum->mod_header);
 	}
 	if (outformat & SECHK_OUT_STATS) {
-		buff_sz += strlen("Found  file types.\n") + intlen(mod->result->num_items);
+		printf("Found %i file types.\n", mod->result->num_items);
 	}
 	if (outformat & SECHK_OUT_LIST) {
-		buff_sz++; /* '\n' */
-		for (item = mod->result->items; item; item = item->next) {
-			buff_sz += 2 + strlen(policy->types[item->item_id].name);
-		}
-	}
-	if (outformat & SECHK_OUT_LONG) {
-		buff_sz += 2;
-		for (item = mod->result->items; item; item = item->next) {
-			buff_sz += strlen(policy->types[item->item_id].name);
-			buff_sz += strlen(" - severity: x\n");
-			for (proof = item->proof; proof; proof = proof->next) {
-				buff_sz += 2 + strlen(proof->text);
-			}
-		}
-	}
-	buff_sz++; /* '\0' */
-
-	buff = (char*)calloc(buff_sz, sizeof(char));
-	if (!buff) {
-		fprintf(stderr, "file_type_get_output_str failed: out of memory\n");
-		return NULL;
-	}
-	tmp = buff;
-
-	tmp += sprintf(buff, "Module: File Type\n");
-	if (outformat & SECHK_OUT_HEADER) {
-		tmp += sprintf(tmp, datum->mod_header);
-	}
-	if (outformat & SECHK_OUT_STATS) {
-		tmp += sprintf(tmp, "Found %i file types.\n", mod->result->num_items);
-	}
-	if (outformat & SECHK_OUT_LIST) {
-		tmp += sprintf(tmp, "\n");
+		printf("\n");
 		for (item = mod->result->items; item; item = item->next) {
 			i++;
 			i %= 4; /* 4 items per line */
-			tmp += sprintf(tmp, "%s %c", policy->types[item->item_id].name, i?' ':'\n');
+			printf("%s %c", policy->types[item->item_id].name, i?' ':'\n');
 		}
 	}
 	if (outformat & SECHK_OUT_LONG) {
-		tmp += sprintf(tmp, "\n\n");
+		printf("\n\n");
 		for (item = mod->result->items; item; item = item->next) {
-			tmp += sprintf(tmp,"%s", policy->types[item->item_id].name);
-			tmp += sprintf(tmp, " - severity: %i\n", sechk_item_sev(item));
+			printf("%s", policy->types[item->item_id].name);
+			printf(" - severity: %i\n", sechk_item_sev(item));
 			for (proof = item->proof; proof; proof = proof->next) {
-				tmp += sprintf(tmp,"\t%s\n", proof->text);
+				printf("\t%s\n", proof->text);
 			}
 		}
 	}
 
-	return buff;
+	return 0;
 }
 
 sechk_result_t *file_type_get_result(sechk_module_t *mod) 
@@ -643,7 +607,7 @@ sechk_result_t *file_type_get_result(sechk_module_t *mod)
 	return mod->result;
 }
 
-file_type_data_t *new_file_type_data(void) 
+file_type_data_t *file_type_data_new(void) 
 {
 	file_type_data_t *datum = NULL;
 
@@ -652,16 +616,14 @@ file_type_data_t *new_file_type_data(void)
 	return datum;
 }
 
-void free_file_type_data(file_type_data_t **datum) 
+void file_type_data_free(file_type_data_t *datum) 
 {
-	if (!datum || !(*datum))
+	if (!datum)
 		return;
 
-	free((*datum)->file_type_attribs);
+	free(datum->file_type_attribs);
 
-	free((*datum)->mod_header);
-	free(*datum);
-	*datum = NULL;
+	free(datum->mod_header);
 }
 
 int file_type_get_file_type_list(sechk_module_t *mod, int **array, int *size) 
