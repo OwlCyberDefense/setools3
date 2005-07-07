@@ -20,13 +20,8 @@
 extern int domain_type_register(sechk_lib_t *lib);
 extern int file_type_register(sechk_lib_t *lib);
 extern int domain_and_file_type_register(sechk_lib_t *lib);
+/* additional externs go here ... */
 
-/* array of register function pointers*/
-sechk_register_fn_t register_list[] = { \
-/* &<module_name>_register,\ */
-&domain_type_register,\
-&file_type_register,\
-&domain_and_file_type_register
-};
+int sechk_register_get_num_modules();
 
 #endif /* SECHK_REGISTER_LIST_H */
