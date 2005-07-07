@@ -21,6 +21,16 @@
 #define SECHK_OUT_LONG   0x04
 #define SECHK_OUT_HEADER 0x08
 
+/* xml parser keywords */
+#define PARSE_SECHECKER_TAG      (xmlChar*)"sechecker"
+#define PARSE_MODULE_TAG         (xmlChar*)"module"
+#define PARSE_OPTION_TAG         (xmlChar*)"option"
+#define PARSE_REQUIRE_TAG        (xmlChar*)"require"
+#define PARSE_DEPENDENCY_TAG     (xmlChar*)"dependency"
+#define PARSE_VALUE_ATTRIB       (xmlChar*)"value"
+#define PARSE_NAME_ATTRIB        (xmlChar*)"name"
+#define PARSE_VERSION_ATTRIB     (xmlChar*)"version"
+
 /* module results proof */
 typedef struct sechk_proof {
 	int		idx;
@@ -68,13 +78,13 @@ typedef struct sechk_fn {
 } sechk_fn_t;
 
 typedef struct sechk_module {
-	char		*name;                /* unique module name */
-	sechk_result_t	*result;              /* test results */
-	sechk_name_value_t	*options;             /* test inputs */ 
+	char		   *name;                /* unique module name */
+	sechk_result_t	  *result;              /* test results */
+	sechk_name_value_t *options;             /* test inputs */ 
 	sechk_name_value_t *requirements;
 	sechk_name_value_t *dependencies;
-	sechk_fn_t	*functions;           /* register/init/run/free/print */
-	void		*data;
+	sechk_fn_t	   *functions;           /* register/init/run/free/print */
+	void		   *data;
 } sechk_module_t;
 
 typedef struct sechk_lib {
@@ -111,11 +121,11 @@ sechk_proof_t *sechk_proof_new(void);
 /* free methods */
 void sechk_lib_free(sechk_lib_t *lib);
 void sechk_fn_free(sechk_fn_t *fn_struct);
-void sechk_name_value_free(sechk_name_value_t *opt);
 void sechk_result_free(sechk_result_t *res);
 void sechk_item_free(sechk_item_t *item);
 void sechk_proof_free(sechk_proof_t *proof);
 void sechk_module_free(sechk_module_t *module, sechk_free_fn_t free_fn);
+void sechk_name_value_destroy(sechk_name_value_t *opt);
 
 /* register/init/run -  modules */
 int sechk_lib_register_modules(sechk_register_fn_t *register_fns, sechk_lib_t *lib);
