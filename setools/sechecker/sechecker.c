@@ -9,7 +9,7 @@
  */
 
 #include "sechecker.h"
-#include "modules/register_list.h"
+#include "register_list.h"
 #include <stdio.h>
 #include <string.h> 
 #include <assert.h>
@@ -161,12 +161,11 @@ void sechk_module_free(sechk_module_t *module, sechk_free_fn_t free_fn)
 	if (!module)
 		return;
 
-	if (module->name)
 		free(module->name);
-	if (module->result)
 		sechk_result_free(module->result);
-	if (module->options)
-		sechk_opt_free(module->options);
+		sechk_name_value_free(module->options);
+		sechk_name_value_free(module->requirements);
+		sechk_name_value_free(module->dependencies);
 	if (module->data) {
 		assert(free_fn);
 		free_fn(module);
@@ -190,9 +189,9 @@ void sechk_fn_free(sechk_fn_t *fn_struct)
 	}
 }
 
-void sechk_opt_free(sechk_opt_t *opt)
+void sechk_name_value_free(sechk_name_value_t *opt)
 {
-	sechk_opt_t *next_opt = NULL;
+	sechk_name_value_t *next_opt = NULL;
 
 	if (!opt)
 		return;
@@ -253,10 +252,10 @@ sechk_fn_t *sechk_fn_new(void)
 	return (sechk_fn_t*)calloc(1, sizeof(sechk_fn_t));
 }
 
-sechk_opt_t *sechk_opt_new(void)
+sechk_name_value_t *sechk_name_value_new(void)
 {
 	/* no initialization needed here */
-	return (sechk_opt_t*)calloc(1, sizeof(sechk_opt_t));
+	return (sechk_name_value_t*)calloc(1, sizeof(sechk_name_value_t));
 }
 
 sechk_result_t *sechk_result_new(void) 
@@ -379,7 +378,7 @@ int sechk_lib_init_modules(sechk_lib_t *lib)
 
 int sechk_lib_run_modules(sechk_lib_t *lib) 
 {
-	int i, retv;
+	int i, retv, success = 0;
 	sechk_run_fn_t run_fn = NULL;
 
 	for (i = 0; i < lib->num_modules; i++) {
@@ -393,25 +392,13 @@ int sechk_lib_run_modules(sechk_lib_t *lib)
 			return -1;
 		}
 		retv = run_fn(&(lib->modules[i]), lib->policy);
-		if (retv)
+		if (retv) {
 			fprintf(stderr, "Error: module %s failed\n", lib->modules[i].name);
+			success++;
+		}
 	}
 
-	return 0;
-}
-
-int intlen(int n)
-{
-	int i = 1;
-	if (i < 0) {
-		i++;
-		n *= -1;
-	}
-	while (n > 10) {
-		n /= 10;
-		i++;
-	}
-	return i;
+	return success;
 }
 
 int sechk_item_sev(sechk_item_t *item)
@@ -547,7 +534,7 @@ static int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib)
 {
 	xmlChar *attrib = NULL;
 	int idx;
-	sechk_opt_t *option;
+	sechk_name_value_t *option;
 	static sechk_module_t *current_module=NULL;
 
 	switch (xmlTextReaderNodeType(reader)) {
@@ -594,7 +581,7 @@ static int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib)
 			}
 		} else if (xmlStrEqual(xmlTextReaderConstName(reader), PARSE_OPTION_TAG) == 1) {
 			/* parsing the <option> tag within a module */
-			option = sechk_opt_new();
+			option = sechk_name_value_new();
 			attrib = xmlTextReaderGetAttribute(reader, PARSE_NAME_ATTRIB);
 			if (attrib) {
 				option->name = strdup((char*)attrib);
@@ -629,7 +616,7 @@ static int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib)
 	if (attrib)
 		free(attrib);
 	if (option) {
-		sechk_opt_free(option);
+		sechk_name_value_free(option);
 		free(option);
 	}
 	return -1;
