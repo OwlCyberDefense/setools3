@@ -83,12 +83,12 @@ int domain_type_register(sechk_lib_t *lib)
 		fprintf(stderr, "domain_type_register failed: out of memory\n");
 		return -1;
 	}
-	fn_struct->name = strdup("get_output_str");
+	fn_struct->name = strdup("print_output");
 	if (!fn_struct->name) {
 		fprintf(stderr, "domain_type_register failed: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &domain_type_get_output_str;
+	fn_struct->fn = &domain_type_print_output;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -125,7 +125,7 @@ int domain_type_register(sechk_lib_t *lib)
 
 int domain_type_init(sechk_module_t *mod, policy_t *policy) 
 {
-	sechk_opt_t *opt = NULL;
+	sechk_name_value_t *opt = NULL;
 	domain_type_data_t *datum = NULL;
 	int attr = -1, retv;
 	bool_t header = TRUE;
@@ -139,7 +139,7 @@ int domain_type_init(sechk_module_t *mod, policy_t *policy)
 		return -1;
 	}
 
-	datum = new_domain_type_data();
+	datum = domain_type_data_new();
 	if (!datum) {
 		fprintf(stderr, "domain_type_init failed: out of memory\n");
 		return -1;
@@ -379,8 +379,10 @@ int domain_type_run(sechk_module_t *mod, policy_t *policy)
 			buff = NULL;
 		}
 
-		/* test roles 0 is object_r skip it */
-		for (j = 1; j < policy->num_roles; j++) {
+		/* test roles */
+		for (j = 0; j < policy->num_roles; j++) {
+			if (!strcmp("object_r", policy->roles[j].name))
+				continue;
 			if (does_role_use_type(j, i, policy)) {
 				buff_sz = 1 + strlen("role  types ;") + strlen(policy->roles[j].name) + strlen(policy->types[i].name);
 				buff = (char*)calloc(buff_sz, sizeof(char));
@@ -437,13 +439,12 @@ domain_type_run_fail:
 
 void domain_type_free(sechk_module_t *mod) 
 {
-	free_domain_type_data((domain_type_data_t**)&(mod->data));
+	domain_type_data_free((domain_type_data_t*)(mod->data));
+	free(mod->data);
 }
 
-char *domain_type_get_output_str(sechk_module_t *mod, policy_t *policy) 
+int domain_type_print_output(sechk_module_t *mod, policy_t *policy) 
 {
-	char *buff = NULL, *tmp = NULL;
-	unsigned long buff_sz = 0L;
 	domain_type_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
@@ -451,82 +452,50 @@ char *domain_type_get_output_str(sechk_module_t *mod, policy_t *policy)
 	int i = 0;
 
 	if (!mod || !policy) {
-		fprintf(stderr, "domain_type_get_output_str failed: invalid parameters\n");
-		return NULL;
+		fprintf(stderr, "domain_type_print_output failed: invalid parameters\n");
+		return -1;
 	}
 	if (strcmp("domain_type", mod->name)) {
-		fprintf(stderr, "domain_type_get_output_str failed: wrong module (%s)\n", mod->name);
-		return NULL;
+		fprintf(stderr, "domain_type_print_output failed: wrong module (%s)\n", mod->name);
+		return -1;
 	}
 	if (!mod->result) {
-		fprintf(stderr, "domain_type_get_output_str failed: module has not been run\n");
-		return NULL;
+		fprintf(stderr, "domain_type_print_output failed: module has not been run\n");
+		return -1;
 	}
 
 	datum = (domain_type_data_t*)mod->data;
 	outformat = datum->outformat;
 	if (!outformat)
-		return NULL; /* not an error - no output is requested */
+		return 0; /* not an error - no output is requested */
 
-	buff_sz += strlen("Module: Domain Type\n");
+	printf("Module: Domain Type\n");
 	if (outformat & SECHK_OUT_HEADER) {
-		buff_sz += strlen(datum->mod_header);
+		printf("%s", datum->mod_header);
 	}
 	if (outformat & SECHK_OUT_STATS) {
-		buff_sz += strlen("Found  domain types.\n") + intlen(mod->result->num_items);
+		printf("Found %i domain types.\n", mod->result->num_items);
 	}
 	if (outformat & SECHK_OUT_LIST) {
-		buff_sz++; /* '\n' */
-		for (item = mod->result->items; item; item = item->next) {
-			buff_sz += 2 + strlen(policy->types[item->item_id].name);
-		}
-	}
-	if (outformat & SECHK_OUT_LONG) {
-		buff_sz += 2;
-		for (item = mod->result->items; item; item = item->next) {
-			buff_sz += strlen(policy->types[item->item_id].name);
-			buff_sz += strlen(" - severity: x\n");
-			for (proof = item->proof; proof; proof = proof->next) {
-				buff_sz += 2 + strlen(proof->text);
-			}
-		}
-	}
-	buff_sz++; /* '\0' */
-
-	buff = (char*)calloc(buff_sz, sizeof(char));
-	if (!buff) {
-		fprintf(stderr, "domain_type_get_output_str failed: out of memory\n");
-		return NULL;
-	}
-	tmp = buff;
-
-	tmp += sprintf(buff, "Module: Domain Type\n");
-	if (outformat & SECHK_OUT_HEADER) {
-		tmp += sprintf(tmp, datum->mod_header);
-	}
-	if (outformat & SECHK_OUT_STATS) {
-		tmp += sprintf(tmp, "Found %i domain types.\n", mod->result->num_items);
-	}
-	if (outformat & SECHK_OUT_LIST) {
-		tmp += sprintf(tmp, "\n");
+		printf("\n");
 		for (item = mod->result->items; item; item = item->next) {
 			i++;
 			i %= 4; /* 4 items per line */
-			tmp += sprintf(tmp, "%s %c", policy->types[item->item_id].name, i?' ':'\n');
+			printf("%s %c", policy->types[item->item_id].name, i?' ':'\n');
 		}
 	}
 	if (outformat & SECHK_OUT_LONG) {
-		tmp += sprintf(tmp, "\n\n");
+		printf("\n\n");
 		for (item = mod->result->items; item; item = item->next) {
-			tmp += sprintf(tmp,"%s", policy->types[item->item_id].name);
-			tmp += sprintf(tmp, " - severity: %i\n", sechk_item_sev(item));
+			printf("%s", policy->types[item->item_id].name);
+			printf(" - severity: %i\n", sechk_item_sev(item));
 			for (proof = item->proof; proof; proof = proof->next) {
-				tmp += sprintf(tmp,"\t%s\n", proof->text);
+				printf("\t%s\n", proof->text);
 			}
 		}
 	}
 
-	return buff;
+	return 0;
 }
 
 sechk_result_t *domain_type_get_result(sechk_module_t *mod) 
@@ -577,7 +546,7 @@ int domain_type_get_domain_list(sechk_module_t *mod, int **array, int *size)
 	return 0;
 }
 
-domain_type_data_t *new_domain_type_data(void) 
+domain_type_data_t *domain_type_data_new(void) 
 {
 	domain_type_data_t *datum = NULL;
 
@@ -586,16 +555,14 @@ domain_type_data_t *new_domain_type_data(void)
 	return datum;
 }
 
-void free_domain_type_data(domain_type_data_t **datum) 
+void domain_type_data_free(domain_type_data_t *datum) 
 {
-	if (!datum || !(*datum))
+	if (!datum)
 		return;
 
-	free((*datum)->domain_attribs);
+	free(datum->domain_attribs);
 
-	free((*datum)->mod_header);
-	free(*datum);
-	*datum = NULL;
+	free(datum->mod_header);
 }
 
  
