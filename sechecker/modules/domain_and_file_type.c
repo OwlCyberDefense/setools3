@@ -81,12 +81,12 @@ int domain_and_file_type_register(sechk_lib_t *lib)
 		fprintf(stderr, "domain_and_file_type_register failed: out of memory\n");
 		return -1;
 	}
-	fn_struct->name = strdup("get_output_str");
+	fn_struct->name = strdup("print_output");
 	if (!fn_struct->name) {
 		fprintf(stderr, "domain_and_file_type_register failed: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &domain_and_file_type_get_output_str;
+	fn_struct->fn = &domain_and_file_type_print_output;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -109,7 +109,7 @@ int domain_and_file_type_register(sechk_lib_t *lib)
 
 int domain_and_file_type_init(sechk_module_t *mod, policy_t *policy) 
 {
-	sechk_opt_t *opt = NULL;
+	sechk_name_value_t *opt = NULL;
 	domain_and_file_type_data_t *datum = NULL;
 	bool_t header = TRUE;
 	sechk_module_t *dep_mod = NULL;
@@ -123,7 +123,7 @@ int domain_and_file_type_init(sechk_module_t *mod, policy_t *policy)
 		return -1;
 	}
 
-	datum = new_domain_and_file_type_data();
+	datum = domain_and_file_type_data_new();
 	if (!datum) {
 		fprintf(stderr, "domain_and_file_type_init failed: out of memory\n");
 		return -1;
@@ -357,6 +357,7 @@ int domain_and_file_type_run(sechk_module_t *mod, policy_t *policy)
 		item->next = res->items;
 		res->items = item;
 		(res->num_items)++;
+		item = NULL;
 	}
 
 	free(domain_list);
@@ -379,15 +380,13 @@ domain_and_file_type_run_fail:
 
 void domain_and_file_type_free(sechk_module_t *mod) 
 {
-
 // TODO:	domain_and_file_type_data_free((domain_and_file_type_data_t**)&(mod->data));
+
 
 }
 
-char *domain_and_file_type_get_output_str(sechk_module_t *mod, policy_t *policy) 
+int domain_and_file_type_print_output(sechk_module_t *mod, policy_t *policy) 
 {
-	char *buff = NULL, *tmp = NULL;
-	unsigned long buff_sz = 0L;
 	domain_and_file_type_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
@@ -395,83 +394,52 @@ char *domain_and_file_type_get_output_str(sechk_module_t *mod, policy_t *policy)
 	int i = 0;
 
 	if (!mod || !policy) {
-		fprintf(stderr, "domain_and_file_type_get_output_str failed: invalid parameters\n");
-		return NULL;
+		fprintf(stderr, "domain_and_file_type_print_output failed: invalid parameters\n");
+		return -1;
 	}
 	if (strcmp("domain_and_file_type", mod->name)) {
-		fprintf(stderr, "domain_and_file_type_get_output_str failed: wrong module (%s)\n", mod->name);
-		return NULL;
+		fprintf(stderr, "domain_and_file_type_print_output failed: wrong module (%s)\n", mod->name);
+		return -1;
 	}
 	if (!mod->result) {
-		fprintf(stderr, "domain_and_file_type_get_output_str failed: module has not been run\n");
-		return NULL;
+		fprintf(stderr, "domain_and_file_type_print_output failed: module has not been run\n");
+		return -1;
 	}
 
 	datum = (domain_and_file_type_data_t*)mod->data;
 	outformat = datum->outformat;
 	if (!outformat)
-		return NULL; /* not an error - no output is requested */
+		return 0; /* not an error - no output is requested */
 
-	buff_sz += strlen("Module: Domain and File Type\n");
+
+	printf("Module: Domain and File Type\n");
 	if (outformat & SECHK_OUT_HEADER) {
-		buff_sz += strlen(datum->mod_header);
+		printf("%s", datum->mod_header);
 	}
 	if (outformat & SECHK_OUT_STATS) {
-		buff_sz += strlen("Found  types.\n") + intlen(mod->result->num_items);
+		printf("Found %i types.\n", mod->result->num_items);
 	}
 	if (outformat & SECHK_OUT_LIST) {
-		buff_sz++; /* '\n' */
-		for (item = mod->result->items; item; item = item->next) {
-			buff_sz += 2 + strlen(policy->types[item->item_id].name);
-		}
-	}
-	if (outformat & SECHK_OUT_LONG) {
-		buff_sz += 2;
-		for (item = mod->result->items; item; item = item->next) {
-			buff_sz += strlen(policy->types[item->item_id].name);
-			buff_sz += strlen(" - severity: x\n");
-			for (proof = item->proof; proof; proof = proof->next) {
-				buff_sz += 2 + strlen(proof->text);
-			}
-		}
-	}
-	buff_sz++; /* '\0' */
-
-	buff = (char*)calloc(buff_sz, sizeof(char));
-	if (!buff) {
-		fprintf(stderr, "domain_and_file_type_get_output_str failed: out of memory\n");
-		return NULL;
-	}
-	tmp = buff;
-
-	tmp += sprintf(buff, "Module: Domain and File Type\n");
-	if (outformat & SECHK_OUT_HEADER) {
-		tmp += sprintf(tmp, datum->mod_header);
-	}
-	if (outformat & SECHK_OUT_STATS) {
-		tmp += sprintf(tmp, "Found %i types.\n", mod->result->num_items);
-	}
-	if (outformat & SECHK_OUT_LIST) {
-		tmp += sprintf(tmp, "\n");
+		printf("\n");
 		for (item = mod->result->items; item; item = item->next) {
 			i++;
 			i %= 4; /* 4 items per line */
-			tmp += sprintf(tmp, "%s %c", policy->types[item->item_id].name, i?' ':'\n');
+			printf("%s %c", policy->types[item->item_id].name, i?' ':'\n');
 		}
 	}
 
 	if (outformat & SECHK_OUT_LONG) {
-		tmp += sprintf(tmp, "\n\n");
+		printf("\n\n");
 		for (item = mod->result->items; item; item = item->next) {
-			tmp += sprintf(tmp,"%s", policy->types[item->item_id].name);
-			tmp += sprintf(tmp, " - severity: %i\n", sechk_item_sev(item));
+			printf("%s", policy->types[item->item_id].name);
+			printf(" - severity: %i\n", sechk_item_sev(item));
 			for (proof = item->proof; proof; proof = proof->next) {
-				tmp += sprintf(tmp,"\t%s\n", proof->text);
+				printf("\t%s\n", proof->text);
 			}
 		}
 	}
 
-	return buff;
+	return 0;
 }
 
 sechk_result_t *domain_and_file_type_get_result(sechk_module_t *mod) 
@@ -489,7 +457,7 @@ sechk_result_t *domain_and_file_type_get_result(sechk_module_t *mod)
 	return mod->result;
 }
 
-domain_and_file_type_data_t *new_domain_and_file_type_data(void) 
+domain_and_file_type_data_t *domain_and_file_type_data_new(void) 
 {
 	domain_and_file_type_data_t *datum = NULL;
 
@@ -498,23 +466,21 @@ domain_and_file_type_data_t *new_domain_and_file_type_data(void)
 	return datum;
 }
 
-void free_domain_and_file_type_data(domain_and_file_type_data_t **datum) 
+void domain_and_file_type_data_free(domain_and_file_type_data_t *datum) 
 {
 	int i;
 
-	if (!datum || !(*datum))
+	if (!datum)
 		return;
 
-	for (i = 0; i < (*datum)->num_depend; i++) {
-		free((*datum)->depend_names[i]);
+	for (i = 0; i < datum->num_depend; i++) {
+		free(datum->depend_names[i]);
 	}
-	free((*datum)->depend_run_fns);
-	free((*datum)->depend_get_res_fns);
-	free((*datum)->depend_mods);
+	free(datum->depend_run_fns);
+	free(datum->depend_get_res_fns);
+	free(datum->depend_mods);
 
-	free((*datum)->mod_header);
-	free(*datum);
-	*datum = NULL;
+	free(datum->mod_header);
 }
 
  
