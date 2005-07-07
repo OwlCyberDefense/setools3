@@ -20,6 +20,7 @@
 #define SECHK_OUT_LIST   0x02
 #define SECHK_OUT_LONG   0x04
 #define SECHK_OUT_HEADER 0x08
+#define SECHK_OUT_FULL   SECHK_OUT_STATS|SECHK_OUT_LIST|SECHK_OUT_LONG|SECHK_OUT_HEADER
 
 /* xml parser keywords */
 #define PARSE_SECHECKER_TAG      (xmlChar*)"sechecker"
@@ -27,9 +28,15 @@
 #define PARSE_OPTION_TAG         (xmlChar*)"option"
 #define PARSE_REQUIRE_TAG        (xmlChar*)"require"
 #define PARSE_DEPENDENCY_TAG     (xmlChar*)"dependency"
+#define PARSE_OUTPUT_TAG         (xmlChar*)"output"
 #define PARSE_VALUE_ATTRIB       (xmlChar*)"value"
 #define PARSE_NAME_ATTRIB        (xmlChar*)"name"
 #define PARSE_VERSION_ATTRIB     (xmlChar*)"version"
+#define PARSE_OUTPUT_STATS       (xmlChar*)"stats"
+#define PARSE_OUTPUT_LIST        (xmlChar*)"list"
+#define PARSE_OUTPUT_LONG        (xmlChar*)"long"
+#define PARSE_OUTPUT_HEADER      (xmlChar*)"header"
+#define PARSE_OUTPUT_FULL        (xmlChar*)"full"
 
 /* module results proof */
 typedef struct sechk_proof {
@@ -78,12 +85,13 @@ typedef struct sechk_fn {
 } sechk_fn_t;
 
 typedef struct sechk_module {
-	char		   *name;                /* unique module name */
-	sechk_result_t	  *result;              /* test results */
+	char               *name;                /* unique module name */
+	sechk_result_t	   *result;              /* test results */
 	sechk_name_value_t *options;             /* test inputs */ 
 	sechk_name_value_t *requirements;
 	sechk_name_value_t *dependencies;
 	sechk_fn_t	   *functions;           /* register/init/run/free/print */
+	unsigned char	   outputformat;            /* default output format */
 	void		   *data;
 } sechk_module_t;
 
