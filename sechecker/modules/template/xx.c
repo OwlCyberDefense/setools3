@@ -27,14 +27,14 @@ int xx_register(sechk_lib_t *lib)
 
 	library = lib;
 
-	mod = get_module("xx", lib);
+	mod = sechk_lib_get_module("xx", lib);
 	if (!mod) {
 		fprintf(stderr, "xx_register failed: module unknown\n");
 		return -1;
 	}
 	
 	/* register functions */
-	fn_struct = new_sechk_fn();
+	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		fprintf(stderr, "xx_register failed: out of memory\n");
 		return -1;
@@ -48,7 +48,7 @@ int xx_register(sechk_lib_t *lib)
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
-	fn_struct = new_sechk_fn();
+	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		fprintf(stderr, "xx_register failed: out of memory\n");
 		return -1;
@@ -62,7 +62,7 @@ int xx_register(sechk_lib_t *lib)
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
-	fn_struct = new_sechk_fn();
+	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		fprintf(stderr, "xx_register failed: out of memory\n");
 		return -1;
@@ -76,7 +76,7 @@ int xx_register(sechk_lib_t *lib)
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
-	fn_struct = new_sechk_fn();
+	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		fprintf(stderr, "xx_register failed: out of memory\n");
 		return -1;
@@ -90,7 +90,7 @@ int xx_register(sechk_lib_t *lib)
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
-	fn_struct = new_sechk_fn();
+	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		fprintf(stderr, "xx_register failed: out of memory\n");
 		return -1;

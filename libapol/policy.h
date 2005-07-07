@@ -173,14 +173,6 @@ typedef struct security_context {
 #define FILETYPE_ANY  8 /* any type */
 #define FILETYPE_NONE 0 /* none */
 
-/* general file contexts structure */
-typedef struct fscon {
-	char		*path;		/* the path for genfs_context, regexp for file_context */
-	char		*fstype;	/* only used in genfs_context */
-	int		filetype;	/* the type of file, block, char etc */
-	security_con_t 	*context;  
-} fscon_t; 
-
 /* IDs of rules */
 #define RULE_TE_ALLOW		0 	/*AV rule */
 #define RULE_AUDITALLOW		1	/*AV rule */
