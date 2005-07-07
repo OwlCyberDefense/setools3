@@ -19,14 +19,6 @@
 #include <util.h>
 #include <file_contexts.h>
 
-/* xml parser tags and attributes */
-#define PARSE_SECHECKER_TAG      (xmlChar*)"sechecker"
-#define PARSE_MODULE_TAG         (xmlChar*)"module"
-#define PARSE_OPTION_TAG         (xmlChar*)"option"
-#define PARSE_VALUE_ATTRIB       (xmlChar*)"value"
-#define PARSE_NAME_ATTRIB        (xmlChar*)"name"
-#define PARSE_VERSION_ATTRIB     (xmlChar*)"version"
-
 /* static methods */
 static int sechk_lib_parse_config_file(const char *filename, sechk_lib_t *lib);
 static int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib);
@@ -137,7 +129,10 @@ void sechk_lib_free(sechk_lib_t *lib)
 	}
 	if (lib->modules) {
 		for (i = 0; i < lib->num_modules; i++) {
-			free_fn = sechk_lib_get_module_function(lib->modules[i].name, "free", lib);
+			if (lib->modules[i].data)
+				free_fn = sechk_lib_get_module_function(lib->modules[i].name, "free", lib);
+			else
+				free_fn = NULL;
 			sechk_module_free(&lib->modules[i], free_fn);
 		}
 		free(lib->modules);
@@ -163,9 +158,9 @@ void sechk_module_free(sechk_module_t *module, sechk_free_fn_t free_fn)
 
 		free(module->name);
 		sechk_result_free(module->result);
-		sechk_name_value_free(module->options);
-		sechk_name_value_free(module->requirements);
-		sechk_name_value_free(module->dependencies);
+		sechk_name_value_destroy(module->options);
+		sechk_name_value_destroy(module->requirements);
+		sechk_name_value_destroy(module->dependencies);
 	if (module->data) {
 		assert(free_fn);
 		free_fn(module);
@@ -189,7 +184,7 @@ void sechk_fn_free(sechk_fn_t *fn_struct)
 	}
 }
 
-void sechk_name_value_free(sechk_name_value_t *opt)
+void sechk_name_value_destroy(sechk_name_value_t *opt)
 {
 	sechk_name_value_t *next_opt = NULL;
 
@@ -534,7 +529,7 @@ static int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib)
 {
 	xmlChar *attrib = NULL;
 	int idx;
-	sechk_name_value_t *option;
+	sechk_name_value_t *nv = NULL;
 	static sechk_module_t *current_module=NULL;
 
 	switch (xmlTextReaderNodeType(reader)) {
@@ -580,11 +575,14 @@ static int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib)
 				goto exit_err;
 			}
 		} else if (xmlStrEqual(xmlTextReaderConstName(reader), PARSE_OPTION_TAG) == 1) {
-			/* parsing the <option> tag within a module */
-			option = sechk_name_value_new();
+			if (!current_module) {
+				fprintf(stderr, "Error: 'option' specified outside the scope of a module.\n");
+				goto exit_err;
+			}
+			nv = sechk_name_value_new();
 			attrib = xmlTextReaderGetAttribute(reader, PARSE_NAME_ATTRIB);
 			if (attrib) {
-				option->name = strdup((char*)attrib);
+				nv->name = strdup((char*)attrib);
 				free(attrib);
 				attrib = NULL;
 			} else {
@@ -593,31 +591,76 @@ static int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib)
 			}
 			attrib = xmlTextReaderGetAttribute(reader, PARSE_VALUE_ATTRIB);
 			if (attrib) {
-				option->value = strdup((char*)attrib);
+				nv->value = strdup((char*)attrib);
 				free(attrib);
 				attrib = NULL;
 			} else {
 				fprintf(stderr, "Error: option value is not specified in configuration file.\n");
 				goto exit_err;
 			}
+
+			nv->next = current_module->options;
+			current_module->options = nv;
+		} else if (xmlStrEqual(xmlTextReaderConstName(reader), PARSE_REQUIRE_TAG) == 1) {
 			if (!current_module) {
-				fprintf(stderr, "Error: option specified outside the scope of a module.\n");
+				fprintf(stderr, "Error: 'require' specified outside the scope of a module.\n");
 				goto exit_err;
 			}
-			option->next = current_module->options;
-			current_module->options = option;
+			nv = sechk_name_value_new();
+			attrib = xmlTextReaderGetAttribute(reader, PARSE_NAME_ATTRIB);
+			if (attrib) {
+				nv->name = strdup((char*)attrib);
+				free(attrib);
+				attrib = NULL;
+			} else {
+				fprintf(stderr, "Error: require name is not specified in configuration file.\n");
+				goto exit_err;
+			}
+			attrib = xmlTextReaderGetAttribute(reader, PARSE_VALUE_ATTRIB);
+			if (attrib) {
+				nv->value = strdup((char*)attrib);
+				free(attrib);
+				attrib = NULL;
+			} else {
+				fprintf(stderr, "Error: require value is not specified in configuration file.\n");
+				goto exit_err;
+			}
+			nv->next = current_module->requirements;
+			current_module->requirements = nv;
+		} else if (xmlStrEqual(xmlTextReaderConstName(reader), PARSE_DEPENDENCY_TAG) == 1) {
+			if (!current_module) {
+				fprintf(stderr, "Error: 'dependency' specified outside the scope of a module.\n");
+				goto exit_err;
+			}
+			nv = sechk_name_value_new();
+			attrib = xmlTextReaderGetAttribute(reader, PARSE_NAME_ATTRIB);
+			if (attrib) {
+				nv->name = strdup((char*)attrib);
+				free(attrib);
+				attrib = NULL;
+			} else {
+				fprintf(stderr, "Error: dependency name is not specified in configuration file.\n");
+				goto exit_err;
+			}
+			attrib = xmlTextReaderGetAttribute(reader, PARSE_VALUE_ATTRIB);
+			if (attrib) {
+				nv->value = strdup((char*)attrib);
+				free(attrib);
+				attrib = NULL;
+			} else {
+				fprintf(stderr, "Error: dependency value is not specified in configuration file.\n");
+				goto exit_err;
+			}
+			nv->next = current_module->dependencies;
+			current_module->dependencies = nv;
 		}
 		break;
 	}
 	return 0;
 
  exit_err:
-	/* NOTE: don't free the module pointer b/c it references a index in the array */
-	if (attrib)
-		free(attrib);
-	if (option) {
-		sechk_name_value_free(option);
-		free(option);
+	if (nv) {
+		sechk_name_value_destroy(nv);
 	}
 	return -1;
 }
