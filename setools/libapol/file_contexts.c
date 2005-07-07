@@ -15,7 +15,7 @@
 /* for some reason we have to define this here to remove compile warnings */
 ssize_t getline(char **lineptr, size_t *n, FILE *stream);
 
-int parse_file_contexts_file(char *fc_path, fscon_t **contexts, int *num_contexts, policy_t *policy) 
+int parse_file_contexts_file(const char *fc_path, fscon_t **contexts, int *num_contexts, policy_t *policy) 
 {
 	int array_sz = 0; /* actual size of array */
 	char *line = NULL, *tmp = NULL, *context = NULL;
@@ -209,3 +209,17 @@ failure:
 	return -1;
 }
 
+void fscon_free(fscon_t *fscon)
+{
+	if (!fscon)
+		return;
+	if (fscon->path)
+		free(fscon->path);
+	fscon->path = NULL;
+	if (fscon->fstype)
+		free(fscon->fstype);
+	fscon->fstype = NULL;
+	if (fscon->context)
+		free(fscon->context);
+	fscon->context = NULL;
+}

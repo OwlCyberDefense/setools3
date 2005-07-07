@@ -27,14 +27,14 @@ int empty_attribute_register(sechk_lib_t *lib)
 
 	library = lib;
 
-	mod = get_module("empty_attribute", lib);
+	mod = sechk_lib_get_module("empty_attribute", lib);
 	if (!mod) {
 		fprintf(stderr, "empty_attribute_register failed: module unknown\n");
 		return -1;
 	}
 	
 	/* register functions */
-	fn_struct = new_sechk_fn();
+	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		fprintf(stderr, "empty_attribute_register failed: out of memory\n");
 		return -1;
@@ -48,7 +48,7 @@ int empty_attribute_register(sechk_lib_t *lib)
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
-	fn_struct = new_sechk_fn();
+	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		fprintf(stderr, "empty_attribute_register failed: out of memory\n");
 		return -1;
@@ -62,7 +62,7 @@ int empty_attribute_register(sechk_lib_t *lib)
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
-	fn_struct = new_sechk_fn();
+	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		fprintf(stderr, "empty_attribute_register failed: out of memory\n");
 		return -1;
@@ -76,7 +76,7 @@ int empty_attribute_register(sechk_lib_t *lib)
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
-	fn_struct = new_sechk_fn();
+	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		fprintf(stderr, "empty_attribute_register failed: out of memory\n");
 		return -1;
@@ -90,7 +90,7 @@ int empty_attribute_register(sechk_lib_t *lib)
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
-	fn_struct = new_sechk_fn();
+	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		fprintf(stderr, "empty_attribute_register failed: out of memory\n");
 		return -1;
@@ -212,7 +212,7 @@ int empty_attribute_run(sechk_module_t *mod, policy_t *policy)
 		return 0;
 
 	datum = (empty_attribute_data_t*)mod->data;
-	res = new_sechk_result();
+	res = sechk_result_new();
 	if (!res) {
 		fprintf(stderr, "empty_attribute_run failed: out of memory\n");
 		return -1;
@@ -235,7 +235,7 @@ int empty_attribute_run(sechk_module_t *mod, policy_t *policy)
 		}
 		if (num_types) 
 			continue;
-		proof = new_sechk_proof();
+		proof = sechk_proof_new();
 		if (!proof) {
 			fprintf(stderr, "empty_attribute_run failed: out of memory\n");
 			goto empty_attribute_run_fail;
@@ -245,7 +245,7 @@ int empty_attribute_run(sechk_module_t *mod, policy_t *policy)
 		proof->severity = SECHK_SEV_LOW;
 		proof->text = (char*)calloc(strlen("attribute  has no types")+strlen(policy->attribs[i].name)+1, sizeof(char));
 		sprintf(proof->text, "attribute %s has no types", policy->attribs[i].name);
-		item = new_sechk_item();
+		item = sechk_item_new();
 		if (!item) {
 			fprintf(stderr, "empty_attribute_run failed: out of memory\n");
 			goto empty_attribute_run_fail;
@@ -264,9 +264,9 @@ int empty_attribute_run(sechk_module_t *mod, policy_t *policy)
 
 empty_attribute_run_fail:
 	free(types);
-	free_sechk_proof(&proof);
-	free_sechk_item(&item);
-	free_sechk_result(&res);
+	sechk_proof_free(proof);
+	sechk_item_free(item);
+	sechk_result_free(res);
 	return -1;
 }
 
@@ -283,9 +283,9 @@ void empty_attribute_free(sechk_module_t *mod)
 	
 	free(mod->name);
 	mod->name = NULL;
-	free_sechk_result(&(mod->result));
-	free_sechk_opt(&(mod->options));
-	free_sechk_fn(&(mod->functions));
+	sechk_result_free(mod->result);
+	sechk_opt_free(mod->options);
+	sechk_fn_free(mod->functions);
 	free_empty_attribute_data((empty_attribute_data_t**)&(mod->data));
 }
 

@@ -13,6 +13,7 @@
 
 #include "policy.h"
 #include <libxml/xmlstring.h>
+#include <file_contexts.h>
 
 /* defined flags for outformat */
 #define SECHK_OUT_STATS  0x01
@@ -20,6 +21,7 @@
 #define SECHK_OUT_LONG   0x04
 #define SECHK_OUT_HEADER 0x08
 
+/* module results proof */
 typedef struct sechk_proof {
 	int		idx;
 	unsigned char	type;
@@ -54,8 +56,8 @@ typedef struct sechk_result {
 } sechk_result_t;
 
 typedef struct sechk_opt {
-	char		*name;
-	char		*value;
+	char		 *name;
+	char		 *value;
 	struct sechk_opt *next;
 } sechk_opt_t;
 
@@ -65,33 +67,30 @@ typedef struct sechk_fn {
 	struct sechk_fn	*next;
 } sechk_fn_t;
 
-#define SECHK_MOD_TYPE_NONE 0x00
-#define SECHK_MOD_TYPE_SYS  0x01
-#define SECHK_MOD_TYPE_DEV  0x02
-#define SECHK_MOD_TYPE_BOTH (SECHK_MOD_TYPE_SYS|SECHK_MOD_TYPE_DEV)
-
 typedef struct sechk_module {
-	char		*name;
-	unsigned char	type;
-	sechk_result_t	*result;
-	sechk_opt_t	*options;
-	sechk_fn_t	*functions;
+	char		*name;                /* unique module name */
+	sechk_result_t	*result;              /* test results */
+	sechk_opt_t	*options;             /* test inputs */ 
+	sechk_fn_t	*functions;           /* register/init/run/free/print */
 	void		*data;
 } sechk_module_t;
 
 typedef struct sechk_lib {
-	sechk_module_t	*modules;
+	sechk_module_t	*modules;             /* test modules */
+	bool_t		*module_selection;    /* selected test modules */
+	int             modules_size;
 	int 		num_modules;
-	policy_t 	*policy;
-	fscon_t		*fc_entries;
+	policy_t 	*policy;              /* policy data */
+	fscon_t		*fc_entries;          /* file contexts data */
 	int		num_fc_entries;
 	unsigned char	outformat;
 	char		*selinux_config_path;
-	char		*policy_path;
-	char		*fc_path;
-	bool_t		*module_selection;
+	char		*policy_path;         /* policy filename */
+	char		*fc_path;             /* file contexts filename */
+
 } sechk_lib_t;
 
+/* Module function signatures */
 typedef int (*sechk_register_fn_t)(sechk_lib_t *lib);
 typedef int (*sechk_init_fn_t)(sechk_module_t *mod, policy_t *policy);
 typedef int (*sechk_run_fn_t)(sechk_module_t *mod, policy_t *policy);
@@ -99,28 +98,31 @@ typedef void (*sechk_free_fn_t)(sechk_module_t *mod);
 typedef char *(*sechk_get_output_str_fn_t)(sechk_module_t *mod, policy_t *policy);
 typedef sechk_result_t *(*sechk_get_result_fn_t)(sechk_module_t *mod);
 
-sechk_lib_t *new_sechk_lib(char *policyfilelocation, char *fcfilelocation, unsigned char output_override);
-int parse_config_file(char *confpath, unsigned char output_override, sechk_lib_t *lib);
-void free_sechk_lib(sechk_lib_t **lib);
+/* alloc methods */
+sechk_lib_t *sechk_lib_new(const char *policyfilelocation, const char *fcfilelocation);
+sechk_fn_t *sechk_fn_new(void);
+sechk_opt_t *sechk_opt_new(void);
+sechk_result_t *sechk_result_new(void);
+sechk_item_t *sechk_item_new(void);
+sechk_proof_t *sechk_proof_new(void);
 
-void free_sechk_fn(sechk_fn_t **fn_struct);
-void free_sechk_opt(sechk_opt_t **opt);
-void free_sechk_result(sechk_result_t **res);
-void free_sechk_item(sechk_item_t **item);
-void free_sechk_proof(sechk_proof_t **proof);
+/* free methods */
+void sechk_lib_free(sechk_lib_t *lib);
+void sechk_fn_free(sechk_fn_t *fn_struct);
+void sechk_opt_free(sechk_opt_t *opt);
+void sechk_result_free(sechk_result_t *res);
+void sechk_item_free(sechk_item_t *item);
+void sechk_proof_free(sechk_proof_t *proof);
+void sechk_module_free(sechk_module_t *module, sechk_free_fn_t free_fn);
 
-sechk_fn_t *new_sechk_fn(void);
-sechk_opt_t *new_sechk_opt(void);
-sechk_result_t *new_sechk_result(void);
-sechk_item_t *new_sechk_item(void);
-sechk_proof_t *new_sechk_proof(void);
+/* register/init/run -  modules */
+int sechk_lib_register_modules(sechk_register_fn_t *register_fns, sechk_lib_t *lib);
+int sechk_lib_init_modules(sechk_lib_t *lib);
+int sechk_lib_run_modules(sechk_lib_t *lib);
 
-int register_modules(sechk_register_fn_t *register_fns, sechk_lib_t *lib);
-void *get_module_function(char *module_name, char *function_name, sechk_lib_t *lib);
-sechk_module_t *get_module(char *module_name, sechk_lib_t *lib);
-int init_modules(sechk_lib_t *lib);
-int run_modules(unsigned char run_mode, sechk_lib_t *lib);
-void free_modules(sechk_lib_t *lib);
+/* module accessors */
+sechk_module_t *sechk_lib_get_module(const char *module_name, sechk_lib_t *lib);
+void *sechk_lib_get_module_function(const char *module_name, const char *function_name, sechk_lib_t *lib);
 
 /* utility functions */
 int intlen(int n);
