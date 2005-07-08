@@ -16,11 +16,14 @@
 #include <file_contexts.h>
 
 /* defined flags for outformat */
-#define SECHK_OUT_STATS  0x01
-#define SECHK_OUT_LIST   0x02
-#define SECHK_OUT_LONG   0x04
-#define SECHK_OUT_HEADER 0x08
-#define SECHK_OUT_FULL   SECHK_OUT_STATS|SECHK_OUT_LIST|SECHK_OUT_LONG|SECHK_OUT_HEADER
+#define SECHK_OUT_STATS   0x01
+#define SECHK_OUT_LIST    0x02
+#define SECHK_OUT_PROOF   0x04
+#define SECHK_OUT_HEADER  0x08
+#define SECHK_OUT_QUIET   (SECHK_OUT_STATS|SECHK_OUT_HEADER)
+#define SECHK_OUT_SHORT   (SECHK_OUT_QUIET|SECHK_OUT_LIST)
+#define SECHK_OUT_LONG    (SECHK_OUT_QUIET|SECHK_OUT_PROOF)
+#define SECHK_OUT_VERBOSE (SECHK_OUT_SHORT|SECHK_OUT_LONG)
 
 /* xml parser keywords */
 #define PARSE_SECHECKER_TAG      (xmlChar*)"sechecker"
@@ -32,11 +35,10 @@
 #define PARSE_VALUE_ATTRIB       (xmlChar*)"value"
 #define PARSE_NAME_ATTRIB        (xmlChar*)"name"
 #define PARSE_VERSION_ATTRIB     (xmlChar*)"version"
-#define PARSE_OUTPUT_STATS       (xmlChar*)"stats"
-#define PARSE_OUTPUT_LIST        (xmlChar*)"list"
+#define PARSE_OUTPUT_SHORT       (xmlChar*)"short"
+#define PARSE_OUTPUT_QUIET       (xmlChar*)"quiet"
 #define PARSE_OUTPUT_LONG        (xmlChar*)"long"
-#define PARSE_OUTPUT_HEADER      (xmlChar*)"header"
-#define PARSE_OUTPUT_FULL        (xmlChar*)"full"
+#define PARSE_OUTPUT_VERBOSE     (xmlChar*)"verbose"
 
 /* module results proof */
 typedef struct sechk_proof {

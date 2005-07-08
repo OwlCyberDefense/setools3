@@ -660,21 +660,19 @@ static int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib)
 			}
 			attrib = xmlTextReaderGetAttribute(reader, PARSE_VALUE_ATTRIB);
 			if (attrib) {
-				if (xmlStrEqual(attrib, PARSE_OUTPUT_STATS) == 1) {
-					current_module->outputformat |= SECHK_OUT_STATS;
-				} else if (xmlStrEqual(attrib, PARSE_OUTPUT_LIST) == 1) {
-					current_module->outputformat |= SECHK_OUT_LIST;
+				if (xmlStrEqual(attrib, PARSE_OUTPUT_SHORT) == 1) {
+					current_module->outputformat = SECHK_OUT_SHORT;
+				} else if (xmlStrEqual(attrib, PARSE_OUTPUT_QUIET) == 1) {
+					current_module->outputformat = SECHK_OUT_QUIET;
 				} else if (xmlStrEqual(attrib, PARSE_OUTPUT_LONG) == 1) {
-					current_module->outputformat |= SECHK_OUT_LONG;
-				} else if (xmlStrEqual(attrib, PARSE_OUTPUT_HEADER) == 1) {
-					current_module->outputformat |= SECHK_OUT_HEADER;
-				} else if (xmlStrEqual(attrib, PARSE_OUTPUT_FULL) == 1) {
-					current_module->outputformat |= SECHK_OUT_FULL;
+					current_module->outputformat = SECHK_OUT_LONG;
+				} else if (xmlStrEqual(attrib, PARSE_OUTPUT_VERBOSE) == 1) {
+					current_module->outputformat = SECHK_OUT_VERBOSE;
 				}
 				free(attrib);
 				attrib = NULL;
 			} else {
-				fprintf(stderr, "Error: dependency value is not specified in configuration file.\n");
+				fprintf(stderr, "Error: output value is not specified in configuration file.\n");
 				goto exit_err;
 			}
 		}
