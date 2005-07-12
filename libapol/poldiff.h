@@ -22,6 +22,18 @@
 #define AP_TGT_ROLE   5
 #define AP_EXEC_TYPE  6
 
+typedef struct ap_diff_rename {
+	int *p1;       /* policy 1 items */
+	int *p2;       /* equivalent policy 2 items */
+	int num_items; /* the number of equivalent items */
+	int sz;        /* the array sizes */
+} ap_diff_rename_t;
+
+ap_diff_rename_t *ap_diff_rename_new();
+void ap_diff_rename_free(ap_diff_rename_t *rename);
+int ap_diff_rename_add(int p1_type, int p2_type, policy_t *p1, policy_t *p2, ap_diff_rename_t *rename);
+int ap_diff_rename_remove(int p1, int p2, ap_diff_rename_t *rename);
+
 typedef struct int_a_diff {
 	int	idx;
 	char    *str_id; /* this is the string id so we can sort them in the gui*/
@@ -227,8 +239,8 @@ typedef struct apol_diff_result {
 #define apol_is_bindiff(adr) (adr != NULL ? adr->bindiff : FALSE)
 
 void apol_free_diff_result(bool_t close_pols, apol_diff_result_t *adr);
-apol_diff_result_t *apol_diff_policies(unsigned int opts, policy_t *p1, policy_t *p2);
-int make_p2_key(avh_key_t *p1key, avh_key_t *p2key, policy_t *p1, policy_t *p2);
+apol_diff_result_t *apol_diff_policies(unsigned int opts, policy_t *p1, policy_t *p2, ap_diff_rename_t *renamed_types);
+int make_p2_key(avh_key_t *p1key, avh_key_t *p2key, policy_t *p1, policy_t *p2, ap_diff_rename_t *renamed_types);
 bool_t does_cond_match(avh_node_t *n1, policy_t *p1, avh_node_t *n2, policy_t *p2, bool_t *inverse);
 ap_cond_expr_diff_t *find_cdiff_in_policy(ap_cond_expr_diff_t *cond_expr_diff,apol_diff_t *diff2,policy_t *p1,policy_t *p2,bool_t *inverse);
 int find_cond_in_policy(int p1_idx,policy_t *p1,policy_t *p2,bool_t noinverse);
