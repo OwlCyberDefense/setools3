@@ -1318,7 +1318,7 @@ int print_te_added_changed(char **changed_buf,char **added_buf,int *changed_sz,i
 	char tbuf[APOL_STR_SZ*10];
 
 	/* make the p1 key */
-	make_p2_key(&diffcur2->key,&p1key,policy2,policy1);
+	make_p2_key(&diffcur2->key,&p1key,policy2,policy1, NULL);
 	
 	/* now loop through policy 1 and find not only matching key but also matching 
 	   conditional */			
@@ -1412,7 +1412,7 @@ int print_te_removed(char **changed_buf,char **removed_buf,int *changed_sz,int *
 	char tbuf[APOL_STR_SZ*10];
 
 	/* make the p2 key */
-	make_p2_key(&diffcur1->key,&p2key,policy1,policy2); 
+	make_p2_key(&diffcur1->key,&p2key,policy1,policy2, NULL); 
 	/* search for the key/cond in p2, at this point we do not want to print out changes */
 	cur2 = avh_find_first_node(&policy2->avh, &p2key);
 	while (cur2 != NULL && does_cond_match(cur2,policy2,diffcur1,policy1,&inverse) == FALSE)
@@ -1883,7 +1883,7 @@ int main (int argc, char **argv)
 	}
 
 	/* diff and display requested info */
-	diff = apol_diff_policies(opts, p1, p2);
+	diff = apol_diff_policies(opts, p1, p2, NULL);
 	if(diff == NULL) {
 		printf("Problem differentiating policies\n");
 		exit(1);
