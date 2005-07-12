@@ -66,7 +66,7 @@ typedef struct sediff_app {
 	GtkTextBuffer *conditionals_buffer;
 	GString *p1_filename;
 	GString *p2_filename;
-	struct sediff_rename_types *rename_types;
+	struct sediff_rename_types *rename_types_window;
 	policy_t *p1;
 	policy_t *p2;
 	sediff_summary_t summary;

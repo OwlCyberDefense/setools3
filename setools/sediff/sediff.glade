@@ -1229,8 +1229,8 @@
 		      <property name="border_width">5</property>
 		      <property name="visible">True</property>
 		      <property name="can_focus">True</property>
-		      <property name="hscrollbar_policy">GTK_POLICY_ALWAYS</property>
-		      <property name="vscrollbar_policy">GTK_POLICY_ALWAYS</property>
+		      <property name="hscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
+		      <property name="vscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
 		      <property name="shadow_type">GTK_SHADOW_IN</property>
 		      <property name="window_placement">GTK_CORNER_TOP_LEFT</property>
 
@@ -1239,9 +1239,9 @@
 			  <property name="visible">True</property>
 			  <property name="can_focus">True</property>
 			  <property name="headers_visible">True</property>
-			  <property name="rules_hint">False</property>
+			  <property name="rules_hint">True</property>
 			  <property name="reorderable">False</property>
-			  <property name="enable_search">True</property>
+			  <property name="enable_search">False</property>
 			  <property name="fixed_height_mode">False</property>
 			  <property name="hover_selection">False</property>
 			  <property name="hover_expand">False</property>
@@ -1376,9 +1376,9 @@
 		      <child>
 			<widget class="GtkCombo" id="sediff_rename_types_combo1">
 			  <property name="visible">True</property>
-			  <property name="value_in_list">False</property>
+			  <property name="value_in_list">True</property>
 			  <property name="allow_empty">True</property>
-			  <property name="case_sensitive">False</property>
+			  <property name="case_sensitive">True</property>
 			  <property name="enable_arrow_keys">True</property>
 			  <property name="enable_arrows_always">True</property>
 
@@ -1386,7 +1386,7 @@
 			    <widget class="GtkEntry" id="sediff_rename_types_entry1">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
-			      <property name="editable">True</property>
+			      <property name="editable">False</property>
 			      <property name="visibility">True</property>
 			      <property name="max_length">0</property>
 			      <property name="text" translatable="yes"></property>
@@ -1452,9 +1452,9 @@
 		      <child>
 			<widget class="GtkCombo" id="sediff_rename_types_combo2">
 			  <property name="visible">True</property>
-			  <property name="value_in_list">False</property>
+			  <property name="value_in_list">True</property>
 			  <property name="allow_empty">True</property>
-			  <property name="case_sensitive">False</property>
+			  <property name="case_sensitive">True</property>
 			  <property name="enable_arrow_keys">True</property>
 			  <property name="enable_arrows_always">True</property>
 
@@ -1462,7 +1462,7 @@
 			    <widget class="GtkEntry" id="sediff_rename_types_entry2">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
-			      <property name="editable">True</property>
+			      <property name="editable">False</property>
 			      <property name="visibility">True</property>
 			      <property name="max_length">0</property>
 			      <property name="text" translatable="yes"></property>
