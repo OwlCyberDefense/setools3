@@ -1292,7 +1292,7 @@ static int sediff_load_policies(const char *p1_file, const char *p2_file)
    also sets up the buffers used in gui so we can switch faster
    returns -1 on error otherwise 0
 */
-static int sediff_diff_policies(policy_t *p1, policy_t *p2)
+static int sediff_diff_policies(policy_t *p1, policy_t *p2, ap_diff_rename_t *renamed_types)
 {
 	apol_diff_result_t *diff = NULL;
 	unsigned int opts = POLOPT_ALL;
@@ -1323,7 +1323,7 @@ static int sediff_diff_policies(policy_t *p1, policy_t *p2)
 		gtk_main_iteration ();
 	
 	/* diff and display requested info */
-	diff = apol_diff_policies(opts, p1, p2);
+	diff = apol_diff_policies(opts, p1, p2, renamed_types);
 	if (diff == NULL) {
 		g_string_printf(string,"Error differentiating policies");
 		message_display(sediff_app->window,GTK_MESSAGE_ERROR,string->str);
@@ -2383,7 +2383,10 @@ static int txt_buffer_insert_te_added_changed(GtkTextBuffer *txt,GtkTextMark *ch
 	gtk_text_buffer_get_iter_at_mark(txt,&added_iter,added_mark);
 	
 	/* make the p1 key */
-	make_p2_key(&diffcur2->key,&p1key,policy2,policy1);
+	if (sediff_app->rename_types_window)
+		make_p2_key(&diffcur2->key, &p1key, policy2, policy1, sediff_app->rename_types_window->renamed_types);
+	else
+		make_p2_key(&diffcur2->key, &p1key, policy2, policy1, NULL);
 	/* now loop through list and find not only matching key but also matching 
 	   conditional */
 	matched = FALSE;
@@ -2550,7 +2553,10 @@ static int txt_buffer_insert_te_missing(GtkTextBuffer *txt,GtkTextMark *changed_
 
 
 	/* make the p2 key */
-	make_p2_key(&diffcur1->key,&p2key,policy1,policy2); 
+	if (sediff_app->rename_types_window)
+		make_p2_key(&diffcur1->key, &p2key, policy1, policy2, sediff_app->rename_types_window->renamed_types); 
+	else
+		make_p2_key(&diffcur1->key, &p2key, policy1, policy2, NULL);
 	
 	/* search for the key/cond in p2, */			
 	matched = FALSE;
@@ -4110,9 +4116,9 @@ static void sediff_destroy(sediff_app_t *sediff_app)
 		g_string_free(sediff_app->p1_filename,TRUE);
 	if (sediff_app->p2_filename) 
 		g_string_free(sediff_app->p2_filename,TRUE);
-	if (sediff_app->rename_types) {
-		sediff_rename_types_unref_members(sediff_app->rename_types);
-		free(sediff_app->rename_types);
+	if (sediff_app->rename_types_window) {
+		sediff_rename_types_window_unref_members(sediff_app->rename_types_window);
+		free(sediff_app->rename_types_window);
 	}
 	if (sediff_app->p1)
 		close_policy(sediff_app->p1);
@@ -4300,8 +4306,12 @@ static int sediff_policy_file_textview_populate(const char *filename,GtkTextView
 
 static void run_diff_clicked()
 {
-	if (sediff_app->p1_filename && sediff_app->p2_filename)	
-		sediff_diff_policies(sediff_app->p1, sediff_app->p2);
+	if (sediff_app->p1_filename && sediff_app->p2_filename) {
+		if (sediff_app->rename_types_window)
+			sediff_diff_policies(sediff_app->p1, sediff_app->p2, sediff_app->rename_types_window->renamed_types);
+		else
+			sediff_diff_policies(sediff_app->p1, sediff_app->p2, NULL);
+	}
 	else
 		message_display(sediff_app->window, GTK_MESSAGE_ERROR, "A policy filename is empty! Could not reload.");		
 }
@@ -4418,10 +4428,10 @@ static void sediff_open_button_clicked()
 
 static void sediff_rename_types_window_show()
 {
-	if (sediff_app->rename_types == NULL)
-		sediff_app->rename_types = sediff_rename_types_new(sediff_app);
-	g_assert(sediff_app->rename_types);
-	sediff_rename_types_display_window(sediff_app->rename_types);
+	if (sediff_app->rename_types_window == NULL)
+		sediff_app->rename_types_window = sediff_rename_types_window_new(sediff_app);
+	g_assert(sediff_app->rename_types_window);
+	sediff_rename_types_window_display(sediff_app->rename_types_window);
 }
 
 void sediff_menu_on_renametypes_clicked(GtkMenuItem *menuitem, gpointer user_data)
@@ -4677,7 +4687,7 @@ static void sediff_initialize_policies()
 	GtkTextBuffer *txt;
 	
 	sediff_initialize_diff();
-	sediff_rename_types_unref_members(sediff_app->rename_types);
+	sediff_rename_types_window_unref_members(sediff_app->rename_types_window);
 	
 	if (sediff_app->p1)
 		close_policy(sediff_app->p1);
