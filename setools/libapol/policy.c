@@ -990,7 +990,8 @@ int get_attrib_idx(const char *name, policy_t *policy)
 	return avl_get_idx(name, &policy->tree[AVL_ATTRIBS]);	
 }
 
-int get_type_or_attrib_idx(const char *name, int *idx_type, policy_t *policy) {
+int get_type_or_attrib_idx(const char *name, int *idx_type, policy_t *policy) 
+{
 	int idx;
 	if(name == NULL || policy == NULL)
 		return -1;
@@ -1008,7 +1009,8 @@ int get_type_or_attrib_idx(const char *name, int *idx_type, policy_t *policy) {
 	return idx;
 }
 
-bool_t is_attrib_in_type(const char *attrib, int type_idx, policy_t *policy) {
+bool_t is_attrib_in_type(const char *attrib, int type_idx, policy_t *policy) 
+{
 	
 	int i;
 	char *name;
@@ -1025,7 +1027,8 @@ bool_t is_attrib_in_type(const char *attrib, int type_idx, policy_t *policy) {
 }
 
 typedef int (*_get_name_ptr_t)(int idx, char **name, policy_t *policy);
-static bool_t is_name_in_namea(const char *name, int idx_type, int idx, policy_t *policy) {
+static bool_t is_name_in_namea(const char *name, int idx_type, int idx, policy_t *policy) 
+{
 	int i, rt;
 	name_a_t *list;
 	_get_name_ptr_t _get_name;
@@ -1067,15 +1070,18 @@ static bool_t is_name_in_namea(const char *name, int idx_type, int idx, policy_t
 	return FALSE;
 }
 
-bool_t is_type_in_attrib(const char *type, int attrib_idx, policy_t *policy) {
+bool_t is_type_in_attrib(const char *type, int attrib_idx, policy_t *policy) 
+{
 	return(is_name_in_namea(type, IDX_ATTRIB, attrib_idx, policy));
 }
 
-bool_t is_type_in_role(const char *type, int role_idx, policy_t *policy) {
+bool_t is_type_in_role(const char *type, int role_idx, policy_t *policy) 
+{
 	return(is_name_in_namea(type, IDX_ROLE, role_idx, policy));
 }
 
-bool_t is_role_in_user(const char *role, int user_idx, policy_t *policy) {
+bool_t is_role_in_user(const char *role, int user_idx, policy_t *policy) 
+{
 	return(is_name_in_namea(role, IDX_USER, user_idx, policy));
 }
 
