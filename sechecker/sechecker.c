@@ -692,7 +692,6 @@ static int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib)
  * the boolean array of selected modules */
 static int sechk_lib_grow_modules(sechk_lib_t *lib)
 {
-	const int GROW_SIZE=1;
 	int i;
 
 	if (lib == NULL)
@@ -700,20 +699,20 @@ static int sechk_lib_grow_modules(sechk_lib_t *lib)
 	/* check if we need to grow */
 	if (lib->modules_size <= lib->num_modules) {
 		/* first grow the modules array */
-		lib->modules = (sechk_module_t*)realloc(lib->modules, sizeof(sechk_module_t) * (lib->modules_size + GROW_SIZE));
+		lib->modules = (sechk_module_t*)realloc(lib->modules, sizeof(sechk_module_t) * (lib->modules_size + LIST_SZ));
 		if (!lib->modules) {
 			fprintf(stderr, "Error: out of memory.\n");
 			return -1;
 		}
 		/* then grow the selection array */
-		lib->module_selection = (bool_t*)realloc(lib->module_selection, sizeof(bool_t) * (lib->modules_size + GROW_SIZE));
+		lib->module_selection = (bool_t*)realloc(lib->module_selection, sizeof(bool_t) * (lib->modules_size + LIST_SZ));
 
 		/* initialize any newly allocated memory */
-		for (i = lib->num_modules; i < lib->num_modules + GROW_SIZE; i++) {
+		for (i = lib->num_modules; i < lib->num_modules + LIST_SZ; i++) {
 			lib->module_selection[i] = FALSE;
 			memset(&lib->modules[i], 0,  sizeof(sechk_module_t));
 		}
-		lib->modules_size += GROW_SIZE;
+		lib->modules_size += LIST_SZ;
 	}
 	return 0;
 }
