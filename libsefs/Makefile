@@ -1,6 +1,6 @@
 # libsefs 
 
-LIB-OBJ	= fsdata.o 
+LIB-OBJ	= fsdata.o file_contexts.o
 
 SQL-OBJ = sqlite/attach.o sqlite/auth.o sqlite/btree.o sqlite/build.o sqlite/date.o \
 	sqlite/delete.o sqlite/expr.o sqlite/func.o sqlite/hash.o sqlite/insert.o sqlite/legacy.o \
@@ -47,6 +47,9 @@ install-policy:
 
 fsdata.o: fsdata.c
 	$(CC) $(CFLAGS) -c fsdata.c
+
+file_contexts.o: file_contexts.c file_contexts.h
+	$(CC) $(CFLAGS) -c $< 
 
 %.o:  %.c 
 	cd sqlite
