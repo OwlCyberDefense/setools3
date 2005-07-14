@@ -24,8 +24,8 @@
 #include "seuser_db.h"
 
 /* apol lib */
-#include "../libapol/policy.h"
-#include "../libapol/policy-io.h"
+#include <policy.h>
+#include <policy-io.h>
 
 /* assumed defines */
 #define MAKEFILE		"Makefile"

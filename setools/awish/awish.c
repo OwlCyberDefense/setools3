@@ -13,7 +13,6 @@
 #include <tcl.h>
 #include <tk.h>
 #include "../libapol/apol_tcl.h"
-#include "../libseuser/seuser_tcl.h"
 
 
 int Tcl_AppInit(Tcl_Interp *interp)
@@ -26,11 +25,6 @@ int Tcl_AppInit(Tcl_Interp *interp)
 	}
 	/* apolicy packagae initialization */
 	if(Apol_Init(interp) == TCL_ERROR) {
-     		return TCL_ERROR;
-     	}
-     	
-     	/* seuser package init */
-     	if(Seuser_Init(interp) == TCL_ERROR) {
      		return TCL_ERROR;
      	}
 
