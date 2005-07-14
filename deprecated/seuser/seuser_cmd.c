@@ -14,9 +14,9 @@
 #include <string.h>
 #include <assert.h>
 #include <limits.h>
-#include "../libapol/util.h"
-#include "../libseuser/seuser_db.h"
-#include "../libapol/policy-io.h"
+#include <util.h>
+#include "seuser_db.h"
+#include <policy-io.h>
 #include <pwd.h>
 #include <sys/types.h>
 #include <unistd.h>

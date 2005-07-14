@@ -7,22 +7,22 @@ SEUSER_HELP_FILE = seuser_help.txt
 SEUSER_CONF_FILE = seuser.conf
 
 ifeq ($(DYNAMIC), 0)
-LIBAPOL		= ../libapol/libapol.a
-LIBAPOL-TCL	= ../libapol/libapol-tcl.a
+LIBAPOL		= ../$(SETOOLS_TREE)libapol/libapol.a
+LIBAPOL-TCL	= ../$(SETOOLS_TREE)libapol/libapol-tcl.a
 LIBSEUSER	= ../libseuser/libseuser.a
 LIBSEUSER-TCL	= ../libseuser/libseuser-tcl.a
 ifeq ($(USE_LIBSEFS), 1)
-	LIBSEFS		= ../libsefs/libsefs.a
+	LIBSEFS		= ../$(SETOOLS_TREE)libsefs/libsefs.a
 else
 	LIBSEFS = 
 endif
 else
-LIBAPOL		= ../libapol/libapol.so.$(shell cat ../libapol/VERSION)
-LIBAPOL-TCL	= ../libapol/libapol-tcl.a
+LIBAPOL		= ../$(SETOOLS_TREE)libapol/libapol.so.$(shell cat $(SETOOLS_TREE)libapol/VERSION)
+LIBAPOL-TCL	= ../$(SETOOLS_TREE)libapol/libapol-tcl.a
 LIBSEUSER	= ../libseuser/libseuser.so.$(shell cat ../libseuser/VERSION)
 LIBSEUSER-TCL	= ../libseuser/libseuser-tcl.a
 ifeq ($(USE_LIBSEFS), 1)
-	LIBSEFS		= ../libsefs/libsefs.so.$(shell cat ../libsefs/VERSION)
+	LIBSEFS		= ../$(SETOOLS_TREE)libsefs/libsefs.so.$(shell cat ../$(SETOOLS_TREE)libsefs/VERSION)
 else
 	LIBSEFS = 
 endif
@@ -36,7 +36,7 @@ TE_PROGS_DIR	= $(POLICY_SRC_DIR)/domains/program
 FC_PROGS_DIR	= $(POLICY_SRC_DIR)/file_contexts/program
 GUI_CFLAGS  	+= -DSTARTUP_SCRIPT='"$(SEUSER_STARTUP_SCRIPT)"'
 CFLAGS  	+= -DSEUSERCMD_VERSION_STRING='"$(shell cat CMD_VERSION)"'
-
+INCLUDE 	= -I../$(SETOOLS_TREE)libapol -I../libseuser
 SHELL = /bin/sh
 
 seuser: $(CMD-OBJ) 
@@ -55,7 +55,7 @@ tmp.tcl: $(TCL-STRIP-FILES)
 	@perl -p -i -e 's/^\s*(\#[^!]*){0,1}$$//s' $@ 
 
 %.o:  %.c 
-	$(CC) $(CFLAGS) -c $<
+	$(CC) $(CFLAGS) $(INCLUDE) -c $<
 
 $(LIBAPOL): 
 	cd ../ ; $(MAKE) libapol
@@ -69,6 +69,8 @@ $(LIBSEUSER):
 $(LIBSEUSER-TCL):
 	cd ../ ; $(MAKE) libseuser-tcl
 
+$(LIBSEFS):
+	cd ../; $(MAKE) libsefs
 
 # The following two targets are for when seuser is installed during the 
 # selinux installation procedure. (THESE TARGETS ARE DEPRECATED)
