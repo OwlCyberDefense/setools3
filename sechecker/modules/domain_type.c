@@ -16,6 +16,7 @@
 #include <semantic/avsemantics.h>
 
 static sechk_lib_t *library;
+static const char *const mod_name = "domain_type";
 
 int domain_type_register(sechk_lib_t *lib) 
 {
@@ -23,27 +24,27 @@ int domain_type_register(sechk_lib_t *lib)
 	sechk_fn_t *fn_struct = NULL;
 
 	if (!lib) {
-		fprintf(stderr, "domain_type_register failed: no library\n");
+		fprintf(stderr, "Error: no library\n");
 		return -1;
 	}
 
 	library = lib;
 
-	mod = sechk_lib_get_module("domain_type", lib);
+	mod = sechk_lib_get_module(mod_name, lib);
 	if (!mod) {
-		fprintf(stderr, "domain_type_register failed: module unknown\n");
+		fprintf(stderr, "Error: module unknown\n");
 		return -1;
 	}
 	
 	/* register functions */
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "domain_type_register failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->name = strdup("init");
+	fn_struct->name = strdup(SECHK_MOD_FN_INIT);
 	if (!fn_struct->name) {
-		fprintf(stderr, "domain_type_register failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
 	fn_struct->fn = &domain_type_init;
@@ -52,12 +53,12 @@ int domain_type_register(sechk_lib_t *lib)
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "domain_type_register failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->name = strdup("run");
+	fn_struct->name = strdup(SECHK_MOD_FN_RUN);
 	if (!fn_struct->name) {
-		fprintf(stderr, "domain_type_register failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
 	fn_struct->fn = &domain_type_run;
@@ -66,26 +67,26 @@ int domain_type_register(sechk_lib_t *lib)
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "domain_type_register failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->name = strdup("free");
+	fn_struct->name = strdup(SECHK_MOD_FN_FREE);
 	if (!fn_struct->name) {
-		fprintf(stderr, "domain_type_register failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &domain_type_free;
+	fn_struct->fn = &domain_type_data_free;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "domain_type_register failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->name = strdup("print_output");
+	fn_struct->name = strdup(SECHK_MOD_FN_PRINT);
 	if (!fn_struct->name) {
-		fprintf(stderr, "domain_type_register failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
 	fn_struct->fn = &domain_type_print_output;
@@ -94,12 +95,12 @@ int domain_type_register(sechk_lib_t *lib)
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "domain_type_register failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->name = strdup("get_result");
+	fn_struct->name = strdup(SECHK_MOD_FN_GET_RES);
 	if (!fn_struct->name) {
-		fprintf(stderr, "domain_type_register failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
 	fn_struct->fn = &domain_type_get_result;
@@ -108,12 +109,12 @@ int domain_type_register(sechk_lib_t *lib)
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "domain_type_register failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
 	fn_struct->name = strdup("get_domain_list");
 	if (!fn_struct->name) {
-		fprintf(stderr, "domain_type_register failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
 	fn_struct->fn = &domain_type_get_domain_list;
@@ -128,26 +129,49 @@ int domain_type_init(sechk_module_t *mod, policy_t *policy)
 	sechk_name_value_t *opt = NULL;
 	domain_type_data_t *datum = NULL;
 	int attr = -1, retv;
-	bool_t header = TRUE;
+	bool_t test = FALSE;
 
 	if (!mod || !policy) {
-		fprintf(stderr, "domain_type_init failed: invalid parameters\n");
+		fprintf(stderr, "Error: invalid parameters\n");
 		return -1;
 	}
-	if (strcmp("domain_type", mod->name)) {
-		fprintf(stderr, "domain_type_init failed: wrong module (%s)\n", mod->name);
+	if (strcmp(mod_name, mod->name)) {
+		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
 		return -1;
 	}
 
 	datum = domain_type_data_new();
 	if (!datum) {
-		fprintf(stderr, "domain_type_init failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
 	mod->data = datum;
 
-	datum->outformat = library->outformat;
-	datum->mod_header = strdup("Finds all types in policy treated as a domain.\nA type is considered a domain if any of the following is true:\n   It has an attribute associated with domains\n   It is the source of a te rule for object class process\n   It is the default type in a type_transition rule for object class process\n   It is associated with a role other than object_r\n\n");
+	if (!mod->outputformat)
+		mod->outputformat = library->outputformat;
+	mod->header = strdup("Finds all types in policy treated as a domain.\nA type is considered a domain if any of the following is true:\n   It has an attribute associated with domains\n   It is the source of a te rule for object class process\n   It is the default type in a type_transition rule for object class process\n   It is associated with a role other than object_r");
+
+	opt = mod->requirements;
+	while (opt) {
+		test = FALSE;
+		test = sechk_lib_check_requirement(opt, library);
+		if (!test) {
+			fprintf(stderr, "Error: requirements not met\n");
+			return -1;
+		}
+		opt = opt->next;
+	}
+
+	opt = mod->dependencies;
+	while (opt) {
+		test = FALSE;
+		test = sechk_lib_check_dependency(opt, library);
+		if (!test) {
+			fprintf(stderr, "Error: dependency %s not found\n", opt->name);
+			return -1;
+		}
+		opt = opt->next;
+	}
 
 	opt = mod->options;
 	while (opt) {
@@ -156,42 +180,15 @@ int domain_type_init(sechk_module_t *mod, policy_t *policy)
 			if (attr != -1) {
 				retv = add_i_to_a(attr, &(datum->num_domain_attribs), &(datum->domain_attribs));
 				if (retv) {
-					fprintf(stderr, "domain_type_init failed: out of memory\n");
+					fprintf(stderr, "Error: out of memory\n");
 					return -1;
 				}
 			} else {
-				fprintf(stderr, "domain_type_init Warning: attribute %s not defined, ignoring\n", opt->value);
-			}
-		} else if (!strcmp(opt->name, "pol_type")) {
-			if (!strcmp(opt->value, "source")) {
-				if (is_binary_policy(policy))
-					fprintf(stderr, "domain_type_init Warning: module required source policy but was given binary, results may not be complete\n");
-			} else if (!strcmp(opt->value, "binary")) {
-				if (!is_binary_policy(policy))
-					fprintf(stderr, "domain_type_init Warning: module required binary policy but was given source, results may not be complete\n");
-			} else {
-				fprintf(stderr, "domain_type_init failed: invalid policy type specification %s\n", opt->value);
-				return -1;
-			}
-		} else if (!strcmp(opt->name, "output_type")) {
-			if (!strcmp(opt->value, "full")) {
-				datum->outformat = (SECHK_OUT_LONG|SECHK_OUT_LIST|SECHK_OUT_STATS|SECHK_OUT_HEADER);
-			} else if (!strcmp(opt->value, "long")) {
-				datum->outformat = (SECHK_OUT_LONG|SECHK_OUT_STATS|SECHK_OUT_HEADER);
-			} else if (!strcmp(opt->value, "short")) {
-				datum->outformat = (SECHK_OUT_LIST|SECHK_OUT_STATS|SECHK_OUT_HEADER);
-			} else if (!strcmp(opt->value, "stats")) {
-				datum->outformat = (SECHK_OUT_STATS|SECHK_OUT_HEADER);
-			}
-		} else if (!strcmp(opt->name, "output_header")) {
-			if (!strcmp(opt->value, "no")) {
-				header = FALSE;
+				fprintf(stderr, "Warning: attribute %s not defined, ignoring\n", opt->value);
 			}
 		}
 		opt = opt->next;
 	}
-	if (!header)
-		datum->outformat &= ~(SECHK_OUT_HEADER);
 
 	return 0;
 }
@@ -213,11 +210,11 @@ int domain_type_run(sechk_module_t *mod, policy_t *policy)
 	unsigned char type;
 	
 	if (!mod || !policy) {
-		fprintf(stderr, "domain_type_run failed: invalid parameters\n");
+		fprintf(stderr, "Error: invalid parameters\n");
 		return -1;
 	}
-	if (strcmp("domain_type", mod->name)) {
-		fprintf(stderr, "domain_type_run failed: wrong module (%s)\n", mod->name);
+	if (strcmp(mod_name, mod->name)) {
+		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
 		return -1;
 	}
 
@@ -230,20 +227,20 @@ int domain_type_run(sechk_module_t *mod, policy_t *policy)
 	datum = (domain_type_data_t*)mod->data;
 	res = sechk_result_new();
 	if (!res) {
-		fprintf(stderr, "domain_type_run failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
 	res->item_type = POL_LIST_TYPE;
-	res->test_name = strdup("doamin_type");
+	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
-		fprintf(stderr, "domain_type_run failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		goto domain_type_run_fail;
 	}
 
 	if (!avh_hash_table_present(policy->avh)) {
 		retv = avh_build_hashtab(policy);
 		if (retv) {
-			fprintf(stderr, "domain_type_run failed: could not build hash table\n");
+			fprintf(stderr, "Error: could not build hash table\n");
 			goto domain_type_run_fail;
 		}
 	}
@@ -254,7 +251,7 @@ int domain_type_run(sechk_module_t *mod, policy_t *policy)
 		if (!(is_binary_policy(policy))) {
 			retv = get_type_attribs(i, &num_attribs, &attribs, policy);
 			if (retv) {
-				fprintf(stderr, "domain_type_run failed: could not get attributes for %s\n", policy->types[i].name);
+				fprintf(stderr, "Error: could not get attributes for %s\n", policy->types[i].name);
 				goto domain_type_run_fail;
 			}
 			for (j = 0; j < datum->num_domain_attribs; j++) {
@@ -262,7 +259,7 @@ int domain_type_run(sechk_module_t *mod, policy_t *policy)
 				if (find_int_in_array(datum->domain_attribs[j], attribs, num_attribs) != -1) {
 					proof = sechk_proof_new();
 					if (!proof) {
-						fprintf(stderr, "domain_type_run failed: out of memory\n");
+						fprintf(stderr, "Error: out of memory\n");
 						goto domain_type_run_fail;
 					}
 					proof->idx = datum->domain_attribs[j];
@@ -271,19 +268,19 @@ int domain_type_run(sechk_module_t *mod, policy_t *policy)
 					buff_sz = 1+strlen(policy->types[i].name)+strlen(policy->attribs[datum->domain_attribs[j]].name)+strlen("type  has attribute ");
 					buff = (char*)calloc(buff_sz, sizeof(char));
 					if (!buff) {
-						fprintf(stderr, "domain_type_run failed: out of memory\n");
+						fprintf(stderr, "Error: out of memory\n");
 						goto domain_type_run_fail;
 					}
 					proof->text = buff;
 					if (!proof->text) {
-						fprintf(stderr, "domain_type_run failed: out of memory\n");
+						fprintf(stderr, "Error: out of memory\n");
 						goto domain_type_run_fail;
 					}
 					snprintf(proof->text, buff_sz, "type %s has attribute %s", policy->types[i].name, policy->attribs[datum->domain_attribs[j]].name);
 					if (!item) {
 						item = sechk_item_new();
 						if (!item) {
-							fprintf(stderr, "domain_type_run failed: out of memory\n");
+							fprintf(stderr, "Error: out of memory\n");
 							goto domain_type_run_fail;
 						}
 						item->item_id = i;
@@ -320,12 +317,12 @@ int domain_type_run(sechk_module_t *mod, policy_t *policy)
 					else if (hash_idx->nodes[j]->key.rule_type <= RULE_MAX_AV)
 						buff = re_render_av_rule(!is_binary_policy(policy), hash_rule->rule, (hash_idx->nodes[j]->key.rule_type > RULE_TE_ALLOW ? 1 : 0), policy);
 					if (!buff) {
-						fprintf(stderr, "domain_type_run failed: out of memory\n");
+						fprintf(stderr, "Error: out of memory\n");
 						goto domain_type_run_fail;
 					}
 					proof = sechk_proof_new();
 					if (!proof) {
-						fprintf(stderr, "domain_type_run failed: out of memory\n");
+						fprintf(stderr, "Error: out of memory\n");
 						goto domain_type_run_fail;
 					}
 					proof->idx = idx;
@@ -335,7 +332,7 @@ int domain_type_run(sechk_module_t *mod, policy_t *policy)
 					if (!item) {
 						item = sechk_item_new();
 						if (!item) {
-							fprintf(stderr, "domain_type_run failed: out of memory\n");
+							fprintf(stderr, "Error: out of memory\n");
 							goto domain_type_run_fail;
 						}
 						item->item_id = i;
@@ -352,12 +349,12 @@ int domain_type_run(sechk_module_t *mod, policy_t *policy)
 			if (i == policy->te_trans[j].dflt_type.idx && does_tt_rule_use_classes(j, &process_idx, 1, policy)) {
 				buff = re_render_tt_rule(!is_binary_policy(policy), j, policy);
 				if (!buff) {
-					fprintf(stderr, "domain_type_run failed: out of memory\n");
+					fprintf(stderr, "Error: out of memory\n");
 					goto domain_type_run_fail;
 				}
 				proof = sechk_proof_new();
 				if (!proof) {
-					fprintf(stderr, "domain_type_run failed: out of memory\n");
+					fprintf(stderr, "Error: out of memory\n");
 					goto domain_type_run_fail;
 				}
 				proof->idx = j;
@@ -367,7 +364,7 @@ int domain_type_run(sechk_module_t *mod, policy_t *policy)
 				if (!item) {
 					item = sechk_item_new();
 					if (!item) {
-						fprintf(stderr, "domain_type_run failed: out of memory\n");
+						fprintf(stderr, "Error: out of memory\n");
 						goto domain_type_run_fail;
 					}
 					item->item_id = i;
@@ -387,13 +384,13 @@ int domain_type_run(sechk_module_t *mod, policy_t *policy)
 				buff_sz = 1 + strlen("role  types ;") + strlen(policy->roles[j].name) + strlen(policy->types[i].name);
 				buff = (char*)calloc(buff_sz, sizeof(char));
 				if (!buff) {
-					fprintf(stderr, "domain_type_run failed: out of memory\n");
+					fprintf(stderr, "Error: out of memory\n");
 					goto domain_type_run_fail;
 				}
 				snprintf(buff, buff_sz, "role %s types %s;", policy->roles[j].name, policy->types[i].name);
 				proof = sechk_proof_new();
 				if (!proof) {
-					fprintf(stderr, "domain_type_run failed: out of memory\n");
+					fprintf(stderr, "Error: out of memory\n");
 					goto domain_type_run_fail;
 				}
 				proof->idx = j;
@@ -403,7 +400,7 @@ int domain_type_run(sechk_module_t *mod, policy_t *policy)
 				if (!item) {
 					item = sechk_item_new();
 					if (!item) {
-						fprintf(stderr, "domain_type_run failed: out of memory\n");
+						fprintf(stderr, "Error: out of memory\n");
 						goto domain_type_run_fail;
 					}
 					item->item_id = i;
@@ -437,10 +434,24 @@ domain_type_run_fail:
 	return -1;
 }
 
-void domain_type_free(sechk_module_t *mod) 
+void domain_type_data_free(sechk_module_t *mod) 
 {
-	domain_type_data_free((domain_type_data_t*)(mod->data));
+	domain_type_data_t *datum = NULL;
+
+	if (!mod) {
+		fprintf(stderr, "Error: invalid parameters\n");
+		return;
+	}
+	if (strcmp(mod_name, mod->name)) {
+		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+		return;
+	}
+	datum = (domain_type_data_t*)mod->data;
+	if (datum) {
+		free(datum->domain_attribs);
+	}
 	free(mod->data);
+	mod->data = NULL;
 }
 
 int domain_type_print_output(sechk_module_t *mod, policy_t *policy) 
@@ -452,26 +463,26 @@ int domain_type_print_output(sechk_module_t *mod, policy_t *policy)
 	int i = 0;
 
 	if (!mod || !policy) {
-		fprintf(stderr, "domain_type_print_output failed: invalid parameters\n");
+		fprintf(stderr, "Error: invalid parameters\n");
 		return -1;
 	}
 	if (strcmp("domain_type", mod->name)) {
-		fprintf(stderr, "domain_type_print_output failed: wrong module (%s)\n", mod->name);
+		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
 		return -1;
 	}
 	if (!mod->result) {
-		fprintf(stderr, "domain_type_print_output failed: module has not been run\n");
+		fprintf(stderr, "Error: module has not been run\n");
 		return -1;
 	}
 
 	datum = (domain_type_data_t*)mod->data;
-	outformat = datum->outformat;
+	outformat = mod->outputformat;
 	if (!outformat)
 		return 0; /* not an error - no output is requested */
 
 	printf("Module: Domain Type\n");
 	if (outformat & SECHK_OUT_HEADER) {
-		printf("%s", datum->mod_header);
+		printf("%s\n\n", mod->header);
 	}
 	if (outformat & SECHK_OUT_STATS) {
 		printf("Found %i domain types.\n", mod->result->num_items);
@@ -481,11 +492,12 @@ int domain_type_print_output(sechk_module_t *mod, policy_t *policy)
 		for (item = mod->result->items; item; item = item->next) {
 			i++;
 			i %= 4; /* 4 items per line */
-			printf("%s %c", policy->types[item->item_id].name, i?' ':'\n');
+			printf("%s%s", policy->types[item->item_id].name, i ?", " : "\n");
 		}
+		printf("\n");
 	}
-	if (outformat & SECHK_OUT_LONG) {
-		printf("\n\n");
+	if (outformat & SECHK_OUT_PROOF) {
+		printf("\n");
 		for (item = mod->result->items; item; item = item->next) {
 			printf("%s", policy->types[item->item_id].name);
 			printf(" - severity: %i\n", sechk_item_sev(item));
@@ -493,6 +505,7 @@ int domain_type_print_output(sechk_module_t *mod, policy_t *policy)
 				printf("\t%s\n", proof->text);
 			}
 		}
+		printf("\n");
 	}
 
 	return 0;
@@ -502,11 +515,11 @@ sechk_result_t *domain_type_get_result(sechk_module_t *mod)
 {
 
 	if (!mod) {
-		fprintf(stderr, "domain_type_get_result failed: invalid parameters\n");
+		fprintf(stderr, "Error: invalid parameters\n");
 		return NULL;
 	}
-	if (strcmp("domain_type", mod->name)) {
-		fprintf(stderr, "domain_type_get_result failed: wrong module (%s)\n", mod->name);
+	if (strcmp(mod_name, mod->name)) {
+		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
 		return NULL;
 	}
 
@@ -519,15 +532,15 @@ int domain_type_get_domain_list(sechk_module_t *mod, int **array, int *size)
 	sechk_item_t *item = NULL;
 
 	if (!mod || !array || !size) {
-		fprintf(stderr, "domain_type_get_domain_list failed: invalid parameters\n");
+		fprintf(stderr, "Error: invalid parameters\n");
 		return -1;
 	}
-	if (strcmp("domain_type", mod->name)) {
-		fprintf(stderr, "domain_type_get_domain_list failed: wrong module (%s)\n", mod->name);
+	if (strcmp(mod_name, mod->name)) {
+		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
 		return -1;
 	}
 	if (!mod->result) {
-		fprintf(stderr, "domain_type_get_domain_list failed: module has not been run\n");
+		fprintf(stderr, "Error: module has not been run\n");
 		return -1;
 	}
 
@@ -535,7 +548,7 @@ int domain_type_get_domain_list(sechk_module_t *mod, int **array, int *size)
 
 	*array = (int*)malloc(mod->result->num_items * sizeof(int));
 	if (!(*array)) {
-		fprintf(stderr, "domain_type_get_domain_list failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
 
@@ -555,14 +568,4 @@ domain_type_data_t *domain_type_data_new(void)
 	return datum;
 }
 
-void domain_type_data_free(domain_type_data_t *datum) 
-{
-	if (!datum)
-		return;
 
-	free(datum->domain_attribs);
-
-	free(datum->mod_header);
-}
-
- 

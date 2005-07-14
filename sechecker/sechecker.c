@@ -19,6 +19,10 @@
 #include <util.h>
 #include <file_contexts.h>
 
+#ifdef LIBSELINUX
+#include <selinux/selinux.h>
+#endif
+
 /* static methods */
 static int sechk_lib_parse_config_file(const char *filename, sechk_lib_t *lib);
 static int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib);
@@ -29,7 +33,7 @@ static int sechk_lib_get_module_indx(const char *name, sechk_lib_t *lib);
 sechk_lib_t *sechk_lib_new(const char *policyfilelocation, const char *fcfilelocation) 
 {
 	sechk_lib_t *lib = NULL;
-	char *default_policy_path = NULL;
+	char *default_policy_path = NULL, *default_fc_path = NULL;
 	const char *CONFIG_FILE="/.sechecker", *DEFAULT_CONFIG_FILE="/dot_sechecker";
 	char *conf_path = NULL, *conf_filename = NULL;
 	int retv;
@@ -96,7 +100,29 @@ sechk_lib_t *sechk_lib_new(const char *policyfilelocation, const char *fcfileloc
 		}
 		lib->policy_path = strdup(policyfilelocation);
 		}
-	/* TODO: fc file */
+
+	/* if no file_contexts file is given attempt to find the default */
+	if (!fcfilelocation) {
+		retv = find_default_file_contexts_file(&default_fc_path);
+		if (retv) {
+			fprintf(stderr, "Warning: unable to find default file_contexts file\n");
+		}
+		retv = parse_file_contexts_file(default_fc_path, &(lib->fc_entries), &(lib->num_fc_entries), lib->policy);
+		if (retv) {
+			fprintf(stderr, "Warning: unable to process file_contexts file\n");
+		} else {
+			lib->fc_path = strdup(default_fc_path);
+		}
+	} else {
+		retv = parse_file_contexts_file(fcfilelocation, &(lib->fc_entries), &(lib->num_fc_entries), lib->policy);
+		if (retv) {
+			fprintf(stderr, "Warning: unable to process file_contexts file\n");
+		} else {
+			lib->fc_path = strdup(fcfilelocation);
+		}
+
+	}
+
 exit:
 	if (default_policy_path)
 		free(default_policy_path);
@@ -130,7 +156,7 @@ void sechk_lib_free(sechk_lib_t *lib)
 	if (lib->modules) {
 		for (i = 0; i < lib->num_modules; i++) {
 			if (lib->modules[i].data)
-				free_fn = sechk_lib_get_module_function(lib->modules[i].name, "free", lib);
+				free_fn = sechk_lib_get_module_function(lib->modules[i].name, SECHK_MOD_FN_FREE, lib);
 			else
 				free_fn = NULL;
 			sechk_module_free(&lib->modules[i], free_fn);
@@ -141,7 +167,7 @@ void sechk_lib_free(sechk_lib_t *lib)
 	}
 	if (lib->fc_entries) {
 		for (i = 0; i < lib->num_fc_entries; i++)
-			fscon_free(&lib->fc_entries[i]);
+			sefs_fc_entry_free(&lib->fc_entries[i]);
 		lib->num_fc_entries = 0;
 		free(lib->fc_entries);
 	}
@@ -156,16 +182,17 @@ void sechk_module_free(sechk_module_t *module, sechk_free_fn_t free_fn)
 	if (!module)
 		return;
 
-		free(module->name);
-		sechk_result_free(module->result);
-		sechk_name_value_destroy(module->options);
-		sechk_name_value_destroy(module->requirements);
-		sechk_name_value_destroy(module->dependencies);
+	free(module->header);
+	sechk_result_free(module->result);
+	sechk_name_value_destroy(module->options);
+	sechk_name_value_destroy(module->requirements);
+	sechk_name_value_destroy(module->dependencies);
 	if (module->data) {
 		assert(free_fn);
 		free_fn(module);
 	}
 	sechk_fn_free(module->functions);
+	free(module->name);
 }
 
 void sechk_fn_free(sechk_fn_t *fn_struct)
@@ -178,7 +205,7 @@ void sechk_fn_free(sechk_fn_t *fn_struct)
 	while(fn_struct) {
 		next_fn_struct = fn_struct->next;
 		free(fn_struct->name);
-		/* NEVER free (*fn_struct)->fn */
+		/* NEVER free fn_struct->fn */
 		free(fn_struct);
 		fn_struct = next_fn_struct;
 	}
@@ -358,7 +385,7 @@ int sechk_lib_init_modules(sechk_lib_t *lib)
 	if (lib == NULL || lib->modules == NULL)
 		return -1;
 	for (i = 0; i < lib->num_modules; i++) {
-		init_fn = (sechk_init_fn_t)sechk_lib_get_module_function(lib->modules[i].name, "init", lib);
+		init_fn = (sechk_init_fn_t)sechk_lib_get_module_function(lib->modules[i].name, SECHK_MOD_FN_INIT, lib);
 		if (!init_fn) {
 			fprintf(stderr, "Error: could not initialize module %s\n", lib->modules[i].name);
 			return -1;
@@ -373,15 +400,20 @@ int sechk_lib_init_modules(sechk_lib_t *lib)
 
 int sechk_lib_run_modules(sechk_lib_t *lib) 
 {
-	int i, retv, success = 0;
+	int i, retv, rc = 0;
 	sechk_run_fn_t run_fn = NULL;
+
+	if (!lib) {
+		fprintf(stderr, "Error: invalid library\n");
+		return -1;
+	}
 
 	for (i = 0; i < lib->num_modules; i++) {
 		/* if module is "off" do not run unless requested by another module */
 		if (!lib->module_selection[i])
 			continue;
 		assert(lib->modules[i].name);
-		run_fn = (sechk_run_fn_t)sechk_lib_get_module_function(lib->modules[i].name, "run", lib);
+		run_fn = (sechk_run_fn_t)sechk_lib_get_module_function(lib->modules[i].name, SECHK_MOD_FN_RUN, lib);
 		if (!run_fn) {
 			fprintf(stderr, "Error: could not run module %s\n", lib->modules[i].name);
 			return -1;
@@ -389,13 +421,166 @@ int sechk_lib_run_modules(sechk_lib_t *lib)
 		retv = run_fn(&(lib->modules[i]), lib->policy);
 		if (retv) {
 			fprintf(stderr, "Error: module %s failed\n", lib->modules[i].name);
-			success++;
+			rc = -1;
 		}
 	}
 
-	return success;
+	return rc;
 }
 
+int sechk_lib_print_modules_output(sechk_lib_t *lib)
+{
+	int i, retv, rc = 0;
+	sechk_print_output_fn_t print_fn = NULL;
+
+	if (!lib) {
+		fprintf(stderr, "Error: invalid library\n");
+		return -1;
+	}
+
+	for (i = 0; i < lib->num_modules; i++) {
+		/* if module is "off" do not print its results */
+		if (!lib->module_selection[i])
+			continue;
+		assert(lib->modules[i].name);
+		print_fn = (sechk_run_fn_t)sechk_lib_get_module_function(lib->modules[i].name, SECHK_MOD_FN_PRINT, lib);
+		if (!print_fn) {
+			fprintf(stderr, "Error: could not get print function for module %s\n", lib->modules[i].name);
+			return -1;
+		}
+		retv = print_fn(&(lib->modules[i]), lib->policy);
+		if (retv) {
+			fprintf(stderr, "Error: unable to print results for module %s \n", lib->modules[i].name);
+			rc = -1;
+		}
+	}
+
+	return -1;
+}
+
+bool_t sechk_lib_check_requirement(sechk_name_value_t *req, sechk_lib_t *lib)
+{
+	int pol_ver = POL_VER_UNKNOWN;
+
+	if (!req) {
+		fprintf(stderr, "Error: invalid requirement\n");
+		return FALSE;
+	}
+
+	if (!lib || !lib->policy) {
+		fprintf(stderr, "Error: invalid library\n");
+		return FALSE;
+	}
+
+	if (!strcmp(req->name, SECHK_PARSE_REQUIRE_POL_TYPE)) {
+		if (!strcmp(req->value, SECHK_PARSE_REQUIRE_POL_TYPE_SRC)) {
+			if (is_binary_policy(lib->policy)) {
+				fprintf(stderr, "Error: module required source policy but was given binary\n");
+				return FALSE;
+			}
+		} else if (!strcmp(req->value, SECHK_PARSE_REQUIRE_POL_TYPE_BIN)) {
+			if (!is_binary_policy(lib->policy)) {
+				fprintf(stderr, "Error: module required binary policy but was given source\n");
+				return FALSE;
+			}
+		} else {
+			fprintf(stderr, "Error: invalid policy type specification %s\n", req->value);
+			return FALSE;
+		}
+	} else if (!strcmp(req->name, SECHK_PARSE_REQUIRE_POL_VER)) {
+		pol_ver = atoi(req->value);
+		if (pol_ver < 11)
+			pol_ver = POL_VER_PRE_11;
+		else if (pol_ver < 15)
+			pol_ver = POL_VER_12;
+		else if (pol_ver < 16)
+			pol_ver = POL_VER_15;
+		else if (pol_ver == 16)
+			pol_ver = POL_VER_16;
+		else if (pol_ver == 17)
+			pol_ver = POL_VER_17;
+		else if (pol_ver == 18)
+			pol_ver = POL_VER_18;
+		else if (pol_ver > 18)
+			pol_ver = POL_VER_19;
+		else
+			pol_ver = POL_VER_UNKNOWN;
+		if (lib->policy->version < pol_ver) {
+			fprintf(stderr, "Error: module requires newer policy version\n");
+			return FALSE;
+		}
+	} else if (!strcmp(req->name, SECHK_PARSE_REQUIRE_SELINUX)) {
+#ifdef LIBSELINUX
+		if (!is_selinux_enabled()) {
+			fprintf(stderr, "Error: module requires selinux system\n");
+			return FALSE;
+		}
+#else
+		fprintf(stderr, "Error: module requires selinux system, but SEChecker was not built to support system checks\n");
+		return FALSE
+#endif
+	} else if (!strcmp(req->name, SECHK_PARSE_REQUIRE_MLS_POLICY)) {
+		if (lib->policy->version != POL_VER_19MLS) {
+			fprintf(stderr, "Error: module requires MLS policy\n");
+			return FALSE;
+		}
+	} else if (!strcmp(req->name, SECHK_PARSE_REQUIRE_MLS_SYSTEM)) {
+#ifdef LIBSELINUX
+		if (!is_selinux_mls_enabled() || !is_selinux_enabled()) {
+			fprintf(stderr, "Error: module requires MLS enabled selinux system\n");
+			return FALSE;
+		}
+#else
+		fprintf(stderr, "Error: module requires selinux system, but SEChecker was not built to support system checks\n");
+		return FALSE
+#endif
+	} else {
+		fprintf(stderr, "Error: unrecognized requirement\n");
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+bool_t sechk_lib_check_dependency(sechk_name_value_t *dep, sechk_lib_t *lib)
+{
+	sechk_module_t *mod = NULL;
+
+	if (!dep || !dep->value) {
+		fprintf(stderr, "Error: invalid dependency\n");
+		return FALSE;
+	}
+
+	if (!lib) {
+		fprintf(stderr, "Error: invalid library\n");
+		return FALSE;
+	}
+
+	mod = sechk_lib_get_module(dep->value, lib);
+	if (!mod) {
+		fprintf(stderr, "Error: could not find dependency %s\n", dep->value);
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+int sechk_lib_set_outputformat(unsigned char out, sechk_lib_t *lib)
+{
+	int i;
+	
+	if (!lib || !out)
+		return -1;
+	
+	lib->outputformat = out;
+	
+	for (i = 0; i < lib->num_modules; i++)
+		lib->modules[i].outputformat = out;
+
+	return 0;
+}
+
+/* sechk_item_sev calculates the severity level of an item based on the proof */
 int sechk_item_sev(sechk_item_t *item)
 {
 	sechk_proof_t *proof = NULL;
@@ -404,7 +589,9 @@ int sechk_item_sev(sechk_item_t *item)
 	if (!item)
 		return SECHK_SEV_NONE;
 
-	for (proof = item->proof; proof; proof = proof->next) 
+	/* the severity of an item is equal to
+	 * the highest severity among its proof elements */
+	for (proof = item->proof; proof; proof = proof->next)
 		if (proof->severity > sev)
 			sev = proof->severity;
 
@@ -535,15 +722,15 @@ static int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib)
 	switch (xmlTextReaderNodeType(reader)) {
 
 	case XML_ELEMENT_DECL: /* closing tags */
-		if (xmlStrEqual(xmlTextReaderConstName(reader), PARSE_MODULE_TAG) == 1)
+		if (xmlStrEqual(xmlTextReaderConstName(reader), (xmlChar*)SECHK_PARSE_MODULE_TAG) == 1)
 			current_module = NULL;
 		break;
 
 	case XML_ELEMENT_NODE: /* opening tags */
 
-		if (xmlStrEqual(xmlTextReaderConstName(reader), PARSE_SECHECKER_TAG) == 1) {
+		if (xmlStrEqual(xmlTextReaderConstName(reader), (xmlChar*)SECHK_PARSE_SECHECKER_TAG) == 1) {
 			/* parsing the <sechecker> tag */
-			attrib = xmlTextReaderGetAttribute(reader, PARSE_VERSION_ATTRIB);
+			attrib = xmlTextReaderGetAttribute(reader, (xmlChar*)SECHK_PARSE_VERSION_ATTRIB);
 			if (attrib) {
 				/* TODO: add version logic */
 				free(attrib);
@@ -552,9 +739,9 @@ static int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib)
 				fprintf(stderr, "Warning: sechecker version is not specified in configuration file.\n");
 			}
 
-		} else if (xmlStrEqual(xmlTextReaderConstName(reader), PARSE_MODULE_TAG) == 1) {
+		} else if (xmlStrEqual(xmlTextReaderConstName(reader), (xmlChar*)SECHK_PARSE_MODULE_TAG) == 1) {
 			/* parsing the <module> tag */
-			attrib = xmlTextReaderGetAttribute(reader, PARSE_NAME_ATTRIB);
+			attrib = xmlTextReaderGetAttribute(reader, (xmlChar*)SECHK_PARSE_NAME_ATTRIB);
 			if (attrib) {
 				if ((idx = sechk_lib_get_module_indx((const char*)attrib, lib)) == -1) {
 					/* set the values on a new module b/c it doesn't already exist */
@@ -574,13 +761,13 @@ static int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib)
 				fprintf(stderr, "Error: module name is not specified in configuration file.\n");
 				goto exit_err;
 			}
-		} else if (xmlStrEqual(xmlTextReaderConstName(reader), PARSE_OPTION_TAG) == 1) {
+		} else if (xmlStrEqual(xmlTextReaderConstName(reader), (xmlChar*)SECHK_PARSE_OPTION_TAG) == 1) {
 			if (!current_module) {
 				fprintf(stderr, "Error: 'option' specified outside the scope of a module.\n");
 				goto exit_err;
 			}
 			nv = sechk_name_value_new();
-			attrib = xmlTextReaderGetAttribute(reader, PARSE_NAME_ATTRIB);
+			attrib = xmlTextReaderGetAttribute(reader, (xmlChar*)SECHK_PARSE_NAME_ATTRIB);
 			if (attrib) {
 				nv->name = strdup((char*)attrib);
 				free(attrib);
@@ -589,7 +776,7 @@ static int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib)
 				fprintf(stderr, "Error: option name is not specified in configuration file.\n");
 				goto exit_err;
 			}
-			attrib = xmlTextReaderGetAttribute(reader, PARSE_VALUE_ATTRIB);
+			attrib = xmlTextReaderGetAttribute(reader, (xmlChar*)SECHK_PARSE_VALUE_ATTRIB);
 			if (attrib) {
 				nv->value = strdup((char*)attrib);
 				free(attrib);
@@ -601,13 +788,13 @@ static int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib)
 
 			nv->next = current_module->options;
 			current_module->options = nv;
-		} else if (xmlStrEqual(xmlTextReaderConstName(reader), PARSE_REQUIRE_TAG) == 1) {
+		} else if (xmlStrEqual(xmlTextReaderConstName(reader), (xmlChar*)SECHK_PARSE_REQUIRE_TAG) == 1) {
 			if (!current_module) {
 				fprintf(stderr, "Error: 'require' specified outside the scope of a module.\n");
 				goto exit_err;
 			}
 			nv = sechk_name_value_new();
-			attrib = xmlTextReaderGetAttribute(reader, PARSE_NAME_ATTRIB);
+			attrib = xmlTextReaderGetAttribute(reader, (xmlChar*)SECHK_PARSE_NAME_ATTRIB);
 			if (attrib) {
 				nv->name = strdup((char*)attrib);
 				free(attrib);
@@ -616,7 +803,7 @@ static int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib)
 				fprintf(stderr, "Error: require name is not specified in configuration file.\n");
 				goto exit_err;
 			}
-			attrib = xmlTextReaderGetAttribute(reader, PARSE_VALUE_ATTRIB);
+			attrib = xmlTextReaderGetAttribute(reader, (xmlChar*)SECHK_PARSE_VALUE_ATTRIB);
 			if (attrib) {
 				nv->value = strdup((char*)attrib);
 				free(attrib);
@@ -627,13 +814,13 @@ static int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib)
 			}
 			nv->next = current_module->requirements;
 			current_module->requirements = nv;
-		} else if (xmlStrEqual(xmlTextReaderConstName(reader), PARSE_DEPENDENCY_TAG) == 1) {
+		} else if (xmlStrEqual(xmlTextReaderConstName(reader), (xmlChar*)SECHK_PARSE_DEPENDENCY_TAG) == 1) {
 			if (!current_module) {
 				fprintf(stderr, "Error: 'dependency' specified outside the scope of a module.\n");
 				goto exit_err;
 			}
 			nv = sechk_name_value_new();
-			attrib = xmlTextReaderGetAttribute(reader, PARSE_NAME_ATTRIB);
+			attrib = xmlTextReaderGetAttribute(reader, (xmlChar*)SECHK_PARSE_NAME_ATTRIB);
 			if (attrib) {
 				nv->name = strdup((char*)attrib);
 				free(attrib);
@@ -642,7 +829,7 @@ static int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib)
 				fprintf(stderr, "Error: dependency name is not specified in configuration file.\n");
 				goto exit_err;
 			}
-			attrib = xmlTextReaderGetAttribute(reader, PARSE_VALUE_ATTRIB);
+			attrib = xmlTextReaderGetAttribute(reader, (xmlChar*)SECHK_PARSE_VALUE_ATTRIB);
 			if (attrib) {
 				nv->value = strdup((char*)attrib);
 				free(attrib);
@@ -653,20 +840,20 @@ static int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib)
 			}
 			nv->next = current_module->dependencies;
 			current_module->dependencies = nv;
-		} else if (xmlStrEqual(xmlTextReaderConstName(reader), PARSE_OUTPUT_TAG) == 1) {
+		} else if (xmlStrEqual(xmlTextReaderConstName(reader), (xmlChar*)SECHK_PARSE_OUTPUT_TAG) == 1) {
 			if (!current_module) {
 				fprintf(stderr, "Error: 'output' specified outside the scope of a module.\n");
 				goto exit_err;
 			}
-			attrib = xmlTextReaderGetAttribute(reader, PARSE_VALUE_ATTRIB);
+			attrib = xmlTextReaderGetAttribute(reader, (xmlChar*)SECHK_PARSE_VALUE_ATTRIB);
 			if (attrib) {
-				if (xmlStrEqual(attrib, PARSE_OUTPUT_SHORT) == 1) {
+				if (xmlStrEqual(attrib, (xmlChar*)SECHK_PARSE_OUTPUT_SHORT) == 1) {
 					current_module->outputformat = SECHK_OUT_SHORT;
-				} else if (xmlStrEqual(attrib, PARSE_OUTPUT_QUIET) == 1) {
+				} else if (xmlStrEqual(attrib, (xmlChar*)SECHK_PARSE_OUTPUT_QUIET) == 1) {
 					current_module->outputformat = SECHK_OUT_QUIET;
-				} else if (xmlStrEqual(attrib, PARSE_OUTPUT_LONG) == 1) {
+				} else if (xmlStrEqual(attrib, (xmlChar*)SECHK_PARSE_OUTPUT_LONG) == 1) {
 					current_module->outputformat = SECHK_OUT_LONG;
-				} else if (xmlStrEqual(attrib, PARSE_OUTPUT_VERBOSE) == 1) {
+				} else if (xmlStrEqual(attrib, (xmlChar*)SECHK_PARSE_OUTPUT_VERBOSE) == 1) {
 					current_module->outputformat = SECHK_OUT_VERBOSE;
 				}
 				free(attrib);

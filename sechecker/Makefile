@@ -1,7 +1,8 @@
-OBJS 		  = sechecker.o
+OBJS 		  = sechecker.o register_list.o
 LIBAPOL 	  = ../libapol/libapol.a
+LIBSEFS           = ../libsefs/libsefs.a
 MODULES 	  = $(patsubst %.c, %.o, $(wildcard ./modules/*.c))
-INCLUDE 	  += -I. -I../libapol
+INCLUDE 	  += -I. -I../libapol -I../libsefs
 LINKFLAGS 	  = -lfl -lm $(LIBSELINUX)
 SECHECKER_VERSION = '"$(shell cat ./VERSION)"'
 LIBXML_FLAGS	  = `pkg-config --cflags libxml-2.0`
@@ -10,10 +11,11 @@ CFLAGS 		  += -D_GNU_SOURCE
 
 all: sechecker
 
-sechecker:$(LIBAPOL) $(MODULES) $(OBJS) sechecker_cli.o register_list.o
-	$(CC) $(CFLAGS) -o $@ sechecker_cli.o register_list.o $(OBJS) $(LIBXML_LIBS) $(MODULES) $(LIBAPOL) $(LIBSELINUX) $(LINKFLAGS)
 
-sechecker_cli.o: sechecker_cli.c register_list.o
+sechecker: $(LIBSEFS) $(LIBAPOL) $(MODULES) $(OBJS) sechecker_cli.o
+	$(CC) $(CFLAGS) -o $@ sechecker_cli.o  $(OBJS) $(LIBXML_LIBS) $(MODULES) $(LIBAPOL) $(LIBSEFS) $(LINKFLAGS)
+
+sechecker_cli.o: sechecker_cli.c register_list.h sechecker.h
 	$(CC) $(CFLAGS) $(INCLUDE) $(LIBXML_FLAGS) -DSECHECKER_VERSION=$(SECHECKER_VERSION) -c $<
 
 %.o: %.c
@@ -22,8 +24,15 @@ sechecker_cli.o: sechecker_cli.c register_list.o
 $(LIBAPOL):
 	$(MAKE) -C .. libapol
 
+$(LIBSEFS):
+	$(MAKE) -C .. libsefs
+
 $(MODULES): $(wildcard ./modules/*.c)
 	$(MAKE) -C ./modules $(notdir $@)
+
+register_list.o : register_list.h
+
+sechecker.o: sechecker.h
 
 install: all
 	install -m 755 sechecker $(BINDIR)
