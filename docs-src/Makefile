@@ -1,9 +1,9 @@
 # SE Tools Documentation makefile
 TOP-DOCS = INSTALL KNOWN-BUGS README
-INSTALL_DOCS = KNOWN-BUGS README apol/*.txt sepct/sepcut_help.txt \
-	       seuser/seuser_help.txt seaudit/seaudit_help.txt
+INSTALL_DOCS = KNOWN-BUGS README apol/*.txt \
+	       seaudit/seaudit_help.txt
 
-docs: apol-doc sepcut-doc seuser-doc seaudit-doc top-docs sediff-doc
+docs: apol-doc seaudit-doc top-docs sediff-doc
 
 top-docs:
 	for file in $(TOP-DOCS); do \
@@ -41,18 +41,6 @@ apol-doc:
 	cat flow_assertion_help.in | \
 	sed -e 's/APOL_GUI_VERSION/$(shell cat ../apol/VERSION)/g' | \
 	sed -e 's/MOD_DATE/$(shell date '+%B %d, %G')/g' > ../apol/flow_assertion_help.txt
-	
-sepcut-doc: 
-	rm -f ../sepct/*.txt; \
-	cat sepcut_help_text.in | \
-	sed -e 's/SEPCUT_GUI_VERSION/$(shell cat ../sepct/VERSION)/g' | \
-	sed -e 's/MOD_DATE/$(shell date '+%B %d, %G')/g' > ../sepct/sepcut_help.txt
-	
-seuser-doc: 
-	rm -f ../seuser/*.txt; \
-	cat seuser_help_text.in | \
-	sed -e 's/SEUSER_GUI_VERSION/$(shell cat ../seuser/GUI_VERSION)/g' | \
-	sed -e 's/MOD_DATE/$(shell date '+%B %d, %G')/g' > ../seuser/seuser_help.txt
 
 seaudit-doc: 
 	rm -f ../seaudit/*.txt; \
@@ -68,8 +56,6 @@ sediff-doc:
 
 remove-docs :
 	rm -f ../apol/*.txt; \
-	rm -f ../sepct/*.txt; \
-	rm -f ../seuser/*.txt; \
 	rm -f ../seaudit/*.txt; 
 	for file in $(TOP-DOCS); do \
 		rm -f ../$$file; \
