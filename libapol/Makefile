@@ -24,15 +24,17 @@ CFLAGS  += -DLIBAPOL_SELINUX_DIR='"$(SELINUX_DIR)"'
 CFLAGS	+= -DLIBAPOL_DEFAULT_POLICY='"$(POLICY_SRC_FILE)"'
 CFLAGS  += -I.
 
+LDFLAGS += -lfl
+
 all: libapol libapol-tcl libapolso libapol-tclso
 
 libapol: libapol.a
 libapol-tcl: libapol-tcl.a
 libapolso: $(LIB-OBJ)
-	$(CC) $(LDFLAGS) -shared -o $(LIBSO) $(LIB-OBJ) -Wl,-soname,$(SONAME) 
+	$(CC)  -shared -o $(LIBSO) $(LIB-OBJ) $(LDFLAGS) -Wl,-soname,$(SONAME) 
 
 libapol-tclso: $(LIB-OBJ-TCL)
-	$(CC) $(LDFLAGS) -shared -o $(LIBSOTCL) $(LIB-OBJ-TCL) -Wl,-soname,$(SONAMETCL) 
+	$(CC) -shared -o $(LIBSOTCL) $(LIB-OBJ-TCL) $(LDFLAGS) -Wl,-soname,$(SONAMETCL) 
 
 libapol.a: $(LIB-OBJ) 
 	 ar cr $@ $(LIB-OBJ) 
@@ -40,20 +42,22 @@ libapol.a: $(LIB-OBJ)
 libapol-tcl.a: $(LIB-OBJ-TCL) 
 	 ar cr $@ $(LIB-OBJ-TCL) 
 
-install-libapol-shared: libapolso
+install-libapol-shared: libapolso install-includes
 	install -m 755 $(LIBSO) $(SHARED_LIB_INSTALL_DIR)
 	cd $(SHARED_LIB_INSTALL_DIR) && ln -sf $(LIBSO) $(SONAME) && ln -sf $(SONAME) $(TARGET)
 
-install-libapol-static: libapol
+install-libapol-static: libapol install-includes
 	install -m 644 libapol.a $(STATIC_LIB_INSTALL_DIR)
-	install -m 755 -d $(SETOOLS_INCLUDE)/libapol
-	install -m 644 *.h $(SETOOLS_INCLUDE)/libapol
-	install -m 755 -d $(SETOOLS_INCLUDE)/libapol/semantic
-	install -m 644 *.h $(SETOOLS_INCLUDE)/libapol/semantic
-	install -m 755 -d $(SETOOLS_INCLUDE)/libapol/binpol
-	install -m 644 *.h $(SETOOLS_INCLUDE)/libapol/binpol
 
-install: install-libapol-shared install-libapol-static
+install-includes:
+	test -d $(SETOOLS_INCLUDE)/libapol || install -m 755 -d $(SETOOLS_INCLUDE)/libapol
+	test -d $(SETOOLS_INCLUDE)/libapol/semantic || install -m 755 -d $(SETOOLS_INCLUDE)/libapol/semantic
+	test -d $(SETOOLS_INCLUDE)/libapol/binpol || install -m 755 -d $(SETOOLS_INCLUDE)/libapol/binpol
+	install -m 644 $(filter-out y.tab.h,$(wildcard *.h)) $(SETOOLS_INCLUDE)/libapol
+	install -m 644 $(wildcard semantic/*.h) $(SETOOLS_INCLUDE)/libapol/semantic
+	install -m 644 $(wildcard binpol/*.h) $(SETOOLS_INCLUDE)/libapol/binpol
+
+install: install-libapol-shared install-libapol-static install-includes
 
 install-policy:
 	chcon system_u:object_r:shlib_t $(SHARED_LIB_INSTALL_DIR)/$(LIBSO)
