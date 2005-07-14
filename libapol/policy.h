@@ -604,8 +604,6 @@ int get_rule_lineno(int rule_idx, int rule_type, policy_t *policy);
 int get_ta_item_name(ta_item_t *ta, char **name, policy_t *policy);
 int free_ta_list(ta_item_t *list);
 
-int get_complement(ta_item_t *, int, int *, int **);
-
 /**************/
 /* these are INTERNAL functions only; allow direct access to type/attrib name string
  * stored within the policy db.  They are exported only for use by other internal
