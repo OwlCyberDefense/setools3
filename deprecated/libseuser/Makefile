@@ -14,6 +14,7 @@ LIBSO	    = $(TARGET).$(shell cat VERSION)
 TARGETTCL   = libseuser-tcl.so
 SONAMETCL   = $(TARGETTCL).1
 LIBSOTCL    = $(TARGETTCL).$(shell cat VERSION)
+INCLUDE	    = -I../$(SETOOLS_TREE)libapol
 
 all: libseuser libseuser-tcl libseuserso libseuser-tclso
 
@@ -47,7 +48,7 @@ install-policy:
 	chcon system_u:object_r:shlib_t $(SHARED_LIB_INSTALL_DIR)/$(LIBSO)
 
 %.o:  %.c 
-	$(CC) $(CFLAGS) -c $<
+	$(CC) $(CFLAGS) $(INCLUDE) -c $< 
 
 clean:
 	rm -f *.o  core *~ 

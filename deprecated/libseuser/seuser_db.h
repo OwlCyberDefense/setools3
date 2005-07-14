@@ -21,7 +21,7 @@
 #ifndef _SEUSER_DB_H_
 #define _SEUSER_DB_H_
 
-#include "../libapol/policy.h"
+#include "policy.h"
 
 
 /* user statements; linked list */

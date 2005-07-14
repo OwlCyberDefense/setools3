@@ -20,7 +20,6 @@
 #include <libseaudit/filters.h>
 #include <libseaudit/auditlog.h>
 #include <libapol/policy.h>
-#include <libseuser/seuser_db.h>
 #include <string.h>
 
 enum {
