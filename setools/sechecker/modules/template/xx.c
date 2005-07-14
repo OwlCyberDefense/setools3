@@ -6,6 +6,13 @@
  *
  */
 
+/* NOTE: TODO This is a module template, which includes all the necessary
+ * infrastructure to implement a basic SEChecker module. To use this template
+ * first replace all instances of the string xx with the name of the module,
+ * then edit or complete all sections marked TODO as instructed. Do not forget
+ * to add a block to the config file and to place the register function in
+ * the register_list files (see these files for further instruction) */
+
 #include "sechecker.h"
 #include "policy.h"
 #include "xx.h"
@@ -13,35 +20,49 @@
 #include <stdio.h>
 #include <string.h>
 
+/* This is the pointer to the library which contains the module; 
+ * it is used to access needed parts of the library policy, fc entries, etc.*/
 static sechk_lib_t *library;
 
+/* This string is the name of the module and should match the stem
+ * of the file name; it should also match the prefix of all functions
+ * defined in this module and the private data storage structure */
+static const char *const mod_name = "xx";
+
+/* The register function registers all of a module's functions
+ * with the library.  You should not need to edit this function
+ * unless you are adding additional functions you need other modules
+ * to call. See the note at the bottom of this function to do so. */
 int xx_register(sechk_lib_t *lib) 
 {
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
 
 	if (!lib) {
-		fprintf(stderr, "xx_register failed: no library\n");
+		fprintf(stderr, "Error: no library\n");
 		return -1;
 	}
 
 	library = lib;
 
-	mod = sechk_lib_get_module("xx", lib);
+	/* Modules are declared by the config file and their name and options
+	 * are stored in the module array.  The name is looked up to determine 
+	 * where to store the function structures */
+	mod = sechk_lib_get_module(mod_name, lib);
 	if (!mod) {
-		fprintf(stderr, "xx_register failed: module unknown\n");
+		fprintf(stderr, "Error: module unknown\n");
 		return -1;
 	}
 	
 	/* register functions */
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "xx_register failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->name = strdup("init");
+	fn_struct->name = strdup(SECHK_MOD_FN_INIT);
 	if (!fn_struct->name) {
-		fprintf(stderr, "xx_register failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
 	fn_struct->fn = &xx_init;
@@ -50,12 +71,12 @@ int xx_register(sechk_lib_t *lib)
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "xx_register failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->name = strdup("run");
+	fn_struct->name = strdup(SECHK_MOD_FN_RUN);
 	if (!fn_struct->name) {
-		fprintf(stderr, "xx_register failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
 	fn_struct->fn = &xx_run;
@@ -64,12 +85,12 @@ int xx_register(sechk_lib_t *lib)
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "xx_register failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->name = strdup("free");
+	fn_struct->name = strdup(SECHK_MOD_FN_FREE);
 	if (!fn_struct->name) {
-		fprintf(stderr, "xx_register failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
 	fn_struct->fn = &xx_free;
@@ -78,123 +99,117 @@ int xx_register(sechk_lib_t *lib)
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "xx_register failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->name = strdup("get_output_str");
+	fn_struct->name = strdup(SECHK_MOD_FN_PRINT);
 	if (!fn_struct->name) {
-		fprintf(stderr, "xx_register failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &xx_get_output_str;
+	fn_struct->fn = &xx_print_output;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "xx_register failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->name = strdup("get_result");
+	fn_struct->name = strdup(SECHK_MOD_FN_GET_RES);
 	if (!fn_struct->name) {
-		fprintf(stderr, "xx_register failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
 	fn_struct->fn = &xx_get_result;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
-	/* TODO: add any other functions needed here*/
+	/* TODO: (optional) add any other functions needed here, 
+	 * add a block as above for each additional function */
 
 
 	return 0;
 }
 
+/* The init function creates the module's private data storage object
+ * and initializes its values based on the options parsed in the config
+ * file. It also checks that the requirements and dependencies are met.
+ * Add any option processing logic as indicated below.
+ * This function also defines the module header, which provides a brief
+ * explanation of the check performed by the module. 
+ * TODO: add options processing logic */
 int xx_init(sechk_module_t *mod, policy_t *policy) 
 {
-	sechk_opt_t *opt = NULL;
+	sechk_name_value_t *opt = NULL;
 	xx_data_t *datum = NULL;
-	bool_t header = TRUE;
-	int pol_ver = POL_VER_UNKNOWN;
+	bool_t test = FALSE;
 
 	if (!mod || !policy) {
-		fprintf(stderr, "xx_init failed: invalid parameters\n");
+		fprintf(stderr, "Error: invalid parameters\n");
 		return -1;
 	}
-	if (strcmp("xx", mod->name)) {
-		fprintf(stderr, "xx_init failed: wrong module (%s)\n", mod->name);
+	if (strcmp(mod_name, mod->name)) {
+		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
 		return -1;
 	}
 
-	datum = new_xx_data();
+	datum = xx_data_new();
 	if (!datum) {
-		fprintf(stderr, "xx_init failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
 	mod->data = datum;
 
-	datum->outformat = library->outformat;
-	datum->mod_header = strdup("");/* TODO: add header text */
+	/* TODO: the module header
+	 * The module header should describe the basic steps taken by the
+	 * module while performing the check and indicate what is printed
+	 * in the report. Use new line characters to wrap lines to a width
+	 * suitable for console printing. */
+	mod->header = strdup("");
+
+	opt = mod->requirements;
+	while (opt) {
+		test = FALSE;
+		test = sechk_lib_check_requirement(opt, library);
+		if (!test) {
+			return -1;
+		}
+		opt = opt->next;
+	}
+
+	opt = mod->dependencies;
+	while (opt) {
+		test = FALSE;
+		test = sechk_lib_check_dependency(opt, library);
+		if (!test) {
+			return -1;
+		}
+		opt = opt->next;
+	}
 
 	opt = mod->options;
 	while (opt) {
-		if (!strcmp(opt->name, "pol_type")) {
-			if (!strcmp(opt->value, "source")) {
-				if (is_binary_policy(policy))
-					fprintf(stderr, "xx_init Warning: module required source policy but was given binary, results may not be complete\n");
-			} else if (!strcmp(opt->value, "binary")) {
-				if (!is_binary_policy(policy))
-					fprintf(stderr, "xx_init Warning: module required binary policy but was given source, results may not be complete\n");
-			} else {
-				fprintf(stderr, "xx_init failed: invalid policy type specification %s\n", opt->value);
-				return -1;
-			}
-		} else if (!strcmp(opt->name, "pol_ver")) {
-			pol_ver = atoi(opt->value);
-			if (pol_ver < 11)
-				pol_ver = POL_VER_PRE_11;
-			else if (pol_ver < 15)
-				pol_ver = POL_VER_12;
-			else if (pol_ver < 16)
-				pol_ver = POL_VER_15;
-			else if (pol_ver == 16)
-				pol_ver = POL_VER_16;
-			else if (pol_ver == 17)
-				pol_ver = POL_VER_17;
-			else if (pol_ver == 18)
-				pol_ver = POL_VER_18;
-			else if (pol_ver > 18)
-				pol_ver = POL_VER_19;
-			else
-				pol_ver = POL_VER_UNKNOWN;
-			if (policy->version < pol_ver) {
-				fprintf(stderr, "xx_init failed: module requires newer policy version\n");
-				return -1;
-			}
-		} else if (!strcmp(opt->name, "output_type")) {
-			if (!strcmp(opt->value, "full")) {
-				datum->outformat = (SECHK_OUT_LONG|SECHK_OUT_LIST|SECHK_OUT_STATS|SECHK_OUT_HEADER);
-			} else if (!strcmp(opt->value, "long")) {
-				datum->outformat = (SECHK_OUT_LONG|SECHK_OUT_STATS|SECHK_OUT_HEADER);
-			} else if (!strcmp(opt->value, "short")) {
-				datum->outformat = (SECHK_OUT_LIST|SECHK_OUT_STATS|SECHK_OUT_HEADER);
-			} else if (!strcmp(opt->value, "stats")) {
-				datum->outformat = (SECHK_OUT_STATS|SECHK_OUT_HEADER);
-			}
-		} else if (!strcmp(opt->name, "output_header")) {
-			if (!strcmp(opt->value, "no")) {
-				header = FALSE;
-			}
-		}
-		/* TODO: check string name and set value in xx_data */
+		/* TODO: check options
+		 * check strings opt->name and opt->value of each option 
+		 * to set the members of the private data storage object 
+		 * (pointed to by datum).
+		 * i.e. if (!strcmp(...)) {} else if (!strcmp((...)) etc.
+		 * There should be relatively few options for any one module.
+		 * If too many options are needed consider splitting the check
+		 * into multiple modules and using dependencies.  It is desirable
+		 * for all checks to be a simple and granular as is possible */
 		opt = opt->next;
 	}
-	if (!header)
-		datum->outformat &= ~(SECHK_OUT_HEADER);
 
 	return 0;
 }
 
+/* The run function performs the check. This function runs only once
+ * even if called multiple times. All test logic should be placed below
+ * as instructed. This function allocates the result structure and fills
+ * in all relavant item and proof data.
+ * TODO: add check logic */
 int xx_run(sechk_module_t *mod, policy_t *policy) 
 {
 	xx_data_t *datum;
@@ -203,14 +218,14 @@ int xx_run(sechk_module_t *mod, policy_t *policy)
 	sechk_proof_t *proof = NULL;
 
 
-	/* TODO: vars */
+	/* TODO: define any aditional variables needed */
 
 	if (!mod || !policy) {
-		fprintf(stderr, "xx_run failed: invalid parameters\n");
+		fprintf(stderr, "Error: invalid parameters\n");
 		return -1;
 	}
-	if (strcmp("xx", mod->name)) {
-		fprintf(stderr, "xx_run failed: wrong module (%s)\n", mod->name);
+	if (strcmp(mod_name, mod->name)) {
+		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
 		return -1;
 	}
 
@@ -219,56 +234,76 @@ int xx_run(sechk_module_t *mod, policy_t *policy)
 		return 0;
 
 	datum = (xx_data_t*)mod->data;
-	res = new_sechk_result();
+	res = sechk_result_new();
 	if (!res) {
-		fprintf(stderr, "xx_run failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	res->test_name = strdup("xx");
+	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
-		fprintf(stderr, "xx_run failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		goto xx_run_fail;
 	}
+	/* TODO: set res->item_type to indicate which array the item_id indexes
+	 * use values from the POL_LIST_ define set (see policy.h for list and
+	 * sechecker.h for a set of extended values for components not in the
+	 * source policy filesuch as file context entries) */
 
-	/* TODO: set result structure values */
-
-	/* TODO: check logic here */
+	/* TODO: check logic here 
+	 * Perform check here. Create and initialize items and proof as found,
+	 * be sure to update res->num_items as items are added for statistics
+	 * tracking in the report. For examples of the type of code to use here
+	 * see other modules. */
 
 	mod->result = res;
 
 	return 0;
 
 xx_run_fail:
-	/* TODO: free any allocations */
-	free_sechk_proof(&proof);
-	free_sechk_item(&item);
-	free_sechk_result(&res);
+	/* TODO: free any other memory allocated during check logic */
+	sechk_proof_free(proof);
+	sechk_item_free(item);
+	sechk_result_free(res);
 	return -1;
 }
 
+/* The free function frees the private data of a module
+ * TODO: be sure to free any allocated space in the private data */
 void xx_free(sechk_module_t *mod) 
 {
+	xx_data_t *datum;
+
 	if (!mod) {
-		fprintf(stderr, "xx_free failed: invalid parameters\n");
+		fprintf(stderr, "Error: invalid parameters\n");
 		return;
 	}
-	if (strcmp("xx", mod->name)) {
-		fprintf(stderr, "xx_free failed: wrong module (%s)\n", mod->name);
+	if (strcmp(mod_name, mod->name)) {
+		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
 		return;
 	}
-	
-	free(mod->name);
-	mod->name = NULL;
-	free_sechk_result(&(mod->result));
-	free_sechk_opt(&(mod->options));
-	free_sechk_fn(&(mod->functions));
-	free_xx_data((xx_data_t**)&(mod->data));
+
+	datum = (xx_data_t*)mod->data;
+	if (datum) {
+		/* TODO: free any allocated members of the module's
+		 * private data structure */
+	}
+
+	free(mod->data);
+	mod->data = NULL;
 }
 
-char *xx_get_output_str(sechk_module_t *mod, policy_t *policy) 
+/* The print output function generates the text printed in the
+ * report and prints it to stdout. The outline below is prints
+ * the standard format of a report section. Some modules may
+ * not have results in a format that can be represented by this
+ * outline and will need a different specification. It is
+ * required that each of the flags for output components be
+ * tested in this function (header, stats, list, and proof)
+ * TODO: fill in the indicated information in the report fields
+ * as indicated below. Some alteration may be necessary for 
+ * checks that perform different analyses */
+int xx_print_output(sechk_module_t *mod, policy_t *policy) 
 {
-	char *buff = NULL, *tmp = NULL;
-	unsigned long buff_sz = 0L;
 	xx_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
@@ -276,121 +311,123 @@ char *xx_get_output_str(sechk_module_t *mod, policy_t *policy)
 	int i = 0;
 
 	if (!mod || !policy) {
-		fprintf(stderr, "xx_get_output_str failed: invalid parameters\n");
-		return NULL;
+		fprintf(stderr, "Error: invalid parameters\n");
+		return -1;
 	}
-	if (strcmp("xx", mod->name)) {
-		fprintf(stderr, "xx_get_output_str failed: wrong module (%s)\n", mod->name);
-		return NULL;
+	if (strcmp(mod_name, mod->name)) {
+		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+		return -1;
 	}
 	if (!mod->result) {
-		fprintf(stderr, "xx_get_output_str failed: module has not been run\n");
-		return NULL;
+		fprintf(stderr, "Error: module has not been run\n");
+		return -1;
 	}
 
 	datum = (xx_data_t*)mod->data;
-	outformat = datum->outformat;
+	outformat = mod->outputformat;
 	if (!outformat)
-		return NULL; /* not an error - no output is requested */
+		return 0; /* not an error - no output is requested */
 
-	/* TODO: allocate and write results to buffer */
-	buff_sz += strlen("Module: \n"); /* TODO: module name */
+	/* TODO: fill in output fields below */
+	/* TODO: add the module name in title case here */
+	printf("Module: \n");
+	/* print the header */
 	if (outformat & SECHK_OUT_HEADER) {
-		buff_sz += strlen(datum->mod_header);
+		printf("%s\n\n", mod->header);
 	}
+	/* TODO: display the statistics of the results
+	 * typical text is "Found %i <itemtype>.\n"
+	 * additional information may be printed here depending upon
+	 * the amount of data gathered in the check */
 	if (outformat & SECHK_OUT_STATS) {
-		buff_sz += strlen("Found  .\n") + intlen(mod->result->num_items); /* TODO: item type */
+		/* TODO: "Found %i <itemtype>.\n": enter itemtype */
+		printf("Found %i .\n", mod->result->num_items);
+		/* TODO: any additional generated statistics */
 	}
+	/* The list report component is a display of all items
+	 * found without any supporting proof. The default method
+	 * is to display a comma separated list four items to a line
+	 * this may need to be changed for longer items.
+	 * TODO: you will need to enter the string representation of 
+	 * each item as the second parameter in the printf statement 
+	 * in place of the empty string. 
+	 * NOTE: if the item is a type of rule print only one per line. */
 	if (outformat & SECHK_OUT_LIST) {
-		buff_sz++; /* '\n' */
-		for (item = mod->result->items; item; item = item->next) {
-			buff_sz += 2 + strlen(""); /* TODO: item name */
-		}
-	}
-	if (outformat & SECHK_OUT_LONG) {
-		buff_sz += 2;
-		for (item = mod->result->items; item; item = item->next) {
-			buff_sz += strlen("");/* TODO: item name */
-			buff_sz += strlen(" - severity: x\n");
-			for (proof = item->proof; proof; proof = proof->next) {
-				buff_sz += 2 + strlen(proof->text);
-			}
-		}
-	}
-	buff_sz++; /* '\0' */
-
-	buff = (char*)calloc(buff_sz, sizeof(char));
-	if (!buff) {
-		fprintf(stderr, "xx_get_output_str failed: out of memory\n");
-		return NULL;
-	}
-	tmp = buff;
-
-	tmp += sprintf(buff, "Module: \n");/* TODO: module name */
-	if (outformat & SECHK_OUT_HEADER) {
-		tmp += sprintf(tmp, datum->mod_header);
-	}
-	if (outformat & SECHK_OUT_STATS) {
-		tmp += sprintf(tmp, "Found %i .\n", mod->result->num_items);/* TODO: item type */
-	}
-	if (outformat & SECHK_OUT_LIST) {
-		tmp += sprintf(tmp, "\n");
+		printf("\n");
 		for (item = mod->result->items; item; item = item->next) {
 			i++;
-			i %= 4; /* 4 items per line */
-			tmp += sprintf(tmp, "%s %c", "", i?' ':'\n'); /* TODO: item name */
+			 /* TODO: (optional) change the number below to
+			  * print more or less than 4 items per line */
+			i %= 4;
+			/* TODO: second parameter: item name */
+			printf("%s%s", "", (i ? ", " : "\n")); 
 		}
+		printf("\n");
 	}
-	if (outformat & SECHK_OUT_LONG) {
-		tmp += sprintf(tmp, "\n\n");
+	/* The proof report component is a display of a list of items
+	 * with an indented list of proof statements supporting the result
+	 * of the check for that item (e.g. rules with a given type)
+	 * this field also lists the computed severity of each item
+	 * (see sechk_item_sev in sechecker.c for details on calculation)
+	 * items are printed on a line either with (or, if long, such as a
+	 * rule, followed by) the severity. Each proof element is then
+	 * displayed in an indented list one per line below it.
+	 * TODO: the name of the item should be entered below.
+	 * NOTE: certain checks may need to further modify this 
+	 * report component if the results cannot be presented in this format */
+	if (outformat & SECHK_OUT_PROOF) {
+		printf("\n");
 		for (item = mod->result->items; item; item = item->next) {
-			tmp += sprintf(tmp,"%s", "");/* TODO: item name */
-			tmp += sprintf(tmp, " - severity: %i\n", sechk_item_sev(item));
+			printf("%s", "");/* TODO: item name */
+			printf(" - severity: %i\n", sechk_item_sev(item));
 			for (proof = item->proof; proof; proof = proof->next) {
-				tmp += sprintf(tmp,"\t%s\n", proof->text);
+				printf("\t%s\n", proof->text);
 			}
 		}
+		printf("\n");
 	}
 
-	return buff;
+	return 0;
 }
 
+/* The get_result function returns a pointer to the results
+ * structure for this check to be used in another check.
+ * You should not need to modify this function. */
 sechk_result_t *xx_get_result(sechk_module_t *mod) 
 {
 
 	if (!mod) {
-		fprintf(stderr, "xx_get_result failed: invalid parameters\n");
+		fprintf(stderr, "Error: invalid parameters\n");
 		return NULL;
 	}
-	if (strcmp("xx", mod->name)) {
-		fprintf(stderr, "xx_get_result failed: wrong module (%s)\n", mod->name);
+	if (strcmp(mod_name, mod->name)) {
+		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
 		return NULL;
 	}
 
 	return mod->result;
 }
 
-xx_data_t *new_xx_data(void) 
+/* The xx_data_new function allocates and returns an
+ * initialized private data storage structure for this
+ * module. Initialization expected is as follows:
+ * all arrays (including strings) are initialized to NULL
+ * array sizes are set to 0
+ * any other pointers should be NULL
+ * indices into other arrays (such as type or permission indices)
+ * should be initialized to -1
+ * any other data should be initialized as needed by the check logic
+ * TODO: initialize any non-zero/non-null data (if needed) below */
+xx_data_t *xx_data_new(void)
 {
 	xx_data_t *datum = NULL;
 
 	datum = (xx_data_t*)calloc(1,sizeof(xx_data_t));
 
-	/* TODO: initialize any array indices to -1 and any other non-zero initialization data */
+	/* TODO: initialize any array indices to -1 and
+	 * any other non-zero initialization data */
 
 	return datum;
-}
-
-void free_xx_data(xx_data_t **datum) 
-{
-	if (!datum || !(*datum))
-		return;
-
-	/* TODO: free any allocated items in xx_data_t */
-
-	free((*datum)->mod_header);
-	free(*datum);
-	*datum = NULL;
 }
 
  
