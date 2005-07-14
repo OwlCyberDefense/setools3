@@ -18,15 +18,11 @@ awish           Our customized version of the Tk wish interpreter
 docs-src	Repository for generating setools documentation.
 libapol         The main policy analysis library
 libseaudit	The seaudit support library 
-libseuser       The seuser support library
 libsefs		The selinux filesystem database library	
 seaudit 	The audit log analysis tools (seaudit and seaudit-report)
 secmds		The setools command line tools (seinfo, sesearch, 
 		findcon, replcon, indexcon, searchcon)
-sepct           The policy configuration/editing tool (sepcut)
-seuser          The user management tool and shell scripts
-sediff 		The semantic policy difference tool (command-line)
-sediffx		The semantic policy difference tool (GUI)
+sediff 		The semantic policy difference tool (command-line and GUI)
 packages	External packages required by setools
 
 Apol and the other tools are designed to specifically not address MLS
@@ -91,45 +87,24 @@ variables in this Makefile.
 	- DYNAMIC : If set to 1, this will dynamically link with internal 
 	     libraries.
 	- USE_LIBSELINUX : This determines:
-	     	1. whether libapol and libseuser use libselinux to find the 
-	           default policies. NOTE: libselinux must be version 1.18 or 
-	           greater.
-		2. whether libsefs will be built into apol, awish and seuserx. 
+	     	1. whether libapol uses libselinux to find the default policies. 
+		   NOTE: libselinux must be version 1.18 or greater.
+		2. whether libsefs will be built into apol, and awish. 
 	   Useful to create a version of apol that runs on non-selinux machines. 
 	   Set this to 0 for non-selinux machines.
       
-1. If you are installing seuser and have a version of SELinux based
-on an LSM kernel earlier than 2.4.19 (prior to August 2002 or so): 
-
-	a. Check that you have the policy management changes to your 
-	installed policy. Starting with the 2.4.19 LSM kernel based 
-	SELinux, you do NOT need to install the policy patch; skip 
-	ahead to Step 2.
-
-	The changes to the policy necessary for pre-2.4.19 LSM kernels 
-	are based on a patch we posted for the SELinux main 
-	distribution.  See ./setools/policy/polpatch/readme.txt for 
-	further instructions on determining whether you need the patch 
-	and if so how to apply it.
-
-	b. After you have applied the patch for the policy, make sure 
-	the policy sources are installed. The patched policy make 
-	file (./selinux/policy/Makefile) should have an 
-	"install-src" target that will do this for you.
-
-2. Build and install tools:  If you want to install all tools, just 
+1. Build and install tools:  If you want to install all tools, just 
 type "make install" to build and install everything.  Type "make help" 
 to see options to build individual pieces, for example to install just 
-seuser, sepcut, or apol.
+apol.
 
-3. If you installed seuser or secmds and you are using the default policy
+2. If you installed secmds and you are using the default policy
 distributed by the NSA or a similar policy (e.g. the "strict" policy
 distributed with Fedora Core 2), then you will need to type "make
-install-policy". This will install the policy for seuser and label the
-binaries and config files for seuser and the secmds.
+install-policy". This will label the binaries and config files for 
+the secmds.
 
-If this failed, you either are not using an SELinux machine, 
-the policy management patch isn't installed (see Step 1), or the 
+If this failed, you either are not using an SELinux machine, or the 
 policy source directory is not installed in the conventional location 
 (use make install-src in the policy source directory from the SELinux 
 distribution). Email us; we'll try to help (selinux@tresys.com)!
@@ -143,7 +118,7 @@ DEVELOPMENT SUPPORT INSTALLATION
 
 Support for development using the setools libraries can be installed using the 
 'make install-dev' target. This target installs the headers and libraries for 
-libapol, libseuser, and libseaudit. This is provided as a convenience to third 
+libapol, and libseaudit. This is provided as a convenience to third 
 party developers, but is not otherwise supported. These libraries are in 
 constant development and interfaces can and will change, sometimes 
 substantially.

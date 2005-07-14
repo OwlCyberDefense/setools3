@@ -15,11 +15,10 @@ USEGPROF		= 0
 # how the setools applications link.
 DYNAMIC 		= 0
 # This determines: 
-# 	1. whether libapol and libseuser use libselinux 
+# 	1. whether libapol uses libselinux 
 # 	   to find the default policies. NOTE: libselinux must
 #	   be version 1.18 or greater.
-# 	2. whether libsefs will be built into apol, awish 
-#	   and seuserx. 
+# 	2. whether libsefs will be built into apol and awish 
 # Useful to create a version of apol that runs on non-selinux machines. 
 # Set this to 0 for non-selinux machines.
 USE_LIBSELINUX 		= 1
@@ -73,7 +72,7 @@ INSTALL_LIBDIR	= $(DESTDIR)/usr/share/setools
 # END NOTE
 
 # all apps that have a te/fc file need to be listed here
-POLICYINSTALLDIRS = seuser
+POLICYINSTALLDIRS = 
 
 # You should not need to edit anything after this point.
 ifeq ($(USE_LIBSELINUX), 1)
@@ -118,13 +117,13 @@ export CFLAGS CC YACC LEX LINKFLAGS BINDIR INSTALL_LIBDIR INSTALL_HELPDIR LIBS T
 export SELINUX_DIR POLICY_INSTALL_DIR POLICY_SRC_DIR SRC_POLICY_DIR POLICY_SRC_FILE DEFAULT_LOG_FILE
 export TOPDIR SHARED_LIB_INSTALL_DIR STATIC_LIB_INSTALL_DIR SETOOLS_INCLUDE DYNAMIC LIBSELINUX USE_LIBSEFS
 
-all:  all-libs apol awish seuser seuserx sepcut seaudit secmds sediff sediffx
+all:  all-libs apol awish seaudit secmds sediff sediffx
 
-all-nogui:  corelibs seuser secmds sediff
+all-nogui:  corelibs secmds sediff
 
-corelibs: libapol libseuser libseaudit libsefs
+corelibs: libapol libseaudit libsefs
 
-guilibs: libapol-tcl libseuser-tcl
+guilibs: libapol-tcl
 
 all-libs: corelibs guilibs
 
@@ -134,9 +133,6 @@ help:
 	@echo "   install-nogui:     		build and install all non-GUI tools (selinux required)"
 	@echo ""
 	@echo "   install-apol:      		build and install apol (selinux not required)"
-	@echo "   install-sepcut:    		build and install sepct (selinux not required)"
-	@echo "   install-seuser:    		build and install command line seuser (selinux required)"
-	@echo "   install-seuserx:   		build and install seuser and seuserx (selinux required)"
 	@echo "   install-secmds:    		build and install command line tools (selinux required for some tools)"
 	@echo "   install-seaudit:   		build and install seaudit and seaudit-report (selinux not required)"
 	@echo "   install-sediff:   		build and install sediff command-line tool (selinux not required)"
@@ -147,15 +143,12 @@ help:
 	@echo "   install-policy:    		install SELinux policy and label files"
 	@echo "   install-bwidget:   		install BWidgets-1.4.1 package (requires Tcl/Tk)"
 	@echo ""
-	@echo "   install-logwatch-files:   	install LogWatch config files for seaudit-report (LogWatch required)"
+	@echo "   install-logwatch-files:   install LogWatch config files for seaudit-report (LogWatch required)"
 	@echo " "
 	@echo "   all:               		build everything, but don't install"
 	@echo "   all-nogui:         		only build non-GUI tools and libraries"
 	@echo ""
 	@echo "   apol:              		build policy analysis tool"
-	@echo "   seuser:            		build SE Linux command line user tool"
-	@echo "   seuserx:           		build SE Linux GUI user tool"
-	@echo "   sepcut             		build policy customization/browsing tool"
 	@echo "   secmds:            		build setools command line tools"
 	@echo "   seaudit:           		build audit log analysis tools"
 	@echo "   sediff:           		build semantic policy diff command line tool"
@@ -173,20 +166,11 @@ apol: selinux_tool
 awish: selinux_tool
 	cd awish; $(MAKE) awish;
 
-seuser: selinux_tool
-	cd seuser; $(MAKE) seuser 	
-
-seuserx: selinux_tool
-	cd seuser; $(MAKE) seuserx;
-
 sediff: selinux_tool
 	cd sediff; $(MAKE) sediff;
 
 sediffx: selinux_tool
 	cd sediff; $(MAKE) sediffx
-
-sepcut: selinux_tool
-	cd sepct; $(MAKE) sepcut
 
 seaudit: selinux_tool
 	cd seaudit; $(MAKE) all	
@@ -208,12 +192,6 @@ ifeq ($(USE_LIBSEFS), 1)
 	cd libsefs; $(MAKE) libsefs libsefsso
 endif
 
-libseuser: selinux_tool
-	cd libseuser; $(MAKE) libseuser libseuserso
-
-libseuser-tcl: selinux_tool
-	cd libseuser; $(MAKE) libseuser-tcl libseuser-tclso;
-
 libseaudit: selinux_tool
 	cd libseaudit; $(MAKE) libseaudit libseauditso
 
@@ -229,19 +207,8 @@ install-apol: $(INSTALL_LIBDIR) $(BINDIR)
 install-awish: $(INSTALL_LIBDIR) $(BINDIR)
 	cd awish; $(MAKE) install; 
 
-# installs both GUI and non-GUI versions
-install-seuserx: $(INSTALL_LIBDIR) $(BINDIR)
-	cd seuser; $(MAKE) install; 
-
 install-sediffx: $(INSTALL_LIBDIR) $(BINDIR)
 	cd sediff; $(MAKE) install; 
-
-# Non-GUI version only
-install-seuser: $(INSTALL_LIBDIR) $(BINDIR)
-	cd seuser; $(MAKE) install-nogui
-
-install-sepcut: $(INSTALL_LIBDIR) $(BINDIR)
-	cd sepct; $(MAKE) install
 
 install-secmds: $(INSTALL_LIBDIR) $(BINDIR)
 	cd secmds; $(MAKE) install
@@ -255,17 +222,15 @@ install-sediff-nogui: $(INSTALL_LIBDIR) $(BINDIR)
 install-seaudit: $(INSTALL_LIBDIR) $(BINDIR)
 	 cd seaudit; $(MAKE) install
 
-install-nogui: $(INSTALL_LIBDIR) install-seuser install-secmds install-sediff-nogui
+install-nogui: $(INSTALL_LIBDIR) install-secmds install-sediff-nogui
 
-install: all $(BINDIR) $(SHARED_LIB_INSTALL_DIR) install-dev install-apol install-seuserx install-sepcut \
+install: all $(BINDIR) $(SHARED_LIB_INSTALL_DIR) install-dev install-apol \
 	 install-awish install-secmds install-seaudit install-sediff install-docs
 
 $(SHARED_LIB_INSTALL_DIR):
 	install -m 755 -d $(SHARED_LIB_INSTALL_DIR)
-# Install the libraries
-install-libseuser: $(SHARED_LIB_INSTALL_DIR)
-	cd libseuser; $(MAKE) install
 
+# Install the libraries
 install-libapol: $(SHARED_LIB_INSTALL_DIR)
 	cd libapol; $(MAKE) install
 
@@ -277,21 +242,13 @@ ifeq ($(USE_LIBSEFS), 1)
 	cd libsefs; $(MAKE) install
 endif
 
-install-dev: install-libseuser install-libapol install-libseaudit install-libsefs
-
-# Install the policy - this is a separate step to better support systems with
-# non-standard policies.
-install-seuser-policy: $(INSTALL_LIBDIR)
-	cd seuser; $(MAKE) install-policy
+install-dev: install-libapol install-libseaudit install-libsefs
 
 install-secmds-policy: $(INSTALL_LIBDIR)
 	cd secmds; $(MAKE) install-policy
 
 install-libapol-policy:
 	cd libapol; $(MAKE) install-policy
-
-install-libseuser-policy:
-	cd libseuser; $(MAKE) install-policy
 
 install-libseaudit-policy:
 	cd libseaudit; $(MAKE) install-policy
@@ -301,8 +258,8 @@ ifeq ($(USE_LIBSEFS), 1)
 	cd libsefs; $(MAKE) install-policy
 endif
 
-install-policy: install-seuser-policy install-secmds-policy \
-		install-libapol-policy install-libseuser-policy \
+install-policy: install-secmds-policy \
+		install-libapol-policy \
 		install-libseaudit-policy install-libsefs-policy
 
 # Install the BWidgets package
@@ -325,25 +282,20 @@ install-docs:
 	cd docs-src; $(MAKE) install
 
 # test targets
-tests: test-seuser test-apol test-seaudit test-regression
+tests: test-apol test-seaudit test-regression
 
 test-apol: selinux_tool
 	cd libapol/test; $(MAKE) $@
-
-test-seuser: selinux_tool
-	cd libseuser/test; $(MAKE) $@
 
 test-seaudit: selinux_tool
 	cd libseaudit/test; $(MAKE) $@
 
 test-clean: 
 	cd libapol/test; $(MAKE) clean
-	cd libseuser/test; $(MAKE) clean
 	cd test; $(MAKE) clean
 
 test-bare:
 	cd libapol/test; $(MAKE) bare
-	cd libseuser/test; $(MAKE) bare
 	cd libseaudit/test; $(MAKE) bare
 	cd test; $(MAKE) bare
 
@@ -354,9 +306,6 @@ clean: test-clean
 	cd apol; $(MAKE) clean
 	cd awish; $(MAKE) clean
 	cd libapol; $(MAKE) clean
-	cd sepct; $(MAKE) clean
-	cd seuser; $(MAKE) clean
-	cd libseuser; $(MAKE) clean
 	cd libsefs; $(MAKE) clean
 	cd seaudit; $(MAKE) clean
 	cd secmds; $(MAKE) clean
@@ -370,9 +319,6 @@ bare: test-bare
 	cd apol; $(MAKE) bare
 	cd awish; $(MAKE) bare
 	cd libapol; $(MAKE) bare
-	cd seuser; $(MAKE) bare
-	cd sepct; $(MAKE) bare
-	cd libseuser; $(MAKE) bare
 	cd libsefs; $(MAKE) bare
 	cd seaudit; $(MAKE) bare
 	cd secmds; $(MAKE) bare
