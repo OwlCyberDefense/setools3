@@ -2,19 +2,19 @@
 <!-- TODO: some good explanations go here -->
 	<module name="domain_type">
 		<output value="short"/>
-		<require name="pol_type" value="source"/>
+		<require name="policy_type" value="source"/>
 		<option name="domain_attribute" value="domain"/>
 	</module>
 
 	<module name="file_type">
 		<output value="short"/>
-		<require name="pol_type" value="source"/>
+		<require name="policy_type" value="source"/>
 		<option name="file_type_attribute" value="file_type"/>
 	</module>
 
 	<module name="domain_and_file_type">
 		<output value="short"/>
-		<require name="pol_type" value="source"/>
+		<require name="policy_type" value="source"/>
 		<dependency name="module" value="domain_type"/>
 		<dependency name="module" value="file_type"/>
 	</module>
