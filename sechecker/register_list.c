@@ -15,7 +15,7 @@ sechk_register_fn_t sechk_register_list[] = {
 	&domain_type_register,
 	&file_type_register,
 	&domain_and_file_type_register,
-	/* additional register addresses here */
+	/* TODO: add additional register addresses here */
 	NULL
 };
 

@@ -203,7 +203,23 @@ static int count_and_get_unique_bools(cond_expr_t *e, int **bools)
 	return num;
 }
 
+bool_t does_cond_expr_use_bool(cond_expr_item_t *expr, int boolean)
+{
+	int *bools = NULL;
+	int num_bools = 0;
+	
+	if (!expr)
+		return FALSE;
 
+	num_bools = count_and_get_unique_bools(expr->expr, &bools);
+	if (num_bools == -1)
+		return FALSE;
+
+	if (find_int_in_array(boolean, bools, num_bools) == -1)
+		return FALSE;
+	else
+		return TRUE;
+}
 
 /* assumes vals is of size sz (which is num of bools in policy; alloc's and returns pre computed values.
  * num is number of unique bools in expression e.  Returns in comp the pre comp and return the sz in bytes
