@@ -1,18 +1,21 @@
 <sechecker version="1.0">
 <!-- TODO: some good explanations go here -->
 	<module name="domain_type">
+		<header>This is the header deally...</header>
 		<output value="short"/>
 		<require name="policy_type" value="source"/>
 		<option name="domain_attribute" value="domain"/>
 	</module>
 
 	<module name="file_type">
+		<header>This is the header deally...</header>
 		<output value="short"/>
 		<require name="policy_type" value="source"/>
 		<option name="file_type_attribute" value="file_type"/>
 	</module>
 
 	<module name="domain_and_file_type">
+		<header>This is the header deally...</header>
 		<output value="long"/>
 		<require name="policy_type" value="source"/>
 		<dependency name="module" value="domain_type"/>
@@ -20,23 +23,28 @@
 	</module>
 
 	<module name="empty_role">
+		<header>This is the header deally...</header>
 		<output value="short"/>
 	</module>
 
 	<module name="empty_user">
+		<header>This is the header deally...</header>
 		<output value="short"/>
 	</module>
 
 	<module name="empty_attribute">
+		<header>This is the header deally...</header>
 		<require name="policy_type" value="source"/>
 		<output value="short"/>
 	</module>
 
 	<module name="unused_role">
+		<header>This is the header deally...</header>
 		<output value="short"/>
 	</module>
 
 	<module name="unused_type">
+		<header>This is the header deally...</header>
 		<output value="short"/>
 	</module>
 
