@@ -230,6 +230,8 @@ int find_default_file_contexts_file(char **path)
 	*path = NULL;
 #ifdef LIBSELINUX
 	*path = selinux_file_context_path();
-#endif
 	return 0;
+#else
+	return -1;
+#endif
 }

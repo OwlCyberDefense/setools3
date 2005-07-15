@@ -24,7 +24,7 @@ typedef struct xx_data {
 	 * for module's private data */
 } xx_data_t;
 
-/* Module functions: 
+/* Module functions:
  * Do not change any of these prototypes or you will not be
  * able to run the module in the library
  * (do, however, replace the xx with the module name)
@@ -38,7 +38,7 @@ int xx_run(sechk_module_t *mod, policy_t *policy);
 void xx_free(sechk_module_t *mod);
 int xx_print_output(sechk_module_t *mod, policy_t *policy);
 sechk_result_t *xx_get_result(sechk_module_t *mod);
- 
+
 /* TODO: (optional) Declare any other functions
  * needed by other modules here. For use by the
  * get_module_function() function, be sure to add

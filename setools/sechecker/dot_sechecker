@@ -13,23 +13,31 @@
 	</module>
 
 	<module name="domain_and_file_type">
-		<output value="short"/>
+		<output value="long"/>
 		<require name="policy_type" value="source"/>
 		<dependency name="module" value="domain_type"/>
 		<dependency name="module" value="file_type"/>
 	</module>
 
-<!--	<module name="empty_role" status="on" mode="development">
+	<module name="empty_role">
 		<output value="short"/>
 	</module>
 
-	<module name="empty_user" status="on" mode="development">
+	<module name="empty_user">
 		<output value="short"/>
 	</module>
 
-	<module name="empty_attribute" status="on" mode="development">
-		<require pol_type="source"/>
+	<module name="empty_attribute">
+		<require name="policy_type" value="source"/>
 		<output value="short"/>
-	</module> -->
+	</module>
+
+	<module name="unused_role">
+		<output value="short"/>
+	</module>
+
+	<module name="unused_type">
+		<output value="short"/>
+	</module>
 
 </sechecker>

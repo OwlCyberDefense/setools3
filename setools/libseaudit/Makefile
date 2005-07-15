@@ -11,7 +11,7 @@ LIBSO  = $(TARGET).$(shell cat VERSION)
 
 libseaudit: libseaudit.a
 libseauditso: $(LIB-OBJ)
-	$(CC) $(LDFLAGS) -shared -o $(LIBSO) $(LIB-OBJ) -Wl,-soname,$(SONAME) 
+	$(CC) -shared -o $(LIBSO) $(LIB-OBJ) $(LDFLAGS) -Wl,-soname,$(SONAME) 
 
 libseaudit.a: $(LIB-OBJ)
 	ar cr $@ $(LIB-OBJ)
@@ -19,16 +19,18 @@ libseaudit.a: $(LIB-OBJ)
 ../libapol/libapol.a: 
 	cd ../; $(MAKE) libapol
 
-install-libapol-shared: libseauditso
+install-libapol-shared: libseauditso install-includes
 	install -m 755 $(LIBSO) $(SHARED_LIB_INSTALL_DIR)
 	cd $(SHARED_LIB_INSTALL_DIR) && ln -sf $(LIBSO) $(SONAME) && ln -sf $(SONAME) $(TARGET)
 
-install-libapol-static: libseaudit
+install-libapol-static: libseaudit install-includes
 	install -m 644 libseaudit.a $(STATIC_LIB_INSTALL_DIR)
-	install -m 755 -d $(SETOOLS_INCLUDE)/libseaudit
-	install -m 644 *.h $(SETOOLS_INCLUDE)/libseaudit
 
-install: install-libapol-shared install-libapol-static
+install-includes:
+	test -d $(SETOOLS_INCLUDE)/libseaudit || install -m 755 -d $(SETOOLS_INCLUDE)/libseaudit
+	install -m 644 $(wildcard *.h) $(SETOOLS_INCLUDE)/libseaudit
+ 
+install: install-libapol-shared install-libapol-static install-includes
 
 install-policy:
 	chcon system_u:object_r:shlib_t $(SHARED_LIB_INSTALL_DIR)/$(LIBSO)

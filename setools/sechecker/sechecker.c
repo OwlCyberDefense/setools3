@@ -314,8 +314,8 @@ int sechk_lib_register_modules(sechk_register_fn_t *register_fns, sechk_lib_t *l
 		fprintf(stderr, "Error: could not register modules\n");
 		return -1;
 	}
-	if (lib->num_modules != sechk_register_get_num_modules()) {
-		printf("%d\n%d\n", lib->num_modules, sechk_register_get_num_modules());
+	if (lib->num_modules != sechk_register_list_get_num_modules()) {
+		printf("%d\n%d\n", lib->num_modules, sechk_register_list_get_num_modules());
 		fprintf(stderr, "Error: the number of registered modules does not match the number of modules in the configuration file.\n");
 		return -1;
 	}
