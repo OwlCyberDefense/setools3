@@ -1877,8 +1877,8 @@ int main (int argc, char **argv)
 		printf("Problem opening second policy file: %s\n", p2_file);
 		exit(1);
 	}
-	if(get_policy_version_id(p1) < POL_VER_12 ) {
-		printf("Policy 1:  Unsupport version: Supported versions are Source (12 and higher), Binary (15 and higher).\n");
+	if(get_policy_version_id(p2) < POL_VER_12 ) {
+		printf("Policy 2:  Unsupport version: Supported versions are Source (12 and higher), Binary (15 and higher).\n");
 		exit(1);
 	}
 
