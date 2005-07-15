@@ -1,7 +1,7 @@
 /* Copyright (C) 2005 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
- 
-/* 
+
+/*
  * Author: jmowery@tresys.com
  *
  */
@@ -20,7 +20,7 @@
 #include <stdio.h>
 #include <string.h>
 
-/* This is the pointer to the library which contains the module; 
+/* This is the pointer to the library which contains the module;
  * it is used to access needed parts of the library policy, fc entries, etc.*/
 static sechk_lib_t *library;
 
@@ -33,7 +33,7 @@ static const char *const mod_name = "xx";
  * with the library.  You should not need to edit this function
  * unless you are adding additional functions you need other modules
  * to call. See the note at the bottom of this function to do so. */
-int xx_register(sechk_lib_t *lib) 
+int xx_register(sechk_lib_t *lib)
 {
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
@@ -46,7 +46,7 @@ int xx_register(sechk_lib_t *lib)
 	library = lib;
 
 	/* Modules are declared by the config file and their name and options
-	 * are stored in the module array.  The name is looked up to determine 
+	 * are stored in the module array.  The name is looked up to determine
 	 * where to store the function structures */
 	mod = sechk_lib_get_module(mod_name, lib);
 	if (!mod) {
@@ -125,7 +125,7 @@ int xx_register(sechk_lib_t *lib)
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
-	/* TODO: (optional) add any other functions needed here, 
+	/* TODO: (optional) add any other functions needed here,
 	 * add a block as above for each additional function */
 
 
@@ -137,9 +137,9 @@ int xx_register(sechk_lib_t *lib)
  * file. It also checks that the requirements and dependencies are met.
  * Add any option processing logic as indicated below.
  * This function also defines the module header, which provides a brief
- * explanation of the check performed by the module. 
+ * explanation of the check performed by the module.
  * TODO: add options processing logic */
-int xx_init(sechk_module_t *mod, policy_t *policy) 
+int xx_init(sechk_module_t *mod, policy_t *policy)
 {
 	sechk_name_value_t *opt = NULL;
 	xx_data_t *datum = NULL;
@@ -191,8 +191,8 @@ int xx_init(sechk_module_t *mod, policy_t *policy)
 	opt = mod->options;
 	while (opt) {
 		/* TODO: check options
-		 * check strings opt->name and opt->value of each option 
-		 * to set the members of the private data storage object 
+		 * check strings opt->name and opt->value of each option
+		 * to set the members of the private data storage object
 		 * (pointed to by datum).
 		 * i.e. if (!strcmp(...)) {} else if (!strcmp((...)) etc.
 		 * There should be relatively few options for any one module.
@@ -210,7 +210,7 @@ int xx_init(sechk_module_t *mod, policy_t *policy)
  * as instructed. This function allocates the result structure and fills
  * in all relavant item and proof data.
  * TODO: add check logic */
-int xx_run(sechk_module_t *mod, policy_t *policy) 
+int xx_run(sechk_module_t *mod, policy_t *policy)
 {
 	xx_data_t *datum;
 	sechk_result_t *res = NULL;
@@ -269,7 +269,7 @@ xx_run_fail:
 
 /* The free function frees the private data of a module
  * TODO: be sure to free any allocated space in the private data */
-void xx_free(sechk_module_t *mod) 
+void xx_free(sechk_module_t *mod)
 {
 	xx_data_t *datum;
 
@@ -300,7 +300,7 @@ void xx_free(sechk_module_t *mod)
  * required that each of the flags for output components be
  * tested in this function (header, stats, list, and proof)
  * TODO: fill in the indicated information in the report fields
- * as indicated below. Some alteration may be necessary for 
+ * as indicated below. Some alteration may be necessary for
  * checks that perform different analyses */
 int xx_print_output(sechk_module_t *mod, policy_t *policy) 
 {
@@ -348,9 +348,9 @@ int xx_print_output(sechk_module_t *mod, policy_t *policy)
 	 * found without any supporting proof. The default method
 	 * is to display a comma separated list four items to a line
 	 * this may need to be changed for longer items.
-	 * TODO: you will need to enter the string representation of 
-	 * each item as the second parameter in the printf statement 
-	 * in place of the empty string. 
+	 * TODO: you will need to enter the string representation of
+	 * each item as the second parameter in the printf statement
+	 * in place of the empty string.
 	 * NOTE: if the item is a type of rule print only one per line. */
 	if (outformat & SECHK_OUT_LIST) {
 		printf("\n");
@@ -373,7 +373,7 @@ int xx_print_output(sechk_module_t *mod, policy_t *policy)
 	 * rule, followed by) the severity. Each proof element is then
 	 * displayed in an indented list one per line below it.
 	 * TODO: the name of the item should be entered below.
-	 * NOTE: certain checks may need to further modify this 
+	 * NOTE: certain checks may need to further modify this
 	 * report component if the results cannot be presented in this format */
 	if (outformat & SECHK_OUT_PROOF) {
 		printf("\n");
