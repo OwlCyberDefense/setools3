@@ -31,16 +31,20 @@ $(LIBSO): $(LIB-OBJ) $(SQL-OBJ)
 libsefs.a:  $(LIB-OBJ) 
 	 ar cr $@ $(LIB-OBJ) $(SQL-OBJ)
 
-install-libsefs-shared: $(LIBSO)
+install-libsefs-shared: $(LIBSO) install-includes
 	install -m 755 $(LIBSO) $(SHARED_LIB_INSTALL_DIR)
 	cd $(SHARED_LIB_INSTALL_DIR) && ln -sf $(LIBSO) $(SONAME) && ln -sf $(SONAME) $(TARGET)
 
-install-libsefs-static: libsefs
+install-libsefs-static: libsefs install-includes
 	install -m 644 libsefs.a $(STATIC_LIB_INSTALL_DIR)
-	install -m 755 -d $(SETOOLS_INCLUDE)/libsefs
-	install -m 644 *.h $(SETOOLS_INCLUDE)/libsefs
 
-install: install-libsefs-static install-libsefs-shared
+install-includes:
+	test -d $(SETOOLS_INCLUDE)/libsefs || install -m 755 -d $(SETOOLS_INCLUDE)/libsefs
+	test -d $(SETOOLS_INCLUDE)/libsefs/sqlite || install -m 755 -d $(SETOOLS_INCLUDE)/libsefs/sqlite
+	install -m 644 $(wildcard *.h) $(SETOOLS_INCLUDE)/libsefs
+	install -m 644 $(wildcard sqlite/*.h) $(SETOOLS_INCLUDE)/libsefs/sqlite
+ 
+install: install-libsefs-static install-libsefs-shared install-includes
 
 install-policy:
 	chcon system_u:object_r:shlib_t $(SHARED_LIB_INSTALL_DIR)/$(LIBSO)
