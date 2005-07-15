@@ -1,7 +1,7 @@
 /* Copyright (C) 2005 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
- 
-/* 
+
+/*
  * Author: jmowery@tresys.com
  *
  */
@@ -13,35 +13,47 @@
 #include <stdio.h>
 #include <string.h>
 
+/* This is the pointer to the library which contains the module;
+ * it is used to access needed parts of the library policy, fc entries, etc.*/
 static sechk_lib_t *library;
 
+/* This string is the name of the module and should match the stem
+ * of the file name; it should also match the prefix of all functions
+ * defined in this module and the private data storage structure */
+static const char *const mod_name = "empty_role";
+
+/* The register function registers all of a module's functions
+ * with the library. */
 int empty_role_register(sechk_lib_t *lib) 
 {
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
 
 	if (!lib) {
-		fprintf(stderr, "empty_role_register failed: no library\n");
+		fprintf(stderr, "Error: no library\n");
 		return -1;
 	}
 
 	library = lib;
 
-	mod = sechk_lib_get_module("empty_role", lib);
+	/* Modules are declared by the config file and their name and options
+	 * are stored in the module array.  The name is looked up to determine
+	 * where to store the function structures */
+	mod = sechk_lib_get_module(mod_name, lib);
 	if (!mod) {
-		fprintf(stderr, "empty_role_register failed: module unknown\n");
+		fprintf(stderr, "Error: module unknown\n");
 		return -1;
 	}
 	
 	/* register functions */
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "empty_role_register failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->name = strdup("init");
+	fn_struct->name = strdup(SECHK_MOD_FN_INIT);
 	if (!fn_struct->name) {
-		fprintf(stderr, "empty_role_register failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
 	fn_struct->fn = &empty_role_init;
@@ -50,12 +62,12 @@ int empty_role_register(sechk_lib_t *lib)
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "empty_role_register failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->name = strdup("run");
+	fn_struct->name = strdup(SECHK_MOD_FN_RUN);
 	if (!fn_struct->name) {
-		fprintf(stderr, "empty_role_register failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
 	fn_struct->fn = &empty_role_run;
@@ -64,12 +76,12 @@ int empty_role_register(sechk_lib_t *lib)
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "empty_role_register failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->name = strdup("free");
+	fn_struct->name = strdup(SECHK_MOD_FN_FREE);
 	if (!fn_struct->name) {
-		fprintf(stderr, "empty_role_register failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
 	fn_struct->fn = &empty_role_free;
@@ -78,26 +90,26 @@ int empty_role_register(sechk_lib_t *lib)
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "empty_role_register failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->name = strdup("get_output_str");
+	fn_struct->name = strdup(SECHK_MOD_FN_PRINT);
 	if (!fn_struct->name) {
-		fprintf(stderr, "empty_role_register failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &empty_role_get_output_str;
+	fn_struct->fn = &empty_role_print_output;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "empty_role_register failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->name = strdup("get_result");
+	fn_struct->name = strdup(SECHK_MOD_FN_GET_RES);
 	if (!fn_struct->name) {
-		fprintf(stderr, "empty_role_register failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
 	fn_struct->fn = &empty_role_get_result;
@@ -107,67 +119,67 @@ int empty_role_register(sechk_lib_t *lib)
 	return 0;
 }
 
-int empty_role_init(sechk_module_t *mod, policy_t *policy) 
+/* The init function creates the module's private data storage object
+ * and initializes its values based on the options parsed in the config
+ * file. It also checks that the requirements and dependencies are met.
+ * This function also defines the module header, which provides a brief
+ * explanation of the check performed by the module. */
+int empty_role_init(sechk_module_t *mod, policy_t *policy)
 {
-	sechk_opt_t *opt = NULL;
+	sechk_name_value_t *opt = NULL;
 	empty_role_data_t *datum = NULL;
-	bool_t header = TRUE;
+	bool_t test = FALSE;
 
 	if (!mod || !policy) {
-		fprintf(stderr, "empty_role_init failed: invalid parameters\n");
+		fprintf(stderr, "Error: invalid parameters\n");
 		return -1;
 	}
-	if (strcmp("empty_role", mod->name)) {
-		fprintf(stderr, "empty_role_init failed: wrong module (%s)\n", mod->name);
+	if (strcmp(mod_name, mod->name)) {
+		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
 		return -1;
 	}
 
-	datum = new_empty_role_data();
+	datum = empty_role_data_new();
 	if (!datum) {
-		fprintf(stderr, "empty_role_init failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
 	mod->data = datum;
 
-	datum->outformat = library->outformat;
-	datum->mod_header = strdup("Finds empty roles in the policy.\nA role is empty if no types are associted with it.\n\n");/* TODO: add header text */
+	mod->header = strdup("Finds empty roles in the policy.\nA role is empty if no types are associted with it.");
 
-	opt = mod->options;
+	opt = mod->requirements;
 	while (opt) {
-		if (!strcmp(opt->name, "pol_type")) {
-			if (!strcmp(opt->value, "source")) {
-				if (is_binary_policy(policy))
-					fprintf(stderr, "empty_role_init Warning: module required source policy but was given binary, results may not be complete\n");
-			} else if (!strcmp(opt->value, "binary")) {
-				if (!is_binary_policy(policy))
-					fprintf(stderr, "empty_role_init Warning: module required binary policy but was given source, results may not be complete\n");
-			} else {
-				fprintf(stderr, "empty_role_init failed: invalid policy type specification %s\n", opt->value);
-			}
-		} else if (!strcmp(opt->name, "output_type")) {
-			if (!strcmp(opt->value, "full")) {
-				datum->outformat = (SECHK_OUT_LONG|SECHK_OUT_LIST|SECHK_OUT_STATS|SECHK_OUT_HEADER);
-			} else if (!strcmp(opt->value, "long")) {
-				datum->outformat = (SECHK_OUT_LONG|SECHK_OUT_STATS|SECHK_OUT_HEADER);
-			} else if (!strcmp(opt->value, "short")) {
-				datum->outformat = (SECHK_OUT_LIST|SECHK_OUT_STATS|SECHK_OUT_HEADER);
-			} else if (!strcmp(opt->value, "stats")) {
-				datum->outformat = (SECHK_OUT_STATS|SECHK_OUT_HEADER);
-			}
-		} else if (!strcmp(opt->name, "output_header")) {
-			if (!strcmp(opt->value, "no")) {
-				header = FALSE;
-			}
+		test = FALSE;
+		test = sechk_lib_check_requirement(opt, library);
+		if (!test) {
+			return -1;
 		}
 		opt = opt->next;
 	}
-	if (!header)
-		datum->outformat &= ~(SECHK_OUT_HEADER);
+
+	opt = mod->dependencies;
+	while (opt) {
+		test = FALSE;
+		test = sechk_lib_check_dependency(opt, library);
+		if (!test) {
+			return -1;
+		}
+		opt = opt->next;
+	}
+
+	opt = mod->options;
+	while (opt) {
+		opt = opt->next;
+	}
 
 	return 0;
 }
 
-int empty_role_run(sechk_module_t *mod, policy_t *policy) 
+/* The run function performs the check. This function runs only once
+ * even if called multiple times. This function allocates the result
+ * structure and fills in all relavant item and proof data. */
+int empty_role_run(sechk_module_t *mod, policy_t *policy)
 {
 	empty_role_data_t *datum;
 	sechk_result_t *res = NULL;
@@ -176,11 +188,11 @@ int empty_role_run(sechk_module_t *mod, policy_t *policy)
 	int i, retv, num_types = 0, *types = NULL;
 
 	if (!mod || !policy) {
-		fprintf(stderr, "empty_role_run failed: invalid parameters\n");
+		fprintf(stderr, "Error: invalid parameters\n");
 		return -1;
 	}
-	if (strcmp("empty_role", mod->name)) {
-		fprintf(stderr, "empty_role_run failed: wrong module (%s)\n", mod->name);
+	if (strcmp(mod_name, mod->name)) {
+		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
 		return -1;
 	}
 
@@ -191,31 +203,32 @@ int empty_role_run(sechk_module_t *mod, policy_t *policy)
 	datum = (empty_role_data_t*)mod->data;
 	res = sechk_result_new();
 	if (!res) {
-		fprintf(stderr, "empty_role_run failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	res->test_name = strdup("empty_role");
+	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
-		fprintf(stderr, "empty_role_run failed: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		goto empty_role_run_fail;
 	}
-	res->item_type = POL_LIST_ROLES;
+	res->item_type  = POL_LIST_ROLES;
 
-	/* role 0 is object_r skip */
-	for (i = policy->num_roles - 1; i; i--) {
+	for (i = policy->num_roles - 1; i > -1; i--) {
+		if (!strcmp("object_r", policy->roles[i].name))
+			continue;
 		num_types = 0;
 		free(types);
 		types = NULL;
 		retv = get_role_types(i, &num_types, &types, policy);
 		if (retv) {
-			fprintf(stderr, "empty_role_run failed: out of memory\n");
+			fprintf(stderr, "Error: out of memory\n");
 			goto empty_role_run_fail;
 		}
 		if (num_types) 
 			continue;
 		proof = sechk_proof_new();
 		if (!proof) {
-			fprintf(stderr, "empty_role_run failed: out of memory\n");
+			fprintf(stderr, "Error: out of memory\n");
 			goto empty_role_run_fail;
 		}
 		proof->idx = i;
@@ -225,7 +238,7 @@ int empty_role_run(sechk_module_t *mod, policy_t *policy)
 		sprintf(proof->text, "role %s has no types", policy->roles[i].name);
 		item = sechk_item_new();
 		if (!item) {
-			fprintf(stderr, "empty_role_run failed: out of memory\n");
+			fprintf(stderr, "Error: out of memory\n");
 			goto empty_role_run_fail;
 		}
 		item->item_id = i;
@@ -234,6 +247,7 @@ int empty_role_run(sechk_module_t *mod, policy_t *policy)
 		item->proof = proof;
 		item->next = res->items;
 		res->items = item;
+		(res->num_items)++;
 	}
 
 	mod->result = res;
@@ -248,29 +262,30 @@ empty_role_run_fail:
 	return -1;
 }
 
-void empty_role_free(sechk_module_t *mod) 
+/* The free function frees the private data of a module */
+void empty_role_free(sechk_module_t *mod)
 {
+	empty_role_data_t *datum;
+
 	if (!mod) {
-		fprintf(stderr, "empty_role_free failed: invalid parameters\n");
+		fprintf(stderr, "Error: invalid parameters\n");
 		return;
 	}
-	if (strcmp("empty_role", mod->name)) {
-		fprintf(stderr, "empty_role_free failed: wrong module (%s)\n", mod->name);
+	if (strcmp(mod_name, mod->name)) {
+		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
 		return;
 	}
-	
-	free(mod->name);
-	mod->name = NULL;
-	sechk_result_free(mod->result);
-	sechk_opt_free(mod->options);
-	sechk_fn_free(mod->functions);
-	free_empty_role_data((empty_role_data_t**)&(mod->data));
+
+	datum = (empty_role_data_t*)mod->data;
+
+	free(mod->data);
+	mod->data = NULL;
 }
 
-char *empty_role_get_output_str(sechk_module_t *mod, policy_t *policy) 
+/* The print output function generates the text printed in the
+ * report and prints it to stdout. */
+int empty_role_print_output(sechk_module_t *mod, policy_t *policy) 
 {
-	char *buff = NULL, *tmp = NULL;
-	unsigned long buff_sz = 0L;
 	empty_role_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
@@ -278,116 +293,92 @@ char *empty_role_get_output_str(sechk_module_t *mod, policy_t *policy)
 	int i = 0;
 
 	if (!mod || !policy) {
-		fprintf(stderr, "empty_role_get_output_str failed: invalid parameters\n");
-		return NULL;
+		fprintf(stderr, "Error: invalid parameters\n");
+		return -1;
 	}
-	if (strcmp("empty_role", mod->name)) {
-		fprintf(stderr, "empty_role_get_output_str failed: wrong module (%s)\n", mod->name);
-		return NULL;
+	if (strcmp(mod_name, mod->name)) {
+		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+		return -1;
 	}
 	if (!mod->result) {
-		fprintf(stderr, "empty_role_get_output_str failed: module has not been run\n");
-		return NULL;
+		fprintf(stderr, "Error: module has not been run\n");
+		return -1;
 	}
 
 	datum = (empty_role_data_t*)mod->data;
-	outformat = datum->outformat;
+	outformat = mod->outputformat;
 	if (!outformat)
-		return NULL; /* not an error - no output is requested */
+		return 0; /* not an error - no output is requested */
 
-	buff_sz += strlen("Module: Empty Role\n"); 
+	printf("Module: Empty Role\n");
+	/* print the header */
 	if (outformat & SECHK_OUT_HEADER) {
-		buff_sz += strlen(datum->mod_header);
+		printf("%s\n\n", mod->header);
 	}
+	/* display the statistics of the results */
 	if (outformat & SECHK_OUT_STATS) {
-		buff_sz += strlen("Found  roles.\n") + intlen(mod->result->num_items); 
+		printf("Found %i roles.\n", mod->result->num_items);
 	}
+	/* The list report component is a display of all items
+	 * found without any supporting proof. */
 	if (outformat & SECHK_OUT_LIST) {
-		buff_sz++; /* '\n' */
-		for (item = mod->result->items; item; item = item->next) {
-			buff_sz += 2 + strlen(policy->roles[item->item_id].name); 
-		}
-	}
-	if (outformat & SECHK_OUT_LONG) {
-		buff_sz += 2;
-		for (item = mod->result->items; item; item = item->next) {
-			buff_sz += strlen(policy->roles[item->item_id].name);
-			buff_sz += strlen(" - severity: x\n");
-			for (proof = item->proof; proof; proof = proof->next) {
-				buff_sz += 2 + strlen(proof->text);
-			}
-		}
-	}
-	buff_sz++; /* '\0' */
-
-	buff = (char*)calloc(buff_sz, sizeof(char));
-	if (!buff) {
-		fprintf(stderr, "empty_role_get_output_str failed: out of memory\n");
-		return NULL;
-	}
-	tmp = buff;
-
-	tmp += sprintf(buff, "Module: Empty Role\n");
-	if (outformat & SECHK_OUT_HEADER) {
-		tmp += sprintf(tmp, datum->mod_header);
-	}
-	if (outformat & SECHK_OUT_STATS) {
-		tmp += sprintf(tmp, "Found %i roles.\n", mod->result->num_items);
-	}
-	if (outformat & SECHK_OUT_LIST) {
-		tmp += sprintf(tmp, "\n");
+		printf("\n");
 		for (item = mod->result->items; item; item = item->next) {
 			i++;
-			i %= 4; /* 4 items per line */
-			tmp += sprintf(tmp, "%s %c", policy->roles[item->item_id].name, i?' ':'\n');
+			i %= 4;
+			printf("%s%s", policy->roles[item->item_id].name, (i ? ", " : "\n")); 
 		}
+		printf("\n");
 	}
-	if (outformat & SECHK_OUT_LONG) {
-		tmp += sprintf(tmp, "\n\n");
+	/* The proof report component is a display of a list of items
+	 * with an indented list of proof statements supporting the result
+	 * of the check for that item (e.g. rules with a given type)
+	 * this field also lists the computed severity of each item
+	 * items are printed on a line either with (or, if long, such as a
+	 * rule, followed by) the severity. Each proof element is then
+	 * displayed in an indented list one per line below it. */
+	if (outformat & SECHK_OUT_PROOF) {
+		printf("\n");
 		for (item = mod->result->items; item; item = item->next) {
-			tmp += sprintf(tmp,"%s", policy->roles[item->item_id].name);
-			tmp += sprintf(tmp, " - severity: %i\n", sechk_item_sev(item));
+			printf("%s", policy->roles[item->item_id].name);
+			printf(" - severity: %i\n", sechk_item_sev(item));
 			for (proof = item->proof; proof; proof = proof->next) {
-				tmp += sprintf(tmp,"\t%s\n", proof->text);
+				printf("\t%s\n", proof->text);
 			}
 		}
+		printf("\n");
 	}
 
-	return buff;
+	return 0;
 }
 
+/* The get_result function returns a pointer to the results
+ * structure for this check to be used in another check. */
 sechk_result_t *empty_role_get_result(sechk_module_t *mod) 
 {
 
 	if (!mod) {
-		fprintf(stderr, "empty_role_get_result failed: invalid parameters\n");
+		fprintf(stderr, "Error: invalid parameters\n");
 		return NULL;
 	}
-	if (strcmp("empty_role", mod->name)) {
-		fprintf(stderr, "empty_role_get_result failed: wrong module (%s)\n", mod->name);
+	if (strcmp(mod_name, mod->name)) {
+		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
 		return NULL;
 	}
 
 	return mod->result;
 }
 
-empty_role_data_t *new_empty_role_data(void) 
+/* The empty_role_data_new function allocates and returns an
+ * initialized private data storage structure for this
+ * module. */
+empty_role_data_t *empty_role_data_new(void)
 {
 	empty_role_data_t *datum = NULL;
 
 	datum = (empty_role_data_t*)calloc(1,sizeof(empty_role_data_t));
 
 	return datum;
-}
-
-void free_empty_role_data(empty_role_data_t **datum) 
-{
-	if (!datum || !(*datum))
-		return;
-
-	free((*datum)->mod_header);
-	free(*datum);
-	*datum = NULL;
 }
 
  
