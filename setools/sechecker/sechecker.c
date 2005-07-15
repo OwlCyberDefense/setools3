@@ -719,11 +719,14 @@ static int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib)
 	sechk_name_value_t *nv = NULL;
 	static sechk_module_t *current_module=NULL;
 
+
+
 	switch (xmlTextReaderNodeType(reader)) {
 
 	case XML_ELEMENT_DECL: /* closing tags */
-		if (xmlStrEqual(xmlTextReaderConstName(reader), (xmlChar*)SECHK_PARSE_MODULE_TAG) == 1)
+		if (xmlStrEqual(xmlTextReaderConstName(reader), (xmlChar*)SECHK_PARSE_MODULE_TAG) == 1) {
 			current_module = NULL;
+		} 
 		break;
 
 	case XML_ELEMENT_NODE: /* opening tags */
@@ -862,6 +865,8 @@ static int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib)
 				fprintf(stderr, "Error: output value is not specified in configuration file.\n");
 				goto exit_err;
 			}
+		} else if (xmlStrEqual(xmlTextReaderConstName(reader), (xmlChar*)SECHK_PARSE_HEADER_TAG) == 1) {
+			xmlTextReaderReadString(reader);
 		}
 		break;
 	}
