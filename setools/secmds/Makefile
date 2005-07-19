@@ -38,10 +38,10 @@ all: $(SE_CMDS)
 
 # seinfo and sesearch are optionally linked to libselinux.  
 # The LIBSELINUX variable is set in the top-level Makefile. 
-seinfo: seinfo.o $(LIBAPOL)
+seinfo: seinfo.o libapol 
 	$(CC) -o $@  seinfo.o $(LIBAPOL) $(LIBS) $(LINKFLAGS) $(LIBSELINUX)
 
-sesearch: sesearch.o $(LIBAPOL)
+sesearch: sesearch.o libapol 
 	$(CC) -o $@ sesearch.o $(LIBAPOL) $(LIBS) $(LINKFLAGS) $(LIBSELINUX)
 
 # replcon, findcon, indexcon, and searchcon must always be linked to libselinux.  
@@ -49,25 +49,25 @@ sesearch: sesearch.o $(LIBAPOL)
 replcon.o: replcon.c 
 	$(CC) -c replcon.c $(CFLAGS) $(INCLUDE)
 
-replcon: replcon.o $(LIBSEFS) $(LIBAPOL)
+replcon: replcon.o libapol libsefs 
 	$(CC) -o $@ replcon.o $(LINKFLAGS) $(LIBSELINUXSO) $(LIBSEFS) $(LIBAPOL) $(LIBS)
 
 indexcon.o: indexcon.c
 	$(CC) -c indexcon.c $(CFLAGS) $(INCLUDE)
 
-indexcon: indexcon.o $(LIBAPOL) $(LIBSEFS)
+indexcon: indexcon.o libapol libsefs 
 	$(CC) -static -o $@ indexcon.o $(LINKFLAGS) $(STATICSEFS) $(LIBSELINUXSO) $(STATICAPOL) $(LIBS)
 
 searchcon.o: searchcon.c
 	$(CC) -c searchcon.c $(CFLAGS) $(INCLUDE)
 
-searchcon: searchcon.o $(LIBSEFS) $(LIBAPOL)
+searchcon: searchcon.o libapol libsefs 
 	$(CC) -o $@ searchcon.o $(LINKFLAGS) $(LIBSEFS) $(LIBSELINUXSO) $(LIBAPOL) $(LIBS)
 
 findcon.o: replcon.c
 	$(CC) -c replcon.c -o findcon.o -DFINDCON $(CFLAGS) $(INCLUDE)
 
-findcon: findcon.o $(LIBSEFS) $(LIBAPOL)
+findcon: findcon.o libapol libsefs 
 	$(CC) -o $@ findcon.o $(LINKFLAGS) $(LIBSELINUXSO) $(LIBSEFS) $(LIBAPOL) $(LIBS)
 	
 install: $(SE_CMDS)
@@ -81,23 +81,17 @@ install-policy:
 %.o:  %.c
 	$(CC) $(CFLAGS) $(INCLUDE) -c $<
 
-$(LIBAPOL):
-	cd ../ ; $(MAKE) libapol
+libapol:
+	$(MAKE) -C .. libapol
 
-$(LIBAPOL-TCL):
-	cd ../ ; $(MAKE) libapol-tcl
-
-$(LIBSEFS):
-	cd ../ ; $(MAKE) libsefs
-
-$(LIBSEUSER):
-	cd ../ ; $(MAKE) libseuser
-
-$(LIBSEUSER-TCL):
-	cd ../ ; $(MAKE) libseuser-tcl
+libsefs:
+	$(MAKE) -C .. libsefs
 
 clean:
 	rm -f *.o core* $(SE_CMDS) $(SELINUX_TOOLS) *~
 
 bare: clean
 	rm -f *.o core* $(SE_CMDS) $(SELINUX_TOOLS) *~
+
+.PHONY: bare clean libapol libsefs
+

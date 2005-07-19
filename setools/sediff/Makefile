@@ -14,10 +14,10 @@ CFLAGS  	+= -DSEDIFF_GUI_VERSION_NUM='"$(shell cat SEDIFF_GUI_VERSION)"'
 
 all: sediff sediffx
 
-sediff: sediff.o $(LIBAPOL)
+sediff: sediff.o libapol 
 	$(CC) -o $@ sediff.o $(LIBAPOL) $(LIBS) $(LINKFLAGS) $(LIBSELINUX) 
 
-sediffx: $(LIBAPOL) $(GUI-OBJS)
+sediffx: libapol $(GUI-OBJS)
 	$(CC) $(GUI-OBJS) -o $@ -export-dynamic $(LIBAPOL) $(LINKFLAGS) $(LIBSELINUX) $(LIBS) $(GTK_LIBS)  
 
 install-nogui: sediff 
@@ -31,10 +31,20 @@ install: all
 %.o:  %.c
 	$(CC) $(CFLAGS) $(GTK_CFLAGS) $(INCLUDE) -c $<
 
-$(LIBAPOL):
-	cd ../ ; $(MAKE) libapol
+libapol:
+	$(MAKE) -C .. libapol
 
 clean:
 	rm -f *.o core* sediff sediffx *~ *.bak *.gladep
 	
 bare: clean
+
+.PHONY: clean bare libapol 
+
+# include objects here for header dependencies
+sediff_gui.o sediff_rename_types.o: sediff_gui.h
+sediff_gui.o sediff_rename_types.o: sediff_rename_types.h
+sediff_treemodel.o: sediff_treemodel.h
+support.o: support.h
+sediff_gui.o utilgui.o: utilgui.h
+

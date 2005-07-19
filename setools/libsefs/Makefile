@@ -16,12 +16,12 @@ LIBSO  = $(TARGET).$(shell cat VERSION)
 
 CFLAGS		+= -I. -I../libapol 
 
-all: sqlite libsefs $(LIBSO)
+all: libsefs $(LIBSO)
 
 libsefsso: $(LIBSO)
 
-sqlite: nothing
-	cd sqlite; $(MAKE)
+sqlite: 
+	$(MAKE) -C sqlite all
 
 libsefs: sqlite libsefs.a 
 
@@ -49,10 +49,10 @@ install: install-libsefs-static install-libsefs-shared install-includes
 install-policy:
 	chcon system_u:object_r:shlib_t $(SHARED_LIB_INSTALL_DIR)/$(LIBSO)
 
-fsdata.o: fsdata.c
+fsdata.o: fsdata.c sqlite
 	$(CC) $(CFLAGS) -c fsdata.c
 
-file_contexts.o: file_contexts.c file_contexts.h
+file_contexts.o: file_contexts.c file_contexts.h ../libapol/policy.h
 	$(CC) $(CFLAGS) -c $< 
 
 %.o:  %.c 
@@ -67,4 +67,5 @@ bare: clean
 	rm -f *.o core *~ libsefs.a $(LIBSO) $(SONAME)
 	cd sqlite; $(MAKE) bare
 
-nothing:
+.PHONY: clean bare sqlite
+
