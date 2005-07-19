@@ -132,7 +132,6 @@ int domain_and_file_type_init(sechk_module_t *mod, policy_t *policy)
 
 	if (!mod->outputformat)
 		mod->outputformat = library->outputformat;
-	mod->header = strdup("Finds all types in the policy treated as both a domain and a file type\nSee domain_type and file_type modules for details about\nhow types are placed in these categories");
 
 	opt = mod->requirements;
 	while (opt) {
@@ -236,14 +235,14 @@ int domain_and_file_type_run(sechk_module_t *mod, policy_t *policy)
 	}
 
 	/* get lists */
-	domain_list_fn = sechk_lib_get_module_function("domain_type", "get_domain_list", library);
-	retv = domain_list_fn(sechk_lib_get_module("domain_type", library), &domain_list, &domain_list_sz);
+	domain_list_fn = sechk_lib_get_module_function("find_domains", "get_list", library);
+	retv = domain_list_fn(sechk_lib_get_module("find_domains", library), &domain_list, &domain_list_sz);
 	if (retv) {
 		fprintf(stderr, "Error: unable to get domain list\n");
 		goto domain_and_file_type_run_fail;
 	}
-	file_type_list_fn = sechk_lib_get_module_function("file_type", "get_file_type_list", library);
-	retv = file_type_list_fn(sechk_lib_get_module("file_type", library), &file_type_list, &file_type_list_sz);
+	file_type_list_fn = sechk_lib_get_module_function("find_file_types", "get_list", library);
+	retv = file_type_list_fn(sechk_lib_get_module("find_file_types", library), &file_type_list, &file_type_list_sz);
 	if (retv) {
 		fprintf(stderr, "Error: unable to get file type list\n");
 		goto domain_and_file_type_run_fail;
@@ -363,18 +362,20 @@ int domain_and_file_type_print_output(sechk_module_t *mod, policy_t *policy)
 		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
 		return -1;
 	}
-	if (!mod->result) {
+
+	datum = (domain_and_file_type_data_t*)mod->data;
+	outformat = mod->outputformat;
+
+	if (!mod->result && (outformat & ~(SECHK_OUT_HEADER))) {
 		fprintf(stderr, "Error: module has not been run\n");
 		return -1;
 	}
 
-	datum = (domain_and_file_type_data_t*)mod->data;
-	outformat = mod->outputformat;
 	if (!outformat)
 		return 0; /* not an error - no output is requested */
 
 
-	printf("Module: Domain and File Type\n");
+	printf("Module: %s\n", mod_name);
 	if (outformat & SECHK_OUT_HEADER) {
 		printf("%s\n\n", mod->header);
 	}

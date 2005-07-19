@@ -9,7 +9,7 @@
 
 #include "sechecker.h"
 #include "policy.h"
-#include "empty_attribute.h"
+#include "attributes_wo_types.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -21,11 +21,11 @@ static sechk_lib_t *library;
 /* This string is the name of the module and should match the stem
  * of the file name; it should also match the prefix of all functions
  * defined in this module and the private data storage structure */
-static const char *const mod_name = "empty_attribute";
+static const char *const mod_name = "attributes_wo_types";
 
 /* The register function registers all of a module's functions
  * with the library. */
-int empty_attribute_register(sechk_lib_t *lib) 
+int attributes_wo_types_register(sechk_lib_t *lib) 
 {
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
@@ -57,7 +57,7 @@ int empty_attribute_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &empty_attribute_init;
+	fn_struct->fn = &attributes_wo_types_init;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -71,7 +71,7 @@ int empty_attribute_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &empty_attribute_run;
+	fn_struct->fn = &attributes_wo_types_run;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -85,7 +85,7 @@ int empty_attribute_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &empty_attribute_free;
+	fn_struct->fn = &attributes_wo_types_free;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -99,7 +99,7 @@ int empty_attribute_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &empty_attribute_print_output;
+	fn_struct->fn = &attributes_wo_types_print_output;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -113,7 +113,7 @@ int empty_attribute_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &empty_attribute_get_result;
+	fn_struct->fn = &attributes_wo_types_get_result;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -125,10 +125,10 @@ int empty_attribute_register(sechk_lib_t *lib)
  * file. It also checks that the requirements and dependencies are met.
  * This function also defines the module header, which provides a brief
  * explanation of the check performed by the module. */
-int empty_attribute_init(sechk_module_t *mod, policy_t *policy)
+int attributes_wo_types_init(sechk_module_t *mod, policy_t *policy)
 {
 	sechk_name_value_t *opt = NULL;
-	empty_attribute_data_t *datum = NULL;
+	attributes_wo_types_data_t *datum = NULL;
 	bool_t test = FALSE;
 
 	if (!mod || !policy) {
@@ -140,14 +140,12 @@ int empty_attribute_init(sechk_module_t *mod, policy_t *policy)
 		return -1;
 	}
 
-	datum = empty_attribute_data_new();
+	datum = attributes_wo_types_data_new();
 	if (!datum) {
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
 	mod->data = datum;
-
-	mod->header = strdup("Finds empty attributes in the policy.\nAn attribute is considered empty if no type has that attribute.");
 
 	opt = mod->requirements;
 	while (opt) {
@@ -180,9 +178,9 @@ int empty_attribute_init(sechk_module_t *mod, policy_t *policy)
 /* The run function performs the check. This function runs only once
  * even if called multiple times. This function allocates the result
  * structure and fills in all relavant item and proof data. */
-int empty_attribute_run(sechk_module_t *mod, policy_t *policy)
+int attributes_wo_types_run(sechk_module_t *mod, policy_t *policy)
 {
-	empty_attribute_data_t *datum;
+	attributes_wo_types_data_t *datum;
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
@@ -201,7 +199,7 @@ int empty_attribute_run(sechk_module_t *mod, policy_t *policy)
 	if (mod->result)
 		return 0;
 
-	datum = (empty_attribute_data_t*)mod->data;
+	datum = (attributes_wo_types_data_t*)mod->data;
 	res = sechk_result_new();
 	if (!res) {
 		fprintf(stderr, "Error: out of memory\n");
@@ -210,7 +208,7 @@ int empty_attribute_run(sechk_module_t *mod, policy_t *policy)
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
 		fprintf(stderr, "Error: out of memory\n");
-		goto empty_attribute_run_fail;
+		goto attributes_wo_types_run_fail;
 	}
 	res->item_type = POL_LIST_ATTRIB;
 
@@ -221,14 +219,14 @@ int empty_attribute_run(sechk_module_t *mod, policy_t *policy)
 		retv = get_attrib_types(i, &num_types, &types, policy);
 		if (retv) {
 			fprintf(stderr, "Error: out of memory\n");
-			goto empty_attribute_run_fail;
+			goto attributes_wo_types_run_fail;
 		}
 		if (num_types) 
 			continue;
 		proof = sechk_proof_new();
 		if (!proof) {
 			fprintf(stderr, "Error: out of memory\n");
-			goto empty_attribute_run_fail;
+			goto attributes_wo_types_run_fail;
 		}
 		proof->idx = i;
 		proof->type = POL_LIST_ATTRIB;
@@ -238,7 +236,7 @@ int empty_attribute_run(sechk_module_t *mod, policy_t *policy)
 		item = sechk_item_new();
 		if (!item) {
 			fprintf(stderr, "Error: out of memory\n");
-			goto empty_attribute_run_fail;
+			goto attributes_wo_types_run_fail;
 		}
 		item->item_id = i;
 		item->test_result = 1;
@@ -254,7 +252,7 @@ int empty_attribute_run(sechk_module_t *mod, policy_t *policy)
 
 	return 0;
 
-empty_attribute_run_fail:
+attributes_wo_types_run_fail:
 	free(types);
 	sechk_proof_free(proof);
 	sechk_item_free(item);
@@ -263,9 +261,9 @@ empty_attribute_run_fail:
 }
 
 /* The free function frees the private data of a module */
-void empty_attribute_free(sechk_module_t *mod) 
+void attributes_wo_types_free(sechk_module_t *mod) 
 {
-	empty_attribute_data_t *datum;
+	attributes_wo_types_data_t *datum;
 
 	if (!mod) {
 		fprintf(stderr, "Error: invalid parameters\n");
@@ -276,7 +274,7 @@ void empty_attribute_free(sechk_module_t *mod)
 		return;
 	}
 
-	datum = (empty_attribute_data_t*)mod->data;
+	datum = (attributes_wo_types_data_t*)mod->data;
 
 	free(mod->data);
 	mod->data = NULL;
@@ -284,9 +282,9 @@ void empty_attribute_free(sechk_module_t *mod)
 
 /* The print output function generates the text printed in the
  * report and prints it to stdout. */
-int empty_attribute_print_output(sechk_module_t *mod, policy_t *policy) 
+int attributes_wo_types_print_output(sechk_module_t *mod, policy_t *policy) 
 {
-	empty_attribute_data_t *datum = NULL;
+	attributes_wo_types_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
@@ -300,17 +298,19 @@ int empty_attribute_print_output(sechk_module_t *mod, policy_t *policy)
 		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
 		return -1;
 	}
-	if (!mod->result) {
+
+	datum = (attributes_wo_types_data_t*)mod->data;
+	outformat = mod->outputformat;
+
+	if (!mod->result && (outformat & ~(SECHK_OUT_HEADER))) {
 		fprintf(stderr, "Error: module has not been run\n");
 		return -1;
 	}
 
-	datum = (empty_attribute_data_t*)mod->data;
-	outformat = mod->outputformat;
 	if (!outformat)
 		return 0; /* not an error - no output is requested */
 
-	printf("Module: Empty Attribute\n");
+	printf("Module: %s\n", mod_name);
 	/* print the header */
 	if (outformat & SECHK_OUT_HEADER) {
 		printf("%s\n\n", mod->header);
@@ -354,7 +354,7 @@ int empty_attribute_print_output(sechk_module_t *mod, policy_t *policy)
 
 /* The get_result function returns a pointer to the results
  * structure for this check to be used in another check. */
-sechk_result_t *empty_attribute_get_result(sechk_module_t *mod) 
+sechk_result_t *attributes_wo_types_get_result(sechk_module_t *mod) 
 {
 
 	if (!mod) {
@@ -369,14 +369,14 @@ sechk_result_t *empty_attribute_get_result(sechk_module_t *mod)
 	return mod->result;
 }
 
-/* The empty_attribute_data_new function allocates and returns an
+/* The attributes_wo_types_data_new function allocates and returns an
  * initialized private data storage structure for this
  * module. */
-empty_attribute_data_t *empty_attribute_data_new(void)
+attributes_wo_types_data_t *attributes_wo_types_data_new(void)
 {
-	empty_attribute_data_t *datum = NULL;
+	attributes_wo_types_data_t *datum = NULL;
 
-	datum = (empty_attribute_data_t*)calloc(1,sizeof(empty_attribute_data_t));
+	datum = (attributes_wo_types_data_t*)calloc(1,sizeof(attributes_wo_types_data_t));
 
 	return datum;
 }
