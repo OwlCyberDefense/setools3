@@ -30,43 +30,45 @@ test.o : test.c test.h
 %.o : %.c
 	$(CC) $(CFLAGS) -c $<
 
-$(LIBAPOL) libapol: 
+$(LIBAPOL): libapol
+
+libapol: 
 	$(MAKE) -C .. libapol
 
-partial_policy_loading : partial_policy_loading.o $(OBJS) $(LIBAPOL) 
+partial_policy_loading : partial_policy_loading.o $(OBJS) libapol 
 	$(CC) $< $(CFLAGS) $(OBJS) $(LIBS) -o $@
 
-transitive_flow : transitive_flow.o $(OBJS) $(LIBAPOL) 
+transitive_flow : transitive_flow.o $(OBJS) libapol 
 	$(CC) $< $(CFLAGS) $(OBJS) $(LIBS) -o $@
  
-obj_perms : obj_perms.o $(OBJS) $(LIBAPOL) 
+obj_perms : obj_perms.o $(OBJS) libapol 
 	$(CC) $< $(CFLAGS) $(OBJS) $(LIBS) -o $@
 
-perm_map_reload : perm_map_reload.o $(OBJS) $(LIBAPOL) 
+perm_map_reload : perm_map_reload.o $(OBJS) libapol 
 	$(CC) $< $(CFLAGS) $(OBJS) $(LIBS) -o $@
 
-template : template.o $(OBJS) $(LIBAPOL) 
+template : template.o $(OBJS) libapol 
 	$(CC) $< $(CFLAGS) $(OBJS) $(LIBS) -o $@
 
-reload : reload.o $(OBJS) $(LIBAPOL) 
+reload : reload.o $(OBJS) libapol 
 	$(CC) $< $(CFLAGS) $(OBJS) $(LIBS) -o $@
 
-roles : roles.o $(OBJS) $(LIBAPOL) 
+roles : roles.o $(OBJS) libapol 
 	$(CC) $< $(CFLAGS) $(OBJS) $(LIBS) -o $@
 
-binpol : binpol.o $(OBJS) $(LIBAPOL) 
+binpol : binpol.o $(OBJS) libapol 
 	$(CC) $< $(CFLAGS) $(OBJS) $(LIBS) -o $@
 
-relabel : relabel.o $(OBJS) $(LIBAPOL) 
+relabel : relabel.o $(OBJS) libapol 
 	$(CC) $< $(CFLAGS) $(OBJS) $(LIBS) -o $@
 
-role_rules : role_rules.o $(OBJS) $(LIBAPOL) 
+role_rules : role_rules.o $(OBJS) libapol 
 	$(CC) $< $(CFLAGS) $(OBJS) $(LIBS) -o $@
 
-subtract : subtract.o $(OBJS) $(LIBAPOL) 
+subtract : subtract.o $(OBJS) libapol 
 	$(CC) $< $(CFLAGS) $(OBJS) $(LIBS) -o $@
 
-.PHONY : clean bare
+.PHONY : clean bare libapol
 
 clean : 
 	rm -f *.o *.res $(TESTS) tests-*.results
