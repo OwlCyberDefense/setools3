@@ -17,14 +17,14 @@
  * don't forget to add any necessary options to the config file */
 
 /* extern register functions declarations */
-extern int domain_type_register(sechk_lib_t *lib);
-extern int file_type_register(sechk_lib_t *lib);
+extern int find_domains_register(sechk_lib_t *lib);
+extern int find_file_types_register(sechk_lib_t *lib);
 extern int domain_and_file_type_register(sechk_lib_t *lib);
-extern int empty_attribute_register(sechk_lib_t *lib);
-extern int empty_role_register(sechk_lib_t *lib);
-extern int empty_user_register(sechk_lib_t *lib);
-extern int unused_role_register(sechk_lib_t *lib);
-extern int unused_type_register(sechk_lib_t *lib);
+extern int attributes_wo_types_register(sechk_lib_t *lib);
+extern int roles_wo_types_register(sechk_lib_t *lib);
+extern int users_wo_roles_register(sechk_lib_t *lib);
+extern int roles_not_in_allow_register(sechk_lib_t *lib);
+extern int types_not_in_allow_register(sechk_lib_t *lib);
 /* TODO: additional externs go here ... */
 
 int sechk_register_list_get_num_modules();
