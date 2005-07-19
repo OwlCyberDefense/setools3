@@ -12,14 +12,14 @@ static int sechk_register_num_modules=-1;
 
 /* array of register function pointers*/
 sechk_register_fn_t sechk_register_list[] = {
-	&domain_type_register,
-	&file_type_register,
+	&find_domains_register,
+	&find_file_types_register,
 	&domain_and_file_type_register,
-	&empty_attribute_register,
-	&empty_role_register,
-	&empty_user_register,
-	&unused_role_register,
-	&unused_type_register,
+	&attributes_wo_types_register,
+	&roles_wo_types_register,
+	&users_wo_roles_register,
+	&roles_not_in_allow_register,
+	&types_not_in_allow_register,
 	/* TODO: add additional register addresses here */
 	NULL
 };
