@@ -1,4 +1,4 @@
-# apol tool
+#apol tool
 
 APOL_STARTUP_SCRIPT = apol.tcl
 APOL_HELP_FILES	= apol_help.txt dta_help.txt iflow_help.txt obj_perms_help.txt 
@@ -29,17 +29,18 @@ else
 	
 	ifeq ($(USE_LIBSEFS), 1)
 	LIBSEFS		= ../libsefs/libsefs.so.$(shell cat ../libsefs/VERSION)
+	apol: libsefs
 	else
 	LIBSEFS = 
 	endif
 endif
 
-GUI-OBJ 	= apol_gui.o $(LIBAPOL) $(LIBSEFS)
+GUI-OBJ		= apol_gui.o $(LIBAPOL) $(LIBSEFS)
 CFLAGS          += -DSTARTUP_SCRIPT='"$(APOL_STARTUP_SCRIPT)"'
 
 # apol is optionally linked to libselinux. The LIBSELINUX variable 
 # is set in the top-level Makefile.
-apol: $(GUI-OBJ) apol.tcl
+apol: libapol libapol-tcl $(GUI-OBJ) apol.tcl
 	$(CC) $(TCL_LIBINC) -o $@ $(LINKFLAGS) $(GUI-OBJ) $(TCL_LIBS) $(LIBSELINUX)
 
 
@@ -50,15 +51,23 @@ apol.tcl: $(TCL-FILES)
 
 tmp.tcl: $(TCL-STRIP-FILES)
 	cat $(TCL-STRIP-FILES) > $@
-        # compact it by removing comments and empty lines
+	# compact it by removing comments and empty lines
 	@perl -p -i -e 's/^\s*(\#[^!]*){0,1}$$//s' $@
 
+libpol:
+	$(MAKE) -C .. libapol
+
+libapol-tcl:
+	$(MAKE) -C .. libapol-tcl
+
+libsefs:
+	$(MAKE) -C .. libsefs
 
 ../libapol/libapol.a: 
-	cd ../; $(MAKE) libapol
+	$(MAKE) -C .. libapol
 
 ../libapol/libapol-tcl.a:
-	cd ../; $(MAKE) libapol-tcl
+	$(MAKE) -C .. libapol-tcl
 
 %.o:  %.c 
 	$(CC) $(CFLAGS) -c $<
@@ -67,7 +76,7 @@ tmp.tcl: $(TCL-STRIP-FILES)
 # do nothing
 
 $(LIBSEFS):
-	cd ../ ; $(MAKE) libsefs
+	$(MAKE) -C .. libsefs
 
 install: apol apol.tcl
 	install -m 755 apol $(BINDIR)
@@ -87,8 +96,5 @@ clean:
 bare:
 	rm -f *.o  core* apol *~ apol.tcl tmp.tcl
 
-
-
-
-
+.PHONY: clean bare libapol libapol-tcl libsefs
 
