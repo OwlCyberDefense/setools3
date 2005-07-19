@@ -866,7 +866,15 @@ static int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib)
 				goto exit_err;
 			}
 		} else if (xmlStrEqual(xmlTextReaderConstName(reader), (xmlChar*)SECHK_PARSE_HEADER_TAG) == 1) {
-			xmlTextReaderReadString(reader);
+			if (!current_module) {
+				fprintf(stderr, "Error: 'header' specified outside the scope of a module.\n");
+				goto exit_err;
+			}
+			attrib = xmlTextReaderReadString(reader);
+			current_module->header = strdup(attrib);
+			free(attrib);
+			attrib = NULL;
+			
 		}
 		break;
 	}
