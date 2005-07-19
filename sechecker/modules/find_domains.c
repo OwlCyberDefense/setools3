@@ -8,7 +8,7 @@
 
 #include "sechecker.h"
 #include "policy.h"
-#include "find_domians.h"
+#include "find_domains.h"
 #include "render.h"
 
 #include <stdio.h>
@@ -16,9 +16,9 @@
 #include <semantic/avsemantics.h>
 
 static sechk_lib_t *library;
-static const char *const mod_name = "find_domians";
+static const char *const mod_name = "find_domains";
 
-int find_domians_register(sechk_lib_t *lib) 
+int find_domains_register(sechk_lib_t *lib) 
 {
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
@@ -47,7 +47,7 @@ int find_domians_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &find_domians_init;
+	fn_struct->fn = &find_domains_init;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -61,7 +61,7 @@ int find_domians_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &find_domians_run;
+	fn_struct->fn = &find_domains_run;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -75,7 +75,7 @@ int find_domians_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &find_domians_data_free;
+	fn_struct->fn = &find_domains_data_free;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -89,7 +89,7 @@ int find_domians_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &find_domians_print_output;
+	fn_struct->fn = &find_domains_print_output;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -103,7 +103,7 @@ int find_domians_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &find_domians_get_result;
+	fn_struct->fn = &find_domains_get_result;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -117,17 +117,17 @@ int find_domians_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &find_domians_get_list;
+	fn_struct->fn = &find_domains_get_list;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
 	return 0;
 }
 
-int find_domians_init(sechk_module_t *mod, policy_t *policy) 
+int find_domains_init(sechk_module_t *mod, policy_t *policy) 
 {
 	sechk_name_value_t *opt = NULL;
-	find_domians_data_t *datum = NULL;
+	find_domains_data_t *datum = NULL;
 	int attr = -1, retv;
 	bool_t test = FALSE;
 
@@ -140,7 +140,7 @@ int find_domians_init(sechk_module_t *mod, policy_t *policy)
 		return -1;
 	}
 
-	datum = find_domians_data_new();
+	datum = find_domains_data_new();
 	if (!datum) {
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
@@ -192,13 +192,13 @@ int find_domians_init(sechk_module_t *mod, policy_t *policy)
 	return 0;
 }
 
-int find_domians_run(sechk_module_t *mod, policy_t *policy) 
+int find_domains_run(sechk_module_t *mod, policy_t *policy) 
 {
 	int i, j, retv, idx;
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
-	find_domians_data_t *datum = NULL;
+	find_domains_data_t *datum = NULL;
 	int *attribs = NULL, num_attribs = 0;
 	avh_idx_t *hash_idx = NULL;
 	int num_nodes = 0;
@@ -223,7 +223,7 @@ int find_domians_run(sechk_module_t *mod, policy_t *policy)
 
 	process_idx = get_obj_class_idx("process", policy);
 
-	datum = (find_domians_data_t*)mod->data;
+	datum = (find_domains_data_t*)mod->data;
 	res = sechk_result_new();
 	if (!res) {
 		fprintf(stderr, "Error: out of memory\n");
@@ -233,14 +233,14 @@ int find_domians_run(sechk_module_t *mod, policy_t *policy)
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
 		fprintf(stderr, "Error: out of memory\n");
-		goto find_domians_run_fail;
+		goto find_domains_run_fail;
 	}
 
 	if (!avh_hash_table_present(policy->avh)) {
 		retv = avh_build_hashtab(policy);
 		if (retv) {
 			fprintf(stderr, "Error: could not build hash table\n");
-			goto find_domians_run_fail;
+			goto find_domains_run_fail;
 		}
 	}
 
@@ -251,7 +251,7 @@ int find_domians_run(sechk_module_t *mod, policy_t *policy)
 			retv = get_type_attribs(i, &num_attribs, &attribs, policy);
 			if (retv) {
 				fprintf(stderr, "Error: could not get attributes for %s\n", policy->types[i].name);
-				goto find_domians_run_fail;
+				goto find_domains_run_fail;
 			}
 			for (j = 0; j < datum->num_domain_attribs; j++) {
 				buff = NULL;
@@ -259,7 +259,7 @@ int find_domians_run(sechk_module_t *mod, policy_t *policy)
 					proof = sechk_proof_new();
 					if (!proof) {
 						fprintf(stderr, "Error: out of memory\n");
-						goto find_domians_run_fail;
+						goto find_domains_run_fail;
 					}
 					proof->idx = datum->domain_attribs[j];
 					proof->type = POL_LIST_ATTRIB;
@@ -268,19 +268,19 @@ int find_domians_run(sechk_module_t *mod, policy_t *policy)
 					buff = (char*)calloc(buff_sz, sizeof(char));
 					if (!buff) {
 						fprintf(stderr, "Error: out of memory\n");
-						goto find_domians_run_fail;
+						goto find_domains_run_fail;
 					}
 					proof->text = buff;
 					if (!proof->text) {
 						fprintf(stderr, "Error: out of memory\n");
-						goto find_domians_run_fail;
+						goto find_domains_run_fail;
 					}
 					snprintf(proof->text, buff_sz, "type %s has attribute %s", policy->types[i].name, policy->attribs[datum->domain_attribs[j]].name);
 					if (!item) {
 						item = sechk_item_new();
 						if (!item) {
 							fprintf(stderr, "Error: out of memory\n");
-							goto find_domians_run_fail;
+							goto find_domains_run_fail;
 						}
 						item->item_id = i;
 						item->test_result = 1;
@@ -317,12 +317,12 @@ int find_domians_run(sechk_module_t *mod, policy_t *policy)
 						buff = re_render_av_rule(!is_binary_policy(policy), hash_rule->rule, (hash_idx->nodes[j]->key.rule_type > RULE_TE_ALLOW ? 1 : 0), policy);
 					if (!buff) {
 						fprintf(stderr, "Error: out of memory\n");
-						goto find_domians_run_fail;
+						goto find_domains_run_fail;
 					}
 					proof = sechk_proof_new();
 					if (!proof) {
 						fprintf(stderr, "Error: out of memory\n");
-						goto find_domians_run_fail;
+						goto find_domains_run_fail;
 					}
 					proof->idx = idx;
 					proof->type = type;
@@ -332,7 +332,7 @@ int find_domians_run(sechk_module_t *mod, policy_t *policy)
 						item = sechk_item_new();
 						if (!item) {
 							fprintf(stderr, "Error: out of memory\n");
-							goto find_domians_run_fail;
+							goto find_domains_run_fail;
 						}
 						item->item_id = i;
 						item->test_result = 1;
@@ -349,12 +349,12 @@ int find_domians_run(sechk_module_t *mod, policy_t *policy)
 				buff = re_render_tt_rule(!is_binary_policy(policy), j, policy);
 				if (!buff) {
 					fprintf(stderr, "Error: out of memory\n");
-					goto find_domians_run_fail;
+					goto find_domains_run_fail;
 				}
 				proof = sechk_proof_new();
 				if (!proof) {
 					fprintf(stderr, "Error: out of memory\n");
-					goto find_domians_run_fail;
+					goto find_domains_run_fail;
 				}
 				proof->idx = j;
 				proof->type = POL_LIST_TE_TRANS;
@@ -364,7 +364,7 @@ int find_domians_run(sechk_module_t *mod, policy_t *policy)
 					item = sechk_item_new();
 					if (!item) {
 						fprintf(stderr, "Error: out of memory\n");
-						goto find_domians_run_fail;
+						goto find_domains_run_fail;
 					}
 					item->item_id = i;
 					item->test_result = 1;
@@ -384,13 +384,13 @@ int find_domians_run(sechk_module_t *mod, policy_t *policy)
 				buff = (char*)calloc(buff_sz, sizeof(char));
 				if (!buff) {
 					fprintf(stderr, "Error: out of memory\n");
-					goto find_domians_run_fail;
+					goto find_domains_run_fail;
 				}
 				snprintf(buff, buff_sz, "role %s types %s;", policy->roles[j].name, policy->types[i].name);
 				proof = sechk_proof_new();
 				if (!proof) {
 					fprintf(stderr, "Error: out of memory\n");
-					goto find_domians_run_fail;
+					goto find_domains_run_fail;
 				}
 				proof->idx = j;
 				proof->type = POL_LIST_ROLES;
@@ -400,7 +400,7 @@ int find_domians_run(sechk_module_t *mod, policy_t *policy)
 					item = sechk_item_new();
 					if (!item) {
 						fprintf(stderr, "Error: out of memory\n");
-						goto find_domians_run_fail;
+						goto find_domains_run_fail;
 					}
 					item->item_id = i;
 					item->test_result = 1;
@@ -425,7 +425,7 @@ int find_domians_run(sechk_module_t *mod, policy_t *policy)
 
 	return 0;
 
-find_domians_run_fail:
+find_domains_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
 	sechk_result_free(res);
@@ -433,9 +433,9 @@ find_domians_run_fail:
 	return -1;
 }
 
-void find_domians_data_free(sechk_module_t *mod) 
+void find_domains_data_free(sechk_module_t *mod) 
 {
-	find_domians_data_t *datum = NULL;
+	find_domains_data_t *datum = NULL;
 
 	if (!mod) {
 		fprintf(stderr, "Error: invalid parameters\n");
@@ -445,7 +445,7 @@ void find_domians_data_free(sechk_module_t *mod)
 		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
 		return;
 	}
-	datum = (find_domians_data_t*)mod->data;
+	datum = (find_domains_data_t*)mod->data;
 	if (datum) {
 		free(datum->domain_attribs);
 	}
@@ -453,9 +453,9 @@ void find_domians_data_free(sechk_module_t *mod)
 	mod->data = NULL;
 }
 
-int find_domians_print_output(sechk_module_t *mod, policy_t *policy) 
+int find_domains_print_output(sechk_module_t *mod, policy_t *policy) 
 {
-	find_domians_data_t *datum = NULL;
+	find_domains_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
@@ -465,12 +465,12 @@ int find_domians_print_output(sechk_module_t *mod, policy_t *policy)
 		fprintf(stderr, "Error: invalid parameters\n");
 		return -1;
 	}
-	if (strcmp("find_domians", mod->name)) {
+	if (strcmp("find_domains", mod->name)) {
 		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
 		return -1;
 	}
 
-	datum = (find_domians_data_t*)mod->data;
+	datum = (find_domains_data_t*)mod->data;
 	outformat = mod->outputformat;
 
 	if (!mod->result && (outformat & ~(SECHK_OUT_HEADER))) {
@@ -512,7 +512,7 @@ int find_domians_print_output(sechk_module_t *mod, policy_t *policy)
 	return 0;
 }
 
-sechk_result_t *find_domians_get_result(sechk_module_t *mod) 
+sechk_result_t *find_domains_get_result(sechk_module_t *mod) 
 {
 
 	if (!mod) {
@@ -527,7 +527,7 @@ sechk_result_t *find_domians_get_result(sechk_module_t *mod)
 	return mod->result;
 }
 
-int find_domians_get_list(sechk_module_t *mod, int **array, int *size) 
+int find_domains_get_list(sechk_module_t *mod, int **array, int *size) 
 {
 	int i;
 	sechk_item_t *item = NULL;
@@ -560,11 +560,11 @@ int find_domians_get_list(sechk_module_t *mod, int **array, int *size)
 	return 0;
 }
 
-find_domians_data_t *find_domians_data_new(void) 
+find_domains_data_t *find_domains_data_new(void) 
 {
-	find_domians_data_t *datum = NULL;
+	find_domains_data_t *datum = NULL;
 
-	datum = (find_domians_data_t*)calloc(1,sizeof(find_domians_data_t));
+	datum = (find_domains_data_t*)calloc(1,sizeof(find_domains_data_t));
 
 	return datum;
 }
