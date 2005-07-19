@@ -136,8 +136,6 @@ int xx_register(sechk_lib_t *lib)
  * and initializes its values based on the options parsed in the config
  * file. It also checks that the requirements and dependencies are met.
  * Add any option processing logic as indicated below.
- * This function also defines the module header, which provides a brief
- * explanation of the check performed by the module.
  * TODO: add options processing logic */
 int xx_init(sechk_module_t *mod, policy_t *policy)
 {
@@ -160,13 +158,6 @@ int xx_init(sechk_module_t *mod, policy_t *policy)
 		return -1;
 	}
 	mod->data = datum;
-
-	/* TODO: the module header
-	 * The module header should describe the basic steps taken by the
-	 * module while performing the check and indicate what is printed
-	 * in the report. Use new line characters to wrap lines to a width
-	 * suitable for console printing. */
-	mod->header = strdup("");
 
 	opt = mod->requirements;
 	while (opt) {
@@ -318,19 +309,20 @@ int xx_print_output(sechk_module_t *mod, policy_t *policy)
 		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
 		return -1;
 	}
-	if (!mod->result) {
+
+	datum = (xx_data_t*)mod->data;
+	outformat = mod->outputformat;
+
+	if (!mod->result && (outformat & ~(SECHK_OUT_HEADER))) {
 		fprintf(stderr, "Error: module has not been run\n");
 		return -1;
 	}
 
-	datum = (xx_data_t*)mod->data;
-	outformat = mod->outputformat;
 	if (!outformat)
 		return 0; /* not an error - no output is requested */
 
 	/* TODO: fill in output fields below */
-	/* TODO: add the module name in title case here */
-	printf("Module: \n");
+	printf("Module: %s\n", mod_name);
 	/* print the header */
 	if (outformat & SECHK_OUT_HEADER) {
 		printf("%s\n\n", mod->header);

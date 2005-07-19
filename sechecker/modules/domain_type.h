@@ -9,18 +9,18 @@
 #include "sechecker.h"
 #include "policy.h"
 
-typedef struct domain_type_data {
+typedef struct find_domians_data {
 	int		*domain_attribs;
 	int		num_domain_attribs;
-} domain_type_data_t;
+} find_domians_data_t;
 
-int domain_type_register(sechk_lib_t *lib);
-int domain_type_init(sechk_module_t *mod, policy_t *policy);
-int domain_type_run(sechk_module_t *mod, policy_t *policy);
-void domain_type_data_free(sechk_module_t *mod);
-int domain_type_print_output(sechk_module_t *mod, policy_t *policy);
-sechk_result_t *domain_type_get_result(sechk_module_t *mod);
+int find_domians_register(sechk_lib_t *lib);
+int find_domians_init(sechk_module_t *mod, policy_t *policy);
+int find_domians_run(sechk_module_t *mod, policy_t *policy);
+void find_domians_data_free(sechk_module_t *mod);
+int find_domians_print_output(sechk_module_t *mod, policy_t *policy);
+sechk_result_t *find_domians_get_result(sechk_module_t *mod);
  
-int domain_type_get_domain_list(sechk_module_t *mod, int **array, int *size);
+int find_domians_get_list(sechk_module_t *mod, int **array, int *size);
 
-domain_type_data_t *domain_type_data_new(void);
+find_domians_data_t *find_domians_data_new(void);
