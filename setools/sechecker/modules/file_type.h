@@ -9,19 +9,19 @@
 #include "sechecker.h"
 #include "policy.h"
 
-typedef struct file_type_data {
+typedef struct find_file_types_data {
 	int		*file_type_attribs;
 	int		num_file_type_attribs;
-} file_type_data_t;
+} find_file_types_data_t;
 
-int file_type_register(sechk_lib_t *lib);
-int file_type_init(sechk_module_t *mod, policy_t *policy);
-int file_type_run(sechk_module_t *mod, policy_t *policy);
-void file_type_data_free(sechk_module_t *mod);
-int file_type_print_output(sechk_module_t *mod, policy_t *policy);
-sechk_result_t *file_type_get_result(sechk_module_t *mod);
+int find_file_types_register(sechk_lib_t *lib);
+int find_file_types_init(sechk_module_t *mod, policy_t *policy);
+int find_file_types_run(sechk_module_t *mod, policy_t *policy);
+void find_file_types_data_free(sechk_module_t *mod);
+int find_file_types_print_output(sechk_module_t *mod, policy_t *policy);
+sechk_result_t *find_file_types_get_result(sechk_module_t *mod);
  
-int file_type_get_file_type_list(sechk_module_t *mod, int **array, int *size);
+int find_file_types_get_list(sechk_module_t *mod, int **array, int *size);
 
-file_type_data_t *file_type_data_new(void);
+find_file_types_data_t *find_file_types_data_new(void);
 
