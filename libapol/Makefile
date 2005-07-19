@@ -86,4 +86,36 @@ bare:
 		flowassert_parse.c flowassert_parse.h flowassert_scan.c libapol.a libapol-tcl.a \
 		$(LIBSO) $(LIBSOTCL)
 
+.PHONY: bare clean
+
+# include objects here for header dependencies
+analysis.o clone.o flowasser.o infoflow.o perm-map.o policy-io.o: policy.h
+policy-avl.o policy-query.o relabel_analysis.o render.o util.o: policy.h
+binpol/binpol.o semantic/avhash.o semantic/avsemantics.o: policy.h
+poldiff.o policy-io.o binpol/binpol.o: policy-io.h
+avl-util.o policy-avl.o:avl-util.h
+policy.o cond.o: cond.h
+$(filter flowassert, $(LIB-OBJ)): flowassert.h
+analysis.o infoflow.o flowassert.o flowassert_parse.o: infoflow.h
+flowassert.o policy.o perm-map.o: perm-map.h
+analysis.o flowassert_parse.o infoflow.o poldiff.o: policy-query.h
+analysis.o infoflow.o policy-io.h queue.o: queue.h
+analysis.o avl-util.o clone.o cond.o flowassert.o flowassert_parse.o: util.h
+infoflow.o perm-map.o policy-avl.o policy.o polic-io.o policy-query.o: util.h
+render.o symtable.o util.o binpol/binpol.o: util.h
+analysis.o: analysis.h
+clone.o: clone.h
+poldiff.o: poldiff.h
+policy.o policy-avl.o: policy-avl.h
+relabel_analysis.o: relabel_analysis.h
+render.o: render.h
+symtable.o flowassert_parse.o: symtable.h
+binpol/binpol.o policy-io.o: binpol/binpol.h
+binpol/binpol.o binpol/bpmaps.o: binpol/bpmaps.h
+binpol/binpol.o binpol/ebitmap.o: binpol/borrowed.h
+binpol/binpol.o binpol/bpmaps.o binpol/ebitmap.o: binpol/ebitmap.h
+binpol/binpol.o binpol/ebitmap.o binpol/fbuf.o: binpol/fbuf.h
+poldiff.o relabel_analysis.o render.o: semantic/avhash.h semantic/avsemantics.h
+semantic/avhash.o semantic/avsemantics.o: semantic/avhash.h
+semantic/avsemantics.o: semantic/avsemantics.h
 

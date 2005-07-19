@@ -32,23 +32,29 @@ endif
 
 all: seaudit seaudit-report
 
-seaudit: $(OBJS) $(SEAUDIT_LIBS) $(GTK-SOURCEVIEW-OBJS) $(SEAUDIT_REPORT_BACKEND)  
+seaudit: libapol libseaudit $(OBJS) $(SEAUDIT_LIBS) $(GTK-SOURCEVIEW-OBJS) $(SEAUDIT_REPORT_BACKEND)  
 	$(CC) $(CFLAGS) $(INCLUDE) $(OBJS) -o $@ -export-dynamic $(SEAUDIT_LIBS) $(SEAUDIT_REPORT_BACKEND) $(LIBS) $(GTK_LIBS) 
 
 seaudit-report: $(SEAUDIT_REPORT_BACKEND) seaudit-report.o $(SEAUDIT_LIBS) 
 	$(CC) $(INCLUDE) $(LINKFLAGS) -o $@ $(SEAUDIT_REPORT_BACKEND) seaudit-report.o $(SEAUDIT_LIBS) $(LIBXML_LIBS) $(LIBS) 
 
+libapol:
+	$(MAKE) -C .. libapol
+
+libseaudit: 
+	$(MAKE) -C .. libseaudit
+
 ../libseaudit/libseaudit.a:
-	cd ../libseaudit; $(MAKE) libseaudit
+	$(MAKE) -C ../libseaudit libseaudit
 
 ../libseaudit/libseaudit.so.$(shell cat ../libseaudit/VERSION):
-	cd ../libseaudit; $(MAKE) libseauditso
+	$(MAKE) -C ../libseaudit libseauditso
 
 ../libapol/libapol.a: 
-	cd ../libapol; $(MAKE) libapol
+	$(MAKE) -C ../libapol libapol
 
 ../libapol/libapol.so.$(shell cat ../libapol/VERSION): 
-	cd ../libapol; $(MAKE) libapolso
+	$(MAKE) -C ../libapol libapolso
 
 %.o:  %.c 
 	$(CC) $(CFLAGS) $(GTK_CFLAGS) $(LIBXML_FLAGS) $(INCLUDE) -c $<
@@ -71,4 +77,22 @@ clean:
 	rm -f *.o seaudit seaudit-report *~ core* *.bak *.gladep
 
 bare: clean
+
+.PHONY: clean bare libapol libseaudit
+
+# include objects here for header dependencies
+auditlogmodel.o seaudit.o: auditlogmodel.h
+multifilter_window.o: multifilter_window.h
+report.o seaudit_report.o: report.h
+query_window.o auditlogmodel.o filter_window.o seaudit_window.o: seaudit.h
+multifilter_window.o preferences.o seaudit.o seaudit_callback.o: seaudit.h
+report_window.o filtered_view.o multifilter_window.o: filtered_view.h
+preferences.o seaudit.o: preferences.h
+report_window.o: report_window.h
+seaudit_window.o: seaudit_window.h
+filtered_view.o filter_window.o multifilter_window.o seaudit.o: filter_window.h
+query_window.o seaudit.o seaudit_window.o: query_window.h
+auditlogmodel.o filter_window.o query_window.o seaudit_callback.o: seaudit_callback.h
+query_window.o filtered_view.o filter_window.o multifilter_window.o: utilgui.h
+preferences.o report_window.o seaudit.o seaudit_window.o utilgui.o: utilgui.h
 

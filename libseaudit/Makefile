@@ -43,3 +43,15 @@ clean:
 
 bare: clean
 	rm -f libseaudit.a $(LIBSO)
+
+.PHONY: bare clean
+
+# include objects here for header dependencies
+auditlog.o filter_criteria.o: auditlog.h
+filter_criteria.o: filter_criteria.h
+multifilter.o: multifilter.h
+sort.o: sort.h
+auditlog_view.o: auditlog_view.h
+auditlog.o filters.o: filters.h
+parse.o: parse.h
+
