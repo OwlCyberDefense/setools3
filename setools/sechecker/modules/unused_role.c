@@ -8,7 +8,7 @@
 
 #include "sechecker.h"
 #include "policy.h"
-#include "unused_role.h"
+#include "roles_not_in_allow.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -20,11 +20,11 @@ static sechk_lib_t *library;
 /* This string is the name of the module and should match the stem
  * of the file name; it should also match the prefix of all functions
  * defined in this module and the private data storage structure */
-static const char *const mod_name = "unused_role";
+static const char *const mod_name = "roles_not_in_allow";
 
 /* The register function registers all of a module's functions
  * with the library. */
-int unused_role_register(sechk_lib_t *lib)
+int roles_not_in_allow_register(sechk_lib_t *lib)
 {
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
@@ -56,7 +56,7 @@ int unused_role_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &unused_role_init;
+	fn_struct->fn = &roles_not_in_allow_init;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -70,7 +70,7 @@ int unused_role_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &unused_role_run;
+	fn_struct->fn = &roles_not_in_allow_run;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -84,7 +84,7 @@ int unused_role_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &unused_role_free;
+	fn_struct->fn = &roles_not_in_allow_free;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -98,7 +98,7 @@ int unused_role_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &unused_role_print_output;
+	fn_struct->fn = &roles_not_in_allow_print_output;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -112,7 +112,7 @@ int unused_role_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &unused_role_get_result;
+	fn_struct->fn = &roles_not_in_allow_get_result;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -121,12 +121,12 @@ int unused_role_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->name = strdup("get_unused_roles_list");
+	fn_struct->name = strdup("get_list");
 	if (!fn_struct->name) {
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &unused_role_get_unused_roles_list;
+	fn_struct->fn = &roles_not_in_allow_get_list;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -138,10 +138,10 @@ int unused_role_register(sechk_lib_t *lib)
  * file. It also checks that the requirements and dependencies are met.
  * This function also defines the module header, which provides a brief
  * explanation of the check performed by the module. */
-int unused_role_init(sechk_module_t *mod, policy_t *policy)
+int roles_not_in_allow_init(sechk_module_t *mod, policy_t *policy)
 {
 	sechk_name_value_t *opt = NULL;
-	unused_role_data_t *datum = NULL;
+	roles_not_in_allow_data_t *datum = NULL;
 	bool_t test = FALSE;
 
 	if (!mod || !policy) {
@@ -153,14 +153,12 @@ int unused_role_init(sechk_module_t *mod, policy_t *policy)
 		return -1;
 	}
 
-	datum = unused_role_data_new();
+	datum = roles_not_in_allow_data_new();
 	if (!datum) {
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
 	mod->data = datum;
-
-	mod->header = strdup("Finds roles defined but not used in role allow rules in a policy.\nThis module also reports role_transition rules found for these roles.");
 
 	opt = mod->requirements;
 	while (opt) {
@@ -193,9 +191,9 @@ int unused_role_init(sechk_module_t *mod, policy_t *policy)
 /* The run function performs the check. This function runs only once
  * even if called multiple times. This function allocates the result 
  * structure and fills in all relavant item and proof data. */
-int unused_role_run(sechk_module_t *mod, policy_t *policy)
+int roles_not_in_allow_run(sechk_module_t *mod, policy_t *policy)
 {
-	unused_role_data_t *datum;
+	roles_not_in_allow_data_t *datum;
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
@@ -218,7 +216,7 @@ int unused_role_run(sechk_module_t *mod, policy_t *policy)
 	if (mod->result)
 		return 0;
 
-	datum = (unused_role_data_t*)mod->data;
+	datum = (roles_not_in_allow_data_t*)mod->data;
 	res = sechk_result_new();
 	if (!res) {
 		fprintf(stderr, "Error: out of memory\n");
@@ -227,7 +225,7 @@ int unused_role_run(sechk_module_t *mod, policy_t *policy)
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
 		fprintf(stderr, "Error: out of memory\n");
-		goto unused_role_run_fail;
+		goto roles_not_in_allow_run_fail;
 	}
 	res->item_type = POL_LIST_ROLES;
 
@@ -261,7 +259,7 @@ int unused_role_run(sechk_module_t *mod, policy_t *policy)
 				buff = (char*)calloc(buff_sz, sizeof(char));
 				if (!buff) {
 					fprintf(stderr, "Error: out of memory\n");
-					goto unused_role_run_fail;
+					goto roles_not_in_allow_run_fail;
 				}
  				if (!is_binary_policy(policy))
 					sprintf(buff, "[%lu] ", policy->role_trans[j].lineno);
@@ -287,7 +285,7 @@ int unused_role_run(sechk_module_t *mod, policy_t *policy)
 				proof = sechk_proof_new();
 				if (!proof) {
 					fprintf(stderr, "Error: out of memory\n");
-					goto unused_role_run_fail;
+					goto roles_not_in_allow_run_fail;
 				}
 				proof->idx = j;
 				proof->type = POL_LIST_ROLE_TRANS;
@@ -297,7 +295,7 @@ int unused_role_run(sechk_module_t *mod, policy_t *policy)
 					item = sechk_item_new();
 					if (!item) {
 						fprintf(stderr, "Error: out of memory\n");
-						goto unused_role_run_fail;
+						goto roles_not_in_allow_run_fail;
 					}
 					item->item_id = i;
 				}
@@ -313,7 +311,7 @@ int unused_role_run(sechk_module_t *mod, policy_t *policy)
 			proof = sechk_proof_new();
 			if (!proof) {
 				fprintf(stderr, "Error: out of memory\n");
-				goto unused_role_run_fail;
+				goto roles_not_in_allow_run_fail;
 			}
 			proof->idx = -1;
 			proof->type = -1;
@@ -323,7 +321,7 @@ int unused_role_run(sechk_module_t *mod, policy_t *policy)
 				item = sechk_item_new();
 				if (!item) {
 					fprintf(stderr, "Error: out of memory\n");
-					goto unused_role_run_fail;
+					goto roles_not_in_allow_run_fail;
 				}
 				item->item_id = i;
 				item->test_result++;
@@ -343,7 +341,7 @@ int unused_role_run(sechk_module_t *mod, policy_t *policy)
 
 	return 0;
 
-unused_role_run_fail:
+roles_not_in_allow_run_fail:
 	free(buff);
 	sechk_proof_free(proof);
 	sechk_item_free(item);
@@ -352,9 +350,9 @@ unused_role_run_fail:
 }
 
 /* The free function frees the private data of a module */
-void unused_role_free(sechk_module_t *mod)
+void roles_not_in_allow_free(sechk_module_t *mod)
 {
-	unused_role_data_t *datum;
+	roles_not_in_allow_data_t *datum;
 
 	if (!mod) {
 		fprintf(stderr, "Error: invalid parameters\n");
@@ -365,7 +363,7 @@ void unused_role_free(sechk_module_t *mod)
 		return;
 	}
 
-	datum = (unused_role_data_t*)mod->data;
+	datum = (roles_not_in_allow_data_t*)mod->data;
 
 	free(mod->data);
 	mod->data = NULL;
@@ -381,9 +379,9 @@ void unused_role_free(sechk_module_t *mod)
  * TODO: fill in the indicated information in the report fields
  * as indicated below. Some alteration may be necessary for
  * checks that perform different analyses */
-int unused_role_print_output(sechk_module_t *mod, policy_t *policy) 
+int roles_not_in_allow_print_output(sechk_module_t *mod, policy_t *policy) 
 {
-	unused_role_data_t *datum = NULL;
+	roles_not_in_allow_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
@@ -397,17 +395,19 @@ int unused_role_print_output(sechk_module_t *mod, policy_t *policy)
 		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
 		return -1;
 	}
-	if (!mod->result) {
+
+	datum = (roles_not_in_allow_data_t*)mod->data;
+	outformat = mod->outputformat;
+
+	if (!mod->result && (outformat & ~(SECHK_OUT_HEADER))) {
 		fprintf(stderr, "Error: module has not been run\n");
 		return -1;
 	}
 
-	datum = (unused_role_data_t*)mod->data;
-	outformat = mod->outputformat;
 	if (!outformat)
 		return 0; /* not an error - no output is requested */
 
-	printf("Module: Unused Role\n");
+	printf("Module: %s\n", mod_name);
 	/* print the header */
 	if (outformat & SECHK_OUT_HEADER) {
 		printf("%s\n\n", mod->header);
@@ -450,7 +450,7 @@ int unused_role_print_output(sechk_module_t *mod, policy_t *policy)
 
 /* The get_result function returns a pointer to the results
  * structure for this check to be used in another check. */
-sechk_result_t *unused_role_get_result(sechk_module_t *mod) 
+sechk_result_t *roles_not_in_allow_get_result(sechk_module_t *mod) 
 {
 
 	if (!mod) {
@@ -465,19 +465,19 @@ sechk_result_t *unused_role_get_result(sechk_module_t *mod)
 	return mod->result;
 }
 
-/* The unused_role_data_new function allocates and returns an
+/* The roles_not_in_allow_data_new function allocates and returns an
  * initialized private data storage structure for this
  * module. */
-unused_role_data_t *unused_role_data_new(void)
+roles_not_in_allow_data_t *roles_not_in_allow_data_new(void)
 {
-	unused_role_data_t *datum = NULL;
+	roles_not_in_allow_data_t *datum = NULL;
 
-	datum = (unused_role_data_t*)calloc(1,sizeof(unused_role_data_t));
+	datum = (roles_not_in_allow_data_t*)calloc(1,sizeof(roles_not_in_allow_data_t));
 
 	return datum;
 }
 
-int unused_role_get_unused_roles_list(sechk_module_t *mod, int **array, int *size)
+int roles_not_in_allow_get_list(sechk_module_t *mod, int **array, int *size)
 {
 	int i;
 	sechk_item_t *item = NULL;

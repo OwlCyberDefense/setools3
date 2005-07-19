@@ -8,7 +8,7 @@
 
 #include "sechecker.h"
 #include "policy.h"
-#include "empty_user.h"
+#include "users_wo_roles.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -20,11 +20,11 @@ static sechk_lib_t *library;
 /* This string is the name of the module and should match the stem
  * of the file name; it should also match the prefix of all functions
  * defined in this module and the private data storage structure */
-static const char *const mod_name = "empty_user";
+static const char *const mod_name = "users_wo_roles";
 
 /* The register function registers all of a module's functions
  * with the library. */
-int empty_user_register(sechk_lib_t *lib)
+int users_wo_roles_register(sechk_lib_t *lib)
 {
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
@@ -56,7 +56,7 @@ int empty_user_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &empty_user_init;
+	fn_struct->fn = &users_wo_roles_init;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -70,7 +70,7 @@ int empty_user_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &empty_user_run;
+	fn_struct->fn = &users_wo_roles_run;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -84,7 +84,7 @@ int empty_user_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &empty_user_free;
+	fn_struct->fn = &users_wo_roles_free;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -98,7 +98,7 @@ int empty_user_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &empty_user_print_output;
+	fn_struct->fn = &users_wo_roles_print_output;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -112,7 +112,7 @@ int empty_user_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &empty_user_get_result;
+	fn_struct->fn = &users_wo_roles_get_result;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -124,10 +124,10 @@ int empty_user_register(sechk_lib_t *lib)
  * file. It also checks that the requirements and dependencies are met.
  * This function also defines the module header, which provides a brief
  * explanation of the check performed by the module. */
-int empty_user_init(sechk_module_t *mod, policy_t *policy)
+int users_wo_roles_init(sechk_module_t *mod, policy_t *policy)
 {
 	sechk_name_value_t *opt = NULL;
-	empty_user_data_t *datum = NULL;
+	users_wo_roles_data_t *datum = NULL;
 	bool_t test = FALSE;
 
 	if (!mod || !policy) {
@@ -139,14 +139,12 @@ int empty_user_init(sechk_module_t *mod, policy_t *policy)
 		return -1;
 	}
 
-	datum = empty_user_data_new();
+	datum = users_wo_roles_data_new();
 	if (!datum) {
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
 	mod->data = datum;
-
-	mod->header = strdup("Finds empty users in the policy.\nA user is considered empty if no roles are assigned to that user.");
 
 	opt = mod->requirements;
 	while (opt) {
@@ -181,9 +179,9 @@ int empty_user_init(sechk_module_t *mod, policy_t *policy)
  * as instructed. This function allocates the result structure and fills
  * in all relavant item and proof data.
  * TODO: add check logic */
-int empty_user_run(sechk_module_t *mod, policy_t *policy)
+int users_wo_roles_run(sechk_module_t *mod, policy_t *policy)
 {
-	empty_user_data_t *datum;
+	users_wo_roles_data_t *datum;
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
@@ -202,7 +200,7 @@ int empty_user_run(sechk_module_t *mod, policy_t *policy)
 	if (mod->result)
 		return 0;
 
-	datum = (empty_user_data_t*)mod->data;
+	datum = (users_wo_roles_data_t*)mod->data;
 	res = sechk_result_new();
 	if (!res) {
 		fprintf(stderr, "Error: out of memory\n");
@@ -211,7 +209,7 @@ int empty_user_run(sechk_module_t *mod, policy_t *policy)
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
 		fprintf(stderr, "Error: out of memory\n");
-		goto empty_user_run_fail;
+		goto users_wo_roles_run_fail;
 	}
 	res->item_type = POL_LIST_USERS;
 
@@ -222,14 +220,14 @@ int empty_user_run(sechk_module_t *mod, policy_t *policy)
 		retv = get_user_roles(i, &num_roles, &roles, policy);
 		if (retv) {
 			fprintf(stderr, "Error: out of memory\n");
-			goto empty_user_run_fail;
+			goto users_wo_roles_run_fail;
 		}
 		if (num_roles) 
 			continue;
 		proof = sechk_proof_new();
 		if (!proof) {
 			fprintf(stderr, "Error: out of memory\n");
-			goto empty_user_run_fail;
+			goto users_wo_roles_run_fail;
 		}
 		proof->idx = i;
 		proof->type = POL_LIST_USERS;
@@ -239,7 +237,7 @@ int empty_user_run(sechk_module_t *mod, policy_t *policy)
 		item = sechk_item_new();
 		if (!item) {
 			fprintf(stderr, "Error: out of memory\n");
-			goto empty_user_run_fail;
+			goto users_wo_roles_run_fail;
 		}
 		item->item_id = i;
 		item->test_result = 1;
@@ -254,7 +252,7 @@ int empty_user_run(sechk_module_t *mod, policy_t *policy)
 
 	return 0;
 
-empty_user_run_fail:
+users_wo_roles_run_fail:
 	free(roles);
 	sechk_proof_free(proof);
 	sechk_item_free(item);
@@ -263,9 +261,9 @@ empty_user_run_fail:
 }
 
 /* The free function frees the private data of a module */
-void empty_user_free(sechk_module_t *mod)
+void users_wo_roles_free(sechk_module_t *mod)
 {
-	empty_user_data_t *datum;
+	users_wo_roles_data_t *datum;
 
 	if (!mod) {
 		fprintf(stderr, "Error: invalid parameters\n");
@@ -276,7 +274,7 @@ void empty_user_free(sechk_module_t *mod)
 		return;
 	}
 
-	datum = (empty_user_data_t*)mod->data;
+	datum = (users_wo_roles_data_t*)mod->data;
 
 	free(mod->data);
 	mod->data = NULL;
@@ -284,9 +282,9 @@ void empty_user_free(sechk_module_t *mod)
 
 /* The print output function generates the text printed in the
  * report and prints it to stdout. */
-int empty_user_print_output(sechk_module_t *mod, policy_t *policy) 
+int users_wo_roles_print_output(sechk_module_t *mod, policy_t *policy) 
 {
-	empty_user_data_t *datum = NULL;
+	users_wo_roles_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
@@ -300,17 +298,19 @@ int empty_user_print_output(sechk_module_t *mod, policy_t *policy)
 		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
 		return -1;
 	}
-	if (!mod->result) {
+
+	datum = (users_wo_roles_data_t*)mod->data;
+	outformat = mod->outputformat;
+
+	if (!outformat)
+		return 0; /* not an error - no output is requested */
+
+	if (!mod->result && (outformat & ~(SECHK_OUT_HEADER))) {
 		fprintf(stderr, "Error: module has not been run\n");
 		return -1;
 	}
 
-	datum = (empty_user_data_t*)mod->data;
-	outformat = mod->outputformat;
-	if (!outformat)
-		return 0; /* not an error - no output is requested */
-
-	printf("Module: Empty User\n");
+	printf("Module: %s\n", mod_name);
 	/* print the header */
 	if (outformat & SECHK_OUT_HEADER) {
 		printf("%s\n\n", mod->header);
@@ -354,7 +354,7 @@ int empty_user_print_output(sechk_module_t *mod, policy_t *policy)
 
 /* The get_result function returns a pointer to the results
  * structure for this check to be used in another check. */
-sechk_result_t *empty_user_get_result(sechk_module_t *mod) 
+sechk_result_t *users_wo_roles_get_result(sechk_module_t *mod) 
 {
 
 	if (!mod) {
@@ -369,14 +369,14 @@ sechk_result_t *empty_user_get_result(sechk_module_t *mod)
 	return mod->result;
 }
 
-/* The empty_user_data_new function allocates and returns an
+/* The users_wo_roles_data_new function allocates and returns an
  * initialized private data storage structure for this
  * module. */
-empty_user_data_t *empty_user_data_new(void)
+users_wo_roles_data_t *users_wo_roles_data_new(void)
 {
-	empty_user_data_t *datum = NULL;
+	users_wo_roles_data_t *datum = NULL;
 
-	datum = (empty_user_data_t*)calloc(1,sizeof(empty_user_data_t));
+	datum = (users_wo_roles_data_t*)calloc(1,sizeof(users_wo_roles_data_t));
 
 	return datum;
 }

@@ -8,7 +8,7 @@
 
 #include "sechecker.h"
 #include "policy.h"
-#include "file_type.h"
+#include "find_file_types.h"
 #include "render.h"
 #include "file_contexts.h"
 
@@ -18,9 +18,9 @@
 #include <semantic/avsemantics.h>
 
 static sechk_lib_t *library;
-static const char *const mod_name = "file_type";
+static const char *const mod_name = "find_file_types";
 
-int file_type_register(sechk_lib_t *lib) 
+int find_file_types_register(sechk_lib_t *lib) 
 {
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
@@ -49,7 +49,7 @@ int file_type_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &file_type_init;
+	fn_struct->fn = &find_file_types_init;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -63,7 +63,7 @@ int file_type_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &file_type_run;
+	fn_struct->fn = &find_file_types_run;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -77,7 +77,7 @@ int file_type_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &file_type_data_free;
+	fn_struct->fn = &find_file_types_data_free;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -91,7 +91,7 @@ int file_type_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &file_type_print_output;
+	fn_struct->fn = &find_file_types_print_output;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -105,7 +105,7 @@ int file_type_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &file_type_get_result;
+	fn_struct->fn = &find_file_types_get_result;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -114,12 +114,12 @@ int file_type_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->name = strdup("get_file_type_list");
+	fn_struct->name = strdup("get_list");
 	if (!fn_struct->name) {
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &file_type_get_file_type_list;
+	fn_struct->fn = &find_file_types_get_list;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -127,10 +127,10 @@ int file_type_register(sechk_lib_t *lib)
 	return 0;
 }
 
-int file_type_init(sechk_module_t *mod, policy_t *policy) 
+int find_file_types_init(sechk_module_t *mod, policy_t *policy) 
 {
 	sechk_name_value_t *opt = NULL;
-	file_type_data_t *datum = NULL;
+	find_file_types_data_t *datum = NULL;
 	int attr = -1, retv;
 	bool_t test = FALSE;
 
@@ -143,7 +143,7 @@ int file_type_init(sechk_module_t *mod, policy_t *policy)
 		return -1;
 	}
 
-	datum = file_type_data_new();
+	datum = find_file_types_data_new();
 	if (!datum) {
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
@@ -152,7 +152,6 @@ int file_type_init(sechk_module_t *mod, policy_t *policy)
 
 	if (!mod->outputformat)
 		mod->outputformat = library->outputformat;
-	mod->header = strdup("Finds all types in the policy treated as a file type\nA type is considered a file type if any of the following is true:\n   It has an attribute associated with file types\n   It is the source of a rule to allow filesystem associate\n   It is the default type of a type transition rule\n      for an object class other than process\n   It is specified in a context in the file_contexts file");
 
 	opt = mod->requirements;
 	while (opt) {
@@ -196,9 +195,9 @@ int file_type_init(sechk_module_t *mod, policy_t *policy)
 	return 0;
 }
 
-int file_type_run(sechk_module_t *mod, policy_t *policy) 
+int find_file_types_run(sechk_module_t *mod, policy_t *policy) 
 {
-	file_type_data_t *datum;
+	find_file_types_data_t *datum;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
 	sechk_result_t *res = NULL;
@@ -230,7 +229,7 @@ int file_type_run(sechk_module_t *mod, policy_t *policy)
 	process_obj_class_idx = get_obj_class_idx("process", policy);
 	associate_perm_idx = get_perm_idx("associate", policy);
 
-	datum = (file_type_data_t*)mod->data;
+	datum = (find_file_types_data_t*)mod->data;
 	res = sechk_result_new();
 	if (!res) {
 		fprintf(stderr, "Error: out of memory\n");
@@ -240,14 +239,14 @@ int file_type_run(sechk_module_t *mod, policy_t *policy)
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
 		fprintf(stderr, "Error: out of memory\n");
-		goto file_type_run_fail;
+		goto find_file_types_run_fail;
 	}
 
 	if (!avh_hash_table_present(policy->avh)) {
 		retv = avh_build_hashtab(policy);
 		if (retv) {
 			fprintf(stderr, "Error: could not build hash table\n");
-			goto file_type_run_fail;
+			goto find_file_types_run_fail;
 		}
 	}
 
@@ -270,7 +269,7 @@ int file_type_run(sechk_module_t *mod, policy_t *policy)
 			retv = get_type_attribs(i, &num_attribs, &attribs, policy);
 			if (retv) {
 				fprintf(stderr, "Error: could not get attributes for %s\n", policy->types[i].name);
-				goto file_type_run_fail;
+				goto find_file_types_run_fail;
 			}
 			for (j = 0; j < datum->num_file_type_attribs; j++) {
 				buff = NULL;
@@ -278,7 +277,7 @@ int file_type_run(sechk_module_t *mod, policy_t *policy)
 					proof = sechk_proof_new();
 					if (!proof) {
 						fprintf(stderr, "Error: out of memory\n");
-						goto file_type_run_fail;
+						goto find_file_types_run_fail;
 					}
 					proof->idx = datum->file_type_attribs[j];
 					proof->type = POL_LIST_ATTRIB;
@@ -287,19 +286,19 @@ int file_type_run(sechk_module_t *mod, policy_t *policy)
 					buff = (char*)calloc(buff_sz, sizeof(char));
 					if (!buff) {
 						fprintf(stderr, "Error: out of memory\n");
-						goto file_type_run_fail;
+						goto find_file_types_run_fail;
 					}
 					proof->text = buff;
 					if (!proof->text) {
 						fprintf(stderr, "Error: out of memory\n");
-						goto file_type_run_fail;
+						goto find_file_types_run_fail;
 					}
 					snprintf(proof->text, buff_sz, "type %s has attribute %s", policy->types[i].name, policy->attribs[datum->file_type_attribs[j]].name);
 					if (!item) {
 						item = sechk_item_new();
 						if (!item) {
 							fprintf(stderr, "Error: out of memory\n");
-							goto file_type_run_fail;
+							goto find_file_types_run_fail;
 						}
 						item->item_id = i;
 						item->test_result = 1;
@@ -327,7 +326,7 @@ int file_type_run(sechk_module_t *mod, policy_t *policy)
 						proof = sechk_proof_new();
 						if (!proof) {
 							fprintf(stderr, "Error: out of memory\n");
-							goto file_type_run_fail;
+							goto find_file_types_run_fail;
 						}
 						proof->idx = hash_rule->rule;
 						proof->type = POL_LIST_AV_ACC;
@@ -337,7 +336,7 @@ int file_type_run(sechk_module_t *mod, policy_t *policy)
 							item = sechk_item_new();
 							if (!item) {
 								fprintf(stderr, "Error: out of memory\n");
-								goto file_type_run_fail;
+								goto find_file_types_run_fail;
 							}
 							item->item_id = i;
 							item->test_result = 1;
@@ -355,12 +354,12 @@ int file_type_run(sechk_module_t *mod, policy_t *policy)
 				buff = re_render_tt_rule(!is_binary_policy(policy), j, policy);
 				if (!buff) {
 					fprintf(stderr, "Error: out of memory\n");
-					goto file_type_run_fail;
+					goto find_file_types_run_fail;
 				}
 				proof = sechk_proof_new();
 				if (!proof) {
 					fprintf(stderr, "Error: out of memory\n");
-					goto file_type_run_fail;
+					goto find_file_types_run_fail;
 				}
 				proof->idx = j;
 				proof->type = POL_LIST_TE_TRANS;
@@ -370,7 +369,7 @@ int file_type_run(sechk_module_t *mod, policy_t *policy)
 					item = sechk_item_new();
 					if (!item) {
 						fprintf(stderr, "Error: out of memory\n");
-						goto file_type_run_fail;
+						goto find_file_types_run_fail;
 					}
 					item->item_id = i;
 					item->test_result = 1;
@@ -405,7 +404,7 @@ int file_type_run(sechk_module_t *mod, policy_t *policy)
 					case FILETYPE_NONE: /* none */
 					default:
 						fprintf(stderr, "Error: error processing file context entries\n");
-						goto file_type_run_fail;
+						goto find_file_types_run_fail;
 						break;
 					}
 					if (library->fc_entries[j].context) {
@@ -445,7 +444,7 @@ int file_type_run(sechk_module_t *mod, policy_t *policy)
 					case FILETYPE_NONE: /* none */
 					default:
 						fprintf(stderr, "Error: error processing file context entries\n");
-						goto file_type_run_fail;
+						goto find_file_types_run_fail;
 						break;
 					}
 					if (library->fc_entries[j].context) {
@@ -460,7 +459,7 @@ int file_type_run(sechk_module_t *mod, policy_t *policy)
 					proof = sechk_proof_new();
 					if (!proof) {
 						fprintf(stderr, "Error: out of memory\n");
-						goto file_type_run_fail;
+						goto find_file_types_run_fail;
 					}
 					proof->idx = j;
 					proof->type = POL_LIST_FCENT;
@@ -470,7 +469,7 @@ int file_type_run(sechk_module_t *mod, policy_t *policy)
 						item = sechk_item_new();
 						if (!item) {
 							fprintf(stderr, "Error: out of memory\n");
-							goto file_type_run_fail;
+							goto find_file_types_run_fail;
 						}
 						item->item_id = i;
 						item->test_result = 1;
@@ -495,7 +494,7 @@ int file_type_run(sechk_module_t *mod, policy_t *policy)
 
 	return 0;
 
-file_type_run_fail:
+find_file_types_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
 	sechk_result_free(res);
@@ -503,9 +502,9 @@ file_type_run_fail:
 	return -1;
 }
 
-void file_type_data_free(sechk_module_t *mod) 
+void find_file_types_data_free(sechk_module_t *mod) 
 {
-	file_type_data_t *datum;
+	find_file_types_data_t *datum;
 
 	if (!mod) {
 		fprintf(stderr, "Error: invalid parameters\n");
@@ -516,7 +515,7 @@ void file_type_data_free(sechk_module_t *mod)
 		return;
 	}
 
-	datum = (file_type_data_t*)mod->data;
+	datum = (find_file_types_data_t*)mod->data;
 	if (datum) {
 		free(datum->file_type_attribs);
 	}
@@ -524,9 +523,9 @@ void file_type_data_free(sechk_module_t *mod)
 	mod->data = NULL;
 }
 
-int file_type_print_output(sechk_module_t *mod, policy_t *policy) 
+int find_file_types_print_output(sechk_module_t *mod, policy_t *policy) 
 {
-	file_type_data_t *datum = NULL;
+	find_file_types_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
@@ -541,17 +540,19 @@ int file_type_print_output(sechk_module_t *mod, policy_t *policy)
 		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
 		return -1;
 	}
-	if (!mod->result) {
+
+	datum = (find_file_types_data_t*)mod->data;
+	outformat = mod->outputformat;
+
+	if (!mod->result && (outformat & ~(SECHK_OUT_HEADER))) {
 		fprintf(stderr, "Error: module has not been run\n");
 		return -1;
 	}
 
-	datum = (file_type_data_t*)mod->data;
-	outformat = mod->outputformat;
 	if (!outformat)
 		return 0; /* not an error - no output is requested */
 
-	printf("Module: File Type\n");
+	printf("Module: %s\n", mod_name);
 	if (outformat & SECHK_OUT_HEADER) {
 		printf("%s\n\n", mod->header);
 	}
@@ -582,7 +583,7 @@ int file_type_print_output(sechk_module_t *mod, policy_t *policy)
 	return 0;
 }
 
-sechk_result_t *file_type_get_result(sechk_module_t *mod) 
+sechk_result_t *find_file_types_get_result(sechk_module_t *mod) 
 {
 
 	if (!mod) {
@@ -597,16 +598,16 @@ sechk_result_t *file_type_get_result(sechk_module_t *mod)
 	return mod->result;
 }
 
-file_type_data_t *file_type_data_new(void) 
+find_file_types_data_t *find_file_types_data_new(void) 
 {
-	file_type_data_t *datum = NULL;
+	find_file_types_data_t *datum = NULL;
 
-	datum = (file_type_data_t*)calloc(1,sizeof(file_type_data_t));
+	datum = (find_file_types_data_t*)calloc(1,sizeof(find_file_types_data_t));
 
 	return datum;
 }
 
-int file_type_get_file_type_list(sechk_module_t *mod, int **array, int *size) 
+int find_file_types_get_list(sechk_module_t *mod, int **array, int *size) 
 {
 	int i;
 	sechk_item_t *item = NULL;

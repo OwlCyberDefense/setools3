@@ -145,7 +145,7 @@ int main(int argc, char **argv)
 	if (!module_library)
 		goto exit_err;
 
-/* XXX testing XXX */module_library->module_selection[2] = TRUE;
+/* XXX testing XXX */for(i=0;i<module_library->num_modules;i++)module_library->module_selection[i] = TRUE;
 
 	/* register modules */
 	fprintf(stderr, "registering modules...");
@@ -156,8 +156,16 @@ int main(int argc, char **argv)
 	/* just show the available modules and exit */
 	if (list_stop) {
 		printf("\nAvailable Modules:\n");
-		for (i = 0; i < module_library->num_modules; i++) {
-			printf("   %s\n", module_library->modules[i].name);
+		retv = sechk_lib_set_outputformat(SECHK_OUT_HEADER, module_library);
+		if (retv) {
+			goto exit_err;
+		}
+		for(i = 0; i < module_library->num_modules; i++) {
+			module_library->module_selection[i] = TRUE;
+		}
+		retv = sechk_lib_print_modules_output(module_library);
+		if (retv) {
+			goto exit_err;
 		}
 		goto exit;
 	}
