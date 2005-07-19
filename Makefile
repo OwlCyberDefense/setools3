@@ -1,10 +1,45 @@
-# SE Tools Main makefile
+#SETools main Makefile
 
-TOPDIR	 = $(shell pwd)
+TOPDIR 			= $(shell pwd)
+MAKEFILE 		= Makefile
 
-MAKEFILE = Makefile
-MAKE 	 ?= make
+MAKE 			?= make
+CC 			?= gcc
+YACC			= bison -y
+LEX			= flex -olex.yy.c
+LIBS			= -lfl -lm
 
+INCLUDE_DIR		= $(DESTDIR)/usr/include
+SHARED_LIB_INSTALL_DIR 	= $(DESTDIR)/usr/lib
+STATIC_LIB_INSTALL_DIR 	= $(SHARED_LIB_INSTALL_DIR)
+SETOOLS_INCLUDE 	= $(INCLUDE_DIR)/setools
+TCLVER			= $(shell env tclsh tcl_vars)
+TCL_LIBS		= -ltk$(TCLVER) -ltcl$(TCLVER) -ldl $(LIBS)
+
+# File location defaults; used in various places in code
+# Change these if you want different defaults
+SELINUX_DIR 		= $(DESTDIR)/selinux
+SELINUX_POLICY_DIR 	= $(DESTDIR)/etc/security/selinux
+POLICY_INSTALL_DIR 	= $(DESTDIR)$(SELINUX_POLICY_DIR)
+POLICY_SRC_DIR		= $(DESTDIR)$(SELINUX_POLICY_DIR)/src/policy
+POLICY_SRC_FILE 	= $(POLICY_SRC_DIR)/policy.conf
+DEFAULT_LOG_FILE 	= /var/log/messages
+
+# Install directories
+# Binaries go here
+BINDIR			= $(DESTDIR)/usr/bin
+# The code uses the specified path below. If you change this, DO NOT add 
+# a trailing path seperator ("/"). For example, use "/usr/share/setools" 
+# instead of "/usr/share/setools/". This probably needs to become more 
+# robust in the future.
+#
+INSTALL_LIBDIR		= $(DESTDIR)/usr/share/setools
+# all apps that have a te/fc file need to be listed here
+POLICYINSTALLDIRS 	= 
+# Help files here
+INSTALL_HELPDIR = $(INSTALL_LIBDIR)
+
+# Compile options
 # If debug is zero, an optimized version is created
 DEBUG			= 1
 # If GPROF is not zero, compile and link with gprof profiling data
@@ -22,63 +57,19 @@ DYNAMIC 		= 0
 # Useful to create a version of apol that runs on non-selinux machines. 
 # Set this to 0 for non-selinux machines.
 USE_LIBSELINUX 		= 1
-
-LIBS		= -lfl -lm
-TCLVER		= $(shell env tclsh tcl_vars)
-#TCLVER		= 8.3
-#TCL_INCLUDE	= -I/usr/include
-#TCL_LIBINC	= -L/usr/lib
-TCL_LIBS	= -ltk$(TCLVER) -ltcl$(TCLVER) -ldl $(LIBS)
-INCLUDE_DIR	= $(DESTDIR)/usr/include
-
-LINKFLAGS	=
-LDFLAGS         =
-CC		?= gcc 
-YACC		= bison -y
-LEX		= flex -olex.yy.c
-
-SHARED_LIB_INSTALL_DIR = $(DESTDIR)/usr/lib
-STATIC_LIB_INSTALL_DIR = $(SHARED_LIB_INSTALL_DIR)
-SETOOLS_INCLUDE = $(INCLUDE_DIR)/setools
-
-# File location defaults; used in various places in code
-# Change these if you want different defaults
-SELINUX_DIR = $(DESTDIR)/selinux
-SELINUX_POLICY_DIR = $(DESTDIR)/etc/security/selinux
-POLICY_INSTALL_DIR = $(DESTDIR)$(SELINUX_POLICY_DIR)
-POLICY_SRC_DIR	= $(DESTDIR)$(SELINUX_POLICY_DIR)/src/policy
-POLICY_SRC_FILE = $(POLICY_SRC_DIR)/policy.conf
-DEFAULT_LOG_FILE = /var/log/messages
-
-# Compile options
 # -DAPOL_PERFORM_TEST	
-##		simple performance measure tests (shouldn't normally use)
-##              set PERFORM_TEST above to 1 to use
+#	simple performance measure tests (shouldn't normally use)
+#	set PERFORM_TEST to 1 to use
+PERFORM_TEST 		= 0
 # -DCONFIG_SECURITY_SELINUX_MLS 
-#		compiles library to be compatible with MLS 
-##		in the policy (experimental, see Readme)
-CC_DEFINES	= -DCONFIG_SECURITY_SELINUX_MLS 
-
-# Install directories
-# Binaries go here
-BINDIR		= $(DESTDIR)/usr/bin
-
-# The code uses the specified path below. If you change this, DO NOT add 
-# a trailing path seperator ("/"). For example, use "/usr/share/setools" 
-# instead of "/usr/share/setools/". This probably needs to become more 
-# robust in the future.
-#
-INSTALL_LIBDIR	= $(DESTDIR)/usr/share/setools
-#
-# END NOTE
-
-# all apps that have a te/fc file need to be listed here
-POLICYINSTALLDIRS = 
+#	compiles library to be compatible with MLS 
+#	in the policy (experimental, see Readme)
+CC_DEFINES		= -DCONFIG_SECURITY_SELINUX_MLS 
 
 # You should not need to edit anything after this point.
 ifeq ($(USE_LIBSELINUX), 1)
-LIBSELINUX  = -lselinux
-LDFLAGS		+= $(LIBSELINUX)
+LIBSELINUX  		= -lselinux
+LDFLAGS			+= $(LIBSELINUX)
 USE_LIBSEFS 		= 1
 else
 LIBSELINUX = 
@@ -86,49 +77,215 @@ USE_LIBSEFS 		= 0
 endif
 
 ifeq ($(USE_LIBSELINUX), 1)
-CC_DEFINES += -DLIBSELINUX
+CC_DEFINES 		+= -DLIBSELINUX
 endif
 
 ifeq ($(USE_LIBSEFS), 1)
-CC_DEFINES += -DLIBSEFS
+CC_DEFINES 		+= -DLIBSEFS
 endif
 
 ifeq ($(PERFORM_TEST), 1)
-CC_DEFINES += -DAPOL_PERFORM_TEST
+CC_DEFINES 		+= -DAPOL_PERFORM_TEST
 endif
 
 ifeq ($(DEBUG), 0)
-CFLAGS		= -Wall -O2 -fPIC $(TCL_INCLUDE) $(CC_DEFINES)
+CFLAGS			= -Wall -O2 -fPIC $(CC_DEFINES)
 else
-CFLAGS		= -Wall -g $(TCL_INCLUDE) $(CC_DEFINES)
-#CFLAGS		= -Wall -ansi -pedantic -g $(TCL_INCLUDE) $(CC_DEFINES)
+CFLAGS			= -Wall -g $(CC_DEFINES)
+#CFLAGS			= -Wall -ansi -pedantic -g $(CC_DEFINES)
 endif
 
 ifneq ($(USEGPROF), 0)
-CFLAGS 		+= -pg
-LINKFLAGS 	+= -pg
+CFLAGS 			+= -pg
+LINKFLAGS 		+= -pg
 endif
 
-INSTALL_HELPDIR = $(INSTALL_LIBDIR)
+# Exports
+export CC YACC LEX LIBS MAKE CFLAGS TOPDIR LINKFLAGS LDFLAGS CC_DEFINES
+export DYNAMIC LIBSELINUX USE_LIBSEFS
+export INCLUDE_DIR SETOOLS_INCLUDE TCLVER TCL_LIBS
+export SHARED_LIB_INSTALL_DIR STATIC_LIB_INSTALL_DIR
+export SELINUX_DIR POLICY_INSTALL_DIR POLICY_SRC_DIR DEFAULT_LOG_FILE 
+export POLICY_SRC_DIR POLICY_SRC_FILE
+export BINDIR INSTALL_LIBDIR INSTALL_HELPDIR POLICYINSTALLDIR 
 
-# This should be imported from tools/Makefile (deprecated)
-SRC_POLICY_DIR = ../../
+# Top Level Targets
+all: all-libs all-nogui all-gui
 
-# exports
-export CFLAGS CC YACC LEX LINKFLAGS BINDIR INSTALL_LIBDIR INSTALL_HELPDIR LIBS TCL_LIBINC TCL_LIBS MAKE LDFLAGS
-export SELINUX_DIR POLICY_INSTALL_DIR POLICY_SRC_DIR SRC_POLICY_DIR POLICY_SRC_FILE DEFAULT_LOG_FILE
-export TOPDIR SHARED_LIB_INSTALL_DIR STATIC_LIB_INSTALL_DIR SETOOLS_INCLUDE DYNAMIC LIBSELINUX USE_LIBSEFS
+all-nogui: corelibs sediff sechecker secmds
 
-all:  all-libs apol awish seaudit secmds sediff sediffx sechecker
-
-all-nogui:  corelibs secmds sediff sechecker
-
-corelibs: libapol libseaudit libsefs
-
-guilibs: libapol-tcl
+all-gui: all-libs apol awish seaudit sediffx
 
 all-libs: corelibs guilibs
 
+corelibs: libapol libseaudit
+ifeq ($(USE_LIBSEFS), 1)
+corelibs: libsefs
+endif
+
+guilibs: libapol-tcl
+
+libapol-tcl apol: CFLAGS += $(TCL_INCLUDE)
+
+#Libraries
+libapol:
+	$(MAKE) -C libapol libapol libapolso
+
+libapol-tcl: 
+	$(MAKE) -C libapol libapol-tcl libapol-tclso
+
+libseaudit:
+	$(MAKE) -C libseaudit libseaudit libseauditso
+
+libsefs:
+	$(MAKE) -C libsefs libsefs libsefsso
+
+# Tools
+apol: libapol libapol-tcl
+	$(MAKE) -C apol apol
+
+awish: libapol libapol-tcl
+	$(MAKE) -C awish awish
+
+seaudit: libapol libseaudit
+	$(MAKE) -C seaudit all
+
+sediff: libapol
+	$(MAKE) -C sediff sediff
+
+sediffx: libapol
+	$(MAKE) -C sediff sediffx
+
+secmds: libapol
+	$(MAKE) -C secmds all
+
+sechecker: libapol
+	$(MAKE) -C sechecker sechecker
+
+# Some tools optionally use libsefs if available
+ifeq ($(USE_LIBSEFS), 1)
+apol awish sechecker secmds: libsefs
+endif
+
+docs:
+	$(MAKE) -C docs-src $@
+
+# Install Targets 
+install: all install-dirs \
+	install-dev install-apol install-awish \
+	install-secmds install-seaudit install-sediff \
+	install-docs install-sechecker
+
+install-nogui: install-dirs install-dev install-secmds \
+	install-sediff-nogui install-sechecker
+
+# Install directories
+install-dirs: $(BINDIR) $(SHARED_LIB_INSTALL_DIR) $(INSTALL_LIBDIR)
+
+$(BINDIR) $(SHARED_LIB_INSTALL_DIR) $(INSTALL_LIBDIR):
+	test -d $@ || install -m 755 -d $@
+
+# Install Libraries
+install-dev: install-libapol install-libseaudit
+ifeq ($(USE_LIBSEFS), 1)
+install-dev: install-libsefs
+endif
+
+# Individual Install Targets
+install-apol: $(BINDIR) $(INSTALL_LIBDIR) 
+	$(MAKE) -C apol install
+
+install-awish: $(BINDIR) 
+	$(MAKE) -C awish install
+
+install-secmds: $(BINDIR) $(INSTALL_LIBDIR) 
+	$(MAKE) -C secmds install
+
+install-seaudit: $(BINDIR) $(INSTALL_LIBDIR) 
+	$(MAKE) -C seaudit install
+
+install-sediff: $(BINDIR) $(INSTALL_LIBDIR) 
+	$(MAKE) -C sediff install
+
+install-sediff-nogui: $(BINDIR) $(INSTALL_LIBDIR) 
+	$(MAKE) -C sediff install-nogui
+
+install-sediffx: $(BINDIR) $(INSTALL_LIBDIR) 
+	$(MAKE) -C sediff install
+
+install-sechecker: $(BINDIR) $(INSTALL_LIBDIR) 
+	$(MAKE) -C sechecker install
+
+# Install the BWidgets package
+install-bwidget:
+	$(MAKE) -C packages install
+
+# Install LogWatch config files to plug-in seaudit-report to LogWatch
+install-logwatch-files:
+	$(MAKE) -C seaudit install-logwatch-service
+
+# Install Documentation
+install-docs: docs
+	$(MAKE) -C docs-src install
+
+# Install Libraries
+install-libapol: $(INSTALL_LIBDIR) $(SHARED_LIB_INSTALL_DIR) 
+	$(MAKE) -C libapol install
+
+install-libseaudit: $(INSTALL_LIBDIR) $(SHARED_LIB_INSTALL_DIR) 
+	$(MAKE) -C libseaudit install
+
+install-libsefs: $(INSTALL_LIBDIR) $(SHARED_LIB_INSTALL_DIR) 
+	$(MAKE) -C libsefs install
+
+# Install Policy 
+install-policy: $(POLICYINSTALLDIR) install-secmds-policy \
+		install-libapol-policy install-libseaudit-policy
+ifeq ($(USE_LIBSEFS), 1)
+install-policy: install-libsefs-policy
+endif
+
+install-secmds-policy: $(BINDIR)
+	$(MAKE) -C secmds install-policy
+
+install-libapol-policy: $(SHARED_LIB_INSTALL_DIR)
+	$(MAKE) -C libapol install-policy
+
+install-libseaudit-policy: $(SHARED_LIB_INSTALL_DIR)
+	$(MAKE) -C libseaudit install-policy
+
+install-libsefs-policy: $(SHARED_LIB_INSTALL_DIR)
+	$(MAKE) -C libsefs install-policy
+
+# Tests
+tests: test-apol test-seaudit test-regression
+
+test-apol: libapol
+	$(MAKE) -C libapol/test $@
+
+test-seaudit: libapol libseaudit
+	$(MAKE) -C libseaudit/test $@
+
+test-regression: libapol
+	$(MAKE) -C test all
+
+test-regression-run: libapol
+	$(MAKE) -C test all run
+
+ifeq (USE_LIBSEFS, 1)
+test-apol test-regression test-regression-run: libsefs
+endif
+
+test-clean:
+	$(MAKE) -C libapol/test clean
+	$(MAKE) -C libseaudit/test clean
+	$(MAKE) -C test clean
+
+test-bare:
+	$(MAKE) -C libapol/test bare
+	$(MAKE) -C libseaudit/test bare
+	$(MAKE) -C test bare
+# Help 
 help:
 	@echo "Make targets for setools: "
 	@echo "   install:           		build and install everything (selinux required)"
@@ -139,7 +296,7 @@ help:
 	@echo "   install-seaudit:   		build and install seaudit and seaudit-report (selinux not required)"
 	@echo "   install-sediff:   		build and install sediff command-line tool (selinux not required)"
 	@echo "   install-sediffx:   		build and install sediff GUI tool (selinux not required)"
-	@echo "   install-sechecker:            build and install sechecker"
+	@echo "   install-sechecker:   		build and install sechecker (selinux not required)"
 	@echo ""
 	@echo "   install-dev:       		build and install headers and libraries"
 	@echo "   install-docs:      		install setools documentation"
@@ -164,181 +321,39 @@ help:
 	@echo "   bare:              		more extensive clean up"
 
 
-apol: selinux_tool
-	cd apol; $(MAKE) apol; 
-
-awish: selinux_tool
-	cd awish; $(MAKE) awish;
-
-sediff: selinux_tool
-	cd sediff; $(MAKE) sediff;
-
-sediffx: selinux_tool
-	cd sediff; $(MAKE) sediffx
-
-seaudit: selinux_tool
-	cd seaudit; $(MAKE) all	
-
-sechecker: selinux_tool
-	cd sechecker; $(MAKE) sechecker
-
-secmds: selinux_tool
-	cd secmds; $(MAKE) all
-
-libapol: selinux_tool
-	cd libapol; $(MAKE) libapol libapolso
-
-libapol-tcl: selinux_tool
-	cd libapol; $(MAKE) libapol-tcl libapol-tclso; 
-
-libsefs: selinux_tool
-ifeq ($(USE_LIBSEFS), 1)
-	cd libsefs; $(MAKE) libsefs libsefsso
-endif
-
-libseaudit: selinux_tool
-	cd libseaudit; $(MAKE) libseaudit libseauditso
-
-$(INSTALL_LIBDIR):
-	install -m 755 -d $(INSTALL_LIBDIR)
-
-$(BINDIR):
-	install -m 755 -d $(BINDIR)
-
-install-apol: $(INSTALL_LIBDIR) $(BINDIR)
-	cd apol; $(MAKE) install; 
-
-install-awish: $(INSTALL_LIBDIR) $(BINDIR)
-	cd awish; $(MAKE) install; 
-
-install-sediffx: $(INSTALL_LIBDIR) $(BINDIR)
-	cd sediff; $(MAKE) install; 
-
-install-secmds: $(INSTALL_LIBDIR) $(BINDIR)
-	cd secmds; $(MAKE) install
-
-install-sediff: $(INSTALL_LIBDIR) $(BINDIR)
-	cd sediff; $(MAKE) install
-
-install-sediff-nogui: $(INSTALL_LIBDIR) $(BINDIR)
-	cd sediff; $(MAKE) install-nogui
-
-install-seaudit: $(INSTALL_LIBDIR) $(BINDIR)
-	 cd seaudit; $(MAKE) install
-
-install-sechecker: $(INSTALL_LIBDIR) $(BINDIR)
-	cd sechecker; $(MAKE) install
-
-install-nogui: $(INSTALL_LIBDIR) install-secmds install-sediff-nogui install-sechecker
-
-install: all $(BINDIR) $(SHARED_LIB_INSTALL_DIR) install-dev install-apol \
-	install-awish install-secmds install-seaudit install-sediff \
-	install-docs install-sechecker
-
-$(SHARED_LIB_INSTALL_DIR):
-	install -m 755 -d $(SHARED_LIB_INSTALL_DIR)
-
-# Install the libraries
-install-libapol: $(SHARED_LIB_INSTALL_DIR)
-	cd libapol; $(MAKE) install
-
-install-libseaudit: $(SHARED_LIB_INSTALL_DIR)
-	cd libseaudit; $(MAKE) install
-
-install-libsefs: $(SHARED_LIB_INSTALL_DIR)
-ifeq ($(USE_LIBSEFS), 1)
-	cd libsefs; $(MAKE) install
-endif
-
-install-dev: install-libapol install-libseaudit install-libsefs
-
-install-secmds-policy: $(INSTALL_LIBDIR)
-	cd secmds; $(MAKE) install-policy
-
-install-libapol-policy:
-	cd libapol; $(MAKE) install-policy
-
-install-libseaudit-policy:
-	cd libseaudit; $(MAKE) install-policy
-
-install-libsefs-policy:
-ifeq ($(USE_LIBSEFS), 1)
-	cd libsefs; $(MAKE) install-policy
-endif
-
-install-policy: install-secmds-policy \
-		install-libapol-policy \
-		install-libseaudit-policy install-libsefs-policy
-
-# Install the BWidgets package
-install-bwidget:
-	cd packages; $(MAKE) install
-
-# Install LogWatch config files to plug-in seaudit-report to LogWatch
-install-logwatch-files:
-	cd seaudit; $(MAKE) install-logwatch-service
-
-# Re-generate all setools documentation in source tree
-docs:
-	cd docs-src; $(MAKE) docs
-
-# Remove all generated setools documentation from source tree
-remove-docs:
-	cd docs-src; $(MAKE) remove-docs
-
-install-docs:
-	cd docs-src; $(MAKE) install
-
-# test targets
-tests: test-apol test-seaudit test-regression
-
-test-apol: selinux_tool
-	cd libapol/test; $(MAKE) $@
-
-test-seaudit: selinux_tool
-	cd libseaudit/test; $(MAKE) $@
-
-test-clean: 
-	cd libapol/test; $(MAKE) clean
-	cd test; $(MAKE) clean
-
-test-bare:
-	cd libapol/test; $(MAKE) bare
-	cd libseaudit/test; $(MAKE) bare
-	cd test; $(MAKE) bare
-
-test-regression: selinux_tool
-	cd test; $(MAKE)
-
+# Other Targets
 clean: test-clean
-	cd apol; $(MAKE) clean
-	cd awish; $(MAKE) clean
-	cd libapol; $(MAKE) clean
-	cd libsefs; $(MAKE) clean
-	cd seaudit; $(MAKE) clean
-	cd secmds; $(MAKE) clean
-	cd libseaudit; $(MAKE) clean
-	cd sediff; $(MAKE) clean
-	cd sechecker; $(MAKE) clean
+	$(MAKE) -C apol $@
+	$(MAKE) -C awish $@
+	$(MAKE) -C libapol $@
+	$(MAKE) -C libseaudit $@
+	$(MAKE) -C libsefs $@
+	$(MAKE) -C seaudit $@
+	$(MAKE) -C secmds $@
+	$(MAKE) -C sechecker $@
+	$(MAKE) -C sediff $@
 	rm -f *~
 	rm -f lib/*.a lib/*.so lib/*.so.1
 
 bare: test-bare
-	cd apol; $(MAKE) bare
-	cd awish; $(MAKE) bare
-	cd libapol; $(MAKE) bare
-	cd libsefs; $(MAKE) bare
-	cd seaudit; $(MAKE) bare
-	cd secmds; $(MAKE) bare
-	cd libseaudit; $(MAKE) bare
-	cd sediff; $(MAKE) bare
-	cd sechecker; $(MAKE) bare
+	$(MAKE) -C apol $@
+	$(MAKE) -C awish $@
+	$(MAKE) -C libapol $@
+	$(MAKE) -C libseaudit $@
+	$(MAKE) -C libsefs $@
+	$(MAKE) -C seaudit $@
+	$(MAKE) -C secmds $@
+	$(MAKE) -C sechecker $@
+	$(MAKE) -C sediff $@
+	$(MAKE) -C packages $@
 	rm -f *~
 	rm -rf ./lib
-	cd libseaudit; $(MAKE) bare
-	cd packages; $(MAKE) bare
+
+remove-docs:
+	$(MAKE) -C docs-src $@
+
+.PHONY: clean bare test-clean test-bare help apol awish \
+	seaudit sechecker secmds sediff libapol libseaudit \
+	libsefs install
 
 
-# Leave this empty target here!
-selinux_tool:
-# empty!
