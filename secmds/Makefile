@@ -38,10 +38,10 @@ all: $(SE_CMDS)
 
 # seinfo and sesearch are optionally linked to libselinux.  
 # The LIBSELINUX variable is set in the top-level Makefile. 
-seinfo: seinfo.o libapol 
+seinfo: seinfo.o $(LIBAPOL) 
 	$(CC) -o $@  seinfo.o $(LIBAPOL) $(LIBS) $(LINKFLAGS) $(LIBSELINUX)
 
-sesearch: sesearch.o libapol 
+sesearch: sesearch.o $(LIBAPOL) 
 	$(CC) -o $@ sesearch.o $(LIBAPOL) $(LIBS) $(LINKFLAGS) $(LIBSELINUX)
 
 # replcon, findcon, indexcon, and searchcon must always be linked to libselinux.  
@@ -49,28 +49,28 @@ sesearch: sesearch.o libapol
 replcon.o: replcon.c 
 	$(CC) -c replcon.c $(CFLAGS) $(INCLUDE)
 
-replcon: replcon.o libapol libsefs 
+replcon: replcon.o $(LIBSEFS) $(LIBAPOL)
 	$(CC) -o $@ replcon.o $(LINKFLAGS) $(LIBSELINUXSO) $(LIBSEFS) $(LIBAPOL) $(LIBS)
 
 indexcon.o: indexcon.c
 	$(CC) -c indexcon.c $(CFLAGS) $(INCLUDE)
 
-indexcon: indexcon.o libapol libsefs 
+indexcon: indexcon.o $(LIBSEFS) $(LIBAPOL)
 	$(CC) -static -o $@ indexcon.o $(LINKFLAGS) $(STATICSEFS) $(LIBSELINUXSO) $(STATICAPOL) $(LIBS)
 
 searchcon.o: searchcon.c
 	$(CC) -c searchcon.c $(CFLAGS) $(INCLUDE)
 
-searchcon: searchcon.o libapol libsefs 
+searchcon: searchcon.o $(LIBSEFS) $(LIBAPOL)
 	$(CC) -o $@ searchcon.o $(LINKFLAGS) $(LIBSEFS) $(LIBSELINUXSO) $(LIBAPOL) $(LIBS)
 
 findcon.o: replcon.c
 	$(CC) -c replcon.c -o findcon.o -DFINDCON $(CFLAGS) $(INCLUDE)
 
-findcon: findcon.o libapol libsefs 
+findcon: findcon.o $(LIBSEFS) $(LIBAPOL)
 	$(CC) -o $@ findcon.o $(LINKFLAGS) $(LIBSELINUXSO) $(LIBSEFS) $(LIBAPOL) $(LIBS)
 	
-install: $(SE_CMDS)
+install: all
 	install -m 755 $(SE_CMDS) $(BINDIR);
 
 install-policy:

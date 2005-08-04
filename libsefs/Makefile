@@ -16,19 +16,18 @@ LIBSO  = $(TARGET).$(shell cat VERSION)
 
 CFLAGS		+= -I. -I../libapol 
 
-all: libsefs $(LIBSO)
+all: libsefs libsefsso
 
+libsefs: libsefs.a 
 libsefsso: $(LIBSO)
 
-sqlite: 
+sqlite: $(SQL-OBJ)
 	$(MAKE) -C sqlite all
 
-libsefs: sqlite libsefs.a 
+$(LIBSO): sqlite $(LIB-OBJ)  
+	$(CC) $(LDFLAGS) -shared -o $(LIBSO) $(LIB-OBJ) $(SQL-OBJ) -Wl,-soname,$(SONAME) 
 
-$(LIBSO): $(LIB-OBJ) $(SQL-OBJ)
-	$(CC) $(LDFLAGS) -shared -o $(LIBSO) $^ -Wl,-soname,$(SONAME) 
-
-libsefs.a:  $(LIB-OBJ) 
+libsefs.a: sqlite $(LIB-OBJ) 
 	 ar cr $@ $(LIB-OBJ) $(SQL-OBJ)
 
 install-libsefs-shared: $(LIBSO) install-includes
@@ -55,17 +54,19 @@ fsdata.o: fsdata.c sqlite
 file_contexts.o: file_contexts.c file_contexts.h ../libapol/policy.h
 	$(CC) $(CFLAGS) -c $< 
 
-%.o:  %.c 
-	cd sqlite
-	$(CC) $(CFLAGS) -c $<
-
 clean:
 	cd sqlite; $(MAKE) clean
 	rm -f *.o core *~
 
 bare: clean
 	rm -f *.o core *~ libsefs.a $(LIBSO) $(SONAME)
-	cd sqlite; $(MAKE) bare
+	$(MAKE) -C sqlite bare
 
-.PHONY: clean bare sqlite
+.PHONY: clean bare 
+
+$(SQL-OBJ): sqlite/config.h
+$(SQL-OBJ): CFLAGS = -fPIC -w -O2
+
+sqlite/config.h:
+	$(MAKE) -C sqlite $(notdir $@)
 
