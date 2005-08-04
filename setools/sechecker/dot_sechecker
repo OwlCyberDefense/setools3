@@ -31,8 +31,8 @@ See domain_type and file_type modules for details about
 how types are placed in these categories</header>
 		<output value="long"/>
 		<require name="policy_type" value="source"/>
-		<dependency name="module" value="domain_type"/>
-		<dependency name="module" value="file_type"/>
+		<dependency name="module" value="find_domains"/>
+		<dependency name="module" value="find_file_types"/>
 	</module>
 
 	<module name="roles_wo_types">
@@ -62,5 +62,13 @@ This module also reports role_transition rules found for these roles.</header>
 This module reports other uses if found.</header>
 		<output value="short"/>
 	</module>
-
+	
+	<module name="spurious_audit">
+		<header>Finds audit rules which do not affect the auditing of the policy.
+This module finds two types of spurious audit rules:
+   dontaudit rules for allowed permission sets
+   auditallow rules without an allow rule</header>
+		<output value="long"/>
+	</module>
+	
 </sechecker>
