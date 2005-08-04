@@ -10,30 +10,34 @@
 
 #include "sechecker.h"
 #include "register_list.h"
+#include "sechk_parse.h"
 #include <stdio.h>
-#include <string.h> 
+#include <string.h>
 #include <assert.h>
-#include <libxml/xmlreader.h>
 #include <policy.h>
 #include <policy-io.h>
 #include <util.h>
-#include <file_contexts.h>
+#include <dirent.h>
+#ifdef LIBSEFS
+#include "file_contexts.h"
+#endif
 
 #ifdef LIBSELINUX
 #include <selinux/selinux.h>
 #endif
 
-/* static methods */
-static int sechk_lib_parse_config_file(const char *filename, sechk_lib_t *lib);
-static int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib);
-static int sechk_lib_grow_modules(sechk_lib_t *lib);
-static int sechk_lib_get_module_indx(const char *name, sechk_lib_t *lib);
-
 /* 'public' methods */
-sechk_lib_t *sechk_lib_new(const char *policyfilelocation, const char *fcfilelocation) 
+#ifdef LIBSEFS
+sechk_lib_t *sechk_lib_new(const char *policyfilelocation, const char *fcfilelocation)
+#else
+sechk_lib_t *sechk_lib_new(const char *policyfilelocation)
+#endif
 {
 	sechk_lib_t *lib = NULL;
-	char *default_policy_path = NULL, *default_fc_path = NULL;
+	char *default_policy_path = NULL;
+#ifdef LIBSEFS
+	char *default_fc_path = NULL;
+#endif
 	const char *CONFIG_FILE="/.sechecker", *DEFAULT_CONFIG_FILE="/dot_sechecker";
 	char *conf_path = NULL, *conf_filename = NULL;
 	int retv;
@@ -101,6 +105,7 @@ sechk_lib_t *sechk_lib_new(const char *policyfilelocation, const char *fcfileloc
 		lib->policy_path = strdup(policyfilelocation);
 		}
 
+#ifdef LIBSEFS
 	/* if no file_contexts file is given attempt to find the default */
 	if (!fcfilelocation) {
 		retv = find_default_file_contexts_file(&default_fc_path);
@@ -120,16 +125,13 @@ sechk_lib_t *sechk_lib_new(const char *policyfilelocation, const char *fcfileloc
 		} else {
 			lib->fc_path = strdup(fcfilelocation);
 		}
-
 	}
+#endif
 
 exit:
-	if (default_policy_path)
-		free(default_policy_path);
-	if (conf_path)
-		free(conf_path);
-	if (conf_filename)
-		free(conf_filename);
+	free(default_policy_path);
+	free(conf_path);
+	free(conf_filename);
 	return lib;
 
 exit_err:
@@ -165,15 +167,17 @@ void sechk_lib_free(sechk_lib_t *lib)
 		lib->modules_size = 0;
 		lib->num_modules = 0;
 	}
+#ifdef LIBSEFS
 	if (lib->fc_entries) {
 		for (i = 0; i < lib->num_fc_entries; i++)
 			sefs_fc_entry_free(&lib->fc_entries[i]);
 		lib->num_fc_entries = 0;
 		free(lib->fc_entries);
 	}
+	free(lib->fc_path);
+#endif
 	free(lib->selinux_config_path);
 	free(lib->policy_path);
-	free(lib->fc_path);
 	free(lib->module_selection);
 }
 
@@ -315,8 +319,7 @@ int sechk_lib_register_modules(sechk_register_fn_t *register_fns, sechk_lib_t *l
 		return -1;
 	}
 	if (lib->num_modules != sechk_register_list_get_num_modules()) {
-		printf("%d\n%d\n", lib->num_modules, sechk_register_list_get_num_modules());
-		fprintf(stderr, "Error: the number of registered modules does not match the number of modules in the configuration file.\n");
+		fprintf(stderr, "Error: the number of registered modules (%d) does not match the number of modules in the configuration file (%d).\n", sechk_register_list_get_num_modules(), lib->num_modules);
 		return -1;
 	}
 	for (i = 0; i < lib->num_modules; i++) {
@@ -377,7 +380,88 @@ sechk_module_t *sechk_lib_get_module(const char *module_name, sechk_lib_t *lib)
 	return NULL;
 }
 
-int sechk_lib_init_modules(sechk_lib_t *lib) 
+int sechk_lib_check_module_dependencies(sechk_lib_t *lib)
+{
+	int i, idx = 0;
+	bool_t test = TRUE, done = FALSE, *processed = NULL;
+	sechk_name_value_t *nv = NULL;
+
+	if (!lib) {
+		fprintf(stderr, "Error: invalid module library\n");
+		return -1;
+	}
+
+	processed = (bool_t*)calloc(lib->num_modules, sizeof(bool_t));
+	if (!processed) {
+		fprintf(stderr, "Error: out of memory\n");
+		return -1;
+	}
+
+	/* check dependencies and select dependencies to be run */
+	while (!done) {
+		for (i = 0; i < lib->num_modules; i++) {
+			if (processed[i])
+				continue;
+			if (!lib->module_selection[i]) {
+				processed[i] = TRUE;
+				continue;
+			}
+			nv = lib->modules[i].dependencies;
+			while (nv) {
+				test = FALSE;
+				test = sechk_lib_check_dependency(nv, lib);
+				if (!test) {
+					fprintf(stderr, "Error: dependency %s not found for %s\n", nv->name, lib->modules[i].name);
+					free(processed);
+					return -1;
+				}
+				idx = sechk_lib_get_module_idx(nv->value, lib);
+				if (!lib->module_selection[idx]) {
+					processed[idx] = FALSE;
+					lib->module_selection[idx] = TRUE;
+				}
+				nv = nv->next;
+			}
+			processed[i] = TRUE;
+		}
+		for (i = 0; i < lib->num_modules; i++) {
+			if (!processed[i])
+				break;
+		}
+		if (i == lib->num_modules)
+			done = TRUE;
+	}
+	free(processed);
+
+	return 0;
+}
+
+int sechk_lib_check_module_requirements(sechk_lib_t *lib)
+{
+	int i;
+	bool_t test = TRUE;
+	sechk_name_value_t *nv = NULL;
+
+	/* check requirements for all selected modules */
+	for (i = 0; i < lib->num_modules; i++) {
+		if (!lib->module_selection[i])
+			continue;
+		nv = lib->modules[i].requirements;
+		while (nv) {
+			test = FALSE;
+			test = sechk_lib_check_requirement(nv, lib);
+			if (!test) {
+				fprintf(stderr, "Error: requirements not met for %s\n", lib->modules[i].name);
+				return -1;
+			}
+			nv = nv->next;
+		}
+	}
+
+	return 0;
+}
+
+int sechk_lib_init_modules(sechk_lib_t *lib)
 {
 	int i, retv;
 	sechk_init_fn_t init_fn = NULL;
@@ -385,6 +469,8 @@ int sechk_lib_init_modules(sechk_lib_t *lib)
 	if (lib == NULL || lib->modules == NULL)
 		return -1;
 	for (i = 0; i < lib->num_modules; i++) {
+		if (!lib->module_selection[i])
+			continue;
 		init_fn = (sechk_init_fn_t)sechk_lib_get_module_function(lib->modules[i].name, SECHK_MOD_FN_INIT, lib);
 		if (!init_fn) {
 			fprintf(stderr, "Error: could not initialize module %s\n", lib->modules[i].name);
@@ -455,7 +541,7 @@ int sechk_lib_print_modules_output(sechk_lib_t *lib)
 		}
 	}
 
-	return -1;
+	return rc;
 }
 
 bool_t sechk_lib_check_requirement(sechk_name_value_t *req, sechk_lib_t *lib)
@@ -517,7 +603,7 @@ bool_t sechk_lib_check_requirement(sechk_name_value_t *req, sechk_lib_t *lib)
 		}
 #else
 		fprintf(stderr, "Error: module requires selinux system, but SEChecker was not built to support system checks\n");
-		return FALSE
+		return FALSE;
 #endif
 	} else if (!strcmp(req->name, SECHK_PARSE_REQUIRE_MLS_POLICY)) {
 		if (lib->policy->version != POL_VER_19MLS) {
@@ -532,7 +618,7 @@ bool_t sechk_lib_check_requirement(sechk_name_value_t *req, sechk_lib_t *lib)
 		}
 #else
 		fprintf(stderr, "Error: module requires selinux system, but SEChecker was not built to support system checks\n");
-		return FALSE
+		return FALSE;
 #endif
 	} else {
 		fprintf(stderr, "Error: unrecognized requirement\n");
@@ -575,7 +661,8 @@ int sechk_lib_set_outputformat(unsigned char out, sechk_lib_t *lib)
 	lib->outputformat = out;
 	
 	for (i = 0; i < lib->num_modules; i++)
-		lib->modules[i].outputformat = out;
+		if (lib->modules[i].outputformat) /* if outputformat=none leave as none */
+			lib->modules[i].outputformat = out;
 
 	return 0;
 }
@@ -598,7 +685,7 @@ int sechk_item_sev(sechk_item_t *item)
 	return sev;
 }
 
-sechk_item_t *get_sechk_item_from_result(int item_id, unsigned char item_type, sechk_result_t *res)
+sechk_item_t *sechk_result_get_item(int item_id, unsigned char item_type, sechk_result_t *res)
 {
 	sechk_item_t *item = NULL;
 
@@ -625,7 +712,7 @@ sechk_item_t *get_sechk_item_from_result(int item_id, unsigned char item_type, s
 	return item;
 }
 
-sechk_proof_t *copy_sechk_proof(sechk_proof_t *orig)
+sechk_proof_t *sechk_proof_copy(sechk_proof_t *orig)
 {
 	sechk_proof_t *copy = NULL;
 
@@ -652,7 +739,7 @@ sechk_proof_t *copy_sechk_proof(sechk_proof_t *orig)
 	return copy;
 }
 
-bool_t is_sechk_proof_in_item(int idx, unsigned char type, sechk_item_t *item) 
+bool_t sechk_item_has_proof(int idx, unsigned char type, sechk_item_t *item) 
 {
 	sechk_proof_t *proof = NULL;
 
@@ -666,267 +753,122 @@ bool_t is_sechk_proof_in_item(int idx, unsigned char type, sechk_item_t *item)
 	return FALSE;
 }
 
-/* static functions */
-
-/*
- * Parse the configuration file. */
-static int sechk_lib_parse_config_file(const char *filename, sechk_lib_t *lib) 
+int sechk_lib_load_profile(const char *prof_name, sechk_lib_t *lib)
 {
-	xmlTextReaderPtr reader = NULL;
-	int ret;
-	
-        /* this initializes the XML library and checks potential ABI mismatches
-	 * between the version it was compiled for and the actual shared
-	 * library used. */
-	LIBXML_TEST_VERSION;
-	
-	reader = xmlReaderForFile(filename, NULL, 0);
-	if (!reader) {
-		fprintf(stderr, "Error: Could not create xmlReader.");
-		goto exit_err;
-	}
-	
-	while (1) {
-		ret = xmlTextReaderRead(reader);
-		if (ret == -1) {
-			fprintf(stderr, "Error: Error reading xml.");
-			goto exit_err;
-		}
-		if (ret == 0) /* no more nodes to read */
-			break;
-		if (sechk_lib_process_xml_node(reader, lib) != 0)
-			goto exit_err;
-      	}
+	char *profpath = NULL, *prof_filename = NULL, *path = NULL;
+	int retv, i;
 
-	/* cleanup function for the XML library */
-	xmlCleanupParser();
-	xmlFreeTextReader(reader);
-	return 0;
-
- exit_err:
-	xmlCleanupParser();
-	if (reader)
-		xmlFreeTextReader(reader);
-	return -1;
-}
-
-/*
- * process a single node in the xml file */
-static int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib)
-{
-	xmlChar *attrib = NULL;
-	int idx;
-	sechk_name_value_t *nv = NULL;
-	static sechk_module_t *current_module=NULL;
-
-
-
-	switch (xmlTextReaderNodeType(reader)) {
-
-	case XML_ELEMENT_DECL: /* closing tags */
-		if (xmlStrEqual(xmlTextReaderConstName(reader), (xmlChar*)SECHK_PARSE_MODULE_TAG) == 1) {
-			current_module = NULL;
-		} 
-		break;
-
-	case XML_ELEMENT_NODE: /* opening tags */
-
-		if (xmlStrEqual(xmlTextReaderConstName(reader), (xmlChar*)SECHK_PARSE_SECHECKER_TAG) == 1) {
-			/* parsing the <sechecker> tag */
-			attrib = xmlTextReaderGetAttribute(reader, (xmlChar*)SECHK_PARSE_VERSION_ATTRIB);
-			if (attrib) {
-				/* TODO: add version logic */
-				free(attrib);
-				attrib = NULL;
-			} else {
-				fprintf(stderr, "Warning: sechecker version is not specified in configuration file.\n");
-			}
-
-		} else if (xmlStrEqual(xmlTextReaderConstName(reader), (xmlChar*)SECHK_PARSE_MODULE_TAG) == 1) {
-			/* parsing the <module> tag */
-			attrib = xmlTextReaderGetAttribute(reader, (xmlChar*)SECHK_PARSE_NAME_ATTRIB);
-			if (attrib) {
-				if ((idx = sechk_lib_get_module_indx((const char*)attrib, lib)) == -1) {
-					/* set the values on a new module b/c it doesn't already exist */
-					if (sechk_lib_grow_modules(lib) != 0)
-						goto exit_err;
-					lib->num_modules++;
-					assert(lib->modules && lib->num_modules >0);
-					lib->modules[lib->num_modules-1].name = strdup((const char*)attrib);
-					current_module = &lib->modules[lib->num_modules-1];
-				} else {
-					/* set the values on the existing module */
-					current_module = &lib->modules[idx];
-				}
-				free(attrib);
-				attrib = NULL;
-			} else {
-				fprintf(stderr, "Error: module name is not specified in configuration file.\n");
-				goto exit_err;
-			}
-		} else if (xmlStrEqual(xmlTextReaderConstName(reader), (xmlChar*)SECHK_PARSE_OPTION_TAG) == 1) {
-			if (!current_module) {
-				fprintf(stderr, "Error: 'option' specified outside the scope of a module.\n");
-				goto exit_err;
-			}
-			nv = sechk_name_value_new();
-			attrib = xmlTextReaderGetAttribute(reader, (xmlChar*)SECHK_PARSE_NAME_ATTRIB);
-			if (attrib) {
-				nv->name = strdup((char*)attrib);
-				free(attrib);
-				attrib = NULL;
-			} else {
-				fprintf(stderr, "Error: option name is not specified in configuration file.\n");
-				goto exit_err;
-			}
-			attrib = xmlTextReaderGetAttribute(reader, (xmlChar*)SECHK_PARSE_VALUE_ATTRIB);
-			if (attrib) {
-				nv->value = strdup((char*)attrib);
-				free(attrib);
-				attrib = NULL;
-			} else {
-				fprintf(stderr, "Error: option value is not specified in configuration file.\n");
-				goto exit_err;
-			}
-
-			nv->next = current_module->options;
-			current_module->options = nv;
-		} else if (xmlStrEqual(xmlTextReaderConstName(reader), (xmlChar*)SECHK_PARSE_REQUIRE_TAG) == 1) {
-			if (!current_module) {
-				fprintf(stderr, "Error: 'require' specified outside the scope of a module.\n");
-				goto exit_err;
-			}
-			nv = sechk_name_value_new();
-			attrib = xmlTextReaderGetAttribute(reader, (xmlChar*)SECHK_PARSE_NAME_ATTRIB);
-			if (attrib) {
-				nv->name = strdup((char*)attrib);
-				free(attrib);
-				attrib = NULL;
-			} else {
-				fprintf(stderr, "Error: require name is not specified in configuration file.\n");
-				goto exit_err;
-			}
-			attrib = xmlTextReaderGetAttribute(reader, (xmlChar*)SECHK_PARSE_VALUE_ATTRIB);
-			if (attrib) {
-				nv->value = strdup((char*)attrib);
-				free(attrib);
-				attrib = NULL;
-			} else {
-				fprintf(stderr, "Error: require value is not specified in configuration file.\n");
-				goto exit_err;
-			}
-			nv->next = current_module->requirements;
-			current_module->requirements = nv;
-		} else if (xmlStrEqual(xmlTextReaderConstName(reader), (xmlChar*)SECHK_PARSE_DEPENDENCY_TAG) == 1) {
-			if (!current_module) {
-				fprintf(stderr, "Error: 'dependency' specified outside the scope of a module.\n");
-				goto exit_err;
-			}
-			nv = sechk_name_value_new();
-			attrib = xmlTextReaderGetAttribute(reader, (xmlChar*)SECHK_PARSE_NAME_ATTRIB);
-			if (attrib) {
-				nv->name = strdup((char*)attrib);
-				free(attrib);
-				attrib = NULL;
-			} else {
-				fprintf(stderr, "Error: dependency name is not specified in configuration file.\n");
-				goto exit_err;
-			}
-			attrib = xmlTextReaderGetAttribute(reader, (xmlChar*)SECHK_PARSE_VALUE_ATTRIB);
-			if (attrib) {
-				nv->value = strdup((char*)attrib);
-				free(attrib);
-				attrib = NULL;
-			} else {
-				fprintf(stderr, "Error: dependency value is not specified in configuration file.\n");
-				goto exit_err;
-			}
-			nv->next = current_module->dependencies;
-			current_module->dependencies = nv;
-		} else if (xmlStrEqual(xmlTextReaderConstName(reader), (xmlChar*)SECHK_PARSE_OUTPUT_TAG) == 1) {
-			if (!current_module) {
-				fprintf(stderr, "Error: 'output' specified outside the scope of a module.\n");
-				goto exit_err;
-			}
-			attrib = xmlTextReaderGetAttribute(reader, (xmlChar*)SECHK_PARSE_VALUE_ATTRIB);
-			if (attrib) {
-				if (xmlStrEqual(attrib, (xmlChar*)SECHK_PARSE_OUTPUT_SHORT) == 1) {
-					current_module->outputformat = SECHK_OUT_SHORT;
-				} else if (xmlStrEqual(attrib, (xmlChar*)SECHK_PARSE_OUTPUT_QUIET) == 1) {
-					current_module->outputformat = SECHK_OUT_QUIET;
-				} else if (xmlStrEqual(attrib, (xmlChar*)SECHK_PARSE_OUTPUT_LONG) == 1) {
-					current_module->outputformat = SECHK_OUT_LONG;
-				} else if (xmlStrEqual(attrib, (xmlChar*)SECHK_PARSE_OUTPUT_VERBOSE) == 1) {
-					current_module->outputformat = SECHK_OUT_VERBOSE;
-				}
-				free(attrib);
-				attrib = NULL;
-			} else {
-				fprintf(stderr, "Error: output value is not specified in configuration file.\n");
-				goto exit_err;
-			}
-		} else if (xmlStrEqual(xmlTextReaderConstName(reader), (xmlChar*)SECHK_PARSE_HEADER_TAG) == 1) {
-			if (!current_module) {
-				fprintf(stderr, "Error: 'header' specified outside the scope of a module.\n");
-				goto exit_err;
-			}
-			attrib = xmlTextReaderReadString(reader);
-			current_module->header = strdup(attrib);
-			free(attrib);
-			attrib = NULL;
-			
-		}
-		break;
-	}
-	return 0;
-
- exit_err:
-	if (nv) {
-		sechk_name_value_destroy(nv);
-	}
-	return -1;
-}
-
-/*
- * check the size and grow appropriately - the array of modules and 
- * the boolean array of selected modules */
-static int sechk_lib_grow_modules(sechk_lib_t *lib)
-{
-	int i;
-
-	if (lib == NULL)
+	if (!prof_name || !lib) {
+		fprintf(stderr, "Error: invalid parameters to load profile\n");
 		return -1;
-	/* check if we need to grow */
-	if (lib->modules_size <= lib->num_modules) {
-		/* first grow the modules array */
-		lib->modules = (sechk_module_t*)realloc(lib->modules, sizeof(sechk_module_t) * (lib->modules_size + LIST_SZ));
-		if (!lib->modules) {
-			fprintf(stderr, "Error: out of memory.\n");
-			return -1;
-		}
-		/* then grow the selection array */
-		lib->module_selection = (bool_t*)realloc(lib->module_selection, sizeof(bool_t) * (lib->modules_size + LIST_SZ));
-
-		/* initialize any newly allocated memory */
-		for (i = lib->num_modules; i < lib->num_modules + LIST_SZ; i++) {
-			lib->module_selection[i] = FALSE;
-			memset(&lib->modules[i], 0,  sizeof(sechk_module_t));
-		}
-		lib->modules_size += LIST_SZ;
 	}
+
+	/* translate profile name into filename */
+	prof_filename = (char*)calloc(31 + strlen(prof_name), sizeof(char));
+	if (!prof_filename) {
+		fprintf(stderr, "Error: out of memory\n");
+		return -1;
+	}
+	strcat(prof_filename, "/profiles.sechecker/");
+	strcat(prof_filename, prof_name);
+	strcat(prof_filename, ".sechecker");
+
+	/* find the file */
+	path = find_file(prof_filename);
+	if (!path) {
+		fprintf(stderr, "Error: could not find profile\n");
+		goto sechk_load_profile_error;
+	}
+
+	/* concatenate path and filename */
+	profpath = (char*)calloc(1 + strlen(path) + strlen(prof_filename), sizeof(char));
+	if (!profpath) {
+		fprintf(stderr, "Error: out of memory\n");
+		goto sechk_load_profile_error;
+	}
+	strcat(profpath, path);
+	strcat(profpath, prof_filename);
+
+	/* parse the profile */
+	retv = sechk_lib_parse_profile(profpath, lib);
+	if (retv) {
+		fprintf(stderr, "Error: parse error in profile\n");
+		goto sechk_load_profile_error;
+	}
+
+	/* turn off output for any unselected modules */
+	for (i = 0; i < lib->num_modules; i++) {
+		if (!lib->module_selection[i])
+			lib->modules[i].outputformat = SECHK_OUT_NONE;
+	}
+
+	free(prof_filename);
+	free(path);
+	free(profpath);
 	return 0;
+
+sechk_load_profile_error:
+	free(prof_filename);
+	free(path);
+	free(profpath);
+	return -1;
 }
 
-/*
- * get the index of a module in the library by name */
-static int sechk_lib_get_module_indx(const char *name, sechk_lib_t *lib)
+/* get the index of a module in the library by name */
+int sechk_lib_get_module_idx(const char *name, sechk_lib_t *lib)
 {
 	int i;
-	if (lib == NULL || lib->modules == NULL)
+	if (!name || !lib || !lib->modules)
 		return -1;
 	for (i=0; i < lib->num_modules; i++) {
 		if (lib->modules[i].name && strcmp(name, lib->modules[i].name) == 0)
 			return i;
 	}
 	return -1;
+}
+
+int sechk_get_installed_profile_names(char ***names, int *num_profiles)
+{
+	int retv;
+	DIR *prof_install_dir = NULL;
+	struct dirent *entry = NULL;
+	char *ext = NULL;
+
+	if (!names || !num_profiles) {
+		fprintf(stderr, "Error: invalid list storage pointer(s)\n");
+		return -1;
+	}
+
+	assert(strlen(PROFILE_INSTALL_DIR));
+	prof_install_dir = opendir(PROFILE_INSTALL_DIR);
+	if (!prof_install_dir) {
+		fprintf(stderr, "Error: unable to open %s\n", PROFILE_INSTALL_DIR);
+		return -1;
+	}
+
+	*num_profiles = 0;
+	*names = NULL;
+
+	while ((entry = readdir(prof_install_dir))) {
+		ext = strrchr(entry->d_name, '.');
+		if (ext) {
+			ext++;
+			retv = strncmp(ext, "sechecker", 9);
+			if (!retv) {
+				ext--;
+				(*num_profiles)++;
+				*names = (char**)realloc(*names, *num_profiles * sizeof(char*));
+				if (!(*names)) {
+					fprintf(stderr, "Error: out of memory");
+					closedir(prof_install_dir);
+					return -1;
+				}
+				(*names)[*num_profiles - 1] = strndup(entry->d_name, (size_t)(ext - entry->d_name));
+			}
+		}
+		entry = NULL;
+	}
+
+	closedir(prof_install_dir);
+	return 0;
 }

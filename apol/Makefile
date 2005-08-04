@@ -29,7 +29,7 @@ else
 	
 	ifeq ($(USE_LIBSEFS), 1)
 	LIBSEFS		= ../libsefs/libsefs.so.$(shell cat ../libsefs/VERSION)
-	apol: libsefs
+	all: libsefs
 	else
 	LIBSEFS = 
 	endif
@@ -40,7 +40,9 @@ CFLAGS          += -DSTARTUP_SCRIPT='"$(APOL_STARTUP_SCRIPT)"'
 
 # apol is optionally linked to libselinux. The LIBSELINUX variable 
 # is set in the top-level Makefile.
-apol: libapol libapol-tcl $(GUI-OBJ) apol.tcl
+all: libapol libapol-tcl apol
+
+apol: $(GUI-OBJ) apol.tcl
 	$(CC) $(TCL_LIBINC) -o $@ $(LINKFLAGS) $(GUI-OBJ) $(TCL_LIBS) $(LIBSELINUX)
 
 
