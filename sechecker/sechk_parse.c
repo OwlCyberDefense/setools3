@@ -248,7 +248,7 @@ int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib)
 				goto exit_err;
 			}
 			attrib = xmlTextReaderReadString(reader);
-			current_module->header = strdup(attrib);
+			current_module->header = strdup((char*)attrib);
 			free(attrib);
 			attrib = NULL;
 			

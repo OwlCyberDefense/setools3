@@ -30,10 +30,14 @@ all: libapol libapol-tcl libapolso libapol-tclso
 
 libapol: libapol.a
 libapol-tcl: libapol-tcl.a
-libapolso: $(LIB-OBJ)
+libapolso: $(LIBSO) 
+
+$(LIBSO): $(LIB-OBJ)
 	$(CC)  -shared -o $(LIBSO) $(LIB-OBJ) $(LDFLAGS) -Wl,-soname,$(SONAME) 
 
-libapol-tclso: $(LIB-OBJ-TCL)
+libapol-tclso: $(LIBSOTCL)
+
+$(LIBSOTCL):$(LIB-OBJ-TCL)
 	$(CC) -shared -o $(LIBSOTCL) $(LIB-OBJ-TCL) $(LDFLAGS) -Wl,-soname,$(SONAMETCL) 
 
 libapol.a: $(LIB-OBJ) 

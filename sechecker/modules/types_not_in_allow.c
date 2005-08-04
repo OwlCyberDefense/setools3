@@ -137,14 +137,11 @@ int types_not_in_allow_register(sechk_lib_t *lib)
 
 /* The init function creates the module's private data storage object
  * and initializes its values based on the options parsed in the config
- * file. It also checks that the requirements and dependencies are met.
- * This function also defines the module header, which provides a brief
- * explanation of the check performed by the module. */
+ * file. */
 int types_not_in_allow_init(sechk_module_t *mod, policy_t *policy)
 {
 	sechk_name_value_t *opt = NULL;
 	types_not_in_allow_data_t *datum = NULL;
-	bool_t test = FALSE;
 
 	if (!mod || !policy) {
 		fprintf(stderr, "Error: invalid parameters\n");
@@ -161,26 +158,6 @@ int types_not_in_allow_init(sechk_module_t *mod, policy_t *policy)
 		return -1;
 	}
 	mod->data = datum;
-
-	opt = mod->requirements;
-	while (opt) {
-		test = FALSE;
-		test = sechk_lib_check_requirement(opt, library);
-		if (!test) {
-			return -1;
-		}
-		opt = opt->next;
-	}
-
-	opt = mod->dependencies;
-	while (opt) {
-		test = FALSE;
-		test = sechk_lib_check_dependency(opt, library);
-		if (!test) {
-			return -1;
-		}
-		opt = opt->next;
-	}
 
 	opt = mod->options;
 	while (opt) {
@@ -615,7 +592,7 @@ int types_not_in_allow_print_output(sechk_module_t *mod, policy_t *policy)
 	if (!outformat)
 		return 0; /* not an error - no output is requested */
 
-	printf("Module: %s\n", mod_name);
+	printf("\nModule: %s\n", mod_name);
 	/* print the header */
 	if (outformat & SECHK_OUT_HEADER) {
 		printf("%s\n\n", mod->header);
