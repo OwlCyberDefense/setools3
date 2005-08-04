@@ -10,7 +10,9 @@
 #include "policy.h"
 #include "find_file_types.h"
 #include "render.h"
+#ifdef LIBSEFS
 #include "file_contexts.h"
+#endif
 
 #include <stdio.h>
 #include <string.h>
@@ -132,7 +134,6 @@ int find_file_types_init(sechk_module_t *mod, policy_t *policy)
 	sechk_name_value_t *opt = NULL;
 	find_file_types_data_t *datum = NULL;
 	int attr = -1, retv;
-	bool_t test = FALSE;
 
 	if (!mod || !policy) {
 		fprintf(stderr, "Error: invalid parameters\n");
@@ -149,31 +150,6 @@ int find_file_types_init(sechk_module_t *mod, policy_t *policy)
 		return -1;
 	}
 	mod->data = datum;
-
-	if (!mod->outputformat)
-		mod->outputformat = library->outputformat;
-
-	opt = mod->requirements;
-	while (opt) {
-		test = FALSE;
-		test = sechk_lib_check_requirement(opt, library);
-		if (!test) {
-			fprintf(stderr, "Error: requirements not met\n");
-			return -1;
-		}
-		opt = opt->next;
-	}
-
-	opt = mod->dependencies;
-	while (opt) {
-		test = FALSE;
-		test = sechk_lib_check_dependency(opt, library);
-		if (!test) {
-			fprintf(stderr, "Error: dependency %s not found\n", opt->name);
-			return -1;
-		}
-		opt = opt->next;
-	}
 
 	opt = mod->options;
 	while (opt) {
@@ -250,6 +226,7 @@ int find_file_types_run(sechk_module_t *mod, policy_t *policy)
 		}
 	}
 
+#ifdef LIBSEFS
 	if (!library->fc_entries) {
 		if (library->fc_path) {
 			retv = parse_file_contexts_file(library->fc_path, &(library->fc_entries), &(library->num_fc_entries), policy);
@@ -260,6 +237,7 @@ int find_file_types_run(sechk_module_t *mod, policy_t *policy)
 			fprintf(stderr, "Warning: unable to find file_contexts file\n");
 		}
 	}
+#endif
 
 
 	/* head insert for item LL so walk backward to preserve order */
@@ -318,7 +296,7 @@ int find_file_types_run(sechk_module_t *mod, policy_t *policy)
 		for (j = 0; j < num_nodes; j++) {
 			if (hash_idx->nodes[j]->key.cls == filesystem_obj_class_idx && hash_idx->nodes[j]->key.rule_type == RULE_TE_ALLOW) {
 				for (hash_rule = hash_idx->nodes[j]->rules; hash_rule; hash_rule = hash_rule->next) {
-					if (is_sechk_proof_in_item(hash_rule->rule, POL_LIST_AV_ACC, item))
+					if (sechk_item_has_proof(hash_rule->rule, POL_LIST_AV_ACC, item))
 						continue;
 					buff = NULL;
 					if (does_av_rule_use_perms(hash_rule->rule, 1, &associate_perm_idx, 1, policy)) {
@@ -382,6 +360,7 @@ int find_file_types_run(sechk_module_t *mod, policy_t *policy)
 			
 		}
 
+#ifdef LIBSEFS
 		/* assigned in fc check */
 		if (library->fc_entries) {
 			for (j=0; j < library->num_fc_entries; j++) {
@@ -479,6 +458,7 @@ int find_file_types_run(sechk_module_t *mod, policy_t *policy)
 				}
 			}
 		}
+#endif
 
 		/* insert any resutls for this type */
 		if (item) {
@@ -552,7 +532,7 @@ int find_file_types_print_output(sechk_module_t *mod, policy_t *policy)
 	if (!outformat)
 		return 0; /* not an error - no output is requested */
 
-	printf("Module: %s\n", mod_name);
+	printf("\nModule: %s\n", mod_name);
 	if (outformat & SECHK_OUT_HEADER) {
 		printf("%s\n\n", mod->header);
 	}

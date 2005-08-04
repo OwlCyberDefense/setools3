@@ -1,7 +1,7 @@
 /* Copyright (C) 2005 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
  
-/* 
+/*
  * Author: jmowery@tresys.com
  *
  * sechecker.h
@@ -12,8 +12,15 @@
 #define SECHECKER_H
 
 #include "policy.h"
+#ifdef LIBSEFS
+#include "file_contexts.h"
+#endif
 #include <libxml/xmlstring.h>
-#include <file_contexts.h>
+
+/* This should be defined from the make environment */
+#ifndef PROFILE_INSTALL_DIR
+#define PROFILE_INSTALL_DIR /usr/share/setools/profiles.sechecker
+#endif
 
 /* defined flags for outformat */
 /* report components */
@@ -21,34 +28,13 @@
 #define SECHK_OUT_LIST    0x02
 #define SECHK_OUT_PROOF   0x04
 #define SECHK_OUT_HEADER  0x08
-/* mode flags from command line and comfig file */
+/* mode flags from command line, test profiles, and comfig file */
+/* NOTE: none is only valid in profiles */
+#define SECHK_OUT_NONE    0x00
 #define SECHK_OUT_QUIET   (SECHK_OUT_STATS|SECHK_OUT_HEADER)
 #define SECHK_OUT_SHORT   (SECHK_OUT_QUIET|SECHK_OUT_LIST)
 #define SECHK_OUT_LONG    (SECHK_OUT_QUIET|SECHK_OUT_PROOF)
 #define SECHK_OUT_VERBOSE (SECHK_OUT_SHORT|SECHK_OUT_LONG)
-
-/* xml parser keywords */
-#define SECHK_PARSE_SECHECKER_TAG      "sechecker"
-#define SECHK_PARSE_MODULE_TAG         "module"
-#define SECHK_PARSE_OPTION_TAG         "option"
-#define SECHK_PARSE_REQUIRE_TAG        "require"
-#define SECHK_PARSE_DEPENDENCY_TAG     "dependency"
-#define SECHK_PARSE_OUTPUT_TAG         "output"
-#define SECHK_PARSE_HEADER_TAG         "header"
-#define SECHK_PARSE_VALUE_ATTRIB       "value"
-#define SECHK_PARSE_NAME_ATTRIB        "name"
-#define SECHK_PARSE_VERSION_ATTRIB     "version"
-#define SECHK_PARSE_OUTPUT_SHORT       "short"
-#define SECHK_PARSE_OUTPUT_QUIET       "quiet"
-#define SECHK_PARSE_OUTPUT_LONG        "long"
-#define SECHK_PARSE_OUTPUT_VERBOSE     "verbose"
-#define SECHK_PARSE_REQUIRE_POL_TYPE   "policy_type"
-#define SECHK_PARSE_REQUIRE_POL_TYPE_SRC	"source"
-#define SECHK_PARSE_REQUIRE_POL_TYPE_BIN	"binary"
-#define SECHK_PARSE_REQUIRE_POL_VER	"policy_version"
-#define SECHK_PARSE_REQUIRE_SELINUX	"selinux"
-#define SECHK_PARSE_REQUIRE_MLS_POLICY	"mls_policy"
-#define SECHK_PARSE_REQUIRE_MLS_SYSTEM	"mls_system"
 
 /* module results proof element */
 typedef struct sechk_proof {
@@ -119,13 +105,14 @@ typedef struct sechk_lib {
 	int             modules_size;
 	int 		num_modules;
 	policy_t 	*policy;              /* policy data */
+#ifdef LIBSEFS
 	sefs_fc_entry_t		*fc_entries;          /* file contexts data */
 	int		num_fc_entries;
+	char		*fc_path;             /* file contexts filename */
+#endif
 	unsigned char	outputformat;
 	char		*selinux_config_path;
 	char		*policy_path;         /* policy filename */
-	char		*fc_path;             /* file contexts filename */
-
 } sechk_lib_t;
 
 /* Module function signatures */
@@ -144,7 +131,11 @@ typedef sechk_result_t *(*sechk_get_result_fn_t)(sechk_module_t *mod);
 #define SECHK_MOD_FN_GET_RES "get_result"
 
 /* alloc methods */
+#ifdef LIBSEFS
 sechk_lib_t *sechk_lib_new(const char *policyfilelocation, const char *fcfilelocation);
+#else
+sechk_lib_t *sechk_lib_new(const char *policyfilelocation);
+#endif
 sechk_fn_t *sechk_fn_new(void);
 sechk_name_value_t *sechk_name_value_new(void);
 sechk_result_t *sechk_result_new(void);
@@ -160,8 +151,10 @@ void sechk_proof_free(sechk_proof_t *proof);
 void sechk_module_free(sechk_module_t *module, sechk_free_fn_t free_fn);
 void sechk_name_value_destroy(sechk_name_value_t *opt);
 
-/* register/init/run/print -  modules */
+/* register/check_dep/init/run/print -  modules */
 int sechk_lib_register_modules(sechk_register_fn_t *register_fns, sechk_lib_t *lib);
+int sechk_lib_check_module_dependencies(sechk_lib_t *lib);
+int sechk_lib_check_module_requirements(sechk_lib_t *lib);
 int sechk_lib_init_modules(sechk_lib_t *lib);
 int sechk_lib_run_modules(sechk_lib_t *lib);
 int sechk_lib_print_modules_output(sechk_lib_t *lib);
@@ -171,13 +164,16 @@ sechk_module_t *sechk_lib_get_module(const char *module_name, sechk_lib_t *lib);
 void *sechk_lib_get_module_function(const char *module_name, const char *function_name, sechk_lib_t *lib);
 
 /* utility functions */
+int sechk_lib_load_profile(const char *prof_name, sechk_lib_t *lib);
+int sechk_get_installed_profile_names(char ***names, int *num_profiles);
 bool_t sechk_lib_check_requirement(sechk_name_value_t *req, sechk_lib_t *lib);
 bool_t sechk_lib_check_dependency(sechk_name_value_t *dep, sechk_lib_t *lib);
 int sechk_lib_set_outputformat(unsigned char out, sechk_lib_t *lib);
 int sechk_item_sev(sechk_item_t *item);
-sechk_item_t *get_sechk_item_from_result(int item_id, unsigned char item_type, sechk_result_t *res);
-sechk_proof_t *copy_sechk_proof(sechk_proof_t *orig);
-bool_t is_sechk_proof_in_item(int idx, unsigned char type, sechk_item_t *item);
+sechk_item_t *sechk_result_get_item(int item_id, unsigned char item_type, sechk_result_t *res);
+sechk_proof_t *sechk_proof_copy(sechk_proof_t *orig);
+bool_t sechk_item_has_proof(int idx, unsigned char type, sechk_item_t *item);
+int sechk_lib_get_module_idx(const char *name, sechk_lib_t *lib);
 
 #endif /* SECHECKER_H */
 

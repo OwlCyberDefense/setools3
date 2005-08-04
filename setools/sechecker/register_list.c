@@ -20,6 +20,7 @@ sechk_register_fn_t sechk_register_list[] = {
 	&users_wo_roles_register,
 	&roles_not_in_allow_register,
 	&types_not_in_allow_register,
+	&spurious_audit_register,
 	/* TODO: add additional register addresses here */
 	NULL
 };

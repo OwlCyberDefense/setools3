@@ -10,14 +10,16 @@ SONAME = $(TARGET).1
 LIBSO  = $(TARGET).$(shell cat VERSION)
 
 libseaudit: libseaudit.a
-libseauditso: $(LIB-OBJ)
+libseauditso: $(LIBSO) 
+
+$(LIBSO): $(LIB-OBJ)
 	$(CC) -shared -o $(LIBSO) $(LIB-OBJ) $(LDFLAGS) -Wl,-soname,$(SONAME) 
 
 libseaudit.a: $(LIB-OBJ)
 	ar cr $@ $(LIB-OBJ)
 
 ../libapol/libapol.a: 
-	cd ../; $(MAKE) libapol
+	$(MAKE) -C .. libapol
 
 install-libapol-shared: libseauditso install-includes
 	install -m 755 $(LIBSO) $(SHARED_LIB_INSTALL_DIR)

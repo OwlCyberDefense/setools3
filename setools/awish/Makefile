@@ -14,7 +14,7 @@ LIBAPOL-TCL	= ../libapol/libapol-tcl.a ../libapol/libapol.so.$(shell cat ../liba
 
 ifeq ($(USE_LIBSEFS), 1)
 	LIBSEFS		= ../libsefs/libsefs.so.$(shell cat ../libsefs/VERSION)
-	awish: libsefs
+	all: libsefs
 	else
 	LIBSEFS = 
 	endif
@@ -24,7 +24,9 @@ AWISH_OBJ	= awish.o $(LIBAPOL-TCL) $(LIBSEFS)
 
 # awish is optionally linked to libselinux. The LIBSELINUX variable is 
 # set in the top-level Makefile.
-awish: libapol libapol-tcl $(AWISH_OBJ)
+all: libapol libapol-tcl awish
+
+awish: $(AWISH_OBJ)
 	$(CC) $(TCL_LIBINC) -o $@ $(AWISH_OBJ) $(LINKFLAGS) $(TCL_LIBS) $(LIBSELINUX)
 
 %.o:  %.c 

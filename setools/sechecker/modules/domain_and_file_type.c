@@ -112,7 +112,6 @@ int domain_and_file_type_init(sechk_module_t *mod, policy_t *policy)
 {
 	sechk_name_value_t *opt = NULL;
 	domain_and_file_type_data_t *datum = NULL;
-	bool_t test = FALSE;
 
 	if (!mod || !policy) {
 		fprintf(stderr, "Error: invalid parameters\n");
@@ -129,31 +128,6 @@ int domain_and_file_type_init(sechk_module_t *mod, policy_t *policy)
 		return -1;
 	}
 	mod->data = datum;
-
-	if (!mod->outputformat)
-		mod->outputformat = library->outputformat;
-
-	opt = mod->requirements;
-	while (opt) {
-		test = FALSE;
-		test = sechk_lib_check_requirement(opt, library);
-		if (!test) {
-			fprintf(stderr, "Error: requirements not met\n");
-			return -1;
-		}
-		opt = opt->next;
-	}
-
-	opt = mod->dependencies;
-	while (opt) {
-		test = FALSE;
-		test = sechk_lib_check_dependency(opt, library);
-		if (!test) {
-			fprintf(stderr, "Error: dependency %s not found\n", opt->name);
-			return -1;
-		}
-		opt = opt->next;
-	}
 
 	opt = mod->options;
 	while (opt) {
@@ -213,22 +187,22 @@ int domain_and_file_type_run(sechk_module_t *mod, policy_t *policy)
 	}
 
 	/* get results */
-	get_res = sechk_lib_get_module_function("domain_type", SECHK_MOD_FN_GET_RES, library);
+	get_res = sechk_lib_get_module_function("find_domains", SECHK_MOD_FN_GET_RES, library);
 	if (!get_res) {
 		fprintf(stderr, "Error: unable to find get_result function\n");
 		goto domain_and_file_type_run_fail;
 	}
-	domain_res = get_res(sechk_lib_get_module("domain_type", library));
+	domain_res = get_res(sechk_lib_get_module("find_domains", library));
 	if (!domain_res) {
 		fprintf(stderr, "Error: unable to get results\n");
 		goto domain_and_file_type_run_fail;
 	}
-	get_res = sechk_lib_get_module_function("file_type", SECHK_MOD_FN_GET_RES, library);
+	get_res = sechk_lib_get_module_function("find_file_types", SECHK_MOD_FN_GET_RES, library);
 	if (!get_res) {
 		fprintf(stderr, "Error: unable to find get_result function\n");
 		goto domain_and_file_type_run_fail;
 	}
-	file_type_res = get_res(sechk_lib_get_module("file_type", library));
+	file_type_res = get_res(sechk_lib_get_module("find_file_types", library));
 	if (!file_type_res) {
 		fprintf(stderr, "Error: unable to get results\n");
 		goto domain_and_file_type_run_fail;
@@ -270,16 +244,16 @@ int domain_and_file_type_run(sechk_module_t *mod, policy_t *policy)
 		item->test_result = 1;
 
 		/* include proof that it is a domain */
-		tmp_item = get_sechk_item_from_result(both_list[i], POL_LIST_TYPE, domain_res);
+		tmp_item = sechk_result_get_item(both_list[i], POL_LIST_TYPE, domain_res);
 		if (!tmp_item) {
 			fprintf(stderr, "Error: internal logic failure\n");
 			goto domain_and_file_type_run_fail;
 		}
 		for (tmp_proof = tmp_item->proof; tmp_proof; tmp_proof = tmp_proof->next) {
-			if (is_sechk_proof_in_item(tmp_proof->idx, tmp_proof->type, item))
+			if (sechk_item_has_proof(tmp_proof->idx, tmp_proof->type, item))
 				continue;
 			proof = NULL;
-			proof = copy_sechk_proof(tmp_proof);
+			proof = sechk_proof_copy(tmp_proof);
 			if (!proof) {
 				fprintf(stderr, "Error: out of memory\n");
 				goto domain_and_file_type_run_fail;
@@ -289,16 +263,16 @@ int domain_and_file_type_run(sechk_module_t *mod, policy_t *policy)
 		}
 
 		/* include proof that it is a file type */
-		tmp_item = get_sechk_item_from_result(both_list[i], POL_LIST_TYPE, file_type_res);
+		tmp_item = sechk_result_get_item(both_list[i], POL_LIST_TYPE, file_type_res);
 		if (!tmp_item) {
 			fprintf(stderr, "Error: internal logic failure\n");
 			goto domain_and_file_type_run_fail;
 		}
 		for (tmp_proof = tmp_item->proof; tmp_proof; tmp_proof = tmp_proof->next) {
-			if (is_sechk_proof_in_item(tmp_proof->idx, tmp_proof->type, item))
+			if (sechk_item_has_proof(tmp_proof->idx, tmp_proof->type, item))
 				continue;
 			proof = NULL;
-			proof = copy_sechk_proof(tmp_proof);
+			proof = sechk_proof_copy(tmp_proof);
 			if (!proof) {
 				fprintf(stderr, "Error: out of memory\n");
 				goto domain_and_file_type_run_fail;
@@ -375,7 +349,7 @@ int domain_and_file_type_print_output(sechk_module_t *mod, policy_t *policy)
 		return 0; /* not an error - no output is requested */
 
 
-	printf("Module: %s\n", mod_name);
+	printf("\nModule: %s\n", mod_name);
 	if (outformat & SECHK_OUT_HEADER) {
 		printf("%s\n\n", mod->header);
 	}
