@@ -364,7 +364,7 @@ int spurious_audit_run(sechk_module_t *mod, policy_t *policy)
 							proof = NULL;
 							tmp = NULL;
 							if (does_av_rule_use_perms(hash_rule->rule, 1, perms, num_perms, policy)) {
-								if (is_sechk_proof_in_item(hash_rule->rule, POL_LIST_AV_ACC, item))
+								if (sechk_item_has_proof(hash_rule->rule, POL_LIST_AV_ACC, item))
 									continue;
 								proof = sechk_proof_new();
 								if (!proof) {
@@ -448,7 +448,6 @@ int spurious_audit_print_output(sechk_module_t *mod, policy_t *policy)
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
-	int i = 0;
 
 	if (!mod || !policy) {
 		fprintf(stderr, "Error: invalid parameters\n");

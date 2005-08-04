@@ -148,7 +148,7 @@ awish: libapol libapol-tcl
 	$(MAKE) -C awish awish
 
 seaudit: libapol libseaudit
-	$(MAKE) -C seaudit all
+	$(MAKE) -C seaudit all 
 
 sediff: libapol
 	$(MAKE) -C sediff sediff
@@ -176,7 +176,7 @@ install: all install-dirs \
 	install-secmds install-seaudit install-sediff \
 	install-docs install-sechecker
 
-install-nogui: install-dirs install-dev install-secmds \
+install-nogui: all-nogui install-dirs install-dev install-secmds \
 	install-sediff-nogui install-sechecker
 
 # Install directories
@@ -215,6 +215,9 @@ install-sediffx: $(BINDIR) $(INSTALL_LIBDIR)
 
 install-sechecker: $(BINDIR) $(INSTALL_LIBDIR) 
 	$(MAKE) -C sechecker install
+
+install-sechecker-profiles: $(BINDIR) $(INSTALL_LIBDIR) 
+	$(MAKE) -C sechecker install-profiles
 
 # Install the BWidgets package
 install-bwidget:
@@ -352,8 +355,6 @@ bare: test-bare
 remove-docs:
 	$(MAKE) -C docs-src $@
 
-.PHONY: clean bare test-clean test-bare help apol awish \
-	seaudit sechecker secmds sediff libapol libseaudit \
-	libsefs install
-
+.PHONY: clean bare test-clean test-bare help\
+        libapol libapol-tcl libseaudit libsefs
 

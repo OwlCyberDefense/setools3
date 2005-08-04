@@ -134,7 +134,7 @@ int xx_register(sechk_lib_t *lib)
 
 /* The init function creates the module's private data storage object
  * and initializes its values based on the options parsed in the config
- * file. It also checks that the requirements and dependencies are met.
+ * file.
  * Add any option processing logic as indicated below.
  * TODO: add options processing logic */
 int xx_init(sechk_module_t *mod, policy_t *policy)
@@ -158,26 +158,6 @@ int xx_init(sechk_module_t *mod, policy_t *policy)
 		return -1;
 	}
 	mod->data = datum;
-
-	opt = mod->requirements;
-	while (opt) {
-		test = FALSE;
-		test = sechk_lib_check_requirement(opt, library);
-		if (!test) {
-			return -1;
-		}
-		opt = opt->next;
-	}
-
-	opt = mod->dependencies;
-	while (opt) {
-		test = FALSE;
-		test = sechk_lib_check_dependency(opt, library);
-		if (!test) {
-			return -1;
-		}
-		opt = opt->next;
-	}
 
 	opt = mod->options;
 	while (opt) {
@@ -322,7 +302,7 @@ int xx_print_output(sechk_module_t *mod, policy_t *policy)
 		return 0; /* not an error - no output is requested */
 
 	/* TODO: fill in output fields below */
-	printf("Module: %s\n", mod_name);
+	printf("\nModule: %s\n", mod_name);
 	/* print the header */
 	if (outformat & SECHK_OUT_HEADER) {
 		printf("%s\n\n", mod->header);

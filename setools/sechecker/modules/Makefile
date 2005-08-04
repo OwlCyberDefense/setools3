@@ -1,7 +1,9 @@
 MODS		= $(patsubst %.c, %.o, $(wildcard ./*.c))
 LIBXML_FLAGS    = `pkg-config --cflags libxml-2.0`
-INCLUDES	+= -I../../libapol -I.. -I../../libsefs
-
+INCLUDES	+= -I../../libapol -I..
+ifeq ($(USE_LIBSEFS), 1)
+INCLUDES        += -I../../libsefs
+endif
 
 all: $(MODS)
 

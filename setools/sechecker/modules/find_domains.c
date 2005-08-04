@@ -129,7 +129,6 @@ int find_domains_init(sechk_module_t *mod, policy_t *policy)
 	sechk_name_value_t *opt = NULL;
 	find_domains_data_t *datum = NULL;
 	int attr = -1, retv;
-	bool_t test = FALSE;
 
 	if (!mod || !policy) {
 		fprintf(stderr, "Error: invalid parameters\n");
@@ -146,31 +145,6 @@ int find_domains_init(sechk_module_t *mod, policy_t *policy)
 		return -1;
 	}
 	mod->data = datum;
-
-	if (!mod->outputformat)
-		mod->outputformat = library->outputformat;
-
-	opt = mod->requirements;
-	while (opt) {
-		test = FALSE;
-		test = sechk_lib_check_requirement(opt, library);
-		if (!test) {
-			fprintf(stderr, "Error: requirements not met\n");
-			return -1;
-		}
-		opt = opt->next;
-	}
-
-	opt = mod->dependencies;
-	while (opt) {
-		test = FALSE;
-		test = sechk_lib_check_dependency(opt, library);
-		if (!test) {
-			fprintf(stderr, "Error: dependency %s not found\n", opt->name);
-			return -1;
-		}
-		opt = opt->next;
-	}
 
 	opt = mod->options;
 	while (opt) {
@@ -308,7 +282,7 @@ int find_domains_run(sechk_module_t *mod, policy_t *policy)
 					else
 						type = POL_LIST_AV_ACC;
 					idx = hash_rule->rule;
-					if (is_sechk_proof_in_item(idx, type, item))
+					if (sechk_item_has_proof(idx, type, item))
 						continue;
 					buff = NULL;
 					if (hash_idx->nodes[j]->key.rule_type == RULE_TE_TRANS)
@@ -481,7 +455,7 @@ int find_domains_print_output(sechk_module_t *mod, policy_t *policy)
 	if (!outformat)
 		return 0; /* not an error - no output is requested */
 
-	printf("Module: %s\n", mod_name);
+	printf("\nModule: %s\n", mod_name);
 	if (outformat & SECHK_OUT_HEADER) {
 		printf("%s\n\n", mod->header);
 	}
