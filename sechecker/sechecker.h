@@ -17,9 +17,12 @@
 #endif
 #include <libxml/xmlstring.h>
 
-/* This should be defined from the make environment */
+/* These should be defined from the make environment */
 #ifndef PROFILE_INSTALL_DIR
-#define PROFILE_INSTALL_DIR /usr/share/setools/profiles.sechecker
+#define PROFILE_INSTALL_DIR "/usr/share/setools/sechecker-profiles"
+#endif
+#ifndef PROF_SUBDIR
+#define PROF_SUBDIR "/sechecker-profiles"
 #endif
 
 /* defined flags for outformat */
