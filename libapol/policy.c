@@ -2699,7 +2699,7 @@ int extract_types_from_te_rule(int rule_idx, int rule_type, unsigned char whichl
 		for (i = 0; i < (policy->num_types); i++) 
 			b_types[i] = !b_types[i];
 	}
-	if ((whichlist & SRC_LIST) && (flags & AVFLAG_SRC_STAR))
+	if ((whichlist & SRC_LIST) && (flags & AVFLAG_SRC_TILDA))
 		b_types[0] = FALSE; /* self not valid*/
 	for (i = 0; i < (policy->num_types); i++) {
 		if (b_types[i]) {
