@@ -229,7 +229,7 @@ int find_default_file_contexts_file(char **path)
 {
 	*path = NULL;
 #ifdef LIBSELINUX
-	*path = selinux_file_context_path();
+	*path = strdup(selinux_file_context_path());
 	return 0;
 #else
 	return -1;

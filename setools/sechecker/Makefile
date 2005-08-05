@@ -14,6 +14,7 @@ SECHECKER_VERSION = '"$(shell cat ./VERSION)"'
 LIBXML_FLAGS	  = `pkg-config --cflags libxml-2.0`
 LIBXML_LIBS       = `pkg-config --libs libxml-2.0`
 CFLAGS 		  += -D_GNU_SOURCE
+PROF_INSTALL_DIR = /sechecker-profiles
 
 all: libapol sechecker
 
@@ -38,7 +39,8 @@ modules:
 register_list.o : register_list.h
 
 sechecker.o: sechecker.h 
-sechecker.o sechecker_cli.o: CFLAGS+=-DPROFILE_INSTALL_DIR='"$(INSTALL_LIBDIR)/profiles.sechecker"'
+sechecker.o: CFLAGS+=-DPROFILE_INSTALL_DIR='"$(INSTALL_LIBDIR)$(PROF_INSTALL_DIR)"'
+sechecker.o: CFLAGS+=-DPROF_SUBDIR='"$(PROF_INSTALL_DIR)"'
 
 sechk_parse.o: sechk_parse.h
 
@@ -47,8 +49,8 @@ install: all install-profiles
 	install -m 644 dot_sechecker $(INSTALL_LIBDIR)
 
 install-profiles:
-	mkdir -m 755 -p $(INSTALL_LIBDIR)/profiles.sechecker
-	install -m 644 profiles/*.sechecker $(INSTALL_LIBDIR)/profiles.sechecker
+	mkdir -m 755 -p $(INSTALL_LIBDIR)$(PROF_INSTALL_DIR)
+	install -m 644 profiles/*.sechecker $(INSTALL_LIBDIR)$(PROF_INSTALL_DIR)
 
 clean:
 	rm -f sechecker *.o; $(MAKE) -C ./modules clean

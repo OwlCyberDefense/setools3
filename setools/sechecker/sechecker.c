@@ -764,19 +764,19 @@ int sechk_lib_load_profile(const char *prof_name, sechk_lib_t *lib)
 	}
 
 	/* translate profile name into filename */
-	prof_filename = (char*)calloc(31 + strlen(prof_name), sizeof(char));
+	prof_filename = (char*)calloc(1 + strlen(PROF_SUBDIR) + strlen(prof_name) + strlen(".sechecker"), sizeof(char));
 	if (!prof_filename) {
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	strcat(prof_filename, "/profiles.sechecker/");
+	strcat(prof_filename, PROF_SUBDIR);
 	strcat(prof_filename, prof_name);
 	strcat(prof_filename, ".sechecker");
 
 	/* find the file */
 	path = find_file(prof_filename);
 	if (!path) {
-		fprintf(stderr, "Error: could not find profile\n");
+		fprintf(stderr, "Error: could not find profile %s.\n", prof_name);
 		goto sechk_load_profile_error;
 	}
 
