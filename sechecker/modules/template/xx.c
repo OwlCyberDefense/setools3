@@ -141,7 +141,6 @@ int xx_init(sechk_module_t *mod, policy_t *policy)
 {
 	sechk_name_value_t *opt = NULL;
 	xx_data_t *datum = NULL;
-	bool_t test = FALSE;
 
 	if (!mod || !policy) {
 		fprintf(stderr, "Error: invalid parameters\n");
