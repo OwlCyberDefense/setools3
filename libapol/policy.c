@@ -2178,7 +2178,7 @@ int does_av_rule_use_type(int idx, int type, unsigned char whichlist, bool_t do_
 	int ans;
 	
 	if(whichlist & SRC_LIST) {
-		if (type == 0) /* self not valid */
+		if (idx == 0) /* self not valid */
 			return FALSE;
 		if(rule->flags & (AVFLAG_SRC_STAR)) {
 			if(do_indirect ) {
