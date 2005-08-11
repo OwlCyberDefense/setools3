@@ -35,5 +35,9 @@
 	<module name="spurious_audit">
 		<output value="long"/>
 	</module>
+	
+	<module name="attributes_not_in_rules">
+		<output value="short"/>
+	</module>
 </profile>
 </sechecker>
