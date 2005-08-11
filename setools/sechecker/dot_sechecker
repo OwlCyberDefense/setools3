@@ -71,4 +71,10 @@ This module finds two types of spurious audit rules:
 		<output value="long"/>
 	</module>
 	
+	<module name="attributes_not_in_rules">
+		<header>Finds attributes in the policy not used in any rule.</header>
+		<require name="policy_type" value="source"/>
+		<output value="short"/>
+	</module>
+
 </sechecker>
