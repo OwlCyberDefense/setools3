@@ -2178,7 +2178,7 @@ int does_av_rule_use_type(int idx, int type, unsigned char whichlist, bool_t do_
 	int ans;
 	
 	if(whichlist & SRC_LIST) {
-		if (idx == 0) /* self not valid */
+		if (idx == 0 && type == IDX_TYPE) /* self not valid */
 			return FALSE;
 		if(rule->flags & (AVFLAG_SRC_STAR)) {
 			if(do_indirect ) {
@@ -2204,7 +2204,8 @@ int does_av_rule_use_type(int idx, int type, unsigned char whichlist, bool_t do_
 		if(rule->flags & (AVFLAG_TGT_STAR)) {
 			if(do_indirect) {
 				(*cnt)++;
-				return TRUE;			}
+				return TRUE;
+			}
 		}
 		else {
 			ans = type_list_match_by_idx(idx, type, do_indirect, rule->tgt_types, policy);
