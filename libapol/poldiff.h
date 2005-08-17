@@ -22,17 +22,19 @@
 #define AP_TGT_ROLE   5
 #define AP_EXEC_TYPE  6
 
+#define OPT_ADD          0x000001
+#define OPT_REM          0x000010
+#define OPT_CHG          0x000100
+#define OPT_ADD_TYPE     0x001000
+#define OPT_REM_TYPE     0x010000
+
+
 typedef struct ap_diff_rename {
 	int *p1;       /* policy 1 items */
 	int *p2;       /* equivalent policy 2 items */
 	int num_items; /* the number of equivalent items */
 	int sz;        /* the array sizes */
 } ap_diff_rename_t;
-
-ap_diff_rename_t *ap_diff_rename_new();
-void ap_diff_rename_free(ap_diff_rename_t *rename);
-int ap_diff_rename_add(int p1_type, int p2_type, policy_t *p1, policy_t *p2, ap_diff_rename_t *rename);
-int ap_diff_rename_remove(int p1, int p2, ap_diff_rename_t *rename);
 
 typedef struct int_a_diff {
 	int	idx;
@@ -110,17 +112,18 @@ typedef struct ap_single_iad_chg {
 				 because they have to deal with changes because of types*/
         int *rem;               /* the array of removed sub items used for roles/attribs 
 				 because they have to deal with changes because of types*/
-        int_a_diff_t *add_iad; /* the arr of added sub items for all other items */
-        int_a_diff_t *rem_iad; /* the arr of removed sub items for all other items */
+        int_a_diff_t *add_iad; /* pointer to the added iad */
+        int_a_diff_t *rem_iad; /* pointer to removed iad */
         int num_add;            /* should be one */
         int num_rem;            /* should be one */
         int p1_idx;             /* the p1 idx of the base thing */
+		int p2_idx;
 } ap_single_iad_chg_t;
 
 /* this is used for types/roles/attribs/rallows/perms/oclasses/users 
    all of these are currently stored as iads*/
 typedef struct ap_single_iad_diff {
-        unsigned int type;               /* this indicates what kind of thing this is, type, attrib, etc */
+        unsigned int id;               /* this indicates what kind of thing this is, type, attrib, etc */
         int_a_diff_t **add;     /* the array of added iad elements */
         int_a_diff_t **rem;     /* the array of removed iad elements */
         ap_single_iad_chg_t *chg;      /* the array of changed structs */
@@ -173,7 +176,7 @@ typedef struct ap_single_te_chg {
 typedef struct ap_single_te_diff {
         avh_node_t **add;                  /* added te rules --idx into p2 diff hash */
         avh_node_t **rem;                  /* removed te rules --idx into p1 diff hash */
-        ap_single_te_chg_t *chg;           /* changed te rules */
+        ap_single_te_chg_t *chg;           /* an array changed te rules */
         avh_node_t **add_type;             /* added te rules because of added type */ 
         avh_node_t **rem_type;             /* removed te rules because of removed type */
         int num_add;
@@ -184,23 +187,22 @@ typedef struct ap_single_te_diff {
         int sort_key;    /* bit mask telling us sorting directions 1 is asc, 0 is desc */
 } ap_single_te_diff_t;
 
+/* idx for added/removed is for p2/p1 respectively
+   for chg it will be p1's idx */
+typedef struct ap_single_cond_diff_node_t {
+	int idx;
+	int idx2;
+	ap_single_te_diff_t *true_list;
+	ap_single_te_diff_t *false_list;	
+} ap_single_cond_diff_node_t;
 
-/* for conds just use the structs already in poldiff to handle it
-for adds just put in "pointer indexes" to p2 diff to only added
-conds, and visa versa for removed and p1.  To deal with changes
-make two pointer index arrays (of the same length) that match up
-conds by index, i.e. the pointers at index 0 both point to the same
-cond if one of the index pointers is null we know its a change because
-of only a remove or an add */
 typedef struct ap_single_cond_diff {
-        ap_cond_expr_diff_t **add;        /* the added conditonals */
-        ap_cond_expr_diff_t **rem;        /* removed conditionals */
-        ap_cond_expr_diff_t **chg_add;    /* array of added parts of changed conditionals */
-        ap_cond_expr_diff_t **chg_rem;    /* array of removed parts of changed conditionals */
+        ap_single_cond_diff_node_t *add;        /* the added conditonals */
+        ap_single_cond_diff_node_t *rem;        /* removed conditionals */
+        ap_single_cond_diff_node_t *chg;     /* changed conditionals */
         int num_add;
         int num_rem;
-        int num_chg_add;
-        int num_chg_rem;
+        int num_chg;
 } ap_single_cond_diff_t;
 
 typedef struct ap_single_perm_diff {
@@ -210,6 +212,14 @@ typedef struct ap_single_perm_diff {
 	int num_rem;
 } ap_single_perm_diff_t;
 
+/* for perms we just need the ints stored in d1/d2 */
+typedef struct apol_diff_result {
+	policy_t        *p1;	/* First policy */
+	policy_t	*p2;	/* Second policy */
+	bool_t		bindiff; /* indicates wither one p1/p2 is binary */
+	apol_diff_t	*diff1;	/* p1's stuff not in p2 */
+	apol_diff_t	*diff2; /* p2's stuff not in p1 */
+} apol_diff_result_t;
 
 typedef struct ap_single_view {
 	ap_single_iad_diff_t *types;         /* single view of the type differences */
@@ -224,31 +234,19 @@ typedef struct ap_single_view {
 	ap_single_rtrans_diff_t *rtrans; /* single view of the role transition differences */
 	ap_single_te_diff_t *te;         /* single view of the TE rule differences */
 	ap_single_cond_diff_t *conds;    /* single view of the conditional differences */
+	apol_diff_result_t *diff;               /* the old diff structure */
 } ap_single_view_diff_t;
-
-/* for perms we just need the ints stored in d1/d2 */
-typedef struct apol_diff_result {
-	policy_t        *p1;	/* First policy */
-	policy_t	*p2;	/* Second policy */
-	bool_t		bindiff; /* indicates wither one p1/p2 is binary */
-	apol_diff_t	*diff1;	/* p1's stuff not in p2 */
-	apol_diff_t	*diff2; /* p2's stuff not in p1 */
-} apol_diff_result_t;
 
 
 #define apol_is_bindiff(adr) (adr != NULL ? adr->bindiff : FALSE)
 
-void apol_free_diff_result(bool_t close_pols, apol_diff_result_t *adr);
+ap_single_view_diff_t *ap_new_single_view_diff(unsigned int opts, policy_t *p1, policy_t *p2,ap_diff_rename_t *renamed_types);
+void ap_destroy_single_view_diff(ap_single_view_diff_t *svd);
+ap_diff_rename_t *ap_diff_rename_new();
+void ap_diff_rename_free(ap_diff_rename_t *rename);
+int ap_diff_rename_add(int p1_type, int p2_type, policy_t *p1, policy_t *p2, ap_diff_rename_t *rename);
+int ap_diff_rename_remove(int p1, int p2, ap_diff_rename_t *rename);
 
-
-
-apol_diff_result_t *apol_diff_policies(unsigned int opts, policy_t *p1, policy_t *p2, ap_diff_rename_t *renamed_types);
-ap_single_view_diff_t *ap_new_single_view_diff(apol_diff_result_t *diff, ap_diff_rename_t *renamed_types);
-int make_p2_key(avh_key_t *p1key, avh_key_t *p2key, policy_t *p1, policy_t *p2, ap_diff_rename_t *renamed_types);
-void apol_free_single_view_diff(ap_single_view_diff_t *svd);
-bool_t does_cond_match(avh_node_t *n1, policy_t *p1, avh_node_t *n2, policy_t *p2, bool_t *inverse);
-ap_cond_expr_diff_t *find_cdiff_in_policy(ap_cond_expr_diff_t *cond_expr_diff,apol_diff_t *diff2,policy_t *p1,policy_t *p2,bool_t *inverse);
-int find_cond_in_policy(int p1_idx,policy_t *p1,policy_t *p2,bool_t noinverse);
 #endif /* _APOLICY_POLDIFF_H_ */
 
 

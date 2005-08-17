@@ -14,6 +14,7 @@
 #define SEDIFF_RENAME_NUM_COLUMNS       2
 
 #include "sediff_gui.h"
+#include "poldiff.h"
 #include <glade/glade.h>
 #include <gtk/gtk.h>
 
