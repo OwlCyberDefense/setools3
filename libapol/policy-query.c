@@ -356,7 +356,6 @@ int match_rbac_roles(int	idx,
                      policy_t	*policy)
 {
 	int i;
-	int ans;
 	ta_item_t *ta;
 
 	if(b == NULL)
@@ -395,13 +394,6 @@ int match_rbac_roles(int	idx,
 						b->trans[policy->role_trans[i].trans_role.idx] = TRUE;
 
 				}
-			}
-			if(!(b->trans[i]) && (whichlist & TGT_LIST) && !tgt_is_role) {
-				ans = does_role_trans_use_ta(idx, type, do_indirect, &(policy->role_trans[i]), 
-						&(b->t_cnt), policy);
-				if (ans == -1)
-					return -1;
-				b->trans[i] = ans;
 			}
 		}
 	}
