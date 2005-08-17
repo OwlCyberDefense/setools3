@@ -2,7 +2,7 @@
 
 LIBAPOL		= ../libapol/libapol.a
 INCLUDE		= -I.. -I../libapol
-GUI-OBJS	= sediff_gui.o sediff_treemodel.o utilgui.o sediff_rename_types.o
+GUI-OBJS	= sediff_gui.o sediff_treemodel.o utilgui.o sediff_rename_types.o sediff_find_window.o
 GTK_CFLAGS      = `pkg-config --cflags libglade-2.0`
 GTK_LIBS        = `pkg-config --libs libglade-2.0`
 GLADE_FILES     = sediff.glade
@@ -44,6 +44,8 @@ bare: clean
 # include objects here for header dependencies
 sediff_gui.o sediff_rename_types.o: sediff_gui.h
 sediff_gui.o sediff_rename_types.o: sediff_rename_types.h
+sediff_gui.o sediff_find_window.o: sediff_gui.h
+sediff_gui.o sediff_find_window.o: sediff_find_window.h
 sediff_treemodel.o: sediff_treemodel.h
 support.o: support.h
 sediff_gui.o utilgui.o: utilgui.h
