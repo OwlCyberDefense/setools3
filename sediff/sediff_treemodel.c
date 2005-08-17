@@ -6,355 +6,238 @@
  * Date: December 28, 2004
  */
 #include "sediff_treemodel.h"
+#include <poldiff.h>
 #include <render.h>
 
 #include <stdlib.h>
 
-gchar **diff_labels = NULL;
-		      			       
-/* Local static functions */
-static void sediff_tree_view_store_init(SEDiffTreeViewStore *store);
-static void sediff_tree_view_store_class_init(SEDiffTreeViewStore *klass);
-static void sediff_tree_view_store_tree_model_init(GtkTreeModelIface *iface);
-static void sediff_tree_view_store_finalize(GObject *object);
-static void sediff_tree_view_store_get_value(GtkTreeModel *tree_model, GtkTreeIter *iter, gint column, GValue *value);
-
-static GType sediff_tree_view_store_get_column_type(GtkTreeModel *tree_model, gint index);
-static GtkTreeModelFlags sediff_tree_view_store_get_flags(GtkTreeModel *tree_model);
-static GtkTreePath *sediff_tree_view_store_get_path(GtkTreeModel *tree_model, GtkTreeIter *iter);
-static gint sediff_tree_view_store_get_n_columns(GtkTreeModel *tree_model);
-static gint sediff_tree_view_store_iter_n_children(GtkTreeModel *tree_model, GtkTreeIter *iter);
-static gboolean sediff_tree_view_store_get_iter(GtkTreeModel *tree_model, GtkTreeIter *iter, GtkTreePath *path);
-static gboolean sediff_tree_view_store_iter_next(GtkTreeModel *tree_model, GtkTreeIter *iter);
-static gboolean sediff_tree_view_store_iter_children(GtkTreeModel *tree_model, GtkTreeIter *iter, GtkTreeIter *parent);
-static gboolean sediff_tree_view_store_iter_has_child(GtkTreeModel *tree_model, GtkTreeIter *iter);
-static gboolean sediff_tree_view_store_iter_nth_child(GtkTreeModel *tree_model, GtkTreeIter *iter, GtkTreeIter *parent,
-						      gint n);
-static gboolean sediff_tree_view_store_iter_parent(GtkTreeModel *tree_model, GtkTreeIter *iter, GtkTreeIter *child);
-
-static GObjectClass *parent_class = NULL;  /* GObject stuff - nothing to worry about */
-
-/* Start of static function prototypes */
-static void sediff_tree_view_store_class_init(SEDiffTreeViewStore *klass)
+gboolean widget_event(GtkWidget *widget,GdkEventMotion *event,
+		      gpointer user_data)
 {
-	GObjectClass *object_class;
+	GtkTreeView *treeview;
+	gint x, ex, ey, y;
+	GtkTreePath *path = NULL;
+	GtkTreeViewColumn *column = NULL;
+	treeview = GTK_TREE_VIEW(widget);
+	int row;
+	GdkEventButton *event_button;
+	GtkTreeIter iter;
+	GtkTreeModel *treemodel = NULL;
 	
-	/* 'klass' is used instead of 'class', because 'class' is a C++ keyword */
-	parent_class = g_type_class_peek_parent(klass);
-	object_class = (GObjectClass*)klass;
-
-	object_class->finalize = sediff_tree_view_store_finalize;
-}
-
-static void sediff_tree_view_store_tree_model_init(GtkTreeModelIface *iface)
-{
-	iface->get_flags = sediff_tree_view_store_get_flags;
-	iface->get_n_columns = sediff_tree_view_store_get_n_columns;
-	iface->get_column_type = sediff_tree_view_store_get_column_type;
-	iface->get_iter = sediff_tree_view_store_get_iter;
-	iface->get_path = sediff_tree_view_store_get_path;
-	iface->get_value = sediff_tree_view_store_get_value;
-  	iface->iter_next = sediff_tree_view_store_iter_next;
-	iface->iter_children = sediff_tree_view_store_iter_children;
-	iface->iter_has_child = sediff_tree_view_store_iter_has_child;
-	iface->iter_n_children = sediff_tree_view_store_iter_n_children;
-	iface->iter_nth_child = sediff_tree_view_store_iter_nth_child;
-	iface->iter_parent = sediff_tree_view_store_iter_parent;
-}
-
-static void sediff_tree_view_store_init(SEDiffTreeViewStore *store)
-{
-	store->n_columns       = SEDIFF_NUM_COLUMNS;
-
-	store->column_types[0] = G_TYPE_STRING;   /* SEDIFF_LABEL_COLUMN  */
-	store->column_types[1] = G_TYPE_POINTER;  /* SEDIFF_HIDDEN_COLUMN */
-	
-	g_assert (SEDIFF_NUM_COLUMNS == 2);
-	
-	store->num_rows = 0;	
-	store->stamp = g_random_int();  /* Random int to check whether an iter belongs to our model */
-}
-
-static void sediff_tree_view_store_finalize(GObject *object)
-{	
-	SEDiffTreeViewStore *store = SEDIFF_TREE_STORE(object); 
-	/* Free all memory */
-  	if (store->diff_results)
-  		apol_free_diff_result(1, store->diff_results);
-  	store->diff_results = NULL;
-	/* free labels */
-	if (diff_labels)
-		g_strfreev(diff_labels);
-	diff_labels = NULL;
-
-	(*parent_class->finalize)(object);
-}
-
-static GtkTreeModelFlags sediff_tree_view_store_get_flags(GtkTreeModel *tree_model)
-{
-	g_return_val_if_fail(SEDIFF_IS_TREE_STORE(tree_model), 0);
-	return GTK_TREE_MODEL_ITERS_PERSIST | GTK_TREE_MODEL_LIST_ONLY;
-}
-
-static gint sediff_tree_view_store_get_n_columns(GtkTreeModel *tree_model)
-{
-	return SEDIFF_TREE_STORE(tree_model)->n_columns;
-}
-
-static GType sediff_tree_view_store_get_column_type(GtkTreeModel *tree_model, gint index)
-{
-	g_return_val_if_fail(SEDIFF_IS_TREE_STORE(tree_model), G_TYPE_INVALID);
-	g_return_val_if_fail(index < SEDIFF_TREE_STORE(tree_model)->n_columns && index >= 0, G_TYPE_INVALID);
-	
-	return SEDIFF_TREE_STORE(tree_model)->column_types[index];
-}
-
-static gboolean sediff_tree_view_store_get_iter(GtkTreeModel *tree_model, GtkTreeIter *iter, GtkTreePath *path)
-{
-	gint i, depth;
-	SEDiffTreeViewStore *store;
-	
-	store = (SEDiffTreeViewStore*)tree_model;
-	g_return_val_if_fail(store->diff_results != NULL, FALSE);
+	if (event->type == GDK_BUTTON_PRESS) {
+		/* is this a right click event */
+		event_button = (GdkEventButton*)event;
+		if (event->is_hint) {	
+			gdk_window_get_pointer(event->window, &ex, &ey, NULL);
+		} else {
+			ex = event->x;
+			ey = event->y;
+		}
 		
-	g_return_val_if_fail(SEDIFF_IS_TREE_STORE(tree_model), FALSE);
-	g_return_val_if_fail(gtk_tree_path_get_depth (path) > 0, FALSE);
-	
-	depth = gtk_tree_path_get_depth(path);
-	/* we do not allow children */
-  	g_assert(depth == 1); /* depth 1 = top level; a list only has top level nodes and no children */
-  	
-	i = gtk_tree_path_get_indices(path)[0];
-	if (i >= store->num_rows)
-		return FALSE;
-		
-	iter->stamp = store->stamp;
-	iter->user_data = GINT_TO_POINTER(i);
+		gtk_tree_view_get_path_at_pos   (treeview,
+						 ex,
+						 ey,
+						 &path,
+						 &column,
+						 &x,
+						 &y);
+		if (event_button->button == 1) {			
+			treemodel = gtk_tree_view_get_model(GTK_TREE_VIEW(treeview));
+			gtk_tree_model_get_iter(treemodel,&iter,path);
+			gtk_tree_model_get(treemodel, &iter, SEDIFF_HIDDEN_COLUMN,&row,-1);
 
-	return TRUE;
-}
-
-static GtkTreePath *sediff_tree_view_store_get_path(GtkTreeModel *tree_model,
-					    	    GtkTreeIter *iter)
-{
-	GtkTreePath *retval;
-	SEDiffTreeViewStore *store;
-
-	store = (SEDiffTreeViewStore*)tree_model;
-	g_return_val_if_fail(SEDIFF_IS_TREE_STORE(tree_model), NULL);
-	g_return_val_if_fail(iter->stamp == store->stamp, NULL);
-
-	retval = gtk_tree_path_new();
-	gtk_tree_path_append_index(retval, GPOINTER_TO_INT(iter->user_data));
-	return retval;
-}
-
-static void sediff_tree_view_store_get_value(GtkTreeModel *tree_model, GtkTreeIter *iter,
-				     	     gint column, GValue *value)
-{
-	SEDiffTreeViewStore *store;
-	int indx;
-	apol_diff_result_t *diff_results;
-	
-	store = (SEDiffTreeViewStore*)tree_model;
-	g_return_if_fail(store->diff_results != NULL);
-	g_return_if_fail(SEDIFF_IS_TREE_STORE(tree_model));
-	g_return_if_fail(iter->stamp == store->stamp);
-	g_return_if_fail(column < store->n_columns);
-	diff_results = store->diff_results;
-	
-	g_value_init(value, SEDIFF_TREE_STORE(tree_model)->column_types[column]);
-	
-	if (column == SEDIFF_HIDDEN_COLUMN) {
-		g_value_set_pointer(value, diff_results);		
-	} else if (column == SEDIFF_LABEL_COLUMN) {
-		indx = GPOINTER_TO_INT(iter->user_data);
-		g_assert(indx < store->num_rows);
-		g_value_set_string(value, diff_labels[indx]);	
-	} else {
-		g_return_if_reached();
+		}
 	}
-}
 
-static gboolean sediff_tree_view_store_iter_next(GtkTreeModel *tree_model, GtkTreeIter *iter)
-{
-	SEDiffTreeViewStore *store;
-	int i;
-
-	store = (SEDiffTreeViewStore*)tree_model;
-	g_return_val_if_fail(store->diff_results != NULL, FALSE);
-	g_return_val_if_fail(SEDIFF_IS_TREE_STORE(tree_model), FALSE);
-	g_return_val_if_fail(iter->stamp == store->stamp, FALSE);
-
-	i = GPOINTER_TO_INT(iter->user_data) + 1;
-
-	iter->user_data = GINT_TO_POINTER(i);
-
-	return i < store->num_rows;
-}
-
-static gboolean sediff_tree_view_store_iter_children(GtkTreeModel *tree_model, GtkTreeIter *iter,
-						     GtkTreeIter *parent)
-{
-	SEDiffTreeViewStore *store;
-
-	if (parent)
-		return FALSE;
-	g_return_val_if_fail(SEDIFF_IS_TREE_STORE(tree_model), FALSE);
-	store = (SEDiffTreeViewStore*)tree_model;
-	g_return_val_if_fail(store->diff_results != NULL, FALSE);
-
-	if (store->num_rows) {
-		iter->stamp = store->stamp;
-		iter->user_data = GINT_TO_POINTER(0);
-		return TRUE;
-	} else {
-		return FALSE;
-	}
-}
-
-static gboolean sediff_tree_view_store_iter_has_child(GtkTreeModel *tree_model, GtkTreeIter *iter)
-{
 	return FALSE;
 }
 
-static gint sediff_tree_view_store_iter_n_children(GtkTreeModel *tree_model, GtkTreeIter *iter)
-{
-	SEDiffTreeViewStore *store;
-	
-	g_return_val_if_fail(SEDIFF_IS_TREE_STORE(tree_model), -1);
-	store = (SEDiffTreeViewStore*)tree_model;
-	g_return_val_if_fail(store->diff_results != NULL, 0);
-	if (iter == NULL)
-		return store->num_rows;
 
+
+int sediff_tree_store_add_row(GtkTreeStore *treestore,const char *str,int *row)
+{
+	GtkTreeIter   toplevel,child;
+	gchar **split_line_array = NULL;
+	int i = 0;
+	if (treestore == NULL || str == NULL)
+		return -1;
+
+	split_line_array = g_strsplit(str,":", 0);   
+	gtk_tree_store_append(treestore,&toplevel,NULL);
+	gtk_tree_store_set(treestore, &toplevel,
+			   SEDIFF_HIDDEN_COLUMN,*row,
+			   SEDIFF_LABEL_COLUMN,split_line_array[0],
+			   -1);
+	*row += 1;
+
+	i = 1;
+	while (split_line_array[i] != NULL) {					
+		gtk_tree_store_append(treestore,&child,&toplevel);
+		gtk_tree_store_set(treestore, &child,
+			   SEDIFF_HIDDEN_COLUMN,*row,
+			   SEDIFF_LABEL_COLUMN,split_line_array[i],
+			   -1);
+
+		*row += 1;
+		i++;
+	}
+	g_strfreev(split_line_array);
 	return 0;
 }
 
-static gboolean sediff_tree_view_store_iter_nth_child(GtkTreeModel *tree_model, GtkTreeIter *iter, GtkTreeIter *parent,
-					 	      gint n)
+
+
+GtkTreeModel *sediff_create_and_fill_model (ap_single_view_diff_t *svd)
 {
-	SEDiffTreeViewStore *store = (SEDiffTreeViewStore*)tree_model;
-	if (!store)
-		return FALSE;
-	g_return_val_if_fail(store->diff_results != NULL, FALSE);
+	GtkTreeStore  *treestore;
+	int i = 0;
+	GString *string = g_string_new("");
 
-	if (parent)
-		return FALSE;
+	treestore = gtk_tree_store_new(SEDIFF_NUM_COLUMNS,
+				       G_TYPE_STRING,
+				       G_TYPE_INT);
 
-	if (n < store->num_rows) {
-		iter->stamp = store->stamp;
-		iter->user_data = GINT_TO_POINTER(n);
-		return TRUE;
-	} else {
-		return FALSE;
-	}
-}
+	/* Append a top level row and leave it empty */
 
-static gboolean sediff_tree_view_store_iter_parent(GtkTreeModel *tree_model, GtkTreeIter *iter,
-					   	   GtkTreeIter *child)
-{
-	return FALSE;
-}
-
-static void sediff_tree_store_append_item(SEDiffTreeViewStore *store, const gchar *name)
-{
-	GtkTreeIter   iter;
-	GtkTreePath  *path;
-	guint         pos;
+	sediff_tree_store_add_row(treestore,"Summary",&i);
 	
-	g_return_if_fail(SEDIFF_TREE_STORE(store));
-	g_return_if_fail(name != NULL);
+	g_string_printf(string,"Classes %d:Added %d:Removed %d:Changed %d",
+			svd->classes->num_add+svd->classes->num_rem+svd->classes->num_chg,
+			svd->classes->num_add,svd->classes->num_rem,svd->classes->num_chg);	
+	sediff_tree_store_add_row(treestore,string->str,&i);
+
+	g_string_printf(string,"Permissions %d:Added %d:Removed %d",
+			svd->perms->num_add+svd->perms->num_rem,
+			svd->perms->num_add,svd->perms->num_rem);
+	sediff_tree_store_add_row(treestore,string->str,&i);
+
+	g_string_printf(string,"Common Permissions %d:Added %d:Removed %d:Changed %d",
+			svd->common_perms->num_add+svd->common_perms->num_rem+svd->common_perms->num_chg,
+			svd->common_perms->num_add,svd->common_perms->num_rem,svd->common_perms->num_chg);
+	sediff_tree_store_add_row(treestore,string->str,&i);
+
+	g_string_printf(string,"Types %d:Added %d:Removed %d:Changed %d",
+			svd->types->num_add+svd->types->num_rem+svd->types->num_chg,
+			svd->types->num_add,svd->types->num_rem,svd->types->num_chg);
+	sediff_tree_store_add_row(treestore,string->str,&i);
+
+	g_string_printf(string,"Attributes %d:Added %d:Removed %d:Changed %d:Changed Add %d:Changed Remove %d",
+			svd->attribs->num_add+svd->attribs->num_rem+svd->attribs->num_chg+
+			svd->attribs->num_chg_add+svd->attribs->num_chg_rem,
+			svd->attribs->num_add,svd->attribs->num_rem,svd->attribs->num_chg,
+			svd->attribs->num_chg_add,svd->attribs->num_chg_rem);
+	sediff_tree_store_add_row(treestore,string->str,&i);
+
+	g_string_printf(string,"Roles %d:Added %d:Removed %d:Changed %d:Changed Add %d:Changed Remove %d",
+			svd->roles->num_add+svd->roles->num_rem+svd->roles->num_chg+
+			svd->roles->num_chg_add+svd->roles->num_chg_rem,
+			svd->roles->num_add,svd->roles->num_rem,svd->roles->num_chg,
+			svd->roles->num_chg_add,svd->roles->num_chg_rem);
+	sediff_tree_store_add_row(treestore,string->str,&i);
+
+	g_string_printf(string,"Users %d:Added %d :Removed %d:Changed %d",
+			svd->users->num_add+svd->users->num_rem+svd->users->num_chg,
+			svd->users->num_add,svd->users->num_rem,svd->users->num_chg);
+	sediff_tree_store_add_row(treestore,string->str,&i);
+
+	g_string_printf(string,"Booleans %d:Added %d:Removed %d:Changed %d",svd->bools->num_add+
+			svd->bools->num_rem+svd->bools->num_chg,svd->bools->num_add,
+			svd->bools->num_rem,svd->bools->num_chg);
+	sediff_tree_store_add_row(treestore,string->str,&i);
+
+	g_string_printf(string,"Role Allows %d:Added %d:Removed %d:Changed %d",svd->rallows->num_add+
+			svd->rallows->num_rem+svd->rallows->num_chg,svd->rallows->num_add,
+			svd->rallows->num_rem,svd->rallows->num_chg);
+	sediff_tree_store_add_row(treestore,string->str,&i);
+
+	g_string_printf(string,"Role Transitions %d:Added %d:Added Type %d:Removed %d:Removed Type %d:Changed %d",
+			svd->rtrans->num_add+svd->rtrans->num_rem+svd->rtrans->num_chg+
+			svd->rtrans->num_add_type+svd->rtrans->num_rem_type,svd->rtrans->num_add,
+			svd->rtrans->num_add_type,svd->rtrans->num_rem,svd->rtrans->num_rem_type,
+			svd->rtrans->num_chg);
+	sediff_tree_store_add_row(treestore,string->str,&i);
+
+	g_string_printf(string,"TE Rules %d:Added %d:Added Type %d:Removed %d:Removed Type %d:Changed %d",
+			svd->te->num_add+svd->te->num_add_type+svd->te->num_rem+svd->te->num_rem_type+
+			svd->te->num_chg,svd->te->num_add,svd->te->num_add_type,svd->te->num_rem,
+			svd->te->num_rem_type,svd->te->num_chg);
+	sediff_tree_store_add_row(treestore,string->str,&i);
+
+	g_string_printf(string,"Conditionals %d:Added %d:Removed %d:Changed %d",svd->conds->num_add+svd->conds->num_rem+
+			svd->conds->num_chg,svd->conds->num_add,svd->conds->num_rem,svd->conds->num_chg);
+	sediff_tree_store_add_row(treestore,string->str,&i);
+
+	g_string_free(string,TRUE);
+	return GTK_TREE_MODEL(treestore);
 	
-	pos = store->num_rows;
-	store->num_rows++;
-	iter.stamp = store->stamp;
-	/* inform the tree view and other interested objects
-	 * (e.g. tree row references) that we have inserted
-	 * a new row, and where it was inserted */
-	path = gtk_tree_path_new();
-	gtk_tree_path_append_index(path, pos);
-	sediff_tree_view_store_get_iter(GTK_TREE_MODEL(store), &iter, path);
-	gtk_tree_model_row_inserted(GTK_TREE_MODEL(store), path, &iter);
-	gtk_tree_path_free(path);
-}
-/* End of static funtion prototypes */
-
-/* Start of exported function prototypes */
-gchar **sediff_tree_store_get_labels()
-{
-	return diff_labels;
 }
 
-void sediff_tree_store_set_labels(gchar **labels)
+int sediff_get_model_option_iter(GtkTreeModel *tree_model,GtkTreeIter *parent,GtkTreeIter *child,int opt)
 {
-	if (diff_labels != NULL)
-		g_strfreev(diff_labels);
-	diff_labels = g_strdupv(labels);
-}
+	int option;
 
-GType sediff_tree_view_store_get_type(void)
-{
-	static GType store_type = 0;
-
-	if (!store_type)
-	{
-		static const GTypeInfo sediff_tree_store_info = {
-			sizeof(SEDiffTreeViewStoreClass),
-			NULL,
-			NULL,
-			(GClassInitFunc)sediff_tree_view_store_class_init,
-			NULL,
-			NULL,
-			sizeof (SEDiffTreeViewStore),
-			0,
-			(GInstanceInitFunc)sediff_tree_view_store_init,
-		};
-
-		static const GInterfaceInfo tree_model_info = {
-			(GInterfaceInitFunc)sediff_tree_view_store_tree_model_init,
-			NULL,
-			NULL
-		};
-
-		store_type = g_type_register_static (G_TYPE_OBJECT, 
-						     "SEDiffTreeViewStore",
-						     &sediff_tree_store_info, 
-						     0);
-
-		g_type_add_interface_static(store_type,
-					    GTK_TYPE_TREE_MODEL,
-					    &tree_model_info);
+	if(gtk_tree_model_get_iter_first(tree_model,parent)) {
+		gtk_tree_model_get(tree_model, parent, SEDIFF_HIDDEN_COLUMN,&option,-1);
+		while (option != opt && gtk_tree_model_iter_next(tree_model,parent)) {
+			if (gtk_tree_model_iter_children(tree_model,child,parent)) {
+				gtk_tree_model_get(tree_model, child, SEDIFF_HIDDEN_COLUMN,&option,-1);
+				while (option != opt && gtk_tree_model_iter_next(tree_model,child))
+					gtk_tree_model_get(tree_model, child, SEDIFF_HIDDEN_COLUMN,&option,-1); 
+				if (option == opt) {				       
+					return 0;
+				}
+			}
+			gtk_tree_model_get(tree_model, parent, SEDIFF_HIDDEN_COLUMN,&option,-1);
+		}
+		if (option == opt) {
+			child = parent;
+			return 0;
+				
+		}
 	}
-
-	return store_type;
+	return -1;
 }
 
-SEDiffTreeViewStore *sediff_tree_store_new(void)
+GtkWidget *sediff_create_treeview()
 {
-	SEDiffTreeViewStore *store;
+	GtkTreeViewColumn   *col;
+	GtkCellRenderer     *renderer;
+	GtkWidget           *view;
 
-	store = g_object_new(SEDIFF_TYPE_TREE_STORE, NULL);
-	g_assert( store != NULL );
 
-	return store;
+
+	view = gtk_tree_view_new();
+	g_signal_connect_after(G_OBJECT(view), "event", 
+			       GTK_SIGNAL_FUNC(widget_event), 
+			       NULL);
+
+	col = gtk_tree_view_column_new();
+	gtk_tree_view_column_set_sizing (col,GTK_TREE_VIEW_COLUMN_GROW_ONLY);
+	gtk_tree_view_column_set_title(col, "Differences");
+	/* pack tree view column into tree view */
+	gtk_tree_view_append_column(GTK_TREE_VIEW(view), col);
+	renderer = gtk_cell_renderer_text_new();
+	/* pack cell renderer into tree view column */
+	gtk_tree_view_column_pack_start(col, renderer, TRUE);
+	/* connect 'text' property of the cell renderer to
+	 *  model column that contains the first name */
+	gtk_tree_view_column_add_attribute(col, renderer, "text", SEDIFF_LABEL_COLUMN);	
+
+	return view;
+
 }
 
-int sediff_tree_store_populate(SEDiffTreeViewStore *store)
+
+GtkWidget *sediff_create_view_and_model (ap_single_view_diff_t *svd)
 {
-	int i;
+	GtkWidget           *view;
+	GtkTreeModel        *model;
 
-	g_return_val_if_fail(store != NULL, -1);
-	for (i = 0; diff_labels[i] != NULL; i++) {
-		sediff_tree_store_append_item(store, diff_labels[i]);
-	}
-	
-	return 0;
+	model = sediff_create_and_fill_model(svd);
+	view = sediff_create_treeview();
+	gtk_tree_view_set_model(GTK_TREE_VIEW(view), model);
+
+	return view;
 }
 
-int seaudit_tree_store_iter_to_idx(SEDiffTreeViewStore *store, GtkTreeIter *iter)
-{
-	g_return_val_if_fail(iter->stamp == store->stamp, -1);
-	return GPOINTER_TO_INT(iter->user_data);
-}
-/* End of exported function prototypes */
+
