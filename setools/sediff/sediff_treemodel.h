@@ -9,30 +9,79 @@
 #ifndef _SEDIFF_TREE_MODEL_H
 #define _SEDIFF_TREE_MODEL_H
 
-#include <poldiff.h>
 #include <gtk/gtk.h>
-#include <glib.h>
+#include <poldiff.h>
 
-/* Some boilerplate GObject defines. 'klass' is used
- * instead of 'class', because 'class' is a C++ keyword */
-#define SEDIFF_TYPE_TREE_STORE            (sediff_tree_view_store_get_type())
-#define SEDIFF_TREE_STORE(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), SEDIFF_TYPE_TREE_STORE, SEDiffTreeViewStore))
-#define SEDIFF_TREE_STORE_CLASS(klass)    (G_TYPE_CHECK_CLASS_CAST ((klass),  SEDIFF_TYPE_TREE_STORE, SEDiffTreeViewStoreClass))
-#define SEDIFF_IS_TREE_STORE(obj)         (G_TYPE_CHECK_INSTANCE_TYPE ((obj), SEDIFF_TYPE_TREE_STORE))
-#define SEDIFF_IS_TREE_STORE_CLASS(klass) (G_TYPE_CHECK_CLASS_TYPE ((klass),  SEDIFF_TYPE_TREE_STORE))
-#define SEDIFF_TREE_STORE_GET_CLASS(obj)  (G_TYPE_INSTANCE_GET_CLASS ((obj),  SEDIFF_TYPE_TREE_STORE, SEDiffTreeViewStoreClass))
-
-/* defines for the sediff options */
+/* defines for the sediff tree options */
 #define OPT_SUMMARY             0
+
 #define OPT_CLASSES 		1
-#define OPT_TYPES 		2
-#define OPT_ATTRIBUTES          3
-#define OPT_ROLES		4
-#define OPT_USERS		5
-#define OPT_BOOLEANS 		6
-#define OPT_TE_RULES		7
-#define OPT_RBAC_RULES		8
-#define OPT_CONDITIONALS        9
+#define OPT_CLASSES_ADD         2
+#define OPT_CLASSES_REM         3
+#define OPT_CLASSES_CHG         4
+
+#define OPT_PERMISSIONS         5
+#define OPT_PERMISSIONS_ADD     6
+#define OPT_PERMISSIONS_REM     7
+
+#define OPT_COMMON_PERMS        8
+#define OPT_COMMON_PERMS_ADD    9
+#define OPT_COMMON_PERMS_REM   10
+#define OPT_COMMON_PERMS_CHG   11
+ 
+#define OPT_TYPES 	       12
+#define OPT_TYPES_ADD          13
+#define OPT_TYPES_REM          14
+#define OPT_TYPES_CHG          15
+
+#define OPT_ATTRIBUTES         16
+#define OPT_ATTRIBUTES_ADD     17
+#define OPT_ATTRIBUTES_REM     18
+#define OPT_ATTRIBUTES_CHG     19
+#define OPT_ATTRIBUTES_CHG_ADD 20
+#define OPT_ATTRIBUTES_CHG_REM 21
+
+#define OPT_ROLES	       22
+#define OPT_ROLES_ADD          23
+#define OPT_ROLES_REM          24
+#define OPT_ROLES_CHG          25
+#define OPT_ROLES_CHG_ADD      26
+#define OPT_ROLES_CHG_REM      27
+
+#define OPT_USERS	       28
+#define OPT_USERS_ADD          29 
+#define OPT_USERS_REM          30 
+#define OPT_USERS_CHG          31
+
+#define OPT_BOOLEANS 	       32
+#define OPT_BOOLEANS_ADD       33 
+#define OPT_BOOLEANS_REM       34 
+#define OPT_BOOLEANS_CHG       35
+
+#define OPT_ROLE_ALLOWS        36 
+#define OPT_ROLE_ALLOWS_ADD    37
+#define OPT_ROLE_ALLOWS_REM    38 
+#define OPT_ROLE_ALLOWS_CHG    39
+
+#define OPT_ROLE_TRANS         40 
+#define OPT_ROLE_TRANS_ADD     41
+#define OPT_ROLE_TRANS_ADD_TYPE 42  
+#define OPT_ROLE_TRANS_REM     43 
+#define OPT_ROLE_TRANS_REM_TYPE 44
+#define OPT_ROLE_TRANS_CHG     45
+
+#define OPT_TE_RULES	       46
+#define OPT_TE_RULES_ADD       47
+#define OPT_TE_RULES_ADD_TYPE  48
+#define OPT_TE_RULES_REM       49
+#define OPT_TE_RULES_REM_TYPE  50
+#define OPT_TE_RULES_CHG       51
+
+#define OPT_CONDITIONALS       52
+#define OPT_CONDITIONALS_ADD   53
+#define OPT_CONDITIONALS_REM   54
+#define OPT_CONDITIONALS_CHG   55
+
 
 /* The data columns that we export via the tree model interface */
 enum
@@ -42,34 +91,7 @@ enum
   SEDIFF_NUM_COLUMNS
 };
 
-/* SEDiffTreeViewStore: This structure contains everything we need for our
- *             model implementation. It is crucial that 'parent' is the 
- *	       first member of the structure.                                          
- */
-typedef struct _SEDiffTreeViewStore
-{
-	GObject parent;
-	apol_diff_result_t *diff_results; /* Reference to the diff results */
-	guint num_rows;    		  /* Number of rows */
-	gint stamp;			  /* Random integer to check whether an iter belongs to our model */
-	/* These two fields are not absolutely necessary, but they  */
-	/* speed things up a bit in our get_value implementation    */
-	gint            n_columns;
-	GType           column_types[SEDIFF_NUM_COLUMNS];
-} SEDiffTreeViewStore;
-
-/* SEDiffTreeViewStoreClass: custom GObject */
-struct _SEDiffTreeViewStoreClass
-{
-	GObjectClass parent_class;
-} SEDiffTreeViewStoreClass;
-
-/* Exported function prototypes */
-SEDiffTreeViewStore *sediff_tree_store_new(void);
-int sediff_tree_store_iter_to_idx(SEDiffTreeViewStore *store, GtkTreeIter *iter);
-GType sediff_tree_view_store_get_type(void);
-int sediff_tree_store_populate(SEDiffTreeViewStore *store);
-gchar **sediff_tree_store_get_labels();
-void sediff_tree_store_set_labels(gchar **);
+GtkWidget *sediff_create_view_and_model(ap_single_view_diff_t *svd);
+int sediff_get_model_option_iter(GtkTreeModel *model,GtkTreeIter *parent,GtkTreeIter *child, int opt);
 #endif 
  

@@ -12,6 +12,8 @@
 
 #include "sediff_treemodel.h"
 #include "sediff_rename_types.h"
+#include "sediff_find_window.h"
+#include "poldiff.h"
 #include <gtk/gtk.h>
 #include <glade/glade.h>
 
@@ -20,27 +22,9 @@
 #define MAIN_WINDOW_ID 	       "sediff_main_window"
 #define OPEN_DIALOG_ID 	       "sediff_policies_dialog"
 #define RENAME_TYPES_DIALOG_ID "sediff_rename_types_dialog"
-
-typedef struct summary_node {
-	int added;
-	int removed;
-	int changed;
-} summary_node_t;
-
-typedef struct sediff_summary {
-	summary_node_t permissions;
-	summary_node_t commons;
-	summary_node_t classes;
-	summary_node_t types;
-	summary_node_t attributes;
-	summary_node_t users;
-	summary_node_t roles;
-	summary_node_t booleans;
-	summary_node_t rallow;
-	summary_node_t rtrans;
-	summary_node_t te_rules;
-	summary_node_t conds;
-} sediff_summary_t;
+#define FIND_DIALOG_ID       "sediff_find_dialog"
+#define FIND_FORWARD_ID      "sediff_find_forward"
+#define FIND_ENTRY_ID        "sediff_find_text_entry"
 
 typedef struct sediff_app {
 	GtkWindow *window;		/* the main window */
@@ -54,22 +38,28 @@ typedef struct sediff_app {
 	GtkTextBuffer *policy2_text;
 	GList *callbacks;
 	gint progress_completed;
-	GtkTextBuffer *summary_buffer;
-	GtkTextBuffer *classes_buffer;
-	GtkTextBuffer *types_buffer;
-	GtkTextBuffer *roles_buffer;
-	GtkTextBuffer *users_buffer;
-	GtkTextBuffer *booleans_buffer;
-	GtkTextBuffer *attribs_buffer;
+	GtkTextBuffer *main_buffer;
 	GtkTextBuffer *te_buffer;
-	GtkTextBuffer *rbac_buffer;
-	GtkTextBuffer *conditionals_buffer;
+	GtkTextBuffer *te_add_buffer;
+	GtkTextBuffer *te_rem_buffer;
+	GtkTextBuffer *te_chg_buffer;
+	GtkTextBuffer *te_add_type_buffer;
+	GtkTextBuffer *te_rem_type_buffer;
+	GtkTextBuffer *summary_buffer;
+	GtkTextBuffer *cond_buffer;
+	GtkTextBuffer *cond_add_buffer;
+	GtkTextBuffer *cond_rem_buffer;
+	GtkTextBuffer *cond_chg_buffer;
 	GString *p1_filename;
 	GString *p2_filename;
+	ap_single_view_diff_t *svd;
+	apol_diff_result_t *diff_results;
 	struct sediff_rename_types *rename_types_window;
+	struct sediff_find_window *find_window;
 	policy_t *p1;
 	policy_t *p2;
-	sediff_summary_t summary;
 } sediff_app_t;
+
+GtkTextView *sediff_get_current_view(sediff_app_t *app);
 
 #endif
