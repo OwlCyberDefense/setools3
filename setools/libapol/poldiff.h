@@ -246,6 +246,7 @@ ap_diff_rename_t *ap_diff_rename_new();
 void ap_diff_rename_free(ap_diff_rename_t *rename);
 int ap_diff_rename_add(int p1_type, int p2_type, policy_t *p1, policy_t *p2, ap_diff_rename_t *rename);
 int ap_diff_rename_remove(int p1, int p2, ap_diff_rename_t *rename);
+void ap_qsort_single_view_te_rules(ap_single_view_diff_t *svd, int sort_col, int which_arr, int direction);
 
 #endif /* _APOLICY_POLDIFF_H_ */
 

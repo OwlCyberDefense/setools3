@@ -1,13 +1,20 @@
+/* Copyright (C) 2005 Tresys Technology, LLC
+ * see file 'COPYING' for use and warranty information */
+
+/*
+ * Author: Brandon Whalen <bwhalen@tresys.com>
+ * Date: August 8, 2005
+ */
 #include "sediff_find_window.h"
 #include "utilgui.h"
 
-
+/* hide we don't actually destroy the widget we just hide it */
 static void sediff_find_window_dialog_on_window_destroy(GtkWidget *widget, GdkEvent *event, gpointer user_data)
 {
 	gtk_widget_hide(widget);
 }
 
-
+/* hide the find window */
 static void sediff_find_close_button_clicked(GtkButton *button, gpointer user_data)
 {
 	sediff_find_window_t *find_window;
@@ -16,6 +23,7 @@ static void sediff_find_close_button_clicked(GtkButton *button, gpointer user_da
 	gtk_widget_hide(GTK_WIDGET(find_window->window));
 }
 
+/* highlight text between to iters in the text buffer txt */
 static void sediff_scroll_and_highlight_iters(GtkTextView *view, GtkTextBuffer *txt, 
 					      GtkTextIter *start, GtkTextIter *end)
 {
@@ -26,8 +34,10 @@ static void sediff_scroll_and_highlight_iters(GtkTextView *view, GtkTextBuffer *
 	gtk_text_buffer_select_range(txt,start,end);
 }
 
-/* called when the find button is clicked */
-static void sediff_find_button_clicked(GtkButton *button, gpointer user_data)
+/* This function gets the value stored in the GtkEntry(entry) and searches the 
+   current text buffer visible to the user for that string, then highlights the 
+   items found */
+static void sediff_find_search_buffer(gpointer user_data)
 {
 	GtkTextBuffer *gui_txt = NULL;
 	sediff_find_window_t *find_window = NULL;
@@ -37,17 +47,22 @@ static void sediff_find_button_clicked(GtkButton *button, gpointer user_data)
 	GtkTextView *view = NULL;
 	GString *string;
 
+	/* grab the find window */
 	find_window = (sediff_find_window_t*)user_data;
+	/* get the current textview displayed to the user */
 	view = sediff_get_current_view(find_window->sediff_app);
 	if (view != NULL) {
 		gui_txt = gtk_text_view_get_buffer(view);
 	} else {
 		return;
 	}
+	/* user our stored offsets to move to the last position in the view,
+	   these are reset when we switch users by the gui */
 	gtk_text_buffer_get_iter_at_offset(gui_txt,&start,find_window->start_offset);
 	gtk_text_buffer_get_iter_at_offset(gui_txt,&end,find_window->end_offset);		
 	sediff_scroll_and_highlight_iters(view,gui_txt,&start,&end);
 
+	/* now we actually search for the text  */
 	fwd = GTK_TOGGLE_BUTTON(glade_xml_get_widget(find_window->xml, FIND_FORWARD_ID));
 	entry = GTK_ENTRY(glade_xml_get_widget(find_window->xml, FIND_ENTRY_ID));
 	/* find out which radio button is selected */
@@ -76,13 +91,33 @@ static void sediff_find_button_clicked(GtkButton *button, gpointer user_data)
 			g_string_free(string,TRUE);
 		}
 	}
+
 }
 
+/* This function is called when the user presses enter in the GtkEntry */
+static void  on_sediff_find_entry_activated(GtkEntry *entry, gpointer user_data)
+{
+	if (user_data == NULL)
+		return;
+	sediff_find_search_buffer(user_data);
+}
+
+
+/* called when the find button is clicked */
+static void sediff_find_button_clicked(GtkButton *button, gpointer user_data)
+{
+	if (user_data == NULL)
+		return;
+	sediff_find_search_buffer(user_data);
+}
+
+/* function to create a find window */
 static int sediff_find_window_init(sediff_find_window_t *find_window)
 {
-	GtkButton *button;
-	GString *path;
+	GtkButton *button = NULL;
+	GString *path = NULL;
 	char *dir=NULL;
+	GtkEntry *entry = NULL;
 
 	if (find_window == NULL)
 		return -1;
@@ -119,6 +154,11 @@ static int sediff_find_window_init(sediff_find_window_t *find_window)
 	button = GTK_BUTTON(glade_xml_get_widget(find_window->xml, "sediff_find_button"));
 	g_signal_connect(G_OBJECT(button), "clicked", 
 			 G_CALLBACK(sediff_find_button_clicked), find_window);
+
+	/* connect the text entry callback events */
+	entry = GTK_ENTRY(glade_xml_get_widget(find_window->xml, "sediff_find_text_entry"));
+	g_signal_connect(G_OBJECT(entry), "activate", 
+			 G_CALLBACK(on_sediff_find_entry_activated), find_window);
 
 	return 0;
 }
