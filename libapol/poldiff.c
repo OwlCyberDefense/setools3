@@ -18,6 +18,10 @@
 #include <assert.h>
 #include <string.h>
 
+#include <sys/types.h>
+#include <time.h>
+
+
 /* return 0 on success completion.  If expr2 == NULL on a 0 return, means could
  * not make the p2 expr because something in p1 expr (e.g., a boolean) was not
  * defined in p2.  Return -1 for error. */
@@ -68,7 +72,6 @@ static int make_p2_cond_expr(int idx1, policy_t *p1, cond_expr_t **expr2, policy
 	
 	return 0;	
 }
-
 
 ap_diff_rename_t* ap_diff_rename_new()
 {
@@ -342,6 +345,7 @@ static void ap_free_single_cond_diff_node(ap_single_cond_diff_node_t *node)
 	return;
 }
 
+
 static void apol_free_diff(apol_diff_t *ad)
 {
 	if(ad == NULL)
@@ -376,6 +380,7 @@ static void apol_free_diff_result(bool_t close_pols, apol_diff_result_t *adr)
 		close_policy(adr->p2);
 	}
 }
+
 
 void ap_destroy_single_view_diff(ap_single_view_diff_t *svd)
 {
@@ -460,10 +465,6 @@ void ap_destroy_single_view_diff(ap_single_view_diff_t *svd)
 		
 	free(svd);
 }
-
-
-
-
 
 static int ap_diff_find_type_in_p2(int p1_type, policy_t *p1, policy_t *p2, ap_diff_rename_t *renamed_types)
 {
@@ -1528,8 +1529,6 @@ err_return:
 	return NULL;
 }
 
-
-
 typedef int(*get_iad_name_fn_t)(int idx, char **name, policy_t *policy);		
 typedef int(*get_iad_idx_fn_t)(const char *name,policy_t *policy);
 
@@ -1663,7 +1662,6 @@ ap_iad_new_type_chg_error:
 	return -1;
 }
 
-
 /* if the item exists first check to see if the item exists in the policy using get_name, if the item exists than this
    is a change */
 static int ap_iad_new_addrem(int_a_diff_t *iad,ap_single_iad_diff_t *siad,policy_t *p1,policy_t *p2,
@@ -1763,7 +1761,6 @@ static ap_single_iad_diff_t *ap_new_iad_diff(apol_diff_result_t *diff,unsigned i
 	policy_t *p2 = NULL;
 	if (diff == NULL)
 		return NULL;
-
        
 	p1 = diff->p1;
 	p2 = diff->p2;
@@ -2547,6 +2544,166 @@ ap_new_single_rtrans_diff_error:
 
 }
 
+/* this function simply copies two single_te_chg_t items */
+static void ap_copy_single_te_chg(ap_single_te_chg_t *src,ap_single_te_chg_t *tgt)
+{
+	tgt->add = src->add;
+	tgt->rem = src->rem;
+	tgt->add_diff = src->add_diff;
+	tgt->rem_diff = src->rem_diff;
+}
+
+/* the partition fcn (used in quicksort) that will work on te_chg items 
+   this will sort using either source type, target type, or object class depending on
+   opt passed in, and direction tells us whether to sort ascending or descending */
+static int ap_partition_te_chg(ap_single_te_chg_t *arr,policy_t *policy, int p, int r, int opt,int direction)
+{
+	char *name = NULL;
+	int i,j;
+	ap_single_te_chg_t holder;
+	
+	if (arr == NULL || policy == NULL)
+		return -1;
+	i = p-1;
+	
+	if (opt == AP_SRC_TYPE) {
+		name = policy->types[arr[r].rem->key.src].name;
+		for (j = p; j <= r-1; j++) {
+			if ((direction * strcmp(policy->types[arr[j].rem->key.src].name,name)) <= 0) {
+				i++;
+				ap_copy_single_te_chg(&arr[j],&holder);
+				ap_copy_single_te_chg(&arr[i],&arr[j]);
+				ap_copy_single_te_chg(&holder,&arr[i]);
+			}
+		}
+	} else if (opt == AP_TGT_TYPE) {
+		name = policy->types[arr[r].rem->key.tgt].name;
+		for (j = p; j <= r-1; j++) {
+			if ((direction * strcmp(policy->types[arr[j].rem->key.tgt].name,name)) <= 0) {
+				i++;
+				ap_copy_single_te_chg(&arr[j],&holder);
+				ap_copy_single_te_chg(&arr[i],&arr[j]);
+				ap_copy_single_te_chg(&holder,&arr[i]);
+			}
+		}
+	} else {
+		name = policy->obj_classes[arr[r].rem->key.tgt].name;
+		for (j = p; j <= r-1; j++) {
+			if ((direction * strcmp(policy->obj_classes[arr[j].rem->key.tgt].name,name)) <= 0) {
+				i++;
+				ap_copy_single_te_chg(&arr[j],&holder);
+				ap_copy_single_te_chg(&arr[i],&arr[j]);
+				ap_copy_single_te_chg(&holder,&arr[i]);
+			}
+		}
+	}
+	holder = arr[r];
+	arr[r] = arr[i+1];
+	arr[i+1] = holder;
+	return i+1;
+}
+
+/* the partition fcn (used in quicksort) that will work on te adds and rems  
+   this will sort using either source type, target type, or object class depending on
+   opt passed in, and direction tells us whether to sort ascending or descending */
+static int ap_partition_te_addrem(avh_node_t **arr,policy_t *policy,int p, int r,int opt,int direction)
+{
+	char *name = NULL;
+	int i,j;
+	avh_node_t *holder = NULL;
+
+	
+	if (arr == NULL || policy == NULL)
+		return -1;
+	i = p-1;
+	if (opt == AP_SRC_TYPE) {
+		name = policy->types[(arr)[r]->key.src].name;
+		for (j = p; j <= r-1; j++) {
+			if ((strcmp(policy->types[(arr)[j]->key.src].name,name)*direction) <= 0) {
+				i++;
+				holder = (arr)[j];
+				(arr)[j] = (arr)[i];
+				(arr)[i] = holder;			       
+			}
+		}
+	} else if (opt == AP_TGT_TYPE) {
+		name = policy->types[(arr)[r]->key.tgt].name;
+		for (j = p; j <= r-1; j++) {
+			if ((strcmp(policy->types[(arr)[j]->key.tgt].name,name)*direction) <= 0) {
+				i++;
+				holder = (arr)[j];
+				(arr)[j] = (arr)[i];
+				(arr)[i] = holder;
+				
+			}
+		}
+	} else {
+		name = policy->obj_classes[(arr)[r]->key.cls].name;
+		for (j = p; j <= r -1; j++) {
+			if ((strcmp(policy->obj_classes[(arr)[j]->key.cls].name,name)*direction) <= 0) {
+				i++;
+				holder = (arr)[j];
+				(arr)[j] = (arr)[i];
+				(arr)[i] = holder;
+			}
+		}
+	}
+	holder = (arr)[r];
+	(arr)[r] = (arr)[i+1];
+	(arr)[i+1] = holder;
+	return i+1;
+}
+
+/* the qsort function for the added and removed arrays of the single view of a TE diff, opt is used by partition
+   to know which column to sort by direction tells whether to sort ascending or descending*/
+static void ap_qsort_single_view_te_addrem(avh_node_t **arr, policy_t *policy,int p, int r,int opt,int direction)
+{
+	int q;
+
+	if (p < r) {
+		q = ap_partition_te_addrem(arr,policy,p,r,opt,direction);
+		ap_qsort_single_view_te_addrem(arr,policy,p,q-1,opt,direction);
+		ap_qsort_single_view_te_addrem(arr,policy,q+1,r,opt,direction);				
+	}
+}
+
+/* the qsort function for the changed array of the single view of a TE diff, opt is used by partition
+   to know which column to sort by direction tells whether to sort ascending or descending*/
+static void ap_qsort_single_view_te_chg(ap_single_te_chg_t *arr, policy_t *policy,int p, int r,int opt,int direction)
+{
+	int q;
+	
+	if (p < r) {
+		q = ap_partition_te_chg(arr,policy,p,r,opt,direction);
+		ap_qsort_single_view_te_chg(arr,policy,p,q-1,opt,direction);
+		ap_qsort_single_view_te_chg(arr,policy,q+1,r,opt,direction);				
+	}
+}
+
+/* the function called by the outside world to sort the single_view_te_diff_t, 
+   sort_col says whether we are sorting the source type, target type, or object class
+   which_arr says whether to sort the added, removed, added type, removed type, or changed arrays,
+   direction says whether to sort ascending or descending */
+void ap_qsort_single_view_te_rules(ap_single_view_diff_t *svd, int sort_col, int which_arr, int direction) 
+{
+	if (which_arr & OPT_ADD) {
+		ap_qsort_single_view_te_addrem((svd->te->add),svd->diff->p2,0,svd->te->num_add-1,sort_col,direction);
+	}
+	if (which_arr & OPT_ADD_TYPE) {
+		ap_qsort_single_view_te_addrem((svd->te->add_type),svd->diff->p2,0,(svd->te->num_add_type)-1,sort_col,direction);
+	}
+	if (which_arr & OPT_REM) {
+		ap_qsort_single_view_te_addrem((svd->te->rem),svd->diff->p1,0,svd->te->num_rem-1,sort_col,direction);
+	}
+	if (which_arr & OPT_REM_TYPE) {
+		ap_qsort_single_view_te_addrem((svd->te->rem_type),svd->diff->p1,0,svd->te->num_rem_type-1,sort_col,direction);
+	}
+	if (which_arr & OPT_CHG) {
+		ap_qsort_single_view_te_chg(svd->te->chg,svd->diff->p1,0,svd->te->num_chg-1,sort_col,direction);
+	}
+}
+
+
 static ap_single_perm_diff_t *ap_new_single_perm_diff(apol_diff_result_t *diff)
 {
 	ap_single_perm_diff_t *pd;
@@ -2613,6 +2770,7 @@ err_return:
 	return NULL;
 }
 
+
 ap_single_view_diff_t *ap_new_single_view_diff(unsigned int opts, policy_t *p1, policy_t *p2,ap_diff_rename_t *renamed_types)
 {
 	ap_single_view_diff_t *svd = NULL;
@@ -2638,13 +2796,11 @@ ap_single_view_diff_t *ap_new_single_view_diff(unsigned int opts, policy_t *p1, 
 	diff = svd->diff;
 
 	/*** types ***/
-	svd->types = ap_new_iad_diff(diff,IDX_TYPE);  
-	if (svd->types == NULL)
-		goto svd_error_return;
+	svd->types = ap_new_iad_diff(diff,IDX_TYPE);
 	if (svd->types == NULL)
 		goto svd_error_return;
 	/*** attribs ***/
-	svd->attribs = ap_new_iad_diff(diff,IDX_ATTRIB);
+	svd->attribs = ap_new_iad_diff(diff,IDX_ATTRIB); 
 	if (svd->attribs == NULL)
 		goto svd_error_return;
 	/*** roles ***/
@@ -2653,8 +2809,6 @@ ap_single_view_diff_t *ap_new_single_view_diff(unsigned int opts, policy_t *p1, 
 		goto svd_error_return;
 	/*** users ***/
 	svd->users = ap_new_iad_diff(diff,IDX_USER);
-	if (svd->users == NULL)
-		goto svd_error_return;
 	if (svd->users == NULL)
 		goto svd_error_return;
 	/*** classes ***/
@@ -2667,8 +2821,6 @@ ap_single_view_diff_t *ap_new_single_view_diff(unsigned int opts, policy_t *p1, 
 		goto svd_error_return;
 	/*** common permissions ***/
 	svd->common_perms = ap_new_iad_diff(diff,IDX_COMMON_PERM);
-	if (svd->common_perms == NULL)
-		goto svd_error_return;
 	if (svd->common_perms == NULL)
 		goto svd_error_return;
 	/*** booleans ***/
@@ -2684,13 +2836,14 @@ ap_single_view_diff_t *ap_new_single_view_diff(unsigned int opts, policy_t *p1, 
 	if (svd->rtrans == NULL)
 		goto svd_error_return;
 	/*** te rules ***/
-	rt = ap_new_single_te_diff(svd,diff, renamed_types);
+	rt = ap_new_single_te_diff(svd,diff, renamed_types); 
 	if (rt < 0 || svd->te == NULL || svd->conds == NULL)
 		goto svd_error_return;
 
 	rt = ap_find_empty_single_cond_diff(svd->conds,diff);
 	if (rt < 0)
 		goto svd_error_return;
+
 
 	return svd;
 svd_error_return:

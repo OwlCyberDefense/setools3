@@ -165,6 +165,7 @@ static char *sediff_get_tab_spaces(int numspaces)
 	return c;
 }
 
+
 static void sediff_clear_text_buffer(GtkTextBuffer *txt)
 {
 	GtkTextIter start,end;
@@ -898,6 +899,9 @@ static void sediff_set_open_policies_gui_state(gboolean open)
 	g_assert(widget);
 	gtk_widget_set_sensitive(widget, open);
 	widget = glade_xml_get_widget(sediff_app->window_xml, "menu_run_diff");
+	g_assert(widget);
+	gtk_widget_set_sensitive(widget, open);
+	widget = glade_xml_get_widget(sediff_app->window_xml, "sediff_menu_find");
 	g_assert(widget);
 	gtk_widget_set_sensitive(widget, open);
 
@@ -2874,7 +2878,7 @@ static void txt_view_populate_large_buffers(ap_single_view_diff_t *svd)
 				     string, svd->te, 
 				     policy_old,policy_new,OPT_ADD_TYPE,TRUE);
 	g_string_truncate(string,0);
-	gtk_text_buffer_get_end_iter(sediff_app->te_rem_buffer, &end);
+	gtk_text_buffer_get_end_iter(sediff_app->te_rem_type_buffer, &end);
 	txt_buffer_insert_te_results(sediff_app->te_rem_type_buffer, &end, 
 				     string, svd->te, 
 				     policy_old,policy_new,OPT_REM_TYPE,TRUE);
@@ -2938,7 +2942,7 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 	GtkTextIter end;
 	GString *string = g_string_new("");
 	int rt;
-	
+	GtkWidget *widget = NULL;
 
 	attr = gtk_text_view_get_default_attributes(textview);
 	if (attr->font != NULL) {
@@ -2958,18 +2962,23 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 
 	if (policy_option == 1) {
 		sediff_find_window_reset_idx(sediff_app->find_window);
+		widget = glade_xml_get_widget(sediff_app->window_xml, "sort_te_rules1");
+		g_assert(widget);
+		gtk_widget_set_sensitive(widget, FALSE);
+
 		switch (option) {
 		case OPT_SUMMARY:
 			if (sediff_app->svd != NULL) {
 				txt_buffer_insert_summary_results(sediff_app->main_buffer);
 			}
-				gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
+			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
 			break;
 		case OPT_CLASSES:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
 			gtk_text_buffer_get_start_iter(sediff_app->main_buffer,&end);
 			txt_buffer_insert_summary(sediff_app->main_buffer,&end,OPT_CLASSES);
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_CLASSES_ADD:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
@@ -2978,6 +2987,7 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 					    sediff_app->diff_results->p1, 
 					    sediff_app->diff_results->p2,OPT_ADD);						
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_CLASSES_REM:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
@@ -2986,6 +2996,7 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 					    sediff_app->diff_results->p1, 
 					    sediff_app->diff_results->p2,OPT_REM);						
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_CLASSES_CHG:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
@@ -2995,12 +3006,14 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 					    sediff_app->diff_results->p2,OPT_CHG);
 						
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_PERMISSIONS:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
 			gtk_text_buffer_get_start_iter(sediff_app->main_buffer,&end);
 			txt_buffer_insert_summary(sediff_app->main_buffer,&end,OPT_PERMISSIONS);
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_PERMISSIONS_ADD:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
@@ -3009,6 +3022,7 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 					    sediff_app->diff_results->p1, 
 					    sediff_app->diff_results->p2,OPT_ADD);
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_PERMISSIONS_REM:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
@@ -3017,12 +3031,14 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 					    sediff_app->diff_results->p1, 
 					    sediff_app->diff_results->p2,OPT_REM);
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_COMMON_PERMS:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
 			gtk_text_buffer_get_start_iter(sediff_app->main_buffer,&end);
 			txt_buffer_insert_summary(sediff_app->main_buffer,&end,OPT_COMMON_PERMS);
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_COMMON_PERMS_ADD:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
@@ -3032,6 +3048,7 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 							    sediff_app->diff_results->p2,OPT_ADD);
 						
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_COMMON_PERMS_REM:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
@@ -3041,6 +3058,7 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 							    sediff_app->diff_results->p2,OPT_REM);
 						
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_COMMON_PERMS_CHG:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
@@ -3050,12 +3068,14 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 							    sediff_app->diff_results->p2,OPT_CHG);
 						
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_TYPES:			
 			sediff_clear_text_buffer(sediff_app->main_buffer);
 			gtk_text_buffer_get_start_iter(sediff_app->main_buffer,&end);
 			txt_buffer_insert_summary(sediff_app->main_buffer,&end,OPT_TYPES);
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_TYPES_ADD:			
 			sediff_clear_text_buffer(sediff_app->main_buffer);
@@ -3065,6 +3085,7 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 					    sediff_app->diff_results->p2,OPT_ADD);
 						
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_TYPES_REM:			
 			sediff_clear_text_buffer(sediff_app->main_buffer);
@@ -3074,6 +3095,7 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 					    sediff_app->diff_results->p2,OPT_REM);
 						
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_TYPES_CHG:			
 			sediff_clear_text_buffer(sediff_app->main_buffer);
@@ -3083,12 +3105,14 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 					    sediff_app->diff_results->p2,OPT_CHG);
 			
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_ROLES:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
 			gtk_text_buffer_get_start_iter(sediff_app->main_buffer,&end);
 			txt_buffer_insert_summary(sediff_app->main_buffer,&end,OPT_ROLES);
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_ROLES_ADD:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
@@ -3098,6 +3122,7 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 					    sediff_app->diff_results->p2,OPT_ADD);
 					    
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_ROLES_REM:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
@@ -3107,6 +3132,7 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 					    sediff_app->diff_results->p2,OPT_REM);
 						
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_ROLES_CHG:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
@@ -3116,6 +3142,7 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 					    sediff_app->diff_results->p2,OPT_CHG);
 			
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_ROLES_CHG_ADD:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
@@ -3125,6 +3152,7 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 					    sediff_app->diff_results->p2,OPT_ADD_TYPE);
 			
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_ROLES_CHG_REM:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
@@ -3134,12 +3162,14 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 					    sediff_app->diff_results->p2,OPT_REM_TYPE);
 			
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_USERS:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
 			gtk_text_buffer_get_start_iter(sediff_app->main_buffer,&end);
 			txt_buffer_insert_summary(sediff_app->main_buffer,&end,OPT_USERS);
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_USERS_ADD:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
@@ -3149,6 +3179,7 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 					    sediff_app->diff_results->p2,OPT_ADD);
 			
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_USERS_REM:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
@@ -3158,6 +3189,7 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 					    sediff_app->diff_results->p2,OPT_REM);
 			
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_USERS_CHG:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
@@ -3167,12 +3199,14 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 					    sediff_app->diff_results->p2,OPT_CHG);
 			
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_ATTRIBUTES:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
 			gtk_text_buffer_get_start_iter(sediff_app->main_buffer,&end);
 			txt_buffer_insert_summary(sediff_app->main_buffer,&end,OPT_ATTRIBUTES);
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_ATTRIBUTES_ADD:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
@@ -3182,7 +3216,8 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 					    sediff_app->diff_results->p2,OPT_ADD);
 			
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
-			break;
+			
+				break;
 		case OPT_ATTRIBUTES_REM:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
 			rt = print_iad_buffer(sediff_app->main_buffer, &end,
@@ -3191,6 +3226,7 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 					    sediff_app->diff_results->p2,OPT_REM);
 			
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_ATTRIBUTES_CHG:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
@@ -3200,6 +3236,7 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 					    sediff_app->diff_results->p2,OPT_CHG);
 			
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_ATTRIBUTES_CHG_ADD:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
@@ -3209,6 +3246,7 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 					    sediff_app->diff_results->p2,OPT_ADD_TYPE);
 			
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_ATTRIBUTES_CHG_REM:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
@@ -3218,12 +3256,14 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 					    sediff_app->diff_results->p2,OPT_REM_TYPE);
 			
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_BOOLEANS:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
 			gtk_text_buffer_get_start_iter(sediff_app->main_buffer,&end);
 			txt_buffer_insert_summary(sediff_app->main_buffer,&end,OPT_BOOLEANS);
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_BOOLEANS_ADD:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
@@ -3231,6 +3271,7 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 					      string, sediff_app->svd->bools,sediff_app->diff_results->p1,
 					      sediff_app->diff_results->p2,OPT_ADD);
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_BOOLEANS_REM:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
@@ -3238,6 +3279,7 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 					      string, sediff_app->svd->bools,sediff_app->diff_results->p1,
 					      sediff_app->diff_results->p2,OPT_REM);
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_BOOLEANS_CHG:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
@@ -3245,12 +3287,14 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 					      string, sediff_app->svd->bools,sediff_app->diff_results->p1,
 					      sediff_app->diff_results->p2,OPT_CHG);
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_ROLE_ALLOWS:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
 			gtk_text_buffer_get_start_iter(sediff_app->main_buffer,&end);
 			txt_buffer_insert_summary(sediff_app->main_buffer,&end,OPT_ROLE_ALLOWS);
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_ROLE_ALLOWS_ADD:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
@@ -3260,6 +3304,7 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 					    sediff_app->diff_results->p2,OPT_ADD);
 			
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_ROLE_ALLOWS_REM:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
@@ -3269,6 +3314,7 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 					    sediff_app->diff_results->p2,OPT_REM);
 			
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_ROLE_ALLOWS_CHG:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
@@ -3278,12 +3324,14 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 					    sediff_app->diff_results->p2,OPT_CHG);
 			
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_ROLE_TRANS:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
 			gtk_text_buffer_get_start_iter(sediff_app->main_buffer,&end);
 			txt_buffer_insert_summary(sediff_app->main_buffer,&end,OPT_ROLE_TRANS);
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_ROLE_TRANS_ADD:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
@@ -3293,6 +3341,7 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 							 sediff_app->diff_results->p2,OPT_ADD);
 			
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_ROLE_TRANS_ADD_TYPE:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
@@ -3302,6 +3351,7 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 							 sediff_app->diff_results->p2,OPT_ADD_TYPE);
 			
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_ROLE_TRANS_REM:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
@@ -3311,6 +3361,7 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 							 sediff_app->diff_results->p2,OPT_REM);
 			
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_ROLE_TRANS_REM_TYPE:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
@@ -3320,6 +3371,7 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 							 sediff_app->diff_results->p2,OPT_REM_TYPE);
 			
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_ROLE_TRANS_CHG:
 			sediff_clear_text_buffer(sediff_app->main_buffer);
@@ -3329,9 +3381,11 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 							 sediff_app->diff_results->p2,OPT_CHG);
 			
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
+			
 			break;
 		case OPT_CONDITIONALS:
 			gtk_text_view_set_buffer(textview,sediff_app->cond_buffer);
+			
 			break;
 		case OPT_CONDITIONALS_ADD:
 			table = gtk_text_buffer_get_tag_table(sediff_app->cond_add_buffer);
@@ -3353,6 +3407,7 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 							      GTK_SIGNAL_FUNC(txt_view_on_text_view_motion), link2_tag);
 			}
 			gtk_text_view_set_buffer(textview,sediff_app->cond_add_buffer);
+			
 			break;
 		case OPT_CONDITIONALS_REM:
 			table = gtk_text_buffer_get_tag_table(sediff_app->cond_rem_buffer);
@@ -3374,6 +3429,7 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 							      GTK_SIGNAL_FUNC(txt_view_on_text_view_motion), link2_tag);
 			}
 			gtk_text_view_set_buffer(textview,sediff_app->cond_rem_buffer);
+			
 			break;
 		case OPT_CONDITIONALS_CHG:
 			table = gtk_text_buffer_get_tag_table(sediff_app->cond_chg_buffer);
@@ -3395,9 +3451,11 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 							      GTK_SIGNAL_FUNC(txt_view_on_text_view_motion), link2_tag);
 			}
 			gtk_text_view_set_buffer(textview,sediff_app->cond_chg_buffer);
+			
 			break;
 		case OPT_TE_RULES:
 			gtk_text_view_set_buffer(textview,sediff_app->te_buffer);
+			
 			break;
 		case OPT_TE_RULES_ADD:
 			table = gtk_text_buffer_get_tag_table(sediff_app->te_add_buffer);
@@ -3419,6 +3477,7 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 							      GTK_SIGNAL_FUNC(txt_view_on_text_view_motion), link2_tag);
 			}
 			gtk_text_view_set_buffer(textview,sediff_app->te_add_buffer);
+			gtk_widget_set_sensitive(widget, TRUE);
 			break;
 		case OPT_TE_RULES_REM:
 			table = gtk_text_buffer_get_tag_table(sediff_app->te_rem_buffer);
@@ -3440,6 +3499,7 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 							      GTK_SIGNAL_FUNC(txt_view_on_text_view_motion), link2_tag);
 			}
 			gtk_text_view_set_buffer(textview,sediff_app->te_rem_buffer);
+			gtk_widget_set_sensitive(widget, TRUE);
 			break;
 		case OPT_TE_RULES_CHG:
 			table = gtk_text_buffer_get_tag_table(sediff_app->te_chg_buffer);
@@ -3461,6 +3521,7 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 							      GTK_SIGNAL_FUNC(txt_view_on_text_view_motion), link2_tag);
 			}
 			gtk_text_view_set_buffer(textview,sediff_app->te_chg_buffer);
+			gtk_widget_set_sensitive(widget, TRUE);
 			break;
 		case OPT_TE_RULES_ADD_TYPE:
 			table = gtk_text_buffer_get_tag_table(sediff_app->te_add_type_buffer);
@@ -3482,6 +3543,7 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 							      GTK_SIGNAL_FUNC(txt_view_on_text_view_motion), link2_tag);
 			}
 			gtk_text_view_set_buffer(textview,sediff_app->te_add_type_buffer);
+			gtk_widget_set_sensitive(widget, TRUE);
 			break;
 		case OPT_TE_RULES_REM_TYPE:
 			table = gtk_text_buffer_get_tag_table(sediff_app->te_rem_type_buffer);
@@ -3503,6 +3565,7 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 							      GTK_SIGNAL_FUNC(txt_view_on_text_view_motion), link2_tag);
 			}
 			gtk_text_view_set_buffer(textview,sediff_app->te_rem_type_buffer);
+			gtk_widget_set_sensitive(widget, TRUE);
 			break;
 		default:
 			fprintf(stderr, "Invalid list item %d!", option);
@@ -3519,39 +3582,13 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 */
 static gboolean txt_buffer_insert_results(gpointer data)
 {
-	GtkTreeIter iter;
+
 	GtkTextView *textview1;
 	gint option;
 	apol_diff_result_t *diff_results = NULL;
-	GtkTreeModel *tree_model;
-	GtkTreeSelection *sel;
-	GList *glist = NULL, *item = NULL;
-	GtkTreePath *path = NULL;
 
-	tree_model = gtk_tree_view_get_model(GTK_TREE_VIEW(sediff_app->tree_view));
-	sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(sediff_app->tree_view));
-	glist = gtk_tree_selection_get_selected_rows(sel, &tree_model);
-	if (glist == NULL) {
-		return FALSE;
-	}
-	/* Only grab the top-most selected item */
-	item = glist;
-	path = item->data;
-	
-	/* if we can't get the iterator, then we need to just exit */
-	if (!gtk_tree_model_get_iter(tree_model, &iter, path)) {
-		if (glist) {	
-			g_list_foreach(glist, (GFunc) gtk_tree_path_free, NULL);
-			g_list_free(glist);			
-		}	
-		return FALSE;
-	}
-	if (glist) {	
-		g_list_foreach(glist, (GFunc) gtk_tree_path_free, NULL);
-		g_list_free(glist);			
-	}
 
-	gtk_tree_model_get(tree_model, &iter, SEDIFF_HIDDEN_COLUMN,&option,-1);
+	option = sediff_get_current_treeview_selected_row(GTK_TREE_VIEW(sediff_app->tree_view));
 	
 	/* grab the text buffers for our text views */
 	textview1 = (GtkTextView *)glade_xml_get_widget(sediff_app->window_xml, "sediff_p1_results_txt_view");
@@ -3802,6 +3839,93 @@ static void run_diff_clicked()
 	else
 		message_display(sediff_app->window, GTK_MESSAGE_ERROR, "A policy filename is empty! Could not reload.");		
 }
+
+/* sort the te rules in the currently displayed buffer */
+static void sediff_sort_te_rules(int sort_opt,int direction)
+{
+	int treeview_row;
+ 	GtkTextView *textview = NULL;
+	GtkTextIter iter;
+	GString *string = g_string_new("");
+	int draw_opt;
+	GtkTextBuffer **buffer;
+
+	/* get the current row so we know what to sort */
+	treeview_row = sediff_get_current_treeview_selected_row(GTK_TREE_VIEW(sediff_app->tree_view));
+	/* set up the buffers and the drawing options */
+	if (treeview_row == OPT_TE_RULES_ADD) {
+		draw_opt = OPT_ADD;
+		buffer = &(sediff_app->te_add_buffer);
+	} else if (treeview_row == OPT_TE_RULES_ADD_TYPE) {
+		draw_opt = OPT_ADD_TYPE;
+		buffer = &(sediff_app->te_add_type_buffer);		
+	} else if (treeview_row == OPT_TE_RULES_REM) {
+		draw_opt = OPT_REM;
+		buffer = &(sediff_app->te_rem_buffer);
+	} else if (treeview_row == OPT_TE_RULES_REM_TYPE) {
+		draw_opt = OPT_REM_TYPE;
+		buffer = &(sediff_app->te_rem_type_buffer);
+	} else if (treeview_row == OPT_TE_RULES_CHG) {
+		draw_opt = OPT_CHG;
+		buffer = &(sediff_app->te_chg_buffer);
+	}
+       
+	textview = GTK_TEXT_VIEW(glade_xml_get_widget(sediff_app->window_xml, "sediff_p1_results_txt_view"));
+	assert(textview);
+
+	/* sort the rules */
+	ap_qsort_single_view_te_rules(sediff_app->svd,sort_opt,draw_opt,direction);
+
+	/* -- Here we destroy the buffer because its faster than uses the gtk_text_buffer_delete fcn -- */
+	/* unref the buffer from the text view */
+	gtk_text_view_set_buffer(textview,NULL);
+	/* unref it from our ref so that it gets destroyed */
+	g_object_unref (G_OBJECT(*buffer)); 
+	/* create a new buffer */
+        *buffer = gtk_text_buffer_new(NULL);
+	g_object_ref (G_OBJECT(*buffer)); 
+
+	/* grab the start iter */
+	gtk_text_buffer_get_start_iter(*buffer, &iter);
+	/* put the sorted rules into the buffer */
+	txt_buffer_insert_te_results(*buffer, &iter, 
+				     string, sediff_app->svd->te, 
+				     sediff_app->svd->diff->p1,sediff_app->svd->diff->p2,draw_opt,TRUE);
+	/* use this switch to force display to update */
+	txt_view_switch_buffer(textview,treeview_row,1);
+	g_string_free(string,TRUE);
+}
+
+void sediff_menu_on_oclass_asc_clicked(GtkMenuItem *menuitem, gpointer user_data)
+{
+	sediff_sort_te_rules(AP_OCLASS,1);
+}
+
+void sediff_menu_on_oclass_des_clicked(GtkMenuItem *menuitem, gpointer user_data)
+{
+	sediff_sort_te_rules(AP_OCLASS,-1);
+}
+
+void sediff_menu_on_src_type_asc_clicked(GtkMenuItem *menuitem, gpointer user_data)
+{
+	sediff_sort_te_rules(AP_SRC_TYPE,1);
+}
+
+void sediff_menu_on_src_type_des_clicked(GtkMenuItem *menuitem, gpointer user_data)
+{
+	sediff_sort_te_rules(AP_SRC_TYPE,-1);
+}
+
+void sediff_menu_on_tgt_type_asc_clicked(GtkMenuItem *menuitem, gpointer user_data)
+{
+	sediff_sort_te_rules(AP_TGT_TYPE,1);
+}
+
+void sediff_menu_on_tgt_type_des_clicked(GtkMenuItem *menuitem, gpointer user_data)
+{
+	sediff_sort_te_rules(AP_TGT_TYPE,-1);
+}
+
 
 void on_sediff_menu_find_clicked(GtkMenuItem *menuitem, gpointer user_data)
 {
@@ -4354,16 +4478,16 @@ GtkTextView *sediff_get_current_view(sediff_app_t *app)
 
 int main(int argc, char **argv)
 {
-	char *dir;
-	GString *path; 
+	char *dir = NULL;
+	GString *path = NULL; 
 	filename_data_t filenames;
 	bool_t havefiles = FALSE;
 	int optc;
 	int cli;
 	const char *fname1;
 	filenames.p1_file = filenames.p2_file = NULL;
-	GtkNotebook *notebook;
-	GtkTextView *textview;
+	GtkNotebook *notebook = NULL;
+	GtkTextView *textview = NULL;
 	
 	if (rindex(argv[0],'/')) {
 		fname1 = rindex(argv[0],'/')+1;
