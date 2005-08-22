@@ -93,5 +93,6 @@ enum
 
 GtkWidget *sediff_create_view_and_model(ap_single_view_diff_t *svd);
 int sediff_get_model_option_iter(GtkTreeModel *model,GtkTreeIter *parent,GtkTreeIter *child, int opt);
+int sediff_get_current_treeview_selected_row(GtkTreeView *tree_view);
 #endif 
  
