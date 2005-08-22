@@ -41,6 +41,9 @@ gboolean widget_event(GtkWidget *widget,GdkEventMotion *event,
 						 &column,
 						 &x,
 						 &y);
+		
+		if (path == NULL || column == NULL)
+			return FALSE;		
 		if (event_button->button == 1) {			
 			treemodel = gtk_tree_view_get_model(GTK_TREE_VIEW(treeview));
 			gtk_tree_model_get_iter(treemodel,&iter,path);
@@ -227,6 +230,42 @@ GtkWidget *sediff_create_treeview()
 
 }
 
+int sediff_get_current_treeview_selected_row(GtkTreeView *tree_view)
+{
+	int row;
+	GtkTreeIter iter;
+	GtkTreeModel *tree_model;
+	GtkTreeSelection *sel;
+	GList *glist = NULL, *item = NULL;
+	GtkTreePath *path = NULL;
+
+	tree_model = gtk_tree_view_get_model(tree_view);
+	sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(tree_view));
+	glist = gtk_tree_selection_get_selected_rows(sel, &tree_model);
+	if (glist == NULL) {
+		return FALSE;
+	}
+	/* Only grab the top-most selected item */
+	item = glist;
+	path = item->data;
+	
+	/* if we can't get the iterator, then we need to just exit */
+	if (!gtk_tree_model_get_iter(tree_model, &iter, path)) {
+		if (glist) {	
+			g_list_foreach(glist, (GFunc) gtk_tree_path_free, NULL);
+			g_list_free(glist);			
+		}	
+		return FALSE;
+	}
+	if (glist) {	
+		g_list_foreach(glist, (GFunc) gtk_tree_path_free, NULL);
+		g_list_free(glist);			
+	}
+
+	gtk_tree_model_get(tree_model, &iter, SEDIFF_HIDDEN_COLUMN,&row,-1);
+	return row;
+
+}
 
 GtkWidget *sediff_create_view_and_model (ap_single_view_diff_t *svd)
 {
