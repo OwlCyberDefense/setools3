@@ -1289,32 +1289,6 @@ int add_alias(int type_idx, const char *alias, policy_t *policy)
 	return 0;
 }
 
-int remove_alias(int type_idx, const char *alias, policy_t *policy)
-{
-	bool_t found = FALSE;
-	int i;
-
-	if (!is_valid_type_idx(type_idx, policy) || alias == NULL || policy == NULL)
-		return -1;
-
-	for (i=0; i < policy->num_aliases; i++) {
-		/* this is a quick optimization instead of doing a strcmp each time */
-		if (!found && policy->aliases[i].type != type_idx)
-			continue;
-		if (!found && strcmp(policy->aliases[i].name, alias) == 0) {
-			free(policy->aliases[i].name);
-			found = TRUE;
-		}
-		if (found && i < policy->num_aliases-1) {
-			policy->aliases[i].name = policy->aliases[i+1].name;
-			policy->aliases[i].type = policy->aliases[i+1].type;
-			continue;
-		}
-	}
-	policy->num_aliases--;
-	return 0;
-}
-
 /* add a new type into db; we use the memory
  * of the parameter so the caller should not expect to use it after calling
  * this funciton.
