@@ -162,24 +162,18 @@ static void sediff_rename_types_window_on_add_button_clicked(GtkButton *button, 
 	p2_type = get_type_idx(p2_str, rename_types_window->sediff_app->p2);
 	g_assert(p2_type >= 0);
 
-	/* TODO: better error messages. */
 	switch (ap_diff_rename_add(p1_type, p2_type, rename_types_window->sediff_app->p1, rename_types_window->sediff_app->p2, rename_types_window->renamed_types)) {
 	case -1:
 		dialog = gtk_message_dialog_new(rename_types_window->window, GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, 
-						"Add failed");
-		gtk_message_dialog_format_secondary_text(GTK_MESSAGE_DIALOG(dialog), "The item %s is already renamed", p1_str);
+						"The item %s is already renamed", p1_str);
 		gtk_dialog_run(GTK_DIALOG(dialog));
 		gtk_widget_destroy(dialog);
 		break;
 	case -2:
 		dialog = gtk_message_dialog_new(rename_types_window->window, GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, 
-						"Add failed");
-		gtk_message_dialog_format_secondary_text(GTK_MESSAGE_DIALOG(dialog), "The item %s is already renamed", p2_str);
+						"The item %s is already renamed", p2_str);
 		gtk_dialog_run(GTK_DIALOG(dialog));
 		gtk_widget_destroy(dialog);
-		break;
-	case -3: 
-	case -4:/* we don't need to process these error codes because we are filtering the contents of the combo boxes */
 		break;
 	case -5:
 		dialog = gtk_message_dialog_new(rename_types_window->window, GTK_DIALOG_MODAL, GTK_MESSAGE_ERROR, GTK_BUTTONS_OK, 
@@ -194,11 +188,16 @@ static void sediff_rename_types_window_on_add_button_clicked(GtkButton *button, 
 		gtk_list_store_set(store, &iter, SEDIFF_RENAME_POLICY_ONE_COLUMN, p1_str, 
 				   SEDIFF_RENAME_POLICY_TWO_COLUMN, p2_str, -1);
 		break;
+	case -3: 
+	case -4:
+	default: /* we don't need to process these error codes because we are filtering the contents of the combo boxes */
+		g_assert(FALSE);
+		break;
 	}
 
 }
 
-static int sediff_rename_types_window_init(sediff_rename_types_t *rename_types_window)//, sediff_app_t *sediff_app)
+static int sediff_rename_types_window_init(sediff_rename_types_t *rename_types_window)
 {
 	GList *items;
 	GtkCellRenderer *renderer;
