@@ -91,6 +91,5 @@ int cond_free_expr_item(cond_expr_item_t *c);
 int cond_evaluate_expr(cond_expr_t *expr, struct policy *policy);
 bool_t cond_exprs_equal(cond_expr_t *a, cond_expr_t *b);
 bool_t cond_exprs_semantic_equal(cond_expr_t *a, cond_expr_t *b, struct policy *p, bool_t *inverse);
-bool_t does_cond_expr_use_bool(cond_expr_item_t *expr, int boolean);
 
 #endif
