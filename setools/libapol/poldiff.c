@@ -772,12 +772,12 @@ static int make_p2_key(avh_key_t *p1key, avh_key_t *p2key, policy_t *p1, policy_
 		}
 	}
 	if (p2src < 0)
-		p2key->src = get_type_idx(p1->types[p1key->src].name, p2);
+		p2key->src = ap_diff_find_type_in_p2(p1key->src,p1,p2,renamed_types);
 	else 
 		p2key->src = p2src;
 
 	if (p2tgt < 0)
-		p2key->tgt = get_type_idx(p1->types[p1key->tgt].name, p2);
+		p2key->tgt = ap_diff_find_type_in_p2(p1key->tgt,p1,p2,renamed_types);
 	else 
 		p2key->tgt = p2tgt;
 
@@ -786,8 +786,6 @@ static int make_p2_key(avh_key_t *p1key, avh_key_t *p2key, policy_t *p1, policy_
 
 	return 0;
 }
-
-
 
 
 static bool_t does_cond_match(avh_node_t *n1, policy_t *p1, avh_node_t *n2, policy_t *p2, bool_t *inverse)
@@ -1292,7 +1290,7 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 							   diff this, its a missing type */
 							/* if the target is just a type */
 							if (tgt_types->type & IDX_TYPE) {
-								idx2 = get_type_idx(p1->types[tgt_types->idx].name, p2);
+								idx2 = ap_diff_find_type_in_p2(tgt_types->idx, p1, p2, renamed_types);
 								if (idx2 >= 0) {
 									/* first try to match the key(srole,type),
 									   and get the role target in p2 */
@@ -1313,7 +1311,7 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 							} else if (tgt_types->type & IDX_ATTRIB) {
 								/* walk the types for this attribute */
 								for(k = 0; k < p1->attribs[tgt_types->idx].num; k++) {
-									idx2 = get_type_idx(p1->types[p1->attribs[tgt_types->idx].a[k]].name, p2);
+									idx2 = ap_diff_find_type_in_p2(p1->attribs[tgt_types->idx].a[k], p1, p2, renamed_types);
 									if (0 <= idx2) {
 										/* first try to match the key(srole,type),
 										   and get the role target in p2 */
@@ -1536,7 +1534,6 @@ typedef int(*get_iad_idx_fn_t)(const char *name,policy_t *policy);
 static int ap_iad_new_type_chg(ap_single_iad_diff_t *siad,int_a_diff_t *add,int_a_diff_t *rem,policy_t *p1,policy_t *p2)
 {
 	int curr;
-	char *name;
 	int rt;
 	bool_t changed,added_chg,removed_chg;
 	
@@ -1550,11 +1547,7 @@ static int ap_iad_new_type_chg(ap_single_iad_diff_t *siad,int_a_diff_t *add,int_
 	   they get added to chg_add or chg_rem depending on the starting list */
 	curr = 0;
 	for (curr = 0;add && curr < add->numa;curr++) {
-		rt = get_type_name(add->a[curr],&name,p2);
-		if (rt < 0)
-			goto ap_iad_new_type_chg_error;
-		rt = get_type_idx(name,p1);
-		free(name);
+		rt = ap_diff_find_type_in_p2(add->a[curr], p2, p1, NULL);
 		/* this is an add because of a new type */
 		if (rt < 0) {
 			if (added_chg == FALSE) {
@@ -1605,11 +1598,7 @@ static int ap_iad_new_type_chg(ap_single_iad_diff_t *siad,int_a_diff_t *add,int_
 
 	}
 	for (curr = 0;rem && curr < rem->numa;curr++) {
-		rt = get_type_name(rem->a[curr],&name,p1);
-		if (rt < 0)
-			goto ap_iad_new_type_chg_error;
-		rt = get_type_idx(name,p2);
-		free(name);
+		rt = ap_diff_find_type_in_p2(rem->a[curr], p1, p2, NULL);
 		/* this is an rem because of a rem type */
 		if (rt < 0) {
 			if (removed_chg == FALSE) {
@@ -2486,11 +2475,7 @@ static ap_single_rtrans_diff_t *ap_new_single_rtrans_diff(apol_diff_result_t *di
 				goto ap_new_single_rtrans_diff_error;
 			r2 = get_role_idx(name,p2);
 			free(name);
-			rt = get_type_name(rd->t_idx,&name,p1);
-			if (rt < 0)
-				goto ap_new_single_rtrans_diff_error;
-			t2 = get_type_idx(name,p2);
-			free(name);
+			t2 = ap_diff_find_type_in_p2(rd->t_idx, p1, p2, NULL);
 			rd_cur = diff2->role_trans;
 			while (rd_cur && (rd_cur->rs_idx != r2 || rd_cur->t_idx != t2))
 				rd_cur = rd_cur->next;
@@ -2502,11 +2487,7 @@ static ap_single_rtrans_diff_t *ap_new_single_rtrans_diff(apol_diff_result_t *di
 		} else {
 			/* lets find out if this is because of a type not
 			   being in p2 */
-			rt = get_type_name(rd->t_idx,&name,p1);
-			if (rt < 0)
-				goto ap_new_single_rtrans_diff_error;
-			t2 = get_type_idx(name,p2);
-			free(name);
+			t2 = ap_diff_find_type_in_p2(rd->t_idx, p1, p2, NULL);
 			if (t2 < 0) {
 				ap_new_single_rtrans_addrem(srd,rd,FALSE,TRUE);
 			} else {
@@ -2520,11 +2501,7 @@ static ap_single_rtrans_diff_t *ap_new_single_rtrans_diff(apol_diff_result_t *di
 		if (rd->missing) {
 			/* lets find out if this is because of a type not
 			   in p1 */
-			rt = get_type_name(rd->t_idx,&name,p2);
-			if (rt < 0)
-				goto ap_new_single_rtrans_diff_error;
-			t2 = get_type_idx(name,p1);
-			free(name);
+			t2 = ap_diff_find_type_in_p2(rd->t_idx, p1, p2, NULL);
 			if (t2 < 0) {
 				ap_new_single_rtrans_addrem(srd,rd,TRUE,TRUE);
 			} else {

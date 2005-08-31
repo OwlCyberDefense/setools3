@@ -838,7 +838,7 @@ int get_type_idx(const char *name, policy_t *policy)
 
 	/* traverse the avl tree */
 	rt = avl_get_idx(name, &policy->tree[AVL_TYPES]);
-	if(rt <0) {
+	if(rt < 0) {
 		/* check aliases for a match */
 		rt2 = get_type_idx_by_alias_name(name, policy);
 		if(rt2 >=0 )

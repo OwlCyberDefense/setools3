@@ -29,7 +29,7 @@
 typedef struct sediff_app {
 	GtkWindow *window;		/* the main window */
 	GtkWindow *open_dlg; 
-	GtkWidget *loading_dlg;
+	GtkWidget *modal_dlg;
 	GtkWidget *dummy_view;
 	GladeXML *window_xml;
 	GladeXML *open_dlg_xml;
