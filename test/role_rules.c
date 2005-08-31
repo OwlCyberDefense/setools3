@@ -10,6 +10,7 @@
 int main(int argc, char **argv)
 {	
 	apol_diff_result_t *diff;
+	ap_single_view_diff_t *svd;
 	policy_t *p1;
 	policy_t *p2;
 	int_a_diff_t *iad;
@@ -26,8 +27,9 @@ int main(int argc, char **argv)
 	TEST("load policy 2", open_policy("policy/rbac2.conf", &p2) == 0);
 
 	/* diff them */
-	TEST("diff policies", (diff = apol_diff_policies(opts,p1,p2)) != NULL);
-	
+	TEST("diff policies", (svd = ap_new_single_view_diff(opts,p1,p2,NULL)) != NULL);
+
+	diff = svd->diff;
 	/* role allow differences */
 	/* 
 	   there should be 3 different role allow rules 
@@ -148,7 +150,7 @@ int main(int argc, char **argv)
 
 
 	/* cleanup the pointers */
-	apol_free_diff_result(1, diff);	
+	ap_destroy_single_view_diff(svd);
 
 	return 0;
 }
