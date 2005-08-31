@@ -82,6 +82,7 @@
 #define OPT_CONDITIONALS_REM   54
 #define OPT_CONDITIONALS_CHG   55
 
+#define OPT_NUM_DIFF_NODES 56
 
 /* The data columns that we export via the tree model interface */
 enum
