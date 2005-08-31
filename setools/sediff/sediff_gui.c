@@ -94,22 +94,21 @@ static void sediff_update_status_bar();
 static void sediff_rename_policy_tabs(GString *p1, GString *p2) ;
 static void txt_buffer_insert_summary_results(GtkTextBuffer *txt);
 static char *sediff_get_tab_spaces(int numspaces);
-static void sediff_loading_dialog_on_window_destroy(GtkWidget *widget, GdkEvent *event, gpointer user_data);
-void sediff_menu_on_reload_clicked(GtkMenuItem *menuitem, gpointer user_data);
+static void sediff_modal_dialog_on_window_destroy(GtkWidget *widget, GdkEvent *event, gpointer user_data);
 static gboolean txt_view_on_cond_link_event(GtkTextTag *tag, GObject *event_object, 
 					      GdkEvent *event, const GtkTextIter *iter, 
 					    gpointer user_data);
 gboolean txt_view_on_text_view_motion(GtkWidget *widget, GdkEventMotion *event, gpointer user_data);
-gboolean sediff_load_dlg_destroy();
+static gboolean sediff_modal_dlg_destroy();
 static int sediff_policy_file_textview_populate(const char *filename,GtkTextView *textview);
 static void sediff_policy_stats_textview_populate(policy_t *p1, GtkTextView *textview,const char *filename);
 static void sediff_initialize_diff();
 static void sediff_initialize_policies();
-gboolean sediff_load_dlg_show();
+static gboolean sediff_modal_dlg_show(const char *title,const char *label);
 static void sediff_free_stored_buffers();
 static void sediff_open_button_clicked();
-void sediff_on_policy1_notebook_event_after(GtkWidget *widget, GdkEvent *event, gpointer user_data);
-void sediff_on_policy2_notebook_event_after(GtkWidget *widget, GdkEvent *event, gpointer user_data);
+static void sediff_on_policy1_notebook_event_after(GtkWidget *widget, GdkEvent *event, gpointer user_data);
+static void sediff_on_policy2_notebook_event_after(GtkWidget *widget, GdkEvent *event, gpointer user_data);
 static gboolean sediff_treeview_on_row_selected(GtkTreeSelection *selection,
 					    	GtkTreeModel     *model,
 					    	GtkTreePath      *path,
@@ -122,7 +121,7 @@ static void sediff_treeview_on_row_double_clicked(GtkTreeView *tree_view,
 
 
 
-void usage(const char *program_name, int brief)
+static void usage(const char *program_name, int brief)
 {
 	printf("%s (sediff ver. %s)\n\n", COPYRIGHT_INFO, SEDIFF_VERSION_NUM);
 	printf("Usage: %s [OPTIONS]\n", program_name);
@@ -188,7 +187,7 @@ static void sediff_callback_signal_emit_1(gpointer data, gpointer user_data)
 
 /* the signal emit function executes each function registered with 
  * sediff_callback_register() */
-void sediff_callback_signal_emit(unsigned int type)
+static void sediff_callback_signal_emit(unsigned int type)
 {
 
 	g_list_foreach(sediff_app->callbacks, &sediff_callback_signal_emit_1, &type);
@@ -925,8 +924,8 @@ static int sediff_load_policies(const char *p1_file, const char *p2_file)
 	gdk_cursor_unref(cursor);
 	gdk_flush();
 
-	sediff_initialize_policies();
 
+	sediff_initialize_policies();
 	while (gtk_events_pending ())
 		gtk_main_iteration ();
 		
@@ -1042,20 +1041,21 @@ static int sediff_diff_policies(policy_t *p1, policy_t *p2, ap_diff_rename_t *re
 	if (p1 == NULL || p2 == NULL)
 		goto err;
 
-
 	sediff_initialize_diff();
 	/* show our loading dialog */
-	sediff_load_dlg_show();
-	
+	sediff_modal_dlg_show("Loading","Calculating difference - this may take a while");
+
 	/* set the cursor to a hourglass */
 	cursor = gdk_cursor_new(GDK_WATCH);
 	gdk_window_set_cursor(GTK_WIDGET(sediff_app->window)->window, cursor);
 	gdk_cursor_unref(cursor);
 	gdk_flush();
-	
+
+	/* make sure we clear everything out before we run the diff */
 	while (gtk_events_pending ())
 		gtk_main_iteration ();
 
+	/* create a new svd */
 	sediff_app->svd = ap_new_single_view_diff(opts, p1, p2,renamed_types);
 
 	if (sediff_app->svd == NULL) {
@@ -1063,7 +1063,6 @@ static int sediff_diff_policies(policy_t *p1, policy_t *p2, ap_diff_rename_t *re
 		message_display(sediff_app->window,GTK_MESSAGE_ERROR,string->str);
 		goto err;
 	}
-
 
 	/* load up the buffers */
 	txt_view_populate_large_buffers(sediff_app->svd);
@@ -1077,12 +1076,10 @@ static int sediff_diff_policies(policy_t *p1, policy_t *p2, ap_diff_rename_t *re
 		gtk_container_remove(GTK_CONTAINER(container), sediff_app->dummy_view);
 	}
 
-
-	/* create a new tree_store */
+	/* copy over the diff results */
 	sediff_app->diff_results = sediff_app->svd->diff;
 	
 	/* create the tree_view */
-
 	sediff_app->tree_view = sediff_create_view_and_model(sediff_app->svd);
 
 	sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(sediff_app->tree_view));
@@ -1109,7 +1106,7 @@ static int sediff_diff_policies(policy_t *p1, policy_t *p2, ap_diff_rename_t *re
 		gtk_tree_selection_select_iter(sel,&iter);
 	}
 	/* get rid of the loading when done */
-	sediff_load_dlg_destroy();
+	sediff_modal_dlg_destroy();
 
 	/* diff is done set cursor back to a ptr */
 	cursor = gdk_cursor_new(GDK_LEFT_PTR);
@@ -1124,7 +1121,7 @@ err:
 	gdk_cursor_unref(cursor);
 	gdk_flush();
 	g_string_free(string,TRUE);
-	sediff_load_dlg_destroy();
+	sediff_modal_dlg_destroy();
 	return -1;
 }
 
@@ -1738,7 +1735,7 @@ static int txt_buffer_insert_perms_results(GtkTextBuffer *txt, GtkTextIter *txt_
    will create a hyperlinked tag with the id "cond-link-policynum-idx", will
    associate that id to the tag, and will connect that tag to a callback fcn in the
    main textview. That will link us to the mark with the matching id in conditionals */
-GtkTextTag *txt_buffer_create_cond_tag(GtkTextBuffer *txt,int policy_num,int idx)
+static GtkTextTag *txt_buffer_create_cond_tag(GtkTextBuffer *txt,int policy_num,int idx)
 {
 	GtkTextTag *tag = NULL;
 	GtkTextTagTable *table = NULL;
@@ -2273,7 +2270,7 @@ static int txt_buffer_insert_rtrans_results(GtkTextBuffer *txt, GtkTextIter *txt
 	return -1;
 }
 
-GtkTextMark *txt_buffer_insert_cond_mark(GtkTextBuffer *txt,GtkTextIter *iter,GString *string,
+static GtkTextMark *txt_buffer_insert_cond_mark(GtkTextBuffer *txt,GtkTextIter *iter,GString *string,
 					 int policy,int idx,bool_t goes_left)
 {
 	GtkTextMark *mark = NULL;
@@ -2446,7 +2443,7 @@ static int txt_buffer_insert_cond_results(GtkTextBuffer *txt, GtkTextIter *txt_i
    them.  This allows find these marks since gtk has no
    generic destroy all marks 
 */
-void cond_tag_foreach(GtkTextTag *tag,gpointer data)
+/*static void cond_tag_foreach(GtkTextTag *tag,gpointer data)
 {
 	GtkTextBuffer *te_txt = NULL;
 	char *str = NULL;
@@ -2463,7 +2460,7 @@ void cond_tag_foreach(GtkTextTag *tag,gpointer data)
 		if (mark)
 			gtk_text_buffer_delete_mark(te_txt,mark);
 	}
-}
+	}*/
 
 /*
   clear the text buffers 
@@ -2483,7 +2480,7 @@ static void sediff_free_stored_buffers()
 		g_object_unref (G_OBJECT(sediff_app->te_rem_buffer)); 
 	}
 	if (sediff_app->te_chg_buffer) {
-		g_object_unref (G_OBJECT(sediff_app->te_add_type_buffer)); 
+		g_object_unref (G_OBJECT(sediff_app->te_chg_buffer)); 
 	}
 	if (sediff_app->te_add_type_buffer) {
 		g_object_unref (G_OBJECT(sediff_app->te_add_type_buffer)); 
@@ -2491,7 +2488,6 @@ static void sediff_free_stored_buffers()
 	if (sediff_app->te_rem_type_buffer) {
 		g_object_unref (G_OBJECT(sediff_app->te_rem_type_buffer)); 
 	}
-
 	if (sediff_app->cond_buffer) {
 		g_object_unref (G_OBJECT(sediff_app->cond_buffer)); 
 	}
@@ -2849,11 +2845,6 @@ static void txt_view_populate_large_buffers(ap_single_view_diff_t *svd)
 	GtkTextIter end;
 	policy_t *policy_old = svd->diff->p1;
 	policy_t *policy_new = svd->diff->p2;
-
-	/* first free any existing buffers */
-	sediff_free_stored_buffers();
-	
-	sediff_create_buffers();
 
 	g_string_truncate(string,0);
 	sediff_clear_text_buffer(sediff_app->te_buffer);
@@ -3571,7 +3562,6 @@ static void txt_view_switch_buffer(GtkTextView *textview,gint option,gint policy
 			fprintf(stderr, "Invalid list item %d!", option);
 			break;
 		};
-
 	}
 
 }
@@ -3587,9 +3577,8 @@ static gboolean txt_buffer_insert_results(gpointer data)
 	gint option;
 	apol_diff_result_t *diff_results = NULL;
 
-
 	option = sediff_get_current_treeview_selected_row(GTK_TREE_VIEW(sediff_app->tree_view));
-	
+
 	/* grab the text buffers for our text views */
 	textview1 = (GtkTextView *)glade_xml_get_widget(sediff_app->window_xml, "sediff_p1_results_txt_view");
 	g_assert(textview1);
@@ -3668,8 +3657,8 @@ static void sediff_destroy(sediff_app_t *sediff_app)
 		gtk_widget_destroy(GTK_WIDGET(sediff_app->window));
 	if (sediff_app->open_dlg != NULL)
 		gtk_widget_destroy(GTK_WIDGET(sediff_app->open_dlg));
-	if (sediff_app->loading_dlg != NULL)
-		gtk_widget_destroy(GTK_WIDGET(sediff_app->loading_dlg));
+	if (sediff_app->modal_dlg != NULL)
+		gtk_widget_destroy(GTK_WIDGET(sediff_app->modal_dlg));
 	if (sediff_app->window_xml != NULL)
 		g_object_unref(G_OBJECT(sediff_app->window_xml));
 	if (sediff_app->open_dlg_xml != NULL)
@@ -3682,8 +3671,10 @@ static void sediff_destroy(sediff_app_t *sediff_app)
 		sediff_rename_types_window_unref_members(sediff_app->rename_types_window);
 		free(sediff_app->rename_types_window);
 	}
-	if (sediff_app->svd)
+	if (sediff_app->svd) {
 		ap_destroy_single_view_diff(sediff_app->svd);
+		sediff_app->svd = NULL;
+	}
 
 	g_list_foreach(sediff_app->callbacks, &sediff_callbacks_free_elem_data, NULL);
 	g_list_free(sediff_app->callbacks);
@@ -3850,8 +3841,10 @@ static void sediff_sort_te_rules(int sort_opt,int direction)
 	int draw_opt;
 	GtkTextBuffer **buffer;
 
+	sediff_modal_dlg_show("Sorting","Sorting - this may take a while");
 	/* get the current row so we know what to sort */
 	treeview_row = sediff_get_current_treeview_selected_row(GTK_TREE_VIEW(sediff_app->tree_view));
+
 	/* set up the buffers and the drawing options */
 	if (treeview_row == OPT_TE_RULES_ADD) {
 		draw_opt = OPT_ADD;
@@ -3875,7 +3868,6 @@ static void sediff_sort_te_rules(int sort_opt,int direction)
 
 	/* sort the rules */
 	ap_qsort_single_view_te_rules(sediff_app->svd,sort_opt,draw_opt,direction);
-
 	/* -- Here we destroy the buffer because its faster than uses the gtk_text_buffer_delete fcn -- */
 	/* unref the buffer from the text view */
 	gtk_text_view_set_buffer(textview,NULL);
@@ -3893,6 +3885,10 @@ static void sediff_sort_te_rules(int sort_opt,int direction)
 				     sediff_app->svd->diff->p1,sediff_app->svd->diff->p2,draw_opt,TRUE);
 	/* use this switch to force display to update */
 	txt_view_switch_buffer(textview,treeview_row,1);
+
+	/* get rid of the loading when done */
+	sediff_modal_dlg_destroy();
+
 	g_string_free(string,TRUE);
 }
 
@@ -3926,7 +3922,6 @@ void sediff_menu_on_tgt_type_des_clicked(GtkMenuItem *menuitem, gpointer user_da
 	sediff_sort_te_rules(AP_TGT_TYPE,-1);
 }
 
-
 void on_sediff_menu_find_clicked(GtkMenuItem *menuitem, gpointer user_data)
 {
 	if (sediff_app->find_window == NULL)
@@ -3934,7 +3929,6 @@ void on_sediff_menu_find_clicked(GtkMenuItem *menuitem, gpointer user_data)
 	g_assert(sediff_app->find_window);
 	sediff_find_window_display(sediff_app->find_window);
 }
-
 
 void sediff_menu_on_rundiff_clicked(GtkMenuItem *menuitem, gpointer user_data)
 {
@@ -3985,10 +3979,10 @@ void sediff_open_dialog_on_p2browse_button_clicked(GtkButton *button, gpointer u
 	}
 }
 
-static void sediff_loading_dialog_on_window_destroy(GtkWidget *widget, GdkEvent *event, gpointer user_data)
+static void sediff_modal_dialog_on_window_destroy(GtkWidget *widget, GdkEvent *event, gpointer user_data)
 {
   	gtk_widget_destroy(widget);
-	sediff_app->loading_dlg = NULL;
+	sediff_app->modal_dlg = NULL;
 }
 
 
@@ -4149,37 +4143,37 @@ void sediff_menu_on_about_clicked(GtkMenuItem *menuitem, gpointer user_data)
 	g_string_free(str, TRUE);
 }
 
-gboolean sediff_load_dlg_destroy()
+static gboolean sediff_modal_dlg_destroy()
 {
 	GtkWidget *widget = NULL;
-	if (sediff_app->loading_dlg != NULL) {
-		widget = GTK_WIDGET(sediff_app->loading_dlg);
-		gtk_widget_destroy(GTK_WIDGET(sediff_app->loading_dlg));
-		sediff_app->loading_dlg = NULL;
+	if (sediff_app->modal_dlg != NULL) {
+		widget = GTK_WIDGET(sediff_app->modal_dlg);
+		gtk_widget_destroy(GTK_WIDGET(sediff_app->modal_dlg));
+		sediff_app->modal_dlg = NULL;
 	}
 	return FALSE;
 }
 
-gboolean sediff_load_dlg_show()
+static gboolean sediff_modal_dlg_show(const char *title,const char *label_string)
 {
 	GtkWidget *label;
 	/* if the dialog is not already up */
-	if (sediff_app->loading_dlg == NULL) {
-		sediff_app->loading_dlg = gtk_dialog_new_with_buttons ("Loading",
+	if (sediff_app->modal_dlg == NULL) {
+		sediff_app->modal_dlg = gtk_dialog_new_with_buttons (title,
 						      sediff_app->window,
 						      GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_NO_SEPARATOR,
 				     NULL);
-		gtk_widget_set_usize(sediff_app->loading_dlg,300,100);
-		label = gtk_label_new ("Calculating difference - this may take a while");
-		gtk_container_add (GTK_CONTAINER (GTK_DIALOG(sediff_app->loading_dlg)->vbox),
+		gtk_widget_set_usize(sediff_app->modal_dlg,300,100);
+		label = gtk_label_new (label_string);
+		gtk_container_add (GTK_CONTAINER (GTK_DIALOG(sediff_app->modal_dlg)->vbox),
 				   label);
 
-		gtk_widget_show_all (sediff_app->loading_dlg);
+		gtk_widget_show_all (sediff_app->modal_dlg);
 		while (gtk_events_pending ())
 			gtk_main_iteration ();
 	}
-		g_signal_connect(G_OBJECT(sediff_app->loading_dlg), "delete_event", 
-			G_CALLBACK(sediff_loading_dialog_on_window_destroy), sediff_app);
+	g_signal_connect(G_OBJECT(sediff_app->modal_dlg), "delete_event", 
+			 G_CALLBACK(sediff_modal_dialog_on_window_destroy), sediff_app);
 
 	return FALSE;
 }
@@ -4253,7 +4247,7 @@ static void sediff_initialize_diff()
 	GtkWidget *container = NULL;
 	GtkLabel *label = NULL;
 	GtkTreeSelection *selection = NULL;
-
+	
 	if (sediff_app->tree_view) {
 		/* unselect the selected items */
 		selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(sediff_app->tree_view));
@@ -4283,24 +4277,27 @@ static void sediff_initialize_diff()
 	sediff_free_stored_buffers();
 	sediff_create_buffers();
 	
-	
 	textview = GTK_TEXT_VIEW((glade_xml_get_widget(sediff_app->window_xml, "sediff_key_txt_view")));
 	g_assert(textview);
 	txt = gtk_text_view_get_buffer(textview);
 	g_assert(txt);
 	sediff_clear_text_buffer(txt);
 	
+	/* switch to our newly blank main buffer */
 	textview = GTK_TEXT_VIEW((glade_xml_get_widget(sediff_app->window_xml, "sediff_p1_results_txt_view")));
-	g_assert(textview);
-	txt = gtk_text_view_get_buffer(textview);
-	g_assert(txt);
-	sediff_clear_text_buffer(txt);
-	
+	gtk_text_view_set_buffer(textview,sediff_app->main_buffer);
+
 	label = (GtkLabel*)glade_xml_get_widget(sediff_app->window_xml, "line_label");
 	gtk_label_set_text(label, "");
 
 	label = (GtkLabel *)(glade_xml_get_widget(sediff_app->window_xml, "label_stats"));
 	gtk_label_set_text(label, "");
+
+	/* clear out the svd if we need to */
+	if (sediff_app->svd) {
+		ap_destroy_single_view_diff(sediff_app->svd);
+		sediff_app->svd = NULL;
+	}
 }
 
 static void sediff_initialize_policies()
@@ -4309,14 +4306,11 @@ static void sediff_initialize_policies()
 	GtkTextBuffer *txt;
 	
 	sediff_initialize_diff();
-	sediff_rename_types_window_unref_members(sediff_app->rename_types_window);
-	
-	if (sediff_app->p1)
-		close_policy(sediff_app->p1);
-	if (sediff_app->p2)
-		close_policy(sediff_app->p2);
+	/* prev fcn will close policies if not null */
 	sediff_app->p1 = NULL;
 	sediff_app->p2 = NULL;
+
+	sediff_rename_types_window_unref_members(sediff_app->rename_types_window);
 
 	/* Grab the 2 policy textviews */
 	textview = (GtkTextView *)glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p1_text");
@@ -4361,7 +4355,6 @@ void sediff_open_dialog_on_diff_button_clicked(GtkButton *button, gpointer user_
 	GdkCursor *cursor = NULL;
 	int rt;
 	GString *string = NULL;
-
 	
 	/* grab the GtkEntry widgets so we can get their data*/
 	p1_entry = (GtkEntry *)glade_xml_get_widget(sediff_app->open_dlg_xml, "sediff_dialog_p1_entry");
@@ -4389,9 +4382,7 @@ void sediff_open_dialog_on_diff_button_clicked(GtkButton *button, gpointer user_
 	gdk_window_set_cursor(GTK_WIDGET(sediff_app->open_dlg)->window, cursor);	
 	gdk_cursor_unref(cursor);
 	gdk_flush();
-
 	rt = sediff_load_policies((const char*)p1_file, (const char*)p2_file);
-
 	/* load is done set cursor back to a ptr */
 	cursor = gdk_cursor_new(GDK_LEFT_PTR);
 	gdk_window_set_cursor(GTK_WIDGET(sediff_app->open_dlg)->window, cursor);	
@@ -4420,7 +4411,7 @@ typedef struct filename_data {
  * the gui for too long. To solve this, the function is called from an
  * idle callback set-up in main.
  */
-gboolean delayed_main(gpointer data)
+static gboolean delayed_main(gpointer data)
 {
 	filename_data_t *filenames = (filename_data_t *)data;
 	const char *p1_file = filenames->p1_file->str;
@@ -4432,7 +4423,7 @@ gboolean delayed_main(gpointer data)
 	return FALSE;
 }
 
-void sediff_on_main_notebook_switch_page(GtkNotebook *notebook, GtkNotebookPage *page, guint pagenum, gpointer user_data) 
+static void sediff_on_main_notebook_switch_page(GtkNotebook *notebook, GtkNotebookPage *page, guint pagenum, gpointer user_data) 
 {
 	sediff_app_t *sediff_app = (sediff_app_t*)user_data;
 	GtkLabel *label = NULL;
