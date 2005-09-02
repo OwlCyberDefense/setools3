@@ -41,6 +41,8 @@ typedef struct bpmaps {
 	int	r_num;
 	int	*t_map;		/* types */
 	int	t_num;
+	int	*a_map;		/* attribs */
+	int	a_num;
 	ap_alias_bmap_t *alias_map;	/* aliases (top) */
 	ap_alias_bmap_t *alias_map_last; /* (bottom) */
 	int	*u_map;		/* users */
