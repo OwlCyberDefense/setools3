@@ -211,7 +211,7 @@ static int match_te_rules_idx(int  idx,
 		for(i = 0; i < policy->num_av_audit; i++) {
 			if (rules_b->audit[i])
 				continue;
-			if (only_enabled && !policy->av_access[i].enabled)
+			if (only_enabled && !policy->av_audit[i].enabled)
 				continue;
 			ans = does_av_rule_use_type(idx, idx_type, whichlists, do_indirect, 
 					&(policy->av_audit[i]), &(rules_b->au_cnt), policy);
