@@ -95,7 +95,7 @@ void ll_free(llist_t *ll, void(*free_data)(void *));
 llist_node_t *ll_node_free(llist_node_t *n, void(*free_data)(void *));
 int ll_unlink_node(llist_t *ll, llist_node_t *n);
 int ll_insert_data(llist_t *ll, llist_node_t *n, void *data);
-int ll_append_data(llist_t *ll, void *data) ;
+int ll_append_data(llist_t *ll, void *data);
 int init_rules_bool(bool_t include_audit, rules_bool_t *rules_b, struct policy *policy);
 int init_rbac_bool(rbac_bool_t *b, struct policy *policy, bool_t roles);
 int all_true_rules_bool(rules_bool_t *rules_b, struct policy *policy);

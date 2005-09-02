@@ -516,8 +516,10 @@ void generate_message_header(char *message_header, audit_log_t *audit_log, struc
 	assert(message_header != NULL && audit_log != NULL && date_stamp != NULL);
 
 	strftime(message_header, TIME_SIZE, "%b %d %T", date_stamp);
-	strcat(message_header, " ");
-	strcat(message_header, audit_log_get_host(audit_log, host));
+	if (audit_log_get_host(audit_log, host)) {
+		strcat(message_header, " ");
+		strcat(message_header, audit_log_get_host(audit_log, host));
+	}
 	strcat(message_header, " kernel: ");
 
 	return;

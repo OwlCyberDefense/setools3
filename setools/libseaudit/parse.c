@@ -24,8 +24,9 @@
 #define OLD_LOAD_POLICY_STRING "loadingpolicyconfigurationfrom"
 #define AVCMSG " avc: "
 #define LOADMSG " security: "
-#define SYSCALL_STRING "audit("
+#define SYSCALL_STRING "msg=audit("
 #define BOOLMSG "committed booleans"
+#define AUDITD_MSG "type="
 #define PARSE_AVC_MSG 1
 #define PARSE_LOAD_MSG 2
 #define PARSE_BOOL_MSG 3
@@ -50,11 +51,11 @@ static unsigned int get_tokens(char *line, int msgtype, audit_log_t *log, FILE *
 static int is_selinux(char *line) 
 {
 	assert(line != NULL);
-	if (strstr(line, BOOLMSG) && strstr(line, "kernel"))
+	if (strstr(line, BOOLMSG) && (strstr(line, "kernel") || strstr(line, AUDITD_MSG)))
 		return PARSE_BOOL_MSG;
-	else if (strstr(line, LOADMSG) && strstr(line, "kernel")) 
+	else if (strstr(line, LOADMSG) && (strstr(line, "kernel") || strstr(line, AUDITD_MSG)))
 		return PARSE_LOAD_MSG;
-	else if (strstr(line, AVCMSG) && strstr(line, "kernel"))
+	else if (strstr(line, AVCMSG) && (strstr(line, "kernel") || strstr(line, AUDITD_MSG)))
 		return PARSE_AVC_MSG;
 	else 
 		return PARSE_NON_SELINUX;
@@ -229,6 +230,7 @@ static unsigned int avc_msg_insert_syscall_info(char *token, msg_t *msg)
 	int length, header_len = 0, i = 0;
 	char *fields[PARSE_NUM_SYSCALL_FIELDS];
 	char *time_str = NULL;
+	time_t temp;
 	 
 	assert(token != NULL && msg != NULL);
 	
@@ -249,16 +251,25 @@ static unsigned int avc_msg_insert_syscall_info(char *token, msg_t *msg)
 	header_len = strlen(SYSCALL_STRING);
 	time_str = &token[header_len];
 	/* Parse seconds.nanoseconds:serial */
-        while ((fields[i] = strsep(&time_str, ".:")) != NULL && i < PARSE_NUM_SYSCALL_FIELDS) {
-		i++;       	       	
-        }
+	while ((fields[i] = strsep(&time_str, ".:")) != NULL && i < PARSE_NUM_SYSCALL_FIELDS) {
+		i++;
+	}
 
 	if (i != PARSE_NUM_SYSCALL_FIELDS)
 		return PARSE_RET_INVALID_MSG_WARN;
 
-	msg->msg_data.avc_msg->tm_stmp_sec = atoi(fields[0]);
+	temp = atol(fields[0]);
+
+	msg->msg_data.avc_msg->tm_stmp_sec = temp;
 	msg->msg_data.avc_msg->tm_stmp_nano = atoi(fields[1]);
 	msg->msg_data.avc_msg->serial = atoi(fields[2]);
+
+	if (!msg->date_stamp) {
+		if ((msg->date_stamp = (struct tm*) malloc(sizeof(struct tm))) == NULL)
+			return PARSE_RET_MEMORY_ERROR;
+	}
+
+	msg->date_stamp = localtime_r(&temp, msg->date_stamp);
 
 	return PARSE_RET_SUCCESS;
 }
@@ -826,26 +837,11 @@ static unsigned int avc_msg_insert_field_data(char **tokens, msg_t *msg, audit_l
 {
 	int position = 0;
 	unsigned int ret = 0, tmp_ret = 0;
-	
-	assert(tokens != NULL && msg != NULL && log != NULL && num_tokens > 0);
-	tmp_ret |= insert_standard_msg_header(*(&tokens), msg, log, &position, num_tokens);
-	if (tmp_ret & PARSE_RET_MEMORY_ERROR)
-		return PARSE_RET_MEMORY_ERROR;
-	else if (tmp_ret & PARSE_REACHED_END_OF_MSG) 
-		return PARSE_RET_INVALID_MSG_WARN;
-	else if (!(tmp_ret & PARSE_RET_INVALID_MSG_WARN)) {
-		position++;
-		if (position == num_tokens)
-			return PARSE_RET_INVALID_MSG_WARN;
-	}
-	ret |= tmp_ret;
-	/* Reset our bitmask */
-	tmp_ret = 0;	
 
-	if (!strstr(*(&tokens[position]), "kernel")) {
-		ret |= PARSE_RET_INVALID_MSG_WARN;
-		/* Hold the position */
-	} else {
+	assert(tokens != NULL && msg != NULL && log != NULL && num_tokens > 0);
+
+	/* Check for new auditd log format */
+	if (strstr(*(&tokens[position]), AUDITD_MSG)) {
 		position++;
 		if (position == num_tokens)
 			return PARSE_RET_INVALID_MSG_WARN;
@@ -862,6 +858,29 @@ static unsigned int avc_msg_insert_field_data(char **tokens, msg_t *msg, audit_l
 		ret |= tmp_ret;
 		/* Reset our bitmask */
 		tmp_ret = 0;	
+	} else {
+		tmp_ret |= insert_standard_msg_header(*(&tokens), msg, log, &position, num_tokens);
+		if (tmp_ret & PARSE_RET_MEMORY_ERROR)
+			return PARSE_RET_MEMORY_ERROR;
+		else if (tmp_ret & PARSE_REACHED_END_OF_MSG) 
+			return PARSE_RET_INVALID_MSG_WARN;
+		else if (!(tmp_ret & PARSE_RET_INVALID_MSG_WARN)) {
+			position++;
+			if (position == num_tokens)
+				return PARSE_RET_INVALID_MSG_WARN;
+		}
+		ret |= tmp_ret;
+		/* Reset our bitmask */
+		tmp_ret = 0;	
+
+		if (!strstr(*(&tokens[position]), "kernel")) {
+			ret |= PARSE_RET_INVALID_MSG_WARN;
+			/* Hold the position */
+		} else {
+			position++;
+			if (position == num_tokens)
+				return PARSE_RET_INVALID_MSG_WARN;
+		}
 	}
 		
 	/* Make sure the following token is the string "avc:" */

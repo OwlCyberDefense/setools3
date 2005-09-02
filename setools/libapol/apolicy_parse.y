@@ -1150,7 +1150,7 @@ static int define_typeattribute(void)
 		return 0;
 	}
 	
-	rt = set_policy_version(POL_VER_18_19, parse_policy);
+	rt = set_policy_version(POL_VER_18_20, parse_policy);
 	if(rt != 0) {
 		yyerror("error setting policy version");
 		return -1;
