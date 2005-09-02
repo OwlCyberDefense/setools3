@@ -1,10 +1,10 @@
 SELinux Policy Analysis Tool Help File
-apol, version 2.0
-May 17, 2005
+apol, version 2.1
+August 26, 2005
 selinux@tresys.com
 
 This file contains basic help information for using apol, version
-2.0 This version of apol allows you to:
+2.1 This version of apol allows you to:
 
 	+ examine, search, and relate policy components (types, type 
 	attributes, object classes, object permissions, roles, users,
@@ -30,7 +30,7 @@ the two types of policies similarly.
 Apol attempts to provide compatibility with the current and older 
 policy syntax to allow one to analyze current and old policies.  As of 
 this version, we believe the tools are compatible with all policy 
-versions from version 11 to the current version 18.
+versions from version 11 to the current version 20.
 
 See setools/ChangeLog-setools for a list of new features in this 
 release. See setools/KNOWN_BUGS for a list of current bugs.

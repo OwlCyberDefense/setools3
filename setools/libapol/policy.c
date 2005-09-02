@@ -35,8 +35,9 @@ const char *policy_version_strings[] = { "Unkown version",
 			 	 	 "v.11 -- v.12", 
 			 	 	 "v.15", "v.16", 
 					 "v.17", "v.18",
-					 "v.18 -- v.19",
-					 "v.19", "v.19mls"};
+					 "v.18 -- v.20",
+					 "v.19", "v.19mls",
+					 "v.20", "v.20mls"};
 			 	 
 /* get a policy version string from the global array of constant strings. 
  * We use the defined policy version numbers as indices into this array.*/
@@ -3062,7 +3063,7 @@ int add_cond_expr_item(cond_expr_t *expr, cond_rule_list_t *true_list, cond_rule
 		}
 		memset(&ptr[policy->num_cond_exprs], 0, LIST_SZ * sizeof(cond_expr_item_t));
 		policy->cond_exprs = ptr;
-		policy->list_sz[POL_LIST_INITIAL_SIDS] += LIST_SZ;
+		policy->list_sz[POL_LIST_COND_EXPRS] += LIST_SZ;
 	}
 	idx = policy->num_cond_exprs;
 	policy->num_cond_exprs++;

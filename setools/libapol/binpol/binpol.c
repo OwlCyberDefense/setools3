@@ -80,6 +80,25 @@ static int skip_mls_range(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int 
 	return 0;
 }
 
+static int load_range(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
+{
+	int nel, i;
+	__u32 *buf32;
+
+	INTERNAL_ASSERTION
+
+	buf32 = ap_read_fbuf(fb, sizeof(__u32), fp);
+	if (buf32 == NULL) return fb->err;
+	nel = le32_to_cpu(buf32[0]);
+
+	for (i=0; i < nel; i++) {
+		buf32 = ap_read_fbuf(fb, sizeof(__u32)*2, fp); /* dom, type */
+		if (buf32 == NULL) return fb->err;
+		skip_mls_range(fb, fp, bm, opts, policy);
+	}
+	return 0;
+}
+
 static int skip_mls_level(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
 {
 	__u32 *buf;
@@ -570,6 +589,110 @@ static int load_type(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts,
 		return LOAD_SUCCESS_NO_SAVE;
 }
 
+/* Generates a fake attribute name based on the number of attributes currently in the policy. 
+ * The result is guaranteed to be unique in the policy.(this is used by the binary policy 
+ * parser because we don't have attribute names available) */
+static char* ap_get_fake_attrib_name(policy_t *policy)
+{
+	char *attrib=NULL;
+	int sz, i = 0;
+
+#define AP_FAKE_ATTRIB_PREFIX "attrib_"
+
+	if (policy == NULL)
+		return NULL;
+
+	sz = strlen(AP_FAKE_ATTRIB_PREFIX) + 11; /* 11 is large enough for the biggest 32 bit number and a trailing NULL */
+	attrib = (char*)malloc(sizeof(char)*sz); 
+	if (attrib == NULL) {
+		fprintf(stderr, "Error: Out of memory\n");
+		return NULL;
+	}
+
+	do {
+		snprintf(attrib, sz, "%s%03i", AP_FAKE_ATTRIB_PREFIX, policy->num_attribs+i);
+		i++;
+	} while (get_attrib_idx(attrib, policy) >= 0);
+
+	return attrib;
+}
+
+static int add_fake_attrib(policy_t *policy)
+{
+	char *attrib;
+	int attrib_idx;
+
+	/* TODO: will there be an aux file for looking up attrib names from attrib vals */
+	attrib = ap_get_fake_attrib_name(policy);
+	if (attrib == NULL) 
+		return -1;
+	attrib_idx = add_attrib(FALSE, -1, policy, attrib);
+	free(attrib);
+	if (attrib_idx < 0) {
+		return -1;
+     	}
+	return attrib_idx;
+}
+
+static int load_type_attr_map(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
+{
+	int i, j, rt;
+	ebitmap_node_t *tnode;
+	ebitmap_t *type_attr_map;
+	char *attrib;
+
+	INTERNAL_ASSERTION
+		
+	if (policy->version < POL_VER_20) {
+		assert(FALSE);
+		return -1;
+	}
+
+	type_attr_map = malloc(bm->t_num * sizeof(ebitmap_t));
+	if (type_attr_map == NULL) return -1;
+
+	for (i = 0; i < bm->t_num; i++)
+		ebitmap_init(&type_attr_map[i]);
+	
+	for (i = 0; i < bm->t_num; i++) {
+		rt = ebitmap_read(fb, &type_attr_map[i], fp);
+		if (rt < 0) goto bad;
+
+		if (bm->t_map[i] == -1)
+			continue;
+
+		ebitmap_for_each_bit(&type_attr_map[i], tnode, j) {
+
+			if (ebitmap_node_get_bit(tnode, j) && i != j) { /* the bit is high and not a type */
+
+				if (is_valid_type_idx(bm->t_map[j], policy)) {
+					assert(FALSE);
+					rt = -1;
+					goto bad;
+				}
+				if (!is_valid_attrib_idx(bm->a_map[j], policy)) { /* the attrib didn't occur in the avtab */
+					rt = add_fake_attrib(policy);
+					if (rt < 0) goto bad;
+					bm->a_map[j] = rt;
+				}
+				if (get_attrib_name(bm->a_map[j], &attrib, policy) < 0) {
+					assert(FALSE);
+					rt = -1;
+					goto bad;
+				}
+				rt = add_attrib_to_type(bm->t_map[i], attrib, policy);
+				free(attrib);
+				if (rt < 0) goto bad;
+			}
+		}
+	}
+	
+	rt = 0;
+bad:
+	ebitmap_destroy(type_attr_map);
+	return rt;
+}
+
 static int load_user(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
 {
 	__u32 *buf, val;
@@ -889,11 +1012,27 @@ static int load_role_allow(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int
 	return 0;
 }
 
+static int load_security_context(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
+{
+	int rt;
+	__u32 *buf32;
+
+	buf32 = ap_read_fbuf(fb, sizeof(__u32)*3, fp); /* user, role, type */
+	if (buf32 == NULL) return fb->err;
+
+	if (policy->version >= POL_VER_19) {
+		rt = skip_mls_range(fb, fp, bm, opts, policy);
+		if (rt < 0) return fb->err;
+	}
+	return 0;
+}
 
 static int load_initial_sids(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
 {
 	bool_t keep = FALSE;
-	
+	int nel, i, rt;
+	__u32 *buf32;
+
 	INTERNAL_ASSERTION
 	
 	if (opts & POLOPT_INITIAL_SIDS)
@@ -903,11 +1042,217 @@ static int load_initial_sids(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned i
 	 * the binary policy does not store the symbolic name of initial sids, yet apol
 	 * assumes these names and keys off of them.  Thus until we resolve this issue, initial
 	 * sids will not be supported */
+
+	buf32 = ap_read_fbuf(fb, sizeof(__u32), fp);
+	if(buf32 == NULL) return fb->err;
+	nel = le32_to_cpu(buf32[0]);
+
+	for (i=0; i < nel; i++) {
+		buf32 = ap_read_fbuf(fb, sizeof(__u32), fp);   /* sid */
+		if (buf32 == NULL) return fb->err;
+
+		rt = load_security_context(fb, fp, bm, opts, policy);
+		if (rt < 0) return fb->err;
+	}
 	return 0;
 }
 
-static int insert_into_new_tt_item(int rule_type, int src, int tgt, int cls, int def_type,
-		bool_t enabled, policy_t *policy)
+static int load_ocon_netif(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
+{
+	bool_t keep = FALSE;
+	int nel, len, i, rt;
+	__u32 *buf32;
+
+	INTERNAL_ASSERTION
+	
+	if (opts & POLOPT_OTHER)
+		keep = TRUE;
+	
+	buf32 = ap_read_fbuf(fb, sizeof(__u32), fp);
+	if(buf32 == NULL) return fb->err;
+	nel = le32_to_cpu(buf32[0]);
+
+	for (i=0; i < nel; i++) {
+		buf32 = ap_read_fbuf(fb, sizeof(__u32), fp);
+		if(buf32 == NULL) return fb->err;
+		len = le32_to_cpu(buf32[0]);
+
+		buf32 = ap_read_fbuf(fb, len, fp); /* name */
+		if (buf32 == NULL) return fb->err;
+		
+		rt = load_security_context(fb, fp, bm, opts, policy); /* context[0] */
+		if (rt < 0) return fb->err;
+
+		rt = load_security_context(fb, fp, bm, opts, policy); /* context[1] */
+		if (rt < 0) return fb->err;
+	}
+	
+	return 0;
+}
+
+static int load_ocon_fs(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
+{
+	bool_t keep = FALSE;
+	
+	INTERNAL_ASSERTION
+	
+	if (opts & POLOPT_OTHER)
+		keep = TRUE;
+	
+	return load_ocon_netif(fb, fp, bm, opts, policy);
+}
+
+static int load_ocon_port(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
+{
+	bool_t keep = FALSE;
+	int nel, i, rt;
+	__u32 *buf32;
+
+	INTERNAL_ASSERTION
+	
+	if (opts & POLOPT_OTHER)
+		keep = TRUE;
+
+	buf32 = ap_read_fbuf(fb, sizeof(__u32), fp);
+	if(buf32 == NULL) return fb->err;
+	nel = le32_to_cpu(buf32[0]);
+
+	for (i=0; i < nel; i++) {
+		buf32 = ap_read_fbuf(fb, sizeof(__u32)*3, fp); /* protocol, low_port, high_port */
+		if (buf32 == NULL) return fb->err;
+		
+		rt = load_security_context(fb, fp, bm, opts, policy);
+		if (rt < 0) return fb->err;
+	}
+
+	return 0;
+}
+
+static int load_ocon_node(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
+{
+	bool_t keep = FALSE;
+	int nel, i, rt;
+	__u32 *buf32;
+	
+	INTERNAL_ASSERTION
+	
+	if (opts & POLOPT_OTHER)
+		keep = TRUE;
+	
+	buf32 = ap_read_fbuf(fb, sizeof(__u32), fp);
+	if(buf32 == NULL) return fb->err;
+	nel = le32_to_cpu(buf32[0]);
+
+	for (i=0; i < nel; i++) {
+		buf32 = ap_read_fbuf(fb, sizeof(__u32)*2, fp); /* addr, mask */
+		if (buf32 == NULL) return fb->err;
+
+		rt = load_security_context(fb, fp, bm, opts, policy);
+		if (rt < 0) return fb->err;
+	}
+	return 0;
+}
+
+static int load_ocon_fsuse(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
+{
+	bool_t keep = FALSE;
+	int nel, len, i, rt;
+	__u32 *buf32;
+	
+	INTERNAL_ASSERTION
+	
+	if (opts & POLOPT_OTHER)
+		keep = TRUE;
+	
+	buf32 = ap_read_fbuf(fb, sizeof(__u32), fp);
+	if(buf32 == NULL) return fb->err;
+	nel = le32_to_cpu(buf32[0]);
+
+	for (i=0; i < nel; i++) {
+		buf32 = ap_read_fbuf(fb, sizeof(__u32)*2, fp); /* behavior, len */
+		if (buf32 == NULL) return fb->err;
+		len = le32_to_cpu(buf32[1]);
+
+		buf32 = ap_read_fbuf(fb, len, fp); /* name */
+		if (buf32 == NULL) return fb->err;
+		
+		rt = load_security_context(fb, fp, bm, opts, policy);
+		if (rt < 0) return fb->err;
+	}
+
+	return 0;
+}
+
+static int load_ocon_node6(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
+{
+	bool_t keep = FALSE;
+	int nel, i, rt;
+	__u32 *buf32;
+
+	INTERNAL_ASSERTION
+	
+	if (opts & POLOPT_OTHER)
+		keep = TRUE;
+
+	buf32 = ap_read_fbuf(fb, sizeof(__u32), fp);
+	if(buf32 == NULL) return fb->err;
+	nel = le32_to_cpu(buf32[0]);
+
+	for (i=0; i < nel; i++) {
+		buf32 = ap_read_fbuf(fb, sizeof(__u32)*8, fp); /* v6 addr */
+		if (buf32 == NULL) return fb->err;
+
+		rt = load_security_context(fb, fp, bm, opts, policy);
+		if (rt < 0) return fb->err;
+	}
+	return 0;
+}
+
+static int load_genfs_contexts(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
+{
+	bool_t keep = FALSE;
+	int nel, nel2, len, i, j, rt;
+	__u32 *buf32;
+
+	if (opts & POLOPT_OTHER)
+		keep = TRUE;
+
+	buf32 = ap_read_fbuf(fb, sizeof(__u32), fp);
+	if (buf32 == NULL) return fb->err;
+	nel = le32_to_cpu(buf32[0]);
+
+	for (i=0; i < nel; i++) {
+		buf32 = ap_read_fbuf(fb, sizeof(__u32), fp);
+		if (buf32 == NULL) return fb->err;
+		len = le32_to_cpu(buf32[0]);
+		
+		buf32 = ap_read_fbuf(fb, len, fp); /* name */
+		if (buf32 == NULL) return fb->err;
+
+		buf32 = ap_read_fbuf(fb, sizeof(__u32), fp);
+		if (buf32 == NULL) return fb->err;
+		nel2 = le32_to_cpu(buf32[0]);
+
+		for (j=0; j < nel2; j++) {
+			buf32 = ap_read_fbuf(fb, sizeof(__u32), fp);
+			if (buf32 == NULL) return fb->err;
+			len = le32_to_cpu(buf32[0]);
+
+			buf32 = ap_read_fbuf(fb, len, fp); /* name */
+			if (buf32 == NULL) return fb->err;
+			
+			buf32 = ap_read_fbuf(fb, sizeof(__u32), fp); /* sclass */
+			if (buf32 == NULL) return fb->err;
+			
+			rt = load_security_context(fb, fp, bm, opts, policy);
+			if (rt < 0) return rt;
+		}
+	}
+	return 0;
+}
+
+static int insert_into_new_tt_item(int rule_type, int src, unsigned int src_id, int tgt, unsigned int tgt_id, int cls, int def_type,
+				   bool_t enabled, policy_t *policy)
 {
 	ta_item_t *titem;
 	tt_item_t *item;
@@ -921,6 +1266,15 @@ static int insert_into_new_tt_item(int rule_type, int src, int tgt, int cls, int
 		assert(FALSE); /* debug aide */
 		return -4;
 	}
+
+	if (policy->version < POL_VER_20) {
+		if (src_id != IDX_TYPE || tgt_id != IDX_TYPE) 
+		{ assert(FALSE); return -4; }
+	} else {
+		if ( (src_id != IDX_TYPE && src_id != IDX_ATTRIB) || 
+		     (tgt_id != IDX_TYPE && tgt_id != IDX_ATTRIB)) 
+		{ assert(FALSE); return -4;}
+	}
 	
 	/* source */
 	titem = (ta_item_t *)malloc(sizeof(ta_item_t));
@@ -928,7 +1282,7 @@ static int insert_into_new_tt_item(int rule_type, int src, int tgt, int cls, int
 		fprintf(stdout, "out of memory\n");
 		return -1;
 	}
-	titem->type = IDX_TYPE;
+	titem->type = src_id;
 	titem->idx = src;
 	if(insert_ta_item(titem, &(item->src_types)) != 0) {
 		assert(FALSE); /* debug aide */
@@ -941,7 +1295,7 @@ static int insert_into_new_tt_item(int rule_type, int src, int tgt, int cls, int
 		fprintf(stdout, "out of memory\n");
 		return -1;
 	}
-	titem->type = IDX_TYPE;
+	titem->type = tgt_id;
 	titem->idx = tgt;
 	if(insert_ta_item(titem, &(item->tgt_types)) != 0) {
 		assert(FALSE); /* debug aide */
@@ -973,8 +1327,8 @@ static int insert_into_new_tt_item(int rule_type, int src, int tgt, int cls, int
 
 
 
-static int insert_into_new_av_item(int rule_type, int src, int tgt, int cls, 
-		bool_t enabled, policy_t *policy)
+static int insert_into_new_av_item(int rule_type, int src, unsigned int src_id, int tgt, unsigned int tgt_id, int cls, 
+				   bool_t enabled, policy_t *policy)
 {
 	ta_item_t *titem;
 	av_item_t *item;
@@ -992,14 +1346,23 @@ static int insert_into_new_av_item(int rule_type, int src, int tgt, int cls,
 		assert(FALSE); /* debug aide */
 		return -4;
 	}
-	
+
+	if (policy->version < POL_VER_20) {
+		if (src_id != IDX_TYPE || tgt_id != IDX_TYPE) 
+		{ assert(FALSE); return -4; }
+	} else {
+		if ( (src_id != IDX_TYPE && src_id != IDX_ATTRIB) || 
+		     (tgt_id != IDX_TYPE && tgt_id != IDX_ATTRIB)) 
+		{ assert(FALSE); return -4;}
+	}
+
 	/* source */
 	titem = (ta_item_t *)malloc(sizeof(ta_item_t));
 	if(titem == NULL) {
 		fprintf(stdout, "out of memory\n");
 		return -1;
 	}
-	titem->type = IDX_TYPE;
+	titem->type = src_id;
 	titem->idx = src;
 	if(insert_ta_item(titem, &(item->src_types)) != 0) {
 		assert(FALSE); /* debug aide */
@@ -1012,7 +1375,7 @@ static int insert_into_new_av_item(int rule_type, int src, int tgt, int cls,
 		fprintf(stdout, "out of memory\n");
 		return -1;
 	}
-	titem->type = IDX_TYPE;
+	titem->type = tgt_id;
 	titem->idx = tgt;
 	if(insert_ta_item(titem, &(item->tgt_types)) != 0) {
 		assert(FALSE); /* debug aide */
@@ -1074,15 +1437,15 @@ static ta_item_t *decode_perm_mask(__u32 mask, int clsidx, __u32 cval, ap_bmaps_
 	return top;
 }
 
-
-
-static int add_binary_avrule(avtab_datum_t *avdatum, avtab_key_t *avkey, ap_bmaps_t *bm, 
-			unsigned int opts, cond_rule_list_t *r_list, policy_t *policy)
+static int add_binary_avrule(avtab_datum_t *avdatum, avtab_key_t *avkey, ap_bmaps_t *bm,
+			     unsigned int opts, cond_rule_list_t *r_list, policy_t *policy)
 {
 	int src = 0, tgt = 0, cls = 0, dflt = 0, rule_idx = 0; /* indicies from bmaps */
+	int rt;
 	ta_item_t *perms;
 	bool_t is_cond, enabled;
-		
+	unsigned int src_id = IDX_TYPE, tgt_id = IDX_TYPE;
+
 	assert(avdatum != NULL && avkey != NULL && bm != NULL && policy != NULL);
 	src = tgt = cls = dflt = rule_idx = -1;
 	is_cond = (r_list != NULL);
@@ -1090,7 +1453,7 @@ static int add_binary_avrule(avtab_datum_t *avdatum, avtab_key_t *avkey, ap_bmap
 
 	if(avdatum->specified & (AVTAB_AV|AVTAB_TYPE)) {
 		
-		/* re-map the src, tgr, and class indicies */
+		/* re-map the src, tgt, and class indicies */
 		
 		if(!binpol_validate_val(avkey->source_type, bm->t_num)) {
 			assert(FALSE); /* debug aide */
@@ -1107,16 +1470,42 @@ static int add_binary_avrule(avtab_datum_t *avdatum, avtab_key_t *avkey, ap_bmap
 		src = bm->t_map[avkey->source_type-1];
 		tgt = bm->t_map[avkey->target_type-1];
 		cls = bm->cls_map[avkey->target_class-1];
-		assert(is_valid_type(policy, src, 1));
-		assert(is_valid_type(policy, tgt, 1));
 		assert(is_valid_obj_class_idx(cls, policy));
+
+		if (policy->version >= POL_VER_20) {
+			if (!is_valid_type(policy, src, TRUE)) {
+				src_id = IDX_ATTRIB;
+				src = bm->a_map[avkey->source_type-1];
+				if (!is_valid_attrib_idx(src, policy)) {
+					rt = add_fake_attrib(policy);
+					if (rt < 0) return rt;
+					bm->a_map[avkey->source_type-1] = rt;
+					src = rt;
+				}
+			}
+			if (!is_valid_type(policy, tgt, TRUE)) {
+				tgt_id = IDX_ATTRIB;
+				tgt = bm->a_map[avkey->target_type-1];
+				if (!is_valid_attrib_idx(tgt, policy)) {
+					rt = add_fake_attrib(policy);
+					if (rt < 0) return rt;
+					bm->a_map[avkey->target_type-1] = rt;
+					tgt = rt;
+				}
+			}
+		} else {
+			if (!is_valid_type(policy, src, TRUE) || !is_valid_type(policy, tgt, TRUE)) {
+				assert(FALSE);
+				return -1;
+			}
+		}
 	}
 
 	if (avdatum->specified & AVTAB_AV) {
 		
 		if(avdatum->specified & AVTAB_ALLOWED) {
-			rule_idx = insert_into_new_av_item(RULE_TE_ALLOW, src, tgt, cls, 
-					enabled, policy);
+			rule_idx = insert_into_new_av_item(RULE_TE_ALLOW, src, src_id, tgt, tgt_id, cls, 
+							   enabled, policy);
 			if(rule_idx < 0) return rule_idx;
 			if(avtab_allowed(avdatum)) {
 				perms = decode_perm_mask(avtab_allowed(avdatum), cls, avkey->target_class, bm, policy);
@@ -1131,7 +1520,7 @@ static int add_binary_avrule(avtab_datum_t *avdatum, avtab_key_t *avkey, ap_bmap
 			}
 		}
 		if(avdatum->specified & AVTAB_AUDITALLOW){
-			rule_idx = insert_into_new_av_item(RULE_AUDITALLOW, src, tgt, cls, 
+			rule_idx = insert_into_new_av_item(RULE_AUDITALLOW, src, src_id, tgt, tgt_id, cls, 
 					enabled, policy);
 			if(rule_idx < 0) return rule_idx;
 			if(avtab_auditallow(avdatum)) {
@@ -1148,7 +1537,7 @@ static int add_binary_avrule(avtab_datum_t *avdatum, avtab_key_t *avkey, ap_bmap
 		}
 		if(avdatum->specified & AVTAB_AUDITDENY) {
 			__u32 dontaudit_mask;
-			rule_idx = insert_into_new_av_item(RULE_DONTAUDIT, src, tgt, cls, 
+			rule_idx = insert_into_new_av_item(RULE_DONTAUDIT, src, src_id, tgt, tgt_id, cls, 
 					enabled, policy);
 			if(rule_idx < 0) return rule_idx;
 			/* these are stored as auditdeny rules; we need to translate into dontaudit */
@@ -1173,7 +1562,7 @@ static int add_binary_avrule(avtab_datum_t *avdatum, avtab_key_t *avkey, ap_bmap
 			}
 			dflt = bm->t_map[avtab_transition(avdatum)-1];
 			assert(is_valid_type(policy, dflt, 1));
-			rule_idx = insert_into_new_tt_item(RULE_TE_TRANS, src, tgt, cls, dflt,
+			rule_idx = insert_into_new_tt_item(RULE_TE_TRANS, src, src_id, tgt, tgt_id, cls, dflt,
 					enabled, policy);
 			if(is_cond) {
 				if (add_i_to_a(rule_idx, &r_list->num_te_trans, &r_list->te_trans) != 0) {
@@ -1189,7 +1578,7 @@ static int add_binary_avrule(avtab_datum_t *avdatum, avtab_key_t *avkey, ap_bmap
 			}
 			dflt = bm->t_map[avtab_change(avdatum)-1];
 			assert(is_valid_type(policy, dflt, 1));
-			rule_idx = insert_into_new_tt_item(RULE_TE_CHANGE, src, tgt, cls, dflt,
+			rule_idx = insert_into_new_tt_item(RULE_TE_CHANGE, src, src_id, tgt, tgt_id, cls, dflt,
 					enabled, policy);
 			if(is_cond) {
 				if (add_i_to_a(rule_idx, &r_list->num_te_trans, &r_list->te_trans) != 0) {
@@ -1205,7 +1594,7 @@ static int add_binary_avrule(avtab_datum_t *avdatum, avtab_key_t *avkey, ap_bmap
 			}
 			dflt = bm->t_map[avtab_member(avdatum)-1];
 			assert(is_valid_type(policy, dflt, 1));
-			rule_idx = insert_into_new_tt_item(RULE_TE_MEMBER, src, tgt, cls, dflt,
+			rule_idx = insert_into_new_tt_item(RULE_TE_MEMBER, src, src_id, tgt, tgt_id, cls, dflt,
 					enabled, policy);
 			if(is_cond) {
 				if (add_i_to_a(rule_idx, &r_list->num_te_trans, &r_list->te_trans) != 0) {
@@ -1216,28 +1605,73 @@ static int add_binary_avrule(avtab_datum_t *avdatum, avtab_key_t *avkey, ap_bmap
 		}
 	}
 	return rule_idx;
+
 }
 
-static int load_avtab_item(ap_fbuf_t *fb, FILE *fp, unsigned int opts, avtab_datum_t *avdatum, avtab_key_t *avkey)
+static int load_avtab_item(ap_fbuf_t *fb, FILE *fp, unsigned int opts, avtab_datum_t *avdatum, avtab_key_t *avkey, int polver)
 {
-	__u32 *buf;
+	__u32 *buf32;
 	__u32 items, items2;
-	
+
+	__u16 *buf16;
+
 	memset(avkey, 0, sizeof(avtab_key_t));
 	memset(avdatum, 0, sizeof(avtab_datum_t));
+
+	if (polver >= POL_VER_20) {
+		/* Read the new avtab format */
+		buf16 = ap_read_fbuf(fb, sizeof(__u16)*4, fp);
+		if (buf16 == NULL)
+			return fb->err;
+		items = 0;
+		avkey->source_type = le16_to_cpu(buf16[items++]);
+		avkey->target_type = le16_to_cpu(buf16[items++]);
+		avkey->target_class = le16_to_cpu(buf16[items++]);
+		avdatum->specified = le16_to_cpu(buf16[items++]);
+		
+		buf32 = ap_read_fbuf(fb, sizeof(__u32), fp);
+		if (buf32 == NULL)
+			return fb->err;
+
+		switch (avdatum->specified & (AVTAB_AV|AVTAB_TYPE)) {
+		case AVTAB_ALLOWED:
+			avtab_allowed(avdatum) = le32_to_cpu(buf32[0]);
+			break;
+		case AVTAB_AUDITDENY: 
+			avtab_auditdeny(avdatum) = le32_to_cpu(buf32[0]);
+			break;
+		case AVTAB_AUDITALLOW:
+			avtab_auditallow(avdatum) = le32_to_cpu(buf32[0]);
+			break;
+		case AVTAB_TRANSITION:
+			avtab_transition(avdatum) = le32_to_cpu(buf32[0]);
+			break;
+		case AVTAB_CHANGE:
+			avtab_change(avdatum) = le32_to_cpu(buf32[0]);
+			break;
+		case AVTAB_MEMBER:
+			avtab_member(avdatum) = le32_to_cpu(buf32[0]);
+			break;
+		default: /* only one rule type will be present in version 20+ */
+			assert(FALSE); /* debug aide */
+			return -7;
+			break;
+		}
+		return 0;
+	}
 	
-	buf = ap_read_fbuf(fb, sizeof(__u32), fp); 
-	if(buf == NULL)	return fb->err;
-	
-	items2 = le32_to_cpu(buf[0]);
-	buf = ap_read_fbuf(fb, sizeof(__u32)*items2, fp); 
-	if(buf == NULL)	return fb->err;
-	
+	buf32 = ap_read_fbuf(fb, sizeof(__u32), fp); 
+	if(buf32 == NULL)	return fb->err;
+
+	items2 = le32_to_cpu(buf32[0]);
+	buf32 = ap_read_fbuf(fb, sizeof(__u32)*items2, fp); 
+	if(buf32 == NULL)	return fb->err;
+
 	items = 0;
-	avkey->source_type = le32_to_cpu(buf[items++]);
-	avkey->target_type = le32_to_cpu(buf[items++]);
-	avkey->target_class = le32_to_cpu(buf[items++]);
-	avdatum->specified = le32_to_cpu(buf[items++]);
+	avkey->source_type = le32_to_cpu(buf32[items++]);
+	avkey->target_type = le32_to_cpu(buf32[items++]);
+	avkey->target_class = le32_to_cpu(buf32[items++]);
+	avdatum->specified = le32_to_cpu(buf32[items++]);
 	if ((avdatum->specified & AVTAB_AV) &&
 	    (avdatum->specified & AVTAB_TYPE)) {
 		assert(FALSE); /* debug aide */
@@ -1245,18 +1679,18 @@ static int load_avtab_item(ap_fbuf_t *fb, FILE *fp, unsigned int opts, avtab_dat
 	}
 	if (avdatum->specified & AVTAB_AV) {
 		if(avdatum->specified & AVTAB_ALLOWED)
-			avtab_allowed(avdatum) = le32_to_cpu(buf[items++]);
+			avtab_allowed(avdatum) = le32_to_cpu(buf32[items++]);
 		if(avdatum->specified & AVTAB_AUDITDENY) 
-			avtab_auditdeny(avdatum) = le32_to_cpu(buf[items++]);
+			avtab_auditdeny(avdatum) = le32_to_cpu(buf32[items++]);
 		if(avdatum->specified & AVTAB_AUDITALLOW )
-			avtab_auditallow(avdatum) = le32_to_cpu(buf[items++]);
+				avtab_auditallow(avdatum) = le32_to_cpu(buf32[items++]);
 	} else {		
 		if(avdatum->specified & AVTAB_TRANSITION )
-			avtab_transition(avdatum) = le32_to_cpu(buf[items++]);
+			avtab_transition(avdatum) = le32_to_cpu(buf32[items++]);
 		if(avdatum->specified & AVTAB_CHANGE )
-			avtab_change(avdatum) = le32_to_cpu(buf[items++]);
+			avtab_change(avdatum) = le32_to_cpu(buf32[items++]);
 		if(avdatum->specified & AVTAB_MEMBER )
-			avtab_member(avdatum) = le32_to_cpu(buf[items++]);
+			avtab_member(avdatum) = le32_to_cpu(buf32[items++]);
 	}	
 	if (items != items2) {
 		assert(FALSE); /* debug aide */
@@ -1292,14 +1726,14 @@ static int load_avtab(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts
 		return 0; /* empty AV table */
 		
 	for (i = 0; i < nel; i++) {
-		rt = load_avtab_item(fb, fp, opts, &avdatum, &avkey);
+		rt = load_avtab_item(fb, fp, opts, &avdatum, &avkey, policy->version);
 		if (rt != 0)
 			return rt;
 		/* add the rule(s) to our policy */
 		if(keep) {
-			rt = add_binary_avrule(&avdatum, &avkey, bm, opts, r_list, policy);
+		      	rt = add_binary_avrule(&avdatum, &avkey, bm, opts, r_list, policy);
 			if(rt < 0)
-				return rt;
+			return rt;
 		}
 	}
 
@@ -1461,14 +1895,12 @@ static int skip_mls_cats(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int o
 	return 0;
 }
 
-
-
 /* main policy load function */
 static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 {
 	__u32  *buf;
 	size_t len, nprim, nel;
-	unsigned int policy_ver, num_syms, i, j;
+	unsigned int policy_ver, num_syms, i, j, num_ocons;
 	int rt = 0, role_idx, type_idx;
 	ap_fbuf_t *fb;
 	ap_bmaps_t *bm = NULL;
@@ -1500,32 +1932,46 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 	
 	policy_ver = buf[0];
 	switch(policy_ver) {
-	case POLICYDB_VERSION_MLS:
-		if (set_policy_version(POL_VER_19, policy) != 0) {
-			rt = -4;goto err_return;
+
+	case POLICYDB_VERSION_AVTAB:
+		if (set_policy_version(POL_VER_20, policy) != 0) {
+			rt = -4; goto err_return; 
 		}
 		mls_config = 1;
 		num_syms = SYM_NUM;
+		num_ocons = OCON_NUM;
+		break;
+	case POLICYDB_VERSION_MLS:
+		if (set_policy_version(POL_VER_19, policy) != 0) {
+			rt = -4; goto err_return;
+		}
+		mls_config = 1;
+		num_syms = SYM_NUM;
+		num_ocons = OCON_NUM;
 		break;
 	case POLICYDB_VERSION_NLCLASS:
 		if(set_policy_version(POL_VER_18, policy) != 0)
 			{ rt = -4; goto err_return; }
 		num_syms = SYM_NUM - 2;
+		num_ocons = OCON_NUM;
 		break;
 	case POLICYDB_VERSION_IPV6 :
 		if(set_policy_version(POL_VER_17, policy) != 0)
 			{ rt = -4; goto err_return; }
 		num_syms = SYM_NUM - 2;
+		num_ocons = OCON_NUM;
 		break;
 	case POLICYDB_VERSION_BOOL:
 		if(set_policy_version(POL_VER_16, policy) != 0)
 			{ rt = -4; goto err_return; }
 		num_syms = SYM_NUM - 2;
+		num_ocons = OCON_NUM - 1;
 		break;
 	case POLICYDB_VERSION_BASE:
 		if(set_policy_version(POL_VER_15, policy) != 0)
 			{ rt = -4; goto err_return; }
 		num_syms = SYM_NUM - 3;
+		num_ocons = OCON_NUM - 1;
 		break;
 	default: /* unsupported version */
 		return -5;
@@ -1533,7 +1979,7 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 	}
 	
 	/* symbol table size check (skip OCON num check)*/
-	if (buf[2] != num_syms)	{ 
+	if (buf[2] != num_syms || buf[3] != num_ocons)	{ 
 		assert(FALSE);
 		rt = -4; 
 		goto err_return; 
@@ -1541,7 +1987,10 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 
 	/* check for MLS stuff and skip over the # of levels */
 	if(mls_config && buf[1]) {
-		set_policy_version(POL_VER_19MLS, policy);
+		if (policy->version == POL_VER_19)
+			set_policy_version(POL_VER_19MLS, policy);
+		if (policy->version == POL_VER_20)
+			set_policy_version(POL_VER_20MLS, policy);
 	}
 	if(buf[1] && policy->version < POL_VER_MLS) { 
 		rt = -6;
@@ -1556,7 +2005,7 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 		nel = le32_to_cpu(buf[1]);
 		/* allocate bmap structure */
 		switch (i) {
-		case 0:		/* common permissions */
+		case SYM_COMMONS:	/* common permissions */
 			bm->cp_map = (int *)malloc(sizeof(int) * nprim);
 			if(bm->cp_map == NULL) {
 				rt = -1;
@@ -1575,7 +2024,7 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 			memset(bm->cp_perm_map, 0, sizeof(ap_permission_bmap_t) * nprim);
 			bm->cp_num = nprim;
 			break;
-		case 1:		/* object classes */
+		case SYM_CLASSES:	/* object classes */
 			bm->cls_map = (int *)malloc(sizeof(int) * nprim);
 			if(bm->cls_map == NULL){
 				rt = -1;
@@ -1589,7 +2038,7 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 			memset(bm->cls_perm_map, 0, sizeof(ap_permission_bmap_t) * nprim);
 			bm->cls_num = nprim;
 			break;
-		case 2:		/* roles */
+		case SYM_ROLES:		/* roles */
 			bm->r_map = (int *)malloc(sizeof(int) * nprim);
 			if(bm->r_map == NULL){
 				rt = -1;
@@ -1602,7 +2051,7 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 			}			
 			bm->r_num = nprim;
 			break;
-		case 3:		/* types */
+		case SYM_TYPES:		/* types */
 			bm->t_map = (int *)malloc(sizeof(int) * nprim);
 			if(bm->t_map == NULL){
 				rt = -1;
@@ -1610,10 +2059,21 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 			}
 			/* for types, we need to initialize to invalid indicies
 			 * because of the way aliases are handled in the binary policy */
-			for(j = 0; j < nprim; j++) { bm->t_map[j] = -1;}
+			for(j = 0; j < nprim; j++) { bm->t_map[j] = -1; }
 			bm->t_num = nprim;
+
+			/* support attribs */
+			if (policy->version >= POL_VER_20) {
+				bm->a_map = (int *)malloc(sizeof(int) * nprim);
+				if (bm->a_map == NULL) {
+					rt = -1;
+					goto err_return;
+				}
+				for(j=0; j < nprim; j++) { bm->a_map[j] = -1; }
+				bm->a_num = nprim;
+			}
 			break;
-		case 4:		/* users */
+		case SYM_USERS:		/* users */
 			bm->u_map = (int *)malloc(sizeof(int) * nprim);
 			if(bm->u_map == NULL){
 				rt = -1;
@@ -1621,7 +2081,7 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 			}
 			bm->u_num = nprim;
 			break;
-		case 5:		/* conditional booleans */
+		case SYM_BOOLS:		/* conditional booleans */
 			bm->bool_map = (int *)malloc(sizeof(int) * nprim);
 			if(bm->bool_map == NULL){
 				rt = -1;
@@ -1629,8 +2089,8 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 			}
 			bm->bool_num = nprim;
 			break;
-		case 6:		/* MLS sensitivities */
-		case 7:		/* MLS categories */
+		case SYM_LEVELS:	/* MLS sensitivities */
+		case SYM_CATS:		/* MLS categories */
 			/* we don't save any MLS stuff yet */
 			break;
 		default:	/* shouldn't get here */
@@ -1638,37 +2098,38 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 			goto err_return;
 			break;
 		}
+
 		for (j = 0; j < nel; j++) {
 			switch (i) {
-			case 0:		/* common permissions */
+			case SYM_COMMONS:	/* common permissions */
 				rt = load_common_perm(fb, fp, bm, opts, policy);
 				if(rt < 0 && rt != LOAD_SUCCESS_NO_SAVE) goto err_return;
 				break;
-			case 1:		/* object classes */
+			case SYM_CLASSES:	/* object classes */
 				rt = load_class(fb, fp, bm, opts, policy);
 				if(rt < 0 && rt != LOAD_SUCCESS_NO_SAVE) goto err_return;
 				break;
-			case 2:		/* roles */
+			case SYM_ROLES:		/* roles */
 				rt = load_role(fb, fp, bm, opts, policy);
 				if(rt < 0 && rt != LOAD_SUCCESS_NO_SAVE) goto err_return;
 				break;
-			case 3:		/* types */
+			case SYM_TYPES:		/* types */
 				rt = load_type(fb, fp, bm, opts, policy);
 				if (rt < 0 && rt != LOAD_SUCCESS_NO_SAVE) goto err_return;
 				break;
-			case 4:		/* users */
+			case SYM_USERS:		/* users */
 				rt = load_user(fb, fp, bm, opts, policy);
 				if(rt != 0) goto err_return;
 				break;
-			case 5:		/* conditional booleans */
+			case SYM_BOOLS:		/* conditional booleans */
 				rt = load_bool(fb, fp, bm, opts, policy);
 				if(rt < 0 && rt != LOAD_SUCCESS_NO_SAVE) goto err_return;
 				break;
-			case 6:		/* MLS levels */
+			case SYM_LEVELS:	/* MLS levels */
 				rt = skip_mls_sens(fb, fp, bm, opts, policy);
 				if(rt < 0) return rt;
 				break;
-			case 7:		/* MLS categories */
+			case SYM_CATS:		/* MLS categories */
 				rt = skip_mls_cats(fb, fp, bm, opts, policy);
 				if(rt < 0) goto err_return;
 				break;
@@ -1734,13 +2195,61 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 	rt =load_role_allow(fb, fp, bm, opts, policy);
 	if(rt != 0) 
 		return rt;
-	
-	/* initial SIDs */
-	rt =load_initial_sids(fb, fp, bm, opts, policy);
-	if(rt != 0) 
-		return rt;
-	
-	/* Rest is unsupported at this time */
+
+	/* object contexts */
+	for (i=0; i < num_ocons; i++) {
+		switch (i) {
+		case OCON_ISID:
+			rt = load_initial_sids(fb, fp, bm, opts, policy);
+			if (rt < 0 && rt != LOAD_SUCCESS_NO_SAVE) return rt;
+			break;
+		case OCON_FS:
+			rt = load_ocon_fs(fb, fp, bm, opts, policy);
+			if (rt < 0 && rt != LOAD_SUCCESS_NO_SAVE) return rt;
+			break;
+		case OCON_PORT:
+			rt = load_ocon_port(fb, fp, bm, opts, policy);
+			if (rt < 0 && rt != LOAD_SUCCESS_NO_SAVE) return rt;
+			break;
+		case OCON_NETIF:
+			rt = load_ocon_netif(fb, fp, bm, opts, policy);
+			if (rt < 0 && rt != LOAD_SUCCESS_NO_SAVE) return rt;
+			break;
+		case OCON_NODE:
+			rt = load_ocon_node(fb, fp, bm, opts, policy);
+			if (rt < 0 && rt != LOAD_SUCCESS_NO_SAVE) return rt;
+			break;
+		case OCON_FSUSE:
+			rt = load_ocon_fsuse(fb, fp, bm, opts, policy);
+			if (rt < 0 && rt != LOAD_SUCCESS_NO_SAVE) return rt;
+			break;
+		case OCON_NODE6:
+			rt = load_ocon_node6(fb, fp, bm, opts, policy);
+			if (rt < 0 && rt != LOAD_SUCCESS_NO_SAVE) return rt;
+			break;
+		default:
+			assert(FALSE);
+			return -1;
+		}
+	}
+
+	/* genfs contexts */
+	if (policy->version >= POL_VER_19) {
+		rt = load_genfs_contexts(fb, fp, bm, opts, policy);
+		if (rt < 0) return fb->err;
+	}
+
+	/* mls range */
+	if (policy->version >= POL_VER_19) {
+		rt = load_range(fb, fp, bm, opts, policy);
+		if (rt < 0) return fb->err;
+	}
+
+	/* type_attr_map */
+	if (policy->version >= POL_VER_20) { 
+		rt = load_type_attr_map(fb, fp, bm, opts, policy);
+		if (rt < 0) { return fb->err; }
+	}
 
 	rt = 0;
 err_return:

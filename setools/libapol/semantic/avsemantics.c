@@ -123,7 +123,7 @@ static int avh_load_avrules( void *r, int num, bool_t is_av, policy_t *p)
 			key.rule_type = ((tt_item_t *)r)[i].type;
 			assert(key.rule_type >= RULE_TE_TRANS && key.rule_type <= RULE_MAX_TE);
 		}
-		
+
 		/* extract all the rule elements */
 		rt = extract_types_from_te_rule(i, key.rule_type, SRC_LIST, &src_a, &num_src, p);
 		if(rt == -1)
