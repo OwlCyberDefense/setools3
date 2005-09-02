@@ -1,4 +1,4 @@
- /* Copyright (C) 2001-2003 Tresys Technology, LLC
+/* Copyright (C) 2001-2003 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
 
 /* 
@@ -17,7 +17,6 @@
 #include <ctype.h>
 #include <assert.h>
 #include <unistd.h>
-
 
 /* convert from string to intger "bool" */
 bool_t getbool(const char *str) 

@@ -65,7 +65,7 @@ int ap_add_alias_bmap(char *alias, __u32 val, ap_bmaps_t *bm)
 	
 	if(alias == NULL || bm == NULL)
 		return -1;
-		
+	
 	assert(val <= bm->t_num);
 	
 	t = (ap_alias_bmap_t *)malloc(sizeof(ap_alias_bmap_t));
@@ -122,6 +122,8 @@ void ap_free_bmaps(ap_bmaps_t *bm)
 		free_bmap_emap(bm->r_emap, bm->r_num);
 	if(bm->t_map != NULL)
 		free(bm->t_map);
+	if(bm->a_map != NULL)
+		free(bm->a_map);
 	if(bm->alias_map != NULL)
 		ap_free_alias_bmap(bm);
 	if(bm->u_map != NULL)
