@@ -1,5 +1,21 @@
 CHANGE LOG, SE Linux TOOLS (setools)
 =======================================================
+August 24, 2005 Version 2.1.2
+
+apol:
+	created new permission maps for policy versions
+	19 and 20.  also some minor changes to support
+	version 20 binary format.
+libseaudit:
+	updated the parser to properly parse avc 
+	messages from auditd logfiles
+libapol:
+	updated the binary policy parser to handle the
+	new version 20 avtab format. The parser 
+	preserves attributes in av rules by generating 
+	fake attribute names.
+
+=======================================================
 May 17, 2005, Version 2.1.1
 
 libseaudit:

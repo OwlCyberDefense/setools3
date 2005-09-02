@@ -30,7 +30,7 @@ the two types of policies similarly.
 Apol attempts to provide compatibility with the current and older 
 policy syntax to allow one to analyze current and old policies.  As of 
 this version, we believe the tools are compatible with all policy 
-versions from version 11 to the current version 18.
+versions from version 11 to the current version 20.
 
 See setools/ChangeLog-setools for a list of new features in this 
 release. See setools/KNOWN_BUGS for a list of current bugs.

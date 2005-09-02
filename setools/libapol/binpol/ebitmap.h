@@ -41,14 +41,34 @@ typedef struct ebitmap {
 	__u32 highbit;	/* highest position in the total bitmap */
 } ebitmap_t;
 
-
 #define ebitmap_length(e) ((e)->highbit)
 #define ebitmap_startbit(e) ((e)->node ? (e)->node->startbit : 0)
+
+static inline unsigned int ebitmap_start(ebitmap_t *e, ebitmap_node_t **n) 
+{
+	*n = e->node;
+	return ebitmap_startbit(e);
+}
+
+static inline unsigned int ebitmap_next(ebitmap_node_t **n,
+					unsigned int bit)
+{
+	if ((bit == ((*n)->startbit + MAPSIZE - 1)) &&
+	    (*n)->next) {
+		*n = (*n)->next;
+		return (*n)->startbit;
+	}
+
+	return (bit+1);
+}
 
 static inline void ebitmap_init(ebitmap_t * e)
 {
 	memset(e, 0, sizeof(ebitmap_t));
 }
+
+#define ebitmap_for_each_bit(e, n, bit)				\
+	for (bit = ebitmap_start(e, &n); bit < ebitmap_length(e); bit = ebitmap_next(&n, bit)) \
 
 int ebitmap_cmp(ebitmap_t * e1, ebitmap_t * e2);
 int ebitmap_or(ebitmap_t * dst, ebitmap_t * e1, ebitmap_t * e2);
@@ -58,6 +78,14 @@ int ebitmap_get_bit(ebitmap_t * e, unsigned int bit);
 int ebitmap_set_bit(ebitmap_t * e, unsigned int bit, int value);
 void ebitmap_destroy(ebitmap_t * e);
 int ebitmap_read(ap_fbuf_t *fb, ebitmap_t * e, FILE *fp);
+
+static inline int ebitmap_node_get_bit(ebitmap_node_t * n, 
+				       unsigned int bit)
+{
+	if (n->map & (MAPBIT << (bit - n->startbit)))
+		return 1;
+	return 0;
+}
 
 #endif	
 

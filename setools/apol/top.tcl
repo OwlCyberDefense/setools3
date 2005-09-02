@@ -117,6 +117,9 @@ namespace eval ApolTop {
 	for {set i 0} {$i<$max_recent_files} {incr i} {
 		set recent_files($i) ""
 	}
+
+	#show warning for loading policy with fake attribute names
+	variable show_fake_attrib_warning 1
 }
 
 proc ApolTop::is_policy_open {} {
@@ -1336,6 +1339,8 @@ proc ApolTop::writeInitFile { } {
         puts $f [winfo width .]
         puts $f "\[policy_open_option\]"
         puts $f $policy_open_option
+	puts $f "\[show_fake_attrib_warning\]"
+	puts $f $ApolTop::show_fake_attrib_warning
 	close $f
 	return 0
 }
@@ -1452,6 +1457,15 @@ proc ApolTop::readInitFile { } {
 					continue
 				}
 				set policy_open_option $tline
+			}
+			"\[show_fake_attrib_warning\]" {
+				gets $f line
+				set tline [string trim $line]
+				if {[eof $f] == 1 && $tline == ""} {
+					puts "EOF reached trying to read show_fake_attrib_warning"
+					continue
+				}
+				set ApolTop::show_fake_attrib_warning $tline
 			}
 		
 			# The form of [max_recent_file] is a single line that follows
@@ -2014,7 +2028,27 @@ proc ApolTop::set_initial_open_policy_state {} {
 	} 
 	
 	if {[ApolTop::is_binary_policy]} {
-   		ApolTop::disable_non_binary_tabs
+		if {$version_num >= 20 } {
+			if {$ApolTop::show_fake_attrib_warning != 0} {
+				set fake_attrib_warn .fakeattribDlg
+				Dialog $fake_attrib_warn -modal local -parent . \
+					-title "Warning - Attribute Names"
+				set message_text "Warning: Apol has created fake attribute names because
+the names are not preserved in the binary policy format."
+				set fake_attrib_label [label $fake_attrib_warn.l -text $message_text]
+				set fake_attrib_ok [button $fake_attrib_warn.b_ok -text "OK" \
+					-command "destroy $fake_attrib_warn"]
+				set fake_attrib_show [checkbutton $fake_attrib_warn.show_cb \
+					-text "Show this message again next time." \
+					-variable ApolTop::show_fake_attrib_warning]
+				$fake_attrib_show select
+				pack $fake_attrib_label -side top -padx 10 -pady 10
+				pack $fake_attrib_show -side top -pady 10
+				pack $fake_attrib_ok -side top -padx 10 -pady 10
+				$fake_attrib_warn draw
+			}
+		}
+		ApolTop::disable_non_binary_tabs
    	}   	
    	
 	ApolTop::set_Focus_to_Text [$ApolTop::notebook raise]  

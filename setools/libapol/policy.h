@@ -312,11 +312,13 @@ typedef struct alias_item {
 #define POL_VER_COND		4	/* same */
 #define POL_VER_17		5
 #define POL_VER_18		6	/* for v 18 binary */
-#define POL_VER_18_19		7	/* for source w/o MLS */
+#define POL_VER_18_20		7	/* for source w/o MLS */
 #define POL_VER_19		8	/* for binary w/o MLS */
 #define POL_VER_19MLS		9
 #define POL_VER_MLS		9	/* minimum policy version for MLS support */
-#define	POL_VER_MAX		9
+#define POL_VER_20		10
+#define POL_VER_20MLS		11
+#define	POL_VER_MAX		11
 
 /* Policy type macros */
 #define POL_TYPE_UNKNOWN 	0x00000000
