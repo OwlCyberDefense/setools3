@@ -243,36 +243,78 @@ static void free_bool_diff(bool_diff_t *bd)
 	}
 }
 
+static int ap_diff_find_type_in_p2(int p1_type, policy_t *p1, policy_t *p2, ap_diff_rename_t *renamed_types)
+{
+	int i, idx;
+	name_item_t *t;
+	
+	if (p1 == NULL || !is_valid_type_idx(p1_type, p1) || p2 == NULL)
+		return -1;
+
+	if (renamed_types && renamed_types->p1) {
+		assert(renamed_types->p2);
+		for (i = 0; i < renamed_types->num_items; i++)
+			if (renamed_types->p1[i] == p1_type)
+				return renamed_types->p2[i];
+	}
+	/* first check if type name is in p2 as type name */
+	idx = get_type_idx(p1->types[p1_type].name, p2);
+	if(idx >= 0)
+		return idx;
+	/* else as a p2 type alias name */
+	idx = get_type_idx_by_alias_name(p1->types[p1_type].name, p2);
+	if(idx >= 0) {
+		return idx;
+	}
+	/* else check all of type's aliases if they're p2 types or aliases */
+	for(t = p1->types[p1_type].aliases; t != NULL; t = t->next) {
+		idx = get_type_idx(t->name, p2);
+		if(idx >= 0) {
+			return idx;
+		}
+		idx = get_type_idx_by_alias_name(t->name, p2);
+		if(idx >= 0) {
+			return idx;
+		}
+	}
+	return -1; /* not in p2 */		
+}
+
 static bool_t ap_diff_is_type_in_p2attrib(int p1_type, int p2_attrib, policy_t *p1, policy_t *p2, ap_diff_rename_t *renamed_types)
 {
-	int i, rt;
+	int i, rt = -1;
 	char *name = NULL;
 	bool_t ret;
 
 	if (!p1 || !is_valid_type_idx(p1_type, p1) || !p2)
 		return FALSE;
-
+	/* first check renamed types */
 	if (renamed_types) {
 		for (i = 0; i < renamed_types->num_items; i++) {
 			if (renamed_types->p1[i] == p1_type) {
-				rt = get_type_name(renamed_types->p2[i], &name, p2);
+				rt = renamed_types->p2[i];
 				assert(rt >= 0);
+			       
 			}	
 		}
 	}
-	if (name == NULL) {
-		rt = get_type_name(p1_type, &name, p1);
-		assert(rt >= 0);
+	/* if we didn't find a value in renamed types */
+	if (rt < 0) {
+		/* when looking for types we have to make sure we check aliases, this fcn will */
+		rt = ap_diff_find_type_in_p2(p1_type, p1,p2,renamed_types);
 	}
-	ret = is_type_in_attrib(name, p2_attrib, p2);
+	if (rt < 0)
+		return FALSE;
+	get_attrib_name(p2_attrib,&name,p2);
+	/* use this fcn since is_type_in_attrib wants a type name and won't do a thorough alias search */
+	ret = is_attrib_in_type(name,rt,p2);
 	free(name);
 	return ret;
 }
 
 static bool_t ap_diff_is_type_in_p2role(int p1_type, int p2_role, policy_t *p1, policy_t *p2, ap_diff_rename_t *renamed_types)
 {
-	int i, rt;
-	char *name = NULL;
+	int i, rt = -1;
 	bool_t ret;
 
 	if (!p1 || !is_valid_type_idx(p1_type, p1) || !p2)
@@ -281,17 +323,20 @@ static bool_t ap_diff_is_type_in_p2role(int p1_type, int p2_role, policy_t *p1, 
 	if (renamed_types) {
 		for (i = 0; i < renamed_types->num_items; i++) {
 			if (renamed_types->p1[i] == p1_type) {
-				rt = get_type_name(renamed_types->p2[i], &name, p2);
+				rt = renamed_types->p2[i];
 				assert(rt >= 0);
 			}	
 		}
 	}
-	if (name == NULL) {
-		rt = get_type_name(p1_type, &name, p1);
-		assert(rt >= 0);
+	/* if we didn't find a value in renamed types */
+	if (rt < 0) {
+		/* when looking for types we have to make sure we check aliases, this fcn will */
+		rt = ap_diff_find_type_in_p2(p1_type, p1,p2,renamed_types);
 	}
-	ret = is_type_in_role(name, p2_role, p2);
-	free(name);
+	if (rt < 0)
+		return FALSE;
+	ret = does_role_use_type(p2_role,rt,p2);
+	
 	return ret;
 }
 
@@ -466,42 +511,6 @@ void ap_destroy_single_view_diff(ap_single_view_diff_t *svd)
 	free(svd);
 }
 
-static int ap_diff_find_type_in_p2(int p1_type, policy_t *p1, policy_t *p2, ap_diff_rename_t *renamed_types)
-{
-	int i, idx;
-	name_item_t *t;
-	
-	if (p1 == NULL || !is_valid_type_idx(p1_type, p1) || p2 == NULL)
-		return -1;
-
-	if (renamed_types && renamed_types->p1) {
-		assert(renamed_types->p2);
-		for (i = 0; i < renamed_types->num_items; i++)
-			if (renamed_types->p1[i] == p1_type)
-				return renamed_types->p2[i];
-	}
-	/* first check if type name is in p2 as type name */
-	idx = get_type_idx(p1->types[p1_type].name, p2);
-	if(idx >= 0)
-		return idx;
-	/* else as a p2 type alias name */
-	idx = get_type_idx_by_alias_name(p1->types[p1_type].name, p2);
-	if(idx >= 0) {
-		return idx;
-	}
-	/* else check all of type's aliases if they're p2 types or aliases */
-	for(t = p1->types[p1_type].aliases; t != NULL; t = t->next) {
-		idx = get_type_idx(t->name, p2);
-		if(idx >= 0) {
-			return idx;
-		}
-		idx = get_type_idx_by_alias_name(t->name, p2);
-		if(idx >= 0) {
-			return idx;
-		}
-	}
-	return -1; /* not in p2 */		
-}
 
 
 static int_a_diff_t *add_i_to_inta(int i, int *num, int_a_diff_t **inta,char **str_id)
