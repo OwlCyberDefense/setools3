@@ -4531,7 +4531,7 @@ GtkTextView *sediff_get_current_view(sediff_app_t *app)
 		/* is this one of the other notebooks */
 		tab_notebook = GTK_NOTEBOOK(glade_xml_get_widget(sediff_app->window_xml, "notebook2"));
 		pagenum = gtk_notebook_get_current_page(tab_notebook);
-		if (pagenum == 1) 
+		if (pagenum == 0) 
 			text_view = GTK_TEXT_VIEW(glade_xml_get_widget(app->window_xml, "sediff_main_p2_stats_text"));			
 		else
 			text_view = GTK_TEXT_VIEW(glade_xml_get_widget(app->window_xml, "sediff_main_p2_text"));			
