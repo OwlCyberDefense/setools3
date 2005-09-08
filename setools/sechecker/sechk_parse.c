@@ -23,7 +23,7 @@ int sechk_lib_parse_xml_file(const char *filename, sechk_lib_t *lib)
 	 * between the version it was compiled for and the actual shared
 	 * library used. */
 	LIBXML_TEST_VERSION;
-	
+      
 	reader = xmlReaderForFile(filename, NULL, 0);
 	if (!reader) {
 		fprintf(stderr, "Error: Could not create xmlReader.");
