@@ -14,7 +14,6 @@ LIBAPOL-TCL	= ../libapol/libapol-tcl.a ../libapol/libapol.so.$(shell cat ../liba
 
 ifeq ($(USE_LIBSEFS), 1)
 	LIBSEFS		= ../libsefs/libsefs.so.$(shell cat ../libsefs/VERSION)
-	all: libsefs
 	else
 	LIBSEFS = 
 	endif
