@@ -29,7 +29,6 @@ else
 	
 	ifeq ($(USE_LIBSEFS), 1)
 	LIBSEFS		= ../libsefs/libsefs.so.$(shell cat ../libsefs/VERSION)
-	all: libsefs
 	else
 	LIBSEFS = 
 	endif
