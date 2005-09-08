@@ -4,7 +4,7 @@
 		<header>Finds all types in policy treated as a domain.
 A type is considered a domain if any of the following is true:
    It has an attribute associated with domains
-   It is the source of a te rule for object class process
+   It is the source of a te rule for object class other than filesystem
    It is the default type in a type_transition rule for object class process
    It is associated with a role other than object_r</header>
 		<output value="short"/>
