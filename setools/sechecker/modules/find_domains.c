@@ -177,6 +177,7 @@ int find_domains_run(sechk_module_t *mod, policy_t *policy)
 	avh_idx_t *hash_idx = NULL;
 	int num_nodes = 0;
 	int process_idx = -1;
+	int file_idx = -1;
 	avh_rule_t *hash_rule = NULL;
 	char *buff = NULL;
 	int buff_sz;
@@ -196,6 +197,7 @@ int find_domains_run(sechk_module_t *mod, policy_t *policy)
 		return 0;
 
 	process_idx = get_obj_class_idx("process", policy);
+	file_idx = get_obj_class_idx("filesystem",policy);
 
 	datum = (find_domains_data_t*)mod->data;
 	res = sechk_result_new();
@@ -272,8 +274,11 @@ int find_domains_run(sechk_module_t *mod, policy_t *policy)
 		else 
 			num_nodes = hash_idx->num_nodes;
 
+		proof = NULL;
+		buff = NULL;
 		for (j = 0; j < num_nodes; j++) {
-			if(hash_idx->nodes[j]->key.cls == process_idx || hash_idx->nodes[j]->key.rule_type == RULE_TE_TRANS) {
+			/* if key.cls != file system */
+			if(hash_idx->nodes[j]->key.cls != file_idx) {
 				for (hash_rule = hash_idx->nodes[j]->rules; hash_rule; hash_rule = hash_rule->next) {
 					if (hash_idx->nodes[j]->key.rule_type == RULE_TE_TRANS)
 						type = POL_LIST_TE_TRANS;
@@ -287,7 +292,7 @@ int find_domains_run(sechk_module_t *mod, policy_t *policy)
 					buff = NULL;
 					if (hash_idx->nodes[j]->key.rule_type == RULE_TE_TRANS)
 						buff = re_render_tt_rule(!is_binary_policy(policy), hash_rule->rule, policy);
-					else if (hash_idx->nodes[j]->key.rule_type <= RULE_MAX_AV)
+					else if (hash_idx->nodes[j]->key.rule_type <= RULE_MAX_TE)
 						buff = re_render_av_rule(!is_binary_policy(policy), hash_rule->rule, (hash_idx->nodes[j]->key.rule_type > RULE_TE_ALLOW ? 1 : 0), policy);
 					if (!buff) {
 						fprintf(stderr, "Error: out of memory\n");
@@ -317,6 +322,8 @@ int find_domains_run(sechk_module_t *mod, policy_t *policy)
 			}
 		}
 
+		proof = NULL;
+		buff = NULL;
 		/* test type rules */
 		for (j = 0; j < policy->num_te_trans; j++) {
 			if (i == policy->te_trans[j].dflt_type.idx && does_tt_rule_use_classes(j, &process_idx, 1, policy)) {
@@ -350,6 +357,8 @@ int find_domains_run(sechk_module_t *mod, policy_t *policy)
 		}
 
 		/* test roles */
+		proof = NULL;
+		buff = NULL;
 		for (j = 0; j < policy->num_roles; j++) {
 			if (!strcmp("object_r", policy->roles[j].name))
 				continue;
@@ -385,7 +394,7 @@ int find_domains_run(sechk_module_t *mod, policy_t *policy)
 			buff = NULL;
 		}
 
-		/* insert any resutls for this type */
+		/* insert any results for this type */
 		if (item) {
 			item->next = res->items;
 			res->items = item;
