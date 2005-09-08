@@ -10,7 +10,7 @@ LIBSEFS		= ../libsefs/libsefs.so.$(shell cat ../libsefs/VERSION)
 LIBSEUSER	= ../libseuser/libseuser.so.$(shell cat ../libseuser/VERSION)
 endif
 
-# These are for searchcon so it's usable on non-selinux machines
+# These are for indexcon so it's usable on machines without libapol
 STATICAPOL = ../libapol/libapol.a
 STATICSEFS = ../libsefs/libsefs.a
 
@@ -56,7 +56,7 @@ indexcon.o: indexcon.c
 	$(CC) -c indexcon.c $(CFLAGS) $(INCLUDE)
 
 indexcon: indexcon.o $(LIBSEFS) $(LIBAPOL)
-	$(CC) -static -o $@ indexcon.o $(LINKFLAGS) $(STATICSEFS) $(LIBSELINUXSO) $(STATICAPOL) $(LIBS)
+	$(CC) -o $@ indexcon.o $(LINKFLAGS) $(STATICSEFS) $(LIBSELINUXSO) $(STATICAPOL) $(LIBS)
 
 searchcon.o: searchcon.c
 	$(CC) -c searchcon.c $(CFLAGS) $(INCLUDE)
