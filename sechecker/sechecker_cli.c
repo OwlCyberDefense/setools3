@@ -208,7 +208,7 @@ int main(int argc, char **argv)
 			printf("   <<no profiles installed>>\n");
 		}
 		printf("\nAvailable Modules:\n");
-		retv = sechk_lib_set_outputformat(SECHK_OUT_HEADER, module_library);
+		retv = sechk_lib_set_outputformat(SECHK_OUT_BRF_DESCP, module_library);
 		if (retv) {
 			goto exit_err;
 		}

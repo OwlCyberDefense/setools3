@@ -1,34 +1,18 @@
 <sechecker version="1.0">
 <!-- TODO: some good explanations go here -->
 	<module name="find_domains">
-		<header>Finds all types in policy treated as a domain.
-A type is considered a domain if any of the following is true:
-   It has an attribute associated with domains
-   It is the source of a te rule for object class other than filesystem
-   It is the default type in a type_transition rule for object class process
-   It is associated with a role other than object_r</header>
 		<output value="short"/>
 		<require name="policy_type" value="source"/>
 		<option name="domain_attribute" value="domain"/>
 	</module>
 
 	<module name="find_file_types">
-		<header>Finds all types in the policy treated as a file type
-A type is considered a file type if any of the following is true:
-   It has an attribute associated with file types
-   It is the source of a rule to allow filesystem associate
-   It is the default type of a type transition rule
-      for an object class other than process
-   It is specified in a context in the file_contexts file</header>
 		<output value="short"/>
 		<require name="policy_type" value="source"/>
 		<option name="file_type_attribute" value="file_type"/>
 	</module>
 
 	<module name="domain_and_file_type">
-		<header>Finds all types in the policy treated as both a domain and a file type
-See domain_type and file_type modules for details about
-how types are placed in these categories</header>
 		<output value="long"/>
 		<require name="policy_type" value="source"/>
 		<dependency name="module" value="find_domains"/>
@@ -36,43 +20,31 @@ how types are placed in these categories</header>
 	</module>
 
 	<module name="roles_wo_types">
-		<header>Finds all roles in the policy with no associated types.</header>
 		<output value="short"/>
 	</module>
 
 	<module name="users_wo_roles">
-		<header>Finds all users in the policy with no assigned roles.</header>
 		<output value="short"/>
 	</module>
 
 	<module name="attributes_wo_types">
-		<header>Finds attributes in the policy with no types.</header>
 		<require name="policy_type" value="source"/>
 		<output value="short"/>
 	</module>
 
 	<module name="roles_not_in_allow">
-		<header>Finds roles defined but not used in role allow rules in a policy.
-This module also reports role_transition rules found for these roles.</header>
 		<output value="short"/>
 	</module>
 
 	<module name="types_not_in_allow">
-		<header>Finds types declared but not used in allow rules of a poicy.
-This module reports other uses if found.</header>
 		<output value="short"/>
 	</module>
 	
 	<module name="spurious_audit">
-		<header>Finds audit rules which do not affect the auditing of the policy.
-This module finds two types of spurious audit rules:
-   dontaudit rules for allowed permission sets
-   auditallow rules without an allow rule</header>
 		<output value="long"/>
 	</module>
 	
 	<module name="attributes_not_in_rules">
-		<header>Finds attributes in the policy not used in any rule.</header>
 		<require name="policy_type" value="source"/>
 		<output value="short"/>
 	</module>

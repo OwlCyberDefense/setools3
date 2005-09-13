@@ -22,7 +22,6 @@
 #define SECHK_PARSE_REQUIRE_TAG           "require"
 #define SECHK_PARSE_DEPENDENCY_TAG        "dependency"
 #define SECHK_PARSE_OUTPUT_TAG            "output"
-#define SECHK_PARSE_HEADER_TAG            "header"
 #define SECHK_PARSE_VALUE_ATTRIB          "value"
 #define SECHK_PARSE_NAME_ATTRIB           "name"
 #define SECHK_PARSE_VERSION_ATTRIB        "version"

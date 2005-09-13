@@ -238,20 +238,6 @@ int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib)
 				fprintf(stderr, "Error: output value is not specified.\n");
 				goto exit_err;
 			}
-		} else if (xmlStrEqual(xmlTextReaderConstName(reader), (xmlChar*)SECHK_PARSE_HEADER_TAG) == 1) {
-			if (!current_module) {
-				fprintf(stderr, "Error: 'header' specified outside the scope of a module.\n");
-				goto exit_err;
-			}
-			if (profile) {
-				fprintf(stderr, "Error: 'header' specified in profile (only valid in configuration file).\n");
-				goto exit_err;
-			}
-			attrib = xmlTextReaderReadString(reader);
-			current_module->header = strdup((char*)attrib);
-			free(attrib);
-			attrib = NULL;
-			
 		}
 		break;
 	}

@@ -186,7 +186,7 @@ void sechk_module_free(sechk_module_t *module, sechk_free_fn_t free_fn)
 	if (!module)
 		return;
 
-	free(module->header);
+
 	sechk_result_free(module->result);
 	sechk_name_value_destroy(module->options);
 	sechk_name_value_destroy(module->requirements);
