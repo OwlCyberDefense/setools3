@@ -39,8 +39,18 @@ int find_file_types_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: module unknown\n");
 		return -1;
 	}
-	
-	/* register functions */
+
+	/* assign the descriptions */
+	mod->brief_description = "Finds all types in the policy treated as a file type";
+	mod->detailed_description = "Finds all types in the policy treated as a file type"
+"\nA type is considered a file type if any of the following is true:"
+"\n  It has an attribute associated with file types"
+"\n  It is the source of a rule to allow filesystem associate"
+"\n  It is the default type of a type transition rule"
+"\n   for an object class other than process"
+"\n  It is specified in a context in the file_contexts file";
+
+		/* register functions */
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
 		fprintf(stderr, "Error: out of memory\n");
@@ -524,7 +534,7 @@ int find_file_types_print_output(sechk_module_t *mod, policy_t *policy)
 	datum = (find_file_types_data_t*)mod->data;
 	outformat = mod->outputformat;
 
-	if (!mod->result && (outformat & ~(SECHK_OUT_HEADER))) {
+	if (!mod->result && (outformat & ~(SECHK_OUT_BRF_DESCP)) && (outformat & ~(SECHK_OUT_DET_DESCP))) {
 		fprintf(stderr, "Error: module has not been run\n");
 		return -1;
 	}
@@ -533,8 +543,13 @@ int find_file_types_print_output(sechk_module_t *mod, policy_t *policy)
 		return 0; /* not an error - no output is requested */
 
 	printf("\nModule: %s\n", mod_name);
-	if (outformat & SECHK_OUT_HEADER) {
-		printf("%s\n\n", mod->header);
+	/* print the brief description */
+	if (outformat & SECHK_OUT_BRF_DESCP) {
+		printf("%s\n\n", mod->brief_description);
+	}
+	/* print the detailed description */
+	if (outformat & SECHK_OUT_DET_DESCP) {
+		printf("%s\n\n", mod->detailed_description);
 	}
 	if (outformat & SECHK_OUT_STATS) {
 		printf("Found %i file types.\n", mod->result->num_items);
