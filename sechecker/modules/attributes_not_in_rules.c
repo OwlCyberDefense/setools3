@@ -45,6 +45,10 @@ int attributes_not_in_rules_register(sechk_lib_t *lib)
 		return -1;
 	}
 	
+	/* assign the descriptions */
+	mod->brief_description = "Finds attributes in the policy not used in any rule.";
+	mod->detailed_description = "Finds attributes in the policy not used in any rule.";
+
 	/* register functions */
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -324,7 +328,7 @@ int attributes_not_in_rules_print_output(sechk_module_t *mod, policy_t *policy)
 	datum = (attributes_not_in_rules_data_t*)mod->data;
 	outformat = mod->outputformat;
 
-	if (!mod->result && (outformat & ~(SECHK_OUT_HEADER))) {
+	if (!mod->result && (outformat & ~(SECHK_OUT_BRF_DESCP)) && (outformat & ~(SECHK_OUT_DET_DESCP))) {
 		fprintf(stderr, "Error: module has not been run\n");
 		return -1;
 	}
@@ -333,9 +337,13 @@ int attributes_not_in_rules_print_output(sechk_module_t *mod, policy_t *policy)
 		return 0; /* not an error - no output is requested */
 
 	printf("\nModule: %s\n", mod_name);
-	/* print the header */
-	if (outformat & SECHK_OUT_HEADER) {
-		printf("%s\n\n", mod->header);
+	/* print the brief description */
+	if (outformat & SECHK_OUT_BRF_DESCP) {
+		printf("%s\n\n", mod->brief_description);
+	}
+	/* print the detailed description */
+	if (outformat & SECHK_OUT_DET_DESCP) {
+		printf("%s\n\n", mod->detailed_description);
 	}
 	if (outformat & SECHK_OUT_STATS) {
 		printf("Found %i attributes.\n", mod->result->num_items);

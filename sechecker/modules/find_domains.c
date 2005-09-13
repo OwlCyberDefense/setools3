@@ -35,7 +35,17 @@ int find_domains_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: module unknown\n");
 		return -1;
 	}
-	
+
+	/* assign descriptions */
+	mod->brief_description = "Finds all types in policy treated as a domain. ";
+	mod->detailed_description = "Finds all types in policy treated as a domain. "
+"\nA type is considered a domain if any of the following is true: "
+"\n  It has an attribute associated with domains "
+"\n  It is the source of a te rule for object class other than filesystem "
+"\n  It is the default type in a type_transition rule for object class process "
+"\n  It is associated with a role other than object_r";
+
+
 	/* register functions */
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -456,7 +466,7 @@ int find_domains_print_output(sechk_module_t *mod, policy_t *policy)
 	datum = (find_domains_data_t*)mod->data;
 	outformat = mod->outputformat;
 
-	if (!mod->result && (outformat & ~(SECHK_OUT_HEADER))) {
+	if (!mod->result && (outformat & ~(SECHK_OUT_BRF_DESCP)) && (outformat & ~(SECHK_OUT_DET_DESCP))) {
 		fprintf(stderr, "Error: module has not been run\n");
 		return -1;
 	}
@@ -465,8 +475,13 @@ int find_domains_print_output(sechk_module_t *mod, policy_t *policy)
 		return 0; /* not an error - no output is requested */
 
 	printf("\nModule: %s\n", mod_name);
-	if (outformat & SECHK_OUT_HEADER) {
-		printf("%s\n\n", mod->header);
+	/* print the brief description */
+	if (outformat & SECHK_OUT_BRF_DESCP) {
+		printf("%s\n\n", mod->brief_description);
+	}
+	/* print the detailed description */
+	if (outformat & SECHK_OUT_DET_DESCP) {
+		printf("%s\n\n", mod->detailed_description);
 	}
 	if (outformat & SECHK_OUT_STATS) {
 		printf("Found %i domain types.\n", mod->result->num_items);
