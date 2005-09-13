@@ -27,14 +27,15 @@
 
 /* defined flags for outformat */
 /* report components */
-#define SECHK_OUT_STATS   0x01
-#define SECHK_OUT_LIST    0x02
-#define SECHK_OUT_PROOF   0x04
-#define SECHK_OUT_HEADER  0x08
+#define SECHK_OUT_STATS		0x01
+#define SECHK_OUT_LIST		0x02
+#define SECHK_OUT_PROOF		0x04
+#define SECHK_OUT_DET_DESCP	0x08
+#define SECHK_OUT_BRF_DESCP	0x10
 /* mode flags from command line, test profiles, and comfig file */
 /* NOTE: none is only valid in profiles */
 #define SECHK_OUT_NONE    0x00
-#define SECHK_OUT_QUIET   (SECHK_OUT_STATS|SECHK_OUT_HEADER)
+#define SECHK_OUT_QUIET   (SECHK_OUT_STATS|SECHK_OUT_BRF_DESCP)
 #define SECHK_OUT_SHORT   (SECHK_OUT_QUIET|SECHK_OUT_LIST)
 #define SECHK_OUT_LONG    (SECHK_OUT_QUIET|SECHK_OUT_PROOF)
 #define SECHK_OUT_VERBOSE (SECHK_OUT_SHORT|SECHK_OUT_LONG)
@@ -92,7 +93,8 @@ typedef struct sechk_fn {
 
 typedef struct sechk_module {
 	char               *name;                /* unique module name */
-	char		*header;		/* description of the module */
+        const char	   *brief_description;	 /* brief description of the module */
+	const char        *detailed_description;/* detailed description of the module */
 	sechk_result_t	   *result;              /* test results */
 	sechk_name_value_t *options;             /* test inputs */ 
 	sechk_name_value_t *requirements;		/* conditions required such as policy version */

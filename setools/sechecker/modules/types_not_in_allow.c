@@ -46,6 +46,10 @@ int types_not_in_allow_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: module unknown\n");
 		return -1;
 	}
+
+	/* assign the descriptions */
+	mod->brief_description = "Finds types declared but not used in allow rules of a poicy.\nThis module reports other uses if found.";
+	mod->detailed_description = "Finds types declared but not used in allow rules of a poicy.\nThis module reports other uses if found.";
 	
 	/* register functions */
 	fn_struct = sechk_fn_new();
@@ -584,7 +588,7 @@ int types_not_in_allow_print_output(sechk_module_t *mod, policy_t *policy)
 	datum = (types_not_in_allow_data_t*)mod->data;
 	outformat = mod->outputformat;
 
-	if (!mod->result && (outformat & ~(SECHK_OUT_HEADER))) {
+	if (!mod->result && (outformat & ~(SECHK_OUT_BRF_DESCP)) && (outformat & ~(SECHK_OUT_DET_DESCP))) {
 		fprintf(stderr, "Error: module has not been run\n");
 		return -1;
 	}
@@ -593,9 +597,13 @@ int types_not_in_allow_print_output(sechk_module_t *mod, policy_t *policy)
 		return 0; /* not an error - no output is requested */
 
 	printf("\nModule: %s\n", mod_name);
-	/* print the header */
-	if (outformat & SECHK_OUT_HEADER) {
-		printf("%s\n\n", mod->header);
+	/* print the brief description */
+	if (outformat & SECHK_OUT_BRF_DESCP) {
+		printf("%s\n\n", mod->brief_description);
+	}
+	/* print the detailed description */
+	if (outformat & SECHK_OUT_DET_DESCP) {
+		printf("%s\n\n", mod->detailed_description);
 	}
 	/* display the statistics of the results */
 	if (outformat & SECHK_OUT_STATS) {

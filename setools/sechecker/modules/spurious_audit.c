@@ -48,6 +48,13 @@ int spurious_audit_register(sechk_lib_t *lib)
 		return -1;
 	}
 	
+	/* assign the descriptions */
+	mod->brief_description = "Finds audit rules which do not affect the auditing of the policy.";
+	mod->detailed_description = "Finds audit rules which do not affect the auditing of the policy."
+"\nThis module finds two types of spurious audit rules:"
+"\n  dontaudit rules for allowed permission sets"
+"\n  auditallow rules without an allow rule";
+
 	/* register functions */
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -461,7 +468,7 @@ int spurious_audit_print_output(sechk_module_t *mod, policy_t *policy)
 	datum = (spurious_audit_data_t*)mod->data;
 	outformat = mod->outputformat;
 
-	if (!mod->result && (outformat & ~(SECHK_OUT_HEADER))) {
+	if (!mod->result && (outformat & ~(SECHK_OUT_BRF_DESCP)) && (outformat & ~(SECHK_OUT_DET_DESCP))) {
 		fprintf(stderr, "Error: module has not been run\n");
 		return -1;
 	}
@@ -471,8 +478,13 @@ int spurious_audit_print_output(sechk_module_t *mod, policy_t *policy)
 
 	printf("\nModule: %s\n", mod_name);
 	/* print the header */
-	if (outformat & SECHK_OUT_HEADER) {
-		printf("%s\n\n", mod->header);
+	/* print the brief description */
+	if (outformat & SECHK_OUT_BRF_DESCP) {
+		printf("%s\n\n", mod->brief_description);
+	}
+	/* print the detailed description */
+	if (outformat & SECHK_OUT_DET_DESCP) {
+		printf("%s\n\n", mod->detailed_description);
 	}
 	if (outformat & SECHK_OUT_STATS) {
 		printf("Found %i rules.\n", mod->result->num_items);
