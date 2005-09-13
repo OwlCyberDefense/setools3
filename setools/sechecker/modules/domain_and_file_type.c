@@ -34,6 +34,12 @@ int domain_and_file_type_register(sechk_lib_t *lib)
 		return -1;
 	}
 	
+	/* assign descriptions */
+	mod->detailed_description = "Finds all types in the policy treated as both a domain and a file type "
+"\n  See domain_type and file_type modules for details about how "
+"\n  types are placed in these categories";
+	mod->brief_description = "Finds all types in the policy treated as both a domain and a file type";
+
 	/* register functions */
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -340,7 +346,7 @@ int domain_and_file_type_print_output(sechk_module_t *mod, policy_t *policy)
 	datum = (domain_and_file_type_data_t*)mod->data;
 	outformat = mod->outputformat;
 
-	if (!mod->result && (outformat & ~(SECHK_OUT_HEADER))) {
+	if (!mod->result && (outformat & ~(SECHK_OUT_BRF_DESCP)) && (outformat & ~(SECHK_OUT_DET_DESCP))) {
 		fprintf(stderr, "Error: module has not been run\n");
 		return -1;
 	}
@@ -350,8 +356,13 @@ int domain_and_file_type_print_output(sechk_module_t *mod, policy_t *policy)
 
 
 	printf("\nModule: %s\n", mod_name);
-	if (outformat & SECHK_OUT_HEADER) {
-		printf("%s\n\n", mod->header);
+	/* print the brief description */
+	if (outformat & SECHK_OUT_BRF_DESCP) {
+		printf("%s\n\n", mod->brief_description);
+	}
+	/* print the detailed description */
+	if (outformat & SECHK_OUT_DET_DESCP) {
+		printf("%s\n\n", mod->detailed_description);
 	}
 	if (outformat & SECHK_OUT_STATS) {
 		printf("Found %i types.\n", mod->result->num_items);
