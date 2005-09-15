@@ -52,11 +52,9 @@ typedef struct sechk_proof {
 
 /* severity categories used in proof elements */
 #define SECHK_SEV_NONE 0
-#define SECHK_SEV_MIN  1
-#define SECHK_SEV_LOW  2
-#define SECHK_SEV_MOD  3
-#define SECHK_SEV_HIGH 4
-#define SECHK_SEV_DNGR 5
+#define SECHK_SEV_LOW  1
+#define SECHK_SEV_MOD  2
+#define SECHK_SEV_HIGH 3
 
 /* The following definitions are expanding
  * POL_LIST (see policy.h) for aditional items stored
@@ -174,7 +172,7 @@ int sechk_get_installed_profile_names(char ***names, int *num_profiles);
 bool_t sechk_lib_check_requirement(sechk_name_value_t *req, sechk_lib_t *lib);
 bool_t sechk_lib_check_dependency(sechk_name_value_t *dep, sechk_lib_t *lib);
 int sechk_lib_set_outputformat(unsigned char out, sechk_lib_t *lib);
-int sechk_item_sev(sechk_item_t *item);
+const char *sechk_item_sev(sechk_item_t *item);
 sechk_item_t *sechk_result_get_item(int item_id, unsigned char item_type, sechk_result_t *res);
 sechk_proof_t *sechk_proof_copy(sechk_proof_t *orig);
 bool_t sechk_item_has_proof(int idx, unsigned char type, sechk_item_t *item);

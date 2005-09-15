@@ -509,7 +509,7 @@ int spurious_audit_print_output(sechk_module_t *mod, policy_t *policy)
 		printf("\n");
 		for (item = mod->result->items; item; item = item->next) {
 			printf("%s\n", re_render_av_rule(!is_binary_policy(policy), item->item_id, 1, policy));/* TODO: item name */
-			printf(" - severity: %i\n", sechk_item_sev(item));
+			printf(" - severity: %s\n", sechk_item_sev(item));
 			for (proof = item->proof; proof; proof = proof->next) {
 				printf("\t%s\n", proof->text);
 			}
