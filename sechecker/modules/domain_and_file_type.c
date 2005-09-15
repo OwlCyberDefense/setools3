@@ -334,7 +334,7 @@ int domain_and_file_type_print_output(sechk_module_t *mod, policy_t *policy)
 	sechk_proof_t *proof = NULL;
 	int i = 0;
 
-	if (!mod || !policy) {
+	if (!mod || (!policy && (mod->outputformat & ~(SECHK_OUT_BRF_DESCP)))) {
 		fprintf(stderr, "Error: invalid parameters\n");
 		return -1;
 	}
@@ -353,7 +353,6 @@ int domain_and_file_type_print_output(sechk_module_t *mod, policy_t *policy)
 
 	if (!outformat)
 		return 0; /* not an error - no output is requested */
-
 
 	printf("\nModule: %s\n", mod_name);
 	/* print the brief description */
