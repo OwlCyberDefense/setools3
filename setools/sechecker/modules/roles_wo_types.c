@@ -326,7 +326,7 @@ int roles_wo_types_print_output(sechk_module_t *mod, policy_t *policy)
 		printf("\n");
 		for (item = mod->result->items; item; item = item->next) {
 			printf("%s", policy->roles[item->item_id].name);
-			printf(" - severity: %i\n", sechk_item_sev(item));
+			printf(" - severity: %s\n", sechk_item_sev(item));
 			for (proof = item->proof; proof; proof = proof->next) {
 				printf("\t%s\n", proof->text);
 			}

@@ -26,6 +26,8 @@
 #include <selinux/selinux.h>
 #endif
 
+static const char *sechk_severities = { "None", "Low", "Medium", "High" };
+
 /* 'public' methods */
 #ifdef LIBSEFS
 sechk_lib_t *sechk_lib_new(const char *policyfilelocation, const char *fcfilelocation)
@@ -668,21 +670,19 @@ int sechk_lib_set_outputformat(unsigned char out, sechk_lib_t *lib)
 }
 
 /* sechk_item_sev calculates the severity level of an item based on the proof */
-int sechk_item_sev(sechk_item_t *item)
+const char *sechk_item_sev(sechk_item_t *item)
 {
 	sechk_proof_t *proof = NULL;
 	int sev = SECHK_SEV_NONE;
 
-	if (!item)
-		return SECHK_SEV_NONE;
-
-	/* the severity of an item is equal to
-	 * the highest severity among its proof elements */
-	for (proof = item->proof; proof; proof = proof->next)
-		if (proof->severity > sev)
-			sev = proof->severity;
-
-	return sev;
+	if (item) {
+		/* the severity of an item is equal to
+		 * the highest severity among its proof elements */
+		for (proof = item->proof; proof; proof = proof->next)
+			if (proof->severity > sev)
+				sev = proof->severity;
+	}
+	return sechk_severities[sev];
 }
 
 sechk_item_t *sechk_result_get_item(int item_id, unsigned char item_type, sechk_result_t *res)
