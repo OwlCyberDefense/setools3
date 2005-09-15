@@ -26,7 +26,7 @@
 #include <selinux/selinux.h>
 #endif
 
-static const char *sechk_severities = { "None", "Low", "Medium", "High" };
+static const char *sechk_severities[] = { "None", "Low", "Medium", "High" };
 
 /* 'public' methods */
 #ifdef LIBSEFS
