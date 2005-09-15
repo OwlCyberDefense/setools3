@@ -269,7 +269,7 @@ int find_file_types_run(sechk_module_t *mod, policy_t *policy)
 					}
 					proof->idx = datum->file_type_attribs[j];
 					proof->type = POL_LIST_ATTRIB;
-					proof->severity = SECHK_SEV_MIN;
+					proof->severity = SECHK_SEV_LOW;
 					buff_sz = 1+strlen(policy->types[i].name)+strlen(policy->attribs[datum->file_type_attribs[j]].name)+strlen("type  has attribute ");
 					buff = (char*)calloc(buff_sz, sizeof(char));
 					if (!buff) {
@@ -567,7 +567,7 @@ int find_file_types_print_output(sechk_module_t *mod, policy_t *policy)
 		printf("\n");
 		for (item = mod->result->items; item; item = item->next) {
 			printf("%s", policy->types[item->item_id].name);
-			printf(" - severity: %i\n", sechk_item_sev(item));
+			printf(" - severity: %s\n", sechk_item_sev(item));
 			for (proof = item->proof; proof; proof = proof->next) {
 				printf("\t%s\n", proof->text);
 			}
