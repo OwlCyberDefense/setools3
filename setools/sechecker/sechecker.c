@@ -28,18 +28,10 @@
 
 static const char *sechk_severities[] = { "None", "Low", "Medium", "High" };
 
-/* 'public' methods */
-#ifdef LIBSEFS
-sechk_lib_t *sechk_lib_new(const char *policyfilelocation, const char *fcfilelocation)
-#else
-sechk_lib_t *sechk_lib_new(const char *policyfilelocation)
-#endif
+/* exported functions */
+sechk_lib_t *sechk_lib_new()
 {
 	sechk_lib_t *lib = NULL;
-	char *default_policy_path = NULL;
-#ifdef LIBSEFS
-	char *default_fc_path = NULL;
-#endif
 	const char *CONFIG_FILE="/.sechecker", *DEFAULT_CONFIG_FILE="/dot_sechecker";
 	char *conf_path = NULL, *conf_filename = NULL;
 	int retv;
@@ -85,53 +77,9 @@ sechk_lib_t *sechk_lib_new(const char *policyfilelocation)
 		goto exit_err;
 	}
 
-	/* if no policy is given, attempt to find default */
-	if (!policyfilelocation) {
-		retv = find_default_policy_file((POL_TYPE_SOURCE|POL_TYPE_BINARY), &default_policy_path);
-		if (retv) {
-			fprintf(stderr, "Error: could not find default policy\n");
-			goto exit_err;
-		}
-		retv = open_policy(default_policy_path, &(lib->policy));
-		if (retv) {
-			fprintf(stderr, "Error: failed opening default policy\n");
-			goto exit_err;
-		}
-		lib->policy_path = strdup(default_policy_path);
-	} else {
-		retv = open_policy(policyfilelocation, &(lib->policy));
-		if (retv) {
-			fprintf(stderr, "Error: failed opening policy %s\n", policyfilelocation);
-			goto exit_err;
-		}
-		lib->policy_path = strdup(policyfilelocation);
-		}
 
-#ifdef LIBSEFS
-	/* if no file_contexts file is given attempt to find the default */
-	if (!fcfilelocation) {
-		retv = find_default_file_contexts_file(&default_fc_path);
-		if (retv) {
-			fprintf(stderr, "Warning: unable to find default file_contexts file\n");
-		}
-		retv = parse_file_contexts_file(default_fc_path, &(lib->fc_entries), &(lib->num_fc_entries), lib->policy);
-		if (retv) {
-			fprintf(stderr, "Warning: unable to process file_contexts file\n");
-		} else {
-			lib->fc_path = strdup(default_fc_path);
-		}
-	} else {
-		retv = parse_file_contexts_file(fcfilelocation, &(lib->fc_entries), &(lib->num_fc_entries), lib->policy);
-		if (retv) {
-			fprintf(stderr, "Warning: unable to process file_contexts file\n");
-		} else {
-			lib->fc_path = strdup(fcfilelocation);
-		}
-	}
-#endif
 
 exit:
-	free(default_policy_path);
 	free(conf_path);
 	free(conf_filename);
 	return lib;
@@ -312,10 +260,81 @@ sechk_proof_t *sechk_proof_new(void)
 	return proof;
 }
 
-int sechk_lib_register_modules(sechk_register_fn_t *register_fns, sechk_lib_t *lib) 
+int sechk_lib_load_policy(const char *policyfilelocation, sechk_lib_t *lib)
+{
+	
+	char *default_policy_path = NULL;
+	int retv = -1;
+	if (!lib)
+		return -1;
+
+	/* if no policy is given, attempt to find default */
+	if (!policyfilelocation) {
+		retv = find_default_policy_file((POL_TYPE_SOURCE|POL_TYPE_BINARY), &default_policy_path);
+		if (retv) {
+			fprintf(stderr, "Error: could not find default policy\n");
+			return -1;
+		}
+		retv = open_policy(default_policy_path, &(lib->policy));
+		if (retv) {
+			fprintf(stderr, "Error: failed opening default policy\n");
+			return -1;
+		}
+		lib->policy_path = strdup(default_policy_path);
+	} else {
+		retv = open_policy(policyfilelocation, &(lib->policy));
+		if (retv) {
+			fprintf(stderr, "Error: failed opening policy %s\n", policyfilelocation);
+			return -1;
+		}
+		lib->policy_path = strdup(policyfilelocation);
+	}
+	return 0;
+}
+
+#ifdef LIBSEFS
+int sechk_lib_load_fc(const char *fcfilelocation, sechk_lib_t *lib)
+{
+	int retv = -1;
+	char *default_fc_path = NULL;
+
+	/* if no policy we can't parse the fc file */
+	if (!lib->policy || !lib)
+		return -1;
+
+	/* if no file_contexts file is given attempt to find the default */
+	if (!fcfilelocation) {
+		retv = find_default_file_contexts_file(&default_fc_path);
+		if (retv) {
+			fprintf(stderr, "Warning: unable to find default file_contexts file\n");
+			return -1;
+		}
+		retv = parse_file_contexts_file(default_fc_path, &(lib->fc_entries), &(lib->num_fc_entries), lib->policy);
+		if (retv) {
+			fprintf(stderr, "Warning: unable to process file_contexts file\n");
+			return -1;
+		} else {
+			lib->fc_path = strdup(default_fc_path);
+		}
+	} else {
+		retv = parse_file_contexts_file(fcfilelocation, &(lib->fc_entries), &(lib->num_fc_entries), lib->policy);
+		if (retv) {
+			fprintf(stderr, "Warning: unable to process file_contexts file\n");
+			return -1;
+		} else {
+			lib->fc_path = strdup(fcfilelocation);
+		}
+	}
+	return 0;
+
+}
+#endif
+
+
+int sechk_lib_register_modules(sechk_module_name_reg_t *register_fns, sechk_lib_t *lib) 
 {
 	int i, retv;
-
+	sechk_register_fn_t fn = NULL;
 	if (!register_fns || !lib) {
 		fprintf(stderr, "Error: could not register modules\n");
 		return -1;
@@ -325,7 +344,8 @@ int sechk_lib_register_modules(sechk_register_fn_t *register_fns, sechk_lib_t *l
 		return -1;
 	}
 	for (i = 0; i < lib->num_modules; i++) {
-		retv = register_fns[i](lib);
+		fn = (sechk_register_fn_t)(register_fns[i].fn);
+		retv = fn(lib);
 		if (retv) {
 			fprintf(stderr, "Error: could not register module #%i\n", i);
 			return retv;
@@ -508,7 +528,9 @@ int sechk_lib_run_modules(sechk_lib_t *lib)
 		}
 		retv = run_fn(&(lib->modules[i]), lib->policy);
 		if (retv) {
-			fprintf(stderr, "Error: module %s failed\n", lib->modules[i].name);
+			/* only put output failures if we are not in quiet mode */
+			if (lib->outputformat & ~(SECHK_OUT_QUIET)) 
+				fprintf(stderr, "Error: module %s failed\n", lib->modules[i].name);
 			rc = -1;
 		}
 	}
@@ -683,6 +705,7 @@ const char *sechk_item_sev(sechk_item_t *item)
 				sev = proof->severity;
 	}
 	return sechk_severities[sev];
+
 }
 
 sechk_item_t *sechk_result_get_item(int item_id, unsigned char item_type, sechk_result_t *res)

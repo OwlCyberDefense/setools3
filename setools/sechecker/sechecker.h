@@ -35,10 +35,9 @@
 /* mode flags from command line, test profiles, and comfig file */
 /* NOTE: none is only valid in profiles */
 #define SECHK_OUT_NONE    0x00
-#define SECHK_OUT_QUIET   (SECHK_OUT_STATS|SECHK_OUT_BRF_DESCP)
-#define SECHK_OUT_SHORT   (SECHK_OUT_QUIET|SECHK_OUT_LIST)
-#define SECHK_OUT_LONG    (SECHK_OUT_QUIET|SECHK_OUT_PROOF)
-#define SECHK_OUT_VERBOSE (SECHK_OUT_SHORT|SECHK_OUT_LONG)
+#define SECHK_OUT_QUIET   0x20
+#define SECHK_OUT_DEFAULT (SECHK_OUT_STATS|SECHK_OUT_BRF_DESCP|SECHK_OUT_LIST)
+#define SECHK_OUT_VERBOSE (SECHK_OUT_STATS|SECHK_OUT_DET_DESCP|SECHK_OUT_PROOF)
 
 /* module results proof element */
 typedef struct sechk_proof {
@@ -109,7 +108,7 @@ typedef struct sechk_lib {
 	int 		num_modules;
 	policy_t 	*policy;              /* policy data */
 #ifdef LIBSEFS
-	sefs_fc_entry_t		*fc_entries;          /* file contexts data */
+	sefs_fc_entry_t *fc_entries;          /* file contexts data */
 	int		num_fc_entries;
 	char		*fc_path;             /* file contexts filename */
 #endif
@@ -117,6 +116,11 @@ typedef struct sechk_lib {
 	char		*selinux_config_path;
 	char		*policy_path;         /* policy filename */
 } sechk_lib_t;
+
+typedef struct sechk_module_name_reg {
+	char            *name;
+	void            *fn;
+} sechk_module_name_reg_t;
 
 /* Module function signatures */
 typedef int (*sechk_register_fn_t)(sechk_lib_t *lib);
@@ -134,11 +138,7 @@ typedef sechk_result_t *(*sechk_get_result_fn_t)(sechk_module_t *mod);
 #define SECHK_MOD_FN_GET_RES "get_result"
 
 /* alloc methods */
-#ifdef LIBSEFS
-sechk_lib_t *sechk_lib_new(const char *policyfilelocation, const char *fcfilelocation);
-#else
-sechk_lib_t *sechk_lib_new(const char *policyfilelocation);
-#endif
+sechk_lib_t *sechk_lib_new();
 sechk_fn_t *sechk_fn_new(void);
 sechk_name_value_t *sechk_name_value_new(void);
 sechk_result_t *sechk_result_new(void);
@@ -155,7 +155,7 @@ void sechk_module_free(sechk_module_t *module, sechk_free_fn_t free_fn);
 void sechk_name_value_destroy(sechk_name_value_t *opt);
 
 /* register/check_dep/init/run/print -  modules */
-int sechk_lib_register_modules(sechk_register_fn_t *register_fns, sechk_lib_t *lib);
+int sechk_lib_register_modules(sechk_module_name_reg_t *register_fns, sechk_lib_t *lib);
 int sechk_lib_check_module_dependencies(sechk_lib_t *lib);
 int sechk_lib_check_module_requirements(sechk_lib_t *lib);
 int sechk_lib_init_modules(sechk_lib_t *lib);
@@ -167,6 +167,10 @@ sechk_module_t *sechk_lib_get_module(const char *module_name, sechk_lib_t *lib);
 void *sechk_lib_get_module_function(const char *module_name, const char *function_name, sechk_lib_t *lib);
 
 /* utility functions */
+int sechk_lib_load_policy(const char *policyfilelocation, sechk_lib_t *lib);
+#ifdef LIBSEFS
+int sechk_lib_load_fc(const char *fcfilelocation, sechk_lib_t *lib);
+#endif
 int sechk_lib_load_profile(const char *prof_name, sechk_lib_t *lib);
 int sechk_get_installed_profile_names(char ***names, int *num_profiles);
 bool_t sechk_lib_check_requirement(sechk_name_value_t *req, sechk_lib_t *lib);
