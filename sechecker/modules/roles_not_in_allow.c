@@ -299,7 +299,7 @@ int roles_not_in_allow_run(sechk_module_t *mod, policy_t *policy)
 			proof->idx = -1;
 			proof->type = -1;
 			proof->text = strdup("This role does not appear in any rules.");
-			proof->severity = SECHK_SEV_MIN;
+			proof->severity = SECHK_SEV_LOW;
 			if (!item) {
 				item = sechk_item_new();
 				if (!item) {
@@ -424,7 +424,7 @@ int roles_not_in_allow_print_output(sechk_module_t *mod, policy_t *policy)
 		printf("\n");
 		for (item = mod->result->items; item; item = item->next) {
 			printf("%s", policy->roles[item->item_id].name);
-			printf(" - severity: %i\n", sechk_item_sev(item));
+			printf(" - severity: %s\n", sechk_item_sev(item));
 			for (proof = item->proof; proof; proof = proof->next) {
 				printf("\t%s\n", proof->text);
 			}
