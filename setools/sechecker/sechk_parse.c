@@ -213,14 +213,12 @@ int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib)
 			}
 			attrib = xmlTextReaderGetAttribute(reader, (xmlChar*)SECHK_PARSE_VALUE_ATTRIB);
 			if (attrib) {
-				if (xmlStrEqual(attrib, (xmlChar*)SECHK_PARSE_OUTPUT_SHORT) == 1) {
-					current_module->outputformat = SECHK_OUT_SHORT;
-				} else if (xmlStrEqual(attrib, (xmlChar*)SECHK_PARSE_OUTPUT_QUIET) == 1) {
+				if (xmlStrEqual(attrib, (xmlChar*)SECHK_PARSE_OUTPUT_QUIET) == 1) {
 					current_module->outputformat = SECHK_OUT_QUIET;
-				} else if (xmlStrEqual(attrib, (xmlChar*)SECHK_PARSE_OUTPUT_LONG) == 1) {
-					current_module->outputformat = SECHK_OUT_LONG;
 				} else if (xmlStrEqual(attrib, (xmlChar*)SECHK_PARSE_OUTPUT_VERBOSE) == 1) {
 					current_module->outputformat = SECHK_OUT_VERBOSE;
+				} else if (xmlStrEqual(attrib, (xmlChar*)SECHK_PARSE_OUTPUT_DEFAULT) == 1) {
+					current_module->outputformat = SECHK_OUT_DEFAULT;
 				} else if (xmlStrEqual(attrib, (xmlChar*)SECHK_PARSE_OUTPUT_NONE) == 1) {
 					if (profile) {
 						current_module->outputformat = SECHK_OUT_NONE;

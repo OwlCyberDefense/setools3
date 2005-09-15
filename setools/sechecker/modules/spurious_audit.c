@@ -456,7 +456,7 @@ int spurious_audit_print_output(sechk_module_t *mod, policy_t *policy)
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
 
-	if (!mod || !policy) {
+	if (!mod || (!policy && (mod->outputformat & ~(SECHK_OUT_BRF_DESCP)))) {
 		fprintf(stderr, "Error: invalid parameters\n");
 		return -1;
 	}
