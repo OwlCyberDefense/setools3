@@ -296,7 +296,7 @@ int xx_print_output(sechk_module_t *mod, policy_t *policy)
 	datum = (xx_data_t*)mod->data;
 	outformat = mod->outputformat;
 
-	if (!mod->result && (outformat & ~(SECHK_OUT_BRF_DESCP) || (outformat & ~(SECHK_OUT_DET_DESCP))) {
+	if (!mod->result && (outformat & ~(SECHK_OUT_BRF_DESCP)) && (outformat & ~(SECHK_OUT_DET_DESCP))) {
 		fprintf(stderr, "Error: module has not been run\n");
 		return -1;
 	}

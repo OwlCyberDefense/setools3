@@ -522,7 +522,7 @@ int find_file_types_print_output(sechk_module_t *mod, policy_t *policy)
 	int i = 0;
 
 
-	if (!mod || !policy) {
+	if (!mod || (!policy && (mod->outputformat & ~(SECHK_OUT_BRF_DESCP)))) {
 		fprintf(stderr, "Error: invalid parameters\n");
 		return -1;
 	}
