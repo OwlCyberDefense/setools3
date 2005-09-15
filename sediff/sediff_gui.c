@@ -4367,6 +4367,10 @@ static int sediff_load_policies(const char *p1_file, const char *p2_file)
 		g_string_free(sediff_app->p1_filename,TRUE);
 	if (sediff_app->p2_filename)
 		g_string_free(sediff_app->p2_filename,TRUE);
+	if (sediff_app->p1)
+		close_policy(p1);
+	if (sediff_app->p2)
+		close_policy(p2);
 	sediff_app->p1_filename = g_string_new(p1_file);
 	sediff_app->p2_filename = g_string_new(p2_file);
 	sediff_app->p1 = p1;

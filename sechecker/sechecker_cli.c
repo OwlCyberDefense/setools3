@@ -21,7 +21,7 @@
 
 #define COPYRIGHT_INFO "Copyright (C) 2005 Tresys Technology, LLC"
 
-extern sechk_register_fn_t sechk_register_list[];
+extern sechk_module_name_reg_t sechk_register_list[];
 
 /* command line options struct */
 static struct option const longopts[] = 
@@ -31,8 +31,7 @@ static struct option const longopts[] =
 #ifdef LLIBSEFS
 	{"file_contexts", required_argument, NULL, 'c'},
 #endif
-	{"short", no_argument, NULL, 'S'},
-	{"long", no_argument, NULL, 'L'},
+	{"default", no_argument, NULL, 'd'},
 	{"quiet", no_argument, NULL, 'q'},
 	{"verbose", no_argument, NULL, 'V'},
 	{"module", required_argument, NULL, 'm'},
@@ -58,10 +57,9 @@ void usage(const char *arg0, bool_t brief)
 		printf("   -l, --list                  Print a list of available modules\n");
 		printf("   -h, --help                  Print this help message\n");
 		printf("   -v, --version               Print version information\n");
-		printf("   -S, --short                 Use short output format\n");
-		printf("   -L, --long                  Use long output format\n");
+		printf("   -d, --default               Use default output format\n");
 		printf("   -V, --verbose               Use verbose output format\n");
-		printf("   -q, --quiet                 Output only module name and statistics\n");
+		printf("   -q, --quiet                 Output 0 for success, 1 for error\n");
 		printf("   -p file, --policy=file      The location of the policy file\n");
 #ifdef LIBSEFS
 		printf("   -c file, --fcfile=file      The location of the file_contexts file\n");
@@ -124,15 +122,6 @@ int main(int argc, char **argv)
 		case 'p':
 			polpath = strdup(optarg);
 			break;
-		case 'S':
-			if (output_override) {
-				fprintf(stderr, "Error: Multiple output specifications.\n");
-				usage(argv[0], 1);
-				exit(1);
-			} else {
-				output_override = SECHK_OUT_SHORT;
-			}
-			break;
 		case 'V':
 			if (output_override) {
 				fprintf(stderr, "Error: Multiple output specifications.\n");
@@ -142,13 +131,13 @@ int main(int argc, char **argv)
 				output_override = SECHK_OUT_VERBOSE;
 			}
 			break;
-		case 'L':
+		case 'd':
 			if (output_override) {
 				fprintf(stderr, "Error: Multiple output specifications.\n");
 				usage(argv[0], 1);
 				exit(1);
 			} else {
-				output_override = SECHK_OUT_LONG;
+				output_override = SECHK_OUT_DEFAULT;
 			}
 			break;
 		case 'q':
@@ -185,16 +174,13 @@ int main(int argc, char **argv)
 	}
 
 	/* create the module library */
-#ifdef LIBSEFS
-	module_library = sechk_lib_new(polpath, fcpath);
-#else
-	module_library = sechk_lib_new(polpath);
-#endif
+	module_library = sechk_lib_new();
+
 	if (!module_library)
 		goto exit_err;
 
 	if (!module_library->outputformat)
-		module_library->outputformat = SECHK_OUT_LONG;
+		module_library->outputformat = SECHK_OUT_DEFAULT;
 
 	/* register modules */
 	if ((retv = sechk_lib_register_modules(sechk_register_list, module_library)) != 0)
@@ -221,6 +207,18 @@ int main(int argc, char **argv)
 		}
 		goto exit;
 	}
+
+	/* initialize the policy */
+	retv = sechk_lib_load_policy(polpath,module_library);
+	if (retv < 0)
+		goto exit_err;
+
+#ifdef LIBSEFS
+	retv = sechk_lib_load_fc(fcpath,module_library);
+	if (retv < 0)
+		goto exit_err;
+#endif
+
 
 	/* load profile if specified */
 	if (prof_name) {
@@ -295,7 +293,7 @@ int main(int argc, char **argv)
 	}
 
 	/* print the report */
-	if (modname) {
+	if (modname && (!(output_override) || output_override & ~(SECHK_OUT_QUIET))) {
 		/* here we are only printing results for one specific module */
 		mod = sechk_lib_get_module(modname, module_library);
 		if (!mod) {
@@ -306,12 +304,12 @@ int main(int argc, char **argv)
 			goto exit_err;
 		}
 		if (!mod->outputformat)
-			mod->outputformat = SECHK_OUT_LONG;
+			mod->outputformat = SECHK_OUT_DEFAULT;
 		retv = print_fn(mod, module_library->policy);
 		if (retv) {
 			goto exit_err;
 		}
-	} else {
+	} else if (!(output_override) || output_override & ~(SECHK_OUT_QUIET)){
 		/* here we are printing results for all the available modules */
 		retv = sechk_lib_print_modules_output(module_library);
 		if (retv) {
