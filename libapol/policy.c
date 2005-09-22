@@ -87,7 +87,6 @@ int _get_user_name_ptr(int idx, char **name, policy_t *policy)
 }
 /**************/
 
-
 int init_policy(policy_t **p)
 {
 	char *key;
@@ -250,7 +249,104 @@ int init_policy(policy_t **p)
 	policy->list_sz[POL_LIST_USERS] = LIST_SZ;
 	policy->num_users = 0;	
 	
-	
+	/* fs_use */
+	policy->fs_use = (ap_fs_use_t *)malloc(sizeof(ap_fs_use_t) * LIST_SZ);
+	if(policy->fs_use == NULL) {
+		fprintf(stderr, "out of memory\n");
+		return -1;
+	}
+	policy->list_sz[POL_LIST_FS_USE] = LIST_SZ;
+	policy->num_fs_use = 0;
+
+	/* portcon */
+	policy->portcon = (ap_portcon_t *)malloc(sizeof(ap_portcon_t) * LIST_SZ);
+	if(policy->portcon == NULL) {
+		fprintf(stderr, "out of memory\n");
+		return -1;
+	}
+	policy->list_sz[POL_LIST_PORTCON] = LIST_SZ;
+	policy->num_portcon = 0;
+
+	/* netifcon */
+	policy->netifcon = (ap_netifcon_t *)malloc(sizeof(ap_netifcon_t) * LIST_SZ);
+	if(policy->netifcon == NULL) {
+		fprintf(stderr, "out of memory\n");
+		return -1;
+	}
+	policy->list_sz[POL_LIST_NETIFCON] = LIST_SZ;
+	policy->num_netifcon = 0;
+
+	/* nodecon */
+	policy->nodecon = (ap_nodecon_t *)malloc(sizeof(ap_nodecon_t) * LIST_SZ);
+	if (policy->nodecon == NULL) {
+		fprintf(stderr, "out of memory\n");
+		return -1;
+	}
+	policy->list_sz[POL_LIST_NODECON] = LIST_SZ;
+	policy->num_nodecon = 0;
+
+	/* genfscon */
+	policy->genfscon = (ap_genfscon_t *)malloc(sizeof(ap_genfscon_t) * LIST_SZ);
+	if (policy->genfscon == NULL) {
+		fprintf(stderr, "out of memory\n");
+		return -1;
+	}
+	policy->list_sz[POL_LIST_GENFSCON] = LIST_SZ;
+	policy->num_genfscon = 0;
+
+	/* constraints */
+	policy->constraints = (ap_constraint_t *)malloc(sizeof(ap_constraint_t) * LIST_SZ);
+	if (policy->constraints == NULL) {
+		fprintf(stderr, "out of memory\n");
+		return -1;
+	}
+	policy->list_sz[POL_LIST_CONSTRAINT] = LIST_SZ;
+	policy->num_constraints = 0;
+
+	/* validatetrans */
+	policy->validatetrans = (ap_validatetrans_t *)malloc(sizeof(ap_validatetrans_t) * LIST_SZ);
+	if (policy->validatetrans == NULL) {
+		fprintf(stderr, "out of memory\n");
+		return -1;
+	}
+	policy->list_sz[POL_LIST_VALIDATETRANS] = LIST_SZ;
+	policy->num_validatetrans = 0;
+
+	/* MLS components */
+	policy->sensitivities = (ap_mls_sens_t*)malloc(sizeof(ap_mls_sens_t) * LIST_SZ);
+	if (policy->sensitivities == NULL) {
+		fprintf(stderr, "out of memory\n");
+		return -1;
+	}
+	policy->list_sz[POL_LIST_SENSITIVITIES] = LIST_SZ;
+	policy->num_sensitivities = 0;
+
+	policy->categories = (ap_mls_cat_t*)malloc(sizeof(ap_mls_cat_t) * LIST_SZ);
+	if (policy->categories == NULL) {
+		fprintf(stderr, "out of memory\n");
+		return -1;
+	}
+	policy->list_sz[POL_LIST_CATEGORIES] = LIST_SZ;
+	policy->num_categories = 0;
+
+	policy->levels = (ap_mls_level_t*)malloc(sizeof(ap_mls_level_t) * LIST_SZ);
+	if (policy->levels == NULL) {
+		fprintf(stderr, "out of memory\n");
+		return -1;
+	}
+	policy->list_sz[POL_LIST_LEVELS] = LIST_SZ;
+	policy->num_levels = 0;
+
+	policy->rangetrans = (ap_rangetrans_t*)malloc(sizeof(ap_rangetrans_t) *LIST_SZ);
+	if (policy->rangetrans == NULL) {
+		fprintf(stderr, "out of memory\n");
+		return -1;
+	}
+	policy->list_sz[POL_LIST_RANGETRANS] = LIST_SZ;
+	policy->num_rangetrans = 0;
+
+	policy->mls_dominance = NULL;
+
 	/* rule stats */
 	memset(policy->rule_cnt, 0, sizeof(int) * RULE_MAX);
 	
@@ -300,7 +396,7 @@ int set_policy_version(int ver, policy_t *policy)
 	return 0;
 }
 
-static int free_name_list(name_item_t *list)
+int free_name_list(name_item_t *list)
 {
 	name_item_t *ptr, *old;
 	for(ptr = list; ptr != NULL; ){
@@ -323,7 +419,6 @@ int free_ta_list(ta_item_t *list)
 	return 0;
 }
 
-
 static int free_av_list(av_item_t *list, int num)
 {
 	int i;
@@ -337,7 +432,6 @@ static int free_av_list(av_item_t *list, int num)
 	}
 	return 0;
 }
-
 
 /* frees attrib_item_t and those aliases to it */
 static int free_name_a(name_a_t *ptr, int num)
@@ -355,7 +449,6 @@ static int free_name_a(name_a_t *ptr, int num)
 	free(ptr);
 	return 0;
 }
-
 
 int free_policy(policy_t **p)
 {
@@ -389,6 +482,8 @@ int free_policy(policy_t **p)
 		for(i = 0; i < policy->num_obj_classes; i++) {
 			free(policy->obj_classes[i].u_perms);
 			free(policy->obj_classes[i].name);
+			free_ta_list(policy->obj_classes[i].constraints);
+			free_ta_list(policy->obj_classes[i].validatetrans);
 		}
 		free(policy->obj_classes);
 	}
@@ -503,7 +598,97 @@ int free_policy(policy_t **p)
 	/* perm map */
 	if(policy->pmap != NULL) {
 		free_perm_mapping(policy->pmap);
-	} 
+	}
+
+	/* fs_use */
+	if (policy->fs_use != NULL) {
+		for (i = 0; i < policy->num_fs_use; i++) {
+			free(policy->fs_use[i].fstype);
+			free(policy->fs_use[i].scontext);
+		}
+		free(policy->fs_use);
+	}
+
+	/* portcon */
+	if (policy->portcon) {
+		for (i = 0; i < policy->num_portcon; i++) {
+			free(policy->portcon[i].scontext);
+		}
+		free(policy->portcon);
+	}
+
+	/* netifcon */
+	if (policy->netifcon) {
+		for (i = 0; i < policy->num_netifcon; i++) {
+			free(policy->netifcon[i].iface);
+			free(policy->netifcon[i].device_context);
+			free(policy->netifcon[i].packet_context);
+		}
+		free(policy->netifcon);
+	}
+
+	/* nodecon */
+	if (policy->nodecon) {
+		free(policy->nodecon);
+	}
+
+	/* genfscon */
+	if (policy->genfscon) {
+		for (i = 0; i < policy->num_genfscon; i++) {
+			ap_genfscon_node_destroy(policy->genfscon[i].paths);
+		}
+		free(policy->genfscon);
+	}
+
+	/* constraints */
+	if (policy->constraints) {
+		for (i = 0; i < policy->num_constraints; i++) {
+			free_ta_list(policy->constraints[i].classes);
+			free_ta_list(policy->constraints[i].perms);
+			ap_constraint_expr_destroy(policy->constraints[i].expr);
+		}
+		free(policy->constraints);
+	}
+
+	/* validatetrans */
+	if (policy->validatetrans) {
+		for (i = 0; i < policy->num_validatetrans; i++) {
+			free_ta_list(policy->validatetrans[i].classes);
+			ap_constraint_expr_destroy(policy->validatetrans[i].expr);
+		}
+		free(policy->validatetrans);
+	}
+
+	/* MLS components */
+	if (policy->sensitivities) {
+		for (i = 0; i < policy->num_sensitivities; i++) {
+			free_name_list(policy->sensitivities[i].aliases);
+			free(policy->sensitivities[i].name);
+		}
+		free(policy->sensitivities);
+	}
+	if (policy->categories) {
+		for (i = 0; i < policy->num_categories; i++) {
+			free_name_list(policy->categories[i].aliases);
+			free(policy->categories[i].name);
+		}
+		free(policy->categories);
+	}
+	if (policy->levels) {
+		for (i = 0; i < policy->num_levels; i++) {
+			free(policy->levels[i].categories);
+		}
+		free(policy->levels);
+	}
+	if (policy->rangetrans) {
+		for (i = 0; i < policy->num_rangetrans; i++) {
+			free_ta_list(policy->rangetrans[i].src_types);
+			free_ta_list(policy->rangetrans[i].tgt_types);
+			ap_mls_range_free(policy->rangetrans[i].range);
+		}
+		free(policy->rangetrans);
+	}
+	free(policy->mls_dominance);
 
 	if(free_avl_trees(policy) != 0)
 		return -1;
@@ -623,7 +808,6 @@ int add_initial_sid_context(int idx, security_con_t *scontext, policy_t *policy)
 	return 0;
 }
 
-
 int get_initial_sid_idx(const char *name, policy_t *policy)
 {
 	if(name == NULL || policy == NULL)
@@ -716,7 +900,6 @@ int search_initial_sids_context(int **isids, int *num_isids, const char *user, c
 	}
 	return 0;
 }
-
 
 /*
  * Check that type is valid for this policy. If self_allowed is FALSE
@@ -847,7 +1030,6 @@ int get_type_idx(const char *name, policy_t *policy)
 	}
 	return rt;		
 }
-
 
 /* allocates space for name, release memory with free() */
 int get_type_name(int idx, char **name, policy_t *policy)
@@ -1098,8 +1280,6 @@ int get_role_idx(const char *name, policy_t *policy)
 	return -1;
 }
 
-
-
 /* allocates space for name, release memory with free() */
 int get_role_name(int idx, char **name, policy_t *policy)
 {
@@ -1160,7 +1340,6 @@ int get_user_name2(int idx, char **name, policy_t *policy)
 	return na_get_name(idx, policy->users, policy->num_users, name);
 }
 
-
 /* check if user exists, and if so return its index */
 int get_user_idx(const char *name, policy_t *policy)
 {
@@ -1193,7 +1372,6 @@ bool_t does_user_have_role(int user, int role, policy_t *policy)
 	return na_is_idx_in_a(role, &policy->users[user]);
 }
 
-
 static int add_type_to_attrib(int type_idx, name_a_t *attrib)
 {
 	/* do not multiply add types to attributes */
@@ -1204,8 +1382,6 @@ static int add_type_to_attrib(int type_idx, name_a_t *attrib)
 	return 0;
 }
 
-
-
 int add_type_to_role(int type_idx, int role_idx, policy_t *policy)
 {
 	if(policy == NULL || !is_valid_role_idx(role_idx, policy))
@@ -1213,7 +1389,6 @@ int add_type_to_role(int type_idx, int role_idx, policy_t *policy)
 
 	return(na_add_idx(type_idx, &policy->roles[role_idx]));
 }
-
 
 /* changed for Jul 2002 policy to allow adding attributes separately, and
  * not only as part of the type declaration.  If !with_type, then
@@ -1240,7 +1415,6 @@ int add_attrib(bool_t with_type, int type_idx, policy_t *policy, char *attrib)
 		
 	return i;
 }
-
 
 int add_alias(int type_idx, const char *alias, policy_t *policy)
 {
@@ -1327,7 +1501,6 @@ int add_attrib_to_type(int type_idx, char *token, policy_t *policy)
 	return 0;
 }
 
-
 /* allocates space for name, release memory with free() */
 int get_obj_class_name(int idx, char **name, policy_t *policy)
 {
@@ -1340,7 +1513,6 @@ int get_obj_class_name(int idx, char **name, policy_t *policy)
 	strcpy(*name, policy->obj_classes[idx].name);
 	return 0;
 }
-
 
 int get_obj_class_perm_idx(int cls_idx, int idx, policy_t *policy)
 {
@@ -1530,7 +1702,6 @@ bad:
 	return -1;
 }
 
-
 /* take a list of classes, and return a list of permissions (union or intersection)
  * that contain the permissions for those classes.  The perm array is alloc amd must
  * be freed by caller.
@@ -1641,7 +1812,6 @@ free_return:
 	free(p_union); free(p_count);
 	return rt;
 }
-
 
 /* allocates space for name, release memory with free() */
 int get_common_perm_name(int idx, char **name, policy_t *policy)
@@ -1760,7 +1930,6 @@ int add_common_perm(char *name, policy_t *policy)
 	return idx;
 }
 
-
 int add_class(char *classname, policy_t *policy)
 {
 	int idx, rt;
@@ -1773,7 +1942,6 @@ int add_class(char *classname, policy_t *policy)
 		return -1;
 	return idx;
 }
-
 
 /* insert a ta_item_t into a list; this is a completely unsorted list! */
 int insert_ta_item(ta_item_t *newitem, ta_item_t **list)
@@ -1793,7 +1961,6 @@ int insert_ta_item(ta_item_t *newitem, ta_item_t **list)
 	ptr->next = newitem;
 	return 0;
 }
-
 
 int add_user(char *user, policy_t *policy)
 {
@@ -1823,7 +1990,6 @@ int add_user(char *user, policy_t *policy)
 	return policy->num_users - 1;	
 }
 
-
 int add_role_to_user(int role_idx, int user_idx, policy_t *policy)
 {
 	if(policy == NULL || !is_valid_user_idx(user_idx, policy))
@@ -1832,9 +1998,7 @@ int add_role_to_user(int role_idx, int user_idx, policy_t *policy)
 	return(na_add_idx(role_idx, &policy->users[user_idx]));
 }
 
-
 /* add a name_item_t to the provided list */
-/* DEPRECATED */
 int add_name(char *name, name_item_t **list)
 {
 	name_item_t *newptr, *ptr;
@@ -1969,7 +2133,6 @@ int add_clone_rule(int src, int tgt, unsigned long lineno, policy_t *policy)
 	return 0;
 }
 
-
 static int append_attrib_types_to_array(int attrib, int *array_len, int **array, policy_t *policy)
 {
 	int i;
@@ -2084,8 +2247,6 @@ out:
 		free(subtracted_attribs);
 	return ret;
 }
-
-
 
 int does_tt_rule_use_type(int idx, int type, unsigned char whichlist, bool_t do_indirect, tt_item_t *rule,
 	int *cnt, policy_t *policy)
@@ -2202,8 +2363,6 @@ int does_av_rule_use_type(int idx, int type, unsigned char whichlist, bool_t do_
 	return FALSE;
 }
 
-
-
 /* wrapper for does_av_rule_use_type() that accepts a rule idx rather than a rule pointer 
  * This wrapper also does not expose the cnter incrementing feature.  For rule_type,
  * 0 = access rules, 1 = audit rules  */
@@ -2230,7 +2389,6 @@ int does_av_rule_idx_use_type(int rule_idx, unsigned char rule_type, int type_id
 	return does_av_rule_use_type(type_idx, ta_type, whichlist, do_indirect, rule, &unused_cnt, policy);
 }
 
-
 bool_t does_clone_rule_use_type(int idx, int type, unsigned char whichlist, cln_item_t *rule,
 	int *cnt, policy_t *policy)
 {
@@ -2250,7 +2408,6 @@ bool_t does_clone_rule_use_type(int idx, int type, unsigned char whichlist, cln_
 	}
 	return FALSE;
 }
-
 
 int add_role(char *role, policy_t *policy)
 {
@@ -2351,7 +2508,6 @@ bool_t does_role_allow_use_role(int idx, unsigned char whichlist, bool_t do_indi
 	}
 	return FALSE;
 }
-
 
 /* NOTE: role_transition rule only has roles in the source and default field. */
 bool_t does_role_trans_use_role(int idx, unsigned char whichlist, bool_t do_indirect, rt_item_t *rule, int *cnt)
@@ -2488,7 +2644,6 @@ bool_t does_av_rule_use_perms(int rule_idx, int rule_type, int *perm_idxs, int n
 	return FALSE;
 }
 
-
 bool_t does_tt_rule_use_classes(int rule_idx, int *cls_idxs, int num_cls_idxs, policy_t *policy)
 {
 	int i;
@@ -2564,7 +2719,6 @@ int get_rule_lineno(int rule_idx, int rule_type, policy_t *policy)
 		break;
 	}
 }
-
 
 /* extract indicies of all types for selected rule, expanding attributes 
  * types is returned as an allocated array of ints num_types in sz, caller must free types 
@@ -2851,7 +3005,6 @@ int extract_perms_from_te_rule(int rule_idx, int rule_type, int **perms, int *nu
 	return 0;
 }
 
-
 /* Returns a string with the appropriate name for a provided ta_item.  Will
  * determine which type/list the ta_item is for and then allocated the memory
  * for the return name. Caller must free the name.
@@ -2863,7 +3016,7 @@ int get_ta_item_name(ta_item_t *ta, char **name, policy_t *policy)
 	if(ta == NULL || name == NULL || policy == NULL)
 		return -1;
 	
-	switch(ta->type) {
+	switch(ta->type & ~(IDX_SUBTRACT)) {
 	case IDX_TYPE:
 		rt = get_type_name(ta->idx, name, policy);
 		break;
@@ -2881,6 +3034,9 @@ int get_ta_item_name(ta_item_t *ta, char **name, policy_t *policy)
 		break;
 	case IDX_OBJ_CLASS:
 		rt = get_obj_class_name(ta->idx, name, policy);
+		break;
+	case IDX_USER:
+		rt = get_user_name2(ta->idx, name, policy);
 		break;
 	default:
 		return -1;
@@ -3163,7 +3319,6 @@ int apol_obj_perm_set_init(obj_perm_set_t *it)
 	return 0;
 }
 
-
 void apol_free_obj_perm_set_data(obj_perm_set_t *it)
 {
 	if (!it) 
@@ -3172,7 +3327,6 @@ void apol_free_obj_perm_set_data(obj_perm_set_t *it)
 		free(it->perms);
 	apol_obj_perm_set_init(it);
 }
-
 
 /*
  * Add an object class to a query - returns the index of
@@ -3212,7 +3366,6 @@ int apol_add_class_to_obj_perm_set_list(obj_perm_set_t **obj_options, int *num_o
 
 	return cur;
 }
-
 
 /*
  * Add an object class and perm to a query - returns the index of
@@ -3258,5 +3411,466 @@ int apol_add_perm_to_obj_perm_set_list(obj_perm_set_t **obj_options, int *num_ob
 			return -1;
 	}
 	return 0;
+}
+
+int add_fs_use(int behavior, char *fstype, security_con_t *scontext, policy_t *policy)
+{
+	size_t sz;
+	ap_fs_use_t *new_fs_use= NULL;
+		
+	if(scontext == NULL || policy == NULL || fstype == NULL)
+		return -1;
+		
+	/* make sure there is a room for another fs_use statement in the array */
+	if(policy->list_sz[POL_LIST_FS_USE] <= policy->num_fs_use) {
+		sz = policy->list_sz[POL_LIST_FS_USE] + LIST_SZ;
+		policy->fs_use = (ap_fs_use_t *)realloc(policy->fs_use, sizeof(ap_fs_use_t) * sz);
+		if(policy->fs_use == NULL) {
+			fprintf(stderr, "out of memory\n");
+			return -1;
+		}
+		policy->list_sz[POL_LIST_FS_USE] = sz;
+	}
+	/* next available index */
+	new_fs_use = &(policy->fs_use[policy->num_fs_use]);
+	new_fs_use->fstype = fstype;	/* use the memory passed in */
+	new_fs_use->behavior= behavior; 
+	new_fs_use->scontext = scontext;	/* use the memory passed in */
+	policy->num_fs_use++;
+
+	return 0;
+}
+
+int add_portcon(int protocol, int lowport, int highport, security_con_t *scontext, policy_t *policy)
+{
+	size_t sz;
+	ap_portcon_t *new_portcon = NULL;
+
+	if(scontext == NULL || policy == NULL)
+		return -1;
+
+	/* make sure there is a room for another portcon statement in the array */
+	if(policy->list_sz[POL_LIST_PORTCON] <= policy->num_portcon) {
+		sz = policy->list_sz[POL_LIST_PORTCON] + LIST_SZ;
+		policy->portcon = (ap_portcon_t *)realloc(policy->portcon, sizeof(ap_portcon_t) * sz);
+		if(policy->portcon == NULL) {
+			fprintf(stderr, "out of memory\n");
+			return -1;
+		}
+		policy->list_sz[POL_LIST_PORTCON] = sz;
+	}
+	/* next available index */
+	new_portcon = &(policy->portcon[policy->num_portcon]);
+	new_portcon->protocol = protocol;
+	new_portcon->lowport = lowport;
+	new_portcon->highport = highport;
+	new_portcon->scontext = scontext; /* use the memory passed in */
+	policy->num_portcon++;
+
+	return 0;
+}
+
+int add_netifcon(char *iface, security_con_t *devcon, security_con_t *pktcon, policy_t *policy)
+{
+	size_t sz;
+	ap_netifcon_t *new_netifcon = NULL;
+
+	if (!iface || !devcon || !pktcon || !policy)
+		return -1;
+
+	/* make sure there is a room for another netifcon statement in the array */
+	if(policy->list_sz[POL_LIST_NETIFCON] <= policy->num_netifcon) {
+		sz = policy->list_sz[POL_LIST_NETIFCON] + LIST_SZ;
+		policy->netifcon = (ap_netifcon_t *)realloc(policy->netifcon, sizeof(ap_netifcon_t) * sz);
+		if(policy->netifcon == NULL) {
+			fprintf(stderr, "out of memory\n");
+			return -1;
+		}
+		policy->list_sz[POL_LIST_NETIFCON] = sz;
+	}
+	/* next available index */
+	new_netifcon = &(policy->netifcon[policy->num_netifcon]);
+	new_netifcon->iface = iface;
+	new_netifcon->device_context = devcon;
+	new_netifcon->packet_context = pktcon;
+	policy->num_netifcon++;
+
+	return 0;
+}
+
+int add_nodecon(int flag, uint32_t *addr, uint32_t *mask, security_con_t *scontext, policy_t *policy)
+{
+	size_t sz;
+	ap_nodecon_t *new_nodecon = NULL;
+	int i;
+
+	if (!addr || !mask || !scontext || !policy)
+		return -1;
+
+	/* make sure there is a room for another nodecon statement in the array */
+	if(policy->list_sz[POL_LIST_NODECON] <= policy->num_nodecon) {
+		sz = policy->list_sz[POL_LIST_NODECON] + LIST_SZ;
+		policy->nodecon = (ap_nodecon_t *)realloc(policy->nodecon, sizeof(ap_nodecon_t) * sz);
+		if(policy->nodecon == NULL) {
+			fprintf(stderr, "out of memory\n");
+			return -1;
+		}
+		policy->list_sz[POL_LIST_NODECON] = sz;
+	}
+
+	new_nodecon = &(policy->nodecon[policy->num_nodecon]);
+
+	new_nodecon->flag = flag;
+	for (i = 0; i < 4; i++) {
+		new_nodecon->addr[i] = addr[i];
+	}
+	free(addr);
+	for (i = 0; i < 4; i++) {
+		new_nodecon->mask[i] = mask[i];
+	}
+	free(mask);
+	new_nodecon->scontext = scontext;
+	policy->num_nodecon++;
+
+	return 0;
+}
+
+int add_genfscon(char *fstype, policy_t *policy)
+{
+	size_t sz;
+	ap_genfscon_t *new_genfscon = NULL;
+
+	if (!fstype || !policy)
+		return -1;
+
+	/* make sure there is a room for another genfscon statement in the array */
+	if(policy->list_sz[POL_LIST_GENFSCON] <= policy->num_genfscon) {
+		sz = policy->list_sz[POL_LIST_GENFSCON] + LIST_SZ;
+		policy->genfscon = (ap_genfscon_t *)realloc(policy->genfscon, sizeof(ap_genfscon_t) * sz);
+		if(policy->genfscon == NULL) {
+			fprintf(stderr, "out of memory\n");
+			return -1;
+		}
+		policy->list_sz[POL_LIST_GENFSCON] = sz;
+	}
+	/* next available index */
+	new_genfscon = &(policy->genfscon[policy->num_genfscon]);
+	new_genfscon->fstype = fstype;
+	new_genfscon->paths = NULL;
+	policy->num_genfscon++;
+
+	return 0;
+}
+
+int add_path_to_genfscon(ap_genfscon_t *genfscon, char *path, int filetype, security_con_t *context)
+{
+	ap_genfscon_node_t *new_path_node = NULL;
+
+	if (!genfscon || !path || !context)
+		return -1;
+
+	new_path_node = (ap_genfscon_node_t *)calloc(1, sizeof(ap_genfscon_node_t));
+	if (!new_path_node) {
+		fprintf(stderr, "out of memory\n");
+		return -1;
+	}
+
+	new_path_node->path = path;
+	new_path_node->filetype = filetype;
+	new_path_node->scontext = context;
+	new_path_node->next = genfscon->paths;
+	genfscon->paths = new_path_node;
+
+	return 0;
+}
+
+int ap_genfscon_get_idx(char *fstype, policy_t *policy)
+{
+	int i;
+
+	if (!fstype || !policy)
+		return -1;
+
+	for (i = 0; i < policy->num_genfscon; i++) {
+		if (!strcmp(policy->genfscon[i].fstype, fstype))
+			return i;
+	}
+
+	return -1;
+}
+
+void ap_genfscon_node_destroy(ap_genfscon_node_t *node)
+{
+	ap_genfscon_node_t *tmp = NULL, *next = NULL;
+
+	for (tmp = node; tmp; tmp = next) {
+		next = tmp->next;
+		free(tmp);
+	}
+}
+
+int add_constraint(bool_t is_mls, ta_item_t *classes, ta_item_t *perms, ap_constraint_expr_t *expr, unsigned long lineno, policy_t *policy)
+{
+	size_t sz;
+	ap_constraint_t *new_constraint = NULL;
+	ta_item_t *item = NULL, *obj_class = NULL;
+
+	if (!classes || !perms || !policy)
+		return -1;
+
+	/* make sure there is room for another constraint */
+	if (policy->list_sz[POL_LIST_CONSTRAINT] <= policy->num_constraints) {
+		sz = policy->list_sz[POL_LIST_CONSTRAINT] + LIST_SZ;
+		policy->constraints = (ap_constraint_t *)realloc(policy->constraints, sizeof(ap_constraint_t) * sz);
+		if (!policy->constraints) {
+			fprintf(stderr, "out of memory\n");
+			return -1;
+		}
+		policy->list_sz[POL_LIST_CONSTRAINT] = sz;
+	}
+
+	new_constraint = &(policy->constraints[policy->num_constraints]);
+
+	new_constraint->is_mls = is_mls;
+	new_constraint->classes = classes;
+	new_constraint->perms = perms;
+	new_constraint->expr = expr;
+	new_constraint->lineno = lineno;
+	policy->num_constraints++;
+
+	/* insert into object class */
+	for (obj_class = classes; obj_class; obj_class = obj_class->next) {
+		item = (ta_item_t*)calloc(1, sizeof(ta_item_t));
+		if (!item) {
+			fprintf(stderr, "out of memory\n");
+			return -1;
+		}
+		item->type = IDX_CONSTRAINT;
+		item->idx = policy->num_constraints - 1;
+		insert_ta_item(item, &(policy->obj_classes[obj_class->idx].constraints));
+		item = NULL;
+	}
+
+	return 0;
+}
+
+int add_validatetrans(bool_t is_mls, ta_item_t *classes, ap_constraint_expr_t *expr, unsigned long lineno, policy_t *policy)
+{
+	size_t sz;
+	ap_constraint_t *new_vtrx = NULL;
+	ta_item_t *item = NULL, *obj_class = NULL;
+
+	if (!classes || !policy)
+		return -1;
+
+	/* make sure there is room for another validatetrans */
+	if (policy->list_sz[POL_LIST_VALIDATETRANS] <= policy->num_validatetrans) {
+		sz = policy->list_sz[POL_LIST_VALIDATETRANS] + LIST_SZ;
+		policy->validatetrans = (ap_constraint_t *)realloc(policy->constraints, sizeof(ap_constraint_t) * sz);
+		if (!policy->validatetrans) {
+			fprintf(stderr, "out of memory\n");
+			return -1;
+		}
+		policy->list_sz[POL_LIST_VALIDATETRANS] = sz;
+	}
+
+	new_vtrx = &(policy->validatetrans[policy->num_validatetrans]);
+
+	new_vtrx->is_mls = is_mls;
+	new_vtrx->classes = classes;
+	new_vtrx->perms = NULL;
+	new_vtrx->expr = expr;
+	new_vtrx->lineno = lineno;
+	policy->num_validatetrans++;
+
+	/* insert into object class */
+	for (obj_class = classes; obj_class; obj_class = obj_class->next) {
+		item = (ta_item_t*)calloc(1, sizeof(ta_item_t));
+		if (!item) {
+			fprintf(stderr, "out of memory\n");
+			return -1;
+		}
+		item->type = IDX_VALIDATETRANS;
+		item->idx = policy->num_validatetrans - 1;
+		insert_ta_item(item, &(policy->obj_classes[obj_class->idx].validatetrans));
+		item = NULL;
+	}
+
+	return 0;
+}
+
+int add_sensitivity(char *name, name_item_t *aliases, policy_t *policy)
+{
+	size_t sz;
+	ap_mls_sens_t *new_sens;
+
+	if (!name || !policy) /* aliases == NULL is valid */
+		return -1;
+
+	/* make sure there is enough room */
+	if (policy->list_sz[POL_LIST_SENSITIVITIES] <= policy->num_sensitivities) {
+		sz = policy->list_sz[POL_LIST_SENSITIVITIES] + LIST_SZ;
+		policy->sensitivities = (ap_mls_sens_t*)realloc(policy->sensitivities, sizeof(ap_mls_sens_t) * sz);
+		if(policy->sensitivities == NULL) {
+			fprintf(stderr, "out of memory\n");
+			return -1;
+		}
+	}
+
+	new_sens = &(policy->sensitivities[policy->num_sensitivities]);
+	new_sens->name = name;
+	new_sens->aliases = aliases;
+	policy->num_sensitivities++;
+
+	return 0;
+}
+
+int add_category(char *name, name_item_t *aliases, policy_t *policy)
+{
+	size_t sz;
+	ap_mls_cat_t *new_cat = NULL;
+
+	if (!name || !policy) /* aliases == NULL is valid */
+		return -1;
+
+	/* make sure there is enough room */
+	if (policy->list_sz[POL_LIST_CATEGORIES] <= policy->num_categories) {
+		sz = policy->list_sz[POL_LIST_CATEGORIES] + LIST_SZ;
+		policy->categories = (ap_mls_cat_t*)realloc(policy->categories, sizeof(ap_mls_cat_t) * sz);
+		if(policy->categories == NULL) {
+			fprintf(stderr, "out of memory\n");
+			return -1;
+		}
+	}
+
+	new_cat = &(policy->categories[policy->num_categories]);
+	new_cat->name = name;
+	new_cat->aliases = aliases;
+	policy->num_categories++;
+
+	return 0;
+}
+
+/* defined for sorting category list */
+static int int_compar(const void *a, const void *b) {return *(int*)a - *(int*)b;}
+
+int add_mls_level(int sens, int *cats, int num_cats, policy_t *policy)
+{
+	size_t sz;
+	ap_mls_level_t *new_level = NULL;
+
+	if (!cats || !policy)
+		return -1;
+
+	/* make sure there is enough room */
+	if (policy->list_sz[POL_LIST_LEVELS] <= policy->num_levels) {
+		sz = policy->list_sz[POL_LIST_LEVELS] + LIST_SZ;
+		policy->levels = (ap_mls_level_t*)realloc(policy->levels, sizeof(ap_mls_level_t) * sz);
+		if (policy->levels == NULL) {
+			fprintf(stderr, "out of memory\n");
+			return -1;
+		}
+	}
+
+	qsort(cats, num_cats, sizeof(int), &int_compar);
+
+	new_level = &(policy->levels[policy->num_levels]);
+	new_level->sensitivity = sens;
+	new_level->categories = cats;
+	new_level->num_categories = num_cats;
+	policy->num_levels++;
+
+	return 0;
+}
+
+int get_sensitivity_idx(const char *name, policy_t *policy)
+{
+	int i;
+	name_item_t *alias = NULL;
+	
+	for (i = 0; i < policy->num_sensitivities; i++) {
+		if (!strcmp(name, policy->sensitivities[i].name))
+			return i;
+		for (alias = policy->sensitivities[i].aliases; alias; alias = alias->next) {
+			if (!strcmp(name, alias->name))
+				return i;
+		}
+	}
+
+	return -1;
+}
+
+int get_category_idx(const char *name, policy_t *policy)
+{
+	int i;
+	name_item_t *alias = NULL;
+	
+	for (i = 0; i < policy->num_categories; i++) {
+		if (!strcmp(name, policy->categories[i].name))
+			return i;
+		for (alias = policy->categories[i].aliases; alias; alias = alias->next) {
+			if (!strcmp(name, alias->name))
+				return i;
+		}
+	}
+
+	return -1;
+}
+
+
+void ap_mls_level_free(ap_mls_level_t *lvl)
+{
+	if (!lvl)
+		return;
+	free(lvl->categories);
+}
+
+void ap_mls_range_free(ap_mls_range_t *rng)
+{
+	if (!rng)
+		return;
+
+	if (rng->high == rng->low)
+		rng->high = NULL; /* to avoid a double free */
+
+	ap_mls_level_free(rng->low);
+	ap_mls_level_free(rng->high);
+}
+
+void ap_constraint_expr_destroy(ap_constraint_expr_t *expr)
+{
+	ap_constraint_expr_t *tmp = NULL, *next = NULL;
+
+	if (!expr)
+		return;
+
+	for (tmp = expr; tmp; tmp = next) {
+		next = tmp->next;
+		free_ta_list(tmp->names);
+		free(tmp);
+	}
+}
+
+ap_rangetrans_t *add_new_rangetrans(policy_t *policy)
+{
+	/* as with av rules return pointer to next available space
+	 * so caller can complete the contents */
+	size_t sz;
+	ap_rangetrans_t *new_rngtr = NULL;
+
+	/* make sure there is enough room */
+	if (policy->list_sz[POL_LIST_RANGETRANS] <= policy->num_rangetrans) {
+		sz = policy->list_sz[POL_LIST_RANGETRANS] + LIST_SZ;
+		policy->rangetrans = (ap_rangetrans_t*)realloc(policy->rangetrans, sizeof(ap_rangetrans_t) * sz);
+		if (policy->rangetrans == NULL) {
+			fprintf(stderr, "out of memory\n");
+			return NULL;
+		}
+	}
+
+	new_rngtr = &(policy->rangetrans[policy->num_rangetrans]);
+	memset(new_rngtr, 0, sizeof(ap_rangetrans_t));
+	policy->num_rangetrans++;
+	return new_rngtr;
 }
 
