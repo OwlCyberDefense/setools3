@@ -10,7 +10,7 @@
  * analysis policy database support header 
  *
  * Our policy database (see below) is completly different
- * than that used by checkpolicy/SS; we're trying to analyze from
+ * than that used by checkpolicy; we're trying to analyze from
  * policy.conf "up" to higher abstractions.
  */
 
@@ -40,7 +40,7 @@
  * policy were loaded. 
  */
 #define POLOPT_NONE		0x0
-#define	POLOPT_CLASSES		0x00000001	/* object classes  */
+#define POLOPT_CLASSES		0x00000001	/* object classes  */
 #define POLOPT_PERMS		0x00000002	
 #define POLOPT_TYPES		0x00000004	/* types and type attributes */
 #define POLOPT_ROLES		0x00000008	/* role declarations */
@@ -97,16 +97,18 @@ typedef struct name_item {
 
 
 /* IDs for policy components */
-#define IDX_INVALID		0x0
-#define IDX_TYPE		0x00000001
-#define IDX_ATTRIB		0x00000002
-#define IDX_ROLE		0x00000004
-#define IDX_PERM		0x00000008
+#define IDX_INVALID			0x0
+#define IDX_TYPE			0x00000001
+#define IDX_ATTRIB			0x00000002
+#define IDX_ROLE			0x00000004
+#define IDX_PERM			0x00000008
 #define IDX_COMMON_PERM		0x00000010
 #define IDX_OBJ_CLASS		0x00000020
-#define IDX_USER		0x00000040
-#define IDX_BOOLEAN		0x00000080
-#define IDX_BOTH		0x10000000	/* reserve as special indicator for regex rule searches  */
+#define IDX_USER			0x00000040
+#define IDX_BOOLEAN			0x00000080
+#define IDX_CONSTRAINT		0x00000100
+#define IDX_VALIDATETRANS	0x00000200
+#define IDX_BOTH			0x10000000	/* reserve as special indicator for regex rule searches  */
 #define IDX_SUBTRACT		0x20000000
 
 /* type, attribute, role, perm , common perm list item */
@@ -117,13 +119,13 @@ typedef struct ta_item {
 } ta_item_t;
 
 /* AVL tree list type ids */
-#define	AVL_TYPES		0	/* the type array */
-#define AVL_ATTRIBS		1	/* the attrib array */
-#define AVL_CLASSES		2	/* object classes */
-#define AVL_PERMS		3	/* permissions */
+#define AVL_TYPES			0	/* the type array */
+#define AVL_ATTRIBS			1	/* the attrib array */
+#define AVL_CLASSES			2	/* object classes */
+#define AVL_PERMS			3	/* permissions */
 #define AVL_INITIAL_SIDS	4	/* initial SID contexts */
 #define AVL_COND_BOOLS		5
-#define	AVL_NUM_TREES		6	/* # of avl trees supported */
+#define AVL_NUM_TREES		6	/* # of avl trees supported */
 
 /* type decalaration */
 typedef struct type_item {
@@ -153,6 +155,8 @@ typedef struct obj_class {
 	int	common_perms;	/* there may be only one of these */
 	int	num_u_perms;
 	int	*u_perms;
+	ta_item_t	*constraints;	/* list of constraints for this class */
+	ta_item_t	*validatetrans;	/* list of validatetrans for this class */
 } obj_class_t;
 
 
@@ -179,23 +183,23 @@ typedef struct security_context {
 #define RULE_AUDITDENY		2	/*AV rule */
 #define RULE_DONTAUDIT		3	/* really the same as auditdeny */
 #define RULE_NEVERALLOW		4	/*AV rule */
-#define RULE_MAX_AV		4   	/*end of AV rule types */
+#define RULE_MAX_AV			4   	/*end of AV rule types */
 #define RULE_TE_TRANS		5   	/*TT rule (type transition|change|member) */
 #define RULE_TE_MEMBER		6   	/*TT rule */
 #define RULE_TE_CHANGE		7	/*TT rule */
-#define RULE_MAX_TE		7
-#define RULE_CLONE		8	/*clone rule */
+#define RULE_MAX_TE			7
+#define RULE_CLONE			8	/*clone rule */
 #define RULE_ROLE_ALLOW		9	/* Role allow */
 #define RULE_ROLE_TRANS		10	/* Role transition */
-#define RULE_USER		11	/* User role definition */
-#define RULE_MAX		12	/* # of rule IDs defined (1+last rule)*/
+#define RULE_USER			11	/* User role definition */
+#define RULE_MAX			12	/* # of rule IDs defined (1+last rule)*/
 #define RULE_INVALID		99
 
 
 
 /* flags used to indicate '~' and '*' */
 /* used for both AV and TT rules */
-#define AVFLAG_NONE		0x00
+#define AVFLAG_NONE			0x00
 #define AVFLAG_SRC_TILDA	0x01
 #define AVFLAG_SRC_STAR		0x02
 #define AVFLAG_TGT_TILDA	0x04
@@ -256,9 +260,6 @@ typedef struct cln_item {
 	struct cln_item *next;
 } cln_item_t;
 
-
-
-
 /* initial SIDs and their context */
 typedef struct initial_sid {
 	char			*name;
@@ -269,28 +270,161 @@ typedef struct initial_sid {
 /* type alias array
  * TODO: see comments in add_alias() in policy.c */
 typedef struct alias_item {
-	char			*name;
-	int			type;	/* assoicated type */
+	char	*name;
+	int		type;	/* assoicated type */
 } alias_item_t;
 
+typedef struct ap_fs_use {
+	#define AP_FS_USE_PSID  0
+	#define AP_FS_USE_XATTR 1
+	#define AP_FS_USE_TASK  2
+	#define AP_FS_USE_TRANS 3
+	int		behavior; /* xattr,task,trans */
+	char	*fstype;
+	security_con_t	*scontext;
+} ap_fs_use_t;
+
+typedef struct ap_portcon {
+	#define AP_TCP_PROTO 6
+	#define AP_UDP_PROTO 17
+	#define AP_ESP_PROTO 50
+	int protocol;
+	int lowport;
+	int highport;
+	security_con_t *scontext;
+} ap_portcon_t;
+
+typedef struct ap_netifcon {
+	char *iface;
+	security_con_t *device_context;
+	security_con_t *packet_context;
+} ap_netifcon_t;
+
+typedef struct ap_nodecon {
+	#define AP_IPV4 1
+	#define AP_IPV6 2
+	int flag;
+	uint32_t mask[4];
+	uint32_t addr[4];
+	security_con_t *scontext;
+}  ap_nodecon_t;
+
+typedef struct ap_genfscon_node {
+	char *path;      /* the path  */
+	int   filetype;   /* the type of file, block, char etc will be -1 if undefined*/ 
+	security_con_t *scontext;
+	struct ap_genfscon_node *next;
+} ap_genfscon_node_t;
+
+typedef struct ap_genfscon {
+        char *fstype;   /* the file system type */
+        ap_genfscon_node_t *paths;
+} ap_genfscon_t;
+
+typedef struct ap_constraint_expr {
+	#define AP_CEXPR_NOT		1	/* not expr */
+	#define AP_CEXPR_AND		2	/* expr and expr */
+	#define AP_CEXPR_OR			3	/* expr or expr */
+	#define AP_CEXPR_ATTR		4	/* attr op attr */
+	#define AP_CEXPR_NAMES		5	/* attr op names */
+	unsigned int expr_type;			/* expression type */
+
+	#define AP_CEXPR_USER			1	/* user */
+	#define AP_CEXPR_ROLE			2	/* role */
+	#define AP_CEXPR_TYPE			4	/* type */
+	#define AP_CEXPR_TARGET			8	/* target if set, source otherwise */
+	#define AP_CEXPR_XTARGET		16	/* special 3rd target for validatetrans rule */
+	#define AP_CEXPR_MLS_LOW1_LOW2	32	/* low level 1 vs. low level 2 */
+	#define AP_CEXPR_MLS_LOW1_HIGH2	64	/* low level 1 vs. high level 2 */
+	#define AP_CEXPR_MLS_HIGH1_LOW2	128	/* high level 1 vs. low level 2 */
+	#define AP_CEXPR_MLS_HIGH1_HIGH2 256	/* high level 1 vs. high level 2 */
+	#define AP_CEXPR_MLS_LOW1_HIGH1	512	/* low level 1 vs. high level 1 */
+	#define AP_CEXPR_MLS_LOW2_HIGH2	1024	/* low level 2 vs. high level 2 */
+	unsigned int attr;			/* attribute */
+
+	#define AP_CEXPR_EQ			1	/* == or eq */
+	#define AP_CEXPR_NEQ		2	/* != */
+	#define AP_CEXPR_DOM		3	/* dom */
+	#define AP_CEXPR_DOMBY		4	/* domby  */
+	#define AP_CEXPR_INCOMP		5	/* incomp */
+	unsigned int op;				/* operator */
+
+	ta_item_t *names;			/* this will index int apol structs so we can just figure out what it is at lookup time */
+	#define AP_CEXPR_STAR		0x01
+	#define AP_CEXPR_TILDA		0x02
+	unsigned char name_flags;			/* flags for handling "*" and "~" in names list */
+	struct ap_constraint_expr *next;
+} ap_constraint_expr_t;
+
+/* the ap_constraint_t structure is used for both constraints
+ * and validatetrans statements */
+typedef struct ap_constraint {
+	bool_t is_mls;
+	ap_constraint_expr_t *expr;
+	ta_item_t *perms;	/* index into policy_t array (not used for validatetrans) */
+	ta_item_t *classes;	/* index into policy_t array */
+	unsigned long lineno;	/* for use in apol and sediff */
+} ap_constraint_t;
+
+/* typedef for clarity */
+typedef struct ap_constraint ap_validatetrans_t;
+
+typedef struct ap_mls_sens {
+	char	*name;
+	name_item_t	*aliases;
+} ap_mls_sens_t;
+
+/* typedef for clarity */
+typedef struct ap_mls_sens ap_mls_cat_t;
+
+typedef struct ap_mls_level {
+	int sensitivity;
+	int *categories;
+	int num_categories;
+} ap_mls_level_t;
+
+typedef struct ap_mls_range {
+	ap_mls_level_t *low;
+	ap_mls_level_t *high;
+} ap_mls_range_t;
+
+typedef struct ap_rangetrans {
+	unsigned long lineno;
+	unsigned char flags;
+	ta_item_t *src_types;
+	ta_item_t *tgt_types;
+	ap_mls_range_t *range;
+} ap_rangetrans_t;
+
 /* IDs for DYNAMIC array only  (e.g., clones is not a dynamic array, but rather a linked list*/
-#define POL_LIST_TYPE		0
-#define POL_LIST_ATTRIB		1
-#define POL_LIST_AV_ACC 	2
-#define POL_LIST_AV_AU		3
-#define POL_LIST_TE_TRANS	4
-#define POL_LIST_ROLES		5
-#define POL_LIST_ROLE_ALLOW	6
-#define POL_LIST_ROLE_TRANS	7
-#define POL_LIST_PERMS		8
+#define POL_LIST_TYPE			0
+#define POL_LIST_ATTRIB			1
+#define POL_LIST_AV_ACC 		2
+#define POL_LIST_AV_AU			3
+#define POL_LIST_TE_TRANS		4
+#define POL_LIST_ROLES			5
+#define POL_LIST_ROLE_ALLOW		6
+#define POL_LIST_ROLE_TRANS		7
+#define POL_LIST_PERMS			8
 #define POL_LIST_COMMON_PERMS	9
 #define POL_LIST_OBJ_CLASSES	10
-#define POL_LIST_ALIAS		11
+#define POL_LIST_ALIAS			11
 #define POL_LIST_INITIAL_SIDS	12
-#define POL_LIST_COND_BOOLS	13
-#define POL_LIST_COND_EXPRS	14
-#define POL_LIST_USERS		15
-#define POL_NUM_LISTS		16
+#define POL_LIST_COND_BOOLS		13
+#define POL_LIST_COND_EXPRS		14
+#define POL_LIST_USERS			15
+#define POL_LIST_FS_USE			16
+#define POL_LIST_PORTCON		17
+#define POL_LIST_NETIFCON		18
+#define POL_LIST_NODECON		19
+#define POL_LIST_GENFSCON		20
+#define POL_LIST_CONSTRAINT		21
+#define POL_LIST_VALIDATETRANS	22
+#define POL_LIST_SENSITIVITIES	23
+#define POL_LIST_CATEGORIES		24
+#define POL_LIST_LEVELS			25
+#define POL_LIST_RANGETRANS		26
+#define POL_NUM_LISTS			27
 
 /* These are our weak indicators of which version of policy we're using.
  * The syntax and semantics of a policy are in great flux, and many changes
@@ -347,7 +481,18 @@ typedef struct policy {
 	int	num_obj_classes;
 	int	num_aliases;
 	int	num_initial_sids;
-	int 	rule_cnt[RULE_MAX];	/* statics on # of various rules */
+	int	num_fs_use;
+	int	num_portcon;
+	int	num_netifcon;
+	int	num_nodecon;
+	int	num_genfscon;
+	int	num_constraints;
+	int	num_validatetrans;
+	int	num_sensitivities;
+	int	num_categories;
+	int	num_levels;
+	int	num_rangetrans;
+	int	rule_cnt[RULE_MAX];	/* statics on # of various rules */
 	int	list_sz[POL_NUM_LISTS]; /* keep track of dynamic array sizes */
 
 /* AVL trees */
@@ -368,6 +513,11 @@ typedef struct policy {
 	cln_item_t	*clones;	/* clone rules (LLIST) */
 /* Misc. Policy */
 	initial_sid_t	*initial_sids;	/* initial SIDs and their context (ARRAY) */
+	ap_fs_use_t		*fs_use;		/* fs_use statements (ARRAY) */
+	ap_portcon_t	*portcon;		/* portcon statements (ARRAY) */
+	ap_netifcon_t	*netifcon;		/* netifcon statements (ARRAY) */
+	ap_nodecon_t	*nodecon;		/* nodecon statements (ARRAY) */
+	ap_genfscon_t	*genfscon;		/* genfscon statements (ARRAY) */
 /* Conditional Policy */
 	cond_bool_t	*cond_bools;	/* conditional policy booleans (ARRAY) */
 	cond_expr_item_t *cond_exprs;	/* conditional expressions (ARRAY) */
@@ -377,6 +527,15 @@ typedef struct policy {
 	rt_item_t	*role_trans;	/* role transition rules (ARRAY) */
 /* User rules */
 	name_a_t	*users;		/* users (ARRAY) */
+/* Constraints */
+	ap_constraint_t		*constraints;	/* constraints (ARRAY) */
+	ap_validatetrans_t	*validatetrans;	/* validatetrans (ARRAY) */
+/* MLS components*/
+	ap_mls_sens_t	*sensitivities;	/* MLS sensitivities (ARRAY) */
+	ap_mls_cat_t	*categories;	/* MLS categories(ORDERED ARRAY) */
+	int		*mls_dominance;	/* MLS sensitivity dominance size num_sensitivities*/
+	ap_mls_level_t	*levels;	/* MLS levels (ARRAY) */
+	ap_rangetrans_t	*rangetrans;	/* MLS rangetrans rules (ARRAY) */
 /* Permissions map (which is used for information flow analysis) */
 	struct classes_perm_map *pmap;	/* see perm-map.h */
 /* Semantic hash table; this structure is created when necessary (NULL ptr means its necessary)
@@ -427,6 +586,7 @@ int add_alias(int type_idx, const char *alias, policy_t *policy);
 int add_attrib_to_type(int type_idx, char *token, policy_t *policy);
 int insert_ta_item(ta_item_t *newitem, ta_item_t **list);
 int add_name(char *name, name_item_t **list);
+int free_name_list(name_item_t *list);
 int add_clone_rule(int src, int tgt,  unsigned long lineno, policy_t *policy);
 int add_attrib(bool_t with_type, int type_idx, policy_t *policy, char *attrib);
 int add_type_to_role(int type_idx, int role_idx, policy_t *policy);
@@ -437,8 +597,20 @@ int add_perm_to_common(int comm_perm_idx, int perm_idx, policy_t *policy);
 int add_perm(char *perm, policy_t *policy);
 int add_cond_bool(char *name, bool_t state, policy_t *policy);
 int add_cond_expr_item(cond_expr_t *expr, cond_rule_list_t *true_list, cond_rule_list_t *false_list, policy_t *policy);
+int add_fs_use(int behavior, char *fstype, security_con_t *scontext, policy_t *policy);
+int add_portcon(int protocol, int lowport, int highport, security_con_t *scontext, policy_t *policy);
+int add_netifcon(char *iface, security_con_t *devcon, security_con_t *pktcon, policy_t *policy);
+int add_nodecon(int flag, uint32_t *addr, uint32_t *mask, security_con_t *scontext, policy_t *policy);
+int add_genfscon(char *fstype, policy_t *policy);
+int add_path_to_genfscon(ap_genfscon_t *genfscon, char *path, int filetype, security_con_t *context);
+int add_constraint(bool_t is_mls, ta_item_t *classes, ta_item_t *perms, ap_constraint_expr_t *expr, unsigned long lineno, policy_t *policy);
+int add_validatetrans(bool_t is_mls, ta_item_t *classes, ap_constraint_expr_t *expr, unsigned long lineno, policy_t *policy);
+int add_sensitivity(char *name, name_item_t *aliases, policy_t *policy);
+int add_category(char *name, name_item_t *aliases, policy_t *policy);
+int add_mls_level(int sens, int *cats, int num_cats, policy_t *policy);
 av_item_t *add_new_av_rule(int rule_type, policy_t *policy);
 tt_item_t *add_new_tt_rule(int rule_type, policy_t *policy);
+ap_rangetrans_t *add_new_rangetrans(policy_t *policy);
 
 /* Object Classes */
 #define num_obj_classes(policy) (policy != NULL ? policy->num_obj_classes : -1)
@@ -595,7 +767,18 @@ int apol_add_perm_to_obj_perm_set_list(obj_perm_set_t **obj_options,
 				      int *num_obj_options, int obj_class, 
 				      int perm);
 
+/* genfscon */
+int ap_genfscon_get_idx(char *fstype, policy_t *policy);
+void ap_genfscon_node_destroy(ap_genfscon_node_t *node);
 
+/* MLS */
+int get_sensitivity_idx(const char *name, policy_t *policy);
+int get_category_idx(const char *name, policy_t *policy);
+void ap_mls_level_free(ap_mls_level_t *lvl);
+void ap_mls_range_free(ap_mls_range_t *rng);
+
+/* constraints */
+void ap_constraint_expr_destroy(ap_constraint_expr_t *expr);
 
 /* misc */
 
