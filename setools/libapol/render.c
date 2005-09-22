@@ -699,3 +699,823 @@ err_return:
 	return NULL;
 }
 
+char *re_render_fs_use(ap_fs_use_t *fsuse, policy_t *policy)
+{
+	char *context_str = NULL;
+	char *line = NULL;
+	char *behavior_str = NULL;
+
+	switch (fsuse->behavior) {
+	case AP_FS_USE_PSID:
+		behavior_str = strdup("fs_use_psid");
+		break;
+	case AP_FS_USE_XATTR:
+		behavior_str = strdup("fs_use_xattr");
+		break;
+	case AP_FS_USE_TASK:
+		behavior_str = strdup("fs_use_task");
+		break;
+	case AP_FS_USE_TRANS:
+		behavior_str = strdup("fs_use_trans");
+		break;
+	default:
+		break;
+	}
+	if (!behavior_str)
+		return NULL;
+
+	context_str = re_render_security_context(fsuse->scontext, policy);
+	if (!context_str) {
+		free(behavior_str);
+		return NULL;
+	}
+
+	line = (char *)calloc(strlen(behavior_str) + strlen(context_str) + strlen(fsuse->fstype) + 4, sizeof(char));
+	if (!line) {
+		free(context_str);
+		free(behavior_str);
+		return NULL;
+	}
+	strcat(line, behavior_str);
+	strcat(line, " ");
+	strcat(line, fsuse->fstype);
+	strcat(line, " ");
+	strcat(line, context_str);
+	strcat(line, ";");
+
+	free(behavior_str);
+	free(context_str);
+	return line;
+}
+
+char *re_render_portcon(ap_portcon_t *portcon, policy_t *policy)
+{
+	char *line = NULL;
+	char *buff = NULL;
+	char *proto_str = NULL;
+	char *context_str = NULL;
+
+	const int bufflen = 50; /* arbitrary size big enough to hold port no. */
+
+	if (!portcon || !policy)
+		return NULL;
+
+	buff = (char*)calloc(bufflen + 1, sizeof(char));
+	if (!buff)
+		goto exit_err;
+
+	switch (portcon->protocol) {
+	case AP_TCP_PROTO:
+		proto_str = strdup("tcp");
+		break;
+	case AP_UDP_PROTO:
+		proto_str = strdup("udp");
+		break;
+	case AP_ESP_PROTO:
+		proto_str = strdup("esp");
+		break;
+	default:
+		break;
+	}
+	if (!proto_str)
+		goto exit_err;
+
+	if (portcon->lowport == portcon->highport)
+		snprintf(buff, bufflen, "%d", portcon->lowport);
+	else
+		snprintf(buff, bufflen, "%d-%d", portcon->lowport, portcon->highport);
+
+	context_str = re_render_security_context(portcon->scontext, policy);
+	if (!context_str) 
+		goto exit_err;
+
+	line = (char *)calloc(4 + strlen("portcon") + strlen(proto_str) + strlen(buff) + strlen(context_str), sizeof(char));
+
+	strcat(line, "portcon");
+	strcat(line, " ");
+	strcat(line, proto_str);
+	strcat(line, " ");
+	strcat(line, buff);
+	strcat(line, " ");
+	strcat(line, context_str);
+
+	free(buff);
+	free(proto_str);
+	free(context_str);
+
+	return line;
+
+exit_err:
+	free(line);
+	free(buff);
+	free(proto_str);
+	free(context_str);
+
+	return NULL;
+}
+
+char *re_render_netifcon(ap_netifcon_t *netifcon, policy_t *policy)
+{
+	char *line = NULL;
+	char *devcon_str = NULL;
+	char *pktcon_str = NULL;
+
+	if (!netifcon || !policy)
+		return NULL;
+
+	devcon_str = re_render_security_context(netifcon->device_context, policy);
+	if (!devcon_str)
+		return NULL;
+
+	pktcon_str = re_render_security_context(netifcon->packet_context, policy);
+	if (!pktcon_str) {
+		free(devcon_str);
+		return NULL;
+	}
+
+	line = (char *)calloc(4 + strlen(netifcon->iface) + strlen(devcon_str) + strlen(pktcon_str) + strlen("netifcon"), sizeof(char));
+
+	strcat(line, "netifcon");
+	strcat(line, " ");
+	strcat(line, netifcon->iface);
+	strcat(line, " ");
+	strcat(line, devcon_str);
+	strcat(line, " ");
+	strcat(line, pktcon_str);
+
+	free(devcon_str);
+	free(pktcon_str);
+
+	return line;
+}
+
+char *re_render_nodecon(ap_nodecon_t *nodecon, policy_t *policy)
+{
+	char *line = NULL;
+	char *context_str = NULL;
+	char *addr_str = NULL;
+	char *mask_str = NULL;
+	uint32_t tmp = 0;
+	uint32_t *tmp_arr = NULL;
+
+	/* max length of a string for an IP is 40 characters
+	 *  (8 fields * 4 char/field) + 7  * ':' + '\0' */
+	const size_t ip_addr_str_len_max = 40;
+
+	if (!nodecon || !policy)
+		return NULL;
+
+	addr_str = (char *)calloc(ip_addr_str_len_max, sizeof(char));
+	mask_str = (char *)calloc(ip_addr_str_len_max, sizeof(char));
+
+	if (!addr_str || !mask_str) {
+		free(addr_str);
+		free(mask_str);
+		return NULL;
+	}
+
+	switch (nodecon->flag) {
+	case AP_IPV4:
+		tmp = nodecon->addr[3];
+		/* the math below prints one byte at a time as a decimal value */
+		snprintf(addr_str, ip_addr_str_len_max - 1, "%3d.%3d.%3d.%3d", (tmp/(1<<24)), (tmp/(1<<16)%(1<<8)), (tmp/(1<<8)%(1<<8)), (tmp%(1<<8)));
+		tmp = nodecon->mask[3];
+		snprintf(mask_str, ip_addr_str_len_max - 1, "%3d.%3d.%3d.%3d", (tmp/(1<<24)), (tmp/(1<<16)%(1<<8)), (tmp/(1<<8)%(1<<8)), (tmp%(1<<8)));
+		break;
+	case AP_IPV6:
+		tmp_arr = nodecon->addr;
+		/* the math below prints the IPv6 fields in hexidecimal 2 bytes at a time */
+		snprintf(addr_str, ip_addr_str_len_max - 1, "%04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x",
+			tmp_arr[0]/(1<<16), tmp_arr[0]%(1<<16), tmp_arr[1]/(1<<16), tmp_arr[1]%(1<<16),
+			tmp_arr[2]/(1<<16), tmp_arr[2]%(1<<16), tmp_arr[3]/(1<<16), tmp_arr[3]%(1<<16) );
+		tmp_arr = nodecon->mask;
+		snprintf(mask_str, ip_addr_str_len_max - 1, "%04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x",
+			tmp_arr[0]/(1<<16), tmp_arr[0]%(1<<16), tmp_arr[1]/(1<<16), tmp_arr[1]%(1<<16),
+			tmp_arr[2]/(1<<16), tmp_arr[2]%(1<<16), tmp_arr[3]/(1<<16), tmp_arr[3]%(1<<16) );
+		break;
+	default:
+		break;
+	}
+
+	context_str = re_render_security_context(nodecon->scontext, policy);
+	if (!context_str)
+		return NULL;
+
+	line = (char*)calloc(4 + strlen("nodecon") + strlen(addr_str) + strlen(mask_str) + strlen(context_str), sizeof(char));
+	if (!line) {
+		free(addr_str);
+		free(mask_str);
+		free(context_str);
+		return NULL;
+	}
+
+	strcat(line, "nodecon");
+	strcat(line, " ");
+	strcat(line, addr_str);
+	strcat(line, " ");
+	strcat(line, mask_str);
+	strcat(line, " ");
+	strcat(line, context_str);
+
+	free(addr_str);
+	free(mask_str);
+	free(context_str);
+	return line;
+}
+
+char *re_render_genfscon(ap_genfscon_t *genfscon, policy_t *policy)
+{
+	char **lines = NULL;
+	int num_lines = 0;
+	char *context_str = NULL;
+	char *type_str = NULL;
+	ap_genfscon_node_t *path = NULL;
+	char *front_str = NULL;
+	char *text = NULL;
+	int i;
+	size_t text_sz = 0, len = 0;
+
+	if (!genfscon || !policy)
+		return NULL;
+
+	for (path = genfscon->paths; path; path = path->next)
+		num_lines++;
+
+	lines = (char**)calloc(num_lines, sizeof(char*));
+	if (!lines) 
+		return NULL;
+
+	front_str = (char *)calloc(3 + strlen("genfscon") + strlen(genfscon->fstype), sizeof(char));
+	if (!front_str) {
+		free(lines);
+		return NULL;
+	}
+	strcat(front_str, "genfscon ");
+	strcat(front_str, genfscon->fstype);
+	strcat(front_str, " ");
+
+	len = strlen(front_str);
+
+	for (path = genfscon->paths, i = 0; i < num_lines && path; path = path->next, i++) {
+		context_str = re_render_security_context(path->scontext, policy);
+		if (!context_str) {
+			return NULL;
+		}
+
+		switch (path->filetype) {
+		case FILETYPE_DIR:
+			type_str = strdup("-d ");
+			break;
+		case FILETYPE_CHR:
+			type_str = strdup(" -c ");
+			break;
+		case FILETYPE_BLK:
+			type_str = strdup(" -b ");
+			break;
+		case FILETYPE_REG:
+			type_str = strdup(" -- ");
+			break;
+		case FILETYPE_FIFO:
+			type_str = strdup(" -p ");
+			break;
+		case FILETYPE_LNK:
+			type_str = strdup(" -l ");
+			break;
+		case FILETYPE_SOCK:
+			type_str = strdup(" -s ");
+			break;
+		case FILETYPE_ANY:
+			type_str = strdup("    ");
+			break;
+		default:
+			goto exit_err;
+			break;
+		}
+
+		/* front_str + path + type_str + context_str + '\0' */
+		lines[i] = (char*)calloc(len + strlen(path->path) + 4 + strlen(context_str) + 1 , sizeof(char));
+		if (!lines[i])
+			goto exit_err;
+
+		strcat(lines[i], front_str);
+		strcat(lines[i], path->path);
+		strcat(lines[i], type_str);
+		strcat(lines[i], context_str);
+
+		text_sz += (strlen(lines[i]) + 1); /* add newline */
+
+		free(context_str);
+		free(type_str);
+	}
+
+	text = (char*)calloc(text_sz + 1, sizeof(char));
+	if (!text)
+		goto exit_err;
+
+	for (i = 0; i < num_lines; i++) {
+		strcat(text, lines[i]);
+		strcat(text, "\n");
+	}
+
+	free(front_str);
+	for (i = 0; i < num_lines; i++)
+		free(lines[i]);
+	free(lines);
+
+	return text;
+
+exit_err:
+	free(context_str);
+	free(type_str);
+	free(front_str);
+	for (i = 0; i < num_lines; i++)
+		free(lines[i]);
+	free(lines);
+	return NULL;
+}
+
+char *re_render_cexpr(ap_constraint_expr_t *expr, policy_t *policy)
+{
+	char *rt = NULL, *tmp_name = NULL;
+	char tmp[BUF_SZ];
+	int sz = 0, retv;
+	ap_constraint_expr_t *cexpr = NULL;
+	ta_item_t *name = NULL;
+
+	append_str(&rt, &sz, "( ");
+	for (cexpr = expr; cexpr; cexpr = cexpr->next) {
+		switch (cexpr->expr_type) {
+		case AP_CEXPR_NOT:
+			snprintf(tmp, sizeof(tmp)-1, "! ");
+			append_str(&rt, &sz, tmp);
+			break;
+		case AP_CEXPR_AND:
+			snprintf(tmp, sizeof(tmp)-1, "&& ");
+			append_str(&rt, &sz, tmp);
+			break;
+		case AP_CEXPR_OR:
+			snprintf(tmp, sizeof(tmp)-1, "|| ");
+			append_str(&rt, &sz, tmp);
+			break;
+		case AP_CEXPR_ATTR:
+			if (cexpr->attr == AP_CEXPR_USER) {
+				snprintf(tmp, sizeof(tmp)-1, "(u1 ");
+				append_str(&rt, &sz, tmp);
+			} else if (cexpr->attr == AP_CEXPR_ROLE) {
+				snprintf(tmp, sizeof(tmp)-1, "(r1 ");
+				append_str(&rt, &sz, tmp);
+			} else if (cexpr->attr == AP_CEXPR_TYPE) {
+				snprintf(tmp, sizeof(tmp)-1, "(t1 ");
+				append_str(&rt, &sz, tmp);
+			} else if (cexpr->attr & (AP_CEXPR_MLS_LOW1_LOW2 | AP_CEXPR_MLS_LOW1_HIGH2 | AP_CEXPR_MLS_LOW1_HIGH1)) {
+				snprintf(tmp, sizeof(tmp)-1, "(l1 ");
+				append_str(&rt, &sz, tmp);
+			} else if (cexpr->attr == AP_CEXPR_MLS_LOW2_HIGH2) {
+				snprintf(tmp, sizeof(tmp)-1, "(l2 ");
+				append_str(&rt, &sz, tmp);
+			} else if (cexpr->attr & (AP_CEXPR_MLS_HIGH1_LOW2 | AP_CEXPR_MLS_HIGH1_HIGH2)) {
+				snprintf(tmp, sizeof(tmp)-1, "(h1 ");
+				append_str(&rt, &sz, tmp);
+			}
+
+			if (cexpr->op == AP_CEXPR_EQ) {
+				snprintf(tmp, sizeof(tmp)-1, "== ");
+				append_str(&rt, &sz, tmp);
+			} else if (cexpr->op == AP_CEXPR_NEQ) {
+				snprintf(tmp, sizeof(tmp)-1, "!= ");
+				append_str(&rt, &sz, tmp);
+			} else if (cexpr->op == AP_CEXPR_DOM) {
+				snprintf(tmp, sizeof(tmp)-1, "dom ");
+				append_str(&rt, &sz, tmp);
+			} else if (cexpr->op == AP_CEXPR_DOMBY) {
+				snprintf(tmp, sizeof(tmp)-1, "domby ");
+				append_str(&rt, &sz, tmp);
+			} else if (cexpr->op == AP_CEXPR_INCOMP) {
+				snprintf(tmp, sizeof(tmp)-1, "incomp ");
+				append_str(&rt, &sz, tmp);
+			}
+
+			if (cexpr->attr == AP_CEXPR_USER) {
+				snprintf(tmp, sizeof(tmp)-1, "u2) ");
+				append_str(&rt, &sz, tmp);
+			} else if (cexpr->attr == AP_CEXPR_ROLE) {
+				snprintf(tmp, sizeof(tmp)-1, "r2) ");
+				append_str(&rt, &sz, tmp);
+			} else if (cexpr->attr == AP_CEXPR_TYPE) {
+				snprintf(tmp, sizeof(tmp)-1, "t2) ");
+				append_str(&rt, &sz, tmp);
+			} else if (cexpr->attr & (AP_CEXPR_MLS_LOW1_LOW2 | AP_CEXPR_MLS_HIGH1_LOW2)) {
+				snprintf(tmp, sizeof(tmp)-1, "l2) ");
+				append_str(&rt, &sz, tmp);
+			} else if (cexpr->attr & (AP_CEXPR_MLS_LOW1_HIGH2 | AP_CEXPR_MLS_HIGH1_HIGH2 | AP_CEXPR_MLS_LOW2_HIGH2)) {
+				snprintf(tmp, sizeof(tmp)-1, "h2) ");
+				append_str(&rt, &sz, tmp);
+			} else if (cexpr->attr == AP_CEXPR_MLS_LOW1_HIGH1) {
+				snprintf(tmp, sizeof(tmp)-1, "h1) ");
+				append_str(&rt, &sz, tmp);
+			}
+			break;
+		case AP_CEXPR_NAMES:
+			if (cexpr->attr == (AP_CEXPR_USER)) {
+				snprintf(tmp, sizeof(tmp)-1, "(u1 ");
+				append_str(&rt, &sz, tmp);
+			} else if (cexpr->attr == (AP_CEXPR_USER|AP_CEXPR_TARGET)) {
+				snprintf(tmp, sizeof(tmp)-1, "(u2 ");
+				append_str(&rt, &sz, tmp);
+			} else if (cexpr->attr == (AP_CEXPR_USER|AP_CEXPR_XTARGET)) {
+				snprintf(tmp, sizeof(tmp)-1, "(u3 ");
+				append_str(&rt, &sz, tmp);
+			} else if (cexpr->attr == (AP_CEXPR_ROLE)) {
+				snprintf(tmp, sizeof(tmp)-1, "(r1 ");
+				append_str(&rt, &sz, tmp);
+			} else if (cexpr->attr == (AP_CEXPR_ROLE|AP_CEXPR_TARGET)) {
+				snprintf(tmp, sizeof(tmp)-1, "(r2 ");
+				append_str(&rt, &sz, tmp);
+			} else if (cexpr->attr == (AP_CEXPR_ROLE|AP_CEXPR_XTARGET)) {
+				snprintf(tmp, sizeof(tmp)-1, "(r3 ");
+				append_str(&rt, &sz, tmp);
+			} else if (cexpr->attr == (AP_CEXPR_TYPE)) {
+				snprintf(tmp, sizeof(tmp)-1, "(t1 ");
+				append_str(&rt, &sz, tmp);
+			} else if (cexpr->attr == (AP_CEXPR_TYPE|AP_CEXPR_TARGET)) {
+				snprintf(tmp, sizeof(tmp)-1, "(t2 ");
+				append_str(&rt, &sz, tmp);
+			} else if (cexpr->attr == (AP_CEXPR_TYPE|AP_CEXPR_XTARGET)) {
+				snprintf(tmp, sizeof(tmp)-1, "(t3 ");
+				append_str(&rt, &sz, tmp);
+			}
+
+			if (cexpr->op == AP_CEXPR_EQ) {
+				snprintf(tmp, sizeof(tmp)-1, "== ");
+				append_str(&rt, &sz, tmp);
+			} else if (cexpr->op == AP_CEXPR_NEQ) {
+				snprintf(tmp, sizeof(tmp)-1, "!= ");
+				append_str(&rt, &sz, tmp);
+			}
+
+			if (cexpr->name_flags == AP_CEXPR_STAR) {
+				snprintf(tmp, sizeof(tmp)-1, "*");
+				append_str(&rt, &sz, tmp);
+			} else if (cexpr->name_flags == AP_CEXPR_TILDA) {
+				snprintf(tmp, sizeof(tmp)-1, "~");
+				append_str(&rt, &sz, tmp);
+			}
+
+			if (cexpr->names && cexpr->names->next) {
+				snprintf(tmp, sizeof(tmp)-1, "{");
+				append_str(&rt, &sz, tmp);
+			}
+
+			for (name = cexpr->names; name; name = name->next) {
+				retv = get_ta_item_name(name, &tmp_name, policy);
+				if (retv) {
+					free(rt);
+					return NULL;
+				}
+				if (name->type & IDX_SUBTRACT)
+					snprintf(tmp, sizeof(tmp)-1, "-%s", tmp_name);
+				else
+					snprintf(tmp, sizeof(tmp)-1, "%s", tmp_name);
+				append_str(&rt, &sz, tmp);
+				free(tmp_name);
+				tmp_name = NULL;
+				if (name->next) {
+					snprintf(tmp, sizeof(tmp)-1, " ");
+					append_str(&rt, &sz, tmp);
+				}
+			}
+
+			if (cexpr->names && cexpr->names->next) {
+				snprintf(tmp, sizeof(tmp)-1, "} ");
+				append_str(&rt, &sz, tmp);
+			}
+
+			append_str(&rt, &sz, ") ");
+
+			break;
+		}
+	}
+	append_str(&rt, &sz, ")");
+
+	return rt;
+}
+
+char *re_render_constraint(bool_t addlineno, ap_constraint_t *constraint, policy_t *policy)
+{
+	char *rt = NULL, *tmp_name = NULL, *expr_str = NULL;
+	char tmp[BUF_SZ];
+	int sz = 0, retv;
+	ta_item_t *name = NULL;
+
+	if (!(constraint && constraint->classes) || !policy)
+		return NULL;
+
+	if (addlineno) {
+		snprintf(tmp, sizeof(tmp)-1, "[%7lu] ", constraint->lineno);
+		append_str(&rt, &sz, tmp);
+	}
+
+	if (constraint->is_mls)
+		append_str(&rt, &sz, "mls");
+
+	if (constraint->perms) {
+		snprintf(tmp, sizeof(tmp)-1, "constrain ");
+		append_str(&rt, &sz, tmp);
+	} else {
+		snprintf(tmp, sizeof(tmp)-1, "validatetrans ");
+		append_str(&rt, &sz, tmp);
+	}
+
+	if (constraint->classes->next)
+		append_str(&rt, &sz, "{");
+
+	for (name = constraint->classes; name; name = name->next) {
+		retv = get_ta_item_name(name, &tmp_name, policy);
+		if (retv) {
+			free(rt);
+			return NULL;
+		}
+		snprintf(tmp, sizeof(tmp)-1, "%s", tmp_name);
+		append_str(&rt, &sz, tmp);
+		free(tmp_name);
+		tmp_name = NULL;
+		if (name->next)
+			append_str(&rt, &sz, " ");
+	}
+
+	if (constraint->classes->next)
+		append_str(&rt, &sz, "} ");
+
+	if (constraint->perms) {
+		if (constraint->perms->next)
+			append_str(&rt, &sz, "{");
+
+		for (name = constraint->perms; name; name = name->next) {
+			retv = get_ta_item_name(name, &tmp_name, policy);
+			if (retv) {
+				free(rt);
+				return NULL;
+			}
+			snprintf(tmp, sizeof(tmp)-1, "%s", tmp_name);
+			append_str(&rt, &sz, tmp);
+			free(tmp_name);
+			tmp_name = NULL;
+			if (name->next)
+				append_str(&rt, &sz, " ");
+		}
+
+		if (constraint->perms->next)
+			append_str(&rt, &sz, "} ");
+	}
+
+	expr_str = re_render_cexpr(constraint->expr, policy);
+	if (!expr_str) {
+		free(rt);
+		return NULL;
+	}
+
+	append_str(&rt, &sz, "\n\t");
+	append_str(&rt, &sz, expr_str);
+	append_str(&rt, &sz, ";");
+
+	return rt;
+}
+
+char *re_render_mls_level(ap_mls_level_t *level, policy_t *policy)
+{
+	char *rt = NULL;
+	int sz = 0, i, cur;
+
+	if (!level || !policy)
+		return NULL;
+
+	append_str(&rt, &sz, policy->sensitivities[level->sensitivity].name);
+
+	if (!level->categories)
+		return rt; /* no categories, simply return the sensitivity name */
+
+	append_str(&rt, &sz, ":");
+	append_str(&rt, &sz, policy->categories[level->categories[0]].name);
+
+	if (level->num_categories == 1)
+		return rt; /* only one category so done */
+
+	cur = 0; /* current value to compare with cat[i] */
+	for (i = 1; i < level->num_categories; i++) {
+		if (level->categories[i] == level->categories[cur] + 1) {
+			if (i + 1 == level->num_categories || level->categories[i+1] != level->categories[cur] + 2) {
+				append_str(&rt, &sz, ".");
+				append_str(&rt, &sz, policy->categories[level->categories[i]].name);
+				cur = i;
+			} else {
+				cur++;
+			}
+		} else {
+			append_str(&rt, &sz, ", ");
+			append_str(&rt, &sz, policy->categories[level->categories[i]].name);
+			cur = i;
+		}
+	}
+
+	return rt;
+}
+
+char *re_render_mls_range(ap_mls_range_t *range, policy_t *policy)
+{
+	char *rt = NULL;
+	int sz = 0;
+
+	if (!range || !policy)
+		return NULL;
+
+	append_str(&rt, &sz, re_render_mls_level(range->low, policy));
+	if (range->high != range->low) {
+		append_str(&rt, &sz, " - ");
+		append_str(&rt, &sz, re_render_mls_level(range->high, policy));
+	}
+
+	return rt;
+}
+
+char *re_render_rangetrans(bool_t addlineno, int idx, policy_t *policy)
+{
+	char *rt = NULL, *tmp_name = NULL;
+	char tmp[BUF_SZ];
+	int sz = 0, retv;
+	ta_item_t *name = NULL;
+
+	if (!policy || idx < 0 || idx >= policy->num_rangetrans)
+		return NULL;
+
+	if (addlineno) {
+		snprintf(tmp, sizeof(tmp)-1, "[%7lu] ", policy->rangetrans[idx].lineno);
+		append_str(&rt, &sz, tmp);
+	}
+
+	append_str(&rt, &sz, "range_transition ");
+
+	/* render source(s) */
+	if (policy->rangetrans[idx].flags & AVFLAG_SRC_STAR) {
+		append_str(&rt, &sz, "*");
+	} else if (policy->rangetrans[idx].flags & AVFLAG_SRC_TILDA) {
+		append_str(&rt, &sz, "~");
+	}
+	if (policy->rangetrans[idx].src_types->next) {
+		append_str(&rt, &sz, "{");
+	}
+
+	for (name = policy->rangetrans[idx].src_types; name; name = name->next) {
+		retv = get_ta_item_name(name, &tmp_name, policy);
+		if (retv) {
+			free(rt);
+			return NULL;
+		}
+		if (name->type & IDX_SUBTRACT) {
+			snprintf(tmp, sizeof(tmp)-1, "-%s", tmp_name);
+		} else {
+			snprintf(tmp, sizeof(tmp)-1, "%s", tmp_name);
+		}
+		append_str(&rt, &sz, tmp);
+		free(tmp_name);
+		tmp_name = NULL;
+		if (name->next) {
+			append_str(&rt, &sz, " ");
+		}
+	}
+
+	if (policy->rangetrans[idx].src_types->next) {
+		append_str(&rt, &sz, "}");
+	}
+	append_str(&rt, &sz, " ");
+
+	/* render target(s) */
+	if (policy->rangetrans[idx].flags & AVFLAG_TGT_STAR) {
+		append_str(&rt, &sz, "*");
+	} else if (policy->rangetrans[idx].flags & AVFLAG_TGT_TILDA) {
+		append_str(&rt, &sz, "~");
+	}
+
+	if (policy->rangetrans[idx].tgt_types->next) {
+		append_str(&rt, &sz, "{");
+	}
+
+	for (name = policy->rangetrans[idx].tgt_types; name; name = name->next) {
+		retv = get_ta_item_name(name, &tmp_name, policy);
+		if (retv) {
+			free(rt);
+			return NULL;
+		}
+		if (name->type & IDX_SUBTRACT) {
+			snprintf(tmp, sizeof(tmp)-1, "-%s", tmp_name);
+		} else {
+			snprintf(tmp, sizeof(tmp)-1, "%s", tmp_name);
+		}
+		append_str(&rt, &sz, tmp);
+		free(tmp_name);
+		tmp_name = NULL;
+		if (name->next) {
+			append_str(&rt, &sz, " ");
+		}
+	}
+
+	if (policy->rangetrans[idx].tgt_types->next) {
+		append_str(&rt, &sz, "}");
+	}
+
+	append_str(&rt, &sz, " ");
+
+	/* render range */
+	append_str(&rt, &sz, re_render_mls_range(policy->rangetrans[idx].range, policy));
+
+	append_str(&rt, &sz, ";");
+
+	return rt;
+}
+
+char *re_render_role_trans(bool_t addlineno, int idx, policy_t *policy)
+{
+	char *rt = NULL, *tmp_name = NULL;
+	char tmp[BUF_SZ];
+	int sz = 0, retv;
+	ta_item_t *name;
+
+	if (!policy || idx < 0 || idx >= policy->num_role_trans)
+		return NULL;
+
+	if (addlineno) {
+		snprintf(tmp, sizeof(tmp)-1, "[%7lu] ", policy->role_trans[idx].lineno);
+		append_str(&rt, &sz, tmp);
+	}
+
+	append_str(&rt, &sz, "role_transition ");
+
+	/* render source role(s) */
+	if (policy->role_trans[idx].flags & AVFLAG_SRC_STAR) {
+		append_str(&rt, &sz, "*");
+	} else if (policy->role_trans[idx].flags & AVFLAG_SRC_TILDA) {
+		append_str(&rt, &sz, "~");
+	}
+	if (policy->role_trans[idx].src_roles->next) {
+		append_str(&rt, &sz, "{");
+	}
+
+	for (name = policy->role_trans[idx].src_roles; name; name = name->next) {
+		retv = get_ta_item_name(name, &tmp_name, policy);
+		if (retv) {
+			free(rt);
+			return NULL;
+		}
+		snprintf(tmp, sizeof(tmp)-1, "%s", tmp_name);
+		append_str(&rt, &sz, tmp);
+		free(tmp_name);
+		tmp_name = NULL;
+		if (name->next) {
+			append_str(&rt, &sz, " ");
+		}
+	}
+
+	if (policy->role_trans[idx].src_roles->next) {
+		append_str(&rt, &sz, "}");
+	}
+	append_str(&rt, &sz, " ");
+
+	/* render target type(s) */
+	if (policy->role_trans[idx].flags & AVFLAG_TGT_STAR) {
+		append_str(&rt, &sz, "*");
+	} else if (policy->role_trans[idx].flags & AVFLAG_TGT_TILDA) {
+		append_str(&rt, &sz, "~");
+	}
+
+	if (policy->role_trans[idx].tgt_types->next) {
+		append_str(&rt, &sz, "{");
+	}
+
+	for (name = policy->role_trans[idx].tgt_types; name; name = name->next) {
+		retv = get_ta_item_name(name, &tmp_name, policy);
+		if (retv) {
+			free(rt);
+			return NULL;
+		}
+		snprintf(tmp, sizeof(tmp)-1, "%s", tmp_name);
+		append_str(&rt, &sz, tmp);
+		free(tmp_name);
+		tmp_name = NULL;
+		if (name->next) {
+			append_str(&rt, &sz, " ");
+		}
+	}
+
+	if (policy->role_trans[idx].tgt_types->next) {
+		append_str(&rt, &sz, "}");
+	}
+
+	append_str(&rt, &sz, " ");
+
+	/* render transition role */
+	append_str(&rt, &sz, policy->roles[policy->role_trans[idx].trans_role.idx].name);
+
+	append_str(&rt, &sz, ";");
+
+	return rt;
+}
+
