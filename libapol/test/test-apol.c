@@ -595,7 +595,18 @@ static int display_policy_stats(policy_t *p)
 	printf("     Type Rules:         %d\n", p->num_te_trans);
 	printf("     Roles:              %d\n", p->num_roles);
 	printf("     Role Rules:         %d\n", (p->num_role_allow + p->num_role_trans));
-	printf("     Booleans            %d\n", p->num_cond_bools);
+	printf("     Booleans:           %d\n", p->num_cond_bools);
+	printf("     Fs_use:             %d\n", p->num_fs_use);
+	printf("     Portcon:            %d\n", p->num_portcon);
+	printf("     Netifcon:           %d\n", p->num_netifcon);
+	printf("     Nodecon:            %d\n", p->num_nodecon);
+	printf("     Genfscon:           %d\n", p->num_genfscon);
+	printf("     Constraints:        %d\n", p->num_constraints);
+	printf("     Validatetrans:      %d\n", p->num_validatetrans);
+	printf("     Sensitivities:      %d\n", p->num_sensitivities);
+	printf("     Categories:         %d\n", p->num_categories);
+	printf("     Levels:             %d\n", p->num_levels);
+	printf("     Range Transitions:  %d\n", p->num_rangetrans);
 	return 0;
 }
 
@@ -1578,9 +1589,7 @@ void test_print_cond_list(cond_rule_list_t *list, policy_t *policy)
 void test_print_cond_exprs(policy_t *policy)
 {
         int i;
-        
-
-        
+ 
         for (i = 0; i < policy->num_cond_exprs; i++) {
  	        fprintf(outfile, "\nconditional expression %d: [ ", i);
                 test_print_expr(policy->cond_exprs[i].expr, policy);
@@ -1590,6 +1599,111 @@ void test_print_cond_exprs(policy_t *policy)
 		fprintf(outfile, "FALSE list:\n");
 		test_print_cond_list(policy->cond_exprs[i].false_list, policy);
         }
+}
+
+void test_print_fs_use(policy_t *policy)
+{
+	int i;
+	char *ln;
+
+	for (i = 0; i < policy->num_fs_use; i++) {
+		ln = re_render_fs_use(&(policy->fs_use[i]), policy);
+		fprintf(outfile, "%s\n", ln);
+		free(ln);
+	}
+}
+
+void test_print_portcon(policy_t *policy)
+{
+	int i;
+	char *ln;
+
+	for (i = 0; i < policy->num_portcon; i++) {
+		ln = re_render_portcon(&(policy->portcon[i]), policy);
+		fprintf(outfile, "%s\n", ln);
+		free(ln);
+	}
+}
+
+void test_print_netifcon(policy_t *policy)
+{
+	int i;
+	char *ln;
+
+	for (i = 0; i < policy->num_netifcon; i++) {
+		ln = re_render_netifcon(&(policy->netifcon[i]), policy);
+		fprintf(outfile, "%s\n", ln);
+		free(ln);
+	}
+}
+
+void test_print_nodecon(policy_t *policy)
+{
+	int i;
+	char *ln;
+
+	for (i = 0; i < policy->num_nodecon; i++) {
+		ln = re_render_nodecon(&(policy->nodecon[i]), policy);
+		fprintf(outfile, "%s\n", ln);
+		free(ln);
+	}
+}
+
+void test_print_genfscon(policy_t *policy)
+{
+	int i;
+	char *ln;
+
+	for (i = 0; i < policy->num_genfscon; i++) {
+		ln = re_render_genfscon(&(policy->genfscon[i]), policy);
+		fprintf(outfile, "%s", ln);
+		free(ln);
+	}
+}
+
+void test_print_constraints(policy_t *policy)
+{
+	int i;
+	char *ln;
+
+	for (i = 0; i < policy->num_constraints; i++) {
+		ln = re_render_constraint(!is_binary_policy(policy), &(policy->constraints[i]), policy);
+		fprintf(outfile, "%s\n", ln);
+		free(ln);
+	}
+
+	for (i = 0; i < policy->num_validatetrans; i++) {
+		ln = re_render_validatetrans(!is_binary_policy(policy), &(policy->validatetrans[i]), policy);
+		fprintf(outfile, "%s\n", ln);
+		free(ln);
+	}
+}
+
+void test_print_mls(policy_t *policy)
+{
+	int i;
+
+	printf("\nSensitivities:\n");
+	for (i = 0; i < policy->num_sensitivities; i++)
+		printf("\t%s\n", policy->sensitivities[i].name);
+
+	printf("\nCategories:\n");
+	for (i = 0; i < policy->num_categories; i++)
+		printf("\t%s\n", policy->categories[i].name);
+
+	printf("\nLevels:\n");
+	for (i = 0; i < policy->num_levels; i++)
+		printf("\t%s\n", re_render_mls_level(&(policy->levels[i]), policy));
+
+	printf("\nDominance:\n");
+	printf("\tdominance { ");
+	for (i = 0; i < policy->num_sensitivities; i++)
+		printf("%s ", policy->sensitivities[policy->mls_dominance[i]].name);
+	printf("}\n");
+	
+	printf("\nRange Transitions:\n");
+	for (i = 0; i < policy->num_rangetrans; i++)
+		printf("\t%s\n", re_render_rangetrans(is_binary_policy(policy), i, policy));
 }
 
 int check_for_duplicate_object(int *classes, int num_objs, int obj_class)
@@ -1607,7 +1721,8 @@ int check_for_duplicate_object(int *classes, int num_objs, int obj_class)
 	return -1;
 }
 
-int menu() {
+int menu() 
+{
 	printf("\nSelect a command:\n");
 	printf("0)  analyze forward domain transitions\n");
 	printf("1)  analyze reverse domain transitions\n");
@@ -1616,9 +1731,16 @@ int menu() {
 	printf("4)  test regex type name matching\n");
 	printf("5)  test transitive inflormation flows\n");
 	printf("6)  display initial SIDs and contexts\n");
-        printf("7)  display policy booleans and expressions\n");
+	printf("7)  display policy booleans and expressions\n");
 	printf("8)  set the value of a boolean\n");
 	printf("9)  search for conditional expressions\n");
+	printf("u)  display fs_use statements\n");
+	printf("p)  display portcon statements\n");
+	printf("n)  display netifcon statements\n");
+	printf("o)  display nodecon statements\n");
+	printf("g)  display genfscon statements\n");
+	printf("c)  display constraints and validatetrans\n");
+	printf("M)  display MLS components\n");
 	printf("t)  analyze types relationship\n");
 	printf("h)  (re)load hash table, and print table eval stats\n");
 	printf("l)  test relabel analysis\n");
@@ -2321,6 +2443,27 @@ int main(int argc, char *argv[])
 		case 'l':
 			test_relabel_analysis(policy);
 			menu();
+			break;
+		case 'u':
+			test_print_fs_use(policy);
+			break;
+		case 'p':
+			test_print_portcon(policy);
+			break;
+		case 'n':
+			test_print_netifcon(policy);
+			break;
+		case 'o':
+			test_print_nodecon(policy);
+			break;
+		case 'g':
+			test_print_genfscon(policy);
+			break;
+		case 'c':
+			test_print_constraints(policy);
+			break;
+		case 'M':
+			test_print_mls(policy);
 			break;
 		case 'f':
 			printf("\nFilename for output (<CR> for screen output): ");

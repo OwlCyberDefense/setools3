@@ -235,6 +235,8 @@ static int avl_add_class(void *user_data, const void *key, int idx)
 	policy->obj_classes[idx].common_perms = -1;
 	policy->obj_classes[idx].num_u_perms = 0;
 	policy->obj_classes[idx].u_perms = NULL;
+	policy->obj_classes[idx].constraints = NULL;
+	policy->obj_classes[idx].validatetrans = NULL;
 	(policy->num_obj_classes)++;
 	return 0;
 }

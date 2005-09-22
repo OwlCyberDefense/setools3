@@ -63,6 +63,10 @@
 #include "policy.h"
 #include "cond.h"
 #include <assert.h>
+#include <netinet/in.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
 
 queue_t id_queue = 0;
 unsigned int pass;
@@ -70,42 +74,6 @@ unsigned int pass;
 /* our GLOBAL policy structure */
 policy_t *parse_policy = NULL;
 
-typedef struct constraint_expr {
-#define AP_CEXPR_NOT   1 	/* not expr */
-#define AP_CEXPR_AND   2 	/* expr and expr */
-#define AP_CEXPR_OR    3 	/* expr or expr */
-#define AP_CEXPR_ATTR  4 	/* attr op attr */
-#define AP_CEXPR_NAMES 5 	/* attr op names */	
-	uint32_t expr_type;	/* expression type */
-
-#define AP_CEXPR_USER    1	/* user */
-#define AP_CEXPR_ROLE    2	/* role */
-#define AP_CEXPR_TYPE    4	/* type */
-#define AP_CEXPR_TARGET  8	/* target if set, source otherwise */
-#define AP_CEXPR_L1_L2  16	/* low1 op low2 */
-#define AP_CEXPR_L1_H2  32	/* low1 op high2 */
-#define AP_CEXPR_H1_L2  64	/* high1 op low2 */
-#define AP_CEXPR_H1_H2 128	/* high1 op high2 */
-#define AP_CEXPR_L1_H1 256	/* low1 op high1 */
-#define AP_CEXPR_L2_H2 512	/* low2 op high2 */
-#define AP_CEXPR_XTGT 1024	/* [urt]3 op names */
-	uint32_t attr;		/* attribute */
-
-#define AP_CEXPR_EQ     1	/* == or eq */
-#define AP_CEXPR_NEQ    2	/* != */
-#define AP_CEXPR_DOM    3	/* dom */
-#define AP_CEXPR_DOMBY  4	/* domby  */
-#define AP_CEXPR_INCOMP 5	/* incomp */
-	uint32_t op;		/* operator */
-	
-/*	ebitmap_t names;*/	/* names */
-
-	struct constraint_expr *left;
-	struct constraint_expr *right;
-
-	__u32 count;		/* reference count */
-} constraint_expr_t;
-/* end from constraint.h */
 
 /* this is for passing around a rule (used in the conditional
  * policy support.
@@ -149,20 +117,21 @@ static int define_role_types(void);
 static int define_role_dom(void);
 static int define_role_trans(void);
 static int define_role_allow(void);
-static int define_constraint(void);
+static int define_constraint(bool_t is_mls, ap_constraint_expr_t *expr);
 static int define_mls(void);
 static int mls_valid(void);
-static int define_validatetrans(void);
+static int define_validatetrans(bool_t is_mls, ap_constraint_expr_t *expr);
 static int define_range_trans(void);
-static constraint_expr_t *define_cexpr(__u32 expr_type, __u32 arg1, __u32 arg2);
+static ap_constraint_expr_t *define_cexpr(__u32 expr_type, __u32 arg1, __u32 arg2);
 static int define_user(void);
 static security_con_t *parse_security_context(int dontsave);
 static int define_initial_sid_context(void);
 static int define_devfs_context(int has_type);
 static int define_fs_context(int ver);
-static int define_port_context(int ver);
+static int define_port_context(int ver, int low, int high);
 static int define_netif_context(int ver);
-static int define_ipv4_node_context(int ver);
+static int define_ipv4_node_context(int ver, __u32 addr, __u32 mask);
+static uint32_t *parse_ipv6_addr(char *addr_str);
 static int define_ipv6_node_context(int ver);
 static int define_fs_use(int behavior, int ver);
 static int define_genfs_context(int has_type);
@@ -337,7 +306,7 @@ level_def		: LEVEL identifier ':' id_comma_list ';'
 			{if (define_level()) return -1;}
 			| LEVEL identifier ';' 
 			{if (define_level()) return -1;}
-			| LEVEL identifier ':' identifier '.' identifier ';'
+			| LEVEL identifier ':' identifier '.' { if (insert_id(".", 0)) return -1; } identifier ';'
 			{if (define_level()) return -1;} 
 			;
 te_rbac			: te_rbac_decl
@@ -559,16 +528,16 @@ mls_constraints		: mls_constraint_def
 			| mls_constraints mlsvalidatetrans_def
 			;
 constraint_def		: CONSTRAIN names names mls_cexpr ';'
-			{ if (define_constraint()) return -1; }
+			{ if (define_constraint(FALSE, (ap_constraint_expr_t *)$4)) return -1; }
 			;
 mls_constraint_def	: MLSCONSTRAIN names names mls_cexpr ';'
-			{ if (define_constraint() | define_mls()) return -1; } 
+			{ if (define_mls() | define_constraint(TRUE, (ap_constraint_expr_t *)$4)) return -1; } 
 			;
 validatetrans_def	: VALIDATETRANS names mls_trans_cexpr ';'
-			{ if (define_validatetrans()) return -1; }
+			{ if (define_validatetrans(FALSE, (ap_constraint_expr_t *)$3)) return -1; }
 			;
 mlsvalidatetrans_def	: MLSVALIDATETRANS names mls_trans_cexpr ';'
-			{ if (define_validatetrans() | define_mls()) return -1; }
+			{ if (define_mls() | define_validatetrans(TRUE, (ap_constraint_expr_t *)$3)) return -1; }
 			;
 mls_cexpr		: '(' mls_cexpr ')'
 			{ $$ = $2; }
@@ -645,38 +614,38 @@ cexpr_prim		: U1 op U2
 			  if ($$ == 0) return -1; }
 			;
 trans_prim		: U3 op { if (insert_separator(1)) return -1; } names_push
-			{ $$ = (int) define_cexpr(AP_CEXPR_NAMES, AP_CEXPR_USER | AP_CEXPR_XTGT, $2);
+			{ $$ = (int) define_cexpr(AP_CEXPR_NAMES, AP_CEXPR_USER | AP_CEXPR_XTARGET, $2);
 			  if ($$ == 0) return -1; }
 			| R3 op { if (insert_separator(1)) return -1; } names_push
-			{ $$ = (int) define_cexpr(AP_CEXPR_NAMES, AP_CEXPR_ROLE | AP_CEXPR_XTGT, $2);
+			{ $$ = (int) define_cexpr(AP_CEXPR_NAMES, AP_CEXPR_ROLE | AP_CEXPR_XTARGET, $2);
 			  if ($$ == 0) return -1; }
 			| T3 op { if (insert_separator(1)) return -1; } names_push
-			{ $$ = (int) define_cexpr(AP_CEXPR_NAMES, AP_CEXPR_TYPE | AP_CEXPR_XTGT, $2);
+			{ $$ = (int) define_cexpr(AP_CEXPR_NAMES, AP_CEXPR_TYPE | AP_CEXPR_XTARGET, $2);
 			  if ($$ == 0) return -1; }
 			;
 mls_prim		: L1 roleop L2
 			{ if (!mls_valid()) YYABORT;
-			  $$ = (int) define_cexpr(AP_CEXPR_ATTR, AP_CEXPR_L1_L2, $2);
+			  $$ = (int) define_cexpr(AP_CEXPR_ATTR, AP_CEXPR_MLS_LOW1_LOW2, $2);
 			  if ($$ == 0) return -1; }
 			| L1 roleop H2
 			{ if (!mls_valid()) YYABORT;
-			  $$ = (int) define_cexpr(AP_CEXPR_ATTR, AP_CEXPR_L1_H2, $2);
+			  $$ = (int) define_cexpr(AP_CEXPR_ATTR, AP_CEXPR_MLS_LOW1_HIGH2, $2);
 			  if ($$ == 0) return -1; }
 			| H1 roleop L2
 			{ if (!mls_valid()) YYABORT;
-			  $$ = (int) define_cexpr(AP_CEXPR_ATTR, AP_CEXPR_H1_L2, $2);
+			  $$ = (int) define_cexpr(AP_CEXPR_ATTR, AP_CEXPR_MLS_HIGH1_LOW2, $2);
 			  if ($$ == 0) return -1; }
 			| H1 roleop H2
 			{ if (!mls_valid()) YYABORT;
-			  $$ = (int) define_cexpr(AP_CEXPR_ATTR, AP_CEXPR_H1_H2, $2);
+			  $$ = (int) define_cexpr(AP_CEXPR_ATTR, AP_CEXPR_MLS_HIGH1_HIGH2, $2);
 			  if ($$ == 0) return -1; }
 			| L1 roleop H1
 			{ if (!mls_valid()) YYABORT;
-			  $$ = (int) define_cexpr(AP_CEXPR_ATTR, AP_CEXPR_L1_H1, $2);
+			  $$ = (int) define_cexpr(AP_CEXPR_ATTR, AP_CEXPR_MLS_LOW1_HIGH1, $2);
 			  if ($$ == 0) return -1; }
 			| L2 roleop H2
 			{ if (!mls_valid()) YYABORT;
-			  $$ = (int) define_cexpr(AP_CEXPR_ATTR, AP_CEXPR_L2_H2, $2);
+			  $$ = (int) define_cexpr(AP_CEXPR_ATTR, AP_CEXPR_MLS_LOW2_HIGH2, $2);
 			  if ($$ == 0) return -1; }
 			;
 trans_cexpr_prim	: trans_prim
@@ -725,7 +694,7 @@ user_range		: mls_range_def
 dflt_lvl		: identifier opt_cat_list
 			;
 opt_cat_list		: ':' id_comma_list
-			| ':' identifier '.' identifier
+			| ':' identifier '.' { if (insert_id(".", 0)) return -1; } identifier
 			| 
 			;
 initial_sid_contexts	: initial_sid_context_def
@@ -766,13 +735,13 @@ fs_uses                 : fs_use_def
 /* added Jul 2002 */
 /* changed Jul 2003; added FSUSEXATTR */
 fs_use_def              : FSUSEPSID identifier ';' 
-                        {if (define_fs_use(0, POL_VER_JUL2002)) return -1;}
+                        {if (define_fs_use(AP_FS_USE_PSID, POL_VER_JUL2002)) return -1;}
                         | FSUSEXATTR identifier security_context_def ';'
-                        {if (define_fs_use(1, POL_VER_15)) return -1;}
+                        {if (define_fs_use(AP_FS_USE_XATTR, POL_VER_15)) return -1;}
                         | FSUSETASK identifier security_context_def ';'
-                        {if (define_fs_use(1, POL_VER_JUL2002)) return -1;}
+                        {if (define_fs_use(AP_FS_USE_TASK, POL_VER_JUL2002)) return -1;}
                         | FSUSETRANS identifier security_context_def ';'
-                        {if (define_fs_use(1, POL_VER_JUL2002)) return -1;}
+                        {if (define_fs_use(AP_FS_USE_TRANS, POL_VER_JUL2002)) return -1;}
                         ; 
 /* added Jul 2002 */                       
 opt_genfs_contexts      : genfs_contexts
@@ -828,18 +797,18 @@ port_contexts_11	: port_context_def_11
 			
 /* changed Jul 2002 to add PORTCON keyword */
 port_context_def_11	: PORTCON identifier number security_context_def
-			{if (define_port_context(POL_VER_JUL2002)) return -1;}
+			{if (define_port_context(POL_VER_JUL2002, $3, $3)) return -1;}
 			| PORTCON identifier number '-' number security_context_def
-			{if (define_port_context(POL_VER_JUL2002)) return -1;}
+			{if (define_port_context(POL_VER_JUL2002, $3, $5)) return -1;}
 			;
 /* removed in Jul 2002; keep to allow old form for backwards compatability */
 port_contexts_pre11	: port_context_def_pre11
 			| port_contexts_pre11 port_context_def_pre11
 			;
 port_context_def_pre11	: identifier number security_context_def
-			{if (define_port_context(POL_VER_PREJUL2002)) return -1;}
+			{if (define_port_context(POL_VER_PREJUL2002, $2, $2)) return -1;}
 			| identifier number '-' number security_context_def
-			{if (define_port_context(POL_VER_PREJUL2002)) return -1;}
+			{if (define_port_context(POL_VER_PREJUL2002, $2, $4)) return -1;}
 			;
 /* added Jul 2002 */
 opt_netif_contexts_11   : netif_contexts_11
@@ -868,7 +837,7 @@ node_contexts_11	: node_context_def_11
 			;
 /* changed Jul 2002 to add NODECON keyword (v 11) or later version changes (e.g., 17 w/ IPv6) */
 node_context_def_11	: NODECON ipv4_addr_def ipv4_addr_def security_context_def
-			{if (define_ipv4_node_context(POL_VER_JUL2002)) return -1;}
+			{if (define_ipv4_node_context(POL_VER_JUL2002, $2, $3)) return -1;}
 			| NODECON ipv6_addr ipv6_addr security_context_def
 			{if (define_ipv6_node_context(POL_VER_17)) return -1;}
  			;
@@ -878,7 +847,7 @@ node_contexts_pre11	: node_context_def_pre11
 			;
 /* removed in Jul 2002; keep to allow old form for backwards compatability */
 node_context_def_pre11	: ipv4_addr_def ipv4_addr_def security_context_def
-			{if (define_ipv4_node_context(POL_VER_PREJUL2002)) return -1;}
+			{if (define_ipv4_node_context(POL_VER_PREJUL2002, $1, $2)) return -1;}
 			;
 /* all NFS remove Jul 2002 */
 opt_nfs_contexts        : nfs_contexts
@@ -906,8 +875,16 @@ devfs_context_def	: path '-' identifier security_context_def
 			{if (define_devfs_context(0)) return -1;}
 			;
 ipv4_addr_def		: number '.' number '.' number '.' number
-			{ 
-			  /*do nothing*/
+			{
+				unsigned int address = 0;
+				address |= ($1 & 0xff);
+				address = address << 8;
+				address |= ($3 & 0xff);
+				address = address << 8;
+				address |= ($5 & 0xff);
+				address = address << 8;
+				address |= ($7 & 0xff);
+				$$ = address;
 			}
 			;	
 ipv6_addr		: IPV6_ADDR
@@ -927,7 +904,7 @@ mls_level_def		: identifier ':' id_comma_list
 			{if (insert_separator(0)) return -1;}
 	                | identifier 
 			{if (insert_separator(0)) return -1;}
-			| identifier ':' identifier '.' identifier
+			| identifier ':' identifier '.' { if (insert_id(".", 0)) return -1; } identifier
 			{ if (insert_separator(0)) return -1; }
 			;
 id_comma_list           : identifier
@@ -2195,6 +2172,7 @@ static int define_user(void)
 	
 
 	/* strip any MLS level/range definitions*/
+	/* TODO store this */
 	while ((id = queue_remove(id_queue))) { /* sensitivity */
 		free(id);
 	}
@@ -2923,7 +2901,7 @@ static int define_initial_sid(void)
 static security_con_t *parse_security_context(int dontsave)
 {
 	char *id;
-	int rt; 
+	int rt, l;
 	security_con_t *scontext;
 	
 	if (pass == 1 || dontsave) {
@@ -2934,16 +2912,16 @@ static security_con_t *parse_security_context(int dontsave)
 		id = queue_remove(id_queue);  /* type  */
 		free(id);
 
-
 		int l;
-		for (l = 0; l < 4; l++) {
+		for (l = 0; l < 2; l++) {
 			while ((id = queue_remove(id_queue))) {
 				free(id);
 			}
+		id = queue_head(id_queue);
+		if (!id)
+			id = queue_remove(id_queue);
 		}
-
-
-	return NULL; /* In this case this is not an error */
+		return NULL; /* In this case this is not an error */
 	}
 	
 	scontext = (security_con_t *)malloc(sizeof(security_con_t));
@@ -3005,13 +2983,17 @@ static security_con_t *parse_security_context(int dontsave)
 	free(id);
 	scontext->type = rt;	
 	
-
-	int l;
-	for (l = 0; l < 4; l++) {
-		while ((id = queue_remove(id_queue))) {
-			free(id);
+	if (parse_policy->version >= POL_VER_MLS) {
+		for (l = 0; l < 2; l++) {
+			while ((id = queue_remove(id_queue))) {
+				free(id);
+			}
 		}
+		id = queue_head(id_queue);
+		if (!id)
+			id = queue_remove(id_queue);
 	}
+
 	return scontext;
 }
 
@@ -3070,63 +3052,338 @@ static int define_initial_sid_context(void)
 
 static int define_sens(void)
 {
-	char *id;
+	char *id, *name = NULL;
 	int rt;
-	while ((id = queue_remove(id_queue))) 
-		free(id);
+	name_item_t *aliases = NULL;
+
 	rt = set_policy_version(POL_VER_MLS, parse_policy);
 	if(rt != 0) {
 		yyerror("error setting policy version");
 		return -1;
 	}
+
+	if (pass == 2) {
+		while ((id = queue_remove(id_queue))) 
+			free(id);
+		return 0;
+	}
+
+	name = queue_remove(id_queue);
+	if (!name) {
+		yyerror("no name for sensitivity?");
+		return -1;
+	}
+
+	while ( (id = queue_remove(id_queue)) ) {
+		rt = add_name(id, &aliases);
+		if (rt) {
+			free_name_list(aliases);
+			yyerror("error adding alias to sensitivity");
+			return -1;
+		}
+	}
+
+	rt = add_sensitivity(name, aliases, parse_policy);
+	if (rt) {
+		free(name);
+		free_name_list(aliases);
+		yyerror("error adding sensitivity to policy");
+		return -1;
+	}
+
 	return 0;
 }
 
 static int define_dominance(void)
 {
 	char *id;
-	int rt;
-	while ((id = queue_remove(id_queue))) 
-		free(id);
-	return 0;
+	int rt, i = 0;
+
+	if (pass == 2) {
+		while ((id = queue_remove(id_queue)))
+			free(id);
+		return 0;
+	}
+
 	rt = set_policy_version(POL_VER_MLS, parse_policy);
 	if(rt != 0) {
 		yyerror("error setting policy version");
 		return -1;
 	}
+
+	parse_policy->mls_dominance = (int*)malloc(parse_policy->num_sensitivities * sizeof(int));
+	if (!parse_policy->mls_dominance) {
+		yyerror("out of memory");
+		return -1;
+	}
+	for (i = 0; i < parse_policy->num_sensitivities; i++)
+		parse_policy->mls_dominance[i] = -1;
+
+	i = 0;
+	while ((id = queue_remove(id_queue))) {
+		rt = get_sensitivity_idx(id, parse_policy);
+		if (rt < 0) {
+			yyerror("undefined sensitivity in dominance definition");
+			return -1;
+		}
+		if (i >= parse_policy->num_sensitivities) {
+			yyerror("too many sensitivities in dominance definition?");
+			return -1;
+		}
+		if (find_int_in_array(rt, parse_policy->mls_dominance, parse_policy->num_sensitivities) != -1) {
+			yyerror("duplicate sensitivity in  dominance definition");
+			return -1;
+		}
+
+		parse_policy->mls_dominance[i] = rt;
+
+		i++;
+		free(id);
+	}
+
+	if (i != parse_policy->num_sensitivities) {
+		yyerror("all sensitivities must be specified in dominance definition");
+		return -1;
+	}
+
 	return 0;
 }
 
 static int define_category(void)
 {
-	char *id;
-	while ((id = queue_remove(id_queue))) 
-		free(id);
-	return 0;
-	set_policy_version(POL_VER_MLS,parse_policy);
-}
-
-static int define_level(void)
-{
-	char *id;
+	char *id, *name = NULL;
 	int rt;
-	while ((id = queue_remove(id_queue))) 
-		free(id);
-	return 0;
+	name_item_t *aliases = NULL;
+
 	rt = set_policy_version(POL_VER_MLS, parse_policy);
 	if(rt != 0) {
 		yyerror("error setting policy version");
 		return -1;
 	}
+
+	if (pass == 2) {
+		while ((id = queue_remove(id_queue))) 
+			free(id);
+		return 0;
+	}
+
+	name = queue_remove(id_queue);
+	if (!name) {
+		yyerror("no name for category?");
+		return -1;
+	}
+
+	while ( (id = queue_remove(id_queue)) ) {
+		rt = add_name(id, &aliases);
+		if (rt) {
+			free_name_list(aliases);
+			yyerror("error adding alias to category");
+			return -1;
+		}
+	}
+
+	rt = add_category(name, aliases, parse_policy);
+	if (rt) {
+		free(name);
+		free_name_list(aliases);
+		yyerror("error adding category to policy");
+		return -1;
+	}
+
+	return 0;
 }
 
-static int define_constraint(void)
+static int define_level(void)
+{
+	char *id, *id_2nd;
+	int rt, sens, num_cats = 0, i;
+	int *cats = NULL;
+
+	rt = set_policy_version(POL_VER_MLS, parse_policy);
+	if(rt != 0) {
+		yyerror("error setting policy version");
+		return -1;
+	}
+
+	if (pass == 2) {
+		while ((id = queue_remove(id_queue)))
+			free(id);
+		return 0;
+	}
+
+	id = queue_remove(id_queue);
+	sens = get_sensitivity_idx(id, parse_policy);
+	if (sens < 0) {
+		yyerror("invalid sensitivity in level definition");
+		return -1;
+	}
+	free(id);
+
+	while ((id = queue_remove(id_queue))) {
+		if (!strcmp(id, ".")) {
+			free(id);
+			if (num_cats == 0) {
+				yyerror("no starting category for category range in level definition?");
+				return -1;
+			}
+			id = queue_remove(id_queue);
+			if (!id) {
+				yyerror("incomplete category range in level definition");
+				return -1;
+			}
+			rt = get_category_idx(id, parse_policy);
+			if (rt < 0) {
+				snprintf(errormsg, sizeof(errormsg), "undefined category %s in level definition", id);
+				yyerror(errormsg);
+				return -1;
+			}
+			i = cats[num_cats-1];
+			if (i >= rt) {
+				yyerror("invalid category range in level definition");
+				return -1;
+			}
+			i++; /* do not add i twice */
+			for (/* i already initialized */; i <= rt; i++) {
+				if (add_i_to_a(i, &num_cats, &cats)) {
+					yyerror("out of memory");
+					return -1;
+				}
+			}
+			free(id);
+		} else if ((id_2nd = strchr(id, '.'))) {
+			*(id_2nd++) = '\0';
+			i = get_category_idx(id, parse_policy);
+			if (i < 0) {
+				snprintf(errormsg, sizeof(errormsg), "undefined category %s in level definition", id);
+				yyerror(errormsg);
+				return -1;
+			}
+			rt = get_category_idx(id_2nd, parse_policy);
+			if (rt < 0) {
+				snprintf(errormsg, sizeof(errormsg), "undefined category %s in level definition", id_2nd);
+				yyerror(errormsg);
+				return -1;
+			}
+			if (i >= rt) {
+				yyerror("invalid category range in level definition");
+				return -1;
+			}
+			for (/* i already initialized */; i <= rt; i++) {
+				if (add_i_to_a(i, &num_cats, &cats)) {
+					yyerror("out of memory");
+					return -1;
+				}
+			}
+			free(id);
+			id_2nd = NULL;
+		} else {
+			i = get_category_idx(id, parse_policy);
+			free(id);
+			if (i < 0) {
+				snprintf(errormsg, sizeof(errormsg), "undefined category %s in level definition", id);
+				yyerror(errormsg);
+				return -1;
+			}
+			if (add_i_to_a(i, &num_cats, &cats)) {
+				yyerror("out of memory");
+				return -1;
+			}
+		}	
+	}
+
+	rt = add_mls_level(sens, cats, num_cats, parse_policy);
+	if (rt) {
+		yyerror("error adding level to the policy");
+		return -1;
+	}
+
+	return 0;
+}
+
+static int define_constraint(bool_t is_mls, ap_constraint_expr_t *expr)
 {
 	char *id;
-	while ((id = queue_remove(id_queue))) 
+	ta_item_t *classes = NULL, *perms = NULL, *item = NULL;
+	int idx, rt;
+
+	if (pass == 1) {
+		while ((id = queue_remove(id_queue))) 
+			free(id);
+		while ((id = queue_remove(id_queue))) 
+			free(id);
+		return 0;
+	}
+
+	while ((id = queue_remove(id_queue))) {
+		idx = get_obj_class_idx(id, parse_policy);
 		free(id);
-	while ((id = queue_remove(id_queue))) 
+		if (idx == -1) {
+			yyerror("invalid object class");
+			ap_constraint_expr_destroy(expr);
+			free_ta_list(classes);
+			return -1;
+		}
+		item = (ta_item_t*)calloc(1, sizeof(ta_item_t));
+		if (!item) {
+			free_ta_list(classes);
+			ap_constraint_expr_destroy(expr);
+			yyerror("out of memory");
+			return -1;
+		}
+		item->idx = idx;
+		item->type = IDX_OBJ_CLASS;
+		rt = insert_ta_item(item, &classes);
+		if (rt) {
+			free(item);
+			free_ta_list(classes);
+			ap_constraint_expr_destroy(expr);
+			yyerror("out of memory");
+			return -1;
+		}
+		item = NULL;
+	}
+
+	while ((id = queue_remove(id_queue))) {
+		idx = get_perm_idx(id, parse_policy);
 		free(id);
+		if (idx == -1) {
+			yyerror("invalid permission");
+			ap_constraint_expr_destroy(expr);
+			free_ta_list(classes);
+			free_ta_list(perms);
+			return -1;
+		}
+		item = (ta_item_t*)calloc(1, sizeof(ta_item_t));
+		if (!item) {
+			free_ta_list(classes);
+			free_ta_list(perms);
+			ap_constraint_expr_destroy(expr);
+			yyerror("out of memory");
+			return -1;
+		}
+		item->idx = idx;
+		item->type = IDX_PERM;
+		rt = insert_ta_item(item, &perms);
+		if (rt) {
+			free(item);
+			free_ta_list(classes);
+			free_ta_list(perms);
+			ap_constraint_expr_destroy(expr);
+			yyerror("out of memory");
+			return -1;
+		}
+		item = NULL;
+	}
+
+	rt = add_constraint(is_mls, classes, perms, expr, policydb_lineno, parse_policy);
+	if (rt) {
+		free_ta_list(classes);
+		free_ta_list(perms);
+		ap_constraint_expr_destroy(expr);
+		yyerror("error adding constraint to policy");
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -3145,41 +3402,546 @@ static int mls_valid(void)
 	}
 }
 
-static int define_validatetrans(void)
+static int define_validatetrans(bool_t is_mls, ap_constraint_expr_t *expr)
 {
 	char *id;
-	while ((id = queue_remove(id_queue)))
+	ta_item_t *classes = NULL, *item = NULL;
+	int idx, rt;
+
+	if (pass == 1) {
+		while ((id = queue_remove(id_queue))) 
+			free(id);
+		return 0;
+	}
+
+	while ((id = queue_remove(id_queue))) {
+		idx = get_obj_class_idx(id, parse_policy);
 		free(id);
-	while ((id = queue_remove(id_queue)))
-		free(id);
-	return  0;
+		if (idx == -1) {
+			yyerror("invalid object class");
+			ap_constraint_expr_destroy(expr);
+			free_ta_list(classes);
+			return -1;
+		}
+		item = (ta_item_t*)calloc(1, sizeof(ta_item_t));
+		if (!item) {
+			free_ta_list(classes);
+			ap_constraint_expr_destroy(expr);
+			yyerror("out of memory");
+			return -1;
+		}
+		item->idx = idx;
+		item->type = IDX_OBJ_CLASS;
+		rt = insert_ta_item(item, &classes);
+		if (rt) {
+			free(item);
+			free_ta_list(classes);
+			ap_constraint_expr_destroy(expr);
+			yyerror("out of memory");
+			return -1;
+		}
+		item = NULL;
+	}
+
+	rt = add_validatetrans(is_mls, classes, expr, policydb_lineno, parse_policy);
+	if (rt) {
+		free_ta_list(classes);
+		ap_constraint_expr_destroy(expr);
+		yyerror("error adding validatetrans to policy");
+		return -1;
+	}
+
+	return 0;
 }
 
 static int define_range_trans(void)
 {
-	char *id;
-	int rt;
-	while ((id = queue_remove(id_queue)))
-		free(id);
-	while ((id = queue_remove(id_queue)))
-		free(id);
+	char *id, *id_2nd;
+	int rt, l, idx, idx_type, i;
+	int *cats = NULL, num_cats = 0;
+	ap_rangetrans_t *new_rngtr = NULL;
+	bool_t subtract;
+	ta_item_t *titem = NULL;
+	ap_mls_range_t *range = NULL;
+
 	rt = set_policy_version(POL_VER_MLS, parse_policy);
 	if(rt != 0) {
 		yyerror("error setting policy version");
 		return -1;
 	}
+
+	if (pass == 1)  {
+		while ((id = queue_remove(id_queue)))
+			free(id);
+		while ((id = queue_remove(id_queue)))
+			free(id);
+		id = queue_remove(id_queue); 
+		free(id); 
+		for (l = 0; l < 2; l++) {
+			while ((id = queue_remove(id_queue))) {
+				free(id);
+			}
+			id = queue_remove(id_queue);
+			if (!id)
+				break;
+			free(id); 
+		}
+	return 0;
+	}
+
+	new_rngtr = add_new_rangetrans(parse_policy);
+	if (new_rngtr == NULL) {
+		yyerror("Problem adding rangetrans to policy");
+		return -1;
+	}
+	
+	new_rngtr->lineno = policydb_lineno;
+
+	/*read source (domain) */
+	subtract = FALSE;
+	while ((id = queue_remove(id_queue))) {
+		if (strcmp(id, "*") == 0) {
+			new_rngtr->flags |= AVFLAG_SRC_STAR;
+			free(id);
+			continue;
+		}
+		if (strcmp(id, "-") == 0) {
+			subtract = TRUE;
+			free(id);
+			continue;
+		}
+		if (strcmp(id, "~") == 0) {
+			new_rngtr->flags |= AVFLAG_SRC_TILDA;
+			free(id);
+			continue;
+		}
+		idx = get_type_or_attrib_idx(id, &idx_type, parse_policy);
+		if (idx < 0) {
+			snprintf(errormsg, sizeof(errormsg), "%s is neither a type nor type attribute", id);
+			yyerror(errormsg);
+			return -1;
+		}
+		titem = (ta_item_t*)malloc(sizeof(ta_item_t));
+		if (titem == NULL) {
+			yyerror("out of memory");
+			return -1;
+		}
+		titem->type = idx_type;
+		if (subtract) {
+			titem->type |= IDX_SUBTRACT;
+			subtract = FALSE;
+		}
+		titem->idx = idx;
+		if (insert_ta_item(titem, &(new_rngtr->src_types)) != 0) {
+			snprintf(errormsg, sizeof(errormsg), "failed ta_item insetion for source type id %s", id);
+			yyerror(errormsg);
+			return -1;
+		}
+		free(id);
+	}
+
+	/* read target (executable) types */
+	subtract = FALSE;
+	while ((id = queue_remove(id_queue))) {
+		if (strcmp(id, "*") == 0) {
+			new_rngtr->flags |= AVFLAG_TGT_STAR;
+			free(id);
+			continue;
+		}
+		if (strcmp(id, "-") == 0) {
+			subtract = TRUE;
+			free(id);
+			continue;
+		}
+		if (strcmp(id, "~") == 0) {
+			new_rngtr->flags |= AVFLAG_TGT_TILDA;
+			free(id);
+			continue;
+		}
+		idx = get_type_or_attrib_idx(id, &idx_type, parse_policy);
+		if (idx < 0) {
+			snprintf(errormsg, sizeof(errormsg), "%s is neither a type nor type attribute", id);
+			yyerror(errormsg);
+			return -1;
+		}
+		titem = (ta_item_t*)malloc(sizeof(ta_item_t));
+		if (titem == NULL) {
+			yyerror("out of memory");
+			return -1;
+		}
+		titem->type = idx_type;
+		if (subtract) {
+			titem->type |= IDX_SUBTRACT;
+			subtract = FALSE;
+		}
+		titem->idx = idx;
+		if (insert_ta_item(titem, &(new_rngtr->tgt_types)) != 0) {
+			snprintf(errormsg, sizeof(errormsg), "failed ta_item insetion for target type id %s", id);
+			yyerror(errormsg);
+			return -1;
+		}
+		free(id);
+	}
+
+	/* read range */
+
+	range = (ap_mls_range_t*)malloc(sizeof(ap_mls_range_t));
+	if (range == NULL) {
+		yyerror("out of memory");
+		return -1;
+	}
+	
+	range->low = (ap_mls_level_t*)malloc(sizeof(ap_mls_level_t));
+	if (range->low == NULL) {
+		yyerror("out of memory");
+		return -1;
+	}
+	
+	id = queue_remove(id_queue);
+	range->low->sensitivity = get_sensitivity_idx(id, parse_policy);
+	if (range->low->sensitivity < 0) {
+		yyerror("invalid sensitivity in rangetrans low level");
+		return -1;
+	}
+
+	while ((id = queue_remove(id_queue))) {
+		if (!strcmp(id, ".")) {
+			free(id);
+			if (num_cats == 0) {
+				yyerror("no starting category for category range in rangetrans low level?");
+				return -1;
+			}
+			id = queue_remove(id_queue);
+			if (!id) {
+				yyerror("incomplete category range in rangetrans low level");
+				return -1;
+			}
+			rt = get_category_idx(id, parse_policy);
+			if (rt < 0) {
+				snprintf(errormsg, sizeof(errormsg), "undefined category %s in rangetrans low level", id);
+				yyerror(errormsg);
+				return -1;
+			}
+			i = cats[num_cats-1];
+			if (i >= rt) {
+				yyerror("invalid category range in rangetrans low level");
+				return -1;
+			}
+			i++; /* do not add i twice */
+			for (/* i already initialized */; i <= rt; i++) {
+				if (add_i_to_a(i, &num_cats, &cats)) {
+					yyerror("out of memory");
+					return -1;
+				}
+			}
+			free(id);
+		} else if ((id_2nd = strchr(id, '.'))) {
+			*(id_2nd++) = '\0';
+			i = get_category_idx(id, parse_policy);
+			if (i < 0) {
+				snprintf(errormsg, sizeof(errormsg), "undefined category %s in rangetrans low level", id);
+				yyerror(errormsg);
+				return -1;
+			}
+			rt = get_category_idx(id_2nd, parse_policy);
+			if (rt < 0) {
+				snprintf(errormsg, sizeof(errormsg), "undefined category %s in rangetrans low level", id_2nd);
+				yyerror(errormsg);
+				return -1;
+			}
+			if (i >= rt) {
+				yyerror("invalid category range in rangetrans low level");
+				return -1;
+			}
+			for (/* i already initialized */; i <= rt; i++) {
+				if (add_i_to_a(i, &num_cats, &cats)) {
+					yyerror("out of memory");
+					return -1;
+				}
+			}
+			free(id);
+			id_2nd = NULL;
+		} else {
+			i = get_category_idx(id, parse_policy);
+			free(id);
+			if (i < 0) {
+				snprintf(errormsg, sizeof(errormsg), "undefined category %s in rangetrans low level", id);
+				yyerror(errormsg);
+				return -1;
+			}
+			if (add_i_to_a(i, &num_cats, &cats)) {
+				yyerror("out of memory");
+				return -1;
+			}
+		}	
+	}
+	range->low->categories = cats;
+	cats = NULL;
+	range->low->num_categories = num_cats;
+	num_cats = 0;
+
+	id = queue_remove(id_queue);
+	if (id == NULL) {
+		range->high = range->low;
+		new_rngtr->range = range;
+		return 0; /* done at this point, range is only one level */
+	}
+	range->high = (ap_mls_level_t*)malloc(sizeof(ap_mls_level_t));
+	if (range->high == NULL) {
+		yyerror("out of memory");
+		return -1;
+	}
+	range->high->sensitivity = get_sensitivity_idx(id, parse_policy);
+	if (range->high->sensitivity < 0) {
+		yyerror("invalid sensitivity in rangetrans high level");
+		return -1;
+	}
+
+	while ((id = queue_remove(id_queue))) {
+		if (!strcmp(id, ".")) {
+			free(id);
+			if (num_cats == 0) {
+				yyerror("no starting category for category range in rangetrans high level?");
+				return -1;
+			}
+			id = queue_remove(id_queue);
+			if (!id) {
+				yyerror("incomplete category range in rangetrans high level");
+				return -1;
+			}
+			rt = get_category_idx(id, parse_policy);
+			if (rt < 0) {
+				snprintf(errormsg, sizeof(errormsg), "undefined category %s in rangetrans high level", id);
+				yyerror(errormsg);
+				return -1;
+			}
+			i = cats[num_cats-1];
+			if (i >= rt) {
+				yyerror("invalid category range in rangetrans high level");
+				return -1;
+			}
+			i++; /* do not add i twice */
+			for (/* i already initialized */; i <= rt; i++) {
+				if (add_i_to_a(i, &num_cats, &cats)) {
+					yyerror("out of memory");
+					return -1;
+				}
+			}
+			free(id);
+		} else if ((id_2nd = strchr(id, '.'))) {
+			*(id_2nd++) = '\0';
+			i = get_category_idx(id, parse_policy);
+			if (i < 0) {
+				snprintf(errormsg, sizeof(errormsg), "undefined category %s in rangetrans high level", id);
+				yyerror(errormsg);
+				return -1;
+			}
+			rt = get_category_idx(id_2nd, parse_policy);
+			if (rt < 0) {
+				snprintf(errormsg, sizeof(errormsg), "undefined category %s in rangetrans high level", id_2nd);
+				yyerror(errormsg);
+				return -1;
+			}
+			if (i >= rt) {
+				yyerror("invalid category range in rangetrans high level");
+				return -1;
+			}
+			for (/* i already initialized */; i <= rt; i++) {
+				if (add_i_to_a(i, &num_cats, &cats)) {
+					yyerror("out of memory");
+					return -1;
+				}
+			}
+			free(id);
+			id_2nd = NULL;
+		} else {
+			i = get_category_idx(id, parse_policy);
+			free(id);
+			if (i < 0) {
+				snprintf(errormsg, sizeof(errormsg), "undefined category %s in rangetrans high level", id);
+				yyerror(errormsg);
+				return -1;
+			}
+			if (add_i_to_a(i, &num_cats, &cats)) {
+				yyerror("out of memory");
+				return -1;
+			}
+		}	
+	}
+	range->high->categories = cats;
+	range->high->num_categories = num_cats;
+	new_rngtr->range = range;
+
+	id = queue_remove(id_queue);
+	if (id != NULL) {
+		yyerror("extra identifiers after rangetrans?");
+		return -1;
+	}
+
 	return 0;
 }
 
-static constraint_expr_t *
+static ap_constraint_expr_t *
  define_cexpr(__u32 expr_type, __u32 arg1, __u32 arg2)
 {
 	char *id;
-	if (expr_type == AP_CEXPR_NAMES) {
-		while ((id = queue_remove(id_queue))) 
-			free(id);
+	ap_constraint_expr_t *expr = NULL, *tmp_expr1 = NULL, *tmp_expr2 = NULL;
+	ta_item_t *item = NULL;
+	bool_t subtract = FALSE;
+
+	if (pass == 1) {
+		if (expr_type == AP_CEXPR_NAMES) {
+			while ((id = queue_remove(id_queue))) 
+				free(id);
+		}
+		return (ap_constraint_expr_t *)1; /* any non-NULL value */
 	}
-	return (constraint_expr_t *)1; /* any non-NULL value */
+
+	expr = (ap_constraint_expr_t *)calloc(1, sizeof(ap_constraint_expr_t));
+	if (!expr) {
+		yyerror("out of memory");
+		return NULL;
+	}
+
+	expr->expr_type = expr_type;
+
+	switch(expr_type) {
+	case AP_CEXPR_NOT:
+		tmp_expr1 = NULL;
+		tmp_expr2 = (ap_constraint_expr_t *)arg1;
+		while (tmp_expr2) {
+			tmp_expr1 = tmp_expr2;
+			tmp_expr2 = tmp_expr2->next;
+		}
+		if (!tmp_expr1 || tmp_expr1->next) {
+			yyerror("invalid constraint expression");
+			free(expr);
+			return NULL;
+		}
+		tmp_expr1->next = expr;
+		return (ap_constraint_expr_t *)arg1;
+		break;
+	case AP_CEXPR_AND:
+	case AP_CEXPR_OR:
+		tmp_expr1 = NULL;
+		tmp_expr2 = (ap_constraint_expr_t *)arg1;
+		while (tmp_expr2) {
+			tmp_expr1 = tmp_expr2;
+			tmp_expr2 = tmp_expr2->next;
+		}
+		if (!tmp_expr1 || tmp_expr1->next) {
+			yyerror("invalid constraint expression");
+			free(expr);
+			return NULL;
+		}
+		tmp_expr1->next = (ap_constraint_expr_t *)arg2;
+
+		tmp_expr1 = NULL;
+		tmp_expr2 = (ap_constraint_expr_t *)arg2;
+		while (tmp_expr2) {
+			tmp_expr1 = tmp_expr2;
+			tmp_expr2 = tmp_expr2->next;
+		}
+		if (!tmp_expr1 || tmp_expr1->next) {
+			yyerror("invalid constraint expression");
+			free(expr);
+			return NULL;
+		}
+		tmp_expr1->next = expr;
+		return (ap_constraint_expr_t *)arg1;
+		break;
+	case AP_CEXPR_ATTR:
+		expr->attr = arg1;
+		expr->op = arg2;
+		return expr;
+		break;
+	case AP_CEXPR_NAMES:
+		expr->attr = arg1;
+		expr->op = arg2;
+		while ((id = (char *) queue_remove(id_queue))) {
+			item = (ta_item_t*)calloc(1, sizeof(ta_item_t));
+			if (!item) {
+				yyerror("out of memory");
+				free(expr);
+				return NULL;
+			}
+			if (expr->attr & AP_CEXPR_USER) {
+				item->type = IDX_USER;
+				item->idx = get_user_idx(id, parse_policy);
+				if (item->idx == -1) {
+					yyerror("invalid user");
+					free(item);
+					free(expr);
+					return NULL;
+				}
+				if (insert_ta_item(item, &(expr->names))) {
+					yyerror("failed adding user");
+					free(expr);
+					return NULL;
+				}
+			} else if(expr->attr & AP_CEXPR_ROLE) {
+				item->type = IDX_ROLE;
+				item->idx = get_role_idx(id, parse_policy);
+				if (item->idx == -1) {
+					yyerror("invalid role");
+					free(item);
+					free(expr);
+					return NULL;
+				}
+				if (insert_ta_item(item, &(expr->names))) {
+					yyerror("failed adding role");
+					free(expr);
+					return NULL;
+				}
+			} else if (expr->attr & AP_CEXPR_TYPE) {
+				if (!strcmp(id, "*")) {
+					expr->name_flags |= AP_CEXPR_STAR;
+					free(id);
+					free(item);
+					continue;
+				} else if (!strcmp(id, "~")) {
+					expr->name_flags |= AP_CEXPR_TILDA;
+					free(id);
+					free(item);
+					continue;
+				} else if (!strcmp(id, "-")) {
+					subtract = TRUE;
+					free(id);
+					free(item);
+					continue;
+				} else {
+					item->idx = get_type_or_attrib_idx(id, &(item->type), parse_policy);
+					if (item->idx == -1) {
+						yyerror("invalid type/attribute");
+						free(item);
+						free(expr);
+						return NULL;
+					}
+					if (subtract) {
+						subtract = FALSE;
+						item->type |= IDX_SUBTRACT;
+					}
+					if (insert_ta_item(item, &(expr->names))) {
+						yyerror("failed adding type/attribute");
+						free(expr);
+						return NULL;
+					}
+				}
+			} else {
+				yyerror("invalid constraint expression");
+				free(expr);
+				return NULL;
+			}
+		}
+		break;
+	default:
+		yyerror("invalid constraint expression");
+		free(expr);
+		return NULL;
+		break;
+	}
+
+	return expr;
 }
 
 
@@ -3199,64 +3961,197 @@ static int define_fs_context(int ver)
 	return 0;
 }
 
-static int define_port_context(int ver)
+static int define_port_context(int ver, int low, int high)
 {
 	char *id;
-
-	int rt;
+	security_con_t *context;
+	int rt, protocol = 0;
 	
 	rt = set_policy_version(ver, parse_policy);
 	if(rt != 0) {
 		yyerror("error setting policy version");
 		return -1;
 	}
-	id = (char *) queue_remove(id_queue); 
-	free(id);
-	parse_security_context(1);
+	id = (char *) queue_remove(id_queue);
+
+	if (pass == 1) {
+		free(id);
+		parse_security_context(1);
+	} else {
+		if (!strcmp(id, "tcp"))
+			protocol = AP_TCP_PROTO;
+		else if (!strcmp(id, "udp"))
+			protocol = AP_UDP_PROTO;
+		else if (!strcmp(id, "esp"))
+			protocol = AP_ESP_PROTO;
+		else {
+			yyerror("unrecognized protocol");
+			return -1;
+		}
+
+		context = parse_security_context(0);
+
+		rt = add_portcon(protocol, low, high, context, parse_policy);
+		if (rt) {
+			yyerror("error adding portcon to policy");
+			return -1;
+		}
+
+	}
+
 	return 0;
 }
 
 static int define_netif_context(int ver)
 {
 	int rt;
-	
+	char *id;
+	security_con_t *devcon, *pktcon;
+
 	rt = set_policy_version(ver, parse_policy);
 	if(rt != 0) {
 		yyerror("error setting policy version");
 		return -1;
 	}
-	free(queue_remove(id_queue));
-	parse_security_context(1);
-	parse_security_context(1);
+
+	if (pass == 1) {
+		free(queue_remove(id_queue));
+		parse_security_context(1);
+		parse_security_context(1);
+		return 0;
+	} else {
+		id = queue_remove(id_queue);
+		if (!id) {
+			yyerror("no interface for netifcon?");
+			return -1;
+		}
+		devcon = parse_security_context(0);
+		pktcon = parse_security_context(0);
+	}
+
+	rt = add_netifcon(id, devcon, pktcon, parse_policy);
+	if (rt) {
+		yyerror("error adding netifcon to policy");
+		return -1;
+	}
+
 	return 0;
 }
 
-static int define_ipv4_node_context(int ver)
+static int define_ipv4_node_context(int ver, __u32 addr, __u32 mask)
 {
 	int rt;
-	
+	uint32_t *address = NULL, *netmask = NULL;
+	security_con_t *context = NULL;
+
+	if (pass == 1) {
+		parse_security_context(1);
+		return 0;
+	}
+
+	address = (uint32_t *)calloc(4, sizeof(uint32_t));
+	if (!address) {
+		yyerror("out of memory");
+		return -1;
+	}
+	netmask = (uint32_t *)calloc(4, sizeof(uint32_t));
+	if (!netmask) {
+		yyerror("out of memory");
+		free(address);
+		return -1;
+	}
+
 	rt = set_policy_version(ver, parse_policy);
 	if(rt != 0) {
 		yyerror("error setting policy version");
+		free(address);
+		free(netmask);
 		return -1;
 	}
-	parse_security_context(1);
+
+	context = parse_security_context(0);
+	address[3] = addr;
+	netmask[3] = mask;
+	rt = add_nodecon(AP_IPV4, address, netmask, context, parse_policy);
+	if (rt) {
+		yyerror("error adding nodecon to policy");
+		free(address);
+		free(netmask);
+		return -1;
+	}
+
 	return 0;
+}
+
+static uint32_t *parse_ipv6_addr(char *addr_str)
+{
+	int rt, i;
+	uint32_t *address = NULL;
+	struct in6_addr addr;
+
+	if (!addr_str) {
+		yyerror("invalid IPv6 address");
+		return NULL;
+	}
+
+	address = (uint32_t *)calloc(4, sizeof(uint32_t));
+	if (!address){
+		yyerror("out of memory");
+		return NULL;
+	}
+
+	rt = inet_pton(AF_INET6, addr_str, &addr);
+	if (rt < 1) {
+		yyerror("error processing IPv6 address");
+		return NULL;
+	}
+
+	for (i = 0; i < 16; i++) {
+		address[i/4] |= ((uint32_t)addr.s6_addr[i] << (8 * (3 - i%4)));
+	}
+
+	return address;
 }
 
 static int define_ipv6_node_context(int ver)
 {
 	int rt;
-	
+	uint32_t *address = NULL, *netmask = NULL;
+	security_con_t *context = NULL;
+	char *id = NULL;
+
 	rt = set_policy_version(ver, parse_policy);
 	if(rt != 0) {
 		yyerror("error setting policy version");
 		return -1;
 	}
 
-	free(queue_remove(id_queue));
-	free(queue_remove(id_queue));
-	parse_security_context(1);
+	if (pass == 1) {
+		free(queue_remove(id_queue));
+		free(queue_remove(id_queue));
+		parse_security_context(1);
+		return 0;
+	}
+	id = queue_remove(id_queue);
+	address = parse_ipv6_addr(id);
+	if (!address) {
+		return -1; /* error reported from above function */
+	}
+	id = queue_remove(id_queue);
+	netmask = parse_ipv6_addr(id);
+	if (!netmask) {
+		free(address);
+		return -1; /* error reported from above function */
+	}
+	context = parse_security_context(0);
+	rt = add_nodecon(AP_IPV6, address, netmask, context, parse_policy);
+	if (rt) {
+		yyerror("error adding nodecon to policy");
+		free(address);
+		free(netmask);
+		return -1;
+	}
+
 	return 0;	
 }
 
@@ -3296,34 +4191,133 @@ static int define_nfs_context(void)
 static int define_fs_use(int behavior, int ver)
 {
 	int rt;
+	char *id = NULL;
+	security_con_t *context = NULL;
 	
 	rt = set_policy_version(ver, parse_policy);
 	if(rt != 0) {
-		yyerror("error setting policy version)");
+		yyerror("error setting policy version");
 		return -1;
 	}
-	free(queue_remove(id_queue));
-	if(behavior != 0)
+
+	if (pass == 1) {
+	id = (char*) queue_remove(id_queue);
+	free(id);
+	if(behavior != AP_FS_USE_PSID)
 		parse_security_context(1);
 	return 0;
+	}
 
+	id = (char*) queue_remove(id_queue);
+	if (!id) {
+		yyerror("no name for filesystem in fs_use statement?");
+		return -1;
+	}
+	if(behavior != AP_FS_USE_PSID) {
+		context = parse_security_context(0);
+		if (!context) {
+			yyerror("missing or invalid context for fs_use statement");
+			return -1;
+		}
+	}
+
+	rt = add_fs_use(behavior, id, context, parse_policy);
+	if (rt != 0) {
+		yyerror("error adding fs_use statement to policy");
+		return -1;
+	}
+
+	return 0;
 }
 
 /* added Jul 2002 */
 static int define_genfs_context_helper(char *fstype, int has_type)
 {
-	int rt;
-	
+	int rt, idx, type;
+	char *id = NULL, *tmp = NULL;
+	security_con_t *context;
+
 	rt = set_policy_version(POL_VER_JUL2002, parse_policy);
 	if(rt != 0) {
 		yyerror("error setting policy version");
 		return -1;
 	}
+
+	if (pass == 1) {
 		free(fstype);
-	free(queue_remove(id_queue));
-	if (has_type)
 		free(queue_remove(id_queue));
-	parse_security_context(1);
+		if (has_type)
+			free(queue_remove(id_queue));
+		parse_security_context(1);
+		return 0;
+	}
+
+	if (!fstype) {
+		yyerror("no name for filesystem type?");
+		return -1;
+	}
+
+	idx = ap_genfscon_get_idx(fstype, parse_policy);
+	if (idx == -1) {
+		rt = add_genfscon(fstype, parse_policy);
+		if (rt) {
+			yyerror("error adding genfscon to policy");
+			return -1;
+		}
+		idx = parse_policy->num_genfscon - 1;
+	}
+
+	id = queue_remove(id_queue);
+	if (!id) {
+		yyerror("no path for genfscon?");
+		return -1;
+	}
+
+	if (has_type) {
+		tmp = queue_remove(id_queue);
+		switch (tmp[0]) {
+		case 'b':
+			type = FILETYPE_BLK;
+			break;
+		case 'c':
+			type = FILETYPE_CHR;
+			break;
+		case 'd':
+			type = FILETYPE_DIR;
+			break;
+		case 'l':
+			type = FILETYPE_LNK;
+			break;
+		case 'p':
+			type = FILETYPE_FIFO;
+			break;
+		case 's':
+			type = FILETYPE_SOCK;
+			break;
+		case '-':
+			type = FILETYPE_REG;
+			break;
+		default:
+			yyerror("invalid filetype in genfscon");
+			break;
+		}
+		free(tmp);
+	} else {
+		type = FILETYPE_ANY;
+	}
+
+	context = parse_security_context(0);
+	if (!context) {
+		yyerror("invalid context for genfscon");
+		return -1;
+	}
+
+	rt = add_path_to_genfscon(&(parse_policy->genfscon[idx]), id, type, context);
+	if (rt) {
+		yyerror("error adding path to genfscon");
+		return -1;
+	}
+
 	return 0;
 }
 
