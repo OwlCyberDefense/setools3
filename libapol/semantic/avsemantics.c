@@ -263,10 +263,12 @@ static int avh_load_avrules( void *r, int num, bool_t is_av, policy_t *p)
 
 							assert(is_valid_perm_idx(pidx, p));
 	
-							rt = avh_add_datum(node, pidx);
-							if(rt < 0) {
-								assert(0);
-								goto err_return;
+							if (is_valid_perm_for_obj_class(p, key.cls, pidx)) {
+								rt = avh_add_datum(node, pidx);
+								if(rt < 0) {
+									assert(0);
+									goto err_return;
+								}
 							}
 						}
 					}
