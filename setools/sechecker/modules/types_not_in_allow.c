@@ -49,7 +49,14 @@ int types_not_in_allow_register(sechk_lib_t *lib)
 
 	/* assign the descriptions */
 	mod->brief_description = "Finds types declared but not used in allow rules of a poicy.\nThis module reports other uses if found.";
-	mod->detailed_description = "Finds types declared but not used in allow rules of a poicy.\nThis module reports other uses if found.";
+	mod->detailed_description = "Finds types declared but not used in allow rules of a poicy."
+		"\nThis module reports other uses if found."
+		"\n  REQUIREMENTS:"
+		"\n    none"
+		"\n  DEPENDENCIES:"
+		"\n    none"
+		"\n  OPTIONS:"
+		"\n    none";
 	
 	/* register functions */
 	fn_struct = sechk_fn_new();
