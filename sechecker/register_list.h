@@ -30,5 +30,5 @@ extern int attributes_not_in_rules_register(sechk_lib_t *lib);
 /* TODO: additional externs go here ... */
 
 int sechk_register_list_get_num_modules();
-
+const sechk_module_name_reg_t *sechk_register_list_get_known_modules();
 #endif /* SECHK_REGISTER_LIST_H */

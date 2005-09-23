@@ -58,6 +58,14 @@ int xx_register(sechk_lib_t *lib)
 	mod->brief_description = "";
 	mod->detailed_description = "";
 
+	/* assign requirements */
+	mod->requirements = sechk_name_value_new_prepend(NULL,"","");
+	mod->requirements = sechk_name_value_new_prepend(mod->requirements,"","");
+
+	/* assign dependencies */
+	mod->dependencies = sechk_name_value_new_prepend(NULL,"","");
+	mod->dependencies = sechk_name_value_new_prepxzend(mod->dependencies,"","");
+
 	/* register functions */
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -292,7 +300,7 @@ int xx_print_output(sechk_module_t *mod, policy_t *policy)
 		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
 		return -1;
 	}
-
+	
 	datum = (xx_data_t*)mod->data;
 	outformat = mod->outputformat;
 
@@ -300,7 +308,7 @@ int xx_print_output(sechk_module_t *mod, policy_t *policy)
 		fprintf(stderr, "Error: module has not been run\n");
 		return -1;
 	}
-
+	
 	if (!outformat)
 		return 0; /* not an error - no output is requested */
 

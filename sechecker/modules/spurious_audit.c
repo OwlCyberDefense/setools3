@@ -53,7 +53,13 @@ int spurious_audit_register(sechk_lib_t *lib)
 	mod->detailed_description = "Finds audit rules which do not affect the auditing of the policy."
 "\nThis module finds two types of spurious audit rules:"
 "\n  dontaudit rules for allowed permission sets"
-"\n  auditallow rules without an allow rule";
+"\n  auditallow rules without an allow rule"
+		"\n  REQUIREMENTS:"
+		"\n    none"
+		"\n  DEPENDENCIES:"
+		"\n    none"
+		"\n  OPTIONS:"
+		"\n    none";
 
 	/* register functions */
 	fn_struct = sechk_fn_new();
