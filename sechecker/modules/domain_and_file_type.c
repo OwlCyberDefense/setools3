@@ -35,10 +35,24 @@ int domain_and_file_type_register(sechk_lib_t *lib)
 	}
 	
 	/* assign descriptions */
+	mod->brief_description = "Finds all types in the policy treated as both a domain and a file type";
 	mod->detailed_description = "Finds all types in the policy treated as both a domain and a file type "
 "\n  See domain_type and file_type modules for details about how "
-"\n  types are placed in these categories";
-	mod->brief_description = "Finds all types in the policy treated as both a domain and a file type";
+"\n  types are placed in these categories"
+"\n  REQUIREMENTS:"
+"\n    policy_type=source"
+"\n  DEPENDENCIES:"
+"\n    module=find_domains"
+"\n    module=find_file_types"
+"\n  OPTIONS:"
+"\n    none";
+
+	/* assign requirements */
+	mod->requirements = sechk_name_value_prepend(NULL,"policy_type","source");
+
+	/* assign dependencies */
+	mod->dependencies = sechk_name_value_prepend(NULL,"module","find_domains");
+	mod->dependencies = sechk_name_value_prepend(mod->dependencies,"module","find_file_types");
 
 	/* register functions */
 	fn_struct = sechk_fn_new();

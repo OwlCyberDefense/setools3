@@ -31,11 +31,12 @@ static struct option const longopts[] =
 #ifdef LLIBSEFS
 	{"file_contexts", required_argument, NULL, 'c'},
 #endif
-	{"default", no_argument, NULL, 'd'},
+	{"short", no_argument, NULL, 's'},
 	{"quiet", no_argument, NULL, 'q'},
 	{"verbose", no_argument, NULL, 'V'},
 	{"module", required_argument, NULL, 'm'},
-	{"list", no_argument, NULL, 'l'},
+	{"mod-list", no_argument, NULL, 'L'},
+	{"prof-list", no_argument, NULL, 'l'},
 	{"help", no_argument, NULL, 'h'},
 	{"version", no_argument, NULL, 'v'},
 	{NULL, 0, NULL, 0}
@@ -50,21 +51,23 @@ void usage(const char *arg0, bool_t brief)
 	printf("   or: sechecker [OPTIONS] -P profile -m module  Load the specified profile\n");
 	printf("                                                 and run the specified module\n");
 	if (brief) {
-		printf("\n\tTry %s --help for more help.\n\n", arg0);
+		printf("\n\tTry %s --help for more help.\n", arg0);
 	} else {
 		printf("Perform modular checks on a SELinux policy\n\n");
 
-		printf("   -l, --list                  Print a list of available modules\n");
-		printf("   -h, --help                  Print this help message\n");
-		printf("   -v, --version               Print version information\n");
-		printf("   -d, --default               Use default output format\n");
-		printf("   -V, --verbose               Use verbose output format\n");
-		printf("   -q, --quiet                 Output 0 for success, 1 for error\n");
-		printf("   -p file, --policy=file      The location of the policy file\n");
+		printf("   -l, --prof-list          Print a list of known profiles\n");
+		printf("   -L, --mod-list           Print a list of available modules\n");
+		printf("   -h, --help               Print this help message\n");
+		printf("   -v, --version            Print version information\n");
+		printf("   -s, --short              Use short output format\n");
+		printf("   -V, --verbose            Use verbose output format\n");
+		printf("   -q, --quiet              Output 0 for success, 1 for error\n");
+		printf("   -p file, --policy=file   The location of the policy file\n");
 #ifdef LIBSEFS
-		printf("   -c file, --fcfile=file      The location of the file_contexts file\n");
+		printf("   -c file, --fcfile=file   The location of the file_contexts file\n");
 #endif
 	}
+	printf("\n");
 }
 
 /* print list of installed profiles */
@@ -73,16 +76,14 @@ int sechk_print_profiles_list()
 	char **profile_names = NULL;
 	int num_profiles = 0, i;
 
-	if (sechk_get_installed_profile_names(&profile_names, &num_profiles)) {
-		return -1;
-	}
+	profile_names = sechk_lib_get_profiles(&num_profiles);
 
 	for (i = 0; i < num_profiles; i++) {
 		printf("   %s\n", profile_names[i]);
 		free(profile_names[i]);
 	}
-
-	if (!num_profiles)
+	printf("\n");
+	if (num_profiles == 0)
 		printf("   <<no profiles installed>>\n");
 
 	free(profile_names);
@@ -100,15 +101,16 @@ int main(int argc, char **argv)
 	char *prof_name = NULL;
 	unsigned char output_override = 0;
 	sechk_lib_t *module_library;
-	bool_t list_stop = FALSE;
+	bool_t module_list_stop = FALSE;
+	bool_t profile_list_stop = FALSE;
 	sechk_module_t *mod = NULL;
 	sechk_run_fn_t run_fn = NULL;
 	sechk_print_output_fn_t print_fn = NULL;
 
 #ifdef LIBSEFS
-	while ((optc = getopt_long(argc, argv, "P:c:p:SVLqm:ldsbhv", longopts, NULL)) != -1) {
+	while ((optc = getopt_long(argc, argv, "P:c:p:SVLqm:lhvsVq", longopts, NULL)) != -1) {
 #else
-	while ((optc = getopt_long(argc, argv, "P:p:SVLqm:ldsbhv", longopts, NULL)) != -1) {
+	while ((optc = getopt_long(argc, argv, "P:p:SVLqm:lhvsVq", longopts, NULL)) != -1) {
 #endif
 		switch (optc) {
 		case 'P':
@@ -131,13 +133,13 @@ int main(int argc, char **argv)
 				output_override = SECHK_OUT_VERBOSE;
 			}
 			break;
-		case 'd':
+		case 's':
 			if (output_override) {
 				fprintf(stderr, "Error: Multiple output specifications.\n");
 				usage(argv[0], 1);
 				exit(1);
 			} else {
-				output_override = SECHK_OUT_DEFAULT;
+				output_override = SECHK_OUT_SHORT;
 			}
 			break;
 		case 'q':
@@ -152,8 +154,11 @@ int main(int argc, char **argv)
 		case 'm':
 			modname = strdup(optarg);
 			break;
+		case 'L':
+			module_list_stop = TRUE;
+			break;
 		case 'l':
-			list_stop = TRUE;
+			profile_list_stop = TRUE;
 			break;
 		case 'h':
 			usage(argv[0], 0);
@@ -167,7 +172,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (!prof_name && !modname && !list_stop) {
+	if (!prof_name && !modname && !module_list_stop && !profile_list_stop) {
 		fprintf(stderr, "Error: no profile specified\n");
 		usage(argv[0], 1);
 		exit(1);
@@ -179,20 +184,13 @@ int main(int argc, char **argv)
 	if (!module_library)
 		goto exit_err;
 
-	if (!module_library->outputformat)
-		module_library->outputformat = SECHK_OUT_DEFAULT;
-
-	/* register modules */
-	if ((retv = sechk_lib_register_modules(sechk_register_list, module_library)) != 0)
-		goto exit_err;
+	if (profile_list_stop) {
+		printf("\nAvailable Profiles:\n");
+		retv = sechk_print_profiles_list();
+	}
 
 	/* if --list, just show the available modules and exit */
-	if (list_stop) {
-		printf("\nInstalled Profiles:\n");
-		retv = sechk_print_profiles_list();
-		if (retv) {
-			printf("   <<no profiles installed>>\n");
-		}
+	if (module_list_stop) {
 		printf("\nAvailable Modules:\n");
 		retv = sechk_lib_set_outputformat(SECHK_OUT_BRF_DESCP, module_library);
 		if (retv) {
@@ -205,8 +203,9 @@ int main(int argc, char **argv)
 		if (retv) {
 			goto exit_err;
 		}
-		goto exit;
 	}
+	if (profile_list_stop || module_list_stop)
+		goto exit;
 
 	/* initialize the policy */
 	retv = sechk_lib_load_policy(polpath,module_library);
@@ -214,6 +213,7 @@ int main(int argc, char **argv)
 		goto exit_err;
 
 #ifdef LIBSEFS
+	/* initialize the file contexts */
 	retv = sechk_lib_load_fc(fcpath,module_library);
 	if (retv < 0)
 		goto exit_err;
@@ -240,15 +240,6 @@ int main(int argc, char **argv)
 			module_library->module_selection[i] = FALSE;
 		}
 		module_library->module_selection[retv] = TRUE;
-	}
-
-	/* if command line specified an output format
-	 * use it for all modules in the report */
-	if (output_override) {
-		retv = sechk_lib_set_outputformat(output_override, module_library);
-		if (retv) {
-			goto exit_err;
-		}
 	}
 
 	/* process dependencies for selected modules */
@@ -292,6 +283,16 @@ int main(int argc, char **argv)
 		}
 	}
 
+	/* if command line specified an output format
+	 * use it for all modules in the report */
+	if (output_override) {
+		retv = sechk_lib_set_outputformat(output_override, module_library);
+		if (retv) {
+			goto exit_err;
+		}
+	}
+
+
 	/* print the report */
 	if (modname && (!(output_override) || output_override & ~(SECHK_OUT_QUIET))) {
 		/* here we are only printing results for one specific module */
@@ -304,7 +305,7 @@ int main(int argc, char **argv)
 			goto exit_err;
 		}
 		if (!mod->outputformat)
-			mod->outputformat = SECHK_OUT_DEFAULT;
+			mod->outputformat = SECHK_OUT_SHORT;
 		retv = print_fn(mod, module_library->policy);
 		if (retv) {
 			goto exit_err;
