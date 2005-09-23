@@ -47,7 +47,13 @@ int users_wo_roles_register(sechk_lib_t *lib)
 
 	/* assign the descriptions */
 	mod->brief_description = "Finds all users in the policy with no assigned roles.";
-	mod->detailed_description = "Finds all users in the policy with no assigned roles.";
+	mod->detailed_description = "Finds all users in the policy with no assigned roles."
+		"\n  REQUIREMENTS:"
+		"\n    none"
+		"\n  DEPENDENCIES:"
+		"\n    none"
+		"\n  OPTIONS:"
+		"\n    none";
 	
 	/* register functions */
 	fn_struct = sechk_fn_new();

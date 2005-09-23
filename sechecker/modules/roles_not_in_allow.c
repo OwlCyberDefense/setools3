@@ -49,7 +49,13 @@ int roles_not_in_allow_register(sechk_lib_t *lib)
 	mod->brief_description = "Finds roles defined but not used in role allow rules in a policy."
 "\nThis module also reports role_transition rules found for these roles.";
 	mod->detailed_description = "Finds roles defined but not used in role allow rules in a policy."
-"\nThis module also reports role_transition rules found for these roles.";
+"\nThis module also reports role_transition rules found for these roles."
+		"\n  REQUIREMENTS:"
+		"\n    none"
+		"\n  DEPENDENCIES:"
+		"\n    none"
+		"\n  OPTIONS:"
+		"\n    none";
 
 	/* register functions */
 	fn_struct = sechk_fn_new();

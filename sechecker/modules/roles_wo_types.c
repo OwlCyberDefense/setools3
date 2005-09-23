@@ -46,8 +46,14 @@ int roles_wo_types_register(sechk_lib_t *lib)
 	}
 
 	/* assign descriptions */
-	mod->detailed_description = "Finds all roles in the policy with no associated types.";
 	mod->brief_description = "Finds all roles in the policy with no associated types.";
+	mod->detailed_description = "Finds all roles in the policy with no associated types."
+		"\n  REQUIREMENTS:"
+		"\n    none"
+		"\n  DEPENDENCIES:"
+		"\n    none"
+		"\n  OPTIONS:"
+		"\n    none";
 	
 	/* register functions */
 	fn_struct = sechk_fn_new();

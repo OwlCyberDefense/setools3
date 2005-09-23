@@ -43,8 +43,19 @@ int find_domains_register(sechk_lib_t *lib)
 "\n  It has an attribute associated with domains "
 "\n  It is the source of a te rule for object class other than filesystem "
 "\n  It is the default type in a type_transition rule for object class process "
-"\n  It is associated with a role other than object_r";
+"\n  It is associated with a role other than object_r"
+"\n  REQUIREMENTS:"
+"\n    policy_type=source"
+"\n  DEPENDENCIES:"
+"\n    none"
+"\n  OPTIONS:"
+"\n    domain_attribute";
 
+	/* assign requirements */
+	mod->requirements = sechk_name_value_prepend(NULL,"policy_type","source");
+	
+	/* assign options */
+	mod->options = sechk_name_value_prepend(NULL,"domain_attribute","domain");
 
 	/* register functions */
 	fn_struct = sechk_fn_new();
@@ -471,9 +482,9 @@ int find_domains_print_output(sechk_module_t *mod, policy_t *policy)
 		return -1;
 	}
 
-	if (!outformat)
+	if (!outformat) {
 		return 0; /* not an error - no output is requested */
-
+	}
 	printf("\nModule: %s\n", mod_name);
 	/* print the brief description */
 	if (outformat & SECHK_OUT_BRF_DESCP) {

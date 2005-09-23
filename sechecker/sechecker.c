@@ -28,14 +28,20 @@
 
 static const char *sechk_severities[] = { "None", "Low", "Medium", "High" };
 
+/* this is where we define the known profiles */
+static sechk_name_value_t known_profiles[] = { 
+	{"developer","devel-checks.sechecker"},
+	{"system","system-checks.sechecker"}
+};
+static int num_known_profiles = 2;
+
 /* exported functions */
 sechk_lib_t *sechk_lib_new()
 {
 	sechk_lib_t *lib = NULL;
-	const char *CONFIG_FILE="/.sechecker", *DEFAULT_CONFIG_FILE="/dot_sechecker";
-	char *conf_path = NULL, *conf_filename = NULL;
-	int retv;
-
+	int retv, i;
+	const sechk_module_name_reg_t *reg_list;
+	int num_known_modules = 0;
 
 	/* allocate the new sechk_lib_t structure */
 	lib = (sechk_lib_t*)calloc(1, sizeof(sechk_lib_t));
@@ -43,45 +49,25 @@ sechk_lib_t *sechk_lib_new()
 		fprintf(stderr, "Error: out of memory\n");
 		goto exit_err;
 	}
-	/* find the configuration file */
-	conf_path = find_user_config_file(CONFIG_FILE);
-	if (!conf_path) {
-		conf_path = find_file(DEFAULT_CONFIG_FILE);
-		if (!conf_path) {
-			fprintf(stderr, "Error: could not find config file\n");
+
+	/* create the module array from the known modules in register list */
+	num_known_modules = sechk_register_list_get_num_modules();
+	reg_list = sechk_register_list_get_known_modules();
+	for (i = 0; i < num_known_modules; i++) {
+		if (sechk_lib_grow_modules(lib) != 0)
 			goto exit_err;
-		} else {
-			/* concat path and filename */
-			conf_filename = (char*)calloc(1+strlen(conf_path) + strlen(DEFAULT_CONFIG_FILE), sizeof(char));
-			if (!conf_filename) {
-				fprintf(stderr, "Error: out of memory\n");
-				goto exit_err;
-			}
-			strcat(conf_filename, conf_path);
-			strcat(conf_filename, DEFAULT_CONFIG_FILE);
-		}
-	} else {
-		/* concat path and filename */
-		conf_filename = (char*)calloc(1 + strlen(conf_path) + strlen(CONFIG_FILE), sizeof(char));
-		if (!conf_path) {
-			fprintf(stderr, "Error: out of memory\n");
-			goto exit_err;
-		}
-		strcat(conf_filename, conf_path);
-		strcat(conf_filename, CONFIG_FILE);
+		lib->num_modules++;
+		assert(lib->modules && lib->num_modules > 0);
+		lib->modules[lib->num_modules-1].name = strdup(reg_list[i].name);
 	}
-	assert(conf_filename);
-	/* parse the configuration file */
-	if ((retv = sechk_lib_parse_config_file(conf_filename, lib)) != 0) {
-		fprintf(stderr, "Error: could not parse config file\n");
+
+	/* set the default output format */
+	lib->outputformat = SECHK_OUT_SHORT;
+
+	/* register modules */
+	if ((retv = sechk_lib_register_modules(reg_list, lib)) != 0)
 		goto exit_err;
-	}
-
-
-
 exit:
-	free(conf_path);
-	free(conf_filename);
 	return lib;
 
 exit_err:
@@ -260,6 +246,49 @@ sechk_proof_t *sechk_proof_new(void)
 	return proof;
 }
 
+/* this function will create a new name value struct and append it to the list */
+sechk_name_value_t *sechk_name_value_prepend(sechk_name_value_t *list,const char *name,const char *value)
+{
+	sechk_name_value_t *new_nv = NULL;
+	if (!name || !value)
+		return list;
+	new_nv = sechk_name_value_new();
+	new_nv->name = strdup(name);
+	new_nv->value = strdup(value);
+	new_nv->next = list;
+	return new_nv;
+}
+
+/*
+ * check the size and grow appropriately - the array of modules and 
+ * the boolean array of selected modules */
+int sechk_lib_grow_modules(sechk_lib_t *lib)
+{
+	int i;
+
+	if (lib == NULL)
+		return -1;
+	/* check if we need to grow */
+	if (lib->modules_size <= lib->num_modules) {
+		/* first grow the modules array */
+		lib->modules = (sechk_module_t*)realloc(lib->modules, sizeof(sechk_module_t) * (lib->modules_size + LIST_SZ));
+		if (!lib->modules) {
+			fprintf(stderr, "Error: out of memory.\n");
+			return -1;
+		}
+		/* then grow the selection array */
+		lib->module_selection = (bool_t*)realloc(lib->module_selection, sizeof(bool_t) * (lib->modules_size + LIST_SZ));
+
+		/* initialize any newly allocated memory */
+		for (i = lib->num_modules; i < lib->num_modules + LIST_SZ; i++) {
+			lib->module_selection[i] = FALSE;
+			memset(&lib->modules[i], 0,  sizeof(sechk_module_t));
+		}
+		lib->modules_size += LIST_SZ;
+	}
+	return 0;
+}
+
 int sechk_lib_load_policy(const char *policyfilelocation, sechk_lib_t *lib)
 {
 	
@@ -331,7 +360,7 @@ int sechk_lib_load_fc(const char *fcfilelocation, sechk_lib_t *lib)
 #endif
 
 
-int sechk_lib_register_modules(sechk_module_name_reg_t *register_fns, sechk_lib_t *lib) 
+int sechk_lib_register_modules(const sechk_module_name_reg_t *register_fns, sechk_lib_t *lib) 
 {
 	int i, retv;
 	sechk_register_fn_t fn = NULL;
@@ -547,7 +576,6 @@ int sechk_lib_print_modules_output(sechk_lib_t *lib)
 		fprintf(stderr, "Error: invalid library\n");
 		return -1;
 	}
-
 	for (i = 0; i < lib->num_modules; i++) {
 		/* if module is "off" do not print its results */
 		if (!lib->module_selection[i])
@@ -685,8 +713,7 @@ int sechk_lib_set_outputformat(unsigned char out, sechk_lib_t *lib)
 	lib->outputformat = out;
 	
 	for (i = 0; i < lib->num_modules; i++)
-		if (lib->modules[i].outputformat) /* if outputformat=none leave as none */
-			lib->modules[i].outputformat = out;
+		lib->modules[i].outputformat = out;
 
 	return 0;
 }
@@ -786,32 +813,52 @@ int sechk_lib_load_profile(const char *prof_name, sechk_lib_t *lib)
 		return -1;
 	}
 
-	/* translate profile name into filename */
-	prof_filename = (char*)calloc(2 + strlen(PROF_SUBDIR) + strlen(prof_name) + strlen(".sechecker"), sizeof(char));
-	if (!prof_filename) {
-		fprintf(stderr, "Error: out of memory\n");
-		return -1;
+	/* try to find the profile in our known profiles */
+	for (i = 0; i < num_known_profiles; i++) {
+		if (strcmp(known_profiles[i].name,prof_name) == 0) {
+			break;
+		}
 	}
-	strcat(prof_filename, PROF_SUBDIR);
-	strcat(prof_filename, "/");
-	strcat(prof_filename, prof_name);
-	strcat(prof_filename, ".sechecker");
-
-	/* find the file */
-	path = find_file(prof_filename);
-	if (!path) {
-		fprintf(stderr, "Error: could not find profile %s.\n", prof_name);
-		goto sechk_load_profile_error;
+	/* this is a known installed profile, look or it in that directory */
+	if (i < num_known_profiles) {
+		/* first look in the local subdir using just PROF_SUBDIR/profile */
+		prof_filename = (char *)calloc(strlen(known_profiles[i].value)+2+strlen(PROF_SUBDIR),sizeof(char));
+		if (!prof_filename) {
+			fprintf(stderr, "Error: out of memory\n");
+			return -1;
+		}
+		sprintf(prof_filename,"%s/%s",PROF_SUBDIR,known_profiles[i].value);		
+		path = find_file(prof_filename);
+		if (!path) {
+			free(prof_filename);
+			prof_filename = NULL;
+			prof_filename = (char *)calloc(strlen(PROFILE_INSTALL_DIR)+strlen(known_profiles[i].value)+2,sizeof(char));
+			if (!prof_filename) {
+				fprintf(stderr, "Error: out of memory\n");
+				return -1;
+			}
+			sprintf(prof_filename,"%s/%s",PROFILE_INSTALL_DIR,known_profiles[i].value);		
+			path = find_file(prof_filename);
+			if (!path) {
+				fprintf(stderr,"Error: Unable to find path\n");
+				goto sechk_load_profile_error;
+			}
+		}
+		
+		/* concatenate path and filename */
+		profpath = (char*)calloc(2 + strlen(path) + strlen(prof_filename), sizeof(char));
+		if (!profpath) {
+			fprintf(stderr, "Error: out of memory\n");
+			goto sechk_load_profile_error;
+		}
+		sprintf(profpath,"%s/%s",path,prof_filename);
+		free(path);
+		free(prof_filename);
+		path = NULL;
+		prof_filename = NULL;
+	} else {
+		profpath = strdup(prof_name);
 	}
-
-	/* concatenate path and filename */
-	profpath = (char*)calloc(1 + strlen(path) + strlen(prof_filename), sizeof(char));
-	if (!profpath) {
-		fprintf(stderr, "Error: out of memory\n");
-		goto sechk_load_profile_error;
-	}
-	strcat(profpath, path);
-	strcat(profpath, prof_filename);
 
 	/* parse the profile */
 	retv = sechk_lib_parse_profile(profpath, lib);
@@ -826,16 +873,52 @@ int sechk_lib_load_profile(const char *prof_name, sechk_lib_t *lib)
 			lib->modules[i].outputformat = SECHK_OUT_NONE;
 	}
 
+	free(profpath);
 	free(prof_filename);
 	free(path);
-	free(profpath);
 	return 0;
 
 sechk_load_profile_error:
+	free(profpath);
 	free(prof_filename);
 	free(path);
-	free(profpath);
 	return -1;
+}
+
+int sechk_lib_module_add_option_list(sechk_module_t *module, sechk_name_value_t *options)
+{
+	sechk_name_value_t *cur = NULL;
+	if (!module || !options)
+		return -1;
+	cur = options;
+	while (cur->next)
+		cur = cur->next;
+	cur->next = module->options;
+	module->options = cur;
+	return 0;
+}
+
+static sechk_name_value_t *sechk_lib_del_option_list_recursive(sechk_name_value_t *cur,char *option)
+{
+	sechk_name_value_t *next = NULL;
+	if (!cur)
+		return NULL;
+	if (strcmp(cur->name,option) == 0) {
+		free(cur->name);
+		free(cur->value);
+		next = cur->next;
+		free(cur);
+		return sechk_lib_del_option_list_recursive(next,option);
+	} else {
+		cur->next = sechk_lib_del_option_list_recursive(cur->next,option);
+		return cur;
+	}
+}
+
+int sechk_lib_module_del_option(sechk_module_t *module,char *option)
+{
+	module->options = sechk_lib_del_option_list_recursive(module->options,option);
+	return 0;
 }
 
 /* get the index of a module in the library by name */
@@ -851,48 +934,16 @@ int sechk_lib_get_module_idx(const char *name, sechk_lib_t *lib)
 	return -1;
 }
 
-int sechk_get_installed_profile_names(char ***names, int *num_profiles)
+char **sechk_lib_get_profiles(int *num_profiles)
 {
-	int retv;
-	DIR *prof_install_dir = NULL;
-	struct dirent *entry = NULL;
-	char *ext = NULL;
-
-	if (!names || !num_profiles) {
-		fprintf(stderr, "Error: invalid list storage pointer(s)\n");
-		return -1;
+	char **names = NULL;
+	*num_profiles = num_known_profiles;
+	int i;
+	if (num_known_profiles > 0) {
+		names = (char **)calloc(num_known_profiles,sizeof(char *));
+		for (i = 0; i < num_known_profiles; i++) 
+			names[i] = strdup(known_profiles[i].name);
 	}
+	return names;
 
-	assert(strlen(PROFILE_INSTALL_DIR));
-	prof_install_dir = opendir(PROFILE_INSTALL_DIR);
-	if (!prof_install_dir) {
-		fprintf(stderr, "Error: unable to open %s\n", PROFILE_INSTALL_DIR);
-		return -1;
-	}
-
-	*num_profiles = 0;
-	*names = NULL;
-
-	while ((entry = readdir(prof_install_dir))) {
-		ext = strrchr(entry->d_name, '.');
-		if (ext) {
-			ext++;
-			retv = strncmp(ext, "sechecker", 9);
-			if (!retv) {
-				ext--;
-				(*num_profiles)++;
-				*names = (char**)realloc(*names, *num_profiles * sizeof(char*));
-				if (!(*names)) {
-					fprintf(stderr, "Error: out of memory");
-					closedir(prof_install_dir);
-					return -1;
-				}
-				(*names)[*num_profiles - 1] = strndup(entry->d_name, (size_t)(ext - entry->d_name));
-			}
-		}
-		entry = NULL;
-	}
-
-	closedir(prof_install_dir);
-	return 0;
 }
