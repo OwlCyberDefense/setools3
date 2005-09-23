@@ -3418,7 +3418,7 @@ int add_fs_use(int behavior, char *fstype, security_con_t *scontext, policy_t *p
 	size_t sz;
 	ap_fs_use_t *new_fs_use= NULL;
 		
-	if(scontext == NULL || policy == NULL || fstype == NULL)
+	if((scontext == NULL && behavior != AP_FS_USE_PSID) || policy == NULL || fstype == NULL)
 		return -1;
 		
 	/* make sure there is a room for another fs_use statement in the array */
