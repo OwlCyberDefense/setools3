@@ -566,7 +566,7 @@ const char* libapol_get_version(void)
  */
 char* find_file(const char *file_name)
 {
-	char *file, *var = NULL, *dir = NULL;
+	char *file = NULL, *var = NULL, *dir = NULL;
 	int filesz;
 	int rt;
 	

@@ -19,10 +19,13 @@
 
 /* These should be defined from the make environment */
 #ifndef PROFILE_INSTALL_DIR
-#define PROFILE_INSTALL_DIR "/usr/share/setools/sechecker-profiles"
+#define PROFILE_INSTALL_DIR "/usr/share/setools/sechecker-profiles/"
 #endif
 #ifndef PROF_SUBDIR
 #define PROF_SUBDIR "/sechecker-profiles"
+#endif
+#ifndef DEFAULT_PROFILE
+#define DEFAULT_PROFILE ""
 #endif
 
 /* defined flags for outformat */
@@ -36,7 +39,7 @@
 /* NOTE: none is only valid in profiles */
 #define SECHK_OUT_NONE    0x00
 #define SECHK_OUT_QUIET   0x20
-#define SECHK_OUT_DEFAULT (SECHK_OUT_STATS|SECHK_OUT_BRF_DESCP|SECHK_OUT_LIST)
+#define SECHK_OUT_SHORT (SECHK_OUT_STATS|SECHK_OUT_BRF_DESCP|SECHK_OUT_LIST)
 #define SECHK_OUT_VERBOSE (SECHK_OUT_STATS|SECHK_OUT_DET_DESCP|SECHK_OUT_PROOF)
 
 /* module results proof element */
@@ -155,7 +158,7 @@ void sechk_module_free(sechk_module_t *module, sechk_free_fn_t free_fn);
 void sechk_name_value_destroy(sechk_name_value_t *opt);
 
 /* register/check_dep/init/run/print -  modules */
-int sechk_lib_register_modules(sechk_module_name_reg_t *register_fns, sechk_lib_t *lib);
+int sechk_lib_register_modules(const sechk_module_name_reg_t *register_fns, sechk_lib_t *lib);
 int sechk_lib_check_module_dependencies(sechk_lib_t *lib);
 int sechk_lib_check_module_requirements(sechk_lib_t *lib);
 int sechk_lib_init_modules(sechk_lib_t *lib);
@@ -171,7 +174,11 @@ int sechk_lib_load_policy(const char *policyfilelocation, sechk_lib_t *lib);
 #ifdef LIBSEFS
 int sechk_lib_load_fc(const char *fcfilelocation, sechk_lib_t *lib);
 #endif
+int sechk_lib_grow_modules(sechk_lib_t *lib);
 int sechk_lib_load_profile(const char *prof_name, sechk_lib_t *lib);
+int sechk_lib_module_add_option_list(sechk_module_t *module, sechk_name_value_t *options);
+int sechk_lib_module_del_option(sechk_module_t *module,char *option);
+char **sechk_lib_get_profiles(int *num_profiles);
 int sechk_get_installed_profile_names(char ***names, int *num_profiles);
 bool_t sechk_lib_check_requirement(sechk_name_value_t *req, sechk_lib_t *lib);
 bool_t sechk_lib_check_dependency(sechk_name_value_t *dep, sechk_lib_t *lib);
@@ -181,6 +188,6 @@ sechk_item_t *sechk_result_get_item(int item_id, unsigned char item_type, sechk_
 sechk_proof_t *sechk_proof_copy(sechk_proof_t *orig);
 bool_t sechk_item_has_proof(int idx, unsigned char type, sechk_item_t *item);
 int sechk_lib_get_module_idx(const char *name, sechk_lib_t *lib);
-
+sechk_name_value_t *sechk_name_value_prepend(sechk_name_value_t *nv,const char *name,const char *value);
 #endif /* SECHECKER_H */
 

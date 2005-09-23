@@ -47,7 +47,16 @@ int attributes_not_in_rules_register(sechk_lib_t *lib)
 	
 	/* assign the descriptions */
 	mod->brief_description = "Finds attributes in the policy not used in any rule.";
-	mod->detailed_description = "Finds attributes in the policy not used in any rule.";
+	mod->detailed_description = "Finds attributes in the policy not used in any rule."
+		"\n  REQUIREMENTS:"
+		"\n    policy_type=src"
+		"\n  DEPENDENCIES:"
+		"\n    none"
+		"\n  OPTIONS:"
+		"\n    none";
+
+	/* assign requirements */
+	mod->requirements = sechk_name_value_prepend(NULL,"policy_type","source");
 
 	/* register functions */
 	fn_struct = sechk_fn_new();

@@ -48,7 +48,16 @@ int attributes_wo_types_register(sechk_lib_t *lib)
 	
 	/* assign the descriptions */
 	mod->brief_description = "Finds attributes in the policy with no types.";
-	mod->detailed_description = "Finds attributes in the policy with no types.";
+	mod->detailed_description = "Finds attributes in the policy with no types."
+		"\n  REQUIREMENTS:"
+		"\n    policy_type=source"
+		"\n  DEPENDENCIES:"
+		"\n    none"
+		"\n  OPTIONS:"
+		"\n    none";
+
+	/* assign requirements */
+	mod->requirements = sechk_name_value_prepend(NULL,"policy_type","source");
 
 	/* register functions */
 	fn_struct = sechk_fn_new();
