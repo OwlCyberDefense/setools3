@@ -3062,7 +3062,7 @@ static int define_sens(void)
 		return -1;
 	}
 
-	if (pass == 2) {
+	if (pass == 2 || (pass == 1 && !(parse_policy->opts & POLOPT_MLS_COMP))) {
 		while ((id = queue_remove(id_queue))) 
 			free(id);
 		return 0;
@@ -3099,7 +3099,7 @@ static int define_dominance(void)
 	char *id;
 	int rt, i = 0;
 
-	if (pass == 2) {
+	if (pass == 2 || (pass == 1 && !(parse_policy->opts & POLOPT_MLS_COMP))) {
 		while ((id = queue_remove(id_queue)))
 			free(id);
 		return 0;
@@ -3161,7 +3161,7 @@ static int define_category(void)
 		return -1;
 	}
 
-	if (pass == 2) {
+	if (pass == 2 || (pass == 1 && !(parse_policy->opts & POLOPT_MLS_COMP))) {
 		while ((id = queue_remove(id_queue))) 
 			free(id);
 		return 0;
@@ -3205,7 +3205,7 @@ static int define_level(void)
 		return -1;
 	}
 
-	if (pass == 2) {
+	if (pass == 2 || (pass == 1 && !(parse_policy->opts & POLOPT_MLS_COMP))) {
 		while ((id = queue_remove(id_queue)))
 			free(id);
 		return 0;
@@ -3306,7 +3306,7 @@ static int define_constraint(bool_t is_mls, ap_constraint_expr_t *expr)
 	ta_item_t *classes = NULL, *perms = NULL, *item = NULL;
 	int idx, rt;
 
-	if (pass == 1) {
+	if (pass == 1 || (pass == 2 && !(parse_policy->opts & POLOPT_CONSTRAIN))) {
 		while ((id = queue_remove(id_queue))) 
 			free(id);
 		while ((id = queue_remove(id_queue))) 
@@ -3408,7 +3408,7 @@ static int define_validatetrans(bool_t is_mls, ap_constraint_expr_t *expr)
 	ta_item_t *classes = NULL, *item = NULL;
 	int idx, rt;
 
-	if (pass == 1) {
+	if (pass == 1 || (pass == 2 && !(parse_policy->opts & POLOPT_CONSTRAIN))) {
 		while ((id = queue_remove(id_queue))) 
 			free(id);
 		return 0;
@@ -3470,7 +3470,7 @@ static int define_range_trans(void)
 		return -1;
 	}
 
-	if (pass == 1)  {
+	if (pass == 1 || (pass == 2 && !(parse_policy->opts & POLOPT_RANGETRANS)))  {
 		while ((id = queue_remove(id_queue)))
 			free(id);
 		while ((id = queue_remove(id_queue)))
@@ -3789,7 +3789,7 @@ static ap_constraint_expr_t *
 	ta_item_t *item = NULL;
 	bool_t subtract = FALSE;
 
-	if (pass == 1) {
+	if (pass == 1 || (pass == 2 && !(parse_policy->opts & POLOPT_CONSTRAIN))) {
 		if (expr_type == AP_CEXPR_NAMES) {
 			while ((id = queue_remove(id_queue))) 
 				free(id);
@@ -3974,7 +3974,7 @@ static int define_port_context(int ver, int low, int high)
 	}
 	id = (char *) queue_remove(id_queue);
 
-	if (pass == 1) {
+	if (pass == 1 || (pass == 2 && !(parse_policy->opts & POLOPT_OCONTEXT))) {
 		free(id);
 		parse_security_context(1);
 	} else {
@@ -4014,7 +4014,7 @@ static int define_netif_context(int ver)
 		return -1;
 	}
 
-	if (pass == 1) {
+	if (pass == 1 || (pass == 2 && !(parse_policy->opts & POLOPT_OCONTEXT))) {
 		free(queue_remove(id_queue));
 		parse_security_context(1);
 		parse_security_context(1);
@@ -4044,7 +4044,7 @@ static int define_ipv4_node_context(int ver, __u32 addr, __u32 mask)
 	uint32_t *address = NULL, *netmask = NULL;
 	security_con_t *context = NULL;
 
-	if (pass == 1) {
+	if (pass == 1 || (pass == 2 && !(parse_policy->opts & POLOPT_OCONTEXT))) {
 		parse_security_context(1);
 		return 0;
 	}
@@ -4126,7 +4126,7 @@ static int define_ipv6_node_context(int ver)
 		return -1;
 	}
 
-	if (pass == 1) {
+	if (pass == 1 || (pass == 2 && !(parse_policy->opts & POLOPT_OCONTEXT))) {
 		free(queue_remove(id_queue));
 		free(queue_remove(id_queue));
 		parse_security_context(1);
@@ -4200,7 +4200,7 @@ static int define_fs_use(int behavior, int ver)
 		return -1;
 	}
 
-	if (pass == 1) {
+	if (pass == 1 || (pass == 2 && !(parse_policy->opts & POLOPT_OCONTEXT))) {
 	id = (char*) queue_remove(id_queue);
 	free(id);
 	if(behavior != AP_FS_USE_PSID)
@@ -4243,7 +4243,7 @@ static int define_genfs_context_helper(char *fstype, int has_type)
 		return -1;
 	}
 
-	if (pass == 1) {
+	if (pass == 1 || (pass == 2 && !(parse_policy->opts & POLOPT_OCONTEXT))) {
 		free(fstype);
 		free(queue_remove(id_queue));
 		if (has_type)

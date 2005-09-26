@@ -468,7 +468,7 @@ unsigned int validate_policy_options(unsigned int options)
 	opts |= (POLOPT_COND_BOOLS|POLOPT_COND_EXPR);
 
 	/* NOTE: The order of these is important */
-	if(POLOPT_COND_TE_RULES)
+	if(POLOPT_COND_TE_RULES & opts)
 		opts |= POLOPT_TYPES|POLOPT_OBJECTS;	
 	if(POLOPT_TE_RULES & opts)
 		opts |= (POLOPT_OBJECTS|POLOPT_TYPES);
@@ -482,8 +482,14 @@ unsigned int validate_policy_options(unsigned int options)
 		opts |= POLOPT_TYPES;
 	if(POLOPT_INITIAL_SIDS & opts)
 		opts |= (POLOPT_TYPES|POLOPT_ROLES|POLOPT_USERS);
+	if(POLOPT_OCONTEXT & opts)
+		opts |= (POLOPT_TYPES|POLOPT_ROLES|POLOPT_USERS);
 	if(POLOPT_OBJECTS & opts)
 		opts |= POLOPT_OBJECTS;
+	if(POLOPT_CONSTRAIN & opts)
+		opts |= POLOPT_SYMBOLS;
+	if(POLOPT_RANGETRANS & opts)
+		opts |= (POLOPT_MLS_COMP|POLOPT_TYPES);
 	
 	return opts;
 }
