@@ -49,12 +49,12 @@ int find_file_types_register(sechk_lib_t *lib)
 "\n  It is the default type of a type transition rule"
 "\n   for an object class other than process"
 "\n  It is specified in a context in the file_contexts file"
-"\n  REQUIREMENTS:"
+"\n  Requirements:"
 "\n    policy_type=source"
-"\n  DEPENDENCIES:"
+"\n  Dependencies:"
 "\n    none"
-"\n  OPTIONS"
-"\n  file_type_attribute";
+"\n  Options:"
+"\n    file_type_attribute";
 
 	/* assign requirements */
 	mod->requirements = sechk_name_value_prepend(NULL,"policy_type","source");
