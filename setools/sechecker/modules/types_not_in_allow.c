@@ -48,14 +48,16 @@ int types_not_in_allow_register(sechk_lib_t *lib)
 	}
 
 	/* assign the descriptions */
-	mod->brief_description = "Finds types declared but not used in allow rules of a poicy.\nThis module reports other uses if found.";
-	mod->detailed_description = "Finds types declared but not used in allow rules of a poicy."
+	mod->brief_description = "Finds types declared but not used in allow rules of a policy.\n";
+	mod->detailed_description = "Finds types declared but not used in allow rules of a policy."
+"\nIf a type does not appear in an allow rule, all attemped access to that"
+"\ntype will be denied (including relabeling to a usable type)."
 		"\nThis module reports other uses if found."
-		"\n  REQUIREMENTS:"
+		"\n  Requirements:"
 		"\n    none"
-		"\n  DEPENDENCIES:"
+		"\n  Dependencies:"
 		"\n    none"
-		"\n  OPTIONS:"
+		"\n  Options:"
 		"\n    none";
 	
 	/* register functions */

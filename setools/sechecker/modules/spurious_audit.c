@@ -54,11 +54,14 @@ int spurious_audit_register(sechk_lib_t *lib)
 "\nThis module finds two types of spurious audit rules:"
 "\n  dontaudit rules for allowed permission sets"
 "\n  auditallow rules without an allow rule"
-		"\n  REQUIREMENTS:"
+"\ndontaudit has no effect on allowed permission sets because this would not"
+"\nnormally be audited. auditallow has no effect if the permission is not"
+"\ngranted via an allow rule (it would not be allowed)."
+		"\n  Requirements:"
 		"\n    none"
-		"\n  DEPENDENCIES:"
+		"\n  Dependencies:"
 		"\n    none"
-		"\n  OPTIONS:"
+		"\n  Options:"
 		"\n    none";
 
 	/* register functions */
