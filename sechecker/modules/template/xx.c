@@ -274,13 +274,13 @@ void xx_free(sechk_module_t *mod)
 	mod->data = NULL;
 }
 
-/* The print output function generates the text printed in the
- * report and prints it to stdout. The outline below is prints
+/* The print output function generates the text and prints the
+ * results to stdout. The outline below prints
  * the standard format of a report section. Some modules may
  * not have results in a format that can be represented by this
  * outline and will need a different specification. It is
  * required that each of the flags for output components be
- * tested in this function (header, stats, list, and proof)
+ * tested in this function (stats, list, proof, detailed, and brief)
  * TODO: fill in the indicated information in the report fields
  * as indicated below. Some alteration may be necessary for
  * checks that perform different analyses */
@@ -292,7 +292,8 @@ int xx_print_output(sechk_module_t *mod, policy_t *policy)
 	sechk_proof_t *proof = NULL;
 	int i = 0;
 
-	if (!mod || !policy) {
+	if (!mod || (!policy && (mod->outputformat & ~(SECHK_OUT_BRF_DESCP) &&
+				 (mod->outputformat & ~(SECHK_OUT_DET_DESCP))))){
 		fprintf(stderr, "Error: invalid parameters\n");
 		return -1;
 	}
