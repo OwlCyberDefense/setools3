@@ -483,7 +483,7 @@ int find_domains_print_output(sechk_module_t *mod, policy_t *policy)
 		return -1;
 	}
 
-	if (!outformat) {
+	if (!outformat || (outformat & SECHK_OUT_QUIET)) {
 		return 0; /* not an error - no output is requested */
 	}
 	printf("\nModule: %s\n", mod_name);

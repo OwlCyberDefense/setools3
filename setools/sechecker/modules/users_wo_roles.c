@@ -240,6 +240,9 @@ int users_wo_roles_run(sechk_module_t *mod, policy_t *policy)
 
 	mod->result = res;
 
+	if (res->num_items > 0)
+		return 1;
+
 	return 0;
 
 users_wo_roles_run_fail:
@@ -293,7 +296,7 @@ int users_wo_roles_print_output(sechk_module_t *mod, policy_t *policy)
 	datum = (users_wo_roles_data_t*)mod->data;
 	outformat = mod->outputformat;
 
-	if (!outformat)
+	if (!outformat || (outformat & SECHK_OUT_QUIET))
 		return 0; /* not an error - no output is requested */
 
 	if (!mod->result && (outformat & ~(SECHK_OUT_BRF_DESCP)) && (outformat & ~(SECHK_OUT_DET_DESCP))) {
