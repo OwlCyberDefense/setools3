@@ -190,7 +190,11 @@ int xx_init(sechk_module_t *mod, policy_t *policy)
 /* The run function performs the check. This function runs only once
  * even if called multiple times. All test logic should be placed below
  * as instructed. This function allocates the result structure and fills
- * in all relavant item and proof data.
+ * in all relavant item and proof data. 
+ * Return Values:
+ *  -1 System error
+ *   0 The module "succeeded"	- no negative results found
+ *   1 The module "failed" 		- some negative results found
  * TODO: add check logic */
 int xx_run(sechk_module_t *mod, policy_t *policy)
 {
@@ -238,6 +242,11 @@ int xx_run(sechk_module_t *mod, policy_t *policy)
 	 * see other modules. */
 
 	mod->result = res;
+
+	/* If module finds something that would be considered a fail 
+	 * on the policy return 1 here */
+	if (res->num_items > 0)
+		return 1;
 
 	return 0;
 
@@ -310,7 +319,7 @@ int xx_print_output(sechk_module_t *mod, policy_t *policy)
 		return -1;
 	}
 	
-	if (!outformat)
+	if (!outformat || (outformat & SECHK_OUT_QUIET))
 		return 0; /* not an error - no output is requested */
 
 	/* TODO: fill in output fields below */
