@@ -39,16 +39,16 @@ int find_domains_register(sechk_lib_t *lib)
 	/* assign descriptions */
 	mod->brief_description = "Finds all types in policy treated as a domain. ";
 	mod->detailed_description = "Finds all types in policy treated as a domain. "
-"\nA type is considered a domain if any of the following is true: "
-"\n  It has an attribute associated with domains "
-"\n  It is the source of a te rule for object class other than filesystem "
-"\n  It is the default type in a type_transition rule for object class process "
-"\n  It is associated with a role other than object_r"
-"\n  REQUIREMENTS:"
+"\n  A type is considered a domain if any of the following is true: "
+"\n    It has an attribute associated with domains "
+"\n    It is the source of a te rule for object class other than filesystem "
+"\n    It is the default type in a type_transition rule for object class process "
+"\n    It is associated with a role other than object_r"
+"\n  Requirements:"
 "\n    policy_type=source"
-"\n  DEPENDENCIES:"
+"\n  Dependencies:"
 "\n    none"
-"\n  OPTIONS:"
+"\n  Options:"
 "\n    domain_attribute";
 
 	/* assign requirements */
