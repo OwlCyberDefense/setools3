@@ -48,11 +48,14 @@ int users_wo_roles_register(sechk_lib_t *lib)
 	/* assign the descriptions */
 	mod->brief_description = "Finds all users in the policy with no assigned roles.";
 	mod->detailed_description = "Finds all users in the policy with no assigned roles."
-		"\n  REQUIREMENTS:"
+"\nUsers without a role cannot be used to form a valid security context"
+"\nexcept with object_r.  Such a user cannot login or have any asociated"
+"\nprocesses, but could appear in the label of a file system object."
+		"\n  Requirements:"
 		"\n    none"
-		"\n  DEPENDENCIES:"
+		"\n  Dependencies:"
 		"\n    none"
-		"\n  OPTIONS:"
+		"\n  Options:"
 		"\n    none";
 	
 	/* register functions */
