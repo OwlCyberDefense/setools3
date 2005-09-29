@@ -46,15 +46,16 @@ int roles_not_in_allow_register(sechk_lib_t *lib)
 	}
 	
 	/* assign the descriptions */
-	mod->brief_description = "Finds roles defined but not used in role allow rules in a policy."
-"\nThis module also reports role_transition rules found for these roles.";
-	mod->detailed_description = "Finds roles defined but not used in role allow rules in a policy."
+	mod->brief_description = "Finds roles defined but not used in role allow rules in a policy.";
+ 	mod->detailed_description = "Finds roles defined but not used in role allow rules in a policy."
 "\nThis module also reports role_transition rules found for these roles."
-		"\n  REQUIREMENTS:"
+"\nIt is impossible to transition to or from any role that does not have"
+"\nany allow rules."
+		"\n  Requirements:"
 		"\n    none"
-		"\n  DEPENDENCIES:"
+		"\n  Dependencies:"
 		"\n    none"
-		"\n  OPTIONS:"
+		"\n  Options:"
 		"\n    none";
 
 	/* register functions */

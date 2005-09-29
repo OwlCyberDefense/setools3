@@ -48,11 +48,12 @@ int roles_wo_types_register(sechk_lib_t *lib)
 	/* assign descriptions */
 	mod->brief_description = "Finds all roles in the policy with no associated types.";
 	mod->detailed_description = "Finds all roles in the policy with no associated types."
-		"\n  REQUIREMENTS:"
+"A role with no types cannot form a valid security context."
+		"\n  Requirements:"
 		"\n    none"
-		"\n  DEPENDENCIES:"
+		"\n  Dependencies:"
 		"\n    none"
-		"\n  OPTIONS:"
+		"\n  Options:"
 		"\n    none";
 	
 	/* register functions */

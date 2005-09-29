@@ -48,11 +48,13 @@ int attributes_not_in_rules_register(sechk_lib_t *lib)
 	/* assign the descriptions */
 	mod->brief_description = "Finds attributes in the policy not used in any rule.";
 	mod->detailed_description = "Finds attributes in the policy not used in any rule."
-		"\n  REQUIREMENTS:"
+"\nThese attributes will be lost in the binary policy, but have no effect on"
+"\nthe resulting security enforcement."
+		"\n  Requirements:"
 		"\n    policy_type=src"
-		"\n  DEPENDENCIES:"
+		"\n  Dependencies:"
 		"\n    none"
-		"\n  OPTIONS:"
+		"\n  Options:"
 		"\n    none";
 
 	/* assign requirements */
