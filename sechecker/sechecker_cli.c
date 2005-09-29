@@ -58,15 +58,16 @@ void usage(const char *arg0, bool_t brief)
 		printf("   -l, --prof-list          Print a list of known profiles\n");
 		printf("   -L, --mod-list           Print a list of available modules\n");
 		printf("   -h, --help               Print this help message\n");
-		printf("   -H, --mod-help           Print module help message\n");
 		printf("   -v, --version            Print version information\n");
-		printf("   -s, --short              Use short output format\n");
-		printf("   -V, --verbose            Use verbose output format\n");
-		printf("   -q, --quiet              Output 0 for success, 1 for error\n");
-		printf("   -p file, --policy=file   The location of the policy file\n");
+		printf("   -q, --quiet              Do not print any results\n");
+		printf("   -s, --short              Print short output format\n");
+		printf("   -V, --verbose            Print verbose output format\n");
+		printf("\n");
+		printf("   -p file,   --policy=file      The location of the policy file\n");
 #ifdef LIBSEFS
-		printf("   -c file, --fcfile=file   The location of the file_contexts file\n");
+		printf("   -c file,   --fcfile=file      The location of the file_contexts file\n");
 #endif
+		printf("   -H module, --mod-help=module  Print a complete module description\n");
 	}
 	printf("\n");
 }

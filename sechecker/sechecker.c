@@ -310,6 +310,9 @@ int sechk_lib_load_policy(const char *policyfilelocation, sechk_lib_t *lib)
 			return -1;
 		}
 		lib->policy_path = strdup(default_policy_path);
+		if (lib->outputformat & ~(SECHK_OUT_QUIET)) {
+			fprintf(stderr,"Using policy: %s\n",lib->policy_path);
+		}
 	} else {
 		retv = open_policy(policyfilelocation, &(lib->policy));
 		if (retv) {
@@ -344,6 +347,9 @@ int sechk_lib_load_fc(const char *fcfilelocation, sechk_lib_t *lib)
 			return -1;
 		} else {
 			lib->fc_path = strdup(default_fc_path);
+		}
+		if (lib->outputformat & ~(SECHK_OUT_QUIET)) {
+			fprintf(stderr,"Using file contexts: %s\n",lib->fc_path);
 		}
 	} else {
 		retv = parse_file_contexts_file(fcfilelocation, &(lib->fc_entries), &(lib->num_fc_entries), lib->policy);
@@ -502,13 +508,20 @@ int sechk_lib_check_module_requirements(sechk_lib_t *lib)
 			test = FALSE;
 			test = sechk_lib_check_requirement(nv, lib);
 			if (!test) {
-				fprintf(stderr, "Error: requirements not met for %s\n", lib->modules[i].name);
-				return -1;
+				/* if we're in quiet mode then we quit on a failed requirement */
+				if (lib->outputformat & (SECHK_OUT_QUIET)) {
+					return -1;
+					
+				} else {
+					/* otherwise we just disable this module and keep testing */
+					printf("Error: requirements not met for %s\n", lib->modules[i].name);					
+					lib->module_selection[i] = FALSE;
+					break;
+				}
 			}
 			nv = nv->next;
 		}
 	}
-
 	return 0;
 }
 
@@ -556,11 +569,17 @@ int sechk_lib_run_modules(sechk_lib_t *lib)
 			return -1;
 		}
 		retv = run_fn(&(lib->modules[i]), lib->policy);
-		if (retv) {
+	       
+		if (retv < 0) {
+			/* module failure */
 			/* only put output failures if we are not in quiet mode */
 			if (lib->outputformat & ~(SECHK_OUT_QUIET)) 
 				fprintf(stderr, "Error: module %s failed\n", lib->modules[i].name);
 			rc = -1;
+		} else if (retv > 0) {
+			/* a module looking for policy errors has found one */
+			if (lib->outputformat & (SECHK_OUT_QUIET)) 
+				rc = -1;
 		}
 	}
 
@@ -613,16 +632,22 @@ bool_t sechk_lib_check_requirement(sechk_name_value_t *req, sechk_lib_t *lib)
 	if (!strcmp(req->name, SECHK_PARSE_REQUIRE_POL_TYPE)) {
 		if (!strcmp(req->value, SECHK_PARSE_REQUIRE_POL_TYPE_SRC)) {
 			if (is_binary_policy(lib->policy)) {
-				fprintf(stderr, "Error: module required source policy but was given binary\n");
+				/* as long as we're not in quiet mode print output */
+				if (lib->outputformat & ~(SECHK_OUT_QUIET))
+					fprintf(stderr, "Error: module required source policy but was given binary\n");
 				return FALSE;
 			}
 		} else if (!strcmp(req->value, SECHK_PARSE_REQUIRE_POL_TYPE_BIN)) {
 			if (!is_binary_policy(lib->policy)) {
-				fprintf(stderr, "Error: module required binary policy but was given source\n");
+				/* as long as we're not in quiet mode print output */
+				if (lib->outputformat & ~(SECHK_OUT_QUIET))
+					fprintf(stderr, "Error: module required binary policy but was given source\n");
 				return FALSE;
 			}
 		} else {
-			fprintf(stderr, "Error: invalid policy type specification %s\n", req->value);
+			/* as long as we're not in quiet mode print output */
+			if (lib->outputformat & ~(SECHK_OUT_QUIET))
+				fprintf(stderr, "Error: invalid policy type specification %s\n", req->value);
 			return FALSE;
 		}
 	} else if (!strcmp(req->name, SECHK_PARSE_REQUIRE_POL_VER)) {
@@ -644,36 +669,50 @@ bool_t sechk_lib_check_requirement(sechk_name_value_t *req, sechk_lib_t *lib)
 		else
 			pol_ver = POL_VER_UNKNOWN;
 		if (lib->policy->version < pol_ver) {
-			fprintf(stderr, "Error: module requires newer policy version\n");
+			/* as long as we're not in quiet mode print output */
+			if (lib->outputformat & ~(SECHK_OUT_QUIET))				
+				fprintf(stderr, "Error: module requires newer policy version\n");
 			return FALSE;
 		}
 	} else if (!strcmp(req->name, SECHK_PARSE_REQUIRE_SELINUX)) {
 #ifdef LIBSELINUX
 		if (!is_selinux_enabled()) {
-			fprintf(stderr, "Error: module requires selinux system\n");
+			/* as long as we're not in quiet mode print output */
+			if (lib->outputformat & ~(SECHK_OUT_QUIET))				
+				fprintf(stderr, "Error: module requires selinux system\n");
 			return FALSE;
 		}
 #else
-		fprintf(stderr, "Error: module requires selinux system, but SEChecker was not built to support system checks\n");
+		/* as long as we're not in quiet mode print output */
+		if (lib->outputformat & ~(SECHK_OUT_QUIET))
+			fprintf(stderr, "Error: module requires selinux system, but SEChecker was not built to support system checks\n");
 		return FALSE;
 #endif
 	} else if (!strcmp(req->name, SECHK_PARSE_REQUIRE_MLS_POLICY)) {
 		if (lib->policy->version != POL_VER_19MLS) {
-			fprintf(stderr, "Error: module requires MLS policy\n");
+			/* as long as we're not in quiet mode print output */
+			if (lib->outputformat & ~(SECHK_OUT_QUIET))
+				fprintf(stderr, "Error: module requires MLS policy\n");
 			return FALSE;
 		}
 	} else if (!strcmp(req->name, SECHK_PARSE_REQUIRE_MLS_SYSTEM)) {
 #ifdef LIBSELINUX
 		if (!is_selinux_mls_enabled() || !is_selinux_enabled()) {
-			fprintf(stderr, "Error: module requires MLS enabled selinux system\n");
+			/* as long as we're not in quiet mode print output */
+			if (lib->outputformat & ~(SECHK_OUT_QUIET))
+				fprintf(stderr, "Error: module requires MLS enabled selinux system\n");
 			return FALSE;
 		}
 #else
-		fprintf(stderr, "Error: module requires selinux system, but SEChecker was not built to support system checks\n");
+		/* as long as we're not in quiet mode print output */
+		if (lib->outputformat & ~(SECHK_OUT_QUIET))
+			fprintf(stderr, "Error: module requires selinux system, but SEChecker was not built to support system checks\n");
 		return FALSE;
 #endif
 	} else {
-		fprintf(stderr, "Error: unrecognized requirement\n");
+		/* as long as we're not in quiet mode print output */
+		if (lib->outputformat & ~(SECHK_OUT_QUIET))			
+			fprintf(stderr, "Error: unrecognized requirement\n");
 		return FALSE;
 	}
 
@@ -819,10 +858,10 @@ int sechk_lib_load_profile(const char *prof_name, sechk_lib_t *lib)
 			break;
 		}
 	}
-	/* this is a known installed profile, look or it in that directory */
+	/* this is a known installed profile, look for it in that directory */
 	if (i < num_known_profiles) {
 		/* first look in the local subdir using just PROF_SUBDIR/profile */
-		prof_filename = (char *)calloc(strlen(known_profiles[i].value)+2+strlen(PROF_SUBDIR),sizeof(char));
+		prof_filename = (char *)calloc(strlen(known_profiles[i].value)+4+strlen(PROF_SUBDIR),sizeof(char));
 		if (!prof_filename) {
 			fprintf(stderr, "Error: out of memory\n");
 			return -1;
@@ -832,7 +871,7 @@ int sechk_lib_load_profile(const char *prof_name, sechk_lib_t *lib)
 		if (!path) {
 			free(prof_filename);
 			prof_filename = NULL;
-			prof_filename = (char *)calloc(strlen(PROFILE_INSTALL_DIR)+strlen(known_profiles[i].value)+2,sizeof(char));
+			prof_filename = (char *)calloc(strlen(PROFILE_INSTALL_DIR)+strlen(known_profiles[i].value)+4,sizeof(char));
 			if (!prof_filename) {
 				fprintf(stderr, "Error: out of memory\n");
 				return -1;
@@ -846,7 +885,7 @@ int sechk_lib_load_profile(const char *prof_name, sechk_lib_t *lib)
 		}
 		
 		/* concatenate path and filename */
-		profpath = (char*)calloc(2 + strlen(path) + strlen(prof_filename), sizeof(char));
+		profpath = (char*)calloc(3 + strlen(path) + strlen(prof_filename), sizeof(char));
 		if (!profpath) {
 			fprintf(stderr, "Error: out of memory\n");
 			goto sechk_load_profile_error;
@@ -866,18 +905,18 @@ int sechk_lib_load_profile(const char *prof_name, sechk_lib_t *lib)
 		fprintf(stderr, "Error: parse error in profile\n");
 		goto sechk_load_profile_error;
 	}
-
+	
 	/* turn off output for any unselected modules */
 	for (i = 0; i < lib->num_modules; i++) {
 		if (!lib->module_selection[i])
 			lib->modules[i].outputformat = SECHK_OUT_NONE;
 	}
-
+	
 	free(profpath);
 	free(prof_filename);
 	free(path);
 	return 0;
-
+	
 sechk_load_profile_error:
 	free(profpath);
 	free(prof_filename);

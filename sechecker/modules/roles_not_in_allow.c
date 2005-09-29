@@ -329,6 +329,9 @@ int roles_not_in_allow_run(sechk_module_t *mod, policy_t *policy)
 
 	mod->result = res;
 
+	if (res->num_items > 0)
+		return 1;
+
 	return 0;
 
 roles_not_in_allow_run_fail:
@@ -395,7 +398,7 @@ int roles_not_in_allow_print_output(sechk_module_t *mod, policy_t *policy)
 		return -1;
 	}
 
-	if (!outformat)
+	if (!outformat || (outformat & SECHK_OUT_QUIET))
 		return 0; /* not an error - no output is requested */
 
 	printf("\nModule: %s\n", mod_name);
