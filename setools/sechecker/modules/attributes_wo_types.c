@@ -48,12 +48,15 @@ int attributes_wo_types_register(sechk_lib_t *lib)
 	
 	/* assign the descriptions */
 	mod->brief_description = "Finds attributes in the policy with no types.";
-	mod->detailed_description = "Finds attributes in the policy with no types."
-		"\n  REQUIREMENTS:"
+	mod->detailed_description = "Finds attributes in the policy not associated with any types."
+"\nAttributes without types can cause type fields in rules to expand to empty"
+"\nsets, which are discarded by the compiler. While this does not cause any"
+"\nadditional access, it may be misleading when reading the source."
+		"\n  Requirements:"
 		"\n    policy_type=source"
-		"\n  DEPENDENCIES:"
+		"\n  Dependencies:"
 		"\n    none"
-		"\n  OPTIONS:"
+		"\n  Options:"
 		"\n    none";
 
 	/* assign requirements */

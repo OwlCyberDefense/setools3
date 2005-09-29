@@ -37,14 +37,16 @@ int domain_and_file_type_register(sechk_lib_t *lib)
 	/* assign descriptions */
 	mod->brief_description = "Finds all types in the policy treated as both a domain and a file type";
 	mod->detailed_description = "Finds all types in the policy treated as both a domain and a file type "
-"\n  See domain_type and file_type modules for details about how "
-"\n  types are placed in these categories"
-"\n  REQUIREMENTS:"
+"\nSee domain_type and file_type modules for details about how "
+"\ntypes are placed in these categories. It is considered bad security"
+"\npractice to use the same type for a domain and its data objects, because"
+"\nit requires that less restrictive access be granted."
+"\n  Requirements:"
 "\n    policy_type=source"
-"\n  DEPENDENCIES:"
+"\n  Dependencies:"
 "\n    module=find_domains"
 "\n    module=find_file_types"
-"\n  OPTIONS:"
+"\n  Options:"
 "\n    none";
 
 	/* assign requirements */
