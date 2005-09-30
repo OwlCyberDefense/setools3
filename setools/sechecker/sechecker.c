@@ -30,8 +30,8 @@ static const char *sechk_severities[] = { "None", "Low", "Medium", "High" };
 
 /* this is where we define the known profiles */
 static sechk_name_value_t known_profiles[] = { 
-	{"developer","devel-checks.sechecker"},
-	{"system","system-checks.sechecker"}
+	{"development","devel-checks.sechecker"},
+	{"analysis","analysis-checks.sechecker"}
 };
 static int num_known_profiles = 2;
 

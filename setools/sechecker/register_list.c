@@ -22,7 +22,11 @@ sechk_module_name_reg_t sechk_register_list[] = {
 	{"types_not_in_allow",		&types_not_in_allow_register},
 	{"spurious_audit",			&spurious_audit_register},
 	{"attributes_not_in_rules",	&attributes_not_in_rules_register},
-
+	{"incomplete_mount",		&incomplete_mount_register},
+	{"roles_not_in_users",		&roles_not_in_users_register},
+	{"rules_expand_to_nothing",	&rules_expand_to_nothing_register},
+	{"domains_wo_roles",		&domains_wo_roles_register},
+	{"incomplete_domain_trans", &incomplete_domain_trans_register},
 	/* TODO: add additional register addresses here */
 
 	{NULL, NULL}
