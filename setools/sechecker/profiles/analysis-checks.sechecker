@@ -1,0 +1,43 @@
+<sechecker version="1.0">
+<profile>
+	<module name="find_domains">
+		<output value="quiet"/>
+		<option name="domain_attribute">
+			domain
+		</option>
+	</module>
+	
+	<module name="find_file_types">
+		<output value="quiet"/>
+		<option name="file_type_attribute">
+			file_type
+		</option>
+	</module>
+	
+	<module name="domain_and_file_type">
+		<output value="verbose"/>
+	</module>
+	
+	<module name="spurious_audit">
+		<output value="verbose"/>
+	</module>
+	
+	<module name="incomplete_mount">
+		<output value="verbose"/>
+	</module>
+
+	<module name="rules_expand_to_nothing">
+		<output value="verbose"/>
+	</module>
+
+	<module name="domains_wo_roles">
+		<output value="short"/>
+	</module>
+
+	<module name="incomplete_domain_trans">
+		<output value="verbose"/>
+	</module>
+
+</profile>
+</sechecker>
+
