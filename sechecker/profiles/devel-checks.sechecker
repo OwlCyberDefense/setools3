@@ -14,13 +14,42 @@
 		</option>
 	</module>
 	
-	<module name="domain_and_file_type">
-		<output value="verbose"/>
+	<module name="attributes_wo_types">
+		<output value="short"/>
 	</module>
 	
+	<module name="roles_wo_types">
+		<output value="short"/>
+	</module>
+
+	<module name="users_wo_roles">
+		<output value="short"/>
+	</module>
+
+	<module name="roles_not_in_allow">
+		<output value="verbose"/>
+	</module>
+
+	<module name="types_not_in_allow">
+		<output value="verbose"/>
+	</module>
+
+	<module name="attributes_not_in_rules">
+		<output value="short"/>
+	</module>
+
+	<module name="roles_not_in_users">
+		<output value="short"/>
+	</module>
+
+	<module name="rules_expand_to_nothing">
+		<output value="verbose"/>
+	</module>
+
 	<module name="spurious_audit">
 		<output value="verbose"/>
 	</module>
 	
 </profile>
 </sechecker>
+
