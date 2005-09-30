@@ -1917,6 +1917,7 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 	/* magic # and sz of policy string */
 	buf = ap_read_fbuf(fb, sizeof(__u32)*2, fp);
 	if(buf == NULL) { rt = fb->err; goto err_return; }
+	buf[0] = le32_to_cpu(buf[0]);
 	if (buf[0] != SELINUX_MAGIC) { rt = -2; goto err_return; }
 	
 	len = le32_to_cpu(buf[1]);
@@ -2303,6 +2304,7 @@ bool_t ap_is_file_binpol(FILE *fp)
 	if(sz != 1)
 		rt = FALSE; /* problem reading file */
 
+	ubuf = le32_to_cpu(ubuf);
 	if(ubuf == SELINUX_MAGIC) 
 		rt = TRUE;
 	else
@@ -2336,6 +2338,7 @@ int ap_binpol_version(FILE *fp)
 	/* magic # and sz of policy string */
 	buf = ap_read_fbuf(fb, sizeof(__u32)*2, fp);
 	if (buf == NULL) { rt = fb->err; goto err_return; }
+	buf[0] = le32_to_cpu(buf[0]);
 	if (buf[0] != SELINUX_MAGIC) { rt = -2; goto err_return; }
 	
 	len = le32_to_cpu(buf[1]);
