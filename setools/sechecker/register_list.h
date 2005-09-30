@@ -27,6 +27,11 @@ extern int roles_not_in_allow_register(sechk_lib_t *lib);
 extern int types_not_in_allow_register(sechk_lib_t *lib);
 extern int spurious_audit_register(sechk_lib_t *lib);
 extern int attributes_not_in_rules_register(sechk_lib_t *lib);
+extern int incomplete_mount_register(sechk_lib_t *lib);
+extern int roles_not_in_users_register(sechk_lib_t *lib);
+extern int rules_expand_to_nothing_register(sechk_lib_t *lib);
+extern int domains_wo_roles_register(sechk_lib_t *lib);
+extern int incomplete_domain_trans_register(sechk_lib_t *lib);
 /* TODO: additional externs go here ... */
 
 int sechk_register_list_get_num_modules();
