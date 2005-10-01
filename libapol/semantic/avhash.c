@@ -300,7 +300,7 @@ int avh_new(avh_t *avh)
 {
 	int i;
 	
-	avh->tab = malloc(sizeof(avh_node_t *) * AVH_SIZE);
+	avh->tab = (avh_node_t**)malloc(sizeof(avh_node_t *) * AVH_SIZE);
 	if (avh->tab == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
