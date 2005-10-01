@@ -50,7 +50,7 @@
 		      <accelerator key="O" modifiers="GDK_CONTROL_MASK" signal="activate"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image155">
+			<widget class="GtkImage" id="image165">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-open</property>
 			  <property name="icon_size">1</property>
@@ -141,7 +141,7 @@
 		      <accelerator key="F" modifiers="GDK_CONTROL_MASK" signal="activate"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image156">
+			<widget class="GtkImage" id="image166">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-find</property>
 			  <property name="icon_size">1</property>
@@ -163,7 +163,7 @@
 		      <accelerator key="R" modifiers="GDK_CONTROL_MASK" signal="activate"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image157">
+			<widget class="GtkImage" id="image167">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-execute</property>
 			  <property name="icon_size">1</property>
@@ -185,7 +185,7 @@
 		      <accelerator key="T" modifiers="GDK_CONTROL_MASK" signal="activate"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image158">
+			<widget class="GtkImage" id="image168">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-preferences</property>
 			  <property name="icon_size">1</property>
@@ -205,13 +205,13 @@
 		  </child>
 
 		  <child>
-		    <widget class="GtkMenuItem" id="sort_te_rules1">
+		    <widget class="GtkMenuItem" id="sediff_sort_menu">
 		      <property name="visible">True</property>
 		      <property name="label" translatable="yes">Sort TE Rules</property>
 		      <property name="use_underline">True</property>
 
 		      <child>
-			<widget class="GtkMenu" id="sort_te_rules1_menu">
+			<widget class="GtkMenu" id="sediff_sort_menu_menu">
 
 			  <child>
 			    <widget class="GtkMenuItem" id="source_type1">
@@ -230,7 +230,7 @@
 				      <signal name="activate" handler="sediff_menu_on_src_type_asc_clicked" last_modification_time="Fri, 19 Aug 2005 15:27:41 GMT"/>
 
 				      <child internal-child="image">
-					<widget class="GtkImage" id="image159">
+					<widget class="GtkImage" id="image169">
 					  <property name="visible">True</property>
 					  <property name="stock">gtk-sort-ascending</property>
 					  <property name="icon_size">1</property>
@@ -251,7 +251,7 @@
 				      <signal name="activate" handler="sediff_menu_on_src_type_des_clicked" last_modification_time="Fri, 19 Aug 2005 15:27:41 GMT"/>
 
 				      <child internal-child="image">
-					<widget class="GtkImage" id="image160">
+					<widget class="GtkImage" id="image170">
 					  <property name="visible">True</property>
 					  <property name="stock">gtk-sort-descending</property>
 					  <property name="icon_size">1</property>
@@ -285,7 +285,7 @@
 				      <signal name="activate" handler="sediff_menu_on_tgt_type_asc_clicked" last_modification_time="Fri, 19 Aug 2005 15:27:41 GMT"/>
 
 				      <child internal-child="image">
-					<widget class="GtkImage" id="image161">
+					<widget class="GtkImage" id="image171">
 					  <property name="visible">True</property>
 					  <property name="stock">gtk-sort-ascending</property>
 					  <property name="icon_size">1</property>
@@ -306,7 +306,7 @@
 				      <signal name="activate" handler="sediff_menu_on_tgt_type_des_clicked" last_modification_time="Fri, 19 Aug 2005 15:27:41 GMT"/>
 
 				      <child internal-child="image">
-					<widget class="GtkImage" id="image162">
+					<widget class="GtkImage" id="image172">
 					  <property name="visible">True</property>
 					  <property name="stock">gtk-sort-descending</property>
 					  <property name="icon_size">1</property>
@@ -340,7 +340,7 @@
 				      <signal name="activate" handler="sediff_menu_on_oclass_asc_clicked" last_modification_time="Fri, 19 Aug 2005 15:27:41 GMT"/>
 
 				      <child internal-child="image">
-					<widget class="GtkImage" id="image163">
+					<widget class="GtkImage" id="image173">
 					  <property name="visible">True</property>
 					  <property name="stock">gtk-sort-ascending</property>
 					  <property name="icon_size">1</property>
@@ -361,7 +361,7 @@
 				      <signal name="activate" handler="sediff_menu_on_oclass_des_clicked" last_modification_time="Fri, 19 Aug 2005 15:27:41 GMT"/>
 
 				      <child internal-child="image">
-					<widget class="GtkImage" id="image164">
+					<widget class="GtkImage" id="image174">
 					  <property name="visible">True</property>
 					  <property name="stock">gtk-sort-descending</property>
 					  <property name="icon_size">1</property>
@@ -412,7 +412,7 @@
 		      <signal name="activate" handler="sediff_menu_on_about_clicked" last_modification_time="Sun, 04 Sep 2005 19:04:21 GMT"/>
 
 		      <child internal-child="image">
-			<widget class="GtkImage" id="image165">
+			<widget class="GtkImage" id="image175">
 			  <property name="visible">True</property>
 			  <property name="stock">gtk-about</property>
 			  <property name="icon_size">1</property>
@@ -1537,7 +1537,7 @@
 		    <widget class="GtkVButtonBox" id="vbuttonbox3">
 		      <property name="border_width">5</property>
 		      <property name="visible">True</property>
-		      <property name="layout_style">GTK_BUTTONBOX_DEFAULT_STYLE</property>
+		      <property name="layout_style">GTK_BUTTONBOX_END</property>
 		      <property name="spacing">0</property>
 
 		      <child>
@@ -1553,7 +1553,7 @@
 		      </child>
 		    </widget>
 		    <packing>
-		      <property name="padding">0</property>
+		      <property name="padding">5</property>
 		      <property name="expand">False</property>
 		      <property name="fill">True</property>
 		    </packing>
@@ -1566,7 +1566,7 @@
 	  <child>
 	    <widget class="GtkLabel" id="label25">
 	      <property name="visible">True</property>
-	      <property name="label" translatable="yes">Equivalent Types</property>
+	      <property name="label" translatable="yes">Renamed types</property>
 	      <property name="use_underline">False</property>
 	      <property name="use_markup">True</property>
 	      <property name="justify">GTK_JUSTIFY_LEFT</property>
@@ -1629,7 +1629,7 @@
 		      <child>
 			<widget class="GtkLabel" id="label23">
 			  <property name="visible">True</property>
-			  <property name="label" translatable="yes">Policy 1</property>
+			  <property name="label" translatable="yes">Policy 1 types - not in Policy 2</property>
 			  <property name="use_underline">False</property>
 			  <property name="use_markup">False</property>
 			  <property name="justify">GTK_JUSTIFY_LEFT</property>
@@ -1645,7 +1645,7 @@
 			  <property name="angle">0</property>
 			</widget>
 			<packing>
-			  <property name="padding">0</property>
+			  <property name="padding">3</property>
 			  <property name="expand">False</property>
 			  <property name="fill">False</property>
 			</packing>
@@ -1682,7 +1682,7 @@
 			  </child>
 			</widget>
 			<packing>
-			  <property name="padding">0</property>
+			  <property name="padding">5</property>
 			  <property name="expand">False</property>
 			  <property name="fill">False</property>
 			</packing>
@@ -1705,7 +1705,7 @@
 		      <child>
 			<widget class="GtkLabel" id="label24">
 			  <property name="visible">True</property>
-			  <property name="label" translatable="yes">Policy 2</property>
+			  <property name="label" translatable="yes">Policy 2 types - not in Policy 1</property>
 			  <property name="use_underline">False</property>
 			  <property name="use_markup">False</property>
 			  <property name="justify">GTK_JUSTIFY_LEFT</property>
@@ -1721,7 +1721,7 @@
 			  <property name="angle">0</property>
 			</widget>
 			<packing>
-			  <property name="padding">0</property>
+			  <property name="padding">3</property>
 			  <property name="expand">False</property>
 			  <property name="fill">False</property>
 			</packing>
@@ -1758,7 +1758,7 @@
 			  </child>
 			</widget>
 			<packing>
-			  <property name="padding">0</property>
+			  <property name="padding">5</property>
 			  <property name="expand">False</property>
 			  <property name="fill">False</property>
 			</packing>
@@ -1773,6 +1773,7 @@
 
 		  <child>
 		    <widget class="GtkVButtonBox" id="vbuttonbox2">
+		      <property name="border_width">5</property>
 		      <property name="visible">True</property>
 		      <property name="layout_style">GTK_BUTTONBOX_SPREAD</property>
 		      <property name="spacing">0</property>
@@ -1805,7 +1806,7 @@
 	  <child>
 	    <widget class="GtkLabel" id="label23">
 	      <property name="visible">True</property>
-	      <property name="label" translatable="yes">New Equivalent Type</property>
+	      <property name="label" translatable="yes">Add a new type rename</property>
 	      <property name="use_underline">False</property>
 	      <property name="use_markup">True</property>
 	      <property name="justify">GTK_JUSTIFY_LEFT</property>
