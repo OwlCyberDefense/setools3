@@ -56,13 +56,15 @@ void clear_wait_cursor(GtkWidget *widget)
 	g_idle_add(&pointer_reset, widget);
 }
 
-GString* get_filename_from_user(const char *title, const gchar *startfilename)
+GString* get_filename_from_user(GtkWindow *parent, const char *title, const gchar *startfilename)
 {
 	GtkWidget *file_selector;
 	gint response;
 	GString *filename;
 
 	file_selector = gtk_file_selection_new(title);
+	gtk_window_set_transient_for(GTK_WINDOW(file_selector), GTK_WINDOW(parent));
+	gtk_window_set_position(GTK_WINDOW(file_selector), GTK_WIN_POS_CENTER_ON_PARENT);
 	gtk_file_selection_hide_fileop_buttons (GTK_FILE_SELECTION(file_selector));
 	if (startfilename)
 		gtk_file_selection_set_filename(GTK_FILE_SELECTION(file_selector), startfilename);
