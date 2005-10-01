@@ -1282,7 +1282,7 @@ int main (int argc, char **argv)
 		exit(1);
 	}
 
-	svd = ap_new_single_view_diff(opts, p1, p2,NULL);
+	svd = ap_single_view_diff_new(opts, p1, p2,NULL);
 	if (svd == NULL) {
 		printf("Problem differentiating policies\n");
 		exit(1);
@@ -1355,7 +1355,7 @@ int main (int argc, char **argv)
 		printf("\n");
 	}
 
-	ap_destroy_single_view_diff(svd);
+	ap_single_view_diff_destroy(svd);
 	exit(0);
 }
 
