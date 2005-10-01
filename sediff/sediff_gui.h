@@ -37,8 +37,6 @@ typedef struct sediff_app {
 	GladeXML *window_xml;             /* the main windows xml */
 	GladeXML *open_dlg_xml;           /* the open dialogs xml */
 	GtkWidget *tree_view;	          /* the treeview seen on left hand pane */
-	GtkTextBuffer *policy1_text;      /* the text buffer we stored policy 1 in */
-	GtkTextBuffer *policy2_text;      /* the text buffer we store policy 2 in */
 	GList *callbacks;               
 	gint progress_completed;
 	GtkTextBuffer *main_buffer;       /* the generic buffer used for everything but te rules and conditionals(because they take so long to draw */

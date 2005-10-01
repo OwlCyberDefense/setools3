@@ -27,7 +27,7 @@ int main(int argc, char **argv)
 	TEST("load policy 2", open_policy("policy/rbac2.conf", &p2) == 0);
 
 	/* diff them */
-	TEST("diff policies", (svd = ap_new_single_view_diff(opts,p1,p2,NULL)) != NULL);
+	TEST("diff policies", (svd = ap_single_view_diff_new(opts, p1, p2, NULL)) != NULL);
 
 	diff = svd->diff;
 	/* role allow differences */
@@ -150,7 +150,7 @@ int main(int argc, char **argv)
 
 
 	/* cleanup the pointers */
-	ap_destroy_single_view_diff(svd);
+	ap_single_view_diff_destroy(svd);
 
 	return 0;
 }
