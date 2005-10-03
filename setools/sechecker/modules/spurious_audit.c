@@ -187,7 +187,7 @@ int spurious_audit_run(sechk_module_t *mod, policy_t *policy)
 	int *obj_classes = NULL, num_obj_classes = 0;
 	int *perms = NULL, num_perms = 0;
 	bool_t *used_perms = NULL;
-	avh_key_t *key = NULL;
+	avh_key_t key = {-1,-1,-1,RULE_INVALID};
 	avh_rule_t *hash_rule = NULL;
 	char *tmp = NULL;
 
@@ -257,16 +257,11 @@ int spurious_audit_run(sechk_module_t *mod, policy_t *policy)
 			for (tgt = 0; tgt < num_tgt_types; tgt++) {
 				for (obj = 0; obj < num_obj_classes; obj++) {
 					proof = NULL;
-					key = (avh_key_t*)calloc(1, sizeof(avh_key_t));
-					if (!key) {
-						fprintf(stderr, "Error: out of memory\n");
-						goto spurious_audit_run_fail;
-					}
-					key->src = src_types[src];
-					key->tgt = tgt_types[tgt];
-					key->cls = obj_classes[obj];
-					key->rule_type = RULE_TE_ALLOW;
-					node = avh_find_first_node(&(policy->avh), key);
+					key.src = src_types[src];
+					key.tgt = tgt_types[tgt];
+					key.cls = obj_classes[obj];
+					key.rule_type = RULE_TE_ALLOW;
+					node = avh_find_first_node(&(policy->avh), &key);
 					if (policy->av_audit[i].type == RULE_AUDITALLOW) {
 						if (!node) {
 							proof = sechk_proof_new();
@@ -416,6 +411,22 @@ int spurious_audit_run(sechk_module_t *mod, policy_t *policy)
 			(res->num_items)++;
 		}
 		item = NULL;
+
+		/* free temporary lists */
+		free(used_perms);
+		used_perms = NULL;
+		free(src_types);
+		src_types = NULL;
+		num_src_types = 0;
+		free(tgt_types);
+		tgt_types = NULL;
+		num_tgt_types = 0;
+		free(obj_classes);
+		obj_classes = NULL;
+		num_obj_classes = 0;
+		free(perms);
+		perms = NULL;
+		num_perms = 0;
 	}
 
 	mod->result = res;
@@ -424,7 +435,6 @@ int spurious_audit_run(sechk_module_t *mod, policy_t *policy)
 
 spurious_audit_run_fail:
 	free(tmp);
-	free(key);
 	free(used_perms);
 	free(src_types);
 	free(tgt_types);
@@ -464,6 +474,7 @@ int spurious_audit_print_output(sechk_module_t *mod, policy_t *policy)
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
+	char *tmp = NULL;
 
         if (!mod || (!policy && (mod->outputformat & ~(SECHK_OUT_BRF_DESCP) &&
                                  (mod->outputformat & ~(SECHK_OUT_DET_DESCP))))){
@@ -504,7 +515,8 @@ int spurious_audit_print_output(sechk_module_t *mod, policy_t *policy)
 	if (outformat & SECHK_OUT_LIST) {
 		printf("\n");
 		for (item = mod->result->items; item; item = item->next) {
-			printf("%s\n", re_render_av_rule(!is_binary_policy(policy), item->item_id, 1, policy)); 
+			printf("%s\n", (tmp=re_render_av_rule(!is_binary_policy(policy), item->item_id, 1, policy))); 
+			free(tmp);
 		}
 		printf("\n");
 	}
