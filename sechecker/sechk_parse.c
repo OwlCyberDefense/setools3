@@ -10,6 +10,7 @@
 #include "sechk_parse.h"
 #include "util.h"
 #include <libxml/xmlreader.h>
+#include <errno.h>
 
 #define WHITESPACE " \t\n\r"
 
@@ -28,14 +29,16 @@ int sechk_lib_parse_xml_file(const char *filename, sechk_lib_t *lib)
 	LIBXML_TEST_VERSION;
 	reader = xmlReaderForFile(filename, NULL, 0);
 	if (!reader) {
-		fprintf(stderr, "Error: Could not create xmlReader.");
+		ret = errno;
+		if (ret != ENOENT)
+			fprintf(stderr, "Error: Could not create xmlReader.\n");
 		goto exit_err;
 	}
 	
 	while (1) {
 		ret = xmlTextReaderRead(reader);
 		if (ret == -1) {
-			fprintf(stderr, "Error: Error reading xml.");
+			fprintf(stderr, "Error: Error reading xml.\n");
 			goto exit_err;
 		}
 		if (ret == 0) /* no more nodes to read */
@@ -53,6 +56,8 @@ int sechk_lib_parse_xml_file(const char *filename, sechk_lib_t *lib)
 	xmlCleanupParser();
 	if (reader)
 		xmlFreeTextReader(reader);
+	if (ret)
+		errno = ret;
 	return -1;
 }
 
