@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <getopt.h>
+#include <errno.h>
 
 /* SECHECKER_VERSION should be defined in the make environment */
 #ifndef SECHECKER_VERSION
@@ -243,8 +244,12 @@ int main(int argc, char **argv)
 	if (prof_name) {
 		retv = sechk_lib_load_profile(prof_name, module_library);
 		if (retv) {
-			if (!output_override || !(output_override & ~(SECHK_OUT_QUIET)))
-				fprintf(stderr, "Error: could not load profile %s.\n", prof_name);
+			retv = errno;
+			if (!output_override || !(output_override & ~(SECHK_OUT_QUIET))) {
+				fprintf(stderr, "Error: could not load profile %s\n", prof_name);
+				errno = retv;
+				perror("Error");
+			}
 			goto exit_err;
 		}
 	}
@@ -375,6 +380,7 @@ exit:
 	free(polpath);
 	free(modname);
 	sechk_lib_free(module_library);
+	free(module_library);
 	return 0;
 
 exit_err:
@@ -385,5 +391,6 @@ exit_err:
 	free(polpath);
 	free(modname);
 	sechk_lib_free(module_library);
+	free(module_library);
 	return 1;
 }
