@@ -18,6 +18,7 @@
 #include <policy-io.h>
 #include <util.h>
 #include <dirent.h>
+#include <errno.h>
 #ifdef LIBSEFS
 #include "file_contexts.h"
 #endif
@@ -360,8 +361,9 @@ int sechk_lib_load_fc(const char *fcfilelocation, sechk_lib_t *lib)
 			lib->fc_path = strdup(fcfilelocation);
 		}
 	}
-	return 0;
+	free(default_fc_path);
 
+	return 0;
 }
 #endif
 
@@ -902,7 +904,8 @@ int sechk_lib_load_profile(const char *prof_name, sechk_lib_t *lib)
 	/* parse the profile */
 	retv = sechk_lib_parse_profile(profpath, lib);
 	if (retv) {
-		fprintf(stderr, "Error: parse error in profile\n");
+		retv = errno;
+		fprintf(stderr, "Error: could not parse profile\n");
 		goto sechk_load_profile_error;
 	}
 	
@@ -921,6 +924,8 @@ sechk_load_profile_error:
 	free(profpath);
 	free(prof_filename);
 	free(path);
+	if (retv)
+		errno = retv;
 	return -1;
 }
 
