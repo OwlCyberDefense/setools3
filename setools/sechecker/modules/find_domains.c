@@ -10,7 +10,6 @@
 #include "policy.h"
 #include "find_domains.h"
 #include "render.h"
-
 #include <stdio.h>
 #include <string.h>
 #include <semantic/avsemantics.h>

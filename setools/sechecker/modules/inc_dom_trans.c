@@ -8,7 +8,7 @@
 
 #include "sechecker.h"
 #include "policy.h"
-#include "incomplete_domain_trans.h"
+#include "inc_dom_trans.h"
 #include "semantic/avhash.h"
 #include "semantic/avsemantics.h"
 #include "render.h"
@@ -23,11 +23,11 @@ static sechk_lib_t *library;
 /* This string is the name of the module and should match the stem
  * of the file name; it should also match the prefix of all functions
  * defined in this module and the private data storage structure */
-static const char *const mod_name = "incomplete_domain_trans";
+static const char *const mod_name = "inc_dom_trans";
 
 /* The register function registers all of a module's functions
  * with the library. */
-int incomplete_domain_trans_register(sechk_lib_t *lib)
+int inc_dom_trans_register(sechk_lib_t *lib)
 {
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
@@ -74,7 +74,7 @@ int incomplete_domain_trans_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &incomplete_domain_trans_init;
+	fn_struct->fn = &inc_dom_trans_init;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -88,7 +88,7 @@ int incomplete_domain_trans_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &incomplete_domain_trans_run;
+	fn_struct->fn = &inc_dom_trans_run;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -102,7 +102,7 @@ int incomplete_domain_trans_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &incomplete_domain_trans_free;
+	fn_struct->fn = &inc_dom_trans_free;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -116,7 +116,7 @@ int incomplete_domain_trans_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &incomplete_domain_trans_print_output;
+	fn_struct->fn = &inc_dom_trans_print_output;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -130,7 +130,7 @@ int incomplete_domain_trans_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &incomplete_domain_trans_get_result;
+	fn_struct->fn = &inc_dom_trans_get_result;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -140,10 +140,10 @@ int incomplete_domain_trans_register(sechk_lib_t *lib)
 /* The init function creates the module's private data storage object
  * and initializes its values based on the options parsed in the config
  * file. */
-int incomplete_domain_trans_init(sechk_module_t *mod, policy_t *policy)
+int inc_dom_trans_init(sechk_module_t *mod, policy_t *policy)
 {
 	sechk_name_value_t *opt = NULL;
-	incomplete_domain_trans_data_t *datum = NULL;
+	inc_dom_trans_data_t *datum = NULL;
 
 	if (!mod || !policy) {
 		fprintf(stderr, "Error: invalid parameters\n");
@@ -154,7 +154,7 @@ int incomplete_domain_trans_init(sechk_module_t *mod, policy_t *policy)
 		return -1;
 	}
 
-	datum = incomplete_domain_trans_data_new();
+	datum = inc_dom_trans_data_new();
 	if (!datum) {
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
@@ -189,7 +189,7 @@ static int add_trans_pair_to_a(trans_pair_t tp, int *sz, trans_pair_t **a)
 	return 0;	
 };
 
-static sechk_proof_t *incomplete_domain_trans_generate_proof(int src, int exec, int trx, unsigned char flags, policy_t *policy)
+static sechk_proof_t *inc_dom_trans_generate_proof(int src, int exec, int trx, unsigned char flags, policy_t *policy)
 {
 	sechk_proof_t *proof = NULL;
 	char buff[BUF_SZ];
@@ -293,9 +293,9 @@ static sechk_proof_t *incomplete_domain_trans_generate_proof(int src, int exec, 
 
 /* The run function performs the check. This function runs only once
  * even if called multiple times. */
-int incomplete_domain_trans_run(sechk_module_t *mod, policy_t *policy)
+int inc_dom_trans_run(sechk_module_t *mod, policy_t *policy)
 {
-	incomplete_domain_trans_data_t *datum;
+	inc_dom_trans_data_t *datum;
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
@@ -331,7 +331,7 @@ int incomplete_domain_trans_run(sechk_module_t *mod, policy_t *policy)
 	if (mod->result)
 		return 0;
 
-	datum = (incomplete_domain_trans_data_t*)mod->data;
+	datum = (inc_dom_trans_data_t*)mod->data;
 	res = sechk_result_new();
 	if (!res) {
 		fprintf(stderr, "Error: out of memory\n");
@@ -340,7 +340,7 @@ int incomplete_domain_trans_run(sechk_module_t *mod, policy_t *policy)
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
 		fprintf(stderr, "Error: out of memory\n");
-		goto incomplete_domain_trans_run_fail;
+		goto inc_dom_trans_run_fail;
 	}
 	res->item_type = POL_LIST_TYPE;
 
@@ -348,28 +348,28 @@ int incomplete_domain_trans_run(sechk_module_t *mod, policy_t *policy)
 		retv = avh_build_hashtab(policy);
 		if (retv) {
 			fprintf(stderr, "Error: could not build hash table\n");
-			goto incomplete_domain_trans_run_fail;
+			goto inc_dom_trans_run_fail;
 		}
 	}
 
 	process_obj_class_idx = get_obj_class_idx("process", policy);
 	if (process_obj_class_idx == -1) 
-		goto incomplete_domain_trans_run_fail;
+		goto inc_dom_trans_run_fail;
 	execute_perm_idx = get_perm_idx("execute", policy);
 	if (execute_perm_idx == -1) 
-		goto incomplete_domain_trans_run_fail;
+		goto inc_dom_trans_run_fail;
 	execute_no_trans_perm_idx = get_perm_idx("execute_no_trans", policy);
 	if (execute_no_trans_perm_idx == -1) 
-		goto incomplete_domain_trans_run_fail;
+		goto inc_dom_trans_run_fail;
 	entrypoint_perm_idx = get_perm_idx("entrypoint", policy);
 	if (entrypoint_perm_idx == -1) 
-		goto incomplete_domain_trans_run_fail;
+		goto inc_dom_trans_run_fail;
 	transition_perm_idx = get_perm_idx("transition", policy);
 	if (transition_perm_idx == -1) 
-		goto incomplete_domain_trans_run_fail;
+		goto inc_dom_trans_run_fail;
 	file_obj_class_idx = get_obj_class_idx("file", policy);
 	if (file_obj_class_idx == -1)	
-		goto incomplete_domain_trans_run_fail;
+		goto inc_dom_trans_run_fail;
 
 	/* skip self (type 0) */
 	for (i = policy->num_types - 1; i; i--) {
@@ -405,7 +405,7 @@ int incomplete_domain_trans_run(sechk_module_t *mod, policy_t *policy)
 					retv = add_i_to_a(hash_idx->nodes[j]->key.tgt, &proctrans_list_sz, &proctrans_list);
 					if (retv) {
 						fprintf(stderr, "out of memory\n");
-						goto incomplete_domain_trans_run_fail;
+						goto inc_dom_trans_run_fail;
 					}
 				}
 			} /* end collect transition end points */
@@ -419,7 +419,7 @@ int incomplete_domain_trans_run(sechk_module_t *mod, policy_t *policy)
 						retv = add_i_to_a(hash_idx->nodes[j]->key.tgt, &execnotrans_list_sz, &execnotrans_list);
 						if (retv) {
 							fprintf(stderr, "out of memory\n");
-							goto incomplete_domain_trans_run_fail;
+							goto inc_dom_trans_run_fail;
 						}
 					}
 				} else {
@@ -427,7 +427,7 @@ int incomplete_domain_trans_run(sechk_module_t *mod, policy_t *policy)
 						retv = add_i_to_a(hash_idx->nodes[j]->key.tgt, &execwtrans_list_sz, &execwtrans_list);
 						if (retv) {
 							fprintf(stderr, "out of memory\n");
-							goto incomplete_domain_trans_run_fail;
+							goto inc_dom_trans_run_fail;
 						}
 					}
 				}
@@ -441,7 +441,7 @@ int incomplete_domain_trans_run(sechk_module_t *mod, policy_t *policy)
 					retv = add_trans_pair_to_a(tmp, &transpair_list_sz, &transpair_list);
 					if (retv) {
 						fprintf(stderr, "out of memory\n");
-						goto incomplete_domain_trans_run_fail;
+						goto inc_dom_trans_run_fail;
 					}
 			} /* end collect type_transitions */
 
@@ -487,13 +487,13 @@ int incomplete_domain_trans_run(sechk_module_t *mod, policy_t *policy)
 						item = sechk_item_new();
 						if (!item) {
 							fprintf(stderr, "out of memory\n");
-							goto incomplete_domain_trans_run_fail;
+							goto inc_dom_trans_run_fail;
 						}
 						item->item_id = i;
 					}
-					proof = incomplete_domain_trans_generate_proof(i, transpair_list[k].ep, transpair_list[k].tt, report_flag, policy);
+					proof = inc_dom_trans_generate_proof(i, transpair_list[k].ep, transpair_list[k].tt, report_flag, policy);
 					if (!proof)
-						goto incomplete_domain_trans_run_fail;
+						goto inc_dom_trans_run_fail;
 					item->test_result++;
 					proof->next = item->proof;
 					item->proof = proof;
@@ -513,13 +513,13 @@ int incomplete_domain_trans_run(sechk_module_t *mod, policy_t *policy)
 						item = sechk_item_new();
 						if (!item) {
 							fprintf(stderr, "out of memory\n");
-							goto incomplete_domain_trans_run_fail;
+							goto inc_dom_trans_run_fail;
 						}
 						item->item_id = i;
 					}
-					proof = incomplete_domain_trans_generate_proof(i, -1, proctrans_list[k], report_flag, policy);
+					proof = inc_dom_trans_generate_proof(i, -1, proctrans_list[k], report_flag, policy);
 					if (!proof)
-						goto incomplete_domain_trans_run_fail;
+						goto inc_dom_trans_run_fail;
 					item->test_result++;
 					proof->next = item->proof;
 					item->proof = proof;
@@ -551,13 +551,13 @@ int incomplete_domain_trans_run(sechk_module_t *mod, policy_t *policy)
 						item = sechk_item_new();
 						if (!item) {
 							fprintf(stderr, "out of memory\n");
-							goto incomplete_domain_trans_run_fail;
+							goto inc_dom_trans_run_fail;
 						}
 						item->item_id = i;
 					}
-					proof = incomplete_domain_trans_generate_proof(i, -1, proctrans_list[k], report_flag, policy);
+					proof = inc_dom_trans_generate_proof(i, -1, proctrans_list[k], report_flag, policy);
 					if (!proof)
-						goto incomplete_domain_trans_run_fail;
+						goto inc_dom_trans_run_fail;
 					item->test_result++;
 					proof->next = item->proof;
 					item->proof = proof;
@@ -567,13 +567,13 @@ int incomplete_domain_trans_run(sechk_module_t *mod, policy_t *policy)
 						item = sechk_item_new();
 						if (!item) {
 							fprintf(stderr, "out of memory\n");
-							goto incomplete_domain_trans_run_fail;
+							goto inc_dom_trans_run_fail;
 						}
 						item->item_id = i;
 					}
-					proof = incomplete_domain_trans_generate_proof(i, -1, proctrans_list[k], report_flag, policy);
+					proof = inc_dom_trans_generate_proof(i, -1, proctrans_list[k], report_flag, policy);
 					if (!proof)
-						goto incomplete_domain_trans_run_fail;
+						goto inc_dom_trans_run_fail;
 					item->test_result++;
 					proof->next = item->proof;
 					item->proof = proof;
@@ -593,13 +593,13 @@ int incomplete_domain_trans_run(sechk_module_t *mod, policy_t *policy)
 						item = sechk_item_new();
 						if (!item) {
 							fprintf(stderr, "out of memory\n");
-							goto incomplete_domain_trans_run_fail;
+							goto inc_dom_trans_run_fail;
 						}
 						item->item_id = i;
 					}
-					proof = incomplete_domain_trans_generate_proof(i, execwtrans_list[k], -1, report_flag, policy);
+					proof = inc_dom_trans_generate_proof(i, execwtrans_list[k], -1, report_flag, policy);
 					if (!proof)
-						goto incomplete_domain_trans_run_fail;
+						goto inc_dom_trans_run_fail;
 					item->test_result++;
 					proof->next = item->proof;
 					item->proof = proof;
@@ -616,13 +616,13 @@ int incomplete_domain_trans_run(sechk_module_t *mod, policy_t *policy)
 						item = sechk_item_new();
 						if (!item) {
 							fprintf(stderr, "out of memory\n");
-							goto incomplete_domain_trans_run_fail;
+							goto inc_dom_trans_run_fail;
 						}
 						item->item_id = i;
 					}
-					proof = incomplete_domain_trans_generate_proof(i, execwtrans_list[k], hash_idx2->nodes[l]->key.src, report_flag, policy);
+					proof = inc_dom_trans_generate_proof(i, execwtrans_list[k], hash_idx2->nodes[l]->key.src, report_flag, policy);
 					if (!proof)
-						goto incomplete_domain_trans_run_fail;
+						goto inc_dom_trans_run_fail;
 					item->test_result++;
 					proof->next = item->proof;
 					item->proof = proof;
@@ -632,13 +632,13 @@ int incomplete_domain_trans_run(sechk_module_t *mod, policy_t *policy)
 						item = sechk_item_new();
 						if (!item) {
 							fprintf(stderr, "out of memory\n");
-							goto incomplete_domain_trans_run_fail;
+							goto inc_dom_trans_run_fail;
 						}
 						item->item_id = i;
 					}
-					proof = incomplete_domain_trans_generate_proof(i, execwtrans_list[k], -1, report_flag, policy);
+					proof = inc_dom_trans_generate_proof(i, execwtrans_list[k], -1, report_flag, policy);
 					if (!proof)
-						goto incomplete_domain_trans_run_fail;
+						goto inc_dom_trans_run_fail;
 					item->test_result++;
 					proof->next = item->proof;
 					item->proof = proof;
@@ -669,7 +669,7 @@ int incomplete_domain_trans_run(sechk_module_t *mod, policy_t *policy)
 
 	return 0;
 
-incomplete_domain_trans_run_fail:
+inc_dom_trans_run_fail:
 	free(transpair_list);
 	free(proctrans_list);
 	free(execnotrans_list);
@@ -681,9 +681,9 @@ incomplete_domain_trans_run_fail:
 }
 
 /* The free function frees the private data of a module */
-void incomplete_domain_trans_free(sechk_module_t *mod)
+void inc_dom_trans_free(sechk_module_t *mod)
 {
-	incomplete_domain_trans_data_t *datum;
+	inc_dom_trans_data_t *datum;
 
 	if (!mod) {
 		fprintf(stderr, "Error: invalid parameters\n");
@@ -694,7 +694,7 @@ void incomplete_domain_trans_free(sechk_module_t *mod)
 		return;
 	}
 
-	datum = (incomplete_domain_trans_data_t*)mod->data;
+	datum = (inc_dom_trans_data_t*)mod->data;
 
 	free(mod->data);
 	mod->data = NULL;
@@ -702,9 +702,9 @@ void incomplete_domain_trans_free(sechk_module_t *mod)
 
 /* The print output function generates the text printed in the
  * report and prints it to stdout. */
-int incomplete_domain_trans_print_output(sechk_module_t *mod, policy_t *policy) 
+int inc_dom_trans_print_output(sechk_module_t *mod, policy_t *policy) 
 {
-	incomplete_domain_trans_data_t *datum = NULL;
+	inc_dom_trans_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
@@ -719,7 +719,7 @@ int incomplete_domain_trans_print_output(sechk_module_t *mod, policy_t *policy)
 		return -1;
 	}
 
-	datum = (incomplete_domain_trans_data_t*)mod->data;
+	datum = (inc_dom_trans_data_t*)mod->data;
 	outformat = mod->outputformat;
 
 	if (!mod->result && (outformat & ~(SECHK_OUT_BRF_DESCP)) && (outformat & ~(SECHK_OUT_DET_DESCP))) {
@@ -773,7 +773,7 @@ int incomplete_domain_trans_print_output(sechk_module_t *mod, policy_t *policy)
 
 /* The get_result function returns a pointer to the results
  * structure for this check to be used in another check. */
-sechk_result_t *incomplete_domain_trans_get_result(sechk_module_t *mod) 
+sechk_result_t *inc_dom_trans_get_result(sechk_module_t *mod) 
 {
 
 	if (!mod) {
@@ -788,14 +788,14 @@ sechk_result_t *incomplete_domain_trans_get_result(sechk_module_t *mod)
 	return mod->result;
 }
 
-/* The incomplete_domain_trans_data_new function allocates and returns an
+/* The inc_dom_trans_data_new function allocates and returns an
  * initialized private data storage structure for this
  * module.  */
-incomplete_domain_trans_data_t *incomplete_domain_trans_data_new(void)
+inc_dom_trans_data_t *inc_dom_trans_data_new(void)
 {
-	incomplete_domain_trans_data_t *datum = NULL;
+	inc_dom_trans_data_t *datum = NULL;
 
-	datum = (incomplete_domain_trans_data_t*)calloc(1,sizeof(incomplete_domain_trans_data_t));
+	datum = (inc_dom_trans_data_t*)calloc(1,sizeof(inc_dom_trans_data_t));
 
 	return datum;
 }

@@ -82,7 +82,7 @@ int sechk_print_list(sechk_lib_t *lib)
 	profiles = sechk_register_list_get_profiles();
 	num_profiles = sechk_register_list_get_num_profiles();
 	for (i = 0; i < num_profiles; i++) {
-		printf("%25s\t%s\n", profiles[i].name, profiles[i].desc);
+		printf("%20s\t%s\n", profiles[i].name, profiles[i].desc);
 	}
 	if (num_profiles == 0)
 		printf("<none>\n");
@@ -90,7 +90,7 @@ int sechk_print_list(sechk_lib_t *lib)
 	printf("Modules:\n");
 	/* TODO: should we be storing the description in the register list and iterate there instead? */
 	for(i = 0; i < lib->num_modules; i++) {
-		printf("%25s\t%s\n", lib->modules[i].name, lib->modules[i].brief_description);
+		printf("%20s\t%s\n", lib->modules[i].name, lib->modules[i].brief_description);
 	}
 	if (lib->num_modules == 0)
 		printf("<none>\n");
