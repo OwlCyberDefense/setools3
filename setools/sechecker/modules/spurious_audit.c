@@ -394,7 +394,7 @@ int spurious_audit_run(sechk_module_t *mod, policy_t *policy)
 									fprintf(stderr, "Error: out of memory\n");
 									goto spurious_audit_run_fail;
 								}
-								strcat(proof->text, "conflicting: ");
+								strcat(proof->text, "inconsistent: ");
 								strcat(proof->text, tmp);
 								free(tmp);
 								proof->next = item->proof;
@@ -535,8 +535,8 @@ int spurious_audit_print_output(sechk_module_t *mod, policy_t *policy)
 			for (proof = item->proof; proof; proof = proof->next) {
 				printf("\t%s\n", proof->text);
 			}
+			printf("\n");
 		}
-		printf("\n");
 	}
 
 	return 0;
