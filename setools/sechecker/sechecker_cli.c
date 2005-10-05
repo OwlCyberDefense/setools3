@@ -33,7 +33,6 @@ static struct option const longopts[] =
 	{"quiet", no_argument, NULL, 'q'},
 	{"short", no_argument, NULL, 's'},
 	{"verbose", no_argument, NULL, 'v'},
-
 	{"profile", required_argument, NULL, 'p'},
 	{"policy", required_argument, NULL, 'P'},
 #ifdef LLIBSEFS
@@ -65,7 +64,6 @@ void usage(const char *arg0, bool_t brief)
 		printf("   --fcfile=<file>  file_contexts file\n");
 #endif
 		printf("   --policy=<file>  policy file\n");
-
 		printf("\n");
 		printf("   -h[mod],   --help[=module]   print this help or help for a module\n");
 		printf("   -m <mod>,  --module=<mod>    module name\n");
@@ -316,7 +314,7 @@ int main(int argc, char **argv)
 			goto exit_err;
 		}
 		retv = run_fn(mod, lib->policy);
-		if (retv) {
+		if (retv < 0) {
 			goto exit_err;
 		}
 	} else {

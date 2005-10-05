@@ -266,7 +266,7 @@ int rules_expand_to_nothing_run(sechk_module_t *mod, policy_t *policy)
 		goto rules_expand_to_nothing_run_fail;	
 
 	retv = run_fn((mod_ptr = sechk_lib_get_module("attributes_wo_types", library)), policy);
-	if (retv) {
+	if (retv < 0) {
 		fprintf(stderr, "Error: depenency failed\n");
 		goto rules_expand_to_nothing_run_fail;
 	}
