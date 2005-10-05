@@ -14,7 +14,7 @@
 		</option>
 	</module>
 	
-	<module name="domain_and_file_type">
+	<module name="domain_and_file">
 		<output value="verbose"/>
 	</module>
 	
@@ -22,11 +22,11 @@
 		<output value="verbose"/>
 	</module>
 	
-	<module name="incomplete_mount">
+	<module name="inc_mount">
 		<output value="verbose"/>
 	</module>
 
-	<module name="rules_expand_to_nothing">
+	<module name="rules_exp_nothing">
 		<output value="verbose"/>
 	</module>
 
@@ -34,7 +34,7 @@
 		<output value="short"/>
 	</module>
 
-	<module name="incomplete_domain_trans">
+	<module name="inc_dom_trans">
 		<output value="verbose"/>
 	</module>
 
