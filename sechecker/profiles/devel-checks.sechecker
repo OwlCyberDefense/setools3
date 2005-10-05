@@ -14,7 +14,7 @@
 		</option>
 	</module>
 	
-	<module name="attributes_wo_types">
+	<module name="attribs_wo_types">
 		<output value="short"/>
 	</module>
 	
@@ -26,23 +26,23 @@
 		<output value="short"/>
 	</module>
 
-	<module name="roles_not_in_allow">
+	<module name="roles_wo_allow">
 		<output value="verbose"/>
 	</module>
 
-	<module name="types_not_in_allow">
+	<module name="types_wo_allow">
 		<output value="verbose"/>
 	</module>
 
-	<module name="attributes_not_in_rules">
+	<module name="attribs_wo_rules">
 		<output value="short"/>
 	</module>
 
-	<module name="roles_not_in_users">
+	<module name="roles_wo_users">
 		<output value="short"/>
 	</module>
 
-	<module name="rules_expand_to_nothing">
+	<module name="rules_exp_nothing">
 		<output value="verbose"/>
 	</module>
 
