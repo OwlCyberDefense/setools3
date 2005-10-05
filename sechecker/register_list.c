@@ -13,30 +13,30 @@ static int sechk_register_num_profiles=-1;
 
 /* NULL terminated array of module names and register functions */
 static sechk_module_name_reg_t sechk_module_register_list[] = { 
-	{"find_domains",		&find_domains_register},
-	{"find_file_types", 		&find_file_types_register},
-	{"domain_and_file_type",	&domain_and_file_type_register},
-	{"attributes_wo_types",		&attributes_wo_types_register},
-	{"roles_wo_types",		&roles_wo_types_register},
-	{"users_wo_roles",		&users_wo_roles_register},
-	{"roles_not_in_allow",		&roles_not_in_allow_register},
-	{"types_not_in_allow",		&types_not_in_allow_register},
-	{"spurious_audit",		&spurious_audit_register},
-	{"attributes_not_in_rules",	&attributes_not_in_rules_register},
-	{"incomplete_mount",		&incomplete_mount_register},
-	{"roles_not_in_users",		&roles_not_in_users_register},
-	{"rules_expand_to_nothing",	&rules_expand_to_nothing_register},
-	{"domains_wo_roles",		&domains_wo_roles_register},
-	{"incomplete_domain_trans",	&incomplete_domain_trans_register},
-	/* TODO: add additional register addresses here */
+	{"attribs_wo_rules",	&attribs_wo_rules_register},
+	{"attribs_wo_types",	&attribs_wo_types_register},
+	{"domain_and_file",	&domain_and_file_register},
+	{"domains_wo_roles",	&domains_wo_roles_register},
+	{"find_domains",	&find_domains_register},
+	{"find_file_types", 	&find_file_types_register},
+	{"inc_dom_trans",	&inc_dom_trans_register},
+	{"inc_mount",		&inc_mount_register},
+	{"roles_wo_allow",	&roles_wo_allow_register},
+	{"roles_wo_types",	&roles_wo_types_register},
+	{"roles_wo_users",	&roles_wo_users_register},
+	{"rules_exp_nothing",	&rules_exp_nothing_register},
+	{"spurious_audit",	&spurious_audit_register},
+	{"types_wo_allow",	&types_wo_allow_register},
+	{"users_wo_roles",	&users_wo_roles_register},
+	/* TODO: add additional register addresses here in alphabetical order */
 
 	{NULL, NULL}
 };
 
 /* NULL terminated array of profiles (name, file, description) */
 static sechk_profile_name_reg_t sechk_profile_register_list[] = {
-	{"development", "devel-checks.sechecker",    "common development checks"},
 	{"analysis",    "analysis-checks.sechecker", "common analysis checks"},
+	{"development", "devel-checks.sechecker",    "common development checks"},
 	/* TODO: add more profiles */
 
 	{NULL, NULL, NULL}

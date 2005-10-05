@@ -8,7 +8,7 @@
 
 #include "sechecker.h"
 #include "policy.h"
-#include "incomplete_mount.h"
+#include "inc_mount.h"
 #include "semantic/avhash.h"
 #include "semantic/avsemantics.h"
 #include "render.h"
@@ -23,11 +23,11 @@ static sechk_lib_t *library;
 /* This string is the name of the module and should match the stem
  * of the file name; it should also match the prefix of all functions
  * defined in this module and the private data storage structure */
-static const char *const mod_name = "incomplete_mount";
+static const char *const mod_name = "inc_mount";
 
 /* The register function registers all of a module's functions
  * with the library.  */
-int incomplete_mount_register(sechk_lib_t *lib)
+int inc_mount_register(sechk_lib_t *lib)
 {
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
@@ -72,7 +72,7 @@ int incomplete_mount_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &incomplete_mount_init;
+	fn_struct->fn = &inc_mount_init;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -86,7 +86,7 @@ int incomplete_mount_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &incomplete_mount_run;
+	fn_struct->fn = &inc_mount_run;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -100,7 +100,7 @@ int incomplete_mount_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &incomplete_mount_free;
+	fn_struct->fn = &inc_mount_free;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -114,7 +114,7 @@ int incomplete_mount_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &incomplete_mount_print_output;
+	fn_struct->fn = &inc_mount_print_output;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -128,7 +128,7 @@ int incomplete_mount_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &incomplete_mount_get_result;
+	fn_struct->fn = &inc_mount_get_result;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -138,10 +138,10 @@ int incomplete_mount_register(sechk_lib_t *lib)
 /* The init function creates the module's private data storage object
  * and initializes its values based on the options parsed in the config
  * file. */
-int incomplete_mount_init(sechk_module_t *mod, policy_t *policy)
+int inc_mount_init(sechk_module_t *mod, policy_t *policy)
 {
 	sechk_name_value_t *opt = NULL;
-	incomplete_mount_data_t *datum = NULL;
+	inc_mount_data_t *datum = NULL;
 
 	if (!mod || !policy) {
 		fprintf(stderr, "Error: invalid parameters\n");
@@ -152,7 +152,7 @@ int incomplete_mount_init(sechk_module_t *mod, policy_t *policy)
 		return -1;
 	}
 
-	datum = incomplete_mount_data_new();
+	datum = inc_mount_data_new();
 	if (!datum) {
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
@@ -171,9 +171,9 @@ int incomplete_mount_init(sechk_module_t *mod, policy_t *policy)
  * even if called multiple times. This function allocates the result
  * structure and fills in all relavant item and proof data. */
  
-int incomplete_mount_run(sechk_module_t *mod, policy_t *policy)
+int inc_mount_run(sechk_module_t *mod, policy_t *policy)
 {
-	incomplete_mount_data_t *datum;
+	inc_mount_data_t *datum;
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
@@ -201,7 +201,7 @@ int incomplete_mount_run(sechk_module_t *mod, policy_t *policy)
 	if (mod->result)
 		return 0;
 
-	datum = (incomplete_mount_data_t*)mod->data;
+	datum = (inc_mount_data_t*)mod->data;
 	res = sechk_result_new();
 	if (!res) {
 		fprintf(stderr, "Error: out of memory\n");
@@ -210,7 +210,7 @@ int incomplete_mount_run(sechk_module_t *mod, policy_t *policy)
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
 		fprintf(stderr, "Error: out of memory\n");
-		goto incomplete_mount_run_fail;
+		goto inc_mount_run_fail;
 	}
 	res->item_type = POL_LIST_TYPE;
 
@@ -218,7 +218,7 @@ int incomplete_mount_run(sechk_module_t *mod, policy_t *policy)
 		retv = avh_build_hashtab(policy);
 		if (retv) {
 			fprintf(stderr, "Error: could not build hash table\n");
-			goto incomplete_mount_run_fail;
+			goto inc_mount_run_fail;
 		}
 	}
 
@@ -256,7 +256,7 @@ int incomplete_mount_run(sechk_module_t *mod, policy_t *policy)
 							retv = add_i_to_a(hash_rule->rule, &num_mount_rules, &mount_rules);
 							if (retv) {
 								fprintf(stderr, "Error: out of memory\n");
-								goto incomplete_mount_run_fail;
+								goto inc_mount_run_fail;
 							}
 						}
 					}
@@ -271,7 +271,7 @@ int incomplete_mount_run(sechk_module_t *mod, policy_t *policy)
 								retv = add_i_to_a(hash_rule->rule, &num_mounton_rules, &mounton_rules);
 								if (retv) {
 									fprintf(stderr, "Error: out of memory\n");
-									goto incomplete_mount_run_fail;
+									goto inc_mount_run_fail;
 								}
 							}
 						}
@@ -284,7 +284,7 @@ int incomplete_mount_run(sechk_module_t *mod, policy_t *policy)
 							item = sechk_item_new();
 							if (!item) {
 								fprintf(stderr, "Error: out of memory\n");
-								goto incomplete_mount_run_fail;
+								goto inc_mount_run_fail;
 							}
 							item->item_id = i;
 						}
@@ -293,14 +293,14 @@ int incomplete_mount_run(sechk_module_t *mod, policy_t *policy)
 							proof = sechk_proof_new();
 							if (!proof) {
 								fprintf(stderr, "Error: out of memory\n");
-								goto incomplete_mount_run_fail;
+								goto inc_mount_run_fail;
 							}
 							proof->idx = hash_rule->rule;
 							proof->type = POL_LIST_AV_ACC;
 							proof->text = re_render_av_rule(!is_binary_policy(policy), hash_rule->rule, 0, policy);
 							if (!proof->text) {
 								fprintf(stderr, "Error: out of memory\n");
-								goto incomplete_mount_run_fail;
+								goto inc_mount_run_fail;
 							}
 							proof->severity = SECHK_SEV_LOW;
 							proof->next = item->proof;
@@ -315,7 +315,7 @@ int incomplete_mount_run(sechk_module_t *mod, policy_t *policy)
 				item = sechk_item_new();
 				if (!item) {
 					fprintf(stderr, "Error: out of memory\n");
-					goto incomplete_mount_run_fail;
+					goto inc_mount_run_fail;
 				}
 				item->item_id = i;
 			}
@@ -324,7 +324,7 @@ int incomplete_mount_run(sechk_module_t *mod, policy_t *policy)
 				buff = strdup("This type has mount permission but cannot mounton any directory");
 				if (!buff) {
 					fprintf(stderr, "Error: out of memory\n");
-					goto incomplete_mount_run_fail;
+					goto inc_mount_run_fail;
 				}
 				tmp = mount_rules;
 				tmp_sz = num_mount_rules;
@@ -333,7 +333,7 @@ int incomplete_mount_run(sechk_module_t *mod, policy_t *policy)
 				buff = strdup("This type has mounton permission but cannot mount any filesystem");
 				if (!buff) {
 					fprintf(stderr, "Error: out of memory\n");
-					goto incomplete_mount_run_fail;
+					goto inc_mount_run_fail;
 				}
 				tmp = mounton_rules;
 				tmp_sz = num_mounton_rules;
@@ -342,14 +342,14 @@ int incomplete_mount_run(sechk_module_t *mod, policy_t *policy)
 				proof = sechk_proof_new();
 				if (!proof) {
 					fprintf(stderr, "Error: out of memory\n");
-					goto incomplete_mount_run_fail;
+					goto inc_mount_run_fail;
 				}
 				proof->idx = tmp[k];
 				proof->type = POL_LIST_AV_ACC;
 				proof->text = re_render_av_rule(!is_binary_policy(policy),tmp[k], 0, policy);
 				if (!proof->text) {
 					fprintf(stderr, "Error: out of memory\n");
-					goto incomplete_mount_run_fail;
+					goto inc_mount_run_fail;
 				}
 				proof->severity = SECHK_SEV_LOW;
 				proof->next = item->proof;
@@ -358,7 +358,7 @@ int incomplete_mount_run(sechk_module_t *mod, policy_t *policy)
 			proof = sechk_proof_new();
 			if (!proof) {
 				fprintf(stderr, "Error: out of memory\n");
-				goto incomplete_mount_run_fail;
+				goto inc_mount_run_fail;
 			}
 			proof->idx = -1;
 			proof->type = -1;
@@ -386,7 +386,7 @@ int incomplete_mount_run(sechk_module_t *mod, policy_t *policy)
 
 	return 0;
 
-incomplete_mount_run_fail:
+inc_mount_run_fail:
 	free(buff);
 	free(mount_rules);
 	free(mounton_rules);
@@ -397,9 +397,9 @@ incomplete_mount_run_fail:
 }
 
 /* The free function frees the private data of a module */
-void incomplete_mount_free(sechk_module_t *mod)
+void inc_mount_free(sechk_module_t *mod)
 {
-	incomplete_mount_data_t *datum;
+	inc_mount_data_t *datum;
 
 	if (!mod) {
 		fprintf(stderr, "Error: invalid parameters\n");
@@ -410,7 +410,7 @@ void incomplete_mount_free(sechk_module_t *mod)
 		return;
 	}
 
-	datum = (incomplete_mount_data_t*)mod->data;
+	datum = (inc_mount_data_t*)mod->data;
 
 	free(mod->data);
 	mod->data = NULL;
@@ -418,9 +418,9 @@ void incomplete_mount_free(sechk_module_t *mod)
 
 /* The print output function generates the text printed in the
  * report and prints it to stdout. */
-int incomplete_mount_print_output(sechk_module_t *mod, policy_t *policy) 
+int inc_mount_print_output(sechk_module_t *mod, policy_t *policy) 
 {
-	incomplete_mount_data_t *datum = NULL;
+	inc_mount_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
@@ -435,7 +435,7 @@ int incomplete_mount_print_output(sechk_module_t *mod, policy_t *policy)
 		return -1;
 	}
 
-	datum = (incomplete_mount_data_t*)mod->data;
+	datum = (inc_mount_data_t*)mod->data;
 	outformat = mod->outputformat;
 
 	if (!mod->result && (outformat & ~(SECHK_OUT_BRF_DESCP)) && (outformat & ~(SECHK_OUT_DET_DESCP))) {
@@ -502,7 +502,7 @@ int incomplete_mount_print_output(sechk_module_t *mod, policy_t *policy)
 
 /* The get_result function returns a pointer to the results
  * structure for this check to be used in another check. */
-sechk_result_t *incomplete_mount_get_result(sechk_module_t *mod) 
+sechk_result_t *inc_mount_get_result(sechk_module_t *mod) 
 {
 
 	if (!mod) {
@@ -517,14 +517,14 @@ sechk_result_t *incomplete_mount_get_result(sechk_module_t *mod)
 	return mod->result;
 }
 
-/* The incomplete_mount_data_new function allocates and returns an
+/* The inc_mount_data_new function allocates and returns an
  * initialized private data storage structure for this
  * module. */
-incomplete_mount_data_t *incomplete_mount_data_new(void)
+inc_mount_data_t *inc_mount_data_new(void)
 {
-	incomplete_mount_data_t *datum = NULL;
+	inc_mount_data_t *datum = NULL;
 
-	datum = (incomplete_mount_data_t*)calloc(1,sizeof(incomplete_mount_data_t));
+	datum = (inc_mount_data_t*)calloc(1,sizeof(inc_mount_data_t));
 
 	return datum;
 }
