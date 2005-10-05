@@ -9,7 +9,6 @@
 #include "sechecker.h"
 #include "policy.h"
 #include "domains_wo_roles.h"
-
 #include <stdio.h>
 #include <string.h>
 
