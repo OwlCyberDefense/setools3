@@ -47,7 +47,7 @@ int rules_expand_to_nothing_register(sechk_lib_t *lib)
 	}
 	
 	/* assign the descriptions */
-	mod->brief_description = "finds rules that disappear during expansion";
+	mod->brief_description = "rules that disappear during expansion";
 	mod->detailed_description = "finds rules that disappear during expansion"
 "\nThis happens when a rule uses an attribute with no types."
 "\n  Requirements:"

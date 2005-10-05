@@ -37,7 +37,7 @@ int find_domains_register(sechk_lib_t *lib)
 	}
 
 	/* assign descriptions */
-	mod->brief_description = "Finds all types in policy treated as a domain. ";
+	mod->brief_description = "utility module";
 	mod->detailed_description = "Finds all types in policy treated as a domain. "
 "\n  A type is considered a domain if any of the following is true: "
 "\n    It has an attribute associated with domains "

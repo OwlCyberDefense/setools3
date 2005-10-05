@@ -46,7 +46,7 @@ int users_wo_roles_register(sechk_lib_t *lib)
 	}
 
 	/* assign the descriptions */
-	mod->brief_description = "Finds all users in the policy with no assigned roles.";
+	mod->brief_description = "users with no roles";
 	mod->detailed_description = "Finds all users in the policy with no assigned roles."
 "\nUsers without a role cannot be used to form a valid security context"
 "\nexcept with object_r.  Such a user cannot login or have any asociated"
