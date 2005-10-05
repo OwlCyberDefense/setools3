@@ -41,7 +41,7 @@ int find_file_types_register(sechk_lib_t *lib)
 	}
 
 	/* assign the descriptions */
-	mod->brief_description = "Finds all types in the policy treated as a file type";
+	mod->brief_description = "utility module";
 	mod->detailed_description = "Finds all types in the policy treated as a file type"
 "\nA type is considered a file type if any of the following is true:"
 "\n  It has an attribute associated with file types"

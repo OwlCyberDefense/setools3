@@ -49,7 +49,7 @@ int spurious_audit_register(sechk_lib_t *lib)
 	}
 	
 	/* assign the descriptions */
-	mod->brief_description = "Finds audit rules which do not affect the auditing of the policy.";
+	mod->brief_description = "audit rules with no effect";
 	mod->detailed_description = "Finds audit rules which do not affect the auditing of the policy."
 "\nThis module finds two types of spurious audit rules:"
 "\n  dontaudit rules for allowed permission sets"

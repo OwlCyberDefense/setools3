@@ -46,7 +46,7 @@ int roles_not_in_users_register(sechk_lib_t *lib)
 	}
 	
 	/* assign the descriptions */
-	mod->brief_description = "Finds roles not assigned to users";
+	mod->brief_description = "roles not assigned to users";
 	mod->detailed_description = "Finds roles not assigned to users"
 "\nA role not assigned to a user cannot form a valid context."
 "\n  Requirements:"
