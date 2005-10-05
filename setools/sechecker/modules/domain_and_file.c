@@ -8,15 +8,15 @@
 
 #include "sechecker.h"
 #include "policy.h"
-#include "domain_and_file_type.h"
+#include "domain_and_file.h"
 
 #include <stdio.h>
 #include <string.h>
 
 static sechk_lib_t *library;
-static const char *const mod_name = "domain_and_file_type";
+static const char *const mod_name = "domain_and_file";
 
-int domain_and_file_type_register(sechk_lib_t *lib) 
+int domain_and_file_register(sechk_lib_t *lib) 
 {
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
@@ -35,7 +35,7 @@ int domain_and_file_type_register(sechk_lib_t *lib)
 	}
 	
 	/* assign descriptions */
-	mod->brief_description = "types treated as a domain and file";
+	mod->brief_description = "types treated as a domain and file type";
 	mod->detailed_description = "Finds all types in the policy treated as both a domain and a file type "
 "\nSee domain_type and file_type modules for details about how "
 "\ntypes are placed in these categories. It is considered bad security"
@@ -67,7 +67,7 @@ int domain_and_file_type_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &domain_and_file_type_init;
+	fn_struct->fn = &domain_and_file_init;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -81,7 +81,7 @@ int domain_and_file_type_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &domain_and_file_type_run;
+	fn_struct->fn = &domain_and_file_run;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -95,7 +95,7 @@ int domain_and_file_type_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &domain_and_file_type_data_free;
+	fn_struct->fn = &domain_and_file_data_free;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -109,7 +109,7 @@ int domain_and_file_type_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &domain_and_file_type_print_output;
+	fn_struct->fn = &domain_and_file_print_output;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
@@ -123,17 +123,17 @@ int domain_and_file_type_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &domain_and_file_type_get_result;
+	fn_struct->fn = &domain_and_file_get_result;
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
 	return 0;
 }
 
-int domain_and_file_type_init(sechk_module_t *mod, policy_t *policy) 
+int domain_and_file_init(sechk_module_t *mod, policy_t *policy) 
 {
 	sechk_name_value_t *opt = NULL;
-	domain_and_file_type_data_t *datum = NULL;
+	domain_and_file_data_t *datum = NULL;
 
 	if (!mod || !policy) {
 		fprintf(stderr, "Error: invalid parameters\n");
@@ -144,7 +144,7 @@ int domain_and_file_type_init(sechk_module_t *mod, policy_t *policy)
 		return -1;
 	}
 
-	datum = domain_and_file_type_data_new();
+	datum = domain_and_file_data_new();
 	if (!datum) {
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
@@ -159,9 +159,9 @@ int domain_and_file_type_init(sechk_module_t *mod, policy_t *policy)
 	return 0;
 }
 
-int domain_and_file_type_run(sechk_module_t *mod, policy_t *policy) 
+int domain_and_file_run(sechk_module_t *mod, policy_t *policy) 
 {
-	domain_and_file_type_data_t *datum;
+	domain_and_file_data_t *datum;
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL, *tmp_item = NULL;
 	sechk_proof_t *proof = NULL, *tmp_proof = NULL;
@@ -188,7 +188,7 @@ int domain_and_file_type_run(sechk_module_t *mod, policy_t *policy)
 	if (mod->result)
 		return 0;
 
-	datum = (domain_and_file_type_data_t*)mod->data;
+	datum = (domain_and_file_data_t*)mod->data;
 	res = sechk_result_new();
 	if (!res) {
 		fprintf(stderr, "Error: out of memory\n");
@@ -197,7 +197,7 @@ int domain_and_file_type_run(sechk_module_t *mod, policy_t *policy)
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
 		fprintf(stderr, "Error: out of memory\n");
-		goto domain_and_file_type_run_fail;
+		goto domain_and_file_run_fail;
 	}
 	res->item_type = POL_LIST_TYPE;
 	
@@ -212,22 +212,22 @@ int domain_and_file_type_run(sechk_module_t *mod, policy_t *policy)
 	get_res = sechk_lib_get_module_function("find_domains", SECHK_MOD_FN_GET_RES, library);
 	if (!get_res) {
 		fprintf(stderr, "Error: unable to find get_result function\n");
-		goto domain_and_file_type_run_fail;
+		goto domain_and_file_run_fail;
 	}
 	domain_res = get_res(sechk_lib_get_module("find_domains", library));
 	if (!domain_res) {
 		fprintf(stderr, "Error: unable to get results\n");
-		goto domain_and_file_type_run_fail;
+		goto domain_and_file_run_fail;
 	}
 	get_res = sechk_lib_get_module_function("find_file_types", SECHK_MOD_FN_GET_RES, library);
 	if (!get_res) {
 		fprintf(stderr, "Error: unable to find get_result function\n");
-		goto domain_and_file_type_run_fail;
+		goto domain_and_file_run_fail;
 	}
 	file_type_res = get_res(sechk_lib_get_module("find_file_types", library));
 	if (!file_type_res) {
 		fprintf(stderr, "Error: unable to get results\n");
-		goto domain_and_file_type_run_fail;
+		goto domain_and_file_run_fail;
 	}
 
 	/* get lists */
@@ -235,13 +235,13 @@ int domain_and_file_type_run(sechk_module_t *mod, policy_t *policy)
 	retv = domain_list_fn(sechk_lib_get_module("find_domains", library), &domain_list, &domain_list_sz);
 	if (retv) {
 		fprintf(stderr, "Error: unable to get domain list\n");
-		goto domain_and_file_type_run_fail;
+		goto domain_and_file_run_fail;
 	}
 	file_type_list_fn = sechk_lib_get_module_function("find_file_types", "get_list", library);
 	retv = file_type_list_fn(sechk_lib_get_module("find_file_types", library), &file_type_list, &file_type_list_sz);
 	if (retv) {
 		fprintf(stderr, "Error: unable to get file type list\n");
-		goto domain_and_file_type_run_fail;
+		goto domain_and_file_run_fail;
 	}
 
 	/* build the both list */
@@ -250,7 +250,7 @@ int domain_and_file_type_run(sechk_module_t *mod, policy_t *policy)
 			retv = add_i_to_a(domain_list[i], &both_list_sz, &both_list);
 			if (retv) {
 				fprintf(stderr, "Error: out of memory\n");
-				goto domain_and_file_type_run_fail;
+				goto domain_and_file_run_fail;
 			}
 		}
 	}
@@ -260,7 +260,7 @@ int domain_and_file_type_run(sechk_module_t *mod, policy_t *policy)
 		item = sechk_item_new();
 		if (!item) {
 			fprintf(stderr, "Error: out of memory\n");
-			goto domain_and_file_type_run_fail;
+			goto domain_and_file_run_fail;
 		}
 		item->item_id = both_list[i];
 		item->test_result = 1;
@@ -269,7 +269,7 @@ int domain_and_file_type_run(sechk_module_t *mod, policy_t *policy)
 		tmp_item = sechk_result_get_item(both_list[i], POL_LIST_TYPE, domain_res);
 		if (!tmp_item) {
 			fprintf(stderr, "Error: internal logic failure\n");
-			goto domain_and_file_type_run_fail;
+			goto domain_and_file_run_fail;
 		}
 		for (tmp_proof = tmp_item->proof; tmp_proof; tmp_proof = tmp_proof->next) {
 			if (sechk_item_has_proof(tmp_proof->idx, tmp_proof->type, item))
@@ -278,7 +278,7 @@ int domain_and_file_type_run(sechk_module_t *mod, policy_t *policy)
 			proof = sechk_proof_copy(tmp_proof);
 			if (!proof) {
 				fprintf(stderr, "Error: out of memory\n");
-				goto domain_and_file_type_run_fail;
+				goto domain_and_file_run_fail;
 			}
 			proof->next = item->proof;
 			item->proof = proof;
@@ -288,7 +288,7 @@ int domain_and_file_type_run(sechk_module_t *mod, policy_t *policy)
 		tmp_item = sechk_result_get_item(both_list[i], POL_LIST_TYPE, file_type_res);
 		if (!tmp_item) {
 			fprintf(stderr, "Error: internal logic failure\n");
-			goto domain_and_file_type_run_fail;
+			goto domain_and_file_run_fail;
 		}
 		for (tmp_proof = tmp_item->proof; tmp_proof; tmp_proof = tmp_proof->next) {
 			if (sechk_item_has_proof(tmp_proof->idx, tmp_proof->type, item))
@@ -297,7 +297,7 @@ int domain_and_file_type_run(sechk_module_t *mod, policy_t *policy)
 			proof = sechk_proof_copy(tmp_proof);
 			if (!proof) {
 				fprintf(stderr, "Error: out of memory\n");
-				goto domain_and_file_type_run_fail;
+				goto domain_and_file_run_fail;
 			}
 			proof->next = item->proof;
 			item->proof = proof;
@@ -320,7 +320,7 @@ int domain_and_file_type_run(sechk_module_t *mod, policy_t *policy)
 
 	return 0;
 
-domain_and_file_type_run_fail:
+domain_and_file_run_fail:
 	free(domain_list);
 	free(file_type_list);
 	free(both_list);
@@ -330,7 +330,7 @@ domain_and_file_type_run_fail:
 	return -1;
 }
 
-void domain_and_file_type_data_free(sechk_module_t *mod)
+void domain_and_file_data_free(sechk_module_t *mod)
 {
 	if (!mod) {
 		fprintf(stderr, "Error: invalid parameters\n");
@@ -345,9 +345,9 @@ void domain_and_file_type_data_free(sechk_module_t *mod)
 	mod->data = NULL;
 }
 
-int domain_and_file_type_print_output(sechk_module_t *mod, policy_t *policy) 
+int domain_and_file_print_output(sechk_module_t *mod, policy_t *policy) 
 {
-	domain_and_file_type_data_t *datum = NULL;
+	domain_and_file_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
@@ -363,7 +363,7 @@ int domain_and_file_type_print_output(sechk_module_t *mod, policy_t *policy)
 		return -1;
 	}
 
-	datum = (domain_and_file_type_data_t*)mod->data;
+	datum = (domain_and_file_data_t*)mod->data;
 	outformat = mod->outputformat;
 
 	if (!mod->result && (outformat & ~(SECHK_OUT_BRF_DESCP)) && (outformat & ~(SECHK_OUT_DET_DESCP))) {
@@ -411,7 +411,7 @@ int domain_and_file_type_print_output(sechk_module_t *mod, policy_t *policy)
 	return 0;
 }
 
-sechk_result_t *domain_and_file_type_get_result(sechk_module_t *mod) 
+sechk_result_t *domain_and_file_get_result(sechk_module_t *mod) 
 {
 
 	if (!mod) {
@@ -426,11 +426,11 @@ sechk_result_t *domain_and_file_type_get_result(sechk_module_t *mod)
 	return mod->result;
 }
 
-domain_and_file_type_data_t *domain_and_file_type_data_new(void) 
+domain_and_file_data_t *domain_and_file_data_new(void) 
 {
-	domain_and_file_type_data_t *datum = NULL;
+	domain_and_file_data_t *datum = NULL;
 
-	datum = (domain_and_file_type_data_t*)calloc(1,sizeof(domain_and_file_type_data_t));
+	datum = (domain_and_file_data_t*)calloc(1,sizeof(domain_and_file_data_t));
 
 	return datum;
 }
