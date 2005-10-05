@@ -49,7 +49,7 @@ int incomplete_domain_trans_register(sechk_lib_t *lib)
 	}
 	
 	/* assign the descriptions */
-	mod->brief_description = "Finds potential domain transitions missing key permissions";
+	mod->brief_description = "domains with partial transition permissions";
 	mod->detailed_description = "Finds potential domain transitions missing key permissions"
 "\nA valid domain transition needs the following:"
 "\n  The starting domain can transition to the end domian for class process"

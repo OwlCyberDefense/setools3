@@ -46,7 +46,7 @@ int domains_wo_roles_register(sechk_lib_t *lib)
 	}
 	
 	/* assign the descriptions */
-	mod->brief_description = "Finds all domains in the policy not associated with a role";
+	mod->brief_description = "domains with no roles";
 	mod->detailed_description = "Finds all domains in the policy not associated with a role"
 "\nThese domians cannot have a valid security context."
 "\nThe role object_r is not considered in this check."
