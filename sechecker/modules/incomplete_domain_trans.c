@@ -800,4 +800,3 @@ incomplete_domain_trans_data_t *incomplete_domain_trans_data_new(void)
 	return datum;
 }
 
- 
