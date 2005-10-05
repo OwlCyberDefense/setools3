@@ -35,7 +35,7 @@ int domain_and_file_type_register(sechk_lib_t *lib)
 	}
 	
 	/* assign descriptions */
-	mod->brief_description = "Finds all types in the policy treated as both a domain and a file type";
+	mod->brief_description = "types treated as a domain and file";
 	mod->detailed_description = "Finds all types in the policy treated as both a domain and a file type "
 "\nSee domain_type and file_type modules for details about how "
 "\ntypes are placed in these categories. It is considered bad security"
