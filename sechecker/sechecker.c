@@ -29,13 +29,6 @@
 
 static const char *sechk_severities[] = { "None", "Low", "Medium", "High" };
 
-/* this is where we define the known profiles */
-static sechk_name_value_t known_profiles[] = { 
-	{"development","devel-checks.sechecker"},
-	{"analysis","analysis-checks.sechecker"}
-};
-static int num_known_profiles = 2;
-
 /* exported functions */
 sechk_lib_t *sechk_lib_new()
 {
@@ -53,7 +46,7 @@ sechk_lib_t *sechk_lib_new()
 
 	/* create the module array from the known modules in register list */
 	num_known_modules = sechk_register_list_get_num_modules();
-	reg_list = sechk_register_list_get_known_modules();
+	reg_list = sechk_register_list_get_modules();
 	for (i = 0; i < num_known_modules; i++) {
 		if (sechk_lib_grow_modules(lib) != 0)
 			goto exit_err;
@@ -846,8 +839,9 @@ bool_t sechk_item_has_proof(int idx, unsigned char type, sechk_item_t *item)
 
 int sechk_lib_load_profile(const char *prof_name, sechk_lib_t *lib)
 {
+	const sechk_profile_name_reg_t *profiles;
 	char *profpath = NULL, *prof_filename = NULL, *path = NULL;
-	int retv, i;
+	int num_profiles, retv, i;
 
 	if (!prof_name || !lib) {
 		fprintf(stderr, "Error: invalid parameters to load profile\n");
@@ -855,33 +849,35 @@ int sechk_lib_load_profile(const char *prof_name, sechk_lib_t *lib)
 	}
 
 	/* try to find the profile in our known profiles */
-	for (i = 0; i < num_known_profiles; i++) {
-		if (strcmp(known_profiles[i].name,prof_name) == 0) {
+	profiles = sechk_register_list_get_profiles();
+	num_profiles = sechk_register_list_get_num_profiles();
+	for (i = 0; i < num_profiles; i++) {
+		if (strcmp(profiles[i].name, prof_name) == 0) {
 			break;
 		}
 	}
 	/* this is a known installed profile, look for it in that directory */
-	if (i < num_known_profiles) {
+	if (i < num_profiles) {
 		/* first look in the local subdir using just PROF_SUBDIR/profile */
-		prof_filename = (char *)calloc(strlen(known_profiles[i].value)+4+strlen(PROF_SUBDIR),sizeof(char));
+		prof_filename = (char *)calloc(strlen(profiles[i].file)+4+strlen(PROF_SUBDIR), sizeof(char));
 		if (!prof_filename) {
 			fprintf(stderr, "Error: out of memory\n");
 			return -1;
 		}
-		sprintf(prof_filename,"%s/%s",PROF_SUBDIR,known_profiles[i].value);		
+		sprintf(prof_filename, "%s/%s", PROF_SUBDIR, profiles[i].file);		
 		path = find_file(prof_filename);
 		if (!path) {
 			free(prof_filename);
 			prof_filename = NULL;
-			prof_filename = (char *)calloc(strlen(PROFILE_INSTALL_DIR)+strlen(known_profiles[i].value)+4,sizeof(char));
+			prof_filename = (char *)calloc(strlen(PROFILE_INSTALL_DIR)+strlen(profiles[i].file)+4, sizeof(char));
 			if (!prof_filename) {
 				fprintf(stderr, "Error: out of memory\n");
 				return -1;
 			}
-			sprintf(prof_filename,"%s/%s",PROFILE_INSTALL_DIR,known_profiles[i].value);		
+			sprintf(prof_filename, "%s/%s", PROFILE_INSTALL_DIR, profiles[i].file);		
 			path = find_file(prof_filename);
 			if (!path) {
-				fprintf(stderr,"Error: Unable to find path\n");
+				fprintf(stderr, "Error: Unable to find path\n");
 				goto sechk_load_profile_error;
 			}
 		}
@@ -976,18 +972,4 @@ int sechk_lib_get_module_idx(const char *name, sechk_lib_t *lib)
 			return i;
 	}
 	return -1;
-}
-
-char **sechk_lib_get_profiles(int *num_profiles)
-{
-	char **names = NULL;
-	*num_profiles = num_known_profiles;
-	int i;
-	if (num_known_profiles > 0) {
-		names = (char **)calloc(num_known_profiles,sizeof(char *));
-		for (i = 0; i < num_known_profiles; i++) 
-			names[i] = strdup(known_profiles[i].name);
-	}
-	return names;
-
 }

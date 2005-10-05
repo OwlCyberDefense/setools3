@@ -27,20 +27,19 @@ extern sechk_module_name_reg_t sechk_register_list[];
 /* command line options struct */
 static struct option const longopts[] = 
 {
-	{"profile", required_argument, NULL, 'P'},
-	{"policy", required_argument, NULL, 'p'},
-#ifdef LLIBSEFS
-	{"file_contexts", required_argument, NULL, 'c'},
-#endif
-	{"short", no_argument, NULL, 's'},
+	{"list", no_argument, NULL, 'l'},
+	{"help", optional_argument, NULL, 'h'},
+	{"version", no_argument, NULL, 'V'},
 	{"quiet", no_argument, NULL, 'q'},
-	{"verbose", no_argument, NULL, 'V'},
+	{"short", no_argument, NULL, 's'},
+	{"verbose", no_argument, NULL, 'v'},
+
+	{"profile", required_argument, NULL, 'p'},
+	{"policy", required_argument, NULL, 'P'},
+#ifdef LLIBSEFS
+	{"fcfile", required_argument, NULL, 'c'},
+#endif
 	{"module", required_argument, NULL, 'm'},
-	{"mod-list", no_argument, NULL, 'L'},
-	{"prof-list", no_argument, NULL, 'l'},
-	{"help", no_argument, NULL, 'h'},
-	{"mod-help", required_argument, NULL, 'H'},
-	{"version", no_argument, NULL, 'v'},
 	{NULL, 0, NULL, 0}
 };
 
@@ -48,48 +47,56 @@ static struct option const longopts[] =
 void usage(const char *arg0, bool_t brief) 
 {
 	printf("%s (sechecker v%s)\n\n", COPYRIGHT_INFO, SECHECKER_VERSION);
-	printf("Usage: sechecker [OPTIONS] -P profile            Run the specified profile\n");
-	printf("   or: sechecker [OPTIONS] -m module             Run the specified module\n");
-	printf("   or: sechecker [OPTIONS] -P profile -m module  Load the specified profile\n");
-	printf("                                                 and run the specified module\n");
+	printf("Usage: sechecker [OPTS] -m module             run module\n");
+	printf("   or: sechecker [OPTS] -p profile            run profile\n");
+	printf("   or: sechecker [OPTS] -p profile -m module  run module with profile options\n");
+	printf("\n");
 	if (brief) {
 		printf("\n\tTry %s --help for more help.\n", arg0);
 	} else {
-		printf("Perform modular checks on a SELinux policy\n\n");
-		printf("   -l, --prof-list          Print a list of known profiles\n");
-		printf("   -L, --mod-list           Print a list of available modules\n");
-		printf("   -h, --help               Print this help message\n");
-		printf("   -v, --version            Print version information\n");
-		printf("   -q, --quiet              Do not print any results\n");
-		printf("   -s, --short              Print short output format\n");
-		printf("   -V, --verbose            Print verbose output format\n");
+		printf("Perform modular checks on a SELinux policy\n");
 		printf("\n");
-		printf("   -p file,   --policy=file      The location of the policy file\n");
+		printf("   -l, --list       print a list of profiles and modules\n");
+		printf("   -q, --quiet      suppress output\n");
+		printf("   -s, --short      print short output\n");
+		printf("   -v, --verbose    print verbose output\n");
+		printf("   --version        print version and exit\n");
 #ifdef LIBSEFS
-		printf("   -c file,   --fcfile=file      The location of the file_contexts file\n");
+		printf("   --fcfile=<file>  file_contexts file\n");
 #endif
-		printf("   -H module, --mod-help=module  Print a complete module description\n");
+		printf("   --policy=<file>  policy file\n");
+
+		printf("\n");
+		printf("   -h[mod],   --help[=module]   print this help or help for a module\n");
+		printf("   -m <mod>,  --module=<mod>    module name\n");
+		printf("   -p <prof>, --profile=<prof>  profile name or path\n");
 	}
 	printf("\n");
 }
 
-/* print list of installed profiles */
-int sechk_print_profiles_list()
+/* print list of modules and installed profiles */
+int sechk_print_list(sechk_lib_t *lib)
 {
-	char **profile_names = NULL;
-	int num_profiles = 0, i;
+	const sechk_profile_name_reg_t *profiles;
+	int num_profiles, i;
 
-	profile_names = sechk_lib_get_profiles(&num_profiles);
-
+	printf("\nProfiles:\n");
+	profiles = sechk_register_list_get_profiles();
+	num_profiles = sechk_register_list_get_num_profiles();
 	for (i = 0; i < num_profiles; i++) {
-		printf("   %s\n", profile_names[i]);
-		free(profile_names[i]);
+		printf("%25s\t%s\n", profiles[i].name, profiles[i].desc);
 	}
-	printf("\n");
 	if (num_profiles == 0)
-		printf("   <<no profiles installed>>\n");
+		printf("<none>\n");
 
-	free(profile_names);
+	printf("Modules:\n");
+	/* TODO: should we be storing the description in the register list and iterate there instead? */
+	for(i = 0; i < lib->num_modules; i++) {
+		printf("%25s\t%s\n", lib->modules[i].name, lib->modules[i].brief_description);
+	}
+	if (lib->num_modules == 0)
+		printf("<none>\n");
+	printf("\n");
 	return 0;
 }
 
@@ -103,21 +110,16 @@ int main(int argc, char **argv)
 	char *polpath = NULL, *modname = NULL;
 	char *prof_name = NULL;
 	unsigned char output_override = 0;
-	sechk_lib_t *module_library;
-	bool_t module_list_stop = FALSE;
-	bool_t profile_list_stop = FALSE;
+	sechk_lib_t *lib;
+	bool_t list_stop = FALSE;
 	bool_t module_help = FALSE;
 	sechk_module_t *mod = NULL;
 	sechk_run_fn_t run_fn = NULL;
 	sechk_print_output_fn_t print_fn = NULL;
 
-#ifdef LIBSEFS
-	while ((optc = getopt_long(argc, argv, "P:c:p:SVLqm:H:lhvs", longopts, NULL)) != -1) {
-#else
-	while ((optc = getopt_long(argc, argv, "P:p:SVLqm:H:lhvs", longopts, NULL)) != -1) {
-#endif
+	while ((optc = getopt_long(argc, argv, "h::p:m:lqsv", longopts, NULL)) != -1) {
 		switch (optc) {
-		case 'P':
+		case 'p':
 			prof_name = strdup(optarg);
 			break;
 #ifdef LIBSEFS
@@ -125,10 +127,10 @@ int main(int argc, char **argv)
 			fcpath = strdup(optarg);
 			break;
 #endif
-		case 'p':
+		case 'P':
 			polpath = strdup(optarg);
 			break;
-		case 'V':
+		case 'v':
 			if (output_override) {
 				fprintf(stderr, "Error: Multiple output specifications.\n");
 				usage(argv[0], 1);
@@ -158,20 +160,18 @@ int main(int argc, char **argv)
 		case 'm':
 			modname = strdup(optarg);
 			break;
-		case 'H':
-			modname = strdup(optarg);
-			module_help = TRUE;
-			break;
-		case 'L':
-			module_list_stop = TRUE;
-			break;
 		case 'l':
-			profile_list_stop = TRUE;
+			list_stop = TRUE;
 			break;
 		case 'h':
+			if (optarg != NULL) {
+				modname = strdup(optarg);
+				module_help = TRUE;
+				break;
+			}
 			usage(argv[0], 0);
 			exit(0);
-		case 'v':
+		case 'V':
 			printf("\nSEChecker v%s\n%s\n\n", SECHECKER_VERSION, COPYRIGHT_INFO);
 			exit(0);
 		default:
@@ -180,69 +180,49 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (!prof_name && !modname && !module_list_stop && !profile_list_stop) {
-		fprintf(stderr, "Error: no profile specified\n");
+	if (!prof_name && !modname && !list_stop) {
+		fprintf(stderr, "Error: no module or profile specified\n\n");
 		usage(argv[0], 1);
 		exit(1);
 	}
 
 	/* create the module library */
-	module_library = sechk_lib_new();
-
-	if (!module_library)
+	lib = sechk_lib_new();
+	if (!lib)
 		goto exit_err;
-
-	if (profile_list_stop) {
-		printf("\nAvailable Profiles:\n");
-		retv = sechk_print_profiles_list();
-	}
-
-	/* if --list, just show the available modules and exit */
-	if (module_list_stop) {
-		printf("\nAvailable Modules:\n");
-		retv = sechk_lib_set_outputformat(SECHK_OUT_BRF_DESCP, module_library);
-		if (retv) {
-			goto exit_err;
-		}
-		for(i = 0; i < module_library->num_modules; i++) {
-			module_library->module_selection[i] = TRUE;
-		}
-		retv = sechk_lib_print_modules_output(module_library);
-		if (retv) {
-			goto exit_err;
-		}
+	if (list_stop == TRUE) {
+		sechk_print_list(lib);
+		goto exit;
 	}
 
 	if (module_help == TRUE) {
 		/* first get the module and select it*/
-		retv = sechk_lib_get_module_idx(modname, module_library);
-		if (retv == -1 || retv >= module_library->num_modules) {
+		retv = sechk_lib_get_module_idx(modname, lib);
+		if (retv == -1 || retv >= lib->num_modules) {
 			fprintf(stderr, "Error: module %s not found\n", modname);
 			goto exit_err;
 		}
-		for (i = 0; i < module_library->num_modules; i++) {
-			module_library->module_selection[i] = FALSE;
+		for (i = 0; i < lib->num_modules; i++) {
+			lib->module_selection[i] = FALSE;
 		}
-		module_library->module_selection[retv] = TRUE;
+		lib->module_selection[retv] = TRUE;
 
 		/* next set the output to be nice and long */
-		retv = sechk_lib_set_outputformat(SECHK_OUT_DET_DESCP, module_library);
+		retv = sechk_lib_set_outputformat(SECHK_OUT_DET_DESCP, lib);
 		if (retv) {
 			goto exit_err;
 		}
 		/* and print */
-		retv = sechk_lib_print_modules_output(module_library);
+		retv = sechk_lib_print_modules_output(lib);
 		if (retv < 0 || (output_override && output_override & SECHK_OUT_QUIET)) {
 			goto exit_err;
 		}
-	}
-
-	if (profile_list_stop || module_list_stop || module_help)
 		goto exit;
+	}
 
 	/* load profile if specified */
 	if (prof_name) {
-		retv = sechk_lib_load_profile(prof_name, module_library);
+		retv = sechk_lib_load_profile(prof_name, lib);
 		if (retv) {
 			retv = errno;
 			if (!output_override || !(output_override & ~(SECHK_OUT_QUIET))) {
@@ -256,7 +236,7 @@ int main(int argc, char **argv)
 	/* if command line specified an output format
 	 * use it for all modules in the report */
 	if (output_override) {
-		retv = sechk_lib_set_outputformat(output_override, module_library);
+		retv = sechk_lib_set_outputformat(output_override, lib);
 		if (retv) {
 			goto exit_err;
 		}
@@ -264,20 +244,20 @@ int main(int argc, char **argv)
 
 
 	/* initialize the policy */
-	retv = sechk_lib_load_policy(polpath,module_library);
+	retv = sechk_lib_load_policy(polpath,lib);
 	if (retv < 0)
 		goto exit_err;
 
 #ifdef LIBSEFS
 	/* initialize the file contexts */
-	retv = sechk_lib_load_fc(fcpath,module_library);
+	retv = sechk_lib_load_fc(fcpath,lib);
 	if (retv < 0)
 		goto exit_err;
 #endif
 	/* if command line specified an output format
 	 * use it for all modules in the report */
 	if (output_override) {
-		retv = sechk_lib_set_outputformat(output_override, module_library);
+		retv = sechk_lib_set_outputformat(output_override, lib);
 		if (retv) {
 			goto exit_err;
 		}
@@ -286,31 +266,31 @@ int main(int argc, char **argv)
 
 	/* if running only one module, deselect all others */
 	if (modname) {
-		retv = sechk_lib_get_module_idx(modname, module_library);
-		if (retv == -1 || retv >= module_library->num_modules) {
+		retv = sechk_lib_get_module_idx(modname, lib);
+		if (retv == -1 || retv >= lib->num_modules) {
 			fprintf(stderr, "Error: module %s not found\n", modname);
 			goto exit_err;
 		}
-		for (i = 0; i < module_library->num_modules; i++) {
-			module_library->module_selection[i] = FALSE;
+		for (i = 0; i < lib->num_modules; i++) {
+			lib->module_selection[i] = FALSE;
 		}
-		module_library->module_selection[retv] = TRUE;
+		lib->module_selection[retv] = TRUE;
 	}
 
 	/* process dependencies for selected modules */
-	retv = sechk_lib_check_module_dependencies(module_library);
+	retv = sechk_lib_check_module_dependencies(lib);
 	if (retv) {
 		goto exit_err;
 	}
 
 	/* process requirements for selected modules */
-	retv = sechk_lib_check_module_requirements(module_library);
+	retv = sechk_lib_check_module_requirements(lib);
 	if (retv) {
 		goto exit_err;
 	}
 
 	/* initialize the modules */
-	retv = sechk_lib_init_modules(module_library);
+	retv = sechk_lib_init_modules(lib);
 	if (retv) {
 		goto exit_err;
 	}
@@ -318,30 +298,30 @@ int main(int argc, char **argv)
 	/* run the modules */
 	if (modname) {
 		/* check to see if after processing dependencies we should run this module */
-		retv = sechk_lib_get_module_idx(modname, module_library);
-		if (retv == -1 || retv >= module_library->num_modules) {
+		retv = sechk_lib_get_module_idx(modname, lib);
+		if (retv == -1 || retv >= lib->num_modules) {
 			fprintf(stderr, "Error: module %s not found\n", modname);
 			goto exit_err;
 		}
-		if (module_library->module_selection[retv] == FALSE)
+		if (lib->module_selection[retv] == FALSE)
 			goto exit_err;
 
 		/* here we are only running one specific module */
-		mod = sechk_lib_get_module(modname, module_library);
+		mod = sechk_lib_get_module(modname, lib);
 		if (!mod) {
 			goto exit_err;
 		}		
-		run_fn = sechk_lib_get_module_function(modname, SECHK_MOD_FN_RUN, module_library);
+		run_fn = sechk_lib_get_module_function(modname, SECHK_MOD_FN_RUN, lib);
 		if (!run_fn) {
 			goto exit_err;
 		}
-		retv = run_fn(mod, module_library->policy);
+		retv = run_fn(mod, lib->policy);
 		if (retv) {
 			goto exit_err;
 		}
 	} else {
 		/* here we are running all specified modules */
-		retv = sechk_lib_run_modules(module_library);
+		retv = sechk_lib_run_modules(lib);
 		if (retv) {
 			goto exit_err;
 		}
@@ -350,23 +330,23 @@ int main(int argc, char **argv)
 	/* print the report */
 	if (modname && (!(output_override) || (output_override & ~(SECHK_OUT_QUIET)))) {
 		/* here we are only printing results for one specific module */
-		mod = sechk_lib_get_module(modname, module_library);
+		mod = sechk_lib_get_module(modname, lib);
 		if (!mod) {
 			goto exit_err;
 		}
-		print_fn = sechk_lib_get_module_function(modname, SECHK_MOD_FN_PRINT, module_library);
+		print_fn = sechk_lib_get_module_function(modname, SECHK_MOD_FN_PRINT, lib);
 		if (!run_fn) {
 			goto exit_err;
 		}
 		if (!mod->outputformat)
 			mod->outputformat = SECHK_OUT_SHORT;
-		retv = print_fn(mod, module_library->policy);
+		retv = print_fn(mod, lib->policy);
 		if (retv) {
 			goto exit_err;
 		}
 	} else if (!(output_override) || (output_override & ~(SECHK_OUT_QUIET))){
 		/* here we are printing results for all the available modules */
-		retv = sechk_lib_print_modules_output(module_library);
+		retv = sechk_lib_print_modules_output(lib);
 		if (retv) {
 			goto exit_err;
 		}
@@ -379,8 +359,8 @@ exit:
 	free(prof_name);
 	free(polpath);
 	free(modname);
-	sechk_lib_free(module_library);
-	free(module_library);
+	sechk_lib_free(lib);
+	free(lib);
 	return 0;
 
 exit_err:
@@ -390,7 +370,7 @@ exit_err:
 	free(prof_name);
 	free(polpath);
 	free(modname);
-	sechk_lib_free(module_library);
-	free(module_library);
+	sechk_lib_free(lib);
+	free(lib);
 	return 1;
 }

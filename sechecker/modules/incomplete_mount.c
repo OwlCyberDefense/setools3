@@ -49,7 +49,7 @@ int incomplete_mount_register(sechk_lib_t *lib)
 	}
 	
 	/* assign the descriptions */
-	mod->brief_description = "finds domains with incomplete mounting permission sets";
+	mod->brief_description = "domains with partial mount permissions";
 	mod->detailed_description = "finds domains that have only one of mount for filesystem" 
 "\nand mounton for dir. Both are needed for a successful mount operation."
 "\nThis module lists all rules found containing one of these"

@@ -1282,12 +1282,12 @@ int main (int argc, char **argv)
 		exit(1);
 	}
 
-	svd = ap_single_view_diff_new(opts, p1, p2,NULL);
+	svd = ap_single_view_diff_new(opts, p1, p2, NULL);
 	if (svd == NULL) {
 		printf("Problem differentiating policies\n");
 		exit(1);
 	
-}
+	}
 	diff = svd->diff;
 	
 	printf("Difference between policy 1 and policy 2: \n");
@@ -1304,8 +1304,8 @@ int main (int argc, char **argv)
 			printf("\n");
 		}
 		if (!(quiet && (diff->diff1->num_common_perms == 0 && diff->diff2->num_common_perms == 0))) {
-		print_common_perms_diffs(stdout, svd);
-		printf("\n");
+			print_common_perms_diffs(stdout, svd);
+			printf("\n");
 		}
 	}
 	if(types || all) {

@@ -2753,42 +2753,58 @@ ap_single_view_diff_t *ap_single_view_diff_new(unsigned int opts, policy_t *p1, 
 		goto error;
 	}
 	diff = svd->diff;
-	svd->types = ap_single_iad_diff_new(diff, IDX_TYPE);
-	if (svd->types == NULL)
-		goto error;
-	svd->attribs = ap_single_iad_diff_new(diff, IDX_ATTRIB); 
-	if (svd->attribs == NULL)
-		goto error;
-	svd->roles = ap_single_iad_diff_new(diff, IDX_ROLE);
-	if (svd->roles == NULL)
-		goto error;
-	svd->users = ap_single_iad_diff_new(diff, IDX_USER);
-	if (svd->users == NULL)
-		goto error;
-	svd->classes = ap_single_iad_diff_new(diff, IDX_OBJ_CLASS);
-	if (svd->classes == NULL)
-		goto error;
-	svd->perms = ap_single_perm_diff_new(diff);
-	if (svd->perms == NULL)
-		goto error;
-	svd->common_perms = ap_single_iad_diff_new(diff, IDX_COMMON_PERM);
-	if (svd->common_perms == NULL)
-		goto error;
-	svd->bools = ap_single_bool_diff_new(diff);
-	if (svd->bools == NULL)
-		goto error;
-	svd->rallows = ap_single_iad_diff_new(diff, IDX_ROLE|IDX_PERM);
-	if (svd->rallows == NULL)
-		goto error;
-	svd->rtrans = ap_new_single_rtrans_diff(diff);
-	if (svd->rtrans == NULL)
-		goto error;
-	rt = ap_new_single_te_diff(svd, diff, renamed_types); 
-	if (rt < 0 || svd->te == NULL || svd->conds == NULL)
-		goto error;
-	rt = ap_find_empty_single_cond_diff(svd->conds, diff);
-	if (rt < 0)
-		goto error;
+	if (opts & POLOPT_TYPES) {
+		svd->types = ap_single_iad_diff_new(diff, IDX_TYPE);
+		if (svd->types == NULL)
+			goto error;
+		svd->attribs = ap_single_iad_diff_new(diff, IDX_ATTRIB); 
+		if (svd->attribs == NULL)
+			goto error;
+	}
+	if (opts & POLOPT_ROLES) {
+		svd->roles = ap_single_iad_diff_new(diff, IDX_ROLE);
+		if (svd->roles == NULL)
+			goto error;
+	}
+	if (opts & POLOPT_USERS) {
+		svd->users = ap_single_iad_diff_new(diff, IDX_USER);
+		if (svd->users == NULL)
+			goto error;
+	}
+	if (opts & POLOPT_CLASSES) {
+		svd->classes = ap_single_iad_diff_new(diff, IDX_OBJ_CLASS);
+		if (svd->classes == NULL)
+			goto error;
+		svd->perms = ap_single_perm_diff_new(diff);
+		if (svd->perms == NULL)
+			goto error;
+		svd->common_perms = ap_single_iad_diff_new(diff, IDX_COMMON_PERM);
+		if (svd->common_perms == NULL)
+			goto error;
+	}
+	if (opts & POLOPT_COND_BOOLS) {
+		svd->bools = ap_single_bool_diff_new(diff);
+		if (svd->bools == NULL)
+			goto error;
+	}
+	if (opts & POLOPT_ROLE_RULES) {
+		svd->rallows = ap_single_iad_diff_new(diff, IDX_ROLE|IDX_PERM);
+		if (svd->rallows == NULL)
+			goto error;
+		svd->rtrans = ap_new_single_rtrans_diff(diff);
+		if (svd->rtrans == NULL)
+			goto error;
+	}
+	if (opts & POLOPT_AV_RULES) {
+		rt = ap_new_single_te_diff(svd, diff, renamed_types); 
+		if (rt < 0 || svd->te == NULL || svd->conds == NULL)
+			goto error;
+	}
+	if (opts & POLOPT_COND_BOOLS ) {
+		rt = ap_find_empty_single_cond_diff(svd->conds, diff);
+		if (rt < 0)
+			goto error;
+	}
 	return svd;
 error:
 	if (svd)

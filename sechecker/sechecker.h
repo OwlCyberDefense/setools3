@@ -125,6 +125,12 @@ typedef struct sechk_module_name_reg {
 	void            *fn;
 } sechk_module_name_reg_t;
 
+typedef struct sechk_profile_name_reg {
+	char *name;
+	char *file;
+	char *desc;
+} sechk_profile_name_reg_t;
+
 /* Module function signatures */
 typedef int (*sechk_register_fn_t)(sechk_lib_t *lib);
 typedef int (*sechk_init_fn_t)(sechk_module_t *mod, policy_t *policy);
