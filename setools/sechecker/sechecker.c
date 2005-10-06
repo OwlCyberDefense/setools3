@@ -577,11 +577,10 @@ int sechk_lib_run_modules(sechk_lib_t *lib)
 				rc = -1;
 		}
 	}
-
 	return rc;
 }
 
-int sechk_lib_print_modules_output(sechk_lib_t *lib)
+int sechk_lib_print_modules_report(sechk_lib_t *lib)
 {
 	int i, retv, rc = 0;
 	sechk_print_output_fn_t print_fn = NULL;
@@ -591,10 +590,13 @@ int sechk_lib_print_modules_output(sechk_lib_t *lib)
 		return -1;
 	}
 	for (i = 0; i < lib->num_modules; i++) {
-		/* if module is "off" do not print its results */
-		if (!lib->module_selection[i])
+		/* if module is "off" or its output format is quiet continue */
+		if (!lib->module_selection[i] || lib->modules[i].outputformat & SECHK_OUT_QUIET)
 			continue;
+		if (lib->modules[i].outputformat == SECHK_OUT_NONE)
+			lib->modules[i].outputformat = SECHK_OUT_SHORT;
 		assert(lib->modules[i].name);
+		printf("\nModule name: %s\n%s\n", lib->modules[i].name, lib->modules[i].detailed_description);
 		print_fn = (sechk_run_fn_t)sechk_lib_get_module_function(lib->modules[i].name, SECHK_MOD_FN_PRINT, lib);
 		if (!print_fn) {
 			fprintf(stderr, "Error: could not get print function for module %s\n", lib->modules[i].name);
@@ -606,7 +608,6 @@ int sechk_lib_print_modules_output(sechk_lib_t *lib)
 			rc = -1;
 		}
 	}
-
 	return rc;
 }
 

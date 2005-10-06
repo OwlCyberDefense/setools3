@@ -42,19 +42,23 @@ int find_file_types_register(sechk_lib_t *lib)
 
 	/* assign the descriptions */
 	mod->brief_description = "utility module";
-	mod->detailed_description = "Finds all types in the policy treated as a file type"
-"\nA type is considered a file type if any of the following is true:"
-"\n  It has an attribute associated with file types"
-"\n  It is the source of a rule to allow filesystem associate"
-"\n  It is the default type of a type transition rule"
-"\n   for an object class other than process"
-"\n  It is specified in a context in the file_contexts file"
-"\n  Requirements:"
-"\n    policy_type=source"
-"\n  Dependencies:"
-"\n    none"
-"\n  Options:"
-"\n    file_type_attribute";
+	mod->detailed_description = 
+"--------------------------------------------------------------------------------\n"
+"This module finds all types in the policy treated as a file type.  A type is    \n"
+"considered a file type if any of the following is true\n"
+"\n"
+"   1) it has an attribute associated with file types\n"
+"   2) it is the source of a rules to allow filesystem associate permission\n"
+"   3) it is the default type of a type transition rule with an object class\n"
+"      other than process\n"
+"   4) it is specified in a context in the file_contexts file\n";
+	mod->opt_description = 
+"Module requirements:\n"
+"   none\n"
+"Module dependencies:\n"
+"   none\n"
+"Module options:\n"
+"   file_type_attribute can be modified in a profile\n";
 
 	/* assign requirements */
 	mod->requirements = sechk_name_value_prepend(NULL,"policy_type","source");
@@ -534,8 +538,7 @@ int find_file_types_print_output(sechk_module_t *mod, policy_t *policy)
 	int i = 0;
 
 
-        if (!mod || (!policy && (mod->outputformat & ~(SECHK_OUT_BRF_DESCP) &&
-                                 (mod->outputformat & ~(SECHK_OUT_DET_DESCP))))){
+        if (!mod || !policy){
 		fprintf(stderr, "Error: invalid parameters\n");
 		return -1;
 	}
@@ -547,7 +550,7 @@ int find_file_types_print_output(sechk_module_t *mod, policy_t *policy)
 	datum = (find_file_types_data_t*)mod->data;
 	outformat = mod->outputformat;
 
-	if (!mod->result && (outformat & ~(SECHK_OUT_BRF_DESCP)) && (outformat & ~(SECHK_OUT_DET_DESCP))) {
+	if (!mod->result) {
 		fprintf(stderr, "Error: module has not been run\n");
 		return -1;
 	}
@@ -555,15 +558,6 @@ int find_file_types_print_output(sechk_module_t *mod, policy_t *policy)
 	if (!outformat || (outformat & SECHK_OUT_QUIET))
 		return 0; /* not an error - no output is requested */
 
-	printf("\nModule: %s\n", mod_name);
-	/* print the brief description */
-	if (outformat & SECHK_OUT_BRF_DESCP) {
-		printf("%s\n\n", mod->brief_description);
-	}
-	/* print the detailed description */
-	if (outformat & SECHK_OUT_DET_DESCP) {
-		printf("%s\n\n", mod->detailed_description);
-	}
 	if (outformat & SECHK_OUT_STATS) {
 		printf("Found %i file types.\n", mod->result->num_items);
 	}

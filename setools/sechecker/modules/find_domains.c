@@ -37,18 +37,22 @@ int find_domains_register(sechk_lib_t *lib)
 
 	/* assign descriptions */
 	mod->brief_description = "utility module";
-	mod->detailed_description = "Finds all types in policy treated as a domain. "
-"\n  A type is considered a domain if any of the following is true: "
-"\n    It has an attribute associated with domains "
-"\n    It is the source of a te rule for object class other than filesystem "
-"\n    It is the default type in a type_transition rule for object class process "
-"\n    It is associated with a role other than object_r"
-"\n  Requirements:"
-"\n    policy_type=source"
-"\n  Dependencies:"
-"\n    none"
-"\n  Options:"
-"\n    domain_attribute";
+	mod->detailed_description = 
+"--------------------------------------------------------------------------------\n"
+"This is a utility module which finds types in a policy that are treated as a    \n"
+"domain  A type is considered a domain if any of the following is true\n"
+"\n"
+"   1) it has an attribute associated with domains\n"
+"   2) it is the source of a te rule for object class other than filesystem\n"
+"   3) it is the default type is a type_transition rule for object class process \n"
+"   4) it is associated with a role other than object_r\n";
+	mod->opt_description = 
+"Module requirements:\n"
+"   none\n"
+"Module dependencies:\n"
+"   none\n"
+"Module options:\n"
+"   domain_attributes can be set in a profile\n";
 
 	/* assign requirements */
 	mod->requirements = sechk_name_value_prepend(NULL,"policy_type","source");
@@ -464,8 +468,7 @@ int find_domains_print_output(sechk_module_t *mod, policy_t *policy)
 	sechk_proof_t *proof = NULL;
 	int i = 0;
 
-	if (!mod || (!policy && (mod->outputformat & ~(SECHK_OUT_BRF_DESCP) &&
-				 (mod->outputformat & ~(SECHK_OUT_DET_DESCP))))){
+	if (!mod || !policy){
 		fprintf(stderr, "Error: invalid parameters\n");
 		return -1;
 	}
@@ -477,22 +480,13 @@ int find_domains_print_output(sechk_module_t *mod, policy_t *policy)
 	datum = (find_domains_data_t*)mod->data;
 	outformat = mod->outputformat;
 
-	if (!mod->result && (outformat & ~(SECHK_OUT_BRF_DESCP)) && (outformat & ~(SECHK_OUT_DET_DESCP))) {
+	if (!mod->result) {
 		fprintf(stderr, "Error: module has not been run\n");
 		return -1;
 	}
 
 	if (!outformat || (outformat & SECHK_OUT_QUIET)) {
 		return 0; /* not an error - no output is requested */
-	}
-	printf("\nModule: %s\n", mod_name);
-	/* print the brief description */
-	if (outformat & SECHK_OUT_BRF_DESCP) {
-		printf("%s\n\n", mod->brief_description);
-	}
-	/* print the detailed description */
-	if (outformat & SECHK_OUT_DET_DESCP) {
-		printf("%s\n\n", mod->detailed_description);
 	}
 	if (outformat & SECHK_OUT_STATS) {
 		printf("Found %i domain types.\n", mod->result->num_items);

@@ -56,7 +56,16 @@ int xx_register(sechk_lib_t *lib)
 	
 	/* assign the descriptions */
 	mod->brief_description = "";
-	mod->detailed_description = "";
+	mod->detailed_description =
+"--------------------------------------------------------------------------------\n"
+"TODO: detailed description for this module.\n";
+	mod->opt_description = 
+"  Module requirements:\n"
+"    none\n"
+"  Module dependencies:\n"
+"    none\n"
+"  Module options:\n"
+"    none\n";
 
 	/* assign requirements */
 	mod->requirements = sechk_name_value_new_prepend(NULL,"","");
@@ -301,8 +310,7 @@ int xx_print_output(sechk_module_t *mod, policy_t *policy)
 	sechk_proof_t *proof = NULL;
 	int i = 0;
 
-	if (!mod || (!policy && (mod->outputformat & ~(SECHK_OUT_BRF_DESCP) &&
-				 (mod->outputformat & ~(SECHK_OUT_DET_DESCP))))){
+	if (!mod || !policy){
 		fprintf(stderr, "Error: invalid parameters\n");
 		return -1;
 	}
@@ -314,7 +322,7 @@ int xx_print_output(sechk_module_t *mod, policy_t *policy)
 	datum = (xx_data_t*)mod->data;
 	outformat = mod->outputformat;
 
-	if (!mod->result && (outformat & ~(SECHK_OUT_BRF_DESCP)) && (outformat & ~(SECHK_OUT_DET_DESCP))) {
+	if (!mod->result) {
 		fprintf(stderr, "Error: module has not been run\n");
 		return -1;
 	}
@@ -322,16 +330,6 @@ int xx_print_output(sechk_module_t *mod, policy_t *policy)
 	if (!outformat || (outformat & SECHK_OUT_QUIET))
 		return 0; /* not an error - no output is requested */
 
-	/* TODO: fill in output fields below */
-	printf("\nModule: %s\n", mod_name);
-	/* print the brief description */
-	if (outformat & SECHK_OUT_BRF_DESCP) {
-		printf("%s\n\n", mod->brief_description);
-	}
-	/* print the detailed description */
-	if (outformat & SECHK_OUT_DET_DESCP) {
-		printf("%s\n\n", mod->detailed_description);
-	}
 	/* TODO: display the statistics of the results
 	 * typical text is "Found %i <itemtype>.\n"
 	 * additional information may be printed here depending upon

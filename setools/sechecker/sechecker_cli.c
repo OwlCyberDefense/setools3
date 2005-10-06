@@ -113,7 +113,6 @@ int main(int argc, char **argv)
 	bool_t module_help = FALSE;
 	sechk_module_t *mod = NULL;
 	sechk_run_fn_t run_fn = NULL;
-	sechk_print_output_fn_t print_fn = NULL;
 
 	while ((optc = getopt_long(argc, argv, "h::p:m:lqsv", longopts, NULL)) != -1) {
 		switch (optc) {
@@ -194,27 +193,8 @@ int main(int argc, char **argv)
 	}
 
 	if (module_help == TRUE) {
-		/* first get the module and select it*/
-		retv = sechk_lib_get_module_idx(modname, lib);
-		if (retv == -1 || retv >= lib->num_modules) {
-			fprintf(stderr, "Error: module %s not found\n", modname);
-			goto exit_err;
-		}
-		for (i = 0; i < lib->num_modules; i++) {
-			lib->module_selection[i] = FALSE;
-		}
-		lib->module_selection[retv] = TRUE;
-
-		/* next set the output to be nice and long */
-		retv = sechk_lib_set_outputformat(SECHK_OUT_DET_DESCP, lib);
-		if (retv) {
-			goto exit_err;
-		}
-		/* and print */
-		retv = sechk_lib_print_modules_output(lib);
-		if (retv < 0 || (output_override && output_override & SECHK_OUT_QUIET)) {
-			goto exit_err;
-		}
+		printf("\nModule name: %s\n%s\n%s\n", lib->modules[retv].name, lib->modules[retv].detailed_description, 
+		       lib->modules[retv].opt_description);
 		goto exit;
 	}
 
@@ -231,15 +211,6 @@ int main(int argc, char **argv)
 			goto exit_err;
 		}
 	}
-	/* if command line specified an output format
-	 * use it for all modules in the report */
-	if (output_override) {
-		retv = sechk_lib_set_outputformat(output_override, lib);
-		if (retv) {
-			goto exit_err;
-		}
-	}
-
 
 	/* initialize the policy */
 	retv = sechk_lib_load_policy(polpath,lib);
@@ -260,7 +231,6 @@ int main(int argc, char **argv)
 			goto exit_err;
 		}
 	}
-
 
 	/* if running only one module, deselect all others */
 	if (modname) {
@@ -326,28 +296,9 @@ int main(int argc, char **argv)
 	}
 
 	/* print the report */
-	if (modname && (!(output_override) || (output_override & ~(SECHK_OUT_QUIET)))) {
-		/* here we are only printing results for one specific module */
-		mod = sechk_lib_get_module(modname, lib);
-		if (!mod) {
-			goto exit_err;
-		}
-		print_fn = sechk_lib_get_module_function(modname, SECHK_MOD_FN_PRINT, lib);
-		if (!run_fn) {
-			goto exit_err;
-		}
-		if (!mod->outputformat)
-			mod->outputformat = SECHK_OUT_SHORT;
-		retv = print_fn(mod, lib->policy);
-		if (retv) {
-			goto exit_err;
-		}
-	} else if (!(output_override) || (output_override & ~(SECHK_OUT_QUIET))){
-		/* here we are printing results for all the available modules */
-		retv = sechk_lib_print_modules_output(lib);
-		if (retv) {
-			goto exit_err;
-		}
+	retv = sechk_lib_print_modules_report(lib);
+	if (retv) {
+		goto exit_err;
 	}
 
 exit:
