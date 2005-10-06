@@ -47,14 +47,17 @@ int roles_wo_users_register(sechk_lib_t *lib)
 	
 	/* assign the descriptions */
 	mod->brief_description = "roles not assigned to users";
-	mod->detailed_description = "Finds roles not assigned to users"
-"\nA role not assigned to a user cannot form a valid context."
-"\n  Requirements:"
-"\n    none"
-"\n  Dependencies:"
-"\n    none"
-"\n  Options:"
-"\n    none";
+	mod->detailed_description = 
+"--------------------------------------------------------------------------------\n"
+"This module finds roles that are not assigned to users.  If a role is not       \n"
+"assigned to a user it cannot for a valid context.\n";
+	mod->opt_description = 
+"Module requirements:\n"
+"   none\n"
+"Module dependencies:\n"
+"   none\n"
+"Module options:\n"
+"   none\n";
 
 	/* register functions */
 	fn_struct = sechk_fn_new();
@@ -299,8 +302,7 @@ int roles_wo_users_print_output(sechk_module_t *mod, policy_t *policy)
 	sechk_proof_t *proof = NULL;
 	int i = 0;
 
-	if (!mod || (!policy && (mod->outputformat & ~(SECHK_OUT_BRF_DESCP) &&
-				 (mod->outputformat & ~(SECHK_OUT_DET_DESCP))))) {
+	if (!mod || !policy) {
 		fprintf(stderr, "Error: invalid parameters\n");
 		return -1;
 	}
@@ -312,7 +314,7 @@ int roles_wo_users_print_output(sechk_module_t *mod, policy_t *policy)
 	datum = (roles_wo_users_data_t*)mod->data;
 	outformat = mod->outputformat;
 
-	if (!mod->result && (outformat & ~(SECHK_OUT_BRF_DESCP)) && (outformat & ~(SECHK_OUT_DET_DESCP))) {
+	if (!mod->result) {
 		fprintf(stderr, "Error: module has not been run\n");
 		return -1;
 	}
@@ -320,15 +322,6 @@ int roles_wo_users_print_output(sechk_module_t *mod, policy_t *policy)
 	if (!outformat || (outformat & SECHK_OUT_QUIET))
 		return 0; /* not an error - no output is requested */
 
-	printf("\nModule: %s\n", mod_name);
-	/* print the brief description */
-	if (outformat & SECHK_OUT_BRF_DESCP) {
-		printf("%s\n\n", mod->brief_description);
-	}
-	/* print the detailed description */
-	if (outformat & SECHK_OUT_DET_DESCP) {
-		printf("%s\n\n", mod->detailed_description);
-	}
 	if (outformat & SECHK_OUT_STATS) {
 		printf("Found %i roles.\n", mod->result->num_items);
 	}

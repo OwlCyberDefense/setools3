@@ -50,19 +50,22 @@ int spurious_audit_register(sechk_lib_t *lib)
 	
 	/* assign the descriptions */
 	mod->brief_description = "audit rules with no effect";
-	mod->detailed_description = "Finds audit rules which do not affect the auditing of the policy."
-"\nThis module finds two types of spurious audit rules:"
-"\n  dontaudit rules for allowed permission sets"
-"\n  auditallow rules without an allow rule"
-"\ndontaudit has no effect on allowed permission sets because this would not"
-"\nnormally be audited. auditallow has no effect if the permission is not"
-"\ngranted via an allow rule (it would not be allowed)."
-		"\n  Requirements:"
-		"\n    none"
-		"\n  Dependencies:"
-		"\n    none"
-		"\n  Options:"
-		"\n    none";
+	mod->detailed_description = 
+"--------------------------------------------------------------------------------\n"
+"This module finds audit rules in the policy which do not affect the auditing of \n"
+"the policy.  This could happed in the following situations.\n"
+"\n"
+"   1) there is an allow rule with the same key and permission for a dontaudit   \n"
+"      rule\n"
+"   2) there is an auditallow rule with the same key and permission as an allow  \n"
+"      rule\n";
+	mod->opt_description =
+"Module requirements:\n"
+"   none\n"
+"Module dependencies:\n"
+"   none\n"
+"Module options:\n"
+"   none\n";
 
 	/* register functions */
 	fn_struct = sechk_fn_new();
@@ -476,8 +479,7 @@ int spurious_audit_print_output(sechk_module_t *mod, policy_t *policy)
 	sechk_proof_t *proof = NULL;
 	char *tmp = NULL;
 
-        if (!mod || (!policy && (mod->outputformat & ~(SECHK_OUT_BRF_DESCP) &&
-                                 (mod->outputformat & ~(SECHK_OUT_DET_DESCP))))){
+        if (!mod || !policy){
 		fprintf(stderr, "Error: invalid parameters\n");
 		return -1;
 	}
@@ -489,7 +491,7 @@ int spurious_audit_print_output(sechk_module_t *mod, policy_t *policy)
 	datum = (spurious_audit_data_t*)mod->data;
 	outformat = mod->outputformat;
 
-	if (!mod->result && (outformat & ~(SECHK_OUT_BRF_DESCP)) && (outformat & ~(SECHK_OUT_DET_DESCP))) {
+	if (!mod->result) {
 		fprintf(stderr, "Error: module has not been run\n");
 		return -1;
 	}
@@ -497,16 +499,6 @@ int spurious_audit_print_output(sechk_module_t *mod, policy_t *policy)
 	if (!outformat || (outformat & SECHK_OUT_QUIET))
 		return 0; /* not an error - no output is requested */
 
-	printf("\nModule: %s\n", mod_name);
-	/* print the header */
-	/* print the brief description */
-	if (outformat & SECHK_OUT_BRF_DESCP) {
-		printf("%s\n\n", mod->brief_description);
-	}
-	/* print the detailed description */
-	if (outformat & SECHK_OUT_DET_DESCP) {
-		printf("%s\n\n", mod->detailed_description);
-	}
 	if (outformat & SECHK_OUT_STATS) {
 		printf("Found %i rules.\n", mod->result->num_items);
 	}
