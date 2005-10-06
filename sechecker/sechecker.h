@@ -33,14 +33,12 @@
 #define SECHK_OUT_STATS		0x01
 #define SECHK_OUT_LIST		0x02
 #define SECHK_OUT_PROOF		0x04
-#define SECHK_OUT_DET_DESCP	0x08
-#define SECHK_OUT_BRF_DESCP	0x10
 /* mode flags from command line, test profiles, and comfig file */
 /* NOTE: none is only valid in profiles */
 #define SECHK_OUT_NONE    0x00
 #define SECHK_OUT_QUIET   0x20
-#define SECHK_OUT_SHORT (SECHK_OUT_STATS|SECHK_OUT_BRF_DESCP|SECHK_OUT_LIST)
-#define SECHK_OUT_VERBOSE (SECHK_OUT_STATS|SECHK_OUT_DET_DESCP|SECHK_OUT_PROOF)
+#define SECHK_OUT_SHORT (SECHK_OUT_STATS|SECHK_OUT_LIST)
+#define SECHK_OUT_VERBOSE (SECHK_OUT_STATS|SECHK_OUT_PROOF)
 
 /* module results proof element */
 typedef struct sechk_proof {
@@ -94,13 +92,14 @@ typedef struct sechk_fn {
 typedef struct sechk_module {
 	char               *name;                /* unique module name */
         const char	   *brief_description;	 /* brief description of the module */
-	const char        *detailed_description;/* detailed description of the module */
+	const char         *detailed_description;/* detailed description of the module */
+	const char         *opt_description;     /* description of options, requirements, and dependencies */
 	sechk_result_t	   *result;              /* test results */
 	sechk_name_value_t *options;             /* test inputs */ 
-	sechk_name_value_t *requirements;		/* conditions required such as policy version */
-	sechk_name_value_t *dependencies;		/* other modules needed to run */
+	sechk_name_value_t *requirements;	 /* conditions required such as policy version */
+	sechk_name_value_t *dependencies;	 /* other modules needed to run */
 	sechk_fn_t	   *functions;           /* register/init/run/free/print */
-	unsigned char	   outputformat;            /* default output format */
+	unsigned char	   outputformat;         /* default output format */
 	void		   *data;
 } sechk_module_t;
 
@@ -169,7 +168,7 @@ int sechk_lib_check_module_dependencies(sechk_lib_t *lib);
 int sechk_lib_check_module_requirements(sechk_lib_t *lib);
 int sechk_lib_init_modules(sechk_lib_t *lib);
 int sechk_lib_run_modules(sechk_lib_t *lib);
-int sechk_lib_print_modules_output(sechk_lib_t *lib);
+int sechk_lib_print_modules_report(sechk_lib_t *lib);
 
 /* module accessors */
 sechk_module_t *sechk_lib_get_module(const char *module_name, sechk_lib_t *lib);

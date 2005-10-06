@@ -50,18 +50,22 @@ int inc_dom_trans_register(sechk_lib_t *lib)
 	
 	/* assign the descriptions */
 	mod->brief_description = "domains with partial transition permissions";
-	mod->detailed_description = "Finds potential domain transitions missing key permissions"
-"\nA valid domain transition needs the following:"
-"\n  The starting domain can transition to the end domian for class process"
-"\n  The end domain has some type as an entrypoint"
-"\n  The starting domain can execute that entrypoint type"
-"\n  Optional: A type transition rule specifying these three types"
-"\n  Requirements:"
-"\n    none"
-"\n  Dependencies:"
-"\n    none"
-"\n  Options:"
-"\n    none";
+	mod->detailed_description = 
+"--------------------------------------------------------------------------------\n"
+"This module finds potential domain transitions missing key permissions.  A valid\n"
+"domain transition requires the following.\n"
+"\n"
+"   1) the starting domain can transition to the end domain for class process\n"
+"   2) the end domain has some type as an entrypoint\n"
+"   3) the starting domain can execute that extrypoint type\n"
+"   4) (optional) a type transition rules specifying these three types\n";
+	mod->opt_description = 
+"Module requirements:\n"
+"   none\n"
+"Module dependencies:\n"
+"   none\n"
+"Module options:\n"
+"   none\n";
 
 	/* register functions */
 	fn_struct = sechk_fn_new();
@@ -709,8 +713,7 @@ int inc_dom_trans_print_output(sechk_module_t *mod, policy_t *policy)
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
 
-	if (!mod || (!policy && (mod->outputformat & ~(SECHK_OUT_BRF_DESCP) &&
-				 (mod->outputformat & ~(SECHK_OUT_DET_DESCP))))) {
+	if (!mod || !policy) {
 		fprintf(stderr, "Error: invalid parameters\n");
 		return -1;
 	}
@@ -722,7 +725,7 @@ int inc_dom_trans_print_output(sechk_module_t *mod, policy_t *policy)
 	datum = (inc_dom_trans_data_t*)mod->data;
 	outformat = mod->outputformat;
 
-	if (!mod->result && (outformat & ~(SECHK_OUT_BRF_DESCP)) && (outformat & ~(SECHK_OUT_DET_DESCP))) {
+	if (!mod->result) {
 		fprintf(stderr, "Error: module has not been run\n");
 		return -1;
 	}
@@ -730,15 +733,6 @@ int inc_dom_trans_print_output(sechk_module_t *mod, policy_t *policy)
 	if (!outformat || (outformat & SECHK_OUT_QUIET))
 		return 0; /* not an error - no output is requested */
 
-	printf("\nModule: %s\n", mod_name);
-	/* print the brief description */
-	if (outformat & SECHK_OUT_BRF_DESCP) {
-		printf("%s\n\n", mod->brief_description);
-	}
-	/* print the detailed description */
-	if (outformat & SECHK_OUT_DET_DESCP) {
-		printf("%s\n\n", mod->detailed_description);
-	}
 	if (outformat & SECHK_OUT_STATS) {
 		printf("Found %i start types.\n", mod->result->num_items);
 	}
