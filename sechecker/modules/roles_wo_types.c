@@ -47,15 +47,18 @@ int roles_wo_types_register(sechk_lib_t *lib)
 
 	/* assign descriptions */
 	mod->brief_description = "roles with no types";
-	mod->detailed_description = "Finds all roles in the policy with no associated types."
-"A role with no types cannot form a valid security context."
-		"\n  Requirements:"
-		"\n    none"
-		"\n  Dependencies:"
-		"\n    none"
-		"\n  Options:"
-		"\n    none";
-	
+	mod->detailed_description = 
+"--------------------------------------------------------------------------------\n"
+"This module finds roles in the policy that have no types.  A role with no types \n"
+"cannot form a valid context.\n";
+	mod->opt_description = 
+"Module requirements:\n"
+"   none\n"
+"Module dependencies:\n"
+"   none\n"
+"Module options:\n"
+"   none\n";
+
 	/* register functions */
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -281,8 +284,7 @@ int roles_wo_types_print_output(sechk_module_t *mod, policy_t *policy)
 	sechk_proof_t *proof = NULL;
 	int i = 0;
 
-        if (!mod || (!policy && (mod->outputformat & ~(SECHK_OUT_BRF_DESCP) &&
-                                 (mod->outputformat & ~(SECHK_OUT_DET_DESCP))))){
+        if (!mod || !policy){
 		fprintf(stderr, "Error: invalid parameters\n");
 		return -1;
 	}
@@ -297,20 +299,11 @@ int roles_wo_types_print_output(sechk_module_t *mod, policy_t *policy)
 	if (!outformat || (outformat & SECHK_OUT_QUIET))
 		return 0; /* not an error - no output is requested */
 
-	if (!mod->result && (outformat & ~(SECHK_OUT_BRF_DESCP)) && (outformat & ~(SECHK_OUT_DET_DESCP))) {
+	if (!mod->result) {
 		fprintf(stderr, "Error: module has not been run\n");
 		return -1;
 	}
 
-	printf("\nModule: %s\n", mod_name);
-	/* print the brief description */
-	if (outformat & SECHK_OUT_BRF_DESCP) {
-		printf("%s\n\n", mod->brief_description);
-	}
-	/* print the detailed description */
-	if (outformat & SECHK_OUT_DET_DESCP) {
-		printf("%s\n\n", mod->detailed_description);
-	}
 	/* display the statistics of the results */
 	if (outformat & SECHK_OUT_STATS) {
 		printf("Found %i roles.\n", mod->result->num_items);

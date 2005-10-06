@@ -49,16 +49,20 @@ int types_wo_allow_register(sechk_lib_t *lib)
 
 	/* assign the descriptions */
 	mod->brief_description = "types with no allow rules";
-	mod->detailed_description = "Finds types declared but not used in allow rules of a policy."
-"\nIf a type does not appear in an allow rule, all attemped access to that"
-"\ntype will be denied (including relabeling to a usable type)."
-		"\nThis module reports other uses if found."
-		"\n  Requirements:"
-		"\n    none"
-		"\n  Dependencies:"
-		"\n    none"
-		"\n  Options:"
-		"\n    none";
+	mod->detailed_description = 
+"--------------------------------------------------------------------------------\n"
+"This module finds types defined in the policy that are not used in any allow    \n"
+"rules.  A type that is never granted an allow rule in the policy is a dead type.\n"
+"This means that all attempted acces to the type will be denied including        \n"
+"attempts to relabel to a (usable) type.  The type may need to be removed from   \n"
+"the policy or some intended access should be granted to the type.\n";
+	mod->opt_description = 
+"Module requirements:\n"
+"   none\n"
+"Module dependencies:\n"
+"   none\n"
+"Module options:\n"
+"   none\n";
 	
 	/* register functions */
 	fn_struct = sechk_fn_new();
@@ -193,10 +197,7 @@ int types_wo_allow_run(sechk_module_t *mod, policy_t *policy)
 	avh_idx_t *hash_idx = NULL;
 	int num_nodes = 0;
 	avh_rule_t *hash_rule = NULL;
-	char *buff = NULL;
-	int buff_sz;
 	bool_t used = FALSE;
-	ta_item_t *ta = NULL;
 
 	if (!mod || !policy) {
 		fprintf(stderr, "Error: invalid parameters\n");
@@ -250,21 +251,11 @@ int types_wo_allow_run(sechk_module_t *mod, policy_t *policy)
 				case RULE_AUDITALLOW:
 				case RULE_AUDITDENY:
 				case RULE_DONTAUDIT:
-					buff = re_render_av_rule(!is_binary_policy(policy), hash_rule->rule, 1, policy);
-					if (!buff) {
-						fprintf(stderr, "Error: out of memory\n");
-						goto types_wo_allow_run_fail;
-					}
 					retv = POL_LIST_AV_AU;
 					break;
 				case RULE_TE_TRANS:
 				case RULE_TE_MEMBER:
 				case RULE_TE_CHANGE:
-					buff = re_render_tt_rule(!is_binary_policy(policy), hash_rule->rule, policy);
-					if (!buff) {
-						fprintf(stderr, "Error: out of memory\n");
-						goto types_wo_allow_run_fail;
-					}
 					retv = POL_LIST_TE_TRANS;
 					break;
 				default:
@@ -272,37 +263,11 @@ int types_wo_allow_run(sechk_module_t *mod, policy_t *policy)
 				}
 				if (used)
 					break;
-				if (buff) {
-					proof = sechk_proof_new();
-					if (!proof) {
-						fprintf(stderr, "Error: out of memory\n");
-						goto types_wo_allow_run_fail;
-					}
-					proof->idx = hash_rule->rule;
-					proof->type = retv;
-					proof->text = buff;
-					proof->severity = SECHK_SEV_LOW;
-					if (!item) {
-						item = sechk_item_new();
-						if (!item) {
-							fprintf(stderr, "Error: out of memory\n");
-							goto types_wo_allow_run_fail;
-						}
-						item->item_id = i;
-					}
-					item->test_result++;
-					proof->next = item->proof;
-					item->proof = proof;
-				}
-				buff = NULL;
-				proof = NULL;
 			}
 			if (used) 
 				break;
 		}
 		if (used) {
-			sechk_item_free(item);
-			item = NULL;
 			continue;
 		}
 
@@ -321,21 +286,11 @@ int types_wo_allow_run(sechk_module_t *mod, policy_t *policy)
 				case RULE_AUDITALLOW:
 				case RULE_AUDITDENY:
 				case RULE_DONTAUDIT:
-					buff = re_render_av_rule(!is_binary_policy(policy), hash_rule->rule, 1, policy);
-					if (!buff) {
-						fprintf(stderr, "Error: out of memory\n");
-						goto types_wo_allow_run_fail;
-					}
 					retv = POL_LIST_AV_AU;
 					break;
 				case RULE_TE_TRANS:
 				case RULE_TE_MEMBER:
 				case RULE_TE_CHANGE:
-					buff = re_render_tt_rule(!is_binary_policy(policy), hash_rule->rule, policy);
-					if (!buff) {
-						fprintf(stderr, "Error: out of memory\n");
-						goto types_wo_allow_run_fail;
-					}
 					retv = POL_LIST_TE_TRANS;
 					break;
 				default:
@@ -343,212 +298,43 @@ int types_wo_allow_run(sechk_module_t *mod, policy_t *policy)
 				}
 				if (used)
 					break;
-				if (buff) {
-					proof = sechk_proof_new();
-					if (!proof) {
-						fprintf(stderr, "Error: out of memory\n");
-						goto types_wo_allow_run_fail;
-					}
-					proof->idx = hash_rule->rule;
-					proof->type = retv;
-					proof->text = buff;
-					proof->severity = SECHK_SEV_LOW;
-					if (!item) {
-						item = sechk_item_new();
-						if (!item) {
-							fprintf(stderr, "Error: out of memory\n");
-							goto types_wo_allow_run_fail;
-						}
-						item->item_id = i;
-					}
-					item->test_result++;
-					proof->next = item->proof;
-					item->proof = proof;
-				}
-				buff = NULL;
-				proof = NULL;
 			}
 			if (used) 
 				break;
 		}
 		if (used) {
-			sechk_item_free(item);
-			item = NULL;
 			continue;
 		}
 
-		/* role_trans not hashed check for tgt */
-		for (j = 0; j < policy->num_role_trans; j++) {
-			if (does_role_trans_use_ta(i, IDX_TYPE, 1, &(policy->role_trans[j]), &retv, policy)) {
-				buff_sz += strlen("role_transition {} {} ; ");
-				if (!is_binary_policy(policy))
-					buff_sz += ((policy->role_trans[j].lineno)/10 + 5);
-				for (ta = policy->role_trans[j].src_roles; ta; ta = ta->next) {
-					buff_sz += (1 + strlen(policy->roles[ta->idx].name));
-				}
-				for (ta = policy->role_trans[j].tgt_types; ta; ta = ta->next) {
-					if (ta->type == IDX_TYPE)
-						buff_sz += (1 + strlen(policy->types[ta->idx].name));
-					else
-						buff_sz += (1 + strlen(policy->attribs[ta->idx].name));
-				}
-				buff_sz += strlen(policy->roles[policy->role_trans[j].trans_role.idx].name);
-				buff = (char*)calloc(buff_sz, sizeof(char));
-				if (!buff) {
-					fprintf(stderr, "Error: out of memory\n");
-					goto types_wo_allow_run_fail;
-				}
- 				if (!is_binary_policy(policy))
-					sprintf(buff, "[%lu] ", policy->role_trans[j].lineno);
-				strcat(buff, "role_transition {");
-				for (ta = policy->role_trans[j].src_roles; ta; ta = ta->next) {
-					strcat(buff, policy->roles[ta->idx].name);
-					strcat(buff, " ");
-				}
-				strcat(buff, "} {");
-				for (ta = policy->role_trans[j].tgt_types; ta; ta = ta->next) {
-					if (ta->type == IDX_TYPE) {
-						strcat(buff, policy->types[ta->idx].name);
-						strcat(buff, " ");
-					} else {
-						strcat(buff, policy->attribs[ta->idx].name);
-						strcat(buff, " ");
-					}
-				}
-				strcat(buff, "} ");
-				strcat(buff, policy->roles[policy->role_trans[j].trans_role.idx].name);
-				strcat(buff, ";");
-
-				proof = sechk_proof_new();
-				if (!proof) {
-					fprintf(stderr, "Error: out of memory\n");
-					goto types_wo_allow_run_fail;
-				}
-				proof->idx = j;
-				proof->type = POL_LIST_ROLE_TRANS;
-				proof->text = buff;
-				proof->severity = SECHK_SEV_LOW;
-				if (!item) {
-					item = sechk_item_new();
-					if (!item) {
-						fprintf(stderr, "Error: out of memory\n");
-						goto types_wo_allow_run_fail;
-					}
-					item->item_id = i;
-				}
-				item->test_result++;
-				proof->next = item->proof;
-				item->proof = proof;
-			}
-			buff = NULL;
-			buff_sz = 0;
-		}
-		
-		/* check for default*/
-		for (j = 0; j < policy->num_te_trans; j++) {
-			if (policy->te_trans[j].dflt_type.idx == i) {
-				buff = re_render_tt_rule(!is_binary_policy(policy), j, policy);
-				if (!buff) {
-					fprintf(stderr, "Error: out of memory\n");
-					goto types_wo_allow_run_fail;
-				}
-				proof = sechk_proof_new();
-				if (!proof) {
-					fprintf(stderr, "Error: out of memory\n");
-					goto types_wo_allow_run_fail;
-				}
-				proof->idx = j;
-				proof->type = POL_LIST_TE_TRANS;
-				proof->text = buff;
-				proof->severity = SECHK_SEV_LOW;
-				if (!item) {
-					item = sechk_item_new();
-					if (!item) {
-						fprintf(stderr, "Error: out of memory\n");
-						goto types_wo_allow_run_fail;
-					}
-					item->item_id = i;
-				}
-				item->test_result++;
-				proof->next = item->proof;
-				item->proof = proof;
-			}
-			buff = NULL;
-		}
-
-		/* check neverallows */
-		for (j = 0; j < policy->num_av_access; j++) {
-			if (policy->av_access[j].type != RULE_NEVERALLOW)
-				continue;
-			if (does_av_rule_idx_use_type(j, 0, i, IDX_TYPE, BOTH_LISTS, 1, policy)) {
-				buff = re_render_av_rule(!is_binary_policy(policy), j, 0, policy);
-				if (!buff) {
-					fprintf(stderr, "Error: out of memory\n");
-					goto types_wo_allow_run_fail;
-				}
-				retv = POL_LIST_AV_ACC;
-				proof = sechk_proof_new();
-				if (!proof) {
-					fprintf(stderr, "Error: out of memory\n");
-					goto types_wo_allow_run_fail;
-				}
-				proof->idx = j;
-				proof->type = retv;
-				proof->text = buff;
-				proof->severity = SECHK_SEV_LOW;
-				if (!item) {
-					item = sechk_item_new();
-					if (!item) {
-						fprintf(stderr, "Error: out of memory\n");
-						goto types_wo_allow_run_fail;
-					}
-					item->item_id = i;
-				}
-				item->test_result++;
-				proof->next = item->proof;
-				item->proof = proof;
-			}
-			buff = NULL;
-		}
-
 		/* not used anywhere*/
+		item = sechk_item_new();
 		if (!item) {
-			proof = sechk_proof_new();
-			if (!proof) {
-				fprintf(stderr, "Error: out of memory\n");
-				goto types_wo_allow_run_fail;
-			}
-			proof->idx = -1;
-			proof->type = -1;
-			proof->text = strdup("This type does not appear in any rules.");
-			proof->severity = SECHK_SEV_LOW;
-			if (!item) {
-				item = sechk_item_new();
-				if (!item) {
-					fprintf(stderr, "Error: out of memory\n");
-					goto types_wo_allow_run_fail;
-				}
-				item->item_id = i;
-				item->test_result++;
-			}
-			proof->next = item->proof;
-			item->proof = proof;
+			fprintf(stderr, "Error: out of memory\n");
+			goto types_wo_allow_run_fail;
 		}
+		item->item_id = i;
+		item->test_result = 1;
 
-		if (item) {
-			item->next = res->items;
-			res->items = item;
-			(res->num_items)++;
+		proof = sechk_proof_new();
+		if (!proof) {
+			fprintf(stderr, "Error: out of memory\n");
+			goto types_wo_allow_run_fail;
 		}
-		item = NULL;
+		proof->idx = -1;
+		proof->type = -1;
+		proof->text = strdup("This type does not appear in any allow rules.");
+		proof->severity = SECHK_SEV_LOW;
+
+		item->proof = proof;
+		item->next = res->items;
+		res->items = item;
+		res->num_items++;
 	}
-
 	mod->result = res;
 
 	return 0;
 
 types_wo_allow_run_fail:
-	free(buff);
 	sechk_proof_free(proof);
 	sechk_item_free(item);
 	sechk_result_free(res);
@@ -585,8 +371,7 @@ int types_wo_allow_print_output(sechk_module_t *mod, policy_t *policy)
 	sechk_proof_t *proof = NULL;
 	int i = 0;
 
-        if (!mod || (!policy && (mod->outputformat & ~(SECHK_OUT_BRF_DESCP) &&
-                                 (mod->outputformat & ~(SECHK_OUT_DET_DESCP))))){
+        if (!mod || !policy){
 		fprintf(stderr, "Error: invalid parameters\n");
 		return -1;
 	}
@@ -598,7 +383,7 @@ int types_wo_allow_print_output(sechk_module_t *mod, policy_t *policy)
 	datum = (types_wo_allow_data_t*)mod->data;
 	outformat = mod->outputformat;
 
-	if (!mod->result && (outformat & ~(SECHK_OUT_BRF_DESCP)) && (outformat & ~(SECHK_OUT_DET_DESCP))) {
+	if (!mod->result) {
 		fprintf(stderr, "Error: module has not been run\n");
 		return -1;
 	}
@@ -606,15 +391,6 @@ int types_wo_allow_print_output(sechk_module_t *mod, policy_t *policy)
 	if (!outformat || (outformat & SECHK_OUT_QUIET))
 		return 0; /* not an error - no output is requested */
 
-	printf("\nModule: %s\n", mod_name);
-	/* print the brief description */
-	if (outformat & SECHK_OUT_BRF_DESCP) {
-		printf("%s\n\n", mod->brief_description);
-	}
-	/* print the detailed description */
-	if (outformat & SECHK_OUT_DET_DESCP) {
-		printf("%s\n\n", mod->detailed_description);
-	}
 	/* display the statistics of the results */
 	if (outformat & SECHK_OUT_STATS) {
 		printf("Found %i types.\n", mod->result->num_items);

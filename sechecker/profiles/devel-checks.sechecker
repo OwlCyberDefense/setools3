@@ -27,11 +27,11 @@
 	</module>
 
 	<module name="roles_wo_allow">
-		<output value="verbose"/>
+		<output value="short"/>
 	</module>
 
 	<module name="types_wo_allow">
-		<output value="verbose"/>
+		<output value="short"/>
 	</module>
 
 	<module name="attribs_wo_rules">
