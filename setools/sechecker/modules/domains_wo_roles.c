@@ -46,15 +46,18 @@ int domains_wo_roles_register(sechk_lib_t *lib)
 	
 	/* assign the descriptions */
 	mod->brief_description = "domains with no roles";
-	mod->detailed_description = "Finds all domains in the policy not associated with a role"
-"\nThese domians cannot have a valid security context."
-"\nThe role object_r is not considered in this check."
-"\n  Requirements:"
-"\n    none"
-"\n  Dependencies:"
-"\n    module=find_domains"
-"\n  Options:"
-"\n    none";
+	mod->detailed_description = 
+"--------------------------------------------------------------------------------\n"
+"This module finds all domains in the policy not associated with a role.  These  \n"
+"domains cannot have a valid security context.  The object_r role is not         \n"
+"considered in this check.\n";
+	mod->opt_description = 
+"Module requirements:\n"
+"   none\n"
+"Module dependencies:\n"
+"   none\n"
+"Module options:\n"
+"   none\n";
 
 	/* assign dependencies */
 	mod->dependencies = sechk_name_value_prepend(NULL,"module","find_domains");
@@ -309,8 +312,7 @@ int domains_wo_roles_print_output(sechk_module_t *mod, policy_t *policy)
 	sechk_proof_t *proof = NULL;
 	int i = 0;
 
-	if (!mod || (!policy && (mod->outputformat & ~(SECHK_OUT_BRF_DESCP) &&
-				 (mod->outputformat & ~(SECHK_OUT_DET_DESCP))))) {
+	if (!mod || !policy) {
 		fprintf(stderr, "Error: invalid parameters\n");
 		return -1;
 	}
@@ -322,7 +324,7 @@ int domains_wo_roles_print_output(sechk_module_t *mod, policy_t *policy)
 	datum = (domains_wo_roles_data_t*)mod->data;
 	outformat = mod->outputformat;
 
-	if (!mod->result && (outformat & ~(SECHK_OUT_BRF_DESCP)) && (outformat & ~(SECHK_OUT_DET_DESCP))) {
+	if (!mod->result) {
 		fprintf(stderr, "Error: module has not been run\n");
 		return -1;
 	}
@@ -330,15 +332,6 @@ int domains_wo_roles_print_output(sechk_module_t *mod, policy_t *policy)
 	if (!outformat || (outformat & SECHK_OUT_QUIET))
 		return 0; /* not an error - no output is requested */
 
-	printf("\nModule: %s\n", mod_name);
-	/* print the brief description */
-	if (outformat & SECHK_OUT_BRF_DESCP) {
-		printf("%s\n\n", mod->brief_description);
-	}
-	/* print the detailed description */
-	if (outformat & SECHK_OUT_DET_DESCP) {
-		printf("%s\n\n", mod->detailed_description);
-	}
 	if (outformat & SECHK_OUT_STATS) {
 		printf("Found %i types.\n", mod->result->num_items);
 	}

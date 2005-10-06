@@ -36,18 +36,21 @@ int domain_and_file_register(sechk_lib_t *lib)
 	
 	/* assign descriptions */
 	mod->brief_description = "types treated as a domain and file type";
-	mod->detailed_description = "Finds all types in the policy treated as both a domain and a file type "
-"\nSee domain_type and file_type modules for details about how "
-"\ntypes are placed in these categories. It is considered bad security"
-"\npractice to use the same type for a domain and its data objects, because"
-"\nit requires that less restrictive access be granted."
-"\n  Requirements:"
-"\n    policy_type=source"
-"\n  Dependencies:"
-"\n    module=find_domains"
-"\n    module=find_file_types"
-"\n  Options:"
-"\n    none";
+	mod->detailed_description = 
+"--------------------------------------------------------------------------------\n"
+"This module finds all types in the policy treated as both a domain and a file   \n"
+"type.  See find_domains and find_file_types modules for details about the       \n"
+"heuristics used to determine these types.  It is considered bad security\n"
+"practice to use the same type for a domain and its data objects because it \n"
+"requires that less restrictive access be granted to these types.\n";
+	mod->opt_description = 
+"Module requirements:\n"
+"   none\n"
+"Module dependencies:\n"
+"   find_domains module\n"
+"   find_file_types module\n"
+"Module options:\n"
+"   none\n";
 
 	/* assign requirements */
 	mod->requirements = sechk_name_value_prepend(NULL,"policy_type","source");
@@ -353,8 +356,7 @@ int domain_and_file_print_output(sechk_module_t *mod, policy_t *policy)
 	sechk_proof_t *proof = NULL;
 	int i = 0;
 
-        if (!mod || (!policy && (mod->outputformat & ~(SECHK_OUT_BRF_DESCP) &&
-                                 (mod->outputformat & ~(SECHK_OUT_DET_DESCP))))){
+        if (!mod || !policy){
 		fprintf(stderr, "Error: invalid parameters\n");
 		return -1;
 	}
@@ -366,7 +368,7 @@ int domain_and_file_print_output(sechk_module_t *mod, policy_t *policy)
 	datum = (domain_and_file_data_t*)mod->data;
 	outformat = mod->outputformat;
 
-	if (!mod->result && (outformat & ~(SECHK_OUT_BRF_DESCP)) && (outformat & ~(SECHK_OUT_DET_DESCP))) {
+	if (!mod->result) {
 		fprintf(stderr, "Error: module has not been run\n");
 		return -1;
 	}
@@ -374,15 +376,6 @@ int domain_and_file_print_output(sechk_module_t *mod, policy_t *policy)
 	if (!outformat || (outformat & SECHK_OUT_QUIET))
 		return 0; /* not an error - no output is requested */
 
-	printf("\nModule: %s\n", mod_name);
-	/* print the brief description */
-	if (outformat & SECHK_OUT_BRF_DESCP) {
-		printf("%s\n\n", mod->brief_description);
-	}
-	/* print the detailed description */
-	if (outformat & SECHK_OUT_DET_DESCP) {
-		printf("%s\n\n", mod->detailed_description);
-	}
 	if (outformat & SECHK_OUT_STATS) {
 		printf("Found %i types.\n", mod->result->num_items);
 	}

@@ -47,16 +47,20 @@ int users_wo_roles_register(sechk_lib_t *lib)
 
 	/* assign the descriptions */
 	mod->brief_description = "users with no roles";
-	mod->detailed_description = "Finds all users in the policy with no assigned roles."
-"\nUsers without a role cannot be used to form a valid security context"
-"\nexcept with object_r.  Such a user cannot login or have any asociated"
-"\nprocesses, but could appear in the label of a file system object."
-		"\n  Requirements:"
-		"\n    none"
-		"\n  Dependencies:"
-		"\n    none"
-		"\n  Options:"
-		"\n    none";
+	mod->detailed_description =
+"--------------------------------------------------------------------------------\n"
+"This module finds all the SELinux users in the policy that have no associated   \n"
+"roles.  Users without roles may appear in the label of a file system object     \n"
+"however the users cannot login to the system or run any processes.  Since these \n"
+"users cannot be used on the system, a policy change is required to remove the   \n"
+"user or provide some intended access.                                           \n";
+	mod->opt_description = 
+"  Module requirements:\n"
+"    none\n"
+"  Module dependencies:\n"
+"    none\n"
+"  Module options:\n"
+"    none\n";
 	
 	/* register functions */
 	fn_struct = sechk_fn_new();
@@ -283,8 +287,7 @@ int users_wo_roles_print_output(sechk_module_t *mod, policy_t *policy)
 	sechk_proof_t *proof = NULL;
 	int i = 0;
 
-        if (!mod || (!policy && (mod->outputformat & ~(SECHK_OUT_BRF_DESCP) &&
-                                 (mod->outputformat & ~(SECHK_OUT_DET_DESCP))))){
+        if (!mod || !policy){
 		fprintf(stderr, "Error: invalid parameters\n");
 		return -1;
 	}
@@ -299,20 +302,11 @@ int users_wo_roles_print_output(sechk_module_t *mod, policy_t *policy)
 	if (!outformat || (outformat & SECHK_OUT_QUIET))
 		return 0; /* not an error - no output is requested */
 
-	if (!mod->result && (outformat & ~(SECHK_OUT_BRF_DESCP)) && (outformat & ~(SECHK_OUT_DET_DESCP))) {
+	if (!mod->result) {
 		fprintf(stderr, "Error: module has not been run\n");
 		return -1;
 	}
 
-	printf("\nModule: %s\n", mod_name);
-	/* print the brief description */
-	if (outformat & SECHK_OUT_BRF_DESCP) {
-		printf("%s\n\n", mod->brief_description);
-	}
-	/* print the detailed description */
-	if (outformat & SECHK_OUT_DET_DESCP) {
-		printf("%s\n\n", mod->detailed_description);
-	}
 	/* display the statistics of the results */
 	if (outformat & SECHK_OUT_STATS) {
 		printf("Found %i users.\n", mod->result->num_items);
