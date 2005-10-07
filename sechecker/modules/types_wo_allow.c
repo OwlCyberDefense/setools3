@@ -63,7 +63,7 @@ int types_wo_allow_register(sechk_lib_t *lib)
 "   none\n"
 "Module options:\n"
 "   none\n";
-	
+	mod->severity = SECHK_SEV_LOW;
 	/* register functions */
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -323,8 +323,6 @@ int types_wo_allow_run(sechk_module_t *mod, policy_t *policy)
 		proof->idx = -1;
 		proof->type = -1;
 		proof->text = strdup("This type does not appear in any allow rules.");
-		proof->severity = SECHK_SEV_LOW;
-
 		item->proof = proof;
 		item->next = res->items;
 		res->items = item;
@@ -417,7 +415,6 @@ int types_wo_allow_print_output(sechk_module_t *mod, policy_t *policy)
 		printf("\n");
 		for (item = mod->result->items; item; item = item->next) {
 			printf("%s", policy->types[item->item_id].name);
-			printf(" - severity: %s\n", sechk_item_sev(item));
 			for (proof = item->proof; proof; proof = proof->next) {
 				printf("\t%s\n", proof->text);
 			}

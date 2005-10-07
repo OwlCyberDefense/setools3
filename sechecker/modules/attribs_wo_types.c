@@ -61,7 +61,7 @@ int attribs_wo_types_register(sechk_lib_t *lib)
 "   none\n"
 "Module options:\n"
 "   none\n";
-
+	mod->severity = SECHK_SEV_LOW;
 	/* assign requirements */
 	mod->requirements = sechk_name_value_prepend(NULL,"policy_type","source");
 
@@ -240,7 +240,6 @@ int attribs_wo_types_run(sechk_module_t *mod, policy_t *policy)
 		}
 		proof->idx = i;
 		proof->type = POL_LIST_ATTRIB;
-		proof->severity = SECHK_SEV_LOW;
 		proof->text = (char*)calloc(strlen("attribute  has no types")+strlen(policy->attribs[i].name)+1, sizeof(char));
 		sprintf(proof->text, "attribute %s has no types", policy->attribs[i].name);
 		item = sechk_item_new();
@@ -349,7 +348,6 @@ int attribs_wo_types_print_output(sechk_module_t *mod, policy_t *policy)
 		printf("\n");
 		for (item = mod->result->items; item; item = item->next) {
 			printf("%s", policy->attribs[item->item_id].name);
-			printf(" - severity: %s\n", sechk_item_sev(item));
 			for (proof = item->proof; proof; proof = proof->next) {
 				printf("\t%s\n", proof->text);
 			}

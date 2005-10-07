@@ -58,7 +58,7 @@ int roles_wo_users_register(sechk_lib_t *lib)
 "   none\n"
 "Module options:\n"
 "   none\n";
-
+	mod->severity = SECHK_SEV_LOW;
 	/* register functions */
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -243,7 +243,6 @@ int roles_wo_users_run(sechk_module_t *mod, policy_t *policy)
 		item->test_result = 1;
 		proof->idx = -1;
 		proof->type = POL_LIST_USERS;
-		proof->severity = SECHK_SEV_MOD;
 		proof->text = strdup("This role is not assigned to any user.");
 		if (!proof->text) {
 			fprintf(stderr, "Error: out of memory\n");
@@ -348,7 +347,6 @@ int roles_wo_users_print_output(sechk_module_t *mod, policy_t *policy)
 		printf("\n");
 		for (item = mod->result->items; item; item = item->next) {
 			printf("%s", policy->roles[item->item_id].name);
-			printf(" - severity: %s\n", sechk_item_sev(item));
 			for (proof = item->proof; proof; proof = proof->next) {
 				printf("\t%s\n", proof->text);
 			}
