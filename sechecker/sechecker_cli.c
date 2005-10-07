@@ -39,6 +39,7 @@ static struct option const longopts[] =
 	{"fcfile", required_argument, NULL, 'c'},
 #endif
 	{"module", required_argument, NULL, 'm'},
+	{"min-sev", required_argument, NULL, 'M' },
 	{NULL, 0, NULL, 0}
 };
 
@@ -68,6 +69,9 @@ void usage(const char *arg0, bool_t brief)
 		printf("   -h[mod],   --help[=module]   print this help or help for a module\n");
 		printf("   -m <mod>,  --module=<mod>    module name\n");
 		printf("   -p <prof>, --profile=<prof>  profile name or path\n");
+		printf("\n");
+		printf("   --min-sev=<low|med|high>     the minimum severity to report\n");
+
 	}
 	printf("\n");
 }
@@ -107,12 +111,11 @@ int main(int argc, char **argv)
 #endif
 	char *polpath = NULL, *modname = NULL;
 	char *prof_name = NULL;
+	char *minsev = NULL;
 	unsigned char output_override = 0;
 	sechk_lib_t *lib;
 	bool_t list_stop = FALSE;
 	bool_t module_help = FALSE;
-	sechk_module_t *mod = NULL;
-	sechk_run_fn_t run_fn = NULL;
 
 	while ((optc = getopt_long(argc, argv, "h::p:m:lqsv", longopts, NULL)) != -1) {
 		switch (optc) {
@@ -127,9 +130,16 @@ int main(int argc, char **argv)
 		case 'P':
 			polpath = strdup(optarg);
 			break;
+		case 'M':
+			if (modname) {
+				fprintf(stderr, "Error: --min-sev does not work with -m\n");
+				exit(1);
+			}
+			minsev = strdup(optarg);
+			break;
 		case 'v':
 			if (output_override) {
-				fprintf(stderr, "Error: Multiple output specifications.\n");
+				fprintf(stderr, "Error: multiple output formats specified\n");
 				usage(argv[0], 1);
 				exit(1);
 			} else {
@@ -138,7 +148,7 @@ int main(int argc, char **argv)
 			break;
 		case 's':
 			if (output_override) {
-				fprintf(stderr, "Error: Multiple output specifications.\n");
+				fprintf(stderr, "Error: multiple output formats specified\n");
 				usage(argv[0], 1);
 				exit(1);
 			} else {
@@ -147,7 +157,7 @@ int main(int argc, char **argv)
 			break;
 		case 'q':
 			if (output_override) {
-				fprintf(stderr, "Error: Multiple output specifications.\n");
+				fprintf(stderr, "Error: multiple output formats specified\n\n");
 				usage(argv[0], 1);
 				exit(1);
 			} else {
@@ -155,6 +165,10 @@ int main(int argc, char **argv)
 			}
 			break;
 		case 'm':
+			if (minsev) {
+				fprintf(stderr, "Error: --min-sev does not work with -m\n");
+				exit(1);
+			}
 			modname = strdup(optarg);
 			break;
 		case 'l':
@@ -187,11 +201,14 @@ int main(int argc, char **argv)
 	lib = sechk_lib_new();
 	if (!lib)
 		goto exit_err;
+
+	/* print the list */
 	if (list_stop == TRUE) {
 		sechk_print_list(lib);
 		goto exit;
 	}
 
+	/* print help for a module */
 	if (module_help == TRUE) {
 		printf("\nModule name: %s\n%s\n%s\n", lib->modules[retv].name, lib->modules[retv].detailed_description, 
 		       lib->modules[retv].opt_description);
@@ -211,25 +228,24 @@ int main(int argc, char **argv)
 			goto exit_err;
 		}
 	}
+	
+	/* set the minimum severity */
+	if (minsev && sechk_lib_set_minsev(lib, minsev) < 0)
+		goto exit_err;
 
 	/* initialize the policy */
-	retv = sechk_lib_load_policy(polpath,lib);
-	if (retv < 0)
+	if (sechk_lib_load_policy(polpath,lib) < 0)
 		goto exit_err;
 
 #ifdef LIBSEFS
 	/* initialize the file contexts */
-	retv = sechk_lib_load_fc(fcpath,lib);
-	if (retv < 0)
+	if (sechk_lib_load_fc(fcpath,lib) < 0)
 		goto exit_err;
 #endif
-	/* if command line specified an output format
-	 * use it for all modules in the report */
+	/* initialize the output format */
 	if (output_override) {
-		retv = sechk_lib_set_outputformat(output_override, lib);
-		if (retv) {
+		if (sechk_lib_set_outputformat(output_override, lib) < 0)
 			goto exit_err;
-		}
 	}
 
 	/* if running only one module, deselect all others */
@@ -246,65 +262,30 @@ int main(int argc, char **argv)
 	}
 
 	/* process dependencies for selected modules */
-	retv = sechk_lib_check_module_dependencies(lib);
-	if (retv) {
+	if (sechk_lib_check_module_dependencies(lib) < 0)
 		goto exit_err;
-	}
 
 	/* process requirements for selected modules */
-	retv = sechk_lib_check_module_requirements(lib);
-	if (retv) {
+	if (sechk_lib_check_module_requirements(lib) < 0)
 		goto exit_err;
-	}
 
 	/* initialize the modules */
-	retv = sechk_lib_init_modules(lib);
-	if (retv) {
+	if (sechk_lib_init_modules(lib))
 		goto exit_err;
-	}
 
 	/* run the modules */
-	if (modname) {
-		/* check to see if after processing dependencies we should run this module */
-		retv = sechk_lib_get_module_idx(modname, lib);
-		if (retv == -1 || retv >= lib->num_modules) {
-			fprintf(stderr, "Error: module %s not found\n", modname);
-			goto exit_err;
-		}
-		if (lib->module_selection[retv] == FALSE)
-			goto exit_err;
-
-		/* here we are only running one specific module */
-		mod = sechk_lib_get_module(modname, lib);
-		if (!mod) {
-			goto exit_err;
-		}		
-		run_fn = sechk_lib_get_module_function(modname, SECHK_MOD_FN_RUN, lib);
-		if (!run_fn) {
-			goto exit_err;
-		}
-		retv = run_fn(mod, lib->policy);
-		if (retv < 0) {
-			goto exit_err;
-		}
-	} else {
-		/* here we are running all specified modules */
-		retv = sechk_lib_run_modules(lib);
-		if (retv) {
-			goto exit_err;
-		}
-	}
+	if (sechk_lib_run_modules(lib))
+		goto exit_err;
 
 	/* print the report */
-	retv = sechk_lib_print_modules_report(lib);
-	if (retv) {
+	if (sechk_lib_print_modules_report(lib))
 		goto exit_err;
-	}
 
 exit:
 #ifdef LIBSEFS
 	free(fcpath);
 #endif
+	free(minsev);
 	free(prof_name);
 	free(polpath);
 	free(modname);
@@ -316,6 +297,7 @@ exit_err:
 #ifdef LIBSEFS
 	free(fcpath);
 #endif
+	free(minsev);
 	free(prof_name);
 	free(polpath);
 	free(modname);
