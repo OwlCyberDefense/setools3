@@ -37,7 +37,7 @@
 /* NOTE: none is only valid in profiles */
 #define SECHK_OUT_NONE    0x00
 #define SECHK_OUT_QUIET   0x20
-#define SECHK_OUT_SHORT (SECHK_OUT_STATS|SECHK_OUT_LIST)
+#define SECHK_OUT_SHORT   (SECHK_OUT_STATS|SECHK_OUT_LIST)
 #define SECHK_OUT_VERBOSE (SECHK_OUT_STATS|SECHK_OUT_PROOF)
 
 /* module results proof element */
@@ -117,6 +117,7 @@ typedef struct sechk_lib {
 	unsigned char	outputformat;
 	char		*selinux_config_path;
 	char		*policy_path;         /* policy filename */
+	const char      *minsev;
 } sechk_lib_t;
 
 typedef struct sechk_module_name_reg {
@@ -188,6 +189,7 @@ int sechk_get_installed_profile_names(char ***names, int *num_profiles);
 bool_t sechk_lib_check_requirement(sechk_name_value_t *req, sechk_lib_t *lib);
 bool_t sechk_lib_check_dependency(sechk_name_value_t *dep, sechk_lib_t *lib);
 int sechk_lib_set_outputformat(unsigned char out, sechk_lib_t *lib);
+int sechk_lib_set_minsev(sechk_lib_t *lib, const char *sev);
 sechk_item_t *sechk_result_get_item(int item_id, unsigned char item_type, sechk_result_t *res);
 sechk_proof_t *sechk_proof_copy(sechk_proof_t *orig);
 bool_t sechk_item_has_proof(int idx, unsigned char type, sechk_item_t *item);
