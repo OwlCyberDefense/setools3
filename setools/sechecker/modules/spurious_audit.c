@@ -66,7 +66,7 @@ int spurious_audit_register(sechk_lib_t *lib)
 "   none\n"
 "Module options:\n"
 "   none\n";
-
+	mod->severity = SECHK_SEV_LOW;
 	/* register functions */
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -274,7 +274,6 @@ int spurious_audit_run(sechk_module_t *mod, policy_t *policy)
 							}
 							proof->idx = -1;
 							proof->type = POL_LIST_AV_ACC;
-							proof->severity = SECHK_SEV_MOD;
 							tmp = re_render_av_rule(!is_binary_policy(policy), i, 1, policy);
 							if (!tmp) {
 								fprintf(stderr, "Error: out of memory\n");
@@ -312,7 +311,6 @@ int spurious_audit_run(sechk_module_t *mod, policy_t *policy)
 							proof = sechk_proof_new();
 							proof->idx = -1;
 							proof->type = POL_LIST_AV_ACC;
-							proof->severity = SECHK_SEV_LOW;
 							retv = 0;
 							tmp = (char*)calloc(3*LIST_SZ, sizeof(char));
 							if (!tmp) {
@@ -387,10 +385,6 @@ int spurious_audit_run(sechk_module_t *mod, policy_t *policy)
 								}
 								proof->idx = hash_rule->rule;
 								proof->type = POL_LIST_AV_ACC;
-								if (retv == num_perms)
-									proof->severity = SECHK_SEV_MOD;
-								else
-									proof->severity = SECHK_SEV_LOW;
 								tmp = re_render_av_rule(!is_binary_policy(policy), hash_rule->rule, 0, policy);
 								proof->text = (char*)calloc(15+strlen(tmp), sizeof(char));
 								if (!proof->text) {
@@ -523,7 +517,6 @@ int spurious_audit_print_output(sechk_module_t *mod, policy_t *policy)
 		printf("\n");
 		for (item = mod->result->items; item; item = item->next) {
 			printf("%s\n", re_render_av_rule(!is_binary_policy(policy), item->item_id, 1, policy));/* TODO: item name */
-			printf(" - severity: %s\n", sechk_item_sev(item));
 			for (proof = item->proof; proof; proof = proof->next) {
 				printf("\t%s\n", proof->text);
 			}

@@ -61,7 +61,7 @@ int users_wo_roles_register(sechk_lib_t *lib)
 "    none\n"
 "  Module options:\n"
 "    none\n";
-	
+	mod->severity = SECHK_SEV_LOW;
 	/* register functions */
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -226,7 +226,6 @@ int users_wo_roles_run(sechk_module_t *mod, policy_t *policy)
 		proof->idx = i;
 		proof->type = POL_LIST_USERS;
 		proof->text = (char*)calloc(strlen("user  has no roles")+strlen(policy->users[i].name)+1, sizeof(char));
-		proof->severity = SECHK_SEV_LOW;
 		sprintf(proof->text, "user %s has no roles", policy->users[i].name);
 		item = sechk_item_new();
 		if (!item) {
@@ -333,7 +332,6 @@ int users_wo_roles_print_output(sechk_module_t *mod, policy_t *policy)
 		printf("\n");
 		for (item = mod->result->items; item; item = item->next) {
 			printf("%s", policy->users[item->item_id].name);
-			printf(" - severity: %s\n", sechk_item_sev(item));
 			for (proof = item->proof; proof; proof = proof->next) {
 				printf("\t%s\n", proof->text);
 			}

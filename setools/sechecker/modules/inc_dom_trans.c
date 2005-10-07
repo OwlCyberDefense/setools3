@@ -66,7 +66,7 @@ int inc_dom_trans_register(sechk_lib_t *lib)
 "   none\n"
 "Module options:\n"
 "   none\n";
-
+	mod->severity = SECHK_SEV_MED;
 	/* register functions */
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -239,7 +239,6 @@ static sechk_proof_t *inc_dom_trans_generate_proof(int src, int exec, int trx, u
 
 	proof->idx = (int) flags;
 	proof->type = 0xFF;
-	proof->severity = SECHK_SEV_MOD;
 
 	if (flags & SECHK_INC_DOM_TRANS_HAS_TT) {
 		snprintf(buff, sizeof(buff)-1, "%s", policy->types[src].name);
@@ -754,7 +753,6 @@ int inc_dom_trans_print_output(sechk_module_t *mod, policy_t *policy)
 		printf("\n");
 		for (item = mod->result->items; item; item = item->next) {
 			printf("%s", policy->types[item->item_id].name);
-			printf(" - severity: %s\n", sechk_item_sev(item));
 			for (proof = item->proof; proof; proof = proof->next) {
 				printf("%s\n", proof->text);
 			}

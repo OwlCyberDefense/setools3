@@ -59,7 +59,7 @@ int rules_exp_nothing_register(sechk_lib_t *lib)
 "   none\n"
 "Module options:\n"
 "   none\n";
-
+	mod->severity = SECHK_SEV_MED;
 	/* assign requirements */
 	mod->requirements = sechk_name_value_prepend(NULL,"policy_type","source");
 
@@ -299,7 +299,6 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 					proof->text = strdup(buff);
 					if (!proof->text)
 						goto rules_exp_nothing_run_fail;
-					proof->severity = SECHK_SEV_MOD;
 					proof->next = item->proof;
 					item->proof = proof;
 					proof = NULL;
@@ -331,7 +330,6 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 					proof->text = strdup(buff);
 					if (!proof->text)
 						goto rules_exp_nothing_run_fail;
-					proof->severity = SECHK_SEV_MOD;
 					proof->next = item->proof;
 					item->proof = proof;
 					proof = NULL;
@@ -357,7 +355,6 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 			proof->text = strdup(buff);
 			if (!proof->text)
 				goto rules_exp_nothing_run_fail;
-			proof->severity = SECHK_SEV_NONE;
 			proof->next = item->proof;
 			item->proof = proof;
 			proof = NULL;
@@ -400,7 +397,6 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 					proof->text = strdup(buff);
 					if (!proof->text)
 						goto rules_exp_nothing_run_fail;
-					proof->severity = SECHK_SEV_MOD;
 					proof->next = item->proof;
 					item->proof = proof;
 					proof = NULL;
@@ -432,7 +428,6 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 					proof->text = strdup(buff);
 					if (!proof->text)
 						goto rules_exp_nothing_run_fail;
-					proof->severity = SECHK_SEV_MOD;
 					proof->next = item->proof;
 					item->proof = proof;
 					proof = NULL;
@@ -458,7 +453,6 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 			proof->text = strdup(buff);
 			if (!proof->text)
 				goto rules_exp_nothing_run_fail;
-			proof->severity = SECHK_SEV_NONE;
 			proof->next = item->proof;
 			item->proof = proof;
 			proof = NULL;
@@ -500,7 +494,6 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 					proof->text = strdup(buff);
 					if (!proof->text)
 						goto rules_exp_nothing_run_fail;
-					proof->severity = SECHK_SEV_MOD;
 					proof->next = item->proof;
 					item->proof = proof;
 					proof = NULL;
@@ -532,7 +525,6 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 					proof->text = strdup(buff);
 					if (!proof->text)
 						goto rules_exp_nothing_run_fail;
-					proof->severity = SECHK_SEV_MOD;
 					proof->next = item->proof;
 					item->proof = proof;
 					proof = NULL;
@@ -558,7 +550,6 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 			proof->text = strdup(buff);
 			if (!proof->text)
 				goto rules_exp_nothing_run_fail;
-			proof->severity = SECHK_SEV_NONE;
 			proof->next = item->proof;
 			item->proof = proof;
 			proof = NULL;
@@ -605,7 +596,6 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 					proof->text = strdup(buff);
 					if (!proof->text)
 						goto rules_exp_nothing_run_fail;
-					proof->severity = SECHK_SEV_MOD;
 					proof->next = item->proof;
 					item->proof = proof;
 					proof = NULL;
@@ -631,7 +621,6 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 			proof->text = strdup(buff);
 			if (!proof->text)
 				goto rules_exp_nothing_run_fail;
-			proof->severity = SECHK_SEV_NONE;
 			proof->next = item->proof;
 			item->proof = proof;
 			proof = NULL;
@@ -668,7 +657,6 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 					proof->text = strdup(buff);
 					if (!proof->text)
 						goto rules_exp_nothing_run_fail;
-					proof->severity = SECHK_SEV_MOD;
 					proof->next = item->proof;
 					item->proof = proof;
 					proof = NULL;
@@ -700,7 +688,6 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 					proof->text = strdup(buff);
 					if (!proof->text)
 						goto rules_exp_nothing_run_fail;
-					proof->severity = SECHK_SEV_MOD;
 					proof->next = item->proof;
 					item->proof = proof;
 					proof = NULL;
@@ -726,7 +713,6 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 			proof->text = strdup(buff);
 			if (!proof->text)
 				goto rules_exp_nothing_run_fail;
-			proof->severity = SECHK_SEV_NONE;
 			proof->next = item->proof;
 			item->proof = proof;
 			proof = NULL;
@@ -883,7 +869,6 @@ int rules_exp_nothing_print_output(sechk_module_t *mod, policy_t *policy)
 				fprintf(stderr, "Error: invalid rule\n");
 				return -1;
 			}
-			printf(" - severity: %s\n", sechk_item_sev(item));
 			for (proof = item->proof; proof; proof = proof->next) {
 				printf("\t%s\n", proof->text);
 			}
