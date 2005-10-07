@@ -58,7 +58,7 @@ int roles_wo_types_register(sechk_lib_t *lib)
 "   none\n"
 "Module options:\n"
 "   none\n";
-
+	mod->severity = SECHK_SEV_LOW;
 	/* register functions */
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -222,7 +222,6 @@ int roles_wo_types_run(sechk_module_t *mod, policy_t *policy)
 		}
 		proof->idx = i;
 		proof->type = POL_LIST_ROLES;
-		proof->severity = SECHK_SEV_LOW;
 		proof->text = (char*)calloc(strlen("role  has no types")+strlen(policy->roles[i].name)+1, sizeof(char));
 		sprintf(proof->text, "role %s has no types", policy->roles[i].name);
 		item = sechk_item_new();
@@ -330,7 +329,6 @@ int roles_wo_types_print_output(sechk_module_t *mod, policy_t *policy)
 		printf("\n");
 		for (item = mod->result->items; item; item = item->next) {
 			printf("%s", policy->roles[item->item_id].name);
-			printf(" - severity: %s\n", sechk_item_sev(item));
 			for (proof = item->proof; proof; proof = proof->next) {
 				printf("\t%s\n", proof->text);
 			}

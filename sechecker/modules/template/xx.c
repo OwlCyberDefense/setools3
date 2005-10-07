@@ -66,7 +66,7 @@ int xx_register(sechk_lib_t *lib)
 "    none\n"
 "  Module options:\n"
 "    none\n";
-
+	mod->severity = "TODO: set proper severity";
 	/* assign requirements */
 	mod->requirements = sechk_name_value_new_prepend(NULL,"","");
 	mod->requirements = sechk_name_value_new_prepend(mod->requirements,"","");

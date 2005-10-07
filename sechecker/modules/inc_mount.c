@@ -62,7 +62,7 @@ int inc_mount_register(sechk_lib_t *lib)
 "   none\n"
 "Module options:\n"
 "   none\n";
-
+	mod->severity = SECHK_SEV_MED;
 	/* register functions */
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -304,7 +304,6 @@ int inc_mount_run(sechk_module_t *mod, policy_t *policy)
 								fprintf(stderr, "Error: out of memory\n");
 								goto inc_mount_run_fail;
 							}
-							proof->severity = SECHK_SEV_LOW;
 							proof->next = item->proof;
 							item->proof = proof;
 						}
@@ -353,7 +352,6 @@ int inc_mount_run(sechk_module_t *mod, policy_t *policy)
 					fprintf(stderr, "Error: out of memory\n");
 					goto inc_mount_run_fail;
 				}
-				proof->severity = SECHK_SEV_LOW;
 				proof->next = item->proof;
 				item->proof = proof;
 			}
@@ -481,7 +479,6 @@ int inc_mount_print_output(sechk_module_t *mod, policy_t *policy)
 		printf("\n");
 		for (item = mod->result->items; item; item = item->next) {
 			printf("%s", policy->types[item->item_id].name);
-			printf(" - severity: %s\n", sechk_item_sev(item));
 			for (proof = item->proof; proof; proof = proof->next) {
 				printf("\t%s\n", proof->text);
 			}

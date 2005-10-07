@@ -27,8 +27,6 @@
 #include <selinux/selinux.h>
 #endif
 
-static const char *sechk_severities[] = { "None", "Low", "Medium", "High" };
-
 /* exported functions */
 sechk_lib_t *sechk_lib_new()
 {
@@ -596,7 +594,7 @@ int sechk_lib_print_modules_report(sechk_lib_t *lib)
 		if (lib->modules[i].outputformat == SECHK_OUT_NONE)
 			lib->modules[i].outputformat = SECHK_OUT_SHORT;
 		assert(lib->modules[i].name);
-		printf("\nModule name: %s\n%s\n", lib->modules[i].name, lib->modules[i].detailed_description);
+		printf("\nModule name: %s\tSeverity: %s\n%s\n", lib->modules[i].name, lib->modules[i].severity, lib->modules[i].detailed_description);
 		print_fn = (sechk_run_fn_t)sechk_lib_get_module_function(lib->modules[i].name, SECHK_MOD_FN_PRINT, lib);
 		if (!print_fn) {
 			fprintf(stderr, "Error: could not get print function for module %s\n", lib->modules[i].name);
@@ -753,23 +751,6 @@ int sechk_lib_set_outputformat(unsigned char out, sechk_lib_t *lib)
 	return 0;
 }
 
-/* sechk_item_sev calculates the severity level of an item based on the proof */
-const char *sechk_item_sev(sechk_item_t *item)
-{
-	sechk_proof_t *proof = NULL;
-	int sev = SECHK_SEV_NONE;
-
-	if (item) {
-		/* the severity of an item is equal to
-		 * the highest severity among its proof elements */
-		for (proof = item->proof; proof; proof = proof->next)
-			if (proof->severity > sev)
-				sev = proof->severity;
-	}
-	return sechk_severities[sev];
-
-}
-
 sechk_item_t *sechk_result_get_item(int item_id, unsigned char item_type, sechk_result_t *res)
 {
 	sechk_item_t *item = NULL;
@@ -818,7 +799,6 @@ sechk_proof_t *sechk_proof_copy(sechk_proof_t *orig)
 		return NULL;
 	}
 	copy->xml_out = NULL; /* TODO: do xml string copy here */
-	copy->severity = orig->severity;
 	copy->next = NULL; /* do not link to original list */
 
 	return copy;
