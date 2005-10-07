@@ -27,7 +27,65 @@
 #include <selinux/selinux.h>
 #endif
 
-/* exported functions */
+static int sechk_lib_compare_sev(const char *a, const char *b)
+{
+	int aval, bval;
+	
+	if (a == NULL || b == NULL) {
+		assert(FALSE);
+		return -1;
+	}
+
+	if (strcmp(a, SECHK_SEV_NONE) == 0)
+		aval = 0;
+	else if (strcmp(a, SECHK_SEV_LOW) == 0)
+		aval = 1;
+	else if (strcmp(a, SECHK_SEV_MED) == 0)
+		aval = 2;
+	else if (strcmp(a, SECHK_SEV_HIGH) == 0)
+		aval = 3;
+	else {
+		assert(FALSE);
+		return -1;
+	}
+
+	if (strcmp(b, SECHK_SEV_NONE) == 0)
+		bval = 0;
+	else if (strcmp(b, SECHK_SEV_LOW) == 0)
+		bval = 1;
+	else if (strcmp(b, SECHK_SEV_MED) == 0)
+		bval = 2;
+	else if (strcmp(b, SECHK_SEV_HIGH) == 0)
+		bval = 3;
+	else {
+		assert(FALSE);
+		return -1;
+	}
+	if (aval == bval)
+		return 0;
+	return aval < bval ? -1 : 1;
+}
+
+int sechk_lib_set_minsev(sechk_lib_t *lib, const char *minsev)
+{
+	if (lib == NULL || minsev == NULL) {
+		assert(FALSE);
+		return -1;
+	}
+	
+	if (strcmp(minsev, SECHK_SEV_LOW) == 0)
+		lib->minsev = SECHK_SEV_LOW;
+	else if (strcmp(minsev, SECHK_SEV_MED) == 0)
+		lib->minsev = SECHK_SEV_MED;
+	else if (strcmp(minsev, SECHK_SEV_HIGH) == 0)
+		lib->minsev = SECHK_SEV_HIGH;
+	else {
+		fprintf(stderr, "Error: invalid severity\n");
+		return -1;
+	}
+	return 0;
+}
+
 sechk_lib_t *sechk_lib_new()
 {
 	sechk_lib_t *lib = NULL;
@@ -55,6 +113,7 @@ sechk_lib_t *sechk_lib_new()
 
 	/* set the default output format */
 	lib->outputformat = SECHK_OUT_SHORT;
+	lib->minsev = SECHK_SEV_LOW;
 
 	/* register modules */
 	if ((retv = sechk_lib_register_modules(reg_list, lib)) != 0)
@@ -552,8 +611,11 @@ int sechk_lib_run_modules(sechk_lib_t *lib)
 	}
 
 	for (i = 0; i < lib->num_modules; i++) {
-		/* if module is "off" do not run unless requested by another module */
+		/* if module is "off" do not run */
 		if (!lib->module_selection[i])
+			continue;
+		/* if module is below the minsev do not run */
+		if (lib->minsev && sechk_lib_compare_sev(lib->modules[i].severity, lib->minsev) < 0)
 			continue;
 		assert(lib->modules[i].name);
 		run_fn = (sechk_run_fn_t)sechk_lib_get_module_function(lib->modules[i].name, SECHK_MOD_FN_RUN, lib);
@@ -590,6 +652,9 @@ int sechk_lib_print_modules_report(sechk_lib_t *lib)
 	for (i = 0; i < lib->num_modules; i++) {
 		/* if module is "off" or its output format is quiet continue */
 		if (!lib->module_selection[i] || lib->modules[i].outputformat & SECHK_OUT_QUIET)
+			continue;
+		/* if module is below the minsev do not print */
+		if (lib->minsev && sechk_lib_compare_sev(lib->modules[i].severity, lib->minsev) < 0)
 			continue;
 		if (lib->modules[i].outputformat == SECHK_OUT_NONE)
 			lib->modules[i].outputformat = SECHK_OUT_SHORT;
