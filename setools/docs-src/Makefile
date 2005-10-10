@@ -3,7 +3,7 @@ TOP-DOCS = INSTALL KNOWN-BUGS README
 INSTALL_DOCS = KNOWN-BUGS README apol/*.txt \
 	       seaudit/seaudit_help.txt
 
-docs: apol-doc seaudit-doc top-docs sediff-doc
+docs: apol-doc seaudit-doc top-docs sediff-doc sechecker-doc
 
 top-docs:
 	for file in $(TOP-DOCS); do \
@@ -11,33 +11,33 @@ top-docs:
 		cat $$file.in | sed -e 's/RELEASE_VERSION/$(shell cat ../VERSION)/g' | \
 		sed -e 's/MOD_DATE/$(shell date '+%B %d, %G')/g' > ../$$file; \
 	done 
-	
+
 apol-doc: 
 	rm -f ../apol/*.txt; \
 	cat apol_help_text.in | \
 	sed -e 's/APOL_GUI_VERSION/$(shell cat ../apol/VERSION)/g' | \
 	sed -e 's/MOD_DATE/$(shell date '+%B %d, %G')/g' > ../apol/apol_help.txt \
-	
+
 	cat dta_help.in | \
 	sed -e 's/APOL_GUI_VERSION/$(shell cat ../apol/VERSION)/g' | \
 	sed -e 's/MOD_DATE/$(shell date '+%B %d, %G')/g' > ../apol/dta_help.txt \
-	
+
 	cat iflow_help.in | \
 	sed -e 's/APOL_GUI_VERSION/$(shell cat ../apol/VERSION)/g' | \
 	sed -e 's/MOD_DATE/$(shell date '+%B %d, %G')/g' > ../apol/iflow_help.txt
-	
+
 	cat obj_perms_help.in | \
 	sed -e 's/APOL_GUI_VERSION/$(shell cat ../apol/VERSION)/g' | \
 	sed -e 's/MOD_DATE/$(shell date '+%B %d, %G')/g' > ../apol/obj_perms_help.txt
-	
+
 	cat types_relation_help.in | \
 	sed -e 's/APOL_GUI_VERSION/$(shell cat ../apol/VERSION)/g' | \
 	sed -e 's/MOD_DATE/$(shell date '+%B %d, %G')/g' > ../apol/types_relation_help.txt
-	
+
 	cat file_relabel_help.in | \
 	sed -e 's/APOL_GUI_VERSION/$(shell cat ../apol/VERSION)/g' | \
 	sed -e 's/MOD_DATE/$(shell date '+%B %d, %G')/g' > ../apol/file_relabel_help.txt
-	
+
 	cat flow_assertion_help.in | \
 	sed -e 's/APOL_GUI_VERSION/$(shell cat ../apol/VERSION)/g' | \
 	sed -e 's/MOD_DATE/$(shell date '+%B %d, %G')/g' > ../apol/flow_assertion_help.txt
@@ -47,12 +47,18 @@ seaudit-doc:
 	cat seaudit_help_text.in | \
 	sed -e 's/SEAUDIT_GUI_VERSION/$(shell cat ../seaudit/SEAUDIT_GUI_VERSION)/g' | \
 	sed -e 's/MOD_DATE/$(shell date '+%B %d, %G')/g' > ../seaudit/seaudit_help.txt
-	
+
 sediff-doc: 
 	rm -f ../sediff/*.txt; \
 	cat sediff_help_text.in | \
 	sed -e 's/SEDIFF_GUI_VERSION/$(shell cat ../sediff/SEDIFF_GUI_VERSION)/g' | \
 	sed -e 's/MOD_DATE/$(shell date '+%B %d, %G')/g' > ../sediff/sediff_help.txt
+
+sechecker-doc:
+	rm -f ../sechecker/*.txt; \
+	cat sechecker_help_text.in | \
+	sed -e 's/SECHECKER_VERSION/$(shell cat ../sechecker/VERSION)/g' | \
+	sed -e 's/MOD_DATE/$(shell date '+%B %d, %G')/g' > ../sechecker/sechecker_help.txt \
 
 remove-docs :
 	rm -f ../apol/*.txt; \
@@ -66,4 +72,4 @@ install:
 	for file in $(INSTALL_DOCS); do \
 		install -m 644 $$file ${INSTALL_HELPDIR}; \
 	done 
-	 
+

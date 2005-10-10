@@ -1,6 +1,6 @@
 Semantic Policy Difference Tool for Security Enhanced Linux
 sediff, Graphical User Interface version 1.1.1
-May 17, 2005
+October 03, 2005
 selinux@tresys.com
 
 Overview:
@@ -15,10 +15,8 @@ Sediff currently compares only the following policy elements:
         + roles
         + users
         + booleans
-        + type enforcement rules (allow, type_transitions)
+        + type enforcement rules (allow, type_transitions, etc.)
         + role allow rules
-        + role transition rules
-        + conditionals
         
 Other elements will be added as the core libraries support them.
 
@@ -39,7 +37,7 @@ Sediff can be run from command line or as a GUI. For command line help, run "sed
 
 Understanding Sediff's Results: 
 ==============================
-After differing two policies, the GUI shows the policy areas compared in the left hand frame. Besides each policy area is a number representing the total number of differences in that area. As a general rule, for each policy area, the righthand window shows the detailed results. 
+After differing two policies, the GUI shows the policy areas compared in the left hand frame. Besides each policy area is a number representing the total number of differences in that area. As a general rule, for each policy area, the righhand window shows the detailed results. 
 
 NOTE: All differences are shown from the perspective of the first policy given (i.e., policy 1).  There are three types of differences shown:
 
@@ -52,29 +50,33 @@ Supported Policy Areas Differences:
 ==================================
 Below is an explanation of the difference for each supported policy area:
 
-   Classes:
-   -------
-   Classes can be added, removed, or changed. Changed means that the permissions associated with the classes have changed between the two policies.
+   Classes and Permissions:
+   -----------------------
+   This area examines three aspects of a policy: class definitions, common permission definitions, and permissions:
+   
+        Classes:
+        -------
+        Classes can be added, removed, or changed. Changed means that the permissions associated with the classes have changed between the two policies.
         
-   Permissions:
-   -----------
-   Permissions can either be added or removed, they cannot be changed.
+        Common Permissions:
+        -------------------
+        Common permissions are compared much like classes. They can be added, removed or changed, where change means that the permissions associated with the common permission has changed.
+        
+        Permissions:
+        -----------
+        Permissions can either be added or removed, they cannot be changed.
 
-   Common Permissions:
-   -------------------
-   Common permissions are compared much like classes. They can be added, removed or changed, where change means that the permissions associated with the common permission has changed.
-        
    Types:
    -----
    Types can be added, removed, or changed. Change means that the attributes associated with a type are different between the two policies. Attributes can be added or removed from a type.
 
    Attributes:
    -----------
-   Attributes can be added, removed, changed because a type added in policy 2 was associated with the attribute, changed because a type removed in policy 2 is not associated with the attribute, and changed because a type that exists in both policies was added or removed.    
+   Attributes are compared like types. They can be added, removed, or changed. Change means that the type associated with the attributes are different (types can be added or removed from the attribute).
 
    Roles:
    -----
-   Roles can be added, removed, changed because a type added in policy 2 is added the role, changed because a type removed in policy 2 is removed from the role, and changed because a type that exists in both policies was added or removed.    
+   Roles can be added, removed, or changed. Change means that the types associated with a role are different between the two policies. Types can be added or removed from a role.
    
    Users: 
    ------
@@ -84,24 +86,20 @@ Below is an explanation of the difference for each supported policy area:
    --------
    Booleans can be added, removed, or changed. If you compare a version 15 or earlier policy with a version 16 or later policy. All the booleans will be added/removed (booleans came in version 16). Change means that the default value is different between the two policies.
 
-   Role Allow Rules:
-   ----------------
-   Role allow rules determine if a role is allowed to transition (either explicitly or through a role_transition) to another. Diffing a role allow involves taking the source role and checking to see if there are corresponding rules in the other policy. If there is no rule with this source in the first policy it is an add, likewise if there is none in the second policy it is a remove. If role allows with the same source exist in both policies then the target roles are shown as a change.
-
-   Role Transition Rules:
-   ---------------------
-   Role transition rules are rules that determine what role to transition to when that role acts on a type.  Diffing a role transition rule involves taking the source role and the type, checking to see if this pair exists in the other policy and if it does to see if the target role is the same in both policies. Role transitions can be added and contains only types that exist in both policies, added and contains a type that is new in policy 2, removed and contains only types that exist in both policies, removed and contains a type that is missing in policy 2, and changed.
-
    TE Rules: 
    ---------
    The TE rules areas covers the "meat" of a policy. This area includes AV rules (allow, audit_allow, and dont_audit) and Type rules (type_transitions and type_change). The rule comparison is truly semantic. All issues of redundancy and duplication, as well as indirect access through attributes are resolved. All rules are keyed by the "source-target-class" (STC) triple.  In addition, conditional rules are distinguished from non-conditional rules. Thus, for example, two rules with the same STC will not be compared if one is non-conditional and the other is conditional, or if both are conditional but conditioned on two different conditional expressions. For conditional rules, the conditional expression is compared to ensure that conditional rules are meaningfully compared. In the results pane, conditional rules are indicated by a "T" or "F" (representing the TRUE or FALSE list of a conditional expressions), as well as a rendering of its associated conditional expression.
    
    NOTE: For conditional rules, the default and current values of the booleans are ignored. Conditional expressions are compared as if the booleans are all the same.
    
-   Rules can be added, added because the rule contains a type added in policy 2, removed, removed because the rule contains a type that was removed in policy 2, or changed. Added means the STC triple for that rule is not present in Policy 1, but is in Policy 2. Removed means the STC triple is present in Policy 1, but not in Policy 2. For AV rules, change means that the permissions for the rule are different between the policies. For Type rules, change means that the default type is different between the policies.
+   Rules can be added, removed, or changed. Added means the STC triple for that rule is not present in Policy 1, but is in Policy 2. Removed means the STC triple is present in Policy 1, but not in Policy 2. For AV rules, change means that the permissions for the rule are different between the policies. For Type rules, change means that the default type is different between the policies.
    
    When source policies are compared, hyper-linked line numbers are shown that take you to the source ".conf" file where the rule is defined. If there are more than one source rules that contribute to a STC triple for a given rule, then all source rules are linked.
-      
+
+   RBAC Rules:
+   ----------
+   RBAC includes role allow and role_transition rules. Currently role_transition rules are not supported in sediff. Role allow rules determine if a role is allowed to transition (either explicitly or through a role_transition) to another. Diffing a role allow involves taking the source role and checking to see if there are corresponding rules in the other policy. If there is no rule with this source in the first policy it is an add, likewise if there is none in the second policy it is a remove. If role allows with the same source exist in both policies then the target roles are shown as a change.
+   
    Conditional Expressions:
    -----------------------
    While conditional expressions are compared when analyzing conditional TE rules as described above, sediff does not currently support comparing conditional expressions directly.
