@@ -7,13 +7,13 @@
 INSTALL_PATH	= $(DESTDIR)/usr/share/tcl$(shell env tclsh ../tcl_vars)/.
 
 install:
-	tar -zxvf BWidget-1.4.1.tar.gz
-	mv BWidget-1.4.1 $(INSTALL_PATH)
+	tar -zxvf BWidget-1.7.0.tar.gz
+	mv BWidget-1.7.0 $(INSTALL_PATH)
 
 remove:
-	rm -r $(INSTALL_PATH)/BWidget-1.4.1
+	rm -r $(INSTALL_PATH)/BWidget-1.7.0
 
 clean:
-	rm -Rf BWidget-1.4.1
+	rm -rf BWidget-1.7.0
 
 bare:	clean
