@@ -602,20 +602,23 @@ int sechk_lib_init_modules(sechk_lib_t *lib)
 
 int sechk_lib_run_modules(sechk_lib_t *lib) 
 {
-	int i, retv, rc = 0;
+	int i, retv, num_selected = 0, rc = 0;
 	sechk_run_fn_t run_fn = NULL;
 
 	if (!lib) {
 		fprintf(stderr, "Error: invalid library\n");
 		return -1;
 	}
-
+	for (i = 0; i < lib->num_modules; i++) {
+		if (lib->module_selection[i])
+			num_selected++;
+	}
 	for (i = 0; i < lib->num_modules; i++) {
 		/* if module is "off" do not run */
 		if (!lib->module_selection[i])
 			continue;
-		/* if module is below the minsev do not run */
-		if (lib->minsev && sechk_lib_compare_sev(lib->modules[i].severity, lib->minsev) < 0)
+		/* if module is below the minsev do not run unless its exactly one module */
+		if (lib->minsev && sechk_lib_compare_sev(lib->modules[i].severity, lib->minsev) < 0 && num_selected != 1)
 			continue;
 		assert(lib->modules[i].name);
 		run_fn = (sechk_run_fn_t)sechk_lib_get_module_function(lib->modules[i].name, SECHK_MOD_FN_RUN, lib);
@@ -642,21 +645,25 @@ int sechk_lib_run_modules(sechk_lib_t *lib)
 
 int sechk_lib_print_modules_report(sechk_lib_t *lib)
 {
-	int i, retv, rc = 0;
+	int i, retv, num_selected = 0, rc = 0;
 	sechk_print_output_fn_t print_fn = NULL;
-
+	
 	if (!lib) {
 		fprintf(stderr, "Error: invalid library\n");
 		return -1;
 	}
 	for (i = 0; i < lib->num_modules; i++) {
+		if (lib->module_selection[i])
+			num_selected++;
+	}
+	for (i = 0; i < lib->num_modules; i++) {
 		/* if module is "off" or its output format is quiet continue */
 		if (!lib->module_selection[i] || lib->modules[i].outputformat & SECHK_OUT_QUIET)
 			continue;
-		/* if module is below the minsev do not print */
-		if (lib->minsev && sechk_lib_compare_sev(lib->modules[i].severity, lib->minsev) < 0)
+		/* if module is below the minsev do not print unless its exactly one module */
+		if (lib->minsev && sechk_lib_compare_sev(lib->modules[i].severity, lib->minsev) < 0 && num_selected != 1)
 			continue;
-		if (lib->modules[i].outputformat == SECHK_OUT_NONE)
+	       	if (lib->modules[i].outputformat == SECHK_OUT_NONE)
 			lib->modules[i].outputformat = SECHK_OUT_SHORT;
 		assert(lib->modules[i].name);
 		printf("\nModule name: %s\tSeverity: %s\n%s\n", lib->modules[i].name, lib->modules[i].severity, lib->modules[i].detailed_description);
