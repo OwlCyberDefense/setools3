@@ -3715,6 +3715,7 @@ int add_sensitivity(char *name, name_item_t *aliases, policy_t *policy)
 			fprintf(stderr, "out of memory\n");
 			return -1;
 		}
+		policy->list_sz[POL_LIST_SENSITIVITIES] = sz;
 	}
 
 	new_sens = &(policy->sensitivities[policy->num_sensitivities]);
@@ -3741,6 +3742,7 @@ int add_category(char *name, name_item_t *aliases, policy_t *policy)
 			fprintf(stderr, "out of memory\n");
 			return -1;
 		}
+		policy->list_sz[POL_LIST_CATEGORIES] = sz;
 	}
 
 	new_cat = &(policy->categories[policy->num_categories]);
@@ -3770,6 +3772,7 @@ int add_mls_level(int sens, int *cats, int num_cats, policy_t *policy)
 			fprintf(stderr, "out of memory\n");
 			return -1;
 		}
+		policy->list_sz[POL_LIST_LEVELS] = sz;
 	}
 
 	qsort(cats, num_cats, sizeof(int), &int_compar);
