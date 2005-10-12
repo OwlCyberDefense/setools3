@@ -78,7 +78,6 @@ void usage(const char *program_name, int brief)
 "  -r, --roles      role definitions\n"
 "  -u, --users      user definitions\n"
 "  -b, --booleans   boolean definitions and default values\n"
-/* "  -i, --initialsids initial SIDs (not currently supported)\n" */
 "  -T, --terules    type enforcement rules\n"
 "  -R, --roletrans   role transition rules\n"
 "  -A, --roleallows  role allow rules\n"  
@@ -135,7 +134,7 @@ const char *policy_type(policy_t *p)
 }
 
 
-int print_diff_stats(FILE *fp, ap_single_view_diff_t *svd)
+static int print_diff_stats(FILE *fp, ap_single_view_diff_t *svd)
 {
 	if (fp == NULL || svd == NULL)
 		return -1;
@@ -314,7 +313,7 @@ static int print_rallow_element(FILE *fp,int_a_diff_t *diff,policy_t *policy,boo
 
 /* print out a difference, in this case we consider everything in the p1 diff to be removed
    and everything in the p2 to be added, and everything in both to be changed*/
-int print_iad(FILE *fp, int id, ap_single_iad_diff_t *siad,policy_t *p_old,policy_t *p_new)
+static int print_iad(FILE *fp, int id, ap_single_iad_diff_t *siad,policy_t *p_old,policy_t *p_new)
 {
 	get_iad_name_fn_t get_name, get_a_name;
 	char *name, *descrp = NULL, *adescrp = NULL;
@@ -493,7 +492,7 @@ int print_iad(FILE *fp, int id, ap_single_iad_diff_t *siad,policy_t *p_old,polic
 
 /* print out a difference, in this case we consider everything in the p1 diff to be removed
    and everything in the p2 to be added, and everything in both to be changed*/
-int print_rallow(FILE *fp, int id, ap_single_iad_diff_t *siad,
+static int print_rallow(FILE *fp, int id, ap_single_iad_diff_t *siad,
 		     policy_t *p1, policy_t *p2)
 {
 	get_iad_name_fn_t get_name, get_a_name;
@@ -596,7 +595,7 @@ int print_rallow(FILE *fp, int id, ap_single_iad_diff_t *siad,
 
 }
 
-int print_type_diffs(FILE *fp, ap_single_view_diff_t *svd)
+static int print_type_diffs(FILE *fp, ap_single_view_diff_t *svd)
 {
 	int rt;
 	if(svd == NULL || fp == NULL)
@@ -610,7 +609,7 @@ int print_type_diffs(FILE *fp, ap_single_view_diff_t *svd)
 	return 0;
 }
 
-int print_attrib_diffs(FILE *fp, ap_single_view_diff_t *svd)
+static int print_attrib_diffs(FILE *fp, ap_single_view_diff_t *svd)
 {
 	int rt;
 	
@@ -625,7 +624,7 @@ int print_attrib_diffs(FILE *fp, ap_single_view_diff_t *svd)
 	return 0;
 }
 
-int print_role_diffs(FILE *fp, ap_single_view_diff_t *svd)
+static int print_role_diffs(FILE *fp, ap_single_view_diff_t *svd)
 {
 	int rt;
 	
@@ -640,7 +639,7 @@ int print_role_diffs(FILE *fp, ap_single_view_diff_t *svd)
 	return 0;
 }
 
-int print_rallows_diffs(FILE *fp, ap_single_iad_diff_t *siad,policy_t *p1,policy_t *p2)
+static int print_rallows_diffs(FILE *fp, ap_single_iad_diff_t *siad,policy_t *p1,policy_t *p2)
 {
 	int rt;
 	
@@ -655,7 +654,7 @@ int print_rallows_diffs(FILE *fp, ap_single_iad_diff_t *siad,policy_t *p1,policy
 	return 0;
 }
 
-int print_user_diffs(FILE *fp, ap_single_view_diff_t *svd)
+static int print_user_diffs(FILE *fp, ap_single_view_diff_t *svd)
 {
 	int rt;
 	if(svd == NULL || fp == NULL)
@@ -795,7 +794,7 @@ static int print_rtrans_diffs(FILE *fp, ap_single_rtrans_diff_t *srd, policy_t *
 
 }
 
-int print_boolean_diffs(FILE *fp, ap_single_bool_diff_t *sbd, policy_t *policy_old, policy_t *policy_new)
+static int print_boolean_diffs(FILE *fp, ap_single_bool_diff_t *sbd, policy_t *policy_old, policy_t *policy_new)
 {
 	int rt,i;
 	char *name = NULL;
@@ -854,7 +853,7 @@ int print_boolean_diffs(FILE *fp, ap_single_bool_diff_t *sbd, policy_t *policy_o
 	return 0;
 }
 
-int print_classes_diffs(FILE *fp, ap_single_view_diff_t *svd)
+static int print_classes_diffs(FILE *fp, ap_single_view_diff_t *svd)
 {
 	int rt;
 	if(svd == NULL || fp == NULL)
@@ -868,7 +867,7 @@ int print_classes_diffs(FILE *fp, ap_single_view_diff_t *svd)
 	return 0;	
 }
 
-int print_common_perms_diffs(FILE *fp, ap_single_view_diff_t *svd)
+static int print_common_perms_diffs(FILE *fp, ap_single_view_diff_t *svd)
 {
 	int rt;
 	if(svd == NULL || fp == NULL)
@@ -882,7 +881,7 @@ int print_common_perms_diffs(FILE *fp, ap_single_view_diff_t *svd)
 	return 0;	
 }
 
-int print_perms_diffs(FILE *fp, ap_single_perm_diff_t *spd, policy_t *policy_old, policy_t *policy_new)
+static int print_perms_diffs(FILE *fp, ap_single_perm_diff_t *spd, policy_t *policy_old, policy_t *policy_new)
 {
 	int rt, i;
 	char *name;
@@ -966,7 +965,7 @@ static int print_te_rule(FILE *fp,avh_node_t *cur, policy_t *policy, const char 
 	return 0;
 }
 
-int print_te_diffs(FILE *fp, ap_single_te_diff_t *sted,policy_t *policy1,policy_t *policy2,
+static int print_te_diffs(FILE *fp, ap_single_te_diff_t *sted,policy_t *policy1,policy_t *policy2,
 		   bool_t showconds)
 {
 	int i,j;
@@ -1065,20 +1064,17 @@ int print_te_diffs(FILE *fp, ap_single_te_diff_t *sted,policy_t *policy1,policy_
 
 }
 
-static int print_cond_diffs(FILE *fp, ap_single_cond_diff_t *scd,policy_t *policy_old,policy_t *policy_new)
+static int print_cond_diffs(FILE *fp, ap_single_cond_diff_t *scd, policy_t *policy_old, policy_t *policy_new)
 {
 	char *rule = NULL;
 	int i;
 
-
-	if(scd == NULL || fp == NULL)
+	if(scd == NULL || fp == NULL || policy_old == NULL || policy_new == NULL) {
 		goto print_cond_error;
+	}
 
-
-	fprintf(fp, "Conditionals (%d Added, %d Removed, %d Changed)\n",scd->num_add,scd->num_rem,
+	fprintf(fp, "Conditionals (%d Added, %d Removed, %d Changed)\n", scd->num_add,scd->num_rem,
 			scd->num_chg);
-
-
 	/* print the header */
 	fprintf(fp, "\tAdded Conditionals: %d\n",scd->num_add);
 	for (i = 0;i < scd->num_add;i++) {
@@ -1091,7 +1087,6 @@ static int print_cond_diffs(FILE *fp, ap_single_cond_diff_t *scd,policy_t *polic
 		fprintf(fp,"\t\tFALSE list:\n");	    		
 		print_te_diffs(fp, scd->add[i].false_list, policy_old,policy_new,FALSE);
 	}
-
 	fprintf(fp, "\tRemoved Conditionals: %d\n",scd->num_rem);
 	for (i = 0;i < scd->num_rem;i++) {
 		/* print the conditional */
@@ -1102,7 +1097,6 @@ static int print_cond_diffs(FILE *fp, ap_single_cond_diff_t *scd,policy_t *polic
 		print_te_diffs(fp, scd->rem[i].true_list, policy_old,policy_new,FALSE);
 		fprintf(fp,"\t\tFALSE list:\n");	    		
 		print_te_diffs(fp, scd->rem[i].false_list, policy_old,policy_new,FALSE);
-			
 	}
 	/* changes */
 	fprintf(fp, "\tChanged Conditionals: %d\n",scd->num_chg);
@@ -1191,7 +1185,8 @@ int main (int argc, char **argv)
 	  		break;
 	  	case 'C': /* conditionals */
 	  		opts |= POLOPT_COND_POLICY;
-	  		conds = 1;
+			opts |= POLOPT_AV_RULES;
+			conds = 1;
 	  		break;
 	  	case 'h': /* help */
 	  		usage(argv[0], 0);
@@ -1211,7 +1206,7 @@ int main (int argc, char **argv)
 	}
 
 	/* if no options, then show stats */
-	if(classes + bools + types + roles + users + isids + terules + rbac + conds + stats < 1) {
+	if(classes + bools + types + roles + users + isids + terules + rbac + conds + stats + attributes + terules + rallows + rtrans < 1) {
 		opts = POLOPT_ALL;
 		all = 1;
 	}
@@ -1286,7 +1281,6 @@ int main (int argc, char **argv)
 	if (svd == NULL) {
 		printf("Problem differentiating policies\n");
 		exit(1);
-	
 	}
 	diff = svd->diff;
 	
@@ -1334,7 +1328,7 @@ int main (int argc, char **argv)
 		print_boolean_diffs(stdout, svd->bools,svd->diff->p1,svd->diff->p2);
 		printf("\n");
 	}
-	if ((rallows || all) && !(quiet && (diff->diff1->num_role_allow == 0 && diff->diff2->num_role_allow == 0))){
+	if((rallows || all) && !(quiet && (diff->diff1->num_role_allow == 0 && diff->diff2->num_role_allow == 0))){
 		print_rallows_diffs(stdout, svd->rallows, svd->diff->p1, svd->diff->p2);
 		printf("\n");
 	}
@@ -1343,19 +1337,21 @@ int main (int argc, char **argv)
 		printf("\n");
 	}
 	if((terules || all) && !(quiet && (diff->diff1->te.num == 0 && diff->diff2->te.num == 0))) {
-		print_te_diffs(stdout,svd->te,svd->diff->p1,svd->diff->p2,TRUE);
+		print_te_diffs(stdout, svd->te, svd->diff->p1, svd->diff->p2, TRUE);
 		printf("\n");
 	}
 	if((conds || all) && !(quiet && (diff->diff1->num_cond_exprs == 0 && diff->diff2->num_cond_exprs == 0))) {
-		print_cond_diffs(stdout,svd->conds,svd->diff->p1,svd->diff->p2);
+		print_cond_diffs(stdout, svd->conds, svd->diff->p1, svd->diff->p2);
 		printf("\n");
-	}
+	} 
 	if((stats || all) && !quiet) {
 		print_diff_stats(stdout, svd);
 		printf("\n");
 	}
 
 	ap_single_view_diff_destroy(svd);
+	close_policy(p1);
+	close_policy(p2);
 	exit(0);
 }
 
