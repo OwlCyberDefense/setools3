@@ -35,7 +35,7 @@ static struct option const longopts[] =
 	{"verbose", no_argument, NULL, 'v'},
 	{"profile", required_argument, NULL, 'p'},
 	{"policy", required_argument, NULL, 'P'},
-#ifdef LLIBSEFS
+#ifdef LIBSEFS
 	{"fcfile", required_argument, NULL, 'c'},
 #endif
 	{"module", required_argument, NULL, 'm'},
