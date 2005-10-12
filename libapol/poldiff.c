@@ -2200,7 +2200,6 @@ static int ap_new_single_te_diff(ap_single_view_diff_t *svd, apol_diff_result_t 
 				if (rt < 0)
 					goto error;
 			}
-
 		}
 	}
 	return 0;
@@ -2212,7 +2211,7 @@ error:
 	return -1;
 }
 
-static int ap_find_empty_single_cond_diff(ap_single_cond_diff_t *scd,apol_diff_result_t *adr)
+static int ap_find_empty_single_cond_diff(ap_single_cond_diff_t *scd, apol_diff_result_t *adr)
 {
 	apol_diff_t *diff = NULL;
 	int rt,rta,rtc,idx;
@@ -2800,7 +2799,7 @@ ap_single_view_diff_t *ap_single_view_diff_new(unsigned int opts, policy_t *p1, 
 		if (rt < 0 || svd->te == NULL || svd->conds == NULL)
 			goto error;
 	}
-	if (opts & POLOPT_COND_BOOLS ) {
+	if (opts & POLOPT_COND_POLICY) {
 		rt = ap_find_empty_single_cond_diff(svd->conds, diff);
 		if (rt < 0)
 			goto error;
@@ -2811,7 +2810,6 @@ error:
 		ap_single_view_diff_destroy(svd);
 	
 	return NULL;
-
 }
 
 
