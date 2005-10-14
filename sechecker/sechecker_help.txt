@@ -1,6 +1,6 @@
 SELinux Policy Checker Tool Help File
 sechecker, version 1.0
-October 03, 2005
+October 04, 2005
 selinux@tresys.com
 
 This file contains the basic help information for using sechecker,
@@ -26,7 +26,7 @@ conditional branching.
 
 
 Report Output:
-
+-------------
 Sechecker generates a report with the output of each module that was 
 run.  The report includes an explanation of each module, the modules'
 severity, and the modules' results.  There are three output options to
@@ -39,7 +39,7 @@ specify what gets included in the report.
 
 
 Modules:
-
+-------
 A module encapsulates a single check on the policy.  Modules can be
 data driven by information specified in a profile, however each module 
 will work using default values if no profile is used.  See the help for
@@ -63,9 +63,9 @@ defined as follows:
 
 
 Profiles:
-
-There are three profiles that are installed by default with the sechecker
-program.  The three profiles are described below.
+--------
+There are three profiles that are installed with the sechecker program.  
+The three profiles are described below.
 
 1.) development: this profile includes several policy checks of low and
     med severity.  The checks are common tasks that a policy developer will
@@ -77,9 +77,11 @@ program.  The three profiles are described below.
 
 3.) all: this profile runs all the known modules.
 
+Profiles can be create to run any set of modules with different options.  The
+profile can specify the output format for each module.
 
 Other Options:
-
+-------------
 You can specify a minimum module severity to report.  If the minimum severity
 is "med", and the "all" profile is used all the modules that are "med" or "high"
 will be run and the results for those modules will be reported by sechecker.  
