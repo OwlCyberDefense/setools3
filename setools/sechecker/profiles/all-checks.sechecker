@@ -3,14 +3,14 @@
 	<module name="find_domains">
 		<output value="quiet"/>
 		<option name="domain_attribute">
-			domain
+			<item value="domain"/>
 		</option>
 	</module>
 	
 	<module name="find_file_types">
 		<output value="quiet"/>
 		<option name="file_type_attribute">
-			file_type
+			<item value="file_type"/>
 		</option>
 	</module>
 	

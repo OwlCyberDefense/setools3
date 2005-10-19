@@ -61,10 +61,10 @@ int find_file_types_register(sechk_lib_t *lib)
 "   file_type_attribute can be modified in a profile\n";
 	mod->severity = SECHK_SEV_NONE;
 	/* assign requirements */
-	mod->requirements = sechk_name_value_prepend(NULL,"policy_type","source");
+	mod->requirements = sechk_name_value_new("policy_type","source");
 
 	/* assign options */
-	mod->options = sechk_name_value_prepend(NULL,"file_type_attribute","file_type");
+	mod->options = sechk_name_value_new("file_type_attribute", "file_type");
 
 	/* register functions */
 	fn_struct = sechk_fn_new();
