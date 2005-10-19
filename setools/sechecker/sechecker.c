@@ -265,10 +265,18 @@ sechk_fn_t *sechk_fn_new(void)
 	return (sechk_fn_t*)calloc(1, sizeof(sechk_fn_t));
 }
 
-sechk_name_value_t *sechk_name_value_new(void)
+sechk_name_value_t *sechk_name_value_new(const char *name, const char *value)
 {
-	/* no initialization needed here */
-	return (sechk_name_value_t*)calloc(1, sizeof(sechk_name_value_t));
+	sechk_name_value_t *nv;
+
+	nv = (sechk_name_value_t*)calloc(1, sizeof(sechk_name_value_t));
+	if (!nv)
+		return NULL;
+	if (name)
+		nv->name = strdup(name);
+	if (value)
+		nv->value = strdup(value);
+	return nv;
 }
 
 sechk_result_t *sechk_result_new(void) 
@@ -295,19 +303,6 @@ sechk_proof_t *sechk_proof_new(void)
 		return NULL;
 	proof->idx = -1;
 	return proof;
-}
-
-/* this function will create a new name value struct and append it to the list */
-sechk_name_value_t *sechk_name_value_prepend(sechk_name_value_t *list,const char *name,const char *value)
-{
-	sechk_name_value_t *new_nv = NULL;
-	if (!name || !value)
-		return list;
-	new_nv = sechk_name_value_new();
-	new_nv->name = strdup(name);
-	new_nv->value = strdup(value);
-	new_nv->next = list;
-	return new_nv;
 }
 
 /*
@@ -978,39 +973,26 @@ sechk_load_profile_error:
 	return -1;
 }
 
-int sechk_lib_module_add_option_list(sechk_module_t *module, sechk_name_value_t *options)
-{
-	sechk_name_value_t *cur = NULL;
-	if (!module || !options)
-		return -1;
-	cur = options;
-	while (cur->next)
-		cur = cur->next;
-	cur->next = module->options;
-	module->options = cur;
-	return 0;
-}
-
-static sechk_name_value_t *sechk_lib_del_option_list_recursive(sechk_name_value_t *cur,char *option)
+static sechk_name_value_t *sechk_lib_clear_option_list_recursive(sechk_name_value_t *cur, char *option)
 {
 	sechk_name_value_t *next = NULL;
 	if (!cur)
 		return NULL;
-	if (strcmp(cur->name,option) == 0) {
+	if (strcmp(cur->name, option) == 0) {
 		free(cur->name);
 		free(cur->value);
 		next = cur->next;
 		free(cur);
-		return sechk_lib_del_option_list_recursive(next,option);
+		return sechk_lib_clear_option_list_recursive(next, option);
 	} else {
-		cur->next = sechk_lib_del_option_list_recursive(cur->next,option);
+		cur->next = sechk_lib_clear_option_list_recursive(cur->next, option);
 		return cur;
 	}
 }
 
-int sechk_lib_module_del_option(sechk_module_t *module,char *option)
+int sechk_lib_module_clear_option(sechk_module_t *module, char *option)
 {
-	module->options = sechk_lib_del_option_list_recursive(module->options,option);
+	module->options = sechk_lib_clear_option_list_recursive(module->options, option);
 	return 0;
 }
 

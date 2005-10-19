@@ -61,7 +61,7 @@ int attribs_wo_rules_register(sechk_lib_t *lib)
 "   none\n";
 	mod->severity = SECHK_SEV_LOW;
 	/* assign requirements */
-	mod->requirements = sechk_name_value_prepend(NULL,"policy_type","source");
+	mod->requirements = sechk_name_value_new("policy_type","source");
 
 	/* register functions */
 	fn_struct = sechk_fn_new();

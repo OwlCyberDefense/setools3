@@ -55,10 +55,10 @@ int find_domains_register(sechk_lib_t *lib)
 "   domain_attributes can be set in a profile\n";
 	mod->severity = SECHK_SEV_NONE;
 	/* assign requirements */
-	mod->requirements = sechk_name_value_prepend(NULL,"policy_type","source");
+	mod->requirements = sechk_name_value_new("policy_type", "source");
 	
 	/* assign options */
-	mod->options = sechk_name_value_prepend(NULL,"domain_attribute","domain");
+	mod->options = sechk_name_value_new("domain_attribute", "domain");
 
 	/* register functions */
 	fn_struct = sechk_fn_new();

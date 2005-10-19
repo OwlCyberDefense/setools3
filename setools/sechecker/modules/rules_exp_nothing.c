@@ -61,10 +61,10 @@ int rules_exp_nothing_register(sechk_lib_t *lib)
 "   none\n";
 	mod->severity = SECHK_SEV_MED;
 	/* assign requirements */
-	mod->requirements = sechk_name_value_prepend(NULL,"policy_type","source");
+	mod->requirements = sechk_name_value_new("policy_type", "source");
 
 	/* assign dependencies */
-	mod->dependencies = sechk_name_value_prepend(NULL,"module","attribs_wo_types");
+	mod->dependencies = sechk_name_value_new("module", "attribs_wo_types");
 
 	/* register functions */
 	fn_struct = sechk_fn_new();
