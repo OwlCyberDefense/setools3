@@ -60,7 +60,7 @@ int domains_wo_roles_register(sechk_lib_t *lib)
 "   none\n";
 	mod->severity = SECHK_SEV_MED;
 	/* assign dependencies */
-	mod->dependencies = sechk_name_value_prepend(NULL,"module","find_domains");
+	mod->dependencies = sechk_name_value_new("module", "find_domains");
 
 	/* register functions */
 	fn_struct = sechk_fn_new();

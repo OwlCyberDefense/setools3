@@ -157,7 +157,7 @@ typedef sechk_result_t *(*sechk_get_result_fn_t)(sechk_module_t *mod);
 /* alloc methods */
 sechk_lib_t *sechk_lib_new();
 sechk_fn_t *sechk_fn_new(void);
-sechk_name_value_t *sechk_name_value_new(void);
+sechk_name_value_t *sechk_name_value_new(const char *name, const char *value);
 sechk_result_t *sechk_result_new(void);
 sechk_item_t *sechk_item_new(void);
 sechk_proof_t *sechk_proof_new(void);
@@ -191,7 +191,7 @@ int sechk_lib_load_fc(const char *fcfilelocation, sechk_lib_t *lib);
 int sechk_lib_grow_modules(sechk_lib_t *lib);
 int sechk_lib_load_profile(const char *prof_name, sechk_lib_t *lib);
 int sechk_lib_module_add_option_list(sechk_module_t *module, sechk_name_value_t *options);
-int sechk_lib_module_del_option(sechk_module_t *module,char *option);
+int sechk_lib_module_clear_option(sechk_module_t *module, char *option);
 char **sechk_lib_get_profiles(int *num_profiles);
 int sechk_get_installed_profile_names(char ***names, int *num_profiles);
 bool_t sechk_lib_check_requirement(sechk_name_value_t *req, sechk_lib_t *lib);
@@ -202,6 +202,5 @@ sechk_item_t *sechk_result_get_item(int item_id, unsigned char item_type, sechk_
 sechk_proof_t *sechk_proof_copy(sechk_proof_t *orig);
 bool_t sechk_item_has_proof(int idx, unsigned char type, sechk_item_t *item);
 int sechk_lib_get_module_idx(const char *name, sechk_lib_t *lib);
-sechk_name_value_t *sechk_name_value_prepend(sechk_name_value_t *nv,const char *name,const char *value);
 #endif /* SECHECKER_H */
 
