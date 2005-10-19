@@ -210,6 +210,11 @@ int main(int argc, char **argv)
 
 	/* print help for a module */
 	if (module_help == TRUE) {
+		retv = sechk_lib_get_module_idx(modname, lib);
+		if (retv < 0) {
+			fprintf(stderr, "Error: Module %s does not exist.\n", modname);
+			goto exit_err;
+		}
 		printf("\nModule name: %s\n%s\n%s\n", lib->modules[retv].name, lib->modules[retv].detailed_description, 
 		       lib->modules[retv].opt_description);
 		goto exit;
