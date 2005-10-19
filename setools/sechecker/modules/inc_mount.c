@@ -52,9 +52,13 @@ int inc_mount_register(sechk_lib_t *lib)
 	mod->brief_description = "domains with partial mount permissions";
 	mod->detailed_description = 
 "--------------------------------------------------------------------------------\n"
-"This module finds domains that have only one of mount for filesystem and mounton\n"
-"for dir.  Both are needed for a successful mount operation.  This module lists  \n"
-"all the rules found containing one of these permissions for each domain found.  \n";
+"This module finds domains that have incomplete mount permissions.  In order for \n"
+"a mount operation to be allowed by the policy the follow rules must be present: \n"
+"\n"
+"   1.) allow somedomain_d sometype_t : fs  { mount };\n"
+"   2.) allow somedomain_d sometype_t : dir { mounton };\n"
+"\n"
+"This module finds domains that have only one of the rules listed above.\n";
 	mod->opt_description = 
 "Module requirements:\n"
 "   none\n"
