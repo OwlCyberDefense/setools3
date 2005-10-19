@@ -55,7 +55,7 @@ int types_wo_allow_register(sechk_lib_t *lib)
 "rules.  A type that is never granted an allow rule in the policy is a dead type.\n"
 "This means that all attempted acces to the type will be denied including        \n"
 "attempts to relabel to a (usable) type.  The type may need to be removed from   \n"
-"the policy or some intended access should be granted to the type.\n";
+"the policy or some intended access should be granted to the type.\n";		
 	mod->opt_description = 
 "Module requirements:\n"
 "   none\n"

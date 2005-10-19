@@ -51,7 +51,7 @@ int rules_exp_nothing_register(sechk_lib_t *lib)
 	mod->detailed_description = 
 "--------------------------------------------------------------------------------\n"
 "This module finds rules that disappear during expansion.  This can occur if a   \n"
-"rule uses an attribute with not types.\n";
+"rule uses an attribute with no types, or if all types are subtracted from a set.\n";
 	mod->opt_description = 
 "Module requirements:\n"
 "   none\n"

@@ -53,12 +53,12 @@ int spurious_audit_register(sechk_lib_t *lib)
 	mod->detailed_description = 
 "--------------------------------------------------------------------------------\n"
 "This module finds audit rules in the policy which do not affect the auditing of \n"
-"the policy.  This could happed in the following situations.\n"
+"the policy.  This could happen in the following situations:\n"
 "\n"
 "   1) there is an allow rule with the same key and permissions for a dontaudit   \n"
 "      rule\n"
-"   2) there is an auditallow rule without an allow rule with the same key\n" 
-"      and permissions\n";
+"   2) there is an auditallow rule without an allow rule with a key and permission\n"
+"      that does not appear in an allow rule.\n";
 	mod->opt_description =
 "Module requirements:\n"
 "   none\n"

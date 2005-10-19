@@ -40,11 +40,11 @@ int find_domains_register(sechk_lib_t *lib)
 	mod->detailed_description = 
 "--------------------------------------------------------------------------------\n"
 "This is a utility module which finds types in a policy that are treated as a    \n"
-"domain  A type is considered a domain if any of the following is true\n"
+"domain.  A type is considered a domain if any of the following is true:\n"
 "\n"
 "   1) it has an attribute associated with domains\n"
-"   2) it is the source of a te rule for object class other than filesystem\n"
-"   3) it is the default type is a type_transition rule for object class process \n"
+"   2) it is the source of a TE rule for object class other than filesystem\n"
+"   3) it is the default type in a type_transition rule for object class process \n"
 "   4) it is associated with a role other than object_r\n";
 	mod->opt_description = 
 "Module requirements:\n"
