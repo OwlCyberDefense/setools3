@@ -1833,6 +1833,7 @@ static int define_role_types(void)
 		}
 	}
 
+	free(tmp);
 	free(list_types);
 	free(subtracted);
 	return 0;

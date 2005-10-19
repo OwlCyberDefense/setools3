@@ -43,11 +43,11 @@
 	</module>
 
 	<module name="rules_exp_nothing">
-		<output value="verbose"/>
+		<output value="short"/>
 	</module>
 
 	<module name="spurious_audit">
-		<output value="verbose"/>
+		<output value="short"/>
 	</module>
 	
 </profile>
