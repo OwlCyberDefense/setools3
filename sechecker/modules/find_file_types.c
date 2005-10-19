@@ -45,10 +45,10 @@ int find_file_types_register(sechk_lib_t *lib)
 	mod->detailed_description = 
 "--------------------------------------------------------------------------------\n"
 "This module finds all types in the policy treated as a file type.  A type is    \n"
-"considered a file type if any of the following is true\n"
+"considered a file type if any of the following is true:\n"
 "\n"
 "   1) it has an attribute associated with file types\n"
-"   2) it is the source of a rules to allow filesystem associate permission\n"
+"   2) it is the source of a rule to allow filesystem associate permission\n"
 "   3) it is the default type of a type transition rule with an object class\n"
 "      other than process\n"
 "   4) it is specified in a context in the file_contexts file\n";
