@@ -172,31 +172,125 @@ int rules_exp_nothing_init(sechk_module_t *mod, policy_t *policy)
 	return 0;
 }
 
-/* function for finding attributes in type lists containing only attribs 
- * returns false for * ~ or if any single type is specified otherwise
- * fills the array with the indices of the attributes */
-static bool_t rules_exp_nothing_process_list_attribs(ta_item_t *list, unsigned char flags, bool_t is_src, int **array, int *size)
+/* function for processing ta_item list for lists that expand to nothing 
+ * returns true if item needs to be added
+ * state of array can be used to determine cause 
+ * array == NULL : all types subtracted out (or if ~ compliment of all types)
+ * array != NULL : array contains list of used attributes 
+ *                 if array is subset of empty then only empty attributes used */
+static bool_t rules_exp_nothing_process_list(ta_item_t *list, unsigned char flags, bool_t is_src, int **array, int *size, policy_t *policy)
 {
 	ta_item_t *item = NULL;
-	int retv;
+	int retv, i, j, *tmp = NULL, tmp_sz = 0;
+	bool_t status = FALSE;
 
-	if ((is_src && (flags & (AVFLAG_SRC_TILDA | AVFLAG_SRC_STAR))) || (!is_src && (flags & (AVFLAG_TGT_TILDA | AVFLAG_TGT_STAR))))
+	bool_t *attr_used, *attr_sub, *type_used, *type_sub;
+	int *type_res, type_res_sz;
+
+	if ((is_src && (flags & AVFLAG_SRC_STAR)) || (!is_src && (flags & AVFLAG_TGT_STAR)))
 		return FALSE; 
 
-	*array = NULL;
-	*size = 0;
+	*array = type_res = NULL;
+	attr_used = attr_sub = type_used = type_sub = NULL;
+	*size = type_res_sz = 0;
+
+	attr_used = (bool_t*)calloc(policy->num_types, sizeof(bool_t));
+	attr_sub = (bool_t*)calloc(policy->num_types, sizeof(bool_t));
+	type_used = (bool_t*)calloc(policy->num_types, sizeof(bool_t));
+	type_sub = (bool_t*)calloc(policy->num_types, sizeof(bool_t));
+
+	if (!attr_used || !attr_sub ||!type_used || !type_sub) {
+		status = FALSE;
+		goto exit;	
+	}
 
 	for (item = list; item; item = item->next) {
-		if (item->type == IDX_ATTRIB) {
-			retv = add_i_to_a(item->idx, size, array);
-			if (retv)
-				return FALSE;
-		} else {
-			return FALSE;
+		switch (item->type) {
+		case IDX_TYPE:
+			type_used[item->idx] = TRUE;
+			break;
+		case (IDX_TYPE|IDX_SUBTRACT):
+			type_sub[item->idx] = TRUE;
+			break;
+		case IDX_ATTRIB:
+			attr_used[item->idx] = TRUE;
+			retv = get_attrib_types(item->idx, &tmp_sz, &tmp, policy);
+			if (retv) {
+				status = FALSE;
+				goto exit;
+			}
+			for (j = 0; j < tmp_sz; j++) {
+				type_used[tmp[j]] = TRUE;
+			}
+			break;
+		case (IDX_ATTRIB|IDX_SUBTRACT):
+			attr_sub[item->idx] = TRUE;
+			retv = get_attrib_types(item->idx, &tmp_sz, &tmp, policy);
+			if (retv) {
+				status = FALSE;
+				goto exit;
+			}
+			for (j = 0; j < tmp_sz; j++) {
+				type_sub[tmp[j]] = TRUE;
+			}
+			break;
+		default:
+			status = FALSE;
+			goto exit;
+		}
+		free(tmp);
+		tmp = NULL;
+		tmp_sz = 0;
+	}
+
+	for (i = 0; i < policy->num_types; i++) {
+		if (attr_used[i] == TRUE && attr_sub[i] == FALSE) {
+			retv = add_i_to_a(i, size, array);
+			if (retv) {
+				status = FALSE;
+				goto exit;
+			}
+		}
+		if (type_used[i] == TRUE && type_sub[i] == FALSE) {
+			retv = add_i_to_a(i, &type_res_sz, &type_res);
+			if (retv) {
+				status = FALSE;
+				goto exit;
+			}
 		}
 	}
 
-	return TRUE;
+	if ((is_src && (flags & AVFLAG_SRC_TILDA)) || (!is_src && (flags & AVFLAG_TGT_TILDA))) {
+		if (type_res_sz == policy->num_types) {
+			status = TRUE;
+			free(*array);
+			*array = NULL;
+			*size = 0;
+		} else {
+			status = FALSE;
+			goto exit;
+		}
+	}
+
+	if (!type_res_sz && *size) {
+		status = TRUE;
+	} else if (!type_res_sz) {
+		status = TRUE;
+		free(*array);
+		*array = NULL;
+		*size = 0;	
+	} else {
+		status = FALSE;
+	}
+
+exit:
+	free(tmp);
+	free(attr_used);
+	free(attr_sub);
+	free(type_used);
+	free(type_sub);
+	free(type_res);
+	return status;
 }
 
 /* tests if array subset of size ssz is a subset of master of size msz */
@@ -282,7 +376,7 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 	/* access rules */
 	for (j = 0; j < policy->num_av_access; j++) {
 		/* source type field */
-		if (rules_exp_nothing_process_list_attribs(policy->av_access[j].src_types, policy->av_access[j].flags, 1, &src_list_attribs, &src_list_attribs_sz)) {
+		if (rules_exp_nothing_process_list(policy->av_access[j].src_types, policy->av_access[j].flags, 1, &src_list_attribs, &src_list_attribs_sz, policy)) {
 			if (is_subset(attrib_list, attrib_list_sz, src_list_attribs, src_list_attribs_sz)) {
 				item = sechk_item_new();
 				if (!item)
@@ -303,6 +397,27 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 					item->proof = proof;
 					proof = NULL;
 				}
+			} else {
+				item = sechk_item_new();
+				if (!item)
+					goto rules_exp_nothing_run_fail;
+				item->item_id = j;
+				item->test_result = POL_LIST_AV_ACC;
+				proof = sechk_proof_new();
+				if (!proof)
+					goto rules_exp_nothing_run_fail;
+				proof->idx = -1;
+				proof->type = SECHK_TYPE_NONE;
+				snprintf(buff, sizeof(buff)-1, "all types subtracted from rule source");
+				proof->text = strdup(buff);
+				if (!proof->text)
+					goto rules_exp_nothing_run_fail;
+				proof->next = item->proof;
+				item->proof = proof;
+				proof = NULL;
+				free(src_list_attribs);
+				src_list_attribs = NULL;
+				src_list_attribs_sz = 0;
 			}
 		} else {
 			free(src_list_attribs);
@@ -311,7 +426,7 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 		}
 
 		/* target type field */
-		if (rules_exp_nothing_process_list_attribs(policy->av_access[j].tgt_types, policy->av_access[j].flags, 0, &tgt_list_attribs, &tgt_list_attribs_sz)) {
+		if (rules_exp_nothing_process_list(policy->av_access[j].tgt_types, policy->av_access[j].flags, 0, &tgt_list_attribs, &tgt_list_attribs_sz, policy)) {
 			if (is_subset(attrib_list, attrib_list_sz, tgt_list_attribs, tgt_list_attribs_sz)) {
 				if (!item) {
 					item = sechk_item_new();
@@ -334,14 +449,36 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 					item->proof = proof;
 					proof = NULL;
 				}
+			} else {
+				item = sechk_item_new();
+				if (!item)
+					goto rules_exp_nothing_run_fail;
+				item->item_id = j;
+				item->test_result = POL_LIST_AV_ACC;
+				proof = sechk_proof_new();
+				if (!proof)
+					goto rules_exp_nothing_run_fail;
+				proof->idx = -1;
+				proof->type = SECHK_TYPE_NONE;
+				snprintf(buff, sizeof(buff)-1, "all types subtracted from rule target");
+				proof->text = strdup(buff);
+				if (!proof->text)
+					goto rules_exp_nothing_run_fail;
+				proof->next = item->proof;
+				item->proof = proof;
+				proof = NULL;
+				free(tgt_list_attribs);
+				tgt_list_attribs = NULL;
+				tgt_list_attribs_sz = 0;
 			}
+
 		} else {
 			free(tgt_list_attribs);
 			tgt_list_attribs = NULL;
 			tgt_list_attribs_sz = 0;
 		}
 
-		if (item) {
+		if (item && (src_list_attribs_sz + tgt_list_attribs_sz)) {
 			proof = sechk_proof_new();
 			if (!proof)
 				goto rules_exp_nothing_run_fail;
@@ -358,6 +495,8 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 			proof->next = item->proof;
 			item->proof = proof;
 			proof = NULL;
+		}
+		if (item) {
 			item->next = res->items;
 			res->items = item;
 			res->num_items++;
@@ -380,7 +519,7 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 	/* audit rules */
 	for (j = 0; j < policy->num_av_audit; j++) {
 		/* source type field */
-		if (rules_exp_nothing_process_list_attribs(policy->av_audit[j].src_types, policy->av_access[j].flags, 1, &src_list_attribs, &src_list_attribs_sz)) {
+		if (rules_exp_nothing_process_list(policy->av_audit[j].src_types, policy->av_access[j].flags, 1, &src_list_attribs, &src_list_attribs_sz, policy)) {
 			if (is_subset(attrib_list, attrib_list_sz, src_list_attribs, src_list_attribs_sz)) {
 				item = sechk_item_new();
 				if (!item)
@@ -401,6 +540,27 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 					item->proof = proof;
 					proof = NULL;
 				}
+			} else {
+				item = sechk_item_new();
+				if (!item)
+					goto rules_exp_nothing_run_fail;
+				item->item_id = j;
+				item->test_result = POL_LIST_AV_ACC;
+				proof = sechk_proof_new();
+				if (!proof)
+					goto rules_exp_nothing_run_fail;
+				proof->idx = -1;
+				proof->type = SECHK_TYPE_NONE;
+				snprintf(buff, sizeof(buff)-1, "all types subtracted from rule source");
+				proof->text = strdup(buff);
+				if (!proof->text)
+					goto rules_exp_nothing_run_fail;
+				proof->next = item->proof;
+				item->proof = proof;
+				proof = NULL;
+				free(src_list_attribs);
+				src_list_attribs = NULL;
+				src_list_attribs_sz = 0;
 			}
 		} else {
 			free(src_list_attribs);
@@ -409,7 +569,7 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 		}
 
 		/* target type field */
-		if (rules_exp_nothing_process_list_attribs(policy->av_audit[j].tgt_types, policy->av_access[j].flags, 0, &tgt_list_attribs, &tgt_list_attribs_sz)) {
+		if (rules_exp_nothing_process_list(policy->av_audit[j].tgt_types, policy->av_access[j].flags, 0, &tgt_list_attribs, &tgt_list_attribs_sz, policy)) {
 			if (is_subset(attrib_list, attrib_list_sz, tgt_list_attribs, tgt_list_attribs_sz)) {
 				if (!item) {
 					item = sechk_item_new();
@@ -432,14 +592,36 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 					item->proof = proof;
 					proof = NULL;
 				}
+			} else {
+				item = sechk_item_new();
+				if (!item)
+					goto rules_exp_nothing_run_fail;
+				item->item_id = j;
+				item->test_result = POL_LIST_AV_ACC;
+				proof = sechk_proof_new();
+				if (!proof)
+					goto rules_exp_nothing_run_fail;
+				proof->idx = -1;
+				proof->type = SECHK_TYPE_NONE;
+				snprintf(buff, sizeof(buff)-1, "all types subtracted from rule target");
+				proof->text = strdup(buff);
+				if (!proof->text)
+					goto rules_exp_nothing_run_fail;
+				proof->next = item->proof;
+				item->proof = proof;
+				proof = NULL;
+				free(tgt_list_attribs);
+				tgt_list_attribs = NULL;
+				tgt_list_attribs_sz = 0;
 			}
+
 		} else {
 			free(tgt_list_attribs);
 			tgt_list_attribs = NULL;
 			tgt_list_attribs_sz = 0;
 		}
 
-		if (item) {
+		if (item && (src_list_attribs_sz + tgt_list_attribs_sz)) {
 			proof = sechk_proof_new();
 			if (!proof)
 				goto rules_exp_nothing_run_fail;
@@ -456,6 +638,8 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 			proof->next = item->proof;
 			item->proof = proof;
 			proof = NULL;
+		}
+		if (item) {
 			item->next = res->items;
 			res->items = item;
 			res->num_items++;
@@ -477,7 +661,7 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 	
 	for (j = 0; j < policy->num_te_trans; j++) {
 		/* source type field */
-		if (rules_exp_nothing_process_list_attribs(policy->te_trans[j].src_types, policy->av_access[j].flags, 1, &src_list_attribs, &src_list_attribs_sz)) {
+		if (rules_exp_nothing_process_list(policy->te_trans[j].src_types, policy->av_access[j].flags, 1, &src_list_attribs, &src_list_attribs_sz, policy)) {
 			if (is_subset(attrib_list, attrib_list_sz, src_list_attribs, src_list_attribs_sz)) {
 				item = sechk_item_new();
 				if (!item)
@@ -498,7 +682,29 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 					item->proof = proof;
 					proof = NULL;
 				}
+			} else {
+				item = sechk_item_new();
+				if (!item)
+					goto rules_exp_nothing_run_fail;
+				item->item_id = j;
+				item->test_result = POL_LIST_AV_ACC;
+				proof = sechk_proof_new();
+				if (!proof)
+					goto rules_exp_nothing_run_fail;
+				proof->idx = -1;
+				proof->type = SECHK_TYPE_NONE;
+				snprintf(buff, sizeof(buff)-1, "all types subtracted from rule source");
+				proof->text = strdup(buff);
+				if (!proof->text)
+					goto rules_exp_nothing_run_fail;
+				proof->next = item->proof;
+				item->proof = proof;
+				proof = NULL;
+				free(src_list_attribs);
+				src_list_attribs = NULL;
+				src_list_attribs_sz = 0;
 			}
+
 		} else {
 			free(src_list_attribs);
 			src_list_attribs = NULL;
@@ -506,7 +712,7 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 		}
 
 		/* target type field */
-		if (rules_exp_nothing_process_list_attribs(policy->te_trans[j].tgt_types, policy->av_access[j].flags, 0, &tgt_list_attribs, &tgt_list_attribs_sz)) {
+		if (rules_exp_nothing_process_list(policy->te_trans[j].tgt_types, policy->av_access[j].flags, 0, &tgt_list_attribs, &tgt_list_attribs_sz, policy)) {
 			if (is_subset(attrib_list, attrib_list_sz, tgt_list_attribs, tgt_list_attribs_sz)) {
 				if (!item) {
 					item = sechk_item_new();
@@ -529,14 +735,36 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 					item->proof = proof;
 					proof = NULL;
 				}
+			} else {
+				item = sechk_item_new();
+				if (!item)
+					goto rules_exp_nothing_run_fail;
+				item->item_id = j;
+				item->test_result = POL_LIST_AV_ACC;
+				proof = sechk_proof_new();
+				if (!proof)
+					goto rules_exp_nothing_run_fail;
+				proof->idx = -1;
+				proof->type = SECHK_TYPE_NONE;
+				snprintf(buff, sizeof(buff)-1, "all types subtracted from rule target");
+				proof->text = strdup(buff);
+				if (!proof->text)
+					goto rules_exp_nothing_run_fail;
+				proof->next = item->proof;
+				item->proof = proof;
+				proof = NULL;
+				free(tgt_list_attribs);
+				tgt_list_attribs = NULL;
+				tgt_list_attribs_sz = 0;
 			}
+
 		} else {
 			free(tgt_list_attribs);
 			tgt_list_attribs = NULL;
 			tgt_list_attribs_sz = 0;
 		}
 
-		if (item) {
+		if (item && (src_list_attribs_sz + tgt_list_attribs_sz)) {
 			proof = sechk_proof_new();
 			if (!proof)
 				goto rules_exp_nothing_run_fail;
@@ -553,6 +781,8 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 			proof->next = item->proof;
 			item->proof = proof;
 			proof = NULL;
+		}
+		if (item) {
 			item->next = res->items;
 			res->items = item;
 			res->num_items++;
@@ -579,7 +809,7 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 	src_list_attribs_sz = 0;		
 	for (j = 0; j < policy->num_role_trans; j++) {
 		/* target type field */
-		if (rules_exp_nothing_process_list_attribs(policy->role_trans[j].tgt_types, policy->av_access[j].flags, 0, &tgt_list_attribs, &tgt_list_attribs_sz)) {
+		if (rules_exp_nothing_process_list(policy->role_trans[j].tgt_types, policy->av_access[j].flags, 0, &tgt_list_attribs, &tgt_list_attribs_sz, policy)) {
 			if (is_subset(attrib_list, attrib_list_sz, tgt_list_attribs, tgt_list_attribs_sz)) {
 				item = sechk_item_new();
 				if (!item)
@@ -600,14 +830,36 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 					item->proof = proof;
 					proof = NULL;
 				}
+			} else {
+				item = sechk_item_new();
+				if (!item)
+					goto rules_exp_nothing_run_fail;
+				item->item_id = j;
+				item->test_result = POL_LIST_AV_ACC;
+				proof = sechk_proof_new();
+				if (!proof)
+					goto rules_exp_nothing_run_fail;
+				proof->idx = -1;
+				proof->type = SECHK_TYPE_NONE;
+				snprintf(buff, sizeof(buff)-1, "all types subtracted from rule target");
+				proof->text = strdup(buff);
+				if (!proof->text)
+					goto rules_exp_nothing_run_fail;
+				proof->next = item->proof;
+				item->proof = proof;
+				proof = NULL;
+				free(tgt_list_attribs);
+				tgt_list_attribs = NULL;
+				tgt_list_attribs_sz = 0;
 			}
+
 		} else {
 			free(tgt_list_attribs);
 			tgt_list_attribs = NULL;
 			tgt_list_attribs_sz = 0;
 		}
 
-		if (item) {
+		if (item && (src_list_attribs_sz + tgt_list_attribs_sz)) {
 			proof = sechk_proof_new();
 			if (!proof)
 				goto rules_exp_nothing_run_fail;
@@ -624,6 +876,8 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 			proof->next = item->proof;
 			item->proof = proof;
 			proof = NULL;
+		}
+		if (item) {
 			item->next = res->items;
 			res->items = item;
 			res->num_items++;
@@ -640,7 +894,7 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 	/* range transition rules (MLS) */
 	for (j = 0; j < policy->num_rangetrans; j++) {
 		/* source type field */
-		if (rules_exp_nothing_process_list_attribs(policy->rangetrans[j].src_types, policy->av_access[j].flags, 1, &src_list_attribs, &src_list_attribs_sz)) {
+		if (rules_exp_nothing_process_list(policy->rangetrans[j].src_types, policy->av_access[j].flags, 1, &src_list_attribs, &src_list_attribs_sz, policy)) {
 			if (is_subset(attrib_list, attrib_list_sz, src_list_attribs, src_list_attribs_sz)) {
 				item = sechk_item_new();
 				if (!item)
@@ -661,7 +915,29 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 					item->proof = proof;
 					proof = NULL;
 				}
+			} else {
+				item = sechk_item_new();
+				if (!item)
+					goto rules_exp_nothing_run_fail;
+				item->item_id = j;
+				item->test_result = POL_LIST_AV_ACC;
+				proof = sechk_proof_new();
+				if (!proof)
+					goto rules_exp_nothing_run_fail;
+				proof->idx = -1;
+				proof->type = SECHK_TYPE_NONE;
+				snprintf(buff, sizeof(buff)-1, "all types subtracted from rule source");
+				proof->text = strdup(buff);
+				if (!proof->text)
+					goto rules_exp_nothing_run_fail;
+				proof->next = item->proof;
+				item->proof = proof;
+				proof = NULL;
+				free(src_list_attribs);
+				src_list_attribs = NULL;
+				src_list_attribs_sz = 0;
 			}
+
 		} else {
 			free(src_list_attribs);
 			src_list_attribs = NULL;
@@ -669,7 +945,7 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 		}
 
 		/* target type field */
-		if (rules_exp_nothing_process_list_attribs(policy->rangetrans[j].tgt_types, policy->av_access[j].flags, 0, &tgt_list_attribs, &tgt_list_attribs_sz)) {
+		if (rules_exp_nothing_process_list(policy->rangetrans[j].tgt_types, policy->av_access[j].flags, 0, &tgt_list_attribs, &tgt_list_attribs_sz, policy)) {
 			if (is_subset(attrib_list, attrib_list_sz, tgt_list_attribs, tgt_list_attribs_sz)) {
 				if (!item) {
 					item = sechk_item_new();
@@ -692,14 +968,36 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 					item->proof = proof;
 					proof = NULL;
 				}
+			} else {
+				item = sechk_item_new();
+				if (!item)
+					goto rules_exp_nothing_run_fail;
+				item->item_id = j;
+				item->test_result = POL_LIST_AV_ACC;
+				proof = sechk_proof_new();
+				if (!proof)
+					goto rules_exp_nothing_run_fail;
+				proof->idx = -1;
+				proof->type = SECHK_TYPE_NONE;
+				snprintf(buff, sizeof(buff)-1, "all types subtracted from rule target");
+				proof->text = strdup(buff);
+				if (!proof->text)
+					goto rules_exp_nothing_run_fail;
+				proof->next = item->proof;
+				item->proof = proof;
+				proof = NULL;
+				free(tgt_list_attribs);
+				tgt_list_attribs = NULL;
+				tgt_list_attribs_sz = 0;
 			}
+
 		} else {
 			free(tgt_list_attribs);
 			tgt_list_attribs = NULL;
 			tgt_list_attribs_sz = 0;
 		}
 
-		if (item) {
+		if (item && (src_list_attribs_sz + tgt_list_attribs_sz)) {
 			proof = sechk_proof_new();
 			if (!proof)
 				goto rules_exp_nothing_run_fail;
@@ -716,6 +1014,8 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 			proof->next = item->proof;
 			item->proof = proof;
 			proof = NULL;
+		}
+		if (item) {
 			item->next = res->items;
 			res->items = item;
 			res->num_items++;
