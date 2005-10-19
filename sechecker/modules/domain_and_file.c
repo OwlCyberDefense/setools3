@@ -20,6 +20,7 @@ int domain_and_file_register(sechk_lib_t *lib)
 {
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
+	sechk_name_value_t *nv = NULL;
 
 	if (!lib) {
 		fprintf(stderr, "Error: no library\n");
@@ -53,11 +54,13 @@ int domain_and_file_register(sechk_lib_t *lib)
 "   none\n";
 	mod->severity = SECHK_SEV_LOW;
 	/* assign requirements */
-	mod->requirements = sechk_name_value_prepend(NULL,"policy_type","source");
+	mod->requirements = sechk_name_value_new("policy_type", "source");
 
 	/* assign dependencies */
-	mod->dependencies = sechk_name_value_prepend(NULL,"module","find_domains");
-	mod->dependencies = sechk_name_value_prepend(mod->dependencies,"module","find_file_types");
+	mod->dependencies = sechk_name_value_new("module", "find_domains");
+	nv = sechk_name_value_new("module", "find_file_types");
+	nv->next = mod->dependencies;
+	mod->dependencies = nv;
 
 	/* register functions */
 	fn_struct = sechk_fn_new();

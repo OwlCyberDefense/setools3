@@ -12,7 +12,21 @@
 #include <libxml/xmlreader.h>
 #include <errno.h>
 
-#define WHITESPACE " \t\n\r"
+/* xml parser keywords */
+#define SECHK_PARSE_SECHECKER_TAG         "sechecker"
+#define SECHK_PARSE_PROFILE_TAG           "profile"
+#define SECHK_PARSE_MODULE_TAG            "module"
+#define SECHK_PARSE_OPTION_TAG            "option"
+#define SECHK_PARSE_ITEM_TAG              "item"
+#define SECHK_PARSE_OUTPUT_TAG            "output"
+#define SECHK_PARSE_VALUE_ATTRIB          "value"
+#define SECHK_PARSE_NAME_ATTRIB           "name"
+#define SECHK_PARSE_VERSION_ATTRIB        "version"
+#define SECHK_PARSE_OUTPUT_NONE           "none"
+#define SECHK_PARSE_OUTPUT_QUIET          "quiet"
+#define SECHK_PARSE_OUTPUT_SHORT          "short"
+#define SECHK_PARSE_OUTPUT_VERBOSE        "verbose"
+
 
 /* Parsing functions */
 
@@ -61,44 +75,15 @@ int sechk_lib_parse_xml_file(const char *filename, sechk_lib_t *lib)
 	return -1;
 }
 
-/* options are now lists, this will parse the list remove any instances of the option that existed before
-   in the module, and overwrite them */
-static int sechk_lib_parse_module_option_list(sechk_module_t *module, xmlChar *option, const xmlChar *text_in)
-{
-	char *text = NULL;
-	char *token = NULL;
-	sechk_name_value_t *nv = NULL;
-	int rt;
-	if (!module || !option || !text_in) 
-		return -1;
-	/* put our text into something we can chop up */
-	text = strdup((char *)text_in);
-	/* chop it up and only grab the text */
-	token = strsep(&text,WHITESPACE);
-	while (token) {
-		rt = trim_string(&token);
-		if (rt < 0)
-			return -1;
-		if (strlen(token) > 0) 
-			nv = sechk_name_value_prepend(nv,(char *)option,token);
-		token = strsep(&text,WHITESPACE);
-	}
-	/* if we got anything in this nv we need to add it to the current one */
-	if (nv) {
-		sechk_lib_module_del_option(module,(char *)option);
-		sechk_lib_module_add_option_list(module,nv);
-	}
-	return 0;
-}
-
 /*
  * process a single node in the xml file */
 int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib)
 {
 	xmlChar *attrib = NULL;
-	static xmlChar *option = NULL;
 	int idx;
 	sechk_name_value_t *nv = NULL;
+	static xmlChar *option = NULL;
+	static xmlChar *value = NULL;
 	static sechk_module_t *current_module=NULL;	
 	static bool_t profile = FALSE;
 
@@ -110,14 +95,8 @@ int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib)
 		} else if (xmlStrEqual(xmlTextReaderConstName(reader), (xmlChar*)SECHK_PARSE_OPTION_TAG) == 1) {
 			free(option);
 			option = NULL;
-		}
+		} 
 		break;
-	case XML_TEXT_NODE: /* this should only be the list */
-		if (!option) {
-			fprintf(stderr, "Warning: no option name specified for this option value\n");
-			goto exit_err;
-		}
-		sechk_lib_parse_module_option_list(current_module, option, xmlTextReaderConstValue(reader));
 
 	case XML_ELEMENT_NODE: /* opening tags */
 
@@ -125,7 +104,7 @@ int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib)
 			/* parsing the <sechecker> tag */
 			attrib = xmlTextReaderGetAttribute(reader, (xmlChar*)SECHK_PARSE_VERSION_ATTRIB);
 			if (attrib) {
-				/* TODO: add version logic */
+				/* TODO: add version logic in later versions */
 				free(attrib);
 				attrib = NULL;
 			} else {
@@ -161,15 +140,35 @@ int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib)
 				goto exit_err;
 			}
 		} else if (xmlStrEqual(xmlTextReaderConstName(reader), (xmlChar*)SECHK_PARSE_OPTION_TAG) == 1) {
+			/* parsing the <option> tag */
 			if (!current_module) {
 				fprintf(stderr, "Error: 'option' specified outside the scope of a module.\n");
 				goto exit_err;
 			}
+			/* read the name of the option */
 			option = xmlTextReaderGetAttribute(reader, (xmlChar*)SECHK_PARSE_NAME_ATTRIB);
 			if (!option) {
 				fprintf(stderr, "Error: option name is not specified.\n");
 				goto exit_err;
 			}
+			/* clear the options with this name that were set by defualt for this module */
+			sechk_lib_module_clear_option(current_module, (char*)option);
+
+		} else if (xmlStrEqual(xmlTextReaderConstName(reader), (xmlChar*)SECHK_PARSE_ITEM_TAG) == 1) {
+			/* parsing the <item> tag */
+			assert(current_module);
+			nv = sechk_name_value_new((char*)option, NULL);
+			/* read the value for this name value pair */
+			value = xmlTextReaderGetAttribute(reader, (xmlChar*)SECHK_PARSE_VALUE_ATTRIB);
+			if (!value) {
+				fprintf(stderr, "Error: item value is not specified.\n");
+				goto exit_err;
+			}
+			nv->value = strdup((char*)value);
+			/* add the nv pair to the module options */
+			nv->next = current_module->options;
+			current_module->options = nv;
+
 		} else if (xmlStrEqual(xmlTextReaderConstName(reader), (xmlChar*)SECHK_PARSE_OUTPUT_TAG) == 1) {
 			if (!current_module) {
 				fprintf(stderr, "Error: 'output' specified outside the scope of a module.\n");
