@@ -276,8 +276,8 @@ int attribs_wo_rules_run(sechk_module_t *mod, policy_t *policy)
 			goto attribs_wo_rules_run_fail;
 		}
 		proof->idx = -1;
-		proof->type = POL_LIST_ATTRIB;
-		proof->text = strdup("attribut was not used in any rules.");
+		proof->type = SECHK_TYPE_NONE;
+		proof->text = strdup("attribute was not used in any rules.");
 		if (!proof->text) {
 			fprintf(stderr, "Error: out of memory\n");
 			goto attribs_wo_rules_run_fail;

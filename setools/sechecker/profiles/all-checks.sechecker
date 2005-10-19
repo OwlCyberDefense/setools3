@@ -51,11 +51,11 @@
 	</module>
 
 	<module name="spurious_audit">
-		<output value="verbose"/>
+		<output value="short"/>
 	</module>
 
 	<module name="inc_mount">
-		<output value="verbose"/>
+		<output value="short"/>
 	</module>
 
 	<module name="domains_wo_roles">
@@ -63,7 +63,7 @@
 	</module>
 
 	<module name="inc_dom_trans">
-		<output value="verbose"/>
+		<output value="short"/>
 	</module>
 
 </profile>
