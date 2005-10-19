@@ -8,16 +8,18 @@
 
 #include "sechecker.h"
 #include "policy.h"
+#include "dta.h"
 
 #define SECHK_INC_DOM_TRANS_HAS_TT	0x08
-#define SECHK_INC_DOM_TRANS_CAN_EXEC	0x04
-#define SECHK_INC_DOM_TRANS_CAN_TRANS	0x02
-#define SECHK_INC_DOM_TRANS_IS_EP	0x01
-#define SECHK_INC_DOM_TRANS_COMPLETE	(SECHK_INC_DOM_TRANS_IS_EP|SECHK_INC_DOM_TRANS_CAN_TRANS|SECHK_INC_DOM_TRANS_CAN_EXEC)
+#define SECHK_INC_DOM_TRANS_HAS_EXEC	0x04
+#define SECHK_INC_DOM_TRANS_HAS_TRANS	0x02
+#define SECHK_INC_DOM_TRANS_HAS_EP		0x01
+#define SECHK_INC_DOM_TRANS_COMPLETE	(SECHK_INC_DOM_TRANS_HAS_EP|SECHK_INC_DOM_TRANS_HAS_TRANS|SECHK_INC_DOM_TRANS_HAS_EXEC)
 
 /* The inc_dom_transition_data structure is used to hold the check specific
  *  private data of a module. */
 typedef struct inc_dom_trans_data {
+	dta_trans_t *trans_list;
 } inc_dom_trans_data_t;
 
 int inc_dom_trans_register(sechk_lib_t *lib);
