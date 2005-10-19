@@ -259,7 +259,7 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 		fprintf(stderr, "Error: out of memory\n");
 		goto rules_exp_nothing_run_fail;
 	}
-	res->item_type = 0xFF; /* can be multiple types, ignored */
+	res->item_type = SECHK_TYPE_NONE; /* can be multiple types, ignored */
 
 	run_fn = sechk_lib_get_module_function("attribs_wo_types", SECHK_MOD_FN_RUN, library);
 	if (!run_fn)
@@ -346,8 +346,8 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 			if (!proof)
 				goto rules_exp_nothing_run_fail;
 			proof->idx = -1;
-			proof->type = 0xFF;
-			snprintf(buff, sizeof(buff)-1, "rule uses attribute %d attribute%swhich expand%sto no types", 
+			proof->type = SECHK_TYPE_NONE;
+			snprintf(buff, sizeof(buff)-1, "rule uses %d attribute%swhich expand%sto no types", 
 				src_list_attribs_sz + tgt_list_attribs_sz, 
 				/* handle English plurality */
 				((src_list_attribs_sz + tgt_list_attribs_sz) > 1?"s ":" "), 
@@ -444,7 +444,7 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 			if (!proof)
 				goto rules_exp_nothing_run_fail;
 			proof->idx = -1;
-			proof->type = 0xFF;
+			proof->type = SECHK_TYPE_NONE;
 			snprintf(buff, sizeof(buff)-1, "rule uses attribute %d attribute%swhich expand%sto no types", 
 				src_list_attribs_sz + tgt_list_attribs_sz, 
 				/* handle English plurality */
@@ -541,7 +541,7 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 			if (!proof)
 				goto rules_exp_nothing_run_fail;
 			proof->idx = -1;
-			proof->type = 0xFF;
+			proof->type = SECHK_TYPE_NONE;
 			snprintf(buff, sizeof(buff)-1, "rule uses attribute %d attribute%swhich expand%sto no types", 
 				src_list_attribs_sz + tgt_list_attribs_sz, 
 				/* handle English plurality */
@@ -612,7 +612,7 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 			if (!proof)
 				goto rules_exp_nothing_run_fail;
 			proof->idx = -1;
-			proof->type = 0xFF;
+			proof->type = SECHK_TYPE_NONE;
 			snprintf(buff, sizeof(buff)-1, "rule uses attribute %d attribute%swhich expand%sto no types", 
 				src_list_attribs_sz + tgt_list_attribs_sz, 
 				/* handle English plurality */
@@ -704,7 +704,7 @@ int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 			if (!proof)
 				goto rules_exp_nothing_run_fail;
 			proof->idx = -1;
-			proof->type = 0xFF;
+			proof->type = SECHK_TYPE_NONE;
 			snprintf(buff, sizeof(buff)-1, "rule uses attribute %d attribute%swhich expand%sto no types", 
 				src_list_attribs_sz + tgt_list_attribs_sz, 
 				/* handle English plurality */

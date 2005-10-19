@@ -361,7 +361,7 @@ int inc_mount_run(sechk_module_t *mod, policy_t *policy)
 				goto inc_mount_run_fail;
 			}
 			proof->idx = -1;
-			proof->type = -1;
+			proof->type = SECHK_TYPE_NONE;
 			proof->text = buff;
 			proof->next = item->proof;
 			item->proof = proof;

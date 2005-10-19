@@ -55,10 +55,10 @@ int spurious_audit_register(sechk_lib_t *lib)
 "This module finds audit rules in the policy which do not affect the auditing of \n"
 "the policy.  This could happed in the following situations.\n"
 "\n"
-"   1) there is an allow rule with the same key and permission for a dontaudit   \n"
+"   1) there is an allow rule with the same key and permissions for a dontaudit   \n"
 "      rule\n"
-"   2) there is an auditallow rule with the same key and permission as an allow  \n"
-"      rule\n";
+"   2) there is an auditallow rule without an allow rule with the same key\n" 
+"      and permissions\n";
 	mod->opt_description =
 "Module requirements:\n"
 "   none\n"
@@ -273,7 +273,7 @@ int spurious_audit_run(sechk_module_t *mod, policy_t *policy)
 								goto spurious_audit_run_fail;
 							}
 							proof->idx = -1;
-							proof->type = POL_LIST_AV_ACC;
+							proof->type = SECHK_TYPE_NONE;
 							tmp = re_render_av_rule(!is_binary_policy(policy), i, 1, policy);
 							if (!tmp) {
 								fprintf(stderr, "Error: out of memory\n");
@@ -310,7 +310,7 @@ int spurious_audit_run(sechk_module_t *mod, policy_t *policy)
 								continue;
 							proof = sechk_proof_new();
 							proof->idx = -1;
-							proof->type = POL_LIST_AV_ACC;
+							proof->type = SECHK_TYPE_NONE;
 							retv = 0;
 							tmp = (char*)calloc(3*LIST_SZ, sizeof(char));
 							if (!tmp) {

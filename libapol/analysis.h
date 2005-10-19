@@ -200,6 +200,7 @@ int dta_query_add_obj_class(dta_query_t *q, int obj_class);
 int dta_query_add_obj_class_perm(dta_query_t *q, int obj_class, int perm);
 domain_trans_analysis_t *new_domain_trans_analysis(void);
 trans_domain_t *new_trans_domain(void); 
+entrypoint_type_t *new_entry_point_type(void);
 int determine_domain_trans(dta_query_t *dta_query, 
 			   domain_trans_analysis_t **dta, 
 			   policy_t *policy);

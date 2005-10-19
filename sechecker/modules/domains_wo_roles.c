@@ -255,7 +255,7 @@ int domains_wo_roles_run(sechk_module_t *mod, policy_t *policy)
 		item->test_result = 1;
 		item->proof = sechk_proof_new();
 		item->proof->idx = -1;
-		item->proof->type = POL_LIST_ROLES;
+		item->proof->type = SECHK_TYPE_NONE;
 		item->proof->text = strdup("Type is a domain but not associated with a role.");
 		if (!item->proof->text) {
 			fprintf(stderr, "Error: out of memory\n");

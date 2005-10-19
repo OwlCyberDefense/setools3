@@ -306,7 +306,7 @@ int roles_wo_allow_run(sechk_module_t *mod, policy_t *policy)
 				goto roles_wo_allow_run_fail;
 			}
 			proof->idx = -1;
-			proof->type = -1;
+			proof->type = SECHK_TYPE_NONE;
 			proof->text = strdup("This role does not appear in any rules.");
 			if (!item) {
 				item = sechk_item_new();
