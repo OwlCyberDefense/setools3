@@ -50,9 +50,8 @@ int roles_wo_allow_register(sechk_lib_t *lib)
  	mod->detailed_description = 
 "--------------------------------------------------------------------------------\n"
 "This module finds roles defined in the policy that are not used in any roleallow\n"
-"rules.  This module also reports role_transition rules found for these roles.   \n"
-"It is not possible to transition to or from any role that does not have any     \n"
-"roleallow rules\n";
+"rules.  It is not possible to transition to or from any role that does not have \n"
+"any roleallow rules.\n";
 	mod->opt_description = 
 "Module requirements:\n"
 "   none\n"

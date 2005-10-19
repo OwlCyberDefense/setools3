@@ -50,7 +50,7 @@ int roles_wo_users_register(sechk_lib_t *lib)
 	mod->detailed_description = 
 "--------------------------------------------------------------------------------\n"
 "This module finds roles that are not assigned to users.  If a role is not       \n"
-"assigned to a user it cannot for a valid context.\n";
+"assigned to a user it cannot form a valid context.\n";
 	mod->opt_description = 
 "Module requirements:\n"
 "   none\n"

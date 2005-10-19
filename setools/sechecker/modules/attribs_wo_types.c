@@ -52,8 +52,8 @@ int attribs_wo_types_register(sechk_lib_t *lib)
 "--------------------------------------------------------------------------------\n"
 "This module finds attributes in the policy that are not associated with any\n"
 "types.  Attributes without types can cause type fields in rules to expand to\n"
-"empty sets and thus get thrown out by the compiler.  This make for misleading\n"
-"policy source files.\n";
+"empty sets and thus become unreachable.  This makes for misleading policy source\n"
+"files.\n";
 	mod->opt_description = 
 "Module requirements:\n"
 "   policy source\n"
