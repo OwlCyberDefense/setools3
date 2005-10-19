@@ -464,7 +464,7 @@ int find_file_types_run(sechk_module_t *mod, policy_t *policy)
 						goto find_file_types_run_fail;
 					}
 					proof->idx = j;
-					proof->type = POL_LIST_FCENT;
+					proof->type = SECHK_TYPE_FCENT;
 					proof->text = buff;
 					if (!item) {
 						item = sechk_item_new();

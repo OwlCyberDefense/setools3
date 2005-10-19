@@ -3,7 +3,7 @@
 LIB-OBJ	= policy.o policy-query.o policy-io.o queue.o util.o clone.o y.tab.o lex.yy.o
 LIB-OBJ +=  avl-util.o policy-avl.o render.o analysis.o perm-map.o cond.o infoflow.o poldiff.o
 LIB-OBJ +=  flowassert.o flowassert_scan.o flowassert_parse.o symtable.o
-LIB-OBJ +=  relabel_analysis.o
+LIB-OBJ +=  relabel_analysis.o dta.o
 LIB-OBJ +=  binpol/binpol.o binpol/bpmaps.o binpol/fbuf.o binpol/ebitmap.o
 LIB-OBJ +=  semantic/avhash.o semantic/avsemantics.o
 
@@ -95,7 +95,7 @@ bare:
 # include objects here for header dependencies
 analysis.o clone.o flowasser.o infoflow.o perm-map.o policy-io.o: policy.h
 policy-avl.o policy-query.o relabel_analysis.o render.o util.o: policy.h
-binpol/binpol.o semantic/avhash.o semantic/avsemantics.o: policy.h
+binpol/binpol.o semantic/avhash.o semantic/avsemantics.o dta.o: policy.h
 poldiff.o policy-io.o binpol/binpol.o: policy-io.h
 avl-util.o policy-avl.o:avl-util.h
 policy.o cond.o: cond.h
@@ -119,7 +119,8 @@ binpol/binpol.o binpol/bpmaps.o: binpol/bpmaps.h
 binpol/binpol.o binpol/ebitmap.o: binpol/borrowed.h
 binpol/binpol.o binpol/bpmaps.o binpol/ebitmap.o: binpol/ebitmap.h
 binpol/binpol.o binpol/ebitmap.o binpol/fbuf.o: binpol/fbuf.h
-poldiff.o relabel_analysis.o render.o: semantic/avhash.h semantic/avsemantics.h
+poldiff.o relabel_analysis.o render.o dta.o: semantic/avhash.h semantic/avsemantics.h
 semantic/avhash.o semantic/avsemantics.o: semantic/avhash.h
 semantic/avsemantics.o: semantic/avsemantics.h
+dta.o: dta.h
 

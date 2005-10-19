@@ -242,7 +242,7 @@ int roles_wo_users_run(sechk_module_t *mod, policy_t *policy)
 		item->item_id = i;
 		item->test_result = 1;
 		proof->idx = -1;
-		proof->type = POL_LIST_USERS;
+		proof->type = SECHK_TYPE_NONE;
 		proof->text = strdup("This role is not assigned to any user.");
 		if (!proof->text) {
 			fprintf(stderr, "Error: out of memory\n");

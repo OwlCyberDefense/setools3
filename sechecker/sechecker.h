@@ -55,15 +55,23 @@ typedef struct sechk_proof {
 #define SECHK_SEV_MED  "med"
 #define SECHK_SEV_HIGH "high"
 
-/* The following definitions are expanding
- * POL_LIST (see policy.h) for aditional items stored
- * neither in policy structure not in the policy
- * sorce file. This list is used by result->item_type
- * and proof->type */
-#define POL_LIST_FCENT (POL_NUM_LISTS + 1)
+/* The following definitions are defined with 
+ * non-coliding values relative to the list
+ * POL_LIST (see policy.h).  This list is used 
+ * by result->item_type and 
+ * proof->type */
+#define SECHK_TYPE_FCENT (POL_NUM_LISTS + 1)
+/* use the datum value to indicate that the item 
+ * is a pointer to data not an index */
+#define SECHK_TYPE_DATUM (POL_NUM_LISTS + 2)
+/* defined for use in proofs that are only a string */
+#define SECHK_TYPE_NONE (POL_NUM_LISTS + 3)
 
 typedef struct sechk_item {
-	int		item_id;
+	union {
+		int	item_id;
+		void	*item_ptr;
+	};
 	unsigned char	test_result;
 	sechk_proof_t	*proof;
 	struct sechk_item *next;
