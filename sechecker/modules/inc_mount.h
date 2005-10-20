@@ -11,7 +11,6 @@
 
 #define SECHK_MOUNT_ONLY_MOUNT   0x01
 #define SECHK_MOUNT_ONLY_MOUNTON 0x02
-#define SECHK_MOUNT_INV_MOUNTON  0x04
 
 typedef struct inc_mount_data {
 } inc_mount_data_t;
