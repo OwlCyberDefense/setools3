@@ -55,7 +55,7 @@ int inc_mount_register(sechk_lib_t *lib)
 "This module finds domains that have incomplete mount permissions.  In order for \n"
 "a mount operation to be allowed by the policy the follow rules must be present: \n"
 "\n"
-"   1.) allow somedomain_d sometype_t : fs  { mount };\n"
+"   1.) allow somedomain_d sometype_t : filesystem  { mount };\n"
 "   2.) allow somedomain_d sometype_t : dir { mounton };\n"
 "\n"
 "This module finds domains that have only one of the rules listed above.\n";
@@ -187,7 +187,6 @@ int inc_mount_run(sechk_module_t *mod, policy_t *policy)
 	avh_idx_t *hash_idx = NULL;
 	int num_nodes = 0;
 	avh_rule_t *hash_rule = NULL;
-	char *buff = NULL;
 	int mount_perm_idx = -1, mounton_perm_idx = -1;
 	int dir_obj_class_idx = -1, filesystem_obj_class_idx = -1;
 	bool_t can_mount = FALSE, can_mounton = FALSE;
@@ -267,49 +266,16 @@ int inc_mount_run(sechk_module_t *mod, policy_t *policy)
 						}
 					}
 				}
-			}
-			if (find_int_in_array(mounton_perm_idx, hash_idx->nodes[j]->data, hash_idx->nodes[j]->num_data) != -1) {
+			} else if (hash_idx->nodes[j]->key.cls == dir_obj_class_idx && find_int_in_array(mounton_perm_idx, hash_idx->nodes[j]->data, hash_idx->nodes[j]->num_data) != -1) {
 				can_mounton = TRUE;
-				if (hash_idx->nodes[j]->key.cls == dir_obj_class_idx) {
-					for (hash_rule = hash_idx->nodes[j]->rules; hash_rule; hash_rule = hash_rule->next) {
-						if (does_av_rule_use_classes(hash_rule->rule, 1, &dir_obj_class_idx, 1, policy) && does_av_rule_use_perms(hash_rule->rule, 1, &mounton_perm_idx, 1, policy)) {
-							if (find_int_in_array(hash_rule->rule, mounton_rules, num_mounton_rules) == -1) {
-								retv = add_i_to_a(hash_rule->rule, &num_mounton_rules, &mounton_rules);
-								if (retv) {
-									fprintf(stderr, "Error: out of memory\n");
-									goto inc_mount_run_fail;
-								}
-							}
-						}
-					}
-				} else {
-					for (hash_rule = hash_idx->nodes[j]->rules; hash_rule; hash_rule = hash_rule->next) {
-						if (does_av_rule_use_classes(hash_rule->rule, 1, &dir_obj_class_idx, 1, policy) || !does_av_rule_use_perms(hash_rule->rule, 1, &mounton_perm_idx, 1, policy))
-							continue;
-						if (!item) {
-							item = sechk_item_new();
-							if (!item) {
+				for (hash_rule = hash_idx->nodes[j]->rules; hash_rule; hash_rule = hash_rule->next) {
+					if (does_av_rule_use_classes(hash_rule->rule, 1, &dir_obj_class_idx, 1, policy) && does_av_rule_use_perms(hash_rule->rule, 1, &mounton_perm_idx, 1, policy)) {
+						if (find_int_in_array(hash_rule->rule, mounton_rules, num_mounton_rules) == -1) {
+							retv = add_i_to_a(hash_rule->rule, &num_mounton_rules, &mounton_rules);
+							if (retv) {
 								fprintf(stderr, "Error: out of memory\n");
 								goto inc_mount_run_fail;
 							}
-							item->item_id = i;
-						}
-						item->test_result |= SECHK_MOUNT_INV_MOUNTON;
-						if (!sechk_item_has_proof(hash_rule->rule, POL_LIST_AV_ACC, item)) {
-							proof = sechk_proof_new();
-							if (!proof) {
-								fprintf(stderr, "Error: out of memory\n");
-								goto inc_mount_run_fail;
-							}
-							proof->idx = hash_rule->rule;
-							proof->type = POL_LIST_AV_ACC;
-							proof->text = re_render_av_rule(!is_binary_policy(policy), hash_rule->rule, 0, policy);
-							if (!proof->text) {
-								fprintf(stderr, "Error: out of memory\n");
-								goto inc_mount_run_fail;
-							}
-							proof->next = item->proof;
-							item->proof = proof;
 						}
 					}
 				}
@@ -325,21 +291,11 @@ int inc_mount_run(sechk_module_t *mod, policy_t *policy)
 				item->item_id = i;
 			}
 			if (can_mount) {
-				item->test_result |= SECHK_MOUNT_ONLY_MOUNT;
-				buff = strdup("This type has mount permission but cannot mounton any directory");
-				if (!buff) {
-					fprintf(stderr, "Error: out of memory\n");
-					goto inc_mount_run_fail;
-				}
+				item->test_result = SECHK_MOUNT_ONLY_MOUNT;
 				tmp = mount_rules;
 				tmp_sz = num_mount_rules;
 			} else if (can_mounton) {
-				item->test_result |= SECHK_MOUNT_ONLY_MOUNTON;
-				buff = strdup("This type has mounton permission but cannot mount any filesystem");
-				if (!buff) {
-					fprintf(stderr, "Error: out of memory\n");
-					goto inc_mount_run_fail;
-				}
+				item->test_result = SECHK_MOUNT_ONLY_MOUNTON;
 				tmp = mounton_rules;
 				tmp_sz = num_mounton_rules;
 			}
@@ -359,24 +315,8 @@ int inc_mount_run(sechk_module_t *mod, policy_t *policy)
 				proof->next = item->proof;
 				item->proof = proof;
 			}
-			proof = sechk_proof_new();
-			if (!proof) {
-				fprintf(stderr, "Error: out of memory\n");
-				goto inc_mount_run_fail;
-			}
-			proof->idx = -1;
-			proof->type = SECHK_TYPE_NONE;
-			proof->text = buff;
-			proof->next = item->proof;
-			item->proof = proof;
-			
 		}
 		if (item) {
-			if (item->test_result == SECHK_MOUNT_INV_MOUNTON) {
-				sechk_item_free(item);
-				item = NULL;
-				continue;
-			}
 			item->next = res->items;
 			res->items = item;
 			(res->num_items)++;
@@ -385,13 +325,17 @@ int inc_mount_run(sechk_module_t *mod, policy_t *policy)
 	}
 	mod->result = res;
 
-	if (res->num_items > 0)
+	if (res->num_items > 0) {
+		free(mount_rules);
+		free(mounton_rules);
 		return 1;
+	}
 
+	free(mount_rules);
+	free(mounton_rules);
 	return 0;
 
 inc_mount_run_fail:
-	free(buff);
 	free(mount_rules);
 	free(mounton_rules);
 	sechk_proof_free(proof);
@@ -428,6 +372,7 @@ int inc_mount_print_output(sechk_module_t *mod, policy_t *policy)
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
+	int i = 0;
 
 	if (!mod || !policy) {
 		fprintf(stderr, "Error: invalid parameters\n");
@@ -456,18 +401,9 @@ int inc_mount_print_output(sechk_module_t *mod, policy_t *policy)
 	 * found without any supporting proof. */
 	if (outformat & SECHK_OUT_LIST) {
 		printf("\n");
-		for (item = mod->result->items; item; item = item->next) {
-			printf("%s - ", policy->types[item->item_id].name);
-			if (item->test_result & SECHK_MOUNT_ONLY_MOUNT)
-				printf("has mount but not mounton");
-			else if (item->test_result & SECHK_MOUNT_ONLY_MOUNTON)
-				printf("has mounton but not mount");
-			else
-				printf("ERROR");
-			if (item->test_result & SECHK_MOUNT_INV_MOUNTON)
-				printf(" and invalid mounton rules\n");
-			else
-				printf("\n");
+		for (item = mod->result->items, i = 1; item; item = item->next, i++) {
+			i %= 4;
+			printf("%s%s", policy->types[item->item_id].name, (i && item->next)? ", ":"\n");
 		}
 		printf("\n");
 	}
@@ -482,9 +418,17 @@ int inc_mount_print_output(sechk_module_t *mod, policy_t *policy)
 	if (outformat & SECHK_OUT_PROOF) {
 		printf("\n");
 		for (item = mod->result->items; item; item = item->next) {
-			printf("%s", policy->types[item->item_id].name);
-			for (proof = item->proof; proof; proof = proof->next) {
-				printf("\t%s\n", proof->text);
+			printf("%s\n", policy->types[item->item_id].name);
+			if (item->test_result == SECHK_MOUNT_ONLY_MOUNT) {
+				for (proof = item->proof; proof; proof = proof->next) {
+					printf("\t%s\n", proof->text);
+				}
+				printf("\tMissing:\n\t\tallow %s <<dir_type>> : dir mounton;\n", policy->types[item->item_id].name);
+			} else if (item->test_result == SECHK_MOUNT_ONLY_MOUNTON) {
+				printf("\tMissing:\n\t\tallow %s <<fs_type>> : filesystem mount;\n", policy->types[item->item_id].name);
+				for (proof = item->proof; proof; proof = proof->next) {
+					printf("\t%s\n", proof->text);
+				}
 			}
 		}
 		printf("\n");
