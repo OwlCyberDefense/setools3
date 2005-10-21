@@ -363,21 +363,12 @@ void roles_wo_allow_free(sechk_module_t *mod)
 }
 
 /* The print output function generates the text printed in the
- * report and prints it to stdout. The outline below is prints
- * the standard format of a report section. Some modules may
- * not have results in a format that can be represented by this
- * outline and will need a different specification. It is
- * required that each of the flags for output components be
- * tested in this function (stats, list, proof, detailed, brief)
- * TODO: fill in the indicated information in the report fields
- * as indicated below. Some alteration may be necessary for
- * checks that perform different analyses */
+ * report and prints it to stdout. */
 int roles_wo_allow_print_output(sechk_module_t *mod, policy_t *policy) 
 {
 	roles_wo_allow_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
-	sechk_proof_t *proof = NULL;
 	int i = 0;
 
         if (!mod || !policy){
@@ -403,31 +394,17 @@ int roles_wo_allow_print_output(sechk_module_t *mod, policy_t *policy)
 	if (outformat & SECHK_OUT_STATS) {
 		printf("Found %i roles.\n", mod->result->num_items);
 	}
+	if (outformat & SECHK_OUT_PROOF) {
+		printf("\nThe following roles do not appear in any allow rules.\n");
+	}
 	/* The list report component is a display of all items
 	 * found without any supporting proof. */
-	if (outformat & SECHK_OUT_LIST) {
+	if (outformat & (SECHK_OUT_LIST|SECHK_OUT_PROOF)) {
 		printf("\n");
 		for (item = mod->result->items; item; item = item->next) {
 			i++;
 			i %= 4;
-			printf("%s%s", policy->roles[item->item_id].name, (i ? ", " : "\n")); 
-		}
-		printf("\n");
-	}
-	/* The proof report component is a display of a list of items
-	 * with an indented list of proof statements supporting the result
-	 * of the check for that item (e.g. rules with a given type)
-	 * this field also lists the computed severity of each item
-	 * items are printed on a line either with (or, if long, such as a
-	 * rule, followed by) the severity. Each proof element is then
-	 * displayed in an indented list one per line below it. */
-	if (outformat & SECHK_OUT_PROOF) {
-		printf("\n");
-		for (item = mod->result->items; item; item = item->next) {
-			printf("%s", policy->roles[item->item_id].name);
-			for (proof = item->proof; proof; proof = proof->next) {
-				printf("\t%s\n", proof->text);
-			}
+			printf("%s%s", policy->roles[item->item_id].name, (i&&item->next) ? ", " : "\n"); 
 		}
 		printf("\n");
 	}
