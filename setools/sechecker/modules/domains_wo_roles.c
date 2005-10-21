@@ -308,7 +308,6 @@ int domains_wo_roles_print_output(sechk_module_t *mod, policy_t *policy)
 	domains_wo_roles_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
-	sechk_proof_t *proof = NULL;
 	int i = 0;
 
 	if (!mod || !policy) {
@@ -334,30 +333,17 @@ int domains_wo_roles_print_output(sechk_module_t *mod, policy_t *policy)
 	if (outformat & SECHK_OUT_STATS) {
 		printf("Found %i types.\n", mod->result->num_items);
 	}
+	if (outformat & SECHK_OUT_PROOF) {
+		printf("\nThe following types are domains but not associated with any roles.\n");
+	}
 	/* The list report component is a display of all items
 	 * found without any supporting proof. */
-	if (outformat & SECHK_OUT_LIST) {
+	if (outformat & (SECHK_OUT_LIST|SECHK_OUT_PROOF)) {
 		printf("\n");
 		for (item = mod->result->items; item; item = item->next) {
 			i++;
 			i %= 4;
-			printf("%s%s", policy->types[item->item_id].name, (i ? ", " : "\n")); 
-		}
-		printf("\n");
-	}
-	/* The proof report component is a display of a list of items
-	 * with an indented list of proof statements supporting the result
-	 * of the check for that item (e.g. rules with a given type)
-	 * this field also lists the computed severity of each item
-	 * (see sechk_item_sev in sechecker.c for details on calculation)
-	 * items are printed on a line either with the severity. */
-	if (outformat & SECHK_OUT_PROOF) {
-		printf("\n");
-		for (item = mod->result->items; item; item = item->next) {
-			printf("%s", policy->types[item->item_id].name);
-			for (proof = item->proof; proof; proof = proof->next) {
-				printf("\t%s\n", proof->text);
-			}
+			printf("%s%s", policy->types[item->item_id].name, (i&&item->next)? ", " : "\n"); 
 		}
 		printf("\n");
 	}

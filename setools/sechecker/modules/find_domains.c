@@ -274,7 +274,7 @@ int find_domains_run(sechk_module_t *mod, policy_t *policy)
 						fprintf(stderr, "Error: out of memory\n");
 						goto find_domains_run_fail;
 					}
-					snprintf(proof->text, buff_sz, "type %s has attribute %s", policy->types[i].name, policy->attribs[datum->domain_attribs[j]].name);
+					snprintf(proof->text, buff_sz, "has attribute %s", policy->attribs[datum->domain_attribs[j]].name);
 					if (!item) {
 						item = sechk_item_new();
 						if (!item) {
@@ -462,7 +462,6 @@ int find_domains_print_output(sechk_module_t *mod, policy_t *policy)
 	find_domains_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
-	sechk_proof_t *proof = NULL;
 	int i = 0;
 
 	if (!mod || !policy){
@@ -488,22 +487,15 @@ int find_domains_print_output(sechk_module_t *mod, policy_t *policy)
 	if (outformat & SECHK_OUT_STATS) {
 		printf("Found %i domain types.\n", mod->result->num_items);
 	}
-	if (outformat & SECHK_OUT_LIST) {
+	if (outformat & SECHK_OUT_PROOF) {
+		printf("\nThe following types are domains.\n\n");
+	}
+	if (outformat & (SECHK_OUT_LIST|SECHK_OUT_PROOF)) {
 		printf("\n");
 		for (item = mod->result->items; item; item = item->next) {
 			i++;
 			i %= 4; /* 4 items per line */
-			printf("%s%s", policy->types[item->item_id].name, i ?", " : "\n");
-		}
-		printf("\n");
-	}
-	if (outformat & SECHK_OUT_PROOF) {
-		printf("\n");
-		for (item = mod->result->items; item; item = item->next) {
-			printf("%s", policy->types[item->item_id].name);
-			for (proof = item->proof; proof; proof = proof->next) {
-				printf("\t%s\n", proof->text);
-			}
+			printf("%s%s", policy->types[item->item_id].name, (i&&item->next)?", " : "\n");
 		}
 		printf("\n");
 	}
