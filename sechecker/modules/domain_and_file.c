@@ -387,7 +387,7 @@ int domain_and_file_print_output(sechk_module_t *mod, policy_t *policy)
 		for (item = mod->result->items; item; item = item->next) {
 			i++;
 			i %= 4; /* 4 items per line */
-			printf("%s%s", policy->types[item->item_id].name, i ? ", " : "\n");
+			printf("%s%s", policy->types[item->item_id].name, (i&&item->next) ? ", " : "\n");
 		}
 		printf("\n");
 	}
@@ -395,7 +395,7 @@ int domain_and_file_print_output(sechk_module_t *mod, policy_t *policy)
 	if (outformat & SECHK_OUT_PROOF) {
 		printf("\n");
 		for (item = mod->result->items; item; item = item->next) {
-			printf("%s", policy->types[item->item_id].name);
+			printf("%s\n", policy->types[item->item_id].name);
 			for (proof = item->proof; proof; proof = proof->next) {
 				printf("\t%s\n", proof->text);
 			}
