@@ -1,3 +1,4 @@
+# libseaudit
 LIB-OBJ        = auditlog.o auditlog_view.o filters.o filter_criteria.o multifilter.o sort.o parse.o
 INCLUDE        = -I..
 SEAUDIT_LIBS   = libseaudit.a ../libapol/libapol.a $(LIBS)
