@@ -43,6 +43,10 @@ sediff_app_t *sediff_app = NULL;
 gboolean toggle = TRUE;
 gint curr_option = OPT_CLASSES; 
 
+static int sediff_txt_buffer_insert_te_results(GtkTextBuffer *txt, ap_single_te_diff_t *sted, policy_t *policy1, policy_t *policy2,
+					       int opts, bool_t showheader);
+static int sediff_txt_buffer_insert_cond_results(GtkTextBuffer *txt, ap_single_cond_diff_t *scd,
+						 policy_t *policy_old, policy_t *policy_new,int opts);
 static struct option const longopts[] =
 {
   {"classes", no_argument, NULL, 'c'},
@@ -76,27 +80,6 @@ typedef struct registered_callback {
 } registered_callback_t;
 
 #define row_selected_signal_emit() sediff_callback_signal_emit(LISTBOX_SELECTED_SIGNAL)
-
-static void usage(const char *program_name, int brief)
-{
-	printf("%s (sediff ver. %s)\n\n", COPYRIGHT_INFO, SEDIFF_VERSION_NUM);
-	printf("Usage: %s [OPTIONS]\n", program_name);
-	printf("Usage: %s [POLICY1 POLICY2]\n",program_name);
-	if(brief) {
-		printf("\n   Try %s --help for more help.\n\n", program_name);
-		return;
-	}
-	fputs("\n\
-Semantically differentiate two policies.  The policies can be either source\n\
-or binary policy files, version 15 or later.  By default, all supported\n\
-policy elements are examined.  The following diff options are available:\n\
-", stdout);
-	fputs("\n\
-  -h, --help       display this help and exit\n\
-  -v, --version    output version information and exit\n\n\
-", stdout);
-	return;
-}
 
 static gboolean sediff_modal_dlg_destroy()
 {
@@ -135,6 +118,99 @@ static gboolean sediff_modal_dlg_show(const char *title,const char *label_string
 	g_signal_connect(G_OBJECT(sediff_app->modal_dlg), "delete_event", 
 			 G_CALLBACK(sediff_modal_dialog_on_window_destroy), sediff_app);
 	return FALSE;
+}
+
+static void sediff_lazy_load_large_buffer(unsigned int buff_idx, gboolean show_dialog)
+{
+	if (show_dialog)
+		sediff_modal_dlg_show("Loading...", "Loading text - this may take a while.");
+
+	switch (buff_idx) {
+	case OPT_TE_RULES_ADD:
+		if (sediff_app->te_add_buffer == NULL) {
+			sediff_app->te_add_buffer = gtk_text_buffer_new(NULL);
+			sediff_txt_buffer_insert_te_results(sediff_app->te_add_buffer, sediff_app->svd->te, sediff_app->p1, 
+							    sediff_app->p2, AP_SVD_OPT_ADD, TRUE);
+		}
+		break;
+	case OPT_TE_RULES_ADD_TYPE:
+		if (sediff_app->te_add_type_buffer == NULL) {
+			sediff_app->te_add_type_buffer = gtk_text_buffer_new(NULL);
+			sediff_txt_buffer_insert_te_results(sediff_app->te_add_type_buffer, sediff_app->svd->te, sediff_app->p1, 
+							    sediff_app->p2, AP_SVD_OPT_ADD_TYPE, TRUE);
+		}
+		break;
+	case OPT_TE_RULES_REM:
+		if (sediff_app->te_rem_buffer == NULL) {
+			sediff_app->te_rem_buffer = gtk_text_buffer_new(NULL);
+			sediff_txt_buffer_insert_te_results(sediff_app->te_rem_buffer, sediff_app->svd->te, sediff_app->p1, 
+							    sediff_app->p2, AP_SVD_OPT_REM, TRUE);
+		}
+		break;
+	case OPT_TE_RULES_REM_TYPE:
+		if (sediff_app->te_rem_type_buffer == NULL) {
+			sediff_app->te_rem_type_buffer = gtk_text_buffer_new(NULL);
+			sediff_txt_buffer_insert_te_results(sediff_app->te_rem_type_buffer, sediff_app->svd->te, sediff_app->p1, 
+							    sediff_app->p2, AP_SVD_OPT_REM_TYPE, TRUE);
+		}
+		break;
+	case OPT_TE_RULES_CHG:
+		if (sediff_app->te_chg_buffer == NULL) {
+			sediff_app->te_chg_buffer = gtk_text_buffer_new(NULL);
+			sediff_txt_buffer_insert_te_results(sediff_app->te_chg_buffer, sediff_app->svd->te, sediff_app->p1, 
+							    sediff_app->p2, AP_SVD_OPT_CHG, TRUE);
+		}
+		break;
+	case OPT_CONDITIONALS_ADD:
+		if (sediff_app->cond_add_buffer == NULL) {
+			sediff_app->cond_add_buffer = gtk_text_buffer_new(NULL);
+			sediff_txt_buffer_insert_cond_results(sediff_app->cond_add_buffer, sediff_app->svd->conds, sediff_app->p1, 
+							      sediff_app->p2, AP_SVD_OPT_ADD);
+		}
+		break;
+	case OPT_CONDITIONALS_REM:
+		if (sediff_app->cond_rem_buffer == NULL) {
+			sediff_app->cond_rem_buffer = gtk_text_buffer_new(NULL);
+			sediff_txt_buffer_insert_cond_results(sediff_app->cond_rem_buffer, sediff_app->svd->conds, sediff_app->p1, 
+							      sediff_app->p2, AP_SVD_OPT_REM);
+		}
+		break;
+	case OPT_CONDITIONALS_CHG:
+		if (sediff_app->cond_chg_buffer == NULL) {
+			sediff_app->cond_chg_buffer = gtk_text_buffer_new(NULL);
+			sediff_txt_buffer_insert_cond_results(sediff_app->cond_chg_buffer, sediff_app->svd->conds, sediff_app->p1, 
+							      sediff_app->p2, AP_SVD_OPT_CHG);
+		}
+
+		break;
+	default:
+		assert(FALSE);
+		break;
+	}
+
+	if (show_dialog)
+		sediff_modal_dlg_destroy();
+}
+
+static void usage(const char *program_name, int brief)
+{
+	printf("%s (sediff ver. %s)\n\n", COPYRIGHT_INFO, SEDIFF_VERSION_NUM);
+	printf("Usage: %s [OPTIONS]\n", program_name);
+	printf("Usage: %s [POLICY1 POLICY2]\n",program_name);
+	if(brief) {
+		printf("\n   Try %s --help for more help.\n\n", program_name);
+		return;
+	}
+	fputs("\n\
+Semantically differentiate two policies.  The policies can be either source\n\
+or binary policy files, version 15 or later.  By default, all supported\n\
+policy elements are examined.  The following diff options are available:\n\
+", stdout);
+	fputs("\n\
+  -h, --help       display this help and exit\n\
+  -v, --version    output version information and exit\n\n\
+", stdout);
+	return;
 }
 
 /* allocate a string that creates a "tab" of numspaces
@@ -1748,14 +1824,14 @@ static int sediff_txt_buffer_insert_rtrans_results(GtkTextBuffer *txt, GString *
 gboolean txt_view_on_text_view_motion(GtkWidget *widget, GdkEventMotion *event, gpointer user_data)
 {
 	GtkTextBuffer *buffer;
- 	GtkTextView *tree_view;
+ 	GtkTextView *textview;
 	GdkCursor *cursor;
 	GtkTextIter iter;
 	GSList *tags,*tagp;
 	gint x, ex, ey, y;
 	bool_t hovering = FALSE;
 	
-	tree_view = GTK_TEXT_VIEW(widget);
+	textview = GTK_TEXT_VIEW(widget);
 
 	if (event->is_hint) {	
 		gdk_window_get_pointer(event->window, &ex, &ey, NULL);
@@ -1764,11 +1840,11 @@ gboolean txt_view_on_text_view_motion(GtkWidget *widget, GdkEventMotion *event, 
 		ey = event->y;
 	}
 
-	gtk_text_view_window_to_buffer_coords(tree_view, GTK_TEXT_WINDOW_WIDGET,
+	gtk_text_view_window_to_buffer_coords(textview, GTK_TEXT_WINDOW_WIDGET,
 					       ex, ey, &x, &y);
 
-	buffer = gtk_text_view_get_buffer(tree_view);
-	gtk_text_view_get_iter_at_location(tree_view, &iter, x, y);
+	buffer = gtk_text_view_get_buffer(textview);
+	gtk_text_view_get_iter_at_location(textview, &iter, x, y);
 	tags = gtk_text_iter_get_tags(&iter);
 	for (tagp = tags;  tagp != NULL;  tagp = tagp->next)
 	{
@@ -1809,7 +1885,6 @@ static void sediff_results_txt_view_switch_buffer(GtkTextView *textview,gint opt
 	GString *string = g_string_new("");
 	int rt;
 	GtkWidget *widget = NULL;
-
 
 	attr = gtk_text_view_get_default_attributes(textview);
 	if (attr->font != NULL) {
@@ -2166,9 +2241,13 @@ static void sediff_results_txt_view_switch_buffer(GtkTextView *textview,gint opt
 			gtk_text_view_set_buffer(textview,sediff_app->main_buffer);			
 			break;
 		case OPT_CONDITIONALS:
-			gtk_text_view_set_buffer(textview,sediff_app->cond_buffer);
+			sediff_clear_text_buffer(sediff_app->main_buffer);
+			sediff_txt_buffer_insert_summary(sediff_app->main_buffer, OPT_CONDITIONALS);
+			gtk_text_view_set_buffer(textview, sediff_app->main_buffer);
 			break;
 		case OPT_CONDITIONALS_ADD:
+			if (sediff_app->cond_add_buffer == NULL)
+				sediff_lazy_load_large_buffer(OPT_CONDITIONALS_ADD, TRUE);
 			table = gtk_text_buffer_get_tag_table(sediff_app->cond_add_buffer);
 			link1_tag = gtk_text_tag_table_lookup(table, "policy1-link-tag");
 			link2_tag = gtk_text_tag_table_lookup(table, "policy2-link-tag");
@@ -2190,6 +2269,8 @@ static void sediff_results_txt_view_switch_buffer(GtkTextView *textview,gint opt
 			gtk_text_view_set_buffer(textview,sediff_app->cond_add_buffer);
 			break;
 		case OPT_CONDITIONALS_REM:
+			if (sediff_app->cond_rem_buffer == NULL)
+				sediff_lazy_load_large_buffer(OPT_CONDITIONALS_REM, TRUE);
 			table = gtk_text_buffer_get_tag_table(sediff_app->cond_rem_buffer);
 			link1_tag = gtk_text_tag_table_lookup(table, "policy1-link-tag");
 			link2_tag = gtk_text_tag_table_lookup(table, "policy2-link-tag");
@@ -2211,6 +2292,8 @@ static void sediff_results_txt_view_switch_buffer(GtkTextView *textview,gint opt
 			gtk_text_view_set_buffer(textview,sediff_app->cond_rem_buffer);
 			break;
 		case OPT_CONDITIONALS_CHG:
+			if (sediff_app->cond_chg_buffer == NULL)
+				sediff_lazy_load_large_buffer(OPT_CONDITIONALS_CHG, TRUE);
 			table = gtk_text_buffer_get_tag_table(sediff_app->cond_chg_buffer);
 			link1_tag = gtk_text_tag_table_lookup(table, "policy1-link-tag");
 			link2_tag = gtk_text_tag_table_lookup(table, "policy2-link-tag");
@@ -2232,9 +2315,13 @@ static void sediff_results_txt_view_switch_buffer(GtkTextView *textview,gint opt
 			gtk_text_view_set_buffer(textview,sediff_app->cond_chg_buffer);
 			break;
 		case OPT_TE_RULES:
-			gtk_text_view_set_buffer(textview,sediff_app->te_buffer);
+			sediff_clear_text_buffer(sediff_app->main_buffer);
+			sediff_txt_buffer_insert_summary(sediff_app->main_buffer, OPT_TE_RULES);
+			gtk_text_view_set_buffer(textview, sediff_app->main_buffer);
 			break;
 		case OPT_TE_RULES_ADD:
+			if (sediff_app->te_add_buffer == NULL)
+				sediff_lazy_load_large_buffer(OPT_TE_RULES_ADD, TRUE);
 			table = gtk_text_buffer_get_tag_table(sediff_app->te_add_buffer);
 			link1_tag = gtk_text_tag_table_lookup(table, "policy1-link-tag");
 			link2_tag = gtk_text_tag_table_lookup(table, "policy2-link-tag");
@@ -2257,6 +2344,8 @@ static void sediff_results_txt_view_switch_buffer(GtkTextView *textview,gint opt
 			gtk_widget_set_sensitive(widget, TRUE);
 			break;
 		case OPT_TE_RULES_REM:
+			if (sediff_app->te_rem_buffer == NULL)
+				sediff_lazy_load_large_buffer(OPT_TE_RULES_REM, TRUE);
 			table = gtk_text_buffer_get_tag_table(sediff_app->te_rem_buffer);
 			link1_tag = gtk_text_tag_table_lookup(table, "policy1-link-tag");
 			link2_tag = gtk_text_tag_table_lookup(table, "policy2-link-tag");
@@ -2279,6 +2368,8 @@ static void sediff_results_txt_view_switch_buffer(GtkTextView *textview,gint opt
 			gtk_widget_set_sensitive(widget, TRUE);
 			break;
 		case OPT_TE_RULES_CHG:
+			if (sediff_app->te_chg_buffer == NULL)
+				sediff_lazy_load_large_buffer(OPT_TE_RULES_CHG, TRUE);
 			table = gtk_text_buffer_get_tag_table(sediff_app->te_chg_buffer);
 			link1_tag = gtk_text_tag_table_lookup(table, "policy1-link-tag");
 			link2_tag = gtk_text_tag_table_lookup(table, "policy2-link-tag");
@@ -2301,6 +2392,8 @@ static void sediff_results_txt_view_switch_buffer(GtkTextView *textview,gint opt
 			gtk_widget_set_sensitive(widget, TRUE);
 			break;
 		case OPT_TE_RULES_ADD_TYPE:
+			if (sediff_app->te_add_type_buffer == NULL)
+				sediff_lazy_load_large_buffer(OPT_TE_RULES_ADD_TYPE, TRUE);
 			table = gtk_text_buffer_get_tag_table(sediff_app->te_add_type_buffer);
 			link1_tag = gtk_text_tag_table_lookup(table, "policy1-link-tag");
 			link2_tag = gtk_text_tag_table_lookup(table, "policy2-link-tag");
@@ -2323,6 +2416,8 @@ static void sediff_results_txt_view_switch_buffer(GtkTextView *textview,gint opt
 			gtk_widget_set_sensitive(widget, TRUE);
 			break;
 		case OPT_TE_RULES_REM_TYPE:
+			if (sediff_app->te_rem_type_buffer == NULL)
+				sediff_lazy_load_large_buffer(OPT_TE_RULES_REM_TYPE, TRUE);
 			table = gtk_text_buffer_get_tag_table(sediff_app->te_rem_type_buffer);
 			link1_tag = gtk_text_tag_table_lookup(table, "policy1-link-tag");
 			link2_tag = gtk_text_tag_table_lookup(table, "policy2-link-tag");
@@ -2363,16 +2458,15 @@ static gboolean txt_view_on_cond_link_event(GtkTextTag *tag, GObject *event_obje
 	GtkTextIter start, end;
 	gchar *my_str = NULL;
 	GtkTextView *textview = GTK_TEXT_VIEW(user_data);
-	GtkTextMark *mark;
+	GtkTextMark *mark = NULL;
 	GtkTreeModel *tree_model;
 	GtkTreeIter tree_iter;
 	GtkTreeIter tree_iter_next;
 	GtkTreeSelection *sel;
 	GtkTreePath *parent = NULL,*child = NULL;
+	GString *string;
 	int opt,rt;
 	
-
-
 	if (textview == NULL)
 		return FALSE;
 
@@ -2385,18 +2479,37 @@ static gboolean txt_view_on_cond_link_event(GtkTextTag *tag, GObject *event_obje
 		}
 
 		/* switch the textview to show the cond buffer */
-		if ((mark = gtk_text_buffer_get_mark(sediff_app->cond_add_buffer,my_str)) != NULL) {
+		sediff_modal_dlg_show("Searching...", "Searching text - this may take a while.");
+		if (sediff_app->cond_add_buffer == NULL) 
+			sediff_lazy_load_large_buffer(OPT_CONDITIONALS_ADD, FALSE);
+		if ((mark = gtk_text_buffer_get_mark(sediff_app->cond_add_buffer, my_str)) != NULL) {
 			opt = OPT_CONDITIONALS_ADD;
 			buffer = sediff_app->cond_add_buffer;
-		} else if ((mark = gtk_text_buffer_get_mark(sediff_app->cond_rem_buffer,my_str)) != NULL) {
+			goto got_mark;
+		}
+		if (sediff_app->cond_rem_buffer == NULL)
+			sediff_lazy_load_large_buffer(OPT_CONDITIONALS_REM, FALSE);
+		if ((mark = gtk_text_buffer_get_mark(sediff_app->cond_rem_buffer,my_str)) != NULL) {
 			opt = OPT_CONDITIONALS_REM;
 			buffer = sediff_app->cond_rem_buffer;
-		} else if ((mark = gtk_text_buffer_get_mark(sediff_app->cond_chg_buffer,my_str)) != NULL) {
+			goto got_mark;
+		} 
+		if (sediff_app->cond_chg_buffer == NULL) 
+			sediff_lazy_load_large_buffer(OPT_CONDITIONALS_REM, FALSE);
+		if ((mark = gtk_text_buffer_get_mark(sediff_app->cond_chg_buffer,my_str)) != NULL) {
 			opt = OPT_CONDITIONALS_CHG;
 			buffer = sediff_app->cond_chg_buffer;
-		} else {
-			return FALSE;
+			goto got_mark;
 		}
+		/* we didn't find the mark */
+		sediff_modal_dlg_destroy();
+		string = g_string_new("Error finding mark.");
+		message_display(sediff_app->window, GTK_MESSAGE_ERROR, string->str);
+		g_string_free(string, TRUE);
+		return FALSE;
+
+	got_mark:
+		sediff_modal_dlg_destroy();
 		sediff_results_txt_view_switch_buffer(textview,opt,1);
 		/* select the last element in the tree */
 		tree_model = gtk_tree_view_get_model(GTK_TREE_VIEW(sediff_app->tree_view));		
@@ -3074,10 +3187,6 @@ static void sediff_free_stored_buffers()
 		g_object_unref (G_OBJECT(sediff_app->main_buffer)); 
 		sediff_app->main_buffer = NULL;	
 	}
-	if (sediff_app->te_buffer) {
-		g_object_unref (G_OBJECT(sediff_app->te_buffer)); 
-		sediff_app->te_buffer = NULL;
-	}
 	if (sediff_app->te_add_buffer) {
 		g_object_unref (G_OBJECT(sediff_app->te_add_buffer)); 
 		sediff_app->te_add_buffer = NULL;
@@ -3098,10 +3207,6 @@ static void sediff_free_stored_buffers()
 		g_object_unref (G_OBJECT(sediff_app->te_rem_type_buffer));
 		sediff_app->te_rem_type_buffer = NULL;	
 	}
-	if (sediff_app->cond_buffer) {
-		g_object_unref (G_OBJECT(sediff_app->cond_buffer)); 
-		sediff_app->cond_buffer = NULL;
-	}
 	if (sediff_app->cond_add_buffer) {
 		g_object_unref (G_OBJECT(sediff_app->cond_add_buffer)); 
 		sediff_app->cond_add_buffer = NULL;
@@ -3115,74 +3220,6 @@ static void sediff_free_stored_buffers()
 		sediff_app->cond_chg_buffer = NULL; 
 	}
 }
-
-/*
- * Here we create the text buffers which typically store large results. 
- */
-static void sediff_create_buffers()
-{
-	if (sediff_app->main_buffer == NULL) 
-		sediff_app->main_buffer = gtk_text_buffer_new(NULL);
-	if (sediff_app->te_buffer == NULL)
-		sediff_app->te_buffer = gtk_text_buffer_new(NULL);
-	if (sediff_app->te_add_buffer == NULL)
-		sediff_app->te_add_buffer = gtk_text_buffer_new(NULL);
-	if (sediff_app->te_rem_buffer == NULL)
-		sediff_app->te_rem_buffer = gtk_text_buffer_new(NULL);
-	if (sediff_app->te_chg_buffer == NULL)
-		sediff_app->te_chg_buffer = gtk_text_buffer_new(NULL);
-	if (sediff_app->te_add_type_buffer == NULL)
-		sediff_app->te_add_type_buffer = gtk_text_buffer_new(NULL);
-	if (sediff_app->te_rem_type_buffer == NULL)
-		sediff_app->te_rem_type_buffer = gtk_text_buffer_new(NULL);
-	if (sediff_app->cond_buffer == NULL)
-		sediff_app->cond_buffer = gtk_text_buffer_new(NULL);
-	if (sediff_app->cond_add_buffer == NULL)
-		sediff_app->cond_add_buffer = gtk_text_buffer_new(NULL);
-	if (sediff_app->cond_rem_buffer == NULL)
-		sediff_app->cond_rem_buffer = gtk_text_buffer_new(NULL);
-	if (sediff_app->cond_chg_buffer == NULL)
-		sediff_app->cond_chg_buffer = gtk_text_buffer_new(NULL);
-}
-
-/*
-  puts the diff results into the precreated text buffers
-  this is used for te/cond results because they can be so large
-  that drawing them on the fly can cause the gui to be very slow
-*/
-static void sediff_populate_large_buffers(ap_single_view_diff_t *svd)
-{
-	policy_t *policy_old = svd->diff->p1;
-	policy_t *policy_new = svd->diff->p2;
-
-	sediff_txt_buffer_insert_summary(sediff_app->te_buffer,OPT_TE_RULES);
-	sediff_txt_buffer_insert_te_results(sediff_app->te_add_buffer, 
-					    svd->te, policy_old, policy_new, AP_SVD_OPT_ADD, TRUE);
-	sediff_txt_buffer_insert_te_results(sediff_app->te_rem_buffer, 
-					    svd->te, policy_old, policy_new, AP_SVD_OPT_REM, TRUE);
-	sediff_txt_buffer_insert_te_results(sediff_app->te_add_type_buffer,
-					    svd->te, policy_old, policy_new, AP_SVD_OPT_ADD_TYPE, TRUE);
-	sediff_txt_buffer_insert_te_results(sediff_app->te_rem_type_buffer, 
-					    svd->te, policy_old, policy_new, AP_SVD_OPT_REM_TYPE, TRUE);
-	sediff_txt_buffer_insert_te_results(sediff_app->te_chg_buffer, 
-					    svd->te, policy_old, policy_new, AP_SVD_OPT_CHG, TRUE);
-
-	/* case CONDITIONALS: */
-	sediff_txt_buffer_insert_summary(sediff_app->cond_buffer, OPT_CONDITIONALS);
-	sediff_txt_buffer_insert_cond_results(sediff_app->cond_add_buffer, svd->conds, policy_old, policy_new, AP_SVD_OPT_ADD);
-	sediff_txt_buffer_insert_cond_results(sediff_app->cond_rem_buffer, svd->conds, policy_old, policy_new, AP_SVD_OPT_REM);
-	sediff_txt_buffer_insert_cond_results(sediff_app->cond_chg_buffer, svd->conds, policy_old, policy_new, AP_SVD_OPT_CHG);
-
-	/* insert the diff summary */
-	sediff_txt_buffer_insert_summary_results(sediff_app->main_buffer);
-
-	/* load up the status bar */
-	sediff_update_status_bar();
-
-	/* populate the key */
-	sediff_populate_key_buffer();
-}
-
 
 /* 
    callback used to switch our text view based on
@@ -3510,10 +3547,11 @@ static void sediff_initialize_diff()
 		gtk_widget_show_all(container);			
 	}
 	
-	/* recreate our stored buffers */
 	sediff_free_stored_buffers();
-	sediff_create_buffers();
-	
+	/* re-create the main buffer */
+	if (sediff_app->main_buffer == NULL) 
+		sediff_app->main_buffer = gtk_text_buffer_new(NULL);
+
 	textview = GTK_TEXT_VIEW((glade_xml_get_widget(sediff_app->window_xml, "sediff_key_txt_view")));
 	g_assert(textview);
 	txt = gtk_text_view_get_buffer(textview);
@@ -3558,7 +3596,7 @@ static int sediff_diff_policies(policy_t *p1, policy_t *p2, ap_diff_rename_t *re
 		goto err;
 
 	/* show our loading dialog */
-	sediff_modal_dlg_show("Calculating","Calculating difference - this may take a while");
+	sediff_modal_dlg_show("Calculating", "Calculating difference - this may take a while");
 
 	sediff_initialize_diff();
 	/* set the cursor to a hourglass */
@@ -3579,8 +3617,11 @@ static int sediff_diff_policies(policy_t *p1, policy_t *p2, ap_diff_rename_t *re
 		goto err;
 	}
 	
-	/* load up the buffers */
-	sediff_populate_large_buffers(sediff_app->svd);
+	/* load up the status bar */
+	sediff_update_status_bar();
+
+	/* populate the key */
+	sediff_populate_key_buffer();
 
 	/* get the scrolled window we are going to put the tree_store in */
 	container = glade_xml_get_widget(sediff_app->window_xml, "scrolledwindow_list");
@@ -3634,7 +3675,6 @@ err:
 	sediff_modal_dlg_destroy();
 	return -1;
 }
-
 
 static void run_diff_clicked()
 {
