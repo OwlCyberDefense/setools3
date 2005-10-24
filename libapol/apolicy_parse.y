@@ -4234,7 +4234,7 @@ static int define_fs_use(int behavior, int ver)
 /* added Jul 2002 */
 static int define_genfs_context_helper(char *fstype, int has_type)
 {
-	int rt, idx, type;
+	int rt, idx, type=-1;
 	char *id = NULL, *tmp = NULL;
 	security_con_t *context;
 

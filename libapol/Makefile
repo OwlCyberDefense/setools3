@@ -8,7 +8,7 @@ LIB-OBJ +=  binpol/binpol.o binpol/bpmaps.o binpol/fbuf.o binpol/ebitmap.o
 LIB-OBJ +=  semantic/avhash.o semantic/avsemantics.o
 
 LIB-OBJ-TCL = apol_tcl.o
-
+#libapol
 TARGET = libapol.so
 SONAME = $(TARGET).1
 LIBSO  = $(TARGET).$(shell cat VERSION)

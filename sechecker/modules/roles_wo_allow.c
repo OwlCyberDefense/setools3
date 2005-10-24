@@ -192,7 +192,7 @@ int roles_wo_allow_run(sechk_module_t *mod, policy_t *policy)
 	int i, j, retv;
 	bool_t used = FALSE;
 	char *buff = NULL;
-	int buff_sz;
+	int buff_sz=-1;
 	ta_item_t *ta = NULL;
 
 	if (!mod || !policy) {
