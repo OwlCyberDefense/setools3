@@ -3557,10 +3557,10 @@ static int sediff_diff_policies(policy_t *p1, policy_t *p2, ap_diff_rename_t *re
 	if (p1 == NULL || p2 == NULL)
 		goto err;
 
-	sediff_initialize_diff();
 	/* show our loading dialog */
 	sediff_modal_dlg_show("Calculating","Calculating difference - this may take a while");
 
+	sediff_initialize_diff();
 	/* set the cursor to a hourglass */
 	cursor = gdk_cursor_new(GDK_WATCH);
 	gdk_window_set_cursor(GTK_WIDGET(sediff_app->window)->window, cursor);
