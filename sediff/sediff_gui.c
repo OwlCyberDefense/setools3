@@ -1003,7 +1003,7 @@ static int sediff_txt_buffer_insert_boolean_results(GtkTextBuffer *txt, GString 
 				fprintf(stderr, "Problem getting name for boolean %d\n", sbd->add[i]->idx);
 				return -1;
 			}
-			g_string_printf(string, "\t\t- %s\n", name);
+			g_string_printf(string, "\t\t+ %s\n", name);
 			gtk_text_buffer_get_end_iter(txt, &iter);
 			gtk_text_buffer_insert_with_tags_by_name(txt, &iter, string->str, 
 								 -1, "added-tag", NULL);
@@ -2674,8 +2674,6 @@ static int sediff_txt_buffer_insert_te_results(GtkTextBuffer *txt, ap_single_te_
 	GString *string;
 	GtkTextIter iter;
 
-	sediff_clear_text_buffer(txt);
-
 	snprintf(cond_on,TABSIZE,"D:\t");
 	snprintf(cond_off,TABSIZE,"E:\t");
 	snprintf(cond_none,TABSIZE,"\t");
@@ -3003,7 +3001,7 @@ static int sediff_txt_buffer_insert_cond_results(GtkTextBuffer *txt, ap_single_c
 								 -1, "added-tag", NULL);
 			
 			sediff_txt_buffer_insert_te_results(txt, scd->add[i].false_list, policy_old, policy_new, 
-							    AP_SVD_OPT_ALL, FALSE);	
+							    AP_SVD_OPT_ALL, FALSE);
 		}
 	}
 	if (opts & AP_SVD_OPT_REM) {

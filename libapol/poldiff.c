@@ -264,7 +264,6 @@ static void ap_cond_expr_diff_free(ap_cond_expr_diff_t *ced)
 	ap_cond_expr_diff_t *cur, *next;
 	if(ced == NULL)
 		return;
-		
 	for(cur = ced; cur != NULL; ) {
 		next = cur->next;
 		free(cur->true_list_diffs);
@@ -430,7 +429,7 @@ static void apol_diff_destroy(apol_diff_t *ad)
 {
 	if(ad == NULL)
 		return;
-		
+	
 	int_a_diff_free(ad->types);
 	int_a_diff_free(ad->attribs);
 	int_a_diff_free(ad->roles);
@@ -441,8 +440,8 @@ static void apol_diff_destroy(apol_diff_t *ad)
 	ap_bool_diff_destroy(ad->booleans);
 	int_a_diff_free(ad->role_allow);
 	ap_rtrans_diff_destroy(ad->role_trans);
-	avh_free(&ad->te);
 	ap_cond_expr_diff_free(ad->cond_exprs);
+	avh_free(&ad->te);
 	free(ad);
 }
 
@@ -498,20 +497,34 @@ void ap_single_view_diff_destroy(ap_single_view_diff_t *svd)
 	if (svd == NULL)
 		return;
 
-	ap_single_iad_diff_destroy(svd->types);
-	ap_single_iad_diff_destroy(svd->roles);
-	ap_single_iad_diff_destroy(svd->users);
-	ap_single_iad_diff_destroy(svd->attribs);
-	ap_single_iad_diff_destroy(svd->classes);
-	ap_single_perm_diff_destroy(svd->perms);
-	ap_single_iad_diff_destroy(svd->common_perms);
-	ap_single_iad_diff_destroy(svd->rallows);
-	ap_single_bool_diff_destroy(svd->bools);
-	ap_single_rtrans_diff_destroy(svd->rtrans);
-	ap_single_te_diff_free(svd->te); 
-	free(svd->te);
-	ap_single_cond_diff_destroy(svd->conds);
-	apol_diff_result_destroy(FALSE, svd->diff);
+	if (svd->types)
+		ap_single_iad_diff_destroy(svd->types);
+	if (svd->roles)
+		ap_single_iad_diff_destroy(svd->roles);
+	if (svd->users)
+		ap_single_iad_diff_destroy(svd->users);
+	if (svd->attribs)
+		ap_single_iad_diff_destroy(svd->attribs);
+	if (svd->classes)
+		ap_single_iad_diff_destroy(svd->classes);
+	if (svd->perms)
+		ap_single_perm_diff_destroy(svd->perms);
+	if (svd->common_perms)
+		ap_single_iad_diff_destroy(svd->common_perms);
+	if (svd->rallows)
+		ap_single_iad_diff_destroy(svd->rallows);
+	if (svd->bools)
+		ap_single_bool_diff_destroy(svd->bools);
+	if (svd->rtrans)
+		ap_single_rtrans_diff_destroy(svd->rtrans);
+	if (svd->te) {
+		ap_single_te_diff_free(svd->te); 
+		free(svd->te);
+	}
+	if (svd->conds)
+		ap_single_cond_diff_destroy(svd->conds);
+	if (svd->diff)
+		apol_diff_result_destroy(FALSE, svd->diff);
 	free(svd);
 }
 
@@ -1752,8 +1765,8 @@ static ap_single_iad_diff_t *ap_single_iad_diff_new(apol_diff_result_t *diff,uns
 	ap_single_iad_diff_t *siad = NULL;
 	char *name = NULL,*name2 = NULL;
 	int rt;
-	get_iad_name_fn_t get_name;
-	get_iad_idx_fn_t get_idx;
+	get_iad_name_fn_t get_name=NULL;
+	get_iad_idx_fn_t get_idx=NULL;
 	bool_t has_types_diff = FALSE;
 	char *descrp = NULL;
 	policy_t *p1 = NULL;

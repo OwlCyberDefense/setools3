@@ -889,7 +889,7 @@ int sechk_lib_load_profile(const char *prof_name, sechk_lib_t *lib)
 {
 	const sechk_profile_name_reg_t *profiles;
 	char *profpath = NULL, *prof_filename = NULL, *path = NULL;
-	int num_profiles, retv, i;
+	int num_profiles, retv=-1, i;
 
 	if (!prof_name || !lib) {
 		fprintf(stderr, "Error: invalid parameters to load profile\n");

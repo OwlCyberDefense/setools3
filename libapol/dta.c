@@ -42,7 +42,7 @@ static int dta_find_rule_for_type(dta_rule_t *rule_list, int list_sz, int type)
 	return -1;
 }
 
-int dta_rule_compare(const void *a, const void *b)
+static int dta_rule_compare(const void *a, const void *b)
 {
 	const dta_rule_t *rule_a = (const dta_rule_t*)a;
 	const dta_rule_t *rule_b = (const dta_rule_t*)b;
