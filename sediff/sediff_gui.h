@@ -40,14 +40,12 @@ typedef struct sediff_app {
 	GList *callbacks;               
 	gint progress_completed;
 	GtkTextBuffer *main_buffer;       /* the generic buffer used for everything but te rules and conditionals(because they take so long to draw */
-	GtkTextBuffer *te_buffer;         /* the top level node in the te diff */
 	GtkTextBuffer *te_add_buffer;     /* the added te rules buffer */
 	GtkTextBuffer *te_rem_buffer;     /* the removed te rules buffer */
 	GtkTextBuffer *te_chg_buffer;     /* the changed te rules buffer */
 	GtkTextBuffer *te_add_type_buffer;/* the te rules added because of a new type buffer */
 	GtkTextBuffer *te_rem_type_buffer;/* the te rules removed because of a missing type buffer */
 	GtkTextBuffer *summary_buffer;    /* the summary buffer */
-	GtkTextBuffer *cond_buffer;       /* the top level conditional buffer */
 	GtkTextBuffer *cond_add_buffer;   /* the added conditionals buffer */
 	GtkTextBuffer *cond_rem_buffer;   /* the removed conditionals buffer */
 	GtkTextBuffer *cond_chg_buffer;   /* the changed conditionals buffer */
