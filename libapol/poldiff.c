@@ -51,14 +51,6 @@ static void ap_single_perm_diff_destroy(ap_single_perm_diff_t *spd)
 {
 	if (spd == NULL)
 		return;
-	if (spd->add)
-		free(spd->add);
-	if (spd->rem)
-		free(spd->rem);
-	spd->add = NULL;
-	spd->rem = NULL;
-	spd->num_add = 0;
-	spd->num_rem = 0;
 	free(spd);
 }
 
