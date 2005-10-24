@@ -41,7 +41,7 @@ INSTALL_HELPDIR = $(INSTALL_LIBDIR)
 
 # Compile options
 # If debug is zero, an optimized version is created
-DEBUG			= 1
+DEBUG			= 0
 # If GPROF is not zero, compile and link with gprof profiling data
 USEGPROF		= 0
 # Determine whether setools is linked dynamically with
@@ -91,7 +91,7 @@ endif
 ifeq ($(DEBUG), 0)
 CFLAGS			= -Wall -O2 -fPIC $(CC_DEFINES)
 else
-CFLAGS			= -Wall -g $(CC_DEFINES)
+CFLAGS			= -Wall -g -fPIC $(CC_DEFINES)
 #CFLAGS			= -Wall -ansi -pedantic -g $(CC_DEFINES)
 endif
 
