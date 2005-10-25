@@ -2484,7 +2484,7 @@ static ap_single_rtrans_diff_t *ap_new_single_rtrans_diff(apol_diff_result_t *di
 				rd_cur = rd_cur->next;
 			if(rd_cur == NULL)
 				goto ap_new_single_rtrans_diff_error;
-			rt = ap_new_single_rtrans_chg(srd,rd,rd_cur);
+			rt = ap_new_single_rtrans_chg(srd, rd_cur, rd);
 			if (rt < 0)
 				goto ap_new_single_rtrans_diff_error;
 		} else {
