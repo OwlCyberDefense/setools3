@@ -23,6 +23,7 @@ seaudit 	The audit log analysis tools (seaudit and seaudit-report)
 secmds		The setools command line tools (seinfo, sesearch, 
 		findcon, replcon, indexcon, searchcon)
 sediff 		The semantic policy difference tool (command-line and GUI)
+sechecker	The modular policy checking tool
 packages	External packages required by setools
 
 Apol and the other tools are designed to specifically not address MLS
