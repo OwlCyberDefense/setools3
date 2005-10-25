@@ -1,4 +1,4 @@
-# libseuser and libseuser-tcl
+#sqlite
 
 LIB-OBJ = attach.o auth.o btree.o build.o date.o delete.o expr.o func.o hash.o insert.o legacy.o main.o opcodes.o \
 	os_mac.o os_unix.o os_win.o pager.o parse.o pragma.o printf.o random.o select.o table.o tokenize.o trigger.o \

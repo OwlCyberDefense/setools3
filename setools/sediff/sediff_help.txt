@@ -1,6 +1,6 @@
 Semantic Policy Difference Tool for Security Enhanced Linux
-sediff, Graphical User Interface version 1.1.1
-October 03, 2005
+sediff, Graphical User Interface version 1.2.0
+October 25, 2005
 selinux@tresys.com
 
 Overview:
