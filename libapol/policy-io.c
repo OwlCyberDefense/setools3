@@ -60,7 +60,7 @@ extern void yyrestart(FILE *);
 extern unsigned int pass;
 extern int yydebug;
 
-/* returns an error string based on a return error from seuser_label_home_dir() */
+/* returns an error string based on a return error */
 const char* find_default_policy_file_strerr(int err)
 {
 	switch(err) {

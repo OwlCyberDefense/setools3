@@ -2,7 +2,7 @@ SELinux Tools (setools), version 2.1.2
 by Tresys Technology, LLC
 (selinux@tresys.com, www.tresys.com/selinux)
 
-October 03, 2005
+October 25, 2005
 
 
 CURRENT BUGS AND ISSUES
@@ -17,10 +17,7 @@ APOL
    search command does not handle a '-' as the first character in the 
    string. 
    
-2. The domain transition analysis currently does not handle the '~' 
-   semantics in allow rules
-   
-3. Double clicking on listbox items may not display popup windows in 
+2. Double clicking on listbox items may not display popup windows in 
    certain window managers, such as Gnome or Ximian. For example, 
    double-clicking an attribute in the [policy components]/types tab 
    does not display the types for that attribute. You must right-
@@ -28,38 +25,21 @@ APOL
    Tcl/Tk bug and has been submitted to 
    http://sourceforge.net/projects/tcllib.
    
-4. The use of some fonts may cause widgets in the GUI to be obscured. 
+3. The use of some fonts may cause widgets in the GUI to be obscured. 
    If you experience this problem, you may edit the fonts in the 
    .apol file in your home directory. Apol may also obscure widgets  
    from the screen on resolutions less than 1024x768.
    
-5. Apol will correctly load policies with aliases, but the alias 
+4. Apol will correctly load policies with aliases, but the alias 
    names will be lost (the root type name is used instead). 
    Therefore, aliases are not displayed and queries cannot use them 
    as parameters.
    
-6. Searching for specific permissions in AV rules will return 
-   rules that have '*' even if the listed object classes do not 
-   have the requested permissions.
-
-SEPCUT
-
-1. There is a bug in the text search feature. The text widgets' search 
-   command does not handle a '-' as the first character in the string. 
-
-
 LIBAPOL
 
 1. Lots of yacc shift/reduce errors in libapol that don't currently 
    impact operation (so it appears).
    
-2. Complements are not always correctly handled in type and 
-   permission lists.
-
-3. The direct file relabel analysis does not currently 
-   distinguish object classes, resulting in some false positives. 
-   This should not effect most well-written policies.
-
 SEAUDIT
 
 1. Sorting by date will not work correctly if your audit log spans 
@@ -72,10 +52,10 @@ SEAUDIT
 
 TESTING INFORMATION
 
-Operating Systems: Fedora Core 1, 2 and 3, RHEL 4, Gentoo 2004.3
-SELinux versions: 2.4, 2.6
-SELinux Policy versions: 12, 15, 16, 17 and 18 (with and without MLS support)
-TCL/TK versions: 8.3, 8.4
+Operating Systems: Fedora Core 3 and 4, RHEL 4, Gentoo 2004.3
+SELinux version: 2.6
+SELinux Policy versions: 12, 15, 16, 17, 18, 19 and 20 (with MLS support for versions 19 and 20)
+TCL/TK version: 8.4
 BWidget versions: 1.4, 1.6, 1.7
 Desktops: Gnome, KDE, Gnome, fvwm 
 
