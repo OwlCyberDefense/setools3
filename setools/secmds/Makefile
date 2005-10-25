@@ -3,11 +3,9 @@
 ifeq ($(DYNAMIC), 0)
 LIBAPOL		= ../libapol/libapol.a
 LIBSEFS		= ../libsefs/libsefs.a
-LIBSEUSER	= ../libseuser/libseuser.a
 else
 LIBAPOL		= ../libapol/libapol.so.$(shell cat ../libapol/VERSION)
 LIBSEFS		= ../libsefs/libsefs.so.$(shell cat ../libsefs/VERSION)
-LIBSEUSER	= ../libseuser/libseuser.so.$(shell cat ../libseuser/VERSION)
 endif
 
 # These are for indexcon so it's usable on machines without libapol
