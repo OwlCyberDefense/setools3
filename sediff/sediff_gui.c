@@ -2495,8 +2495,8 @@ static gboolean txt_view_on_cond_link_event(GtkTextTag *tag, GObject *event_obje
 			goto got_mark;
 		} 
 		if (sediff_app->cond_chg_buffer == NULL) 
-			sediff_lazy_load_large_buffer(OPT_CONDITIONALS_REM, FALSE);
-		if ((mark = gtk_text_buffer_get_mark(sediff_app->cond_chg_buffer,my_str)) != NULL) {
+			sediff_lazy_load_large_buffer(OPT_CONDITIONALS_CHG, FALSE);
+		if ((mark = gtk_text_buffer_get_mark(sediff_app->cond_chg_buffer, my_str)) != NULL) {
 			opt = OPT_CONDITIONALS_CHG;
 			buffer = sediff_app->cond_chg_buffer;
 			goto got_mark;
