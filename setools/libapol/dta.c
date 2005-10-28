@@ -641,35 +641,6 @@ int dta_table_get_all_trans(dta_table_t *table, dta_trans_t **trans, int start_i
 		}
 	}
 
-	/* find any execute rules for start_idx that lack valid transitions */
-	for (i = 1; i < table->size; i++){
-		retv = dta_find_rule_for_type(table->exec_list[i].exec_rules, table->exec_list[i].num_exec_rules, start_idx);
-		if (retv < 0)
-			continue;
-		if (table->exec_list[i].exec_rules[retv].has_no_trans || table->exec_list[i].exec_rules[retv].used)
-			continue;
-		entry = dta_trans_new();
-		entry->start_type = start_idx;
-		entry->ep_type = i;
-		entry->end_type = -1;
-		entry->valid = FALSE;
-		entry->num_exec_rules = table->exec_list[i].exec_rules[retv].num_rules;
-		if (entry->num_exec_rules < 1) {
-			error = EINVAL;
-			goto exit_error;
-		}
-		entry->exec_rules = (int*)malloc(entry->num_exec_rules * sizeof(int));
-		if (!entry->exec_rules) {
-			error = errno;
-			goto exit_error;
-		}
-		memcpy(entry->exec_rules, table->exec_list[i].exec_rules[retv].rules, entry->num_exec_rules * sizeof(int));
-		entry->next = cur_list;
-		cur_list = entry;
-		if (!tail)
-			tail = entry;
-	}
-
 	/* if results were found add to list */
 	if (cur_list) {
 		if (!tail) {
