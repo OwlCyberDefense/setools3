@@ -1,0 +1,545 @@
+# This file contains the default permission mappings for
+# apol's information flow analysis.  The permissions defined 
+# for each object class are mapped to one of the following:
+# read (r), write(w), read & write (b), none (n).  Read
+# means that information flows from the object to the 
+# subject.  Write mean that information flows from the
+# subject to the object.  None means no information flow
+# occurs for that permission.  The default mappings are
+# based on those defined for the MLS portions of the SE
+# Linux policy.  You can change the default mappings in
+# this file.
+#
+# This file is used to initialize a user's mapping, or
+# when the suer asks to reset their mappings.  A user is
+# able to change the mappings for their local environment.
+#
+# First datum is number of object classes in file.
+29
+
+# Then for each object class we have the keyword "class"
+# followed by class name and number of permissions for 
+# that class.  Finally for each class permission, we have
+# the mapping charater (r, w, b, or n).
+class dir 22
+ioctl		x
+read		r
+write		w
+create		w
+getattr		r
+setattr		w
+lock		n
+relabelfrom	b
+relabelto	w
+append		w
+unlink		w
+link		w
+rename		w
+execute		r
+swapon		b
+quotaon		b
+mounton		b
+add_name	w
+remove_name	w
+reparent	w
+search		r
+rmdir		b
+
+class file 19
+ioctl		n
+read		r
+write		w
+create		w
+getattr		r
+setattr		w
+lock		n
+relabelfrom	b
+relabelto	w
+append		w
+unlink		w
+link		w
+rename		w
+execute		r
+swapon		b
+quotaon		b
+mounton		b
+execute_no_trans r
+entrypoint	r
+
+class lnk_file 17
+ioctl		n
+read		r
+write		w
+create		w
+getattr		r
+setattr		w
+lock		n
+relabelfrom	b
+relabelto	w
+append		w
+unlink		w
+link		w
+rename		w
+execute		r
+swapon		b
+quotaon		b
+mounton		b
+
+class chr_file 17
+ioctl		n
+read		r
+write		w
+create		w
+getattr		r
+setattr		w
+lock		n
+relabelfrom	b
+relabelto	w
+append		w
+unlink		w
+link		w
+rename		w
+execute		r
+swapon		b
+quotaon		b
+mounton		b
+
+class blk_file 17
+ioctl		n
+read		r
+write		w
+create		w
+getattr		r
+setattr		w
+lock		n
+relabelfrom	b
+relabelto	w
+append		w
+unlink		w
+link		w
+rename		w
+execute		r
+swapon		b
+quotaon		b
+mounton		b
+
+class sock_file 17
+ioctl		n
+read		r
+write		w
+create		w
+getattr		r
+setattr		w
+lock		n
+relabelfrom	b
+relabelto	w
+append		w
+unlink		w
+link		w
+rename		w
+execute		r
+swapon		b
+quotaon		b
+mounton		b
+
+class fifo_file 17
+ioctl		n
+read		r
+write		w
+create		w
+getattr		r
+setattr		w
+lock		n
+relabelfrom	b
+relabelto	w
+append		w
+unlink		w
+link		w
+rename		w
+execute		r
+swapon		b
+quotaon		b
+mounton		b
+
+class filesystem 10
+mount		w
+remount		w
+unmount		w
+getattr		r
+relabelfrom	b
+relabelto	w
+transition	w
+associate	n
+quotamod	w
+quotaget	r
+
+
+class fd 1
+use		b
+
+
+class socket 22
+ioctl		n
+read		r
+write		w
+create		w
+getattr		r
+setattr		w
+lock		n
+relabelfrom	b
+relabelto	w
+append		w
+bind		w
+connect		w
+listen		r
+accept		r
+getopt		r
+setopt		w
+shutdown	w
+recvfrom	r
+sendto		w
+recv_msg	r
+send_msg	w
+name_bind	n
+
+class tcp_socket 25
+ioctl		n
+read		r
+write		w
+create		w
+getattr		r
+setattr		w
+lock		n
+relabelfrom	b
+relabelto	w
+append		w
+bind		w
+connect		w
+listen		r
+accept		r
+getopt		r
+setopt		w
+shutdown	w
+recvfrom	r
+sendto		w
+recv_msg	r
+send_msg	w
+name_bind	n
+connectto 	w
+newconn 	w
+acceptfrom 	r
+
+
+class udp_socket 22
+ioctl		n
+read		r
+write		w
+create		w
+getattr		r
+setattr		w
+lock		n
+relabelfrom	b
+relabelto	w
+append		w
+bind		w
+connect		w
+listen		r
+accept		r
+getopt		r
+setopt		w
+shutdown	w
+recvfrom	r
+sendto		w
+recv_msg	r
+send_msg	w
+name_bind	n
+
+class rawip_socket 22
+ioctl		n
+read		r
+write		w
+create		w
+getattr		r
+setattr		w
+lock		n
+relabelfrom	b
+relabelto	w
+append		w
+bind		w
+connect		w
+listen		r
+accept		r
+getopt		r
+setopt		w
+shutdown	w
+recvfrom	r
+sendto		w
+recv_msg	r
+send_msg	w
+name_bind	n
+
+class node 7
+tcp_recv 	r
+tcp_send	w
+udp_recv 	r
+udp_send	w
+rawip_recv	r
+rawip_send	w
+enforce_dest	n
+
+class netif 6
+tcp_recv 	r
+tcp_send	w
+udp_recv 	r
+udp_send	w
+rawip_recv 	r
+rawip_send	w
+
+
+class netlink_socket 22
+ioctl		n
+read		r
+write		w
+create		w
+getattr		r
+setattr		w
+lock		n
+relabelfrom	b
+relabelto	w
+append		w
+bind		w
+connect		w
+listen		r
+accept		r
+getopt		r
+setopt		w
+shutdown	w
+recvfrom	r
+sendto		w
+recv_msg	r
+send_msg	w
+name_bind	n
+
+class packet_socket 22
+ioctl		n
+read		r
+write		w
+create		w
+getattr		r
+setattr		w
+lock		n
+relabelfrom	b
+relabelto	w
+append		w
+bind		w
+connect		w
+listen		r
+accept		r
+getopt		r
+setopt		w
+shutdown	w
+recvfrom	r
+sendto		w
+recv_msg	r
+send_msg	w
+name_bind	n
+
+class key_socket 22
+ioctl		n
+read		r
+write		w
+create		w
+getattr		r
+setattr		w
+lock		n
+relabelfrom	b
+relabelto	w
+append		w
+bind		w
+connect		w
+listen		r
+accept		r
+getopt		r
+setopt		w
+shutdown	w
+recvfrom	r
+sendto		w
+recv_msg	r
+send_msg	w
+name_bind	n
+
+class unix_dgram_socket  22
+ioctl		n
+read		r
+write		w
+create		w
+getattr		r
+setattr		w
+lock		n
+relabelfrom	b
+relabelto	w
+append		w
+bind		w
+connect		w
+listen		r
+accept		r
+getopt		r
+setopt		w
+shutdown	w
+recvfrom	r
+sendto		w
+recv_msg	r
+send_msg	w
+name_bind	n
+
+class unix_stream_socket 25
+ioctl		n
+read		r
+write		w
+create		w
+getattr		r
+setattr		w
+lock		n
+relabelfrom	b
+relabelto	w
+append		w
+bind		w
+connect		w
+listen		r
+accept		r
+getopt		r
+setopt		w
+shutdown	w
+recvfrom	r
+sendto		w
+recv_msg	r
+send_msg	w
+name_bind	n
+connectto 	w
+newconn 	w
+acceptfrom 	r
+
+class process 16
+fork		n
+transition	w
+sigchld		w
+sigkill		w
+sigstop		w
+signull		n
+signal		w
+ptrace		b
+getsched	r
+setsched	w
+getsession	r
+getpgid		r
+setpgid		w
+getcap		r
+setcap		w
+share		b
+
+
+class ipc 9
+create		w
+destroy		w
+getattr		r
+setattr		w
+read		r
+write		w
+associate	n
+unix_read	r
+unix_write	w
+
+class sem 9
+create		w
+destroy		w
+getattr		r
+setattr		w
+read		r
+write		w
+associate	n
+unix_read	r
+unix_write	w
+
+class msgq 10
+create		w
+destroy		w
+getattr		r
+setattr		w
+read		r
+write		w
+associate	n
+unix_read	r
+unix_write	w
+enqueue		w
+
+
+class msg 2
+send		w
+receive		r
+
+
+class shm 10
+create		w
+destroy		w
+getattr		r
+setattr		w
+read		r
+write		w
+associate	n
+unix_read	r
+unix_write	w
+lock		w
+
+
+class security 9
+compute_av	n
+transition_sid	n
+member_sid	n
+sid_to_context	n
+context_to_sid	n
+load_policy	n
+get_sids	n
+change_sid	n
+get_user_sids	n
+}
+
+class system 8
+ipc_info	n
+avc_toggle	n
+nfsd_control	n
+bdflush		n
+syslog_read	n
+syslog_mod	n
+syslog_console	n
+ichsid		n
+
+class capability 29
+chown           n
+dac_override    n
+dac_read_search n
+fowner          n
+fsetid          n
+kill            n
+setgid          n
+setuid          n
+setpcap         n
+linux_immutable n
+net_bind_service n 
+net_broadcast   n
+net_admin       n
+net_raw         n
+ipc_lock        n
+ipc_owner       n
+sys_module      n 
+sys_rawio       n
+sys_chroot      n
+sys_ptrace      n
+sys_pacct       n
+sys_admin       n 
+sys_boot        n 
+sys_nice        n
+sys_resource    n 
+sys_time        n
+sys_tty_config  n
+mknod		n
+lease		n

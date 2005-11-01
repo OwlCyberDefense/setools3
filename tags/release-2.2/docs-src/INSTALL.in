@@ -1,0 +1,168 @@
+SELinux Tools (setools), version RELEASE_VERSION
+by Tresys Technology, LLC
+(selinux@tresys.com, www.tresys.com/selinux)
+
+MOD_DATE
+
+BUILDING AND INSTALLING NOTES AND WARNINGS
+
+We have built and used this package on several distributions with and
+without SELinux (see TESTING INFORMATION in KNOWN-BUGS file). These
+directions should work well on most distributions, but you should be
+familiar with the documentation for the distribution you are using.
+
+The directory structure of the Setools distribution is as follows:
+
+apol            The policy analysis tool
+awish           Our customized version of the Tk wish interpreter
+docs-src	Repository for generating setools documentation.
+libapol         The main policy analysis library
+libseaudit	The seaudit support library 
+libsefs		The selinux filesystem database library	
+seaudit 	The audit log analysis tools (seaudit and seaudit-report)
+secmds		The setools command line tools (seinfo, sesearch, 
+		findcon, replcon, indexcon, searchcon)
+sediff 		The semantic policy difference tool (command-line and GUI)
+sechecker	The modular policy checking tool
+packages	External packages required by setools
+
+Apol and the other tools are designed to specifically not address MLS
+policies. However, you can set the config option CONFIG_SECURITY_SELINUX_MLS
+in the Makefile to enable support for parsing MLS policy files. Even with
+this flag set during compile time, Setools still ignores all the MLS aspects
+of a policy, but should be able to parse such policies. We have conducted
+very little testing with MLS enabled.
+	
+REQUIREMENTS
+
+TCL/TK VERSION AND INSTALL: Before building you will need to ensure that you
+have Tcl/Tk 8.3 or higher installed with BWidgets. Generally, modern Linux
+distributions have appropriate versions of Tcl and Tk. Usually the BWidgets
+package IS NOT installed by default, however. If you do not have BWidgets
+installed it is available in the packages subdirectory of the Setools
+distribution. It can be installed by going to the packages subdirectory and
+typing "make install". If you have BWidgets installed make certain that it
+is a compatible version. See BWIDGETS VERSIONS below for more information.
+
+LIBSELINUX: In order to successfully build and install the file context tools 
+that come with the secmds package onto your system, as well as include the 
+file context interface in apol, you will need to install libselinux version 
+1.18 or higher and the associated headers. A package may be available for 
+your distribution - on Fedora Core it is called libselinux-devel. 
+
+If you DO NOT wish to install libselinux, make sure to set the USE_LIBSELINUX 
+variable in the top-level Makefile to 0, which is set to 1 by default. Setting 
+this variable to 0 will only build seinfo and sesearch, as well as exclude the 
+file context interface from apol.
+
+GTK: In order to successfully install seaudit and sediffx onto your system you 
+will need libglade and GTK2.0 or above installed. GTK2.4 is specifically required 
+for Fedora Core 1 systems. It also requires the pkg-config program to be installed 
+before you can build. 
+
+INSTALLATION
+
+These are the instructions for building and installing all of the Setools.
+You can also build and install portions of the package including only those
+tools and libraries that do not require a GUI and X support. See "make help"
+for more information or for a complete list of make targets.
+
+BUILDING AND INSTALL
+
+Short version: make all; su root; make install; make install-policy  
+
+Long version follows:
+
+0. Review the ./setools/Makefile. The following is information on important
+variables in this Makefile.
+
+	- TCLVER : When running 'make', the TCLVER should be automatically set 
+	      for your installation of Tcl/Tk. 
+	- TCL_INCLUDE : This variable is commented out by default and should 
+	      only be changed if your Tcl/Tk header files cannot be located  
+	      using your default search path.
+	- TCL_LIBINC : This variable is commented out by default and should 
+	      only be changed if your Tcl/Tk libraries cannot be located
+	      using the default search path.
+	- DEBUG : If set to 0, this will create an optimized version
+	- DYNAMIC : If set to 1, this will dynamically link with internal 
+	     libraries.
+	- USE_LIBSELINUX : This determines:
+	     	1. whether libapol uses libselinux to find the default policies. 
+		   NOTE: libselinux must be version 1.18 or greater.
+		2. whether libsefs will be built into apol, and awish. 
+	   Useful to create a version of apol that runs on non-selinux machines. 
+	   Set this to 0 for non-selinux machines.
+      
+1. Build and install tools:  If you want to install all tools, just 
+type "make install" to build and install everything.  Type "make help" 
+to see options to build individual pieces, for example to install just 
+apol.
+
+2. If you installed secmds and you are using the default policy
+distributed by the NSA or a similar policy (e.g. the "strict" policy
+distributed with Fedora Core 2), then you will need to type "make
+install-policy". This will label the binaries and config files for 
+the secmds.
+
+If this failed, you either are not using an SELinux machine, or the 
+policy source directory is not installed in the conventional location 
+(use make install-src in the policy source directory from the SELinux 
+distribution). Email us; we'll try to help (selinux@tresys.com)!
+
+Most errors result from improperly installed Tcl/Tk, BWidgets, or the 
+above libapol files.  
+   
+Send comments/questions to selinux@tresys.com.
+
+DEVELOPMENT SUPPORT INSTALLATION
+
+Support for development using the setools libraries can be installed using the 
+'make install-dev' target. This target installs the headers and libraries for 
+libapol, and libseaudit. This is provided as a convenience to third 
+party developers, but is not otherwise supported. These libraries are in 
+constant development and interfaces can and will change, sometimes 
+substantially.
+
+INSTALLING SEAUDIT-REPORT AS A LOGWATCH PLUG-IN
+
+Support for installing seaudit-report as a plug-in to the LogWatch program,
+which comes standard with Red Hat Linux, is provided using the 
+'make install-logwatch-files' target. This target installs and labels the 
+configuration files for LogWatch necessary for having seaudit-report run as 
+a service to LogWatch. These configuration files are provided with the setools
+source distribution and are located in the seaudit subdirectory. They are as 
+follows:
+	- seaudit-report-group.conf: the logfile group configuration file
+	- seaudit-report-service.conf: the service filter config file
+	- seaudit-report-service: the service filter script
+	
+Integrating the seaudit-report tool with LogWatch can provide an 
+effective IDS solution by automating customized audit reports and having them 
+e-mailed to a specific recipient(s) for further analysis. You should make sure 
+that the LogWatch program is installed, before proceeding with using this 
+install target. 
+
+BWIDGETS VERSIONS
+
+The BWidgets package can be found at 
+http://sourceforge.net/projects/tcllib. There are some 
+incompatibilities with different versions of Tcl/Tk and BWidgets that 
+can cause critical runtime errors. You will not be able to run any of 
+the tools if you are using incompatible versions of Tcl/Tk and 
+BWidgets. Correct versions of BWidgets for the Tcl/Tk version you are 
+using are:
+
+	- Tcl/Tk 8.3 - BWidget-1.4.1
+	- Tcl/Tk 8.4 or greater - any
+
+NOTE: You may run the tools using a pre-1.4.1 BWidgets package, 
+however, you may experience problems. These tools have been tested 
+using the latest BWidgets packages starting from version 1.4.1. 
+See TESTING INFORMATION in KNOWN-BUGS for more information on what 
+platforms and configurations these tools have been tested against.
+
+Once you  have downloaded the correct version of BWidgets, then you 
+can install it in your TCL directory. For instance, if you have 
+Tcl installed in the /usr/lib directory, then you should install the 
+BWidgets directory to /usr/lib/tcl8.3/.
