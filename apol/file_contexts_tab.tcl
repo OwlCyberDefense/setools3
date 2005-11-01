@@ -315,7 +315,9 @@ proc Apol_File_Contexts::search_fc_database { } {
 
 	$resultsbox configure -state normal
 	$resultsbox delete 0.0 end
-	set sz [llength $results]
+        if {[set sz [llength $results]] == 0} {
+                $resultsbox insert end "Search returned no results."
+        }
 	set num 0
 	for {set i 0} {$i < $sz} {incr i} {
 		set path [lindex $results $i]

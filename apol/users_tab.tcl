@@ -71,7 +71,12 @@ proc Apol_Users::searchUsers {} {
     } else {
     	$resultsbox configure -state normal
 	$resultsbox delete 0.0 end
-	$resultsbox insert end $results
+        $resultsbox insert end "USERS:\n"
+        if {$results == ""} {
+            $resultsbox insert end "Search returned no results."
+        } else {
+            $resultsbox insert end $results
+        }
 	ApolTop::makeTextBoxReadOnly $resultsbox 
     }
     
