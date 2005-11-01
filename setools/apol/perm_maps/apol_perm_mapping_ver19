@@ -116,8 +116,8 @@ class filesystem 10
            remount     w           1
            unmount     w           1
            getattr     r           1
-       relabelfrom     b           3
-         relabelto     w           3
+       relabelfrom     r           10
+         relabelto     w           10
         transition     w           1
          associate     n           1
           quotamod     w           1
@@ -134,8 +134,8 @@ class file 20
            getattr     r           7
            setattr     w           7
               lock     n           1
-       relabelfrom     b           1
-         relabelto     w           5
+       relabelfrom     r           10
+         relabelto     w           10
             append     w           1
             unlink     w           1
               link     w           1
@@ -158,8 +158,8 @@ class dir 22
            getattr     r           7
            setattr     w           7
               lock     n           1
-       relabelfrom     b           3
-         relabelto     w           3
+       relabelfrom     r           10
+         relabelto     w           10
             append     w           1
             unlink     w           1
               link     w           1
@@ -180,8 +180,8 @@ class lnk_file 17
            getattr     r           7
            setattr     w           7
               lock     n           1
-       relabelfrom     b           3
-         relabelto     w           3
+       relabelfrom     r           10
+         relabelto     w           10
             append     w           1
             unlink     w           1
               link     w           1
@@ -202,8 +202,8 @@ class chr_file 20
            getattr     r           7
            setattr     w           7
               lock     n           1
-       relabelfrom     b           3
-         relabelto     w           3
+       relabelfrom     r           10
+         relabelto     w           10
             append     w           1
             unlink     w           1
               link     w           1
@@ -221,8 +221,8 @@ class blk_file 17
            getattr     r           7
            setattr     w           7
               lock     n           1
-       relabelfrom     b           3
-         relabelto     w           3
+       relabelfrom     r           10
+         relabelto     w           10
             append     w           1
             unlink     w           1
               link     w           1
@@ -240,8 +240,8 @@ class sock_file 17
            getattr     r           7
            setattr     w           7
               lock     n           1
-       relabelfrom     b           3
-         relabelto     w           3
+       relabelfrom     r           10
+         relabelto     w           10
             append     w           1
             unlink     w           1
               link     w           1
@@ -259,8 +259,8 @@ class fifo_file 17
            getattr     r           7
            setattr     w           7
               lock     n           1
-       relabelfrom     b           3
-         relabelto     w           3
+       relabelfrom     r           10
+         relabelto     w           10
             append     w           1
             unlink     w           1
               link     w           1
@@ -278,8 +278,8 @@ class socket 22
            getattr     r           7
            setattr     w           7
               lock     n           1
-       relabelfrom     b           3
-         relabelto     w           3
+       relabelfrom     r           10
+         relabelto     w           10
             append     w           1
               bind     w           1
            connect     w           1
@@ -306,8 +306,8 @@ class tcp_socket 27
            getattr     r           7
            setattr     w           7
               lock     n           1
-       relabelfrom     b           3
-         relabelto     w           3
+       relabelfrom     r           10
+         relabelto     w           10
             append     w           1
               bind     w           1
            connect     w           1
@@ -332,8 +332,8 @@ class udp_socket 23
            getattr     r           7
            setattr     w           7
               lock     n           1
-       relabelfrom     b           3
-         relabelto     w           3
+       relabelfrom     r           10
+         relabelto     w           10
             append     w           1
               bind     w           1
            connect     w           1
@@ -357,8 +357,8 @@ class rawip_socket 23
            getattr     r           1
            setattr     w           1
               lock     n           1
-       relabelfrom     b           3
-         relabelto     w           3
+       relabelfrom     r           10
+         relabelto     w           10
             append     w           1
               bind     w           1
            connect     w           1
@@ -398,8 +398,8 @@ class netlink_socket 22
            getattr     r           7
            setattr     w           7
               lock     n           1
-       relabelfrom     b           3
-         relabelto     w           3
+       relabelfrom     r           10
+         relabelto     w           10
             append     w           1
               bind     w           1
            connect     w           1
@@ -422,8 +422,8 @@ class packet_socket 22
            getattr     r           7
            setattr     w           7
               lock     n           1
-       relabelfrom     b           3
-         relabelto     w           3
+       relabelfrom     r           10
+         relabelto     w           10
             append     w           1
               bind     w           1
            connect     w           1
@@ -446,8 +446,8 @@ class key_socket 22
            getattr     r           7
            setattr     w           7
               lock     n           1
-       relabelfrom     b           3
-         relabelto     w           3
+       relabelfrom     r           10
+         relabelto     w           10
             append     w           1
               bind     w           1
            connect     w           1
@@ -473,8 +473,8 @@ class unix_stream_socket 25
            getattr     r           7
            setattr     w           7
               lock     n           1
-       relabelfrom     b           3
-         relabelto     w           3
+       relabelfrom     r           10
+         relabelto     w           10
             append     w           1
               bind     w           1
            connect     w           1
@@ -497,8 +497,8 @@ class unix_dgram_socket 22
            getattr     r           7
            setattr     w           7
               lock     n           1
-       relabelfrom     b           3
-         relabelto     w           3
+       relabelfrom     r           10
+         relabelto     w           10
             append     w           1
               bind     w           1
            connect     w           1
@@ -689,8 +689,8 @@ class netlink_route_socket 24
            getattr     r           7
            setattr     w           7
               lock     n           1
-       relabelfrom     b           3
-         relabelto     w           3
+       relabelfrom     r           10
+         relabelto     w           10
             append     w           1
               bind     w           1
            connect     w           1
@@ -715,8 +715,8 @@ class netlink_firewall_socket 24
            getattr     r           7
            setattr     w           7
               lock     n           1
-       relabelfrom     b           3
-         relabelto     w           3
+       relabelfrom     r           10
+         relabelto     w           10
             append     w           1
               bind     w           1
            connect     w           1
@@ -741,8 +741,8 @@ class netlink_tcpdiag_socket 24
            getattr     r           7
            setattr     w           7
               lock     n           1
-       relabelfrom     b           3
-         relabelto     w           3
+       relabelfrom     r           10
+         relabelto     w           10
             append     w           1
               bind     w           1
            connect     w           1
@@ -765,8 +765,8 @@ class netlink_nflog_socket 22
            getattr     r           7
            setattr     w           7
               lock     n           1
-       relabelfrom     b           3
-         relabelto     w           3
+       relabelfrom     r           10
+         relabelto     w           10
             append     w           1
               bind     w           1
            connect     w           1
@@ -791,8 +791,8 @@ class netlink_xfrm_socket 24
            getattr     r           7
            setattr     w           7
               lock     n           1
-       relabelfrom     b           3
-         relabelto     w           3
+       relabelfrom     r           10
+         relabelto     w           10
             append     w           1
               bind     w           1
            connect     w           1
@@ -815,8 +815,8 @@ class netlink_selinux_socket 22
            getattr     r           7
            setattr     w           7
               lock     n           1
-       relabelfrom     b           3
-         relabelto     w           3
+       relabelfrom     r           10
+         relabelto     w           10
             append     w           1
               bind     w           1
            connect     w           1
@@ -841,8 +841,8 @@ class netlink_audit_socket 26
            getattr     r           7
            setattr     w           7
               lock     n           1
-       relabelfrom     b           3
-         relabelto     w           3
+       relabelfrom     r           10
+         relabelto     w           10
             append     w           1
               bind     w           1
            connect     w           1
@@ -869,8 +869,8 @@ class netlink_ip6fw_socket 24
            getattr     r           7
            setattr     w           7
               lock     n           1
-       relabelfrom     b           3
-         relabelto     w           3
+       relabelfrom     r           10
+         relabelto     w           10
             append     w           1
               bind     w           1
            connect     w           1
@@ -893,8 +893,8 @@ class netlink_dnrt_socket 22
            getattr     r           7
            setattr     w           7
               lock     n           1
-       relabelfrom     b           3
-         relabelto     w           3
+       relabelfrom     r           10
+         relabelto     w           10
             append     w           1
               bind     w           1
            connect     w           1
@@ -917,8 +917,8 @@ class netlink_kobject_uevent_socket 22
            getattr     r           7
            setattr     w           7
               lock     n           1
-       relabelfrom     b           3
-         relabelto     w           3
+       relabelfrom     r           10
+         relabelto     w           10
             append     w           1
               bind     w           1
            connect     w           1
