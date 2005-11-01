@@ -1481,6 +1481,7 @@ proc Apol_TE::configure_perms_section { } {
 	ApolTop::enable_tkListbox $permslistbox
 	set objectsList [Apol_TE::get_Selected_ListItems $objslistbox]
 			
+	$Apol_TE::permslistbox selection clear 0 end
 	if { $Apol_TE::opts(perm_select) == "all" } {
 		$Apol_TE::b_union configure -state disabled
     		$Apol_TE::b_intersection configure -state disabled
@@ -1494,7 +1495,6 @@ proc Apol_TE::configure_perms_section { } {
 	} elseif { $Apol_TE::opts(perm_select) == "selected" && $objectsList != ""} {
 		# First clear the selection in the permissions listbox and then get the selected items
 		# from the objects listbox.
-		$Apol_TE::permslistbox selection clear 0 end
 		$cb_perms_tilda configure -state disabled
 	
 		# If items from the objects list have been selected and the selected radio
@@ -1523,7 +1523,6 @@ proc Apol_TE::configure_perms_section { } {
     	} else {
     		# Clear button has been invoked OR no selection has been made in the objects listbox.
     		# So, clear permissions listbox items.
-    		$Apol_TE::permslistbox selection clear 0 end
     		set permslist "" 
     		$permslistbox configure -bg  $ApolTop::default_bg_color
     		if { $Apol_TE::opts(perm_select) == "selected" } {
@@ -1818,7 +1817,9 @@ proc Apol_TE::load_query_options {file_channel parentDlg} {
 	variable selObjectsList
 	variable selPermsList
 	variable show_enabled_rules
-	
+
+	Apol_TE::reinitialize_default_search_options
+
 	set query_options ""
         while {[eof $file_channel] != 1} {
 		gets $file_channel line
@@ -1946,7 +1947,7 @@ proc Apol_TE::load_query_options {file_channel parentDlg} {
 			set selObjectsList [lappend selObjectsList $end_element]
 		}
 	}
-	# Now we're ready to parse the selected objects list
+	# Now we're ready to parse the selected perms list
       	incr i
 	if {[lindex $query_options $i] != "\{\}"} {
 	        # we have to pretend to parse a list here since this is a string and not a TCL list.
@@ -2007,8 +2008,9 @@ proc Apol_TE::load_query_options {file_channel parentDlg} {
         Apol_TE::change_tgt_dflt_state
         Apol_TE::on_rule_selection
         # Reset Objects and Permissions selections 
-	Apol_TE::resetObjsPerms_Selections $selObjectsList $selPermsList
+	Apol_TE::resetObjs_Selections $selObjectsList
         Apol_TE::configure_perms_section
+	Apol_TE::resetPerms_Selections $selPermsList
     		
         # Check the search criteria for the Classes/Permissions and Types/Attributes tabs
         # and then set the indicator  accordingly.
