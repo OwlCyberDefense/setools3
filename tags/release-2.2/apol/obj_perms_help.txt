@@ -1,0 +1,554 @@
+AN OVERVIEW OF OBJECT CLASSES AND PERMISSIONS
+apol, version 2.1
+October 28, 2005
+selinux@tresys.com
+
+OVERVIEW
+
+This document contains a list of all of the object classes and permissions for 
+SELinux including a brief description of of the semantics of each permission. 
+Additionally, any permissions that are version specific are noted. The 
+permission descriptions are only a rough initial version and might be incomplete 
+or inaccurate. Please send any updates or suggestions for changes to these 
+descriptions, or any other part of this document, to selinux@tresys.com.
+
+
+Class                   Permission           Version Specific?    Description
+-----			----------	     -----------------    -----------
+
+blk_file
+                        getattr                                   Get file attributes for block file, such as access mode. (e.g. stat, some ioctls. ...)
+                        relabelto                                 Change the security context based on the new type
+                        unlink                                    Remove hard link (delete)
+                        ioctl                                     IO control system call requests not addressed by other permissions.
+                        execute                                   Execute
+                        append                                    Append file contents. i.e opened with O_APPEND flag
+                        read                                      Read block file contents
+                        setattr                                   Change file attributes for block file such as access mode.  (e.g. chmod, some ioctls, ...)
+                        swapon                                    Allows file to be used for paging/swapping space
+                        write                                     Write or append file contents
+                        lock                                      Set and unset block file locks
+                        create                                    Create new block file
+                        rename                                    Rename a hard link
+                        mounton                                   Use as mount point; only useful for directories in Linux
+                        quotaon                                   Enabling quotas
+                        relabelfrom                               Change the security context based on existing type
+                        link                                      Create hard link to block files
+
+file
+                        setattr                                   Change file attributes for file such as access mode. (e.g. chmod, some ioctls, ...)
+                        swapon                                    Allows file to be used for paging/swapping space
+                        write                                     Write or append file contents
+                        lock                                      Set and unset file locks
+                        create                                    Create new file
+                        rename                                    Rename a hard link
+                        mounton                                   Use as mount point; only useful for directories in Linux
+                        quotaon                                   Enabling quotas
+                        relabelfrom                               Change the security context based on existing type
+                        link                                      Create hard link to files
+                        entrypoint                                Permission to enter a new domain via this program
+                        getattr                                   Get file attributes for file, such as access mode. (e.g. stat, some ioctls. ...)
+                        relabelto                                 Change the security context based on the new type
+                        unlink                                    Remove hard link (delete)
+                        execute_no_trans                          Permission to execute file without a domain transition
+                        ioctl                                     IO control system call requests not addressed by other permissions.
+                        execute                                   Execute
+                        append                                    Append file contents. i.e opened with O_APPEND flag
+                        read                                      Read file contents
+
+udp_socket
+                        listen                                    Listen for connections
+                        setattr                                   Change file attributes for file such as access mode. (e.g. chmod, some ioctls, ...)
+                        shutdown                                  Shutdown connection
+                        relabelto                                 Change the security context based on the new type
+                        recv_msg                                  Receive datagram message; implicitly granted if the message [SID is equal to the sending socket SID]
+                        accept                                    Accept a connection
+                        name_bind                                 Use port or file; for AF_INET sockets, controls relationship between a socket and it's port number; for AF_UNIX sockets, controls relationship between a socket and it's file
+                        append                                    Append socket file contents. i.e opened with O_APPEND flag
+                        relabelfrom                               Change the security context based on existing type
+                        create                                    Create new socket file
+                        read                                      Read socket file contents
+                        sendto                                    Send datagrams to socket
+                        connect                                   Initiate connection
+                        recvfrom                                  Receive datagrams from socket
+                        send_msg                                  Send datagram message; implicitly granted if the message SID is equal to the sending socket SID
+                        bind                                      Bind name
+                        lock                                      Set and unset socket file locks
+                        ioctl                                     IO control system call requests not addressed by other permissions.
+                        getattr                                   Get file attributes for socket file, such as access mode. e.g. stat, some ioctls. ...)
+                        write                                     Write or append socket file contents
+                        setopt                                    Get socket options
+                        getopt                                    Set socket options
+                        node_bind            v.16
+
+socket
+                        append                                    Write or append socket file contents
+                        relabelfrom                               Change the security context based on existing type
+                        create                                    Create new socket file
+                        read                                      Read socket file contents
+                        sendto                                    Send datagrams to socket
+                        connect                                   Initiate connection
+                        recvfrom                                  Receive datagrams from socket
+                        send_msg                                  Send datagram message; implicitly granted if the message SID is equal to the sending socket SID
+                        bind                                      Bind name
+                        lock                                      Set and unset socket file locks
+                        ioctl                                     IO control system call requests not addressed by other permissions.
+                        getattr                                   Get file attributes for socket file, such as access mode. (e.g. stat, some ioctls. ...)
+                        write                                     Write or append socket file contents
+                        setopt                                    Set socket options
+                        getopt                                    Get socket options
+                        listen                                    Listen for connections
+                        setattr                                   Change file attributes for file such as access mode. (e.g. chmod, some ioctls, …)
+                        shutdown                                  Shutdown connection
+                        relabelto                                 Change the security context based on the new type
+                        recv_msg                                  Receive datagram message; implicitly granted if the message SID is equal to the sending socket SID
+                        accept                                    Accept a connection
+                        name_bind                                 Use port or file; for AF_INET sockets, controls relationship between a socket and it's port number; for AF_UNIX sockets, controls relationship between a socket and it's file
+
+passwd
+                        passwd               v.15-16              Update user password
+                        chfn                 v.15-16              Change finger information. e.g real name, work room and phone and home phone
+                        chsh                 v.15-16              Change login shell
+                        rootok               v.16                 pam_rootok - Allow update if the user is root and the process has the rootok permission
+
+fifo_file
+                        relabelto                                 Change the security context based on the new type
+                        getattr                                   Get file attributes for fifo file, such as access mode. (e.g. stat, some ioctls. ...)
+                        lock                                      Set and unset fifo file locks
+                        execute                                   Execute
+                        unlink                                    Remove hard link (delete)
+                        ioctl                                     IO control system call requests not addressed by other
+                        setattr                                   Change file attributes for file such as access mode. (e.g. chmod, some ioctls, ...)
+                        append                                    Write or append fifo file (a.k.a. pipes) contents
+                        write                                     Write or append fifo file (a.k.a. pipes) contents
+                        swapon                                    Allows file to be used for paging/swapping space
+                        create                                    Create new fifo file
+                        link                                      Create hard link to files
+                        rename                                    Rename a hard link
+                        relabelfrom                               Change the security context based on existing type
+                        mounton                                   Use as mount point; only useful for directories in Linux
+                        quotaon                                   Enabling quotas
+                        read                                      Read fifo file contents
+
+chr_file
+                        append                                    Write or append chr_file file contents
+                        swapon                                    Allows file to be used for paging/swapping space
+                        mounton                                   Use as mount point; only useful for directories in Linux
+                        quotaon                                   Enabling quotas
+                        create                                    Create new chr_file file
+                        rename                                    Rename a hard link
+                        ioctl                                     IO control system call requests not addressed by other permissions.
+                        getattr                                   Get file attributes for chr_file file, such as access mode. (e.g. stat, some ioctls. ...)
+                        link                                      Create hard link to files
+                        write                                     Write or append chr_file file contents
+                        execute                                   Execute
+                        relabelto                                 Change the security context based on the new type
+                        setattr                                   Change file attributes for file such as access mode. (e.g. chmod, some ioctls, ...)
+                        relabelfrom                               Change the security context based on existing type
+                        read                                      Read chr_file file contents
+                        unlink                                    Remove hard link (delete)
+                        lock                                      Set and unset chr_file file locks
+
+netlink_socket
+                        listen                                    Listen for connections
+                        accept                                    Accept a connection
+                        read                                      Read Netlink socket file contents
+                        setattr                                   Change file attributes for file such as access mode. (e.g. chmod, some ioctls, …
+                        append                                    Write or append to Netlink socket
+                        bind                                      Bind name
+                        lock                                      Set and unset socket file locks
+                        shutdown                                  Shutdown connection
+                        recv_msg                                  Receive datagram message; implicitly granted if the message SID is equal to the sending socket SID
+                        create                                    Create new Netlink socket file
+                        sendto                                    Send datagrams to socket
+                        relabelto                                 Change the security context based on the new type
+                        ioctl                                     IO control system call requests not addressed by other permissions.
+                        name_bind                                 Use port or file; for AF_INET sockets, controls relationship between a socket and it's port number; for AF_UNIX sockets, controls relationship between a socket and it's file
+                        connect                                   Initiate connection
+                        write                                     Write or append socket file contents
+                        recvfrom                                  Receive datagrams from socket
+                        send_msg                                  Send datagram message; implicitly granted if the message SID is equal to the sending socket SID
+                        relabelfrom                               Change the security context based on existing type
+                        setopt                                    Set socket options
+                        getattr                                   Get file attributes for socket file, such as access mode. (e.g. stat, some ioctls. ...)
+                        getopt                                    Get Netlink socket options
+
+unix_dgram_socket
+                        connect                                   Initiate connection
+                        getopt                                    Get socket options
+                        listen                                    Listen for connections
+                        relabelto                                 Change the security context based on the new type
+                        name_bind                                 Use port or file; for AF_INET sockets, controls relationship between a socket and it's port number; for AF_UNIX sockets, controls relationship between a socket and it's file
+                        accept                                    Accept a connection
+                        shutdown                                  Shutdown connection
+                        getattr                                   Get file attributes for socket file, such as access mode. (e.g. stat, some ioctls. ...)
+                        recv_msg                                  Receive datagram message; implicitly granted if the message SID is equal to the sending socket SID
+                        append                                    Write or append socket file contents
+                        read                                      Read socket file contents
+                        create                                    Create new socket file
+                        sendto                                    Send datagrams to socket
+                        ioctl                                     IO control system call requests not addressed by other permissions.
+                        setattr                                   Change file attributes for file such as access mode. (e.g. chmod, some ioctls, ...)
+                        bind                                      Bind name
+                        lock                                      Set and unset socket file locks
+                        recvfrom                                  Receive datagrams from socket
+                        send_msg                                  Send datagram message; implicitly granted if the message SID is equal to the sending socket SID
+                        write                                     Write or append socket file contents
+                        relabelfrom                               Change the security context based on existing type
+                        setopt                                    Set socket options
+
+node
+                        rawip_recv                                Receive raw IP packet
+                        rawip_send                                Send raw IP packet
+                        tcp_recv                                  Receive TCP packet
+                        tcp_send                                  Send TCP packet
+                        enforce_dest                              Ensure that the destination node can enforce restrictions on the destination socket
+                        udp_recv                                  Receive UDP packet
+                        udp_send                                  Send UDP packet
+
+netif
+                        rawip_recv                                Receive raw IP packet
+                        rawip_send                                Send raw IP packet
+                        tcp_recv                                  Receive TCP packet
+                        tcp_send                                  Send TCP packet
+                        udp_recv                                  Receive UDP packet
+                        udp_send                                  Send UDP packet
+
+unix_stream_socket
+                        relabelto                                 Change the security context based on the new type
+                        append                                    Write or append socket file contents
+                        name_bind                                 Use port or file; for AF_INET sockets, controls relationship between a socket and it's port number; for AF_UNIX sockets, controls relationship between a socket and it's file
+                        setattr                                   Change file attributes for file such as access mode. (e.g. chmod, some ioctls, ...)
+                        connectto                                 Connect to server socket
+                        newconn                                   Create new socket for connection
+                        recvfrom                                  Receive datagrams from socket
+                        create                                    Create new socket file
+                        sendto                                    Send datagrams to socket
+                        send_msg                                  Send datagram message; implicitly granted if the message SID is equal to the sending socket SID
+                        read                                      Read socket file contents
+                        bind                                      Bind name
+                        lock                                      Set and unset socket file locks
+                        connect                                   Initiate connection
+                        setopt                                    Set socket options
+                        acceptfrom                                Accept connection from client socket
+                        getopt                                    Get socket options
+                        ioctl                                     IO control system call requests not addressed by other permissions.
+                        getattr                                   Get file attributes for socket file, such as access mode. (e.g. stat, some ioctls. ...)
+                        shutdown                                  Shutdown connection
+                        recv_msg                                  Receive datagram message; implicitly granted if the message SID is equal to the sending socket SID
+                        listen                                    Listen for connections
+                        accept                                    Accept a connection
+                        relabelfrom                               Change the security context based on existing type
+                        write                                     Write or append socket file contents
+
+tcp_socket
+                        connectto                                 Connect to server socket
+                        newconn                                   Create new socket for connection
+                        recvfrom                                  Receive datagrams from socket
+                        create                                    Create new socket file
+                        sendto                                    Send datagrams to socket
+                        send_msg                                  Send datagram message; implicitly granted if the message SID is equal to the sending socket SID
+                        read                                      Read socket file contents
+                        bind                                      Bind name
+                        lock                                      Set and unset socket file locks
+                        connect                                   Initiate connection
+                        setopt                                    Set socket options
+                        acceptfrom                                Accept connection from client socket
+                        getopt                                    Get socket options
+                        ioctl                                     IO control system call requests not addressed by other permissions.
+                        getattr                                   Get file attributes for socket file, such as access mode. (e.g. stat, some ioctls. ...)
+                        shutdown                                  Shutdown connection
+                        recv_msg                                  Receive datagram message; implicitly granted if the message SID is equal to the sending socket SID
+                        listen                                    Listen for connections
+                        accept                                    Accept a connection
+                        relabelfrom                               Change the security context based on existing type
+                        write                                     Write or append socket file contents
+                        relabelto                                 Change the security context based on the new type
+                        append                                    Write or append socket file contents
+                        name_bind                                 Use port or file; for AF_INET sockets, controls relationship between a socket and it's port number; for AF_UNIX sockets, controls relationship between a socket and it's file
+                        setattr                                   Change file attributes for file such as access mode. e.g. chmod, some ioctls, ...
+                        node_bind            v.16
+
+dir
+                        mounton                                   Use as mount point; only useful for directories in Linux
+                        search                                    Search
+                        link                                      Create hard link to files
+                        quotaon                                   Use as mount point; only useful for directories in Linux
+                        append                                    Append file contents. i.e opened with O_APPEND flag
+                        swapon                                    Allows file to be used for paging/swapping space
+                        rmdir                                     Remove
+                        create                                    Create new file
+                        ioctl                                     IO control system call requests not addressed by other permissions.
+                        getattr                                   Get file attributes for file, such as access mode. (e.g. stat, some ioctls. ...)
+                        remove_name                               Remove a name
+                        rename                                    Rename a hard link
+                        read                                      Read file contents
+                        write                                     Write or append file contents
+                        relabelfrom                               Change the security context based on existing type
+                        execute                                   Execute
+                        relabelto                                 Change the security context based on the new type
+                        lock                                      Set and unset file locks
+                        setattr                                   Change file attributes for file such as access mode. (e.g. chmod, some ioctls, ...)
+                        reparent                                  Change parent directory
+                        add_name                                  Add a name
+                        unlink                                    Remove hard link (delete)
+
+shm
+                        destroy                                   Destroy shared memory segment
+                        write                                     Write or append to shared memory segment
+                        read                                      Read shared memory segment
+                        getattr                                   Get file attributes for shared memory segment, such as access mode. (e.g. stat, some ioctls. ...)
+                        unix_write                                Write or append file contents; required by IPC operations
+                        unix_read                                 Read file contents; required by IPC operations
+                        lock                                      (Un)lock page(s) in memory
+                        associate                                 Associate a key with a shared memory segment
+                        setattr                                   Change file attributes for shared memory segment such as access mode. (e.g. chmod, some ioctls, ...)
+                        create                                    Create shared memory segment
+
+security
+                        change_sid           v.12                 Allows a query to the security server to determine the SID of an object given a source SID, target SID, and target class when relabeling an object
+                        transition_sid       v.12                 Determine sid for a new object
+                        sid_to_context       v.12                 Convert a SID to a context
+                        member_sid           v.12                 Determines SID to use "when selecting a member of a polyinstantiated object in a particular class based on a SID pair." [man 2 security_member_sid]
+                        get_user_sids        v.12                 
+                        get_sids             v.12                 Get the list of active SIDs
+                        context_to_sid       v.12                 Convert a context to a SID
+                        compute_user         v.15-16              Set user info in selinuxfs
+                        compute_relabel      v.15-16              Set relabel info in selinuxfs
+                        compute_create       v.15-16              Set create info in selinuxfs
+                        compute_av                            	  Compute an access vector given a source/target/class
+                        compute_member       v.15-16                     
+                        setenforce           v.15-16              Change the enforcement state of SELinux
+                        check_context        v.15-16              Write context in selinuxfs
+                        load_policy          	                  Load the security policy
+                        setbool              v.16                 Set a boolean value
+
+packet_socket
+                        setattr                                   Change file attributes for socket such as access mode. (e.g. chmod, some ioctls, ...)
+                        read                                      Read socket file contents
+                        relabelto                                 Change the security context based on the new type
+                        shutdown                                  Shutdown connection
+                        name_bind                                 Use port or file; for AF_INET sockets, controls relationship between a socket and it's port number; for AF_UNIX sockets, controls relationship between a socket and it's file
+                        recv_msg                                  Receive datagram message; implicitly granted if the message SID is equal to the sending socket SID
+                        setopt                                    Set socket options
+                        bind                                      Bind name
+                        lock                                      Set and unset socket file locks
+                        ioctl                                     IO control system call requests not addressed by other permissions.
+                        getopt                                    Get socket options
+                        connect                                   Initiate connection
+                        relabelfrom                               Change the security context based on existing type
+                        listen                                    Listen for connections
+                        write                                     Write or append socket file contents
+                        accept                                    Accept a connection
+                        append                                    Write or append socket file contents
+                        recvfrom                                  Receive datagrams from socket
+                        send_msg                                  Send datagram message; implicitly granted if the message SID is equal to the sending socket SID
+                        getattr                                   Get file attributes for socket file, such as access mode. (e.g. stat, some ioctls. ...)
+                        create                                    Create new socket file
+                        sendto                                    Send datagrams to socket
+
+msgq
+                        enqueue                                   Message may reside on queue
+                        create                                    Create a new message queue
+                        destroy                                   Destroy the message queue
+                        write                                     Write
+                        read                                      Read
+                        getattr                                   Get file attributes for message queue, such as access mode. (e.g. stat, some ioctls. ...)
+                        unix_write                                Write or append; required by IPC operations
+                        unix_read                                 Read; required by IPC operations
+                        associate                                 Associate a key with a queue
+                        setattr                                   Change file attributes for shared memory segment such as access mode. (e.g. chmod, some ioctls, ...)
+
+key_socket
+                        connect                                   Initiate connection
+                        setopt                                    Set options for IPSec security association database socket
+                        relabelto                                 Change the security context based on the new type
+                        read                                      Read file contents for IPSec security association database socket
+                        name_bind                                 Use port or file; for AF_INET sockets, controls relationship between a socket and it's port number; for AF_UNIX sockets, controls relationship between a socket and it's file
+                        getopt                                    Get socket options
+                        getattr                                   Get file attributes for socket file, such as access mode. (e.g. stat, some ioctls. ...)
+                        recvfrom                                  Receive datagrams from socket
+                        send_msg                                  Send datagram message; implicitly granted if the message SID is equal to the sending socket SID
+                        bind                                      Bind name
+                        listen                                    Listen for connections
+                        lock                                      Set and unset socket file locks
+                        accept                                    Accept a connection
+                        append                                    Write or append socket file contents
+                        setattr                                   Change file attributes for socket file such as access mode. (e.g. chmod, some ioctls, ...)
+                        ioctl                                     IO control system call requests not addressed by other permissions.
+                        create                                    Create new socket file
+                        sendto                                    Send datagrams to socket
+                        relabelfrom                               Change the security context based on existing type
+                        write                                     Write or append socket file contents
+                        shutdown                                  Shutdown connection
+                        recv_msg                                  Receive datagram message; implicitly granted if the message SID is equal to the sending socket SID
+
+capability
+                        net_bind_service                          Allow low port binding. Port < 1024 for TCP/UDP. VCI < 32 for ATM.
+                        sys_module                                Allow unrestricted kernel modification including but not limited to loading and removing kernel modules. Allows modification of kernel's bounding capability mask. See sysctl
+                        sys_admin                                 Too many to list here (see /usr/include/linux/capability.h)
+                        fowner                                    Grant all file operations otherwise restricted due to different ownership except where FSETID capability is applicable. DAC and MAC accesses are not overridden.
+                        net_raw                                   Allows opening of raw sockets and packet sockets.
+                        setuid                                    Allow all setsuid(2) type calls including fsuid. Allow passing of forged pids on credentials passed over a socket.
+                        sys_chroot                                Grant use of the chroot(2) call.
+                        lease                                     Grants ability to take leases on a file. For details on what leases are see fcntl(2)
+                        net_admin                                 Allows all networking configurations and modifications. See linux/capability.h for details.
+                        ipc_owner                                 Grant the ability to ignore IPC ownership checks.
+                        fsetid                                    Unimplemented in Linux kernel 2.4.x (see capability.h on your system for details)
+                        sys_resource                              Too many to list here (see /usr/include/linux/capability.h for details.)
+                        sys_rawio                                 Grant permission to use ioperm(2) and iopl(2) as well as the ability to send messages to USB devices via /proc/bus/usb.
+                        sys_ptrace                                Allow a ptrace of any process.
+                        sys_nice                                  Grants privilage to change priority of any process. Grants change of scheduling algorithm used by any process.
+                        setpcap                                   Transfer capability maps from current process to any process.
+                        kill                                      Allow signal raising for any process
+                        sys_pacct                                 Allow modification of accounting for any process.
+                        sys_boot                                  Grant ability to reboot the system.
+                        dac_override                              Overrides all discretionary access control including ACL execute access if applicable. This does not include the access covered by LINUX_IMMUTABLE.
+                        setgid                                    Allow setgid(2) allow setgroups(2) allow fake gids on credentials passed over a socket.
+                        netbroadcast                              Grant network broadcasting and listening to incoming multicasts
+                        chown                                     Allow changing file ownership and group ownership
+                        sys_tty_config                            Grant permission to configure tty devices. Allow vhangup(2) call on a tty
+                        linux_immutable                           Grant privilege to modify S_IMMUTABLE and S_APPEND file attributes on supporting filesystems.
+                        sys_time                                  Grant permission to set system time and to set the real-time lock.
+                        ipc_lock                                  Grants the capability to lock non-shared and shared memory segments.
+                        mknod                                     Grants permission to creation of character and block device nodes.
+                        dac_read_search                           Overrides all discretionary access control.
+
+fd
+                        use                                       Permission to use a file descriptor
+
+rawip_socket
+                        lock                                      Set and unset socket file locks
+                        write                                     Write or append socket file contents
+                        getattr                                   Get file attributes for socket file, such as access mode. (e.g. stat, some ioctls. ...)
+                        recvfrom                                  Receive datagrams from socket
+                        send_msg                                  Send datagram message; implicitly granted if the message SID is equal to the sending socket SID
+                        setopt                                    Set socket options
+                        setattr                                   Change file attributes for shared memory segment such as access mode. (e.g. chmod, some ioctls, ...)
+                        getopt                                    Get socket options
+                        relabelto                                 Change the security context based on the new type
+                        listen                                    Listen for connections
+                        name_bind                                 Use port or file; for AF_INET sockets, controls relationship between a socket and it's port number; for AF_UNIX sockets, controls relationship between a socket and it's file
+                        accept                                    Accept a connection
+                        append                                    Write or append socket file contents
+                        shutdown                                  Shutdown connection
+                        recv_msg                                  Receive datagram message; implicitly granted if the message SID is equal to the sending socket SID
+                        relabelfrom                               Change the security context based on existing type
+                        read                                      Read socket file contents
+                        ioctl                                     IO control system call requests not addressed by other permissions.
+                        connect                                   Initiate connection
+                        create                                    Create a new message queue
+                        sendto                                    Send datagrams to socket
+                        bind                                      Bind name
+                        node_bind            v.16
+
+ipc
+                        write                                     Write or append
+                        destroy                                   Destroy
+                        unix_write                                Write or append; required by IPC operations
+                        getattr                                   Get file attributes, such as access mode. (e.g. stat, some ioctls. ...)
+                        create                                    Create
+                        read                                      Read
+                        setattr                                   Change file attributes for shared memory segment such as access mode. (e.g. chmod, some ioctls, ...)
+                        unix_read                                 Read; required by IPC operations
+                        associate                                 Associate a key
+
+lnk_file
+                        relabelfrom                               Change the security context based on existing type
+                        append                                    Write or append socket file contents
+                        ioctl                                     IO control system call requests not addressed by other permissions.
+                        swapon                                    Allows file to be used for paging/swapping space
+                        create                                    Create new link file
+                        read                                      Read link file
+                        write                                     Write or append socket file contents
+                        rename                                    Rename a hard link
+                        mounton                                   Use as mount point; only useful for directories in Linux
+                        quotaon                                   Use as mount point; only useful for directories in Linux
+                        lock                                      Set and unset socket file locks
+                        relabelto                                 Change the security context based on the new type
+                        getattr                                   Get file attributes, such as access mode. (e.g. stat, some ioctls. ...)
+                        unlink                                    Remove hard link (delete)
+                        execute                                   Execute
+                        link                                      Create hard link
+                        setattr                                   Change file attributes for shared memory segment such as access mode. (e.g. chmod, some ioctls, ...)
+
+system
+                        ipc_info                                  Get info for an ipc socket
+                        syslog_mod                                Perform syslog operation other than syslog_read or console logging
+                        syslog_read                               Perform syslog read
+                        syslog_console                            Perform syslog console
+                        nfsd_control         v.12                 Control the nfs server
+                        avc_toggle           v.12                 Toggle between permissive and enforcing modes
+                        bdflush              v.12                 Start, flush, or tune buffer-dirty-flush daemon [man 2 bdflush]
+                        ichsid               v.12 
+
+sem
+                        unix_read                                 Read; required by IPC operations
+                        associate                                 Associate a key with a semaphore set
+                        create                                    Create a semaphore set
+                        destroy                                   Destroy a semaphore set
+                        getattr                                   Get file attributes, such as access mode. (e.g. stat, some ioctls. ...)
+                        read                                      Read semaphore set
+                        setattr                                   Change file attributes for shared memory segment such as access mode. (e.g. chmod, some ioctls, ...)
+                        write                                     Write or append semaphore set
+                        unix_write                                Read; required by IPC operations
+
+filesystem
+                        remount                                   Change filesystem mount flags
+                        relabelfrom                               Change the security context based on existing type
+                        getattr                                   Get file attributes, such as access mode. (e.g. stat, some ioctls. ...)
+                        relabelto                                 Change the security context based on the new type
+                        mount                                     Mount
+                        transition                                Transition to a new SID (change security context)
+                        quotaget                                  Get quota information
+                        quotamod                                  Modify quota information
+                        unmount                                   Unmount
+                        associate                                 Associate file
+
+sock_file
+                        setattr                                   Change file attributes for shared memory segment such as access mode. (e.g. chmod, some ioctls, ...)
+                        rename                                    Rename a hard link
+                        ioctl                                     IO control system call requests not addressed by other permissions.
+                        link                                      Create hard link to block files
+                        write                                     Write or append socket file contents
+                        mounton                                   Use as mount point; only useful for directories in Linux
+                        relabelto                                 Change the security context based on the new type
+                        quotaon                                   Enabling quotas
+                        read                                      Read socket file contents
+                        unlink                                    Remove hard link (delete)
+                        append                                    Write or append socket file contents
+                        lock                                      Set and unset socket file locks
+                        getattr                                   Get file attributes for socket file, such as access mode. (e.g. stat, some ioctls. ...)
+                        swapon                                    Allows file to be used for paging/swapping space
+                        relabelfrom                               Change the security context based on existing type
+                        execute                                   Execute
+                        create                                    Create new block file
+
+process
+                        noatsecure          v.15-16               Disallow secure sid transitions
+                        getsched                                  Get priority of another process
+                        signull                                   Test for exisitence of another process without sending a signal
+                        sigstop                                   Send SIGSTOP signal
+                        getattr             v.15-16               Get attributes of a file
+                        share                                     Allow state sharing with cloned or forked process
+                        getpgid                                   Get group Process ID of another process
+                        signal                                    Send a signal other than SIGKILL, SIGSTOP, or SIGCHLD
+                        setcap                                    Set Linux capabilities
+                        sigchld                                   Send SIGCHLD signal
+                        setexec		    v.15-16
+                        getcap                                    Get Linux capabilities
+                        getsession                                Get session ID of another process
+                        setsched                                  Set priority of another process
+                        fork                                      Fork into two processes
+                        ptrace                                    Trace program execution of parent or child
+                        sigkill                                   Send SIGKILL signal
+                        setpgid                                   Set group Process ID of another process
+                        transition                                Transition to a new SID (change security context)
+                        setfscreate          v.15-16              Set own fscreate context
+                        siginh               v.16                 Inherit signal state from old sid
+                        setrlimit            v.16                 Change process hard limits
+                        rlimitinh            v.16                 Inherit resource limits from old sid
+                        
+msg
+                        receive                                   Remove a message from a queue
+                        send                                      Add a message to a queue
