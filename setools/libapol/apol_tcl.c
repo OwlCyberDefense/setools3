@@ -807,6 +807,7 @@ static int append_all_ta_using_regex(regex_t *preg, const char *regexp, bool_t d
 {
 	int i, rt;
 	char tbuf[APOL_STR_SZ+64];
+        int results_found = 0;
 
 	if(!(do_types || do_attribs)) {
 		return 0; /* nothing to do */
@@ -828,6 +829,7 @@ static int append_all_ta_using_regex(regex_t *preg, const char *regexp, bool_t d
 	Tcl_DStringAppend(buf, tbuf, -1);
 	
 	if(do_types) {
+                results_found = 0;
 		Tcl_DStringAppend(buf, "\n\nTYPES:\n", -1);
 		for (i = 0; i < policy->num_types; i++) {
 			rt = regexec(preg, policy->types[i].name, 0, NULL, 0);
@@ -836,6 +838,7 @@ static int append_all_ta_using_regex(regex_t *preg, const char *regexp, bool_t d
 				if(rt != 0) {
 					return -1;
 				}
+                                results_found = 1;
 				if (show_files) {
 #ifdef LIBSEFS
 					if (apol_append_type_files(i, FALSE, include_cxt, include_class, buf, policy, interp) != 0) {
@@ -858,13 +861,18 @@ static int append_all_ta_using_regex(regex_t *preg, const char *regexp, bool_t d
 						if(rt != 0) {
 							return -1;
 						}
+                                                results_found = 1;
 					}
 				}
 			}
 		}
+                if (results_found == 0) {
+                        Tcl_DStringAppend(buf, "Search returned no results.", -1);
+                }
 	}
 	
 	if(do_attribs) {
+                results_found = 0;
 		Tcl_DStringAppend(buf, "\n\nTYPE ATTRIBUTES:\n", -1);
 		for(i = 0; i < policy->num_attribs; i++) {
 			if(regexec(preg, policy->attribs[i].name, 0,NULL,0) == 0) {
@@ -872,6 +880,7 @@ static int append_all_ta_using_regex(regex_t *preg, const char *regexp, bool_t d
 				if(rt != 0) {
 					return -1;
 				}
+                                results_found = 1;
 				if (show_files) {
 #ifdef LIBSEFS
 					if (apol_append_type_files(i, TRUE, include_cxt, include_class, buf, policy, interp) != 0) {
@@ -887,8 +896,10 @@ static int append_all_ta_using_regex(regex_t *preg, const char *regexp, bool_t d
 				} 	
 			}						
 		}
+                if (results_found == 0) {
+                        Tcl_DStringAppend(buf, "Search returned no results.", -1);
+                }
 	}
-
 	return 0;
 }
 
@@ -1838,6 +1849,7 @@ int Apol_GetClassPermInfo(ClientData clientData, Tcl_Interp *interp, int argc, c
 	bool_t do_classes, classes_perms, classes_cps, do_common_perms, cp_perms, cp_classes, do_perms,
 		perm_classes, perm_cps, use_srchstr;
 	regex_t reg;
+        int results_found;
 	
 	if(argc != 12) {
 		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
@@ -1911,39 +1923,54 @@ int Apol_GetClassPermInfo(ClientData clientData, Tcl_Interp *interp, int argc, c
 
 	/* FIX: Here and elsewhere, need to use sorted traversal using AVL trees */	
 	if(do_classes) {
-		Tcl_DStringAppend(buf, "OBJECT CLASSES \n\n", -1);
+                results_found = 0;
+		Tcl_DStringAppend(buf, "OBJECT CLASSES:\n", -1);
 		for(i = 0; i < policy->num_obj_classes; i++) {
 			if(use_srchstr && (regexec(&reg, policy->obj_classes[i].name, 0,NULL,0) != 0)) {
 				continue;
 			}
 			append_class_str(classes_perms, classes_perms, classes_cps, 1, i, buf, policy);
+                        results_found = 1;
 		}
-		Tcl_DStringAppend(buf, "\n", -1);
+                if (results_found == 0) {
+                        Tcl_DStringAppend(buf, "Search returned no results.", -1);
+                }
+		Tcl_DStringAppend(buf, "\n\n", -1);
 	}
 	if(do_common_perms) {
-		Tcl_DStringAppend(buf, "COMMON PERMISSIONS\n\n", -1);
+                results_found = 0;
+		Tcl_DStringAppend(buf, "COMMON PERMISSIONS:\n", -1);
 		for(i = 0; i < policy->num_common_perms; i++) {
 			if(use_srchstr && (regexec(&reg, policy->common_perms[i].name, 0,NULL,0) != 0)) {
 				continue;
 			}
 			append_common_perm_str(cp_perms, cp_classes, 1, i, buf, policy);
+                        results_found = 1;
 		}
-		Tcl_DStringAppend(buf, "\n", -1);
+                if (results_found == 0) {
+                        Tcl_DStringAppend(buf, "Search returned no results.", -1);
+                }
+		Tcl_DStringAppend(buf, "\n\n", -1);
 	}
 	if(do_perms) {
+                results_found = 0;
 		Tcl_DStringAppend(buf, "PERMISSIONS", -1);
 		if(perm_classes) {
-			Tcl_DStringAppend(buf,  "  (* means class uses permission via a common permission)\n\n", -1);
+			Tcl_DStringAppend(buf,  "  (* means class uses permission via a common permission):\n", -1);
 		}
 		else {
-			Tcl_DStringAppend(buf, "\n\n", -1);
+			Tcl_DStringAppend(buf, ":\n", -1);
 		}
 		for(i = 0; i < policy->num_perms; i++) {
 			if(use_srchstr && (regexec(&reg, policy->perms[i], 0,NULL,0) != 0)) {
 				continue;
 			}
 			append_perm_str(perm_cps, perm_classes, 1, i, buf, policy);
+                        results_found = 1;
 		}
+                if (results_found == 0) {
+                        Tcl_DStringAppend(buf, "Search returned no results.", -1);
+                }
 		Tcl_DStringAppend(buf, "\n", -1);
 	}
 	
@@ -2361,8 +2388,8 @@ int Apol_SearchInitialSIDs(ClientData clientData, Tcl_Interp *interp, int argc, 
 	int *isids = NULL, num_isids;
 	char tbuf[BUF_SZ];
 	int sz, rt, i;
-	Tcl_DString *buf, buffer; 
-	
+	Tcl_DString *buf, buffer;
+
 	if(argc != 4) {
 		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
 		return TCL_ERROR;
@@ -2444,6 +2471,9 @@ int Apol_SearchInitialSIDs(ClientData clientData, Tcl_Interp *interp, int argc, 
 		free(str);
 	}
 	free(isids);
+        if (num_isids == 0) {
+                Tcl_DStringAppend(buf, "Search returned no results.", -1);
+        }
 	Tcl_DStringResult(interp, buf);
 								
 	return TCL_OK;
@@ -3243,10 +3273,9 @@ int Apol_GetUsersByRole(ClientData clientData, Tcl_Interp *interp, int argc, cha
 				Tcl_ResetResult(interp);
 				Tcl_AppendResult(interp, "error appending user", (char *) NULL);
 				return rt;
-			}	
+			}
 		}
 	}
-	
 	Tcl_DStringResult(interp, buf);
 	return TCL_OK;	
 }
@@ -3545,7 +3574,7 @@ int Apol_GetRolesByType(ClientData clientData, Tcl_Interp *interp, int argc, cha
 				Tcl_ResetResult(interp);
 				Tcl_AppendResult(interp, "error appending role", (char *) NULL);
 				return TCL_ERROR;
-			}	
+			}
 		}
 	}
 	Tcl_DStringResult(interp, buf);
@@ -3820,10 +3849,12 @@ int Apol_GetTypeInfo(ClientData clientData, Tcl_Interp *interp, int argc, char *
 		
 	Tcl_DStringInit(buf);	
 	if(!use_srchstr) {	
+                int results_found = 0;
 		if(do_types) {
 			sprintf(tmpbuf, "\n\nTYPES (%d):\n", policy->num_types);
 			Tcl_DStringAppend(buf, tmpbuf, -1);
 			for(i = 0; i < policy->num_types; i++) {
+				results_found = 1;
 				sprintf(tmpbuf, "%d: ", i+1);
 				Tcl_DStringAppend(buf, tmpbuf, -1);
 				rt = append_type_str(type_attribs, use_aliases, 0, i, policy, buf);
@@ -3849,12 +3880,17 @@ int Apol_GetTypeInfo(ClientData clientData, Tcl_Interp *interp, int argc, char *
 					Tcl_DStringAppend(buf, "\n", -1);
 				}
 			}
+                        if (results_found == 0) {
+                                Tcl_DStringAppend(buf, "Search returned no results.", -1);
+                        }
 		}
 		
 		if(do_attribs) {
+                        results_found = 0;
 			sprintf(tmpbuf, "\n\nTYPE ATTRIBUTES (%d):\n", policy->num_attribs);
 			Tcl_DStringAppend(buf, tmpbuf, -1);
 			for(i = 0; i < policy->num_attribs; i++) {
+				results_found = 1;
 				sprintf(tmpbuf, "%d: ", i+1);
 				Tcl_DStringAppend(buf, tmpbuf, -1);
 				rt = append_attrib_str(attrib_types, attrib_type_attribs, use_aliases, 0, 0, i,
@@ -3881,7 +3917,10 @@ int Apol_GetTypeInfo(ClientData clientData, Tcl_Interp *interp, int argc, char *
 					Tcl_DStringAppend(buf, "\n", -1);
 				}
 			}
-		}	
+                        if (results_found == 0) {
+                                Tcl_DStringAppend(buf, "Search returned no results.", -1);
+                        }
+		}
 	}
 	else {   /* use search string; search string was provided */
 		if(!is_valid_str_sz(argv[8])) {
