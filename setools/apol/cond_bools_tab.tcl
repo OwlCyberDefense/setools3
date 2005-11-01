@@ -120,7 +120,12 @@ proc Apol_Cond_Bools::cond_bool_search_bools {} {
 	
 		$resultsbox configure -state normal
 		$resultsbox delete 0.0 end
-		$resultsbox insert end $results
+                $resultsbox insert end "BOOLEANS:\n"
+                if {$results == ""} {
+                        $resultsbox insert end "Search returned no results."
+                } else {
+                        $resultsbox insert end $results
+                }
 		ApolTop::makeTextBoxReadOnly $resultsbox 
 	} else {
 		tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened!"
