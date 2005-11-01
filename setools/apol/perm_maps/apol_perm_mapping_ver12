@@ -32,7 +32,7 @@
 
 class blk_file 17
            getattr     r	7
-         relabelto     w	3
+         relabelto     w	10
             unlink     w	1
              ioctl     n	1
            execute     r	0
@@ -46,7 +46,7 @@ class blk_file 17
             rename     w	5
            mounton     b	1
            quotaon     b	1
-       relabelfrom     b	3
+       relabelfrom     r	10
               link     w	1
 
 
@@ -59,11 +59,11 @@ class file 19
             rename     w	5
            mounton     b	1
            quotaon     b	1
-       relabelfrom     b	1
+       relabelfrom     r	10
               link     w	1
         entrypoint     r	0
            getattr     r	7
-         relabelto     w	5
+         relabelto     w	10
             unlink     w	1
   execute_no_trans     r	0
              ioctl     n	1
@@ -76,12 +76,12 @@ class udp_socket 22
             listen     r	1
            setattr     w	7
           shutdown     w	1
-         relabelto     w	3
+         relabelto     w	10
           recv_msg     r	10
             accept     r	1
          name_bind     n	1
             append     w	1
-       relabelfrom     b	3
+       relabelfrom     r	10
             create     w	1
               read     r	10
             sendto     w	10
@@ -99,7 +99,7 @@ class udp_socket 22
 
 class socket 22
             append     w	1
-       relabelfrom     b	3
+       relabelfrom     r	10
             create     w	1
               read     r	10
             sendto     w	10
@@ -116,14 +116,14 @@ class socket 22
             listen     r	0
            setattr     w	7
           shutdown     w	1
-         relabelto     w	3
+         relabelto     w	10
           recv_msg     r	10
             accept     r	1
          name_bind     n	1
 
 
 class fifo_file 17
-         relabelto     w	3
+         relabelto     w	10
            getattr     r	7
               lock     n	1
            execute     r	0
@@ -136,7 +136,7 @@ class fifo_file 17
             create     w	1
               link     w	1
             rename     w	5
-       relabelfrom     b	3
+       relabelfrom     r	10
            mounton     b	1
            quotaon     b	1
               read     r	10
@@ -154,9 +154,9 @@ class chr_file 17
               link     w	1
              write     w	10
            execute     r	0
-         relabelto     w	3
+         relabelto     w	10
            setattr     w	7
-       relabelfrom     b	3
+       relabelfrom     r	10
               read     r	10
             unlink     w	1
               lock     n	1
@@ -174,14 +174,14 @@ class netlink_socket 22
           recv_msg     r	10
             create     w	1
             sendto     w	10
-         relabelto     w	3
+         relabelto     w	10
              ioctl     n	1
          name_bind     n	1
            connect     w	1
              write     w	10
           recvfrom     r	10
           send_msg     w	10
-       relabelfrom     b	3
+       relabelfrom     r	10
             setopt     w	1
            getattr     r	7
             getopt     r	1
@@ -191,7 +191,7 @@ class unix_dgram_socket 22
            connect     w	1
             getopt     r	1
             listen     r	1
-         relabelto     w	3
+         relabelto     w	10
          name_bind     n	1
             accept     r	1
           shutdown     w	1
@@ -208,7 +208,7 @@ class unix_dgram_socket 22
           recvfrom     r	10
           send_msg     w	10
              write     w	10
-       relabelfrom     b	3
+       relabelfrom     r	10
             setopt     w	1
 
 
@@ -232,7 +232,7 @@ class netif 6
 
 
 class unix_stream_socket 25
-         relabelto     w	3
+         relabelto     w	10
             append     w	1
          name_bind     n	1
            setattr     w	7
@@ -255,7 +255,7 @@ class unix_stream_socket 25
           recv_msg     r	10
             listen     r	1
             accept     r	1
-       relabelfrom     b	3
+       relabelfrom     r	10
              write     w	10
 
 
@@ -279,9 +279,9 @@ class tcp_socket 25
           recv_msg     r	10
             listen     r	1
             accept     r	1
-       relabelfrom     b	3
+       relabelfrom     r	10
              write     w	10
-         relabelto     w	3
+         relabelto     w	10
             append     w	1
          name_bind     n	1
            setattr     w	7
@@ -302,9 +302,9 @@ class dir 22
             rename     w	5
               read     r	10
              write     w	10
-       relabelfrom     b	3
+       relabelfrom     r	10
            execute     r	0
-         relabelto     w	3
+         relabelto     w	10
               lock     n	1
            setattr     w	7
           reparent     w	1
@@ -340,7 +340,7 @@ class security 9
 class packet_socket 22
            setattr     w	7
               read     r	10
-         relabelto     w	3
+         relabelto     w	10
           shutdown     w	1
          name_bind     n	1
           recv_msg     r	10
@@ -350,7 +350,7 @@ class packet_socket 22
              ioctl     n	1
             getopt     r	1
            connect     w	1
-       relabelfrom     b	3
+       relabelfrom     r	10
             listen     r	1
              write     w	10
             accept     r	1
@@ -378,7 +378,7 @@ class msgq 10
 class key_socket 22
            connect     w	1
             setopt     w	1
-         relabelto     w	3
+         relabelto     w	10
               read     r	10
          name_bind     n	1
             getopt     r	1
@@ -394,7 +394,7 @@ class key_socket 22
              ioctl     n	1
             create     w	1
             sendto     w	10
-       relabelfrom     b	3
+       relabelfrom     r	10
              write     w	10
           shutdown     w	1
           recv_msg     r	10
@@ -445,14 +445,14 @@ class rawip_socket 22
             setopt     w	1
            setattr     w	1
             getopt     r	1
-         relabelto     w	3
+         relabelto     w	10
             listen     r	1
          name_bind     n	1
             accept     r	1
             append     w	1
           shutdown     w	1
           recv_msg     r	10
-       relabelfrom     b	3
+       relabelfrom     r	10
               read     r	10
              ioctl     n	1
            connect     w	1
@@ -474,7 +474,7 @@ class ipc 9
 
 
 class lnk_file 17
-       relabelfrom     b	3
+       relabelfrom     r	10
             append     w	1
              ioctl     n	1
             swapon     b	0
@@ -485,7 +485,7 @@ class lnk_file 17
            mounton     b	1
            quotaon     b	1
               lock     n	1
-         relabelto     w	3
+         relabelto     w	10
            getattr     r	7
             unlink     w	1
            execute     r	0
@@ -518,9 +518,9 @@ class sem 9
 
 class filesystem 10
            remount     w	1
-       relabelfrom     b	3
+       relabelfrom     r	10
            getattr     r	1
-         relabelto     w	3
+         relabelto     w	10
              mount     w	1
         transition     w	1
           quotaget     r	1
@@ -536,7 +536,7 @@ class sock_file 17
               link     w	1
              write     w	10
            mounton     b	1
-         relabelto     w	3
+         relabelto     w	10
            quotaon     b	1
               read     r	10
             unlink     w	1
@@ -544,7 +544,7 @@ class sock_file 17
               lock     n	1
            getattr     r	7
             swapon     b	0
-       relabelfrom     b	3
+       relabelfrom     r	10
            execute     r	0
             create     w	1
 
