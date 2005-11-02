@@ -979,8 +979,9 @@ int dta_trans_filter_access_types(dta_trans_t **trans, int *access_types, int nu
 					if (node->key.cls == obj_perm_sets[j].obj_class) {
 						for (rule = node->rules; rule; rule = rule->next) {
 							/* add any rules that use any of the permissions included for that object class */
-							if (does_av_rule_use_perms(rule->rule, 1, obj_perm_sets[j].perms, 
-										obj_perm_sets[j].num_perms, policy) &&
+							if ((obj_perm_sets[j].num_perms == num_of_class_perms(obj_perm_sets[j].obj_class, policy)  
+									|| does_av_rule_use_perms(rule->rule, 1, obj_perm_sets[j].perms, 
+									obj_perm_sets[j].num_perms, policy)) &&
 								find_int_in_array(rule->rule,  cur->access_rules, cur->num_access_rules) == -1) {
 								retv = add_i_to_a(rule->rule, &(cur->num_access_rules), &(cur->access_rules));
 								if (retv) {
