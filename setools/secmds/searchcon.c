@@ -76,12 +76,12 @@ void usage(const char *program_name, int brief)
 	}
 	fputs("\n\
 Print requested information about an SELinux policy.\n\
-  -t type, --type=typename   	   The name of the type to search for\n\
-  -u user, --user=username   	   The name of the user to search for\n\
-  -p path, --path=pathname   	   The path or path fragment to search for\n\
+  -t type,   --type=typename   	   The name of the type to search for\n\
+  -u user,   --user=username   	   The name of the user to search for\n\
+  -p path,   --path=pathname   	   The path or path fragment to search for\n\
   -o object, --object=class        The name of the object class to search for\n\
-  -r regex, --regex   		   Search using regular expressions\n\
-  -l, --list			   List types in the snapshot\n\
+  -r regex,  --regex               Search using regular expressions\n\
+  -l, --list                       List types in the snapshot\n\
 ", stdout);
 	fputs("\n\
   -h, --help                       Display this help and exit\n\
@@ -91,7 +91,7 @@ Print requested information about an SELinux policy.\n\
 Valid object classes include:\n\
 ",stdout);
 	array = sefs_get_valid_object_classes(&size);
-	sefs_double_array_print(array,size);
+	sefs_double_array_print(array,size-1); /* don't print "all_files" it is not used here */
 	sefs_double_array_destroy(array,size);
 	return;
 }

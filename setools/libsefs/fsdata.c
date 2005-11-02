@@ -1165,14 +1165,7 @@ int sefs_filesystem_db_search(sefs_filesystem_db_t *fsd,sefs_search_keys_t *sear
 			return -1;
 		}
 		for (i=0; i<search_keys->num_object_class; i++){ 
-			if (sefs_is_valid_object_class(search_keys->object_class[i]) != -1){
-				object_class[i] = sefs_get_class_int(search_keys->object_class[i]);
-			}
-			else {
-				ret_val = -1;
-				fprintf(stderr, "Invalid object class provided!\n");
-				goto done_search;
-			}
+			object_class[i] = sefs_get_class_int(search_keys->object_class[i]);
 		}
 	}
 
@@ -1244,7 +1237,6 @@ int sefs_filesystem_db_search(sefs_filesystem_db_t *fsd,sefs_search_keys_t *sear
 	}
 	else
 		ret_val = 0;
- done_search:
 
 	/* here we deallocate anything that might need to be */
 	if (stmt)
