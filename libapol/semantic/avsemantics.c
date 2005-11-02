@@ -57,13 +57,23 @@ bool_t avh_is_enabled(avh_node_t *node, policy_t *p)
 }
 
  
-/* Determine is a provided conditional type rule is valid for exntry into the hash
+/* Determine if a provided conditional type rule is valid for exntry into the hash
  * table.  Valid means that there is NOT an unconditional type rule with the same
  * key, AND there is NOT a conditional type rule with the same key UNLESS it's in the
  * same conditional BUT on the opposite true/false list */
 static bool_t avh_is_valid_cond_type_rule(avh_key_t *key, int cond_expr, bool_t cond_list, policy_t *p) 
 {
-	/* TODO: This needs to be done */
+	avh_node_t *node = NULL;
+
+	for (node = avh_find_first_node(&(p->avh), key); node; node = avh_find_next_node(node)) {
+		if (node->flags != AVH_FLAG_COND)
+			return FALSE;
+		if (node->cond_expr != cond_expr) 
+			return FALSE;
+		if (node->cond_list == cond_list)
+			return FALSE;
+	}
+
 	return TRUE;	
 }
 
