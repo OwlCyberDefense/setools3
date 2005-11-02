@@ -239,6 +239,7 @@ typedef struct ap_single_view_diff {
 ap_single_view_diff_t *ap_single_view_diff_new(unsigned int opts, policy_t *p1, policy_t *p2,ap_diff_rename_t *renamed_types);
 void ap_single_view_diff_destroy(ap_single_view_diff_t *svd);
 void ap_single_view_diff_sort_te_rules(ap_single_view_diff_t *svd, int sort_col, int which_arr, int direction);
+int ap_single_view_diff_get_num_diffs(ap_single_view_diff_t *svd);
 
 ap_diff_rename_t *ap_diff_rename_new();
 void ap_diff_rename_free(ap_diff_rename_t *rename);
