@@ -2682,6 +2682,60 @@ void ap_single_view_diff_sort_te_rules(ap_single_view_diff_t *svd, int sort_col,
 	}
 }
 
+/* return the total number of differences in the single view diff */
+int ap_single_view_diff_get_num_diffs(ap_single_view_diff_t *svd)
+{
+	int total = 0;
+
+	if (!svd)
+		return -1;
+
+	/* types */
+	total += svd->types->num_add + svd->types->num_rem + svd->types->num_chg +
+		svd->types->num_chg_add + svd->types->num_chg_rem;
+	/* roles */
+	total += svd->roles->num_add + svd->roles->num_rem + svd->roles->num_chg +
+		svd->roles->num_chg_add + svd->roles->num_chg_rem;
+	/* users */
+	total += svd->users->num_add + svd->users->num_rem + svd->users->num_chg +
+		svd->users->num_chg_add + svd->users->num_chg_rem;
+	/* attributes */
+	total += svd->attribs->num_add + svd->attribs->num_rem + svd->attribs->num_chg +
+		svd->attribs->num_chg_add + svd->attribs->num_chg_rem;
+	/* classes */
+	total += svd->classes->num_add + svd->classes->num_rem + svd->classes->num_chg +
+		svd->classes->num_chg_add + svd->classes->num_chg_rem;
+	/* common perms */
+	total += svd->common_perms->num_add + svd->common_perms->num_rem + svd->common_perms->num_chg +
+		svd->common_perms->num_chg_add + svd->common_perms->num_chg_rem;
+	/* role allows */
+	total += svd->rallows->num_add + svd->rallows->num_rem + svd->rallows->num_chg +
+		svd->rallows->num_chg_add + svd->rallows->num_chg_rem;
+	/* bools */
+	total += svd->bools->num_add + svd->bools->num_rem + svd->bools->num_chg;
+	/* role trans */
+	total += svd->rtrans->num_add + svd->rtrans->num_rem + svd->rtrans->num_chg + 
+		svd->rtrans->num_add_type + svd->rtrans->num_rem_type;
+	/* perms */
+	total += svd->perms->num_add + svd->perms->num_rem;
+	/* te */
+	total += svd->te->num_add + svd->te->num_rem + svd->te->num_chg + svd->te->num_add_type +
+		svd->te->num_rem_type;
+	/* conds */
+	total += svd->conds->num_add + svd->conds->num_rem + svd->conds->num_chg;
+
+	/* NOTE: this is not a perfect check, but we need to make sure this function gets updated 
+	 * as we provide more difference capabilities in the future */
+	if (sizeof(ap_single_view_diff_t) != sizeof(svd->types) + sizeof(svd->roles) + sizeof(svd->users) + sizeof(svd->attribs) + 
+	    sizeof(svd->classes) + sizeof(svd->perms) + sizeof(svd->common_perms) + sizeof(svd->rallows) + sizeof(svd->bools) + 
+	    sizeof(svd->rtrans) + sizeof(svd->te) + sizeof(svd->conds) + sizeof(svd->diff)) {
+		assert(FALSE);
+		return -1;
+	}
+
+	return total;
+}
+
 /* opts are policy open options (see policy.h).  They indicate to apol_get_pol_diffs()
  * what parts of the policy to differntiate.  Policies p1 and p2 must be opened with
  * at least the same options.  If unsure you can always use POLOPT_ALL (and ensure
