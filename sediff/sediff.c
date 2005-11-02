@@ -1129,6 +1129,7 @@ int main (int argc, char **argv)
 	ap_single_view_diff_t *svd = NULL;
 	unsigned int opts = POLOPT_NONE;
 	char prog_path[PATH_MAX];
+	int ret_code = 0;
 	
 	attributes = rallows = rtrans = classes = types = roles = users = bools = all = stats = isids = conds = terules = rbac = gui = quiet = 0;
 	while ((optc = getopt_long (argc, argv, "qXaActrubiTRCshv", longopts, NULL)) != -1)  {
@@ -1277,6 +1278,7 @@ int main (int argc, char **argv)
 		exit(1);
 	}
 
+	printf("Calculating difference, this might take a while\n");
 	svd = ap_single_view_diff_new(opts, p1, p2, NULL);
 	if (svd == NULL) {
 		printf("Problem differentiating policies\n");
@@ -1349,9 +1351,11 @@ int main (int argc, char **argv)
 		printf("\n");
 	}
 
+	if (ap_single_view_diff_get_num_diffs(svd) > 0)
+		ret_code = 1;
 	ap_single_view_diff_destroy(svd);
 	close_policy(p1);
 	close_policy(p2);
-	exit(0);
+	exit(ret_code);
 }
 
