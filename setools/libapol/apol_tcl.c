@@ -4954,7 +4954,7 @@ int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *interp, int
 			Tcl_AppendResult(interp, "Out of memory.", (char *) NULL);
 			goto err;
 		}
-	   	trim_trailing_whitespace(&end_type);
+		trim_trailing_whitespace(&end_type);
 		rt = regcomp(&reg, end_type, REG_EXTENDED|REG_NOSUB);
 		if (rt != 0) {
 			sz = regerror(rt, &reg, NULL, 0);
@@ -4966,10 +4966,8 @@ int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *interp, int
 			regfree(&reg);
 			Tcl_AppendResult(interp, err, (char *) NULL);
 			free(err);
-			free(end_type);
 			goto err;
 		}
-		free(end_type);
 		rt = get_type_idxs_by_regex(&dta_query->filter_types, &dta_query->num_filter_types, &reg, FALSE, policy);
 		if (rt < 0) {
 			Tcl_AppendResult(interp, "Error searching types\n", (char *) NULL);
@@ -5007,6 +5005,7 @@ int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *interp, int
 	}
 		
 	free_domain_trans_analysis(dta_results);
+	free(end_type);
 	return TCL_OK;
 err:
 	if (dta_query != NULL) dta_query_destroy(dta_query);
@@ -5327,7 +5326,7 @@ int Apol_TransitiveFlowAnalysis(ClientData clientData, Tcl_Interp *interp, int a
 	char *start_type = NULL;
 	int rt;
 	char tbuf[64];
-	bool_t filter_end_types;
+	bool_t filter_end_types, filter_inter_types;
 	
 	if(argc != 12) {
 		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
@@ -5336,6 +5335,14 @@ int Apol_TransitiveFlowAnalysis(ClientData clientData, Tcl_Interp *interp, int a
 	iflow_query = set_transitive_query_args(interp, argv);
 	if (iflow_query == NULL) {
 		return TCL_ERROR;
+	}
+
+	filter_inter_types = getbool(argv[8]);
+	/* Don't run the analysis call if the start type is excluded */
+	if (filter_inter_types && find_int_in_array(iflow_query->start_type, iflow_query->types, iflow_query->num_types) != -1) {
+			assert(FALSE); /* this should get caught by the tcl code */
+			Tcl_AppendResult(interp, "Advanced filter cannot exclude start type from analysis\n", (char *) NULL);
+			return TCL_ERROR;
 	}
 	filter_end_types = getbool(argv[5]);
 	/* Don't run the analysis call if the user has specified to filter end types by reg exp  

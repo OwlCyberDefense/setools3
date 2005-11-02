@@ -678,9 +678,18 @@ proc Apol_Analysis::do_analysis { which } {
 			-message "You must select an analysis type."
 		return -1
 	}
+
 	# Hold the currently raised tab.
 	set prev_raisedTab [$results_notebook raise]
 	ApolTop::setBusyCursor
+	#hack: check the filter options of Transitive infoflow before clearing result tab so as not to lose them
+	if {$curr_analysis_module == "Apol_Analysis_fulflow"} {
+		set rt [catch {Apol_Analysis_fulflow::verify_options} err]
+		if {$rt != 0} {
+			ApolTop::resetBusyCursor
+			return -1
+		}
+	}
 	switch $which {
 		new_analysis {
 			$Apol_Analysis::newButton configure -state disabled
