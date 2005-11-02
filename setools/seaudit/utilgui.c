@@ -58,9 +58,10 @@ void clear_wait_cursor(GtkWidget *widget)
 
 GString* get_filename_from_user(const char *title, const gchar *startfilename)
 {
-	GtkWidget *file_selector;
-	gint response;
-	GString *filename;
+	GtkWidget *file_selector = NULL;
+	gint response, overwrite;
+	GString *filename = NULL;
+	GString *overwrite_warning = NULL;
 
 	file_selector = gtk_file_selection_new(title);
 	if (startfilename)
@@ -79,7 +80,14 @@ GString* get_filename_from_user(const char *title, const gchar *startfilename)
 		 * under the Files list. */
 		if (g_file_test(filename->str, G_FILE_TEST_IS_DIR))
 			gtk_file_selection_complete(GTK_FILE_SELECTION(file_selector), filename->str);
-		else 
+		else if (g_file_test(filename->str, G_FILE_TEST_EXISTS)) {
+			overwrite_warning = g_string_new("");
+			g_string_printf(overwrite_warning, "Overwrite File:\n%s?", filename->str);
+			overwrite = get_user_response_to_message(GTK_WINDOW(gtk_widget_get_toplevel(file_selector)), overwrite_warning->str);	
+			g_string_free(overwrite_warning, 1);
+			if (overwrite == GTK_RESPONSE_YES)
+				break;				
+		} else
 			break;
 	}
 	gtk_widget_destroy(file_selector);
