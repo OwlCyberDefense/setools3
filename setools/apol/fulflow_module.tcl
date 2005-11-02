@@ -148,6 +148,29 @@ proc Apol_Analysis_fulflow::get_results_raised_tab {} {
      	return $Apol_Analysis_fulflow::fulflow_info_text
 } 
 
+# ------------------------------------------------------------------------------
+#  Command Apol_Analysis_fulflow::verify_options
+# ------------------------------------------------------------------------------
+proc Apol_Analysis_fulflow::verify_options {} {
+	variable start_type
+        variable end_type
+        variable endtype_sel
+	variable fulflow_tree
+	variable fulflow_info_text
+        variable flow_direction
+	variable advanced_filter_Dlg
+	variable f_opts
+
+	if {![info exists f_opts]} { return 0 }
+	if {$f_opts($advanced_filter_Dlg,filtered_excl_types) != "" && $start_type != ""} {   
+		if {[lsearch $f_opts($advanced_filter_Dlg,filtered_excl_types) $start_type] != -1} {
+			set err "Advanced filter cannot exclude start type ($start_type) from analysis"
+			tk_messageBox -icon error -type ok -title "Error" -message $err
+			return -code error $err
+		}
+	} else { return 0 }
+}
+
 ## Command Apol_Analysis_fulflow::do_analysis is the principal interface command.
 ## The GUI will call this when the module is to perform it's analysis.  The
 ## module should know how to get its own option information (the options
@@ -1107,7 +1130,9 @@ proc Apol_Analysis_fulflow::find_more_flows {src_node tgt_node} {
 	# Current time - start time = elapsed time
 	$time_exp_lbl configure -text [Apol_Analysis_fulflow::convert_seconds [expr [clock seconds] - $start_time]]
 	#Apol_Analysis_fulflow::find_more_flows_generate_virtual_events
-	
+	$num_found_lbl configure -text $curr_flows_num
+	update
+
 	# The last query arguments were stored in the data for the root node
 	set rt [catch {apol_TransitiveFindPathsStart \
 		$src \
