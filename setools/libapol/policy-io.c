@@ -503,6 +503,7 @@ int open_partial_policy(const char* filename, unsigned int options, policy_t **p
 {
 	int rt;
 	unsigned int opts;
+	struct stat buf;
 	
 	opts = validate_policy_options(options);
 	
@@ -515,6 +516,17 @@ int open_partial_policy(const char* filename, unsigned int options, policy_t **p
 		return -1;
 	}
 	(*policy)->opts = opts;
+	rt = stat(filename, &buf);
+	if (rt < 0) {
+		fprintf(stderr, "Could not open policy %s!\n",filename);
+		return -1;
+	} else {
+		/* ensure this is a regular file ie. not a directory, blk_file etc. */
+		if (!S_ISREG(buf.st_mode)) {
+			fprintf(stderr, "Could not open policy %s, not a regular file!\n", filename);
+			return -1;
+		}
+	}
 	yyin = fopen(filename, "r");
 	if (yyin == NULL) {
 		fprintf(stderr, "Could not open policy %s!\n", filename);
