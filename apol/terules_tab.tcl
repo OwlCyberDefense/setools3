@@ -402,6 +402,7 @@ proc Apol_TE::remove_conditional_tags { tb } {
 # ------------------------------------------------------------------------------
 #  Command Apol_TE::searchTErules
 # ------------------------------------------------------------------------------
+
 proc Apol_TE::searchTErules { whichButton } {
 	variable opts
 	variable ta1
@@ -447,22 +448,56 @@ proc Apol_TE::searchTErules { whichButton } {
 		# Getting all selected permissions
 		set selPermsList [Apol_TE::get_Selected_ListItems $permslistbox]
 	}
-		
+
+        set results ""
 	# Making the call to apol_GetTErules to search for rules with given options
 	ApolTop::setBusyCursor
-	set rt [catch {set results [apol_SearchTErules $opts(teallow) $opts(neverallow) \
-		$opts(clone) $opts(auallow) $opts(audeny) $opts(audont) $opts(ttrans) \
-		$opts(tmember) $opts(tchange) $opts(use_1st_list) $opts(indirect_1) \
-		$ta1 $opts(which_1) $opts(use_2nd_list) $opts(indirect_2) \
-		$ta2 $opts(use_3rd_list) $opts(indirect_3) $ta3 $selObjectsList $selPermsList\
-		$allow_regex $ta1_opt $ta2_opt $show_enabled_rules]} err]
-	
-	if {$rt != 0} {	
-		tk_messageBox -icon error -type ok -title "Error" -message "$err"
-		ApolTop::resetBusyCursor
-		return 
-	} 
 
+        # expand all types/attributes based upon regexp and/or use
+        # indirect matches
+        if {[catch {Apol_TE::expand_ids $ta1 $ta1_opt $opts(indirect_1) $allow_regex} source_list] != 0} {
+                tk_messageBox -icon error -type ok -title "Error" -message "$err"
+                return
+        }
+        if {[catch {Apol_TE::expand_ids $ta2 $ta2_opt $opts(indirect_2) $allow_regex} dest_list] != 0} {
+                tk_messageBox -icon error -type ok -title "Error" -message "$err"
+                return
+        }
+            
+        set searches_todo [expr {[llength $source_list] * [llength $dest_list] + 2}]
+        set ::Apol_TE::searches_done 0
+        set ::Apol_TE::searches_text "Searching for TE Rules..."
+        ProgressDlg::create .busy -title "TE Rules Search" \
+            -maximum $searches_todo -variable ::Apol_TE::searches_done \
+            -textvariable ::Apol_TE::searches_text
+        update idletasks
+        foreach t2 $dest_list {
+                foreach t1 $source_list {
+                        set rt [catch {set sub_results [apol_SearchTErules $opts(teallow) $opts(neverallow) \
+		               $opts(clone) $opts(auallow) $opts(audeny) $opts(audont) $opts(ttrans) \
+		               $opts(tmember) $opts(tchange) $opts(use_1st_list) $opts(indirect_1) \
+		               $t1 $opts(which_1) $opts(use_2nd_list) $opts(indirect_2) \
+		               $t2 $opts(use_3rd_list) $opts(indirect_3) $ta3 $selObjectsList $selPermsList\
+		               $allow_regex $ta1_opt $ta2_opt $show_enabled_rules]} err]
+
+                        if {$rt != 0} {
+                                destroy .busy
+                                tk_messageBox -icon error -type ok -title "Error" -message "$err"
+                                ApolTop::resetBusyCursor
+                                return
+                        } 
+
+                        # reformat all of the results into 4-tuples
+                        foreach {rule line_num is_cond enabled} $sub_results {
+                                lappend results [list $rule $line_num $is_cond $enabled]
+                        }
+                        incr ::Apol_TE::searches_done
+                        update idletasks
+                }
+                # now go through and remove all duplicates
+                set results [lsort -command Apol_TE::sort_cmd -unique $results]
+        }
+        destroy .busy
 	switch $whichButton {
 		newTab {
 			# Enable the update button.
@@ -487,11 +522,48 @@ proc Apol_TE::searchTErules { whichButton } {
 			return -code error
 		}
 	} 
-        
         ApolTop::resetBusyCursor
         
         return 0
 }
+
+proc Apol_TE::expand_ids {id id_opt use_indirect use_regexp} {
+    if {[set results_list $id] == {}} {
+        set results_list {{}}
+    } elseif {$use_indirect} {
+        if {$id_opt == "types" || $id_opt == "both"} {
+            # libapol will expand types for me
+        }
+        if {$id_opt == "attribs" || $id_opt == "both"} {
+            if {$use_regexp} {
+                set attribute_list [apol_GetAttributeByRegexp $id]
+            } else {
+                set attribute_list $id
+            }
+            foreach a $attribute_list {
+                if {[catch {apol_GetAttribTypesList $a} types_list] == 0} {
+                    foreach t $types_list {
+                        lappend results_list $t
+                    }
+                }
+            }
+        }
+        set results_list [lsort -uniq $results_list]
+    }
+    return $results_list
+}
+    
+proc Apol_TE::sort_cmd {a b} {
+    set rule_type_a [lindex $a 0]
+    set rule_type_a [string range $rule_type_a 0 [string first { } $rule_type_a]]
+    set rule_type_b [lindex $b 0]
+    set rule_type_b [string range $rule_type_b 0 [string first { } $rule_type_b]]
+    if {[set result [string compare $rule_type_a $rule_type_b]] != 0} {
+        return $result
+    }
+    return [expr {[lindex $a 1] - [lindex $b 1]}]
+}
+
 
 # ------------------------------------------------------------------------------
 #  Command Apol_TE::initialize
@@ -517,27 +589,20 @@ proc Apol_TE::insertTERules { tb results } {
 	variable tag_disabled_rules
 	variable show_enabled_rules
 	
-	# Determine number of rules returned (1/4 size of llength). 
-	# This is because each rule returned consists of:
+	# Each rule tuple returned consists of:
 	#	1. rule
 	#	2. line number
 	#	3. is_conditional rule flag
 	#	4. enabled flag
-	set num [expr { [llength $results] / 4 }]
+	set num [llength $results]
 	set num_cond 	 0
 	set num_disabled 0
 	set num_enabled  0
 
-	for {set x 0} {$x < [llength $results]} {incr x} { 
+        foreach result_tuple $results {
+                foreach {rule lineno is_conditional enabled} $result_tuple break
 		set start_line_pos [$tb index insert]
 		set line_num [lindex [split $start_line_pos "."] 0]
-		set rule [lindex $results $x]
-		incr x
-		set lineno [lindex $results $x]
-		incr x
-		set is_conditional [lindex $results $x]
-		incr x
-		set enabled [lindex $results $x]
 
 		# Only display line number hyperlink if this is not a binary policy.
 		if {![ApolTop::is_binary_policy]} {
@@ -1269,8 +1334,6 @@ proc Apol_TE::close_All_ResultsTabs { } {
 #  Command Apol_TE::populate_ta_list
 # ------------------------------------------------------------------------------
 proc Apol_TE::populate_ta_list { list } {
-        variable incl_indirect1
-	variable incl_indirect2
 	variable src_list_type_1
 	variable src_list_type_2	
 	variable tgt_list_type_1
@@ -1311,7 +1374,6 @@ proc Apol_TE::populate_ta_list { list } {
 		set which $ta1_opt
 		set uselist $Apol_TE::source_list
 		set ta Apol_TE::ta1
-	        set cBox $incl_indirect1
 	        set useStatus $Apol_TE::opts(use_1st_list)
 	} elseif { $list == 2 } {
 		# Make sure that either "Types" OR "Attribs", OR Both checkbuttons are selected
@@ -1341,7 +1403,6 @@ proc Apol_TE::populate_ta_list { list } {
 		set which $ta2_opt
 		set uselist $Apol_TE::target_list
 		set ta Apol_TE::ta2
-	        set cBox $incl_indirect2
 	        set useStatus $Apol_TE::opts(use_2nd_list)
 	} elseif { $list == 3 } {
 		set subtract_cb $cb_dflt_subtract
@@ -1357,19 +1418,14 @@ proc Apol_TE::populate_ta_list { list } {
 		types {
 			$uselist configure -values $Apol_Types::typelist
 			if { $useStatus } {
-				if {!$allow_syntactic} {
-		        		$cBox configure -state normal	
-		        	} else {
+				if {$allow_syntactic} {
 		        		$subtract_cb configure -state normal    
 		        	}
 		        }
 		}
 		attribs {
 			$uselist configure -values $Apol_Types::attriblist
-		        if {!$allow_syntactic} {
-		        	$cBox configure -state disabled
-		        	$cBox deselect
-		        } else {
+		        if {$allow_syntactic} {
 		        	$subtract_cb configure -state disabled
 		        }
 		}
@@ -1377,10 +1433,7 @@ proc Apol_TE::populate_ta_list { list } {
 			set bothlist [concat $Apol_Types::typelist $Apol_Types::attriblist]
 			set bothlist [lsort -dictionary $bothlist]
 			$uselist configure -values $bothlist
-			if {!$allow_syntactic} {
-				$cBox configure -state disabled
-				$cBox deselect
-			} else {
+			if {$allow_syntactic} {
 				$subtract_cb configure -state disabled
 			}
 		}
@@ -1389,9 +1442,6 @@ proc Apol_TE::populate_ta_list { list } {
 		}
 		default {
 			$uselist configure -values ""
-			if {!$allow_syntactic} {
-				$cBox configure -state normal
-			}
 		}
 	}
 	if {$allow_syntactic} {
@@ -1572,7 +1622,7 @@ proc Apol_TE::enable_listbox { cBox list_number b1 b2 } {
 		    $b2 configure -state normal
 		    $Apol_TE::global_asSource configure -state normal
 		    $Apol_TE::global_any configure -state normal	
-		    $Apol_TE::incl_indirect1 configure -state normal
+                    $incl_indirect1 configure -state normal
 		} else {
 		    $cBox configure -state normal -entrybg white
 		    $b1 configure -state normal
@@ -1581,19 +1631,9 @@ proc Apol_TE::enable_listbox { cBox list_number b1 b2 } {
 		    $Apol_TE::global_any configure -state normal	
 		    Apol_TE::change_tgt_dflt_state
 		}
-		if {$Apol_TE::src_list_type_1 == 0 && $Apol_TE::src_list_type_2 == 1} {
-		    $incl_indirect1 configure -state disabled
-		    $incl_indirect1 deselect
-		}
-		if {$Apol_TE::src_list_type_1 == 1 && $Apol_TE::src_list_type_2 == 1} {
-			$incl_indirect1 configure -state disabled
-		    	$incl_indirect1 deselect
-		}
 		if {$allow_syntactic} {
 	    		$cb_src_tilda configure -state normal
     			$cb_src_subtract configure -state normal
-    			$incl_indirect1 configure -state disabled
-		    	$incl_indirect1 deselect
 		    	Apol_TE::insert_star_into_types_attribs_list $source_list
 	    	} else {
 	    		$cb_src_tilda configure -state disabled
@@ -1620,20 +1660,9 @@ proc Apol_TE::enable_listbox { cBox list_number b1 b2 } {
 		$b1 configure -state normal
 		$b2 configure -state normal
 		$Apol_TE::incl_indirect2 configure -state normal
-		
-		if {$Apol_TE::tgt_list_type_1 == 0 && $Apol_TE::tgt_list_type_2 == 1} {
-		    $incl_indirect2 configure -state disabled
-		    $incl_indirect2 deselect
-		}
-		if {$Apol_TE::tgt_list_type_1 == 1 && $Apol_TE::tgt_list_type_2 == 1} {
-			$incl_indirect2 configure -state disabled
-		    	$incl_indirect2 deselect
-		}
 		if {$allow_syntactic} {
 	    		$cb_tgt_tilda configure -state normal
     			$cb_tgt_subtract configure -state normal
-    			$incl_indirect2 configure -state disabled
-		    	$incl_indirect2 deselect
 		    	Apol_TE::insert_star_into_types_attribs_list $target_list
 	    	} else {
 	    		$cb_tgt_tilda configure -state disabled
@@ -1747,8 +1776,6 @@ proc Apol_TE::change_tgt_dflt_state { } {
 	selection clear -displayof $Apol_TE::target_list
 	$Apol_TE::use_2nd_list configure -state disabled -text $Apol_TE::m_disable_tgt_ta
 	$Apol_TE::use_2nd_list deselect
-	$Apol_TE::incl_indirect2 configure -state disabled
-	$Apol_TE::incl_indirect2 deselect
 	$Apol_TE::list_types_2 configure -state disabled
 	$Apol_TE::list_attribs_2 configure -state disabled
     } elseif { $Apol_TE::opts(use_1st_list) == 1 && $bool && $Apol_TE::opts(which_1) == "source"} {
@@ -2280,8 +2307,6 @@ proc Apol_TE::enable_disable_syntactic_search_widgets {enable} {
 	variable cb_src_subtract
 	variable cb_tgt_tilda
 	variable cb_tgt_subtract
-	variable incl_indirect1
-	variable incl_indirect2
 	variable source_list
 	variable target_list
 	variable dflt_type_list
@@ -2294,15 +2319,11 @@ proc Apol_TE::enable_disable_syntactic_search_widgets {enable} {
 		if {$opts(use_1st_list)} {
 			$cb_src_tilda configure -state normal
 			$cb_src_subtract configure -state normal
-			$incl_indirect1 configure -state disabled
-	    		$incl_indirect1 deselect
 	    		Apol_TE::insert_star_into_types_attribs_list $source_list
 	    	}
 	    	if {$opts(use_2nd_list)} {
 			$cb_tgt_tilda configure -state normal
 			$cb_tgt_subtract configure -state normal
-			$incl_indirect2 configure -state disabled
-	    		$incl_indirect2 deselect
 	    		Apol_TE::insert_star_into_types_attribs_list $target_list
 	    	}
 		if {[Apol_TE::get_Selected_ListItems $permslistbox] == ""} {
@@ -2316,13 +2337,11 @@ proc Apol_TE::enable_disable_syntactic_search_widgets {enable} {
 		if {$opts(use_1st_list)} {
 	    		$cb_src_tilda configure -state disabled
 			$cb_src_subtract configure -state disabled
-			$incl_indirect1 configure -state normal
 			Apol_TE::remove_star_from_types_attribs_list $source_list
 		}
 		if {$opts(use_2nd_list)} {
 			$cb_tgt_tilda configure -state disabled
 			$cb_tgt_subtract configure -state disabled
-			$incl_indirect2 configure -state normal
 			Apol_TE::remove_star_from_types_attribs_list $target_list
 		}
 		if {$opts(use_3rd_list)} {
