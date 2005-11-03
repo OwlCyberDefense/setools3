@@ -2684,6 +2684,38 @@ int Apol_SearchConditionalRules(ClientData clientData, Tcl_Interp *interp, int a
 	return TCL_OK;
 }
 
+/* Given an regexp, returns all attributes matching that pattern. */
+int Apol_GetAttributeByRegexp(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[]) {
+        regex_t regexp;
+        int i;
+	if(policy == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		return TCL_ERROR;
+	}
+        if (argc != 2) {
+		Tcl_SetResult(interp, "wrong # of args", TCL_STATIC);
+		return TCL_ERROR;
+        }
+        if(!is_valid_str_sz(argv[1])) {
+                Tcl_SetResult(interp, "regular expression string is too large", TCL_STATIC);
+                return TCL_ERROR;
+        }
+        if (regcomp(&regexp, argv[1], REG_EXTENDED | REG_NOSUB) != 0) {
+                Tcl_Obj *result = Tcl_NewStringObj("Invalid regular expression:\n\n     ", -1);
+                Tcl_AppendStringsToObj(result, argv[1], "\n", NULL);
+                Tcl_SetObjResult(interp, result);
+                return TCL_ERROR;
+
+        }
+        for(i = 0; i < policy->num_attribs; i++) {
+                if(regexec(&regexp, policy->attribs[i].name, 0, NULL, 0) == 0) {
+                        Tcl_AppendElement(interp, policy->attribs[i].name);
+                }						
+        }
+        regfree(&regexp);
+	return TCL_OK;
+}
+
 /* search and return type enforcement rules */
 
 /* This is a newer function that replaces the legacy Apol_GetTErules() function (below).  The 
@@ -6560,6 +6592,7 @@ int Apol_Init(Tcl_Interp *interp)
 	Tcl_CreateCommand(interp, "apol_GetTypeInfo", (Tcl_CmdProc *) Apol_GetTypeInfo, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 /* Apol_GetTErules not supported, use Apol_SearchTErules */
 	Tcl_CreateCommand(interp, "apol_GetTErules", (Tcl_CmdProc *) Apol_GetTErules, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+        Tcl_CreateCommand(interp, "apol_GetAttributeByRegexp", (Tcl_CmdProc *) Apol_GetAttributeByRegexp, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_SearchTErules", (Tcl_CmdProc *) Apol_SearchTErules, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_GetSingleRoleInfo", (Tcl_CmdProc *) Apol_GetSingleRoleInfo, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_GetRolesByType", (Tcl_CmdProc *) Apol_GetRolesByType, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
