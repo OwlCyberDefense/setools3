@@ -63,6 +63,7 @@ static struct option const longopts[] =
   {"quiet", no_argument, NULL, 'q'},
   {"help", no_argument, NULL, 'h'},
   {"version", no_argument, NULL, 'v'},
+  {"run-diff", no_argument, NULL, 'd' },
   {NULL, 0, NULL, 0}
 };
 
@@ -195,20 +196,21 @@ static void sediff_lazy_load_large_buffer(unsigned int buff_idx, gboolean show_d
 static void usage(const char *program_name, int brief)
 {
 	printf("%s (sediff ver. %s)\n\n", COPYRIGHT_INFO, SEDIFF_VERSION_NUM);
-	printf("Usage: %s [OPTIONS]\n", program_name);
-	printf("Usage: %s [POLICY1 POLICY2]\n",program_name);
+	printf("Usage: %s [-h|-v]\n", program_name);
+	printf("Usage: %s [-d] [POLICY1 POLICY2]\n",program_name);
 	if(brief) {
 		printf("\n   Try %s --help for more help.\n\n", program_name);
 		return;
 	}
 	fputs("\n\
-Semantically differentiate two policies.  The policies can be either source\n\
-or binary policy files, version 15 or later.  By default, all supported\n\
-policy elements are examined.  The following diff options are available:\n\
+Semantically differentiate two policies.  The policies can be either source\n \
+or binary policy files, version 15 or later.  By default, all supported\n \
+policy elements are examined.  The following diff options are available:\n \
 ", stdout);
 	fputs("\n\
   -h, --help       display this help and exit\n\
-  -v, --version    output version information and exit\n\n\
+  -v, --version    output version information and exit\n\
+  -d, --diff-now   diff the policies immediately\n\n\
 ", stdout);
 	return;
 }
@@ -3591,6 +3593,7 @@ static int sediff_diff_policies(policy_t *p1, policy_t *p2, ap_diff_rename_t *re
 	GtkTreeSelection *sel;
 	GtkTreeIter iter;
 	GtkNotebook *notebook1, *notebook2;
+	GtkTextView *textview;
 	
 	if (p1 == NULL || p2 == NULL)
 		goto err;
@@ -3653,9 +3656,18 @@ static int sediff_diff_policies(policy_t *p1, policy_t *p2, ap_diff_rename_t *re
 	/* select the first element in the tree */
 	tree_model = gtk_tree_view_get_model(GTK_TREE_VIEW(sediff_app->tree_view));
 	sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(sediff_app->tree_view));
-	if (gtk_tree_model_get_iter_first(tree_model,&iter)) {
-		gtk_tree_selection_select_iter(sel,&iter);
+	if (gtk_tree_model_get_iter_first(tree_model, &iter)) {
+		gtk_tree_selection_select_iter(sel, &iter);
 	}
+
+	/* grab the text buffers for our text views */
+	textview = GTK_TEXT_VIEW(glade_xml_get_widget(sediff_app->window_xml, "sediff_results_txt_view"));
+	g_assert(textview);
+
+	/* set the buffer to the summary page */
+	sediff_results_txt_view_switch_buffer(textview, OPT_SUMMARY, 1);
+
+
 	/* get rid of the loading when done */
 	sediff_modal_dlg_destroy();
 
@@ -4283,16 +4295,18 @@ static int sediff_load_policies(const char *p1_file, const char *p2_file)
 	return -1;
 }
 
-void sediff_open_dialog_on_diff_button_clicked(GtkButton *button, gpointer user_data)
+/* open the files listed in the open_dialog */
+void sediff_open_dialog_open_and_load_policies()
 {
 	const gchar *p1_file = NULL;
 	const gchar *p2_file = NULL;
 	GtkEntry *p1_entry;
 	GtkEntry *p2_entry;
+
 	GdkCursor *cursor = NULL;
 	int rt;
 	GString *string = NULL;
-	
+
 	/* grab the GtkEntry widgets so we can get their data*/
 	p1_entry = (GtkEntry *)glade_xml_get_widget(sediff_app->open_dlg_xml, "sediff_dialog_p1_entry");
 	p2_entry = (GtkEntry *)glade_xml_get_widget(sediff_app->open_dlg_xml, "sediff_dialog_p2_entry");
@@ -4319,7 +4333,9 @@ void sediff_open_dialog_on_diff_button_clicked(GtkButton *button, gpointer user_
 	gdk_window_set_cursor(GTK_WIDGET(sediff_app->open_dlg)->window, cursor);	
 	gdk_cursor_unref(cursor);
 	gdk_flush();
+
 	rt = sediff_load_policies((const char*)p1_file, (const char*)p2_file);
+
 	/* load is done set cursor back to a ptr */
 	cursor = gdk_cursor_new(GDK_LEFT_PTR);
 	gdk_window_set_cursor(GTK_WIDGET(sediff_app->open_dlg)->window, cursor);	
@@ -4328,8 +4344,39 @@ void sediff_open_dialog_on_diff_button_clicked(GtkButton *button, gpointer user_
 
 	if (rt < 0)
 		return;
+}
+
+void sediff_open_dialog_on_open_and_diff_button_clicked(GtkButton *button, gpointer user_data)
+{
+	GdkCursor *cursor = NULL;
+	
+	sediff_open_dialog_open_and_load_policies();
+
+	/* set the cursor to a hand */
+	cursor = gdk_cursor_new(GDK_WATCH);
+	gdk_window_set_cursor(GTK_WIDGET(sediff_app->open_dlg)->window, cursor);	
+	gdk_cursor_unref(cursor);
+	gdk_flush();
+
+	run_diff_clicked();
+
+	/* load is done set cursor back to a ptr */
+	cursor = gdk_cursor_new(GDK_LEFT_PTR);
+	gdk_window_set_cursor(GTK_WIDGET(sediff_app->open_dlg)->window, cursor);	
+	gdk_cursor_unref(cursor);
+	gdk_flush();
 
 	/* destroy the no longer needed dialog widget */
+	gtk_widget_destroy(gtk_widget_get_toplevel(GTK_WIDGET(button)));
+	sediff_app->open_dlg = NULL;
+	g_object_unref(G_OBJECT(sediff_app->open_dlg_xml));
+	sediff_app->open_dlg_xml = NULL;
+}
+
+void sediff_open_dialog_on_open_button_clicked(GtkButton *button, gpointer user_data)
+{
+
+	sediff_open_dialog_open_and_load_policies();
 	gtk_widget_destroy(gtk_widget_get_toplevel(GTK_WIDGET(button)));
 	sediff_app->open_dlg = NULL;
 	g_object_unref(G_OBJECT(sediff_app->open_dlg_xml));
@@ -4337,10 +4384,11 @@ void sediff_open_dialog_on_diff_button_clicked(GtkButton *button, gpointer user_
 
 }
 
-typedef struct filename_data {
+typedef struct delayed_main_data {
 	GString *p1_file;
 	GString *p2_file;
-} filename_data_t;
+	bool_t run_diff;
+} delayed_data_t;
 
 /*
  * We don't want to do the heavy work of loading and displaying 
@@ -4350,13 +4398,16 @@ typedef struct filename_data {
  */
 static gboolean delayed_main(gpointer data)
 {
-	filename_data_t *filenames = (filename_data_t *)data;
-	const char *p1_file = filenames->p1_file->str;
-	const char *p2_file = filenames->p2_file->str;
+	delayed_data_t *delay_data = (delayed_data_t *)data;
+	const char *p1_file = delay_data->p1_file->str;
+	const char *p2_file = delay_data->p2_file->str;
 
 	sediff_load_policies(p1_file, p2_file);
-	g_string_free(filenames->p1_file,TRUE);
-	g_string_free(filenames->p2_file,TRUE);
+	g_string_free(delay_data->p1_file, TRUE);
+	g_string_free(delay_data->p2_file, TRUE);
+
+	if (delay_data->run_diff == TRUE)
+		run_diff_clicked();
 	return FALSE;
 }
 
@@ -4409,12 +4460,13 @@ int main(int argc, char **argv)
 {
 	char *dir = NULL;
 	GString *path = NULL; 
-	filename_data_t filenames;
+	delayed_data_t delay_data;
 	bool_t havefiles = FALSE;
 	int optc;
 	int cli;
 	const char *fname1;
-	filenames.p1_file = filenames.p2_file = NULL;
+        delay_data.p1_file = delay_data.p2_file = NULL;
+	delay_data.run_diff = FALSE;
 	GtkNotebook *notebook = NULL;
 	GtkTextView *textview = NULL;
 	
@@ -4426,9 +4478,12 @@ int main(int argc, char **argv)
 
 	cli = strncmp("sediffx",fname1,strlen("sediffx"));
 	
-	while ((optc = getopt_long (argc, argv, "qXctrubiTRCshv", longopts, NULL)) != -1)  {
+	while ((optc = getopt_long (argc, argv, "qXctrubiTRCshvd", longopts, NULL)) != -1)  {
 		switch (optc) {
 		case 0:
+	  		break;
+	  	case 'd': /* run the diff only for gui */
+			delay_data.run_diff = TRUE;
 	  		break;
 		case 'X': /* gui */
 			if (cli == 0) {
@@ -4513,12 +4568,18 @@ int main(int argc, char **argv)
 	/* sediff with file names */
 	if (argc - optind == 2) {
 		havefiles = TRUE;
-		filenames.p1_file = g_string_new(argv[optind]); 
-		filenames.p2_file = g_string_new(argv[optind+1]); 
+		delay_data.p1_file = g_string_new(argv[optind]); 
+		delay_data.p2_file = g_string_new(argv[optind+1]); 
 	}
 	else if (argc - optind != 0){
 		usage(argv[0],0);
 		return -1; 
+	} else {
+		/* here we have found no missing arguments, but perhaps the user specified -d with no files */
+		if (delay_data.run_diff == TRUE) {
+			usage(argv[0], 0);
+			return -1;
+		}
 	}
 
 	
@@ -4543,7 +4604,6 @@ int main(int argc, char **argv)
 
 	gtk_set_locale();
 	gtk_init(&argc, &argv);
-	printf(path->str);
 	sediff_app->window_xml = glade_xml_new(path->str, MAIN_WINDOW_ID, NULL);
 	if (!sediff_app->window_xml) {
 		free(sediff_app);
@@ -4562,8 +4622,9 @@ int main(int argc, char **argv)
 	
 	sediff_initialize_policies();
 	sediff_initialize_diff();
+
 	if (havefiles) 
-		g_idle_add(&delayed_main,&filenames);
+		g_idle_add(&delayed_main, &delay_data);
 
 	/* grab the text buffers for our text views */
 	textview = GTK_TEXT_VIEW(glade_xml_get_widget(sediff_app->window_xml, "sediff_results_txt_view"));
