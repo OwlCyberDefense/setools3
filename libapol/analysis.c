@@ -231,10 +231,15 @@ int determine_domain_trans(dta_query_t *dta_query,
 
 	/* optional end type filtering */
 	if (dta_query->use_endtype_filters) {
-		if (dta_query->reverse)
+		if (!dta_query->num_filter_types) { 	/* use_filter && num_types == 0 */
+			retv = 0;			/* means that the regexp matches */
+			dta_trans_destroy(&transitions);/* no types so destroy them all */
+			transitions = NULL;
+		} else if (dta_query->reverse) {
 			retv = dta_trans_filter_start_types(&transitions, dta_query->filter_types, dta_query->num_filter_types);
-		else
+		} else {
 			retv = dta_trans_filter_end_types(&transitions, dta_query->filter_types, dta_query->num_filter_types);
+		}
 		if (retv) {
 			perror("DTA filter result types");
 			goto exit_error;

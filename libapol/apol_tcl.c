@@ -5031,6 +5031,7 @@ int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *interp, int
 	}
 	Tcl_AppendElement(interp, tmp);
 	free(tmp);
+	tmp = NULL;
 	if (append_dta_results(policy, dta_results, interp) != TCL_OK) {
 		Tcl_AppendResult(interp, "Error appending domain transition analysis results!", (char *) NULL);
 		goto err;
