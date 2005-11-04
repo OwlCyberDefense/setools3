@@ -2724,6 +2724,7 @@ int ap_single_view_diff_get_num_diffs(ap_single_view_diff_t *svd)
 	/* conds */
 	total += svd->conds->num_add + svd->conds->num_rem + svd->conds->num_chg;
 
+#ifdef DEBUG
 	/* NOTE: this is not a perfect check, but we need to make sure this function gets updated 
 	 * as we provide more difference capabilities in the future */
 	if (sizeof(ap_single_view_diff_t) != sizeof(svd->types) + sizeof(svd->roles) + sizeof(svd->users) + sizeof(svd->attribs) + 
@@ -2732,6 +2733,7 @@ int ap_single_view_diff_get_num_diffs(ap_single_view_diff_t *svd)
 		assert(FALSE);
 		return -1;
 	}
+#endif
 
 	return total;
 }
