@@ -91,7 +91,7 @@ endif
 ifeq ($(DEBUG), 0)
 CFLAGS			= -Wall -O2 -fPIC $(CC_DEFINES)
 else
-CFLAGS			= -Wall -g -fPIC $(CC_DEFINES)
+CFLAGS			= -Wall -g -fPIC $(CC_DEFINES) -DDEBUG
 #CFLAGS			= -Wall -ansi -pedantic -g $(CC_DEFINES)
 endif
 
