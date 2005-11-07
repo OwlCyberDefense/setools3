@@ -477,6 +477,12 @@ static int seaudit_window_create_list(GtkTreeView *view, bool_t visibility[])
 	width += 12;
 	seaudit_window_create_column(view, "Executable", renderer, AVC_EXE_FIELD, width, visibility);
 
+	layout = gtk_widget_create_pango_layout(GTK_WIDGET(view), "/usr/bin/cat");
+	pango_layout_get_pixel_size(layout, &width, NULL);
+	g_object_unref(G_OBJECT(layout));
+	width += 12;
+	seaudit_window_create_column(view, "Command", renderer, AVC_COMM_FIELD, width, visibility);
+
 	layout = gtk_widget_create_pango_layout(GTK_WIDGET(view), "12345");
 	pango_layout_get_pixel_size(layout, &width, NULL);
 	g_object_unref(G_OBJECT(layout));
