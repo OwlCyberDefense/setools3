@@ -268,3 +268,7 @@ proc Apol_Analysis_foo::create_options { options_frame } {
 	pack $sLabel $sEntry -side top -anchor nw
 	return 0	
 }
+
+proc Apol_Analysis_foo::get_short_name {} {
+    return "Foo"
+}
