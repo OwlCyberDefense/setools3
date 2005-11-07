@@ -41,7 +41,6 @@ namespace eval Apol_Analysis {
 	# We use the prefix 'Apol_' for all notebook tabnames. Also, tabnames may not have a colon.
 	variable tabName		"Apol_ResultsTab"
 	variable emptyTabID		"Apol_Emptytab"	
-	variable tabText		"Results "
 	variable pageID			""
 	variable results		""
 	variable enableUpdate		0
@@ -224,9 +223,9 @@ proc Apol_Analysis::create_New_ResultsTab { } {
 	variable totalTabCount
 	variable pageNums
 	variable tabName
-	variable tabText
         variable updateButton
         variable bClose
+        variable curr_analysis_module
 	
 	if { $currTabCount >= $totalTabCount } {		
 		tk_messageBox -icon error -type ok -title "Attention" \
@@ -240,7 +239,8 @@ proc Apol_Analysis::create_New_ResultsTab { } {
 
 	# Create tab and its' widgets
 	set resultNums [expr $pageNums-1]
-	$results_notebook insert end $tabName$pageNums -text $tabText$resultNums
+        set tab_name "($resultNums) [${curr_analysis_module}::get_short_name]"
+	$results_notebook insert end $tabName$pageNums -text $tab_name
     	# Create explicit inner frame
     	set tab_frame [$results_notebook getframe $tabName$pageNums]
     	set results_frame [Apol_Analysis::create_results_frame $tab_frame]
@@ -269,7 +269,6 @@ proc Apol_Analysis::create_empty_resultsTab { } {
 	variable totalTabCount
 	variable pageNums
 	variable tabName
-	variable tabText
         variable updateButton
 	
 	if { $currTabCount >= $totalTabCount } {		
@@ -681,12 +680,10 @@ proc Apol_Analysis::do_analysis { which } {
 
 	# Hold the currently raised tab.
 	set prev_raisedTab [$results_notebook raise]
-	ApolTop::setBusyCursor
 	#hack: check the filter options of Transitive infoflow before clearing result tab so as not to lose them
 	if {$curr_analysis_module == "Apol_Analysis_fulflow"} {
 		set rt [catch {Apol_Analysis_fulflow::verify_options} err]
 		if {$rt != 0} {
-			ApolTop::resetBusyCursor
 			return -1
 		}
 	}
@@ -712,48 +709,42 @@ proc Apol_Analysis::do_analysis { which } {
 			Apol_Analysis::create_results_frame $parent
 		}
 		default {
-			ApolTop::resetBusyCursor
 			return -1
 		}
 	} 
 	if {$results_frame != ""} {
 		ApolTop::disable_DeleteWindow_event
+                ApolTop::setBusyCursor
 		set rt [catch {${curr_analysis_module}::do_analysis $results_frame} err] 
 		ApolTop::enable_DeleteWindow_event
+                ApolTop::resetBusyCursor
 		# Handle an error.
 		if {$rt != 0 && $which == "new_analysis"} { 
 			puts $err
-			ApolTop::resetBusyCursor	
-			# Re-enable buttons
-			$Apol_Analysis::newButton configure -state normal
-			$Apol_Analysis::updateButton configure -state disabled
-			
 			# Remove the bad tab and then decrement current tab counter
 			$results_notebook delete [$results_notebook raise]
-	    		set currTabCount [expr $currTabCount - 1]	
+	    		incr currTabCount -1
 	    		# Raise the previously raise tab.
 			Apol_Analysis::switch_results_tab $prev_raisedTab
 			return -1
 		} elseif {$rt != 0} {
-			# Remove the bad tab since the results frame has been cleared
+                        # Remove the bad tab since the results frame has been cleared
 	    		set prev_Tab [$results_notebook pages \
 				[expr [$results_notebook index $prev_raisedTab] - 1]]
 			if {$prev_raisedTab != $Apol_Analysis::emptyTabID} {
-					$results_notebook delete $prev_raisedTab
-	    				set currTabCount [expr $currTabCount - 1]
-					Apol_Analysis::switch_results_tab $prev_Tab
+                                $results_notebook delete $prev_raisedTab
+                                incr currTabCount -1
+                                Apol_Analysis::switch_results_tab $prev_Tab
 			}
+                        return -1
 		}
 	    	set raised_tab_analysis_type $curr_analysis_module
 	    	# Here store the current content of the new tab.
 		Apol_Analysis::store_current_results_state [$results_notebook raise] 
+                # Re-enable buttons
+                $Apol_Analysis::newButton configure -state normal
+                $Apol_Analysis::updateButton configure -state normal
 	} 
-	ApolTop::resetBusyCursor
-	
-	# Re-enable buttons
-	$Apol_Analysis::newButton configure -state normal
-	$Apol_Analysis::updateButton configure -state normal
-	       
      	return 0
 } 
 
