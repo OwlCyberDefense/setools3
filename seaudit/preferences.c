@@ -586,6 +586,10 @@ static void on_preference_toggled(GtkToggleButton *toggle, gpointer user_data)
 		seaudit_app->seaudit_conf.column_visibility[AVC_EXE_FIELD] = gtk_toggle_button_get_active(toggle);
 		seaudit_app->column_visibility_changed = TRUE;
 
+	} else if (!strcmp("CommandCheck", gtk_widget_get_name(GTK_WIDGET(toggle)))) {
+		seaudit_app->seaudit_conf.column_visibility[AVC_COMM_FIELD] = gtk_toggle_button_get_active(toggle);
+		seaudit_app->column_visibility_changed = TRUE;
+
 	} else if (!strcmp("PIDCheck", gtk_widget_get_name(GTK_WIDGET(toggle)))) {
 		seaudit_app->seaudit_conf.column_visibility[AVC_PID_FIELD] = gtk_toggle_button_get_active(toggle);
 		seaudit_app->column_visibility_changed = TRUE;
@@ -742,6 +746,10 @@ void on_preferences_activate(GtkWidget *widget, GdkEvent *event, gpointer callba
 	toggle = GTK_TOGGLE_BUTTON(glade_xml_get_widget(xml, "ExecutableCheck"));
 	g_assert(toggle);
 	gtk_toggle_button_set_active(toggle, seaudit_app->seaudit_conf.column_visibility[AVC_EXE_FIELD]);
+
+	toggle = GTK_TOGGLE_BUTTON(glade_xml_get_widget(xml, "CommandCheck"));
+	g_assert(toggle);
+	gtk_toggle_button_set_active(toggle, seaudit_app->seaudit_conf.column_visibility[AVC_COMM_FIELD]);
 
 	toggle = GTK_TOGGLE_BUTTON(glade_xml_get_widget(xml, "PIDCheck"));
 	g_assert(toggle);
