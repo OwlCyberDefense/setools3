@@ -322,6 +322,9 @@ static void log_view_store_get_value(GtkTreeModel *tree_model, GtkTreeIter *iter
 	case AVC_EXE_FIELD:
 		set_utf8_return_value(value, cur_msg->exe);
 		break;
+	case AVC_COMM_FIELD:
+		set_utf8_return_value(value, cur_msg->comm);
+		break;
 	case AVC_PATH_FIELD:
 		set_utf8_return_value(value, cur_msg->path);
 		break;
@@ -604,6 +607,10 @@ static void seaudit_log_view_store_set_sort_column_id(GtkTreeSortable *sortable,
 		break;
 	case AVC_EXE_FIELD:
 		if (audit_log_view_append_sort(store->log_view, exe_sort_action_create()))
+			return;
+		break;
+	case AVC_COMM_FIELD:
+		if (audit_log_view_append_sort(store->log_view, comm_sort_action_create()))
 			return;
 		break;
 	case AVC_PATH_FIELD:
