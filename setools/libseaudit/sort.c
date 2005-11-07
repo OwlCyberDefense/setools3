@@ -408,6 +408,25 @@ static int exe_compare(const msg_t *a, const msg_t *b)
 		return ret;
 }
 
+static int comm_compare(const msg_t *a, const msg_t *b)
+{
+	char *comm_a, *comm_b;
+	int ret;
+	comm_a = msg_get_avc_data(a)->comm;
+	comm_b = msg_get_avc_data(b)->comm;
+
+	if (!comm_a)
+		return -1;
+	if (!comm_b)
+		return 1;
+
+	ret = strcmp(comm_a, comm_b);
+	if (ret == 0)
+		return 0;
+	else
+		return ret;
+}
+
 static int path_compare(const msg_t *a, const msg_t *b)
 {
 	char *sa, *sb;
@@ -611,6 +630,18 @@ sort_action_node_t *exe_sort_action_create(void)
 	}
 	node->msg_types = AVC_MSG;
 	node->sort = &exe_compare;
+	return node;
+}
+
+sort_action_node_t *comm_sort_action_create(void)
+{
+	sort_action_node_t *node = sort_action_node_create();
+	if (!node) {
+		fprintf(stderr, "Out of memory!\n");
+		return NULL;
+	}
+	node->msg_types = AVC_MSG;
+	node->sort = &comm_compare;
 	return node;
 }
 
