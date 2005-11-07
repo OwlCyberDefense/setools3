@@ -43,6 +43,7 @@ sort_action_node_t *src_type_sort_action_create(void);
 sort_action_node_t *tgt_type_sort_action_create(void);
 sort_action_node_t *obj_class_sort_action_create(void);
 sort_action_node_t *exe_sort_action_create(void);
+sort_action_node_t *comm_sort_action_create(void);
 sort_action_node_t *path_sort_action_create(void);
 sort_action_node_t *dev_sort_action_create(void);
 sort_action_node_t *inode_sort_action_create(void);
