@@ -72,6 +72,10 @@ namespace eval Apol_Analysis_relabel {
 	Apol_Analysis::register_analysis_modules "Apol_Analysis_relabel" "Direct Relabel"
 }
 
+proc Apol_Analysis_relabel::get_short_name {} {
+    return "Relabel"
+}
+
 # Apol_Analysis_relabel::initialize is called when the tool first
 # starts up.  The analysis has the opportunity to do any additional
 # initialization it must do that wasn't done in the initial namespace

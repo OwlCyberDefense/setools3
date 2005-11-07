@@ -1798,30 +1798,15 @@ proc Apol_TE::change_tgt_dflt_state { } {
 proc Apol_TE::reverseSelection {listname} {
 	variable cb_perms_tilda
 	variable permslistbox
-	
-	# Returns a list of all the indices of the selected items in the listbox
-	set indicesList [$listname curselection]
-		
-	if { $indicesList != "" } {
-		# Returns a count of the number of elements in the listbox (not the index of the last element). 
-    		set elementCount [$listname index end]
-   
-		# This loop goes through each element in the listbox and compares its' index to the indicesList items.
-		# If a match is found, then it will clear the selection for that element in the listbox and 
-		# then continue to the next element in the listbox, else it sets the selection for non-matching indices.
-    		for { set idx 0 } { $idx != $elementCount} { incr idx } {	
-			foreach selectedItem_Index $indicesList {
-	    			if { $selectedItem_Index == $idx } {
-					$listname selection clear $idx
-					break
-	    			} else {
-	    				$listname selection set $idx
-	    			}
-			}	
-    		}
-	} else {
-		return
-	}
+
+        set elementCount [$listname index end]
+        for {set i 0} {$i < $elementCount} {incr i} {
+                if {[$listname selection includes $i]} {
+                        $listname selection clear $i
+                } else {
+                        $listname selection set $i
+                }
+        }
 	if {[Apol_TE::get_Selected_ListItems $permslistbox] == ""} {
 		# Disable the ~ modifier button if the reverse yields nothing selected
 		$cb_perms_tilda configure -state disabled

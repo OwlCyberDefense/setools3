@@ -109,6 +109,9 @@ namespace eval Apol_Analysis_fulflow {
     	Apol_Analysis::register_analysis_modules "Apol_Analysis_fulflow" "Transitive Information Flow"
 }
 
+proc Apol_Analysis_fulflow::get_short_name {} {
+    return "Trans Flow"
+}
 
 
 ## Apol_Analysis_fulflow::initialize is called when the tool first starts up.  The
