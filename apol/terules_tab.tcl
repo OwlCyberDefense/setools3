@@ -1616,19 +1616,13 @@ proc Apol_TE::enable_listbox { cBox list_number b1 b2 } {
     switch $which {
 	list1 {	    
 	    if { $Apol_TE::opts(use_1st_list) } {
-		if { $Apol_TE::opts(which_1) == "source"} {
-		    $cBox configure -state normal -entrybg white
-		    $b1 configure -state normal
-		    $b2 configure -state normal
-		    $Apol_TE::global_asSource configure -state normal
-		    $Apol_TE::global_any configure -state normal	
-                    $incl_indirect1 configure -state normal
-		} else {
-		    $cBox configure -state normal -entrybg white
-		    $b1 configure -state normal
-		    $b2 configure -state normal
-		    $Apol_TE::global_asSource configure -state normal
-		    $Apol_TE::global_any configure -state normal	
+                $cBox configure -state normal -entrybg white
+                $incl_indirect1 configure -state normal
+                $b1 configure -state normal
+                $b2 configure -state normal
+                $Apol_TE::global_asSource configure -state normal
+                $Apol_TE::global_any configure -state normal
+		if { $Apol_TE::opts(which_1) == "either"} {
 		    Apol_TE::change_tgt_dflt_state
 		}
 		if {$allow_syntactic} {
