@@ -129,6 +129,10 @@ namespace eval Apol_Analysis_dta {
 #
 #	
 
+proc Apol_Analysis_dta::get_short_name {} {
+    return "Domain Trans"
+}
+
 # ------------------------------------------------------------------------------
 #  Command Apol_Analysis_dta::forward_options_update_dialog
 # ------------------------------------------------------------------------------

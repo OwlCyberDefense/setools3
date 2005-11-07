@@ -108,6 +108,10 @@ namespace eval Apol_Analysis_tra {
    	Apol_Analysis::register_analysis_modules "Apol_Analysis_tra" "Types Relationship Summary"	
 }
 
+proc Apol_Analysis_tra::get_short_name {} {
+    return "Types Relationship"
+}
+
 # ------------------------------------------------------------------------------
 #  Command Apol_Analysis_tra::display_dta_options
 # ------------------------------------------------------------------------------

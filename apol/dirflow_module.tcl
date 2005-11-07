@@ -83,6 +83,9 @@ namespace eval Apol_Analysis_dirflow {
     	Apol_Analysis::register_analysis_modules "Apol_Analysis_dirflow" "Direct Information Flow"
 }
 
+proc Apol_Analysis_dirflow::get_short_name {} {
+    return "Direct Flow"
+}
 
 
 ## Apol_Analysis_dirflow::initialize is called when the tool first starts up.  The
