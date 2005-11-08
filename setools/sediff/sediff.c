@@ -10,7 +10,6 @@
  
 /* libapol */
 #include "util.h"
-#include "sediff_rename_types.h"
 #include <policy.h>
 #include <policy-io.h>
 #include <policy-query.h>
