@@ -222,26 +222,6 @@ proc Apol_Cond_Bools::cond_bool_set_bool_value {bool_name} {
 } 
 
 ################################################################
-#  ::cond_bool_embed_buttons
-#
-proc Apol_Cond_Bools::cond_bool_embed_buttons {widget bool_name} {	
-	set rb_frame [frame $widget.rb_frame:$bool_name -bd 0 -bg white]
-	set rb_true  [radiobutton $rb_frame.rb_true:$bool_name -bg white \
-		-variable Apol_Cond_Bools::cond_bools_value_array($bool_name) \
-		-command "Apol_Cond_Bools::cond_bool_set_bool_value $bool_name" \
-		-value 1 -highlightthickness 0 -text "True"]
-	set rb_false [radiobutton $rb_frame.rb_false:$bool_name -bg white \
-		-variable Apol_Cond_Bools::cond_bools_value_array($bool_name) \
-		-command "Apol_Cond_Bools::cond_bool_set_bool_value $bool_name" \
-		-value 0 -highlightthickness 0 -text "False"]
-	
-	pack $rb_frame -side left -anchor nw
-	pack $rb_true $rb_false -side left -anchor nw -padx 2
-			
-	return $rb_frame	
-} 
-
-################################################################
 #  ::cond_bool_init_state
 #
 proc Apol_Cond_Bools::cond_bool_init_state { } {
@@ -256,40 +236,40 @@ proc Apol_Cond_Bools::cond_bool_init_state { } {
 #  	- Method for remove all embedded check buttons.
 # 
 proc Apol_Cond_Bools::cond_bool_remove_listbox_items { } {   
-	variable cond_bools_listbox
+    variable cond_bools_listbox
 
-	foreach item [$cond_bools_listbox items] {
-		set window [$cond_bools_listbox itemcget $item -window]
-    		if { [winfo exists $window] } {
-			destroy $window
-		}
-	}
-	# Delete
-	$cond_bools_listbox delete [$cond_bools_listbox items]
-	return 0	
+    foreach w [winfo children [$cond_bools_listbox getframe]] {
+        catch {destroy $w}
+    }
+    # get rid of the scrollbars
+    [$cond_bools_listbox getframe] configure -width 1 -height 1
 }
 
 ################################################################
 #  ::cond_bool_insert_listbox_items
 #
 proc Apol_Cond_Bools::cond_bool_insert_listbox_items { } {
-	variable cond_bools_listbox 
-	variable cond_bools_list
-	
-	foreach bool_name $cond_bools_list {
-		$cond_bools_listbox insert end $bool_name -text " - $bool_name" \
-		 	 -window [Apol_Cond_Bools::cond_bool_embed_buttons \
-		 	 	$Apol_Cond_Bools::cond_bools_listbox $bool_name]  
-		  
-	}
+    variable cond_bools_listbox 
+    variable cond_bools_list
 
-    	# Display updates immediately.
-    	# Adjust the view so that no part of the canvas is off-screen to the left.
-	$cond_bools_listbox configure -redraw 1
-    	$cond_bools_listbox.c xview moveto 0			 	 
-    	update idletasks
-    	$cond_bools_listbox configure -padx [winfo reqwidth [$cond_bools_listbox itemcget [$cond_bools_listbox items 0] -window]]	
-	return 0
+    set subf [$cond_bools_listbox getframe]
+    $subf configure -width 0 -height 0
+    foreach bool_name $cond_bools_list {
+        set rb_true [radiobutton $subf.rb_true:$bool_name -bg white \
+                         -variable Apol_Cond_Bools::cond_bools_value_array($bool_name) \
+                         -command [list Apol_Cond_Bools::cond_bool_set_bool_value $bool_name] \
+                         -value 1 -highlightthickness 0 -text "True"]
+        set rb_false [radiobutton $subf.rb_false:$bool_name -bg white \
+                          -variable Apol_Cond_Bools::cond_bools_value_array($bool_name) \
+                          -command [list Apol_Cond_Bools::cond_bool_set_bool_value $bool_name] \
+                          -value 0 -highlightthickness 0 -text "False"]
+        set rb_label [label $subf.rb_label:$bool_name \
+                          -bg white -text "- $bool_name"]
+        grid $rb_true $rb_false $rb_label -padx 2 -pady 5 -sticky w
+    }
+    $cond_bools_listbox configure -areaheight 0 -areawidth 0
+    $cond_bools_listbox xview moveto 0
+    $cond_bools_listbox yview moveto 0
 } 
 
 ################################################################
@@ -413,44 +393,37 @@ proc Apol_Cond_Bools::create {nb} {
 	variable cond_bools_listbox 
 	variable resultsbox 
 	variable cb_RegExp
-	
+
 	# Layout frames
 	set frame [$nb insert end $ApolTop::cond_bools_tab -text "Booleans"]
-	set topf  [frame $frame.topf]
-	set pw1   [PanedWindow $topf.pw -side top]
-	set pane  [$pw1 add ]
-	set spane [$pw1 add -weight 5]
-	set pw2   [PanedWindow $pane.pw -side left]
-	set rpane [$pw2 add -weight 3]
-	
+        set pw [PanedWindow $frame.pw -side top]
+        set left_pane [$pw add -weight 0]
+        set right_pane [$pw add -weight 1]
+        pack $pw -expand 1 -fill both
+
 	# Title frames
-	set cond_bools_box [TitleFrame $rpane.cond_bools_box -text "Booleans"]
-	set s_optionsbox   [TitleFrame $spane.obox -text "Search Options"]
-	set rslts_frame	   [TitleFrame $spane.rbox -text "Search Results"]
-	
-	# Placing layout
-	pack $topf -fill both -expand yes 
-	pack $pw1 -fill both -expand yes
-	pack $pw2 -fill both -expand yes
-	
-	# Placing title frames
-	pack $s_optionsbox -padx 2 -fill both
-	pack $cond_bools_box -padx 2 -side left -fill both -expand yes
-	pack $rslts_frame -pady 2 -padx 2 -fill both -anchor n -side bottom -expand yes
-	
-	# Roles listbox widget
-	set sw_r [ScrolledWindow [$cond_bools_box getframe].sw -auto both]
-	set cond_bools_listbox [ListBox [$cond_bools_box getframe].cond_bools_listbox \
-	          -relief sunken -borderwidth 2 -bg white  \
-	          -selectmode none -deltay 25 \
-	          -width 25 -highlightthickness 0 \
-	          -redraw 0]
-	$sw_r setwidget $cond_bools_listbox 
-	
-	set button_defaults [button [$cond_bools_box getframe].button_defaults \
+	set cond_bools_box [TitleFrame $left_pane.cond_bools_box -text "Booleans"]
+	set s_optionsbox   [TitleFrame $right_pane.obox -text "Search Options"]
+	set rslts_frame	   [TitleFrame $right_pane.rbox -text "Search Results"]
+	pack $cond_bools_box -padx 2 -expand 1 -fill both
+	pack $s_optionsbox -padx 2 -fill x -expand 1 -side top
+	pack $rslts_frame -pady 2 -padx 2 -fill both -side bottom -expand yes
+
+	# Booleans listbox widget
+        set left_frame [$cond_bools_box getframe]
+        set sw_b [ScrolledWindow $left_frame.sw -auto both]
+        set cond_bools_listbox [ScrollableFrame $sw_b.cond_bools_listbox -bg white -width 200]
+        set subf [$cond_bools_listbox getframe]
+        grid rowconfigure $subf 0 -weight 0 -uniform 1
+        grid rowconfigure $subf 1 -weight 0 -uniform 1
+        grid rowconfigure $subf 2 -weight 1
+	$sw_b setwidget $cond_bools_listbox
+	set button_defaults [button $left_frame.button_defaults \
 		-text "Reset to policy defaults" \
 		-command {Apol_Cond_Bools::cond_bool_set_bool_values_to_policy_defaults}]
-	    	
+        pack $sw_b -side top -expand 1 -fill both
+        pack $button_defaults -side bottom -expand 0 -fill x
+
 	# Search options subframes
 	set ofm [$s_optionsbox getframe]
 	set l_innerFrame [LabelFrame $ofm.l_innerFrame]
@@ -506,7 +479,6 @@ proc Apol_Cond_Bools::create {nb} {
 	pack $cb_enable_bool_combo_box $bool_combo_box -side top -anchor nw -fill x
 	pack $cb_RegExp -side top -anchor nw 
 	pack $cb_bools_default_state $cb_bools_curr_state -side top -anchor nw 
-	pack $sw_r -fill both -expand yes
 	pack $sw_d -side left -expand yes -fill both 
 	Apol_Cond_Bools::cond_bool_init_state
 	
