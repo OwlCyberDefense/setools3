@@ -7,11 +7,6 @@ GTK_CFLAGS      = `pkg-config --cflags libglade-2.0`
 GTK_LIBS        = `pkg-config --libs libglade-2.0`
 GLADE_FILES     = sediff.glade
 
-CFLAGS  	+= -DSEDIFF_VERSION_NUM='"$(shell cat SEDIFF_VERSION)"'
-CFLAGS  	+= -DSEDIFF_GUI_VERSION_NUM='"$(shell cat SEDIFF_GUI_VERSION)"'
-CFLAGS  	+= -DSEDIFF_GUI_VERSION_NUM='"$(shell cat SEDIFF_GUI_VERSION)"'
-
-
 all: libapol sediff sediffx
 
 sediff: sediff.o $(LIBAPOL) 
@@ -29,7 +24,12 @@ install: all
 	install -m 644 sediff_help.txt $(INSTALL_LIBDIR)
 
 %.o:  %.c
-	$(CC) $(CFLAGS) $(GTK_CFLAGS) $(INCLUDE) -c $<
+	$(CC) $(CFLAGS) $(INCLUDE) -c $<
+
+$(GUI-OBJS): CFLAGS += $(GTK_CFLAGS)
+sediff.o: CFLAGS += -DSEDIFF_VERSION_NUM='"$(shell cat SEDIFF_VERSION)"'
+sediff_gui.o: CFLAGS += -DSEDIFF_VERSION_NUM='"$(shell cat SEDIFF_VERSION)"'
+sediff_gui.o: CFLAGS += -DSEDIFF_GUI_VERSION_NUM='"$(shell cat SEDIFF_GUI_VERSION)"'
 
 libapol:
 	$(MAKE) -C .. libapol
