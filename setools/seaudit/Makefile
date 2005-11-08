@@ -7,8 +7,6 @@ GLADE_FILES       = customize_filter_window.glade filter_window.glade prefer_win
 
 CFLAGS	          += -DDEFAULT_LOG='"$(DEFAULT_LOG_FILE)"' 
 CFLAGS            += -DINSTALL_LIBDIR='"$(INSTALL_LIBDIR)"'
-CFLAGS            += -DSEAUDIT_GUI_VERSION_STRING='"$(shell cat SEAUDIT_GUI_VERSION)"'
-CFLAGS            += -DSEREPORT_VERSION_NUM='"$(shell cat SEAUDIT_REPORT_VERSION)"'
 
 SEAUDIT_REPORT_BACKEND  = report.o
 
@@ -57,7 +55,13 @@ libseaudit:
 	$(MAKE) -C ../libapol libapolso
 
 %.o:  %.c 
-	$(CC) $(CFLAGS) $(GTK_CFLAGS) $(LIBXML_FLAGS) $(INCLUDE) -c $<
+	$(CC) $(CFLAGS) $(LIBXML_FLAGS) $(INCLUDE) -c $<
+
+$(OBJS): CFLAGS += $(GTK_CFLAGS)
+
+seaudit.o: CFLAGS += -DSEAUDIT_GUI_VERSION_STRING='"$(shell cat SEAUDIT_GUI_VERSION)"'
+
+seaudit-report.o: CFLAGS += -DSEREPORT_VERSION_NUM='"$(shell cat SEAUDIT_REPORT_VERSION)"'
 
 install: seaudit seaudit-report
 	install -m 755 seaudit $(BINDIR)
