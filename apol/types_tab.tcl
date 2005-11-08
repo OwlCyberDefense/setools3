@@ -305,6 +305,11 @@ proc Apol_Types::searchTypes {} {
 		tk_messageBox -icon error -type ok -title "Error" -message "No regular expression provided!"
 		return
 	}
+	if {$opts(types) == 0 && $opts(attribs) == 0} {
+		tk_messageBox -icon error -type ok -title "Error" -message "No search options provided!"
+		return
+	}
+
 	Apol_Types::display_progressDlg
 	set rt [catch {set results [apol_GetTypeInfo $opts(types) $opts(typeattribs) \
 		$opts(attribs) $opts(attribtypes) $opts(attribtypeattribs) \
@@ -335,20 +340,20 @@ proc Apol_Types::_useSearch { entry } {
 }
 
 proc Apol_Types::enable_disable_checkbuttons { b1 b2 opt } {
-	switch $opt \
-		"1" {
+	switch -- $opt {
+		1 {
 			set status $Apol_Types::opts(types)
-		} \
-		"2" {
+		}
+		2 {
 			set status $Apol_Types::opts(attribs)
-		} \
-		"3" {
+		}
+		3 {
 			set status $Apol_Types::opts(show_files)
-		} \
+		}
 		default { 
 			puts "Invalid option for num argument: $num\n"
 		}
-        
+	}
 	if {$status} {
 	    $b1 configure -state normal
 	    $b2 configure -state normal
@@ -358,7 +363,20 @@ proc Apol_Types::enable_disable_checkbuttons { b1 b2 opt } {
 	    $b1 configure -state disabled
 	    $b2 configure -state disabled
 	}
-	return 0
+    variable sEntry
+    variable sString
+    # disable regular expression searching if both types and attribs
+    # are disabled
+    if {$Apol_Types::opts(types) == 0 && $Apol_Types::opts(attribs) == 0} {
+        set Apol_Types::opts(usesrchstr) 0
+        $sString deselect
+        $sString configure -state disabled
+        _useSearch $sEntry
+    } else {
+        variable sString
+        $sString configure -state normal
+        _useSearch $sEntry
+    }
 }
 
 proc Apol_Types::enable_disable_incl_attribs { cb } {
@@ -496,7 +514,7 @@ proc Apol_Types::create {nb} {
     set typealiases [checkbutton $fm_types_select.typealiases -text "Use Aliases" \
 	-variable Apol_Types::opts(typealiases) -padx 10]
     set types_select [checkbutton $fm_types_select.type -text "Show Types" -variable Apol_Types::opts(types) \
-	-command "Apol_Types::enable_disable_checkbuttons $typeattribs $typealiases 1"]
+	 -command [list Apol_Types::enable_disable_checkbuttons $typeattribs $typealiases 1]]
 
     # Attributes search section
     set a_typeattribs [checkbutton $fm_attribs_select.typeattribs -text "Include Type Attribs" \
@@ -507,7 +525,7 @@ proc Apol_Types::create {nb} {
 	-variable Apol_Types::opts(attribtypes) \
 	-padx 10 \
 	-offvalue 0 \
-	-command "Apol_Types::enable_disable_incl_attribs $a_typeattribs" \
+	-command [list Apol_Types::enable_disable_incl_attribs $a_typeattribs] \
 	-onvalue 1]
     set attribs_select [checkbutton $fm_attribs_select.type -text "Show Attributes" \
 	-variable Apol_Types::opts(attribs) \
@@ -527,7 +545,7 @@ proc Apol_Types::create {nb} {
     set sEntry [Entry $fm_sString.entry -textvariable Apol_Types::srchstr -width 40 \
 		    -helptext "Enter a regular expression string for which to search"]
     set sString [checkbutton $fm_sString.cb -variable Apol_Types::opts(usesrchstr) -text "Search Using Regular Expression" \
-		     -command "Apol_Types::_useSearch $sEntry"] 
+		     -command [list Apol_Types::_useSearch $sEntry]]
 
     # Action buttons
     button $okbox.ok -text OK -width 6 -command { Apol_Types::searchTypes }
