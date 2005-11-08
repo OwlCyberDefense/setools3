@@ -22,13 +22,6 @@ ifeq ($(USE_LIBSEFS), 1)
 SE_CMDS += $(SELINUX_TOOLS)
 endif
 
-CFLAGS  	+= -DSEINFO_VERSION_NUM='"$(shell cat SEINFO_VERSION)"'
-CFLAGS  	+= -DSESEARCH_VERSION_NUM='"$(shell cat SESEARCH_VERSION)"'
-CFLAGS          += -DREPLCON_VERSION_NUM='"$(shell cat REPLCON_VERSION)"'
-CFLAGS          += -DFINDCON_VERSION_NUM='"$(shell cat FINDCON_VERSION)"'
-CFLAGS          += -DINDEXCON_VERSION_NUM='"$(shell cat INDEXCON_VERSION)"'
-CFLAGS          += -DSEARCHCON_VERSION_NUM='"$(shell cat SEARCHCON_VERSION)"'
-CFLAGS          += -DAPOL_DEFAULT_PERM_MAP="\"/usr/share/setools/apol_perm_mapping\""
 
 SHELL = /bin/sh
 
@@ -78,6 +71,14 @@ install-policy:
 
 %.o:  %.c
 	$(CC) $(CFLAGS) $(INCLUDE) -c $<
+
+seinfo.o: CFLAGS += -DSEINFO_VERSION_NUM='"$(shell cat SEINFO_VERSION)"'
+sesearch.o: CFLAGS += -DSESEARCH_VERSION_NUM='"$(shell cat SESEARCH_VERSION)"'
+replcon.o: CFLAGS += -DREPLCON_VERSION_NUM='"$(shell cat REPLCON_VERSION)"'
+findcon.o: CFLAGS += -DFINDCON_VERSION_NUM='"$(shell cat FINDCON_VERSION)"'
+indexcon.o: CFLAGS += -DINDEXCON_VERSION_NUM='"$(shell cat INDEXCON_VERSION)"'
+searchcon.o: CFLAGS += -DSEARCHCON_VERSION_NUM='"$(shell cat SEARCHCON_VERSION)"'
+flowtool.o: CFLAGS += -DAPOL_DEFAULT_PERM_MAP="\"/usr/share/setools/apol_perm_mapping\""
 
 libapol:
 	$(MAKE) -C .. libapol
