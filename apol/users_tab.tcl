@@ -18,16 +18,10 @@ namespace eval Apol_Users {
     variable srchstr ""
     variable role_1ist ""
     variable users_list ""
-    # callback procedures for the listbox items menu. Each element in this list is an embedded list of 2 items.
-    # The 2 items consist of the command label and the function name. The tabname will be added as an
-    # argument to the callback procedure.
-    variable menu_callbacks		""
 	
     # Global Widgets
     variable resultsbox
-    variable users_listbox
     variable role_combo_box
-
 }
 
 ##############################################################
@@ -115,10 +109,6 @@ proc Apol_Users::close { } {
 }
 
 proc Apol_Users::free_call_back_procs { } {
-       	variable menu_callbacks	
-    		
-	set menu_callbacks ""
-	return 0
 }
 
 # ------------------------------------------------------------------------------
@@ -194,11 +184,9 @@ proc Apol_Users::goto_line { line_num } {
 # ------------------------------------------------------------------------------
 proc Apol_Users::create {nb} {
     variable opts
-    variable users_listbox 
     variable resultsbox 
     variable srchstr 
     variable role_combo_box
-    variable menu_callbacks
     
     # Layout frames
     set frame [$nb insert end $ApolTop::users_tab -text "Users"]
@@ -224,25 +212,11 @@ proc Apol_Users::create {nb} {
     pack $userbox -padx 2 -side left -fill both -expand yes
     pack $resultsbox -pady 2 -padx 2 -fill both -anchor n -side bottom -expand yes
    
-    # Roles listbox widget
-    set sw_r [ScrolledWindow [$userbox getframe].sw -auto both]
-    set users_listbox [listbox [$sw_r getframe].lb -height 18 -width 20 -highlightthickness 0 \
-		 -listvar Apol_Users::users_list -bg white] 
-    $sw_r setwidget $users_listbox 
-    	    
-    # Popup menu widget
-    menu .popupMenu_users
-    set menu_callbacks [lappend menu_callbacks {"Display User Info" "Apol_Users::popupUserInfo users"}]
-    	    
-    # Event binding on the users list box widget
-    bindtags $users_listbox [linsert [bindtags $users_listbox] 3 ulist_Tag]  
-    bind ulist_Tag <Double-Button-1> { Apol_Users::popupUserInfo "users" [$Apol_Users::users_listbox get active]}
-    bind ulist_Tag <Button-3> { ApolTop::popup_listbox_Menu \
-    	%W %x %y .popupMenu_users $Apol_Users::menu_callbacks \
-    	$Apol_Users::users_listbox}
-    
-    bind ulist_Tag <<ListboxSelect>> { focus -force $Apol_Users::users_listbox}
-             
+    # Users listbox widget
+    set users_listbox [Apol_Widget::makeScrolledListbox [$userbox getframe].lb -width 20 -listvar Apol_Users::users_list]
+    Apol_Widget::setListboxCallbacks $users_listbox \
+        {{"Display User Info" {Apol_Users::popupUserInfo users}}}
+
     # Search options subframes
     set ofm [$s_optionsbox getframe]
     set l_innerFrame [LabelFrame $ofm.to \
@@ -290,7 +264,7 @@ proc Apol_Users::create {nb} {
     pack $lfm.names_only $lfm.all_info -side top -anchor nw -pady 5 -padx 5
     pack $cfm.cb -side top -anchor nw -padx 10 -pady 5
     pack $role_combo_box -anchor w -pady 10 -padx 10
-    pack $sw_r -fill both -expand yes
+    pack $users_listbox -fill both -expand yes
     pack $sw_d -side left -expand yes -fill both 
         
     return $frame	
