@@ -27,17 +27,11 @@ namespace eval Apol_Initial_SIDS {
 	
 	# Global Widgets
 	variable resultsbox
-	variable init_sids_listbox
 	variable user_combo_box
 	variable role_combo_box
 	variable type_combo_box
 	variable attribute_combo_box
 	variable cb_attrib
-	
-	# callback procedures for the listbox items menu. Each element in this list is an embedded list of 2 items.
-	# The 2 items consist of the command label and the function name. The tabname will be added as an
-	# argument to the callback procedure.
-	variable menu_callbacks		""
 }
 
 ##############################################################
@@ -152,10 +146,6 @@ proc Apol_Initial_SIDS::close { } {
 }
 
 proc Apol_Initial_SIDS::free_call_back_procs { } {
-       variable menu_callbacks
-       
-       set menu_callbacks ""
-       return 0
 }
 
 # ------------------------------------------------------------------------------
@@ -261,14 +251,12 @@ proc Apol_Initial_SIDS::goto_line { line_num } {
 # ------------------------------------------------------------------------------
 proc Apol_Initial_SIDS::create {nb} {
 	variable opts
-	variable init_sids_listbox 
 	variable resultsbox 
 	variable user_combo_box
 	variable role_combo_box
 	variable type_combo_box
 	variable attribute_combo_box
 	variable cb_attrib
-	variable menu_callbacks
 	
 	# Layout frames
 	set frame [$nb insert end $ApolTop::initial_sids_tab -text "Initial SIDs"]
@@ -294,23 +282,10 @@ proc Apol_Initial_SIDS::create {nb} {
 	pack $sids_box -padx 2 -side left -fill both -expand yes
 	pack $rslts_frame -pady 2 -padx 2 -fill both -anchor n -side bottom -expand yes
 	
-	# Roles listbox widget
-	set sw_r [ScrolledWindow [$sids_box getframe].sw -auto both]
-	set init_sids_listbox [listbox [$sw_r getframe].lb -height 18 -highlightthickness 0 \
-		 -listvar Apol_Initial_SIDS::sids_list -bg white] 
-	$sw_r setwidget $init_sids_listbox 
-	    
-	# Popup menu widget
-	menu .popupMenu_sids
-	set menu_callbacks [lappend menu_callbacks {"Display Initial SID Context" "Apol_Initial_SIDS::popupSIDInfo"}]
-		    
-	# Event binding on the users list box widget
-	bindtags $init_sids_listbox [linsert [bindtags $init_sids_listbox] 3 sidlist_Tag]  
-	bind sidlist_Tag <Double-Button-1> {Apol_Initial_SIDS::popupSIDInfo [$Apol_Initial_SIDS::init_sids_listbox get active]}
-	bind sidlist_Tag <Button-3> {ApolTop::popup_listbox_Menu \
-		%W %x %y .popupMenu_sids $Apol_Initial_SIDS::menu_callbacks \
-		$Apol_Initial_SIDS::init_sids_listbox}
-        bind sidlist_Tag <<ListboxSelect>> {focus -force $Apol_Initial_SIDS::init_sids_listbox}
+	# Initial SIDs listbox widget
+	set init_sids_listbox [Apol_Widget::makeScrolledListbox [$sids_box getframe].lb -width 20 -listvar Apol_Initial_SIDS::sids_list]
+	Apol_Widget::setListboxCallbacks $init_sids_listbox \
+		{{"Display Initial SID Context" {Apol_Initial_SIDS::popupSIDInfo}}}
 
 	# Search options subframes
 	set ofm [$s_optionsbox getframe]
@@ -404,7 +379,7 @@ proc Apol_Initial_SIDS::create {nb} {
 	pack $user_combo_box $role_combo_box $type_combo_box -side top -fill x -anchor nw -padx 4
 	pack $cb_attrib -side top -anchor nw -padx 15
 	pack $attribute_combo_box -side top -fill x -anchor nw -padx 25 -pady 2
-	pack $sw_r -fill both -expand yes
+	pack $init_sids_listbox -fill both -expand yes
 	pack $sw_d -side left -expand yes -fill both 
 	
 	return $frame	
