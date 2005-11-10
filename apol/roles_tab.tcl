@@ -26,16 +26,10 @@ namespace eval Apol_Roles {
 		
 	# Global Widgets
 	variable resultsbox
-	variable rlistbox
 	variable combo_types
 	variable combo_attribute
 	variable cb_attrib
 	variable cb_type
-	
-	# callback procedures for the listbox items menu. Each element in this list is an embedded list of 2 items.
-	# The 2 items consist of the command label and the function name. The tabname will be added as an
-	# argument to the callback procedure.
-	variable menu_callbacks		""
 }
 
 proc Apol_Roles::open { } {
@@ -79,10 +73,6 @@ proc Apol_Roles::close { } {
 }
 
 proc Apol_Roles::free_call_back_procs { } {
-       	variable menu_callbacks	
-    		
-	set menu_callbacks ""
-	return 0
 }
 
 # ----------------------------------------------------------------------------------------
@@ -243,7 +233,6 @@ proc Apol_Roles::goto_line { line_num } {
 }
 
 proc Apol_Roles::create {nb} {
-	variable rlistbox 
 	variable resultsbox 
 	variable srchstr 
 	variable opts
@@ -252,7 +241,6 @@ proc Apol_Roles::create {nb} {
 	variable combo_attribute
 	variable cb_attrib
 	variable cb_type
-	variable menu_callbacks
 	
 	# Layout frames
 	set frame [$nb insert end $ApolTop::roles_tab -text "Roles"]
@@ -279,23 +267,10 @@ proc Apol_Roles::create {nb} {
 	pack $resultsbox -pady 2 -padx 2 -fill both -anchor n -side bottom -expand yes
 	
 	# Roles listbox widget
-	set sw_r [ScrolledWindow [$rolebox getframe].sw -auto both]
-	set rlistbox [listbox [$sw_r getframe].lb -height 18 -width 20 -highlightthickness 0 \
-		 -listvar Apol_Roles::role_list -bg white] 
-	$sw_r setwidget $rlistbox 
-	
-	# Popup menu widget
-	menu .popupMenu_roles
-	set menu_callbacks [lappend menu_callbacks {"Display Role Info" "Apol_Roles::popupRoleInfo role"}]
-		    
-	# Event bindong on the roles list box widget
-	bindtags $rlistbox [linsert [bindtags $rlistbox] 3 rlist_Tag]  
-	bind rlist_Tag <Double-Button-1> { Apol_Roles::popupRoleInfo "role" [$Apol_Roles::rlistbox get active]}
-	bind rlist_Tag <Button-3> { ApolTop::popup_listbox_Menu \
-		%W %x %y .popupMenu_roles $Apol_Roles::menu_callbacks \
-		$Apol_Roles::rlistbox}
-	bind rlist_Tag <<ListboxSelect>> { focus -force $Apol_Roles::rlistbox}
-	
+	set rlistbox [Apol_Widget::makeScrolledListbox [$rolebox getframe].lb -width 20 -listvar Apol_Roles::role_list]
+	Apol_Widget::setListboxCallbacks $rlistbox \
+		{{"Display Role Info" {Apol_Roles::popupRoleInfo role}}}
+
 	# Search options subframes
 	set ofm [$s_optionsbox getframe]
 	set l_innerFrame [LabelFrame $ofm.to \
@@ -357,7 +332,7 @@ proc Apol_Roles::create {nb} {
 	pack $combo_types -anchor w -padx 10
 	pack $cb_attrib -expand yes -anchor nw -padx 15
 	pack $combo_attribute -fill x -expand yes -padx 25
-	pack $sw_r -fill both -expand yes
+	pack $rlistbox -fill both -expand yes
 	pack $sw_d -side left -expand yes -fill both 
 	
 	return $frame	
