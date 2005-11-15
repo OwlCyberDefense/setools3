@@ -112,12 +112,14 @@ static gboolean sediff_modal_dlg_show(const char *title,const char *label_string
 		label = gtk_label_new (label_string);
 		gtk_container_add (GTK_CONTAINER (GTK_DIALOG(sediff_app->modal_dlg)->vbox),
 				   label);
-		gtk_widget_show_all (sediff_app->modal_dlg);
-		while (gtk_events_pending ())
-			gtk_main_iteration ();
 	}
 	g_signal_connect(G_OBJECT(sediff_app->modal_dlg), "delete_event", 
 			 G_CALLBACK(sediff_modal_dialog_on_window_destroy), sediff_app);
+
+	gtk_widget_show_all (sediff_app->modal_dlg);
+	while (gtk_events_pending ())
+		gtk_main_iteration ();
+
 	return FALSE;
 }
 
@@ -1150,8 +1152,10 @@ static void sediff_main_notebook_raise_policy_tab_goto_line(unsigned long line, 
 	GtkTextIter iter,end_iter;
 	GtkTextView *text_view = NULL;
 	GtkTextTagTable *table = NULL;
-	GtkLabel *lbl;
+	GtkTextMark *mark = NULL;
+	GtkLabel *lbl = NULL;
 	GString *string = g_string_new("");
+
 
 	main_notebook = GTK_NOTEBOOK(glade_xml_get_widget(sediff_app->window_xml, "main_notebook"));
 	g_assert(main_notebook);
@@ -1171,6 +1175,9 @@ static void sediff_main_notebook_raise_policy_tab_goto_line(unsigned long line, 
 		gtk_notebook_set_current_page(tab_notebook, 1);
 	}
 
+	/* when moving the buffer we must use marks to scroll because
+	   goto_line if called before the line height has been calculated can produce 
+	   undesired results, in our case we get no scolling at all */
 	buffer = gtk_text_view_get_buffer(text_view);
 	g_assert(buffer);
 
@@ -1183,20 +1190,27 @@ static void sediff_main_notebook_raise_policy_tab_goto_line(unsigned long line, 
 	while (!gtk_text_iter_ends_line(&end_iter))	
 		gtk_text_iter_forward_char(&end_iter);
 
-	gtk_text_view_scroll_to_iter(text_view, &iter, 0.0, TRUE, 0.0, 0.5);
-
+	mark = gtk_text_buffer_create_mark(buffer, "line-position", &iter, TRUE);	
+	assert(mark);
+	
+	gtk_text_view_scroll_to_mark(text_view, mark, 0.0, TRUE, 0.0, 0.5);
+	
+	/* destroying the mark and recreating is faster than doing a move on a mark that
+	   still exists, so we always destroy it once we're done */
+	gtk_text_buffer_delete_mark(buffer, mark);
 	gtk_text_view_set_cursor_visible(text_view, TRUE);
 	gtk_text_buffer_place_cursor(buffer, &iter);
-	gtk_text_buffer_select_range(buffer,&iter,&end_iter);
+	gtk_text_buffer_select_range(buffer, &iter, &end_iter);
 
 	gtk_container_set_focus_child(GTK_CONTAINER(tab_notebook),
 					 GTK_WIDGET(text_view));
-
-	g_string_printf(string,"Line: %d",gtk_text_iter_get_line(&iter)+1);
+	
+	g_string_printf(string, "Line: %d", gtk_text_iter_get_line(&iter)+1);
 	lbl = (GtkLabel*)glade_xml_get_widget(sediff_app->window_xml, "line_label");
 	gtk_label_set_text(lbl, string->str);
-	g_string_free(string,TRUE);
-	
+	g_string_free(string, TRUE);
+
+
 	return;
 }
 
@@ -3456,22 +3470,22 @@ static int sediff_policy_file_textview_populate(const char *filename, GtkTextVie
 	gtk_text_view_set_cursor_visible (GTK_TEXT_VIEW (textview), TRUE);
 
 	/* if this is not a binary policy */
+
 	if (!fn_is_binpol(filename)) {
 		if (!g_file_get_contents(filename, &contents, &length, &error)){
-			g_warning("Unable to read file %s\n",filename);
+			g_warning("Unable to read file %s\n", filename);
 			return -1;
 		}
-		gtk_text_buffer_insert_with_tags_by_name(txt, &iter, contents, length,"mono-tag",NULL);
+		gtk_text_buffer_insert_with_tags_by_name(txt, &iter, contents, length, "mono-tag", NULL);
 		gtk_text_buffer_set_modified(txt, TRUE);
 		g_free(contents);
 	} else {
 		string = g_string_new("");
 		g_string_printf(string,"Policy File %s is a binary policy",filename);
-		gtk_text_buffer_insert_with_tags_by_name(txt,&iter,string->str,-1,"mono-tag",NULL);
+		gtk_text_buffer_insert_with_tags_by_name(txt, &iter, string->str, -1, "mono-tag", NULL);
 		g_string_free(string,TRUE);
-
 	}
-	
+
 	return 0;
 }
 
@@ -4065,6 +4079,57 @@ void sediff_menu_on_about_clicked(GtkMenuItem *menuitem, gpointer user_data)
 }
 
 
+static void sediff_policy_notebook_on_switch_page(GtkNotebook *notebook, GtkNotebookPage *page, guint pagenum, gpointer user_data) 
+{
+	GtkTextView *txt;
+	int main_pagenum;
+	char *file = NULL;
+	GtkNotebook *main_notebook;
+
+	/* if we don't have filenames we can't open anything... */
+	if (!sediff_app->p1_filename && !sediff_app->p2_filename)
+		return;
+
+	/* if we aren't looking at the policy tab of the noteboook return */
+	if (pagenum == 0)
+		return;
+
+	main_notebook = GTK_NOTEBOOK(glade_xml_get_widget(sediff_app->window_xml, "main_notebook"));
+	assert(main_notebook);
+
+	/* here we know pagenum is going to be 1 or 2 */
+	main_pagenum = gtk_notebook_get_current_page(main_notebook);
+
+	if (main_pagenum == 1) {
+		/* if we are looking at policy 1 */
+		txt = GTK_TEXT_VIEW(glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p1_text"));
+		g_assert(txt);
+		file = sediff_app->p1_filename->str;
+	} else {
+		/* if we are looking at policy 2 */
+		txt = GTK_TEXT_VIEW(glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p2_text"));
+		g_assert(txt);
+		file = sediff_app->p2_filename->str;
+	}
+
+	/* if the buffer has already been modified, i.e. its had the policy put into it
+	   just return we have already printed*/
+	if (gtk_text_buffer_get_modified(gtk_text_view_get_buffer(txt)) == TRUE) 
+		return;
+
+	/* set the modified bit immediately because of gtk is asynchronous
+	 and this fcn might be called again before its set in the populate fcn*/
+	gtk_text_buffer_set_modified(gtk_text_view_get_buffer(txt), TRUE);
+
+	/* show our loading dialog */
+	sediff_modal_dlg_show("Loading...", "Loading text - this may take a while.");
+
+	sediff_policy_file_textview_populate(file, txt);	
+
+	sediff_modal_dlg_destroy();
+
+	return;
+}
 
 void sediff_on_policy1_notebook_event_after(GtkWidget *widget, GdkEvent *event, gpointer user_data) 
 {
@@ -4075,7 +4140,8 @@ void sediff_on_policy1_notebook_event_after(GtkWidget *widget, GdkEvent *event, 
 	GtkTextBuffer *txt = NULL;
 	GtkTextIter iter;
 	GtkTextView *p1_textview = (GtkTextView *)glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p1_text");
-				
+
+
 	pagenum = gtk_notebook_get_current_page(notebook);
 	txt = gtk_text_view_get_buffer(p1_textview);
 	assert(txt);
@@ -4185,6 +4251,19 @@ static void sediff_initialize_policies()
 	sediff_set_open_policies_gui_state(FALSE);
 }
 
+void sediff_reset_policy_notebooks()
+{
+	GtkNotebook *nb = NULL;
+	nb = GTK_NOTEBOOK(glade_xml_get_widget(sediff_app->window_xml, "notebook1"));
+	assert(nb);
+	gtk_notebook_set_current_page(nb, 0);
+	nb = GTK_NOTEBOOK(glade_xml_get_widget(sediff_app->window_xml, "notebook2"));
+	assert(nb);
+	gtk_notebook_set_current_page(nb, 0);
+
+}
+
+
 /* opens p1 and p2, populates policy text buffers */
 static int sediff_load_policies(const char *p1_file, const char *p2_file)
 {
@@ -4273,13 +4352,11 @@ static int sediff_load_policies(const char *p1_file, const char *p2_file)
 	g_signal_connect_after(G_OBJECT(notebook2), "event-after", 
 			 G_CALLBACK(sediff_on_policy2_notebook_event_after), notebook2);
 
-	/* now lets populate the textviews with our new policies */
-	sediff_policy_file_textview_populate(p1_file, p1_textview);
-	sediff_policy_file_textview_populate(p2_file, p2_textview);
-
 	/* populate the 2 stat buffers */
 	sediff_policy_stats_textview_populate(p1, stats1, p1_file);
 	sediff_policy_stats_textview_populate(p2, stats2, p2_file);
+
+	sediff_reset_policy_notebooks();
 	
 	/* open is done set cursor back to a ptr */
 	gdk_window_set_cursor(GTK_WIDGET(sediff_app->window)->window, NULL);
@@ -4470,6 +4547,7 @@ int main(int argc, char **argv)
 	GtkNotebook *notebook = NULL;
 	GtkTextView *textview = NULL;
 	
+	
 	if (rindex(argv[0],'/')) {
 		fname1 = rindex(argv[0],'/')+1;
 	}
@@ -4618,6 +4696,16 @@ int main(int argc, char **argv)
 	g_signal_connect_after(G_OBJECT(notebook), "switch-page", 
 			 G_CALLBACK(sediff_main_notebook_on_switch_page), sediff_app);
 		
+	notebook = GTK_NOTEBOOK(glade_xml_get_widget(sediff_app->window_xml, "notebook1"));
+	g_assert(notebook);
+	g_signal_connect_after(G_OBJECT(notebook), "switch-page", 
+			 G_CALLBACK(sediff_policy_notebook_on_switch_page), sediff_app);
+	notebook = GTK_NOTEBOOK(glade_xml_get_widget(sediff_app->window_xml, "notebook2"));
+	g_assert(notebook);
+	g_signal_connect_after(G_OBJECT(notebook), "switch-page", 
+			 G_CALLBACK(sediff_policy_notebook_on_switch_page), sediff_app);
+
+
 	glade_xml_signal_autoconnect(sediff_app->window_xml);
 	
 	sediff_initialize_policies();
@@ -4633,6 +4721,9 @@ int main(int argc, char **argv)
 	/* Configure text_view */
 	gtk_text_view_set_editable(textview, FALSE);
 	gtk_text_view_set_cursor_visible(textview, FALSE);
+
+
+
 
 	sediff_results_txt_view_switch_buffer(textview,OPT_SUMMARY,1);
 	
