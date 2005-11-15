@@ -10,8 +10,7 @@
 #ifndef _FSDATA_H
 #define _FSDATA_H
 
-
-
+#include "fshash.h"
 #include <stdint.h>
 
 #include <sys/types.h>
@@ -105,7 +104,7 @@ char **sefs_filesystem_db_get_known(sefs_filesystem_db_t *fsd,int *count,int req
 int sefs_double_array_destroy(char **array,int size);
 
 /* find the mount points */
-int find_mount_points(char *dir, char ***mounts, unsigned int *num_mounts, int rw);
+int find_mount_points(char *dir, char ***mounts, unsigned int *num_mounts, sefs_hash_t *hashtab, int rw);
 
 /* object classes */
 int sefs_get_file_class(const struct stat64 *statptr);
