@@ -1,6 +1,6 @@
 # libsefs 
 
-LIB-OBJ	= fsdata.o file_contexts.o
+LIB-OBJ	= fsdata.o file_contexts.o fshash.o
 
 SQL-OBJ = sqlite/attach.o sqlite/auth.o sqlite/btree.o sqlite/build.o sqlite/date.o \
 	sqlite/delete.o sqlite/expr.o sqlite/func.o sqlite/hash.o sqlite/insert.o sqlite/legacy.o \
@@ -52,6 +52,9 @@ fsdata.o: fsdata.c sqlite
 	$(CC) $(CFLAGS) -c fsdata.c
 
 file_contexts.o: file_contexts.c file_contexts.h ../libapol/policy.h
+	$(CC) $(CFLAGS) -c $< 
+
+fshash.o: fshash.c
 	$(CC) $(CFLAGS) -c $< 
 
 clean:
