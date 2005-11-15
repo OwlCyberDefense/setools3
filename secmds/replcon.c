@@ -13,7 +13,7 @@
  */
 
 #include <fsdata.h>
-
+#include "fshash.h"
 /* SE Linux includes*/
 #include <selinux/selinux.h>
 #include <selinux/context.h>
@@ -55,6 +55,7 @@
 #define NFTW_FLAGS FTW_MOUNT | FTW_PHYS
 #define NFTW_DEPTH 1024
 
+#define SEFS_BIND_HASH_SIZE 50
 
 /* Data Structures */
 
@@ -92,6 +93,7 @@ typedef struct replcon_info {
 replcon_info_t replcon_info;
 char **mounts;
 unsigned int num_mounts;
+sefs_hash_t *hashtab;
 
 static struct option const longopts[] = {
 	{"recursive", no_argument, NULL, 'r'},
@@ -761,6 +763,12 @@ replcon_file_context_replace(const char *filename, const struct stat64 *statptr,
 	}
 
 	if (match) {
+		/* check to see if this is a bind mount */
+		if (sefs_hash_find(hashtab, filename) == 1) {
+			if (!info->quiet)
+				fprintf(stdout, "Did not replace context for bind mount: %-40s\n", filename);
+			goto exit;
+		}
 		/* If the new context was not spcified completely, fill in the blanks */
 		if (strcmp(replacement_con->user, "") == 0)
 			replcon_context_user_set(replacement_con, original_con->user);
@@ -790,13 +798,14 @@ replcon_file_context_replace(const char *filename, const struct stat64 *statptr,
 		}
 		freecon(new_file_con);
 	}
-
+       
+exit:
 	replcon_context_destroy(original_con);
 	replcon_context_destroy(replacement_con);
 	freecon(old_file_con);
 	return 0;
 
-	err:
+err:
 	if (original_con) replcon_context_destroy(original_con);
 	if (replacement_con) replcon_context_destroy(replacement_con);
 	if (old_file_con) freecon(old_file_con);
@@ -1083,7 +1092,12 @@ main(int argc, char **argv)
 	rw = 1;
 #endif
 
-	if (find_mount_points("/", &mounts, &num_mounts, rw)) {
+	/* initialize the hash used for bind mounts */
+	hashtab = sefs_hash_new(SEFS_BIND_HASH_SIZE);
+	if (!hashtab)
+		goto err;
+
+	if (find_mount_points("/", &mounts, &num_mounts, hashtab, rw)) {
 		fprintf(stderr, "Could not enumerate mountpoints.\n");
 		goto err;
 	}
@@ -1103,11 +1117,12 @@ main(int argc, char **argv)
 	for (i = 0; i < num_mounts; i++)
 		free(mounts[i]);
 	free(mounts);
-	
+	sefs_hash_destroy(hashtab);
 	return 0;
 	
 err:
 	replcon_info_free(&replcon_info);
 	if (mounts) free(mounts);
+	sefs_hash_destroy(hashtab);
 	return -1;
 }
