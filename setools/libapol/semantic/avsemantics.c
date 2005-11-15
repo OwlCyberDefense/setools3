@@ -61,17 +61,24 @@ bool_t avh_is_enabled(avh_node_t *node, policy_t *p)
  * table.  Valid means that there is NOT an unconditional type rule with the same
  * key, AND there is NOT a conditional type rule with the same key UNLESS it's in the
  * same conditional BUT on the opposite true/false list */
-static bool_t avh_is_valid_cond_type_rule(avh_key_t *key, int cond_expr, bool_t cond_list, policy_t *p) 
+static bool_t avh_is_valid_cond_type_rule(avh_key_t *key, int cond_expr, bool_t cond_list, int dflt_type, policy_t *p) 
 {
 	avh_node_t *node = NULL;
 
 	for (node = avh_find_first_node(&(p->avh), key); node; node = avh_find_next_node(node)) {
-		if (node->flags != AVH_FLAG_COND)
-			return FALSE;
-		if (node->cond_expr != cond_expr) 
-			return FALSE;
-		if (node->cond_list == cond_list)
-			return FALSE;
+		if (node->flags != AVH_FLAG_COND) {
+			if (node->data[0] != dflt_type)
+				return FALSE;
+		} else if (node->cond_expr != cond_expr) {
+			if (node->data[0] != dflt_type)
+				return FALSE;
+		} else if (node->cond_list == cond_list) {
+			if (node->data[0] != dflt_type)
+				return FALSE;
+		} else if (node->cond_list != cond_list) {
+			if (node->data[0] == dflt_type)
+				return FALSE;
+		}
 	}
 
 	return TRUE;	
@@ -220,8 +227,8 @@ static int avh_load_avrules( void *r, int num, bool_t is_av, policy_t *p)
 					 * type rule is invalid.  Likewise if there are two conditional type rules with 
 					 * the same key, they are only valid if their conditionals are the same and the 
 					 * reside in opposite lists */
-					if(is_cond && !is_av && !avh_is_valid_cond_type_rule(&key, cond_expr, cond_list, p)) {
-						fprintf(stderr, "Warning: invalid conditional type_ rule; skipped\n");
+					if(is_cond && !is_av && !avh_is_valid_cond_type_rule(&key, cond_expr, cond_list, ((tt_item_t*)r)[i].dflt_type.idx, p)) {
+						fprintf(stderr, "Warning: invalid conditional type_ rule on line %lu; skipped\n", ((tt_item_t*)r)[i].lineno);
 						continue;
 					}
 					
