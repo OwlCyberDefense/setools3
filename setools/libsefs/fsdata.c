@@ -12,7 +12,6 @@
 /* sqlite db stuff */
 #include "sqlite/sqlite3.h"
 
-
 /* SE Linux includes*/
 #include <selinux/selinux.h>
 #include <selinux/context.h>
@@ -541,16 +540,17 @@ int sefs_get_file_class(const struct stat64 *statptr)
 	return SEFS_ALL_FILES;
 }
 
-int find_mount_points(char *dir, char ***mounts, unsigned int *num_mounts, int rw) 
+/* find_mount_points finds all mount points and if hashtab is not NULL it attempts to put
+   the bind mounts found into it.  The user is expected to have already called
+   sefs_hash_init before calling this function if finding bind mounts */
+int find_mount_points(char *dir, char ***mounts, unsigned int *num_mounts, sefs_hash_t *hashtab, int rw) 
 {
 	FILE *mtab = NULL;
 	int nel = 0, len = 10;
 	struct mntent *entry;
 	security_context_t con;	
 
-
 	if ((mtab = fopen("/etc/mtab", "r")) == NULL) {
-		
 		return -1;
 	}
 
@@ -567,7 +567,10 @@ int find_mount_points(char *dir, char ***mounts, unsigned int *num_mounts, int r
 		/* This checks for bind mounts so that we don't recurse them 
 		   I'll use a string constant for now */
 		if (strstr(entry->mnt_opts, "bind") != NULL) {
-			continue;
+			if (!hashtab)
+				continue;
+			if (sefs_hash_insert(hashtab, entry->mnt_dir) < 0)
+				return -1;
 		}
 
 		nel = strlen(dir);
@@ -582,7 +585,6 @@ int find_mount_points(char *dir, char ***mounts, unsigned int *num_mounts, int r
 		if (rw)
 			if (hasmntopt(entry, MNTOPT_RW) == NULL)
 				continue;
-
 
 		if (*num_mounts >= len) {
 			len *= 2;
@@ -602,8 +604,6 @@ int find_mount_points(char *dir, char ***mounts, unsigned int *num_mounts, int r
 				return -1;
 			}
 		}
-
-
 	}
 	fclose(mtab);
 	return 0;
@@ -1279,7 +1279,7 @@ int sefs_filesystem_db_populate(sefs_filesystem_db_t *fsd, char *dir)
 	/* init it so that all the old fcns work right */
 	sefs_filesystem_data_init(fsdh);
 
-	find_mount_points(dir,&mounts,&num_mounts, 0);
+	find_mount_points(dir, &mounts, &num_mounts, NULL, 0);
 
 	int (*fn)(const char *file, const struct stat64 *sb, int flag, struct FTW *s) = ftw_handler;
 	for (i = 0; i < num_mounts; i++ ) {
