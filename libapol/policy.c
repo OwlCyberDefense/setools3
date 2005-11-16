@@ -104,7 +104,7 @@ int init_policy(policy_t **p)
 	policy->policy_type = POL_TYPE_SOURCE;
 
 	/* permissions */
-	policy->perms = (char **)malloc(sizeof(char*) * LIST_SZ);
+	policy->perms = (char **)calloc(LIST_SZ, sizeof(char*));
 	if(policy->perms == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
@@ -112,7 +112,7 @@ int init_policy(policy_t **p)
 	policy->list_sz[POL_LIST_PERMS] = LIST_SZ;
 	policy->num_perms = 0;
 	/* common perms */
-	policy->common_perms = (common_perm_t *)malloc(sizeof(common_perm_t) * LIST_SZ);
+	policy->common_perms = (common_perm_t *)calloc(LIST_SZ, sizeof(common_perm_t));
 	if(policy->common_perms == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
@@ -121,7 +121,7 @@ int init_policy(policy_t **p)
 	policy->num_common_perms = 0;
 	
 	/* object classes */
-	policy->obj_classes = (obj_class_t *)malloc(sizeof(obj_class_t) * LIST_SZ);
+	policy->obj_classes = (obj_class_t *)calloc(LIST_SZ, sizeof(obj_class_t));
 	if(policy->obj_classes == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
@@ -130,7 +130,7 @@ int init_policy(policy_t **p)
 	policy->num_obj_classes = 0;
 	
 	/* initial SIDs */
-	policy->initial_sids = (initial_sid_t *)malloc(sizeof(initial_sid_t) * LIST_SZ);
+	policy->initial_sids = (initial_sid_t *)calloc(LIST_SZ, sizeof(initial_sid_t));
 	if(policy->initial_sids == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
@@ -139,7 +139,7 @@ int init_policy(policy_t **p)
 	policy->num_initial_sids = 0;
 	
 	/* types list */
-	policy->types = (type_item_t *)malloc(sizeof(type_item_t) * LIST_SZ);
+	policy->types = (type_item_t *)calloc(LIST_SZ, sizeof(type_item_t));
 	if(policy->types == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
@@ -148,7 +148,7 @@ int init_policy(policy_t **p)
 	policy->num_types = 0;
 	
 	/* type aliases */
-	policy->aliases = (alias_item_t *)malloc(sizeof(alias_item_t) * LIST_SZ);
+	policy->aliases = (alias_item_t *)calloc(LIST_SZ, sizeof(alias_item_t));
 	if(policy->aliases == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
@@ -157,7 +157,7 @@ int init_policy(policy_t **p)
 	policy->num_aliases = 0;
 	
 	/* type attributes list */
-	policy->attribs = (name_a_t *)malloc(sizeof(name_a_t) * LIST_SZ);
+	policy->attribs = (name_a_t *)calloc(LIST_SZ, sizeof(name_a_t));
 	if(policy->attribs == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
@@ -166,7 +166,7 @@ int init_policy(policy_t **p)
 	policy->num_attribs = 0;
 	
 	/* conditional booleans */
-	policy->cond_bools = (cond_bool_t *)malloc(sizeof(cond_bool_t) * LIST_SZ);
+	policy->cond_bools = (cond_bool_t *)calloc(LIST_SZ, sizeof(cond_bool_t));
 	if(policy->cond_bools == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
@@ -175,7 +175,7 @@ int init_policy(policy_t **p)
 	policy->num_cond_bools = 0;
 	
 	/* conditional expressions */
-	policy->cond_exprs = (cond_expr_item_t *)malloc(sizeof(cond_expr_item_t) * LIST_SZ);
+	policy->cond_exprs = (cond_expr_item_t *)calloc(LIST_SZ, sizeof(cond_expr_item_t));
 	if(policy->cond_exprs == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
@@ -184,7 +184,7 @@ int init_policy(policy_t **p)
 	policy->num_cond_exprs = 0;	
 	
 	/* av_access rules */
-	policy->av_access = (av_item_t *)malloc(sizeof(av_item_t) * LIST_SZ);
+	policy->av_access = (av_item_t *)calloc(LIST_SZ, sizeof(av_item_t));
 	if(policy->av_access == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
@@ -193,7 +193,7 @@ int init_policy(policy_t **p)
 	policy->num_av_access = 0;
 
 	/* av_audit rules */
-	policy->av_audit = (av_item_t *)malloc(sizeof(av_item_t) * LIST_SZ);
+	policy->av_audit = (av_item_t *)calloc(LIST_SZ, sizeof(av_item_t));
 	if(policy->av_audit == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
@@ -202,7 +202,7 @@ int init_policy(policy_t **p)
 	policy->num_av_audit = 0;
 
 	/* type transition, etc. rules */
-	policy->te_trans = (tt_item_t *)malloc(sizeof(tt_item_t) * LIST_SZ);
+	policy->te_trans = (tt_item_t *)calloc(LIST_SZ, sizeof(tt_item_t));
 	if(policy->te_trans == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
@@ -214,7 +214,7 @@ int init_policy(policy_t **p)
 	policy->clones = NULL;
 
 	/* role definitions */
-	policy->roles = (name_a_t *)malloc(sizeof(name_a_t) * LIST_SZ);
+	policy->roles = (name_a_t *)calloc(LIST_SZ, sizeof(name_a_t));
 	if(policy->roles == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
@@ -223,7 +223,7 @@ int init_policy(policy_t **p)
 	policy->num_roles = 0;
 	
 	/* role allow rules */
-	policy->role_allow = (role_allow_t *)malloc(sizeof(role_allow_t) * LIST_SZ);
+	policy->role_allow = (role_allow_t *)calloc(LIST_SZ, sizeof(role_allow_t));
 	if(policy->role_allow == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
@@ -232,7 +232,7 @@ int init_policy(policy_t **p)
 	policy->num_role_allow = 0;
 	
 	/* role transition rules */
-	policy->role_trans = (rt_item_t *)malloc(sizeof(rt_item_t) * LIST_SZ);
+	policy->role_trans = (rt_item_t *)calloc(LIST_SZ, sizeof(rt_item_t));
 	if(policy->role_trans == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
@@ -241,7 +241,7 @@ int init_policy(policy_t **p)
 	policy->num_role_trans = 0;	
 	
 	/* users */
-	policy->users = (name_a_t *)malloc(sizeof(name_a_t) * LIST_SZ);
+	policy->users = (name_a_t *)calloc(LIST_SZ, sizeof(name_a_t));
 	if(policy->users == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
@@ -250,7 +250,7 @@ int init_policy(policy_t **p)
 	policy->num_users = 0;	
 	
 	/* fs_use */
-	policy->fs_use = (ap_fs_use_t *)malloc(sizeof(ap_fs_use_t) * LIST_SZ);
+	policy->fs_use = (ap_fs_use_t *)calloc(LIST_SZ, sizeof(ap_fs_use_t));
 	if(policy->fs_use == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
@@ -259,7 +259,7 @@ int init_policy(policy_t **p)
 	policy->num_fs_use = 0;
 
 	/* portcon */
-	policy->portcon = (ap_portcon_t *)malloc(sizeof(ap_portcon_t) * LIST_SZ);
+	policy->portcon = (ap_portcon_t *)calloc(LIST_SZ, sizeof(ap_portcon_t));
 	if(policy->portcon == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
@@ -268,7 +268,7 @@ int init_policy(policy_t **p)
 	policy->num_portcon = 0;
 
 	/* netifcon */
-	policy->netifcon = (ap_netifcon_t *)malloc(sizeof(ap_netifcon_t) * LIST_SZ);
+	policy->netifcon = (ap_netifcon_t *)calloc(LIST_SZ, sizeof(ap_netifcon_t));
 	if(policy->netifcon == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
@@ -277,7 +277,7 @@ int init_policy(policy_t **p)
 	policy->num_netifcon = 0;
 
 	/* nodecon */
-	policy->nodecon = (ap_nodecon_t *)malloc(sizeof(ap_nodecon_t) * LIST_SZ);
+	policy->nodecon = (ap_nodecon_t *)calloc(LIST_SZ, sizeof(ap_nodecon_t));
 	if (policy->nodecon == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
@@ -286,7 +286,7 @@ int init_policy(policy_t **p)
 	policy->num_nodecon = 0;
 
 	/* genfscon */
-	policy->genfscon = (ap_genfscon_t *)malloc(sizeof(ap_genfscon_t) * LIST_SZ);
+	policy->genfscon = (ap_genfscon_t *)calloc(LIST_SZ, sizeof(ap_genfscon_t));
 	if (policy->genfscon == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
@@ -295,7 +295,7 @@ int init_policy(policy_t **p)
 	policy->num_genfscon = 0;
 
 	/* constraints */
-	policy->constraints = (ap_constraint_t *)malloc(sizeof(ap_constraint_t) * LIST_SZ);
+	policy->constraints = (ap_constraint_t *)calloc(LIST_SZ, sizeof(ap_constraint_t));
 	if (policy->constraints == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
@@ -304,7 +304,7 @@ int init_policy(policy_t **p)
 	policy->num_constraints = 0;
 
 	/* validatetrans */
-	policy->validatetrans = (ap_validatetrans_t *)malloc(sizeof(ap_validatetrans_t) * LIST_SZ);
+	policy->validatetrans = (ap_validatetrans_t *)calloc(LIST_SZ, sizeof(ap_validatetrans_t));
 	if (policy->validatetrans == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
@@ -313,7 +313,7 @@ int init_policy(policy_t **p)
 	policy->num_validatetrans = 0;
 
 	/* MLS components */
-	policy->sensitivities = (ap_mls_sens_t*)malloc(sizeof(ap_mls_sens_t) * LIST_SZ);
+	policy->sensitivities = (ap_mls_sens_t*)calloc(LIST_SZ, sizeof(ap_mls_sens_t));
 	if (policy->sensitivities == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
@@ -321,7 +321,7 @@ int init_policy(policy_t **p)
 	policy->list_sz[POL_LIST_SENSITIVITIES] = LIST_SZ;
 	policy->num_sensitivities = 0;
 
-	policy->categories = (ap_mls_cat_t*)malloc(sizeof(ap_mls_cat_t) * LIST_SZ);
+	policy->categories = (ap_mls_cat_t*)calloc(LIST_SZ, sizeof(ap_mls_cat_t));
 	if (policy->categories == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
@@ -329,7 +329,7 @@ int init_policy(policy_t **p)
 	policy->list_sz[POL_LIST_CATEGORIES] = LIST_SZ;
 	policy->num_categories = 0;
 
-	policy->levels = (ap_mls_level_t*)malloc(sizeof(ap_mls_level_t) * LIST_SZ);
+	policy->levels = (ap_mls_level_t*)calloc(LIST_SZ, sizeof(ap_mls_level_t));
 	if (policy->levels == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
@@ -337,7 +337,7 @@ int init_policy(policy_t **p)
 	policy->list_sz[POL_LIST_LEVELS] = LIST_SZ;
 	policy->num_levels = 0;
 
-	policy->rangetrans = (ap_rangetrans_t*)malloc(sizeof(ap_rangetrans_t) *LIST_SZ);
+	policy->rangetrans = (ap_rangetrans_t*)calloc(LIST_SZ, sizeof(ap_rangetrans_t));
 	if (policy->rangetrans == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
@@ -3699,6 +3699,16 @@ int add_validatetrans(bool_t is_mls, ta_item_t *classes, ap_constraint_expr_t *e
 	return 0;
 }
 
+int add_sensitivity_alias(int sens, char *alias, policy_t *policy)
+{
+	if (sens < 0 || sens >= policy->num_sensitivities || alias == NULL || policy == NULL)
+		return -1;
+
+	return add_name(alias, &(policy->sensitivities[sens].aliases));
+}
+
+/* Sensitivities do not require an order, so they are stored in the order they were
+ * added to the policy. */
 int add_sensitivity(char *name, name_item_t *aliases, policy_t *policy)
 {
 	size_t sz;
@@ -3726,26 +3736,43 @@ int add_sensitivity(char *name, name_item_t *aliases, policy_t *policy)
 	return 0;
 }
 
-int add_category(char *name, name_item_t *aliases, policy_t *policy)
+int add_category_alias(int category, char *alias, policy_t *policy)
 {
-	size_t sz;
+	if (category < 0 || category >= policy->num_categories || alias == NULL || policy == NULL)
+		return -1;
+
+	return add_name(alias, &(policy->categories[category].aliases));
+}
+
+/* Categories have to be stored in order - so the indx is the order or value of the category. 
+ * If a category already exists at the index we return -1 */
+int add_category(char *name, int idx, name_item_t *aliases, policy_t *policy)
+{
+	size_t sz, old_sz;
 	ap_mls_cat_t *new_cat = NULL;
 
-	if (!name || !policy) /* aliases == NULL is valid */
+	if (!name || !policy || idx < 0) /* aliases == NULL is valid */
 		return -1;
 
 	/* make sure there is enough room */
-	if (policy->list_sz[POL_LIST_CATEGORIES] <= policy->num_categories) {
+	while (idx > policy->list_sz[POL_LIST_CATEGORIES] - 1) {
+		old_sz = policy->list_sz[POL_LIST_CATEGORIES];
 		sz = policy->list_sz[POL_LIST_CATEGORIES] + LIST_SZ;
 		policy->categories = (ap_mls_cat_t*)realloc(policy->categories, sizeof(ap_mls_cat_t) * sz);
 		if(policy->categories == NULL) {
 			fprintf(stderr, "out of memory\n");
 			return -1;
 		}
+		memset(&(policy->categories[old_sz]), 0, (sz-old_sz) * sizeof(ap_mls_cat_t));
 		policy->list_sz[POL_LIST_CATEGORIES] = sz;
 	}
+	/* check if we have a collision */
+	if (policy->categories[idx].name != NULL) {
+		fprintf(stderr, "category name collision\n");
+		return -1;
+	}
 
-	new_cat = &(policy->categories[policy->num_categories]);
+	new_cat = &(policy->categories[idx]);
 	new_cat->name = name;
 	new_cat->aliases = aliases;
 	policy->num_categories++;

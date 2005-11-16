@@ -72,7 +72,8 @@
 #define SYM_TYPES   3
 #define SYM_USERS   4
 #define SYM_BOOLS   5
-#define SYM_LEVELS  6
+#define SYM_LEVELS  6          /* there are no levels in the symtab, libsepol has this defined anyway */
+#define SYM_SENS    SYM_LEVELS /* SYM_SENS is more accurate */
 #define SYM_CATS    7
 #define SYM_NUM     8
 

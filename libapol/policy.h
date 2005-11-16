@@ -610,7 +610,9 @@ int add_path_to_genfscon(ap_genfscon_t *genfscon, char *path, int filetype, secu
 int add_constraint(bool_t is_mls, ta_item_t *classes, ta_item_t *perms, ap_constraint_expr_t *expr, unsigned long lineno, policy_t *policy);
 int add_validatetrans(bool_t is_mls, ta_item_t *classes, ap_constraint_expr_t *expr, unsigned long lineno, policy_t *policy);
 int add_sensitivity(char *name, name_item_t *aliases, policy_t *policy);
-int add_category(char *name, name_item_t *aliases, policy_t *policy);
+int add_sensitivity_alias(int sens, char *alias, policy_t *policy);
+int add_category(char *name, int idx, name_item_t *aliases, policy_t *policy);
+int add_category_alias(int cat, char *alias, policy_t *policy);
 int add_mls_level(int sens, int *cats, int num_cats, policy_t *policy);
 av_item_t *add_new_av_rule(int rule_type, policy_t *policy);
 tt_item_t *add_new_tt_rule(int rule_type, policy_t *policy);
