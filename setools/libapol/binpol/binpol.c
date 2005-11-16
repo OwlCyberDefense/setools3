@@ -80,10 +80,101 @@ static int skip_mls_range(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int 
 	return 0;
 }
 
-static int load_range(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
+static int load_mls_range(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy, ap_mls_range_t **range)
 {
-	int nel, i;
+	__u32 *buf, nlvl;
+	ebitmap_t ebitmap;
+	ebitmap_node_t *node;
+	int rt, i, indx, sens = -1;
+
+	INTERNAL_ASSERTION
+
+	if (range == NULL) {
+		assert(FALSE);
+		return -1;
+	}
+	/* create a new range */
+	*range = (ap_mls_range_t*)malloc(sizeof(ap_mls_range_t));
+	if (*range == NULL) {
+		fprintf(stderr, "Error: Out of memory\n");
+		return -1;
+	}
+	memset(*range, 0, sizeof(ap_mls_range_t));
+
+	buf = ap_read_fbuf(fb, sizeof(__u32) * 2, fp); /* num items (1 or 2), first sensitivity */
+	if(buf == NULL) return fb->err;
+	nlvl = le32_to_cpu(buf[0]);
+
+	/* load the first level*/
+	(*range)->low = (ap_mls_level_t*)malloc(sizeof(ap_mls_level_t));
+	if ((*range)->low == NULL) {
+		fprintf(stderr, "Error: Out of memory\n");
+		return -1;
+	}
+	sens = le32_to_cpu(buf[1]);
+	(*range)->low->sensitivity = bm->sens_map[sens-1];
+	if (nlvl == 2) {
+		buf = ap_read_fbuf(fb, sizeof(__u32), fp); /* second sensitivity */
+		if (buf == NULL) return fb->err;
+	        sens = le32_to_cpu(buf[0]);
+	}
+	ebitmap_init(&ebitmap);
+	rt = ebitmap_read(fb, &ebitmap, fp);
+	if (rt < 0) return rt;
+	(*range)->low->categories = (int*)malloc(sizeof(int) * ebitmap.highbit);
+	if ((*range)->low->categories == NULL) {
+		fprintf(stderr, "Error: Out of memory\n.");
+		return -1;
+	}
+	indx = 0;
+	ebitmap_for_each_bit(&ebitmap, node, i) {
+		if (ebitmap_node_get_bit(node, i)) {
+			(*range)->low->categories[indx++] = i;
+		}
+	}
+	(*range)->low->num_categories = indx;
+	(*range)->low->categories = realloc((*range)->low->categories, sizeof(int) * (*range)->low->num_categories);
+	if (rt < 0)
+		return -1;
+	if (nlvl == 2) {
+		/* load the second level */
+		(*range)->high = (ap_mls_level_t*)malloc(sizeof(ap_mls_level_t));
+		if ((*range)->high == NULL) {
+			fprintf(stderr, "Error: Out of memory\n");
+			return -1;
+		}				
+		assert(sens != -1);
+		(*range)->high->sensitivity = bm->sens_map[sens-1];
+		ebitmap_init(&ebitmap);
+		rt = ebitmap_read(fb, &ebitmap, fp);
+		if (rt < 0) return rt;
+		(*range)->high->categories = (int*)malloc(sizeof(int) * ebitmap.highbit);
+		if ((*range)->high->categories == NULL) {
+			fprintf(stderr, "Error: Out of memory\n.");
+			return -1;
+		}
+		indx = 0;
+		ebitmap_for_each_bit(&ebitmap, node, i) {
+			if (ebitmap_node_get_bit(node, i)) {
+				(*range)->high->categories[indx++] = i;
+			}
+		}		
+		(*range)->high->num_categories = indx;
+		(*range)->high->categories = realloc((*range)->high->categories, sizeof(int) * (*range)->high->num_categories);
+	} else {
+		/* the low level is the same as the high level */
+		(*range)->high = (*range)->low;
+	}
+
+	return 0;
+}
+
+static int load_range_trans(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
+{
+	int nel, i, dom, type, idx, idx_type;
 	__u32 *buf32;
+	ap_rangetrans_t *new_rngtr = NULL;
+	ta_item_t *titem = NULL;
 
 	INTERNAL_ASSERTION
 
@@ -92,9 +183,66 @@ static int load_range(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts
 	nel = le32_to_cpu(buf32[0]);
 
 	for (i=0; i < nel; i++) {
-		buf32 = ap_read_fbuf(fb, sizeof(__u32)*2, fp); /* dom, type */
+		buf32 = ap_read_fbuf(fb, sizeof(__u32)*2, fp);
+		dom = le32_to_cpu(buf32[0]);
+		type = le32_to_cpu(buf32[1]);
+		new_rngtr = add_new_rangetrans(policy);
+		if (new_rngtr == NULL) {
+			fprintf(stderr, "could not create new range_trans rule.\n");
+			return -1;
+		}
+		new_rngtr->lineno = -1;
+		/* source */
+		titem = (ta_item_t*)malloc(sizeof(ta_item_t));
+		if (titem == NULL) {
+			fprintf(stderr, "Error: Out of memory\n");
+			return -1;
+		}
+		idx = bm->t_map[dom-1];
+		if (idx < 0) {
+			idx = bm->a_map[dom-1];
+			if (idx < 0) {
+				assert(FALSE);
+				return -1;
+			}
+			idx_type = IDX_ATTRIB;
+		} else {
+			idx_type = IDX_TYPE;
+		}
+
+		titem->idx = idx;
+		titem->type = idx_type;
+		if (insert_ta_item(titem, &(new_rngtr->src_types)) != 0) {
+			assert(FALSE);
+			return -1;
+		}
+		/* target */
+		titem = (ta_item_t*)malloc(sizeof(ta_item_t));
+		if (titem == NULL) {
+			fprintf(stderr, "Error: Out of memory\n");
+			return -1;
+		}
+		idx = bm->t_map[type-1];
+		if (!is_valid_type_idx(idx, policy)) {
+			idx = bm->a_map[type-1];
+			if (!is_valid_attrib_idx(idx, policy)) {
+				assert(FALSE);
+				return -1;
+			}
+			idx_type = IDX_ATTRIB;
+		} else {
+			idx_type = IDX_TYPE;
+		}
+
+		titem->idx = idx;
+		titem->type = idx_type;
+		if (insert_ta_item(titem, &(new_rngtr->tgt_types)) != 0) {
+			assert(FALSE);
+			return -1;
+		}
+
 		if (buf32 == NULL) return fb->err;
-		skip_mls_range(fb, fp, bm, opts, policy);
+		load_mls_range(fb, fp, bm, opts, policy, &(new_rngtr->range));
 	}
 	return 0;
 }
@@ -110,6 +258,46 @@ static int skip_mls_level(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int 
 		return fb->err;
 
 	return skip_ebitmap(fb,fp);
+}
+
+static int load_mls_level(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
+{
+	__u32 *buf;
+	ebitmap_t ebitmap;
+	ebitmap_node_t *node;
+	int sens, rt, i, indx, num_categories, *categories;
+
+	INTERNAL_ASSERTION
+
+	buf = ap_read_fbuf(fb, sizeof(__u32), fp);
+	if (buf == NULL)
+		return fb->err;
+	sens = le32_to_cpu(buf[0]);
+	/* this is where we store the sensitivity precedence information. */
+	bm->sens_map[sens-1] = policy->num_sensitivities-1;
+
+	/* read categories bitmap */
+	ebitmap_init(&ebitmap);
+	rt = ebitmap_read(fb, &ebitmap, fp);
+	if (rt < 0) return rt;
+	categories = (int*)malloc(sizeof(int) * ebitmap.highbit);
+	if (categories == NULL) {
+		fprintf(stderr, "Error: Out of memory\n.");
+		return -1;
+	}
+	indx = 0;
+	ebitmap_for_each_bit(&ebitmap, node, i) {
+		if (ebitmap_node_get_bit(node, i)) {
+			categories[indx++] = i;
+		}
+	}
+	num_categories = indx;
+	categories = realloc(categories, num_categories * sizeof(int));
+	rt = add_mls_level(bm->sens_map[sens-1], categories, num_categories, policy);
+	if (rt < 0) {
+		free(categories);
+	}
+	return rt; 
 }
 
 /*********************************************************************
@@ -367,7 +555,7 @@ static int load_class(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts
 	if(keep) { 
 		bm->cls_perm_map[val-1].map = (int *)malloc(sizeof(int) * (num_cp+nel));
 		if(bm->cls_perm_map[val-1].map == NULL) {
-			fprintf(stderr, "out of memory\n");
+			fprintf(stderr, "Error: Out of memory\n");
 			return -1;				
 		}
 		bm->cls_perm_map[val-1].num = num_cp+nel;
@@ -868,7 +1056,7 @@ static int load_role_trans(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int
 				ptr = (rt_item_t *)realloc(policy->role_trans, 
 					(LIST_SZ+policy->list_sz[POL_LIST_ROLE_TRANS]) * sizeof(rt_item_t));
 				if(ptr == NULL) {
-					fprintf(stderr, "out of memory\n");
+					fprintf(stderr, "Error: Out of memory\n");
 					return -1;
 				}
 				policy->role_trans = ptr;
@@ -880,7 +1068,7 @@ static int load_role_trans(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int
 			/* handle source role */
 			role = (ta_item_t *)malloc(sizeof(ta_item_t));
 			if(role == NULL) {
-				fprintf(stderr, "out of memory\n");
+				fprintf(stderr, "Error: Out of memory\n");
 				return -1;
 			}
 			role->type = IDX_ROLE;
@@ -893,7 +1081,7 @@ static int load_role_trans(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int
 			/* handle target type */
 			type = (ta_item_t *)malloc(sizeof(ta_item_t));
 			if(type == NULL) {
-				fprintf(stderr, "out of memory\n");
+				fprintf(stderr, "Error: Out of memory\n");
 				return -1;
 			}
 			type->type = IDX_TYPE;
@@ -969,7 +1157,7 @@ static int load_role_allow(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int
 				role_allow_t * ptr;		
 				ptr = (role_allow_t *)realloc(policy->role_allow, (LIST_SZ+policy->list_sz[POL_LIST_ROLE_ALLOW]) * sizeof(role_allow_t));
 				if(ptr == NULL) {
-					fprintf(stderr, "out of memory\n");
+					fprintf(stderr, "Error: Out of memory\n");
 					return -1;
 				}
 				policy->role_allow = ptr;
@@ -981,7 +1169,7 @@ static int load_role_allow(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int
 			/* handle source role */
 			role = (ta_item_t *)malloc(sizeof(ta_item_t));
 			if(role == NULL) {
-				fprintf(stderr, "out of memory\n");
+				fprintf(stderr, "Error: Out of memory\n");
 				return -1;
 			}
 			role->type = IDX_ROLE;
@@ -994,7 +1182,7 @@ static int load_role_allow(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int
 			/* handle target role*/
 			role = (ta_item_t *)malloc(sizeof(ta_item_t));
 			if(role == NULL) {
-				fprintf(stderr, "out of memory\n");
+				fprintf(stderr, "Error: Out of memory\n");
 				return -1;
 			}
 			role->type = IDX_ROLE;
@@ -1279,7 +1467,7 @@ static int insert_into_new_tt_item(int rule_type, int src, unsigned int src_id, 
 	/* source */
 	titem = (ta_item_t *)malloc(sizeof(ta_item_t));
 	if(titem == NULL) {
-		fprintf(stdout, "out of memory\n");
+		fprintf(stderr, "Error: Out of memory\n");
 		return -1;
 	}
 	titem->type = src_id;
@@ -1292,7 +1480,7 @@ static int insert_into_new_tt_item(int rule_type, int src, unsigned int src_id, 
 	/* target */
 	titem = (ta_item_t *)malloc(sizeof(ta_item_t));
 	if(titem == NULL) {
-		fprintf(stdout, "out of memory\n");
+		fprintf(stderr, "Error: Out of memory\n");
 		return -1;
 	}
 	titem->type = tgt_id;
@@ -1304,7 +1492,7 @@ static int insert_into_new_tt_item(int rule_type, int src, unsigned int src_id, 
 	/* class */
 	titem = (ta_item_t *)malloc(sizeof(ta_item_t));
 	if(titem == NULL) {
-		fprintf(stdout, "out of memory\n");
+		fprintf(stderr, "Error: Out of memory\n");
 		return -1;
 	}
 	titem->type = IDX_OBJ_CLASS;
@@ -1359,7 +1547,7 @@ static int insert_into_new_av_item(int rule_type, int src, unsigned int src_id, 
 	/* source */
 	titem = (ta_item_t *)malloc(sizeof(ta_item_t));
 	if(titem == NULL) {
-		fprintf(stdout, "out of memory\n");
+		fprintf(stderr, "Error: Out of memory\n");
 		return -1;
 	}
 	titem->type = src_id;
@@ -1372,7 +1560,7 @@ static int insert_into_new_av_item(int rule_type, int src, unsigned int src_id, 
 	/* target */
 	titem = (ta_item_t *)malloc(sizeof(ta_item_t));
 	if(titem == NULL) {
-		fprintf(stdout, "out of memory\n");
+		fprintf(stderr, "Error: Out of memory\n");
 		return -1;
 	}
 	titem->type = tgt_id;
@@ -1384,7 +1572,7 @@ static int insert_into_new_av_item(int rule_type, int src, unsigned int src_id, 
 	/* class */
 	titem = (ta_item_t *)malloc(sizeof(ta_item_t));
 	if(titem == NULL) {
-		fprintf(stdout, "out of memory\n");
+		fprintf(stderr, "Error: Out of memory\n");
 		return -1;
 	}
 	titem->type = IDX_OBJ_CLASS;
@@ -1421,7 +1609,7 @@ static ta_item_t *decode_perm_mask(__u32 mask, int clsidx, __u32 cval, ap_bmaps_
 			
 			t = (ta_item_t *)malloc(sizeof(ta_item_t));
 			if(t == NULL) {
-				fprintf(stderr, "out of memory \n");
+				fprintf(stderr, "Error: Out of memory \n");
 				return NULL;
 			}
 			t->type = IDX_PERM;
@@ -1773,7 +1961,7 @@ static int load_cond_list(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int 
 			if(keep) {
 				expr = malloc(sizeof(cond_expr_t));
 				if (expr == NULL) {
-					fprintf(stderr, "out of memory\n");
+					fprintf(stderr, "Error: Out of memory\n");
 					cond_free_expr(first);
 					return -1;
 				}
@@ -1800,7 +1988,7 @@ static int load_cond_list(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int 
 		if(keep) {
 			t_list = (cond_rule_list_t *)malloc(sizeof(cond_rule_list_t));
 			if(t_list == NULL) {
-				fprintf(stderr, "out of memory\n");
+				fprintf(stderr, "Error: Out of memory\n");
 				return -1;
 			}
 			memset(t_list, 0, sizeof(cond_rule_list_t));
@@ -1819,7 +2007,7 @@ static int load_cond_list(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int 
 		if(keep) {
 			f_list = (cond_rule_list_t *)malloc(sizeof(cond_rule_list_t));
 			if(f_list == NULL) {
-				fprintf(stderr, "out of memory\n");
+				fprintf(stderr, "Error: Out of memory\n");
 				return -1;
 			}
 			memset(f_list, 0, sizeof(cond_rule_list_t));
@@ -1850,49 +2038,85 @@ static int load_cond_list(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int 
 	return 0;
 }
 
-static int skip_mls_sens(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
+static int load_mls_sens(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
 {
 	/* see sens_read() */
-	__u32 *buf, len;
+	__u32 *buf, len, isalias;
+	int rt;
+	char *name = NULL;
 
 	INTERNAL_ASSERTION
 	
 	buf = ap_read_fbuf(fb, sizeof(__u32)*2, fp); 
 	if(buf == NULL)	return fb->err;
-	/* buf[0] len
-	 * buf[1] isalias
-	 */
-	
-	/* name */
-	len = le32_to_cpu(buf[0]);
-	if(fseek(fp, len, SEEK_CUR) != 0)  
-			 return -3;
-	
-	buf = ap_read_fbuf(fb, sizeof(__u32), fp);
 
-	/* ebitmap */
-	return skip_ebitmap(fb, fp);
+	len = le32_to_cpu(buf[0]);
+	isalias = le32_to_cpu(buf[1]);
+
+	/* name */
+	buf = ap_read_fbuf(fb, len, fp);
+	if (buf == NULL) return fb->err;
+	name = (char*)malloc(len+1);
+	if (name == NULL) {
+		fprintf(stderr, "Error: Out of memory\n");
+		return -1;
+	}
+	memcpy(name, buf, len);
+	name[len] = 0;
+
+	if (isalias) {
+		rt = add_sensitivity_alias(policy->num_sensitivities-1, name, policy);
+		if (rt < 0) goto err;
+		skip_mls_level(fb, fp, bm, opts, policy);
+	} else {
+		rt = add_sensitivity(name, NULL, policy); /* no aliases */
+		if (rt < 0) goto err;
+		load_mls_level(fb, fp, bm, opts, policy);
+	}
+
+	return 0;
+err:
+	free(name);
+	return rt;
 }
 
-static int skip_mls_cats(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
+static int load_mls_cats(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
 {
 	/* see cat_read() */
 	__u32 *buf, len;
+	int isalias, val, rt;
+	char *name;
 
 	INTERNAL_ASSERTION
 	
 	buf = ap_read_fbuf(fb, sizeof(__u32)*3, fp); 
 	if(buf == NULL)	return fb->err;
-	/* buf[0] len
-	 * buf[1] val 
-	 * buf[2] isalias
-	  */
-	 len = le32_to_cpu(buf[0]);
-	
-	if(fseek(fp, len, SEEK_CUR) != 0)  
-			 return -3;
+	len = le32_to_cpu(buf[0]);
+	val = le32_to_cpu(buf[1]);
+	isalias = le32_to_cpu(buf[2]);
 
+	/* name */
+	buf = ap_read_fbuf(fb, len, fp);
+	if (buf == NULL) return fb->err;
+	name = (char*)malloc(len);
+	if (name == NULL) {
+		fprintf(stderr, "Error: Out of memory\n");
+		return -1;
+	}
+	memcpy(name, buf, len);
+	name[len] = 0;
+	
+	if (isalias) {
+		rt = add_category_alias(val-1, name, policy);
+		if (rt < 0) goto err;
+	} else {
+		rt = add_category(name, val-1, NULL, policy); /* no aliases */
+		if (rt < 0) goto err;
+	}
 	return 0;
+err:
+	free(name);
+	return rt;
 }
 
 /* main policy load function */
@@ -2090,11 +2314,18 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 			}
 			bm->bool_num = nprim;
 			break;
-		case SYM_LEVELS:	/* MLS sensitivities */
-		case SYM_CATS:		/* MLS categories */
-			/* we don't save any MLS stuff yet */
+		case SYM_SENS:		/* MLS Sensitivities */
+			bm->sens_map = (int *)malloc(sizeof(int) * nprim);
+			if (bm->sens_map == NULL) {
+				rt = -1;
+				goto err_return;
+			}
+			bm->sens_num = nprim;
+			break;
+		case SYM_CATS:		/* MLS Categories */
 			break;
 		default:	/* shouldn't get here */
+			assert(FALSE);
 			rt = -1; 
 			goto err_return;
 			break;
@@ -2126,12 +2357,12 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 				rt = load_bool(fb, fp, bm, opts, policy);
 				if(rt < 0 && rt != LOAD_SUCCESS_NO_SAVE) goto err_return;
 				break;
-			case SYM_LEVELS:	/* MLS levels */
-				rt = skip_mls_sens(fb, fp, bm, opts, policy);
-				if(rt < 0) return rt;
+			case SYM_SENS:		/* MLS sensitivies */
+				rt = load_mls_sens(fb, fp, bm, opts, policy);
+				if(rt < 0) goto err_return;
 				break;
 			case SYM_CATS:		/* MLS categories */
-				rt = skip_mls_cats(fb, fp, bm, opts, policy);
+				rt = load_mls_cats(fb, fp, bm, opts, policy);
 				if(rt < 0) goto err_return;
 				break;
 			default:	/* shouldn't get here */
@@ -2188,12 +2419,12 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 	}
 	
 	/* role trans */
-	rt =load_role_trans(fb, fp, bm, opts, policy);
+	rt = load_role_trans(fb, fp, bm, opts, policy);
 	if(rt != 0) 
 		return rt;
 
 	/* role allow */
-	rt =load_role_allow(fb, fp, bm, opts, policy);
+	rt = load_role_allow(fb, fp, bm, opts, policy);
 	if(rt != 0) 
 		return rt;
 
@@ -2240,18 +2471,32 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 		if (rt < 0) return fb->err;
 	}
 
-	/* mls range */
+	/* mls range_trans */
 	if (policy->version >= POL_VER_19) {
-		rt = load_range(fb, fp, bm, opts, policy);
+		rt = load_range_trans(fb, fp, bm, opts, policy);
 		if (rt < 0) return fb->err;
 	}
 
+	/* store the dominance */
+	if (policy->version >= POL_VER_19) {
+		policy->mls_dominance = (int*)malloc(policy->num_sensitivities * sizeof(int));
+		if (!policy->mls_dominance) {
+			fprintf(stderr, "Error: Out of memory\n");
+			return -1;
+		}
+		/* we already loaded the sensitivies */
+		assert(policy->num_sensitivities == bm->sens_num);
+		for (i = 0; i < bm->sens_num; i++) {
+			policy->mls_dominance[i] = bm->sens_map[i];
+		}
+	}
+	
 	/* type_attr_map */
 	if (policy->version >= POL_VER_20) { 
 		rt = load_type_attr_map(fb, fp, bm, opts, policy);
 		if (rt < 0) { return fb->err; }
 	}
-
+	
 	rt = 0;
 err_return:
 	ap_free_fbuf(&fb); 
@@ -2285,8 +2530,6 @@ int ap_read_binpol_file(FILE *fp, unsigned int options, policy_t *policy)
 	
 	return rt;
 }
-
-
 
 /* checks whether provided file is a binary policy file.
  * will return the file rewounded */

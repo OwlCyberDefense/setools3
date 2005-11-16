@@ -3183,7 +3183,7 @@ static int define_category(void)
 		}
 	}
 
-	rt = add_category(name, aliases, parse_policy);
+	rt = add_category(name, parse_policy->num_categories, aliases, parse_policy);
 	if (rt) {
 		free(name);
 		free_name_list(aliases);
