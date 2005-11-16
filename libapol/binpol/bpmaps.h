@@ -49,6 +49,8 @@ typedef struct bpmaps {
 	int	u_num;
 	int	*bool_map;	/* conditional booleans */
 	int	bool_num;
+	int	sens_num;	/* number of MLS sensitivies */
+	int	*sens_map;
 } ap_bmaps_t;
 
 ap_bmaps_t *ap_new_bmaps(void);
