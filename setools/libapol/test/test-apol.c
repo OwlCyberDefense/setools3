@@ -1703,7 +1703,7 @@ void test_print_mls(policy_t *policy)
 	
 	printf("\nRange Transitions:\n");
 	for (i = 0; i < policy->num_rangetrans; i++)
-		printf("\t%s\n", re_render_rangetrans(is_binary_policy(policy), i, policy));
+		printf("\t%s\n", re_render_rangetrans(!is_binary_policy(policy), i, policy));
 }
 
 int check_for_duplicate_object(int *classes, int num_objs, int obj_class)

@@ -130,7 +130,8 @@ void ap_free_bmaps(ap_bmaps_t *bm)
 		free(bm->u_map);
 	if(bm->bool_map != NULL)
 		free(bm->bool_map); 
-		
+	if(bm->sens_map != NULL)
+		free(bm->sens_map);
 	free(bm);
 	return;
 }
