@@ -55,7 +55,9 @@ typedef struct sediff_app {
 	struct sediff_rename_types *rename_types_window; /* the renamed types window reference */
 	struct sediff_find_window *find_window;          /* the find window reference */
 	policy_t *p1;                     /* the policy 1 struct */
-	policy_t *p2;                     /* the policy 2 struct */
+	policy_t *p2;                     /* the policy 2 struct */      
+	int tv_buf_offsets[OPT_NUM_DIFF_NODES];   /* the line offsets used for remembering position in treeview buffers */
+	int tv_curr_buf;         /* the buffer currently displayed for the treeview */
 } sediff_app_t;
 
 /* return the textview currently displayed to the user */
