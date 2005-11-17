@@ -1901,6 +1901,19 @@ static void sediff_results_txt_view_switch_buffer(GtkTextView *textview,gint opt
 	GString *string = g_string_new("");
 	int rt;
 	GtkWidget *widget = NULL;
+	GtkTextIter iter;
+	GtkTextMark *mark;
+	GtkTextBuffer *txt;
+	GdkRectangle rect;
+
+	/* Save position in this buffer 
+	   you must use an offset because an x/y coord is does not stay true
+	   across clears and redraws */
+	gtk_text_view_get_visible_rect(textview, &rect);
+	gtk_text_view_get_iter_at_location(textview, &iter, rect.x,
+					   rect.y);
+	sediff_app->tv_buf_offsets[sediff_app->tv_curr_buf] = gtk_text_iter_get_offset(&iter);
+
 
 	attr = gtk_text_view_get_default_attributes(textview);
 	if (attr->font != NULL) {
@@ -2459,6 +2472,18 @@ static void sediff_results_txt_view_switch_buffer(GtkTextView *textview,gint opt
 			fprintf(stderr, "Invalid list item %d!", option);
 			break;
 		};
+
+		/* go back to our previous location if we had one 
+		   must use marks to ensure that we go to this position even if
+		   it hasn't been drawn
+		 */
+		txt = gtk_text_view_get_buffer(textview);
+		gtk_text_buffer_get_start_iter(txt, &iter);
+		gtk_text_iter_set_offset(&iter, sediff_app->tv_buf_offsets[option]);
+		mark = gtk_text_buffer_create_mark(txt, "location-mark", &iter, FALSE);
+		gtk_text_view_scroll_to_mark(textview, mark, 0.0, TRUE, 0.0, 0.0);			
+		gtk_text_buffer_delete_mark(txt, mark);
+		sediff_app->tv_curr_buf = option;
 	}
 }
 
@@ -3521,7 +3546,7 @@ gboolean sediff_textview_button_event(GtkWidget *widget,
 }
 /* this function resets the treemodel, recreates our stored buffers
    (this is faster than clearing them), clears out the keys, and results
-   textviews and resets the diff pointer itself */
+   textviews, resets the indexes into diff buffers, and resets the diff pointer itself */
 static void sediff_initialize_diff()
 {
 	GtkTextView *textview;
@@ -3530,6 +3555,7 @@ static void sediff_initialize_diff()
 	GtkLabel *label = NULL;
 	GtkTreeSelection *selection = NULL;
 	GtkWidget *widget;
+	int i;
 	
 	if (sediff_app->tree_view) {
 		/* unselect the selected items */
@@ -3583,6 +3609,10 @@ static void sediff_initialize_diff()
 
 	label = (GtkLabel *)(glade_xml_get_widget(sediff_app->window_xml, "label_stats"));
 	gtk_label_set_text(label, "");
+
+	for (i = 0; i < OPT_NUM_DIFF_NODES; i++)
+		sediff_app->tv_buf_offsets[i] = 0;
+	sediff_app->tv_curr_buf = OPT_SUMMARY;
 
 	/* clear out the svd if we need to */
 	if (sediff_app->svd != NULL) {
