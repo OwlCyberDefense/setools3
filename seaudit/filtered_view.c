@@ -52,11 +52,11 @@ void seaudit_filtered_view_destroy(seaudit_filtered_view_t *view)
 	g_string_free(view->name, TRUE);
 }
 
-void seaudit_filtered_view_display(seaudit_filtered_view_t* filtered_view)
+void seaudit_filtered_view_display(seaudit_filtered_view_t* filtered_view, GtkWindow *parent)
 {
 	if(!filtered_view)
 		return;
-	multifilter_window_display(filtered_view->multifilter_window);
+	multifilter_window_display(filtered_view->multifilter_window, parent);
 }
 
 void seaudit_filtered_view_set_log(seaudit_filtered_view_t *view, audit_log_t *log)
@@ -71,7 +71,7 @@ void seaudit_filtered_view_save_view(seaudit_filtered_view_t* filtered_view, gbo
 {
 	if (!filtered_view)
 		return;
-	multifilter_window_save_multifilter(filtered_view->multifilter_window, saveas);
+	multifilter_window_save_multifilter(filtered_view->multifilter_window, saveas, FALSE);
 }
 
 void seaudit_filtered_view_set_multifilter_window(seaudit_filtered_view_t *filtered_view, multifilter_window_t *window)

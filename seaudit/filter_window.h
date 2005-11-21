@@ -51,7 +51,7 @@ typedef struct filter_window {
  ***************************/
 filter_window_t* filter_window_create(multifilter_window_t *parent, gint parent_index, const char *name);
 void filter_window_destroy(filter_window_t* filter_window);
-void filter_window_display(filter_window_t* filter_window);
+void filter_window_display(filter_window_t* filter_window, GtkWindow *parent);
 void filter_window_hide(filter_window_t *filter_window);
 seaudit_filter_t* filter_window_get_filter(filter_window_t *filter_window);
 void filter_window_set_values_from_filter(filter_window_t *filter_window, seaudit_filter_t *filter);

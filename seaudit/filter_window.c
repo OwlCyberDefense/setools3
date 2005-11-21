@@ -740,7 +740,7 @@ static filters_select_items_t* filters_select_items_create(filter_window_t *pare
 	return item;
 }
 
-static void filters_select_items_display(filters_select_items_t *filter_items_list)
+static void filters_select_items_display(filters_select_items_t *filter_items_list, GtkWindow *parent)
 {
 	GladeXML *xml;
 	GtkTreeView *include_tree, *exclude_tree;
@@ -772,7 +772,12 @@ static void filters_select_items_display(filters_select_items_t *filter_items_li
 
 	/* Set this new dialog transient for the parent filters dialog so that
 	 * it will be destroyed when the parent filters dialog is destroyed */
-	gtk_window_set_transient_for(window, filter_items_list->parent->window);
+	/* set this window to be transient on the parent window, so that when it pops up it gets centered on it */
+	/* however to have it "appear" to be centered we have to hide and then show */
+	gtk_window_set_transient_for(window, parent);
+	gtk_window_set_position(window, GTK_WIN_POS_CENTER_ON_PARENT);
+	gtk_widget_hide(GTK_WIDGET(window));
+	gtk_window_present(window);
 	gtk_window_set_destroy_with_parent(window, FALSE);
 	    
 	if (!seaudit_app->cur_policy) {
@@ -1155,7 +1160,7 @@ static void filter_window_on_custom_clicked(GtkButton *button, filters_select_it
 	}
 	/* add anything from the entry to the list stores */
 	filters_select_items_parse_entry(filter_items_list);
-	filters_select_items_display(filter_items_list);
+	filters_select_items_display(filter_items_list, seaudit_app->window->window);
 }
 
 static void filter_window_on_close_button_pressed(GtkButton *button, filter_window_t *filter_window)
@@ -1321,7 +1326,7 @@ void filter_window_hide(filter_window_t *filter_window)
 	filter_window->window = NULL;
 }
 
-void filter_window_display(filter_window_t* filter_window)
+void filter_window_display(filter_window_t* filter_window, GtkWindow *parent)
 {
 	GladeXML *xml;
 	GtkWindow *window;
@@ -1329,7 +1334,7 @@ void filter_window_display(filter_window_t* filter_window)
 	GString *path;
 	char *dir;
 
-	if (!filter_window)
+	if (!filter_window || !parent)
 		return;
 
 	if (filter_window->window) {
@@ -1350,6 +1355,13 @@ void filter_window_display(filter_window_t* filter_window)
 	
 	window = GTK_WINDOW(glade_xml_get_widget(xml, "FilterWindow"));
 	g_assert(window);
+	/* set this window to be transient on the parent window, so that when it pops up it gets centered on it */
+	/* however to have it "appear" to be centered we have to hide and then show */
+	gtk_window_set_transient_for(window, parent);
+	gtk_window_set_position(window,GTK_WIN_POS_CENTER_ON_PARENT);
+	gtk_widget_hide(GTK_WIDGET(window));
+	gtk_window_present(window);
+
 		
 	filter_window->window = window;
 	filter_window->xml = xml;
