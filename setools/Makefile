@@ -264,34 +264,6 @@ install-libseaudit-policy: $(SHARED_LIB_INSTALL_DIR)
 install-libsefs-policy: $(SHARED_LIB_INSTALL_DIR)
 	$(MAKE) -C libsefs install-policy
 
-# Tests
-tests: test-apol test-seaudit test-regression
-
-test-apol: libapol
-	$(MAKE) -C libapol/test $@
-
-test-seaudit: libapol libseaudit
-	$(MAKE) -C libseaudit/test $@
-
-test-regression: libapol
-	$(MAKE) -C test all
-
-test-regression-run: libapol
-	$(MAKE) -C test all run
-
-ifeq (USE_LIBSEFS, 1)
-test-apol test-regression test-regression-run: libsefs
-endif
-
-test-clean:
-	$(MAKE) -C libapol/test clean
-	$(MAKE) -C libseaudit/test clean
-	$(MAKE) -C test clean
-
-test-bare:
-	$(MAKE) -C libapol/test bare
-	$(MAKE) -C libseaudit/test bare
-	$(MAKE) -C test bare
 # Help 
 help:
 	@echo "Make targets for setools: "
@@ -329,7 +301,7 @@ help:
 
 
 # Other Targets
-clean: test-clean
+clean:
 	$(MAKE) -C apol $@
 	$(MAKE) -C awish $@
 	$(MAKE) -C libapol $@
@@ -342,7 +314,7 @@ clean: test-clean
 	rm -f *~
 	rm -f lib/*.a lib/*.so lib/*.so.1
 
-bare: test-bare
+bare:
 	$(MAKE) -C apol $@
 	$(MAKE) -C awish $@
 	$(MAKE) -C libapol $@
@@ -359,6 +331,6 @@ bare: test-bare
 remove-docs:
 	$(MAKE) -C docs-src $@
 
-.PHONY: clean bare test-clean test-bare help\
+.PHONY: clean bare help\
         libapol libapol-tcl libseaudit libsefs
 
