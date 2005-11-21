@@ -29,7 +29,7 @@ typedef struct seaudit_filtered_view {
 seaudit_filtered_view_t* seaudit_filtered_view_create(audit_log_t *log, GtkTreeView *tree_view, const char *view_name);
 void seaudit_filtered_view_destroy(seaudit_filtered_view_t *view);
 void seaudit_filtered_view_set_log(seaudit_filtered_view_t *view, audit_log_t *log);
-void seaudit_filtered_view_display(seaudit_filtered_view_t* filters_view);
+void seaudit_filtered_view_display(seaudit_filtered_view_t* filters_view, GtkWindow *parent);
 void seaudit_filtered_view_save_view(seaudit_filtered_view_t* filtered_view, gboolean saveas);
 void seaudit_filtered_view_set_notebook_index(seaudit_filtered_view_t *filtered_view, gint index);
 void seaudit_filtered_view_set_multifilter_window(seaudit_filtered_view_t *filtered_view, multifilter_window_t *window);
