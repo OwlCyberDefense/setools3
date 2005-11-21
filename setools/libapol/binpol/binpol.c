@@ -1441,13 +1441,12 @@ static int load_ocon_node(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int 
 		if (rt < 0) return fb->err;
 
 		if (keep) {
-			printf("adding nodecon\n");
 			rt = add_nodecon(AP_IPV4, addr, mask, context, policy);
 			if (rt == 0)
 				continue;
-			printf("added\n");
+			else
+				fprintf(stderr, "Error: failed to add nodecon");
 		}
-		printf("didn't add\n");
 		security_con_destroy(context);
 	}
 	return 0;
