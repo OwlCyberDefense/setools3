@@ -599,6 +599,12 @@ int query_window_create(int *tree_item_idx)
 	g_string_free(path, TRUE);
 	window = GTK_WINDOW(glade_xml_get_widget(xml, "query_window"));
 	g_assert(window);
+	/* set this window to be transient on the main window, so that when it pops up it gets centered on it */
+	/* however to have it "appear" to be we have to hide and then show */
+	gtk_window_set_transient_for(window, seaudit_app->window->window);
+	gtk_window_set_position(window, GTK_WIN_POS_CENTER_ON_PARENT);
+	gtk_widget_hide(GTK_WIDGET(window));
+	gtk_window_present(window);
 		
 	/* connect functions to display selection as regular expression */
 	combo = glade_xml_get_widget(xml, "src_combo");

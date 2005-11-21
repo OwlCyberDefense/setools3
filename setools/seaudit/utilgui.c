@@ -56,7 +56,7 @@ void clear_wait_cursor(GtkWidget *widget)
 	g_idle_add(&pointer_reset, widget);
 }
 
-GString* get_filename_from_user(const char *title, const gchar *startfilename)
+GString* get_filename_from_user(const char *title, const gchar *startfilename, GtkWindow *window)
 {
 	GtkWidget *file_selector = NULL;
 	gint response, overwrite;
@@ -64,6 +64,10 @@ GString* get_filename_from_user(const char *title, const gchar *startfilename)
 	GString *overwrite_warning = NULL;
 
 	file_selector = gtk_file_selection_new(title);
+	if (window)
+		/* set this window to be transient window, so that when it pops up it gets centered on it */
+		gtk_window_set_transient_for(GTK_WINDOW(file_selector), window);
+	
 	if (startfilename)
 		gtk_file_selection_set_filename(GTK_FILE_SELECTION(file_selector), startfilename);
 

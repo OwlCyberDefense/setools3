@@ -471,9 +471,19 @@ static void display_browse_dialog_for_entry_box(GtkEntry *entry, const char *fil
 	GtkWidget *file_selector;
 	gint response;
 	const gchar *filename;
+	GtkWidget *window;
 
 	g_assert(entry);
 	file_selector = gtk_file_selection_new(title);
+	
+	/* get the top level widget, which of this widget is the prefer window */
+	window = GTK_WIDGET(entry);
+	while (gtk_widget_get_parent(window))
+		window = gtk_widget_get_parent(window);;
+	assert(window);
+
+	/* set the file selector window to be transient on the preference window, so that when it pops up it gets centered on it */
+	gtk_window_set_transient_for(GTK_WINDOW(file_selector), GTK_WINDOW(window));
 	gtk_file_selection_hide_fileop_buttons(GTK_FILE_SELECTION(file_selector));
 	if (file_path != NULL)
 		gtk_file_selection_complete(GTK_FILE_SELECTION(file_selector), gtk_entry_get_text(entry));
@@ -635,6 +645,12 @@ void on_preferences_activate(GtkWidget *widget, GdkEvent *event, gpointer callba
 	g_string_free(path, TRUE);
 	window = glade_xml_get_widget(xml, "PreferWindow");
 	g_assert(window);
+	/* set this window to be transient on the main window, so that when it pops up it gets centered on it */
+	/* however to have it "appear" to be centered on xml_new we have to hide and then show */
+	gtk_window_set_transient_for(GTK_WINDOW(window), seaudit_app->window->window);
+	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER_ON_PARENT);
+	gtk_widget_hide(GTK_WIDGET(window));
+	gtk_window_present(GTK_WINDOW(window));
 	
 	entry = GTK_ENTRY(glade_xml_get_widget(xml, "interval_lbl"));
 	g_assert(entry);
