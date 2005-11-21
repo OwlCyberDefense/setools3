@@ -22,6 +22,7 @@
 #include "../util.h"
 #include <assert.h>
 #include <stdio.h>
+#include <netinet/in.h>
 
 #define INTERNAL_ASSERTION assert(fp != NULL && policy != NULL && bm != NULL && fb != NULL && !(fb->buf == NULL && fb->sz > 0));
 
@@ -455,7 +456,7 @@ static int load_common_perm(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned in
 	if(kbuf == NULL) return fb->err;
 	
 	if(keep) {
-		key = (char *)malloc(len + 1);
+		key = (char *)malloc(sizeof(char)*(len+1));
 		if(key == NULL) return -1;
 		memcpy(key, kbuf, len);
 		key[len] = '\0';
@@ -517,7 +518,7 @@ static int load_class(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts
 	if(kbuf == NULL) return fb->err;
 	
 	if(keep) {
-		key = (char *)malloc(len + 1);
+		key = (char *)malloc(sizeof(char)*(len+1));
 		if(key == NULL) return -1;
 		memcpy(key, kbuf, len);
 		key[len] = '\0';
@@ -681,7 +682,7 @@ static int load_role(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts,
 	kbuf = ap_read_fbuf(fb, len, fp);
 	if(kbuf == NULL) return fb->err;
 	if(keep) {
-		key = (char *)malloc(len + 1);
+		key = (char *)malloc(sizeof(char)*(len+1));
 		if(key == NULL) return -1;
 		memcpy(key, kbuf, len);
 		key[len] = '\0';
@@ -745,7 +746,7 @@ static int load_type(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts,
 	kbuf = ap_read_fbuf(fb, len, fp);
 	if(kbuf == NULL) return fb->err;
 	if(keep) {
-		key = (char *)malloc(len + 1);
+		key = (char *)malloc(sizeof(char)*(len+1));
 		if(key == NULL) return -1;
 		memcpy(key, kbuf, len);
 		key[len] = '\0';
@@ -906,7 +907,7 @@ static int load_user(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts,
 	kbuf = ap_read_fbuf(fb, len, fp);
 	if(kbuf == NULL) return fb->err;
 	if(keep) {
-		key = (char *)malloc(len + 1);
+		key = (char *)malloc(sizeof(char)*(len+1));
 		if(key == NULL) return -1;
 		memcpy(key, kbuf, len);
 		key[len] = '\0';
@@ -973,7 +974,7 @@ static int load_bool(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts,
 	buf = ap_read_fbuf(fb, len, fp);
 	if(buf == NULL) return fb->err;
 	if(keep) {
-		key = (char *)malloc(len + 1);
+		key = (char *)malloc(sizeof(char)*(len+1));
 		if(key == NULL) return -1;
 		memcpy(key, buf, len);
 		key[len] = '\0';
@@ -1200,19 +1201,50 @@ static int load_role_allow(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int
 	return 0;
 }
 
-static int load_security_context(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
+static int load_security_context(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy, security_con_t **context)
 {
-	int rt;
+	int rt, user, role, type;
 	__u32 *buf32;
 
+	INTERNAL_ASSERTION
+
+	if (context == NULL) {
+		assert(FALSE);
+		return -1;
+	}
+	*context = (security_con_t*)malloc(sizeof(security_con_t));
+	if (*context == NULL) {
+		fprintf(stderr, "Error: Out of memory.\n");
+		return -1;
+	}
+	memset(*context, 0, sizeof(security_con_t));
 	buf32 = ap_read_fbuf(fb, sizeof(__u32)*3, fp); /* user, role, type */
-	if (buf32 == NULL) return fb->err;
+	if (buf32 == NULL) {
+		rt = fb->err;
+		goto err;
+	}
+	user = le32_to_cpu(buf32[0]);
+	role = le32_to_cpu(buf32[1]);
+	type = le32_to_cpu(buf32[2]);
+
+	(*context)->user = bm->u_map[user-1];
+	(*context)->role = bm->r_map[role-1];
+	(*context)->type = bm->t_map[type-1];
 
 	if (policy->version >= POL_VER_19) {
-		rt = skip_mls_range(fb, fp, bm, opts, policy);
-		if (rt < 0) return fb->err;
+		rt = load_mls_range(fb, fp, bm, opts, policy, &((*context)->range));
+		assert((*context)->range->low);
+		if (rt < 0) goto err;
 	}
 	return 0;
+err:
+	if (*context) {
+		if ((*context)->range)
+			ap_mls_range_free((*context)->range);
+		free(*context);
+		*context = NULL;
+	}
+	return rt;
 }
 
 static int load_initial_sids(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
@@ -1220,6 +1252,7 @@ static int load_initial_sids(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned i
 	bool_t keep = FALSE;
 	int nel, i, rt;
 	__u32 *buf32;
+	security_con_t *context;
 
 	INTERNAL_ASSERTION
 	
@@ -1239,7 +1272,7 @@ static int load_initial_sids(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned i
 		buf32 = ap_read_fbuf(fb, sizeof(__u32), fp);   /* sid */
 		if (buf32 == NULL) return fb->err;
 
-		rt = load_security_context(fb, fp, bm, opts, policy);
+		rt = load_security_context(fb, fp, bm, opts, policy, &context);
 		if (rt < 0) return fb->err;
 	}
 	return 0;
@@ -1250,10 +1283,63 @@ static int load_ocon_netif(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int
 	bool_t keep = FALSE;
 	int nel, len, i, rt;
 	__u32 *buf32;
+	security_con_t *devcon = NULL, *pktcon = NULL;
+	char *iface = NULL;
 
 	INTERNAL_ASSERTION
 	
-	if (opts & POLOPT_OTHER)
+	if (opts & POLOPT_OCONTEXT)
+		keep = TRUE;
+	
+	buf32 = ap_read_fbuf(fb, sizeof(__u32), fp);
+	if(buf32 == NULL) return fb->err;
+	nel = le32_to_cpu(buf32[0]);
+
+	for (i=0; i < nel; i++) {
+		buf32 = ap_read_fbuf(fb, sizeof(__u32), fp);
+		if(buf32 == NULL) return fb->err;
+		len = le32_to_cpu(buf32[0]);
+
+		buf32 = ap_read_fbuf(fb, len, fp); /* interface name */
+		if (buf32 == NULL) return fb->err;
+
+		iface = malloc(sizeof(char) * (len+1));
+		memcpy(iface, buf32, len);
+		iface[len] = '\0';
+		
+		rt = load_security_context(fb, fp, bm, opts, policy, &devcon); /* device context */
+		if (rt < 0) return fb->err;
+
+		rt = load_security_context(fb, fp, bm, opts, policy, &pktcon); /* packed context */
+		if (rt < 0) return fb->err;
+		
+		if (keep) {
+			rt = add_netifcon(iface, devcon, pktcon, policy);
+			if (rt == 0) 
+				continue;
+			else
+				fprintf(stderr, "Error: failed to add netifcon for %s.\n", iface);
+		}
+		security_con_destroy(devcon); 
+		devcon = NULL;
+		security_con_destroy(pktcon); 
+		pktcon = NULL;
+		free(iface); 
+		iface = NULL;
+	}
+	return 0;
+}
+
+static int skip_ocon_fs(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
+{
+	bool_t keep = FALSE;
+	int nel, len, i, rt;
+	__u32 *buf32;
+	security_con_t *devcon, *pktcon;
+
+	INTERNAL_ASSERTION
+	
+	if (opts & POLOPT_OCONTEXT)
 		keep = TRUE;
 	
 	buf32 = ap_read_fbuf(fb, sizeof(__u32), fp);
@@ -1267,38 +1353,28 @@ static int load_ocon_netif(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int
 
 		buf32 = ap_read_fbuf(fb, len, fp); /* name */
 		if (buf32 == NULL) return fb->err;
-		
-		rt = load_security_context(fb, fp, bm, opts, policy); /* context[0] */
-		if (rt < 0) return fb->err;
 
-		rt = load_security_context(fb, fp, bm, opts, policy); /* context[1] */
+		rt = load_security_context(fb, fp, bm, opts, policy, &devcon); /* context 1 */
 		if (rt < 0) return fb->err;
+		security_con_destroy(devcon);
+		rt = load_security_context(fb, fp, bm, opts, policy, &pktcon); /* context 2 */
+		if (rt < 0) return fb->err;
+		security_con_destroy(pktcon);
 	}
 	
 	return 0;
 }
 
-static int load_ocon_fs(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
-{
-	bool_t keep = FALSE;
-	
-	INTERNAL_ASSERTION
-	
-	if (opts & POLOPT_OTHER)
-		keep = TRUE;
-	
-	return load_ocon_netif(fb, fp, bm, opts, policy);
-}
-
 static int load_ocon_port(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
 {
 	bool_t keep = FALSE;
-	int nel, i, rt;
+	int nel, i, rt, proto, lowport, highport;
 	__u32 *buf32;
+	security_con_t *context;
 
 	INTERNAL_ASSERTION
 	
-	if (opts & POLOPT_OTHER)
+	if (opts & POLOPT_OCONTEXT)
 		keep = TRUE;
 
 	buf32 = ap_read_fbuf(fb, sizeof(__u32), fp);
@@ -1308,9 +1384,28 @@ static int load_ocon_port(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int 
 	for (i=0; i < nel; i++) {
 		buf32 = ap_read_fbuf(fb, sizeof(__u32)*3, fp); /* protocol, low_port, high_port */
 		if (buf32 == NULL) return fb->err;
+
+		proto = le32_to_cpu(buf32[0]);
+		lowport = le32_to_cpu(buf32[1]);
+		highport = le32_to_cpu(buf32[2]);
+
+		if (proto != AP_TCP_PROTO && proto != AP_UDP_PROTO && proto != AP_ESP_PROTO) {
+			assert(FALSE);
+			return -1;
+		}
 		
-		rt = load_security_context(fb, fp, bm, opts, policy);
+		rt = load_security_context(fb, fp, bm, opts, policy, &context);
 		if (rt < 0) return fb->err;
+
+		if (keep) {
+			rt = add_portcon(proto, lowport, highport, context, policy);
+			if (rt == 0)
+				continue;
+			else
+				fprintf(stderr, "Error: failed to add portcon for (%i-%i)\n", lowport, highport);
+		}
+		security_con_destroy(context);
+		context = NULL;
 	}
 
 	return 0;
@@ -1321,10 +1416,12 @@ static int load_ocon_node(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int 
 	bool_t keep = FALSE;
 	int nel, i, rt;
 	__u32 *buf32;
+	security_con_t *context;
+	uint32_t mask[4], addr[4];
 	
 	INTERNAL_ASSERTION
-	
-	if (opts & POLOPT_OTHER)
+
+	if (opts & POLOPT_OCONTEXT)
 		keep = TRUE;
 	
 	buf32 = ap_read_fbuf(fb, sizeof(__u32), fp);
@@ -1335,8 +1432,23 @@ static int load_ocon_node(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int 
 		buf32 = ap_read_fbuf(fb, sizeof(__u32)*2, fp); /* addr, mask */
 		if (buf32 == NULL) return fb->err;
 
-		rt = load_security_context(fb, fp, bm, opts, policy);
+		addr[3] = ntohl(le32_to_cpu(buf32[0]));
+		addr[2] = addr[1] = addr[0] = 0;
+		mask[3] = ntohl(le32_to_cpu(buf32[1]));
+		mask[2] = mask[1] = mask[0] = 0;
+
+		rt = load_security_context(fb, fp, bm, opts, policy, &context);
 		if (rt < 0) return fb->err;
+
+		if (keep) {
+			printf("adding nodecon\n");
+			rt = add_nodecon(AP_IPV4, addr, mask, context, policy);
+			if (rt == 0)
+				continue;
+			printf("added\n");
+		}
+		printf("didn't add\n");
+		security_con_destroy(context);
 	}
 	return 0;
 }
@@ -1344,12 +1456,14 @@ static int load_ocon_node(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int 
 static int load_ocon_fsuse(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
 {
 	bool_t keep = FALSE;
-	int nel, len, i, rt;
+	int nel, len, i, rt, behav;
 	__u32 *buf32;
+	security_con_t *context;
+	char *fstype;
 	
 	INTERNAL_ASSERTION
 	
-	if (opts & POLOPT_OTHER)
+	if (opts & POLOPT_OCONTEXT)
 		keep = TRUE;
 	
 	buf32 = ap_read_fbuf(fb, sizeof(__u32), fp);
@@ -1359,13 +1473,35 @@ static int load_ocon_fsuse(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int
 	for (i=0; i < nel; i++) {
 		buf32 = ap_read_fbuf(fb, sizeof(__u32)*2, fp); /* behavior, len */
 		if (buf32 == NULL) return fb->err;
+		behav = le32_to_cpu(buf32[0]);
+		if (behav != AP_FS_USE_PSID && behav != AP_FS_USE_XATTR && behav != AP_FS_USE_TASK && behav != AP_FS_USE_TRANS) {
+			assert(FALSE);
+			return -1;
+		}
 		len = le32_to_cpu(buf32[1]);
-
-		buf32 = ap_read_fbuf(fb, len, fp); /* name */
+		fstype = malloc(sizeof(char) * (len+1));
+		if (fstype == NULL) {
+			fprintf(stderr, "Error: Out of memory\n");
+			return -1;
+		}
+		buf32 = ap_read_fbuf(fb, len, fp); /* fstype */
 		if (buf32 == NULL) return fb->err;
-		
-		rt = load_security_context(fb, fp, bm, opts, policy);
+		memcpy(fstype, buf32, len);
+		fstype[len] = '\0';
+		rt = load_security_context(fb, fp, bm, opts, policy, &context);
 		if (rt < 0) return fb->err;
+		
+		if (keep) {
+			rt = add_fs_use(behav, fstype, context, policy);
+			if (rt == 0)
+				continue;
+			else
+				fprintf(stderr, "Error: failed to add fs_use for %s\n", fstype);
+		}
+		free(fstype);
+		fstype = NULL;
+		security_con_destroy(context);
+		context = NULL;
 	}
 
 	return 0;
@@ -1376,10 +1512,12 @@ static int load_ocon_node6(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int
 	bool_t keep = FALSE;
 	int nel, i, rt;
 	__u32 *buf32;
+	security_con_t *context;
+	uint32_t mask[4], addr[4];
 
 	INTERNAL_ASSERTION
 	
-	if (opts & POLOPT_OTHER)
+	if (opts & POLOPT_OCONTEXT)
 		keep = TRUE;
 
 	buf32 = ap_read_fbuf(fb, sizeof(__u32), fp);
@@ -1387,11 +1525,27 @@ static int load_ocon_node6(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int
 	nel = le32_to_cpu(buf32[0]);
 
 	for (i=0; i < nel; i++) {
-		buf32 = ap_read_fbuf(fb, sizeof(__u32)*8, fp); /* v6 addr */
+		buf32 = ap_read_fbuf(fb, sizeof(__u32)*8, fp); /* v6 addr , mask*/
 		if (buf32 == NULL) return fb->err;
 
-		rt = load_security_context(fb, fp, bm, opts, policy);
+		addr[0] = ntohl(le32_to_cpu(buf32[0]));
+		addr[1] = ntohl(le32_to_cpu(buf32[1]));
+		addr[2] = ntohl(le32_to_cpu(buf32[2]));
+		addr[3] = ntohl(le32_to_cpu(buf32[3]));
+
+		mask[0] = ntohl(le32_to_cpu(buf32[4]));
+		mask[1] = ntohl(le32_to_cpu(buf32[5]));
+		mask[2] = ntohl(le32_to_cpu(buf32[6]));
+		mask[3] = ntohl(le32_to_cpu(buf32[7]));
+
+		rt = load_security_context(fb, fp, bm, opts, policy, &context);
 		if (rt < 0) return fb->err;
+		if (keep) {
+			rt = add_nodecon(AP_IPV6, addr, mask, context, policy);
+			if (rt ==  0) 
+				continue;
+		}
+		security_con_destroy(context);
 	}
 	return 0;
 }
@@ -1399,10 +1553,12 @@ static int load_ocon_node6(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int
 static int load_genfs_contexts(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
 {
 	bool_t keep = FALSE;
-	int nel, nel2, len, i, j, rt;
+	int nel, nel2, len, i, j, rt, filetype;
 	__u32 *buf32;
+	security_con_t *context;
+	char *fstype, *path;
 
-	if (opts & POLOPT_OTHER)
+	if (opts & POLOPT_OCONTEXT)
 		keep = TRUE;
 
 	buf32 = ap_read_fbuf(fb, sizeof(__u32), fp);
@@ -1414,8 +1570,23 @@ static int load_genfs_contexts(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned
 		if (buf32 == NULL) return fb->err;
 		len = le32_to_cpu(buf32[0]);
 		
-		buf32 = ap_read_fbuf(fb, len, fp); /* name */
+		buf32 = ap_read_fbuf(fb, len, fp); /* fstype */
 		if (buf32 == NULL) return fb->err;
+		fstype = malloc(sizeof(char) * (len+1));
+		if (fstype == NULL) {
+			fprintf(stderr, "Error: Out of memory\n");
+			return -1;
+		}
+		memcpy(fstype, buf32, len);
+		fstype[len] = '\0';
+		if (keep) {
+			rt = add_genfscon(fstype, policy);
+			if (rt < 0) {
+				fprintf(stderr, "Error: failed to add genfscon for %s\n", fstype);
+				free(fstype);
+				return -1;
+			}
+		}
 
 		buf32 = ap_read_fbuf(fb, sizeof(__u32), fp);
 		if (buf32 == NULL) return fb->err;
@@ -1426,14 +1597,43 @@ static int load_genfs_contexts(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned
 			if (buf32 == NULL) return fb->err;
 			len = le32_to_cpu(buf32[0]);
 
-			buf32 = ap_read_fbuf(fb, len, fp); /* name */
+			buf32 = ap_read_fbuf(fb, len, fp); /* path */
 			if (buf32 == NULL) return fb->err;
-			
-			buf32 = ap_read_fbuf(fb, sizeof(__u32), fp); /* sclass */
+			path = malloc(sizeof(char) * (len+1));
+			if (path == NULL) {
+				fprintf(stderr, "Error: Out of memory\n");
+				return -1;
+			}
+			memcpy(path, buf32, len);
+			path[len] = '\0';
+			buf32 = ap_read_fbuf(fb, sizeof(__u32), fp); /* filetype */
 			if (buf32 == NULL) return fb->err;
+			filetype = le32_to_cpu(buf32[0]);
+			if (filetype == 0)
+				filetype = FILETYPE_ANY;
+
+			if (filetype != FILETYPE_REG && filetype != FILETYPE_DIR && filetype != FILETYPE_LNK &&
+			    filetype != FILETYPE_CHR && filetype != FILETYPE_BLK && filetype != FILETYPE_SOCK &&
+			    filetype != FILETYPE_FIFO && filetype != FILETYPE_ANY) {
+				assert(FALSE);
+				return -1;
+			}
 			
-			rt = load_security_context(fb, fp, bm, opts, policy);
+			rt = load_security_context(fb, fp, bm, opts, policy, &context);
+			if (context->range->low == NULL) assert(FALSE);
 			if (rt < 0) return rt;
+			if (keep) {
+				rt = add_path_to_genfscon(&(policy->genfscon[policy->num_genfscon-1]), path, filetype, context);
+				assert(context->range->low);
+				if (rt == 0)
+					continue;
+				else
+					fprintf(stderr, "Erorr: failed to add path \"%s\" for genfscon \"%s\"\n", path, fstype);
+			} 
+			free(path);
+			path = NULL;
+			security_con_destroy(context);
+			context = NULL;
 		}
 	}
 	return 0;
@@ -2056,13 +2256,13 @@ static int load_mls_sens(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int o
 	/* name */
 	buf = ap_read_fbuf(fb, len, fp);
 	if (buf == NULL) return fb->err;
-	name = (char*)malloc(len+1);
+	name = (char*)malloc(sizeof(char)*(len+1));
 	if (name == NULL) {
 		fprintf(stderr, "Error: Out of memory\n");
 		return -1;
 	}
 	memcpy(name, buf, len);
-	name[len] = 0;
+	name[len] = '\0';
 
 	if (isalias) {
 		rt = add_sensitivity_alias(policy->num_sensitivities-1, name, policy);
@@ -2098,13 +2298,13 @@ static int load_mls_cats(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int o
 	/* name */
 	buf = ap_read_fbuf(fb, len, fp);
 	if (buf == NULL) return fb->err;
-	name = (char*)malloc(len);
+	name = (char*)malloc(sizeof(char)*(len+1));
 	if (name == NULL) {
 		fprintf(stderr, "Error: Out of memory\n");
 		return -1;
 	}
 	memcpy(name, buf, len);
-	name[len] = 0;
+	name[len] = '\0';
 	
 	if (isalias) {
 		rt = add_category_alias(val-1, name, policy);
@@ -2436,7 +2636,7 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 			if (rt < 0 && rt != LOAD_SUCCESS_NO_SAVE) return rt;
 			break;
 		case OCON_FS:
-			rt = load_ocon_fs(fb, fp, bm, opts, policy);
+			rt = skip_ocon_fs(fb, fp, bm, opts, policy);
 			if (rt < 0 && rt != LOAD_SUCCESS_NO_SAVE) return rt;
 			break;
 		case OCON_PORT:
