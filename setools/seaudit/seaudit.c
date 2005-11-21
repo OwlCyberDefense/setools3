@@ -409,6 +409,8 @@ void seaudit_save_log_file(bool_t selected_only)
 	} else {
 		file_selector = gtk_file_selection_new("Export View");
 	}
+	/* set up transient so that it will center on the main window */
+	gtk_window_set_transient_for(GTK_WINDOW(file_selector), seaudit_app->window->window);
 	gtk_file_selection_complete(GTK_FILE_SELECTION(file_selector), (*(seaudit_app->audit_log_file)).str);
 
 	g_signal_connect(GTK_OBJECT(file_selector), "response", 
@@ -961,7 +963,10 @@ void seaudit_on_PolicyFileOpen_activate(GtkWidget *widget, GdkEvent *event, gpoi
 	gint response;
 	const gchar *filename;
 
-	file_selector = gtk_file_selection_new("Open Policy");
+	file_selector = gtk_file_selection_new("Open Policy");  
+	/* set this window to be transient window, so that when it pops up it gets centered on it */
+	gtk_window_set_transient_for(GTK_WINDOW(file_selector), seaudit_app->window->window);
+	
 	gtk_file_selection_hide_fileop_buttons(GTK_FILE_SELECTION(file_selector));
 	if (seaudit_app->seaudit_conf.default_policy_file != NULL)
 		gtk_file_selection_complete(GTK_FILE_SELECTION(file_selector), seaudit_app->seaudit_conf.default_policy_file);
@@ -992,7 +997,9 @@ void seaudit_on_LogFileOpen_activate(GtkWidget *widget, GdkEvent *event, gpointe
 	const gchar *filename;
 
 	file_selector = gtk_file_selection_new("Open Log");
-	gtk_file_selection_hide_fileop_buttons(GTK_FILE_SELECTION(file_selector));
+	/* set this window to be transient window, so that when it pops up it gets centered on it */
+	gtk_window_set_transient_for(GTK_WINDOW(file_selector), seaudit_app->window->window);
+		gtk_file_selection_hide_fileop_buttons(GTK_FILE_SELECTION(file_selector));
 	if (seaudit_app->seaudit_conf.default_log_file != NULL)
 		gtk_file_selection_complete(GTK_FILE_SELECTION(file_selector), seaudit_app->seaudit_conf.default_log_file);
 
@@ -1174,6 +1181,10 @@ void seaudit_on_help_activate(GtkWidget *widget, GdkEvent *event, gpointer callb
 	char *dir;
 
 	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	/* set this window to be transient to main window and center it on it */
+	gtk_window_set_transient_for(GTK_WINDOW(window), seaudit_app->window->window);
+	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER_ON_PARENT);
+
 	scroll = gtk_scrolled_window_new(NULL, NULL);
 	text_view = gtk_text_view_new();
 	gtk_window_set_title(GTK_WINDOW(window), "seAudit Help");
@@ -1220,7 +1231,7 @@ void seaudit_on_filter_log_button_clicked(GtkWidget *widget, GdkEvent *event, gp
 	}
 
 	view = seaudit_window_get_current_view(seaudit_app->window);
-	seaudit_filtered_view_display(view);	
+	seaudit_filtered_view_display(view, seaudit_app->window->window);	
 	return;
 }
 

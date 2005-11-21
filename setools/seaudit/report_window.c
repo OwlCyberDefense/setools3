@@ -183,7 +183,7 @@ static void on_create_report_button_clicked(GtkButton *button, gpointer user_dat
 	const gchar *file_path = NULL;
 			
 	assert(report_window != NULL);
-	filename = get_filename_from_user("Save Report to File", NULL);
+	filename = get_filename_from_user("Save Report to File", NULL, report_window->window);
 	if (filename == NULL)
 		return;
 	
@@ -265,6 +265,9 @@ static void on_browse_report_config_button_clicked(GtkButton *button, gpointer u
 	entry = GTK_ENTRY(glade_xml_get_widget(report_window->xml, "entry_report_config"));
 	g_assert(entry);
 	file_selector = gtk_file_selection_new("Select Alternate Config File");
+	/* set this window to be transient on the report window, so that when it pops up it gets centered on it */
+	gtk_window_set_transient_for(GTK_WINDOW(file_selector), report_window->window);
+
 	gtk_file_selection_hide_fileop_buttons(GTK_FILE_SELECTION(file_selector));
 	if (report_window->report_info->configPath != NULL)
 		gtk_file_selection_complete(GTK_FILE_SELECTION(file_selector), gtk_entry_get_text(GTK_ENTRY(entry)));
@@ -297,6 +300,8 @@ static void on_browse_report_css_button_clicked(GtkButton *button, gpointer user
 	entry = GTK_ENTRY(glade_xml_get_widget(report_window->xml, "entry_stylesheet"));
 	g_assert(entry);
 	file_selector = gtk_file_selection_new("Select Alternate Stylesheet");
+	/* set this window to be transient on the report window, so that when it pops up it gets centered on it */
+	gtk_window_set_transient_for(GTK_WINDOW(file_selector), report_window->window);
 	gtk_file_selection_hide_fileop_buttons(GTK_FILE_SELECTION(file_selector));
 	if (report_window->report_info->stylesheet_file != NULL)
 		gtk_file_selection_complete(GTK_FILE_SELECTION(file_selector), gtk_entry_get_text(GTK_ENTRY(entry)));
@@ -409,6 +414,12 @@ void report_window_display(report_window_t *report_window)
 	
 	window = GTK_WINDOW(glade_xml_get_widget(xml, "window_standard_report"));
 	g_assert(window);
+	/* set this window to be transient on the report window, so that when it pops up it gets centered on it */
+	/* however to have it "appear" to be centered we have to hide and then show */
+	gtk_window_set_transient_for(window, report_window->parent->window);
+	gtk_window_set_position(window, GTK_WIN_POS_CENTER_ON_PARENT);
+	gtk_widget_hide(GTK_WIDGET(window));
+	gtk_window_present(window);
 		
 	report_window->window = window;
 	report_window->xml = xml;

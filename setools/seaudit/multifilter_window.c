@@ -86,7 +86,7 @@ void multifilter_window_destroy(multifilter_window_t *window)
 	g_string_free(window->filename, TRUE);
 }
 
-void multifilter_window_display(multifilter_window_t *window)
+void multifilter_window_display(multifilter_window_t *window, GtkWindow *parent)
 {
 	char *dir;
 	GString *path;
@@ -94,7 +94,7 @@ void multifilter_window_display(multifilter_window_t *window)
 	GtkCellRenderer *renderer;
 	GtkTreeViewColumn *column;
 
-	if (!window)
+	if (!window || !parent)
 		return;
 
 	if (window->window) {
@@ -114,6 +114,14 @@ void multifilter_window_display(multifilter_window_t *window)
 	g_assert(window->xml);
 	window->window = GTK_WINDOW(glade_xml_get_widget(window->xml, "MultifilterWindow"));
 	g_assert(window->window);
+
+	/* set this window to be transient on the parent window, so that when it pops up it gets centered on it */
+	/* however to have it "appear" to be centered we have to hide and then show */
+	gtk_window_set_transient_for(window->window, parent);
+	gtk_window_set_position(window->window, GTK_WIN_POS_CENTER_ON_PARENT);
+	gtk_widget_hide(GTK_WIDGET(window->window));
+	gtk_window_present(window->window);
+
 	widget = glade_xml_get_widget(window->xml, "NameEntry");
 	g_assert(widget);
 	gtk_entry_set_text(GTK_ENTRY(widget), window->name->str);
@@ -173,7 +181,7 @@ void multifilter_window_display(multifilter_window_t *window)
 	multifilter_window_update_buttons_sensitivity(window);
 }
 
-void multifilter_window_save_multifilter(multifilter_window_t *window, gboolean saveas)
+void multifilter_window_save_multifilter(multifilter_window_t *window, gboolean saveas, gboolean multifilter_is_parent_window)
 {
 	seaudit_multifilter_t *multifilter;
 	filter_window_t *filter_window;
@@ -192,7 +200,10 @@ void multifilter_window_save_multifilter(multifilter_window_t *window, gboolean 
 	if (!saveas && strcmp(window->filename->str, "") != 0)
 		filename = g_string_new(window->filename->str);
 	else {
-		filename = get_filename_from_user("Save View", window->name->str);
+		if (multifilter_is_parent_window)
+			filename = get_filename_from_user("Save View", window->name->str, window->window);
+		else
+			filename = get_filename_from_user("Save View", window->name->str, seaudit_app->window->window);
 		if (filename == NULL)
 			return;
 		/* Append the default seaudit view extension (defined in seaudit.h). */
@@ -261,7 +272,7 @@ int multifilter_window_load_multifilter(multifilter_window_t *window)
 	if (!window)
 		return -1;
 
-	filename = get_filename_from_user("Open View", NULL);
+	filename = get_filename_from_user("Open View", NULL, seaudit_app->window->window);
 	if (filename == NULL)
 		return -1;
 	err = seaudit_multifilter_load_from_file(&multifilter, &is_multi, filename->str);
@@ -390,7 +401,7 @@ static void multifilter_window_on_add_button_pressed(GtkButton *button, multifil
 
 	filter_window = filter_window_create(window, window->num_filter_windows, "Untitled");
 	multifilter_window_add_filter_window(window, filter_window);
-	filter_window_display(filter_window);
+	filter_window_display(filter_window, window->window);
 	multifilter_window_update_buttons_sensitivity(window);
 }
 
@@ -415,7 +426,7 @@ static void multifilter_window_on_edit_button_pressed(GtkButton *button, multifi
 	index = gtk_tree_path_get_indices(path);
 	filter_window = (filter_window_t*)g_list_nth_data(window->filter_windows, index[0]);
 	if (filter_window)
-		filter_window_display(filter_window);
+		filter_window_display(filter_window, window->window);
 
 	gtk_tree_path_free(path);
 	widget = glade_xml_get_widget(window->xml, "ApplyButton");
@@ -471,7 +482,7 @@ static void multifilter_window_on_import_button_pressed(GtkButton *button, multi
 	GString *filename, *message;
 	gint err;
 
-	filename = get_filename_from_user("Import Filter", NULL);
+	filename = get_filename_from_user("Import Filter", NULL, window->window);
 	if (!filename)
 		return;
 	err = seaudit_multifilter_load_from_file(&multifilter, &is_multi, filename->str);
@@ -533,7 +544,7 @@ static void multifilter_window_on_export_button_pressed(GtkButton *button, multi
 	index = gtk_tree_path_get_indices(path);
 	filter_window = g_list_nth_data(window->filter_windows, index[0]);
 	filter = filter_window_get_filter(filter_window);
-	filename = get_filename_from_user("Export filter", filter->name);
+	filename = get_filename_from_user("Export filter", filter->name, window->window);
 	if (filename == NULL)
 		return;
 	/* Append the default seaudit filter extension (defined in seaudit.h). */
@@ -808,6 +819,6 @@ static gboolean multifilter_window_get_selected_on_delete_event(GtkWidget *widge
 
 static void multifilter_window_on_save_button_pressed(GtkButton *button, multifilter_window_t *user_data)
 {
-	multifilter_window_save_multifilter(user_data, FALSE);
+	multifilter_window_save_multifilter(user_data, FALSE, TRUE);
 	
 }
