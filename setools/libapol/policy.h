@@ -163,23 +163,35 @@ typedef struct obj_class {
 	ta_item_t	*validatetrans;	/* list of validatetrans for this class */
 } obj_class_t;
 
+typedef struct ap_mls_level {
+	int sensitivity;
+	int *categories;
+	int num_categories;
+} ap_mls_level_t;
+
+typedef struct ap_mls_range {
+	ap_mls_level_t *low;
+	ap_mls_level_t *high;
+} ap_mls_range_t;
 
 typedef struct security_context {
 	int		user;	
 	int		role;
 	int		type;
+	ap_mls_range_t  *range;
 } security_con_t;
 
 /* file type IDs */
-#define FILETYPE_DIR  1 /* Directory */
-#define FILETYPE_CHR  2 /* Character device */
-#define FILETYPE_BLK  3 /* Block device */
-#define FILETYPE_REG  4 /* Regular file */
-#define FILETYPE_FIFO 5 /* FIFO */
-#define FILETYPE_LNK  6 /* Symbolic link */
-#define FILETYPE_SOCK 7 /* Socket */
-#define FILETYPE_ANY  8 /* any type */
-#define FILETYPE_NONE 0 /* none */
+#define FILETYPE_NONE 0  /* none */
+/* the following values must correspond to libsepol flask.h */
+#define FILETYPE_REG  6  /* Regular file */
+#define FILETYPE_DIR  7  /* Directory */
+#define FILETYPE_LNK  9  /* Symbolic link */
+#define FILETYPE_CHR  10 /* Character device */
+#define FILETYPE_BLK  11 /* Block device */
+#define FILETYPE_SOCK 12 /* Socket */
+#define FILETYPE_FIFO 13 /* FIFO */
+#define FILETYPE_ANY  14 /* any type */
 
 /* IDs of rules */
 #define RULE_TE_ALLOW		0 	/*AV rule */
@@ -187,16 +199,16 @@ typedef struct security_context {
 #define RULE_AUDITDENY		2	/*AV rule */
 #define RULE_DONTAUDIT		3	/* really the same as auditdeny */
 #define RULE_NEVERALLOW		4	/*AV rule */
-#define RULE_MAX_AV			4   	/*end of AV rule types */
+#define RULE_MAX_AV		4   	/*end of AV rule types */
 #define RULE_TE_TRANS		5   	/*TT rule (type transition|change|member) */
 #define RULE_TE_MEMBER		6   	/*TT rule */
 #define RULE_TE_CHANGE		7	/*TT rule */
-#define RULE_MAX_TE			7
-#define RULE_CLONE			8	/*clone rule */
+#define RULE_MAX_TE		7
+#define RULE_CLONE		8	/*clone rule */
 #define RULE_ROLE_ALLOW		9	/* Role allow */
 #define RULE_ROLE_TRANS		10	/* Role transition */
-#define RULE_USER			11	/* User role definition */
-#define RULE_MAX			12	/* # of rule IDs defined (1+last rule)*/
+#define RULE_USER		11	/* User role definition */
+#define RULE_MAX		12	/* # of rule IDs defined (1+last rule)*/
 #define RULE_INVALID		99
 
 
@@ -380,17 +392,6 @@ typedef struct ap_mls_sens {
 
 /* typedef for clarity */
 typedef struct ap_mls_sens ap_mls_cat_t;
-
-typedef struct ap_mls_level {
-	int sensitivity;
-	int *categories;
-	int num_categories;
-} ap_mls_level_t;
-
-typedef struct ap_mls_range {
-	ap_mls_level_t *low;
-	ap_mls_level_t *high;
-} ap_mls_range_t;
 
 typedef struct ap_rangetrans {
 	unsigned long lineno;
@@ -772,6 +773,8 @@ int apol_add_class_to_obj_perm_set_list(obj_perm_set_t **obj_options,
 int apol_add_perm_to_obj_perm_set_list(obj_perm_set_t **obj_options, 
 				      int *num_obj_options, int obj_class, 
 				      int perm);
+
+void security_con_destroy(security_con_t *context);
 
 /* genfscon */
 int ap_genfscon_get_idx(char *fstype, policy_t *policy);

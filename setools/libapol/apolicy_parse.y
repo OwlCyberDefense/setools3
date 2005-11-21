@@ -2930,6 +2930,7 @@ static security_con_t *parse_security_context(int dontsave)
 		yyerror("out of memory");
 		return NULL;
 	}
+	memset(scontext, 0, sizeof(security_con_t));
 	/* user */
 	id = queue_remove(id_queue);
 	if (!id) {
@@ -4042,24 +4043,12 @@ static int define_netif_context(int ver)
 static int define_ipv4_node_context(int ver, __u32 addr, __u32 mask)
 {
 	int rt;
-	uint32_t *address = NULL, *netmask = NULL;
+	uint32_t address[4], netmask[4];
 	security_con_t *context = NULL;
 
 	if (pass == 1 || (pass == 2 && !(parse_policy->opts & POLOPT_OCONTEXT))) {
 		parse_security_context(1);
 		return 0;
-	}
-
-	address = (uint32_t *)calloc(4, sizeof(uint32_t));
-	if (!address) {
-		yyerror("out of memory");
-		return -1;
-	}
-	netmask = (uint32_t *)calloc(4, sizeof(uint32_t));
-	if (!netmask) {
-		yyerror("out of memory");
-		free(address);
-		return -1;
 	}
 
 	rt = set_policy_version(ver, parse_policy);
@@ -4072,12 +4061,13 @@ static int define_ipv4_node_context(int ver, __u32 addr, __u32 mask)
 
 	context = parse_security_context(0);
 	address[3] = addr;
+	address[0] = address[1] = address[2] = 0;
 	netmask[3] = mask;
+	netmask[0] = netmask[1] = netmask[2] = 0;
 	rt = add_nodecon(AP_IPV4, address, netmask, context, parse_policy);
 	if (rt) {
 		yyerror("error adding nodecon to policy");
-		free(address);
-		free(netmask);
+		security_con_destroy(context);
 		return -1;
 	}
 
@@ -4146,10 +4136,11 @@ static int define_ipv6_node_context(int ver)
 	}
 	context = parse_security_context(0);
 	rt = add_nodecon(AP_IPV6, address, netmask, context, parse_policy);
+	free(address);
+	free(netmask);
 	if (rt) {
 		yyerror("error adding nodecon to policy");
-		free(address);
-		free(netmask);
+		security_con_destroy(context);
 		return -1;
 	}
 

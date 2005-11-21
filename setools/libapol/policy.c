@@ -3524,11 +3524,9 @@ int add_nodecon(int flag, uint32_t *addr, uint32_t *mask, security_con_t *sconte
 	for (i = 0; i < 4; i++) {
 		new_nodecon->addr[i] = addr[i];
 	}
-	free(addr);
 	for (i = 0; i < 4; i++) {
 		new_nodecon->mask[i] = mask[i];
 	}
-	free(mask);
 	new_nodecon->scontext = scontext;
 	policy->num_nodecon++;
 
@@ -3904,3 +3902,11 @@ ap_rangetrans_t *add_new_rangetrans(policy_t *policy)
 	return new_rngtr;
 }
 
+void security_con_destroy(security_con_t *context)
+{
+	if (context == NULL)
+		return;
+	if (context->range != NULL)
+		ap_mls_range_free(context->range);
+	free(context);
+}
