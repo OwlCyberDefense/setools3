@@ -371,13 +371,64 @@ char *re_render_tt_rule(bool_t addlineno, int idx, policy_t *policy)
 
 }
 
-/* security contexts */
-char *re_render_security_context(const security_con_t *context,
-				 policy_t *policy
-				 )
+char *re_render_mls_level(ap_mls_level_t *level, policy_t *policy)
 {
-	char *buf, *name;
+	char *rt = NULL;
+	int sz = 0, i, cur;
+
+	if (!level || !policy)
+		return NULL;
+
+	append_str(&rt, &sz, policy->sensitivities[level->sensitivity].name);
+	if (!level->categories)
+		return rt; /* no categories, simply return the sensitivity name */
+
+	append_str(&rt, &sz, ":");
+	append_str(&rt, &sz, policy->categories[level->categories[0]].name);
+	if (level->num_categories == 1)
+		return rt; /* only one category so done */
+
+	cur = 0; /* current value to compare with cat[i] */
+	for (i = 1; i < level->num_categories; i++) {
+		if (level->categories[i] == level->categories[cur] + 1) {
+			if (i + 1 == level->num_categories || level->categories[i+1] != level->categories[cur] + 2) {
+				append_str(&rt, &sz, ".");
+				append_str(&rt, &sz, policy->categories[level->categories[i]].name);
+				cur = i;
+			} else {
+				cur++;
+			}
+		} else {
+			append_str(&rt, &sz, ", ");
+			append_str(&rt, &sz, policy->categories[level->categories[i]].name);
+			cur = i;
+		}
+	}
+	return rt;
+}
+
+char *re_render_mls_range(ap_mls_range_t *range, policy_t *policy)
+{
+	char *rt = NULL;
+	int sz = 0;
+
+	if (!range || !policy)
+		return NULL;
+
+	append_str(&rt, &sz, re_render_mls_level(range->low, policy));
+	if (range->high != range->low) {
+		append_str(&rt, &sz, " - ");
+		append_str(&rt, &sz, re_render_mls_level(range->high, policy));
+	}
+	return rt;
+}
+
+/* security contexts */
+char *re_render_security_context(const security_con_t *context, policy_t *policy)
+{
+	char *buf = NULL, *name = NULL, *range = NULL;
 	int buf_sz;
+
 	if(policy == NULL )
 		return NULL;
 	
@@ -401,7 +452,8 @@ char *re_render_security_context(const security_con_t *context,
 		goto err_return;
 	if(append_str(&buf, &buf_sz, name) != 0) 
 		goto err_return;
-	free(name);
+	free(name); 
+	name = NULL;
 	if(append_str(&buf, &buf_sz, ":") != 0) 
 		goto err_return;
 	if(get_role_name(context->role, &name, policy) != 0) 
@@ -409,18 +461,35 @@ char *re_render_security_context(const security_con_t *context,
 	if(append_str(&buf, &buf_sz, name) != 0) 
 		goto err_return;
 	free(name);
+	name = NULL;
 	if(append_str(&buf, &buf_sz, ":") != 0) 
 		goto err_return;
 	if(get_type_name(context->type, &name, policy) != 0) 
 		goto err_return;
 	if(append_str(&buf, &buf_sz, name) != 0) 
 		goto err_return;
-	free(name);	
+	free(name);
+	name = NULL;
 	
+	/* render range */
+	if (context->range != NULL) {
+		if (append_str(&buf, &buf_sz, ":") != 0)
+			goto err_return;
+		range = re_render_mls_range(context->range, policy);
+		if (append_str(&buf, &buf_sz, range) != 0)
+			goto err_return;
+		free(range);
+		range = NULL;
+	}
 	return buf;
+
 err_return:
-	if(buf != NULL) 
+	if (buf != NULL) 
 		free(buf);
+	if (range != NULL)
+		free(range);
+	if (name != NULL)
+		free(name);
 	return NULL;	
 }
 
@@ -860,7 +929,7 @@ char *re_render_nodecon(ap_nodecon_t *nodecon, policy_t *policy)
 
 	/* max length of a string for an IP is 40 characters
 	 *  (8 fields * 4 char/field) + 7  * ':' + '\0' */
-	const size_t ip_addr_str_len_max = 40;
+	const size_t ip_addr_str_len_max = 41;
 
 	if (!nodecon || !policy)
 		return NULL;
@@ -950,6 +1019,7 @@ char *re_render_genfscon(ap_genfscon_t *genfscon, policy_t *policy)
 		free(lines);
 		return NULL;
 	}
+
 	strcat(front_str, "genfscon ");
 	strcat(front_str, genfscon->fstype);
 	strcat(front_str, " ");
@@ -961,10 +1031,9 @@ char *re_render_genfscon(ap_genfscon_t *genfscon, policy_t *policy)
 		if (!context_str) {
 			return NULL;
 		}
-
 		switch (path->filetype) {
 		case FILETYPE_DIR:
-			type_str = strdup("-d ");
+			type_str = strdup(" -d ");
 			break;
 		case FILETYPE_CHR:
 			type_str = strdup(" -c ");
@@ -991,7 +1060,6 @@ char *re_render_genfscon(ap_genfscon_t *genfscon, policy_t *policy)
 			goto exit_err;
 			break;
 		}
-
 		/* front_str + path + type_str + context_str + '\0' */
 		lines[i] = (char*)calloc(len + strlen(path->path) + 4 + strlen(context_str) + 1 , sizeof(char));
 		if (!lines[i])
@@ -1277,62 +1345,6 @@ char *re_render_constraint(bool_t addlineno, ap_constraint_t *constraint, policy
 	append_str(&rt, &sz, "\n\t");
 	append_str(&rt, &sz, expr_str);
 	append_str(&rt, &sz, ";");
-
-	return rt;
-}
-
-char *re_render_mls_level(ap_mls_level_t *level, policy_t *policy)
-{
-	char *rt = NULL;
-	int sz = 0, i, cur;
-
-	if (!level || !policy)
-		return NULL;
-
-	append_str(&rt, &sz, policy->sensitivities[level->sensitivity].name);
-
-	if (!level->categories)
-		return rt; /* no categories, simply return the sensitivity name */
-
-	append_str(&rt, &sz, ":");
-	append_str(&rt, &sz, policy->categories[level->categories[0]].name);
-
-	if (level->num_categories == 1)
-		return rt; /* only one category so done */
-
-	cur = 0; /* current value to compare with cat[i] */
-	for (i = 1; i < level->num_categories; i++) {
-		if (level->categories[i] == level->categories[cur] + 1) {
-			if (i + 1 == level->num_categories || level->categories[i+1] != level->categories[cur] + 2) {
-				append_str(&rt, &sz, ".");
-				append_str(&rt, &sz, policy->categories[level->categories[i]].name);
-				cur = i;
-			} else {
-				cur++;
-			}
-		} else {
-			append_str(&rt, &sz, ", ");
-			append_str(&rt, &sz, policy->categories[level->categories[i]].name);
-			cur = i;
-		}
-	}
-
-	return rt;
-}
-
-char *re_render_mls_range(ap_mls_range_t *range, policy_t *policy)
-{
-	char *rt = NULL;
-	int sz = 0;
-
-	if (!range || !policy)
-		return NULL;
-
-	append_str(&rt, &sz, re_render_mls_level(range->low, policy));
-	if (range->high != range->low) {
-		append_str(&rt, &sz, " - ");
-		append_str(&rt, &sz, re_render_mls_level(range->high, policy));
-	}
 
 	return rt;
 }
