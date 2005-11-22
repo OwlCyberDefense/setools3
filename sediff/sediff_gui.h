@@ -26,6 +26,12 @@
 #define FIND_FORWARD_ID      "sediff_find_forward"
 #define FIND_ENTRY_ID        "sediff_find_text_entry"
 
+typedef struct sediff_file_data {
+	GString *name;           /* the filename */
+	char *data;              /* the data inside the file */
+	size_t size;             /* the size of the data inside the file */
+} sediff_file_data_t;
+
 /* STRUCT: sediff_app_t
    This structure is used to control the gui.  It contains the links
    to all necessary buffers, textviews, dlgs, etc that are needed.  */
@@ -49,8 +55,8 @@ typedef struct sediff_app {
 	GtkTextBuffer *cond_add_buffer;   /* the added conditionals buffer */
 	GtkTextBuffer *cond_rem_buffer;   /* the removed conditionals buffer */
 	GtkTextBuffer *cond_chg_buffer;   /* the changed conditionals buffer */
-	GString *p1_filename;             /* the name of policy 1 */
-	GString *p2_filename;             /* the name of policy 2 */
+	sediff_file_data_t p1_sfd;        /* file info for policy 1 */
+	sediff_file_data_t p2_sfd;        /* file info for policy 2 */
 	ap_single_view_diff_t *svd;       /* the single view diff struct */
 	struct sediff_rename_types *rename_types_window; /* the renamed types window reference */
 	struct sediff_find_window *find_window;          /* the find window reference */
