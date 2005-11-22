@@ -6,8 +6,16 @@
 
 namespace eval Apol_Widget {
     variable popup ""
+    variable vars
 }
 
+# Create a listbox contained within a scrolled window.  Whenever the
+# listbox has focus, if the user hits an alphanum key then scroll to
+# the first entry beginning with that letter.  That entry is then
+# selected, with all others being cleared.  Repeatedly hitting the
+# same key causes the widget to select succesive entries, wrapping
+# back to the first when at the end of the list.  (This behavior
+# assumes that the listbox has been alphabetized.)
 proc Apol_Widget::makeScrolledListbox {path args} {
     set sw [ScrolledWindow $path -scrollbar both -auto both]
     set lb [eval listbox $sw.lb $args -bg white -highlightthickness 0]
@@ -50,6 +58,232 @@ proc Apol_Widget::getScrolledListbox {path} {
     return $path.lb
 }
 
+proc Apol_Widget::setScrolledListboxState {path newState} {
+    if {$newState == 0 || $newState == "disabled"} {
+        $path.lb configure -state disabled
+    } else {
+        $path.lb configure -state normal
+    }
+}
+
+# Create combobox from which the user may choose a type.  Then create
+# a combobox from which the user may select an attribute; this
+# attribute filters the allowable types.
+proc Apol_Widget::makeTypeCombobox {path args} {
+    variable vars
+    array unset vars $path:*
+    set vars($path:type) ""
+    set vars($path:attribenable) 0
+    set vars($path:attrib) ""
+
+    set f [frame $path]
+    set type_box [eval ComboBox $f.tb $args -helptext {{Type or select a type}} \
+                      -textvariable Apol_Widget::vars($path:type) \
+                      -entrybg white -width 16]
+    bind $type_box.e <KeyPress> [list ApolTop::_create_popup $type_box %W %K]
+    pack $type_box -side top -expand 1 -fill x
+    
+    set attrib_enable [checkbutton $f.ae \
+                           -text "Filter types to select using attribute:" \
+                           -variable Apol_Widget::vars($path:attribenable) \
+                           -command [list Apol_Widget::_attrib_enabled $path]]
+    set attrib_box [ComboBox $f.ab -entrybg white -width 14 \
+                        -textvariable Apol_Widget::vars($path:attrib)]
+    trace add variable Apol_Widget::vars($path:attrib) write [list Apol_Widget::_attrib_changed $path]
+    bind $attrib_box.e <KeyPress> [list ApolTop::_create_popup $attrib_box %W %K]
+    bind $attrib_box.e <FocusOut> +[list Apol_Widget::_attrib_validate $path]
+
+    pack $attrib_enable -side top -expand 0 -fill x -anchor s -padx 5 -pady 2
+    pack $attrib_box -side top -expand 1 -fill x -padx 10
+    _attrib_enabled $path
+    return $f
+}
+
+proc Apol_Widget::resetTypeComboboxToPolicy {path} {
+    $path.tb configure -values $Apol_Types::typelist
+    $path.ab configure -values $Apol_Types::attriblist
+}
+
+proc Apol_Widget::clearTypeCombobox {path} {
+    variable vars
+    set vars($path:attribenable) 0
+    set vars($path:attrib) ""
+    set vars($path:type) ""    
+    $path.tb configure -values {}
+    $path.ab configure -values {}
+    _attrib_enabled $path
+}
+
+proc Apol_Widget::getTypeComboboxValue {path} {
+    set Apol_Widget::vars($path:type)
+}
+
+proc Apol_Widget::setTypeComboboxState {path newState} {
+    variable vars
+    if {$newState == 0 || $newState == "disabled"} {
+        $path.tb configure -state disabled
+        $path.ae configure -state disabled
+        $path.ab configure -state disabled
+    } else {
+        $path.tb configure -state normal
+        $path.ae configure -state normal
+        if {$vars($path:attribenable)} {
+            $path.ab configure -state normal
+        }
+    }
+}
+
+
+# Create a mega-widget used to select a single MLS level (a
+# sensitivity + 0 or more categories).
+#
+# catSize - number of categories to show in the box, by default
+proc Apol_Widget::makeLevelSelector {path catSize args} {
+    variable vars
+    array unset vars $path:*
+    set vars($path:sens) ""
+    set vars($path:cats) {}
+
+    set f [frame $path]
+    set sens_box [eval ComboBox $f.sens $args \
+                      -textvariable Apol_Widget::vars($path:sens) \
+                      -entrybg white -width 16]
+    trace add variable Apol_Widget::vars($path:sens) write [list Apol_Widget::_sens_changed $path]
+    bind $sens_box.e <KeyPress> [list ApolTop::_create_popup $sens_box %W %K]
+    pack $sens_box -side top -expand 0 -fill x
+
+    set cats_label [label $f.cl -text "Categories:"]
+    pack $cats_label -side top -anchor sw -pady 2 -expand 0
+
+    set cats [makeScrolledListbox $f.cats -width 16 -height $catSize \
+                  -listvariable Apol_Widget::vars($path:cats) \
+                  -selectmode extended -exportselection 0]
+    pack $cats -side top -expand 1 -fill both
+
+    set reset [button $f.reset -text "Clear Categories" \
+                   -command [list [getScrolledListbox $cats] selection clear 0 end]]
+    pack $reset -side top -anchor center -pady 2
+    return $f
+}
+
+proc Apol_Widget::getLevelSelectorLevel {path} {
+    variable vars
+    set sl [getScrolledListbox $path.cats]
+    set cats {}
+    foreach idx [$sl curselection] {
+        lappend cats [$sl get $idx] 
+    }
+    list $vars($path:sens) $cats
+}
+
+proc Apol_Widget::setLevelSelectorLevel {path level} {
+    variable vars
+    
+    set sens [lindex $level 0]
+    set cats [lindex $level 1]
+    set sens_list [$path.sens cget -values]
+    if {[lsearch -exact $sens_list $sens] != -1} {
+        set vars($path:sens) $sens
+        set cats_list $vars($path:cats)
+        foreach cat $cats {
+            if {[set idx [lsearch -exact $cats_list $cat]] != -1} {
+                [getScrolledListbox $path.cats] selection set $idx
+            }
+        }
+    }
+}
+
+proc Apol_Widget::resetLevelSelectorToPolicy {path} {
+    variable vars
+    set vars($path:sens) ""
+    $path.sens configure -values [lsort -unique [apol_GetSens]]
+}
+
+proc Apol_Widget::clearLevelSelector {path} {
+    variable vars
+    set vars($path:sens) ""
+    $path.sens configure -values {}
+    # the category box will be cleared because of the trace on $path:sens
+}
+
+proc Apol_Widget::setLevelSelectorState {path newState} {
+    if {$newState == 0 || $newState == "disabled"} {
+        set newState disabled
+    } else {
+        set newState normal
+    }
+    $path.sens configure -state $newState
+    $path.cl configure -state $newState
+    $path.reset configure -state $newState
+    setScrolledListboxState $path.cats $newState
+}
+
+
+# Create a scrolled non-editable text widget, from which search
+# results may be displayed.
+proc Apol_Widget::makeSearchResults {path args} {
+    variable vars
+    array unset vars $path:*
+    set sw [ScrolledWindow $path -scrollbar both -auto none]
+    set tb [eval text $sw.tb $args -bg white -wrap none -state disabled -font $ApolTop::text_font]
+    set vars($path:cursor) [$tb cget -cursor]
+    $tb tag configure header -font {Helvetica 12}
+    $tb tag configure linenum -foreground blue -underline 1
+    $tb tag configure selected -foreground red -underline 1
+    $tb tag bind linenum <Button-1> [list Apol_Widget::_hyperlink $path %x %y]
+    $tb tag bind linenum <Enter> [list $tb configure -cursor hand2]
+    $tb tag bind linenum <Leave> [list $tb configure -cursor $Apol_Widget::vars($path:cursor)]
+    $sw setwidget $tb
+    return $sw
+}
+
+proc Apol_Widget::clearSearchResults {path} {
+    $path.tb configure -state normal
+    $path.tb delete 0.0 end
+    $path.tb configure -state disabled
+}
+
+proc Apol_Widget::appendSearchResultHeader {path header} {
+    $path.tb configure -state normal
+    $path.tb insert end "$text\n" header
+    $path.tb configure -state disabled
+}
+
+proc Apol_Widget::appendSearchResultText {path text} {
+    $path.tb configure -state normal
+    $path.tb insert end $text
+    $path.tb configure -state disabled
+}
+
+# Append a list of values to the search results box.  If linenum is
+# non-empty, create a hyperlink from it to the policy.
+proc Apol_Widget::appendSearchResultLine {path linenum line_type args} {
+    $path.tb configure -state normal
+    if {$linenum != ""} {
+        $path.tb insert end \[ {} $linenum linenum "\] "
+    }
+    set text $line_type
+    foreach arg $args {
+        append text " $arg"
+    }
+    $path.tb insert end "[string trim $text];\n"
+    $path.tb configure -state disabled
+}
+
+proc Apol_Widget::gotoLineSearchResults {path line_num} {
+    if {![string is integer -strict $line_num]} {
+        tk_messageBox -icon error -type ok -title "Invalid line number" \
+            -message "$line_num is not a valid line number."
+        return
+    }
+    set textbox $path.tb
+    # Remove any selection tags.
+    $textBox tag remove sel 0.0 end
+    $textBox mark set insert ${line_num}.0 
+    $textBox see ${line_num}.0 
+    $textBox tag add sel $line_num.0 $line_num.end
+    focus -force $textBox
+}
 
 ########## private functions below ##########
 
@@ -84,4 +318,67 @@ proc Apol_Widget::_listbox_key {listbox key} {
 
 proc Apol_Widget::_listbox_double_click {listbox callback_func args} {
     eval $callback_func $args [$listbox get active]
+}
+
+proc Apol_Widget::_attrib_enabled {path} {
+    variable vars
+    if {$vars($path:attribenable)} {
+        $path.ab configure -state normal
+        _filter_type_combobox $path $vars($path:attrib)
+    } else {
+        $path.ab configure -state disabled
+        _filter_type_combobox $path ""
+    }
+}
+
+proc Apol_Widget::_attrib_changed {path name1 name2 op} {
+    variable vars
+    if {$vars($path:attribenable)} {
+        _filter_type_combobox $path $vars($name2)
+    }
+}
+
+proc Apol_Widget::_attrib_validate {path} {
+    # check that the attribute given was valid
+}
+
+proc Apol_Widget::_filter_type_combobox {path attribvalue} {
+    variable vars
+    if {$attribvalue != ""} {
+        if {[catch {apol_GetAttribTypesList $attribvalue} typesList]} {
+            # unknown attribute, so don't change type combobox
+            return
+        }
+        set typesList [lsort $typesList]
+    } else {
+        set typesList $Apol_Types::typelist
+        # during policy load this list should already have been sorted
+    }
+    if {[set idx [lsearch -exact $typesList "self"]] != -1} {
+        set typesList [lreplace $typesList $idx $idx]
+    }
+    if {[lsearch -exact $typesList $vars($path:type)] == -1} {
+        set vars($path:type) ""
+    }
+    $path.tb configure -values $typesList
+}
+
+proc Apol_Widget::_sens_changed {path name1 name2 op} {
+    variable vars
+    # get a list of categories associated with this sensitivity
+    [getScrolledListbox $path.cats] selection clear 0 end
+    if {$vars($path:sens) == ""} {
+        set vars($path:cats) {}
+    } else {
+        set vars($path:cats) [apol_SensCats $vars($path:sens)]
+    }
+}
+
+proc Apol_Widget::_hyperlink {path x y} {
+    set tb $path.tb
+    set range [$tb tag prevrange linenum "@$x,$y + 1 char"]
+    $tb tag add selected [lindex $range 0] [lindex $range 1]
+    set line_num [$tb get [lindex $range 0] [lindex $range 1]]
+    $ApolTop::notebook raise $ApolTop::policy_conf_tab
+    Apol_PolicyConf::goto_line $line_num
 }
