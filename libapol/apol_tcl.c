@@ -28,6 +28,7 @@
 #include "infoflow.h"
 #include "perm-map.h"
 #include "policy-query.h"
+#include "tcl_render.h"
 
 #ifdef LIBSEFS
 #include "../libsefs/fsdata.h"
@@ -2477,6 +2478,302 @@ int Apol_SearchInitialSIDs(ClientData clientData, Tcl_Interp *interp, int argc, 
 	Tcl_DStringResult(interp, buf);
 								
 	return TCL_OK;
+}
+
+/* Takes a Tcl string representing a MLS level and converts it to an
+ * al_mls_level_t object.  Returns 0 on success, 1 if a identifier was
+ * not unknown, or -1 on error. */
+static int tcl_level_string_to_level(Tcl_Interp *interp, char *level_string, ap_mls_level_t *level) {
+        Tcl_Obj *level_obj, *sens_obj, *cats_list_obj, *cats_obj;
+        const char *sens_string, *cat_string;
+        int num_cats, i, cat_value;
+        level->sensitivity = 0;
+        level->categories = NULL;
+        level->num_categories = 0;
+	if (policy == NULL) {
+                /* no policy, so nothing to convert */
+		return 1;
+	}
+        level_obj = Tcl_NewStringObj(level_string, -1);
+        if (Tcl_ListObjIndex(interp, level_obj, 0, &sens_obj) == TCL_ERROR) {
+                return -1;
+        }
+        if (Tcl_ListObjIndex(interp, level_obj, 1, &cats_list_obj) == TCL_ERROR) {
+                return -1;
+        }
+        if (sens_obj == NULL || cats_list_obj == NULL) {
+                /* no sensitivity given -- this is an error */
+                Tcl_SetResult(interp, "Sensivitiy string did not have two elements within it.", TCL_STATIC);
+                return -1;
+        }
+        sens_string = Tcl_GetString(sens_obj);
+        if ((level->sensitivity = get_sensitivity_idx(sens_string, policy)) < 0) {
+                /* unknown sensitivity */
+                return 1;
+        }
+        if (Tcl_ListObjLength(interp, cats_list_obj, &num_cats) == TCL_ERROR) {
+                return -1;
+        }
+        for (i = 0; i < num_cats; i++) {
+                if (Tcl_ListObjIndex(interp, cats_list_obj, i, &cats_obj) == TCL_ERROR) {
+                        free(level->categories);
+                        return -1;
+                }
+                assert(cats_obj != NULL);
+                cat_string = Tcl_GetString(cats_obj);
+                if ((cat_value = get_category_idx(cat_string, policy)) < 0) {
+                        /* unknown category */
+                        free(level->categories);
+                        return 1;
+                }
+                if (add_i_to_a(cat_value, &(level->num_categories), &(level->categories))) {
+                        Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
+                        free(level->categories);
+                        return -1;
+                }
+        }
+        return 0;
+}
+
+int Apol_RenderLevel(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
+{
+        ap_mls_level_t level;
+        int retval;
+        char *rendered_level;
+
+		if (argc != 2) {
+			Tcl_SetResult(interp, "wrong # of args", TCL_STATIC);
+			return TCL_ERROR;
+		}
+        retval = tcl_level_string_to_level(interp, argv[1], &level);
+        if (retval == -1) {
+                return TCL_ERROR;
+        }
+        else if (retval == 1) {
+                return TCL_OK;                     /* no render possible */
+        }
+        rendered_level = re_render_mls_level(&level, policy);
+        ap_mls_level_free(&level);
+        Tcl_AppendResult(interp, rendered_level, NULL);
+        free(rendered_level);
+        return TCL_OK;
+}
+
+/* Render a single range transition rule, given its index */
+int Apol_RenderRangeTrans(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
+{
+        int idx;
+        bool_t show_linenos;
+
+        if (argc != 2) {
+			Tcl_SetResult(interp, "wrong # of args", TCL_STATIC);
+			return TCL_ERROR;
+		}
+        if (policy == NULL) {
+                Tcl_SetResult(interp, "Could not display range transition because no policy was loaded.", TCL_STATIC);
+                return TCL_ERROR;
+        }
+        if (Tcl_GetInt(interp, argv[1], &idx) == TCL_ERROR) {
+                return TCL_ERROR;
+        }
+        show_linenos = (is_binary_policy(policy) ? FALSE : TRUE);
+        return tcl_render_rangetrans(interp, show_linenos, idx, policy);
+}
+
+int Apol_IsValidRange(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
+{
+        ap_mls_level_t low, high;
+        ap_mls_range_t range;
+        bool_t retval;
+
+        if (argc != 3) {
+			Tcl_SetResult(interp, "wrong # of args", TCL_STATIC);
+			return TCL_ERROR;
+		}
+        if (tcl_level_string_to_level(interp, argv[1], &low) != 0) {
+                return TCL_ERROR;
+        }
+        if (tcl_level_string_to_level(interp, argv[2], &high) != 0) {
+                ap_mls_level_free(&low);
+                return TCL_ERROR;
+        }
+        range.low = &low;
+        range.high = &high;
+        retval = ap_mls_validate_range(&range, policy);
+        ap_mls_level_free(&low);
+        ap_mls_level_free(&high);
+        if (retval == TRUE) {
+                Tcl_SetResult(interp, "1", TCL_STATIC);
+        }
+        else {
+                Tcl_SetResult(interp, "0", TCL_STATIC);
+        }
+        return TCL_OK;
+}
+
+/* Return an un-ordered list of sensitivities within the policy, or an
+ * empty list if no policy was loaded. */
+int Apol_GetSens(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
+{
+	int i;
+
+	if (argc != 1) {
+		Tcl_SetResult(interp, "wrong # of args", TCL_STATIC);
+		return TCL_ERROR;
+	}
+	if (policy == NULL) {
+		return TCL_OK;
+	}
+	for (i = 0; i < policy->num_sensitivities; i++) {
+                ap_mls_sens_t *sens = policy->sensitivities + i;
+                name_item_t *name = sens->aliases;
+                Tcl_AppendElement(interp, sens->name);
+                while (name != NULL) {
+                        Tcl_AppendElement(interp, name->name);
+                        name = name->next;
+                }
+        }
+        return TCL_OK;
+}
+
+
+int Apol_SensCats(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
+{
+	int sens_index;
+
+	if (argc != 2) {
+		Tcl_SetResult(interp, "wrong # of args", TCL_STATIC);
+		return TCL_ERROR;
+	}
+	if (policy == NULL) {
+		return TCL_OK;
+	}
+        if ((sens_index = get_sensitivity_idx(argv[1], policy)) >= 0) {
+                int *cats, num_cats, i;
+                if (ap_mls_sens_get_level_cats(sens_index, &cats, &num_cats, policy) < 0) {
+                        Tcl_SetResult(interp, "could not get categories list", TCL_STATIC);
+                        return TCL_ERROR;
+                }
+                for (i = 0; i < num_cats; i++) {
+                        Tcl_AppendElement(interp, policy->categories[i].name);
+                }
+                free(cats);
+        }
+        return TCL_OK;
+}
+
+/* Perform a range transition search.  Expected arguments are:
+ *
+ *  argv[1] - list of source types  (string)
+ *  argv[2] - list of target types  (string)
+ *  argv[3] - low level             (2-ple of sensitivity + list of categories)
+ *  argv[4] - high level            (2-ple of sensitivity + list of categories)
+ *  argv[5] - search type           ("", "exact", "subset", or "superset")
+ *
+ * If search type is "" then ignore argv[3] and argv[4].
+ * Returns a list of range_transition indices.
+ */
+int Apol_SearchRangeTransRules(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
+{
+        int *types[2] = {NULL, NULL}, num_types[2] = {0, 0};
+        ap_mls_range_t range;
+        unsigned search_type = 0;
+        int *found_rules = NULL;
+        int num_rules;
+        int retval = TCL_ERROR;
+
+        ap_mls_level_t low = {0, NULL, 0}, high = {0, NULL, 0};
+        int i, j;
+        Tcl_Obj *result_list_obj;
+
+        if (argc != 6) {
+		Tcl_SetResult(interp, "wrong # of args", TCL_STATIC);
+		return TCL_ERROR;
+	}
+
+        for (i = 0; i < 2; i++) {
+                Tcl_Obj *types_list_obj = Tcl_NewStringObj(argv[i + 1], -1);
+                Tcl_Obj *types_obj;
+                char *type_string;
+                int num_list_objs, type_value;
+                if (Tcl_ListObjLength(interp, types_list_obj, &num_list_objs) == TCL_ERROR) {
+                        goto cleanup;
+                }
+                for (j = 0; j < num_list_objs; j++) {
+                        if (Tcl_ListObjIndex(interp, types_list_obj, j, &types_obj) == TCL_ERROR) {
+                                goto cleanup;
+                        }
+                        assert(types_obj != NULL);
+                        type_string = Tcl_GetString(types_obj);
+                        if ((type_value = get_type_idx(type_string, policy)) < 0) {
+                                Tcl_AppendResult(interp, "Unknown type ", type_string, NULL);
+                                goto cleanup;
+                        }
+                        if (add_i_to_a(type_value, num_types + i, types + i)) {
+                                Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
+                                goto cleanup;
+                        }
+                }
+        }
+        if (num_types[0] > 0) {
+                search_type |= AP_MLS_RTS_SRC_TYPE;
+        }
+        if (num_types[1] > 0) {
+                search_type |= AP_MLS_RTS_TGT_TYPE;
+        }
+        
+        if (argv[5][0] != '\0') {
+                /* in a search type was given, then try to parse the range */
+                if (strcmp(argv[5], "exact") == 0) {
+                        search_type |= AP_MLS_RTS_RNG_EXACT;
+                }
+                else if (strcmp(argv[5], "subset") == 0) {
+                        search_type |= AP_MLS_RTS_RNG_SUB;
+                }
+                else if (strcmp(argv[5], "superset") == 0) {
+                        search_type |= AP_MLS_RTS_RNG_SUPER;
+                }
+                else {
+                        Tcl_SetResult(interp, "Illegal search type given.", TCL_STATIC);
+                        goto cleanup;
+                }
+
+                if (tcl_level_string_to_level(interp, argv[3], &low) != 0) {
+                        goto cleanup;
+                }
+                if (tcl_level_string_to_level(interp, argv[4], &high) != 0) {
+                        goto cleanup;
+                }
+        }
+        range.low = &low;
+        range.high = &high;
+
+        num_rules = ap_mls_range_transition_search(types[0], num_types[0],
+                                                   types[1], num_types[1],
+                                                   &range, search_type,
+                                                   &found_rules, policy);
+        if (num_rules < 0) {
+                Tcl_SetResult(interp, "Error while executiong range transition search.", TCL_STATIC);
+                goto cleanup;
+        }
+        
+        result_list_obj = Tcl_NewListObj(0, NULL);
+        for (i = 0; i < num_rules; i++) {
+                Tcl_Obj *rule_obj = Tcl_NewIntObj(found_rules[i]);
+                if (Tcl_ListObjAppendElement(interp, result_list_obj, rule_obj) == TCL_ERROR) {
+                        goto cleanup;
+                }
+        }
+        Tcl_SetObjResult(interp, result_list_obj);
+        retval = TCL_OK;
+
+ cleanup:
+        free(types[0]);
+        free(types[1]);
+        ap_mls_level_free(&low);
+        ap_mls_level_free(&high);
+        free(found_rules);
+        return retval;
 }
 
 static void apol_cond_rules_append_cond_list(cond_rule_list_t *list, bool_t include_allow, bool_t include_audit, bool_t include_tt, 
@@ -6593,7 +6890,7 @@ int Apol_Init(Tcl_Interp *interp)
 	Tcl_CreateCommand(interp, "apol_GetTypeInfo", (Tcl_CmdProc *) Apol_GetTypeInfo, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 /* Apol_GetTErules not supported, use Apol_SearchTErules */
 	Tcl_CreateCommand(interp, "apol_GetTErules", (Tcl_CmdProc *) Apol_GetTErules, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-        Tcl_CreateCommand(interp, "apol_GetAttributeByRegexp", (Tcl_CmdProc *) Apol_GetAttributeByRegexp, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+    Tcl_CreateCommand(interp, "apol_GetAttributeByRegexp", (Tcl_CmdProc *) Apol_GetAttributeByRegexp, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_SearchTErules", (Tcl_CmdProc *) Apol_SearchTErules, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_GetSingleRoleInfo", (Tcl_CmdProc *) Apol_GetSingleRoleInfo, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_GetRolesByType", (Tcl_CmdProc *) Apol_GetRolesByType, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
@@ -6626,6 +6923,12 @@ int Apol_Init(Tcl_Interp *interp)
 	Tcl_CreateCommand(interp, "apol_TransitiveFindPathsAbort", (Tcl_CmdProc *) Apol_TransitiveFindPathsAbort, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_SearchInitialSIDs", (Tcl_CmdProc *) Apol_SearchInitialSIDs, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_GetInitialSIDInfo", (Tcl_CmdProc *) Apol_GetInitialSIDInfo, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+	Tcl_CreateCommand(interp, "apol_RenderLevel", (Tcl_CmdProc *) Apol_RenderLevel, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_RenderRangeTrans", (Tcl_CmdProc *) Apol_RenderRangeTrans, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_IsValidRange", (Tcl_CmdProc *) Apol_IsValidRange, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_GetSens", (Tcl_CmdProc *) Apol_GetSens, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_SensCats", (Tcl_CmdProc *) Apol_SensCats, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_SearchRangeTransRules", (Tcl_CmdProc *) Apol_SearchRangeTransRules, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_Cond_Bool_SetBoolValue", (Tcl_CmdProc *) Apol_Cond_Bool_SetBoolValue, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_Cond_Bool_GetBoolValue", (Tcl_CmdProc *) Apol_Cond_Bool_GetBoolValue, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_SearchConditionalRules", (Tcl_CmdProc *) Apol_SearchConditionalRules, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
