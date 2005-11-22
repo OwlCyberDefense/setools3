@@ -183,7 +183,7 @@ static void on_create_report_button_clicked(GtkButton *button, gpointer user_dat
 	const gchar *file_path = NULL;
 			
 	assert(report_window != NULL);
-	filename = get_filename_from_user("Save Report to File", NULL, report_window->window);
+	filename = get_filename_from_user("Save Report to File", NULL, report_window->window, TRUE);
 	if (filename == NULL)
 		return;
 	

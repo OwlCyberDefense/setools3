@@ -70,7 +70,6 @@ seaudit_window_tree_view_onSelect_ViewEntireMsg(GtkTreeView *treeview,
                                             	GtkTreeViewColumn *column,
                                             	gpointer user_data)
 {
-
 	/* we passed the view as userdata when we connected the signal */
 	seaudit_window_view_entire_message_in_textbox(NULL);
 }
@@ -144,7 +143,7 @@ seaudit_window_onButtonPressed(GtkWidget *treeview, GdkEventButton *event, gpoin
 	GList *glist = NULL;
 	GtkTreeIter iter;
 	int fltr_msg_idx; 
-	
+
 	/* single click with the right mouse button? */
 	if (event->type == GDK_BUTTON_PRESS  &&  event->button == 3) {	
         	selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(treeview));
@@ -174,8 +173,11 @@ seaudit_window_onButtonPressed(GtkWidget *treeview, GdkEventButton *event, gpoin
 			gtk_tree_path_free(path);	
 		}
 		return TRUE; /* we handled this */
+	} else if (event->type == GDK_BUTTON_PRESS  &&  event->button == 1) {	
+		/* remember that we don't care about deselection, because you can't 
+		   deselect rows so something will always be selected unless we reload*/
+		seaudit_view_entire_selection_update_sensitive(FALSE);
 	}
-	
 	return FALSE; /* we did not handle this */
 }
 
@@ -351,8 +353,23 @@ static void seaudit_window_on_log_column_clicked(GtkTreeViewColumn *column, gpoi
 
 static void seaudit_window_on_notebook_switch_page(GtkNotebook *notebook, GtkNotebookPage *page, guint pagenum, seaudit_window_t *window)
 {
-	seaudit_update_status_bar(seaudit_app);
+	seaudit_filtered_view_t *view;
+	GtkTreeSelection *selection;
 
+	seaudit_update_status_bar(seaudit_app);
+	/* if the current page has a selected row then 
+	   make sure the view entire message button is sensitive */
+	if (!window)
+		return;
+	view = seaudit_window_get_current_view(window);
+	if (view && view->tree_view) {
+		selection = gtk_tree_view_get_selection(view->tree_view);
+		assert(selection);
+		if (gtk_tree_selection_count_selected_rows(selection) == 0)
+			seaudit_view_entire_selection_update_sensitive(TRUE);
+		else
+			seaudit_view_entire_selection_update_sensitive(FALSE);
+	}
 }
 
 /*
