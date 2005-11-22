@@ -201,9 +201,9 @@ void multifilter_window_save_multifilter(multifilter_window_t *window, gboolean 
 		filename = g_string_new(window->filename->str);
 	else {
 		if (multifilter_is_parent_window)
-			filename = get_filename_from_user("Save View", window->name->str, window->window);
+			filename = get_filename_from_user("Save View", window->name->str, window->window, TRUE);
 		else
-			filename = get_filename_from_user("Save View", window->name->str, seaudit_app->window->window);
+			filename = get_filename_from_user("Save View", window->name->str, seaudit_app->window->window, TRUE);
 		if (filename == NULL)
 			return;
 		/* Append the default seaudit view extension (defined in seaudit.h). */
@@ -272,7 +272,7 @@ int multifilter_window_load_multifilter(multifilter_window_t *window)
 	if (!window)
 		return -1;
 
-	filename = get_filename_from_user("Open View", NULL, seaudit_app->window->window);
+	filename = get_filename_from_user("Open View", NULL, seaudit_app->window->window, FALSE);
 	if (filename == NULL)
 		return -1;
 	err = seaudit_multifilter_load_from_file(&multifilter, &is_multi, filename->str);
@@ -482,7 +482,7 @@ static void multifilter_window_on_import_button_pressed(GtkButton *button, multi
 	GString *filename, *message;
 	gint err;
 
-	filename = get_filename_from_user("Import Filter", NULL, window->window);
+	filename = get_filename_from_user("Import Filter", NULL, window->window, FALSE);
 	if (!filename)
 		return;
 	err = seaudit_multifilter_load_from_file(&multifilter, &is_multi, filename->str);
@@ -544,7 +544,7 @@ static void multifilter_window_on_export_button_pressed(GtkButton *button, multi
 	index = gtk_tree_path_get_indices(path);
 	filter_window = g_list_nth_data(window->filter_windows, index[0]);
 	filter = filter_window_get_filter(filter_window);
-	filename = get_filename_from_user("Export filter", filter->name, window->window);
+	filename = get_filename_from_user("Export filter", filter->name, window->window, TRUE);
 	if (filename == NULL)
 		return;
 	/* Append the default seaudit filter extension (defined in seaudit.h). */

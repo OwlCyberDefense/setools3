@@ -62,7 +62,7 @@ void seaudit_destroy(seaudit_t *seaudit_app);
 int seaudit_open_policy(seaudit_t *seaudit_app, const char *filename);
 int seaudit_open_log_file(seaudit_t *seaudit_app, const char *filename);
 void seaudit_update_status_bar(seaudit_t *seaudit);
-
+void seaudit_view_entire_selection_update_sensitive(bool_t disable);
 /* Functions related to exporting log files */
 
 void seaudit_save_log_file(bool_t selected_only);
