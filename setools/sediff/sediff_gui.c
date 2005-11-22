@@ -18,12 +18,14 @@
 #include <binpol/binpol.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>
 #include <assert.h>
 #include <getopt.h>
 #include <time.h>
+#include <sys/mman.h>
 
 /* The following should be defined in the make environment */
 #ifndef SEDIFF_GUI_VERSION_NUM
@@ -995,7 +997,7 @@ static void sediff_set_open_policies_gui_state(gboolean open)
 	widget = glade_xml_get_widget(sediff_app->window_xml, "sediff_menu_find");
 	g_assert(widget);
 	gtk_widget_set_sensitive(widget, open);
-	sediff_main_window_rename_policy_tabs(sediff_app->p1_filename, sediff_app->p2_filename);
+	sediff_main_window_rename_policy_tabs(sediff_app->p1_sfd.name, sediff_app->p2_sfd.name);
 }
 
 static int sediff_txt_buffer_insert_boolean_results(GtkTextBuffer *txt, GString *string, ap_single_bool_diff_t *sbd,
@@ -1493,13 +1495,13 @@ static void sediff_txt_buffer_insert_summary_results(GtkTextBuffer *txt)
 
 	gtk_text_buffer_get_start_iter(txt,&iter);
 	g_string_printf(string,"Policy Difference Statistics\n\n");
-	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,main_header_tag,NULL);
+	gtk_text_buffer_insert_with_tags(txt, &iter, string->str, -1, main_header_tag, NULL);
 	g_string_printf(string,"Policy Filenames:\n");
-	gtk_text_buffer_insert_with_tags(txt,&iter,string->str,-1,header_tag,NULL);
-	g_string_printf(string,"\tPolicy 1: %s\n",sediff_app->p1_filename->str);
-	gtk_text_buffer_insert(txt,&iter,string->str,-1);
-	g_string_printf(string,"\tPolicy 2: %s\n\n",sediff_app->p2_filename->str);
-	gtk_text_buffer_insert(txt,&iter,string->str,-1);
+	gtk_text_buffer_insert_with_tags(txt, &iter, string->str, -1, header_tag, NULL);
+	g_string_printf(string,"\tPolicy 1: %s\n", sediff_app->p1_sfd.name->str);
+	gtk_text_buffer_insert(txt,&iter,string->str, -1);
+	g_string_printf(string,"\tPolicy 2: %s\n\n", sediff_app->p2_sfd.name->str);
+	gtk_text_buffer_insert(txt,&iter,string->str, -1);
 
 	sediff_txt_buffer_insert_summary(txt, OPT_CLASSES);
 	sediff_txt_buffer_insert_summary(txt, OPT_COMMON_PERMS);
@@ -3357,10 +3359,14 @@ static void sediff_destroy(sediff_app_t *sediff_app)
 		g_object_unref(G_OBJECT(sediff_app->window_xml));
 	if (sediff_app->open_dlg_xml != NULL)
 		g_object_unref(G_OBJECT(sediff_app->open_dlg_xml));
-	if (sediff_app->p1_filename) 
-		g_string_free(sediff_app->p1_filename,TRUE);
-	if (sediff_app->p2_filename) 
-		g_string_free(sediff_app->p2_filename,TRUE);
+	if (sediff_app->p1_sfd.name) 
+		g_string_free(sediff_app->p1_sfd.name, TRUE);
+	if (sediff_app->p2_sfd.name) 
+		g_string_free(sediff_app->p2_sfd.name, TRUE);
+	if (sediff_app->p1_sfd.data)
+		munmap(sediff_app->p1_sfd.data, sediff_app->p1_sfd.size);
+	if (sediff_app->p2_sfd.data)
+		munmap(sediff_app->p2_sfd.data, sediff_app->p2_sfd.size);
 	if (sediff_app->rename_types_window) {
 		sediff_rename_types_window_unref_members(sediff_app->rename_types_window);
 		free(sediff_app->rename_types_window);
@@ -3464,13 +3470,11 @@ static void sediff_policy_stats_textview_populate(policy_t *p1, GtkTextView *tex
 	g_free(contents);
 }
 
-static int sediff_policy_file_textview_populate(const char *filename, GtkTextView *textview)
+static int sediff_policy_file_textview_populate(sediff_file_data_t *sfd, GtkTextView *textview)
 {
         GtkTextBuffer *txt;
 	GtkTextIter iter;
 	gchar *contents = NULL;
-	gsize length;
-	GError *error;
 	GString *string;
 	GtkTextTag *mono_tag = NULL;
 	GtkTextTagTable *table = NULL;
@@ -3495,18 +3499,13 @@ static int sediff_policy_file_textview_populate(const char *filename, GtkTextVie
 	gtk_text_view_set_cursor_visible (GTK_TEXT_VIEW (textview), TRUE);
 
 	/* if this is not a binary policy */
-
-	if (!fn_is_binpol(filename)) {
-		if (!g_file_get_contents(filename, &contents, &length, &error)){
-			g_warning("Unable to read file %s\n", filename);
-			return -1;
-		}
-		gtk_text_buffer_insert_with_tags_by_name(txt, &iter, contents, length, "mono-tag", NULL);
+	if (!fn_is_binpol(sfd->name->str) && sfd->data) {
+		gtk_text_buffer_insert_with_tags_by_name(txt, &iter, sfd->data, sfd->size, "mono-tag", NULL);
 		gtk_text_buffer_set_modified(txt, TRUE);
 		g_free(contents);
 	} else {
 		string = g_string_new("");
-		g_string_printf(string,"Policy File %s is a binary policy",filename);
+		g_string_printf(string,"Policy File %s is a binary policy", sfd->name->str);
 		gtk_text_buffer_insert_with_tags_by_name(txt, &iter, string->str, -1, "mono-tag", NULL);
 		g_string_free(string,TRUE);
 	}
@@ -3734,7 +3733,7 @@ err:
 
 static void run_diff_clicked()
 {
-	if (sediff_app->p1_filename && sediff_app->p2_filename) {
+	if (sediff_app->p1_sfd.name && sediff_app->p2_sfd.name) {
 		if (sediff_app->rename_types_window)
 			sediff_diff_policies(sediff_app->p1, sediff_app->p2, sediff_app->rename_types_window->renamed_types);
 		else
@@ -3989,13 +3988,13 @@ static void sediff_open_button_clicked()
 		gtk_window_set_transient_for(GTK_WINDOW(sediff_app->open_dlg), sediff_app->window);
 		gtk_window_set_position(GTK_WINDOW(sediff_app->open_dlg), GTK_WIN_POS_CENTER_ON_PARENT);
 
-		if (sediff_app->p1_filename) {
+		if (sediff_app->p1_sfd.name) {
 			entry = GTK_ENTRY(glade_xml_get_widget(sediff_app->open_dlg_xml, "sediff_dialog_p1_entry"));
-			gtk_entry_set_text(entry,sediff_app->p1_filename->str);
+			gtk_entry_set_text(entry, sediff_app->p1_sfd.name->str);
 		}
-		if (sediff_app->p2_filename) {
+		if (sediff_app->p2_sfd.name) {
 			entry = GTK_ENTRY(glade_xml_get_widget(sediff_app->open_dlg_xml, "sediff_dialog_p2_entry"));
-			gtk_entry_set_text(entry,sediff_app->p2_filename->str);
+			gtk_entry_set_text(entry, sediff_app->p2_sfd.name->str);
 		}
 		g_signal_connect(G_OBJECT(sediff_app->open_dlg), "delete_event", 
 			G_CALLBACK(sediff_open_dialog_on_window_destroy), sediff_app);
@@ -4113,11 +4112,11 @@ static void sediff_policy_notebook_on_switch_page(GtkNotebook *notebook, GtkNote
 {
 	GtkTextView *txt;
 	int main_pagenum;
-	char *file = NULL;
 	GtkNotebook *main_notebook;
+	sediff_file_data_t *sfd = NULL;
 
 	/* if we don't have filenames we can't open anything... */
-	if (!sediff_app->p1_filename && !sediff_app->p2_filename)
+	if (!sediff_app->p1_sfd.name && !sediff_app->p2_sfd.name)
 		return;
 
 	/* if we aren't looking at the policy tab of the noteboook return */
@@ -4134,12 +4133,12 @@ static void sediff_policy_notebook_on_switch_page(GtkNotebook *notebook, GtkNote
 		/* if we are looking at policy 1 */
 		txt = GTK_TEXT_VIEW(glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p1_text"));
 		g_assert(txt);
-		file = sediff_app->p1_filename->str;
+		sfd = &(sediff_app->p1_sfd);
 	} else {
 		/* if we are looking at policy 2 */
 		txt = GTK_TEXT_VIEW(glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p2_text"));
 		g_assert(txt);
-		file = sediff_app->p2_filename->str;
+		sfd = &(sediff_app->p2_sfd);
 	}
 
 	/* if the buffer has already been modified, i.e. its had the policy put into it
@@ -4154,7 +4153,7 @@ static void sediff_policy_notebook_on_switch_page(GtkNotebook *notebook, GtkNote
 	/* show our loading dialog */
 	sediff_modal_dlg_show("Loading...", "Loading text - this may take a while.");
 
-	sediff_policy_file_textview_populate(file, txt);	
+	sediff_policy_file_textview_populate(sfd, txt);	
 
 	sediff_modal_dlg_destroy();
 
@@ -4236,12 +4235,12 @@ static void sediff_initialize_policies()
 		close_policy(sediff_app->p2);
 	sediff_app->p1 = NULL;
 	sediff_app->p2 = NULL;
-	if (sediff_app->p1_filename)
-		g_string_free(sediff_app->p1_filename, TRUE);
-	if (sediff_app->p2_filename)
-		g_string_free(sediff_app->p2_filename, TRUE);
-	sediff_app->p1_filename = NULL;
-	sediff_app->p2_filename = NULL;
+	if (sediff_app->p1_sfd.name)
+		g_string_free(sediff_app->p1_sfd.name, TRUE);
+	if (sediff_app->p2_sfd.name)
+		g_string_free(sediff_app->p2_sfd.name, TRUE);
+	sediff_app->p1_sfd.name = NULL;
+	sediff_app->p2_sfd.name = NULL;
 
 	sediff_rename_types_window_unref_members(sediff_app->rename_types_window);
 
@@ -4293,6 +4292,45 @@ void sediff_reset_policy_notebooks()
 
 }
 
+/* file_data should be a char ** that can be assigned to the data allocated
+   by mmap, size should be a preallocated int that we can put the size of data into 
+   will also clear out any existing data from file_data.  will return 0 after clearing
+   out data if file is binary
+*/
+static int sediff_file_mmap(const char *file, char **file_data, size_t *size)
+{
+	struct stat statbuf;
+	int rt;
+
+	/* clear out any old data */
+	if (*file_data)
+		munmap(*file_data,*size);
+	
+	*file_data = NULL;
+	*size = 0;
+
+	/* if this is a binary policy just return now
+	   but this is not an error */
+	if (fn_is_binpol(file))
+		return 0;
+	
+	rt = open(file, O_RDONLY);
+	if (rt < 0)
+		return -1;
+	if (fstat(rt, &statbuf) < 0) {
+		close(rt);
+		return -1;
+	}
+
+        *size = statbuf.st_size;
+	if ((*file_data = mmap(0, statbuf.st_size, PROT_READ, MAP_PRIVATE,
+			  rt, 0)) == (caddr_t) -1) {
+		close(rt);
+		return -1;
+	}
+	close(rt);
+	return 0;
+}
 
 /* opens p1 and p2, populates policy text buffers */
 static int sediff_load_policies(const char *p1_file, const char *p2_file)
@@ -4352,14 +4390,18 @@ static int sediff_load_policies(const char *p1_file, const char *p2_file)
 		goto err;
 	}
 
+	/* set up the policies */
 	if (sediff_app->p1)
 		close_policy(p1);
 	if (sediff_app->p2)
 		close_policy(p2);
-	sediff_app->p1_filename = g_string_new(p1_file);
-	sediff_app->p2_filename = g_string_new(p2_file);
+
+	sediff_app->p1_sfd.name = g_string_new(p1_file);
+	sediff_app->p2_sfd.name = g_string_new(p2_file);
 	sediff_app->p1 = p1;
 	sediff_app->p2 = p2;
+	sediff_file_mmap(p1_file,&(sediff_app->p1_sfd.data), &(sediff_app->p1_sfd.size));
+	sediff_file_mmap(p1_file,&(sediff_app->p2_sfd.data), &(sediff_app->p2_sfd.size));
 		
 	/* Grab the 2 policy textviews */
 	p1_textview = (GtkTextView *)glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p1_text");
