@@ -96,16 +96,48 @@ void seaudit_destroy(seaudit_t *seaudit_app)
 	seaudit_app = NULL;
 }
 
-static void seaudit_change_report_menuitem_state(bool_t disable) 
-{
-	GtkWidget *report_menu;
 
-	report_menu = glade_xml_get_widget(seaudit_app->window->xml, "create_standard_report");
-	g_assert(report_menu);
+/* change the sensitive state of widget by name */
+static void seaudit_widget_update_sensitive(const char *name, bool_t disable)
+{
+	GtkWidget *widget;
+
+	if (!seaudit_app || !seaudit_app->window || !seaudit_app->window->xml)
+		return;
+	widget = glade_xml_get_widget(seaudit_app->window->xml, name);
+	g_assert(widget);
 	if (disable)
-		gtk_widget_set_sensitive(report_menu , 0); 
+		gtk_widget_set_sensitive(widget , 0); 
 	else 
-		gtk_widget_set_sensitive(report_menu , 1); 
+		gtk_widget_set_sensitive(widget , 1); 
+}
+
+/* this is just a public method to set this button */
+void seaudit_view_entire_selection_update_sensitive(bool_t disable)
+{
+	seaudit_widget_update_sensitive("view_entire_message1", disable);
+}
+
+/* change the state of all widgets that depend on the log being open */
+static void seaudit_log_menu_items_update(bool_t disable)
+{
+	seaudit_widget_update_sensitive("SaveView", disable);
+	seaudit_widget_update_sensitive("SaveAsView", disable);
+	seaudit_widget_update_sensitive("ExportLog", disable);
+	seaudit_widget_update_sensitive("export_selection1", disable);
+	seaudit_widget_update_sensitive("create_standard_report", disable);
+	seaudit_widget_update_sensitive("RealTimeButton", disable);
+	seaudit_widget_update_sensitive("ModifyView", disable);
+	seaudit_widget_update_sensitive("ModifyViewButton", disable);
+	seaudit_widget_update_sensitive("NewTab", disable);
+	seaudit_widget_update_sensitive("OpenView", disable);
+}
+
+/* change the state of all widgets that depend on the policy being open */
+static void seaudit_policy_menu_items_update(bool_t disable)
+{
+	seaudit_widget_update_sensitive("top_window_query_button", disable);
+	seaudit_widget_update_sensitive("QueryPolicy", disable);
 }
 
 void seaudit_update_status_bar(seaudit_t *seaudit)
@@ -126,12 +158,14 @@ void seaudit_update_status_bar(seaudit_t *seaudit)
 	if (seaudit->cur_policy == NULL) {
 		ver_str = "Policy Version: No policy";
 		gtk_label_set_text(v_status_bar, ver_str);
+		seaudit_policy_menu_items_update(TRUE);
 	} else {
                	if(is_binary_policy(seaudit->cur_policy))
                 	snprintf(str, STR_SIZE, "Policy Version: %s (binary)", get_policy_version_name(seaudit->cur_policy->version));
                	else
                 	snprintf(str, STR_SIZE, "Policy Version: %s (source)", get_policy_version_name(seaudit->cur_policy->version));
 		gtk_label_set_text(v_status_bar, str);
+		seaudit_policy_menu_items_update(FALSE);
 	}
 
 	if (seaudit->cur_log == NULL) {
@@ -139,6 +173,8 @@ void seaudit_update_status_bar(seaudit_t *seaudit)
 		gtk_label_set_text(l_status_bar, str);
 		snprintf(str, STR_SIZE, "Dates: No log");
 		gtk_label_set_text(d_status_bar, str);
+		seaudit_log_menu_items_update(TRUE);
+		seaudit_view_entire_selection_update_sensitive(TRUE);
 	} else {
 		view = seaudit_window_get_current_view(seaudit->window);
 		if (view)
@@ -160,7 +196,10 @@ void seaudit_update_status_bar(seaudit_t *seaudit)
 			snprintf(str, STR_SIZE, "Dates: No messages");
 			gtk_label_set_text(d_status_bar, str);
 		}
+		seaudit_log_menu_items_update(FALSE);
+		seaudit_view_entire_selection_update_sensitive(TRUE);
 	}
+
 }
 
 int seaudit_open_policy(seaudit_t *seaudit, const char *filename)
@@ -319,7 +358,6 @@ int seaudit_open_log_file(seaudit_t *seaudit, const char *filename)
 	seaudit_set_recent_logs_submenu(&(seaudit->seaudit_conf));
 	save_seaudit_conf_file(&(seaudit->seaudit_conf));
 	log_load_signal_emit();
-	seaudit_change_report_menuitem_state(FALSE);
 	clear_wait_cursor(GTK_WIDGET(seaudit->window->window));
 	return 0;
 }
@@ -870,7 +908,7 @@ int main(int argc, char **argv)
 	seaudit_app = seaudit_init();
 	if (!seaudit_app)
 		exit(1);
-	seaudit_change_report_menuitem_state(TRUE);
+
 	seaudit_set_recent_policys_submenu(&(seaudit_app->seaudit_conf));
 	seaudit_set_recent_logs_submenu(&(seaudit_app->seaudit_conf));
 	seaudit_set_real_time_log_button_state(seaudit_app->seaudit_conf.real_time_log);
@@ -920,7 +958,6 @@ int main(int argc, char **argv)
 
 	return 0;
 }
-
 
 /*
  * glade autoconnected callbacks for main window
