@@ -785,6 +785,39 @@ int get_sensitivity_idx(const char *name, policy_t *policy);
 int get_category_idx(const char *name, policy_t *policy);
 void ap_mls_level_free(ap_mls_level_t *lvl);
 void ap_mls_range_free(ap_mls_range_t *rng);
+bool_t ap_mls_does_level_use_category(ap_mls_level_t *level, int cat);
+bool_t ap_mls_does_range_include_level(ap_mls_range_t *range, ap_mls_level_t *level, policy_t *policy);
+bool_t ap_mls_does_range_contain_subrange(ap_mls_range_t *range, ap_mls_range_t *subrange, policy_t *policy);
+int ap_mls_get_sens_dom_val(int sensitivity, policy_t *policy);
+bool_t ap_mls_validate_level(ap_mls_level_t *level, policy_t *policy);
+bool_t ap_mls_validate_range(ap_mls_range_t *range, policy_t *policy);
+
+/* the level compare function will return one of the following on success or -1 on error */
+#define AP_MLS_EQ 0
+#define AP_MLS_DOM 1
+#define AP_MLS_DOMBY 2
+#define AP_MLS_INCOMP 3
+int ap_mls_level_compare(ap_mls_level_t *l1, ap_mls_level_t *l2, policy_t *policy);
+ap_mls_level_t * ap_mls_sensitivity_get_level(int sens, policy_t *policy);
+int ap_mls_sens_get_level_cats(int sens, int **cats, int *num_cats, policy_t *policy);
+int ap_mls_category_get_sens(int cat, int **sens, int *num_sens, policy_t *policy);
+
+/* Range Trnsition Search*/
+/* return value >=0 num resutls < 0 for error (-arg idx on EINVAL -1 otherwise) */
+/* the search type flg*/
+/* types may be one of the following src, tgt, src|tgt, any (use src array) */
+#define AP_MLS_RTS_SRC_TYPE 0x01
+#define AP_MLS_RTS_TGT_TYPE 0x02
+#define AP_MLS_RTS_ANY_TYPE 0x04
+/* range matching mode */
+#define AP_MLS_RTS_RNG_SUB   0x08 /* query range is subset of rule range */
+#define AP_MLS_RTS_RNG_SUPER 0x10 /* query range is superset of rule range */
+#define AP_MLS_RTS_RNG_EXACT (AP_MLS_RTS_RNG_SUB|AP_MLS_RTS_RNG_SUPER)
+/* how to treat searches on multiple fields 
+ * by default matches criteria in all fields
+ * if set returns matches any one field */
+#define AP_MLS_RTS_MATCH_ANY 0x20
+int ap_mls_range_transition_search(int *src_types, int num_src_types, int *tgt_types, int num_tgt_types, ap_mls_range_t *range, unsigned char search_type, int **rules, policy_t *policy);
 
 /* constraints */
 void ap_constraint_expr_destroy(ap_constraint_expr_t *expr);
@@ -795,6 +828,7 @@ bool_t does_clone_rule_use_type(int idx, int type, unsigned char whichlist, cln_
 	int *cnt, policy_t *policy);
 int get_rule_lineno(int rule_idx, int rule_type, policy_t *policy);
 int get_ta_item_name(ta_item_t *ta, char **name, policy_t *policy);
+int extract_types_from_ta_list(ta_item_t *list, bool_t compliment, bool_t allow_self, int **types, int *num_types, policy_t *policy);
 int free_ta_list(ta_item_t *list);
 
 /**************/
