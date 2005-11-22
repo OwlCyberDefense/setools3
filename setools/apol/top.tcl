@@ -91,6 +91,7 @@ namespace eval ApolTop {
 	variable terules_tab		"Apol_TE"
 	variable roles_tab		"Apol_Roles"
 	variable rbac_tab		"Apol_RBAC"
+	variable range_tab		"Apol_Range"
 	variable class_perms_tab	"Apol_Class_Perms"
 	variable users_tab		"Apol_Users"
 	variable initial_sids_tab	"Apol_Initial_SIDS"
@@ -434,6 +435,10 @@ proc ApolTop::set_Focus_to_Text { tab } {
 		$ApolTop::rbac_tab {
 			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
 			Apol_RBAC::set_Focus_to_Text
+		} \
+		$ApolTop::range_tab {
+			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
+			Apol_Range::set_Focus_to_Text
 		} \
 		$ApolTop::class_perms_tab {
 			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
@@ -1254,6 +1259,7 @@ proc ApolTop::create { } {
 	Apol_TE::create $rules_nb
 	Apol_Cond_Rules::create $rules_nb
 	Apol_RBAC::create $rules_nb
+	Apol_Range::create $rules_nb
 	
 	$components_nb compute_size
 	pack $components_nb -fill both -expand yes -padx 4 -pady 4
@@ -1887,6 +1893,7 @@ proc ApolTop::closePolicy {} {
 	Apol_TE::close
 	Apol_Roles::close
         Apol_RBAC::close
+	Apol_Range::close
         Apol_Users::close
         Apol_Initial_SIDS::close
         Apol_Cond_Bools::close
@@ -1934,6 +1941,9 @@ proc ApolTop::open_apol_modules {file} {
 	}
 	set rt [catch {Apol_RBAC::open} err]
 	if {$rt != 0} {
+		return -code error $err
+	}
+	if {[catch {Apol_Range::open} err]} {
 		return -code error $err
 	}
 	set rt [catch {Apol_Users::open} err]
