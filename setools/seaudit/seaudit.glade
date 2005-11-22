@@ -19,6 +19,7 @@
   <property name="skip_pager_hint">False</property>
   <property name="type_hint">GDK_WINDOW_TYPE_HINT_NORMAL</property>
   <property name="gravity">GDK_GRAVITY_NORTH_WEST</property>
+  <property name="focus_on_map">True</property>
   <signal name="destroy" handler="seaudit_on_TopWindow_destroy" last_modification_time="Fri, 23 Jan 2004 18:06:38 GMT"/>
 
   <child>
@@ -229,6 +230,7 @@
 		  <child>
 		    <widget class="GtkImageMenuItem" id="SaveView">
 		      <property name="visible">True</property>
+		      <property name="sensitive">False</property>
 		      <property name="tooltip" translatable="yes">Save the view for the current tab</property>
 		      <property name="label" translatable="yes">Save</property>
 		      <property name="use_underline">True</property>
@@ -251,6 +253,7 @@
 		  <child>
 		    <widget class="GtkImageMenuItem" id="SaveAsView">
 		      <property name="visible">True</property>
+		      <property name="sensitive">False</property>
 		      <property name="tooltip" translatable="yes">Save the view for the current tab as a new file</property>
 		      <property name="label" translatable="yes">Save As...</property>
 		      <property name="use_underline">True</property>
@@ -279,6 +282,7 @@
 		  <child>
 		    <widget class="GtkImageMenuItem" id="ModifyView">
 		      <property name="visible">True</property>
+		      <property name="sensitive">False</property>
 		      <property name="tooltip" translatable="yes">Modify the view for the current tab</property>
 		      <property name="label" translatable="yes">Modify</property>
 		      <property name="use_underline">True</property>
@@ -308,6 +312,7 @@
 		  <child>
 		    <widget class="GtkImageMenuItem" id="ExportLog">
 		      <property name="visible">True</property>
+		      <property name="sensitive">False</property>
 		      <property name="tooltip" translatable="yes">Export the log being displayed in the current tab to a file</property>
 		      <property name="label" translatable="yes">Export View...</property>
 		      <property name="use_underline">True</property>
@@ -331,6 +336,7 @@
 		  <child>
 		    <widget class="GtkImageMenuItem" id="export_selection1">
 		      <property name="visible">True</property>
+		      <property name="sensitive">False</property>
 		      <property name="tooltip" translatable="yes">Export selected messages to a file</property>
 		      <property name="label" translatable="yes">Export Selected Messages...</property>
 		      <property name="use_underline">True</property>
@@ -360,6 +366,7 @@
 		  <child>
 		    <widget class="GtkImageMenuItem" id="view_entire_message1">
 		      <property name="visible">True</property>
+		      <property name="sensitive">False</property>
 		      <property name="tooltip" translatable="yes">View all fields of the log message</property>
 		      <property name="label" translatable="yes">View Entire Message</property>
 		      <property name="use_underline">True</property>
@@ -395,6 +402,7 @@
 		  <child>
 		    <widget class="GtkImageMenuItem" id="QueryPolicy">
 		      <property name="visible">True</property>
+		      <property name="sensitive">False</property>
 		      <property name="tooltip" translatable="yes">Query the policy for TE rules</property>
 		      <property name="label" translatable="yes">Query policy</property>
 		      <property name="use_underline">True</property>
@@ -514,6 +522,7 @@
 	  <child>
 	    <widget class="GtkButton" id="top_window_query_button">
 	      <property name="visible">True</property>
+	      <property name="sensitive">False</property>
 	      <property name="tooltip" translatable="yes">Query the policy for TE rules</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
 	      <property name="focus_on_click">True</property>
@@ -567,6 +576,10 @@
 			  <property name="yalign">0.5</property>
 			  <property name="xpad">0</property>
 			  <property name="ypad">0</property>
+			  <property name="ellipsize">PANGO_ELLIPSIZE_NONE</property>
+			  <property name="width_chars">-1</property>
+			  <property name="single_line_mode">False</property>
+			  <property name="angle">0</property>
 			</widget>
 			<packing>
 			  <property name="padding">0</property>
@@ -587,8 +600,9 @@
 	  </child>
 
 	  <child>
-	    <widget class="GtkButton" id="button1">
+	    <widget class="GtkButton" id="ModifyViewButton">
 	      <property name="visible">True</property>
+	      <property name="sensitive">False</property>
 	      <property name="tooltip" translatable="yes">Modify the view for the current tab</property>
 	      <property name="can_focus">True</property>
 	      <property name="relief">GTK_RELIEF_NORMAL</property>
@@ -643,6 +657,10 @@
 			  <property name="yalign">0.5</property>
 			  <property name="xpad">0</property>
 			  <property name="ypad">0</property>
+			  <property name="ellipsize">PANGO_ELLIPSIZE_NONE</property>
+			  <property name="width_chars">-1</property>
+			  <property name="single_line_mode">False</property>
+			  <property name="angle">0</property>
 			</widget>
 			<packing>
 			  <property name="padding">0</property>
@@ -719,6 +737,10 @@
 			  <property name="yalign">0.5</property>
 			  <property name="xpad">0</property>
 			  <property name="ypad">0</property>
+			  <property name="ellipsize">PANGO_ELLIPSIZE_NONE</property>
+			  <property name="width_chars">-1</property>
+			  <property name="single_line_mode">False</property>
+			  <property name="angle">0</property>
 			</widget>
 			<packing>
 			  <property name="padding">0</property>
@@ -782,6 +804,10 @@
 	      <property name="yalign">0.5</property>
 	      <property name="xpad">0</property>
 	      <property name="ypad">0</property>
+	      <property name="ellipsize">PANGO_ELLIPSIZE_NONE</property>
+	      <property name="width_chars">-1</property>
+	      <property name="single_line_mode">False</property>
+	      <property name="angle">0</property>
 	    </widget>
 	    <packing>
 	      <property name="padding">4</property>
@@ -803,6 +829,10 @@
 	      <property name="yalign">0.5</property>
 	      <property name="xpad">0</property>
 	      <property name="ypad">0</property>
+	      <property name="ellipsize">PANGO_ELLIPSIZE_NONE</property>
+	      <property name="width_chars">-1</property>
+	      <property name="single_line_mode">False</property>
+	      <property name="angle">0</property>
 	    </widget>
 	    <packing>
 	      <property name="padding">0</property>
@@ -824,6 +854,10 @@
 	      <property name="yalign">0.5</property>
 	      <property name="xpad">0</property>
 	      <property name="ypad">0</property>
+	      <property name="ellipsize">PANGO_ELLIPSIZE_NONE</property>
+	      <property name="width_chars">-1</property>
+	      <property name="single_line_mode">False</property>
+	      <property name="angle">0</property>
 	    </widget>
 	    <packing>
 	      <property name="padding">4</property>
@@ -845,6 +879,10 @@
 	      <property name="yalign">0.5</property>
 	      <property name="xpad">0</property>
 	      <property name="ypad">0</property>
+	      <property name="ellipsize">PANGO_ELLIPSIZE_NONE</property>
+	      <property name="width_chars">-1</property>
+	      <property name="single_line_mode">False</property>
+	      <property name="angle">0</property>
 	    </widget>
 	    <packing>
 	      <property name="padding">0</property>
