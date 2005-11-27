@@ -28,7 +28,7 @@
 #include "infoflow.h"
 #include "perm-map.h"
 #include "policy-query.h"
-#include "tcl_render.h"
+#include "apol_tcl_render.h"
 
 #ifdef LIBSEFS
 #include "../libsefs/fsdata.h"
