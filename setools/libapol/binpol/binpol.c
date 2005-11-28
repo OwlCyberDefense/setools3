@@ -170,6 +170,51 @@ static int load_mls_range(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int 
 	return 0;
 }
 
+/* Generates a fake attribute name based on the number of attributes currently in the policy. 
+ * The result is guaranteed to be unique in the policy.(this is used by the binary policy 
+ * parser because we don't have attribute names available) */
+static char* get_fake_attrib_name(policy_t *policy)
+{
+	char *attrib=NULL;
+	int sz, i = 0;
+
+#define AP_FAKE_ATTRIB_PREFIX "attrib_"
+
+	if (policy == NULL)
+		return NULL;
+
+	sz = strlen(AP_FAKE_ATTRIB_PREFIX) + 11; /* 11 is large enough for the biggest 32 bit number and a trailing NULL */
+	attrib = (char*)malloc(sizeof(char)*sz); 
+	if (attrib == NULL) {
+		fprintf(stderr, "Error: Out of memory\n");
+		return NULL;
+	}
+
+	do {
+		snprintf(attrib, sz, "%s%03i", AP_FAKE_ATTRIB_PREFIX, policy->num_attribs+i);
+		i++;
+	} while (get_attrib_idx(attrib, policy) >= 0);
+
+	return attrib;
+}
+
+static int add_fake_attrib(policy_t *policy)
+{
+	char *attrib;
+	int attrib_idx;
+
+	/* TODO: will there be an aux file for looking up attrib names from attrib vals */
+	attrib = get_fake_attrib_name(policy);
+	if (attrib == NULL) 
+		return -1;
+	attrib_idx = add_attrib(FALSE, -1, policy, attrib);
+	free(attrib);
+	if (attrib_idx < 0) {
+		return -1;
+     	}
+	return attrib_idx;
+}
+
 static int load_range_trans(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
 {
 	int nel, i, dom, type, idx, idx_type;
@@ -227,8 +272,15 @@ static int load_range_trans(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned in
 		if (!is_valid_type_idx(idx, policy)) {
 			idx = bm->a_map[type-1];
 			if (!is_valid_attrib_idx(idx, policy)) {
-				assert(FALSE);
-				return -1;
+				if (policy->version < POL_VER_20) {
+					assert(FALSE);
+					return -1;
+				} else {
+					idx = add_fake_attrib(policy);
+					if (idx < 0)
+						return -1;
+					bm->a_map[type-1] = idx;
+				}
 			}
 			idx_type = IDX_ATTRIB;
 		} else {
@@ -776,51 +828,6 @@ static int load_type(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts,
 		return idx;
 	else
 		return LOAD_SUCCESS_NO_SAVE;
-}
-
-/* Generates a fake attribute name based on the number of attributes currently in the policy. 
- * The result is guaranteed to be unique in the policy.(this is used by the binary policy 
- * parser because we don't have attribute names available) */
-static char* ap_get_fake_attrib_name(policy_t *policy)
-{
-	char *attrib=NULL;
-	int sz, i = 0;
-
-#define AP_FAKE_ATTRIB_PREFIX "attrib_"
-
-	if (policy == NULL)
-		return NULL;
-
-	sz = strlen(AP_FAKE_ATTRIB_PREFIX) + 11; /* 11 is large enough for the biggest 32 bit number and a trailing NULL */
-	attrib = (char*)malloc(sizeof(char)*sz); 
-	if (attrib == NULL) {
-		fprintf(stderr, "Error: Out of memory\n");
-		return NULL;
-	}
-
-	do {
-		snprintf(attrib, sz, "%s%03i", AP_FAKE_ATTRIB_PREFIX, policy->num_attribs+i);
-		i++;
-	} while (get_attrib_idx(attrib, policy) >= 0);
-
-	return attrib;
-}
-
-static int add_fake_attrib(policy_t *policy)
-{
-	char *attrib;
-	int attrib_idx;
-
-	/* TODO: will there be an aux file for looking up attrib names from attrib vals */
-	attrib = ap_get_fake_attrib_name(policy);
-	if (attrib == NULL) 
-		return -1;
-	attrib_idx = add_attrib(FALSE, -1, policy, attrib);
-	free(attrib);
-	if (attrib_idx < 0) {
-		return -1;
-     	}
-	return attrib_idx;
 }
 
 static int load_type_attr_map(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
