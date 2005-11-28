@@ -16,6 +16,6 @@
 #ifndef AP_TCL_RENDER_H
 #define AP_TCL_RENDER_H
 
-int tcl_render_rangetrans(Tcl_Interp *interp, bool_t addlineno, int idx, policy_t *policy);
+int ap_tcl_render_rangetrans(Tcl_Interp *interp, bool_t addlineno, int idx, policy_t *policy);
 
 #endif
