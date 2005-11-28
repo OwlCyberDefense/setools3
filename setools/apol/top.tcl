@@ -95,6 +95,7 @@ namespace eval ApolTop {
 	variable class_perms_tab	"Apol_Class_Perms"
 	variable users_tab		"Apol_Users"
 	variable initial_sids_tab	"Apol_Initial_SIDS"
+        variable mls_tab                "Apol_MLS"
 	variable file_contexts_tab	"Apol_File_Contexts"
 	variable cond_bools_tab		"Apol_Cond_Bools"
 	variable cond_rules_tab		"Apol_Cond_Rules"
@@ -464,11 +465,15 @@ proc ApolTop::set_Focus_to_Text { tab } {
 			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
 			Apol_Initial_SIDS::set_Focus_to_Text
 		} \
-		$ApolTop::cond_bools_tab {
+		$ApolTop::mls_tab {
 			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
-			Apol_Cond_Bools::set_Focus_to_Text
+			Apol_MLS::set_Focus_to_Text
 		} \
 		$ApolTop::cond_bools_tab {
+			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
+			Apol_Cond_Rules::set_Focus_to_Text
+		} \
+		$ApolTop::cond_rules_tab {
 			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
 			Apol_Cond_Rules::set_Focus_to_Text
 		} \
@@ -1254,6 +1259,7 @@ proc ApolTop::create { } {
 	Apol_Users::create $components_nb
 	Apol_Cond_Bools::create $components_nb
 	Apol_Initial_SIDS::create $components_nb
+	Apol_MLS::create $components_nb
 	
 	# Subtabs for the main policy rules tab
 	Apol_TE::create $rules_nb
@@ -1896,6 +1902,7 @@ proc ApolTop::closePolicy {} {
 	Apol_Range::close
         Apol_Users::close
         Apol_Initial_SIDS::close
+	Apol_MLS::close
         Apol_Cond_Bools::close
         Apol_Cond_Rules::close
         Apol_Analysis::close 
@@ -1951,6 +1958,10 @@ proc ApolTop::open_apol_modules {file} {
 		return -code error $err
 	}
 	set rt [catch {Apol_Initial_SIDS::open} err]
+	if {$rt != 0} {
+		return -code error $err
+	}
+	set rt [catch {Apol_MLS::open} err]
 	if {$rt != 0} {
 		return -code error $err
 	}
