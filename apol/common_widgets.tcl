@@ -5,7 +5,8 @@
 # Requires tcl and tk 8.4+, with BWidgets 1.7+
 
 namespace eval Apol_Widget {
-    variable popup ""
+    variable menuPopup {}
+    variable infoPopup {}
     variable vars
 }
 
@@ -45,13 +46,13 @@ proc Apol_Widget::setListboxCallbacks {path callback_list} {
     # the user see more info
     
     # first create a global popup menu widget if one does not already exist
-    variable popup
-    if {$popup == "" || ![winfo exists $popup]} {
-        set popup [menu .apol_widget_popup]
+    variable menuPopup
+    if {![winfo exists $menuPopup]} {
+        set menuPopup [menu .apol_widget_menu_popup]
     }
 
     set lb [getScrolledListbox $path]
-    bind $lb <Button-3> [list ApolTop::popup_listbox_Menu %W %x %y $popup $callback_list $lb]
+    bind $lb <Button-3> [list ApolTop::popup_listbox_Menu %W %x %y $menuPopup $callback_list $lb]
 }
 
 proc Apol_Widget::getScrolledListbox {path} {
@@ -218,6 +219,42 @@ proc Apol_Widget::setLevelSelectorState {path newState} {
     setScrolledListboxState $path.cats $newState
 }
 
+# Create a common "search using regular expression" checkbutton + entry.
+proc Apol_Widget::makeRegexpEntry {path args} {
+    variable vars
+    array unset vars $path:*
+    set vars($path:enable_regexp) 0
+
+    set f [frame $path]
+    set cb [checkbutton $f.cb -text "Search using regular expression" \
+                -variable Apol_Widget::vars($path:enable_regexp)]
+    set regexp [eval entry $f.entry $args \
+                    -textvariable Apol_Widget::vars($path:regexp) \
+                    -width 32 -state disabled -bg $ApolTop::default_bg_color]
+    trace add variable Apol_Widget::vars($path:enable_regexp) write \
+        [list Apol_Widget::_toggle_regexp_check_button $regexp]
+    pack $cb -side top -anchor nw
+    pack $regexp -side top -anchor nw -expand 0 -fill x
+    return $f
+}
+
+proc Apol_Widget::setRegexpEntryState {path newState} {
+    variable vars
+    if {$newState == 0 || $newState == "disabled"} {
+        set vars($path:enable_regexp) 0
+        $path.cb configure -state disabled
+    } else {
+        $path.cb configure -state normal
+    }
+}
+
+proc Apol_Widget::getRegexpEntryState {path} {
+    return $Apol_Widget::vars($path:enable_regexp)
+}
+
+proc Apol_Widget::getRegexpEntryValue {path} {
+    return $Apol_Widget::vars($path:regexp)
+}
 
 # Create a scrolled non-editable text widget, from which search
 # results may be displayed.
@@ -283,6 +320,29 @@ proc Apol_Widget::gotoLineSearchResults {path line_num} {
     $textBox see ${line_num}.0 
     $textBox tag add sel $line_num.0 $line_num.end
     focus -force $textBox
+}
+
+proc Apol_Widget::showPopupText {title info} {
+    variable infoPopup
+    if {![winfo exists $infoPopup]} {
+        set infoPopup [toplevel .apol_widget_info_popup]
+        wm withdraw $infoPopup
+        set sw [ScrolledWindow $infoPopup.sw -scrollbar both -auto horizontal]
+        set text [text [$sw getframe].text -font {helvetica 10} -wrap none -width 35 -height 10]
+        $sw setwidget $text
+        pack $sw -expand 1 -fill both
+        set b [button $infoPopup.close -text "Close" -command [list destroy $infoPopup]]
+        pack $b -side bottom -expand 0 -pady 5
+        wm geometry $infoPopup +50+50
+    }
+    wm deiconify $infoPopup
+    raise $infoPopup
+    wm title $infoPopup $title
+    set text [$infoPopup.sw getframe].text
+    $text configure -state normal
+    $text delete 1.0 end
+    $text insert 0.0 $info
+    $text configure -state disabled
 }
 
 ########## private functions below ##########
@@ -371,6 +431,14 @@ proc Apol_Widget::_sens_changed {path name1 name2 op} {
         set vars($path:cats) {}
     } else {
         set vars($path:cats) [apol_SensCats $vars($path:sens)]
+    }
+}
+
+proc Apol_Widget::_toggle_regexp_check_button {path name1 name2 op} {
+    if {$Apol_Widget::vars($name2)} {
+        $path configure -state normal -bg white
+    } else {
+        $path configure -state disabled -bg $ApolTop::default_bg_color
     }
 }
 

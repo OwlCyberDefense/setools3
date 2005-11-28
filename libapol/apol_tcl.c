@@ -2577,7 +2577,7 @@ int Apol_RenderRangeTrans(ClientData clientData, Tcl_Interp *interp, int argc, c
                 return TCL_ERROR;
         }
         show_linenos = (is_binary_policy(policy) ? FALSE : TRUE);
-        return tcl_render_rangetrans(interp, show_linenos, idx, policy);
+        return ap_tcl_render_rangetrans(interp, show_linenos, idx, policy);
 }
 
 int Apol_IsValidRange(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
@@ -2611,8 +2611,8 @@ int Apol_IsValidRange(ClientData clientData, Tcl_Interp *interp, int argc, char 
         return TCL_OK;
 }
 
-/* Return an un-ordered list of sensitivities within the policy, or an
- * empty list if no policy was loaded. */
+/* Return a list of sensitivities, ordered by dominance (low to high)
+ * within the policy, or an empty list if no policy was loaded. */
 int Apol_GetSens(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
 {
 	int i;
@@ -2625,7 +2625,7 @@ int Apol_GetSens(ClientData clientData, Tcl_Interp *interp, int argc, char *argv
 		return TCL_OK;
 	}
 	for (i = 0; i < policy->num_sensitivities; i++) {
-                ap_mls_sens_t *sens = policy->sensitivities + i;
+                ap_mls_sens_t *sens = policy->sensitivities + policy->mls_dominance[i];
                 name_item_t *name = sens->aliases;
                 Tcl_AppendElement(interp, sens->name);
                 while (name != NULL) {
@@ -2637,9 +2637,45 @@ int Apol_GetSens(ClientData clientData, Tcl_Interp *interp, int argc, char *argv
 }
 
 
+/* Returns an ordered list of categories.  If a level is given, return
+ * only those categories associated with that level. */
 int Apol_SensCats(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
 {
-	int sens_index;
+	int i, sens_index;
+
+	if (argc >= 3) {
+		Tcl_SetResult(interp, "wrong # of args", TCL_STATIC);
+		return TCL_ERROR;
+	}
+	if (policy == NULL) {
+		return TCL_OK;
+	}
+        if (argc == 1) {
+                for (i = 0; i < policy->num_categories; i++) {
+                        Tcl_AppendElement(interp, policy->categories[i].name);
+                }
+        }
+        else {
+                if ((sens_index = get_sensitivity_idx(argv[1], policy)) >= 0) {
+                        int *cats, num_cats;
+                        if (ap_mls_sens_get_level_cats(sens_index, &cats, &num_cats, policy) < 0) {
+                                Tcl_SetResult(interp, "could not get categories list", TCL_STATIC);
+                                return TCL_ERROR;
+                        }
+                        for (i = 0; i < num_cats; i++) {
+                                Tcl_AppendElement(interp, policy->categories[cats[i]].name);
+                        }
+                        free(cats);
+                }
+        }
+        return TCL_OK;
+}
+
+/* Given a category name, return a list a sensitivities that contain
+ * that category. */
+int Apol_CatsSens(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
+{
+	int i, cats_index;
 
 	if (argc != 2) {
 		Tcl_SetResult(interp, "wrong # of args", TCL_STATIC);
@@ -2648,16 +2684,13 @@ int Apol_SensCats(ClientData clientData, Tcl_Interp *interp, int argc, char *arg
 	if (policy == NULL) {
 		return TCL_OK;
 	}
-        if ((sens_index = get_sensitivity_idx(argv[1], policy)) >= 0) {
-                int *cats, num_cats, i;
-                if (ap_mls_sens_get_level_cats(sens_index, &cats, &num_cats, policy) < 0) {
-                        Tcl_SetResult(interp, "could not get categories list", TCL_STATIC);
-                        return TCL_ERROR;
+        if ((cats_index = get_category_idx(argv[1], policy)) >= 0) {
+                for (i = 0; i < policy->num_levels; i++) {
+                        ap_mls_level_t *level = policy->levels + i;
+                        if (ap_mls_does_level_use_category(level, cats_index)) {
+                                Tcl_AppendElement(interp, policy->sensitivities[level->sensitivity].name);
+                        }
                 }
-                for (i = 0; i < num_cats; i++) {
-                        Tcl_AppendElement(interp, policy->categories[i].name);
-                }
-                free(cats);
         }
         return TCL_OK;
 }
@@ -6928,6 +6961,7 @@ int Apol_Init(Tcl_Interp *interp)
 	Tcl_CreateCommand(interp, "apol_IsValidRange", (Tcl_CmdProc *) Apol_IsValidRange, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetSens", (Tcl_CmdProc *) Apol_GetSens, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_SensCats", (Tcl_CmdProc *) Apol_SensCats, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_CatsSens", (Tcl_CmdProc *) Apol_CatsSens, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_SearchRangeTransRules", (Tcl_CmdProc *) Apol_SearchRangeTransRules, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_Cond_Bool_SetBoolValue", (Tcl_CmdProc *) Apol_Cond_Bool_SetBoolValue, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_Cond_Bool_GetBoolValue", (Tcl_CmdProc *) Apol_Cond_Bool_GetBoolValue, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
