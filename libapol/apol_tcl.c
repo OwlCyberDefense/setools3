@@ -955,8 +955,8 @@ static int append_user_str(int idx, bool_t name_only,  policy_t *policy, Tcl_DSt
 	Tcl_DStringAppend(buf, policy->users[idx].name, -1);
 	if(!name_only) {
 		Tcl_DStringAppend(buf, " { ", -1);
-		for(i = 0; i < policy->users[idx].num; i++) {
-			rt = get_role_name(policy->users[idx].a[i], &name, policy);
+		for(i = 0; i < policy->users[idx].num_roles; i++) {
+			rt = get_role_name(policy->users[idx].roles[i], &name, policy);
 			if(rt != 0) {
 				return -1;
 			}
@@ -1345,9 +1345,9 @@ static int append_role(int idx, bool_t name_only, int numperline, policy_t *poli
 	
 	Tcl_DStringAppend(buf, policy->roles[idx].name, -1);
 	if(!name_only) {
-		sprintf(tmpbuf, " (%d types)\n     ", policy->roles[idx].num);
+		sprintf(tmpbuf, " (%d types)\n     ", policy->roles[idx].num_types);
 		Tcl_DStringAppend(buf, tmpbuf, -1);
-		for(j = 0; j < policy->roles[idx].num; j++) {
+		for(j = 0; j < policy->roles[idx].num_types; j++) {
 			/* control # of types per line */
 			if(j != 0) {
 				x = div(j, numperline);
@@ -1356,7 +1356,7 @@ static int append_role(int idx, bool_t name_only, int numperline, policy_t *poli
 					Tcl_DStringAppend(buf, tmpbuf, -1);
 				}
 			}
-			sprintf(tmpbuf, "%s  ", policy->types[policy->roles[idx].a[j]].name);
+			sprintf(tmpbuf, "%s  ", policy->types[policy->roles[idx].types[j]].name);
 			Tcl_DStringAppend(buf, tmpbuf, -1);
 		}
 		Tcl_DStringAppend(buf, "\n", -1); /* extra line if we're exploding role types */	
@@ -3530,8 +3530,8 @@ int Apol_RoleTypes(ClientData clientData, Tcl_Interp *interp, int argc, char *ar
 		return TCL_ERROR;
 	}
 	assert(strcmp(argv[1], policy->roles[idx].name) == 0);
-	for(i = 0; i < policy->roles[idx].num; i++) {
-		rt = get_type_name(policy->roles[idx].a[i], &name, policy);
+	for(i = 0; i < policy->roles[idx].num_types; i++) {
+		rt = get_type_name(policy->roles[idx].types[i], &name, policy);
 		if(rt != 0) {
 			Tcl_ResetResult(interp);
 			Tcl_AppendResult(interp, "Problem finding a role name", (char *) NULL);
@@ -3570,8 +3570,8 @@ int Apol_UserRoles(ClientData clientData, Tcl_Interp *interp, int argc, char *ar
 		return TCL_ERROR;		
 	}
 	
-	for(i = 0; i < policy->users[idx].num; i++) {
-		rt = get_role_name(policy->users[idx].a[i], &name, policy);
+	for(i = 0; i < policy->users[idx].num_roles; i++) {
+		rt = get_role_name(policy->users[idx].roles[i], &name, policy);
 		if(rt != 0) {
 			Tcl_ResetResult(interp);
 			Tcl_AppendResult(interp, "error getting role name", (char *) NULL);			
