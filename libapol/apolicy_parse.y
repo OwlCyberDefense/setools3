@@ -113,8 +113,8 @@ static int define_compute_type(int rule_type);
 static int define_te_clone(void);
 static int define_te_avtab(int rule_type);
 static int define_role_types(void);
-/*static role_datum_t *merge_roles_dom(role_datum_t *r1,role_datum_t *r2);*/
-static int define_role_dom(void);
+static ap_role_t *merge_roles_dom(ap_role_t *r1, ap_role_t *r2);
+static ap_role_t *define_role_dom(ap_role_t *r);
 static int define_role_trans(void);
 static int define_role_allow(void);
 static int define_constraint(bool_t is_mls, ap_constraint_expr_t *expr);
@@ -142,6 +142,8 @@ static cond_expr_t *define_cond_expr(__u32 expr_type, void *arg1, void *arg2);
 static cond_rule_list_t *define_cond_pol_list(cond_rule_list_t *list, rule_desc_t *rule);
 static rule_desc_t *define_cond_compute_type(int rule_type);
 static rule_desc_t *define_cond_te_avtab(int rule_type);
+static ap_mls_level_t *parse_mls_level(int dontsave);
+static ap_mls_range_t *parse_mls_range(int dontsave);
 %}
 
 %union {
@@ -154,7 +156,7 @@ static rule_desc_t *define_cond_te_avtab(int rule_type);
 %type <ptr> cond_expr cond_expr_prim cond_pol_list
 %type <ptr> cond_allow_def cond_auditallow_def cond_auditdeny_def cond_dontaudit_def
 %type <ptr> cond_transition_def cond_te_avtab_def cond_rule_def
-%type <sval> role_def roles
+%type <ptr> role_def roles
 %type <sval> cexpr_prim op roleop mls_cexpr mls_trans_cexpr
 %type <sval> trans_prim mls_prim trans_cexpr_prim mls_cexpr_prim mls_trans_cexpr_prim
 %type <val> ipv4_addr_def number
@@ -502,12 +504,12 @@ role_allow_def		: ALLOW names names ';'
 roles			: role_def
 			{ $$ = $1; }
 			| roles role_def
-			{ /* do nothing */}
+			{ $$ = merge_roles_dom((ap_role_t*)$1, (ap_role_t*)$2); if ($$ == 0) return -1;}
 			;
 role_def		: ROLE identifier_push ';'
-                        {$$ = define_role_dom(); if ($$ == 0) return -1;}
+                        {$$ = define_role_dom(NULL); if ($$ == 0) return -1;}
 			| ROLE identifier_push '{' roles '}'
-                        {$$ = define_role_dom(); if ($$ == 0) return -1;}
+                        {$$ = define_role_dom((ap_role_t*)$4); if ($$ == 0) return -1;}
 			;
 /* added July 2002; made constraints optional */
 opt_constraints         : constraints
@@ -685,17 +687,11 @@ user_id			: identifier
 user_def		: USER user_id ROLES names opt_mls_components ';'
 	                {if (define_user()) return -1;}
 			;
-opt_mls_components	: LEVEL dflt_lvl RANGE user_range 
+opt_mls_components	: LEVEL mls_level_def RANGE user_range 
 			{ if (!mls_valid()) YYABORT; }
 			| 
 			;
 user_range		: mls_range_def
-			;
-dflt_lvl		: identifier opt_cat_list
-			;
-opt_cat_list		: ':' id_comma_list
-			| ':' identifier '.' { if (insert_id(".", 0)) return -1; } identifier
-			| 
 			;
 initial_sid_contexts	: initial_sid_context_def
 			| initial_sid_contexts initial_sid_context_def
@@ -2088,10 +2084,16 @@ static int define_user(void)
 	int idx, ridx, rt, i;
 	bool_t existing, tilde = FALSE;
 	int *tmp = NULL, num_tmp = 0;
+	ap_mls_level_t *lvl = NULL;
+	ap_mls_range_t *rng = NULL;
 
 	if(pass == 1 || (pass == 2 && !(parse_policy-> opts & POLOPT_USERS))) {
 		while ((id = queue_remove(id_queue))) 
 			free(id);
+		if (is_mls_policy(parse_policy)) {
+			parse_mls_level(1);
+			parse_mls_range(1);
+		}
 		return 0;
 	}
 	
@@ -2172,17 +2174,27 @@ static int define_user(void)
 	}
 	
 
-	/* strip any MLS level/range definitions*/
-	/* TODO store this */
-	while ((id = queue_remove(id_queue))) { /* sensitivity */
-		free(id);
+	/* MLS level/range definitions*/
+	if (is_mls_policy(parse_policy)) {
+		lvl = parse_mls_level(0);
+		if (!lvl){
+			yyerror("no default level for user?");
+			return -1;
+		}
+		rng = parse_mls_range(0);
+		if (!rng) {
+			yyerror("no range for user?");
+			return -1;
+		}
+		if (parse_policy->users[idx].dflt_level) /* currently over-write if multiple */
+			ap_mls_level_free(parse_policy->users[idx].dflt_level);
+		parse_policy->users[idx].dflt_level = lvl;
+		if (parse_policy->users[idx].range) /* currently over-write if multiple */
+			ap_mls_range_free(parse_policy->users[idx].range);
+		parse_policy->users[idx].range = rng;
 	}
-	while ((id = queue_remove(id_queue))) { /* category */
-		free(id);
-	}
-	while ((id = queue_remove(id_queue))) { /* category */
-		free(id);
-	}
+
+	id = queue_remove(id_queue);
 
 	free(tmp);
 	return 0;
@@ -2368,52 +2380,167 @@ static int define_common_perms(void)
 	return 0;
 }
 
-/* TODO: Temporary fix to allow role names defined by role domainance to exist
- * in policy name space.  Still need to handle their definitions.
- */
- 
-static int
- define_role_dom(void)
+static ap_role_t *merge_roles_dom(ap_role_t *r1, ap_role_t *r2)
+{
+	ap_role_t *new = NULL;
+	int i, retv;
+
+	if (pass == 1 || (pass == 2 && !(parse_policy->opts & POLOPT_ROLES))) {
+		return (ap_role_t*)1; /* any non-NULL value */
+	}
+
+	new = (ap_role_t*)calloc(1, sizeof(ap_role_t));
+	if (!new) {
+		yyerror("out of memory");
+		return NULL;
+	}
+
+	/* r1 types */
+	for (i = 0; i < r1->num_types; i++) {
+		retv = add_i_to_a(r1->types[i], &(new->num_types), &(new->types));
+		if (retv) {
+			yyerror("error merging roles");
+			goto fail;
+		}
+	}
+
+	/* r2 types */
+	for (i = 0; i < r2->num_types; i++) {
+		if (find_int_in_array(r2->types[i], new->types, new->num_types) == -1) {
+			retv = add_i_to_a(r2->types[i], &(new->num_types), &(new->types));
+			if (retv) {
+				yyerror("error merging roles");
+				goto fail;
+			}
+		}
+	}
+
+	/* r1 dom roles */
+	for (i = 0; i < r1->num_dom_roles; i++) {
+		retv = add_i_to_a(r1->dom_roles[i], &(new->num_dom_roles), &(new->dom_roles));
+		if (retv) {
+			yyerror("error merging roles");
+			goto fail;
+		}
+	}
+
+	/* r2 dom roles */
+	for (i = 0; i < r2->num_dom_roles; i++) {
+		if (find_int_in_array(r2->dom_roles[i], new->dom_roles, new->num_dom_roles) == -1) {
+			retv = add_i_to_a(r2->dom_roles[i], &(new->num_dom_roles), &(new->dom_roles));
+			if (retv) {
+				yyerror("error merging roles");
+				goto fail;
+			}
+		}
+	}
+
+
+	/* if r1 has no name it is temporary; free it */
+	if (!r1->name) {
+		free(r1->types);
+		free(r1->dom_roles);
+		free(r1);
+	}
+
+	return new;
+
+fail:
+	free(new->types);
+	free(new->dom_roles);
+	free(new);
+	return NULL;
+}
+
+static ap_role_t* define_role_dom(ap_role_t *r)
 {
 	char *id;
-	int idx;
+	int idx, i, retv, j;
+	ap_role_t *role = NULL;
 	
-	id = queue_remove(id_queue);
-	if (!id) {
-		yyerror("no role name for role dominance?");
-		return -1;
-	}
 	if (pass == 1 || (pass == 2 && !(parse_policy->opts & POLOPT_ROLES))) {
+		id = queue_remove(id_queue);
 		free(id);
-		return 1;
+		return (ap_role_t*)1; /* any non-NULL value */
 	}
 	
 	/* pass 2 */
-	/* if the role already exists, we'll just add the new type, otherwise
+	/* if the role already exists, we'll just add the new types, otherwise
 	 * we create new role */
+	id = queue_remove(id_queue);
+	if (!id) {
+		yyerror("no role name for role dominance?");
+		return NULL;
+	}
+
 	idx = get_role_idx(id, parse_policy);
 	if(idx < 0) {
-		/* new role identifier; for now just create the role...nothing
-		 * else will be done with it but user statements can use it!
-		 * TODO: Finish this!
-		 */
+		/* new role identifier;*/
 		if(!is_valid_str_sz(id) ) {
 			snprintf(errormsg, sizeof(errormsg), "string \"%s\" exceeds APOL_SZ_SIZE", id);
 			yyerror(errormsg);
-			return -1;
+			return NULL;
 		}
 		idx = add_role(id, parse_policy);
 		if(idx < 0)
-			return -1;
+			return NULL;
 	}
 	else {
-		/* already exists; we're done for now
-		 * TODO: handle dominance semantics
-		 */
+		/* already exists; */
 		free(id);
 	}
+
+	role = &(parse_policy->roles[idx]);
+
+	if (r) {
+		for (i = 0; i < r->num_types; i++) {
+			if (find_int_in_array(r->types[i], role->types, role->num_types) == -1) {
+				retv = add_i_to_a(r->types[i], &(role->num_types), &(role->types));
+				if (retv) {
+					yyerror("error adding types to dominant role");
+					return NULL;
+				}
+			}
+		}
+		for (i = 0; i < r->num_dom_roles; i++) {
+			if (find_int_in_array(r->dom_roles[i], role->dom_roles, role->num_dom_roles) == -1) {
+				retv = add_i_to_a(r->dom_roles[i], &(role->num_dom_roles), &(role->dom_roles));
+				if (retv) {
+					yyerror("error adding dominated roles to dominant role");
+					return NULL;
+				}
+			}
+		}
+
+		/* propagate to roles dominating this one */
+		for (j = 0; j < parse_policy->num_roles; j ++) {
+			if (j == idx)
+				continue; /* do not process self */
+			if (find_int_in_array(idx, parse_policy->roles[j].dom_roles, parse_policy->roles[j].num_dom_roles) != -1) {
+				for (i = 0; i < role->num_types; i++) {
+					if (find_int_in_array(role->types[i], parse_policy->roles[j].types, parse_policy->roles[j].num_types) == -1) {
+						retv = add_i_to_a(role->types[i], &(parse_policy->roles[j].num_types), &(parse_policy->roles[j].types));
+						if (retv) {
+							yyerror("error propagating dominance");
+							return NULL;
+						}
+					}
+				}
+				for (i = 0; i < role->num_dom_roles; i++) {
+					if (find_int_in_array(role->dom_roles[i], parse_policy->roles[j].dom_roles, parse_policy->roles[j].num_dom_roles) == -1) {
+						retv = add_i_to_a(role->dom_roles[i], &(parse_policy->roles[j].num_dom_roles), &(parse_policy->roles[j].dom_roles));
+						if (retv) {
+							yyerror("error propagating dominance");
+							return NULL;
+						}
+					}
+				}
+			}
+		}
+
+	}
 		
-	return 1; 
+	return role; 
 }
 
 
@@ -2895,6 +3022,161 @@ static int define_initial_sid(void)
 	return 0;
 }
 
+static ap_mls_level_t *parse_mls_level(int dontsave)
+{
+	char *id, *id_2nd;
+	int rt, sens, i;
+	int *cats = NULL, num_cats = 0;
+	ap_mls_level_t *lvl = NULL;
+
+	if (dontsave) {
+		while ((id = queue_remove(id_queue))) {
+			free(id);
+		}
+		return NULL; /* not an error here */
+	}
+
+	id = queue_remove(id_queue);
+	sens = get_sensitivity_idx(id, parse_policy);
+	if (sens < 0) {
+		yyerror("invalid sensitivity in level definition");
+		return NULL;
+	}
+	free(id);
+
+	while ((id = queue_remove(id_queue))) {
+		if (!strcmp(id, ".")) {
+			free(id);
+			if (num_cats == 0) {
+				yyerror("no starting category for category range in level definition?");
+				return NULL;
+			}
+			id = queue_remove(id_queue);
+			if (!id) {
+				yyerror("incomplete category range in level definition");
+				return NULL;
+			}
+			rt = get_category_idx(id, parse_policy);
+			if (rt < 0) {
+				snprintf(errormsg, sizeof(errormsg), "undefined category %s in level definition", id);
+				yyerror(errormsg);
+				return NULL;
+			}
+			i = cats[num_cats-1];
+			if (i >= rt) {
+				yyerror("invalid category range in level definition");
+				return NULL;
+			}
+			i++; /* do not add i twice */
+			for (/* i already initialized */; i <= rt; i++) {
+				if (add_i_to_a(i, &num_cats, &cats)) {
+					yyerror("out of memory");
+					return NULL;
+				}
+			}
+			free(id);
+		} else if ((id_2nd = strchr(id, '.'))) {
+			*(id_2nd++) = '\0';
+			i = get_category_idx(id, parse_policy);
+			if (i < 0) {
+				snprintf(errormsg, sizeof(errormsg), "undefined category %s in level definition", id);
+				yyerror(errormsg);
+				return NULL;
+			}
+			rt = get_category_idx(id_2nd, parse_policy);
+			if (rt < 0) {
+				snprintf(errormsg, sizeof(errormsg), "undefined category %s in level definition", id_2nd);
+				yyerror(errormsg);
+				return NULL;
+			}
+			if (i >= rt) {
+				yyerror("invalid category range in level definition");
+				return NULL;
+			}
+			for (/* i already initialized */; i <= rt; i++) {
+				if (add_i_to_a(i, &num_cats, &cats)) {
+					yyerror("out of memory");
+					return NULL;
+				}
+			}
+			free(id);
+			id_2nd = NULL;
+		} else {
+			i = get_category_idx(id, parse_policy);
+			free(id);
+			if (i < 0) {
+				snprintf(errormsg, sizeof(errormsg), "undefined category %s in level definition", id);
+				yyerror(errormsg);
+				return NULL;
+			}
+			if (add_i_to_a(i, &num_cats, &cats)) {
+				yyerror("out of memory");
+				return NULL;
+			}
+		}	
+	}
+
+	lvl = (ap_mls_level_t*)calloc(1, sizeof(ap_mls_level_t));
+	if (!lvl) {
+		free(cats);
+		yyerror("out of memory");
+		return NULL;
+	}
+
+	lvl->sensitivity = sens;
+	lvl->categories = cats;
+	lvl->num_categories = num_cats;
+
+	return lvl;
+}
+
+static ap_mls_range_t *parse_mls_range(int dontsave)
+{
+	ap_mls_level_t *low = NULL, *high = NULL;
+	ap_mls_range_t  *rng = NULL;
+	char *id;
+
+	if (dontsave) {
+		parse_mls_level(dontsave);
+		id = queue_head(id_queue);
+		if (id) { /* id is null then one level */
+			parse_mls_level(dontsave);
+		}
+		return NULL; /* not an error here */
+	}
+
+	low = parse_mls_level(dontsave);
+	if (!low) {
+		yyerror("error parsing MLS range low level");
+		return NULL;
+	}
+
+	id = queue_head(id_queue);
+	if (id) { /* id is null then one level */
+		high = parse_mls_level(dontsave);
+	} else {
+		high = low;
+	}
+	if (!high) {
+		yyerror("error parsing MLS range high level");
+		return NULL;
+	}
+
+	rng = (ap_mls_range_t*)calloc(1, sizeof(ap_mls_range_t));
+	if (!rng) {
+		if (high != low)
+			ap_mls_level_free(high);
+		ap_mls_level_free(low);
+		yyerror("out of memory");
+		return NULL;
+	}
+
+	rng->low = low;
+	rng->high = high;
+
+	return rng;
+}
+
 /* If dontsave, then just clear the queue and return NULL (the return
  * should be ignored in this case).  Otherwise, allocate a context
  * structure and return it, or NULL for error
@@ -2902,7 +3184,7 @@ static int define_initial_sid(void)
 static security_con_t *parse_security_context(int dontsave)
 {
 	char *id;
-	int rt, l;
+	int rt;
 	security_con_t *scontext;
 	
 	if (pass == 1 || dontsave) {
@@ -2912,16 +3194,12 @@ static security_con_t *parse_security_context(int dontsave)
 		free(id);
 		id = queue_remove(id_queue);  /* type  */
 		free(id);
-
-		int l;
-		for (l = 0; l < 2; l++) {
-			while ((id = queue_remove(id_queue))) {
-				free(id);
-			}
+		if (is_mls_policy(parse_policy)) {
+			parse_mls_range(1);
+		}
 		id = queue_head(id_queue);
 		if (!id)
 			id = queue_remove(id_queue);
-		}
 		return NULL; /* In this case this is not an error */
 	}
 	
@@ -2985,16 +3263,12 @@ static security_con_t *parse_security_context(int dontsave)
 	free(id);
 	scontext->type = rt;	
 	
-	if (parse_policy->version >= POL_VER_MLS) {
-		for (l = 0; l < 2; l++) {
-			while ((id = queue_remove(id_queue))) {
-				free(id);
-			}
-		}
-		id = queue_head(id_queue);
-		if (!id)
-			id = queue_remove(id_queue);
+	if (is_mls_policy(parse_policy)) {
+		scontext->range = parse_mls_range(0);
 	}
+	id = queue_head(id_queue);
+	if (!id)
+		id = queue_remove(id_queue);
 
 	return scontext;
 }
@@ -3197,9 +3471,8 @@ static int define_category(void)
 
 static int define_level(void)
 {
-	char *id, *id_2nd;
-	int rt, sens, num_cats = 0, i;
-	int *cats = NULL;
+	int rt;
+	ap_mls_level_t *lvl = NULL;
 
 	rt = set_policy_version(POL_VER_MLS, parse_policy);
 	if(rt != 0) {
@@ -3208,92 +3481,18 @@ static int define_level(void)
 	}
 
 	if (pass == 2 || (pass == 1 && !(parse_policy->opts & POLOPT_MLS_COMP))) {
-		while ((id = queue_remove(id_queue)))
-			free(id);
+		parse_mls_level(1);
 		return 0;
 	}
 
-	id = queue_remove(id_queue);
-	sens = get_sensitivity_idx(id, parse_policy);
-	if (sens < 0) {
-		yyerror("invalid sensitivity in level definition");
+	lvl = parse_mls_level(0);
+	if (!lvl) {
+		yyerror("error parsing level");
 		return -1;
 	}
-	free(id);
-
-	while ((id = queue_remove(id_queue))) {
-		if (!strcmp(id, ".")) {
-			free(id);
-			if (num_cats == 0) {
-				yyerror("no starting category for category range in level definition?");
-				return -1;
-			}
-			id = queue_remove(id_queue);
-			if (!id) {
-				yyerror("incomplete category range in level definition");
-				return -1;
-			}
-			rt = get_category_idx(id, parse_policy);
-			if (rt < 0) {
-				snprintf(errormsg, sizeof(errormsg), "undefined category %s in level definition", id);
-				yyerror(errormsg);
-				return -1;
-			}
-			i = cats[num_cats-1];
-			if (i >= rt) {
-				yyerror("invalid category range in level definition");
-				return -1;
-			}
-			i++; /* do not add i twice */
-			for (/* i already initialized */; i <= rt; i++) {
-				if (add_i_to_a(i, &num_cats, &cats)) {
-					yyerror("out of memory");
-					return -1;
-				}
-			}
-			free(id);
-		} else if ((id_2nd = strchr(id, '.'))) {
-			*(id_2nd++) = '\0';
-			i = get_category_idx(id, parse_policy);
-			if (i < 0) {
-				snprintf(errormsg, sizeof(errormsg), "undefined category %s in level definition", id);
-				yyerror(errormsg);
-				return -1;
-			}
-			rt = get_category_idx(id_2nd, parse_policy);
-			if (rt < 0) {
-				snprintf(errormsg, sizeof(errormsg), "undefined category %s in level definition", id_2nd);
-				yyerror(errormsg);
-				return -1;
-			}
-			if (i >= rt) {
-				yyerror("invalid category range in level definition");
-				return -1;
-			}
-			for (/* i already initialized */; i <= rt; i++) {
-				if (add_i_to_a(i, &num_cats, &cats)) {
-					yyerror("out of memory");
-					return -1;
-				}
-			}
-			free(id);
-			id_2nd = NULL;
-		} else {
-			i = get_category_idx(id, parse_policy);
-			free(id);
-			if (i < 0) {
-				snprintf(errormsg, sizeof(errormsg), "undefined category %s in level definition", id);
-				yyerror(errormsg);
-				return -1;
-			}
-			if (add_i_to_a(i, &num_cats, &cats)) {
-				yyerror("out of memory");
-				return -1;
-			}
-		}	
-	}
-
-	rt = add_mls_level(sens, cats, num_cats, parse_policy);
+	
+	rt = add_mls_level(lvl->sensitivity, lvl->categories, lvl->num_categories, parse_policy);
+	free(lvl); /* only free the container its internal memory is used by parse_policy*/
 	if (rt) {
 		yyerror("error adding level to the policy");
 		return -1;
@@ -3458,9 +3657,8 @@ static int define_validatetrans(bool_t is_mls, ap_constraint_expr_t *expr)
 
 static int define_range_trans(void)
 {
-	char *id, *id_2nd;
-	int rt, l, idx, idx_type, i;
-	int *cats = NULL, num_cats = 0;
+	char *id;
+	int rt, l, idx, idx_type;
 	ap_rangetrans_t *new_rngtr = NULL;
 	bool_t subtract;
 	ta_item_t *titem = NULL;
@@ -3587,191 +3785,12 @@ static int define_range_trans(void)
 
 	/* read range */
 
-	range = (ap_mls_range_t*)malloc(sizeof(ap_mls_range_t));
+	range = parse_mls_range(0);
 	if (range == NULL) {
-		yyerror("out of memory");
-		return -1;
-	}
-	
-	range->low = (ap_mls_level_t*)malloc(sizeof(ap_mls_level_t));
-	if (range->low == NULL) {
-		yyerror("out of memory");
-		return -1;
-	}
-	
-	id = queue_remove(id_queue);
-	range->low->sensitivity = get_sensitivity_idx(id, parse_policy);
-	if (range->low->sensitivity < 0) {
-		yyerror("invalid sensitivity in rangetrans low level");
+		yyerror("error parsing range");
 		return -1;
 	}
 
-	while ((id = queue_remove(id_queue))) {
-		if (!strcmp(id, ".")) {
-			free(id);
-			if (num_cats == 0) {
-				yyerror("no starting category for category range in rangetrans low level?");
-				return -1;
-			}
-			id = queue_remove(id_queue);
-			if (!id) {
-				yyerror("incomplete category range in rangetrans low level");
-				return -1;
-			}
-			rt = get_category_idx(id, parse_policy);
-			if (rt < 0) {
-				snprintf(errormsg, sizeof(errormsg), "undefined category %s in rangetrans low level", id);
-				yyerror(errormsg);
-				return -1;
-			}
-			i = cats[num_cats-1];
-			if (i >= rt) {
-				yyerror("invalid category range in rangetrans low level");
-				return -1;
-			}
-			i++; /* do not add i twice */
-			for (/* i already initialized */; i <= rt; i++) {
-				if (add_i_to_a(i, &num_cats, &cats)) {
-					yyerror("out of memory");
-					return -1;
-				}
-			}
-			free(id);
-		} else if ((id_2nd = strchr(id, '.'))) {
-			*(id_2nd++) = '\0';
-			i = get_category_idx(id, parse_policy);
-			if (i < 0) {
-				snprintf(errormsg, sizeof(errormsg), "undefined category %s in rangetrans low level", id);
-				yyerror(errormsg);
-				return -1;
-			}
-			rt = get_category_idx(id_2nd, parse_policy);
-			if (rt < 0) {
-				snprintf(errormsg, sizeof(errormsg), "undefined category %s in rangetrans low level", id_2nd);
-				yyerror(errormsg);
-				return -1;
-			}
-			if (i >= rt) {
-				yyerror("invalid category range in rangetrans low level");
-				return -1;
-			}
-			for (/* i already initialized */; i <= rt; i++) {
-				if (add_i_to_a(i, &num_cats, &cats)) {
-					yyerror("out of memory");
-					return -1;
-				}
-			}
-			free(id);
-			id_2nd = NULL;
-		} else {
-			i = get_category_idx(id, parse_policy);
-			free(id);
-			if (i < 0) {
-				snprintf(errormsg, sizeof(errormsg), "undefined category %s in rangetrans low level", id);
-				yyerror(errormsg);
-				return -1;
-			}
-			if (add_i_to_a(i, &num_cats, &cats)) {
-				yyerror("out of memory");
-				return -1;
-			}
-		}	
-	}
-	range->low->categories = cats;
-	cats = NULL;
-	range->low->num_categories = num_cats;
-	num_cats = 0;
-
-	id = queue_remove(id_queue);
-	if (id == NULL) {
-		range->high = range->low;
-		new_rngtr->range = range;
-		return 0; /* done at this point, range is only one level */
-	}
-	range->high = (ap_mls_level_t*)malloc(sizeof(ap_mls_level_t));
-	if (range->high == NULL) {
-		yyerror("out of memory");
-		return -1;
-	}
-	range->high->sensitivity = get_sensitivity_idx(id, parse_policy);
-	if (range->high->sensitivity < 0) {
-		yyerror("invalid sensitivity in rangetrans high level");
-		return -1;
-	}
-
-	while ((id = queue_remove(id_queue))) {
-		if (!strcmp(id, ".")) {
-			free(id);
-			if (num_cats == 0) {
-				yyerror("no starting category for category range in rangetrans high level?");
-				return -1;
-			}
-			id = queue_remove(id_queue);
-			if (!id) {
-				yyerror("incomplete category range in rangetrans high level");
-				return -1;
-			}
-			rt = get_category_idx(id, parse_policy);
-			if (rt < 0) {
-				snprintf(errormsg, sizeof(errormsg), "undefined category %s in rangetrans high level", id);
-				yyerror(errormsg);
-				return -1;
-			}
-			i = cats[num_cats-1];
-			if (i >= rt) {
-				yyerror("invalid category range in rangetrans high level");
-				return -1;
-			}
-			i++; /* do not add i twice */
-			for (/* i already initialized */; i <= rt; i++) {
-				if (add_i_to_a(i, &num_cats, &cats)) {
-					yyerror("out of memory");
-					return -1;
-				}
-			}
-			free(id);
-		} else if ((id_2nd = strchr(id, '.'))) {
-			*(id_2nd++) = '\0';
-			i = get_category_idx(id, parse_policy);
-			if (i < 0) {
-				snprintf(errormsg, sizeof(errormsg), "undefined category %s in rangetrans high level", id);
-				yyerror(errormsg);
-				return -1;
-			}
-			rt = get_category_idx(id_2nd, parse_policy);
-			if (rt < 0) {
-				snprintf(errormsg, sizeof(errormsg), "undefined category %s in rangetrans high level", id_2nd);
-				yyerror(errormsg);
-				return -1;
-			}
-			if (i >= rt) {
-				yyerror("invalid category range in rangetrans high level");
-				return -1;
-			}
-			for (/* i already initialized */; i <= rt; i++) {
-				if (add_i_to_a(i, &num_cats, &cats)) {
-					yyerror("out of memory");
-					return -1;
-				}
-			}
-			free(id);
-			id_2nd = NULL;
-		} else {
-			i = get_category_idx(id, parse_policy);
-			free(id);
-			if (i < 0) {
-				snprintf(errormsg, sizeof(errormsg), "undefined category %s in rangetrans high level", id);
-				yyerror(errormsg);
-				return -1;
-			}
-			if (add_i_to_a(i, &num_cats, &cats)) {
-				yyerror("out of memory");
-				return -1;
-			}
-		}	
-	}
-	range->high->categories = cats;
-	range->high->num_categories = num_cats;
 	new_rngtr->range = range;
 
 	id = queue_remove(id_queue);

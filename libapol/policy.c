@@ -215,7 +215,7 @@ int init_policy(policy_t **p)
 	policy->clones = NULL;
 
 	/* role definitions */
-	policy->roles = (name_a_t *)calloc(LIST_SZ, sizeof(name_a_t));
+	policy->roles = (ap_role_t *)calloc(LIST_SZ, sizeof(ap_role_t));
 	if(policy->roles == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
@@ -242,7 +242,7 @@ int init_policy(policy_t **p)
 	policy->num_role_trans = 0;	
 	
 	/* users */
-	policy->users = (name_a_t *)calloc(LIST_SZ, sizeof(name_a_t));
+	policy->users = (ap_user_t *)calloc(LIST_SZ, sizeof(ap_user_t));
 	if(policy->users == NULL) {
 		fprintf(stderr, "out of memory\n");
 		return -1;
@@ -573,7 +573,13 @@ int free_policy(policy_t **p)
 	}
 
 	/* role lists */
-	free_name_a(policy->roles, policy->num_roles);
+	if (policy->roles != NULL) {
+		for (i = 0; i < policy->num_roles; i++) {
+			free(policy->roles[i].types);
+			free(policy->roles[i].dom_roles);
+		}
+		free(policy->roles);
+	}
 	
 	/* role allow rules */
 	if(policy->role_allow != NULL) {
@@ -594,8 +600,13 @@ int free_policy(policy_t **p)
 	}	
 	
 	/* users */
-	free_name_a(policy->users, policy->num_users);
-	
+	if (policy->users != NULL) {
+		for (i = 0; i < policy->num_users; i++) {
+			ap_user_free(&(policy->users[i]));
+		}
+		free(policy->users);
+	}
+
 	/* perm map */
 	if(policy->pmap != NULL) {
 		free_perm_mapping(policy->pmap);
@@ -746,29 +757,6 @@ static int na_get_name(int nidx, name_a_t *na, int a_sz, char **name)
 	}
 	strcpy(*name, na[nidx].name);
 	return 0;
-}
-
-static bool_t na_is_idx_in_a(int idx, name_a_t *na)
-{
-	int i;
-	if(na == NULL)
-		return FALSE;
-	
-	for(i = 0; i < na->num; i++) {
-		if(na->a[i] == idx)
-			return TRUE;
-	}
-	return FALSE;
-} 
-
-/* checks for idx already in a, and if so doesn't add it again */
-static int na_add_idx(int idx, name_a_t *na)
-{
-	if(na == NULL)
-		return -1;
-	if(na_is_idx_in_a(idx, na))
-		return 0; /* already in list */
-	return(add_i_to_a(idx, &na->num, &na->a));
 }
 
 /* END name_a_t support */
@@ -1136,7 +1124,7 @@ int get_type_roles(int type, int *num_roles, int **roles, policy_t *policy)
 	*roles = NULL;
 
 	for (i = 0; i < policy->num_roles; i++) {
-		if (find_int_in_array(type, policy->roles[i].a, policy->roles[i].num) >= 0) {
+		if (find_int_in_array(type, policy->roles[i].types, policy->roles[i].num_types) >= 0) {
 			rt = add_i_to_a(i, num_roles, roles);	
 			if (rt != 0) {
 				return -1;
@@ -1225,18 +1213,6 @@ static bool_t is_name_in_namea(const char *name, int idx_type, int idx, policy_t
 		list = policy->attribs;
 		_get_name = &_get_type_name_ptr;
 		break;
-	case IDX_ROLE:
-		if(!is_valid_role_idx(idx, policy))
-			return FALSE;
-		list = policy->roles;
-		_get_name = &_get_type_name_ptr;
-		break;
-	case IDX_USER:
-		if(!is_valid_user_idx(idx, policy))
-			return FALSE;
-		list = policy->users;
-		_get_name = &_get_role_name_ptr;
-		break;
 	default:
 		return FALSE;
 	}
@@ -1261,12 +1237,38 @@ bool_t is_type_in_attrib(const char *type, int attrib_idx, policy_t *policy)
 
 bool_t is_type_in_role(const char *type, int role_idx, policy_t *policy) 
 {
-	return(is_name_in_namea(type, IDX_ROLE, role_idx, policy));
+	int type_idx;
+
+	if (!type || !policy || !is_valid_role_idx(role_idx, policy)) {
+		errno = EINVAL;
+		return FALSE;
+	}
+
+	type_idx = get_type_idx(type, policy);
+	if (!is_valid_type_idx(type_idx, policy)) {
+		errno = EINVAL;
+		return FALSE;
+	}
+
+	return ((find_int_in_array(type_idx, policy->roles[role_idx].types, policy->roles[role_idx].num_types) != -1) ? TRUE : FALSE);
 }
 
 bool_t is_role_in_user(const char *role, int user_idx, policy_t *policy) 
 {
-	return(is_name_in_namea(role, IDX_USER, user_idx, policy));
+	int role_idx;
+
+	if (!role || !policy || !is_valid_user_idx(user_idx, policy)) {
+		errno = EINVAL;
+		return FALSE;
+	}
+
+	role_idx = get_role_idx(role, policy);
+	if (!is_valid_role_idx(role_idx, policy)) {
+		errno = EINVAL;
+		return FALSE;
+	}
+
+	return ((find_int_in_array(role_idx, policy->users[user_idx].roles, policy->users[user_idx].num_roles) != -1) ? TRUE : FALSE);
 }
 
 int get_role_idx(const char *name, policy_t *policy) 
@@ -1284,7 +1286,16 @@ int get_role_idx(const char *name, policy_t *policy)
 /* allocates space for name, release memory with free() */
 int get_role_name(int idx, char **name, policy_t *policy)
 {
-	return na_get_name(idx, policy->roles, policy->num_roles, name);
+	if (!policy || !name || !is_valid_role_idx(idx, policy)) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	*name = strdup(policy->roles[idx].name);
+	if (!(*name))
+		return -1; /* errno set by strdup */
+
+	return 0;
 }
 
 int get_role_types(int role, int *num_types, int **types, policy_t *policy)
@@ -1301,8 +1312,8 @@ int get_role_types(int role, int *num_types, int **types, policy_t *policy)
 		*num_types = 0;
 	*types = NULL;
 
-	for (i = 0; i < policy->roles[role].num; i++) {
-		rt = add_i_to_a(policy->roles[role].a[i], num_types, types);	
+	for (i = 0; i < policy->roles[role].num_types; i++) {
+		rt = add_i_to_a(policy->roles[role].types[i], num_types, types);	
 		if (rt != 0)
 			goto bad;
 	}
@@ -1324,8 +1335,8 @@ int get_user_roles(int user, int *num_roles, int **roles, policy_t *policy)
 	*num_roles = 0;
 	*roles = NULL;
 
-	for (i = 0; i < policy->users[user].num; i++) {
-		rt = add_i_to_a(policy->users[user].a[i], num_roles, roles);	
+	for (i = 0; i < policy->users[user].num_roles; i++) {
+		rt = add_i_to_a(policy->users[user].roles[i], num_roles, roles);	
 		if (rt != 0)
 			goto bad;
 	}
@@ -1338,7 +1349,16 @@ bad:
 /* allocates space for name, release memory with free() */
 int get_user_name2(int idx, char **name, policy_t *policy)
 {
-	return na_get_name(idx, policy->users, policy->num_users, name);
+	if (!policy || !name || idx < 0 || idx >= policy->num_users) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	*name = strdup(policy->users[idx].name);
+	if (!(*name))
+		return -1; /* errno set by strdup */
+
+	return 0;
 }
 
 /* check if user exists, and if so return its index */
@@ -1370,7 +1390,11 @@ bool_t does_user_have_role(int user, int role, policy_t *policy)
 {
 	if(policy == NULL || !is_valid_user_idx(user, policy))
 		return FALSE;
-	return na_is_idx_in_a(role, &policy->users[user]);
+
+	if (find_int_in_array(role, policy->users[user].roles, policy->users[user].num_roles) == -1)
+		return FALSE;
+	else
+		return TRUE;
 }
 
 static int add_type_to_attrib(int type_idx, name_a_t *attrib)
@@ -1385,10 +1409,12 @@ static int add_type_to_attrib(int type_idx, name_a_t *attrib)
 
 int add_type_to_role(int type_idx, int role_idx, policy_t *policy)
 {
-	if(policy == NULL || !is_valid_role_idx(role_idx, policy))
+	if(policy == NULL || !is_valid_role_idx(role_idx, policy)) {
+		errno = EINVAL;
 		return -1;
+	}
 
-	return(na_add_idx(type_idx, &policy->roles[role_idx]));
+	return(add_i_to_a(type_idx, &(policy->roles[role_idx].num_types), &(policy->roles[role_idx].types)));
 }
 
 /* changed for Jul 2002 policy to allow adding attributes separately, and
@@ -1966,7 +1992,7 @@ int insert_ta_item(ta_item_t *newitem, ta_item_t **list)
 int add_user(char *user, policy_t *policy)
 {
 	size_t sz;
-	name_a_t *new_user= NULL;
+	ap_user_t *new_user= NULL;
 		
 	if(user == NULL || policy == NULL)
 		return -1;
@@ -1974,7 +2000,7 @@ int add_user(char *user, policy_t *policy)
 	/* make sure there is a room for another role in the array */
 	if(policy->list_sz[POL_LIST_USERS] <= policy->num_users) {
 		sz = policy->list_sz[POL_LIST_USERS] + LIST_SZ;
-		policy->users = (name_a_t *)realloc(policy->users, sizeof(name_a_t) * sz);
+		policy->users = (ap_user_t *)realloc(policy->users, sizeof(ap_user_t) * sz);
 		if(policy->users == NULL) {
 			fprintf(stderr, "out of memory\n");
 			return -1;
@@ -1984,8 +2010,10 @@ int add_user(char *user, policy_t *policy)
 	/* next user available */
 	new_user = &(policy->users[policy->num_users]);
 	new_user->name = user;	/* use the memory passed in */
-	new_user->num= 0; 
-	new_user->a = NULL;
+	new_user->num_roles = 0; 
+	new_user->roles = NULL;
+	new_user->dflt_level = NULL;
+	new_user->range = NULL;
 	(policy->rule_cnt[RULE_USER])++;	
 	policy->num_users++;
 	return policy->num_users - 1;	
@@ -1993,10 +2021,18 @@ int add_user(char *user, policy_t *policy)
 
 int add_role_to_user(int role_idx, int user_idx, policy_t *policy)
 {
-	if(policy == NULL || !is_valid_user_idx(user_idx, policy))
+	int i, retv;
+
+	if(policy == NULL || !is_valid_user_idx(user_idx, policy) || !is_valid_role_idx(role_idx, policy))
 		return -1;
 
-	return(na_add_idx(role_idx, &policy->users[user_idx]));
+	/* add all roles dominated by role_idx to user (roles always dominate themselves) */
+	for (i = 0; i < policy->roles[role_idx].num_dom_roles; i++) {
+		retv = add_i_to_a(policy->roles[role_idx].dom_roles[i], &(policy->users[user_idx].num_roles), &(policy->users[user_idx].roles));
+		if (retv)
+			return -1;
+	}
+	return 0;
 }
 
 /* add a name_item_t to the provided list */
@@ -2413,8 +2449,9 @@ bool_t does_clone_rule_use_type(int idx, int type, unsigned char whichlist, cln_
 int add_role(char *role, policy_t *policy)
 {
 	size_t sz;
-	name_a_t *new_role = NULL;
-	name_a_t *ptr = NULL;
+	ap_role_t *new_role = NULL;
+	ap_role_t *ptr = NULL;
+	int retv;
 	
 	if(role == NULL || policy == NULL)
 		return -1;
@@ -2422,12 +2459,12 @@ int add_role(char *role, policy_t *policy)
 	/* make sure there is a room for another role in the array */
 	if(policy->list_sz[POL_LIST_ROLES] <= policy->num_roles) {
 		sz = policy->list_sz[POL_LIST_ROLES] + LIST_SZ;
-		ptr = (name_a_t *)realloc(policy->roles, sizeof(name_a_t) * sz);
+		ptr = (ap_role_t *)realloc(policy->roles, sizeof(ap_role_t) * sz);
 		if (ptr == NULL) {
 			fprintf(stderr, "out of memory\n");
 			return -1;
 		}
-		memset(&ptr[policy->num_roles], 0, sizeof(name_a_t) * LIST_SZ);
+		memset(&ptr[policy->num_roles], 0, sizeof(ap_role_t) * LIST_SZ);
 		policy->roles = ptr;
 		policy->list_sz[POL_LIST_ROLES] = sz;
 	}
@@ -2435,8 +2472,15 @@ int add_role(char *role, policy_t *policy)
 	/* next role available */
 	new_role = &(policy->roles[policy->num_roles]);
 	new_role->name = role;	/* use the memory passed in */
-	new_role->num= 0;
-	new_role->a = NULL;
+	new_role->num_types= 0;
+	new_role->types = NULL;
+	new_role->num_dom_roles = 0;
+	new_role->dom_roles = NULL;
+	/* make role dominate itself */
+	retv = add_i_to_a(policy->num_roles, &(new_role->num_dom_roles), &(new_role->dom_roles));
+	if (retv) {
+		return -1;
+	}
 	policy->num_roles++;
 	return policy->num_roles - 1;
 }
@@ -2446,7 +2490,10 @@ bool_t does_role_use_type(int role, int type, policy_t *policy)
 {
 	if(policy == NULL || !is_valid_role_idx(role, policy))
 		return FALSE;
-	return na_is_idx_in_a(type, &policy->roles[role]);
+	if (find_int_in_array(type, policy->roles[role].types, policy->roles[role].num_types) == -1)
+		return FALSE;
+	else
+		return TRUE;
 }
 
 /* Determine whether a role allow includes the roles provided 
@@ -4353,6 +4400,22 @@ exit_error:
 	*num_types = 0;
 	errno = error;
 	return -1;
+}
+
+void ap_user_free(ap_user_t *user)
+{
+	if (!user)
+		return;
+
+	free(user->name);
+	user->name = NULL;
+	free(user->roles);
+	user->roles = NULL;
+	user->num_roles = 0;
+	ap_mls_level_free(user->dflt_level);
+	user->dflt_level = NULL;
+	ap_mls_range_free(user->range);
+	user->range = NULL;
 }
 
 void security_con_destroy(security_con_t *context)
