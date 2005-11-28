@@ -3981,7 +3981,7 @@ bool_t ap_mls_does_range_include_level(ap_mls_range_t *range, ap_mls_level_t *le
 	if (high_cmp == AP_MLS_EQ || high_cmp == AP_MLS_DOM) {
 		if ((low_cmp == AP_MLS_EQ || low_cmp == AP_MLS_DOMBY) && range->low != range->high)
 			return TRUE;
-		else if (range->low == range->high)
+		else if (range->low == range->high && level->sensitivity == range->low->sensitivity)
 			return TRUE;
 	}
 
@@ -4284,6 +4284,10 @@ int ap_mls_range_transition_search(int *src_types, int num_src_types, int *tgt_t
 			match = ap_mls_does_range_contain_subrange(policy->rangetrans[i].range, range, policy);
 		} else if ((search_type & ~(AP_MLS_RTS_SRC_TYPE|AP_MLS_RTS_TGT_TYPE|AP_MLS_RTS_ANY_TYPE|AP_MLS_RTS_MATCH_ANY)) ==  AP_MLS_RTS_RNG_SUPER) {
 			match = ap_mls_does_range_contain_subrange(range, policy->rangetrans[i].range, policy);
+		}
+		/* if there was no search criteria */
+		if (!(search_type & 0x1F)) {
+			match = TRUE;
 		}
 		if (match) {
 			add = TRUE;
