@@ -60,9 +60,10 @@ findcon.o: replcon.c
 
 findcon: findcon.o $(LIBSEFS) $(LIBAPOL)
 	$(CC) -o $@ findcon.o $(LINKFLAGS) $(LIBSELINUXSO) $(LIBSEFS) $(LIBAPOL) $(LIBS)
-	
+
 install: all
 	install -m 755 $(SE_CMDS) $(BINDIR);
+	install -m 644 findcon.1 $(MANDIR)/man1
 
 install-policy:
 	-@if [ -e $(BINDIR)/replcon ]; then \
