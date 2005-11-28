@@ -39,7 +39,7 @@ static int tcl_render_ta_item_list(Tcl_Interp *interp, Tcl_Obj *dest_listobj, ta
         return TCL_OK;
 }
 
-int tcl_render_rangetrans(Tcl_Interp *interp, bool_t addlineno, int idx, policy_t *policy)
+int ap_tcl_render_rangetrans(Tcl_Interp *interp, bool_t addlineno, int idx, policy_t *policy)
 {
         Tcl_Obj *result_obj;
         Tcl_Obj *linenum_obj, *source_obj, *target_obj, *type_obj, *range_obj;
