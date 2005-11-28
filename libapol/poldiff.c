@@ -969,8 +969,8 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 			else {
 				/* role i is in p2; make sure it has the same types assigned in p2 */
 				added = FALSE;
-				for(j = 0; j < p1->roles[i].num; j++) {
-					if (!ap_diff_is_type_in_p2role(p1->roles[i].a[j], idx2, p1, p2, renamed_types)) {
+				for(j = 0; j < p1->roles[i].num_types; j++) {
+					if (!ap_diff_is_type_in_p2role(p1->roles[i].types[j], idx2, p1, p2, renamed_types)) {
 						if(!added) {
 							/* add the role to the diff, and then note the first missing type */
 							added = TRUE;
@@ -981,7 +981,7 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 							}
 						}
 						/* note the missing type */
-						rt = add_i_to_a(p1->roles[i].a[j], &iad_node->numa, &iad_node->a);
+						rt = add_i_to_a(p1->roles[i].types[j], &iad_node->numa, &iad_node->a);
 						if(rt < 0)
 							goto err_return;
 					}
@@ -1004,8 +1004,8 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 			else {
 				/* user i is in p2; make sure it has the same roles assigned in p2 */
 				added = FALSE;
-				for(j = 0; j < p1->users[i].num; j++) {
-					rt = get_role_name(p1->users[i].a[j], &name, p1);
+				for(j = 0; j < p1->users[i].num_roles; j++) {
+					rt = get_role_name(p1->users[i].roles[j], &name, p1);
 					if(rt < 0)
 						goto err_return;
 					if(!is_role_in_user(name, idx2, p2)) {
@@ -1021,7 +1021,7 @@ static apol_diff_t *apol_get_pol_diffs(unsigned int opts, policy_t *p1, policy_t
 							}
 						}
 						/* note the missing role */
-						rt = add_i_to_a(p1->users[i].a[j], &iad_node->numa, &iad_node->a);
+						rt = add_i_to_a(p1->users[i].roles[j], &iad_node->numa, &iad_node->a);
 						if(rt < 0) {
 							free(name);
 							goto err_return;
