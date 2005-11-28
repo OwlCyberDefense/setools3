@@ -251,6 +251,14 @@ typedef struct tt_item {
 	ta_item_t	dflt_type;	/* the default type; only one of these */	
 } tt_item_t;
 
+typedef struct ap_role {
+	char *name;
+	int *types;
+	int num_types;
+	int *dom_roles;
+	int num_dom_roles;
+} ap_role_t;
+
 /* a role allow rule; dynamic arrays */
 typedef struct role_allow_item {
 	unsigned char	flags;		/* use AV* flags above, only need SRC & TGT */	
@@ -401,6 +409,14 @@ typedef struct ap_rangetrans {
 	ap_mls_range_t *range;
 } ap_rangetrans_t;
 
+typedef struct ap_user {
+	char *name;
+	int *roles;
+	int num_roles;
+	ap_mls_level_t *dflt_level;
+	ap_mls_range_t *range;
+} ap_user_t;
+
 /* IDs for DYNAMIC array only  (e.g., clones is not a dynamic array, but rather a linked list*/
 #define POL_LIST_TYPE			0
 #define POL_LIST_ATTRIB			1
@@ -527,11 +543,11 @@ typedef struct policy {
 	cond_bool_t	*cond_bools;	/* conditional policy booleans (ARRAY) */
 	cond_expr_item_t *cond_exprs;	/* conditional expressions (ARRAY) */
 /* Role-based access control rules */
-	name_a_t	*roles;		/* roles (ARRAY)*/
+	ap_role_t	*roles;		/* roles (ARRAY)*/
 	role_allow_t	*role_allow;	/* role allow rules (ARRAY) */
 	rt_item_t	*role_trans;	/* role transition rules (ARRAY) */
 /* User rules */
-	name_a_t	*users;		/* users (ARRAY) */
+	ap_user_t	*users;		/* users (ARRAY) */
 /* Constraints */
 	ap_constraint_t		*constraints;	/* constraints (ARRAY) */
 	ap_validatetrans_t	*validatetrans;	/* validatetrans (ARRAY) */
@@ -582,6 +598,7 @@ const char* get_policy_version_name(int policy_version);
 #define is_binary_policy(policy) (policy != NULL ? (policy->policy_type & POL_TYPE_BINARY) : 0)
 #define is_valid_policy_version(version) (version >= POL_VER_UNKNOWN && version <= POL_VER_MAX)
 #define get_policy_version_id(policy) (policy != NULL ? policy->version : -1)
+#define is_mls_policy(policy) ((policy != NULL && policy->version >= POL_VER_MLS && policy->version % 2)?1:0)
 
 /* DB updates/additions/changes */
 #define add_common_perm_to_class(cls_idx, cp_idx, policy) ((is_valid_obj_class_idx(cls_idx, policy) && is_valid_common_perm_idx(cp_idx, policy)) ? policy->obj_classes[cls_idx].common_perms = cp_idx: -1 )
@@ -821,6 +838,9 @@ int ap_mls_range_transition_search(int *src_types, int num_src_types, int *tgt_t
 
 /* constraints */
 void ap_constraint_expr_destroy(ap_constraint_expr_t *expr);
+
+/* users */
+void ap_user_free(ap_user_t *user);
 
 /* misc */
 
