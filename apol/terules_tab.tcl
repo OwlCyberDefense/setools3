@@ -548,7 +548,7 @@ proc Apol_TE::expand_ids {id id_opt use_indirect use_regexp} {
                 }
             }
         }
-        set results_list [lsort -uniq $results_list]
+        set results_list [lsort -unique $results_list]
     }
     return $results_list
 }
@@ -561,6 +561,9 @@ proc Apol_TE::sort_cmd {a b} {
     if {[set result [string compare $rule_type_a $rule_type_b]] != 0} {
         return $result
     }
+	if {[ApolTop::is_binary_policy]} {
+		return [string compare [lindex $a 0] [lindex $b 0]]
+	}
     return [expr {[lindex $a 1] - [lindex $b 1]}]
 }
 
