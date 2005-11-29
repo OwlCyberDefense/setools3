@@ -489,6 +489,8 @@ int replcon_info_add_object_class(replcon_info_t *info, const char *str)
 	assert(info != NULL);
 	class_id = sefs_is_valid_object_class(str);
 	switch(class_id) {
+	case -1:
+		break;
 	case 0:
 		class_id = SEFS_NORM_FILE;
 		break;
