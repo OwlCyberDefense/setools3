@@ -1704,6 +1704,29 @@ void test_print_mls(policy_t *policy)
 	printf("\nRange Transitions:\n");
 	for (i = 0; i < policy->num_rangetrans; i++)
 		printf("\t%s\n", re_render_rangetrans(!is_binary_policy(policy), i, policy));
+
+	printf("\nUser MLS info:\n");
+	for (i = 0; i < policy->num_users; i++)
+		printf("%s level %s range %s\n", policy->users[i].name, re_render_mls_level(policy->users[i].dflt_level, policy), re_render_mls_range(policy->users[i].range, policy));
+}
+
+void test_print_role_dom(policy_t *policy)
+{
+	int i, j;
+
+	for (i = 0; i < policy->num_roles; i++) {
+		if (policy->roles[i].num_dom_roles > 1) {
+			fprintf(outfile, "dominance {role %s {", policy->roles[i].name);
+			for (j = 1; j < policy->roles[i].num_dom_roles; j++) {
+				fprintf(outfile, "role %s%s", policy->roles[policy->roles[i].dom_roles[j]].name, j+1==policy->roles[i].num_dom_roles?";":"; ");
+			}
+			fprintf(outfile, "}}\n");
+		} else if (policy->roles[i].num_dom_roles == 1) {
+			fprintf(outfile, "role %s only dominates itself\n", policy->roles[i].name);
+		} else {
+			fprintf(outfile, "role %s: DOMINANCE ERROR!\n", policy->roles[i].name);
+		}
+	}
 }
 
 int check_for_duplicate_object(int *classes, int num_objs, int obj_class)
@@ -1734,6 +1757,7 @@ int menu()
 	printf("7)  display policy booleans and expressions\n");
 	printf("8)  set the value of a boolean\n");
 	printf("9)  search for conditional expressions\n");
+	printf("d)  display role dominance\n");
 	printf("u)  display fs_use statements\n");
 	printf("p)  display portcon statements\n");
 	printf("n)  display netifcon statements\n");
@@ -2443,6 +2467,9 @@ int main(int argc, char *argv[])
 		case 'l':
 			test_relabel_analysis(policy);
 			menu();
+			break;
+		case 'd':
+			test_print_role_dom(policy);
 			break;
 		case 'u':
 			test_print_fs_use(policy);
