@@ -2,6 +2,7 @@
 MAKE 		= make
 CC		= gcc
 LIBAPOL		= ../../setools/libapol/libapol.a
+LIBSELINUX	= -lselinux
 LIBS		= -lm -lfl $(LIBSELINUX)
 OBJS		= test.o $(LIBAPOL)
 INCLUDES	= -I../../setools/libapol
@@ -18,7 +19,7 @@ run : $(foreach test,$(TESTS),$(test).res)
 
 %.res : %.o $(OBJS)
 	@echo $* > $*.res0
-	-@./$* > $*.res1 2> $*.res2 
+	@./$* > $*.res1 2> $*.res2 
 	@cat $*.res0 $*.res1 $*.res2 > $@ 
 	@rm -f $*.res[012]
 

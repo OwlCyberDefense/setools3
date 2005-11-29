@@ -20,10 +20,10 @@ int main(int argc, char **argv)
 	get_role_name(role, &role_name, policy);
 	TEST("whether get_role_name agrees", strcmp(role_name, "system_r") == 0);
 	free(role_name);
-	TEST("system_r's num_types", policy->roles[role].num == 30);
-	TEST("object_r's num_types", policy->roles[get_role_idx("object_r", policy)].num == 0);
-	TEST("sysadm_r's num_types", policy->roles[get_role_idx("sysadm_r", policy)].num == 24);
-	TEST("user_r's num_types", policy->roles[get_role_idx("user_r", policy)].num == 8);
+	TEST("system_r's num_types", policy->roles[role].num_types == 30);
+	TEST("object_r's num_types", policy->roles[get_role_idx("object_r", policy)].num_types == 0);
+	TEST("sysadm_r's num_types", policy->roles[get_role_idx("sysadm_r", policy)].num_types == 24);
+	TEST("user_r's num_types", policy->roles[get_role_idx("user_r", policy)].num_types == 8);
 	{
 		errors = 8;
 		role = get_role_idx("user_r", policy);
