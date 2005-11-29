@@ -4400,8 +4400,8 @@ static int sediff_load_policies(const char *p1_file, const char *p2_file)
 	sediff_app->p2_sfd.name = g_string_new(p2_file);
 	sediff_app->p1 = p1;
 	sediff_app->p2 = p2;
-	sediff_file_mmap(p1_file,&(sediff_app->p1_sfd.data), &(sediff_app->p1_sfd.size));
-	sediff_file_mmap(p1_file,&(sediff_app->p2_sfd.data), &(sediff_app->p2_sfd.size));
+	sediff_file_mmap(p1_file, &(sediff_app->p1_sfd.data), &(sediff_app->p1_sfd.size));
+	sediff_file_mmap(p2_file, &(sediff_app->p2_sfd.data), &(sediff_app->p2_sfd.size));
 		
 	/* Grab the 2 policy textviews */
 	p1_textview = (GtkTextView *)glade_xml_get_widget(sediff_app->window_xml, "sediff_main_p1_text");
