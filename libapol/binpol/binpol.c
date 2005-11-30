@@ -60,33 +60,17 @@ static int skip_ebitmap(ap_fbuf_t *fb, FILE *fp)
 	return 0;
 }
 
-static int skip_mls_range(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
-{
-	__u32 *buf, nlvl;
-
-	INTERNAL_ASSERTION
-
-	buf = ap_read_fbuf(fb, sizeof(__u32), fp);
-	if(buf == NULL) return fb->err;
-	
-	nlvl = le32_to_cpu(buf[0]);
-	if (fseek(fp, sizeof(__u32)*nlvl, SEEK_CUR))
-		return -3;
-	if (skip_ebitmap(fb,fp))
-		return -3;
-	if (nlvl > 1){
-		if (skip_ebitmap(fb,fp))
-			return -3;
-	} 
-	return 0;
-}
-
-static int load_mls_range(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy, ap_mls_range_t **range)
+/* Read and store an ap_mls_range_t struct 
+ * raw_sens is TRUE if we store the sensitvity value from the binary, or FALSE if we store the mapped value - a policy index. 
+ * If we are calling this function before the sensitities mappings are create raw_sens must be FALSE in which case some post processing
+ * is required before load_binpol returns in order to ultimately store valid policy indexes. */
+static int load_mls_range(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy, ap_mls_range_t **range, bool_t raw_sens)
 {
 	__u32 *buf, nlvl;
 	ebitmap_t ebitmap;
 	ebitmap_node_t *node;
-	int rt, i, indx, sens = -1;
+	int *cats_low, *cats_high = NULL, num_cats_low, num_cats_high = -1, rt, i, indx, sens_low, sens_high = -1;
+	ap_mls_level_t *mls_level_low, *mls_level_high;
 
 	INTERNAL_ASSERTION
 
@@ -94,79 +78,93 @@ static int load_mls_range(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int 
 		assert(FALSE);
 		return -1;
 	}
-	/* create a new range */
-	*range = (ap_mls_range_t*)malloc(sizeof(ap_mls_range_t));
-	if (*range == NULL) {
-		fprintf(stderr, "Error: Out of memory\n");
-		return -1;
-	}
-	memset(*range, 0, sizeof(ap_mls_range_t));
 
 	buf = ap_read_fbuf(fb, sizeof(__u32) * 2, fp); /* num items (1 or 2), first sensitivity */
 	if(buf == NULL) return fb->err;
 	nlvl = le32_to_cpu(buf[0]);
-
-	/* load the first level*/
-	(*range)->low = (ap_mls_level_t*)malloc(sizeof(ap_mls_level_t));
-	if ((*range)->low == NULL) {
-		fprintf(stderr, "Error: Out of memory\n");
-		return -1;
-	}
-	sens = le32_to_cpu(buf[1]);
-	(*range)->low->sensitivity = bm->sens_map[sens-1];
+	
+	/* low sens */
+	sens_low = le32_to_cpu(buf[1]);
+	if (!raw_sens)
+		sens_low = bm->sens_map[sens_low-1];
 	if (nlvl == 2) {
-		buf = ap_read_fbuf(fb, sizeof(__u32), fp); /* second sensitivity */
+		/* optional high sens */
+		buf = ap_read_fbuf(fb, sizeof(__u32), fp);
 		if (buf == NULL) return fb->err;
-	        sens = le32_to_cpu(buf[0]);
+	        sens_high = le32_to_cpu(buf[0]);
+		if (!raw_sens)
+			sens_high = bm->sens_map[sens_high-1];
 	}
+	/* low cats */
 	ebitmap_init(&ebitmap);
 	rt = ebitmap_read(fb, &ebitmap, fp);
 	if (rt < 0) return rt;
-	(*range)->low->categories = (int*)malloc(sizeof(int) * ebitmap.highbit);
-	if ((*range)->low->categories == NULL) {
+	cats_low = (int*)malloc(sizeof(int) * ebitmap.highbit);
+	if (cats_low == NULL) {
 		fprintf(stderr, "Error: Out of memory\n.");
 		return -1;
 	}
 	indx = 0;
 	ebitmap_for_each_bit(&ebitmap, node, i) {
 		if (ebitmap_node_get_bit(node, i)) {
-			(*range)->low->categories[indx++] = i;
+			cats_low[indx++] = i;
 		}
 	}
-	(*range)->low->num_categories = indx;
-	(*range)->low->categories = realloc((*range)->low->categories, sizeof(int) * (*range)->low->num_categories);
-	if (rt < 0)
-		return -1;
+	num_cats_low = indx;
+	cats_low = realloc(cats_low, sizeof(int) * num_cats_low);
+
 	if (nlvl == 2) {
-		/* load the second level */
-		(*range)->high = (ap_mls_level_t*)malloc(sizeof(ap_mls_level_t));
-		if ((*range)->high == NULL) {
-			fprintf(stderr, "Error: Out of memory\n");
-			return -1;
-		}				
-		assert(sens != -1);
-		(*range)->high->sensitivity = bm->sens_map[sens-1];
+		/* optional high cats */
 		ebitmap_init(&ebitmap);
 		rt = ebitmap_read(fb, &ebitmap, fp);
 		if (rt < 0) return rt;
-		(*range)->high->categories = (int*)malloc(sizeof(int) * ebitmap.highbit);
-		if ((*range)->high->categories == NULL) {
+		cats_high = (int*)malloc(sizeof(int) * ebitmap.highbit);
+		if (cats_high == NULL) {
 			fprintf(stderr, "Error: Out of memory\n.");
 			return -1;
 		}
 		indx = 0;
 		ebitmap_for_each_bit(&ebitmap, node, i) {
 			if (ebitmap_node_get_bit(node, i)) {
-				(*range)->high->categories[indx++] = i;
+				cats_high[indx++] = i;
 			}
 		}		
-		(*range)->high->num_categories = indx;
-		(*range)->high->categories = realloc((*range)->high->categories, sizeof(int) * (*range)->high->num_categories);
+		num_cats_high = indx;
+		cats_high = realloc(cats_high, sizeof(int) * num_cats_high);
+	} 
+
+	/* create the low level*/
+	mls_level_low = (ap_mls_level_t*)malloc(sizeof(ap_mls_level_t));
+	if (mls_level_low == NULL) {
+		fprintf(stderr, "Error: Out of memory\n");
+		return -1;
+	}
+	mls_level_low->sensitivity = sens_low;
+	mls_level_low->categories = cats_low;
+	mls_level_low->num_categories = num_cats_low;
+
+	if (nlvl == 2) {
+		/* optional second level */
+		mls_level_high = (ap_mls_level_t*)malloc(sizeof(ap_mls_level_t));
+		if (mls_level_high == NULL) {
+			fprintf(stderr, "Error: Out of memory\n");
+			return -1;
+		}
+		mls_level_high->sensitivity = sens_high;
+		mls_level_high->categories = cats_high;
+		mls_level_high->num_categories = num_cats_high;
 	} else {
-		/* the low level is the same as the high level */
-		(*range)->high = (*range)->low;
+		mls_level_high = mls_level_low;
 	}
 
+	/* create a new range */
+	*range = (ap_mls_range_t*)malloc(sizeof(ap_mls_range_t));
+	if (*range == NULL) {
+		fprintf(stderr, "Error: Out of memory\n");
+		return -1;
+	}
+	(*range)->low = mls_level_low;
+	(*range)->high = mls_level_high;
 	return 0;
 }
 
@@ -295,7 +293,9 @@ static int load_range_trans(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned in
 		}
 
 		if (buf32 == NULL) return fb->err;
-		load_mls_range(fb, fp, bm, opts, policy, &(new_rngtr->range));
+		/* range_trans rules are always loaded after sensitivities so pass FALSE to store the policy indexes
+		 * instead of the raws sensitivity values */  
+		load_mls_range(fb, fp, bm, opts, policy, &(new_rngtr->range), FALSE);
 	}
 	return 0;
 }
@@ -311,6 +311,57 @@ static int skip_mls_level(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int 
 		return fb->err;
 
 	return skip_ebitmap(fb,fp);
+}
+
+static int load_user_dflt_mls_level(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy, ap_mls_level_t **mls_level)
+{
+	__u32 *buf;
+	ebitmap_t ebitmap;
+	ebitmap_node_t *node;
+	int sens, rt, i, indx, num_categories, *categories;
+
+	INTERNAL_ASSERTION
+
+	if (mls_level == NULL) {
+		assert(FALSE);
+		return -1;
+	}
+
+	buf = ap_read_fbuf(fb, sizeof(__u32), fp);
+	if (buf == NULL)
+		return fb->err;
+
+	/* we load users before the sensitivity mapping, so we will post process this raw value later */
+	sens = le32_to_cpu(buf[0]);
+
+	/* read categories bitmap */
+	ebitmap_init(&ebitmap);
+	rt = ebitmap_read(fb, &ebitmap, fp);
+	if (rt < 0) return rt;
+	categories = (int*)malloc(sizeof(int) * ebitmap.highbit);
+	if (categories == NULL) {
+		fprintf(stderr, "Error: Out of memory\n.");
+		return -1;
+	}
+	indx = 0;
+	ebitmap_for_each_bit(&ebitmap, node, i) {
+		if (ebitmap_node_get_bit(node, i)) {
+			categories[indx++] = i;
+		}
+	}
+	num_categories = indx;
+	categories = realloc(categories, num_categories * sizeof(int));
+
+	*mls_level = malloc(sizeof(ap_mls_level_t));
+	if (*mls_level == NULL) {
+		fprintf(stderr, "Error: Out of memory\n");
+		return -1;
+	}
+	(*mls_level)->categories = categories;
+	(*mls_level)->num_categories = num_categories;
+	(*mls_level)->sensitivity = sens;
+
+	return rt; 
 }
 
 static int load_mls_level(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts, policy_t *policy)
@@ -898,6 +949,8 @@ static int load_user(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts,
 	bool_t keep = FALSE;
 	int i, rt, idx = -1;
 	ebitmap_t e;
+	ap_mls_level_t *mls_level = NULL;
+	ap_mls_range_t *mls_range = NULL;
 
 	INTERNAL_ASSERTION
 	
@@ -948,8 +1001,15 @@ static int load_user(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts,
 	ebitmap_destroy(&e);
 	
 	if (policy->version >= POL_VER_19) {
-		skip_mls_range(fb, fp, bm, opts, policy);
-		skip_mls_level(fb, fp, bm, opts, policy);
+		/* users are always loaded before the sensitivity mappings, so pass TRUE to store the 
+		 * raw sensitivity values and do the post processing on these values before load_binpol
+		 * returns. */
+		rt = load_mls_range(fb, fp, bm, opts, policy, &mls_range, TRUE);
+		if (rt < 0) return -1;
+		policy->users[idx].range = mls_range;
+		rt = load_user_dflt_mls_level(fb, fp, bm, opts, policy, &mls_level);
+		if (rt < 0) return -1;
+		policy->users[idx].dflt_level = mls_level;
 	}
 
 	return 0;
@@ -1239,7 +1299,9 @@ static int load_security_context(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsign
 	(*context)->type = bm->t_map[type-1];
 
 	if (policy->version >= POL_VER_19) {
-		rt = load_mls_range(fb, fp, bm, opts, policy, &((*context)->range));
+		/* security contexts are always loaded after sensitivities so pass FALSE to store the policy indexes
+		 * instead of the raws sensitivity values */ 
+		rt = load_mls_range(fb, fp, bm, opts, policy, &((*context)->range), FALSE);
 		assert((*context)->range->low);
 		if (rt < 0) goto err;
 	}
@@ -2330,7 +2392,7 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 {
 	__u32  *buf;
 	size_t len, nprim, nel;
-	unsigned int policy_ver, num_syms, i, j, num_ocons;
+	unsigned int policy_ver, num_syms, i, j, num_ocons, tmp;
 	int rt = 0, role_idx, type_idx;
 	ap_fbuf_t *fb;
 	ap_bmaps_t *bm = NULL;
@@ -2577,7 +2639,6 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 			}
 		}
 	}
-	
 
 	/* Process aliases */
 	for(a = bm->alias_map; a != NULL; a = a->next) {
@@ -2702,7 +2763,27 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 		rt = load_type_attr_map(fb, fp, bm, opts, policy);
 		if (rt < 0) { return fb->err; }
 	}
-	
+
+	if (mls_config) {
+		/* post-process the users sensitivities because we didn't have the mappings
+		 * when we loaded the users */
+		for (i = 0; i < policy->num_users; i++) {
+			/* default level sens */
+			tmp = policy->users[i].dflt_level->sensitivity;
+			policy->users[i].dflt_level->sensitivity = bm->sens_map[tmp-1];
+			
+			/* range sens low */
+			tmp = policy->users[i].range->low->sensitivity;
+			policy->users[i].range->low->sensitivity = bm->sens_map[tmp-1];
+			
+			/* optional range sens high */
+			if (policy->users[i].range->low != policy->users[i].range->high) {
+				tmp = policy->users[i].range->high->sensitivity;
+				policy->users[i].range->high->sensitivity = bm->sens_map[tmp-1];
+			}
+		}
+	}
+
 	rt = 0;
 err_return:
 	ap_free_fbuf(&fb); 
