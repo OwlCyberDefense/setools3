@@ -490,7 +490,9 @@ dontaudit_def		: DONTAUDIT names names ':' names names ';'
 neverallow_def		: NEVERALLOW names names ':' names names  ';'
 			{if (define_te_avtab(RULE_NEVERALLOW)) return -1; }
 		        ;
-role_type_def		: ROLE identifier TYPES names ';'
+role_type_def		: ROLE identifier ';'
+			{if (define_role_types()) return -1;}
+			| ROLE identifier TYPES names ';'
 			{if (define_role_types()) return -1;}
                         ;
 role_dominance		: DOMINANCE '{' roles '}'
