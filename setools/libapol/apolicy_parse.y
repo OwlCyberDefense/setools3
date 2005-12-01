@@ -3334,7 +3334,7 @@ static int define_sens(void)
 	int rt;
 	name_item_t *aliases = NULL;
 
-	rt = set_policy_version(POL_VER_MLS, parse_policy);
+	rt = set_policy_version(POL_VER_19_20, parse_policy);
 	if(rt != 0) {
 		yyerror("error setting policy version");
 		return -1;
@@ -3383,7 +3383,7 @@ static int define_dominance(void)
 		return 0;
 	}
 
-	rt = set_policy_version(POL_VER_MLS, parse_policy);
+	rt = set_policy_version(POL_VER_19_20, parse_policy);
 	if(rt != 0) {
 		yyerror("error setting policy version");
 		return -1;
@@ -3433,7 +3433,7 @@ static int define_category(void)
 	int rt;
 	name_item_t *aliases = NULL;
 
-	rt = set_policy_version(POL_VER_MLS, parse_policy);
+	rt = set_policy_version(POL_VER_19_20, parse_policy);
 	if(rt != 0) {
 		yyerror("error setting policy version");
 		return -1;
@@ -3476,7 +3476,7 @@ static int define_level(void)
 	int rt;
 	ap_mls_level_t *lvl = NULL;
 
-	rt = set_policy_version(POL_VER_MLS, parse_policy);
+	rt = set_policy_version(POL_VER_19_20, parse_policy);
 	if(rt != 0) {
 		yyerror("error setting policy version");
 		return -1;
@@ -3592,7 +3592,17 @@ static int define_constraint(bool_t is_mls, ap_constraint_expr_t *expr)
 
 static int define_mls(void)
 {
-	return set_policy_version(POL_VER_MLS, parse_policy);
+	int rt;
+
+	rt = set_policy_version(POL_VER_19_20, parse_policy);
+	if(rt != 0) {
+		yyerror("error setting policy version");
+		return -1;
+	}
+
+	parse_policy->mls = TRUE;
+
+	return 0;
 }
 
 static int mls_valid(void)
@@ -3666,7 +3676,7 @@ static int define_range_trans(void)
 	ta_item_t *titem = NULL;
 	ap_mls_range_t *range = NULL;
 
-	rt = set_policy_version(POL_VER_MLS, parse_policy);
+	rt = set_policy_version(POL_VER_19_20, parse_policy);
 	if(rt != 0) {
 		yyerror("error setting policy version");
 		return -1;

@@ -3414,7 +3414,7 @@ static void sediff_policy_stats_textview_populate(policy_t *p1, GtkTextView *tex
 
 
 	contents = g_strdup_printf("Filename: %s\n"
-				   "Version: %s\n"
+				   "Version: %s%s\n"
 				   "Policy Type: %s\n\n"
 
 				   "Number of Classes and Permissions:\n"
@@ -3447,6 +3447,7 @@ static void sediff_policy_stats_textview_populate(policy_t *p1, GtkTextView *tex
 
 				   filename,
 				   get_policy_version_name(p1->version),
+					is_mls_policy(p1) ? "mls" : "",
                                    is_binary_policy(p1) == 0 ? "source" : "binary", 
 				   p1->num_obj_classes,
 				   p1->num_common_perms,

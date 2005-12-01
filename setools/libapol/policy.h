@@ -467,13 +467,12 @@ typedef struct ap_user {
 #define POL_VER_COND		4	/* same */
 #define POL_VER_17		5
 #define POL_VER_18		6	/* for v 18 binary */
-#define POL_VER_18_20		7	/* for source w/o MLS */
-#define POL_VER_19		8	/* for binary w/o MLS */
-#define POL_VER_19MLS		9
-#define POL_VER_MLS		9	/* minimum policy version for MLS support */
+#define POL_VER_18_20		7	/* for source v >=18 w/o MLS */
+#define POL_VER_19		8	
+#define POL_VER_MLS		8	/* minimum policy version for MLS support */
+#define POL_VER_19_20		9	/* for source v >= 19 w/ MLS */
 #define POL_VER_20		10
-#define POL_VER_20MLS		11
-#define	POL_VER_MAX		11
+#define	POL_VER_MAX		10
 
 /* Policy type macros */
 #define POL_TYPE_UNKNOWN 	0x00000000
@@ -484,6 +483,7 @@ typedef struct ap_user {
 /* This is an actual policy data base */
 typedef struct policy {
 	int	version;		/* weak indicator of policy version, see comments above */
+	bool_t mls;		/* indicates mls policy */
 	unsigned int opts;		/* indicates which parts of the policy are included in this policy */
 	unsigned int policy_type;	/* policy type (binary or source) */
 	int	num_types;		/* array current ptr */
@@ -598,7 +598,7 @@ const char* get_policy_version_name(int policy_version);
 #define is_binary_policy(policy) (policy != NULL ? (policy->policy_type & POL_TYPE_BINARY) : 0)
 #define is_valid_policy_version(version) (version >= POL_VER_UNKNOWN && version <= POL_VER_MAX)
 #define get_policy_version_id(policy) (policy != NULL ? policy->version : -1)
-#define is_mls_policy(policy) ((policy != NULL && policy->version >= POL_VER_MLS && policy->version % 2)?1:0)
+#define is_mls_policy(policy) ((policy != NULL && policy->mls)?1:0)
 
 /* DB updates/additions/changes */
 #define add_common_perm_to_class(cls_idx, cp_idx, policy) ((is_valid_obj_class_idx(cls_idx, policy) && is_valid_common_perm_idx(cp_idx, policy)) ? policy->obj_classes[cls_idx].common_perms = cp_idx: -1 )
