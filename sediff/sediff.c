@@ -1286,8 +1286,8 @@ int main (int argc, char **argv)
 	diff = svd->diff;
 	
 	printf("Difference between policy 1 and policy 2: \n");
-	printf("   p1 (%6s, ver: %s): %s\n", policy_type(svd->diff->p1), get_policy_version_name(svd->diff->p1->version), p1_file);
-	printf("   p2 (%6s, ver: %s): %s\n\n", policy_type(svd->diff->p2), get_policy_version_name(svd->diff->p2->version), p2_file);
+	printf("   p1 (%6s, ver: %s%s): %s\n", policy_type(svd->diff->p1), get_policy_version_name(svd->diff->p1->version), is_mls_policy(svd->diff->p1)?"mls":"", p1_file);
+	printf("   p2 (%6s, ver: %s%s): %s\n\n", policy_type(svd->diff->p2), get_policy_version_name(svd->diff->p2->version), is_mls_policy(svd->diff->p2)?"mls":"", p2_file);
 	
 	if(classes || all)  {
 		if (!(quiet && (diff->diff1->num_classes == 0 && diff->diff2->num_classes == 0))) {

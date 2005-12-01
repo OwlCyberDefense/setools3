@@ -50,7 +50,9 @@
 
 #define COPYRIGHT_INFO "Copyright (C) 2003-2005 Tresys Technology, LLC"
 
+#ifndef DEBUG
 #define DEBUG 0
+#endif
 #define MAX_INPUT_SIZE 1024
 #define NFTW_FLAGS FTW_MOUNT | FTW_PHYS
 #define NFTW_DEPTH 1024
