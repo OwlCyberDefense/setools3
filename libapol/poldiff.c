@@ -2691,38 +2691,50 @@ int ap_single_view_diff_get_num_diffs(ap_single_view_diff_t *svd)
 		return -1;
 
 	/* types */
-	total += svd->types->num_add + svd->types->num_rem + svd->types->num_chg +
-		svd->types->num_chg_add + svd->types->num_chg_rem;
+	if (svd->types)
+		total += svd->types->num_add + svd->types->num_rem + svd->types->num_chg +
+			svd->types->num_chg_add + svd->types->num_chg_rem;
 	/* roles */
-	total += svd->roles->num_add + svd->roles->num_rem + svd->roles->num_chg +
-		svd->roles->num_chg_add + svd->roles->num_chg_rem;
+	if (svd->roles)
+		total += svd->roles->num_add + svd->roles->num_rem + svd->roles->num_chg +
+			svd->roles->num_chg_add + svd->roles->num_chg_rem;
 	/* users */
-	total += svd->users->num_add + svd->users->num_rem + svd->users->num_chg +
-		svd->users->num_chg_add + svd->users->num_chg_rem;
+	if (svd->users)
+		total += svd->users->num_add + svd->users->num_rem + svd->users->num_chg +
+			svd->users->num_chg_add + svd->users->num_chg_rem;
 	/* attributes */
-	total += svd->attribs->num_add + svd->attribs->num_rem + svd->attribs->num_chg +
-		svd->attribs->num_chg_add + svd->attribs->num_chg_rem;
+	if (svd->attribs)
+		total += svd->attribs->num_add + svd->attribs->num_rem + svd->attribs->num_chg +
+			svd->attribs->num_chg_add + svd->attribs->num_chg_rem;
 	/* classes */
-	total += svd->classes->num_add + svd->classes->num_rem + svd->classes->num_chg +
-		svd->classes->num_chg_add + svd->classes->num_chg_rem;
+	if (svd->classes)
+		total += svd->classes->num_add + svd->classes->num_rem + svd->classes->num_chg +
+			svd->classes->num_chg_add + svd->classes->num_chg_rem;
 	/* common perms */
-	total += svd->common_perms->num_add + svd->common_perms->num_rem + svd->common_perms->num_chg +
-		svd->common_perms->num_chg_add + svd->common_perms->num_chg_rem;
+	if (svd->common_perms)
+		total += svd->common_perms->num_add + svd->common_perms->num_rem + svd->common_perms->num_chg +
+			svd->common_perms->num_chg_add + svd->common_perms->num_chg_rem;
 	/* role allows */
-	total += svd->rallows->num_add + svd->rallows->num_rem + svd->rallows->num_chg +
-		svd->rallows->num_chg_add + svd->rallows->num_chg_rem;
+	if (svd->rallows)
+		total += svd->rallows->num_add + svd->rallows->num_rem + svd->rallows->num_chg +
+			svd->rallows->num_chg_add + svd->rallows->num_chg_rem;
 	/* bools */
-	total += svd->bools->num_add + svd->bools->num_rem + svd->bools->num_chg;
+	if (svd->bools)
+		total += svd->bools->num_add + svd->bools->num_rem + svd->bools->num_chg;
 	/* role trans */
-	total += svd->rtrans->num_add + svd->rtrans->num_rem + svd->rtrans->num_chg + 
-		svd->rtrans->num_add_type + svd->rtrans->num_rem_type;
+	if (svd->rtrans)
+		total += svd->rtrans->num_add + svd->rtrans->num_rem + svd->rtrans->num_chg + 
+			svd->rtrans->num_add_type + svd->rtrans->num_rem_type;
 	/* perms */
-	total += svd->perms->num_add + svd->perms->num_rem;
+	if (svd->perms)
+		total += svd->perms->num_add + svd->perms->num_rem;
 	/* te */
-	total += svd->te->num_add + svd->te->num_rem + svd->te->num_chg + svd->te->num_add_type +
-		svd->te->num_rem_type;
+	if (svd->te)
+		total += svd->te->num_add + svd->te->num_rem + svd->te->num_chg + svd->te->num_add_type +
+			svd->te->num_rem_type;
 	/* conds */
-	total += svd->conds->num_add + svd->conds->num_rem + svd->conds->num_chg;
+	if (svd->conds)
+		total += svd->conds->num_add + svd->conds->num_rem + svd->conds->num_chg;
 
 #ifdef DEBUG
 	/* NOTE: this is not a perfect check, but we need to make sure this function gets updated 
