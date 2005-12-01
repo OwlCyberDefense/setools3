@@ -87,9 +87,9 @@ int print_stats(FILE *fp, policy_t *policy)
 	fprintf(fp, "\nStatistics for policy file: %s\n", policy_file);
 	fprintf(fp, "Policy Version: %s\n", get_policy_version_name(policy->version));
 	if(is_binary_policy(policy))
-		fprintf(fp, "Policy Type: binary\n");
+		fprintf(fp, "Policy Type: binary%s", is_mls_policy(policy)?" mls\n":"\n");
 	else
-		fprintf(fp, "Policy Type: source\n");
+		fprintf(fp, "Policy Type: source%s", is_mls_policy(policy)?" mls\n":"\n");
 	fprintf(fp, "\n");
 
 	fprintf(fp, "   Classes:      %7d    Permissions:  %7d\n", num_obj_classes(policy), num_perms(policy));
