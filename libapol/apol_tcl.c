@@ -945,31 +945,6 @@ static int append_av_rule(bool_t addnl, bool_t addlineno, int idx, bool_t is_au,
 	return 0;
 }
 
-static int append_user_str(int idx, bool_t name_only,  policy_t *policy, Tcl_DString *buf)
-{
-	char *name;
-	int rt;
-	int i;
-		
-	assert(is_valid_user_idx(idx, policy));
-	Tcl_DStringAppend(buf, policy->users[idx].name, -1);
-	if(!name_only) {
-		Tcl_DStringAppend(buf, " { ", -1);
-		for(i = 0; i < policy->users[idx].num_roles; i++) {
-			rt = get_role_name(policy->users[idx].roles[i], &name, policy);
-			if(rt != 0) {
-				return -1;
-			}
-			Tcl_DStringAppend(buf, name, -1);
-			free(name);
-			Tcl_DStringAppend(buf, " ", -1);
-		}
-		Tcl_DStringAppend(buf, "};", -1);
-	}
-	Tcl_DStringAppend(buf, "\n", -1);
-	return 0;
-}
-
 static int append_direct_edge_to_results(policy_t *policy, iflow_query_t* q,
 					 iflow_t *answer, Tcl_Interp *interp)
 {
@@ -1672,12 +1647,23 @@ int Apol_GetVersion(ClientData clientData, Tcl_Interp *interp, int argc, char *a
 	return TCL_OK;
 }
 
+/* Returns a 2-uple describing the current policy type.  The first
+ * element is says if the policy is binary or source.  The second
+ * element gives if the policy is MLS or not.
+ *
+ *   field 1: "binary" or "source"
+ *   field 2: "mls" or "non-mls"
+ */
 int Apol_GetPolicyType(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
 {
 	if(is_binary_policy(policy) )
 		Tcl_AppendResult(interp, "binary", (char *) NULL);
 	else
 		Tcl_AppendResult(interp, "source", (char *) NULL);
+	if (is_mls_policy(policy))
+		Tcl_AppendElement(interp, "mls");
+	else
+		Tcl_AppendElement(interp, "non-mls");
 	return TCL_OK;
 }
 
@@ -2490,10 +2476,12 @@ static int tcl_level_string_to_level(Tcl_Interp *interp, char *level_string, ap_
         level->sensitivity = 0;
         level->categories = NULL;
         level->num_categories = 0;
-	if (policy == NULL) {
-                /* no policy, so nothing to convert */
-		return 1;
-	}
+
+		if (policy == NULL) {
+            /* no policy, so nothing to convert */
+            Tcl_SetResult(interp, "No policy loaded!", TCL_STATIC);
+			return 1;
+		}
         level_obj = Tcl_NewStringObj(level_string, -1);
         if (Tcl_ListObjIndex(interp, level_obj, 0, &sens_obj) == TCL_ERROR) {
                 return -1;
@@ -2580,6 +2568,8 @@ int Apol_RenderRangeTrans(ClientData clientData, Tcl_Interp *interp, int argc, c
         return ap_tcl_render_rangetrans(interp, show_linenos, idx, policy);
 }
 
+/* Checks if a range is valid or not.  Takes two arguments - low and
+ * high level.  Returns 1 if valid, 0 if invalid. */
 int Apol_IsValidRange(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
 {
         ap_mls_level_t low, high;
@@ -2612,7 +2602,8 @@ int Apol_IsValidRange(ClientData clientData, Tcl_Interp *interp, int argc, char 
 }
 
 /* Return a list of sensitivities, ordered by dominance (low to high)
- * within the policy, or an empty list if no policy was loaded. */
+ * within the policy, or an empty list if no policy was loaded.
+ * Aliases are added following the primary symbol. */
 int Apol_GetSens(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
 {
 	int i;
@@ -2693,6 +2684,92 @@ int Apol_CatsSens(ClientData clientData, Tcl_Interp *interp, int argc, char *arg
                 }
         }
         return TCL_OK;
+}
+
+
+/* Compare two ranges:
+ *
+ *  argv[1] - first range  (2-ple of levels)
+ *  argv[2] - second range (2-ple of levels)
+ *  argv[3] - search type  ("exact", "subset", or "superset")
+ *
+ * A level is a 2-ple of sensitivity + list of categories.  Returns 1
+ * if the comparison succeeds (based upon search type), 0 if not.
+ *   for subset, is argv[1] a subset of argv[2]
+ *   for superset, is argv[1] a superset of argv[2]
+ */
+int Apol_CompareRanges(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
+{
+        ap_mls_range_t range1, range2;
+        ap_mls_level_t low1 = {0, NULL, 0}, high1 = {0, NULL, 0};
+        ap_mls_level_t low2 = {0, NULL, 0}, high2 = {0, NULL, 0};
+        Tcl_Obj *range_obj, *level_obj;
+        int retval = TCL_ERROR;
+        bool_t answer;
+
+        if (argc != 4) {
+		Tcl_SetResult(interp, "wrong # of args", TCL_STATIC);
+		return TCL_ERROR;
+	}
+        range_obj = Tcl_NewStringObj(argv[1], -1);
+        if (Tcl_ListObjIndex(interp, range_obj, 0, &level_obj) == TCL_ERROR ||
+            level_obj == NULL ||
+            tcl_level_string_to_level(interp, Tcl_GetString(level_obj), &low1) != 0) {
+                goto cleanup;
+        }
+        if (Tcl_ListObjIndex(interp, range_obj, 1, &level_obj) == TCL_ERROR ||
+            level_obj == NULL ||
+            tcl_level_string_to_level(interp, Tcl_GetString(level_obj), &high1) != 0) {
+                goto cleanup;
+        }
+        range_obj = Tcl_NewStringObj(argv[2], -1);
+        if (Tcl_ListObjIndex(interp, range_obj, 0, &level_obj) == TCL_ERROR ||
+            level_obj == NULL ||
+            tcl_level_string_to_level(interp, Tcl_GetString(level_obj), &low2) != 0) {
+                goto cleanup;
+        }
+        if (Tcl_ListObjIndex(interp, range_obj, 1, &level_obj) == TCL_ERROR ||
+            level_obj == NULL ||
+            tcl_level_string_to_level(interp, Tcl_GetString(level_obj), &high2) != 0) {
+                goto cleanup;
+        }
+        range1.low = &low1;
+        range1.high = &high1;
+        range2.low = &low2;
+        range2.high = &high2;
+
+        if (strcmp(argv[3], "exact") == 0) {
+                answer = (ap_mls_does_range_contain_subrange(&range1, &range2, policy) == TRUE &&
+                          ap_mls_does_range_contain_subrange(&range2, &range1, policy) == TRUE ?
+                          TRUE :
+                          FALSE);
+        }
+        else if (strcmp(argv[3], "subset") == 0) {
+                answer = ap_mls_does_range_contain_subrange(&range2, &range1, policy);
+        }
+        else if (strcmp(argv[3], "superset") == 0) {
+                answer = ap_mls_does_range_contain_subrange(&range1, &range2, policy);
+        }
+        else {
+                Tcl_SetResult(interp, "Illegal search type given.", TCL_STATIC);
+                goto cleanup;
+        }
+
+        if (answer == TRUE) {
+                Tcl_SetResult(interp, "1", TCL_STATIC);
+        }
+        else {
+                Tcl_SetResult(interp, "0", TCL_STATIC);
+        }
+                
+        retval = TCL_OK;
+
+ cleanup:
+        ap_mls_level_free(&low1);
+        ap_mls_level_free(&high1);
+        ap_mls_level_free(&low2);
+        ap_mls_level_free(&high2);
+        return retval;
 }
 
 /* Perform a range transition search.  Expected arguments are:
@@ -2786,7 +2863,10 @@ int Apol_SearchRangeTransRules(ClientData clientData, Tcl_Interp *interp, int ar
                                                    &range, search_type,
                                                    &found_rules, policy);
         if (num_rules < 0) {
-                Tcl_SetResult(interp, "Error while executiong range transition search.", TCL_STATIC);
+                Tcl_SetResult(interp, "Error while executing range transition search.", TCL_STATIC);
+		char buf[1024];
+		sprintf(buf, "%d", num_rules);
+		Tcl_AppendResult(interp, buf, NULL);
                 goto cleanup;
         }
         
@@ -3584,65 +3664,81 @@ int Apol_UserRoles(ClientData clientData, Tcl_Interp *interp, int argc, char *ar
 	return TCL_OK;
 } 
 
-/* get a list of users that contain a given role */
-/* args ordering for argv[x]:
- * 1	(bool) name_only (whether to show names only, or all role information)
- * 2	(bool) use_type (whether to only return roles that include provided type)
- * 3	(string, opt) type (type to use if use_type)
- */
-int Apol_GetUsersByRole(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
-{
-	int rt, idx = -1, i;
-	char tmpbuf[APOL_STR_SZ+64];
-	bool_t name_only, use_role;
-	Tcl_DString *buf, buffer;
-	
-	if(argc < 3 || argc > 4) {
-		Tcl_AppendResult(interp, "apol_GetUsersByRole: wrong # of args", (char *) NULL);
-		return TCL_ERROR;
-	}
-	if(policy == NULL) {
-		Tcl_AppendResult(interp,"No current policy file is opened!", (char *) NULL);
-		return TCL_ERROR;
-	}	
-	name_only = getbool(argv[1]);
-	use_role = getbool(argv[2]);
-	if(use_role) {
-		if(argc != 4) {
-			Tcl_AppendResult(interp, "apol_GetUsersByRole: wrong # of args", (char *) NULL);
-			return TCL_ERROR;
-		}
-		if(!is_valid_str_sz(argv[3])) {
-			Tcl_AppendResult(interp, "Type string too large", (char *) NULL);
-			return TCL_ERROR;
-		}
-		idx = get_role_idx(argv[3], policy);
-		if(idx < 0) {
-			sprintf(tmpbuf, "Invalid role name (%s)", argv[3]);
-			Tcl_AppendResult(interp, tmpbuf, (char *) NULL);
-			return TCL_ERROR;			
-		}	
-	}
 
-	buf = &buffer;	
-	Tcl_DStringInit(buf);
-	
-	for(i = 0; i < policy->num_users; i++) {
-		if(!use_role || does_user_have_role(i, idx, policy)) {
-			rt = append_user_str(i, name_only, policy, buf);
-			if(rt != 0){
-				Tcl_DStringFree(buf);
-				Tcl_ResetResult(interp);
-				Tcl_AppendResult(interp, "error appending user", (char *) NULL);
-				return rt;
-			}
-		}
-	}
-	Tcl_DStringResult(interp, buf);
-	return TCL_OK;	
+static int level_to_tcl_obj(Tcl_Interp *interp, ap_mls_level_t *level, Tcl_Obj **obj) 
+{
+        Tcl_Obj *level_elem[2], *cats_obj;
+        int i;
+
+        level_elem[0] = Tcl_NewStringObj(policy->sensitivities[level->sensitivity].name, -1);
+        level_elem[1] = Tcl_NewListObj(0, NULL);
+        for (i = 0; i < level->num_categories; i++) {
+                cats_obj = Tcl_NewStringObj(policy->categories[level->categories[i]].name, -1);
+                if (Tcl_ListObjAppendElement(interp, level_elem[1], cats_obj) == TCL_ERROR) {
+                        return TCL_ERROR;
+                }
+        }
+        *obj = Tcl_NewListObj(2, level_elem);
+        return TCL_OK;
 }
 
+/* Returns a list of users-tuples.
+ *  element 1: user name
+ *  element 2: list of role names authorized for user
+ *  element 3: default level if MLS, empty otherwise
+ *             (level = sensitivity + list of categories)
+ *  element 4: authorized range for user if MLS, empty otherwise
+ *             (range = 2-uple of levels)
+ */
+int Apol_GetUsers(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
+{
+        int i, j, num_roles, *roles;
+        Tcl_Obj *result_list, *user_list, *user_elem[4], *role_obj;
+        Tcl_Obj *range_elem[2];
+        if (policy == NULL) {
+                Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		return TCL_ERROR;
+        }
+        result_list = Tcl_NewListObj(0, NULL);
+        for(i = 0; i < policy->num_users; i++) {
+                ap_user_t *user = policy->users + i;
+                user_elem[0] = Tcl_NewStringObj(user->name, -1);
+                if (get_user_roles(i, &num_roles, &roles, policy)) {
+                        Tcl_SetResult(interp, "Could not obtain user information.", TCL_STATIC);
+                        return TCL_ERROR;
+                }
+                user_elem[1] = Tcl_NewListObj(0, NULL);
+                for (j = 0; j < num_roles; j++) {
+                        role_obj = Tcl_NewStringObj(policy->roles[roles[j]].name, -1);
+                        if (Tcl_ListObjAppendElement(interp, user_elem[1], role_obj) == TCL_ERROR) {
+                                free(roles);
+                                return TCL_ERROR;
+                        }
+                }
+                free(roles);
 
+                if (is_mls_policy(policy)) {
+                        if (level_to_tcl_obj(interp, user->dflt_level, user_elem + 2) == TCL_ERROR) {
+                                return TCL_ERROR;
+                        }
+                        if (level_to_tcl_obj(interp, user->range->low, range_elem + 0) == TCL_ERROR ||
+                            level_to_tcl_obj(interp, user->range->high, range_elem + 1) == TCL_ERROR) {
+                                return TCL_ERROR;
+                        }
+                        user_elem[3] = Tcl_NewListObj(2, range_elem);
+                }
+                else {
+                        user_elem[2] = Tcl_NewListObj(0, NULL);
+                        user_elem[3] = Tcl_NewListObj(0, NULL);
+                }
+                user_list = Tcl_NewListObj(4, user_elem);
+                if (Tcl_ListObjAppendElement(interp, result_list, user_list) == TCL_ERROR) {
+                        return TCL_ERROR;
+                }
+        }
+        Tcl_SetObjResult(interp, result_list);
+        return TCL_OK;
+}
 
 /* Search role rules */
 /* arg ordering for argv[x]:
@@ -6930,7 +7026,7 @@ int Apol_Init(Tcl_Interp *interp)
 	Tcl_CreateCommand(interp, "apol_GetRoleRules", (Tcl_CmdProc *) Apol_GetRoleRules, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_RoleTypes", (Tcl_CmdProc *) Apol_RoleTypes, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_UserRoles", (Tcl_CmdProc *) Apol_UserRoles, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-	Tcl_CreateCommand(interp, "apol_GetUsersByRole", (Tcl_CmdProc *) Apol_GetUsersByRole, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+	Tcl_CreateCommand(interp, "apol_GetUsers", (Tcl_CmdProc *) Apol_GetUsers, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetPolicyVersionString", (Tcl_CmdProc *) Apol_GetPolicyVersionString, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_GetPolicyVersionNumber", (Tcl_CmdProc *) Apol_GetPolicyVersionNumber, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_GetPolicyContents", (Tcl_CmdProc *) Apol_GetPolicyContents, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
@@ -6962,6 +7058,7 @@ int Apol_Init(Tcl_Interp *interp)
 	Tcl_CreateCommand(interp, "apol_GetSens", (Tcl_CmdProc *) Apol_GetSens, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_SensCats", (Tcl_CmdProc *) Apol_SensCats, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_CatsSens", (Tcl_CmdProc *) Apol_CatsSens, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_CompareRanges", (Tcl_CmdProc *) Apol_CompareRanges, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_SearchRangeTransRules", (Tcl_CmdProc *) Apol_SearchRangeTransRules, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_Cond_Bool_SetBoolValue", (Tcl_CmdProc *) Apol_Cond_Bool_SetBoolValue, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_Cond_Bool_GetBoolValue", (Tcl_CmdProc *) Apol_Cond_Bool_GetBoolValue, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
