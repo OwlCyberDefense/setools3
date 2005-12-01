@@ -2480,10 +2480,7 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 
 	/* check for MLS stuff and skip over the # of levels */
 	if(mls_config && buf[1]) {
-		if (policy->version == POL_VER_19)
-			set_policy_version(POL_VER_19MLS, policy);
-		if (policy->version == POL_VER_20)
-			set_policy_version(POL_VER_20MLS, policy);
+			policy->mls = TRUE;
 	}
 	if(buf[1] && policy->version < POL_VER_MLS) { 
 		rt = -6;
