@@ -315,11 +315,11 @@ proc Apol_Widget::gotoLineSearchResults {path line_num} {
     }
     set textbox $path.tb
     # Remove any selection tags.
-    $textBox tag remove sel 0.0 end
-    $textBox mark set insert ${line_num}.0 
-    $textBox see ${line_num}.0 
-    $textBox tag add sel $line_num.0 $line_num.end
-    focus -force $textBox
+    $textbox tag remove sel 0.0 end
+    $textbox mark set insert ${line_num}.0 
+    $textbox see ${line_num}.0 
+    $textbox tag add sel $line_num.0 $line_num.end
+    focus -force $textbox
 }
 
 proc Apol_Widget::showPopupText {title info} {

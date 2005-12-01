@@ -30,12 +30,15 @@ proc Apol_Range::close {} {
     variable widgets
     Apol_Widget::clearTypeCombobox $widgets(source_type)
     Apol_Widget::clearTypeCombobox $widgets(target_type)
-    set vals(range) {}
+    Apol_Widget::clearRangeSelector $widgets(range)
     Apol_Widget::clearSearchResults $widgets(results)
     set vals(enable_source) 0
     set vals(enable_target) 0
-    set vals(enable_range) 0
-    set vals(search_type) exact
+}
+
+proc Apol_Range::search { str case_Insensitive regExpr srch_Direction } {
+	variable widgets
+	ApolTop::textSearch $widgets(results) $str $case_Insensitive $regExpr $srch_Direction
 }
 
 proc Apol_Range::goto_line { line_num } {
@@ -64,11 +67,7 @@ proc Apol_Range::create {nb} {
     # Create the options widgets
     set source_frame [frame [$obox getframe].source]
     set target_frame [frame [$obox getframe].target]
-    set range_frame [frame [$obox getframe].range]
-    set range2_frame [frame [$obox getframe].range2]
-    pack $source_frame $target_frame $range_frame \
-        -side left -padx 10 -pady 4 -expand 0 -anchor nw
-    pack $range2_frame -side left -pady 4 -expand 0 -anchor nw
+    pack $source_frame $target_frame -side left -padx 10 -pady 4 -expand 0 -anchor nw
 
     # source type
     set vals(enable_source) 0
@@ -78,7 +77,8 @@ proc Apol_Range::create {nb} {
     Apol_Widget::setTypeComboboxState $widgets(source_type) 0
     trace add variable Apol_Range::vals(enable_source) write \
         [list Apol_Range::toggleTypeCombobox $widgets(source_type)]
-    pack $source_cb $widgets(source_type) -side top -expand 0 -anchor nw
+    pack $source_cb -side top -expand 0 -anchor nw
+    pack $widgets(source_type) -side top -expand 0 -anchor nw -padx 4
 
     # target type
     set vals(enable_target) 0
@@ -88,37 +88,13 @@ proc Apol_Range::create {nb} {
     Apol_Widget::setTypeComboboxState $widgets(target_type) 0
     trace add variable Apol_Range::vals(enable_target) write \
         [list Apol_Range::toggleTypeCombobox $widgets(target_type)]
-    pack $target_cb $widgets(target_type) -side top -expand 0 -anchor nw
+    pack $target_cb -side top -expand 0 -anchor nw
+    pack $widgets(target_type) -side top -expand 0 -anchor nw -padx 4
 
     # range display
-    set vals(enable_range) 0
-    set range_cb [checkbutton $range_frame.cb -text "Range" \
-                      -variable Apol_Range::vals(enable_range)]
-    set vals(range) {}
-    set vals(range_rendered) {}
-    set widgets(range_display) [Entry $range_frame.display -textvariable Apol_Range::vals(range_rendered) -width 28 -editable 0]
-    set widgets(range_button) [button $range_frame.button -text "Select Range..." -state disabled -command Apol_Range::showMLSRangeDialog]
-    trace add variable Apol_Range::vals(range) write Apol_Range::updateRangeDisplay
-    pack $range_cb -side top -expand 0 -anchor nw
-    pack $widgets(range_display) -side top -expand 1 -fill x -anchor nw
-    pack $widgets(range_button) -side top -expand 0 -anchor ne
-
-    # range search type
-    set vals(search_type) "exact"
-    set widgets(range_label) [label $range2_frame.range_label -text "Range Matching:" -state disabled]
-    set widgets(range_exact) [radiobutton $range2_frame.exact -text "Exact Matches" \
-                            -state disabled \
-                            -value exact -variable Apol_Range::vals(search_type)]
-    set widgets(range_subset) [radiobutton $range2_frame.subset -text "Rules Containing Range" \
-                             -state disabled \
-                             -value subset -variable Apol_Range::vals(search_type)]
-    set widgets(range_superset) [radiobutton $range2_frame.superset -text "Rules Within Range" \
-                               -state disabled \
-                               -value superset -variable Apol_Range::vals(search_type)]
-    trace add variable Apol_Range::vals(enable_range) write Apol_Range::toggleRangeBox
-    pack $widgets(range_label) $widgets(range_exact) $widgets(range_subset) $widgets(range_superset) \
-        -side top -expand 0 -anchor nw
-
+    set widgets(range) [Apol_Widget::makeRangeSelector [$obox getframe].range]
+    pack $widgets(range) -side left -padx 10 -pady 4 -expand 0 -anchor nw
+    
     set ok [button [$obox getframe].ok -text "OK" -width 6 -command Apol_Range::searchRanges]
     pack $ok -side right -pady 5 -padx 5 -anchor ne
     
@@ -135,6 +111,10 @@ proc Apol_Range::searchRanges {} {
     variable vals
     variable widgets
     Apol_Widget::clearSearchResults $widgets(results)
+    if {![ApolTop::is_policy_open]} {
+        tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened!"
+        return
+    }
     if {$vals(enable_source)} {
         set source [Apol_Widget::getTypeComboboxValue $widgets(source_type)]
         if {$source == {}} {
@@ -153,13 +133,12 @@ proc Apol_Range::searchRanges {} {
     } else {
         set target {}
     }
-    if {$vals(enable_range)} {
-        set range $vals(range)
-        if {$range == {}} {
+    if {[Apol_Widget::getRangeSelectorState $widgets(range)]} {
+        foreach {range type} [Apol_Widget::getRangeSelectorValue $widgets(range)] break
+        if {$range == {{{} {}} {{} {}}}} {
             tk_messageBox -icon error -type ok -title "Error" -message "No range provided!"
             return
         }
-        set type $vals(search_type)
     } else {
         set range {}
         set type {}
@@ -196,43 +175,6 @@ proc Apol_Range::searchRanges {} {
     }
 }
 
-proc Apol_Range::showMLSRangeDialog {} {
-    set Apol_Range::vals(range) [Apol_Range_Dialog::getRange $Apol_Range::vals(range)]
-    # the trace on this variable will trigger [updateRangeDisplay] to execute
-}
-
 proc Apol_Range::toggleTypeCombobox {path name1 name2 op} {
     Apol_Widget::setTypeComboboxState $path $Apol_Range::vals($name2)
-}
-
-proc Apol_Range::toggleRangeBox {name1 name2 op} {
-    variable widgets
-    if {$Apol_Range::vals(enable_range)} {
-        set new_state normal
-    } else {
-        set new_state disabled
-    }
-    foreach w {range_display range_button range_label \
-                   range_exact range_subset range_superset} {
-        $widgets($w) configure -state $new_state
-    }
-}
-
-proc Apol_Range::updateRangeDisplay {name1 name2 op} {
-    variable vals
-    if {$vals(range) == "" || $vals(range) == {{{} {}} {{} {}}}} {
-        set vals(range_rendered) {}
-    } else {
-        set low_level [apol_RenderLevel [lindex $vals(range) 0]]
-        set high_level [apol_RenderLevel [lindex $vals(range) 1]]
-        if {$low_level == "" || $high_level == ""} {
-            set vals(range_rendered) "<invalid MLS range>"
-        } else {
-            if {$low_level == $high_level} {
-                set vals(range_rendered) $low_level
-            } else {
-                set vals(range_rendered) "$low_level - $high_level"
-            }
-        }
-    }
 }
