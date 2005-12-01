@@ -15,6 +15,7 @@ namespace eval ApolTop {
 	variable status 		""
 	variable polversion 		""
 	variable policy_type		""
+        variable policy_mls_type	0
 	variable binary_policy_type	"binary"
 	variable source_policy_type	"source"
 	variable filename 		""
@@ -141,6 +142,13 @@ proc ApolTop::is_binary_policy {} {
 		return 1
 	}
 	return 0
+}
+
+proc ApolTop::is_mls_policy {} {
+    if {![is_policy_open]} {
+        return 1
+    }
+    return $ApolTop::policy_mls_type
 }
 
 proc ApolTop::load_fc_index_file {} {
@@ -2089,6 +2097,7 @@ proc ApolTop::openPolicyFile {file recent_flag} {
 	variable contents
 	variable polversion
 	variable policy_type
+	variable policy_mls_type
 	variable policy_is_open	
 	variable filename
 	variable policy_open_option
@@ -2146,12 +2155,13 @@ proc ApolTop::openPolicyFile {file recent_flag} {
 		tk_messageBox -icon error -type ok -title "Error" -message "apol_GetPolicyVersionString: $rt"
 		return 0
 	}
-	set rt [catch {set policy_type [apol_GetPolicyType]}]
-	if {$rt != 0} {
-		tk_messageBox -icon error -type ok -title "Error" -message "apol_GetPolicyType: $rt"
-		return 0
-	}
+	foreach {policy_type policy_mls_type} [apol_GetPolicyType] break;
 	set polversion [append polversion " \($policy_type)"]
+	if {$policy_mls_type == "mls"} {
+		set policy_mls_type 1
+	} else {
+		set policy_mls_type 0
+	}
 	# Set the contents flags to indicate what the opened policy contains
 	set rt [catch {set con [apol_GetPolicyContents]} err]
 	if {$rt != 0} {
