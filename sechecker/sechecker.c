@@ -750,7 +750,7 @@ bool_t sechk_lib_check_requirement(sechk_name_value_t *req, sechk_lib_t *lib)
 		return FALSE;
 #endif
 	} else if (!strcmp(req->name, SECHK_PARSE_REQUIRE_MLS_POLICY)) {
-		if (lib->policy->version != POL_VER_19MLS) {
+		if (!lib->policy->mls) {
 			/* as long as we're not in quiet mode print output */
 			if (lib->outputformat & ~(SECHK_OUT_QUIET))
 				fprintf(stderr, "Error: module requires MLS policy\n");

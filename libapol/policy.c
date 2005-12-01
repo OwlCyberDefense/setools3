@@ -31,14 +31,19 @@
 #include <errno.h>
 
 /* The following is a private global array of constant strings. */
-const char *policy_version_strings[] = { "Unkown version", 
-			 	 	 "prior to v. 11", 
-			 	 	 "v.11 -- v.12", 
-			 	 	 "v.15", "v.16", 
-					 "v.17", "v.18",
-					 "v.18 -- v.20",
-					 "v.19", "v.19mls",
-					 "v.20", "v.20mls"};
+const char *policy_version_strings[] = {
+	"Unkown version",
+	"prior to v.11",
+	"v.11 - 12",
+	"v.15",
+	"v.16",
+	"v.17",
+	"v.18",
+	"v.18 - 20",
+	"v.19",
+	"v.19 - 20",
+	"v.20",
+};
 			 	 
 /* get a policy version string from the global array of constant strings. 
  * We use the defined policy version numbers as indices into this array.*/
@@ -103,6 +108,7 @@ int init_policy(policy_t **p)
 	policy->version = POL_VER_UNKNOWN;
 	policy->opts = POLOPT_NONE;
 	policy->policy_type = POL_TYPE_SOURCE;
+	policy->mls = FALSE;
 
 	/* permissions */
 	policy->perms = (char **)calloc(LIST_SZ, sizeof(char*));
