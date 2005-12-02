@@ -92,7 +92,7 @@ proc Apol_Range::create {nb} {
     pack $widgets(target_type) -side top -expand 0 -anchor nw -padx 4
 
     # range display
-    set widgets(range) [Apol_Widget::makeRangeSelector [$obox getframe].range]
+    set widgets(range) [Apol_Widget::makeRangeSelector [$obox getframe].range Rules]
     pack $widgets(range) -side left -padx 10 -pady 4 -expand 0 -anchor nw
     
     set ok [button [$obox getframe].ok -text "OK" -width 6 -command Apol_Range::searchRanges]

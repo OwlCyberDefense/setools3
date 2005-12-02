@@ -12,10 +12,10 @@ namespace eval Apol_Widget {
 # search type (exact, subset, superset).  If the second argument is
 # not "" then add a checkbutton that enables/disables the entire
 # widget.
-proc Apol_Widget::makeRangeSelector {path {enableText "Range"} args} {
+proc Apol_Widget::makeRangeSelector {path rangeMatchText {enableText "Range"} args} {
     variable vars
     array unset vars $path:*
-    set vars($path:range) {{{} {}} {{} {}}}
+    set vars($path:range) {{{} {}}}
     set vars($path:range_rendered) {}
     set vars($path:search_type) "exact"
 
@@ -47,10 +47,10 @@ proc Apol_Widget::makeRangeSelector {path {enableText "Range"} args} {
     set range_exact [radiobutton $range2_frame.exact -text "Exact Matches" \
                          -state disabled \
                          -value exact -variable Apol_Widget::vars($path:search_type)]
-    set range_subset [radiobutton $range2_frame.subset -text "Rules Containing Range" \
+    set range_subset [radiobutton $range2_frame.subset -text "$rangeMatchText Containing Range" \
                           -state disabled \
                           -value subset -variable Apol_Widget::vars($path:search_type)]
-    set range_superset [radiobutton $range2_frame.superset -text "Rules Within Range" \
+    set range_superset [radiobutton $range2_frame.superset -text "$rangeMatchText Within Range" \
                             -state disabled \
                             -value superset -variable Apol_Widget::vars($path:search_type)]
     pack $range_label $range_exact $range_subset $range_superset \
@@ -74,7 +74,7 @@ proc Apol_Widget::setRangeSelectorState {path newState} {
 }
 
 proc Apol_Widget::clearRangeSelector {path} {
-    set Apol_Widget::vars($path:range) {{{} {}} {{} {}}}
+    set Apol_Widget::vars($path:range) {{{} {}}}
     set Apol_Widget::vars($path:search_type) exact
     catch {set Apol_Widget::vars($path:enable) 0}
 }
@@ -85,8 +85,13 @@ proc Apol_Widget::getRangeSelectorState {path} {
 
 # returns a 2-uple containing the range value and the search type
 proc Apol_Widget::getRangeSelectorValue {path} {
-    return [list $Apol_Widget::vars($path:range) \
-                $Apol_Widget::vars($path:search_type)]
+    variable vars
+    if {[llength $vars($path:range)] == 1} {
+        set range [list [lindex $vars($path:range) 0] [lindex $vars($path:range) 0]]
+    } else {
+        set range $vars($path:range)
+    }
+    list $range $vars($path:search_type)
 }
 
 ########## private functions below ##########
@@ -112,11 +117,19 @@ proc Apol_Widget::_show_mls_range_dialog {path} {
 
 proc Apol_Widget::_update_range_display {path name1 name2 op} {
     variable vars
-    if {$vars($path:range) == {{{} {}} {{} {}}}} {
-        set vars($path:range_rendered) {}
+    set display $path.range.display
+    set low_level [lindex $vars($path:range) 0]
+    if {[llength $vars($path:range)] == 1} {
+        set high_level $low_level
     } else {
-        set low_level [apol_RenderLevel [lindex $vars($path:range) 0]]
-        set high_level [apol_RenderLevel [lindex $vars($path:range) 1]]
+        set high_level [lindex $vars($path:range) 1]
+    }
+    if {$low_level == {{} {}} && $high_level == {{} {}}} {
+        set vars($path:range_rendered) {}
+        $display configure -helptext {}
+    } else {
+        set low_level [apol_RenderLevel $low_level]
+        set high_level [apol_RenderLevel $high_level]
         if {$low_level == "" || $high_level == ""} {
             set vars($path:range_rendered) "<invalid MLS range>"
         } else {
@@ -126,5 +139,6 @@ proc Apol_Widget::_update_range_display {path name1 name2 op} {
                 set vars($path:range_rendered) "$low_level - $high_level"
             }
         }
+        $display configure -helptext $vars($path:range_rendered)
     }
 }

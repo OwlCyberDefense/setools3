@@ -251,15 +251,15 @@ proc Apol_Users::create {nb} {
     set defaultDisplay [Entry $defaultFrame.display -textvariable Apol_Users::opts(default_level_display) -width 16 -editable 0]
     set defaultButton [button $defaultFrame.button -text "Select Level..." -state disabled -command [list Apol_Users::show_level_dialog]]
     trace add variable Apol_Users::opts(enable_default) write \
-        [list Apol_Users::toggleDefaultCheckbutton $defaultCB $defaultButton]
+        [list Apol_Users::toggleDefaultCheckbutton $defaultCB $defaultDisplay $defaultButton]
     trace add variable Apol_Users::opts(default_level) write \
-        [list Apol_Users::updateDefaultDisplay]
+        [list Apol_Users::updateDefaultDisplay $defaultDisplay]
     pack $defaultCB -side top -anchor nw -expand 0
     pack $defaultDisplay -side top -expand 0 -fill x -padx 4
     pack $defaultButton -side top -expand 1 -fill none -padx 4 -anchor ne
 
     set rangeFrame [frame $ofm.range -relief sunken -borderwidth 1]
-    set widgets(range) [Apol_Widget::makeRangeSelector $rangeFrame.range]
+    set widgets(range) [Apol_Widget::makeRangeSelector $rangeFrame.range Users]
     pack $widgets(range) -expand 1 -fill x
     
     pack $verboseFrame $rolesFrame $defaultFrame $rangeFrame \
@@ -287,11 +287,12 @@ proc Apol_Users::toggleRolesCheckbutton {path name1 name2 op} {
     }
 }
 
-proc Apol_Users::toggleDefaultCheckbutton {cb button name1 name2 op} {
+proc Apol_Users::toggleDefaultCheckbutton {cb display button name1 name2 op} {
     variable opts
     if {$opts($name2)} {
         if {[ApolTop::is_mls_policy]} {
             $button configure -state normal
+            $display configure -state normal
         } else {
             set opts($name2) 0
             $cb configure -state normal
@@ -299,6 +300,7 @@ proc Apol_Users::toggleDefaultCheckbutton {cb button name1 name2 op} {
         }
     } else {
         $button configure -state disabled
+        $display configure -state disabled
     }
 }
 
@@ -306,10 +308,11 @@ proc Apol_Users::show_level_dialog {} {
     set Apol_Users::opts(default_level) [Apol_Level_Dialog::getLevel $Apol_Users::opts(default_level)]
 }
 
-proc Apol_Users::updateDefaultDisplay {name1 name2 op} {
+proc Apol_Users::updateDefaultDisplay {display name1 name2 op} {
     variable opts
     if {$opts(default_level) == {{} {}}} {
         set opts(default_level_display) ""
+        $display configure -helptext {}
     } else {
         set level [apol_RenderLevel $opts(default_level)]
         if {$level == ""} {
@@ -317,5 +320,6 @@ proc Apol_Users::updateDefaultDisplay {name1 name2 op} {
         } else {
             set opts(default_level_display) $level
         }
+        $display configure -helptext $opts(default_level_display)
     }
 }
