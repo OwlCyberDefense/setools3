@@ -652,6 +652,9 @@ void on_preferences_activate(GtkWidget *widget, GdkEvent *event, gpointer callba
 	gtk_widget_hide(GTK_WIDGET(window));
 	gtk_window_present(GTK_WINDOW(window));
 	
+	/* make the window modal */
+	gtk_window_set_modal(GTK_WINDOW(window), TRUE); 	
+
 	entry = GTK_ENTRY(glade_xml_get_widget(xml, "interval_lbl"));
 	g_assert(entry);
 	g_string_printf(interval, "%d", seaudit_app->seaudit_conf.real_time_interval);
