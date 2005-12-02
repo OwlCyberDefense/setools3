@@ -186,11 +186,20 @@ proc Apol_Widget::setLevelSelectorLevel {path level} {
     if {[lsearch -exact $sens_list $sens] != -1} {
         set vars($path:sens) $sens
         set cats_list $vars($path:cats)
+        set first_idx -1
+        set listbox [getScrolledListbox $path.cats]
         foreach cat $cats {
             if {[set idx [lsearch -exact $cats_list $cat]] != -1} {
-                [getScrolledListbox $path.cats] selection set $idx
+                $listbox selection set $idx
+                if {$first_idx == -1 || $idx < $first_idx} {
+                    set first_idx $idx
+                }
             }
         }
+        # scroll the listbox so that the first one selected is visible
+        # near the top
+        incr first_idx -1
+        $listbox yview scroll $first_idx units
     }
 }
 

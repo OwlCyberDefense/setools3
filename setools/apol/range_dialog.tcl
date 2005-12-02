@@ -12,8 +12,10 @@ namespace eval Apol_Range_Dialog {
 # Create a dialog box to allow the user to select an MLS range (either
 # a single level or two levels.  Ensure that the selected range is
 # valid (i.e., high dominates low).  If the range is invalid then
-# return $defaultRange.
-proc Apol_Range_Dialog::getRange {{defaultRange {{{} {}} {{} {}}}} {parent .}} {
+# return $defaultRange.  Returns a list -- only one element if only a
+# single level selected, two elements if both a low and a high was
+# selected.
+proc Apol_Range_Dialog::getRange {{defaultRange {{{} {}}}} {parent .}} {
     variable dialog
     variable vars
     if {![winfo exists $dialog]} {
@@ -22,15 +24,13 @@ proc Apol_Range_Dialog::getRange {{defaultRange {{{} {}} {{} {}}}} {parent .}} {
     set f [$dialog getframe]
     Apol_Widget::resetLevelSelectorToPolicy $f.low
     Apol_Widget::resetLevelSelectorToPolicy $f.high
-    set low [lindex $defaultRange 0]
-    set high [lindex $defaultRange 1]
-    Apol_Widget::setLevelSelectorLevel $f.low $low
-    if {$low == $high} {
+    Apol_Widget::setLevelSelectorLevel $f.low [lindex $defaultRange 0]
+    if {[llength $defaultRange] == 1} {
         set vars($dialog:highenable) 0
     } else {
-        Apol_Widget::setLevelSelectorLevel $f.high $high
+        Apol_Widget::setLevelSelectorLevel $f.high [lindex $defaultRange 1]
         set vars($dialog:highenable) 1
-    }
+    } 
     _high_enabled $dialog
     # force a recomputation of button sizes  (bug in ButtonBox)
     $dialog.bbox _redraw
@@ -76,22 +76,27 @@ proc Apol_Range_Dialog::_get_range {dialog} {
     variable vars
     set f [$dialog getframe]
     set low [Apol_Widget::getLevelSelectorLevel $f.low]
-    if {$vars($dialog:highenable)} {
-        set high [Apol_Widget::getLevelSelectorLevel $f.high]
+    if {!$vars($dialog:highenable)} {
+        list $low
     } else {
-        set high $low
+        list $low [Apol_Widget::getLevelSelectorLevel $f.high]
     }
-    list $low $high
 }
 
 proc Apol_Range_Dialog::_okay {dialog} {
     set range [_get_range $dialog]
-    if {[catch {apol_IsValidRange [lindex $range 0] [lindex $range 1]} val]} {
+    set low [lindex $range 0]
+    if {[llength $range] == 1} {
+        set high $low
+    } else {
+        set high [lindex $range 1]
+    }
+    if {[catch {apol_IsValidRange $low $high} val]} {
         tk_messageBox -icon error -type ok -title "Could Not Validate Range" \
-            -message "Could not validate selected range.  Make sure that the correct policy was loaded."
+            -message "The selected range is not valid.  The selected level is not part of the current policy."
     } elseif {$val == 0} {
         tk_messageBox -icon error -type ok -title "Invalid Range" \
-            -message "The selected range is not valid.  Make sure that the correct policy was loaded."
+            -message "The selected range is not valid.  The high level does not dominate the low level."
     } else {
         $dialog enddialog 0
     }
