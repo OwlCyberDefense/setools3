@@ -38,12 +38,12 @@ proc Apol_Range::close {} {
 
 proc Apol_Range::search { str case_Insensitive regExpr srch_Direction } {
 	variable widgets
-	ApolTop::textSearch $widgets(results) $str $case_Insensitive $regExpr $srch_Direction
+	ApolTop::textSearch $widgets(results).tb $str $case_Insensitive $regExpr $srch_Direction
 }
 
 proc Apol_Range::goto_line { line_num } {
     variable widgets
-    ApolTop::goto_line $line_num $widgets(results)
+    Apol_Widget::gotoLineSearchResults $widgets(results) $line_num
 }
 
 proc Apol_Range::create {nb} {
