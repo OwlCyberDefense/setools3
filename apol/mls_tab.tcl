@@ -43,9 +43,14 @@ proc Apol_MLS::close {} {
     }
 }
 
+proc Apol_MLS::search { str case_Insensitive regExpr srch_Direction } {
+	variable widgets
+	ApolTop::textSearch $widgets(results).tb $str $case_Insensitive $regExpr $srch_Direction
+}
+
 proc Apol_MLS::goto_line { line_num } {
     variable widgets
-    ApolTop::goto_line $line_num $widgets(results)
+    Apol_Widget::gotoLineSearchResults $widgets(results) $line_num
 }
 
 proc Apol_MLS::create {nb} {
