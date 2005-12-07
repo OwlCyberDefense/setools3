@@ -19,6 +19,7 @@
 #include "policy.h"
 #include "semantic/avhash.h"
 #include "semantic/avsemantics.h"
+#include "render.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -925,7 +926,7 @@ char *re_render_nodecon(ap_nodecon_t *nodecon, policy_t *policy)
 	char *addr_str = NULL;
 	char *mask_str = NULL;
 	uint32_t tmp = 0;
-	uint32_t *tmp_arr = NULL;
+	char *tmp_str = NULL;
 
 	/* max length of a string for an IP is 40 characters
 	 *  (8 fields * 4 char/field) + 7  * ':' + '\0' */
@@ -952,15 +953,8 @@ char *re_render_nodecon(ap_nodecon_t *nodecon, policy_t *policy)
 		snprintf(mask_str, ip_addr_str_len_max - 1, "%3d.%3d.%3d.%3d", (tmp/(1<<24)), (tmp/(1<<16)%(1<<8)), (tmp/(1<<8)%(1<<8)), (tmp%(1<<8)));
 		break;
 	case AP_IPV6:
-		tmp_arr = nodecon->addr;
-		/* the math below prints the IPv6 fields in hexidecimal 2 bytes at a time */
-		snprintf(addr_str, ip_addr_str_len_max - 1, "%04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x",
-			tmp_arr[0]/(1<<16), tmp_arr[0]%(1<<16), tmp_arr[1]/(1<<16), tmp_arr[1]%(1<<16),
-			tmp_arr[2]/(1<<16), tmp_arr[2]%(1<<16), tmp_arr[3]/(1<<16), tmp_arr[3]%(1<<16) );
-		tmp_arr = nodecon->mask;
-		snprintf(mask_str, ip_addr_str_len_max - 1, "%04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x",
-			tmp_arr[0]/(1<<16), tmp_arr[0]%(1<<16), tmp_arr[1]/(1<<16), tmp_arr[1]%(1<<16),
-			tmp_arr[2]/(1<<16), tmp_arr[2]%(1<<16), tmp_arr[3]/(1<<16), tmp_arr[3]%(1<<16) );
+		snprintf(addr_str, ip_addr_str_len_max - 1, "%s", (tmp_str = re_render_ipv6_addr(nodecon->addr)));
+		snprintf(mask_str, ip_addr_str_len_max - 1, "%s", (tmp_str = re_render_ipv6_addr(nodecon->mask)));
 		break;
 	default:
 		break;
@@ -1529,5 +1523,65 @@ char *re_render_role_trans(bool_t addlineno, int idx, policy_t *policy)
 	append_str(&rt, &sz, ";");
 
 	return rt;
+}
+
+/*	case AP_IPV6:
+		tmp_arr = nodecon->addr;
+		/ * the math below prints the IPv6 fields in hexidecimal 2 bytes at a time * /
+		snprintf(addr_str, ip_addr_str_len_max - 1, "%04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x",
+			tmp_arr[0]/(1<<16), tmp_arr[0]%(1<<16), tmp_arr[1]/(1<<16), tmp_arr[1]%(1<<16),
+			tmp_arr[2]/(1<<16), tmp_arr[2]%(1<<16), tmp_arr[3]/(1<<16), tmp_arr[3]%(1<<16) );
+		tmp_arr = nodecon->mask;
+		snprintf(mask_str, ip_addr_str_len_max - 1, "%04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x",
+			tmp_arr[0]/(1<<16), tmp_arr[0]%(1<<16), tmp_arr[1]/(1<<16), tmp_arr[1]%(1<<16),
+			tmp_arr[2]/(1<<16), tmp_arr[2]%(1<<16), tmp_arr[3]/(1<<16), tmp_arr[3]%(1<<16) );
+		break;
+*/
+char *re_render_ipv6_addr(uint32_t addr[4])
+{
+	char *str = NULL;
+	uint16_t tmp[8] = {0,0,0,0,0,0,0,0};
+	int i, sz = 0, retv;
+	char buff[40]; /* 8 * 4 hex digits + 7 * ':' + '\0' == max size of string */
+	int contract = 0, prev_contr = 0, contr_idx_end = -1; 
+	for (i = 0; i < 4; i++) {
+		tmp[2*i] = addr[i]/(1<<16);
+		tmp[2*i+1] = addr[i]%(1<<16);
+	}
+
+	for (i = 0; i < 8; i++) {
+		if (tmp[i] == 0) {
+			contract++;
+			if (i == 7 && contr_idx_end == -1)
+				contr_idx_end = 8;
+		} else {
+			if (contract > prev_contr) {
+				contr_idx_end = i;
+			}
+			prev_contr = contract;
+			contract = 0;
+		}
+	}
+
+	if (prev_contr > contract)
+		contract = prev_contr;
+
+	for (i = 0; i < 8; i++) {
+		if (i == contr_idx_end - contract) {
+			retv = snprintf(buff + sz, 40 - sz, i?":":"::");
+			sz += retv;
+		} else if (i > contr_idx_end - contract && i < contr_idx_end) {
+			continue;
+		} else {
+			retv = snprintf(buff + sz, 40 - sz, i==7?"%04x":"%04x:", tmp[i]);
+			sz += retv;
+		}
+	}
+
+	buff[sz] = '\0';
+
+	str = strdup(buff);
+
+	return str;
 }
 
