@@ -375,7 +375,7 @@ proc Apol_File_Contexts::display_create_db_dlg {} {
 		} 
 		set dir_n [tk_chooseDirectory \
 			-title "Select Directory to Index..." \
-			-parent $ApolTop::mainframe \
+			-parent $Apol_File_Contexts::create_fc_dlg \
 			-initialdir $txt]
 		if {$dir_n != ""} {
 			$Apol_File_Contexts::entry_dir delete 0 end
@@ -397,7 +397,7 @@ proc Apol_File_Contexts::display_create_db_dlg {} {
 		}
 		set file_n [tk_getSaveFile \
 			-title "Select File to Save..." \
-			-parent $ApolTop::mainframe \
+			-parent $Apol_File_Contexts::create_fc_dlg \
 			-initialdir $dir_name \
 			-initialfile $init_file]
 		if {$file_n != ""} {
