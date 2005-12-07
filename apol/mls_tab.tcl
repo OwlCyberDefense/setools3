@@ -13,7 +13,6 @@
 namespace eval Apol_MLS {
     variable widgets
     variable vals
-    variable popup {}
 }
 
 proc Apol_MLS::set_Focus_to_Text {} {
@@ -62,10 +61,8 @@ proc Apol_MLS::create {nb} {
     # Layout frames
     set frame [$nb insert end $ApolTop::mls_tab -text "MLS"]
     set pw [PanedWindow $frame.pw -side top -weights extra]
-    $pw add -weight 0
-    $pw add -weight 1
-    set leftf [$pw getframe 0]
-    set rightf [$pw getframe 1]
+    set leftf [$pw add -weight 0]
+    set rightf [$pw add -weight 1]
     pack $pw -fill both -expand yes
 
     # build the left column, where one may browse sensitivities and categories
@@ -118,7 +115,7 @@ proc Apol_MLS::create {nb} {
     pack $widgets(regexp) -side left -padx 5 -pady 4 -anchor nw
 
     set ok [button [$optsbox getframe].ok -text "OK" -width 6 \
-                -command Apol_MLS::search]
+                -command Apol_MLS::runSearch]
     pack $ok -side right -pady 5 -padx 5 -anchor ne
 
     # build the results box
@@ -163,16 +160,16 @@ proc Apol_MLS::popupCatsInfo {cats} {
     Apol_Widget::showPopupText $cats $info
 }
 
-proc Apol_MLS::search {} {
+proc Apol_MLS::runSearch {} {
     variable vals
     variable widgets
     Apol_Widget::clearSearchResults $widgets(results)
-    if {$vals(enable_sens) == 0 && $vals(enable_cats) == 0} {
-        tk_messageBox -icon error -type ok -title "Error" -message "No search options provided!"
-        return
-    }
     if {![ApolTop::is_policy_open]} {
         tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened!"
+        return
+    }
+    if {$vals(enable_sens) == 0 && $vals(enable_cats) == 0} {
+        tk_messageBox -icon error -type ok -title "Error" -message "No search options provided!"
         return
     }
     set results ""
