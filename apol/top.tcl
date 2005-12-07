@@ -15,7 +15,7 @@ namespace eval ApolTop {
 	variable status 		""
 	variable polversion 		""
 	variable policy_type		""
-        variable policy_mls_type	0
+    variable policy_mls_type	""
 	variable binary_policy_type	"binary"
 	variable source_policy_type	"source"
 	variable filename 		""
@@ -74,6 +74,8 @@ namespace eval ApolTop {
 	# Subordinate notebook widgets
 	variable components_nb
 	variable rules_nb
+
+    variable mls_tabs {}  ;# list of notebook tabs that are only for MLS
 	
 	# Search-related variables
 	variable searchString		""
@@ -145,10 +147,10 @@ proc ApolTop::is_binary_policy {} {
 }
 
 proc ApolTop::is_mls_policy {} {
-    if {![is_policy_open]} {
+    if {![is_policy_open] || $ApolTop::policy_mls_type == "mls"} {
         return 1
     }
-    return $ApolTop::policy_mls_type
+    return 0
 }
 
 proc ApolTop::load_fc_index_file {} {
@@ -1232,7 +1234,7 @@ proc ApolTop::create { } {
 		
 	$mainframe addindicator -textvariable ApolTop::policyConf_lineno -width 14
 	$mainframe addindicator -textvariable ApolTop::polstats -width 88
-	$mainframe addindicator -textvariable ApolTop::polversion -width 19 
+	$mainframe addindicator -textvariable ApolTop::polversion -width 28
 	
 	# Disable menu items since a policy is not yet loaded.
 	$ApolTop::mainframe setmenustate Disable_SearchMenu_Tag disabled
@@ -1259,7 +1261,9 @@ proc ApolTop::create { } {
 	# Create subordinate tab frames
 	set components_nb [NoteBook $components_frame.components_nb]
 	set rules_nb [NoteBook $rules_frame.rules_nb]
-	
+
+	variable mls_tabs
+    
 	# Subtabs for the main policy components tab.
 	Apol_Types::create $components_nb
 	Apol_Class_Perms::create $components_nb
@@ -1268,13 +1272,15 @@ proc ApolTop::create { } {
 	Apol_Cond_Bools::create $components_nb
 	Apol_Initial_SIDS::create $components_nb
 	Apol_MLS::create $components_nb
-	
+	lappend mls_tabs [list $components_nb [$components_nb pages end]]
+
 	# Subtabs for the main policy rules tab
 	Apol_TE::create $rules_nb
 	Apol_Cond_Rules::create $rules_nb
 	Apol_RBAC::create $rules_nb
 	Apol_Range::create $rules_nb
-	
+	lappend mls_tabs [list $rules_nb [$rules_nb pages end]]
+
 	$components_nb compute_size
 	pack $components_nb -fill both -expand yes -padx 4 -pady 4
 	$components_nb raise [$components_nb page 0]
@@ -1898,6 +1904,7 @@ proc ApolTop::closePolicy {} {
 	set contents(roles)	0
 	set contents(rbac)	0
 	set contents(users)	0
+	variable policy_mls_type ""
 	array unset contents
 	
 	wm title . "SE Linux Policy Analysis"
@@ -1931,6 +1938,7 @@ proc ApolTop::closePolicy {} {
 	$ApolTop::mainframe setmenustate Disable_Summary disabled
 	ApolTop::enable_non_binary_tabs
 	ApolTop::enable_disable_conditional_widgets 1
+	set_mls_tabs_state normal
 	ApolTop::configure_edit_pmap_menu_item 0
 	#ApolTop::configure_load_index_menu_item 0
 	
@@ -2046,6 +2054,22 @@ proc ApolTop::disable_non_binary_tabs {} {
 	return 0
 }
 
+# Enable/disable all of apol's tabs that deal exclusively with MLS
+# components.  If the currently raised page is one of those tabs then
+# raise the first page (which hopefully is not MLS specific).
+proc ApolTop::set_mls_tabs_state {new_state} {
+    variable mls_tabs
+
+    foreach tab $mls_tabs {
+        foreach {notebook page} $tab break
+        set current_tab [$notebook raise]
+        $notebook itemconfigure $page -state $new_state
+        if {$current_tab == $page && $new_state == "disabled"} {
+            $notebook raise [$notebook pages 0]
+        }
+    }
+}
+
 proc ApolTop::set_initial_open_policy_state {} {
 	set rt [catch {set version_num [apol_GetPolicyVersionNumber]} err]
 	if {$rt != 0} {
@@ -2078,8 +2102,11 @@ the names are not preserved in the binary policy format."
 			}
 		}
 		ApolTop::disable_non_binary_tabs
-   	}   	
-   	
+   	}
+	if {![is_mls_policy]} {
+		set_mls_tabs_state disabled
+	}
+
 	ApolTop::set_Focus_to_Text [$ApolTop::notebook raise]  
 	# Enable perm map menu items since a policy is now open.
 	$ApolTop::mainframe setmenustate Perm_Map_Tag normal
@@ -2156,12 +2183,7 @@ proc ApolTop::openPolicyFile {file recent_flag} {
 		return 0
 	}
 	foreach {policy_type policy_mls_type} [apol_GetPolicyType] break;
-	set polversion [append polversion " \($policy_type)"]
-	if {$policy_mls_type == "mls"} {
-		set policy_mls_type 1
-	} else {
-		set policy_mls_type 0
-	}
+	append polversion " ($policy_type, $policy_mls_type)"
 	# Set the contents flags to indicate what the opened policy contains
 	set rt [catch {set con [apol_GetPolicyContents]} err]
 	if {$rt != 0} {
@@ -2178,17 +2200,19 @@ proc ApolTop::openPolicyFile {file recent_flag} {
 	}
 	
 	ApolTop::showPolicyStats
+	set policy_is_open 1
 	set rt [catch {ApolTop::open_apol_modules $file} err]
  	if {$rt != 0} {
  		tk_messageBox -icon error -type ok -title "Error" -message "$err"
+        	set policy_is_open 0
 		return $rt	
  	}
  	set rt [catch {ApolTop::set_initial_open_policy_state} err]
 	if {$rt != 0} {
 		tk_messageBox -icon error -type ok -title "Error" -message "$err"
+        	set policy_is_open 0
  		return $rt
  	}
-	set policy_is_open 1
 	
 	if {$recent_flag == 1} {
 		ApolTop::addRecent $file
