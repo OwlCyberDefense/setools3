@@ -121,5 +121,6 @@ char *config_var_list_to_string(const char **list, int size);
 unsigned char str_token_is_not_valid(const char *str);
 int append_str(char **tgt, int *tgt_sz, const char *str);
 int read_file_to_buffer(const char *fname, char **buf, int *len);
+int str_to_internal_ip(const char *str, uint32_t ip[4]);
 
 #endif /*_APOLICY_UTIL_H_*/

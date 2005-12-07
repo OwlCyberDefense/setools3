@@ -1123,7 +1123,7 @@ int main (int argc, char **argv)
 	int classes, types, roles, users, all, stats, attributes, rallows, rtrans;
 	int optc, isids, conds, terules, rbac, bools, rt,gui, quiet;
 	policy_t *p1 = NULL, *p2 = NULL;
-	char *p1_file = NULL, *p2_file = NULL;
+	char *p1_file = NULL, *p2_file = NULL, *tmp = NULL;
 	apol_diff_result_t *diff = NULL;
 	ap_single_view_diff_t *svd = NULL;
 	unsigned int opts = POLOPT_NONE;
@@ -1286,8 +1286,10 @@ int main (int argc, char **argv)
 	diff = svd->diff;
 	
 	printf("Difference between policy 1 and policy 2: \n");
-	printf("   p1 (%6s, ver: %s%s): %s\n", policy_type(svd->diff->p1), get_policy_version_name(svd->diff->p1->version), is_mls_policy(svd->diff->p1)?"mls":"", p1_file);
-	printf("   p2 (%6s, ver: %s%s): %s\n\n", policy_type(svd->diff->p2), get_policy_version_name(svd->diff->p2->version), is_mls_policy(svd->diff->p2)?"mls":"", p2_file);
+	printf("   p1 (%s): %s\n", (tmp = get_policy_version_type_mls_str(svd->diff->p1)), p1_file);
+	free(tmp);
+	printf("   p2 (%s): %s\n\n", (tmp = get_policy_version_type_mls_str(svd->diff->p2)), p2_file);
+	free(tmp);
 	
 	if(classes || all)  {
 		if (!(quiet && (diff->diff1->num_classes == 0 && diff->diff2->num_classes == 0))) {

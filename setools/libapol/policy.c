@@ -55,6 +55,27 @@ const char* get_policy_version_name(int policy_version)
 		return policy_version_strings[policy_version];
 }
 		 	 
+char *get_policy_version_type_mls_str(policy_t *policy)
+{
+	char buff[BUF_SZ];
+	char *str = NULL;
+
+	str = &(buff[0]);
+	str += snprintf(str, BUF_SZ - 1, "%s (", get_policy_version_name(policy->version));
+	if (policy->policy_type == POL_TYPE_SOURCE) {
+		str += snprintf(str, BUF_SZ - 1 - (str - buff) * sizeof(char), "source, ");
+	} else if (policy->policy_type == POL_TYPE_BINARY) {
+		str += snprintf(str, BUF_SZ - 1 - (str - buff) * sizeof(char), "binary, ");
+	} else {
+		str += snprintf(str, BUF_SZ - 1 - (str - buff) * sizeof(char), "unknown, ");
+	}
+	str += snprintf(str, BUF_SZ - 1 - (str - buff) * sizeof(char), "%s)", policy->mls?"MLS":"non-MLS");
+
+	str = strdup(buff);
+
+	return str;
+}
+
 /**************/
 /* these are INTERNAL functions only; allow direct access to type/attrib name string
  * stored within the policy db.  These functions shouldn't be exported as a caller
@@ -500,7 +521,7 @@ int free_policy(policy_t **p)
 		for(i = 0; i < policy->num_initial_sids; i++) {
 			if(policy->initial_sids[i].name != NULL) {
 				free(policy->initial_sids[i].name);
-				free(policy->initial_sids[i].scontext);
+				security_con_destroy(policy->initial_sids[i].scontext);
 			}
 		}
 		free(policy->initial_sids);
@@ -622,7 +643,7 @@ int free_policy(policy_t **p)
 	if (policy->fs_use != NULL) {
 		for (i = 0; i < policy->num_fs_use; i++) {
 			free(policy->fs_use[i].fstype);
-			free(policy->fs_use[i].scontext);
+			security_con_destroy(policy->fs_use[i].scontext);
 		}
 		free(policy->fs_use);
 	}
@@ -630,7 +651,7 @@ int free_policy(policy_t **p)
 	/* portcon */
 	if (policy->portcon) {
 		for (i = 0; i < policy->num_portcon; i++) {
-			free(policy->portcon[i].scontext);
+			security_con_destroy(policy->portcon[i].scontext);
 		}
 		free(policy->portcon);
 	}
@@ -639,14 +660,17 @@ int free_policy(policy_t **p)
 	if (policy->netifcon) {
 		for (i = 0; i < policy->num_netifcon; i++) {
 			free(policy->netifcon[i].iface);
-			free(policy->netifcon[i].device_context);
-			free(policy->netifcon[i].packet_context);
+			security_con_destroy(policy->netifcon[i].device_context);
+			security_con_destroy(policy->netifcon[i].packet_context);
 		}
 		free(policy->netifcon);
 	}
 
 	/* nodecon */
 	if (policy->nodecon) {
+		for (i = 0; i < policy->num_nodecon; i++) {
+			security_con_destroy(policy->nodecon[i].scontext);
+		}
 		free(policy->nodecon);
 	}
 
@@ -4153,7 +4177,7 @@ int ap_mls_category_get_sens(int cat, int **sens, int *num_sens, policy_t *polic
 	for (i = 0; i < policy->num_levels; i++) {
 		retv = find_int_in_array(cat, policy->levels[i].categories, policy->levels[i].num_categories);
 		if (retv != -1) {
-			retv = add_i_to_a(retv, num_sens, sens);
+			retv = add_i_to_a(policy->levels[i].sensitivity, num_sens, sens);
 			if (retv) {
 				free(*sens);
 				*sens = NULL;

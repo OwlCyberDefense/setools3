@@ -37,4 +37,5 @@ char *re_render_constraint(bool_t addlineno, ap_constraint_t *constraint, policy
 char *re_render_mls_level(ap_mls_level_t *level, policy_t *policy);
 char *re_render_mls_range(ap_mls_range_t *range, policy_t *policy);
 char *re_render_rangetrans(bool_t addlineno, int idx, policy_t *policy);
+char *re_render_ipv6_addr(uint32_t addr[4]);
 #endif /*_APOLICY_RENDER_H_*/
