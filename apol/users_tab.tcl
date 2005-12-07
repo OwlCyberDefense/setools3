@@ -131,6 +131,7 @@ proc Apol_Users::searchUsers {} {
 # ------------------------------------------------------------------------------
 proc Apol_Users::open { } {
     variable users_list
+    variable widgets
   
     set rt [catch {set users_list [apol_GetNames users]} err]
     if {$rt != 0} {
@@ -138,7 +139,15 @@ proc Apol_Users::open { } {
     }
     set users_list [lsort $users_list]
     $Apol_Users::widgets(role) configure -values $Apol_Roles::role_list
-  
+    if {[ApolTop::is_mls_policy]} {
+        Apol_Widget::setRangeSelectorCompleteState $widgets(range) normal
+        $widgets(defaultCB) configure -state normal
+    } else {
+        Apol_Widget::clearRangeSelector $widgets(range)
+        Apol_Widget::setRangeSelectorCompleteState $widgets(range) disabled
+        set Apol_Users::opts(enable_default) 0
+        $widgets(defaultCB) configure -state disabled
+    }
     return 0
 } 
 
@@ -152,6 +161,8 @@ proc Apol_Users::close { } {
     $widgets(role) configure -values ""
     Apol_Widget::clearSearchResults $widgets(results)
     Apol_Widget::clearRangeSelector $widgets(range)
+    Apol_Widget::setRangeSelectorCompleteState $widgets(range) normal
+    $widgets(defaultCB) configure -state normal
     array set opts {
         showSelection all
         useRole 0         role {}
@@ -247,14 +258,14 @@ proc Apol_Users::create {nb} {
     pack $widgets(role) -side top -anchor nw -padx 4 -expand 0 -fill x
 
     set defaultFrame [frame $ofm.default -relief sunken -borderwidth 1]
-    set defaultCB [checkbutton $defaultFrame.cb -variable Apol_Users::opts(enable_default) -text "Default Level"]
+    set widgets(defaultCB) [checkbutton $defaultFrame.cb -variable Apol_Users::opts(enable_default) -text "Default MLS Level"]
     set defaultDisplay [Entry $defaultFrame.display -textvariable Apol_Users::opts(default_level_display) -width 16 -editable 0]
     set defaultButton [button $defaultFrame.button -text "Select Level..." -state disabled -command [list Apol_Users::show_level_dialog]]
     trace add variable Apol_Users::opts(enable_default) write \
-        [list Apol_Users::toggleDefaultCheckbutton $defaultCB $defaultDisplay $defaultButton]
+        [list Apol_Users::toggleDefaultCheckbutton $widgets(defaultCB) $defaultDisplay $defaultButton]
     trace add variable Apol_Users::opts(default_level) write \
         [list Apol_Users::updateDefaultDisplay $defaultDisplay]
-    pack $defaultCB -side top -anchor nw -expand 0
+    pack $widgets(defaultCB) -side top -anchor nw -expand 0
     pack $defaultDisplay -side top -expand 0 -fill x -padx 4
     pack $defaultButton -side top -expand 1 -fill none -padx 4 -anchor ne
 
@@ -290,14 +301,8 @@ proc Apol_Users::toggleRolesCheckbutton {path name1 name2 op} {
 proc Apol_Users::toggleDefaultCheckbutton {cb display button name1 name2 op} {
     variable opts
     if {$opts($name2)} {
-        if {[ApolTop::is_mls_policy]} {
-            $button configure -state normal
-            $display configure -state normal
-        } else {
-            set opts($name2) 0
-            $cb configure -state normal
-            tk_messageBox -icon error -type ok -title Error -message "The currently loaded policy does not have MLS enabled."
-        }
+        $button configure -state normal
+        $display configure -state normal
     } else {
         $button configure -state disabled
         $display configure -state disabled
