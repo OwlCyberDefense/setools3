@@ -12,7 +12,7 @@ namespace eval Apol_Widget {
 # search type (exact, subset, superset).  If the second argument is
 # not "" then add a checkbutton that enables/disables the entire
 # widget.
-proc Apol_Widget::makeRangeSelector {path rangeMatchText {enableText "Range"} args} {
+proc Apol_Widget::makeRangeSelector {path rangeMatchText {enableText "MLS Range"} args} {
     variable vars
     array unset vars $path:*
     set vars($path:range) {{{} {}}}
@@ -73,6 +73,15 @@ proc Apol_Widget::setRangeSelectorState {path newState} {
     }
 }
 
+proc Apol_Widget::setRangeSelectorCompleteState {path newState} {
+    if {$newState == 0 || $newState == "disabled"} {
+        set new_state disabled
+    } else {
+        set new_state normal
+    }
+    catch {$path.range.enable configure -state $new_state}
+}
+
 proc Apol_Widget::clearRangeSelector {path} {
     set Apol_Widget::vars($path:range) {{{} {}}}
     set Apol_Widget::vars($path:search_type) exact
@@ -98,13 +107,7 @@ proc Apol_Widget::getRangeSelectorValue {path} {
 
 proc Apol_Widget::_toggle_range_selector {path cb name1 name2 op} {
     if {$Apol_Widget::vars($path:enable)} {
-        if {[ApolTop::is_mls_policy]} {
-            Apol_Widget::setRangeSelectorState $path normal
-        } else {
-            set Apol_Widget::vars($path:enable) 0
-            $cb configure -state normal
-            tk_messageBox -icon error -type ok -title Error -message "The currently loaded policy does not have MLS enabled."
-        }
+        Apol_Widget::setRangeSelectorState $path normal
     } else {
         Apol_Widget::setRangeSelectorState $path disabled
     }
