@@ -143,7 +143,7 @@ static void seaudit_policy_menu_items_update(bool_t disable)
 void seaudit_update_status_bar(seaudit_t *seaudit)
 {	
 	char str[STR_SIZE];
-	char *ver_str = NULL;
+	char *ver_str = NULL, *tmp = NULL;
 	int num_log_msgs, num_filtered_log_msgs;
 	char old_time[TIME_SIZE], recent_time[TIME_SIZE];
 	seaudit_filtered_view_t *view;
@@ -160,10 +160,8 @@ void seaudit_update_status_bar(seaudit_t *seaudit)
 		gtk_label_set_text(v_status_bar, ver_str);
 		seaudit_policy_menu_items_update(TRUE);
 	} else {
-               	if(is_binary_policy(seaudit->cur_policy))
-                	snprintf(str, STR_SIZE, "Policy Version: %s%s (binary)", get_policy_version_name(seaudit->cur_policy->version), is_mls_policy(seaudit->cur_policy)?"mls":"");
-               	else
-                	snprintf(str, STR_SIZE, "Policy Version: %s%s (source)", get_policy_version_name(seaudit->cur_policy->version), is_mls_policy(seaudit->cur_policy)?"mls":"");
+		snprintf(str, STR_SIZE, "Policy Version: %s", (tmp = get_policy_version_type_mls_str(seaudit->cur_policy)));
+		free(tmp);
 		gtk_label_set_text(v_status_bar, str);
 		seaudit_policy_menu_items_update(FALSE);
 	}

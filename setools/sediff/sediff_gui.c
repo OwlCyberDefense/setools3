@@ -3402,6 +3402,7 @@ static void sediff_policy_stats_textview_populate(policy_t *p1, GtkTextView *tex
 	GtkTextBuffer *txt;
 	GtkTextIter iter;
 	gchar *contents = NULL;
+	char *tmp = NULL;
 
 	/* grab the text buffer for our tree_view */
 	txt = gtk_text_view_get_buffer (GTK_TEXT_VIEW (textview));
@@ -3414,8 +3415,7 @@ static void sediff_policy_stats_textview_populate(policy_t *p1, GtkTextView *tex
 
 
 	contents = g_strdup_printf("Filename: %s\n"
-				   "Version: %s%s\n"
-				   "Policy Type: %s\n\n"
+				   "Policy Version & Type: %s\n\n"
 
 				   "Number of Classes and Permissions:\n"
 				   "\tObject Classes: %d\n"
@@ -3446,9 +3446,7 @@ static void sediff_policy_stats_textview_populate(policy_t *p1, GtkTextView *tex
 				   "Number of Booleans: %d\n\n",
 
 				   filename,
-				   get_policy_version_name(p1->version),
-					is_mls_policy(p1) ? "mls" : "",
-                                   is_binary_policy(p1) == 0 ? "source" : "binary", 
+				   (tmp = get_policy_version_type_mls_str(p1)),
 				   p1->num_obj_classes,
 				   p1->num_common_perms,
 				   p1->num_perms,
@@ -3466,6 +3464,7 @@ static void sediff_policy_stats_textview_populate(policy_t *p1, GtkTextView *tex
 				   p1->rule_cnt[RULE_USER],
 				   p1->num_cond_bools
 				   );
+	free(tmp);
 	gtk_text_buffer_get_iter_at_offset(txt, &iter, 0);
 	gtk_text_buffer_insert(txt, &iter, contents,-1);
 	g_free(contents);
