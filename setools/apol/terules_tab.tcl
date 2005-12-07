@@ -419,7 +419,11 @@ proc Apol_TE::searchTErules { whichButton } {
 	variable show_enabled_rules
 	variable ta1_opt
 	variable ta2_opt
-			
+
+        if {[winfo exists .terules_busy]} {
+            # still searching, so ignore this request
+            return
+        }
 	if { $whichButton == "newTab" && $currTabCount >= $totalTabCount } {		
 		tk_messageBox -icon error -type ok -title "Attention" \
 			-message "You have reached the maximum amount of tabs. Please delete a tab and try again."
@@ -451,8 +455,6 @@ proc Apol_TE::searchTErules { whichButton } {
 
         set results ""
 	# Making the call to apol_GetTErules to search for rules with given options
-	ApolTop::setBusyCursor
-
         # expand all types/attributes based upon regexp and/or use
         # indirect matches
         if {[catch {Apol_TE::expand_ids $ta1 $ta1_opt $opts(indirect_1) $allow_regex} source_list] != 0} {
@@ -465,12 +467,13 @@ proc Apol_TE::searchTErules { whichButton } {
         }
             
         set searches_todo [expr {[llength $source_list] * [llength $dest_list] + 2}]
+
         set ::Apol_TE::searches_done 0
         set ::Apol_TE::searches_text "Searching for TE Rules..."
-        ProgressDlg::create .busy -title "TE Rules Search" \
+        ProgressDlg::create .terules_busy -title "TE Rules Search" \
             -maximum $searches_todo -variable ::Apol_TE::searches_done \
             -textvariable ::Apol_TE::searches_text
-        update idletasks
+	ApolTop::setBusyCursor
         foreach t2 $dest_list {
                 foreach t1 $source_list {
                         set rt [catch {set sub_results [apol_SearchTErules $opts(teallow) $opts(neverallow) \
@@ -481,9 +484,9 @@ proc Apol_TE::searchTErules { whichButton } {
 		               $allow_regex $ta1_opt $ta2_opt $show_enabled_rules]} err]
 
                         if {$rt != 0} {
-                                destroy .busy
-                                tk_messageBox -icon error -type ok -title "Error" -message "$err"
+                                destroy .terules_busy
                                 ApolTop::resetBusyCursor
+                                tk_messageBox -icon error -type ok -title "Error" -message "$err"
                                 return
                         } 
 
@@ -497,7 +500,7 @@ proc Apol_TE::searchTErules { whichButton } {
                 # now go through and remove all duplicates
                 set results [lsort -command Apol_TE::sort_cmd -unique $results]
         }
-        destroy .busy
+        destroy .terules_busy
 	switch $whichButton {
 		newTab {
 			# Enable the update button.

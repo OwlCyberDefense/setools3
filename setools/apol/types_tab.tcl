@@ -242,31 +242,6 @@ proc Apol_Types::popupTypeInfo {which ta} {
 	return 0
 }
 
-proc Apol_Types::destroy_progressDlg {} {
-	variable progressDlg
-	
-	if {[winfo exists $progressDlg]} {
-		destroy $progressDlg
-	}
-	ApolTop::resetBusyCursor
-     	return 0
-} 
-
-proc Apol_Types::display_progressDlg {} {
-     	variable progressDlg
-	    		
-	set Apol_Types::progressmsg "Searching...This may take a while."
-	set progressBar [ProgressDlg $Apol_Types::progressDlg \
-		-parent $ApolTop::mainframe \
-        	-textvariable Apol_Types::progressmsg \
-        	-variable Apol_Types::progress_indicator \
-        	-maximum 3 \
-        	-width 45]
-	ApolTop::setBusyCursor
-	update
-        return 0
-} 
-
 ##############################################################
 # ::search
 #  	- Search text widget for a string
@@ -281,7 +256,12 @@ proc Apol_Types::search { str case_Insensitive regExpr srch_Direction } {
 proc Apol_Types::searchTypes {} {
 	variable opts
 	variable srchstr
+	variable progressDlg
 	
+	if {[winfo exists $progressDlg]} {
+		# another search already going, so ignore this search request
+		return
+	}
 	if {$opts(usesrchstr) && $srchstr == ""} {
 		tk_messageBox -icon error -type ok -title "Error" -message "No regular expression provided!"
 		return
@@ -290,25 +270,30 @@ proc Apol_Types::searchTypes {} {
 		tk_messageBox -icon error -type ok -title "Error" -message "No search options provided!"
 		return
 	}
-
-	Apol_Types::display_progressDlg
+    
+	set Apol_Types::progressmsg "Searching...This may take a while."
+	ProgressDlg $progressDlg \
+		-parent $ApolTop::mainframe \
+        	-textvariable Apol_Types::progressmsg \
+        	-variable Apol_Types::progress_indicator \
+        	-maximum 3 \
+        	-width 45
+	ApolTop::setBusyCursor
 	set rt [catch {set results [apol_GetTypeInfo $opts(types) $opts(typeattribs) \
 		$opts(attribs) $opts(attribtypes) $opts(attribtypeattribs) \
 		$opts(typealiases) $opts(usesrchstr) $srchstr \
-		$opts(show_files) $opts(incl_context) $opts(incl_class)]} err]	
+		$opts(show_files) $opts(incl_context) $opts(incl_class)]} err]
+	destroy $progressDlg
+	ApolTop::resetBusyCursor
 	if {$rt != 0} {	
-		Apol_Types::destroy_progressDlg
 		tk_messageBox -icon error -type ok -title "Error" \
 			-message "$err \n\nNote:If you need to load an index file, go to the File Context tab."
-		return 
 	} else {
 	    $Apol_Types::resultsbox configure -state normal
 	    $Apol_Types::resultsbox delete 0.0 end
 	    $Apol_Types::resultsbox insert end $results
 	    ApolTop::makeTextBoxReadOnly $Apol_Types::resultsbox
         }
-        Apol_Types::destroy_progressDlg
-	return 0
 }
 
 proc Apol_Types::_useSearch { entry } {
