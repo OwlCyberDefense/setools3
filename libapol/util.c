@@ -17,6 +17,7 @@
 #include <ctype.h>
 #include <assert.h>
 #include <unistd.h>
+#include <errno.h>
 
 /* convert from string to intger "bool" */
 bool_t getbool(const char *str) 
@@ -857,3 +858,78 @@ int read_file_to_buffer(const char *fname, char **buf, int *len)
 	}
 	return 0;
 }
+
+
+int str_to_internal_ip(const char *str, uint32_t ip[4])
+{
+	int len = 0, i, retv;
+	int seg = 0;
+	uint32_t val = 0; /* value of current segment of address */
+	bool_t ipv4 = FALSE;
+	bool_t ipv6 = FALSE;
+	char tmp[6] = {'0', 'x', '\0', '\0', '\0', '\0'};
+	int seg_cnt = 0; /* for counting number of segments in ipv6 addr */
+
+	if (!str || !ip) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	len = strlen(str);
+	ip[0] = ip[1] = ip[2] = ip[3] = 0;
+
+	if (strchr(str, '.'))
+		ipv4 = TRUE;
+
+	if (strchr(str, ':'))
+		ipv6 = TRUE;
+
+	if (ipv4 == ipv6) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (ipv6) {
+		for (i = 0; i < len; i++) {
+			if (str[i] == ':')
+				seg_cnt++;
+		}
+	}
+
+	for (i = 0; i <= len; i++) {
+		if (ipv4) {
+			if (str[i] == '.' || str[i] == '\0') {
+				ip[3] |= ((0x000000ff & val) << (8 * (3 - seg)));
+				seg++;
+				val = 0;
+				if (seg == 4)
+					break;
+			} else if (isdigit(str[i])) {
+				tmp[4] = str[i];
+				retv = atoi(&(tmp[4]));
+				val *= 10;
+				val += retv;
+			}
+		} else if (ipv6) {
+			if (str[i] == ':' || str[i] == '\0') {
+				ip[seg/2] |= ((0x0000ffff & val) << (16 * (1 - seg % 2)));
+				seg++;
+				val = 0;
+				if (i + 1 < len && str[i+1] == ':') {
+					seg += 8 - seg_cnt;
+					i++;
+				}
+				if (seg == 8)
+					break;
+			} else if (isxdigit(str[i])) {
+				tmp[2] = str[i];
+				retv = strtol(tmp, NULL, 16);
+				val = val << 4;
+				val += retv;
+			}
+		}
+	}
+
+	return ipv4?AP_IPV4:AP_IPV6;
+}
+
