@@ -1697,12 +1697,17 @@ int Apol_GetPolicyContents(ClientData clientData, Tcl_Interp *interp, int argc, 
 
 int Apol_GetPolicyVersionString(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
 {
+        char *pol_string;
 	if(policy == NULL) {
 		Tcl_AppendResult(interp, "No current policy file is opened!", (char *) NULL);
 		return TCL_ERROR;
 	}
-	Tcl_AppendResult(interp, (char *)get_policy_version_name(policy->version), (char *) NULL);
-
+        if ((pol_string = get_policy_version_type_mls_str(policy)) == NULL) {
+                Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
+                return TCL_ERROR;
+        }
+	Tcl_SetResult(interp, pol_string, TCL_VOLATILE);
+        free(pol_string);
 	return TCL_OK;
 }
 
