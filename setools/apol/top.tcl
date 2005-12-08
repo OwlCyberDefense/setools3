@@ -13,11 +13,9 @@ namespace eval ApolTop {
 	# All capital letters is the convention for variables defined via the Makefile.
 	variable bwidget_version	""
 	variable status 		""
-	variable polversion 		""
+	variable policy_version_string	""
 	variable policy_type		""
     variable policy_mls_type	""
-	variable binary_policy_type	"binary"
-	variable source_policy_type	"source"
 	variable filename 		""
 	# The following is used with opening a policy for loading all or pieces of a policy. 
 	# The option defaults to 0 (or all portions of the policy).
@@ -140,7 +138,7 @@ proc ApolTop::get_toplevel_dialog {} {
 }
 
 proc ApolTop::is_binary_policy {} {
-	if {$ApolTop::policy_type == $ApolTop::binary_policy_type} {
+	if {$ApolTop::policy_type == "binary"} {
 		return 1
 	}
 	return 0
@@ -1234,7 +1232,7 @@ proc ApolTop::create { } {
 		
 	$mainframe addindicator -textvariable ApolTop::policyConf_lineno -width 14
 	$mainframe addindicator -textvariable ApolTop::polstats -width 88
-	$mainframe addindicator -textvariable ApolTop::polversion -width 28
+	$mainframe addindicator -textvariable ApolTop::policy_version_string -width 28
 	
 	# Disable menu items since a policy is not yet loaded.
 	$ApolTop::mainframe setmenustate Disable_SearchMenu_Tag disabled
@@ -1714,8 +1712,6 @@ proc ApolTop::resetBusyCursor {} {
 }
 
 proc ApolTop::popupPolicyStats {} {
-	variable polversion
-	variable policy_type
 	variable contents
 	
 	set rt [catch {set pstats [apol_GetStats]}]
@@ -1747,7 +1743,13 @@ proc ApolTop::popupPolicyStats {} {
 		set common_perms $stats(common_perms)
 		set perms $stats(perms)
 	}
-	
+    if {![regexp -- {^([^\(]+) \(([^,]+), ([^\)]+)} $ApolTop::policy_version_string -> policy_version policy_type policy_mls_type]} {
+        set policy_version $ApolTop::policy_version_string
+        set policy_type "unknown"
+        set policy_mls_type "unknown"
+    }
+    set policy_version [string trim $policy_version]
+
 	set w .polstatsbox
 	catch {destroy $w}
 	toplevel $w
@@ -1758,7 +1760,8 @@ proc ApolTop::popupPolicyStats {} {
 		
 	set left_text "\
 Policy Version:\n\
-Policy Type:\n\n\
+Policy Type:\n\
+MLS Status:\n\n\
 Number of Classes and Permissions\n\
      \tObject Classes:\n\
      \tCommon Perms:\n\
@@ -1789,8 +1792,9 @@ Number of Booleans:\n\
      \tBools:\n"
      
      	set right_text "\
-$polversion\n\
-$policy_type\n\n\
+$policy_version\n\
+$policy_type\n\
+$policy_mls_type\n\n\
 \n\
 $classes\n\
 $common_perms\n\
@@ -1891,10 +1895,9 @@ proc ApolTop::closePolicy {} {
         variable contents
 	variable filename 
 	variable polstats
-	variable polversion
+	variable policy_version_string {}
 	variable policy_is_open	
 	
-	set polversion ""
 	set filename ""
 	set polstats ""
 	set contents(classes)	0
@@ -2122,7 +2125,7 @@ the names are not preserved in the binary policy format."
 # to 1 if a recently file is being opened with this proc
 proc ApolTop::openPolicyFile {file recent_flag} {
 	variable contents
-	variable polversion
+	variable policy_version_string
 	variable policy_type
 	variable policy_mls_type
 	variable policy_is_open	
@@ -2177,13 +2180,12 @@ proc ApolTop::openPolicyFile {file recent_flag} {
 		focus -force .
 		return -1
 	}
-	set rt [catch {set polversion [apol_GetPolicyVersionString]}]
-	if {$rt != 0} {
-		tk_messageBox -icon error -type ok -title "Error" -message "apol_GetPolicyVersionString: $rt"
+
+	if {[catch {apol_GetPolicyVersionString} policy_version_string]} {
+		tk_messageBox -icon error -type ok -title "Error" -message "apol_GetPolicyVersionString: $policy_version_string"
 		return 0
 	}
 	foreach {policy_type policy_mls_type} [apol_GetPolicyType] break;
-	append polversion " ($policy_type, $policy_mls_type)"
 	# Set the contents flags to indicate what the opened policy contains
 	set rt [catch {set con [apol_GetPolicyContents]} err]
 	if {$rt != 0} {
@@ -2228,7 +2230,6 @@ proc ApolTop::openPolicyFile {file recent_flag} {
 
 proc ApolTop::openPolicy {} {
 	variable filename 
-	variable polversion
 	
         set progressval 0
         set file ""
