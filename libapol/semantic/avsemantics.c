@@ -75,9 +75,6 @@ static bool_t avh_is_valid_cond_type_rule(avh_key_t *key, int cond_expr, bool_t 
 		} else if (node->cond_list == cond_list) {
 			if (node->data[0] != dflt_type)
 				return FALSE;
-		} else if (node->cond_list != cond_list) {
-			if (node->data[0] == dflt_type)
-				return FALSE;
 		}
 	}
 
