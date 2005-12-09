@@ -50,6 +50,7 @@ typedef struct teq_query {
 	int		num_classes;
 	int		*perms;			/* array of permission indexes */
 	int		num_perms;
+	char		*bool_name;			/* name of conditional boolean (or regex if use_regex) */
 } teq_query_t;
 
 /* set of arrays of rule indicies matching search query */
@@ -101,7 +102,7 @@ int search_te_rules(teq_query_t *q, teq_results_t *r, policy_t *policy);
 bool_t match_rbac_role_ta(int rs_idx,int ta_idx, int *rt_idx,policy_t *policy);
 
 int search_conditional_expressions(bool_t use_bool, char *bool, bool_t allow_regex, bool_t *exprs_b, char **error_msg, policy_t *policy);
-
+int match_cond_rules(rules_bool_t *rules_b, bool_t *exprs_b, bool_t include_audit, policy_t *policy);
 int policy_query_add_type(int **end_types, int *num_end_types, int end_type);
 #endif /*_APOLICY_POLICY_QUERY_H_*/
 
