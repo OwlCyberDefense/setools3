@@ -1006,10 +1006,20 @@ static int load_user(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned int opts,
 		 * returns. */
 		rt = load_mls_range(fb, fp, bm, opts, policy, &mls_range, TRUE);
 		if (rt < 0) return -1;
-		policy->users[idx].range = mls_range;
+		if (keep) {
+			policy->users[idx].range = mls_range;
+		} else {
+			ap_mls_range_free(mls_range);
+			mls_range = NULL;
+		}
 		rt = load_user_dflt_mls_level(fb, fp, bm, opts, policy, &mls_level);
 		if (rt < 0) return -1;
-		policy->users[idx].dflt_level = mls_level;
+		if (keep) {
+			policy->users[idx].dflt_level = mls_level;
+		} else {
+			ap_mls_level_free(mls_level);
+			mls_level = NULL;
+		}
 	}
 
 	return 0;
