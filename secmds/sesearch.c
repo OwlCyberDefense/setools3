@@ -36,12 +36,14 @@ static struct option const longopts[] =
   {"target", required_argument, NULL, 't'},
   {"class", required_argument, NULL, 'c'},
   {"perms", required_argument, NULL, 'p'},
+  {"boolean", required_argument, NULL, 'b'},
   {"allow", no_argument, NULL, 'A'},
   {"neverallow", no_argument, NULL, 'N'},
   {"audit", no_argument, NULL, 'U'},
   {"type", no_argument, NULL, 'T'},
   {"all", no_argument, NULL, 'a'},
   {"lineno", no_argument, NULL, 'l'},
+  {"show_cond", no_argument, NULL, 'C'},
   {"indirect", no_argument, NULL, 'i'},
   {"noregex", no_argument, NULL, 'n'},
   {"help", no_argument, NULL, 'h'},
@@ -63,25 +65,27 @@ Search Type Enforcement rules in an SELinux policy.\n\
   -t NAME, --target NAME  find rules with NAME type/attrib (regex) as target\n\
   -c NAME, --class NAME   find rules with NAME as the object class\n\
   -p P1[,P2,...] --perms P1[,P2...]\n\
-                         find rules with the specified permissions\n\
+                          find rules with the specified permissions\n\
+  -b NAME, --boolean NAME find conditional rules with NAME in the expression\n\
 ", stdout);
 	fputs("\
-  --allow                search for allow rules only \n\
-  --neverallow           search for neverallow rules only\n\
-  --audit                search for auditallow and dontaudit rules only\n\
-  --type                 search for type_trans and type_change rules only\n\
+  --allow                 search for allow rules only \n\
+  --neverallow            search for neverallow rules only\n\
+  --audit                 search for auditallow and dontaudit rules only\n\
+  --type                  search for type_trans and type_change rules only\n\
 ", stdout);
 	fputs("\
-  -i, --indirect         indirect; also search for the type's attributes\n\
-  -n, --noregex          do not use regular expression to match type/attributes\n\
-  -a, --all              show all rules regardless of type, class, or perms\n\
-  -l, --lineno           include line # in policy.conf for each rule.\n\
-  			 This option is ignored if using a binary policy.\n\n\
-  -h, --help             display this help and exit\n\
-  -v, --version          output version information and exit\n\
+  -i, --indirect          indirect; also search for the type's attributes\n\
+  -n, --noregex           do not use regular expression to match type/attributes\n\
+  -a, --all               show all rules regardless of type, class, or perms\n\
+  -l, --lineno            include line # in policy.conf for each rule.\n\
+  			  This option is ignored if using a binary policy.\n\
+  -C, --show_cond         show conditional expression for conditional rules\n\
+  -h, --help              display this help and exit\n\
+  -v, --version           output version information and exit\n\
 ", stdout);
   	fputs("\n\
-If none of -s, -t, -c, -p are specified, then all rules are shown\n\
+If none of -s, -t, -c, -p -b are specified, then all rules are shown\n\
 You must specify -a (--all), or one of more of --allow, --neverallow, \n\
 --audit, or --type.\
 \n\n\
@@ -94,24 +98,24 @@ The default source policy, or if that is unavailable the default binary\n\
 int main (int argc, char **argv)
 {
 	int i, rt, optc, cls, idx, *perms, num_perms;
-	bool_t all, lineno, indirect, allow, nallow, audit, type, useregex;
+	bool_t all, lineno, indirect, allow, nallow, audit, type, useregex, show_cond;
 	unsigned int open_opts = 0;
 	policy_t *policy;
-	char *src_name, *tgt_name, *class_name, *permlist, *tok, *rule;
+	char *src_name, *tgt_name, *class_name, *permlist, *tok, *rule, *bool_name, *cond_expr;
 	teq_query_t q;
 	teq_results_t r;
 	unsigned int search_opts = 0;
 	
-	all = lineno = allow = nallow = audit = type = indirect = FALSE;
+	all = lineno = allow = nallow = audit = type = indirect = show_cond = FALSE;
 	useregex = TRUE;
 	cls = -1;
 	num_perms = 0;
 	perms = NULL;
-	src_name = tgt_name = class_name = permlist = NULL;
+	src_name = tgt_name = class_name = permlist = bool_name = NULL;
 	
 	open_opts = POLOPT_TE_POLICY | POLOPT_OBJECTS;
 	
-	while ((optc = getopt_long (argc, argv, "s:t:c:p:d:alhvni0:", longopts, NULL)) != -1)  {
+	while ((optc = getopt_long (argc, argv, "s:t:c:p:b:d:alChvni0:", longopts, NULL)) != -1)  {
 		switch (optc) {
 		case 0:
 	  		break;
@@ -142,7 +146,7 @@ int main (int argc, char **argv)
 	  	case 'c': /* class */
 	  		if(optarg == 0) {
 	  			usage(argv[0], 1);
-	  			printf("Missing object class for -c (--class)\\n");
+	  			printf("Missing object class for -c (--class)\n");
 	  			exit(1);
 	  		}
 	  		class_name = strdup(optarg);
@@ -154,7 +158,7 @@ int main (int argc, char **argv)
 	  	case 'p': /* permissions */
 	  		if(optarg == 0) {
 	  			usage(argv[0], 1);
-	  			printf("Missing permissions for -p (--perms)\n\n");
+	  			printf("Missing permissions for -p (--perms)\n");
 	  			exit(1);
 	  		}
 	  		permlist = strdup(optarg);
@@ -163,6 +167,18 @@ int main (int argc, char **argv)
 	  			exit(1);	
 	  		}
 	  		break;
+		case 'b':
+	  		if(optarg == 0) {
+	  			usage(argv[0], 1);
+	  			printf("Missing boolean for -b (--boolean)\n");
+	  			exit(1);
+	  		}
+	  		bool_name = strdup(optarg);
+	  		if (!bool_name) {
+	  			fprintf(stderr, "Memory error!\n");
+	  			exit(1);	
+	  		}
+			break;
 	  	case 'i': /* indirect search */
 	  		indirect = TRUE;
 	  		break;
@@ -188,6 +204,9 @@ int main (int argc, char **argv)
 	  	case 'l': /* lineno */
 	  		lineno = TRUE;
 	  		break;
+		case 'C':
+			show_cond = TRUE;
+			break;
 	  	case 'h': /* help */
 	  		usage(argv[0], 0);
 	  		exit(0);
@@ -261,6 +280,7 @@ int main (int argc, char **argv)
 	q.ta2.ta = tgt_name;
 	q.num_perms = num_perms;
 	q.perms = perms;
+	q.bool_name = bool_name;
 	
 	if(class_name != NULL) {
 		q.classes = (int *)malloc(sizeof(int)*1);
@@ -278,7 +298,6 @@ int main (int argc, char **argv)
 		q.num_classes = 1;
 	}
 
-	
 	/* display requested info */
 	init_teq_results(&r);
 	rt = search_te_rules(&q, &r, policy);
@@ -344,10 +363,19 @@ int main (int argc, char **argv)
 		for(i = 0; i < r.num_av_access; i++) {
 			rule = re_render_av_rule(FALSE, r.av_access[i], FALSE, policy);
 			assert(rule);
+			if(show_cond && policy->av_access[r.av_access[i]].cond_expr != -1)
+				printf("%c  ", policy->av_access[r.av_access[i]].cond_list?'T':'F');
+			else if (show_cond)
+				printf("   ");
 			if(lineno && !is_binary_policy(policy))
-				printf("[%6d]  ", r.av_access_lineno[i]);
-			printf("%s\n", rule);
+				printf("[%7d]  ", r.av_access_lineno[i]);
+			printf("%s", rule);
 			free(rule);
+			if(show_cond && policy->av_access[r.av_access[i]].cond_expr != -1) {
+				printf(" %s", (cond_expr = re_render_cond_expr(policy->av_access[r.av_access[i]].cond_expr, policy)));
+				free(cond_expr);
+			}
+			printf("\n");
 
 		}
 	}
@@ -355,22 +383,37 @@ int main (int argc, char **argv)
 		for(i = 0; i < r.num_av_audit; i++) {
 			rule = re_render_av_rule(FALSE, r.av_audit[i], TRUE, policy);
 			assert(rule);
+			if(show_cond && policy->av_audit[r.av_audit[i]].cond_expr != -1)
+				printf("%c  ", policy->av_audit[r.av_audit[i]].cond_list?'T':'F');
+			else if (show_cond)
+				printf("   ");
 			if(lineno && !is_binary_policy(policy))
-				printf("[%6d]  ", r.av_audit_lineno[i]);
-			printf("%s\n", rule);
+				printf("[%7d]  ", r.av_audit_lineno[i]);
+			printf("%s", rule);
 			free(rule);
-
+			if(show_cond && policy->av_audit[r.av_audit[i]].cond_expr != -1) {
+				printf(" %s", (cond_expr = re_render_cond_expr(policy->av_audit[r.av_audit[i]].cond_expr, policy)));
+				free(cond_expr);
+			}
+			printf("\n");
 		}
 	}
 	if(r.num_type_rules > 0) { 
 		for(i = 0; i < r.num_type_rules; i++) {
 			rule = re_render_tt_rule(FALSE, r.type_rules[i], policy);
 			assert(rule);
+			if (show_cond && policy->te_trans[r.type_rules[i]].cond_expr != -1)
+				printf("%c  ", policy->te_trans[r.type_rules[i]].cond_list?'T':'F');
+			else if (show_cond)
+				printf("   ");
 			if(lineno && !is_binary_policy(policy))
-				printf("[%6d]  ", r.type_lineno[i]);
-			printf("%s\n", rule);
+				printf("[%7d]  ", r.type_lineno[i]);
+			printf("%s", rule);
 			free(rule);
-
+			if (show_cond && policy->te_trans[r.type_rules[i]].cond_expr != -1) {
+				printf(" %s", (cond_expr = re_render_cond_expr(policy->te_trans[r.type_rules[i]].cond_expr, policy)));
+			}
+			printf("\n");
 		}
 	}
 
