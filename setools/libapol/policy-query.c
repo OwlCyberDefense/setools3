@@ -46,6 +46,7 @@ int free_teq_query_contents(teq_query_t *q)
 		return 0;
 	if(q->classes != NULL) free(q->classes);
 	if(q->perms != NULL) free(q->perms);
+	free(q->bool_name);
 	free_teq_search_type(&q->ta1);
 	free_teq_search_type(&q->ta2);
 	free_teq_search_type(&q->ta3);
@@ -447,8 +448,8 @@ int search_te_rules(teq_query_t *q, teq_results_t *r, policy_t *policy)
 	int i, j, rt, sz, ta1 = -1, ta2 = -1, ta3 = -1, ta1_type, ta2_type, ignore_cntr;
 	char *err;
 	regex_t reg[3];
-	bool_t include_audit, use_1, use_2, use_3;
-	rules_bool_t rules_src, rules_tgt, rules_default;
+	bool_t include_audit, use_1, use_2, use_3, *cexprs_b = NULL;
+	rules_bool_t rules_src, rules_tgt, rules_default, rules_cond;
 
 	
 	if(q == NULL)
@@ -605,6 +606,13 @@ int search_te_rules(teq_query_t *q, teq_results_t *r, policy_t *policy)
 		rt = -1;
 		goto err_return1;
 	}
+	if(init_rules_bool(include_audit, &rules_cond, policy) != 0) {
+		free_rules_bool(&rules_src);
+		free_rules_bool(&rules_tgt);
+		free_rules_bool(&rules_default);
+		rt = -1;
+		goto err_return1;
+	}
 
 	if(use_1) {
 		if(match_te_rules(q->use_regex, &(reg[0]), q->ta1.t_or_a, ta1, ta1_type, include_audit, SRC_LIST, q->ta1.indirect, q->only_enabled, &rules_src, policy) != 0) {
@@ -647,6 +655,22 @@ int search_te_rules(teq_query_t *q, teq_results_t *r, policy_t *policy)
 			all_true_rules_bool(&rules_default, policy);		
 		}
 	}
+
+	if (q->bool_name) {
+		cexprs_b = (bool_t*)calloc(policy->num_cond_exprs, sizeof(bool_t));
+		if (!cexprs_b) {
+			rt = -1;
+			goto err_return2;
+		}
+		rt = search_conditional_expressions(1, q->bool_name, q->use_regex, cexprs_b, &err, policy);
+		if (rt) {
+			rt = -1;
+			goto err_return2;
+		}
+		rt = match_cond_rules(&rules_cond, cexprs_b, include_audit, policy);
+	} else {
+		all_true_rules_bool(&rules_cond, policy);
+	}
 	
 	/* further select and output matching rules */
 	if(q->rule_select & TEQ_AV_ACCESS) {
@@ -661,6 +685,8 @@ int search_te_rules(teq_query_t *q, teq_results_t *r, policy_t *policy)
 			   ( (q->num_classes < 1) || ((q->num_classes > 0) && does_av_rule_use_classes(i, 1, q->classes, q->num_classes, policy)) )
 			  &&
 			   ( (q->num_perms < 1) || ((q->num_perms > 0) && does_av_rule_use_perms(i, 1, q->perms, q->num_perms, policy)) )
+			  &&
+				( !q->bool_name || (q->bool_name && rules_cond.access[i]) )
 			  )	{
 			  	if (q->only_enabled && !policy->av_access[i].enabled)
 					continue;
@@ -711,6 +737,8 @@ int search_te_rules(teq_query_t *q, teq_results_t *r, policy_t *policy)
 			    (q->any && (rules_src.ttrules[i] || rules_tgt.ttrules[i] || rules_default.ttrules[i])))
 	  		   &&
 			   ( (q->num_classes < 1) || ((q->num_classes > 0) && does_tt_rule_use_classes(i, q->classes, q->num_classes, policy)) )
+			  &&
+				( !q->bool_name || (q->bool_name && rules_cond.ttrules[i]) )
 			  ) {
 			  	if (q->only_enabled && !policy->te_trans[i].enabled)
 					continue;
@@ -741,6 +769,8 @@ int search_te_rules(teq_query_t *q, teq_results_t *r, policy_t *policy)
 			    ( (q->num_classes < 1) || ((q->num_classes > 0) && does_av_rule_use_classes(i, 0, q->classes, q->num_classes, policy)) )
 			   &&
 			    ( (q->num_perms < 1) || ((q->num_perms > 0) && does_av_rule_use_perms(i, 0, q->perms, q->num_perms, policy)) )
+			  &&
+				( !q->bool_name || (q->bool_name && rules_cond.audit[i]) )
 			  )	{
 			  	if (q->only_enabled && !policy->av_audit[i].enabled)
 					continue;
@@ -766,6 +796,7 @@ int search_te_rules(teq_query_t *q, teq_results_t *r, policy_t *policy)
 	free_rules_bool(&rules_src);	
 	free_rules_bool(&rules_tgt);	
 	free_rules_bool(&rules_default);	
+	free_rules_bool(&rules_cond);
 	
 	return 0;	
 	
@@ -773,6 +804,7 @@ err_return2:
 	free_rules_bool(&rules_src);	
 	free_rules_bool(&rules_tgt);	
 	free_rules_bool(&rules_default);
+	free_rules_bool(&rules_cond);
 err_return1:
 	if(use_1 && q->use_regex) {regfree(&(reg[0]));}
 	if(use_2 && q->use_regex) {regfree(&(reg[1]));}
@@ -831,6 +863,33 @@ int search_conditional_expressions(bool_t use_bool, char *bool, bool_t regex, bo
 
 	if (regex)
 		regfree(&reg);
+	return 0;
+}
+
+int match_cond_rules(rules_bool_t *rules_b, bool_t *exprs_b, bool_t include_audit, policy_t *policy)
+{
+	int i;
+
+	if (!policy || !rules_b || !exprs_b)
+		return -1;
+
+	for (i = 0; i < policy->num_av_access; i++) {
+		if (policy->av_access[i].cond_expr != -1 && exprs_b[policy->av_access[i].cond_expr])
+			rules_b->access[i] = TRUE;
+	}
+	for (i = 0; i < policy->num_te_trans; i++) {
+		if (policy->te_trans[i].cond_expr != -1 && exprs_b[policy->te_trans[i].cond_expr])
+			rules_b->ttrules[i] = TRUE;
+	}
+
+	if (include_audit) {
+		assert(rules_b->audit != NULL);
+		for (i = 0; i < policy->num_av_audit; i++) {
+			if (policy->av_audit[i].cond_expr != -1 && exprs_b[policy->av_audit[i].cond_expr]) 
+				rules_b->audit[i] = TRUE;
+		}
+	}
+
 	return 0;
 }
 
