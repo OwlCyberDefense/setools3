@@ -4155,11 +4155,15 @@ int ap_mls_sens_get_level_cats(int sens, int **cats, int *num_cats, policy_t *po
 	if (!lvl)
 		return -1;
 
-	*cats = (int*)malloc((*num_cats = lvl->num_categories) * sizeof(int));
-	if (!(*cats))
-		return -1;
-
-	memcpy(*cats, lvl->categories, *num_cats * sizeof(int));
+	*num_cats = lvl->num_categories;
+	if (*num_cats) {
+		*cats = (int*)malloc( lvl->num_categories * sizeof(int));
+		if (!(*cats))
+			return -1;
+		memcpy(*cats, lvl->categories, *num_cats * sizeof(int));
+	} else {
+		*cats = NULL;
+	}
 
 	return 0;
 }
