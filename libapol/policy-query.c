@@ -75,6 +75,7 @@ int init_teq_query(teq_query_t *q)
 	init_teq_search_type(&q->ta1);
 	init_teq_search_type(&q->ta2);
 	init_teq_search_type(&q->ta3);
+	q->bool_name = NULL;
 	return 0;
 }
 
