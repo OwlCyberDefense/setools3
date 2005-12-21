@@ -4464,3 +4464,28 @@ void security_con_destroy(security_con_t *context)
 		ap_mls_range_free(context->range);
 	free(context);
 }
+
+bool_t validate_security_context(const security_con_t *context, policy_t *policy)
+{
+	if (!context || !policy)
+		return FALSE;
+
+	if (!is_valid_user_idx(context->user, policy) || 
+	!is_valid_role_idx(context->role, policy) ||
+	!is_valid_type_idx(context->type, policy))
+		return FALSE;
+
+	if (is_mls_policy(policy) && !ap_mls_validate_range(context->range, policy))
+		return FALSE;
+	if (context->role != get_role_idx("object_r", policy)) {
+		if (!does_user_have_role(context->user, context->role, policy))
+			return FALSE;
+		if (!does_role_use_type(context->role, context->type, policy))
+			return FALSE;
+	}
+	if (is_mls_policy(policy) && !ap_mls_does_range_contain_subrange(policy->users[context->user].range, context->range, policy))
+		return FALSE;
+
+	return TRUE;
+}
+

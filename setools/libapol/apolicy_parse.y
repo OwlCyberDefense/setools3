@@ -3272,6 +3272,12 @@ static security_con_t *parse_security_context(int dontsave)
 	if (!id)
 		id = queue_remove(id_queue);
 
+	if (!validate_security_context(scontext, parse_policy)) {
+		yyerror("Context not valid");
+		security_con_destroy(scontext);
+		return NULL;
+	}
+
 	return scontext;
 }
 
