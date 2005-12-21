@@ -403,7 +403,8 @@ int close_policy(policy_t *policy)
 
 static int read_policy(policy_t *policy)
 {
-	int rt;
+	int rt, i;
+	ap_mls_level_t *lvl = NULL;
 	
 	policy->policy_type = POL_TYPE_SOURCE;
 	/*yydebug = 1; */
@@ -456,6 +457,21 @@ static int read_policy(policy_t *policy)
 			return -1;
 		}
 	}
+
+	/* ensure all sensitivities have a level if not
+	 * do what checkpolicy does: create one with an
+	 * empty category list */
+	if (is_mls_policy(policy)) {
+		for (i = 0; i < policy->num_sensitivities; i++) {
+			if (!(lvl = ap_mls_sensitivity_get_level(i, policy))) {
+				if (add_mls_level(i, NULL, 0, policy)) {
+					fprintf(stderr, "error adding implicit level for sensitivity %s\n", policy->sensitivities[i].name);
+					return -1;
+				}
+			}
+		}
+	}
+
 	return 0;		
 }
 
