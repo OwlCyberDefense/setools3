@@ -3864,7 +3864,7 @@ int add_mls_level(int sens, int *cats, int num_cats, policy_t *policy)
 	size_t sz;
 	ap_mls_level_t *new_level = NULL;
 
-	if (!cats || !policy)
+	if (!policy || (num_cats > 0 && !cats) || num_cats < 0)
 		return -1;
 
 	/* make sure there is enough room */
