@@ -792,7 +792,9 @@ int apol_add_perm_to_obj_perm_set_list(obj_perm_set_t **obj_options,
 				      int *num_obj_options, int obj_class, 
 				      int perm);
 
+/* contexts */
 void security_con_destroy(security_con_t *context);
+bool_t validate_security_context(const security_con_t *context, policy_t *policy);
 
 /* genfscon */
 int ap_genfscon_get_idx(char *fstype, policy_t *policy);
