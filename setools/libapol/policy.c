@@ -4489,3 +4489,50 @@ bool_t validate_security_context(const security_con_t *context, policy_t *policy
 	return TRUE;
 }
 
+bool_t match_security_context(security_con_t *context1, security_con_t *context2, unsigned char range_match, policy_t *policy)
+{
+	if (!context1 || !context2 || !policy)
+		return FALSE;
+
+	if (context1->user >= 0 && context2->user >= 0 && context1->user != context2->user)
+		return FALSE;
+	if (context1->role >= 0 && context2->role >= 0 && context1->role != context2->role)
+		return FALSE;
+	if (context1->type >= 0 && context2->type >= 0 && context1->type != context2->type)
+		return FALSE;
+
+	/* mask out unused bits */
+	range_match &= AP_MLS_RTS_RNG_SUB|AP_MLS_RTS_RNG_SUPER|AP_MLS_RTS_RNG_EXACT;
+
+	switch(range_match) {
+	case AP_MLS_RTS_RNG_SUB:
+	{
+		if (!ap_mls_does_range_contain_subrange(context1->range, context2->range, policy))
+			return FALSE;
+                break;
+	}
+	case AP_MLS_RTS_RNG_SUPER:
+	{
+		if (!ap_mls_does_range_contain_subrange(context2->range, context1->range, policy))
+			return FALSE;
+                break;
+	}
+	case AP_MLS_RTS_RNG_EXACT: /* EXACT = SUB | SUPER */
+	{
+		if (ap_mls_level_compare(context1->range->low, context2->range->low, policy) != AP_MLS_EQ || ap_mls_level_compare(context1->range->high, context2->range->high, policy) != AP_MLS_EQ)
+			return FALSE;
+                break;
+	}
+	case 0: /* nothing selected - no matching check */
+	{
+		break;
+	}
+	default: /* should not be possible to get here */
+	{
+		assert(0);
+		break;
+	}
+	}
+
+	return TRUE;
+}
