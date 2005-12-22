@@ -229,7 +229,15 @@ proc Apol_Widget::setLevelSelectorLevel {path level} {
 proc Apol_Widget::resetLevelSelectorToPolicy {path} {
     variable vars
     set vars($path:sens) ""
-    $path.sens configure -values [lsort -unique [apol_GetSens]]
+    if {[catch {apol_GetSens} sens]} {
+        $path.sens configure -values {}
+    } else {
+        set vals {}
+        foreach s [lsort -index 0 $sens] {
+            lappend vals [lindex $s 0]
+        }
+        $path.sens configure -values $vals
+    }
 }
 
 proc Apol_Widget::clearLevelSelector {path} {
@@ -459,10 +467,11 @@ proc Apol_Widget::_sens_changed {path name1 name2 op} {
     variable vars
     # get a list of categories associated with this sensitivity
     [getScrolledListbox $path.cats] selection clear 0 end
-    if {$vars($path:sens) == ""} {
-        set vars($path:cats) {}
-    } else {
-        set vars($path:cats) [apol_SensCats $vars($path:sens)]
+    set vars($path:cats) {}
+    if {![catch {apol_SensCats $vars($path:sens)} cats]} {
+        foreach c $cats {
+            lappend vars($path:cats) [lindex $c 0]
+        }
     }
 }
 

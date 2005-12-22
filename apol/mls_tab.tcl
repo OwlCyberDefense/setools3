@@ -21,14 +21,14 @@ proc Apol_MLS::set_Focus_to_Text {} {
 
 proc Apol_MLS::open {} {
     variable vals
-    if {[catch {apol_GetSens} senslist]} {
-        return -code error $senslist
+    set vals(senslist) {}
+    foreach s [lsort -index 0 -dictionary [apol_GetSens]] {
+        lappend vals(senslist) [lindex $s 0]
     }
-    set vals(senslist) $senslist
-    if {[catch {apol_SensCats} catslist]} {
-        return -code error $catslist
+    set vals(catslist) {}
+    foreach c [lsort -index 0 -dictionary [apol_GetCats]] {
+        lappend vals(catslist) [lindex $c 0]
     }
-    set vals(catslist) $catslist
 }
 
 proc Apol_MLS::close {} {
@@ -38,8 +38,8 @@ proc Apol_MLS::close {} {
     Apol_Widget::setRegexpEntryState $widgets(regexp) 0
     array set vals {
         senslist {}      catslist {}
-        enable_sens 0
-        enable_cats 0
+        enable_sens 1    show_cats_too 1
+        enable_cats 0    show_sens_too 0
     }
 }
 
@@ -59,7 +59,7 @@ proc Apol_MLS::create {nb} {
 
     array set vals {
         senslist {}      catslist {}
-        enable_sens 0    show_cats_too 0
+        enable_sens 1    show_cats_too 1
         enable_cats 0    show_sens_too 0
     }
 
@@ -150,19 +150,11 @@ proc Apol_MLS::toggleCheckbutton {path name1 name2 op} {
 }
 
 proc Apol_MLS::popupSensInfo {sens} {
-    if {[catch {getSensInfo $sens 1} info]} {
-        tk_messageBox -icon error -type ok -title "Error" -message $info
-    } else {
-        Apol_Widget::showPopupText $sens $info
-    }
+    Apol_Widget::showPopupText $sens [renderSens $sens 1]
 }
 
 proc Apol_MLS::popupCatsInfo {cats} {
-    if {[catch {getCatsInfo $cats 1} info]} {
-        tk_messageBox -icon error -type ok -title "Error" -message $info
-        return
-    }        
-    Apol_Widget::showPopupText $cats $info
+    Apol_Widget::showPopupText $cats [renderCats $cats 1]
 }
 
 proc Apol_MLS::runSearch {} {
@@ -185,22 +177,34 @@ proc Apol_MLS::runSearch {} {
         return
     }
     if {$vals(enable_sens)} {
-        append results "SENSITIVITIES:"
-        set sens_list [apol_GetSens]
-        if {$use_regexp} {
-            set new_list {}
-            foreach sens $sens_list {
+        append results "SENSITIVITIES (ordered by dominance):"
+        set orig_sens_list [apol_GetSens]
+        set sens_list {}
+        foreach s $orig_sens_list {
+            foreach {sens aliases} $s {break}
+            if {$use_regexp} {
+                set keep 0
                 if {[regexp -- $regexp $sens]} {
-                    lappend new_list $sens
+                    set keep 1
                 }
+                foreach a $aliases {
+                    if {[regexp -- $regexp $a]} {
+                        set keep 1
+                        break
+                    }
+                }
+            } else {
+                set keep 1
             }
-            set sens_list $new_list
+            if {$keep} {
+                lappend sens_list $sens                
+            }
         }
         if {[llength $sens_list] == 0} {
             append results "\nSearch returned no results."
         } else {
             foreach sens $sens_list {
-                append results "\n[getSensInfo $sens $vals(show_cats_too)]"
+                append results "\n[renderSens $sens $vals(show_cats_too)]"
             }
         }
     }
@@ -209,39 +213,67 @@ proc Apol_MLS::runSearch {} {
             append results "\n\n"
         }
         append results "CATEGORIES:"
-        set cats_list [apol_SensCats]
-        if {$use_regexp} {
-            set new_list {}
-            foreach cats $cats_list {
+        set orig_cats_list [apol_GetCats]
+        set cats_list {}
+        foreach c $orig_cats_list {
+            foreach {cats aliases} $c {break}
+            if {$use_regexp} {
+                set keep 0
                 if {[regexp -- $regexp $cats]} {
-                    lappend new_list $cats
+                    set keep 1
                 }
+                foreach a $aliases {
+                    if {[regexp -- $regexp $a]} {
+                        set keep 1
+                        break
+                    }
+                }
+            } else {
+                set keep 1
             }
-            set cats_list $new_list
+            if {$keep} {
+                lappend cats_list $cats
+            }
         }
         if {[llength $cats_list] == 0} {
             append results "\nSearch returned no results."
         } else {
             foreach cats $cats_list {
-                append results "\n[getCatsInfo $cats $vals(show_sens_too)]"
+                append results "\n[renderCats $cats $vals(show_sens_too)]"
             }
         }
     }
     Apol_Widget::appendSearchResultText $widgets(results) $results
 }
 
-proc Apol_MLS::getSensInfo {sens show_level} {
+proc Apol_MLS::renderSens {sens show_level} {
     set text $sens
+    set aliases [lindex [apol_GetSens $sens] 0 1]
+    if {[llength $aliases] > 0} {
+        append text " alias \{$aliases\}"
+    }
     if {$show_level} {
-        set cats [apol_SensCats $sens]
-        set level [apol_RenderLevel [list $sens $cats]]
-        append text "\n    level $level"
+        set cats {}
+        foreach c [apol_SensCats $sens] {
+            lappend cats [lindex $c 0]
+        }
+        append text " ([llength $cats] categor"
+        if {[llength $cats] == 1} {
+            append text "y)"
+        } else {
+            append text "ies)"
+        }
+        append text "\n    level [apol_RenderLevel [list $sens $cats]]\n"
     }
     return $text
 }
 
-proc Apol_MLS::getCatsInfo {cats show_sens} {
+proc Apol_MLS::renderCats {cats show_sens} {
     set text $cats
+    set aliases [lindex [apol_GetCats $cats] 0 1]
+    if {[llength $aliases] > 0} {
+        append text " alias \{$aliases\}"
+    }
     if {$show_sens} {
         set sens_list [apol_CatsSens $cats]
         foreach sens $sens_list {
