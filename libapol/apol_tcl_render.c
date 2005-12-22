@@ -110,3 +110,33 @@ int ap_tcl_render_rangetrans(Tcl_Interp *interp, bool_t addlineno, int idx, poli
         Tcl_SetObjResult(interp, result_obj);
         return TCL_OK;
 }
+
+/* Takes an array of four uint32_t and returns a Tcl string with that
+ * address/mask rendered. */
+int ap_tcl_render_addr(Tcl_Interp *interp, int flag, uint32_t addr[4], Tcl_Obj **result) {
+        switch (flag) {
+        case AP_IPV4: {
+                char buf[41];
+                buf[40] = '\0';
+                uint32_t tmp = addr[3];
+		snprintf(buf, sizeof(buf) - 1, "%d.%d.%d.%d", (tmp/(1<<24)), (tmp/(1<<16)%(1<<8)), (tmp/(1<<8)%(1<<8)), (tmp%(1<<8)));
+                *result = Tcl_NewStringObj(buf, -1);
+                break;
+        }
+        case AP_IPV6: {
+                char *s;
+                if ((s = re_render_ipv6_addr(addr)) == NULL) {
+                        Tcl_SetResult(interp, "Out of memory", TCL_STATIC);
+                        return TCL_ERROR;
+                }
+                *result = Tcl_NewStringObj(s, -1);
+                free(s);
+                break;
+        }
+        default: {
+                Tcl_SetResult(interp, "Unknown ip flag", TCL_STATIC);
+                return TCL_ERROR;
+        }
+        }
+        return TCL_OK;
+}
