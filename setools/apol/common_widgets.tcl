@@ -119,6 +119,29 @@ proc Apol_Widget::getTypeComboboxValue {path} {
     set Apol_Widget::vars($path:type)
 }
 
+proc Apol_Widget::getTypeComboboxValueAndAttrib {path} {
+    variable vars
+    if {$vars($path:attribenable)} {
+        list $vars($path:type) $vars($path:attrib)
+    } else {
+        set vars($path:type)
+    }
+}
+
+proc Apol_Widget::setTypeComboboxValue {path type} {
+    variable vars
+    if {[llength $type] <= 1} {
+        set vars($path:type) $type
+        set vars($path:attribenable) 0
+        set vars($path:attrib) ""
+    } else {
+        set vars($path:type) [lindex $type 0]
+        set vars($path:attribenable) 1
+        set vars($path:attrib) [lindex $type 1]
+    }
+    _attrib_enabled $path
+}
+
 proc Apol_Widget::setTypeComboboxState {path newState} {
     variable vars
     if {$newState == 0 || $newState == "disabled"} {
