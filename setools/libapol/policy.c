@@ -3894,6 +3894,9 @@ int get_sensitivity_idx(const char *name, policy_t *policy)
 	int i;
 	name_item_t *alias = NULL;
 	
+	if (!name || !policy)
+		return -1;
+
 	for (i = 0; i < policy->num_sensitivities; i++) {
 		if (!strcmp(name, policy->sensitivities[i].name))
 			return i;
@@ -3911,6 +3914,9 @@ int get_category_idx(const char *name, policy_t *policy)
 	int i;
 	name_item_t *alias = NULL;
 	
+	if (!name || !policy)
+		return -1;
+
 	for (i = 0; i < policy->num_categories; i++) {
 		if (!strcmp(name, policy->categories[i].name))
 			return i;
