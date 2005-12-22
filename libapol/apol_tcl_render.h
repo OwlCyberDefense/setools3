@@ -17,5 +17,6 @@
 #define AP_TCL_RENDER_H
 
 int ap_tcl_render_rangetrans(Tcl_Interp *interp, bool_t addlineno, int idx, policy_t *policy);
+int ap_tcl_render_addr(Tcl_Interp *interp, int flag, uint32_t addr[4], Tcl_Obj **result);
 
 #endif
