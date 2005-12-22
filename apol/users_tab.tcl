@@ -62,29 +62,26 @@ proc Apol_Users::searchUsers {} {
     }
     
     if {[catch {apol_GetUsers} orig_users_info]} {
-	tk_messageBox -icon error -type ok -title "Error" -message "Error obtaining users list:\n$results"
+	tk_messageBox -icon error -type ok -title "Error" -message "Error obtaining users list:\n$orig_users_info"
         return
     }
 
     # apply filters to the list of users
     set users_info {}
     foreach user $orig_users_info {
-        set keep 1
         if {$opts(useRole) && \
                 [lsearch -exact [lindex $user 1] $opts(role)] == -1} {
-                set keep 0
+            continue
         }
         if {$opts(enable_default) && \
                 [lindex $user 2] != $opts(default_level)} {
-            set keep 0
+            continue
         }
         if {$range_state && \
                 ![apol_CompareRanges $range [lindex $user 3] $search_type]} {
-            set keep 0
+            continue
         }
-        if {$keep} {
-            lappend users_info $user
-        }
+        lappend users_info $user
     }
 
     # now display results
@@ -115,7 +112,11 @@ proc Apol_Users::searchUsers {} {
                     tk_messageBox -icon error -type ok -title "Error" -message $results
                     return
                 }
-                append results " range $low - $high"
+                if {$low == $high} {
+                    append results " range $low"
+                } else {
+                    append results " range $low - $high"
+                }
             }
             append results "\n"
             foreach role $roles {
@@ -251,7 +252,7 @@ proc Apol_Users::create {nb} {
     set widgets(role) [ComboBox $rolesFrame.combo -width 12 -textvariable Apol_Users::opts(role) \
                            -helptext "Type or select a role" -state disabled]
 
-    bind $widgets(role) <KeyPress> [list ApolTop::_create_popup $widgets(role) %W %K]
+    bind $widgets(role).e <KeyPress> [list ApolTop::_create_popup $widgets(role) %W %K]
     trace add variable Apol_Users::opts(useRole) write \
         [list Apol_Users::toggleRolesCheckbutton $widgets(role)]
     pack $rolesFrame.cb -side top -anchor nw
