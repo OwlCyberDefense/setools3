@@ -87,22 +87,34 @@ namespace eval ApolTop {
 	# underscore and that that tabnames may NOT have a colon.
 	variable tabName_prefix		"Apol_"
 	variable components_tab 	"Apol_Components"
-    	variable rules_tab 		"Apol_Rules"
 	variable types_tab		"Apol_Types"
-	variable terules_tab		"Apol_TE"
+	variable class_perms_tab	"Apol_Class_Perms"
 	variable roles_tab		"Apol_Roles"
+	variable users_tab		"Apol_Users"
+	variable cond_bools_tab		"Apol_Cond_Bools"
+        variable mls_tab                "Apol_MLS"
+	variable initial_sids_tab	"Apol_Initial_SIDS"
+        variable net_contexts_tab	"Apol_NetContexts"
+
+    	variable rules_tab 		"Apol_Rules"
+	variable terules_tab		"Apol_TE"
+	variable cond_rules_tab		"Apol_Cond_Rules"
 	variable rbac_tab		"Apol_RBAC"
 	variable range_tab		"Apol_Range"
-	variable class_perms_tab	"Apol_Class_Perms"
-	variable users_tab		"Apol_Users"
-	variable initial_sids_tab	"Apol_Initial_SIDS"
-        variable mls_tab                "Apol_MLS"
+
 	variable file_contexts_tab	"Apol_File_Contexts"
-	variable cond_bools_tab		"Apol_Cond_Bools"
-	variable cond_rules_tab		"Apol_Cond_Rules"
-	variable policy_conf_tab	"Apol_PolicyConf"
+
 	variable analysis_tab		"Apol_Analysis"
-	 
+
+        variable policy_conf_tab	"Apol_PolicyConf"
+
+        variable tab_names {
+            Types Class_Perms Roles Users Cond_Bools MLS Initial_SIDS NetContexts
+            TE Cond_Rules RBAC Range
+            File_Contexts
+            Analysis
+            PolicyConf
+        }
 	variable tk_msgBox_Wait
 
 	# "contents" indicates which aspects of the policy are included in the current opened policy file
@@ -422,12 +434,6 @@ proc ApolTop::set_Focus_to_Text { tab } {
 		$ApolTop::rules_tab {
 			ApolTop::set_Focus_to_Text [$rules_nb raise]
 		} \
-		$ApolTop::file_contexts_tab {
-			Apol_File_Contexts::set_Focus_to_Text
-		} \
-		$ApolTop::types_tab {
-			Apol_Types::set_Focus_to_Text
-		} \
 		$ApolTop::terules_tab {
 			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag normal 
 			set raisedPage [Apol_TE::get_results_raised_tab]
@@ -437,26 +443,6 @@ proc ApolTop::set_Focus_to_Text { tab } {
 				focus [$ApolTop::rules_nb getframe $ApolTop::terules_tab]
 			}
 		} \
-		$ApolTop::roles_tab {
-			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
-			Apol_Roles::set_Focus_to_Text
-		} \
-		$ApolTop::rbac_tab {
-			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
-			Apol_RBAC::set_Focus_to_Text
-		} \
-		$ApolTop::range_tab {
-			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
-			Apol_Range::set_Focus_to_Text
-		} \
-		$ApolTop::class_perms_tab {
-			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
-			Apol_Class_Perms::set_Focus_to_Text
-		} \
-		$ApolTop::users_tab {
-			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
-			Apol_Users::set_Focus_to_Text
-		} \
 		$ApolTop::analysis_tab {
 			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag normal
 			$ApolTop::mainframe setmenustate Disable_SearchMenu_Tag disabled
@@ -465,31 +451,10 @@ proc ApolTop::set_Focus_to_Text { tab } {
 				Apol_Analysis::set_Focus_to_Text $raisedPage
 			} 
 		} \
-		$ApolTop::policy_conf_tab {
-			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
-			Apol_PolicyConf::set_Focus_to_Text
-		} \
-		$ApolTop::initial_sids_tab {
-			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
-			Apol_Initial_SIDS::set_Focus_to_Text
-		} \
-		$ApolTop::mls_tab {
-			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
-			Apol_MLS::set_Focus_to_Text
-		} \
-		$ApolTop::cond_bools_tab {
-			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
-			Apol_Cond_Rules::set_Focus_to_Text
-		} \
-		$ApolTop::cond_rules_tab {
-			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
-			Apol_Cond_Rules::set_Focus_to_Text
-		} \
-		default { 
-			return 
-		}
-	
-	return 0
+            default {
+                $ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
+                ${tab}::set_Focus_to_Text
+            }
 }
 
 ########################################################################
@@ -1268,9 +1233,10 @@ proc ApolTop::create { } {
 	Apol_Roles::create $components_nb
 	Apol_Users::create $components_nb
 	Apol_Cond_Bools::create $components_nb
-	Apol_Initial_SIDS::create $components_nb
 	Apol_MLS::create $components_nb
 	lappend mls_tabs [list $components_nb [$components_nb pages end]]
+	Apol_Initial_SIDS::create $components_nb
+	Apol_NetContexts::create $components_nb
 
 	# Subtabs for the main policy rules tab
 	Apol_TE::create $rules_nb
@@ -1911,20 +1877,15 @@ proc ApolTop::closePolicy {} {
 	array unset contents
 	
 	wm title . "SE Linux Policy Analysis"
-	Apol_Perms_Map::close $ApolTop::mainframe 
-	Apol_Class_Perms::close
-	Apol_Types::close
-	Apol_TE::close
-	Apol_Roles::close
-        Apol_RBAC::close
-	Apol_Range::close
-        Apol_Users::close
-        Apol_Initial_SIDS::close
-	Apol_MLS::close
-        Apol_Cond_Bools::close
-        Apol_Cond_Rules::close
-        Apol_Analysis::close 
-        Apol_PolicyConf::close    
+
+    variable tab_names
+    foreach tab $tab_names {
+        if {$tab == "Perms_Map"} {
+            Apol_Perms_Map::close $ApolTop::mainframe 
+        } else {
+            Apol_${tab}::close
+        }
+    }
         
 	ApolTop::set_Focus_to_Text [$ApolTop::notebook raise]
 	set rt [catch {apol_ClosePolicy} err]
@@ -1949,59 +1910,15 @@ proc ApolTop::closePolicy {} {
 }
 
 proc ApolTop::open_apol_modules {file} {
-	set rt [catch {Apol_Class_Perms::open} err]
-	if {$rt != 0} {
-		return -code error $err
-	}
-	set rt [catch {Apol_Types::open} err]
-	if {$rt != 0} {
-		return -code error $err
-	}	
-	set rt [catch {Apol_TE::open} err]
-	if {$rt != 0} {
-		return -code error $err
-	}
-	set rt [catch {Apol_Roles::open} err]
-	if {$rt != 0} {
-		return -code error $err
-	}
-	set rt [catch {Apol_RBAC::open} err]
-	if {$rt != 0} {
-		return -code error $err
-	}
-	if {[catch {Apol_Range::open} err]} {
-		return -code error $err
-	}
-	set rt [catch {Apol_Users::open} err]
-	if {$rt != 0} {
-		return -code error $err
-	}
-	set rt [catch {Apol_Initial_SIDS::open} err]
-	if {$rt != 0} {
-		return -code error $err
-	}
-	set rt [catch {Apol_MLS::open} err]
-	if {$rt != 0} {
-		return -code error $err
-	}
-	set rt [catch {Apol_Cond_Bools::open} err]
-	if {$rt != 0} {
-		return -code error $err
-	}
-	set rt [catch {Apol_Cond_Rules::open} err]
-	if {$rt != 0} {
-		return -code error $err
-	}
-	set rt [catch {Apol_Analysis::open} err]
-	if {$rt != 0} {
-		return -code error $err
-	}
-	set rt [catch {Apol_PolicyConf::open $file} err]
-	if {$rt != 0} {
-		return -code error $err
-	}
- 	return 0
- }
+    variable tab_names
+    foreach tab $tab_names {
+        if {$tab == "PolicyConf"} {
+            Apol_PolicyConf::open $file
+        } else {
+            Apol_${tab}::open
+        }
+    }
+}
  
 proc ApolTop::enable_disable_conditional_widgets {enable} {
 	set tab [$ApolTop::notebook raise] 
