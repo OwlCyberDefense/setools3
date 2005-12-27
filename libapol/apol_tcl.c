@@ -2873,7 +2873,7 @@ static int tcl_context_string_to_context(Tcl_Interp *interp, char *context_strin
         }
         user_string = Tcl_GetString(user_obj);
         if (strcmp(user_string, "") != 0) {
-                if ((context->type = get_user_idx(user_string, policy)) < 0) {
+                if ((context->user = get_user_idx(user_string, policy)) < 0) {
                         return 1;
                 }
         }
