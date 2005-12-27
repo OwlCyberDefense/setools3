@@ -3914,47 +3914,6 @@ int Apol_RoleTypes(ClientData clientData, Tcl_Interp *interp, int argc, char *ar
 	return TCL_OK;
 }
 
-
-/* get roles for a user */
-int Apol_UserRoles(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
-{
-	char tmpbuf[APOL_STR_SZ+64], *name;
-	int rt, idx, i;
-	
-	if(argc != 2) {
-		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
-		return TCL_ERROR;
-	}
-	if(policy == NULL) {
-		Tcl_AppendResult(interp,"No current policy file is opened!", (char *) NULL);
-		return TCL_ERROR;
-	}
-	if(!is_valid_str_sz(argv[1])) {
-		Tcl_AppendResult(interp, "User string too large", (char *) NULL);
-		return TCL_ERROR;
-	}	
-	idx = get_user_idx(argv[1], policy);
-	if(idx < 0) {
-		sprintf(tmpbuf, "Invalid user name (%s)", argv[1]);
-		Tcl_AppendResult(interp, tmpbuf, (char *) NULL);
-		return TCL_ERROR;		
-	}
-	
-	for(i = 0; i < policy->users[idx].num_roles; i++) {
-		rt = get_role_name(policy->users[idx].roles[i], &name, policy);
-		if(rt != 0) {
-			Tcl_ResetResult(interp);
-			Tcl_AppendResult(interp, "error getting role name", (char *) NULL);			
-			return TCL_ERROR;
-		}
-		Tcl_AppendElement(interp, name);
-		free(name);
-	}
-		
-	return TCL_OK;
-} 
-
-
 static int level_to_tcl_obj(Tcl_Interp *interp, ap_mls_level_t *level, Tcl_Obj **obj) 
 {
         Tcl_Obj *level_elem[2], *cats_obj;
@@ -3979,6 +3938,8 @@ static int level_to_tcl_obj(Tcl_Interp *interp, ap_mls_level_t *level, Tcl_Obj *
  *             (level = sensitivity + list of categories)
  *  element 4: authorized range for user if MLS, empty otherwise
  *             (range = 2-uple of levels)
+ *
+ * If a parameter is passed, return only the tuple for that user.
  */
 int Apol_GetUsers(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
 {
@@ -3992,6 +3953,9 @@ int Apol_GetUsers(ClientData clientData, Tcl_Interp *interp, int argc, char *arg
         result_list = Tcl_NewListObj(0, NULL);
         for(i = 0; i < policy->num_users; i++) {
                 ap_user_t *user = policy->users + i;
+                if (argc > 1 && strcmp(argv[1], user->name) != 0) {
+                        continue;
+                }
                 user_elem[0] = Tcl_NewStringObj(user->name, -1);
                 if (get_user_roles(i, &num_roles, &roles, policy)) {
                         Tcl_SetResult(interp, "Could not obtain user information.", TCL_STATIC);
@@ -7705,7 +7669,6 @@ int Apol_Init(Tcl_Interp *interp)
 	Tcl_CreateCommand(interp, "apol_GetRolesByType", (Tcl_CmdProc *) Apol_GetRolesByType, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_GetRoleRules", (Tcl_CmdProc *) Apol_GetRoleRules, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_RoleTypes", (Tcl_CmdProc *) Apol_RoleTypes, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-	Tcl_CreateCommand(interp, "apol_UserRoles", (Tcl_CmdProc *) Apol_UserRoles, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_GetUsers", (Tcl_CmdProc *) Apol_GetUsers, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetPolicyVersionString", (Tcl_CmdProc *) Apol_GetPolicyVersionString, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_GetPolicyVersionNumber", (Tcl_CmdProc *) Apol_GetPolicyVersionNumber, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);

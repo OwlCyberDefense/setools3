@@ -55,7 +55,7 @@ proc Apol_Users::searchUsers {} {
         return
     }
     set range_state [Apol_Widget::getRangeSelectorState $widgets(range)]
-    foreach {range search_type} [Apol_Widget::getRangeSelectorValue $widgets(range)] break
+    foreach {val_range val_search_type} [Apol_Widget::getRangeSelectorValue $widgets(range)] {break}
     if {$range_state && $range == {{{} {}} {{} {}}}} {
         tk_messageBox -icon error -type ok -title "Error" -message "No range selected."
         return
@@ -68,17 +68,18 @@ proc Apol_Users::searchUsers {} {
 
     # apply filters to the list of users
     set users_info {}
-    foreach user $orig_users_info {
+    foreach u $orig_users_info {
+        foreach {user roles default range} $u {break}
         if {$opts(useRole) && \
-                [lsearch -exact [lindex $user 1] $opts(role)] == -1} {
+                [lsearch -exact $roles $opts(role)] == -1} {
             continue
         }
         if {$opts(enable_default) && \
-                [lindex $user 2] != $opts(default_level)} {
+                $default != $opts(default_level)} {
             continue
         }
         if {$range_state && \
-                ![apol_CompareRanges $range [lindex $user 3] $search_type]} {
+                ![apol_CompareRanges $val_range $range $val_search_type]} {
             continue
         }
         lappend users_info $user
@@ -89,42 +90,44 @@ proc Apol_Users::searchUsers {} {
     if {[llength $users_info] == 0} {
         append results "\nSearch returned no results."
     } else {
-        foreach user_list $users_info {
-            foreach {user roles default range} $user_list break
-            append results "\n$user"
-            if {$opts(showSelection) == "names"} {
-                # skip all further reporting
-                continue
-            }
-            append results " ([llength $roles] role"
-            if {[llength $roles] != 1} {
-                append results "s"
-            }
-            append results ")"
-            if {[ApolTop::is_mls_policy]} {
-                if {[catch {apol_RenderLevel $default} level]} {
-                    tk_messageBox -icon error -type ok -title "Error" -message $results
-                    return
-                }
-                append results " level $level"
-                if {[catch {apol_RenderLevel [lindex $range 0]} low] ||
-                    [catch {apol_RenderLevel [lindex $range 1]} high]} {
-                    tk_messageBox -icon error -type ok -title "Error" -message $results
-                    return
-                }
-                if {$low == $high} {
-                    append results " range $low"
-                } else {
-                    append results " range $low - $high"
-                }
-            }
-            append results "\n"
-            foreach role $roles {
-                append results "    $role\n"
+        foreach user $users_info {
+            if {$opts(showSelection) == "all"} {
+                append results "\n[renderUser $user 1]"
+            } else {
+                append results "\n[renderUser $user 0]"
             }
         }
     }
     Apol_Widget::appendSearchResultText $widgets(results) $results
+}
+
+proc Apol_Users::renderUser {user show_all} {
+    set text ""
+    foreach {user roles default range} [lindex [apol_GetUsers $user] 0] {break}
+    append text "$user"
+    if {!$show_all} {
+        return $text
+    }
+    if {[ApolTop::is_mls_policy]} {
+        append text " level [apol_RenderLevel $default]"
+        set low [apol_RenderLevel [lindex $range 0]]
+        set high [apol_RenderLevel [lindex $range 1]]
+        if {$low == $high} {
+            append text " range $low"
+        } else {
+            append text " range $low - $high"
+        }
+    }
+    append text " ([llength $roles] role"
+    if {[llength $roles] != 1} {
+        append text "s"
+    }
+    append text ")"
+    append text "\n"
+    foreach r $roles {
+        append text "    $r\n"
+    }
+    return $text
 }
 
 # ------------------------------------------------------------------------------
@@ -178,16 +181,7 @@ proc Apol_Users::free_call_back_procs { } {
 #  Command Apol_Users::popupUserInfo
 # ------------------------------------------------------------------------------
 proc Apol_Users::popupUserInfo {which user} {
-    if {[catch {apol_UserRoles $user} info]} {
-        tk_messageBox -icon error -type ok -title Error -message $info
-    } else {
-	set user_count [llength $info]
-        set text "$user ($user_count roles)"
-	foreach role $info {
-		append text "\n\t$role"
-	}
-        Apol_Widget::showPopupText $user $text
-    }
+    Apol_Widget::showPopupText $user [renderUser $user 1]
 }
 
 ########################################################################
