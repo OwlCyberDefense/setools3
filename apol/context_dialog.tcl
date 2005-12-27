@@ -173,8 +173,8 @@ proc Apol_Context_Dialog::_okay {dialog} {
                       $vars($dialog:user_enable) && \
                       $vars($dialog:user) != "" && \
                       [ApolTop::is_policy_open]} {
-            set roles [apol_UserRoles $vars($dialog:user)]
-            if {[lsearch -exact $roles $vars($dialog:role)] == -1} {
+            set users_list [apol_GetUsers $vars($dialog:user)]
+            if {[lsearch -exact [lindex $users_list 0 1] $vars($dialog:role)] == -1} {
                 tk_messageBox -icon error -type ok -title "Could Not Validate Context" \
                     -message "User $vars($dialog:user) does not have role $vars($dialog:role)."
                 return
