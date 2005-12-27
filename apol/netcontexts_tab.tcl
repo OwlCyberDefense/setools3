@@ -203,11 +203,14 @@ proc Apol_NetContexts::portcon_open {} {
     if {[catch {apol_GetPortcons} portcons]} {
         return
     }
-    foreach p [lsort -unique -index 1 -integer $portcons] {
-        if {[lindex $p 1] != [lindex $vals(portcon:items) end]} {
+    foreach p $portcons {
+        if {[lindex $p 1] == [lindex $p 2]} {
             lappend vals(portcon:items) [lindex $p 1]
+        } else {
+            lappend vals(portcon:items) "[lindex $p 1]-[lindex $p 2]"
         }
     }
+    set vals(portcon:items) [lsort -unique -dictionary $vals(portcon:items)]
 }
 
 proc Apol_NetContexts::portcon_show {} {
@@ -321,10 +324,16 @@ proc Apol_NetContexts::portcon_render {portcon} {
     concat $line [apol_RenderContext $context [ApolTop::is_mls_policy]]
 }
 
-proc Apol_NetContexts::portcon_popup {port} {
-    if {[catch {apol_GetPortcons $port} portcons]} {
-        tk_messageBox -icon error -type ok -title "Error" -message "Error obtaining portcons list:\n$portcons"
-        return
+proc Apol_NetContexts::portcon_popup {port} { 
+    foreach {low high} [split $port "-"] {break}
+    if {$high == {}} {
+        set high $low
+    }
+    set portcons {}
+    foreach p [apol_GetPortcons $low] {
+        if {$high == [lindex $p 2]} {
+            lappend portcons $p
+        }
     }
     set text "port $port ([llength $portcons] context"
     if {[llength $portcons] != 1} {
@@ -402,7 +411,7 @@ proc Apol_NetContexts::portcon_runSearch {} {
         if {$vals(portcon:proto_enable) && $proto != $vals(portcon:proto)} {
             continue
         }
-        if {$vals(portcon:port_enable) && ($loport > $low || $hiport < $high)} {
+        if {$vals(portcon:port_enable) && ($hiport < $low || $loport > $high)} {
             continue
         }
         if {$vals_context != {} && ![apol_CompareContexts $vals_context $context $vals_range_match]} {
@@ -592,30 +601,28 @@ proc Apol_NetContexts::nodecon_create {p_f} {
         nodecon:ipv6_mask_enable 0  nodecon:ipv6_mask {}
     }
 
-    frame $p_f.ip -relief sunken -bd 1
-    frame $p_f.ip.rb
-    set ipv4_rb [radiobutton $p_f.ip.rb.v4 -text "IPv4" -value ipv4 \
+    frame $p_f.ip_type -relief sunken -bd 1
+    set ipv4_rb [radiobutton $p_f.ip_type.v4 -text "IPv4" -value ipv4 \
                      -variable Apol_NetContexts::vals(nodecon:ip_type)]
-    set ipv6_rb [radiobutton $p_f.ip.rb.v6 -text "IPv6" -value ipv6 \
+    set ipv6_rb [radiobutton $p_f.ip_type.v6 -text "IPv6" -value ipv6 \
                      -variable Apol_NetContexts::vals(nodecon:ip_type)]
     trace add variable Apol_NetContexts::vals(nodecon:ip_type) write \
         [list Apol_NetContexts::nodecon_pageChanged]
-    pack $ipv4_rb $ipv6_rb -side top -expand 0 -anchor nw
-    pack $p_f.ip.rb -side left -anchor nw -padx 4 -pady 4
+    pack $ipv4_rb $ipv6_rb -side top -expand 0 -anchor nw -padx 4 -pady 4
     
-    set widgets(nodecon:ip_pm) [PagesManager $p_f.ip.pm]
+    frame $p_f.opts -relief sunken -bd 1
+    set widgets(nodecon:ip_pm) [PagesManager $p_f.opts.pm]
     nodecon_ipv4Create [$widgets(nodecon:ip_pm) add ipv4]
     nodecon_ipv6Create [$widgets(nodecon:ip_pm) add ipv6]
-
     $widgets(nodecon:ip_pm) compute_size
-    pack $widgets(nodecon:ip_pm) -side right -expand 0 -fill both -anchor nw
+    pack $widgets(nodecon:ip_pm) -pady 2 -expand 0 -fill both -anchor nw
     $widgets(nodecon:ip_pm) raise ipv4
 
     frame $p_f.con -relief sunken -bd 1
     set widgets(nodecon:context) [Apol_Widget::makeContextSelector $p_f.con.context "Contexts"]
     pack $widgets(nodecon:context)
 
-    pack $p_f.ip $p_f.con -side left -padx 4 -expand 0 -fill y
+    pack $p_f.ip_type $p_f.opts $p_f.con -side left -padx 4 -expand 0 -fill y
 }
     
 proc Apol_NetContexts::nodecon_ipv4Create {fv4} {
