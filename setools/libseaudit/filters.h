@@ -33,6 +33,8 @@ typedef struct seaudit_filter {
 	seaudit_criteria_t *tgt_user_criteria;
 	seaudit_criteria_t *class_criteria;
 	seaudit_criteria_t *exe_criteria;
+	seaudit_criteria_t *comm_criteria;
+	seaudit_criteria_t *msg_criteria;
 	seaudit_criteria_t *path_criteria;
 	seaudit_criteria_t *netif_criteria;
 	seaudit_criteria_t *ipaddr_criteria;

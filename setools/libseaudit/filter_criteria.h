@@ -48,9 +48,11 @@ seaudit_criteria_t* class_criteria_create(char **classes, int num_classes);
 seaudit_criteria_t* exe_criteria_create(const char *exe);
 seaudit_criteria_t* host_criteria_create(const char *host);
 seaudit_criteria_t* path_criteria_create(const char *path);
+seaudit_criteria_t* comm_criteria_create(const char *comm);
 seaudit_criteria_t* netif_criteria_create(const char *netif);
 seaudit_criteria_t* ipaddr_criteria_create(const char *ipaddr); /* a generic match-any IP criteria */
 seaudit_criteria_t* ports_criteria_create(int port);            /* a generic match-any port criteria */
+seaudit_criteria_t* msg_criteria_create(int msg);
 
 const char **strs_criteria_get_strs(seaudit_criteria_t *criteria, int *size);
 #define src_type_criteria_get_strs(criteria, size) strs_criteria_get_strs(criteria, size)
@@ -66,10 +68,12 @@ const char *glob_criteria_get_str(seaudit_criteria_t *criteria);
 #define path_criteria_get_str(criteria) glob_criteria_get_str(criteria)
 #define ipaddr_criteria_get_str(criteria) glob_criteria_get_str(criteria)
 #define host_criteria_get_str(criteria) glob_criteria_get_str(criteria)
+#define comm_criteria_get_str(criteria) glob_criteria_get_str(criteria)
 
 const char *netif_criteria_get_str(seaudit_criteria_t *criteria);
 int ports_criteria_get_val(seaudit_criteria_t *criteria);
 void seaudit_criteria_print(seaudit_criteria_t *criteria, FILE *stream, int tabs);
+int msg_criteria_get_val(seaudit_criteria_t *criteria);
 
 /* destroy a criteria */
 void seaudit_criteria_destroy(seaudit_criteria_t *ftr);
