@@ -95,6 +95,7 @@ namespace eval ApolTop {
         variable mls_tab                "Apol_MLS"
 	variable initial_sids_tab	"Apol_Initial_SIDS"
         variable net_contexts_tab	"Apol_NetContexts"
+        variable fs_contexts_tab	"Apol_FSContexts"
 
     	variable rules_tab 		"Apol_Rules"
 	variable terules_tab		"Apol_TE"
@@ -109,7 +110,7 @@ namespace eval ApolTop {
         variable policy_conf_tab	"Apol_PolicyConf"
 
         variable tab_names {
-            Types Class_Perms Roles Users Cond_Bools MLS Initial_SIDS NetContexts
+            Types Class_Perms Roles Users Cond_Bools MLS Initial_SIDS NetContexts FSContexts
             TE Cond_Rules RBAC Range
             File_Contexts
             Analysis
@@ -1237,6 +1238,7 @@ proc ApolTop::create { } {
 	lappend mls_tabs [list $components_nb [$components_nb pages end]]
 	Apol_Initial_SIDS::create $components_nb
 	Apol_NetContexts::create $components_nb
+	Apol_FSContexts::create $components_nb
 
 	# Subtabs for the main policy rules tab
 	Apol_TE::create $rules_nb
