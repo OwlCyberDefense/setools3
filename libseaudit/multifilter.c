@@ -26,6 +26,8 @@ enum seaudit_multifilter_parser_state_t {
 	PARSING_TGT_ROLES,
 	PARSING_CLASSES,
 	PARSING_EXE,
+	PARSING_MSG,
+	PARSING_COMM,
 	PARSING_PATH,
 	PARSING_NETIF,
 	PARSING_IPADDR,
@@ -94,10 +96,12 @@ static void my_parse_characters(void *user_data, const xmlChar *ch, int len)
 	case PARSING_TGT_USERS:
 	case PARSING_CLASSES:
 	case PARSING_EXE:
+	case PARSING_COMM:
+	case PARSING_MSG:
 	case PARSING_PATH:
 	case PARSING_NETIF:
 	case PARSING_IPADDR:
-	case PARSING_PORTS:
+	case PARSING_PORTS:		
 	case PARSING_HOST:
 		if (!data->parsing_item)
 			break;
@@ -179,6 +183,10 @@ static void my_parse_startElement(void *user_data, const xmlChar *name, const xm
 			data->state = PARSING_CLASSES;
 		else if (xmlStrcmp(attrs[1], (unsigned char*)"exe") == 0)
 			data->state = PARSING_EXE;
+		else if (xmlStrcmp(attrs[1], (unsigned char*)"comm") == 0)
+			data->state = PARSING_COMM;
+		else if (xmlStrcmp(attrs[1], (unsigned char*)"msg") == 0)
+			data->state = PARSING_MSG;
 		else if (xmlStrcmp(attrs[1], (unsigned char*)"path") == 0)
 			data->state = PARSING_PATH;
 		else if (xmlStrcmp(attrs[1], (unsigned char*)"netif") == 0)
@@ -268,6 +276,12 @@ static void my_parse_endElement(void *user_data, const xmlChar *name)
 			seaudit_multifilter_parser_data_free(data);
 			data->state = PARSING_NONE;
 			break;
+		case PARSING_COMM:
+			if (data->strs[0])
+				data->cur_filter->comm_criteria = comm_criteria_create(data->strs[0]);
+			seaudit_multifilter_parser_data_free(data);
+			data->state = PARSING_NONE;
+			break;
 		case PARSING_PATH:
 			if (data->strs[0])
 				data->cur_filter->path_criteria = path_criteria_create(data->strs[0]);
@@ -295,6 +309,11 @@ static void my_parse_endElement(void *user_data, const xmlChar *name)
 		case PARSING_PORTS:
 			if (data->strs[0])
 				data->cur_filter->ports_criteria = ports_criteria_create(atoi(data->strs[0]));
+			seaudit_multifilter_parser_data_free(data);
+			data->state = PARSING_NONE;
+		case PARSING_MSG:
+			if (data->strs[0])
+				data->cur_filter->msg_criteria = msg_criteria_create(atoi(data->strs[0]));
 			seaudit_multifilter_parser_data_free(data);
 			data->state = PARSING_NONE;
 		}
