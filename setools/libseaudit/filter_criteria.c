@@ -37,6 +37,11 @@ typedef glob_criteria_t exe_criteria_t;
 typedef glob_criteria_t path_criteria_t;
 typedef glob_criteria_t ipaddr_criteria_t;
 typedef glob_criteria_t host_criteria_t;
+typedef glob_criteria_t comm_criteria_t;
+
+typedef struct msg_criteria {
+	int val;	/* AVC_DENIED or AVC_GRANTED */
+} msg_criteria_t;
 
 typedef struct ports_criteria {
 	int val;
@@ -88,6 +93,17 @@ int ports_criteria_get_val(seaudit_criteria_t *criteria)
 	ports_criteria = (ports_criteria_t*)criteria->data;
 	assert(ports_criteria);
 	return ports_criteria->val;
+}
+
+int msg_criteria_get_val(seaudit_criteria_t *criteria)
+{
+	msg_criteria_t *msg_criteria;
+	
+	if (!criteria)
+		return -1;
+	msg_criteria = (msg_criteria_t*)criteria->data;
+	assert(msg_criteria);
+	return msg_criteria->val;
 }
 
 static bool_t netif_criteria_action(msg_t *msg, seaudit_criteria_t *criteria, audit_log_t *log)
@@ -169,6 +185,42 @@ static void ports_criteria_print(seaudit_criteria_t *criteria, FILE *stream, int
 	for (i = 0; i < tabs+1; i++)
 		fprintf(stream, "\t");
 	fprintf(stream, "<item>%d</item>\n", ports_criteria->val);
+	for (i = 0; i < tabs; i++)
+		fprintf(stream, "\t");
+	fprintf(stream, "</criteria>\n");
+}
+
+static bool_t msg_criteria_action(msg_t *msg, seaudit_criteria_t *criteria, audit_log_t *log)
+{
+	msg_criteria_t *msg_criteria;
+
+	if (msg == NULL || criteria == NULL || criteria->data == NULL)
+		return FALSE;
+
+	msg_criteria = (msg_criteria_t*)criteria->data;
+	if (msg_criteria->val == msg->msg_data.avc_msg->msg)
+		return TRUE;
+	return FALSE;
+}
+
+static void msg_criteria_print(seaudit_criteria_t *criteria, FILE *stream, int tabs)
+{
+	msg_criteria_t *msg_criteria;
+	int i;
+
+	if (criteria == NULL || criteria->data == NULL || stream == NULL)
+		return;
+
+	if (tabs < 0)
+		tabs = 0;
+	msg_criteria = (msg_criteria_t*)criteria->data;
+
+	for (i = 0; i < tabs; i++)
+		fprintf(stream, "\t");
+	fprintf(stream, "<criteria type=\"msg\">\n");
+	for (i = 0; i < tabs+1; i++)
+		fprintf(stream, "\t");
+	fprintf(stream, "<item>%d</item>\n", msg_criteria->val);
 	for (i = 0; i < tabs; i++)
 		fprintf(stream, "\t");
 	fprintf(stream, "</criteria>\n");
@@ -260,6 +312,47 @@ static void host_criteria_print(seaudit_criteria_t *criteria, FILE *stream, int 
 	for (i = 0; i < tabs; i++)
 		fprintf(stream, "\t");
 	fprintf(stream, "<criteria type=\"host\">\n");
+	for (i = 0; i < tabs+1; i++)
+		fprintf(stream, "\t");
+	fprintf(stream, "<item>%s</item>\n", escaped);
+	for (i = 0; i < tabs; i++)
+		fprintf(stream, "\t");
+	fprintf(stream, "</criteria>\n");
+	free(escaped);
+	free(str_xml);
+}
+
+static bool_t comm_criteria_action(msg_t *msg, seaudit_criteria_t *criteria, audit_log_t *log)  
+{ 
+	comm_criteria_t *comm_criteria;
+
+	if (msg == NULL || criteria == NULL || criteria->data == NULL || !msg->msg_data.avc_msg->comm)
+		return FALSE;
+
+	comm_criteria = (comm_criteria_t*)criteria->data;
+	if (!comm_criteria->globex)
+		return FALSE;
+	if (fnmatch(comm_criteria->globex, msg->msg_data.avc_msg->comm, 0) == 0)
+		return TRUE;
+	return FALSE;
+} 
+
+static void comm_criteria_print(seaudit_criteria_t *criteria, FILE *stream, int tabs)
+{
+	comm_criteria_t *comm_criteria;
+	xmlChar *escaped;
+	xmlChar *str_xml;
+	int i;
+
+	if (criteria == NULL || criteria->data == NULL || stream == NULL)
+		return;
+
+	comm_criteria = (comm_criteria_t*)criteria->data;
+	str_xml = xmlCharStrdup(comm_criteria->globex);
+	escaped = xmlURIEscapeStr(str_xml, NULL);
+	for (i = 0; i < tabs; i++)
+		fprintf(stream, "\t");
+	fprintf(stream, "<criteria type=\"comm\">\n");
 	for (i = 0; i < tabs+1; i++)
 		fprintf(stream, "\t");
 	fprintf(stream, "<item>%s</item>\n", escaped);
@@ -1001,6 +1094,60 @@ seaudit_criteria_t* class_criteria_create(char **classes, int num_classes)
 
 /*
  * destroy the exe criteria, not the container struct */
+static void comm_criteria_destroy(seaudit_criteria_t *ftr)
+{
+	comm_criteria_t *d;
+
+	if (ftr == NULL || ftr->data == NULL)
+		return;
+	d = (comm_criteria_t*)ftr->data;
+	if (d->globex)
+		free(d->globex);
+	free(d);
+	return;
+}
+
+/*
+ * create the entire exe criteria */
+seaudit_criteria_t* comm_criteria_create(const char* comm)
+{
+        seaudit_criteria_t *new;
+	comm_criteria_t *d;
+	int i;
+
+	d = (comm_criteria_t*)malloc(sizeof(comm_criteria_t));
+	if (d == NULL) 
+		goto bad;
+	memset(d, 0, sizeof(comm_criteria_t));
+	i = strlen(comm);
+	d->globex = (char*)malloc(sizeof(char) * (i+1));
+	if (d->globex == NULL) 
+		goto bad;
+	new = criteria_create();
+	if (new == NULL) {
+		goto bad;
+	}
+	/* set container variables */
+	new->msg_types |= AVC_MSG;
+	new->criteria_act = &comm_criteria_action; 
+	new->print = &comm_criteria_print;
+	new->destroy = &comm_criteria_destroy; 
+	new->data = d; 
+	/* set criteria variables */
+	strcpy(d->globex, comm);
+	return new;
+bad:
+	fprintf(stdout, "Out of memory");
+	if (d) {
+		if (d->globex)
+			free(d->globex);
+		free(d);
+	}
+	return NULL;
+}
+
+/*
+ * destroy the exe criteria, not the container struct */
 static void exe_criteria_destroy(seaudit_criteria_t *ftr)
 {
 	exe_criteria_t *d;
@@ -1293,4 +1440,43 @@ bad:
 	return NULL;
 }
 
+static void msg_criteria_destroy(seaudit_criteria_t *ftr)
+{
+	msg_criteria_t *d;
+	if (ftr == NULL)
+		return;
+	d = (msg_criteria_t*)ftr->data;
+	if (d == NULL)
+		return;
+	free(d);
+	return;
+}
+
+seaudit_criteria_t* msg_criteria_create(int msg)
+{
+        seaudit_criteria_t *new;
+	msg_criteria_t *d;
+	d = (msg_criteria_t*)malloc(sizeof(msg_criteria_t));
+	if (d == NULL)
+		goto bad;
+	memset(d, 0, sizeof(msg_criteria_t));
+	new = criteria_create();
+	if (new == NULL)
+		goto bad;
+	/* set container variables */
+	new->msg_types |= AVC_MSG;
+	new->criteria_act = &msg_criteria_action; 
+	new->print = &msg_criteria_print;
+	new->destroy = &msg_criteria_destroy; 
+	new->data = d; 
+	/* set criteria variables */
+	d->val = msg;
+	return new;
+bad:
+	fprintf(stdout, "Out of memory");
+	if (d) {
+		free(d);
+	}
+	return NULL;
+}
 
