@@ -152,6 +152,8 @@ llist_t* seaudit_filter_get_list(seaudit_filter_t *filter)
 	ll_append_data(list, filter->tgt_user_criteria);
 	ll_append_data(list, filter->class_criteria);
 	ll_append_data(list, filter->exe_criteria);
+	ll_append_data(list, filter->comm_criteria);
+	ll_append_data(list, filter->msg_criteria);
 	ll_append_data(list, filter->path_criteria);
 	ll_append_data(list, filter->netif_criteria);
 	ll_append_data(list, filter->ipaddr_criteria);
