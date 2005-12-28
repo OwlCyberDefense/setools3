@@ -43,6 +43,14 @@ enum select_values_source_t {
 	SEAUDIT_FROM_UNION
 };
 
+enum message_types {
+	SEAUDIT_MSG_NONE,
+	SEAUDIT_MSG_AVC_DENIED,
+	SEAUDIT_MSG_AVC_GRANTED
+};
+
+const char *msg_type_strs[] = { "none", "denied", "granted" };
+
 typedef struct  seaudit_filter_list {
 	char **list;
 	int size;
@@ -70,7 +78,7 @@ static GtkEntry* filters_select_items_get_entry(filters_select_items_t *s)
 {	
 	GtkEntry *entry;
 	GtkWidget *widget;
-	
+
 	switch (s->items_list_type) {
 	case SEAUDIT_SRC_TYPES:
 		widget = glade_xml_get_widget(s->parent->xml, "SrcTypesEntry");
@@ -946,6 +954,10 @@ static void filter_window_set_values(filter_window_t *filter_window)
 	/* set executable */
 	widget = glade_xml_get_widget(filter_window->xml, "ExeEntry");
 	gtk_entry_set_text(GTK_ENTRY(widget), filter_window->executable->str);
+
+	/* set command */
+	widget = glade_xml_get_widget(filter_window->xml, "CommEntry");
+	gtk_entry_set_text(GTK_ENTRY(widget), filter_window->comm->str);
 	
 	/* set path */
 	widget = glade_xml_get_widget(filter_window->xml, "PathEntry");
@@ -964,6 +976,9 @@ static void filter_window_set_values(filter_window_t *filter_window)
 
 	widget = glade_xml_get_widget(filter_window->xml, "HostEntry");
 	gtk_entry_set_text(GTK_ENTRY(widget), filter_window->host->str);
+
+	widget = glade_xml_get_widget(filter_window->xml, "MsgCombo");
+	gtk_combo_box_set_active(GTK_COMBO_BOX(widget), filter_window->msg);
 
 }
 
@@ -997,6 +1012,10 @@ static void filter_window_update_values(filter_window_t *filter_window)
 	/* update executable value */
 	widget = glade_xml_get_widget(filter_window->xml, "ExeEntry");
 	filter_window->executable = g_string_assign(filter_window->executable, gtk_entry_get_text(GTK_ENTRY(widget)));
+
+	/* update command value */
+	widget = glade_xml_get_widget(filter_window->xml, "CommEntry");
+	filter_window->comm = g_string_assign(filter_window->comm, gtk_entry_get_text(GTK_ENTRY(widget)));
 	
 	/* update path value */
 	widget = glade_xml_get_widget(filter_window->xml, "PathEntry");
@@ -1010,6 +1029,10 @@ static void filter_window_update_values(filter_window_t *filter_window)
 
 	widget = glade_xml_get_widget(filter_window->xml, "HostEntry");
 	filter_window->host = g_string_assign(filter_window->host, gtk_entry_get_text(GTK_ENTRY(widget)));
+
+	/* update message value */
+	widget = glade_xml_get_widget(filter_window->xml, "MsgCombo");
+	filter_window->msg = gtk_combo_box_get_active(GTK_COMBO_BOX(widget));
 
 	widget = glade_xml_get_widget(filter_window->xml, "NotesTextView");
 	buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(widget));
@@ -1110,11 +1133,23 @@ static void filter_window_clear_other_tab_values(filter_window_t *filter_window)
 	widget = glade_xml_get_widget(filter_window->xml, "ExeEntry");
 	g_assert(widget);
 	gtk_entry_set_text(GTK_ENTRY(widget), "");
+
+	/* clear command */
+	widget = glade_xml_get_widget(filter_window->xml, "CommEntry");
+	g_assert(widget);
+	gtk_entry_set_text(GTK_ENTRY(widget), "");
 	
 	/* clear path */
 	widget = glade_xml_get_widget(filter_window->xml, "PathEntry");
 	g_assert(widget);
 	gtk_entry_set_text(GTK_ENTRY(widget), "");
+
+	/* clear message */
+	widget = glade_xml_get_widget(filter_window->xml, "MsgCombo");
+	g_assert(widget);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(widget), SEAUDIT_MSG_NONE);
+
+
 }
 
 static void filter_window_clear_context_tab_values(filter_window_t *filter_window)
@@ -1224,10 +1259,13 @@ filter_window_t* filter_window_create(multifilter_window_t *parent, gint parent_
 	filter_window->port = g_string_new("");
 	filter_window->interface = g_string_new("");
 	filter_window->executable = g_string_new("");
+	filter_window->comm = g_string_new("");
 	filter_window->path = g_string_new("");
 	filter_window->match = g_string_new("All");
 	filter_window->notes = g_string_new("");
 	filter_window->host = g_string_new("");
+
+	filter_window->msg = SEAUDIT_MSG_NONE;
 	
 	filter_window->window = NULL;
 	filter_window->xml = NULL;
@@ -1261,6 +1299,8 @@ void filter_window_destroy(filter_window_t *filter_window)
 		g_string_free(filter_window->interface, TRUE);
 	if (filter_window->executable)
 		g_string_free(filter_window->executable, TRUE);
+	if (filter_window->comm)
+		g_string_free(filter_window->comm, TRUE);
 	if (filter_window->path)
 		g_string_free(filter_window->path, TRUE);
 	if (filter_window->name)
@@ -1325,7 +1365,6 @@ void filter_window_hide(filter_window_t *filter_window)
 	gtk_widget_destroy(GTK_WIDGET(filter_window->window));
 	filter_window->window = NULL;
 }
-
 void filter_window_display(filter_window_t* filter_window, GtkWindow *parent)
 {
 	GladeXML *xml;
@@ -1405,6 +1444,13 @@ void filter_window_display(filter_window_t* filter_window, GtkWindow *parent)
 	glade_xml_signal_connect_data(xml, "filters_on_OtherClearButton_clicked",
 				      G_CALLBACK(filter_window_on_OtherClearButton_clicked),
 				      filter_window);
+
+	widget = glade_xml_get_widget(filter_window->xml, "MsgCombo");
+	g_assert(widget);
+	gtk_combo_box_append_text(GTK_COMBO_BOX(widget), msg_type_strs[SEAUDIT_MSG_NONE]);
+	gtk_combo_box_append_text(GTK_COMBO_BOX(widget), msg_type_strs[SEAUDIT_MSG_AVC_DENIED]);
+	gtk_combo_box_append_text(GTK_COMBO_BOX(widget), msg_type_strs[SEAUDIT_MSG_AVC_GRANTED]);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(widget), filter_window->msg);
 
 	/* Restore previous values and selections for the filter dialog */
 	filter_window_set_values(filter_window);
@@ -1539,6 +1585,16 @@ seaudit_filter_t* filter_window_get_filter(filter_window_t *filter_window)
 		rt->exe_criteria = exe_criteria_create(text);
 	}
 	
+	/* check for command filter */
+	if (filter_window->window) {
+		widget = glade_xml_get_widget(filter_window->xml, "CommEntry");
+		text = (char*)gtk_entry_get_text(GTK_ENTRY(widget));
+	} else 
+		text = filter_window->comm->str;
+	if (strcmp(text, "") != 0) {
+		rt->comm_criteria = comm_criteria_create(text);
+	}
+
 	/* check for path filter */
 	if (filter_window->window) {
 		widget = glade_xml_get_widget(filter_window->xml, "PathEntry");
@@ -1574,6 +1630,23 @@ seaudit_filter_t* filter_window_get_filter(filter_window_t *filter_window)
 		text = filter_window->host->str;
 	if (strcmp(text, "") != 0)
 		rt->host_criteria = host_criteria_create(text);
+
+	if (filter_window->window) {
+		widget = glade_xml_get_widget(filter_window->xml, "MsgCombo");
+		int_val = gtk_combo_box_get_active(GTK_COMBO_BOX(widget));
+	} else
+		int_val = filter_window->msg;
+	switch (int_val)
+	{
+	case SEAUDIT_MSG_AVC_DENIED:
+		rt->msg_criteria = msg_criteria_create(AVC_DENIED);
+		break;
+	case SEAUDIT_MSG_AVC_GRANTED:
+		rt->msg_criteria = msg_criteria_create(AVC_GRANTED);
+		break;
+	default:
+		break;
+	}
 
 	if (filter_window->window) {
 		widget = glade_xml_get_widget(filter_window->xml, "NotesTextView");
@@ -1652,7 +1725,22 @@ void filter_window_set_values_from_filter(filter_window_t *filter_window, seaudi
 		filter_window->path = g_string_assign(filter_window->path, path_criteria_get_str(filter->path_criteria));
 	if (filter->exe_criteria) 
 		filter_window->executable = g_string_assign(filter_window->executable, exe_criteria_get_str(filter->exe_criteria));
+	if (filter->comm_criteria) 
+		filter_window->comm = g_string_assign(filter_window->comm, comm_criteria_get_str(filter->comm_criteria));
 	if (filter->host_criteria)
 		filter_window->host = g_string_assign(filter_window->host, host_criteria_get_str(filter->host_criteria));
-
+	if (filter->msg_criteria) {
+		switch (msg_criteria_get_val(filter->msg_criteria))
+		{
+		case AVC_GRANTED:
+			filter_window->msg = SEAUDIT_MSG_AVC_GRANTED;
+			break;
+		case AVC_DENIED:
+			filter_window->msg = SEAUDIT_MSG_AVC_DENIED;
+			break;
+		default:
+			filter_window->msg = SEAUDIT_MSG_NONE;
+			break;
+		}
+	}
 }

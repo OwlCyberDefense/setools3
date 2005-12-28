@@ -35,11 +35,13 @@ typedef struct filter_window {
 	GString *port;
 	GString *interface;
 	GString *executable;
+	GString *comm;
 	GString *path;
 	GString *name;
 	GString *match;
 	GString *notes;
 	GString *host;
+	int msg;
 	GtkWindow *window;
 	GladeXML *xml;
 	multifilter_window_t *parent;
