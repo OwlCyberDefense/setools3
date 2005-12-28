@@ -4383,6 +4383,144 @@ int Apol_ConvertStringToAddress(ClientData clientData, Tcl_Interp *interp, int a
         return TCL_OK;
 }
 
+/* Return an unordered unique list of all filesystems with a genfscon
+ * entry. */
+int Apol_GetGenFSConFilesystems(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
+{
+        int i;
+        if (policy == NULL) {
+                Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+                return TCL_ERROR;
+        }
+        for (i = 0; i < policy->num_genfscon; i++) {
+                Tcl_AppendElement(interp, policy->genfscon[i].fstype);
+        }
+        return TCL_OK;
+}
+
+static const char *filetype_to_string(int filetype) {
+        switch (filetype) {
+        case FILETYPE_BLK:  return "block";
+        case FILETYPE_CHR:  return "char";
+        case FILETYPE_DIR:  return "dir";
+        case FILETYPE_LNK:  return "link";
+        case FILETYPE_FIFO: return "fifo";
+        case FILETYPE_SOCK: return "sock";
+        case FILETYPE_REG:  return "file";
+        case FILETYPE_ANY:  return "any";
+        }
+        return NULL;
+}
+
+/* Return a list of all genfscon declarations within the policy.
+ * Entries with the same filesystem are reported as separate
+ * elements.
+ *
+ * element 0 - filesystem
+ * element 1 - path
+ * element 2 - genfs type ("file", "block", etc)
+ * element 3 - context
+ *
+ * If a parameter is given, only return those with that filesystem.
+ */
+int Apol_GetGenFSCons(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
+{
+        int i;
+        Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
+        if (policy == NULL) {
+                Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+                return TCL_ERROR;
+        }
+        for (i = 0; i < policy->num_genfscon; i++) {
+                ap_genfscon_t *genfscon = policy->genfscon + i;
+                ap_genfscon_node_t *node = genfscon->paths;
+                if (argc >= 2 && strcmp(genfscon->fstype, argv[1]) != 0) {
+                        continue;
+                }
+                while (node != NULL) {
+                        Tcl_Obj *genfs_elem[4], *genfs_list;
+                        const char *fstype;
+                        genfs_elem[0] = Tcl_NewStringObj(genfscon->fstype, -1);
+                        genfs_elem[1] = Tcl_NewStringObj(node->path, -1);
+                        if ((fstype = filetype_to_string(node->filetype)) == NULL) {
+                                Tcl_SetResult(interp, "Illegal filetype given in genfscon node", TCL_STATIC);
+                                return TCL_ERROR;
+                        }
+                        genfs_elem[2] = Tcl_NewStringObj(fstype, -1);
+                        if (security_con_to_tcl_context_string(interp, node->scontext, genfs_elem + 3) == TCL_ERROR) {
+                                return TCL_ERROR;
+                        }
+                        genfs_list = Tcl_NewListObj(4, genfs_elem);
+                        if (Tcl_ListObjAppendElement(interp, result_obj, genfs_list) == TCL_ERROR) {
+                                return TCL_ERROR;
+                        }
+                        node = node->next;
+                }
+        }
+        Tcl_SetObjResult(interp, result_obj);
+        return TCL_OK;
+}
+
+static const char *fsuse_behavior_to_string(int i) {
+        switch (i) {
+        case AP_FS_USE_PSID: return "fs_use_psid";
+        case AP_FS_USE_XATTR: return "fs_use_xattr";
+        case AP_FS_USE_TASK: return "fs_use_task";
+        case AP_FS_USE_TRANS: return "fs_use_trans";
+        }
+        return NULL;
+}
+
+/* Return an unordered list of fs_use type statemens. */
+int Apol_GetFSUseBehaviors(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
+{
+        int i;
+        for (i = AP_FS_USE_PSID; i <= AP_FS_USE_TRANS; i++) {
+                Tcl_AppendElement(interp, fsuse_behavior_to_string(i));
+        }
+        return TCL_OK;
+}
+
+/* Return a list of all fs_use declarations within the policy.
+ *
+ * element 0 - fs_use behavior
+ * element 1 - filesystem
+ * element 2 - context
+ *
+ * If a parameter is given, only return those with that behavior.
+ */
+int Apol_GetFSUses(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
+{
+        int i;
+        Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
+        if (policy == NULL) {
+                Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+                return TCL_ERROR;
+        }
+        for (i = 0; i < policy->num_fs_use; i++) {
+                ap_fs_use_t *fs_use = policy->fs_use + i;
+                Tcl_Obj *fsuse_elem[3], *fsuse_list;
+                const char *behavior = fsuse_behavior_to_string(fs_use->behavior);
+                if (behavior == NULL) {
+                        Tcl_SetResult(interp, "Invalid fs_use behavior.", TCL_STATIC);
+                        return TCL_ERROR;
+                }
+                if (argc >= 2 && strcmp(behavior, argv[1]) != 0) {
+                        continue;
+                }
+                fsuse_elem[0] = Tcl_NewStringObj(behavior, -1);
+                fsuse_elem[1] = Tcl_NewStringObj(fs_use->fstype, -1);
+                if (security_con_to_tcl_context_string(interp, fs_use->scontext, fsuse_elem + 2) == TCL_ERROR) {
+                        return TCL_ERROR;
+                }
+                fsuse_list = Tcl_NewListObj(3, fsuse_elem);
+                if (Tcl_ListObjAppendElement(interp, result_obj, fsuse_list) == TCL_ERROR) {
+                        return TCL_ERROR;
+                }
+        }
+        Tcl_SetObjResult(interp, result_obj);
+        return TCL_OK;
+}
 
 /* Search role rules */
 /* arg ordering for argv[x]:
@@ -7710,6 +7848,10 @@ int Apol_Init(Tcl_Interp *interp)
  	Tcl_CreateCommand(interp, "apol_GetNodecons", (Tcl_CmdProc *) Apol_GetNodecons, NULL, NULL);
         Tcl_CreateCommand(interp, "apol_RenderAddress", (Tcl_CmdProc *) Apol_RenderAddress, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_ConvertStringToAddress", (Tcl_CmdProc *) Apol_ConvertStringToAddress, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_GetGenFSConFilesystems", (Tcl_CmdProc *) Apol_GetGenFSConFilesystems, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_GetGenFSCons", (Tcl_CmdProc *) Apol_GetGenFSCons, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_GetFSUseBehaviors", (Tcl_CmdProc *) Apol_GetFSUseBehaviors, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_GetFSUses", (Tcl_CmdProc *) Apol_GetFSUses, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_CompareRanges", (Tcl_CmdProc *) Apol_CompareRanges, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_CompareContexts", (Tcl_CmdProc *) Apol_CompareContexts, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_CompareAddresses", (Tcl_CmdProc *) Apol_CompareAddresses, NULL, NULL);
