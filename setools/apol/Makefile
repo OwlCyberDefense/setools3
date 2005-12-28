@@ -17,6 +17,7 @@ TCL-STRIP-FILES = types_tab.tcl terules_tab.tcl roles_tab.tcl rbac_tab.tcl \
 		  range_dialog.tcl level_dialog.tcl \
 		  range_trans.tcl mls_tab.tcl \
 		  netcontexts_tab.tcl context_dialog.tcl context_selector.tcl \
+		  fscontexts_tab.tcl \
 		  common_widgets.tcl range_selector.tcl \
 		  $(ANALYSIS-MODULES) top.tcl
 
