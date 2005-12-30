@@ -233,7 +233,7 @@ proc Apol_Widget::resetLevelSelectorToPolicy {path} {
         $path.sens configure -values {}
     } else {
         set vals {}
-        foreach s [lsort -index 0 $sens] {
+        foreach s $sens {
             lappend vals [lindex $s 0]
         }
         $path.sens configure -values $vals
