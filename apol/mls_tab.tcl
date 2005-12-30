@@ -22,11 +22,11 @@ proc Apol_MLS::set_Focus_to_Text {} {
 proc Apol_MLS::open {} {
     variable vals
     set vals(senslist) {}
-    foreach s [lsort -index 0 -dictionary [apol_GetSens]] {
+    foreach s [apol_GetSens] {
         lappend vals(senslist) [lindex $s 0]
     }
     set vals(catslist) {}
-    foreach c [lsort -index 0 -dictionary [apol_GetCats]] {
+    foreach c [apol_GetCats] {
         lappend vals(catslist) [lindex $c 0]
     }
 }
@@ -177,7 +177,7 @@ proc Apol_MLS::runSearch {} {
         return
     }
     if {$vals(enable_sens)} {
-        append results "SENSITIVITIES (ordered by dominance):"
+        append results "SENSITIVITIES (ordered by dominance from low to high):"
         set orig_sens_list [apol_GetSens]
         set sens_list {}
         foreach s $orig_sens_list {
@@ -212,7 +212,7 @@ proc Apol_MLS::runSearch {} {
         if {$vals(enable_sens)} {
             append results "\n\n"
         }
-        append results "CATEGORIES:"
+        append results "CATEGORIES (ordered by appearance within policy):"
         set orig_cats_list [apol_GetCats]
         set cats_list {}
         foreach c $orig_cats_list {
