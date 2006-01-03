@@ -328,13 +328,13 @@ proc Apol_FSContexts::fsuse_open {} {
     variable vals
     variable widgets
     set behavs [lsort [apol_GetFSUseBehaviors]]
-    set vals(fsuse:items) $behavs
     $widgets(fsuse:type) configure -values $behavs
     set fstypes {}
     foreach f [lsort -unique -index 1 [apol_GetFSUses]] {
         lappend fstypes [lindex $f 1]
     }
     $widgets(fsuse:fs) configure -values $fstypes
+    set vals(fsuse:items) $fstypes
 }
 
 proc Apol_FSContexts::fsuse_show {} {
@@ -391,9 +391,9 @@ proc Apol_FSContexts::fsuse_render {fsuse} {
     format "%s %s %s" $behav $fstype [apol_RenderContext $context [ApolTop::is_mls_policy]]
 }
 
-proc Apol_FSContexts::fsuse_popup {behav} {
-    set fsuses [apol_GetFSUses $behav]
-    set text "$behav ([llength $fsuses] context"
+proc Apol_FSContexts::fsuse_popup {fs} {
+    set fsuses [apol_GetFSUses $fs]
+    set text "fs_use $fs ([llength $fsuses] context"
     if {[llength $fsuses] != 1} {
         append text s
     }
@@ -401,7 +401,7 @@ proc Apol_FSContexts::fsuse_popup {behav} {
     foreach u [lsort -index 1 -dictionary $fsuses] {
         append text "\n\t[fsuse_render $u]"
     }
-    Apol_Widget::showPopupText $behav $text
+    Apol_Widget::showPopupText $fs $text
 }
 
 proc Apol_FSContexts::fsuse_runSearch {} {
