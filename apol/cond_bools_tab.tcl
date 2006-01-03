@@ -406,7 +406,7 @@ proc Apol_Cond_Bools::create {nb} {
 	set s_optionsbox   [TitleFrame $right_pane.obox -text "Search Options"]
 	set rslts_frame	   [TitleFrame $right_pane.rbox -text "Search Results"]
 	pack $cond_bools_box -padx 2 -expand 1 -fill both
-	pack $s_optionsbox -padx 2 -fill x -expand 1 -side top
+	pack $s_optionsbox -padx 2 -fill x -expand 0 -side top
 	pack $rslts_frame -pady 2 -padx 2 -fill both -side bottom -expand yes
 
 	# Booleans listbox widget
@@ -414,9 +414,6 @@ proc Apol_Cond_Bools::create {nb} {
         set sw_b [ScrolledWindow $left_frame.sw -auto both]
         set cond_bools_listbox [ScrollableFrame $sw_b.cond_bools_listbox -bg white -width 200]
         set subf [$cond_bools_listbox getframe]
-        grid rowconfigure $subf 0 -weight 0 -uniform 1
-        grid rowconfigure $subf 1 -weight 0 -uniform 1
-        grid rowconfigure $subf 2 -weight 1
 	$sw_b setwidget $cond_bools_listbox
 	set button_defaults [button $left_frame.button_defaults \
 		-text "Reset to policy defaults" \
@@ -428,7 +425,6 @@ proc Apol_Cond_Bools::create {nb} {
 	set ofm [$s_optionsbox getframe]
 	set l_innerFrame [LabelFrame $ofm.l_innerFrame]
 	set c_innerFrame [LabelFrame $ofm.c_innerFrame]
-	set buttons_f    [LabelFrame $ofm.buttons_f]
 	
 	set cb_bools_default_state [checkbutton $c_innerFrame.default_state \
 		-variable Apol_Cond_Bools::search_opts(default_state) \
@@ -462,8 +458,8 @@ proc Apol_Cond_Bools::create {nb} {
 	bind bool_vars_combo_box_Tag <KeyPress> { ApolTop::_create_popup $Apol_Cond_Bools::bool_combo_box %W %K }
 			
 	# Action Buttons
-	set ok_button [button [$buttons_f getframe].ok -text "Search for Booleans" -width 15 -command {Apol_Cond_Bools::cond_bool_search_bools}]
-	#button $rfm.print -text Print -width 6 -command {ApolTop::unimplemented}
+	set ok_button [button $ofm.ok -text "OK" -width 6 \
+                           -command Apol_Cond_Bools::cond_bool_search_bools]
 	
 	# Display results window
 	set sw_d [ScrolledWindow [$rslts_frame getframe].sw -auto none]
@@ -472,8 +468,7 @@ proc Apol_Cond_Bools::create {nb} {
 	
 	# Placing all widget items
 	pack $button_defaults -side bottom -pady 2 -anchor center
-	pack $ok_button -side top -anchor e -pady 5 -padx 5
-	pack $buttons_f -side right -expand yes -fill both -anchor nw -padx 4 -pady 4
+	pack $ok_button -side right -anchor ne -padx 5 -pady 5
 	pack $l_innerFrame $c_innerFrame -side left -fill y -anchor nw -padx 4 -pady 4
 	
 	pack $cb_enable_bool_combo_box $bool_combo_box -side top -anchor nw -fill x
