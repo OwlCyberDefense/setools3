@@ -4390,7 +4390,7 @@ int Apol_GetFSUseBehaviors(ClientData clientData, Tcl_Interp *interp, int argc, 
  * element 1 - filesystem
  * element 2 - context
  *
- * If a parameter is given, only return those with that behavior.
+ * If a parameter is given, only return those for that filesystem.
  */
 int Apol_GetFSUses(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
 {
@@ -4408,7 +4408,7 @@ int Apol_GetFSUses(ClientData clientData, Tcl_Interp *interp, int argc, char *ar
                         Tcl_SetResult(interp, "Invalid fs_use behavior.", TCL_STATIC);
                         return TCL_ERROR;
                 }
-                if (argc >= 2 && strcmp(behavior, argv[1]) != 0) {
+                if (argc >= 2 && strcmp(fs_use->fstype, argv[1]) != 0) {
                         continue;
                 }
                 fsuse_elem[0] = Tcl_NewStringObj(behavior, -1);
