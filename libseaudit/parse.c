@@ -475,6 +475,32 @@ static int avc_msg_insert_string(char **dest, char **src)
 	return MSG_INSERT_SUCCESS;
 }
 
+/* removes quotes from a string, this is currently to 
+   remove quotes from the command argument */
+static int avc_msg_remove_quotes_insert_string(char **dest, char **src)
+{
+	int i, j, l;	
+	assert(dest != NULL && src != NULL && *src != NULL);
+	l = strlen(*src) - 1;
+	/* see if there are any quotes to begin with 
+	   if there aren't just run insert string */
+	if ((*src)[0] == '"' && (*src)[l] == '"') {
+		if ((*dest = (char*)calloc((strlen(*src) + 1), sizeof(char))) == NULL)
+			return MSG_MEMORY_ERROR;
+		j = 0;
+		for (i = 0; i < strlen(*src); i++) {
+			if ((*src)[i] == '"')
+				continue;
+			(*dest)[j] = (*src)[i];
+			j++;
+		}
+		(*dest)[j] = '\0';
+		return MSG_INSERT_SUCCESS;
+	} else
+		return avc_msg_insert_string(dest, src);
+
+}
+
 static unsigned int insert_hostname(audit_log_t *log, char **tokens, msg_t *msg, int *position, int num_tokens)
 {
         int id;
@@ -581,14 +607,14 @@ static unsigned int avc_msg_insert_additional_field_data(char **tokens, msg_t *m
 			    return PARSE_RET_MEMORY_ERROR;
 		}
 
-		if (found[AVC_EXE_FIELD] == PARSE_NOT_MATCH && avc_msg_is_prefix(*(&tokens[i]), "exe=", &field_value) != FALSE) {
+		if (found[AVC_EXE_FIELD] == PARSE_NOT_MATCH && avc_msg_is_prefix(*(&tokens[i]), "exe=", &field_value) != FALSE) {			
 			found[AVC_EXE_FIELD] = avc_msg_insert_string(&msg->msg_data.avc_msg->exe, &field_value);
 			if (found[AVC_EXE_FIELD] == PARSE_RET_MEMORY_ERROR)
 			    return PARSE_RET_MEMORY_ERROR;
 		}
 		
 		if (found[AVC_COMM_FIELD] == PARSE_NOT_MATCH && avc_msg_is_prefix(*(&tokens[i]), "comm=", &field_value) != FALSE) {
-			found[AVC_COMM_FIELD] = avc_msg_insert_string(&msg->msg_data.avc_msg->comm, &field_value);
+			found[AVC_COMM_FIELD] = avc_msg_remove_quotes_insert_string(&msg->msg_data.avc_msg->comm, &field_value);
 			if (found[AVC_COMM_FIELD] == PARSE_RET_MEMORY_ERROR)
 			    return PARSE_RET_MEMORY_ERROR;
 		}
