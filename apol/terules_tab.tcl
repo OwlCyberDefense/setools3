@@ -1340,6 +1340,8 @@ proc Apol_TE::close_All_ResultsTabs { } {
 #  Command Apol_TE::populate_ta_list
 # ------------------------------------------------------------------------------
 proc Apol_TE::populate_ta_list { list } {
+        variable incl_indirect1
+	variable incl_indirect2
 	variable src_list_type_1
 	variable src_list_type_2	
 	variable tgt_list_type_1
@@ -1380,6 +1382,7 @@ proc Apol_TE::populate_ta_list { list } {
 		set which $ta1_opt
 		set uselist $Apol_TE::source_list
 		set ta Apol_TE::ta1
+	        set cBox $incl_indirect1
 	        set useStatus $Apol_TE::opts(use_1st_list)
 	} elseif { $list == 2 } {
 		# Make sure that either "Types" OR "Attribs", OR Both checkbuttons are selected
@@ -1409,6 +1412,7 @@ proc Apol_TE::populate_ta_list { list } {
 		set which $ta2_opt
 		set uselist $Apol_TE::target_list
 		set ta Apol_TE::ta2
+	        set cBox $incl_indirect2
 	        set useStatus $Apol_TE::opts(use_2nd_list)
 	} elseif { $list == 3 } {
 		set subtract_cb $cb_dflt_subtract
@@ -1424,14 +1428,19 @@ proc Apol_TE::populate_ta_list { list } {
 		types {
 			$uselist configure -values $Apol_Types::typelist
 			if { $useStatus } {
-				if {$allow_syntactic} {
+				if {!$allow_syntactic} {
+		        		$cBox configure -state normal	
+		        	} else {
 		        		$subtract_cb configure -state normal    
 		        	}
 		        }
 		}
 		attribs {
 			$uselist configure -values $Apol_Types::attriblist
-		        if {$allow_syntactic} {
+		        if {!$allow_syntactic} {
+		        	$cBox configure -state disabled
+		        	$cBox deselect
+		        } else {
 		        	$subtract_cb configure -state disabled
 		        }
 		}
@@ -1439,7 +1448,10 @@ proc Apol_TE::populate_ta_list { list } {
 			set bothlist [concat $Apol_Types::typelist $Apol_Types::attriblist]
 			set bothlist [lsort -dictionary $bothlist]
 			$uselist configure -values $bothlist
-			if {$allow_syntactic} {
+			if {!$allow_syntactic} {
+				$cBox configure -state disabled
+				$cBox deselect
+			} else {
 				$subtract_cb configure -state disabled
 			}
 		}
@@ -1448,6 +1460,9 @@ proc Apol_TE::populate_ta_list { list } {
 		}
 		default {
 			$uselist configure -values ""
+			if {!$allow_syntactic} {
+				$cBox configure -state normal
+			}
 		}
 	}
 	if {$allow_syntactic} {
@@ -1631,9 +1646,20 @@ proc Apol_TE::enable_listbox { cBox list_number b1 b2 } {
 		if { $Apol_TE::opts(which_1) == "either"} {
 		    Apol_TE::change_tgt_dflt_state
 		}
+# disable indirect attribute searching
+		if {$Apol_TE::src_list_type_1 == 0 && $Apol_TE::src_list_type_2 == 1} {
+		    $incl_indirect1 configure -state disabled
+		    $incl_indirect1 deselect
+		}
+		if {$Apol_TE::src_list_type_1 == 1 && $Apol_TE::src_list_type_2 == 1} {
+			$incl_indirect1 configure -state disabled
+		    	$incl_indirect1 deselect
+		}
 		if {$allow_syntactic} {
 	    		$cb_src_tilda configure -state normal
     			$cb_src_subtract configure -state normal
+    			$incl_indirect1 configure -state disabled
+		    	$incl_indirect1 deselect
 		    	Apol_TE::insert_star_into_types_attribs_list $source_list
 	    	} else {
 	    		$cb_src_tilda configure -state disabled
@@ -1660,9 +1686,20 @@ proc Apol_TE::enable_listbox { cBox list_number b1 b2 } {
 		$b1 configure -state normal
 		$b2 configure -state normal
 		$Apol_TE::incl_indirect2 configure -state normal
+# disable indirect attribute search
+		if {$Apol_TE::tgt_list_type_1 == 0 && $Apol_TE::tgt_list_type_2 == 1} {
+		    $incl_indirect2 configure -state disabled
+		    $incl_indirect2 deselect
+		}
+		if {$Apol_TE::tgt_list_type_1 == 1 && $Apol_TE::tgt_list_type_2 == 1} {
+			$incl_indirect2 configure -state disabled
+		    	$incl_indirect2 deselect
+		}
 		if {$allow_syntactic} {
 	    		$cb_tgt_tilda configure -state normal
     			$cb_tgt_subtract configure -state normal
+    			$incl_indirect2 configure -state disabled
+		    	$incl_indirect2 deselect
 		    	Apol_TE::insert_star_into_types_attribs_list $target_list
 	    	} else {
 	    		$cb_tgt_tilda configure -state disabled
@@ -1776,6 +1813,8 @@ proc Apol_TE::change_tgt_dflt_state { } {
 	selection clear -displayof $Apol_TE::target_list
 	$Apol_TE::use_2nd_list configure -state disabled -text $Apol_TE::m_disable_tgt_ta
 	$Apol_TE::use_2nd_list deselect
+	$Apol_TE::incl_indirect2 configure -state disabled
+	$Apol_TE::incl_indirect2 deselect
 	$Apol_TE::list_types_2 configure -state disabled
 	$Apol_TE::list_attribs_2 configure -state disabled
     } elseif { $Apol_TE::opts(use_1st_list) == 1 && $bool && $Apol_TE::opts(which_1) == "source"} {
