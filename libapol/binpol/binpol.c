@@ -2434,6 +2434,7 @@ static int load_binpol(FILE *fp, unsigned int opts, policy_t *policy)
 		buf[i] = le32_to_cpu(buf[i]);
 	
 	policy_ver = buf[0];
+	mls_config = 0;
 	switch(policy_ver) {
 
 	case POLICYDB_VERSION_AVTAB:
