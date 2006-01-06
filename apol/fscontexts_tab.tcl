@@ -388,7 +388,12 @@ proc Apol_FSContexts::fsuse_create {p_f} {
 
 proc Apol_FSContexts::fsuse_render {fsuse} {
     foreach {behav fstype context} $fsuse {break}
-    format "%s %s %s" $behav $fstype [apol_RenderContext $context [ApolTop::is_mls_policy]]
+    if {$behav == "fs_use_psid"} {
+        # fs_use_psid has no context, so don't render that part
+        format "%-13s %s;" $behav $fstype
+    } else {
+        format "%-13s %-10s %s;" $behav $fstype [apol_RenderContext $context [ApolTop::is_mls_policy]]
+    }
 }
 
 proc Apol_FSContexts::fsuse_popup {fs} {
@@ -433,8 +438,12 @@ proc Apol_FSContexts::fsuse_runSearch {} {
         if {$vals(fsuse:fs_enable) && $fstype != $vals(fsuse:fs)} {
             continue
         }
-        if {$vals_context != {} && ![apol_CompareContexts $vals_context $context $vals_range_match]} {
-            continue
+        if {$vals_context != {}} {
+            # fs_use_psid is special in that it has no context at all
+            if {$behav == "fs_use_psid" || \
+                ![apol_CompareContexts $vals_context $context $vals_range_match]} {
+                continue
+            }
         }
         lappend fsuses $u
     }
