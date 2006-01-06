@@ -4413,8 +4413,13 @@ int Apol_GetFSUses(ClientData clientData, Tcl_Interp *interp, int argc, char *ar
                 }
                 fsuse_elem[0] = Tcl_NewStringObj(behavior, -1);
                 fsuse_elem[1] = Tcl_NewStringObj(fs_use->fstype, -1);
-                if (security_con_to_tcl_context_string(interp, fs_use->scontext, fsuse_elem + 2) == TCL_ERROR) {
-                        return TCL_ERROR;
+                if (fs_use->behavior == AP_FS_USE_PSID) {
+                        /* PSIDs are special in that they have no context at all */
+                        fsuse_elem[2] = Tcl_NewStringObj("", -1);
+                } else {
+                        if (security_con_to_tcl_context_string(interp, fs_use->scontext, fsuse_elem + 2) == TCL_ERROR) {
+                                return TCL_ERROR;
+                        }
                 }
                 fsuse_list = Tcl_NewListObj(3, fsuse_elem);
                 if (Tcl_ListObjAppendElement(interp, result_obj, fsuse_list) == TCL_ERROR) {
