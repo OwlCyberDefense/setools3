@@ -311,6 +311,7 @@ static void my_parse_endElement(void *user_data, const xmlChar *name)
 				data->cur_filter->ports_criteria = ports_criteria_create(atoi(data->strs[0]));
 			seaudit_multifilter_parser_data_free(data);
 			data->state = PARSING_NONE;
+			break;
 		case PARSING_MSG:
 			if (data->strs[0])
 				data->cur_filter->msg_criteria = msg_criteria_create(atoi(data->strs[0]));
