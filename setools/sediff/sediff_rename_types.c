@@ -258,7 +258,7 @@ static int sediff_rename_types_window_init(sediff_rename_types_t *rename_types_w
 		rt = get_type_name(i, &name, rename_types_window->sediff_app->p1);
 		g_assert(rt == 0);
 		if (get_type_idx(name, rename_types_window->sediff_app->p2) < 0)
-			g_list_append(items, rename_types_window->sediff_app->p1->types[i].name);
+			items = g_list_append(items, rename_types_window->sediff_app->p1->types[i].name);
 		free(name);
 	}
 	items = g_list_sort(items, &sediff_str_compare_func);
@@ -270,7 +270,7 @@ static int sediff_rename_types_window_init(sediff_rename_types_t *rename_types_w
 		rt = get_type_name(i, &name, rename_types_window->sediff_app->p2);
 		g_assert(rt == 0);
 		if (get_type_idx(name, rename_types_window->sediff_app->p1) < 0 )
-			g_list_append(items, rename_types_window->sediff_app->p2->types[i].name);
+			items = g_list_append(items, rename_types_window->sediff_app->p2->types[i].name);
         }
 	items = g_list_sort(items, &sediff_str_compare_func);
 	gtk_combo_set_popdown_strings(GTK_COMBO(rename_types_window->p2_combo), items);
