@@ -21,6 +21,8 @@
 #include <libseaudit/auditlog.h>
 #include <libapol/policy.h>
 #include <string.h>
+#include <ctype.h>
+#include <limits.h>
 
 enum {
 	ITEMS_LIST_COLUMN, 
@@ -48,6 +50,8 @@ enum message_types {
 	SEAUDIT_MSG_AVC_DENIED,
 	SEAUDIT_MSG_AVC_GRANTED
 };
+
+#define SEAUDIT_MAX_U16_STRLEN 5 /* the max # of chars that can be in a string representing a 16 bit digit */
 
 const char *msg_type_strs[] = { "none", "denied", "granted" };
 
@@ -914,6 +918,42 @@ static void filters_select_items_display(filters_select_items_t *filter_items_li
 /********************************************************
  * Private methods and callbacks for the filters object *
  ********************************************************/ 
+static int filter_window_verify_filter_values(filter_window_t *filter_window)
+{
+	char *text = NULL;	
+	GtkWidget *widget = NULL;
+	int i, j;
+
+	/* check for network port filter */
+	/* since we do not know if this is an ipv4 or ipv6 port we check against
+	   ipv6 sizes since that is the larger of the two */
+	widget = glade_xml_get_widget(filter_window->xml, "PortEntry");
+	text = (char*)gtk_entry_get_text(GTK_ENTRY(widget));
+	/* check to see if the strlen of this number is larger than 
+	   the strlen of a __16 which is the 
+	   maximum size a ipv6 port can be as defined in in6.h*/
+	if (strlen(text) > SEAUDIT_MAX_U16_STRLEN)
+		goto err;
+	if (strcmp(text, "") != 0) {
+		for (i = 0 ; i < strlen(text); i++) {
+			if (isdigit(text[i]) == 0) {
+				goto err;
+			}
+		}
+		j = atoi(text);
+		/* now check that the number returned is within the range
+		   of #'s allowed for a ipv6 port */
+		if (j < 0 || j > (1 << 16)) 
+			goto err;
+	}	
+	return 0;
+
+err:
+	message_display(filter_window->window, GTK_MESSAGE_ERROR, "Invalid Port Filter.\n");
+	return -1;
+	
+}
+
 static void filter_window_set_title(filter_window_t *filter_window)
 {
 	GString *title;
@@ -1200,7 +1240,8 @@ static void filter_window_on_custom_clicked(GtkButton *button, filters_select_it
 
 static void filter_window_on_close_button_pressed(GtkButton *button, filter_window_t *filter_window)
 {
-	filter_window_hide(filter_window);
+	if (filter_window_verify_filter_values(filter_window) == 0)
+		filter_window_hide(filter_window);
 }
 
 static gboolean filter_window_on_filter_window_destroy(GtkWidget *widget, GdkEvent *event, filter_window_t *filter_window)
