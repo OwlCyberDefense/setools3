@@ -54,9 +54,9 @@ proc Apol_Users::searchUsers {} {
         tk_messageBox -icon error -type ok -title "Error" -message "No default level selected."
         return
     }
-    set range_state [Apol_Widget::getRangeSelectorState $widgets(range)]
+    set range_enabled [Apol_Widget::getRangeSelectorState $widgets(range)]
     foreach {val_range val_search_type} [Apol_Widget::getRangeSelectorValue $widgets(range)] {break}
-    if {$range_state && $range == {{{} {}} {{} {}}}} {
+    if {$range_enabled && $val_range == {{{} {}} {{} {}}}} {
         tk_messageBox -icon error -type ok -title "Error" -message "No range selected."
         return
     }
@@ -78,7 +78,7 @@ proc Apol_Users::searchUsers {} {
                 $default != $opts(default_level)} {
             continue
         }
-        if {$range_state && \
+        if {$range_enabled && \
                 ![apol_CompareRanges $val_range $range $val_search_type]} {
             continue
         }
