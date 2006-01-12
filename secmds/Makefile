@@ -63,8 +63,6 @@ findcon: findcon.o $(LIBSEFS) $(LIBAPOL)
 
 install: all
 	install -m 755 $(SE_CMDS) $(BINDIR);
-	test -d $(MANDIR)/man1 || install -m 755 -d $(MANDIR)/man1
-	install -m 644 findcon.1 $(MANDIR)/man1
 
 install-policy:
 	-@if [ -e $(BINDIR)/replcon ]; then \
