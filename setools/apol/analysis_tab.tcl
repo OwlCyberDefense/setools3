@@ -690,7 +690,7 @@ proc Apol_Analysis::do_analysis { which } {
 	switch $which {
 		new_analysis {
 			$Apol_Analysis::newButton configure -state disabled
-			update			
+			update idletasks
 		        # If the update button is disabled, then enable it.
 			if { $enableUpdate == 0 } {
 				$Apol_Analysis::updateButton configure -state normal
@@ -701,7 +701,7 @@ proc Apol_Analysis::do_analysis { which } {
 		}
 		update_analysis {
 			$Apol_Analysis::updateButton configure -state disabled
-			update
+			update idletasks
 			# Destroy results tab subwidgets and free any data associated with them.
 			set results_frame [Apol_Analysis::get_results_frame [$results_notebook raise]]
 			set parent [winfo parent $results_frame]
@@ -716,6 +716,7 @@ proc Apol_Analysis::do_analysis { which } {
 		ApolTop::disable_DeleteWindow_event
                 ApolTop::setBusyCursor
 		set rt [catch {${curr_analysis_module}::do_analysis $results_frame} err] 
+                $Apol_Analysis::newButton configure -state normal
 		ApolTop::enable_DeleteWindow_event
                 ApolTop::resetBusyCursor
 		# Handle an error.
@@ -742,7 +743,6 @@ proc Apol_Analysis::do_analysis { which } {
 	    	# Here store the current content of the new tab.
 		Apol_Analysis::store_current_results_state [$results_notebook raise] 
                 # Re-enable buttons
-                $Apol_Analysis::newButton configure -state normal
                 $Apol_Analysis::updateButton configure -state normal
 	} 
      	return 0
