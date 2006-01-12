@@ -39,6 +39,7 @@ proc Apol_NetContexts::close {} {
     Apol_Widget::clearContextSelector $widgets(netifcon:msgcon)
     Apol_Widget::clearContextSelector $widgets(nodecon:context)
     $widgets(portcon:proto) configure -values {}
+    $widgets(netifcon:dev) configure -values {}
     array set vals {
         items {}
         portcon:items {}
@@ -147,7 +148,7 @@ proc Apol_NetContexts::popupContextInfo {value} {
         portcon_popup $value
     } elseif {$vals(context_type) == "netifcon"} {
         netifcon_popup $value
-    } elseif {$vals(context_type) == "nodecon"} {
+    } else {
         nodecon_popup $value
     }
 }
@@ -160,7 +161,7 @@ proc Apol_NetContexts::contextTypeChanged {name1 name2 op} {
         portcon_show
     } elseif {$vals(context_type) == "netifcon"} {
         netifcon_show
-    } elseif {$vals(context_type) == "nodecon"} {
+    } else {
         nodecon_show
     }
 }
@@ -200,10 +201,7 @@ proc Apol_NetContexts::portcon_open {} {
     variable widgets
     $widgets(portcon:proto) configure -values [apol_GetPortconProtos]
     set vals(portcon:items) {}
-    if {[catch {apol_GetPortcons} portcons]} {
-        return
-    }
-    foreach p $portcons {
+    foreach p [apol_GetPortcons] {
         if {[lindex $p 1] == [lindex $p 2]} {
             lappend vals(portcon:items) [lindex $p 1]
         } else {
@@ -250,7 +248,7 @@ proc Apol_NetContexts::portcon_create {p_f} {
     set widgets(portcon:port) [spinbox $low.port -bg white -width 8 \
                                    -justify right -state disabled \
                                    -from 0 -to 65535 \
-                                   -validate key -vcmd [list Apol_NetContexts::portcon_limitPort %P] \
+                                   -validate all -vcmd [list Apol_NetContexts::portcon_limitPort %W %V %P port] \
                                    -textvariable Apol_NetContexts::vals(portcon:port)]
     set high [frame $p_f.port.h]
     set hiport_cb [checkbutton $high.hiport_enable -text "High Port" \
@@ -259,7 +257,7 @@ proc Apol_NetContexts::portcon_create {p_f} {
     set widgets(portcon:hiport) [spinbox $high.hiport -bg white -width 8 \
                                      -justify right -state disabled \
                                      -from 0 -to 65535 \
-                                     -validate key -vcmd [list Apol_NetContexts::portcon_limitPort %P] \
+                                     -validate all -vcmd [list Apol_NetContexts::portcon_limitPort %W %V %P hiport] \
                                      -textvariable Apol_NetContexts::vals(portcon:hiport)]
     trace add variable Apol_NetContexts::vals(portcon:port_enable) write \
         [list Apol_NetContexts::portcon_toggleCheckbutton_lowport \
@@ -273,15 +271,28 @@ proc Apol_NetContexts::portcon_create {p_f} {
     pack $low $high -side left -expand 0 -fill both
     
     frame $p_f.c -relief sunken -bd 1
-    set widgets(portcon:context) [Apol_Widget::makeContextSelector $p_f.c.context "Port Contexts"]
+    set widgets(portcon:context) [Apol_Widget::makeContextSelector $p_f.c.context "Contexts"]
     pack $widgets(portcon:context)
     pack $p_f.proto $p_f.port $p_f.c -side left -padx 4 -expand 0 -fill y
 }
 
-proc Apol_NetContexts::portcon_limitPort {new_port} {
-    if {![string is integer -strict $new_port] ||
-        $new_port < 0 || $new_port > 65535} {
-        return 0
+proc Apol_NetContexts::portcon_limitPort {widget command new_port varname} {
+    variable vals
+    if {$command == "key"} {
+        if {$new_port != "" &&
+            (![string is integer $new_port] || $new_port < 0 || $new_port > 65535)} {
+            return 0
+        }
+    } elseif {$command == "focusout"} {
+        if {$new_port == ""} {
+            set vals(portcon:$varname) 0
+        } elseif {[string length $new_port] > 1} {
+            set vals(portcon:$varname) [string trimleft $new_port " 0"]
+        }
+        
+        # re-enable the validation command (it could have been
+        # disabled because the variable changed)
+        $widget config -validate all
     }
     return 1
 }
@@ -380,6 +391,10 @@ proc Apol_NetContexts::portcon_sort {a b} {
 proc Apol_NetContexts::portcon_runSearch {} {
     variable vals
     variable widgets
+
+    # explicitly validate the spinboxes (they could still have focus)
+    portcon_limitPort $widgets(portcon:port) focusout $vals(portcon:port) port
+    portcon_limitPort $widgets(portcon:hiport) focusout $vals(portcon:hiport) hiport
     if {$vals(portcon:proto_enable) && $vals(portcon:proto) == {}} {
         tk_messageBox -icon error -type ok -title "Error" -message "No protocol selected."
         return
@@ -438,11 +453,7 @@ proc Apol_NetContexts::portcon_runSearch {} {
 proc Apol_NetContexts::netifcon_open {} {
     variable vals
     variable widgets
-    if {[catch {apol_GetNetifconInterfaces} ifs]} {
-        set vals(netifcon:items) {}
-        return
-    }
-    set ifs [lsort -unique $ifs]
+    set ifs [lsort -unique [apol_GetNetifconInterfaces]]
     $widgets(netifcon:dev) configure -values $ifs
     set vals(netifcon:items) $ifs
 }
@@ -626,43 +637,44 @@ proc Apol_NetContexts::nodecon_create {p_f} {
 }
     
 proc Apol_NetContexts::nodecon_ipv4Create {fv4} {
+    variable widgets
     set v4addrf [frame $fv4.addr]
     set ipv4_addr_cb [checkbutton $v4addrf.enable -text "IP Address" \
                           -variable Apol_NetContexts::vals(nodecon:ipv4_addr_enable)]
-    set v4addrf2 [frame $v4addrf.a]
+    set widgets(nodecon:v4addrf2) [frame $v4addrf.a]
     for {set i 0} {$i < 4} {incr i} {
-        set e [entry $v4addrf2.e$i -bg white -justify center -width 4 \
+        set e [entry $widgets(nodecon:v4addrf2).e$i -bg white -justify center -width 4 \
                    -state disabled \
-                   -validate key -vcmd [list Apol_NetContexts::nodecon_limitVal %P] \
+                   -validate all -vcmd [list Apol_NetContexts::nodecon_limitAddr %W %V %P ipv4_addr$i] \
                    -textvariable Apol_NetContexts::vals(nodecon:ipv4_addr$i)]
         pack $e -side left -padx 1 -anchor center
         if {$i < 3} {
-            pack [label $v4addrf2.l$i -text "."] -side left -expand 0 -anchor s
+            pack [label $widgets(nodecon:v4addrf2).l$i -text "."] -side left -expand 0 -anchor s
         }
     }
     trace add variable Apol_NetContexts::vals(nodecon:ipv4_addr_enable) write \
-        [list Apol_NetContexts::nodecon_toggleV4button $v4addrf2.e]
+        [list Apol_NetContexts::nodecon_toggleV4button $widgets(nodecon:v4addrf2).e]
     pack $ipv4_addr_cb -anchor w
-    pack $v4addrf2 -padx 3 -expand 0 -fill x
+    pack $widgets(nodecon:v4addrf2) -padx 3 -expand 0 -fill x
 
     set v4maskf [frame $fv4.mask]
     set ipv4_mask_cb [checkbutton $v4maskf.enable -text "Mask" \
                           -variable Apol_NetContexts::vals(nodecon:ipv4_mask_enable)]
-    set v4maskf2 [frame $v4maskf.m]
+    set widgets(nodecon:v4maskf2) [frame $v4maskf.m]
     for {set i 0} {$i < 4} {incr i} {
-        set e [entry $v4maskf2.e$i -bg white -justify center -width 4 \
+        set e [entry $widgets(nodecon:v4maskf2).e$i -bg white -justify center -width 4 \
                    -state disabled \
-                   -validate key -vcmd [list Apol_NetContexts::nodecon_limitVal %P] \
+                   -validate all -vcmd [list Apol_NetContexts::nodecon_limitAddr %W %V %P ipv4_mask$i] \
                    -textvariable Apol_NetContexts::vals(nodecon:ipv4_mask$i)]
         pack $e -side left -padx 1 -anchor center
         if {$i < 3} {
-            pack [label $v4maskf2.l$i -text "."] -side left -expand 0 -anchor s
+            pack [label $widgets(nodecon:v4maskf2).l$i -text "."] -side left -expand 0 -anchor s
         }
     }
     trace add variable Apol_NetContexts::vals(nodecon:ipv4_mask_enable) write \
-        [list Apol_NetContexts::nodecon_toggleV4button $v4maskf2.e]
+        [list Apol_NetContexts::nodecon_toggleV4button $widgets(nodecon:v4maskf2).e]
     pack $ipv4_mask_cb -anchor w
-    pack $v4maskf2 -padx 3 -expand 0 -fill x
+    pack $widgets(nodecon:v4maskf2) -padx 3 -expand 0 -fill x
 
     pack $v4addrf $v4maskf -padx 4 -pady 2 -anchor w
 }
@@ -697,10 +709,23 @@ proc Apol_NetContexts::nodecon_pageChanged {name1 name2 op} {
     $widgets(nodecon:ip_pm) raise $vals(nodecon:ip_type)
 }
 
-proc Apol_NetContexts::nodecon_limitVal {newValue} {
-    if {![string is integer -strict $newValue] ||
-        $newValue < 0 || $newValue > 255} {
-        return 0
+proc Apol_NetContexts::nodecon_limitAddr {widget command new_addr varname} {
+    variable vals
+    if {$command == "key"} {
+        if {$new_addr != "" &&
+            (![string is integer $new_addr] || $new_addr < 0 || $new_addr > 255)} {
+            return 0
+        }
+    } elseif {$command == "focusout"} {
+        if {$new_addr == ""} {
+            set vals(nodecon:$varname) 0
+        } elseif {[string length $new_addr] > 1} {
+            set vals(nodecon:$varname) [string trimleft $new_addr " 0"]
+        }
+        
+        # re-enable the validation command (it could have been
+        # disabled because the variable changed)
+        after idle [list $widget config -validate all]
     }
     return 1
 }
@@ -775,6 +800,11 @@ proc Apol_NetContexts::nodecon_runSearch {} {
     variable vals
     variable widgets
     if {$vals(nodecon:ip_type) == "ipv4"} {
+        # explicitly validate the entries (they could still have focus)
+        foreach i {0 1 2 3} {
+            nodecon_limitAddr $widgets(nodecon:v4addrf2).e$i focusout $vals(nodecon:ipv4_addr$i) ipv4_addr$i
+            nodecon_limitAddr $widgets(nodecon:v4maskf2).e$i focusout $vals(nodecon:ipv4_mask$i) ipv4_mask$i
+        }
         if {$vals(nodecon:ipv4_addr_enable)} {
             set addr [format "%d.%d.%d.%d" \
                           $vals(nodecon:ipv4_addr0) $vals(nodecon:ipv4_addr1) \
