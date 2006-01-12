@@ -80,7 +80,7 @@ Print requested information about an SELinux policy.\n\
   -u user,   --user=username   	   The name of the user to search for\n\
   -p path,   --path=pathname   	   The path or path fragment to search for\n\
   -o object, --object=class        The name of the object class to search for\n\
-  -r regex,  --regex               Search using regular expressions\n\
+  -r, --regex                      Search using regular expressions\n\
   -l, --list                       List types in the snapshot\n\
 ", stdout);
 	fputs("\n\
