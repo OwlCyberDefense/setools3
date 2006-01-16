@@ -62,7 +62,6 @@ void usage(const char *program_name, int brief)
 {
 	printf("%s (sediff ver. %s)\n\n", COPYRIGHT_INFO, SEDIFF_VERSION_NUM);
 	printf("Usage: %s [OPTIONS] POLICY1 POLICY2\n", program_name);
-	printf("Usage: %s -X [POLICY1 POLICY2]\n",program_name);
 	if(brief) {
 		printf("\n   Try %s --help for more help.\n\n", program_name);
 		return;
@@ -81,7 +80,6 @@ void usage(const char *program_name, int brief)
 "  -R, --roletrans   role transition rules\n"
 "  -A, --roleallows  role allow rules\n"  
 "  -C, --conds      conditionals and their rules\n\n"
-"  -X, --gui        launch the sediff gtk gui\n"
 "  -q, --quiet      only print different definitions\n"
 "  -s, --stats      print useful policy statics\n"
 "  -h, --help       display this help and exit\n"
@@ -1127,7 +1125,6 @@ int main (int argc, char **argv)
 	apol_diff_result_t *diff = NULL;
 	ap_single_view_diff_t *svd = NULL;
 	unsigned int opts = POLOPT_NONE;
-	char prog_path[PATH_MAX];
 	int ret_code = 0;
 	
 	attributes = rallows = rtrans = classes = types = roles = users = bools = all = stats = isids = conds = terules = rbac = gui = quiet = 0;
@@ -1216,32 +1213,8 @@ int main (int argc, char **argv)
 	}
 	/* are we going to use the gui */
 	else if (gui == 1) {
-		snprintf(prog_path, PATH_MAX, "./%s", SEDIFF_GUI_PROG);
-		/* launch the gui with no arguments */
-		if (argc - optind == 0 ) {
-			rt = access(prog_path, X_OK);
-			if (rt == 0) {
-				rt = execvp(prog_path,argv);
-			} else {
-				rt = execvp(SEDIFF_GUI_PROG,argv);
-			}
-
-
-		}
-		/* launch the gui with file args */
-		else if (argc - optind == 2) {
-			rt = access(prog_path, X_OK);
-			if (rt == 0) {
-				rt = execvp(prog_path,argv);
-			} else {
-				rt = execvp(prog_path,argv);
-			}			
-		}
-		if (argc - optind != 0 && argc - optind != 2) {
-			usage(argv[0], 1);
-			exit(1);
-		}
-		exit(1);
+		printf("Use of 'sediff -X' is not supported.  Instead invoke 'sediffx' directly.\n");
+		exit(0);
 	}
 
 	else {
