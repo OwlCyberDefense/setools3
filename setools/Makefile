@@ -2,39 +2,42 @@
 
 TOPDIR 			= $(shell pwd)
 MAKEFILE 		= Makefile
+SETOOLS_VER 	:= $(shell cat VERSION)
 
 MAKE 			?= make
 CC 			?= gcc
 YACC			= bison -y
 LEX			= flex -olex.yy.c
 LIBS			= -lfl -lm
+DESTDIR		?= /usr
 
-INCLUDE_DIR		= $(DESTDIR)/usr/include
-SHARED_LIB_INSTALL_DIR 	= $(DESTDIR)/usr/lib
+INCLUDE_DIR		= $(DESTDIR)/include
+SHARED_LIB_INSTALL_DIR 	= $(DESTDIR)/lib
 STATIC_LIB_INSTALL_DIR 	= $(SHARED_LIB_INSTALL_DIR)
-SETOOLS_INCLUDE 	= $(INCLUDE_DIR)/setools
+SETOOLS_INCLUDE 	= $(INCLUDE_DIR)/setools-$(SETOOLS_VER)
 TCLVER			= $(shell env tclsh tcl_vars)
 TCL_LIBS		= -ltk$(TCLVER) -ltcl$(TCLVER) -ldl $(LIBS)
 
 # File location defaults; used in various places in code
 # Change these if you want different defaults
-SELINUX_DIR 		= $(DESTDIR)/selinux
-SELINUX_POLICY_DIR 	= $(DESTDIR)/etc/security/selinux
-POLICY_INSTALL_DIR 	= $(DESTDIR)$(SELINUX_POLICY_DIR)
-POLICY_SRC_DIR		= $(DESTDIR)$(SELINUX_POLICY_DIR)/src/policy
-MANDIR			= $(DESTDIR)/usr/share/man
+SELINUX_DIR 		= /selinux
+SELINUX_POLICY_DIR 	= /etc/selinux/strict
+POLICY_INSTALL_DIR 	= $(SELINUX_POLICY_DIR)/policy
+POLICY_SRC_DIR		= $(SELINUX_POLICY_DIR)/src/policy
+MANDIR			= $(DESTDIR)/share/man
 POLICY_SRC_FILE 	= $(POLICY_SRC_DIR)/policy.conf
 DEFAULT_LOG_FILE 	= /var/log/messages
 
 # Install directories
 # Binaries go here
-BINDIR			= $(DESTDIR)/usr/bin
+BINDIR			= $(DESTDIR)/bin
+SBINDIR			= $(DESTDIR)/sbin
 # The code uses the specified path below. If you change this, DO NOT add 
 # a trailing path seperator ("/"). For example, use "/usr/share/setools" 
 # instead of "/usr/share/setools/". This probably needs to become more 
 # robust in the future.
 #
-INSTALL_LIBDIR		= $(DESTDIR)/usr/share/setools
+INSTALL_LIBDIR		= $(DESTDIR)/share/setools-$(SETOOLS_VER)
 # all apps that have a te/fc file need to be listed here
 POLICYINSTALLDIRS 	= 
 # Help files here
@@ -112,8 +115,8 @@ export INCLUDE_DIR SETOOLS_INCLUDE TCLVER TCL_LIBS
 export SHARED_LIB_INSTALL_DIR STATIC_LIB_INSTALL_DIR
 export SELINUX_DIR POLICY_INSTALL_DIR POLICY_SRC_DIR DEFAULT_LOG_FILE 
 export POLICY_SRC_DIR POLICY_SRC_FILE
-export BINDIR INSTALL_LIBDIR INSTALL_HELPDIR POLICYINSTALLDIR 
-export MANDIR
+export BINDIR SBINDIR INSTALL_LIBDIR INSTALL_HELPDIR POLICYINSTALLDIR 
+export MANDIR DESTDIR
 
 # Top Level Targets
 all: all-libs all-nogui all-gui
@@ -186,9 +189,9 @@ install-nogui: all-nogui install-dirs install-dev install-secmds \
 	install-sediff-nogui install-sechecker
 
 # Install directories
-install-dirs: $(BINDIR) $(SHARED_LIB_INSTALL_DIR) $(INSTALL_LIBDIR)
+install-dirs: $(BINDIR) $(SBINDIR) $(MANDIR) $(SHARED_LIB_INSTALL_DIR) $(INSTALL_LIBDIR) $(INSTALL_HELPDIR)
 
-$(BINDIR) $(SHARED_LIB_INSTALL_DIR) $(INSTALL_LIBDIR):
+$(BINDIR) $(SBINDIR) $(MANDIR) $(SHARED_LIB_INSTALL_DIR) $(INSTALL_LIBDIR) $(INSTALL_HELPDIR):
 	test -d $@ || install -m 755 -d $@
 
 # Install Libraries
@@ -204,10 +207,10 @@ install-apol: $(BINDIR) $(INSTALL_LIBDIR)
 install-awish: $(BINDIR) 
 	$(MAKE) -C awish install
 
-install-secmds: $(BINDIR) $(INSTALL_LIBDIR) 
+install-secmds: $(BINDIR) $(SBINDIR) $(INSTALL_LIBDIR) 
 	$(MAKE) -C secmds install
 
-install-seaudit: $(BINDIR) $(INSTALL_LIBDIR) 
+install-seaudit: $(SBINDIR) $(INSTALL_LIBDIR) 
 	$(MAKE) -C seaudit install
 
 install-sediff: $(BINDIR) $(INSTALL_LIBDIR) 
@@ -219,10 +222,10 @@ install-sediff-nogui: $(BINDIR) $(INSTALL_LIBDIR)
 install-sediffx: $(BINDIR) $(INSTALL_LIBDIR) 
 	$(MAKE) -C sediff install
 
-install-sechecker: $(BINDIR) $(INSTALL_LIBDIR) 
+install-sechecker: $(SBINDIR) $(INSTALL_LIBDIR) 
 	$(MAKE) -C sechecker install
 
-install-sechecker-profiles: $(BINDIR) $(INSTALL_LIBDIR) 
+install-sechecker-profiles: $(INSTALL_LIBDIR) 
 	$(MAKE) -C sechecker install-profiles
 
 # Install the BWidgets package
