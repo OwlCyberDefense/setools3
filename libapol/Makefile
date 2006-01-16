@@ -18,7 +18,6 @@ SONAMETCL = $(TARGETTCL).1
 LIBSOTCL  = $(TARGETTCL).$(shell cat VERSION)
 
 CFLAGS  += -DLIBAPOL_VERSION_STRING='"$(shell cat VERSION)"'
-CFLAGS  += -DAPOL_INSTALL_DIR='"$(INSTALL_LIBDIR)"'
 CFLAGS  += -DLIBAPOL_POLICY_INSTALL_DIR='"$(POLICY_INSTALL_DIR)"'
 CFLAGS  += -DLIBAPOL_SELINUX_DIR='"$(SELINUX_DIR)"'
 CFLAGS	+= -DLIBAPOL_DEFAULT_POLICY='"$(POLICY_SRC_FILE)"'
@@ -123,4 +122,4 @@ poldiff.o relabel_analysis.o render.o dta.o: semantic/avhash.h semantic/avsemant
 semantic/avhash.o semantic/avsemantics.o: semantic/avhash.h
 semantic/avsemantics.o: semantic/avsemantics.h
 dta.o: dta.h
-
+apol_tcl.o util.o: CFLAGS  += -DAPOL_INSTALL_DIR='"$(INSTALL_LIBDIR)"'
