@@ -61,11 +61,11 @@ $(OBJS): CFLAGS += $(GTK_CFLAGS)
 
 seaudit.o: CFLAGS += -DSEAUDIT_GUI_VERSION_STRING='"$(shell cat SEAUDIT_GUI_VERSION)"'
 
-seaudit-report.o: CFLAGS += -DSEREPORT_VERSION_NUM='"$(shell cat SEAUDIT_REPORT_VERSION)"'
+seaudit-report.o: CFLAGS += -DSEREPORT_VERSION_NUM='"$(shell cat SEAUDIT_REPORT_VERSION)"' -DAPOL_INSTALL_DIR='"$(INSTALL_LIBDIR)"'
 
 install: seaudit seaudit-report
-	install -m 755 seaudit $(BINDIR)
-	install -m 755 seaudit-report $(BINDIR)
+	install -m 755 seaudit $(SBINDIR)
+	install -m 755 seaudit-report $(SBINDIR)
 	install -m 644 $(GLADE_FILES) $(INSTALL_LIBDIR)
 	install -m 644 seaudit_help.txt $(INSTALL_LIBDIR)
 	install -m 444 dot_seaudit $(INSTALL_LIBDIR)

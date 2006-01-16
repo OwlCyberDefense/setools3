@@ -22,10 +22,6 @@
 	#define LIBAPOL_VERSION_STRING "UNKNOWN"
 #endif
 
-#ifndef APOL_INSTALL_DIR
-	#define APOL_INSTALL_DIR "/usr/share/setools"
-#endif	
-
 /* use 8k line size */
 #define LINE_SZ 8192
 #define BUF_SZ 240
