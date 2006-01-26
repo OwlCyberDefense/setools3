@@ -9,12 +9,12 @@ CC 			?= gcc
 YACC			= bison -y
 LEX			= flex -olex.yy.c
 LIBS			= -lfl -lm
-DESTDIR		?= /usr
+PREFIX		?= $(DESTDIR)/usr
 
-INCLUDE_DIR		= $(DESTDIR)/include
-SHARED_LIB_INSTALL_DIR 	= $(DESTDIR)/lib
+INCLUDE_DIR		= $(PREFIX)/include
+SHARED_LIB_INSTALL_DIR 	= $(PREFIX)/lib
 STATIC_LIB_INSTALL_DIR 	= $(SHARED_LIB_INSTALL_DIR)
-SETOOLS_INCLUDE 	= $(INCLUDE_DIR)/setools-$(SETOOLS_VER)
+#SETOOLS_INCLUDE 	= $(INCLUDE_DIR)/setools-$(SETOOLS_VER)
 TCLVER			= $(shell env tclsh tcl_vars)
 TCL_LIBS		= -ltk$(TCLVER) -ltcl$(TCLVER) -ldl $(LIBS)
 
@@ -24,24 +24,24 @@ SELINUX_DIR 		= /selinux
 SELINUX_POLICY_DIR 	= /etc/selinux/strict
 POLICY_INSTALL_DIR 	= $(SELINUX_POLICY_DIR)/policy
 POLICY_SRC_DIR		= $(SELINUX_POLICY_DIR)/src/policy
-MANDIR			= $(DESTDIR)/share/man
+MANDIR			= $(PREFIX)/share/man
 POLICY_SRC_FILE 	= $(POLICY_SRC_DIR)/policy.conf
 DEFAULT_LOG_FILE 	= /var/log/messages
 
 # Install directories
 # Binaries go here
-BINDIR			= $(DESTDIR)/bin
-SBINDIR			= $(DESTDIR)/sbin
+BINDIR			= $(PREFIX)/bin
+SBINDIR			= $(PREFIX)/sbin
 # The code uses the specified path below. If you change this, DO NOT add 
 # a trailing path seperator ("/"). For example, use "/usr/share/setools" 
 # instead of "/usr/share/setools/". This probably needs to become more 
 # robust in the future.
 #
-INSTALL_LIBDIR		= $(DESTDIR)/share/setools-$(SETOOLS_VER)
+INSTALL_LIBDIR		= $(PREFIX)/share/setools-$(SETOOLS_VER)
 # all apps that have a te/fc file need to be listed here
 POLICYINSTALLDIRS 	= 
 # Help files here
-INSTALL_HELPDIR = $(INSTALL_LIBDIR)
+INSTALL_HELPDIR = $(INSTALL_LIBDIR)/docs
 
 # Compile options
 # If debug is zero, an optimized version is created
@@ -65,10 +65,6 @@ USE_LIBSELINUX 		= 1
 #	simple performance measure tests (shouldn't normally use)
 #	set PERFORM_TEST to 1 to use
 PERFORM_TEST 		= 0
-# -DCONFIG_SECURITY_SELINUX_MLS 
-#	compiles library to be compatible with MLS 
-#	in the policy (experimental, see Readme)
-CC_DEFINES		= -DCONFIG_SECURITY_SELINUX_MLS 
 
 # You should not need to edit anything after this point.
 ifeq ($(USE_LIBSELINUX), 1)
@@ -111,12 +107,12 @@ endif
 # Exports
 export CC YACC LEX LIBS MAKE CFLAGS TOPDIR LINKFLAGS LDFLAGS CC_DEFINES
 export DYNAMIC LIBSELINUX USE_LIBSEFS
-export INCLUDE_DIR SETOOLS_INCLUDE TCLVER TCL_LIBS
+export INCLUDE_DIR TCLVER TCL_LIBS
 export SHARED_LIB_INSTALL_DIR STATIC_LIB_INSTALL_DIR
 export SELINUX_DIR POLICY_INSTALL_DIR POLICY_SRC_DIR DEFAULT_LOG_FILE 
 export POLICY_SRC_DIR POLICY_SRC_FILE
 export BINDIR SBINDIR INSTALL_LIBDIR INSTALL_HELPDIR POLICYINSTALLDIR 
-export MANDIR DESTDIR
+export MANDIR PREFIX
 
 # Top Level Targets
 all: all-libs all-nogui all-gui
@@ -188,10 +184,10 @@ install: all install-dirs \
 install-nogui: all-nogui install-dirs install-dev install-secmds \
 	install-sediff-nogui install-sechecker
 
-# Install directories
-install-dirs: $(BINDIR) $(SBINDIR) $(MANDIR) $(SHARED_LIB_INSTALL_DIR) $(INSTALL_LIBDIR) $(INSTALL_HELPDIR)
+# Install directories - sort gets rid of make warnings on duplicates
+install-dirs: $(sort $(BINDIR) $(SBINDIR) $(MANDIR) $(SHARED_LIB_INSTALL_DIR) $(INSTALL_LIBDIR) $(INSTALL_HELPDIR))
 
-$(BINDIR) $(SBINDIR) $(MANDIR) $(SHARED_LIB_INSTALL_DIR) $(INSTALL_LIBDIR) $(INSTALL_HELPDIR):
+$(sort $(BINDIR) $(SBINDIR) $(MANDIR) $(SHARED_LIB_INSTALL_DIR) $(INSTALL_LIBDIR) $(INSTALL_HELPDIR)):
 	test -d $@ || install -m 755 -d $@
 
 # Install Libraries

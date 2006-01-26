@@ -1,4 +1,4 @@
- /* Copyright (C) 2001-2005 Tresys Technology, LLC
+ /* Copyright (C) 2001-2006 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
 
 /* 
