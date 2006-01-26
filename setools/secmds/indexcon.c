@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2003-2005 Tresys Technology, LLC
+ *  Copyright (C) 2003-2006 Tresys Technology, LLC
  *  see file 'COPYING' for use and warranty information
  *
  *  indexcon: a tool for indexing the security contexts of filesystem entities
@@ -19,7 +19,7 @@
 #define INDEXCON_VERSION_NUM "UNKNOWN"
 #endif
 
-#define COPYRIGHT_INFO "Copyright (C) 2003-2005 Tresys Technology, LLC"
+#define COPYRIGHT_INFO "Copyright (C) 2003-2006 Tresys Technology, LLC"
 
 static struct option const longopts[] =
 {

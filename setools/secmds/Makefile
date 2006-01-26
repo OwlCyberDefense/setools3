@@ -64,6 +64,14 @@ findcon: findcon.o $(LIBSEFS) $(LIBAPOL)
 install: all
 	install -m 755 $(SE_CMDS) $(BINDIR);
 
+	test -d $(MANDIR)/man1 || install -m 755 -d $(MANDIR)/man1
+	install -m 644 ../man/searchcon.1 $(MANDIR)/man1
+	install -m 644 ../man/seinfo.1 $(MANDIR)/man1
+	install -m 644 ../man/sesearch.1 $(MANDIR)/man1
+	install -m 644 ../man/indexcon.1 $(MANDIR)/man1
+	install -m 644 ../man/findcon.1 $(MANDIR)/man1
+	install -m 644 ../man/replcon.1 $(MANDIR)/man1
+
 install-policy:
 	-@if [ -e $(BINDIR)/replcon ]; then \
 		chcon system_u:object_r:setfiles_exec_t $(BINDIR)/replcon; \
