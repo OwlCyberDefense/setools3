@@ -1,4 +1,4 @@
-/* Copyright (C) 2005 Tresys Technology, LLC
+/* Copyright (C) 2004-2006 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
 
 /* 
@@ -30,7 +30,7 @@
 	#define SEDIFF_VERSION_NUM "UNKNOWN"
 #endif
 
-#define COPYRIGHT_INFO "Copyright (C) 2004,2005 Tresys Technology, LLC"
+#define COPYRIGHT_INFO "Copyright (C) 2004-2006 Tresys Technology, LLC"
 #define SEDIFF_GUI_PROG	"sediffx"
 
 char *p1_file, *p2_file;

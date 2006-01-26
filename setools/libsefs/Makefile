@@ -38,10 +38,10 @@ install-libsefs-static: libsefs install-includes
 	install -m 644 libsefs.a $(STATIC_LIB_INSTALL_DIR)
 
 install-includes:
-	test -d $(SETOOLS_INCLUDE)/libsefs || install -m 755 -d $(SETOOLS_INCLUDE)/libsefs
-	test -d $(SETOOLS_INCLUDE)/libsefs/sqlite || install -m 755 -d $(SETOOLS_INCLUDE)/libsefs/sqlite
-	install -m 644 $(wildcard *.h) $(SETOOLS_INCLUDE)/libsefs
-	install -m 644 $(wildcard sqlite/*.h) $(SETOOLS_INCLUDE)/libsefs/sqlite
+	test -d $(INCLUDE_DIR)/libsefs || install -m 755 -d $(INCLUDE_DIR)/libsefs
+	test -d $(INCLUDE_DIR)/libsefs/sqlite || install -m 755 -d $(INCLUDE_DIR)/libsefs/sqlite
+	install -m 644 $(wildcard *.h) $(INCLUDE_DIR)/libsefs
+	install -m 644 $(wildcard sqlite/*.h) $(INCLUDE_DIR)/libsefs/sqlite
  
 install: install-libsefs-static install-libsefs-shared install-includes
 
