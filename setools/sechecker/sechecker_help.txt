@@ -1,6 +1,6 @@
 SELinux Policy Checker Tool Help File
 sechecker, version 1.0
-October 28, 2005
+January 23, 2006
 selinux@tresys.com
 
 This file contains the basic help information for using sechecker,

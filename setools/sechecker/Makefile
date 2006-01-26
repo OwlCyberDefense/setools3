@@ -1,3 +1,4 @@
+#sechecker
 OBJS 		  = sechecker.o register_list.o sechk_parse.o
 LIBAPOL 	  = ../libapol/libapol.a
 ifeq ($(USE_LIBSEFS), 1)
@@ -47,6 +48,9 @@ sechk_parse.o: sechk_parse.h
 
 install: all install-profiles
 	install -m 755 sechecker $(BINDIR)
+	install -m 644 sechecker_help.txt $(INSTALL_HELPDIR)
+	test -d $(MANDIR)/man1 || install -m 755 -d $(MANDIR)/man1
+	install -m 644 ../man/sechecker.1 $(MANDIR)/man1
 
 install-profiles:
 	mkdir -m 755 -p $(INSTALL_LIBDIR)/$(SECHK_BASE_INSTALL_DIR)/$(PROF_INSTALL_DIR)

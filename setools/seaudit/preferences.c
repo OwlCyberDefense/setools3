@@ -1,4 +1,4 @@
-/* Copyright (C) 2004-2005 Tresys Technology, LLC
+/* Copyright (C) 2004-2006 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
 
 /*
@@ -649,7 +649,6 @@ void on_preferences_activate(GtkWidget *widget, GdkEvent *event, gpointer callba
 	/* however to have it "appear" to be centered on xml_new we have to hide and then show */
 	gtk_window_set_transient_for(GTK_WINDOW(window), seaudit_app->window->window);
 	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER_ON_PARENT);
-	gtk_widget_hide(GTK_WIDGET(window));
 	gtk_window_present(GTK_WINDOW(window));
 	
 	/* make the window modal */

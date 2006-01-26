@@ -1,4 +1,4 @@
-# Copyright (C) 2001-2005 Tresys Technology, LLC
+# Copyright (C) 2001-2006 Tresys Technology, LLC
 # see file 'COPYING' for use and warranty information 
 
 # TCL/TK GUI for SE Linux policy analysis
@@ -192,17 +192,21 @@ proc Apol_Widget::makeLevelSelector {path catSize args} {
 
 proc Apol_Widget::getLevelSelectorLevel {path} {
     variable vars
+    if {[catch {apol_GetSens $vars($path:sens)} s] || $s == {}} {
+        set s $vars($path:sens)
+    } else {
+        set s [lindex $s 0 0]
+    }
     set sl [getScrolledListbox $path.cats]
     set cats {}
     foreach idx [$sl curselection] {
         lappend cats [$sl get $idx] 
     }
-    list $vars($path:sens) $cats
+    list $s $cats
 }
 
 proc Apol_Widget::setLevelSelectorLevel {path level} {
     variable vars
-    
     set sens [lindex $level 0]
     set cats [lindex $level 1]
     set sens_list [$path.sens cget -values]

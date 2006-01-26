@@ -53,12 +53,12 @@ install-libapol-static: libapol install-includes
 	install -m 644 libapol.a $(STATIC_LIB_INSTALL_DIR)
 
 install-includes:
-	test -d $(SETOOLS_INCLUDE)/libapol || install -m 755 -d $(SETOOLS_INCLUDE)/libapol
-	test -d $(SETOOLS_INCLUDE)/libapol/semantic || install -m 755 -d $(SETOOLS_INCLUDE)/libapol/semantic
-	test -d $(SETOOLS_INCLUDE)/libapol/binpol || install -m 755 -d $(SETOOLS_INCLUDE)/libapol/binpol
-	install -m 644 $(filter-out y.tab.h,$(wildcard *.h)) $(SETOOLS_INCLUDE)/libapol
-	install -m 644 $(wildcard semantic/*.h) $(SETOOLS_INCLUDE)/libapol/semantic
-	install -m 644 $(wildcard binpol/*.h) $(SETOOLS_INCLUDE)/libapol/binpol
+	test -d $(INCLUDE_DIR)/libapol || install -m 755 -d $(INCLUDE_DIR)/libapol
+	test -d $(INCLUDE_DIR)/libapol/semantic || install -m 755 -d $(INCLUDE_DIR)/libapol/semantic
+	test -d $(INCLUDE_DIR)/libapol/binpol || install -m 755 -d $(INCLUDE_DIR)/libapol/binpol
+	install -m 644 $(filter-out y.tab.h,$(wildcard *.h)) $(INCLUDE_DIR)/libapol
+	install -m 644 $(wildcard semantic/*.h) $(INCLUDE_DIR)/libapol/semantic
+	install -m 644 $(wildcard binpol/*.h) $(INCLUDE_DIR)/libapol/binpol
 
 install: install-libapol-shared install-libapol-static install-includes
 
@@ -122,4 +122,4 @@ poldiff.o relabel_analysis.o render.o dta.o: semantic/avhash.h semantic/avsemant
 semantic/avhash.o semantic/avsemantics.o: semantic/avhash.h
 semantic/avsemantics.o: semantic/avsemantics.h
 dta.o: dta.h
-apol_tcl.o util.o: CFLAGS  += -DAPOL_INSTALL_DIR='"$(INSTALL_LIBDIR)"'
+apol_tcl.o util.o: CFLAGS  += -DAPOL_INSTALL_DIR='"$(INSTALL_LIBDIR)"' -DAPOL_HELP_DIR='"$(INSTALL_HELPDIR)"'

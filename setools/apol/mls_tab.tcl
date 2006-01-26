@@ -1,4 +1,4 @@
-# Copyright (C) 2001-2005 Tresys Technology, LLC
+# Copyright (C) 2001-2006 Tresys Technology, LLC
 # see file 'COPYING' for use and warranty information 
 
 # TCL/TK GUI for SE Linux policy analysis
@@ -100,7 +100,7 @@ proc Apol_MLS::create {nb} {
     set enable_sens [checkbutton $sensf.enable -text "Sensitivities" \
                          -variable Apol_MLS::vals(enable_sens)]
     set show_cats [checkbutton $sensf.cats -text "Show Level (Categories)" \
-                       -variable Apol_MLS::vals(show_cats_too) -state disabled]
+                       -variable Apol_MLS::vals(show_cats_too)]
     trace add variable Apol_MLS::vals(enable_sens) write \
         [list Apol_MLS::toggleCheckbutton $show_cats]
     pack $enable_sens -side top -anchor nw
