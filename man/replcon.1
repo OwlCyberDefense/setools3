@@ -1,0 +1,47 @@
+.TH replcon 1
+.SH NAME
+replcon \- SELinux file context replacement tool
+.SH SYNOPSIS
+.B replcon
+[OPTIONS] -c OLD NEW FILENAMES
+.SH DESCRIPTION
+This manual page describes the
+.BR replcon
+command.
+.PP
+.B replcon 
+allows the user to find and replace file contexts.  Replacements can be restricted by object class.
+.SH OPTIONS
+.IP "-c, --context=OLD NEW"
+Specify context to search for, and replace.
+.IP "-o, --object=OBJECT"
+Only replace context for the specified object class.
+.IP "-r, --recursive"
+Recurse through directories.
+.IP "-s, --stdin"
+Read FILENAMES from standard input.
+.IP "-q, --quiet"
+Suppress progress output.
+.IP "-V, --verbose"
+Display context info.
+.IP "-v, --version"
+Display version information and exit.
+.IP "-h, --help"
+Display help information and exit.
+.SH INFORMATION
+Valid object classes are
+.PP
+file,
+dir,
+lnk_file,
+chr_file,
+blk_file,
+sock_file,
+fifo_file,
+all_files
+.SH AUTHOR
+This manual page was written by Kevin Carr <kcarr@tresys.com>.  
+.SH COPYRIGHT
+Copyright(C) 2006 Tresys Technology, LLC
+.SH SEE ALSO
+replcon(1), searchcon(1), indexcon(1)

@@ -19,6 +19,7 @@ int Apol_Init(Tcl_Interp *interp);
 
 /* The following are exposed for C wrappers.  They wouldn't be used directly by TCL */
 int Apol_GetScriptDir(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[]);
+int Apol_GetHelpDir(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[]);
 int Apol_OpenPolicy(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[]);
 int Apol_ClosePolicy(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[]);
 int Apol_GetVersion(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[]);

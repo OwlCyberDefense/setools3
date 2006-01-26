@@ -1,8 +1,8 @@
-SELinux Tools (setools), version 2.2
+SELinux Tools (setools), version 2.3
 by Tresys Technology, LLC
 (selinux@tresys.com, www.tresys.com/selinux)
 
-October 28, 2005
+January 23, 2006
 
 BUILDING AND INSTALLING NOTES AND WARNINGS
 
@@ -26,17 +26,10 @@ sediff 		The semantic policy difference tool (command-line and GUI)
 sechecker	The modular policy checking tool
 packages	External packages required by setools
 
-Apol and the other tools are designed to specifically not address MLS
-policies. However, you can set the config option CONFIG_SECURITY_SELINUX_MLS
-in the Makefile to enable support for parsing MLS policy files. Even with
-this flag set during compile time, Setools still ignores all the MLS aspects
-of a policy, but should be able to parse such policies. We have conducted
-very little testing with MLS enabled.
-	
 REQUIREMENTS
 
 TCL/TK VERSION AND INSTALL: Before building you will need to ensure that you
-have Tcl/Tk 8.3 or higher installed with BWidgets. Generally, modern Linux
+have Tcl/Tk 8.4 or higher installed with BWidgets. Generally, modern Linux
 distributions have appropriate versions of Tcl and Tk. Usually the BWidgets
 package IS NOT installed by default, however. If you do not have BWidgets
 installed it is available in the packages subdirectory of the Setools
@@ -78,10 +71,7 @@ variables in this Makefile.
 
 	- TCLVER : When running 'make', the TCLVER should be automatically set 
 	      for your installation of Tcl/Tk. 
-	- TCL_INCLUDE : This variable is commented out by default and should 
-	      only be changed if your Tcl/Tk header files cannot be located  
-	      using your default search path.
-	- TCL_LIBINC : This variable is commented out by default and should 
+	- TCL_LIBS : This variable is commented out by default and should 
 	      only be changed if your Tcl/Tk libraries cannot be located
 	      using the default search path.
 	- DEBUG : If set to 0, this will create an optimized version
@@ -94,21 +84,10 @@ variables in this Makefile.
 	   Useful to create a version of apol that runs on non-selinux machines. 
 	   Set this to 0 for non-selinux machines.
       
-1. Build and install tools:  If you want to install all tools, just 
+Build and install tools:  If you want to install all tools, just 
 type "make install" to build and install everything.  Type "make help" 
 to see options to build individual pieces, for example to install just 
 apol.
-
-2. If you installed secmds and you are using the default policy
-distributed by the NSA or a similar policy (e.g. the "strict" policy
-distributed with Fedora Core 2), then you will need to type "make
-install-policy". This will label the binaries and config files for 
-the secmds.
-
-If this failed, you either are not using an SELinux machine, or the 
-policy source directory is not installed in the conventional location 
-(use make install-src in the policy source directory from the SELinux 
-distribution). Email us; we'll try to help (selinux@tresys.com)!
 
 Most errors result from improperly installed Tcl/Tk, BWidgets, or the 
 above libapol files.  
@@ -153,16 +132,15 @@ the tools if you are using incompatible versions of Tcl/Tk and
 BWidgets. Correct versions of BWidgets for the Tcl/Tk version you are 
 using are:
 
-	- Tcl/Tk 8.3 - BWidget-1.4.1
-	- Tcl/Tk 8.4 or greater - any
+	- Tcl/Tk 8.4 - BWidget-1.7.0
 
-NOTE: You may run the tools using a pre-1.4.1 BWidgets package, 
+NOTE: You may run the tools using a pre-1.7.0 BWidgets package, 
 however, you may experience problems. These tools have been tested 
-using the latest BWidgets packages starting from version 1.4.1. 
+using the latest BWidgets packages starting from version 1.7.0. 
 See TESTING INFORMATION in KNOWN-BUGS for more information on what 
 platforms and configurations these tools have been tested against.
 
 Once you  have downloaded the correct version of BWidgets, then you 
 can install it in your TCL directory. For instance, if you have 
 Tcl installed in the /usr/lib directory, then you should install the 
-BWidgets directory to /usr/lib/tcl8.3/.
+BWidgets directory to /usr/lib/tcl8.4/.

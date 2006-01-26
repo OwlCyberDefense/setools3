@@ -3777,10 +3777,15 @@ int add_validatetrans(bool_t is_mls, ta_item_t *classes, ap_constraint_expr_t *e
 
 int add_sensitivity_alias(int sens, char *alias, policy_t *policy)
 {
+        char *name;
 	if (sens < 0 || sens >= policy->num_sensitivities || alias == NULL || policy == NULL)
 		return -1;
-
-	return add_name(alias, &(policy->sensitivities[sens].aliases));
+        /* strdup() the name */
+        if ((name = malloc(strlen(alias) + 1)) == NULL) {
+                return -1;
+        }
+        strcpy(name, alias);
+	return add_name(name, &(policy->sensitivities[sens].aliases));
 }
 
 /* Sensitivities do not require an order, so they are stored in the order they were
@@ -3814,10 +3819,15 @@ int add_sensitivity(char *name, name_item_t *aliases, policy_t *policy)
 
 int add_category_alias(int category, char *alias, policy_t *policy)
 {
+        char *name;
 	if (category < 0 || category >= policy->num_categories || alias == NULL || policy == NULL)
 		return -1;
-
-	return add_name(alias, &(policy->categories[category].aliases));
+        /* strdup() the name */
+        if ((name = malloc(strlen(alias) + 1)) == NULL) {
+                return -1;
+        }
+        strcpy(name, alias);
+	return add_name(name, &(policy->categories[category].aliases));
 }
 
 /* Categories have to be stored in order - so the indx is the order or value of the category. 
@@ -4541,4 +4551,21 @@ bool_t match_security_context(security_con_t *context1, security_con_t *context2
 	}
 
 	return TRUE;
+}
+
+int ap_genfscon_get_num_paths(policy_t *policy)
+{
+	int i, num_genfs = 0;
+	ap_genfscon_node_t *tmp_node = NULL;
+
+	if (!policy) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	for (i = 0; i < policy->num_genfscon; i++)
+		for (tmp_node = policy->genfscon[i].paths; tmp_node; tmp_node = tmp_node->next)
+			num_genfs++;
+
+	return num_genfs;
 }
