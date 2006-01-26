@@ -59,15 +59,20 @@ ap_bmaps_t *ap_new_bmaps(void)
 	return t;
 }
 
-int ap_add_alias_bmap(char *alias, __u32 val, ap_bmaps_t *bm)
+int ap_add_alias_bmap(char *alias, __u32 val, ap_bmaps_t *bm, int which)
 {
 	ap_alias_bmap_t *t;
 	
 	if(alias == NULL || bm == NULL)
 		return -1;
-	
-	assert(val <= bm->t_num);
-	
+
+        switch(which) {
+        case AP_ALIAS_TYPE: assert(val > 0 && val <= bm->t_num); break;
+        case AP_ALIAS_SENS: assert(val > 0 && val <= bm->sens_num); break;
+        case AP_ALIAS_CATS: assert(val > 0 && val <= bm->cats_num); break;
+        default: return -1;
+        }
+
 	t = (ap_alias_bmap_t *)malloc(sizeof(ap_alias_bmap_t));
 	if(t == NULL) {
 		fprintf(stdout, "out of memory\n");
@@ -76,21 +81,21 @@ int ap_add_alias_bmap(char *alias, __u32 val, ap_bmaps_t *bm)
 	t->name = alias;
 	t->val = val;
 	t->next = NULL;
-	
-	if(bm->alias_map == NULL) 
-		bm->alias_map = bm->alias_map_last = t;
+
+	if(bm->alias_map[which] == NULL) 
+		bm->alias_map[which] = bm->alias_map_last[which] = t;
 	else {
-		bm->alias_map_last->next = t;
-		bm->alias_map_last = t;
+		bm->alias_map_last[which]->next = t;
+		bm->alias_map_last[which] = t;
 	}
 
-	return 0;	
+	return 0;
 }
 
-int ap_free_alias_bmap(ap_bmaps_t *bm)
+int ap_free_alias_bmap(ap_bmaps_t *bm, int which)
 {
 	ap_alias_bmap_t *a, *tmp;
-	for(a = bm->alias_map; a != NULL;) {
+	for(a = bm->alias_map[which]; a != NULL;) {
 		if(a->name != NULL)
 			free(a->name);
 		tmp = a->next;
@@ -124,8 +129,9 @@ void ap_free_bmaps(ap_bmaps_t *bm)
 		free(bm->t_map);
 	if(bm->a_map != NULL)
 		free(bm->a_map);
-	if(bm->alias_map != NULL)
-		ap_free_alias_bmap(bm);
+        ap_free_alias_bmap(bm, AP_ALIAS_TYPE);
+        ap_free_alias_bmap(bm, AP_ALIAS_SENS);
+        ap_free_alias_bmap(bm, AP_ALIAS_CATS);
 	if(bm->u_map != NULL)
 		free(bm->u_map);
 	if(bm->bool_map != NULL)

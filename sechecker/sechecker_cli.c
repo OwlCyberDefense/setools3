@@ -1,4 +1,4 @@
-/* Copyright (C) 2005 Tresys Technology, LLC
+/* Copyright (C) 2005-2006 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
  
 /* 
@@ -20,7 +20,7 @@
 #define SECHECKER_VERSION "UNKNOWN"
 #endif
 
-#define COPYRIGHT_INFO "Copyright (C) 2005 Tresys Technology, LLC"
+#define COPYRIGHT_INFO "Copyright (C) 2005-2006 Tresys Technology, LLC"
 
 extern sechk_module_name_reg_t sechk_register_list[];
 

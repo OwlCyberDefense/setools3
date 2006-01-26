@@ -1,5 +1,35 @@
 CHANGE LOG, SE Linux TOOLS (setools)
 =======================================================
+January 23, 2006, Version 2.3
+
+apol:
+	added new MLS components tab for sensitivities, 
+	levels, and categories.
+	changed users tab to support ranges and default 
+	levels.
+	added range transition tab for searching range
+	transition rules.
+	added new tab for network context components.
+	added new tab for file system context components.
+libapol:
+	added binpol support for MLS, network contexts, 
+	and file system contexts.
+seinfo:
+	added command line options for MLS components.
+	added command line options for network contexts
+	and file system contexts.
+sesearch:
+	added command line option for searching for rules
+	by conditional boolean name.
+seaudit:
+	added new column in the log view for the 'comm' 
+	field found in auditd log files.
+	added filters for the 'comm' field and 'message'
+	field.
+manpages:
+	added manpages for all tools.	
+	
+=======================================================
 October 31, 2005, Version 2.2
 
 libapol:
