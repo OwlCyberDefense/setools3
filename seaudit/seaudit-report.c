@@ -1,4 +1,4 @@
-/* Copyright (C) 2004-2005 Tresys Technology, LLC
+/* Copyright (C) 2004-2006 Tresys Technology, LLC
  * see file 'COPYING' for use and warranty information */
 
 /* 
@@ -29,7 +29,7 @@
 #define SEREPORT_VERSION_NUM "UNKNOWN"
 #endif
 
-#define COPYRIGHT_INFO "Copyright (C) 2004-2005 Tresys Technology, LLC"
+#define COPYRIGHT_INFO "Copyright (C) 2004-2006 Tresys Technology, LLC"
 
 static struct option const longopts[] = {
 	{"html", no_argument, NULL, 'H'},

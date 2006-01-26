@@ -30,8 +30,8 @@ install-libapol-static: libseaudit install-includes
 	install -m 644 libseaudit.a $(STATIC_LIB_INSTALL_DIR)
 
 install-includes:
-	test -d $(SETOOLS_INCLUDE)/libseaudit || install -m 755 -d $(SETOOLS_INCLUDE)/libseaudit
-	install -m 644 $(wildcard *.h) $(SETOOLS_INCLUDE)/libseaudit
+	test -d $(INCLUDE_DIR)/libseaudit || install -m 755 -d $(INCLUDE_DIR)/libseaudit
+	install -m 644 $(wildcard *.h) $(INCLUDE_DIR)/libseaudit
 
 install: install-libapol-shared install-libapol-static install-includes
 

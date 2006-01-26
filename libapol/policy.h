@@ -801,6 +801,7 @@ bool_t match_security_context(security_con_t *context1, security_con_t *context2
 /* genfscon */
 int ap_genfscon_get_idx(char *fstype, policy_t *policy);
 void ap_genfscon_node_destroy(ap_genfscon_node_t *node);
+int ap_genfscon_get_num_paths(policy_t *policy);
 
 /* MLS */
 int get_sensitivity_idx(const char *name, policy_t *policy);

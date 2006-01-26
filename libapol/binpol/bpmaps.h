@@ -28,6 +28,12 @@ typedef struct permisson_map {
 	int	*map;
 } ap_permission_bmap_t;
 
+/* As of version 20 binary policies, there are three policy components
+   which may have aliases:  types, sensitivities, and categories. */
+#define AP_ALIAS_TYPE 0
+#define AP_ALIAS_SENS 1
+#define AP_ALIAS_CATS 2
+
 typedef struct bpmaps {
 	int	*cp_map;	/* common permission (from val to idx) */
 	__u32 	*rev_cp_map;	/* common permission (from idx to val) */
@@ -43,18 +49,19 @@ typedef struct bpmaps {
 	int	t_num;
 	int	*a_map;		/* attribs */
 	int	a_num;
-	ap_alias_bmap_t *alias_map;	/* aliases (top) */
-	ap_alias_bmap_t *alias_map_last; /* (bottom) */
+	ap_alias_bmap_t *alias_map[3];	/* aliases (top) */
+	ap_alias_bmap_t *alias_map_last[3]; /* (bottom) */
 	int	*u_map;		/* users */
 	int	u_num;
 	int	*bool_map;	/* conditional booleans */
 	int	bool_num;
 	int	sens_num;	/* number of MLS sensitivies */
 	int	*sens_map;
+        int	cats_num;	/* number of MLS categories */
 } ap_bmaps_t;
 
 ap_bmaps_t *ap_new_bmaps(void);
 void ap_free_bmaps(ap_bmaps_t *bm);
-int ap_add_alias_bmap(char *alias, __u32 val, ap_bmaps_t *bm);
+int ap_add_alias_bmap(char *alias, __u32 val, ap_bmaps_t *bm, int which);
 
 #endif
