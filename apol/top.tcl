@@ -1,4 +1,4 @@
-# Copyright (C) 2001-2005 Tresys Technology, LLC
+# Copyright (C) 2001-2006 Tresys Technology, LLC
 # see file 'COPYING' for use and warranty information 
 
 # TCL/TK GUI for SE Linux policy analysis
@@ -24,7 +24,7 @@ namespace eval ApolTop {
 	variable polstats 		""
 	# The version number is defined as a magical string here. This is later configured in the make environment.
 	variable gui_ver 		APOL_GUI_VERSION 
-	variable copyright_date		"2001-2005"
+	variable copyright_date		"2001-2006"
 	# install_dir is a magical string to be defined via the makefile!
 	variable apol_install_dir	APOL_INSTALL_DIR
 	variable recent_files
@@ -1631,8 +1631,8 @@ proc ApolTop::helpDlg {title file_name} {
     set okButton [Button $hbox.okButton -text "Close" \
 		      -command "destroy $helpDlg"]
     # go to the script dir to find the help file
-    set script_dir  [apol_GetScriptDir "$file_name"]
-    set helpfile "$script_dir/$file_name"
+    set help_dir  [apol_GetHelpDir "$file_name"]
+    set helpfile "$help_dir/$file_name"
     
     # Placing display widgets
     pack $hbox -expand yes -fill both -padx 5 -pady 5

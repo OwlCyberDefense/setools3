@@ -1,0 +1,48 @@
+.TH sechecker 1
+.SH NAME
+sechecker \- SELinux policy checking tool
+.SH SYNOPSIS
+.B sechecker
+[OPTIONS] -m module                 Run module
+.PP
+.B sechecker
+[OPTIONS] -p profile                Run profile
+.PP
+.B sechecker
+[OPTIONS] -m module -p profile      Run module with profile
+.SH Description
+This manual page describes the
+.B sechecker
+command.
+.PP
+.B sechecker
+allows the user to perform predefined modular checks on a SELinux policy.  Profiles exist to group modules together and allow modification of module settings.
+.SH OPTIONS
+.IP "-l, --list"
+print a list of profiles and modules
+.IP "-q, --quiet"
+suppress output
+.IP "-s, --short"
+print short output
+.IP "-v, --verbose"
+print verbose output
+.IP "--version"
+print version and exit
+.IP "--fcfile=<file>"
+file_contexts file
+.IP "--policy=<file>"
+policy file
+.IP "-h[mod], --help[=module]"
+print general help or help for a module
+.IP "-m <mod>, --module=<mod>"
+module name
+.IP "-p <prof>, --profile=<prof>"
+profile name or path
+.IP "--min-sev=<low|med|high>"
+the minimum severity to report
+.SH AUTHOR
+This manual page was written by Kevin Carr <kcarr@tresys.com>.  
+.SH COPYRIGHT
+Copyright(C) 2006 Tresys Technology, LLC
+.SH SEE ALSO
+apol(1)

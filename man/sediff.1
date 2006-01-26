@@ -1,0 +1,48 @@
+.TH sediff 1
+.SH NAME
+sediff  \- SELinux policy difference tool
+.SH SYNOPSIS
+.B sediff
+[OPTIONS] POLICY1 POLICY2
+.SH DESCRIPTION
+This manual page describes the
+.B sediff
+command.
+.PP
+.B sediff 
+allows the user to inspect the semantic differences between two SELinux policy files.
+.SH OPTIONS
+.IP "-c, --classes"
+object class and permission definitions
+.IP "-t, --types"
+type definitions
+.IP "-a, --attributes"
+attribute definitions
+.IP "-r, --roles"
+role definitions
+.IP "-u, --users"
+user definitions
+.IP "-b, --booleans"
+boolean definitions and default values
+.IP "-T, --terules"
+type enforcement rules
+.IP "-R, --roletrans"
+role transition rules
+.IP "-A, --roleallows"
+role allow rules
+.IP "-C, --conds"
+conditionals and their rules
+.IP "-q, --quiet"
+only print different definitions
+.IP "-s, --stats"
+print useful policy statics
+.IP "-h, --help"
+display this help and exit
+.IP "-v, --version"
+output version information and exit
+.SH AUTHOR
+This manual page was written by Kevin Carr <kcarr@tresys.com>.  
+.SH COPYRIGHT
+Copyright(C) 2006 Tresys Technology, LLC
+.SH SEE ALSO
+sediffx(1)

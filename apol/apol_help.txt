@@ -1,16 +1,17 @@
 SELinux Policy Analysis Tool Help File
-apol, version 2.1
-October 28, 2005
+apol, version 2.2.0
+January 23, 2006
 selinux@tresys.com
 
 This file contains basic help information for using apol, version
-2.1 This version of apol allows you to:
+2.2.0 This version of apol allows you to:
 
 	+ examine, search, and relate policy components (types, type 
 	attributes, object classes, object permissions, roles, users,
-	initials SIDs and booleans), and policy rules (type allow, 
+	initials SIDs, MLS components, network and file system contexts,
+	and booleans), and policy rules (type allow, 
 	neverallow, auditallow, dontaudit, type_transition, 
-	type_change); and 
+	type_change, role allow, role_transition, and range_transition); and 
 	
 	+ Create and query an on-disk database which contains SELinux 
 	context information about the filesystem.
@@ -18,7 +19,8 @@ This file contains basic help information for using apol, version
 	+ perform some automated analysis of policies which 
 	currently includes forward and reverse domain transition 
 	analyses, direct information flow analysis, and transitive 
-	(indirect) information flow analysis.
+	(indirect) information flow analysis, direct relabel analysis,
+	and type relationship analysis.
 
 This version also supports binary policies. This allows you to 
 load either a binary or source policy and use all of the features of 
@@ -126,7 +128,9 @@ components of an SELinux policy.
 	IV. USERS TAB
 
 	This tab allows you to search users defined in the policy, and 
-	view the roles allowed for that user.
+	view the roles allowed for that user. It also allows you to view
+	the default MLS level and allowed MLS range for users if a MLS 
+	policy is loaded.
 	
 	V. INITIAL SIDS TAB
 
@@ -142,6 +146,21 @@ components of an SELinux policy.
 	of a variable will be applied in memory and but will not change the
 	state within the actual policy file.
 
+	VII. MLS TAB
+
+	This tab allows you to search sensitivities and categories in the 
+	policy, as well as display the level statements for sensitivities
+	and which sensitivites can be associated with a category.
+
+	VIII. NET CONTEXTS TAB
+
+	This tab allows you to search the portcon, netifcon, and nodecon
+	statements defined in the policy.
+
+	IX. FS CONTEXTS TAB
+
+	This tab allows you to search the fs_use_ and genfscon statements
+	defined in the policy.
 
 3. POLICY RULES TAB 
 
@@ -297,6 +316,15 @@ a set of search criteria you select.
 	
 	As with TE Rules, the Source option can also be used in an "any" 
 	search.
+
+	IV. RANGE TRANSITION RULES TAB:
+
+	This tab allows you to search to search range_transition rules.
+	You can search by source and target types and by the MLS range.
+	There are three options when searching for ranges; you can find
+	exact matches to the entered range, find rules which have ranges 
+	that contain the entered range, or find rules which have ranges 
+	that are within the entered range. 
 
 4. FILE CONTEXTS TAB
 

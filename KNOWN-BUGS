@@ -1,8 +1,8 @@
-SELinux Tools (setools), version 2.2
+SELinux Tools (setools), version 2.3
 by Tresys Technology, LLC
 (selinux@tresys.com, www.tresys.com/selinux)
 
-October 28, 2005
+January 23, 2006
 
 
 CURRENT BUGS AND ISSUES
@@ -56,8 +56,8 @@ Operating Systems: Fedora Core 3 and 4, RHEL 4, Gentoo 2004.3
 SELinux version: 2.6
 SELinux Policy versions: 12, 15, 16, 17, 18, 19 and 20 (with MLS support for versions 19 and 20)
 TCL/TK version: 8.4
-BWidget versions: 1.4, 1.6, 1.7
-Desktops: Gnome, KDE, Gnome, fvwm 
+BWidget version: 1.7
+Desktops: Gnome, KDE, fvwm 
 
 These tools will likely have some bugs of which we are currently unaware.  
 Please report any new bugs or comments to selinux@tresys.com.  Thank you 
