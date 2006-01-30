@@ -21,8 +21,11 @@
 #include <libseaudit/auditlog.h>
 #include <libapol/policy.h>
 #include <string.h>
+#include <time.h>
 #include <ctype.h>
 #include <limits.h>
+
+#define TM_YEAR_ZERO 1900
 
 enum {
 	ITEMS_LIST_COLUMN, 
@@ -51,6 +54,12 @@ enum message_types {
 	SEAUDIT_MSG_AVC_GRANTED
 };
 
+/* define the date time options */
+#define SEAUDIT_DT_OPTION_NONE 0
+#define SEAUDIT_DT_OPTION_BEFORE 1
+#define SEAUDIT_DT_OPTION_AFTER 2
+#define SEAUDIT_DT_OPTION_BETWEEN 3
+
 #define SEAUDIT_MAX_U16_STRLEN 5 /* the max # of chars that can be in a string representing a 16 bit digit */
 
 const char *msg_type_strs[] = { "none", "denied", "granted" };
@@ -72,7 +81,166 @@ typedef struct filters_select_items {
 	struct filter_window *parent;
 } filters_select_items_t;
 
+typedef struct filters_date_item {
+	struct tm *start;
+	struct tm *end;
+	unsigned int option;
+} filters_date_item_t;
+
 extern seaudit_t *seaudit_app;
+
+/* Given the year and the month set the spin button to have the correct number of 
+   days for that month */
+static void filter_window_date_set_number_days(int year, int month, GtkSpinButton *button, bool_t use_year)
+{	
+	int days[] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+	int cur_day;
+	if (!button || month < 0)
+		return;
+	/* we have to get the current day because set_range moves the current day
+	   by the difference minus 1 day, i.e. going from jan 20 to february
+	   the day would automatically become 18 */
+	cur_day = gtk_spin_button_get_value_as_int(button);
+	/* are we dealing with february and can to take year into account*/
+	if (month == 1 && use_year) {
+		if (year % 4 == 0) {
+			if (year % 100 == 0 && year % 400 != 0)
+				gtk_spin_button_set_range(button, 1, days[month]);
+			else
+				gtk_spin_button_set_range(button, 1, days[month] + 1);
+		} else 		
+			gtk_spin_button_set_range(button, 1, days[month]);
+	} else if (month == 1) {
+		/* just use the maximum # of days feb can have since won't know the year */
+		gtk_spin_button_set_range(button, 1, days[month] + 1);
+	} else
+		gtk_spin_button_set_range(button, 1, days[month]);
+	/* return to current day, or to the max value allowed in range*/
+	gtk_spin_button_set_value(button, cur_day);	
+	return;
+}
+
+/* this is called whenever the month or year is changed in the date filter*/
+static void filter_window_date_update_days(GladeXML *xml, bool_t use_year)
+{
+	int month;
+	int year;
+	GtkWidget *widget;
+
+	if (!xml)
+		return;
+
+	widget = glade_xml_get_widget(xml, "DateStartMonth");	
+	/* remember that months start with 0 in this widget */
+	month = gtk_combo_box_get_active(GTK_COMBO_BOX(widget));
+	widget = glade_xml_get_widget(xml, "DateStartYear");	
+	year = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(widget));			
+	widget = glade_xml_get_widget(xml, "DateStartDay");	
+	filter_window_date_set_number_days(year, month, GTK_SPIN_BUTTON(widget), use_year);
+
+	widget = glade_xml_get_widget(xml, "DateEndMonth");	
+	/* remember that months start with 0 in this widget */
+	month = gtk_combo_box_get_active(GTK_COMBO_BOX(widget));
+	widget = glade_xml_get_widget(xml, "DateEndYear");	
+	year = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(widget));			
+	widget = glade_xml_get_widget(xml, "DateEndDay");	
+	filter_window_date_set_number_days(year, month, GTK_SPIN_BUTTON(widget), use_year);
+
+}
+
+/* set the frames sorrounding date options sensitive based on toggle selections */
+static void filter_window_date_set_sensitive(GtkToggleButton *tb, gpointer user_data)
+{
+	GtkWidget *startframe;
+	GtkWidget *endframe;
+	filter_window_t *fw = (filter_window_t *)user_data;
+	const char *name;
+	/* if this toggle button is the deselected one just return */
+	if (!gtk_toggle_button_get_active(tb))
+		return;
+	startframe = glade_xml_get_widget(fw->xml, "DateStartFrame");
+	endframe = glade_xml_get_widget(fw->xml, "DateEndFrame");
+	if (!startframe || !endframe)
+		return;
+	name =  gtk_widget_get_name(GTK_WIDGET(tb));
+	if (strcmp(name, "MatchNoneRadio") == 0) {
+		gtk_widget_set_sensitive(startframe, FALSE);
+		gtk_widget_set_sensitive(endframe, FALSE);
+	} else if (strcmp(name, "MatchBetweenRadio") == 0) {
+		gtk_widget_set_sensitive(startframe, TRUE);
+		gtk_widget_set_sensitive(endframe, TRUE);
+	} else {
+		gtk_widget_set_sensitive(startframe, TRUE);
+		gtk_widget_set_sensitive(endframe, FALSE);
+	}
+}
+
+/* get the option from the date filter gui */
+int filters_window_get_tm_option(GladeXML *xml)
+{
+	GtkWidget *widget;
+	widget = glade_xml_get_widget(xml, "MatchNoneRadio");	
+	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)))
+		return SEAUDIT_DT_OPTION_NONE;
+	widget = glade_xml_get_widget(xml, "MatchBeforeRadio");	
+	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)))
+		return SEAUDIT_DT_OPTION_BEFORE;
+	widget = glade_xml_get_widget(xml, "MatchAfterRadio");	
+	if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget)))
+		return SEAUDIT_DT_OPTION_AFTER;
+	return SEAUDIT_DT_OPTION_BETWEEN;
+}
+
+/* 
+   get the current time stored in the window and place in parameter tm 
+   unless the year is not valid, then do not overwrite the year 
+*/
+static int filters_window_update_tm(filter_window_t *fw, bool_t start, struct tm *tm)
+{
+	GladeXML *xml;
+	GtkWidget *widget = NULL;
+
+	if (!fw || !tm)
+		return -1;
+	xml = fw->xml;
+	if (start) {
+		/* get the date */
+		widget = glade_xml_get_widget(xml, "DateStartMonth");	
+		tm->tm_mon = gtk_combo_box_get_active(GTK_COMBO_BOX(widget));
+		widget = glade_xml_get_widget(xml, "DateStartDay");	
+		tm->tm_mday = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(widget));
+		if (audit_log_has_valid_years(fw->parent->parent->store->log_view->my_log)) {
+		    widget = glade_xml_get_widget(xml, "DateStartYear");	
+		    tm->tm_year = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(widget)) - TM_YEAR_ZERO;		
+		}
+		/* get the hour min sec */
+		widget = glade_xml_get_widget(xml, "DateStartHour");	
+		tm->tm_hour = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(widget));
+		widget = glade_xml_get_widget(xml, "DateStartMinute");	
+		tm->tm_min = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(widget));
+		widget = glade_xml_get_widget(xml, "DateStartSecond");	
+		tm->tm_sec = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(widget));		
+	} else {
+		/* get the date */
+		widget = glade_xml_get_widget(xml, "DateEndMonth");	
+		tm->tm_mon = gtk_combo_box_get_active(GTK_COMBO_BOX(widget));
+		widget = glade_xml_get_widget(xml, "DateEndDay");	
+		tm->tm_mday = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(widget));
+		if (audit_log_has_valid_years(fw->parent->parent->store->log_view->my_log)) {
+			widget = glade_xml_get_widget(xml, "DateEndYear");	
+			tm->tm_year = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(widget)) - TM_YEAR_ZERO;		
+		}
+		/* get the hour min sec */
+		widget = glade_xml_get_widget(xml, "DateEndHour");	
+		tm->tm_hour = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(widget));
+		widget = glade_xml_get_widget(xml, "DateEndMinute");	
+		tm->tm_min = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(widget));
+		widget = glade_xml_get_widget(xml, "DateEndSecond");	
+		tm->tm_sec = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(widget));		
+	}
+	return 0;
+}
+
 
 /******************************************************************
  * The following are private methods for the filters_select_items *
@@ -617,7 +785,7 @@ static void filters_select_items_on_close_button_clicked(GtkButton *button, filt
 		filter_items_list->window = NULL;
 		filters_select_items_fill_entry(filter_items_list);
 		log_load_callback_remove(&filters_select_on_log_opened, filter_items_list);
-		policy_load_callback_remove(&filters_select_on_policy_opened, filter_items_list);
+		policy_load_callback_remove(&filters_select_on_policy_opened, filter_items_list);		
 	}
 }
 
@@ -782,6 +950,8 @@ static void filters_select_items_display(filters_select_items_t *filter_items_li
 	g_assert(window);
 	filter_items_list->window = window;
 
+
+
 	/* Set this new dialog transient for the parent filters dialog so that
 	 * it will be destroyed when the parent filters dialog is destroyed */
 	/* set this window to be transient on the parent window, so that when it pops up it gets centered on it */
@@ -918,11 +1088,42 @@ static void filters_select_items_display(filters_select_items_t *filter_items_li
 /********************************************************
  * Private methods and callbacks for the filters object *
  ********************************************************/ 
+/*
+  if a log is opened reset the year spin buttons on the time filter
+  to reflect whether the current log has years or not 
+*/
+static void filter_window_on_log_opened(void *filter_window)
+{
+
+	filter_window_t *fw = (filter_window_t*)filter_window;
+	GtkWidget *start, *end;
+	bool_t use_years;
+	/* grab the widgets if they exist */
+	if (fw->window) {
+		start = glade_xml_get_widget(fw->xml, "DateStartYear");
+		end = glade_xml_get_widget(fw->xml, "DateEndYear");
+		use_years = audit_log_has_valid_years(fw->parent->parent->store->log_view->my_log);
+		if (use_years) {
+			gtk_spin_button_set_value(GTK_SPIN_BUTTON(start), TM_YEAR_ZERO + fw->dates->start->tm_year);
+			gtk_spin_button_set_value(GTK_SPIN_BUTTON(end), TM_YEAR_ZERO + fw->dates->end->tm_year);
+			gtk_widget_set_sensitive(start, TRUE);
+			gtk_widget_set_sensitive(end, TRUE);
+		} else {
+			gtk_entry_set_text(GTK_ENTRY(start), ""); 
+			gtk_entry_set_text(GTK_ENTRY(end), ""); 
+			gtk_widget_set_sensitive(start, FALSE);
+			gtk_widget_set_sensitive(end, FALSE);
+		}
+		filter_window_date_update_days(fw->xml, use_years);
+	}	
+}
+
 static int filter_window_verify_filter_values(filter_window_t *filter_window)
 {
 	char *text = NULL;	
 	GtkWidget *widget = NULL;
 	int i, j;
+	struct tm *t1 = NULL, *t2 = NULL;
 
 	/* check for network port filter */
 	/* since we do not know if this is an ipv4 or ipv6 port we check against
@@ -932,26 +1133,42 @@ static int filter_window_verify_filter_values(filter_window_t *filter_window)
 	/* check to see if the strlen of this number is larger than 
 	   the strlen of a __16 which is the 
 	   maximum size a ipv6 port can be as defined in in6.h*/
-	if (strlen(text) > SEAUDIT_MAX_U16_STRLEN)
-		goto err;
+	if (strlen(text) > SEAUDIT_MAX_U16_STRLEN) {
+		message_display(filter_window->window, GTK_MESSAGE_ERROR, "Invalid Port Filter.\n");
+		return -1;
+	}
 	if (strcmp(text, "") != 0) {
 		for (i = 0 ; i < strlen(text); i++) {
 			if (isdigit(text[i]) == 0) {
-				goto err;
+				message_display(filter_window->window, GTK_MESSAGE_ERROR, "Invalid Port Filter.\n");
+				return -1;
 			}
 		}
 		j = atoi(text);
 		/* now check that the number returned is within the range
 		   of #'s allowed for a ipv6 port */
-		if (j < 0 || j > (1 << 16)) 
-			goto err;
+		if (j < 0 || j > (1 << 16)) {
+			message_display(filter_window->window, GTK_MESSAGE_ERROR, "Invalid Port Filter.\n");
+			return -1;
+		}
 	}	
-	return 0;
 
-err:
-	message_display(filter_window->window, GTK_MESSAGE_ERROR, "Invalid Port Filter.\n");
-	return -1;
-	
+	/*check the date and time */
+	if (filters_window_get_tm_option(filter_window->xml) == SEAUDIT_DT_OPTION_BETWEEN) {
+		t1 = (struct tm *)calloc(1, sizeof(struct tm));
+		t2 = (struct tm *)calloc(1, sizeof(struct tm));
+		filters_window_update_tm(filter_window, TRUE, t1);
+		filters_window_update_tm(filter_window, FALSE, t2);
+		if (date_time_compare(t1, t2) > 0) {
+			free(t1);
+			free(t2);
+			message_display(filter_window->window, GTK_MESSAGE_ERROR, "Invalid Date Filter.\n");
+			return -1;
+		}
+		free(t1);
+		free(t2);
+	}
+	return 0;
 }
 
 static void filter_window_set_title(filter_window_t *filter_window)
@@ -1017,6 +1234,68 @@ static void filter_window_set_values(filter_window_t *filter_window)
 	widget = glade_xml_get_widget(filter_window->xml, "HostEntry");
 	gtk_entry_set_text(GTK_ENTRY(widget), filter_window->host->str);
 
+	/* next set the time*/
+	if (filter_window->dates) {
+		widget = glade_xml_get_widget(filter_window->xml, "DateStartMonth");	
+		gtk_combo_box_set_active(GTK_COMBO_BOX(widget), filter_window->dates->start->tm_mon);
+		widget = glade_xml_get_widget(filter_window->xml, "DateStartDay");	
+		gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), filter_window->dates->start->tm_mday);
+		widget = glade_xml_get_widget(filter_window->xml, "DateStartYear");	
+		/* depending on if this log has valid years we change how this is displayed, if it has valid years
+		   display a year, otherwise blank out the spin button and set it insensitive */
+		if (audit_log_has_valid_years(filter_window->parent->parent->store->log_view->my_log)) {
+			gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), TM_YEAR_ZERO + filter_window->dates->start->tm_year);
+		} else {
+			if (!GTK_WIDGET_REALIZED(widget))
+				gtk_widget_realize(widget);
+			gtk_entry_set_text(GTK_ENTRY(widget), "");
+			gtk_widget_set_sensitive(widget, FALSE);
+		}
+		widget = glade_xml_get_widget(filter_window->xml, "DateStartHour");	
+		gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), filter_window->dates->start->tm_hour);
+		widget = glade_xml_get_widget(filter_window->xml, "DateStartMinute");	
+		gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), filter_window->dates->start->tm_min);
+		widget = glade_xml_get_widget(filter_window->xml, "DateStartSecond");	
+		gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), filter_window->dates->start->tm_sec);
+
+		widget = glade_xml_get_widget(filter_window->xml, "DateEndMonth");	
+		gtk_combo_box_set_active(GTK_COMBO_BOX(widget), filter_window->dates->end->tm_mon);
+		widget = glade_xml_get_widget(filter_window->xml, "DateEndDay");	
+		gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), filter_window->dates->end->tm_mday);
+		widget = glade_xml_get_widget(filter_window->xml, "DateEndYear");	
+		/* depending on if this log has valid years we change how this is displayed, if it has valid years
+		   display a year, otherwise blank out the spin button and set it insensitive */
+		if (audit_log_has_valid_years(filter_window->parent->parent->store->log_view->my_log)) {
+			gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), TM_YEAR_ZERO + filter_window->dates->end->tm_year);
+		} else {
+			if (!GTK_WIDGET_REALIZED(widget))
+				gtk_widget_realize(widget);
+			gtk_widget_set_sensitive(widget, FALSE);
+			gtk_entry_set_text(GTK_ENTRY(widget), "");
+		}
+		widget = glade_xml_get_widget(filter_window->xml, "DateEndHour");	
+		gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), filter_window->dates->end->tm_hour);
+		widget = glade_xml_get_widget(filter_window->xml, "DateEndMinute");	
+		gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), filter_window->dates->end->tm_min);
+		widget = glade_xml_get_widget(filter_window->xml, "DateEndSecond");	
+		gtk_spin_button_set_value(GTK_SPIN_BUTTON(widget), filter_window->dates->end->tm_sec);
+		
+		switch (filter_window->dates->option) {
+		case SEAUDIT_DT_OPTION_NONE:
+			widget = glade_xml_get_widget(filter_window->xml, "MatchNoneRadio");
+			break;
+		case SEAUDIT_DT_OPTION_BEFORE:
+			widget = glade_xml_get_widget(filter_window->xml, "MatchBeforeRadio");
+			break;
+		case SEAUDIT_DT_OPTION_AFTER:
+			widget = glade_xml_get_widget(filter_window->xml, "MatchAfterRadio");
+			break;
+		default :
+			widget = glade_xml_get_widget(filter_window->xml, "MatchBetweenRadio");
+			break;
+		}
+		gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(widget), TRUE);
+	}
 	widget = glade_xml_get_widget(filter_window->xml, "MsgCombo");
 	gtk_combo_box_set_active(GTK_COMBO_BOX(widget), filter_window->msg);
 
@@ -1027,6 +1306,7 @@ static void filter_window_update_values(filter_window_t *filter_window)
 	GtkWidget *widget;
 	GtkTextBuffer *buffer;
 	GtkTextIter start, end;
+	int rt;
 	
 	/* First parse all selection enabled entry boxes, because the user may have typed in the value */
 	filters_select_items_parse_entry(filter_window->src_types_items);
@@ -1080,8 +1360,17 @@ static void filter_window_update_values(filter_window_t *filter_window)
 	gtk_text_buffer_get_end_iter(buffer, &end);
 	filter_window->notes = g_string_assign(filter_window->notes, gtk_text_buffer_get_text(buffer, &start, &end, FALSE));
 		
-}
+	if (filter_window->dates) {		
+		rt = filters_window_update_tm(filter_window, TRUE, filter_window->dates->start);		
+		if (rt < 0)
+			return;
+		rt = filters_window_update_tm(filter_window, FALSE, filter_window->dates->end);
+		if (rt < 0)
+			return;
+		filter_window->dates->option = filters_window_get_tm_option(filter_window->xml);
+	}
 
+}
 
 static void filter_window_seaudit_filter_list_free(seaudit_filter_list_t *list)
 {
@@ -1260,6 +1549,26 @@ static void filter_window_on_OtherClearButton_clicked(GtkButton *button, filter_
 	filter_window_clear_other_tab_values(filter_window);
 }
 
+static void filter_window_on_radio_toggled(GtkToggleButton *tb, gpointer user_data)
+{
+	filter_window_date_set_sensitive(tb, user_data);
+}
+
+static void filter_window_on_month_changed(GtkComboBox *cb, gpointer user_data)
+{
+	filter_window_t *fw = (filter_window_t *)user_data;	
+	bool_t use_year = audit_log_has_valid_years(fw->parent->parent->store->log_view->my_log);
+	filter_window_date_update_days(fw->xml, use_year);
+}
+
+static void filter_window_on_year_value_changed(GtkSpinButton *sb, gpointer user_data)
+{
+	filter_window_t *fw = (filter_window_t *)user_data;
+	bool_t use_year = audit_log_has_valid_years(fw->parent->parent->store->log_view->my_log);
+	filter_window_date_update_days(fw->xml, use_year);
+}
+
+
 static gboolean filter_window_name_entry_text_changed(GtkWidget *widget, GdkEventKey *event, filter_window_t *filter_window)
 {
 	const gchar *name;
@@ -1277,6 +1586,7 @@ static gboolean filter_window_name_entry_text_changed(GtkWidget *widget, GdkEven
 filter_window_t* filter_window_create(multifilter_window_t *parent, gint parent_index, const char *name)
 {
 	filter_window_t *filter_window;
+	time_t t;
 	
 	if (!parent || !name)
 		return NULL;
@@ -1314,6 +1624,22 @@ filter_window_t* filter_window_create(multifilter_window_t *parent, gint parent_
 	filter_window->parent = parent;
 	filter_window->parent_index = parent_index;
 
+	filter_window->dates = (filters_date_item_t *)calloc(1, sizeof(filters_date_item_t));
+	t = time(NULL);
+	filter_window->dates->start = (struct tm *)calloc(1, sizeof(struct tm));
+	filter_window->dates->start = localtime_r(&t, filter_window->dates->start);       
+	filter_window->dates->end = (struct tm *)calloc(1, sizeof(struct tm));
+	filter_window->dates->end = localtime_r(&t, filter_window->dates->end);
+	
+	/* set the hour/min/secs up so that we have one full day */
+	filter_window->dates->start->tm_hour = 0;
+	filter_window->dates->start->tm_min = 0;
+	filter_window->dates->start->tm_sec = 0;
+
+	filter_window->dates->end->tm_hour = 23;
+	filter_window->dates->end->tm_min = 59;
+	filter_window->dates->end->tm_sec = 59;
+	
 	return filter_window;
 }
 
@@ -1322,6 +1648,8 @@ void filter_window_destroy(filter_window_t *filter_window)
 	if (filter_window == NULL)
 		return;
 	
+	log_load_callback_remove(&filter_window_on_log_opened, filter_window);
+
 	filters_select_items_destroy(filter_window->src_types_items);
 	filters_select_items_destroy(filter_window->src_users_items);
 	filters_select_items_destroy(filter_window->src_roles_items);
@@ -1357,6 +1685,8 @@ void filter_window_destroy(filter_window_t *filter_window)
 		gtk_widget_destroy(GTK_WIDGET(filter_window->window));
 	if (filter_window->xml != NULL)
 		g_object_unref(G_OBJECT(filter_window->xml));
+
+	free(filter_window->dates);
 
 	free(filter_window);
 }
@@ -1397,6 +1727,7 @@ void filter_window_hide(filter_window_t *filter_window)
 		filter_window->obj_class_items->window = NULL;
 	}
 	filter_window_update_values(filter_window);
+	
 	/* if there is an idle function for this window
 	 * then we must remove it to avoid that function
 	 * being executed after we delete the window.  This
@@ -1438,7 +1769,7 @@ void filter_window_display(filter_window_t* filter_window, GtkWindow *parent)
 	/* set this window to be transient on the parent window, so that when it pops up it gets centered on it */
 	/* however to have it "appear" to be centered we have to hide and then show */
 	gtk_window_set_transient_for(window, parent);
-	gtk_window_set_position(window,GTK_WIN_POS_CENTER_ON_PARENT);
+	gtk_window_set_position(window, GTK_WIN_POS_CENTER_ON_PARENT);
 	gtk_widget_hide(GTK_WIDGET(window));
 	gtk_window_present(window);
 
@@ -1486,6 +1817,34 @@ void filter_window_display(filter_window_t* filter_window, GtkWindow *parent)
 				      G_CALLBACK(filter_window_on_OtherClearButton_clicked),
 				      filter_window);
 
+	/* rename vars, or comment to make clear for dates */
+	glade_xml_signal_connect_data(xml, "filters_on_MatchNoneRadio_toggled",
+				      G_CALLBACK(filter_window_on_radio_toggled),
+				      filter_window);
+	glade_xml_signal_connect_data(xml, "filters_on_MatchBeforeRadio_toggled",
+				      G_CALLBACK(filter_window_on_radio_toggled),
+				      filter_window);
+	glade_xml_signal_connect_data(xml, "filters_on_MatchAfterRadio_toggled",
+				      G_CALLBACK(filter_window_on_radio_toggled),
+				      filter_window);
+	glade_xml_signal_connect_data(xml, "filters_on_MatchBetweenRadio_toggled",
+				      G_CALLBACK(filter_window_on_radio_toggled),
+				      filter_window);
+
+	glade_xml_signal_connect_data(xml, "filters_on_DateEndYear_value_changed",
+				      G_CALLBACK(filter_window_on_year_value_changed),
+				      filter_window);
+	glade_xml_signal_connect_data(xml, "filters_on_DateEndMonth_changed",
+				      G_CALLBACK(filter_window_on_month_changed),
+				      filter_window);
+
+	glade_xml_signal_connect_data(xml, "filters_on_DateStartYear_value_changed",
+				      G_CALLBACK(filter_window_on_year_value_changed),
+				      filter_window);
+	glade_xml_signal_connect_data(xml, "filters_on_DateStartMonth_changed",
+				      G_CALLBACK(filter_window_on_month_changed),
+				      filter_window);
+
 	widget = glade_xml_get_widget(filter_window->xml, "MsgCombo");
 	g_assert(widget);
 	gtk_combo_box_append_text(GTK_COMBO_BOX(widget), msg_type_strs[SEAUDIT_MSG_NONE]);
@@ -1493,8 +1852,15 @@ void filter_window_display(filter_window_t* filter_window, GtkWindow *parent)
 	gtk_combo_box_append_text(GTK_COMBO_BOX(widget), msg_type_strs[SEAUDIT_MSG_AVC_GRANTED]);
 	gtk_combo_box_set_active(GTK_COMBO_BOX(widget), filter_window->msg);
 
+	log_load_callback_register(&filter_window_on_log_opened, filter_window);
+
 	/* Restore previous values and selections for the filter dialog */
 	filter_window_set_values(filter_window);
+
+
+
+
+
 }
 
 seaudit_filter_t* filter_window_get_filter(filter_window_t *filter_window)
@@ -1507,6 +1873,7 @@ seaudit_filter_t* filter_window_get_filter(filter_window_t *filter_window)
 	GtkTextIter start, end;
 	char *text;
 	int int_val;
+	struct tm *dt_start, *dt_end;
 
 	rt = seaudit_filter_create();
 
@@ -1645,6 +2012,36 @@ seaudit_filter_t* filter_window_get_filter(filter_window_t *filter_window)
 	if (strcmp(text, "") != 0) {
 		rt->path_criteria = path_criteria_create(text);
 	}	
+	
+
+	dt_start = (struct tm *)calloc(1, sizeof(struct tm));
+	dt_end = (struct tm *)calloc(1, sizeof(struct tm));
+
+	*dt_start = *(filter_window->dates->start);
+	*dt_end = *(filter_window->dates->end);
+	if (filter_window->window) {		
+		filters_window_update_tm(filter_window, TRUE, dt_start);
+		filters_window_update_tm(filter_window, FALSE, dt_end);
+		int_val = filters_window_get_tm_option(filter_window->xml);	       
+	} else {
+		int_val = filter_window->dates->option;
+	}
+	/* check for date time filter */
+	if (int_val != SEAUDIT_DT_OPTION_NONE) {
+		switch (int_val) {
+		case SEAUDIT_DT_OPTION_BEFORE:		
+			rt->date_time_criteria = date_time_criteria_create(dt_start, dt_end, FILTER_CRITERIA_DT_OPTION_BEFORE);
+			break;
+		case SEAUDIT_DT_OPTION_AFTER:
+			rt->date_time_criteria = date_time_criteria_create(dt_start, dt_end, FILTER_CRITERIA_DT_OPTION_AFTER);
+			break;
+		default:
+			rt->date_time_criteria = date_time_criteria_create(dt_start, dt_end, FILTER_CRITERIA_DT_OPTION_BETWEEN);
+			break;
+		}
+	}
+	free(dt_start);
+	free(dt_end);
 
 	if (filter_window->window) {
 		widget = glade_xml_get_widget(filter_window->xml, "MatchEntry");
@@ -1784,4 +2181,27 @@ void filter_window_set_values_from_filter(filter_window_t *filter_window, seaudi
 			break;
 		}
 	}
+	if (filter->date_time_criteria) {
+		if (!filter_window->dates)
+			filter_window->dates = (filters_date_item_t *)calloc(1, sizeof(filters_date_item_t));
+		*(filter_window->dates->start) = *(date_time_criteria_get_date(filter->date_time_criteria, TRUE));
+		*(filter_window->dates->end) = *(date_time_criteria_get_date(filter->date_time_criteria, FALSE));
+		i = date_time_criteria_get_option(filter->date_time_criteria);
+		switch(i) {
+		case FILTER_CRITERIA_DT_OPTION_BEFORE:		
+			filter_window->dates->option = SEAUDIT_DT_OPTION_BEFORE;
+			break;
+		case FILTER_CRITERIA_DT_OPTION_AFTER:
+			filter_window->dates->option = SEAUDIT_DT_OPTION_AFTER;
+			break;
+			
+		case FILTER_CRITERIA_DT_OPTION_BETWEEN:
+			filter_window->dates->option = SEAUDIT_DT_OPTION_BETWEEN;
+			break;
+		default:
+			filter_window->dates->option = SEAUDIT_DT_OPTION_NONE;
+			break;
+		}
+	}
+
 }

@@ -14,6 +14,7 @@
 #include <string.h>
 #include <libxml/parser.h>
 #include <libxml/uri.h>
+#include <time.h>
 
 /* xml parser data structures */
 enum seaudit_multifilter_parser_state_t {
@@ -33,7 +34,8 @@ enum seaudit_multifilter_parser_state_t {
 	PARSING_IPADDR,
 	PARSING_PORTS,
 	PARSING_DESC,
-	PARSING_HOST
+	PARSING_HOST,
+	PARSING_DATE_TIME
 };
 
 const char *parser_valid_names[] = { "item", "criteria", "view", "filter", "desc", NULL };
@@ -102,6 +104,7 @@ static void my_parse_characters(void *user_data, const xmlChar *ch, int len)
 	case PARSING_NETIF:
 	case PARSING_IPADDR:
 	case PARSING_PORTS:		
+	case PARSING_DATE_TIME:
 	case PARSING_HOST:
 		if (!data->parsing_item)
 			break;
@@ -197,6 +200,8 @@ static void my_parse_startElement(void *user_data, const xmlChar *name, const xm
 			data->state = PARSING_PORTS;
 		else if (xmlStrcmp(attrs[1], (unsigned char*)"host") == 0)
 			data->state = PARSING_HOST;
+		else if (xmlStrcmp(attrs[1], (unsigned char*)"date_time") == 0)
+			data->state = PARSING_DATE_TIME;
 		else
 			data->state = PARSING_NONE;
 
@@ -208,6 +213,11 @@ static void my_parse_startElement(void *user_data, const xmlChar *name, const xm
 static void my_parse_endElement(void *user_data, const xmlChar *name)
 {
 	seaudit_multifilter_parser_data_t *data = (seaudit_multifilter_parser_data_t *)user_data;
+	struct tm *t1, *t2;
+	int i;
+	
+	t1 = (struct tm*)calloc(1, sizeof(struct tm));
+	t2 = (struct tm*)calloc(1, sizeof(struct tm));
 
 	if (!seaudit_multifilter_parser_is_valid_name(name))
 		data->invalid_names = TRUE;
@@ -312,6 +322,18 @@ static void my_parse_endElement(void *user_data, const xmlChar *name)
 			seaudit_multifilter_parser_data_free(data);
 			data->state = PARSING_NONE;
 			break;
+		case PARSING_DATE_TIME:
+			/* here we have the elements */
+			if (data->strs[0])
+				strptime(data->strs[0], "%a %b %d %T %Y", t1);								
+			if (data->strs[1])
+				strptime(data->strs[1], "%a %b %d %T %Y", t2);					
+			if (data->strs[2])
+				i = atoi(data->strs[2]);
+			data->cur_filter->date_time_criteria = date_time_criteria_create(t1, t2, i);
+			seaudit_multifilter_parser_data_free(data);
+			data->state = PARSING_NONE;
+			break;
 		case PARSING_MSG:
 			if (data->strs[0])
 				data->cur_filter->msg_criteria = msg_criteria_create(atoi(data->strs[0]));
@@ -319,7 +341,8 @@ static void my_parse_endElement(void *user_data, const xmlChar *name)
 			data->state = PARSING_NONE;
 		}
 	}
-
+	free(t1);
+	free(t2);
 }
 
 seaudit_multifilter_t* seaudit_multifilter_create(void)
