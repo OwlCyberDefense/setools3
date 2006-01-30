@@ -585,8 +585,38 @@ void msg_destroy(msg_t* tmp)
 }
 
 /*
+ * set the log type, syslog or auditd
+ */
+void audit_log_set_log_type(audit_log_t *log, int logtype)
+{
+	if (!log || (logtype != AUDITLOG_SYSLOG && logtype != AUDITLOG_AUDITD))
+		return;	
+	log->logtype = logtype;
+}
+
+int audit_log_get_log_type(audit_log_t *log)
+{
+	if (!log)
+		return -1;
+	return log->logtype;
+}
+
+/*
+ * return if this log has valid years or not
+ */
+bool_t audit_log_has_valid_years(audit_log_t *log)
+{
+	if (!log)
+		return FALSE;
+	if (log->logtype == AUDITLOG_AUDITD)
+		return TRUE;
+	return FALSE;
+}
+
+/*
  * add a string to the audit log database.
  */
+
 int audit_log_add_str(audit_log_t *log, char *string, int *id, int which)
 {
 	if (string == NULL || log == NULL || id == NULL || which >= NUM_TREES)

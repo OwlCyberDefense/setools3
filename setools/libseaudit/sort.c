@@ -204,21 +204,48 @@ static int perm_compare(const msg_t *a, const msg_t *b)
 
 static int date_compare(const msg_t *a, const msg_t *b)
 {
-	time_t at, bt;
-	double diff;
+	return date_time_compare(a->date_stamp, b->date_stamp);
+}
 
-	at = mktime(a->date_stamp);
-	bt = mktime(b->date_stamp);
+/* given two dates compare them, checking to see if the dates passed in
+ * have valid years and correcting if not before comparing */
+int date_time_compare(struct tm *t1, struct tm *t2)
+{
+	/* tm has year, month, day, hour, min, sec */
+	/* if we should compare the years */
+	if (t1->tm_year != 0 && t2->tm_year != 0) {
+		if (t1->tm_year > t2->tm_year)
+			return 1;
+		else if (t1->tm_year < t2->tm_year)
+			return -1;
+	}
 
-	diff = difftime(at, bt);
-
-	if (diff < 0)
-		return -1;
-	else if (diff > 0)
+	if (t1->tm_mon > t2->tm_mon)
 		return 1;
-	else
-		return 0;
+	else if (t1->tm_mon < t2->tm_mon)
+		return -1;
+	
+	if (t1->tm_mday > t2->tm_mday)
+		return 1;
+	else if (t1->tm_mday < t2->tm_mday)
+		return -1;
 
+	if (t1->tm_hour > t2->tm_hour)
+		return 1;
+	else if (t1->tm_hour < t2->tm_hour)
+		return -1;
+	
+	if (t1->tm_min > t2->tm_min)
+		return 1;
+	else if (t1->tm_min < t2->tm_min)
+		return -1;
+
+	if (t1->tm_sec > t2->tm_sec)
+		return 1;
+	else if (t1->tm_sec < t2->tm_sec)
+		return -1;
+
+	return 0;
 }
 
 static int host_field_compare(const msg_t *a, const msg_t *b)
