@@ -37,6 +37,11 @@ typedef struct seaudit_criteria {
 	bool_t dirty;
 } seaudit_criteria_t;
 
+
+#define FILTER_CRITERIA_DT_OPTION_BEFORE 0
+#define FILTER_CRITERIA_DT_OPTION_AFTER 1
+#define FILTER_CRITERIA_DT_OPTION_BETWEEN 2
+
 /* create a criteria */
 seaudit_criteria_t* src_type_criteria_create(char **types, int num_types);
 seaudit_criteria_t* tgt_type_criteria_create(char **types, int num_types);
@@ -52,6 +57,7 @@ seaudit_criteria_t* comm_criteria_create(const char *comm);
 seaudit_criteria_t* netif_criteria_create(const char *netif);
 seaudit_criteria_t* ipaddr_criteria_create(const char *ipaddr); /* a generic match-any IP criteria */
 seaudit_criteria_t* ports_criteria_create(int port);            /* a generic match-any port criteria */
+seaudit_criteria_t *date_time_criteria_create(struct tm *start, struct tm *end, int option);
 seaudit_criteria_t* msg_criteria_create(int msg);
 
 const char **strs_criteria_get_strs(seaudit_criteria_t *criteria, int *size);
@@ -73,6 +79,8 @@ const char *glob_criteria_get_str(seaudit_criteria_t *criteria);
 const char *netif_criteria_get_str(seaudit_criteria_t *criteria);
 int ports_criteria_get_val(seaudit_criteria_t *criteria);
 void seaudit_criteria_print(seaudit_criteria_t *criteria, FILE *stream, int tabs);
+const struct tm *date_time_criteria_get_date(seaudit_criteria_t *criteria, bool_t start);
+int date_time_criteria_get_option(seaudit_criteria_t *criteria);
 int msg_criteria_get_val(seaudit_criteria_t *criteria);
 
 /* destroy a criteria */

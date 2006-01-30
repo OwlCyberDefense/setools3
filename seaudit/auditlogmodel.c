@@ -247,7 +247,11 @@ static void log_view_store_get_value(GtkTreeModel *tree_model, GtkTreeIter *iter
 
 	if (DATE_FIELD == column) {
 		char date[DATE_STR_SIZE];
-		strftime(date, DATE_STR_SIZE, "%b %d %H:%M:%S", store->log_view->my_log->msg_list[indx]->date_stamp);
+		/* check to see if we have been given a valid year, if so display, otherwise no year displayed */
+		if (store->log_view->my_log->msg_list[indx]->date_stamp->tm_year == 0)
+			strftime(date, DATE_STR_SIZE, "%b %d %H:%M:%S", store->log_view->my_log->msg_list[indx]->date_stamp);
+		else 
+			strftime(date, DATE_STR_SIZE, "%b %d %H:%M:%S %Y", store->log_view->my_log->msg_list[indx]->date_stamp);
 		set_utf8_return_value(value, date);
 		return;
 	}

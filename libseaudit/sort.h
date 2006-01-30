@@ -31,6 +31,9 @@ int audit_log_view_remove_sort(audit_log_view_t *log, sort_action_node_t *node);
 /* main sort function for qsort */
 int msg_compare(const void *a, const void *b);
 
+/* our own date/time compare function */
+int date_time_compare(struct tm *t1, struct tm *t2);
+
 sort_action_node_t *msg_sort_action_create(void);
 sort_action_node_t *host_sort_action_create(void);
 sort_action_node_t *perm_sort_action_create(void);

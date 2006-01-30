@@ -21,7 +21,9 @@
 #include <gtk/gtk.h>
 #include <glade/glade.h>
 
+
 struct filters_select_items;
+struct filters_date_item;
 
 typedef struct filter_window {
 	struct filters_select_items *src_types_items;
@@ -40,7 +42,8 @@ typedef struct filter_window {
 	GString *name;
 	GString *match;
 	GString *notes;
-	GString *host;
+	GString *host;	
+	struct filters_date_item *dates;
 	int msg;
 	GtkWindow *window;
 	GladeXML *xml;
