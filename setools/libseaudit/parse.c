@@ -206,20 +206,23 @@ static unsigned int insert_time(char **tokens, msg_t *msg, int *position, int nu
 	if (*position == num_tokens)
 		return PARSE_REACHED_END_OF_MSG;
 	time = strcat(time, tokens[*position]);
-   
+
 	if (!msg->date_stamp) {
 		if ((msg->date_stamp = (struct tm*) malloc(sizeof(struct tm))) == NULL)
 			return PARSE_RET_MEMORY_ERROR;
+		memset(msg->date_stamp, 0, sizeof(sizeof(struct tm)));
 	}
-	msg->date_stamp->tm_isdst = (daylight==0 ? 0 : 1);
 
 	if (!strptime(time, "%b %d %T", msg->date_stamp)) {    
 		free(time); 
 		return 0;
 	} else {
 		free(time);
-		/* random year to make mktime happy */
-		msg->date_stamp->tm_year = 2000 - 1900;
+		/* set year to 1900 since we know no valid
+		 logs were generated then this will tell us that
+		the msg does not really have a year*/
+		msg->date_stamp->tm_isdst = 0;
+		msg->date_stamp->tm_year = 0;
 		return PARSE_RET_SUCCESS;
 	}
 	
@@ -871,6 +874,8 @@ static unsigned int avc_msg_insert_field_data(char **tokens, msg_t *msg, audit_l
 		position++;
 		if (position == num_tokens)
 			return PARSE_RET_INVALID_MSG_WARN;
+		if (audit_log_get_log_type(log) != AUDITLOG_AUDITD)
+			audit_log_set_log_type(log, AUDITLOG_AUDITD);
 	}
 
 	/* Insert the audit header if it exists */

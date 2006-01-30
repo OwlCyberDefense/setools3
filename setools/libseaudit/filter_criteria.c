@@ -10,13 +10,14 @@
  * filter_criteria.c
  */
 
-#include "filter_criteria.h"
-#include "auditlog.h"
 #include <string.h>
 #include <sys/types.h>
 #include <assert.h>
 #include <fnmatch.h>
 #include <libxml/uri.h>
+#include "filter_criteria.h"
+#include "auditlog.h"
+#include "sort.h"
 
 typedef struct strs_criteria {
 	char **strs;
@@ -50,6 +51,12 @@ typedef struct ports_criteria {
 typedef struct netif_criteria {
 	char *netif;
 } netif_criteria_t;
+
+typedef struct date_time_criteria {
+	struct tm *start;
+	struct tm *end;
+	int option;
+} date_time_criteria_t;
 
 
 const char *netif_criteria_get_str(seaudit_criteria_t *criteria)
@@ -93,6 +100,87 @@ int ports_criteria_get_val(seaudit_criteria_t *criteria)
 	ports_criteria = (ports_criteria_t*)criteria->data;
 	assert(ports_criteria);
 	return ports_criteria->val;
+}
+
+const struct tm *date_time_criteria_get_date(seaudit_criteria_t *criteria, bool_t start)
+{
+	date_time_criteria_t *dtc = NULL;
+	if (!criteria || !criteria->data)
+		return NULL;
+	dtc = (date_time_criteria_t *)criteria->data;
+	if (start)
+		return (const struct tm*)dtc->start;
+	else
+		return (const struct tm*)dtc->end;
+}
+
+int date_time_criteria_get_option(seaudit_criteria_t *criteria)
+{
+	date_time_criteria_t *dtc = NULL;
+	if (!criteria || !criteria->data)
+		return 0;
+	dtc = (date_time_criteria_t *)criteria->data;
+	return dtc->option;
+}
+
+static bool_t date_time_criteria_action(msg_t *msg, seaudit_criteria_t *criteria, audit_log_t *log)
+{
+	date_time_criteria_t *dt_criteria;
+	int rt;
+
+	if (msg == NULL || criteria == NULL || criteria->data == NULL)
+		return FALSE;
+	dt_criteria = (date_time_criteria_t *)criteria->data;
+
+	rt = date_time_compare(dt_criteria->start, msg->date_stamp);
+	if (dt_criteria->option == FILTER_CRITERIA_DT_OPTION_BEFORE) {
+		return   rt > 0 ? TRUE : FALSE;
+	} else if (dt_criteria->option == FILTER_CRITERIA_DT_OPTION_AFTER) {
+		return   rt < 0 ? TRUE : FALSE;
+	} else {
+		if (rt > 0)
+			return FALSE;
+		rt = date_time_compare(dt_criteria->end, msg->date_stamp);
+		return rt < 0 ? FALSE : TRUE;
+	}
+}
+
+static void date_time_criteria_print(seaudit_criteria_t *criteria, FILE *stream, int tabs)
+{
+	date_time_criteria_t *dt_criteria;
+	xmlChar *escaped;
+	xmlChar *str_xml;
+	int i;
+
+	if (criteria == NULL || criteria->data == NULL || stream == NULL)
+		return;
+
+	dt_criteria = (date_time_criteria_t*)criteria->data;
+	if (tabs < 0) 
+		tabs = 0;
+	for (i = 0; i < tabs; i++)
+		fprintf(stream, "\t");
+	fprintf(stream, "<criteria type=\"date_time\">\n");
+	str_xml = xmlCharStrdup(asctime(dt_criteria->start));
+	escaped = xmlURIEscapeStr(str_xml, NULL);
+	for (i = 0; i < tabs+1; i++)
+		fprintf(stream, "\t");
+	fprintf(stream, "<item>%s</item>\n", escaped);
+	free(escaped);
+	free(str_xml);
+	str_xml = xmlCharStrdup(asctime(dt_criteria->end));
+	escaped = xmlURIEscapeStr(str_xml, NULL);
+	for (i = 0; i < tabs+1; i++)
+		fprintf(stream, "\t");
+	fprintf(stream, "<item>%s</item>\n", escaped);
+	free(escaped);
+	free(str_xml);
+	for (i = 0; i < tabs+1; i++)
+		fprintf(stream, "\t");
+	fprintf(stream, "<item>%d</item>\n", dt_criteria->option);
+	for (i = 0; i < tabs; i++)
+		fprintf(stream, "\t");
+	fprintf(stream, "</criteria>\n");
 }
 
 int msg_criteria_get_val(seaudit_criteria_t *criteria)
@@ -1450,6 +1538,76 @@ static void msg_criteria_destroy(seaudit_criteria_t *ftr)
 		return;
 	free(d);
 	return;
+}
+
+static void date_time_criteria_destroy(seaudit_criteria_t *ftr)
+{
+	date_time_criteria_t *d;
+
+	if (ftr == NULL)
+		return;
+
+	d = (date_time_criteria_t*)ftr->data;
+	if (d == NULL)
+		return;
+
+	free(d->start);
+	free(d->end);
+	free(d);
+	return;
+}
+
+/* 
+ *  Create a date/time filter with the given start time, end time, and matching
+ *  option.
+ */
+seaudit_criteria_t* date_time_criteria_create(struct tm *start, struct tm *end, int option)
+{
+	seaudit_criteria_t *rt = NULL;
+	date_time_criteria_t *d = NULL;
+	
+	if (option != FILTER_CRITERIA_DT_OPTION_BETWEEN &&
+		option != FILTER_CRITERIA_DT_OPTION_AFTER &&
+		option != FILTER_CRITERIA_DT_OPTION_BEFORE)
+		return NULL;	/* invalid option */
+
+	/* malloc new date criteria */
+	d = (date_time_criteria_t*)calloc(1, sizeof(date_time_criteria_t));
+	if (d == NULL)
+		goto bad;
+	d->start = (struct tm *)calloc(1, sizeof(struct tm));
+	if (d->start == NULL)
+		goto bad;
+	d->end = (struct tm *)calloc(1, sizeof(struct tm));
+	if (d->end == NULL)
+		goto bad;
+
+	/* set the criteria */
+	*(d->start) = *start;
+	*(d->end) = *end;
+	d->option = option;
+
+	/* create container filter */
+	rt = criteria_create();
+	if (rt == NULL)
+		goto bad;
+	rt->msg_types = AVC_MSG | LOAD_POLICY_MSG | BOOLEAN_MSG;
+	rt->criteria_act = &date_time_criteria_action;
+	rt->print = &date_time_criteria_print;
+	rt->destroy = &date_time_criteria_destroy;
+	rt->data = d;
+	return rt;
+
+bad:
+	fprintf(stdout, "Out of memory");
+	if (d) {
+		free(d->start);
+		free(d->end);
+		free(d);
+	}
+	if (rt)
+		seaudit_criteria_destroy(rt);
+	return NULL;
 }
 
 seaudit_criteria_t* msg_criteria_create(int msg)
