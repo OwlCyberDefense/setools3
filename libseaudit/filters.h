@@ -40,6 +40,7 @@ typedef struct seaudit_filter {
 	seaudit_criteria_t *ipaddr_criteria;
 	seaudit_criteria_t *ports_criteria;
 	seaudit_criteria_t *host_criteria;
+	seaudit_criteria_t *date_time_criteria;
 	enum seaudit_filter_match_t match;
 	char *name;
 	char *desc;
