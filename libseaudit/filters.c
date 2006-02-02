@@ -159,6 +159,7 @@ llist_t* seaudit_filter_get_list(seaudit_filter_t *filter)
 	ll_append_data(list, filter->ipaddr_criteria);
 	ll_append_data(list, filter->ports_criteria);
 	ll_append_data(list, filter->host_criteria);
+	ll_append_data(list, filter->date_time_criteria);	
 	return list;
 }
 
