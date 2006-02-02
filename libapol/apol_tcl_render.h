@@ -16,7 +16,11 @@
 #ifndef AP_TCL_RENDER_H
 #define AP_TCL_RENDER_H
 
-int ap_tcl_render_rangetrans(Tcl_Interp *interp, bool_t addlineno, int idx, policy_t *policy);
-int ap_tcl_render_addr(Tcl_Interp *interp, int flag, uint32_t addr[4], Tcl_Obj **result);
+int ap_tcl_render_init(Tcl_Interp *interp);
+
+int ap_tcl_append_type_str(bool_t do_attribs, bool_t do_aliases, bool_t newline, int idx, 
+                           policy_t *policy, Tcl_DString *buf);
+int ap_tcl_append_attrib_str(bool_t do_types, bool_t do_type_attribs, bool_t use_aliases, 
+                             bool_t newline, bool_t upper, int idx, policy_t *policy, Tcl_DString *buf);
 
 #endif
