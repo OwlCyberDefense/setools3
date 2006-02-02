@@ -14,7 +14,7 @@
 #include <tcl.h>
 #include <tk.h>
 #include <getopt.h>
-#include "../libapol/apol_tcl.h"
+#include "../libapol/apol_tcl_other.h"
 #include "../libapol/util.h"
 
 #ifndef STARTUP_SCRIPT

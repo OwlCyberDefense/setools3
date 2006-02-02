@@ -13,7 +13,237 @@
 #include "policy.h"
 #include "render.h"
 
+#include "apol_tcl_other.h"
+
 #include <tcl.h>
+
+#include <assert.h>
+
+int ap_tcl_append_type_str(bool_t do_attribs, bool_t do_aliases, bool_t newline, int idx, 
+	policy_t *policy, Tcl_DString *buf)
+{
+	int j;
+	char tbuf[APOL_STR_SZ + 64];
+	if(idx >= policy->num_types || buf == NULL) {
+		return -1;
+	}
+
+	Tcl_DStringAppend(buf, policy->types[idx].name, -1);
+	
+	if(do_aliases) {
+		if(policy->types[idx].aliases != NULL) {
+			name_item_t *ptr;
+			Tcl_DStringAppend(buf, " alias {", -1);
+			for(ptr = policy->types[idx].aliases; ptr != NULL; ptr = ptr->next) {
+				Tcl_DStringAppend(buf, ptr->name, -1);
+				if(ptr->next != NULL)
+					Tcl_DStringAppend(buf, " ", -1);
+			}
+			Tcl_DStringAppend(buf, "} ", -1);
+		}
+	}
+	
+	if(do_attribs) {
+		sprintf(tbuf, " (%d attributes)\n", policy->types[idx].num_attribs);
+		Tcl_DStringAppend(buf, tbuf, -1);
+		for(j = 0; j < policy->types[idx].num_attribs; j++) {
+			sprintf(tbuf, "\t%s\n", policy->attribs[policy->types[idx].attribs[j]].name);
+			Tcl_DStringAppend(buf, tbuf, -1);
+		}
+	}
+	if(newline)
+		Tcl_DStringAppend(buf, "\n", -1);	
+
+	return 0;
+}
+
+
+int ap_tcl_append_attrib_str(bool_t do_types, bool_t do_type_attribs, bool_t use_aliases, 
+	bool_t newline, bool_t upper, int idx, policy_t *policy, Tcl_DString *buf)
+{
+	int j, k;
+	char tbuf[APOL_STR_SZ+64];
+
+	if(idx >= policy->num_attribs || buf == NULL) {
+		return -1;
+	}	
+
+	if(upper) {
+		Tcl_DStringAppend(buf, uppercase(policy->attribs[idx].name, tbuf), -1);
+	}
+	else
+		Tcl_DStringAppend(buf, policy->attribs[idx].name, -1);
+		
+	if(do_types) {
+		sprintf(tbuf, " (%d types)\n", policy->attribs[idx].num);
+		Tcl_DStringAppend(buf, tbuf, -1);
+		for(j = 0; j < policy->attribs[idx].num; j++) {
+			Tcl_DStringAppend(buf, "\t", -1);
+			Tcl_DStringAppend(buf, policy->types[policy->attribs[idx].a[j]].name, -1);
+			/* aliases */
+			if(use_aliases && policy->types[policy->attribs[idx].a[j]].aliases != NULL) {
+				name_item_t *ptr;
+				Tcl_DStringAppend(buf, ":", -1);
+				for(ptr = policy->types[policy->attribs[idx].a[j]].aliases; ptr != NULL; ptr = ptr->next) {
+					Tcl_DStringAppend(buf, " ", -1);
+					Tcl_DStringAppend(buf, ptr->name, -1);
+					if(ptr->next != NULL)
+						Tcl_DStringAppend(buf, ",", -1);
+				}
+			}			
+			if(do_type_attribs) {
+				Tcl_DStringAppend(buf, " { ", -1);
+				for(k = 0; k < policy->types[policy->attribs[idx].a[j]].num_attribs; k++) {
+					if(strcmp(policy->attribs[idx].name, policy->attribs[policy->types[policy->attribs[idx].a[j]].attribs[k]].name) != 0)
+						Tcl_DStringAppend(buf, policy->attribs[policy->types[policy->attribs[idx].a[j]].attribs[k]].name, -1);
+						Tcl_DStringAppend(buf, " ", -1);
+				}
+				Tcl_DStringAppend(buf, "}", -1);
+			}
+			Tcl_DStringAppend(buf, "\n", -1);
+		}
+	}
+	if(newline)
+		Tcl_DStringAppend(buf, "\n", -1);		
+
+	return 0;
+}
+
+static int Apol_RenderLevel(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
+{
+        ap_mls_level_t level;
+        int retval;
+        char *rendered_level;
+
+        if (argc != 2) {
+                Tcl_SetResult(interp, "wrong # of args", TCL_STATIC);
+                return TCL_ERROR;
+        }
+        retval = ap_tcl_level_string_to_level(interp, argv[1], &level);
+        if (retval == -1) {
+                return TCL_ERROR;
+        }
+        else if (retval == 1) {
+                return TCL_OK;                     /* no render possible */
+        }
+        rendered_level = re_render_mls_level(&level, policy);
+        ap_mls_level_free(&level);
+        Tcl_AppendResult(interp, rendered_level, NULL);
+        free(rendered_level);
+        return TCL_OK;
+}
+
+/* Takes a Tcl context object (argv[1]) and returns a single string
+ * with the context rendered.  If argv[2] exists and is non-zero then
+ * consider the fourth element of argv[1] to be a MLS range object. */
+static int Apol_RenderContext(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
+{
+        Tcl_Obj *context_obj, *user_obj, *role_obj, *type_obj;
+        char *s;
+        security_con_t context;
+        ap_mls_level_t low, high;
+        ap_mls_range_t range;
+        char *rendered_context;
+        int range_len = -1;
+
+        if (argc < 1 || argc > 3) {
+                Tcl_SetResult(interp, "wrong # of args", TCL_STATIC);
+                return TCL_ERROR;
+        }
+	if(policy == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		return TCL_ERROR;
+	}
+        context_obj = Tcl_NewStringObj(argv[1], -1);
+
+        if (Tcl_ListObjIndex(interp, context_obj, 0, &user_obj) == TCL_ERROR ||
+                user_obj == NULL) {
+                Tcl_SetResult(interp, "Invalid user name", TCL_STATIC);
+        }
+        s = Tcl_GetString(user_obj);
+        if ((context.user = get_user_idx(s, policy)) < 0) {
+                Tcl_AppendResult(interp, "Invalid user name ", s, NULL);
+                return TCL_ERROR;
+        }
+
+        if (Tcl_ListObjIndex(interp, context_obj, 1, &role_obj) == TCL_ERROR ||
+                role_obj == NULL) {
+                Tcl_SetResult(interp, "Invalid role name", TCL_STATIC);
+        }
+        s = Tcl_GetString(role_obj);
+        if ((context.role = get_role_idx(s, policy)) < 0) {
+                Tcl_AppendResult(interp, "Invalid role ", s, NULL);
+                return TCL_ERROR;
+        }
+
+        if (Tcl_ListObjIndex(interp, context_obj, 2, &type_obj) == TCL_ERROR ||
+                type_obj == NULL) {
+                Tcl_SetResult(interp, "Invalid type name", TCL_STATIC);
+        }
+        s = Tcl_GetString(type_obj);
+        if ((context.type = get_type_idx(s, policy)) < 0) {
+                Tcl_AppendResult(interp, "Invalid type ", s, NULL);
+                return TCL_ERROR;
+        }
+
+        /* now add MLS component as necessary */
+        if (argc == 2 || strcmp(argv[2], "0") == 0) {
+                context.range = NULL;
+        }
+        else {
+                Tcl_Obj *range_obj, *low_obj, *high_obj;
+                if (Tcl_ListObjIndex(interp, context_obj, 3, &range_obj) == TCL_ERROR ||
+                    range_obj == NULL) {
+                        Tcl_SetResult(interp, "Invalid range", TCL_STATIC);
+                }
+
+                if (Tcl_ListObjIndex(interp, range_obj, 0, &low_obj) == TCL_ERROR ||
+                    low_obj == NULL) {
+                        Tcl_SetResult(interp, "Invalid low level", NULL);
+                }
+                s = Tcl_GetString(low_obj);
+                if (ap_tcl_level_string_to_level(interp, s, &low) != 0) {
+                        Tcl_AppendResult(interp, "Invalid low level ", s, NULL);
+                        return TCL_ERROR;
+                }
+                range.low = &low;
+
+                if (Tcl_ListObjLength(interp, range_obj, &range_len) == TCL_ERROR ||
+                    range_len > 2) {
+                        Tcl_SetResult(interp, "Invalid range", TCL_STATIC);
+                        return TCL_ERROR;
+                }
+                if (range_len == 1) {
+                        /* only single level given */
+                        range.high = &low;
+                }
+                else {
+                        if (Tcl_ListObjIndex(interp, range_obj, 1, &high_obj) == TCL_ERROR ||
+                            high_obj == NULL) {
+                                Tcl_SetResult(interp, "Invalid high level", NULL);
+                        }
+                        s = Tcl_GetString(high_obj);
+                        if (ap_tcl_level_string_to_level(interp, s, &high) != 0) {
+                                Tcl_AppendResult(interp, "Invalid high level ", s, NULL);
+                                ap_mls_level_free(&low);
+                                return TCL_ERROR;
+                        }
+                        range.high = &high;
+                }
+                context.range = &range;
+        }
+        if ((rendered_context = re_render_security_context(&context, policy)) == NULL) {
+                Tcl_SetResult(interp, "Error while rendering context.", TCL_STATIC);
+                return TCL_ERROR;
+        }
+        if (range_len != -1) {
+                ap_mls_range_free(&range);
+        }
+        Tcl_SetResult(interp, rendered_context, TCL_VOLATILE);
+        free(rendered_context);
+        return TCL_OK;
+}
+
 
 static int tcl_render_ta_item_list(Tcl_Interp *interp, Tcl_Obj *dest_listobj, ta_item_t *name, policy_t *policy) {
         int retv;
@@ -39,22 +269,35 @@ static int tcl_render_ta_item_list(Tcl_Interp *interp, Tcl_Obj *dest_listobj, ta
         return TCL_OK;
 }
 
-int ap_tcl_render_rangetrans(Tcl_Interp *interp, bool_t addlineno, int idx, policy_t *policy)
+/* Render a single range transition rule, given its index */
+static int Apol_RenderRangeTrans(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
+        int idx;
         Tcl_Obj *result_obj;
         Tcl_Obj *linenum_obj, *source_obj, *target_obj, *type_obj, *range_obj;
         char *rendered_range;
 
-	if (!policy || idx < 0 || idx >= policy->num_rangetrans) {
+        if (argc != 2) {
+                Tcl_SetResult(interp, "wrong # of args", TCL_STATIC);
+                return TCL_ERROR;
+        }
+        if (policy == NULL) {
+                Tcl_SetResult(interp, "Could not display range transition because no policy was loaded.", TCL_STATIC);
+                return TCL_ERROR;
+        }
+	if (idx < 0 || idx >= policy->num_rangetrans) {
                 Tcl_SetResult(interp, "Illegal range transition index.", TCL_STATIC);
                 return TCL_ERROR;
         }
 
-	if (addlineno) {
-                linenum_obj = Tcl_NewLongObj((long) policy->rangetrans[idx].lineno);
+        if (Tcl_GetInt(interp, argv[1], &idx) == TCL_ERROR) {
+                return TCL_ERROR;
+        }
+        if (is_binary_policy(policy)) {
+                linenum_obj = Tcl_NewStringObj(NULL, 0);
         }
         else {
-                linenum_obj = Tcl_NewStringObj(NULL, 0);
+                linenum_obj = Tcl_NewLongObj((long) policy->rangetrans[idx].lineno);
         }
 
 	/* render source(s) */
@@ -111,16 +354,47 @@ int ap_tcl_render_rangetrans(Tcl_Interp *interp, bool_t addlineno, int idx, poli
         return TCL_OK;
 }
 
-/* Takes an array of four uint32_t and returns a Tcl string with that
- * address/mask rendered. */
-int ap_tcl_render_addr(Tcl_Interp *interp, int flag, uint32_t addr[4], Tcl_Obj **result) {
+
+/* Takes a Tcl list of four elements and returns the IP address/mask
+ * it represents.  argv[1] must be "ipv4" or "ipv6" that gives type of
+ * address. */
+static int Apol_RenderAddress(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
+{
+        int flag, i;
+        uint32_t addr[4];
+        Tcl_Obj *addr_obj, *t, *result_obj;
+        long l;
+        if (argc != 3) {
+		Tcl_SetResult(interp, "wrong # of args", TCL_STATIC);
+		return TCL_ERROR;
+        }
+        if (strcmp(argv[1], "ipv4") == 0) {
+                flag = AP_IPV4;
+        }
+        else if (strcmp(argv[1], "ipv6") == 0) {
+                flag = AP_IPV6;
+        }
+        else {
+                Tcl_AppendResult(interp, "Unknown ip flag ", argv[1], NULL);
+                return TCL_ERROR;
+        }
+        addr_obj = Tcl_NewStringObj(argv[2], -1);
+        for (i = 0; i < 4; i++) {
+                if (Tcl_ListObjIndex(interp, addr_obj, i, &t) == TCL_ERROR ||
+                    t == NULL ||
+                    Tcl_GetLongFromObj(interp, t, &l) == TCL_ERROR) {
+                        Tcl_AppendResult(interp, "Invalid address ", argv[2], NULL);
+                        return TCL_ERROR;
+                }
+                addr[i] = (uint32_t) l;
+        }
         switch (flag) {
         case AP_IPV4: {
                 char buf[41];
                 buf[40] = '\0';
                 uint32_t tmp = addr[3];
 		snprintf(buf, sizeof(buf) - 1, "%d.%d.%d.%d", (tmp/(1<<24)), (tmp/(1<<16)%(1<<8)), (tmp/(1<<8)%(1<<8)), (tmp%(1<<8)));
-                *result = Tcl_NewStringObj(buf, -1);
+                result_obj = Tcl_NewStringObj(buf, -1);
                 break;
         }
         case AP_IPV6: {
@@ -129,7 +403,7 @@ int ap_tcl_render_addr(Tcl_Interp *interp, int flag, uint32_t addr[4], Tcl_Obj *
                         Tcl_SetResult(interp, "Out of memory", TCL_STATIC);
                         return TCL_ERROR;
                 }
-                *result = Tcl_NewStringObj(s, -1);
+                result_obj = Tcl_NewStringObj(s, -1);
                 free(s);
                 break;
         }
@@ -138,5 +412,14 @@ int ap_tcl_render_addr(Tcl_Interp *interp, int flag, uint32_t addr[4], Tcl_Obj *
                 return TCL_ERROR;
         }
         }
+        Tcl_SetObjResult(interp, result_obj);
+        return TCL_OK;
+}
+
+int ap_tcl_render_init(Tcl_Interp *interp) {
+        Tcl_CreateCommand(interp, "apol_RenderLevel", Apol_RenderLevel, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_RenderContext", Apol_RenderContext, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_RenderRangeTrans", Apol_RenderRangeTrans, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_RenderAddress", Apol_RenderAddress, NULL, NULL);
         return TCL_OK;
 }
