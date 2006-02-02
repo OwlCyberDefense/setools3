@@ -2,7 +2,7 @@
 # see file 'COPYING' for use and warranty information 
 
 # TCL/TK GUI for SE Linux policy analysis
-# Requires tcl and tk 8.3+, with BWidgets
+# Requires tcl and tk 8.4+, with BWidgets
 
 
 ##############################################################
@@ -11,65 +11,28 @@
 # The Roles page
 ##############################################################
 namespace eval Apol_Roles {
-# opts(opt), where opt =
-# roles          use roles
-
-	variable opts
-	set opts(roles)			1
-	set opts(useType)		0
-	set opts(showSelection)         all
-	variable srchstr 		""
-	variable role_list 		""
-	variable types_list 		""
-	variable selected_attribute	""
-	variable attrib_sel		0
-		
-	# Global Widgets
-	variable resultsbox
-	variable combo_types
-	variable combo_attribute
-	variable cb_attrib
-	variable cb_type
+    variable widgets
+    variable opts
+    set opts(useType)		0
+    set opts(showSelection)     all
+    variable role_list 		""
 }
 
 proc Apol_Roles::open { } {
-	variable role_list
-    
-        set rt [catch {set role_list [apol_GetNames roles]} err]
-        if {$rt != 0} {
-		return -code error $err
-	}
-	set role_list [lsort $role_list]
-	Apol_Roles::enable_type_list
-        $Apol_Roles::combo_types configure -values $Apol_Types::typelist
-        $Apol_Roles::combo_attribute configure -values $Apol_Types::attriblist
-        return 0
+    variable widgets
+    variable role_list
+    set role_list [lsort [apol_GetNames roles]]
+    Apol_Widget::resetTypeComboboxToPolicy $widgets(combo_types)
 }
 
 proc Apol_Roles::close { } {
-	variable opts 
-	variable combo_types
-	variable combo_attribute
-	variable cb_attrib
-	variable cb_type
-	
-	set opts(roles)		1
-	set opts(useType)	0
-	set Apol_Roles::attrib_sel	0
-	set opts(showSelection) 	all
-	set Apol_Roles::srchstr 	""
-	set Apol_Roles::role_list 	""
-	set Apol_Roles::types_list 	""
-	set Apol_Roles::selected_attribute	""
-	set Apol_Roles::role_list 	""
-        $Apol_Roles::combo_types configure -values ""
-        $Apol_Roles::combo_attribute configure -values ""
-        $Apol_Roles::resultsbox configure -state normal
-        $Apol_Roles::resultsbox delete 0.0 end
-        ApolTop::makeTextBoxReadOnly $Apol_Roles::resultsbox 
-        set Apol_Roles::types_list ""
-       	Apol_Roles::enable_type_list
-	return	
+    variable widgets
+    variable opts 
+    set opts(useType)	0
+    set opts(showSelection) 	all
+    set Apol_Roles::role_list 	""
+    Apol_Widget::clearTypeCombobox $widgets(combo_types)
+    Apol_Widget::clearSearchResults $widgets(resultsbox)
 }
 
 proc Apol_Roles::free_call_back_procs { } {
@@ -81,39 +44,36 @@ proc Apol_Roles::free_call_back_procs { } {
 #  Description: 
 # ----------------------------------------------------------------------------------------
 proc Apol_Roles::set_Focus_to_Text {} {
-	focus $Apol_Roles::resultsbox
-	return 0
+    focus $Apol_Roles::widgets(resultsbox)
 }
 
 proc Apol_Roles::popupRoleInfo {which role} {
-	set rt [catch {set info [apol_GetSingleRoleInfo $role 1]} err]
-	if {$rt != 0} {
-		tk_messageBox -icon error -type ok -title "Error" -message "$err"
-		return -1
-	}
+    if {[catch {apol_GetRoles $role} info]} {
+        tk_messageBox -icon error -type ok -title "Error" -message $info
+        return -1
+    }
+    set text {}
+    foreach r $info {
+        lappend text [renderRole $r 1]
+    }
+    Apol_Widget::showPopupText $role [join $text "\n"]
+}
 
-	set w .role_infobox
-	set rt [catch {destroy $w} err]
-	if {$rt != 0} {
-		tk_messageBox -icon error -type ok -title "Error" -message "$err"
-		return -1
-	}
-	toplevel $w 
-	wm title $w "$role"
-	wm protocol $w WM_DELETE_WINDOW " "
-    	wm withdraw $w
-	set sf [ScrolledWindow $w.sf  -scrollbar both -auto both]
-	set f [text [$sf getframe].f -font {helvetica 10} -wrap none -width 35 -height 10]
-	$sf setwidget $f
-     	set b1 [button $w.close -text Close -command "catch {destroy $w}" -width 10]
-     	pack $b1 -side bottom -anchor s -padx 5 -pady 5 
-	pack $sf -fill both -expand yes
-     	$f insert 0.0 $info
- 	wm geometry $w +50+50
- 	wm deiconify $w
- 	$f configure -state disabled
- 	wm protocol $w WM_DELETE_WINDOW "destroy $w"
-	return 0
+proc Apol_Roles::renderRole {role show_all} {
+    foreach {name types dominates} $role {break}
+    if {!$show_all} {
+        return $name
+    }
+    set text "$name ([llength $types] type"
+    if {[llength $types] != 1} {
+        append text "s"
+    }
+    append text ")\n"
+    foreach t [lsort -dictionary $types] {
+        append text "    $t\n"
+    }
+    append text "  domianance: $dominates\n"
+    return $text
 }
 
 ##############################################################
@@ -121,104 +81,50 @@ proc Apol_Roles::popupRoleInfo {which role} {
 #  	- Search text widget for a string
 # 
 proc Apol_Roles::search { str case_Insensitive regExpr srch_Direction } {
-	variable resultsbox
-	
-	ApolTop::textSearch $resultsbox $str $case_Insensitive $regExpr $srch_Direction
-	return 0
+    variable widgets
+    ApolTop::textSearch $widgets(resultsbox).tb $str $case_Insensitive $regExpr $srch_Direction
 }
 
 proc Apol_Roles::searchRoles {} {
-	variable opts
-	variable resultsbox
+    variable widgets
+    variable opts
 
-	if {$opts(showSelection) == "names"} {
-		set name_only 1
-	} else {
-		set name_only 0
-	}
-        set rt [catch {set results [apol_GetRolesByType $name_only $opts(useType) \
-		$Apol_Roles::types_list]} err]
-	if {$rt != 0} {	
-		tk_messageBox -icon error -type ok -title "Error" -message "$err"
-		return 
-	} else {
-	    $resultsbox configure -state normal
-	    $resultsbox delete 0.0 end
-            $resultsbox insert end "ROLES:\n"
-            if {$results == ""} {
-                $resultsbox insert end "Search returned no results."
-            } else {
-                $resultsbox insert end $results
-            }
-	    ApolTop::makeTextBoxReadOnly $resultsbox 
+    Apol_Widget::clearSearchResults $widgets(resultsbox)
+    if {![ApolTop::is_policy_open]} {
+        tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened!"
+        return
+    }
+    set type [Apol_Widget::getTypeComboboxValue $widgets(combo_types)]
+    if {$opts(useType) && $type == {}} {
+        tk_messageBox -icon error -type ok -title "Error" -message "No type selected."
+        return
+    }
+    if {$opts(showSelection) == "names"} {
+        set show_all 0
+    } else {
+        set show_all 1
+    }
+
+    if {[catch {apol_GetRoles} orig_roles_info]} {
+        tk_messageBox -icon error -type ok -title "Error" -message $orig_roles_info
+        return
+    }
+
+    set roles_text {}
+    foreach r [lsort -index 0 -dictionary $orig_roles_info] {
+        foreach {name types dominates} $r {break}
+        if {$opts(useType) && [lsearch -exact $types $type] == -1} {
+            continue
         }
-	
-	return
+        lappend roles_text [renderRole $r $show_all]
+    }
+
+    set text "ROLES:\n[join $roles_text "\n"]"
+    Apol_Widget::appendSearchResultText $widgets(resultsbox) $text
 }
 
-proc Apol_Roles::enable_attrib_list {combo_box cb_value} {
-	if {$cb_value} {
-		$combo_box configure -state normal -entrybg white
-	} else {
-		$combo_box configure -state disabled -entrybg $ApolTop::default_bg_color
-	}
-	Apol_Roles::change_types_list
-	return 0
-}
-
-proc Apol_Roles::enable_type_list {} {
-	variable combo_types
-	variable combo_attribute
-	variable attrib_sel
-	variable cb_attrib
-	variable opts
-	
-	if {$opts(useType)} {
-		$combo_types configure -state normal -entrybg white
-		$cb_attrib configure -state normal
-		if {$attrib_sel} {
-			$combo_attribute configure -state normal -entrybg white
-		} else {
-			$combo_attribute configure -state disabled -entrybg $ApolTop::default_bg_color
-		}
-		Apol_Roles::change_types_list
-	} else {
-		$combo_types configure -state disabled -entrybg  $ApolTop::default_bg_color
-		$combo_attribute configure -state disabled -entrybg  $ApolTop::default_bg_color
-		$cb_attrib configure -state disabled
-		$cb_attrib deselect
-	}
-	
-	return 0
-}
-
-proc Apol_Roles::change_types_list { } { 
-	variable selected_attribute	
-	variable combo_types
-	variable attrib_sel
-	
-	if {$attrib_sel && $selected_attribute != ""} {	   
-		set rt [catch {set attrib_typesList [apol_GetAttribTypesList $selected_attribute]} err]	
-		if {$rt != 0} {
-			tk_messageBox -icon error -type ok -title "Error" -message "$err"
-			return -1
-		} 
-		set attrib_typesList [lsort $attrib_typesList]
-		set idx [lsearch -exact $attrib_typesList "self"]
-		if {$idx != -1} {
-			set attrib_typesList [lreplace $attrib_typesList $idx $idx]
-		}
-		$combo_types configure -values $attrib_typesList
-        } else {
-        	set attrib_typesList $Apol_Types::typelist
-		set idx [lsearch -exact $attrib_typesList "self"]
-		if {$idx != -1} {
-			set attrib_typesList [lreplace $attrib_typesList $idx $idx]
-		}
-        	$combo_types configure -values $attrib_typesList
-        }
-        selection clear -displayof $combo_types
-     	return 0
+proc Apol_Roles::toggleTypeCombobox {path name1 name2 op} {
+    Apol_Widget::setTypeComboboxState $path $Apol_Roles::opts(useType)
 }
 
 ########################################################################
@@ -226,115 +132,68 @@ proc Apol_Roles::change_types_list { } {
 #  	- goes to indicated line in text box
 # 
 proc Apol_Roles::goto_line { line_num } {
-	variable resultsbox
-	
-	ApolTop::goto_line $line_num $resultsbox
-	return 0
+    variable widgets
+    Apol_Widget::gotoLineSearchResults $widgets(resultsbox) $line_num
 }
 
 proc Apol_Roles::create {nb} {
-	variable resultsbox 
-	variable srchstr 
-	variable opts
-	variable types_list
-	variable combo_types
-	variable combo_attribute
-	variable cb_attrib
-	variable cb_type
-	
-	# Layout frames
-	set frame [$nb insert end $ApolTop::roles_tab -text "Roles"]
-	set topf  [frame $frame.topf]
-	set pw1   [PanedWindow $topf.pw -side top]
-	set pane  [$pw1 add ]
-	set spane [$pw1 add -weight 5]
-	set pw2   [PanedWindow $pane.pw -side left]
-	set rpane [$pw2 add -weight 3]
-	
-	# Title frames
-	set rolebox [TitleFrame $rpane.rolebox -text "Roles"]
-	set s_optionsbox [TitleFrame $spane.obox -text "Search Options"]
-	set resultsbox [TitleFrame $spane.rbox -text "Search Results"]
-	
-	# Placing layout
-	pack $topf -fill both -expand yes 
-	pack $pw1 -fill both -expand yes
-	pack $pw2 -fill both -expand yes
-	
-	# Placing title frames
-	pack $s_optionsbox -padx 2 -fill both
-	pack $rolebox -padx 2 -side left -fill both -expand yes
-	pack $resultsbox -pady 2 -padx 2 -fill both -anchor n -side bottom -expand yes
-	
-	# Roles listbox widget
-	set rlistbox [Apol_Widget::makeScrolledListbox [$rolebox getframe].lb -width 20 -listvar Apol_Roles::role_list]
-	Apol_Widget::setListboxCallbacks $rlistbox \
-		{{"Display Role Info" {Apol_Roles::popupRoleInfo role}}}
+    variable widgets
+    variable opts
+    
+    # Layout frames
+    set frame [$nb insert end $ApolTop::roles_tab -text "Roles"]
+    set pw [PanedWindow $frame.pw -side top]
+    set leftf [$pw add -weight 0]
+    set rightf [$pw add -weight 1]
+    pack $pw -fill both -expand yes
+    
+    # Title frames
+    set rolebox [TitleFrame $leftf.rolebox -text "Roles"]
+    set s_optionsbox [TitleFrame $rightf.obox -text "Search Options"]
+    set resultsbox [TitleFrame $rightf.rbox -text "Search Results"]
+    
+    # Placing title frames
+    pack $rolebox -fill both -expand yes
+    pack $s_optionsbox -padx 2 -fill both -expand 0
+    pack $resultsbox -padx 2 -fill both -expand yes
+    
+    # Roles listbox widget
+    set rlistbox [Apol_Widget::makeScrolledListbox [$rolebox getframe].lb \
+                      -width 20 -listvar Apol_Roles::role_list]
+    Apol_Widget::setListboxCallbacks $rlistbox \
+        {{"Display Role Info" {Apol_Roles::popupRoleInfo role}}}
 
-	# Search options subframes
-	set ofm [$s_optionsbox getframe]
-	set l_innerFrame [LabelFrame $ofm.to \
-	            -relief sunken -borderwidth 1]
-	set c_innerFrame [LabelFrame $ofm.co \
-	            -relief sunken -borderwidth 1]
-	set r_innerFrame [frame $ofm.ro \
-	            -relief flat -borderwidth 1]
-	
-	# Placing inner frames
-	set lfm [$l_innerFrame getframe]
-	set cfm [$c_innerFrame getframe]
-	set rfm  $r_innerFrame
-	
-	# Search options widget items
-	set combo_types [ComboBox $cfm.combo_types -width 30 -textvariable Apol_Roles::types_list \
-		  -helptext "Type or select a type"]
-		
-	set cb_type [checkbutton $cfm.cb -variable Apol_Roles::opts(useType) -text "Search Using Type" \
-			-command {Apol_Roles::enable_type_list}]
-		
-	# ComboBox is not a simple widget, it is a mega-widget, and bindings for mega-widgets are non-trivial.
-	# If bindtags is invoked with only one argument, then the current set of binding tags for window is 
-	# returned as a list.
-	bindtags $combo_types.e [linsert [bindtags $combo_types.e] 3 listTag]
-	bind listTag <KeyPress> { ApolTop::_create_popup $Apol_Roles::combo_types %W %K }
-	
-	set combo_attribute [ComboBox $cfm.combo_attribute  \
-		-textvariable Apol_Roles::selected_attribute \
-		-modifycmd {Apol_Roles::change_types_list} \
-		-exportselection 0] 
-		
-	set cb_attrib [checkbutton $cfm.cb_attrib -text "Filter types to select using attribute:" \
-		-variable Apol_Roles::attrib_sel \
-		-offvalue 0 -onvalue 1 \
-		-command {Apol_Roles::enable_attrib_list $Apol_Roles::combo_attribute $Apol_Roles::attrib_sel}]
-		
-	# Set default state for combo boxes
-	Apol_Roles::enable_type_list	
-	radiobutton $lfm.names_only -text "Names Only" -variable Apol_Roles::opts(showSelection) -value names 
-	radiobutton $lfm.all_info -text "All Information" -variable Apol_Roles::opts(showSelection) -value all 
-		
-	# Action Buttons
-	button $rfm.ok -text OK -width 6 -command {Apol_Roles::searchRoles}      
-	#button $rfm.print -text Print -width 6 -command {ApolTop::unimplemented}
-	
-	# Display results window
-	set sw_d [ScrolledWindow [$resultsbox getframe].sw -auto none]
-	set resultsbox [text [$sw_d getframe].text -bg white -wrap none -state disabled]
-	$sw_d setwidget $resultsbox
-	
-	# Placing all widget items
-	pack $r_innerFrame -side right -fill both -expand yes -anchor ne
-	pack $l_innerFrame -side left -fill both -anchor n
-	pack $c_innerFrame -side right -expand yes -anchor nw -padx 5
-	pack $rfm.ok -side top -anchor e -pady 5 -padx 5
-	pack $lfm.names_only $lfm.all_info -side top -anchor nw -pady 5 -padx 5
-	pack $cb_type -side top -anchor nw -padx 10 
-	pack $combo_types -anchor w -padx 10
-	pack $cb_attrib -expand yes -anchor nw -padx 15
-	pack $combo_attribute -fill x -expand yes -padx 25
-	pack $rlistbox -fill both -expand yes
-	pack $sw_d -side left -expand yes -fill both 
-	
-	return $frame	
+    # Search options subframes
+    set ofm [$s_optionsbox getframe]
+    set lfm [frame $ofm.to -relief sunken -borderwidth 1]
+    set cfm [frame $ofm.co -relief sunken -borderwidth 1]
+
+    # Set default state for combo boxes
+    radiobutton $lfm.names_only -text "Names Only" \
+        -variable Apol_Roles::opts(showSelection) -value names
+    radiobutton $lfm.all_info -text "All Information" \
+        -variable Apol_Roles::opts(showSelection) -value all
+
+    # Search options widget items
+    set cb_type [checkbutton $cfm.cb -variable Apol_Roles::opts(useType) -text "Type"]
+    set widgets(combo_types) [Apol_Widget::makeTypeCombobox $cfm.combo_tyes]
+    Apol_Widget::setTypeComboboxState $widgets(combo_types) disabled
+    trace add variable Apol_Roles::opts(useType) write \
+        [list Apol_Roles::toggleTypeCombobox $widgets(combo_types)]
+    
+    button $ofm.ok -text OK -width 6 -command {Apol_Roles::searchRoles}      
+    
+    # Display results window
+    set widgets(resultsbox) [Apol_Widget::makeSearchResults [$resultsbox getframe].sw]
+
+    # Placing all widget items
+    pack $lfm $cfm -side left -padx 5 -pady 4 -ipady 4 -anchor nw -expand 0 -fill y
+    pack $ofm.ok -side top -anchor e -pady 5 -padx 5
+    pack $lfm.names_only $lfm.all_info -side top -anchor nw -pady 5 -padx 5
+    pack $cb_type -side top -anchor nw
+    pack $widgets(combo_types) -side top -anchor nw -padx 4
+    pack $rlistbox -fill both -expand yes
+    pack $widgets(resultsbox) -expand 1 -fill both
+    
+    return $frame	
 }
-
