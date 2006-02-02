@@ -190,8 +190,8 @@ proc Apol_Context_Dialog::_okay {dialog} {
                       $vars($dialog:role) != "" && \
                       $vars($dialog:role) != "object_r" && \
                       [ApolTop::is_policy_open]} {
-            set types [apol_RoleTypes $vars($dialog:role)]
-            if {[lsearch -exact $types $type] == -1} {
+            set role_info [apol_GetRoles $vars($dialog:role)]
+            if {[lsearch -exact [lindex $role_info 0 1] $type] == -1} {
                 tk_messageBox -icon error -type ok -title "Could Not Validate Context" \
                     -message "Role $vars($dialog:role) does not have type $type."
                 return
