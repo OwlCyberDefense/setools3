@@ -25,6 +25,11 @@
 	#define LIBSEAUDIT_VERSION_STRING "UNKNOWN"
 #endif
 
+/* define the types of logs that we understand here, this will 
+   be assigned to the logtype of the audit_log_t */
+#define AUDITLOG_SYSLOG 0
+#define AUDITLOG_AUDITD 1
+
 /* 
  * msg_type_t defines the different types of audit messages this library will
  * handle.  AVC_MSG is a standard 'allowed' or 'denied' type message.  
@@ -238,6 +243,7 @@ typedef struct audit_log {
 	audit_log_malformed_msg_list_t *malformed_msgs;
 	avl_tree_t trees[NUM_TREES];
 	strs_t symbols[NUM_TREES];
+	int logtype;         /* the type of log, syslog or auditlog */
 } audit_log_t;
 
 audit_log_t* audit_log_create(void);
@@ -255,6 +261,10 @@ int audit_log_add_str(audit_log_t *log, char *string, int *id, int which);
 int audit_log_get_str_idx(audit_log_t *log, const char *str, int which);
 const char* audit_log_get_str(audit_log_t *log, int idx, int which);
 int audit_log_add_malformed_msg(char *line, audit_log_t **log);
+
+void audit_log_set_log_type(audit_log_t *log, int logtype);
+int audit_log_get_log_type(audit_log_t *log);
+bool_t audit_log_has_valid_years(audit_log_t *log);  /* does the log have valid years in the dates */
 
 enum avc_msg_class_t which_avc_msg_class(msg_t *msg);
 
