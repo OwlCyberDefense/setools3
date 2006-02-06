@@ -13,16 +13,17 @@
 #define _APOLICY_POLICY_QUERY_H_
 
 #include <regex.h>
+#include <errno.h>
 #include "policy.h"
 
 
-typedef struct teq_srch_type {
+typedef struct srch_type {
 	bool_t	indirect;	/* include matches for assoicated attributes (if type) */	
 	/* NOTE: Since the search can take a regex or type/attrib, we must have the 
 	 * ta specified as a string rather than an idx */
 	char	*ta;		/* type/attrib string, NULL if unused, can be regex*/
 	int	t_or_a	;	/* Used only for regex searches, can be IDX_TYPE, IDX_ATTRIB, or IDX_BOTH */
-} teq_srch_type_t;
+} srch_type_t;
 
 typedef struct teq_query {
 	#define TEQ_NONE	0x0
@@ -43,9 +44,9 @@ typedef struct teq_query {
 	bool_t		any;			/* if true, than use ta1 for any and ignore ta2-3 */
 	bool_t		use_regex;		/* if true, ta* are regex */
 	bool_t		only_enabled; 		/* include only rules that are enabled by the conditional policy */
-	teq_srch_type_t	ta1;			/* */
-	teq_srch_type_t	ta2;			/* */
-	teq_srch_type_t	ta3;			/* */
+	srch_type_t	ta1;			/* */
+	srch_type_t	ta2;			/* */
+	srch_type_t	ta3;			/* */
 	int		*classes;		/* array of class indexes */
 	int		num_classes;
 	int		*perms;			/* array of permission indexes */

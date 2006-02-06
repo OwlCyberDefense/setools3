@@ -411,15 +411,20 @@ char *re_render_mls_level(ap_mls_level_t *level, policy_t *policy)
 char *re_render_mls_range(ap_mls_range_t *range, policy_t *policy)
 {
 	char *rt = NULL;
+	char *sub_str = NULL;
 	int sz = 0;
 
 	if (!range || !policy)
 		return NULL;
 
-	append_str(&rt, &sz, re_render_mls_level(range->low, policy));
+	sub_str = re_render_mls_level(range->low, policy);
+	append_str(&rt, &sz, sub_str);
+	free(sub_str);
 	if (range->high != range->low) {
 		append_str(&rt, &sz, " - ");
-		append_str(&rt, &sz, re_render_mls_level(range->high, policy));
+		sub_str = re_render_mls_level(range->high, policy);
+		append_str(&rt, &sz, sub_str);
+		free(sub_str);
 	}
 	return rt;
 }
@@ -1345,7 +1350,7 @@ char *re_render_constraint(bool_t addlineno, ap_constraint_t *constraint, policy
 
 char *re_render_rangetrans(bool_t addlineno, int idx, policy_t *policy)
 {
-	char *rt = NULL, *tmp_name = NULL;
+	char *rt = NULL, *tmp_name = NULL, *sub_str = NULL;
 	char tmp[BUF_SZ];
 	int sz = 0, retv;
 	ta_item_t *name = NULL;
@@ -1431,7 +1436,9 @@ char *re_render_rangetrans(bool_t addlineno, int idx, policy_t *policy)
 	append_str(&rt, &sz, " ");
 
 	/* render range */
-	append_str(&rt, &sz, re_render_mls_range(policy->rangetrans[idx].range, policy));
+	sub_str = re_render_mls_range(policy->rangetrans[idx].range, policy);
+	append_str(&rt, &sz, sub_str);
+	free(sub_str);
 
 	append_str(&rt, &sz, ";");
 
