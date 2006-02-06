@@ -5,6 +5,9 @@ INCLUDE		= -I.. -I../libapol
 GUI-OBJS	= sediff_gui.o sediff_treemodel.o utilgui.o sediff_rename_types.o sediff_find_window.o
 GTK_CFLAGS      = `pkg-config --cflags libglade-2.0`
 GTK_LIBS        = `pkg-config --libs libglade-2.0`
+#ifdef G_THREADS_ENABLED
+G_THREADS       =  `pkg-config --libs gthread-2.0`
+#endif
 GLADE_FILES     = sediff.glade
 
 all: libapol sediff sediffx
@@ -13,7 +16,7 @@ sediff: sediff.o $(LIBAPOL)
 	$(CC) -o $@ sediff.o $(LIBAPOL) $(LIBS) $(LINKFLAGS) $(LIBSELINUX) 
 
 sediffx: $(LIBAPOL) $(GUI-OBJS)
-	$(CC) $(GUI-OBJS) -o $@ -export-dynamic $(LIBAPOL) $(LINKFLAGS) $(LIBSELINUX) $(LIBS) $(GTK_LIBS)  
+	$(CC) $(GUI-OBJS) -o $@ -export-dynamic $(LIBAPOL) $(LINKFLAGS) $(LIBSELINUX) $(LIBS) $(GTK_LIBS) $(G_THREADS)
 
 install-nogui: sediff 
 	install -m 755 sediff $(BINDIR);
