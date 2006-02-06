@@ -17,6 +17,7 @@
 #include "policy-query.h"
 
 
+
 int free_teq_results_contents(teq_results_t *r)
 {
 	if(r == NULL)
@@ -33,7 +34,7 @@ int free_teq_results_contents(teq_results_t *r)
 	return 0;
 }
 
-static int free_teq_search_type(teq_srch_type_t *s)
+static int free_search_type(srch_type_t *s)
 {
 	assert(s != NULL);
 	if(s->ta != NULL) free(s->ta);
@@ -46,14 +47,14 @@ int free_teq_query_contents(teq_query_t *q)
 		return 0;
 	if(q->classes != NULL) free(q->classes);
 	if(q->perms != NULL) free(q->perms);
-	free(q->bool_name);
-	free_teq_search_type(&q->ta1);
-	free_teq_search_type(&q->ta2);
-	free_teq_search_type(&q->ta3);
+	if(q->bool_name != NULL) free(q->bool_name);
+	free_search_type(&q->ta1);
+	free_search_type(&q->ta2);
+	free_search_type(&q->ta3);
 	return 0;
 }
 
-static void init_teq_search_type(teq_srch_type_t *s)
+static void init_search_type(srch_type_t *s)
 {
 	assert(s != NULL);
 	s->indirect = FALSE;
@@ -72,9 +73,9 @@ int init_teq_query(teq_query_t *q)
 	q->rule_select = 0x0;
 	q->use_regex = TRUE;
 	q->only_enabled = FALSE;
-	init_teq_search_type(&q->ta1);
-	init_teq_search_type(&q->ta2);
-	init_teq_search_type(&q->ta3);
+	init_search_type(&q->ta1);
+	init_search_type(&q->ta2);
+	init_search_type(&q->ta3);
 	q->bool_name = NULL;
 	return 0;
 }
@@ -97,7 +98,7 @@ int init_teq_results(teq_results_t *r)
 	return 0;
 }
 
-static bool_t validate_teq_search_type(teq_srch_type_t *s)
+static bool_t validate_search_type(srch_type_t *s)
 {
 	assert(s != NULL);
 	if(!(s->t_or_a == IDX_BOTH || s->t_or_a == IDX_TYPE || s->t_or_a == IDX_ATTRIB ) )
@@ -116,11 +117,11 @@ bool_t validate_te_query(teq_query_t *q)
 	/* can't use ta3 if one of the type rules isn't selected */
 	if(!q->any && is_ta_used(q->ta3) && !(q->rule_select & TEQ_TYPE))
 		return FALSE;
-	if(is_ta_used(q->ta1) && !validate_teq_search_type(&q->ta1))
+	if(is_ta_used(q->ta1) && !validate_search_type(&q->ta1))
 		return FALSE;
-	if(!q->any && is_ta_used(q->ta2) && !validate_teq_search_type(&q->ta2))
+	if(!q->any && is_ta_used(q->ta2) && !validate_search_type(&q->ta2))
 		return FALSE;
-	if(!q->any && is_ta_used(q->ta3) && !validate_teq_search_type(&q->ta3))
+	if(!q->any && is_ta_used(q->ta3) && !validate_search_type(&q->ta3))
 		return FALSE;
 	return TRUE;
 }
@@ -160,7 +161,7 @@ static int match_te_rules_idx(int  idx,
                           bool_t  include_audit, 
                           unsigned char whichlists,	/* indicates src, target, and/or default lists */	
                           bool_t do_indirect,
-			  bool_t only_enabled,
+                          bool_t only_enabled,
                           rules_bool_t *rules_b,
                           policy_t *policy) 		
 {
