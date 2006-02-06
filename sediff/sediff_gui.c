@@ -26,6 +26,7 @@
 #include <getopt.h>
 #include <time.h>
 #include <sys/mman.h>
+#include <glib.h>
 
 /* The following should be defined in the make environment */
 #ifndef SEDIFF_GUI_VERSION_NUM
@@ -3620,48 +3621,18 @@ static void sediff_initialize_diff()
 	}
 }
 
-
 /* 
-   diff p1 and p2
-   also sets up the buffers used in gui so we can switch faster
-   returns -1 on error otherwise 0
+   populate the main window
 */
-static int sediff_diff_policies(policy_t *p1, policy_t *p2, ap_diff_rename_t *renamed_types)
+gboolean sediff_populate_main_window()
 {
-	unsigned int opts = POLOPT_ALL;
 	GdkCursor *cursor = NULL;
-	GString *string = g_string_new("");
 	GtkWidget *container = NULL;
 	GtkTreeModel *tree_model;
 	GtkTreeSelection *sel;
 	GtkTreeIter iter;
 	GtkNotebook *notebook1, *notebook2;
 	GtkTextView *textview;
-	
-	if (p1 == NULL || p2 == NULL)
-		goto err;
-
-	/* show our loading dialog */
-	sediff_modal_dlg_show("Calculating", "Calculating difference - this may take a while");
-
-	sediff_initialize_diff();
-	/* set the cursor to a hourglass */
-	cursor = gdk_cursor_new(GDK_WATCH);
-	gdk_window_set_cursor(GTK_WIDGET(sediff_app->window)->window, cursor);
-	gdk_cursor_unref(cursor);
-	gdk_flush();
-
-	/* make sure we clear everything out before we run the diff */
-	while (gtk_events_pending ())
-		gtk_main_iteration ();
-
-	/* create a new svd */
-	sediff_app->svd = ap_single_view_diff_new(opts, p1, p2, renamed_types);
-	if (sediff_app->svd == NULL) {
-		g_string_printf(string,"Error creating single view difference");
-		message_display(sediff_app->window,GTK_MESSAGE_ERROR,string->str);
-		goto err;
-	}
 	
 	/* load up the status bar */
 	sediff_update_status_bar();
@@ -3710,37 +3681,140 @@ static int sediff_diff_policies(policy_t *p1, policy_t *p2, ap_diff_rename_t *re
 	/* set the buffer to the summary page */
 	sediff_results_txt_view_switch_buffer(textview, OPT_SUMMARY, 1);
 
-
-	/* get rid of the loading when done */
-	sediff_modal_dlg_destroy();
-
 	/* diff is done set cursor back to a ptr */
 	cursor = gdk_cursor_new(GDK_LEFT_PTR);
 	if (sediff_app->window != NULL)
 		gdk_window_set_cursor(GTK_WIDGET(sediff_app->window)->window, cursor);
 	
-	return 0;
-err:
-	cursor = gdk_cursor_new(GDK_LEFT_PTR);
-	if (sediff_app->window != NULL)
-		gdk_window_set_cursor(GTK_WIDGET(sediff_app->window)->window, cursor);
+	return FALSE;
+}
+
+gboolean sediff_pulse_window_destroy(gpointer data)
+{
+	GtkWidget *window;
+
+	if (!data)
+		return FALSE;
+	window = GTK_WIDGET(data);
+	/* stop pulsing progress bar */
+	g_source_remove(GPOINTER_TO_INT(g_object_get_data(G_OBJECT(window), "source_id")));
+	gtk_widget_hide(window);
+	gtk_widget_destroy(window);
+	return FALSE;
+}
+
+gpointer sediff_diff_policies(gpointer data)
+{
+	unsigned int opts = POLOPT_ALL;
+	ap_diff_rename_t *renamed_types = NULL;
+	/* if we have no threads, then just use the hourglass approach */
+#ifndef G_THREADS_ENABLED
+
+	GdkCursor *cursor = NULL;
+
+
+	/* set the cursor to a hourglass */
+	cursor = gdk_cursor_new(GDK_WATCH);
+	gdk_window_set_cursor(GTK_WIDGET(sediff_app->window)->window, cursor);
 	gdk_cursor_unref(cursor);
 	gdk_flush();
-	g_string_free(string,TRUE);
-	sediff_modal_dlg_destroy();
-	return -1;
+
+	/* make sure we clear everything out before we run the diff */
+	while (gtk_events_pending ())
+		gtk_main_iteration ();
+
+	if (sediff_app->p1_sfd.name && sediff_app->p2_sfd.name) {
+		if (sediff_app->rename_types_window) {
+			renamed_types = sediff_app->rename_types_window->renamed_types;
+		}
+		sediff_app->svd = ap_single_view_diff_new(opts, sediff_app->p1, 
+							  sediff_app->p2, renamed_types);
+		if (sediff_app->svd == NULL) {
+			message_display(sediff_app->window,GTK_MESSAGE_ERROR, "Error creating single view difference");
+			cursor = gdk_cursor_new(GDK_LEFT_PTR);
+			if (sediff_app->window != NULL)
+				gdk_window_set_cursor(GTK_WIDGET(sediff_app->window)->window, cursor);
+			gdk_cursor_unref(cursor);
+			gdk_flush();		
+		}
+	}
+	else
+		message_display(sediff_app->window, GTK_MESSAGE_ERROR, "A policy filename is empty! Could not reload.");		
+
+#else
+	if (sediff_app->p1_sfd.name && sediff_app->p2_sfd.name) {
+		if (sediff_app->rename_types_window) {
+			renamed_types = sediff_app->rename_types_window->renamed_types;
+		}
+		sediff_app->svd = ap_single_view_diff_new(opts, sediff_app->p1, 
+							  sediff_app->p2, renamed_types);
+		if (sediff_app->svd == NULL) {
+			message_display(sediff_app->window,GTK_MESSAGE_ERROR, "Error creating single view difference");
+			return NULL;		
+		}
+	}
+	else
+		message_display(sediff_app->window, GTK_MESSAGE_ERROR, "A policy filename is empty! Could not reload.");		
+	g_idle_add_full(G_PRIORITY_HIGH_IDLE, &sediff_pulse_window_destroy, data, NULL);
+#endif
+
+	g_idle_add_full(G_PRIORITY_HIGH_IDLE, &sediff_populate_main_window, NULL, NULL);
+	return NULL;
+}
+
+gboolean update_progress(gpointer data)
+{
+
+	gtk_progress_bar_pulse(GTK_PROGRESS_BAR(data));
+	return TRUE;
 }
 
 static void run_diff_clicked()
 {
-	if (sediff_app->p1_sfd.name && sediff_app->p2_sfd.name) {
-		if (sediff_app->rename_types_window)
-			sediff_diff_policies(sediff_app->p1, sediff_app->p2, sediff_app->rename_types_window->renamed_types);
-		else
-			sediff_diff_policies(sediff_app->p1, sediff_app->p2, NULL);
-	}
-	else
-		message_display(sediff_app->window, GTK_MESSAGE_ERROR, "A policy filename is empty! Could not reload.");		
+	/* here check to see if we can thread this out, if we can
+	   then thread it otherwise just use use the old hourglass way */
+
+#ifdef G_THREADS_ENABLED
+	GtkWidget *window, *widget, *vbox;
+	guint sid;
+
+	/* create the modal window which warns the user to wait */
+	/* the sediff_diff_policies, will destroy this window*/
+	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	gtk_window_set_modal(GTK_WINDOW(window), TRUE);
+	gtk_window_set_title(GTK_WINDOW(window), "SEDiff Progress");
+	gtk_container_set_border_width(GTK_CONTAINER(window), 12);
+	g_signal_connect(window, "delete_event", G_CALLBACK(gtk_true), NULL);
+	gtk_window_set_transient_for(GTK_WINDOW(window), sediff_app->window);
+	gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER_ON_PARENT);
+
+	vbox = gtk_vbox_new(FALSE, 8);
+	gtk_widget_show(vbox);
+
+	/* create label */
+	widget = gtk_label_new("Please wait...");
+	gtk_widget_show(widget);
+	gtk_container_add(GTK_CONTAINER(vbox), widget);
+	
+	/* create progress bar */
+	widget = gtk_progress_bar_new();
+	gtk_widget_show(widget);
+	gtk_container_add(GTK_CONTAINER(vbox), widget);
+	
+	/* add vbox to dialog */
+	gtk_container_add(GTK_CONTAINER(window), vbox);
+	gtk_widget_show (window);
+
+	/* refresh the progress dialog */
+	sid = g_timeout_add(100, update_progress, widget);
+	g_object_set_data(G_OBJECT(window), "source_id", GINT_TO_POINTER(sid));
+
+	sediff_initialize_diff();	
+	g_thread_create(sediff_diff_policies, window, FALSE, NULL);
+#else
+	sediff_initialize_diff();	
+	sediff_diff_policies(sediff_app->window);
+#endif
 }
 
 /* sort the te rules in the currently displayed buffer */
@@ -4445,7 +4519,7 @@ static int sediff_load_policies(const char *p1_file, const char *p2_file)
 }
 
 /* open the files listed in the open_dialog */
-void sediff_open_dialog_open_and_load_policies()
+int sediff_open_dialog_open_and_load_policies()
 {
 	const gchar *p1_file = NULL;
 	const gchar *p2_file = NULL;
@@ -4468,13 +4542,13 @@ void sediff_open_dialog_open_and_load_policies()
 		string = g_string_new("Invalid file specified for policy 1!");
 		message_display(sediff_app->window, GTK_MESSAGE_ERROR, string->str);
 		g_string_free(string, TRUE);
-		return;
+		return -1;
 	}
 	if (!g_file_test(p2_file, G_FILE_TEST_EXISTS) || g_file_test(p2_file, G_FILE_TEST_IS_DIR)) {
 		string = g_string_new("Invalid file specified for policy 2!");
 		message_display(sediff_app->window, GTK_MESSAGE_ERROR, string->str);
 		g_string_free(string, TRUE);
-		return;
+		return -1;
 	}
 	
 	/* set the cursor to a hand */
@@ -4491,16 +4565,15 @@ void sediff_open_dialog_open_and_load_policies()
 	gdk_cursor_unref(cursor);
 	gdk_flush();
 
-	if (rt < 0)
-		return;
+	return rt;
 }
 
 void sediff_open_dialog_on_open_and_diff_button_clicked(GtkButton *button, gpointer user_data)
 {
 	GdkCursor *cursor = NULL;
 	
-	sediff_open_dialog_open_and_load_policies();
-
+	if (sediff_open_dialog_open_and_load_policies() < 0)
+		return;
 	/* set the cursor to a hand */
 	cursor = gdk_cursor_new(GDK_WATCH);
 	gdk_window_set_cursor(GTK_WIDGET(sediff_app->open_dlg)->window, cursor);	
@@ -4547,17 +4620,22 @@ typedef struct delayed_main_data {
  */
 static gboolean delayed_main(gpointer data)
 {
+	int rt;
 	delayed_data_t *delay_data = (delayed_data_t *)data;
 	const char *p1_file = delay_data->p1_file->str;
 	const char *p2_file = delay_data->p2_file->str;
 
-	sediff_load_policies(p1_file, p2_file);
+	rt = sediff_load_policies(p1_file, p2_file);
 	g_string_free(delay_data->p1_file, TRUE);
 	g_string_free(delay_data->p2_file, TRUE);
+	if (rt < 0)
+		return FALSE;
 
 	if (delay_data->run_diff == TRUE)
 		run_diff_clicked();
+
 	return FALSE;
+   
 }
 
 static void sediff_main_notebook_on_switch_page(GtkNotebook *notebook, GtkNotebookPage *page, guint pagenum, gpointer user_data) 
@@ -4618,7 +4696,10 @@ int main(int argc, char **argv)
 	delay_data.run_diff = FALSE;
 	GtkNotebook *notebook = NULL;
 	GtkTextView *textview = NULL;
-	
+
+#ifdef G_THREADS_ENABLED
+	if (!g_thread_supported ()) g_thread_init (NULL);
+#endif
 	
 	if (rindex(argv[0],'/')) {
 		fname1 = rindex(argv[0],'/')+1;
@@ -4733,6 +4814,8 @@ int main(int argc, char **argv)
 	}
 
 	
+
+
 	gtk_init(&argc, &argv);
 	glade_init();
 	dir = find_file(GLADEFILE);
