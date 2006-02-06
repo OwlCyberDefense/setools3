@@ -387,7 +387,6 @@ int main (int argc, char **argv)
 	  			exit(1);
 	  		}
 	  		cmd_opts.src_name = strdup(optarg);
-			printf("src_name input is %s\n\n", cmd_opts.src_name);
 	  		if (!cmd_opts.src_name) {
 	  			fprintf(stderr, "Memory error!\n");
 	  			exit(1);	
