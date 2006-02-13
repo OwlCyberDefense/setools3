@@ -510,68 +510,78 @@ int Apol_GetPolicyVersionNumber(ClientData clientData, Tcl_Interp *interp, int a
 	return TCL_OK;
 }
 
-/* return statics about the policy */
-int Apol_GetStats(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
-{
-	char buf[128];
-	if(argc != 1) {
-		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
-		return TCL_ERROR;
-	}
-	if(policy == NULL) {
-		Tcl_AppendResult(interp,"No current policy file is opened!", (char *) NULL);
-		return TCL_ERROR;
-	}
-	/* elements */	
-	sprintf(buf, "types %d", policy->num_types);
-	Tcl_AppendElement(interp, buf);
-	sprintf(buf, "attribs %d", policy->num_attribs);
-	Tcl_AppendElement(interp, buf);
-	sprintf(buf, "roles %d", policy->num_roles);
-	Tcl_AppendElement(interp, buf);
-/* FIX: Rather than this type of code, we need to add TCL flags that indicate
- *      what was collected so that tcl/tk GUIs will know what to expect
- */
-	sprintf(buf, "classes %d", policy->num_obj_classes);
-	Tcl_AppendElement(interp, buf);
-	sprintf(buf, "common_perms %d", policy->num_common_perms);
-	Tcl_AppendElement(interp, buf);
-	sprintf(buf, "perms %d", policy->num_perms);
-	Tcl_AppendElement(interp, buf);
-		
-	/* rules */
-	sprintf(buf, "teallow %d", policy->rule_cnt[RULE_TE_ALLOW]);
-	Tcl_AppendElement(interp, buf);
-	sprintf(buf, "neverallow %d", policy->rule_cnt[RULE_NEVERALLOW]);
-	Tcl_AppendElement(interp, buf);
-	sprintf(buf, "auditallow %d", policy->rule_cnt[RULE_AUDITALLOW]);
-	Tcl_AppendElement(interp, buf);
-	sprintf(buf, "auditdeny %d", policy->rule_cnt[RULE_AUDITDENY]);
-	Tcl_AppendElement(interp, buf);	
-	sprintf(buf, "dontaudit %d", policy->rule_cnt[RULE_DONTAUDIT]);
-	Tcl_AppendElement(interp, buf);
-	sprintf(buf, "tetrans %d", policy->rule_cnt[RULE_TE_TRANS]);
-	Tcl_AppendElement(interp, buf);
-	sprintf(buf, "temember %d", policy->rule_cnt[RULE_TE_MEMBER]);
-	Tcl_AppendElement(interp, buf);
-	sprintf(buf, "techange %d", policy->rule_cnt[RULE_TE_CHANGE]);
-	Tcl_AppendElement(interp, buf);
-	sprintf(buf, "clone %d", policy->rule_cnt[RULE_CLONE]);
-	Tcl_AppendElement(interp, buf);
-	sprintf(buf, "roleallow %d", policy->rule_cnt[RULE_ROLE_ALLOW]);
-	Tcl_AppendElement(interp, buf);
-	sprintf(buf, "roletrans %d", policy->rule_cnt[RULE_ROLE_TRANS]);
-	Tcl_AppendElement(interp, buf);
-	sprintf(buf, "users %d", policy->rule_cnt[RULE_USER]);
-	Tcl_AppendElement(interp, buf);
-	sprintf(buf, "sids %d", policy->num_initial_sids);
-	Tcl_AppendElement(interp, buf);
-	sprintf(buf, "cond_bools %d", policy->num_cond_bools);
-	Tcl_AppendElement(interp, buf);
-			
-	return TCL_OK;
-}
+struct ap_policy_stat {
+        const char *name;
+        int num_elems;
+};
 
+/* Calculate and return statistics about the policy, in a format
+ * suitable for [array set]. */
+static int Apol_GetStats(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
+{
+        Tcl_Obj *result_obj  = Tcl_NewListObj(0, NULL);
+        int num_genfscon;
+        if(policy == NULL) {
+                Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+                return TCL_ERROR;
+        }
+        num_genfscon = ap_genfscon_get_num_paths(policy);
+        {
+                struct ap_policy_stat stats[] = {
+                        /* components */
+                        {"types", policy->num_types},
+                        {"attribs", policy->num_attribs},
+                        {"roles", policy->num_roles},
+                        {"classes", policy->num_obj_classes},
+                        {"common_perms", policy->num_common_perms},
+                        {"perms", policy->num_perms},
+                        {"users", policy->rule_cnt[RULE_USER]},
+                        {"cond_bools", policy->num_cond_bools},
+
+                        /* rules */
+                        {"teallow", policy->rule_cnt[RULE_TE_ALLOW]},
+                        {"neverallow", policy->rule_cnt[RULE_NEVERALLOW]},
+                        {"auditallow", policy->rule_cnt[RULE_AUDITALLOW]},
+                        {"auditdeny", policy->rule_cnt[RULE_AUDITDENY]},
+                        {"dontaudit", policy->rule_cnt[RULE_DONTAUDIT]},
+                        {"tetrans", policy->rule_cnt[RULE_TE_TRANS]},
+                        {"temember", policy->rule_cnt[RULE_TE_MEMBER]},
+                        {"techange", policy->rule_cnt[RULE_TE_CHANGE]},
+                        {"clone", policy->rule_cnt[RULE_CLONE]},
+
+                        /* rbac */
+                        {"roleallow", policy->rule_cnt[RULE_ROLE_ALLOW]},
+                        {"roletrans", policy->rule_cnt[RULE_ROLE_TRANS]},
+
+                        /* mls */
+                        {"sens", policy->num_sensitivities},
+                        {"cats", policy->num_categories},
+                        {"rangetrans", policy->num_rangetrans},
+
+                        /* contexts */
+                        {"sids", policy->num_initial_sids},
+                        {"portcons", policy->num_portcon},
+                        {"netifcons", policy->num_netifcon},
+                        {"nodecons", policy->num_nodecon},
+                        {"genfscons", num_genfscon},
+                        {"fs_uses", policy->num_fs_use}
+                };
+                int i;
+                Tcl_Obj *stat_elem[2];
+
+                for (i = 0; i < sizeof(stats) / sizeof(stats[0]); i++) {
+                        stat_elem[0] = Tcl_NewStringObj(stats[i].name, -1);
+                        stat_elem[1] = Tcl_NewIntObj(stats[i].num_elems);
+                        if (Tcl_ListObjAppendElement(interp, result_obj, stat_elem[0]) != TCL_OK ||
+                            Tcl_ListObjAppendElement(interp, result_obj, stat_elem[1]) != TCL_OK) {
+                                return TCL_ERROR;
+                        }
+                }
+        }
+		
+        Tcl_SetObjResult(interp, result_obj);
+        return TCL_OK;
+}
 
 /* Given just the name of an object class, return a list of three
    items.  The first element is a list of permissions, sans any common
@@ -1324,7 +1334,7 @@ int Apol_Init(Tcl_Interp *interp)
 	Tcl_CreateCommand(interp, "apol_OpenPolicy", (Tcl_CmdProc *) Apol_OpenPolicy, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_ClosePolicy", (Tcl_CmdProc *) Apol_ClosePolicy, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_GetVersion", (Tcl_CmdProc *) Apol_GetVersion, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-	Tcl_CreateCommand(interp, "apol_GetStats", (Tcl_CmdProc *) Apol_GetStats, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+        Tcl_CreateCommand(interp, "apol_GetStats", Apol_GetStats, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetPolicyVersionString", (Tcl_CmdProc *) Apol_GetPolicyVersionString, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_GetPolicyVersionNumber", (Tcl_CmdProc *) Apol_GetPolicyVersionNumber, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_GetPolicyContents", (Tcl_CmdProc *) Apol_GetPolicyContents, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
