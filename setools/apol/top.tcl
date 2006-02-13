@@ -21,7 +21,8 @@ namespace eval ApolTop {
 	# The option defaults to 0 (or all portions of the policy).
 	variable policy_open_option	0
 	variable policyConf_lineno	""
-	variable polstats 		""
+	variable polstats
+        variable policy_stats_summary   ""
 	# The version number is defined as a magical string here. This is later configured in the make environment.
 	variable gui_ver 		APOL_GUI_VERSION 
 	variable copyright_date		"2001-2006"
@@ -1197,7 +1198,7 @@ proc ApolTop::create { } {
 	#[$mainframe getmenu fc_index_menu] insert 0 command -label "Create Index" -command "ApolTop::create_fc_index_file"
 		
 	$mainframe addindicator -textvariable ApolTop::policyConf_lineno -width 14
-	$mainframe addindicator -textvariable ApolTop::polstats -width 88
+	$mainframe addindicator -textvariable ApolTop::policy_stats_summary -width 88
 	$mainframe addindicator -textvariable ApolTop::policy_version_string -width 28
 	
 	# Disable menu items since a policy is not yet loaded.
@@ -1680,37 +1681,11 @@ proc ApolTop::resetBusyCursor {} {
 }
 
 proc ApolTop::popupPolicyStats {} {
-	variable contents
-	
-	set rt [catch {set pstats [apol_GetStats]}]
-	if {$rt != 0} {
-		tk_messageBox -icon error -type ok -title "Error" \
-			-message "No policy file currently opened"
-		return 
-	}
-	foreach item $pstats {
-		set rt [scan $item "%s %d" key val]
-		if {$rt != 2} {
-			tk_messageBox -icon error -type ok -title "Error" -message "apol_GetStats: $rt"
-			return
-		}
-		set stats($key) $val
-	}
-	
-	# Build the output based on what was collected in the policy
-	# (for now, only perms and classes are optionally collected (really a compile time option!)
-	if {$contents(classes) == 0} {
-		set classes "not collected"
-	} else {
-		set classes $stats(classes)
-	}
-	if {$contents(perms) == 0 } {
-		set perms "not collected"
-		set common_perms "not collected"
-	} else {
-		set common_perms $stats(common_perms)
-		set perms $stats(perms)
-	}
+    variable polstats
+
+    set classes $polstats(classes)
+    set common_perms $polstats(common_perms)
+    set perms $polstats(perms)
     if {![regexp -- {^([^\(]+) \(([^,]+), ([^\)]+)} $ApolTop::policy_version_string -> policy_version policy_type policy_mls_type]} {
         set policy_version $ApolTop::policy_version_string
         set policy_type "unknown"
@@ -1718,125 +1693,129 @@ proc ApolTop::popupPolicyStats {} {
     }
     set policy_version [string trim $policy_version]
 
-	set w .polstatsbox
-	catch {destroy $w}
-	toplevel $w
+    destroy .polstatsbox
+    set dialog [Dialog .polstatsbox -separator 1 -title "Policy Summary" \
+                    -modal none -parent .]
+    $dialog add -text Close -command [list destroy $dialog]
+    
+    set w [$dialog getframe]
 	
-	label $w.1 -justify left \
-		-text "Policy Summary Statistics\n "
-	set labelf [frame $w.labelf]
-		
-	set left_text "\
-Policy Version:\n\
-Policy Type:\n\
-MLS Status:\n\n\
-Number of Classes and Permissions\n\
-     \tObject Classes:\n\
-     \tCommon Perms:\n\
-     \tPermissions:\n\n\
-Number of Types and Attributes:\n\
-     \tTypes:\n\
-     \tAttributes:\n\n\
-Number of Type Enforcement Rules:\n\
-     \tallow:\n\
-     \tneverallow:\n\
-     \tclone (pre v.11):\n\
-     \ttype_transition.:\n\
-     \ttype_change:\n\
-     \ttype_member:\n\
-     \tauditallow:\n\
-     \tauditdeny:\n\
-     \tdontaudit:\n\n\
-Number of Roles:\n\
-     \tRoles:\n\n\
-Number of RBAC Rules:\n\
-     \tallow:\n\
-     \trole_transition:\n\n\
-Number of Users:\n\
-     \tusers:\n\n\
-Number of Initial SIDs:\n\
-     \tSIDs:\n\n\
-Number of Booleans:\n\
-     \tBools:\n"
-     
-     	set right_text "\
-$policy_version\n\
-$policy_type\n\
-$policy_mls_type\n\n\
-\n\
-$classes\n\
-$common_perms\n\
-$perms\n\n\
-\n\
-$stats(types)\n\
-$stats(attribs)\n\n\
-\n\
-$stats(teallow)\n\
-$stats(neverallow)\n\
-$stats(clone)\n\
-$stats(tetrans)\n\
-$stats(techange)\n\
-$stats(temember)\n\
-$stats(auditallow)\n\
-$stats(auditdeny)\n\
-$stats(dontaudit)\n\n\
-\n\
-$stats(roles)\n\n\
-\n\
-$stats(roleallow)\n\
-$stats(roletrans)\n\n\
-\n\
-$stats(users)\n\n\
-\n\
-$stats(sids)\n\n\
-\n\
-$stats(cond_bools)\n"
+    label $w.title -text "Policy Summary Statistics"
+    set f [frame $w.summary]
+    label $f.l -justify left -text "Policy Version:\nPolicy Type:\nMLS Status:"
+    label $f.r -justify left -text "$policy_version\n$policy_type\n$policy_mls_type"
+    grid $f.l $f.r -sticky w -ipadx 20
+    grid $w.title - -sticky ew
+    grid $f - -sticky ew
+    
+    set f [frame $w.left]
+    set i 0
+    foreach {title block} {
+        "Number of Classes and Permissions" {
+            "Object Classes" classes
+            "Common Perms" common_perms
+            "Permissions" perms
+        }
+        "Number of Types and Attributes" {
+            "Types" types
+            "Attributes" attribs
+        }
+        "Number of Type Enforcement Rules" {
+            "allow" teallow
+            "neverallow" neverallow
+            "clone (pre v.11)" clone
+            "type_transition" tetrans
+            "type_change" techange
+            "type_member" temember
+            "auditallow" auditallow
+            "auditdeny" auditdeny
+            "dontaudit" dontaudit
+        }
+        "Number of Roles" {
+            "Roles" roles
+        }
+        "Number of RBAC Rules" {
+            "allow" roleallow
+            "role_transition" roletrans
+        }
+    } {
+        set ltext "$title:"
+        set rtext {}
+        foreach {l r} $block {
+            append ltext "\n    $l:"
+            append rtext "\n$polstats($r)"
+        }
+        label $f.l$i -justify left -text $ltext
+        label $f.r$i -justify left -text $rtext
+        grid $f.l$i $f.r$i -sticky w -padx 4 -pady 2
+        incr i
+    }
 
-	set left_label  [label $labelf.left -justify left -text $left_text]
-	set right_label [label $labelf.right -justify left -text $right_text]
-     	button $w.close -text Close -command "catch {destroy $w}" -width 10
-	
-	pack $w.close -side bottom -anchor center 
-	pack $w.1 -side top -anchor center
-	pack $labelf -side top -anchor nw -fill both -expand yes -padx 5 -pady 5
-	pack $left_label $right_label -side left -anchor nw -fill both -expand yes
-	wm title $w "Policy Summary"
-	wm iconname $w "policy summary"
-	wm geometry $w +50+60
-    	return		
+    set i 0
+    set g [frame $w.right]
+    foreach {title block} {
+        "Number of Users" {
+            "Users" users
+        }
+        "Number of Booleans" {
+            "Bools:" cond_bools
+        }
+        "Number of MLS Components" {
+            "Sensitivities" sens
+            "Categories" cats
+        }
+        "Number of MLS Rules" {
+            "range_transition" rangetrans
+        }
+        "Number of Initial SIDs" {
+            "SIDs" sids
+        }
+        "Number of OContexts" {
+            "PortCons" portcons
+            "NetIfCons" netifcons
+            "NodeCons" nodecons
+            "GenFSCons" genfscons
+            "fs_use statements" fs_uses
+        }
+    } {
+        set ltext "$title:"
+        set rtext {}
+        foreach {l r} $block {
+                append ltext "\n    $l:"
+            append rtext "\n$polstats($r)"
+        }
+        label $g.l$i -justify left -text $ltext
+        label $g.r$i -justify left -text $rtext
+        grid $g.l$i $g.r$i -sticky w -padx 4 -pady 2
+        incr i
+    }
+    grid $f $g -sticky nw -padx 4
+    $dialog draw
 }
 
 proc ApolTop::showPolicyStats {} {
-	variable polstats 
-	variable contents
-	set rt [catch {set pstats [apol_GetStats]}]
-	if {$rt != 0} {
-		tk_messageBox -icon error -type ok -title \
-			-message "No policy file currently opened"
-		return 
-	}
-	foreach item $pstats {
-		set rt [scan $item "%s %d" key val]
-		if {$rt != 2} {
-			tk_messageBox -icon error -type ok -title "Error" -message "apol_GetStats: $rt"
-			return
-		}
-		set stats($key) $val
-	}
-	set polstats ""
-	if {$contents(classes) == 1} {
-		append polstats "Classes: $stats(classes)   "
-	}
-	if {$contents(perms) == 1} {
-		append polstats "Perms: $stats(perms)   "
-	}
-	append polstats "Types: $stats(types)   Attribs: $stats(attribs)   "
-	append polstats "TE rules: [expr $stats(teallow) + $stats(neverallow) + 	\
-		$stats(auditallow) + $stats(auditdeny) + $stats(clone)  +  $stats(dontaudit) +	\
-		$stats(tetrans) + $stats(temember) + $stats(techange)]   "
-	append polstats "Roles: $stats(roles)"
-	append polstats "   Users: $stats(users)"
-	return
+    variable polstats
+    variable policy_stats_summary
+    if {[catch {apol_GetStats} pstats]} {
+        tk_messageBox -icon error -type ok -title "Error" -message $pstats
+        return 
+    }
+    array unset polstats
+    array set polstats $pstats
+
+    set policy_stats_summary ""
+    append policy_stats_summary "Classes: $polstats(classes)   "
+    append policy_stats_summary "Perms: $polstats(perms)   "
+    append policy_stats_summary "Types: $polstats(types)   "
+    append policy_stats_summary "Attribs: $polstats(attribs)   "
+    set num_te_rules [expr {$polstats(teallow) + $polstats(neverallow) +
+                            $polstats(auditallow) + $polstats(auditdeny) +
+                            $polstats(clone) + $polstats(dontaudit) +
+                            $polstats(tetrans) + $polstats(temember) +
+                            $polstats(techange)}]
+    append policy_stats_summary "TE rules: $num_te_rules   "
+    append policy_stats_summary "Roles: $polstats(roles)   "
+    append policy_stats_summary "Users: $polstats(users)"
 }
 
 proc ApolTop::aboutBox {} {
@@ -1862,12 +1841,11 @@ proc ApolTop::unimplemented {} {
 proc ApolTop::closePolicy {} {
         variable contents
 	variable filename 
-	variable polstats
 	variable policy_version_string {}
-	variable policy_is_open	
+	variable policy_is_open
+	variable policy_stats_summary {}
 	
 	set filename ""
-	set polstats ""
 	set contents(classes)	0
 	set contents(perms)	0
 	set contents(types)	0
