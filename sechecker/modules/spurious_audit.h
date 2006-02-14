@@ -6,6 +6,9 @@
  *
  */
 
+#ifndef SPURIOUS_AUDIT
+#define SPURIOUS_AUDIT
+
 #include "sechecker.h"
 #include "policy.h"
 
@@ -31,3 +34,4 @@ sechk_result_t *spurious_audit_get_result(sechk_module_t *mod);
  * the private data storage structure for this module */
 spurious_audit_data_t *spurious_audit_data_new(void);
 
+#endif
