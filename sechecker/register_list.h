@@ -32,6 +32,11 @@ extern int roles_wo_users_register(sechk_lib_t *lib);
 extern int rules_exp_nothing_register(sechk_lib_t *lib);
 extern int domains_wo_roles_register(sechk_lib_t *lib);
 extern int inc_dom_trans_register(sechk_lib_t *lib);
+extern int find_port_types_register(sechk_lib_t *lib);
+extern int find_node_types_register(sechk_lib_t *lib);
+extern int find_netif_types_register(sechk_lib_t *lib);
+extern int find_assoc_types_register(sechk_lib_t *lib);
+extern int find_net_domains_register(sechk_lib_t *lib);
 /* TODO: additional externs go here ... */
 
 int sechk_register_list_get_num_modules();

@@ -6,6 +6,9 @@
  *
  */
 
+#ifndef DOMAINS_WO_ROLES
+#define DOMAINS_WO_ROLES
+
 #include "sechecker.h"
 #include "policy.h"
 
@@ -25,3 +28,4 @@ sechk_result_t *domains_wo_roles_get_result(sechk_module_t *mod);
  * the private data storage structure for this module */
 domains_wo_roles_data_t *domains_wo_roles_data_new(void);
 
+#endif

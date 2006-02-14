@@ -6,6 +6,9 @@
  *
  */
 
+#ifndef DOMAIN_AND_FILE
+#define DOMAIN_AND_FILE
+
 #include "sechecker.h"
 #include "policy.h"
 
@@ -21,3 +24,4 @@ sechk_result_t *domain_and_file_get_result(sechk_module_t *mod);
 
 domain_and_file_data_t *domain_and_file_data_new(void);
 
+#endif
