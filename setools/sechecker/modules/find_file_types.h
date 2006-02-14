@@ -6,6 +6,9 @@
  *
  */
 
+#ifndef FIND_FILE_TYPES
+#define FIND_FILE_TYPES
+
 #include "sechecker.h"
 #include "policy.h"
 
@@ -25,3 +28,4 @@ int find_file_types_get_list(sechk_module_t *mod, int **array, int *size);
 
 find_file_types_data_t *find_file_types_data_new(void);
 
+#endif

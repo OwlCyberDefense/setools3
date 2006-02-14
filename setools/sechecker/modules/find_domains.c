@@ -206,6 +206,7 @@ int find_domains_run(sechk_module_t *mod, policy_t *policy)
 	char *buff = NULL;
 	int buff_sz;
 	unsigned char type;
+	bool_t attrib_proof = FALSE, tt_proof = FALSE, av_proof = FALSE, role_proof = FALSE;
 	
 	if (!mod || !policy) {
 		fprintf(stderr, "Error: invalid parameters\n");
@@ -226,7 +227,7 @@ int find_domains_run(sechk_module_t *mod, policy_t *policy)
 	datum = (find_domains_data_t*)mod->data;
 	res = sechk_result_new();
 	if (!res) {
-		fprintf(stderr, "Error: out of memory\n");
+~		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
 	res->item_type = POL_LIST_TYPE;
@@ -246,6 +247,7 @@ int find_domains_run(sechk_module_t *mod, policy_t *policy)
 
 	/* head insert for item LL so walk backward to preserve order */
 	for (i = policy->num_types - 1; i; i--) {
+		attrib_proof = av_proof = tt_proof = role_proof = FALSE;
 		/* test attributes */
 		if (!(is_binary_policy(policy))) {
 			retv = get_type_attribs(i, &num_attribs, &attribs, policy);
@@ -253,39 +255,43 @@ int find_domains_run(sechk_module_t *mod, policy_t *policy)
 				fprintf(stderr, "Error: could not get attributes for %s\n", policy->types[i].name);
 				goto find_domains_run_fail;
 			}
+			
 			for (j = 0; j < datum->num_domain_attribs; j++) {
-				buff = NULL;
-				if (find_int_in_array(datum->domain_attribs[j], attribs, num_attribs) != -1) {
-					proof = sechk_proof_new();
-					if (!proof) {
-						fprintf(stderr, "Error: out of memory\n");
-						goto find_domains_run_fail;
-					}
-					proof->idx = datum->domain_attribs[j];
-					proof->type = POL_LIST_ATTRIB;
-					buff_sz = 1+strlen(policy->types[i].name)+strlen(policy->attribs[datum->domain_attribs[j]].name)+strlen("type  has attribute ");
-					buff = (char*)calloc(buff_sz, sizeof(char));
-					if (!buff) {
-						fprintf(stderr, "Error: out of memory\n");
-						goto find_domains_run_fail;
-					}
-					proof->text = buff;
-					if (!proof->text) {
-						fprintf(stderr, "Error: out of memory\n");
-						goto find_domains_run_fail;
-					}
-					snprintf(proof->text, buff_sz, "has attribute %s", policy->attribs[datum->domain_attribs[j]].name);
-					if (!item) {
-						item = sechk_item_new();
-						if (!item) {
+				if (!attrib_proof) { 
+					buff = NULL;
+					if (find_int_in_array(datum->domain_attribs[j], attribs, num_attribs) != -1) {
+						proof = sechk_proof_new();
+						if (!proof) {
 							fprintf(stderr, "Error: out of memory\n");
 							goto find_domains_run_fail;
 						}
-						item->item_id = i;
-						item->test_result = 1;
+						proof->idx = datum->domain_attribs[j];
+						proof->type = POL_LIST_ATTRIB;
+						buff_sz = 1+strlen(policy->types[i].name)+strlen(policy->attribs[datum->domain_attribs[j]].name)+strlen("type  has attribute ");
+						buff = (char*)calloc(buff_sz, sizeof(char));
+						if (!buff) {
+							fprintf(stderr, "Error: out of memory\n");
+							goto find_domains_run_fail;
+						}
+						proof->text = buff;
+						if (!proof->text) {
+							fprintf(stderr, "Error: out of memory\n");
+							goto find_domains_run_fail;
+						}
+						snprintf(proof->text, buff_sz, "has attribute %s", policy->attribs[datum->domain_attribs[j]].name);
+						if (!item) {
+							item = sechk_item_new();
+							if (!item) {
+								fprintf(stderr, "Error: out of memory\n");
+								goto find_domains_run_fail;
+							}
+							item->item_id = i;
+							item->test_result = 1;
+						}
+						proof->next = item->proof;
+						item->proof = proof;
+						attrib_proof = TRUE;
 					}
-					proof->next = item->proof;
-					item->proof = proof;
 				}
 			}
 		}
@@ -299,24 +305,65 @@ int find_domains_run(sechk_module_t *mod, policy_t *policy)
 
 		proof = NULL;
 		buff = NULL;
-		for (j = 0; j < num_nodes; j++) {
-			/* if key.cls != file system */
-			if(hash_idx->nodes[j]->key.cls != file_idx) {
-				for (hash_rule = hash_idx->nodes[j]->rules; hash_rule; hash_rule = hash_rule->next) {
-					if (hash_idx->nodes[j]->key.rule_type == RULE_TE_TRANS)
-						type = POL_LIST_TE_TRANS;
-					else if (hash_idx->nodes[j]->key.rule_type > RULE_TE_ALLOW)
-						type = POL_LIST_AV_AU;
-					else
-						type = POL_LIST_AV_ACC;
-					idx = hash_rule->rule;
-					if (sechk_item_has_proof(idx, type, item))
+	       	for (j = 0; j < num_nodes; j++) {
+			if (!av_proof) {
+				/* if key.cls != file system */
+				if(hash_idx->nodes[j]->key.cls != file_idx) {
+					for (hash_rule = hash_idx->nodes[j]->rules; hash_rule; hash_rule = hash_rule->next) {
+						if (hash_idx->nodes[j]->key.rule_type == RULE_TE_TRANS)
+							type = POL_LIST_TE_TRANS;
+						else if (hash_idx->nodes[j]->key.rule_type > RULE_TE_ALLOW)
+							type = POL_LIST_AV_AU;
+						else
+							type = POL_LIST_AV_ACC;
+						idx = hash_rule->rule;
+						if (sechk_item_has_proof(idx, type, item))
+							continue;
+						buff = NULL;
+						if (hash_idx->nodes[j]->key.rule_type == RULE_TE_TRANS)
+							buff = re_render_tt_rule(!is_binary_policy(policy), hash_rule->rule, policy);
+						else if (hash_idx->nodes[j]->key.rule_type <= RULE_MAX_TE)
+							buff = re_render_av_rule(!is_binary_policy(policy), hash_rule->rule, (hash_idx->nodes[j]->key.rule_type > RULE_TE_ALLOW ? 1 : 0), policy);
+						if (!buff) {
+							fprintf(stderr, "Error: out of memory\n");
+							goto find_domains_run_fail;
+						}
+						proof = sechk_proof_new();
+						if (!proof) {
+							fprintf(stderr, "Error: out of memory\n");
+							goto find_domains_run_fail;
+						}
+						proof->idx = idx;
+						proof->type = type;
+						proof->text = buff;
+
+						if (!item) {
+							item = sechk_item_new();
+							if (!item) {
+								fprintf(stderr, "Error: out of memory\n");
+								goto find_domains_run_fail;
+							}
+							item->item_id = i;
+							item->test_result = 1;
+						}
+						proof->next = item->proof;
+						item->proof = proof;
+						av_proof = TRUE;
+					}
+				}
+			}
+		}
+
+		proof = NULL;
+		buff = NULL;
+		/* test type rules */
+		for (j = 0; j < policy->num_te_trans; j++) {
+			if (!tt_proof) {
+				if (i == policy->te_trans[j].dflt_type.idx && does_tt_rule_use_classes(j, &process_idx, 1, policy)) {
+					if (sechk_item_has_proof(j, POL_LIST_TE_TRANS, item)) {
 						continue;
-					buff = NULL;
-					if (hash_idx->nodes[j]->key.rule_type == RULE_TE_TRANS)
-						buff = re_render_tt_rule(!is_binary_policy(policy), hash_rule->rule, policy);
-					else if (hash_idx->nodes[j]->key.rule_type <= RULE_MAX_TE)
-						buff = re_render_av_rule(!is_binary_policy(policy), hash_rule->rule, (hash_idx->nodes[j]->key.rule_type > RULE_TE_ALLOW ? 1 : 0), policy);
+					}
+					buff = re_render_tt_rule(!is_binary_policy(policy), j, policy);
 					if (!buff) {
 						fprintf(stderr, "Error: out of memory\n");
 						goto find_domains_run_fail;
@@ -326,10 +373,9 @@ int find_domains_run(sechk_module_t *mod, policy_t *policy)
 						fprintf(stderr, "Error: out of memory\n");
 						goto find_domains_run_fail;
 					}
-					proof->idx = idx;
-					proof->type = type;
+					proof->idx = j;
+					proof->type = POL_LIST_TE_TRANS;
 					proof->text = buff;
-
 					if (!item) {
 						item = sechk_item_new();
 						if (!item) {
@@ -341,78 +387,53 @@ int find_domains_run(sechk_module_t *mod, policy_t *policy)
 					}
 					proof->next = item->proof;
 					item->proof = proof;
+					tt_proof = TRUE;
 				}
+				buff = NULL;
 			}
-		}
-
-		proof = NULL;
-		buff = NULL;
-		/* test type rules */
-		for (j = 0; j < policy->num_te_trans; j++) {
-			if (i == policy->te_trans[j].dflt_type.idx && does_tt_rule_use_classes(j, &process_idx, 1, policy)) {
-				buff = re_render_tt_rule(!is_binary_policy(policy), j, policy);
-				if (!buff) {
-					fprintf(stderr, "Error: out of memory\n");
-					goto find_domains_run_fail;
-				}
-				proof = sechk_proof_new();
-				if (!proof) {
-					fprintf(stderr, "Error: out of memory\n");
-					goto find_domains_run_fail;
-				}
-				proof->idx = j;
-				proof->type = POL_LIST_TE_TRANS;
-				proof->text = buff;
-				if (!item) {
-					item = sechk_item_new();
-					if (!item) {
-						fprintf(stderr, "Error: out of memory\n");
-						goto find_domains_run_fail;
-					}
-					item->item_id = i;
-					item->test_result = 1;
-				}
-				proof->next = item->proof;
-				item->proof = proof;
-			}
-			buff = NULL;
 		}
 
 		/* test roles */
 		proof = NULL;
 		buff = NULL;
 		for (j = 0; j < policy->num_roles; j++) {
-			if (!strcmp("object_r", policy->roles[j].name))
-				continue;
-			if (does_role_use_type(j, i, policy)) {
-				buff_sz = 1 + strlen("role  types ;") + strlen(policy->roles[j].name) + strlen(policy->types[i].name);
-				buff = (char*)calloc(buff_sz, sizeof(char));
-				if (!buff) {
-					fprintf(stderr, "Error: out of memory\n");
-					goto find_domains_run_fail;
+			if (!role_proof) {
+				if (sechk_item_has_proof(j, POL_LIST_ROLES, item)) {
+					continue;
 				}
-				snprintf(buff, buff_sz, "role %s types %s;", policy->roles[j].name, policy->types[i].name);
-				proof = sechk_proof_new();
-				if (!proof) {
-					fprintf(stderr, "Error: out of memory\n");
-					goto find_domains_run_fail;
-				}
-				proof->idx = j;
-				proof->type = POL_LIST_ROLES;
-				proof->text = buff;
-				if (!item) {
-					item = sechk_item_new();
-					if (!item) {
+				if (!strcmp("object_r", policy->roles[j].name))
+					continue;
+				if (does_role_use_type(j, i, policy)) {
+					buff_sz = 1 + strlen("role  types ;") + strlen(policy->roles[j].name) + strlen(policy->types[i].name);
+					buff = (char*)calloc(buff_sz, sizeof(char));
+					if (!buff) {
 						fprintf(stderr, "Error: out of memory\n");
 						goto find_domains_run_fail;
 					}
-					item->item_id = i;
-					item->test_result = 1;
+					snprintf(buff, buff_sz, "role %s types %s;", policy->roles[j].name, policy->types[i].name);
+					proof = sechk_proof_new();
+					if (!proof) {
+						fprintf(stderr, "Error: out of memory\n");
+						goto find_domains_run_fail;
+					}
+					proof->idx = j;
+					proof->type = POL_LIST_ROLES;
+					proof->text = buff;
+					if (!item) {
+						item = sechk_item_new();
+						if (!item) {
+							fprintf(stderr, "Error: out of memory\n");
+							goto find_domains_run_fail;
+						}
+						item->item_id = i;
+						item->test_result = 1;
+					}
+					proof->next = item->proof;
+					item->proof = proof;
+					role_proof = TRUE;
 				}
-				proof->next = item->proof;
-				item->proof = proof;
+				buff = NULL;
 			}
-			buff = NULL;
 		}
 
 		/* insert any results for this type */
@@ -462,7 +483,9 @@ int find_domains_print_output(sechk_module_t *mod, policy_t *policy)
 	find_domains_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
-	int i = 0;
+	int i = 0, type_idx = 0;
+	char *type_str = NULL;
+	sechk_proof_t *proof = NULL;
 
 	if (!mod || !policy){
 		fprintf(stderr, "Error: invalid parameters\n");
@@ -488,9 +511,9 @@ int find_domains_print_output(sechk_module_t *mod, policy_t *policy)
 		printf("Found %i domain types.\n", mod->result->num_items);
 	}
 	if (outformat & SECHK_OUT_PROOF) {
-		printf("\nThe following types are domains.\n\n");
+		printf("\nThe following types are domains.\n");
 	}
-	if (outformat & (SECHK_OUT_LIST|SECHK_OUT_PROOF)) {
+	if (outformat & SECHK_OUT_LIST){
 		printf("\n");
 		for (item = mod->result->items; item; item = item->next) {
 			i++;
@@ -499,6 +522,19 @@ int find_domains_print_output(sechk_module_t *mod, policy_t *policy)
 		}
 		printf("\n");
 	}
+
+	if (outformat & SECHK_OUT_PROOF) {
+                printf("\n");
+                for (item = mod->result->items; item; item = item->next) {
+                        type_idx = item->item_id;
+                        type_str = policy->types[type_idx].name;
+                        printf("%s\n", type_str);
+                        for (proof = item->proof; proof; proof = proof->next) {
+                                printf("\t%s\n", proof->text);
+                        }
+                }
+                printf("\n");
+        }
 
 	return 0;
 }

@@ -6,6 +6,9 @@
  *
  */
 
+#ifndef RULES_EXP_NOTHING
+#define RULES_EXP_NOTHING
+
 #include "sechecker.h"
 #include "policy.h"
 
@@ -35,3 +38,4 @@ sechk_result_t *rules_exp_nothing_get_result(sechk_module_t *mod);
  * the private data storage structure for this module */
 rules_exp_nothing_data_t *rules_exp_nothing_data_new(void);
 
+#endif
