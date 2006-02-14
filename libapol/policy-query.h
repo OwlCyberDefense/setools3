@@ -85,6 +85,26 @@ typedef struct teq_results {
 	char		*errmsg;	/* used to communicate error messsage (optional) */
 } teq_results_t;
 
+typedef struct rtrans_query {
+	srch_type_t src;
+	srch_type_t tgt;
+	ap_mls_range_t		*range;  		/* filter range */
+	bool_t				use_regex;		/* if true, ta* are regex */
+	unsigned int		search_type;
+} rtrans_query_t;
+
+/* set of arrays of rule indicies matching search query and error message */
+typedef struct rtrans_results {
+	int*	range_rules;		/* rule indicies */
+	int		num_range_rules;
+	int		err;		/* error type*/
+	char*	errmsg;	/* used to communicate error messsage (optional) */
+	#define RTRANS_ERR_REGCOMP	1	/* invalid regex for src input*/
+	#define RTRANS_ERR_SRC_INVALID  2	/* unknown source */
+	#define RTRANS_ERR_TGT_INVALID  3	/* unknown target */
+} rtrans_results_t;
+
+
 /* macros */
 #define is_ta_used(ta_src_type) (ta_src_type.ta != NULL)
 
@@ -94,14 +114,19 @@ int free_teq_results_contents(teq_results_t *r);
 bool_t validate_te_query(teq_query_t *q);
 int init_teq_results(teq_results_t *r);
 int init_teq_query(teq_query_t *q);
+int init_rtrans_query(rtrans_query_t *q);
+int init_rtrans_results(rtrans_results_t *r);
+int free_rtrans_results_contents(rtrans_results_t *r);
 
 int match_rbac_rules(int idx, int type, unsigned char whichlist, bool_t do_indirect,bool_t tgt_is_role, rbac_bool_t *b, policy_t *policy);
 int match_rbac_roles(int idx, int type, unsigned char whichlist, bool_t	do_indirect, bool_t tgt_is_role, rbac_bool_t *b,int *num_matched, policy_t *policy);
 int match_te_rules(bool_t allow_regex, regex_t *preg, int ta_opt,int idx, int idx_type, bool_t include_audit, unsigned char whichlists,	
 	bool_t do_indirect, bool_t only_enabled, rules_bool_t *rules_b, policy_t *policy);
 int search_te_rules(teq_query_t *q, teq_results_t *r, policy_t *policy);
+int search_range_transition_rules(rtrans_query_t* query, rtrans_results_t* results, policy_t* policy);
 bool_t match_rbac_role_ta(int rs_idx,int ta_idx, int *rt_idx,policy_t *policy);
 
+	
 int search_conditional_expressions(bool_t use_bool, char *bool, bool_t allow_regex, bool_t *exprs_b, char **error_msg, policy_t *policy);
 int match_cond_rules(rules_bool_t *rules_b, bool_t *exprs_b, bool_t include_audit, policy_t *policy);
 int policy_query_add_type(int **end_types, int *num_end_types, int end_type);
