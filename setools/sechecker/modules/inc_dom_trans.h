@@ -6,6 +6,9 @@
  *
  */
 
+#ifndef INC_DOM_TRANS
+#define INC_DOM_TRANS
+
 #include "sechecker.h"
 #include "policy.h"
 #include "dta.h"
@@ -33,3 +36,4 @@ sechk_result_t *inc_dom_trans_get_result(sechk_module_t *mod);
  * the private data storage structure for this module */
 inc_dom_trans_data_t *inc_dom_trans_data_new(void);
 
+#endif

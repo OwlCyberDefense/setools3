@@ -49,7 +49,18 @@
 	<module name="spurious_audit">
 		<output value="short"/>
 	</module>
-	
+
+	<module name="find_net_domains">
+                <output value="quiet"/>
+                <option name="net_obj">
+                        <item value="netif"/>
+                        <item value="tcp_socket"/>
+                        <item value="udp_socket"/>
+                        <item value="node"/>
+                        <item value="association"/>
+                </option>
+        </module>
+
 </profile>
 </sechecker>
 
