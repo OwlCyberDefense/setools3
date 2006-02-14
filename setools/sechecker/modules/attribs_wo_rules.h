@@ -6,6 +6,9 @@
  *
  */
 
+#ifndef ATTRIBS_WO_RULES
+#define ATTRIBS_WO_RULES
+
 #include "sechecker.h"
 #include "policy.h"
 
@@ -38,3 +41,4 @@ int attribs_wo_rules_get_list(sechk_module_t *mod, int **array, int *size);
  * the private data storage structure for this module */
 attribs_wo_rules_data_t *attribs_wo_rules_data_new(void);
 
+#endif

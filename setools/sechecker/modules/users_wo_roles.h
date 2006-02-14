@@ -6,6 +6,9 @@
  *
  */
 
+#ifndef USERS_WO_ROLES
+#define USERS_WO_ROLES
+
 #include "sechecker.h"
 #include "policy.h"
 
@@ -25,3 +28,4 @@ sechk_result_t *users_wo_roles_get_result(sechk_module_t *mod);
  * the private data storage structure for this module */
 users_wo_roles_data_t *users_wo_roles_data_new(void);
 
+#endif

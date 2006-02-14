@@ -6,6 +6,9 @@
  *
  */
 
+#ifndef INC_MOUNT
+#define INC_MOUNT
+
 #include "sechecker.h"
 #include "policy.h"
 
@@ -30,3 +33,4 @@ sechk_result_t *inc_mount_get_result(sechk_module_t *mod);
  * the private data storage structure for this module */
 inc_mount_data_t *inc_mount_data_new(void);
 
+#endif

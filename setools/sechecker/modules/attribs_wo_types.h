@@ -6,6 +6,9 @@
  *
  */
 
+#ifndef ATTRIBS_WO_TYPES
+#define ATTRIBS_WO_TYPES
+
 #include "sechecker.h"
 #include "policy.h"
 
@@ -24,3 +27,4 @@ int attribs_wo_types_get_list(sechk_module_t *mod, int **array, int *size);
  * the private data storage structure for this module */
 attribs_wo_types_data_t *attribs_wo_types_data_new(void);
 
+#endif

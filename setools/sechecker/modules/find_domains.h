@@ -6,6 +6,9 @@
  *
  */
 
+#ifndef FIND_DOMAINS
+#define FIND_DOMAINS
+
 #include "sechecker.h"
 #include "policy.h"
 
@@ -24,3 +27,5 @@ sechk_result_t *find_domains_get_result(sechk_module_t *mod);
 int find_domains_get_list(sechk_module_t *mod, int **array, int *size);
 
 find_domains_data_t *find_domains_data_new(void);
+
+#endif
