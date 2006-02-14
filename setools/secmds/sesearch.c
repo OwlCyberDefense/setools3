@@ -234,48 +234,46 @@ static int perform_te_query(options_t *cmd_opts, teq_results_t *r, policy_t *pol
 }
 
 
-int perform_rtrans_query(options_t* cmd_opts, int** rtrans_results, int* num_results, policy_t *policy)
+static int perform_rtrans_query(options_t* cmd_opts, rtrans_results_t* rtrans_results, 
+	policy_t *policy)
 {
-	unsigned int search_type = 0;
-	unsigned int num_rules = 0;
-	ap_mls_range_t range;
-	int *types[2] = {NULL, NULL}, num_types[2] = {0, 0};
-	int type_value = 0;
+    int rt = 0;
+    rtrans_query_t query;
 
-	range.low = range.high = NULL;
+    init_rtrans_query(&query);
 
-	/* for now only have one source and target type value */
-	if (cmd_opts->src_name) {
-		if ((type_value = get_type_idx(cmd_opts->src_name, policy)) < 0) {
-			printf("Unknown source type %s\n", cmd_opts->src_name);
-			return -1;
-		}
-		if (add_i_to_a(type_value, &num_types[0], &types[0])) {
-			printf("Out of memory!\n");
-			return -1;
-		}	
-		search_type |= AP_MLS_RTS_SRC_TYPE;
-	}
+    query.src.indirect = FALSE;
+    query.src.ta = cmd_opts->src_name;
+    query.src.t_or_a = IDX_BOTH;
 
-	if (cmd_opts->tgt_name) {
-		if ((type_value = get_type_idx(cmd_opts->tgt_name, policy)) < 0) {
-			printf("Unknown target type %s\n", cmd_opts->tgt_name);
-			return -1;
-		}
-		if (add_i_to_a(type_value, &num_types[1], &types[1])) {
-			printf("Out of memory!\n");
-			return -1;
-		}	
-		search_type |= AP_MLS_RTS_TGT_TYPE;
-	}
+    query.tgt.indirect = FALSE;
+    query.tgt.ta = cmd_opts->tgt_name;
+    query.tgt.t_or_a = IDX_BOTH;
 
-	/* TODO: specify a mls range to match in the search */
+    query.use_regex = cmd_opts->useregex;
 
+    query.range = 0;
 
-	num_rules = ap_mls_range_transition_search(types[0], num_types[0], types[1], 
-					num_types[1], &range, search_type, rtrans_results, policy);
+    if (cmd_opts->src_name) {
+        query.search_type |= AP_MLS_RTS_SRC_TYPE;
+    }
 
-	return num_rules;
+    if (cmd_opts->tgt_name) {
+        query.search_type |= AP_MLS_RTS_TGT_TYPE;
+    }
+
+    /* TODO: add mls range types and set the high and low of the range */
+    rt = search_range_transition_rules(&query, rtrans_results, policy);
+    if (rt != 0) {
+        if(rt == -1) {
+            printf("Unexpected error (-1) searching rules\n");
+        }
+        else if( rt == -2) {
+            printf("%s\n", rtrans_results->errmsg);
+        }
+    }
+
+    return rt;
 }
 
 static void print_teq_results(options_t *cmd_opts, teq_results_t *r, 
@@ -337,15 +335,15 @@ static void print_teq_results(options_t *cmd_opts, teq_results_t *r,
 	}
 }
 
-static void print_rtrans_results(options_t *cmd_opts, int* rtrans_results, 
-               int num_rtrans_results, policy_t *policy)
+static void print_rtrans_results(options_t *cmd_opts, 
+				rtrans_results_t* rtrans_results, policy_t *policy)
 {
 	int i;
 	char *rule;
 
-	if(num_rtrans_results > 0) {
-		for(i = 0; i < num_rtrans_results; i++) {
-			rule = re_render_rangetrans((cmd_opts->lineno && !is_binary_policy(policy)), rtrans_results[i], policy);
+	if(rtrans_results->num_range_rules > 0) {
+		for(i = 0; i < rtrans_results->num_range_rules; i++) {
+			rule = re_render_rangetrans((cmd_opts->lineno && !is_binary_policy(policy)), rtrans_results->range_rules[i], policy);
 			assert(rule);
 			printf("   %s\n", rule);
 			free(rule);
@@ -538,25 +536,29 @@ int main (int argc, char **argv)
 		}
 	}
 
-	int* rtrans_results = 0;
-	int	 num_rtrans_results = 0;
+	rtrans_results_t rtrans_results;
+	init_rtrans_results(&rtrans_results);
 	if (rtrans_search) {
-		num_rtrans_results = perform_rtrans_query(&cmd_opts, &rtrans_results, 
-                   &num_rtrans_results, policy);
-		if (num_rtrans_results < 0){
+		rt = perform_rtrans_query(&cmd_opts, &rtrans_results, 
+                   policy);
+		if (rt < 0){
 			printf("exiting.  \n");
+			free_rtrans_results_contents(&rtrans_results);
 			close_policy(policy);
 			exit(1);
 		}
 	}
 
-	printf("\n%d Rules match your search criteria\n", teq_results.num_av_access +
-			teq_results.num_av_audit + teq_results.num_type_rules + num_rtrans_results);
+	printf("\n%d Rules match your search criteria\n", 
+			teq_results.num_av_access + teq_results.num_av_audit +
+			teq_results.num_type_rules + rtrans_results.num_range_rules);
 	print_teq_results(&cmd_opts, &teq_results, policy);
-	print_rtrans_results(&cmd_opts, rtrans_results, num_rtrans_results, policy);
+	print_rtrans_results(&cmd_opts, &rtrans_results, policy);
+	printf("\n\n");
 
 	/* cleanup */
 	free_teq_results_contents(&teq_results);
+	free_rtrans_results_contents(&rtrans_results);
 	close_policy(policy);
 	exit(0);
 }
