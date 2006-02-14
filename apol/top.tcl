@@ -1702,11 +1702,13 @@ proc ApolTop::popupPolicyStats {} {
 	
     label $w.title -text "Policy Summary Statistics"
     set f [frame $w.summary]
-    label $f.l -justify left -text "Policy Version:\nPolicy Type:\nMLS Status:"
+    label $f.l -justify left -text "    Policy Version:\n    Policy Type:\n    MLS Status:"
     label $f.r -justify left -text "$policy_version\n$policy_type\n$policy_mls_type"
-    grid $f.l $f.r -sticky w -ipadx 20
-    grid $w.title - -sticky ew
-    grid $f - -sticky ew
+    grid $f.l $f.r -sticky w
+    grid configure $f.r -padx 30
+    grid $w.title - -sticky w -padx 8
+    grid $f - -sticky w -padx 8
+    grid [Separator $w.sep] - -sticky ew -pady 5
     
     set f [frame $w.left]
     set i 0
@@ -1758,7 +1760,7 @@ proc ApolTop::popupPolicyStats {} {
             "Users" users
         }
         "Number of Booleans" {
-            "Bools:" cond_bools
+            "Bools" cond_bools
         }
         "Number of MLS Components" {
             "Sensitivities" sens
@@ -1781,7 +1783,7 @@ proc ApolTop::popupPolicyStats {} {
         set ltext "$title:"
         set rtext {}
         foreach {l r} $block {
-                append ltext "\n    $l:"
+            append ltext "\n    $l:"
             append rtext "\n$polstats($r)"
         }
         label $g.l$i -justify left -text $ltext
