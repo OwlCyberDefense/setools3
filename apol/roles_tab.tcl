@@ -20,8 +20,11 @@ namespace eval Apol_Roles {
 
 proc Apol_Roles::open { } {
     variable widgets
-    variable role_list
-    set role_list [lsort [apol_GetNames roles]]
+    variable role_list {}
+    foreach r [apol_GetRoles {} {} 0] {
+        lappend role_list [lindex $r 0]
+    }
+    set role_list [lsort $role_list]
     Apol_Widget::resetTypeComboboxToPolicy $widgets(combo_types)
 }
 
@@ -48,19 +51,12 @@ proc Apol_Roles::set_Focus_to_Text {} {
 }
 
 proc Apol_Roles::popupRoleInfo {which role} {
-    if {[catch {apol_GetRoles $role} info]} {
-        tk_messageBox -icon error -type ok -title "Error" -message $info
-        return -1
-    }
-    set text {}
-    foreach r $info {
-        lappend text [renderRole $r 1]
-    }
-    Apol_Widget::showPopupText $role [join $text "\n"]
+    set role_datum [lindex [apol_GetRoles $role] 0]
+    Apol_Widget::showPopupText $role [renderRole $role_datum 1]
 }
 
-proc Apol_Roles::renderRole {role show_all} {
-    foreach {name types dominates} $role {break}
+proc Apol_Roles::renderRole {role_datum show_all} {
+    foreach {name types dominates} $role_datum {break}
     if {!$show_all} {
         return $name
     }
@@ -72,7 +68,7 @@ proc Apol_Roles::renderRole {role show_all} {
     foreach t [lsort -dictionary $types] {
         append text "    $t\n"
     }
-    append text "  domianance: $dominates\n"
+    append text "  dominance: $dominates\n"
     return $text
 }
 
@@ -94,10 +90,14 @@ proc Apol_Roles::searchRoles {} {
         tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened!"
         return
     }
-    set type [Apol_Widget::getTypeComboboxValue $widgets(combo_types)]
-    if {$opts(useType) && $type == {}} {
-        tk_messageBox -icon error -type ok -title "Error" -message "No type selected."
-        return
+    if {$opts(useType)} {
+        set type [Apol_Widget::getTypeComboboxValue $widgets(combo_types)]
+        if {$type == {}} {
+            tk_messageBox -icon error -type ok -title "Error" -message "No type selected."
+            return
+        }
+    } else {
+        set type {}
     }
     if {$opts(showSelection) == "names"} {
         set show_all 0
@@ -105,13 +105,13 @@ proc Apol_Roles::searchRoles {} {
         set show_all 1
     }
 
-    if {[catch {apol_GetRoles} orig_roles_info]} {
-        tk_messageBox -icon error -type ok -title "Error" -message $orig_roles_info
+    if {[catch {apol_GetRoles {} $type 0} roles_data]} {
+        tk_messageBox -icon error -type ok -title "Error" -message $roles_data
         return
     }
 
     set roles_text {}
-    foreach r [lsort -index 0 -dictionary $orig_roles_info] {
+    foreach r [lsort -index 0 $roles_data] {
         foreach {name types dominates} $r {break}
         if {$opts(useType) && [lsearch -exact $types $type] == -1} {
             continue
