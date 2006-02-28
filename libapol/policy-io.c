@@ -10,7 +10,9 @@
  *
  * Policy I/O functions 
  */
- 
+
+
+
 #include "policy.h"
 #include "util.h"
 #include "stdio.h"
@@ -59,6 +61,7 @@ extern int yyparse(void);
 extern void yyrestart(FILE *);
 extern unsigned int pass;
 extern int yydebug;
+
 
 /* returns an error string based on a return error */
 const char* find_default_policy_file_strerr(int err)
@@ -587,3 +590,73 @@ int open_policy(const char* filename, policy_t **policy)
 	return open_partial_policy(filename, POLOPT_ALL, policy);
 }
 
+/******************** new policy reading below ********************/
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <sepol/sepol.h>
+#include "policy-io.h"
+
+int apol_open_binary_policy(const char *path,
+			    sepol_handle_t **policy_handle,
+			    sepol_policydb_t **policydb)
+{
+	int retv = 0;
+	FILE *infile = NULL;
+	sepol_policy_file_t *pfile = NULL;
+
+	*policy_handle = sepol_handle_create();
+	if (!(*policy_handle)) {
+		fprintf(stderr, "Error creating policy handle.\n");
+		return -1;
+	}
+
+	retv = sepol_policydb_create(policydb);
+	if (retv) {
+		fprintf(stderr, "Error creating policy database.\n");
+		goto open_policy_error;
+	}
+
+	retv = sepol_policy_file_create(&pfile);
+	if (retv) {
+		fprintf(stderr, "Error creating policy file.\n");
+		goto open_policy_error;
+	}
+
+	infile = fopen(path, "rb");
+	if (!infile) {
+		fprintf(stderr, "Error: unable to open %s: ", path); /* no new line */
+		perror(NULL);
+		goto open_policy_error;
+	}
+
+	sepol_policy_file_set_fp(pfile, infile);
+	sepol_policy_file_set_handle(pfile, *policy_handle);
+
+	retv = sepol_policydb_read(*policydb, pfile);
+	if (retv) {
+		goto open_policy_error;
+	}
+
+open_policy_done:
+	sepol_policy_file_free(pfile);
+	pfile = NULL;
+	fclose(infile);
+
+	return retv;
+
+open_policy_error:
+	sepol_policydb_free(*policydb);
+	*policydb = NULL;
+	sepol_handle_destroy(*policy_handle);
+	*policy_handle = NULL;
+	goto open_policy_done;
+}
+
+void apol_close_policy(sepol_handle_t *policy_handle, sepol_policydb_t *policy)
+{
+	sepol_handle_destroy(policy_handle);
+	sepol_policydb_free(policy);
+}

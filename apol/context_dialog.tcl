@@ -222,7 +222,7 @@ proc Apol_Context_Dialog::_okay {dialog} {
         }
         if {$vars($dialog:user_enable) && $vars($dialog:user) != "" && [ApolTop::is_policy_open]} {
             set valid_range 0
-            foreach user [apol_GetUsers] {
+            foreach user [apol_GetUsers {} {} 0] {
                 if {[lindex $user 0] == $vars($dialog:user)} {
                     if {[apol_CompareRanges [lindex $user 3] [list $low $high] superset]} {
                         set valid_range 1

@@ -1,10 +1,14 @@
 # libapol and lipapol-tcl
 
-LIB-OBJ	= policy.o policy-query.o policy-io.o queue.o util.o clone.o y.tab.o lex.yy.o
+LIB-OBJ	= policy.o policy-query.o queue.o util.o clone.o y.tab.o lex.yy.o
 LIB-OBJ +=  avl-util.o policy-avl.o render.o analysis.o perm-map.o cond.o infoflow.o poldiff.o
 LIB-OBJ +=  relabel_analysis.o dta.o
 LIB-OBJ +=  binpol/binpol.o binpol/bpmaps.o binpol/fbuf.o binpol/ebitmap.o
 LIB-OBJ +=  semantic/avhash.o semantic/avsemantics.o
+
+# new LIB-OBJS below
+LIB-OBJ += policy-io.o component-query.o mls-query.o
+LIB-OBJ += vector.o
 
 LIB-OBJ-TCL = apol_tcl_other.o apol_tcl_render.o apol_tcl_components.o apol_tcl_rules.o apol_tcl_fc.o apol_tcl_analysis.o
 #libapol

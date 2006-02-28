@@ -46,43 +46,57 @@ proc Apol_Users::searchUsers {} {
         tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened!"
         return
     }
-    if {$opts(useRole) && $opts(role) == ""} {
-        tk_messageBox -icon error -type ok -title "Error" -message "No role selected."
-        return
+    if {$opts(useRole)} {
+        if {$opts(role) == ""} {
+            tk_messageBox -icon error -type ok -title "Error" -message "No role selected."
+            return
+        }
+        set role $opts(role)
+    } else {
+        set role {}
     }
-    if {$opts(enable_default) && $opts(default_level) == {{} {}}} {
-        tk_messageBox -icon error -type ok -title "Error" -message "No default level selected."
-        return
+    if {$opts(enable_default)} {
+        if {$opts(default_level) == {{} {}}} {
+            tk_messageBox -icon error -type ok -title "Error" -message "No default level selected."
+            return
+        }
+        set default $opts(default_level)
+    } else {
+        set default {}
     }
     set range_enabled [Apol_Widget::getRangeSelectorState $widgets(range)]
-    foreach {val_range val_search_type} [Apol_Widget::getRangeSelectorValue $widgets(range)] {break}
-    if {$range_enabled && $val_range == {{{} {}} {{} {}}}} {
-        tk_messageBox -icon error -type ok -title "Error" -message "No range selected."
-        return
+    foreach {range range_type} [Apol_Widget::getRangeSelectorValue $widgets(range)] {break}
+    if {$range_enabled} {
+        if {$range == {{{} {}} {{} {}}}} {
+            tk_messageBox -icon error -type ok -title "Error" -message "No range selected."
+            return
+        }
+    } else {
+        set range {}
     }
-    
-    if {[catch {apol_GetUsers} orig_users_info]} {
-	tk_messageBox -icon error -type ok -title "Error" -message "Error obtaining users list:\n$orig_users_info"
+
+    if {[catch {apol_GetUsers {} $role $default $range $range_type 0} users_data]} {
+	tk_messageBox -icon error -type ok -title "Error" -message "Error obtaining users list:\n$users_data"
         return
     }
 
     # apply filters to the list of users
     set users_info {}
-    foreach u $orig_users_info {
-        foreach {user roles default range} $u {break}
+    foreach u [lsort -index 0 $users_data] {
+        foreach {user roles u_default u_range} $u {break}
         if {$opts(useRole) && \
                 [lsearch -exact $roles $opts(role)] == -1} {
             continue
         }
         if {$opts(enable_default) && \
-                $default ne $opts(default_level)} {
+                $u_default ne $opts(default_level)} {
             continue
         }
         if {$range_enabled && \
-                ![apol_CompareRanges $val_range $range $val_search_type]} {
+                ![apol_CompareRanges $range $u_range $range_type]} {
             continue
         }
-        lappend users_info $user
+        lappend users_info $u
     }
 
     # now display results
@@ -101,9 +115,9 @@ proc Apol_Users::searchUsers {} {
     Apol_Widget::appendSearchResultText $widgets(results) $results
 }
 
-proc Apol_Users::renderUser {user show_all} {
+proc Apol_Users::renderUser {user_datum show_all} {
     set text ""
-    foreach {user roles default range} [lindex [apol_GetUsers $user] 0] {break}
+    foreach {user roles default range} $user_datum {break}
     append text "$user"
     if {!$show_all} {
         return $text
@@ -134,12 +148,10 @@ proc Apol_Users::renderUser {user show_all} {
 #  Command Apol_Users::open
 # ------------------------------------------------------------------------------
 proc Apol_Users::open { } {
-    variable users_list
+    variable users_list {}
     variable widgets
-  
-    set rt [catch {set users_list [apol_GetNames users]} err]
-    if {$rt != 0} {
-	return -code error $err
+    foreach u [apol_GetUsers {} {} {} {} {} 0] {
+        lappend users_list [lindex $u 0]
     }
     set users_list [lsort $users_list]
     $Apol_Users::widgets(role) configure -values $Apol_Roles::role_list
@@ -181,7 +193,8 @@ proc Apol_Users::free_call_back_procs { } {
 #  Command Apol_Users::popupUserInfo
 # ------------------------------------------------------------------------------
 proc Apol_Users::popupUserInfo {which user} {
-    Apol_Widget::showPopupText $user [renderUser $user 1]
+    set user_datum [lindex [apol_GetUsers $user] 0]
+    Apol_Widget::showPopupText $user [renderUser $user_datum 1]
 }
 
 ########################################################################
