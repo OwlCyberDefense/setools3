@@ -1,15 +1,29 @@
-/* Copyright (C) 2002-2006 Tresys Technology, LLC
- * see file 'COPYING' for use and warranty information */
-
-/* 
- * Author: mayerf@tresys.com and Don Patterson <don.patterson@tresys.com>
- */
-
-/* apol_tcl.c
+/**
+ * @file apol_tcl_other.c
  *
+ * Miscellaneous routines that translate between apol (a Tcl/Tk
+ * application) and libapol.
+ *
+ * @author Kevin Carr  kcarr@tresys.com
+ * @author Jeremy A. Mowery jmowery@tresys.com
+ * @author Jason Tang  jtang@tresys.com
+ *
+ * Copyright (C) 2002-2006 Tresys Technology, LLC
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
- 
-/* The tcl functions to support the GUI using TK */
 
 #include <string.h>
 #include <tcl.h>
@@ -32,6 +46,9 @@
 #endif
 
 policy_t *policy; /* local global for policy DB */
+
+sepol_handle_t *policy_handle = NULL;
+sepol_policydb_t *policydb = NULL;
 
 
 /* Takes a Tcl string representing a MLS level and converts it to an
@@ -388,13 +405,26 @@ int Apol_OpenPolicy(ClientData clientData, Tcl_Interp *interp, int argc, char *a
 		Tcl_AppendResult(interp, tbuf, (char *) NULL);
 		return rt;
 	}
-	return TCL_OK;	
+
+	/******** new routine here ********/
+	if (is_binary_policy(policy)) {
+		if (apol_open_binary_policy(argv[1], &policy_handle, &policydb)) {
+			Tcl_SetResult(interp, "Open policy error.", TCL_STATIC);
+			return TCL_ERROR;
+		}
+	}
+	return TCL_OK;
 }
 
 int Apol_ClosePolicy(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
 {
 	close_policy(policy);
 	policy = NULL;
+
+        /******** new routine here ********/
+	apol_close_policy(policy_handle, policydb);
+	policy_handle = NULL;
+	policydb = NULL;
 	return TCL_OK;
 }
 

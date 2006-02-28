@@ -1,14 +1,14 @@
 /**
  * @file component-query.h
  *
- * Routines to query individual components of a policy.  For each 
- * component there is a query structure to specify the details of the query. 
- * The reason for all of the modifier functions on the query structures 
- * is to ease the creation of swig wrappers to libapol.
+ * Routines to query individual components of a policy.  For each
+ * component there is a query structure to specify the details of the
+ * query.  The reason for all of the modifier functions on the query
+ * structures is to ease the creation of swig wrappers to libapol.
  *
- * @author Jason Tang  jtang@tresys.com
  * @author Kevin Carr  kcarr@tresys.com
  * @author Jeremy A. Mowery jmowery@tresys.com
+ * @author Jason Tang  jtang@tresys.com
  *
  * Copyright (C) 2006 Tresys Technology, LLC
  *
@@ -30,92 +30,20 @@
 #ifndef _APOL_COMPONENT_QUERY_H_
 #define _APOL_COMPONENT_QUERY_H_
 
-struct apol_mls_level {
-        char *sens;
-        char **cats;
-        size_t num_cats;
-};
-typedef struct apol_mls_level apol_mls_level_t;
+#include <stdlib.h>
+#include <sepol/policydb-query.h>
 
-struct apol_mls_range {
-        apol_mls_level_t *low, *high;
-};
-typedef struct apol_mls_range apol_mls_range_t;
-
-#define APOL_MLS_RANGE_SUB   0x08 /* query range is subset of rule range */
-#define APOL_MLS_RANGE_SUPER 0x10 /* query range is superset of rule range */
-#define APOL_MLS_RANGE_EXACT (AP_MLS_RANGE_SUB|AP_MLS_RANGE_SUPER)
-
-/** Every query allows the treatment of strings as regular expressions
- *  instead.  Within the query structure are flags; if the first bit
- *  is set then use regex matching instead. */
-#define APOL_QUERY_REGEX 0x01
-
-struct apol_type_query {
-        char *type_name;
-        unsigned int flags;
-};
-
-struct apol_attr_query {
-        char *attr_name;
-        unsigned int flags;
-};
-
-struct apol_class_query {
-        char *class_name;
-        unsigned int flags;
-};
-
-struct apol_common_query {
-        char *common_name;
-        unsigned int flags;
-};
-
-struct apol_perm_query {
-        char *perm_name;
-        unsigned int flags;
-};
-
-struct apol_role_query {
-        char *role_name;
-        char *type_name;
-        unsigned int flags;
-};
-
-struct apol_user_query {
-        char *user_name;
-        char *role_name;
-        apol_mls_level_t *default_level;
-        apol_mls_range_t *range;
-        unsigned int flags;
-};
-
-struct apol_bool_query {
-        char *bool_name;
-        unsigned int flags;
-};
-
-struct apol_sens_query {
-        char *sens_name;
-        unsigned int flags;
-};
-
-struct apol_cats_query {
-        char *cats_name;
-        unsigned int flags;
-};
+#include "mls-query.h"
+#include "vector.h"
 
 typedef struct apol_type_query apol_type_query_t;
-typedef struct apol_attr_query apol_type_query_t;
+typedef struct apol_attr_query apol_attr_query_t;
 typedef struct apol_class_query apol_class_query_t;
 typedef struct apol_common_query apol_common_query_t;
 typedef struct apol_perm_query apol_perm_query_t;
 typedef struct apol_role_query apol_role_query_t;
 typedef struct apol_user_query apol_user_query_t;
 typedef struct apol_bool_query apol_bool_query_t;
-typedef struct apol_sens_query apol_sens_query_t;
-typedef struct apol_cats_query apol_cats_query_t;
-
 
 /******************** type queries ********************/
 
@@ -127,19 +55,16 @@ typedef struct apol_cats_query apol_cats_query_t;
  * @param p Policy within which to look up types.
  * @param t Structure containing parameters for query.  If this is
  * NULL then return all types.
- * @param results Reference to a list of results.  The list will be
- * allocated by this function.  The caller must free this list
+ * @param v Reference to a vector of sepol_datum_t.  The vector will be
+ * allocated by this function.  The caller must destroy this vector
  * afterwards, but <b>must not</b> free the elements within it.  This will
  * be set to NULL upon no results or upon error.
- * @param num_results Reference to number of results, or 0 upon no
- * results or error.
  *
  * @return 0 on success (including none found), negative on error.
  */
 extern int apol_get_type_by_query(sepol_handle_t *h, sepol_policydb_t *p,
                                   apol_type_query_t *t,
-                                  sepol_type_datum_t ***results,
-                                  size_t *num_results);
+                                  apol_vector_t **v);
 
 /**
  * Allocate and return a new type query structure.  All fields are
@@ -171,11 +96,12 @@ extern void apol_type_query_destroy(apol_type_query_t **t);
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_type_query_set_type(apol_type_query_t *t, char *name);
+extern int apol_type_query_set_type(apol_type_query_t *t, const char *name);
 
 /**
  * Set a type query to use regular expression searching for all of its
  * fields.  Strings will be treated as regexes instead of literals.
+ * Matching will occur against the type name or any of its aliases.
  *
  * @param t Type query to set.
  * @param is_regex Non-zero to enable regex searching, 0 to disable.
@@ -238,7 +164,7 @@ extern void apol_attr_query_destroy(apol_attr_query_t **a);
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_attr_query_set_type(apol_attr_query_t *a, char *name);
+extern int apol_attr_query_set_type(apol_attr_query_t *a, const char *name);
 
 /**
  * Set an attribute query to use regular expression searching for all
@@ -306,7 +232,7 @@ extern void apol_class_query_destroy(apol_class_query_t **c);
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_class_query_set_class(apol_class_query_t *c, char *name);
+extern int apol_class_query_set_class(apol_class_query_t *c, const char *name);
 
 /**
  * Set a class query to use regular expression searching for all of
@@ -374,7 +300,7 @@ extern void apol_common_query_destroy(apol_common_query_t **c);
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_common_query_set_common(apol_common_query_t *c, char *name);
+extern int apol_common_query_set_common(apol_common_query_t *c, const char *name);
 
 /**
  * Set a common query to use regular expression searching for all of
@@ -408,10 +334,10 @@ extern int apol_common_query_set_regex(apol_common_query_t *c, int is_regex);
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_common_by_query(sepol_handle_t *h, sepol_policydb_t *p,
-                                    apol_perm_query_t *pq,
-                                    char ***results,
-                                    size_t *num_results);
+extern int apol_get_perm_by_query(sepol_handle_t *h, sepol_policydb_t *p,
+                                  apol_perm_query_t *pq,
+                                  char ***results,
+                                  size_t *num_results);
 
 /**
  * Allocate and return a new permission query structure.  All fields
@@ -443,7 +369,7 @@ extern void apol_perm_query_destroy(apol_perm_query_t **pq);
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_perm_query_set_perm(apol_perm_query_t *pq, char *name);
+extern int apol_perm_query_set_perm(apol_perm_query_t *pq, const char *name);
 
 /**
  * Set a permission query to use regular expression searching for all
@@ -478,8 +404,7 @@ extern int apol_perm_query_set_regex(apol_perm_query_t *pq, int is_regex);
  */
 extern int apol_get_role_by_query(sepol_handle_t *h, sepol_policydb_t *p,
                                   apol_role_query_t *r,
-                                  sepol_role_datum_t ***results,
-                                  size_t *num_results);
+                                  apol_vector_t **v);
 
 /**
  * Allocate and return a new role query structure.  All fields are
@@ -510,7 +435,7 @@ extern void apol_role_query_destroy(apol_role_query_t **r);
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_role_query_set_role(apol_role_query_t *r, char *name);
+extern int apol_role_query_set_role(apol_role_query_t *r, const char *name);
 
 /**
  * Set a role query to return only roles containing this type.  This
@@ -522,7 +447,7 @@ extern int apol_role_query_set_role(apol_role_query_t *r, char *name);
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_role_query_set_type(apol_role_query_t *r, char *name);
+extern int apol_role_query_set_type(apol_role_query_t *r, const char *name);
 
 /**
  * Set a role query to use regular expression searching for all of its
@@ -588,7 +513,7 @@ extern void apol_user_query_destroy(apol_user_query_t **u);
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_user_query_set_user(apol_user_query_t *u, char *name);
+extern int apol_user_query_set_user(apol_user_query_t *u, const char *name);
 
 /**
  * Set a user query to return only users containing this role.  This
@@ -600,7 +525,7 @@ extern int apol_user_query_set_user(apol_user_query_t *u, char *name);
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_user_query_set_role(apol_user_query_t *u, char *role);
+extern int apol_user_query_set_role(apol_user_query_t *u, const char *role);
 
 /**
  * Set a user query to return only users containing this default
@@ -611,7 +536,7 @@ extern int apol_user_query_set_role(apol_user_query_t *u, char *role);
  * @param level Limit query to only users with this level as their
  * default, or NULL to unset this field.
  *
- * @return 0 on success, negative on error.
+ * @return Always returns 0.
  */
 extern int apol_user_query_set_default_level(apol_user_query_t *u,
                                              apol_mls_level_t *level);
@@ -625,10 +550,10 @@ extern int apol_user_query_set_default_level(apol_user_query_t *u,
  * @param range Limit query to only users matching this range, or NULL
  * to unset this field.
  * @param range_match Specifies how to match a user to a range.  This
- * must be one of APOL_MLS_RANGE_SUB, APOL_MLS_RANGE_SUPER, or
- * APOL_MLS_RANGE_EXACT.  This is ignored if range is NULL.
+ * must be one of APOL_QUERY_SUB, APOL_QUERY_SUPER, or
+ * APOL_QUERY_EXACT.  This parameter is ignored if range is NULL.
  *
- * @return 0 on success, negative on error.
+ * @return Always returns 0.
  */
 extern int apol_user_query_set_range(apol_user_query_t *u,
                                      apol_mls_range_t *range,
@@ -698,7 +623,7 @@ extern void apol_bool_query_destroy(apol_bool_query_t **b);
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_bool_query_set_role(apol_bool_query_t *b, char *name);
+extern int apol_bool_query_set_role(apol_bool_query_t *b, const char *name);
 
 /**
  * Set a boolean query to use regular expression searching for all of
@@ -711,108 +636,5 @@ extern int apol_bool_query_set_role(apol_bool_query_t *b, char *name);
  * @return Always 0.
  */
 extern int apol_bool_query_set_regex(apol_bool_query_t *b, int is_regex);
-
-/******************** MLS queries ********************/
-
-
-/**
- * Allocate and return a new MLS level structure.  All fields are
- * initialized to nothing.  The caller must call
- * apol_mls_level_destroy() upon the return value afterwards, assuming
- * that the caller maintains ownership.
- *
- * @return An initialized MLS level structure, or NULL upon error.
- */
-extern apol_mls_level_t *apol_mls_level_create(void);
-
-/**
- * Take a MLS level string (e.g., <t>S0:C0.C127</t>) and parse it.
- * Fill in a newly allocated apol_mls_level_t and return it.  This
- * function needs a policy to resolve dots within categories.  If the
- * string represents an illegal level then return NULL.  The caller
- * must call apol_mls_level_destroy() upon the return value
- * afterwards, assuming that the caller maintains ownership.
- *
- * @param h Error reporting handler.
- * @param p Policy within which to validate mls_level_string.
- * @param mls_level_string Pointer to a string representing a valid
- * MLS level.  Caller is responsible for memory management of this
- * string.
- *
- * @return A filled in MLS level structure, or NULL upon error.
- */
-extern apol_mls_level_t *apol_mls_level_create_from_string(sepol_handle_t *h, sepol_policydb_t *p, char *mls_level_string);
-
-/**
- * Deallocate all memory associated with a MLS level structure and
- * then set it to NULL.  This function does nothing if the level is
- * already NULL.
- *
- * @param level Reference to a MLS level structure to destroy.
- */
-extern void apol_mls_level_destroy(apol_mls_level_t **level);
-
-/**
- * Set the sensitivity component of an MLS level structure.  This
- * function duplicates the incoming string.
- *
- * @param level MLS level to modify.
- * @param sens New sensitivity component to set.
- *
- * @return 0 on success, negative on error.
- */
-extern int apol_mls_level_set_sens(apol_mls_level_t *level, char *sens);
-
-/**
- * Add a category component of an MLS level structure.  This function
- * duplicates the incoming string.
- *
- * @param level MLS level to modify.
- * @param cats New category component to append.
- */
-extern int apol_mls_level_append_cats(apol_mls_level_t *level, char *cats);
-
-/**
- * Allocate and return a new MLS range structure.  All fields are
- * initialized to nothing.  The caller must call
- * apol_mls_range_destroy() upon the return value afterwards, assuming
- * that the caller maintains ownership.
- *
- * @return An initialized MLS range structure, or NULL upon error.
- */
-extern apol_mls_range_t *apol_mls_range_create(void);
-
-/**
- * Deallocate all memory associated with a MLS range structure and
- * then set it to NULL.  This function does nothing if the range is
- * already NULL.
- *
- * @param level Reference to a MLS level structure to destroy.
- */
-extern void apol_mls_range_set_destroy(apol_mls_range_t **range);
-
-/**
- * Set the low level component of a MLS range structure.  This
- * function takes ownership of the level, such that the caller must
- * not modify nor destroy it afterwards.
- *
- * @param range MLS range to modify.
- * @param level New low level for range.
- *
- * @return Always 0.
- */
-extern int apol_mls_range_set_low(apol_mls_range_t *range, apol_mls_level_t *level);
-
-/**
- * Set the high level component of a MLS range structure.  This
- * function takes ownership of the level, such that the caller must
- * not modify nor destroy it afterwards.
- *
- * @param range MLS range to modify.
- * @param level New high level for range.
- *
- * @return Always 0.
- */
-extern int apol_mls_range_set_high(apol_mls_range_t *range, apol_mls_level_t *level);
 
 #endif
