@@ -640,6 +640,10 @@ int apol_open_binary_policy(const char *path,
 		goto open_policy_error;
 	}
 
+	if (sepol_policydb_extend(*policy_handle, *policydb, NULL)) {
+		goto open_policy_error;
+	}
+
 open_policy_done:
 	sepol_policy_file_free(pfile);
 	pfile = NULL;

@@ -449,17 +449,14 @@ proc Apol_Widget::_attrib_validate {path} {
 proc Apol_Widget::_filter_type_combobox {path attribvalue} {
     variable vars
     if {$attribvalue != ""} {
-        if {[catch {apol_GetAttribTypesList $attribvalue} typesList]} {
+        set typesList [lsort [lindex [apol_GetAttribs $attribvalue] 0 1]]
+        if {$typesList == {}} {
             # unknown attribute, so don't change type combobox
             return
         }
-        set typesList [lsort $typesList]
     } else {
         set typesList $Apol_Types::typelist
         # during policy load this list should already have been sorted
-    }
-    if {[set idx [lsearch -exact $typesList "self"]] != -1} {
-        set typesList [lreplace $typesList $idx $idx]
     }
     if {[lsearch -exact $typesList $vars($path:type)] == -1} {
         set vars($path:type) ""

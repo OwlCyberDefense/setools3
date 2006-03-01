@@ -131,9 +131,8 @@ extern int apol_type_query_set_regex(apol_type_query_t *t, int is_regex);
  * @return 0 on success (including none found), negative on error.
  */
 extern int apol_get_attr_by_query(sepol_handle_t *h, sepol_policydb_t *p,
-                                    apol_attr_query_t *t,
-                                    sepol_type_datum_t ***results,
-                                    size_t *num_results);
+                                  apol_attr_query_t *a,
+                                  apol_vector_t **v);
 
 /**
  * Allocate and return a new attribute query structure.  All fields
@@ -164,7 +163,7 @@ extern void apol_attr_query_destroy(apol_attr_query_t **a);
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_attr_query_set_type(apol_attr_query_t *a, const char *name);
+extern int apol_attr_query_set_attr(apol_attr_query_t *a, const char *name);
 
 /**
  * Set an attribute query to use regular expression searching for all
@@ -481,8 +480,7 @@ extern int apol_role_query_set_regex(apol_role_query_t *r, int is_regex);
  */
 extern int apol_get_user_by_query(sepol_handle_t *h, sepol_policydb_t *p,
                                   apol_user_query_t *u,
-                                  sepol_user_datum_t ***results,
-                                  size_t *num_results);
+                                  apol_vector_t **v);
 
 /**
  * Allocate and return a new user query structure.  All fields are

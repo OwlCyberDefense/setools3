@@ -226,7 +226,7 @@ proc Apol_Types::renderType {type_datum show_attribs show_aliases} {
             append text s
         }
         append text ")\n"
-        foreach a $attribs {
+        foreach a [lsort $attribs] {
             append text "    $a\n"
         }
     }
@@ -244,13 +244,14 @@ proc Apol_Types::renderAttrib {attrib_datum show_types show_attribs} {
         }
         append text ")\n"
         foreach type [lsort $types] {
-            append text "    $type\n"
+            append text "    $type"
             if {$show_attribs} {
-                set a [lsort [lindex [apol_GetTypes $type 0] 0 1]]
+                set a [lsort [lindex [apol_GetTypes $type] 0 1]]
                 # remove the entry that we know should be there
                 set idx [lsearch -sorted -exact $a $attrib]
                 append text "  { [lreplace $a $idx $idx] }"
             }
+            append text "\n"
         }
     }
     return $text

@@ -2263,16 +2263,7 @@ proc Apol_Analysis_tra::change_types_list {type_cmbox attrib_cmbox clear_type} {
 		if {$clear_type} {
 			$type_cmbox configure -text ""		   
 		}
-		set rt [catch {set attrib_typesList [apol_GetAttribTypesList $attrib]} err]	
-		if {$rt != 0} {
-			tk_messageBox -icon error -type ok -title "Error" -message "$err"
-			return
-		} 
-		set attrib_typesList [lsort $attrib_typesList]
-		set idx [lsearch -exact $attrib_typesList "self"]
-		if {$idx != -1} {
-			set attrib_typesList [lreplace $attrib_typesList $idx $idx]
-		}
+            set attrib_typesList [lsort [lindex [apol_GetAttribs $attrib] 0 1]]
 		$type_cmbox configure -values $attrib_typesList
         } else {
         	set attrib_typesList $Apol_Types::typelist
