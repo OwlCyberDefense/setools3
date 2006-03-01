@@ -149,7 +149,7 @@ int apol_vector_append(apol_vector_t *v, void *elem)
 	return 0;
 }
 
-int apol_vector_append_unique(apol_vector_t *v, void *elem, int(*cmp)(void*a,void*b))
+int apol_vector_append_unique(apol_vector_t *v, void *elem, apol_vector_comp_func *cmp)
 {
 	size_t i = 0;
 

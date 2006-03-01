@@ -597,6 +597,8 @@ int open_policy(const char* filename, policy_t **policy)
 #include <stdlib.h>
 #include <errno.h>
 #include <sepol/sepol.h>
+#include <sepol/policydb-extend.h>
+
 #include "policy-io.h"
 
 int apol_open_binary_policy(const char *path,
