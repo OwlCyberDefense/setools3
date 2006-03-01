@@ -33,6 +33,7 @@
 #include <sepol/iterator.h>
 
 #include "mls-query.h"
+#include "vector.h"
 
 struct apol_sens_query {
 	char *sens_name;
@@ -57,12 +58,12 @@ apol_mls_level_t *apol_mls_level_create_from_string(sepol_handle_t *h, sepol_pol
 {
 	apol_mls_level_t *lvl = NULL;
 	int error = 0;
-	char *tmp = NULL, **tokens = NULL, *next = NULL, **tmp_array = NULL;
+	char *tmp = NULL, **tokens = NULL, *next = NULL;
 	size_t num_tokens = 1, i;
 	sepol_iterator_t *iter = NULL;
 	sepol_level_datum_t *sens = NULL;
 	sepol_cat_datum_t *cat1 = NULL, *cat2 = NULL, *tmp_cat = NULL;
-	uint32_t val1 = 0, val2 = 0, cat_range_sz = 0, tmp_val = 0;
+	uint32_t val1 = 0, val2 = 0, tmp_val = 0;
 	unsigned char tmp_isalias = 0;
 
 	if (!h || !p || !mls_level_string) {
@@ -148,26 +149,10 @@ apol_mls_level_t *apol_mls_level_create_from_string(sepol_handle_t *h, sepol_pol
 				error = EINVAL;
 				goto err;
 			}
-			/* set range size */
-			cat_range_sz = 1 + val2 - val1;
-			tmp_array = realloc(lvl->cats, (lvl->num_cats + cat_range_sz) * sizeof(char*));
-			if (!tmp_array) {
+			if (!apol_mls_level_append_cats(lvl, tokens[i])) {
 				error = errno;
 				goto err;
 			}
-			memset(&(tmp_array[lvl->num_cats]), 0, cat_range_sz * sizeof(char*));
-			lvl->cats = tmp_array;
-			lvl->cats[lvl->num_cats] = strdup(tokens[i]);
-			if (!lvl->cats[lvl->num_cats]) {
-				error = errno;
-				goto err;
-			}
-			lvl->cats[lvl->num_cats + cat_range_sz - 1] = strdup(next);
-			if (!lvl->cats[lvl->num_cats + cat_range_sz - 1]) {
-				error = errno;
-				goto err;
-			}
-
 			if (sepol_policydb_get_cat_iter(h, p, &iter)) {
 				error = errno;
 				goto err;
@@ -192,15 +177,16 @@ apol_mls_level_t *apol_mls_level_create_from_string(sepol_handle_t *h, sepol_pol
 						error = errno;
 						goto err;
 					}
-					lvl->cats[lvl->num_cats + tmp_val - val1] = strdup(tmp);
-					if (!lvl->cats[lvl->num_cats + tmp_val - val1]) {
+					if (apol_mls_level_append_cats(lvl, tmp)) {
 						error = errno;
 						goto err;
 					}
 				}
 			}
-			lvl->num_cats += cat_range_sz;
-			cat_range_sz = 0;
+			if (apol_mls_level_append_cats(lvl, next)) {
+				error = errno;
+				goto err;
+			}			 
 		} else {
 			if (sepol_policydb_get_cat_by_name(h, p, tokens[i], &cat1)) {
 				error = errno;
@@ -240,7 +226,6 @@ apol_mls_level_t *apol_mls_level_create_from_sepol_mls_level(sepol_handle_t *h, 
 	sepol_cat_datum_t *tmp_cat = NULL;
 	char *tmp = NULL;
 	int error = 0;
-	size_t num_cats = 0, i;
 
 	if (!h || !p || !sepol_level) {
 		errno = EINVAL;
@@ -254,27 +239,17 @@ apol_mls_level_t *apol_mls_level_create_from_sepol_mls_level(sepol_handle_t *h, 
 		error = errno;
 		goto err;
 	}
-	lvl->sens = strdup(tmp);
+	if ((lvl->sens = strdup(tmp)) == NULL) {
+		error = errno;
+		goto err;
+	}
 
 	if (sepol_mls_level_get_cat_iter(h, p, sepol_level, &iter)) {
 		error = errno;
 		goto err;
 	}
 
-	if (sepol_iterator_get_size(iter, &num_cats)) {
-		error = errno;
-		goto err;
-	}
-
-	lvl->cats = calloc(num_cats, sizeof(char*));
-	if (!lvl->cats) {
-		error = errno;
-		goto err;
-	}
-
-	lvl->num_cats = num_cats;
-
-	for (i = 0; !sepol_iterator_end(iter) && i< num_cats; sepol_iterator_next(iter), i++) {
+	for ( ; !sepol_iterator_end(iter); sepol_iterator_next(iter)) {
 		if (sepol_iterator_get_item(iter, (void**)&tmp_cat)) {
 			error = errno;
 			goto err;
@@ -283,8 +258,7 @@ apol_mls_level_t *apol_mls_level_create_from_sepol_mls_level(sepol_handle_t *h, 
 			error = errno;
 			goto err;
 		}
-		lvl->cats[i] = strdup(tmp);
-		if (!lvl->cats[i]) {
+		if (apol_mls_level_append_cats(lvl, tmp)) {
 			error = errno;
 			goto err;
 		}
@@ -306,7 +280,6 @@ apol_mls_level_t *apol_mls_level_create_from_sepol_level_datum(sepol_handle_t *h
 	sepol_cat_datum_t *tmp_cat = NULL;
 	char *tmp = NULL;
 	int error = 0;
-	size_t num_cats = 0, i;
 
 	if (!h || !p || !sepol_level) {
 		errno = EINVAL;
@@ -317,27 +290,17 @@ apol_mls_level_t *apol_mls_level_create_from_sepol_level_datum(sepol_handle_t *h
 		error = errno;
 		goto err;
 	}
-	lvl->sens = strdup(tmp);
+	if ((lvl->sens = strdup(tmp)) == NULL) {
+		error = errno;
+		goto err;
+	}
 
 	if (sepol_level_datum_get_cat_iter(h, p, sepol_level, &iter)) {
 		error = errno;
 		goto err;
 	}
 
-	if (sepol_iterator_get_size(iter, &num_cats)) {
-		error = errno;
-		goto err;
-	}
-
-	lvl->cats = calloc(num_cats, sizeof(char*));
-	if (!lvl->cats) {
-		error = errno;
-		goto err;
-	}
-
-	lvl->num_cats = num_cats;
-
-	for (i = 0; !sepol_iterator_end(iter) && i< num_cats; sepol_iterator_next(iter), i++) {
+	for ( ; !sepol_iterator_end(iter); sepol_iterator_next(iter)) {
 		if (sepol_iterator_get_item(iter, (void**)&tmp_cat)) {
 			error = errno;
 			goto err;
@@ -346,8 +309,7 @@ apol_mls_level_t *apol_mls_level_create_from_sepol_level_datum(sepol_handle_t *h
 			error = errno;
 			goto err;
 		}
-		lvl->cats[i] = strdup(tmp);
-		if (!lvl->cats[i]) {
+		if (apol_mls_level_append_cats(lvl, tmp)) {
 			error = errno;
 			goto err;
 		}
@@ -364,32 +326,25 @@ err:
 
 void apol_mls_level_destroy(apol_mls_level_t **level)
 {
-	size_t i = 0;
-
 	if (!level || !(*level))
 		return;
 
 	free((*level)->sens);
-	if ((*level)->cats) {
-		for (i = 0; i < (*level)->num_cats; i++)
-			free((*level)->cats[i]);
-		free((*level)->cats);
-	}
-
+	apol_vector_destroy(&(*level)->cats, free);
 	free(*level);
 	*level = NULL;
 }
 
 int apol_mls_level_set_sens(apol_mls_level_t *level, char *sens)
 {
-	if (!level || !sens) {
+	if (!level) {
 		errno = EINVAL;
 		return -1;
 	}
 
 	free(level->sens);
-	level->sens = strdup(sens);
-	if (!level->sens) {
+	level->sens = NULL;
+	if (sens != NULL && (level->sens = strdup(sens)) == NULL) {
 		return -1;
 	}
 
@@ -398,29 +353,87 @@ int apol_mls_level_set_sens(apol_mls_level_t *level, char *sens)
 
 int apol_mls_level_append_cats(apol_mls_level_t *level, char *cats)
 {
-	char **tmp;
-	char *tmp_cat;
-
+	char *new_cat = NULL;
 	if (!level || !cats) {
 		errno = EINVAL;
 		return -1;
 	}
 
-	tmp = realloc(level->cats, (level->num_cats+1)*sizeof(char*));
-	if (!tmp) {
+	if (level->cats == NULL &&
+	    (level->cats = apol_vector_create()) == NULL) {
 		return -1;
 	}
-
-	tmp_cat = strdup(cats);	
-	if (!tmp_cat) {
+	if ((new_cat = strdup(cats)) == NULL ||
+	    apol_vector_append(level->cats, (void *) new_cat) < 0) {
+		free(new_cat);
 		return -1;
 	}
-
-	level->cats = tmp;
-	level->cats[level->num_cats++] = tmp_cat;
-
 	return 0;
 }
+
+int apol_mls_compare_level(sepol_handle_t *h, sepol_policydb_t *p,
+			   apol_mls_level_t *target, apol_mls_level_t *search)
+{
+        char *target_name, *search_name;
+	if (search == NULL) {
+		return 1;
+	}
+	if (search->sens != NULL) {
+		sepol_level_datum_t *search_level;
+                target_name = target->sens;
+		if (sepol_policydb_get_level_by_name(h, p, search->sens, &search_level) < 0 ||
+		    sepol_level_datum_get_name(h, p, search_level, &search_name) < 0) {
+			return -1;
+		}
+		if (strcmp(target_name, search_name) != 0) {
+			return 0;
+		}
+	}
+	if (apol_vector_get_size(search->cats) > 0) {
+		apol_vector_t *search_cats;
+		size_t i, j, num_cats = apol_vector_get_size(search->cats);
+		int cat_found;
+		char *orig_name, *cat_name;
+		
+		/* first convert search categories to canonical form */
+		if ((search_cats = apol_vector_create_with_capacity(num_cats)) == NULL) {
+			return -1;
+		}
+		for (i = 0; i < num_cats; i++) {
+			sepol_cat_datum_t *cat;
+			orig_name = (char *) apol_vector_get_element(search->cats, i);
+			if (sepol_policydb_get_cat_by_name(h, p, orig_name, &cat) < 0 ||
+			    sepol_cat_datum_get_name(h, p, cat, &cat_name) < 0 ||
+			    apol_vector_append_unique(search_cats, (void *) cat_name, (apol_vector_comp_func *)strcmp) < 0)
+			{
+				apol_vector_destroy(&search_cats, NULL);
+				return -1;
+			}
+		}
+
+		/* not the most elegant of solutions; luckily levels
+		 * have at most 256 categories */
+		for (i = 0; i < apol_vector_get_size(search_cats); i++) {
+			cat_found = 0;
+			cat_name = (char *) apol_vector_get_element(search_cats, i);
+			for (j = 0; j < apol_vector_get_size(target->cats); j++) {
+                                target_name = (char *) apol_vector_get_element(target->cats, j);
+                                
+				if (strcmp(cat_name, target_name) == 0) {
+					cat_found = 1;
+					break;
+				}
+			}
+			if (!cat_found) {
+				apol_vector_destroy(&search_cats, NULL);
+				return 0;
+			}
+		}
+		apol_vector_destroy(&search_cats, NULL);
+	}
+	return 1;
+}
+
 
 /* range */
 apol_mls_range_t *apol_mls_range_create(void)
@@ -484,11 +497,12 @@ void apol_mls_range_destroy(apol_mls_range_t **range)
 
 int apol_mls_range_set_low(apol_mls_range_t *range, apol_mls_level_t *level)
 {
-	if (!range || !level) {
+	if (!range) {
 		errno = EINVAL;
 		return -1;
 	}
 
+	apol_mls_level_destroy(&(range->low));
 	range->low = level;
 
 	return 0;
@@ -496,13 +510,13 @@ int apol_mls_range_set_low(apol_mls_range_t *range, apol_mls_level_t *level)
 
 int apol_mls_range_set_high(apol_mls_range_t *range, apol_mls_level_t *level)
 {
-	if (!range || !level) {
+	if (!range) {
 		errno = EINVAL;
 		return -1;
 	}
 
+	apol_mls_level_destroy(&(range->high));
 	range->high = level;
 
 	return 0;
 }
-

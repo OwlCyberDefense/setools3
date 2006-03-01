@@ -123,6 +123,8 @@ void *apol_vector_get_element(const apol_vector_t *v, size_t idx);
  */
 int apol_vector_append(apol_vector_t *v, void *elem);
 
+typedef int(apol_vector_comp_func)(void *a, void *b);
+
 /**
  *  Add an element to the end of a vector unless that element is equal
  *  to an existing element.
@@ -140,6 +142,6 @@ int apol_vector_append(apol_vector_t *v, void *elem);
  *  already exists in the vector.  If the call fails or the element
  *  already exists errno will be set.
  */
-int apol_vector_append_unique(apol_vector_t *v, void *elem, int(*cmp)(void*a,void*b));
+int apol_vector_append_unique(apol_vector_t *v, void *elem, apol_vector_comp_func *cmp);
 
 #endif /* APOL_VECTOR_H */
