@@ -330,11 +330,7 @@ proc Apol_Analysis_dta::forward_options_filter_types_using_attrib {attribute_1 l
 	if {$attribute != ""} {
 		$lbox delete 0 end
 		# Get a list of types for the specified attribute
-		set rt [catch {set attrib_types [apol_GetAttribTypesList $attribute]} err]
-		if {$rt != 0} {
-			tk_messageBox -icon error -type ok -title "Error" -message "$err"
-			return -1
-		}
+            set attrib_types [lindex [apol_GetAttribs $attribute] 0 1]
 		if {$non_filtered_types != ""} {
 			for {set i 0} {$i < [llength $non_filtered_types]} {incr i} { 
 				# Check if this is a filtered type
@@ -1931,16 +1927,7 @@ proc Apol_Analysis_dta::change_types_list { } {
 	variable display_attribute
 	
 	if { $display_attribute != "" } {	  
-		set rt [catch {set attrib_typesList [apol_GetAttribTypesList $display_attribute]} err]		
-		if {$rt != 0} {
-			tk_messageBox -icon error -type ok -title "Error" -message "$err"
-			return
-		} 
-		set attrib_typesList [lsort $attrib_typesList]
-		set idx [lsearch -exact $attrib_typesList "self"]
-		if {$idx != -1} {
-			set attrib_typesList [lreplace $attrib_typesList $idx $idx]
-		}
+            set attrib_typesList [lsort [lindex [apol_GetAttribs $display_attribute] 0 1]]
 		$combo_domain configure -values $attrib_typesList
         } else {
         	set attrib_typesList $Apol_Types::typelist

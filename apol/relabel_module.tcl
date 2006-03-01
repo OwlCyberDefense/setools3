@@ -743,12 +743,7 @@ proc Apol_Analysis_relabel::adv_options_create_object {path_name} {
 # ------------------------------------------------------------------------------
 #  Command Apol_Analysis_relabel::adv_options_copy_object
 # ------------------------------------------------------------------------------
-proc Apol_Analysis_relabel::adv_options_copy_object {path_name new_object} {		set rt [catch {set attrib_types [apol_GetAttribTypesList $attribute]} err]
-		if {$rt != 0} {
-			tk_messageBox -icon error -type ok -title "Error" -message "$err"
-			return -1
-		}
-
+proc Apol_Analysis_relabel::adv_options_copy_object {path_name new_object} {
 	variable widget_vars
 	upvar 1 $new_object object 
 	
@@ -897,12 +892,7 @@ proc Apol_Analysis_relabel::adv_options_filter_list_by_attrib {filter_list_1 mas
 	}
 
 	if {$attrib != ""} {
-
-		set rt [catch {set attrib_types [apol_GetAttribTypesList $attrib]} err]
-		if {$rt != 0} {
-			tk_messageBox -icon error -type ok -title "Error" -message "$err"
-			return -1
-		}
+            set attrib_types [lindex [apol_GetAttribs] 0 1]
 		if {$master_list != ""} {
 			$lbox delete 0 end
 			foreach subj $master_list {
@@ -1267,16 +1257,7 @@ proc Apol_Analysis_relabel::change_types_list {type_cmbox attrib_cmbox clear_typ
 		if {$clear_type} {
 			$type_cmbox configure -text ""		   
 		}
-		set rt [catch {set attrib_typesList [apol_GetAttribTypesList $attrib]} err]	
-		if {$rt != 0} {
-			tk_messageBox -icon error -type ok -title "Error" -message "$err"
-			return
-		} 
-		set attrib_typesList [lsort $attrib_typesList]
-		set idx [lsearch -exact $attrib_typesList "self"]
-		if {$idx != -1} {
-			set attrib_typesList [lreplace $attrib_typesList $idx $idx]
-		}
+            set attrib_typesList [lsort [lindex [apol_GetAttribs] 0 1]]
 		$type_cmbox configure -values $attrib_typesList
         } else {
         	set attrib_typesList $Apol_Types::typelist
@@ -1546,9 +1527,7 @@ proc Apol_Analysis_relabel::set_types_list {start_attrib} {
     if {$start_attrib == ""} {
         set start_attrib $widget_vars(start_attrib)
     }
-    if [catch {apol_GetAttribTypesList $start_attrib} types_list] {
-        set types_list ""
-    }
+    set types_list [lindex [apol_GetAttribs $start_attrib] 0 1]
     # check if the starting type is within the list of legal types; if
     # not then remove the entry.
     if {[lsearch $types_list $widget_vars(start_type)] == -1} {

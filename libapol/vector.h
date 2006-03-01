@@ -38,7 +38,7 @@ typedef struct apol_vector {
         void    **array;
         /** The number of elements currently stored in array. */
         size_t  size;
-        /** The actually amount of space in array. This amount will always 
+        /** The actual amount of space in array. This amount will always 
          *  be >= size and will grow exponentially as needed. */
         size_t  capacity; 
 } apol_vector_t;

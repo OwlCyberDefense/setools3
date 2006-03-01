@@ -71,12 +71,11 @@ struct apol_role_query {
 };
 
 struct apol_user_query {
-	char *user_name;
-	char *role_name;
+	char *user_name, *role_name;
 	apol_mls_level_t *default_level;
 	apol_mls_range_t *range;
 	unsigned int flags;
-	regex_t *regex;
+	regex_t *user_regex, *role_regex;
 };
 
 struct apol_bool_query {
@@ -279,7 +278,11 @@ void apol_type_query_destroy(apol_type_query_t **t)
 
 int apol_type_query_set_type(apol_type_query_t *t, const char *name)
 {
-	if ((t->type_name = apol_strdup(name)) == NULL) {
+	if (name == NULL) {
+		free(t->type_name);
+		t->type_name = NULL;
+	}
+	else if ((t->type_name = apol_strdup(name)) == NULL) {
 		return -1;
 	}
 	return 0;
@@ -295,6 +298,101 @@ int apol_type_query_set_regex(apol_type_query_t *t, int is_regex)
 	}
 	return 0;
 }
+
+/******************** attribute queries ********************/
+
+int apol_get_attr_by_query(sepol_handle_t *h, sepol_policydb_t *p,
+			   apol_attr_query_t *a,
+			   apol_vector_t **v)
+{
+	sepol_iterator_t *iter;
+	int retval = -1;
+	*v = NULL;
+	if (sepol_policydb_get_type_iter(h, p, &iter) < 0) {
+		return -1;
+	}
+	*v = apol_vector_create();
+	for( ; !sepol_iterator_end(iter); sepol_iterator_next(iter)) {
+		sepol_type_datum_t *type;
+		unsigned char isattr, isalias;
+		if (sepol_iterator_get_item(iter, (void **) &type) < 0) {
+			goto cleanup;
+		}
+		if (sepol_type_datum_get_isattr(h, p, type, &isattr) < 0 ||
+		    sepol_type_datum_get_isalias(h, p, type, &isalias) < 0) {
+			goto cleanup;
+		}
+		if (!isattr || isalias) {
+			continue;
+		}
+		if (a != NULL) {
+			char *attr_name;
+			if (sepol_type_datum_get_name(h, p, type, &attr_name) < 0) {
+				return -1;
+			}
+			int compval = apol_compare(attr_name, a->attr_name,
+						   a->flags, &(a->regex));
+			if (compval == -1) {
+				goto cleanup;
+			}
+			else if (compval == 0) {
+				continue;
+			}
+		}
+		if (apol_vector_append(*v, type)) {
+			goto cleanup;
+		}
+	}
+
+	retval = 0;
+ cleanup:
+	if (retval != 0) {
+		apol_vector_destroy(v, NULL);
+	}
+	sepol_iterator_destroy(&iter);
+	return retval;
+}
+
+apol_attr_query_t *apol_attr_query_create(void)
+{
+	return calloc(1, sizeof(apol_attr_query_t));
+}
+
+void apol_attr_query_destroy(apol_attr_query_t **a)
+{
+	if (*a != NULL) {
+		free((*a)->attr_name);
+		if ((*a)->regex != NULL) {
+			regfree((*a)->regex);
+			free((*a)->regex);
+		}
+		*a = NULL;
+	}
+}
+
+int apol_attr_query_set_attr(apol_attr_query_t *a, const char *name)
+{
+	if (name == NULL) {
+		free(a->attr_name);
+		a->attr_name = NULL;
+	}
+	else if ((a->attr_name = apol_strdup(name)) == NULL) {
+		return -1;
+	}
+	return 0;
+}
+
+int apol_attr_query_set_regex(apol_attr_query_t *a, int is_regex)
+{
+	if (is_regex) {
+		a->flags |= APOL_QUERY_REGEX;
+	}
+	else {
+		a->flags &= ~APOL_QUERY_REGEX;
+	}
+	return 0;
+}
+
 
 /******************** role queries ********************/
 
@@ -390,7 +488,11 @@ void apol_role_query_destroy(apol_role_query_t **r)
 
 int apol_role_query_set_role(apol_role_query_t *r, const char *name)
 {
-	if ((r->role_name = apol_strdup(name)) == NULL) {
+	if (name == NULL) {
+		free(r->role_name);
+		r->role_name = NULL;
+	}
+	else if ((r->role_name = apol_strdup(name)) == NULL) {
 		return -1;
 	}
 	return 0;
@@ -398,7 +500,11 @@ int apol_role_query_set_role(apol_role_query_t *r, const char *name)
 
 int apol_role_query_set_type(apol_role_query_t *r, const char *name)
 {
-	if ((r->type_name = apol_strdup(name)) == NULL) {
+	if (name == NULL) {
+		free(r->type_name);
+		r->type_name = NULL;
+	}
+	else if ((r->type_name = apol_strdup(name)) == NULL) {
 		return -1;
 	}
 	return 0;
@@ -418,26 +524,77 @@ int apol_role_query_set_regex(apol_role_query_t *r, int is_regex)
 
 /******************** user queries ********************/
 
-/**
- * Execute a query against all users within the policy.
- *
- * @param h Error reporting handler.
- * @param p Policy within which to look up users.
- * @param u Structure containing parameters for query.	If this is
- * NULL then return all users.
- * @param results Reference to a list of results.  The list will be
- * allocated by this function.	The caller must free this list
- * afterwards, but <b>must not</b> free the elements within it.	 This will
- * be set to NULL upon no results or upon error.
- * @param num_results Reference to number of results, or 0 upon no
- * results or error.
- *
- * @return 0 on success (including none found), negative on error.
- */
-extern int apol_get_user_by_query(sepol_handle_t *h, sepol_policydb_t *p,
-				  apol_user_query_t *u,
-				  sepol_user_datum_t ***results,
-				  size_t *num_results);
+int apol_get_user_by_query(sepol_handle_t *h, sepol_policydb_t *p,
+			   apol_user_query_t *u,
+			   apol_vector_t **v)
+{
+	sepol_iterator_t *iter = NULL, *role_iter = NULL;
+	int retval = -1, append_user;
+	*v = NULL;
+	if (sepol_policydb_get_user_iter(h, p, &iter) < 0) {
+		return -1;
+	}
+	*v = apol_vector_create();
+	for ( ; !sepol_iterator_end(iter); sepol_iterator_next(iter)) {
+		sepol_user_datum_t *user;
+		if (sepol_iterator_get_item(iter, (void **) &user) < 0) {
+			goto cleanup;
+		}
+		append_user = 1;
+		if (u != NULL) {
+			char *user_name;
+			int compval;
+			if (sepol_user_datum_get_name(h, p, user, &user_name) < 0) {
+				goto cleanup;
+			}
+			compval = apol_compare(user_name, u->user_name,
+					       u->flags, &(u->user_regex));
+			if (compval == -1) {
+				goto cleanup;
+			}
+			else if (compval == 0) {
+				continue;
+			}
+			if (sepol_user_datum_get_role_iter(h, p, user, &role_iter) < 0) {
+				goto cleanup;
+			}
+			append_user = 0;
+			for ( ; !sepol_iterator_end(role_iter); sepol_iterator_next(role_iter)) {
+				sepol_role_datum_t *role;
+				char *role_name;
+				if (sepol_iterator_get_item(role_iter, (void **) &role) < 0 ||
+				    sepol_role_datum_get_name(h, p, role, &role_name) < 0) {
+					goto cleanup;
+				}
+				compval = apol_compare(role_name, u->role_name,
+						       u->flags, &(u->role_regex));
+				if (compval == -1) {
+					goto cleanup;
+				}
+				else if (compval == 1) {
+					append_user = 1;
+					break;
+				}
+			}
+			sepol_iterator_destroy(&role_iter);
+			if (!append_user) {
+				continue;
+			}
+
+		}
+		if (append_user && apol_vector_append(*v, user)) {
+			goto cleanup;
+		}
+	}
+	retval = 0;
+ cleanup:
+	if (retval != 0) {
+		apol_vector_destroy(v, NULL);
+	}
+	sepol_iterator_destroy(&iter);
+	sepol_iterator_destroy(&role_iter);
+	return retval;
+}
 
 apol_user_query_t *apol_user_query_create(void)
 {
@@ -451,9 +608,13 @@ void apol_user_query_destroy(apol_user_query_t **u)
 		free((*u)->role_name);
 		apol_mls_level_destroy(&((*u)->default_level));
 		apol_mls_range_destroy(&((*u)->range));
-		if ((*u)->regex != NULL) {
-			regfree((*u)->regex);
-			free((*u)->regex);
+		if ((*u)->user_regex != NULL) {
+			regfree((*u)->user_regex);
+			free((*u)->user_regex);
+		}
+		if ((*u)->role_regex != NULL) {
+			regfree((*u)->role_regex);
+			free((*u)->role_regex);
 		}
 		*u = NULL;
 	}
@@ -461,7 +622,11 @@ void apol_user_query_destroy(apol_user_query_t **u)
 
 int apol_user_query_set_user(apol_user_query_t *u, const char *name)
 {
-	if ((u->user_name = apol_strdup(name)) == NULL) {
+	if (name == NULL) {
+		free(u->user_name);
+		u->user_name = NULL;
+	}
+	else if ((u->user_name = apol_strdup(name)) == NULL) {
 		return -1;
 	}
 	return 0;
@@ -469,7 +634,11 @@ int apol_user_query_set_user(apol_user_query_t *u, const char *name)
 
 int apol_user_query_set_role(apol_user_query_t *u, const char *role)
 {
-	if ((u->role_name = apol_strdup(role)) == NULL) {
+	if (role == NULL) {
+		free(u->role_name);
+		u->role_name = NULL;
+	}
+	else if ((u->role_name = apol_strdup(role)) == NULL) {
 		return -1;
 	}
 	return 0;

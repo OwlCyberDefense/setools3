@@ -101,12 +101,6 @@ static int Apol_GetNames(ClientData clientData, Tcl_Interp * interp, int argc, C
 				free(idx_array);
 		} 
 	}
-	else if(strcmp("attribs", argv[1]) == 0) {
-		for(i = 0; get_attrib_name(i, &name, policy) == 0; i++) {
-			Tcl_AppendElement(interp, name);
-			free(name);
-		}
-	}
 	else if(strcmp("classes", argv[1]) == 0) {
 		for(i = 0; get_obj_class_name(i, &name, policy) == 0; i++) {
 			Tcl_AppendElement(interp, name);
@@ -150,42 +144,6 @@ static int Apol_GetNames(ClientData clientData, Tcl_Interp * interp, int argc, C
 	return TCL_OK;
 }
 
-/* get types for a given attribute, returns a TCL list */
-/* args ordering:
- * argv[1]	attrib name
- */
-static int Apol_GetAttribTypesList(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
-{
-	int idx, j;
-	char tmpbuf[APOL_STR_SZ];
-	
-	if(argc != 2) {
-		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
-		return TCL_ERROR;
-	}
-	if(policy == NULL) {
-		Tcl_AppendResult(interp,"No current policy file is opened!", (char *) NULL);
-		return TCL_ERROR;
-	}
-	if(!is_valid_str_sz(argv[1])) {
-		Tcl_AppendResult(interp, "Type/attrib string is too large", (char *) NULL);
-		return TCL_ERROR;
-	}
-	
-	idx = get_attrib_idx(argv[1], policy);
-	if(idx < 0) {
-		sprintf(tmpbuf, "Invalid  attribute (%s)", argv[1]);
-		Tcl_AppendResult(interp, tmpbuf, (char *) NULL);
-		return TCL_ERROR;			
-	}	
-	
-	for(j = 0; j < policy->attribs[idx].num; j++) {
-		Tcl_AppendElement(interp, policy->types[policy->attribs[idx].a[j]].name);
-	}	
-	
-	return TCL_OK;
-}
-
 /* Takes a sepol_type_datum_t and appends a tuple of it to results_list.
  * The tuple consists of:
  *    { type_name {attrib0 attrib1 ...} {alias0 alias1 ...}}
@@ -194,10 +152,20 @@ static int append_type_to_list(Tcl_Interp *interp,
 			       sepol_type_datum_t *type_datum,
 			       Tcl_Obj *result_list)
 {
+	unsigned char is_attr;
 	char *type_name;
 	sepol_iterator_t *attr_iter = NULL, *alias_iter = NULL;
 	Tcl_Obj *type_elem[3], *type_list;
 	int retval = TCL_ERROR;
+	if (sepol_type_datum_get_isattr(policy_handle, policydb,
+					 type_datum, &is_attr) < 0) {
+		Tcl_SetResult(interp, "Could not get isalias.", TCL_STATIC);
+		goto cleanup;
+	}
+	if (is_attr) {
+		/* datum is an attribute, so don't add it */
+		return TCL_OK;
+	}
 	if (sepol_type_datum_get_name(policy_handle, policydb,
 				      type_datum, &type_name) < 0) {
 		Tcl_SetResult(interp, "Could not get type name.", TCL_STATIC);
@@ -278,7 +246,7 @@ static int Apol_GetTypes(ClientData clientData, Tcl_Interp *interp, int argc, CO
 	if (argc == 2) {
 		if (sepol_policydb_get_type_by_name(policy_handle, policydb,
 						    argv[1], &type) < 0) {
-			/* name is an attribute or not within policy */
+			/* name is not within policy */
 			return TCL_OK;
 		}
 		if (append_type_to_list(interp, type, result_obj) == TCL_ERROR) {
@@ -301,6 +269,7 @@ static int Apol_GetTypes(ClientData clientData, Tcl_Interp *interp, int argc, CO
 			}
 			if (apol_type_query_set_type(query, argv[1]) ||
 			    apol_type_query_set_regex(query, regex_flag)) {
+				apol_type_query_destroy(&query);
 				Tcl_SetResult(interp, "Error setting query options.", TCL_STATIC);
 				return TCL_ERROR;
 			}
@@ -325,54 +294,131 @@ static int Apol_GetTypes(ClientData clientData, Tcl_Interp *interp, int argc, CO
 	return TCL_OK;
 }
 
+/* Takes a sepol_type_datum_t representing a type and appends a tuple
+ * of it to results_list.  The tuple consists of:
+  *    { attr_name { type0 type1 ... } }
+ */
+static int append_attr_to_list(Tcl_Interp *interp,
+			       sepol_type_datum_t *attr_datum,
+			       Tcl_Obj *result_list)
+{
+	unsigned char is_attr;
+	char *attr_name;
+	sepol_iterator_t *type_iter = NULL;
+	Tcl_Obj *attr_elem[2], *attr_list;
+	int retval = TCL_ERROR;
+	if (sepol_type_datum_get_isattr(policy_handle, policydb,
+					 attr_datum, &is_attr) < 0) {
+		Tcl_SetResult(interp, "Could not get isalias.", TCL_STATIC);
+		goto cleanup;
+	}
+	if (!is_attr) {
+		/* datum is a type or alias, so don't add it */
+		return TCL_OK;
+	}
+	if (sepol_type_datum_get_name(policy_handle, policydb,
+				      attr_datum, &attr_name) < 0) {
+		Tcl_SetResult(interp, "Could not get attr name.", TCL_STATIC);
+		goto cleanup;
+	}
+	if (sepol_type_datum_get_type_iter(policy_handle, policydb,
+					   attr_datum, &type_iter) < 0) {
+		Tcl_SetResult(interp, "Could not get type iterator.", TCL_STATIC);
+		goto cleanup;
+	}
+	attr_elem[0] = Tcl_NewStringObj(attr_name, -1);
+	attr_elem[1] = Tcl_NewListObj(0, NULL);
+	for ( ; !sepol_iterator_end(type_iter); sepol_iterator_next(type_iter)) {
+		sepol_type_datum_t *type_datum;
+		char *type_name;
+		Tcl_Obj *type_obj;
+		if (sepol_iterator_get_item(type_iter, (void **) &type_datum) < 0 ||
+		    sepol_type_datum_get_name(policy_handle, policydb,
+					      type_datum, &type_name) < 0) {
+			Tcl_SetResult(interp, "Could not get type name.", TCL_STATIC);
+			goto cleanup;
+		}
+		type_obj = Tcl_NewStringObj(type_name, -1);
+		if (Tcl_ListObjAppendElement(interp, attr_elem[1], type_obj) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+	attr_list = Tcl_NewListObj(2, attr_elem);
+	if (Tcl_ListObjAppendElement(interp, result_list, attr_list) == TCL_ERROR) {
+		goto cleanup;
+	}
+	retval = TCL_OK;
+ cleanup:
+	sepol_iterator_destroy(&type_iter);
+	return retval;
+}
 
 /* Returns an unordered list of attribute tuples within the policy.
  *   elem 0 - attribute name
  *   elem 1 - list of types with that attribute
  * argv[1] - attribute name to look up, or a regular expression, or
  *	     empty to get all attributes
- * argv[2] - treat argv[1] as an attribute name or regex
+ * argv[2] - (optional) treat argv[1] as an attribute name or regex
  */
 static int Apol_GetAttribs(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
 	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
-	int i, target_attrib = -1;
+	sepol_type_datum_t *attr;
+
 	if (policy == NULL) {
 		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		return TCL_ERROR;
 	}
-	if (argc < 3) {
-		Tcl_SetResult(interp, "Need an attribute name and a regex flag.", TCL_STATIC);
+	if (argc < 2) {
+		Tcl_SetResult(interp, "Need an attribute name and ?regex flag?.", TCL_STATIC);
 		return TCL_ERROR;
 	}
-	if (strcmp(argv[1], "") != 0) {
-		target_attrib = get_attrib_idx(argv[1], policy);
-		if (target_attrib == -1) {
-			/* name is a type or not within policy */
+	if (argc == 2) {
+		if (sepol_policydb_get_type_by_name(policy_handle, policydb,
+						    argv[1], &attr) < 0) {
+			/* name is not within policy */
 			return TCL_OK;
 		}
-	}
-	for (i = 0; i < policy->num_attribs; i++) {
-		Tcl_Obj *attrib_elem[2], *attrib_list;
-		name_a_t *attrib = policy->attribs + i;
-		int j;
-		if (target_attrib != -1 && i != target_attrib) {
-			continue;
+		if (append_attr_to_list(interp, attr, result_obj) == TCL_ERROR) {
+			return TCL_ERROR;
 		}
-		attrib_elem[0] = Tcl_NewStringObj(attrib->name, -1);
-		attrib_elem[1] = Tcl_NewListObj(0, NULL);
-		for (j = 0; j < attrib->num; j++) {
-			int type_idx = attrib->a[j];
-			type_item_t *type = policy->types + type_idx;
-			Tcl_Obj *type_name = Tcl_NewStringObj(type->name, -1);
-			if (Tcl_ListObjAppendElement(interp, attrib_elem[1], type_name) == TCL_ERROR) {
+	}
+	else {
+		Tcl_Obj *regex_obj = Tcl_NewStringObj(argv[2], -1);
+		int regex_flag;
+		apol_attr_query_t *query = NULL;
+		apol_vector_t *v;
+		size_t i;
+		if (Tcl_GetBooleanFromObj(interp, regex_obj, &regex_flag) == TCL_ERROR) {
+			return TCL_ERROR;
+		}
+		if (*argv[1] != '\0') {
+			if ((query = apol_attr_query_create()) == NULL) {
+				Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
+				return TCL_ERROR;
+			}
+			if (apol_attr_query_set_attr(query, argv[1]) ||
+			    apol_attr_query_set_regex(query, regex_flag)) {
+				apol_attr_query_destroy(&query);
+				Tcl_SetResult(interp, "Error setting query options.", TCL_STATIC);
 				return TCL_ERROR;
 			}
 		}
-		attrib_list = Tcl_NewListObj(2, attrib_elem);
-		if (Tcl_ListObjAppendElement(interp, result_obj, attrib_list) == TCL_ERROR) {
+		if (apol_get_attr_by_query(policy_handle, policydb,
+					   query, &v)) {
+			apol_attr_query_destroy(&query);
+			Tcl_SetResult(interp, "Error running attr query.", TCL_STATIC);
 			return TCL_ERROR;
 		}
+		apol_attr_query_destroy(&query);
+		for (i = 0; i < apol_vector_get_size(v); i++) {
+			attr = (sepol_type_datum_t *) apol_vector_get_element(v, i);
+			if (append_attr_to_list(interp, attr, result_obj) == TCL_ERROR) {
+				apol_vector_destroy(&v, NULL);
+				return TCL_ERROR;
+			}
+		}
+		apol_vector_destroy(&v, NULL);
 	}
 	Tcl_SetObjResult(interp, result_obj);
 	return TCL_OK;
@@ -885,6 +931,7 @@ static int Apol_GetRoles(ClientData clientData, Tcl_Interp *interp, int argc, CO
 			if (apol_role_query_set_role(query, argv[1]) ||
 			    apol_role_query_set_type(query, argv[2]) ||
 			    apol_role_query_set_regex(query, regex_flag)) {
+				apol_role_query_destroy(&query);
 				Tcl_SetResult(interp, "Error setting query options.", TCL_STATIC);
 				return TCL_ERROR;
 			}
@@ -1052,10 +1099,9 @@ static int append_user_to_list(Tcl_Interp *interp,
  */
 static int Apol_GetUsers(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
-	int i, j, num_roles, *roles;
-	Tcl_Obj *result_obj, *user_list, *user_elem[4], *role_obj;
-	Tcl_Obj *range_elem[2];
+	Tcl_Obj *result_obj;
 	sepol_user_datum_t *user;
+
 	if (policy == NULL) {
 		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		return TCL_ERROR;
@@ -1076,45 +1122,43 @@ static int Apol_GetUsers(ClientData clientData, Tcl_Interp *interp, int argc, CO
 		}
 	}
 	else {
-	for(i = 0; i < policy->num_users; i++) {
-		ap_user_t *user = policy->users + i;
-		if (strcmp(argv[1], "") != 0 && strcmp(argv[1], user->name) != 0) {
-			continue;
-		}
-		user_elem[0] = Tcl_NewStringObj(user->name, -1);
-		if (get_user_roles(i, &num_roles, &roles, policy)) {
-			Tcl_SetResult(interp, "Could not obtain user information.", TCL_STATIC);
+		Tcl_Obj *regex_obj = Tcl_NewStringObj(argv[6], -1);
+		int regex_flag;
+		apol_user_query_t *query = NULL;
+		apol_vector_t *v;
+		size_t i;
+		if (Tcl_GetBooleanFromObj(interp, regex_obj, &regex_flag) == TCL_ERROR) {
 			return TCL_ERROR;
 		}
-		user_elem[1] = Tcl_NewListObj(0, NULL);
-		for (j = 0; j < num_roles; j++) {
-			role_obj = Tcl_NewStringObj(policy->roles[roles[j]].name, -1);
-			if (Tcl_ListObjAppendElement(interp, user_elem[1], role_obj) == TCL_ERROR) {
-				free(roles);
+		if (*argv[1] != '\0' || *argv[2] != '\0' ||
+		    *argv[3] != '\0' || *argv[4] != '\0') {
+			if ((query = apol_user_query_create()) == NULL) {
+				Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
+				return TCL_ERROR;
+			}
+			if (apol_user_query_set_user(query, argv[1]) ||
+			    apol_user_query_set_role(query, argv[2]) ||
+			    apol_user_query_set_regex(query, regex_flag)) {
+				apol_user_query_destroy(&query);
+				Tcl_SetResult(interp, "Error setting query options.", TCL_STATIC);
 				return TCL_ERROR;
 			}
 		}
-		free(roles);
-
-		if (is_mls_policy(policy)) {
-			if (level_to_tcl_obj(interp, user->dflt_level, user_elem + 2) == TCL_ERROR) {
-				return TCL_ERROR;
-			}
-			if (level_to_tcl_obj(interp, user->range->low, range_elem + 0) == TCL_ERROR ||
-			    level_to_tcl_obj(interp, user->range->high, range_elem + 1) == TCL_ERROR) {
-				return TCL_ERROR;
-			}
-			user_elem[3] = Tcl_NewListObj(2, range_elem);
-		}
-		else {
-			user_elem[2] = Tcl_NewListObj(0, NULL);
-			user_elem[3] = Tcl_NewListObj(0, NULL);
-		}
-		user_list = Tcl_NewListObj(4, user_elem);
-		if (Tcl_ListObjAppendElement(interp, result_obj, user_list) == TCL_ERROR) {
+		if (apol_get_user_by_query(policy_handle, policydb,
+					   query, &v)) {
+			apol_user_query_destroy(&query);
+			Tcl_SetResult(interp, "Error running user query.", TCL_STATIC);
 			return TCL_ERROR;
 		}
-	}
+		apol_user_query_destroy(&query);
+		for (i = 0; i < apol_vector_get_size(v); i++) {
+			user = (sepol_user_datum_t *) apol_vector_get_element(v, i);
+			if (append_user_to_list(interp, user, result_obj) == TCL_ERROR) {
+				apol_vector_destroy(&v, NULL);
+				return TCL_ERROR;
+			}
+		}
+		apol_vector_destroy(&v, NULL);
 	}
 	Tcl_SetObjResult(interp, result_obj);
 	return TCL_OK;
@@ -1748,7 +1792,6 @@ static int Apol_GetFSUses(ClientData clientData, Tcl_Interp *interp, int argc, C
 
 int ap_tcl_components_init(Tcl_Interp *interp) {
         Tcl_CreateCommand(interp, "apol_GetNames", Apol_GetNames, NULL, NULL);
-	Tcl_CreateCommand(interp, "apol_GetAttribTypesList", Apol_GetAttribTypesList, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetTypes", Apol_GetTypes, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetAttribs", Apol_GetAttribs, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetClassPermInfo", Apol_GetClassPermInfo, NULL, NULL);
@@ -1771,6 +1814,5 @@ int ap_tcl_components_init(Tcl_Interp *interp) {
 	Tcl_CreateCommand(interp, "apol_GetGenFSCons", Apol_GetGenFSCons, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetFSUseBehaviors", Apol_GetFSUseBehaviors, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetFSUses", Apol_GetFSUses, NULL, NULL);
-
         return TCL_OK;
 }
