@@ -981,8 +981,8 @@ static int apol_level_to_tcl_obj(Tcl_Interp *interp, apol_mls_level_t *level, Tc
 	size_t i;
 	level_elem[0] = Tcl_NewStringObj(level->sens, -1);
 	level_elem[1] = Tcl_NewListObj(0, NULL);
-	for (i = 0; i < level->num_cats; i++) {
-		cats_obj = Tcl_NewStringObj(level->cats[i], -1);
+	for (i = 0; i < apol_vector_get_size(level->cats); i++) {
+		cats_obj = Tcl_NewStringObj((char *) apol_vector_get_element(level->cats, i), -1);
 		if (Tcl_ListObjAppendElement(interp, level_elem[1], cats_obj) == TCL_ERROR) {
 			return TCL_ERROR;
 		}
@@ -1060,7 +1060,7 @@ static int append_user_to_list(Tcl_Interp *interp,
 		}
 		if (apol_level_to_tcl_obj(interp, apol_range->low, range_elem + 0) == TCL_ERROR ||
 		    apol_level_to_tcl_obj(interp, apol_range->high, range_elem + 1) == TCL_ERROR) {
-			return TCL_ERROR;
+                        goto cleanup;
 		}
 		user_elem[3] = Tcl_NewListObj(2, range_elem);
 	}

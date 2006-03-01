@@ -30,10 +30,11 @@
 #include <sepol/policydb-query.h>
 #include <sys/types.h>
 
+#include "vector.h"
+
 typedef struct apol_mls_level {
 	char *sens;
-	char **cats;
-	size_t num_cats;
+	apol_vector_t *cats;
 } apol_mls_level_t;
 
 typedef struct apol_mls_range {
@@ -117,7 +118,8 @@ extern void apol_mls_level_destroy(apol_mls_level_t **level);
  * function duplicates the incoming string.
  *
  * @param level MLS level to modify.
- * @param sens New sensitivity component to set.
+ * @param sens New sensitivity component to set, or NULL to unset this
+ * field.
  *
  * @return 0 on success, negative on error.
  */
@@ -134,7 +136,27 @@ extern int apol_mls_level_set_sens(apol_mls_level_t *level, char *sens);
  */
 extern int apol_mls_level_append_cats(apol_mls_level_t *level, char *cats);
 
-
+/**
+ * Compare two levels, determining if one matches the other.  The
+ * second level is a search filter; for each of its non-empty fields
+ * if compare it the the first (target) level. If categories are being
+ * compared, then target must have all of the categories given by
+ * search level.  If search is NULL then comparison always succeeds.
+ * Note that this function converts the search level to the canonical
+ * (non-aliased) form before applying it.
+ *
+ * @param h Error reporting handler.
+ * @param p Policy within which to look up MLS information.
+ * @param target Target MLS level to compare.  It is assumed that this
+ * is already in canonical form.
+ * @param search Source MLS level to compare.
+ *
+ * @return 1 If comparison succeeds, 0 if not; -1 on error.
+ */
+extern int apol_mls_compare_level(sepol_handle_t *h, sepol_policydb_t *p,
+				  apol_mls_level_t *target,
+				  apol_mls_level_t *search);
+    
 /******************** range stuff ********************/
 
 /**
@@ -176,7 +198,7 @@ extern void apol_mls_range_destroy(apol_mls_range_t **range);
  * not modify nor destroy it afterwards.
  *
  * @param range MLS range to modify.
- * @param level New low level for range.
+ * @param level New low level for range, or NULL to unset this field.
  *
  * @return 0 on success or < 0 on failure.
  */
@@ -188,7 +210,7 @@ extern int apol_mls_range_set_low(apol_mls_range_t *range, apol_mls_level_t *lev
  * not modify nor destroy it afterwards.
  *
  * @param range MLS range to modify.
- * @param level New high level for range.
+ * @param level New high level for range, or NULL to unset this field.
  *
  * @return 0 on success or < 0 on failure.
  */
