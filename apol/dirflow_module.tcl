@@ -1181,16 +1181,7 @@ proc Apol_Analysis_dirflow::change_types_list { } {
 	
 	if { $display_attribute != "" } {
 		$combo_start configure -text ""		   
-		set rt [catch {set attrib_typesList [apol_GetAttribTypesList $display_attribute]} err]	
-		if {$rt != 0} {
-			tk_messageBox -icon error -type ok -title "Error" -message "$err"
-			return
-		} 
-		set attrib_typesList [lsort $attrib_typesList]
-		set idx [lsearch -exact $attrib_typesList "self"]
-		if {$idx != -1} {
-			set attrib_typesList [lreplace $attrib_typesList $idx $idx]
-		}
+            set attrib_typesList [lsort [lindex [apol_GetAttribs $display_attribute] 0 1]]
 		$combo_start configure -values $attrib_typesList
         } else {
         	set attrib_typesList $Apol_Types::typelist

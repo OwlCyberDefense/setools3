@@ -544,10 +544,9 @@ proc Apol_TE::expand_ids {id id_opt use_indirect use_regexp} {
                 set attribute_list $id
             }
             foreach a $attribute_list {
-                if {[catch {apol_GetAttribTypesList $a} types_list] == 0} {
-                    foreach t $types_list {
-                        lappend results_list $t
-                    }
+                set types_list [lindex [apol_GetAttribs $a] 0 1]
+                foreach t $types_list {
+                    lappend results_list $t
                 }
             }
         }
