@@ -30,10 +30,10 @@ all: $(SE_CMDS)
 # seinfo and sesearch are optionally linked to libselinux.  
 # The LIBSELINUX variable is set in the top-level Makefile. 
 seinfo: seinfo.o $(LIBAPOL) 
-	$(CC) -o $@  seinfo.o $(LIBAPOL) $(LIBS) $(LINKFLAGS) $(LIBSELINUX)
+	$(CC) -o $@  seinfo.o $(LIBAPOL) $(LIBS) $(LDFLAGS) $(LIBSELINUX)
 
 sesearch: sesearch.o $(LIBAPOL) 
-	$(CC) -o $@ sesearch.o $(LIBAPOL) $(LIBS) $(LINKFLAGS) $(LIBSELINUX)
+	$(CC) -o $@ sesearch.o $(LIBAPOL) $(LIBS) $(LDFLAGS) $(LIBSELINUX)
 
 # replcon, findcon, indexcon, and searchcon must always be linked to libselinux.  
 # We use the LIBSELINUXSO variable (defined above) to do this. 
@@ -41,25 +41,25 @@ replcon.o: replcon.c
 	$(CC) -c replcon.c $(CFLAGS) $(INCLUDE)
 
 replcon: replcon.o $(LIBSEFS) $(LIBAPOL)
-	$(CC) -o $@ replcon.o $(LINKFLAGS) $(LIBSELINUXSO) $(LIBSEFS) $(LIBAPOL) $(LIBS)
+	$(CC) -o $@ replcon.o $(LDFLAGS) $(LIBSELINUXSO) $(LIBSEFS) $(LIBAPOL) $(LIBS)
 
 indexcon.o: indexcon.c
 	$(CC) -c indexcon.c $(CFLAGS) $(INCLUDE)
 
 indexcon: indexcon.o $(LIBSEFS) $(LIBAPOL)
-	$(CC) -o $@ indexcon.o $(LINKFLAGS) $(STATICSEFS) $(LIBSELINUXSO) $(STATICAPOL) $(LIBS)
+	$(CC) -o $@ indexcon.o $(LDFLAGS) $(STATICSEFS) $(LIBSELINUXSO) $(STATICAPOL) $(LIBS)
 
 searchcon.o: searchcon.c
 	$(CC) -c searchcon.c $(CFLAGS) $(INCLUDE)
 
 searchcon: searchcon.o $(LIBSEFS) $(LIBAPOL)
-	$(CC) -o $@ searchcon.o $(LINKFLAGS) $(LIBSEFS) $(LIBSELINUXSO) $(LIBAPOL) $(LIBS)
+	$(CC) -o $@ searchcon.o $(LDFLAGS) $(LIBSEFS) $(LIBSELINUXSO) $(LIBAPOL) $(LIBS)
 
 findcon.o: replcon.c
 	$(CC) -c replcon.c -o findcon.o -DFINDCON $(CFLAGS) $(INCLUDE)
 
 findcon: findcon.o $(LIBSEFS) $(LIBAPOL)
-	$(CC) -o $@ findcon.o $(LINKFLAGS) $(LIBSELINUXSO) $(LIBSEFS) $(LIBAPOL) $(LIBS)
+	$(CC) -o $@ findcon.o $(LDFLAGS) $(LIBSELINUXSO) $(LIBSEFS) $(LIBAPOL) $(LIBS)
 
 install: all
 	install -m 755 $(SE_CMDS) $(BINDIR);
