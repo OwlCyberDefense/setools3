@@ -45,6 +45,16 @@ typedef struct apol_role_query apol_role_query_t;
 typedef struct apol_user_query apol_user_query_t;
 typedef struct apol_bool_query apol_bool_query_t;
 
+/** Every query allows the treatment of strings as regular expressions
+ *  instead.  Within the query structure are flags; if the first bit
+ *  is set then use regex matching instead. */
+#define APOL_QUERY_REGEX 0x01
+
+#define APOL_QUERY_SUB	 0x02	  /* query is subset of rule range */
+#define APOL_QUERY_SUPER 0x04	  /* query is superset of rule range */
+#define APOL_QUERY_EXACT (APOL_QUERY_SUB|APOL_QUERY_SUPER)
+#define APOL_QUERY_INTERSECT 0x08 /* query overlaps any part of rule range */
+
 /******************** type queries ********************/
 
 /**

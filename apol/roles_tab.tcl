@@ -110,16 +110,14 @@ proc Apol_Roles::searchRoles {} {
         return
     }
 
-    set roles_text {}
-    foreach r [lsort -index 0 $roles_data] {
-        foreach {name types dominates} $r {break}
-        if {$opts(useType) && [lsearch -exact $types $type] == -1} {
-            continue
+    set text "ROLES:\n"
+    if {[llength $roles_data] == 0} {
+        append text "Search returned no results."
+    } else {
+        foreach r [lsort -index 0 $roles_data] {
+            append text "\n[renderRole $r $show_all]"
         }
-        lappend roles_text [renderRole $r $show_all]
     }
-
-    set text "ROLES:\n[join $roles_text "\n"]"
     Apol_Widget::appendSearchResultText $widgets(resultsbox) $text
 }
 

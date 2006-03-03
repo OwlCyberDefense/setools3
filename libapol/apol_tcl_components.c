@@ -1101,6 +1101,9 @@ static int Apol_GetUsers(ClientData clientData, Tcl_Interp *interp, int argc, CO
 {
 	Tcl_Obj *result_obj;
 	sepol_user_datum_t *user;
+	apol_user_query_t *query = NULL;
+	apol_vector_t *v = NULL;
+	int retval = TCL_ERROR;
 
 	if (policy == NULL) {
 		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
@@ -1124,44 +1127,69 @@ static int Apol_GetUsers(ClientData clientData, Tcl_Interp *interp, int argc, CO
 	else {
 		Tcl_Obj *regex_obj = Tcl_NewStringObj(argv[6], -1);
 		int regex_flag;
-		apol_user_query_t *query = NULL;
-		apol_vector_t *v;
 		size_t i;
 		if (Tcl_GetBooleanFromObj(interp, regex_obj, &regex_flag) == TCL_ERROR) {
-			return TCL_ERROR;
+			goto cleanup;
 		}
 		if (*argv[1] != '\0' || *argv[2] != '\0' ||
 		    *argv[3] != '\0' || *argv[4] != '\0') {
 			if ((query = apol_user_query_create()) == NULL) {
 				Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
-				return TCL_ERROR;
+				goto cleanup;
 			}
 			if (apol_user_query_set_user(query, argv[1]) ||
 			    apol_user_query_set_role(query, argv[2]) ||
 			    apol_user_query_set_regex(query, regex_flag)) {
-				apol_user_query_destroy(&query);
 				Tcl_SetResult(interp, "Error setting query options.", TCL_STATIC);
-				return TCL_ERROR;
+				goto cleanup;
+			}
+		}
+		if (*argv[3] != '\0') {
+			apol_mls_level_t *default_level;
+			if ((default_level = apol_mls_level_create()) == NULL) {
+				Tcl_SetResult(interp, "Out of memory.", TCL_STATIC);
+				goto cleanup;
+			}
+			if (apol_tcl_string_to_level(interp, argv[3], default_level) != 0 ||
+			    apol_user_query_set_default_level(query, default_level) < 0) {
+				apol_mls_level_destroy(&default_level);
+				goto cleanup;
+			}
+		}
+		if (*argv[4] != '\0') {
+			apol_mls_range_t *range;
+                        unsigned int range_match = 0;
+			if (apol_tcl_string_to_range_match(interp, argv[5], &range_match) < 0) {
+				goto cleanup;
+			}
+			if ((range = apol_mls_range_create()) == NULL) {
+				Tcl_SetResult(interp, "Out of memory.", TCL_STATIC);
+				goto cleanup;
+			}
+			if (apol_tcl_string_to_range(interp, argv[4], range) != 0 ||
+			    apol_user_query_set_range(query, range, range_match) < 0) {
+				apol_mls_range_destroy(&range);
+				goto cleanup;
 			}
 		}
 		if (apol_get_user_by_query(policy_handle, policydb,
-					   query, &v)) {
-			apol_user_query_destroy(&query);
+					   query, &v) < 0) {
 			Tcl_SetResult(interp, "Error running user query.", TCL_STATIC);
-			return TCL_ERROR;
+			goto cleanup;
 		}
-		apol_user_query_destroy(&query);
 		for (i = 0; i < apol_vector_get_size(v); i++) {
 			user = (sepol_user_datum_t *) apol_vector_get_element(v, i);
 			if (append_user_to_list(interp, user, result_obj) == TCL_ERROR) {
-				apol_vector_destroy(&v, NULL);
-				return TCL_ERROR;
+				goto cleanup;
 			}
 		}
-		apol_vector_destroy(&v, NULL);
 	}
 	Tcl_SetObjResult(interp, result_obj);
-	return TCL_OK;
+	retval = TCL_OK;
+ cleanup:
+	apol_user_query_destroy(&query);
+	apol_vector_destroy(&v, NULL);
+	return retval;
 }
 
 /* args ordering:

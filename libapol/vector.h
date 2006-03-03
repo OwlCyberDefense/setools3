@@ -26,6 +26,7 @@
 #define APOL_VECTOR_H
 
 #include <stdlib.h>
+#include <sepol/iterator.h>
 
 /** The default initial capacity of a vector; must be a positive integer */
 #define APOL_VECTOR_DFLT_INIT_CAP 10
@@ -34,7 +35,7 @@
  *  Generic vector structure. Stores elements as void*.
  */
 typedef struct apol_vector {
-        /** The array of element pointers, which will be resized as needed */
+        /** The array of element pointers, which will be resized as needed. */
         void    **array;
         /** The number of elements currently stored in array. */
         size_t  size;
@@ -42,6 +43,8 @@ typedef struct apol_vector {
          *  be >= size and will grow exponentially as needed. */
         size_t  capacity; 
 } apol_vector_t;
+
+typedef int(apol_vector_comp_func)(const void *a, const void *b, void *data);
 
 /**
  *  Allocate and initialize an empty vector with default start
@@ -65,6 +68,23 @@ apol_vector_t *apol_vector_create(void);
  *  responsible for calling apol_vector_destroy() to free memory used.
  */
 apol_vector_t *apol_vector_create_with_capacity(size_t cap);
+
+/**
+ *  Allocate and return a vector that has been initialized with the
+ *  contents of a sepol iterator.  This function merely makes a
+ *  shallow copy of the iterator's contents; any memory ownership
+ *  restrictions imposed by the iterator apply to this vector as well.
+ *  Also note that this function begins copying from the iterator's
+ *  current position, leaving the iterator at its end position
+ *  afterwards.
+ *
+ *  @param iter sepol iterator from which to obtain vector's contents.
+ *
+ *  @return A pointer to a newly created vector on success and NULL on
+ *  failure.  If the call fails, errno will be set.  The caller is
+ *  responsible for calling apol_vector_destroy() to free memory used.
+ */
+apol_vector_t *apol_vector_create_from_iter(sepol_iterator_t *iter);
 
 /**
  *  Free a vector and any memory used by it.
@@ -111,6 +131,25 @@ size_t apol_vector_get_capacity(const apol_vector_t *v);
 void *apol_vector_get_element(const apol_vector_t *v, size_t idx);
 
 /**
+ *  Find an element within a vector, returning its index within the vector.
+ *
+ *  @param v The vector from which to get the element.
+ *  @param elem The element to find.
+ *  @param cmp A comparison call back for the type of element stored
+ *  in the vector.  The expected return value from this function is
+ *  less than, equal to, or greater than 0 if the first argument is
+ *  less than, equal to, or greater than the second respectively.  For
+ *  use in this function the return value is only checked for 0 or
+ *  non-zero return.
+ *  @param data Arbitrary data to pass as the comparison function's
+ *  third paramater.
+ *
+ *  @return The element's position, or < 0 if it could not be found.
+ */
+size_t apol_vector_get_index(const apol_vector_t *v, void *elem,
+                             apol_vector_comp_func *cmp, void *data);
+
+/**
  *  Add an element to the end of a vector.
  *
  *  @param v The vector to which to add the element.
@@ -122,8 +161,6 @@ void *apol_vector_get_element(const apol_vector_t *v, size_t idx);
  *  will be set and v will be unchanged.
  */
 int apol_vector_append(apol_vector_t *v, void *elem);
-
-typedef int(apol_vector_comp_func)(void *a, void *b);
 
 /**
  *  Add an element to the end of a vector unless that element is equal
@@ -137,11 +174,14 @@ typedef int(apol_vector_comp_func)(void *a, void *b);
  *  less than, equal to, or greater than the second respectively.  For
  *  use in this function the return value is only checked for 0 or
  *  non-zero return.
+ *  @param data Arbitrary data to pass as the comparison function's
+ *  third paramater.
  *
  *  @return 0 on success, < 0 on failure, and > 0 if the element
  *  already exists in the vector.  If the call fails or the element
  *  already exists errno will be set.
  */
-int apol_vector_append_unique(apol_vector_t *v, void *elem, apol_vector_comp_func *cmp);
+int apol_vector_append_unique(apol_vector_t *v, void *elem,
+                              apol_vector_comp_func *cmp, void *data);
 
 #endif /* APOL_VECTOR_H */
