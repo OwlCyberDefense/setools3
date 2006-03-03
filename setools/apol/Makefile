@@ -47,7 +47,7 @@ CFLAGS          += -DSTARTUP_SCRIPT='"$(APOL_STARTUP_SCRIPT)"'
 all: libapol libapol-tcl apol
 
 apol: $(GUI-OBJ) apol.tcl
-	$(CC) $(TCL_LIBINC) -o $@ $(LINKFLAGS) $(GUI-OBJ) $(TCL_LIBS) $(LIBSELINUX)
+	$(CC) $(TCL_LIBINC) -o $@ $(LDFLAGS) $(GUI-OBJ) $(TCL_LIBS) $(LIBSELINUX)
 
 
 apol.tcl: $(TCL-FILES)
