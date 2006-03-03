@@ -35,6 +35,9 @@
 #include "render.h"
 #include "perm-map.h"
 
+#include "component-query.h"
+#include "mls-query.h"
+
 #include "apol_tcl_render.h"
 #include "apol_tcl_components.h"
 #include "apol_tcl_rules.h"
@@ -107,6 +110,143 @@ int ap_tcl_level_string_to_level(Tcl_Interp *interp, const char *level_string, a
         return 0;
 }
 
+int apol_tcl_string_to_level(Tcl_Interp *interp, const char *level_string,
+			     apol_mls_level_t *level)
+{
+	Tcl_Obj *level_obj, *sens_obj, *cats_list_obj, *cats_obj;
+	const char *sens_string, *cat_string;
+	sepol_level_datum_t *sens_datum;
+	sepol_cat_datum_t *cat_datum;
+	int num_cats, i;
+
+	if (policydb == NULL) {
+		/* no policy, so nothing to convert */
+		return 1;
+	}
+	level_obj = Tcl_NewStringObj(level_string, -1);
+	if (Tcl_ListObjIndex(interp, level_obj, 0, &sens_obj) == TCL_ERROR ||
+	    Tcl_ListObjIndex(interp, level_obj, 1, &cats_list_obj) == TCL_ERROR) {
+		return -1;
+	}
+	if (sens_obj == NULL || cats_list_obj == NULL) {
+		/* no sensitivity given -- this is an error */
+		Tcl_SetResult(interp, "Sensitivity string did not have two elements within it.", TCL_STATIC);
+		return -1;
+	}
+	sens_string = Tcl_GetString(sens_obj);
+	if (sepol_policydb_get_level_by_name(policy_handle, policydb,
+					     sens_string, &sens_datum) < 0) {
+		/* unknown sensitivity */
+		return 1;
+	}
+	if (apol_mls_level_set_sens(level, sens_string)) {
+		Tcl_SetResult(interp, "Out of memory.", TCL_STATIC);
+		return -1;
+	}
+	if (Tcl_ListObjLength(interp, cats_list_obj, &num_cats) == TCL_ERROR) {
+		return -1;
+	}
+	for (i = 0; i < num_cats; i++) {
+		if (Tcl_ListObjIndex(interp, cats_list_obj, i, &cats_obj) == TCL_ERROR) {
+			return -1;
+		}
+		cat_string = Tcl_GetString(cats_obj);
+		if (sepol_policydb_get_cat_by_name(policy_handle, policydb,
+						   cat_string, &cat_datum) < 0) {
+			/* unknown category */
+			return 1;
+		}
+		if (apol_mls_level_append_cats(level, cat_string) < 0) {
+			Tcl_SetResult(interp, "Out of memory.", TCL_STATIC);
+			return -1;
+		}
+	}
+	return 0;
+}
+
+
+int apol_tcl_string_to_range(Tcl_Interp *interp, const char *range_string,
+			     apol_mls_range_t *range)
+{
+	Tcl_Obj *range_obj = NULL, *low_obj, *high_obj;
+	const char *low_string, *high_string;
+	apol_mls_level_t *low_level = NULL, *high_level = NULL;
+	int retval = -1, list_len;
+
+	range_obj = Tcl_NewStringObj(range_string, -1);
+
+	/* extract low level from string and process it */
+	if (Tcl_ListObjIndex(interp, range_obj, 0, &low_obj) == TCL_ERROR) {
+		goto cleanup;
+	}
+	if (low_obj == NULL) {
+		Tcl_SetResult(interp, "Range string must have at least one level given.", TCL_STATIC);
+		goto cleanup;
+	}
+	low_string = Tcl_GetString(low_obj);
+	if ((low_level = apol_mls_level_create()) == NULL) {
+		Tcl_SetResult(interp, "Out of memory.", TCL_STATIC);
+		goto cleanup;
+	}
+	if ((retval = apol_tcl_string_to_level(interp, low_string, low_level)) != 0) {
+		goto cleanup;
+	}
+	apol_mls_range_set_low(range, low_level);
+	/* for now set the high level to be the same as low level --
+	 * if there really is a high level in the string then that
+	 * will overwrite this entry */
+	apol_mls_range_set_high(range, low_level);
+	low_level = NULL;
+	retval = -1;
+
+	if (Tcl_ListObjLength(interp, range_obj, &list_len) == TCL_ERROR) {
+		goto cleanup;
+	}
+	if (list_len != 1) {
+		/* extract high level and process it */
+		if (Tcl_ListObjIndex(interp, range_obj, 1, &high_obj) == TCL_ERROR) {
+			goto cleanup;
+		}
+		high_string = Tcl_GetString(high_obj);
+		if ((high_level = apol_mls_level_create()) == NULL) {
+			Tcl_SetResult(interp, "Out of memory.", TCL_STATIC);
+			goto cleanup;
+		}
+		if ((retval = apol_tcl_string_to_level(interp, high_string, high_level)) != 0) {
+			goto cleanup;
+		}
+		apol_mls_range_set_high(range, high_level);
+		high_level = NULL;
+	}
+
+	retval = 0;
+ cleanup:
+	apol_mls_level_destroy(&low_level);
+	apol_mls_level_destroy(&high_level);
+	return retval;
+}
+
+int apol_tcl_string_to_range_match(Tcl_Interp *interp, const char *range_match_string,
+				   unsigned int *flags)
+{
+	if (strcmp(range_match_string, "exact") == 0) {
+		*flags |= APOL_QUERY_EXACT;
+	}
+	else if (strcmp(range_match_string, "subset") == 0) {
+		*flags |= APOL_QUERY_SUB;
+	}
+	else if (strcmp(range_match_string, "superset") == 0) {
+		*flags |= APOL_QUERY_SUPER;
+	}
+	else if (strcmp(range_match_string, "intersect") == 0) {
+		*flags |= APOL_QUERY_INTERSECT;
+	}
+	else {
+		Tcl_SetResult(interp, "Invalid range match string.", TCL_STATIC);
+		return -1;
+	}
+	return 0;
+}
 
 #define APOL_TCL_PMAP_WARNINGS_SUBSET (PERMMAP_RET_UNMAPPED_PERM|PERMMAP_RET_UNMAPPED_OBJ|PERMMAP_RET_OBJ_REMMAPPED)
 

@@ -74,45 +74,25 @@ proc Apol_Users::searchUsers {} {
     } else {
         set range {}
     }
+    if {$opts(showSelection) == "all"} {
+        set show_all 1
+    } else {
+        set show_all 0
+    }
 
     if {[catch {apol_GetUsers {} $role $default $range $range_type 0} users_data]} {
 	tk_messageBox -icon error -type ok -title "Error" -message "Error obtaining users list:\n$users_data"
         return
     }
-
-    # apply filters to the list of users
-    set users_info {}
-    foreach u [lsort -index 0 $users_data] {
-        foreach {user roles u_default u_range} $u {break}
-        if {$opts(useRole) && \
-                [lsearch -exact $roles $opts(role)] == -1} {
-            continue
-        }
-        if {$opts(enable_default) && \
-                $u_default ne $opts(default_level)} {
-            continue
-        }
-        if {$range_enabled && \
-                ![apol_CompareRanges $range $u_range $range_type]} {
-            continue
-        }
-        lappend users_info $u
-    }
-
-    # now display results
-    set results "USERS:"
-    if {[llength $users_info] == 0} {
-        append results "\nSearch returned no results."
+    set text "USERS:\n"
+    if {[llength $users_data] == 0} {
+        append text "Search returned no results."
     } else {
-        foreach user $users_info {
-            if {$opts(showSelection) == "all"} {
-                append results "\n[renderUser $user 1]"
-            } else {
-                append results "\n[renderUser $user 0]"
-            }
+        foreach u [lsort -index 0 $users_data] {
+            append text "\n[renderUser $u $show_all]"
         }
     }
-    Apol_Widget::appendSearchResultText $widgets(results) $results
+    Apol_Widget::appendSearchResultText $widgets(results) $text
 }
 
 proc Apol_Users::renderUser {user_datum show_all} {

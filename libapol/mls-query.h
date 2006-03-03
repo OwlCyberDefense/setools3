@@ -44,6 +44,7 @@ typedef struct apol_mls_range {
 typedef struct apol_sens_query apol_sens_query_t;
 typedef struct apol_cats_query apol_cats_query_t;
 
+
 /******************** level stuff ********************/
 
 /**
@@ -123,7 +124,7 @@ extern void apol_mls_level_destroy(apol_mls_level_t **level);
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_mls_level_set_sens(apol_mls_level_t *level, char *sens);
+extern int apol_mls_level_set_sens(apol_mls_level_t *level, const char *sens);
 
 /**
  * Add a category component of an MLS level structure.	This function
@@ -134,16 +135,16 @@ extern int apol_mls_level_set_sens(apol_mls_level_t *level, char *sens);
  * 
  * @return 0 on success or < 0 on failure.
  */
-extern int apol_mls_level_append_cats(apol_mls_level_t *level, char *cats);
+extern int apol_mls_level_append_cats(apol_mls_level_t *level, const char *cats);
 
 /**
  * Compare two levels, determining if one matches the other.  The
  * second level is a search filter; for each of its non-empty fields
- * if compare it the the first (target) level. If categories are being
- * compared, then target must have all of the categories given by
- * search level.  If search is NULL then comparison always succeeds.
- * Note that this function converts the search level to the canonical
- * (non-aliased) form before applying it.
+ * if compare it the the first (target) level.  If categories are
+ * being compared, then target must have all of the categories given
+ * by search level.  If search is NULL then comparison always
+ * succeeds.  Note that this function converts the search level to the
+ * canonical (non-aliased) form before applying it.
  *
  * @param h Error reporting handler.
  * @param p Policy within which to look up MLS information.
@@ -151,12 +152,68 @@ extern int apol_mls_level_append_cats(apol_mls_level_t *level, char *cats);
  * is already in canonical form.
  * @param search Source MLS level to compare.
  *
- * @return 1 If comparison succeeds, 0 if not; -1 on error.
+ * @return 1 If comparison succeeds, 0 if not; < 0 on error.
  */
-extern int apol_mls_compare_level(sepol_handle_t *h, sepol_policydb_t *p,
+extern int apol_mls_level_compare(sepol_handle_t *h, sepol_policydb_t *p,
 				  apol_mls_level_t *target,
 				  apol_mls_level_t *search);
-    
+
+/* the next level compare function will return one of the following on
+   success or -1 on error */
+#define APOL_MLS_EQ 0
+#define APOL_MLS_DOM 1
+#define APOL_MLS_DOMBY 2
+#define APOL_MLS_INCOMP 3
+
+/**
+ * Compare two levels and determine their relationship to each other.
+ * Both levels must have their respective sensitivity and categories
+ * set.  Levels may contain aliases in place of primary names.
+ *
+ * @param h Error reporting handler.
+ * @param p Policy within which to look up MLS information.
+ * @param target Target MLS level to compare.
+ * @param search Source MLS level to compare.
+ *
+ * @return One of APOL_MLS_EQ, APOL_MLS_DOM, APOL_MLS_DOMBY, or
+ * APOL_MLS_INCOMP; < 0 on error.
+ */
+extern int apol_mls_level_compare_level(sepol_handle_t *h, sepol_policydb_t *p,
+                                        apol_mls_level_t *level1,
+                                        apol_mls_level_t *level2);
+
+/**
+ * Determine if two sensitivities are actually the same.  Either level
+ * or both could be using a sensitivity's alias, thus straight string
+ * comparison is not sufficient.
+ *
+ * @param h Error reporting handler.
+ * @param p Policy within which to look up MLS information.
+ * @param sens1 First sensitivity to compare.
+ * @param sens2 Second sensitivity to compare.
+ *
+ * @return 1 If comparison succeeds, 0 if not; -1 on error.
+ */
+extern int apol_mls_sens_compare(sepol_handle_t *h, sepol_policydb_t *p,
+                                 const char *sens1,
+                                 const char *sens2);
+
+/**
+ * Determine if two categories are actually the same.  Either category
+ * or both could be using a category's alias, thus straight string
+ * comparison is not sufficient.
+ *
+ * @param h Error reporting handler.
+ * @param p Policy within which to look up MLS information.
+ * @param cat1 First category to compare.
+ * @param cat2 Second category to compare.
+ *
+ * @return 1 If comparison succeeds, 0 if not; -1 on error.
+ */
+extern int apol_mls_cats_compare(sepol_handle_t *h, sepol_policydb_t *p,
+                                 const char *cat1,
+                                 const char *cat2);
+
 /******************** range stuff ********************/
 
 /**
@@ -195,7 +252,8 @@ extern void apol_mls_range_destroy(apol_mls_range_t **range);
 /**
  * Set the low level component of a MLS range structure.  This
  * function takes ownership of the level, such that the caller must
- * not modify nor destroy it afterwards.
+ * not modify nor destroy it afterwards.  It is legal to pass in the
+ * same pointer for the range's low and high level.
  *
  * @param range MLS range to modify.
  * @param level New low level for range, or NULL to unset this field.
@@ -207,7 +265,8 @@ extern int apol_mls_range_set_low(apol_mls_range_t *range, apol_mls_level_t *lev
 /**
  * Set the high level component of a MLS range structure.  This
  * function takes ownership of the level, such that the caller must
- * not modify nor destroy it afterwards.
+ * not modify nor destroy it afterwards.  It is legal to pass in the
+ * same pointer for the range's low and high level.
  *
  * @param range MLS range to modify.
  * @param level New high level for range, or NULL to unset this field.
@@ -215,5 +274,59 @@ extern int apol_mls_range_set_low(apol_mls_range_t *range, apol_mls_level_t *lev
  * @return 0 on success or < 0 on failure.
  */
 extern int apol_mls_range_set_high(apol_mls_range_t *range, apol_mls_level_t *level);
+
+/**
+ * Compare two ranges, determining if one matches the other.  The
+ * fifth parameter gives how to match the ranges.  For APOL_QUERY_SUB,
+ * if search is a subset of target.  For APOL_QUERY_SUPER, if search
+ * is a superset of target.  Other valid compare types are
+ * APOL_QUERY_EXACT and APOL_QUERY_INTERSECT.  If a range is not valid
+ * according to the policy then this function returns -1.  If search
+ * is NULL then comparison always succeeds.
+ *
+ * @param h Error reporting handler.
+ * @param p Policy within which to look up MLS information.
+ * @param target Target MLS range to compare.  It is assumed that this
+ * is already in canonical form.
+ * @param search Source MLS range to compare.
+ * @param range_compare_type Specifies how to compare the ranges.
+ *
+ * @return 1 If comparison succeeds, 0 if not; -1 on error.
+ */
+extern int apol_mls_range_compare(sepol_handle_t *h, sepol_policydb_t *p,
+				  apol_mls_range_t *target,
+				  apol_mls_range_t *search,
+				  unsigned int range_compare_type);
+
+/**
+ * Determine if a range completely contains a subrange given a certain
+ * policy.  If a range is not valid according to the policy then this
+ * function returns -1.
+ *
+ * @param h Error reporting handler.
+ * @param p Policy within which to look up MLS information.
+ * @param range Parent range to compare.
+ * @param subrange Child range to which compare.
+ *
+ * @return 1 If comparison succeeds, 0 if not; -1 on error.
+ */
+extern int apol_mls_range_contain_subrange(sepol_handle_t *h,
+					   sepol_policydb_t *p,
+					   apol_mls_range_t *range,
+					   apol_mls_range_t *subrange);
+/**
+ * Given a range, determine if it is legal according to the supplied
+ * policy.  This function will convert from aliases to canonical forms
+ * as necessary.
+ *
+ * @param h Error reporting handler.
+ * @param p Policy within which to look up MLS information.
+ * @param range Range to check.
+ *
+ * @return 1 If range is legal, 0 if not; -1 on error.
+ */
+extern int apol_mls_range_validate(sepol_handle_t *h,
+                                   sepol_policydb_t *p,
+                                   apol_mls_range_t *range);
 
 #endif /* APOL_MLS_QUERY_H */
