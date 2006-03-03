@@ -31,10 +31,10 @@ endif
 all: seaudit seaudit-report
 
 seaudit: $(OBJS) $(SEAUDIT_LIBS) $(GTK-SOURCEVIEW-OBJS) $(SEAUDIT_REPORT_BACKEND)  
-	$(CC) $(CFLAGS) $(INCLUDE) $(OBJS) -o $@ -export-dynamic $(SEAUDIT_LIBS) $(SEAUDIT_REPORT_BACKEND) $(LIBS) $(GTK_LIBS) 
+	$(CC) $(CFLAGS) $(INCLUDE) $(LDFLAGS) $(OBJS) -o $@ -export-dynamic $(SEAUDIT_LIBS) $(SEAUDIT_REPORT_BACKEND) $(LIBS) $(GTK_LIBS) 
 
 seaudit-report: $(SEAUDIT_REPORT_BACKEND) seaudit-report.o $(SEAUDIT_LIBS) 
-	$(CC) $(INCLUDE) $(LINKFLAGS) -o $@ $(SEAUDIT_REPORT_BACKEND) seaudit-report.o $(SEAUDIT_LIBS) $(LIBXML_LIBS) $(LIBS) 
+	$(CC) $(INCLUDE) $(LDFLAGS) -o $@ $(SEAUDIT_REPORT_BACKEND) seaudit-report.o $(SEAUDIT_LIBS) $(LIBXML_LIBS) $(LIBS) 
 
 libapol:
 	$(MAKE) -C .. libapol

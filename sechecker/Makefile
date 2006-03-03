@@ -10,7 +10,7 @@ LIBSEFS           =
 endif
 MODULES 	  = $(patsubst %.c, %.o, $(wildcard ./modules/*.c))
 INCLUDE 	  += -I. -I../libapol
-LINKFLAGS 	  += -lfl -lm $(LIBSELINUX)
+LDFLAGS 	  += -lfl -lm $(LIBSELINUX)
 SECHECKER_VERSION = '"$(shell cat ./VERSION)"'
 LIBXML_FLAGS	  = `pkg-config --cflags libxml-2.0`
 LIBXML_LIBS       = `pkg-config --libs libxml-2.0`
@@ -21,7 +21,7 @@ PROF_INSTALL_DIR = profiles
 all: libapol sechecker
 
 sechecker: $(LIBAPOL) $(LIBSEFS) modules $(OBJS) sechecker_cli.o
-	$(CC) $(CFLAGS) -o $@ sechecker_cli.o  $(OBJS) $(LIBXML_LIBS) $(MODULES) $(LIBAPOL) $(LIBSEFS) $(LINKFLAGS)
+	$(CC) $(CFLAGS) -o $@ sechecker_cli.o  $(OBJS) $(LIBXML_LIBS) $(MODULES) $(LIBAPOL) $(LIBSEFS) $(LDFLAGS)
 
 sechecker_cli.o: sechecker_cli.c register_list.h sechecker.h
 	$(CC) $(CFLAGS) $(INCLUDE) $(LIBXML_FLAGS) -DSECHECKER_VERSION=$(SECHECKER_VERSION) -c $<

@@ -26,7 +26,7 @@ AWISH_OBJ	= awish.o $(LIBAPOL-TCL) $(LIBSEFS)
 all: libapol libapol-tcl awish
 
 awish: $(AWISH_OBJ)
-	$(CC) $(TCL_LIBINC) -o $@ $(AWISH_OBJ) $(LINKFLAGS) $(TCL_LIBS) $(LIBSELINUX)
+	$(CC) $(TCL_LIBINC) -o $@ $(AWISH_OBJ) $(LDFLAGS) $(TCL_LIBS) $(LIBSELINUX)
 
 %.o:  %.c 
 	$(CC) $(CFLAGS) -c $<
