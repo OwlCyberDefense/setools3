@@ -1,6 +1,6 @@
 /**
  *  @file mls-query.c
- *  Public Interface for querying MLS components.
+ *  Implementation for querying MLS components.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -32,6 +32,7 @@
 
 #include <sepol/iterator.h>
 
+#include "component-query.h"
 #include "mls-query.h"
 #include "vector.h"
 
@@ -48,7 +49,98 @@ struct apol_cats_query {
 };
 
 
-/* level */
+/********************* miscellaneous routines *********************/
+
+struct apol_vector_comp_data {
+	sepol_handle_t *h;
+	sepol_policydb_t *p;
+};
+
+static int apol_mls_cat_vector_compare(const void *a, const void *b, void *data)
+{
+	const char *cat1 = (const char *) a;
+	const char *cat2 = (const char *) b;
+	struct apol_vector_comp_data *cd = (struct apol_vector_comp_data *) data;
+	sepol_cat_datum_t *cat_datum1, *cat_datum2;
+	uint32_t cat_value1, cat_value2;
+	if (sepol_policydb_get_cat_by_name(cd->h, cd->p, cat1, &cat_datum1) < 0 ||
+	    sepol_policydb_get_cat_by_name(cd->h, cd->p, cat2, &cat_datum2) < 0) {
+		return 0;
+	}
+	if (sepol_cat_datum_get_value(cd->h, cd->p, cat_datum1, &cat_value1) < 0 ||
+	    sepol_cat_datum_get_value(cd->h, cd->p, cat_datum2, &cat_value2) < 0) {
+		return 0;
+	}
+	return (cat_value2 - cat_value1);
+}
+
+static int apol_mls_cat_datum_vector_compare(const void *a, const void *b, void *data)
+{
+	sepol_cat_datum_t *cat_datum1 = (sepol_cat_datum_t *) a;
+	const char *cat2 = (const char *) b;
+	struct apol_vector_comp_data *cd = (struct apol_vector_comp_data *) data;
+	sepol_cat_datum_t *cat_datum2;
+	uint32_t cat_value1, cat_value2;
+	if (sepol_policydb_get_cat_by_name(cd->h, cd->p, cat2, &cat_datum2) < 0) {
+		return 0;
+	}
+	if (sepol_cat_datum_get_value(cd->h, cd->p, cat_datum1, &cat_value1) < 0 ||
+	    sepol_cat_datum_get_value(cd->h, cd->p, cat_datum2, &cat_value2) < 0) {
+		return 0;
+	}
+	return (cat_value2 - cat_value1);
+}
+
+/**
+ * Given a level, determine if it is legal according to the supplied
+ * policy.  This function will convert from aliases to canonical forms
+ * as necessary.  This function differs from apol_mls_level_compare()
+ * in that the supplied level must contain a sensitivity.
+ *
+ * @param h Error reporting handler.
+ * @param p Policy within which to look up MLS information.
+ * @param level Level to check.
+ *
+ * @return 1 If level is legal, 0 if not; < 0 on error.
+ */
+
+static int apol_mls_level_validate(sepol_handle_t *h,
+				   sepol_policydb_t *p,
+				   apol_mls_level_t *level)
+{
+	sepol_level_datum_t *level_datum;
+	sepol_iterator_t *iter = NULL;
+	apol_vector_t *cat_vector;
+	struct apol_vector_comp_data cd = {h, p};
+	int retval = -1;
+	size_t i;
+
+	if (sepol_policydb_get_level_by_name(h, p, level->sens, &level_datum) < 0 ||
+	    sepol_level_datum_get_cat_iter(h, p, level_datum, &iter) < 0) {
+		return -1;
+	}
+	if ((cat_vector = apol_vector_create_from_iter(iter)) == NULL) {
+		goto cleanup;
+	}
+
+	for (i = 0; i < apol_vector_get_size(level->cats); i++) {
+		char *cat_name = (char *) apol_vector_get_element(level->cats, i);
+		if (apol_vector_get_index(cat_vector, cat_name,
+					  apol_mls_cat_datum_vector_compare, &cd) == -1) {
+			retval = 0;
+			goto cleanup;
+		}
+	}
+
+	retval = 1;
+ cleanup:
+	sepol_iterator_destroy(&iter);
+	apol_vector_destroy(&cat_vector, NULL);
+	return retval;
+}
+
+/********************* level *********************/
+
 apol_mls_level_t *apol_mls_level_create(void)
 {
 	return calloc(1, sizeof(apol_mls_level_t));
@@ -71,8 +163,7 @@ apol_mls_level_t *apol_mls_level_create_from_string(sepol_handle_t *h, sepol_pol
 		return NULL;
 	}
 
-	lvl = calloc(1, sizeof(apol_mls_level_t));
-	if (!lvl)
+	if ((lvl = apol_mls_level_create()) == NULL)
 		return NULL;
 
 	for (tmp = mls_level_string; *tmp; tmp++) {
@@ -232,7 +323,7 @@ apol_mls_level_t *apol_mls_level_create_from_sepol_mls_level(sepol_handle_t *h, 
 		return NULL;
 	}
 
-	if (!(lvl = calloc(1, sizeof(apol_mls_level_t))))
+	if ((lvl = apol_mls_level_create()) == NULL)
 		return NULL;
 
 	if (sepol_mls_level_get_sens_name(h, p, sepol_level, &tmp)) {
@@ -286,6 +377,9 @@ apol_mls_level_t *apol_mls_level_create_from_sepol_level_datum(sepol_handle_t *h
 		return NULL;
 	}
 
+	if ((lvl = apol_mls_level_create()) == NULL)
+		return NULL;
+
 	if (sepol_level_datum_get_name(h, p, sepol_level, &tmp)) {
 		error = errno;
 		goto err;
@@ -335,7 +429,7 @@ void apol_mls_level_destroy(apol_mls_level_t **level)
 	*level = NULL;
 }
 
-int apol_mls_level_set_sens(apol_mls_level_t *level, char *sens)
+int apol_mls_level_set_sens(apol_mls_level_t *level, const char *sens)
 {
 	if (!level) {
 		errno = EINVAL;
@@ -351,7 +445,7 @@ int apol_mls_level_set_sens(apol_mls_level_t *level, char *sens)
 	return 0;
 }
 
-int apol_mls_level_append_cats(apol_mls_level_t *level, char *cats)
+int apol_mls_level_append_cats(apol_mls_level_t *level, const char *cats)
 {
 	char *new_cat = NULL;
 	if (!level || !cats) {
@@ -371,71 +465,125 @@ int apol_mls_level_append_cats(apol_mls_level_t *level, char *cats)
 	return 0;
 }
 
-int apol_mls_compare_level(sepol_handle_t *h, sepol_policydb_t *p,
+int apol_mls_level_compare(sepol_handle_t *h, sepol_policydb_t *p,
 			   apol_mls_level_t *target, apol_mls_level_t *search)
 {
-        char *target_name, *search_name;
+	int retval;
+	size_t num_cats;
 	if (search == NULL) {
 		return 1;
 	}
+	if (h == NULL || p == NULL || target == NULL) {
+		return -1;
+	}
+
 	if (search->sens != NULL) {
-		sepol_level_datum_t *search_level;
-                target_name = target->sens;
-		if (sepol_policydb_get_level_by_name(h, p, search->sens, &search_level) < 0 ||
-		    sepol_level_datum_get_name(h, p, search_level, &search_name) < 0) {
-			return -1;
-		}
-		if (strcmp(target_name, search_name) != 0) {
-			return 0;
+		retval = apol_mls_sens_compare(h, p, target->sens, search->sens);
+		if (retval != 1) {
+			return retval;
 		}
 	}
-	if (apol_vector_get_size(search->cats) > 0) {
-		apol_vector_t *search_cats;
-		size_t i, j, num_cats = apol_vector_get_size(search->cats);
-		int cat_found;
-		char *orig_name, *cat_name;
-		
-		/* first convert search categories to canonical form */
-		if ((search_cats = apol_vector_create_with_capacity(num_cats)) == NULL) {
-			return -1;
-		}
-		for (i = 0; i < num_cats; i++) {
-			sepol_cat_datum_t *cat;
-			orig_name = (char *) apol_vector_get_element(search->cats, i);
-			if (sepol_policydb_get_cat_by_name(h, p, orig_name, &cat) < 0 ||
-			    sepol_cat_datum_get_name(h, p, cat, &cat_name) < 0 ||
-			    apol_vector_append_unique(search_cats, (void *) cat_name, (apol_vector_comp_func *)strcmp) < 0)
-			{
-				apol_vector_destroy(&search_cats, NULL);
-				return -1;
-			}
-		}
 
-		/* not the most elegant of solutions; luckily levels
-		 * have at most 256 categories */
-		for (i = 0; i < apol_vector_get_size(search_cats); i++) {
-			cat_found = 0;
-			cat_name = (char *) apol_vector_get_element(search_cats, i);
-			for (j = 0; j < apol_vector_get_size(target->cats); j++) {
-                                target_name = (char *) apol_vector_get_element(target->cats, j);
-                                
-				if (strcmp(cat_name, target_name) == 0) {
-					cat_found = 1;
-					break;
-				}
-			}
-			if (!cat_found) {
-				apol_vector_destroy(&search_cats, NULL);
+	if ((num_cats = apol_vector_get_size(search->cats)) > 0) {
+		size_t i;
+		char *cat_name;
+		struct apol_vector_comp_data cd = {h, p};
+		for (i = 0; i < num_cats; i++) {
+			cat_name = (char *) apol_vector_get_element(search->cats, i);
+			if (apol_vector_get_index(target->cats, cat_name,
+						  apol_mls_cat_vector_compare, (void *) &cd) == -1) {
 				return 0;
 			}
 		}
-		apol_vector_destroy(&search_cats, NULL);
 	}
 	return 1;
 }
 
+extern int apol_mls_level_compare_level(sepol_handle_t *h, sepol_policydb_t *p,
+					apol_mls_level_t *l1,
+					apol_mls_level_t *l2)
+{
+	sepol_level_datum_t *level_datum1, *level_datum2;
+	int level1_sens, level2_sens, sens_cmp;
+	size_t l1_size, l2_size, i;
+	int m_list, ucat = 0;
+	apol_vector_t *cat_list_master, *cat_list_subset;
+	struct apol_vector_comp_data cd = {h, p};
+	if (sepol_policydb_get_level_by_name(h, p, l1->sens, &level_datum1) < 0 ||
+	    sepol_policydb_get_level_by_name(h, p, l2->sens, &level_datum2) < 0) {
+		return -1;
+	}
 
-/* range */
+	/* compare the level's senstitivity value */
+	if (sepol_level_datum_get_value(h, p, level_datum1, &level1_sens) < 0 ||
+	    sepol_level_datum_get_value(h, p, level_datum2, &level2_sens) < 0) {
+		return -1;
+	}
+	sens_cmp = level1_sens - level2_sens;
+
+	/* determine if all the categories in one level are in the other set */
+	l1_size = apol_vector_get_size(l1->cats);
+	l2_size = apol_vector_get_size(l2->cats);
+	if (l1_size < l2_size) {
+		m_list = 2;
+		cat_list_master = l2->cats;
+		cat_list_subset = l1->cats;
+	} else {
+		m_list = 1;
+		cat_list_master = l1->cats;
+		cat_list_subset = l2->cats;
+	}
+	for (i = 0; i < apol_vector_get_size(cat_list_subset); i++) {
+		char *cat = (char *) apol_vector_get_element(cat_list_subset, i);
+		if (apol_vector_get_index(cat_list_master, cat,
+					  apol_mls_cat_vector_compare, (void *) &cd) == -1) {
+			ucat = 1;
+			break;
+		}
+	}
+
+	if (!sens_cmp && !ucat && l1_size == l2_size)
+		return APOL_MLS_EQ;
+	if (sens_cmp >= 0 && m_list == 1 && !ucat)
+		return APOL_MLS_DOM;
+	if (sens_cmp <= 0 && (m_list == 2 || l1_size == l2_size) && !ucat)
+		return APOL_MLS_DOMBY;
+	return APOL_MLS_INCOMP;
+}
+
+int apol_mls_sens_compare(sepol_handle_t *h, sepol_policydb_t *p,
+			  const char *sens1,
+			  const char *sens2)
+{
+	sepol_level_datum_t *level_datum1, *level_datum2;
+	if (sepol_policydb_get_level_by_name(h, p, sens1, &level_datum1) < 0 ||
+	    sepol_policydb_get_level_by_name(h, p, sens2, &level_datum2) < 0) {
+		return -1;
+	}
+	if (level_datum1 == level_datum2) {
+		return 1;
+	}
+	return 0;
+}
+
+int apol_mls_cats_compare(sepol_handle_t *h, sepol_policydb_t *p,
+			  const char *cat1,
+			  const char *cat2)
+{
+	sepol_cat_datum_t *cat_datum1, *cat_datum2;
+	if (sepol_policydb_get_cat_by_name(h, p, cat1, &cat_datum1) < 0 ||
+	    sepol_policydb_get_cat_by_name(h, p, cat2, &cat_datum2) < 0) {
+		return -1;
+	}
+	if (cat_datum1 == cat_datum2) {
+		return 1;
+	}
+	return 0;
+}
+
+
+/********************* range *********************/
+
 apol_mls_range_t *apol_mls_range_create(void)
 {
 	return calloc(1, sizeof(apol_mls_range_t));
@@ -488,9 +636,10 @@ void apol_mls_range_destroy(apol_mls_range_t **range)
 	if (!range || !(*range))
 		return;
 
+	if ((*range)->low != (*range)->high) {
+		apol_mls_level_destroy(&((*range)->high));
+	}
 	apol_mls_level_destroy(&((*range)->low));
-	apol_mls_level_destroy(&((*range)->high));
-
 	free(*range);
 	*range = NULL;
 }
@@ -515,8 +664,134 @@ int apol_mls_range_set_high(apol_mls_range_t *range, apol_mls_level_t *level)
 		return -1;
 	}
 
-	apol_mls_level_destroy(&(range->high));
+	if (range->low != range->high) {
+		apol_mls_level_destroy(&(range->high));
+	}
 	range->high = level;
 
 	return 0;
+}
+
+int apol_mls_range_compare(sepol_handle_t *h, sepol_policydb_t *p,
+			   apol_mls_range_t *target, apol_mls_range_t *search,
+			   unsigned int range_compare_type)
+{
+	int ans1 = -1, ans2 = -1;
+	if (search == NULL) {
+		return 1;
+	}
+	/* FIX ME:  intersect does not work */
+	if ((range_compare_type & APOL_QUERY_SUB) ||
+	    (range_compare_type & APOL_QUERY_EXACT) ||
+	    (range_compare_type & APOL_QUERY_INTERSECT)) {
+		ans1 = apol_mls_range_contain_subrange(h, p, search, target);
+		if (ans1 < 0) {
+			return -1;
+		}
+	}
+	if ((range_compare_type & APOL_QUERY_SUPER) ||
+	    (range_compare_type & APOL_QUERY_EXACT) ||
+	    (range_compare_type & APOL_QUERY_INTERSECT)) {
+		ans2 = apol_mls_range_contain_subrange(h, p, target, search);
+		if (ans2 < 0) {
+			return -1;
+		}
+	}
+	/* EXACT has to come first because its bits are both SUB and SUPER */
+	if (range_compare_type & APOL_QUERY_EXACT) {
+		return (ans1 && ans2);
+	}
+	else if (range_compare_type & APOL_QUERY_SUB) {
+		return ans1;
+	}
+	else if (range_compare_type & APOL_QUERY_SUPER) {
+		return ans2;
+	}
+	else if (range_compare_type & APOL_QUERY_INTERSECT) {
+		return (ans1 || ans2);
+	}
+	return -1;
+}
+
+static int apol_mls_range_does_include_level(sepol_handle_t *h,
+					     sepol_policydb_t *p,
+					     apol_mls_range_t *range,
+					     apol_mls_level_t *level)
+{
+	int high_cmp = -1, low_cmp = -1;
+
+	if (p == NULL || apol_mls_range_validate(h, p, range)) {
+		return -1;
+	}
+
+	if (range->low != range->high) {
+		low_cmp = apol_mls_level_compare_level(h, p, range->low, level);
+		if (low_cmp < 0) {
+			return -1;
+		}
+	}
+
+	high_cmp = apol_mls_level_compare_level(h, p, range->high, level);
+	if (high_cmp < 0) {
+		return -1;
+	}
+
+	if (high_cmp == APOL_MLS_EQ || high_cmp == APOL_MLS_DOM) {
+		if ((low_cmp == APOL_MLS_EQ || low_cmp == APOL_MLS_DOMBY) && range->low != range->high) {
+			return 1;
+		}
+		else if (range->low == range->high) {
+			return apol_mls_sens_compare(h, p, range->low->sens, level->sens);
+		}
+	}
+
+	return 0;
+}
+
+int apol_mls_range_contain_subrange(sepol_handle_t *h,
+				    sepol_policydb_t *p,
+				    apol_mls_range_t *range,
+				    apol_mls_range_t *subrange)
+{
+	if (p == NULL || apol_mls_range_validate(h, p, subrange) == 0) {
+		return -1;
+	}
+	/* parent range validity will be checked via
+	 * apol_mls_range_include_level */
+
+	if (apol_mls_range_does_include_level(h, p, range, subrange->low) &&
+	    apol_mls_range_does_include_level(h, p, range, subrange->high)) {
+		return 1;
+	}
+	return 0;
+}
+
+int apol_mls_range_validate(sepol_handle_t *h,
+			    sepol_policydb_t *p,
+			    apol_mls_range_t *range)
+{
+	int retv;
+
+	if (p == NULL || range == NULL) {
+		return -1;
+	}
+
+	if ((retv = apol_mls_level_validate(h, p, range->low)) != 0) {
+		return retv;
+	}
+
+	if (range->high != range->low &&
+	    (retv = apol_mls_level_validate(h, p, range->high)) != 0) {
+		return retv;
+	}
+
+	retv = apol_mls_level_compare_level(h, p, range->low, range->high);
+	if (retv < 0) {
+		return -1;
+	}
+	else if (retv != APOL_MLS_EQ && retv != APOL_MLS_DOMBY) {
+		return 0;
+	}
+
+	return 1;
 }
