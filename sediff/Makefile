@@ -13,10 +13,10 @@ GLADE_FILES     = sediff.glade
 all: libapol sediff sediffx
 
 sediff: sediff.o $(LIBAPOL) 
-	$(CC) -o $@ sediff.o $(LIBAPOL) $(LIBS) $(LINKFLAGS) $(LIBSELINUX) 
+	$(CC) -o $@ sediff.o $(LIBAPOL) $(LIBS) $(LDFLAGS) $(LIBSELINUX) 
 
 sediffx: $(LIBAPOL) $(GUI-OBJS)
-	$(CC) $(GUI-OBJS) -o $@ -export-dynamic $(LIBAPOL) $(LINKFLAGS) $(LIBSELINUX) $(LIBS) $(GTK_LIBS) $(G_THREADS)
+	$(CC) $(GUI-OBJS) -o $@ -export-dynamic $(LIBAPOL) $(LDFLAGS) $(LIBSELINUX) $(LIBS) $(GTK_LIBS) $(G_THREADS)
 
 install-nogui: sediff 
 	install -m 755 sediff $(BINDIR);
