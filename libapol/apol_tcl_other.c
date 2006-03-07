@@ -50,8 +50,7 @@
 
 policy_t *policy; /* local global for policy DB */
 
-sepol_handle_t *policy_handle = NULL;
-sepol_policydb_t *policydb = NULL;
+apol_policy_t *policydb = NULL;
 
 
 /* Takes a Tcl string representing a MLS level and converts it to an
@@ -134,7 +133,7 @@ int apol_tcl_string_to_level(Tcl_Interp *interp, const char *level_string,
 		return -1;
 	}
 	sens_string = Tcl_GetString(sens_obj);
-	if (sepol_policydb_get_level_by_name(policy_handle, policydb,
+	if (sepol_policydb_get_level_by_name(policydb->sh, policydb->p,
 					     sens_string, &sens_datum) < 0) {
 		/* unknown sensitivity */
 		return 1;
@@ -151,7 +150,7 @@ int apol_tcl_string_to_level(Tcl_Interp *interp, const char *level_string,
 			return -1;
 		}
 		cat_string = Tcl_GetString(cats_obj);
-		if (sepol_policydb_get_cat_by_name(policy_handle, policydb,
+		if (sepol_policydb_get_cat_by_name(policydb->sh, policydb->p,
 						   cat_string, &cat_datum) < 0) {
 			/* unknown category */
 			return 1;
@@ -548,7 +547,7 @@ int Apol_OpenPolicy(ClientData clientData, Tcl_Interp *interp, int argc, char *a
 
 	/******** new routine here ********/
 	if (is_binary_policy(policy)) {
-		if (apol_open_binary_policy(argv[1], &policy_handle, &policydb)) {
+		if (apol_policy_open_binary(argv[1], &policydb)) {
 			Tcl_SetResult(interp, "Open policy error.", TCL_STATIC);
 			return TCL_ERROR;
 		}
@@ -562,9 +561,7 @@ int Apol_ClosePolicy(ClientData clientData, Tcl_Interp *interp, int argc, char *
 	policy = NULL;
 
         /******** new routine here ********/
-	apol_close_policy(policy_handle, policydb);
-	policy_handle = NULL;
-	policydb = NULL;
+	apol_policy_destroy(&policydb);
 	return TCL_OK;
 }
 
