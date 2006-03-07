@@ -70,33 +70,27 @@ const char* find_default_policy_file_strerr(int err);
 #ifndef _APOL_POLICY_IO_H_
 #define _APOL_POLICY_IO_H_
 
-#include <sepol/sepol.h>
+#include "policy.h"
 
 /**
  * Attempt to load a binary policy from disk from the given path.
- * Upon success allocate and return a new handle and a new policydb
- * for the loaded policy.
+ * Upon success allocate and return new error handles and a new
+ * policydb for the loaded policy.
  *
  * @param path Path to the policy to load.
- * @param policy_handle Reference to a newly allocated error reporting
- * handler, or NULL if load failed.
- * @param policy_db Reference to a newly allocated SELinux binary
+ * @param policy Reference to a newly allocated SELinux binary
  * policy, or NULL if load failed.
  *
  * @return 0 on success, non-zero on failure.
  */
-extern int apol_open_binary_policy(const char *path,
-                                   sepol_handle_t **policy_handle,
-                                   sepol_policydb_t **policydb);
+extern int apol_policy_open_binary(const char *path, apol_policy_t **policy);
 
 /**
- * Deallocate all memory associated with a policy, including the
- * pointers themselves.  Does nothing if the pointer is already NULL.
+ * Deallocate all memory associated with a policy, and then set it to
+ * NULL.  Does nothing if the pointer is already NULL.
  *
- * @param policy_handle Handle to destroy if not NULL.
- * @param policydb Policy database to destroy if not NULL.
+ * @param policy Policy to destroy, if not already NULL.
  */
-extern void apol_close_policy(sepol_handle_t *policy_handle,
-                              sepol_policydb_t *policydb);
+extern void apol_policy_destroy(apol_policy_t **policy);
 
 #endif

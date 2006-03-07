@@ -12,9 +12,9 @@
 # The Types page
 ##############################################################
 namespace eval Apol_Types {
+    variable typelist {}
+    variable attriblist {}
     variable opts
-    variable typelist ""
-    variable attriblist ""
     variable widgets
 }
 
@@ -171,6 +171,10 @@ proc Apol_Types::searchTypes {} {
     variable opts
 	
     Apol_Widget::clearSearchResults $widgets(results)
+    if {![ApolTop::is_policy_open]} {
+        tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened!"
+        return
+    }
     if {$opts(types) == 0 && $opts(attribs) == 0} {
         tk_messageBox -icon error -type ok -title "Error" -message "No search options provided!"
         return
@@ -296,7 +300,7 @@ proc Apol_Types::create {nb} {
     pack $tbox -fill both -expand yes
     pack $abox -fill both -expand yes
     pack $pw1 -fill both -expand yes
-    pack $pw2 -fill both -expand yes	
+    pack $pw2 -fill both -expand yes
     
     # Types listbox
     set tlistbox [Apol_Widget::makeScrolledListbox [$tbox getframe].types \

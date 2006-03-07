@@ -596,26 +596,30 @@ int open_policy(const char* filename, policy_t **policy)
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
-#include <sepol/sepol.h>
 #include <sepol/policydb-extend.h>
 
+#include "policy.h"
 #include "policy-io.h"
 
-int apol_open_binary_policy(const char *path,
-			    sepol_handle_t **policy_handle,
-			    sepol_policydb_t **policydb)
+int apol_policy_open_binary(const char *path,
+			    apol_policy_t **policy)
 {
 	int retv = 0;
 	FILE *infile = NULL;
 	sepol_policy_file_t *pfile = NULL;
 
-	*policy_handle = sepol_handle_create();
-	if (!(*policy_handle)) {
-		fprintf(stderr, "Error creating policy handle.\n");
+	if ((*policy = calloc(1, sizeof(**policy))) == NULL) {
+		fprintf(stderr, "Out of memory!\n");
 		return -1;
 	}
 
-	retv = sepol_policydb_create(policydb);
+	(*policy)->sh = sepol_handle_create();
+	if ((*policy)->sh == NULL) {
+		fprintf(stderr, "Error creating sepol policy handle.\n");
+		return -1;
+	}
+
+	retv = sepol_policydb_create(&(*policy)->p);
 	if (retv) {
 		fprintf(stderr, "Error creating policy database.\n");
 		goto open_policy_error;
@@ -635,14 +639,14 @@ int apol_open_binary_policy(const char *path,
 	}
 
 	sepol_policy_file_set_fp(pfile, infile);
-	sepol_policy_file_set_handle(pfile, *policy_handle);
+	sepol_policy_file_set_handle(pfile, (*policy)->sh);
 
-	retv = sepol_policydb_read(*policydb, pfile);
+	retv = sepol_policydb_read((*policy)->p, pfile);
 	if (retv) {
 		goto open_policy_error;
 	}
 
-	if (sepol_policydb_extend(*policy_handle, *policydb, NULL)) {
+	if (sepol_policydb_extend((*policy)->sh, (*policy)->p, NULL)) {
 		goto open_policy_error;
 	}
 
@@ -654,15 +658,19 @@ open_policy_done:
 	return retv;
 
 open_policy_error:
-	sepol_policydb_free(*policydb);
-	*policydb = NULL;
-	sepol_handle_destroy(*policy_handle);
-	*policy_handle = NULL;
+	sepol_policydb_free((*policy)->p);
+	sepol_handle_destroy((*policy)->sh);
+	free(*policy);
+	*policy = NULL;
 	goto open_policy_done;
 }
 
-void apol_close_policy(sepol_handle_t *policy_handle, sepol_policydb_t *policy)
+void apol_policy_destroy(apol_policy_t **policy)
 {
-	sepol_handle_destroy(policy_handle);
-	sepol_policydb_free(policy);
+	if (policy != NULL && *policy != NULL) {
+		sepol_handle_destroy((*policy)->sh);
+		sepol_policydb_free((*policy)->p);
+		free(*policy);
+		*policy = NULL;
+	}
 }

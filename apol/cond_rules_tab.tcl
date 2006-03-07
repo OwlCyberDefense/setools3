@@ -228,12 +228,10 @@ proc Apol_Cond_Rules::set_Focus_to_Text {} {
 #  ::open
 #
 proc Apol_Cond_Rules::open { } {
-	set cond_bools_list [apol_GetNames cond_bools]
-	set rt [catch {set cond_bools_list [apol_GetNames cond_bools]} err]
-	if {$rt != 0} {
-		return -code error $err
-	}	
-	set cond_bools_list [lsort $cond_bools_list] 
+    set cond_bools_list {}
+    foreach bools [lsort -index 0 [apol_GetBools {} 0]] {
+        lappend cond_bools_list $bools
+    }
 	
 	$Apol_Cond_Rules::bool_combo_box configure -values $cond_bools_list
 	return 0
