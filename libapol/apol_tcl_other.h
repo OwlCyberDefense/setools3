@@ -32,18 +32,13 @@
 
 #include <sepol/sepol.h>
 
+#include "policy.h"
 #include "mls-query.h"
-
-/** Global policy handle for all of apol. */
-extern sepol_handle_t *policy_handle;
 
 /** Global SELinux policy (either read from source or from binary
  *  policy file. */
-extern sepol_policydb_t *policydb;
+extern apol_policy_t *policydb;
 
-
-
-#include "policy.h"
 
 extern policy_t *policy;  /* global policy DB, defined in apol_tcl.c */
 

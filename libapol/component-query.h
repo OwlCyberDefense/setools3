@@ -1,7 +1,7 @@
 /**
  * @file component-query.h
  *
- * Routines to query individual components of a policy.  For each
+ * Routines to query individual components of a policy.	 For each
  * component there is a query structure to specify the details of the
  * query.  The reason for all of the modifier functions on the query
  * structures is to ease the creation of swig wrappers to libapol.
@@ -34,6 +34,7 @@
 #include <sepol/policydb-query.h>
 
 #include "mls-query.h"
+#include "policy.h"
 #include "vector.h"
 
 typedef struct apol_type_query apol_type_query_t;
@@ -58,23 +59,22 @@ typedef struct apol_bool_query apol_bool_query_t;
 /******************** type queries ********************/
 
 /**
- * Execute a query against all types within the policy.  The results
+ * Execute a query against all types within the policy.	 The results
  * will only contain types, not aliases nor attributes.
  *
- * @param h Error reporting handler.
  * @param p Policy within which to look up types.
- * @param t Structure containing parameters for query.  If this is
+ * @param t Structure containing parameters for query.	If this is
  * NULL then return all types.
  * @param v Reference to a vector of sepol_datum_t.  The vector will be
- * allocated by this function.  The caller must destroy this vector
- * afterwards, but <b>must not</b> free the elements within it.  This will
+ * allocated by this function.	The caller must destroy this vector
+ * afterwards, but <b>must not</b> free the elements within it.	 This will
  * be set to NULL upon no results or upon error.
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_type_by_query(sepol_handle_t *h, sepol_policydb_t *p,
-                                  apol_type_query_t *t,
-                                  apol_vector_t **v);
+extern int apol_get_type_by_query(apol_policy_t *p,
+				  apol_type_query_t *t,
+				  apol_vector_t **v);
 
 /**
  * Allocate and return a new type query structure.  All fields are
@@ -96,7 +96,7 @@ extern apol_type_query_t *apol_type_query_create(void);
 extern void apol_type_query_destroy(apol_type_query_t **t);
 
 /**
- * Set a type query to return only types that match this name.  The
+ * Set a type query to return only types that match this name.	The
  * name may be either a type or one of its aliases.  This function
  * duplicates the incoming name.
  *
@@ -127,27 +127,26 @@ extern int apol_type_query_set_regex(apol_type_query_t *t, int is_regex);
  * Execute a query against all attributes within the policy.  The
  * results will only contain attributes, not types nor aliases.
  *
- * @param h Error reporting handler.
  * @param p Policy within which to look up types.
- * @param a Structure containing parameters for query.  If this is
+ * @param a Structure containing parameters for query.	If this is
  * NULL then return all attributes.
  * @param results Reference to a list of results.  The list will be
- * allocated by this function.  The caller must free this list
- * afterwards, but <b>must not</b> free the elements within it.  This
+ * allocated by this function.	The caller must free this list
+ * afterwards, but <b>must not</b> free the elements within it.	 This
  * will be set to NULL upon no results or upon error.
  * @param num_results Reference to number of results, or 0 upon no
  * results or error.
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_attr_by_query(sepol_handle_t *h, sepol_policydb_t *p,
-                                  apol_attr_query_t *a,
-                                  apol_vector_t **v);
+extern int apol_get_attr_by_query(apol_policy_t *p,
+				  apol_attr_query_t *a,
+				  apol_vector_t **v);
 
 /**
- * Allocate and return a new attribute query structure.  All fields
+ * Allocate and return a new attribute query structure.	 All fields
  * are initialized, such that running this blank query results in
- * returning all attributes within the policy.  The caller must call
+ * returning all attributes within the policy.	The caller must call
  * apol_attr_query_destroy() upon the return value afterwards.
  *
  * @return An initialized attribute query structure, or NULL upon error.
@@ -194,23 +193,22 @@ extern int apol_attr_query_set_regex(apol_attr_query_t *a, int is_regex);
  * Execute a query against all classes within the policy.  The results
  * will only contain object classes, not common classes.
  *
- * @param h Error reporting handler.
  * @param p Policy within which to look up classes.
- * @param c Structure containing parameters for query.  If this is
+ * @param c Structure containing parameters for query.	If this is
  * NULL then return all object classes.
  * @param results Reference to a list of results.  The list will be
- * allocated by this function.  The caller must free this list
- * afterwards, but <b>must not</b> free the elements within it.  This will
+ * allocated by this function.	The caller must free this list
+ * afterwards, but <b>must not</b> free the elements within it.	 This will
  * be set to NULL upon no results or upon error.
  * @param num_results Reference to number of results, or 0 upon no
  * results or error.
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_class_by_query(sepol_handle_t *h, sepol_policydb_t *p,
-                                   apol_class_query_t *c,
-                                   sepol_class_datum_t ***results,
-                                   size_t *num_results);
+extern int apol_get_class_by_query(apol_policy_t *p,
+				   apol_class_query_t *c,
+				   apol_vector_t **v);
+
 
 /**
  * Allocate and return a new class query structure.  All fields are
@@ -245,7 +243,7 @@ extern int apol_class_query_set_class(apol_class_query_t *c, const char *name);
 
 /**
  * Set a class query to use regular expression searching for all of
- * its fields.  Strings will be treated as regexes instead of
+ * its fields.	Strings will be treated as regexes instead of
  * literals.
  *
  * @param c Class query to set.
@@ -262,23 +260,21 @@ extern int apol_class_query_set_regex(apol_class_query_t *c, int is_regex);
  * Execute a query against all common classes within the policy.  The
  * results will only contain common classes, not object classes.
  *
- * @param h Error reporting handler.
  * @param p Policy within which to look up classes.
- * @param c Structure containing parameters for query.  If this is
+ * @param c Structure containing parameters for query.	If this is
  * NULL then return all common classes.
  * @param results Reference to a list of results.  The list will be
- * allocated by this function.  The caller must free this list
- * afterwards, but <b>must not</b> free the elements within it.  This will
+ * allocated by this function.	The caller must free this list
+ * afterwards, but <b>must not</b> free the elements within it.	 This will
  * be set to NULL upon no results or upon error.
  * @param num_results Reference to number of results, or 0 upon no
  * results or error.
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_common_by_query(sepol_handle_t *h, sepol_policydb_t *p,
-                                    apol_common_query_t *c,
-                                    sepol_common_datum_t ***results,
-                                    size_t *num_results);
+extern int apol_get_common_by_query(apol_policy_t *p,
+				    apol_common_query_t *c,
+				    apol_vector_t **v);
 
 /**
  * Allocate and return a new common query structure.  All fields are
@@ -313,7 +309,7 @@ extern int apol_common_query_set_common(apol_common_query_t *c, const char *name
 
 /**
  * Set a common query to use regular expression searching for all of
- * its fields.  Strings will be treated as regexes instead of
+ * its fields.	Strings will be treated as regexes instead of
  * literals.
  *
  * @param c Class query to set.
@@ -330,9 +326,8 @@ extern int apol_common_query_set_regex(apol_common_query_t *c, int is_regex);
  * Execute a query against all permissions within the policy.  The
  * results will contain char pointers to permission names.
  *
- * @param h Error reporting handler.
  * @param p Policy within which to look up classes.
- * @param pq Structure containing parameters for query.  If this is
+ * @param pq Structure containing parameters for query.	 If this is
  * NULL then return all permission.
  * @param results Reference to a list of results for permissions.  The
  * list will be allocated by this function.  The caller must free this
@@ -343,15 +338,14 @@ extern int apol_common_query_set_regex(apol_common_query_t *c, int is_regex);
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_perm_by_query(sepol_handle_t *h, sepol_policydb_t *p,
-                                  apol_perm_query_t *pq,
-                                  char ***results,
-                                  size_t *num_results);
+extern int apol_get_perm_by_query(apol_policy_t *p,
+				  apol_perm_query_t *pq,
+				  apol_vector_t **v);
 
 /**
  * Allocate and return a new permission query structure.  All fields
  * are initialized, such that running this blank query results in
- * returning all permissions within the policy.  The caller must call
+ * returning all permissions within the policy.	 The caller must call
  * apol_perm_query_destroy() upon the return value afterwards.
  *
  * @return An initialized permission query structure, or NULL upon
@@ -398,22 +392,21 @@ extern int apol_perm_query_set_regex(apol_perm_query_t *pq, int is_regex);
 /**
  * Execute a query against all roles within the policy.
  *
- * @param h Error reporting handler.
  * @param p Policy within which to look up roles.
- * @param r Structure containing parameters for query.  If this is
+ * @param r Structure containing parameters for query.	If this is
  * NULL then return all roles.
  * @param results Reference to a list of results.  The list will be
- * allocated by this function.  The caller must free this list
- * afterwards, but <b>must not</b> free the elements within it.  This will
+ * allocated by this function.	The caller must free this list
+ * afterwards, but <b>must not</b> free the elements within it.	 This will
  * be set to NULL upon no results or upon error.
  * @param num_results Reference to number of results, or 0 upon no
  * results or error.
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_role_by_query(sepol_handle_t *h, sepol_policydb_t *p,
-                                  apol_role_query_t *r,
-                                  apol_vector_t **v);
+extern int apol_get_role_by_query(apol_policy_t *p,
+				  apol_role_query_t *r,
+				  apol_vector_t **v);
 
 /**
  * Allocate and return a new role query structure.  All fields are
@@ -435,7 +428,7 @@ extern apol_role_query_t *apol_role_query_create(void);
 extern void apol_role_query_destroy(apol_role_query_t **r);
 
 /**
- * Set a role query to return only roles that match this name.  This
+ * Set a role query to return only roles that match this name.	This
  * function duplicates the incoming name.
  *
  * @param r Role query to set.
@@ -447,7 +440,7 @@ extern void apol_role_query_destroy(apol_role_query_t **r);
 extern int apol_role_query_set_role(apol_role_query_t *r, const char *name);
 
 /**
- * Set a role query to return only roles containing this type.  This
+ * Set a role query to return only roles containing this type.	This
  * function duplicates the incoming name.
  *
  * @param r Role query to set.
@@ -475,22 +468,21 @@ extern int apol_role_query_set_regex(apol_role_query_t *r, int is_regex);
 /**
  * Execute a query against all users within the policy.
  *
- * @param h Error reporting handler.
  * @param p Policy within which to look up users.
- * @param u Structure containing parameters for query.  If this is
+ * @param u Structure containing parameters for query.	If this is
  * NULL then return all users.
  * @param results Reference to a list of results.  The list will be
- * allocated by this function.  The caller must free this list
- * afterwards, but <b>must not</b> free the elements within it.  This will
+ * allocated by this function.	The caller must free this list
+ * afterwards, but <b>must not</b> free the elements within it.	 This will
  * be set to NULL upon no results or upon error.
  * @param num_results Reference to number of results, or 0 upon no
  * results or error.
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_user_by_query(sepol_handle_t *h, sepol_policydb_t *p,
-                                  apol_user_query_t *u,
-                                  apol_vector_t **v);
+extern int apol_get_user_by_query(apol_policy_t *p,
+				  apol_user_query_t *u,
+				  apol_vector_t **v);
 
 /**
  * Allocate and return a new user query structure.  All fields are
@@ -512,7 +504,7 @@ extern apol_user_query_t *apol_user_query_create(void);
 extern void apol_user_query_destroy(apol_user_query_t **u);
 
 /**
- * Set a user query to return only users that match this name.  This
+ * Set a user query to return only users that match this name.	This
  * function duplicates the incoming name.
  *
  * @param u User query to set.
@@ -524,7 +516,7 @@ extern void apol_user_query_destroy(apol_user_query_t **u);
 extern int apol_user_query_set_user(apol_user_query_t *u, const char *name);
 
 /**
- * Set a user query to return only users containing this role.  This
+ * Set a user query to return only users containing this role.	This
  * function duplicates the incoming name.
  *
  * @param u User query to set.
@@ -547,25 +539,25 @@ extern int apol_user_query_set_role(apol_user_query_t *u, const char *role);
  * @return Always returns 0.
  */
 extern int apol_user_query_set_default_level(apol_user_query_t *u,
-                                             apol_mls_level_t *level);
+					     apol_mls_level_t *level);
 
 /**
- * Set a user query to return only users matching a MLS range.  This
+ * Set a user query to return only users matching a MLS range.	This
  * function takes ownership of the range, such that the caller must
  * not modify nor destroy it afterwards.
  *
  * @param u User query to set.
  * @param range Limit query to only users matching this range, or NULL
  * to unset this field.
- * @param range_match Specifies how to match a user to a range.  This
+ * @param range_match Specifies how to match a user to a range.	 This
  * must be one of APOL_QUERY_SUB, APOL_QUERY_SUPER, or
  * APOL_QUERY_EXACT.  This parameter is ignored if range is NULL.
  *
  * @return Always returns 0.
  */
 extern int apol_user_query_set_range(apol_user_query_t *u,
-                                     apol_mls_range_t *range,
-                                     unsigned int range_match);
+				     apol_mls_range_t *range,
+				     unsigned int range_match);
 
 /**
  * Set a user query to use regular expression searching for all of its
@@ -584,23 +576,21 @@ extern int apol_user_query_set_regex(apol_user_query_t *u, int is_regex);
 /**
  * Execute a query against all booleans within the policy.
  *
- * @param h Error reporting handler.
  * @param p Policy within which to look up roles.
- * @param b Structure containing parameters for query.  If this is
+ * @param b Structure containing parameters for query.	If this is
  * NULL then return all booleans.
  * @param results Reference to a list of results.  The list will be
- * allocated by this function.  The caller must free this list
- * afterwards, but <b>must not</b> free the elements within it.  This will
+ * allocated by this function.	The caller must free this list
+ * afterwards, but <b>must not</b> free the elements within it.	 This will
  * be set to NULL upon no results or upon error.
  * @param num_results Reference to number of results, or 0 upon no
  * results or error.
  *
  * @return 0 on success (including none found), negative on error.
  */
-extern int apol_get_bool_by_query(sepol_handle_t *h, sepol_policydb_t *p,
-                                  apol_bool_query_t *b,
-                                  sepol_bool_datum_t ***results,
-                                  size_t *num_results);
+extern int apol_get_bool_by_query(apol_policy_t *p,
+				  apol_bool_query_t *b,
+				  apol_vector_t **v);
 
 /**
  * Allocate and return a new boolean query structure.  All fields are
@@ -631,11 +621,11 @@ extern void apol_bool_query_destroy(apol_bool_query_t **b);
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_bool_query_set_role(apol_bool_query_t *b, const char *name);
+extern int apol_bool_query_set_bool(apol_bool_query_t *b, const char *name);
 
 /**
  * Set a boolean query to use regular expression searching for all of
- * its fields.  Strings will be treated as regexes instead of
+ * its fields.	Strings will be treated as regexes instead of
  * literals.
  *
  * @param b Boolean query to set.

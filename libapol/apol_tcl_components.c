@@ -125,12 +125,6 @@ static int Apol_GetNames(ClientData clientData, Tcl_Interp * interp, int argc, C
 			free(name);
 		}		
 	}
-	else if(strcmp("cond_bools", argv[1]) == 0) {
-		for(i = 0; get_cond_bool_name(i, &name, policy) == 0; i++) {
-			Tcl_AppendElement(interp, name);
-			free(name);
-		}		
-	}
 	else {
 		if(use_regex) 
 			regfree(&reg);
@@ -157,7 +151,7 @@ static int append_type_to_list(Tcl_Interp *interp,
 	sepol_iterator_t *attr_iter = NULL, *alias_iter = NULL;
 	Tcl_Obj *type_elem[3], *type_list;
 	int retval = TCL_ERROR;
-	if (sepol_type_datum_get_isattr(policy_handle, policydb,
+	if (sepol_type_datum_get_isattr(policydb->sh, policydb->p,
 					 type_datum, &is_attr) < 0) {
 		Tcl_SetResult(interp, "Could not get isalias.", TCL_STATIC);
 		goto cleanup;
@@ -166,17 +160,17 @@ static int append_type_to_list(Tcl_Interp *interp,
 		/* datum is an attribute, so don't add it */
 		return TCL_OK;
 	}
-	if (sepol_type_datum_get_name(policy_handle, policydb,
+	if (sepol_type_datum_get_name(policydb->sh, policydb->p,
 				      type_datum, &type_name) < 0) {
 		Tcl_SetResult(interp, "Could not get type name.", TCL_STATIC);
 		goto cleanup;
 	}
-	if (sepol_type_datum_get_attr_iter(policy_handle, policydb,
+	if (sepol_type_datum_get_attr_iter(policydb->sh, policydb->p,
 					   type_datum, &attr_iter) < 0) {
 		Tcl_SetResult(interp, "Could not get attr iterator.", TCL_STATIC);
 		goto cleanup;
 	}
-	if (sepol_type_datum_get_alias_iter(policy_handle, policydb,
+	if (sepol_type_datum_get_alias_iter(policydb->sh, policydb->p,
 					    type_datum, &alias_iter) < 0) {
 		Tcl_SetResult(interp, "Could not get alias iterator.", TCL_STATIC);
 		goto cleanup;
@@ -188,7 +182,7 @@ static int append_type_to_list(Tcl_Interp *interp,
 		char *attr_name;
 		Tcl_Obj *attr_obj;
 		if (sepol_iterator_get_item(attr_iter, (void **) &attr_datum) < 0 ||
-		    sepol_type_datum_get_name(policy_handle, policydb,
+		    sepol_type_datum_get_name(policydb->sh, policydb->p,
 					      attr_datum, &attr_name) < 0) {
 			Tcl_SetResult(interp, "Could not get attr name.", TCL_STATIC);
 			goto cleanup;
@@ -244,7 +238,7 @@ static int Apol_GetTypes(ClientData clientData, Tcl_Interp *interp, int argc, CO
 		return TCL_ERROR;
 	}
 	if (argc == 2) {
-		if (sepol_policydb_get_type_by_name(policy_handle, policydb,
+		if (sepol_policydb_get_type_by_name(policydb->sh, policydb->p,
 						    argv[1], &type) < 0) {
 			/* name is not within policy */
 			return TCL_OK;
@@ -274,8 +268,7 @@ static int Apol_GetTypes(ClientData clientData, Tcl_Interp *interp, int argc, CO
 				return TCL_ERROR;
 			}
 		}
-		if (apol_get_type_by_query(policy_handle, policydb,
-					   query, &v)) {
+		if (apol_get_type_by_query(policydb, query, &v)) {
 			apol_type_query_destroy(&query);
 			Tcl_SetResult(interp, "Error running type query.", TCL_STATIC);
 			return TCL_ERROR;
@@ -307,7 +300,7 @@ static int append_attr_to_list(Tcl_Interp *interp,
 	sepol_iterator_t *type_iter = NULL;
 	Tcl_Obj *attr_elem[2], *attr_list;
 	int retval = TCL_ERROR;
-	if (sepol_type_datum_get_isattr(policy_handle, policydb,
+	if (sepol_type_datum_get_isattr(policydb->sh, policydb->p,
 					 attr_datum, &is_attr) < 0) {
 		Tcl_SetResult(interp, "Could not get isalias.", TCL_STATIC);
 		goto cleanup;
@@ -316,12 +309,12 @@ static int append_attr_to_list(Tcl_Interp *interp,
 		/* datum is a type or alias, so don't add it */
 		return TCL_OK;
 	}
-	if (sepol_type_datum_get_name(policy_handle, policydb,
+	if (sepol_type_datum_get_name(policydb->sh, policydb->p,
 				      attr_datum, &attr_name) < 0) {
 		Tcl_SetResult(interp, "Could not get attr name.", TCL_STATIC);
 		goto cleanup;
 	}
-	if (sepol_type_datum_get_type_iter(policy_handle, policydb,
+	if (sepol_type_datum_get_type_iter(policydb->sh, policydb->p,
 					   attr_datum, &type_iter) < 0) {
 		Tcl_SetResult(interp, "Could not get type iterator.", TCL_STATIC);
 		goto cleanup;
@@ -333,7 +326,7 @@ static int append_attr_to_list(Tcl_Interp *interp,
 		char *type_name;
 		Tcl_Obj *type_obj;
 		if (sepol_iterator_get_item(type_iter, (void **) &type_datum) < 0 ||
-		    sepol_type_datum_get_name(policy_handle, policydb,
+		    sepol_type_datum_get_name(policydb->sh, policydb->p,
 					      type_datum, &type_name) < 0) {
 			Tcl_SetResult(interp, "Could not get type name.", TCL_STATIC);
 			goto cleanup;
@@ -374,7 +367,7 @@ static int Apol_GetAttribs(ClientData clientData, Tcl_Interp *interp, int argc, 
 		return TCL_ERROR;
 	}
 	if (argc == 2) {
-		if (sepol_policydb_get_type_by_name(policy_handle, policydb,
+		if (sepol_policydb_get_type_by_name(policydb->sh, policydb->p,
 						    argv[1], &attr) < 0) {
 			/* name is not within policy */
 			return TCL_OK;
@@ -404,8 +397,7 @@ static int Apol_GetAttribs(ClientData clientData, Tcl_Interp *interp, int argc, 
 				return TCL_ERROR;
 			}
 		}
-		if (apol_get_attr_by_query(policy_handle, policydb,
-					   query, &v)) {
+		if (apol_get_attr_by_query(policydb, query, &v)) {
 			apol_attr_query_destroy(&query);
 			Tcl_SetResult(interp, "Error running attr query.", TCL_STATIC);
 			return TCL_ERROR;
@@ -817,17 +809,17 @@ static int append_role_to_list(Tcl_Interp *interp,
 	sepol_iterator_t *type_iter = NULL, *dom_iter = NULL;
 	int retval = TCL_ERROR;
 	Tcl_Obj *role_elem[3], *role_list;
-	if (sepol_role_datum_get_name(policy_handle, policydb,
+	if (sepol_role_datum_get_name(policydb->sh, policydb->p,
 				      role_datum, &role_name) < 0) {
 		Tcl_SetResult(interp, "Could not get role name.", TCL_STATIC);
 		goto cleanup;
 	}
-	if (sepol_role_datum_get_type_iter(policy_handle, policydb,
+	if (sepol_role_datum_get_type_iter(policydb->sh, policydb->p,
 					   role_datum, &type_iter) < 0) {
 		Tcl_SetResult(interp, "Could not get type iterator.", TCL_STATIC);
 		goto cleanup;
 	}
-	if (sepol_role_datum_get_dominate_iter(policy_handle, policydb,
+	if (sepol_role_datum_get_dominate_iter(policydb->sh, policydb->p,
 					       role_datum, &dom_iter) < 0) {
 		Tcl_SetResult(interp, "Could not get dominate iterator.", TCL_STATIC);
 		goto cleanup;
@@ -839,7 +831,7 @@ static int append_role_to_list(Tcl_Interp *interp,
 		char *type_name;
 		Tcl_Obj *type_obj;
 		if (sepol_iterator_get_item(type_iter, (void **) &type) < 0 ||
-		    sepol_type_datum_get_name(policy_handle, policydb,
+		    sepol_type_datum_get_name(policydb->sh, policydb->p,
 					      type, &type_name) < 0) {
 			Tcl_SetResult(interp, "Could not get type name.", TCL_STATIC);
 			goto cleanup;
@@ -855,7 +847,7 @@ static int append_role_to_list(Tcl_Interp *interp,
 		char *dom_role_name;
 		Tcl_Obj *dom_role_obj;
 		if (sepol_iterator_get_item(dom_iter, (void **) &dom_role) < 0 ||
-		    sepol_role_datum_get_name(policy_handle, policydb,
+		    sepol_role_datum_get_name(policydb->sh, policydb->p,
 					      dom_role, &dom_role_name) < 0) {
 			Tcl_SetResult(interp, "Could not get dominate name.", TCL_STATIC);
 			goto cleanup;
@@ -905,7 +897,7 @@ static int Apol_GetRoles(ClientData clientData, Tcl_Interp *interp, int argc, CO
 		return TCL_ERROR;
 	}
 	if (argc == 2) {
-		if (sepol_policydb_get_role_by_name(policy_handle, policydb,
+		if (sepol_policydb_get_role_by_name(policydb->sh, policydb->p,
 						    argv[1], &role) < 0) {
 			/* name is not within policy */
 			return TCL_OK;
@@ -936,8 +928,7 @@ static int Apol_GetRoles(ClientData clientData, Tcl_Interp *interp, int argc, CO
 				return TCL_ERROR;
 			}
 		}
-		if (apol_get_role_by_query(policy_handle, policydb,
-					   query, &v)) {
+		if (apol_get_role_by_query(policydb, query, &v)) {
 			apol_role_query_destroy(&query);
 			Tcl_SetResult(interp, "Error running role query.", TCL_STATIC);
 			return TCL_ERROR;
@@ -1006,13 +997,13 @@ static int append_user_to_list(Tcl_Interp *interp,
 	apol_mls_level_t *apol_default = NULL;
 	apol_mls_range_t *apol_range = NULL;
 	int retval = TCL_ERROR;
-	if (sepol_user_datum_get_name(policy_handle, policydb,
+	if (sepol_user_datum_get_name(policydb->sh, policydb->p,
 				      user_datum, &user_name) < 0) {
 		Tcl_SetResult(interp, "Could not get user name.", TCL_STATIC);
 		goto cleanup;
 	}
 	user_elem[0] = Tcl_NewStringObj(user_name, -1);
-	if (sepol_user_datum_get_role_iter(policy_handle, policydb,
+	if (sepol_user_datum_get_role_iter(policydb->sh, policydb->p,
 					   user_datum, &role_iter) < 0) {
 		Tcl_SetResult(interp, "Could not get role iterator.", TCL_STATIC);
 		goto cleanup;
@@ -1023,7 +1014,7 @@ static int append_user_to_list(Tcl_Interp *interp,
 		char *role_name;
 		Tcl_Obj *role_obj;
 		if (sepol_iterator_get_item(role_iter, (void **) &role_datum) < 0 ||
-		    sepol_role_datum_get_name(policy_handle, policydb,
+		    sepol_role_datum_get_name(policydb->sh, policydb->p,
 					      role_datum, &role_name) < 0) {
 			Tcl_SetResult(interp, "Could not get role name.", TCL_STATIC);
 			goto cleanup;
@@ -1037,19 +1028,19 @@ static int append_user_to_list(Tcl_Interp *interp,
 		sepol_mls_level_t *default_level;
 		sepol_mls_range_t *range;
 		Tcl_Obj *range_elem[2];
-		if (sepol_user_datum_get_dfltlevel(policy_handle, policydb, user_datum, &default_level) < 0) {
+		if (sepol_user_datum_get_dfltlevel(policydb->sh, policydb->p, user_datum, &default_level) < 0) {
 			Tcl_SetResult(interp, "Could not get default level.", TCL_STATIC);
 			goto cleanup;
 		}
-		if (sepol_user_datum_get_range(policy_handle, policydb, user_datum, &range) < 0) {
+		if (sepol_user_datum_get_range(policydb->sh, policydb->p, user_datum, &range) < 0) {
 			Tcl_SetResult(interp, "Could not get range.", TCL_STATIC);
 			goto cleanup;
 		}
 		if ((apol_default =
-		     apol_mls_level_create_from_sepol_mls_level(policy_handle, policydb,
+		     apol_mls_level_create_from_sepol_mls_level(policydb,
 								default_level)) == NULL ||
 		    (apol_range =
-		     apol_mls_range_create_from_sepol_mls_range(policy_handle, policydb,
+		     apol_mls_range_create_from_sepol_mls_range(policydb,
 								range)) == NULL) {
 			Tcl_SetResult(interp, "Could not convert to MLS structs.", TCL_STATIC);
 			goto cleanup;
@@ -1115,7 +1106,7 @@ static int Apol_GetUsers(ClientData clientData, Tcl_Interp *interp, int argc, CO
 	}
 	result_obj = Tcl_NewListObj(0, NULL);
 	if (argc == 2) {
-		if (sepol_policydb_get_user_by_name(policy_handle, policydb,
+		if (sepol_policydb_get_user_by_name(policydb->sh, policydb->p,
 						    argv[1], &user) < 0) {
 			/* name is not within policy */
 			return TCL_OK;
@@ -1172,8 +1163,7 @@ static int Apol_GetUsers(ClientData clientData, Tcl_Interp *interp, int argc, CO
 				goto cleanup;
 			}
 		}
-		if (apol_get_user_by_query(policy_handle, policydb,
-					   query, &v) < 0) {
+		if (apol_get_user_by_query(policydb, query, &v) < 0) {
 			Tcl_SetResult(interp, "Error running user query.", TCL_STATIC);
 			goto cleanup;
 		}
@@ -1192,80 +1182,141 @@ static int Apol_GetUsers(ClientData clientData, Tcl_Interp *interp, int argc, CO
 	return retval;
 }
 
-/* args ordering:
- * argv[1]	bool name
- * argv[2]	new value
+/* Takes a sepol_bool_datum_t and appends a tuple of it to results_list.
+ * The tuple consists of:
+ *    { bool_name current_value}
  */
-static int Apol_Cond_Bool_SetBoolValue(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
+static int append_bool_to_list(Tcl_Interp *interp,
+			       sepol_bool_datum_t *bool_datum,
+			       Tcl_Obj *result_list)
 {
-	int rt, bool_idx;
-	bool_t value;
-		
-	if(argc != 3) {
-		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
+	char *bool_name;
+	int bool_state;
+	Tcl_Obj *bool_elem[3], *bool_list;
+	if (sepol_bool_datum_get_name(policydb->sh, policydb->p,
+				      bool_datum, &bool_name) < 0) {
+		Tcl_SetResult(interp, "Could not get boolean name.", TCL_STATIC);
 		return TCL_ERROR;
 	}
-	if(policy == NULL) {
-		Tcl_AppendResult(interp,"No current policy file is opened!", (char *) NULL);
-		return TCL_ERROR;
-	}
-	if(!is_valid_str_sz(argv[1])) {
-		Tcl_AppendResult(interp, "Bool string is too large", (char *) NULL);
-		return TCL_ERROR;
-	}
-	bool_idx = get_cond_bool_idx(argv[1], policy);
-	if (bool_idx < 0) {
-		Tcl_AppendResult(interp, "Error getting index value for ", argv[1], (char *) NULL);
-		return TCL_ERROR;
-	}
-	value = getbool(argv[2]);
-	
-	rt = set_cond_bool_val(bool_idx, value, policy);
-	if (rt != 0) {
-		Tcl_AppendResult(interp, "Error setting value for ", argv[1], (char *) NULL);
+	if (sepol_bool_datum_get_state(policydb->sh, policydb->p,
+				       bool_datum, &bool_state) < 0) {
+		Tcl_SetResult(interp, "Could not get boolean state.", TCL_STATIC);
 		return TCL_ERROR;
 	}
 	
-	rt = update_cond_expr_items(policy);
-	if (rt != 0) {
-		Tcl_AppendResult(interp, "Error updating conditional expressions.",  (char *)NULL);
+	bool_elem[0] = Tcl_NewStringObj(bool_name, -1);
+	bool_elem[1] = Tcl_NewBooleanObj(bool_state);
+	bool_list = Tcl_NewListObj(2, bool_elem);
+	if (Tcl_ListObjAppendElement(interp, result_list, bool_list) == TCL_ERROR) {
 		return TCL_ERROR;
-	}	
-	
+	}
 	return TCL_OK;
 }
 
-/* args ordering:
- * argv[1]	bool name
+/* Return a list of all condition booleans within the policy.
+ *
+ * element 0 - boolean name
+ * element 1 - current state of the boolean (either 0 or 1)
+ *
+ * argv[1] - boolean name to look up, or a regular expression, or empty
+ *	     to get all roles
+ * argv[2] - (optional) treat argv[1] as a boolean name or regex
  */
-static int Apol_Cond_Bool_GetBoolValue(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
+static int Apol_GetBools(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
-	bool_t bool_val;
-	int rt;
-	char tbuf[64];	
-	
-	if(argc != 2) {
-		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
-		return TCL_ERROR;
-	}
+	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
+	sepol_bool_datum_t *bool;
+
 	if(policy == NULL) {
-		Tcl_AppendResult(interp,"No current policy file is opened!", (char *) NULL);
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		return TCL_ERROR;
 	}
-	if(!is_valid_str_sz(argv[1])) {
-		Tcl_AppendResult(interp, "Bool string is too large", (char *) NULL);
+	if (argc != 2 && argc < 3) {
+		Tcl_SetResult(interp, "Need a boolean name and ?regex flag?.", TCL_STATIC);
 		return TCL_ERROR;
 	}
-		
-	rt = get_cond_bool_val(argv[1], &bool_val, policy);
-	if (rt < 0) {
-		Tcl_AppendResult(interp, "Error getting conditional boolean value for ", argv[1], (char *) NULL);
+	if (argc == 2) {
+		if (sepol_policydb_get_bool_by_name(policydb->sh, policydb->p,
+						    argv[1], &bool) < 0) {
+			/* name is not within policy */
+			return TCL_OK;
+		}
+		if (append_bool_to_list(interp, bool, result_obj) == TCL_ERROR) {
+			return TCL_ERROR;
+		}
+	}
+	else {
+		Tcl_Obj *regex_obj = Tcl_NewStringObj(argv[2], -1);
+		int regex_flag;
+		apol_bool_query_t *query = NULL;
+		apol_vector_t *v;
+		size_t i;
+		if (Tcl_GetBooleanFromObj(interp, regex_obj, &regex_flag) == TCL_ERROR) {
+			return TCL_ERROR;
+		}
+		if (*argv[1] != '\0') {
+			if ((query = apol_bool_query_create()) == NULL) {
+				Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
+				return TCL_ERROR;
+			}
+			if (apol_bool_query_set_bool(query, argv[1]) ||
+			    apol_bool_query_set_regex(query, regex_flag)) {
+				apol_bool_query_destroy(&query);
+				Tcl_SetResult(interp, "Error setting query options.", TCL_STATIC);
+				return TCL_ERROR;
+			}
+		}
+		if (apol_get_bool_by_query(policydb, query, &v)) {
+			apol_bool_query_destroy(&query);
+			Tcl_SetResult(interp, "Error running boolean query.", TCL_STATIC);
+			return TCL_ERROR;
+		}
+		apol_bool_query_destroy(&query);
+		for (i = 0; i < apol_vector_get_size(v); i++) {
+			bool = (sepol_bool_datum_t *) apol_vector_get_element(v, i);
+			if (append_bool_to_list(interp, bool, result_obj) == TCL_ERROR) {
+				apol_vector_destroy(&v, NULL);
+				return TCL_ERROR;
+			}
+		}
+		apol_vector_destroy(&v, NULL);
+	}
+	Tcl_SetObjResult(interp, result_obj);
+	return TCL_OK;
+}
+
+/* Sets a boolean value within the policy.
+ *
+ * argv[1] - boolean name
+ * argv[2] - new state for the boolean (either 0 or 1)
+ */
+static int Apol_SetBoolValue(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
+{
+	sepol_bool_datum_t *bool;
+	Tcl_Obj *value_obj;
+	int value;
+
+	if (argc != 3) {
+		Tcl_SetResult(interp, "Need a bool name and a value.", TCL_STATIC);
 		return TCL_ERROR;
 	}
-	
-	sprintf(tbuf, "%d", bool_val);	
-	Tcl_AppendElement(interp, tbuf);
-	
+	if (policy == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		return TCL_ERROR;
+	}
+	if (sepol_policydb_get_bool_by_name(policydb->sh, policydb->p,
+					    argv[1], &bool) < 0) {
+		/* name is not within policy */
+		return TCL_OK;
+	}
+	value_obj = Tcl_NewStringObj(argv[2], -1);
+	if (Tcl_GetBooleanFromObj(interp, value_obj, &value) == TCL_ERROR) {
+		return TCL_ERROR;
+	}
+	if (sepol_bool_datum_set_state(policydb->sh, policydb->p, bool, value) < 0) {
+		Tcl_SetResult(interp, "Error setting boolean state.", TCL_STATIC);
+		return TCL_ERROR;
+	}
 	return TCL_OK;
 }
 
@@ -1826,8 +1877,8 @@ int ap_tcl_components_init(Tcl_Interp *interp) {
 	Tcl_CreateCommand(interp, "apol_GetSingleClassPermInfo", Apol_GetSingleClassPermInfo, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetRoles", Apol_GetRoles, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetUsers", Apol_GetUsers, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_GetBools", Apol_GetBools, NULL, NULL);
         Tcl_CreateCommand(interp, "apol_Cond_Bool_SetBoolValue", Apol_Cond_Bool_SetBoolValue, NULL, NULL);
-	Tcl_CreateCommand(interp, "apol_Cond_Bool_GetBoolValue", Apol_Cond_Bool_GetBoolValue, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetSens", Apol_GetSens, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetCats", Apol_GetCats, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_SensCats", Apol_SensCats, NULL, NULL);
