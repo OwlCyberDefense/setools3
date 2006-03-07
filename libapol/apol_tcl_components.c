@@ -1878,7 +1878,7 @@ int ap_tcl_components_init(Tcl_Interp *interp) {
 	Tcl_CreateCommand(interp, "apol_GetRoles", Apol_GetRoles, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetUsers", Apol_GetUsers, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetBools", Apol_GetBools, NULL, NULL);
-        Tcl_CreateCommand(interp, "apol_Cond_Bool_SetBoolValue", Apol_Cond_Bool_SetBoolValue, NULL, NULL);
+        Tcl_CreateCommand(interp, "apol_SetBoolValue", Apol_SetBoolValue, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetSens", Apol_GetSens, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetCats", Apol_GetCats, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_SensCats", Apol_SensCats, NULL, NULL);
