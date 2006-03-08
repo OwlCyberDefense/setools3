@@ -36,19 +36,6 @@
 #include "mls-query.h"
 #include "vector.h"
 
-struct apol_sens_query {
-	char *sens_name;
-	unsigned int flags;
-	regex_t *sens_regex;
-};
-
-struct apol_cats_query {
-	char *cats_name;
-	unsigned int flags;
-	regex_t *cats_regex;
-};
-
-
 /********************* miscellaneous routines *********************/
 
 /* Given two category names, returns < 0 if a has higher value than b,
