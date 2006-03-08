@@ -39,10 +39,6 @@ typedef struct apol_mls_range {
 	apol_mls_level_t *low, *high;
 } apol_mls_range_t;
 
-typedef struct apol_sens_query apol_sens_query_t;
-typedef struct apol_cats_query apol_cats_query_t;
-
-
 /******************** level stuff ********************/
 
 /**

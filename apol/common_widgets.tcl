@@ -116,7 +116,7 @@ proc Apol_Widget::clearTypeCombobox {path} {
 }
 
 proc Apol_Widget::getTypeComboboxValue {path} {
-    set Apol_Widget::vars($path:type)
+    string trim $Apol_Widget::vars($path:type)
 }
 
 proc Apol_Widget::getTypeComboboxValueAndAttrib {path} {
@@ -192,17 +192,17 @@ proc Apol_Widget::makeLevelSelector {path catSize args} {
 
 proc Apol_Widget::getLevelSelectorLevel {path} {
     variable vars
-    if {[catch {apol_GetSens $vars($path:sens)} s] || $s == {}} {
-        set s $vars($path:sens)
+    if {[catch {apol_GetLevels $vars($path:sens)} l] || $l == {}} {
+        set sens $vars($path:sens)
     } else {
-        set s [lindex $s 0 0]
+        set sens [lindex $l 0 0]
     }
     set sl [getScrolledListbox $path.cats]
     set cats {}
     foreach idx [$sl curselection] {
         lappend cats [$sl get $idx] 
     }
-    list $s $cats
+    list $sens $cats
 }
 
 proc Apol_Widget::setLevelSelectorLevel {path level} {
@@ -233,12 +233,12 @@ proc Apol_Widget::setLevelSelectorLevel {path level} {
 proc Apol_Widget::resetLevelSelectorToPolicy {path} {
     variable vars
     set vars($path:sens) ""
-    if {[catch {apol_GetSens} sens]} {
+    if {[catch {apol_GetLevels {} 0} level_data]} {
         $path.sens configure -values {}
     } else {
         set vals {}
-        foreach s $sens {
-            lappend vals [lindex $s 0]
+        foreach l [lsort -integer -index 3 $level_data] {
+            lappend vals [lindex $l 0]
         }
         $path.sens configure -values $vals
     }
@@ -377,16 +377,16 @@ proc Apol_Widget::showPopupText {title info} {
         pack $sw -expand 1 -fill both
         set b [button $infoPopup.close -text "Close" -command [list destroy $infoPopup]]
         pack $b -side bottom -expand 0 -pady 5
-        wm geometry $infoPopup +50+50
+        wm geometry $infoPopup 250x200+50+50
     }
-    wm deiconify $infoPopup
-    raise $infoPopup
     wm title $infoPopup $title
     set text [$infoPopup.sw getframe].text
     $text configure -state normal
     $text delete 1.0 end
     $text insert 0.0 $info
     $text configure -state disabled
+    wm deiconify $infoPopup
+    raise $infoPopup
 }
 
 ########## private functions below ##########
@@ -469,10 +469,8 @@ proc Apol_Widget::_sens_changed {path name1 name2 op} {
     # get a list of categories associated with this sensitivity
     [getScrolledListbox $path.cats] selection clear 0 end
     set vars($path:cats) {}
-    if {![catch {apol_SensCats $vars($path:sens)} cats]} {
-        foreach c $cats {
-            lappend vars($path:cats) [lindex $c 0]
-        }
+    if {![catch {apol_GetLevels $vars($path:sens)} level_data]} {
+        set vars($path:cats) [concat $vars($path:cats) [lindex $level_data 0 2]]
     }
 }
 

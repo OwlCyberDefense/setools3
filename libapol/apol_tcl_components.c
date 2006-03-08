@@ -268,7 +268,7 @@ static int Apol_GetTypes(ClientData clientData, Tcl_Interp *interp, int argc, CO
 				return TCL_ERROR;
 			}
 		}
-		if (apol_get_type_by_query(policydb, query, &v)) {
+		if (apol_get_type_by_query(policydb, query, &v) < 0) {
 			apol_type_query_destroy(&query);
 			Tcl_SetResult(interp, "Error running type query.", TCL_STATIC);
 			return TCL_ERROR;
@@ -397,7 +397,7 @@ static int Apol_GetAttribs(ClientData clientData, Tcl_Interp *interp, int argc, 
 				return TCL_ERROR;
 			}
 		}
-		if (apol_get_attr_by_query(policydb, query, &v)) {
+		if (apol_get_attr_by_query(policydb, query, &v) < 0) {
 			apol_attr_query_destroy(&query);
 			Tcl_SetResult(interp, "Error running attr query.", TCL_STATIC);
 			return TCL_ERROR;
@@ -928,7 +928,7 @@ static int Apol_GetRoles(ClientData clientData, Tcl_Interp *interp, int argc, CO
 				return TCL_ERROR;
 			}
 		}
-		if (apol_get_role_by_query(policydb, query, &v)) {
+		if (apol_get_role_by_query(policydb, query, &v) < 0) {
 			apol_role_query_destroy(&query);
 			Tcl_SetResult(interp, "Error running role query.", TCL_STATIC);
 			return TCL_ERROR;
@@ -1266,7 +1266,7 @@ static int Apol_GetBools(ClientData clientData, Tcl_Interp *interp, int argc, CO
 				return TCL_ERROR;
 			}
 		}
-		if (apol_get_bool_by_query(policydb, query, &v)) {
+		if (apol_get_bool_by_query(policydb, query, &v) < 0) {
 			apol_bool_query_destroy(&query);
 			Tcl_SetResult(interp, "Error running boolean query.", TCL_STATIC);
 			return TCL_ERROR;
@@ -1320,153 +1320,313 @@ static int Apol_SetBoolValue(ClientData clientData, Tcl_Interp *interp, int argc
 	return TCL_OK;
 }
 
+/* Takes a sepol_level_datum_t and appends a tuple of it to
+ * results_list.  The tuple consists of:
+ *    { sens_name {alias0 alias1 ...} {cats0 cats1 ...} dominance_value }
+ */
+static int append_level_to_list(Tcl_Interp *interp,
+				sepol_level_datum_t *level_datum,
+				Tcl_Obj *result_list)
+{
+	char *sens_name;
+	sepol_iterator_t *alias_iter = NULL, *cat_iter = NULL;
+	uint32_t level_value;
+	Tcl_Obj *level_elem[4], *level_list;
+	int retval = TCL_ERROR;
 
-/* Return a list of sensitivities tuples, ordered by dominance (low to
- * high) within the policy, or an empty list if no policy was loaded.
+	if (sepol_level_datum_get_name(policydb->sh, policydb->p,
+				       level_datum, &sens_name) < 0) {
+		Tcl_SetResult(interp, "Could not get sensitivity name.", TCL_STATIC);
+		goto cleanup;
+	}
+	if (sepol_level_datum_get_alias_iter(policydb->sh, policydb->p,
+					     level_datum, &alias_iter) < 0) {
+		Tcl_SetResult(interp, "Could not get alias iterator.", TCL_STATIC);
+		goto cleanup;
+	}
+	if (sepol_level_datum_get_cat_iter(policydb->sh, policydb->p,
+					   level_datum, &cat_iter) < 0) {
+		Tcl_SetResult(interp, "Could not get category iterator.", TCL_STATIC);
+		goto cleanup;
+	}
+	if (sepol_level_datum_get_value(policydb->sh, policydb->p,
+					level_datum, &level_value) < 0) {
+		Tcl_SetResult(interp, "Could not get level value.", TCL_STATIC);
+		goto cleanup;
+	}
+	level_elem[0] = Tcl_NewStringObj(sens_name, -1);
+	level_elem[1] = Tcl_NewListObj(0, NULL);
+	for ( ; !sepol_iterator_end(alias_iter); sepol_iterator_next(alias_iter)) {
+		char *alias_name;
+		Tcl_Obj *alias_obj;
+		if (sepol_iterator_get_item(alias_iter, (void **) &alias_name) < 0) {
+			Tcl_SetResult(interp, "Could not get alias name.", TCL_STATIC);
+			goto cleanup;
+		}
+		alias_obj = Tcl_NewStringObj(alias_name, -1);
+		if (Tcl_ListObjAppendElement(interp, level_elem[1], alias_obj) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+	level_elem[2] = Tcl_NewListObj(0, NULL);
+	for ( ; !sepol_iterator_end(cat_iter); sepol_iterator_next(cat_iter)) {
+		sepol_cat_datum_t *cat_datum;
+		char *cats_name;
+		Tcl_Obj *cats_obj;
+		if (sepol_iterator_get_item(cat_iter, (void **) &cat_datum) < 0 ||
+		    sepol_cat_datum_get_name(policydb->sh, policydb->p,
+					     cat_datum, &cats_name) < 0) {
+			Tcl_SetResult(interp, "Could not get category name.", TCL_STATIC);
+			goto cleanup;
+		}
+		cats_obj = Tcl_NewStringObj(cats_name, -1);
+		if (Tcl_ListObjAppendElement(interp, level_elem[2], cats_obj) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+	level_elem[3] = Tcl_NewLongObj((long) level_value);
+	level_list = Tcl_NewListObj(4, level_elem);
+	if (Tcl_ListObjAppendElement(interp, result_list, level_list) == TCL_ERROR) {
+		goto cleanup;
+	}
+
+	retval = TCL_OK;
+ cleanup:
+	sepol_iterator_destroy(&alias_iter);
+	sepol_iterator_destroy(&cat_iter);
+	return retval;
+}
+
+/* Return an unordered list of MLS level tuples, or an empty list if
+ * no policy was loaded.
  *   elem 0 - sensitivity name
  *   elem 1 - list of associated aliases
- * If a parameter is given, return only that sensitivity tuple. If the
- * sensitivity does not exist then return an empty list.
+ *   elem 2 - list of categories
+ *   elem 3 - level dominance value
+ *
+ * argv[1] - sensitivity name to look up, or a regular expression, or
+ *           empty to get all levels
+ * argv[2] - (optional) treat argv[1] as a sensitivity name or regex
  */
-static int Apol_GetSens(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
+static int Apol_GetLevels(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
         Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
-	int i, target_sens = -1;
+        sepol_level_datum_t *level;
 
 	if (policy == NULL) {
                 Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		return TCL_ERROR;
 	}
-        if (argc > 1) {
-                target_sens = get_sensitivity_idx(argv[1], policy);
-                if (target_sens == -1) {
+        if (argc < 2) {
+                Tcl_SetResult(interp, "Need a sensitivity name and ?regex flag?.", TCL_STATIC);
+                return TCL_ERROR;
+        }
+        if (argc == 2) {
+                if (sepol_policydb_get_level_by_name(policydb->sh, policydb->p,
+                                                     argv[1], &level) < 0) {
                         /* passed sensitivity is not within the policy */
                         return TCL_OK;
                 }
-        }
-	for (i = 0; i < policy->num_sensitivities; i++) {
-                ap_mls_sens_t *sens = policy->sensitivities + policy->mls_dominance[i];
-                name_item_t *name = sens->aliases;
-                Tcl_Obj *sens_elem[2], *sens_list;
-                if (argc > 1 && policy->mls_dominance[i] != target_sens) {
-                        continue;
-                }
-                sens_elem[0] = Tcl_NewStringObj(sens->name, -1);
-                sens_elem[1] = Tcl_NewListObj(0, NULL);
-                while (name != NULL) {
-                        Tcl_Obj *alias_obj = Tcl_NewStringObj(name->name, -1);
-                        if (Tcl_ListObjAppendElement(interp, sens_elem[1], alias_obj) == TCL_ERROR) {
-                                return TCL_ERROR;
-                        }
-                        name = name->next;
-                }
-                sens_list = Tcl_NewListObj(2, sens_elem);
-                if (Tcl_ListObjAppendElement(interp, result_obj, sens_list) == TCL_ERROR) {
+                if (append_level_to_list(interp, level, result_obj) == TCL_ERROR) {
                         return TCL_ERROR;
                 }
+        }
+        else {
+                Tcl_Obj *regex_obj = Tcl_NewStringObj(argv[2], -1);
+                int regex_flag;
+                apol_level_query_t *query = NULL;
+                apol_vector_t *v;
+                size_t i;
+		if (Tcl_GetBooleanFromObj(interp, regex_obj, &regex_flag) == TCL_ERROR) {
+			return TCL_ERROR;
+		}
+		if (*argv[1] != '\0') {
+			if ((query = apol_level_query_create()) == NULL) {
+				Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
+				return TCL_ERROR;
+			}
+			if (apol_level_query_set_sens(query, argv[1]) ||
+			    apol_level_query_set_regex(query, regex_flag)) {
+				apol_level_query_destroy(&query);
+				Tcl_SetResult(interp, "Error setting query options.", TCL_STATIC);
+				return TCL_ERROR;
+			}
+		}
+                if (apol_get_level_by_query(policydb, query, &v) < 0) {
+                        apol_level_query_destroy(&query);
+                        Tcl_SetResult(interp, "Error running level query.", TCL_STATIC);
+                        return TCL_ERROR;
+                }
+                apol_level_query_destroy(&query);
+                for (i = 0; i < apol_vector_get_size(v); i++) {
+                        level = (sepol_level_datum_t *) apol_vector_get_element(v, i);
+                        if (append_level_to_list(interp, level, result_obj) == TCL_ERROR) {
+                                apol_vector_destroy(&v, NULL);
+                                return TCL_ERROR;
+                        }
+                }
+                apol_vector_destroy(&v, NULL);
         }
         Tcl_SetObjResult(interp, result_obj);
         return TCL_OK;
 }
 
+/* Takes a sepol_cat_datum_t and appends a tuple of it to
+ * results_list.  The tuple consists of:
+ *    { cat_name {alias0 alias1 ...} {level0 level1 ...} cat_value }
+ */
+static int append_cat_to_list(Tcl_Interp *interp,
+			      sepol_cat_datum_t *cat_datum,
+			      Tcl_Obj *result_list)
+{
+	char *cat_name;
+	sepol_iterator_t *alias_iter = NULL;
+	apol_level_query_t *query = NULL;
+	apol_vector_t *levels = NULL;
+	size_t i;
+	uint32_t cat_value;
+	Tcl_Obj *cat_elem[4], *cat_list;
+	int retval = TCL_ERROR;
 
-/* Returns an ordered a 2-ple list of categories:
+	if (sepol_cat_datum_get_name(policydb->sh, policydb->p,
+				     cat_datum, &cat_name) < 0) {
+		Tcl_SetResult(interp, "Could not get category name.", TCL_STATIC);
+		goto cleanup;
+	}
+	if (sepol_cat_datum_get_alias_iter(policydb->sh, policydb->p,
+					   cat_datum, &alias_iter) < 0) {
+		Tcl_SetResult(interp, "Could not get alias iterator.", TCL_STATIC);
+		goto cleanup;
+	}
+	if (sepol_cat_datum_get_value(policydb->sh, policydb->p,
+				      cat_datum, &cat_value) < 0) {
+		Tcl_SetResult(interp, "Could not get category value.", TCL_STATIC);
+		goto cleanup;
+	}
+	cat_elem[0] = Tcl_NewStringObj(cat_name, -1);
+	cat_elem[1] = Tcl_NewListObj(0, NULL);
+	for ( ; !sepol_iterator_end(alias_iter); sepol_iterator_next(alias_iter)) {
+		char *alias_name;
+		Tcl_Obj *alias_obj;
+		if (sepol_iterator_get_item(alias_iter, (void **) &alias_name) < 0) {
+			Tcl_SetResult(interp, "Could not get alias name.", TCL_STATIC);
+			goto cleanup;
+		}
+		alias_obj = Tcl_NewStringObj(alias_name, -1);
+		if (Tcl_ListObjAppendElement(interp, cat_elem[1], alias_obj) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+	cat_elem[2] = Tcl_NewListObj(0, NULL);
+	if ((query = apol_level_query_create()) == NULL ||
+	    apol_level_query_set_cat(query, cat_name) < 0) {
+		Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
+		goto cleanup;
+	}
+	if (apol_get_level_by_query(policydb, query, &levels) < 0) {
+		Tcl_SetResult(interp, "Error running level query.", TCL_STATIC);
+		goto cleanup;
+	}
+	for (i = 0; i < apol_vector_get_size(levels); i++) {
+		sepol_level_datum_t *level = (sepol_level_datum_t *) apol_vector_get_element(levels, i);
+		char *sens_name;
+		Tcl_Obj *sens_obj;
+		if (sepol_level_datum_get_name(policydb->sh, policydb->p,
+					       level, &sens_name) < 0) {
+			Tcl_SetResult(interp, "Could not get sensitivity name.", TCL_STATIC);
+			goto cleanup;
+		}
+		sens_obj = Tcl_NewStringObj(sens_name, -1);
+		if (Tcl_ListObjAppendElement(interp, cat_elem[2], sens_obj) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+	cat_elem[3] = Tcl_NewLongObj((long) cat_value);
+	cat_list = Tcl_NewListObj(4, cat_elem);
+	if (Tcl_ListObjAppendElement(interp, result_list, cat_list) == TCL_ERROR) {
+		goto cleanup;
+	}
+
+	retval = TCL_OK;
+ cleanup:
+	sepol_iterator_destroy(&alias_iter);
+	apol_level_query_destroy(&query);
+	apol_vector_destroy(&levels, NULL);
+	return retval;
+}
+
+/* Returns an unordered list of MLS category tuples, or an empty list
+ * if no policy was loaded.
  *   elem 0 - category name
  *   elem 1 - list of associated aliases
- * If a parameter is given, return only that category tuple. If the
- * sensitivity does not exist or there is no policy loaded then throw
- * an error.
+ *   elem 2 - unordered list of sensitivities that have this category
+ *   elme 3 - category value
+ *
+ * argv[1] - category name to look up, or a regular expression, or
+ *	     empty to get all levels
+ * argv[2] - (optional) treat argv[1] as a category name or regex
  */
 static int Apol_GetCats(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
-        Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
-	int i, target_cats = -1;
+	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
+	sepol_cat_datum_t *cat;
 
 	if (policy == NULL) {
-                Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		return TCL_ERROR;
 	}
-        if (argc > 1) {
-                target_cats = get_category_idx(argv[1], policy);
-                if (target_cats == -1) {
-                        /* passed category is not within the policy */
-                        return TCL_OK;
-                }
-        }
-        for (i = 0; i < policy->num_categories; i++) {
-                Tcl_Obj *cats_obj[2], *cats_list;
-                ap_mls_cat_t *cats = policy->categories + i;
-                name_item_t *name = cats->aliases;
-                if (argc > 1 && i != target_cats) {
-                        continue;
-                }
-                cats_obj[0] = Tcl_NewStringObj(cats->name, -1);
-                cats_obj[1] = Tcl_NewListObj(0, NULL);
-                while (name != NULL) {
-                        Tcl_Obj *alias_obj = Tcl_NewStringObj(name->name, -1);
-                        if (Tcl_ListObjAppendElement(interp, cats_obj[1], alias_obj) == TCL_ERROR) {
-                                return TCL_ERROR;
-                        }
-                        name = name->next;
-                }
-                cats_list = Tcl_NewListObj(2, cats_obj);
-                if (Tcl_ListObjAppendElement(interp, result_obj, cats_list) == TCL_ERROR) {
-                        return TCL_ERROR;
-                }
-        }
-        Tcl_SetObjResult(interp, result_obj);
-        return TCL_OK;
-}
-
-/* Given a sensitivity, return a list of categories associated with
- * that level. */
-static int Apol_SensCats(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
-{
-	int i, sens_index;
-
-	if (argc != 2) {
-		Tcl_SetResult(interp, "wrong # of args", TCL_STATIC);
+	if (argc < 2) {
+		Tcl_SetResult(interp, "Need a category name and ?regex flag?.", TCL_STATIC);
 		return TCL_ERROR;
 	}
-	if (policy == NULL) {
-		return TCL_OK;
+	if (argc == 2) {
+		if (sepol_policydb_get_cat_by_name(policydb->sh, policydb->p,
+						   argv[1], &cat) < 0) {
+			/* passed category is not within the policy */
+			return TCL_OK;
+		}
+		if (append_cat_to_list(interp, cat, result_obj) == TCL_ERROR) {
+			return TCL_ERROR;
+		}
 	}
-        if ((sens_index = get_sensitivity_idx(argv[1], policy)) >= 0) {
-                int *cats, num_cats;
-                if (ap_mls_sens_get_level_cats(sens_index, &cats, &num_cats, policy) < 0) {
-                        Tcl_SetResult(interp, "could not get categories list", TCL_STATIC);
-                        return TCL_ERROR;
-                }
-                for (i = 0; i < num_cats; i++) {
-                        Tcl_AppendElement(interp, policy->categories[cats[i]].name);
-                }
-                free(cats);
-        }
-        return TCL_OK;
-}
-
-/* Given a category name, return a list a sensitivities that contain
- * that category. */
-static int Apol_CatsSens(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
-{
-	int i, cats_index;
-
-	if (argc != 2) {
-		Tcl_SetResult(interp, "wrong # of args", TCL_STATIC);
-		return TCL_ERROR;
+	else {
+		Tcl_Obj *regex_obj = Tcl_NewStringObj(argv[2], -1);
+		int regex_flag;
+		apol_cat_query_t *query = NULL;
+		apol_vector_t *v;
+		size_t i;
+		if (Tcl_GetBooleanFromObj(interp, regex_obj, &regex_flag) == TCL_ERROR) {
+			return TCL_ERROR;
+		}
+		if (*argv[1] != '\0') {
+			if ((query = apol_cat_query_create()) == NULL) {
+				Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
+				return TCL_ERROR;
+			}
+			if (apol_cat_query_set_cat(query, argv[1]) ||
+			    apol_cat_query_set_regex(query, regex_flag)) {
+				apol_cat_query_destroy(&query);
+				Tcl_SetResult(interp, "Error setting query options.", TCL_STATIC);
+				return TCL_ERROR;
+			}
+		}
+		if (apol_get_cat_by_query(policydb, query, &v) < 0) {
+			apol_cat_query_destroy(&query);
+			Tcl_SetResult(interp, "Error running category query.", TCL_STATIC);
+			return TCL_ERROR;
+		}
+		apol_cat_query_destroy(&query);
+		for (i = 0; i < apol_vector_get_size(v); i++) {
+			cat = (sepol_cat_datum_t *) apol_vector_get_element(v, i);
+			if (append_cat_to_list(interp, cat, result_obj) == TCL_ERROR) {
+				apol_vector_destroy(&v, NULL);
+				return TCL_ERROR;
+			}
+		}
+		apol_vector_destroy(&v, NULL);
 	}
-	if (policy == NULL) {
-		return TCL_OK;
-	}
-        if ((cats_index = get_category_idx(argv[1], policy)) >= 0) {
-                for (i = 0; i < policy->num_levels; i++) {
-                        ap_mls_level_t *level = policy->levels + i;
-                        if (ap_mls_does_level_use_category(level, cats_index)) {
-                                Tcl_AppendElement(interp, policy->sensitivities[level->sensitivity].name);
-                        }
-                }
-        }
-        return TCL_OK;
+	Tcl_SetObjResult(interp, result_obj);
+	return TCL_OK;
 }
 
 static int security_con_to_tcl_context_string(Tcl_Interp *interp, security_con_t *context, Tcl_Obj **dest_obj) {
@@ -1879,10 +2039,8 @@ int ap_tcl_components_init(Tcl_Interp *interp) {
 	Tcl_CreateCommand(interp, "apol_GetUsers", Apol_GetUsers, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetBools", Apol_GetBools, NULL, NULL);
         Tcl_CreateCommand(interp, "apol_SetBoolValue", Apol_SetBoolValue, NULL, NULL);
-	Tcl_CreateCommand(interp, "apol_GetSens", Apol_GetSens, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_GetLevels", Apol_GetLevels, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetCats", Apol_GetCats, NULL, NULL);
-	Tcl_CreateCommand(interp, "apol_SensCats", Apol_SensCats, NULL, NULL);
-	Tcl_CreateCommand(interp, "apol_CatsSens", Apol_CatsSens, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetInitialSIDs", Apol_GetInitialSIDs, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetPortconProtos", Apol_GetPortconProtos, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetPortcons", Apol_GetPortcons, NULL, NULL);
