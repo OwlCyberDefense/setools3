@@ -150,6 +150,20 @@ int find_net_domains_register(sechk_lib_t *lib)
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
+	fn_struct = sechk_fn_new();
+        if (!fn_struct) {
+                fprintf(stderr, "Error: out of memory\n");
+                return -1;
+        }
+        fn_struct->name = strdup("get_list");
+        if (!fn_struct->name) {
+                fprintf(stderr, "Error: out of memory\n");
+                return -1;
+        }
+        fn_struct->fn = &find_net_domains_get_list;
+        fn_struct->next = mod->functions;
+        mod->functions = fn_struct;
+
 	return 0;
 }
 
@@ -266,22 +280,9 @@ int find_net_domains_run(sechk_module_t *mod, policy_t *policy)
 				}
 				
 				item = NULL;
-				/* add to result set */
-				for (j = 0; j < src_types_sz; j++) {					
-                                        proof = sechk_proof_new();
-                                        if (!proof) {
-                                                fprintf(stderr, "Error: out of memory\n");
-                                                goto find_net_domains_run_fail;
-                                        }
-                                        proof->idx = src_types[j];
-                                        proof->type = POL_LIST_TYPE;
-                                        buff = re_render_av_rule(1, i, RULE_TE_ALLOW, policy);
-                                        if (!buff) {
-                                                fprintf(stderr, "Error: out of memory\n");
-                                                goto find_net_domains_run_fail;
-                                        }
-                                        proof->text = buff;
 
+				/* add to result set */
+				for (j = 0; j < src_types_sz; j++) {	
 					if (res->num_items > 0) {
 						item = sechk_result_get_item(src_types[j], POL_LIST_TYPE, res);
 					}
@@ -299,9 +300,31 @@ int find_net_domains_run(sechk_module_t *mod, policy_t *policy)
 						(res->num_items)++;
 					}
 
-					proof->next = item->proof;
-					item->proof = proof;	
-				}				
+					/* only 1 proof element/item */
+					if (!sechk_item_has_proof(src_types[j], POL_LIST_TYPE, item)) {
+						proof = sechk_proof_new();
+						if (!proof) {
+							fprintf(stderr, "Error: out of memory\n");
+							goto find_net_domains_run_fail;
+						}
+						proof->idx = src_types[j];
+						proof->type = POL_LIST_TYPE;
+						buff = re_render_av_rule(1, i, RULE_TE_ALLOW, policy);
+						if (!buff) {
+							fprintf(stderr, "Error: out of memory\n");
+							goto find_net_domains_run_fail;
+						}
+						proof->text = buff;
+
+						if (res->num_items > 0) {
+							item = sechk_result_get_item(src_types[j], POL_LIST_TYPE, res);
+						}
+
+						proof->next = item->proof;
+						item->proof = proof;	
+					}
+				}
+				break;
 			}
 		}
 	}
@@ -437,6 +460,39 @@ sechk_result_t *find_net_domains_get_result(sechk_module_t *mod)
 	}
 
 	return mod->result;
+}
+
+int find_net_domains_get_list(sechk_module_t *mod, int **array, int *size)
+{
+        int i;
+        sechk_item_t *item = NULL;
+
+        if (!mod || !array || !size) {
+                fprintf(stderr, "Error: invalid parameters\n");
+                return -1;
+        }
+        if (strcmp(mod_name, mod->name)) {
+                fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+                return -1;
+        }
+        if (!mod->result) {
+                fprintf(stderr, "Error: module has not been run\n");
+                return -1;
+        }
+
+        *size = mod->result->num_items;
+
+        *array = (int*)malloc(mod->result->num_items * sizeof(int));
+        if (!(*array)) {
+                fprintf(stderr, "Error: out of memory\n");
+                return -1;
+        }
+         
+        for (i = 0, item = mod->result->items; item && i < *size; i++, item = item->next) {
+                (*array)[i] = item->item_id;
+        }
+         
+        return 0;
 }
 
 /* The find_net_domains_data_new function allocates and returns an
