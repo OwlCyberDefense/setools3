@@ -126,6 +126,20 @@ int find_netif_types_register(sechk_lib_t *lib)
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
+        fn_struct = sechk_fn_new();
+        if (!fn_struct) {
+                fprintf(stderr, "Error: out of memory\n");
+                return -1;
+        }
+        fn_struct->name = strdup("get_list");
+        if (!fn_struct->name) {
+                fprintf(stderr, "Error: out of memory\n");
+                return -1;
+        }
+        fn_struct->fn = &find_netif_types_get_list;
+        fn_struct->next = mod->functions;
+        mod->functions = fn_struct;
+
 	return 0;
 }
 
@@ -435,6 +449,39 @@ sechk_result_t *find_netif_types_get_result(sechk_module_t *mod)
 	}
 
 	return mod->result;
+}
+
+int find_netif_types_get_list(sechk_module_t *mod, int **array, int *size)
+{
+        int i;
+        sechk_item_t *item = NULL;
+
+        if (!mod || !array || !size) {
+                fprintf(stderr, "Error: invalid parameters\n");
+                return -1;
+        }
+        if (strcmp(mod_name, mod->name)) {
+                fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+                return -1;
+        }
+        if (!mod->result) {
+                fprintf(stderr, "Error: module has not been run\n");
+                return -1;
+        }
+
+        *size = mod->result->num_items;
+
+        *array = (int*)malloc(mod->result->num_items * sizeof(int));
+        if (!(*array)) {
+                fprintf(stderr, "Error: out of memory\n");
+                return -1;
+        }
+
+        for (i = 0, item = mod->result->items; item && i < *size; i++, item = item->next) {
+                (*array)[i] = item->item_id;
+        }
+
+        return 0;
 }
 
 /* The find_netif_types_data_new function allocates and returns an
