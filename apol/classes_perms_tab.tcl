@@ -2,7 +2,7 @@
 # see file 'COPYING' for use and warranty information 
 
 # TCL/TK GUI for SE Linux policy analysis
-# Requires tcl and tk 8.3+, with BWidgets
+# Requires tcl and tk 8.4+, with BWidgets
 
 ##############################################################
 # ::Apol_Class_Perms
@@ -10,164 +10,48 @@
 # The Classes/Permissions page
 ##############################################################
 namespace eval Apol_Class_Perms {
-# opts(opt), where opt =
-# show_classes1		Show class objects (first section)
-# show_perms1 		if show_classes1, also show permissions
-# show_comm_perms1	if show_classes1 and show_perms1, also expand common permissions
-# show_comm_perms2	Show common permissions (second section)
-# show_classes2		if show_comm_perms2, also show permissions
-# show_perms2		if show_comm_perms2, also show object classes
-# show_perms3		Show permissions (third section)
-# show_classes3		if show_perms3, also show object classes
-# show_comm_perms3	if show_perms3, also expand common permissions
-# usesrchstr		use value of srchstr in searches
-	variable opts
-	set opts(show_classes1)		1
-	set opts(show_comm_perms1)	0
-	set opts(show_perms1)		0
-	set opts(show_classes2)		0
-	set opts(show_comm_perms2)	0
-	set opts(show_perms2)		0
-	set opts(show_classes3)		0
-	set opts(show_comm_perms3)	0
-	set opts(show_perms3)		0
-	set opts(usesrchstr)		0
-	variable class_list 		""
-	variable common_perms_list 	""
-	variable perms_list		""
-	variable srchstr		""
-	
-	# Global Widgets
-    	variable show_classes1
-  	variable show_classes2
- 	variable show_classes3
-        variable show_comm_perms1
-        variable show_comm_perms2
-        variable show_comm_perms3
-        variable show_perms1
-        variable show_perms2
-        variable show_perms3
-    	variable resultsbox 
-    	variable sString 
-    	variable sEntry
+    variable class_list {}
+    variable common_perms_list {}
+    variable perms_list {}
+    variable opts
+    variable widgets
 }
 
 proc Apol_Class_Perms::open { } {
-	variable class_list
-	variable common_perms_list
-	variable perms_list
-	
-	# Check whether "classes" are included in the current opened policy file
-	if {$ApolTop::contents(classes) == 1} {
-		set rt [catch {set class_list [apol_GetNames classes]} err]
-		if {$rt != 0} {
-			return -code error $err
-		}
-		set class_list [lsort $class_list]
-	} 	
-	# Check whether "perms" are included in the current opened policy file		
-	if {$ApolTop::contents(perms) == 1} {
-		set rt [catch {set common_perms_list [apol_GetNames common_perms]} err]
-		if {$rt != 0} {
-			return -code error $err
-		}
-		set common_perms_list [lsort $common_perms_list]
-		set rt [catch {set perms_list [apol_GetNames perms]} err]
-		if {$rt != 0} {
-			return -code error $err
-		}
-		set perms_list [lsort $perms_list]
-	} 	
-	
-	return 0
+    variable class_list {}
+    foreach class [lsort -index 0 [apol_GetClasses {} 0]] {
+        lappend class_list [lindex $class 0]
+    }
+    variable common_perms_list {}
+    foreach common [lsort -index 0 [apol_GetCommons {} 0]] {
+        lappend common_perms_list [lindex $common 0]
+    }
+    variable perms_list {}
+    foreach perm [lsort -index 0 [apol_GetPerms {} 0]] {
+        lappend perms_list [lindex $perm 0]
+    }
 }
 
 proc Apol_Class_Perms::close { } {
-	variable class_list 		""
-	variable common_perms_list 	""
-	variable perms_list		""
-	variable srchstr		""
-	
-	Apol_Class_Perms::init_options	
-        set class_list 		""
-	set common_perms_list 	""
-	set perms_list 		""
-	set srchstr 		""
-	$Apol_Class_Perms::resultsbox configure -state normal
-	$Apol_Class_Perms::resultsbox delete 0.0 end
-	ApolTop::makeTextBoxReadOnly $Apol_Class_Perms::resultsbox 
-	      
-	return 0
+    variable class_list {}
+    variable common_perms_list {}
+    variable perms_list {}
+    variable opts
+    variable widgets
+    Apol_Widget::clearSearchResults $widgets(results)
+    Apol_Widget::setRegexpEntryState $widgets(regexp) 0
+    array set opts {
+        classes:show 1  classes:perms 0  classes:commons 0
+        commons:show 0  commons:perms 0  commons:classes 0
+        perms:show 0    perms:classes 0  perms:commons 0
+    }
 }
 
 proc Apol_Class_Perms::free_call_back_procs { } {
 }
 
-# ----------------------------------------------------------------------------------------
-#  Command Apol_Class_Perms::set_Focus_to_Text
-#
-#  Description: 
-# ----------------------------------------------------------------------------------------
 proc Apol_Class_Perms::set_Focus_to_Text {} {
-	focus $Apol_Class_Perms::resultsbox
-	return 0
-}
-
-proc Apol_Class_Perms::enable_disable_widgets { } {
-	variable opts
-     	variable show_classes1
-  	variable show_classes2
- 	variable show_classes3
-        variable show_comm_perms1
-        variable show_comm_perms2
-        variable show_comm_perms3
-        variable show_perms1
-        variable show_perms2
-        variable show_perms3
-        variable sString 
-    	variable sEntry
-        
-        $sString configure -state normal        
-    	if { $opts(show_classes1) } {
-		$show_perms1 configure -state normal
-		if { $opts(show_perms1) } {
-			$show_comm_perms1 configure -state normal
-		} else {
-			$show_comm_perms1 configure -state disabled
-			$show_comm_perms1 deselect
-		}		
-     	} else {
-     		$show_perms1 configure -state disabled
-		$show_comm_perms1 configure -state disabled
-		$show_perms1 deselect
-		$show_comm_perms1 deselect
-    	}
-    	if { $opts(show_comm_perms2) } {
-		$show_perms2 configure -state normal
-		$show_classes2 configure -state normal
-     	} else {
-     		$show_perms2 configure -state disabled
-		$show_classes2 configure -state disabled
-		$show_perms2 deselect
-		$show_classes2 deselect
-    	}
-    	if { $opts(show_perms3) } {
-		$show_classes3 configure -state normal
-		$show_comm_perms3 configure -state normal
-     	} else {
-     		$show_classes3 configure -state disabled
-		$show_comm_perms3 configure -state disabled
-		$show_classes3 deselect
-		$show_comm_perms3 deselect
-    	}
-    	# Disable the regex check button if all search criteria is not selected
-    	if { !$opts(show_classes1) && !$opts(show_comm_perms2) && !$opts(show_perms3) } {
-    		$sString deselect 
-    		$sString configure -state disabled
-    	}
-    	Apol_Class_Perms::useSearch $sEntry
-    	update
-    	return 0
+    focus $Apol_Class_Perms::widgets(results)
 }
 
 ########################################################################
@@ -175,69 +59,19 @@ proc Apol_Class_Perms::enable_disable_widgets { } {
 #  	- goes to indicated line in text box
 # 
 proc Apol_Class_Perms::goto_line { line_num } {
-	variable resultsbox
-	
-	ApolTop::goto_line $line_num $resultsbox
-	return 0
-}
-
-proc Apol_Class_Perms::init_options { } {
-	variable show_classes1
-  	variable show_classes2
- 	variable show_classes3
-        variable show_comm_perms1
-        variable show_comm_perms2
-        variable show_comm_perms3
-        variable show_perms1
-        variable show_perms2
-        variable show_perms3
-    	variable sString 
-    	variable sEntry 
-    	variable opts
-    	set opts(show_classes1)		1
-	set opts(show_comm_perms1)	0
-	set opts(show_perms1)		0
-	set opts(show_classes2)		0
-	set opts(show_comm_perms2)	0
-	set opts(show_perms2)		0
-	set opts(show_classes3)		0
-	set opts(show_comm_perms3)	0
-	set opts(show_perms3)		0
-	set opts(usesrchstr)		0
-
-	Apol_Class_Perms::enable_disable_widgets
-	
-    	return 0
+    variable widgets
+    Apol_Widget::gotoLineSearchResults $widgets(results) $line_num
 }
 
 proc Apol_Class_Perms::popupInfo {which name} {
-	set rt [catch {set info [apol_GetSingleClassPermInfo $name $which]} err]
-	if {$rt != 0} {
-		tk_messageBox -icon error -type ok -title "Error" -message "$err"
-		return -1
-	}
-
-	set w .class_perms_infobox
-	set rt [catch {destroy $w} err]
-	if {$rt != 0} {
-		tk_messageBox -icon error -type ok -title "Error" -message "$err"
-		return -1
-	}
-	toplevel $w 
-	wm title $w "$name"
-    	wm withdraw $w
-	set sf [ScrolledWindow $w.sf  -scrollbar both -auto both]
-	set f [text [$sf getframe].f -font {helvetica 10} -wrap none -width 35 -height 10]
-	$sf setwidget $f
-     	set b1 [button $w.close -text Close -command "catch {destroy $w}" -width 10]
-     	pack $b1 -side bottom -anchor s -padx 5 -pady 5 
-	pack $sf -fill both -expand yes
-     	$f insert 0.0 $info
- 	wm geometry $w +50+50
-	wm deiconify $w	
-	$f configure -state disabled
-	wm protocol $w WM_DELETE_WINDOW "destroy $w"
-	return 0
+    if {$which == "class"} {
+        set text [renderClass [lindex [apol_GetClasses $name] 0] 1 0]
+    } elseif {$which == "common"} {
+        set text [renderCommon [lindex [apol_GetCommons $name] 0] 1 0]
+    } else {
+        set text [renderPerm [lindex [apol_GetPerms $name] 0] 1 1]
+    }
+    Apol_Widget::showPopupText $name $text
 }
 
 ##############################################################
@@ -245,191 +79,308 @@ proc Apol_Class_Perms::popupInfo {which name} {
 #  	- Search text widget for a string
 # 
 proc Apol_Class_Perms::search { str case_Insensitive regExpr srch_Direction } {
-	variable resultsbox
-	
-	ApolTop::textSearch $resultsbox $str $case_Insensitive $regExpr $srch_Direction
-	return 0
+    variable widgets
+    ApolTop::textSearch $widgets(results).tb $str $case_Insensitive $regExpr $srch_Direction
 }
 
 proc Apol_Class_Perms::search_Class_Perms {} {
-	variable opts
-	variable srchstr
-	
-	if {$opts(usesrchstr) && $srchstr == ""} {
-		tk_messageBox -icon error -type ok -title "Error" -message "No regular expression provided!"
-		return
-	}
-	if { !$opts(show_classes1) && !$opts(show_comm_perms2) && !$opts(show_perms3) } {
-    		tk_messageBox -icon error -type ok -title "Error" -message "No search criteria provided!"
-		return
-    	}
-    	
-	set rt [catch {set results [apol_GetClassPermInfo $opts(show_classes1) $opts(show_perms1) \
-		 $opts(show_comm_perms1) $opts(show_comm_perms2) $opts(show_perms2) $opts(show_classes2) \
-		 $opts(show_perms3) $opts(show_classes3) $opts(show_comm_perms3) $opts(usesrchstr) \
-		 $srchstr]} err]
-		 
-	if {$rt != 0} {	
-		tk_messageBox -icon error -type ok -title "Error" -message "$err"
-		return 
-	} else {
-	    $Apol_Class_Perms::resultsbox configure -state normal
-	    $Apol_Class_Perms::resultsbox delete 0.0 end
-	    $Apol_Class_Perms::resultsbox insert end $results
-	    ApolTop::makeTextBoxReadOnly $Apol_Class_Perms::resultsbox 
+    variable opts
+    variable widgets
+
+    Apol_Widget::clearSearchResults $widgets(results)
+    if {![ApolTop::is_policy_open]} {
+        tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened!"
+        return
+    }
+    if {!$opts(classes:show) && !$opts(commons:show) && !$opts(perms:show)} {
+        tk_messageBox -icon error -type ok -title "Error" -message "No search options provided!"
+        return
+    }
+    set use_regexp [Apol_Widget::getRegexpEntryState $widgets(regexp)]
+    set regexp [Apol_Widget::getRegexpEntryValue $widgets(regexp)]
+    if {$use_regexp} {
+        if {$regexp == {}} {
+            tk_messageBox -icon error -type ok -title "Error" -message "No regular expression provided."
+            return
         }
-	return 0	
+    } else {
+        set regexp {}
+    }
+
+    set results {}
+
+    if {$opts(classes:show)} {
+        if {[set classes_perms $opts(classes:perms)]} {
+            set classes_commons $opts(classes:commons)
+        } else {
+            set classes_commons 0
+        }
+        if {[catch {apol_GetClasses $regexp $use_regexp} classes_data]} {
+            tk_messageBox -icon error -type ok -title Error -message "Error obtaining classes list:\n$classes_data"
+            return
+        }
+        append results "OBJECT CLASSES:\n"
+        if {$classes_data == {}} {
+            append results "Search returned no results.\n"
+        } else {
+            foreach c [lsort -index 0 $classes_data] {
+                append results [renderClass $c $opts(classes:perms) $classes_commons]
+            }
+        }
+    }
+
+    if {$opts(commons:show)} {
+        if {[catch {apol_GetCommons $regexp $use_regexp} commons_data]} {
+            tk_messageBox -icon error -type ok -title Error -message "Error obtaining common permissions list:\n$commons_data"
+            return
+        }
+        append results "\nCOMMON PERMISSIONS:  \n"
+        if {$commons_data == {}} {
+            append results "Search returned no results.\n"
+        } else {
+            foreach c [lsort -index 0 $commons_data] {
+                append results [renderCommon $c $opts(commons:perms) $opts(commons:classes)]
+            }
+        }
+    }
+
+    if {$opts(perms:show)} {
+        if {[catch {apol_GetPerms $regexp $use_regexp} perms_data]} {
+            tk_messageBox -icon error -type ok -title Error -message "Error obtaining permissions list:\n$perms_data"
+            return
+        }
+        append results "\nPERMISSIONS"
+        if {$opts(perms:classes)} {
+            append results "  (* means class uses permission via a common permission)"
+        }
+        append results ":\n"
+        if {$perms_data == {}} {
+            append results "Search returned no results.\n"
+        } else {
+            foreach p [lsort -index 0 $perms_data] {
+                append results [renderPerm $p $opts(perms:classes) $opts(perms:commons)]
+            }
+        }
+    }
+    Apol_Widget::appendSearchResultText $widgets(results) [string trim $results]
 }
 
-proc Apol_Class_Perms::useSearch { entry } {
-        if { $Apol_Class_Perms::opts(usesrchstr) } {
-        	$entry config -state normal -background  white
-        } else {
-        	$entry config -state disabled -background  $ApolTop::default_bg_color
+proc Apol_Class_Perms::renderClass {class_datum show_perms expand_common} {
+    foreach {class_name common_class perms_list} $class_datum {break}
+    set text "$class_name\n"
+    if {$show_perms} {
+        foreach perm [lsort $perms_list] {
+            append text "    $perm\n"
         }
-        return 0
+        if {$common_class != {}} {
+            append text "    $common_class  (common perm)\n"
+            if {$expand_common} {
+                foreach perm [lsort [lindex [apol_GetCommons $common_class] 0 1]] {
+                    append text "        $perm\n"
+                }
+            }
+        }
+        append text \n
+    }
+    return $text
+}
+
+proc Apol_Class_Perms::renderCommon {common_datum show_perms show_classes} {
+    foreach {common_name perms_list classes_list} $common_datum {break}
+    set text "$common_name\n"
+    if {$show_perms} {
+        foreach perm [lsort $perms_list] {
+            append text "    $perm\n"
+        }
+    }
+    if {$show_classes} {
+        append text "  Object classes that use this common permission:\n"
+        foreach class [lsort $classes_list] {
+            append text "      $class\n"
+        }
+    }
+    if {$show_perms || $show_classes} {
+        append text "\n"
+    }
+    return $text
+}
+
+proc Apol_Class_Perms::renderPerm {perm_datum show_classes show_commons} {
+    foreach {perm_name classes_list commons_list} $perm_datum {break}
+    set text "$perm_name\n"
+    if {$show_classes} {
+        append text "  object classes:\n"
+        # recurse through each class that inherits from a commons
+        foreach common $commons_list {
+            foreach class [lindex [apol_GetCommons $common] 0 2] {
+                lappend classes_list ${class}*
+            }
+        }
+        if {$classes_list == {}} {
+            append text "    <none>\n"
+        } else {
+            foreach class [lsort -uniq $classes_list] {
+                append text "    $class\n"
+            }
+        }
+    }
+    if {$show_commons} {
+        append text "  common permissions:\n"
+        if {$commons_list == {}} {
+            append text "    <none>\n"
+        } else {
+            foreach common [lsort $commons_list] {
+                append text "    $common\n"
+            }
+        }
+    }
+    if {$show_classes || $show_commons} {
+        append text "\n"
+    }
+    return $text
 }
 
 proc Apol_Class_Perms::create {nb} {
-        variable show_classes1
-        variable show_classes2
-        variable show_classes3
-        variable show_comm_perms1
-        variable show_comm_perms2
-        variable show_comm_perms3
-        variable show_perms1
-        variable show_perms2
-        variable show_perms3
-        variable sString 
-        variable sEntry 
-        variable resultsbox 
-        variable opts
-        
-        # Layout frames
-        set frame [$nb insert end $ApolTop::class_perms_tab -text "Classes/Perms"]
-        set topf  [frame $frame.topf]
-    
-        # Paned Windows
-        set pw1   [PanedWindow $topf.pw -side top]
-        set pane  [$pw1 add ]
-        set search_pane [$pw1 add -weight 5]
-        set pw2   [PanedWindow $pane.pw -side left]
-        set class_pane 	[$pw2 add -weight 2]
-        set common_pane 	[$pw2 add ]
-        set perms_pane 	[$pw2 add -weight 3]
-        global tcl_platform
-    
-        # Major subframes
-        set classes_box 	[TitleFrame $class_pane.tbox -text "Object Classes"]
-        set common_box 		[TitleFrame $common_pane.abox -text "Common Permissions"]
-        set perms_box 		[TitleFrame $perms_pane.abox -text "Permissions"]
-        set options_box 	[TitleFrame $search_pane.obox -text "Search Options"]
-        set results_box 	[TitleFrame $search_pane.rbox -text "Search Results"]
-    
-        # Placing layout frames and major subframes
-        pack $options_box -pady 2 -padx 2 -fill x  -anchor n 
-        pack $classes_box -padx 2 -side left -fill both -expand yes
-        pack $common_box -padx 2 -side left -fill both -expand yes
-        pack $perms_box -padx 2 -side left -fill both -expand yes
-        pack $results_box -pady 2 -padx 2 -fill both -expand yes
-        pack $pw1 -fill both -expand yes
-        pack $pw2 -fill both -expand yes	
-        pack $topf -fill both -expand yes 
-        
-        # Object Classes listbox
-	set class_listbox [Apol_Widget::makeScrolledListbox [$classes_box getframe].lb -height 10 -width 20 -listvar Apol_Class_Perms::class_list]
-	Apol_Widget::setListboxCallbacks $class_listbox \
-		{{"Display Object Class Info" {Apol_Class_Perms::popupInfo class}}}
+    variable opts
+    variable widgets
 
-        # Common Permissions listbox
-	set common_listbox [Apol_Widget::makeScrolledListbox [$common_box getframe].lb -height 5 -width 20 -listvar Apol_Class_Perms::common_perms_list]
-	Apol_Widget::setListboxCallbacks $common_listbox \
-		{{"Display Common Permission Class Info" {Apol_Class_Perms::popupInfo common_perm}}}
-        
-        # Permissions listbox 
-	set perms_listbox [Apol_Widget::makeScrolledListbox [$perms_box getframe].lb -height 10 -width 20 -listvar Apol_Class_Perms::perms_list]
-	Apol_Widget::setListboxCallbacks $perms_listbox \
-		{{"Display Permission Info" {Apol_Class_Perms::popupInfo perm}}}
+    array set opts {
+        classes:show 1  classes:perms 0  classes:commons 0
+        commons:show 0  commons:perms 0  commons:classes 0
+        perms:show 0    perms:classes 0  perms:commons 0
+    }
 
-        # Placing object classes, common permissions and permissions listboxe frames
-        pack $class_listbox -fill both -expand yes
-        pack $common_listbox -fill both -expand yes
-        pack $perms_listbox -fill both -expand yes
-        
-        # Search options section      
-        set opts_fm 			[$options_box getframe]
-        set fm_classes_select 		[frame $opts_fm.class -relief sunken -borderwidth 1]
-        set fm_comm_perms_select 	[frame $opts_fm.common -relief sunken -borderwidth 1]
-        set fm_perms_select 		[frame $opts_fm.perms -relief sunken -borderwidth 1]
-        set fm_sString 			[frame $opts_fm.so -relief flat -borderwidth 1]
-        set okbox 			[frame $opts_fm.okbox]
-        
-        # Placing search options section frames
-        pack $okbox -side right -anchor n -fill both -expand yes -padx 5
-        pack $fm_classes_select -side left -anchor n -padx 5 -pady 2 -fill y 
-        pack $fm_comm_perms_select -side left -anchor n -fill y -pady 2
-        pack $fm_perms_select -side left -anchor n -fill y -padx 5 -pady 2
-        pack $fm_sString -side left -anchor n -fill both -expand yes -padx 5   
-        
-        # First set of checkbuttons
-        set show_classes1 [checkbutton $fm_classes_select.show_classes1 -text "Object Classes" \
-    	-variable Apol_Class_Perms::opts(show_classes1) \
-    	-command { Apol_Class_Perms::enable_disable_widgets }] 
-        set show_perms1 [checkbutton $fm_classes_select.show_perms1 -text "Include Perms" \
-    	-variable Apol_Class_Perms::opts(show_perms1) -padx 10 \
-    	-command { Apol_Class_Perms::enable_disable_widgets }]
-        set show_comm_perms1 [checkbutton $fm_classes_select.show_comm_perms1 -text "Expand Common Perms" \
-    	-variable Apol_Class_Perms::opts(show_comm_perms1) -padx 10]
-    	
-        # Second set of checkbuttons
-        set show_comm_perms2 [checkbutton $fm_comm_perms_select.show_comm_perms2 -text "Common Permissions" \
-    	-variable Apol_Class_Perms::opts(show_comm_perms2) \
-    	-command { Apol_Class_Perms::enable_disable_widgets }] 
-        set show_perms2 [checkbutton $fm_comm_perms_select.show_perms2 -text "Include Perms" \
-    	-variable Apol_Class_Perms::opts(show_perms2) -padx 10]
-        set show_classes2 [checkbutton $fm_comm_perms_select.show_classes2 -text "Object Classes" \
-    	-variable Apol_Class_Perms::opts(show_classes2) -padx 10]
-        
-        # Third set of checkbuttons	
-        set show_perms3 [checkbutton $fm_perms_select.show_perms3 -text "Permissions" \
-    	-variable Apol_Class_Perms::opts(show_perms3) \
-    	-command { Apol_Class_Perms::enable_disable_widgets }] 
-        set show_classes3 [checkbutton $fm_perms_select.show_classes3 -text "Object Classes" \
-    	-variable Apol_Class_Perms::opts(show_classes3) -padx 10]
-        set show_comm_perms3 [checkbutton $fm_perms_select.show_comm_perms3 -text "Common Perms" \
-    	-variable Apol_Class_Perms::opts(show_comm_perms3) -padx 10]
-          
-        # Search string section widgets
-        set sEntry [Entry $fm_sString.entry -textvariable Apol_Class_Perms::srchstr -width 40 \
-    		    -helptext "Enter a regular expression"]
-        set sString [checkbutton $fm_sString.cb -variable Apol_Class_Perms::opts(usesrchstr) \
-        		-text "Search using regular expression" \
-    		   	-command "Apol_Class_Perms::useSearch $sEntry"] 
-    
-        # Action buttons
-        button $okbox.ok -text OK -width 6 -command { Apol_Class_Perms::search_Class_Perms }
-        #button $okbox.print -text Print -width 6 -command {ApolTop::unimplemented}
-            
-        # Display results window
-        set sw [ScrolledWindow [$results_box getframe].sw -auto none]
-        set resultsbox [text [$sw getframe].text -bg white -wrap none -state disabled] 
-        $sw setwidget $resultsbox
-        
-        # Placing search options section widgets
-        pack $show_classes1 $show_perms1 $show_comm_perms1 -anchor w 
-        pack $show_comm_perms2 $show_perms2 $show_classes2 -anchor w  
-        pack $show_perms3 $show_classes3 $show_comm_perms3 -anchor w
-        pack $sString -side top -anchor w -expand yes 
-        pack $sEntry -fill x -anchor center -expand yes 
-        pack $okbox.ok -side top -padx 5 -pady 5 -anchor se 
-      
-        # Placing display widgets
-        pack $sw -side left -expand yes -fill both 
-        
-        # Initializes widget options
-        Apol_Class_Perms::init_options
-    
-        return $frame	
+    # Layout frames
+    set frame [$nb insert end $ApolTop::class_perms_tab -text "Classes/Perms"]
+
+    # Paned Windows
+    set pw1 [PanedWindow $frame.pw -side top]
+    set left_pane   [$pw1 add -weight 0]
+    set center_pane [$pw1 add -weight 1]
+    set pw2 [PanedWindow $left_pane.pw -side left]
+    set class_pane  [$pw2 add -weight 1]
+    set common_pane [$pw2 add -weight 0]
+    set perms_pane  [$pw2 add -weight 1]
+
+    # Major subframes
+    set classes_box [TitleFrame $class_pane.tbox -text "Object Classes"]
+    set common_box  [TitleFrame $common_pane.tbox -text "Common Permissions"]
+    set perms_box   [TitleFrame $perms_pane.tbox -text "Permissions"]
+    set options_box [TitleFrame $center_pane.obox -text "Search Options"]
+    set results_box [TitleFrame $center_pane.rbox -text "Search Results"]
+
+    # Placing layout frames and major subframe
+    pack $classes_box -fill both -expand yes
+    pack $common_box -fill both -expand yes
+    pack $perms_box -fill both -expand yes
+    pack $options_box -padx 2 -fill both -expand 0
+    pack $results_box -padx 2 -fill both -expand yes
+    pack $pw1 -fill both -expand yes
+    pack $pw2 -fill both -expand yes
+
+    # Object Classes listbox
+    set class_listbox [Apol_Widget::makeScrolledListbox [$classes_box getframe].lb -height 10 -width 20 -listvar Apol_Class_Perms::class_list]
+    Apol_Widget::setListboxCallbacks $class_listbox \
+        {{"Display Object Class Info" {Apol_Class_Perms::popupInfo class}}}
+    pack $class_listbox -fill both -expand yes
+
+    # Common Permissions listbox
+    set common_listbox [Apol_Widget::makeScrolledListbox [$common_box getframe].lb -height 5 -width 20 -listvar Apol_Class_Perms::common_perms_list]
+    Apol_Widget::setListboxCallbacks $common_listbox \
+        {{"Display Common Permission Class Info" {Apol_Class_Perms::popupInfo common}}}
+    pack $common_listbox -fill both -expand yes
+
+    # Permissions listbox 
+    set perms_listbox [Apol_Widget::makeScrolledListbox [$perms_box getframe].lb -height 10 -width 20 -listvar Apol_Class_Perms::perms_list]
+    Apol_Widget::setListboxCallbacks $perms_listbox \
+        {{"Display Permission Info" {Apol_Class_Perms::popupInfo perm}}}
+    pack $perms_listbox -fill both -expand yes
+
+    # Search options section      
+    set ofm [$options_box getframe]
+
+    # First set of checkbuttons
+    set classesfm [frame $ofm.classes -relief sunken -borderwidth 1]
+    set classes [checkbutton $classesfm.classes -text "Object Classes" \
+                     -variable Apol_Class_Perms::opts(classes:show)]
+    set perms [checkbutton $classesfm.perms -text "Include Perms" \
+                   -variable Apol_Class_Perms::opts(classes:perms) -padx 10]
+    set commons [checkbutton $classesfm.commons -text "Expand Common Perms" \
+                     -variable Apol_Class_Perms::opts(classes:commons) \
+                     -state disabled -padx 10]
+    trace add variable Apol_Class_Perms::opts(classes:show) write \
+        [list Apol_Class_Perms::toggleCheckbuttons $perms $commons]
+    trace add variable Apol_Class_Perms::opts(classes:perms) write \
+        [list Apol_Class_Perms::toggleCheckbuttons $commons {}]
+    pack $classes $perms $commons -anchor w
+
+    # Second set of checkbuttons
+    set commonsfm [frame $ofm.commons -relief sunken -borderwidth 1]
+    set commons [checkbutton $commonsfm.commons -text "Common Permissions" \
+                     -variable Apol_Class_Perms::opts(commons:show)]
+    set perms [checkbutton $commonsfm.perms2 -text "Include Perms" \
+                   -variable Apol_Class_Perms::opts(commons:perms) \
+                   -state disabled -padx 10]
+    set classes [checkbutton $commonsfm.classes -text "Object Classes" \
+                     -variable Apol_Class_Perms::opts(commons:classes) \
+                     -state disabled -padx 10]
+    trace add variable Apol_Class_Perms::opts(commons:show) write \
+        [list Apol_Class_Perms::toggleCheckbuttons $perms $classes]
+    pack $commons $perms $classes -anchor w
+
+    # Third set of checkbuttons
+    set permsfm [frame $ofm.perms -relief sunken -borderwidth 1]
+    set perms [checkbutton $permsfm.prems -text "Permissions" \
+                   -variable Apol_Class_Perms::opts(perms:show)]
+    set classes [checkbutton $permsfm.classes -text "Object Classes" \
+                     -variable Apol_Class_Perms::opts(perms:classes) \
+                     -state disabled -padx 10]
+    set commons [checkbutton $permsfm.commons -text "Common Perms" \
+                     -variable Apol_Class_Perms::opts(perms:commons) \
+                     -state disabled -padx 10]
+    trace add variable Apol_Class_Perms::opts(perms:show) write \
+        [list Apol_Class_Perms::toggleCheckbuttons $classes $commons]
+    pack $perms $classes $commons -anchor w
+
+    set widgets(regexp) [Apol_Widget::makeRegexpEntry $ofm.regexp]
+
+    pack $classesfm $commonsfm $permsfm $widgets(regexp) \
+        -side left -padx 5 -pady 4 -anchor ne
+
+    set ok [button $ofm.ok -text OK -width 6 \
+                -command Apol_Class_Perms::search_Class_Perms]
+    pack $ok -side right -pady 5 -padx 5 -anchor ne
+
+    # Display results window
+    set widgets(results) [Apol_Widget::makeSearchResults [$results_box getframe].results]
+    pack $widgets(results) -expand yes -fill both 
+
+    return $frame	
 }
 
-                                                                                                                                                                                              
+proc Apol_Class_Perms::toggleCheckbuttons {cb1 cb2 name1 name2 op} {
+    variable opts
+    variable widgets
+    if {$opts($name2)} {
+        $cb1 configure -state normal
+        if {$name2 == "classes:show"} {
+            if {$opts(classes:perms)} {
+                $cb2 configure -state normal
+            } else {
+                $cb2 configure -state disabled
+            }
+        } elseif {$cb2 != {}} {
+            $cb2 configure -state normal
+        }
+    } else {
+        $cb1 configure -state disabled
+        if {$cb2 != {}} {
+            $cb2 configure -state disabled
+        }
+    }
+    if {!$opts(classes:show) && !$opts(commons:show) && !$opts(perms:show)} {
+        Apol_Widget::setRegexpEntryState $widgets(regexp) 0
+    } else {
+        Apol_Widget::setRegexpEntryState $widgets(regexp) 1
+    }
+}

@@ -113,12 +113,6 @@ static int Apol_GetNames(ClientData clientData, Tcl_Interp * interp, int argc, C
 			free(name);
 		}
 	}
-	else if(strcmp("common_perms", argv[1]) == 0) {
-		for(i = 0; get_common_perm_name(i, &name, policy) == 0; i++) {
-			Tcl_AppendElement(interp, name);
-			free(name);
-		}		
-	}
 	else if(strcmp("initial_sids", argv[1]) == 0) {
 		for(i = 0; get_initial_sid_name(i, &name, policy) == 0; i++) {
 			Tcl_AppendElement(interp, name);
@@ -416,385 +410,409 @@ static int Apol_GetAttribs(ClientData clientData, Tcl_Interp *interp, int argc, 
 	return TCL_OK;
 }
 
-static int append_common_perm_str(bool_t do_perms, bool_t do_classes, bool_t newline, int idx, Tcl_DString *buf,
-				policy_t *policy);
-static int append_perm_str(bool_t do_common_perms, bool_t do_classes, bool_t newline, int idx, Tcl_DString *buf,
-                           policy_t *policy);
-
-static int append_class_str(bool_t do_perms, bool_t do_cps, bool_t expand_cps, bool_t newline, int idx, Tcl_DString *buf,
-				policy_t *policy)
-{
-	int i, cp_idx;
-	
-	if(idx >= policy->num_obj_classes|| buf == NULL) {
-		return -1;
-	}
-	
-	Tcl_DStringAppend(buf, policy->obj_classes[idx].name, -1);
-	
-	if(do_cps || do_perms) {
-		Tcl_DStringAppend(buf, "\n", -1);
-	}
-	/* class-specific perms */
-	if(do_perms) {
-		for(i = 0; i < policy->obj_classes[idx].num_u_perms; i++) {
-			assert(i < policy->num_perms);
-			Tcl_DStringAppend(buf, "     ", -1);
-			append_perm_str(0, 0, 1, policy->obj_classes[idx].u_perms[i], buf, policy);
-		}
-	}
-	
-	/* common perms */
-	if(do_cps) {
-		if(policy->obj_classes[idx].common_perms >= 0) {
-			cp_idx = policy->obj_classes[idx].common_perms;
-			Tcl_DStringAppend(buf, "     ", -1);
-			append_common_perm_str(0, 0, 0, cp_idx, buf, policy);
-			Tcl_DStringAppend(buf, "  (common perm)\n", -1);
-			if(expand_cps) {
-				for(i = 0; i < policy->common_perms[cp_idx].num_perms; i++) {
-					assert(i < policy->num_perms);
-					Tcl_DStringAppend(buf, "          ", -1);
-					append_perm_str(0, 0, 1, policy->common_perms[cp_idx].perms[i], buf, policy);
-				}
-			}
-		}
-	}
-	
-	if(newline)
-		Tcl_DStringAppend(buf, "\n", -1);		
-	return TCL_OK;
-}
-
-static int append_common_perm_str(bool_t do_perms, bool_t do_classes, bool_t newline, int idx, Tcl_DString *buf,
-				policy_t *policy)
-{
-	int i;
-	char tbuf[APOL_STR_SZ + 64];
-	
-	if(idx >= policy->num_common_perms|| buf == NULL) {
-		return -1;
-	}	
-	Tcl_DStringAppend(buf, policy->common_perms[idx].name, -1);
-	if(do_perms) {
-		sprintf(tbuf, "   (%d permissions)\n", policy->common_perms[idx].num_perms);
-		Tcl_DStringAppend(buf, tbuf, -1);
-		for(i = 0; i < policy->common_perms[idx].num_perms; i++) {
-			Tcl_DStringAppend(buf, "     ", -1);
-			append_perm_str(0, 0, 1, policy->common_perms[idx].perms[i], buf, policy);
-		}
-	}
-	/* determine which classes use this common perm */
-	if(do_classes) {
-		Tcl_DStringAppend(buf, "\n   Object classes that use this common permission\n", -1);
-		for(i = 0; i < policy->num_obj_classes; i++) {
-			if(does_class_use_common_perm(i, idx, policy)) {
-				Tcl_DStringAppend(buf, "     ", -1);
-				append_class_str(0,0,0,1,i,buf,policy);
-			}
-		}
-	}
-	
-	if(newline)
-		Tcl_DStringAppend(buf, "\n", -1);		
-	return TCL_OK;
-}
-
-
-static int append_perm_str(bool_t do_common_perms, bool_t do_classes, bool_t newline, int idx, Tcl_DString *buf,
-				policy_t *policy)
-{
-	int i;
-	bool_t used;
-	
-	if(idx >= policy->num_perms|| buf == NULL) {
-		return -1;
-	}
-	
-	Tcl_DStringAppend(buf, policy->perms[idx], -1);
-	if(do_classes || do_common_perms) {
-		Tcl_DStringAppend(buf, "\n", -1);
-	}
-	/* find the classes that use this perm */
-	if(do_classes) {
-		used = FALSE;
-		Tcl_DStringAppend(buf, "   object classes:\n", -1);
-		for(i = 0; i < policy->num_obj_classes; i++) {
-			if(does_class_use_perm(i, idx, policy)) {
-				used = TRUE;
-				Tcl_DStringAppend(buf, "        ", -1);
-				append_class_str(0,0,0,1,i,buf,policy);
-			}
-			else if(does_class_indirectly_use_perm(i, idx, policy)) {
-				used = TRUE;
-				Tcl_DStringAppend(buf, "        ", -1);
-				append_class_str(0,0,0,0,i,buf,policy);
-				/* we "star" those included via common perm */
-				Tcl_DStringAppend(buf, "*\n", -1);
-			}
-		}
-		if(!used) {
-			Tcl_DStringAppend(buf, "        <none>\n", -1);
-		}
-	}	
-	/* find the common perms that use this perm */
-	if(do_common_perms) {
-		used = FALSE;
-		Tcl_DStringAppend(buf, "   common permissions:\n", -1);
-		for(i = 0; i < policy->num_common_perms; i++) {
-			if(does_common_perm_use_perm(i, idx, policy)) {
-				used = TRUE;
-				Tcl_DStringAppend(buf, "        ", -1);
-				append_common_perm_str(0,0,1,i,buf,policy);
-			}
-		}
-		if(!used) {
-			Tcl_DStringAppend(buf, "        <none>\n", -1);
-		}
-	}
-
-	if(newline)
-		Tcl_DStringAppend(buf, "\n", -1);		
-	return TCL_OK;	
-}
-
-/* 
- * Get information about object classes, permissions, and common perms
- * args are:
- *
- * 1	do_classes	(bool)
- * 2	classes_perms 	(bool, ignored if !do_classes)
- * 3	classes_cps	(bool, ignored if !do_classes || !classes_cps)
- * 4	do_comm_perms	(bool)
- * 5	cp_perms	(bool, ignored if !do_comm_perms)
- * 6	cp_classes	(bool, ignored if !do_comm_perms)
- * 7	do_perms	(bool)
- * 8	perm_classes	(bool, ignored if !do_perms)
- * 9	perm_cps	(bool, ignored if !do_perms)
- * 10	use_srchstr	(bool, regex)
- * 11	srch_str	(string, ignored if !use_srch_str)
- *
+/* Takes a sepol_class_datum_t representing a class and appends a
+ * tuple of it to results_list.	 The tuple consists of:
+ *    { class_name common_class {perms0 perms1 ...} }
+ * If the object class has no common, then the second element will be
+ * an empy string.
  */
-static int Apol_GetClassPermInfo(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
+static int append_class_to_list(Tcl_Interp *interp,
+				sepol_class_datum_t *class_datum,
+				Tcl_Obj *result_list)
 {
-	int i, sz, rt;
-	char *err;
-	Tcl_DString buffer, *buf = &buffer;
-	bool_t do_classes, classes_perms, classes_cps, do_common_perms, cp_perms, cp_classes, do_perms,
-		perm_classes, perm_cps, use_srchstr;
-	regex_t reg;
-        int results_found;
-	
-	if(argc != 12) {
-		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
+	char *class_name, *common_name = "";
+	sepol_common_datum_t *common_datum;
+	sepol_iterator_t *perm_iter = NULL;
+	Tcl_Obj *class_elem[3], *class_list;
+	int retval = TCL_ERROR;
+	if (sepol_class_datum_get_name(policydb->sh, policydb->p,
+				       class_datum, &class_name) < 0) {
+		Tcl_SetResult(interp, "Could not get class name.", TCL_STATIC);
+		goto cleanup;
+	}
+	if (sepol_class_datum_get_common(policydb->sh, policydb->p,
+					 class_datum, &common_datum) < 0 ||
+	    (common_datum != NULL &&
+	     sepol_common_datum_get_name(policydb->sh, policydb->p,
+					 common_datum, &common_name) < 0)) {
+		Tcl_SetResult(interp, "Could not get common name.", TCL_STATIC);
+		goto cleanup;
+	}
+	if (sepol_class_datum_get_perm_iter(policydb->sh, policydb->p,
+					    class_datum, &perm_iter) < 0) {
+		Tcl_SetResult(interp, "Could not got permissions iterator.", TCL_STATIC);
+		goto cleanup;
+	}
+	class_elem[0] = Tcl_NewStringObj(class_name, -1);
+	class_elem[1] = Tcl_NewStringObj(common_name, -1);
+	class_elem[2] = Tcl_NewListObj(0, NULL);
+	for ( ; !sepol_iterator_end(perm_iter); sepol_iterator_next(perm_iter)) {
+		char *perm_name;
+		Tcl_Obj *perm_obj;
+		if (sepol_iterator_get_item(perm_iter, (void **) &perm_name) < 0) {
+			Tcl_SetResult(interp, "Could not get permission name.", TCL_STATIC);
+			goto cleanup;
+		}
+		perm_obj = Tcl_NewStringObj(perm_name, -1);
+		if (Tcl_ListObjAppendElement(interp, class_elem[2], perm_obj) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+	class_list = Tcl_NewListObj(3, class_elem);
+	if (Tcl_ListObjAppendElement(interp, result_list, class_list) == TCL_ERROR) {
+		goto cleanup;
+	}
+	retval = TCL_OK;
+ cleanup:
+	sepol_iterator_destroy(&perm_iter);
+	return retval;
+}
+
+/* Returns an unordered list of class tuples within the policy.
+ *   elem 0 - class name
+ *   elem 1 - class's common class, or empty string if none
+ *   elem 2 - list of class's permissions
+ * argv[1] - class name to look up, or a regular expression, or empty
+ *	     to get all classes
+ * argv[2] - (optional) treat argv[1] as a class name or regex
+ */
+static int Apol_GetClasses(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
+{
+	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
+	sepol_class_datum_t *class_datum;
+
+	if (policy == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		return TCL_ERROR;
 	}
-	if(policy == NULL) {
-		Tcl_AppendResult(interp,"No current policy file is opened!", (char *) NULL);
+	if (argc < 2) {
+		Tcl_SetResult(interp, "Need a class name and ?regex flag?.", TCL_STATIC);
 		return TCL_ERROR;
 	}
-	do_classes = getbool(argv[1]);
-	if(do_classes) {
-		classes_perms = getbool(argv[2]);
-		if(classes_perms)
-			classes_cps = getbool(argv[3]);
-		else
-			classes_cps = FALSE;
-	}
-	else {
-		classes_perms = FALSE;
-		classes_cps = FALSE;
-	}
-	do_common_perms = getbool(argv[4]);
-	if(do_common_perms) {
-		cp_perms = getbool(argv[5]);
-		cp_classes = getbool(argv[6]);
-	}
-	else {
-		cp_perms = FALSE;
-		cp_classes = FALSE;
-	}
-	do_perms = getbool(argv[7]);
-	if(do_perms) {
-		perm_classes = getbool(argv[8]);
-		perm_cps = getbool(argv[9]);
-	}
-	else {
-		perm_classes = FALSE;
-		perm_cps = FALSE;
-	}
-	if(!do_classes && !do_common_perms && !do_perms) {
-		return TCL_OK; /* nothing to do! */
-	}
-	use_srchstr = getbool(argv[10]);
-	if(use_srchstr) {
-		if(!is_valid_str_sz(argv[11])) {
-			Tcl_AppendResult(interp, "Regular expression string is too large", (char *) NULL);
+	if (argc == 2) {
+		if (sepol_policydb_get_class_by_name(policydb->sh, policydb->p,
+						     argv[1], &class_datum) < 0) {
+			/* name is not within policy */
+			return TCL_OK;
+		}
+		if (append_class_to_list(interp, class_datum, result_obj) == TCL_ERROR) {
 			return TCL_ERROR;
 		}
-		rt = regcomp(&reg, argv[11], REG_EXTENDED|REG_NOSUB);
-		if(rt != 0) {
-			sz = regerror(rt, &reg, NULL, 0);
-			if((err = (char *)malloc(++sz)) == NULL) {
-				Tcl_AppendResult(interp, "out of memory", (char *) NULL);
+	}
+	else {
+		Tcl_Obj *regex_obj = Tcl_NewStringObj(argv[2], -1);
+		int regex_flag;
+		apol_class_query_t *query = NULL;
+		apol_vector_t *v;
+		size_t i;
+		if (Tcl_GetBooleanFromObj(interp, regex_obj, &regex_flag) == TCL_ERROR) {
+			return TCL_ERROR;
+		}
+		if (*argv[1] != '\0') {
+			if ((query = apol_class_query_create()) == NULL) {
+				Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
 				return TCL_ERROR;
 			}
-			regerror(rt, &reg, err, sz);
-			Tcl_AppendResult(interp, "Invalid regular expression:\n\n     ", (char*) NULL);
-			Tcl_AppendResult(interp, argv[11], (char*) NULL);
-			Tcl_AppendResult(interp, "\n\n", (char*) NULL);
-			Tcl_AppendResult(interp, err, (char *) NULL);
-			Tcl_DStringFree(buf);
-			regfree(&reg);
-			free(err);
+			if (apol_class_query_set_class(query, argv[1]) ||
+			    apol_class_query_set_regex(query, regex_flag)) {
+				apol_class_query_destroy(&query);
+				Tcl_SetResult(interp, "Error setting query options.", TCL_STATIC);
+				return TCL_ERROR;
+			}
+		}
+		if (apol_get_class_by_query(policydb, query, &v) < 0) {
+			apol_class_query_destroy(&query);
+			Tcl_SetResult(interp, "Error running class query.", TCL_STATIC);
 			return TCL_ERROR;
-			
 		}
-	}
-
-	
-	Tcl_DStringInit(buf);
-
-	/* FIX: Here and elsewhere, need to use sorted traversal using AVL trees */	
-	if(do_classes) {
-                results_found = 0;
-		Tcl_DStringAppend(buf, "OBJECT CLASSES:\n", -1);
-		for(i = 0; i < policy->num_obj_classes; i++) {
-			if(use_srchstr && (regexec(&reg, policy->obj_classes[i].name, 0,NULL,0) != 0)) {
-				continue;
+		apol_class_query_destroy(&query);
+		for (i = 0; i < apol_vector_get_size(v); i++) {
+			class_datum = (sepol_class_datum_t *) apol_vector_get_element(v, i);
+			if (append_class_to_list(interp, class_datum, result_obj) == TCL_ERROR) {
+				apol_vector_destroy(&v, NULL);
+				return TCL_ERROR;
 			}
-			append_class_str(classes_perms, classes_perms, classes_cps, 1, i, buf, policy);
-                        results_found = 1;
 		}
-                if (results_found == 0) {
-                        Tcl_DStringAppend(buf, "Search returned no results.", -1);
-                }
-		Tcl_DStringAppend(buf, "\n\n", -1);
+		apol_vector_destroy(&v, NULL);
 	}
-	if(do_common_perms) {
-                results_found = 0;
-		Tcl_DStringAppend(buf, "COMMON PERMISSIONS:\n", -1);
-		for(i = 0; i < policy->num_common_perms; i++) {
-			if(use_srchstr && (regexec(&reg, policy->common_perms[i].name, 0,NULL,0) != 0)) {
-				continue;
-			}
-			append_common_perm_str(cp_perms, cp_classes, 1, i, buf, policy);
-                        results_found = 1;
-		}
-                if (results_found == 0) {
-                        Tcl_DStringAppend(buf, "Search returned no results.", -1);
-                }
-		Tcl_DStringAppend(buf, "\n\n", -1);
-	}
-	if(do_perms) {
-                results_found = 0;
-		Tcl_DStringAppend(buf, "PERMISSIONS", -1);
-		if(perm_classes) {
-			Tcl_DStringAppend(buf,  "  (* means class uses permission via a common permission):\n", -1);
-		}
-		else {
-			Tcl_DStringAppend(buf, ":\n", -1);
-		}
-		for(i = 0; i < policy->num_perms; i++) {
-			if(use_srchstr && (regexec(&reg, policy->perms[i], 0,NULL,0) != 0)) {
-				continue;
-			}
-			append_perm_str(perm_cps, perm_classes, 1, i, buf, policy);
-                        results_found = 1;
-		}
-                if (results_found == 0) {
-                        Tcl_DStringAppend(buf, "Search returned no results.", -1);
-                }
-		Tcl_DStringAppend(buf, "\n", -1);
-	}
-	
-	Tcl_DStringResult(interp, buf);
+	Tcl_SetObjResult(interp, result_obj);
 	return TCL_OK;
 }
-
-/* get information for a single class/perm/common perm 
- * argv[1]	name
- * argv[2]	which ("class", "perm", or "common_perm")
+     
+/* Takes a sepol_common_datum_t representing a common and appends a
+ * tuple of it to results_list.	 The tuple consists of:
+ *    { common_name {perms0 perms1 ...} {class0 class1 ...} }
+ * The second list is a list of object classes that inherit from this
+ * common.
  */
-static int Apol_GetSingleClassPermInfo(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
+static int append_common_to_list(Tcl_Interp *interp,
+				 sepol_common_datum_t *common_datum,
+				 Tcl_Obj *result_list)
 {
-	int rt, idx;
-	char tbuf[APOL_STR_SZ+64];
-	Tcl_DString buffer, *buf = &buffer;
-	
-	if(argc != 3) {
-		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
-		return TCL_ERROR;
+	char *common_name;
+	sepol_iterator_t *perm_iter = NULL;
+	apol_class_query_t *query = NULL;
+	apol_vector_t *classes = NULL;
+	size_t i;
+	Tcl_Obj *common_elem[3], *common_list;
+	int retval = TCL_ERROR;
+	if (sepol_common_datum_get_name(policydb->sh, policydb->p,
+					common_datum, &common_name) < 0) {
+		Tcl_SetResult(interp, "Could not get common name.", TCL_STATIC);
+		goto cleanup;
 	}
-	if(policy == NULL) {
-		Tcl_AppendResult(interp,"No current policy file is opened!", (char *) NULL);
-		return TCL_ERROR;
-	}	
+	if (sepol_common_datum_get_perm_iter(policydb->sh, policydb->p,
+					     common_datum, &perm_iter) < 0) {
+		Tcl_SetResult(interp, "Could not got permissions iterator.", TCL_STATIC);
+		goto cleanup;
+	}
+	common_elem[0] = Tcl_NewStringObj(common_name, -1);
+	common_elem[1] = Tcl_NewListObj(0, NULL);
+	for ( ; !sepol_iterator_end(perm_iter); sepol_iterator_next(perm_iter)) {
+		char *perm_name;
+		Tcl_Obj *perm_obj;
+		if (sepol_iterator_get_item(perm_iter, (void **) &perm_name) < 0) {
+			Tcl_SetResult(interp, "Could not get permission name.", TCL_STATIC);
+			goto cleanup;
+		}
+		perm_obj = Tcl_NewStringObj(perm_name, -1);
+		if (Tcl_ListObjAppendElement(interp, common_elem[1], perm_obj) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+	common_elem[2] = Tcl_NewListObj(0, NULL);
+	if ((query = apol_class_query_create()) == NULL ||
+	    apol_class_query_set_common(query, common_name) < 0) {
+		Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
+		goto cleanup;
+	}
+	if (apol_get_class_by_query(policydb, query, &classes) < 0) {
+		Tcl_SetResult(interp, "Error running class query.", TCL_STATIC);
+		goto cleanup;
+	}
+	for (i = 0; i < apol_vector_get_size(classes); i++) {
+		sepol_class_datum_t *class_datum = (sepol_class_datum_t *) apol_vector_get_element(classes, i);
+		char *class_name;
+		Tcl_Obj *class_obj;
+		if (sepol_class_datum_get_name(policydb->sh, policydb->p,
+					       class_datum, &class_name) < 0) {
+			Tcl_SetResult(interp, "Could not get class name.", TCL_STATIC);
+			goto cleanup;
+		}
+		class_obj = Tcl_NewStringObj(class_name, -1);
+		if (Tcl_ListObjAppendElement(interp, common_elem[2], class_obj) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+	common_list = Tcl_NewListObj(3, common_elem);
+	if (Tcl_ListObjAppendElement(interp, result_list, common_list) == TCL_ERROR) {
+		goto cleanup;
+	}
+	retval = TCL_OK;
+ cleanup:
+	sepol_iterator_destroy(&perm_iter);
+	apol_class_query_destroy(&query);
+	apol_vector_destroy(&classes, NULL);
+	return retval;
+}
 
-	if(!is_valid_str_sz(argv[1])) {
-		Tcl_AppendResult(interp, "Class/Perm name is too large", (char *) NULL);
+/* Returns an unordered list of common tuples within the policy.
+ *   elem 0 - common name
+ *   elem 1 - list of common's permissions
+ *   elem 2 - list of classes that inherit this common
+ * argv[1] - common name to look up, or a regular expression, or empty
+ *	     to get all common
+ * argv[2] - (optional) treat argv[1] as a common name or regex
+ */
+static int Apol_GetCommons(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
+{
+	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
+	sepol_common_datum_t *common_datum;
+
+	if (policy == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		return TCL_ERROR;
 	}
-	if(!is_valid_str_sz(argv[2])) {
-		Tcl_AppendResult(interp, "Which option string is too large", (char *) NULL);
+	if (argc < 2) {
+		Tcl_SetResult(interp, "Need a common name and ?regex flag?.", TCL_STATIC);
 		return TCL_ERROR;
 	}
-	
-	Tcl_DStringInit(buf);
-	if(strcmp(argv[2], "class") == 0) {
-		idx = get_obj_class_idx(argv[1], policy);
-		if(idx < 0) {
-			Tcl_DStringFree(buf);
-			sprintf(tbuf, "%s is an invalid class name", argv[1]);
-			Tcl_AppendResult(interp, tbuf, (char *) NULL);
-			return TCL_ERROR;
+	if (argc == 2) {
+		if (sepol_policydb_get_common_by_name(policydb->sh, policydb->p,
+						      argv[1], &common_datum) < 0) {
+			/* name is not within policy */
+			return TCL_OK;
 		}
-		rt = append_class_str(1, 1, 0, 0, idx, buf, policy);
-		if(rt != 0) {
-			Tcl_DStringFree(buf);
-			Tcl_AppendResult(interp, "error appending class info", (char *) NULL);
-			return TCL_ERROR;
-		}
-	}
-	else if(strcmp(argv[2], "common_perm") == 0) {
-		idx = get_common_perm_idx(argv[1], policy);
-		if(idx < 0) {
-			Tcl_DStringFree(buf);
-			sprintf(tbuf, "%s is an invalid common permission name", argv[1]);
-			Tcl_AppendResult(interp, tbuf, (char *) NULL);
-			return TCL_ERROR;
-		}
-		rt = append_common_perm_str(1, 0, 0, idx, buf, policy);
-		if(rt != 0) {
-			Tcl_DStringFree(buf);
-			Tcl_AppendResult(interp, "error appending common perm info", (char *) NULL);
-			return TCL_ERROR;
-		}
-	}
-	else if(strcmp(argv[2], "perm") == 0) {
-		idx = get_perm_idx(argv[1], policy);
-		if(idx < 0) {
-			Tcl_DStringFree(buf);
-			sprintf(tbuf, "%s is an invalid permission name", argv[1]);
-			Tcl_AppendResult(interp, tbuf, (char *) NULL);
-			return TCL_ERROR;
-		}
-		rt = append_perm_str(1,1, 0, idx, buf, policy);
-		if(rt != 0) {
-			Tcl_DStringFree(buf);
-			Tcl_AppendResult(interp, "error appending permmission info", (char *) NULL);
+		if (append_common_to_list(interp, common_datum, result_obj) == TCL_ERROR) {
 			return TCL_ERROR;
 		}
 	}
 	else {
-		Tcl_DStringFree(buf);
-		sprintf(tbuf, "%s is an invalid which options", argv[2]);
-		Tcl_AppendResult(interp, tbuf, (char *) NULL);
+		Tcl_Obj *regex_obj = Tcl_NewStringObj(argv[2], -1);
+		int regex_flag;
+		apol_common_query_t *query = NULL;
+		apol_vector_t *v;
+		size_t i;
+		if (Tcl_GetBooleanFromObj(interp, regex_obj, &regex_flag) == TCL_ERROR) {
+			return TCL_ERROR;
+		}
+		if (*argv[1] != '\0') {
+			if ((query = apol_common_query_create()) == NULL) {
+				Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
+				return TCL_ERROR;
+			}
+			if (apol_common_query_set_common(query, argv[1]) ||
+			    apol_common_query_set_regex(query, regex_flag)) {
+				apol_common_query_destroy(&query);
+				Tcl_SetResult(interp, "Error setting query options.", TCL_STATIC);
+				return TCL_ERROR;
+			}
+		}
+		if (apol_get_common_by_query(policydb, query, &v) < 0) {
+			apol_common_query_destroy(&query);
+			Tcl_SetResult(interp, "Error running common query.", TCL_STATIC);
+			return TCL_ERROR;
+		}
+		apol_common_query_destroy(&query);
+		for (i = 0; i < apol_vector_get_size(v); i++) {
+			common_datum = (sepol_common_datum_t *) apol_vector_get_element(v, i);
+			if (append_common_to_list(interp, common_datum, result_obj) == TCL_ERROR) {
+				apol_vector_destroy(&v, NULL);
+				return TCL_ERROR;
+			}
+		}
+		apol_vector_destroy(&v, NULL);
+	}
+	Tcl_SetObjResult(interp, result_obj);
+	return TCL_OK;
+}
+     
+/* Takes a string representing a permission and appends a tuple of it
+ * to results_list.  The tuple consists of:
+  *    { perm_name {class0 class1 ...} {common0 common1 ...} }
+ */
+static int append_perm_to_list(Tcl_Interp *interp,
+			       char *perm,
+			       Tcl_Obj *result_list)
+{
+	sepol_iterator_t *class_iter = NULL, *common_iter = NULL;
+	Tcl_Obj *perm_elem[3], *perm_list;
+	int retval = TCL_ERROR;
+	if (sepol_perm_get_class_iter(policydb->sh, policydb->p,
+					    perm, &class_iter) < 0 ||
+	    sepol_perm_get_common_iter(policydb->sh, policydb->p,
+					     perm, &common_iter) < 0) {
+		Tcl_SetResult(interp, "Could not got classes iterators.", TCL_STATIC);
+		goto cleanup;
+	}
+	perm_elem[0] = Tcl_NewStringObj(perm, -1);
+	perm_elem[1] = Tcl_NewListObj(0, NULL);
+	for ( ; !sepol_iterator_end(class_iter); sepol_iterator_next(class_iter)) {
+		sepol_class_datum_t *class_datum;
+		char *class_name;
+		Tcl_Obj *class_obj;
+		if (sepol_iterator_get_item(class_iter, (void **) &class_datum) < 0 ||
+		    sepol_class_datum_get_name(policydb->sh, policydb->p,
+					       class_datum, &class_name) < 0) {
+			Tcl_SetResult(interp, "Could not get class name.", TCL_STATIC);
+			goto cleanup;
+		}
+		class_obj = Tcl_NewStringObj(class_name, -1);
+		if (Tcl_ListObjAppendElement(interp, perm_elem[1], class_obj) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+	perm_elem[2] = Tcl_NewListObj(0, NULL);
+	for ( ; !sepol_iterator_end(common_iter); sepol_iterator_next(common_iter)) {
+		sepol_common_datum_t *common_datum;
+		char *common_name;
+		Tcl_Obj *common_obj;
+		if (sepol_iterator_get_item(common_iter, (void **) &common_datum) < 0 ||
+		    sepol_common_datum_get_name(policydb->sh, policydb->p,
+						common_datum, &common_name) < 0) {
+			Tcl_SetResult(interp, "Could not get common name.", TCL_STATIC);
+			goto cleanup;
+		}
+		common_obj = Tcl_NewStringObj(common_name, -1);
+		if (Tcl_ListObjAppendElement(interp, perm_elem[2], common_obj) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+
+	perm_list = Tcl_NewListObj(3, perm_elem);
+	if (Tcl_ListObjAppendElement(interp, result_list, perm_list) == TCL_ERROR) {
+		goto cleanup;
+	}
+	retval = TCL_OK;
+ cleanup:
+	sepol_iterator_destroy(&class_iter);
+	sepol_iterator_destroy(&common_iter);
+	return retval;
+}
+
+/* Returns an unordered list of permission tuples within the policy.
+ *   elem 0 - permission name
+ *   elem 1 - list of classes that have this permission
+ *   elem 2 - list of commons that have this permission
+ * argv[1] - permission name to look up, or a regular expression, or
+ *	     empty to get all permissions
+ * argv[2] - (optional) treat argv[1] as a permission name or regex
+ */
+static int Apol_GetPerms(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
+{
+	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
+	if (policy == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		return TCL_ERROR;
 	}
-	
-	Tcl_DStringResult(interp, buf);
-	return TCL_OK;	
+	if (argc < 2) {
+		Tcl_SetResult(interp, "Need a permission name and ?regex flag?.", TCL_STATIC);
+		return TCL_ERROR;
+	}
+	if (argc == 2) {
+		if (append_perm_to_list(interp, argv[1], result_obj) == TCL_ERROR) {
+			return TCL_ERROR;
+		}
+	}
+	else {
+		Tcl_Obj *regex_obj = Tcl_NewStringObj(argv[2], -1);
+		int regex_flag;
+		apol_perm_query_t *query = NULL;
+		apol_vector_t *v;
+		size_t i;
+		char *perm;
+		if (Tcl_GetBooleanFromObj(interp, regex_obj, &regex_flag) == TCL_ERROR) {
+			return TCL_ERROR;
+		}
+		if (*argv[1] != '\0') {
+			if ((query = apol_perm_query_create()) == NULL) {
+				Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
+				return TCL_ERROR;
+			}
+			if (apol_perm_query_set_perm(query, argv[1]) ||
+			    apol_perm_query_set_regex(query, regex_flag)) {
+				apol_perm_query_destroy(&query);
+				Tcl_SetResult(interp, "Error setting query options.", TCL_STATIC);
+				return TCL_ERROR;
+			}
+		}
+		if (apol_get_perm_by_query(policydb, query, &v) < 0) {
+			apol_perm_query_destroy(&query);
+			Tcl_SetResult(interp, "Error running permission query.", TCL_STATIC);
+			return TCL_ERROR;
+		}
+		apol_perm_query_destroy(&query);
+		for (i = 0; i < apol_vector_get_size(v); i++) {
+			perm = (char *) apol_vector_get_element(v, i);
+			if (append_perm_to_list(interp, perm, result_obj) == TCL_ERROR) {
+				apol_vector_destroy(&v, NULL);
+				return TCL_ERROR;
+			}
+		}
+		apol_vector_destroy(&v, NULL);
+	}
+	Tcl_SetObjResult(interp, result_obj);
+	return TCL_OK;
 }
 
 /* Takes a sepol_role_datum_t and appends a tuple of it to results_list.
@@ -1051,7 +1069,7 @@ static int append_user_to_list(Tcl_Interp *interp,
 		}
 		if (apol_level_to_tcl_obj(interp, apol_range->low, range_elem + 0) == TCL_ERROR ||
 		    apol_level_to_tcl_obj(interp, apol_range->high, range_elem + 1) == TCL_ERROR) {
-                        goto cleanup;
+			goto cleanup;
 		}
 		user_elem[3] = Tcl_NewListObj(2, range_elem);
 	}
@@ -1149,7 +1167,7 @@ static int Apol_GetUsers(ClientData clientData, Tcl_Interp *interp, int argc, CO
 		}
 		if (*argv[4] != '\0') {
 			apol_mls_range_t *range;
-                        unsigned int range_match = 0;
+			unsigned int range_match = 0;
 			if (apol_tcl_string_to_range_match(interp, argv[5], &range_match) < 0) {
 				goto cleanup;
 			}
@@ -1405,38 +1423,38 @@ static int append_level_to_list(Tcl_Interp *interp,
  *   elem 3 - level dominance value
  *
  * argv[1] - sensitivity name to look up, or a regular expression, or
- *           empty to get all levels
+ *	     empty to get all levels
  * argv[2] - (optional) treat argv[1] as a sensitivity name or regex
  */
 static int Apol_GetLevels(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
-        Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
-        sepol_level_datum_t *level;
+	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
+	sepol_level_datum_t *level;
 
 	if (policy == NULL) {
-                Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		return TCL_ERROR;
 	}
-        if (argc < 2) {
-                Tcl_SetResult(interp, "Need a sensitivity name and ?regex flag?.", TCL_STATIC);
-                return TCL_ERROR;
-        }
-        if (argc == 2) {
-                if (sepol_policydb_get_level_by_name(policydb->sh, policydb->p,
-                                                     argv[1], &level) < 0) {
-                        /* passed sensitivity is not within the policy */
-                        return TCL_OK;
-                }
-                if (append_level_to_list(interp, level, result_obj) == TCL_ERROR) {
-                        return TCL_ERROR;
-                }
-        }
-        else {
-                Tcl_Obj *regex_obj = Tcl_NewStringObj(argv[2], -1);
-                int regex_flag;
-                apol_level_query_t *query = NULL;
-                apol_vector_t *v;
-                size_t i;
+	if (argc < 2) {
+		Tcl_SetResult(interp, "Need a sensitivity name and ?regex flag?.", TCL_STATIC);
+		return TCL_ERROR;
+	}
+	if (argc == 2) {
+		if (sepol_policydb_get_level_by_name(policydb->sh, policydb->p,
+						     argv[1], &level) < 0) {
+			/* passed sensitivity is not within the policy */
+			return TCL_OK;
+		}
+		if (append_level_to_list(interp, level, result_obj) == TCL_ERROR) {
+			return TCL_ERROR;
+		}
+	}
+	else {
+		Tcl_Obj *regex_obj = Tcl_NewStringObj(argv[2], -1);
+		int regex_flag;
+		apol_level_query_t *query = NULL;
+		apol_vector_t *v;
+		size_t i;
 		if (Tcl_GetBooleanFromObj(interp, regex_obj, &regex_flag) == TCL_ERROR) {
 			return TCL_ERROR;
 		}
@@ -1452,23 +1470,23 @@ static int Apol_GetLevels(ClientData clientData, Tcl_Interp *interp, int argc, C
 				return TCL_ERROR;
 			}
 		}
-                if (apol_get_level_by_query(policydb, query, &v) < 0) {
-                        apol_level_query_destroy(&query);
-                        Tcl_SetResult(interp, "Error running level query.", TCL_STATIC);
-                        return TCL_ERROR;
-                }
-                apol_level_query_destroy(&query);
-                for (i = 0; i < apol_vector_get_size(v); i++) {
-                        level = (sepol_level_datum_t *) apol_vector_get_element(v, i);
-                        if (append_level_to_list(interp, level, result_obj) == TCL_ERROR) {
-                                apol_vector_destroy(&v, NULL);
-                                return TCL_ERROR;
-                        }
-                }
-                apol_vector_destroy(&v, NULL);
-        }
-        Tcl_SetObjResult(interp, result_obj);
-        return TCL_OK;
+		if (apol_get_level_by_query(policydb, query, &v) < 0) {
+			apol_level_query_destroy(&query);
+			Tcl_SetResult(interp, "Error running level query.", TCL_STATIC);
+			return TCL_ERROR;
+		}
+		apol_level_query_destroy(&query);
+		for (i = 0; i < apol_vector_get_size(v); i++) {
+			level = (sepol_level_datum_t *) apol_vector_get_element(v, i);
+			if (append_level_to_list(interp, level, result_obj) == TCL_ERROR) {
+				apol_vector_destroy(&v, NULL);
+				return TCL_ERROR;
+			}
+		}
+		apol_vector_destroy(&v, NULL);
+	}
+	Tcl_SetObjResult(interp, result_obj);
+	return TCL_OK;
 }
 
 /* Takes a sepol_cat_datum_t and appends a tuple of it to
@@ -2033,8 +2051,9 @@ int ap_tcl_components_init(Tcl_Interp *interp) {
         Tcl_CreateCommand(interp, "apol_GetNames", Apol_GetNames, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetTypes", Apol_GetTypes, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetAttribs", Apol_GetAttribs, NULL, NULL);
-	Tcl_CreateCommand(interp, "apol_GetClassPermInfo", Apol_GetClassPermInfo, NULL, NULL);
-	Tcl_CreateCommand(interp, "apol_GetSingleClassPermInfo", Apol_GetSingleClassPermInfo, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_GetClasses", Apol_GetClasses, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_GetCommons", Apol_GetCommons, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_GetPerms", Apol_GetPerms, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetRoles", Apol_GetRoles, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetUsers", Apol_GetUsers, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetBools", Apol_GetBools, NULL, NULL);
