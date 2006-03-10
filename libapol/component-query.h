@@ -211,7 +211,6 @@ extern int apol_get_class_by_query(apol_policy_t *p,
 				   apol_class_query_t *c,
 				   apol_vector_t **v);
 
-
 /**
  * Allocate and return a new class query structure.  All fields are
  * initialized, such that running this blank query results in
@@ -243,6 +242,19 @@ extern void apol_class_query_destroy(apol_class_query_t **c);
  */
 extern int apol_class_query_set_class(apol_class_query_t *c, const char *name);
 
+/**
+ * Set a class query to return only object classes that inherit from a
+ * particular common class.  Queries will not match classes without
+ * commons if this option is set.  This function duplicates the
+ * incoming name.
+ *
+ * @param c Class query to set.
+ * @param name Limit query to only classes that inherit from this
+ * common class, or NULL to unset this field.
+ *
+ * @return 0 on success, negative on error.
+ */
+extern int apol_class_query_set_common(apol_class_query_t *c, const char *name);
 /**
  * Set a class query to use regular expression searching for all of
  * its fields.	Strings will be treated as regexes instead of
@@ -728,7 +740,7 @@ extern int apol_level_query_set_regex(apol_level_query_t *l, int is_regex);
  * @param p Policy within which to look up types.
  * @param c Structure containing parameters for query.	If this is
  * NULL then return all levels.
- * @param v Reference to a vector of sepol_cat_datum_t.  The vector
+ * @param v Reference to a vector of sepol_cat_datum_t.	 The vector
  * will be allocated by this function. The caller must destroy this
  * vector afterwards, but <b>must not</b> free the elements within it.
  * This will be set to NULL upon no results or upon error.
@@ -740,9 +752,9 @@ extern int apol_get_cat_by_query(apol_policy_t *p,
 				 apol_vector_t **v);
 
 /**
- * Allocate and return a new category query structure.  All fields are
+ * Allocate and return a new category query structure.	All fields are
  * initialized, such that running this blank query results in
- * returning all categories within the policy.  The caller must call
+ * returning all categories within the policy.	The caller must call
  * apol_cat_query_destroy() upon the return value afterwards.
  *
  * @return An initialized category query structure, or NULL upon

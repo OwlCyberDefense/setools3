@@ -111,7 +111,7 @@ namespace eval Apol_TE {
     	variable selPermsList		""
 	variable objectslist 		""
 	variable permslist 		""
-	# Below used as master perm list to avoid repeated calls to apol_GetNames
+
 	variable master_permlist 	""
 	
 	# OTHER GLOBAL WIDGETS AND VARIABLES
@@ -1120,8 +1120,8 @@ proc Apol_TE::get_results_raised_tab {} {
 #  Command Apol_TE::open
 # ------------------------------------------------------------------------------
 proc Apol_TE::open { } {
-	variable objectslist
-	variable permslist
+    variable objectslist {}
+    variable permslist {}
 	variable master_permlist
 	variable src_list_type_1	
 	variable src_list_type_2	
@@ -1142,26 +1142,16 @@ proc Apol_TE::open { } {
         Apol_TE::populate_ta_list 2
         $Apol_TE::dflt_type_list configure -values $Apol_Types::typelist
                 
-        # Check whether "classes" are included in the current opened policy file
-        if {$ApolTop::contents(classes) == 1} {
-        	set rt [catch {set objectslist [apol_GetNames classes]} err]
-		if {$rt != 0} {	
-			return -code error $err 
-		}
-		set objectslist [lsort $objectslist]
+    foreach class [lsort -index 0 [apol_GetClasses {} 0]] {
+        lappend objectslist [lindex $class 0]
+    }
 		if {$objectslist != ""} {
 			$objslistbox configure -bg white
 		}
-	}
-	# Check whether "perms" are included in the current opened policy file
-	if {$ApolTop::contents(perms) == 1} {
-		set rt [catch {set master_permlist [apol_GetNames perms]} err]
-		if {$rt != 0} {	
-			return -code error $err 
-		} 
-		set master_permlist [lsort $master_permlist]
+    foreach perm [lsort -index 0 [apol_GetPerms {} 0]] {
+        lappend master_permlist [lindex $perm 0]
+    }
 		set permslist $master_permlist
-	}
 	Apol_TE::configure_perms_section
 	Apol_TE::on_rule_selection
         return 0

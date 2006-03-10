@@ -51,7 +51,7 @@ typedef struct apol_mls_range {
 extern apol_mls_level_t *apol_mls_level_create(void);
 
 /**
- * Take a MLS level string (e.g., <t>S0:C0.C127</t>) and parse it.
+ * Take a MLS level string (e.g., <b>S0:C0.C127</b>) and parse it.
  * Fill in a newly allocated apol_mls_level_t and return it.  This
  * function needs a policy to resolve dots within categories.  If the
  * string represents an illegal level then return NULL.	 The caller
