@@ -190,9 +190,9 @@ int apol_vector_append(apol_vector_t *v, void *elem)
 int apol_vector_append_unique(apol_vector_t *v, void *elem,
 			      apol_vector_comp_func *cmp, void *data)
 {
-	if (apol_vector_get_index(v, elem, cmp, data) >= 0) {
-		errno = EEXIST;
-		return 1;
+	if (apol_vector_get_index(v, elem, cmp, data) == -1) {
+	    return apol_vector_append(v, elem);
 	}
-	return apol_vector_append(v, elem);
+	errno = EEXIST;
+	return 1;
 }
