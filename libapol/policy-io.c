@@ -592,7 +592,7 @@ int open_policy(const char* filename, policy_t **policy)
 
 /******************** new policy reading below ********************/
 
-
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -600,6 +600,24 @@ int open_policy(const char* filename, policy_t **policy)
 
 #include "policy.h"
 #include "policy-io.h"
+
+static void sepol_handle_route_to_apol_handle(void *varg, sepol_handle_t *handle, const char *fmt, ...)
+{
+	apol_policy_t *p = (apol_policy_t *) varg;
+	ERR(p, fmt);
+}
+
+__attribute__ ((format (printf, 3, 4)))
+static void apol_handle_default_callback(void *varg __attribute__ ((unused)),
+					 apol_policy_t *p __attribute__ ((unused)),
+					 const char *fmt, ...)
+{
+	 va_list ap;
+	 va_start(ap, fmt);
+	 vfprintf(stderr, fmt, ap);
+	 va_end(ap);
+	 fprintf(stderr, "\n");
+}
 
 int apol_policy_open_binary(const char *path,
 			    apol_policy_t **policy)
@@ -612,28 +630,31 @@ int apol_policy_open_binary(const char *path,
 		fprintf(stderr, "Out of memory!\n");
 		return -1;
 	}
+	(*policy)->msg_callback = apol_handle_default_callback;
+	(*policy)->msg_callback_arg = (*policy);
 
 	(*policy)->sh = sepol_handle_create();
 	if ((*policy)->sh == NULL) {
-		fprintf(stderr, "Error creating sepol policy handle.\n");
+		ERR(*policy, "Error creating sepol policy handle.\n");
 		return -1;
 	}
+	sepol_handle_set_callback((*policy)->sh, sepol_handle_route_to_apol_handle, (*policy));
 
 	retv = sepol_policydb_create(&(*policy)->p);
 	if (retv) {
-		fprintf(stderr, "Error creating policy database.\n");
+		ERR(*policy, "Error creating policy database.\n");
 		goto open_policy_error;
 	}
 
 	retv = sepol_policy_file_create(&pfile);
 	if (retv) {
-		fprintf(stderr, "Error creating policy file.\n");
+		ERR(*policy, "Error creating policy file.\n");
 		goto open_policy_error;
 	}
 
 	infile = fopen(path, "rb");
 	if (!infile) {
-		fprintf(stderr, "Error: unable to open %s: ", path); /* no new line */
+		ERR(*policy, "Error: unable to open %s: ", path); /* no new line */
 		perror(NULL);
 		goto open_policy_error;
 	}
@@ -658,18 +679,15 @@ open_policy_done:
 	return retv;
 
 open_policy_error:
-	sepol_policydb_free((*policy)->p);
-	sepol_handle_destroy((*policy)->sh);
-	free(*policy);
-	*policy = NULL;
+	apol_policy_destroy(policy);
 	goto open_policy_done;
 }
 
 void apol_policy_destroy(apol_policy_t **policy)
 {
 	if (policy != NULL && *policy != NULL) {
-		sepol_handle_destroy((*policy)->sh);
 		sepol_policydb_free((*policy)->p);
+		sepol_handle_destroy((*policy)->sh);
 		free(*policy);
 		*policy = NULL;
 	}

@@ -47,6 +47,22 @@ int Apol_GetScriptDir(ClientData clientData, Tcl_Interp *interp, int argc, char 
 int ap_tcl_level_string_to_level(Tcl_Interp *interp, const char *level_string, ap_mls_level_t *level);
 
 /**
+ * If the callback arg embedded within the gloabl apol policy is not
+ * NULL, then set the Tcl interpreter's result string to it.  That arg
+ * is then reset to NULL afterwards.  If the arg was NULL to begin
+ * with then do nothing.
+ *
+ * @param interp Tcl interpreter object.
+ */
+void apol_tcl_write_error(Tcl_Interp *interp);
+
+/**
+ * Clears and resets the callback arg string within the global apol
+ * policy structure, if it is present.
+ */
+void apol_tcl_clear_error(void);
+
+/**
  * Takes a Tcl string representing an MLS level and converts it to an
  * apol_mls_level_t object.
  *

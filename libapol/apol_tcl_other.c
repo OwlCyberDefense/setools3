@@ -25,6 +25,8 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#define _GNU_SOURCE
+#include <stdarg.h>
 #include <string.h>
 #include <tcl.h>
 #include <assert.h>
@@ -52,6 +54,43 @@ policy_t *policy; /* local global for policy DB */
 
 apol_policy_t *policydb = NULL;
 
+/**
+ * Take the formated string, allocate space for it, and then write it
+ * the policy's msg_callback_arg.  This will first free the previous
+ * contents of msg_callback_arg.
+ */
+static void apol_tcl_route_handle_to_string(void *varg __attribute__ ((unused)),
+					    apol_policy_t *p,
+					    const char *fmt, ...)
+{
+	char *s;
+	va_list ap;
+	free(p->msg_callback_arg);
+	p->msg_callback_arg = NULL;
+	va_start(ap, fmt);
+	if (vasprintf(&s, fmt, ap) < 0) {
+		fprintf(stderr, "Out of memory!\n");
+	}
+	else {
+		p->msg_callback_arg = s;
+	}
+	va_end(ap);
+}
+
+void apol_tcl_clear_error(void)
+{
+	free(policydb->msg_callback_arg);
+	policydb->msg_callback_arg = NULL;
+}
+
+void apol_tcl_write_error(Tcl_Interp *interp)
+{
+	if (policydb->msg_callback_arg != NULL) {
+		Tcl_Obj *obj = Tcl_NewStringObj(policydb->msg_callback_arg, -1);
+		Tcl_SetObjResult(interp, obj);
+		apol_tcl_clear_error();
+	}
+}
 
 /* Takes a Tcl string representing a MLS level and converts it to an
  * ap_mls_level_t object.  Returns 0 on success, 1 if a identifier was
@@ -551,6 +590,8 @@ int Apol_OpenPolicy(ClientData clientData, Tcl_Interp *interp, int argc, char *a
 			Tcl_SetResult(interp, "Open policy error.", TCL_STATIC);
 			return TCL_ERROR;
 		}
+		policydb->msg_callback_arg = NULL;
+		policydb->msg_callback = apol_tcl_route_handle_to_string;
 	}
 	return TCL_OK;
 }

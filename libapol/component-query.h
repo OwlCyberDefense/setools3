@@ -102,25 +102,29 @@ extern void apol_type_query_destroy(apol_type_query_t **t);
  * name may be either a type or one of its aliases.  This function
  * duplicates the incoming name.
  *
+ * @param p Policy handler, to report errors.
  * @param t Type query to set.
  * @param name Limit query to only types or aliases with this name, or
  * NULL to unset this field.
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_type_query_set_type(apol_type_query_t *t, const char *name);
+extern int apol_type_query_set_type(apol_policy_t *p,
+				    apol_type_query_t *t, const char *name);
 
 /**
  * Set a type query to use regular expression searching for all of its
  * fields.  Strings will be treated as regexes instead of literals.
  * Matching will occur against the type name or any of its aliases.
  *
+ * @param p Policy handler, to report errors.
  * @param t Type query to set.
  * @param is_regex Non-zero to enable regex searching, 0 to disable.
  *
  * @return Always 0.
  */
-extern int apol_type_query_set_regex(apol_type_query_t *t, int is_regex);
+extern int apol_type_query_set_regex(apol_policy_t *p,
+				     apol_type_query_t *t, int is_regex);
 
 
 /******************** attribute queries ********************/
@@ -168,25 +172,29 @@ extern void apol_attr_query_destroy(apol_attr_query_t **a);
  * Set an attribute query to return only attributes that match this
  * name.  This function duplicates the incoming name.
  *
+ * @param p Policy handler, to report errors.
  * @param a Attribute query to set.
  * @param name Limit query to only attributes with this name, or NULL
  * to unset this field.
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_attr_query_set_attr(apol_attr_query_t *a, const char *name);
+extern int apol_attr_query_set_attr(apol_policy_t *p,
+				    apol_attr_query_t *a, const char *name);
 
 /**
  * Set an attribute query to use regular expression searching for all
  * of its fields.  Strings will be treated as regexes instead of
  * literals.
  *
+ * @param p Policy handler, to report errors.
  * @param a Attribute query to set.
  * @param is_regex Non-zero to enable regex searching, 0 to disable.
  *
  * @return Always 0.
  */
-extern int apol_attr_query_set_regex(apol_attr_query_t *a, int is_regex);
+extern int apol_attr_query_set_regex(apol_policy_t *p,
+				     apol_attr_query_t *a, int is_regex);
 
 
 /******************** class queries ********************/
@@ -234,13 +242,15 @@ extern void apol_class_query_destroy(apol_class_query_t **c);
  * Set a class query to return only object classes that match this
  * name.  This function duplicates the incoming name.
  *
+ * @param p Policy handler, to report errors.
  * @param c Class query to set.
  * @param name Limit query to only classes with this name, or NULL
  * to unset this field.
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_class_query_set_class(apol_class_query_t *c, const char *name);
+extern int apol_class_query_set_class(apol_policy_t *p,
+				      apol_class_query_t *c, const char *name);
 
 /**
  * Set a class query to return only object classes that inherit from a
@@ -248,24 +258,28 @@ extern int apol_class_query_set_class(apol_class_query_t *c, const char *name);
  * commons if this option is set.  This function duplicates the
  * incoming name.
  *
+ * @param p Policy handler, to report errors.
  * @param c Class query to set.
  * @param name Limit query to only classes that inherit from this
  * common class, or NULL to unset this field.
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_class_query_set_common(apol_class_query_t *c, const char *name);
+extern int apol_class_query_set_common(apol_policy_t *p,
+				       apol_class_query_t *c, const char *name);
 /**
  * Set a class query to use regular expression searching for all of
  * its fields.	Strings will be treated as regexes instead of
  * literals.
  *
+ * @param p Policy handler, to report errors.
  * @param c Class query to set.
  * @param is_regex Non-zero to enable regex searching, 0 to disable.
  *
  * @return Always 0.
  */
-extern int apol_class_query_set_regex(apol_class_query_t *c, int is_regex);
+extern int apol_class_query_set_regex(apol_policy_t *p,
+				      apol_class_query_t *c, int is_regex);
 
 
 /******************** common class queries ********************/
@@ -313,25 +327,29 @@ extern void apol_common_query_destroy(apol_common_query_t **c);
  * Set a common query to return only common classes that match this
  * name.  This function duplicates the incoming name.
  *
+ * @param p Policy handler, to report errors.
  * @param c Common query to set.
  * @param name Limit query to only commons with this name, or NULL to
  * unset this field.
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_common_query_set_common(apol_common_query_t *c, const char *name);
+extern int apol_common_query_set_common(apol_policy_t *p,
+					apol_common_query_t *c, const char *name);
 
 /**
  * Set a common query to use regular expression searching for all of
  * its fields.	Strings will be treated as regexes instead of
  * literals.
  *
+ * @param p Policy handler, to report errors.
  * @param c Class query to set.
  * @param is_regex Non-zero to enable regex searching, 0 to disable.
  *
  * @return Always 0.
  */
-extern int apol_common_query_set_regex(apol_common_query_t *c, int is_regex);
+extern int apol_common_query_set_regex(apol_policy_t *p,
+				       apol_common_query_t *c, int is_regex);
 
 
 /******************** permission queries ********************/
@@ -380,25 +398,29 @@ extern void apol_perm_query_destroy(apol_perm_query_t **pq);
  * Set a permission query to return only permissions that match this
  * name.  This function duplicates the incoming name.
  *
+ * @param p Policy handler, to report errors.
  * @param pq Permission query to set.
  * @param name Limit query to only permissions with this name, or NULL
  * to unset this field.
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_perm_query_set_perm(apol_perm_query_t *pq, const char *name);
+extern int apol_perm_query_set_perm(apol_policy_t *p,
+				    apol_perm_query_t *pq, const char *name);
 
 /**
  * Set a permission query to use regular expression searching for all
  * of its fields.  Strings will be treated as regexes instead of
  * literals.
  *
+ * @param p Policy handler, to report errors.
  * @param pq Permission query to set.
  * @param is_regex Non-zero to enable regex searching, 0 to disable.
  *
  * @return Always 0.
  */
-extern int apol_perm_query_set_regex(apol_perm_query_t *pq, int is_regex);
+extern int apol_perm_query_set_regex(apol_policy_t *p,
+				     apol_perm_query_t *pq, int is_regex);
 
 
 /******************** role queries ********************/
@@ -445,36 +467,42 @@ extern void apol_role_query_destroy(apol_role_query_t **r);
  * Set a role query to return only roles that match this name.	This
  * function duplicates the incoming name.
  *
+ * @param p Policy handler, to report errors.
  * @param r Role query to set.
  * @param name Limit query to only roles with this name, or NULL to
  * unset this field.
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_role_query_set_role(apol_role_query_t *r, const char *name);
+extern int apol_role_query_set_role(apol_policy_t *p,
+				    apol_role_query_t *r, const char *name);
 
 /**
  * Set a role query to return only roles containing this type.	This
  * function duplicates the incoming name.
  *
+ * @param p Policy handler, to report errors.
  * @param r Role query to set.
  * @param name Limit query to only roles with this type, or NULL to
  * unset this field.
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_role_query_set_type(apol_role_query_t *r, const char *name);
+extern int apol_role_query_set_type(apol_policy_t *p,
+				    apol_role_query_t *r, const char *name);
 
 /**
  * Set a role query to use regular expression searching for all of its
  * fields.  Strings will be treated as regexes instead of literals.
  *
+ * @param p Policy handler, to report errors.
  * @param r Role query to set.
  * @param is_regex Non-zero to enable regex searching, 0 to disable.
  *
  * @return Always 0.
  */
-extern int apol_role_query_set_regex(apol_role_query_t *r, int is_regex);
+extern int apol_role_query_set_regex(apol_policy_t *p,
+				     apol_role_query_t *r, int is_regex);
 
 
 /******************** user queries ********************/
@@ -521,38 +549,44 @@ extern void apol_user_query_destroy(apol_user_query_t **u);
  * Set a user query to return only users that match this name.	This
  * function duplicates the incoming name.
  *
+ * @param p Policy handler, to report errors.
  * @param u User query to set.
  * @param name Limit query to only users this name, or NULL to unset
  * this field.
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_user_query_set_user(apol_user_query_t *u, const char *name);
+extern int apol_user_query_set_user(apol_policy_t *p,
+				    apol_user_query_t *u, const char *name);
 
 /**
  * Set a user query to return only users containing this role.	This
  * function duplicates the incoming name.
  *
+ * @param p Policy handler, to report errors.
  * @param u User query to set.
  * @param role Limit query to only users with this role, or NULL to
  * unset this field.
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_user_query_set_role(apol_user_query_t *u, const char *role);
+extern int apol_user_query_set_role(apol_policy_t *p,
+				    apol_user_query_t *u, const char *role);
 
 /**
  * Set a user query to return only users containing this default
  * level.  This function takes ownership of the level, such that the
  * caller must not modify nor destroy it afterwards.
  *
+ * @param p Policy handler, to report errors.
  * @param u User query to which set.
  * @param level Limit query to only users with this level as their
  * default, or NULL to unset this field.
  *
  * @return Always returns 0.
  */
-extern int apol_user_query_set_default_level(apol_user_query_t *u,
+extern int apol_user_query_set_default_level(apol_policy_t *p,
+					     apol_user_query_t *u,
 					     apol_mls_level_t *level);
 
 /**
@@ -560,6 +594,7 @@ extern int apol_user_query_set_default_level(apol_user_query_t *u,
  * function takes ownership of the range, such that the caller must
  * not modify nor destroy it afterwards.
  *
+ * @param p Policy handler, to report errors.
  * @param u User query to set.
  * @param range Limit query to only users matching this range, or NULL
  * to unset this field.
@@ -569,7 +604,8 @@ extern int apol_user_query_set_default_level(apol_user_query_t *u,
  *
  * @return Always returns 0.
  */
-extern int apol_user_query_set_range(apol_user_query_t *u,
+extern int apol_user_query_set_range(apol_policy_t *p,
+				     apol_user_query_t *u,
 				     apol_mls_range_t *range,
 				     unsigned int range_match);
 
@@ -577,12 +613,14 @@ extern int apol_user_query_set_range(apol_user_query_t *u,
  * Set a user query to use regular expression searching for all of its
  * fields.  Strings will be treated as regexes instead of literals.
  *
+ * @param p Policy handler, to report errors.
  * @param u User query to set.
  * @param is_regex Non-zero to enable regex searching, 0 to disable.
  *
  * @return Always 0.
  */
-extern int apol_user_query_set_regex(apol_user_query_t *u, int is_regex);
+extern int apol_user_query_set_regex(apol_policy_t *p,
+				     apol_user_query_t *u, int is_regex);
 
 
 /******************** booleans queries ********************/
@@ -629,25 +667,29 @@ extern void apol_bool_query_destroy(apol_bool_query_t **b);
  * Set a boolean query to return only booleans that match this name.
  * This function duplicates the incoming name.
  *
+ * @param p Policy handler, to report errors.
  * @param b Boolean query to set.
  * @param name Limit query to only booleans with this name, or NULL to
  * unset this field.
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_bool_query_set_bool(apol_bool_query_t *b, const char *name);
+extern int apol_bool_query_set_bool(apol_policy_t *p,
+				    apol_bool_query_t *b, const char *name);
 
 /**
  * Set a boolean query to use regular expression searching for all of
  * its fields.	Strings will be treated as regexes instead of
  * literals.
  *
+ * @param p Policy handler, to report errors.
  * @param b Boolean query to set.
  * @param is_regex Non-zero to enable regex searching, 0 to disable.
  *
  * @return Always 0.
  */
-extern int apol_bool_query_set_regex(apol_bool_query_t *b, int is_regex);
+extern int apol_bool_query_set_regex(apol_policy_t *p,
+				     apol_bool_query_t *b, int is_regex);
 
 
 /******************** level queries ********************/
@@ -695,26 +737,30 @@ extern void apol_level_query_destroy(apol_level_query_t **l);
  * name may be either a sensitivity or one of its aliases.  This
  * function duplicates the incoming name.
  *
+ * @param p Policy handler, to report errors.
  * @param l Level query to set.
  * @param name Limit query to only sensitivities or aliases with this
  * name, or NULL to unset this field.
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_level_query_set_sens(apol_level_query_t *l, const char *name);
+extern int apol_level_query_set_sens(apol_policy_t *p,
+				     apol_level_query_t *l, const char *name);
 
 /**
  * Set a level query to return only levels contain a particular
  * category.  The name may be either a category or one of its aliases.
  * This function duplicates the incoming name.
  *
+ * @param p Policy handler, to report errors.
  * @param l Level query to set.
  * @param name Limit query to levels containing this category or
  * alias, or NULL to unset this field.
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_level_query_set_cat(apol_level_query_t *l, const char *name);
+extern int apol_level_query_set_cat(apol_policy_t *p,
+				    apol_level_query_t *l, const char *name);
 
 /**
  * Set a level query to use regular expression searching for all of
@@ -722,12 +768,14 @@ extern int apol_level_query_set_cat(apol_level_query_t *l, const char *name);
  * literals.  Matching will occur against the sensitivity name or any
  * of its aliases.
  *
+ * @param p Policy handler, to report errors.
  * @param l Level query to set.
  * @param is_regex Non-zero to enable regex searching, 0 to disable.
  *
  * @return Always 0.
  */
-extern int apol_level_query_set_regex(apol_level_query_t *l, int is_regex);
+extern int apol_level_query_set_regex(apol_policy_t *p,
+				      apol_level_query_t *l, int is_regex);
 
 
 /******************** category queries ********************/
@@ -776,13 +824,15 @@ extern void apol_cat_query_destroy(apol_cat_query_t **c);
  * The name may be either a category or one of its aliases.  This
  * function duplicates the incoming name.
  *
+ * @param p Policy handler, to report errors.
  * @param c Category query to set.
  * @param name Limit query to only categories or aliases with this
  * name, or NULL to unset this field.
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_cat_query_set_cat(apol_cat_query_t *c, const char *name);
+extern int apol_cat_query_set_cat(apol_policy_t *p,
+				  apol_cat_query_t *c, const char *name);
 
 /**
  * Set a category query to use regular expression searching for all of
@@ -790,11 +840,13 @@ extern int apol_cat_query_set_cat(apol_cat_query_t *c, const char *name);
  * Matching will occur against the category name or any of its
  * aliases.
  *
+ * @param p Policy handler, to report errors.
  * @param c Category query to set.
  * @param is_regex Non-zero to enable regex searching, 0 to disable.
  *
  * @return Always 0.
  */
-extern int apol_cat_query_set_regex(apol_cat_query_t *c, int is_regex);
+extern int apol_cat_query_set_regex(apol_policy_t *p,
+				    apol_cat_query_t *c, int is_regex);
 
 #endif
