@@ -75,7 +75,9 @@ const char* find_default_policy_file_strerr(int err);
 /**
  * Attempt to load a binary policy from disk from the given path.
  * Upon success allocate and return new error handles and a new
- * policydb for the loaded policy.
+ * policydb for the loaded policy.  By default the policy's error
+ * handler will write everything to stderr; the callback arg will
+ * point to the apol_policy_t itself.
  *
  * @param path Path to the policy to load.
  * @param policy Reference to a newly allocated SELinux binary

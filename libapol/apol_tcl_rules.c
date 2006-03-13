@@ -493,38 +493,6 @@ static int Apol_SearchTErules(ClientData clientData, Tcl_Interp *interp, int arg
 	return TCL_OK;	
 }
 
-/* Given an regexp, returns all attributes matching that pattern. */
-static int Apol_GetAttributeByRegexp(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[]) {
-        regex_t regexp;
-        int i;
-	if(policy == NULL) {
-		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
-		return TCL_ERROR;
-	}
-        if (argc != 2) {
-		Tcl_SetResult(interp, "wrong # of args", TCL_STATIC);
-		return TCL_ERROR;
-        }
-        if(!is_valid_str_sz(argv[1])) {
-                Tcl_SetResult(interp, "regular expression string is too large", TCL_STATIC);
-                return TCL_ERROR;
-        }
-        if (regcomp(&regexp, argv[1], REG_EXTENDED | REG_NOSUB) != 0) {
-                Tcl_Obj *result = Tcl_NewStringObj("Invalid regular expression:\n\n     ", -1);
-                Tcl_AppendStringsToObj(result, argv[1], "\n", NULL);
-                Tcl_SetObjResult(interp, result);
-                return TCL_ERROR;
-
-        }
-        for(i = 0; i < policy->num_attribs; i++) {
-                if(regexec(&regexp, policy->attribs[i].name, 0, NULL, 0) == 0) {
-                        Tcl_AppendElement(interp, policy->attribs[i].name);
-                }						
-        }
-        regfree(&regexp);
-	return TCL_OK;
-}
-
 static void apol_cond_rules_append_expr(cond_expr_t *exp, policy_t *policy, Tcl_Interp *interp)
 {
 	char tbuf[BUF_SZ];
@@ -1232,7 +1200,6 @@ static int Apol_SearchRangeTransRules(ClientData clientData, Tcl_Interp *interp,
 int ap_tcl_rules_init(Tcl_Interp *interp) {
 
 	Tcl_CreateCommand(interp, "apol_SearchTErules", Apol_SearchTErules, NULL, NULL);
-        Tcl_CreateCommand(interp, "apol_GetAttributeByRegexp", Apol_GetAttributeByRegexp, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_SearchConditionalRules", Apol_SearchConditionalRules, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetRoleRules", Apol_GetRoleRules, NULL, NULL);
         Tcl_CreateCommand(interp, "apol_SearchRangeTransRules", Apol_SearchRangeTransRules, NULL, NULL);
