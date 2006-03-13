@@ -905,12 +905,11 @@ int _get_type_name_ptr(int idx, char **name, policy_t *policy);
 #include <sepol/handle.h>
 #include <sepol/policydb.h>
 
-typedef struct apol_handle apol_handle_t;
-
 typedef struct apol_policy {
         sepol_policydb_t *p;
         sepol_handle_t *sh;
-        apol_handle_t *ah;
+	void (*msg_callback) (void *varg, struct apol_policy *p, const char *fmt, ...);
+	void *msg_callback_arg;
 } apol_policy_t;
 
 /**
@@ -921,5 +920,17 @@ typedef struct apol_policy {
  * @return 1 if policy is MLS, 0 if not, < 0 upon error.
  */
 extern int apol_policy_is_mls(apol_policy_t *p);
+
+/**
+ * Invoke a apol_policy_t's error callback function, passing it a
+ * format string and arguments.
+ */
+#define ERR(p, ...)  \
+	do { \
+		if ((p) != NULL && (p)->msg_callback != NULL) { \
+			(p)->msg_callback((p)->msg_callback_arg, \
+					     (p), __VA_ARGS__); \
+		} \
+	} while(0);
 
 #endif

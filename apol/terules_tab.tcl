@@ -539,7 +539,7 @@ proc Apol_TE::expand_ids {id id_opt use_indirect use_regexp} {
         }
         if {$id_opt == "attribs" || $id_opt == "both"} {
             if {$use_regexp} {
-                set attribute_list [apol_GetAttributeByRegexp $id]
+                set attribute_list [apol_GetAttribs $id 1]
             } else {
                 set attribute_list $id
             }
