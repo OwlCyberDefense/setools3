@@ -236,7 +236,8 @@ static int apol_compare(apol_policy_t *p, const char *target, const char *name, 
 	}
 }
 
-/* Given an iterator of strings, checks if name matches any element
+/**
+ * Given an iterator of strings, checks if name matches any element
  * within it.  If there is a match, either literally or by regular
  * expression, then return 1.  If there are no matches then return 0.
  *

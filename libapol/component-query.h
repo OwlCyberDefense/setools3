@@ -31,7 +31,7 @@
 #define _APOL_COMPONENT_QUERY_H_
 
 #include <stdlib.h>
-#include <sepol/policydb-query.h>
+#include <sepol/policydb_query.h>
 
 #include "mls-query.h"
 #include "policy.h"
@@ -68,9 +68,10 @@ typedef struct apol_cat_query apol_cat_query_t;
  * @param t Structure containing parameters for query.	If this is
  * NULL then return all types.
  * @param v Reference to a vector of sepol_type_datum_t.  The vector
- * will be allocated by this function. The caller must destroy this
- * vector afterwards, but <b>must not</b> free the elements within it.
- * This will be set to NULL upon no results or upon error.
+ * will be allocated by this function.  The caller must call
+ * apol_vector_destroy() afterwards, but <b>must not</b> free the
+ * elements within it.  This will be set to NULL upon no results or
+ * upon error.
  *
  * @return 0 on success (including none found), negative on error.
  */
@@ -133,15 +134,14 @@ extern int apol_type_query_set_regex(apol_policy_t *p,
  * Execute a query against all attributes within the policy.  The
  * results will only contain attributes, not types nor aliases.
  *
- * @param p Policy within which to look up types.
+ * @param p Policy within which to look up attributes.
  * @param a Structure containing parameters for query.	If this is
  * NULL then return all attributes.
- * @param results Reference to a list of results.  The list will be
- * allocated by this function.	The caller must free this list
- * afterwards, but <b>must not</b> free the elements within it.	 This
- * will be set to NULL upon no results or upon error.
- * @param num_results Reference to number of results, or 0 upon no
- * results or error.
+ * @param v Reference to a vector of sepol_type_datum_t.  The vector
+ * will be allocated by this function.  The caller must call
+ * apol_vector_destroy() afterwards, but <b>must not</b> free the
+ * elements within it.  This will be set to NULL upon no results or
+ * upon error.
  *
  * @return 0 on success (including none found), negative on error.
  */
@@ -206,12 +206,11 @@ extern int apol_attr_query_set_regex(apol_policy_t *p,
  * @param p Policy within which to look up classes.
  * @param c Structure containing parameters for query.	If this is
  * NULL then return all object classes.
- * @param results Reference to a list of results.  The list will be
- * allocated by this function.	The caller must free this list
- * afterwards, but <b>must not</b> free the elements within it.	 This will
- * be set to NULL upon no results or upon error.
- * @param num_results Reference to number of results, or 0 upon no
- * results or error.
+ * @param v Reference to a vector of sepol_class_datum_t.  The vector
+ * will be allocated by this function. The caller must call
+ * apol_vector_destroy() afterwards, but <b>must not</b> free the
+ * elements within it.  This will be set to NULL upon no results or
+ * upon error.
  *
  * @return 0 on success (including none found), negative on error.
  */
@@ -291,12 +290,11 @@ extern int apol_class_query_set_regex(apol_policy_t *p,
  * @param p Policy within which to look up classes.
  * @param c Structure containing parameters for query.	If this is
  * NULL then return all common classes.
- * @param results Reference to a list of results.  The list will be
- * allocated by this function.	The caller must free this list
- * afterwards, but <b>must not</b> free the elements within it.	 This will
- * be set to NULL upon no results or upon error.
- * @param num_results Reference to number of results, or 0 upon no
- * results or error.
+ * @param v Reference to a vector of sepol_common_datum_t.  The vector
+ * will be allocated by this function. The caller must call
+ * apol_vector_destroy() afterwards, but <b>must not</b> free the
+ * elements within it.  This will be set to NULL upon no results or
+ * upon error.
  *
  * @return 0 on success (including none found), negative on error.
  */
@@ -361,12 +359,11 @@ extern int apol_common_query_set_regex(apol_policy_t *p,
  * @param p Policy within which to look up classes.
  * @param pq Structure containing parameters for query.	 If this is
  * NULL then return all permission.
- * @param results Reference to a list of results for permissions.  The
- * list will be allocated by this function.  The caller must free this
- * list afterwards, but <b>must not</b> free the elements within it.
- * This will be set to NULL upon no results or upon error.
- * @param num_results Reference to number of results, or 0 upon no
- * results or error.
+ * @param v Reference to a vector of character pointers.  The vector
+ * will be allocated by this function.  The caller must call
+ * apol_vector_destroy() afterwards, but <b>must not</b> free the
+ * elements within it.  This will be set to NULL upon no results or
+ * upon error.
  *
  * @return 0 on success (including none found), negative on error.
  */
@@ -431,12 +428,11 @@ extern int apol_perm_query_set_regex(apol_policy_t *p,
  * @param p Policy within which to look up roles.
  * @param r Structure containing parameters for query.	If this is
  * NULL then return all roles.
- * @param results Reference to a list of results.  The list will be
- * allocated by this function.	The caller must free this list
- * afterwards, but <b>must not</b> free the elements within it.	 This will
- * be set to NULL upon no results or upon error.
- * @param num_results Reference to number of results, or 0 upon no
- * results or error.
+ * @param v Reference to a vector of sepol_role_datum_t.  The vector
+ * will be allocated by this function.  The caller must call
+ * apol_vector_destroy() afterwards, but <b>must not</b> free the
+ * elements within it.  This will be set to NULL upon no results or
+ * upon error.
  *
  * @return 0 on success (including none found), negative on error.
  */
@@ -513,12 +509,11 @@ extern int apol_role_query_set_regex(apol_policy_t *p,
  * @param p Policy within which to look up users.
  * @param u Structure containing parameters for query.	If this is
  * NULL then return all users.
- * @param results Reference to a list of results.  The list will be
- * allocated by this function.	The caller must free this list
- * afterwards, but <b>must not</b> free the elements within it.	 This will
- * be set to NULL upon no results or upon error.
- * @param num_results Reference to number of results, or 0 upon no
- * results or error.
+ * @param v Reference to a vector of sepol_user_datum_t.  The vector
+ * will be allocated by this function. The caller must call
+ * apol_vector_destroy() afterwards, but <b>must not</b> free the
+ * elements within it.  This will be set to NULL upon no results or
+ * upon error.
  *
  * @return 0 on success (including none found), negative on error.
  */
@@ -631,12 +626,11 @@ extern int apol_user_query_set_regex(apol_policy_t *p,
  * @param p Policy within which to look up roles.
  * @param b Structure containing parameters for query.	If this is
  * NULL then return all booleans.
- * @param results Reference to a list of results.  The list will be
- * allocated by this function.	The caller must free this list
- * afterwards, but <b>must not</b> free the elements within it.	 This will
- * be set to NULL upon no results or upon error.
- * @param num_results Reference to number of results, or 0 upon no
- * results or error.
+ * @param v Reference to a vector of sepol_bool_datum_t.  The vector
+ * will be allocated by this function. The caller must call
+ * apol_vector_destroy() afterwards, but <b>must not</b> free the
+ * elements within it.  This will be set to NULL upon no results or
+ * upon error.
  *
  * @return 0 on success (including none found), negative on error.
  */
@@ -703,9 +697,10 @@ extern int apol_bool_query_set_regex(apol_policy_t *p,
  * @param l Structure containing parameters for query.	If this is
  * NULL then return all levels.
  * @param v Reference to a vector of sepol_level_datum_t.  The vector
- * will be allocated by this function. The caller must destroy this
- * vector afterwards, but <b>must not</b> free the elements within it.
- * This will be set to NULL upon no results or upon error.
+ * will be allocated by this function. The caller must call
+ * apol_vector_destroy() afterwards, but <b>must not</b> free the
+ * elements within it.  This will be set to NULL upon no results or
+ * upon error.
  *
  * @return 0 on success (including none found), negative on error.
  */
@@ -788,10 +783,11 @@ extern int apol_level_query_set_regex(apol_policy_t *p,
  * @param p Policy within which to look up types.
  * @param c Structure containing parameters for query.	If this is
  * NULL then return all levels.
- * @param v Reference to a vector of sepol_cat_datum_t.	 The vector
- * will be allocated by this function. The caller must destroy this
- * vector afterwards, but <b>must not</b> free the elements within it.
- * This will be set to NULL upon no results or upon error.
+ * @param v Reference to a vector of sepol_cat_datum_t.  The vector
+ * will be allocated by this function. The caller must call
+ * apol_vector_destroy() afterwards, but <b>must not</b> free the
+ * elements within it.  This will be set to NULL upon no results or
+ * upon error.
  *
  * @return 0 on success (including none found), negative on error.
  */

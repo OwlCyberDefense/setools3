@@ -94,8 +94,8 @@ static int Apol_GetNames(ClientData clientData, Tcl_Interp * interp, int argc, C
 	return TCL_OK;
 }
 
-/* Takes a sepol_type_datum_t and appends a tuple of it to results_list.
- * The tuple consists of:
+/* Takes a sepol_type_datum_t and appends a tuple of it to
+ * result_list.  The tuple consists of:
  *    { type_name {attrib0 attrib1 ...} {alias0 alias1 ...}}
  */
 static int append_type_to_list(Tcl_Interp *interp,
@@ -236,8 +236,8 @@ static int Apol_GetTypes(ClientData clientData, Tcl_Interp *interp, int argc, CO
 }
 
 /* Takes a sepol_type_datum_t representing a type and appends a tuple
- * of it to results_list.  The tuple consists of:
-  *    { attr_name { type0 type1 ... } }
+ * of it to result_list.  The tuple consists of:
+ *    { attr_name { type0 type1 ... } }
  */
 static int append_attr_to_list(Tcl_Interp *interp,
 			       sepol_type_datum_t *attr_datum,
@@ -361,7 +361,7 @@ static int Apol_GetAttribs(ClientData clientData, Tcl_Interp *interp, int argc, 
 }
 
 /* Takes a sepol_class_datum_t representing a class and appends a
- * tuple of it to results_list.	 The tuple consists of:
+ * tuple of it to result_list.	 The tuple consists of:
  *    { class_name common_class {perms0 perms1 ...} }
  * If the object class has no common, then the second element will be
  * an empy string.
@@ -484,7 +484,7 @@ static int Apol_GetClasses(ClientData clientData, Tcl_Interp *interp, int argc, 
 }
      
 /* Takes a sepol_common_datum_t representing a common and appends a
- * tuple of it to results_list.	 The tuple consists of:
+ * tuple of it to result_list.	 The tuple consists of:
  *    { common_name {perms0 perms1 ...} {class0 class1 ...} }
  * The second list is a list of object classes that inherit from this
  * common.
@@ -624,7 +624,7 @@ static int Apol_GetCommons(ClientData clientData, Tcl_Interp *interp, int argc, 
 }
      
 /* Takes a string representing a permission and appends a tuple of it
- * to results_list.  The tuple consists of:
+ * to result_list.  The tuple consists of:
   *    { perm_name {class0 class1 ...} {common0 common1 ...} }
  */
 static int append_perm_to_list(Tcl_Interp *interp,
@@ -751,8 +751,8 @@ static int Apol_GetPerms(ClientData clientData, Tcl_Interp *interp, int argc, CO
 	return retval;
 }
 
-/* Takes a sepol_role_datum_t and appends a tuple of it to results_list.
- * The tuple consists of:
+/* Takes a sepol_role_datum_t and appends a tuple of it to
+ * result_list.  The tuple consists of:
  *    { role_name {types1 types2 ...} {dominated_role1 dominated_role2 ...}}
  */
 static int append_role_to_list(Tcl_Interp *interp,
@@ -931,7 +931,7 @@ static int apol_level_to_tcl_obj(Tcl_Interp *interp, apol_mls_level_t *level, Tc
 
 
 /* Takes a sepol_user_datum_t and appends a tuple of it to
- * results_list.  The tuple consists of:
+ * result_list.  The tuple consists of:
  *    { user_name { role0 role1 ... } default_level { low_range high_range } }
  */
 static int append_user_to_list(Tcl_Interp *interp,
@@ -1121,8 +1121,8 @@ static int Apol_GetUsers(ClientData clientData, Tcl_Interp *interp, int argc, CO
 	return retval;
 }
 
-/* Takes a sepol_bool_datum_t and appends a tuple of it to results_list.
- * The tuple consists of:
+/* Takes a sepol_bool_datum_t and appends a tuple of it to
+ * result_list.  The tuple consists of:
  *    { bool_name current_value}
  */
 static int append_bool_to_list(Tcl_Interp *interp,
@@ -1257,7 +1257,7 @@ static int Apol_SetBoolValue(ClientData clientData, Tcl_Interp *interp, int argc
 }
 
 /* Takes a sepol_level_datum_t and appends a tuple of it to
- * results_list.  The tuple consists of:
+ * result_list.  The tuple consists of:
  *    { sens_name {alias0 alias1 ...} {cats0 cats1 ...} dominance_value }
  */
 static int append_level_to_list(Tcl_Interp *interp,
@@ -1399,7 +1399,7 @@ static int Apol_GetLevels(ClientData clientData, Tcl_Interp *interp, int argc, C
 }
 
 /* Takes a sepol_cat_datum_t and appends a tuple of it to
- * results_list.  The tuple consists of:
+ * result_list.  The tuple consists of:
  *    { cat_name {alias0 alias1 ...} {level0 level1 ...} cat_value }
  */
 static int append_cat_to_list(Tcl_Interp *interp,
