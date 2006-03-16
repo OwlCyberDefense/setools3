@@ -33,6 +33,7 @@
 #include <sepol/sepol.h>
 
 #include "policy.h"
+#include "context-query.h"
 #include "mls-query.h"
 
 /** Global SELinux policy (either read from source or from binary
@@ -63,28 +64,41 @@ void apol_tcl_write_error(Tcl_Interp *interp);
 void apol_tcl_clear_error(void);
 
 /**
- * Takes a Tcl string representing an MLS level and converts it to an
- * apol_mls_level_t object.
+ * Given a string representing a Tcl level object, fill the passed
+ * apol_mls_level_t structure with the level information.  A Tcl level
+ * object consists of:
+ *
+ *  { sens {cat0 cat1 ...} }
  *
  * @param interp Tcl interpreter object.
- * @param level_string String representation of an MLS level.
- * @return 0 on success, 1 if an identifier was not unknown, or < 0 on
- * error.
+ * @param level_string Character string representing a Tcl level.
+ * @param level Destination to write level data.
+ *
+ * @return 0 if level converted, 1 if an identifier is not known
+ * according to the policy, <0 on error.
  */
-int apol_tcl_string_to_level(Tcl_Interp *interp, const char *level_string,
-                             apol_mls_level_t *level);
+extern int apol_tcl_string_to_level(Tcl_Interp *interp, const char *level_string,
+				    apol_mls_level_t *level);
 
 /**
- * Takes a Tcl string representing an MLS range and converts it to an
- * apol_mls_range_t object.
+ * Given a string representing a Tcl range object, fill the passed
+ * apol_mls_range_t structure with the range information.  A Tcl range
+ * object consists of:
+ *
+ *  { sens {cat0 cat1 ...} } [{ sens {cat0 cat1 ...} }]
+ *
+ * If the string only has one element then treat the range's high
+ * level to be equivalent to its low.
  *
  * @param interp Tcl interpreter object.
- * @param range_string String representation of an MLS range.
- * @return 0 on success, 1 if an identifier was not unknown, or < 0 on
- * error.
+ * @param range_string Character string representing a Tcl range.
+ * @param range Destination to write range data.
+ *
+ * @return 0 if range converted, 1 if an identifier is not known
+ * according to the policy, <0 on error.
  */
-int apol_tcl_string_to_range(Tcl_Interp *interp, const char *range_string,
-                             apol_mls_range_t *range);
+extern int apol_tcl_string_to_range(Tcl_Interp *interp, const char *range_string,
+				    apol_mls_range_t *range);
 
 /**
  * Given a Tcl string representing a range type ("exact", "subset",
@@ -99,6 +113,28 @@ int apol_tcl_string_to_range(Tcl_Interp *interp, const char *range_string,
  */
 int apol_tcl_string_to_range_match(Tcl_Interp *interp, const char *range_match_string,
                                    unsigned int *flags);
+
+
+/**
+ * Given a string representing a Tcl context object, fill the passed
+ * apol_context_t structure with as much information as possible.  A
+ * Tcl context object consists of:
+ *
+ *   { user role type [range] }
+ *
+ * where the range is optional.	 If it is given, the range a 1-ple or
+ * 2-ple list of levels.
+ *
+ * @param interp Tcl interpreter object.
+ * @param context_string Character string represting a Tcl context.
+ * @param context Destination to write context data.
+ *
+ * @return 0 if context converted, 1 if an identifier is not known
+ * according to the policy, <0 on error.
+ */
+extern int apol_tcl_string_to_context(Tcl_Interp *interp,
+				      const char *context_string,
+				      apol_context_t *context);
 
 #endif /*_APOLICY_TCL_H_*/
 

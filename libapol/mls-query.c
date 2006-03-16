@@ -102,6 +102,7 @@ static int apol_mls_level_validate(apol_policy_t *p,
 	size_t i;
 
 	if (level == NULL) {
+		ERR(p, "Invalid argument.");
 		return -1;
 	}
 	if (sepol_policydb_get_level_by_name(p->sh, p->p, level->sens, &level_datum) < 0 ||
@@ -109,6 +110,7 @@ static int apol_mls_level_validate(apol_policy_t *p,
 		return -1;
 	}
 	if ((cat_vector = apol_vector_create_from_iter(iter)) == NULL) {
+		ERR(p, "Out of memory!");
 		goto cleanup;
 	}
 
@@ -126,6 +128,22 @@ static int apol_mls_level_validate(apol_policy_t *p,
 	sepol_iterator_destroy(&iter);
 	apol_vector_destroy(&cat_vector, NULL);
 	return retval;
+}
+
+/**
+ * Equivalent to the non-ANSI strdup() function.
+ * @param p Policy handler.
+ * @param s String to duplicate.
+ * @return Pointer to newly allocated string, or NULL on error.
+ */
+static char *apol_strdup(apol_policy_t *p, const char *s)
+{
+	char *t;
+	if ((t = malloc(strlen(s) + 1)) == NULL) {
+		ERR(p, "Out of memory!");
+		return NULL;
+	}
+	return strcpy(t, s);
 }
 
 /********************* level *********************/
@@ -229,7 +247,7 @@ apol_mls_level_t *apol_mls_level_create_from_string(apol_policy_t *p, char *mls_
 				error = EINVAL;
 				goto err;
 			}
-			if (apol_mls_level_append_cats(lvl, tokens[i])) {
+			if (apol_mls_level_append_cats(p, lvl, tokens[i])) {
 				error = errno;
 				goto err;
 			}
@@ -257,13 +275,13 @@ apol_mls_level_t *apol_mls_level_create_from_string(apol_policy_t *p, char *mls_
 						error = errno;
 						goto err;
 					}
-					if (apol_mls_level_append_cats(lvl, tmp)) {
+					if (apol_mls_level_append_cats(p, lvl, tmp)) {
 						error = errno;
 						goto err;
 					}
 				}
 			}
-			if (apol_mls_level_append_cats(lvl, next)) {
+			if (apol_mls_level_append_cats(p, lvl, next)) {
 				error = errno;
 				goto err;
 			}			 
@@ -272,7 +290,7 @@ apol_mls_level_t *apol_mls_level_create_from_string(apol_policy_t *p, char *mls_
 				error = errno;
 				goto err;
 			}
-			if (apol_mls_level_append_cats(lvl, tokens[i])) {
+			if (apol_mls_level_append_cats(p, lvl, tokens[i])) {
 				error = errno;
 				goto err;
 			}
@@ -338,7 +356,7 @@ apol_mls_level_t *apol_mls_level_create_from_sepol_mls_level(apol_policy_t *p, s
 			error = errno;
 			goto err;
 		}
-		if (apol_mls_level_append_cats(lvl, tmp)) {
+		if (apol_mls_level_append_cats(p, lvl, tmp)) {
 			error = errno;
 			goto err;
 		}
@@ -392,7 +410,7 @@ apol_mls_level_t *apol_mls_level_create_from_sepol_level_datum(apol_policy_t *p,
 			error = errno;
 			goto err;
 		}
-		if (apol_mls_level_append_cats(lvl, tmp)) {
+		if (apol_mls_level_append_cats(p, lvl, tmp)) {
 			error = errno;
 			goto err;
 		}
@@ -418,36 +436,40 @@ void apol_mls_level_destroy(apol_mls_level_t **level)
 	*level = NULL;
 }
 
-int apol_mls_level_set_sens(apol_mls_level_t *level, const char *sens)
+int apol_mls_level_set_sens(apol_policy_t *p, apol_mls_level_t *level, const char *sens)
 {
 	if (!level) {
+		ERR(p, "Invalid argument.");
 		errno = EINVAL;
 		return -1;
 	}
 
 	free(level->sens);
 	level->sens = NULL;
-	if (sens != NULL && (level->sens = strdup(sens)) == NULL) {
+	if (sens != NULL && (level->sens = apol_strdup(p, sens)) == NULL) {
 		return -1;
 	}
 
 	return 0;
 }
 
-int apol_mls_level_append_cats(apol_mls_level_t *level, const char *cats)
+int apol_mls_level_append_cats(apol_policy_t *p, apol_mls_level_t *level, const char *cats)
 {
 	char *new_cat = NULL;
 	if (!level || !cats) {
+		ERR(p, "Invalid argument.");
 		errno = EINVAL;
 		return -1;
 	}
 
 	if (level->cats == NULL &&
 	    (level->cats = apol_vector_create()) == NULL) {
+		ERR(p, "Out of memory!");
 		return -1;
 	}
-	if ((new_cat = strdup(cats)) == NULL ||
+	if ((new_cat = apol_strdup(p, cats)) == NULL ||
 	    apol_vector_append(level->cats, (void *) new_cat) < 0) {
+		ERR(p, "Out of memory!");
 		free(new_cat);
 		return -1;
 	}
@@ -564,7 +586,7 @@ apol_mls_range_t *apol_mls_range_create_from_sepol_mls_range(apol_policy_t *p, s
 	/* low */
 	if (sepol_mls_range_get_low_level(p->sh, p->p, sepol_range, &tmp) ||
 	    !(tmp_lvl = apol_mls_level_create_from_sepol_mls_level(p, tmp)) ||
-	    apol_mls_range_set_low(apol_range, tmp_lvl)) {	      
+	    apol_mls_range_set_low(p, apol_range, tmp_lvl)) {	      
 		error = errno;
 		goto err;
 	}
@@ -573,7 +595,7 @@ apol_mls_range_t *apol_mls_range_create_from_sepol_mls_range(apol_policy_t *p, s
 	/* high */
 	if (sepol_mls_range_get_high_level(p->sh, p->p, sepol_range, &tmp) ||
 	    !(tmp_lvl = apol_mls_level_create_from_sepol_mls_level(p, tmp)) ||
-	    apol_mls_range_set_high(apol_range, tmp_lvl)) {
+	    apol_mls_range_set_high(p, apol_range, tmp_lvl)) {
 		error = errno;
 		goto err;
 	}
@@ -599,9 +621,10 @@ void apol_mls_range_destroy(apol_mls_range_t **range)
 	*range = NULL;
 }
 
-int apol_mls_range_set_low(apol_mls_range_t *range, apol_mls_level_t *level)
+int apol_mls_range_set_low(apol_policy_t *p, apol_mls_range_t *range, apol_mls_level_t *level)
 {
 	if (!range) {
+		ERR(p, "Invalid argument.");
 		errno = EINVAL;
 		return -1;
 	}
@@ -612,9 +635,10 @@ int apol_mls_range_set_low(apol_mls_range_t *range, apol_mls_level_t *level)
 	return 0;
 }
 
-int apol_mls_range_set_high(apol_mls_range_t *range, apol_mls_level_t *level)
+int apol_mls_range_set_high(apol_policy_t *p, apol_mls_range_t *range, apol_mls_level_t *level)
 {
 	if (!range) {
+		ERR(p, "Invalid argument.");
 		errno = EINVAL;
 		return -1;
 	}
@@ -673,6 +697,7 @@ static int apol_mls_range_does_include_level(apol_policy_t *p,
 	int high_cmp = -1, low_cmp = -1;
 
 	if (p == NULL || apol_mls_range_validate(p, range) != 1) {
+		ERR(p, "Invalid argument.");
 		return -1;
 	}
 
@@ -705,6 +730,7 @@ int apol_mls_range_contain_subrange(apol_policy_t *p,
 				    apol_mls_range_t *subrange)
 {
 	if (p == NULL || apol_mls_range_validate(p, subrange) != 1) {
+		ERR(p, "Invalid argument.");
 		return -1;
 	}
 	/* parent range validity will be checked via
@@ -723,6 +749,7 @@ int apol_mls_range_validate(apol_policy_t *p,
 	int retv;
 
 	if (p == NULL || range == NULL) {
+		ERR(p, "Invalid argument.");
 		return -1;
 	}
 

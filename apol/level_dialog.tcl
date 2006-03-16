@@ -59,7 +59,7 @@ proc Apol_Level_Dialog::_get_level {} {
 proc Apol_Level_Dialog::_okay {dialog} {
     set level [_get_level]
 
-    if {[catch {apol_IsValidRange $level $level} val]} {
+    if {[catch {apol_IsValidRange [list $level]} val]} {
         tk_messageBox -icon error -type ok -title "Could Not Validate Level" \
             -message "Could not validate selected level.  Make sure that the correct policy was loaded."
     } elseif {$val == 0} {
