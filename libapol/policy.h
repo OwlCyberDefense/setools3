@@ -902,13 +902,14 @@ int _get_type_name_ptr(int idx, char **name, policy_t *policy);
 #ifndef _APOL_POLICY_H_
 #define _APOL_POLICY_H_
 
+#include <stdarg.h>
 #include <sepol/handle.h>
 #include <sepol/policydb.h>
 
 typedef struct apol_policy {
         sepol_policydb_t *p;
         sepol_handle_t *sh;
-	void (*msg_callback) (void *varg, struct apol_policy *p, const char *fmt, ...);
+	void (*msg_callback) (void *varg, struct apol_policy *p, const char *fmt, va_list argp);
 	void *msg_callback_arg;
 } apol_policy_t;
 
@@ -928,9 +929,21 @@ extern int apol_policy_is_mls(apol_policy_t *p);
 #define ERR(p, ...)  \
 	do { \
 		if ((p) != NULL && (p)->msg_callback != NULL) { \
-			(p)->msg_callback((p)->msg_callback_arg, \
-					     (p), __VA_ARGS__); \
+			apol_handle_route_to_callback((p)->msg_callback_arg, \
+						      (p), __VA_ARGS__); \
 		} \
 	} while(0);
+
+/**
+ * Write a message to the callback stored within an apol error
+ * handler.  This function satisfies limitations of C's variable
+ * arguments syntax (comp.lang.c FAQ, question 15.12).
+ *
+ * @param varg Arbitrary callback argument.
+ * @param p Error reporting handler.
+ * @param fmt Format string to print, using syntax of printf(3).
+ */
+extern void apol_handle_route_to_callback(void *varg, apol_policy_t *p,
+					  const char *fmt, ...);
 
 #endif

@@ -458,6 +458,7 @@ void apol_type_query_destroy(apol_type_query_t **t)
 	if (*t != NULL) {
 		free((*t)->type_name);
 		apol_regex_destroy(&(*t)->regex);
+		free(*t);
 		*t = NULL;
 	}
 }
@@ -541,6 +542,7 @@ void apol_attr_query_destroy(apol_attr_query_t **a)
 	if (*a != NULL) {
 		free((*a)->attr_name);
 		apol_regex_destroy(&(*a)->regex);
+		free(*a);
 		*a = NULL;
 	}
 }
@@ -645,6 +647,7 @@ void apol_class_query_destroy(apol_class_query_t **c)
 		free((*c)->common_name);
 		apol_regex_destroy(&(*c)->class_regex);
 		apol_regex_destroy(&(*c)->common_regex);
+		free(*c);
 		*c = NULL;
 	}
 }
@@ -726,6 +729,7 @@ void apol_common_query_destroy(apol_common_query_t **c)
 	if (*c != NULL) {
 		free((*c)->common_name);
 		apol_regex_destroy(&(*c)->regex);
+		free(*c);
 		*c = NULL;
 	}
 }
@@ -838,6 +842,7 @@ void apol_perm_query_destroy(apol_perm_query_t **pq)
 	if (*pq != NULL) {
 		free((*pq)->perm_name);
 		apol_regex_destroy(&(*pq)->regex);
+		free(*pq);
 		*pq = NULL;
 	}
 }
@@ -939,6 +944,7 @@ void apol_role_query_destroy(apol_role_query_t **r)
 		free((*r)->type_name);
 		apol_regex_destroy(&(*r)->role_regex);
 		apol_regex_destroy(&(*r)->type_regex);
+		free(*r);
 		*r = NULL;
 	}
 }
@@ -1035,6 +1041,7 @@ int apol_get_user_by_query(apol_policy_t *p,
 				}
 				compval = apol_mls_level_compare(p, default_level,
 								 u->default_level);
+				apol_mls_level_destroy(&default_level);
 				if (compval < 0) {
 					goto cleanup;
 				}
@@ -1049,6 +1056,7 @@ int apol_get_user_by_query(apol_policy_t *p,
 				compval = apol_mls_range_compare(p,
 								 range, u->range,
 								 u->flags);
+				apol_mls_range_destroy(&range);
 				if (compval < 0) {
 					goto cleanup;
 				}
@@ -1088,6 +1096,7 @@ void apol_user_query_destroy(apol_user_query_t **u)
 		apol_mls_range_destroy(&((*u)->range));
 		apol_regex_destroy(&(*u)->user_regex);
 		apol_regex_destroy(&(*u)->role_regex);
+		free(*u);
 		*u = NULL;
 	}
 }
@@ -1186,6 +1195,7 @@ void apol_bool_query_destroy(apol_bool_query_t **b)
 	if (*b != NULL) {
 		free((*b)->bool_name);
 		apol_regex_destroy(&(*b)->regex);
+		free(*b);
 		*b = NULL;
 	}
 }
@@ -1287,6 +1297,7 @@ void apol_level_query_destroy(apol_level_query_t **l)
 		free((*l)->cat_name);
 		apol_regex_destroy(&(*l)->sens_regex);
 		apol_regex_destroy(&(*l)->cat_regex);
+		free(*l);
 		*l = NULL;
 	}
 }
@@ -1368,6 +1379,7 @@ void apol_cat_query_destroy(apol_cat_query_t **c)
 	if (*c != NULL) {
 		free((*c)->cat_name);
 		apol_regex_destroy(&(*c)->regex);
+		free(*c);
 		*c = NULL;
 	}
 }

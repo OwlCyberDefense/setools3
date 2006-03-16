@@ -601,21 +601,24 @@ int open_policy(const char* filename, policy_t **policy)
 #include "policy.h"
 #include "policy-io.h"
 
-static void sepol_handle_route_to_apol_handle(void *varg, sepol_handle_t *handle, const char *fmt, ...)
+__attribute__ ((format (printf, 3, 4)))
+static void sepol_handle_route_to_callback(void *varg, sepol_handle_t *handle,
+					   const char *fmt, ...)
 {
 	apol_policy_t *p = (apol_policy_t *) varg;
-	ERR(p, fmt);
+	va_list ap;
+	va_start(ap, fmt);
+	if (p != NULL && p->msg_callback != NULL) {
+		p->msg_callback(p->msg_callback_arg, p, fmt, ap);
+	}
+	va_end(ap);
 }
 
-__attribute__ ((format (printf, 3, 4)))
 static void apol_handle_default_callback(void *varg __attribute__ ((unused)),
 					 apol_policy_t *p __attribute__ ((unused)),
-					 const char *fmt, ...)
+					 const char *fmt, va_list ap)
 {
-	 va_list ap;
-	 va_start(ap, fmt);
 	 vfprintf(stderr, fmt, ap);
-	 va_end(ap);
 	 fprintf(stderr, "\n");
 }
 
@@ -638,7 +641,7 @@ int apol_policy_open_binary(const char *path,
 		ERR(*policy, "Error creating sepol policy handle.\n");
 		return -1;
 	}
-	sepol_handle_set_callback((*policy)->sh, sepol_handle_route_to_apol_handle, (*policy));
+	sepol_handle_set_callback((*policy)->sh, sepol_handle_route_to_callback, (*policy));
 
 	retv = sepol_policydb_create(&(*policy)->p);
 	if (retv) {

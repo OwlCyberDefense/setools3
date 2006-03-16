@@ -362,6 +362,7 @@ apol_mls_level_t *apol_mls_level_create_from_sepol_mls_level(apol_policy_t *p, s
 		}
 	}
 
+	sepol_iterator_destroy(&iter);
 	return lvl;
 
 err:
@@ -415,7 +416,7 @@ apol_mls_level_t *apol_mls_level_create_from_sepol_level_datum(apol_policy_t *p,
 			goto err;
 		}
 	}
-
+	sepol_iterator_destroy(&iter);
 	return lvl;
 
 err:

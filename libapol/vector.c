@@ -87,7 +87,7 @@ void apol_vector_destroy(apol_vector_t **v, void(*free_fn)(void *elem))
 			free_fn((*v)->array[i]);
 		}
 	}
-
+	free((*v)->array);
 	free(*v);
 	*v = NULL;
 }
