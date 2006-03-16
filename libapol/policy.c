@@ -4607,3 +4607,15 @@ int apol_policy_is_mls(apol_policy_t *p)
 	}
 	return sepol_policydb_is_mls_enabled(p->sh, p->p);
 }
+
+__attribute__ ((format (printf, 3, 4)))
+void apol_handle_route_to_callback(void *varg, apol_policy_t *p,
+				   const char *fmt, ...)
+{
+	va_list ap;
+	if (p != NULL && p->msg_callback != NULL) {
+		va_start(ap, fmt);
+		p->msg_callback(varg, p, fmt, ap);
+		va_end(ap);
+	}
+}
