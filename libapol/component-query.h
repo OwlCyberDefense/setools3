@@ -474,8 +474,8 @@ extern int apol_role_query_set_role(apol_policy_t *p,
 				    apol_role_query_t *r, const char *name);
 
 /**
- * Set a role query to return only roles containing this type.	This
- * function duplicates the incoming name.
+ * Set a role query to return only roles containing this type or one
+ * of its aliases.  This function duplicates the incoming name.
  *
  * @param p Policy handler, to report errors.
  * @param r Role query to set.

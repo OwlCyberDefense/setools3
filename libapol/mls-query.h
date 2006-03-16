@@ -108,24 +108,28 @@ extern void apol_mls_level_destroy(apol_mls_level_t **level);
  * Set the sensitivity component of an MLS level structure.  This
  * function duplicates the incoming string.
  *
+ * @param p Error reporting handler.
  * @param level MLS level to modify.
  * @param sens New sensitivity component to set, or NULL to unset this
  * field.
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_mls_level_set_sens(apol_mls_level_t *level, const char *sens);
+extern int apol_mls_level_set_sens(apol_policy_t *p,
+				   apol_mls_level_t *level, const char *sens);
 
 /**
  * Add a category component of an MLS level structure.	This function
  * duplicates the incoming string.
  *
+ * @param p Error reporting handler.
  * @param level MLS level to modify.
  * @param cats New category component to append.
  * 
  * @return 0 on success or < 0 on failure.
  */
-extern int apol_mls_level_append_cats(apol_mls_level_t *level, const char *cats);
+extern int apol_mls_level_append_cats(apol_policy_t *p,
+				      apol_mls_level_t *level, const char *cats);
 
 /* the next level compare function will return one of the following on
    success or -1 on error */
@@ -137,7 +141,7 @@ extern int apol_mls_level_append_cats(apol_mls_level_t *level, const char *cats)
 /**
  * Compare two levels and determine their relationship to each other.
  * Both levels must have their respective sensitivity and categories
- * set.  Levels may contain aliases in place of primary names.  If
+ * set.	 Levels may contain aliases in place of primary names.	If
  * level2 is NULL then this always returns APOL_MLS_EQ.
  *
  * @param p Policy within which to look up MLS information.
@@ -211,7 +215,7 @@ extern apol_mls_range_t *apol_mls_range_create_from_sepol_mls_range(apol_policy_
  * then set it to NULL.	 This function does nothing if the range is
  * already NULL.
  *
- * @param level Reference to a MLS level structure to destroy.
+ * @param range Reference to a MLS range structure to destroy.
  */
 extern void apol_mls_range_destroy(apol_mls_range_t **range);
 
@@ -221,12 +225,14 @@ extern void apol_mls_range_destroy(apol_mls_range_t **range);
  * not modify nor destroy it afterwards.  It is legal to pass in the
  * same pointer for the range's low and high level.
  *
+ * @param p Error reporting handler.
  * @param range MLS range to modify.
  * @param level New low level for range, or NULL to unset this field.
  *
  * @return 0 on success or < 0 on failure.
  */
-extern int apol_mls_range_set_low(apol_mls_range_t *range, apol_mls_level_t *level);
+extern int apol_mls_range_set_low(apol_policy_t *p,
+				  apol_mls_range_t *range, apol_mls_level_t *level);
 
 /**
  * Set the high level component of a MLS range structure.  This
@@ -234,12 +240,14 @@ extern int apol_mls_range_set_low(apol_mls_range_t *range, apol_mls_level_t *lev
  * not modify nor destroy it afterwards.  It is legal to pass in the
  * same pointer for the range's low and high level.
  *
+ * @param p Error reporting handler.
  * @param range MLS range to modify.
  * @param level New high level for range, or NULL to unset this field.
  *
  * @return 0 on success or < 0 on failure.
  */
-extern int apol_mls_range_set_high(apol_mls_range_t *range, apol_mls_level_t *level);
+extern int apol_mls_range_set_high(apol_policy_t *p,
+				   apol_mls_range_t *range, apol_mls_level_t *level);
 
 /**
  * Compare two ranges, determining if one matches the other.  The
@@ -251,8 +259,7 @@ extern int apol_mls_range_set_high(apol_mls_range_t *range, apol_mls_level_t *le
  * is NULL then comparison always succeeds.
  *
  * @param p Policy within which to look up MLS information.
- * @param target Target MLS range to compare.  It is assumed that this
- * is already in canonical form.
+ * @param target Target MLS range to compare.
  * @param search Source MLS range to compare.
  * @param range_compare_type Specifies how to compare the ranges.
  *
