@@ -62,31 +62,30 @@ apol_policy_t *policydb = NULL;
  */
 static void apol_tcl_route_handle_to_string(void *varg __attribute__ ((unused)),
 					    apol_policy_t *p,
-					    const char *fmt, ...)
+					    const char *fmt, va_list ap)
 {
 	char *s;
-	va_list ap;
 	free(p->msg_callback_arg);
 	p->msg_callback_arg = NULL;
-	va_start(ap, fmt);
 	if (vasprintf(&s, fmt, ap) < 0) {
 		fprintf(stderr, "Out of memory!\n");
 	}
 	else {
 		p->msg_callback_arg = s;
 	}
-	va_end(ap);
 }
 
 void apol_tcl_clear_error(void)
 {
-	free(policydb->msg_callback_arg);
-	policydb->msg_callback_arg = NULL;
+	if (policydb != NULL) {
+		free(policydb->msg_callback_arg);
+		policydb->msg_callback_arg = NULL;
+	}
 }
 
 void apol_tcl_write_error(Tcl_Interp *interp)
 {
-	if (policydb->msg_callback_arg != NULL) {
+	if (policydb != NULL && policydb->msg_callback_arg != NULL) {
 		Tcl_Obj *obj = Tcl_NewStringObj(policydb->msg_callback_arg, -1);
 		Tcl_SetObjResult(interp, obj);
 		apol_tcl_clear_error();
