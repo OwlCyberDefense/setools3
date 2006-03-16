@@ -159,46 +159,33 @@ proc Apol_Context_Dialog::_create_dialog {parent} {
 proc Apol_Context_Dialog::_okay {dialog} {
     variable vars
     set type [Apol_Widget::getTypeComboboxValue $vars($dialog:type_box)]
-    if {$vars($dialog:user_enable) && $vars($dialog:user) == {}} {
-        tk_messageBox -icon error -type ok -title "Could Not Validate Context" \
-            -message "No user was selected."
-        return
+    if {$vars($dialog:user_enable)} {
+        if {[set user $vars($dialog:user)] == {}} {
+            tk_messageBox -icon error -type ok -title "Could Not Validate Context" \
+                -message "No user was selected."
+            return
+        }
+    } else {
+        set user {}
     }
     if {$vars($dialog:role_enable)} {
         if {$vars($dialog:role) == {}} {
             tk_messageBox -icon error -type ok -title "Could Not Validate Context" \
                 -message "No role was selected."
             return
-        } elseif {$vars($dialog:role) != "object_r" && \
-                      $vars($dialog:user_enable) && \
-                      $vars($dialog:user) != "" && \
-                      [ApolTop::is_policy_open]} {
-            set users_list [apol_GetUsers $vars($dialog:user)]
-            if {[lsearch -exact [lindex $users_list 0 1] $vars($dialog:role)] == -1} {
-                tk_messageBox -icon error -type ok -title "Could Not Validate Context" \
-                    -message "User $vars($dialog:user) does not have role $vars($dialog:role)."
-                return
-            }
         }
+    } else {
+        set role {}
     }
     if {$vars($dialog:type_enable)} {
         if {$type == {}} {
             tk_messageBox -icon error -type ok -title "Could Not Validate Context" \
                 -message "No type was selected."
             return
-        } elseif {$vars($dialog:role_enable) && \
-                      $vars($dialog:role) != "" && \
-                      $vars($dialog:role) != "object_r" && \
-                      [ApolTop::is_policy_open]} {
-            set role_info [apol_GetRoles $vars($dialog:role)]
-            if {[lsearch -exact [lindex $role_info 0 1] $type] == -1} {
-                tk_messageBox -icon error -type ok -title "Could Not Validate Context" \
-                    -message "Role $vars($dialog:role) does not have type $type."
-                return
-            }
         }
+    } else {
+        set type {}
     }
-
     if {$vars($dialog:low_enable)} {
         set range [_get_range $dialog]
         set low [lindex $range 0]
@@ -206,35 +193,19 @@ proc Apol_Context_Dialog::_okay {dialog} {
             tk_messageBox -icon error -type ok -title "Could Not Validate Context" \
                 -message "No level was selected."
             return
-        } elseif {[llength $range] == 1} {
-            set high $low
-        } else {
-            set high [lindex $range 1]
         }
-        if {[catch {apol_IsValidRange $low $high} val]} {
+    } else {
+        set range {}
+    }
+    if {[ApolTop::is_policy_open]} {
+        if {[catch {apol_IsValidPartialContext [list $user $role $type $range]} val]} {
             tk_messageBox -icon error -type ok -title "Could Not Validate Context" \
-                -message "The selected range is not valid.  The selected level is not part of the current policy."
+                -message "The context could not be validated:\n$val"
             return
         } elseif {$val == 0} {
             tk_messageBox -icon error -type ok -title "Could Not Validate Context" \
-                -message "The selected range is not valid.  The high level does not dominate the low level."
+                -message "The selected context is not valid for the current policy."
             return
-        }
-        if {$vars($dialog:user_enable) && $vars($dialog:user) != "" && [ApolTop::is_policy_open]} {
-            set valid_range 0
-            foreach user [apol_GetUsers {} {} 0] {
-                if {[lindex $user 0] == $vars($dialog:user)} {
-                    if {[apol_CompareRanges [lindex $user 3] [list $low $high] superset]} {
-                        set valid_range 1
-                    }
-                    break
-                }
-            }
-            if {!$valid_range} {
-                tk_messageBox -icon error -type ok -title "Could Not Validate Context" \
-                    -message "User $vars($dialog:user) is not authorized for the selected range."
-                return
-            }
         }
     }
     $dialog enddialog 0

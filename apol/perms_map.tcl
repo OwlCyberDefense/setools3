@@ -1470,10 +1470,7 @@ proc Apol_Perms_Map::load_perm_map_from_mls {mls_file save_file} {
 	# Expand common permissions if there are any
 	if {[array exists common_perms]} {
 		foreach class [array names class_info] {
-			set rt [catch {set valid_common_perm [apol_GetClassCommonPerm $class]} err]
-			if {$rt != 0} {
-				puts "Error retrieving common permissions for $class: $err"	
-			} else {
+                    set valid_common_perm [lindex [apol_GetClasses $class] 0 1]
 				if {$valid_common_perm != ""} {
 					set perms_list $class_info($class)
 					# See if the valid common permission from the policy is defined in the mls file
@@ -1485,7 +1482,6 @@ proc Apol_Perms_Map::load_perm_map_from_mls {mls_file save_file} {
 						set class_info($class) $perms_list
 					} 
 				}
-			}			
 		}
 		array unset common_perms
 	}	

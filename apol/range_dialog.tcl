@@ -91,7 +91,7 @@ proc Apol_Range_Dialog::_okay {dialog} {
     } else {
         set high [lindex $range 1]
     }
-    if {[catch {apol_IsValidRange $low $high} val]} {
+    if {[catch {apol_IsValidRange [list $low $high]} val]} {
         tk_messageBox -icon error -type ok -title "Could Not Validate Range" \
             -message "The selected range is not valid.  The selected level is not part of the current policy."
     } elseif {$val == 0} {
