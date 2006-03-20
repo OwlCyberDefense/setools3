@@ -7,6 +7,7 @@
 
 #include <tcl.h>
 #include <assert.h>
+#include <netinet/in.h>    /* needed for portcon's protocol */
 
 #include "component-query.h"
 
@@ -94,8 +95,9 @@ static int Apol_GetNames(ClientData clientData, Tcl_Interp * interp, int argc, C
 	return TCL_OK;
 }
 
-/* Takes a sepol_type_datum_t and appends a tuple of it to
- * result_list.  The tuple consists of:
+/**
+ * Takes a sepol_type_datum_t and appends a tuple of it to
+ * result_list.	 The tuple consists of:
  *    { type_name {attrib0 attrib1 ...} {alias0 alias1 ...}}
  */
 static int append_type_to_list(Tcl_Interp *interp,
@@ -162,7 +164,8 @@ static int append_type_to_list(Tcl_Interp *interp,
 	return retval;
 }
 
-/* Returns an unordered list of type tuples within the policy.
+/**
+ * Returns an unordered list of type tuples within the policy.
  *   elem 0 - type name
  *   elem 1 - list of associated attributes
  *   elem 2 - list of associated aliases
@@ -198,10 +201,9 @@ static int Apol_GetTypes(ClientData clientData, Tcl_Interp *interp, int argc, CO
 		}
 	}
 	else {
-		Tcl_Obj *regex_obj = Tcl_NewStringObj(argv[2], -1);
 		int regex_flag;
 		size_t i;
-		if (Tcl_GetBooleanFromObj(interp, regex_obj, &regex_flag) == TCL_ERROR) {
+		if (Tcl_GetBoolean(interp, argv[2], &regex_flag) == TCL_ERROR) {
 			goto cleanup;
 		}
 		if (*argv[1] != '\0') {
@@ -235,7 +237,8 @@ static int Apol_GetTypes(ClientData clientData, Tcl_Interp *interp, int argc, CO
 	return retval;
 }
 
-/* Takes a sepol_type_datum_t representing a type and appends a tuple
+/**
+ * Takes a sepol_type_datum_t representing a type and appends a tuple
  * of it to result_list.  The tuple consists of:
  *    { attr_name { type0 type1 ... } }
  */
@@ -288,7 +291,8 @@ static int append_attr_to_list(Tcl_Interp *interp,
 	return retval;
 }
 
-/* Returns an unordered list of attribute tuples within the policy.
+/**
+ * Returns an unordered list of attribute tuples within the policy.
  *   elem 0 - attribute name
  *   elem 1 - list of types with that attribute
  * argv[1] - attribute name to look up, or a regular expression, or
@@ -323,10 +327,9 @@ static int Apol_GetAttribs(ClientData clientData, Tcl_Interp *interp, int argc, 
 		}
 	}
 	else {
-		Tcl_Obj *regex_obj = Tcl_NewStringObj(argv[2], -1);
 		int regex_flag;
 		size_t i;
-		if (Tcl_GetBooleanFromObj(interp, regex_obj, &regex_flag) == TCL_ERROR) {
+		if (Tcl_GetBoolean(interp, argv[2], &regex_flag) == TCL_ERROR) {
 			goto cleanup;
 		}
 		if (*argv[1] != '\0') {
@@ -360,7 +363,8 @@ static int Apol_GetAttribs(ClientData clientData, Tcl_Interp *interp, int argc, 
 	return TCL_OK;
 }
 
-/* Takes a sepol_class_datum_t representing a class and appends a
+/**
+ * Takes a sepol_class_datum_t representing a class and appends a
  * tuple of it to result_list.	 The tuple consists of:
  *    { class_name common_class {perms0 perms1 ...} }
  * If the object class has no common, then the second element will be
@@ -410,7 +414,8 @@ static int append_class_to_list(Tcl_Interp *interp,
 	return retval;
 }
 
-/* Returns an unordered list of class tuples within the policy.
+/**
+ * Returns an unordered list of class tuples within the policy.
  *   elem 0 - class name
  *   elem 1 - class's common class, or empty string if none
  *   elem 2 - list of class's permissions
@@ -446,10 +451,9 @@ static int Apol_GetClasses(ClientData clientData, Tcl_Interp *interp, int argc, 
 		}
 	}
 	else {
-		Tcl_Obj *regex_obj = Tcl_NewStringObj(argv[2], -1);
 		int regex_flag;
 		size_t i;
-		if (Tcl_GetBooleanFromObj(interp, regex_obj, &regex_flag) == TCL_ERROR) {
+		if (Tcl_GetBoolean(interp, argv[2], &regex_flag) == TCL_ERROR) {
 			goto cleanup;
 		}
 		if (*argv[1] != '\0') {
@@ -483,7 +487,8 @@ static int Apol_GetClasses(ClientData clientData, Tcl_Interp *interp, int argc, 
 	return retval;
 }
      
-/* Takes a sepol_common_datum_t representing a common and appends a
+/**
+ * Takes a sepol_common_datum_t representing a common and appends a
  * tuple of it to result_list.	 The tuple consists of:
  *    { common_name {perms0 perms1 ...} {class0 class1 ...} }
  * The second list is a list of object classes that inherit from this
@@ -550,7 +555,8 @@ static int append_common_to_list(Tcl_Interp *interp,
 	return retval;
 }
 
-/* Returns an unordered list of common tuples within the policy.
+/**
+ * Returns an unordered list of common tuples within the policy.
  *   elem 0 - common name
  *   elem 1 - list of common's permissions
  *   elem 2 - list of classes that inherit this common
@@ -586,10 +592,9 @@ static int Apol_GetCommons(ClientData clientData, Tcl_Interp *interp, int argc, 
 		}
 	}
 	else {
-		Tcl_Obj *regex_obj = Tcl_NewStringObj(argv[2], -1);
 		int regex_flag;
 		size_t i;
-		if (Tcl_GetBooleanFromObj(interp, regex_obj, &regex_flag) == TCL_ERROR) {
+		if (Tcl_GetBoolean(interp, argv[2], &regex_flag) == TCL_ERROR) {
 			goto cleanup;
 		}
 		if (*argv[1] != '\0') {
@@ -623,9 +628,10 @@ static int Apol_GetCommons(ClientData clientData, Tcl_Interp *interp, int argc, 
 	return retval;
 }
      
-/* Takes a string representing a permission and appends a tuple of it
+/**
+ * Takes a string representing a permission and appends a tuple of it
  * to result_list.  The tuple consists of:
-  *    { perm_name {class0 class1 ...} {common0 common1 ...} }
+ *    { perm_name {class0 class1 ...} {common0 common1 ...} }
  */
 static int append_perm_to_list(Tcl_Interp *interp,
 			       const char *perm,
@@ -683,7 +689,8 @@ static int append_perm_to_list(Tcl_Interp *interp,
 	return retval;
 }
 
-/* Returns an unordered list of permission tuples within the policy.
+/**
+ * Returns an unordered list of permission tuples within the policy.
  *   elem 0 - permission name
  *   elem 1 - list of classes that have this permission
  *   elem 2 - list of commons that have this permission
@@ -713,11 +720,10 @@ static int Apol_GetPerms(ClientData clientData, Tcl_Interp *interp, int argc, CO
 		}
 	}
 	else {
-		Tcl_Obj *regex_obj = Tcl_NewStringObj(argv[2], -1);
 		int regex_flag;
 		size_t i;
 		char *perm;
-		if (Tcl_GetBooleanFromObj(interp, regex_obj, &regex_flag) == TCL_ERROR) {
+		if (Tcl_GetBoolean(interp, argv[2], &regex_flag) == TCL_ERROR) {
 			goto cleanup;
 		}
 		if (*argv[1] != '\0') {
@@ -751,8 +757,9 @@ static int Apol_GetPerms(ClientData clientData, Tcl_Interp *interp, int argc, CO
 	return retval;
 }
 
-/* Takes a sepol_role_datum_t and appends a tuple of it to
- * result_list.  The tuple consists of:
+/**
+ * Takes a sepol_role_datum_t and appends a tuple of it to
+ * result_list.	 The tuple consists of:
  *    { role_name {types1 types2 ...} {dominated_role1 dominated_role2 ...}}
  */
 static int append_role_to_list(Tcl_Interp *interp,
@@ -817,7 +824,8 @@ static int append_role_to_list(Tcl_Interp *interp,
 	return retval;
 }
 
-/* Return a list of all roles within the policy.
+/**
+ * Return a list of all roles within the policy.
  *
  * element 0 - role name
  * element 1 - list of types
@@ -856,10 +864,9 @@ static int Apol_GetRoles(ClientData clientData, Tcl_Interp *interp, int argc, CO
 		}
 	}
 	else {
-		Tcl_Obj *regex_obj = Tcl_NewStringObj(argv[3], -1);
 		int regex_flag;
 		size_t i;
-		if (Tcl_GetBooleanFromObj(interp, regex_obj, &regex_flag) == TCL_ERROR) {
+		if (Tcl_GetBoolean(interp, argv[3], &regex_flag) == TCL_ERROR) {
 			goto cleanup;
 		}
 		if (*argv[1] != '\0' || *argv[2] != '\0') {
@@ -911,7 +918,8 @@ static int level_to_tcl_obj(Tcl_Interp *interp, ap_mls_level_t *level, Tcl_Obj *
 	return TCL_OK;
 }
 
-/* Converts an apol_mls_level_t to a Tcl representation:
+/**
+ * Converts an apol_mls_level_t to a Tcl representation:
  *   { level { cat0 cat1 ... } }
  */
 static int apol_level_to_tcl_obj(Tcl_Interp *interp, apol_mls_level_t *level, Tcl_Obj **obj) {
@@ -930,8 +938,9 @@ static int apol_level_to_tcl_obj(Tcl_Interp *interp, apol_mls_level_t *level, Tc
 }
 
 
-/* Takes a sepol_user_datum_t and appends a tuple of it to
- * result_list.  The tuple consists of:
+/**
+ * Takes a sepol_user_datum_t and appends a tuple of it to
+ * result_list.	 The tuple consists of:
  *    { user_name { role0 role1 ... } default_level { low_range high_range } }
  */
 static int append_user_to_list(Tcl_Interp *interp,
@@ -1009,7 +1018,8 @@ static int append_user_to_list(Tcl_Interp *interp,
 	return retval;
 }
 
-/* Returns a list of users-tuples.
+/**
+ * Returns a list of users-tuples.
  *  element 1: user name
  *  element 2: list of role names authorized for user
  *  element 3: default level if MLS, empty otherwise
@@ -1054,10 +1064,9 @@ static int Apol_GetUsers(ClientData clientData, Tcl_Interp *interp, int argc, CO
 		}
 	}
 	else {
-		Tcl_Obj *regex_obj = Tcl_NewStringObj(argv[6], -1);
 		int regex_flag;
 		size_t i;
-		if (Tcl_GetBooleanFromObj(interp, regex_obj, &regex_flag) == TCL_ERROR) {
+		if (Tcl_GetBoolean(interp, argv[6], &regex_flag) == TCL_ERROR) {
 			goto cleanup;
 		}
 		if (*argv[1] != '\0' || *argv[2] != '\0' ||
@@ -1121,8 +1130,9 @@ static int Apol_GetUsers(ClientData clientData, Tcl_Interp *interp, int argc, CO
 	return retval;
 }
 
-/* Takes a sepol_bool_datum_t and appends a tuple of it to
- * result_list.  The tuple consists of:
+/**
+ * Takes a sepol_bool_datum_t and appends a tuple of it to
+ * result_list.	 The tuple consists of:
  *    { bool_name current_value}
  */
 static int append_bool_to_list(Tcl_Interp *interp,
@@ -1147,7 +1157,8 @@ static int append_bool_to_list(Tcl_Interp *interp,
 	return TCL_OK;
 }
 
-/* Return a list of all condition booleans within the policy.
+/**
+ * Return a list of all condition booleans within the policy.
  *
  * element 0 - boolean name
  * element 1 - current state of the boolean (either 0 or 1)
@@ -1184,10 +1195,9 @@ static int Apol_GetBools(ClientData clientData, Tcl_Interp *interp, int argc, CO
 		}
 	}
 	else {
-		Tcl_Obj *regex_obj = Tcl_NewStringObj(argv[2], -1);
 		int regex_flag;
 		size_t i;
-		if (Tcl_GetBooleanFromObj(interp, regex_obj, &regex_flag) == TCL_ERROR) {
+		if (Tcl_GetBoolean(interp, argv[2], &regex_flag) == TCL_ERROR) {
 			goto cleanup;
 		}
 		if (*argv[1] != '\0') {
@@ -1221,7 +1231,8 @@ static int Apol_GetBools(ClientData clientData, Tcl_Interp *interp, int argc, CO
 	return retval;
 }
 
-/* Sets a boolean value within the policy.
+/**
+ * Sets a boolean value within the policy.
  *
  * argv[1] - boolean name
  * argv[2] - new state for the boolean (either 0 or 1)
@@ -1256,8 +1267,9 @@ static int Apol_SetBoolValue(ClientData clientData, Tcl_Interp *interp, int argc
 	return TCL_OK;
 }
 
-/* Takes a sepol_level_datum_t and appends a tuple of it to
- * result_list.  The tuple consists of:
+/**
+ * Takes a sepol_level_datum_t and appends a tuple of it to
+ * result_list.	 The tuple consists of:
  *    { sens_name {alias0 alias1 ...} {cats0 cats1 ...} dominance_value }
  */
 static int append_level_to_list(Tcl_Interp *interp,
@@ -1322,7 +1334,8 @@ static int append_level_to_list(Tcl_Interp *interp,
 	return retval;
 }
 
-/* Return an unordered list of MLS level tuples, or an empty list if
+/**
+ * Return an unordered list of MLS level tuples, or an empty list if
  * no policy was loaded.
  *   elem 0 - sensitivity name
  *   elem 1 - list of associated aliases
@@ -1361,10 +1374,9 @@ static int Apol_GetLevels(ClientData clientData, Tcl_Interp *interp, int argc, C
 		}
 	}
 	else {
-		Tcl_Obj *regex_obj = Tcl_NewStringObj(argv[2], -1);
 		int regex_flag;
 		size_t i;
-		if (Tcl_GetBooleanFromObj(interp, regex_obj, &regex_flag) == TCL_ERROR) {
+		if (Tcl_GetBoolean(interp, argv[2], &regex_flag) == TCL_ERROR) {
 			goto cleanup;
 		}
 		if (*argv[1] != '\0') {
@@ -1398,8 +1410,9 @@ static int Apol_GetLevels(ClientData clientData, Tcl_Interp *interp, int argc, C
 	return retval;
 }
 
-/* Takes a sepol_cat_datum_t and appends a tuple of it to
- * result_list.  The tuple consists of:
+/**
+ * Takes a sepol_cat_datum_t and appends a tuple of it to
+ * result_list.	 The tuple consists of:
  *    { cat_name {alias0 alias1 ...} {level0 level1 ...} cat_value }
  */
 static int append_cat_to_list(Tcl_Interp *interp,
@@ -1469,7 +1482,8 @@ static int append_cat_to_list(Tcl_Interp *interp,
 	return retval;
 }
 
-/* Returns an unordered list of MLS category tuples, or an empty list
+/**
+ * Returns an unordered list of MLS category tuples, or an empty list
  * if no policy was loaded.
  *   elem 0 - category name
  *   elem 1 - list of associated aliases
@@ -1508,10 +1522,9 @@ static int Apol_GetCats(ClientData clientData, Tcl_Interp *interp, int argc, CON
 		}
 	}
 	else {
-		Tcl_Obj *regex_obj = Tcl_NewStringObj(argv[2], -1);
 		int regex_flag;
 		size_t i;
-		if (Tcl_GetBooleanFromObj(interp, regex_obj, &regex_flag) == TCL_ERROR) {
+		if (Tcl_GetBoolean(interp, argv[2], &regex_flag) == TCL_ERROR) {
 			goto cleanup;
 		}
 		if (*argv[1] != '\0') {
@@ -1592,6 +1605,35 @@ static int security_con_to_tcl_context_string(Tcl_Interp *interp, security_con_t
         return TCL_OK;
 }
 
+/**
+ * Given a sepol_context_struct, allocate a new TclObj to the
+ * referenced paramater dest_obj.  The returned Tcl list is:
+ *   { user role type range }
+ * If the current policy is non-MLS then range will be an empty list.
+ * Otherwise it will be a 2-ple list of levels.
+ */
+static int apol_context_to_tcl_obj(Tcl_Interp *interp, apol_context_t *context, Tcl_Obj **dest_obj) {
+	Tcl_Obj *context_elem[4], *range_elem[2];
+	int retval = TCL_ERROR;
+	context_elem[0] = Tcl_NewStringObj(context->user, -1);
+	context_elem[1] = Tcl_NewStringObj(context->role, -1);
+	context_elem[2] = Tcl_NewStringObj(context->type, -1);
+	if (is_mls_policy(policy)) {
+		if (apol_level_to_tcl_obj(interp, context->range->low, range_elem + 0) == TCL_ERROR ||
+		    apol_level_to_tcl_obj(interp, context->range->high, range_elem + 1) == TCL_ERROR) {
+			goto cleanup;
+		}
+		context_elem[3] = Tcl_NewListObj(2, range_elem);
+	}
+	else {
+		context_elem[3] = Tcl_NewListObj(0, NULL);
+	}
+	*dest_obj = Tcl_NewListObj(4, context_elem);
+	retval = TCL_OK;
+ cleanup:
+	return retval;
+}
+
 /* Returns a list of all initial sids:
  *  elem 0 - sidname
  *  elem 1 - context
@@ -1625,69 +1667,160 @@ static int Apol_GetInitialSIDs(ClientData clientData, Tcl_Interp *interp, int ar
         return TCL_OK;
 }
 
-/* Return a list of protocols understood by selinux. */
-static int Apol_GetPortconProtos(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
+/**
+ * Takes a sepol_portcon_t and appends a tuple of it to result_list.
+ * The tuple consists of:
+ *
+ *   { low_port high_port protocol context }
+ *
+ * where a context is:	{ user role type {low_level high_level} }
+ */
+static int append_portcon_to_list(Tcl_Interp *interp,
+				  sepol_portcon_t *portcon,
+				  Tcl_Obj *result_list)
 {
-        Tcl_AppendElement(interp, "tcp");
-        Tcl_AppendElement(interp, "udp");
-        Tcl_AppendElement(interp, "esp");
-        return TCL_OK;
+	Tcl_Obj *portcon_elem[4], *portcon_list;
+	uint8_t protocol;
+	uint16_t low_port, high_port;
+	sepol_context_struct_t *context;
+	apol_context_t *apol_context;
+	int retval = TCL_ERROR;
+	if (sepol_portcon_get_low_port(policydb->sh, policydb->p,
+				       portcon, &low_port) < 0 ||
+	    sepol_portcon_get_high_port(policydb->sh, policydb->p,
+					portcon, &high_port) < 0 ||
+	    sepol_portcon_get_protocol(policydb->sh, policydb->p,
+				       portcon, &protocol) < 0 ||
+	    sepol_portcon_get_context(policydb->sh, policydb->p,
+				      portcon, &context) < 0) {
+		goto cleanup;
+	}
+	portcon_elem[0] = Tcl_NewIntObj(low_port);
+	portcon_elem[1] = Tcl_NewIntObj(high_port);
+	switch (protocol) {
+	case IPPROTO_TCP: portcon_elem[2] = Tcl_NewStringObj("tcp", -1); break;
+	case IPPROTO_UDP: portcon_elem[2] = Tcl_NewStringObj("udp", -1); break;
+	default:
+		Tcl_SetResult(interp, "Unrecognized protocol in portcon", TCL_STATIC);
+		goto cleanup;
+	}
+	apol_context = apol_context_create_from_sepol_context(policydb, context);
+	if (apol_context == NULL) {
+		ERR(policydb, "Out of memory!");
+		goto cleanup;
+	}
+	if (apol_context_to_tcl_obj(interp, apol_context, portcon_elem + 3) == TCL_ERROR) {
+		goto cleanup;
+	}
+	portcon_list = Tcl_NewListObj(4, portcon_elem);
+	if (Tcl_ListObjAppendElement(interp, result_list, portcon_list) == TCL_ERROR) {
+		goto cleanup;
+	}
+	retval = TCL_OK;
+ cleanup:
+	apol_context_destroy(&apol_context);
+	return retval;
 }
 
-/* Return a list of portcon declarations within the current policy.
- * If a parameter is given, only return those with the value as its
- * lower port irrespective of protocol. */
+/**
+ * Given a string giving a protocol name, set the referenced proto
+ * variable to its numerical representation.  Current acceptable names
+ * are "tcp" and "udp" (note the lowercase).
+ *
+ * @param interp Tcl interpreter object.
+ * @param proto_name Protocol name.
+ * @param proto Reference to where to store protocol number.
+ *
+ * @return 0 on success, <0 if the protocol was unknown.
+ */
+static int apol_tcl_string_to_proto(Tcl_Interp *interp, const char *proto_name, int *proto)
+{
+	if (strcmp(proto_name, "tcp") == 0) {
+		*proto = IPPROTO_TCP;
+	}
+	else if (strcmp(proto_name, "udp") == 0) {
+		*proto = IPPROTO_UDP;
+	}
+	else if (*proto_name != '\0') {
+		Tcl_SetResult(interp, "Unknown protocol.", TCL_STATIC);
+		return -1;
+	}
+	return 0;
+}
+
+/**
+ * Return a list of portcon declarations within the current policy.
+ *   element 0: low port
+ *   element 1: high port
+ *   element 2: protocol
+ *   element 3: portcon context
+ *
+ * argv[1] - low port to lookup, or -1 to ignore
+ * argv[2] - high port, or -1 to ignore
+ * argv[3] - (optional) protocol string
+ * argv[4] - full or partial context to match
+ * argv[5] - range query type
+ */
 static int Apol_GetPortcons(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
-	int i, which_port = -1;
-        Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
-        if (policy == NULL) {
+	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
+	sepol_portcon_t *portcon;
+	int low = -1, high = -1, proto = -1;
+	apol_context_t *context = NULL;
+	apol_portcon_query_t *query = NULL;
+	apol_vector_t *v = NULL;
+	size_t i;
+	int retval = TCL_ERROR;
+
+	apol_tcl_clear_error();
+	if (policy == NULL) {
 		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
-		return TCL_ERROR;
+		goto cleanup;
 	}
-        if (argc > 1) {
-            Tcl_Obj *portObj = Tcl_NewStringObj(argv[1], -1);
-            if (Tcl_GetIntFromObj(interp, portObj, &which_port) == TCL_ERROR) {
-                return TCL_ERROR;
-            }
-        }
-        for (i = 0; i < policy->num_portcon; i++) {
-                Tcl_Obj *portcon_elem[4], *portcon_list;
-                ap_portcon_t *portcon = policy->portcon + i;
-                if (argc > 1 && portcon->lowport != which_port) {
-                    continue;
-                }
-                switch (portcon->protocol) {
-                case AP_TCP_PROTO: {
-                        portcon_elem[0] = Tcl_NewStringObj("tcp", -1);
-                        break;
-                }
-                case AP_UDP_PROTO: {
-                        portcon_elem[0] = Tcl_NewStringObj("udp", -1);
-                        break;
-                }
-                case AP_ESP_PROTO: {
-                        portcon_elem[0] = Tcl_NewStringObj("esp", -1);
-                        break;
-                }
-                default: {
-                        Tcl_SetResult(interp, "Unrecognized protocol in portcon", TCL_STATIC);
-                        return TCL_ERROR;
-                }
-                }
-                portcon_elem[1] = Tcl_NewIntObj(portcon->lowport);
-                portcon_elem[2] = Tcl_NewIntObj(portcon->highport);
-                if (security_con_to_tcl_context_string(interp, portcon->scontext, portcon_elem + 3) == TCL_ERROR) {
-                        return TCL_ERROR;
-                }
-                portcon_list = Tcl_NewListObj(4, portcon_elem);
-                if (Tcl_ListObjAppendElement(interp, result_obj, portcon_list) == TCL_ERROR) {
-                        return TCL_ERROR;
-                }
-        }
-        Tcl_SetObjResult(interp, result_obj);
-        return TCL_OK;
-}
+	if (argc != 3 && argc != 6) {
+		Tcl_SetResult(interp, "Need a low port, high port, ?proto?, ?context?, ?range_match?.", TCL_STATIC);
+		goto cleanup;
+	}
+	
+	if (Tcl_GetInt(interp, argv[1], &low) == TCL_ERROR ||
+	    Tcl_GetInt(interp, argv[2], &high) == TCL_ERROR) {
+		goto cleanup;
+	}
+	if (argc == 6) {
+                
+		if (apol_tcl_string_to_proto(interp, argv[3], &proto) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+	if (low >= 0 || high >= 0 || proto >= 0 || context != NULL) {
+		if ((query = apol_portcon_query_create()) == NULL) {
+			Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
+			goto cleanup;
+		}
+		if (apol_portcon_query_set_low(policydb, query, low) < 0 ||
+		    apol_portcon_query_set_high(policydb, query, high) < 0 ||
+		    apol_portcon_query_set_proto(policydb, query, proto) < 0) {
+			goto cleanup;
+		}
+	}
+	if (apol_get_portcon_by_query(policydb, query, &v) < 0) {
+		goto cleanup;
+	}
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		portcon = (sepol_portcon_t *) apol_vector_get_element(v, i);
+		if (append_portcon_to_list(interp, portcon, result_obj) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+	Tcl_SetObjResult(interp, result_obj);
+	retval = TCL_OK;
+ cleanup:
+	apol_portcon_query_destroy(&query);
+apol_vector_destroy(&v, NULL);
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
 
 /* Return an unsorted list of interface namess for the current policy. */
 static int Apol_GetNetifconInterfaces(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
@@ -1960,7 +2093,6 @@ int ap_tcl_components_init(Tcl_Interp *interp) {
 	Tcl_CreateCommand(interp, "apol_GetLevels", Apol_GetLevels, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetCats", Apol_GetCats, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetInitialSIDs", Apol_GetInitialSIDs, NULL, NULL);
-	Tcl_CreateCommand(interp, "apol_GetPortconProtos", Apol_GetPortconProtos, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetPortcons", Apol_GetPortcons, NULL, NULL);
  	Tcl_CreateCommand(interp, "apol_GetNetifconInterfaces", Apol_GetNetifconInterfaces, NULL, NULL);
  	Tcl_CreateCommand(interp, "apol_GetNetifcons", Apol_GetNetifcons, NULL, NULL);

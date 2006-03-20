@@ -102,7 +102,7 @@ extern int apol_tcl_string_to_range(Tcl_Interp *interp, const char *range_string
 
 /**
  * Given a Tcl string representing a range type ("exact", "subset",
- * "superset", or "intersect"), set the appropriate bit within the
+ * "superset", or "intersect"), set the appropriate bits within the
  * flags reference variable.  If the string is not any of the above
  * then do not modify flags at all.
  *

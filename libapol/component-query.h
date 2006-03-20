@@ -33,6 +33,7 @@
 #include <stdlib.h>
 #include <sepol/policydb_query.h>
 
+#include "context-query.h"
 #include "mls-query.h"
 #include "policy.h"
 #include "vector.h"
@@ -47,6 +48,7 @@ typedef struct apol_user_query apol_user_query_t;
 typedef struct apol_bool_query apol_bool_query_t;
 typedef struct apol_level_query apol_level_query_t;
 typedef struct apol_cat_query apol_cat_query_t;
+typedef struct apol_portcon_query apol_portcon_query_t;
 
 /** Every query allows the treatment of strings as regular expressions
  *  instead.  Within the query structure are flags; if the first bit
@@ -57,6 +59,9 @@ typedef struct apol_cat_query apol_cat_query_t;
 #define APOL_QUERY_SUPER 0x04	  /* query is superset of rule range */
 #define APOL_QUERY_EXACT (APOL_QUERY_SUB|APOL_QUERY_SUPER)
 #define APOL_QUERY_INTERSECT 0x08 /* query overlaps any part of rule range */
+#define APOL_QUERY_FLAGS \
+	(APOL_QUERY_SUB | APOL_QUERY_SUPER | APOL_QUERY_EXACT | \
+	 APOL_QUERY_INTERSECT)
 
 /******************** type queries ********************/
 
@@ -287,7 +292,7 @@ extern int apol_class_query_set_regex(apol_policy_t *p,
  * Execute a query against all common classes within the policy.  The
  * results will only contain common classes, not object classes.
  *
- * @param p Policy within which to look up classes.
+ * @param p Policy within which to look up common classes.
  * @param c Structure containing parameters for query.	If this is
  * NULL then return all common classes.
  * @param v Reference to a vector of sepol_common_datum_t.  The vector
@@ -356,9 +361,9 @@ extern int apol_common_query_set_regex(apol_policy_t *p,
  * Execute a query against all permissions within the policy.  The
  * results will contain char pointers to permission names.
  *
- * @param p Policy within which to look up classes.
+ * @param p Policy within which to look up permissions.
  * @param pq Structure containing parameters for query.	 If this is
- * NULL then return all permission.
+ * NULL then return all permissions.
  * @param v Reference to a vector of character pointers.  The vector
  * will be allocated by this function.  The caller must call
  * apol_vector_destroy() afterwards, but <b>must not</b> free the
@@ -623,7 +628,7 @@ extern int apol_user_query_set_regex(apol_policy_t *p,
 /**
  * Execute a query against all booleans within the policy.
  *
- * @param p Policy within which to look up roles.
+ * @param p Policy within which to look up booleans.
  * @param b Structure containing parameters for query.	If this is
  * NULL then return all booleans.
  * @param v Reference to a vector of sepol_bool_datum_t.  The vector
@@ -693,7 +698,7 @@ extern int apol_bool_query_set_regex(apol_policy_t *p,
  * will only contain levels, not sensitivity aliases.  The returned
  * levels will be unordered.
  *
- * @param p Policy within which to look up types.
+ * @param p Policy within which to look up levels.
  * @param l Structure containing parameters for query.	If this is
  * NULL then return all levels.
  * @param v Reference to a vector of sepol_level_datum_t.  The vector
@@ -780,9 +785,9 @@ extern int apol_level_query_set_regex(apol_policy_t *p,
  * results will only contain categories, not aliases.  The returned
  * categories will be unordered.
  *
- * @param p Policy within which to look up types.
+ * @param p Policy within which to look up categories.
  * @param c Structure containing parameters for query.	If this is
- * NULL then return all levels.
+ * NULL then return all categories.
  * @param v Reference to a vector of sepol_cat_datum_t.  The vector
  * will be allocated by this function. The caller must call
  * apol_vector_destroy() afterwards, but <b>must not</b> free the
@@ -816,9 +821,9 @@ extern apol_cat_query_t *apol_cat_query_create(void);
 extern void apol_cat_query_destroy(apol_cat_query_t **c);
 
 /**
- * Set a category query to return only category that match this name.
- * The name may be either a category or one of its aliases.  This
- * function duplicates the incoming name.
+ * Set a category query to return only categories that match this
+ * name.  The name may be either a category or one of its aliases.
+ * This function duplicates the incoming name.
  *
  * @param p Policy handler, to report errors.
  * @param c Category query to set.
@@ -844,5 +849,106 @@ extern int apol_cat_query_set_cat(apol_policy_t *p,
  */
 extern int apol_cat_query_set_regex(apol_policy_t *p,
 				    apol_cat_query_t *c, int is_regex);
+
+/******************** portcon queries ********************/
+
+/**
+ * Execute a query against all portcons within the policy.  The
+ * returned portcons will be unordered.
+ *
+ * @param p Policy within which to look up portcons.
+ * @param c Structure containing parameters for query.	If this is
+ * NULL then return all portcons.
+ * @param v Reference to a vector of sepol_nodecon_t.  The vector will
+ * be allocated by this function. The caller must call
+ * apol_vector_destroy() afterwards, but <b>must not</b> free the
+ * elements within it.	This will be set to NULL upon no results or
+ * upon error.
+ *
+ * @return 0 on success (including none found), negative on error.
+ */
+extern int apol_get_portcon_by_query(apol_policy_t *p,
+				     apol_portcon_query_t *po,
+				     apol_vector_t **v);
+
+/**
+ * Allocate and return a new portcon query structure. All fields are
+ * initialized, such that running this blank query results in
+ * returning all portcons within the policy. The caller must call
+ * apol_portcon_query_destroy() upon the return value afterwards.
+ *
+ * @return An initialized portcon query structure, or NULL upon error.
+ */
+extern apol_portcon_query_t *apol_portcon_query_create(void);
+
+/**
+ * Deallocate all memory associated with the referenced portcon
+ * query, and then set it to NULL.  This function does nothing if the
+ * query is already NULL.
+ *
+ * @param c Reference to a portcon query structure to destroy.
+ */
+extern void apol_portcon_query_destroy(apol_portcon_query_t **po);
+
+/**
+ * Set a portcon query to return only portcons that use this protocol.
+ *
+ * @param p Policy handler, to report errors.
+ * @param po Portcon query to set.
+ * @param proto Limit query to only portcons with this protocol, or
+ * negative to unset this field.
+ *
+ * @return Always 0.
+ */
+extern int apol_portcon_query_set_proto(apol_policy_t *p,
+					apol_portcon_query_t *po, int proto);
+
+/**
+ * Set a portcon query to return only portcons with this as their low
+ * port.
+ *
+ * @param p Policy handler, to report errors.
+ * @param po Portcon query to set.
+ * @param low Limit query to only portcons with this low port, or
+ * negative to unset this field.
+ *
+ * @return Always 0.
+ */
+extern int apol_portcon_query_set_low(apol_policy_t *p,
+				      apol_portcon_query_t *po, int low);
+
+/**
+ * Set a portcon query to return only portcons with this as their high
+ * port.
+ *
+ * @param p Policy handler, to report errors.
+ * @param po Portcon query to set.
+ * @param high Limit query to only portcons with this high port, or
+ * negative to unset this field.
+ *
+ * @return Always 0.
+ */
+extern int apol_portcon_query_set_high(apol_policy_t *p,
+				       apol_portcon_query_t *po, int high);
+
+/**
+ * Set a portcon query to return only portcons matching a
+ * context. This function takes ownership of the context, such that
+ * the caller must not modify nor destroy it afterwards.
+ *
+ * @param p Policy handler, to report errors.
+ * @param po Portcon query to set.
+ * @param context Limit query to only portcons matching this context,
+ * or NULL to unset this field.
+ * @param range_match Specifies how to match the MLS range within the
+ * context.  This must be one of APOL_QUERY_SUB, APOL_QUERY_SUPER, or
+ * APOL_QUERY_EXACT.  This parameter is ignored if context is NULL.
+ *
+ * @return Always returns 0.
+ */
+extern int apol_portcon_query_set_context(apol_policy_t *p,
+					  apol_portcon_query_t *po,
+					  apol_context_t *context,
+					  unsigned int range_match);
 
 #endif

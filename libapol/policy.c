@@ -4598,7 +4598,7 @@ int ap_genfscon_get_num_paths(policy_t *policy)
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#include <sepol/policydb-query.h>
+#include <sepol/policydb_query.h>
 
 int apol_policy_is_mls(apol_policy_t *p)
 {

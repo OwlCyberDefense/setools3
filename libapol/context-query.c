@@ -54,6 +54,43 @@ apol_context_t *apol_context_create(void)
 	return calloc(1, sizeof(apol_context_t));
 }
 
+apol_context_t *apol_context_create_from_sepol_context(apol_policy_t *p, sepol_context_struct_t *context)
+{
+	apol_context_t *c = NULL;
+	sepol_user_datum_t *user;
+	sepol_role_datum_t *role;
+	sepol_type_datum_t *type;
+	sepol_mls_range_t *range;
+	char *user_name, *role_name, *type_name;
+	apol_mls_range_t *apol_range = NULL;
+	if ((c = apol_context_create()) == NULL) {
+		goto err;
+	}
+	if (sepol_context_struct_get_user(p->sh, p->p, context, &user) < 0 ||
+	    sepol_context_struct_get_role(p->sh, p->p, context, &role) < 0 ||
+	    sepol_context_struct_get_type(p->sh, p->p, context, &type) < 0 ||
+	    sepol_context_struct_get_range(p->sh, p->p, context, &range) < 0) {
+		goto err;
+	}
+	if (sepol_user_datum_get_name(p->sh, p->p, user, &user_name) < 0 ||
+	    sepol_role_datum_get_name(p->sh, p->p, role, &role_name) < 0 ||
+	    sepol_type_datum_get_name(p->sh, p->p, type, &type_name) < 0 ||
+	    (apol_range = apol_mls_range_create_from_sepol_mls_range(p, range)) == NULL) {
+		goto err;
+	}
+	if (apol_context_set_user(p, c, user_name) < 0 ||
+	    apol_context_set_role(p, c, role_name) < 0 ||
+	    apol_context_set_type(p, c, type_name) < 0 ||
+	    apol_context_set_range(p, c, apol_range) < 0) {
+		goto err;
+	}
+	return c;
+ err:
+	apol_mls_range_destroy(&apol_range);
+	apol_context_destroy(&c);
+	return NULL;
+}
+
 void apol_context_destroy(apol_context_t **context)
 {
 	if (*context != NULL) {
@@ -108,6 +145,71 @@ int apol_context_set_range(apol_policy_t *p,
 	apol_mls_range_destroy(&(context->range));
 	context->range = range;
 	return 0;
+}
+
+int apol_context_compare(apol_policy_t *p,
+			 apol_context_t *target,
+			 apol_context_t *search,
+			 unsigned int range_compare_type)
+{
+	uint32_t value0, value1;
+	if (p == NULL || target == NULL || search == NULL) {
+		ERR(p, "Invalid argument.");
+		errno = EINVAL;
+		return -1;
+	}
+	if (target->user != NULL && search->user != NULL) {
+		sepol_user_datum_t *user0, *user1;
+		if (sepol_policydb_get_user_by_name(p->sh, p->p,
+						    target->user, &user0) < 0 ||
+		    sepol_policydb_get_user_by_name(p->sh, p->p,
+						    search->user, &user1) < 0 ||
+		    sepol_user_datum_get_value(p->sh, p->p,
+					       user0, &value0) < 0 ||
+		    sepol_user_datum_get_value(p->sh, p->p,
+					       user1, &value1) < 0) {
+			return -1;
+		}
+		if (value0 != value1) {
+			return 0;
+		}
+	}
+	if (target->role != NULL && search->role != NULL) {
+		sepol_role_datum_t *role0, *role1;
+		if (sepol_policydb_get_role_by_name(p->sh, p->p,
+						    target->role, &role0) < 0 ||
+		    sepol_policydb_get_role_by_name(p->sh, p->p,
+						    search->role, &role1) < 0 ||
+		    sepol_role_datum_get_value(p->sh, p->p,
+					       role0, &value0) < 0 ||
+		    sepol_role_datum_get_value(p->sh, p->p,
+					       role1, &value1) < 0) {
+			return -1;
+		}
+		if (value0 != value1) {
+			return 0;
+		}
+	}
+	if (target->type != NULL && search->type != NULL) {
+		sepol_type_datum_t *type0, *type1;
+		if (sepol_policydb_get_type_by_name(p->sh, p->p,
+						    target->type, &type0) < 0 ||
+		    sepol_policydb_get_type_by_name(p->sh, p->p,
+						    search->type, &type1) < 0 ||
+		    sepol_type_datum_get_value(p->sh, p->p,
+					       type0, &value0) < 0 ||
+		    sepol_type_datum_get_value(p->sh, p->p,
+					       type1, &value1) < 0) {
+			return -1;
+		}
+		if (value0 != value1) {
+			return 0;
+		}
+	}
+	if (target->range != NULL && search->range != NULL) {
+		return apol_mls_range_compare(p, target->range, search->range, range_compare_type);
+	}
+	return 1;
 }
 
 int apol_context_validate(apol_policy_t *p,
