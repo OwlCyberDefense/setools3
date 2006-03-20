@@ -158,7 +158,6 @@ proc Apol_Context_Dialog::_create_dialog {parent} {
 # the low and high level).
 proc Apol_Context_Dialog::_okay {dialog} {
     variable vars
-    set type [Apol_Widget::getTypeComboboxValue $vars($dialog:type_box)]
     if {$vars($dialog:user_enable)} {
         if {[set user $vars($dialog:user)] == {}} {
             tk_messageBox -icon error -type ok -title "Could Not Validate Context" \
@@ -169,7 +168,7 @@ proc Apol_Context_Dialog::_okay {dialog} {
         set user {}
     }
     if {$vars($dialog:role_enable)} {
-        if {$vars($dialog:role) == {}} {
+        if {[set role $vars($dialog:role)] == {}} {
             tk_messageBox -icon error -type ok -title "Could Not Validate Context" \
                 -message "No role was selected."
             return
@@ -177,6 +176,7 @@ proc Apol_Context_Dialog::_okay {dialog} {
     } else {
         set role {}
     }
+    set type [Apol_Widget::getTypeComboboxValue $vars($dialog:type_box)]
     if {$vars($dialog:type_enable)} {
         if {$type == {}} {
             tk_messageBox -icon error -type ok -title "Could Not Validate Context" \

@@ -26,7 +26,7 @@
 #ifndef APOL_MLS_QUERY_H
 #define APOL_MLS_QUERY_H
 
-#include <sepol/policydb-query.h>
+#include <sepol/policydb_query.h>
 #include "policy.h"
 #include "vector.h"
 

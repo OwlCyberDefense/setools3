@@ -33,9 +33,10 @@
 #include <string.h>
 #include <sys/types.h>
 
-#include <sepol/policydb-query.h>
+#include <sepol/policydb_query.h>
 
 #include "component-query.h"
+#include "context-query.h"
 #include "mls-query.h"
 
 struct apol_type_query {
@@ -98,6 +99,13 @@ struct apol_cat_query {
 	char *cat_name;
 	unsigned int flags;
 	regex_t *regex;
+};
+
+struct apol_portcon_query {
+        int proto;
+        int low, high;
+        apol_context_t *context;
+	unsigned int flags;
 };
 
 /******************** misc helpers ********************/
@@ -258,6 +266,9 @@ static int apol_compare_iter(apol_policy_t *p, sepol_iterator_t *iter,
 			     unsigned int flags, regex_t **regex)
 {
 	int compval;
+	if (name == NULL || *name == '\0') {
+		return 1;
+	}
 	for ( ; !sepol_iterator_end(iter); sepol_iterator_next(iter)) {
 		char *iter_name;
 		if (sepol_iterator_get_item(iter, (void **) &iter_name) < 0) {
@@ -897,6 +908,9 @@ int apol_get_role_by_query(apol_policy_t *p,
 			if (sepol_role_datum_get_type_iter(p->sh, p->p, role, &type_iter) < 0) {
 				goto cleanup;
 			}
+			if (r->type_name == NULL || r->type_name[0] == '\0') {
+				goto end_of_query;
+			}
 			append_role = 0;
 			for ( ; !sepol_iterator_end(type_iter); sepol_iterator_next(type_iter)) {
 				sepol_type_datum_t *type;
@@ -916,6 +930,7 @@ int apol_get_role_by_query(apol_policy_t *p,
 			}
 			sepol_iterator_destroy(&type_iter);
 		}
+	end_of_query:
 		if (append_role && apol_vector_append(*v, role)) {
 			ERR(p, "Out of memory!");
 			goto cleanup;
@@ -1013,26 +1028,28 @@ int apol_get_user_by_query(apol_policy_t *p,
 			if (sepol_user_datum_get_role_iter(p->sh, p->p, user, &role_iter) < 0) {
 				goto cleanup;
 			}
-			append_user = 0;
-			for ( ; !sepol_iterator_end(role_iter); sepol_iterator_next(role_iter)) {
-				sepol_role_datum_t *role;
-				char *role_name;
-				if (sepol_iterator_get_item(role_iter, (void **) &role) < 0 ||
-				    sepol_role_datum_get_name(p->sh, p->p, role, &role_name) < 0) {
-					goto cleanup;
+			if (u->role_name != NULL && u->role_name[0] != '\0') {
+				append_user = 0;
+				for ( ; !sepol_iterator_end(role_iter); sepol_iterator_next(role_iter)) {
+					sepol_role_datum_t *role;
+					char *role_name;
+					if (sepol_iterator_get_item(role_iter, (void **) &role) < 0 ||
+					    sepol_role_datum_get_name(p->sh, p->p, role, &role_name) < 0) {
+						goto cleanup;
+					}
+					compval = apol_compare(p, role_name, u->role_name,
+							       u->flags, &(u->role_regex));
+					if (compval < 0) {
+						goto cleanup;
+					}
+					else if (compval == 1) {
+						append_user = 1;
+						break;
+					}
 				}
-				compval = apol_compare(p, role_name, u->role_name,
-						       u->flags, &(u->role_regex));
-				if (compval < 0) {
-					goto cleanup;
+				if (!append_user) {
+					continue;
 				}
-				else if (compval == 1) {
-					append_user = 1;
-					break;
-				}
-			}
-			if (!append_user) {
-				continue;
 			}
 			if (apol_policy_is_mls(p)) {
 				if (sepol_user_datum_get_dfltlevel(p->sh, p->p, user, &mls_default_level) < 0 ||
@@ -1124,8 +1141,11 @@ int apol_user_query_set_range(apol_policy_t *p __attribute__ ((unused)),
 			      apol_mls_range_t *range,
 			      unsigned int range_match)
 {
+	if (u->range != NULL) {
+		apol_mls_range_destroy(&u->range);
+	}
 	u->range = range;
-	u->flags |= range_match;
+	u->flags = (u->flags & ~APOL_QUERY_FLAGS) | range_match;
 	return 0;
 }
 
@@ -1222,7 +1242,7 @@ int apol_get_level_by_query(apol_policy_t *p,
 	if (sepol_policydb_get_level_iter(p->sh, p->p, &iter) < 0) {
 		return -1;
 	}
-	if ((*v = apol_vector_create ()) == NULL) {
+	if ((*v = apol_vector_create()) == NULL) {
 		ERR(p, "Out of memory!");
 		goto cleanup;
 	}
@@ -1329,7 +1349,7 @@ int apol_get_cat_by_query(apol_policy_t *p,
 	if (sepol_policydb_get_cat_iter(p->sh, p->p, &iter) < 0) {
 		return -1;
 	}
-	if ((*v = apol_vector_create ()) == NULL) {
+	if ((*v = apol_vector_create()) == NULL) {
 		ERR(p, "Out of memory!");
 		goto cleanup;
 	}
@@ -1392,4 +1412,126 @@ int apol_cat_query_set_cat(apol_policy_t *p, apol_cat_query_t *c, const char *na
 int apol_cat_query_set_regex(apol_policy_t *p, apol_cat_query_t *c, int is_regex)
 {
 	return apol_query_set_regex(p, &c->flags, is_regex);
+}
+
+/******************** portcon queries ********************/
+
+int apol_get_portcon_by_query(apol_policy_t *p,
+                              apol_portcon_query_t *po,
+                              apol_vector_t **v)
+{
+        sepol_iterator_t *iter;
+        int retval = -1, retval2;
+        *v = NULL;
+        if (sepol_policydb_get_portcon_iter(p->sh, p->p, &iter) < 0) {
+                return -1;
+        }
+        if ((*v = apol_vector_create()) == NULL) {
+                ERR(p, "Out of memory!");
+                goto cleanup;
+        }
+        for ( ; !sepol_iterator_end(iter); sepol_iterator_next(iter)) {
+                sepol_portcon_t *portcon;
+                if (sepol_iterator_get_item(iter, (void **) &portcon) < 0) {
+                        goto cleanup;
+                }
+                if (po != NULL) {
+                        uint16_t low, high;
+                        uint8_t proto;
+                        sepol_context_struct_t *context;
+                        if (sepol_portcon_get_low_port(p->sh, p->p,
+                                                       portcon, &low) < 0 ||
+                            sepol_portcon_get_high_port(p->sh, p->p,
+                                                        portcon, &high) < 0 ||
+                            sepol_portcon_get_protocol(p->sh, p->p,
+                                                       portcon, &proto) < 0 ||
+                            sepol_portcon_get_context(p->sh, p->p,
+                                                      portcon, &context) < 0) {
+                                goto cleanup;
+                        }
+                        if ((po->low >= 0 && ((uint16_t) po->low) != low) ||
+                            (po->high >= 0 && ((uint16_t) po->high) != high) ||
+                            (po->proto >= 0 && ((uint8_t) po->proto) != proto)) {
+                                continue;
+                        }
+                        if (po->context != NULL) {
+                                apol_context_t *apol_context;
+                                apol_context = apol_context_create_from_sepol_context(p, context);
+                                retval2 = apol_context_compare(p, apol_context,
+                                                               po->context, po->flags);
+                                apol_context_destroy(&apol_context);
+                                if (retval2 < 0) {
+                                        goto cleanup;
+                                }
+                                else if (retval == 0) {
+                                        continue;
+                                }
+                        }
+                }
+                if (apol_vector_append(*v, portcon)) {
+                        ERR(p, "Out of memory!");
+                        goto cleanup;
+                }
+        }
+
+        retval = 0;
+ cleanup:
+        if (retval != 0) {
+                apol_vector_destroy(v, NULL);
+        }
+        sepol_iterator_destroy(&iter);
+        return retval;
+}
+
+apol_portcon_query_t *apol_portcon_query_create(void)
+{
+	apol_portcon_query_t *po = calloc(1, sizeof(*po));
+	if (po == NULL) {
+		return NULL;
+	}
+	po->proto = po->low = po->high = -1;
+	return po;
+}
+
+void apol_portcon_query_destroy(apol_portcon_query_t **po)
+{
+	if (*po != NULL) {
+		apol_context_destroy(&((*po)->context));
+		free(*po);
+		*po = NULL;
+	}
+}
+
+int apol_portcon_query_set_proto(apol_policy_t *p __attribute__ ((unused)),
+				 apol_portcon_query_t *po, int proto)
+{
+	po->proto = proto;
+	return 0;
+}
+
+int apol_portcon_query_set_low(apol_policy_t *p __attribute__ ((unused)),
+			       apol_portcon_query_t *po, int low)
+{
+	po->low = low;
+	return 0;
+}
+
+int apol_portcon_query_set_high(apol_policy_t *p __attribute__ ((unused)),
+                                apol_portcon_query_t *po, int high)
+{
+	po->high = high;
+	return 0;
+}
+
+int apol_portcon_query_set_context(apol_policy_t *p __attribute__ ((unused)),
+				   apol_portcon_query_t *po,
+				   apol_context_t *context,
+				   unsigned int range_match)
+{
+	if (po->context != NULL) {
+		apol_context_destroy(&po->context);
+	}
+	po->context = context;
+	po->flags = (po->flags & ~APOL_QUERY_FLAGS) | range_match;
+	return 0;
 }
