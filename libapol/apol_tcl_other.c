@@ -168,7 +168,7 @@ int apol_tcl_string_to_level(Tcl_Interp *interp, const char *level_string,
 	}
 	if (sens_obj == NULL || cats_list_obj == NULL) {
 		/* no sensitivity given -- this is an error */
-		Tcl_SetResult(interp, "Sensitivity string did not have two elements within it.", TCL_STATIC);
+		ERR(policydb, "Sensitivity string did not have two elements within it.", TCL_STATIC);
 		return -1;
 	}
 	sens_string = Tcl_GetString(sens_obj);
@@ -197,7 +197,7 @@ int apol_tcl_string_to_level(Tcl_Interp *interp, const char *level_string,
 	}
 	if (level->cats == NULL &&
 	    (level->cats = apol_vector_create()) == NULL) {
-		Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
+		ERR(policydb, "Out of memory!");
 		return -1;
 	}
 	return 0;
@@ -218,12 +218,12 @@ int apol_tcl_string_to_range(Tcl_Interp *interp, const char *range_string,
 		goto cleanup;
 	}
 	if (low_obj == NULL) {
-		Tcl_SetResult(interp, "Range string must have at least one level given.", TCL_STATIC);
+		ERR(policydb, "Range string must have at least one level given.");
 		goto cleanup;
 	}
 	low_string = Tcl_GetString(low_obj);
 	if ((low_level = apol_mls_level_create()) == NULL) {
-		Tcl_SetResult(interp, "Out of memory.", TCL_STATIC);
+		ERR(policydb, "Out of memory.");
 		goto cleanup;
 	}
 	if ((retval = apol_tcl_string_to_level(interp, low_string, low_level)) != 0) {
@@ -269,22 +269,24 @@ int apol_tcl_string_to_range(Tcl_Interp *interp, const char *range_string,
 int apol_tcl_string_to_range_match(Tcl_Interp *interp, const char *range_match_string,
 				   unsigned int *flags)
 {
+	unsigned new_flag;
 	if (strcmp(range_match_string, "exact") == 0) {
-		*flags |= APOL_QUERY_EXACT;
+		new_flag = APOL_QUERY_EXACT;
 	}
 	else if (strcmp(range_match_string, "subset") == 0) {
-		*flags |= APOL_QUERY_SUB;
+		new_flag = APOL_QUERY_SUB;
 	}
 	else if (strcmp(range_match_string, "superset") == 0) {
-		*flags |= APOL_QUERY_SUPER;
+		new_flag = APOL_QUERY_SUPER;
 	}
 	else if (strcmp(range_match_string, "intersect") == 0) {
-		*flags |= APOL_QUERY_INTERSECT;
+		new_flag = APOL_QUERY_INTERSECT;
 	}
 	else {
-		Tcl_SetResult(interp, "Invalid range match string.", TCL_STATIC);
+		ERR(policydb, "Invalid range match string %s.", range_match_string);
 		return -1;
 	}
+	*flags = (*flags & ~APOL_QUERY_FLAGS) | new_flag;
 	return 0;
 }
 
@@ -300,7 +302,7 @@ int apol_tcl_string_to_context(Tcl_Interp *interp,
 		goto cleanup;
 	}
 	if (num_elems < 3 || num_elems > 4) {
-		Tcl_SetResult(interp, "Invalid Tcl context object.", TCL_STATIC);
+		ERR(policydb, "Invalid Tcl context object: %s.", context_string);
 		goto cleanup;
 	}
 	user = context_elem[0];
@@ -315,7 +317,7 @@ int apol_tcl_string_to_context(Tcl_Interp *interp,
 		range_string = context_elem[3];
 		if (*range_string != '\0') {
 			if ((range = apol_mls_range_create()) == NULL) {
-				Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
+				ERR(policydb, "Out of memory!");
 				goto cleanup;
 			}
 			retval2 = apol_tcl_string_to_range(interp, range_string, range);
@@ -903,8 +905,10 @@ int Apol_GetPermsByClass(ClientData clientData, Tcl_Interp * interp, int argc, c
 	return TCL_OK;
 }
 
-/* Checks if a range is valid or not according to the policy.  Returns
- * 1 if valid, 0 if invalid. */
+/**
+ * Checks if a range is valid or not according to the policy.  Returns
+ * 1 if valid, 0 if invalid.
+ */
 static int Apol_IsValidRange(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
 	apol_mls_range_t *range = NULL;
@@ -1044,8 +1048,10 @@ static int tcl_context_string_to_context(Tcl_Interp *interp, char *context_strin
         return 0;
 }
 
-/* Checks if a context is partially valid or not according to the
- * policy.  Returns 1 if valid, 0 if invalid. */
+/**
+ * Checks if a context is partially valid or not according to the
+ * policy.  Returns 1 if valid, 0 if invalid.
+ */
 static int Apol_IsValidPartialContext(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
         apol_context_t *context = NULL;

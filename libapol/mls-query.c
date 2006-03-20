@@ -688,6 +688,7 @@ int apol_mls_range_compare(apol_policy_t *p,
 	else if (range_compare_type & APOL_QUERY_INTERSECT) {
 		return (ans1 || ans2);
 	}
+	ERR(p, "Invalid range compare type argument.");
 	return -1;
 }
 

@@ -26,7 +26,7 @@
 #ifndef APOL_CONTEXT_QUERY_H
 #define APOL_CONTEXT_QUERY_H
 
-#include <sepol/policydb-query.h>
+#include <sepol/policydb_query.h>
 #include "policy.h"
 #include "mls-query.h"
 
@@ -43,6 +43,19 @@ typedef struct apol_context {
  * @return An initialized MLS range structure, or NULL upon error.
  */
 extern apol_context_t *apol_context_create(void);
+
+/**
+ * Allocate and return a new context structure, initialized from an
+ * existing sepol_context_struct_t.  The caller must call
+ * apol_context_destroy() upon the return value afterwards.
+ *
+ * @param p Policy from which the sepol_context_t was obtained.
+ * @param context The libsepol context for which to create a new apol
+ * context.  This context will not be altered by this call.
+ *
+ * @return An initialized MLS range structure, or NULL upon error.
+ */
+extern apol_context_t *apol_context_create_from_sepol_context(apol_policy_t *p, sepol_context_struct_t *context);
 
 /**
  * Deallocate all memory associated with a context structure and then

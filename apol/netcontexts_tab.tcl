@@ -199,16 +199,19 @@ proc Apol_NetContexts::runSearch {} {
 proc Apol_NetContexts::portcon_open {} {
     variable vals
     variable widgets
-    $widgets(portcon:proto) configure -values [apol_GetPortconProtos]
     set vals(portcon:items) {}
-    foreach p [apol_GetPortcons] {
-        if {[lindex $p 1] == [lindex $p 2]} {
-            lappend vals(portcon:items) [lindex $p 1]
+    set protos {}
+    foreach p [apol_GetPortcons -1 -1 {} {} 0] {
+        foreach {low high proto context} $p {break}
+        if {$low == $high} {
+            lappend vals(portcon:items) $low
         } else {
-            lappend vals(portcon:items) "[lindex $p 1]-[lindex $p 2]"
+            lappend vals(portcon:items) "$low-$high"
         }
+        lappend protos $proto
     }
     set vals(portcon:items) [lsort -unique -dictionary $vals(portcon:items)]
+    $widgets(portcon:proto) configure -values [lsort -unique -dictionary $protos]
 }
 
 proc Apol_NetContexts::portcon_show {} {
@@ -326,7 +329,7 @@ proc Apol_NetContexts::portcon_toggleCheckbutton_hiport {low high name1 name2 op
 }
 
 proc Apol_NetContexts::portcon_render {portcon} {
-    foreach {proto loport hiport context} $portcon {break}
+    foreach {loport hiport proto context} $portcon {break}
     if {$loport == $hiport} {
         set line "portcon $proto $loport "
     } else {
@@ -340,12 +343,7 @@ proc Apol_NetContexts::portcon_popup {port} {
     if {$high == {}} {
         set high $low
     }
-    set portcons {}
-    foreach p [apol_GetPortcons $low] {
-        if {$high == [lindex $p 2]} {
-            lappend portcons $p
-        }
-    }
+    set portcons [apol_GetPortcons $low $high]
     set text "port $port ([llength $portcons] context"
     if {[llength $portcons] != 1} {
         append text s
@@ -358,8 +356,8 @@ proc Apol_NetContexts::portcon_popup {port} {
 }
 
 proc Apol_NetContexts::portcon_sort {a b} {
-    foreach {proto1 loport1 hiport1 context1} $a {break}
-    foreach {proto2 loport2 hiport2 context2} $b {break}
+    foreach {loport1 hiport1 proto1 context1} $a {break}
+    foreach {loport2 hiport2 proto2 context2} $b {break}
     if {$loport1 == $hiport1} {
         set singleport1 1
     } else {
@@ -414,7 +412,7 @@ proc Apol_NetContexts::portcon_runSearch {} {
     } else {
         set vals_context {}
     }
-    if {[catch {apol_GetPortcons} orig_portcons]} {
+    if {[catch {apol_GetPortcons -1 -1 {} {} 0} orig_portcons]} {
         tk_messageBox -icon error -type ok -title "Error" -message "Error obtaining portcons list:\n$orig_portcons"
         return
     }
@@ -422,7 +420,7 @@ proc Apol_NetContexts::portcon_runSearch {} {
     # apply filters to list
     set portcons {}
     foreach p $orig_portcons {
-        foreach {proto loport hiport context} $p {break}
+        foreach {loport hiport proto context} $p {break}
         if {$vals(portcon:proto_enable) && $proto != $vals(portcon:proto)} {
             continue
         }
