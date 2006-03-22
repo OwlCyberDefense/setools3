@@ -49,6 +49,7 @@ typedef struct apol_bool_query apol_bool_query_t;
 typedef struct apol_level_query apol_level_query_t;
 typedef struct apol_cat_query apol_cat_query_t;
 typedef struct apol_portcon_query apol_portcon_query_t;
+typedef struct apol_netifcon_query apol_netifcon_query_t;
 
 /** Every query allows the treatment of strings as regular expressions
  *  instead.  Within the query structure are flags; if the first bit
@@ -857,9 +858,9 @@ extern int apol_cat_query_set_regex(apol_policy_t *p,
  * returned portcons will be unordered.
  *
  * @param p Policy within which to look up portcons.
- * @param c Structure containing parameters for query.	If this is
+ * @param po Structure containing parameters for query.	 If this is
  * NULL then return all portcons.
- * @param v Reference to a vector of sepol_nodecon_t.  The vector will
+ * @param v Reference to a vector of sepol_portcon_t.  The vector will
  * be allocated by this function. The caller must call
  * apol_vector_destroy() afterwards, but <b>must not</b> free the
  * elements within it.	This will be set to NULL upon no results or
@@ -886,7 +887,7 @@ extern apol_portcon_query_t *apol_portcon_query_create(void);
  * query, and then set it to NULL.  This function does nothing if the
  * query is already NULL.
  *
- * @param c Reference to a portcon query structure to destroy.
+ * @param po Reference to a portcon query structure to destroy.
  */
 extern void apol_portcon_query_destroy(apol_portcon_query_t **po);
 
@@ -950,5 +951,99 @@ extern int apol_portcon_query_set_context(apol_policy_t *p,
 					  apol_portcon_query_t *po,
 					  apol_context_t *context,
 					  unsigned int range_match);
+
+/******************** netifcon queries ********************/
+
+/**
+ * Execute a query against all netifcons within the policy.  The
+ * returned netifcons will be unordered.
+ *
+ * @param p Policy within which to look up netifcons.
+ * @param n Structure containing parameters for query.	If this is
+ * NULL then return all netifcons.
+ * @param v Reference to a vector of sepol_netifcon_t.	The vector
+ * will be allocated by this function. The caller must call
+ * apol_vector_destroy() afterwards, but <b>must not</b> free the
+ * elements within it.	This will be set to NULL upon no results or
+ * upon error.
+ *
+ * @return 0 on success (including none found), negative on error.
+ */
+extern int apol_get_netifcon_by_query(apol_policy_t *p,
+				      apol_netifcon_query_t *n,
+				      apol_vector_t **v);
+
+/**
+ * Allocate and return a new netifcon query structure.	All fields are
+ * initialized, such that running this blank query results in
+ * returning all netifcons within the policy.  The caller must call
+ * apol_netifcon_query_destroy() upon the return value afterwards.
+ *
+ * @return An initialized netifcon query structure, or NULL upon
+ * error.
+ */
+extern apol_netifcon_query_t *apol_netifcon_query_create(void);
+
+/**
+ * Deallocate all memory associated with the referenced netifcon
+ * query, and then set it to NULL.  This function does nothing if the
+ * query is already NULL.
+ *
+ * @param n Reference to a netifcon query structure to destroy.
+ */
+extern void apol_netifcon_query_destroy(apol_netifcon_query_t **n);
+
+/**
+ * Set a netifcon query to return only netifcons that use this device.
+ *
+ * @param p Policy handler, to report errors.
+ * @param n Netifcon query to set.
+ * @param dev Limit query to only netifcons that use this device, or
+ * NULL to unset this field.
+ *
+ * @return 0 on success, negative on error.
+ */
+extern int apol_netifcon_query_set_device(apol_policy_t *p,
+					  apol_netifcon_query_t *n, const char *dev);
+
+/**
+ * Set a netifcon query to return only netifcons matching this context
+ * for its interface.  This function takes ownership of the context,
+ * such that the caller must not modify nor destroy it afterwards.
+ *
+ * @param p Policy handler, to report errors.
+ * @param n Netifcon query to set.
+ * @param context Limit query to only netifcon matching this context
+ * for its interface, or NULL to unset this field.
+ * @param range_match Specifies how to match the MLS range within the
+ * context.  This must be one of APOL_QUERY_SUB, APOL_QUERY_SUPER, or
+ * APOL_QUERY_EXACT.  This parameter is ignored if context is NULL.
+ *
+ * @return Always returns 0.
+ */
+extern int apol_netifcon_query_set_if_context(apol_policy_t *p,
+					      apol_netifcon_query_t *n,
+					      apol_context_t *context,
+					      unsigned int range_match);
+
+/**
+ * Set a netifcon query to return only netifcons matching this context
+ * for its messages.  This function takes ownership of the context,
+ * such that the caller must not modify nor destroy it afterwards.
+ *
+ * @param p Policy handler, to report errors.
+ * @param n Netifcon query to set.
+ * @param context Limit query to only netifcon matching this context
+ * for its messages, or NULL to unset this field.
+ * @param range_match Specifies how to match the MLS range within the
+ * context.  This must be one of APOL_QUERY_SUB, APOL_QUERY_SUPER, or
+ * APOL_QUERY_EXACT.  This parameter is ignored if context is NULL.
+ *
+ * @return Always returns 0.
+ */
+extern int apol_netifcon_query_set_msg_context(apol_policy_t *p,
+					       apol_netifcon_query_t *n,
+					       apol_context_t *context,
+					       unsigned int range_match);
 
 #endif
