@@ -1612,15 +1612,22 @@ static int security_con_to_tcl_context_string(Tcl_Interp *interp, security_con_t
  * If the current policy is non-MLS then range will be an empty list.
  * Otherwise it will be a 2-ple list of levels.
  */
-static int apol_context_to_tcl_obj(Tcl_Interp *interp, apol_context_t *context, Tcl_Obj **dest_obj) {
+static int sepol_context_to_tcl_obj(Tcl_Interp *interp, sepol_context_struct_t *context, Tcl_Obj **dest_obj) {
+	apol_context_t *apol_context = NULL;
 	Tcl_Obj *context_elem[4], *range_elem[2];
 	int retval = TCL_ERROR;
-	context_elem[0] = Tcl_NewStringObj(context->user, -1);
-	context_elem[1] = Tcl_NewStringObj(context->role, -1);
-	context_elem[2] = Tcl_NewStringObj(context->type, -1);
+
+	apol_context = apol_context_create_from_sepol_context(policydb, context);
+	if (apol_context == NULL) {
+		ERR(policydb, "Out of memory!");
+		goto cleanup;
+	}
+	context_elem[0] = Tcl_NewStringObj(apol_context->user, -1);
+	context_elem[1] = Tcl_NewStringObj(apol_context->role, -1);
+	context_elem[2] = Tcl_NewStringObj(apol_context->type, -1);
 	if (is_mls_policy(policy)) {
-		if (apol_level_to_tcl_obj(interp, context->range->low, range_elem + 0) == TCL_ERROR ||
-		    apol_level_to_tcl_obj(interp, context->range->high, range_elem + 1) == TCL_ERROR) {
+		if (apol_level_to_tcl_obj(interp, apol_context->range->low, range_elem + 0) == TCL_ERROR ||
+		    apol_level_to_tcl_obj(interp, apol_context->range->high, range_elem + 1) == TCL_ERROR) {
 			goto cleanup;
 		}
 		context_elem[3] = Tcl_NewListObj(2, range_elem);
@@ -1631,6 +1638,7 @@ static int apol_context_to_tcl_obj(Tcl_Interp *interp, apol_context_t *context, 
 	*dest_obj = Tcl_NewListObj(4, context_elem);
 	retval = TCL_OK;
  cleanup:
+	apol_context_destroy(&apol_context);
 	return retval;
 }
 
@@ -1683,7 +1691,6 @@ static int append_portcon_to_list(Tcl_Interp *interp,
 	uint8_t protocol;
 	uint16_t low_port, high_port;
 	sepol_context_struct_t *context;
-	apol_context_t *apol_context;
 	int retval = TCL_ERROR;
 	if (sepol_portcon_get_low_port(policydb->sh, policydb->p,
 				       portcon, &low_port) < 0 ||
@@ -1704,12 +1711,7 @@ static int append_portcon_to_list(Tcl_Interp *interp,
 		Tcl_SetResult(interp, "Unrecognized protocol in portcon", TCL_STATIC);
 		goto cleanup;
 	}
-	apol_context = apol_context_create_from_sepol_context(policydb, context);
-	if (apol_context == NULL) {
-		ERR(policydb, "Out of memory!");
-		goto cleanup;
-	}
-	if (apol_context_to_tcl_obj(interp, apol_context, portcon_elem + 3) == TCL_ERROR) {
+	if (sepol_context_to_tcl_obj(interp, context, portcon_elem + 3) == TCL_ERROR) {
 		goto cleanup;
 	}
 	portcon_list = Tcl_NewListObj(4, portcon_elem);
@@ -1718,7 +1720,6 @@ static int append_portcon_to_list(Tcl_Interp *interp,
 	}
 	retval = TCL_OK;
  cleanup:
-	apol_context_destroy(&apol_context);
 	return retval;
 }
 
@@ -1767,6 +1768,7 @@ static int Apol_GetPortcons(ClientData clientData, Tcl_Interp *interp, int argc,
 	sepol_portcon_t *portcon;
 	int low = -1, high = -1, proto = -1;
 	apol_context_t *context = NULL;
+	unsigned int range_match;
 	apol_portcon_query_t *query = NULL;
 	apol_vector_t *v = NULL;
 	size_t i;
@@ -1787,9 +1789,18 @@ static int Apol_GetPortcons(ClientData clientData, Tcl_Interp *interp, int argc,
 		goto cleanup;
 	}
 	if (argc == 6) {
-                
 		if (apol_tcl_string_to_proto(interp, argv[3], &proto) == TCL_ERROR) {
 			goto cleanup;
+		}
+		if (*argv[4] != '\0') {
+			if ((context = apol_context_create()) == NULL) {
+				ERR(policydb, "Out of memory!");
+				goto cleanup;
+			}
+			if (apol_tcl_string_to_context(interp, argv[4], context) < 0 ||
+			    apol_tcl_string_to_range_match(interp, argv[5], &range_match) < 0) {
+				goto cleanup;
+			}
 		}
 	}
 	if (low >= 0 || high >= 0 || proto >= 0 || context != NULL) {
@@ -1799,9 +1810,11 @@ static int Apol_GetPortcons(ClientData clientData, Tcl_Interp *interp, int argc,
 		}
 		if (apol_portcon_query_set_low(policydb, query, low) < 0 ||
 		    apol_portcon_query_set_high(policydb, query, high) < 0 ||
-		    apol_portcon_query_set_proto(policydb, query, proto) < 0) {
+		    apol_portcon_query_set_proto(policydb, query, proto) < 0 ||
+		    apol_portcon_query_set_context(policydb, query, context, range_match)) {
 			goto cleanup;
 		}
+		context = NULL;
 	}
 	if (apol_get_portcon_by_query(policydb, query, &v) < 0) {
 		goto cleanup;
@@ -1815,56 +1828,155 @@ static int Apol_GetPortcons(ClientData clientData, Tcl_Interp *interp, int argc,
 	Tcl_SetObjResult(interp, result_obj);
 	retval = TCL_OK;
  cleanup:
+	apol_context_destroy(&context);
 	apol_portcon_query_destroy(&query);
-apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v, NULL);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
 	return retval;
-
-/* Return an unsorted list of interface namess for the current policy. */
-static int Apol_GetNetifconInterfaces(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
-{
-        int i;
-        if (policy == NULL) {
-                Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
-                return TCL_ERROR;
-        }
-        for (i = 0; i < policy->num_netifcon; i++) {
-                Tcl_AppendElement(interp, policy->netifcon[i].iface);
-        }
-        return TCL_OK;
 }
 
-/* Return an unsorted list of all netifcon declarations.  If a
- * parameter is given, only return those with the given interface
- * name. */
+/**
+ * Takes a sepol_netifcon_t and appends a tuple of it to result_list.
+ * The tuple consists of:
+ *
+ *   { device if_context msg_context }
+ */
+static int append_netifcon_to_list(Tcl_Interp *interp,
+				  sepol_netifcon_t *netifcon,
+				  Tcl_Obj *result_list)
+{
+	char *name;
+	sepol_context_struct_t *if_context, *msg_context;
+	Tcl_Obj *netifcon_elem[3], *netifcon_list;
+	int retval = TCL_ERROR;
+	if (sepol_netifcon_get_name(policydb->sh, policydb->p,
+				    netifcon, &name) < 0 ||
+	    sepol_netifcon_get_if_con(policydb->sh, policydb->p,
+				      netifcon, &if_context) < 0 ||
+	    sepol_netifcon_get_msg_con(policydb->sh, policydb->p,
+				       netifcon, &msg_context) < 0) {
+		goto cleanup;
+	}
+	netifcon_elem[0] = Tcl_NewStringObj(name, -1);
+	if (sepol_context_to_tcl_obj(interp, if_context, netifcon_elem + 1) == TCL_ERROR ||
+	    sepol_context_to_tcl_obj(interp, msg_context, netifcon_elem + 2) == TCL_ERROR) {
+		goto cleanup;
+	}
+	netifcon_list = Tcl_NewListObj(3, netifcon_elem);
+	if (Tcl_ListObjAppendElement(interp, result_list, netifcon_list) == TCL_ERROR) {
+		goto cleanup;
+	}
+	retval = TCL_OK;
+ cleanup:
+	return retval;
+}
+
+/**
+ * Return an unsorted list of all netifcon declarations.
+ *   element 0: network device
+ *   element 1: context for device
+ *   element 2: context for messages sent through that device
+ *
+ * argv[1] - network device name to look up, or empty to get all netifcons
+ * argv[2] - (optional) device context, full or partial
+ * argv[3] - (optional) range query type for device context
+ * argv[4] - (optional) message context, full or partial
+ * argv[5] - (optional) range query type for message context
+ */
 static int Apol_GetNetifcons(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
-        int i;
-        Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
-        if (policy == NULL) {
+	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
+	sepol_netifcon_t *netifcon;
+        apol_context_t *if_context = NULL, *msg_context = NULL;
+        unsigned int if_range_match = 0, msg_range_match = 0;
+        apol_netifcon_query_t *query = NULL;
+        apol_vector_t *v = NULL;
+	int retval = TCL_ERROR;
+	if (policy == NULL) {
 		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
-		return TCL_ERROR;
+		goto cleanup;
 	}
-        for (i = 0; i < policy->num_netifcon; i++) {
-                ap_netifcon_t *netifcon = policy->netifcon + i;
-                Tcl_Obj *netifcon_elem[3], *netifcon_list;
-                if (argc > 1 && strcmp(argv[1], netifcon->iface) != 0) {
-                        continue;
+	if (argc != 2 && argc != 6) {
+		Tcl_SetResult(interp, "Need a device, ?if_context?, ?if_range_match?, ?msg_context?, and ?msg_range_match?.", TCL_STATIC);
+		goto cleanup;
+	}
+	if (argc == 2) {
+		if (sepol_policydb_get_netifcon_by_name(policydb->sh, policydb->p,
+							argv[1], &netifcon) < 0) {
+			/* passed category is not within the policy */
+			return TCL_OK;
+		}
+		if (append_netifcon_to_list(interp, netifcon, result_obj) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+	else {
+                const char *dev = NULL;
+                size_t i;
+                if (*argv[1] != '\0') {
+                        dev = argv[1];
                 }
-                netifcon_elem[0] = Tcl_NewStringObj(netifcon->iface, -1);
-                if (security_con_to_tcl_context_string(interp, netifcon->device_context, netifcon_elem + 1) == TCL_ERROR ||
-                    security_con_to_tcl_context_string(interp, netifcon->packet_context, netifcon_elem + 2) == TCL_ERROR) {
-                        return TCL_ERROR;
+                if (*argv[2] != '\0') {
+                        if ((if_context = apol_context_create()) == NULL) {
+                                ERR(policydb, "Out of memory!");
+                                goto cleanup;
+                        }
+                        if (apol_tcl_string_to_context(interp, argv[2], if_context) < 0 ||
+                            apol_tcl_string_to_range_match(interp, argv[3], &if_range_match) < 0) {
+                                goto cleanup;
+                        }
                 }
-                netifcon_list = Tcl_NewListObj(3., netifcon_elem);
-                if (Tcl_ListObjAppendElement(interp, result_obj, netifcon_list) == TCL_ERROR) {
-                        return TCL_ERROR;
+                if (*argv[4] != '\0') {
+                        if ((msg_context = apol_context_create()) == NULL) {
+                                ERR(policydb, "Out of memory!");
+                                goto cleanup;
+                        }
+                        if (apol_tcl_string_to_context(interp, argv[4], msg_context) < 0 ||
+                            apol_tcl_string_to_range_match(interp, argv[5], &msg_range_match) < 0) {
+                                goto cleanup;
+                        }
                 }
-        }
-        Tcl_SetObjResult(interp, result_obj);
-        return TCL_OK;
+                if (dev != NULL || if_context != NULL || msg_context != NULL) {
+                        if ((query = apol_netifcon_query_create()) == NULL) {
+                                Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
+                                goto cleanup;
+                        }
+                        if (apol_netifcon_query_set_device(policydb, query,
+                                                           dev) < 0 ||
+                            apol_netifcon_query_set_if_context(policydb, query,
+                                                               if_context, if_range_match) < 0) {
+                                goto cleanup;
+                        }
+                        if_context = NULL;
+                        if (apol_netifcon_query_set_msg_context(policydb, query,
+                                                                msg_context, msg_range_match) < 0) {
+                                goto cleanup;
+                        }
+                        msg_context = NULL;
+                }
+                if (apol_get_netifcon_by_query(policydb, query, &v) < 0) {
+                        goto cleanup;
+                }
+                for (i = 0; i < apol_vector_get_size(v); i++) {
+                        netifcon = (sepol_netifcon_t *) apol_vector_get_element(v, i);
+                        if (append_netifcon_to_list(interp, netifcon, result_obj) < 0) {
+				goto cleanup;
+			}
+		}
+	}
+	Tcl_SetObjResult(interp, result_obj);
+	retval = TCL_OK;
+ cleanup:
+        apol_context_destroy(&if_context);
+        apol_context_destroy(&msg_context);
+	apol_netifcon_query_destroy(&query);
+	apol_vector_destroy(&v, NULL);
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
 }
 
 /* Return a list of all nodecon declarations.  If a paramater was
@@ -2094,7 +2206,6 @@ int ap_tcl_components_init(Tcl_Interp *interp) {
 	Tcl_CreateCommand(interp, "apol_GetCats", Apol_GetCats, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetInitialSIDs", Apol_GetInitialSIDs, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetPortcons", Apol_GetPortcons, NULL, NULL);
- 	Tcl_CreateCommand(interp, "apol_GetNetifconInterfaces", Apol_GetNetifconInterfaces, NULL, NULL);
  	Tcl_CreateCommand(interp, "apol_GetNetifcons", Apol_GetNetifcons, NULL, NULL);
  	Tcl_CreateCommand(interp, "apol_GetNodecons", Apol_GetNodecons, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetGenFSConFilesystems", Apol_GetGenFSConFilesystems, NULL, NULL);

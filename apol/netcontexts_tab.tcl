@@ -393,44 +393,38 @@ proc Apol_NetContexts::portcon_runSearch {} {
     # explicitly validate the spinboxes (they could still have focus)
     portcon_limitPort $widgets(portcon:port) focusout $vals(portcon:port) port
     portcon_limitPort $widgets(portcon:hiport) focusout $vals(portcon:hiport) hiport
-    if {$vals(portcon:proto_enable) && $vals(portcon:proto) == {}} {
-        tk_messageBox -icon error -type ok -title "Error" -message "No protocol selected."
-        return
+
+    if {$vals(portcon:port_enable)} {
+        set low $vals(portcon:port)
+        set high $low
+        if {$vals(portcon:hiport_enable)} {
+            set high $vals(portcon:hiport)
+            if {$vals(portcon:port_enable) && $high < $low} {
+                tk_messageBox -icon error -type ok -title "Error" -message "The second port is not greater than the first."
+                return
+            }
+        }
+    } else {
+        set low -1
+        set high -1
     }
-    set low $vals(portcon:port)
-    if {$vals(portcon:hiport_enable)} {
-        set high $vals(portcon:hiport)
-        if {$vals(portcon:port_enable) && $high < $low} {
-            tk_messageBox -icon error -type ok -title "Error" -message "The second port is not greater than the first."
+    if {$vals(portcon:proto_enable)} {
+        if {[set proto $vals(portcon:proto)] == {}} {
+            tk_messageBox -icon error -type ok -title "Error" -message "No protocol selected."
             return
         }
     } else {
-        set high $low
+        set proto {}
     }
     if {[Apol_Widget::getContextSelectorState $widgets(portcon:context)]} {
-        foreach {vals_context vals_range_match} [Apol_Widget::getContextSelectorValue $widgets(portcon:context)] {break}
+        foreach {context range_match} [Apol_Widget::getContextSelectorValue $widgets(portcon:context)] {break}
     } else {
-        set vals_context {}
+        set context {}
+        set range_match 0
     }
-    if {[catch {apol_GetPortcons -1 -1 {} {} 0} orig_portcons]} {
-        tk_messageBox -icon error -type ok -title "Error" -message "Error obtaining portcons list:\n$orig_portcons"
+    if {[catch {apol_GetPortcons $low $high $proto $context $range_match} portcons]} {
+        tk_messageBox -icon error -type ok -title "Error" -message "Error obtaining portcons list:\n$portcons"
         return
-    }
-
-    # apply filters to list
-    set portcons {}
-    foreach p $orig_portcons {
-        foreach {loport hiport proto context} $p {break}
-        if {$vals(portcon:proto_enable) && $proto != $vals(portcon:proto)} {
-            continue
-        }
-        if {$vals(portcon:port_enable) && ($hiport < $low || $loport > $high)} {
-            continue
-        }
-        if {$vals_context != {} && ![apol_CompareContexts $vals_context $context $vals_range_match]} {
-            continue
-        }
-        lappend portcons $p
     }
 
     # now display results
@@ -451,7 +445,10 @@ proc Apol_NetContexts::portcon_runSearch {} {
 proc Apol_NetContexts::netifcon_open {} {
     variable vals
     variable widgets
-    set ifs [lsort -unique [apol_GetNetifconInterfaces]]
+    set ifs {}
+    foreach if [lsort -unique -index 0 [apol_GetNetifcons {} {} {} {} {}]] {
+        lappend ifs [lindex $if 0]
+    }
     $widgets(netifcon:dev) configure -values $ifs
     set vals(netifcon:items) $ifs
 }
@@ -494,18 +491,15 @@ proc Apol_NetContexts::netifcon_create {p_f} {
     pack $p_f.dev $p_f.ifcon $p_f.msgcon -side left -padx 4 -expand 0 -fill y
 }
 
-proc Apol_NetContexts::netifcon_render {netifcon} {
-    foreach {dev ifcon msgcon} $netifcon {break}
+proc Apol_NetContexts::netifcon_render {netifcon_datum} {
+    foreach {dev ifcon msgcon} $netifcon_datum {break}
     set line "netifcon $dev "
     append line "[apol_RenderContext $ifcon [ApolTop::is_mls_policy]] "
     concat $line [apol_RenderContext $msgcon [ApolTop::is_mls_policy]]
 }
 
 proc Apol_NetContexts::netifcon_popup {netif} {
-    if {[catch {apol_GetNetifcons $netif} netifcons]} {
-        tk_messageBox -icon error -type ok -title "Error" -message "Error obtaining netifcons list:\n$netifcons"
-        return
-    }
+    set netifcons [apol_GetNetifcons $netif]
     set text "network interface $netif ([llength $netifcons] context"
     if {[llength $netifcons] != 1} {
         append text s
@@ -520,39 +514,30 @@ proc Apol_NetContexts::netifcon_popup {netif} {
 proc Apol_NetContexts::netifcon_runSearch {} {
     variable vals
     variable widgets
-    if {$vals(netifcon:dev_enable) && $vals(netifcon:dev) == {}} {
-        tk_messageBox -icon error -type ok -title "Error" -message "No device selected."
-        return
+    if {$vals(netifcon:dev_enable)} {
+        if {[set dev $vals(netifcon:dev)] == {}} {
+            tk_messageBox -icon error -type ok -title "Error" -message "No device selected."
+            return
+        }
+    } else {
+        set dev {}
     }
     if {[Apol_Widget::getContextSelectorState $widgets(netifcon:ifcon)]} {
         foreach {ifcon_context ifcon_range_match} [Apol_Widget::getContextSelectorValue $widgets(netifcon:ifcon)] {break}
     } else {
         set ifcon_context {}
+        set ifcon_range_match 0
     }
     if {[Apol_Widget::getContextSelectorState $widgets(netifcon:msgcon)]} {
         foreach {msgcon_context msgcon_range_match} [Apol_Widget::getContextSelectorValue $widgets(netifcon:msgcon)] {break}
     } else {
         set msgcon_context {}
+        set msgcon_range_match 0
     }
-    if {[catch {apol_GetNetifcons} orig_netifcons]} {
-        tk_messageBox -icon error -type ok -title "Error" -message "Error obtaining netifcons list:\n$orig_netifcons"
+    if {[catch {apol_GetNetifcons $dev $ifcon_context $ifcon_range_match \
+                    $msgcon_context $msgcon_range_match} netifcons]} {
+        tk_messageBox -icon error -type ok -title "Error" -message "Error obtaining netifcons list:\n$netifcons"
         return
-    }
-
-    # apply filters to list
-    set netifcons {}
-    foreach n $orig_netifcons {
-        foreach {dev ifcon msgcon} $n {break}
-        if {$vals(netifcon:dev_enable) && $dev != $vals(netifcon:dev)} {
-            continue
-        }
-        if {$ifcon_context != {} && ![apol_CompareContexts $ifcon_context $ifcon $ifcon_range_match]} {
-            continue
-        }
-        if {$msgcon_context != {} && ![apol_CompareContexts $msgcon_context $msgcon $msgcon_range_match]} {
-            continue
-        }
-        lappend netifcons $n
     }
 
     # now display results
@@ -566,7 +551,6 @@ proc Apol_NetContexts::netifcon_runSearch {} {
     }
     Apol_Widget::appendSearchResultText $widgets(results) $results
 }
-
 
 
 #### nodecon private functions below ####

@@ -197,16 +197,19 @@ proc Apol_Context_Dialog::_okay {dialog} {
     } else {
         set range {}
     }
-    if {[ApolTop::is_policy_open]} {
-        if {[catch {apol_IsValidPartialContext [list $user $role $type $range]} val]} {
-            tk_messageBox -icon error -type ok -title "Could Not Validate Context" \
-                -message "The context could not be validated:\n$val"
-            return
-        } elseif {$val == 0} {
-            tk_messageBox -icon error -type ok -title "Could Not Validate Context" \
-                -message "The selected context is not valid for the current policy."
-            return
-        }
+    if {![ApolTop::is_policy_open]} {
+        tk_messageBox -icon error -type ok -title "Could Not Validate Context" \
+            -message "The context could not be validated because no policy is open."
+        return
+    }
+    if {[catch {apol_IsValidPartialContext [list $user $role $type $range]} val]} {
+        tk_messageBox -icon error -type ok -title "Could Not Validate Context" \
+            -message "The context could not be validated:\n$val"
+        return
+    } elseif {$val == 0} {
+        tk_messageBox -icon error -type ok -title "Could Not Validate Context" \
+            -message "The selected context is not valid for the current policy."
+        return
     }
     $dialog enddialog 0
 }
