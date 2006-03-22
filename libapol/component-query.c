@@ -108,6 +108,12 @@ struct apol_portcon_query {
 	unsigned int flags;
 };
 
+struct apol_netifcon_query {
+	char *dev;
+	apol_context_t *if_context, *msg_context;
+	unsigned int if_flags, msg_flags;
+};
+
 /******************** misc helpers ********************/
 
 /**
@@ -154,7 +160,9 @@ static void apol_regex_destroy(regex_t **regex)
  */
 static int apol_query_set(apol_policy_t *p, char **query_name, regex_t **regex, const char *name)
 {
-	apol_regex_destroy(regex);
+	if (regex != NULL) {
+		apol_regex_destroy(regex);
+	}
 	free(*query_name);
 	*query_name = NULL;
 	if (name != NULL && ((*query_name) = apol_strdup(p, name)) == NULL) {
@@ -221,7 +229,7 @@ static int apol_compare(apol_policy_t *p, const char *target, const char *name, 
 	if (name == NULL || *name == '\0') {
 		return 1;
 	}
-	if (flags & APOL_QUERY_REGEX) {
+	if ((flags & APOL_QUERY_REGEX) && regex != NULL) {
 		if (*regex == NULL) {
 			if ((*regex = malloc(sizeof(**regex))) == NULL ||
 			    regcomp(*regex, name, REG_EXTENDED | REG_NOSUB)) {
@@ -402,6 +410,32 @@ static int apol_compare_cat(apol_policy_t *p,
 	compval = apol_compare_iter(p, alias_iter, name, flags, cat_regex);
 	sepol_iterator_destroy(&alias_iter);
 	return compval;
+}
+
+/**
+ * Convenience function that compares a sepol_context_struct_t to a
+ * apol_context_t, based upon the MLS range match given by flags.  If
+ * search is NULL then the comparison always succeeds.
+ *
+ * @param p Policy within which to look up types.
+ * @param target Target context to compare.
+ * @param name Source context from which to compare.
+ * @param flags Gives how to match MLS ranges within the contexts.
+ *
+ * @return 1 If comparison succeeds, 0 if not; < 0 on error.
+ */
+static int apol_compare_context(apol_policy_t *p, sepol_context_struct_t *target,
+				apol_context_t *search, unsigned int flags)
+{
+	apol_context_t *apol_context;
+	int retval;
+	if (search == NULL) {
+		return 1;
+	}
+	apol_context = apol_context_create_from_sepol_context(p, target);
+	retval = apol_context_compare(p, apol_context, search, flags);
+	apol_context_destroy(&apol_context);
+	return retval;
 }
 
 /******************** types ********************/
@@ -1454,19 +1488,13 @@ int apol_get_portcon_by_query(apol_policy_t *p,
                             (po->proto >= 0 && ((uint8_t) po->proto) != proto)) {
                                 continue;
                         }
-                        if (po->context != NULL) {
-                                apol_context_t *apol_context;
-                                apol_context = apol_context_create_from_sepol_context(p, context);
-                                retval2 = apol_context_compare(p, apol_context,
-                                                               po->context, po->flags);
-                                apol_context_destroy(&apol_context);
-                                if (retval2 < 0) {
-                                        goto cleanup;
-                                }
-                                else if (retval == 0) {
-                                        continue;
-                                }
-                        }
+			retval2 = apol_compare_context(p, context, po->context, po->flags);
+			if (retval2 < 0) {
+				goto cleanup;
+			}
+			else if (retval2 == 0) {
+				continue;
+			}
                 }
                 if (apol_vector_append(*v, portcon)) {
                         ERR(p, "Out of memory!");
@@ -1535,3 +1563,118 @@ int apol_portcon_query_set_context(apol_policy_t *p __attribute__ ((unused)),
 	po->flags = (po->flags & ~APOL_QUERY_FLAGS) | range_match;
 	return 0;
 }
+
+/******************** netifcon queries ********************/
+
+int apol_get_netifcon_by_query(apol_policy_t *p,
+			       apol_netifcon_query_t *n,
+			       apol_vector_t **v)
+{
+	sepol_iterator_t *iter;
+	int retval = -1, retval2;
+	*v = NULL;
+	if (sepol_policydb_get_netifcon_iter(p->sh, p->p, &iter) < 0) {
+		return -1;
+	}
+	if ((*v = apol_vector_create()) == NULL) {
+		ERR(p, "Out of memory!");
+		goto cleanup;
+	}
+	for ( ; !sepol_iterator_end(iter); sepol_iterator_next(iter)) {
+		sepol_netifcon_t *netifcon;
+		if (sepol_iterator_get_item(iter, (void **) &netifcon) < 0) {
+			goto cleanup;
+		}
+		if (n != NULL) {
+			char *name;
+			sepol_context_struct_t *ifcon, *msgcon;
+			if (sepol_netifcon_get_name(p->sh, p->p, netifcon, &name) < 0 ||
+			    sepol_netifcon_get_if_con(p->sh, p->p, netifcon, &ifcon) < 0 ||
+			    sepol_netifcon_get_msg_con(p->sh, p->p, netifcon, &msgcon) < 0) {
+				goto cleanup;
+			}
+			retval2 = apol_compare(p, name, n->dev, 0, NULL);
+			if (retval2 < 0) {
+				goto cleanup;
+			}
+			else if (retval2 == 0) {
+				continue;
+			}
+			retval2 = apol_compare_context(p, ifcon, n->if_context, n->if_flags);
+			if (retval2 < 0) {
+				goto cleanup;
+			}
+			else if (retval2 == 0) {
+				continue;
+			}
+			retval2 = apol_compare_context(p, msgcon, n->msg_context, n->msg_flags);
+			if (retval2 < 0) {
+				goto cleanup;
+			}
+			else if (retval2 == 0) {
+				continue;
+			}
+		}
+		if (apol_vector_append(*v, netifcon)) {
+			ERR(p, "Out of memory!");
+			goto cleanup;
+		}
+	}
+
+	retval = 0;
+ cleanup:
+	if (retval != 0) {
+		apol_vector_destroy(v, NULL);
+	}
+	sepol_iterator_destroy(&iter);
+	return retval;
+}
+
+apol_netifcon_query_t *apol_netifcon_query_create(void)
+{
+	return calloc(1, sizeof(apol_netifcon_query_t));
+}
+
+void apol_netifcon_query_destroy(apol_netifcon_query_t **n)
+{
+	if (*n != NULL) {
+		apol_context_destroy(&((*n)->if_context));
+		apol_context_destroy(&((*n)->msg_context));
+		free(*n);
+		*n = NULL;
+	}
+}
+
+int apol_netifcon_query_set_device(apol_policy_t *p,
+				   apol_netifcon_query_t *n, const char *dev)
+{
+	return apol_query_set(p, &n->dev, NULL, dev);
+}
+
+
+int apol_netifcon_query_set_if_context(apol_policy_t *p __attribute__ ((unused)),
+				       apol_netifcon_query_t *n,
+				       apol_context_t *context,
+				       unsigned int range_match)
+{
+	if (n->if_context != NULL) {
+		apol_context_destroy(&n->if_context);
+	}
+	n->if_context = context;
+	n->if_flags = (n->if_flags & ~APOL_QUERY_FLAGS) | range_match;
+	return 0;
+}
+
+int apol_netifcon_query_set_msg_context(apol_policy_t *p __attribute__ ((unused)),
+					apol_netifcon_query_t *n,
+					apol_context_t *context,
+					unsigned int range_match)
+{
+	if (n->msg_context != NULL) {
+		apol_context_destroy(&n->msg_context);
+	}
+	n->msg_context = context;
+	n->msg_flags = (n->msg_flags & ~APOL_QUERY_FLAGS) | range_match;
+	return 0;
+}
+
