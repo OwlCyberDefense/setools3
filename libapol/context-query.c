@@ -74,9 +74,15 @@ apol_context_t *apol_context_create_from_sepol_context(apol_policy_t *p, sepol_c
 	}
 	if (sepol_user_datum_get_name(p->sh, p->p, user, &user_name) < 0 ||
 	    sepol_role_datum_get_name(p->sh, p->p, role, &role_name) < 0 ||
-	    sepol_type_datum_get_name(p->sh, p->p, type, &type_name) < 0 ||
-	    (apol_range = apol_mls_range_create_from_sepol_mls_range(p, range)) == NULL) {
+	    sepol_type_datum_get_name(p->sh, p->p, type, &type_name) < 0) {
 		goto err;
+	}
+	if (sepol_policydb_mls_enabled(p->p)) {
+		/* if the policy is MLS then convert the range, else
+		 * rely upon the default value of NULL */
+		if ((apol_range = apol_mls_range_create_from_sepol_mls_range(p, range)) == NULL) {
+		       goto err;
+		}
 	}
 	if (apol_context_set_user(p, c, user_name) < 0 ||
 	    apol_context_set_role(p, c, role_name) < 0 ||
