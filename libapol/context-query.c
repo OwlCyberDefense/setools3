@@ -104,6 +104,7 @@ void apol_context_destroy(apol_context_t **context)
 		free((*context)->role);
 		free((*context)->type);
 		apol_mls_range_destroy(&((*context)->range));
+		free(*context);
 		*context = NULL;
 	}
 }
