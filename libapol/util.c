@@ -285,6 +285,48 @@ int init_rbac_bool(rbac_bool_t *b, policy_t *policy, bool_t roles)
 	return 0;
 }
 
+/* performs the logical operation b1[i] |= b2[i] */
+int rbac_bool_or_eq(rbac_bool_t *b1, rbac_bool_t *b2, policy_t *policy)
+{
+	int i;
+
+	if (!b1 || !b1->allow || !b1->trans || !b2 || !b2->allow || !b2->trans || !policy) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	for (i= 0; i < policy->num_role_allow; i++) {
+		b1->allow[i] |= b2->allow[i];
+	}
+
+	for (i = 0; i < policy->num_role_trans; i++) {
+		b1->trans[i] |= b2->trans[i];
+	}
+
+	return 0;
+}
+
+/* performs the logical operation b1[i] &= b2[i] */
+int rbac_bool_and_eq(rbac_bool_t *b1, rbac_bool_t *b2, policy_t *policy)
+{
+	int i;
+
+	if (!b1 || !b1->allow || !b1->trans || !b2 || !b2->allow || !b2->trans || !policy) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	for (i= 0; i < policy->num_role_allow; i++) {
+		b1->allow[i] &= b2->allow[i];
+	}
+
+	for (i = 0; i < policy->num_role_trans; i++) {
+		b1->trans[i] &= b2->trans[i];
+	}
+
+	return 0;
+}
+
 /* make the boolean array TRUE for all entries */
 int all_true_rules_bool(rules_bool_t *rules_b, policy_t *policy)
 {
@@ -350,6 +392,22 @@ int all_true_rbac_bool(rbac_bool_t *b, policy_t *policy)
 	
 	assert(b->trans != NULL);
 	memset(b->trans, 1, policy->num_role_trans * sizeof(bool_t));
+	b->t_cnt = policy->num_role_trans;
+	
+	return 0;
+}
+
+int all_false_rbac_bool(rbac_bool_t *b, policy_t *policy)
+{
+	if(b == NULL)
+		return -1;
+	
+	assert(b->allow != NULL);
+	memset(b->allow, 0, policy->num_role_allow* sizeof(bool_t));
+	b->a_cnt = policy->num_role_allow;
+	
+	assert(b->trans != NULL);
+	memset(b->trans, 0, policy->num_role_trans * sizeof(bool_t));
 	b->t_cnt = policy->num_role_trans;
 	
 	return 0;
