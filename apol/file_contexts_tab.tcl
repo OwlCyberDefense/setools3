@@ -449,9 +449,9 @@ proc Apol_File_Contexts::create {nb} {
     set status_text [frame $status_frame.t]
     label $status_text.l -text "Loaded Index:"
     set status1 [label $status_text.t -textvariable Apol_File_Contexts::opts(statusText)]
-    trace add variable Apol_File_Contexts::opts(indexFilename) write \
-        [list Apol_File_Contexts::changeStatusLabel $status1]
     set status2 [label $status_text.t2 -textvariable Apol_File_Contexts::opts(statusText2) -fg red]
+    trace add variable Apol_File_Contexts::opts(indexFilename) write \
+        [list Apol_File_Contexts::changeStatusLabel $status1 $status2]
     grid $status_text.l $status1 -sticky w
     grid x $status2 -sticky w -pady 2
     pack $status_buttons $status_text -side left -anchor nw -padx 2 -pady 4
@@ -579,17 +579,21 @@ proc Apol_File_Contexts::create {nb} {
     return $frame
 }
 
-proc Apol_File_Contexts::changeStatusLabel {label name1 name2 opt} {
+proc Apol_File_Contexts::changeStatusLabel {label1 label2 name1 name2 opt} {
     variable opts
-    set opts(statusText2) {}
     if {$opts(indexFilename) == ""} {
         set opts(statusText) "No Index File Loaded"
-        $label configure -fg red
+        $label1 configure -fg red
+        set opts(statusText2) {}
     } else {
         set opts(statusText) $opts(indexFilename)
-        $label configure -fg black
-        if {!$opts(fc_is_mls)} {
+        $label1 configure -fg black
+        if {$opts(fc_is_mls)} {
+            set opts(statusText2) "Database contexts include MLS ranges."
+            $label2 configure -fg black
+        } else {
             set opts(statusText2) "Database contexts do not include MLS ranges."
+            $label2 configure -fg red
         }
     }
 }
