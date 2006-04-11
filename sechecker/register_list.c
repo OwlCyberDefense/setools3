@@ -33,6 +33,7 @@ static sechk_module_name_reg_t sechk_module_register_list[] = {
 	{"rules_exp_nothing",	&rules_exp_nothing_register},
 	{"spurious_audit",	&spurious_audit_register},
 	{"types_wo_allow",	&types_wo_allow_register},
+	{"unreachable_doms",    &unreachable_doms_register},
 	{"users_wo_roles",	&users_wo_roles_register},
 	/* TODO: add additional register addresses here in alphabetical order */
 

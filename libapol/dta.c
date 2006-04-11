@@ -262,6 +262,8 @@ void dta_trans_destroy(dta_trans_t **trans)
 		next = trx->next;
 		free(trx);
 	}
+
+	*trans = NULL;
 }
 
 void dta_table_reset_used_flags(dta_table_t *table)

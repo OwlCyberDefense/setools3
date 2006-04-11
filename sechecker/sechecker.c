@@ -19,6 +19,9 @@
 #include <util.h>
 #include <dirent.h>
 #include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #ifdef LIBSEFS
 #include "file_contexts.h"
 #endif
@@ -679,6 +682,7 @@ int sechk_lib_print_modules_report(sechk_lib_t *lib)
 bool_t sechk_lib_check_requirement(sechk_name_value_t *req, sechk_lib_t *lib)
 {
 	int pol_ver = POL_VER_UNKNOWN;
+	struct stat stat_buf;
 
 	if (!req) {
 		fprintf(stderr, "Error: invalid requirement\n");
@@ -735,7 +739,8 @@ bool_t sechk_lib_check_requirement(sechk_name_value_t *req, sechk_lib_t *lib)
 				fprintf(stderr, "Error: module requires newer policy version\n");
 			return FALSE;
 		}
-	} else if (!strcmp(req->name, SECHK_PARSE_REQUIRE_SELINUX)) {
+	} 
+	else if (!strcmp(req->name, SECHK_PARSE_REQUIRE_SELINUX)) {
 #ifdef LIBSELINUX
 		if (!is_selinux_enabled()) {
 			/* as long as we're not in quiet mode print output */
@@ -770,7 +775,17 @@ bool_t sechk_lib_check_requirement(sechk_name_value_t *req, sechk_lib_t *lib)
 			fprintf(stderr, "Error: module requires selinux system, but SEChecker was not built to support system checks\n");
 		return FALSE;
 #endif
-	} else {
+	} else if (!strcmp(req->name, SECHK_PARSE_REQUIRE_DEF_CTX)) {
+		if (stat(selinux_default_context_path(), &stat_buf) < 0) {
+			/* as long as we're not in quiet mode print output */
+			if (lib->outputformat & ~(SECHK_OUT_QUIET))
+				fprintf(stderr, "Error: module requires a default contexts file\n");
+			return FALSE;
+		}
+
+		return TRUE;
+	}
+	else {
 		/* as long as we're not in quiet mode print output */
 		if (lib->outputformat & ~(SECHK_OUT_QUIET))			
 			fprintf(stderr, "Error: unrecognized requirement\n");
