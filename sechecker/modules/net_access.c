@@ -386,7 +386,7 @@ int net_access_print_output(sechk_module_t *mod, policy_t *policy)
 		return 0; /* not an error - no output is requested */
 
 	if (outformat & SECHK_OUT_STATS) {
-		printf("Found %i network domains with insuffifcient permissions.\n", mod->result->num_items);
+		printf("Found %i network domains with insufficient permissions.\n", mod->result->num_items);
 	}
 
 	/* Print current permissions then the permissions that are missing */
