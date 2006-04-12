@@ -65,6 +65,7 @@ typedef struct replcon_context {
 	char *user;
 	char *role;
 	char *type;
+	char *mls;
 } replcon_context_t;
 
 typedef struct replcon_context_pair {
@@ -73,6 +74,7 @@ typedef struct replcon_context_pair {
 } replcon_context_pair_t;
 
 typedef struct replcon_info {
+	unsigned char use_raw;          /* whether to use libselinux raw functions */
 	unsigned char recursive;
 	unsigned char verbose;
 	unsigned char quiet;
@@ -97,7 +99,16 @@ char **mounts;
 unsigned int num_mounts;
 sefs_hash_t *hashtab;
 
+/* use weak bindings to allow runtime checking for raw fcns */
+/* the raw functions allow access to the raw context not the context
+   returned by the translation library */
+extern int lgetfilecon_raw(const char *, security_context_t *)
+	__attribute__((weak));
+extern int lsetfilecon_raw(const char *, security_context_t)
+	__attribute__((weak));
+
 static struct option const longopts[] = {
+        {"raw", no_argument, NULL, 'a'},
 	{"recursive", no_argument, NULL, 'r'},
 	{"object", required_argument, NULL, 'o'},
 	{"context", required_argument, NULL, 'c'},
@@ -141,6 +152,10 @@ replcon_context_free(replcon_context_t *context)
 		free(context->type);
 		context->type = NULL;
 	}
+	if (context->mls != NULL) {
+		free(context->mls);
+		context->mls = NULL;
+	}
 }
 
 /*
@@ -161,65 +176,128 @@ replcon_context_destroy(replcon_context_t * context)
  *
  * Creates a new replcon_context_t object using the specified string
  *
- * NOTE: Only checks the string for the format "xxx:xxx:xxx".
+ * NOTE: Checks the string for the format "xxx:xxx:xxx[:xxx]".  Will create
+ *       a 4 part context if mls is in use.
  *       Use replcon_is_valid_context_format for more robust
- *	 constext string validation.
+ *	 context string validation.
  */
 replcon_context_t *
 replcon_context_create(const char *context_str)
 {
 	replcon_context_t *context = NULL;
 	char **parts = NULL;
-	char *tokens = NULL, *tokens_orig = NULL;
-	int i = 0;
+	char *tokens = NULL;
+	char *tokens_orig = NULL;
+	const char *str = NULL;
+	int i = 0, context_size = is_selinux_mls_enabled() ? 4 : 3;
+	int num_colon = 0;
 
 	assert(context_str != NULL);
+	str = context_str;
+
+	while(str[i]) {
+		if (str[i] == ':')
+			num_colon++;
+		i++;
+	}
+
 	if ((context = malloc(sizeof (replcon_context_t))) == NULL) {
 		fprintf(stderr, "Out of memory.\n");
 		goto err;
 	}
-	if ((parts = malloc(3 * sizeof(char*))) == NULL) {
+	memset(context, 0, sizeof(replcon_context_t));
+
+	if ((parts = malloc(context_size * sizeof(char*))) == NULL) {
 		fprintf(stderr, "Out of memory.\n");
 		goto err;
 	}
-
-	if ((tokens_orig = tokens = strdup(context_str)) == NULL) {
+	memset(parts, 0, sizeof(char *) * context_size);
+	
+	tokens_orig = tokens = strdup(context_str);
+	if (tokens == NULL) {
 		fprintf(stderr, "Out of memory.\n");
 		goto err;
 	}
 	
-        while (i < 3) {
-        	if ((parts[i] = strsep(&tokens, ":")) == NULL) {
-        		fprintf(stderr, "Invalid context format.\n");
+	i = 0;
+	while (i < 3 && (parts[i] = strsep(&tokens, ":")) != NULL) {
+		i++;
+	}
+	
+	if (!parts[0]) {
+		if ((context->user = strdup("")) == NULL) {
+			fprintf(stderr, "Out of memory.\n");
 			goto err;
 		}
-       	       	i++;
-        }
-        
-	if ((context->user = strdup(parts[0])) == NULL) {
+	} else if ((context->user = strdup(parts[0])) == NULL) {
 		fprintf(stderr, "Out of memory.\n");
 		goto err;
 	}
-	if ((context->role = strdup(parts[1])) == NULL) {
-		fprintf(stderr, "Out of memory.\n");
-		goto err;
-	}
-	if ((context->type = strdup(parts[2])) == NULL) {
+	if (!parts[1]) {
+		if ((context->role = strdup("")) == NULL) {
+			fprintf(stderr, "Out of memory.\n");
+			goto err;
+		}
+	} else if ((context->role = strdup(parts[1])) == NULL) {
 		fprintf(stderr, "Out of memory.\n");
 		goto err;
 	}
 	
-	free(tokens_orig);
-	free(parts);
+	if (!parts[2]) {
+		if ((context->type = strdup("")) == NULL) {
+			fprintf(stderr, "Out of memory.\n");
+			goto err;
+		}
+	} else if ((context->type = strdup(parts[2])) == NULL) {
+		fprintf(stderr, "Out of memory.\n");
+		goto err;
+	}
+	
+	/* if selinux is enabled then tokens should point to whatever is left 
+	   of the original string after the first 3 parts of the context */
+	if (is_selinux_mls_enabled()) {
+		if (tokens) {
+			if ((context->mls = strdup(tokens)) == NULL) {
+				fprintf(stderr, "Out of memory.\n");
+				goto err;
+			}
+		} else {
+			if ((context->mls = strdup("")) == NULL) {
+				fprintf(stderr, "Out of memory.\n");
+				goto err;
+			}
+		}
+	}
+	if (parts) free(parts);
+	if (tokens_orig) free(tokens_orig);
 
 	return context;
 
 	err:
-	  if (tokens_orig) free (tokens_orig);
 	  if (parts) free (parts);
+	  if (tokens_orig) free(tokens_orig);
 	  replcon_context_destroy(context);
 	  fprintf(stderr, "Could not create file context from %s...\n", context_str);
 	  return NULL;
+}
+
+/*
+ * replcon_context_mls_set
+ *
+ * Sets the mls member of a replcon_context_t object using the specified argument
+ */
+int replcon_context_mls_set(replcon_context_t *context, const char *mls)
+{
+	assert(context != NULL);
+	if (context->mls != NULL) {
+		free(context->mls);
+		context->mls = NULL;
+	}
+
+	if ((context->mls = strdup(mls)) == NULL)
+		return -1;
+	
+	return 0;
 }
 
 /*
@@ -272,15 +350,14 @@ int replcon_context_type_set(replcon_context_t *context, const char *type)
 		free(context->type);
 		context->type = NULL;
 	}
-
 	if ((context->type = strdup(type)) == NULL)
 		return -1;
-
 	return 0;
 }
 
 /*
  * get_security_context
+ *
  *
  * Assembles a security_context_t from the information in the replcon context
  */
@@ -290,18 +367,33 @@ get_security_context(const replcon_context_t *context)
 	security_context_t sec_con;
 	
 	assert(context != NULL);
-	if ((sec_con = malloc(strlen(context->user) +
-			      strlen(context->role) +
-			      strlen(context->type) +
-			      3)) == NULL)
-		return NULL;
-
+	
+	if (is_selinux_mls_enabled()) {
+		if ((sec_con = (security_context_t)calloc(1,
+							  (strlen(context->user) + 
+							   strlen(context->role) + 
+							   strlen(context->type) +
+							   strlen(context->mls) + 
+							   4))) == NULL)
+			return NULL;
+	} else {
+		if ((sec_con = (security_context_t)calloc(1,
+							  (strlen(context->user) + 
+							   strlen(context->role) + 
+							   strlen(context->type) + 
+							   3))) == NULL)
+			return NULL;
+	}
+	
 	strcpy(sec_con, (context->user));
 	strcat(sec_con, ":");
 	strcat(sec_con, (context->role));
 	strcat(sec_con, ":");
 	strcat(sec_con, (context->type));
-
+	if (is_selinux_mls_enabled()) {
+		strcat(sec_con, ":");
+		strcat(sec_con, (context->mls));
+	}
 	return sec_con;
 }
 
@@ -338,6 +430,7 @@ replcon_usage(const char *program_name, int brief)
 	printf("  -c,  --context=CONTEXT  Specify context to search for, see below.\n");
 	printf("  -o,  --object=OBJECT    Restrict search to the specified object class.\n");
 #endif
+	printf("  -a,  --raw              Use raw contexts.\n");
 	printf("  -r,  --recursive        Recurse through directories.\n");
 	printf("  -s,  --stdin            Read FILENAMES from standard input.\n");
 	printf("  -q,  --quiet            Suppress progress output.\n");
@@ -345,13 +438,51 @@ replcon_usage(const char *program_name, int brief)
 	printf("  -v,  --version          Display version information and exit.\n");
 	printf("  -h,  --help             Display this help and exit.\n");
 	printf("\n");
-	printf("A context may be specified as a colon separated list of user, role, and type\n");
-	printf("as follows - user_u:object_r:user_t. The tool will automatically match a user,\n");
-	printf("role, or type that is not specified, with any other user, role, or type.\n");
-	printf("For example ::user_t specifies any context that has user_t as the type.\n");
+#ifdef FINDCON
+	if(is_selinux_mls_enabled()) {
+		printf("A context may be specified as a colon separated list of user, role, type, and mls security range\n");
+		printf("as follows - user_u:object_r:user_t:s0.  A single colon can be used to match any context\n");
+                printf("so to find all contexts you only need to type : .  The tool will automatically match a user,\n");
+		printf("role, type, or range that is not specified, with any other user, role, type, or range.\n");
+		printf("The normal matching is done using the translation library if it is enabled.  If you want\n");
+		printf("the tool to match raw contexts please use --raw or -a\n");
+		printf("Search examples:\n");
+		printf("\tfindcon -c : .\n\t\tFind every context in the current directory\n");
+		printf("\tfindcon -c user_u: .\n\t\tFind every context that contains user_u in the current directory\n");
+		printf("\tfindcon -c :::s0 .\n\t\tFind every context with MLS range s0 in the current directory\n");
+	} else {
+		printf("A context may be specified as a colon separated list of user, role, and type\n");
+		printf("as follows - user_u:object_r:user_t. The tool will automatically match a user,\n");
+		printf("role, or type that is not specified, with any other user, role, or type.\n");
+		printf("Search examples:\n");
+		printf("\tfindcon -c : .\n\t\tFind every context in the current directory\n");
+		printf("\tfindcon -c :role_r .\n\t\tFind every context that contains role_r in the current directory\n");
+		printf("\tfindcon -c user_u: .\n\t\tFind every context that contains user_u in the current directory\n");
+	}
+#else
+	if(is_selinux_mls_enabled()) {
+		printf("A context may be specified as a colon separated list of user, role, type, and mls security range\n");
+		printf("as follows - user_u:object_r:user_t:s0.  A single colon can be used to match any context\n");
+                printf("so to find all contexts you only need to type : .  The tool will automatically match a user,\n");
+		printf("role, type, or range that is not specified, with any other user, role, type, or range.\n");
+		printf("The normal matching is done using the translation library if it is enabled.  If you want\n");
+		printf("the tool to match raw contexts please use --raw or -a\n");
+		printf("Search examples:\n");
+		printf("\treplcon -c : ::type_t .\n\t\tReplace every context in the current directory with type type_t\n");
+		printf("\treplcon -c user_u: :role_r .\n\t\tReplace every context that contains user_u in the current directory with role role_r\n");
+		printf("\treplcon -c ::type_t:s0 :::s0:c0\n\t\tReplace every context with type type_t and MLS range s0 in the current directory with MLS range s0:c0\n");
+	} else {
+		printf("A context may be specified as a colon separated list of user, role, and type\n");
+		printf("as follows - user_u:object_r:user_t. The tool will automatically match a user,\n");
+		printf("role, or type that is not specified, with any other user, role, or type.\n");
+		printf("Search examples:\n");
+		printf("\treplcon -c : ::type_t .\n\t\tReplace every context in the current directory with type type_t\n");
+		printf("\treplcon -c user_u: :role_r .\n\t\tReplace every context that contains user_u in the current directory with role role_r\n");
+		printf("\treplcon -c :role_r :newrole_r .\n\t\tReplace every context that contains role_r in the current directory with newrole_r\n");
+	}
+#endif
 	printf("\nThe special string 'unlabeled' can be provided to the -c option in order\n");
 	printf("to find or replace files that have no label.\n\n");
-	
 	printf("Valid OBJECT classes to specify include: \n");
 	array = sefs_get_valid_object_classes(&size);
 	sefs_double_array_print(array,size);
@@ -368,6 +499,7 @@ replcon_usage(const char *program_name, int brief)
 void replcon_info_init(replcon_info_t *info)
 {
 	assert(info != NULL);
+	info->use_raw = 0;
 	info->recursive = 0;
 	info->quiet = 0;
 	info->verbose = 0;
@@ -470,13 +602,16 @@ int replcon_is_valid_context_format(const char *context_str)
 		if (context_str[i] == ':')
 			count++;
 	}
-
-	if (count == 2)
-		return TRUE;
-	else
-		return FALSE;
+	
+	if (is_selinux_mls_enabled()){		
+		if (count > 5)
+			return FALSE;
+	} else {
+		if (count > 2)
+			return FALSE;
+	}
+	 return TRUE;
 }
-
 
 /*
  * replcon_info_add_object_class
@@ -574,9 +709,12 @@ int replcon_info_add_context_pair(replcon_info_t *info, const char *old, const c
 		goto err;
 	}
 
-	if (!strcasecmp("unlabeled", old))
-		context = replcon_context_create("!:!:!");
-	else
+	if (!strcasecmp("unlabeled", old)) {
+		if (is_selinux_mls_enabled()) 
+			context = replcon_context_create("!:!:!:!");
+		else 
+			context = replcon_context_create("!:!:!");		
+	} else
 		context = replcon_context_create(old);
 	if (context != NULL)
 		info->pairs[info->num_pairs].old_context = (*context);
@@ -588,7 +726,6 @@ int replcon_info_add_context_pair(replcon_info_t *info, const char *old, const c
 	/* we use free here, because calling replcon_context_destroy would
 	 * blow away the strings we just saved in info->pairs */
 	free(context);
-
 	if ((context = replcon_context_create(new)) != NULL)
 		info->pairs[info->num_pairs].new_context = (*context);
 	else {
@@ -626,9 +763,12 @@ int replcon_info_add_context(replcon_info_t *info, const char *con)
 		goto err;
 	}
 
-	if (!strcasecmp("unlabeled", con))
-		context = replcon_context_create("!:!:!");
-	else
+	if (!strcasecmp("unlabeled", con)) {
+		if (is_selinux_mls_enabled()) 
+			context = replcon_context_create("!:!:!:!");
+		else 
+			context = replcon_context_create("!:!:!");
+	} else
 		context = replcon_context_create(con);
 	if (context) {
 		info->contexts =
@@ -694,7 +834,7 @@ int replcon_info_add_filename(replcon_info_t *info, const char *file)
 unsigned char
 replcon_context_equal(const replcon_context_t *context, const replcon_context_t *patterns)
 {
-	unsigned char user_match, role_match, type_match;
+	unsigned char user_match, role_match, type_match, mls_match;
 
 	assert((context != NULL) && (patterns != NULL));
 	user_match =
@@ -709,8 +849,19 @@ replcon_context_equal(const replcon_context_t *context, const replcon_context_t 
 	    ((fnmatch(patterns->type, context->type, 0) == 0) ||
 	     (strcmp(context->type, "") == 0) ||
 	     (strcmp(patterns->type, "") == 0));
+	/* set mls_match to return true, if we have mls and no match
+	   it will be set to FNM_NOMATCH 
+	   If pattern->mls is "" then we just match everything
+	   If pattern->mls and context->mls match return true
+	*/
+	mls_match = 1;
+	if (is_selinux_mls_enabled()) {
+		mls_match = ((strcmp(patterns->mls, "") == 0) ||
+			     (fnmatch(patterns->mls, context->mls, 0) == 0)
+			);
+	} 
+	return (user_match && role_match && type_match && mls_match);
 
-	return (user_match && role_match && type_match);
 }
 
 #ifndef FINDCON
@@ -720,12 +871,14 @@ replcon_context_equal(const replcon_context_t *context, const replcon_context_t 
  * Change the context of the file, as long as it meets the specifications in replcon_info
  *
  * The caller must pass a valid filename and statptr
+ * If the caller wants to use raw, the passed in context will try to match the raw context
+ * of the file not the translated context returned by libsetrans
  */
 int
 replcon_file_context_replace(const char *filename, const struct stat64 *statptr,
 			     int fileflags, struct FTW *pfwt)
 {
-	int file_class, i;
+	int file_class, i, ret;
 	unsigned char match = FALSE;
 	replcon_context_t *replacement_con = NULL, *original_con = NULL, *new_con = NULL;
 	security_context_t old_file_con, new_file_con = NULL;
@@ -736,23 +889,35 @@ replcon_file_context_replace(const char *filename, const struct stat64 *statptr,
 	file_class = sefs_get_file_class(statptr);
 	if (!replcon_info_has_object_class(info, file_class))
 		return 0;
-
-	if (lgetfilecon(filename, &old_file_con) <= 0) {
+	if (lgetfilecon_raw && replcon_info.use_raw) 
+		ret = lgetfilecon_raw(filename, &old_file_con);
+	else
+		ret = lgetfilecon(filename, &old_file_con);
+	if (ret <= 0) {
 		if (errno == ENODATA) {
-			if ((old_file_con = strdup("!:!:!")) == NULL)
-				goto err;
+			if (is_selinux_mls_enabled()) {
+				if ((old_file_con = strdup("!:!:!:!")) == NULL)
+					goto err;
+			} else {
+				if ((old_file_con = strdup("!:!:!")) == NULL)
+					goto err;
+			}
 		} else {
 			fprintf(stderr, "Unable to get file context for %s, skipping...\n", filename);
 			return 0;
 		}
 	}
-
 	if ((original_con = replcon_context_create(old_file_con)) == NULL)
 		goto err;
 
-	if ((replacement_con = replcon_context_create("::")) == NULL)
-		goto err;
-
+	if (is_selinux_mls_enabled()) {
+		if ((replacement_con = replcon_context_create(":::")) == NULL)
+			goto err;
+	} else {
+		if ((replacement_con = replcon_context_create("::")) == NULL)
+			goto err;
+	}
+       
 	for (i = 0; i < info->num_pairs; i++) {
 		if (replcon_context_equal(original_con, &(info->pairs[i].old_context))) {
 			match = TRUE;
@@ -763,6 +928,10 @@ replcon_file_context_replace(const char *filename, const struct stat64 *statptr,
 				replcon_context_role_set(replacement_con, new_con->role);
 			if (strcmp(new_con->type, "") != 0)
 				replcon_context_type_set(replacement_con, new_con->type);
+			if (is_selinux_mls_enabled()) {
+				if (strcmp(new_con->mls, "") != 0)
+					replcon_context_mls_set(replacement_con, new_con->mls);
+			}
 		}
 	}
 
@@ -780,18 +949,24 @@ replcon_file_context_replace(const char *filename, const struct stat64 *statptr,
 			replcon_context_role_set(replacement_con, original_con->role);
 		if (strcmp(replacement_con->type, "") == 0)
 			replcon_context_type_set(replacement_con, original_con->type);
-
+		if (is_selinux_mls_enabled()) {
+			if (strcmp(replacement_con->mls, "") == 0)
+				replcon_context_mls_set(replacement_con, original_con->mls);
+		}
 		new_file_con = get_security_context(replacement_con);
 		if (new_file_con == NULL) {
 			fprintf(stderr, "Unable to create new file security context.");	
 			goto err;
 		}
-		if (lsetfilecon(filename, new_file_con) != 0) {
+		if (lsetfilecon_raw && replcon_info.use_raw) 
+			ret = lsetfilecon_raw(filename, new_file_con);
+		else
+			ret = lsetfilecon(filename, new_file_con);
+		if (ret != 0) {
 			fprintf(stderr, "Error setting context %s for file %s:\n", new_file_con, filename);
 			perror("  lsetfilecon");
 			goto err;
 		}
-
 		if (!info->quiet) {
 			if (info->verbose)
 				fprintf(stdout,
@@ -823,12 +998,14 @@ err:
  * findcon
  *
  * The caller must pass a valid filename and statptr
+ * If the caller wants to use raw, the passed in context will try to match the raw context
+ * of the file not the translated context returned by libsetrans
  */
 int
 findcon(const char *filename, const struct stat64 *statptr,
 			     int fileflags, struct FTW *pfwt)
 {
-	int file_class, i;
+	int file_class, i, ret;
 	replcon_context_t *original_con = NULL;
 	security_context_t file_con;
 	
@@ -837,10 +1014,20 @@ findcon(const char *filename, const struct stat64 *statptr,
 	if (!replcon_info_has_object_class(&replcon_info, file_class))
 		return 0;
 
-	if (lgetfilecon(filename, &file_con) <= 0) {
+	if (lgetfilecon_raw && replcon_info.use_raw) 
+		ret = lgetfilecon_raw(filename, &file_con);
+	else
+		ret = lgetfilecon(filename, &file_con);
+
+	if (ret <= 0) {
 		if (errno == ENODATA) {
-			if ((file_con = strdup("!:!:!")) == NULL)
-				goto err;
+			if (is_selinux_mls_enabled()) {
+				if ((file_con = strdup("!:!:!:!")) == NULL)
+					goto err;
+			} else {				
+				if ((file_con = strdup("!:!:!")) == NULL)
+					goto err;
+			}
 		} else {
 			fprintf(stderr, "Unable to get file context for %s\n, skipping...", filename);
 			return 0;
@@ -966,7 +1153,7 @@ replcon_parse_command_line(int argc, char **argv)
 
 	/* get option arguments */
 	while ((optc =
-		getopt_long(argc, argv, "o:c:rsVqvh", longopts, NULL)) != -1) {
+		getopt_long(argc, argv, "o:c:rsVqvha", longopts, NULL)) != -1) {
 		switch (optc) {
 		case 0:
 			break;
@@ -999,6 +1186,9 @@ replcon_parse_command_line(int argc, char **argv)
 				goto err;
 			}
 #endif
+			break;
+		case 'a':
+			replcon_info.use_raw = TRUE;
 			break;
 		case 'r':	/* recursive directory parsing */
 			replcon_info.recursive = TRUE;
@@ -1095,15 +1285,17 @@ main(int argc, char **argv)
 #else
 	rw = 1;
 #endif
-
 	/* initialize the hash used for bind mounts */
 	hashtab = sefs_hash_new(SEFS_BIND_HASH_SIZE);
 	if (!hashtab)
 		goto err;
-
 	if (find_mount_points("/", &mounts, &num_mounts, hashtab, rw)) {
 		fprintf(stderr, "Could not enumerate mountpoints.\n");
 		goto err;
+	}
+	/* check to see if we are using raw and user did not ask */
+	if (replcon_info.use_raw == FALSE && lgetfilecon_raw == NULL) {
+		printf("Note: System only contains raw contexts\n");
 	}
 
 	if (replcon_info.stdin) {
@@ -1116,7 +1308,6 @@ main(int argc, char **argv)
 			replcon_stat_file_replace_context(replcon_info.
 							  filenames[i]);
 	}
-
 	replcon_info_free(&replcon_info);
 	for (i = 0; i < num_mounts; i++)
 		free(mounts[i]);
@@ -1130,3 +1321,4 @@ err:
 	sefs_hash_destroy(hashtab);
 	return -1;
 }
+	
