@@ -120,7 +120,7 @@ Search Type Enforcement rules in an SELinux policy.\n\
 If none of -s, -t, -c, -p, -b, --role_source, or --role_target\n\
 are specified, then all rules are shown.\n\
 You must specify -a (--all), or one of more of --allow, --neverallow, \n\
---audit, --rangtrans, --role_allow, --role_trans or --type.\n\
+--audit, --rangetrans, --role_allow, --role_trans or --type.\n\
 \n\
 The default source policy, or if that is unavailable the default binary\n\
 policy, will be opened if no policy file name is provided.\n", stdout);
