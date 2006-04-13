@@ -50,14 +50,13 @@ int unreachable_doms_register(sechk_lib_t *lib)
 	mod->brief_description = "unreachable domains";
 	mod->detailed_description =
 "--------------------------------------------------------------------------------\n"
-"This module finds all domains in a policy which are unreachable.\n"
-"A domain is unreachable if:\n"
-"There are no valid type transitions to the domain\n"
-"There is a valid type transition to the domain, but no common role\n"
-"There is a valid type transition to the domain, a common role, but no users having this common role\n"
-"There is a valid type transition to the domain, a valid role transition associated\n"
-"with the type transition, but no user having a role in the role transition\n"
-"The domain is also not listed in the system's default contexts file\n"; 
+"This module finds all domains in a policy which are unreachable.  A domain is\n"
+"unreachable if any of the following apply:\n"
+"1) There is insufficient type enforcement policy to allow a transition,\n"
+"2) There is insufficient RBAC policy to allow a transition,\n"
+"3) There are no users with proper roles to allow a transition.\n"
+"However, if any of the above rules indicate an unreachable domain, yet the domain\n"
+"appears in the system default contexts file, it is considered reachable.\n";
 	mod->opt_description = 
 "  Module requirements:\n"
 "    source policy\n"
@@ -74,8 +73,8 @@ int unreachable_doms_register(sechk_lib_t *lib)
 	mod->requirements = sechk_name_value_new("policy_type", "source");
 	nv = sechk_name_value_new("default_ctx", NULL);
 	nv->next = mod->requirements;
-	mod->requirements = nv;
-
+	mod->requirements = nv; 
+	
 	/* assign dependencies */
 	mod->dependencies = sechk_name_value_new("module", "find_domains");
 	nv = sechk_name_value_new("module", "inc_dom_trans");
