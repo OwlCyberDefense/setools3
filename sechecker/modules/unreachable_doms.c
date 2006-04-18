@@ -55,8 +55,8 @@ int unreachable_doms_register(sechk_lib_t *lib)
 "1) There is insufficient type enforcement policy to allow a transition,\n"
 "2) There is insufficient RBAC policy to allow a transition,\n"
 "3) There are no users with proper roles to allow a transition.\n"
-"However, if any of the above rules indicate an unreachable domain, yet the domain\n"
-"appears in the system default contexts file, it is considered reachable.\n";
+"However, if any of the above rules indicate an unreachable domain, yet the\n"
+"domain appears in the system default contexts file, it is considered reachable.\n";
 	mod->opt_description = 
 "  Module requirements:\n"
 "    source policy\n"
