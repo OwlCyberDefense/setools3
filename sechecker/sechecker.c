@@ -545,7 +545,7 @@ int sechk_lib_check_module_dependencies(sechk_lib_t *lib)
 
 int sechk_lib_check_module_requirements(sechk_lib_t *lib)
 {
-	int i;
+	int i, retv = 0;
 	bool_t test = TRUE;
 	sechk_name_value_t *nv = NULL;
 
@@ -564,15 +564,16 @@ int sechk_lib_check_module_requirements(sechk_lib_t *lib)
 					
 				} else {
 					/* otherwise we just disable this module and keep testing */
-					printf("Error: requirements not met for %s\n", lib->modules[i].name);					
+					printf("Error: requirements not met for %s\n", lib->modules[i].name);	
 					lib->module_selection[i] = FALSE;
+					retv = -1;
 					break;
 				}
 			}
 			nv = nv->next;
 		}
 	}
-	return 0;
+	return retv;
 }
 
 int sechk_lib_init_modules(sechk_lib_t *lib)
