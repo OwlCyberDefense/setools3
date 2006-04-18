@@ -2091,6 +2091,7 @@ static int define_role_trans(void)
 	int idx, idx_type;
 	rt_item_t *rule;
 	ta_item_t *role = NULL, *type = NULL;
+	bool_t subtract = FALSE;
 	
 	if(pass == 1 || (pass == 2 && !(parse_policy-> opts & POLOPT_ROLE_RULES)) || (pass > 2 && yyis_decl())) {
 		while ((id = queue_remove(id_queue))) 
@@ -2162,6 +2163,11 @@ static int define_role_trans(void)
 			free(id);
 			continue;
 		}
+		if (strcmp(id, "-") == 0) {
+			subtract = TRUE;
+			free(id);
+			continue;
+		}
 		if(strcmp(id, "~") == 0) {
 			rule->flags |= AVFLAG_TGT_TILDA;
 			free(id);
@@ -2183,6 +2189,10 @@ static int define_role_trans(void)
 			return -1;
 		}
 		type->type = idx_type;
+		if (subtract) {
+			type->type |= IDX_SUBTRACT;
+			subtract = FALSE;
+		}
 		type->idx = idx;
 		if(insert_ta_item(type, &(rule->tgt_types)) != 0) {
 			snprintf(errormsg, sizeof(errormsg), "failed ta_item insetion for target type %s\n", id);
