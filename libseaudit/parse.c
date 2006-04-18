@@ -19,12 +19,12 @@
 #include <time.h>
 #include <assert.h>
 
-#define MEMORY_BLOCK_MAX_SIZE 256
+#define MEMORY_BLOCK_MAX_SIZE 2048
 #define NUM_TIME_COMPONENTS 3
 #define OLD_LOAD_POLICY_STRING "loadingpolicyconfigurationfrom"
 #define AVCMSG " avc: "
 #define LOADMSG " security: "
-#define SYSCALL_STRING "msg=audit("
+#define SYSCALL_STRING "audit("
 #define BOOLMSG "committed booleans"
 #define AUDITD_MSG "type="
 #define PARSE_AVC_MSG 1
@@ -874,8 +874,8 @@ static unsigned int avc_msg_insert_field_data(char **tokens, msg_t *msg, audit_l
 		position++;
 		if (position == num_tokens)
 			return PARSE_RET_INVALID_MSG_WARN;
-		if (audit_log_get_log_type(log) != AUDITLOG_AUDITD)
-			audit_log_set_log_type(log, AUDITLOG_AUDITD);
+		 if (audit_log_get_log_type(log) != AUDITLOG_AUDITD)
+			 audit_log_set_log_type(log, AUDITLOG_AUDITD); 
 	}
 
 	/* Insert the audit header if it exists */
@@ -896,7 +896,7 @@ static unsigned int avc_msg_insert_field_data(char **tokens, msg_t *msg, audit_l
 		else if (tmp_ret & PARSE_REACHED_END_OF_MSG) 
 			return PARSE_RET_INVALID_MSG_WARN;
 		else if (!(tmp_ret & PARSE_RET_INVALID_MSG_WARN)) {
-			position++;
+			position += 2;
 			if (position == num_tokens)
 				return PARSE_RET_INVALID_MSG_WARN;
 		}
@@ -912,6 +912,24 @@ static unsigned int avc_msg_insert_field_data(char **tokens, msg_t *msg, audit_l
 			if (position == num_tokens)
 				return PARSE_RET_INVALID_MSG_WARN;
 		}
+
+		/* new style audit messages can show up in syslog files starting with
+		 * FC5. This means that both the old kernel: header and the new
+		 * audit header might be present. So, here we check again for the
+		 * audit message.
+		 */
+		if (avc_msg_is_token_new_audit_header(*(&tokens[position]))) {
+			tmp_ret |= avc_msg_insert_syscall_info(*(&tokens[position]), msg);
+			if (tmp_ret & PARSE_RET_SUCCESS) {
+				position += 2;
+				if (position == num_tokens)
+					return PARSE_RET_INVALID_MSG_WARN;
+			}
+			ret |= tmp_ret;
+			/* Reset our bitmask */
+			tmp_ret = 0;
+		}
+
 	}
 		
 	/* Make sure the following token is the string "avc:" */
