@@ -401,9 +401,57 @@ int close_policy(policy_t *policy)
 	return free_policy(&policy);
 }
 
+/* external functions from the parser to handle start state changes 
+ * for each pass (initial for passes 1 &2 and optonly for all other passes) */
+extern int yybegin_optonly(void);
+extern int yybegin_initial(void);
+
+static int resolve_optionals(policy_t *policy)
+{
+	int changed = 0;
+	ap_optional_t *opt = NULL;
+
+	for (opt=policy->optionals; opt; opt = opt->next) {
+		if (opt->status != OPTIONAL_STATUS_UNDECIDED)
+			continue;
+		if(ap_optional_check_requires(opt, policy) > 0) {
+			changed = 1;
+			opt->status = OPTIONAL_STATUS_TAKE_MAIN;
+		}
+	}
+
+	return changed;
+}
+
+static void take_else(policy_t *policy)
+{
+	ap_optional_t *opt = NULL;
+
+	for (opt = policy->optionals; opt; opt = opt->next)
+		if (opt->status == OPTIONAL_STATUS_UNDECIDED)
+			opt->status = OPTIONAL_STATUS_TAKE_ELSE;
+}
+
+static int reparse(policy_t *policy)
+{
+	int rt;
+	policydb_lineno = 1;
+		pass++;
+		rewind(yyin);
+		yyrestart(yyin);	
+		if ((rt = yyparse())) {
+			fprintf(stderr, "error(s) encountered while parsing configuration (fourth+ pass, line: %d)\n", policydb_lineno);
+			queue_destroy(id_queue);
+			rewind(yyin);
+			yyrestart(yyin);	
+			return rt;
+		}
+	return 0;
+}
+
 static int read_policy(policy_t *policy)
 {
-	int rt, i;
+	int rt, i, changed = 0;
 	ap_mls_level_t *lvl = NULL;
 	
 	policy->policy_type = POL_TYPE_SOURCE;
@@ -418,6 +466,7 @@ static int read_policy(policy_t *policy)
 	}
 	policydb_lineno = 1;
 	pass = 1;
+	yybegin_initial();
 	if ((rt = yyparse())) {
 		fprintf(stderr, "error(s) encountered while parsing configuration (first pass, line: %d)\n", policydb_lineno);
 		queue_destroy(id_queue);
@@ -443,7 +492,31 @@ static int read_policy(policy_t *policy)
 		yyrestart(yyin);	
 		return rt;
 	}
-		
+
+	if(policy->has_optionals) {
+		policydb_lineno = 1;
+		pass = 3;
+		rewind(yyin);
+		yyrestart(yyin);	
+		yybegin_optonly();
+		if ((rt = yyparse())) {
+			fprintf(stderr, "error(s) encountered while parsing configuration (third pass, line: %d)\n", policydb_lineno);
+			queue_destroy(id_queue);
+			rewind(yyin);
+			yyrestart(yyin);	
+			return rt;
+		}
+
+		/* Pass 4+ */
+		do {
+			changed = resolve_optionals(policy);
+			if((rt=reparse(policy)))
+				return rt;
+		} while (changed);
+		take_else(policy);
+		reparse(policy);
+	}
+
 	queue_destroy(id_queue);
 	/* Kludge; now check for policy version 18 but special permission defined (i.e., if
 	 * nlmsg_write or nlmsg_write are defined as permissions, than the version is at least

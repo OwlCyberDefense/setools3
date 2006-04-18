@@ -129,7 +129,7 @@ int init_policy(policy_t **p)
 	policy->version = POL_VER_UNKNOWN;
 	policy->opts = POLOPT_NONE;
 	policy->policy_type = POL_TYPE_SOURCE;
-	policy->mls = FALSE;
+	policy->mls = policy->has_optionals = FALSE;
 
 	/* permissions */
 	policy->perms = (char **)calloc(LIST_SZ, sizeof(char*));
@@ -378,6 +378,9 @@ int init_policy(policy_t **p)
 	/* rule stats */
 	memset(policy->rule_cnt, 0, sizeof(int) * RULE_MAX);
 	
+	/* optionals */
+	policy->optionals = NULL;
+
 	/* permission maps */
 	policy->pmap = NULL;
 
@@ -731,6 +734,8 @@ int free_policy(policy_t **p)
 		free(policy->rangetrans);
 	}
 	free(policy->mls_dominance);
+
+	ap_optional_list_destroy(&policy->optionals);
 
 	if(free_avl_trees(policy) != 0)
 		return -1;
@@ -2086,6 +2091,20 @@ int add_name(char *name, name_item_t **list)
 	}
 	for(ptr = *list; ptr->next != NULL; ptr = ptr->next) {; }
 	ptr->next = newptr;
+	return 0;
+}
+
+int is_name_in_name_item_list(char *name, name_item_t *list)
+{
+	name_item_t *na = NULL;
+
+	if (!name || !list)
+		return 0;
+
+	for (na = list; na; na = na->next)
+		if (!strcmp(name, na->name))
+			return 1;
+
 	return 0;
 }
 
@@ -4569,3 +4588,213 @@ int ap_genfscon_get_num_paths(policy_t *policy)
 
 	return num_genfs;
 }
+
+/* optionals */
+int ap_optional_init(ap_optional_t *op)
+{
+	if (!op) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	op->requires = NULL;
+	op->types = op->attribs = op->roles = op->users = op->bools = NULL;
+	op->status = OPTIONAL_STATUS_UNDECIDED;
+	op->lineno = 0;
+	op->next = NULL;
+
+	return 0;
+}
+
+/* free all memory used by the list optional (does not free the optional or others in the list */
+void ap_optional_free(ap_optional_t *op)
+{
+	if (!op)
+		return;
+
+	ap_require_destroy(&op->requires);
+	free_name_list(op->types);
+	free_name_list(op->attribs);
+	free_name_list(op->roles);
+	free_name_list(op->users);
+	free_name_list(op->bools);
+	op->types = op->attribs = op->roles = op->users = op->bools = NULL;
+	op->lineno = 0;
+	op->status = OPTIONAL_STATUS_FINISHED;
+}
+
+/* free the linked list of optionals */
+void ap_optional_list_destroy(ap_optional_t **list)
+{
+	ap_optional_t *tmp = NULL;
+	if (!list || !(*list))
+		return;
+
+	tmp = *list;
+
+	do {
+		*list = tmp;
+		ap_optional_free(*list);
+		tmp = tmp->next;
+		free(*list);
+	} while (tmp);
+
+	*list = NULL;
+}
+
+/* returns > 0 if all requirements are met for an optional else returns 0 (or -1 on error)*/
+int ap_optional_check_requires(ap_optional_t *op, policy_t *policy)
+{
+	ap_require_t *req = NULL;
+	int retv = 0, pass = 0, cnt = 0;
+
+	if (!op || !policy) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	for (req = op->requires; req; req = req->next) {
+		retv = ap_require_check(req, op, policy);
+		cnt++;
+		if (retv < 0) {
+			return -1;
+		}
+		pass += retv;
+	}
+
+	if (pass != cnt)
+		pass = 0;
+
+	return pass;
+}
+
+ap_optional_t *ap_optional_get_by_lineno(unsigned long lineno, policy_t *policy)
+{
+	ap_optional_t *opt = NULL;
+
+	if (!policy || !policy->optionals)
+		return NULL;
+
+	opt = policy->optionals;
+	while(opt && opt->lineno != lineno) {
+		opt = opt->next;
+	}
+
+	return opt;
+}
+
+/* require statements */
+int ap_require_init(ap_require_t *req)
+{
+	if (!req) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	req->name = NULL;
+	req->type = IDX_INVALID;
+	req->idx = -1;
+	req->perms = req->next = NULL;
+
+	return 0;
+}
+
+void ap_require_destroy (ap_require_t **req)
+{
+	ap_require_t *tmp = NULL;
+
+	if (!req || !(*req))
+		return;
+
+	tmp = *req;
+
+	do {
+		free(tmp->name);
+		if (tmp->perms)
+			ap_require_destroy(&tmp->perms);
+		*req = tmp;
+		tmp = tmp->next;
+		free(*req);
+	} while (tmp);
+
+	*req = NULL;	
+}
+
+/* returns 1 if requirement met 0 if not or < 0 on error */
+int ap_require_check(ap_require_t *req, ap_optional_t *opt, policy_t *policy)
+{
+	int pass = 0;
+	ap_require_t *tmp = NULL;
+
+	if (!req || !policy) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	switch (req->type) {
+	case IDX_TYPE:
+	{
+		req->idx = get_type_idx(req->name, policy);
+		if (req->idx != -1 || is_name_in_name_item_list(req->name, opt->types))
+			pass = 1;
+		break;
+	}
+	case IDX_ATTRIB:
+	{
+		req->idx = get_attrib_idx(req->name, policy);
+		if (req->idx != -1 || is_name_in_name_item_list(req->name, opt->attribs))
+			pass = 1;
+		break;
+	}
+	case IDX_ROLE:
+	{
+		req->idx = get_role_idx(req->name, policy);
+		if (req->idx != -1 || is_name_in_name_item_list(req->name, opt->roles))
+			pass = 1;
+		break;
+	}
+	case IDX_USER:
+	{
+		req->idx = get_user_idx(req->name, policy);
+		if (req->idx != -1 || is_name_in_name_item_list(req->name, opt->users))
+			pass = 1;
+		break;
+	}
+	case IDX_BOOLEAN:
+	{
+		req->idx = get_cond_bool_idx(req->name, policy);
+		if (req->idx != -1 || is_name_in_name_item_list(req->name, opt->bools))
+			pass = 1;
+		break;
+	}
+	case IDX_OBJ_CLASS:
+	{
+		req->idx = get_obj_class_idx(req->name, policy);
+		if (req->idx != -1) {
+			pass = 1;
+			for (tmp = req->perms; tmp; tmp = tmp->next) {
+				if (!(ap_require_check(tmp, opt, policy) >= 1 && is_valid_perm_for_obj_class(policy, req->idx, tmp->idx))) {
+					pass = 0;
+					break;
+				}
+			}
+		}
+		break;
+	}
+	case IDX_PERM:
+	{
+		req->idx = get_perm_idx(req->name, policy);
+		if (req->idx != -1)
+			pass = 1;
+		break;
+	}
+	default:
+	{
+		errno = EINVAL;
+		return -1;
+	}
+	}
+
+	return pass;
+}
+
