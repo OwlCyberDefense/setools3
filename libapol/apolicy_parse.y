@@ -4550,7 +4550,7 @@ static int begin_optional(void)
 				yyenter_accept();
 			}
 		} else {
-			if (!optional_stack || !optional_stack->opt || optional_stack->opt->status == OPTIONAL_STATUS_TAKE_MAIN) {
+			if (!optional_stack || optional_stack->opt && optional_stack->opt->status == OPTIONAL_STATUS_TAKE_MAIN) {
 				opt = calloc(1, sizeof(ap_optional_t));
 				if (!opt)
 					return -1;
