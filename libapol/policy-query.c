@@ -289,6 +289,23 @@ static int match_te_rules_regex(regex_t *preg,
 					return rt;
 			}
 		}
+
+		/* match against aliases */
+		char *alias_name;
+		for(i = 0; i < policy->num_aliases; i++) { 
+			alias_name =  policy->aliases[i].name;
+			rt = regexec(preg, alias_name, 0, NULL, 0); 
+
+			/* if match, add to list for search */
+			if (rt == 0) {
+				int alias_type_idx = get_type_idx_by_alias_name(alias_name,
+						 policy);
+				rt = match_te_rules_idx(alias_type_idx, idx_type, include_audit,
+						whichlists, do_indirect, only_enabled, rules_b, policy);
+				if(rt != 0)
+					return rt;
+			}
+		}
 	}
 	if(ta_opt == IDX_ATTRIB || ta_opt == IDX_BOTH) {
 		idx_type = IDX_ATTRIB;
@@ -950,65 +967,64 @@ int match_cond_rules(rules_bool_t *rules_b, bool_t *exprs_b, bool_t include_audi
 *  -2 on error with error string in the rtrans_results_t structure
 *	0 on success
 */
-static int get_type_attrib_idxs (char* srch_name, 
-			rtrans_query_t* query, regex_t* reg, int** idx_array, int* num_idx, 
-			rtrans_results_t* results, policy_t* policy)
+static int get_search_type_attrib_idxs (srch_type_t srch,
+		int** type_array, int* num_type, int** attrib_array, int* num_attrib, 
+		bool_t use_regex,  int* err_value, char** err_msg, policy_t* policy)
 {
-	int rt, i = 0, j = 0, att_types_sz = 0;
-	int *att_types = NULL;
-	char* err;
+	int rt, i, j = 0;
 	size_t sz = 0;
+	char* srch_name = NULL;
+	regex_t reg;
 
-	if (query->use_regex) {
+	if (use_regex) {
 		/* compile regular expression for expression comparison*/
-		rt = regcomp(reg, srch_name, REG_EXTENDED|REG_NOSUB);
+		rt = regcomp(&reg, srch.ta, REG_EXTENDED|REG_NOSUB);
 		if (rt != 0) {
-			if((err = (char *)malloc(++sz)) == NULL) {
-				fprintf(stderr, "out of memory");
+			if ((*err_msg == NULL) || (err_msg == NULL)) {
+				fprintf(stderr, "Error in regular expression compilation\n ");
 				return -1;
 			}
-			regerror(rt, &(reg[0]), err, sz);
-			results->err = RTRANS_ERR_REGCOMP;  
-			results->errmsg = err;
-			regfree(&reg[0]);
+
+			regerror(rt, &reg, *err_msg, sz);
+			if (err_value != NULL)
+				*err_value = RTRANS_ERR_REGCOMP;  
+			regfree(&reg);
 			return -2;
 		}
 
+
 		/* for regex, add index of all TYPE regexec matches by index */
-		if ((query->src.t_or_a == IDX_TYPE) || (query->src.t_or_a == IDX_BOTH))
-		{
+		if ((srch.t_or_a == IDX_TYPE) || (srch.t_or_a == IDX_BOTH)) {
 			/* compare each type to the compiled regular expressions */
 			for(i = 0; i < policy->num_types; i++) { 
 				/* get string name of corresponding type id */
-				_get_type_name_ptr(i, &srch_name, policy); 
-				rt = regexec(reg, srch_name, 0, NULL, 0); 
+				_get_type_name_ptr(i, (char**)&srch_name, policy); 
+				rt = regexec(&reg, srch_name, 0, NULL, 0); 
 
 				/* if match, add to src list for search */
 				if (rt == 0) {
-					if (find_int_in_array(i, *idx_array, *num_idx) == -1) {
-						if (add_i_to_a(i, num_idx, idx_array)) {
+					if (find_int_in_array(i, *type_array, *num_type) == -1) {
+						if (add_i_to_a(i, num_type, type_array) != 0) {
 							printf("Out of memory!\n");
 							return -1;
 						}
 					}
 				}
 			}
-			/* compare each alias to the compiled regular expressions */
 
-			char* alias_name = (char*) malloc(100);
+			/* compare each alias to the compiled regular expressions */
+			char *alias_name;
 			for(i = 0; i < policy->num_aliases; i++) { 
-				strcpy(alias_name, policy->aliases[i].name);
-				rt = regexec(reg, policy->aliases[i].name, 0, NULL, 0); 
+				alias_name =  policy->aliases[i].name;
+				rt = regexec(&reg, alias_name, 0, NULL, 0); 
 
 				/* if match, add to list for search */
 				if (rt == 0) {
 					int alias_type_idx = get_type_idx_by_alias_name(alias_name,
-							 policy);
-					if (find_int_in_array(alias_type_idx, *idx_array, *num_idx)
-						== -1) {
-						if (add_i_to_a(alias_type_idx, num_idx, idx_array)) {
+							 policy); 
+					if (find_int_in_array(alias_type_idx, *type_array, *num_type) == -1) {
+						if (add_i_to_a(alias_type_idx, num_type, type_array) != 0) {
 							printf("Out of memory!\n");
-							free (alias_name);
 							return -1;
 						}
 					}
@@ -1016,79 +1032,90 @@ static int get_type_attrib_idxs (char* srch_name,
 			}
 		}
 
-		if ((query->src.t_or_a == IDX_ATTRIB) || (query->src.t_or_a == IDX_BOTH))
+		if ((srch.t_or_a == IDX_ATTRIB) || (srch.t_or_a == IDX_BOTH))
 		{
 			for(i = 0; i < policy->num_attribs; i++) { 
 				/* get attribute string name */
-				_get_attrib_name_ptr(i, &srch_name, policy); 
-				rt = regexec(reg, srch_name, 0, NULL, 0); 
+				_get_attrib_name_ptr(i, (char**)&srch_name, policy); 
+				rt = regexec(&reg, srch_name, 0, NULL, 0); 
 
+				/* if match, add to src list for search */
 				if (rt == 0) {
-					/* get types corresponding to attribute */
-					att_types_sz = 0;
-					get_attrib_types(i, &att_types_sz, &att_types, policy);
-
-					/* for each matching type for alias name, find type id */
-					/* and add to search list */
-					for (j = 0; j < att_types_sz; j++)
-					{ 
-						char* tmpname = (char*) malloc(100);
-						get_type_name(att_types[j], &tmpname, policy); 
-						int type_idx = 0;
-						if ((type_idx = get_type_idx(tmpname, policy)) < 0) {
-							results->err = RTRANS_ERR_SRC_INVALID;
-							results->errmsg = (char*)malloc(50);
-							sprintf(results->errmsg, "\nUnknown type %s\n", 
-								srch_name);
-							free(tmpname);
-							return -2;
-						}
-						if (find_int_in_array(type_idx, *idx_array, *num_idx) == -1) {
-							if (add_i_to_a(type_idx, num_idx, idx_array)) {
-								printf("Out of memory!\n");
-								free(tmpname);
-								return -1;
-							}
+					if (find_int_in_array(i, *attrib_array, *num_attrib) == -1) {
+						if (add_i_to_a(i, num_attrib, attrib_array) != 0) {
+							printf("Out of memory!\n");
+							return -1;
 						}
 					}
 				}
 			}
 		}
+		if (!(*num_attrib) && !(*num_type)) {
+			if (err_value != NULL)
+				*err_value = RTRANS_ERR_SRC_INVALID;
+			if ((err_msg != NULL) && (*err_msg != NULL))
+				sprintf(*err_msg, "\nError: %s is not a valid type or attribute"
+						"\n", srch.ta);
+			else
+				printf("\nError: %s is not a valid type or attribute"
+						"\n", srch.ta);
+			return -2;
+		}
+		regfree(&reg);
 	}
 
 	/* no regex, just find index of passed source name */
 	else {
-		int type_value = 0;
+		int idx_value = 0;
 		int idx_type = 0;
-		if ((type_value = get_type_or_attrib_idx(srch_name, &idx_type, policy))
+		if ((idx_value = get_type_or_attrib_idx(srch.ta, &idx_type, policy))
 				 < 0) {
-			results->err = RTRANS_ERR_SRC_INVALID;
-			results->errmsg = (char*)malloc(50);
-			sprintf(results->errmsg, "\nUnknown type %s\n", 
-					srch_name);
+			if (err_value != NULL)
+				*err_value = RTRANS_ERR_SRC_INVALID;
+			if ((err_msg != NULL) && (*err_msg != NULL))
+				sprintf(*err_msg, "\nError: %s is not a valid type or attribute"
+						"\n", srch.ta);
+			else
+				printf("\nError: %s is not a valid type or attribute"
+						"\n", srch.ta);
+
 			return -2;
 		}
 
 		if (idx_type == IDX_ATTRIB) {
-			get_attrib_types(type_value, &att_types_sz, &att_types, policy);
-			for (i = 0; i < att_types_sz; i++) {
-				if (find_int_in_array(att_types[i], *idx_array, *num_idx) == -1) {
-					if (add_i_to_a(att_types[i], num_idx, idx_array)) {
-						printf("Out of memory!\n");
-						return -1;
-					}
+			if (find_int_in_array(idx_value, *attrib_array, *num_attrib) == -1) {
+				if (add_i_to_a(idx_value, num_attrib, attrib_array) != 0) {
+					printf("Out of memory!\n");
+					return -1;
 				}
 			}
-			
 		} else {
-			if (find_int_in_array(type_value, *idx_array, *num_idx) == -1) {
-				if (add_i_to_a(type_value, num_idx, idx_array)) {
+			if (find_int_in_array(idx_value, *type_array, *num_type) == -1) {
+				if (add_i_to_a(idx_value, num_type, type_array) != 0) {
 					printf("Out of memory!\n");
 					return -1;
 				}
 			}
 		}
 	}
+
+	/* for each collected type, if indirect get corresponding attributes */
+	if (srch.indirect && *num_type) {
+		for (i = 0; i < *num_type; i++) {
+			type_item_t type_info = policy->types[(*type_array)[i]];
+   			for(j = 0; j < type_info.num_attribs; j++) {
+           		if (find_int_in_array(type_info.attribs[j], *attrib_array, 
+						*num_attrib) == -1) {
+					if (add_i_to_a(type_info.attribs[j], num_attrib, 
+						attrib_array) != 0) {
+		   				printf("Out of memory!\n");
+			     		return -1;
+					}
+				}
+			}
+		}
+	}
+
 	return 0;
 }
 
@@ -1116,63 +1143,227 @@ int search_range_transition_rules(rtrans_query_t* query,
 		rtrans_results_t* results, policy_t* policy)
 {
 	int rt = 0;
-	regex_t reg[2];
-	int* src_list = 0;
-	int* tgt_list = 0;
-	int num_src = 0;
-	int num_tgt = 0;
-	int srch_return = 0;
-	int* return_results = 0;
-	char* tempname = (char*)malloc(100);
+	int i = 0;
+	int* src_types = 0;
+	int* src_attribs =  0;
+	int* tgt_types = 0;
+	int* tgt_attribs = 0;
+	int num_src_types = 0;
+	int num_src_attribs = 0;
+	int num_tgt_types = 0;
+	int num_tgt_attribs = 0;
+	int num_rules = 0;
+	int num_total_rules = 0;
+	int* search_results = 0;
 
-	if (query->src.ta!= 0) {
-		rt = get_type_attrib_idxs(query->src.ta, query, &(reg[0]), 
-				&src_list, &num_src, results, policy);	
+	if (results->errmsg == NULL) {
+		if ((results->errmsg = (char*) malloc(200)) == NULL) {
+			fprintf(stderr, "out of memory");
+			return -1;
+		}
+	}
+
+	if (query->src.ta == 0 && query->tgt.ta == 0) {
+		for (i = 0; i < policy->num_rangetrans; i++) {
+			add_i_to_a(i, &(results->num_range_rules), &(results->range_rules));
+		}
+		return 0;
+	}
+
+
+	if (query->src.ta != 0) {
+		rt = get_search_type_attrib_idxs(query->src,
+				&src_types, &num_src_types, &src_attribs, 
+				&num_src_attribs, query->use_regex, &(results->err), 
+				&(results->errmsg), policy);	
 		if (rt != 0){
-			free (tempname);	
-			return rt;
+			return (rt);
 		}
 	}
 
 	if (query->tgt.ta) {
-
-		rt = get_type_attrib_idxs(query->tgt.ta, query, &(reg[1]),  
-				&tgt_list, &num_tgt, results, policy);	
+		rt = get_search_type_attrib_idxs(query->tgt, 
+				&tgt_types, &num_tgt_types, &tgt_attribs, 
+				&num_tgt_attribs, query->use_regex, &(results->err), 
+				&(results->errmsg), policy);	
 		if (rt != 0){
-			free (tempname);	
-			return rt;
+			return (rt);
 		}
 	}
+
 
 	/* TODO: add mls range types and set the high and low of the range */
-		
-	srch_return = ap_mls_range_transition_search(src_list, num_src, tgt_list, 
-				num_tgt, query->range, query->search_type, &return_results, 
-				policy);
-	if (srch_return < 0) {
-		printf("Error in range transition search; returning\n");
-		results->err = srch_return;
-		results->errmsg = (char*)malloc(100); 	
-		if (srch_return == -1 || srch_return == -2) {
-			strcpy(results->errmsg, "No valid types for target input\n");
+	/* match against src and tgt types */
+
+	if (num_src_types || num_src_attribs ) {
+		/* if not target search input then just run search for src types
+		   and attributes */
+		if (!num_tgt_types && !num_tgt_attribs) {
+			if (num_src_types > 0) {
+				num_rules = ap_mls_range_transition_search(src_types, 
+					num_src_types, IDX_TYPE, 0, 0, 0, query->range,
+					query->search_type, &search_results, policy);
+				if (num_rules >= 0) {
+					for (i = 0; i < num_rules; i++)
+						add_i_to_a(search_results[i], &num_total_rules, 
+							&(results->range_rules));
+					free(search_results);
+					search_results = NULL;
+				}
+
+				else 
+					goto return_error;
+			}
+
+			/* run for src attribute matches with no target input */
+			if (num_src_attribs > 0) {
+				num_rules = ap_mls_range_transition_search(src_attribs, 
+					num_src_attribs, IDX_ATTRIB, 0, 0, 0, query->range,
+					query->search_type, &search_results, policy);
+				if (num_rules >= 0) {
+					for (i = 0; i < num_rules; i++)
+						add_i_to_a(search_results[i], &num_total_rules, 
+							&(results->range_rules));
+					free(search_results);
+					search_results = NULL;
+				}
+				else 
+					goto return_error;
+			}
 		}
-		else if (srch_return == -3 || srch_return == -4){
-			strcpy(results->errmsg, "No valid types for src input search\n");
+		/* else there is at least one tgt list to run with at least one */
+		else {
+			if (num_src_types && num_tgt_types) {
+				num_rules = ap_mls_range_transition_search(src_types, 
+					num_src_types, IDX_TYPE, tgt_types, num_tgt_types, IDX_TYPE,
+					query->range, query->search_type, &search_results, policy);
+				if (num_rules >= 0) {
+					for (i = 0; i < num_rules; i++)
+						add_i_to_a(search_results[i], &num_total_rules, 
+							&(results->range_rules));
+					free(search_results);
+					search_results = NULL;
+				}
+				else
+					goto return_error;
+			}
+
+			if (num_src_types && num_tgt_attribs) {
+				num_rules = ap_mls_range_transition_search(src_types, 
+			    	num_src_types, IDX_TYPE, tgt_attribs, num_tgt_attribs, 
+			    	IDX_ATTRIB, query->range, query->search_type, 
+			    	&search_results, policy);
+				if (num_rules >= 0) {
+					for (i = 0; i < num_rules; i++)
+						add_i_to_a(search_results[i], &num_total_rules, 
+							&(results->range_rules));
+					free(search_results);
+					search_results = NULL;
+				}
+				else
+					goto return_error;
+			}
+
+			if (num_src_attribs && num_tgt_types) {
+				num_rules = ap_mls_range_transition_search(src_attribs, 
+			    	num_src_attribs, IDX_ATTRIB, tgt_types, num_tgt_types, 
+			    	IDX_TYPE, query->range, query->search_type, 
+			    	&search_results, policy);
+				if (num_rules >= 0) {
+					for (i = 0; i < num_rules; i++)
+						add_i_to_a(search_results[i], &num_total_rules, 
+							&(results->range_rules));
+					free(search_results);
+					search_results = NULL;
+				}
+				else
+					goto return_error;
+			}
+
+			if (num_src_attribs && num_tgt_attribs) {
+				num_rules = ap_mls_range_transition_search(src_attribs, 
+			    	num_src_attribs, IDX_ATTRIB, tgt_attribs, num_tgt_attribs, 
+			    	IDX_ATTRIB, query->range, query->search_type, 
+			    	&search_results, policy);
+				if (num_rules >= 0) {
+					for (i = 0; i < num_rules; i++)
+						add_i_to_a(search_results[i], &num_total_rules, 
+							&(results->range_rules));
+					free(search_results);
+					search_results = NULL;
+				}
+				else
+					goto return_error;
+			}
 		}
-		else if (srch_return == -5 ){
-			strcpy(results->errmsg, "Invalid range\n");
+	} /* else no src input and ony target input to search */
+	else {
+		if (num_tgt_types) {
+			num_rules = ap_mls_range_transition_search(0, 
+				0, 0, tgt_types, num_tgt_types, IDX_TYPE, query->range,
+				query->search_type, &search_results, policy);
+			if (num_rules >= 0) {
+				for (i = 0; i < num_rules; i++)
+					add_i_to_a(search_results[i], &num_total_rules, 
+						&(results->range_rules));
+					free(search_results);
+					search_results = NULL;
+			}
+			else 
+				goto return_error;
 		}
-		else if (srch_return == -6 ){
-			strcpy(results->errmsg, "Invalid search type\n");
+
+		if (num_tgt_attribs) {
+			num_rules = ap_mls_range_transition_search(0, 0, 0, tgt_attribs, 
+				num_tgt_attribs, IDX_ATTRIB, query->range, query->search_type, 
+				&search_results, policy);
+			if (num_rules >= 0) {
+				for (i = 0; i < num_rules; i++)
+					add_i_to_a(search_results[i], &num_total_rules, 
+						&(results->range_rules));
+					free(search_results);
+					search_results = NULL;
+			}
+			else 
+				goto return_error;
 		}
-		free (tempname);	
-		return -2;
 	}
-	results->range_rules = return_results;
-	results->num_range_rules = srch_return;
+
+
+	results->num_range_rules = num_total_rules;
 	
-	free (tempname);	
+	free(src_types);
+	free(src_attribs);
+	free(tgt_types);
+	free(tgt_attribs);
 	return 0;
+
+return_error: 
+	printf("Error in range transition search; returning\n");
+	results->err = rt;
+	if (results->errmsg == NULL) {
+		if ((results->errmsg = (char*) malloc(200)) == NULL) {
+			fprintf(stderr, "out of memory");
+			return -1;
+		}
+	}
+	if (rt == -1 || rt == -2) {
+		strcpy(results->errmsg, "No valid types for target input\n");
+	}
+	else if (rt == -3 || rt == -4){
+		strcpy(results->errmsg, "No valid types for src input search\n");
+	}
+	else if (rt == -5 ){
+		strcpy(results->errmsg, "Invalid range\n");
+	}
+	else if (rt == -6 ){
+		strcpy(results->errmsg, "Invalid search type\n");
+	}
+	free(src_types);
+	free(src_attribs);
+	free(tgt_types);
+	free(tgt_attribs);
+	return -2;
 }
 
 int search_rbac_rules(rbac_query_t *query, rbac_results_t *results, policy_t *policy)
@@ -1436,4 +1627,3 @@ int free_rbac_results(rbac_results_t *r)
 
 	return 0;
 }
-

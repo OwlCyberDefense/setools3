@@ -2433,8 +2433,6 @@ int does_av_rule_use_type(int idx, int type, unsigned char whichlist, bool_t do_
 			ans = type_list_match_by_idx(idx, type, do_indirect, rule->tgt_types, policy);
 			if (ans == -1)
 				return -1;
-			if (ans == -1)
-				return -1;
 			if (ans && !(rule->flags & (AVFLAG_TGT_TILDA))) {
 				(*cnt)++;
 				 return TRUE;
@@ -4245,11 +4243,149 @@ static bool_t match_int_arrays(int *a1, int a1_sz, int *a2, int a2_sz)
 	return FALSE;
 };
 
-int ap_mls_range_transition_search(int *src_types, int num_src_types, int *tgt_types, int num_tgt_types, ap_mls_range_t *range, unsigned char search_type, int **rules, policy_t *policy)
+int extract_types_and_attribs_from_ta_list(ta_item_t *list, bool_t compliment,	bool_t allow_self, int **types, int *num_types, int **attribs, 
+	int *num_attribs, policy_t *policy)
+{
+	ta_item_t *item = NULL;
+	bool_t *inc_types = NULL, *sub_types = NULL;
+	bool_t *inc_atts = NULL, *sub_atts = NULL;
+	int retv, i, error = 0;
+
+	if (!list || !policy || !types || !num_types) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	free(*types);
+	*types = NULL;
+	*num_types = 0;
+	free(*attribs);
+	*attribs = NULL;
+	*num_attribs = 0;
+
+	inc_types = (bool_t*)calloc(policy->num_types, sizeof(bool_t));
+	if (!inc_types) {
+		errno = ENOMEM;
+		return -1;
+	}
+	sub_types = (bool_t*)calloc(policy->num_types, sizeof(bool_t));
+	if (!sub_types) {
+		free(inc_types);
+		errno = ENOMEM;
+		return -1;
+	}
+
+	inc_atts = (bool_t*)calloc(policy->num_attribs, sizeof(bool_t));
+	if (!inc_atts) {
+		errno = ENOMEM;
+		free(inc_types);
+		free(sub_types);
+		return -1;
+	}
+	sub_atts = (bool_t*)calloc(policy->num_attribs, sizeof(bool_t));
+	if (!sub_atts) {
+		free(inc_atts);
+		free(inc_types);
+		free(sub_types);
+		errno = ENOMEM;
+		return -1;
+	}
+
+	for (item = list; item; item = item->next) {
+		if (item->type & IDX_TYPE) {
+			if (item->type & IDX_SUBTRACT) {
+				sub_types[item->idx] = TRUE;
+			} else {
+				inc_types[item->idx] = TRUE;
+			}
+			continue;
+		} else if (item->type & IDX_ATTRIB) {
+			if (item->type & IDX_SUBTRACT) {
+				sub_atts[item->idx] = TRUE;
+			} else {
+				inc_atts[item->idx] = TRUE;
+			}
+		} else {
+			continue; /* neither an attribute nor type? do nothing */
+		}
+	}
+
+	for (i = 0; i < policy->num_types; i++) {
+		if (sub_types[i])
+			inc_types[i] = FALSE;
+	}
+
+	for (i = 0; i < policy->num_attribs; i++) {
+		if (sub_atts[i])
+			inc_atts[i] = FALSE;
+	}
+
+	if (compliment) {
+		for (i = 0; i < policy->num_types; i++) {
+			inc_types[i] = !inc_types[i];
+		}
+	}
+
+	if (compliment) {
+		for (i = 0; i < policy->num_attribs; i++) {
+			inc_atts[i] = !inc_atts[i];
+		}
+	}
+
+
+	for (i = allow_self?0:1; i < policy->num_types; i++) {
+		if(inc_types[i]) {
+			retv = add_i_to_a(i, num_types, types);
+			if (retv) {
+				error = errno;
+				goto exit_error;
+			}
+		}
+	}
+
+	for (i = 0; i < policy->num_attribs; i++) {
+		if(inc_atts[i]) {
+			retv = add_i_to_a(i, num_attribs, attribs);
+			if (retv) {
+				error = errno;
+				goto exit_error;
+			}
+		}
+	}
+
+
+	free(inc_types);
+	free(sub_types);
+
+	free(inc_atts);
+	free(sub_atts);
+	return 0;
+
+exit_error:
+	free(inc_types);
+	free(sub_types);
+	free(inc_atts);
+	free(sub_atts);
+	/* do not free tmp it points to either inc_ or sub_ */
+	free(*types);
+	free(*attribs);
+	*types = NULL;
+	*attribs = NULL;
+	*num_types = 0;
+	*num_attribs = 0;
+	errno = error;
+	return -1;
+}
+
+
+int ap_mls_range_transition_search(int *srcs, int num_srcs, int src_type,
+	int *tgts, int num_tgts, int tgt_type, ap_mls_range_t *range, 
+	unsigned char search_type, int **rules, policy_t *policy)
 {
 	int num_rules = 0,  error = 0;
 	int retv, i;
 	int *types = NULL, num_types = 0;
+	int *attribs = NULL, num_attribs = 0;
 	bool_t match = FALSE, add = FALSE;
 
 	if (!policy) {
@@ -4266,12 +4402,13 @@ int ap_mls_range_transition_search(int *src_types, int num_src_types, int *tgt_t
 		errno = EINVAL;
 		return -5;
 	}
+	
 
 	if (search_type & AP_MLS_RTS_TGT_TYPE) {
 		retv = 0;
-		if (!tgt_types) {
+		if (!tgts) {
 			retv = -3;
-		} else if (!num_tgt_types) {
+		} else if (!num_tgts) {
 			retv = -4;
 		}
 		if (retv) {
@@ -4282,9 +4419,9 @@ int ap_mls_range_transition_search(int *src_types, int num_src_types, int *tgt_t
 
 	if (search_type & (AP_MLS_RTS_SRC_TYPE|AP_MLS_RTS_ANY_TYPE)) {
 		retv = 0;
-		if (!src_types) {
+		if (!srcs) {
 			retv = -1;
-		} else if (!num_src_types) {
+		} else if (!num_srcs) {
 			retv = -2;
 		}
 		if (retv) {
@@ -4298,15 +4435,29 @@ int ap_mls_range_transition_search(int *src_types, int num_src_types, int *tgt_t
 		match = FALSE;
 		add = FALSE;
 		if (search_type & (AP_MLS_RTS_SRC_TYPE|AP_MLS_RTS_ANY_TYPE)) {
-			retv = extract_types_from_ta_list(policy->rangetrans[i].src_types, policy->rangetrans[i].flags & AVFLAG_SRC_TILDA, 0, &types, &num_types, policy);
+			retv = extract_types_and_attribs_from_ta_list(policy->rangetrans[i].src_types, 
+			policy->rangetrans[i].flags & AVFLAG_SRC_TILDA, 0, &types, 
+			&num_types, &attribs, &num_attribs, policy);
+
 			if (retv){
 				error = errno;
 				goto exit_error;
 			}
-			match = match_int_arrays(src_types, num_src_types, types, num_types);
+			
+			/* match src input against range trans rule src types */
+			if (src_type == IDX_TYPE) {
+				match = match_int_arrays(srcs, num_srcs, types, num_types);
+			}
+			else {
+				match = match_int_arrays(srcs, num_srcs, attribs, num_attribs);
+			}
+
 			free(types);
+			free(attribs);
 			types = NULL;
+			attribs = NULL;
 			num_types = 0;
+
 			if (match && search_type & (AP_MLS_RTS_MATCH_ANY)) {
 				add = TRUE;
 			} else if (!match && !(search_type & (AP_MLS_RTS_MATCH_ANY))) {
@@ -4314,14 +4465,27 @@ int ap_mls_range_transition_search(int *src_types, int num_src_types, int *tgt_t
 			}
 		}
 		if (search_type & (AP_MLS_RTS_TGT_TYPE)) {
-			retv = extract_types_from_ta_list(policy->rangetrans[i].tgt_types, policy->rangetrans[i].flags & AVFLAG_SRC_TILDA, 1, &types, &num_types, policy);
+			retv = extract_types_and_attribs_from_ta_list(policy->rangetrans[i].tgt_types, 
+				policy->rangetrans[i].flags & AVFLAG_SRC_TILDA, 1, &types, 
+				&num_types, &attribs, &num_attribs, policy);
+
 			if (retv){
 				error = errno;
 				goto exit_error;
 			}
-			match = match_int_arrays(tgt_types, num_tgt_types, types, num_types);
+			
+			/* match tgt input against range trans rule tgt types */
+			if (tgt_type == IDX_TYPE) {
+				match = match_int_arrays(tgts, num_tgts, types, num_types);
+			}
+			else {
+				match = match_int_arrays(tgts, num_tgts, attribs, num_attribs);
+			}
+
 			free(types);
+			free(attribs);
 			types = NULL;
+			attribs = NULL;
 			num_types = 0;
 			if (match && search_type & (AP_MLS_RTS_MATCH_ANY)) {
 				add = TRUE;
@@ -4330,14 +4494,23 @@ int ap_mls_range_transition_search(int *src_types, int num_src_types, int *tgt_t
 			}
 		}
 		if (search_type & (AP_MLS_RTS_ANY_TYPE)) {
-			retv = extract_types_from_ta_list(policy->rangetrans[i].tgt_types, policy->rangetrans[i].flags & AVFLAG_SRC_TILDA, 1, &types, &num_types, policy);
+			retv = extract_types_and_attribs_from_ta_list(policy->rangetrans[i].tgt_types, policy->rangetrans[i].flags & AVFLAG_SRC_TILDA, 1, &types, &num_types, &attribs, &num_attribs, policy);
 			if (retv){
 				error = errno;
 				goto exit_error;
 			}
-			match = match_int_arrays(src_types, num_src_types, types, num_types);
+			/* match src input against range trans rule src types */
+			match = match_int_arrays(srcs, num_srcs, types, num_types);
+				
+
+			/* if no match in types, check attribs */
+			if (!match)
+				match = match_int_arrays(srcs, num_srcs, attribs, num_attribs);
+			
 			free(types);
+			free(attribs);
 			types = NULL;
+			attribs = NULL;
 			num_types = 0;
 			if (match && search_type & (AP_MLS_RTS_MATCH_ANY)) {
 				add = TRUE;
@@ -4377,100 +4550,6 @@ exit_error:
 	free(*rules);
 	*rules = NULL;
 	free(types);
-	errno = error;
-	return -1;
-}
-
-int extract_types_from_ta_list(ta_item_t *list, bool_t compliment, bool_t allow_self, int **types, int *num_types, policy_t *policy)
-{
-	ta_item_t *item = NULL;
-	bool_t *inc_types = NULL, *sub_types = NULL, *tmp = NULL;
-	int retv, i, error = 0;
-	int *attrib_types = NULL, num_attrib_types = 0;
-
-	if (!list || !policy || !types || !num_types) {
-		errno = EINVAL;
-		return -1;
-	}
-
-	inc_types = (bool_t*)calloc(policy->num_types, sizeof(bool_t));
-	if (!inc_types) {
-		errno = ENOMEM;
-		return -1;
-	}
-	sub_types = (bool_t*)calloc(policy->num_types, sizeof(bool_t));
-	if (!sub_types) {
-		free(inc_types);
-		errno = ENOMEM;
-		return -1;
-	}
-
-	for (item = list; item; item = item->next) {
-		free(attrib_types);
-		attrib_types = NULL;
-		num_attrib_types = 0;
-		if (item->type & IDX_TYPE) {
-			if (item->type & IDX_SUBTRACT) {
-				sub_types[item->idx] = TRUE;
-			} else {
-				inc_types[item->idx] = TRUE;
-			}
-			continue;
-		} else if (item->type & IDX_ATTRIB) {
-			retv = get_attrib_types(item->idx, &num_attrib_types, &attrib_types, policy);
-			if (retv) {
-				error = errno;
-				goto exit_error;
-			}
-			if (item->type & IDX_SUBTRACT) {
-				tmp = sub_types;
-			} else {
-				tmp = inc_types;
-			}
-			for (i = 0; i < num_attrib_types; i++) {
-				tmp[attrib_types[i]] = TRUE;
-			}
-		} else {
-			continue; /* neither an attribute nor type? do nothing */
-		}
-	}
-
-	for (i = 0; i < policy->num_types; i++) {
-		if (sub_types[i])
-			inc_types[i] = FALSE;
-	}
-
-	if (compliment) {
-		for (i = 0; i < policy->num_types; i++) {
-			inc_types[i] = !inc_types[i];
-		}
-	}
-
-	*types = NULL;
-	*num_types = 0;
-
-	for (i = allow_self?0:1; i < policy->num_types; i++) {
-		if(inc_types[i]) {
-			retv = add_i_to_a(i, num_types, types);
-			if (retv) {
-				error = errno;
-				goto exit_error;
-			}
-		}
-	}
-
-	free(inc_types);
-	free(sub_types);
-
-	return 0;
-
-exit_error:
-	free(inc_types);
-	free(sub_types);
-	/* do not free tmp it points to either inc_ or sub_ */
-	free(*types);
-	*types = NULL;
-	*num_types = 0;
 	errno = error;
 	return -1;
 }

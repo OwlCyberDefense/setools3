@@ -868,7 +868,9 @@ int ap_mls_category_get_sens(int cat, int **sens, int *num_sens, policy_t *polic
  * by default matches criteria in all fields
  * if set returns matches any one field */
 #define AP_MLS_RTS_MATCH_ANY 0x20
-int ap_mls_range_transition_search(int *src_types, int num_src_types, int *tgt_types, int num_tgt_types, ap_mls_range_t *range, unsigned char search_type, int **rules, policy_t *policy);
+int ap_mls_range_transition_search(int *srcs, int num_srcs, int src_type,
+	int *tgts, int num_tgts, int tgt_type, ap_mls_range_t *range, 
+	unsigned char search_type, int **rules, policy_t *policy);
 
 /* constraints */
 void ap_constraint_expr_destroy(ap_constraint_expr_t *expr);
@@ -883,6 +885,9 @@ bool_t does_clone_rule_use_type(int idx, int type, unsigned char whichlist, cln_
 int get_rule_lineno(int rule_idx, int rule_type, policy_t *policy);
 int get_ta_item_name(ta_item_t *ta, char **name, policy_t *policy);
 int extract_types_from_ta_list(ta_item_t *list, bool_t compliment, bool_t allow_self, int **types, int *num_types, policy_t *policy);
+int extract_types_and_attribs_from_ta_list(ta_item_t *list, bool_t compliment, 
+		bool_t allow_self, int **types, int *num_types, int **attribs, 
+		int *num_attribs, policy_t *policy);
 int free_ta_list(ta_item_t *list);
 
 /* optionals */
