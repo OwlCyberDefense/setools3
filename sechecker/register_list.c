@@ -24,6 +24,7 @@ static sechk_module_name_reg_t sechk_module_register_list[] = {
 	{"find_node_types",     &find_node_types_register},
 	{"find_netif_types",    &find_netif_types_register},
 	{"find_port_types",     &find_port_types_register},
+	{"imp_range_trans",     &imp_range_trans_register},
 	{"inc_dom_trans",	&inc_dom_trans_register},
 	{"inc_mount",		&inc_mount_register},
 	{"net_access",          &net_access_register},
