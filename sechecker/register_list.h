@@ -37,7 +37,7 @@ extern int find_node_types_register(sechk_lib_t *lib);
 extern int find_netif_types_register(sechk_lib_t *lib);
 extern int find_assoc_types_register(sechk_lib_t *lib);
 extern int find_net_domains_register(sechk_lib_t *lib);
-extern int net_access_register(sechk_lib_t *lib);
+extern int inc_net_access_register(sechk_lib_t *lib);
 extern int unreachable_doms_register(sechk_lib_t *lib);
 extern int imp_range_trans_register(sechk_lib_t *lib);
 /* TODO: additional externs go here ... */

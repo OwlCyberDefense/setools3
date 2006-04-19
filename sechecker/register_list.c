@@ -27,7 +27,7 @@ static sechk_module_name_reg_t sechk_module_register_list[] = {
 	{"imp_range_trans",     &imp_range_trans_register},
 	{"inc_dom_trans",	&inc_dom_trans_register},
 	{"inc_mount",		&inc_mount_register},
-	{"net_access",          &net_access_register},
+	{"inc_net_access",      &inc_net_access_register},
 	{"roles_wo_allow",	&roles_wo_allow_register},
 	{"roles_wo_types",	&roles_wo_types_register},
 	{"roles_wo_users",	&roles_wo_users_register},
