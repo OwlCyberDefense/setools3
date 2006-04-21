@@ -25,6 +25,7 @@
 #define AVCMSG " avc: "
 #define LOADMSG " security: "
 #define SYSCALL_STRING "audit("
+#define ALT_SYSCALL_STRING "msg=audit("  /* should contain SYSCALL_STRING */
 #define BOOLMSG "committed booleans"
 #define AUDITD_MSG "type="
 #define PARSE_AVC_MSG 1
@@ -192,7 +193,7 @@ static unsigned int insert_time(char **tokens, msg_t *msg, int *position, int nu
 	length += 1 + (NUM_TIME_COMPONENTS - 1); 
 	if ((time = (char*) malloc(length * (sizeof(char)))) == NULL)
 		return PARSE_RET_MEMORY_ERROR;
-	
+
 	if (*position == num_tokens)
 		return PARSE_REACHED_END_OF_MSG;
 	strcpy(time, tokens[*position]);	
@@ -200,6 +201,7 @@ static unsigned int insert_time(char **tokens, msg_t *msg, int *position, int nu
 	(*position)++;
 	if (*position == num_tokens)
 		return PARSE_REACHED_END_OF_MSG;
+	
 	time = strcat(time, tokens[*position]);
 	time = strcat(time, " " );
 	(*position)++;
@@ -213,7 +215,7 @@ static unsigned int insert_time(char **tokens, msg_t *msg, int *position, int nu
 		memset(msg->date_stamp, 0, sizeof(sizeof(struct tm)));
 	}
 
-	if (!strptime(time, "%b %d %T", msg->date_stamp)) {    
+	if (!strptime(time, "%b %d %T", msg->date_stamp)) {
 		free(time); 
 		return 0;
 	} else {
@@ -252,6 +254,12 @@ static unsigned int avc_msg_insert_syscall_info(char *token, msg_t *msg)
 		length--;
 	}
 	header_len = strlen(SYSCALL_STRING);
+
+	/* Check to see if variations on syscall header exist */
+	if (strstr(token, ALT_SYSCALL_STRING)) {
+	  header_len = strlen(ALT_SYSCALL_STRING);
+	}
+
 	time_str = &token[header_len];
 	/* Parse seconds.nanoseconds:serial */
 	while ((fields[i] = strsep(&time_str, ".:")) != NULL && i < PARSE_NUM_SYSCALL_FIELDS) {
@@ -864,7 +872,7 @@ static unsigned int insert_standard_msg_header(char **tokens, msg_t *msg, audit_
 
 static unsigned int avc_msg_insert_field_data(char **tokens, msg_t *msg, audit_log_t *log, int num_tokens)
 {
-	int position = 0;
+        int position = 0;
 	unsigned int ret = 0, tmp_ret = 0;
 
 	assert(tokens != NULL && msg != NULL && log != NULL && num_tokens > 0);
@@ -921,8 +929,8 @@ static unsigned int avc_msg_insert_field_data(char **tokens, msg_t *msg, audit_l
 		if (avc_msg_is_token_new_audit_header(*(&tokens[position]))) {
 			tmp_ret |= avc_msg_insert_syscall_info(*(&tokens[position]), msg);
 			if (tmp_ret & PARSE_RET_SUCCESS) {
-				position += 2;
-				if (position == num_tokens)
+			  position += 2;
+			  if (position == num_tokens)
 					return PARSE_RET_INVALID_MSG_WARN;
 			}
 			ret |= tmp_ret;
