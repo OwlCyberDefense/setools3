@@ -458,7 +458,13 @@ int unreachable_doms_run(sechk_module_t *mod, policy_t *policy)
 		}
 
 		/* if we haven't found a valid transition to this type, check default ctxs */
-		if (!found_valid_trans && !in_def_ctx(domain_list[i], datum) && !sechk_result_get_item(domain_list[i], POL_LIST_TYPE, res)) {
+		if (!found_valid_trans && !in_def_ctx(domain_list[i], datum)) {
+			if (res->num_items > 0) {
+				item = sechk_result_get_item(domain_list[i], POL_LIST_TYPE, res);
+				if (item)
+					break;
+			} 
+
 			item = sechk_item_new();
 			if (!item) {
 				fprintf(stderr, "Error: out of memory\n");
@@ -466,15 +472,15 @@ int unreachable_doms_run(sechk_module_t *mod, policy_t *policy)
 			}
 
 			item->item_id = domain_list[i];
-
+					
 			proof = sechk_proof_new();
-                        if (!proof) {
-                                fprintf(stderr, "Error: out of memory\n");
-                                goto unreachable_doms_run_fail;
-                        }
-                        proof->idx = domain_list[i];
-                        proof->type = POL_LIST_TYPE;
-
+			if (!proof) {
+				fprintf(stderr, "Error: out of memory\n");
+				goto unreachable_doms_run_fail;
+			}
+			proof->idx = domain_list[i];
+			proof->type = POL_LIST_TYPE;
+			
 			/* We failed because an invalid transition exists, and no other valid transitions */
 			if (found_invalid_trans) {
 				for (cur = trans_list; cur; cur = cur->next) {
@@ -494,12 +500,12 @@ int unreachable_doms_run(sechk_module_t *mod, policy_t *policy)
 				if (!proof->text)
 					goto unreachable_doms_run_fail;
 			}
-	
+			
 			proof->next = item->proof;
 			item->proof = proof;
 			item->next =  res->items;
 			res->items = item;
-			(res->num_items)++;			
+			(res->num_items)++;								
 		}
 	}
 
@@ -688,8 +694,12 @@ static char *build_common_role_proof_str(const int src_idx, const int dst_idx, p
 	}
 	memset(str, 0x0, APOL_STR_SZ + 32);
 		
-	snprintf(str, APOL_STR_SZ + 32, "role <<role_r>> types %s\n\trole <<role_r>> types %s\n", 
-		 policy->types[src_idx].name, policy->types[dst_idx].name);
+	if (is_valid_type_idx(src_idx, policy) && is_valid_type_idx(dst_idx, policy)) {
+		snprintf(str, APOL_STR_SZ + 32, "No role was found having types %s and %s:\n\trole <<role_r>> types { %s %s }\n", 
+			 policy->types[src_idx].name, policy->types[dst_idx].name,
+			 policy->types[src_idx].name, policy->types[dst_idx].name);
+	}
+
 	return str;
 }
 

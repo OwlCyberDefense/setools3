@@ -73,7 +73,7 @@ int inc_net_access_register(sechk_lib_t *lib)
 "    find_node_types module\n"
 "  Module options:\n"
 "    none\n";
-	mod->severity = SECHK_SEV_LOW;
+	mod->severity = SECHK_SEV_MED;
 	/* assign requirements */
 	mod->requirements = sechk_name_value_new("policy_type", "source");
 
