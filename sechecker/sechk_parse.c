@@ -35,7 +35,7 @@
 int sechk_lib_parse_xml_file(const char *filename, sechk_lib_t *lib) 
 {
 	xmlTextReaderPtr reader = NULL;
-	int ret;
+	int ret, tmp;
 
 	/* this initializes the XML library and checks potential ABI mismatches
 	 * between the version it was compiled for and the actual shared
@@ -57,8 +57,19 @@ int sechk_lib_parse_xml_file(const char *filename, sechk_lib_t *lib)
 		}
 		if (ret == 0) /* no more nodes to read */
 			break;
-		if (sechk_lib_process_xml_node(reader, lib) != 0)
+		
+		tmp = sechk_lib_process_xml_node(reader, lib);
+		if (tmp == -1)
 			goto exit_err;
+		if (tmp == 1) {
+			ret = xmlTextReaderNext(reader);
+			if (ret == 0)
+				break;
+			if (ret == -1) {
+				fprintf(stderr, "Error in xmlTextReaderNext()\n");
+				goto exit_err;
+			}			
+		}				
 	}
 
 	/* cleanup function for the XML library */
@@ -85,7 +96,6 @@ int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib)
 	static xmlChar *option = NULL;
 	static xmlChar *value = NULL;
 	static sechk_module_t *current_module=NULL;	
-	static bool_t profile = FALSE;
 
 	switch (xmlTextReaderNodeType(reader)) {
 
@@ -104,30 +114,26 @@ int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib)
 			/* parsing the <sechecker> tag */
 			attrib = xmlTextReaderGetAttribute(reader, (xmlChar*)SECHK_PARSE_VERSION_ATTRIB);
 			if (attrib) {
-				/* TODO: add version logic in later versions */
+				#ifdef SECHECKER_VERSION
+				if (atof((const char *)attrib) > atof(SECHECKER_VERSION)) {
+					fprintf(stderr, "Error: sechecker version in profile is incorrect: expected %1.1f got %1.1f\n",
+						atof(SECHECKER_VERSION), atof((const char *)attrib));
+					goto exit_err;
+				}
+				#endif
+
 				free(attrib);
 				attrib = NULL;
 			} else {
 				fprintf(stderr, "Warning: sechecker version is not specified.\n");
 			}
-		} else if (xmlStrEqual(xmlTextReaderConstName(reader), (xmlChar*)SECHK_PARSE_PROFILE_TAG) == 1) {
-			profile = TRUE; /* tell the parser that this is a test profile not a config file */
 		} else if (xmlStrEqual(xmlTextReaderConstName(reader), (xmlChar*)SECHK_PARSE_MODULE_TAG) == 1) {
 			/* parsing the <module> tag */
 			attrib = xmlTextReaderGetAttribute(reader, (xmlChar*)SECHK_PARSE_NAME_ATTRIB);
 			if (attrib) {
 				if ((idx = sechk_lib_get_module_idx((const char*)attrib, lib)) == -1) {
-					if (profile) {
-						fprintf(stderr, "Error: module %s not found.\n", (const char*)attrib);
-						goto exit_err;
-					}
-					/* set the values on a new module b/c it doesn't already exist */
-					if (sechk_lib_grow_modules(lib) != 0)
-						goto exit_err;
-					lib->num_modules++;
-					assert(lib->modules && lib->num_modules > 0);
-					lib->modules[lib->num_modules-1].name = strdup((const char*)attrib);
-					current_module = &lib->modules[lib->num_modules-1];
+						fprintf(stderr, "Warning: module %s not found.\n", (const char*)attrib);
+						return 1; /* not a fatal error */
 				} else {
 					/* set the values on the existing module */
 					current_module = &lib->modules[idx];
@@ -183,12 +189,7 @@ int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib)
 				} else if (xmlStrEqual(attrib, (xmlChar*)SECHK_PARSE_OUTPUT_SHORT) == 1) {
 					current_module->outputformat = SECHK_OUT_SHORT;
 				} else if (xmlStrEqual(attrib, (xmlChar*)SECHK_PARSE_OUTPUT_NONE) == 1) {
-					if (profile) {
-						current_module->outputformat = SECHK_OUT_NONE;
-					} else {
-						fprintf(stderr, "Error: output value of \"none\" is only valid in profiles.\n");
-						goto exit_err;
-					}
+				       current_module->outputformat = SECHK_OUT_NONE;
 				} else {
 					fprintf(stderr, "Error: invalid output value %s.\n",attrib);
 						goto exit_err;

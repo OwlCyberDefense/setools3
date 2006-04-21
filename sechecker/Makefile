@@ -45,6 +45,7 @@ sechecker.o: CFLAGS+=-DPROFILE_INSTALL_DIR='"$(SECHK_BASE_INSTALL_DIR)/$(PROF_IN
 sechecker.o: CFLAGS+=-DPROF_SUBDIR='"$(PROF_INSTALL_DIR)"'
 
 sechk_parse.o: sechk_parse.h
+sechk_parse.o: CFLAGS+=-DSECHECKER_VERSION=$(SECHECKER_VERSION)
 
 install: all install-profiles
 	install -m 755 sechecker $(BINDIR)
