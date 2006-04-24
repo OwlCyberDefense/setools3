@@ -593,8 +593,11 @@ int open_partial_policy(const char* filename, unsigned int options, policy_t **p
 	int rt;
 	unsigned int opts;
 	struct stat buf;
-	
-	opts = validate_policy_options(options);
+
+	/* To support optionals and the transition to 3.0 disable opening 
+	 * only part of a policy .*/	
+	/*	opts = validate_policy_options(options);*/
+	opts = POLOPT_ALL;
 	
 	if(policy == NULL)
 		return -1;
