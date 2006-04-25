@@ -742,7 +742,7 @@ policy_version_contexts	: version_jul_2002
 			| versions_pre_jul_2002
 			;
 
-version_jul_2002	: opt_fs_contexts_11 fs_uses opt_genfs_contexts 
+version_jul_2002	: opt_fs_contexts_11 opt_fs_uses opt_genfs_contexts 
 				net_contexts_11
 			;
 			
@@ -756,8 +756,8 @@ versions_pre_jul_2002	: fs_contexts_pre11
 
 
 /* added Jul 2002 */
-fs_uses                 : fs_use_def
-                        | fs_uses fs_use_def
+opt_fs_uses             : opt_fs_uses fs_use_def
+                        | /* empty */
                         ;
 /* added Jul 2002 */
 /* changed Jul 2003; added FSUSEXATTR */
