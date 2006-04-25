@@ -756,6 +756,7 @@ versions_pre_jul_2002	: fs_contexts_pre11
 
 
 /* added Jul 2002 */
+/* modified Apr 2006 to match checkpolicy 1.49 */
 opt_fs_uses             : opt_fs_uses fs_use_def
                         | /* empty */
                         ;
