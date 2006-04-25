@@ -255,11 +255,11 @@ static int perform_rtrans_query(options_t* cmd_opts, rtrans_results_t* rtrans_re
 
     init_rtrans_query(&query);
 
-    query.src.indirect = FALSE;
+    query.src.indirect = cmd_opts->indirect;
     query.src.ta = cmd_opts->src_name;
     query.src.t_or_a = IDX_BOTH;
 
-    query.tgt.indirect = FALSE;
+    query.tgt.indirect = cmd_opts->indirect;
     query.tgt.ta = cmd_opts->tgt_name;
     query.tgt.t_or_a = IDX_BOTH;
 
@@ -423,7 +423,10 @@ static void print_rtrans_results(options_t *cmd_opts,
 		for(i = 0; i < rtrans_results->num_range_rules; i++) {
 			rule = re_render_rangetrans((cmd_opts->lineno && !is_binary_policy(policy)), rtrans_results->range_rules[i], policy);
 			assert(rule);
-			printf("   %s\n", rule);
+			if (cmd_opts->show_cond)
+				printf("   %s\n", rule);
+			else
+				printf("%s\n", rule);
 			free(rule);
 		}
 	}
