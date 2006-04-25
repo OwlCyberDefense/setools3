@@ -27,6 +27,7 @@
 #define SECHK_PARSE_OUTPUT_SHORT          "short"
 #define SECHK_PARSE_OUTPUT_VERBOSE        "verbose"
 
+static char *build_dtd_path(void);
 
 /* Parsing functions */
 
@@ -35,7 +36,11 @@
 int sechk_lib_parse_xml_file(const char *filename, sechk_lib_t *lib) 
 {
 	xmlTextReaderPtr reader = NULL;
-	int ret, tmp;
+	xmlDtdPtr dtd = NULL;
+	xmlDocPtr xml = NULL;
+	xmlValidCtxtPtr ctxt = NULL;
+	int tmp, ret = 0;
+	char *dtd_path = NULL;
 
 	/* this initializes the XML library and checks potential ABI mismatches
 	 * between the version it was compiled for and the actual shared
@@ -49,6 +54,36 @@ int sechk_lib_parse_xml_file(const char *filename, sechk_lib_t *lib)
 		goto exit_err;
 	}
 	
+	dtd_path = build_dtd_path();
+	if (!dtd_path) {
+		fprintf(stderr, "Error: getting DTD path\n");
+		goto exit_err;
+	}
+	dtd = xmlParseDTD(NULL, (const xmlChar *)dtd_path);
+	free(dtd_path);
+	
+	if (!dtd) {
+		fprintf(stderr, "Error: parsing DTD\n");
+		goto exit_err;
+	}
+
+	xml = xmlParseFile(filename);
+	if (!xml) {
+		fprintf(stderr, "Error: parsing sechecker profile\n");
+		goto exit_err;
+	}
+
+	ctxt = xmlNewValidCtxt();
+	if (!ctxt) {
+		fprintf(stderr, "Error: out of memory\n");
+		goto exit_err;
+	}
+	/* validate profile against the DTD */
+	if (xmlValidateDtd(ctxt, xml, dtd) == 0) {
+		fprintf(stderr, "Error: SEChecker profile contains invalid XML. Aborting.\n");
+		goto exit_err;
+	}
+
 	while (1) {
 		ret = xmlTextReaderRead(reader);
 		if (ret == -1) {
@@ -212,5 +247,30 @@ int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib)
 	return -1;
 }
 
+static char *build_dtd_path(void)
+{
+	char *path = NULL;
+	int path_sz = 0;
+	
+	#ifdef PROFILE_INSTALL_DIR
+	if (append_str(&path, &path_sz, "file://localhost") == -1)
+		return NULL;
 
+	if (append_str(&path, &path_sz, BASE_PATH) == -1)
+		return NULL;
+
+	if (append_str(&path, &path_sz, "/") == -1)
+		return NULL;
+
+	if (append_str(&path, &path_sz, PROFILE_INSTALL_DIR) == -1)
+		return NULL;
+
+	if (append_str(&path, &path_sz, "/sechecker.dtd") == -1)
+		return NULL;
+
+	return path;
+	#endif
+	
+	return NULL;
+}
  

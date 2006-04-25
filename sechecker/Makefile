@@ -45,7 +45,7 @@ sechecker.o: CFLAGS+=-DPROFILE_INSTALL_DIR='"$(SECHK_BASE_INSTALL_DIR)/$(PROF_IN
 sechecker.o: CFLAGS+=-DPROF_SUBDIR='"$(PROF_INSTALL_DIR)"'
 
 sechk_parse.o: sechk_parse.h
-sechk_parse.o: CFLAGS+=-DSECHECKER_VERSION=$(SECHECKER_VERSION)
+sechk_parse.o: CFLAGS+=-DSECHECKER_VERSION=$(SECHECKER_VERSION) -DPROFILE_INSTALL_DIR='"$(SECHK_BASE_INSTALL_DIR)/$(PROF_INSTALL_DIR)"' -DBASE_PATH='"$(INSTALL_LIBDIR)"'
 
 install: all install-profiles
 	install -m 755 sechecker $(BINDIR)
@@ -55,7 +55,7 @@ install: all install-profiles
 
 install-profiles:
 	mkdir -m 755 -p $(INSTALL_LIBDIR)/$(SECHK_BASE_INSTALL_DIR)/$(PROF_INSTALL_DIR)
-	install -m 644 profiles/*.sechecker $(INSTALL_LIBDIR)/$(SECHK_BASE_INSTALL_DIR)/$(PROF_INSTALL_DIR)
+	install -m 644 profiles/*.sechecker profiles/*.dtd $(INSTALL_LIBDIR)/$(SECHK_BASE_INSTALL_DIR)/$(PROF_INSTALL_DIR)
 
 clean:
 	rm -f sechecker *.o; $(MAKE) -C ./modules clean
