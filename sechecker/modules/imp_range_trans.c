@@ -47,8 +47,8 @@ int imp_range_trans_register(sechk_lib_t *lib)
 	mod->detailed_description =
 "--------------------------------------------------------------------------------\n"
 "This module finds impossible range transitions in a policy.\n"
-"A range transition is possible if and only if the following conditions are\n"
-"satisfied:\n"
+"A range transition is possible if and only if all of the following conditions\n" 
+"are satisfied:\n"
 "   1) there exist TE rules allowing the range transition to occur\n"
 "   2) there exist RBAC rules allowing the range transition to occur\n"
 "   3) at least one user must be able to transition to the target MLS range\n";

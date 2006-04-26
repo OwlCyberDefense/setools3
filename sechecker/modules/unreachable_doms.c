@@ -66,7 +66,7 @@ int unreachable_doms_register(sechk_lib_t *lib)
 "    inc_dom_trans module\n"
 "  Module options:\n"
 "    none\n";
-	mod->severity = SECHK_SEV_LOW;
+	mod->severity = SECHK_SEV_MED;
 
 	/* assign requirements */
 	/* find_domains requires source policy.. */
@@ -678,7 +678,7 @@ static char *build_no_trans_proof_str(void)
 		return NULL;
 	}
 
-	sprintf(str, "No transitions to this domain\n");
+	sprintf(str, "There is insufficient TE policy for a transition to this domain to occur\n");
 	return str;
 } 
 
