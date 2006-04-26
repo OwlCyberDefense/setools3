@@ -1,4 +1,4 @@
-<sechecker version="1.0">
+<sechecker version="1.1">
 <profile>
 	<module name="find_domains">
 		<output value="quiet"/>
