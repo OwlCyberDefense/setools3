@@ -1419,6 +1419,13 @@ int search_rbac_rules(rbac_query_t *query, rbac_results_t *results, policy_t *po
 					all_false_rbac_bool(&tmp, policy);
 				}
 			}
+			for (i = 0; i < policy->num_aliases; i++) {
+				if (!regexec(&reg,  policy->aliases[i].name, 0, NULL, 0)) {
+					match_rbac_rules(policy->aliases[i].type, IDX_TYPE, TGT_LIST, query->indirect, 0, &tmp, policy);
+					rbac_bool_or_eq(&secondary, &tmp, policy);
+					all_false_rbac_bool(&tmp, policy);
+				}
+			}
 			for (i = 0; i < policy->num_attribs; i++) {
 				if (!regexec(&reg,  policy->attribs[i].name, 0, NULL, 0)) {
 					match_rbac_rules(i, IDX_ATTRIB, TGT_LIST, query->indirect, 0, &tmp, policy);
