@@ -62,15 +62,15 @@
 	</module>
 
 	<module name="find_port_types">
-		<output value="quiet">
+		<output value="quiet"/>
 	</module>
 
 	<module name="find_node_types">
-		<output value="quiet">
+		<output value="quiet"/>
 	</module>
 
 	<module name="find_netif_types">
-		<output value="quiet">
+		<output value="quiet"/>
 	</module>
 
 </profile>

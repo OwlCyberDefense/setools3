@@ -50,27 +50,27 @@
 	</module>
   
 	<module name="find_port_types">
-		<output value="quiet">
+		<output value="quiet"/>
 	</module>
  
 	<module name="find_node_types">
-		<output value="quiet">
+		<output value="quiet"/>
 	</module>
 
 	<module name="find_netif_types">
-		<output value="quiet">
+		<output value="quiet"/>
 	</module>
 
 	<module name="inc_net_access">
-		<output value="short">
+		<output value="short"/>
 	</module>
 
 	<module name="imp_range_trans">
-		<output value="short">
+		<output value="short"/>
 	</module>
 
 	<module name="unreachable_doms">
-		<output value="short">
+		<output value="short"/>
 	</module>
 
 </profile>
