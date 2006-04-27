@@ -1,8 +1,8 @@
-SELinux Tools (setools), version 2.3
+SELinux Tools (setools), version 2.4
 by Tresys Technology, LLC
 (selinux@tresys.com, www.tresys.com/selinux)
 
-January 23, 2006
+May 1, 2006
 
 
 CURRENT BUGS AND ISSUES
@@ -35,11 +35,6 @@ APOL
    Therefore, aliases are not displayed and queries cannot use them 
    as parameters.
    
-LIBAPOL
-
-1. Lots of yacc shift/reduce errors in libapol that don't currently 
-   impact operation (so it appears).
-   
 SEAUDIT
 
 1. Sorting by date will not work correctly if your audit log spans 
@@ -52,12 +47,12 @@ SEAUDIT
 
 TESTING INFORMATION
 
-Operating Systems: Fedora Core 3 and 4, RHEL 4, Gentoo 2004.3
+Operating Systems: Fedora Core 4 and 5, RHEL 4
 SELinux version: 2.6
 SELinux Policy versions: 12, 15, 16, 17, 18, 19 and 20 (with MLS support for versions 19 and 20)
 TCL/TK version: 8.4
 BWidget version: 1.7
-Desktops: Gnome, KDE, fvwm 
+Desktops: Gnome, KDE
 
 These tools will likely have some bugs of which we are currently unaware.  
 Please report any new bugs or comments to selinux@tresys.com.  Thank you 
