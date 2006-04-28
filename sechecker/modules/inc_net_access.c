@@ -11,12 +11,27 @@
 #include "inc_net_access.h"
 #include "render.h"
 #include "semantic/avsemantics.h"
+#include "policy-query.h"
 
 #include <stdio.h>
 #include <string.h>
 
 static sechk_lib_t *library;
 static const char *const mod_name = "inc_net_access";
+
+static void init_net_state(inc_net_access_data_t *net_data);
+static void init_idx_cache(idx_cache_t *idx_cache, policy_t *policy);
+static int check_perms(const int type_idx, policy_t * policy, sechk_item_t **item, inc_net_access_data_t *net_state);
+static bool_t check_type_perms(const int src_idx, const int dst_idx, const int obj_idx, const int perm_idx, policy_t *policy);
+static char *build_proof_str(char *src_type, char *dst_type, char *obj_class, char *perms);
+static int build_have_perms_proof(const int type_idx, sechk_proof_t **proof, policy_t *policy, idx_cache_t *idx_cache);
+static int validate_net_state(const int type_idx, inc_net_access_data_t *net_data, sechk_proof_t **proof, policy_t *policy);
+static void check_socket_perms(const int type_idx, policy_t *policy, inc_net_access_data_t *net_state);
+static void check_netif_perms(const int type_idx, policy_t *policy, inc_net_access_data_t *net_state);
+static void check_port_perms(const int type_idx, policy_t *policy, inc_net_access_data_t *net_state);
+static void check_node_perms(const int type_idx, policy_t *policy, inc_net_access_data_t *net_state);
+static bool_t uses_tcp(const int domain_idx, idx_cache_t *idx_cache, policy_t *policy);
+static bool_t uses_udp(const int domain_idx, idx_cache_t *idx_cache, policy_t *policy);
 
 /* result lists */
 static int *net_domains_list = NULL, *netif_types_list = NULL, *port_types_list = NULL, *node_types_list = NULL, *assoc_types_list = NULL;
@@ -861,7 +876,7 @@ static int validate_net_state(const int type_idx, inc_net_access_data_t *ns, sec
 	int proof_str_sz = 0;
 
 	/* socket permissions */
-	if (!ns->SELF_TCPSOCK_CREATE && !ns->SELF_UDPSOCK_CREATE) {
+	if (uses_tcp(type_idx, &(ns->idx_cache), policy) && !ns->SELF_TCPSOCK_CREATE) {		
 		tmp_proof = sechk_proof_new();
 		if (!tmp_proof) {
 			fprintf(stderr, "Error: out of memory\n");
@@ -870,7 +885,7 @@ static int validate_net_state(const int type_idx, inc_net_access_data_t *ns, sec
 		tmp_proof->idx = type_idx;
 		tmp_proof->type = inc_net_access_NEEDED_PERMS;
 		proof_str = build_proof_str(policy->types[type_idx].name, policy->types[type_idx].name,
-					    "{ tcp_socket udp_socket }", "{ create }");
+					    "tcp_socket", "{ create }");
 		if (!proof_str) {
 			fprintf(stderr, "Error: unable to build proof\n");
 			return inc_net_access_ERR;
@@ -881,8 +896,32 @@ static int validate_net_state(const int type_idx, inc_net_access_data_t *ns, sec
 		(*proof) = tmp_proof;
 		socket_failed = TRUE;
 		skip = TRUE;
-      	}
-	if (ns->SELF_TCPSOCK_CREATE && (!ns->SELF_TCPSOCK_READ && !ns->SELF_TCPSOCK_WRITE))
+	}
+	if (uses_udp(type_idx, &(ns->idx_cache), policy) && !ns->SELF_UDPSOCK_CREATE) {
+                tmp_proof = sechk_proof_new();
+                if (!tmp_proof) {
+                        fprintf(stderr, "Error: out of memory\n");
+                        return inc_net_access_ERR;
+                }
+                tmp_proof->idx = type_idx;
+                tmp_proof->type = inc_net_access_NEEDED_PERMS;
+                
+                proof_str = build_proof_str(policy->types[type_idx].name, policy->types[type_idx].name,
+                                            "udp_socket", "{ create }");
+                if (!proof_str) {
+                        fprintf(stderr, "Error: unable to build proof\n");
+                        return inc_net_access_ERR;
+                }
+                tmp_proof->text = proof_str;
+
+                tmp_proof->next = (*proof);
+                (*proof) = tmp_proof;
+                socket_failed = TRUE;
+                skip = TRUE;
+        }
+
+	/* need both read/write on tcp_socket */
+	if (uses_tcp(type_idx, &(ns->idx_cache), policy) && !(ns->SELF_TCPSOCK_READ && ns->SELF_TCPSOCK_WRITE))
 	{
 		tmp_proof = sechk_proof_new();
 		if (!tmp_proof) {
@@ -891,8 +930,16 @@ static int validate_net_state(const int type_idx, inc_net_access_data_t *ns, sec
 		}
 		tmp_proof->idx = type_idx;
 		tmp_proof->type = inc_net_access_NEEDED_PERMS;
-		proof_str = build_proof_str(policy->types[type_idx].name, policy->types[type_idx].name,
-					    "tcp_socket", "{ read write }");
+		if (!ns->SELF_TCPSOCK_READ && !ns->SELF_TCPSOCK_WRITE) {
+			proof_str = build_proof_str(policy->types[type_idx].name, policy->types[type_idx].name,
+                                                    "tcp_socket", "{ read write }");
+		} else if (!ns->SELF_TCPSOCK_READ) {
+			proof_str = build_proof_str(policy->types[type_idx].name, policy->types[type_idx].name,
+						    "tcp_socket", "{ read }");
+		} else if (!ns->SELF_TCPSOCK_WRITE) {
+			proof_str = build_proof_str(policy->types[type_idx].name, policy->types[type_idx].name,
+                                                    "tcp_socket", "{ write }");
+		}
 		if (!proof_str) {
 			fprintf(stderr, "Error: unable to build proof\n");
 			return inc_net_access_ERR;
@@ -903,7 +950,7 @@ static int validate_net_state(const int type_idx, inc_net_access_data_t *ns, sec
 		(*proof) = tmp_proof;
 		socket_failed = TRUE;
 	}
-        if (ns->SELF_UDPSOCK_CREATE && (!ns->SELF_UDPSOCK_READ && !ns->SELF_UDPSOCK_WRITE))
+        if (uses_udp(type_idx, &(ns->idx_cache), policy) && (!ns->SELF_UDPSOCK_READ && !ns->SELF_UDPSOCK_WRITE))
         {
                 tmp_proof = sechk_proof_new();
                 if (!tmp_proof) {
@@ -937,15 +984,10 @@ static int validate_net_state(const int type_idx, inc_net_access_data_t *ns, sec
 		tmp_proof->idx = type_idx;
 		tmp_proof->type = inc_net_access_NEEDED_PERMS;
 
-		if (ns->SELF_TCPSOCK_CREATE) {
-			if ((ns->SELF_TCPSOCK_READ && ns->SELF_TCPSOCK_WRITE) || (!ns->SELF_TCPSOCK_READ && !ns->SELF_TCPSOCK_WRITE))
-				append_str(&proof_str, &proof_str_sz, build_proof_str(policy->types[type_idx].name, "<netif type>", "netif", "{ tcp_recv tcp_send }"));
-			else if (ns->SELF_TCPSOCK_READ)
-				append_str(&proof_str, &proof_str_sz, build_proof_str(policy->types[type_idx].name, "<netif type>", "netif", "{ tcp_recv }"));
-			else if (ns->SELF_TCPSOCK_WRITE)
-				append_str(&proof_str, &proof_str_sz, build_proof_str(policy->types[type_idx].name, "<netif type>", "netif", "{ tcp_send }"));
+		if (uses_tcp(type_idx, &(ns->idx_cache), policy)) {
+			append_str(&proof_str, &proof_str_sz, build_proof_str(policy->types[type_idx].name, "<netif type>", "netif", "{ tcp_recv tcp_send }"));
 		}
-		if(ns->SELF_UDPSOCK_CREATE) {
+		if(uses_udp(type_idx, &(ns->idx_cache), policy)) {
 			if ((ns->SELF_UDPSOCK_READ && ns->SELF_UDPSOCK_WRITE) || (!ns->SELF_UDPSOCK_READ && !ns->SELF_UDPSOCK_WRITE))
 				append_str(&proof_str, &proof_str_sz, build_proof_str(policy->types[type_idx].name, "<netif type>", "netif", "{ udp_recv udp_send }"));
 			else if (ns->SELF_UDPSOCK_READ)
@@ -953,9 +995,6 @@ static int validate_net_state(const int type_idx, inc_net_access_data_t *ns, sec
 			else if (ns->SELF_UDPSOCK_WRITE)
 				append_str(&proof_str, &proof_str_sz, build_proof_str(policy->types[type_idx].name, "<netif type>", "netif", "{ udp_send }"));
 		}
-		/* No socket perms exist */
-		else
-			append_str(&proof_str, &proof_str_sz, build_proof_str(policy->types[type_idx].name, "<netif type>", "netif", "{ tcp_recv tcp_send udp_recv udp_send }"));
 
 		if (!proof_str) {
 			fprintf(stderr, "Error: unable to build proof\n");
@@ -968,7 +1007,7 @@ static int validate_net_state(const int type_idx, inc_net_access_data_t *ns, sec
 		skip = TRUE;
 	}
 	
-	if (ns->SELF_TCPSOCK_CREATE && ns->SELF_TCPSOCK_READ && !ns->ANY_NETIF_TCPRECV && !skip) {
+	if (uses_tcp(type_idx, &(ns->idx_cache), policy) && !(ns->ANY_NETIF_TCPRECV && ns->ANY_NETIF_TCPSEND) && !skip) {
 		tmp_proof = sechk_proof_new();
                 if (!tmp_proof) {
                         fprintf(stderr, "Error: out of memory\n");
@@ -976,7 +1015,14 @@ static int validate_net_state(const int type_idx, inc_net_access_data_t *ns, sec
                 }
                 tmp_proof->idx = type_idx;
                 tmp_proof->type = inc_net_access_NEEDED_PERMS;
-                proof_str = build_proof_str(policy->types[type_idx].name, "<netif type>", "netif", "{ tcp_recv }");
+		if (!ns->ANY_NETIF_TCPRECV && !ns->ANY_NETIF_TCPSEND) {
+			proof_str = build_proof_str(policy->types[type_idx].name, "<netif type>", "netif", "{ tcp_recv tcp_send }");
+		} else if (!ns->ANY_NETIF_TCPRECV) {
+			proof_str = build_proof_str(policy->types[type_idx].name, "<netif type>", "netif", "{ tcp_recv }");
+		} else if (!ns->ANY_NETIF_TCPSEND) {
+			proof_str = build_proof_str(policy->types[type_idx].name, "<netif type>", "netif", "{ tcp_send }");
+		}
+
                 if (!proof_str) {
                         fprintf(stderr, "Error: unable to build proof\n");
                         return inc_net_access_ERR;
@@ -986,43 +1032,26 @@ static int validate_net_state(const int type_idx, inc_net_access_data_t *ns, sec
                 (*proof) = tmp_proof;
                 netif_failed = TRUE;
 	}
-	if (ns->SELF_TCPSOCK_CREATE && ns->SELF_TCPSOCK_WRITE && !ns->ANY_NETIF_TCPSEND && !skip) {
-                tmp_proof = sechk_proof_new();
-                if (!tmp_proof) {
-                        fprintf(stderr, "Error: out of memory\n");
-                        return inc_net_access_ERR;
-                }
-                tmp_proof->idx = type_idx;
-                tmp_proof->type = inc_net_access_NEEDED_PERMS;
-                proof_str = build_proof_str(policy->types[type_idx].name, "<netif type>", "netif", "{ tcp_send }");
-                if (!proof_str) {
-                        fprintf(stderr, "Error: unable to build proof\n");
-                        return inc_net_access_ERR;
-                }
-                tmp_proof->text = proof_str;
-                tmp_proof->next = (*proof);
-                (*proof) = tmp_proof;
-                netif_failed = TRUE;
-        }
-	if (ns->SELF_UDPSOCK_CREATE && ns->SELF_UDPSOCK_READ && !ns->ANY_NETIF_UDPRECV && !skip) {
-                tmp_proof = sechk_proof_new();
-                if (!tmp_proof) {
-                        fprintf(stderr, "Error: out of memory\n");
-                        return inc_net_access_ERR;
-                }
-                tmp_proof->idx = type_idx;
-                tmp_proof->type = inc_net_access_NEEDED_PERMS;
-                proof_str = build_proof_str(policy->types[type_idx].name, "<netif type>", "netif", "{ udp_recv }");
-                if (!proof_str) {
-                        fprintf(stderr, "Error: unable to build proof\n");
-                        return inc_net_access_ERR;
-                }
-                tmp_proof->text = proof_str;
-                tmp_proof->next = (*proof);
-                (*proof) = tmp_proof;
-                netif_failed = TRUE;
-        }
-	if (ns->SELF_UDPSOCK_CREATE && ns->SELF_UDPSOCK_WRITE && !ns->ANY_NETIF_UDPSEND && !skip) {
+
+	if (uses_udp(type_idx, &(ns->idx_cache), policy) && ns->SELF_UDPSOCK_READ && !ns->ANY_NETIF_UDPRECV && !skip) {
+		tmp_proof = sechk_proof_new();
+		if (!tmp_proof) {
+			fprintf(stderr, "Error: out of memory\n");
+			return inc_net_access_ERR;
+		}
+		tmp_proof->idx = type_idx;
+		tmp_proof->type = inc_net_access_NEEDED_PERMS;
+		proof_str = build_proof_str(policy->types[type_idx].name, "<netif type>", "netif", "{ udp_recv }");
+		if (!proof_str) {
+			fprintf(stderr, "Error: unable to build proof\n");
+			return inc_net_access_ERR;
+		}
+		tmp_proof->text = proof_str;
+		tmp_proof->next = (*proof);
+		(*proof) = tmp_proof;
+		netif_failed = TRUE;
+	}
+	if (uses_udp(type_idx, &(ns->idx_cache), policy) && ns->SELF_UDPSOCK_WRITE && !ns->ANY_NETIF_UDPSEND && !skip) {
                 tmp_proof = sechk_proof_new();
                 if (!tmp_proof) {
                         fprintf(stderr, "Error: out of memory\n");
@@ -1054,16 +1083,11 @@ static int validate_net_state(const int type_idx, inc_net_access_data_t *ns, sec
                 tmp_proof->idx = type_idx;
                 tmp_proof->type = inc_net_access_NEEDED_PERMS;
 
-		if (ns->SELF_TCPSOCK_CREATE) {
+		if (uses_tcp(type_idx, &(ns->idx_cache), policy)) {
 			/* okay to allocate space for proof_str here */
-			if ((ns->SELF_TCPSOCK_READ && ns->SELF_TCPSOCK_WRITE) || (!ns->SELF_TCPSOCK_READ && !ns->SELF_TCPSOCK_WRITE)) 
-				append_str(&proof_str, &proof_str_sz, build_proof_str(policy->types[type_idx].name, "<port type>", "tcp_socket", "{ recv_msg send_msg }"));
-			else if (ns->SELF_TCPSOCK_READ)
-				append_str(&proof_str, &proof_str_sz, build_proof_str(policy->types[type_idx].name, "<port type>", "tcp_socket", "{ recv_msg }"));
-			else if (ns->SELF_TCPSOCK_WRITE)
-				append_str(&proof_str, &proof_str_sz, build_proof_str(policy->types[type_idx].name, "<port type>", "tcp_socket", "{ send_msg }"));
+			append_str(&proof_str, &proof_str_sz, build_proof_str(policy->types[type_idx].name, "<port type>", "tcp_socket", "{ recv_msg send_msg }"));
 		}
-		if (ns->SELF_UDPSOCK_CREATE) {
+		if (uses_udp(type_idx, &(ns->idx_cache), policy)) {
 			if ((ns->SELF_UDPSOCK_READ && ns->SELF_UDPSOCK_WRITE) || (!ns->SELF_UDPSOCK_READ && !ns->SELF_UDPSOCK_WRITE))
 				append_str(&proof_str, &proof_str_sz, build_proof_str(policy->types[type_idx].name, "<port type>", "udp_socket", "{ recv_msg send_msg }"));
 			else if (ns->SELF_UDPSOCK_READ) 
@@ -1071,20 +1095,14 @@ static int validate_net_state(const int type_idx, inc_net_access_data_t *ns, sec
 			else if (ns->SELF_UDPSOCK_WRITE)
 				append_str(&proof_str, &proof_str_sz, build_proof_str(policy->types[type_idx].name, "<port type>", "udp_socket", "{ send_msg }"));
 		}
-		else
-			append_str(&proof_str, &proof_str_sz, build_proof_str(policy->types[type_idx].name, "<port type>", "{ tcp_socket udp_socket }", "{ recv_msg send_msg }"));
          
-		if (!proof_str) {
-                        fprintf(stderr, "Error: unable to build proof\n");
-                        return inc_net_access_ERR;
-                }
                 tmp_proof->text = proof_str;
                 tmp_proof->next = (*proof);
                 (*proof) = tmp_proof;
                 port_failed = TRUE;
 		skip = TRUE;
         }
-	if (ns->ANY_NETIF_TCPRECV && !ns->PORT_TCPSOCK_RECVMSG && !skip) {
+	if (uses_tcp(type_idx, &(ns->idx_cache), policy) && !(ns->PORT_TCPSOCK_RECVMSG && ns->PORT_TCPSOCK_SENDMSG) && !skip) {
                 tmp_proof = sechk_proof_new();
                 if (!tmp_proof) {
                         fprintf(stderr, "Error: out of memory\n");
@@ -1092,7 +1110,14 @@ static int validate_net_state(const int type_idx, inc_net_access_data_t *ns, sec
                 }
                 tmp_proof->idx = type_idx;
                 tmp_proof->type = inc_net_access_NEEDED_PERMS;
-                proof_str = build_proof_str(policy->types[type_idx].name, "<port type>", "tcp_socket", "{ recv_msg }");
+		if (!ns->PORT_TCPSOCK_RECVMSG && !ns->PORT_TCPSOCK_SENDMSG) {
+			proof_str = build_proof_str(policy->types[type_idx].name, "<port type>", "tcp_socket", "{ recv_msg send_msg }");
+		} else if (!ns->PORT_TCPSOCK_RECVMSG) {
+			proof_str = build_proof_str(policy->types[type_idx].name, "<port type>", "tcp_socket", "{ recv_msg }");
+		} else if (!ns->PORT_TCPSOCK_SENDMSG) {
+			proof_str = build_proof_str(policy->types[type_idx].name, "<port type>", "tcp_socket", "{ send_msg }");
+		}
+
                 if (!proof_str) {
                         fprintf(stderr, "Error: unable to build proof\n");
                         return inc_net_access_ERR;
@@ -1101,26 +1126,9 @@ static int validate_net_state(const int type_idx, inc_net_access_data_t *ns, sec
                 tmp_proof->next = (*proof);
                 (*proof) = tmp_proof;
 		port_failed = TRUE;
-        }
-	if (ns->ANY_NETIF_TCPSEND && !ns->PORT_TCPSOCK_SENDMSG && !skip) {
-                tmp_proof = sechk_proof_new();
-                if (!tmp_proof) {
-                        fprintf(stderr, "Error: out of memory\n");
-                        return inc_net_access_ERR;
-                }
-                tmp_proof->idx = type_idx;
-                tmp_proof->type = inc_net_access_NEEDED_PERMS;
-                proof_str = build_proof_str(policy->types[type_idx].name, "<port type>", "tcp_socket", "{ send_msg }");
-                if (!proof_str) {
-                        fprintf(stderr, "Error: unable to build proof\n");
-                        return inc_net_access_ERR;
-                }
-                tmp_proof->text = proof_str;
-                tmp_proof->next = (*proof);
-                (*proof) = tmp_proof;
-		port_failed = TRUE;
-        }
-	if (ns->ANY_NETIF_UDPRECV && !ns->PORT_UDPSOCK_RECVMSG && !skip) {
+        } 
+ 
+	if (uses_udp(type_idx, &(ns->idx_cache), policy) && ns->ANY_NETIF_UDPRECV && !ns->PORT_UDPSOCK_RECVMSG && !skip) {
                 tmp_proof = sechk_proof_new();
                 if (!tmp_proof) {
                         fprintf(stderr, "Error: out of memory\n");
@@ -1138,7 +1146,7 @@ static int validate_net_state(const int type_idx, inc_net_access_data_t *ns, sec
                 (*proof) = tmp_proof;
 		port_failed = TRUE;
         }
-	if (ns->ANY_NETIF_UDPSEND && !ns->PORT_UDPSOCK_SENDMSG && !skip) {
+	if (uses_udp(type_idx, &(ns->idx_cache), policy) && ns->ANY_NETIF_UDPSEND && !ns->PORT_UDPSOCK_SENDMSG && !skip) {
                 tmp_proof = sechk_proof_new();
                 if (!tmp_proof) {
                         fprintf(stderr, "Error: out of memory\n");
@@ -1169,15 +1177,10 @@ static int validate_net_state(const int type_idx, inc_net_access_data_t *ns, sec
                 tmp_proof->idx = type_idx;
                 tmp_proof->type = inc_net_access_NEEDED_PERMS;
 		
-		if (ns->SELF_TCPSOCK_CREATE) {
-			if ((ns->SELF_TCPSOCK_READ && ns->SELF_TCPSOCK_WRITE) || (!ns->SELF_TCPSOCK_READ && !ns->SELF_TCPSOCK_WRITE))
-				append_str(&proof_str, &proof_str_sz, build_proof_str(policy->types[type_idx].name, "<node type>", "node", "{ tcp_recv tcp_send }"));
-			else if (ns->SELF_TCPSOCK_READ)
-				append_str(&proof_str, &proof_str_sz, build_proof_str(policy->types[type_idx].name, "<node type>", "node", "{ tcp_recv }"));
-			else if (ns->SELF_TCPSOCK_WRITE)
-				append_str(&proof_str, &proof_str_sz, build_proof_str(policy->types[type_idx].name, "<node type>", "node", "{ tcp_send }")); 
-		}
-		if (ns->SELF_UDPSOCK_CREATE) {
+		if (uses_tcp(type_idx, &(ns->idx_cache), policy)) {
+			append_str(&proof_str, &proof_str_sz, build_proof_str(policy->types[type_idx].name, "<node type>", "node", "{ tcp_recv tcp_send }"));
+		} 
+		if (uses_udp(type_idx, &(ns->idx_cache), policy)) {
 			if ((ns->SELF_UDPSOCK_READ && ns->SELF_UDPSOCK_WRITE) || (!ns->SELF_UDPSOCK_READ && !ns->SELF_UDPSOCK_WRITE))
 				append_str(&proof_str, &proof_str_sz, build_proof_str(policy->types[type_idx].name, "<node type>", "node", "{ udp_recv udp_send }"));
 			else if (ns->SELF_UDPSOCK_READ)
@@ -1185,8 +1188,34 @@ static int validate_net_state(const int type_idx, inc_net_access_data_t *ns, sec
 			else if (ns->SELF_UDPSOCK_WRITE)
 				append_str(&proof_str, &proof_str_sz, build_proof_str(policy->types[type_idx].name, "<node type>", "node", "{ udp_send }"));
 		}
-		else 
-			append_str(&proof_str, &proof_str_sz, build_proof_str(policy->types[type_idx].name, "<node type>", "node", "{ tcp_recv tcp_send udp_recv udp_send }"));
+
+		if (!proof_str) {
+			fprintf(stderr, "UNABLE TO BUILD PROOF\n");
+		}
+	
+		if (proof_str) {
+			tmp_proof->text = proof_str;
+			tmp_proof->next = (*proof);
+			(*proof) = tmp_proof;
+			node_failed = TRUE;
+			skip = TRUE;
+		}
+        }
+	if (uses_tcp(type_idx, &(ns->idx_cache), policy) && !(ns->ANY_NODE_TCPRECV && ns->ANY_NODE_TCPSEND) && !skip) {
+		tmp_proof = sechk_proof_new();
+                if (!tmp_proof) {
+                        fprintf(stderr, "Error: out of memory\n");
+                        return inc_net_access_ERR;
+                }
+                tmp_proof->idx = type_idx;
+                tmp_proof->type = inc_net_access_NEEDED_PERMS;		
+		if (!ns->ANY_NODE_TCPRECV && !ns->ANY_NODE_TCPSEND) {
+			proof_str = build_proof_str(policy->types[type_idx].name, "<node_type>", "node", "{ tcp_recv tcp_send }");
+		} else if (!ns->ANY_NODE_TCPRECV) {
+			proof_str = build_proof_str(policy->types[type_idx].name, "<node_type>", "node", "{ tcp_recv }");
+		} else if (!ns->ANY_NODE_TCPSEND) {
+			proof_str = build_proof_str(policy->types[type_idx].name, "<node_type>", "node", "{ tcp_send }");
+		}
 
                 if (!proof_str) {
                         fprintf(stderr, "Error: unable to build proof\n");
@@ -1196,44 +1225,8 @@ static int validate_net_state(const int type_idx, inc_net_access_data_t *ns, sec
                 tmp_proof->next = (*proof);
                 (*proof) = tmp_proof;
                 node_failed = TRUE;
-		skip = TRUE;
-        }
-        if (ns->PORT_TCPSOCK_RECVMSG && !ns->ANY_NODE_TCPRECV && !skip) {
-                tmp_proof = sechk_proof_new();
-                if (!tmp_proof) {
-                        fprintf(stderr, "Error: out of memory\n");
-                        return inc_net_access_ERR;
-                }
-                tmp_proof->idx = type_idx;
-                tmp_proof->type = inc_net_access_NEEDED_PERMS;
-                proof_str = build_proof_str(policy->types[type_idx].name, "<node_type>", "node", "{ tcp_recv }");
-                if (!proof_str) {
-                        fprintf(stderr, "Error: unable to build proof\n");
-                        return inc_net_access_ERR;
-                }
-                tmp_proof->text = proof_str;
-                tmp_proof->next = (*proof);
-                (*proof) = tmp_proof;
-                node_failed = TRUE;
-        }
-	if (ns->PORT_TCPSOCK_SENDMSG && !ns->ANY_NODE_TCPSEND && !skip) {
-                tmp_proof = sechk_proof_new();
-                if (!tmp_proof) {
-                        fprintf(stderr, "Error: out of memory\n");
-                        return inc_net_access_ERR;
-                }
-                tmp_proof->idx = type_idx;
-                tmp_proof->type = inc_net_access_NEEDED_PERMS;
-                proof_str = build_proof_str(policy->types[type_idx].name, "<node_type>", "node", "{ tcp_send }");
-                if (!proof_str) {
-                        fprintf(stderr, "Error: unable to build proof\n");
-                        return inc_net_access_ERR;
-                }
-                tmp_proof->text = proof_str;
-                tmp_proof->next = (*proof);
-                (*proof) = tmp_proof;
-                node_failed = TRUE;
-        }
+	}
+
 	if (ns->PORT_UDPSOCK_RECVMSG && !ns->ANY_NODE_UDPRECV && !skip) {
                 tmp_proof = sechk_proof_new();
                 if (!tmp_proof) {
@@ -1460,4 +1453,103 @@ static void init_idx_cache(idx_cache_t *idx_cache, policy_t *policy)
         idx = get_perm_idx("send_msg", policy);
         if (idx >= 0)
                 idx_cache->SEND_MSG_PERM = idx;
+}
+
+/*
+ * Checks to see whether a domain uses TCP
+ * for network communication. 
+ * Returns TRUE if any of the following is true:
+ *   - The domain has permissions on a tcp_socket object
+ *   - The domain has tcp_recv/tcp_send perms on a netif object
+ *   - The domain has tcp_recv/tcp_send perms on a node object
+ */
+static bool_t uses_tcp(const int domain_idx, idx_cache_t *idx_cache, policy_t *policy)
+{
+	teq_query_t query;
+	teq_results_t res;
+	int retv = 0;
+
+	init_teq_query(&query);
+	init_teq_results(&res);
+	query.use_regex = FALSE;
+	query.rule_select |= TEQ_ALLOW;
+	query.only_enabled = 0;
+
+	/* this query specifies a src domain and an object class */
+	retv = add_i_to_a(idx_cache->TCP_SOCKET_OBJ, &(query.num_classes), &(query.classes));
+	if (retv == -1) {
+		fprintf(stderr, "Error: out of memory\n");
+		return FALSE;
+	}
+
+	query.ta1.ta = policy->types[domain_idx].name;
+	query.ta1.indirect = TRUE;
+	query.ta1.t_or_a = IDX_BOTH;
+	query.perms = NULL;
+	query.num_perms = 0;
+	query.bool_name = NULL;
+	
+	retv = search_te_rules(&query, &res, policy);
+	if (retv == 0) {
+		if (res.num_av_access > 0)
+			return TRUE;
+	        else
+			return FALSE;
+		
+	}
+	if (retv == -1) {
+		fprintf(stderr, "Error: searching TE rules\n");
+		return FALSE;
+	}
+	
+	return FALSE;
+}
+
+/*
+ * Checks to see whether a domain uses UDP
+ * for network communication.
+ * Returns TRUE if any of the following is true:
+ *   - The domain has permissions on a udp_socket object
+ *   - The domain has udp_recv/udp_send perms on a netif object
+ *   - The domain has udp_recv/udp_send perms on a node object
+ */
+static bool_t uses_udp(const int domain_idx, idx_cache_t *idx_cache, policy_t *policy)
+{
+	teq_query_t query;
+	teq_results_t res;
+	int retv = 0;
+
+	init_teq_query(&query);
+	init_teq_results(&res);
+	query.use_regex = FALSE;
+	query.rule_select |= TEQ_ALLOW;
+        query.only_enabled = 0;
+
+        /* this query specifies a src domain and an object class */
+        retv = add_i_to_a(idx_cache->UDP_SOCKET_OBJ, &(query.num_classes), &(query.classes));
+        if (retv == -1) {
+                fprintf(stderr, "Error: out of memory\n");
+                return FALSE;
+        }
+         
+        query.ta1.ta = policy->types[domain_idx].name;
+        query.ta1.indirect = TRUE;
+        query.ta1.t_or_a = IDX_BOTH;
+        query.perms = NULL;
+        query.num_perms = 0;
+        query.bool_name = NULL;
+
+	retv = search_te_rules(&query, &res, policy);
+        if (retv == 0) {
+                if (res.num_av_access > 0)                      
+                        return TRUE;
+                else                       
+                        return FALSE;		
+        }
+        if (retv == -1) {
+                fprintf(stderr, "Error: searching TE rules\n");
+                return FALSE;
+        }
+
+        return FALSE;
 }
