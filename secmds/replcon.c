@@ -430,7 +430,7 @@ replcon_usage(const char *program_name, int brief)
 	printf("  -c,  --context=CONTEXT  Specify context to search for, see below.\n");
 	printf("  -o,  --object=OBJECT    Restrict search to the specified object class.\n");
 #endif
-	printf("  -a,  --raw              Use raw contexts.\n");
+	printf("  --raw                   Use raw contexts.\n");
 	printf("  -r,  --recursive        Recurse through directories.\n");
 	printf("  -s,  --stdin            Read FILENAMES from standard input.\n");
 	printf("  -q,  --quiet            Suppress progress output.\n");
@@ -445,7 +445,7 @@ replcon_usage(const char *program_name, int brief)
 		printf("The tool will automatically match a user, role, type, or range that is not \n");
 		printf("specified, with any other user, role, type, or range.  The normal matching is \n");
 		printf("done using the translation library if it is enabled.  If you want the tool to \n");
-		printf("match raw contexts please use --raw or -a.\n");
+		printf("match raw contexts please use --raw.\n");
 	} else {
 		printf("A context may be specified as a colon separated list of user, role, and type\n");
 		printf("as follows - user_u:object_r:user_t. A single colon can be used to match any \n");
@@ -1166,7 +1166,7 @@ replcon_parse_command_line(int argc, char **argv)
 
 	/* get option arguments */
 	while ((optc =
-		getopt_long(argc, argv, "o:c:rsVqvha", longopts, NULL)) != -1) {
+		getopt_long(argc, argv, "o:c:rsVqvh", longopts, NULL)) != -1) {
 		switch (optc) {
 		case 0:
 			break;
