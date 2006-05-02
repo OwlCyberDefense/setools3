@@ -129,7 +129,7 @@ int init_policy(policy_t **p)
 	policy->version = POL_VER_UNKNOWN;
 	policy->opts = POLOPT_NONE;
 	policy->policy_type = POL_TYPE_SOURCE;
-	policy->mls = FALSE;
+	policy->mls = policy->has_optionals = FALSE;
 
 	/* permissions */
 	policy->perms = (char **)calloc(LIST_SZ, sizeof(char*));
@@ -378,6 +378,9 @@ int init_policy(policy_t **p)
 	/* rule stats */
 	memset(policy->rule_cnt, 0, sizeof(int) * RULE_MAX);
 	
+	/* optionals */
+	policy->optionals = NULL;
+
 	/* permission maps */
 	policy->pmap = NULL;
 
@@ -731,6 +734,8 @@ int free_policy(policy_t **p)
 		free(policy->rangetrans);
 	}
 	free(policy->mls_dominance);
+
+	ap_optional_list_destroy(&policy->optionals);
 
 	if(free_avl_trees(policy) != 0)
 		return -1;
@@ -2089,6 +2094,20 @@ int add_name(char *name, name_item_t **list)
 	return 0;
 }
 
+int is_name_in_name_item_list(char *name, name_item_t *list)
+{
+	name_item_t *na = NULL;
+
+	if (!name || !list)
+		return 0;
+
+	for (na = list; na; na = na->next)
+		if (!strcmp(name, na->name))
+			return 1;
+
+	return 0;
+}
+
 /* Get the next available entry in AV rule list, ensuring list grows as necessary.
  * We return a pointer to the new rule so that caller can complete its content. 
  * On return, the new rule will be in the batabase, but initialized. */
@@ -2412,8 +2431,6 @@ int does_av_rule_use_type(int idx, int type, unsigned char whichlist, bool_t do_
 		}
 		else {
 			ans = type_list_match_by_idx(idx, type, do_indirect, rule->tgt_types, policy);
-			if (ans == -1)
-				return -1;
 			if (ans == -1)
 				return -1;
 			if (ans && !(rule->flags & (AVFLAG_TGT_TILDA))) {
@@ -4226,11 +4243,149 @@ static bool_t match_int_arrays(int *a1, int a1_sz, int *a2, int a2_sz)
 	return FALSE;
 };
 
-int ap_mls_range_transition_search(int *src_types, int num_src_types, int *tgt_types, int num_tgt_types, ap_mls_range_t *range, unsigned char search_type, int **rules, policy_t *policy)
+int extract_types_and_attribs_from_ta_list(ta_item_t *list, bool_t compliment,	bool_t allow_self, int **types, int *num_types, int **attribs, 
+	int *num_attribs, policy_t *policy)
+{
+	ta_item_t *item = NULL;
+	bool_t *inc_types = NULL, *sub_types = NULL;
+	bool_t *inc_atts = NULL, *sub_atts = NULL;
+	int retv, i, error = 0;
+
+	if (!list || !policy || !types || !num_types) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	free(*types);
+	*types = NULL;
+	*num_types = 0;
+	free(*attribs);
+	*attribs = NULL;
+	*num_attribs = 0;
+
+	inc_types = (bool_t*)calloc(policy->num_types, sizeof(bool_t));
+	if (!inc_types) {
+		errno = ENOMEM;
+		return -1;
+	}
+	sub_types = (bool_t*)calloc(policy->num_types, sizeof(bool_t));
+	if (!sub_types) {
+		free(inc_types);
+		errno = ENOMEM;
+		return -1;
+	}
+
+	inc_atts = (bool_t*)calloc(policy->num_attribs, sizeof(bool_t));
+	if (!inc_atts) {
+		errno = ENOMEM;
+		free(inc_types);
+		free(sub_types);
+		return -1;
+	}
+	sub_atts = (bool_t*)calloc(policy->num_attribs, sizeof(bool_t));
+	if (!sub_atts) {
+		free(inc_atts);
+		free(inc_types);
+		free(sub_types);
+		errno = ENOMEM;
+		return -1;
+	}
+
+	for (item = list; item; item = item->next) {
+		if (item->type & IDX_TYPE) {
+			if (item->type & IDX_SUBTRACT) {
+				sub_types[item->idx] = TRUE;
+			} else {
+				inc_types[item->idx] = TRUE;
+			}
+			continue;
+		} else if (item->type & IDX_ATTRIB) {
+			if (item->type & IDX_SUBTRACT) {
+				sub_atts[item->idx] = TRUE;
+			} else {
+				inc_atts[item->idx] = TRUE;
+			}
+		} else {
+			continue; /* neither an attribute nor type? do nothing */
+		}
+	}
+
+	for (i = 0; i < policy->num_types; i++) {
+		if (sub_types[i])
+			inc_types[i] = FALSE;
+	}
+
+	for (i = 0; i < policy->num_attribs; i++) {
+		if (sub_atts[i])
+			inc_atts[i] = FALSE;
+	}
+
+	if (compliment) {
+		for (i = 0; i < policy->num_types; i++) {
+			inc_types[i] = !inc_types[i];
+		}
+	}
+
+	if (compliment) {
+		for (i = 0; i < policy->num_attribs; i++) {
+			inc_atts[i] = !inc_atts[i];
+		}
+	}
+
+
+	for (i = allow_self?0:1; i < policy->num_types; i++) {
+		if(inc_types[i]) {
+			retv = add_i_to_a(i, num_types, types);
+			if (retv) {
+				error = errno;
+				goto exit_error;
+			}
+		}
+	}
+
+	for (i = 0; i < policy->num_attribs; i++) {
+		if(inc_atts[i]) {
+			retv = add_i_to_a(i, num_attribs, attribs);
+			if (retv) {
+				error = errno;
+				goto exit_error;
+			}
+		}
+	}
+
+
+	free(inc_types);
+	free(sub_types);
+
+	free(inc_atts);
+	free(sub_atts);
+	return 0;
+
+exit_error:
+	free(inc_types);
+	free(sub_types);
+	free(inc_atts);
+	free(sub_atts);
+	/* do not free tmp it points to either inc_ or sub_ */
+	free(*types);
+	free(*attribs);
+	*types = NULL;
+	*attribs = NULL;
+	*num_types = 0;
+	*num_attribs = 0;
+	errno = error;
+	return -1;
+}
+
+
+int ap_mls_range_transition_search(int *srcs, int num_srcs, int src_type,
+	int *tgts, int num_tgts, int tgt_type, ap_mls_range_t *range, 
+	unsigned char search_type, int **rules, policy_t *policy)
 {
 	int num_rules = 0,  error = 0;
 	int retv, i;
 	int *types = NULL, num_types = 0;
+	int *attribs = NULL, num_attribs = 0;
 	bool_t match = FALSE, add = FALSE;
 
 	if (!policy) {
@@ -4247,12 +4402,13 @@ int ap_mls_range_transition_search(int *src_types, int num_src_types, int *tgt_t
 		errno = EINVAL;
 		return -5;
 	}
+	
 
 	if (search_type & AP_MLS_RTS_TGT_TYPE) {
 		retv = 0;
-		if (!tgt_types) {
+		if (!tgts) {
 			retv = -3;
-		} else if (!num_tgt_types) {
+		} else if (!num_tgts) {
 			retv = -4;
 		}
 		if (retv) {
@@ -4263,9 +4419,9 @@ int ap_mls_range_transition_search(int *src_types, int num_src_types, int *tgt_t
 
 	if (search_type & (AP_MLS_RTS_SRC_TYPE|AP_MLS_RTS_ANY_TYPE)) {
 		retv = 0;
-		if (!src_types) {
+		if (!srcs) {
 			retv = -1;
-		} else if (!num_src_types) {
+		} else if (!num_srcs) {
 			retv = -2;
 		}
 		if (retv) {
@@ -4279,15 +4435,29 @@ int ap_mls_range_transition_search(int *src_types, int num_src_types, int *tgt_t
 		match = FALSE;
 		add = FALSE;
 		if (search_type & (AP_MLS_RTS_SRC_TYPE|AP_MLS_RTS_ANY_TYPE)) {
-			retv = extract_types_from_ta_list(policy->rangetrans[i].src_types, policy->rangetrans[i].flags & AVFLAG_SRC_TILDA, 0, &types, &num_types, policy);
+			retv = extract_types_and_attribs_from_ta_list(policy->rangetrans[i].src_types, 
+			policy->rangetrans[i].flags & AVFLAG_SRC_TILDA, 0, &types, 
+			&num_types, &attribs, &num_attribs, policy);
+
 			if (retv){
 				error = errno;
 				goto exit_error;
 			}
-			match = match_int_arrays(src_types, num_src_types, types, num_types);
+			
+			/* match src input against range trans rule src types */
+			if (src_type == IDX_TYPE) {
+				match = match_int_arrays(srcs, num_srcs, types, num_types);
+			}
+			else {
+				match = match_int_arrays(srcs, num_srcs, attribs, num_attribs);
+			}
+
 			free(types);
+			free(attribs);
 			types = NULL;
+			attribs = NULL;
 			num_types = 0;
+
 			if (match && search_type & (AP_MLS_RTS_MATCH_ANY)) {
 				add = TRUE;
 			} else if (!match && !(search_type & (AP_MLS_RTS_MATCH_ANY))) {
@@ -4295,14 +4465,27 @@ int ap_mls_range_transition_search(int *src_types, int num_src_types, int *tgt_t
 			}
 		}
 		if (search_type & (AP_MLS_RTS_TGT_TYPE)) {
-			retv = extract_types_from_ta_list(policy->rangetrans[i].tgt_types, policy->rangetrans[i].flags & AVFLAG_SRC_TILDA, 1, &types, &num_types, policy);
+			retv = extract_types_and_attribs_from_ta_list(policy->rangetrans[i].tgt_types, 
+				policy->rangetrans[i].flags & AVFLAG_SRC_TILDA, 1, &types, 
+				&num_types, &attribs, &num_attribs, policy);
+
 			if (retv){
 				error = errno;
 				goto exit_error;
 			}
-			match = match_int_arrays(tgt_types, num_tgt_types, types, num_types);
+			
+			/* match tgt input against range trans rule tgt types */
+			if (tgt_type == IDX_TYPE) {
+				match = match_int_arrays(tgts, num_tgts, types, num_types);
+			}
+			else {
+				match = match_int_arrays(tgts, num_tgts, attribs, num_attribs);
+			}
+
 			free(types);
+			free(attribs);
 			types = NULL;
+			attribs = NULL;
 			num_types = 0;
 			if (match && search_type & (AP_MLS_RTS_MATCH_ANY)) {
 				add = TRUE;
@@ -4311,14 +4494,23 @@ int ap_mls_range_transition_search(int *src_types, int num_src_types, int *tgt_t
 			}
 		}
 		if (search_type & (AP_MLS_RTS_ANY_TYPE)) {
-			retv = extract_types_from_ta_list(policy->rangetrans[i].tgt_types, policy->rangetrans[i].flags & AVFLAG_SRC_TILDA, 1, &types, &num_types, policy);
+			retv = extract_types_and_attribs_from_ta_list(policy->rangetrans[i].tgt_types, policy->rangetrans[i].flags & AVFLAG_SRC_TILDA, 1, &types, &num_types, &attribs, &num_attribs, policy);
 			if (retv){
 				error = errno;
 				goto exit_error;
 			}
-			match = match_int_arrays(src_types, num_src_types, types, num_types);
+			/* match src input against range trans rule src types */
+			match = match_int_arrays(srcs, num_srcs, types, num_types);
+				
+
+			/* if no match in types, check attribs */
+			if (!match)
+				match = match_int_arrays(srcs, num_srcs, attribs, num_attribs);
+			
 			free(types);
+			free(attribs);
 			types = NULL;
+			attribs = NULL;
 			num_types = 0;
 			if (match && search_type & (AP_MLS_RTS_MATCH_ANY)) {
 				add = TRUE;
@@ -4358,100 +4550,6 @@ exit_error:
 	free(*rules);
 	*rules = NULL;
 	free(types);
-	errno = error;
-	return -1;
-}
-
-int extract_types_from_ta_list(ta_item_t *list, bool_t compliment, bool_t allow_self, int **types, int *num_types, policy_t *policy)
-{
-	ta_item_t *item = NULL;
-	bool_t *inc_types = NULL, *sub_types = NULL, *tmp = NULL;
-	int retv, i, error = 0;
-	int *attrib_types = NULL, num_attrib_types = 0;
-
-	if (!list || !policy || !types || !num_types) {
-		errno = EINVAL;
-		return -1;
-	}
-
-	inc_types = (bool_t*)calloc(policy->num_types, sizeof(bool_t));
-	if (!inc_types) {
-		errno = ENOMEM;
-		return -1;
-	}
-	sub_types = (bool_t*)calloc(policy->num_types, sizeof(bool_t));
-	if (!sub_types) {
-		free(inc_types);
-		errno = ENOMEM;
-		return -1;
-	}
-
-	for (item = list; item; item = item->next) {
-		free(attrib_types);
-		attrib_types = NULL;
-		num_attrib_types = 0;
-		if (item->type & IDX_TYPE) {
-			if (item->type & IDX_SUBTRACT) {
-				sub_types[item->idx] = TRUE;
-			} else {
-				inc_types[item->idx] = TRUE;
-			}
-			continue;
-		} else if (item->type & IDX_ATTRIB) {
-			retv = get_attrib_types(item->idx, &num_attrib_types, &attrib_types, policy);
-			if (retv) {
-				error = errno;
-				goto exit_error;
-			}
-			if (item->type & IDX_SUBTRACT) {
-				tmp = sub_types;
-			} else {
-				tmp = inc_types;
-			}
-			for (i = 0; i < num_attrib_types; i++) {
-				tmp[attrib_types[i]] = TRUE;
-			}
-		} else {
-			continue; /* neither an attribute nor type? do nothing */
-		}
-	}
-
-	for (i = 0; i < policy->num_types; i++) {
-		if (sub_types[i])
-			inc_types[i] = FALSE;
-	}
-
-	if (compliment) {
-		for (i = 0; i < policy->num_types; i++) {
-			inc_types[i] = !inc_types[i];
-		}
-	}
-
-	*types = NULL;
-	*num_types = 0;
-
-	for (i = allow_self?0:1; i < policy->num_types; i++) {
-		if(inc_types[i]) {
-			retv = add_i_to_a(i, num_types, types);
-			if (retv) {
-				error = errno;
-				goto exit_error;
-			}
-		}
-	}
-
-	free(inc_types);
-	free(sub_types);
-
-	return 0;
-
-exit_error:
-	free(inc_types);
-	free(sub_types);
-	/* do not free tmp it points to either inc_ or sub_ */
-	free(*types);
-	*types = NULL;
-	*num_types = 0;
 	errno = error;
 	return -1;
 }
@@ -4569,6 +4667,216 @@ int ap_genfscon_get_num_paths(policy_t *policy)
 
 	return num_genfs;
 }
+
+/* optionals */
+int ap_optional_init(ap_optional_t *op)
+{
+	if (!op) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	op->requires = NULL;
+	op->types = op->attribs = op->roles = op->users = op->bools = NULL;
+	op->status = OPTIONAL_STATUS_UNDECIDED;
+	op->lineno = 0;
+	op->next = NULL;
+
+	return 0;
+}
+
+/* free all memory used by the list optional (does not free the optional or others in the list */
+void ap_optional_free(ap_optional_t *op)
+{
+	if (!op)
+		return;
+
+	ap_require_destroy(&op->requires);
+	free_name_list(op->types);
+	free_name_list(op->attribs);
+	free_name_list(op->roles);
+	free_name_list(op->users);
+	free_name_list(op->bools);
+	op->types = op->attribs = op->roles = op->users = op->bools = NULL;
+	op->lineno = 0;
+	op->status = OPTIONAL_STATUS_FINISHED;
+}
+
+/* free the linked list of optionals */
+void ap_optional_list_destroy(ap_optional_t **list)
+{
+	ap_optional_t *tmp = NULL;
+	if (!list || !(*list))
+		return;
+
+	tmp = *list;
+
+	do {
+		*list = tmp;
+		ap_optional_free(*list);
+		tmp = tmp->next;
+		free(*list);
+	} while (tmp);
+
+	*list = NULL;
+}
+
+/* returns > 0 if all requirements are met for an optional else returns 0 (or -1 on error)*/
+int ap_optional_check_requires(ap_optional_t *op, policy_t *policy)
+{
+	ap_require_t *req = NULL;
+	int retv = 0, pass = 0, cnt = 0;
+
+	if (!op || !policy) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	for (req = op->requires; req; req = req->next) {
+		retv = ap_require_check(req, op, policy);
+		cnt++;
+		if (retv < 0) {
+			return -1;
+		}
+		pass += retv;
+	}
+
+	if (pass != cnt)
+		pass = 0;
+
+	return pass;
+}
+
+ap_optional_t *ap_optional_get_by_lineno(unsigned long lineno, policy_t *policy)
+{
+	ap_optional_t *opt = NULL;
+
+	if (!policy || !policy->optionals)
+		return NULL;
+
+	opt = policy->optionals;
+	while(opt && opt->lineno != lineno) {
+		opt = opt->next;
+	}
+
+	return opt;
+}
+
+/* require statements */
+int ap_require_init(ap_require_t *req)
+{
+	if (!req) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	req->name = NULL;
+	req->type = IDX_INVALID;
+	req->idx = -1;
+	req->perms = req->next = NULL;
+
+	return 0;
+}
+
+void ap_require_destroy (ap_require_t **req)
+{
+	ap_require_t *tmp = NULL;
+
+	if (!req || !(*req))
+		return;
+
+	tmp = *req;
+
+	do {
+		free(tmp->name);
+		if (tmp->perms)
+			ap_require_destroy(&tmp->perms);
+		*req = tmp;
+		tmp = tmp->next;
+		free(*req);
+	} while (tmp);
+
+	*req = NULL;	
+}
+
+/* returns 1 if requirement met 0 if not or < 0 on error */
+int ap_require_check(ap_require_t *req, ap_optional_t *opt, policy_t *policy)
+{
+	int pass = 0;
+	ap_require_t *tmp = NULL;
+
+	if (!req || !policy) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	switch (req->type) {
+	case IDX_TYPE:
+	{
+		req->idx = get_type_idx(req->name, policy);
+		if (req->idx != -1 || is_name_in_name_item_list(req->name, opt->types))
+			pass = 1;
+		break;
+	}
+	case IDX_ATTRIB:
+	{
+		req->idx = get_attrib_idx(req->name, policy);
+		if (req->idx != -1 || is_name_in_name_item_list(req->name, opt->attribs))
+			pass = 1;
+		break;
+	}
+	case IDX_ROLE:
+	{
+		req->idx = get_role_idx(req->name, policy);
+		if (req->idx != -1 || is_name_in_name_item_list(req->name, opt->roles))
+			pass = 1;
+		break;
+	}
+	case IDX_USER:
+	{
+		req->idx = get_user_idx(req->name, policy);
+		if (req->idx != -1 || is_name_in_name_item_list(req->name, opt->users))
+			pass = 1;
+		break;
+	}
+	case IDX_BOOLEAN:
+	{
+		req->idx = get_cond_bool_idx(req->name, policy);
+		if (req->idx != -1 || is_name_in_name_item_list(req->name, opt->bools))
+			pass = 1;
+		break;
+	}
+	case IDX_OBJ_CLASS:
+	{
+		req->idx = get_obj_class_idx(req->name, policy);
+		if (req->idx != -1) {
+			pass = 1;
+			for (tmp = req->perms; tmp; tmp = tmp->next) {
+				if (!(ap_require_check(tmp, opt, policy) >= 1 && is_valid_perm_for_obj_class(policy, req->idx, tmp->idx))) {
+					pass = 0;
+					break;
+				}
+			}
+		}
+		break;
+	}
+	case IDX_PERM:
+	{
+		req->idx = get_perm_idx(req->name, policy);
+		if (req->idx != -1)
+			pass = 1;
+		break;
+	}
+	default:
+	{
+		errno = EINVAL;
+		return -1;
+	}
+	}
+
+	return pass;
+}
+
 
 /******************** new stuff here ********************/
 

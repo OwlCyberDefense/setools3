@@ -55,7 +55,6 @@
  *
  */
 
-
 %{
 
 #include <stdio.h>
@@ -74,6 +73,12 @@ unsigned int pass;
 /* our GLOBAL policy structure */
 policy_t *parse_policy = NULL;
 
+typedef struct opt_stack {
+	ap_optional_t *opt;
+	struct opt_stack *next;
+} opt_stack_t;
+
+static opt_stack_t *optional_stack = NULL;
 
 /* this is for passing around a rule (used in the conditional
  * policy support.
@@ -90,6 +95,14 @@ static cond_expr_t dummy_cond_expr;
 extern char yytext[];
 extern int yywarn(char *msg);
 extern int yyerror(char *msg);
+extern int yystate(void);
+extern int yyleave_state(void);
+extern int yyenter_decl(void);
+extern int yyenter_require(void);
+extern int yyenter_ignore(void);
+extern int yyenter_accept(void);
+extern int yybegin_initial(void);
+extern int yyis_decl(void);
 static char errormsg[255];
 extern unsigned long policydb_lineno;
 
@@ -144,6 +157,14 @@ static rule_desc_t *define_cond_compute_type(int rule_type);
 static rule_desc_t *define_cond_te_avtab(int rule_type);
 static ap_mls_level_t *parse_mls_level(int dontsave);
 static ap_mls_range_t *parse_mls_range(int dontsave);
+static int begin_optional(void);
+static int begin_optional_else(void);
+static int end_optional(void);
+static int end_optional_else(void);
+static int optional_end_main(void);
+static int begin_require(void);
+static int add_require(int type);
+static int push_optional(ap_optional_t *opt);
 %}
 
 %union {
@@ -157,7 +178,7 @@ static ap_mls_range_t *parse_mls_range(int dontsave);
 %type <ptr> cond_allow_def cond_auditallow_def cond_auditdeny_def cond_dontaudit_def
 %type <ptr> cond_transition_def cond_te_avtab_def cond_rule_def
 %type <ptr> role_def roles
-%type <sval> cexpr_prim op roleop mls_cexpr mls_trans_cexpr
+%type <sval> cexpr_prim op roleop mls_cexpr mls_trans_cexpr require_decl_def
 %type <sval> trans_prim mls_prim trans_cexpr_prim mls_cexpr_prim mls_trans_cexpr_prim
 %type <val> ipv4_addr_def number
 
@@ -181,6 +202,7 @@ static ap_mls_range_t *parse_mls_range(int dontsave);
 %token ATTRIBUTE
 %token BOOL
 %token IF
+%token DECLIF
 %token ELSE
 %token TYPE_TRANSITION
 %token TYPE_MEMBER
@@ -213,22 +235,23 @@ static ap_mls_range_t *parse_mls_range(int dontsave);
 %token EQUALS
 %token NOTEQUAL
 %token IPV6_ADDR
+%token REQUIRE
+%token OPTIONAL
 
 %left OR
 %left XOR
 %left AND
 %right NOT
 %left EQUALS NOTEQUAL
+
+%nonassoc LOWER_THAN_ELSE
+%nonassoc ELSE
 %%
 policy			: classes initial_sids access_vectors 
-                          { /*do nothing */ }
 			  opt_mls te_rbac users opt_constraints 
-			  { /*do nothing */ } 
 			  initial_sid_contexts  
-			  { /*do nothing*/}
 			  policy_version_contexts
-			  { /* determine which policy version and
-			  	branch accordingly */ }
+			| optionals
 			;
 classes			: class_def 
 			| classes class_def
@@ -317,6 +340,7 @@ te_rbac			: te_rbac_decl
 te_rbac_decl		: te_decl
 			| rbac_decl
 			| range_trans_decl
+			| optional_block
 			| ';'
                         ;
 range_trans_decl	:range_transition_def
@@ -355,11 +379,14 @@ bool_val                : CTRUE
                         | CFALSE
 			{ if (insert_id("F",0)) return -1; }
                         ;
-cond_stmt_def           : IF cond_expr '{' cond_pol_list '}'
+cond_stmt_def           : IF cond_expr '{' cond_pol_list '}' %prec LOWER_THAN_ELSE
                         { if (define_conditional((cond_expr_t*)$2, (cond_rule_list_t*)$4, (cond_rule_list_t*)NULL) < 0) return -1; }
-                        | IF cond_expr '{' cond_pol_list '}' ELSE '{' cond_pol_list '}'
-                        { if (define_conditional((cond_expr_t*)$2, (cond_rule_list_t*)$4, (cond_rule_list_t*)$8) < 0 ) return -1;  }
+                        | IF cond_expr '{' cond_pol_list '}' cond_stmt_else_def cond_pol_list '}'
+                        { if (define_conditional((cond_expr_t*)$2, (cond_rule_list_t*)$4, (cond_rule_list_t*)$7) < 0 ) return -1;  }
                         ;
+cond_stmt_else_def	: ELSE '{'
+			{ yybegin_initial();}
+			;
 cond_expr               : '(' cond_expr ')'
 			{ $$ = $2;}
 			| NOT cond_expr
@@ -399,6 +426,8 @@ cond_rule_def           : cond_transition_def
                         | cond_te_avtab_def
                         { $$ = $1;
 			  if ($$ == NULL) return -1; }
+			| require_block
+			{$$ = NULL;}
                         ;
 cond_transition_def	: TYPE_TRANSITION names names ':' names identifier ';'
                         { $$ = define_cond_compute_type(RULE_TE_TRANS) ;
@@ -713,7 +742,7 @@ policy_version_contexts	: version_jul_2002
 			| versions_pre_jul_2002
 			;
 
-version_jul_2002	: opt_fs_contexts_11 fs_uses opt_genfs_contexts 
+version_jul_2002	: opt_fs_contexts_11 opt_fs_uses opt_genfs_contexts 
 				net_contexts_11
 			;
 			
@@ -727,8 +756,9 @@ versions_pre_jul_2002	: fs_contexts_pre11
 
 
 /* added Jul 2002 */
-fs_uses                 : fs_use_def
-                        | fs_uses fs_use_def
+/* modified Apr 2006 to match checkpolicy 1.49 */
+opt_fs_uses             : opt_fs_uses fs_use_def
+                        | /* empty */
                         ;
 /* added Jul 2002 */
 /* changed Jul 2003; added FSUSEXATTR */
@@ -905,6 +935,89 @@ mls_level_def		: identifier ':' id_comma_list
 			| identifier ':' identifier '.' { if (insert_id(".", 0)) return -1; } identifier
 			{ if (insert_separator(0)) return -1; }
 			;
+optionals : optionals optional_block
+			| optionals optional_stray_else %prec LOWER_THAN_ELSE
+			| /* empty */
+			;
+optional_stray_else 	: optional_stray_else_def '}'
+			{yyleave_state();}
+			;
+optional_stray_else_def: ELSE '{'
+			{yyenter_ignore();}
+			;
+optional_block		: optional_block_main optional_else
+			{end_optional();}
+			;
+optional_block_main	: optional_decl avrules_block '}'
+			{optional_end_main();}
+			;
+optional_decl		: OPTIONAL '{' 
+			{begin_optional();}
+			;
+optional_else		: optional_else_decl avrules_block '}'
+			{end_optional_else();}
+			| %prec LOWER_THAN_ELSE /* empty */
+			;
+optional_else_decl	: ELSE '{'
+			{begin_optional_else();}
+			;
+avrules_block		: avrule_decls avrule_user_defs
+			;
+avrule_decls            : avrule_decls avrule_decl
+                        | /* empty */
+                        ;
+avrule_decl             : rbac_decl
+                        | te_decl
+			| if_decl
+			| optional_stray_else %prec LOWER_THAN_ELSE
+                        | require_block
+			| identifier {free(queue_remove(id_queue));}
+			| optional_block
+			| ':'
+                        | ';'
+                        ;
+if_decl			: if_decl_header avrule_decls '}'
+			{yyleave_state();}
+			if_decl_else
+			;	
+if_decl_header		: DECLIF '{'
+			{yyenter_decl();}
+			;
+if_decl_else		: if_decl_else_header avrule_decls '}'
+			{yyleave_state();}
+			| %prec LOWER_THAN_ELSE /* empty */
+			;
+if_decl_else_header	: ELSE '{'
+			{yyenter_decl();}
+			;
+require_block           : require_header require_list '}'
+			{yyleave_state();}
+                        ;
+require_header		: REQUIRE '{'
+			{begin_require();}
+			;
+require_list            : require_list require_decl
+                        | /* empty */
+                        ;
+require_decl            : require_class ';'
+                        | require_decl_def require_id_list ';'
+			{ add_require($1);}
+                        ;
+require_class           : CLASS identifier names
+			{ add_require(IDX_OBJ_CLASS); }
+			;
+require_decl_def	: ROLE { $$ = IDX_ROLE; }
+			| TYPE { $$ = IDX_TYPE; }
+			| ATTRIBUTE { $$ = IDX_ATTRIB; }
+			| USER { $$ = IDX_USER; }
+			| BOOL { $$ = IDX_BOOLEAN; }
+			;
+require_id_list		: identifier
+			| require_id_list ',' identifier
+			;
+avrule_user_defs        : user_def avrule_user_defs
+                        | /* empty */
+                        ;
 id_comma_list           : identifier
 			| id_comma_list ',' identifier
 			;
@@ -1021,15 +1134,21 @@ static int define_attrib(void)
 		yyerror("error setting policy version");
 		return -1;
 	}
-	if (pass == 2 ||(pass == 1 && !(parse_policy->opts & POLOPT_TYPES))) {
+	if (pass == 2 || (pass == 1 && !(parse_policy->opts & POLOPT_TYPES))) {
 		free(queue_remove(id_queue));
 		return 0;
 	}
+
+	if (pass > 2 && yyis_decl()) {
+		add_name(queue_remove(id_queue), &(parse_policy->optionals->attribs));
+		return 0;
+	}
+
 	id = queue_remove(id_queue);
 	/* check whether already exists */
 	rt = get_attrib_idx(id, parse_policy);
 	if(rt >=0){
-		snprintf(errormsg,sizeof(errormsg), "duplicate class decalaration (%s)\n", id);
+		snprintf(errormsg, sizeof(errormsg), "duplicate attribute decalaration (%s)\n", id);
 		yyerror(errormsg);
 		return -1;
 	}
@@ -1057,6 +1176,17 @@ static int define_type(int alias)
 		while ((id = queue_remove(id_queue))) 
 			free(id);
 		/* change in 2002031409 version for alias syntax */
+		if (alias) {
+			while ((id = queue_remove(id_queue))) 
+				free(id);
+		}
+		return 0;
+	}
+
+	if (pass > 2 && yyis_decl()) {
+		add_name(queue_remove(id_queue), &(parse_policy->optionals->types));
+		while ((id = queue_remove(id_queue))) 
+			free(id);
 		if (alias) {
 			while ((id = queue_remove(id_queue))) 
 				free(id);
@@ -1119,7 +1249,7 @@ static int define_typeattribute(void)
 	char *id;
 	int rt, idx, idx_type;
 	
-	if (pass == 2 || (pass == 1 && !(parse_policy->opts & POLOPT_TYPES))) {
+	if (pass == 2 || (pass == 1 && !(parse_policy->opts & POLOPT_TYPES)) || (pass > 2 && yyis_decl())) {
 		while ((id = queue_remove(id_queue)))
 			free(id);
 		return 0;
@@ -1165,7 +1295,7 @@ static int define_typealias(void)
 	char *id;
 	int idx, idx_type;
 	
-	if (pass == 2 || (pass == 1 && !(parse_policy->opts & POLOPT_TYPES))) {
+	if (pass == 2 || (pass == 1 && !(parse_policy->opts & POLOPT_TYPES)) || (pass > 2 && yyis_decl()) ) {
 		while ((id = queue_remove(id_queue)))
 			free(id);
 		return 0;
@@ -1377,7 +1507,7 @@ static int define_te_avtab(int rule_type)
 	int rt;
 	char *id;
 
-	if (pass == 1) {
+	if (pass == 1 || (pass > 2 && yyis_decl())) {
 		goto skip_avtab_rule;
 	}
 
@@ -1595,7 +1725,7 @@ static int define_compute_type(int rule_type)
 	char *id;
 	int rt;
 	
-	if (pass == 1) {
+	if (pass == 1 || (pass > 2 && yyis_decl())) {
 		goto skip_tt_rule;
 	}
 
@@ -1643,7 +1773,7 @@ static int define_te_clone(void)
 	char *id;
 	int  src, tgt, rt;
 
-	if (pass == 1) {
+	if (pass == 1 || (pass > 2 && yyis_decl())) {
 		id = queue_remove(id_queue);
 		free(id);
 		id = queue_remove(id_queue);
@@ -1691,6 +1821,13 @@ static int define_role_types(void)
 	int num_list_types = 0, num_tmp = 0, num_subtracted = 0;
 
 	if (pass == 1 || (pass == 2 && !(parse_policy->opts & POLOPT_ROLES))) {
+		while ((id = queue_remove(id_queue))) 
+			free(id);
+		return 0;
+	}
+
+	if (pass > 2 && yyis_decl()) {
+		add_name(queue_remove(id_queue), &(parse_policy->optionals->roles));
 		while ((id = queue_remove(id_queue))) 
 			free(id);
 		return 0;
@@ -1845,7 +1982,7 @@ static int define_role_allow(void)
 	ta_item_t *role = NULL;
 	role_allow_t *rule = NULL;
 	
-	if(pass == 1 || (pass == 2 && !(parse_policy-> opts & POLOPT_ROLE_RULES))) {
+	if(pass == 1 || (pass == 2 && !(parse_policy-> opts & POLOPT_ROLE_RULES)) || (pass > 2 && yyis_decl())) {
 		while ((id = queue_remove(id_queue))) 
 			free(id);
 		while ((id = queue_remove(id_queue))) 
@@ -1955,8 +2092,9 @@ static int define_role_trans(void)
 	int idx, idx_type;
 	rt_item_t *rule;
 	ta_item_t *role = NULL, *type = NULL;
+	bool_t subtract = FALSE;
 	
-	if(pass == 1 || (pass == 2 && !(parse_policy-> opts & POLOPT_ROLE_RULES))) {
+	if(pass == 1 || (pass == 2 && !(parse_policy-> opts & POLOPT_ROLE_RULES)) || (pass > 2 && yyis_decl())) {
 		while ((id = queue_remove(id_queue))) 
 			free(id);			/* src roles */
 		while ((id = queue_remove(id_queue))) 
@@ -2026,6 +2164,11 @@ static int define_role_trans(void)
 			free(id);
 			continue;
 		}
+		if (strcmp(id, "-") == 0) {
+			subtract = TRUE;
+			free(id);
+			continue;
+		}
 		if(strcmp(id, "~") == 0) {
 			rule->flags |= AVFLAG_TGT_TILDA;
 			free(id);
@@ -2047,6 +2190,10 @@ static int define_role_trans(void)
 			return -1;
 		}
 		type->type = idx_type;
+		if (subtract) {
+			type->type |= IDX_SUBTRACT;
+			subtract = FALSE;
+		}
 		type->idx = idx;
 		if(insert_ta_item(type, &(rule->tgt_types)) != 0) {
 			snprintf(errormsg, sizeof(errormsg), "failed ta_item insetion for target type %s\n", id);
@@ -2090,6 +2237,17 @@ static int define_user(void)
 	ap_mls_range_t *rng = NULL;
 
 	if(pass == 1 || (pass == 2 && !(parse_policy-> opts & POLOPT_USERS))) {
+		while ((id = queue_remove(id_queue))) 
+			free(id);
+		if (is_mls_policy(parse_policy)) {
+			parse_mls_level(1);
+			parse_mls_range(1);
+		}
+		return 0;
+	}
+
+	if (pass > 2 && yyis_decl()) {
+		add_name(queue_remove(id_queue), &(parse_policy->optionals->users));
 		while ((id = queue_remove(id_queue))) 
 			free(id);
 		if (is_mls_policy(parse_policy)) {
@@ -2564,6 +2722,13 @@ static int define_bool(void)
 		return 0;
 	}
 	
+	if (pass > 2 && yyis_decl()) {
+		add_name(queue_remove(id_queue), &(parse_policy->optionals->bools));
+		while ((id = (char*)queue_remove(id_queue)))
+			free(id);
+		return 0;
+	}
+
 	name = (char*)queue_remove(id_queue);
 	if (!name) {
 		yyerror("No name for boolean declaration");
@@ -2645,7 +2810,7 @@ static int define_conditional(cond_expr_t *expr, cond_rule_list_t *t_list, cond_
 		return -1;
 	}
 	
-	if (pass == 1)
+	if (pass == 1 || (pass > 2 && yyis_decl()))
 		return 0;
 	
 	if (expr == &dummy_cond_expr) {
@@ -2710,7 +2875,7 @@ static cond_expr_t *define_cond_expr(__u32 expr_type, void *arg1, void *arg2)
 	cond_expr_t *expr, *e1 = NULL, *e2;
 	int bool_var;
 	
-	if (pass == 1) {
+	if (pass == 1 || (pass > 2 && yyis_decl())) {
 		if (expr_type == COND_BOOL) {
 			while ((id = queue_remove(id_queue)))
 				free(id);
@@ -2810,7 +2975,7 @@ static cond_rule_list_t *define_cond_pol_list(cond_rule_list_t *list, rule_desc_
 {
 	cond_rule_list_t *rl;
 	
-	if (pass == 1)
+	if (pass == 1 || (pass > 2 && yyis_decl()))
 		return (cond_rule_list_t*)1;
 		
 	if (!list) {
@@ -2871,7 +3036,7 @@ static rule_desc_t *define_cond_compute_type(int rule_type)
 	int rt;
 	rule_desc_t *rule;
 	
-	if (pass == 1)
+	if (pass == 1 || (pass > 2 && yyis_decl()))
 		goto skip_tt_rule;
 		
 	if (!(parse_policy->opts & POLOPT_COND_TE_RULES))
@@ -2922,7 +3087,7 @@ static rule_desc_t *define_cond_te_avtab(int rule_type)
         int rt;
 	rule_desc_t *rule;
 	        
-	if (pass == 1) {
+	if (pass == 1 || (pass > 2 && yyis_decl())) {
 		goto skip_avtab_rule;
 	}
 	
@@ -3688,7 +3853,7 @@ static int define_range_trans(void)
 		return -1;
 	}
 
-	if (pass == 1 || (pass == 2 && !(parse_policy->opts & POLOPT_RANGETRANS)))  {
+	if (pass == 1 || (pass == 2 && !(parse_policy->opts & POLOPT_RANGETRANS)) || (pass > 2 && yyis_decl()))  {
 		while ((id = queue_remove(id_queue)))
 			free(id);
 		while ((id = queue_remove(id_queue)))
@@ -4355,3 +4520,155 @@ static int define_genfs_context(int has_type)
 {
 	return define_genfs_context_helper(queue_remove(id_queue), has_type);
 }
+
+/* Optional processing */
+/* A Brief Explanation:
+ * Optionals are handled by adding start states to the scanner to
+ * enable conditional parsing of sections of the policy
+ * Optionals are skipped during pass one, and also skipped in pass 2. 
+ * If any skipped optionals were found, a third pass is made in the declaration
+ * state; this state reads the require statements and changes the meaning
+ * of symbol declarations to add them to the optional's symbol list rather
+ * than the policy. After this step, requirements are resolved and a fourth 
+ * pass is made to take the main blocks of optionals for which all requirements
+ * are met. This process of resolve and reparse is repeated until no new 
+ * optionals are taken at which point a final pass is make to take the 
+ * else blocks of the remaining optionals. During all passes > 2 lines
+ * outside an optional block are ignored. */
+static int begin_optional(void)
+{
+	ap_optional_t *opt = NULL;
+
+	parse_policy->has_optionals = TRUE;
+
+	if (pass < 3) {
+		yyenter_ignore();
+	} else {
+		if ((opt=ap_optional_get_by_lineno(policydb_lineno, parse_policy))) {
+			if (opt->status & (OPTIONAL_STATUS_UNDECIDED|OPTIONAL_STATUS_TAKE_ELSE|OPTIONAL_STATUS_FINISHED)) {
+				yyenter_ignore();
+			} else {
+				yyenter_accept();
+			}
+		} else {
+			if (!optional_stack || (optional_stack->opt && optional_stack->opt->status == OPTIONAL_STATUS_TAKE_MAIN)) {
+				opt = calloc(1, sizeof(ap_optional_t));
+				if (!opt)
+					return -1;
+				ap_optional_init(opt);
+				opt->next = parse_policy->optionals;
+				parse_policy->optionals = opt;
+				opt->lineno = policydb_lineno;
+				yyenter_decl();
+			} else {
+				/* do not create yet */
+				yyenter_ignore();
+			} 
+		}
+	}
+
+	push_optional(opt);
+	return 0;
+}
+
+static int begin_optional_else(void)
+{
+	if (optional_stack && optional_stack->opt && optional_stack->opt->status == OPTIONAL_STATUS_TAKE_ELSE) {
+		yyenter_accept();
+		optional_stack->opt->status = OPTIONAL_STATUS_FINISHED;
+	} else
+		yyenter_ignore();
+	return 0;
+}
+
+static int optional_end_main(void)
+{
+	if (optional_stack && optional_stack->opt && optional_stack->opt->status == OPTIONAL_STATUS_TAKE_MAIN)
+		optional_stack->opt->status = OPTIONAL_STATUS_FINISHED;
+
+	yyleave_state();
+	return 0;
+}
+
+static int end_optional_else(void)
+{
+	yyleave_state();
+	return 0;
+}
+
+static int end_optional(void)
+{
+	opt_stack_t *tmp = optional_stack;
+
+	if (tmp) {
+		optional_stack = optional_stack->next;
+		free(tmp);
+	}
+	return 0;
+}
+
+static int add_require(int type)
+{
+	ap_require_t *req = NULL;
+	char *id = NULL;
+
+	if (pass >= 3) {
+		if (type == IDX_OBJ_CLASS) {
+			req = calloc(1, sizeof(ap_require_t));
+			if (!req) 
+				return -1;
+			ap_require_init(req);
+			req->name = queue_remove(id_queue);
+			req->type = type;
+			req->next = parse_policy->optionals->requires;
+			parse_policy->optionals->requires = req;
+			if (add_require(IDX_PERM))
+				return -1;
+		} else {
+			while((id = queue_remove(id_queue))) {
+				req = calloc(1, sizeof(ap_require_t));
+				if (!req) 
+					return -1;
+				ap_require_init(req);
+				req->name = id;
+				req->type = type;
+				if (type == IDX_PERM) {
+					req->next = parse_policy->optionals->requires->perms;
+					parse_policy->optionals->requires->perms = req;
+				} else {
+					req->next = parse_policy->optionals->requires;
+					parse_policy->optionals->requires = req;
+				}
+			}
+		}
+	} else {
+		while((id = queue_remove(id_queue)))
+			free(id);
+	}
+
+	return 0;
+}
+
+static int push_optional(ap_optional_t *opt)
+{
+	opt_stack_t *tmp = NULL;
+
+	tmp = calloc(1, sizeof(opt_stack_t));
+	if (!tmp)
+		return -1;
+	tmp->opt = opt;
+	tmp->next = optional_stack;
+	optional_stack = tmp;
+
+	return 0;
+}
+
+static int begin_require(void)
+{
+	if (optional_stack && optional_stack->opt->status & (OPTIONAL_STATUS_FINISHED|OPTIONAL_STATUS_TAKE_MAIN))
+		yyenter_ignore();
+	else
+		yyenter_require();
+	return 0;
+}
+

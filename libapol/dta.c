@@ -262,6 +262,8 @@ void dta_trans_destroy(dta_trans_t **trans)
 		next = trx->next;
 		free(trx);
 	}
+
+	*trans = NULL;
 }
 
 void dta_table_reset_used_flags(dta_table_t *table)
@@ -292,7 +294,7 @@ int dta_table_build(dta_table_t *table, policy_t *policy)
 	int i, retv;
 	avh_node_t *cur;
 	unsigned char rule_type = 0x00;
-	int proc_idx, file_idx, chr_file_idx; /* object class index */
+	int proc_idx, file_idx; /* object class index */
 	int trans_idx, exec_idx, exec_no_trans_idx, ep_idx; /* permission index */
 	avh_rule_t *hash_rule = NULL;
 
@@ -310,8 +312,8 @@ int dta_table_build(dta_table_t *table, policy_t *policy)
 	}
 
 	proc_idx = get_obj_class_idx("process", policy);
+	/* file is the only object class that is valid for this operation as enforced by kernel */
 	file_idx = get_obj_class_idx("file", policy);
-	chr_file_idx = get_obj_class_idx("chr_file", policy);
 
 	trans_idx = get_perm_idx("transition", policy);
 	exec_idx = get_perm_idx("execute", policy);
@@ -337,7 +339,7 @@ int dta_table_build(dta_table_t *table, policy_t *policy)
 							}
 						}
 					}
-				} else if (cur->key.cls == file_idx || cur->key.cls == chr_file_idx) {
+				} else if (cur->key.cls == file_idx) {
 					if (find_int_in_array(ep_idx, cur->data, cur->num_data) != -1) {
 						/* have an entrypoint rule */
 						rule_type = AP_DTA_RULE_ENTRYPOINT;

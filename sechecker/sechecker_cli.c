@@ -282,6 +282,19 @@ int main(int argc, char **argv)
 	if (sechk_lib_run_modules(lib))
 		goto exit_err;
 
+	/* if running only one module, deselect all others again before printing */
+	if (modname) {
+		retv = sechk_lib_get_module_idx(modname, lib);
+		if (retv == -1 || retv >= lib->num_modules) {
+			fprintf(stderr, "Error: module %s not found\n", modname);
+			goto exit_err;
+		}
+		for (i = 0; i < lib->num_modules; i++) {
+			lib->module_selection[i] = FALSE;
+		}
+		lib->module_selection[retv] = TRUE;
+	}
+
 	/* print the report */
 	if (sechk_lib_print_modules_report(lib))
 		goto exit_err;

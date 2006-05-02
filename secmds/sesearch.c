@@ -34,15 +34,19 @@ static struct option const longopts[] =
 {
   {"source", required_argument, NULL, 's'},
   {"target", required_argument, NULL, 't'},
+  {"role_source", required_argument, NULL, 'r'},
+  {"role_target", required_argument, NULL, 'g'},
   {"class", required_argument, NULL, 'c'},
   {"perms", required_argument, NULL, 'p'},
   {"boolean", required_argument, NULL, 'b'},
   {"allow", no_argument, NULL, 'A'},
   {"neverallow", no_argument, NULL, 'N'},
   {"audit", no_argument, NULL, 'U'},
-  {"rangetrans", no_argument, NULL, 'r'},
+  {"rangetrans", no_argument, NULL, 'R'},
   {"all", no_argument, NULL, 'a'},
   {"type", no_argument, NULL, 'T'},
+  {"role_allow", no_argument, NULL, 'L'},
+  {"role_trans", no_argument, NULL, 'o'},
   {"lineno", no_argument, NULL, 'l'},
   {"show_cond", no_argument, NULL, 'C'},
   {"indirect", no_argument, NULL, 'i'},
@@ -55,6 +59,8 @@ static struct option const longopts[] =
 typedef struct options {
 	char *src_name;
 	char *tgt_name;
+	char *src_role_name;
+	char *tgt_role_name;
 	char *class_name;
 	char *permlist;
 	char *bool_name;
@@ -66,6 +72,8 @@ typedef struct options {
 	bool_t audit;
 	bool_t type;
 	bool_t rtrans;
+	bool_t role_allow;
+	bool_t role_trans;
 	bool_t useregex;
 	bool_t show_cond;
 } options_t;
@@ -82,17 +90,21 @@ void usage(const char *program_name, int brief)
 Search Type Enforcement rules in an SELinux policy.\n\
   -s NAME, --source NAME  find rules with NAME type/attrib (regex) as source\n\
   -t NAME, --target NAME  find rules with NAME type/attrib (regex) as target\n\
+  --role_source NAME      find rules with NAME role (regex) as source\n\
+  --role_target NAME      find rules with NAME role (regex) as target\n\
   -c NAME, --class NAME   find rules with NAME as the object class\n\
   -p P1[,P2,...] --perms P1[,P2...]\n\
                           find rules with the specified permissions\n\
   -b NAME, --boolean NAME find conditional rules with NAME in the expression\n\
 ", stdout);
 	fputs("\
-  --allow                 search for allow rules only \n\
-  --neverallow            search for neverallow rules only\n\
-  --audit                 search for auditallow and dontaudit rules only\n\
-  --type                  search for type_trans and type_change rules only\n\
-  --rangetrans            search for range transition rules only\n\
+  --allow                 search for allow rules\n\
+  --neverallow            search for neverallow rules\n\
+  --audit                 search for auditallow and dontaudit rules\n\
+  --type                  search for type_trans and type_change rules\n\
+  --rangetrans            search for range transition rules\n\
+  --role_allow            search for role allow rules\n\
+  --role_trans            search for role transition rules\n\
   -a, --all               show all rules regardless of type, class, or perms\n\
 ", stdout);
 	fputs("\
@@ -105,12 +117,13 @@ Search Type Enforcement rules in an SELinux policy.\n\
   -v, --version           output version information and exit\n\
 ", stdout);
   	fputs("\n\
-If none of -s, -t, -c, -p -b are specified, then all rules are shown\n\
+If none of -s, -t, -c, -p, -b, --role_source, or --role_target\n\
+are specified, then all rules are shown.\n\
 You must specify -a (--all), or one of more of --allow, --neverallow, \n\
---audit, --rangtrans or --type.\
-\n\n\
+--audit, --rangetrans, --role_allow, --role_trans or --type.\n\
+\n\
 The default source policy, or if that is unavailable the default binary\n\
- policy, will be opened if no policy file name is provided.\n", stdout);
+policy, will be opened if no policy file name is provided.\n", stdout);
 	return;
 }
 
@@ -242,11 +255,11 @@ static int perform_rtrans_query(options_t* cmd_opts, rtrans_results_t* rtrans_re
 
     init_rtrans_query(&query);
 
-    query.src.indirect = FALSE;
+    query.src.indirect = cmd_opts->indirect;
     query.src.ta = cmd_opts->src_name;
     query.src.t_or_a = IDX_BOTH;
 
-    query.tgt.indirect = FALSE;
+    query.tgt.indirect = cmd_opts->indirect;
     query.tgt.ta = cmd_opts->tgt_name;
     query.tgt.t_or_a = IDX_BOTH;
 
@@ -274,6 +287,71 @@ static int perform_rtrans_query(options_t* cmd_opts, rtrans_results_t* rtrans_re
     }
 
     return rt;
+}
+
+static int perform_rbac_query(options_t *cmd_opts, rbac_results_t *rbac_results, policy_t *policy)
+{
+	int retv = 0, error = 0;
+	rbac_query_t *query = NULL;
+
+	if (!cmd_opts || !rbac_results || !policy) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	query = calloc(1, sizeof(rbac_query_t));
+	init_rbac_query(query);
+
+	if (cmd_opts->src_role_name) {
+		query->src = strdup(cmd_opts->src_role_name);
+		if (!query->src) {
+			error = errno;
+			goto err;
+		}
+	}
+
+	if (cmd_opts->tgt_role_name) {
+		query->tgt_role = strdup(cmd_opts->tgt_role_name);
+		if (!query->tgt_role) {
+			error = errno;
+			goto err;
+		}
+	}
+
+	if (cmd_opts->tgt_name) {
+		query->tgt_ta = strdup(cmd_opts->tgt_name);
+		if (!query->tgt_ta) {
+			error = errno;
+			goto err;
+		}
+	}
+
+	query->use_regex = cmd_opts->useregex;
+	query->indirect = cmd_opts->indirect;
+
+	if (cmd_opts->role_allow || cmd_opts->all)
+		query->rule_select |= RBACQ_RALLOW;
+
+	if (cmd_opts->role_trans || cmd_opts->all)
+		query->rule_select |= RBACQ_RTRANS;
+
+	retv = search_rbac_rules(query, rbac_results, policy);
+	if (retv < 0) {
+		error = errno;
+		fprintf(stderr, "Error during rbac search: %s\n", rbac_results->errmsg);
+		goto err;
+	}
+
+	free_rbac_query(query);
+	free(query);
+
+	return 0;
+
+err:
+	free_rbac_query(query);
+	free(query);
+	errno = error;
+	return -1;
 }
 
 static void print_teq_results(options_t *cmd_opts, teq_results_t *r, 
@@ -345,19 +423,49 @@ static void print_rtrans_results(options_t *cmd_opts,
 		for(i = 0; i < rtrans_results->num_range_rules; i++) {
 			rule = re_render_rangetrans((cmd_opts->lineno && !is_binary_policy(policy)), rtrans_results->range_rules[i], policy);
 			assert(rule);
-			printf("   %s\n", rule);
+			if (cmd_opts->show_cond)
+				printf("   %s\n", rule);
+			else
+				printf("%s\n", rule);
 			free(rule);
 		}
 	}
 }
 
+static void print_rbac_results(options_t *cmd_opts, rbac_results_t *rbac_results, policy_t *policy)
+{
+	int i;
+	char *rule = NULL;
+
+	if (!cmd_opts || !rbac_results || !policy)
+		return;
+
+	if (rbac_results->err) {
+		fprintf(stderr, "%s\n", rbac_results->errmsg);
+		return;
+	}
+
+	for (i = 0; i < rbac_results->num_role_allows && (cmd_opts->role_allow || cmd_opts->all); i++) {
+		rule = re_render_role_allow((cmd_opts->lineno && !is_binary_policy(policy)), rbac_results->role_allows[i], policy);
+		assert(rule);
+		printf("%s\n", rule);
+		free(rule);
+	}
+
+	for (i = 0; i < rbac_results->num_role_trans && (cmd_opts->role_trans || cmd_opts->all); i++) {
+		rule = re_render_role_trans((cmd_opts->lineno && !is_binary_policy(policy)), rbac_results->role_trans[i], policy);
+		assert(rule);
+		printf("%s\n", rule);
+		free(rule);
+	}
+}
 
 int main (int argc, char **argv)
 {
 	options_t cmd_opts;
 	int optc, rt;
 		
-	bool_t tesearch, rtrans_search;
+	bool_t tesearch, rtrans_search, rbac_search;
 	unsigned int open_opts = 0;
 	policy_t *policy;
 	teq_results_t teq_results;
@@ -367,14 +475,16 @@ int main (int argc, char **argv)
 	cmd_opts.nallow = cmd_opts.audit = cmd_opts.type = FALSE;
 	cmd_opts.rtrans = cmd_opts.indirect = cmd_opts.show_cond = FALSE;
 	cmd_opts.useregex = TRUE;
+	cmd_opts.role_allow = cmd_opts.role_trans = FALSE;
 	cmd_opts.src_name = cmd_opts.tgt_name = cmd_opts.class_name = NULL;
-	cmd_opts.permlist = cmd_opts.bool_name = NULL;
+	cmd_opts.permlist = cmd_opts.bool_name = cmd_opts.src_role_name = NULL;
+	cmd_opts.tgt_role_name = NULL;
 	
-	tesearch = rtrans_search = FALSE;
+	tesearch = rtrans_search = rbac_search = FALSE;
 
 	open_opts = POLOPT_TE_POLICY | POLOPT_OBJECTS;
 	
-	while ((optc = getopt_long (argc, argv, "s:t:c:p:b:d:alChvni0:", longopts, NULL)) != -1)  {
+	while ((optc = getopt_long (argc, argv, "s:t:r:g:c:p:b:ANURaTLolCinhv0", longopts, NULL)) != -1)  {
 		switch (optc) {
 		case 0:
 	  		break;
@@ -386,9 +496,9 @@ int main (int argc, char **argv)
 	  		}
 	  		cmd_opts.src_name = strdup(optarg);
 	  		if (!cmd_opts.src_name) {
-	  			fprintf(stderr, "Memory error!\n");
-	  			exit(1);	
-	  		}
+				fprintf(stderr, "Memory error!\n");
+				exit(1);	
+			}
 	  		break;
 	  	case 't': /* target */
 	  		if(optarg == 0) {
@@ -399,9 +509,33 @@ int main (int argc, char **argv)
 	  		cmd_opts.tgt_name = strdup(optarg);
 	  		if (!cmd_opts.tgt_name) {
 	  			fprintf(stderr, "Memory error!\n");
+		  		exit(1);	
+			}
+	  		break;
+		case 'r':
+	  		if(optarg == 0) {
+	  			usage(argv[0], 1);
+	  			printf("Missing source role for --role_source\n");
+	  			exit(1);
+	  		}
+  			cmd_opts.src_role_name = strdup(optarg);
+  			if (!cmd_opts.src_role_name) {
+  				fprintf(stderr, "Memory error!\n");
 	  			exit(1);	
 	  		}
-	  		break;
+			break;
+		case 'g':
+	  		if(optarg == 0) {
+	  			usage(argv[0], 1);
+	  			printf("Missing target role for --role_target\n");
+	  			exit(1);
+	  		}
+  			cmd_opts.tgt_role_name = strdup(optarg);
+  			if (!cmd_opts.tgt_role_name) {
+  				fprintf(stderr, "Memory error!\n");
+	  			exit(1);	
+	  		}
+			break;
 	  	case 'c': /* class */
 	  		if(optarg == 0) {
 	  			usage(argv[0], 1);
@@ -456,10 +590,18 @@ int main (int argc, char **argv)
 	  	case 'T': /* type */
 	  		cmd_opts.type = TRUE;
 	  		break;
-	  	case 'r': /* range transition */
+	  	case 'R': /* range transition */
 	  		cmd_opts.rtrans = TRUE;
 			open_opts |= POLOPT_RANGETRANS;
 	  		break;
+		case 'L':
+			cmd_opts.role_allow = TRUE;
+			open_opts |= POLOPT_RBAC;
+			break;
+		case 'o':
+			cmd_opts.role_trans = TRUE;
+			open_opts |= POLOPT_RBAC;
+			break;
 	  	case 'a': /* all */
 	  		cmd_opts.all = TRUE;
 	  		open_opts = POLOPT_ALL;
@@ -483,11 +625,11 @@ int main (int argc, char **argv)
 		}
 	}
  
-	if(!(cmd_opts.allow || cmd_opts.nallow || cmd_opts.audit || 
-			cmd_opts.type || cmd_opts.rtrans || cmd_opts.all )) {
+	if(!(cmd_opts.allow || cmd_opts.nallow || cmd_opts.audit || cmd_opts.role_allow ||
+			cmd_opts.type || cmd_opts.rtrans || cmd_opts.role_trans || cmd_opts.all)) {
 		usage(argv[0], 1);
-		printf("Either -a (--all), or one of --allow, --type, --audit, --rangetrans  or "
-               "--type mustbe specified\n\n");
+		printf("One of -a (--all), --allow, --neverallow, --audit, --rangetrans, "
+               "--type, --role_allow, or --role_trans mustbe specified\n\n");
 		exit(1);
 	}
 	if (!search_opts)
@@ -513,6 +655,7 @@ int main (int argc, char **argv)
 	if (cmd_opts.all){
 		tesearch = TRUE;
 		rtrans_search = TRUE;
+		rbac_search = TRUE;
 	}
 	else{
 		if (cmd_opts.allow || cmd_opts.nallow || cmd_opts.audit || 
@@ -522,6 +665,9 @@ int main (int argc, char **argv)
 		if (cmd_opts.rtrans) {
 			rtrans_search = TRUE;
 		}
+		if (cmd_opts.role_allow || cmd_opts.role_trans) {
+			rbac_search = TRUE;
+		}
 	}
 
 	init_teq_results(&teq_results);
@@ -529,7 +675,6 @@ int main (int argc, char **argv)
 	if (tesearch){
 		rt = perform_te_query(&cmd_opts, &teq_results, policy);
 		if (rt < 0){
-			printf("exiting.  \n");
 			free_teq_results_contents(&teq_results);
 			close_policy(policy);
 			exit(1);
@@ -542,8 +687,18 @@ int main (int argc, char **argv)
 		rt = perform_rtrans_query(&cmd_opts, &rtrans_results, 
                    policy);
 		if (rt < 0){
-			printf("exiting.  \n");
 			free_rtrans_results_contents(&rtrans_results);
+			close_policy(policy);
+			exit(1);
+		}
+	}
+
+	rbac_results_t rbac_results;
+	init_rbac_results (&rbac_results);
+	if (rbac_search) {
+		rt = perform_rbac_query(&cmd_opts, &rbac_results, policy);
+		if (rt < 0) {
+			free_rbac_results(&rbac_results);
 			close_policy(policy);
 			exit(1);
 		}
@@ -551,15 +706,25 @@ int main (int argc, char **argv)
 
 	printf("\n%d Rules match your search criteria\n", 
 			teq_results.num_av_access + teq_results.num_av_audit +
-			teq_results.num_type_rules + rtrans_results.num_range_rules);
+			teq_results.num_type_rules + rtrans_results.num_range_rules + 
+			rbac_results.num_role_allows + rbac_results.num_role_trans);
 	print_teq_results(&cmd_opts, &teq_results, policy);
 	print_rtrans_results(&cmd_opts, &rtrans_results, policy);
+	print_rbac_results(&cmd_opts, &rbac_results,  policy);
 	printf("\n\n");
 
 	/* cleanup */
 	free_teq_results_contents(&teq_results);
 	free_rtrans_results_contents(&rtrans_results);
+	free_rbac_results(&rbac_results);
 	close_policy(policy);
+	free(cmd_opts.src_name);
+	free(cmd_opts.tgt_name);
+	free(cmd_opts.class_name);
+	free(cmd_opts.permlist);
+	free(cmd_opts.bool_name);
+	free(cmd_opts.src_role_name);
+	free(cmd_opts.tgt_role_name);
 	exit(0);
 }
 

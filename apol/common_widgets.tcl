@@ -7,6 +7,7 @@
 namespace eval Apol_Widget {
     variable menuPopup {}
     variable infoPopup {}
+    variable infoPopup2 {}
     variable vars
 }
 
@@ -387,6 +388,33 @@ proc Apol_Widget::showPopupText {title info} {
     $text configure -state disabled
     wm deiconify $infoPopup
     raise $infoPopup
+}
+
+proc Apol_Widget::showPopupParagraph {title info} {
+    variable infoPopup2
+    if {![winfo exists $infoPopup2]} {
+        set infoPopup2 [toplevel .apol_widget_info_popup2]
+        wm withdraw $infoPopup2
+        set sw [ScrolledWindow $infoPopup2.sw -auto horizontal -scrollbar vertical]
+        $sw configure -relief sunken
+        set text [text [$sw getframe].text -font $ApolTop::text_font \
+                      -wrap word -width 35 -height 10 -bg white]
+        $sw setwidget $text
+        pack $sw -expand 1 -fill both
+        set sep [Separator $infoPopup2.sep -orient horizontal]
+        pack $sep -expand 0 -fill x
+        set b [button $infoPopup2.close -text "Close" -command [list destroy $infoPopup2]]
+        pack $b -side bottom -expand 0 -pady 5
+        wm geometry $infoPopup2 600x440
+    }
+    wm deiconify $infoPopup2
+    raise $infoPopup2
+    wm title $infoPopup2 $title
+    set text [$infoPopup2.sw getframe].text
+    $text configure -state normal
+    $text delete 1.0 end
+    $text insert 0.0 $info
+    $text configure -state disabled
 }
 
 ########## private functions below ##########

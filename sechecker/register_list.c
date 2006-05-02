@@ -24,15 +24,17 @@ static sechk_module_name_reg_t sechk_module_register_list[] = {
 	{"find_node_types",     &find_node_types_register},
 	{"find_netif_types",    &find_netif_types_register},
 	{"find_port_types",     &find_port_types_register},
+	{"imp_range_trans",     &imp_range_trans_register},
 	{"inc_dom_trans",	&inc_dom_trans_register},
 	{"inc_mount",		&inc_mount_register},
-	{"net_access",          &net_access_register},
+	{"inc_net_access",      &inc_net_access_register},
 	{"roles_wo_allow",	&roles_wo_allow_register},
 	{"roles_wo_types",	&roles_wo_types_register},
 	{"roles_wo_users",	&roles_wo_users_register},
 	{"rules_exp_nothing",	&rules_exp_nothing_register},
 	{"spurious_audit",	&spurious_audit_register},
 	{"types_wo_allow",	&types_wo_allow_register},
+	{"unreachable_doms",    &unreachable_doms_register},
 	{"users_wo_roles",	&users_wo_roles_register},
 	/* TODO: add additional register addresses here in alphabetical order */
 
