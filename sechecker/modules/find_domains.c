@@ -227,7 +227,7 @@ int find_domains_run(sechk_module_t *mod, policy_t *policy)
 	datum = (find_domains_data_t*)mod->data;
 	res = sechk_result_new();
 	if (!res) {
-~		fprintf(stderr, "Error: out of memory\n");
+		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
 	res->item_type = POL_LIST_TYPE;

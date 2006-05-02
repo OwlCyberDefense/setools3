@@ -72,10 +72,10 @@ install-policy:
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 y.tab.c: apolicy_parse.y
-	$(YACC) -d apolicy_parse.y	
+	$(YACC) $(YFLAGS) -d apolicy_parse.y	
 
 lex.yy.c: apolicy_scan.l
-	$(LEX) apolicy_scan.l
+	$(LEX) $(LFLAGS) apolicy_scan.l
 
 clean:
 	rm -f $(LIB-OBJ) *.o core core.* y.tab.c y.tab.h lex.yy.c *~ 
