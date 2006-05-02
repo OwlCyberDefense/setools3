@@ -417,6 +417,30 @@ typedef struct ap_user {
 	ap_mls_range_t *range;
 } ap_user_t;
 
+typedef struct ap_require {
+	char *name;
+	unsigned int type; /* use IDX_* defines */
+	int idx;
+	struct ap_require *perms; /* used for class requirement to include permissions */
+	struct ap_require *next;
+} ap_require_t;
+
+#define OPTIONAL_STATUS_UNDECIDED 1
+#define OPTIONAL_STATUS_TAKE_MAIN 2
+#define OPTIONAL_STATUS_TAKE_ELSE 4
+#define OPTIONAL_STATUS_FINISHED  8
+typedef struct ap_optional {
+	ap_require_t *requires;
+	name_item_t *types;
+	name_item_t *attribs;
+	name_item_t *roles;
+	name_item_t *users;
+	name_item_t *bools;
+	bool_t status;
+	unsigned long lineno;
+	struct ap_optional *next;
+} ap_optional_t;
+
 /* IDs for DYNAMIC array only  (e.g., clones is not a dynamic array, but rather a linked list*/
 #define POL_LIST_TYPE			0
 #define POL_LIST_ATTRIB			1
@@ -484,6 +508,7 @@ typedef struct ap_user {
 typedef struct policy {
 	int	version;		/* weak indicator of policy version, see comments above */
 	bool_t mls;		/* indicates mls policy */
+	bool_t has_optionals; /* indicates that optional policy components are loaded */
 	unsigned int opts;		/* indicates which parts of the policy are included in this policy */
 	unsigned int policy_type;	/* policy type (binary or source) */
 	int	num_types;		/* array current ptr */
@@ -557,6 +582,8 @@ typedef struct policy {
 	int		*mls_dominance;	/* MLS sensitivity dominance size num_sensitivities*/
 	ap_mls_level_t	*levels;	/* MLS levels (ARRAY) */
 	ap_rangetrans_t	*rangetrans;	/* MLS rangetrans rules (ARRAY) */
+/* Linked list of Optionals */
+	ap_optional_t *optionals; /* used during parsing */
 /* Permissions map (which is used for information flow analysis) */
 	struct classes_perm_map *pmap;	/* see perm-map.h */
 /* Semantic hash table; this structure is created when necessary (NULL ptr means its necessary)
@@ -609,6 +636,7 @@ int add_alias(int type_idx, const char *alias, policy_t *policy);
 int add_attrib_to_type(int type_idx, char *token, policy_t *policy);
 int insert_ta_item(ta_item_t *newitem, ta_item_t **list);
 int add_name(char *name, name_item_t **list);
+int is_name_in_name_item_list(char *name, name_item_t *list);
 int free_name_list(name_item_t *list);
 int add_clone_rule(int src, int tgt,  unsigned long lineno, policy_t *policy);
 int add_attrib(bool_t with_type, int type_idx, policy_t *policy, char *attrib);
@@ -840,7 +868,9 @@ int ap_mls_category_get_sens(int cat, int **sens, int *num_sens, policy_t *polic
  * by default matches criteria in all fields
  * if set returns matches any one field */
 #define AP_MLS_RTS_MATCH_ANY 0x20
-int ap_mls_range_transition_search(int *src_types, int num_src_types, int *tgt_types, int num_tgt_types, ap_mls_range_t *range, unsigned char search_type, int **rules, policy_t *policy);
+int ap_mls_range_transition_search(int *srcs, int num_srcs, int src_type,
+	int *tgts, int num_tgts, int tgt_type, ap_mls_range_t *range, 
+	unsigned char search_type, int **rules, policy_t *policy);
 
 /* constraints */
 void ap_constraint_expr_destroy(ap_constraint_expr_t *expr);
@@ -855,7 +885,25 @@ bool_t does_clone_rule_use_type(int idx, int type, unsigned char whichlist, cln_
 int get_rule_lineno(int rule_idx, int rule_type, policy_t *policy);
 int get_ta_item_name(ta_item_t *ta, char **name, policy_t *policy);
 int extract_types_from_ta_list(ta_item_t *list, bool_t compliment, bool_t allow_self, int **types, int *num_types, policy_t *policy);
+int extract_types_and_attribs_from_ta_list(ta_item_t *list, bool_t compliment, 
+		bool_t allow_self, int **types, int *num_types, int **attribs, 
+		int *num_attribs, policy_t *policy);
 int free_ta_list(ta_item_t *list);
+
+/* optionals */
+int ap_optional_init(ap_optional_t *op);
+/* free all memory used by the list optional (does not free the optional or others in the list */
+void ap_optional_free(ap_optional_t *op);
+/* free the linked list of optionals */
+void ap_optional_list_destroy(ap_optional_t **list);
+/* returns true if all requirements are met for an optional else returns 0 */
+int ap_optional_check_requires(ap_optional_t *op, policy_t *policy);
+ap_optional_t *ap_optional_get_by_lineno(unsigned long lineno, policy_t *policy);
+/* require statements */
+int ap_require_init(ap_require_t *req);
+void ap_require_destroy (ap_require_t **req);
+/* returns 1 if requirement met 0 if not or < 0 on error */
+int ap_require_check(ap_require_t *req, ap_optional_t *opt, policy_t *policy);
 
 /**************/
 /* these are INTERNAL functions only; allow direct access to type/attrib name string

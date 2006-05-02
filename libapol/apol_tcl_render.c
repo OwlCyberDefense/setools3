@@ -285,12 +285,11 @@ static int Apol_RenderRangeTrans(ClientData clientData, Tcl_Interp *interp, int 
                 Tcl_SetResult(interp, "Could not display range transition because no policy was loaded.", TCL_STATIC);
                 return TCL_ERROR;
         }
-	if (idx < 0 || idx >= policy->num_rangetrans) {
-                Tcl_SetResult(interp, "Illegal range transition index.", TCL_STATIC);
+        if (Tcl_GetInt(interp, argv[1], &idx) == TCL_ERROR) {
                 return TCL_ERROR;
         }
-
-        if (Tcl_GetInt(interp, argv[1], &idx) == TCL_ERROR) {
+	if (idx < 0 || idx >= policy->num_rangetrans) {
+                Tcl_SetResult(interp, "Illegal range transition index.", TCL_STATIC);
                 return TCL_ERROR;
         }
         if (is_binary_policy(policy)) {

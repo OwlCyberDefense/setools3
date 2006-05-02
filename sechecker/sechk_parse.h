@@ -23,6 +23,7 @@
 #define SECHK_PARSE_REQUIRE_SELINUX       "selinux"
 #define SECHK_PARSE_REQUIRE_MLS_POLICY    "mls_policy"
 #define SECHK_PARSE_REQUIRE_MLS_SYSTEM    "mls_system"
+#define SECHK_PARSE_REQUIRE_DEF_CTX       "default_ctx"
 
 #define sechk_lib_parse_profile(path, lib)     sechk_lib_parse_xml_file(path, lib)
 

@@ -1165,8 +1165,9 @@ static int Apol_SearchRangeTransRules(ClientData clientData, Tcl_Interp *interp,
         range.low = &low;
         range.high = &high;
 
-        num_rules = ap_mls_range_transition_search(types[0], num_types[0],
-                                                   types[1], num_types[1],
+        num_rules = ap_mls_range_transition_search(types[0], num_types[0], 
+                                                   IDX_TYPE, types[1], 
+                                                   num_types[1], IDX_TYPE, 
                                                    &range, search_type,
                                                    &found_rules, policy);
         if (num_rules < 0) {

@@ -1,4 +1,4 @@
-<sechecker version="1.0">
+<sechecker version="1.1">
 <profile>
 	<module name="find_domains">
 		<output value="quiet"/>
@@ -51,15 +51,27 @@
 	</module>
 
 	<module name="find_net_domains">
-                <output value="quiet"/>
-                <option name="net_obj">
-                        <item value="netif"/>
-                        <item value="tcp_socket"/>
-                        <item value="udp_socket"/>
-                        <item value="node"/>
-                        <item value="association"/>
-                </option>
-        </module>
+		<output value="quiet"/>
+		<option name="net_obj">
+			<item value="netif"/>
+			<item value="tcp_socket"/>
+			<item value="udp_socket"/>
+			<item value="node"/>
+			<item value="association"/>
+		</option>
+	</module>
+
+	<module name="find_port_types">
+		<output value="quiet"/>
+	</module>
+
+	<module name="find_node_types">
+		<output value="quiet"/>
+	</module>
+
+	<module name="find_netif_types">
+		<output value="quiet"/>
+	</module>
 
 </profile>
 </sechecker>
