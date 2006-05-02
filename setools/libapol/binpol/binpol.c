@@ -245,9 +245,16 @@ static int load_range_trans(ap_fbuf_t *fb, FILE *fp, ap_bmaps_t *bm, unsigned in
 		idx = bm->t_map[dom-1];
 		if (idx < 0) {
 			idx = bm->a_map[dom-1];
-			if (idx < 0) {
-				assert(FALSE);
-				return -1;
+			if (!is_valid_attrib_idx(idx, policy)) {
+				if (policy->version < POL_VER_20) {
+					assert(FALSE);
+					return -1;
+				} else {
+					idx = add_fake_attrib(policy);
+					if (idx < 0)
+						return -1;
+					bm->a_map[type-1] = idx;
+				}
 			}
 			idx_type = IDX_ATTRIB;
 		} else {
