@@ -10,6 +10,7 @@
 /* standard library includes */
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 /* command line parsing commands */
 #define _GNU_SOURCE
 #include <getopt.h>
@@ -25,6 +26,7 @@ static struct option const longopts[] =
 {
   {"type", required_argument, NULL, 't'},
   {"user", required_argument, NULL, 'u'},
+  {"mls-range", required_argument, NULL, 'm'},
   {"path", required_argument, NULL, 'p'},
   {"list", no_argument, NULL, 'l'},
   {"regex", no_argument, NULL, 'r'},
@@ -47,7 +49,7 @@ static void sefs_search_keys_ret_print(sefs_search_ret_t *key)
 {
 	sefs_search_ret_t *curr = NULL;
 	
-	/* walk the linked list  */
+	/* walk the linked list	 */
 	curr = key;
 	if (curr == NULL) {
 		printf("No results\n");
@@ -78,7 +80,8 @@ void usage(const char *program_name, int brief)
 Print requested information about an SELinux policy.\n\
   -t type,   --type=typename   	   The name of the type to search for\n\
   -u user,   --user=username   	   The name of the user to search for\n\
-  -p path,   --path=pathname   	   The path or path fragment to search for\n\
+  -m range,  --mls-range=range     MLS range to search for\n\
+  -p path,   --path=pathname       The path or path fragment to search for\n\
   -o object, --object=class        The name of the object class to search for\n\
   -r, --regex                      Search using regular expressions\n\
   -l, --list                       List types in the snapshot\n\
@@ -87,6 +90,7 @@ Print requested information about an SELinux policy.\n\
   -h, --help                       Display this help and exit\n\
   -v, --version                    Output version information and exit\n\
 ", stdout);
+	printf("If the index file does not contain any MLS ranges then the search\nwill return nothing.\n");
 	fputs("\n\
 Valid object classes include:\n\
 ",stdout);
@@ -98,26 +102,16 @@ Valid object classes include:\n\
 
 int main(int argc, char **argv, char **envp)
 {
-	char *filename = NULL, *tname = NULL, *uname = NULL, *path = NULL, *object = NULL;
+	char *filename = NULL;
 	int optc = 0, list_sz = 0, list = 0;
 	sefs_filesystem_db_t fsdata;
 	sefs_search_keys_t search_keys;
 	char **list_ret = NULL;
 	const char **holder = NULL;
 
-	search_keys.user = NULL;
-	search_keys.path = NULL;
-	search_keys.type = NULL;
-	search_keys.object_class = NULL;
-	search_keys.num_user = 0;
-	search_keys.num_path = 0;
-	search_keys.num_type = 0;
-	search_keys.num_object_class = 0;
-	search_keys.do_type_regEx = 0;
-	search_keys.do_user_regEx = 0;
-	search_keys.do_path_regEx = 0;
+	memset(&search_keys, 0, sizeof(search_keys));
 
-	while ((optc = getopt_long (argc, argv, "t:u:p:o:rlhv", longopts, NULL)) != -1)  {
+	while ((optc = getopt_long (argc, argv, "t:u:m:p:o:rlhv", longopts, NULL)) != -1)  {
 		switch (optc) {
 		case 't': /* type */	
 			if((holder = (const char**)realloc(search_keys.type,sizeof(char *)*(search_keys.num_type+1))) == NULL){
@@ -127,8 +121,7 @@ int main(int argc, char **argv, char **envp)
 			search_keys.type = holder;
 			search_keys.type[search_keys.num_type] = optarg;
 			search_keys.num_type++;
-	  		tname = optarg;
-	  		break;
+			break;
 		case 'u': /* user */
 			if((holder = (const char**)realloc(search_keys.user,sizeof(char*)*(search_keys.num_user+1))) == NULL){
 				printf("Out of memory\n");
@@ -137,8 +130,16 @@ int main(int argc, char **argv, char **envp)
 			search_keys.user = holder;
 			search_keys.user[search_keys.num_user] = optarg;
 			search_keys.num_user++;
-	  		uname = optarg;
-	  		break;
+			break;
+		case 'm': /* MLS range */
+			if((holder = (const char**)realloc(search_keys.range,sizeof(char*)*(search_keys.num_range+1))) == NULL){
+				printf("Out of memory\n");
+				return 1;
+			}
+			search_keys.range = holder;
+			search_keys.range[search_keys.num_range] = optarg;
+			search_keys.num_range++;
+			break;
 		case 'p': /* path */
 			if((holder = (const char**)realloc(search_keys.path,sizeof(char*)*(search_keys.num_path+1))) == NULL){
 				printf("Out of memory\n");
@@ -147,8 +148,7 @@ int main(int argc, char **argv, char **envp)
 			search_keys.path = holder;
 			search_keys.path[search_keys.num_path] = optarg;
 			search_keys.num_path++;
-	  		path = optarg;
-	  		break;
+			break;
 		case 'o': /* object */
 			if ((holder = (const char**)realloc(search_keys.object_class,sizeof(char*)*(search_keys.num_object_class+1))) == NULL) {
 				printf("Out of memory");
@@ -157,25 +157,25 @@ int main(int argc, char **argv, char **envp)
 			search_keys.object_class = holder;
 			search_keys.object_class[search_keys.num_object_class] = optarg;
 			search_keys.num_object_class++;
-			object = optarg;
 			break;
 		case 'l': /* list */
-	  		list = 1;
-	  		break;
+			list = 1;
+			break;
 		case 'r': /* regex */
 			search_keys.do_type_regEx = 1;
 			search_keys.do_user_regEx = 1;
+			search_keys.do_range_regEx = 1;
 			search_keys.do_path_regEx = 1;
 			break;
 		case 'h': /* help */
-	  		usage(argv[0], 0);
-	  		exit(0);
+			usage(argv[0], 0);
+			exit(0);
 		case 'v': /* version */
-	  		printf("\n%s (searchcon ver. %s)\n\n", COPYRIGHT_INFO, SEARCHCON_VERSION_NUM);
-	  		exit(0);
+			printf("\n%s (searchcon ver. %s)\n\n", COPYRIGHT_INFO, SEARCHCON_VERSION_NUM);
+			exit(0);
 		default:
-	  		usage(argv[0], 1);
-	  		exit(1);
+			usage(argv[0], 1);
+			exit(1);
 		}
 	}
 	if (argc - optind > 1 || argc - optind < 1) {
@@ -184,12 +184,6 @@ int main(int argc, char **argv, char **envp)
 	} else 
 		filename = argv[optind];
 
-	if ((tname == NULL) && (uname == NULL) && (path == NULL) && (object == NULL) && !list) {
-		fprintf(stderr, "\nYou must specify one of -t|-u|-p|-o\n\n");
-		usage(argv[0], 0);
-		return -1;
-	}
-	
 	if (sefs_filesystem_db_load(&fsdata,filename) == -1 ){
 		fprintf(stderr, "sefs_filesystem_data_load failed\n");
 		return -1;
@@ -207,15 +201,10 @@ int main(int argc, char **argv, char **envp)
 		sefs_search_keys_ret_destroy(search_keys.search_ret);
 	}
 
-	if (search_keys.user)
-		free(search_keys.user);
-	if (search_keys.type)
-		free(search_keys.type);
-	if (search_keys.path)
-		free(search_keys.path);
-	if (search_keys.object_class)
-		free(search_keys.object_class);
+	free(search_keys.user);
+	free(search_keys.type);
+	free(search_keys.path);
+	free(search_keys.object_class);
 
 	return 0;
 }
-
