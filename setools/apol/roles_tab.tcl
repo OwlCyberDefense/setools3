@@ -72,7 +72,6 @@ proc Apol_Roles::renderRole {role show_all} {
     foreach t [lsort -dictionary $types] {
         append text "    $t\n"
     }
-    append text "  domianance: $dominates\n"
     return $text
 }
 

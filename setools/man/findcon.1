@@ -11,7 +11,11 @@ command.
 .PP
 .B findcon
 allows the user to search for files of a specified context.  Results can be filtered by object class as described below.
+.PP 
+A context may be specified as a colon separated list of user, role, and type as follows - user_u:object_r:type_t. If your system supports MLS you can also add an additional MLS range to the end as follows - user_u:object_r:type_t:s0. The tool will automatically match a user, role, type, or range that is not specified, with any other user, role, type, or range. If your system has MLS and the translation library is enabled matching is done using it. If you want the tool to match raw contexts please use --raw option.
 .SH OPTIONS
+.IP "--raw"
+Specify context to search for, ignoring the translation library if present.
 .IP "-c, --context=CONTEXT"
 Specify context to search for.
 .IP "-o, --object=OBJECT"
@@ -39,6 +43,16 @@ blk_file,
 sock_file,
 fifo_file,
 all_files
+.SH EXAMPLES
+.TP
+.B findcon -c : .
+Find every context in the current directory
+.TP
+.B findcon -c user_u: .
+Find every context that contains user_u in the current directory 
+.TP
+.B findcon -c ::type_t:s0 .
+Find every context with type type_t and MLS range s0 in the current directory
 .SH AUTHOR
 This manual page was written by Kevin Carr <kcarr@tresys.com>.  
 .SH COPYRIGHT

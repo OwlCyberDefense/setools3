@@ -35,19 +35,20 @@
 #define	SEFS_SOCK_FILE	32
 #define SEFS_FIFO_FILE	64
 #define SEFS_ALL_FILES	(SEFS_NORM_FILE | SEFS_DIR | SEFS_LNK_FILE | SEFS_CHR_FILE | SEFS_BLK_FILE | SEFS_SOCK_FILE | SEFS_FIFO_FILE)
-#define SEFS_TYPES      1
-#define SEFS_USERS      2
+#define SEFS_TYPES	1
+#define SEFS_USERS	2
 #define SEFS_OBJECTCLASS 3
-#define SEFS_PATHS       4
+#define SEFS_PATHS	4
+#define SEFS_RANGES	5
 
 
 typedef int32_t sefs_classes_t;
 
 typedef struct sefs_search_ret {
-	char                  *context;
-	char                  *path;
-	char                  *object_class;
-	struct sefs_search_ret     *next;
+	char		      *context;
+	char		      *path;
+	char		      *object_class;
+	struct sefs_search_ret	   *next;
 
 } sefs_search_ret_t;
 
@@ -61,18 +62,22 @@ typedef struct sefs_search_keys {
 	const char **type;
 	const char **user;
 	const char **path;
+	const char **range;
 	const char **object_class;
 
 	/* number of types in array */
-	int num_type;                 
-	/* number of users in array */              
+	int num_type;
+	/* number of users in array */
 	int num_user;
+	/* number of mls ranges in array */
+	int num_range;
 	/* number of paths in array */
 	int num_path;
 	/* number of object classes in array */
 	int num_object_class;
 	int do_type_regEx;
 	int do_user_regEx;
+	int do_range_regEx;
 	int do_path_regEx;
 	/* this is a linked list of returned matches */
 	sefs_search_ret_t      *search_ret;
@@ -100,6 +105,11 @@ int sefs_filesystem_db_search(sefs_filesystem_db_t *fsd,sefs_search_keys_t *sear
 int sefs_search_keys_ret_destroy(sefs_search_ret_t *key);
 /* this will return all the known types in the context parameter */
 char **sefs_filesystem_db_get_known(sefs_filesystem_db_t *fsd,int *count,int request_type);
+
+/* Given the database, determine if its entries contain MLS ranges or
+ * not.	 Returns 1 if so, 0 if not, or < 0 on error.
+ */
+int sefs_filesystem_db_is_mls(sefs_filesystem_db_t *fsd);
 
 int sefs_double_array_destroy(char **array,int size);
 

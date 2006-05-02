@@ -11,7 +11,11 @@ command.
 .PP
 .B replcon 
 allows the user to find and replace file contexts.  Replacements can be restricted by object class.
+.PP 
+A context may be specified as a colon separated list of user, role, and type as follows - user_u:object_r:type_t. If your system supports MLS you can also add an additional MLS range to the end as follows - user_u:object_r:type_t:s0. The tool will automatically match a user, role, type, or range that is not specified, with any other user, role, type, or range. If your system has MLS and the translation library is enabled matching is done using it. If you want the tool to match raw contexts please use --raw option. 
 .SH OPTIONS
+.IP "--raw"
+Specify context to search for, ignoring the translation library if present.
 .IP "-c, --context=OLD NEW"
 Specify context to search for, and replace.
 .IP "-o, --object=OBJECT"
@@ -39,9 +43,19 @@ blk_file,
 sock_file,
 fifo_file,
 all_files
+.SH EXAMPLES
+.TP
+.B replcon -c : ::type_t .
+Replace every context in the current directory with type_t
+.TP
+.B replcon -c user_u: :role_r .
+Replace every context with user user_u in the current directory with role role_r
+.TP
+.B replcon -c ::type_t:s0  :::s0:c0 .
+Replace every context with type type_t and MLS range s0 in the current directory with range s0:c0
 .SH AUTHOR
 This manual page was written by Kevin Carr <kcarr@tresys.com>.  
 .SH COPYRIGHT
 Copyright(C) 2006 Tresys Technology, LLC
 .SH SEE ALSO
-replcon(1), searchcon(1), indexcon(1)
+findcon(1), searchcon(1), indexcon(1)

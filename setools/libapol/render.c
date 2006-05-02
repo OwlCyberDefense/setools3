@@ -1532,6 +1532,87 @@ char *re_render_role_trans(bool_t addlineno, int idx, policy_t *policy)
 	return rt;
 }
 
+char *re_render_role_allow(bool_t addlineno, int idx, policy_t *policy)
+{
+	char *rt = NULL, *tmp_name = NULL;
+	char tmp[BUF_SZ];
+	int sz = 0, retv;
+	ta_item_t *name;
+
+	if (!policy || idx < 0 || idx >= policy->num_role_allow)
+		return NULL;
+
+	if (addlineno) {
+		snprintf(tmp, sizeof(tmp)-1, "[%7lu] ", policy->role_allow[idx].lineno);
+		append_str(&rt, &sz, tmp);
+	}
+
+	append_str(&rt, &sz, "allow ");
+
+	/* render source role(s) */
+	if (policy->role_allow[idx].flags & AVFLAG_SRC_STAR) {
+		append_str(&rt, &sz, "*");
+	} else if (policy->role_allow[idx].flags & AVFLAG_SRC_TILDA) {
+		append_str(&rt, &sz, "~");
+	}
+	if (policy->role_allow[idx].src_roles->next) {
+		append_str(&rt, &sz, "{");
+	}
+
+	for (name = policy->role_allow[idx].src_roles; name; name = name->next) {
+		retv = get_ta_item_name(name, &tmp_name, policy);
+		if (retv) {
+			free(rt);
+			return NULL;
+		}
+		snprintf(tmp, sizeof(tmp)-1, "%s", tmp_name);
+		append_str(&rt, &sz, tmp);
+		free(tmp_name);
+		tmp_name = NULL;
+		if (name->next) {
+			append_str(&rt, &sz, " ");
+		}
+	}
+
+	if (policy->role_allow[idx].src_roles->next) {
+		append_str(&rt, &sz, "}");
+	}
+	append_str(&rt, &sz, " ");
+
+	/* render target role(s) */
+	if (policy->role_allow[idx].flags & AVFLAG_SRC_STAR) {
+		append_str(&rt, &sz, "*");
+	} else if (policy->role_allow[idx].flags & AVFLAG_SRC_TILDA) {
+		append_str(&rt, &sz, "~");
+	}
+	if (policy->role_allow[idx].tgt_roles->next) {
+		append_str(&rt, &sz, "{");
+	}
+
+	for (name = policy->role_allow[idx].tgt_roles; name; name = name->next) {
+		retv = get_ta_item_name(name, &tmp_name, policy);
+		if (retv) {
+			free(rt);
+			return NULL;
+		}
+		snprintf(tmp, sizeof(tmp)-1, "%s", tmp_name);
+		append_str(&rt, &sz, tmp);
+		free(tmp_name);
+		tmp_name = NULL;
+		if (name->next) {
+			append_str(&rt, &sz, " ");
+		}
+	}
+
+	if (policy->role_allow[idx].tgt_roles->next) {
+		append_str(&rt, &sz, "}");
+	}
+
+	append_str(&rt, &sz, ";");
+
+	return rt;
+}
+
 /*	case AP_IPV6:
 		tmp_arr = nodecon->addr;
 		/ * the math below prints the IPv6 fields in hexidecimal 2 bytes at a time * /

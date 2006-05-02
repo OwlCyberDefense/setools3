@@ -1,5 +1,40 @@
 CHANGE LOG, SE Linux TOOLS (setools)
 =======================================================
+May 1, 2006, Version 2.4
+
+apol:
+	File contexts tab now allows for MLS range searching if 
+	the loaded database is from a MLS filesystem.
+	Policy statistics dialog now shows MLS and ocontexts
+	summaries.
+
+libapol:
+	Added support for loading base policies containing optionals.
+	Added support for searching range transitions containing
+	attributes.
+
+libseaudit:
+	Bugfix to support parsing FC5-style audit logs.
+
+seaudit:
+	Added date filters.
+
+secmds:
+	Added support to indexcon and searchcon for MLS filesytems.
+	Added support to findcon and replcon for MLS filesystems.
+	
+sechecker:
+	Added incomplete network access (inc_net_access) module.
+	Added unreachable domains (unreachable_doms) module.
+	Added impossible range transitions (imp_range_trans) module.
+
+sesearch:
+	Allow user to search range transitions by attributes and
+	indirect matching.
+	Added RBAC searching.
+
+
+=======================================================
 January 23, 2006, Version 2.3
 
 apol:
