@@ -14,6 +14,7 @@
 #include "apol_tcl_other.h"
 #include "apol_tcl_render.h"
 #include "apol_tcl_fc.h"
+#include "render.h"
 
 /* get a list of policy resource names names. Caller may optionally provide a regular
  * expression to limit the list of returned names.
@@ -98,7 +99,9 @@ static int Apol_GetNames(ClientData clientData, Tcl_Interp * interp, int argc, C
 /**
  * Takes a sepol_type_datum_t and appends a tuple of it to
  * result_list.	 The tuple consists of:
- *    { type_name {attrib0 attrib1 ...} {alias0 alias1 ...}}
+ * <code>
+ *    { type_name {attrib0 attrib1 ...} {alias0 alias1 ...} }
+ * </code>
  */
 static int append_type_to_list(Tcl_Interp *interp,
 			       sepol_type_datum_t *type_datum,
@@ -165,13 +168,19 @@ static int append_type_to_list(Tcl_Interp *interp,
 }
 
 /**
- * Returns an unordered list of type tuples within the policy.
- *   elem 0 - type name
- *   elem 1 - list of associated attributes
- *   elem 2 - list of associated aliases
- * argv[1] - type name to look up, or a regular expression, or empty
- *	     to get all types
- * argv[2] - (optional) treat argv[1] as a type name or regex
+ * Returns an unordered list of type tuples within the policy.  Each
+ * tuple consists of:
+ * <ul>
+ *   <li>type name
+ *   <li>list of associated attributes
+ *   <li>list of associated aliases
+ * </ul>
+ * @param argv This function takes two parameters:
+ * <ol>
+ *   <li>type name to look up, or a regular expression, or empty to
+ *       get all types
+ *   <li>(optional) treat argv[1] as a type name or regex
+ * </ol>
  */
 static int Apol_GetTypes(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
@@ -240,7 +249,9 @@ static int Apol_GetTypes(ClientData clientData, Tcl_Interp *interp, int argc, CO
 /**
  * Takes a sepol_type_datum_t representing a type and appends a tuple
  * of it to result_list.  The tuple consists of:
+ * <code>
  *    { attr_name { type0 type1 ... } }
+ * </code>
  */
 static int append_attr_to_list(Tcl_Interp *interp,
 			       sepol_type_datum_t *attr_datum,
@@ -293,11 +304,17 @@ static int append_attr_to_list(Tcl_Interp *interp,
 
 /**
  * Returns an unordered list of attribute tuples within the policy.
- *   elem 0 - attribute name
- *   elem 1 - list of types with that attribute
- * argv[1] - attribute name to look up, or a regular expression, or
- *	     empty to get all attributes
- * argv[2] - (optional) treat argv[1] as an attribute name or regex
+ * Each tuple consists of:
+ * <ul>
+ *   <li>attribute name
+ *   <li>list of types with that attribute
+ * </ul>
+ * @param argv This function takes two parameters:
+ * <ol>
+ *   <li>attribute name to look up, or a regular expression, or empty
+ *       to get all attributes
+ *   <li>(optional) treat argv[1] as an attribute name or regex
+ * </ol>
  */
 static int Apol_GetAttribs(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
@@ -366,9 +383,12 @@ static int Apol_GetAttribs(ClientData clientData, Tcl_Interp *interp, int argc, 
 /**
  * Takes a sepol_class_datum_t representing a class and appends a
  * tuple of it to result_list.	 The tuple consists of:
+ * <code>
  *    { class_name common_class {perms0 perms1 ...} }
+ * </code>
+ *
  * If the object class has no common, then the second element will be
- * an empy string.
+ * an empty string.
  */
 static int append_class_to_list(Tcl_Interp *interp,
 				sepol_class_datum_t *class_datum,
@@ -415,13 +435,19 @@ static int append_class_to_list(Tcl_Interp *interp,
 }
 
 /**
- * Returns an unordered list of class tuples within the policy.
- *   elem 0 - class name
- *   elem 1 - class's common class, or empty string if none
- *   elem 2 - list of class's permissions
- * argv[1] - class name to look up, or a regular expression, or empty
- *	     to get all classes
- * argv[2] - (optional) treat argv[1] as a class name or regex
+ * Returns an unordered list of class tuples within the policy.  Each
+ * tuple consists of:
+ * <ul>
+ *   <li>class name
+ *   <li>class's common class, or empty string if none
+ *   <li>list of class's permissions
+ * </ul>
+ * @param argv This function takes two parameters:
+ * <ol>
+ *   <li>class name to look up, or a regular expression, or empty to
+ *       get all classes
+ *   <li>(optional) treat argv[1] as a class name or regex
+ * </ol>
  */
 static int Apol_GetClasses(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
@@ -490,7 +516,10 @@ static int Apol_GetClasses(ClientData clientData, Tcl_Interp *interp, int argc, 
 /**
  * Takes a sepol_common_datum_t representing a common and appends a
  * tuple of it to result_list.	 The tuple consists of:
+ * <code>
  *    { common_name {perms0 perms1 ...} {class0 class1 ...} }
+ * </code>
+ *
  * The second list is a list of object classes that inherit from this
  * common.
  */
@@ -556,13 +585,19 @@ static int append_common_to_list(Tcl_Interp *interp,
 }
 
 /**
- * Returns an unordered list of common tuples within the policy.
- *   elem 0 - common name
- *   elem 1 - list of common's permissions
- *   elem 2 - list of classes that inherit this common
- * argv[1] - common name to look up, or a regular expression, or empty
- *	     to get all common
- * argv[2] - (optional) treat argv[1] as a common name or regex
+ * Returns an unordered list of common tuples within the policy.  Each
+ * tuple consists of:
+ * <ul>
+ *   <li>common name
+ *   <li>list of common's permissions
+ *   <li>list of classes that inherit this common
+ * </ul>
+ * @param argv This function takes two parameters:
+ * <ol>
+ *   <li>common name to look up, or a regular expression, or empty to
+ *       get all common
+ *   <li>(optional) treat argv[1] as a common name or regex
+ * </ol>
  */
 static int Apol_GetCommons(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
@@ -631,7 +666,9 @@ static int Apol_GetCommons(ClientData clientData, Tcl_Interp *interp, int argc, 
 /**
  * Takes a string representing a permission and appends a tuple of it
  * to result_list.  The tuple consists of:
+ * <code>
  *    { perm_name {class0 class1 ...} {common0 common1 ...} }
+ * </code>
  */
 static int append_perm_to_list(Tcl_Interp *interp,
 			       const char *perm,
@@ -691,12 +728,18 @@ static int append_perm_to_list(Tcl_Interp *interp,
 
 /**
  * Returns an unordered list of permission tuples within the policy.
- *   elem 0 - permission name
- *   elem 1 - list of classes that have this permission
- *   elem 2 - list of commons that have this permission
- * argv[1] - permission name to look up, or a regular expression, or
- *	     empty to get all permissions
- * argv[2] - (optional) treat argv[1] as a permission name or regex
+ * Each tuple consists of:
+ * <ul>
+ *   <li>permission name
+ *   <li>list of classes that have this permission
+ *   <li>list of commons that have this permission
+ * </ul>
+ * @param argv This function takes two parameters:
+ * <ol>
+ *   <li>permission name to look up, or a regular expression, or empty
+ *       to get all permissions
+ *   <li>(optional) treat argv[1] as a permission name or regex
+ * </ol>
  */
 static int Apol_GetPerms(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
@@ -760,7 +803,9 @@ static int Apol_GetPerms(ClientData clientData, Tcl_Interp *interp, int argc, CO
 /**
  * Takes a sepol_role_datum_t and appends a tuple of it to
  * result_list.	 The tuple consists of:
- *    { role_name {types1 types2 ...} {dominated_role1 dominated_role2 ...}}
+ * <code>
+ *    { role_name {types1 types2 ...} {dominated_role1 dominated_role2 ...} }
+ * </code>
  */
 static int append_role_to_list(Tcl_Interp *interp,
 			       sepol_role_datum_t *role_datum,
@@ -825,16 +870,20 @@ static int append_role_to_list(Tcl_Interp *interp,
 }
 
 /**
- * Return a list of all roles within the policy.
- *
- * element 0 - role name
- * element 1 - list of types
- * element 2 - list of roles this one dominates
- *
- * argv[1] - role name to look up, or a regular expression, or empty
- *	     to get all roles
- * argv[2] - (optional) roles containing this type
- * argv[3] - (optional) treat argv[1] and argv[2] as a role name or regex
+ * Return an unordered list of all role tuples within the policy.  Each
+ * tuple consists of:
+ * <ul>
+ *   <li>role name
+ *   <li>list of types
+ *   <li>list of roles this one dominates
+ * </ul>
+ * @param argv This function takes three parameters:
+ * <ol>
+ *   <li>role name to look up, or a regular expression, or empty to
+ *       get all roles
+ *   <li>(optional) roles containing this type
+ *   <li>(optional) treat argv[1] and argv[2] as a role name or regex
+ * </ol>
  */
 static int Apol_GetRoles(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
@@ -920,7 +969,9 @@ static int level_to_tcl_obj(Tcl_Interp *interp, ap_mls_level_t *level, Tcl_Obj *
 
 /**
  * Converts an apol_mls_level_t to a Tcl representation:
+ * <code>
  *   { level { cat0 cat1 ... } }
+ * </code>
  */
 static int apol_level_to_tcl_obj(Tcl_Interp *interp, apol_mls_level_t *level, Tcl_Obj **obj) {
 	Tcl_Obj *level_elem[2], *cats_obj;
@@ -941,7 +992,9 @@ static int apol_level_to_tcl_obj(Tcl_Interp *interp, apol_mls_level_t *level, Tc
 /**
  * Takes a sepol_user_datum_t and appends a tuple of it to
  * result_list.	 The tuple consists of:
+ * <code>
  *    { user_name { role0 role1 ... } default_level { low_range high_range } }
+ * </code>
  */
 static int append_user_to_list(Tcl_Interp *interp,
 			       sepol_user_datum_t *user_datum,
@@ -1019,21 +1072,26 @@ static int append_user_to_list(Tcl_Interp *interp,
 }
 
 /**
- * Returns a list of users-tuples.
- *  element 1: user name
- *  element 2: list of role names authorized for user
- *  element 3: default level if MLS, empty otherwise
- *	       (level = sensitivity + list of categories)
- *  element 4: authorized range for user if MLS, empty otherwise
- *	       (range = 2-uple of levels)
- *
- * argv[1] - user name to look up, or a regular expression, or empty
- *	     to get all users
- * argv[2] - (optional) role that user cantains
- * argv[3] - (optional) default MLS level
- * argv[4] - (optional) MLS range
- * argv[5] - (optional) range query type
- * argv[6] - (optional) treat argv[1] as a user name or regex
+ * Returns an unordered list of user tuples within the policy.  Each
+ * tuple consists of:
+ * <ul>
+ *   <li>user name
+ *   <li>list of role names authorized for user
+ *   <li>default level if MLS, empty otherwise (level = sensitivity +
+ *       list of categories)
+ *   <li>authorized range for user if MLS, empty otherwise (range =
+ *       2-uple of levels)
+ * </ul>
+ * @param argv This function takes six parameters:
+ * <ol>
+ *   <li>user name to look up, or a regular expression, or empty to
+ *       get all users
+ *   <li>(optional) role that user cantains
+ *   <li>(optional) default MLS level
+ *   <li>(optional) MLS range
+ *   <li>(optional) range query type
+ *   <li>(optional) treat argv[1] as a user name or regex
+ * </ol>
  */
 static int Apol_GetUsers(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
@@ -1133,7 +1191,9 @@ static int Apol_GetUsers(ClientData clientData, Tcl_Interp *interp, int argc, CO
 /**
  * Takes a sepol_bool_datum_t and appends a tuple of it to
  * result_list.	 The tuple consists of:
+ * <code>
  *    { bool_name current_value}
+ * </code>
  */
 static int append_bool_to_list(Tcl_Interp *interp,
 			       sepol_bool_datum_t *bool_datum,
@@ -1158,14 +1218,18 @@ static int append_bool_to_list(Tcl_Interp *interp,
 }
 
 /**
- * Return a list of all condition booleans within the policy.
- *
- * element 0 - boolean name
- * element 1 - current state of the boolean (either 0 or 1)
- *
- * argv[1] - boolean name to look up, or a regular expression, or empty
- *	     to get all roles
- * argv[2] - (optional) treat argv[1] as a boolean name or regex
+ * Return an unordered list of all conditional boolean tuples within
+ * the policy.  Each tuple consists of:
+ * <ul>
+ *   <li>boolean name
+ *   <li>current state of the boolean (either 0 or 1)
+ * </ul>
+ * @param argv This function takes two parameters:
+ * <ol>
+ *   <li>boolean name to look up, or a regular expression, or empty to
+ *       get all booleans
+ *   <li>(optional) treat argv[1] as a boolean name or regex
+ * </ol>
  */
 static int Apol_GetBools(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
@@ -1233,9 +1297,11 @@ static int Apol_GetBools(ClientData clientData, Tcl_Interp *interp, int argc, CO
 
 /**
  * Sets a boolean value within the policy.
- *
- * argv[1] - boolean name
- * argv[2] - new state for the boolean (either 0 or 1)
+ * @param argv This function takes two parameters:
+ * <ol>
+ *   <li>boolean name
+ *   <li>new state for the boolean (either 0 or 1)
+ * </ol>
  */
 static int Apol_SetBoolValue(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
@@ -1243,6 +1309,7 @@ static int Apol_SetBoolValue(ClientData clientData, Tcl_Interp *interp, int argc
 	Tcl_Obj *value_obj;
 	int value;
 
+	apol_tcl_clear_error();
 	if (argc != 3) {
 		Tcl_SetResult(interp, "Need a bool name and a value.", TCL_STATIC);
 		return TCL_ERROR;
@@ -1270,7 +1337,9 @@ static int Apol_SetBoolValue(ClientData clientData, Tcl_Interp *interp, int argc
 /**
  * Takes a sepol_level_datum_t and appends a tuple of it to
  * result_list.	 The tuple consists of:
+ * <code>
  *    { sens_name {alias0 alias1 ...} {cats0 cats1 ...} dominance_value }
+ * </code>
  */
 static int append_level_to_list(Tcl_Interp *interp,
 				sepol_level_datum_t *level_datum,
@@ -1335,16 +1404,20 @@ static int append_level_to_list(Tcl_Interp *interp,
 }
 
 /**
- * Return an unordered list of MLS level tuples, or an empty list if
- * no policy was loaded.
- *   elem 0 - sensitivity name
- *   elem 1 - list of associated aliases
- *   elem 2 - list of categories
- *   elem 3 - level dominance value
- *
- * argv[1] - sensitivity name to look up, or a regular expression, or
- *	     empty to get all levels
- * argv[2] - (optional) treat argv[1] as a sensitivity name or regex
+ * Return an unordered list of MLS level tuples within the policy.
+ * Each tuple consists of:
+ * <ul>
+ *   <li>sensitivity name
+ *   <li>list of that sensitivity's aliases
+ *   <li>list of categories
+ *   <li>level dominance value
+ * </ul>
+ * @param argv This function takes two parameters:
+ * <ol>
+ *   <li>sensitivity name to look up, or a regular expression, or
+ *       empty to get all levels
+ *   <li>(optional) treat argv[1] as a sensitivity name or regex
+ * </ol>
  */
 static int Apol_GetLevels(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
@@ -1413,7 +1486,9 @@ static int Apol_GetLevels(ClientData clientData, Tcl_Interp *interp, int argc, C
 /**
  * Takes a sepol_cat_datum_t and appends a tuple of it to
  * result_list.	 The tuple consists of:
+ * <code>
  *    { cat_name {alias0 alias1 ...} {level0 level1 ...} cat_value }
+ * </code>
  */
 static int append_cat_to_list(Tcl_Interp *interp,
 			      sepol_cat_datum_t *cat_datum,
@@ -1483,16 +1558,20 @@ static int append_cat_to_list(Tcl_Interp *interp,
 }
 
 /**
- * Returns an unordered list of MLS category tuples, or an empty list
- * if no policy was loaded.
- *   elem 0 - category name
- *   elem 1 - list of associated aliases
- *   elem 2 - unordered list of sensitivities that have this category
- *   elme 3 - category value
- *
- * argv[1] - category name to look up, or a regular expression, or
- *	     empty to get all levels
- * argv[2] - (optional) treat argv[1] as a category name or regex
+ * Returns an unordered list of MLS category tuples within the policy.
+ * Each tuple consists of:
+ * <ul>
+ *   <li>category name
+ *   <li>list of that category's aliases
+ *   <li>unordered list of sensitivities that have this category
+ *   <li>category value
+ * </ul>
+ * @param argv This function takes two parameters:
+ * <ol>
+ *   <li>category name to look up, or a regular expression, or empty
+ *       to get all categories
+ *   <li>(optional) treat argv[1] as a category name or regex
+ * </ol>
  */
 static int Apol_GetCats(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
@@ -1608,7 +1687,9 @@ static int security_con_to_tcl_context_string(Tcl_Interp *interp, security_con_t
 /**
  * Given a sepol_context_struct, allocate a new TclObj to the
  * referenced paramater dest_obj.  The returned Tcl list is:
+ * <code>
  *   { user role type range }
+ * </code>
  * If the current policy is non-MLS then range will be an empty list.
  * Otherwise it will be a 2-ple list of levels.
  */
@@ -1678,10 +1759,13 @@ static int Apol_GetInitialSIDs(ClientData clientData, Tcl_Interp *interp, int ar
 /**
  * Takes a sepol_portcon_t and appends a tuple of it to result_list.
  * The tuple consists of:
- *
+ * <code>
  *   { low_port high_port protocol context }
- *
- * where a context is:	{ user role type {low_level high_level} }
+ * </code>
+ * where a context is:
+ * <code>
+ *   { user role type {low_level high_level} }
+ * </code>
  */
 static int append_portcon_to_list(Tcl_Interp *interp,
 				  sepol_portcon_t *portcon,
@@ -1750,17 +1834,27 @@ static int apol_tcl_string_to_proto(Tcl_Interp *interp, const char *proto_name, 
 }
 
 /**
- * Return a list of portcon declarations within the current policy.
- *   element 0: low port
- *   element 1: high port
- *   element 2: protocol
- *   element 3: portcon context
+ * Return an unordered list of portcon tuples within the current
+ * policy.  Each tuple consists of:
+ * <ul>
+ *   <li>low port
+ *   <li>high port
+ *   <li>protocol
+ *   <li>portcon context
+ * </ul>
+ * where a context is:
+ * <code>
+ *   { user role type range }
+ * </code>
  *
- * argv[1] - low port to lookup, or -1 to ignore
- * argv[2] - high port, or -1 to ignore
- * argv[3] - (optional) protocol string
- * argv[4] - full or partial context to match
- * argv[5] - range query type
+ * @param argv This function takes five parameters:
+ * <ol>
+ *   <li>low port to lookup, or -1 to ignore
+ *   <li>high port, or -1 to ignore
+ *   <li>(optional) protocol string
+ *   <li>(optional) full or partial context to match
+ *   <li>(optional) range query type
+ * </ol>
  */
 static int Apol_GetPortcons(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
@@ -1840,8 +1934,9 @@ static int Apol_GetPortcons(ClientData clientData, Tcl_Interp *interp, int argc,
 /**
  * Takes a sepol_netifcon_t and appends a tuple of it to result_list.
  * The tuple consists of:
- *
+ * <code>
  *   { device if_context msg_context }
+ * </code>
  */
 static int append_netifcon_to_list(Tcl_Interp *interp,
 				  sepol_netifcon_t *netifcon,
@@ -1874,16 +1969,26 @@ static int append_netifcon_to_list(Tcl_Interp *interp,
 }
 
 /**
- * Return an unsorted list of all netifcon declarations.
- *   element 0: network device
- *   element 1: context for device
- *   element 2: context for messages sent through that device
+ * Return an unsorted list of netifcon tuples within the policy.  Each
+ * tuple consists of:
+ * <ul>
+ *   <li>network device
+ *   <li>context for device
+ *   <li>context for messages sent through that device
+ * </ul>
+ * where a context is:
+ * <code>
+ *   { user role type range }
+ * </code>
  *
- * argv[1] - network device name to look up, or empty to get all netifcons
- * argv[2] - (optional) device context, full or partial
- * argv[3] - (optional) range query type for device context
- * argv[4] - (optional) message context, full or partial
- * argv[5] - (optional) range query type for message context
+ * @param argv This function takes five parameters:
+ * <ol>
+ *   <li>network device name to look up, or empty to get all netifcons
+ *   <li>(optional) device context, full or partial
+ *   <li>(optional) range query type for device context
+ *   <li>(optional) message context, full or partial
+ *   <li>(optional) range query type for message context
+ * </ol>
  */
 static int Apol_GetNetifcons(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
@@ -1894,6 +1999,8 @@ static int Apol_GetNetifcons(ClientData clientData, Tcl_Interp *interp, int argc
         apol_netifcon_query_t *query = NULL;
         apol_vector_t *v = NULL;
 	int retval = TCL_ERROR;
+
+	apol_tcl_clear_error();
 	if (policy == NULL) {
 		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		goto cleanup;
@@ -1905,7 +2012,7 @@ static int Apol_GetNetifcons(ClientData clientData, Tcl_Interp *interp, int argc
 	if (argc == 2) {
 		if (sepol_policydb_get_netifcon_by_name(policydb->sh, policydb->p,
 							argv[1], &netifcon) < 0) {
-			/* passed category is not within the policy */
+			/* passed netifcon is not within the policy */
 			return TCL_OK;
 		}
 		if (append_netifcon_to_list(interp, netifcon, result_obj) == TCL_ERROR) {
@@ -1979,72 +2086,193 @@ static int Apol_GetNetifcons(ClientData clientData, Tcl_Interp *interp, int argc
 	return retval;
 }
 
-/* Return a list of all nodecon declarations.  If a paramater was
- * passed, only return those that match the addr/mask pair. */
+/**
+ * Takes a sepol_nodecon_t and appends a tuple of it to result_list.
+ * The tuple consists of:
+ * <code>
+ *   { IP_type address mask context }
+ * </code>
+ */
+static int append_nodecon_to_list(Tcl_Interp *interp,
+				  sepol_nodecon_t *nodecon,
+				  Tcl_Obj *result_list)
+{
+	unsigned char proto, proto_a, proto_m;
+	uint32_t *addr, *mask;
+	char *addr_str = NULL, *mask_str = NULL;
+	sepol_context_struct_t *context;
+	Tcl_Obj *nodecon_elem[4], *nodecon_list;
+	int retval = TCL_ERROR;
+	if (sepol_nodecon_get_protocol(policydb->sh, policydb->p,
+				   nodecon, &proto) < 0 ||
+	    sepol_nodecon_get_addr(policydb->sh, policydb->p,
+				   nodecon, &addr, &proto_a) < 0 ||
+	    sepol_nodecon_get_mask(policydb->sh, policydb->p,
+				   nodecon, &mask, &proto_m) < 0 ||
+	    sepol_nodecon_get_context(policydb->sh, policydb->p,
+				      nodecon, &context) < 0) {
+		goto cleanup;
+	}
+	assert(proto == proto_a && proto == proto_m);
+	if (proto == SEPOL_IPV4) {
+		nodecon_elem[0] = Tcl_NewStringObj("ipv4", -1);
+		if ((addr_str = re_render_ipv4_addr(addr[0])) == NULL ||
+		    (mask_str = re_render_ipv4_addr(mask[0])) == NULL) {
+			ERR(policydb, "Out of memory!");
+		}
+	}
+	else if (proto == SEPOL_IPV6) {
+		nodecon_elem[0] = Tcl_NewStringObj("ipv6", -1);
+		if ((addr_str = re_render_ipv6_addr(addr)) == NULL ||
+		    (mask_str = re_render_ipv6_addr(mask)) == NULL) {
+			ERR(policydb, "Out of memory!");
+		}
+	}
+	else {
+		Tcl_SetResult(interp, "Unknown protocol.", TCL_STATIC);
+		goto cleanup;
+	}
+	nodecon_elem[1] = Tcl_NewStringObj(addr_str, -1);
+	nodecon_elem[2] = Tcl_NewStringObj(mask_str, -1);
+	if (sepol_context_to_tcl_obj(interp, context, nodecon_elem + 3) == TCL_ERROR) {
+		goto cleanup;
+	}
+	nodecon_list = Tcl_NewListObj(4, nodecon_elem);
+	if (Tcl_ListObjAppendElement(interp, result_list, nodecon_list) == TCL_ERROR) {
+		goto cleanup;
+	}
+	retval = TCL_OK;
+ cleanup:
+	free(addr_str);
+	free(mask_str);
+	return retval;
+}
+
+/**
+ * Return an unsorted list of nodecon declarations within the policy.
+ * Each tuple consists of:
+ * <ul>
+ *   <li>IP type ("ipv4" or "ipv6")
+ *   <li>address
+ *   <li>netmask
+ *   <li>nodecon context
+ * </ul>
+ * where addresses and netmasks are lists of 4 unsigned values and a
+ * context is:
+ * <code>
+ *   { user role type range }
+ * </code>
+ *
+ * @param argv This function takes five parameters:
+ * <ol>
+ *   <li>address, or empty to ignore
+ *   <li>(optional) netmask, or empty to ignore
+ *   <li>(optional) IP type ("ipv4" or "ipv6") to lookup, or empty to ignore
+ *   <li>(optional) full or partial context to match
+ *   <li>(optional) range query type
+ * </ol>
+ */
 static int Apol_GetNodecons(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
-        int i;
-        Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
-        uint32_t addr[4] = {0, 0, 0, 0};
-        int user_type = -1;
-        if (policy == NULL) {
+	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
+	sepol_nodecon_t *nodecon;
+	int proto = -1, proto_a = -1, proto_m = -1;
+	uint32_t *addr = NULL, *mask = NULL;
+	unsigned char has_addr = 0, has_mask = 0;
+	apol_context_t *context = NULL;
+	unsigned int range_match;
+	apol_nodecon_query_t *query = NULL;
+	apol_vector_t *v = NULL;
+	size_t i;
+	int retval = TCL_ERROR;
+	
+	apol_tcl_clear_error();
+	if (policy == NULL) {
 		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
-		return TCL_ERROR;
+		goto cleanup;
 	}
-        if (argc >= 2) {
-                if ((user_type = str_to_internal_ip(argv[1], addr)) == -1) {
-                        Tcl_SetResult(interp, "Could not convert address", TCL_STATIC);
-                        return TCL_ERROR;
-                }
-        }
-        for (i = 0; i < policy->num_nodecon; i++) {
-                ap_nodecon_t *nodecon = policy->nodecon + i;
-                Tcl_Obj *nodecon_elem[4], *nodecon_list;
-                Tcl_Obj *val_elem[4];
-                int i;
-                if (user_type >= 0) {
-                        int keep = 1;
-                        if (user_type != nodecon->flag) {
-                                continue;
-                        }
-                        for (i = 0; i < 4; i++) {
-                                if ((addr[i] & nodecon->mask[i]) != nodecon->addr[i]) {
-                                        keep = 0;
-                                        break;
-                                }
-                        }
-                        if (!keep) {
-                                continue;
-                        }
-                }
-                if (nodecon->flag == AP_IPV4) {
-                        nodecon_elem[0] = Tcl_NewStringObj("ipv4", -1);
-                }
-                else if (nodecon->flag == AP_IPV6) {
-                        nodecon_elem[0] = Tcl_NewStringObj("ipv6", -1);
-                }
-                else {
-                        Tcl_SetResult(interp, "Unknown nodecon flag.", TCL_STATIC);
-                        return TCL_ERROR;
-                }
-                for (i = 0; i < 4; i++) {
-                        val_elem[i] = Tcl_NewLongObj((long) nodecon->addr[i]);
-                }
-                nodecon_elem[1] = Tcl_NewListObj(4, val_elem);
-                for (i = 0; i < 4; i++) {
-                        val_elem[i] = Tcl_NewLongObj((long) nodecon->mask[i]);
-                }
-                nodecon_elem[2] = Tcl_NewListObj(4, val_elem);
-                if (security_con_to_tcl_context_string(interp, nodecon->scontext, nodecon_elem + 3) == TCL_ERROR) {
-                        return TCL_ERROR;
-                }
-                nodecon_list = Tcl_NewListObj(4, nodecon_elem);
-                if (Tcl_ListObjAppendElement(interp, result_obj, nodecon_list) == TCL_ERROR) {
-                        return TCL_ERROR;
-                }
-        }
-        Tcl_SetObjResult(interp, result_obj);
-        return TCL_OK;
+	if (argc != 2 && argc != 6) {
+		Tcl_SetResult(interp, "Need an address, ?netmask?, ?IP_type?, ?context?, and ?range_match?.", TCL_STATIC);
+		goto cleanup;
+	}
+	if (*argv[1] != '\0') {
+		if ((addr = calloc(4, sizeof(*addr))) == NULL) {
+			ERR(policydb, "Out of memory!");
+			goto cleanup;
+		}
+		if ((proto_a = apol_str_to_internal_ip(argv[1], addr)) < 0) {
+			Tcl_SetResult(interp, "Invalid address.", TCL_STATIC);
+			goto cleanup;
+		}
+		has_addr = 1;
+	}
+	if (argc == 6) {
+		if (*argv[2] != '\0') {
+			if ((mask = calloc(4, sizeof(*mask))) == NULL) {
+				ERR(policydb, "Out of memory!");
+				goto cleanup;
+			}
+			if ((proto_m = apol_str_to_internal_ip(argv[2], mask)) < 0) {
+				Tcl_SetResult(interp, "Invalid mask.", TCL_STATIC);
+				goto cleanup;
+			}
+			has_mask = 1;
+		}
+		if (strcmp(argv[3], "ipv4") == 0) {
+			proto = 0;
+		}
+		else if (strcmp(argv[3], "ipv6") == 0) {
+			proto = 1;
+		}
+		else if (*argv[3] != '\0') {
+			Tcl_SetResult(interp, "Unknown protocol.", TCL_STATIC);
+			goto cleanup;
+		}
+		if (*argv[4] != '\0') {
+			if ((context = apol_context_create()) == NULL) {
+				ERR(policydb, "Out of memory!");
+				goto cleanup;
+			}
+			if (apol_tcl_string_to_context(interp, argv[4], context) < 0 ||
+			    apol_tcl_string_to_range_match(interp, argv[5], &range_match) < 0) {
+				goto cleanup;
+			}
+		}
+	}
+	if (proto >= 0 || has_addr || has_mask || context != NULL) {
+		if ((query = apol_nodecon_query_create()) == NULL) {
+			Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
+			goto cleanup;
+		}
+		if (apol_nodecon_query_set_proto(policydb, query, proto) < 0 ||
+		    apol_nodecon_query_set_addr(policydb, query, addr, proto_a) < 0 ||
+		    apol_nodecon_query_set_mask(policydb, query, mask, proto_m) < 0 ||
+		    apol_nodecon_query_set_context(policydb, query, context, range_match) < 0) {
+			goto cleanup;
+		}
+		context = NULL;
+	}
+	if (apol_get_nodecon_by_query(policydb, query, &v) < 0) {
+		goto cleanup;
+	}
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		nodecon = (sepol_nodecon_t *) apol_vector_get_element(v, i);
+		if (append_nodecon_to_list(interp, nodecon, result_obj) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+	Tcl_SetObjResult(interp, result_obj);
+	retval = TCL_OK;
+ cleanup:
+	free(addr);
+	free(mask);
+	apol_context_destroy(&context);
+	apol_nodecon_query_destroy(&query);
+	apol_vector_destroy(&v, NULL);
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
 }
 
 /* Return an unordered unique list of all filesystems with a genfscon

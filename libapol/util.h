@@ -123,3 +123,52 @@ int read_file_to_buffer(const char *fname, char **buf, int *len);
 int str_to_internal_ip(const char *str, uint32_t ip[4]);
 
 #endif /*_APOLICY_UTIL_H_*/
+
+
+/******************** new stuff here ********************/
+
+/**
+ * @file util.h
+ *
+ * Miscellaneous, uncategorized functions for libapol.
+ *
+ * @author Kevin Carr  kcarr@tresys.com
+ * @author Jeremy A. Mowery jmowery@tresys.com
+ * @author Jason Tang  jtang@tresys.com
+ *
+ * Copyright (C) 2006 Tresys Technology, LLC
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ */
+
+#ifndef _APOL_UTIL_H_
+#define _APOL_UTIL_H_
+
+/**
+ * Given a string representing and IP value (mask or address, IPv4 or
+ * IPv6), write to an array that value in the same bit order that
+ * sepol uses.  If the IP was in IPv4 format, only write to the first
+ * element and zero the remainder.
+ *
+ * @param str A string representing and IP value, either in IPv4 or
+ * IPv6 format.
+ * @param ip Array to which write converted value.
+ *
+ * @return SEPOL_IPV4 if the string is in IPv4 format, SEPOL_IPV6 if
+ * in IPv6, < 0 on error.
+ */
+int apol_str_to_internal_ip(const char *str, uint32_t ip[4]);
+
+#endif

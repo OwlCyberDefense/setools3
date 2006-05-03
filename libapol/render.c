@@ -930,7 +930,6 @@ char *re_render_nodecon(ap_nodecon_t *nodecon, policy_t *policy)
 	char *context_str = NULL;
 	char *addr_str = NULL;
 	char *mask_str = NULL;
-	uint32_t tmp = 0;
 	char *tmp_str = NULL;
 
 	/* max length of a string for an IP is 40 characters
@@ -951,11 +950,8 @@ char *re_render_nodecon(ap_nodecon_t *nodecon, policy_t *policy)
 
 	switch (nodecon->flag) {
 	case AP_IPV4:
-		tmp = nodecon->addr[3];
-		/* the math below prints one byte at a time as a decimal value */
-		snprintf(addr_str, ip_addr_str_len_max - 1, "%3d.%3d.%3d.%3d", (tmp/(1<<24)), (tmp/(1<<16)%(1<<8)), (tmp/(1<<8)%(1<<8)), (tmp%(1<<8)));
-		tmp = nodecon->mask[3];
-		snprintf(mask_str, ip_addr_str_len_max - 1, "%3d.%3d.%3d.%3d", (tmp/(1<<24)), (tmp/(1<<16)%(1<<8)), (tmp/(1<<8)%(1<<8)), (tmp%(1<<8)));
+		snprintf(addr_str, ip_addr_str_len_max - 1, "%s", (tmp_str = re_render_ipv4_addr(nodecon->addr[3])));
+		snprintf(mask_str, ip_addr_str_len_max - 1, "%s", (tmp_str = re_render_ipv4_addr(nodecon->mask[3])));
 		break;
 	case AP_IPV6:
 		snprintf(addr_str, ip_addr_str_len_max - 1, "%s", (tmp_str = re_render_ipv6_addr(nodecon->addr)));
@@ -1613,28 +1609,30 @@ char *re_render_role_allow(bool_t addlineno, int idx, policy_t *policy)
 	return rt;
 }
 
-/*	case AP_IPV6:
-		tmp_arr = nodecon->addr;
-		/ * the math below prints the IPv6 fields in hexidecimal 2 bytes at a time * /
-		snprintf(addr_str, ip_addr_str_len_max - 1, "%04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x",
-			tmp_arr[0]/(1<<16), tmp_arr[0]%(1<<16), tmp_arr[1]/(1<<16), tmp_arr[1]%(1<<16),
-			tmp_arr[2]/(1<<16), tmp_arr[2]%(1<<16), tmp_arr[3]/(1<<16), tmp_arr[3]%(1<<16) );
-		tmp_arr = nodecon->mask;
-		snprintf(mask_str, ip_addr_str_len_max - 1, "%04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x",
-			tmp_arr[0]/(1<<16), tmp_arr[0]%(1<<16), tmp_arr[1]/(1<<16), tmp_arr[1]%(1<<16),
-			tmp_arr[2]/(1<<16), tmp_arr[2]%(1<<16), tmp_arr[3]/(1<<16), tmp_arr[3]%(1<<16) );
-		break;
-*/
+char *re_render_ipv4_addr(uint32_t addr)
+{
+	char buf[40];
+	unsigned char *p = (unsigned char *) &addr;
+	snprintf(buf, sizeof(buf), "%d.%d.%d.%d", p[0], p[1], p[2], p[3]);
+	return strdup(buf);
+}
+
 char *re_render_ipv6_addr(uint32_t addr[4])
 {
-	char *str = NULL;
 	uint16_t tmp[8] = {0,0,0,0,0,0,0,0};
 	int i, sz = 0, retv;
 	char buff[40]; /* 8 * 4 hex digits + 7 * ':' + '\0' == max size of string */
-	int contract = 0, prev_contr = 0, contr_idx_end = -1; 
+	int contract = 0, prev_contr = 0, contr_idx_end = -1;
 	for (i = 0; i < 4; i++) {
-		tmp[2*i] = addr[i]/(1<<16);
-		tmp[2*i+1] = addr[i]%(1<<16);
+		uint32_t a;
+		/* for big endian systems */
+		/* a = addr[i]; */
+		/* FIX ME: use autoconf to detect for little-endian systems */
+		swab(addr + i, &a, sizeof(a));
+		/* have to use division and mod here, so as to ignore
+		 * host system's byte ordering */
+		tmp[2*i] = a%(1<<16);
+		tmp[2*i+1] = a/(1<<16);
 	}
 
 	for (i = 0; i < 8; i++) {
@@ -1661,15 +1659,12 @@ char *re_render_ipv6_addr(uint32_t addr[4])
 		} else if (i > contr_idx_end - contract && i < contr_idx_end) {
 			continue;
 		} else {
-			retv = snprintf(buff + sz, 40 - sz, i==7?"%04x":"%04x:", tmp[i]);
+			retv = snprintf(buff + sz, 40 - sz,
+					i==7 ? "%04x" : "%04x:", tmp[i]);
 			sz += retv;
 		}
 	}
 
 	buff[sz] = '\0';
-
-	str = strdup(buff);
-
-	return str;
+	return strdup(buff);
 }
-

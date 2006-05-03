@@ -353,72 +353,9 @@ static int Apol_RenderRangeTrans(ClientData clientData, Tcl_Interp *interp, int 
         return TCL_OK;
 }
 
-
-/* Takes a Tcl list of four elements and returns the IP address/mask
- * it represents.  argv[1] must be "ipv4" or "ipv6" that gives type of
- * address. */
-static int Apol_RenderAddress(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
-{
-        int flag, i;
-        uint32_t addr[4];
-        Tcl_Obj *addr_obj, *t, *result_obj;
-        long l;
-        if (argc != 3) {
-		Tcl_SetResult(interp, "wrong # of args", TCL_STATIC);
-		return TCL_ERROR;
-        }
-        if (strcmp(argv[1], "ipv4") == 0) {
-                flag = AP_IPV4;
-        }
-        else if (strcmp(argv[1], "ipv6") == 0) {
-                flag = AP_IPV6;
-        }
-        else {
-                Tcl_AppendResult(interp, "Unknown ip flag ", argv[1], NULL);
-                return TCL_ERROR;
-        }
-        addr_obj = Tcl_NewStringObj(argv[2], -1);
-        for (i = 0; i < 4; i++) {
-                if (Tcl_ListObjIndex(interp, addr_obj, i, &t) == TCL_ERROR ||
-                    t == NULL ||
-                    Tcl_GetLongFromObj(interp, t, &l) == TCL_ERROR) {
-                        Tcl_AppendResult(interp, "Invalid address ", argv[2], NULL);
-                        return TCL_ERROR;
-                }
-                addr[i] = (uint32_t) l;
-        }
-        switch (flag) {
-        case AP_IPV4: {
-                char buf[41];
-                buf[40] = '\0';
-                uint32_t tmp = addr[3];
-		snprintf(buf, sizeof(buf) - 1, "%d.%d.%d.%d", (tmp/(1<<24)), (tmp/(1<<16)%(1<<8)), (tmp/(1<<8)%(1<<8)), (tmp%(1<<8)));
-                result_obj = Tcl_NewStringObj(buf, -1);
-                break;
-        }
-        case AP_IPV6: {
-                char *s;
-                if ((s = re_render_ipv6_addr(addr)) == NULL) {
-                        Tcl_SetResult(interp, "Out of memory", TCL_STATIC);
-                        return TCL_ERROR;
-                }
-                result_obj = Tcl_NewStringObj(s, -1);
-                free(s);
-                break;
-        }
-        default: {
-                Tcl_SetResult(interp, "Unknown ip flag", TCL_STATIC);
-                return TCL_ERROR;
-        }
-        }
-        Tcl_SetObjResult(interp, result_obj);
-        return TCL_OK;
-}
-
 int ap_tcl_render_init(Tcl_Interp *interp) {
         Tcl_CreateCommand(interp, "apol_RenderLevel", Apol_RenderLevel, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_RenderContext", Apol_RenderContext, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_RenderRangeTrans", Apol_RenderRangeTrans, NULL, NULL);
-	Tcl_CreateCommand(interp, "apol_RenderAddress", Apol_RenderAddress, NULL, NULL);
-        return TCL_OK;
+	return TCL_OK;
 }
