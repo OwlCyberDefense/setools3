@@ -493,8 +493,8 @@ int apol_mls_level_compare(apol_policy_t *p, apol_mls_level_t *l1, apol_mls_leve
 	}
 
 	/* compare the level's senstitivity value */
-	if (sepol_level_datum_get_value(p->sh, p->p, level_datum1, &level1_sens) < 0 ||
-	    sepol_level_datum_get_value(p->sh, p->p, level_datum2, &level2_sens) < 0) {
+	if (sepol_level_datum_get_value(p->sh, p->p, level_datum1, (uint32_t *) (&level1_sens)) < 0 ||
+	    sepol_level_datum_get_value(p->sh, p->p, level_datum2, (uint32_t *) (&level2_sens)) < 0) {
 		return -1;
 	}
 	sens_cmp = level1_sens - level2_sens;

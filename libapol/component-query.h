@@ -50,6 +50,7 @@ typedef struct apol_level_query apol_level_query_t;
 typedef struct apol_cat_query apol_cat_query_t;
 typedef struct apol_portcon_query apol_portcon_query_t;
 typedef struct apol_netifcon_query apol_netifcon_query_t;
+typedef struct apol_nodecon_query apol_nodecon_query_t;
 
 /** Every query allows the treatment of strings as regular expressions
  *  instead.  Within the query structure are flags; if the first bit
@@ -360,7 +361,10 @@ extern int apol_common_query_set_regex(apol_policy_t *p,
 
 /**
  * Execute a query against all permissions within the policy.  The
- * results will contain char pointers to permission names.
+ * results will contain char pointers to permission names.  Thus if
+ * the same permission name is declared within multiple classes (e.g.,
+ * file/read and socket/read) then only one instance of <tt>read</tt>
+ * is returned.
  *
  * @param p Policy within which to look up permissions.
  * @param pq Structure containing parameters for query.	 If this is
@@ -1045,5 +1049,120 @@ extern int apol_netifcon_query_set_msg_context(apol_policy_t *p,
 					       apol_netifcon_query_t *n,
 					       apol_context_t *context,
 					       unsigned int range_match);
+
+/******************** nodecon queries ********************/
+
+/**
+ * Execute a query against all nodecons within the policy.  The
+ * returned nodecons will be unordered.
+ *
+ * @param p Policy within which to look up nodecons.
+ * @param n Structure containing parameters for query.	If this is
+ * NULL then return all nodecons.
+ * @param v Reference to a vector of sepol_node_t.  The vector
+ * will be allocated by this function. The caller must call
+ * apol_vector_destroy() afterwards, but <b>must not</b> free the
+ * elements within it.	This will be set to NULL upon no results or
+ * upon error.
+ *
+ * @return 0 on success (including none found), negative on error.
+ */
+extern int apol_get_nodecon_by_query(apol_policy_t *p,
+				     apol_nodecon_query_t *n,
+				     apol_vector_t **v);
+
+/**
+ * Allocate and return a new nodecon query structure.  All fields are
+ * initialized, such that running this blank query results in
+ * returning all nodecons within the policy.  The caller must call
+ * apol_nodecon_query_destroy() upon the return value afterwards.
+ *
+ * @return An initialized nodecon query structure, or NULL upon
+ * error.
+ */
+extern apol_nodecon_query_t *apol_nodecon_query_create(void);
+
+/**
+ * Deallocate all memory associated with the referenced nodecon
+ * query, and then set it to NULL.  This function does nothing if the
+ * query is already NULL.
+ *
+ * @param n Reference to a nodecon query structure to destroy.
+ */
+extern void apol_nodecon_query_destroy(apol_nodecon_query_t **n);
+
+/**
+ * Set a nodecon query to return only nodecons with this protocol,
+ * either IPv4 or IPv6.
+ *
+ * @param p Policy handler, to report errors.
+ * @param n Nodecon query to set.
+ * @param proto Limit query to only this protocol, either SEPOL_IPV4
+ * or SEPOL_IPV6, or a negative value to unset this field.
+ *
+ * @return 0 if protocol was valid, -1 on error.
+ */
+extern int apol_nodecon_query_set_proto(apol_policy_t *p,
+					apol_nodecon_query_t *n, int proto);
+
+/**
+ * Set a nodecon query to return only nodecons with this address.  If
+ * the protocol is SEPOL_IPV4 then only the first element of the
+ * address array is used, for SEPOL_IPV6 all four are used.
+ *
+ * @param p Policy handler, to report errors.
+ * @param n Nodecon query to set.
+ * @param addr Array of no more than four elements representing the
+ * address, or NULL to unset this field.  This function will make a
+ * copy of the array.
+ * @param proto Format of address, either SEPOL_IPV4 or SEPOL_IPV6.
+ * This parameter is ignored if addr is NULL.
+ *
+ * @return 0 if protocol was valid, -1 on error.
+ */
+extern int apol_nodecon_query_set_addr(apol_policy_t *p,
+				       apol_nodecon_query_t *n,
+				       uint32_t *addr,
+				       int proto);
+
+/**
+ * Set a nodecon query to return only nodecons with this netmask.  If
+ * the protocol is SEPOL_IPV4 then only the first element of the mask
+ * array is used, for SEPOL_IPV6 all four are used.
+ *
+ * @param p Policy handler, to report errors.
+ * @param n Nodecon query to set.
+ * @param mask Array of no more than four elements representing the
+ * netmask, or NULL to unset this field.  This function will make a
+ * copy of the array.
+ * @param proto Format of mask, either SEPOL_IPV4 or SEPOL_IPV6.  This
+ * parameter is ignored if mask is NULL.
+ *
+ * @return 0 if protocol was valid, -1 on error.
+ */
+extern int apol_nodecon_query_set_mask(apol_policy_t *p,
+				       apol_nodecon_query_t *n,
+				       uint32_t *mask,
+				       int proto);
+
+/**
+ * Set a nodecon query to return only nodecons matching this context.
+ * This function takes ownership of the context, such that the caller
+ * must not modify nor destroy it afterwards.
+ *
+ * @param p Policy handler, to report errors.
+ * @param n Nodecon query to set.
+ * @param context Limit query to only nodecons matching this context,
+ * or NULL to unset this field.
+ * @param range_match Specifies how to match the MLS range within the
+ * context.  This must be one of APOL_QUERY_SUB, APOL_QUERY_SUPER, or
+ * APOL_QUERY_EXACT.  This parameter is ignored if context is NULL.
+ *
+ * @return Always returns 0.
+ */
+extern int apol_nodecon_query_set_context(apol_policy_t *p,
+					  apol_nodecon_query_t *n,
+					  apol_context_t *context,
+					  unsigned int range_match);
 
 #endif

@@ -1025,3 +1025,96 @@ int str_to_internal_ip(const char *str, uint32_t ip[4])
 	return ipv4?AP_IPV4:AP_IPV6;
 }
 
+/******************** new stuff here ********************/
+
+/* these are needed for nodecons and IPv4 and IPv6 */
+#include <sepol/nodecon_query.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+
+/**
+ * @file util.c
+ *
+ * Implementation of utility functions.
+ *
+ * @author Kevin Carr  kcarr@tresys.com
+ * @author Jeremy A. Mowery jmowery@tresys.com
+ * @author Jason Tang  jtang@tresys.com
+ *
+ * Copyright (C) 2006 Tresys Technology, LLC
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ */
+
+int apol_str_to_internal_ip(const char *str, uint32_t ip[4])
+{
+	bool_t ipv4 = FALSE;
+	bool_t ipv6 = FALSE;
+
+	if (!str || !ip) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	ip[0] = ip[1] = ip[2] = ip[3] = 0;
+
+	if (strchr(str, '.'))
+		ipv4 = TRUE;
+
+	if (strchr(str, ':'))
+		ipv6 = TRUE;
+
+	if (ipv4 == ipv6) {
+		errno = EINVAL;
+		return -1;
+	}
+
+        if (ipv4) {
+                unsigned char *p = (unsigned char *) &(ip[0]);
+                int seg = 0;
+                uint32_t val = 0; /* value of current segment of address */
+                size_t len = strlen(str), i;
+                for (i = 0; i <= len; i++) {
+                        if (str[i] == '.' || str[i] == '\0') {
+                                if (val < 0 || val > 255) {
+                                        errno = EINVAL;
+                                        return -1;
+                                }
+                                
+                                p[seg] = (unsigned char) (0xff & val);
+                                seg++;
+                                val = 0;
+                                if (seg == 4)
+                                        break;
+                        } else if (isdigit(str[i])) {
+                                char tmp[2] = {str[i], 0};
+                                val = val * 10 + atoi(tmp);
+                        } else {
+                                errno = EINVAL;
+                                return -1;
+                        }
+                }
+        }
+        else {
+                struct in6_addr addr;
+                if (inet_pton(AF_INET6, str, &addr) <= 0) {
+                        return -1;
+                }
+                memcpy(ip, addr.s6_addr32, 16);
+	}
+
+	return ipv4 ? SEPOL_IPV4 : SEPOL_IPV6;
+}

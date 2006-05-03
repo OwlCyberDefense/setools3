@@ -38,5 +38,57 @@ char *re_render_constraint(bool_t addlineno, ap_constraint_t *constraint, policy
 char *re_render_mls_level(ap_mls_level_t *level, policy_t *policy);
 char *re_render_mls_range(ap_mls_range_t *range, policy_t *policy);
 char *re_render_rangetrans(bool_t addlineno, int idx, policy_t *policy);
+
+/******************** new stuff below ********************/
+
+/**
+ * @file render.h
+ *
+ * Public interfaces that renders things.  Unless otherwise stated,
+ * all functions return a newly allocated string, which the caller is
+ * responsible for free()ing afterwards.
+ *
+ * @author Kevin Carr  kcarr@tresys.com
+ * @author Jeremy A. Mowery jmowery@tresys.com
+ * @author Jason Tang  jtang@tresys.com
+ *
+ * Copyright (C) 2003-2006 Tresys Technology, LLC
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ */
+
+/**
+ * Given an IPv4 address (or mask) in sepol byte order, allocate and
+ * return a string representing that address.
+ *
+ * @param addr Address (or mask) to render.
+ *
+ * @return A newly allocated string, which the caller must free.
+ * Returns NULL on error.
+ */
+char *re_render_ipv4_addr(uint32_t addr);
+
+
+/**
+ * Given an IPv6 address (or mask) in sepol byte order, allocate and
+ * return a string representing that address.
+ *
+ * @param addr Address (or mask) to render.
+ *
+ * @return A newly allocated string, which the caller must free.
+ * Returns NULL on error.
+ */
 char *re_render_ipv6_addr(uint32_t addr[4]);
 #endif /*_APOLICY_RENDER_H_*/
