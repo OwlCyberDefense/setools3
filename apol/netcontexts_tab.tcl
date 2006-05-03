@@ -559,11 +559,11 @@ proc Apol_NetContexts::nodecon_open {} {
     variable vals
     variable widgets
     set vals(nodecon:items) {}
-    if {[catch {apol_GetNodecons} nodecons]} {
+    if {[catch {apol_GetNodecons {} {} {} {} 0} nodecons]} {
         return
     }
     foreach n [lsort -command nodecon_sort $nodecons] {
-        set addr [apol_RenderAddress [lindex $n 0] [lindex $n 1]]
+        set addr [lindex $n 1]
         if {[lsearch $vals(nodecon:items) $addr] == -1} {
             lappend vals(nodecon:items) $addr
         }
@@ -727,7 +727,7 @@ proc Apol_NetContexts::nodecon_toggleV4button {path name1 name2 op} {
 
 proc Apol_NetContexts::nodecon_render {nodecon} {
     foreach {iptype addr mask context} $nodecon {break}
-    return "nodecon [apol_RenderAddress $iptype $addr] [apol_RenderAddress $iptype $mask] [apol_RenderContext $context [ApolTop::is_mls_policy]]"
+    return "nodecon $addr $mask [apol_RenderContext $context [ApolTop::is_mls_policy]]"
 }
 
 proc Apol_NetContexts::nodecon_popup {nodecon} {
@@ -746,8 +746,8 @@ proc Apol_NetContexts::nodecon_popup {nodecon} {
     Apol_Widget::showPopupText "address $nodecon" $text
 }
 
-# Sort nodecons, grouping ipv4 before ipv6.  Then sort based upon the
-# address, and then first zero bit within the mask, from MSB to LSB.
+# Sort nodecons, grouping ipv4 before ipv6.  Then sort by address and
+# then mask.
 proc Apol_NetContexts::nodecon_sort {a b} {
     foreach {t1 a1 m1 c1} $a {break}
     foreach {t2 a2 m2 c2} $b {break}
@@ -756,31 +756,19 @@ proc Apol_NetContexts::nodecon_sort {a b} {
     } elseif {$t1 == "ipv6" && $t1 == "ipv4"} {
         return 0
     }
-    foreach i1 $a1 i2 $a2 {
-        set i1 [expr {$i1 & 0xffff}]
-        set i2 [expr {$i2 & 0xffff}]
-        if {$i1 < $i2} {
-            return -1
-        } elseif {$i1 > $i2} {
-            return 1
-        }
+    if {[set x [string compare $a1 $a2]] != 0} {
+        return $x
     }
-    binary scan [binary format I4 $m1] B* b1
-    binary scan [binary format I4 $m2] B* b2
-    set i1 [string first 0 $b1]
-    set i2 [string first 0 $b2]
-    if {$i1 == $i2} {
-        return 0
-    } elseif {$i1 == -1 || $i2 < $i1} {
-        return 1
-    } else {
-        return -1
-    }
+    string compare $m1 $m2
 }
 
 proc Apol_NetContexts::nodecon_runSearch {} {
     variable vals
     variable widgets
+    set addr {}
+    set mask {}
+    set context {}
+    set range_match 0
     if {$vals(nodecon:ip_type) == "ipv4"} {
         # explicitly validate the entries (they could still have focus)
         foreach i {0 1 2 3} {
@@ -791,83 +779,32 @@ proc Apol_NetContexts::nodecon_runSearch {} {
             set addr [format "%d.%d.%d.%d" \
                           $vals(nodecon:ipv4_addr0) $vals(nodecon:ipv4_addr1) \
                           $vals(nodecon:ipv4_addr2) $vals(nodecon:ipv4_addr3)]
-            set ipv4_addr [apol_ConvertStringToAddress $addr]
-        } else {
-            set ipv4_addr {}
         }
         if {$vals(nodecon:ipv4_mask_enable)} {
             set mask [format "%d.%d.%d.%d" \
                           $vals(nodecon:ipv4_mask0) $vals(nodecon:ipv4_mask1) \
                           $vals(nodecon:ipv4_mask2) $vals(nodecon:ipv4_mask3)]
-            set ipv4_mask [apol_ConvertStringToAddress $mask]
-        } else {
-            set ipv4_mask {}
         }
     } else {
         if {$vals(nodecon:ipv6_addr_enable)} {
-            if {$vals(nodecon:ipv6_addr) == {}} {
+            if {[set addr $vals(nodecon:ipv6_addr)] == {}} {
                 tk_messageBox -icon error -type ok -title "Error" -message "No IPV6 address provided."
                 return
             }
-            if {[catch {apol_ConvertStringToAddress $vals(nodecon:ipv6_addr)} ipv6_addr]} {
-                tk_messageBox -icon error -type ok -title "Error" -message "Invalid IPv6 address $vals(nodecon:ipv6_addr)."
-                return
-            }
-        } else {
-            set ipv6_addr {}
         }
         if {$vals(nodecon:ipv6_mask_enable)} {
-            if {$vals(nodecon:ipv6_mask) == {}} {
+            if {[set mask $vals(nodecon:ipv6_mask)] == {}} {
                 tk_messageBox -icon error -type ok -title "Error" -message "No IPV6 address provided."
                 return
             }
-            if {[catch {apol_ConvertStringToAddress $vals(nodecon:ipv6_mask)} ipv6_mask]} {
-                tk_messageBox -icon error -type ok -title "Error" -message "Invalid IPv6 mask $vals(nodecon:ipv6_mask)."
-                return
-            }
-        } else {
-            set ipv6_mask {}
         }
     }
     if {[Apol_Widget::getContextSelectorState $widgets(nodecon:context)]} {
-        foreach {vals_context vals_range_match} [Apol_Widget::getContextSelectorValue $widgets(nodecon:context)] {break}
-    } else {
-        set vals_context {}
+        foreach {context range_match} [Apol_Widget::getContextSelectorValue $widgets(nodecon:context)] {break}
     }
-    if {[catch {apol_GetNodecons} orig_nodecons]} {
-        tk_messageBox -icon error -type ok -title "Error" -message "Error obtaining nodecons list:\n$orig_nodecons"
+    if {[catch {apol_GetNodecons $addr $mask $vals(nodecon:ip_type) $context $range_match} nodecons]} {
+        tk_messageBox -icon error -type ok -title "Error" -message "Error obtaining nodecons list:\n$nodecons"
         return
-    }
-
-    # apply filters to list
-    set nodecons {}
-    foreach n $orig_nodecons {
-        foreach {ip_type addr mask context} $n {break}
-        if {$vals(nodecon:ip_type) == "ipv4"} {
-            if {$ip_type != "ipv4"} {
-                continue
-            }
-            if {$ipv4_addr != {} && ![apol_CompareAddresses $ipv4_addr $addr $mask]} {
-                continue
-            }
-            if {$ipv4_mask != {} && $ipv4_mask != $mask} {
-                continue
-            }
-        } else {
-            if {$ip_type != "ipv6"} {
-                continue
-            }
-            if {$ipv6_addr != {} && ![apol_CompareAddresses $ipv6_addr $addr $mask]} {
-                continue
-            }
-            if {$ipv6_mask != {} && $ipv6_mask != $mask} {
-                continue
-            }
-        }
-        if {$vals_context != {} && ![apol_CompareContexts $vals_context $context $vals_range_match]} {
-            continue
-        }
-        lappend nodecons $n
     }
 
     # now display results

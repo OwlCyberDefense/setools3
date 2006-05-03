@@ -647,6 +647,10 @@ int Apol_OpenPolicy(ClientData clientData, Tcl_Interp *interp, int argc, char *a
 		policydb->msg_callback_arg = NULL;
 		policydb->msg_callback = apol_tcl_route_handle_to_string;
 	}
+        else {
+            fprintf(stderr, "opening source policies does not work yet.\n");
+            assert(0);
+        }
 	return TCL_OK;
 }
 
@@ -1216,32 +1220,6 @@ int Apol_CompareAddresses(ClientData clientData, Tcl_Interp *interp, int argc, c
         return TCL_OK;
 }
 
-/* Takes a string representing an address (either IPv4 or IPv6) and
- * returns a list of four signed integers representing that value. */
-int Apol_ConvertStringToAddress(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
-{
-        uint32_t addr[4];
-        int i;
-        Tcl_Obj *addr_elem[4], *addr_obj;
-        if (argc != 2) {
-		Tcl_SetResult(interp, "wrong # of args", TCL_STATIC);
-		return TCL_ERROR;
-        }
-        if (str_to_internal_ip(argv[1], addr) == -1) {
-                Tcl_SetResult(interp, "Could not convert address", TCL_STATIC);
-                return TCL_ERROR;
-        }
-        for (i = 0; i < 4; i++) {
-                addr_elem[i] = Tcl_NewLongObj((long) addr[i]);
-        }
-        addr_obj = Tcl_NewListObj(4, addr_elem);
-        Tcl_SetObjResult(interp, addr_obj);
-        return TCL_OK;
-}
-
-
-
-
 /* 
  * Used by the GUI to check if permission mappings are loaded.
  */
@@ -1463,7 +1441,6 @@ int Apol_Init(Tcl_Interp *interp)
 	Tcl_CreateCommand(interp, "apol_GetDefault_PermMap", (Tcl_CmdProc *) Apol_GetDefault_PermMap, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_IsValidRange", Apol_IsValidRange, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_IsValidPartialContext", Apol_IsValidPartialContext, NULL, NULL);
-	Tcl_CreateCommand(interp, "apol_ConvertStringToAddress", (Tcl_CmdProc *) Apol_ConvertStringToAddress, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_CompareContexts", (Tcl_CmdProc *) Apol_CompareContexts, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_CompareAddresses", (Tcl_CmdProc *) Apol_CompareAddresses, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetPolicyType", (Tcl_CmdProc *) Apol_GetPolicyType, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);

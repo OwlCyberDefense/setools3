@@ -114,6 +114,13 @@ struct apol_netifcon_query {
 	unsigned int if_flags, msg_flags;
 };
 
+struct apol_nodecon_query {
+        char proto, addr_proto, mask_proto;
+        uint32_t addr[4], mask[4];
+	apol_context_t *context;
+	unsigned int flags;
+};
+
 /******************** misc helpers ********************/
 
 /**
@@ -1675,6 +1682,170 @@ int apol_netifcon_query_set_msg_context(apol_policy_t *p __attribute__ ((unused)
 	}
 	n->msg_context = context;
 	n->msg_flags = (n->msg_flags & ~APOL_QUERY_FLAGS) | range_match;
+	return 0;
+}
+
+/******************** nodecon queries ********************/
+
+int apol_get_nodecon_by_query(apol_policy_t *p,
+			      apol_nodecon_query_t *n,
+			      apol_vector_t **v)
+{
+	sepol_iterator_t *iter;
+	int retval = -1, retval2;
+	*v = NULL;
+	if (sepol_policydb_get_nodecon_iter(p->sh, p->p, &iter) < 0) {
+		return -1;
+	}
+	if ((*v = apol_vector_create()) == NULL) {
+		ERR(p, "Out of memory!");
+		goto cleanup;
+	}
+	for ( ; !sepol_iterator_end(iter); sepol_iterator_next(iter)) {
+		sepol_nodecon_t *nodecon;
+		if (sepol_iterator_get_item(iter, (void **) &nodecon) < 0) {
+			goto cleanup;
+		}
+		if (n != NULL) {
+			unsigned char proto, proto_a, proto_m;
+			uint32_t *addr, *mask;
+			sepol_context_struct_t *con;
+			if (sepol_nodecon_get_protocol(p->sh, p->p, nodecon, &proto) < 0 ||
+			    sepol_nodecon_get_addr(p->sh, p->p, nodecon, &addr, &proto_a) < 0 ||
+			    sepol_nodecon_get_mask(p->sh, p->p, nodecon, &mask, &proto_m) < 0 ||
+			    sepol_nodecon_get_context(p->sh, p->p, nodecon, &con) < 0) {
+				goto cleanup;
+			}
+			if (n->proto >= 0 && n->proto != proto) {
+				continue;
+			}
+			if (n->addr_proto >= 0 &&
+			    (n->addr_proto != proto_a ||
+			     (proto_a == SEPOL_IPV4 && memcmp(n->addr, addr, 1 * sizeof(uint32_t)) != 0) ||
+			     (proto_a == SEPOL_IPV6 && memcmp(n->addr, addr, 4 * sizeof(uint32_t)) != 0))) {
+				continue;
+			}
+			if (n->mask_proto >= 0 &&
+			    (n->mask_proto != proto_m ||
+			     (proto_m == SEPOL_IPV4 && memcmp(n->mask, mask, 1 * sizeof(uint32_t)) != 0) ||
+			     (proto_m == SEPOL_IPV6 && memcmp(n->mask, mask, 4 * sizeof(uint32_t)) != 0))) {
+				continue;
+			}
+			retval2 = apol_compare_context(p, con, n->context, n->flags);
+			if (retval2 < 0) {
+				goto cleanup;
+			}
+			else if (retval2 == 0) {
+				continue;
+			}
+		}
+		if (apol_vector_append(*v, nodecon)) {
+			ERR(p, "Out of memory!");
+			goto cleanup;
+		}
+	}
+
+	retval = 0;
+ cleanup:
+	if (retval != 0) {
+		apol_vector_destroy(v, NULL);
+	}
+	sepol_iterator_destroy(&iter);
+	return retval;
+}
+
+apol_nodecon_query_t *apol_nodecon_query_create(void)
+{
+	apol_nodecon_query_t *n = calloc(1, sizeof(apol_nodecon_query_t));
+	if (n != NULL) {
+		n->proto = n->addr_proto = n->mask_proto = -1;
+	}
+	return n;
+}
+
+void apol_nodecon_query_destroy(apol_nodecon_query_t **n)
+{
+	if (*n != NULL) {
+		apol_context_destroy(&((*n)->context));
+		free(*n);
+		*n = NULL;
+	}
+}
+
+int apol_nodecon_query_set_proto(apol_policy_t *p,
+				 apol_nodecon_query_t *n, int proto)
+{
+	if (proto == SEPOL_IPV4 || proto == SEPOL_IPV6) {
+		n->proto = (char) proto;
+	}
+	else if (proto < 0) {
+		n->proto = -1;
+	}
+	else {
+		ERR(p, "Invalid protocol value %d.", proto);
+		return -1;
+	}
+	return 0;
+}
+
+int apol_nodecon_query_set_addr(apol_policy_t *p,
+				apol_nodecon_query_t *n,
+				uint32_t *addr,
+				int proto)
+{
+	if (addr == NULL) {
+		n->addr_proto = -1;
+	}
+	else {
+		if (proto == SEPOL_IPV4) {
+			memcpy(n->addr, addr, 1 * sizeof(uint32_t));
+		}
+		else if (proto == SEPOL_IPV6) {
+			memcpy(n->addr, addr, 4 * sizeof(uint32_t));
+		}
+		else {
+			ERR(p, "Invalid protocol value %d.", proto);
+			return -1;
+		}
+		n->addr_proto = (char) proto;
+	}
+	return 0;
+}
+
+int apol_nodecon_query_set_mask(apol_policy_t *p,
+				apol_nodecon_query_t *n,
+				uint32_t *mask,
+				int proto)
+{
+	if (mask == NULL) {
+		n->mask_proto = -1;
+	}
+	else {
+		if (proto == SEPOL_IPV4) {
+			memcpy(n->mask, mask, 1 * sizeof(uint32_t));
+		}
+		else if (proto == SEPOL_IPV6) {
+			memcpy(n->mask, mask, 4 * sizeof(uint32_t));
+		}
+		else {
+			ERR(p, "Invalid protocol value %d.", proto);
+			return -1;
+		}
+		n->mask_proto = (char) proto;
+	}
+	return 0;
+}
+
+int apol_nodecon_query_set_context(apol_policy_t *p __attribute__ ((unused)),
+				   apol_nodecon_query_t *n,
+				   apol_context_t *context,
+				   unsigned int range_match)
+{
+	if (n->context != NULL) {
+		apol_context_destroy(&n->context);
+	}
+	n->context = context;
+	n->flags = (n->flags & ~APOL_QUERY_FLAGS) | range_match;
 	return 0;
 }
 
