@@ -1,6 +1,7 @@
 /**
  *  @file mls-query.h
- *  Public Interface for querying MLS components.
+ *  Public Interface for querying MLS components, and for
+ *  sensitivities and categories within a policy.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -38,6 +39,10 @@ typedef struct apol_mls_level {
 typedef struct apol_mls_range {
 	apol_mls_level_t *low, *high;
 } apol_mls_range_t;
+
+typedef struct apol_level_query apol_level_query_t;
+typedef struct apol_cat_query apol_cat_query_t;
+
 
 /******************** level stuff ********************/
 
@@ -296,5 +301,164 @@ extern int apol_mls_range_contain_subrange(apol_policy_t *p,
  */
 extern int apol_mls_range_validate(apol_policy_t *p,
 				   apol_mls_range_t *range);
+
+/******************** level queries ********************/
+
+/**
+ * Execute a query against all levels within the policy.  The results
+ * will only contain levels, not sensitivity aliases.  The returned
+ * levels will be unordered.
+ *
+ * @param p Policy within which to look up levels.
+ * @param l Structure containing parameters for query.	If this is
+ * NULL then return all levels.
+ * @param v Reference to a vector of sepol_level_datum_t.  The vector
+ * will be allocated by this function. The caller must call
+ * apol_vector_destroy() afterwards, but <b>must not</b> free the
+ * elements within it.  This will be set to NULL upon no results or
+ * upon error.
+ *
+ * @return 0 on success (including none found), negative on error.
+ */
+extern int apol_get_level_by_query(apol_policy_t *p,
+				   apol_level_query_t *l,
+				   apol_vector_t **v);
+
+/**
+ * Allocate and return a new level query structure.  All fields are
+ * initialized, such that running this blank query results in
+ * returning all levels within the policy.  The caller must call
+ * apol_level_query_destroy() upon the return value afterwards.
+ *
+ * @return An initialized level query structure, or NULL upon error.
+ */
+extern apol_level_query_t *apol_level_query_create(void);
+
+/**
+ * Deallocate all memory associated with the referenced level query,
+ * and then set it to NULL.  This function does nothing if the query
+ * is already NULL.
+ *
+ * @param l Reference to a level query structure to destroy.
+ */
+extern void apol_level_query_destroy(apol_level_query_t **l);
+
+/**
+ * Set a level query to return only levels that match this name.  The
+ * name may be either a sensitivity or one of its aliases.  This
+ * function duplicates the incoming name.
+ *
+ * @param p Policy handler, to report errors.
+ * @param l Level query to set.
+ * @param name Limit query to only sensitivities or aliases with this
+ * name, or NULL to unset this field.
+ *
+ * @return 0 on success, negative on error.
+ */
+extern int apol_level_query_set_sens(apol_policy_t *p,
+				     apol_level_query_t *l, const char *name);
+
+/**
+ * Set a level query to return only levels contain a particular
+ * category.  The name may be either a category or one of its aliases.
+ * This function duplicates the incoming name.
+ *
+ * @param p Policy handler, to report errors.
+ * @param l Level query to set.
+ * @param name Limit query to levels containing this category or
+ * alias, or NULL to unset this field.
+ *
+ * @return 0 on success, negative on error.
+ */
+extern int apol_level_query_set_cat(apol_policy_t *p,
+				    apol_level_query_t *l, const char *name);
+
+/**
+ * Set a level query to use regular expression searching for all of
+ * its fields.	Strings will be treated as regexes instead of
+ * literals.  Matching will occur against the sensitivity name or any
+ * of its aliases.
+ *
+ * @param p Policy handler, to report errors.
+ * @param l Level query to set.
+ * @param is_regex Non-zero to enable regex searching, 0 to disable.
+ *
+ * @return Always 0.
+ */
+extern int apol_level_query_set_regex(apol_policy_t *p,
+				      apol_level_query_t *l, int is_regex);
+
+
+/******************** category queries ********************/
+
+/**
+ * Execute a query against all categories within the policy.  The
+ * results will only contain categories, not aliases.  The returned
+ * categories will be unordered.
+ *
+ * @param p Policy within which to look up categories.
+ * @param c Structure containing parameters for query.	If this is
+ * NULL then return all categories.
+ * @param v Reference to a vector of sepol_cat_datum_t.  The vector
+ * will be allocated by this function. The caller must call
+ * apol_vector_destroy() afterwards, but <b>must not</b> free the
+ * elements within it.  This will be set to NULL upon no results or
+ * upon error.
+ *
+ * @return 0 on success (including none found), negative on error.
+ */
+extern int apol_get_cat_by_query(apol_policy_t *p,
+				 apol_cat_query_t *c,
+				 apol_vector_t **v);
+
+/**
+ * Allocate and return a new category query structure.	All fields are
+ * initialized, such that running this blank query results in
+ * returning all categories within the policy.	The caller must call
+ * apol_cat_query_destroy() upon the return value afterwards.
+ *
+ * @return An initialized category query structure, or NULL upon
+ * error.
+ */
+extern apol_cat_query_t *apol_cat_query_create(void);
+
+/**
+ * Deallocate all memory associated with the referenced category
+ * query, and then set it to NULL.  This function does nothing if the
+ * query is already NULL.
+ *
+ * @param c Reference to a category query structure to destroy.
+ */
+extern void apol_cat_query_destroy(apol_cat_query_t **c);
+
+/**
+ * Set a category query to return only categories that match this
+ * name.  The name may be either a category or one of its aliases.
+ * This function duplicates the incoming name.
+ *
+ * @param p Policy handler, to report errors.
+ * @param c Category query to set.
+ * @param name Limit query to only categories or aliases with this
+ * name, or NULL to unset this field.
+ *
+ * @return 0 on success, negative on error.
+ */
+extern int apol_cat_query_set_cat(apol_policy_t *p,
+				  apol_cat_query_t *c, const char *name);
+
+/**
+ * Set a category query to use regular expression searching for all of
+ * its fields. Strings will be treated as regexes instead of literals.
+ * Matching will occur against the category name or any of its
+ * aliases.
+ *
+ * @param p Policy handler, to report errors.
+ * @param c Category query to set.
+ * @param is_regex Non-zero to enable regex searching, 0 to disable.
+ *
+ * @return Always 0.
+ */
+extern int apol_cat_query_set_regex(apol_policy_t *p,
+				    apol_cat_query_t *c, int is_regex);
 
 #endif /* APOL_MLS_QUERY_H */
