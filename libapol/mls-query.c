@@ -457,14 +457,7 @@ int apol_mls_level_set_sens(apol_policy_t *p, apol_mls_level_t *level, const cha
 		errno = EINVAL;
 		return -1;
 	}
-
-	free(level->sens);
-	level->sens = NULL;
-	if (sens != NULL && (level->sens = apol_strdup(p, sens)) == NULL) {
-		return -1;
-	}
-
-	return 0;
+	return apol_query_set(p, &level->sens, NULL, sens);
 }
 
 int apol_mls_level_append_cats(apol_policy_t *p, apol_mls_level_t *level, const char *cats)

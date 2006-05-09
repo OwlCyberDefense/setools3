@@ -169,6 +169,42 @@ int str_to_internal_ip(const char *str, uint32_t ip[4]);
  * @return SEPOL_IPV4 if the string is in IPv4 format, SEPOL_IPV6 if
  * in IPv6, < 0 on error.
  */
-int apol_str_to_internal_ip(const char *str, uint32_t ip[4]);
+extern int apol_str_to_internal_ip(const char *str, uint32_t ip[4]);
+
+/**
+ * Given a object class, return a read-only string that describes that
+ * type.
+ *
+ * @param objclass Object class, one of SEPOL_CLASS_BLK_FILE,
+ * SEPOL_CLASS_CHR_FILE, etc.
+ *
+ * @return A string that describes the object class, or NULL if the
+ * object class is invalid.  <b>Do not free() this string.</b>
+ */
+extern const char *apol_objclass_to_str(uint32_t objclass);
+
+/**
+ * Given a fs_use behavior type, return a read-only string that
+ * describes that fs_use behavior.
+ *
+ * @param filetype File type, one of SEPOL_FS_USE_PSID,
+ * SEPOL_FS_USE_XATTR, etc.
+ *
+ * @return A string that describes the behavior, or NULL if the
+ * behavior is invalid.  <b>Do not free() this string.</b>
+ */
+extern const char *apol_fs_use_behavior_to_str(uint32_t behavior);
+
+/**
+ * Given a fs_use behavior string, return its numeric value.
+ *
+ * @param filetype File type, one of "fs_use_psid", "fs_use_xattr",
+ * etc.
+ *
+ * @return A numeric representation for the behavior, one of
+ * SEPOL_FS_USE_PSID, SEPOL_FS_USE_XATTR, etc, or < 0 if the string is
+ * invalid.
+ */
+extern int apol_str_to_fs_use_behavior(const char *behavior);
 
 #endif

@@ -187,7 +187,10 @@ proc Apol_FSContexts::fscontext_sort {a b} {
 proc Apol_FSContexts::genfscon_open {} {
     variable vals
     variable widgets
-    set fstypes [lsort -unique [apol_GetGenFSConFilesystems]]
+    set fstypes {}
+    foreach genfs [lsort -unique -index 0 [apol_GetGenFSCons {} {} {} 0]] {
+        lappend fstypes [lindex $genfs 0]
+    }
     set vals(genfscon:items) $fstypes
     $widgets(genfscon:fs) configure -values $fstypes
 }
@@ -242,14 +245,14 @@ proc Apol_FSContexts::genfscon_create {p_f} {
 }
 
 proc Apol_FSContexts::genfscon_render {genfscon {compact 0}} {
-    foreach {fstype path filetype context} $genfscon {break}
+    foreach {fstype path objclass context} $genfscon {break}
     set context [apol_RenderContext $context [ApolTop::is_mls_policy]]
-    if {$filetype != "any"} {
+    if {$objclass != "any"} {
         if {$compact} {
-            format "genfscon %s %s -t%s %s" $fstype $path $filetype $context
+            format "genfscon %s %s -t%s %s" $fstype $path $objclass $context
         } else {
             format "genfscon  %-12s %-24s -t%-4s %s" \
-                $fstype $path $filetype $context
+                $fstype $path $objclass $context
         }
     } else {
         if {$compact} {
@@ -278,37 +281,25 @@ proc Apol_FSContexts::genfscon_runSearch {} {
     variable vals
     variable widgets
 
-    if {$vals(genfscon:fs_enable) && $vals(genfscon:fs) == {}} {
+    set fstype {}
+    set path {}
+    set context {}
+    set range_match 0
+    if {$vals(genfscon:fs_enable) && [set fstype $vals(genfscon:fs)] == {}} {
         tk_messageBox -icon error -type ok -title "Error" -message "No filesystem selected."
         return
     }
-    if {$vals(genfscon:path_enable) && $vals(genfscon:path) == {}} {
+    if {$vals(genfscon:path_enable) && [set path $vals(genfscon:path)] == {}} {
         tk_messageBox -icon error -type ok -title "Error" -message "No path given."
         return
     }
     if {[Apol_Widget::getContextSelectorState $widgets(genfscon:context)]} {
-        foreach {vals_context vals_range_match} [Apol_Widget::getContextSelectorValue $widgets(genfscon:context)] {break}
-    } else {
-        set vals_context {}
+        foreach {context range_match} [Apol_Widget::getContextSelectorValue $widgets(genfscon:context)] {break}
     }
-    set orig_genfscons [apol_GetGenFSCons]
-
-    # apply filters to list
-    set genfscons {}
-    foreach g $orig_genfscons {
-        foreach {fstype path filetype context} $g {break}
-        if {$vals(genfscon:fs_enable) && $fstype != $vals(genfscon:fs)} {
-            continue
-        }
-        if {$vals(genfscon:path_enable) && $path != $vals(genfscon:path)} {
-            continue
-        }
-        if {$vals_context != {} && ![apol_CompareContexts $vals_context $context $vals_range_match]} {
-            continue
-        }
-        lappend genfscons $g
+    if {[catch {apol_GetGenFSCons $fstype $path $context $range_match} genfscons]} {
+        tk_messageBox -icon error -type ok -title "Error" -message "Error obtaining genfscons list: $genfscons"
+        return
     }
-
     # now display results
     set results "GENFSCONS:"
     if {[llength $genfscons] == 0} {
@@ -327,11 +318,15 @@ proc Apol_FSContexts::genfscon_runSearch {} {
 proc Apol_FSContexts::fsuse_open {} {
     variable vals
     variable widgets
-    set behavs [lsort [apol_GetFSUseBehaviors]]
+    set fsuses [apol_GetFSUses {} {} {} 0]
+    set behavs {}
+    foreach fsuse [lsort -unique -index 0 $fsuses] {
+        lappend behavs [lindex $fsuse 0]
+    }
     $widgets(fsuse:type) configure -values $behavs
     set fstypes {}
-    foreach f [lsort -unique -index 1 [apol_GetFSUses]] {
-        lappend fstypes [lindex $f 1]
+    foreach fsuse [lsort -unique -index 1 $fsuses] {
+        lappend fstypes [lindex $fsuse 1]
     }
     $widgets(fsuse:fs) configure -values $fstypes
     set vals(fsuse:items) $fstypes
@@ -412,42 +407,25 @@ proc Apol_FSContexts::fsuse_popup {fs} {
 proc Apol_FSContexts::fsuse_runSearch {} {
     variable vals
     variable widgets
-
-    if {$vals(fsuse:type_enable) && $vals(fsuse:type) == {}} {
-        tk_messageBox -icon error -type ok -title "Error" -message "No fs_use statement type selected."
-        return
+    set behavior {}
+    set fstype {}
+    set context {}
+    set range_match 0
+    if {$vals(fsuse:type_enable) && [set behavior $vals(fsuse:type)] == {}} {
+            tk_messageBox -icon error -type ok -title "Error" -message "No fs_use statement type selected."
+            return
     }
-    if {$vals(fsuse:fs_enable) && $vals(fsuse:fs) == {}} {
+    if {$vals(fsuse:fs_enable) && [set fstype $vals(fsuse:fs)] == {}} {
         tk_messageBox -icon error -type ok -title "Error" -message "No filesystem selected."
         return
     }
     if {[Apol_Widget::getContextSelectorState $widgets(fsuse:context)]} {
-        foreach {vals_context vals_range_match} [Apol_Widget::getContextSelectorValue $widgets(fsuse:context)] {break}
-    } else {
-        set vals_context {}
+        foreach {context range_match} [Apol_Widget::getContextSelectorValue $widgets(fsuse:context)] {break}
     }
-    set orig_fsuses [apol_GetFSUses]
-
-    # apply filters to list
-    set fsuses {}
-    foreach u $orig_fsuses {
-        foreach {behav fstype context} $u {break}
-        if {$vals(fsuse:type_enable) && $behav != $vals(fsuse:type)} {
-            continue
-        }
-        if {$vals(fsuse:fs_enable) && $fstype != $vals(fsuse:fs)} {
-            continue
-        }
-        if {$vals_context != {}} {
-            # fs_use_psid is special in that it has no context at all
-            if {$behav == "fs_use_psid" || \
-                ![apol_CompareContexts $vals_context $context $vals_range_match]} {
-                continue
-            }
-        }
-        lappend fsuses $u
+    if {[catch {apol_GetFSUses $fstype $behavior $context $range_match} fsuses]} {
+        tk_messageBox -icon error -type ok -title "Error" -message "Error obtaining fs_use list: $fsuses"
+        return
     }
-
     # now display results
     set results "FS_USES:"
     if {[llength $fsuses] == 0} {

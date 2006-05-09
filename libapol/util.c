@@ -1118,3 +1118,54 @@ int apol_str_to_internal_ip(const char *str, uint32_t ip[4])
 
 	return ipv4 ? SEPOL_IPV4 : SEPOL_IPV6;
 }
+
+const char *apol_objclass_to_str(uint32_t objclass)
+{
+        switch (objclass) {
+        case SEPOL_CLASS_BLK_FILE:  return "block";
+        case SEPOL_CLASS_CHR_FILE:  return "char";
+        case SEPOL_CLASS_DIR:       return "dir";
+        case SEPOL_CLASS_FIFO_FILE: return "fifo";
+        case SEPOL_CLASS_FILE:      return "file";
+        case SEPOL_CLASS_LNK_FILE:  return "link";
+        case SEPOL_CLASS_SOCK_FILE: return "sock";
+        case SEPOL_CLASS_ALL:       return "any";
+        }
+        return NULL;
+}
+
+const char *apol_fs_use_behavior_to_str(uint32_t behavior)
+{
+	switch (behavior) {
+	case SEPOL_FS_USE_XATTR: return "fs_use_xattr";
+	case SEPOL_FS_USE_TASK:  return "fs_use_task";
+	case SEPOL_FS_USE_TRANS: return "fs_use_trans";
+	case SEPOL_FS_USE_GENFS: return "fs_use_genfs";
+	case SEPOL_FS_USE_NONE:  return "fs_use_none";
+	case SEPOL_FS_USE_PSID:  return "fs_use_psid";
+	}
+	return NULL;
+}
+
+int apol_str_to_fs_use_behavior(const char *behavior)
+{
+	if (strcmp(behavior, "fs_use_xattr") == 0) {
+		return SEPOL_FS_USE_XATTR;
+	}
+	else if (strcmp(behavior, "fs_use_task") == 0) {
+		return SEPOL_FS_USE_TASK;
+	}
+	else if (strcmp(behavior, "fs_use_trans") == 0) {
+		return SEPOL_FS_USE_TRANS;
+	}
+	else if (strcmp(behavior, "fs_use_genfs") == 0) {
+		return SEPOL_FS_USE_GENFS;
+	}
+	else if (strcmp(behavior, "fs_use_none") == 0) {
+		return SEPOL_FS_USE_NONE;
+	}
+	else if (strcmp(behavior, "fs_use_psid") == 0) {
+		return SEPOL_FS_USE_PSID;
+	}
+	return -1;
+}
