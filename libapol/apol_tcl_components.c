@@ -192,11 +192,11 @@ static int Apol_GetTypes(ClientData clientData, Tcl_Interp *interp, int argc, CO
 
 	apol_tcl_clear_error();
 	if (policy == NULL) {
-		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		ERR(policydb, "No current policy file is opened!");
 		goto cleanup;
 	}
 	if (argc < 2) {
-		Tcl_SetResult(interp, "Need a type name and ?regex flag?.", TCL_STATIC);
+		ERR(policydb, "Need a type name and ?regex flag?.");
 		goto cleanup;
 	}
 	if (argc == 2) {
@@ -217,7 +217,7 @@ static int Apol_GetTypes(ClientData clientData, Tcl_Interp *interp, int argc, CO
 		}
 		if (*argv[1] != '\0') {
 			if ((query = apol_type_query_create()) == NULL) {
-				Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
+				ERR(policydb, "Out of memory!");
 				goto cleanup;
 			}
 			if (apol_type_query_set_type(policydb, query, argv[1]) ||
@@ -326,11 +326,11 @@ static int Apol_GetAttribs(ClientData clientData, Tcl_Interp *interp, int argc, 
 
 	apol_tcl_clear_error();
 	if (policy == NULL) {
-		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		ERR(policydb, "No current policy file is opened!");
 		goto cleanup;
 	}
 	if (argc < 2) {
-		Tcl_SetResult(interp, "Need an attribute name and ?regex flag?.", TCL_STATIC);
+		ERR(policydb, "Need an attribute name and ?regex flag?.");
 		goto cleanup;
 	}
 	if (argc == 2) {
@@ -351,7 +351,7 @@ static int Apol_GetAttribs(ClientData clientData, Tcl_Interp *interp, int argc, 
 		}
 		if (*argv[1] != '\0') {
 			if ((query = apol_attr_query_create()) == NULL) {
-				Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
+				ERR(policydb, "Out of memory!");
 				goto cleanup;
 			}
 			if (apol_attr_query_set_attr(policydb, query, argv[1]) ||
@@ -459,11 +459,11 @@ static int Apol_GetClasses(ClientData clientData, Tcl_Interp *interp, int argc, 
 
 	apol_tcl_clear_error();
 	if (policy == NULL) {
-		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		ERR(policydb, "No current policy file is opened!");
 		goto cleanup;
 	}
 	if (argc < 2) {
-		Tcl_SetResult(interp, "Need a class name and ?regex flag?.", TCL_STATIC);
+		ERR(policydb, "Need a class name and ?regex flag?.");
 		goto cleanup;
 	}
 	if (argc == 2) {
@@ -484,7 +484,7 @@ static int Apol_GetClasses(ClientData clientData, Tcl_Interp *interp, int argc, 
 		}
 		if (*argv[1] != '\0') {
 			if ((query = apol_class_query_create()) == NULL) {
-				Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
+				ERR(policydb, "Out of memory!");
 				goto cleanup;
 			}
 			if (apol_class_query_set_class(policydb, query, argv[1]) ||
@@ -609,11 +609,11 @@ static int Apol_GetCommons(ClientData clientData, Tcl_Interp *interp, int argc, 
 
 	apol_tcl_clear_error();
 	if (policy == NULL) {
-		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		ERR(policydb, "No current policy file is opened!");
 		goto cleanup;
 	}
 	if (argc < 2) {
-		Tcl_SetResult(interp, "Need a common name and ?regex flag?.", TCL_STATIC);
+		ERR(policydb, "Need a common name and ?regex flag?.");
 		goto cleanup;
 	}
 	if (argc == 2) {
@@ -634,7 +634,7 @@ static int Apol_GetCommons(ClientData clientData, Tcl_Interp *interp, int argc, 
 		}
 		if (*argv[1] != '\0') {
 			if ((query = apol_common_query_create()) == NULL) {
-				Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
+				ERR(policydb, "Out of memory!");
 				goto cleanup;
 			}
 			if (apol_common_query_set_common(policydb, query, argv[1]) ||
@@ -750,11 +750,11 @@ static int Apol_GetPerms(ClientData clientData, Tcl_Interp *interp, int argc, CO
 
 	apol_tcl_clear_error();
 	if (policy == NULL) {
-		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		ERR(policydb, "No current policy file is opened!");
 		goto cleanup;
 	}
 	if (argc < 2) {
-		Tcl_SetResult(interp, "Need a permission name and ?regex flag?.", TCL_STATIC);
+		ERR(policydb, "Need a permission name and ?regex flag?.");
 		goto cleanup;
 	}
 	if (argc == 2) {
@@ -771,7 +771,7 @@ static int Apol_GetPerms(ClientData clientData, Tcl_Interp *interp, int argc, CO
 		}
 		if (*argv[1] != '\0') {
 			if ((query = apol_perm_query_create()) == NULL) {
-				Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
+				ERR(policydb, "Out of memory!");
 				goto cleanup;
 			}
 			if (apol_perm_query_set_perm(policydb, query, argv[1]) ||
@@ -895,11 +895,11 @@ static int Apol_GetRoles(ClientData clientData, Tcl_Interp *interp, int argc, CO
 
 	apol_tcl_clear_error();
 	if (policy == NULL) {
-		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		ERR(policydb, "No current policy file is opened!");
 		goto cleanup;
 	}
-	if (argc != 2 && argc < 4) {
-		Tcl_SetResult(interp, "Need a role name, ?type?, and ?regex flag?.", TCL_STATIC);
+	if (argc != 2 && argc != 4) {
+		ERR(policydb, "Need a role name, ?type?, and ?regex flag?.");
 		goto cleanup;
 	}
 	if (argc == 2) {
@@ -920,7 +920,7 @@ static int Apol_GetRoles(ClientData clientData, Tcl_Interp *interp, int argc, CO
 		}
 		if (*argv[1] != '\0' || *argv[2] != '\0') {
 			if ((query = apol_role_query_create()) == NULL) {
-				Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
+				ERR(policydb, "Out of memory!");
 				goto cleanup;
 			}
 			if (apol_role_query_set_role(policydb, query, argv[1]) ||
@@ -1103,11 +1103,11 @@ static int Apol_GetUsers(ClientData clientData, Tcl_Interp *interp, int argc, CO
 
 	apol_tcl_clear_error();
 	if (policy == NULL) {
-		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		ERR(policydb, "No current policy file is opened!");
 		goto cleanup;
 	}
 	if (argc != 2 && argc < 7) {
-		Tcl_SetResult(interp, "Need a user name, ?role?, ?default level?, ?range?, ?range type?, and ?regex flag?.", TCL_STATIC);
+		ERR(policydb, "Need a user name, ?role?, ?default level?, ?range?, ?range type?, and ?regex flag?.");
 		goto cleanup;
 	}
 	result_obj = Tcl_NewListObj(0, NULL);
@@ -1130,7 +1130,7 @@ static int Apol_GetUsers(ClientData clientData, Tcl_Interp *interp, int argc, CO
 		if (*argv[1] != '\0' || *argv[2] != '\0' ||
 		    *argv[3] != '\0' || *argv[4] != '\0') {
 			if ((query = apol_user_query_create()) == NULL) {
-				Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
+				ERR(policydb, "Out of memory!");
 				goto cleanup;
 			}
 			if (apol_user_query_set_user(policydb, query, argv[1]) ||
@@ -1142,7 +1142,7 @@ static int Apol_GetUsers(ClientData clientData, Tcl_Interp *interp, int argc, CO
 		if (*argv[3] != '\0') {
 			apol_mls_level_t *default_level;
 			if ((default_level = apol_mls_level_create()) == NULL) {
-				Tcl_SetResult(interp, "Out of memory.", TCL_STATIC);
+				ERR(policydb, "Out of memory.");
 				goto cleanup;
 			}
 			if (apol_tcl_string_to_level(interp, argv[3], default_level) != 0 ||
@@ -1158,7 +1158,7 @@ static int Apol_GetUsers(ClientData clientData, Tcl_Interp *interp, int argc, CO
 				goto cleanup;
 			}
 			if ((range = apol_mls_range_create()) == NULL) {
-				Tcl_SetResult(interp, "Out of memory.", TCL_STATIC);
+				ERR(policydb, "Out of memory.");
 				goto cleanup;
 			}
 			if (apol_tcl_string_to_range(interp, argv[4], range) != 0 ||
@@ -1241,11 +1241,11 @@ static int Apol_GetBools(ClientData clientData, Tcl_Interp *interp, int argc, CO
 
 	apol_tcl_clear_error();
 	if (policy == NULL) {
-		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		ERR(policydb, "No current policy file is opened!");
 		goto cleanup;
 	}
 	if (argc != 2 && argc < 3) {
-		Tcl_SetResult(interp, "Need a boolean name and ?regex flag?.", TCL_STATIC);
+		ERR(policydb, "Need a boolean name and ?regex flag?.");
 		goto cleanup;
 	}
 	if (argc == 2) {
@@ -1266,7 +1266,7 @@ static int Apol_GetBools(ClientData clientData, Tcl_Interp *interp, int argc, CO
 		}
 		if (*argv[1] != '\0') {
 			if ((query = apol_bool_query_create()) == NULL) {
-				Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
+				ERR(policydb, "Out of memory!");
 				goto cleanup;
 			}
 			if (apol_bool_query_set_bool(policydb, query, argv[1]) ||
@@ -1311,11 +1311,11 @@ static int Apol_SetBoolValue(ClientData clientData, Tcl_Interp *interp, int argc
 
 	apol_tcl_clear_error();
 	if (argc != 3) {
-		Tcl_SetResult(interp, "Need a bool name and a value.", TCL_STATIC);
+		ERR(policydb, "Need a bool name and a value.");
 		return TCL_ERROR;
 	}
 	if (policy == NULL) {
-		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		ERR(policydb, "No current policy file is opened!");
 		return TCL_ERROR;
 	}
 	if (sepol_policydb_get_bool_by_name(policydb->sh, policydb->p,
@@ -1359,7 +1359,7 @@ static int append_level_to_list(Tcl_Interp *interp,
 					   level_datum, &cat_iter) < 0 ||
 	    sepol_level_datum_get_value(policydb->sh, policydb->p,
 					level_datum, &level_value) < 0) {
-		Tcl_SetResult(interp, "Could not get level value.", TCL_STATIC);
+		ERR(policydb, "Could not get level value.");
 		goto cleanup;
 	}
 	level_elem[0] = Tcl_NewStringObj(sens_name, -1);
@@ -1429,11 +1429,11 @@ static int Apol_GetLevels(ClientData clientData, Tcl_Interp *interp, int argc, C
 
 	apol_tcl_clear_error();
 	if (policy == NULL) {
-		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		ERR(policydb, "No current policy file is opened!");
 		goto cleanup;
 	}
 	if (argc < 2) {
-		Tcl_SetResult(interp, "Need a sensitivity name and ?regex flag?.", TCL_STATIC);
+		ERR(policydb, "Need a sensitivity name and ?regex flag?.");
 		goto cleanup;
 	}
 	if (argc == 2) {
@@ -1454,7 +1454,7 @@ static int Apol_GetLevels(ClientData clientData, Tcl_Interp *interp, int argc, C
 		}
 		if (*argv[1] != '\0') {
 			if ((query = apol_level_query_create()) == NULL) {
-				Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
+				ERR(policydb, "Out of memory!");
 				goto cleanup;
 			}
 			if (apol_level_query_set_sens(policydb, query, argv[1]) ||
@@ -1583,11 +1583,11 @@ static int Apol_GetCats(ClientData clientData, Tcl_Interp *interp, int argc, CON
 
 	apol_tcl_clear_error();
 	if (policy == NULL) {
-		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		ERR(policydb, "No current policy file is opened!");
 		goto cleanup;
 	}
 	if (argc < 2) {
-		Tcl_SetResult(interp, "Need a category name and ?regex flag?.", TCL_STATIC);
+		ERR(policydb, "Need a category name and ?regex flag?.");
 		goto cleanup;
 	}
 	if (argc == 2) {
@@ -1608,7 +1608,7 @@ static int Apol_GetCats(ClientData clientData, Tcl_Interp *interp, int argc, CON
 		}
 		if (*argv[1] != '\0') {
 			if ((query = apol_cat_query_create()) == NULL) {
-				Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
+				ERR(policydb, "Out of memory!");
 				goto cleanup;
 			}
 			if (apol_cat_query_set_cat(policydb, query, argv[1]) ||
@@ -1792,7 +1792,7 @@ static int append_portcon_to_list(Tcl_Interp *interp,
 	case IPPROTO_TCP: portcon_elem[2] = Tcl_NewStringObj("tcp", -1); break;
 	case IPPROTO_UDP: portcon_elem[2] = Tcl_NewStringObj("udp", -1); break;
 	default:
-		Tcl_SetResult(interp, "Unrecognized protocol in portcon", TCL_STATIC);
+		ERR(policydb, "Unrecognized protocol in portcon");
 		goto cleanup;
 	}
 	if (sepol_context_to_tcl_obj(interp, context, portcon_elem + 3) == TCL_ERROR) {
@@ -1827,7 +1827,7 @@ static int apol_tcl_string_to_proto(Tcl_Interp *interp, const char *proto_name, 
 		*proto = IPPROTO_UDP;
 	}
 	else if (*proto_name != '\0') {
-		Tcl_SetResult(interp, "Unknown protocol.", TCL_STATIC);
+		ERR(policydb, "Unknown protocol.");
 		return -1;
 	}
 	return 0;
@@ -1870,11 +1870,11 @@ static int Apol_GetPortcons(ClientData clientData, Tcl_Interp *interp, int argc,
 
 	apol_tcl_clear_error();
 	if (policy == NULL) {
-		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		ERR(policydb, "No current policy file is opened!");
 		goto cleanup;
 	}
 	if (argc != 3 && argc != 6) {
-		Tcl_SetResult(interp, "Need a low port, high port, ?proto?, ?context?, ?range_match?.", TCL_STATIC);
+		ERR(policydb, "Need a low port, high port, ?proto?, ?context?, ?range_match?.");
 		goto cleanup;
 	}
 	
@@ -1899,7 +1899,7 @@ static int Apol_GetPortcons(ClientData clientData, Tcl_Interp *interp, int argc,
 	}
 	if (low >= 0 || high >= 0 || proto >= 0 || context != NULL) {
 		if ((query = apol_portcon_query_create()) == NULL) {
-			Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
+			ERR(policydb, "Out of memory!");
 			goto cleanup;
 		}
 		if (apol_portcon_query_set_low(policydb, query, low) < 0 ||
@@ -2002,11 +2002,11 @@ static int Apol_GetNetifcons(ClientData clientData, Tcl_Interp *interp, int argc
 
 	apol_tcl_clear_error();
 	if (policy == NULL) {
-		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		ERR(policydb, "No current policy file is opened!");
 		goto cleanup;
 	}
 	if (argc != 2 && argc != 6) {
-		Tcl_SetResult(interp, "Need a device, ?if_context?, ?if_range_match?, ?msg_context?, and ?msg_range_match?.", TCL_STATIC);
+		ERR(policydb, "Need a device, ?if_context?, ?if_range_match?, ?msg_context?, and ?msg_range_match?.");
 		goto cleanup;
 	}
 	if (argc == 2) {
@@ -2047,7 +2047,7 @@ static int Apol_GetNetifcons(ClientData clientData, Tcl_Interp *interp, int argc
                 }
                 if (dev != NULL || if_context != NULL || msg_context != NULL) {
                         if ((query = apol_netifcon_query_create()) == NULL) {
-                                Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
+                                ERR(policydb, "Out of memory!");
                                 goto cleanup;
                         }
                         if (apol_netifcon_query_set_device(policydb, query,
@@ -2129,7 +2129,7 @@ static int append_nodecon_to_list(Tcl_Interp *interp,
 		}
 	}
 	else {
-		Tcl_SetResult(interp, "Unknown protocol.", TCL_STATIC);
+		ERR(policydb, "Unknown protocol.");
 		goto cleanup;
 	}
 	nodecon_elem[1] = Tcl_NewStringObj(addr_str, -1);
@@ -2188,11 +2188,11 @@ static int Apol_GetNodecons(ClientData clientData, Tcl_Interp *interp, int argc,
 	
 	apol_tcl_clear_error();
 	if (policy == NULL) {
-		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		ERR(policydb, "No current policy file is opened!");
 		goto cleanup;
 	}
 	if (argc != 2 && argc != 6) {
-		Tcl_SetResult(interp, "Need an address, ?netmask?, ?IP_type?, ?context?, and ?range_match?.", TCL_STATIC);
+		ERR(policydb, "Need an address, ?netmask?, ?IP_type?, ?context?, and ?range_match?.");
 		goto cleanup;
 	}
 	if (*argv[1] != '\0') {
@@ -2201,7 +2201,7 @@ static int Apol_GetNodecons(ClientData clientData, Tcl_Interp *interp, int argc,
 			goto cleanup;
 		}
 		if ((proto_a = apol_str_to_internal_ip(argv[1], addr)) < 0) {
-			Tcl_SetResult(interp, "Invalid address.", TCL_STATIC);
+			ERR(policydb, "Invalid address.");
 			goto cleanup;
 		}
 		has_addr = 1;
@@ -2213,7 +2213,7 @@ static int Apol_GetNodecons(ClientData clientData, Tcl_Interp *interp, int argc,
 				goto cleanup;
 			}
 			if ((proto_m = apol_str_to_internal_ip(argv[2], mask)) < 0) {
-				Tcl_SetResult(interp, "Invalid mask.", TCL_STATIC);
+				ERR(policydb, "Invalid mask.");
 				goto cleanup;
 			}
 			has_mask = 1;
@@ -2225,7 +2225,7 @@ static int Apol_GetNodecons(ClientData clientData, Tcl_Interp *interp, int argc,
 			proto = 1;
 		}
 		else if (*argv[3] != '\0') {
-			Tcl_SetResult(interp, "Unknown protocol.", TCL_STATIC);
+			ERR(policydb, "Unknown protocol.");
 			goto cleanup;
 		}
 		if (*argv[4] != '\0') {
@@ -2241,7 +2241,7 @@ static int Apol_GetNodecons(ClientData clientData, Tcl_Interp *interp, int argc,
 	}
 	if (proto >= 0 || has_addr || has_mask || context != NULL) {
 		if ((query = apol_nodecon_query_create()) == NULL) {
-			Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
+			ERR(policydb, "Out of memory!");
 			goto cleanup;
 		}
 		if (apol_nodecon_query_set_proto(policydb, query, proto) < 0 ||
@@ -2268,155 +2268,305 @@ static int Apol_GetNodecons(ClientData clientData, Tcl_Interp *interp, int argc,
 	free(mask);
 	apol_context_destroy(&context);
 	apol_nodecon_query_destroy(&query);
-	apol_vector_destroy(&v, NULL);
+	apol_vector_destroy(&v, free);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
 	return retval;
 }
 
-/* Return an unordered unique list of all filesystems with a genfscon
- * entry. */
-static int Apol_GetGenFSConFilesystems(ClientData clientData, Tcl_Interp *interp, int argc, const char *argv[])
+/**
+ * Takes a sepol_genfscon_t and appends a tuple of it to result_list.
+ * The tuple consists of:
+ * <code>
+ *   { fs_type path object_class context }
+ * </code>
+ */
+static int append_genfscon_to_list(Tcl_Interp *interp,
+				   sepol_genfscon_t *genfscon,
+				   Tcl_Obj *result_obj)
 {
-        int i;
-        if (policy == NULL) {
-                Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
-                return TCL_ERROR;
-        }
-        for (i = 0; i < policy->num_genfscon; i++) {
-                Tcl_AppendElement(interp, policy->genfscon[i].fstype);
-        }
-        return TCL_OK;
+	char *name, *path;
+	uint32_t objclass_val;
+	const char *objclass;
+	sepol_context_struct_t *context;
+	Tcl_Obj *genfs_elem[4], *genfs_list;
+	int retval = TCL_ERROR;
+	if (sepol_genfscon_get_name(policydb->sh, policydb->p,
+				    genfscon, &name) < 0 ||
+	    sepol_genfscon_get_path(policydb->sh, policydb->p,
+				    genfscon, &path) < 0 ||
+	    sepol_genfscon_get_class(policydb->sh, policydb->p,
+				     genfscon, &objclass_val) < 0 ||
+	    sepol_genfscon_get_context(policydb->sh, policydb->p,
+				       genfscon, &context) < 0) {
+		goto cleanup;
+	}
+	genfs_elem[0] = Tcl_NewStringObj(name, -1);
+	genfs_elem[1] = Tcl_NewStringObj(path, -1);
+	if ((objclass = apol_objclass_to_str(objclass_val)) == NULL) {
+		ERR(policydb, "Illegal object class given in genfscon node.");
+		goto cleanup;
+	}
+	genfs_elem[2] = Tcl_NewStringObj(objclass, -1);
+	if (sepol_context_to_tcl_obj(interp, context, genfs_elem + 3) == TCL_ERROR) {
+		goto cleanup;
+	}
+	genfs_list = Tcl_NewListObj(4, genfs_elem);
+	if (Tcl_ListObjAppendElement(interp, result_obj, genfs_list) == TCL_ERROR) {
+		goto cleanup;
+	}
+	retval = TCL_OK;
+ cleanup:
+	return retval;
 }
 
-static const char *filetype_to_string(int filetype) {
-        switch (filetype) {
-        case FILETYPE_BLK:  return "block";
-        case FILETYPE_CHR:  return "char";
-        case FILETYPE_DIR:  return "dir";
-        case FILETYPE_LNK:  return "link";
-        case FILETYPE_FIFO: return "fifo";
-        case FILETYPE_SOCK: return "sock";
-        case FILETYPE_REG:  return "file";
-        case FILETYPE_ANY:  return "any";
-        }
-        return NULL;
-}
-
-/* Return a list of all genfscon declarations within the policy.
- * Entries with the same filesystem are reported as separate
- * elements.
+/**
+ * Return an unsorted list of genfscon declarations within the policy.
+ * Each tuple consists of:
+ * <ul>
+ *   <li>filesystem type
+ *   <li>path
+ *   <li>object class ("block", "char", "dir", etc)
+ *   <li>context
+ * </ul>
+ * where context is:
+ * <code>
+ *   { user role type range }
+ * </code>
  *
- * element 0 - filesystem
- * element 1 - path
- * element 2 - genfs type ("file", "block", etc)
- * element 3 - context
+ * Entries with the same filesystem are reported as separate elements.
  *
- * If a parameter is given, only return those with that filesystem.
+ * @param argv This function takes four parameters:
+ * <ol>
+ *   <li>filesystem
+ *   <li>(optional) path
+ *   <li>(optional) full or partial context to match
+ *   <li>(optional) range query type
+ * </ol>
  */
 static int Apol_GetGenFSCons(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
-        int i;
         Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
+        sepol_genfscon_t *genfscon;
+        CONST char *fstype = NULL, *path = NULL;
+        int objclass = -1;
+        apol_context_t *context = NULL;
+        unsigned int range_match = 0;
+        apol_genfscon_query_t *query = NULL;
+        apol_vector_t *v = NULL;
+        size_t i;
+        int retval = TCL_ERROR;
+
+        apol_tcl_clear_error();
         if (policy == NULL) {
-                Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
-                return TCL_ERROR;
+                ERR(policydb, "No current policy file is opened!");
+                goto cleanup;
         }
-        for (i = 0; i < policy->num_genfscon; i++) {
-                ap_genfscon_t *genfscon = policy->genfscon + i;
-                ap_genfscon_node_t *node = genfscon->paths;
-                if (argc >= 2 && strcmp(genfscon->fstype, argv[1]) != 0) {
-                        continue;
+        if (argc != 2 && argc != 5) {
+                ERR(policydb, "Need a fstype, ?path?, ?file_type?, ?context?, and ?range_match?.");
+                goto cleanup;
+        }
+        if (*argv[1] != '\0') {
+                fstype = argv[1];
+        }
+        if (argc == 5) {
+                if (*argv[2] != '\0') {
+                        path = argv[2];
                 }
-                while (node != NULL) {
-                        Tcl_Obj *genfs_elem[4], *genfs_list;
-                        const char *fstype;
-                        genfs_elem[0] = Tcl_NewStringObj(genfscon->fstype, -1);
-                        genfs_elem[1] = Tcl_NewStringObj(node->path, -1);
-                        if ((fstype = filetype_to_string(node->filetype)) == NULL) {
-                                Tcl_SetResult(interp, "Illegal filetype given in genfscon node", TCL_STATIC);
-                                return TCL_ERROR;
+                if (*argv[3] != '\0') {
+                        if ((context = apol_context_create()) == NULL) {
+                                ERR(policydb, "Out of memory!");
+                                goto cleanup;
                         }
-                        genfs_elem[2] = Tcl_NewStringObj(fstype, -1);
-                        if (security_con_to_tcl_context_string(interp, node->scontext, genfs_elem + 3) == TCL_ERROR) {
-                                return TCL_ERROR;
+                        if (apol_tcl_string_to_context(interp, argv[3], context) < 0 ||
+                            apol_tcl_string_to_range_match(interp, argv[4], &range_match) < 0) {
+                                goto cleanup;
                         }
-                        genfs_list = Tcl_NewListObj(4, genfs_elem);
-                        if (Tcl_ListObjAppendElement(interp, result_obj, genfs_list) == TCL_ERROR) {
-                                return TCL_ERROR;
-                        }
-                        node = node->next;
+                }
+        }
+        if (fstype != NULL || path != NULL || objclass >= 0 || context != NULL) {
+                if ((query = apol_genfscon_query_create()) == NULL) {
+                        ERR(policydb, "Out of memory!");
+                        goto cleanup;
+                }
+                if (apol_genfscon_query_set_filesystem(policydb, query, fstype) < 0 ||
+                    apol_genfscon_query_set_path(policydb, query, path) < 0 ||
+                    apol_genfscon_query_set_objclass(policydb, query, objclass) < 0 ||
+                    apol_genfscon_query_set_context(policydb, query, context, range_match) < 0) {
+                        goto cleanup;
+                }
+                context = NULL;
+        }
+        if (apol_get_genfscon_by_query(policydb, query, &v) < 0) {
+                goto cleanup;
+        }
+        for (i = 0; i < apol_vector_get_size(v); i++) {
+                genfscon = (sepol_genfscon_t *) apol_vector_get_element(v, i);
+                if (append_genfscon_to_list(interp, genfscon, result_obj) == TCL_ERROR) {
+                        goto cleanup;
                 }
         }
         Tcl_SetObjResult(interp, result_obj);
-        return TCL_OK;
-}
-
-static const char *fsuse_behavior_to_string(int i) {
-        switch (i) {
-        case AP_FS_USE_PSID: return "fs_use_psid";
-        case AP_FS_USE_XATTR: return "fs_use_xattr";
-        case AP_FS_USE_TASK: return "fs_use_task";
-        case AP_FS_USE_TRANS: return "fs_use_trans";
+        retval = TCL_OK;
+ cleanup:
+        apol_context_destroy(&context);
+        apol_genfscon_query_destroy(&query);
+        apol_vector_destroy(&v, free);
+        if (retval == TCL_ERROR) {
+                apol_tcl_write_error(interp);
         }
-        return NULL;
+        return retval;
 }
 
-/* Return an unordered list of fs_use type statemens. */
-static int Apol_GetFSUseBehaviors(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
-{
-        int i;
-        for (i = AP_FS_USE_PSID; i <= AP_FS_USE_TRANS; i++) {
-                Tcl_AppendElement(interp, fsuse_behavior_to_string(i));
-        }
-        return TCL_OK;
+/**
+ * Takes a sepol_fs_use_t and appends a tuple of it to result_list.
+ * The tuple consists of:
+ * <code>
+ *   { fs_behavior fs_type context }
+ * </code>
+ *
+ * Note that if fs_behavior is SEPOL_FS_USE_PSID, the context will be
+ * an empty string.
+ */
+static int append_fs_use_to_list(Tcl_Interp *interp,
+				 sepol_fs_use_t *fsuse,
+				 Tcl_Obj *result_obj) {
+	char *name;
+	uint32_t behavior;
+	const char *behav_str;
+	sepol_context_struct_t *context;
+	Tcl_Obj *fsuse_elem[3], *fsuse_list;
+	int retval = TCL_ERROR;
+	if (sepol_fs_use_get_behavior(policydb->sh, policydb->p,
+				      fsuse, &behavior) < 0 ||
+	    sepol_fs_use_get_name(policydb->sh, policydb->p,
+				  fsuse, &name) < 0 ||
+	    (behavior != SEPOL_FS_USE_PSID &&
+	     sepol_fs_use_get_context(policydb->sh, policydb->p,
+				      fsuse, &context) < 0)) {
+		goto cleanup;
+	}
+	if ((behav_str = apol_fs_use_behavior_to_str(behavior)) == NULL) {
+		ERR(policydb, "Illegal fs_use bahavior given in fs_use.");
+		goto cleanup;
+	}
+	fsuse_elem[0] = Tcl_NewStringObj(behav_str, -1);
+	fsuse_elem[1] = Tcl_NewStringObj(name, -1);
+	if (behavior == SEPOL_FS_USE_PSID) {
+		fsuse_elem[2] = Tcl_NewStringObj("", -1);
+	}
+	else {
+		if (sepol_context_to_tcl_obj(interp, context, fsuse_elem + 2) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+	fsuse_list = Tcl_NewListObj(3, fsuse_elem);
+	if (Tcl_ListObjAppendElement(interp, result_obj, fsuse_list) == TCL_ERROR) {
+		goto cleanup;
+	}
+	retval = TCL_OK;
+ cleanup:
+	return retval;
 }
 
-/* Return a list of all fs_use declarations within the policy.
+/**
+ * Return an unsorted list of fs_use declarations within the policy.
+ * Each tuple consists of:
+ * <ul>
+ *   <li>fs_use behavior ("fs_use_psid,", "fs_use_xattr", etc.)
+ *   <li>filesystem type
+ *   <li>context
+ * </ul>
+ * where context is:
+ * <code>
+ *   { user role type range }
+ * </code>
  *
- * element 0 - fs_use behavior
- * element 1 - filesystem
- * element 2 - context
+ * If the behavior is "fs_use_psid", the context will be an empty
+ * string.
  *
- * If a parameter is given, only return those for that filesystem.
+ * @param argv This function takes four parameters:
+ * <ol>
+ *   <li>filesystem
+ *   <li>(optional) behavior ("fs_use_psid", "fs_use_xattr", etc.)
+ *   <li>(optional) full or partial context to match
+ *   <li>(optional) range query type
+ * </ol>
  */
 static int Apol_GetFSUses(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
-        int i;
-        Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
-        if (policy == NULL) {
-                Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
-                return TCL_ERROR;
-        }
-        for (i = 0; i < policy->num_fs_use; i++) {
-                ap_fs_use_t *fs_use = policy->fs_use + i;
-                Tcl_Obj *fsuse_elem[3], *fsuse_list;
-                const char *behavior = fsuse_behavior_to_string(fs_use->behavior);
-                if (behavior == NULL) {
-                        Tcl_SetResult(interp, "Invalid fs_use behavior.", TCL_STATIC);
-                        return TCL_ERROR;
-                }
-                if (argc >= 2 && strcmp(fs_use->fstype, argv[1]) != 0) {
-                        continue;
-                }
-                fsuse_elem[0] = Tcl_NewStringObj(behavior, -1);
-                fsuse_elem[1] = Tcl_NewStringObj(fs_use->fstype, -1);
-                if (fs_use->behavior == AP_FS_USE_PSID) {
-                        /* PSIDs are special in that they have no context at all */
-                        fsuse_elem[2] = Tcl_NewStringObj("", -1);
-                } else {
-                        if (security_con_to_tcl_context_string(interp, fs_use->scontext, fsuse_elem + 2) == TCL_ERROR) {
-                                return TCL_ERROR;
-                        }
-                }
-                fsuse_list = Tcl_NewListObj(3, fsuse_elem);
-                if (Tcl_ListObjAppendElement(interp, result_obj, fsuse_list) == TCL_ERROR) {
-                        return TCL_ERROR;
-                }
-        }
-        Tcl_SetObjResult(interp, result_obj);
-        return TCL_OK;
+	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
+	sepol_fs_use_t *fsuse;
+	CONST char *fstype = NULL;
+	int behavior = -1;
+	apol_context_t *context = NULL;
+	unsigned int range_match = 0;
+	apol_fs_use_query_t *query = NULL;
+	apol_vector_t *v = NULL;
+	size_t i;
+	int retval = TCL_ERROR;
+
+	apol_tcl_clear_error();
+	if (policy == NULL) {
+		ERR(policydb, "No current policy file is opened!");
+		goto cleanup;
+	}
+	if (argc != 2 && argc != 5) {
+		ERR(policydb, "Need a fstype, ?fs_behavior?, ?context?, and ?range_match?.");
+		goto cleanup;
+	}
+	if (*argv[1] != '\0') {
+		fstype = argv[1];
+	}
+	if (argc == 5) {
+		if (*argv[2] != '\0' &&
+		    (behavior = apol_str_to_fs_use_behavior(argv[2])) < 0) {
+			ERR(policydb, "Invalid fs_use behavior.");
+			goto cleanup;
+		}
+		if (*argv[3] != '\0') {
+			if ((context = apol_context_create()) == NULL) {
+				ERR(policydb, "Out of memory!");
+				goto cleanup;
+			}
+			if (apol_tcl_string_to_context(interp, argv[3], context) < 0 ||
+			    apol_tcl_string_to_range_match(interp, argv[4], &range_match) < 0) {
+				goto cleanup;
+			}
+		}
+	}
+	if (fstype != NULL || behavior >= 0 || context != NULL) {
+		if ((query = apol_fs_use_query_create()) == NULL) {
+			ERR(policydb, "Out of memory!");
+			goto cleanup;
+		}
+		if (apol_fs_use_query_set_filesystem(policydb, query, fstype) < 0 ||
+		    apol_fs_use_query_set_behavior(policydb, query, behavior) < 0 ||
+		    apol_fs_use_query_set_context(policydb, query, context, range_match) < 0) {
+			goto cleanup;
+		}
+		context = NULL;
+	}
+	if (apol_get_fs_use_by_query(policydb, query, &v) < 0) {
+		goto cleanup;
+	}
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		fsuse = (sepol_fs_use_t *) apol_vector_get_element(v, i);
+		if (append_fs_use_to_list(interp, fsuse, result_obj) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+	Tcl_SetObjResult(interp, result_obj);
+	retval = TCL_OK;
+ cleanup:
+	apol_context_destroy(&context);
+	apol_fs_use_query_destroy(&query);
+	apol_vector_destroy(&v, NULL);
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
 }
 
 int ap_tcl_components_init(Tcl_Interp *interp) {
@@ -2436,9 +2586,7 @@ int ap_tcl_components_init(Tcl_Interp *interp) {
 	Tcl_CreateCommand(interp, "apol_GetPortcons", Apol_GetPortcons, NULL, NULL);
  	Tcl_CreateCommand(interp, "apol_GetNetifcons", Apol_GetNetifcons, NULL, NULL);
  	Tcl_CreateCommand(interp, "apol_GetNodecons", Apol_GetNodecons, NULL, NULL);
-	Tcl_CreateCommand(interp, "apol_GetGenFSConFilesystems", Apol_GetGenFSConFilesystems, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetGenFSCons", Apol_GetGenFSCons, NULL, NULL);
-	Tcl_CreateCommand(interp, "apol_GetFSUseBehaviors", Apol_GetFSUseBehaviors, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetFSUses", Apol_GetFSUses, NULL, NULL);
         return TCL_OK;
 }

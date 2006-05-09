@@ -1,5 +1,5 @@
 /**
- *  @file bool-query.h
+ *  @file netcon-query.h
  *  Public Interface for querying portcons, netifcons, and nodecons of
  *  a policy.
  *
@@ -239,11 +239,11 @@ extern int apol_netifcon_query_set_msg_context(apol_policy_t *p,
  * @param p Policy within which to look up nodecons.
  * @param n Structure containing parameters for query.	If this is
  * NULL then return all nodecons.
- * @param v Reference to a vector of sepol_node_t.  The vector
- * will be allocated by this function. The caller must call
- * apol_vector_destroy() afterwards, but <b>must not</b> free the
- * elements within it.	This will be set to NULL upon no results or
- * upon error.
+ * @param v Reference to a vector of sepol_node_t.  The vector will be
+ * allocated by this function. The caller must call
+ * apol_vector_destroy() afterwards, <b>passing free() as the second
+ * parameter</b>.  This will be set to NULL upon no results or upon
+ * error.
  *
  * @return 0 on success (including none found), negative on error.
  */

@@ -289,6 +289,7 @@ int apol_get_nodecon_by_query(apol_policy_t *p,
 {
 	sepol_iterator_t *iter;
 	int retval = -1, retval2;
+	sepol_nodecon_t *nodecon = NULL;
 	*v = NULL;
 	if (sepol_policydb_get_nodecon_iter(p->sh, p->p, &iter) < 0) {
 		return -1;
@@ -298,7 +299,6 @@ int apol_get_nodecon_by_query(apol_policy_t *p,
 		goto cleanup;
 	}
 	for ( ; !sepol_iterator_end(iter); sepol_iterator_next(iter)) {
-		sepol_nodecon_t *nodecon;
 		if (sepol_iterator_get_item(iter, (void **) &nodecon) < 0) {
 			goto cleanup;
 		}
@@ -313,18 +313,21 @@ int apol_get_nodecon_by_query(apol_policy_t *p,
 				goto cleanup;
 			}
 			if (n->proto >= 0 && n->proto != proto) {
+				free(nodecon);
 				continue;
 			}
 			if (n->addr_proto >= 0 &&
 			    (n->addr_proto != proto_a ||
 			     (proto_a == SEPOL_IPV4 && memcmp(n->addr, addr, 1 * sizeof(uint32_t)) != 0) ||
 			     (proto_a == SEPOL_IPV6 && memcmp(n->addr, addr, 4 * sizeof(uint32_t)) != 0))) {
+				free(nodecon);
 				continue;
 			}
 			if (n->mask_proto >= 0 &&
 			    (n->mask_proto != proto_m ||
 			     (proto_m == SEPOL_IPV4 && memcmp(n->mask, mask, 1 * sizeof(uint32_t)) != 0) ||
 			     (proto_m == SEPOL_IPV6 && memcmp(n->mask, mask, 4 * sizeof(uint32_t)) != 0))) {
+				free(nodecon);
 				continue;
 			}
 			retval2 = apol_compare_context(p, con, n->context, n->flags);
@@ -332,6 +335,7 @@ int apol_get_nodecon_by_query(apol_policy_t *p,
 				goto cleanup;
 			}
 			else if (retval2 == 0) {
+				free(nodecon);
 				continue;
 			}
 		}
@@ -344,7 +348,8 @@ int apol_get_nodecon_by_query(apol_policy_t *p,
 	retval = 0;
  cleanup:
 	if (retval != 0) {
-		apol_vector_destroy(v, NULL);
+		apol_vector_destroy(v, free);
+		free(nodecon);
 	}
 	sepol_iterator_destroy(&iter);
 	return retval;

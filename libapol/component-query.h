@@ -41,6 +41,7 @@
 #include "bool-query.h"
 #include "mls-query.h"
 #include "netcon-query.h"
+#include "fscon-query.h"
 #include "context-query.h"
 
 /** Every query allows the treatment of strings as regular expressions
