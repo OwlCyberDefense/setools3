@@ -164,8 +164,8 @@ extern int apol_get_fs_use_by_query(apol_policy_t *p,
 /**
  * Allocate and return a new fs_use query structure. All fields are
  * initialized, such that running this blank query results in
- * returning all genfscons within the policy.  The caller must call
- * apol_fs_use_query_destroy() upon the return value afterwards.
+ * returning all fs_use statements within the policy.  The caller must
+ * call apol_fs_use_query_destroy() upon the return value afterwards.
  *
  * @return An initialized fs_use query structure, or NULL upon error.
  */

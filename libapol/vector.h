@@ -28,21 +28,7 @@
 #include <stdlib.h>
 #include <sepol/iterator.h>
 
-/** The default initial capacity of a vector; must be a positive integer */
-#define APOL_VECTOR_DFLT_INIT_CAP 10
-
-/**
- *  Generic vector structure. Stores elements as void*.
- */
-typedef struct apol_vector {
-        /** The array of element pointers, which will be resized as needed. */
-        void    **array;
-        /** The number of elements currently stored in array. */
-        size_t  size;
-        /** The actual amount of space in array. This amount will always 
-         *  be >= size and will grow exponentially as needed. */
-        size_t  capacity; 
-} apol_vector_t;
+typedef struct apol_vector apol_vector_t;
 
 typedef int(apol_vector_comp_func)(const void *a, const void *b, void *data);
 
@@ -71,8 +57,8 @@ apol_vector_t *apol_vector_create_with_capacity(size_t cap);
 
 /**
  *  Allocate and return a vector that has been initialized with the
- *  contents of a sepol iterator.  This function merely makes a
- *  shallow copy of the iterator's contents; any memory ownership
+ *  contents of a sepol iterator.  <b>This function merely makes a
+ *  shallow copy of the iterator's contents</b>; any memory ownership
  *  restrictions imposed by the iterator apply to this vector as well.
  *  Also note that this function begins copying from the iterator's
  *  current position, leaving the iterator at its end position
@@ -85,6 +71,21 @@ apol_vector_t *apol_vector_create_with_capacity(size_t cap);
  *  responsible for calling apol_vector_destroy() to free memory used.
  */
 apol_vector_t *apol_vector_create_from_iter(sepol_iterator_t *iter);
+
+/**
+ *  Allocate and return a vector that has been initialized with the
+ *  contents of another vector.  <b>This function merely makes a
+ *  shallow copy of the vector's contents</b>; any memory ownership
+ *  restrictions imposed by the original vector apply to this new
+ *  vector as well.
+ *
+ *  @param v Vector from which to copy.
+ *
+ *  @return A pointer to a newly created vector on success and NULL on
+ *  failure.  If the call fails, errno will be set.  The caller is
+ *  responsible for calling apol_vector_destroy() to free memory used.
+ */
+apol_vector_t *apol_vector_create_from_vector(const apol_vector_t *v);
 
 /**
  *  Free a vector and any memory used by it.
@@ -183,5 +184,19 @@ int apol_vector_append(apol_vector_t *v, void *elem);
  */
 int apol_vector_append_unique(apol_vector_t *v, void *elem,
                               apol_vector_comp_func *cmp, void *data);
+
+/**
+ *  Sort the vector's elements within place, using an unstable sorting
+ *  algorithm.
+ *
+ *  @param v The vector to sort.
+ *  @param cmp A comparison call back for the type of element stored
+ *  in the vector.  The expected return value from this function is
+ *  less than, equal to, or greater than 0 if the first argument is
+ *  less than, equal to, or greater than the second respectively.
+ *  @param data Arbitrary data to pass as the comparison function's
+ *  third paramater.
+ */
+void apol_vector_sort(apol_vector_t *v, apol_vector_comp_func *cmp, void *data);
 
 #endif /* APOL_VECTOR_H */

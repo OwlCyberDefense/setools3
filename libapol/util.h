@@ -157,6 +157,18 @@ int str_to_internal_ip(const char *str, uint32_t ip[4]);
 #define _APOL_UTIL_H_
 
 /**
+ * Given a portcon protocol, return a read-only string that describes
+ * that protocol.
+ *
+ * @param protocol Portcon protocol, one of IPPROTO_TCP or IPPROTO_UDP
+ * from netinet/in.h.
+ *
+ * @return A string that describes the protocol, or NULL if the
+ * protocol is invalid.  <b>Do not free() this string.</b>
+ */
+extern const char *apol_protocol_to_str(uint8_t protocol);
+
+/**
  * Given a string representing and IP value (mask or address, IPv4 or
  * IPv6), write to an array that value in the same bit order that
  * sepol uses.  If the IP was in IPv4 format, only write to the first
@@ -172,8 +184,8 @@ int str_to_internal_ip(const char *str, uint32_t ip[4]);
 extern int apol_str_to_internal_ip(const char *str, uint32_t ip[4]);
 
 /**
- * Given a object class, return a read-only string that describes that
- * type.
+ * Given a genfscon object class, return a read-only string that
+ * describes that class.
  *
  * @param objclass Object class, one of SEPOL_CLASS_BLK_FILE,
  * SEPOL_CLASS_CHR_FILE, etc.

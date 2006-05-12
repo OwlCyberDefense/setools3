@@ -31,6 +31,12 @@
 #include "policy.h"
 #include "vector.h"
 
+/**
+ * Declaration of a MLS level.  Users of this struct are free
+ * to manipulate its fields directly; alternatively one may use the
+ * convenience functions below.  Note that the category vector only
+ * holds strings.
+ */
 typedef struct apol_mls_level {
 	char *sens;
 	apol_vector_t *cats;
@@ -43,6 +49,22 @@ typedef struct apol_mls_range {
 typedef struct apol_level_query apol_level_query_t;
 typedef struct apol_cat_query apol_cat_query_t;
 
+/******************** misc stuff ********************/
+
+/**
+ * Given two category names, returns < 0 if a has higher value than b,
+ * > 0 if b is higher. The comparison is against the categories'
+ * values according to the supplied policy.  If the two are equal or
+ * upon error, return 0.
+ *
+ * @param a First category name to compare.
+ * @param b Other name to compare.
+ * @param data Pointer to a policy to which use for comparison.
+ *
+ * @return <0, 0, or >0 if a is less than, equal, or greater than b,
+ * respectivel.
+ */
+extern int apol_mls_cat_vector_compare(const void *a, const void *b, void *data);
 
 /******************** level stuff ********************/
 

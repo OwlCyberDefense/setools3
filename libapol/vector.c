@@ -24,7 +24,24 @@
 
 #include "vector.h"
 #include <stdlib.h>
+#include <string.h>
 #include <errno.h>
+
+/** The default initial capacity of a vector; must be a positive integer */
+#define APOL_VECTOR_DFLT_INIT_CAP 10
+
+/**
+ *  Generic vector structure. Stores elements as void*.
+ */
+struct apol_vector {
+	/** The array of element pointers, which will be resized as needed. */
+	void	**array;
+	/** The number of elements currently stored in array. */
+	size_t	size;
+	/** The actual amount of space in array. This amount will always 
+	 *  be >= size and will grow exponentially as needed. */
+	size_t	capacity; 
+};
 
 apol_vector_t *apol_vector_create(void)
 {
@@ -73,6 +90,21 @@ apol_vector_t *apol_vector_create_from_iter(sepol_iterator_t *iter)
 		apol_vector_append(v, item);
 	}
 	return v;
+}
+
+apol_vector_t *apol_vector_create_from_vector(const apol_vector_t *v)
+{
+	apol_vector_t *new_v;
+	if (v == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	if ((new_v = apol_vector_create_with_capacity(v->capacity)) == NULL) {
+		return NULL;
+	}
+	memcpy(new_v->array, v->array, v->size * sizeof(void *));
+	new_v->size = v->size;
+	return new_v;
 }
 
 void apol_vector_destroy(apol_vector_t **v, void(*free_fn)(void *elem))
@@ -195,4 +227,50 @@ int apol_vector_append_unique(apol_vector_t *v, void *elem,
 	}
 	errno = EEXIST;
 	return 1;
+}
+
+static size_t vector_qsort_partition(void **data, size_t first, size_t last,
+				     apol_vector_comp_func *cmp, void *arg)
+{
+	void *pivot = data[last];
+	size_t i = first, j = last;
+	while (i < j) {
+		if (cmp(data[i], pivot, arg) <= 0) {
+			i++;
+		}
+		else {
+			data[j] = data[i];
+			data[i] = data[j - 1];
+			j--;
+		}
+	}
+	data[j] = pivot;
+	return j;
+}
+
+static void vector_qsort(void **data, size_t first, size_t last,
+			 apol_vector_comp_func *cmp, void *arg)
+{
+	if (first < last) {
+		size_t i = vector_qsort_partition(data, first, last, cmp, arg);
+		/* need this explicit check here, because i is an
+		 * unsigned integer, and subtracting 1 from 0 is
+		 * bad */
+		if (i > 0) {
+			vector_qsort(data, first, i - 1, cmp, arg);
+			vector_qsort(data, i + 1, last, cmp, arg);
+		}
+	}
+}
+
+/* implemented as an in-place quicksort */
+void apol_vector_sort(apol_vector_t *v, apol_vector_comp_func *cmp, void *data)
+{
+	if (!v || !cmp) {
+		errno = EINVAL;
+		return;
+	}
+	if (v->size > 0) {
+		vector_qsort(v->array, 0, v->size - 1, cmp, data);
+	}
 }
