@@ -1032,6 +1032,7 @@ int str_to_internal_ip(const char *str, uint32_t ip[4])
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <netinet/in.h>    /* needed for portcon's protocol */
 
 /**
  * @file util.c
@@ -1132,6 +1133,16 @@ const char *apol_objclass_to_str(uint32_t objclass)
         case SEPOL_CLASS_ALL:       return "any";
         }
         return NULL;
+}
+
+const char *apol_protocol_to_str(uint8_t protocol)
+{
+	switch (protocol) {
+	case IPPROTO_TCP: return "tcp";
+	case IPPROTO_UDP: return "udp";
+	default:
+		return NULL;
+	}
 }
 
 const char *apol_fs_use_behavior_to_str(uint32_t behavior)

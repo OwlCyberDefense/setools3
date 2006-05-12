@@ -1773,6 +1773,7 @@ static int append_portcon_to_list(Tcl_Interp *interp,
 {
 	Tcl_Obj *portcon_elem[4], *portcon_list;
 	uint8_t protocol;
+	const char *proto_str;
 	uint16_t low_port, high_port;
 	sepol_context_struct_t *context;
 	int retval = TCL_ERROR;
@@ -1788,13 +1789,11 @@ static int append_portcon_to_list(Tcl_Interp *interp,
 	}
 	portcon_elem[0] = Tcl_NewIntObj(low_port);
 	portcon_elem[1] = Tcl_NewIntObj(high_port);
-	switch (protocol) {
-	case IPPROTO_TCP: portcon_elem[2] = Tcl_NewStringObj("tcp", -1); break;
-	case IPPROTO_UDP: portcon_elem[2] = Tcl_NewStringObj("udp", -1); break;
-	default:
+	if ((proto_str = apol_protocol_to_str(protocol)) == NULL) {
 		ERR(policydb, "Unrecognized protocol in portcon");
 		goto cleanup;
 	}
+	portcon_elem[2] = Tcl_NewStringObj(proto_str, -1);
 	if (sepol_context_to_tcl_obj(interp, context, portcon_elem + 3) == TCL_ERROR) {
 		goto cleanup;
 	}
@@ -2116,16 +2115,16 @@ static int append_nodecon_to_list(Tcl_Interp *interp,
 	assert(proto == proto_a && proto == proto_m);
 	if (proto == SEPOL_IPV4) {
 		nodecon_elem[0] = Tcl_NewStringObj("ipv4", -1);
-		if ((addr_str = re_render_ipv4_addr(addr[0])) == NULL ||
-		    (mask_str = re_render_ipv4_addr(mask[0])) == NULL) {
-			ERR(policydb, "Out of memory!");
+		if ((addr_str = re_render_ipv4_addr(policydb, addr[0])) == NULL ||
+		    (mask_str = re_render_ipv4_addr(policydb, mask[0])) == NULL) {
+			goto cleanup;
 		}
 	}
 	else if (proto == SEPOL_IPV6) {
 		nodecon_elem[0] = Tcl_NewStringObj("ipv6", -1);
-		if ((addr_str = re_render_ipv6_addr(addr)) == NULL ||
-		    (mask_str = re_render_ipv6_addr(mask)) == NULL) {
-			ERR(policydb, "Out of memory!");
+		if ((addr_str = re_render_ipv6_addr(policydb, addr)) == NULL ||
+		    (mask_str = re_render_ipv6_addr(policydb, mask)) == NULL) {
+			goto cleanup;
 		}
 	}
 	else {

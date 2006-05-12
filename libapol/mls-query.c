@@ -50,27 +50,6 @@ struct apol_cat_query {
 
 /********************* miscellaneous routines *********************/
 
-/* Given two category names, returns < 0 if a has higher value than b,
- * > 0 if b is higher.	If the two are equal or upon error, return 0.
- */
-static int apol_mls_cat_vector_compare(const void *a, const void *b, void *data)
-{
-	const char *cat1 = (const char *) a;
-	const char *cat2 = (const char *) b;
-	apol_policy_t *p = (apol_policy_t *) data;
-	sepol_cat_datum_t *cat_datum1, *cat_datum2;
-	uint32_t cat_value1, cat_value2;
-	if (sepol_policydb_get_cat_by_name(p->sh, p->p, cat1, &cat_datum1) < 0 ||
-	    sepol_policydb_get_cat_by_name(p->sh, p->p, cat2, &cat_datum2) < 0) {
-		return 0;
-	}
-	if (sepol_cat_datum_get_value(p->sh, p->p, cat_datum1, &cat_value1) < 0 ||
-	    sepol_cat_datum_get_value(p->sh, p->p, cat_datum2, &cat_value2) < 0) {
-		return 0;
-	}
-	return (cat_value2 - cat_value1);
-}
-
 /* Given a category datum and a names, returns < 0 if a has higher
  * value than b, > 0 if b is higher.  If the two are equal or upon
  * error, return 0.
@@ -158,6 +137,24 @@ static char *apol_strdup(apol_policy_t *p, const char *s)
 	return strcpy(t, s);
 }
 
+int apol_mls_cat_vector_compare(const void *a, const void *b, void *data)
+{
+	const char *cat1 = (const char *) a;
+	const char *cat2 = (const char *) b;
+	apol_policy_t *p = (apol_policy_t *) data;
+	sepol_cat_datum_t *cat_datum1, *cat_datum2;
+	uint32_t cat_value1, cat_value2;
+	if (sepol_policydb_get_cat_by_name(p->sh, p->p, cat1, &cat_datum1) < 0 ||
+	    sepol_policydb_get_cat_by_name(p->sh, p->p, cat2, &cat_datum2) < 0) {
+		return 0;
+	}
+	if (sepol_cat_datum_get_value(p->sh, p->p, cat_datum1, &cat_value1) < 0 ||
+	    sepol_cat_datum_get_value(p->sh, p->p, cat_datum2, &cat_value2) < 0) {
+		return 0;
+	}
+	return (cat_value2 - cat_value1);
+}
+
 /********************* level *********************/
 
 apol_mls_level_t *apol_mls_level_create(void)
@@ -182,9 +179,10 @@ apol_mls_level_t *apol_mls_level_create_from_string(apol_policy_t *p, char *mls_
 		return NULL;
 	}
 
-	if ((lvl = apol_mls_level_create()) == NULL)
+	if ((lvl = apol_mls_level_create()) == NULL) {
+		ERR(p, "Out of memory!");
 		return NULL;
-
+	}
 	for (tmp = mls_level_string; *tmp; tmp++) {
 		if ((next = strpbrk(tmp, ",:"))) {
 			tmp = next;
@@ -194,6 +192,7 @@ apol_mls_level_t *apol_mls_level_create_from_string(apol_policy_t *p, char *mls_
 	tokens = calloc(num_tokens, sizeof(char*));
 	if (!tokens) {
 		error = errno;
+		ERR(p, "Out of memory!");
 		goto err;
 	}
 	for (tmp = mls_level_string, i = 0; *tmp && i < num_tokens; tmp++) {
@@ -213,6 +212,7 @@ apol_mls_level_t *apol_mls_level_create_from_string(apol_policy_t *p, char *mls_
 			tokens[i] = strdup(tmp);
 			if (!tokens[i]) {
 				error = errno;
+				ERR(p, "Out of memory!");
 				goto err;
 			}
 			i++;
@@ -343,15 +343,17 @@ apol_mls_level_t *apol_mls_level_create_from_sepol_mls_level(apol_policy_t *p, s
 		return NULL;
 	}
 
-	if ((lvl = apol_mls_level_create()) == NULL)
+	if ((lvl = apol_mls_level_create()) == NULL) {
+		ERR(p, "Out of memory!");
 		return NULL;
-
+	}
 	if (sepol_mls_level_get_sens_name(p->sh, p->p, sepol_level, &tmp)) {
 		error = errno;
 		goto err;
 	}
 	if ((lvl->sens = strdup(tmp)) == NULL) {
 		error = errno;
+		ERR(p, "Out of memory!");
 		goto err;
 	}
 
@@ -398,15 +400,17 @@ apol_mls_level_t *apol_mls_level_create_from_sepol_level_datum(apol_policy_t *p,
 		return NULL;
 	}
 
-	if ((lvl = apol_mls_level_create()) == NULL)
+	if ((lvl = apol_mls_level_create()) == NULL) {
+		ERR(p, "Out of memory!");
 		return NULL;
-
+	}
 	if (sepol_level_datum_get_name(p->sh, p->p, sepol_level, &tmp)) {
 		error = errno;
 		goto err;
 	}
 	if ((lvl->sens = strdup(tmp)) == NULL) {
 		error = errno;
+		ERR(p, "Out of memory!");
 		goto err;
 	}
 
@@ -586,6 +590,7 @@ apol_mls_range_t *apol_mls_range_create_from_sepol_mls_range(apol_policy_t *p, s
 
 	apol_range = calloc(1, sizeof(apol_mls_range_t));
 	if (!apol_range) {
+		ERR(p, "Out of memory!");
 		return NULL;
 	}
 
