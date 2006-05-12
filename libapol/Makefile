@@ -12,7 +12,7 @@ LIB-OBJ += vector.o
 
 QUERY-OBJ = component-query.o context-query.o mls-query.o \
 	type-query.o class-perm-query.o role-query.o user-query.o \
-	bool-query.o netcon-query.o fscon-query.o
+	bool-query.o isid-query.o netcon-query.o fscon-query.o
 LIB-OBJ += $(QUERY-OBJ)
 
 LIB-OBJ-TCL = apol_tcl_other.o apol_tcl_render.o apol_tcl_components.o apol_tcl_rules.o apol_tcl_fc.o apol_tcl_analysis.o

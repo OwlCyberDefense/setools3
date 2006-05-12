@@ -39,6 +39,7 @@
 #include "role-query.h"
 #include "user-query.h"
 #include "bool-query.h"
+#include "isid-query.h"
 #include "mls-query.h"
 #include "netcon-query.h"
 #include "fscon-query.h"
