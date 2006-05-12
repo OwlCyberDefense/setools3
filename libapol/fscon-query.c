@@ -2,8 +2,8 @@
  * @file fscon-query.c
  *
  * Provides a way for setools to make queries about genfscons and
- * fs_use statements within within a policy.  The caller obtains a
- * query object, fills in its parameters, and then runs the query; it
+ * fs_use statements within a policy.  The caller obtains a query
+ * object, fills in its parameters, and then runs the query; it
  * obtains a vector of results.  Searches are conjunctive -- all
  * fields of the search query must match for a datum to be added to
  * the results query.
@@ -133,6 +133,8 @@ apol_genfscon_query_t *apol_genfscon_query_create(void)
 void apol_genfscon_query_destroy(apol_genfscon_query_t **g)
 {
 	if (*g != NULL) {
+		free((*g)->fs);
+		free((*g)->path);
 		apol_context_destroy(&((*g)->context));
 		free(*g);
 		*g = NULL;
@@ -276,6 +278,7 @@ apol_fs_use_query_t *apol_fs_use_query_create(void)
 void apol_fs_use_query_destroy(apol_fs_use_query_t **f)
 {
 	if (*f != NULL) {
+		free((*f)->fs);
 		apol_context_destroy(&((*f)->context));
 		free(*f);
 		*f = NULL;

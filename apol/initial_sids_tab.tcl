@@ -42,23 +42,21 @@ proc Apol_Initial_SIDS::searchSIDs {} {
     variable vals
     variable widgets
 
+    set name {}
+    set context {}
+    set range_match 0
     Apol_Widget::clearSearchResults $widgets(results)
+    if {![ApolTop::is_policy_open]} {
+        tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened!"
+        return
+    }
     if {[Apol_Widget::getContextSelectorState $widgets(context)]} {
-        foreach {vals_context vals_range_match} [Apol_Widget::getContextSelectorValue $widgets(context)] {break}
-    } else {
-        set vals_context {}
+        foreach {context range_match} [Apol_Widget::getContextSelectorValue $widgets(context)] {break}
     }
-    set orig_isids [apol_GetInitialSIDs]
-
-    set isids {}
-    foreach i $orig_isids {
-        foreach {name context} $i {break}
-        if {$vals_context != {} && ![apol_CompareContexts $vals_context $context $vals_range_match]} {
-            continue
-        }
-        lappend isids $i
+    if {[catch {apol_GetInitialSIDs $name $context $range_match} isids]} {
+        tk_messageBox -icon error -type ok -title "Error" -message "Error obtaining initial SIDs list: $isids"
+        return
     }
-
     set results "INITIAL SIDS:"
     if {[llength $isids] == 0} {
         append results "\nSearch returned no results."
@@ -75,8 +73,11 @@ proc Apol_Initial_SIDS::searchSIDs {} {
 # ------------------------------------------------------------------------------
 proc Apol_Initial_SIDS::open { } {
     variable vals
-    set vals(items) [lsort -index 0 -dictionary [apol_GetNames initial_sids]]
-} 
+    set vals(items) {}
+    foreach sid [lsort -index 0 -dictionary [apol_GetInitialSIDs {} {} 0]] {
+        set vals(items) [lindex $sid 0]
+    }
+}
 
 # ------------------------------------------------------------------------------
 #  Command Apol_Initial_SIDS::close
