@@ -69,26 +69,120 @@ char *re_render_rangetrans(bool_t addlineno, int idx, policy_t *policy);
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+/* QPOL */
+#include <sepol/policydb_query.h>
+#include "mls-query.h"
+#include "vector.h"
 /**
  * Given an IPv4 address (or mask) in sepol byte order, allocate and
  * return a string representing that address.
  *
+ * @param policydb Reference to a policy, for reporting errors
  * @param addr Address (or mask) to render.
  *
  * @return A newly allocated string, which the caller must free.
  * Returns NULL on error.
  */
-char *re_render_ipv4_addr(uint32_t addr);
-
+char *re_render_ipv4_addr(apol_policy_t *policydb, uint32_t addr);
 
 /**
  * Given an IPv6 address (or mask) in sepol byte order, allocate and
  * return a string representing that address.
  *
+ * @param policydb Reference to a policy, for reporting errors
  * @param addr Address (or mask) to render.
  *
  * @return A newly allocated string, which the caller must free.
  * Returns NULL on error.
  */
-char *re_render_ipv6_addr(uint32_t addr[4]);
+char *re_render_ipv6_addr(apol_policy_t *policydb, uint32_t addr[4]);
+
+/**
+ * Creates a string containing the textual representation of
+ * a MLS level.
+ * @param policydb Reference to a policy.
+ * @param level MLS level to render.
+ *
+ * @return A newly allocated string on success, caller must free;
+ * NULL on error.
+ */
+char *re_render_mls_level2(apol_policy_t *policydb, apol_mls_level_t *level);
+
+/**
+ * Creates a string containing the textual representation of
+ * a MLS range.
+ * @param policydb Reference to a policy.
+ * @param range MLS range to render.
+ *
+ * @return A newly allocated string on success, caller must free;
+ * NULL on error.
+ */
+char *re_render_mls_range2(apol_policy_t *policydb, apol_mls_range_t *range);
+
+/**
+ * Creates a string containing the textual representation of
+ * a security context.
+ * @param policydb Reference to a policy.
+ * @param context Reference to the security context to be rendered.
+ *
+ * @return A newly allocated string on success, caller must free;
+ * NULL on error.
+ */
+char *re_render_security_context2(apol_policy_t *policydb, sepol_context_struct_t *context);
+
+/**
+ * Creates a string containing the textual representation of
+ * a portcon type.
+ * @param policydb Reference to a policy.
+ * @param portcon Reference to the portcon statement to be rendered.
+ *
+ * @return A newly allocated string on success, caller must free;
+ * NULL on error.
+ */
+char *re_render_portcon2(apol_policy_t *policydb, sepol_portcon_t *portcon);
+
+/**
+ * Creates a string containing the textual representation of
+ * a netifcon type.
+ * @param policydb Reference to a policy.
+ * @param netifcon Reference to the netifcon statement to be rendered.
+ *
+ * @return A newly allocated string on success, caller must free;
+ * NULL on error.
+ */
+char *re_render_netifcon2(apol_policy_t *policydb, sepol_netifcon_t *netifcon);
+
+/**
+ * Creates a string containing the textual representation of
+ * a nodecon type.
+ * @param policydb Reference to a policy.
+ * @param nodecon Reference to the nodecon statement to be rendered.
+ *
+ * @return A newly allocated string on success, caller must free;
+ * NULL on error.
+ */
+char *re_render_nodecon2(apol_policy_t *policydb, sepol_nodecon_t *nodecon);
+
+/**
+ * Creates a string containing the textual representation of
+ * a genfscon type.
+ * @param policydb Reference to a policy.
+ * @param genfscon Reference to the genfscon statement to be rendered.
+ *
+ * @return A newly allocated string on success, caller must free;
+ * NULL on error.
+ */
+char *re_render_genfscon2(apol_policy_t *policydb, sepol_genfscon_t *genfscon);
+
+/**
+ * Creates a string containing the textual representation of 
+ * a fs_use type.
+ * @param policydb Reference to a policy.
+ * @param fsuse Reference to the fs_use statement to be rendered.
+ *
+ * @return A newly allocated string on success, caller must free; 
+ * NULL on error.
+ */
+char *re_render_fs_use2(apol_policy_t *policydb, sepol_fs_use_t *fsuse);
+
 #endif /*_APOLICY_RENDER_H_*/

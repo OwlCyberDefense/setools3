@@ -372,6 +372,113 @@ char *re_render_tt_rule(bool_t addlineno, int idx, policy_t *policy)
 
 }
 
+char *re_render_mls_level2(apol_policy_t *policydb, apol_mls_level_t *level)
+{
+	char *rt = NULL, *name = NULL, *sens_name = NULL, *cat_name = NULL;
+	char *retval = NULL;
+	int sz = 0, i, cur;
+	sepol_cat_datum_t *cur_cat_datum = NULL, *next_cat_datum = NULL;
+	uint32_t cur_cat_val, next_cat_val, far_cat_val;
+	apol_vector_t *cats = NULL;
+	size_t n_cats = 0;
+
+	if (!level || !policydb)
+		goto cleanup;
+
+	sens_name = level->sens;
+	if (!sens_name)
+		goto cleanup;
+	if (append_str(&rt, &sz, sens_name)) {
+		ERR(policydb, "Out of memory!");
+		goto cleanup;
+	}
+
+	if ((cats = apol_vector_create_from_vector(level->cats)) == NULL) {
+		ERR(policydb, "Out of memory!");
+		goto cleanup;
+	}
+	n_cats = apol_vector_get_size(cats);
+	if (n_cats == 0) {
+		retval = rt;
+		goto cleanup;
+	}
+        apol_vector_sort(cats, apol_mls_cat_vector_compare, policydb);
+	
+	cat_name = (char *)apol_vector_get_element(cats, 0);
+	if (!cat_name)
+		goto cleanup;
+
+	if (append_str(&rt, &sz, ":") || append_str(&rt, &sz, cat_name)) {
+		ERR(policydb, "Out of memory!");
+		goto cleanup;
+	}
+	cur = 0; /* current value to compare with cat[i] */
+	for (i = 1; i < n_cats; i++) { /* we've already appended the first category */
+		/* get the value of cats[cur] */
+		cat_name = (char *)apol_vector_get_element(cats, cur);
+		if (sepol_policydb_get_cat_by_name(policydb->sh, policydb->p, cat_name, &cur_cat_datum))
+			goto cleanup;
+		if (sepol_cat_datum_get_value(policydb->sh, policydb->p, cur_cat_datum, &cur_cat_val))
+			goto cleanup;
+
+		/* get the value of cats[i] */
+		cat_name = (char *)apol_vector_get_element(cats, i);
+		if (sepol_policydb_get_cat_by_name(policydb->sh, policydb->p, cat_name, &next_cat_datum))
+			goto cleanup;
+		if (sepol_cat_datum_get_value(policydb->sh, policydb->p, next_cat_datum, &next_cat_val))
+			goto cleanup;
+		
+		if (next_cat_val == cur_cat_val + 1) {
+			if (i + 1 == n_cats) { /* last category is next; append "." */
+				if (sepol_cat_datum_get_name(policydb->sh, policydb->p, next_cat_datum, &name))
+					goto cleanup;
+				if (append_str(&rt, &sz, ".") ||
+				    append_str(&rt, &sz, name)) {
+					ERR(policydb, "Out of memory!");
+					goto cleanup;
+				}
+				cur = i;
+			} else {
+				sepol_cat_datum_t *far_cat_datum = NULL;  /* category 2 in front of cur */
+				cat_name = (char *)apol_vector_get_element(cats, i+1);	      
+				if (sepol_policydb_get_cat_by_name(policydb->sh, policydb->p, cat_name, &far_cat_datum))
+					goto cleanup;
+				if (sepol_cat_datum_get_value(policydb->sh, policydb->p, far_cat_datum, &far_cat_val))
+					goto cleanup;
+				if (far_cat_val == cur_cat_val + 2) { 
+					cur++;
+				} else {     /* far_cat isn't consecutive wrt cur/next_cat; append it */
+					if (sepol_cat_datum_get_name(policydb->sh, policydb->p, next_cat_datum, &name))
+						goto cleanup;
+					if (append_str(&rt, &sz, ".") ||
+					    append_str(&rt, &sz, name)) {
+						ERR(policydb, "Out of memory!");
+						goto cleanup;
+					}
+					cur = i;
+				}
+			}
+		} else { /* next_cat isn't consecutive to cur_cat; append it */
+			if (sepol_cat_datum_get_name(policydb->sh, policydb->p, next_cat_datum, &name))
+				goto cleanup;
+			if (append_str(&rt, &sz, ", ") ||
+			    append_str(&rt, &sz, name)) {
+				ERR(policydb, "Out of memory!");
+				goto cleanup;
+			}
+			cur = i;
+		}
+	}
+
+	retval = rt;
+ cleanup:
+	apol_vector_destroy(&cats, NULL);
+	if (retval != rt) {
+		free(rt);
+	}
+	return retval;
+}
+
 char *re_render_mls_level(ap_mls_level_t *level, policy_t *policy)
 {
 	char *rt = NULL;
@@ -427,6 +534,129 @@ char *re_render_mls_range(ap_mls_range_t *range, policy_t *policy)
 		free(sub_str);
 	}
 	return rt;
+}
+
+char *re_render_mls_range2(apol_policy_t *policydb, apol_mls_range_t *range)
+{
+	char *rt = NULL, *retval = NULL;
+	char *sub_str = NULL;
+	int retv, sz = 0;
+
+	if (!range || !policydb)
+		goto cleanup;
+
+	if ((sub_str = re_render_mls_level2(policydb, range->low)) == NULL) {
+		goto cleanup;
+	}
+	if (append_str(&rt, &sz, sub_str)) {
+		ERR(policydb, "Out of memory!");
+		goto cleanup;
+	}
+	free(sub_str);
+	sub_str = NULL;
+	retv = apol_mls_level_compare(policydb, range->low, range->high);
+	if (retv < 0) {
+		goto cleanup;
+	}
+	/* if (high level != low level) */
+	if (retv == APOL_MLS_DOM || retv == APOL_MLS_DOMBY) {
+		sub_str = re_render_mls_level2(policydb, range->high);
+		if (!sub_str)
+			goto cleanup;
+		if (append_str(&rt, &sz, " - ") ||
+		    append_str(&rt, &sz, sub_str)) {
+			ERR(policydb, "Out of memory!");
+			goto cleanup;
+		}
+	}
+	retval = rt;
+ cleanup:
+	if (retval != rt) {
+		free(rt);
+	}
+	free(sub_str);
+	return retval;
+}
+
+/* security contexts */
+char *re_render_security_context2(apol_policy_t *policydb, sepol_context_struct_t *context)
+{
+	char *buf = NULL, *name = NULL, *range_str = NULL;
+	sepol_type_datum_t *type_datum = NULL;
+	sepol_user_datum_t *user_datum = NULL;
+	sepol_role_datum_t *role_datum = NULL;
+	int buf_sz = 0;
+
+	if (policydb == NULL)
+		return NULL;
+	
+	if (context != NULL && sepol_context_struct_get_type(policydb->sh, policydb->p, context, &type_datum))
+		return NULL;
+	if (context != NULL && sepol_context_struct_get_user(policydb->sh, policydb->p, context, &user_datum))
+		return NULL;
+	if (context != NULL && sepol_context_struct_get_role(policydb->sh, policydb->p, context, &role_datum))
+		return NULL;	
+
+	/* handle case where initial SID does not have a context */
+	if(context == NULL) {
+		if(append_str(&buf, &buf_sz, "<no context>") != 0) {
+			ERR(policydb, "Out of memory!");
+			goto err_return;
+		}
+		return buf;
+	}
+
+	/* render context */
+	if (sepol_user_datum_get_name(policydb->sh, policydb->p, user_datum, &name))
+		goto err_return;
+	if (append_str(&buf, &buf_sz, name) != 0 ||
+            append_str(&buf, &buf_sz, ":") != 0) {
+		ERR(policydb, "Out of memory!");
+		goto err_return;	
+	}
+	if (sepol_role_datum_get_name(policydb->sh, policydb->p, role_datum, &name))
+		goto err_return;
+	if (append_str(&buf, &buf_sz, name) != 0 ||
+	    append_str(&buf, &buf_sz, ":") != 0) {
+		ERR(policydb, "Out of memory!");
+		goto err_return;
+	}
+	if (sepol_type_datum_get_name(policydb->sh, policydb->p, type_datum, &name))
+		goto err_return;
+	if(append_str(&buf, &buf_sz, name) != 0) {
+		ERR(policydb, "Out of memory!");
+		goto err_return;
+	}
+	/* render range */
+	if (sepol_policydb_is_mls_enabled(policydb->sh, policydb->p)) {
+		sepol_mls_range_t *sepol_range = NULL;
+		if (sepol_context_struct_get_range(policydb->sh, policydb->p, context, &sepol_range))
+			goto err_return;
+		if (sepol_range != NULL) {
+			apol_mls_range_t *range = NULL;
+			if ((range = apol_mls_range_create_from_sepol_mls_range(policydb, sepol_range)) == NULL) {
+				goto err_return;
+			}
+			if ((range_str = re_render_mls_range2(policydb, range)) == NULL) {
+				apol_mls_range_destroy(&range);
+				goto err_return;
+			}
+			if (append_str(&buf, &buf_sz, ":") ||
+			    append_str(&buf, &buf_sz, range_str) != 0) {
+				apol_mls_range_destroy(&range);
+				free(range_str);
+				ERR(policydb, "Out of memory!");
+				goto err_return;
+			}
+			apol_mls_range_destroy(&range);
+			free(range_str);
+		}
+	}
+	return buf;
+
+err_return:
+	free(buf);
+	return NULL;	
 }
 
 /* security contexts */
@@ -823,6 +1053,52 @@ char *re_render_fs_use(ap_fs_use_t *fsuse, policy_t *policy)
 	return line;
 }
 
+char *re_render_fs_use2(apol_policy_t *policydb, sepol_fs_use_t *fsuse)
+{
+	char *context_str = NULL;
+	char *line = NULL, *retval = NULL;
+	const char *behavior_str = NULL;
+	char *fsname = NULL;
+	sepol_context_struct_t *ctxt = NULL;
+	uint32_t behavior;
+
+	if (sepol_fs_use_get_behavior(policydb->sh, policydb->p, fsuse, &behavior))
+		goto cleanup;
+	if ((behavior_str = apol_fs_use_behavior_to_str(behavior)) == NULL) {
+		ERR(policydb, "Could not get behavior string.");
+		goto cleanup;
+	}
+
+	if (sepol_fs_use_get_name(policydb->sh, policydb->p, fsuse, &fsname))
+		goto cleanup;
+
+	if (behavior == SEPOL_FS_USE_PSID) {
+		context_str = strdup("");
+	}
+	else {
+		if (sepol_fs_use_get_context(policydb->sh, policydb->p, fsuse, &ctxt))
+			goto cleanup;
+		context_str = re_render_security_context2(policydb, ctxt);
+		if (!context_str) {
+			goto cleanup;
+		}
+	}
+	line = (char *)calloc(strlen(behavior_str) + strlen(fsname) + strlen(context_str) + 3, sizeof(char));
+	if (!line) {
+		ERR(policydb, "Out of memory!");
+		goto cleanup;
+	}
+	sprintf(line, "%s %s %s", behavior_str, fsname, context_str);
+
+	retval = line;
+ cleanup:
+	free(context_str);
+	if (retval != line) {
+		free(line);
+	}
+	return retval;
+}
+
 char *re_render_portcon(ap_portcon_t *portcon, policy_t *policy)
 {
 	char *line = NULL;
@@ -889,6 +1165,66 @@ exit_err:
 	return NULL;
 }
 
+char *re_render_portcon2(apol_policy_t *policydb, sepol_portcon_t *portcon)
+{
+	char *line = NULL, *retval = NULL;
+	char *buff = NULL;
+	const char *proto_str = NULL;
+	char *context_str = NULL;
+	sepol_context_struct_t *ctxt = NULL;
+	uint16_t low_port, high_port;
+	uint8_t proto;
+
+	const size_t bufflen = 50; /* arbitrary size big enough to hold port no. */
+	if (!portcon || !policydb)
+		goto cleanup;
+
+	buff = (char*)calloc(bufflen + 1, sizeof(char));
+	if (!buff) {
+		ERR(policydb, "Out of memory!");
+		goto cleanup;
+	}
+
+	if (sepol_portcon_get_protocol(policydb->sh, policydb->p, portcon, &proto))
+		goto cleanup;
+
+	if ((proto_str = apol_protocol_to_str(proto)) == NULL) {
+		ERR(policydb, "Could not get protocol string.");
+		goto cleanup;
+	}
+	if (sepol_portcon_get_low_port(policydb->sh, policydb->p, portcon, &low_port))
+		goto cleanup;
+	if (sepol_portcon_get_high_port(policydb->sh, policydb->p, portcon, &high_port))
+		goto cleanup;
+	if (low_port == high_port)
+		snprintf(buff, bufflen, "%d", low_port);
+	else
+		snprintf(buff, bufflen, "%d-%d", low_port, high_port);
+
+	if (sepol_portcon_get_context(policydb->sh, policydb->p, portcon, &ctxt))
+		goto cleanup;
+	context_str = re_render_security_context2(policydb, ctxt);
+	if (!context_str) 
+		goto cleanup;
+
+	line = (char *)calloc(4 + strlen("portcon") + strlen(proto_str) + strlen(buff) + strlen(context_str), sizeof(char));
+	if (!line) {
+		ERR(policydb, "Out of memory!");
+		goto cleanup;
+	}
+
+	sprintf(line, "portcon %s %s %s", proto_str, buff, context_str);
+
+	retval = line;
+ cleanup:
+	free(buff);
+	free(context_str);
+	if (retval != line) {
+		free(line);
+	}
+	return line;
+}
+
 char *re_render_netifcon(ap_netifcon_t *netifcon, policy_t *policy)
 {
 	char *line = NULL;
@@ -924,6 +1260,46 @@ char *re_render_netifcon(ap_netifcon_t *netifcon, policy_t *policy)
 	return line;
 }
 
+char *re_render_netifcon2(apol_policy_t *policydb, sepol_netifcon_t *netifcon)
+{
+	char *line = NULL, *retval = NULL;
+	char *devcon_str = NULL;
+	char *pktcon_str = NULL;
+	char *iface_str = NULL;
+	sepol_context_struct_t *ctxt = NULL;
+
+	if (!netifcon || !policydb)
+                goto cleanup;
+
+	if (sepol_netifcon_get_if_con(policydb->sh, policydb->p, netifcon, &ctxt))
+                goto cleanup;
+	devcon_str = re_render_security_context2(policydb, ctxt);
+	if (!devcon_str)
+                goto cleanup;
+
+	if (sepol_netifcon_get_msg_con(policydb->sh, policydb->p, netifcon, &ctxt))
+                goto cleanup;
+	pktcon_str = re_render_security_context2(policydb, ctxt);
+	if (!pktcon_str) {
+                goto cleanup;
+	}
+
+	if (sepol_netifcon_get_name(policydb->sh, policydb->p, netifcon, &iface_str))
+		return NULL;
+	line = (char *)calloc(4 + strlen(iface_str) + strlen(devcon_str) + strlen(pktcon_str) + strlen("netifcon"), sizeof(char));
+        if (!line) {
+                ERR(policydb, "Out of memory!");
+                goto cleanup;
+        }
+        sprintf(line, "netifcon %s %s %s", iface_str, devcon_str, pktcon_str);
+
+        retval = line;
+ cleanup:
+        free(devcon_str);
+	free(pktcon_str);
+	return retval;
+}
+
 char *re_render_nodecon(ap_nodecon_t *nodecon, policy_t *policy)
 {
 	char *line = NULL;
@@ -950,12 +1326,12 @@ char *re_render_nodecon(ap_nodecon_t *nodecon, policy_t *policy)
 
 	switch (nodecon->flag) {
 	case AP_IPV4:
-		snprintf(addr_str, ip_addr_str_len_max - 1, "%s", (tmp_str = re_render_ipv4_addr(nodecon->addr[3])));
-		snprintf(mask_str, ip_addr_str_len_max - 1, "%s", (tmp_str = re_render_ipv4_addr(nodecon->mask[3])));
+		snprintf(addr_str, ip_addr_str_len_max - 1, "%s", (tmp_str = re_render_ipv4_addr(NULL, nodecon->addr[3])));
+		snprintf(mask_str, ip_addr_str_len_max - 1, "%s", (tmp_str = re_render_ipv4_addr(NULL, nodecon->mask[3])));
 		break;
 	case AP_IPV6:
-		snprintf(addr_str, ip_addr_str_len_max - 1, "%s", (tmp_str = re_render_ipv6_addr(nodecon->addr)));
-		snprintf(mask_str, ip_addr_str_len_max - 1, "%s", (tmp_str = re_render_ipv6_addr(nodecon->mask)));
+		snprintf(addr_str, ip_addr_str_len_max - 1, "%s", (tmp_str = re_render_ipv6_addr(NULL, nodecon->addr)));
+		snprintf(mask_str, ip_addr_str_len_max - 1, "%s", (tmp_str = re_render_ipv6_addr(NULL, nodecon->mask)));
 		break;
 	default:
 		break;
@@ -985,6 +1361,64 @@ char *re_render_nodecon(ap_nodecon_t *nodecon, policy_t *policy)
 	free(mask_str);
 	free(context_str);
 	return line;
+}
+
+char *re_render_nodecon2(apol_policy_t *policydb, sepol_nodecon_t *nodecon)
+{
+	char *line = NULL, *retval = NULL;
+	char *context_str = NULL;
+	char *addr_str = NULL;
+	char *mask_str = NULL;
+	sepol_context_struct_t *ctxt = NULL;
+	unsigned char protocol, addr_proto, mask_proto;
+	uint32_t *addr = NULL, *mask = NULL;
+
+	if (!nodecon || !policydb)
+		goto cleanup;
+
+	if (sepol_nodecon_get_protocol(policydb->sh, policydb->p, nodecon, &protocol))
+		goto cleanup;
+	if (sepol_nodecon_get_addr(policydb->sh, policydb->p, nodecon, &addr, &addr_proto))
+		goto cleanup;
+	if (sepol_nodecon_get_mask(policydb->sh, policydb->p, nodecon, &mask, &mask_proto))
+		goto cleanup;
+	switch (protocol) {
+	case SEPOL_IPV4:
+		if ((addr_str = re_render_ipv4_addr(policydb, addr[0])) == NULL ||
+		    (mask_str = re_render_ipv4_addr(policydb, mask[0])) == NULL) {
+			goto cleanup;
+		}
+		break;
+	case SEPOL_IPV6:
+		if ((addr_str = re_render_ipv6_addr(policydb, addr)) == NULL ||
+		    (mask_str = re_render_ipv6_addr(policydb, mask)) == NULL) {
+			goto cleanup;
+		}
+		break;
+	default:
+		break;
+	}
+
+	if (sepol_nodecon_get_context(policydb->sh, policydb->p, nodecon, &ctxt))
+		goto cleanup;
+	context_str = re_render_security_context2(policydb, ctxt);
+	if (!context_str)
+		goto cleanup;
+
+	line = (char*)calloc(4 + strlen("nodecon") + strlen(addr_str) + strlen(mask_str) + strlen(context_str), sizeof(char));
+	if (!line) {
+		ERR(policydb, "Out of memory!");
+		goto cleanup;
+	}
+
+	sprintf(line, "nodecon %s %s %s", addr_str, mask_str, context_str);
+
+	retval = line;
+ cleanup:
+	free(addr_str);
+	free(mask_str);
+	free(context_str);
+	return retval;
 }
 
 char *re_render_genfscon(ap_genfscon_t *genfscon, policy_t *policy)
@@ -1095,6 +1529,89 @@ exit_err:
 		free(lines[i]);
 	free(lines);
 	return NULL;
+}
+
+char *re_render_genfscon2(apol_policy_t *policydb, sepol_genfscon_t *genfscon)
+{
+	char *line = NULL, *retval = NULL;
+        char *context_str = NULL, *type_str = NULL;
+	char *front_str = NULL, *name = NULL, *path = NULL;
+	sepol_context_struct_t *ctxt = NULL;
+	uint32_t fclass;
+	size_t len = 0;
+
+	if (!genfscon || !policydb)
+		goto cleanup;
+	
+	if (sepol_genfscon_get_name(policydb->sh, policydb->p, genfscon, &name))
+		goto cleanup;
+	front_str = (char *)calloc(3 + strlen("genfscon") + strlen(name), sizeof(char));
+	if (!front_str) {
+		ERR(policydb, "Out of memory!");
+		goto cleanup;
+	}
+
+	strcat(front_str, "genfscon ");
+	strcat(front_str, name);
+	strcat(front_str, " ");
+
+	len = strlen(front_str);
+	
+	if (sepol_genfscon_get_context(policydb->sh, policydb->p, genfscon, &ctxt))
+		goto cleanup;
+	context_str = re_render_security_context2(policydb, ctxt);
+	if (!context_str)
+		goto cleanup;
+	
+	if (sepol_genfscon_get_class(policydb->sh, policydb->p, genfscon, &fclass))
+		return NULL;
+	switch (fclass) {
+	case SEPOL_CLASS_DIR:
+		type_str = " -d ";
+		break;
+	case SEPOL_CLASS_CHR_FILE:
+		type_str = " -c ";
+		break;
+	case SEPOL_CLASS_BLK_FILE:
+		type_str = " -b ";
+		break;
+	case SEPOL_CLASS_FILE:
+		type_str = " -- ";
+		break;
+	case SEPOL_CLASS_FIFO_FILE:
+		type_str = " -p ";
+		break;
+	case SEPOL_CLASS_LNK_FILE:
+		type_str = " -l ";
+		break;
+	case SEPOL_CLASS_SOCK_FILE:
+		type_str = " -s ";
+		break;
+	case SEPOL_CLASS_ALL:
+		type_str = "	";
+		break;
+	default:
+		goto cleanup;
+		break;
+	}
+
+	if (sepol_genfscon_get_path(policydb->sh, policydb->p, genfscon, &path))
+		goto cleanup;
+	line = (char*)calloc(len + strlen(path) + 4 + strlen(context_str) + 1 , sizeof(char));
+	if (!line) {
+		ERR(policydb, "Out of memory!");
+		goto cleanup;
+	}
+	sprintf(line, "%s %s %s %s", front_str, path, type_str, context_str);
+
+	retval = line;
+cleanup:
+	free(front_str);
+	free(context_str);
+	if (retval != line) {
+		free(line);
+	}
+	return line;
 }
 
 char *re_render_cexpr(ap_constraint_expr_t *expr, policy_t *policy)
@@ -1609,19 +2126,22 @@ char *re_render_role_allow(bool_t addlineno, int idx, policy_t *policy)
 	return rt;
 }
 
-char *re_render_ipv4_addr(uint32_t addr)
+char *re_render_ipv4_addr(apol_policy_t *policydb, uint32_t addr)
 {
-	char buf[40];
+	char buf[40], *b;
 	unsigned char *p = (unsigned char *) &addr;
 	snprintf(buf, sizeof(buf), "%d.%d.%d.%d", p[0], p[1], p[2], p[3]);
-	return strdup(buf);
+	if ((b = strdup(buf)) == NULL) {
+		ERR(policydb, "Out of memory!");
+	}
+	return b;
 }
 
-char *re_render_ipv6_addr(uint32_t addr[4])
+char *re_render_ipv6_addr(apol_policy_t *policydb, uint32_t addr[4])
 {
 	uint16_t tmp[8] = {0,0,0,0,0,0,0,0};
 	int i, sz = 0, retv;
-	char buff[40]; /* 8 * 4 hex digits + 7 * ':' + '\0' == max size of string */
+	char buf[40], *b; /* 8 * 4 hex digits + 7 * ':' + '\0' == max size of string */
 	int contract = 0, prev_contr = 0, contr_idx_end = -1;
 	for (i = 0; i < 4; i++) {
 		uint32_t a;
@@ -1654,17 +2174,20 @@ char *re_render_ipv6_addr(uint32_t addr[4])
 
 	for (i = 0; i < 8; i++) {
 		if (i == contr_idx_end - contract) {
-			retv = snprintf(buff + sz, 40 - sz, i?":":"::");
+			retv = snprintf(buf + sz, 40 - sz, i?":":"::");
 			sz += retv;
 		} else if (i > contr_idx_end - contract && i < contr_idx_end) {
 			continue;
 		} else {
-			retv = snprintf(buff + sz, 40 - sz,
+			retv = snprintf(buf + sz, 40 - sz,
 					i==7 ? "%04x" : "%04x:", tmp[i]);
 			sz += retv;
 		}
 	}
 
-	buff[sz] = '\0';
-	return strdup(buff);
+	buf[sz] = '\0';
+	if ((b = strdup(buf)) == NULL) {
+		ERR(policydb, "Out of memory!");
+	}
+	return b;
 }
