@@ -1942,7 +1942,6 @@ proc ApolTop::enable_disable_conditional_widgets {enable} {
 
 proc ApolTop::enable_non_binary_tabs {} {
 	# We make sure tabs that were disabled are re-enabled
-	$ApolTop::components_nb itemconfigure $ApolTop::initial_sids_tab -state normal
 	$ApolTop::notebook itemconfigure $ApolTop::policy_conf_tab -state normal
 }
 
@@ -1951,9 +1950,7 @@ proc ApolTop::disable_non_binary_tabs {} {
 		set name [ApolTop::get_tabname [$ApolTop::notebook pages 0]]
 		$ApolTop::notebook raise $name
 	} 
-	$ApolTop::components_nb itemconfigure $ApolTop::initial_sids_tab -state disabled
    	$ApolTop::notebook itemconfigure $ApolTop::policy_conf_tab -state disabled
-	return 0
 }
 
 # Enable/disable all of apol's tabs that deal exclusively with MLS

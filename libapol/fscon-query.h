@@ -39,7 +39,7 @@ typedef struct apol_fs_use_query apol_fs_use_query_t;
  * Execute a query against all genfscons within the policy.  The
  * returned genfscons will be unordered.
  *
- * @param p Policy within which to look up portcons.
+ * @param p Policy within which to look up genfscons.
  * @param g Structure containing parameters for query.	If this is
  * NULL then return all genfscons.
  * @param v Reference to a vector of sepol_genfscon_t. The vector will
@@ -146,7 +146,7 @@ extern int apol_genfscon_query_set_context(apol_policy_t *p,
  * Execute a query against all fs_uses within the policy.  The
  * returned fs_use statements will be unordered.
  *
- * @param p Policy within which to look up portcons.
+ * @param p Policy within which to look up fs_use statements.
  * @param f Structure containing parameters for query.	If this is
  * NULL then return all fs_use statements.
  * @param v Reference to a vector of sepol_fs_use_t.  The vector will

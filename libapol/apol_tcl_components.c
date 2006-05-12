@@ -16,86 +16,6 @@
 #include "apol_tcl_fc.h"
 #include "render.h"
 
-/* get a list of policy resource names names. Caller may optionally provide a regular
- * expression to limit the list of returned names.
- *
- * TODO: NOTE: Currently regex option will only work for "types".
- */
-/* 
- * argv[1] indicates which name list to return, possible values are:
- * 	types
- * 	attrib
- *	roles
- * 	users
- * 	classes
- *	perms
- *	common_perms
- * 	initial_sids
- * argv[2] (OPTIONAL) regular expression
- */
-static int Apol_GetNames(ClientData clientData, Tcl_Interp * interp, int argc, CONST char *argv[])
-{
-	int i, rt, sz;
-	char *name, *err, tmpbuf[APOL_STR_SZ+64];
-	bool_t use_regex = FALSE;
-	regex_t reg;
-	
-	if(argc > 3 || argc < 2) {
-		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
-		return TCL_ERROR;
-	}
-	Tcl_ResetResult(interp);
-	/* handle optional regular expression */
-	if(argc == 3) {
-		if(strcmp("types", argv[1]) != 0) {
-			Tcl_AppendResult(interp, "Regular expressions are currently only supported for types", (char *) NULL);
-			return TCL_ERROR;
-		} 
-		use_regex = TRUE;
-		if(!is_valid_str_sz(argv[2])) {
-			Tcl_AppendResult(interp, "Regular expression string too large", (char *) NULL);
-			return TCL_ERROR;
-		}
-		rt = regcomp(&reg, argv[2], REG_EXTENDED|REG_NOSUB);
-		if(rt != 0) {
-			sz = regerror(rt, &reg, NULL, 0);
-			if((err = (char *)malloc(++sz)) == NULL) {
-				Tcl_AppendResult(interp, "out of memory", (char *) NULL);
-				return TCL_ERROR;
-			}
-			regerror(rt, &reg, err, sz);
-			sprintf(tmpbuf, "Invalid regular expression:\n\n     %s\n\n", argv[2]);
-			Tcl_AppendResult(interp, tmpbuf, (char *) NULL);
-			Tcl_AppendResult(interp, err, (char *) NULL);
-			free(err);
-			return TCL_ERROR;
-			
-		}
-	}
-	
-	if(policy == NULL) {
-		Tcl_AppendResult(interp,"No current policy file is opened!", (char *) NULL);
-		return TCL_ERROR;
-	}
-	if(strcmp("initial_sids", argv[1]) == 0) {
-		for(i = 0; get_initial_sid_name(i, &name, policy) == 0; i++) {
-			Tcl_AppendElement(interp, name);
-			free(name);
-		}		
-	}
-	else {
-		if(use_regex) 
-			regfree(&reg);
-		Tcl_ResetResult(interp);
-		Tcl_AppendResult(interp, "invalid name class (types, attribs, roles, users, classes, perms, or common_perms)", (char *) NULL);
-		return TCL_ERROR;
-	}	
-	if(use_regex) 
-		regfree(&reg);
-			
-	return TCL_OK;
-}
-
 /**
  * Takes a sepol_type_datum_t and appends a tuple of it to
  * result_list.	 The tuple consists of:
@@ -950,23 +870,6 @@ static int Apol_GetRoles(ClientData clientData, Tcl_Interp *interp, int argc, CO
 	return retval;
 }
 
-static int level_to_tcl_obj(Tcl_Interp *interp, ap_mls_level_t *level, Tcl_Obj **obj) 
-{
-	Tcl_Obj *level_elem[2], *cats_obj;
-	int i;
-
-	level_elem[0] = Tcl_NewStringObj(policy->sensitivities[level->sensitivity].name, -1);
-	level_elem[1] = Tcl_NewListObj(0, NULL);
-	for (i = 0; i < level->num_categories; i++) {
-		cats_obj = Tcl_NewStringObj(policy->categories[level->categories[i]].name, -1);
-		if (Tcl_ListObjAppendElement(interp, level_elem[1], cats_obj) == TCL_ERROR) {
-			return TCL_ERROR;
-		}
-	}
-	*obj = Tcl_NewListObj(2, level_elem);
-	return TCL_OK;
-}
-
 /**
  * Converts an apol_mls_level_t to a Tcl representation:
  * <code>
@@ -1638,52 +1541,6 @@ static int Apol_GetCats(ClientData clientData, Tcl_Interp *interp, int argc, CON
 	return retval;
 }
 
-static int security_con_to_tcl_context_string(Tcl_Interp *interp, security_con_t *context, Tcl_Obj **dest_obj) {
-        Tcl_Obj *context_elem[4], *range_elem[2];
-        char *name;
-        
-        if (get_user_name2(context->user, &name, policy) == -1) {
-                Tcl_SetResult(interp, "Could not get user name for context.", TCL_STATIC);
-                return TCL_ERROR;
-        }
-        context_elem[0] = Tcl_NewStringObj(name, -1);
-        free(name);
-        if (get_role_name(context->role, &name, policy) == -1) {
-                Tcl_SetResult(interp, "Could not get role name for context.", TCL_STATIC);
-                return TCL_ERROR;
-        }
-        context_elem[1] = Tcl_NewStringObj(name, -1);
-        free(name);
-        if (get_type_name(context->type, &name, policy) == -1) {
-                Tcl_SetResult(interp, "Could not get type name for context.", TCL_STATIC);
-                return TCL_ERROR;
-        }
-        context_elem[2] = Tcl_NewStringObj(name, -1);
-        free(name);
-
-        /* convert the MLS range to a Tcl string */
-        if (context->range == NULL) {
-                context_elem[3] = Tcl_NewListObj(0, NULL);
-        }
-        else {
-                if (level_to_tcl_obj(interp, context->range->low, range_elem) == TCL_ERROR) {
-                        return TCL_ERROR;
-                }
-                if (context->range->low == context->range->high) {
-                        context_elem[3] = Tcl_NewListObj(1, range_elem);
-                }
-                else {
-                        if (level_to_tcl_obj(interp, context->range->high, range_elem + 1) == TCL_ERROR) {
-                                return TCL_ERROR;
-                        }
-                        context_elem[3] = Tcl_NewListObj(2, range_elem);
-                }
-        }
-        
-        *dest_obj = Tcl_NewListObj(4, context_elem);
-        return TCL_OK;
-}
-
 /**
  * Given a sepol_context_struct, allocate a new TclObj to the
  * referenced paramater dest_obj.  The returned Tcl list is:
@@ -1723,37 +1580,125 @@ static int sepol_context_to_tcl_obj(Tcl_Interp *interp, sepol_context_struct_t *
 	return retval;
 }
 
-/* Returns a list of all initial sids:
- *  elem 0 - sidname
- *  elem 1 - context
- 
- * If a parameter is given, only return sids with that name.
+/**
+ * Takes a sepol_isid_t and appends a tuple of it to result_list.  The
+ * tuple consists of:
+ * <code>
+ *   { isid_name context }
+ * </code>
+ * where a context is:
+ * <code>
+ *   { user role type {low_level high_level} }
+ * </code>
+ */
+static int append_isid_to_list(Tcl_Interp *interp,
+			       sepol_isid_t *isid,
+			       Tcl_Obj *result_list)
+{
+	Tcl_Obj *isid_elem[2], *isid_list;
+	char *name;
+	sepol_context_struct_t *context;
+	int retval = TCL_ERROR;
+	if (sepol_isid_get_name(policydb->sh, policydb->p, isid, &name) < 0 ||
+	    sepol_isid_get_context(policydb->sh, policydb->p, isid, &context) < 0) {
+		goto cleanup;
+	}
+	isid_elem[0] = Tcl_NewStringObj(name, -1);
+	if (sepol_context_to_tcl_obj(interp, context, isid_elem + 1) == TCL_ERROR) {
+		goto cleanup;
+	}
+	isid_list = Tcl_NewListObj(2, isid_elem);
+	if (Tcl_ListObjAppendElement(interp, result_list, isid_list) == TCL_ERROR) {
+		goto cleanup;
+	}
+	retval = TCL_OK;
+ cleanup:
+	return retval;
+}
+
+/**
+ * Return an unordered list of initial sid tuples within the current
+ * policy.  Each tuple consists of:
+ * <ul>
+ *   <li>initial sid name
+ *   <li>initial sid context
+ * </ul>
+ * where a context is:
+ * <code>
+ *   { user role type range }
+ * </code>
+ *
+ * @param argv This function takes three parameters:
+ * <ol>
+ *   <li>name to lookup, or empty string to ignore
+ *   <li>(optional) full or partial context to match
+ *   <li>(optional) range query type
+ * </ol>
  */
 static int Apol_GetInitialSIDs(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
-        int i;
-        Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
+	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
+	sepol_isid_t *isid;
+	const char *name = NULL;
+	apol_context_t *context = NULL;
+	unsigned int range_match;
+	apol_isid_query_t *query = NULL;
+	apol_vector_t *v = NULL;
+	size_t i;
+	int retval = TCL_ERROR;
+
+	apol_tcl_clear_error();
 	if(policy == NULL) {
-		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
-		return TCL_ERROR;
+		ERR(policydb, "No current policy file is opened!");
+		goto cleanup;
 	}
-        for (i = 0; i < policy->num_initial_sids; i++) {
-                initial_sid_t *isid = policy->initial_sids + i;
-                Tcl_Obj *isid_elem[2], *isid_list;
-                if (argc >= 2 && strcmp(argv[1], isid->name) != 0) {
-                        continue;
-                }
-                isid_elem[0] = Tcl_NewStringObj(isid->name, -1);
-                if (security_con_to_tcl_context_string(interp, isid->scontext, isid_elem + 1) == TCL_ERROR) {
-                        return TCL_ERROR;
-                }
-                isid_list = Tcl_NewListObj(2, isid_elem);
-                if (Tcl_ListObjAppendElement(interp, result_obj, isid_list) == TCL_ERROR) {
-                        return TCL_ERROR;
-                }
-        }
-        Tcl_SetObjResult(interp, result_obj);
-        return TCL_OK;
+	if (argc != 2 && argc != 4) {
+		ERR(policydb, "Need an isid name, ?context?, and ?range_match?.");
+		goto cleanup;
+	}
+	if (*argv[1] != '\0') {
+		name = argv[1];
+	}
+	if (argc > 2 && *argv[2] != '\0') {
+		if ((context = apol_context_create()) == NULL) {
+			ERR(policydb, "Out of memory!");
+			goto cleanup;
+		}
+		if (apol_tcl_string_to_context(interp, argv[2], context) < 0 ||
+		    apol_tcl_string_to_range_match(interp, argv[3], &range_match) < 0) {
+			goto cleanup;
+		}
+	}
+	if (name != NULL || context != NULL) {
+		if ((query = apol_isid_query_create()) == NULL) {
+			ERR(policydb, "Out of memory!");
+			goto cleanup;
+		}
+		if (apol_isid_query_set_name(policydb, query, name) < 0 ||
+		    apol_isid_query_set_context(policydb, query, context, range_match) < 0) {
+			goto cleanup;
+		}
+		context = NULL;
+	}
+	if (apol_get_isid_by_query(policydb, query, &v) < 0) {
+		goto cleanup;
+	}
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		isid = (sepol_isid_t *) apol_vector_get_element(v, i);
+		if (append_isid_to_list(interp, isid, result_obj) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+	Tcl_SetObjResult(interp, result_obj);
+	retval = TCL_OK;
+ cleanup:
+	apol_context_destroy(&context);
+	apol_isid_query_destroy(&query);
+	apol_vector_destroy(&v, NULL);
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
 }
 
 /**
@@ -1904,7 +1849,7 @@ static int Apol_GetPortcons(ClientData clientData, Tcl_Interp *interp, int argc,
 		if (apol_portcon_query_set_low(policydb, query, low) < 0 ||
 		    apol_portcon_query_set_high(policydb, query, high) < 0 ||
 		    apol_portcon_query_set_proto(policydb, query, proto) < 0 ||
-		    apol_portcon_query_set_context(policydb, query, context, range_match)) {
+		    apol_portcon_query_set_context(policydb, query, context, range_match) < 0) {
 			goto cleanup;
 		}
 		context = NULL;
@@ -2569,7 +2514,6 @@ static int Apol_GetFSUses(ClientData clientData, Tcl_Interp *interp, int argc, C
 }
 
 int ap_tcl_components_init(Tcl_Interp *interp) {
-        Tcl_CreateCommand(interp, "apol_GetNames", Apol_GetNames, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetTypes", Apol_GetTypes, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetAttribs", Apol_GetAttribs, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetClasses", Apol_GetClasses, NULL, NULL);
