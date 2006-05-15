@@ -105,7 +105,6 @@ int free_rbac_bool(rbac_bool_t *b);
 char* uppercase(const char *instr, char *outstr);
 
 int add_i_to_a(int i, int *cnt, int **a);
-int add_uint_to_a(uint32_t i, uint32_t *cnt, uint32_t **a);
 int find_int_in_array(int i, const int *a, int a_sz);
 int add_int_to_array(int i, int *a, int num, int a_sz);
 int copy_int_array(int **dest, int *src, int len);
@@ -120,7 +119,6 @@ char *config_var_list_to_string(const char **list, int size);
 unsigned char str_token_is_not_valid(const char *str);
 int append_str(char **tgt, int *tgt_sz, const char *str);
 int read_file_to_buffer(const char *fname, char **buf, int *len);
-int str_to_internal_ip(const char *str, uint32_t ip[4]);
 
 #endif /*_APOLICY_UTIL_H_*/
 
