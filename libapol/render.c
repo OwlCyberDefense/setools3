@@ -393,17 +393,19 @@ char *re_render_mls_level2(apol_policy_t *policydb, apol_mls_level_t *level)
 		goto cleanup;
 	}
 
-	if ((cats = apol_vector_create_from_vector(level->cats)) == NULL) {
-		ERR(policydb, "Out of memory!");
-		goto cleanup;
+	if (level->cats != NULL) {
+		if ((cats = apol_vector_create_from_vector(level->cats)) == NULL) {
+			ERR(policydb, "Out of memory!");
+			goto cleanup;
+		}
+		n_cats = apol_vector_get_size(cats);
 	}
-	n_cats = apol_vector_get_size(cats);
 	if (n_cats == 0) {
 		retval = rt;
 		goto cleanup;
 	}
         apol_vector_sort(cats, apol_mls_cat_vector_compare, policydb);
-	
+
 	cat_name = (char *)apol_vector_get_element(cats, 0);
 	if (!cat_name)
 		goto cleanup;
@@ -427,7 +429,7 @@ char *re_render_mls_level2(apol_policy_t *policydb, apol_mls_level_t *level)
 			goto cleanup;
 		if (sepol_cat_datum_get_value(policydb->sh, policydb->p, next_cat_datum, &next_cat_val))
 			goto cleanup;
-		
+
 		if (next_cat_val == cur_cat_val + 1) {
 			if (i + 1 == n_cats) { /* last category is next; append "." */
 				if (sepol_cat_datum_get_name(policydb->sh, policydb->p, next_cat_datum, &name))
@@ -440,12 +442,12 @@ char *re_render_mls_level2(apol_policy_t *policydb, apol_mls_level_t *level)
 				cur = i;
 			} else {
 				sepol_cat_datum_t *far_cat_datum = NULL;  /* category 2 in front of cur */
-				cat_name = (char *)apol_vector_get_element(cats, i+1);	      
+				cat_name = (char *)apol_vector_get_element(cats, i+1);
 				if (sepol_policydb_get_cat_by_name(policydb->sh, policydb->p, cat_name, &far_cat_datum))
 					goto cleanup;
 				if (sepol_cat_datum_get_value(policydb->sh, policydb->p, far_cat_datum, &far_cat_val))
 					goto cleanup;
-				if (far_cat_val == cur_cat_val + 2) { 
+				if (far_cat_val == cur_cat_val + 2) {
 					cur++;
 				} else {     /* far_cat isn't consecutive wrt cur/next_cat; append it */
 					if (sepol_cat_datum_get_name(policydb->sh, policydb->p, next_cat_datum, &name))
@@ -589,13 +591,13 @@ char *re_render_security_context2(apol_policy_t *policydb, sepol_context_struct_
 
 	if (policydb == NULL)
 		return NULL;
-	
+
 	if (context != NULL && sepol_context_struct_get_type(policydb->sh, policydb->p, context, &type_datum))
 		return NULL;
 	if (context != NULL && sepol_context_struct_get_user(policydb->sh, policydb->p, context, &user_datum))
 		return NULL;
 	if (context != NULL && sepol_context_struct_get_role(policydb->sh, policydb->p, context, &role_datum))
-		return NULL;	
+		return NULL;
 
 	/* handle case where initial SID does not have a context */
 	if(context == NULL) {
@@ -612,7 +614,7 @@ char *re_render_security_context2(apol_policy_t *policydb, sepol_context_struct_
 	if (append_str(&buf, &buf_sz, name) != 0 ||
             append_str(&buf, &buf_sz, ":") != 0) {
 		ERR(policydb, "Out of memory!");
-		goto err_return;	
+		goto err_return;
 	}
 	if (sepol_role_datum_get_name(policydb->sh, policydb->p, role_datum, &name))
 		goto err_return;
@@ -656,7 +658,7 @@ char *re_render_security_context2(apol_policy_t *policydb, sepol_context_struct_
 
 err_return:
 	free(buf);
-	return NULL;	
+	return NULL;
 }
 
 /* security contexts */
@@ -1004,55 +1006,6 @@ err_return:
 	return NULL;
 }
 
-char *re_render_fs_use(ap_fs_use_t *fsuse, policy_t *policy)
-{
-	char *context_str = NULL;
-	char *line = NULL;
-	char *behavior_str = NULL;
-
-	switch (fsuse->behavior) {
-	case AP_FS_USE_PSID:
-		behavior_str = strdup("fs_use_psid");
-		break;
-	case AP_FS_USE_XATTR:
-		behavior_str = strdup("fs_use_xattr");
-		break;
-	case AP_FS_USE_TASK:
-		behavior_str = strdup("fs_use_task");
-		break;
-	case AP_FS_USE_TRANS:
-		behavior_str = strdup("fs_use_trans");
-		break;
-	default:
-		break;
-	}
-	if (!behavior_str)
-		return NULL;
-
-	context_str = re_render_security_context(fsuse->scontext, policy);
-	if (!context_str) {
-		free(behavior_str);
-		return NULL;
-	}
-
-	line = (char *)calloc(strlen(behavior_str) + strlen(context_str) + strlen(fsuse->fstype) + 4, sizeof(char));
-	if (!line) {
-		free(context_str);
-		free(behavior_str);
-		return NULL;
-	}
-	strcat(line, behavior_str);
-	strcat(line, " ");
-	strcat(line, fsuse->fstype);
-	strcat(line, " ");
-	strcat(line, context_str);
-	strcat(line, ";");
-
-	free(behavior_str);
-	free(context_str);
-	return line;
-}
-
 char *re_render_fs_use2(apol_policy_t *policydb, sepol_fs_use_t *fsuse)
 {
 	char *context_str = NULL;
@@ -1204,7 +1157,7 @@ char *re_render_portcon2(apol_policy_t *policydb, sepol_portcon_t *portcon)
 	if (sepol_portcon_get_context(policydb->sh, policydb->p, portcon, &ctxt))
 		goto cleanup;
 	context_str = re_render_security_context2(policydb, ctxt);
-	if (!context_str) 
+	if (!context_str)
 		goto cleanup;
 
 	line = (char *)calloc(4 + strlen("portcon") + strlen(proto_str) + strlen(buff) + strlen(context_str), sizeof(char));
@@ -1222,7 +1175,7 @@ char *re_render_portcon2(apol_policy_t *policydb, sepol_portcon_t *portcon)
 	if (retval != line) {
 		free(line);
 	}
-	return line;
+	return retval;
 }
 
 char *re_render_netifcon(ap_netifcon_t *netifcon, policy_t *policy)
@@ -1421,116 +1374,6 @@ char *re_render_nodecon2(apol_policy_t *policydb, sepol_nodecon_t *nodecon)
 	return retval;
 }
 
-char *re_render_genfscon(ap_genfscon_t *genfscon, policy_t *policy)
-{
-	char **lines = NULL;
-	int num_lines = 0;
-	char *context_str = NULL;
-	char *type_str = NULL;
-	ap_genfscon_node_t *path = NULL;
-	char *front_str = NULL;
-	char *text = NULL;
-	int i;
-	size_t text_sz = 0, len = 0;
-
-	if (!genfscon || !policy)
-		return NULL;
-
-	for (path = genfscon->paths; path; path = path->next)
-		num_lines++;
-
-	lines = (char**)calloc(num_lines, sizeof(char*));
-	if (!lines) 
-		return NULL;
-
-	front_str = (char *)calloc(3 + strlen("genfscon") + strlen(genfscon->fstype), sizeof(char));
-	if (!front_str) {
-		free(lines);
-		return NULL;
-	}
-
-	strcat(front_str, "genfscon ");
-	strcat(front_str, genfscon->fstype);
-	strcat(front_str, " ");
-
-	len = strlen(front_str);
-
-	for (path = genfscon->paths, i = 0; i < num_lines && path; path = path->next, i++) {
-		context_str = re_render_security_context(path->scontext, policy);
-		if (!context_str) {
-			return NULL;
-		}
-		switch (path->filetype) {
-		case FILETYPE_DIR:
-			type_str = strdup(" -d ");
-			break;
-		case FILETYPE_CHR:
-			type_str = strdup(" -c ");
-			break;
-		case FILETYPE_BLK:
-			type_str = strdup(" -b ");
-			break;
-		case FILETYPE_REG:
-			type_str = strdup(" -- ");
-			break;
-		case FILETYPE_FIFO:
-			type_str = strdup(" -p ");
-			break;
-		case FILETYPE_LNK:
-			type_str = strdup(" -l ");
-			break;
-		case FILETYPE_SOCK:
-			type_str = strdup(" -s ");
-			break;
-		case FILETYPE_ANY:
-			type_str = strdup("    ");
-			break;
-		default:
-			goto exit_err;
-			break;
-		}
-		/* front_str + path + type_str + context_str + '\0' */
-		lines[i] = (char*)calloc(len + strlen(path->path) + 4 + strlen(context_str) + 1 , sizeof(char));
-		if (!lines[i])
-			goto exit_err;
-
-		strcat(lines[i], front_str);
-		strcat(lines[i], path->path);
-		strcat(lines[i], type_str);
-		strcat(lines[i], context_str);
-
-		text_sz += (strlen(lines[i]) + 1); /* add newline */
-
-		free(context_str);
-		free(type_str);
-	}
-
-	text = (char*)calloc(text_sz + 1, sizeof(char));
-	if (!text)
-		goto exit_err;
-
-	for (i = 0; i < num_lines; i++) {
-		strcat(text, lines[i]);
-		strcat(text, "\n");
-	}
-
-	free(front_str);
-	for (i = 0; i < num_lines; i++)
-		free(lines[i]);
-	free(lines);
-
-	return text;
-
-exit_err:
-	free(context_str);
-	free(type_str);
-	free(front_str);
-	for (i = 0; i < num_lines; i++)
-		free(lines[i]);
-	free(lines);
-	return NULL;
-}
-
 char *re_render_genfscon2(apol_policy_t *policydb, sepol_genfscon_t *genfscon)
 {
 	char *line = NULL, *retval = NULL;
@@ -1542,7 +1385,7 @@ char *re_render_genfscon2(apol_policy_t *policydb, sepol_genfscon_t *genfscon)
 
 	if (!genfscon || !policydb)
 		goto cleanup;
-	
+
 	if (sepol_genfscon_get_name(policydb->sh, policydb->p, genfscon, &name))
 		goto cleanup;
 	front_str = (char *)calloc(3 + strlen("genfscon") + strlen(name), sizeof(char));
@@ -1556,13 +1399,13 @@ char *re_render_genfscon2(apol_policy_t *policydb, sepol_genfscon_t *genfscon)
 	strcat(front_str, " ");
 
 	len = strlen(front_str);
-	
+
 	if (sepol_genfscon_get_context(policydb->sh, policydb->p, genfscon, &ctxt))
 		goto cleanup;
 	context_str = re_render_security_context2(policydb, ctxt);
 	if (!context_str)
 		goto cleanup;
-	
+
 	if (sepol_genfscon_get_class(policydb->sh, policydb->p, genfscon, &fclass))
 		return NULL;
 	switch (fclass) {
@@ -1611,7 +1454,7 @@ cleanup:
 	if (retval != line) {
 		free(line);
 	}
-	return line;
+	return retval;
 }
 
 char *re_render_cexpr(ap_constraint_expr_t *expr, policy_t *policy)
