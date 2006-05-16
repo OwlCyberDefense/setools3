@@ -49,23 +49,6 @@ typedef struct apol_mls_range {
 typedef struct apol_level_query apol_level_query_t;
 typedef struct apol_cat_query apol_cat_query_t;
 
-/******************** misc stuff ********************/
-
-/**
- * Given two category names, returns < 0 if a has higher value than b,
- * > 0 if b is higher. The comparison is against the categories'
- * values according to the supplied policy.  If the two are equal or
- * upon error, return 0.
- *
- * @param a First category name to compare.
- * @param b Other name to compare.
- * @param data Pointer to a policy to which use for comparison.
- *
- * @return <0, 0, or >0 if a is less than, equal, or greater than b,
- * respectivel.
- */
-extern int apol_mls_cat_vector_compare(const void *a, const void *b, void *data);
-
 /******************** level stuff ********************/
 
 /**
@@ -98,11 +81,11 @@ extern apol_mls_level_t *apol_mls_level_create_from_string(apol_policy_t *p, cha
  * Create a new apol_mls_level_t and initialize it with a
  * sepol_mls_level_t.  The caller must call apol_mls_level_destroy()
  * upon the returned value afterwards.
- * 
+ *
  * @param p Policy from which the sepol_mls_level_t was obtained.
  * @param sepol_level The libsepol level for which to create a new
  * apol level.	This level will not be altered by this call.
- * 
+ *
  * @return A MLS level structure initialized to the value of
  * sepol_level, or NULL upon error.
  */
@@ -116,7 +99,7 @@ extern apol_mls_level_t * apol_mls_level_create_from_sepol_mls_level(apol_policy
  * @param p Policy from which the sepol_level_datum_t was obtained.
  * @param sepol_level The libsepol level for which to create a new
  * apol level.	This level will not be altered by this call.
- * 
+ *
  * @return A MLS level structure initialized to the value of
  * sepol_level, or NULL upon error.
  */
@@ -152,7 +135,7 @@ extern int apol_mls_level_set_sens(apol_policy_t *p,
  * @param p Error reporting handler.
  * @param level MLS level to modify.
  * @param cats New category component to append.
- * 
+ *
  * @return 0 on success or < 0 on failure.
  */
 extern int apol_mls_level_append_cats(apol_policy_t *p,
@@ -212,6 +195,21 @@ extern int apol_mls_cats_compare(apol_policy_t *p,
 				 const char *cat1,
 				 const char *cat2);
 
+/**
+ * Given two category names, returns < 0 if a has higher value than b,
+ * > 0 if b is higher. The comparison is against the categories'
+ * values according to the supplied policy.  If the two are equal or
+ * upon error, return 0.
+ *
+ * @param a First category name to compare.
+ * @param b Other name to compare.
+ * @param data Pointer to a policy to which use for comparison.
+ *
+ * @return <0, 0, or >0 if a is less than, equal, or greater than b,
+ * respectively.
+ */
+extern int apol_mls_cat_name_compare(const void *a, const void *b, void *data);
+
 /******************** range stuff ********************/
 
 /**
@@ -227,11 +225,11 @@ extern apol_mls_range_t *apol_mls_range_create(void);
  * Create a new apol_mls_range_t and initialize it with a
  * sepol_mls_range_t.  The caller must call apol_mls_range_destroy()
  * upon the return value afterwards.
- * 
+ *
  * @param p Policy from which the sepol_mls_range_t was obtained.
  * @param sepol_level The libsepol range for which to create a new
  * apol range.	This range will not be altered by this call.
- * 
+ *
  * @return A MLS range structure initialized to the value of
  * sepol_range, or NULL upon error.
  */

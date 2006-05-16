@@ -1,6 +1,6 @@
 /**
  *  @file context-query.h
- *  Public Interface for querying aspects of a context.
+ *  Public interface for querying and manipulating a context.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -176,5 +176,19 @@ extern int apol_context_validate(apol_policy_t *p,
  */
 extern int apol_context_validate_partial(apol_policy_t *p,
 					 apol_context_t *context);
+
+/**
+ * Given a complete context (user, role, type, and range if policy is
+ * MLS), allocate and return a string that represents that context.
+ * This function does not check if the context is valid or not.
+ *
+ * @param p Policy within which to look up context information.
+ * @param context Context to render.
+ *
+ * @return A newly allocated string on success, caller must free;
+ * NULL on error.
+ */
+extern char *apol_context_render(apol_policy_t *p,
+				 apol_context_t *context);
 
 #endif /* APOL_CONTEXT_QUERY_H */

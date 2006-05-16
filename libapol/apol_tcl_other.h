@@ -45,10 +45,9 @@ extern policy_t *policy;  /* global policy DB, defined in apol_tcl.c */
 
 int Apol_Init(Tcl_Interp *interp);
 int Apol_GetScriptDir(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[]);
-int ap_tcl_level_string_to_level(Tcl_Interp *interp, const char *level_string, ap_mls_level_t *level);
 
 /**
- * If the callback arg embedded within the gloabl apol policy is not
+ * If the callback arg embedded within the global apol policy is not
  * NULL, then set the Tcl interpreter's result string to it.  That arg
  * is then reset to NULL afterwards.  If the arg was NULL to begin
  * with then do nothing.
@@ -137,4 +136,3 @@ extern int apol_tcl_string_to_context(Tcl_Interp *interp,
 				      apol_context_t *context);
 
 #endif /*_APOLICY_TCL_H_*/
-

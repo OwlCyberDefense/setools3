@@ -1,5 +1,5 @@
 # Copyright (C) 2001-2006 Tresys Technology, LLC
-# see file 'COPYING' for use and warranty information 
+# see file 'COPYING' for use and warranty information
 
 # TCL/TK GUI for SE Linux policy analysis
 # Requires tcl and tk 8.4+, with BWidgets
@@ -7,8 +7,8 @@
 
 ##############################################################
 # ::Apol_FSContexts
-#  
-# 
+#
+#
 ##############################################################
 namespace eval Apol_FSContexts {
     variable widgets
@@ -43,7 +43,7 @@ proc Apol_FSContexts::close {} {
         genfscon:items {}
         genfscon:fs_enable 0     genfscon:fs {}
         genfscon:path_enable 0   genfscon:path {}
-        
+
         fsuse:items {}
         fsuse:type_enable 0  fsuse:type {}
         fsuse:fs_enable 0    fsuse:fs {}
@@ -120,7 +120,7 @@ proc Apol_FSContexts::create {nb} {
     pack $resultsbox -expand yes -fill both -padx 2
     set widgets(results) [Apol_Widget::makeSearchResults [$resultsbox getframe].results]
     pack $widgets(results) -side top -expand yes -fill both
-    
+
     return $frame
 }
 
@@ -159,7 +159,7 @@ proc Apol_FSContexts::toggleCheckbutton {path name1 name2 op} {
 proc Apol_FSContexts::runSearch {} {
     variable vals
     variable widgets
-    
+
     Apol_Widget::clearSearchResults $widgets(results)
     if {![ApolTop::is_policy_open]} {
         tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened!"
@@ -237,7 +237,7 @@ proc Apol_FSContexts::genfscon_create {p_f} {
     pack $widgets(genfscon:path) -side top -expand 0 -fill x -padx 4
 
     pack $fs $p -side left -anchor n -padx 4 -pady 4
-    
+
     frame $p_f.c -relief sunken -bd 1
     set widgets(genfscon:context) [Apol_Widget::makeContextSelector $p_f.c.context "Contexts"]
     pack $widgets(genfscon:context)
@@ -246,7 +246,7 @@ proc Apol_FSContexts::genfscon_create {p_f} {
 
 proc Apol_FSContexts::genfscon_render {genfscon {compact 0}} {
     foreach {fstype path objclass context} $genfscon {break}
-    set context [apol_RenderContext $context [ApolTop::is_mls_policy]]
+    set context [apol_RenderContext $context]
     if {$objclass != "any"} {
         if {$compact} {
             format "genfscon %s %s -t%s %s" $fstype $path $objclass $context
@@ -374,7 +374,7 @@ proc Apol_FSContexts::fsuse_create {p_f} {
     pack $widgets(fsuse:fs) -side top -expand 0 -fill x -padx 4
 
     pack $t $fs -side left -anchor n -padx 4 -pady 4
-    
+
     frame $p_f.c -relief sunken -bd 1
     set widgets(fsuse:context) [Apol_Widget::makeContextSelector $p_f.c.context "Contexts"]
     pack $widgets(fsuse:context)
@@ -387,7 +387,7 @@ proc Apol_FSContexts::fsuse_render {fsuse} {
         # fs_use_psid has no context, so don't render that part
         format "%-13s %s;" $behav $fstype
     } else {
-        format "%-13s %-10s %s;" $behav $fstype [apol_RenderContext $context [ApolTop::is_mls_policy]]
+        format "%-13s %-10s %s;" $behav $fstype [apol_RenderContext $context]
     }
 }
 
