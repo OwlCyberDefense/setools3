@@ -141,6 +141,9 @@ libapol:
 libapol-tcl: 
 	$(MAKE) -C libapol libapol-tcl libapol-tclso
 
+libqpol:
+	$(MAKE) -C libqpol libqpol
+
 libseaudit:
 	$(MAKE) -C libseaudit libseaudit libseauditso
 
@@ -314,6 +317,7 @@ clean:
 	$(MAKE) -C secmds $@
 	$(MAKE) -C sechecker $@
 	$(MAKE) -C sediff $@
+	$(MAKE) -C libqpol $@
 	rm -f *~
 	rm -f lib/*.a lib/*.so lib/*.so.1
 
@@ -327,6 +331,7 @@ bare:
 	$(MAKE) -C secmds $@
 	$(MAKE) -C sechecker $@
 	$(MAKE) -C sediff $@
+	$(MAKE) -C libqpol $@
 	$(MAKE) -C packages $@
 	rm -f *~
 	rm -rf ./lib
@@ -335,5 +340,5 @@ remove-docs:
 	$(MAKE) -C docs-src $@
 
 .PHONY: clean bare help\
-        libapol libapol-tcl libseaudit libsefs
+        libapol libapol-tcl libseaudit libsefs libqpol
 
