@@ -28,8 +28,7 @@
 #include <string.h>
 
 #include "component-query.h"
-#include "context-query.h"
-#include "mls-query.h"
+#include "render.h"
 
 /********************* miscellaneous routines *********************/
 
@@ -64,6 +63,7 @@ apol_context_t *apol_context_create_from_sepol_context(apol_policy_t *p, sepol_c
 	char *user_name, *role_name, *type_name;
 	apol_mls_range_t *apol_range = NULL;
 	if ((c = apol_context_create()) == NULL) {
+		ERR(p, "Out of memory!");
 		goto err;
 	}
 	if (sepol_context_struct_get_user(p->sh, p->p, context, &user) < 0 ||
@@ -315,4 +315,44 @@ int apol_context_validate_partial(apol_policy_t *p,
 	apol_vector_destroy(&role_v, NULL);
 	apol_mls_range_destroy(&user_apol_range);
 	return retval;
+}
+
+char *apol_context_render(apol_policy_t *p, apol_context_t *context)
+{
+        char *buf = NULL, *range_str = NULL;
+	int buf_sz = 0;
+
+	/* render context */
+	if (append_str(&buf, &buf_sz, context->user) != 0 ||
+            append_str(&buf, &buf_sz, ":") != 0) {
+		ERR(p, "Out of memory!");
+		goto err_return;
+	}
+	if (append_str(&buf, &buf_sz, context->role) != 0 ||
+	    append_str(&buf, &buf_sz, ":") != 0) {
+		ERR(p, "Out of memory!");
+		goto err_return;
+	}
+	if(append_str(&buf, &buf_sz, context->type) != 0) {
+		ERR(p, "Out of memory!");
+		goto err_return;
+	}
+	/* render range */
+	if (apol_policy_is_mls(p)) {
+                if ((range_str = re_render_mls_range2(p, context->range)) == NULL) {
+                        goto err_return;
+                }
+                if (append_str(&buf, &buf_sz, ":") ||
+                    append_str(&buf, &buf_sz, range_str) != 0) {
+                        ERR(p, "Out of memory!");
+                        goto err_return;
+                }
+	}
+	free(range_str);
+	return buf;
+
+err_return:
+	free(buf);
+	free(range_str);
+	return NULL;
 }

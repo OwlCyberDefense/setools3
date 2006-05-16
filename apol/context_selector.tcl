@@ -132,7 +132,7 @@ proc Apol_Widget::_update_context_display {path name1 name2 op} {
         lappend context [lindex $type 0]
     }
     if {[ApolTop::is_mls_policy]} {
-        if {$range == "" || $range == {{} {}}} {
+        if {$range == {} || $range == {{{} {}}}} {
             lappend context "*"
         } else {
             if {[catch {apol_RenderLevel [lindex $range 0]} level]} {

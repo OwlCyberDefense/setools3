@@ -1,5 +1,5 @@
 # Copyright (C) 2005-2006 Tresys Technology, LLC
-# see file 'COPYING' for use and warranty information 
+# see file 'COPYING' for use and warranty information
 
 # TCL/TK GUI for SE Linux policy analysis
 # Requires tcl and tk 8.4+, with BWidgets 1.7+
@@ -33,7 +33,7 @@ proc Apol_Level_Dialog::getLevel {{defaultLevel {{} {}}} {parent .}} {
 proc Apol_Level_Dialog::_create_dialog {parent} {
     variable dialog
     variable vars
-    
+
     set dialog [Dialog .level_dialog -modal local -parent $parent \
                     -separator 1 -homogeneous 1 -title "Select Level"]
     array unset vars $dialog:*
@@ -63,7 +63,7 @@ proc Apol_Level_Dialog::_okay {dialog} {
         tk_messageBox -icon error -type ok -title "Could Not Validate Level" \
             -message "Could not validate selected level.  Make sure that the correct policy was loaded."
     } elseif {$val == 0} {
-        tk_messageBox -ico error -type ok -title "Invalid Level" \
+        tk_messageBox -icon error -type ok -title "Invalid Level" \
             -message "The selected level is not valid for the current policy."
     } else {
         $dialog enddialog 0

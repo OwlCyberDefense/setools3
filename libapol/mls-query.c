@@ -137,24 +137,6 @@ static char *apol_strdup(apol_policy_t *p, const char *s)
 	return strcpy(t, s);
 }
 
-int apol_mls_cat_vector_compare(const void *a, const void *b, void *data)
-{
-	const char *cat1 = (const char *) a;
-	const char *cat2 = (const char *) b;
-	apol_policy_t *p = (apol_policy_t *) data;
-	sepol_cat_datum_t *cat_datum1, *cat_datum2;
-	uint32_t cat_value1, cat_value2;
-	if (sepol_policydb_get_cat_by_name(p->sh, p->p, cat1, &cat_datum1) < 0 ||
-	    sepol_policydb_get_cat_by_name(p->sh, p->p, cat2, &cat_datum2) < 0) {
-		return 0;
-	}
-	if (sepol_cat_datum_get_value(p->sh, p->p, cat_datum1, &cat_value1) < 0 ||
-	    sepol_cat_datum_get_value(p->sh, p->p, cat_datum2, &cat_value2) < 0) {
-		return 0;
-	}
-	return (cat_value2 - cat_value1);
-}
-
 /********************* level *********************/
 
 apol_mls_level_t *apol_mls_level_create(void)
@@ -296,7 +278,7 @@ apol_mls_level_t *apol_mls_level_create_from_string(apol_policy_t *p, char *mls_
 			if (apol_mls_level_append_cats(p, lvl, next)) {
 				error = errno;
 				goto err;
-			}			 
+			}
 		} else {
 			if (sepol_policydb_get_cat_by_name(p->sh, p->p, tokens[i], &cat1)) {
 				error = errno;
@@ -524,7 +506,7 @@ int apol_mls_level_compare(apol_policy_t *p, apol_mls_level_t *l1, apol_mls_leve
 	for (i = 0; i < apol_vector_get_size(cat_list_subset); i++) {
 		char *cat = (char *) apol_vector_get_element(cat_list_subset, i);
 		if (apol_vector_get_index(cat_list_master, cat,
-					  apol_mls_cat_vector_compare, p) == -1) {
+					  apol_mls_cat_name_compare, p) == -1) {
 			ucat = 1;
 			break;
 		}
@@ -569,6 +551,24 @@ int apol_mls_cats_compare(apol_policy_t *p,
 	return 0;
 }
 
+int apol_mls_cat_name_compare(const void *a, const void *b, void *data)
+{
+	const char *cat1 = (const char *) a;
+	const char *cat2 = (const char *) b;
+	apol_policy_t *p = (apol_policy_t *) data;
+	sepol_cat_datum_t *cat_datum1, *cat_datum2;
+	uint32_t cat_value1, cat_value2;
+	if (sepol_policydb_get_cat_by_name(p->sh, p->p, cat1, &cat_datum1) < 0 ||
+	    sepol_policydb_get_cat_by_name(p->sh, p->p, cat2, &cat_datum2) < 0) {
+		return 0;
+	}
+	if (sepol_cat_datum_get_value(p->sh, p->p, cat_datum1, &cat_value1) < 0 ||
+	    sepol_cat_datum_get_value(p->sh, p->p, cat_datum2, &cat_value2) < 0) {
+		return 0;
+	}
+	return (cat_value1 - cat_value2);
+}
+
 /********************* range *********************/
 
 apol_mls_range_t *apol_mls_range_create(void)
@@ -597,7 +597,7 @@ apol_mls_range_t *apol_mls_range_create_from_sepol_mls_range(apol_policy_t *p, s
 	/* low */
 	if (sepol_mls_range_get_low_level(p->sh, p->p, sepol_range, &tmp) ||
 	    !(tmp_lvl = apol_mls_level_create_from_sepol_mls_level(p, tmp)) ||
-	    apol_mls_range_set_low(p, apol_range, tmp_lvl)) {	      
+	    apol_mls_range_set_low(p, apol_range, tmp_lvl)) {
 		error = errno;
 		goto err;
 	}

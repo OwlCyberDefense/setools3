@@ -15,6 +15,8 @@
 
 #include "apol_tcl_other.h"
 
+#include "context-query.h"
+
 #include <tcl.h>
 
 #include <assert.h>
@@ -109,141 +111,116 @@ int ap_tcl_append_attrib_str(bool_t do_types, bool_t do_type_attribs, bool_t use
 	return 0;
 }
 
+/**
+ * Take a Tcl string representing a level (level = sensitivity + list
+ * of categories) and return a string representation of it.  If the
+ * level is nat valid according to the policy then return an empty
+ * string.
+ *
+ * @param argv A MLS level.
+ */
 static int Apol_RenderLevel(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
-        ap_mls_level_t level;
-        int retval;
-        char *rendered_level;
+	Tcl_Obj *result_obj;
+	apol_mls_level_t *level = NULL;
+	char *rendered_level = NULL;
+	int retval = TCL_ERROR, retval2;
 
-        if (argc != 2) {
-                Tcl_SetResult(interp, "wrong # of args", TCL_STATIC);
-                return TCL_ERROR;
-        }
-        retval = ap_tcl_level_string_to_level(interp, argv[1], &level);
-        if (retval == -1) {
-                return TCL_ERROR;
-        }
-        else if (retval == 1) {
-                return TCL_OK;                     /* no render possible */
-        }
-        rendered_level = re_render_mls_level(&level, policy);
-        ap_mls_level_free(&level);
-        Tcl_AppendResult(interp, rendered_level, NULL);
-        free(rendered_level);
-        return TCL_OK;
+	apol_tcl_clear_error();
+	if (policydb == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		goto cleanup;
+	}
+	if (argc != 2) {
+		ERR(policydb, "Need a level to render.");
+		goto cleanup;
+	}
+	if ((level = apol_mls_level_create()) == NULL) {
+		ERR(policydb, "Out of memory.");
+		goto cleanup;
+	}
+	retval2 = apol_tcl_string_to_level(interp, argv[1], level);
+	if (retval2 < 0) {
+		goto cleanup;
+	}
+	else if (retval2 == 1) {
+		/* no render possible */
+		retval = TCL_OK;
+		goto cleanup;
+	}
+	if ((rendered_level = re_render_mls_level2(policydb, level)) == NULL) {
+		goto cleanup;
+	}
+	result_obj = Tcl_NewStringObj(rendered_level, -1);
+	Tcl_SetObjResult(interp, result_obj);
+	retval = TCL_OK;
+ cleanup:
+	apol_mls_level_destroy(&level);
+	free(rendered_level);
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
 }
 
-/* Takes a Tcl context object (argv[1]) and returns a single string
- * with the context rendered.  If argv[2] exists and is non-zero then
- * consider the fourth element of argv[1] to be a MLS range object. */
+/**
+ * Take a Tcl string representing a context and return a string
+ * representation of it.  A Tcl context is:
+ * <code>
+ *   { user role type range }
+ * </code>
+ *
+ * If the policy is non-mls, then the fourth parameter is ignored.
+ *
+ * @param argv This function takes two parameters:
+ * <ol>
+ *   <li>Tcl string representing a context
+ * </ol>
+ */
 static int Apol_RenderContext(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
-        Tcl_Obj *context_obj, *user_obj, *role_obj, *type_obj;
-        char *s;
-        security_con_t context;
-        ap_mls_level_t low, high;
-        ap_mls_range_t range;
-        char *rendered_context;
-        int range_len = -1;
+	Tcl_Obj *result_obj;
+	apol_context_t *context = NULL;
+	char *rendered_context = NULL;
+	int retval = TCL_ERROR;
 
-        if (argc < 1 || argc > 3) {
-                Tcl_SetResult(interp, "wrong # of args", TCL_STATIC);
-                return TCL_ERROR;
-        }
-	if(policy == NULL) {
+	apol_tcl_clear_error();
+	if (policydb == NULL) {
 		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
-		return TCL_ERROR;
+		goto cleanup;
 	}
-        context_obj = Tcl_NewStringObj(argv[1], -1);
+	if (argc != 2) {
+		ERR(policydb, "Need a context.");
+		goto cleanup;
+	}
+	if ((context = apol_context_create()) == NULL) {
+		ERR(policydb, "Out of memory!");
+		goto cleanup;
+	}
+	if (apol_tcl_string_to_context(interp, argv[1], context) < 0) {
+		goto cleanup;
+	}
 
-        if (Tcl_ListObjIndex(interp, context_obj, 0, &user_obj) == TCL_ERROR ||
-                user_obj == NULL) {
-                Tcl_SetResult(interp, "Invalid user name", TCL_STATIC);
-        }
-        s = Tcl_GetString(user_obj);
-        if ((context.user = get_user_idx(s, policy)) < 0) {
-                Tcl_AppendResult(interp, "Invalid user name ", s, NULL);
-                return TCL_ERROR;
-        }
-
-        if (Tcl_ListObjIndex(interp, context_obj, 1, &role_obj) == TCL_ERROR ||
-                role_obj == NULL) {
-                Tcl_SetResult(interp, "Invalid role name", TCL_STATIC);
-        }
-        s = Tcl_GetString(role_obj);
-        if ((context.role = get_role_idx(s, policy)) < 0) {
-                Tcl_AppendResult(interp, "Invalid role ", s, NULL);
-                return TCL_ERROR;
-        }
-
-        if (Tcl_ListObjIndex(interp, context_obj, 2, &type_obj) == TCL_ERROR ||
-                type_obj == NULL) {
-                Tcl_SetResult(interp, "Invalid type name", TCL_STATIC);
-        }
-        s = Tcl_GetString(type_obj);
-        if ((context.type = get_type_idx(s, policy)) < 0) {
-                Tcl_AppendResult(interp, "Invalid type ", s, NULL);
-                return TCL_ERROR;
-        }
-
-        /* now add MLS component as necessary */
-        if (argc == 2 || strcmp(argv[2], "0") == 0) {
-                context.range = NULL;
-        }
-        else {
-                Tcl_Obj *range_obj, *low_obj, *high_obj;
-                if (Tcl_ListObjIndex(interp, context_obj, 3, &range_obj) == TCL_ERROR ||
-                    range_obj == NULL) {
-                        Tcl_SetResult(interp, "Invalid range", TCL_STATIC);
-                }
-
-                if (Tcl_ListObjIndex(interp, range_obj, 0, &low_obj) == TCL_ERROR ||
-                    low_obj == NULL) {
-                        Tcl_SetResult(interp, "Invalid low level", NULL);
-                }
-                s = Tcl_GetString(low_obj);
-                if (ap_tcl_level_string_to_level(interp, s, &low) != 0) {
-                        Tcl_AppendResult(interp, "Invalid low level ", s, NULL);
-                        return TCL_ERROR;
-                }
-                range.low = &low;
-
-                if (Tcl_ListObjLength(interp, range_obj, &range_len) == TCL_ERROR ||
-                    range_len > 2) {
-                        Tcl_SetResult(interp, "Invalid range", TCL_STATIC);
-                        return TCL_ERROR;
-                }
-                if (range_len == 1) {
-                        /* only single level given */
-                        range.high = &low;
-                }
-                else {
-                        if (Tcl_ListObjIndex(interp, range_obj, 1, &high_obj) == TCL_ERROR ||
-                            high_obj == NULL) {
-                                Tcl_SetResult(interp, "Invalid high level", NULL);
-                        }
-                        s = Tcl_GetString(high_obj);
-                        if (ap_tcl_level_string_to_level(interp, s, &high) != 0) {
-                                Tcl_AppendResult(interp, "Invalid high level ", s, NULL);
-                                ap_mls_level_free(&low);
-                                return TCL_ERROR;
-                        }
-                        range.high = &high;
-                }
-                context.range = &range;
-        }
-        if ((rendered_context = re_render_security_context(&context, policy)) == NULL) {
-                Tcl_SetResult(interp, "Error while rendering context.", TCL_STATIC);
-                return TCL_ERROR;
-        }
-        if (range_len != -1) {
-                ap_mls_range_free(&range);
-        }
-        Tcl_SetResult(interp, rendered_context, TCL_VOLATILE);
-        free(rendered_context);
-        return TCL_OK;
+	/* check that all components exist */
+	if (context->user == NULL || context->role == NULL || context->type == NULL ||
+	    (apol_policy_is_mls(policydb) && context->range == NULL)) {
+		ERR(policydb, "Context string '%s' is not valid.", argv[1]);
+		goto cleanup;
+	}
+	if ((rendered_context = apol_context_render(policydb, context)) == NULL) {
+		goto cleanup;
+	}
+	result_obj = Tcl_NewStringObj(rendered_context, -1);
+	Tcl_SetObjResult(interp, result_obj);
+	retval = TCL_OK;
+ cleanup:
+	apol_context_destroy(&context);
+	free(rendered_context);
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
 }
-
 
 static int tcl_render_ta_item_list(Tcl_Interp *interp, Tcl_Obj *dest_listobj, ta_item_t *name, policy_t *policy) {
         int retv;
