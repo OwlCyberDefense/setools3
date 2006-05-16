@@ -5,6 +5,7 @@
  * and getting various component elements and statistics.
  *
  * @author Frank Mayer  mayerf@tresys.com
+ * @author David Windsor dwindsor@tresys.com
  *
  * Copyright (C) 2003-2006 Tresys Technology, LLC
  *
@@ -53,6 +54,9 @@ static void print_user_roles(FILE *fp, sepol_user_datum_t *user_datum, apol_poli
 static void print_role_types(FILE *fp, sepol_role_datum_t *role_datum, apol_policy_t *policydb, const int expand);
 static void print_bool_state(FILE *fp, sepol_bool_datum_t *bool_datum, apol_policy_t *policydb, const int expand);
 static void print_class_perms(FILE *fp, sepol_class_datum_t *class_datum, apol_policy_t *policydb, const int expand);
+static void print_cat_sens(FILE *fp, sepol_cat_datum_t *cat_datum, apol_policy_t *policydb, const int expand);
+static int sepol_cat_datum_compare(const void *datum1, const void *datum2, void *data);
+static int sepol_level_datum_compare(const void *datum1, const void *datum2, void *data);
 
 static struct option const longopts[] =
 {
@@ -695,7 +699,7 @@ static int print_sens(FILE *fp, const char *name, int expand, apol_policy_t *pol
 	}
 
 	if (name && !apol_vector_get_size(v)) {
-		ERR(policydb, "Provided sensitivity (%s) is not a valid sensitivity name", name);
+		ERR(policydb, "Provided sensitivity (%s) is not a valid sensitivity name.", name);
 		goto cleanup;
 	}
 
@@ -706,47 +710,78 @@ cleanup:
 	return retval;
 }
 
+/**
+ * Prints statistics regarding a policy's MLS categories.
+ * If this function is given a name, it will attempt to
+ * print statistics about a particular category; otherwise
+ * the function prints statistics about all of the policy's
+ * categories.
+ *
+ * @param fp Reference to a file to which to print statistics
+ * @param name Reference to a MLS category's name; if NULL,
+ * all categories will be considered
+ * @param expand Flag indicating whether to print each
+ * category's sensitivities
+ * @param policydb Reference to a policy
+ *
+ * @return 0 on success, < 0 on error.
+ */
 static int print_cats(FILE *fp, const char *name, int expand, apol_policy_t *policydb)
 {
-    /* FIX ME: not done yet */
-    #if 0
-	int idx, i, j, retv, num_sens = 0, *sens = NULL;
+	int retval = 0;
+	apol_cat_query_t *query = NULL;
+	apol_vector_t *v = NULL;
+	sepol_cat_datum_t *cat_datum = NULL;
+	size_t i, n_cats;
 
-	if (name) {
-		idx = get_category_idx(name, policy);
-		if (idx == -1) {
-			ERR(policydb, "Provided category (%s) is not a valid category name\n", name);
-			return -1;
-		}
-	} else {
-		idx = 0;
-		fprintf(fp, "Categories: %d\n", policy->num_categories);
+	query = apol_cat_query_create();
+	if (!query) {
+		ERR(policydb, "Out of memory");
+		goto cleanup;
+	}
+	if (apol_cat_query_set_cat(policydb, query, name))
+		goto cleanup;
+	if (apol_get_cat_by_query(policydb, query, &v))
+		goto cleanup;
+	n_cats = apol_vector_get_size(v);
+	apol_vector_sort(v, &sepol_cat_datum_compare, policydb);
+
+	if (!name)
+		fprintf(fp, "Categories: %zd\n", n_cats);
+	for (i = 0; i < n_cats; i++) {
+		cat_datum = (sepol_cat_datum_t *)apol_vector_get_element(v, i);
+		if (!cat_datum)
+			goto cleanup;
+		print_cat_sens(fp, cat_datum, policydb, expand);
+
 	}
 
-	for (i = idx; i < policy->num_categories; i++) {
-		fprintf(fp, "   %s\n", policy->categories[i].name);
-		if (expand) {
-			retv = ap_mls_category_get_sens(i, &sens, &num_sens, policy);
-			if (retv) {
-				fprintf(stderr, "Unable to get sensitivities for category %s", policy->categories[i].name);
-				return -1;
-			}
-			fprintf(fp, "      Sensitivities:\n");
-			for (j = 0; j < num_sens; j++) {
-				fprintf(fp, "         %s\n", policy->sensitivities[sens[j]].name);
-			}
-			free(sens);
-			sens = NULL;
-			num_sens = 0;
-		}
-		if (name)
-			break;
+	if (name && !n_cats) {
+		ERR(policydb, "Provided category (%s) is not a valid category name.", name);
+		goto cleanup;
 	}
-    #endif
-	return 0;
+
+	retval = 0;
+cleanup:
+	apol_cat_query_destroy(&query);
+	apol_vector_destroy(&v, NULL);
+	return retval;
 }
 
-/* FIX ME: need a header here */
+/**
+ * Prints statistics regarding a policy's fs_use statements.
+ * If this function is given a name, it will attempt to
+ * print statistics about a particular filesystem; otherwise
+ * the function prints statistics about all of the policy's
+ * fs_use statements.
+ *
+ * @param fp Reference to a file to which to print statistics
+ * @param type Reference to the name of a file system type; if NULL,
+ * all file system types will be considered
+ * @param policydb Reference to a policy
+ *
+ * @return 0 on success, < 0 on error.
+ */
 static int print_fsuse(FILE *fp, const char *type, apol_policy_t *policydb)
 {
 	int retval = -1;
@@ -777,9 +812,8 @@ static int print_fsuse(FILE *fp, const char *type, apol_policy_t *policydb)
 		fprintf(fp, "%s\n", tmp);
 		free(tmp);
 	}
-
 	if (type && !apol_vector_get_size(v))
-		ERR(policydb, "No fs_use statement for filesystem of type %s", type);
+		ERR(policydb, "No fs_use statement for filesystem of type %s.", type);
 
 	retval = 0;
 cleanup:
@@ -835,7 +869,7 @@ static int print_genfscon(FILE *fp, const char *type, apol_policy_t *policydb)
 	}
 
 	if (type && !apol_vector_get_size(v))
-		ERR(policydb, "No genfscon statement for filesystem of type %s", type);
+		ERR(policydb, "No genfscon statement for filesystem of type %s.", type);
 
 	retval = 0;
 cleanup:
@@ -862,17 +896,19 @@ cleanup:
 static int print_netifcon(FILE *fp, const char *name, apol_policy_t *policydb)
 {
 	int retval = -1;
-	char *netifcon_name = NULL;
+	char *tmp;
 	sepol_netifcon_t *netifcon = NULL;
 	sepol_iterator_t *iter = NULL;
 	size_t n_netifcons = 0;
-/* FIX ME: call re_render_netifcon here */
+
 	if (name != NULL) {
 		if (sepol_policydb_get_netifcon_by_name(policydb->sh, policydb->p, name, &netifcon))
 			goto cleanup;
-		if (sepol_netifcon_get_name(policydb->sh, policydb->p, netifcon, &netifcon_name))
+		tmp = re_render_netifcon2(policydb, netifcon);
+		if (!tmp)
 			goto cleanup;
-		fprintf(fp, "   %s\n", netifcon_name);
+		fprintf(fp, "   %s\n", tmp);
+		free(tmp);
 	} else {
 		if (sepol_policydb_get_netifcon_iter(policydb->sh, policydb->p, &iter))
 			goto cleanup;
@@ -881,11 +917,13 @@ static int print_netifcon(FILE *fp, const char *name, apol_policy_t *policydb)
 		fprintf(fp, "\nNetifcon: %zd\n", n_netifcons);
 
 		for ( ; !sepol_iterator_end(iter); sepol_iterator_next(iter)) {
-			if (sepol_iterator_get_item(iter, (void **)netifcon))
+			if (sepol_iterator_get_item(iter, (void **)&netifcon))
 				goto cleanup;
-			if (sepol_netifcon_get_name(policydb->sh, policydb->p, netifcon, &netifcon_name))
+			tmp = re_render_netifcon2(policydb, netifcon);
+			if (!tmp)
 				goto cleanup;
-			fprintf(fp, "   %s\n", netifcon_name);
+			fprintf(fp, "   %s\n", tmp);
+			free(tmp);
 		}
 		sepol_iterator_destroy(&iter);
 	}
@@ -944,7 +982,7 @@ static int print_nodecon(FILE *fp, const char *addr, apol_policy_t *policydb)
 
 	n_nodecons = apol_vector_get_size(v);
 	if (!n_nodecons) {
-		ERR(policydb, "Provided address (%s) is not valid", addr);
+		ERR(policydb, "Provided address (%s) is not valid.", addr);
 		goto cleanup;
 	}
 
@@ -961,7 +999,7 @@ static int print_nodecon(FILE *fp, const char *addr, apol_policy_t *policydb)
 	}
 
 	if (addr && !n_nodecons)
-		ERR(policydb, "No matching nodecon for address %s", addr);
+		ERR(policydb, "No matching nodecon for address %s.", addr);
 
 	retval = 0;
 cleanup:
@@ -1002,13 +1040,13 @@ static int print_portcon(FILE *fp, const char *num, const char *protocol, apol_p
 		} else if (!strcmp(protocol, "udp")) {
 			proto = IPPROTO_UDP;
 		} else {
-			ERR(policydb, "Unable to get portcon by port and protocol: bad protocol %s", protocol);
+			ERR(policydb, "Unable to get portcon by port and protocol: bad protocol %s.", protocol);
 			goto cleanup;
 		}
 
 		if (sepol_policydb_get_portcon_by_port(policydb->sh, policydb->p,
 		    (uint16_t)atoi(num), (uint16_t)atoi(num), proto, &portcon)) {
-			ERR(policydb, "No portcon statement for port number %d", atoi(num));
+			ERR(policydb, "No portcon statement for port number %d.", atoi(num));
 			goto cleanup;
 		}
 	}
@@ -1046,53 +1084,73 @@ cleanup:
 	return retval;
 }
 
+/**
+ * Prints statistics regarding a policy's initial SIDs.
+ * If this function is given a name, it will attempt to
+ * print statistics about a particular initial SID; otherwise
+ * the function prints statistics about all of the policy's
+ * initial SIDs.
+ *
+ * @param fp Reference to a file to which to print statistics
+ * @param name Reference to a SID name; if NULL,
+ * all initial SIDs will be considered
+ * @param expand Flag indicating whether to print each
+ * initial SID's security context
+ * @param policydb Reference to a policy
+ *
+ * @return 0 on success, < 0 on error.
+ */
 static int print_isids(FILE *fp, const char *name, int expand, apol_policy_t *policydb)
 {
-   /* FIX ME: not done yet */
-   #if 0
-	char *isid_name = NULL, *scontext = NULL;
-	int idx, i, rt;
-	
-	if(name != NULL) {
-		idx = get_initial_sid_idx(name, policy);
-		if(idx < 0) {
-			ERR(policydb, "Provided initial SID name (%s) is not a valid name.", name);
-			return -1;
+	int retval = -1;
+	apol_isid_query_t *query = NULL;
+	apol_vector_t *v = NULL;
+	sepol_isid_t *isid = NULL;
+	sepol_context_struct_t *ctxt = NULL;
+	size_t i, n_isids = 0;
+	char *tmp = NULL, *isid_name = NULL;
+
+	query = apol_isid_query_create();
+	if (!query) {
+		ERR(policydb, "Out of memory");
+		goto cleanup;
+	}
+	if (apol_isid_query_set_name(policydb, query, name))
+		goto cleanup;
+	if (apol_get_isid_by_query(policydb, query, &v))
+		goto cleanup;
+	n_isids = apol_vector_get_size(v);
+
+	if (!name)
+		fprintf(fp, "\nInitial SID: %zd\n", n_isids);
+
+	for (i = 0; i < n_isids; i++) {
+		isid = (sepol_isid_t *)apol_vector_get_element(v, i);
+		if (sepol_isid_get_name(policydb->sh, policydb->p, isid, &isid_name))
+			goto cleanup;
+		if (!expand) {
+			fprintf(fp, "	    %s\n", isid_name);
+		} else {
+			if (sepol_isid_get_context(policydb->sh, policydb->p, isid, &ctxt))
+				goto cleanup;
+			tmp = re_render_security_context2(policydb, ctxt);
+			if (!tmp)
+				goto cleanup;
+			fprintf(fp, "%20s:  %s\n", isid_name, tmp);
+			free(tmp);
 		}
 	}
-	else 
-		idx = 0;
-		
-	if(name == NULL)
-		fprintf(fp, "\nInitial SID: %d\n", num_initial_sids(policy));
-		
-	for(i = idx; is_valid_initial_sid_idx(i, policy); i++) {
-		rt = get_initial_sid_name(i, &isid_name, policy);
-		if(rt != 0) {
-			ERR(policydb, "Unexpected error getting initial SID name");
-			return -1;
-		}
-		if(expand) {
-			fprintf(fp, "%20s:  ", isid_name);
-			scontext = re_render_initial_sid_security_context(i, policy);
-			if(scontext == NULL) {
-				ERR(policydb, "Problem getting security context for %dth initial SID", i);
-				return -1;
-			}
-			fprintf(fp, "%s", scontext);
-			free(scontext);
-		}
-		else {
-			fprintf(fp, "  %s", isid_name);
-		}
-		free(isid_name);
-		fprintf(fp, "\n");
-		/* if a name was provided, return as we only print the one asked for */
-		if(name != NULL)
-			break;
+
+	if (name && !n_isids) {
+		ERR(policydb, "Provided initial SID name (%s) is not a valid name.", name);
+		goto cleanup;
 	}
-  #endif
-	return 0;
+
+	retval = 0;
+cleanup:
+	apol_isid_query_destroy(&query);
+	apol_vector_destroy(&v, NULL);
+	return retval;
 }
 
 
@@ -1291,6 +1349,16 @@ int main (int argc, char **argv)
 	exit(0);
 }
 
+/**
+ * Prints a textual representation of a type, and possibly
+ * all of that type's attributes.
+ *
+ * @param fp Reference to a file to which to print type information
+ * @param type_datum Reference to sepol type_datum
+ * @param policydb Reference to a policy
+ * @param expand Flag indicating whether to print each type's
+ * attributes
+ */
 static void print_type_attrs(FILE *fp, sepol_type_datum_t *type_datum, apol_policy_t *policydb, const int expand)
 {
 	sepol_iterator_t *iter = NULL;
@@ -1323,6 +1391,16 @@ cleanup:
 	return;
 }
 
+/**
+ * Prints a textual representation of an attribute, and possibly
+ * all of that attribute's types.
+ *
+ * @param fp Reference to a file to which to print attribute information
+ * @param type_datum Reference to sepol type_datum
+ * @param policydb Reference to a policy
+ * @param expand Flag indicating whether to print each attribute's
+ * types
+ */
 static void print_attr_types(FILE *fp, sepol_type_datum_t *type_datum, apol_policy_t *policydb, const int expand)
 {
 	sepol_type_datum_t *attr_datum = NULL;
@@ -1360,14 +1438,25 @@ cleanup:
 	return;
 }
 
+/**
+ * Prints a textual representation of a user, and possibly
+ * all of that user's roles.
+ *
+ * @param fp Reference to a file to which to print user information
+ * @param type_datum Reference to sepol type_datum
+ * @param policydb Reference to a policy
+ * @param expand Flag indicating whether to print each user's
+ * roles
+ */
 static void print_user_roles(FILE *fp, sepol_user_datum_t *user_datum, apol_policy_t *policydb, const int expand)
 {
 	sepol_role_datum_t *role_datum = NULL;
 	sepol_iterator_t *iter = NULL;
 	sepol_mls_range_t *range = NULL;
-	sepol_mls_level_t *dflt_level = NULL, *low_level = NULL, *high_level = NULL;
-	char *user_name = NULL, *role_name = NULL, *dfltlevel_name = NULL,
-	     *lowlevel_name = NULL, *highlevel_name = NULL;
+	sepol_mls_level_t *dflt_level = NULL;
+	apol_mls_level_t *ap_lvl = NULL;
+	apol_mls_range_t *ap_range = NULL;
+	char *tmp, *user_name, *role_name;
 
 	if (sepol_user_datum_get_name(policydb->sh, policydb->p, user_datum, &user_name))
 		goto cleanup;
@@ -1375,22 +1464,24 @@ static void print_user_roles(FILE *fp, sepol_user_datum_t *user_datum, apol_poli
 
 	if (expand) {
 		if (sepol_policydb_is_mls_enabled(policydb->sh, policydb->p)) {
+			/* print default level */
 			if (sepol_user_datum_get_dfltlevel(policydb->sh, policydb->p, user_datum, &dflt_level))
 				goto cleanup;
-			if (sepol_mls_level_get_sens_name(policydb->sh, policydb->p, dflt_level, &dfltlevel_name))
+			ap_lvl = apol_mls_level_create_from_sepol_mls_level(policydb, dflt_level);
+			tmp = re_render_mls_level2(policydb, ap_lvl);
+			if (!tmp)
 				goto cleanup;
-			fprintf(fp, "      default level: %s\n", dfltlevel_name);
+			fprintf(fp, "      default level: %s\n", tmp);
+			free(tmp);
+			/* print default range */
 			if (sepol_user_datum_get_range(policydb->sh, policydb->p, user_datum, &range))
 				goto cleanup;
-			if (sepol_mls_range_get_low_level(policydb->sh, policydb->p, range, &low_level))
+			ap_range = apol_mls_range_create_from_sepol_mls_range(policydb, range);
+			tmp = re_render_mls_range2(policydb, ap_range);
+			if (!tmp)
 				goto cleanup;
-			if (sepol_mls_range_get_high_level(policydb->sh, policydb->p, range, &high_level))
-				goto cleanup;
-			if (sepol_mls_level_get_sens_name(policydb->sh, policydb->p, low_level, &lowlevel_name))
-				goto cleanup;
-			if (sepol_mls_level_get_sens_name(policydb->sh, policydb->p, high_level, &highlevel_name))
-				goto cleanup;
-			fprintf(fp, "      range: %s-%s\n", lowlevel_name, highlevel_name);
+			fprintf(fp, "      range: %s\n", tmp);
+			free(tmp);
 		}
 
 		fprintf(fp, "      roles:\n");
@@ -1407,9 +1498,21 @@ static void print_user_roles(FILE *fp, sepol_user_datum_t *user_datum, apol_poli
 
 cleanup:
 	sepol_iterator_destroy(&iter);
+	apol_mls_level_destroy(&ap_lvl);
+	apol_mls_range_destroy(&ap_range);
 	return;
 }
 
+/**
+ * Prints a textual representation of a role, and possibly
+ * all of that role's types.
+ *
+ * @param fp Reference to a file to which to print role information
+ * @param type_datum Reference to sepol type_datum
+ * @param policydb Reference to a policy
+ * @param expand Flag indicating whether to print each role's
+ * types
+ */
 static void print_role_types(FILE *fp, sepol_role_datum_t *role_datum, apol_policy_t *policydb, const int expand)
 {
 	char *role_name = NULL, *type_name = NULL;
@@ -1462,6 +1565,16 @@ cleanup:
 	return;
 }
 
+/**
+ * Prints a textual representation of a boolean value, and possibly
+ * all of that boolean's initial state.
+ *
+ * @param fp Reference to a file to which to print boolean information
+ * @param type_datum Reference to sepol type_datum
+ * @param policydb Reference to a policy
+ * @param expand Flag indicating whether to print each boolean's
+ * initial state
+ */
 static void print_bool_state(FILE *fp, sepol_bool_datum_t *bool_datum, apol_policy_t *policydb, const int expand)
 {
 	char *bool_name = NULL;
@@ -1479,6 +1592,16 @@ static void print_bool_state(FILE *fp, sepol_bool_datum_t *bool_datum, apol_poli
 	fprintf(fp, "\n");
 }
 
+/**
+ * Prints a textual representation of an object class and possibly
+ * all of that object class' permissions.
+ *
+ * @param fp Reference to a file to which to print object class information
+ * @param type_datum Reference to sepol type_datum
+ * @param policydb Reference to a policy
+ * @param expand Flag indicating whether to print each object class'
+ * permissions
+ */
 static void print_class_perms(FILE *fp, sepol_class_datum_t *class_datum, apol_policy_t *policydb, const int expand)
 {
 	char *class_name = NULL, *perm_name = NULL;
@@ -1521,4 +1644,134 @@ static void print_class_perms(FILE *fp, sepol_class_datum_t *class_datum, apol_p
 cleanup:
 	sepol_iterator_destroy(&iter);
 	return;
+}
+
+/**
+ * Prints a textual representation of a MLS category and possibly
+ * all of that category's sensitivies.
+ *
+ * @param fp Reference to a file to which to print category information
+ * @param type_datum Reference to sepol type_datum
+ * @param policydb Reference to a policy
+ * @param expand Flag indicating whether to print each category's
+ * sensitivities
+ */
+static void print_cat_sens(FILE *fp, sepol_cat_datum_t *cat_datum, apol_policy_t *policydb, const int expand)
+{
+	char *cat_name, *lvl_name;
+	apol_level_query_t *query = NULL;
+	apol_vector_t *v = NULL;
+	sepol_level_datum_t *lvl_datum = NULL;
+	size_t i, n_sens = 0;
+
+	if (!fp || !cat_datum || !policydb )
+		goto cleanup;
+
+	/* get category name for apol query */
+	if (sepol_cat_datum_get_name(policydb->sh, policydb->p, cat_datum, &cat_name))
+		goto cleanup;
+
+	query = apol_level_query_create();
+	if (!query) {
+		ERR(policydb, "Out of memory");
+		goto cleanup;
+	}
+	if (apol_level_query_set_cat(policydb, query, cat_name))
+		goto cleanup;
+	if (apol_get_level_by_query(policydb, query, &v))
+		goto cleanup;
+	fprintf(fp, "   %s\n", cat_name);
+
+	if (expand) {
+		fprintf(fp, "      Sensitivities:\n");
+		apol_vector_sort(v, &sepol_level_datum_compare, (void *)policydb);
+		n_sens = apol_vector_get_size(v);
+		for (i = 0; i < n_sens; i++) {
+			lvl_datum = (sepol_level_datum_t *)apol_vector_get_element(v, i);
+			if (!lvl_datum)
+				goto cleanup;
+			if (sepol_level_datum_get_name(policydb->sh, policydb->p, lvl_datum, &lvl_name))
+				goto cleanup;
+			fprintf(fp, "         %s\n", lvl_name);
+		}
+	}
+
+cleanup:
+	apol_level_query_destroy(&query);
+	apol_vector_destroy(&v, NULL);
+	return;
+}
+
+/**
+ * Compare two sepol_cat_datum_t objects.
+ * This function is meant to be passed to apol_vector_compare
+ * as the callback for performing comparisons.
+ *
+ * @param datum1 Reference to a sepol_type_datum_t object
+ * @param datum2 Reference to a sepol_type_datum_t object
+ * @param data Reference to a policy
+ * @return Greater than 0 if the first argument is less than the second argument,
+ * less than 0 if the first argument is greater than the second argument,
+ * 0 if the arguments are equal
+ */
+static int sepol_cat_datum_compare(const void *datum1, const void *datum2, void *data)
+{
+	sepol_cat_datum_t *cat_datum1 = NULL, *cat_datum2 = NULL;
+	apol_policy_t *policydb = NULL;
+	uint32_t val1, val2;
+
+	policydb = (apol_policy_t *)data;
+	assert(policydb);
+
+	if (!datum1 || !datum2)
+		goto exit_err;
+	cat_datum1 = (sepol_cat_datum_t *)datum1;
+	cat_datum2 = (sepol_cat_datum_t *)datum2;
+
+	if (sepol_cat_datum_get_value(policydb->sh, policydb->p, cat_datum1, &val1))
+		goto exit_err;
+	if (sepol_cat_datum_get_value(policydb->sh, policydb->p, cat_datum2, &val2))
+		goto exit_err;
+
+	return (val1 > val2) ? 1 : ((val1 == val2) ? 0 : -1);
+
+exit_err:
+	assert(0);
+}
+
+/**
+ * Compare two sepol_level_datum_t objects.
+ * This function is meant to be passed to apol_vector_compare
+ * as the callback for performing comparisons.
+ *
+ * @param datum1 Reference to a sepol_level_datum_t object
+ * @param datum2 Reference to a sepol_level_datum_t object
+ * @param data Reference to a policy
+ * @return Greater than 0 if the first argument is less than the second argument,
+ * less than 0 if the first argument is greater than the second argument,
+ * 0 if the arguments are equal
+ */
+static int sepol_level_datum_compare(const void *datum1, const void *datum2, void *data)
+{
+	sepol_level_datum_t *lvl_datum1 = NULL, *lvl_datum2 = NULL;
+	apol_policy_t *policydb = NULL;
+	uint32_t val1, val2;
+
+	policydb = (apol_policy_t *)data;
+	assert(policydb);
+
+	if (!datum1 || !datum2)
+		goto exit_err;
+	lvl_datum1 = (sepol_level_datum_t *)datum1;
+	lvl_datum2 = (sepol_level_datum_t *)datum2;
+
+	if (sepol_level_datum_get_value(policydb->sh, policydb->p, lvl_datum1, &val1))
+		goto exit_err;
+	if (sepol_level_datum_get_value(policydb->sh, policydb->p, lvl_datum2, &val2))
+		goto exit_err;
+
+	return (val1 > val2) ? 1 : ((val1 == val2) ? 0 : -1);
+
+exit_err:
+	assert(0);
 }
