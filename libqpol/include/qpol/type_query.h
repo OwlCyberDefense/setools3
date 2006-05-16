@@ -1,0 +1,159 @@
+ /**
+ *  @file type_query.h
+ *  Defines the public interface for searching and iterating over types. 
+ *
+ *  @author Kevin Carr kcarr@tresys.com
+ *  @author Jeremy A. Mowery jmowery@tresys.com
+ *  @author Jason Tang jtang@tresys.com
+ *
+ *  Copyright (C) 2006 Tresys Technology, LLC
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ */
+
+#ifndef QPOL_TYPE_QUERY_H
+#define QPOL_TYPE_QUERY_H
+
+#include <stddef.h>
+#include <stdint.h>
+#include <sepol/handle.h>
+#include <qpol/iterator.h>
+#include <qpol/policy.h>
+
+typedef struct qpol_type qpol_type_t;
+
+/**
+ *  Get the datum for a type by name.
+ *  @param handle Error handler for the policy database.
+ *  @param policy The policy from which to get the type.
+ *  @param name The name of the type; searching is case sensitive.
+ *  @param datum Pointer in which to store the type datum; the caller
+ *  should not free this pointer.
+ *  @return Returns 0 on success and < 0 on failure; if the call fails,
+ *  errno will be set and *datum will be NULL.
+ */
+extern int qpol_policy_get_type_by_name(sepol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_type_t **datum);
+
+/**
+ *  Get an iterator for types declared in the policy.
+ *  @param handle Error handler for the policy database.
+ *  @param policy The policy from which to create the iterator.
+ *  @param iter Iterator of type qpol_type_t* returned; 
+ *  the caller is responsible for calling qpol_iterator_destroy to 
+ *  free memory used; it is important to note that the iterator is 
+ *  valid only as long as the policy is unchanged.
+ *  @return Returns 0 on success and < 0 on failure; if the call fails,
+ *  errno will be set and *iter will be NULL.
+ */
+extern int qpol_policy_get_type_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter);
+
+/**
+ *  Get the integer value associated with a type. Values range from 1 
+ *  to the number of types declared in the policy.
+ *  @param handle Error handler for the policy database.
+ *  @param policy The policy associated with the type.
+ *  @param datum The type from which to get the value.
+ *  @param value Pointer to the integer in which to store value.
+ *  @return Returns 0 on success and < 0 on failure; if the call fails,
+ *  errno will be set and value will be 0.
+ */
+extern int qpol_type_get_value(sepol_handle_t *handle, qpol_policy_t *policy, qpol_type_t *datum, uint32_t *value);
+
+/**
+ *  Determine whether a given type is an alias for another type.
+ *  @param handle Error handler for the policy database.
+ *  @param policy The policy associated with the type.
+ *  @param datum The type to check.
+ *  @param isalias Pointer to be set to 1 (true) if the type is an alias
+ *  and 0 (false) otherwise.
+ *  @return Returns 0 on success and < 0 on failure; if the call fails,
+ *  errno will be set and *isalias will be 0 (false).
+ */
+extern int qpol_type_get_isalias(sepol_handle_t *handle, qpol_policy_t *policy, qpol_type_t *datum, unsigned char *isalias);
+
+/**
+ *  Determine whether a given type is an attribute.
+ *  @param handle Error handler for the policy database.
+ *  @param policy The policy associated with the type.
+ *  @param datum The type to check.
+ *  @param isattr Pointer to be set to 1 (true) if the type is an
+ *  attribute and 0 (false) otherwise.
+ *  @return Returns 0 on success and < 0 on failure; if the call fails,
+ *  errno will be set and *isattr will be 0 (false).
+ */
+extern int qpol_type_get_isattr(sepol_handle_t *handle, qpol_policy_t *policy, qpol_type_t *datum, unsigned char *isattr);
+
+/**
+ *  Get an iterator for the list of types in an attribute.
+ *  @param handle Error handler for the policy database.
+ *  @param policy The policy associated with the attribute.
+ *  @param datum The attribute from which to get the types.
+ *  @param types Iterator of type qpol_type_t* returned; 
+ *  the caller is responsible for calling qpol_iterator_destroy to 
+ *  free memory used; it is important to note that the iterator is 
+ *  valid only as long as the policy is unchanged.
+ *  @return Returns 0 on success, > 0 if the type is not an attribute
+ *  and < 0 on failure; if the call fails, errno will be set and
+ *  *types will be NULL. If the type is not an attribute *types will
+ *  be NUll.
+ */
+extern int qpol_type_get_type_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol_type_t *datum, qpol_iterator_t **types);
+
+
+/**
+ *  Get an iterator for the list of attributes given to a type.
+ *  @param handle Error handler for the policy database.
+ *  @param policy The policy associated with the type.
+ *  @param datum The type for which to get the attributes.
+ *  @param attrs Iterator of type qpol_type_t* returned; 
+ *  the caller is responsible for calling qpol_iterator_destroy to 
+ *  free memory used; it is important to note that the iterator is 
+ *  valid only as long as the policy is unchanged.
+ *  @return Returns 0 on success, > 0 if the type is an attribute
+ *  and < 0 on failure; if the call fails, errno will be set and
+ *  *types will be NULL. If the type is an attribute *types will
+ *  be NUll.
+ */
+extern int qpol_type_get_attr_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol_type_t *datum, qpol_iterator_t **attrs);
+
+/**
+ *  Get the name by which a type is identified from its datum.
+ *  @param handle Error handler for the policy database.
+ *  @param policy The policy associated with the type.
+ *  @param datum The type for which to get the name.
+ *  @param name Pointer in which to store the name; the caller 
+ *  should not free the string. If the type is an alias then the
+ *  primary name will be returned.
+ *  @return Returns 0 on success and < 0 on failure; if the call fails,
+ *  errno will be set and *name will be NULL.
+ */
+extern int qpol_type_get_name(sepol_handle_t *handle, qpol_policy_t *policy, qpol_type_t *datum, char **name);
+
+/**
+ *  Get an iterator for the list of aliases for a type.
+ *  @param handle Error handler for the policy database.
+ *  @param policy The policy associated with the type.
+ *  @param datum The type for which to get aliases.
+ *  @param aliases Iterator of type char* returned; the caller is 
+ *  responsible for calling qpol_iterator_destroy to free
+ *  memory used; it is important to note that the iterator is valid
+ *  only as long as the policy is unchanged. If a type has no aliases,
+ *  the iterator will be at end and have size 0.
+ *  @return Returns 0 on success and < 0 on failure; if the call fails,
+ *  errno will be set and *aliases will be NULL.
+ */
+extern int qpol_type_get_alias_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol_type_t *datum, qpol_iterator_t **aliases);
+
+#endif /* QPOL_TYPE_QUERY_H */
