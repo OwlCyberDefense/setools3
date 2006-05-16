@@ -1,5 +1,5 @@
 # Copyright (C) 2001-2006 Tresys Technology, LLC
-# see file 'COPYING' for use and warranty information 
+# see file 'COPYING' for use and warranty information
 
 # TCL/TK GUI for SE Linux policy analysis
 # Requires tcl and tk 8.4+, with BWidgets
@@ -9,7 +9,7 @@
 
 ##############################################################
 # ::Apol_Initial_SIDS
-#  
+#
 # The Initial SIDS page
 ##############################################################
 namespace eval Apol_Initial_SIDS {
@@ -19,8 +19,8 @@ namespace eval Apol_Initial_SIDS {
 
 ##############################################################
 # ::search
-#  	- Search text widget for a string
-# 
+#	- Search text widget for a string
+#
 proc Apol_Initial_SIDS::search { str case_Insensitive regExpr srch_Direction } {
     variable widgets
     ApolTop::textSearch $widgets(results).tb $str $case_Insensitive $regExpr $srch_Direction
@@ -29,7 +29,7 @@ proc Apol_Initial_SIDS::search { str case_Insensitive regExpr srch_Direction } {
 # ----------------------------------------------------------------------------------------
 #  Command Apol_Initial_SIDS::set_Focus_to_Text
 #
-#  Description: 
+#  Description:
 # ----------------------------------------------------------------------------------------
 proc Apol_Initial_SIDS::set_Focus_to_Text {} {
     focus $Apol_Initial_SIDS::widgets(results)
@@ -75,7 +75,7 @@ proc Apol_Initial_SIDS::open { } {
     variable vals
     set vals(items) {}
     foreach sid [lsort -index 0 -dictionary [apol_GetInitialSIDs {} {} 0]] {
-        set vals(items) [lindex $sid 0]
+        lappend vals(items) [lindex $sid 0]
     }
 }
 
@@ -83,7 +83,9 @@ proc Apol_Initial_SIDS::open { } {
 #  Command Apol_Initial_SIDS::close
 # ------------------------------------------------------------------------------
 proc Apol_Initial_SIDS::close { } {
+    variable vals
     variable widgets
+    set vals(items) {}
     Apol_Widget::clearSearchResults $widgets(results)
     Apol_Widget::clearContextSelector $widgets(context)
 }
@@ -96,7 +98,7 @@ proc Apol_Initial_SIDS::free_call_back_procs { } {
 # ------------------------------------------------------------------------------
 proc Apol_Initial_SIDS::render_isid {isid {compact 0}} {
     foreach {name context} $isid {break}
-    set context [apol_RenderContext $context [ApolTop::is_mls_policy]]
+    set context [apol_RenderContext $context]
     if {$compact} {
         format "sid %s %s" $name $context
     } else {
@@ -115,8 +117,8 @@ proc Apol_Initial_SIDS::popupSIDInfo {sid} {
 
 ########################################################################
 # ::goto_line
-#  	- goes to indicated line in text box
-# 
+#	- goes to indicated line in text box
+#
 proc Apol_Initial_SIDS::goto_line { line_num } {
     variable widgets
     Apol_Widget::gotoLineSearchResults $widgets(results) $line_num
@@ -168,5 +170,5 @@ proc Apol_Initial_SIDS::create {nb} {
     set widgets(results) [Apol_Widget::makeSearchResults [$rslts_frame getframe].results]
     pack $widgets(results) -side top -expand yes -fill both
 
-    return $frame	
+    return $frame
 }

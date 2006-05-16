@@ -1141,6 +1141,8 @@ static int Apol_SearchRangeTransRules(ClientData clientData, Tcl_Interp *interp,
         
         if (argv[5][0] != '\0') {
                 /* in a search type was given, then try to parse the range */
+            /* FIX ME: not done yet
+               
                 if (strcmp(argv[5], "exact") == 0) {
                         search_type |= AP_MLS_RTS_RNG_EXACT;
                 }
@@ -1161,6 +1163,7 @@ static int Apol_SearchRangeTransRules(ClientData clientData, Tcl_Interp *interp,
                 if (ap_tcl_level_string_to_level(interp, argv[4], &high) != 0) {
                         goto cleanup;
                 }
+            */
         }
         range.low = &low;
         range.high = &high;

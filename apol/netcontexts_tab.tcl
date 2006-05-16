@@ -335,7 +335,7 @@ proc Apol_NetContexts::portcon_render {portcon} {
     } else {
         set line "portcon $proto ${loport}-${hiport} "
     }
-    concat $line [apol_RenderContext $context [ApolTop::is_mls_policy]]
+    concat $line [apol_RenderContext $context]
 }
 
 proc Apol_NetContexts::portcon_popup {port} { 
@@ -494,8 +494,7 @@ proc Apol_NetContexts::netifcon_create {p_f} {
 proc Apol_NetContexts::netifcon_render {netifcon_datum} {
     foreach {dev ifcon msgcon} $netifcon_datum {break}
     set line "netifcon $dev "
-    append line "[apol_RenderContext $ifcon [ApolTop::is_mls_policy]] "
-    concat $line [apol_RenderContext $msgcon [ApolTop::is_mls_policy]]
+    append line "[apol_RenderContext $ifcon] [apol_RenderContext $msgcon]"
 }
 
 proc Apol_NetContexts::netifcon_popup {netif} {
@@ -727,7 +726,7 @@ proc Apol_NetContexts::nodecon_toggleV4button {path name1 name2 op} {
 
 proc Apol_NetContexts::nodecon_render {nodecon} {
     foreach {iptype addr mask context} $nodecon {break}
-    return "nodecon $addr $mask [apol_RenderContext $context [ApolTop::is_mls_policy]]"
+    return "nodecon $addr $mask [apol_RenderContext $context]"
 }
 
 proc Apol_NetContexts::nodecon_popup {nodecon} {

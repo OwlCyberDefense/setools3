@@ -13,7 +13,7 @@
  * TCL interface (and any other) to use these rather than do their own
  * thing.
  */
- 
+
 
 #include "util.h"
 #include "policy.h"
@@ -21,10 +21,11 @@
 #include "semantic/avsemantics.h"
 #include "render.h"
 
+#include "context-query.h"
+
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
-#include <assert.h>
 
 /* global with rule names */
 char *rulenames[] = {"allow", "auditallow", "auditdeny", "dontaudit", "neverallow", "type_transition", 
@@ -404,7 +405,7 @@ char *re_render_mls_level2(apol_policy_t *policydb, apol_mls_level_t *level)
 		retval = rt;
 		goto cleanup;
 	}
-        apol_vector_sort(cats, apol_mls_cat_vector_compare, policydb);
+        apol_vector_sort(cats, apol_mls_cat_name_compare, policydb);
 
 	cat_name = (char *)apol_vector_get_element(cats, 0);
 	if (!cat_name)
@@ -583,82 +584,18 @@ char *re_render_mls_range2(apol_policy_t *policydb, apol_mls_range_t *range)
 /* security contexts */
 char *re_render_security_context2(apol_policy_t *policydb, sepol_context_struct_t *context)
 {
-	char *buf = NULL, *name = NULL, *range_str = NULL;
-	sepol_type_datum_t *type_datum = NULL;
-	sepol_user_datum_t *user_datum = NULL;
-	sepol_role_datum_t *role_datum = NULL;
-	int buf_sz = 0;
+        apol_context_t *c = NULL;
+        char *rendered_context;
 
 	if (policydb == NULL)
 		return NULL;
 
-	if (context != NULL && sepol_context_struct_get_type(policydb->sh, policydb->p, context, &type_datum))
-		return NULL;
-	if (context != NULL && sepol_context_struct_get_user(policydb->sh, policydb->p, context, &user_datum))
-		return NULL;
-	if (context != NULL && sepol_context_struct_get_role(policydb->sh, policydb->p, context, &role_datum))
-		return NULL;
-
-	/* handle case where initial SID does not have a context */
-	if(context == NULL) {
-		if(append_str(&buf, &buf_sz, "<no context>") != 0) {
-			ERR(policydb, "Out of memory!");
-			goto err_return;
-		}
-		return buf;
-	}
-
-	/* render context */
-	if (sepol_user_datum_get_name(policydb->sh, policydb->p, user_datum, &name))
-		goto err_return;
-	if (append_str(&buf, &buf_sz, name) != 0 ||
-            append_str(&buf, &buf_sz, ":") != 0) {
-		ERR(policydb, "Out of memory!");
-		goto err_return;
-	}
-	if (sepol_role_datum_get_name(policydb->sh, policydb->p, role_datum, &name))
-		goto err_return;
-	if (append_str(&buf, &buf_sz, name) != 0 ||
-	    append_str(&buf, &buf_sz, ":") != 0) {
-		ERR(policydb, "Out of memory!");
-		goto err_return;
-	}
-	if (sepol_type_datum_get_name(policydb->sh, policydb->p, type_datum, &name))
-		goto err_return;
-	if(append_str(&buf, &buf_sz, name) != 0) {
-		ERR(policydb, "Out of memory!");
-		goto err_return;
-	}
-	/* render range */
-	if (sepol_policydb_is_mls_enabled(policydb->sh, policydb->p)) {
-		sepol_mls_range_t *sepol_range = NULL;
-		if (sepol_context_struct_get_range(policydb->sh, policydb->p, context, &sepol_range))
-			goto err_return;
-		if (sepol_range != NULL) {
-			apol_mls_range_t *range = NULL;
-			if ((range = apol_mls_range_create_from_sepol_mls_range(policydb, sepol_range)) == NULL) {
-				goto err_return;
-			}
-			if ((range_str = re_render_mls_range2(policydb, range)) == NULL) {
-				apol_mls_range_destroy(&range);
-				goto err_return;
-			}
-			if (append_str(&buf, &buf_sz, ":") ||
-			    append_str(&buf, &buf_sz, range_str) != 0) {
-				apol_mls_range_destroy(&range);
-				free(range_str);
-				ERR(policydb, "Out of memory!");
-				goto err_return;
-			}
-			apol_mls_range_destroy(&range);
-			free(range_str);
-		}
-	}
-	return buf;
-
-err_return:
-	free(buf);
-	return NULL;
+        if ((c = apol_context_create_from_sepol_context(policydb, context)) == NULL) {
+                return NULL;
+        }
+        rendered_context = apol_context_render(policydb, c);
+        apol_context_destroy(&c);
+        return rendered_context;
 }
 
 /* security contexts */

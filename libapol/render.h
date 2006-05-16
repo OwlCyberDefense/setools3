@@ -1,14 +1,3 @@
- /* Copyright (C) 2003-2004 Tresys Technology, LLC
- * see file 'COPYING' for use and warranty information */
-
-/* 
- * Author: mayerf@tresys.com 
- */
-
-/* render.h */
-
-/* Utility functions to render aspects of a policy into strings */
-
 #ifndef _APOLICY_RENDER_H_
 #define _APOLICY_RENDER_H_
 
@@ -175,12 +164,12 @@ char *re_render_nodecon2(apol_policy_t *policydb, sepol_nodecon_t *nodecon);
 char *re_render_genfscon2(apol_policy_t *policydb, sepol_genfscon_t *genfscon);
 
 /**
- * Creates a string containing the textual representation of 
+ * Creates a string containing the textual representation of
  * a fs_use type.
  * @param policydb Reference to a policy.
  * @param fsuse Reference to the fs_use statement to be rendered.
  *
- * @return A newly allocated string on success, caller must free; 
+ * @return A newly allocated string on success, caller must free;
  * NULL on error.
  */
 char *re_render_fs_use2(apol_policy_t *policydb, sepol_fs_use_t *fsuse);

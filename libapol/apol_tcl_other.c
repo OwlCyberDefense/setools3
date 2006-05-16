@@ -38,8 +38,6 @@
 #include "perm-map.h"
 
 #include "component-query.h"
-#include "context-query.h"
-#include "mls-query.h"
 
 #include "apol_tcl_render.h"
 #include "apol_tcl_components.h"
@@ -90,62 +88,6 @@ void apol_tcl_write_error(Tcl_Interp *interp)
 		Tcl_SetObjResult(interp, obj);
 		apol_tcl_clear_error();
 	}
-}
-
-/* Takes a Tcl string representing a MLS level and converts it to an
- * ap_mls_level_t object.  Returns 0 on success, 1 if a identifier was
- * not unknown, or -1 on error. */
-int ap_tcl_level_string_to_level(Tcl_Interp *interp, const char *level_string, ap_mls_level_t *level) {
-        Tcl_Obj *level_obj, *sens_obj, *cats_list_obj, *cats_obj;
-        const char *sens_string, *cat_string;
-        int num_cats, i, cat_value;
-        level->sensitivity = 0;
-        level->categories = NULL;
-        level->num_categories = 0;
-
-        if (policy == NULL) {
-                /* no policy, so nothing to convert */
-                return 1;
-        }
-        level_obj = Tcl_NewStringObj(level_string, -1);
-        if (Tcl_ListObjIndex(interp, level_obj, 0, &sens_obj) == TCL_ERROR) {
-                return -1;
-        }
-        if (Tcl_ListObjIndex(interp, level_obj, 1, &cats_list_obj) == TCL_ERROR) {
-                return -1;
-        }
-        if (sens_obj == NULL || cats_list_obj == NULL) {
-                /* no sensitivity given -- this is an error */
-                Tcl_SetResult(interp, "Sensivitiy string did not have two elements within it.", TCL_STATIC);
-                return -1;
-        }
-        sens_string = Tcl_GetString(sens_obj);
-        if ((level->sensitivity = get_sensitivity_idx(sens_string, policy)) < 0) {
-                /* unknown sensitivity */
-                return 1;
-        }
-        if (Tcl_ListObjLength(interp, cats_list_obj, &num_cats) == TCL_ERROR) {
-                return -1;
-        }
-        for (i = 0; i < num_cats; i++) {
-                if (Tcl_ListObjIndex(interp, cats_list_obj, i, &cats_obj) == TCL_ERROR) {
-                        free(level->categories);
-                        return -1;
-                }
-                assert(cats_obj != NULL);
-                cat_string = Tcl_GetString(cats_obj);
-                if ((cat_value = get_category_idx(cat_string, policy)) < 0) {
-                        /* unknown category */
-                        free(level->categories);
-                        return 1;
-                }
-                if (add_i_to_a(cat_value, &(level->num_categories), &(level->categories))) {
-                        Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
-                        free(level->categories);
-                        return -1;
-                }
-        }
-        return 0;
 }
 
 int apol_tcl_string_to_level(Tcl_Interp *interp, const char *level_string,
@@ -223,7 +165,7 @@ int apol_tcl_string_to_range(Tcl_Interp *interp, const char *range_string,
 	}
 	low_string = Tcl_GetString(low_obj);
 	if ((low_level = apol_mls_level_create()) == NULL) {
-		ERR(policydb, "Out of memory.");
+		ERR(policydb, "Out of memory!");
 		goto cleanup;
 	}
 	if ((retval = apol_tcl_string_to_level(interp, low_string, low_level)) != 0) {
@@ -249,7 +191,7 @@ int apol_tcl_string_to_range(Tcl_Interp *interp, const char *range_string,
 		}
 		high_string = Tcl_GetString(high_obj);
 		if ((high_level = apol_mls_level_create()) == NULL) {
-			Tcl_SetResult(interp, "Out of memory.", TCL_STATIC);
+			Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
 			goto cleanup;
 		}
 		if ((retval = apol_tcl_string_to_level(interp, high_string, high_level)) != 0 ||
@@ -959,122 +901,29 @@ static int Apol_IsValidRange(ClientData clientData, Tcl_Interp *interp, int argc
 }
 
 
-/* Takes a Tcl string representing a context (user:role:type:range)
- * and converts it to a securite_con_t object.  If a component is
- * blank then set it to -1/NULL.  Returns 0 on success, 1 if a identifier
- * was not unknown, or -1 on error. */
-static int tcl_context_string_to_context(Tcl_Interp *interp, char *context_string, security_con_t *context,
-                                         ap_mls_range_t *range, ap_mls_level_t *low_level, ap_mls_level_t *high_level) {
-        Tcl_Obj *context_obj, *user_obj, *role_obj, *type_obj, *range_obj;
-        const char *user_string, *role_string, *type_string;
-        int range_len;
-
-        context->user = context->role = context->type = -1;
-        context->range = NULL;
-
-        if (policy == NULL) {
-                return 1;
-        }
-        context_obj = Tcl_NewStringObj(context_string, -1);
-        if (Tcl_ListObjIndex(interp, context_obj, 0, &user_obj) == TCL_ERROR ||
-            user_obj == NULL) {
-                return -1;
-        }
-        user_string = Tcl_GetString(user_obj);
-        if (strcmp(user_string, "") != 0) {
-                if ((context->user = get_user_idx(user_string, policy)) < 0) {
-                        return 1;
-                }
-        }
-        if (Tcl_ListObjIndex(interp, context_obj, 1, &role_obj) == TCL_ERROR ||
-            role_obj == NULL) {
-                return -1;
-        }
-        role_string = Tcl_GetString(role_obj);
-        if (strcmp(role_string, "") != 0) {
-                if ((context->role = get_role_idx(role_string, policy)) < 0) {
-                        return 1;
-                }
-        }
-        if (Tcl_ListObjIndex(interp, context_obj, 2, &type_obj) == TCL_ERROR ||
-            type_obj == NULL) {
-                return -1;
-        }
-        type_string = Tcl_GetString(type_obj);
-        if (strcmp(type_string, "") != 0) {
-                if ((context->type = get_type_idx(type_string, policy)) < 0) {
-                        return 1;
-                }
-        }
-        if (Tcl_ListObjIndex(interp, context_obj, 3, &range_obj) == TCL_ERROR ||
-            range_obj == NULL ||
-            Tcl_ListObjLength(interp, range_obj, &range_len) == TCL_ERROR) {
-                return -1;
-        }
-        if (range_len != 0) {
-                Tcl_Obj *low_obj, *high_obj;
-                char *level_string;
-                if (Tcl_ListObjIndex(interp, range_obj, 0, &low_obj) == TCL_ERROR) {
-                        return -1;
-                }
-                level_string = Tcl_GetString(low_obj);
-                if (strcmp(level_string, "{} {}") == 0) {
-                        /* no real level given, so treat it as being empty */
-                        return 0;
-                }
-                if (ap_tcl_level_string_to_level(interp, level_string, low_level)) {
-                        return -1;
-                }
-                range->low = low_level;
-                if (range_len == 1) {
-                        range->high = low_level;
-                }
-                else {
-                        if (Tcl_ListObjIndex(interp, range_obj, 1, &high_obj) == TCL_ERROR) {
-                                return -1;
-                        }
-                        level_string = Tcl_GetString(high_obj);
-                        if (strcmp(level_string, "{} {}") == 0) {
-                                /* no real level given, so treat it as being empty */
-                                range->high = low_level;
-                                context->range = range;
-                                return 0;
-                        }
-                        if (ap_tcl_level_string_to_level(interp, level_string, high_level)) {
-                                ap_mls_level_free(low_level);
-                                range->low = range->high = NULL;
-                                return -1;
-                        }
-                        range->high = high_level;
-                }
-                context->range = range;
-        }
-        return 0;
-}
-
 /**
  * Checks if a context is partially valid or not according to the
  * policy.  Returns 1 if valid, 0 if invalid.
  */
 static int Apol_IsValidPartialContext(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
-        apol_context_t *context = NULL;
-        int retval = TCL_ERROR, retval2;
-        apol_tcl_clear_error();
+	apol_context_t *context = NULL;
+	int retval = TCL_ERROR, retval2;
+	apol_tcl_clear_error();
 	if (policy == NULL) {
 		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		goto cleanup;
 	}
-	if (argc < 2) {
-		Tcl_SetResult(interp, "Need a Tcl context.", TCL_STATIC);
-		return TCL_ERROR;
+	if (argc != 2) {
+		ERR(policydb, "Need a Tcl context.");
+		goto cleanup;
 	}
-        if ((context = apol_context_create()) == NULL) {
-                Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
-                return TCL_ERROR;
-        }
-        retval2 = apol_tcl_string_to_context(interp, argv[1], context);
-        	if (retval2 < 0) {
+	if ((context = apol_context_create()) == NULL) {
+		ERR(policydb, "Out of memory!");
+		goto cleanup;
+	}
+	retval2 = apol_tcl_string_to_context(interp, argv[1], context);
+	if (retval2 < 0) {
 		goto cleanup;
 	}
 	else if (retval2 == 1) {
@@ -1092,132 +941,13 @@ static int Apol_IsValidPartialContext(ClientData clientData, Tcl_Interp *interp,
 		goto cleanup;
 	}
 	Tcl_SetResult(interp, "1", TCL_STATIC);
-        retval = TCL_OK;
+	retval = TCL_OK;
  cleanup:
-        apol_context_destroy(&context);
+	apol_context_destroy(&context);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
-        return retval;
-}
-
-/* Compare two contexts:
- *
- *  argv[1] - first context  (4-ple of components)
- *  argv[2] - second context (4-ple of components)
- *  argv[3] - search type  ("exact", "subset", or "superset")
- *
- * A context consists of a user, role, type, and MLS range.  The first
- * context may have empty elements that indicate not to compare that
- * region.  argv[3] is ignored if argv[1] does not give an MLS range.
- * Returns 1 if the comparison succeeds (based upon search type), 0 if
- * not.
- *   for subset, is argv[1] a subset of argv[2]
- *   for superset, is argv[1] a superset of argv[2]
- */
-int Apol_CompareContexts(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
-{
-        security_con_t context1 = {0, 0, 0, NULL}, context2 = {0, 0, 0, NULL};
-        ap_mls_range_t range1, range2;
-        ap_mls_level_t low1, high1, low2, high2;
-        int retval = TCL_ERROR;
-        unsigned char range_match = 0;
-        bool_t answer;
-
-        if (argc != 4) {
-		Tcl_SetResult(interp, "wrong # of args", TCL_STATIC);
-                goto cleanup;
-	}
-	if (policy == NULL) {
-                Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
-                goto cleanup;
-	}
-        if (tcl_context_string_to_context(interp, argv[1], &context1,
-                                          &range1, &low1, &high1) != 0) {
-                Tcl_SetResult(interp, "Could not convert context1 to struct.", TCL_STATIC);
-                goto cleanup;
-        }
-        if (tcl_context_string_to_context(interp, argv[2], &context2,
-                                          &range2, &low2, &high2) != 0) {
-                Tcl_SetResult(interp, "Could not convert context2 to struct.", TCL_STATIC);
-                goto cleanup;
-        }
-        if (context1.range != NULL && context2.range != NULL) {
-                if (strcmp(argv[3], "exact") == 0) {
-                        range_match = AP_MLS_RTS_RNG_EXACT;
-                }
-                else if (strcmp(argv[3], "subset") == 0) {
-                        range_match = AP_MLS_RTS_RNG_SUB;
-                }
-                else if (strcmp(argv[3], "superset") == 0) {
-                        range_match = AP_MLS_RTS_RNG_SUPER;
-                }
-        }
-        answer = match_security_context(&context2, &context1, range_match, policy);
-        if (answer == TRUE) {
-                Tcl_SetResult(interp, "1", TCL_STATIC);
-        }
-        else {
-                Tcl_SetResult(interp, "0", TCL_STATIC);
-        }
-        retval = TCL_OK;
-
- cleanup:
-        if (context1.range != NULL) {
-                ap_mls_range_free(context1.range);
-        }
-        if (context2.range != NULL) {
-                ap_mls_range_free(context2.range);
-        }
-        return retval;
-}
-
-/* Determines if a user address would be accepted by a addr/mask pair.
- *   argv[1] - user address (4-ple address)
- *   argv[2] - target address (4-ple address)
- *   argv[3] - target mask (4-ple mask)
- * Returns 1 if address is accepted, 0 if not.
- */
-int Apol_CompareAddresses(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
-{
-        Tcl_Obj *user_addr_obj, *tgt_addr_obj, *tgt_mask_obj, *x, *y, *z;
-        long ua, ta, tm;
-        int i;
-
-        if (argc != 4) {
-		Tcl_SetResult(interp, "wrong # of args", TCL_STATIC);
-                return TCL_ERROR;
-        }
-
-        user_addr_obj = Tcl_NewStringObj(argv[1], -1);
-        tgt_addr_obj = Tcl_NewStringObj(argv[2], -1);
-        tgt_mask_obj = Tcl_NewStringObj(argv[3], -1);
-        for (i = 0; i < 4; i++) {
-                if (Tcl_ListObjIndex(interp, user_addr_obj, i, &x) == TCL_ERROR ||
-                    x == NULL ||
-                    Tcl_GetLongFromObj(interp, x, &ua) == TCL_ERROR) {
-                        Tcl_AppendResult(interp, "Invalid user address ", argv[1], NULL);
-                        return TCL_ERROR;
-                }
-                if (Tcl_ListObjIndex(interp, tgt_addr_obj, i, &y) == TCL_ERROR ||
-                    y == NULL ||
-                    Tcl_GetLongFromObj(interp, y, &ta) == TCL_ERROR) {
-                        Tcl_AppendResult(interp, "Invalid target address ", argv[2], NULL);
-                        return TCL_ERROR;
-                }
-                if (Tcl_ListObjIndex(interp, tgt_mask_obj, i, &z) == TCL_ERROR ||
-                    z == NULL ||
-                    Tcl_GetLongFromObj(interp, z, &tm) == TCL_ERROR) {
-                        Tcl_AppendResult(interp, "Invalid target mask ", argv[3], NULL);
-                        return TCL_ERROR;
-                }
-                if ((ua & tm) != ta) {
-                        Tcl_SetResult(interp, "0", TCL_STATIC);
-                        return TCL_OK;
-                }
-        }
-        Tcl_SetResult(interp, "1", TCL_STATIC);
-        return TCL_OK;
+	return retval;
 }
 
 /* 
@@ -1441,8 +1171,6 @@ int Apol_Init(Tcl_Interp *interp)
 	Tcl_CreateCommand(interp, "apol_GetDefault_PermMap", (Tcl_CmdProc *) Apol_GetDefault_PermMap, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_IsValidRange", Apol_IsValidRange, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_IsValidPartialContext", Apol_IsValidPartialContext, NULL, NULL);
-	Tcl_CreateCommand(interp, "apol_CompareContexts", (Tcl_CmdProc *) Apol_CompareContexts, NULL, NULL);
-	Tcl_CreateCommand(interp, "apol_CompareAddresses", (Tcl_CmdProc *) Apol_CompareAddresses, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetPolicyType", (Tcl_CmdProc *) Apol_GetPolicyType, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 
         if (ap_tcl_render_init(interp) != TCL_OK ||

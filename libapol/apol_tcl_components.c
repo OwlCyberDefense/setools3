@@ -112,7 +112,7 @@ static int Apol_GetTypes(ClientData clientData, Tcl_Interp *interp, int argc, CO
 
 	apol_tcl_clear_error();
 	if (policy == NULL) {
-		ERR(policydb, "No current policy file is opened!");
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		goto cleanup;
 	}
 	if (argc < 2) {
@@ -246,7 +246,7 @@ static int Apol_GetAttribs(ClientData clientData, Tcl_Interp *interp, int argc, 
 
 	apol_tcl_clear_error();
 	if (policy == NULL) {
-		ERR(policydb, "No current policy file is opened!");
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		goto cleanup;
 	}
 	if (argc < 2) {
@@ -379,7 +379,7 @@ static int Apol_GetClasses(ClientData clientData, Tcl_Interp *interp, int argc, 
 
 	apol_tcl_clear_error();
 	if (policy == NULL) {
-		ERR(policydb, "No current policy file is opened!");
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		goto cleanup;
 	}
 	if (argc < 2) {
@@ -529,7 +529,7 @@ static int Apol_GetCommons(ClientData clientData, Tcl_Interp *interp, int argc, 
 
 	apol_tcl_clear_error();
 	if (policy == NULL) {
-		ERR(policydb, "No current policy file is opened!");
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		goto cleanup;
 	}
 	if (argc < 2) {
@@ -670,7 +670,7 @@ static int Apol_GetPerms(ClientData clientData, Tcl_Interp *interp, int argc, CO
 
 	apol_tcl_clear_error();
 	if (policy == NULL) {
-		ERR(policydb, "No current policy file is opened!");
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		goto cleanup;
 	}
 	if (argc < 2) {
@@ -815,7 +815,7 @@ static int Apol_GetRoles(ClientData clientData, Tcl_Interp *interp, int argc, CO
 
 	apol_tcl_clear_error();
 	if (policy == NULL) {
-		ERR(policydb, "No current policy file is opened!");
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		goto cleanup;
 	}
 	if (argc != 2 && argc != 4) {
@@ -1006,7 +1006,7 @@ static int Apol_GetUsers(ClientData clientData, Tcl_Interp *interp, int argc, CO
 
 	apol_tcl_clear_error();
 	if (policy == NULL) {
-		ERR(policydb, "No current policy file is opened!");
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		goto cleanup;
 	}
 	if (argc != 2 && argc < 7) {
@@ -1045,7 +1045,7 @@ static int Apol_GetUsers(ClientData clientData, Tcl_Interp *interp, int argc, CO
 		if (*argv[3] != '\0') {
 			apol_mls_level_t *default_level;
 			if ((default_level = apol_mls_level_create()) == NULL) {
-				ERR(policydb, "Out of memory.");
+				ERR(policydb, "Out of memory!");
 				goto cleanup;
 			}
 			if (apol_tcl_string_to_level(interp, argv[3], default_level) != 0 ||
@@ -1061,7 +1061,7 @@ static int Apol_GetUsers(ClientData clientData, Tcl_Interp *interp, int argc, CO
 				goto cleanup;
 			}
 			if ((range = apol_mls_range_create()) == NULL) {
-				ERR(policydb, "Out of memory.");
+				ERR(policydb, "Out of memory!");
 				goto cleanup;
 			}
 			if (apol_tcl_string_to_range(interp, argv[4], range) != 0 ||
@@ -1144,7 +1144,7 @@ static int Apol_GetBools(ClientData clientData, Tcl_Interp *interp, int argc, CO
 
 	apol_tcl_clear_error();
 	if (policy == NULL) {
-		ERR(policydb, "No current policy file is opened!");
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		goto cleanup;
 	}
 	if (argc != 2 && argc < 3) {
@@ -1210,31 +1210,36 @@ static int Apol_SetBoolValue(ClientData clientData, Tcl_Interp *interp, int argc
 {
 	sepol_bool_datum_t *bool;
 	Tcl_Obj *value_obj;
-	int value;
+	int retval = TCL_ERROR, value;
 
 	apol_tcl_clear_error();
+	if (policy == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		goto cleanup;
+	}
 	if (argc != 3) {
 		ERR(policydb, "Need a bool name and a value.");
-		return TCL_ERROR;
-	}
-	if (policy == NULL) {
-		ERR(policydb, "No current policy file is opened!");
-		return TCL_ERROR;
+		goto cleanup;
 	}
 	if (sepol_policydb_get_bool_by_name(policydb->sh, policydb->p,
 					    argv[1], &bool) < 0) {
 		/* name is not within policy */
-		return TCL_OK;
+		retval = TCL_OK;
+		goto cleanup;
 	}
 	value_obj = Tcl_NewStringObj(argv[2], -1);
 	if (Tcl_GetBooleanFromObj(interp, value_obj, &value) == TCL_ERROR) {
-		return TCL_ERROR;
+		goto cleanup;
 	}
 	if (sepol_bool_datum_set_state(policydb->sh, policydb->p, bool, value) < 0) {
-		apol_tcl_write_error(interp);
-		return TCL_ERROR;
+		goto cleanup;
 	}
-	return TCL_OK;
+	retval = TCL_OK;
+ cleanup:
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
 }
 
 /**
@@ -1332,7 +1337,7 @@ static int Apol_GetLevels(ClientData clientData, Tcl_Interp *interp, int argc, C
 
 	apol_tcl_clear_error();
 	if (policy == NULL) {
-		ERR(policydb, "No current policy file is opened!");
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		goto cleanup;
 	}
 	if (argc < 2) {
@@ -1486,7 +1491,7 @@ static int Apol_GetCats(ClientData clientData, Tcl_Interp *interp, int argc, CON
 
 	apol_tcl_clear_error();
 	if (policy == NULL) {
-		ERR(policydb, "No current policy file is opened!");
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		goto cleanup;
 	}
 	if (argc < 2) {
@@ -1649,7 +1654,7 @@ static int Apol_GetInitialSIDs(ClientData clientData, Tcl_Interp *interp, int ar
 
 	apol_tcl_clear_error();
 	if(policy == NULL) {
-		ERR(policydb, "No current policy file is opened!");
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		goto cleanup;
 	}
 	if (argc != 2 && argc != 4) {
@@ -1762,7 +1767,7 @@ static int append_portcon_to_list(Tcl_Interp *interp,
  *
  * @return 0 on success, <0 if the protocol was unknown.
  */
-static int apol_tcl_string_to_proto(Tcl_Interp *interp, const char *proto_name, int *proto)
+static int apol_tcl_string_to_proto(Tcl_Interp *interp __attribute__ ((unused)), const char *proto_name, int *proto)
 {
 	if (strcmp(proto_name, "tcp") == 0) {
 		*proto = IPPROTO_TCP;
@@ -1814,7 +1819,7 @@ static int Apol_GetPortcons(ClientData clientData, Tcl_Interp *interp, int argc,
 
 	apol_tcl_clear_error();
 	if (policy == NULL) {
-		ERR(policydb, "No current policy file is opened!");
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		goto cleanup;
 	}
 	if (argc != 3 && argc != 6) {
@@ -1946,7 +1951,7 @@ static int Apol_GetNetifcons(ClientData clientData, Tcl_Interp *interp, int argc
 
 	apol_tcl_clear_error();
 	if (policy == NULL) {
-		ERR(policydb, "No current policy file is opened!");
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		goto cleanup;
 	}
 	if (argc != 2 && argc != 6) {
@@ -2132,7 +2137,7 @@ static int Apol_GetNodecons(ClientData clientData, Tcl_Interp *interp, int argc,
 	
 	apol_tcl_clear_error();
 	if (policy == NULL) {
-		ERR(policydb, "No current policy file is opened!");
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		goto cleanup;
 	}
 	if (argc != 2 && argc != 6) {
@@ -2304,7 +2309,7 @@ static int Apol_GetGenFSCons(ClientData clientData, Tcl_Interp *interp, int argc
 
         apol_tcl_clear_error();
         if (policy == NULL) {
-                ERR(policydb, "No current policy file is opened!");
+                Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
                 goto cleanup;
         }
         if (argc != 2 && argc != 5) {
@@ -2453,7 +2458,7 @@ static int Apol_GetFSUses(ClientData clientData, Tcl_Interp *interp, int argc, C
 
 	apol_tcl_clear_error();
 	if (policy == NULL) {
-		ERR(policydb, "No current policy file is opened!");
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		goto cleanup;
 	}
 	if (argc != 2 && argc != 5) {
