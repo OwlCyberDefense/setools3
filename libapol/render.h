@@ -13,7 +13,6 @@ char *re_render_initial_sid_security_context(int idx, policy_t *policy);
 char *re_render_avh_rule(avh_node_t *node, policy_t *p);
 char *re_render_avh_rule_cond_state(avh_node_t *node, policy_t *p);
 char *re_render_avh_rule_linenos(avh_node_t *node, policy_t *p);
-char * re_render_avh_rule_enabled_state(avh_node_t *node, policy_t *p);
 char *re_render_avh_rule_cond_expr(avh_node_t *node, policy_t *p);
 char *re_render_cond_expr(int idx,policy_t *p);
 char *re_render_fs_use(ap_fs_use_t *fsuse, policy_t *policy);
@@ -40,6 +39,7 @@ char *re_render_rangetrans(bool_t addlineno, int idx, policy_t *policy);
  * @author Kevin Carr  kcarr@tresys.com
  * @author Jeremy A. Mowery jmowery@tresys.com
  * @author Jason Tang  jtang@tresys.com
+ * @author David Windsor dwindsor@tresys.com
  *
  * Copyright (C) 2003-2006 Tresys Technology, LLC
  *
@@ -85,28 +85,6 @@ char *re_render_ipv4_addr(apol_policy_t *policydb, uint32_t addr);
  * Returns NULL on error.
  */
 char *re_render_ipv6_addr(apol_policy_t *policydb, uint32_t addr[4]);
-
-/**
- * Creates a string containing the textual representation of
- * a MLS level.
- * @param policydb Reference to a policy.
- * @param level MLS level to render.
- *
- * @return A newly allocated string on success, caller must free;
- * NULL on error.
- */
-char *re_render_mls_level2(apol_policy_t *policydb, apol_mls_level_t *level);
-
-/**
- * Creates a string containing the textual representation of
- * a MLS range.
- * @param policydb Reference to a policy.
- * @param range MLS range to render.
- *
- * @return A newly allocated string on success, caller must free;
- * NULL on error.
- */
-char *re_render_mls_range2(apol_policy_t *policydb, apol_mls_range_t *range);
 
 /**
  * Creates a string containing the textual representation of

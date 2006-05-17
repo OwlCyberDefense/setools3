@@ -98,20 +98,6 @@ int _get_type_name_ptr(int idx, char **name, policy_t *policy)
 	*name = policy->types[idx].name;
 	return 0;
 }
-int _get_role_name_ptr(int idx, char **name, policy_t *policy)
-{
-	if(!is_valid_role_idx(idx, policy))
-		return -1;
-	*name = policy->roles[idx].name;
-	return 0;
-}
-int _get_user_name_ptr(int idx, char **name, policy_t *policy)
-{
-	if(!is_valid_user_idx(idx, policy))
-		return -1;
-	*name = policy->users[idx].name;
-	return 0;
-}
 /**************/
 
 int init_policy(policy_t **p)
@@ -827,7 +813,7 @@ int add_initial_sid2(char *name, __u32 sid, policy_t *policy)
 int add_initial_sid_context(int idx, security_con_t *scontext, policy_t *policy)
 {
 	if(!is_valid_initial_sid_idx(idx, policy))
-		return -1;
+d		return -1;
 	policy->initial_sids[idx].scontext = scontext;
 	return 0;
 }
@@ -839,90 +825,6 @@ int get_initial_sid_idx(const char *name, policy_t *policy)
 
 	/* traverse the avl tree */
 	return avl_get_idx(name, &policy->tree[AVL_INITIAL_SIDS]);
-}
-
-/* allocates space for name, release memory with free() */
-int get_initial_sid_name(int idx, char **name, policy_t *policy)
-{
-	if(policy == NULL || !is_valid_initial_sid_idx(idx, policy) || name == NULL)
-		return -1;
-	if((*name = (char *)malloc(strlen(policy->initial_sids[idx].name)+1)) == NULL) {
-		fprintf(stderr, "out of memory\n");
-		return -1;
-	}
-	strcpy(*name, policy->initial_sids[idx].name);
-	return 0;
-}
-
-/* selected SID idxs returned in results (NULL means no matches)...caller must free
- * For user, type, and role, use NULL to not use that criteria.  A match means that
- * ALL criteria is satisfied. */
-int search_initial_sids_context(int **isids, int *num_isids, const char *user, const char *role, const char *type, policy_t *policy)
-{
-	/* initialize ridx and tidx so to avoid compile warnings when compiled with optimized flag */
-	int uidx = -1, ridx = -1, tidx = -1, i;
-	
-	if(policy == NULL || isids == NULL || num_isids == NULL) {
-		return -1;
-	}
-	
-	/* For role and type idx, we use < 0 as an indicator that we don't care about these criteria.
-	 * So we can simply take the error return from the idx lookup functions.  For uidx, NULL
-	 * is used to indicate we don't care. */
-	 
-	/* NOTE: since a match must meet ALL criteria, if we fail to look up any of the criteria
-	 * in the policy (because they id does not exists), we will return immediately with a 
-	 * empty list of isids */
-	*num_isids = 0;
-	*isids = NULL;
-		
-	if(role != NULL) {
-		ridx = get_role_idx(role, policy);
-		if(ridx < 0) {
-			return 0;
-		}
-	} 
-	
-	if(type != NULL) {
-		tidx = get_type_idx(type, policy);
-		if(tidx < 0) {
-			return 0;
-		}
-	} 
-	
-	if(user != NULL) {
-		uidx = get_user_idx(user, policy);
-		if(uidx < 0) {
-			return 0;
-		}
-	} 
-
-	for(i = 0; i < policy->num_initial_sids; i++) {
-		if (type != NULL) {
-			 /* Make sure this sid has a context and if so, compare the type field */
-			 if (!(policy->initial_sids[i].scontext != NULL && tidx == policy->initial_sids[i].scontext->type)) {
-			 	continue;
-			 }
-		}
-		if (role != NULL) {
-			 /* Make sure this sid has a context and if so, compare the role field */
-			 if (!(policy->initial_sids[i].scontext != NULL && ridx == policy->initial_sids[i].scontext->role)) {
-			 	continue;	
-			 }
-		}
-		if (user != NULL) {
-			 /* Make sure this sid has a context and if so, compare the user field */
-			 if (!(policy->initial_sids[i].scontext != NULL && uidx == policy->initial_sids[i].scontext->user)) {
-			 	continue;	
-			 }
-		}
-		/* If we get here, we have either matched ALL criteria or all parameters given are empty. */
-		if(add_i_to_a(i, num_isids, isids) < 0) {
-			free(isids);
-			return -1;
-		}
-	}
-	return 0;
 }
 
 /*
@@ -1234,61 +1136,8 @@ bool_t is_attrib_in_type(const char *attrib, int type_idx, policy_t *policy)
 }
 
 typedef int (*_get_name_ptr_t)(int idx, char **name, policy_t *policy);
-static bool_t is_name_in_namea(const char *name, int idx_type, int idx, policy_t *policy) 
-{
-	int i, rt;
-	name_a_t *list;
-	_get_name_ptr_t _get_name;
-	char *n;
-	
-	switch(idx_type) {
-	case IDX_ATTRIB:
-		if(!is_valid_attrib_idx(idx, policy))
-			return FALSE;
-		list = policy->attribs;
-		_get_name = &_get_type_name_ptr;
-		break;
-	default:
-		return FALSE;
-	}
-		
-	for(i = 0; i < list[idx].num; i++) {
-		/* DO NOT free() n; it's an internal ptr */
-		rt = _get_name(list[idx].a[i], &n, policy);
-		if(rt < 0) {
-			assert(FALSE); /* shouldn't get this error */
-			return FALSE;
-		}
-		if(strcmp(n, name) == 0)
-			return TRUE;
-	}
-	return FALSE;
-}
 
-bool_t is_type_in_attrib(const char *type, int attrib_idx, policy_t *policy) 
-{
-	return(is_name_in_namea(type, IDX_ATTRIB, attrib_idx, policy));
-}
-
-bool_t is_type_in_role(const char *type, int role_idx, policy_t *policy) 
-{
-	int type_idx;
-
-	if (!type || !policy || !is_valid_role_idx(role_idx, policy)) {
-		errno = EINVAL;
-		return FALSE;
-	}
-
-	type_idx = get_type_idx(type, policy);
-	if (!is_valid_type_idx(type_idx, policy)) {
-		errno = EINVAL;
-		return FALSE;
-	}
-
-	return ((find_int_in_array(type_idx, policy->roles[role_idx].types, policy->roles[role_idx].num_types) != -1) ? TRUE : FALSE);
-}
-
-bool_t is_role_in_user(const char *role, int user_idx, policy_t *policy) 
+bool_t is_role_in_user(const char *role, int user_idx, policy_t *policy)
 {
 	int role_idx;
 
@@ -1574,14 +1423,6 @@ int get_obj_class_name(int idx, char **name, policy_t *policy)
 	}
 	strcpy(*name, policy->obj_classes[idx].name);
 	return 0;
-}
-
-int get_obj_class_perm_idx(int cls_idx, int idx, policy_t *policy)
-{
-	if(policy == NULL || !is_valid_obj_class_idx(cls_idx, policy) || idx < 0 ||
-			idx >= policy->obj_classes[cls_idx].num_u_perms) 
-		return -1;
-	return(policy->obj_classes[cls_idx].u_perms[idx]);
 }
 
 int get_num_perms_for_obj_class(int cls_idx, policy_t *policy)
@@ -3173,49 +3014,21 @@ int get_cond_bool_idx(const char *name, policy_t *policy)
 {
 	if(name == NULL || policy == NULL)
 		return -1;
-	
-	return avl_get_idx(name, &policy->tree[AVL_COND_BOOLS]);		
-}
 
-/*
- * Get the current value of the conditional boolean in the policy.
- *
- * returns the value of the boolean on success.
- * returns -1 on error.
- */
-int get_cond_bool_val(const char *name, bool_t *val, policy_t *policy)
-{
-	int idx;
-	
-	if(name == NULL || policy == NULL || val == NULL)
-		return -1;
-	
-	idx = avl_get_idx(name, &policy->tree[AVL_COND_BOOLS]);
-	if (idx < 0) 
-		return -1;
-	*val = policy->cond_bools[idx].state; 
-	return 0;
+	return avl_get_idx(name, &policy->tree[AVL_COND_BOOLS]);
 }
 
 int get_cond_bool_default_val(const char *name, bool_t *val, policy_t *policy)
 {
 	int idx;
-	
+
 	if(name == NULL || policy == NULL || val == NULL)
 		return -1;
-	
-	idx = avl_get_idx(name, &policy->tree[AVL_COND_BOOLS]);
-	if (idx < 0) 
-		return -1;
-	*val = policy->cond_bools[idx].default_state; 	
-	return 0;
-}
 
-int get_cond_bool_val_idx(int idx, bool_t *val, policy_t *policy) {
-	if(val == NULL || !is_valid_cond_bool_idx(idx, policy))
+	idx = avl_get_idx(name, &policy->tree[AVL_COND_BOOLS]);
+	if (idx < 0)
 		return -1;
-	
-	*val = policy->cond_bools[idx].state; 
+	*val = policy->cond_bools[idx].default_state;
 	return 0;
 }
 
@@ -3341,34 +3154,6 @@ int update_cond_expr_items(policy_t *policy)
 	for (i = 0; i < policy->num_cond_exprs; i++) {
 		if (update_cond_expr_item(i, policy) != 0)
 			return -1;
-	}
-	return 0;
-}
-
-/*
- * Set the value of the condition bool. This will not update all of the conditional
- * expressions to reflect the change in value.
- *
- * RETURNS:
- * 	0 on success.
- * 	-1 on error.
- */
-int set_cond_bool_val(int bool, bool_t state, policy_t *policy)
-{
-	if (!policy || !is_valid_cond_bool_idx(bool, policy))
-		return -1;
-	
-	policy->cond_bools[bool].state = state;
-	
-	return 0;
-}
-
-int set_cond_bool_vals_to_default(policy_t *policy)
-{
-	int i;
-	
-	for (i = 0; i < policy->num_cond_bools; i++) {
-		policy->cond_bools[i].state = policy->cond_bools[i].default_state;
 	}
 	return 0;
 }
@@ -4177,56 +3962,6 @@ ap_mls_level_t * ap_mls_sensitivity_get_level(int sens, policy_t *policy)
 	return lvl;
 }
 
-int ap_mls_sens_get_level_cats(int sens, int **cats, int *num_cats, policy_t *policy)
-{
-	ap_mls_level_t *lvl = NULL;
-
-	if (!policy || sens < 0 || sens > policy->num_sensitivities || !cats || !num_cats)
-		return -1;
-
-	lvl = ap_mls_sensitivity_get_level(sens, policy);
-	if (!lvl)
-		return -1;
-
-	*num_cats = lvl->num_categories;
-	if (*num_cats) {
-		*cats = (int*)malloc( lvl->num_categories * sizeof(int));
-		if (!(*cats))
-			return -1;
-		memcpy(*cats, lvl->categories, *num_cats * sizeof(int));
-	} else {
-		*cats = NULL;
-	}
-
-	return 0;
-}
-
-int ap_mls_category_get_sens(int cat, int **sens, int *num_sens, policy_t *policy)
-{
-	int retv, i;
-
-	if (!policy || !sens || !num_sens || cat < 0 || cat > policy->num_categories)
-		return -1;
-
-	*sens = NULL;
-	*num_sens = 0;
-
-	for (i = 0; i < policy->num_levels; i++) {
-		retv = find_int_in_array(cat, policy->levels[i].categories, policy->levels[i].num_categories);
-		if (retv != -1) {
-			retv = add_i_to_a(policy->levels[i].sensitivity, num_sens, sens);
-			if (retv) {
-				free(*sens);
-				*sens = NULL;
-				*num_sens = 0;
-				return -1;
-			}
-		}
-	}
-
-	return 0;
-}
-
 /* dummy array matching function returns true if a1 and a2 have at least one common element*/
 static bool_t match_int_arrays(int *a1, int a1_sz, int *a2, int a2_sz)
 {
@@ -4601,71 +4336,6 @@ bool_t validate_security_context(const security_con_t *context, policy_t *policy
 		return FALSE;
 
 	return TRUE;
-}
-
-bool_t match_security_context(security_con_t *context1, security_con_t *context2, unsigned char range_match, policy_t *policy)
-{
-	if (!context1 || !context2 || !policy)
-		return FALSE;
-
-	if (context1->user >= 0 && context2->user >= 0 && context1->user != context2->user)
-		return FALSE;
-	if (context1->role >= 0 && context2->role >= 0 && context1->role != context2->role)
-		return FALSE;
-	if (context1->type >= 0 && context2->type >= 0 && context1->type != context2->type)
-		return FALSE;
-
-	/* mask out unused bits */
-	range_match &= AP_MLS_RTS_RNG_SUB|AP_MLS_RTS_RNG_SUPER|AP_MLS_RTS_RNG_EXACT;
-
-	switch(range_match) {
-	case AP_MLS_RTS_RNG_SUB:
-	{
-		if (!ap_mls_does_range_contain_subrange(context1->range, context2->range, policy))
-			return FALSE;
-                break;
-	}
-	case AP_MLS_RTS_RNG_SUPER:
-	{
-		if (!ap_mls_does_range_contain_subrange(context2->range, context1->range, policy))
-			return FALSE;
-                break;
-	}
-	case AP_MLS_RTS_RNG_EXACT: /* EXACT = SUB | SUPER */
-	{
-		if (ap_mls_level_compare(context1->range->low, context2->range->low, policy) != AP_MLS_EQ || ap_mls_level_compare(context1->range->high, context2->range->high, policy) != AP_MLS_EQ)
-			return FALSE;
-                break;
-	}
-	case 0: /* nothing selected - no matching check */
-	{
-		break;
-	}
-	default: /* should not be possible to get here */
-	{
-		assert(0);
-		break;
-	}
-	}
-
-	return TRUE;
-}
-
-int ap_genfscon_get_num_paths(policy_t *policy)
-{
-	int i, num_genfs = 0;
-	ap_genfscon_node_t *tmp_node = NULL;
-
-	if (!policy) {
-		errno = EINVAL;
-		return -1;
-	}
-
-	for (i = 0; i < policy->num_genfscon; i++)
-		for (tmp_node = policy->genfscon[i].paths; tmp_node; tmp_node = tmp_node->next)
-			num_genfs++;
-
-	return num_genfs;
 }
 
 /* optionals */

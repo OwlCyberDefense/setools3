@@ -339,7 +339,7 @@ char *apol_context_render(apol_policy_t *p, apol_context_t *context)
 	}
 	/* render range */
 	if (apol_policy_is_mls(p)) {
-                if ((range_str = re_render_mls_range2(p, context->range)) == NULL) {
+                if ((range_str = apol_mls_range_render(p, context->range)) == NULL) {
                         goto err_return;
                 }
                 if (append_str(&buf, &buf_sz, ":") ||

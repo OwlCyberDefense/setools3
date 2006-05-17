@@ -1,19 +1,3 @@
-/* Copyright (C) 2001-2004 Tresys Technology, LLC
- * see file 'COPYING' for use and warranty information */
-
-/* 
- * Author: mayerf@tresys.com 
- */
-
-/* policy.h
- *
- * analysis policy database support header 
- *
- * Our policy database (see below) is completly different
- * than that used by checkpolicy; we're trying to analyze from
- * policy.conf "up" to higher abstractions.
- */
-
 #ifndef _APOLICY_POLICY_H_
 #define _APOLICY_POLICY_H_
 
@@ -679,7 +663,6 @@ int get_obj_class_name(int idx, char **name, policy_t *policy);
 int get_obj_class_idx(const char *name, policy_t *policy);
 int get_num_perms_for_obj_class(int clss_idx, policy_t *policy);
 int get_obj_class_common_perm_idx(int cls_idx,  policy_t *policy);
-int get_obj_class_perm_idx(int cls_idx, int idx, policy_t *policy);
 int get_obj_class_perms(int obj_class, int *num_perms, int **perms, policy_t *policy);
 int get_obj_class_nth_perm_idx(int cls_idx, int n, policy_t *policy);
 
@@ -711,8 +694,6 @@ int add_initial_sid(char *name, policy_t *policy);
 int add_initial_sid2(char *name, __u32 sid, policy_t *policy);
 int get_initial_sid_idx(const char *name, policy_t *policy);
 int add_initial_sid_context(int idx, security_con_t *scontext, policy_t *policy);
-int get_initial_sid_name(int idx, char **name, policy_t *policy);
-int search_initial_sids_context(int **isids, int *num_isids, const char *user, const char *role, const char *type, policy_t *policy);
 
 /* Types and attributes */
 #define num_types(policy) (policy != NULL ? policy->num_types : -1)
@@ -739,7 +720,6 @@ int get_type_users(int type, int *num_users, int **users, policy_t *policy);
 int get_type_roles(int type, int *num_roles, int **roles, policy_t *policy);
 int get_attrib_types(int attrib, int *num_types, int **types, policy_t *policy);
 bool_t is_attrib_in_type(const char *attrib, int type_idx, policy_t *policy);
-bool_t is_type_in_attrib(const char *type, int attrib_idx, policy_t *policy);
 
 
 /* conditional policy */
@@ -750,14 +730,10 @@ bool_t is_type_in_attrib(const char *type, int attrib_idx, policy_t *policy);
 #define get_cond_bool_default_state(idx, policy) (is_valid_cond_bool_idx(idx, policy) ? policy->cond_bools[idx].default_state : 0)
 int get_cond_bool_idx(const char *name, policy_t *policy);
 int get_cond_bool_name(int idx, char **name, policy_t *policy);
-int set_cond_bool_val(int bool, bool_t state, policy_t *policy);
-int get_cond_bool_val(const char *name, bool_t *val, policy_t *policy);
-int get_cond_bool_val_idx(int idx, bool_t *val, policy_t *policy);
 int get_cond_bool_default_val(const char *name, bool_t *val, policy_t *policy);
 int get_cond_bool_default_val_idx(int idx, bool_t *val, policy_t *policy);
 int update_cond_expr_items(policy_t *policy);
 void add_cond_expr_item_helper(int cond_expr, bool_t cond_list, cond_rule_list_t *list, policy_t *policy);
-int set_cond_bool_vals_to_default(policy_t *policy);
 
 /* users */
 #define num_users(policy) (policy != NULL ? policy->rule_cnt[RULE_USER] : -1)
@@ -781,7 +757,6 @@ int add_role(char *role, policy_t *policy);
 int get_role_name(int idx, char **name, policy_t *policy);
 int get_role_idx(const char *name, policy_t *policy);
 bool_t does_role_use_type(int role, int type, policy_t *policy);
-bool_t is_type_in_role(const char *type, int role_idx, policy_t *policy);
 
 /* TE rules */
 /* if rule_type == 1, then access rules, otherwise audit rules */
@@ -823,13 +798,10 @@ int apol_add_perm_to_obj_perm_set_list(obj_perm_set_t **obj_options,
 /* contexts */
 void security_con_destroy(security_con_t *context);
 bool_t validate_security_context(const security_con_t *context, policy_t *policy);
-bool_t match_security_context(security_con_t *context1, security_con_t *context2, unsigned char range_match, policy_t *policy);
-
 
 /* genfscon */
 int ap_genfscon_get_idx(char *fstype, policy_t *policy);
 void ap_genfscon_node_destroy(ap_genfscon_node_t *node);
-int ap_genfscon_get_num_paths(policy_t *policy);
 
 /* MLS */
 int get_sensitivity_idx(const char *name, policy_t *policy);
@@ -850,8 +822,6 @@ bool_t ap_mls_validate_range(ap_mls_range_t *range, policy_t *policy);
 #define AP_MLS_INCOMP 3
 int ap_mls_level_compare(ap_mls_level_t *l1, ap_mls_level_t *l2, policy_t *policy);
 ap_mls_level_t * ap_mls_sensitivity_get_level(int sens, policy_t *policy);
-int ap_mls_sens_get_level_cats(int sens, int **cats, int *num_cats, policy_t *policy);
-int ap_mls_category_get_sens(int cat, int **sens, int *num_sens, policy_t *policy);
 
 /* Range Trnsition Search*/
 /* return value >=0 num resutls < 0 for error (-arg idx on EINVAL -1 otherwise) */
