@@ -30,6 +30,7 @@ static void check_socket_perms(const int type_idx, policy_t *policy, inc_net_acc
 static void check_netif_perms(const int type_idx, policy_t *policy, inc_net_access_data_t *net_state);
 static void check_port_perms(const int type_idx, policy_t *policy, inc_net_access_data_t *net_state);
 static void check_node_perms(const int type_idx, policy_t *policy, inc_net_access_data_t *net_state);
+static void check_assoc_perms(const int type_idx, policy_t *policy, inc_net_access_data_t *net_state);
 static bool_t uses_tcp(const int domain_idx, idx_cache_t *idx_cache, policy_t *policy);
 static bool_t uses_udp(const int domain_idx, idx_cache_t *idx_cache, policy_t *policy);
 
@@ -72,17 +73,20 @@ int inc_net_access_register(sechk_lib_t *lib)
 "domains to communicate, the following conditions must be true:\n"
 "   1) the domain must have read or write permissions on a socket of the same\n"
 "      type\n"
-"   2) the domain must have send or receive permissions on netif objects for a\n"
+"   2) the domain must have send or receive permissions on an IPsec association\n"
+"      (see find_assoc_types)\n"
+"   3) the domain must have send or receive permissions on netif objects for a\n"
 "      netif type (see find_netif_types)\n"
-"   3) the domain must have send or receive permissions on node objects for a\n"
+"   4) the domain must have send or receive permissions on node objects for a\n"
 "      node type (see find_node_types)\n"
-"   4) the domain must have send or receive permissions on port objects for a\n"
+"   5) the domain must have send or receive permissions on port objects for a\n"
 "      port type (see find_port_types)\n"; 
 	mod->opt_description = 
 "  Module requirements:\n"
 "    policy source\n"
 "  Module dependencies:\n"
 "    find_net_domains module\n"
+"    find_assoc_types module\n"
 "    find_netif_types module\n"
 "    find_port_types module\n"
 "    find_node_types module\n"
@@ -505,6 +509,7 @@ static int check_perms(const int type_idx, policy_t *policy, sechk_item_t **item
 	init_net_state(net_state);
 
 	/* determine the state of this type's network access permissions */
+	check_assoc_perms(type_idx, policy, net_state);
 	check_socket_perms(type_idx, policy, net_state);
 	check_netif_perms(type_idx, policy, net_state);
 	check_port_perms(type_idx, policy, net_state);
@@ -562,7 +567,6 @@ static int check_perms(const int type_idx, policy_t *policy, sechk_item_t **item
 	return (failed ? inc_net_access_FAIL : inc_net_access_SUCCESS);
 }
 
-
 static bool_t check_type_perms(const int src_idx, const int dst_idx, const int obj_idx, const int perm_idx, policy_t *policy)
 {
 	avh_key_t key;
@@ -573,7 +577,6 @@ static bool_t check_type_perms(const int src_idx, const int dst_idx, const int o
 	key.tgt = dst_idx;
 	key.cls = obj_idx;
 	key.rule_type = RULE_TE_ALLOW;
-
 	node = avh_find_first_node(&(policy->avh), &key);
 	/* If node is found, perms exist */
 	if (!node) 
@@ -589,6 +592,26 @@ static bool_t check_type_perms(const int src_idx, const int dst_idx, const int o
 	return FALSE;
 }
 
+static void check_assoc_perms(const int type_idx, policy_t *policy, inc_net_access_data_t *net_state)
+{
+	int i, src_idx, obj_idx, perm_idx;
+
+	/* Testing: - assoc_type: assoc { recvfrom } */
+	src_idx = type_idx;
+	obj_idx = net_state->idx_cache.ASSOC_OBJ;
+	perm_idx = net_state->idx_cache.RECVFROM_PERM;
+	for (i = 0; i < assoc_types_list_sz; i++) {		
+		if (check_type_perms(src_idx, assoc_types_list[i], obj_idx, perm_idx, policy)) 
+			net_state->ANY_ASSOC_RECVFROM = TRUE;				
+	}
+
+	/* Testing: - assoc_type: assoc { sendto } */
+	perm_idx = net_state->idx_cache.SENDTO_PERM;
+	for (i = 0; i < assoc_types_list_sz; i++) {
+		if (check_type_perms(src_idx, assoc_types_list[i], obj_idx, perm_idx, policy)) 
+			net_state->ANY_ASSOC_SENDTO = TRUE;   
+	}
+}
 
 static void check_socket_perms(const int type_idx, policy_t *policy, inc_net_access_data_t *net_state)
 {
@@ -871,7 +894,8 @@ static int validate_net_state(const int type_idx, inc_net_access_data_t *ns, sec
 {
 	char *proof_str = NULL;
 	sechk_proof_t *tmp_proof = NULL;
-	bool_t socket_failed = FALSE, netif_failed = FALSE, port_failed = FALSE, node_failed = FALSE, failed = FALSE;
+	bool_t socket_failed = FALSE, assoc_failed = FALSE, netif_failed = FALSE, port_failed = FALSE, 
+		node_failed = FALSE, failed = FALSE;
 	bool_t skip = FALSE;    /* Used to skip rest of tests if no access is available */
 	int proof_str_sz = 0;
 
@@ -970,6 +994,82 @@ static int validate_net_state(const int type_idx, inc_net_access_data_t *ns, sec
 		(*proof) = tmp_proof;
 		socket_failed = TRUE;
         }    
+
+	/* association permissions */
+	if (uses_tcp(type_idx, &(ns->idx_cache), policy) && 
+	    (!ns->ANY_ASSOC_RECVFROM || !ns->ANY_ASSOC_SENDTO)) {
+		tmp_proof = sechk_proof_new();
+		if (!tmp_proof) {
+			fprintf(stderr, "Error: out of memory\n");
+			return inc_net_access_ERR;
+		}
+		tmp_proof->idx = type_idx;
+		tmp_proof->type = inc_net_access_NEEDED_PERMS;
+
+		if (!ns->ANY_ASSOC_RECVFROM && !ns->ANY_ASSOC_SENDTO) {
+			proof_str = build_proof_str(policy->types[type_idx].name, "<association type>", 
+						    "association", "{ recvfrom sendto }");
+		} else if (!ns->ANY_ASSOC_RECVFROM) {
+			proof_str = build_proof_str(policy->types[type_idx].name, "<association type>",
+						    "association", "{ recvfrom }");
+		} else {
+			proof_str = build_proof_str(policy->types[type_idx].name, "<association type>",
+						    "association", "{ sendto }");
+		}
+
+		if (!proof_str) {
+			fprintf(stderr, "Error: unable to build proof\n");
+			return inc_net_access_ERR;
+		}
+		tmp_proof->text = proof_str;
+		tmp_proof->next = *proof;
+		*proof = tmp_proof;
+		assoc_failed = TRUE;
+	}	
+	skip = FALSE;
+	if (uses_udp(type_idx, &(ns->idx_cache), policy) && (!ns->ANY_ASSOC_RECVFROM && !ns->ANY_ASSOC_SENDTO)) {
+		tmp_proof = sechk_proof_new();
+		if (!tmp_proof) {
+			fprintf(stderr, "Error: out of memory\n");
+			return inc_net_access_ERR;
+		}
+		tmp_proof->idx = type_idx;
+		tmp_proof->type = inc_net_access_NEEDED_PERMS;
+		tmp_proof->text = build_proof_str(policy->types[type_idx].name, "<association type>", 
+						  "association", "{ sendto recvfrom }");
+		tmp_proof->next = *proof;
+		*proof = tmp_proof;
+		skip = TRUE;
+		assoc_failed = TRUE;
+	}
+	if (!skip && uses_udp(type_idx, &(ns->idx_cache), policy) && ns->SELF_UDPSOCK_READ && !ns->ANY_ASSOC_RECVFROM) {
+		tmp_proof = sechk_proof_new();
+		if (!tmp_proof) {
+			fprintf(stderr, "Error: out of memory\n");
+			return inc_net_access_ERR;
+		}
+		tmp_proof->idx = type_idx;
+		tmp_proof->type = inc_net_access_NEEDED_PERMS;
+		tmp_proof->text = build_proof_str(policy->types[type_idx].name, "<association type>", 
+						  "association", "{ recvfrom }");
+		tmp_proof->next = *proof;
+		*proof = tmp_proof;
+		assoc_failed = TRUE;
+	}
+	if (!skip && uses_udp(type_idx, &(ns->idx_cache), policy) && ns->SELF_UDPSOCK_WRITE && !ns->ANY_ASSOC_SENDTO) {
+		tmp_proof = sechk_proof_new();
+		if (!tmp_proof) {
+			fprintf(stderr, "Error: out of memory\n");
+			return inc_net_access_ERR;
+		}
+		tmp_proof->idx = type_idx;
+		tmp_proof->type = inc_net_access_NEEDED_PERMS;
+		tmp_proof->text = build_proof_str(policy->types[type_idx].name, "<association type>", 
+						  "association", "{ sendto }");
+		tmp_proof->next = *proof;
+		*proof = tmp_proof;
+		assoc_failed = TRUE;
+	}
 
 	proof_str = NULL;
 	proof_str_sz = 0;
@@ -1264,7 +1364,7 @@ static int validate_net_state(const int type_idx, inc_net_access_data_t *ns, sec
                 node_failed = TRUE;
         }
 
-	failed = (socket_failed || netif_failed || port_failed || node_failed);
+	failed = (socket_failed || assoc_failed || netif_failed || port_failed || node_failed);
 	return (failed ? inc_net_access_FAIL : inc_net_access_SUCCESS);
 }
 
@@ -1298,6 +1398,10 @@ static char *build_proof_str(char *src_type, char *dst_type, char *obj_class, ch
 		fprintf(stderr, "Error: out of memory\n");
 		return NULL;
 	}
+	if (append_str(&proof_str, &proof_str_sz, " ") != 0) {
+		fprintf(stderr, "Error: out of memory\n");
+		return NULL;
+	}
 	if (append_str(&proof_str, &proof_str_sz, perms) != 0) {
 		fprintf(stderr, "Error: out of memory\n");
 		return NULL;
@@ -1318,10 +1422,11 @@ static int build_have_perms_proof(const int type_idx, sechk_proof_t **proof, pol
 	avh_idx_t *hash_idx = NULL;
 	avh_rule_t *hash_rule = NULL;
 	sechk_proof_t *tmp_proof = NULL;
-	int net_objs[4] = {idx_cache->TCP_SOCKET_OBJ,
+	int net_objs[5] = {idx_cache->TCP_SOCKET_OBJ,
 			   idx_cache->UDP_SOCKET_OBJ,
 			   idx_cache->NETIF_OBJ,
-			   idx_cache->NODE_OBJ};
+			   idx_cache->NODE_OBJ,
+	                   idx_cache->ASSOC_OBJ};
 	int *used_rules = NULL;
 
 	/* find all rules with net_dom as subject */
@@ -1345,7 +1450,7 @@ static int build_have_perms_proof(const int type_idx, sechk_proof_t **proof, pol
 				tmp_proof_str_sz = 0;
 				switch (hash_idx->nodes[i]->key.rule_type) {
 				case RULE_TE_ALLOW:
-					if (find_int_in_array(hash_idx->nodes[i]->key.cls, net_objs, 4) != -1) {				 
+					if (find_int_in_array(hash_idx->nodes[i]->key.cls, net_objs, 5) != -1) {				 
 						tmp_proof->idx = type_idx;
 						tmp_proof->type = inc_net_access_HAVE_PERMS;
 						append_str(&tmp_proof_str, &tmp_proof_str_sz, "\t");
@@ -1396,6 +1501,8 @@ static void init_net_state(inc_net_access_data_t *ns)
         ns->ANY_NODE_TCPSEND = FALSE;
         ns->ANY_NODE_UDPRECV = FALSE;
         ns->ANY_NODE_UDPSEND = FALSE;
+	ns->ANY_ASSOC_RECVFROM = FALSE;
+	ns->ANY_ASSOC_SENDTO = FALSE;
 }
 
 static void init_idx_cache(idx_cache_t *idx_cache, policy_t *policy)
@@ -1417,6 +1524,10 @@ static void init_idx_cache(idx_cache_t *idx_cache, policy_t *policy)
         idx = get_obj_class_idx("node", policy);
         if (idx >= 0) 
                 idx_cache->NODE_OBJ = idx;
+
+	idx = get_obj_class_idx("association", policy);
+	if (idx >= 0)
+		idx_cache->ASSOC_OBJ = idx;
 	
 	idx = get_perm_idx("create", policy);
 	if (idx >= 0)
@@ -1453,6 +1564,14 @@ static void init_idx_cache(idx_cache_t *idx_cache, policy_t *policy)
         idx = get_perm_idx("send_msg", policy);
         if (idx >= 0)
                 idx_cache->SEND_MSG_PERM = idx;
+	
+	idx = get_perm_idx("recvfrom", policy);
+	if (idx >= 0)
+		idx_cache->RECVFROM_PERM = idx;
+
+	idx = get_perm_idx("sendto", policy);
+	if (idx >= 0)
+		idx_cache->SENDTO_PERM = idx;
 }
 
 /*
