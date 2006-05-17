@@ -25,6 +25,7 @@ typedef struct idx_cache {
         int UDP_SOCKET_OBJ;
         int NODE_OBJ;
         int NETIF_OBJ;
+	int ASSOC_OBJ;
 
         int CREATE_PERM;
         int READ_PERM;
@@ -35,6 +36,8 @@ typedef struct idx_cache {
         int UDP_SEND_PERM;
         int RECV_MSG_PERM;
         int SEND_MSG_PERM;
+	int RECVFROM_PERM;
+	int SENDTO_PERM;
 } idx_cache_t;
 
 /* The inc_net_access_data structure is used to hold the check specific
@@ -58,6 +61,8 @@ typedef struct inc_net_access_data {
 	bool_t ANY_NODE_TCPSEND;
 	bool_t ANY_NODE_UDPRECV;
 	bool_t ANY_NODE_UDPSEND;
+	bool_t ANY_ASSOC_RECVFROM;
+	bool_t ANY_ASSOC_SENDTO;
 
 	idx_cache_t idx_cache;
 } inc_net_access_data_t;
@@ -81,17 +86,5 @@ sechk_result_t *inc_net_access_get_result(sechk_module_t *mod);
 /* The following function is used to allocate and initialize
  * the private data storage structure for this module */
 inc_net_access_data_t *inc_net_access_data_new(void);
-
-static void init_net_state(inc_net_access_data_t *net_data);
-static void init_idx_cache(idx_cache_t *idx_cache, policy_t *policy);
-static int check_perms(const int type_idx, policy_t * policy, sechk_item_t **item, inc_net_access_data_t *net_state);
-static bool_t check_type_perms(const int src_idx, const int dst_idx, const int obj_idx, const int perm_idx, policy_t *policy);
-static char *build_proof_str(char *src_type, char *dst_type, char *obj_class, char *perms);
-static int build_have_perms_proof(const int type_idx, sechk_proof_t **proof, policy_t *policy, idx_cache_t *idx_cache);
-static int validate_net_state(const int type_idx, inc_net_access_data_t *net_data, sechk_proof_t **proof, policy_t *policy);
-static void check_socket_perms(const int type_idx, policy_t *policy, inc_net_access_data_t *net_state);
-static void check_netif_perms(const int type_idx, policy_t *policy, inc_net_access_data_t *net_state);
-static void check_port_perms(const int type_idx, policy_t *policy, inc_net_access_data_t *net_state);
-static void check_node_perms(const int type_idx, policy_t *policy, inc_net_access_data_t *net_state);
 
 #endif
