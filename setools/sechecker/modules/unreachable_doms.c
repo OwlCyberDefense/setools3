@@ -217,7 +217,7 @@ int unreachable_doms_run(sechk_module_t *mod, policy_t *policy)
 	sechk_result_t *inc_dom_trans_res = NULL;
 	sechk_get_result_fn_t get_res = NULL;
 	int *common_roles = NULL, common_roles_sz = 0, num_common_roles = 0;
-	int retv, i, start_type = 0;
+	int retv, i, end_type = 0;
 	dta_table_t *table = NULL;
 	dta_trans_t *cur = NULL, *trans_list = NULL, *trans = NULL;
 	bool_t found_valid_trans, found_invalid_trans;
@@ -293,7 +293,7 @@ int unreachable_doms_run(sechk_module_t *mod, policy_t *policy)
 			break; /* not fatal */
 		
 		dta_trans_destroy(&trans_list);
-		retv = dta_table_get_all_reverse_trans(table, &trans_list, trans->start_type);
+		retv = dta_table_get_all_reverse_trans(table, &trans_list, trans->end_type);
 		if (retv < 0) {
 			fprintf(stderr, "Error: finding domain transitions\n");
 			goto unreachable_doms_run_fail;
@@ -301,7 +301,7 @@ int unreachable_doms_run(sechk_module_t *mod, policy_t *policy)
 		
 		found_valid_trans = FALSE;
 		for (cur = trans_list; cur; cur = cur->next) {
-			start_type = cur->start_type;
+			end_type = cur->end_type;
 			if (cur->valid) {
 				found_valid_trans = TRUE;
 				if (has_common_role(cur->start_type, cur->end_type, policy)) {
@@ -312,8 +312,11 @@ int unreachable_doms_run(sechk_module_t *mod, policy_t *policy)
 		
 		/* we did not find a valid transition to this domain */
 		if (!found_valid_trans) {
+			if (in_isid_ctx(end_type, policy))
+				break;
+
 			if (res->num_items > 0) {
-				item = sechk_result_get_item(trans->start_type, POL_LIST_TYPE, res);
+				item = sechk_result_get_item(trans->end_type, POL_LIST_TYPE, res);
 			}
 			if (!item) {
 				item = sechk_item_new();
@@ -322,7 +325,7 @@ int unreachable_doms_run(sechk_module_t *mod, policy_t *policy)
 					goto unreachable_doms_run_fail;
 				}
 
-				item->item_id = trans->start_type;
+				item->item_id = trans->end_type;
 				item->test_result = 1;
 
 				proof = sechk_proof_new();
@@ -459,6 +462,9 @@ int unreachable_doms_run(sechk_module_t *mod, policy_t *policy)
 
 		/* if we haven't found a valid transition to this type, check default ctxs */
 		if (!found_valid_trans && !in_def_ctx(domain_list[i], datum)) {
+			if (in_isid_ctx(domain_list[i], policy))  			
+				break;
+	       	
 			if (res->num_items > 0) {
 				item = sechk_result_get_item(domain_list[i], POL_LIST_TYPE, res);
 				if (item)
@@ -853,6 +859,22 @@ static bool_t in_def_ctx(const int type_idx, unreachable_doms_data_t *datum)
 		return TRUE;
         else
 		return FALSE;
+}
+
+/* Returns true if type_idx is a type assigned to an isid */
+static bool_t in_isid_ctx(const int type_idx, policy_t *policy)
+{
+	int i;
+	security_con_t *ctxt = NULL;
+
+	for (i = 0; i < policy->num_initial_sids; i++) {
+		ctxt = policy->initial_sids[i].scontext;
+		if (!ctxt) 
+			return FALSE;
+		if (ctxt->type == type_idx)
+			return TRUE;
+	}
+	return FALSE;
 }
 
 static int get_common_roles(int **common_roles, int *common_roles_sz, const int src_idx, const int dst_idx, policy_t *policy)
