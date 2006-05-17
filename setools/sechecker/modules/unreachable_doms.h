@@ -37,6 +37,7 @@ static char *build_common_role_proof_str(const int src_idx, const int dst_idx, p
 static char *build_no_user_proof_str(const int role_idx, policy_t *policy);
 static bool_t parse_default_contexts(const char *ctx_file_path, int **doms, int *ctx_list_sz, policy_t *policy);
 static bool_t in_def_ctx(const int type_idx, unreachable_doms_data_t *datum);
+static bool_t in_isid_ctx(const int type_idx, policy_t *policy);
 static bool_t has_common_role(const int src_idx, const int dst_idx, policy_t *policy);
 static int get_common_roles(int **common_roles, int *common_roles_sz, const int src_idx, const int dst_idx, policy_t *policy);
 static int get_valid_user(const int role_idx, policy_t *policy);
