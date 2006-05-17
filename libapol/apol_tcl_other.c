@@ -733,7 +733,7 @@ static int Apol_GetStats(ClientData clientData, Tcl_Interp *interp, int argc, CO
                 Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
                 return TCL_ERROR;
         }
-        num_genfscon = ap_genfscon_get_num_paths(policy);
+        num_genfscon = 42; /* FIX ME! */
         {
                 struct ap_policy_stat stats[] = {
                         /* components */
@@ -864,13 +864,13 @@ static int Apol_IsValidRange(ClientData clientData, Tcl_Interp *interp, int argc
 		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		goto cleanup;
 	}
-	if (argc < 2) {
-		Tcl_SetResult(interp, "Need a range.", TCL_STATIC);
-		return TCL_ERROR;
+	if (argc != 2) {
+		ERR(policydb, "Need a range.");
+		goto cleanup;
 	}
 	if ((range = apol_mls_range_create()) == NULL) {
-		Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
-		return TCL_ERROR;
+		ERR(policydb, "Out of memory!");
+		goto cleanup;
 	}
 	retval2 = apol_tcl_string_to_range(interp, argv[1], range);
 	if (retval2 < 0) {
@@ -887,10 +887,10 @@ static int Apol_IsValidRange(ClientData clientData, Tcl_Interp *interp, int argc
 	}
 	else if (retval2 == 0) {
 		Tcl_SetResult(interp, "0", TCL_STATIC);
-		retval = TCL_OK;
-		goto cleanup;
 	}
-	Tcl_SetResult(interp, "1", TCL_STATIC);
+	else {
+		Tcl_SetResult(interp, "1", TCL_STATIC);
+        }
 	retval = TCL_OK;
  cleanup:
 	apol_mls_range_destroy(&range);
@@ -937,10 +937,10 @@ static int Apol_IsValidPartialContext(ClientData clientData, Tcl_Interp *interp,
 	}
 	else if (retval2 == 0) {
 		Tcl_SetResult(interp, "0", TCL_STATIC);
-		retval = TCL_OK;
-		goto cleanup;
 	}
-	Tcl_SetResult(interp, "1", TCL_STATIC);
+	else {
+		Tcl_SetResult(interp, "1", TCL_STATIC);
+	}
 	retval = TCL_OK;
  cleanup:
 	apol_context_destroy(&context);

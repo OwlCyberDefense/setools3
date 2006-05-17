@@ -148,7 +148,7 @@ static int Apol_RenderLevel(ClientData clientData, Tcl_Interp *interp, int argc,
 		retval = TCL_OK;
 		goto cleanup;
 	}
-	if ((rendered_level = re_render_mls_level2(policydb, level)) == NULL) {
+	if ((rendered_level = apol_mls_level_render(policydb, level)) == NULL) {
 		goto cleanup;
 	}
 	result_obj = Tcl_NewStringObj(rendered_level, -1);
