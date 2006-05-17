@@ -166,6 +166,17 @@ extern int apol_mls_level_compare(apol_policy_t *p,
 				  apol_mls_level_t *level2);
 
 /**
+ * Creates a string containing the textual representation of
+ * a MLS level.
+ * @param p Reference to a policy.
+ * @param level MLS level to render.
+ *
+ * @return A newly allocated string on success, caller must free;
+ * NULL on error.
+ */
+extern char *apol_mls_level_render(apol_policy_t *p, apol_mls_level_t *level);
+
+/**
  * Determine if two sensitivities are actually the same.  Either level
  * or both could be using a sensitivity's alias, thus straight string
  * comparison is not sufficient.
@@ -321,6 +332,17 @@ extern int apol_mls_range_contain_subrange(apol_policy_t *p,
  */
 extern int apol_mls_range_validate(apol_policy_t *p,
 				   apol_mls_range_t *range);
+
+/**
+ * Creates a string containing the textual representation of
+ * a MLS range.
+ * @param p Reference to a policy.
+ * @param range MLS range to render.
+ *
+ * @return A newly allocated string on success, caller must free;
+ * NULL on error.
+ */
+extern char *apol_mls_range_render(apol_policy_t *p, apol_mls_range_t *range);
 
 /******************** level queries ********************/
 

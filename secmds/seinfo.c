@@ -689,7 +689,7 @@ static int print_sens(FILE *fp, const char *name, int expand, apol_policy_t *pol
 		fprintf(fp, "   %s\n", lvl_name);
 		if (expand) {
 			ap_mls_lvl = (apol_mls_level_t *)apol_mls_level_create_from_sepol_level_datum(policydb, level);
-			tmp = re_render_mls_level2(policydb, ap_mls_lvl);
+			tmp = apol_mls_level_render(policydb, ap_mls_lvl);
 			apol_mls_level_destroy(&ap_mls_lvl);
 			if (!tmp)
 				goto cleanup;
@@ -1468,7 +1468,7 @@ static void print_user_roles(FILE *fp, sepol_user_datum_t *user_datum, apol_poli
 			if (sepol_user_datum_get_dfltlevel(policydb->sh, policydb->p, user_datum, &dflt_level))
 				goto cleanup;
 			ap_lvl = apol_mls_level_create_from_sepol_mls_level(policydb, dflt_level);
-			tmp = re_render_mls_level2(policydb, ap_lvl);
+			tmp = apol_mls_level_render(policydb, ap_lvl);
 			if (!tmp)
 				goto cleanup;
 			fprintf(fp, "      default level: %s\n", tmp);
@@ -1477,7 +1477,7 @@ static void print_user_roles(FILE *fp, sepol_user_datum_t *user_datum, apol_poli
 			if (sepol_user_datum_get_range(policydb->sh, policydb->p, user_datum, &range))
 				goto cleanup;
 			ap_range = apol_mls_range_create_from_sepol_mls_range(policydb, range);
-			tmp = re_render_mls_range2(policydb, ap_range);
+			tmp = apol_mls_range_render(policydb, ap_range);
 			if (!tmp)
 				goto cleanup;
 			fprintf(fp, "      range: %s\n", tmp);

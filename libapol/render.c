@@ -367,119 +367,8 @@ char *re_render_tt_rule(bool_t addlineno, int idx, policy_t *policy)
 		free(buf);
 		return NULL;
 	}
-		
+	return buf;
 
-	return buf;	
-
-}
-
-char *re_render_mls_level2(apol_policy_t *policydb, apol_mls_level_t *level)
-{
-	char *rt = NULL, *name = NULL, *sens_name = NULL, *cat_name = NULL;
-	char *retval = NULL;
-	int sz = 0, i, cur;
-	sepol_cat_datum_t *cur_cat_datum = NULL, *next_cat_datum = NULL;
-	uint32_t cur_cat_val, next_cat_val, far_cat_val;
-	apol_vector_t *cats = NULL;
-	size_t n_cats = 0;
-
-	if (!level || !policydb)
-		goto cleanup;
-
-	sens_name = level->sens;
-	if (!sens_name)
-		goto cleanup;
-	if (append_str(&rt, &sz, sens_name)) {
-		ERR(policydb, "Out of memory!");
-		goto cleanup;
-	}
-
-	if (level->cats != NULL) {
-		if ((cats = apol_vector_create_from_vector(level->cats)) == NULL) {
-			ERR(policydb, "Out of memory!");
-			goto cleanup;
-		}
-		n_cats = apol_vector_get_size(cats);
-	}
-	if (n_cats == 0) {
-		retval = rt;
-		goto cleanup;
-	}
-        apol_vector_sort(cats, apol_mls_cat_name_compare, policydb);
-
-	cat_name = (char *)apol_vector_get_element(cats, 0);
-	if (!cat_name)
-		goto cleanup;
-
-	if (append_str(&rt, &sz, ":") || append_str(&rt, &sz, cat_name)) {
-		ERR(policydb, "Out of memory!");
-		goto cleanup;
-	}
-	cur = 0; /* current value to compare with cat[i] */
-	for (i = 1; i < n_cats; i++) { /* we've already appended the first category */
-		/* get the value of cats[cur] */
-		cat_name = (char *)apol_vector_get_element(cats, cur);
-		if (sepol_policydb_get_cat_by_name(policydb->sh, policydb->p, cat_name, &cur_cat_datum))
-			goto cleanup;
-		if (sepol_cat_datum_get_value(policydb->sh, policydb->p, cur_cat_datum, &cur_cat_val))
-			goto cleanup;
-
-		/* get the value of cats[i] */
-		cat_name = (char *)apol_vector_get_element(cats, i);
-		if (sepol_policydb_get_cat_by_name(policydb->sh, policydb->p, cat_name, &next_cat_datum))
-			goto cleanup;
-		if (sepol_cat_datum_get_value(policydb->sh, policydb->p, next_cat_datum, &next_cat_val))
-			goto cleanup;
-
-		if (next_cat_val == cur_cat_val + 1) {
-			if (i + 1 == n_cats) { /* last category is next; append "." */
-				if (sepol_cat_datum_get_name(policydb->sh, policydb->p, next_cat_datum, &name))
-					goto cleanup;
-				if (append_str(&rt, &sz, ".") ||
-				    append_str(&rt, &sz, name)) {
-					ERR(policydb, "Out of memory!");
-					goto cleanup;
-				}
-				cur = i;
-			} else {
-				sepol_cat_datum_t *far_cat_datum = NULL;  /* category 2 in front of cur */
-				cat_name = (char *)apol_vector_get_element(cats, i+1);
-				if (sepol_policydb_get_cat_by_name(policydb->sh, policydb->p, cat_name, &far_cat_datum))
-					goto cleanup;
-				if (sepol_cat_datum_get_value(policydb->sh, policydb->p, far_cat_datum, &far_cat_val))
-					goto cleanup;
-				if (far_cat_val == cur_cat_val + 2) {
-					cur++;
-				} else {     /* far_cat isn't consecutive wrt cur/next_cat; append it */
-					if (sepol_cat_datum_get_name(policydb->sh, policydb->p, next_cat_datum, &name))
-						goto cleanup;
-					if (append_str(&rt, &sz, ".") ||
-					    append_str(&rt, &sz, name)) {
-						ERR(policydb, "Out of memory!");
-						goto cleanup;
-					}
-					cur = i;
-				}
-			}
-		} else { /* next_cat isn't consecutive to cur_cat; append it */
-			if (sepol_cat_datum_get_name(policydb->sh, policydb->p, next_cat_datum, &name))
-				goto cleanup;
-			if (append_str(&rt, &sz, ", ") ||
-			    append_str(&rt, &sz, name)) {
-				ERR(policydb, "Out of memory!");
-				goto cleanup;
-			}
-			cur = i;
-		}
-	}
-
-	retval = rt;
- cleanup:
-	apol_vector_destroy(&cats, NULL);
-	if (retval != rt) {
-		free(rt);
-	}
-	return retval;
 }
 
 char *re_render_mls_level(ap_mls_level_t *level, policy_t *policy)
@@ -537,48 +426,6 @@ char *re_render_mls_range(ap_mls_range_t *range, policy_t *policy)
 		free(sub_str);
 	}
 	return rt;
-}
-
-char *re_render_mls_range2(apol_policy_t *policydb, apol_mls_range_t *range)
-{
-	char *rt = NULL, *retval = NULL;
-	char *sub_str = NULL;
-	int retv, sz = 0;
-
-	if (!range || !policydb)
-		goto cleanup;
-
-	if ((sub_str = re_render_mls_level2(policydb, range->low)) == NULL) {
-		goto cleanup;
-	}
-	if (append_str(&rt, &sz, sub_str)) {
-		ERR(policydb, "Out of memory!");
-		goto cleanup;
-	}
-	free(sub_str);
-	sub_str = NULL;
-	retv = apol_mls_level_compare(policydb, range->low, range->high);
-	if (retv < 0) {
-		goto cleanup;
-	}
-	/* if (high level != low level) */
-	if (retv == APOL_MLS_DOM || retv == APOL_MLS_DOMBY) {
-		sub_str = re_render_mls_level2(policydb, range->high);
-		if (!sub_str)
-			goto cleanup;
-		if (append_str(&rt, &sz, " - ") ||
-		    append_str(&rt, &sz, sub_str)) {
-			ERR(policydb, "Out of memory!");
-			goto cleanup;
-		}
-	}
-	retval = rt;
- cleanup:
-	if (retval != rt) {
-		free(rt);
-	}
-	free(sub_str);
-	return retval;
 }
 
 /* security contexts */
@@ -677,23 +524,6 @@ char * re_render_initial_sid_security_context(int idx, policy_t *policy)
 	return(re_render_security_context(policy->initial_sids[idx].scontext, policy));
 }
 
-
-char *re_render_avh_rule_enabled_state(avh_node_t *node, policy_t *p)
-{
-	char *t = NULL;
-	int sz, rt;
-	if(avh_is_enabled(node, p))
-		rt = append_str(&t, &sz, "E: ");
-	else
-		rt = append_str(&t, &sz, "D: ");
-	if(rt < 0) {
-		if(t != NULL)
-			free(t);
-		return NULL;	
-	}
-	/* else */
-	return t;
-}
 
 char *re_render_cond_expr(int idx,policy_t *p)
 {
