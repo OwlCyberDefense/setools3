@@ -30,7 +30,7 @@
 
 #include <tcl.h>
 
-#include <sepol/sepol.h>
+#include <qpol/policy_query.h>
 
 #include "policy.h"
 #include "context-query.h"

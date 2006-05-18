@@ -51,29 +51,29 @@ int apol_get_genfscon_by_query(apol_policy_t *p,
 			       apol_genfscon_query_t *g,
 			       apol_vector_t **v)
 {
-	sepol_iterator_t *iter;
+	qpol_iterator_t *iter;
 	int retval = -1, retval2;
-	sepol_genfscon_t *genfscon = NULL;
+	qpol_genfscon_t *genfscon = NULL;
 	*v = NULL;
-	if (sepol_policydb_get_genfscon_iter(p->sh, p->p, &iter) < 0) {
+	if (qpol_policy_get_genfscon_iter(p->sh, p->p, &iter) < 0) {
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
 		ERR(p, "Out of memory!");
 		goto cleanup;
 	}
-	for ( ; !sepol_iterator_end(iter); sepol_iterator_next(iter)) {
-		if (sepol_iterator_get_item(iter, (void **) &genfscon) < 0) {
+	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		if (qpol_iterator_get_item(iter, (void **) &genfscon) < 0) {
 			goto cleanup;
 		}
 		if (g != NULL) {
 			char *fs, *path;
 			uint32_t objclass;
-			sepol_context_struct_t *context;
-			if (sepol_genfscon_get_name(p->sh, p->p, genfscon, &fs) < 0 ||
-			    sepol_genfscon_get_path(p->sh, p->p, genfscon, &path) < 0 ||
-			    sepol_genfscon_get_class(p->sh, p->p, genfscon, &objclass) < 0 ||
-			    sepol_genfscon_get_context(p->sh, p->p, genfscon, &context) < 0) {
+			qpol_context_t *context;
+			if (qpol_genfscon_get_name(p->sh, p->p, genfscon, &fs) < 0 ||
+			    qpol_genfscon_get_path(p->sh, p->p, genfscon, &path) < 0 ||
+			    qpol_genfscon_get_class(p->sh, p->p, genfscon, &objclass) < 0 ||
+			    qpol_genfscon_get_context(p->sh, p->p, genfscon, &context) < 0) {
 				goto cleanup;
 			}
 			retval2 = apol_compare(p, fs, g->fs, 0, NULL);
@@ -117,7 +117,7 @@ int apol_get_genfscon_by_query(apol_policy_t *p,
 		apol_vector_destroy(v, free);
 		free(genfscon);
 	}
-	sepol_iterator_destroy(&iter);
+	qpol_iterator_destroy(&iter);
 	return retval;
 }
 
@@ -164,14 +164,14 @@ int apol_genfscon_query_set_objclass(apol_policy_t *p,
 	}
 	else {
 		switch (objclass) {
-		case SEPOL_CLASS_BLK_FILE:
-		case SEPOL_CLASS_CHR_FILE:
-		case SEPOL_CLASS_DIR:
-		case SEPOL_CLASS_FIFO_FILE:
-		case SEPOL_CLASS_FILE:
-		case SEPOL_CLASS_LNK_FILE:
-		case SEPOL_CLASS_SOCK_FILE:
-		case SEPOL_CLASS_ALL: {
+		case QPOL_CLASS_BLK_FILE:
+		case QPOL_CLASS_CHR_FILE:
+		case QPOL_CLASS_DIR:
+		case QPOL_CLASS_FIFO_FILE:
+		case QPOL_CLASS_FILE:
+		case QPOL_CLASS_LNK_FILE:
+		case QPOL_CLASS_SOCK_FILE:
+		case QPOL_CLASS_ALL: {
 			g->objclass = (int) objclass;
 			break;
 		}
@@ -202,28 +202,28 @@ int apol_get_fs_use_by_query(apol_policy_t *p,
 			     apol_fs_use_query_t *f,
 			     apol_vector_t **v)
 {
-	sepol_iterator_t *iter;
+	qpol_iterator_t *iter;
 	int retval = -1, retval2;
-	sepol_fs_use_t *fs_use = NULL;
+	qpol_fs_use_t *fs_use = NULL;
 	*v = NULL;
-	if (sepol_policydb_get_fs_use_iter(p->sh, p->p, &iter) < 0) {
+	if (qpol_policy_get_fs_use_iter(p->sh, p->p, &iter) < 0) {
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
 		ERR(p, "Out of memory!");
 		goto cleanup;
 	}
-	for ( ; !sepol_iterator_end(iter); sepol_iterator_next(iter)) {
-		if (sepol_iterator_get_item(iter, (void **) &fs_use) < 0) {
+	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		if (qpol_iterator_get_item(iter, (void **) &fs_use) < 0) {
 			goto cleanup;
 		}
 		if (f != NULL) {
 			char *fs;
 			uint32_t behavior;
-			sepol_context_struct_t *context;
-			if (sepol_fs_use_get_name(p->sh, p->p, fs_use, &fs) < 0 ||
-			    sepol_fs_use_get_behavior(p->sh, p->p, fs_use, &behavior) < 0 ||
-			    sepol_fs_use_get_context(p->sh, p->p, fs_use, &context) < 0) {
+			qpol_context_t *context;
+			if (qpol_fs_use_get_name(p->sh, p->p, fs_use, &fs) < 0 ||
+			    qpol_fs_use_get_behavior(p->sh, p->p, fs_use, &behavior) < 0 ||
+			    qpol_fs_use_get_context(p->sh, p->p, fs_use, &context) < 0) {
 				goto cleanup;
 			}
 			retval2 = apol_compare(p, fs, f->fs, 0, NULL);
@@ -238,7 +238,7 @@ int apol_get_fs_use_by_query(apol_policy_t *p,
 			}
 			/* recall that fs_use_psid statements do not
 			 * have contexts */
-			if (f->context != NULL && behavior == SEPOL_FS_USE_PSID) {
+			if (f->context != NULL && behavior == QPOL_FS_USE_PSID) {
 				retval2 = 0;
 			}
 			else {
@@ -262,7 +262,7 @@ int apol_get_fs_use_by_query(apol_policy_t *p,
 	if (retval != 0) {
 		apol_vector_destroy(v, NULL);
 	}
-	sepol_iterator_destroy(&iter);
+	qpol_iterator_destroy(&iter);
 	return retval;
 }
 
@@ -301,12 +301,12 @@ int apol_fs_use_query_set_behavior(apol_policy_t *p,
 	}
 	else {
 		switch (behavior) {
-		case SEPOL_FS_USE_XATTR:
-		case SEPOL_FS_USE_TASK:
-		case SEPOL_FS_USE_TRANS:
-		case SEPOL_FS_USE_GENFS:
-		case SEPOL_FS_USE_NONE:
-		case SEPOL_FS_USE_PSID: {
+		case QPOL_FS_USE_XATTR:
+		case QPOL_FS_USE_TASK:
+		case QPOL_FS_USE_TRANS:
+		case QPOL_FS_USE_GENFS:
+		case QPOL_FS_USE_NONE:
+		case QPOL_FS_USE_PSID: {
 			f->behavior = (int) behavior;
 			break;
 		}

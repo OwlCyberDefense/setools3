@@ -18,18 +18,18 @@ LIB-OBJ += $(QUERY-OBJ)
 LIB-OBJ-TCL = apol_tcl_other.o apol_tcl_render.o apol_tcl_components.o apol_tcl_rules.o apol_tcl_fc.o apol_tcl_analysis.o
 #libapol
 TARGET = libapol.so
-SONAME = $(TARGET).1
+SONAME = $(TARGET).2
 LIBSO  = $(TARGET).$(shell cat VERSION)
 
 TARGETTCL = libapol-tcl.so
-SONAMETCL = $(TARGETTCL).1
+SONAMETCL = $(TARGETTCL).2
 LIBSOTCL  = $(TARGETTCL).$(shell cat VERSION)
 
 CFLAGS  += -DLIBAPOL_VERSION_STRING='"$(shell cat VERSION)"'
 CFLAGS  += -DLIBAPOL_POLICY_INSTALL_DIR='"$(POLICY_INSTALL_DIR)"'
 CFLAGS  += -DLIBAPOL_SELINUX_DIR='"$(SELINUX_DIR)"'
 CFLAGS	+= -DLIBAPOL_DEFAULT_POLICY='"$(POLICY_SRC_FILE)"'
-CFLAGS  += -I.
+CFLAGS  += -I. -I../libqpol/include
 
 LDFLAGS += -lfl
 
@@ -54,10 +54,12 @@ libapol-tcl.a: $(LIB-OBJ-TCL)
 	 ar cr $@ $(LIB-OBJ-TCL) 
 
 install-libapol-shared: libapolso install-includes
+	test -d $(SHARED_LIB_INSTALL_DIR) || install -m 755 -d $(SHARED_LIB_INSTALL_DIR)
 	install -m 755 $(LIBSO) $(SHARED_LIB_INSTALL_DIR)
 	cd $(SHARED_LIB_INSTALL_DIR) && ln -sf $(LIBSO) $(SONAME) && ln -sf $(SONAME) $(TARGET)
 
 install-libapol-static: libapol install-includes
+	test -d $(STATIC_LIB_INSTALL_DIR) || install -m 755 -d $(STATIC_LIB_INSTALL_DIR)
 	install -m 644 libapol.a $(STATIC_LIB_INSTALL_DIR)
 
 install-includes:

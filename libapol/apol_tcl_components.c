@@ -17,22 +17,22 @@
 #include "render.h"
 
 /**
- * Takes a sepol_type_datum_t and appends a tuple of it to
+ * Takes a qpol_type_t and appends a tuple of it to
  * result_list.	 The tuple consists of:
  * <code>
  *    { type_name {attrib0 attrib1 ...} {alias0 alias1 ...} }
  * </code>
  */
 static int append_type_to_list(Tcl_Interp *interp,
-			       sepol_type_datum_t *type_datum,
+			       qpol_type_t *type_datum,
 			       Tcl_Obj *result_list)
 {
 	unsigned char is_attr;
 	char *type_name;
-	sepol_iterator_t *attr_iter = NULL, *alias_iter = NULL;
+	qpol_iterator_t *attr_iter = NULL, *alias_iter = NULL;
 	Tcl_Obj *type_elem[3], *type_list;
 	int retval = TCL_ERROR;
-	if (sepol_type_datum_get_isattr(policydb->sh, policydb->p,
+	if (qpol_type_get_isattr(policydb->sh, policydb->p,
 					 type_datum, &is_attr) < 0) {
 		goto cleanup;
 	}
@@ -40,22 +40,22 @@ static int append_type_to_list(Tcl_Interp *interp,
 		/* datum is an attribute, so don't add it */
 		return TCL_OK;
 	}
-	if (sepol_type_datum_get_name(policydb->sh, policydb->p,
+	if (qpol_type_get_name(policydb->sh, policydb->p,
 				      type_datum, &type_name) < 0 ||
-	    sepol_type_datum_get_attr_iter(policydb->sh, policydb->p,
+	    qpol_type_get_attr_iter(policydb->sh, policydb->p,
 					   type_datum, &attr_iter) < 0 ||
-	    sepol_type_datum_get_alias_iter(policydb->sh, policydb->p,
+	    qpol_type_get_alias_iter(policydb->sh, policydb->p,
 					    type_datum, &alias_iter) < 0) {
 		goto cleanup;
 	}
 	type_elem[0] = Tcl_NewStringObj(type_name, -1);
 	type_elem[1] = Tcl_NewListObj(0, NULL);
-	for ( ; !sepol_iterator_end(attr_iter); sepol_iterator_next(attr_iter)) {
-		sepol_type_datum_t *attr_datum;
+	for ( ; !qpol_iterator_end(attr_iter); qpol_iterator_next(attr_iter)) {
+		qpol_type_t *attr_datum;
 		char *attr_name;
 		Tcl_Obj *attr_obj;
-		if (sepol_iterator_get_item(attr_iter, (void **) &attr_datum) < 0 ||
-		    sepol_type_datum_get_name(policydb->sh, policydb->p,
+		if (qpol_iterator_get_item(attr_iter, (void **) &attr_datum) < 0 ||
+		    qpol_type_get_name(policydb->sh, policydb->p,
 					      attr_datum, &attr_name) < 0) {
 			goto cleanup;
 		}
@@ -65,10 +65,10 @@ static int append_type_to_list(Tcl_Interp *interp,
 		}
 	}
 	type_elem[2] = Tcl_NewListObj(0, NULL);
-	for ( ; !sepol_iterator_end(alias_iter); sepol_iterator_next(alias_iter)) {
+	for ( ; !qpol_iterator_end(alias_iter); qpol_iterator_next(alias_iter)) {
 		char *alias_name;
 		Tcl_Obj *alias_obj;
-		if (sepol_iterator_get_item(alias_iter, (void **) &alias_name) < 0) {
+		if (qpol_iterator_get_item(alias_iter, (void **) &alias_name) < 0) {
 			goto cleanup;
 		}
 		alias_obj = Tcl_NewStringObj(alias_name, -1);
@@ -82,8 +82,8 @@ static int append_type_to_list(Tcl_Interp *interp,
 	}
 	retval = TCL_OK;
  cleanup:
-	sepol_iterator_destroy(&attr_iter);
-	sepol_iterator_destroy(&alias_iter);
+	qpol_iterator_destroy(&attr_iter);
+	qpol_iterator_destroy(&alias_iter);
 	return retval;
 }
 
@@ -105,7 +105,7 @@ static int append_type_to_list(Tcl_Interp *interp,
 static int Apol_GetTypes(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
 	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
-	sepol_type_datum_t *type;
+	qpol_type_t *type;
 	apol_type_query_t *query = NULL;
 	apol_vector_t *v = NULL;
 	int retval = TCL_ERROR;
@@ -120,7 +120,7 @@ static int Apol_GetTypes(ClientData clientData, Tcl_Interp *interp, int argc, CO
 		goto cleanup;
 	}
 	if (argc == 2) {
-		if (sepol_policydb_get_type_by_name(policydb->sh, policydb->p,
+		if (qpol_policy_get_type_by_name(policydb->sh, policydb->p,
 						    argv[1], &type) < 0) {
 			/* name is not within policy */
 			return TCL_OK;
@@ -149,7 +149,7 @@ static int Apol_GetTypes(ClientData clientData, Tcl_Interp *interp, int argc, CO
 			goto cleanup;
 		}
 		for (i = 0; i < apol_vector_get_size(v); i++) {
-			type = (sepol_type_datum_t *) apol_vector_get_element(v, i);
+			type = (qpol_type_t *) apol_vector_get_element(v, i);
 			if (append_type_to_list(interp, type, result_obj) == TCL_ERROR) {
 				goto cleanup;
 			}
@@ -167,22 +167,22 @@ static int Apol_GetTypes(ClientData clientData, Tcl_Interp *interp, int argc, CO
 }
 
 /**
- * Takes a sepol_type_datum_t representing a type and appends a tuple
+ * Takes a qpol_type_t representing a type and appends a tuple
  * of it to result_list.  The tuple consists of:
  * <code>
  *    { attr_name { type0 type1 ... } }
  * </code>
  */
 static int append_attr_to_list(Tcl_Interp *interp,
-			       sepol_type_datum_t *attr_datum,
+			       qpol_type_t *attr_datum,
 			       Tcl_Obj *result_list)
 {
 	unsigned char is_attr;
 	char *attr_name;
-	sepol_iterator_t *type_iter = NULL;
+	qpol_iterator_t *type_iter = NULL;
 	Tcl_Obj *attr_elem[2], *attr_list;
 	int retval = TCL_ERROR;
-	if (sepol_type_datum_get_isattr(policydb->sh, policydb->p,
+	if (qpol_type_get_isattr(policydb->sh, policydb->p,
 					 attr_datum, &is_attr) < 0) {
 		goto cleanup;
 	}
@@ -190,20 +190,20 @@ static int append_attr_to_list(Tcl_Interp *interp,
 		/* datum is a type or alias, so don't add it */
 		return TCL_OK;
 	}
-	if (sepol_type_datum_get_name(policydb->sh, policydb->p,
+	if (qpol_type_get_name(policydb->sh, policydb->p,
 				      attr_datum, &attr_name) < 0 ||
-	    sepol_type_datum_get_type_iter(policydb->sh, policydb->p,
+	    qpol_type_get_type_iter(policydb->sh, policydb->p,
 					   attr_datum, &type_iter) < 0) {
 		goto cleanup;
 	}
 	attr_elem[0] = Tcl_NewStringObj(attr_name, -1);
 	attr_elem[1] = Tcl_NewListObj(0, NULL);
-	for ( ; !sepol_iterator_end(type_iter); sepol_iterator_next(type_iter)) {
-		sepol_type_datum_t *type_datum;
+	for ( ; !qpol_iterator_end(type_iter); qpol_iterator_next(type_iter)) {
+		qpol_type_t *type_datum;
 		char *type_name;
 		Tcl_Obj *type_obj;
-		if (sepol_iterator_get_item(type_iter, (void **) &type_datum) < 0 ||
-		    sepol_type_datum_get_name(policydb->sh, policydb->p,
+		if (qpol_iterator_get_item(type_iter, (void **) &type_datum) < 0 ||
+		    qpol_type_get_name(policydb->sh, policydb->p,
 					      type_datum, &type_name) < 0) {
 			goto cleanup;
 		}
@@ -218,7 +218,7 @@ static int append_attr_to_list(Tcl_Interp *interp,
 	}
 	retval = TCL_OK;
  cleanup:
-	sepol_iterator_destroy(&type_iter);
+	qpol_iterator_destroy(&type_iter);
 	return retval;
 }
 
@@ -239,7 +239,7 @@ static int append_attr_to_list(Tcl_Interp *interp,
 static int Apol_GetAttribs(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
 	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
-	sepol_type_datum_t *attr;
+	qpol_type_t *attr;
 	apol_attr_query_t *query = NULL;
 	apol_vector_t *v = NULL;
 	int retval = TCL_ERROR;
@@ -254,7 +254,7 @@ static int Apol_GetAttribs(ClientData clientData, Tcl_Interp *interp, int argc, 
 		goto cleanup;
 	}
 	if (argc == 2) {
-		if (sepol_policydb_get_type_by_name(policydb->sh, policydb->p,
+		if (qpol_policy_get_type_by_name(policydb->sh, policydb->p,
 						    argv[1], &attr) < 0) {
 			/* name is not within policy */
 			return TCL_OK;
@@ -283,7 +283,7 @@ static int Apol_GetAttribs(ClientData clientData, Tcl_Interp *interp, int argc, 
 			goto cleanup;
 		}
 		for (i = 0; i < apol_vector_get_size(v); i++) {
-			attr = (sepol_type_datum_t *) apol_vector_get_element(v, i);
+			attr = (qpol_type_t *) apol_vector_get_element(v, i);
 			if (append_attr_to_list(interp, attr, result_obj) == TCL_ERROR) {
 				goto cleanup;
 			}
@@ -301,7 +301,7 @@ static int Apol_GetAttribs(ClientData clientData, Tcl_Interp *interp, int argc, 
 }
 
 /**
- * Takes a sepol_class_datum_t representing a class and appends a
+ * Takes a qpol_class_t representing a class and appends a
  * tuple of it to result_list.	 The tuple consists of:
  * <code>
  *    { class_name common_class {perms0 perms1 ...} }
@@ -311,32 +311,32 @@ static int Apol_GetAttribs(ClientData clientData, Tcl_Interp *interp, int argc, 
  * an empty string.
  */
 static int append_class_to_list(Tcl_Interp *interp,
-				sepol_class_datum_t *class_datum,
+				qpol_class_t *class_datum,
 				Tcl_Obj *result_list)
 {
 	char *class_name, *common_name = "";
-	sepol_common_datum_t *common_datum;
-	sepol_iterator_t *perm_iter = NULL;
+	qpol_common_t *common_datum;
+	qpol_iterator_t *perm_iter = NULL;
 	Tcl_Obj *class_elem[3], *class_list;
 	int retval = TCL_ERROR;
-	if (sepol_class_datum_get_name(policydb->sh, policydb->p,
+	if (qpol_class_get_name(policydb->sh, policydb->p,
 				       class_datum, &class_name) < 0 ||
-	    sepol_class_datum_get_common(policydb->sh, policydb->p,
+	    qpol_class_get_common(policydb->sh, policydb->p,
 					 class_datum, &common_datum) < 0 ||
 	    (common_datum != NULL &&
-	     sepol_common_datum_get_name(policydb->sh, policydb->p,
+	     qpol_common_get_name(policydb->sh, policydb->p,
 					 common_datum, &common_name) < 0) ||
-	    sepol_class_datum_get_perm_iter(policydb->sh, policydb->p,
+	    qpol_class_get_perm_iter(policydb->sh, policydb->p,
 					    class_datum, &perm_iter) < 0) {
 		goto cleanup;
 	}
 	class_elem[0] = Tcl_NewStringObj(class_name, -1);
 	class_elem[1] = Tcl_NewStringObj(common_name, -1);
 	class_elem[2] = Tcl_NewListObj(0, NULL);
-	for ( ; !sepol_iterator_end(perm_iter); sepol_iterator_next(perm_iter)) {
+	for ( ; !qpol_iterator_end(perm_iter); qpol_iterator_next(perm_iter)) {
 		char *perm_name;
 		Tcl_Obj *perm_obj;
-		if (sepol_iterator_get_item(perm_iter, (void **) &perm_name) < 0) {
+		if (qpol_iterator_get_item(perm_iter, (void **) &perm_name) < 0) {
 			goto cleanup;
 		}
 		perm_obj = Tcl_NewStringObj(perm_name, -1);
@@ -350,7 +350,7 @@ static int append_class_to_list(Tcl_Interp *interp,
 	}
 	retval = TCL_OK;
  cleanup:
-	sepol_iterator_destroy(&perm_iter);
+	qpol_iterator_destroy(&perm_iter);
 	return retval;
 }
 
@@ -372,7 +372,7 @@ static int append_class_to_list(Tcl_Interp *interp,
 static int Apol_GetClasses(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
 	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
-	sepol_class_datum_t *class_datum;
+	qpol_class_t *class_datum;
 	apol_class_query_t *query = NULL;
 	apol_vector_t *v = NULL;
 	int retval = TCL_ERROR;
@@ -387,7 +387,7 @@ static int Apol_GetClasses(ClientData clientData, Tcl_Interp *interp, int argc, 
 		goto cleanup;
 	}
 	if (argc == 2) {
-		if (sepol_policydb_get_class_by_name(policydb->sh, policydb->p,
+		if (qpol_policy_get_class_by_name(policydb->sh, policydb->p,
 						     argv[1], &class_datum) < 0) {
 			/* name is not within policy */
 			return TCL_OK;
@@ -416,7 +416,7 @@ static int Apol_GetClasses(ClientData clientData, Tcl_Interp *interp, int argc, 
 			goto cleanup;
 		}
 		for (i = 0; i < apol_vector_get_size(v); i++) {
-			class_datum = (sepol_class_datum_t *) apol_vector_get_element(v, i);
+			class_datum = (qpol_class_t *) apol_vector_get_element(v, i);
 			if (append_class_to_list(interp, class_datum, result_obj) == TCL_ERROR) {
 				goto cleanup;
 			}
@@ -434,7 +434,7 @@ static int Apol_GetClasses(ClientData clientData, Tcl_Interp *interp, int argc, 
 }
      
 /**
- * Takes a sepol_common_datum_t representing a common and appends a
+ * Takes a qpol_common_t representing a common and appends a
  * tuple of it to result_list.	 The tuple consists of:
  * <code>
  *    { common_name {perms0 perms1 ...} {class0 class1 ...} }
@@ -444,28 +444,28 @@ static int Apol_GetClasses(ClientData clientData, Tcl_Interp *interp, int argc, 
  * common.
  */
 static int append_common_to_list(Tcl_Interp *interp,
-				 sepol_common_datum_t *common_datum,
+				 qpol_common_t *common_datum,
 				 Tcl_Obj *result_list)
 {
 	char *common_name;
-	sepol_iterator_t *perm_iter = NULL;
+	qpol_iterator_t *perm_iter = NULL;
 	apol_class_query_t *query = NULL;
 	apol_vector_t *classes = NULL;
 	size_t i;
 	Tcl_Obj *common_elem[3], *common_list;
 	int retval = TCL_ERROR;
-	if (sepol_common_datum_get_name(policydb->sh, policydb->p,
+	if (qpol_common_get_name(policydb->sh, policydb->p,
 					common_datum, &common_name) < 0 ||
-	    sepol_common_datum_get_perm_iter(policydb->sh, policydb->p,
+	    qpol_common_get_perm_iter(policydb->sh, policydb->p,
 					     common_datum, &perm_iter) < 0) {
 		goto cleanup;
 	}
 	common_elem[0] = Tcl_NewStringObj(common_name, -1);
 	common_elem[1] = Tcl_NewListObj(0, NULL);
-	for ( ; !sepol_iterator_end(perm_iter); sepol_iterator_next(perm_iter)) {
+	for ( ; !qpol_iterator_end(perm_iter); qpol_iterator_next(perm_iter)) {
 		char *perm_name;
 		Tcl_Obj *perm_obj;
-		if (sepol_iterator_get_item(perm_iter, (void **) &perm_name) < 0) {
+		if (qpol_iterator_get_item(perm_iter, (void **) &perm_name) < 0) {
 			goto cleanup;
 		}
 		perm_obj = Tcl_NewStringObj(perm_name, -1);
@@ -480,10 +480,10 @@ static int append_common_to_list(Tcl_Interp *interp,
 		goto cleanup;
 	}
 	for (i = 0; i < apol_vector_get_size(classes); i++) {
-		sepol_class_datum_t *class_datum = (sepol_class_datum_t *) apol_vector_get_element(classes, i);
+		qpol_class_t *class_datum = (qpol_class_t *) apol_vector_get_element(classes, i);
 		char *class_name;
 		Tcl_Obj *class_obj;
-		if (sepol_class_datum_get_name(policydb->sh, policydb->p,
+		if (qpol_class_get_name(policydb->sh, policydb->p,
 					       class_datum, &class_name) < 0) {
 			goto cleanup;
 		}
@@ -498,7 +498,7 @@ static int append_common_to_list(Tcl_Interp *interp,
 	}
 	retval = TCL_OK;
  cleanup:
-	sepol_iterator_destroy(&perm_iter);
+	qpol_iterator_destroy(&perm_iter);
 	apol_class_query_destroy(&query);
 	apol_vector_destroy(&classes, NULL);
 	return retval;
@@ -522,7 +522,7 @@ static int append_common_to_list(Tcl_Interp *interp,
 static int Apol_GetCommons(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
 	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
-	sepol_common_datum_t *common_datum;
+	qpol_common_t *common_datum;
 	apol_common_query_t *query = NULL;
 	apol_vector_t *v = NULL;
 	int retval = TCL_ERROR;
@@ -537,7 +537,7 @@ static int Apol_GetCommons(ClientData clientData, Tcl_Interp *interp, int argc, 
 		goto cleanup;
 	}
 	if (argc == 2) {
-		if (sepol_policydb_get_common_by_name(policydb->sh, policydb->p,
+		if (qpol_policy_get_common_by_name(policydb->sh, policydb->p,
 						      argv[1], &common_datum) < 0) {
 			/* name is not within policy */
 			return TCL_OK;
@@ -566,7 +566,7 @@ static int Apol_GetCommons(ClientData clientData, Tcl_Interp *interp, int argc, 
 			goto cleanup;
 		}
 		for (i = 0; i < apol_vector_get_size(v); i++) {
-			common_datum = (sepol_common_datum_t *) apol_vector_get_element(v, i);
+			common_datum = (qpol_common_t *) apol_vector_get_element(v, i);
 			if (append_common_to_list(interp, common_datum, result_obj) == TCL_ERROR) {
 				goto cleanup;
 			}
@@ -594,23 +594,23 @@ static int append_perm_to_list(Tcl_Interp *interp,
 			       const char *perm,
 			       Tcl_Obj *result_list)
 {
-	sepol_iterator_t *class_iter = NULL, *common_iter = NULL;
+	qpol_iterator_t *class_iter = NULL, *common_iter = NULL;
 	Tcl_Obj *perm_elem[3], *perm_list;
 	int retval = TCL_ERROR;
-	if (sepol_perm_get_class_iter(policydb->sh, policydb->p,
+	if (qpol_perm_get_class_iter(policydb->sh, policydb->p,
 				      perm, &class_iter) < 0 ||
-	    sepol_perm_get_common_iter(policydb->sh, policydb->p,
+	    qpol_perm_get_common_iter(policydb->sh, policydb->p,
 				       perm, &common_iter) < 0) {
 		goto cleanup;
 	}
 	perm_elem[0] = Tcl_NewStringObj(perm, -1);
 	perm_elem[1] = Tcl_NewListObj(0, NULL);
-	for ( ; !sepol_iterator_end(class_iter); sepol_iterator_next(class_iter)) {
-		sepol_class_datum_t *class_datum;
+	for ( ; !qpol_iterator_end(class_iter); qpol_iterator_next(class_iter)) {
+		qpol_class_t *class_datum;
 		char *class_name;
 		Tcl_Obj *class_obj;
-		if (sepol_iterator_get_item(class_iter, (void **) &class_datum) < 0 ||
-		    sepol_class_datum_get_name(policydb->sh, policydb->p,
+		if (qpol_iterator_get_item(class_iter, (void **) &class_datum) < 0 ||
+		    qpol_class_get_name(policydb->sh, policydb->p,
 					       class_datum, &class_name) < 0) {
 			goto cleanup;
 		}
@@ -620,12 +620,12 @@ static int append_perm_to_list(Tcl_Interp *interp,
 		}
 	}
 	perm_elem[2] = Tcl_NewListObj(0, NULL);
-	for ( ; !sepol_iterator_end(common_iter); sepol_iterator_next(common_iter)) {
-		sepol_common_datum_t *common_datum;
+	for ( ; !qpol_iterator_end(common_iter); qpol_iterator_next(common_iter)) {
+		qpol_common_t *common_datum;
 		char *common_name;
 		Tcl_Obj *common_obj;
-		if (sepol_iterator_get_item(common_iter, (void **) &common_datum) < 0 ||
-		    sepol_common_datum_get_name(policydb->sh, policydb->p,
+		if (qpol_iterator_get_item(common_iter, (void **) &common_datum) < 0 ||
+		    qpol_common_get_name(policydb->sh, policydb->p,
 						common_datum, &common_name) < 0) {
 			goto cleanup;
 		}
@@ -641,8 +641,8 @@ static int append_perm_to_list(Tcl_Interp *interp,
 	}
 	retval = TCL_OK;
  cleanup:
-	sepol_iterator_destroy(&class_iter);
-	sepol_iterator_destroy(&common_iter);
+	qpol_iterator_destroy(&class_iter);
+	qpol_iterator_destroy(&common_iter);
 	return retval;
 }
 
@@ -721,36 +721,36 @@ static int Apol_GetPerms(ClientData clientData, Tcl_Interp *interp, int argc, CO
 }
 
 /**
- * Takes a sepol_role_datum_t and appends a tuple of it to
+ * Takes a qpol_role_t and appends a tuple of it to
  * result_list.	 The tuple consists of:
  * <code>
  *    { role_name {types1 types2 ...} {dominated_role1 dominated_role2 ...} }
  * </code>
  */
 static int append_role_to_list(Tcl_Interp *interp,
-			       sepol_role_datum_t *role_datum,
+			       qpol_role_t *role_datum,
 			       Tcl_Obj *result_list)
 {
 	char *role_name;
-	sepol_iterator_t *type_iter = NULL, *dom_iter = NULL;
+	qpol_iterator_t *type_iter = NULL, *dom_iter = NULL;
 	int retval = TCL_ERROR;
 	Tcl_Obj *role_elem[3], *role_list;
-	if (sepol_role_datum_get_name(policydb->sh, policydb->p,
+	if (qpol_role_get_name(policydb->sh, policydb->p,
 				      role_datum, &role_name) < 0 ||
-	    sepol_role_datum_get_type_iter(policydb->sh, policydb->p,
+	    qpol_role_get_type_iter(policydb->sh, policydb->p,
 					   role_datum, &type_iter) < 0 ||
-	    sepol_role_datum_get_dominate_iter(policydb->sh, policydb->p,
+	    qpol_role_get_dominate_iter(policydb->sh, policydb->p,
 					       role_datum, &dom_iter) < 0) {
 		goto cleanup;
 	}
 	role_elem[0] = Tcl_NewStringObj(role_name, -1);
 	role_elem[1] = Tcl_NewListObj(0, NULL);
-	for ( ; !sepol_iterator_end(type_iter); sepol_iterator_next(type_iter)) {
-		sepol_type_datum_t *type;
+	for ( ; !qpol_iterator_end(type_iter); qpol_iterator_next(type_iter)) {
+		qpol_type_t *type;
 		char *type_name;
 		Tcl_Obj *type_obj;
-		if (sepol_iterator_get_item(type_iter, (void **) &type) < 0 ||
-		    sepol_type_datum_get_name(policydb->sh, policydb->p,
+		if (qpol_iterator_get_item(type_iter, (void **) &type) < 0 ||
+		    qpol_type_get_name(policydb->sh, policydb->p,
 					      type, &type_name) < 0) {
 			goto cleanup;
 		}
@@ -760,12 +760,12 @@ static int append_role_to_list(Tcl_Interp *interp,
 		}
 	}
 	role_elem[2] = Tcl_NewListObj(0, NULL);
-	for ( ; !sepol_iterator_end(dom_iter); sepol_iterator_next(dom_iter)) {
-		sepol_role_datum_t *dom_role;
+	for ( ; !qpol_iterator_end(dom_iter); qpol_iterator_next(dom_iter)) {
+		qpol_role_t *dom_role;
 		char *dom_role_name;
 		Tcl_Obj *dom_role_obj;
-		if (sepol_iterator_get_item(dom_iter, (void **) &dom_role) < 0 ||
-		    sepol_role_datum_get_name(policydb->sh, policydb->p,
+		if (qpol_iterator_get_item(dom_iter, (void **) &dom_role) < 0 ||
+		    qpol_role_get_name(policydb->sh, policydb->p,
 					      dom_role, &dom_role_name) < 0) {
 			goto cleanup;
 		}
@@ -784,8 +784,8 @@ static int append_role_to_list(Tcl_Interp *interp,
 	}
 	retval = TCL_OK;
  cleanup:
-	sepol_iterator_destroy(&type_iter);
-	sepol_iterator_destroy(&dom_iter);
+	qpol_iterator_destroy(&type_iter);
+	qpol_iterator_destroy(&dom_iter);
 	return retval;
 }
 
@@ -808,7 +808,7 @@ static int append_role_to_list(Tcl_Interp *interp,
 static int Apol_GetRoles(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
 	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
-	sepol_role_datum_t *role;
+	qpol_role_t *role;
 	apol_role_query_t *query = NULL;
 	apol_vector_t *v = NULL;
 	int retval = TCL_ERROR;
@@ -823,7 +823,7 @@ static int Apol_GetRoles(ClientData clientData, Tcl_Interp *interp, int argc, CO
 		goto cleanup;
 	}
 	if (argc == 2) {
-		if (sepol_policydb_get_role_by_name(policydb->sh, policydb->p,
+		if (qpol_policy_get_role_by_name(policydb->sh, policydb->p,
 						    argv[1], &role) < 0) {
 			/* name is not within policy */
 			return TCL_OK;
@@ -853,7 +853,7 @@ static int Apol_GetRoles(ClientData clientData, Tcl_Interp *interp, int argc, CO
 			goto cleanup;
 		}
 		for (i = 0; i < apol_vector_get_size(v); i++) {
-			role = (sepol_role_datum_t *) apol_vector_get_element(v, i);
+			role = (qpol_role_t *) apol_vector_get_element(v, i);
 			if (append_role_to_list(interp, role, result_obj) == TCL_ERROR) {
 				goto cleanup;
 			}
@@ -893,36 +893,36 @@ static int apol_level_to_tcl_obj(Tcl_Interp *interp, apol_mls_level_t *level, Tc
 
 
 /**
- * Takes a sepol_user_datum_t and appends a tuple of it to
+ * Takes a qpol_user_t and appends a tuple of it to
  * result_list.	 The tuple consists of:
  * <code>
  *    { user_name { role0 role1 ... } default_level { low_range high_range } }
  * </code>
  */
 static int append_user_to_list(Tcl_Interp *interp,
-			       sepol_user_datum_t *user_datum,
+			       qpol_user_t *user_datum,
 			       Tcl_Obj *result_list)
 {
 	char *user_name;
-	sepol_iterator_t *role_iter = NULL;
+	qpol_iterator_t *role_iter = NULL;
 	Tcl_Obj *user_elem[4], *user_list;
 	apol_mls_level_t *apol_default = NULL;
 	apol_mls_range_t *apol_range = NULL;
 	int retval = TCL_ERROR;
-	if (sepol_user_datum_get_name(policydb->sh, policydb->p,
+	if (qpol_user_get_name(policydb->sh, policydb->p,
 				      user_datum, &user_name) < 0 ||
-	    sepol_user_datum_get_role_iter(policydb->sh, policydb->p,
+	    qpol_user_get_role_iter(policydb->sh, policydb->p,
 					   user_datum, &role_iter) < 0) {
 		goto cleanup;
 	}
 	user_elem[0] = Tcl_NewStringObj(user_name, -1);
 	user_elem[1] = Tcl_NewListObj(0, NULL);
-	for ( ; !sepol_iterator_end(role_iter); sepol_iterator_next(role_iter)) {
-		sepol_role_datum_t *role_datum;
+	for ( ; !qpol_iterator_end(role_iter); qpol_iterator_next(role_iter)) {
+		qpol_role_t *role_datum;
 		char *role_name;
 		Tcl_Obj *role_obj;
-		if (sepol_iterator_get_item(role_iter, (void **) &role_datum) < 0 ||
-		    sepol_role_datum_get_name(policydb->sh, policydb->p,
+		if (qpol_iterator_get_item(role_iter, (void **) &role_datum) < 0 ||
+		    qpol_role_get_name(policydb->sh, policydb->p,
 					      role_datum, &role_name) < 0) {
 			goto cleanup;
 		}
@@ -932,20 +932,20 @@ static int append_user_to_list(Tcl_Interp *interp,
 		}
 	}
 	if (is_mls_policy(policy)) {
-		sepol_mls_level_t *default_level;
-		sepol_mls_range_t *range;
+		qpol_mls_level_t *default_level;
+		qpol_mls_range_t *range;
 		Tcl_Obj *range_elem[2];
-		if (sepol_user_datum_get_dfltlevel(policydb->sh, policydb->p, user_datum, &default_level) < 0) {
+		if (qpol_user_get_dfltlevel(policydb->sh, policydb->p, user_datum, &default_level) < 0) {
 			goto cleanup;
 		}
-		if (sepol_user_datum_get_range(policydb->sh, policydb->p, user_datum, &range) < 0) {
+		if (qpol_user_get_range(policydb->sh, policydb->p, user_datum, &range) < 0) {
 			goto cleanup;
 		}
 		if ((apol_default =
-		     apol_mls_level_create_from_sepol_mls_level(policydb,
+		     apol_mls_level_create_from_qpol_mls_level(policydb,
 								default_level)) == NULL ||
 		    (apol_range =
-		     apol_mls_range_create_from_sepol_mls_range(policydb,
+		     apol_mls_range_create_from_qpol_mls_range(policydb,
 								range)) == NULL) {
 			goto cleanup;
 		}
@@ -968,7 +968,7 @@ static int append_user_to_list(Tcl_Interp *interp,
 
 	retval = TCL_OK;
  cleanup:
-	sepol_iterator_destroy(&role_iter);
+	qpol_iterator_destroy(&role_iter);
 	apol_mls_level_destroy(&apol_default);
 	apol_mls_range_destroy(&apol_range);
 	return retval;
@@ -999,7 +999,7 @@ static int append_user_to_list(Tcl_Interp *interp,
 static int Apol_GetUsers(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
 	Tcl_Obj *result_obj;
-	sepol_user_datum_t *user;
+	qpol_user_t *user;
 	apol_user_query_t *query = NULL;
 	apol_vector_t *v = NULL;
 	int retval = TCL_ERROR;
@@ -1015,7 +1015,7 @@ static int Apol_GetUsers(ClientData clientData, Tcl_Interp *interp, int argc, CO
 	}
 	result_obj = Tcl_NewListObj(0, NULL);
 	if (argc == 2) {
-		if (sepol_policydb_get_user_by_name(policydb->sh, policydb->p,
+		if (qpol_policy_get_user_by_name(policydb->sh, policydb->p,
 						    argv[1], &user) < 0) {
 			/* name is not within policy */
 			return TCL_OK;
@@ -1074,7 +1074,7 @@ static int Apol_GetUsers(ClientData clientData, Tcl_Interp *interp, int argc, CO
 			goto cleanup;
 		}
 		for (i = 0; i < apol_vector_get_size(v); i++) {
-			user = (sepol_user_datum_t *) apol_vector_get_element(v, i);
+			user = (qpol_user_t *) apol_vector_get_element(v, i);
 			if (append_user_to_list(interp, user, result_obj) == TCL_ERROR) {
 				goto cleanup;
 			}
@@ -1092,22 +1092,22 @@ static int Apol_GetUsers(ClientData clientData, Tcl_Interp *interp, int argc, CO
 }
 
 /**
- * Takes a sepol_bool_datum_t and appends a tuple of it to
+ * Takes a qpol_bool_t and appends a tuple of it to
  * result_list.	 The tuple consists of:
  * <code>
  *    { bool_name current_value}
  * </code>
  */
 static int append_bool_to_list(Tcl_Interp *interp,
-			       sepol_bool_datum_t *bool_datum,
+			       qpol_bool_t *bool_datum,
 			       Tcl_Obj *result_list)
 {
 	char *bool_name;
 	int bool_state;
 	Tcl_Obj *bool_elem[3], *bool_list;
-	if (sepol_bool_datum_get_name(policydb->sh, policydb->p,
+	if (qpol_bool_get_name(policydb->sh, policydb->p,
 				      bool_datum, &bool_name) < 0 ||
-	    sepol_bool_datum_get_state(policydb->sh, policydb->p,
+	    qpol_bool_get_state(policydb->sh, policydb->p,
 				       bool_datum, &bool_state) < 0) {
 		return TCL_ERROR;
 	}
@@ -1137,7 +1137,7 @@ static int append_bool_to_list(Tcl_Interp *interp,
 static int Apol_GetBools(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
 	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
-	sepol_bool_datum_t *bool;
+	qpol_bool_t *bool;
 	apol_bool_query_t *query = NULL;
 	apol_vector_t *v = NULL;
 	int retval = TCL_ERROR;
@@ -1152,7 +1152,7 @@ static int Apol_GetBools(ClientData clientData, Tcl_Interp *interp, int argc, CO
 		goto cleanup;
 	}
 	if (argc == 2) {
-		if (sepol_policydb_get_bool_by_name(policydb->sh, policydb->p,
+		if (qpol_policy_get_bool_by_name(policydb->sh, policydb->p,
 						    argv[1], &bool) < 0) {
 			/* name is not within policy */
 			return TCL_OK;
@@ -1181,7 +1181,7 @@ static int Apol_GetBools(ClientData clientData, Tcl_Interp *interp, int argc, CO
 			goto cleanup;
 		}
 		for (i = 0; i < apol_vector_get_size(v); i++) {
-			bool = (sepol_bool_datum_t *) apol_vector_get_element(v, i);
+			bool = (qpol_bool_t *) apol_vector_get_element(v, i);
 			if (append_bool_to_list(interp, bool, result_obj) == TCL_ERROR) {
 				goto cleanup;
 			}
@@ -1208,7 +1208,7 @@ static int Apol_GetBools(ClientData clientData, Tcl_Interp *interp, int argc, CO
  */
 static int Apol_SetBoolValue(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
-	sepol_bool_datum_t *bool;
+	qpol_bool_t *bool;
 	Tcl_Obj *value_obj;
 	int retval = TCL_ERROR, value;
 
@@ -1221,7 +1221,7 @@ static int Apol_SetBoolValue(ClientData clientData, Tcl_Interp *interp, int argc
 		ERR(policydb, "Need a bool name and a value.");
 		goto cleanup;
 	}
-	if (sepol_policydb_get_bool_by_name(policydb->sh, policydb->p,
+	if (qpol_policy_get_bool_by_name(policydb->sh, policydb->p,
 					    argv[1], &bool) < 0) {
 		/* name is not within policy */
 		retval = TCL_OK;
@@ -1231,7 +1231,7 @@ static int Apol_SetBoolValue(ClientData clientData, Tcl_Interp *interp, int argc
 	if (Tcl_GetBooleanFromObj(interp, value_obj, &value) == TCL_ERROR) {
 		goto cleanup;
 	}
-	if (sepol_bool_datum_set_state(policydb->sh, policydb->p, bool, value) < 0) {
+	if (qpol_bool_set_state(policydb->sh, policydb->p, bool, value) < 0) {
 		goto cleanup;
 	}
 	retval = TCL_OK;
@@ -1243,39 +1243,39 @@ static int Apol_SetBoolValue(ClientData clientData, Tcl_Interp *interp, int argc
 }
 
 /**
- * Takes a sepol_level_datum_t and appends a tuple of it to
+ * Takes a qpol_level_t and appends a tuple of it to
  * result_list.	 The tuple consists of:
  * <code>
  *    { sens_name {alias0 alias1 ...} {cats0 cats1 ...} dominance_value }
  * </code>
  */
 static int append_level_to_list(Tcl_Interp *interp,
-				sepol_level_datum_t *level_datum,
+				qpol_level_t *level_datum,
 				Tcl_Obj *result_list)
 {
 	char *sens_name;
-	sepol_iterator_t *alias_iter = NULL, *cat_iter = NULL;
+	qpol_iterator_t *alias_iter = NULL, *cat_iter = NULL;
 	uint32_t level_value;
 	Tcl_Obj *level_elem[4], *level_list;
 	int retval = TCL_ERROR;
 
-	if (sepol_level_datum_get_name(policydb->sh, policydb->p,
+	if (qpol_level_get_name(policydb->sh, policydb->p,
 				       level_datum, &sens_name) < 0 ||
-	    sepol_level_datum_get_alias_iter(policydb->sh, policydb->p,
+	    qpol_level_get_alias_iter(policydb->sh, policydb->p,
 					     level_datum, &alias_iter) < 0 ||
-	    sepol_level_datum_get_cat_iter(policydb->sh, policydb->p,
+	    qpol_level_get_cat_iter(policydb->sh, policydb->p,
 					   level_datum, &cat_iter) < 0 ||
-	    sepol_level_datum_get_value(policydb->sh, policydb->p,
+	    qpol_level_get_value(policydb->sh, policydb->p,
 					level_datum, &level_value) < 0) {
 		ERR(policydb, "Could not get level value.");
 		goto cleanup;
 	}
 	level_elem[0] = Tcl_NewStringObj(sens_name, -1);
 	level_elem[1] = Tcl_NewListObj(0, NULL);
-	for ( ; !sepol_iterator_end(alias_iter); sepol_iterator_next(alias_iter)) {
+	for ( ; !qpol_iterator_end(alias_iter); qpol_iterator_next(alias_iter)) {
 		char *alias_name;
 		Tcl_Obj *alias_obj;
-		if (sepol_iterator_get_item(alias_iter, (void **) &alias_name) < 0) {
+		if (qpol_iterator_get_item(alias_iter, (void **) &alias_name) < 0) {
 			goto cleanup;
 		}
 		alias_obj = Tcl_NewStringObj(alias_name, -1);
@@ -1284,12 +1284,12 @@ static int append_level_to_list(Tcl_Interp *interp,
 		}
 	}
 	level_elem[2] = Tcl_NewListObj(0, NULL);
-	for ( ; !sepol_iterator_end(cat_iter); sepol_iterator_next(cat_iter)) {
-		sepol_cat_datum_t *cat_datum;
+	for ( ; !qpol_iterator_end(cat_iter); qpol_iterator_next(cat_iter)) {
+		qpol_cat_t *cat_datum;
 		char *cats_name;
 		Tcl_Obj *cats_obj;
-		if (sepol_iterator_get_item(cat_iter, (void **) &cat_datum) < 0 ||
-		    sepol_cat_datum_get_name(policydb->sh, policydb->p,
+		if (qpol_iterator_get_item(cat_iter, (void **) &cat_datum) < 0 ||
+		    qpol_cat_get_name(policydb->sh, policydb->p,
 					     cat_datum, &cats_name) < 0) {
 			goto cleanup;
 		}
@@ -1306,8 +1306,8 @@ static int append_level_to_list(Tcl_Interp *interp,
 
 	retval = TCL_OK;
  cleanup:
-	sepol_iterator_destroy(&alias_iter);
-	sepol_iterator_destroy(&cat_iter);
+	qpol_iterator_destroy(&alias_iter);
+	qpol_iterator_destroy(&cat_iter);
 	return retval;
 }
 
@@ -1330,7 +1330,7 @@ static int append_level_to_list(Tcl_Interp *interp,
 static int Apol_GetLevels(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
 	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
-	sepol_level_datum_t *level;
+	qpol_level_t *level;
 	apol_level_query_t *query = NULL;
 	apol_vector_t *v = NULL;
 	int retval = TCL_ERROR;
@@ -1345,7 +1345,7 @@ static int Apol_GetLevels(ClientData clientData, Tcl_Interp *interp, int argc, C
 		goto cleanup;
 	}
 	if (argc == 2) {
-		if (sepol_policydb_get_level_by_name(policydb->sh, policydb->p,
+		if (qpol_policy_get_level_by_name(policydb->sh, policydb->p,
 						     argv[1], &level) < 0) {
 			/* passed sensitivity is not within the policy */
 			return TCL_OK;
@@ -1374,7 +1374,7 @@ static int Apol_GetLevels(ClientData clientData, Tcl_Interp *interp, int argc, C
 			goto cleanup;
 		}
 		for (i = 0; i < apol_vector_get_size(v); i++) {
-			level = (sepol_level_datum_t *) apol_vector_get_element(v, i);
+			level = (qpol_level_t *) apol_vector_get_element(v, i);
 			if (append_level_to_list(interp, level, result_obj) == TCL_ERROR) {
 				goto cleanup;
 			}
@@ -1392,18 +1392,18 @@ static int Apol_GetLevels(ClientData clientData, Tcl_Interp *interp, int argc, C
 }
 
 /**
- * Takes a sepol_cat_datum_t and appends a tuple of it to
+ * Takes a qpol_cat_t and appends a tuple of it to
  * result_list.	 The tuple consists of:
  * <code>
  *    { cat_name {alias0 alias1 ...} {level0 level1 ...} cat_value }
  * </code>
  */
 static int append_cat_to_list(Tcl_Interp *interp,
-			      sepol_cat_datum_t *cat_datum,
+			      qpol_cat_t *cat_datum,
 			      Tcl_Obj *result_list)
 {
 	char *cat_name;
-	sepol_iterator_t *alias_iter = NULL;
+	qpol_iterator_t *alias_iter = NULL;
 	apol_level_query_t *query = NULL;
 	apol_vector_t *levels = NULL;
 	size_t i;
@@ -1411,20 +1411,20 @@ static int append_cat_to_list(Tcl_Interp *interp,
 	Tcl_Obj *cat_elem[4], *cat_list;
 	int retval = TCL_ERROR;
 
-	if (sepol_cat_datum_get_name(policydb->sh, policydb->p,
+	if (qpol_cat_get_name(policydb->sh, policydb->p,
 				     cat_datum, &cat_name) < 0 ||
-	    sepol_cat_datum_get_alias_iter(policydb->sh, policydb->p,
+	    qpol_cat_get_alias_iter(policydb->sh, policydb->p,
 					   cat_datum, &alias_iter) < 0 ||
-	    sepol_cat_datum_get_value(policydb->sh, policydb->p,
+	    qpol_cat_get_value(policydb->sh, policydb->p,
 				      cat_datum, &cat_value) < 0) {
 		goto cleanup;
 	}
 	cat_elem[0] = Tcl_NewStringObj(cat_name, -1);
 	cat_elem[1] = Tcl_NewListObj(0, NULL);
-	for ( ; !sepol_iterator_end(alias_iter); sepol_iterator_next(alias_iter)) {
+	for ( ; !qpol_iterator_end(alias_iter); qpol_iterator_next(alias_iter)) {
 		char *alias_name;
 		Tcl_Obj *alias_obj;
-		if (sepol_iterator_get_item(alias_iter, (void **) &alias_name) < 0) {
+		if (qpol_iterator_get_item(alias_iter, (void **) &alias_name) < 0) {
 			goto cleanup;
 		}
 		alias_obj = Tcl_NewStringObj(alias_name, -1);
@@ -1439,10 +1439,10 @@ static int append_cat_to_list(Tcl_Interp *interp,
 		goto cleanup;
 	}
 	for (i = 0; i < apol_vector_get_size(levels); i++) {
-		sepol_level_datum_t *level = (sepol_level_datum_t *) apol_vector_get_element(levels, i);
+		qpol_level_t *level = (qpol_level_t *) apol_vector_get_element(levels, i);
 		char *sens_name;
 		Tcl_Obj *sens_obj;
-		if (sepol_level_datum_get_name(policydb->sh, policydb->p,
+		if (qpol_level_get_name(policydb->sh, policydb->p,
 					       level, &sens_name) < 0) {
 			goto cleanup;
 		}
@@ -1459,7 +1459,7 @@ static int append_cat_to_list(Tcl_Interp *interp,
 
 	retval = TCL_OK;
  cleanup:
-	sepol_iterator_destroy(&alias_iter);
+	qpol_iterator_destroy(&alias_iter);
 	apol_level_query_destroy(&query);
 	apol_vector_destroy(&levels, NULL);
 	return retval;
@@ -1484,7 +1484,7 @@ static int append_cat_to_list(Tcl_Interp *interp,
 static int Apol_GetCats(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
 	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
-	sepol_cat_datum_t *cat;
+	qpol_cat_t *cat;
 	apol_cat_query_t *query = NULL;
 	apol_vector_t *v = NULL;
 	int retval = TCL_ERROR;
@@ -1499,7 +1499,7 @@ static int Apol_GetCats(ClientData clientData, Tcl_Interp *interp, int argc, CON
 		goto cleanup;
 	}
 	if (argc == 2) {
-		if (sepol_policydb_get_cat_by_name(policydb->sh, policydb->p,
+		if (qpol_policy_get_cat_by_name(policydb->sh, policydb->p,
 						   argv[1], &cat) < 0) {
 			/* passed category is not within the policy */
 			return TCL_OK;
@@ -1529,7 +1529,7 @@ static int Apol_GetCats(ClientData clientData, Tcl_Interp *interp, int argc, CON
 		}
 		apol_cat_query_destroy(&query);
 		for (i = 0; i < apol_vector_get_size(v); i++) {
-			cat = (sepol_cat_datum_t *) apol_vector_get_element(v, i);
+			cat = (qpol_cat_t *) apol_vector_get_element(v, i);
 			if (append_cat_to_list(interp, cat, result_obj) == TCL_ERROR) {
 				goto cleanup;
 			}
@@ -1547,7 +1547,7 @@ static int Apol_GetCats(ClientData clientData, Tcl_Interp *interp, int argc, CON
 }
 
 /**
- * Given a sepol_context_struct, allocate a new TclObj to the
+ * Given a qpol_context, allocate a new TclObj to the
  * referenced paramater dest_obj.  The returned Tcl list is:
  * <code>
  *   { user role type range }
@@ -1555,12 +1555,12 @@ static int Apol_GetCats(ClientData clientData, Tcl_Interp *interp, int argc, CON
  * If the current policy is non-MLS then range will be an empty list.
  * Otherwise it will be a 2-ple list of levels.
  */
-static int sepol_context_to_tcl_obj(Tcl_Interp *interp, sepol_context_struct_t *context, Tcl_Obj **dest_obj) {
+static int qpol_context_to_tcl_obj(Tcl_Interp *interp, qpol_context_t *context, Tcl_Obj **dest_obj) {
 	apol_context_t *apol_context = NULL;
 	Tcl_Obj *context_elem[4], *range_elem[2];
 	int retval = TCL_ERROR;
 
-	apol_context = apol_context_create_from_sepol_context(policydb, context);
+	apol_context = apol_context_create_from_qpol_context(policydb, context);
 	if (apol_context == NULL) {
 		ERR(policydb, "Out of memory!");
 		goto cleanup;
@@ -1586,7 +1586,7 @@ static int sepol_context_to_tcl_obj(Tcl_Interp *interp, sepol_context_struct_t *
 }
 
 /**
- * Takes a sepol_isid_t and appends a tuple of it to result_list.  The
+ * Takes a qpol_isid_t and appends a tuple of it to result_list.  The
  * tuple consists of:
  * <code>
  *   { isid_name context }
@@ -1597,19 +1597,19 @@ static int sepol_context_to_tcl_obj(Tcl_Interp *interp, sepol_context_struct_t *
  * </code>
  */
 static int append_isid_to_list(Tcl_Interp *interp,
-			       sepol_isid_t *isid,
+			       qpol_isid_t *isid,
 			       Tcl_Obj *result_list)
 {
 	Tcl_Obj *isid_elem[2], *isid_list;
 	char *name;
-	sepol_context_struct_t *context;
+	qpol_context_t *context;
 	int retval = TCL_ERROR;
-	if (sepol_isid_get_name(policydb->sh, policydb->p, isid, &name) < 0 ||
-	    sepol_isid_get_context(policydb->sh, policydb->p, isid, &context) < 0) {
+	if (qpol_isid_get_name(policydb->sh, policydb->p, isid, &name) < 0 ||
+	    qpol_isid_get_context(policydb->sh, policydb->p, isid, &context) < 0) {
 		goto cleanup;
 	}
 	isid_elem[0] = Tcl_NewStringObj(name, -1);
-	if (sepol_context_to_tcl_obj(interp, context, isid_elem + 1) == TCL_ERROR) {
+	if (qpol_context_to_tcl_obj(interp, context, isid_elem + 1) == TCL_ERROR) {
 		goto cleanup;
 	}
 	isid_list = Tcl_NewListObj(2, isid_elem);
@@ -1643,7 +1643,7 @@ static int append_isid_to_list(Tcl_Interp *interp,
 static int Apol_GetInitialSIDs(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
 	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
-	sepol_isid_t *isid;
+	qpol_isid_t *isid;
 	const char *name = NULL;
 	apol_context_t *context = NULL;
 	unsigned int range_match;
@@ -1689,7 +1689,7 @@ static int Apol_GetInitialSIDs(ClientData clientData, Tcl_Interp *interp, int ar
 		goto cleanup;
 	}
 	for (i = 0; i < apol_vector_get_size(v); i++) {
-		isid = (sepol_isid_t *) apol_vector_get_element(v, i);
+		isid = (qpol_isid_t *) apol_vector_get_element(v, i);
 		if (append_isid_to_list(interp, isid, result_obj) == TCL_ERROR) {
 			goto cleanup;
 		}
@@ -1707,7 +1707,7 @@ static int Apol_GetInitialSIDs(ClientData clientData, Tcl_Interp *interp, int ar
 }
 
 /**
- * Takes a sepol_portcon_t and appends a tuple of it to result_list.
+ * Takes a qpol_portcon_t and appends a tuple of it to result_list.
  * The tuple consists of:
  * <code>
  *   { low_port high_port protocol context }
@@ -1718,22 +1718,22 @@ static int Apol_GetInitialSIDs(ClientData clientData, Tcl_Interp *interp, int ar
  * </code>
  */
 static int append_portcon_to_list(Tcl_Interp *interp,
-				  sepol_portcon_t *portcon,
+				  qpol_portcon_t *portcon,
 				  Tcl_Obj *result_list)
 {
 	Tcl_Obj *portcon_elem[4], *portcon_list;
 	uint8_t protocol;
 	const char *proto_str;
 	uint16_t low_port, high_port;
-	sepol_context_struct_t *context;
+	qpol_context_t *context;
 	int retval = TCL_ERROR;
-	if (sepol_portcon_get_low_port(policydb->sh, policydb->p,
+	if (qpol_portcon_get_low_port(policydb->sh, policydb->p,
 				       portcon, &low_port) < 0 ||
-	    sepol_portcon_get_high_port(policydb->sh, policydb->p,
+	    qpol_portcon_get_high_port(policydb->sh, policydb->p,
 					portcon, &high_port) < 0 ||
-	    sepol_portcon_get_protocol(policydb->sh, policydb->p,
+	    qpol_portcon_get_protocol(policydb->sh, policydb->p,
 				       portcon, &protocol) < 0 ||
-	    sepol_portcon_get_context(policydb->sh, policydb->p,
+	    qpol_portcon_get_context(policydb->sh, policydb->p,
 				      portcon, &context) < 0) {
 		goto cleanup;
 	}
@@ -1744,7 +1744,7 @@ static int append_portcon_to_list(Tcl_Interp *interp,
 		goto cleanup;
 	}
 	portcon_elem[2] = Tcl_NewStringObj(proto_str, -1);
-	if (sepol_context_to_tcl_obj(interp, context, portcon_elem + 3) == TCL_ERROR) {
+	if (qpol_context_to_tcl_obj(interp, context, portcon_elem + 3) == TCL_ERROR) {
 		goto cleanup;
 	}
 	portcon_list = Tcl_NewListObj(4, portcon_elem);
@@ -1808,7 +1808,7 @@ static int apol_tcl_string_to_proto(Tcl_Interp *interp __attribute__ ((unused)),
 static int Apol_GetPortcons(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
 	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
-	sepol_portcon_t *portcon;
+	qpol_portcon_t *portcon;
 	int low = -1, high = -1, proto = -1;
 	apol_context_t *context = NULL;
 	unsigned int range_match;
@@ -1863,7 +1863,7 @@ static int Apol_GetPortcons(ClientData clientData, Tcl_Interp *interp, int argc,
 		goto cleanup;
 	}
 	for (i = 0; i < apol_vector_get_size(v); i++) {
-		portcon = (sepol_portcon_t *) apol_vector_get_element(v, i);
+		portcon = (qpol_portcon_t *) apol_vector_get_element(v, i);
 		if (append_portcon_to_list(interp, portcon, result_obj) == TCL_ERROR) {
 			goto cleanup;
 		}
@@ -1881,31 +1881,31 @@ static int Apol_GetPortcons(ClientData clientData, Tcl_Interp *interp, int argc,
 }
 
 /**
- * Takes a sepol_netifcon_t and appends a tuple of it to result_list.
+ * Takes a qpol_netifcon_t and appends a tuple of it to result_list.
  * The tuple consists of:
  * <code>
  *   { device if_context msg_context }
  * </code>
  */
 static int append_netifcon_to_list(Tcl_Interp *interp,
-				  sepol_netifcon_t *netifcon,
+				  qpol_netifcon_t *netifcon,
 				  Tcl_Obj *result_list)
 {
 	char *name;
-	sepol_context_struct_t *if_context, *msg_context;
+	qpol_context_t *if_context, *msg_context;
 	Tcl_Obj *netifcon_elem[3], *netifcon_list;
 	int retval = TCL_ERROR;
-	if (sepol_netifcon_get_name(policydb->sh, policydb->p,
+	if (qpol_netifcon_get_name(policydb->sh, policydb->p,
 				    netifcon, &name) < 0 ||
-	    sepol_netifcon_get_if_con(policydb->sh, policydb->p,
+	    qpol_netifcon_get_if_con(policydb->sh, policydb->p,
 				      netifcon, &if_context) < 0 ||
-	    sepol_netifcon_get_msg_con(policydb->sh, policydb->p,
+	    qpol_netifcon_get_msg_con(policydb->sh, policydb->p,
 				       netifcon, &msg_context) < 0) {
 		goto cleanup;
 	}
 	netifcon_elem[0] = Tcl_NewStringObj(name, -1);
-	if (sepol_context_to_tcl_obj(interp, if_context, netifcon_elem + 1) == TCL_ERROR ||
-	    sepol_context_to_tcl_obj(interp, msg_context, netifcon_elem + 2) == TCL_ERROR) {
+	if (qpol_context_to_tcl_obj(interp, if_context, netifcon_elem + 1) == TCL_ERROR ||
+	    qpol_context_to_tcl_obj(interp, msg_context, netifcon_elem + 2) == TCL_ERROR) {
 		goto cleanup;
 	}
 	netifcon_list = Tcl_NewListObj(3, netifcon_elem);
@@ -1942,7 +1942,7 @@ static int append_netifcon_to_list(Tcl_Interp *interp,
 static int Apol_GetNetifcons(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
 	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
-	sepol_netifcon_t *netifcon;
+	qpol_netifcon_t *netifcon;
         apol_context_t *if_context = NULL, *msg_context = NULL;
         unsigned int if_range_match = 0, msg_range_match = 0;
         apol_netifcon_query_t *query = NULL;
@@ -1959,7 +1959,7 @@ static int Apol_GetNetifcons(ClientData clientData, Tcl_Interp *interp, int argc
 		goto cleanup;
 	}
 	if (argc == 2) {
-		if (sepol_policydb_get_netifcon_by_name(policydb->sh, policydb->p,
+		if (qpol_policy_get_netifcon_by_name(policydb->sh, policydb->p,
 							argv[1], &netifcon) < 0) {
 			/* passed netifcon is not within the policy */
 			return TCL_OK;
@@ -2016,7 +2016,7 @@ static int Apol_GetNetifcons(ClientData clientData, Tcl_Interp *interp, int argc
                         goto cleanup;
                 }
                 for (i = 0; i < apol_vector_get_size(v); i++) {
-                        netifcon = (sepol_netifcon_t *) apol_vector_get_element(v, i);
+                        netifcon = (qpol_netifcon_t *) apol_vector_get_element(v, i);
                         if (append_netifcon_to_list(interp, netifcon, result_obj) < 0) {
 				goto cleanup;
 			}
@@ -2036,41 +2036,41 @@ static int Apol_GetNetifcons(ClientData clientData, Tcl_Interp *interp, int argc
 }
 
 /**
- * Takes a sepol_nodecon_t and appends a tuple of it to result_list.
+ * Takes a qpol_nodecon_t and appends a tuple of it to result_list.
  * The tuple consists of:
  * <code>
  *   { IP_type address mask context }
  * </code>
  */
 static int append_nodecon_to_list(Tcl_Interp *interp,
-				  sepol_nodecon_t *nodecon,
+				  qpol_nodecon_t *nodecon,
 				  Tcl_Obj *result_list)
 {
 	unsigned char proto, proto_a, proto_m;
 	uint32_t *addr, *mask;
 	char *addr_str = NULL, *mask_str = NULL;
-	sepol_context_struct_t *context;
+	qpol_context_t *context;
 	Tcl_Obj *nodecon_elem[4], *nodecon_list;
 	int retval = TCL_ERROR;
-	if (sepol_nodecon_get_protocol(policydb->sh, policydb->p,
+	if (qpol_nodecon_get_protocol(policydb->sh, policydb->p,
 				   nodecon, &proto) < 0 ||
-	    sepol_nodecon_get_addr(policydb->sh, policydb->p,
+	    qpol_nodecon_get_addr(policydb->sh, policydb->p,
 				   nodecon, &addr, &proto_a) < 0 ||
-	    sepol_nodecon_get_mask(policydb->sh, policydb->p,
+	    qpol_nodecon_get_mask(policydb->sh, policydb->p,
 				   nodecon, &mask, &proto_m) < 0 ||
-	    sepol_nodecon_get_context(policydb->sh, policydb->p,
+	    qpol_nodecon_get_context(policydb->sh, policydb->p,
 				      nodecon, &context) < 0) {
 		goto cleanup;
 	}
 	assert(proto == proto_a && proto == proto_m);
-	if (proto == SEPOL_IPV4) {
+	if (proto == QPOL_IPV4) {
 		nodecon_elem[0] = Tcl_NewStringObj("ipv4", -1);
 		if ((addr_str = re_render_ipv4_addr(policydb, addr[0])) == NULL ||
 		    (mask_str = re_render_ipv4_addr(policydb, mask[0])) == NULL) {
 			goto cleanup;
 		}
 	}
-	else if (proto == SEPOL_IPV6) {
+	else if (proto == QPOL_IPV6) {
 		nodecon_elem[0] = Tcl_NewStringObj("ipv6", -1);
 		if ((addr_str = re_render_ipv6_addr(policydb, addr)) == NULL ||
 		    (mask_str = re_render_ipv6_addr(policydb, mask)) == NULL) {
@@ -2083,7 +2083,7 @@ static int append_nodecon_to_list(Tcl_Interp *interp,
 	}
 	nodecon_elem[1] = Tcl_NewStringObj(addr_str, -1);
 	nodecon_elem[2] = Tcl_NewStringObj(mask_str, -1);
-	if (sepol_context_to_tcl_obj(interp, context, nodecon_elem + 3) == TCL_ERROR) {
+	if (qpol_context_to_tcl_obj(interp, context, nodecon_elem + 3) == TCL_ERROR) {
 		goto cleanup;
 	}
 	nodecon_list = Tcl_NewListObj(4, nodecon_elem);
@@ -2124,7 +2124,7 @@ static int append_nodecon_to_list(Tcl_Interp *interp,
 static int Apol_GetNodecons(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
 	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
-	sepol_nodecon_t *nodecon;
+	qpol_nodecon_t *nodecon;
 	int proto = -1, proto_a = -1, proto_m = -1;
 	uint32_t *addr = NULL, *mask = NULL;
 	unsigned char has_addr = 0, has_mask = 0;
@@ -2205,7 +2205,7 @@ static int Apol_GetNodecons(ClientData clientData, Tcl_Interp *interp, int argc,
 		goto cleanup;
 	}
 	for (i = 0; i < apol_vector_get_size(v); i++) {
-		nodecon = (sepol_nodecon_t *) apol_vector_get_element(v, i);
+		nodecon = (qpol_nodecon_t *) apol_vector_get_element(v, i);
 		if (append_nodecon_to_list(interp, nodecon, result_obj) == TCL_ERROR) {
 			goto cleanup;
 		}
@@ -2225,29 +2225,29 @@ static int Apol_GetNodecons(ClientData clientData, Tcl_Interp *interp, int argc,
 }
 
 /**
- * Takes a sepol_genfscon_t and appends a tuple of it to result_list.
+ * Takes a qpol_genfscon_t and appends a tuple of it to result_list.
  * The tuple consists of:
  * <code>
  *   { fs_type path object_class context }
  * </code>
  */
 static int append_genfscon_to_list(Tcl_Interp *interp,
-				   sepol_genfscon_t *genfscon,
+				   qpol_genfscon_t *genfscon,
 				   Tcl_Obj *result_obj)
 {
 	char *name, *path;
 	uint32_t objclass_val;
 	const char *objclass;
-	sepol_context_struct_t *context;
+	qpol_context_t *context;
 	Tcl_Obj *genfs_elem[4], *genfs_list;
 	int retval = TCL_ERROR;
-	if (sepol_genfscon_get_name(policydb->sh, policydb->p,
+	if (qpol_genfscon_get_name(policydb->sh, policydb->p,
 				    genfscon, &name) < 0 ||
-	    sepol_genfscon_get_path(policydb->sh, policydb->p,
+	    qpol_genfscon_get_path(policydb->sh, policydb->p,
 				    genfscon, &path) < 0 ||
-	    sepol_genfscon_get_class(policydb->sh, policydb->p,
+	    qpol_genfscon_get_class(policydb->sh, policydb->p,
 				     genfscon, &objclass_val) < 0 ||
-	    sepol_genfscon_get_context(policydb->sh, policydb->p,
+	    qpol_genfscon_get_context(policydb->sh, policydb->p,
 				       genfscon, &context) < 0) {
 		goto cleanup;
 	}
@@ -2258,7 +2258,7 @@ static int append_genfscon_to_list(Tcl_Interp *interp,
 		goto cleanup;
 	}
 	genfs_elem[2] = Tcl_NewStringObj(objclass, -1);
-	if (sepol_context_to_tcl_obj(interp, context, genfs_elem + 3) == TCL_ERROR) {
+	if (qpol_context_to_tcl_obj(interp, context, genfs_elem + 3) == TCL_ERROR) {
 		goto cleanup;
 	}
 	genfs_list = Tcl_NewListObj(4, genfs_elem);
@@ -2297,7 +2297,7 @@ static int append_genfscon_to_list(Tcl_Interp *interp,
 static int Apol_GetGenFSCons(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
         Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
-        sepol_genfscon_t *genfscon;
+        qpol_genfscon_t *genfscon;
         CONST char *fstype = NULL, *path = NULL;
         int objclass = -1;
         apol_context_t *context = NULL;
@@ -2351,7 +2351,7 @@ static int Apol_GetGenFSCons(ClientData clientData, Tcl_Interp *interp, int argc
                 goto cleanup;
         }
         for (i = 0; i < apol_vector_get_size(v); i++) {
-                genfscon = (sepol_genfscon_t *) apol_vector_get_element(v, i);
+                genfscon = (qpol_genfscon_t *) apol_vector_get_element(v, i);
                 if (append_genfscon_to_list(interp, genfscon, result_obj) == TCL_ERROR) {
                         goto cleanup;
                 }
@@ -2369,30 +2369,30 @@ static int Apol_GetGenFSCons(ClientData clientData, Tcl_Interp *interp, int argc
 }
 
 /**
- * Takes a sepol_fs_use_t and appends a tuple of it to result_list.
+ * Takes a qpol_fs_use_t and appends a tuple of it to result_list.
  * The tuple consists of:
  * <code>
  *   { fs_behavior fs_type context }
  * </code>
  *
- * Note that if fs_behavior is SEPOL_FS_USE_PSID, the context will be
+ * Note that if fs_behavior is QPOL_FS_USE_PSID, the context will be
  * an empty string.
  */
 static int append_fs_use_to_list(Tcl_Interp *interp,
-				 sepol_fs_use_t *fsuse,
+				 qpol_fs_use_t *fsuse,
 				 Tcl_Obj *result_obj) {
 	char *name;
 	uint32_t behavior;
 	const char *behav_str;
-	sepol_context_struct_t *context;
+	qpol_context_t *context;
 	Tcl_Obj *fsuse_elem[3], *fsuse_list;
 	int retval = TCL_ERROR;
-	if (sepol_fs_use_get_behavior(policydb->sh, policydb->p,
+	if (qpol_fs_use_get_behavior(policydb->sh, policydb->p,
 				      fsuse, &behavior) < 0 ||
-	    sepol_fs_use_get_name(policydb->sh, policydb->p,
+	    qpol_fs_use_get_name(policydb->sh, policydb->p,
 				  fsuse, &name) < 0 ||
-	    (behavior != SEPOL_FS_USE_PSID &&
-	     sepol_fs_use_get_context(policydb->sh, policydb->p,
+	    (behavior != QPOL_FS_USE_PSID &&
+	     qpol_fs_use_get_context(policydb->sh, policydb->p,
 				      fsuse, &context) < 0)) {
 		goto cleanup;
 	}
@@ -2402,11 +2402,11 @@ static int append_fs_use_to_list(Tcl_Interp *interp,
 	}
 	fsuse_elem[0] = Tcl_NewStringObj(behav_str, -1);
 	fsuse_elem[1] = Tcl_NewStringObj(name, -1);
-	if (behavior == SEPOL_FS_USE_PSID) {
+	if (behavior == QPOL_FS_USE_PSID) {
 		fsuse_elem[2] = Tcl_NewStringObj("", -1);
 	}
 	else {
-		if (sepol_context_to_tcl_obj(interp, context, fsuse_elem + 2) == TCL_ERROR) {
+		if (qpol_context_to_tcl_obj(interp, context, fsuse_elem + 2) == TCL_ERROR) {
 			goto cleanup;
 		}
 	}
@@ -2446,7 +2446,7 @@ static int append_fs_use_to_list(Tcl_Interp *interp,
 static int Apol_GetFSUses(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
 	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
-	sepol_fs_use_t *fsuse;
+	qpol_fs_use_t *fsuse;
 	CONST char *fstype = NULL;
 	int behavior = -1;
 	apol_context_t *context = NULL;
@@ -2501,7 +2501,7 @@ static int Apol_GetFSUses(ClientData clientData, Tcl_Interp *interp, int argc, C
 		goto cleanup;
 	}
 	for (i = 0; i < apol_vector_get_size(v); i++) {
-		fsuse = (sepol_fs_use_t *) apol_vector_get_element(v, i);
+		fsuse = (qpol_fs_use_t *) apol_vector_get_element(v, i);
 		if (append_fs_use_to_list(interp, fsuse, result_obj) == TCL_ERROR) {
 			goto cleanup;
 		}

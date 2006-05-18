@@ -42,7 +42,7 @@ typedef struct apol_attr_query apol_attr_query_t;
  * @param p Policy within which to look up types.
  * @param t Structure containing parameters for query.	If this is
  * NULL then return all types.
- * @param v Reference to a vector of sepol_type_datum_t.  The vector
+ * @param v Reference to a vector of qpol_type_t.  The vector
  * will be allocated by this function.  The caller must call
  * apol_vector_destroy() afterwards, but <b>must not</b> free the
  * elements within it.  This will be set to NULL upon no results or
@@ -111,7 +111,7 @@ extern int apol_type_query_set_regex(apol_policy_t *p,
  * @param p Policy within which to look up attributes.
  * @param a Structure containing parameters for query.	If this is
  * NULL then return all attributes.
- * @param v Reference to a vector of sepol_type_datum_t.  The vector
+ * @param v Reference to a vector of qpol_type_t.  The vector
  * will be allocated by this function.  The caller must call
  * apol_vector_destroy() afterwards, but <b>must not</b> free the
  * elements within it.  This will be set to NULL upon no results or

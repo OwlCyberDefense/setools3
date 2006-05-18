@@ -196,7 +196,7 @@ $(sort $(BINDIR) $(SBINDIR) $(MANDIR) $(SHARED_LIB_INSTALL_DIR) $(INSTALL_LIBDIR
 	test -d $@ || install -m 755 -d $@
 
 # Install Libraries
-install-dev: install-libapol install-libseaudit
+install-dev: install-libapol install-libseaudit install-libqpol
 ifeq ($(USE_LIBSEFS), 1)
 install-dev: install-libsefs
 endif
@@ -244,6 +244,9 @@ install-docs: docs
 # Install Libraries
 install-libapol: $(INSTALL_LIBDIR) $(SHARED_LIB_INSTALL_DIR) 
 	$(MAKE) -C libapol install
+
+install-libqpol: $(INSTALL_LIBDIR) $(SHARED_LIB_INSTALL_DIR) 
+	$(MAKE) -C libqpol install
 
 install-libseaudit: $(INSTALL_LIBDIR) $(SHARED_LIB_INSTALL_DIR) 
 	$(MAKE) -C libseaudit install

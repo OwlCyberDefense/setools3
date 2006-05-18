@@ -49,24 +49,24 @@ int apol_get_type_by_query(apol_policy_t *p,
 			   apol_type_query_t *t,
 			   apol_vector_t **v)
 {
-	sepol_iterator_t *iter;
+	qpol_iterator_t *iter;
 	int retval = -1;
 	*v = NULL;
-	if (sepol_policydb_get_type_iter(p->sh, p->p, &iter) < 0) {
+	if (qpol_policy_get_type_iter(p->sh, p->p, &iter) < 0) {
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
 		ERR(p, "Out of memory!");
 		goto cleanup;
 	}
-	for ( ; !sepol_iterator_end(iter); sepol_iterator_next(iter)) {
-		sepol_type_datum_t *type;
+	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		qpol_type_t *type;
 		unsigned char isattr, isalias;
-		if (sepol_iterator_get_item(iter, (void **) &type) < 0) {
+		if (qpol_iterator_get_item(iter, (void **) &type) < 0) {
 			goto cleanup;
 		}
-		if (sepol_type_datum_get_isattr(p->sh, p->p, type, &isattr) < 0 ||
-		    sepol_type_datum_get_isalias(p->sh, p->p, type, &isalias) < 0) {
+		if (qpol_type_get_isattr(p->sh, p->p, type, &isattr) < 0 ||
+		    qpol_type_get_isalias(p->sh, p->p, type, &isalias) < 0) {
 			goto cleanup;
 		}
 		if (isattr || isalias) {
@@ -94,7 +94,7 @@ int apol_get_type_by_query(apol_policy_t *p,
 	if (retval != 0) {
 		apol_vector_destroy(v, NULL);
 	}
-	sepol_iterator_destroy(&iter);
+	qpol_iterator_destroy(&iter);
 	return retval;
 }
 
@@ -129,24 +129,24 @@ int apol_get_attr_by_query(apol_policy_t *p,
 			   apol_attr_query_t *a,
 			   apol_vector_t **v)
 {
-	sepol_iterator_t *iter;
+	qpol_iterator_t *iter;
 	int retval = -1;
 	*v = NULL;
-	if (sepol_policydb_get_type_iter(p->sh, p->p, &iter) < 0) {
+	if (qpol_policy_get_type_iter(p->sh, p->p, &iter) < 0) {
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
 		ERR(p, "Out of memory!");
 		goto cleanup;
 	}
-	for ( ; !sepol_iterator_end(iter); sepol_iterator_next(iter)) {
-		sepol_type_datum_t *type;
+	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		qpol_type_t *type;
 		unsigned char isattr, isalias;
-		if (sepol_iterator_get_item(iter, (void **) &type) < 0) {
+		if (qpol_iterator_get_item(iter, (void **) &type) < 0) {
 			goto cleanup;
 		}
-		if (sepol_type_datum_get_isattr(p->sh, p->p, type, &isattr) < 0 ||
-		    sepol_type_datum_get_isalias(p->sh, p->p, type, &isalias) < 0) {
+		if (qpol_type_get_isattr(p->sh, p->p, type, &isattr) < 0 ||
+		    qpol_type_get_isalias(p->sh, p->p, type, &isalias) < 0) {
 			goto cleanup;
 		}
 		if (!isattr || isalias) {
@@ -155,7 +155,7 @@ int apol_get_attr_by_query(apol_policy_t *p,
 		if (a != NULL) {
 			char *attr_name;
 			int compval;
-			if (sepol_type_datum_get_name(p->sh, p->p, type, &attr_name) < 0) {
+			if (qpol_type_get_name(p->sh, p->p, type, &attr_name) < 0) {
 				goto cleanup;
 			}
 			compval = apol_compare(p, attr_name, a->attr_name,
@@ -178,7 +178,7 @@ int apol_get_attr_by_query(apol_policy_t *p,
 	if (retval != 0) {
 		apol_vector_destroy(v, NULL);
 	}
-	sepol_iterator_destroy(&iter);
+	qpol_iterator_destroy(&iter);
 	return retval;
 }
 

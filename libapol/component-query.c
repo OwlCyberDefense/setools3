@@ -32,7 +32,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <sepol/policydb_query.h>
+#include <qpol/policy_query.h>
 
 #include "component-query.h"
 
@@ -119,7 +119,7 @@ int apol_compare(apol_policy_t *p, const char *target, const char *name,
 	}
 }
 
-int apol_compare_iter(apol_policy_t *p, sepol_iterator_t *iter,
+int apol_compare_iter(apol_policy_t *p, qpol_iterator_t *iter,
 		      const char *name,
 		      unsigned int flags, regex_t **regex)
 {
@@ -127,9 +127,9 @@ int apol_compare_iter(apol_policy_t *p, sepol_iterator_t *iter,
 	if (name == NULL || *name == '\0') {
 		return 1;
 	}
-	for ( ; !sepol_iterator_end(iter); sepol_iterator_next(iter)) {
+	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 		char *iter_name;
-		if (sepol_iterator_get_item(iter, (void **) &iter_name) < 0) {
+		if (qpol_iterator_get_item(iter, (void **) &iter_name) < 0) {
 			return -1;
 		}
 		compval = apol_compare(p, iter_name, name, flags, regex);
@@ -143,13 +143,13 @@ int apol_compare_iter(apol_policy_t *p, sepol_iterator_t *iter,
 }
 
 int apol_compare_type(apol_policy_t *p,
-		      sepol_type_datum_t *type, const char *name,
+		      qpol_type_t *type, const char *name,
 		      unsigned int flags, regex_t **type_regex)
 {
 	char *type_name;
 	int compval;
-	sepol_iterator_t *alias_iter = NULL;
-	if (sepol_type_datum_get_name(p->sh, p->p, type, &type_name) < 0) {
+	qpol_iterator_t *alias_iter = NULL;
+	if (qpol_type_get_name(p->sh, p->p, type, &type_name) < 0) {
 		return -1;
 	}
 	compval = apol_compare(p, type_name, name, flags, type_regex);
@@ -158,22 +158,22 @@ int apol_compare_type(apol_policy_t *p,
 	}
 	/* also check if the matches against one of the type's
 	   aliases */
-	if (sepol_type_datum_get_alias_iter(p->sh, p->p, type, &alias_iter) < 0) {
+	if (qpol_type_get_alias_iter(p->sh, p->p, type, &alias_iter) < 0) {
 		return -1;
 	}
 	compval = apol_compare_iter(p, alias_iter, name, flags, type_regex);
-	sepol_iterator_destroy(&alias_iter);
+	qpol_iterator_destroy(&alias_iter);
 	return compval;
 }
 
 int apol_compare_level(apol_policy_t *p,
-		       sepol_level_datum_t *level, const char *name,
+		       qpol_level_t *level, const char *name,
 		       unsigned int flags, regex_t **level_regex)
 {
 	char *level_name;
 	int compval;
-	sepol_iterator_t *alias_iter = NULL;
-	if (sepol_level_datum_get_name(p->sh, p->p, level, &level_name) < 0) {
+	qpol_iterator_t *alias_iter = NULL;
+	if (qpol_level_get_name(p->sh, p->p, level, &level_name) < 0) {
 		return -1;
 	}
 	compval = apol_compare(p, level_name, name, flags, level_regex);
@@ -182,22 +182,22 @@ int apol_compare_level(apol_policy_t *p,
 	}
 	/* also check if the matches against one of the sensitivity's
 	   aliases */
-	if (sepol_level_datum_get_alias_iter(p->sh, p->p, level, &alias_iter) < 0) {
+	if (qpol_level_get_alias_iter(p->sh, p->p, level, &alias_iter) < 0) {
 		return -1;
 	}
 	compval = apol_compare_iter(p, alias_iter, name, flags, level_regex);
-	sepol_iterator_destroy(&alias_iter);
+	qpol_iterator_destroy(&alias_iter);
 	return compval;
 }
 
 int apol_compare_cat(apol_policy_t *p,
-		     sepol_cat_datum_t *cat, const char *name,
+		     qpol_cat_t *cat, const char *name,
 		     unsigned int flags, regex_t **cat_regex)
 {
 	char *cat_name;
 	int compval;
-	sepol_iterator_t *alias_iter = NULL;
-	if (sepol_cat_datum_get_name(p->sh, p->p, cat, &cat_name) < 0) {
+	qpol_iterator_t *alias_iter = NULL;
+	if (qpol_cat_get_name(p->sh, p->p, cat, &cat_name) < 0) {
 		return -1;
 	}
 	compval = apol_compare(p, cat_name, name, flags, cat_regex);
@@ -206,15 +206,15 @@ int apol_compare_cat(apol_policy_t *p,
 	}
 	/* also check if the matches against one of the category's
 	   aliases */
-	if (sepol_cat_datum_get_alias_iter(p->sh, p->p, cat, &alias_iter) < 0) {
+	if (qpol_cat_get_alias_iter(p->sh, p->p, cat, &alias_iter) < 0) {
 		return -1;
 	}
 	compval = apol_compare_iter(p, alias_iter, name, flags, cat_regex);
-	sepol_iterator_destroy(&alias_iter);
+	qpol_iterator_destroy(&alias_iter);
 	return compval;
 }
 
-int apol_compare_context(apol_policy_t *p, sepol_context_struct_t *target,
+int apol_compare_context(apol_policy_t *p, qpol_context_t *target,
 			 apol_context_t *search, unsigned int flags)
 {
 	apol_context_t *apol_context;
@@ -222,7 +222,7 @@ int apol_compare_context(apol_policy_t *p, sepol_context_struct_t *target,
 	if (search == NULL) {
 		return 1;
 	}
-	apol_context = apol_context_create_from_sepol_context(p, target);
+	apol_context = apol_context_create_from_qpol_context(p, target);
 	retval = apol_context_compare(p, apol_context, search, flags);
 	apol_context_destroy(&apol_context);
 	return retval;

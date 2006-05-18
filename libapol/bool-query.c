@@ -42,25 +42,25 @@ int apol_get_bool_by_query(apol_policy_t *p,
 			   apol_bool_query_t *b,
 			   apol_vector_t **v)
 {
-	sepol_iterator_t *iter;
+	qpol_iterator_t *iter;
 	int retval = -1;
 	*v = NULL;
-	if (sepol_policydb_get_bool_iter(p->sh, p->p, &iter) < 0) {
+	if (qpol_policy_get_bool_iter(p->sh, p->p, &iter) < 0) {
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
 		ERR(p, "Out of memory!");
 		goto cleanup;
 	}
-	for ( ; !sepol_iterator_end(iter); sepol_iterator_next(iter)) {
-		sepol_bool_datum_t *bool;
-		if (sepol_iterator_get_item(iter, (void **) &bool) < 0) {
+	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		qpol_bool_t *bool;
+		if (qpol_iterator_get_item(iter, (void **) &bool) < 0) {
 			goto cleanup;
 		}
 		if (b != NULL) {
 			char *bool_name;
 			int compval;
-			if (sepol_bool_datum_get_name(p->sh, p->p, bool, &bool_name) < 0) {
+			if (qpol_bool_get_name(p->sh, p->p, bool, &bool_name) < 0) {
 				goto cleanup;
 			}
 			compval = apol_compare(p, bool_name, b->bool_name,
@@ -83,7 +83,7 @@ int apol_get_bool_by_query(apol_policy_t *p,
 	if (retval != 0) {
 		apol_vector_destroy(v, NULL);
 	}
-	sepol_iterator_destroy(&iter);
+	qpol_iterator_destroy(&iter);
 	return retval;
 }
 

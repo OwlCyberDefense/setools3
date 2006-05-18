@@ -14,7 +14,7 @@ SONAME = $(TARGET).1
 LIBSO  = $(TARGET).$(shell cat VERSION)
 
 
-CFLAGS		+= -I. -I../libapol -fPIC
+CFLAGS		+= -I. -I../libapol -I../libqpol/include -fPIC
 
 all: libsefs libsefsso
 

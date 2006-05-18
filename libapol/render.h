@@ -59,11 +59,11 @@ char *re_render_rangetrans(bool_t addlineno, int idx, policy_t *policy);
  */
 
 /* QPOL */
-#include <sepol/policydb_query.h>
+#include <qpol/policy_query.h>
 #include "mls-query.h"
 #include "vector.h"
 /**
- * Given an IPv4 address (or mask) in sepol byte order, allocate and
+ * Given an IPv4 address (or mask) in qpol byte order, allocate and
  * return a string representing that address.
  *
  * @param policydb Reference to a policy, for reporting errors
@@ -75,7 +75,7 @@ char *re_render_rangetrans(bool_t addlineno, int idx, policy_t *policy);
 char *re_render_ipv4_addr(apol_policy_t *policydb, uint32_t addr);
 
 /**
- * Given an IPv6 address (or mask) in sepol byte order, allocate and
+ * Given an IPv6 address (or mask) in qpol byte order, allocate and
  * return a string representing that address.
  *
  * @param policydb Reference to a policy, for reporting errors
@@ -95,7 +95,7 @@ char *re_render_ipv6_addr(apol_policy_t *policydb, uint32_t addr[4]);
  * @return A newly allocated string on success, caller must free;
  * NULL on error.
  */
-char *re_render_security_context2(apol_policy_t *policydb, sepol_context_struct_t *context);
+char *re_render_security_context2(apol_policy_t *policydb, qpol_context_t *context);
 
 /**
  * Creates a string containing the textual representation of
@@ -106,7 +106,7 @@ char *re_render_security_context2(apol_policy_t *policydb, sepol_context_struct_
  * @return A newly allocated string on success, caller must free;
  * NULL on error.
  */
-char *re_render_portcon2(apol_policy_t *policydb, sepol_portcon_t *portcon);
+char *re_render_portcon2(apol_policy_t *policydb, qpol_portcon_t *portcon);
 
 /**
  * Creates a string containing the textual representation of
@@ -117,7 +117,7 @@ char *re_render_portcon2(apol_policy_t *policydb, sepol_portcon_t *portcon);
  * @return A newly allocated string on success, caller must free;
  * NULL on error.
  */
-char *re_render_netifcon2(apol_policy_t *policydb, sepol_netifcon_t *netifcon);
+char *re_render_netifcon2(apol_policy_t *policydb, qpol_netifcon_t *netifcon);
 
 /**
  * Creates a string containing the textual representation of
@@ -128,7 +128,7 @@ char *re_render_netifcon2(apol_policy_t *policydb, sepol_netifcon_t *netifcon);
  * @return A newly allocated string on success, caller must free;
  * NULL on error.
  */
-char *re_render_nodecon2(apol_policy_t *policydb, sepol_nodecon_t *nodecon);
+char *re_render_nodecon2(apol_policy_t *policydb, qpol_nodecon_t *nodecon);
 
 /**
  * Creates a string containing the textual representation of
@@ -139,7 +139,7 @@ char *re_render_nodecon2(apol_policy_t *policydb, sepol_nodecon_t *nodecon);
  * @return A newly allocated string on success, caller must free;
  * NULL on error.
  */
-char *re_render_genfscon2(apol_policy_t *policydb, sepol_genfscon_t *genfscon);
+char *re_render_genfscon2(apol_policy_t *policydb, qpol_genfscon_t *genfscon);
 
 /**
  * Creates a string containing the textual representation of
@@ -150,6 +150,6 @@ char *re_render_genfscon2(apol_policy_t *policydb, sepol_genfscon_t *genfscon);
  * @return A newly allocated string on success, caller must free;
  * NULL on error.
  */
-char *re_render_fs_use2(apol_policy_t *policydb, sepol_fs_use_t *fsuse);
+char *re_render_fs_use2(apol_policy_t *policydb, qpol_fs_use_t *fsuse);
 
 #endif /*_APOLICY_RENDER_H_*/
