@@ -115,6 +115,7 @@ export SELINUX_DIR POLICY_INSTALL_DIR POLICY_SRC_DIR DEFAULT_LOG_FILE
 export POLICY_SRC_DIR POLICY_SRC_FILE
 export BINDIR SBINDIR INSTALL_LIBDIR INSTALL_HELPDIR POLICYINSTALLDIR 
 export MANDIR PREFIX
+export DESTDIR
 
 # Top Level Targets
 all: all-libs all-nogui all-gui
@@ -125,7 +126,7 @@ all-gui: all-libs apol awish seaudit sediffx
 
 all-libs: corelibs guilibs
 
-corelibs: libapol libseaudit
+corelibs: libqpol libapol libseaudit
 ifeq ($(USE_LIBSEFS), 1)
 corelibs: libsefs
 endif
@@ -196,7 +197,7 @@ $(sort $(BINDIR) $(SBINDIR) $(MANDIR) $(SHARED_LIB_INSTALL_DIR) $(INSTALL_LIBDIR
 	test -d $@ || install -m 755 -d $@
 
 # Install Libraries
-install-dev: install-libapol install-libseaudit install-libqpol
+install-dev: install-libqpol install-libapol install-libseaudit
 ifeq ($(USE_LIBSEFS), 1)
 install-dev: install-libsefs
 endif

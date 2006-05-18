@@ -9,8 +9,8 @@ else
 LIBSEFS           =
 endif
 MODULES 	  = $(patsubst %.c, %.o, $(wildcard ./modules/*.c))
-INCLUDE 	  += -I. -I../libapol
-LDFLAGS 	  += -lfl -lm $(LIBSELINUX)
+INCLUDE 	  += -I. -I../libapol -I../libqpol/include
+LDFLAGS 	  += -lfl -lm $(LIBSELINUX) -lqpol -L../libqpol/src
 SECHECKER_VERSION = '"$(shell cat ./VERSION)"'
 LIBXML_FLAGS	  = `pkg-config --cflags libxml-2.0`
 LIBXML_LIBS       = `pkg-config --libs libxml-2.0`

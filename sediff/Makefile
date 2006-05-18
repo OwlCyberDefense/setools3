@@ -1,7 +1,7 @@
 # sediff tools - command-line and GUI
 
 LIBAPOL		= ../libapol/libapol.a
-INCLUDE		= -I.. -I../libapol
+INCLUDE		= -I.. -I../libqpol/include -I../libapol
 GUI-OBJS	= sediff_gui.o sediff_treemodel.o utilgui.o sediff_rename_types.o sediff_find_window.o
 GTK_CFLAGS      = `pkg-config --cflags libglade-2.0`
 GTK_LIBS        = `pkg-config --libs libglade-2.0`
@@ -9,6 +9,7 @@ GTK_LIBS        = `pkg-config --libs libglade-2.0`
 G_THREADS       =  `pkg-config --libs gthread-2.0`
 #endif
 GLADE_FILES     = sediff.glade
+LDFLAGS +=  -lqpol -L../libqpol/src
 
 all: libapol sediff sediffx
 

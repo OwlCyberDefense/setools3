@@ -9,9 +9,12 @@ LIBSO = $(TARGET).$(shell cat ../VERSION)
 
 OBJS = $(patsubst %.c,%.o,$(wildcard *.c))
 
-LIBSEPOL = /home/mowery/nsa-mainline/trunk/libsepol/src/libsepol.a
+SEPOL_DIR = /home/mowery/nsa-mainline/trunk/libsepol
 
-override CFLAGS += -I. -I../include -fpic
+LIBSEPOL = $(SEPOL_DIR)/src/libsepol.a
+SEPOL_INCLUDE = $(SEPOL_DIR)/include
+
+override CFLAGS += -I. -I../include -fpic -I$(SEPOL_INCLUDE)
 
 all: $(LIBA) $(LIBSO) $(TARGET) $(SONAME)
 

@@ -14,7 +14,7 @@ STATICSEFS = ../libsefs/libsefs.a
 
 LIBSELINUXSO      = -lselinux
 
-INCLUDE		= -I.. -I../libapol -I../libsefs 
+INCLUDE		= -I.. -I../libqpol/include -I../libapol -I../libsefs
 
 SE_CMDS		= seinfo sesearch 
 SELINUX_TOOLS   = replcon findcon indexcon searchcon 
@@ -22,6 +22,7 @@ ifeq ($(USE_LIBSEFS), 1)
 SE_CMDS += $(SELINUX_TOOLS)
 endif
 
+LDFLAGS += -lqpol -L../libqpol/src
 
 SHELL = /bin/sh
 
