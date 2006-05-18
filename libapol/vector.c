@@ -70,18 +70,18 @@ apol_vector_t *apol_vector_create_with_capacity(size_t cap)
 	return v;
 }
 
-apol_vector_t *apol_vector_create_from_iter(sepol_iterator_t *iter)
+apol_vector_t *apol_vector_create_from_iter(qpol_iterator_t *iter)
 {
 	size_t iter_size;
 	apol_vector_t *v;
 	void *item;
 	int error;
-	if (sepol_iterator_get_size(iter, &iter_size) < 0 ||
+	if (qpol_iterator_get_size(iter, &iter_size) < 0 ||
 	    (v = apol_vector_create_with_capacity(iter_size)) == NULL) {
 		return NULL;
 	}
-	for ( ; !sepol_iterator_end(iter); sepol_iterator_next(iter)) {
-		if (sepol_iterator_get_item(iter, &item)) {
+	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		if (qpol_iterator_get_item(iter, &item)) {
 			error = errno;
 			free(v);
 			errno = error;

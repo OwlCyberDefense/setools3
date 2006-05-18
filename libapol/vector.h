@@ -26,7 +26,7 @@
 #define APOL_VECTOR_H
 
 #include <stdlib.h>
-#include <sepol/iterator.h>
+#include <qpol/iterator.h>
 
 typedef struct apol_vector apol_vector_t;
 
@@ -70,7 +70,7 @@ apol_vector_t *apol_vector_create_with_capacity(size_t cap);
  *  failure.  If the call fails, errno will be set.  The caller is
  *  responsible for calling apol_vector_destroy() to free memory used.
  */
-apol_vector_t *apol_vector_create_from_iter(sepol_iterator_t *iter);
+apol_vector_t *apol_vector_create_from_iter(qpol_iterator_t *iter);
 
 /**
  *  Allocate and return a vector that has been initialized with the

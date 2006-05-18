@@ -922,17 +922,17 @@ int _get_type_name_ptr(int idx, char **name, policy_t *policy);
 
 #include <stdarg.h>
 #include <sepol/handle.h>
-#include <sepol/policydb.h>
+#include <qpol/policy.h>
 
 typedef struct apol_policy {
-        sepol_policydb_t *p;
+        qpol_policy_t *p;
         sepol_handle_t *sh;
 	void (*msg_callback) (void *varg, struct apol_policy *p, const char *fmt, va_list argp);
 	void *msg_callback_arg;
 } apol_policy_t;
 
 /**
- * Given a sepol policy, return 1 if the policy within is MLS, 0 if
+ * Given a qpol policy, return 1 if the policy within is MLS, 0 if
  * not.  If it cannot be determined or upon error, return <0.
  *
  * @param p Policy to which check.

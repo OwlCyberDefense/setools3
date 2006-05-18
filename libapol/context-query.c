@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "context-query.h"
 #include "component-query.h"
 #include "render.h"
 
@@ -53,34 +54,34 @@ apol_context_t *apol_context_create(void)
 	return calloc(1, sizeof(apol_context_t));
 }
 
-apol_context_t *apol_context_create_from_sepol_context(apol_policy_t *p, sepol_context_struct_t *context)
+apol_context_t *apol_context_create_from_qpol_context(apol_policy_t *p, qpol_context_t *context)
 {
 	apol_context_t *c = NULL;
-	sepol_user_datum_t *user;
-	sepol_role_datum_t *role;
-	sepol_type_datum_t *type;
-	sepol_mls_range_t *range;
+	qpol_user_t *user;
+	qpol_role_t *role;
+	qpol_type_t *type;
+	qpol_mls_range_t *range;
 	char *user_name, *role_name, *type_name;
 	apol_mls_range_t *apol_range = NULL;
 	if ((c = apol_context_create()) == NULL) {
 		ERR(p, "Out of memory!");
 		goto err;
 	}
-	if (sepol_context_struct_get_user(p->sh, p->p, context, &user) < 0 ||
-	    sepol_context_struct_get_role(p->sh, p->p, context, &role) < 0 ||
-	    sepol_context_struct_get_type(p->sh, p->p, context, &type) < 0 ||
-	    sepol_context_struct_get_range(p->sh, p->p, context, &range) < 0) {
+	if (qpol_context_get_user(p->sh, p->p, context, &user) < 0 ||
+	    qpol_context_get_role(p->sh, p->p, context, &role) < 0 ||
+	    qpol_context_get_type(p->sh, p->p, context, &type) < 0 ||
+	    qpol_context_get_range(p->sh, p->p, context, &range) < 0) {
 		goto err;
 	}
-	if (sepol_user_datum_get_name(p->sh, p->p, user, &user_name) < 0 ||
-	    sepol_role_datum_get_name(p->sh, p->p, role, &role_name) < 0 ||
-	    sepol_type_datum_get_name(p->sh, p->p, type, &type_name) < 0) {
+	if (qpol_user_get_name(p->sh, p->p, user, &user_name) < 0 ||
+	    qpol_role_get_name(p->sh, p->p, role, &role_name) < 0 ||
+	    qpol_type_get_name(p->sh, p->p, type, &type_name) < 0) {
 		goto err;
 	}
-	if (sepol_policydb_mls_enabled(p->p)) {
+	if (qpol_policy_is_mls_enabled(p->sh, p->p)) {
 		/* if the policy is MLS then convert the range, else
 		 * rely upon the default value of NULL */
-		if ((apol_range = apol_mls_range_create_from_sepol_mls_range(p, range)) == NULL) {
+		if ((apol_range = apol_mls_range_create_from_qpol_mls_range(p, range)) == NULL) {
 		       goto err;
 		}
 	}
@@ -166,14 +167,14 @@ int apol_context_compare(apol_policy_t *p,
 		return -1;
 	}
 	if (target->user != NULL && search->user != NULL) {
-		sepol_user_datum_t *user0, *user1;
-		if (sepol_policydb_get_user_by_name(p->sh, p->p,
+		qpol_user_t *user0, *user1;
+		if (qpol_policy_get_user_by_name(p->sh, p->p,
 						    target->user, &user0) < 0 ||
-		    sepol_policydb_get_user_by_name(p->sh, p->p,
+		    qpol_policy_get_user_by_name(p->sh, p->p,
 						    search->user, &user1) < 0 ||
-		    sepol_user_datum_get_value(p->sh, p->p,
+		    qpol_user_get_value(p->sh, p->p,
 					       user0, &value0) < 0 ||
-		    sepol_user_datum_get_value(p->sh, p->p,
+		    qpol_user_get_value(p->sh, p->p,
 					       user1, &value1) < 0) {
 			return -1;
 		}
@@ -182,14 +183,14 @@ int apol_context_compare(apol_policy_t *p,
 		}
 	}
 	if (target->role != NULL && search->role != NULL) {
-		sepol_role_datum_t *role0, *role1;
-		if (sepol_policydb_get_role_by_name(p->sh, p->p,
+		qpol_role_t *role0, *role1;
+		if (qpol_policy_get_role_by_name(p->sh, p->p,
 						    target->role, &role0) < 0 ||
-		    sepol_policydb_get_role_by_name(p->sh, p->p,
+		    qpol_policy_get_role_by_name(p->sh, p->p,
 						    search->role, &role1) < 0 ||
-		    sepol_role_datum_get_value(p->sh, p->p,
+		    qpol_role_get_value(p->sh, p->p,
 					       role0, &value0) < 0 ||
-		    sepol_role_datum_get_value(p->sh, p->p,
+		    qpol_role_get_value(p->sh, p->p,
 					       role1, &value1) < 0) {
 			return -1;
 		}
@@ -198,14 +199,14 @@ int apol_context_compare(apol_policy_t *p,
 		}
 	}
 	if (target->type != NULL && search->type != NULL) {
-		sepol_type_datum_t *type0, *type1;
-		if (sepol_policydb_get_type_by_name(p->sh, p->p,
+		qpol_type_t *type0, *type1;
+		if (qpol_policy_get_type_by_name(p->sh, p->p,
 						    target->type, &type0) < 0 ||
-		    sepol_policydb_get_type_by_name(p->sh, p->p,
+		    qpol_policy_get_type_by_name(p->sh, p->p,
 						    search->type, &type1) < 0 ||
-		    sepol_type_datum_get_value(p->sh, p->p,
+		    qpol_type_get_value(p->sh, p->p,
 					       type0, &value0) < 0 ||
-		    sepol_type_datum_get_value(p->sh, p->p,
+		    qpol_type_get_value(p->sh, p->p,
 					       type1, &value1) < 0) {
 			return -1;
 		}
@@ -240,9 +241,9 @@ int apol_context_validate_partial(apol_policy_t *p,
 	apol_user_query_t *user_query = NULL;
 	apol_role_query_t *role_query = NULL;
 	apol_vector_t *user_v = NULL, *role_v = NULL;
-	sepol_user_datum_t *user;
-	sepol_type_datum_t *type;
-	sepol_mls_range_t *user_range;
+	qpol_user_t *user;
+	qpol_type_t *type;
+	qpol_mls_range_t *user_range;
 	apol_mls_range_t *user_apol_range = NULL;
 	int retval = -1, retval2;
 
@@ -278,7 +279,7 @@ int apol_context_validate_partial(apol_policy_t *p,
 		}
 	}
 	if (context->type != NULL) {
-		if (sepol_policydb_get_type_by_name(p->sh, p->p, context->type, &type) < 0) {
+		if (qpol_policy_get_type_by_name(p->sh, p->p, context->type, &type) < 0) {
 			retval = 0;
 			goto cleanup;
 		}
@@ -291,11 +292,11 @@ int apol_context_validate_partial(apol_policy_t *p,
 		}
 		/* next check that the user has access to this context */
 		if (context->user != NULL) {
-			if (sepol_policydb_get_user_by_name(p->sh, p->p, context->user, &user) < 0 ||
-			    sepol_user_datum_get_range(p->sh, p->p, user, &user_range) < 0) {
+			if (qpol_policy_get_user_by_name(p->sh, p->p, context->user, &user) < 0 ||
+			    qpol_user_get_range(p->sh, p->p, user, &user_range) < 0) {
 				goto cleanup;
 			}
-			user_apol_range = apol_mls_range_create_from_sepol_mls_range(p, user_range);
+			user_apol_range = apol_mls_range_create_from_qpol_mls_range(p, user_range);
 			if (user_apol_range == NULL) {
 				ERR(p, "Out of memory!");
 				goto cleanup;

@@ -429,7 +429,7 @@ char *re_render_mls_range(ap_mls_range_t *range, policy_t *policy)
 }
 
 /* security contexts */
-char *re_render_security_context2(apol_policy_t *policydb, sepol_context_struct_t *context)
+char *re_render_security_context2(apol_policy_t *policydb, qpol_context_t *context)
 {
         apol_context_t *c = NULL;
         char *rendered_context;
@@ -437,7 +437,7 @@ char *re_render_security_context2(apol_policy_t *policydb, sepol_context_struct_
 	if (policydb == NULL)
 		return NULL;
 
-        if ((c = apol_context_create_from_sepol_context(policydb, context)) == NULL) {
+        if ((c = apol_context_create_from_qpol_context(policydb, context)) == NULL) {
                 return NULL;
         }
         rendered_context = apol_context_render(policydb, c);
@@ -773,30 +773,30 @@ err_return:
 	return NULL;
 }
 
-char *re_render_fs_use2(apol_policy_t *policydb, sepol_fs_use_t *fsuse)
+char *re_render_fs_use2(apol_policy_t *policydb, qpol_fs_use_t *fsuse)
 {
 	char *context_str = NULL;
 	char *line = NULL, *retval = NULL;
 	const char *behavior_str = NULL;
 	char *fsname = NULL;
-	sepol_context_struct_t *ctxt = NULL;
+	qpol_context_t *ctxt = NULL;
 	uint32_t behavior;
 
-	if (sepol_fs_use_get_behavior(policydb->sh, policydb->p, fsuse, &behavior))
+	if (qpol_fs_use_get_behavior(policydb->sh, policydb->p, fsuse, &behavior))
 		goto cleanup;
 	if ((behavior_str = apol_fs_use_behavior_to_str(behavior)) == NULL) {
 		ERR(policydb, "Could not get behavior string.");
 		goto cleanup;
 	}
 
-	if (sepol_fs_use_get_name(policydb->sh, policydb->p, fsuse, &fsname))
+	if (qpol_fs_use_get_name(policydb->sh, policydb->p, fsuse, &fsname))
 		goto cleanup;
 
-	if (behavior == SEPOL_FS_USE_PSID) {
+	if (behavior == QPOL_FS_USE_PSID) {
 		context_str = strdup("");
 	}
 	else {
-		if (sepol_fs_use_get_context(policydb->sh, policydb->p, fsuse, &ctxt))
+		if (qpol_fs_use_get_context(policydb->sh, policydb->p, fsuse, &ctxt))
 			goto cleanup;
 		context_str = re_render_security_context2(policydb, ctxt);
 		if (!context_str) {
@@ -885,13 +885,13 @@ exit_err:
 	return NULL;
 }
 
-char *re_render_portcon2(apol_policy_t *policydb, sepol_portcon_t *portcon)
+char *re_render_portcon2(apol_policy_t *policydb, qpol_portcon_t *portcon)
 {
 	char *line = NULL, *retval = NULL;
 	char *buff = NULL;
 	const char *proto_str = NULL;
 	char *context_str = NULL;
-	sepol_context_struct_t *ctxt = NULL;
+	qpol_context_t *ctxt = NULL;
 	uint16_t low_port, high_port;
 	uint8_t proto;
 
@@ -905,23 +905,23 @@ char *re_render_portcon2(apol_policy_t *policydb, sepol_portcon_t *portcon)
 		goto cleanup;
 	}
 
-	if (sepol_portcon_get_protocol(policydb->sh, policydb->p, portcon, &proto))
+	if (qpol_portcon_get_protocol(policydb->sh, policydb->p, portcon, &proto))
 		goto cleanup;
 
 	if ((proto_str = apol_protocol_to_str(proto)) == NULL) {
 		ERR(policydb, "Could not get protocol string.");
 		goto cleanup;
 	}
-	if (sepol_portcon_get_low_port(policydb->sh, policydb->p, portcon, &low_port))
+	if (qpol_portcon_get_low_port(policydb->sh, policydb->p, portcon, &low_port))
 		goto cleanup;
-	if (sepol_portcon_get_high_port(policydb->sh, policydb->p, portcon, &high_port))
+	if (qpol_portcon_get_high_port(policydb->sh, policydb->p, portcon, &high_port))
 		goto cleanup;
 	if (low_port == high_port)
 		snprintf(buff, bufflen, "%d", low_port);
 	else
 		snprintf(buff, bufflen, "%d-%d", low_port, high_port);
 
-	if (sepol_portcon_get_context(policydb->sh, policydb->p, portcon, &ctxt))
+	if (qpol_portcon_get_context(policydb->sh, policydb->p, portcon, &ctxt))
 		goto cleanup;
 	context_str = re_render_security_context2(policydb, ctxt);
 	if (!context_str)
@@ -980,31 +980,31 @@ char *re_render_netifcon(ap_netifcon_t *netifcon, policy_t *policy)
 	return line;
 }
 
-char *re_render_netifcon2(apol_policy_t *policydb, sepol_netifcon_t *netifcon)
+char *re_render_netifcon2(apol_policy_t *policydb, qpol_netifcon_t *netifcon)
 {
 	char *line = NULL, *retval = NULL;
 	char *devcon_str = NULL;
 	char *pktcon_str = NULL;
 	char *iface_str = NULL;
-	sepol_context_struct_t *ctxt = NULL;
+	qpol_context_t *ctxt = NULL;
 
 	if (!netifcon || !policydb)
                 goto cleanup;
 
-	if (sepol_netifcon_get_if_con(policydb->sh, policydb->p, netifcon, &ctxt))
+	if (qpol_netifcon_get_if_con(policydb->sh, policydb->p, netifcon, &ctxt))
                 goto cleanup;
 	devcon_str = re_render_security_context2(policydb, ctxt);
 	if (!devcon_str)
                 goto cleanup;
 
-	if (sepol_netifcon_get_msg_con(policydb->sh, policydb->p, netifcon, &ctxt))
+	if (qpol_netifcon_get_msg_con(policydb->sh, policydb->p, netifcon, &ctxt))
                 goto cleanup;
 	pktcon_str = re_render_security_context2(policydb, ctxt);
 	if (!pktcon_str) {
                 goto cleanup;
 	}
 
-	if (sepol_netifcon_get_name(policydb->sh, policydb->p, netifcon, &iface_str))
+	if (qpol_netifcon_get_name(policydb->sh, policydb->p, netifcon, &iface_str))
 		return NULL;
 	line = (char *)calloc(4 + strlen(iface_str) + strlen(devcon_str) + strlen(pktcon_str) + strlen("netifcon"), sizeof(char));
         if (!line) {
@@ -1083,33 +1083,33 @@ char *re_render_nodecon(ap_nodecon_t *nodecon, policy_t *policy)
 	return line;
 }
 
-char *re_render_nodecon2(apol_policy_t *policydb, sepol_nodecon_t *nodecon)
+char *re_render_nodecon2(apol_policy_t *policydb, qpol_nodecon_t *nodecon)
 {
 	char *line = NULL, *retval = NULL;
 	char *context_str = NULL;
 	char *addr_str = NULL;
 	char *mask_str = NULL;
-	sepol_context_struct_t *ctxt = NULL;
+	qpol_context_t *ctxt = NULL;
 	unsigned char protocol, addr_proto, mask_proto;
 	uint32_t *addr = NULL, *mask = NULL;
 
 	if (!nodecon || !policydb)
 		goto cleanup;
 
-	if (sepol_nodecon_get_protocol(policydb->sh, policydb->p, nodecon, &protocol))
+	if (qpol_nodecon_get_protocol(policydb->sh, policydb->p, nodecon, &protocol))
 		goto cleanup;
-	if (sepol_nodecon_get_addr(policydb->sh, policydb->p, nodecon, &addr, &addr_proto))
+	if (qpol_nodecon_get_addr(policydb->sh, policydb->p, nodecon, &addr, &addr_proto))
 		goto cleanup;
-	if (sepol_nodecon_get_mask(policydb->sh, policydb->p, nodecon, &mask, &mask_proto))
+	if (qpol_nodecon_get_mask(policydb->sh, policydb->p, nodecon, &mask, &mask_proto))
 		goto cleanup;
 	switch (protocol) {
-	case SEPOL_IPV4:
+	case QPOL_IPV4:
 		if ((addr_str = re_render_ipv4_addr(policydb, addr[0])) == NULL ||
 		    (mask_str = re_render_ipv4_addr(policydb, mask[0])) == NULL) {
 			goto cleanup;
 		}
 		break;
-	case SEPOL_IPV6:
+	case QPOL_IPV6:
 		if ((addr_str = re_render_ipv6_addr(policydb, addr)) == NULL ||
 		    (mask_str = re_render_ipv6_addr(policydb, mask)) == NULL) {
 			goto cleanup;
@@ -1119,7 +1119,7 @@ char *re_render_nodecon2(apol_policy_t *policydb, sepol_nodecon_t *nodecon)
 		break;
 	}
 
-	if (sepol_nodecon_get_context(policydb->sh, policydb->p, nodecon, &ctxt))
+	if (qpol_nodecon_get_context(policydb->sh, policydb->p, nodecon, &ctxt))
 		goto cleanup;
 	context_str = re_render_security_context2(policydb, ctxt);
 	if (!context_str)
@@ -1141,19 +1141,19 @@ char *re_render_nodecon2(apol_policy_t *policydb, sepol_nodecon_t *nodecon)
 	return retval;
 }
 
-char *re_render_genfscon2(apol_policy_t *policydb, sepol_genfscon_t *genfscon)
+char *re_render_genfscon2(apol_policy_t *policydb, qpol_genfscon_t *genfscon)
 {
 	char *line = NULL, *retval = NULL;
         char *context_str = NULL, *type_str = NULL;
 	char *front_str = NULL, *name = NULL, *path = NULL;
-	sepol_context_struct_t *ctxt = NULL;
+	qpol_context_t *ctxt = NULL;
 	uint32_t fclass;
 	size_t len = 0;
 
 	if (!genfscon || !policydb)
 		goto cleanup;
 
-	if (sepol_genfscon_get_name(policydb->sh, policydb->p, genfscon, &name))
+	if (qpol_genfscon_get_name(policydb->sh, policydb->p, genfscon, &name))
 		goto cleanup;
 	front_str = (char *)calloc(3 + strlen("genfscon") + strlen(name), sizeof(char));
 	if (!front_str) {
@@ -1167,37 +1167,37 @@ char *re_render_genfscon2(apol_policy_t *policydb, sepol_genfscon_t *genfscon)
 
 	len = strlen(front_str);
 
-	if (sepol_genfscon_get_context(policydb->sh, policydb->p, genfscon, &ctxt))
+	if (qpol_genfscon_get_context(policydb->sh, policydb->p, genfscon, &ctxt))
 		goto cleanup;
 	context_str = re_render_security_context2(policydb, ctxt);
 	if (!context_str)
 		goto cleanup;
 
-	if (sepol_genfscon_get_class(policydb->sh, policydb->p, genfscon, &fclass))
+	if (qpol_genfscon_get_class(policydb->sh, policydb->p, genfscon, &fclass))
 		return NULL;
 	switch (fclass) {
-	case SEPOL_CLASS_DIR:
+	case QPOL_CLASS_DIR:
 		type_str = " -d ";
 		break;
-	case SEPOL_CLASS_CHR_FILE:
+	case QPOL_CLASS_CHR_FILE:
 		type_str = " -c ";
 		break;
-	case SEPOL_CLASS_BLK_FILE:
+	case QPOL_CLASS_BLK_FILE:
 		type_str = " -b ";
 		break;
-	case SEPOL_CLASS_FILE:
+	case QPOL_CLASS_FILE:
 		type_str = " -- ";
 		break;
-	case SEPOL_CLASS_FIFO_FILE:
+	case QPOL_CLASS_FIFO_FILE:
 		type_str = " -p ";
 		break;
-	case SEPOL_CLASS_LNK_FILE:
+	case QPOL_CLASS_LNK_FILE:
 		type_str = " -l ";
 		break;
-	case SEPOL_CLASS_SOCK_FILE:
+	case QPOL_CLASS_SOCK_FILE:
 		type_str = " -s ";
 		break;
-	case SEPOL_CLASS_ALL:
+	case QPOL_CLASS_ALL:
 		type_str = "	";
 		break;
 	default:
@@ -1205,7 +1205,7 @@ char *re_render_genfscon2(apol_policy_t *policydb, sepol_genfscon_t *genfscon)
 		break;
 	}
 
-	if (sepol_genfscon_get_path(policydb->sh, policydb->p, genfscon, &path))
+	if (qpol_genfscon_get_path(policydb->sh, policydb->p, genfscon, &path))
 		goto cleanup;
 	line = (char*)calloc(len + strlen(path) + 4 + strlen(context_str) + 1 , sizeof(char));
 	if (!line) {

@@ -55,27 +55,27 @@ int apol_get_class_by_query(apol_policy_t *p,
 			    apol_class_query_t *c,
 			    apol_vector_t **v)
 {
-	sepol_iterator_t *iter = NULL, *perm_iter = NULL;
+	qpol_iterator_t *iter = NULL, *perm_iter = NULL;
 	int retval = -1, append_class;
 	*v = NULL;
-	if (sepol_policydb_get_class_iter(p->sh, p->p, &iter) < 0) {
+	if (qpol_policy_get_class_iter(p->sh, p->p, &iter) < 0) {
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
 		ERR(p, "Out of memory!");
 		goto cleanup;
 	}
-	for ( ; !sepol_iterator_end(iter); sepol_iterator_next(iter)) {
-		sepol_class_datum_t *class_datum;
-		if (sepol_iterator_get_item(iter, (void **) &class_datum) < 0) {
+	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		qpol_class_t *class_datum;
+		if (qpol_iterator_get_item(iter, (void **) &class_datum) < 0) {
 			goto cleanup;
 		}
 		append_class = 1;
 		if (c != NULL) {
 			char *class_name, *common_name = NULL;
-			sepol_common_datum_t *common_datum;
+			qpol_common_t *common_datum;
 			int compval;
-			if (sepol_class_datum_get_name(p->sh, p->p, class_datum, &class_name) < 0) {
+			if (qpol_class_get_name(p->sh, p->p, class_datum, &class_name) < 0) {
 				goto cleanup;
 			}
 			compval = apol_compare(p, class_name, c->class_name,
@@ -86,7 +86,7 @@ int apol_get_class_by_query(apol_policy_t *p,
 			else if (compval == 0) {
 				continue;
 			}
-			if (sepol_class_datum_get_common(p->sh, p->p,
+			if (qpol_class_get_common(p->sh, p->p,
 							 class_datum, &common_datum) < 0) {
 				goto cleanup;
 			}
@@ -96,7 +96,7 @@ int apol_get_class_by_query(apol_policy_t *p,
 				}
 			}
 			else {
-				if (sepol_common_datum_get_name(p->sh, p->p,
+				if (qpol_common_get_name(p->sh, p->p,
 								common_datum, &common_name) < 0) {
 					goto cleanup;
 				}
@@ -121,8 +121,8 @@ int apol_get_class_by_query(apol_policy_t *p,
 	if (retval != 0) {
 		apol_vector_destroy(v, NULL);
 	}
-	sepol_iterator_destroy(&iter);
-	sepol_iterator_destroy(&perm_iter);
+	qpol_iterator_destroy(&iter);
+	qpol_iterator_destroy(&perm_iter);
 	return retval;
 }
 
@@ -165,25 +165,25 @@ int apol_get_common_by_query(apol_policy_t *p,
 			     apol_common_query_t *c,
 			     apol_vector_t **v)
 {
-	sepol_iterator_t *iter = NULL;
+	qpol_iterator_t *iter = NULL;
 	int retval = -1;
 	*v = NULL;
-	if (sepol_policydb_get_common_iter(p->sh, p->p, &iter) < 0) {
+	if (qpol_policy_get_common_iter(p->sh, p->p, &iter) < 0) {
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
 		ERR(p, "Out of memory!");
 		goto cleanup;
 	}
-	for ( ; !sepol_iterator_end(iter); sepol_iterator_next(iter)) {
-		sepol_common_datum_t *common_datum;
-		if (sepol_iterator_get_item(iter, (void **) &common_datum) < 0) {
+	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		qpol_common_t *common_datum;
+		if (qpol_iterator_get_item(iter, (void **) &common_datum) < 0) {
 			goto cleanup;
 		}
 		if (c != NULL) {
 			char *common_name = NULL;
 			int compval;
-			if (sepol_common_datum_get_name(p->sh, p->p, common_datum, &common_name) < 0) {
+			if (qpol_common_get_name(p->sh, p->p, common_datum, &common_name) < 0) {
 				goto cleanup;
 			}
 			compval = apol_compare(p, common_name, c->common_name,
@@ -206,7 +206,7 @@ int apol_get_common_by_query(apol_policy_t *p,
 	if (retval != 0) {
 		apol_vector_destroy(v, NULL);
 	}
-	sepol_iterator_destroy(&iter);
+	qpol_iterator_destroy(&iter);
 	return retval;
 }
 
@@ -252,26 +252,26 @@ int apol_get_perm_by_query(apol_policy_t *p,
 			   apol_perm_query_t *pq,
 			   apol_vector_t **v)
 {
-	sepol_iterator_t *class_iter = NULL, *common_iter = NULL, *perm_iter = NULL;
+	qpol_iterator_t *class_iter = NULL, *common_iter = NULL, *perm_iter = NULL;
 	int retval = -1, compval;
 	char *perm_name;
 	*v = NULL;
-	if (sepol_policydb_get_class_iter(p->sh, p->p, &class_iter) < 0 ||
-	    sepol_policydb_get_common_iter(p->sh, p->p, &common_iter) < 0) {
+	if (qpol_policy_get_class_iter(p->sh, p->p, &class_iter) < 0 ||
+	    qpol_policy_get_common_iter(p->sh, p->p, &common_iter) < 0) {
 		goto cleanup;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
 		ERR(p, "Out of memory!");
 		goto cleanup;
 	}
-	for ( ; !sepol_iterator_end(class_iter); sepol_iterator_next(class_iter)) {
-		sepol_class_datum_t *class_datum;
-		if (sepol_iterator_get_item(class_iter, (void **) &class_datum) < 0 ||
-		    sepol_class_datum_get_perm_iter(p->sh, p->p, class_datum, &perm_iter) < 0) {
+	for ( ; !qpol_iterator_end(class_iter); qpol_iterator_next(class_iter)) {
+		qpol_class_t *class_datum;
+		if (qpol_iterator_get_item(class_iter, (void **) &class_datum) < 0 ||
+		    qpol_class_get_perm_iter(p->sh, p->p, class_datum, &perm_iter) < 0) {
 			goto cleanup;
 		}
-		for ( ; !sepol_iterator_end(perm_iter); sepol_iterator_next(perm_iter)) {
-			if (sepol_iterator_get_item(perm_iter, (void **) &perm_name) < 0) {
+		for ( ; !qpol_iterator_end(perm_iter); qpol_iterator_next(perm_iter)) {
+			if (qpol_iterator_get_item(perm_iter, (void **) &perm_name) < 0) {
 				goto cleanup;
 			}
 			if (pq == NULL) {
@@ -290,17 +290,17 @@ int apol_get_perm_by_query(apol_policy_t *p,
 				goto cleanup;
 			}
 		}
-		sepol_iterator_destroy(&perm_iter);
+		qpol_iterator_destroy(&perm_iter);
 	}
 
-	for ( ; !sepol_iterator_end(common_iter); sepol_iterator_next(common_iter)) {
-		sepol_common_datum_t *common_datum;
-		if (sepol_iterator_get_item(common_iter, (void **) &common_datum) < 0 ||
-		    sepol_common_datum_get_perm_iter(p->sh, p->p, common_datum, &perm_iter) < 0) {
+	for ( ; !qpol_iterator_end(common_iter); qpol_iterator_next(common_iter)) {
+		qpol_common_t *common_datum;
+		if (qpol_iterator_get_item(common_iter, (void **) &common_datum) < 0 ||
+		    qpol_common_get_perm_iter(p->sh, p->p, common_datum, &perm_iter) < 0) {
 			goto cleanup;
 		}
-		for ( ; !sepol_iterator_end(perm_iter); sepol_iterator_next(perm_iter)) {
-			if (sepol_iterator_get_item(perm_iter, (void **) &perm_name) < 0) {
+		for ( ; !qpol_iterator_end(perm_iter); qpol_iterator_next(perm_iter)) {
+			if (qpol_iterator_get_item(perm_iter, (void **) &perm_name) < 0) {
 				goto cleanup;
 			}
 			if (pq == NULL) {
@@ -319,7 +319,7 @@ int apol_get_perm_by_query(apol_policy_t *p,
 				goto cleanup;
 			}
 		}
-		sepol_iterator_destroy(&perm_iter);
+		qpol_iterator_destroy(&perm_iter);
 	}
 
 	retval = 0;
@@ -327,9 +327,9 @@ int apol_get_perm_by_query(apol_policy_t *p,
 	if (retval != 0) {
 		apol_vector_destroy(v, NULL);
 	}
-	sepol_iterator_destroy(&class_iter);
-	sepol_iterator_destroy(&common_iter);
-	sepol_iterator_destroy(&perm_iter);
+	qpol_iterator_destroy(&class_iter);
+	qpol_iterator_destroy(&common_iter);
+	qpol_iterator_destroy(&perm_iter);
 	return retval;
 }
 
