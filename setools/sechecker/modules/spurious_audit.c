@@ -183,12 +183,13 @@ int spurious_audit_run(sechk_module_t *mod, policy_t *policy)
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
-	int i, src, tgt, obj, perm, retv;
-	avh_node_t *node;
+	int i, j, src, tgt, obj, perm, retv;
+	avh_node_t *node, *tmp_node;
 	int *src_types = NULL, num_src_types = 0;
 	int *tgt_types = NULL, num_tgt_types = 0;
 	int *obj_classes = NULL, num_obj_classes = 0;
 	int *perms = NULL, num_perms = 0;
+	int *node_perms = NULL, node_perms_sz = 0;
 	bool_t *used_perms = NULL;
 	avh_key_t key = {-1,-1,-1,RULE_INVALID};
 	avh_rule_t *hash_rule = NULL;
@@ -300,12 +301,22 @@ int spurious_audit_run(sechk_module_t *mod, policy_t *policy)
 							item->proof = proof;
 						} else {
 							retv = 0;
+							node_perms_sz = 0;
+							node_perms = NULL;
+							for ( ; node; node = avh_find_next_node(node)) {
+								for (j = 0; j < node->num_data; j++) 
+									add_i_to_a(node->data[j], &node_perms_sz, &node_perms);
+							}	       
 							for (perm = 0; perm < num_perms; perm++) {
-								if (find_int_in_array(perms[perm], node->data, node->num_data) != -1) {
+								if (find_int_in_array(perms[perm], node_perms, node_perms_sz) != -1) {
 									used_perms[perm] = TRUE;
 									retv ++;
 								}
 							}
+							if (node_perms_sz > 0) {
+								free(node_perms);
+								node_perms_sz = 0;
+							}					       	
 							if (retv == num_perms)
 								continue;
 							proof = sechk_proof_new();
@@ -347,12 +358,23 @@ int spurious_audit_run(sechk_module_t *mod, policy_t *policy)
 							continue;
 						}
 						retv = 0;
+						node_perms_sz = 0;
+						node_perms = NULL;
+						for (tmp_node = node; tmp_node; tmp_node = avh_find_next_node(tmp_node)) {
+							for (j = 0; j < tmp_node->num_data; j++) 
+								add_i_to_a(tmp_node->data[j], &node_perms_sz, &node_perms);
+						}
 						for (perm = 0; perm < num_perms; perm++) {
-							if (find_int_in_array(perms[perm], node->data, node->num_data) != -1) {
+							if (find_int_in_array(perms[perm], node_perms, node_perms_sz) != -1) {
 								used_perms[perm] = TRUE;
 								retv ++;
 							}
 						}
+						if (node_perms_sz > 0) {
+							free(node_perms);
+							node_perms_sz = 0;
+						}					       	
+							
 						if (!retv)
 							continue;
 						if (!item) {
