@@ -33,7 +33,7 @@
 #define STATUS_NODATA   1
 
 //FIXME: real handle use here?
-#define ERR(handle, ...) 0;
+#define ERR(handle, ...) ;
 
 #endif /* QPOL_DEBUG_H */
  

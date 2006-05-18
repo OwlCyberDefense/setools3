@@ -25,9 +25,10 @@
  */
 
 #include <qpol/expand.h>
-#include <sepol/policydb/policydb.h>
-#include <sepol/handle.h>
+#include <sepol/policydb/expand.h>
 #include <stdlib.h>
+#include "debug.h"
+
 #include "debug.h"
 
 int qpol_expand_module(sepol_handle_t *handle, qpol_policy_t *base)
