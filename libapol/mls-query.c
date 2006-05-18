@@ -30,7 +30,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <sepol/iterator.h>
+#include <qpol/iterator.h>
 
 #include "component-query.h"
 #include "mls-query.h"
@@ -54,18 +54,18 @@ struct apol_cat_query {
  * value than b, > 0 if b is higher.  If the two are equal or upon
  * error, return 0.
  */
-static int apol_mls_cat_datum_vector_compare(const void *a, const void *b, void *data)
+static int apol_mls_cat_vector_compare(const void *a, const void *b, void *data)
 {
-	sepol_cat_datum_t *cat_datum1 = (sepol_cat_datum_t *) a;
-	const char *cat2 = (const char *) b;
+	qpol_cat_t *cat1 = (qpol_cat_t *) a;
+	const char *cat2_name = (const char *) b;
 	apol_policy_t *p = (apol_policy_t *) data;
-	sepol_cat_datum_t *cat_datum2;
+	qpol_cat_t *cat2;
 	uint32_t cat_value1, cat_value2;
-	if (sepol_policydb_get_cat_by_name(p->sh, p->p, cat2, &cat_datum2) < 0) {
+	if (qpol_policy_get_cat_by_name(p->sh, p->p, cat2_name, &cat2) < 0) {
 		return 0;
 	}
-	if (sepol_cat_datum_get_value(p->sh, p->p, cat_datum1, &cat_value1) < 0 ||
-	    sepol_cat_datum_get_value(p->sh, p->p, cat_datum2, &cat_value2) < 0) {
+	if (qpol_cat_get_value(p->sh, p->p, cat1, &cat_value1) < 0 ||
+	    qpol_cat_get_value(p->sh, p->p, cat2, &cat_value2) < 0) {
 		return 0;
 	}
 	return (cat_value2 - cat_value1);
@@ -86,8 +86,8 @@ static int apol_mls_cat_datum_vector_compare(const void *a, const void *b, void 
 static int apol_mls_level_validate(apol_policy_t *p,
 				   apol_mls_level_t *level)
 {
-	sepol_level_datum_t *level_datum;
-	sepol_iterator_t *iter = NULL;
+	qpol_level_t *level_datum;
+	qpol_iterator_t *iter = NULL;
 	apol_vector_t *cat_vector;
 	int retval = -1;
 	size_t i;
@@ -96,8 +96,8 @@ static int apol_mls_level_validate(apol_policy_t *p,
 		ERR(p, "Invalid argument.");
 		return -1;
 	}
-	if (sepol_policydb_get_level_by_name(p->sh, p->p, level->sens, &level_datum) < 0 ||
-	    sepol_level_datum_get_cat_iter(p->sh, p->p, level_datum, &iter) < 0) {
+	if (qpol_policy_get_level_by_name(p->sh, p->p, level->sens, &level_datum) < 0 ||
+	    qpol_level_get_cat_iter(p->sh, p->p, level_datum, &iter) < 0) {
 		return -1;
 	}
 	if ((cat_vector = apol_vector_create_from_iter(iter)) == NULL) {
@@ -108,7 +108,7 @@ static int apol_mls_level_validate(apol_policy_t *p,
 	for (i = 0; i < apol_vector_get_size(level->cats); i++) {
 		char *cat_name = (char *) apol_vector_get_element(level->cats, i);
 		if (apol_vector_get_index(cat_vector, cat_name,
-					  apol_mls_cat_datum_vector_compare, p) == -1) {
+					  apol_mls_cat_vector_compare, p) == -1) {
 			retval = 0;
 			goto cleanup;
 		}
@@ -116,7 +116,7 @@ static int apol_mls_level_validate(apol_policy_t *p,
 
 	retval = 1;
  cleanup:
-	sepol_iterator_destroy(&iter);
+	qpol_iterator_destroy(&iter);
 	apol_vector_destroy(&cat_vector, NULL);
 	return retval;
 }
@@ -150,9 +150,9 @@ apol_mls_level_t *apol_mls_level_create_from_string(apol_policy_t *p, char *mls_
 	int error = 0;
 	char *tmp = NULL, **tokens = NULL, *next = NULL;
 	size_t num_tokens = 1, i;
-	sepol_iterator_t *iter = NULL;
-	sepol_level_datum_t *sens = NULL;
-	sepol_cat_datum_t *cat1 = NULL, *cat2 = NULL, *tmp_cat = NULL;
+	qpol_iterator_t *iter = NULL;
+	qpol_level_t *sens = NULL;
+	qpol_cat_t *cat1 = NULL, *cat2 = NULL, *tmp_cat = NULL;
 	uint32_t val1 = 0, val2 = 0, tmp_val = 0;
 	unsigned char tmp_isalias = 0;
 
@@ -205,7 +205,7 @@ apol_mls_level_t *apol_mls_level_create_from_string(apol_policy_t *p, char *mls_
 		}
 	}
 
-	if (sepol_policydb_get_level_by_name(p->sh, p->p, tokens[0], &sens)) {
+	if (qpol_policy_get_level_by_name(p->sh, p->p, tokens[0], &sens)) {
 		error = errno;
 		goto err;
 	}
@@ -219,21 +219,21 @@ apol_mls_level_t *apol_mls_level_create_from_string(apol_policy_t *p, char *mls_
 			next++;
 
 			/* get end points of cat range */
-			if (sepol_policydb_get_cat_by_name(p->sh, p->p, tokens[i], &cat1)) {
+			if (qpol_policy_get_cat_by_name(p->sh, p->p, tokens[i], &cat1)) {
 				error = errno;
 				goto err;
 			}
-			if (sepol_policydb_get_cat_by_name(p->sh, p->p, next, &cat2)) {
+			if (qpol_policy_get_cat_by_name(p->sh, p->p, next, &cat2)) {
 				error = errno;
 				goto err;
 			}
 
 			/* get end point values*/
-			if (sepol_cat_datum_get_value(p->sh, p->p, cat1, &val1)) {
+			if (qpol_cat_get_value(p->sh, p->p, cat1, &val1)) {
 				error = errno;
 				goto err;
 			}
-			if (sepol_cat_datum_get_value(p->sh, p->p, cat2, &val2)) {
+			if (qpol_cat_get_value(p->sh, p->p, cat2, &val2)) {
 				error = errno;
 				goto err;
 			}
@@ -245,27 +245,27 @@ apol_mls_level_t *apol_mls_level_create_from_string(apol_policy_t *p, char *mls_
 				error = errno;
 				goto err;
 			}
-			if (sepol_policydb_get_cat_iter(p->sh, p->p, &iter)) {
+			if (qpol_policy_get_cat_iter(p->sh, p->p, &iter)) {
 				error = errno;
 				goto err;
 			}
-			for (; !sepol_iterator_end(iter); sepol_iterator_next(iter)) {
-				if (sepol_iterator_get_item(iter, (void**)&tmp_cat)) {
+			for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+				if (qpol_iterator_get_item(iter, (void**)&tmp_cat)) {
 					error = errno;
 					goto err;
 				}
-				if (sepol_cat_datum_get_isalias(p->sh, p->p, tmp_cat, &tmp_isalias)) {
+				if (qpol_cat_get_isalias(p->sh, p->p, tmp_cat, &tmp_isalias)) {
 					error = errno;
 					goto err;
 				}
 				if (tmp_isalias)
 					continue;
-				if (sepol_cat_datum_get_value(p->sh, p->p, tmp_cat, &tmp_val)) {
+				if (qpol_cat_get_value(p->sh, p->p, tmp_cat, &tmp_val)) {
 					error = errno;
 					goto err;
 				}
 				if (tmp_val > val1 && tmp_val < val2) {
-					if (sepol_cat_datum_get_name(p->sh, p->p, tmp_cat, &tmp)) {
+					if (qpol_cat_get_name(p->sh, p->p, tmp_cat, &tmp)) {
 						error = errno;
 						goto err;
 					}
@@ -280,7 +280,7 @@ apol_mls_level_t *apol_mls_level_create_from_string(apol_policy_t *p, char *mls_
 				goto err;
 			}
 		} else {
-			if (sepol_policydb_get_cat_by_name(p->sh, p->p, tokens[i], &cat1)) {
+			if (qpol_policy_get_cat_by_name(p->sh, p->p, tokens[i], &cat1)) {
 				error = errno;
 				goto err;
 			}
@@ -297,7 +297,7 @@ apol_mls_level_t *apol_mls_level_create_from_string(apol_policy_t *p, char *mls_
 		free(tokens);
 	}
 
-	sepol_iterator_destroy(&iter);
+	qpol_iterator_destroy(&iter);
 	return lvl;
 
 err:
@@ -307,20 +307,20 @@ err:
 			free(tokens[i]);
 		free(tokens);
 	}
-	sepol_iterator_destroy(&iter);
+	qpol_iterator_destroy(&iter);
 	errno = error;
 	return NULL;
 }
 
-apol_mls_level_t *apol_mls_level_create_from_sepol_mls_level(apol_policy_t *p, sepol_mls_level_t *sepol_level)
+apol_mls_level_t *apol_mls_level_create_from_qpol_mls_level(apol_policy_t *p, qpol_mls_level_t *qpol_level)
 {
 	apol_mls_level_t *lvl = NULL;
-	sepol_iterator_t *iter = NULL;
-	sepol_cat_datum_t *tmp_cat = NULL;
+	qpol_iterator_t *iter = NULL;
+	qpol_cat_t *tmp_cat = NULL;
 	char *tmp = NULL;
 	int error = 0;
 
-	if (!p || !sepol_level) {
+	if (!p || !qpol_level) {
 		errno = EINVAL;
 		return NULL;
 	}
@@ -329,7 +329,7 @@ apol_mls_level_t *apol_mls_level_create_from_sepol_mls_level(apol_policy_t *p, s
 		ERR(p, "Out of memory!");
 		return NULL;
 	}
-	if (sepol_mls_level_get_sens_name(p->sh, p->p, sepol_level, &tmp)) {
+	if (qpol_mls_level_get_sens_name(p->sh, p->p, qpol_level, &tmp)) {
 		error = errno;
 		goto err;
 	}
@@ -339,17 +339,17 @@ apol_mls_level_t *apol_mls_level_create_from_sepol_mls_level(apol_policy_t *p, s
 		goto err;
 	}
 
-	if (sepol_mls_level_get_cat_iter(p->sh, p->p, sepol_level, &iter)) {
+	if (qpol_mls_level_get_cat_iter(p->sh, p->p, qpol_level, &iter)) {
 		error = errno;
 		goto err;
 	}
 
-	for ( ; !sepol_iterator_end(iter); sepol_iterator_next(iter)) {
-		if (sepol_iterator_get_item(iter, (void**)&tmp_cat)) {
+	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		if (qpol_iterator_get_item(iter, (void**)&tmp_cat)) {
 			error = errno;
 			goto err;
 		}
-		if (sepol_cat_datum_get_name(p->sh, p->p, tmp_cat, &tmp)) {
+		if (qpol_cat_get_name(p->sh, p->p, tmp_cat, &tmp)) {
 			error = errno;
 			goto err;
 		}
@@ -359,25 +359,25 @@ apol_mls_level_t *apol_mls_level_create_from_sepol_mls_level(apol_policy_t *p, s
 		}
 	}
 
-	sepol_iterator_destroy(&iter);
+	qpol_iterator_destroy(&iter);
 	return lvl;
 
 err:
 	apol_mls_level_destroy(&lvl);
-	sepol_iterator_destroy(&iter);
+	qpol_iterator_destroy(&iter);
 	errno = error;
 	return NULL;
 }
 
-apol_mls_level_t *apol_mls_level_create_from_sepol_level_datum(apol_policy_t *p, sepol_level_datum_t *sepol_level)
+apol_mls_level_t *apol_mls_level_create_from_qpol_level_datum(apol_policy_t *p, qpol_level_t *qpol_level)
 {
 	apol_mls_level_t *lvl = NULL;
-	sepol_iterator_t *iter = NULL;
-	sepol_cat_datum_t *tmp_cat = NULL;
+	qpol_iterator_t *iter = NULL;
+	qpol_cat_t *tmp_cat = NULL;
 	char *tmp = NULL;
 	int error = 0;
 
-	if (!p || !sepol_level) {
+	if (!p || !qpol_level) {
 		errno = EINVAL;
 		return NULL;
 	}
@@ -386,7 +386,7 @@ apol_mls_level_t *apol_mls_level_create_from_sepol_level_datum(apol_policy_t *p,
 		ERR(p, "Out of memory!");
 		return NULL;
 	}
-	if (sepol_level_datum_get_name(p->sh, p->p, sepol_level, &tmp)) {
+	if (qpol_level_get_name(p->sh, p->p, qpol_level, &tmp)) {
 		error = errno;
 		goto err;
 	}
@@ -396,17 +396,17 @@ apol_mls_level_t *apol_mls_level_create_from_sepol_level_datum(apol_policy_t *p,
 		goto err;
 	}
 
-	if (sepol_level_datum_get_cat_iter(p->sh, p->p, sepol_level, &iter)) {
+	if (qpol_level_get_cat_iter(p->sh, p->p, qpol_level, &iter)) {
 		error = errno;
 		goto err;
 	}
 
-	for ( ; !sepol_iterator_end(iter); sepol_iterator_next(iter)) {
-		if (sepol_iterator_get_item(iter, (void**)&tmp_cat)) {
+	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		if (qpol_iterator_get_item(iter, (void**)&tmp_cat)) {
 			error = errno;
 			goto err;
 		}
-		if (sepol_cat_datum_get_name(p->sh, p->p, tmp_cat, &tmp)) {
+		if (qpol_cat_get_name(p->sh, p->p, tmp_cat, &tmp)) {
 			error = errno;
 			goto err;
 		}
@@ -415,12 +415,12 @@ apol_mls_level_t *apol_mls_level_create_from_sepol_level_datum(apol_policy_t *p,
 			goto err;
 		}
 	}
-	sepol_iterator_destroy(&iter);
+	qpol_iterator_destroy(&iter);
 	return lvl;
 
 err:
 	apol_mls_level_destroy(&lvl);
-	sepol_iterator_destroy(&iter);
+	qpol_iterator_destroy(&iter);
 	errno = error;
 	return NULL;
 }
@@ -471,7 +471,7 @@ int apol_mls_level_append_cats(apol_policy_t *p, apol_mls_level_t *level, const 
 
 int apol_mls_level_compare(apol_policy_t *p, apol_mls_level_t *l1, apol_mls_level_t *l2)
 {
-	sepol_level_datum_t *level_datum1, *level_datum2;
+	qpol_level_t *level_datum1, *level_datum2;
 	int level1_sens, level2_sens, sens_cmp;
 	size_t l1_size, l2_size, i;
 	int m_list, ucat = 0;
@@ -479,14 +479,14 @@ int apol_mls_level_compare(apol_policy_t *p, apol_mls_level_t *l1, apol_mls_leve
 	if (l2 == NULL) {
 		return APOL_MLS_EQ;
 	}
-	if (sepol_policydb_get_level_by_name(p->sh, p->p, l1->sens, &level_datum1) < 0 ||
-	    sepol_policydb_get_level_by_name(p->sh, p->p, l2->sens, &level_datum2) < 0) {
+	if (qpol_policy_get_level_by_name(p->sh, p->p, l1->sens, &level_datum1) < 0 ||
+	    qpol_policy_get_level_by_name(p->sh, p->p, l2->sens, &level_datum2) < 0) {
 		return -1;
 	}
 
 	/* compare the level's senstitivity value */
-	if (sepol_level_datum_get_value(p->sh, p->p, level_datum1, (uint32_t *) (&level1_sens)) < 0 ||
-	    sepol_level_datum_get_value(p->sh, p->p, level_datum2, (uint32_t *) (&level2_sens)) < 0) {
+	if (qpol_level_get_value(p->sh, p->p, level_datum1, (uint32_t *) (&level1_sens)) < 0 ||
+	    qpol_level_get_value(p->sh, p->p, level_datum2, (uint32_t *) (&level2_sens)) < 0) {
 		return -1;
 	}
 	sens_cmp = level1_sens - level2_sens;
@@ -526,7 +526,7 @@ char *apol_mls_level_render(apol_policy_t *p, apol_mls_level_t *level)
 	char *rt = NULL, *name = NULL, *sens_name = NULL, *cat_name = NULL;
 	char *retval = NULL;
 	int sz = 0, i, cur;
-	sepol_cat_datum_t *cur_cat_datum = NULL, *next_cat_datum = NULL;
+	qpol_cat_t *cur_cat = NULL, *next_cat = NULL;
 	uint32_t cur_cat_val, next_cat_val, far_cat_val;
 	apol_vector_t *cats = NULL;
 	size_t n_cats = 0;
@@ -567,21 +567,21 @@ char *apol_mls_level_render(apol_policy_t *p, apol_mls_level_t *level)
 	for (i = 1; i < n_cats; i++) { /* we've already appended the first category */
 		/* get the value of cats[cur] */
 		cat_name = (char *)apol_vector_get_element(cats, cur);
-		if (sepol_policydb_get_cat_by_name(p->sh, p->p, cat_name, &cur_cat_datum))
+		if (qpol_policy_get_cat_by_name(p->sh, p->p, cat_name, &cur_cat))
 			goto cleanup;
-		if (sepol_cat_datum_get_value(p->sh, p->p, cur_cat_datum, &cur_cat_val))
+		if (qpol_cat_get_value(p->sh, p->p, cur_cat, &cur_cat_val))
 			goto cleanup;
 
 		/* get the value of cats[i] */
 		cat_name = (char *)apol_vector_get_element(cats, i);
-		if (sepol_policydb_get_cat_by_name(p->sh, p->p, cat_name, &next_cat_datum))
+		if (qpol_policy_get_cat_by_name(p->sh, p->p, cat_name, &next_cat))
 			goto cleanup;
-		if (sepol_cat_datum_get_value(p->sh, p->p, next_cat_datum, &next_cat_val))
+		if (qpol_cat_get_value(p->sh, p->p, next_cat, &next_cat_val))
 			goto cleanup;
 
 		if (next_cat_val == cur_cat_val + 1) {
 			if (i + 1 == n_cats) { /* last category is next; append "." */
-				if (sepol_cat_datum_get_name(p->sh, p->p, next_cat_datum, &name))
+				if (qpol_cat_get_name(p->sh, p->p, next_cat, &name))
 					goto cleanup;
 				if (append_str(&rt, &sz, ".") ||
 				    append_str(&rt, &sz, name)) {
@@ -590,16 +590,16 @@ char *apol_mls_level_render(apol_policy_t *p, apol_mls_level_t *level)
 				}
 				cur = i;
 			} else {
-				sepol_cat_datum_t *far_cat_datum = NULL;  /* category 2 in front of cur */
+				qpol_cat_t *far_cat = NULL;  /* category 2 in front of cur */
 				cat_name = (char *)apol_vector_get_element(cats, i+1);
-				if (sepol_policydb_get_cat_by_name(p->sh, p->p, cat_name, &far_cat_datum))
+				if (qpol_policy_get_cat_by_name(p->sh, p->p, cat_name, &far_cat))
 					goto cleanup;
-				if (sepol_cat_datum_get_value(p->sh, p->p, far_cat_datum, &far_cat_val))
+				if (qpol_cat_get_value(p->sh, p->p, far_cat, &far_cat_val))
 					goto cleanup;
 				if (far_cat_val == cur_cat_val + 2) {
 					cur++;
 				} else {     /* far_cat isn't consecutive wrt cur/next_cat; append it */
-					if (sepol_cat_datum_get_name(p->sh, p->p, next_cat_datum, &name))
+					if (qpol_cat_get_name(p->sh, p->p, next_cat, &name))
 						goto cleanup;
 					if (append_str(&rt, &sz, ".") ||
 					    append_str(&rt, &sz, name)) {
@@ -610,7 +610,7 @@ char *apol_mls_level_render(apol_policy_t *p, apol_mls_level_t *level)
 				}
 			}
 		} else { /* next_cat isn't consecutive to cur_cat; append it */
-			if (sepol_cat_datum_get_name(p->sh, p->p, next_cat_datum, &name))
+			if (qpol_cat_get_name(p->sh, p->p, next_cat, &name))
 				goto cleanup;
 			if (append_str(&rt, &sz, ", ") ||
 			    append_str(&rt, &sz, name)) {
@@ -634,9 +634,9 @@ int apol_mls_sens_compare(apol_policy_t *p,
 			  const char *sens1,
 			  const char *sens2)
 {
-	sepol_level_datum_t *level_datum1, *level_datum2;
-	if (sepol_policydb_get_level_by_name(p->sh, p->p, sens1, &level_datum1) < 0 ||
-	    sepol_policydb_get_level_by_name(p->sh, p->p, sens2, &level_datum2) < 0) {
+	qpol_level_t *level_datum1, *level_datum2;
+	if (qpol_policy_get_level_by_name(p->sh, p->p, sens1, &level_datum1) < 0 ||
+	    qpol_policy_get_level_by_name(p->sh, p->p, sens2, &level_datum2) < 0) {
 		return -1;
 	}
 	if (level_datum1 == level_datum2) {
@@ -649,12 +649,12 @@ int apol_mls_cats_compare(apol_policy_t *p,
 			  const char *cat1,
 			  const char *cat2)
 {
-	sepol_cat_datum_t *cat_datum1, *cat_datum2;
-	if (sepol_policydb_get_cat_by_name(p->sh, p->p, cat1, &cat_datum1) < 0 ||
-	    sepol_policydb_get_cat_by_name(p->sh, p->p, cat2, &cat_datum2) < 0) {
+	qpol_cat_t *qcat1, *qcat2;
+	if (qpol_policy_get_cat_by_name(p->sh, p->p, cat1, &qcat1) < 0 ||
+	    qpol_policy_get_cat_by_name(p->sh, p->p, cat2, &qcat2) < 0) {
 		return -1;
 	}
-	if (cat_datum1 == cat_datum2) {
+	if (qcat1 == qcat2) {
 		return 1;
 	}
 	return 0;
@@ -665,14 +665,14 @@ int apol_mls_cat_name_compare(const void *a, const void *b, void *data)
 	const char *cat1 = (const char *) a;
 	const char *cat2 = (const char *) b;
 	apol_policy_t *p = (apol_policy_t *) data;
-	sepol_cat_datum_t *cat_datum1, *cat_datum2;
+	qpol_cat_t *qcat1, *qcat2;
 	uint32_t cat_value1, cat_value2;
-	if (sepol_policydb_get_cat_by_name(p->sh, p->p, cat1, &cat_datum1) < 0 ||
-	    sepol_policydb_get_cat_by_name(p->sh, p->p, cat2, &cat_datum2) < 0) {
+	if (qpol_policy_get_cat_by_name(p->sh, p->p, cat1, &qcat1) < 0 ||
+	    qpol_policy_get_cat_by_name(p->sh, p->p, cat2, &qcat2) < 0) {
 		return 0;
 	}
-	if (sepol_cat_datum_get_value(p->sh, p->p, cat_datum1, &cat_value1) < 0 ||
-	    sepol_cat_datum_get_value(p->sh, p->p, cat_datum2, &cat_value2) < 0) {
+	if (qpol_cat_get_value(p->sh, p->p, qcat1, &cat_value1) < 0 ||
+	    qpol_cat_get_value(p->sh, p->p, qcat2, &cat_value2) < 0) {
 		return 0;
 	}
 	return (cat_value1 - cat_value2);
@@ -685,14 +685,14 @@ apol_mls_range_t *apol_mls_range_create(void)
 	return calloc(1, sizeof(apol_mls_range_t));
 }
 
-apol_mls_range_t *apol_mls_range_create_from_sepol_mls_range(apol_policy_t *p, sepol_mls_range_t *sepol_range)
+apol_mls_range_t *apol_mls_range_create_from_qpol_mls_range(apol_policy_t *p, qpol_mls_range_t *qpol_range)
 {
 	apol_mls_range_t *apol_range = NULL;
-	sepol_mls_level_t *tmp = NULL;
+	qpol_mls_level_t *tmp = NULL;
 	apol_mls_level_t *tmp_lvl = NULL;
 	int error = 0;
 
-	if (!p || !sepol_range) {
+	if (!p || !qpol_range) {
 		errno = EINVAL;
 		return NULL;
 	}
@@ -704,8 +704,8 @@ apol_mls_range_t *apol_mls_range_create_from_sepol_mls_range(apol_policy_t *p, s
 	}
 
 	/* low */
-	if (sepol_mls_range_get_low_level(p->sh, p->p, sepol_range, &tmp) ||
-	    !(tmp_lvl = apol_mls_level_create_from_sepol_mls_level(p, tmp)) ||
+	if (qpol_mls_range_get_low_level(p->sh, p->p, qpol_range, &tmp) ||
+	    !(tmp_lvl = apol_mls_level_create_from_qpol_mls_level(p, tmp)) ||
 	    apol_mls_range_set_low(p, apol_range, tmp_lvl)) {
 		error = errno;
 		goto err;
@@ -713,8 +713,8 @@ apol_mls_range_t *apol_mls_range_create_from_sepol_mls_range(apol_policy_t *p, s
 	tmp_lvl = NULL;
 
 	/* high */
-	if (sepol_mls_range_get_high_level(p->sh, p->p, sepol_range, &tmp) ||
-	    !(tmp_lvl = apol_mls_level_create_from_sepol_mls_level(p, tmp)) ||
+	if (qpol_mls_range_get_high_level(p->sh, p->p, qpol_range, &tmp) ||
+	    !(tmp_lvl = apol_mls_level_create_from_qpol_mls_level(p, tmp)) ||
 	    apol_mls_range_set_high(p, apol_range, tmp_lvl)) {
 		error = errno;
 		goto err;
@@ -942,21 +942,21 @@ int apol_get_level_by_query(apol_policy_t *p,
 			    apol_level_query_t *l,
 			    apol_vector_t **v)
 {
-	sepol_iterator_t *iter, *cat_iter = NULL;
+	qpol_iterator_t *iter, *cat_iter = NULL;
 	int retval = -1, append_level;
 	*v = NULL;
-	if (sepol_policydb_get_level_iter(p->sh, p->p, &iter) < 0) {
+	if (qpol_policy_get_level_iter(p->sh, p->p, &iter) < 0) {
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
 		ERR(p, "Out of memory!");
 		goto cleanup;
 	}
-	for ( ; !sepol_iterator_end(iter); sepol_iterator_next(iter)) {
-		sepol_level_datum_t *level;
+	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		qpol_level_t *level;
 		unsigned char isalias;
-		if (sepol_iterator_get_item(iter, (void **) &level) < 0 ||
-		    sepol_level_datum_get_isalias(p->sh, p->p, level, &isalias) < 0) {
+		if (qpol_iterator_get_item(iter, (void **) &level) < 0 ||
+		    qpol_level_get_isalias(p->sh, p->p, level, &isalias) < 0) {
 			goto cleanup;
 		}
 		if (isalias) {
@@ -973,13 +973,13 @@ int apol_get_level_by_query(apol_policy_t *p,
 			else if (compval == 0) {
 				continue;
 			}
-			if (sepol_level_datum_get_cat_iter(p->sh, p->p, level, &cat_iter) < 0) {
+			if (qpol_level_get_cat_iter(p->sh, p->p, level, &cat_iter) < 0) {
 				goto cleanup;
 			}
 			append_level = 0;
-			for ( ; !sepol_iterator_end(cat_iter); sepol_iterator_next(cat_iter)) {
-				sepol_cat_datum_t *cat;
-				if (sepol_iterator_get_item(cat_iter, (void **) &cat) < 0) {
+			for ( ; !qpol_iterator_end(cat_iter); qpol_iterator_next(cat_iter)) {
+				qpol_cat_t *cat;
+				if (qpol_iterator_get_item(cat_iter, (void **) &cat) < 0) {
 					goto cleanup;
 				}
 				compval = apol_compare_cat(p,
@@ -993,7 +993,7 @@ int apol_get_level_by_query(apol_policy_t *p,
 					break;
 				}
 			}
-			sepol_iterator_destroy(&cat_iter);
+			qpol_iterator_destroy(&cat_iter);
 		}
 		if (append_level && apol_vector_append(*v, level)) {
 			ERR(p, "Out of memory!");
@@ -1006,8 +1006,8 @@ int apol_get_level_by_query(apol_policy_t *p,
 	if (retval != 0) {
 		apol_vector_destroy(v, NULL);
 	}
-	sepol_iterator_destroy(&iter);
-	sepol_iterator_destroy(&cat_iter);
+	qpol_iterator_destroy(&iter);
+	qpol_iterator_destroy(&cat_iter);
 	return retval;
 }
 
@@ -1049,21 +1049,21 @@ int apol_get_cat_by_query(apol_policy_t *p,
 			  apol_cat_query_t *c,
 			  apol_vector_t **v)
 {
-	sepol_iterator_t *iter;
+	qpol_iterator_t *iter;
 	int retval = -1;
 	*v = NULL;
-	if (sepol_policydb_get_cat_iter(p->sh, p->p, &iter) < 0) {
+	if (qpol_policy_get_cat_iter(p->sh, p->p, &iter) < 0) {
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
 		ERR(p, "Out of memory!");
 		goto cleanup;
 	}
-	for ( ; !sepol_iterator_end(iter); sepol_iterator_next(iter)) {
-		sepol_cat_datum_t *cat;
+	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		qpol_cat_t *cat;
 		unsigned char isalias;
-		if (sepol_iterator_get_item(iter, (void **) &cat) < 0 ||
-		    sepol_cat_datum_get_isalias(p->sh, p->p, cat, &isalias) < 0) {
+		if (qpol_iterator_get_item(iter, (void **) &cat) < 0 ||
+		    qpol_cat_get_isalias(p->sh, p->p, cat, &isalias) < 0) {
 			goto cleanup;
 		}
 		if (isalias) {
@@ -1091,7 +1091,7 @@ int apol_get_cat_by_query(apol_policy_t *p,
 	if (retval != 0) {
 		apol_vector_destroy(v, NULL);
 	}
-	sepol_iterator_destroy(&iter);
+	qpol_iterator_destroy(&iter);
 	return retval;
 }
 

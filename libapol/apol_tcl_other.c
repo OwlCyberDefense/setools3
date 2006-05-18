@@ -95,8 +95,8 @@ int apol_tcl_string_to_level(Tcl_Interp *interp, const char *level_string,
 {
 	Tcl_Obj *level_obj, *sens_obj, *cats_list_obj, *cats_obj;
 	const char *sens_string, *cat_string;
-	sepol_level_datum_t *sens_datum;
-	sepol_cat_datum_t *cat_datum;
+	qpol_level_t *sens;
+	qpol_cat_t *cat;
 	int num_cats, i;
 
 	if (policydb == NULL) {
@@ -114,8 +114,8 @@ int apol_tcl_string_to_level(Tcl_Interp *interp, const char *level_string,
 		return -1;
 	}
 	sens_string = Tcl_GetString(sens_obj);
-	if (sepol_policydb_get_level_by_name(policydb->sh, policydb->p,
-					     sens_string, &sens_datum) < 0) {
+	if (qpol_policy_get_level_by_name(policydb->sh, policydb->p,
+					     sens_string, &sens) < 0) {
 		/* unknown sensitivity */
 		return 1;
 	}
@@ -128,8 +128,8 @@ int apol_tcl_string_to_level(Tcl_Interp *interp, const char *level_string,
 			return -1;
 		}
 		cat_string = Tcl_GetString(cats_obj);
-		if (sepol_policydb_get_cat_by_name(policydb->sh, policydb->p,
-						   cat_string, &cat_datum) < 0) {
+		if (qpol_policy_get_cat_by_name(policydb->sh, policydb->p,
+						   cat_string, &cat) < 0) {
 			/* unknown category */
 			return 1;
 		}

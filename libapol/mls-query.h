@@ -27,7 +27,7 @@
 #ifndef APOL_MLS_QUERY_H
 #define APOL_MLS_QUERY_H
 
-#include <sepol/policydb_query.h>
+#include <qpol/policy_query.h>
 #include "policy.h"
 #include "vector.h"
 
@@ -79,31 +79,31 @@ extern apol_mls_level_t *apol_mls_level_create_from_string(apol_policy_t *p, cha
 
 /**
  * Create a new apol_mls_level_t and initialize it with a
- * sepol_mls_level_t.  The caller must call apol_mls_level_destroy()
+ * qpol_mls_level_t.  The caller must call apol_mls_level_destroy()
  * upon the returned value afterwards.
  *
- * @param p Policy from which the sepol_mls_level_t was obtained.
- * @param sepol_level The libsepol level for which to create a new
+ * @param p Policy from which the qpol_mls_level_t was obtained.
+ * @param qpol_level The libqpol level for which to create a new
  * apol level.	This level will not be altered by this call.
  *
  * @return A MLS level structure initialized to the value of
- * sepol_level, or NULL upon error.
+ * qpol_level, or NULL upon error.
  */
-extern apol_mls_level_t * apol_mls_level_create_from_sepol_mls_level(apol_policy_t *p, sepol_mls_level_t *sepol_level);
+extern apol_mls_level_t * apol_mls_level_create_from_qpol_mls_level(apol_policy_t *p, qpol_mls_level_t *qpol_level);
 
 /**
  * Create a new apol_mls_level_t and initialize it with a
- * sepol_level_datum_t.	 The caller must call apol_mls_level_destroy()
+ * qpol_level_t.	 The caller must call apol_mls_level_destroy()
  * upon the returned value afterwards.
  *
- * @param p Policy from which the sepol_level_datum_t was obtained.
- * @param sepol_level The libsepol level for which to create a new
+ * @param p Policy from which the qpol_level_t was obtained.
+ * @param qpol_level The libqpol level for which to create a new
  * apol level.	This level will not be altered by this call.
  *
  * @return A MLS level structure initialized to the value of
- * sepol_level, or NULL upon error.
+ * qpol_level, or NULL upon error.
  */
-apol_mls_level_t *apol_mls_level_create_from_sepol_level_datum(apol_policy_t *p, sepol_level_datum_t *sepol_level);
+apol_mls_level_t *apol_mls_level_create_from_qpol_level_datum(apol_policy_t *p, qpol_level_t *qpol_level);
 
 /**
  * Deallocate all memory associated with a MLS level structure and
@@ -234,17 +234,17 @@ extern apol_mls_range_t *apol_mls_range_create(void);
 
 /**
  * Create a new apol_mls_range_t and initialize it with a
- * sepol_mls_range_t.  The caller must call apol_mls_range_destroy()
+ * qpol_mls_range_t.  The caller must call apol_mls_range_destroy()
  * upon the return value afterwards.
  *
- * @param p Policy from which the sepol_mls_range_t was obtained.
- * @param sepol_level The libsepol range for which to create a new
+ * @param p Policy from which the qpol_mls_range_t was obtained.
+ * @param qpol_level The libqpol range for which to create a new
  * apol range.	This range will not be altered by this call.
  *
  * @return A MLS range structure initialized to the value of
- * sepol_range, or NULL upon error.
+ * qpol_range, or NULL upon error.
  */
-extern apol_mls_range_t *apol_mls_range_create_from_sepol_mls_range(apol_policy_t *p, sepol_mls_range_t *sepol_range);
+extern apol_mls_range_t *apol_mls_range_create_from_qpol_mls_range(apol_policy_t *p, qpol_mls_range_t *qpol_range);
 
 /**
  * Deallocate all memory associated with a MLS range structure and
@@ -354,7 +354,7 @@ extern char *apol_mls_range_render(apol_policy_t *p, apol_mls_range_t *range);
  * @param p Policy within which to look up levels.
  * @param l Structure containing parameters for query.	If this is
  * NULL then return all levels.
- * @param v Reference to a vector of sepol_level_datum_t.  The vector
+ * @param v Reference to a vector of qpol_level_t.  The vector
  * will be allocated by this function. The caller must call
  * apol_vector_destroy() afterwards, but <b>must not</b> free the
  * elements within it.  This will be set to NULL upon no results or
@@ -441,7 +441,7 @@ extern int apol_level_query_set_regex(apol_policy_t *p,
  * @param p Policy within which to look up categories.
  * @param c Structure containing parameters for query.	If this is
  * NULL then return all categories.
- * @param v Reference to a vector of sepol_cat_datum_t.  The vector
+ * @param v Reference to a vector of qpol_cat_t.  The vector
  * will be allocated by this function. The caller must call
  * apol_vector_destroy() afterwards, but <b>must not</b> free the
  * elements within it.  This will be set to NULL upon no results or

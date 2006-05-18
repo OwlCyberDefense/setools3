@@ -669,7 +669,7 @@ int open_policy(const char* filename, policy_t **policy)
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
-#include <sepol/policydb_extend.h>
+#include <qpol/policy_extend.h>
 
 #include "policy.h"
 #include "policy-io.h"
@@ -714,7 +714,7 @@ int apol_policy_open_binary(const char *path,
 		ERR(*policy, "Error creating sepol policy handle.\n");
 		return -1;
 	}
-	sepol_handle_set_callback((*policy)->sh, sepol_handle_route_to_callback, (*policy));
+//	sepol_handle_set_callback((*policy)->sh, sepol_handle_route_to_callback, (*policy));
 
 	retv = sepol_policydb_create(&(*policy)->p);
 	if (retv) {
@@ -743,7 +743,7 @@ int apol_policy_open_binary(const char *path,
 		goto open_policy_error;
 	}
 
-	if (sepol_policydb_extend((*policy)->sh, (*policy)->p, NULL)) {
+	if (qpol_policy_extend((*policy)->sh, (*policy)->p, NULL)) {
 		goto open_policy_error;
 	}
 

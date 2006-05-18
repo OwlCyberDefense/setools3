@@ -813,7 +813,7 @@ int add_initial_sid2(char *name, __u32 sid, policy_t *policy)
 int add_initial_sid_context(int idx, security_con_t *scontext, policy_t *policy)
 {
 	if(!is_valid_initial_sid_idx(idx, policy))
-d		return -1;
+		return -1;
 	policy->initial_sids[idx].scontext = scontext;
 	return 0;
 }
@@ -4576,14 +4576,14 @@ int ap_require_check(ap_require_t *req, ap_optional_t *opt, policy_t *policy)
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#include <sepol/policydb_query.h>
+#include <qpol/policy_query.h>
 
 int apol_policy_is_mls(apol_policy_t *p)
 {
 	if (p == NULL) {
 		return -1;
 	}
-	return sepol_policydb_is_mls_enabled(p->sh, p->p);
+	return qpol_policy_is_mls_enabled(p->sh, p->p);
 }
 
 __attribute__ ((format (printf, 3, 4)))

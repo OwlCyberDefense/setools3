@@ -42,26 +42,26 @@ int apol_get_isid_by_query(apol_policy_t *p,
 			   apol_isid_query_t *i,
 			   apol_vector_t **v)
 {
-	sepol_iterator_t *iter;
+	qpol_iterator_t *iter;
 	int retval = -1, retval2;
-	sepol_isid_t *isid = NULL;
+	qpol_isid_t *isid = NULL;
 	*v = NULL;
-	if (sepol_policydb_get_isid_iter(p->sh, p->p, &iter) < 0) {
+	if (qpol_policy_get_isid_iter(p->sh, p->p, &iter) < 0) {
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
 		ERR(p, "Out of memory!");
 		goto cleanup;
 	}
-	for ( ; !sepol_iterator_end(iter); sepol_iterator_next(iter)) {
-		if (sepol_iterator_get_item(iter, (void **) &isid) < 0) {
+	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		if (qpol_iterator_get_item(iter, (void **) &isid) < 0) {
 			goto cleanup;
 		}
 		if (i != NULL) {
 			char *name;
-			sepol_context_struct_t *context;
-			if (sepol_isid_get_name(p->sh, p->p, isid, &name) < 0 ||
-			    sepol_isid_get_context(p->sh, p->p, isid, &context) < 0) {
+			qpol_context_t *context;
+			if (qpol_isid_get_name(p->sh, p->p, isid, &name) < 0 ||
+			    qpol_isid_get_context(p->sh, p->p, isid, &context) < 0) {
 				goto cleanup;
 			}
 			retval2 = apol_compare(p, name, i->name, 0, NULL);
@@ -90,7 +90,7 @@ int apol_get_isid_by_query(apol_policy_t *p,
 	if (retval != 0) {
 		apol_vector_destroy(v, NULL);
 	}
-	sepol_iterator_destroy(&iter);
+	qpol_iterator_destroy(&iter);
 	return retval;
 }
 

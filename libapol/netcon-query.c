@@ -57,32 +57,32 @@ int apol_get_portcon_by_query(apol_policy_t *p,
                               apol_portcon_query_t *po,
                               apol_vector_t **v)
 {
-        sepol_iterator_t *iter;
+        qpol_iterator_t *iter;
         int retval = -1, retval2;
         *v = NULL;
-        if (sepol_policydb_get_portcon_iter(p->sh, p->p, &iter) < 0) {
+        if (qpol_policy_get_portcon_iter(p->sh, p->p, &iter) < 0) {
                 return -1;
         }
         if ((*v = apol_vector_create()) == NULL) {
                 ERR(p, "Out of memory!");
                 goto cleanup;
         }
-        for ( ; !sepol_iterator_end(iter); sepol_iterator_next(iter)) {
-                sepol_portcon_t *portcon;
-                if (sepol_iterator_get_item(iter, (void **) &portcon) < 0) {
+        for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+                qpol_portcon_t *portcon;
+                if (qpol_iterator_get_item(iter, (void **) &portcon) < 0) {
                         goto cleanup;
                 }
                 if (po != NULL) {
                         uint16_t low, high;
                         uint8_t proto;
-                        sepol_context_struct_t *context;
-                        if (sepol_portcon_get_low_port(p->sh, p->p,
+                        qpol_context_t *context;
+                        if (qpol_portcon_get_low_port(p->sh, p->p,
                                                        portcon, &low) < 0 ||
-                            sepol_portcon_get_high_port(p->sh, p->p,
+                            qpol_portcon_get_high_port(p->sh, p->p,
                                                         portcon, &high) < 0 ||
-                            sepol_portcon_get_protocol(p->sh, p->p,
+                            qpol_portcon_get_protocol(p->sh, p->p,
                                                        portcon, &proto) < 0 ||
-                            sepol_portcon_get_context(p->sh, p->p,
+                            qpol_portcon_get_context(p->sh, p->p,
                                                       portcon, &context) < 0) {
                                 goto cleanup;
                         }
@@ -110,7 +110,7 @@ int apol_get_portcon_by_query(apol_policy_t *p,
         if (retval != 0) {
                 apol_vector_destroy(v, NULL);
         }
-        sepol_iterator_destroy(&iter);
+        qpol_iterator_destroy(&iter);
         return retval;
 }
 
@@ -173,27 +173,27 @@ int apol_get_netifcon_by_query(apol_policy_t *p,
 			       apol_netifcon_query_t *n,
 			       apol_vector_t **v)
 {
-	sepol_iterator_t *iter;
+	qpol_iterator_t *iter;
 	int retval = -1, retval2;
 	*v = NULL;
-	if (sepol_policydb_get_netifcon_iter(p->sh, p->p, &iter) < 0) {
+	if (qpol_policy_get_netifcon_iter(p->sh, p->p, &iter) < 0) {
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
 		ERR(p, "Out of memory!");
 		goto cleanup;
 	}
-	for ( ; !sepol_iterator_end(iter); sepol_iterator_next(iter)) {
-		sepol_netifcon_t *netifcon;
-		if (sepol_iterator_get_item(iter, (void **) &netifcon) < 0) {
+	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		qpol_netifcon_t *netifcon;
+		if (qpol_iterator_get_item(iter, (void **) &netifcon) < 0) {
 			goto cleanup;
 		}
 		if (n != NULL) {
 			char *name;
-			sepol_context_struct_t *ifcon, *msgcon;
-			if (sepol_netifcon_get_name(p->sh, p->p, netifcon, &name) < 0 ||
-			    sepol_netifcon_get_if_con(p->sh, p->p, netifcon, &ifcon) < 0 ||
-			    sepol_netifcon_get_msg_con(p->sh, p->p, netifcon, &msgcon) < 0) {
+			qpol_context_t *ifcon, *msgcon;
+			if (qpol_netifcon_get_name(p->sh, p->p, netifcon, &name) < 0 ||
+			    qpol_netifcon_get_if_con(p->sh, p->p, netifcon, &ifcon) < 0 ||
+			    qpol_netifcon_get_msg_con(p->sh, p->p, netifcon, &msgcon) < 0) {
 				goto cleanup;
 			}
 			retval2 = apol_compare(p, name, n->dev, 0, NULL);
@@ -229,7 +229,7 @@ int apol_get_netifcon_by_query(apol_policy_t *p,
 	if (retval != 0) {
 		apol_vector_destroy(v, NULL);
 	}
-	sepol_iterator_destroy(&iter);
+	qpol_iterator_destroy(&iter);
 	return retval;
 }
 
@@ -288,29 +288,29 @@ int apol_get_nodecon_by_query(apol_policy_t *p,
 			      apol_nodecon_query_t *n,
 			      apol_vector_t **v)
 {
-	sepol_iterator_t *iter;
+	qpol_iterator_t *iter;
 	int retval = -1, retval2;
-	sepol_nodecon_t *nodecon = NULL;
+	qpol_nodecon_t *nodecon = NULL;
 	*v = NULL;
-	if (sepol_policydb_get_nodecon_iter(p->sh, p->p, &iter) < 0) {
+	if (qpol_policy_get_nodecon_iter(p->sh, p->p, &iter) < 0) {
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
 		ERR(p, "Out of memory!");
 		goto cleanup;
 	}
-	for ( ; !sepol_iterator_end(iter); sepol_iterator_next(iter)) {
-		if (sepol_iterator_get_item(iter, (void **) &nodecon) < 0) {
+	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		if (qpol_iterator_get_item(iter, (void **) &nodecon) < 0) {
 			goto cleanup;
 		}
 		if (n != NULL) {
 			unsigned char proto, proto_a, proto_m;
 			uint32_t *addr, *mask;
-			sepol_context_struct_t *con;
-			if (sepol_nodecon_get_protocol(p->sh, p->p, nodecon, &proto) < 0 ||
-			    sepol_nodecon_get_addr(p->sh, p->p, nodecon, &addr, &proto_a) < 0 ||
-			    sepol_nodecon_get_mask(p->sh, p->p, nodecon, &mask, &proto_m) < 0 ||
-			    sepol_nodecon_get_context(p->sh, p->p, nodecon, &con) < 0) {
+			qpol_context_t *con;
+			if (qpol_nodecon_get_protocol(p->sh, p->p, nodecon, &proto) < 0 ||
+			    qpol_nodecon_get_addr(p->sh, p->p, nodecon, &addr, &proto_a) < 0 ||
+			    qpol_nodecon_get_mask(p->sh, p->p, nodecon, &mask, &proto_m) < 0 ||
+			    qpol_nodecon_get_context(p->sh, p->p, nodecon, &con) < 0) {
 				goto cleanup;
 			}
 			if (n->proto >= 0 && n->proto != proto) {
@@ -319,15 +319,15 @@ int apol_get_nodecon_by_query(apol_policy_t *p,
 			}
 			if (n->addr_proto >= 0 &&
 			    (n->addr_proto != proto_a ||
-			     (proto_a == SEPOL_IPV4 && memcmp(n->addr, addr, 1 * sizeof(uint32_t)) != 0) ||
-			     (proto_a == SEPOL_IPV6 && memcmp(n->addr, addr, 4 * sizeof(uint32_t)) != 0))) {
+			     (proto_a == QPOL_IPV4 && memcmp(n->addr, addr, 1 * sizeof(uint32_t)) != 0) ||
+			     (proto_a == QPOL_IPV6 && memcmp(n->addr, addr, 4 * sizeof(uint32_t)) != 0))) {
 				free(nodecon);
 				continue;
 			}
 			if (n->mask_proto >= 0 &&
 			    (n->mask_proto != proto_m ||
-			     (proto_m == SEPOL_IPV4 && memcmp(n->mask, mask, 1 * sizeof(uint32_t)) != 0) ||
-			     (proto_m == SEPOL_IPV6 && memcmp(n->mask, mask, 4 * sizeof(uint32_t)) != 0))) {
+			     (proto_m == QPOL_IPV4 && memcmp(n->mask, mask, 1 * sizeof(uint32_t)) != 0) ||
+			     (proto_m == QPOL_IPV6 && memcmp(n->mask, mask, 4 * sizeof(uint32_t)) != 0))) {
 				free(nodecon);
 				continue;
 			}
@@ -352,7 +352,7 @@ int apol_get_nodecon_by_query(apol_policy_t *p,
 		apol_vector_destroy(v, free);
 		free(nodecon);
 	}
-	sepol_iterator_destroy(&iter);
+	qpol_iterator_destroy(&iter);
 	return retval;
 }
 
@@ -377,7 +377,7 @@ void apol_nodecon_query_destroy(apol_nodecon_query_t **n)
 int apol_nodecon_query_set_proto(apol_policy_t *p,
 				 apol_nodecon_query_t *n, int proto)
 {
-	if (proto == SEPOL_IPV4 || proto == SEPOL_IPV6) {
+	if (proto == QPOL_IPV4 || proto == QPOL_IPV6) {
 		n->proto = (char) proto;
 	}
 	else if (proto < 0) {
@@ -399,10 +399,10 @@ int apol_nodecon_query_set_addr(apol_policy_t *p,
 		n->addr_proto = -1;
 	}
 	else {
-		if (proto == SEPOL_IPV4) {
+		if (proto == QPOL_IPV4) {
 			memcpy(n->addr, addr, 1 * sizeof(uint32_t));
 		}
-		else if (proto == SEPOL_IPV6) {
+		else if (proto == QPOL_IPV6) {
 			memcpy(n->addr, addr, 4 * sizeof(uint32_t));
 		}
 		else {
@@ -423,10 +423,10 @@ int apol_nodecon_query_set_mask(apol_policy_t *p,
 		n->mask_proto = -1;
 	}
 	else {
-		if (proto == SEPOL_IPV4) {
+		if (proto == QPOL_IPV4) {
 			memcpy(n->mask, mask, 1 * sizeof(uint32_t));
 		}
-		else if (proto == SEPOL_IPV6) {
+		else if (proto == QPOL_IPV6) {
 			memcpy(n->mask, mask, 4 * sizeof(uint32_t));
 		}
 		else {

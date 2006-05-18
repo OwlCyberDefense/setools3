@@ -42,26 +42,26 @@ int apol_get_role_by_query(apol_policy_t *p,
 			   apol_role_query_t *r,
 			   apol_vector_t **v)
 {
-	sepol_iterator_t *iter = NULL, *type_iter = NULL;
+	qpol_iterator_t *iter = NULL, *type_iter = NULL;
 	int retval = -1, append_role;
 	*v = NULL;
-	if (sepol_policydb_get_role_iter(p->sh, p->p, &iter) < 0) {
+	if (qpol_policy_get_role_iter(p->sh, p->p, &iter) < 0) {
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
 		ERR(p, "Out of memory!");
 		goto cleanup;
 	}
-	for ( ; !sepol_iterator_end(iter); sepol_iterator_next(iter)) {
-		sepol_role_datum_t *role;
-		if (sepol_iterator_get_item(iter, (void **) &role) < 0) {
+	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		qpol_role_t *role;
+		if (qpol_iterator_get_item(iter, (void **) &role) < 0) {
 			goto cleanup;
 		}
 		append_role = 1;
 		if (r != NULL) {
 			char *role_name;
 			int compval;
-			if (sepol_role_datum_get_name(p->sh, p->p, role, &role_name) < 0) {
+			if (qpol_role_get_name(p->sh, p->p, role, &role_name) < 0) {
 				goto cleanup;
 			}
 			compval = apol_compare(p, role_name, r->role_name,
@@ -72,16 +72,16 @@ int apol_get_role_by_query(apol_policy_t *p,
 			else if (compval == 0) {
 				continue;
 			}
-			if (sepol_role_datum_get_type_iter(p->sh, p->p, role, &type_iter) < 0) {
+			if (qpol_role_get_type_iter(p->sh, p->p, role, &type_iter) < 0) {
 				goto cleanup;
 			}
 			if (r->type_name == NULL || r->type_name[0] == '\0') {
 				goto end_of_query;
 			}
 			append_role = 0;
-			for ( ; !sepol_iterator_end(type_iter); sepol_iterator_next(type_iter)) {
-				sepol_type_datum_t *type;
-				if (sepol_iterator_get_item(type_iter, (void **) &type) < 0) {
+			for ( ; !qpol_iterator_end(type_iter); qpol_iterator_next(type_iter)) {
+				qpol_type_t *type;
+				if (qpol_iterator_get_item(type_iter, (void **) &type) < 0) {
 					goto cleanup;
 				}
 				compval = apol_compare_type(p,
@@ -95,7 +95,7 @@ int apol_get_role_by_query(apol_policy_t *p,
 					break;
 				}
 			}
-			sepol_iterator_destroy(&type_iter);
+			qpol_iterator_destroy(&type_iter);
 		}
 	end_of_query:
 		if (append_role && apol_vector_append(*v, role)) {
@@ -109,8 +109,8 @@ int apol_get_role_by_query(apol_policy_t *p,
 	if (retval != 0) {
 		apol_vector_destroy(v, NULL);
 	}
-	sepol_iterator_destroy(&iter);
-	sepol_iterator_destroy(&type_iter);
+	qpol_iterator_destroy(&iter);
+	qpol_iterator_destroy(&type_iter);
 	return retval;
 }
 

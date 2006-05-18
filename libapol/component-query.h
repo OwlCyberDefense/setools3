@@ -32,7 +32,7 @@
 
 #include <regex.h>
 #include <stdlib.h>
-#include <sepol/policydb_query.h>
+#include <qpol/policy_query.h>
 
 #include "type-query.h"
 #include "class-perm-query.h"
@@ -134,11 +134,11 @@ int apol_compare(apol_policy_t *p, const char *target, const char *name,
  *
  * @return 1 If comparison succeeds, 0 if not; < 0 on error.
  */
-int apol_compare_iter(apol_policy_t *p, sepol_iterator_t *iter, const char *name,
+int apol_compare_iter(apol_policy_t *p, qpol_iterator_t *iter, const char *name,
 		      unsigned int flags, regex_t **regex);
 
 /**
- * Determines if a (partial) type query matches a sepol_type_datum_t,
+ * Determines if a (partial) type query matches a qpol_type_t,
  * either the type name or any of its aliases.
  *
  * @param p Policy within which to look up types.
@@ -154,11 +154,11 @@ int apol_compare_iter(apol_policy_t *p, sepol_iterator_t *iter, const char *name
  * @return 1 If comparison succeeds, 0 if not; < 0 on error.
  */
 int apol_compare_type(apol_policy_t *p,
-		      sepol_type_datum_t *type, const char *name,
+		      qpol_type_t *type, const char *name,
 		      unsigned int flags, regex_t **type_regex);
 
 /**
- * Determines if a level query matches a sepol_level_datum_t, either
+ * Determines if a level query matches a qpol_level_t, either
  * the sensitivity name or any of its aliases.
  *
  * @param p Policy within which to look up types.
@@ -174,11 +174,11 @@ int apol_compare_type(apol_policy_t *p,
  * @return 1 If comparison succeeds, 0 if not; < 0 on error.
  */
 int apol_compare_level(apol_policy_t *p,
-		       sepol_level_datum_t *level, const char *name,
+		       qpol_level_t *level, const char *name,
 		       unsigned int flags, regex_t **level_regex);
 
 /**
- * Determines if a category query matches a sepol_cat_datum_t, either
+ * Determines if a category query matches a qpol_cat_t, either
  * the category name or any of its aliases.
  *
  * @param p Policy within which to look up types.
@@ -194,11 +194,11 @@ int apol_compare_level(apol_policy_t *p,
  * @return 1 If comparison succeeds, 0 if not; < 0 on error.
  */
 int apol_compare_cat(apol_policy_t *p,
-		     sepol_cat_datum_t *cat, const char *name,
+		     qpol_cat_t *cat, const char *name,
 		     unsigned int flags, regex_t **cat_regex);
 
 /**
- * Convenience function that compares a sepol_context_struct_t to a
+ * Convenience function that compares a qpol_context_t to a
  * apol_context_t, based upon the MLS range match given by flags.  If
  * search is NULL then the comparison always succeeds.
  *
@@ -209,7 +209,7 @@ int apol_compare_cat(apol_policy_t *p,
  *
  * @return 1 If comparison succeeds, 0 if not; < 0 on error.
  */
-int apol_compare_context(apol_policy_t *p, sepol_context_struct_t *target,
+int apol_compare_context(apol_policy_t *p, qpol_context_t *target,
 			 apol_context_t *search, unsigned int flags);
 
 #endif

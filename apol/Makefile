@@ -29,18 +29,20 @@ ifeq ($(DYNAMIC), 0)
 	else
 	LIBSEFS = 
 	endif
+	LIBQPOL = ../libqpol/src/libqpol.so.1
 else
-	LIBAPOL		= ../libapol/libapol.so.$(shell cat ../libapol/VERSION) ../libapol/libapol-tcl.a
+	LIBAPOL		= ../libapol/libapol.so.2 ../libapol/libapol-tcl.so.2
 	
 	ifeq ($(USE_LIBSEFS), 1)
 	LIBSEFS		= ../libsefs/libsefs.so.$(shell cat ../libsefs/VERSION)
 	else
 	LIBSEFS = 
 	endif
+	LIBQPOL = ../libqpol/src/libqpol.so.1
 endif
 
-GUI-OBJ		= apol_gui.o $(LIBAPOL) $(LIBSEFS)
-CFLAGS          += -DSTARTUP_SCRIPT='"$(APOL_STARTUP_SCRIPT)"'
+GUI-OBJ		= apol_gui.o $(LIBAPOL) $(LIBSEFS) $(LIBQPOL)
+CFLAGS          += -DSTARTUP_SCRIPT='"$(APOL_STARTUP_SCRIPT)"' -I../libqpol/include
 
 # apol is optionally linked to libselinux. The LIBSELINUX variable 
 # is set in the top-level Makefile.
