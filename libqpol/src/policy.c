@@ -44,7 +44,7 @@ int qpol_load_policy_from_file(qpol_policy_t **policy, const char *file)
 	}
 	/* create the policy structure */
 	*policy = NULL;
-	if (sepol_policy_db_create(policy) < 0) {
+	if (sepol_policydb_create(policy) < 0) {
                 ERR("error initializing policy");
                 return STATUS_ERR;
         } 
@@ -58,22 +58,18 @@ int qpol_load_policy_from_file(qpol_policy_t **policy, const char *file)
 		goto err;
 	}
 	/* read the file into the policy structure */
-	if (is_binary_policy_file(fd)) {
-		map = mmap(NULL, sb.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
-		if (map == MAP_FAILED) {
-			ERR("can not map %s", filename);
-			goto err;
-		}
-		f.type = PF_USE_MEMORY;
-		f.data = map;
-		f.len = sb.st_size;
-		fp = &f;
-		if (policydb_read((policydb_t*)*policy, fp, 1)) {
-			ERR("could not load %s", filename);
-			goto err;
-		}
-	} else {
-		ERR("source parsing is not supported yet");
+	map = mmap(NULL, sb.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+	if (map == MAP_FAILED) {
+		ERR("can not map %s", filename);
+		goto err;
+	}
+	f.type = PF_USE_MEMORY;
+	f.data = map;
+	f.len = sb.st_size;
+	f.handle = NULL;
+	fp = &f;
+	if (policydb_read((policydb_t*)*policy, fp, 1)) {
+		// TODO: try read source
 		goto err;
 	}
 	rt = STATUS_SUCCESS;
