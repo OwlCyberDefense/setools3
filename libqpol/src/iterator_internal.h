@@ -26,9 +26,10 @@
  */
 
 #ifndef QPOL_ITERATOR_INTERNAL_H
-#define  QPOL_ITERATOR_INTERNAL_H
+#define QPOL_ITERATOR_INTERNAL_H
 
 #include <sepol/policydb/policydb.h>
+#include <sepol/policydb/avtab.h>
 #include <qpol/iterator.h>
 #include <stddef.h>
 
@@ -48,6 +49,15 @@ typedef struct ocon_state {
 	ocontext_t *cur;
 } ocon_state_t;
 
+typedef struct avtab_state {
+	uint32_t rule_type_mask;
+	uint32_t bucket;
+	avtab_ptr_t node;
+#define QPOL_AVTAB_STATE_AV   0
+#define QPOL_AVTAB_STATE_COND 1
+	unsigned which;
+} avtab_state_t;
+
 int qpol_iterator_create(sepol_handle_t *handle, policydb_t *policy, void *state,
 	void *(*get_cur)(qpol_iterator_t *iter),
 	int (*next)(qpol_iterator_t *iter),
@@ -65,18 +75,22 @@ void *ebitmap_state_get_cur_type(qpol_iterator_t *iter);
 void *ebitmap_state_get_cur_role(qpol_iterator_t *iter);
 void *ebitmap_state_get_cur_cat(qpol_iterator_t *iter);
 void *ocon_state_get_cur(qpol_iterator_t *iter);
+void *avtab_state_get_cur(qpol_iterator_t *iter);
 
 int hash_state_next(qpol_iterator_t *iter);
 int ebitmap_state_next(qpol_iterator_t *iter);
 int ocon_state_next(qpol_iterator_t *iter);
+int avtab_state_next(qpol_iterator_t *iter);
 
 int hash_state_end(qpol_iterator_t *iter);
 int ebitmap_state_end(qpol_iterator_t *iter);
 int ocon_state_end(qpol_iterator_t *iter);
+int avtab_state_end(qpol_iterator_t *iter);
 
 size_t hash_state_size(qpol_iterator_t *iter);
 size_t ebitmap_state_size(qpol_iterator_t *iter);
 size_t ocon_state_size(qpol_iterator_t *iter);
+size_t avtab_state_size(qpol_iterator_t *iter);
 
 void ebitmap_state_destroy(void *es);
 #endif /* QPOL_ITERATOR_INTERNAL_H */
