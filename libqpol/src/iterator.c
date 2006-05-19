@@ -149,6 +149,18 @@ void *ocon_state_get_cur(qpol_iterator_t *iter)
 	return os->cur;
 }
 
+void *avtab_state_get_cur(qpol_iterator_t *iter)
+{
+	avtab_state_t *state;
+
+	if (iter == NULL || iter->state == NULL || avtab_state_end(iter)) {
+		errno = EINVAL;
+		return NULL;
+	}
+	state = (avtab_state_t*)iter->state;
+	return state->node;
+}
+
 int hash_state_next(qpol_iterator_t *iter)
 {
 	hash_state_t *hs = NULL;
@@ -225,6 +237,42 @@ int ocon_state_next(qpol_iterator_t *iter)
 	return STATUS_SUCCESS;
 }
 
+int avtab_state_next(qpol_iterator_t *iter)
+{
+	avtab_t *avtab;
+	avtab_state_t *state;
+	int i;
+
+	if (iter == NULL || iter->state == NULL) {
+		errno = EINVAL;
+		return STATUS_ERR;
+	}
+
+	// TODO: iterate over both te_avtab and te_cond_avtab
+	avtab = &iter->policy->te_avtab;
+	state = iter->state;
+
+	if (state->bucket >= avtab->nel) {
+		errno = ERANGE;
+		return STATUS_ERR;
+	}
+
+	if (state->node != NULL && state->node->next != NULL) {
+		state->node = state->node->next;
+		return STATUS_SUCCESS;
+	}
+
+	/* find the next bucket */
+	for (i = state->bucket; i < avtab->nel; i++) {
+		if (avtab->htable[i] != NULL) {
+			state->node = avtab->htable[i];
+			return STATUS_SUCCESS;
+		}
+	}
+	/* we reached the end */
+	state->node = NULL;
+	return STATUS_SUCCESS;
+}
 
 int hash_state_end(qpol_iterator_t *iter)
 {
@@ -277,6 +325,22 @@ int ocon_state_end(qpol_iterator_t *iter)
 	return 0;
 }
 
+int avtab_state_end(qpol_iterator_t *iter)
+{
+	avtab_state_t *state;
+	avtab_t *avtab;
+
+	if (iter == NULL || iter->state == NULL) {
+		errno = EINVAL;
+		return STATUS_ERR;
+	}
+	// TOOD: make iterate accross te_cond_avtab
+	state = iter->state;
+	avtab = &iter->policy->te_avtab;
+	if (state->bucket >= avtab->nel)
+		return 1;
+	return 0;
+}
 
 size_t hash_state_size(qpol_iterator_t *iter)
 {
@@ -329,6 +393,20 @@ size_t ocon_state_size(qpol_iterator_t *iter)
 		count++;
 
 	return count;
+}
+
+size_t avtab_state_size(qpol_iterator_t *iter)
+{
+	avtab_state_t *state;
+	avtab_t *avtab;
+	// TODO: make iterate accross te_cond_avtab
+	if (iter == NULL || iter->state == NULL) {
+		errno = EINVAL;
+		return STATUS_ERR;
+	}
+
+	state = iter->state;
+	return iter->policy->te_avtab.nel;
 }
 
 void qpol_iterator_destroy(qpol_iterator_t **iter)
