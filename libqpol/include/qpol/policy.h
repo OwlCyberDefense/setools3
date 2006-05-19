@@ -5,6 +5,7 @@
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
  *  @author Jason Tang jtang@tresys.com
+ *  @author Brandon Whalen bwhalen@tresys.com
  *
  *  Copyright (C) 2006 Tresys Technology, LLC
  *
@@ -29,5 +30,27 @@
 #include <sepol/policydb.h>
 
 typedef sepol_policydb_t qpol_policy_t;
+
+/* Policy type macros */
+#define QPOL_TYPE_UNKNOWN	0
+#define QPOL_TYPE_BINARY	1
+#define QPOL_TYPE_SOURCE	2
+
+/**
+ *  Open a policy from a passed in file path.
+ *  @param policy The policy to populate.  The caller should not free
+ *  this pointer.
+ *  @param filename The name of the file to open.
+ *  @return Returns 0 on success and < 0 on failure; if the call fails,
+ *  errno will be set and *policy will be NULL.
+ */
+extern int qpol_load_policy_from_file(qpol_policy_t **policy, const char *filename);
+
+/**
+ *  Close a policy.
+ *  @param policy The policy to close.
+ *  @return Returns 0 on success and < 0 on failure; if the call fails,
+ */
+extern int qpol_close_policy(qpol_policy_t **policy);
 
 #endif
