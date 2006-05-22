@@ -24,6 +24,8 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#include <config.h>
+
 /* libapol */
 #include <policy.h>
 #include <policy-io.h>
@@ -37,11 +39,6 @@
 #include <assert.h>
 #define _GNU_SOURCE
 #include <getopt.h>
-
-/* The following should be defined in the make environment */
-#ifndef SEINFO_VERSION_NUM
-#define SEINFO_VERSION_NUM "UNKNOWN"
-#endif
 
 #define COPYRIGHT_INFO "Copyright (C) 2003-2006 Tresys Technology, LLC"
 
@@ -92,7 +89,7 @@ static struct option const longopts[] =
  */
 void usage(const char *program_name, int brief)
 {
-	printf("%s (seinfo ver. %s)\n\n", COPYRIGHT_INFO, SEINFO_VERSION_NUM);
+	printf("%s (seinfo ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
 	printf("Usage: %s [OPTIONS] [POLICY_FILE]\n", program_name);
 	if(brief) {
 		printf("\n   Try %s --help for more help.\n\n", program_name);
@@ -1273,7 +1270,7 @@ int main (int argc, char **argv)
 			usage(argv[0], 0);
 			exit(0);
 		case 'v': /* version */
-			printf("\n%s (seinfo ver. %s)\n\n", COPYRIGHT_INFO, SEINFO_VERSION_NUM);
+			printf("\n%s (seinfo ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
 			exit(0);
 		default:
 			usage(argv[0], 1);

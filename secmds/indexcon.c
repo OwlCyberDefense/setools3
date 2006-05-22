@@ -5,6 +5,8 @@
  *  indexcon: a tool for indexing the security contexts of filesystem entities
  */
 
+#include <config.h>
+
 /* libsefs */
 #include <fsdata.h>
 /* standard library includes */
@@ -13,11 +15,6 @@
 /* command line parsing commands */
 #define _GNU_SOURCE
 #include <getopt.h>
-
-/* INDEXCON_VERSION_NUM should be defined in the make environment */
-#ifndef INDEXCON_VERSION_NUM
-#define INDEXCON_VERSION_NUM "UNKNOWN"
-#endif
 
 #define COPYRIGHT_INFO "Copyright (C) 2003-2006 Tresys Technology, LLC"
 
@@ -32,7 +29,7 @@ static struct option const longopts[] =
 
 void usage(const char *program_name, int brief)
 {
-	printf("%s (indexcon ver. %s)\n\n", COPYRIGHT_INFO, INDEXCON_VERSION_NUM);
+	printf("%s (indexcon ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
 	printf("Usage: %s <filename> [OPTIONS]\n", program_name);
 	if(brief) {
 		printf("\n   Try %s --help for more help.\n\n", program_name);
@@ -65,7 +62,7 @@ int main(int argc, char **argv, char **envp)
 	  		usage(argv[0], 0);
 	  		exit(0);
 		case 'v': /* version */
-	  		printf("\n%s (indexcon ver. %s)\n\n", COPYRIGHT_INFO, INDEXCON_VERSION_NUM);
+	  		printf("\n%s (indexcon ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
 	  		exit(0);
 		default:
 	  		usage(argv[0], 1);
