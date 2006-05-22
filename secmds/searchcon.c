@@ -4,7 +4,9 @@
  *
  *  searchcon: a tool for searching SELinux filesystem databases
  */
- 
+
+#include <config.h>
+
 /* libsefs */
 #include <fsdata.h>
 /* standard library includes */
@@ -14,11 +16,6 @@
 /* command line parsing commands */
 #define _GNU_SOURCE
 #include <getopt.h>
-
-/* SEARCHCON_VERSION_NUM should be defined in the make environment */
-#ifndef SEARCHCON_VERSION_NUM
-#define SEARCHCON_VERSION_NUM "UNKNOWN"
-#endif
 
 #define COPYRIGHT_INFO "Copyright (C) 2003-2006 Tresys Technology, LLC"
 
@@ -70,7 +67,7 @@ void usage(const char *program_name, int brief)
 {
 	int size;
 	char **array = NULL;
-	printf("%s (searchcon ver. %s)\n\n", COPYRIGHT_INFO, SEARCHCON_VERSION_NUM);
+	printf("%s (searchcon ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
 	printf("Usage: %s <index file> [OPTIONS]\n", program_name);
 	if(brief) {
 		printf("\n   Try %s --help for more help.\n\n", program_name);
@@ -171,7 +168,7 @@ int main(int argc, char **argv, char **envp)
 			usage(argv[0], 0);
 			exit(0);
 		case 'v': /* version */
-			printf("\n%s (searchcon ver. %s)\n\n", COPYRIGHT_INFO, SEARCHCON_VERSION_NUM);
+			printf("\n%s (searchcon ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
 			exit(0);
 		default:
 			usage(argv[0], 1);
