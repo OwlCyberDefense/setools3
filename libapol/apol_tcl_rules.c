@@ -5,6 +5,7 @@
  * Author: mayerf@tresys.com and Don Patterson <don.patterson@tresys.com>
  */
 
+#include <config.h>
 #include <tcl.h>
 #include <assert.h>
 
