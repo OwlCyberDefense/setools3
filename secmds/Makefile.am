@@ -34,6 +34,8 @@ replcon_CFLAGS = $(AM_CFLAGS) $(SEFS_CFLAGS)
 replcon_LDADD = $(SEFS_LDADD) $(LDADD)
 
 searchcon_SOURCES = searchcon.c
+searchcon_CFLAGS = $(AM_CFLAGS) $(SEFS_CFLAGS)
+searchcon_LDADD = $(SEFS_LDADD) $(LDADD)
 
 findcon.c: replcon.c
 	$(LN_S) $< $@
