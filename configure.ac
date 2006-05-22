@@ -1,0 +1,195 @@
+AC_INIT(apol, 3.0, [Tresys Technology <setools@tresys.com>], [setools])
+AC_CONFIG_SRCDIR(awish/awish.c)
+AC_CONFIG_HEADER(config.h)
+AM_INIT_AUTOMAKE(setools, 3.0)
+libqpol_version=1.0.0
+libapol_version=3.0.0
+AC_PROG_CC
+AC_LANG_C
+AC_HEADER_STDC
+AC_PROG_RANLIB
+AC_PROG_LN_S
+AM_PROG_LEX
+AC_PROG_YACC
+AC_PROG_INSTALL
+
+AC_ARG_ENABLE(debug, [  --enable-debug          compile with full debugging support], enable_debug="$enableval")
+AC_MSG_CHECKING([for debugging support])
+if test "x${enable_debug}" = xyes; then
+    CFLAGS="-g3 -gdwarf-2 -O0 -Wall"
+    LDFLAGS="-g"
+    QPOL_LIB_FLAG="-Wl,-rpath=../libqpol/src"
+    AC_SUBST(QPOL_LIB_FLAG)
+    AC_MSG_RESULT(yes)
+else
+    AC_MSG_RESULT(disabled)
+fi
+
+dnl ** find the Tcl/Tk development libraries, then find BWidget
+
+SC_PATH_TCLCONFIG
+SC_LOAD_TCLCONFIG
+AC_MSG_CHECKING([for Tcl 8.4 or greater])
+if test \( "${TCL_MAJOR_VERSION}" -gt 8 \) -o \( "${TCL_MAJOR_VERSION}" -eq 8 -a "${TCL_MINOR_VERSION}" -ge 4 \); then
+    AC_MSG_RESULT(yes)
+else
+    AC_MSG_ERROR([setools requires Tcl 8.4 or greater])
+fi
+SC_PATH_TKCONFIG
+SC_LOAD_TKCONFIG
+AC_MSG_CHECKING([for Tk 8.4 or greater])
+if test \( "${TK_MAJOR_VERSION}" -gt 8 \) -o \( "${TK_MAJOR_VERSION}" -eq 8 -a "${TK_MINOR_VERSION}" -ge 4 \); then
+    AC_MSG_RESULT(yes)
+else
+    AC_MSG_ERROR([setools requires Tk 8.4 or greater])
+fi
+AC_ARG_ENABLE(bwidget, [  --disable-bwidget-check do not check for BWidget], enable_bwidget="$enableval", enable_bwidget="yes")
+if test "x${enable_bwidget}" = "xyes"; then
+    AC_CHECK_PROGS(tclsh_path, tclsh tclsh8.4)
+    if test "x${tclsh_path}" = "x"; then
+        AC_MSG_ERROR([could not find a working tclsh interpreter])
+    fi
+    AC_MSG_CHECKING([for BWidget 1.7 or greater])
+    changequote(<<<,>>>)dnl
+    cat > ./conftest.tcl <<EOF
+package require Tk
+if {![catch {package require BWidget} bwidget_version]} {
+        if {[package vcompare \$bwidget_version 1.7] >= 0} {
+                exit 0
+        }
+}
+exit 2
+EOF
+    changequote([,])dnl
+    if ${tclsh_path} ./conftest.tcl ; then
+        AC_MSG_RESULT(yes)
+    else
+        AC_MSG_WARN([not found, using setools's BWidget instead])
+        copy_bwidget=yes
+    fi
+else
+    copy_bwidget=no
+fi
+
+
+dnl ** look for selinuxfs mount point
+
+AC_ARG_ENABLE(selinux-check, [  --disable-selinux-check do not check for running SELinux, assume it is there], enable_selinux_check="$enableval", enable_selinux_check="yes")
+if test "x${enable_selinux_check}" = "xyes"; then
+  AC_MSG_CHECKING([for running SELinux system])
+  if test ! -r "/selinux/policyvers" ; then
+      AC_MSG_WARN([could not read /selinux/policyvers - disabling runtime SELinux support])
+      use_selinux=no
+  else
+      AC_MSG_RESULT(yes)
+      use_selinux=yes
+  fi
+else
+      use_selinux=yes
+fi
+
+
+if test ${use_selinux} = "yes"; then
+   dnl ** find libselinux
+
+   AC_ARG_WITH(selinux-devel, [  --with-selinux-devel    prefix where SELinux development files are installed], selinux_devel="$withval", selinux_devel="/usr")
+   selinux_devel_incdir="${selinux_devel}/include"
+   selinux_devel_libdir="${selinux_devel}/lib"
+   CFLAGS="$CFLAGS -I${selinux_devel_incdir}"
+   LDFLAGS="$LDFLAGS -L${selinux_devel_libdir}"
+   AC_MSG_CHECKING([for selinux/selinux.h])
+   AC_TRY_RUN([#include <selinux/selinux.h>
+   #include <stdlib.h>
+   int main(void) { exit(0); }],
+       AC_MSG_RESULT(yes),
+       AC_MSG_ERROR([could not find selinux headers - make sure libselinux-devel is installed]))
+   AC_CHECK_LIB(selinux, selinux_policy_root,,
+        AC_MSG_ERROR([could not find libselinux - make sure it is installed]))
+
+   dnl ** find libsepol
+
+   AC_ARG_WITH(sepol-devel, [  --with-sepol-devel      prefix where sepol development files are installed], sepol_devel="$withval", sepol_devel="/usr")
+   sepol_devel_incdir="${sepol_devel}/include"
+   sepol_devel_libdir="${sepol_devel}/lib"
+   CFLAGS="$CFLAGS -I${sepol_devel_incdir}"
+   LDFLAGS="$LDFLAGS -L${sepol_devel_libdir}"
+   AC_MSG_CHECKING([for sepol/sepol.h])
+   AC_TRY_RUN([#include <sepol/sepol.h>
+   #include <stdlib.h>
+   int main(void) { exit(0); }],
+       AC_MSG_RESULT(yes),
+       AC_MSG_ERROR([could not find sepol headers - make sure libsepol-devel is installed]))
+   AC_CHECK_LIB(sepol,sepol_policydb_read,,
+                AC_MSG_ERROR([could not find libsepol - make sure it is installed]))
+fi
+
+AC_ARG_ENABLE(sefs, [  --enable-sefs           allow file system analyses (default)
+                          (requires SELinux development files)], sefs="$enableval", sefs="yes")
+if test "x${sefs}" = "xyes" ; then
+   if test ${use_selinux} = no; then
+      AC_MSG_ERROR([sefs requires a running SELinux system])
+   fi
+   use_sefs=yes
+else
+   use_sefs=no
+fi
+
+AC_ARG_ENABLE(sepol-src, [  --enable-sepol-src=PATH use another sepol source tree at PATH], sepol_srcdir="$enableval", sepol_srcdir="${top_srcdir}/libqpol")
+AC_MSG_CHECKING([for sepol source tree])
+sepol_src_save_CFLAGS=${CFLAGS}
+CFLAGS="$CFLAGS -I${sepol_srcdir}/include -lsepol"
+AC_TRY_RUN([#include <sepol/policydb/policydb.h>
+   #include <stdlib.h>
+   int main(void) { exit(0); }],,
+       AC_MSG_ERROR([could not find sepol source tree]))
+CFLAGS="${sepol_src_save_CFLAGS}"
+if test ! -f "${sepol_srcdir}/src/libsepol.a"; then
+   AC_MSG_ERROR([could not find precompiled libsepol.a])
+fi
+AC_MSG_RESULT(yes)
+
+dnl  todo:  dynamic, log file, default policy (source + binary), sharedir, gtk swab
+dnl SELINUX_DIR 		= /selinux
+dnl SEINUX_POLICY_DIR 	= /etc/selinux/strict
+dnl POLICY_INSTALL_DIR 	= $(SELINUX_POLICY_DIR)/policy
+dnl POLICY_SRC_DIR		= $(SELINUX_POLICY_DIR)/src/policy
+dnl MANDIR			= $(PREFIX)/share/man
+dnl POLICY_SRC_FILE 	= $(POLICY_SRC_DIR)/policy.conf
+dnl DEFAULT_LOG_FILE 	= /var/log/messages
+
+dnl set up variables here
+if test ${use_selinux} = "yes"; then
+   AC_DEFINE(LIBSELINUX, 1, [enable libselinux-specific code])
+   LDADD="$LDADD -lselinux"
+fi
+
+if test ${use_sefs} = "yes"; then
+   AC_DEFINE(LIBSEFS, 1, [enable analyses of a SELinux filesystem])
+   AC_SUBST(use_sefs)
+fi
+AM_CONDITIONAL(WANT_LIBSEFS, test ${use_sefs} = "yes")
+
+apol_install_dir=${datadir}
+apol_help_dir=${datadir}
+
+AC_SUBST(VERSION)
+AC_SUBST(sepol_srcdir)
+AC_SUBST(libqpol_version)
+AC_SUBST(libapol_version)
+AC_SUBST(apol_install_dir)
+AC_SUBST(apol_help_dir)
+
+AC_DEFINE_UNQUOTED(LIBAPOL_VERSION_STRING, "${libapol_version}", [libapol version])
+
+dnl FIX ME: copy bwidget
+
+AC_CONFIG_FILES([Makefile VERSION \
+                 libqpol/Makefile libqpol/src/Makefile libqpol/include/Makefile libqpol/include/qpol/Makefile \
+                 libapol/Makefile \
+                 libsefs/Makefile \
+                 apol/Makefile \
+                 awish/Makefile])
+
+AC_OUTPUT
+
+echo "*** Configuration complete.  Do \`make help' to get a list of setools targets."

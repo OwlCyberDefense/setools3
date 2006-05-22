@@ -11,6 +11,8 @@
  * Policy I/O functions 
  */
 
+#include <config.h>
+
 #include "policy.h"
 #include "util.h"
 #include "stdio.h"

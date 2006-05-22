@@ -5,6 +5,7 @@
  * Author: mayerf@tresys.com and Don Patterson <don.patterson@tresys.com>
  */
 
+#include <config.h>
 #include <tcl.h>
 
 #include "apol_tcl_other.h"
@@ -178,16 +179,16 @@ static int append_search_fc_index_to_list(Tcl_Interp *interp, sefs_search_ret_t 
  */
 static int Apol_Search_FC_Index_DB(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {	
+#ifndef LIBSEFS
+	Tcl_SetResult(interp, "You need to build apol with libsefs to use this feature!", TCL_STATIC);
+	return TCL_ERROR;
+#else		
 	sefs_search_keys_t search_keys;
 	CONST char **object_classes = NULL, **types = NULL, **users = NULL,
 	    **ranges, **paths = NULL;
 	int retval = TCL_ERROR;
 	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
 
-#ifndef LIBSEFS
-	Tcl_SetResult(interp, "You need to build apol with libsefs to use this feature!", TCL_STATIC);
-	return TCL_ERROR;
-#else		
 	memset(&search_keys, 0, sizeof(search_keys));
 	if (argc != 10) {
 		Tcl_SetResult(interp, "Need a list of users, list of types, list of object classes, list of ranges, list of paths, user_regex, type_regex, range_regex, and path_regex", TCL_STATIC);
@@ -308,12 +309,13 @@ static int Apol_FC_Index_DB_Get_Items(ClientData clientData, Tcl_Interp *interp,
 
 static int Apol_FC_Is_MLS(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
-	int retval;
-	Tcl_Obj *result_obj;
 #ifndef LIBSEFS
 	Tcl_SetResult(interp, "You need to build apol with libsefs!", TCL_STATIC);
 	return TCL_ERROR;
 #else
+	int retval;
+	Tcl_Obj *result_obj;
+
 	if (fsdata == NULL) {
 		Tcl_SetResult(interp, "No Index File Loaded!", TCL_STATIC);
 		return TCL_ERROR;

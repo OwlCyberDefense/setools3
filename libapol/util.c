@@ -9,6 +9,8 @@
 
 /* Utility functions */
 
+#include <config.h>
+
 #include "util.h"
 #include "policy.h"
 #include <assert.h>
