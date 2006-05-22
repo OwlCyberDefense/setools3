@@ -5,10 +5,11 @@
 
 %option stack
 %option nodefault
+%option noyywrap
 
 %{
 
-#include "y.tab.h"
+#include "apolicy_parse.h"
 unsigned long policydb_lineno = 1;
 unsigned int policydb_errors = 0;
 
