@@ -1,15 +1,27 @@
-/*
- *  Copyright (C) 2003-2006 Tresys Technology, LLC
- *  see file 'COPYING' for use and warranty information
+/**
+ * @file replcon.c
  *
- */
-
-/*
- *  Authors: Jeremy Stitz <jstitz@tresys.com>
- *           Kevin Carr <kcarr@tresys.com>
- *           James Athey <jathey@tresys.com>
+ * A tool for replacing file contexts in SE Linux
  *
- *  replcon: a tool for replacing file contexts in SE Linux
+ * @author Jeremy Stitz <jstitz@tresys.com>
+ * @author Kevin Carr <kcarr@tresys.com>
+ * @author James Athey <jathey@tresys.com>
+ *
+ * Copyright (C) 2003-2006 Tresys Technology, LLC
+ *
+ *  This program is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 #include <config.h>
@@ -119,10 +131,10 @@ static void sefs_double_array_print(char **array,int size)
 	}
 }
 
-/*
- * replcon_context_free
- *
+/**
  * Frees the contents of the specified replcon_context_t
+ *
+ * @param context Reference to a replcon_context_t object
  */
 void
 replcon_context_free(replcon_context_t *context)
@@ -148,10 +160,10 @@ replcon_context_free(replcon_context_t *context)
 	}
 }
 
-/*
- * replcon_context_destroy
+/**
+ * Destroys the specified replcon_context_t.
  *
- * Destroys the specified replcon_context_t
+ * @param context Reference to a replcon_context_t object
  */
 void
 replcon_context_destroy(replcon_context_t * context)
@@ -161,15 +173,16 @@ replcon_context_destroy(replcon_context_t * context)
 	free(context);
 }
 
-/*
- * replcon_context_create
- *
+/**
  * Creates a new replcon_context_t object using the specified string
+ * NOTE: Checks the string for the format "xxx:xxx:xxx[:xxx]".  
+ * Will create a 4 part context if mls is in use.
+ * Use replcon_is_valid_context_format for more robust
+ * context string validation.
  *
- * NOTE: Checks the string for the format "xxx:xxx:xxx[:xxx]".  Will create
- *       a 4 part context if mls is in use.
- *       Use replcon_is_valid_context_format for more robust
- *	 context string validation.
+ * @param context Reference to a replcon_context_t object
+ * @return a reference to a newly allocated replcon_context_t object 
+ * (caller must free) on success, NULL on error
  */
 replcon_context_t *
 replcon_context_create(const char *context_str)
@@ -271,10 +284,85 @@ replcon_context_create(const char *context_str)
 	  return NULL;
 }
 
-/*
- * replcon_context_mls_set
+/**
+ * Creates a new replcon_context_t object from a
+ * security_context_t object.
  *
- * Sets the mls member of a replcon_context_t object using the specified argument
+ * @param sec_con A security_context_t object
+ * @return A reference to a newly allocated replcon_context_t object
+ * (caller must free) on success, NULL on error
+ */
+replcon_context_t *
+replcon_context_create_from_security_context(const security_context_t sec_con)
+{
+        context_t ctxt;
+        replcon_context_t *rcontext = NULL;
+        const char *str = NULL;
+        int sz = 0;
+
+        assert(sec_con != NULL);
+
+        rcontext = malloc(sizeof(replcon_context_t));
+        if (!rcontext) {
+                fprintf(stderr, "Out of memory.\n");
+                goto err;
+        }
+        memset(rcontext, 0, sizeof(replcon_context_t));
+
+        ctxt = context_new(sec_con);
+        if (!ctxt)
+                goto err;
+
+        sz = 0;
+        str = context_user_get(ctxt);
+        if (!str)
+                goto err;
+        append_str(&(rcontext->user), &sz, str);
+
+        str = NULL;
+        sz = 0;
+        str = context_role_get(ctxt);
+        if (!str)
+                goto err;
+        append_str(&(rcontext->role), &sz, str);
+
+        str = NULL;
+        sz = 0;
+        str = context_type_get(ctxt);
+        if (!str)
+                goto err;
+        append_str(&(rcontext->type), &sz, str);
+
+        if (is_selinux_mls_enabled()) {
+                str = NULL;
+                sz = 0;
+                str = context_range_get(ctxt);
+                if (!str)
+                        goto err;
+                append_str(&(rcontext->mls), &sz, str);
+
+        } else {
+                rcontext->mls = strdup("");
+                if (!rcontext->mls) {
+                        fprintf(stderr, "Out of memory.\n");
+                        goto err;
+                }
+        }
+
+        return rcontext;
+
+err:
+	replcon_context_destroy(rcontext);
+	fprintf(stderr, "Could not create file context from %s...\n", sec_con);
+	return NULL;
+}
+
+/**
+ * Sets the mls member of a replcon_context_t object using the specified argument.
+ *
+ * @param context A reference to a replcon_context_t object
+ * @param mls A MLS level
+ * @return 0 on success, < 0 on error
  */
 int replcon_context_mls_set(replcon_context_t *context, const char *mls)
 {
@@ -290,10 +378,12 @@ int replcon_context_mls_set(replcon_context_t *context, const char *mls)
 	return 0;
 }
 
-/*
- * replcon_context_user_set
+/**
+ * Sets the user member of a replcon_context_t object using the specified argument.
  *
- * Sets the user member of a replcon_context_t object using the specified argument
+ * @param context A reference to a replcon_context_t object
+ * @param user A user
+ * @return 0 on success, < 0 on error
  */
 int replcon_context_user_set(replcon_context_t *context, const char *user)
 {
@@ -309,10 +399,12 @@ int replcon_context_user_set(replcon_context_t *context, const char *user)
 	return 0;
 }
 
-/*
- * replcon_context_role_set
+/**
+ * Sets the role member of a replcon_context_t object using the specified argument.
  *
- * Sets the role member of a replcon_context_t object using the specified argument
+ * @param context A reference to a replcon_context_t object
+ * @param user A role
+ * @return 0 on success, < 0 on error
  */
 int replcon_context_role_set(replcon_context_t *context, const char *role)
 {
@@ -328,10 +420,12 @@ int replcon_context_role_set(replcon_context_t *context, const char *role)
 	return 0;
 }
 
-/*
- * replcon_context_type_set
+/**
+ * Sets the type member of a replcon_context_t object using the specified argument.
  *
- * Sets the type member of a replcon_context_t object using the specified argument
+ * @param context A reference to a replcon_context_t object
+ * @param user A type
+ * @return 0 on success, < 0 on error
  */
 int replcon_context_type_set(replcon_context_t *context, const char *type)
 {
@@ -345,11 +439,12 @@ int replcon_context_type_set(replcon_context_t *context, const char *type)
 	return 0;
 }
 
-/*
- * get_security_context
+/**
+ * Assembles a security_context_t from the information in the replcon context.
  *
- *
- * Assembles a security_context_t from the information in the replcon context
+ * @param context A reference to a constant replcon_context_t object
+ * @return A newly allocated security_context_t object (caller must free) on success,
+ * NULL on error
  */
 security_context_t
 get_security_context(const replcon_context_t *context)
@@ -389,11 +484,12 @@ get_security_context(const replcon_context_t *context)
 
 
 
-/*
- * replcon_usage
- *
+/**
  * Prints out usage instructions for the program. If brief is set to 1 (true) only the
- * syntax for program execution is displayed
+ * syntax for program execution is displayed.
+ *
+ * @param program_name The name of the program for which to print usage information
+ * @param brief Flag indicating whether to print all usage information
  */
 void
 replcon_usage(const char *program_name, int brief)
@@ -494,10 +590,10 @@ replcon_usage(const char *program_name, int brief)
 	printf("\n");
 }
 
-/*
- * replcon_info_init
+/**
+ * Sets the data members of info to initial values.
  *
- * Sets the data members of info to initial values
+ * @param into A reference to a replcon info object
  */
 void replcon_info_init(replcon_info_t *info)
 {
@@ -521,10 +617,10 @@ void replcon_info_init(replcon_info_t *info)
 	info->num_filenames = 0;
 }
 
-/*
- * replcon_info_free
+/**
+ * Frees all the allocated memory in info.
  *
- * Frees all the allocated memory in info
+ * @param info A reference to a replcon info object
  */
 void
 replcon_info_free(replcon_info_t *info)
@@ -568,10 +664,12 @@ replcon_info_free(replcon_info_t *info)
 	}
 }
 
-/*
- * replcon_info_has_object_class
+/**
+ * Frees all the allocated memory in info.
  *
- * Check if replcon_info has an object class
+ * @param info A reference to a replcon info object
+ * @param obj_class 
+ * @return TRUE on success, FALSE on error
  */
 int replcon_info_has_object_class(replcon_info_t *info, sefs_classes_t obj_class)
 {
@@ -585,11 +683,12 @@ int replcon_info_has_object_class(replcon_info_t *info, sefs_classes_t obj_class
 	return FALSE;
 }
 
-
-/*
- * replcon_is_valid_context_format
+/**
+ * Determines if context is a valid file context format.
  *
- * Determines if context is a valid file context format
+ * @param context_str A string containing a security context
+ * @return TRUE if security context string is valid,  
+ * FALSE if the string is invalid
  */
 int replcon_is_valid_context_format(const char *context_str)
 {
@@ -616,11 +715,13 @@ int replcon_is_valid_context_format(const char *context_str)
 	 return TRUE;
 }
 
-/*
- * replcon_info_add_object_class
+/**
+ * Adds class_id to the array of object types stored in replcon_info that 
+ * will have their context changed upon program execution.
  *
- * Adds class_id to the array of object types stored in replcon_info that will have their
- * context changed upon program execution
+ * @param info A reference to a replcon info object
+ * @param str A string containing an object class
+ * @return 0 on success, < 0 on error
  */
 int replcon_info_add_object_class(replcon_info_t *info, const char *str)
 {
@@ -679,11 +780,14 @@ int replcon_info_add_object_class(replcon_info_t *info, const char *str)
 }
 
 #ifndef FINDCON
-/*
- * replcon_info_add_context_pair
+/**
+ * Adds the context pair, old and new, to the array of context pairs
+ * stored in replcon_info that will be changed upon program execution.
  *
- * Adds the context pair, old and new, to the array of context pairs stored in replcon_info
- * that will be changed upon program execution
+ * @param info A reference to a replcon info object
+ * @param old A string representing a security context
+ * @param new A string representing a security context
+ * @return 0 on success, < 0 on error
  */
 int replcon_info_add_context_pair(replcon_info_t *info, const char *old, const char *new)
 {
@@ -748,11 +852,13 @@ int replcon_info_add_context_pair(replcon_info_t *info, const char *old, const c
 
 }
 #else
-/*
- * replcon_info_add_context
- *
+/**
  * Adds the context to the array of contexts stored in replcon_info
- * that will be sought upon program execution
+ * that will be sought upon program execution.
+ *
+ * @param info A reference to a replcon info object
+ * @param old A constant string representing a security context
+ * @return 0 on success, < 0 on error
  */
 int replcon_info_add_context(replcon_info_t *info, const char *con)
 {
@@ -800,11 +906,13 @@ int replcon_info_add_context(replcon_info_t *info, const char *con)
 }
 #endif
 
-/*
- * replcon_info_add_filename
+/**
+ * Adds file to the array of file/directory locations stored in replcon_info that will
+ * that will have contexts replaced.
  *
- * Adds loc to the array of file/directory locations stored in replcon_info that will
- * have contexts replaced
+ * @param info A reference to a replcon info object
+ * @param old A constant string representing a filename
+ * @return 0 on success, < 0 on error
  */
 int replcon_info_add_filename(replcon_info_t *info, const char *file)
 {
@@ -826,13 +934,17 @@ int replcon_info_add_filename(replcon_info_t *info, const char *file)
 
 }
 
-/*
- * replcon_context_equal
+/**
+ * Determines whether the patterns match the fields in 
+ * context.
+ * If any context field is empty, that field automatically matches.
+ * Example - ::user_t == x_u:y_r:user_t,
+ * Example - x_u:y_r:user_t != user_u:y_r:user_t
  *
- * return true if the patterns match the fields in context
- * if any context field is empty then that field matches
- * example - ::user_t == x_u:y_r:user_t,
- * example - x_u:y_r:user_t != user_u:y_r:user_t
+ * @param context A reference to a replcon context object
+ * @param patterns A reference to a replcon context object, 
+ * whose contents will be used for pattern matching against context
+ * @return TRUE on success, FALSE on error
  */
 unsigned char
 replcon_context_equal(const replcon_context_t *context, const replcon_context_t *patterns)
@@ -868,14 +980,23 @@ replcon_context_equal(const replcon_context_t *context, const replcon_context_t 
 }
 
 #ifndef FINDCON
-/*
- * replcon_file_context_replace
+/**
+ * Change the context of the file, as long as it meets the specifications
+ * in replcon_info.
+ * The caller must pass a valid filename and statptr.
+ * If the caller wants to use raw, the passed in context will try to match
+ * the raw context of the file not the translated context returned by libsetrans
+ * This function can be used as a callback for ftw(3). 
  *
- * Change the context of the file, as long as it meets the specifications in replcon_info
- *
- * The caller must pass a valid filename and statptr
- * If the caller wants to use raw, the passed in context will try to match the raw context
- * of the file not the translated context returned by libsetrans
+ * @param filename A string containing a filename
+ * @param stat64 A reference to a constant stat structure
+ * @param fileflags This parameter is currently not used, but is
+ * needed to maintain this function's compatibility as a callback for
+ * ftw(3). 
+ * @param pfwt This parameter is currently not used, but is
+ * needed to maintain this function's compatibility as a callback for
+ * ftw(3). 
+ * @return 0 on success, < 0 on error
  */
 int
 replcon_file_context_replace(const char *filename, const struct stat64 *statptr,
@@ -910,7 +1031,7 @@ replcon_file_context_replace(const char *filename, const struct stat64 *statptr,
 			return 0;
 		}
 	}
-	if ((original_con = replcon_context_create(old_file_con)) == NULL)
+	if ((original_con = replcon_context_create_from_security_context(old_file_con)) == NULL)
 		goto err;
 
 	if (is_selinux_mls_enabled()) {
@@ -997,12 +1118,21 @@ err:
 }
 
 #else
-/*
- * findcon
+/**
+ * The caller must pass a valid filename and statptr.
+ * If the caller wants to use raw, the passed in context will try to match
+ * the raw context of the file not the translated context returned by libsetrans.
+ * This function can be used as a callback for ftw(3).
  *
- * The caller must pass a valid filename and statptr
- * If the caller wants to use raw, the passed in context will try to match the raw context
- * of the file not the translated context returned by libsetrans
+ * @param filename A constant string containing a filename
+ * @param stat64 A reference to a constant stat struct
+ * @param fileflags This parameter is currently not used, but is
+ * needed to maintain this function's compatibility as a callback for
+ * ftw(3).
+ * @param pfwt This parameter is currently not used, but is
+ * needed to maintain this function's compatibility as a callback for
+ * ftw(3).
+ * @return 0 on success, < 0 on error
  */
 int
 findcon(const char *filename, const struct stat64 *statptr,
@@ -1037,7 +1167,7 @@ findcon(const char *filename, const struct stat64 *statptr,
 		}
 	}
 
-	if ((original_con = replcon_context_create(file_con)) == NULL)
+	if ((original_con = replcon_context_create_from_security_context(file_con)) == NULL)
 		goto err;
 
 	for (i = 0; i < replcon_info.num_contexts; i++) {
@@ -1062,9 +1192,10 @@ findcon(const char *filename, const struct stat64 *statptr,
 }
 #endif
 
-/*
- * replcon_stat_file_replace_context
+/**
+ * Replaces file contexts of files which match filename.
  *
+ * @param filename A string containing a filename
  */
 void
 replcon_stat_file_replace_context(const char *filename)
@@ -1126,10 +1257,10 @@ replcon_stat_file_replace_context(const char *filename)
 	}
 }
 
-/*
- * remove_new_line_char
+/**
+ * Removes the newline character from stdin stream input strings.
  *
- * Removes the new line character from stdin stream input strings
+ * @param filename A string whose newline character should be removed
  */
 void
 remove_new_line_char(char *input)
@@ -1144,10 +1275,11 @@ remove_new_line_char(char *input)
 	}
 }
 
-/*
- * replcon_parse_command_line
+/**
+ * Function for parsing command line arguments.
  *
- * Function for parsing command line arguments
+ * @param argc Value representing argc as passed to main
+ * @param argv Array of arguments as passed to main
  */
 void
 replcon_parse_command_line(int argc, char **argv)
