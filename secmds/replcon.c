@@ -12,6 +12,8 @@
  *  replcon: a tool for replacing file contexts in SE Linux
  */
 
+#include <config.h>
+
 #include <fsdata.h>
 #include "fshash.h"
 /* SE Linux includes*/
@@ -35,18 +37,6 @@
 #include <mntent.h>
 
 #include <policy.h>
-
-
-
-/* REPLCON_VERSION_NUM should be defined in the make environment */
-#ifndef REPLCON_VERSION_NUM
-#define REPLCON_VERSION_NUM "UNKNOWN"
-#endif
-
-/* FINDCON_VERSION_NUM should be defined in the make environment */
-#ifndef FINDCON_VERSION_NUM
-#define FINDCON_VERSION_NUM "UNKNOWN"
-#endif
 
 #define COPYRIGHT_INFO "Copyright (C) 2003-2006 Tresys Technology, LLC"
 
@@ -411,10 +401,10 @@ replcon_usage(const char *program_name, int brief)
 	char **array=NULL;
 	int size;
 #ifndef FINDCON
-	printf("%s (replcon ver. %s)\n\n", COPYRIGHT_INFO, REPLCON_VERSION_NUM);
+	printf("%s (replcon ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
 	printf("Usage: %s [OPTIONS] -c OLD NEW FILENAMES\n", program_name);
 #else
-	printf("%s (findcon ver. %s)\n\n", COPYRIGHT_INFO, FINDCON_VERSION_NUM);
+	printf("%s (findcon ver. %s)\n\n", COPYRIGHT_INFO, VERSION);
 	printf("Usage: %s [OPTIONS] -c CONTEXT FILENAMES\n", program_name);
 #endif
 	if (brief) {
@@ -1228,10 +1218,10 @@ replcon_parse_command_line(int argc, char **argv)
 		case 'v':	/* version */
 #ifndef FINDCON
 				printf("\n%s (replcon ver. %s)\n\n", COPYRIGHT_INFO,
-       					REPLCON_VERSION_NUM);
+       					VERSION);
 #else
 				printf("\n%s (findcon ver. %s)\n\n", COPYRIGHT_INFO,
-       					FINDCON_VERSION_NUM);
+       					VERSION);
 #endif
 			
 			replcon_info_free(&replcon_info);
