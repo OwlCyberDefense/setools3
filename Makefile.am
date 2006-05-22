@@ -54,4 +54,23 @@ help:
 
 .PHONY: libqpol libapol libsefs \
 	apol secmds seaudit sediff sediffx sechecker awish \
-	all-nogui help
+	all-nogui help \
+	seinfo sesearch indexcon findcon replcon searchcon
+
+seinfo:
+	$(MAKE) -C $(top_srcdir)/secmds seinfo
+
+sesearch:
+	$(MAKE) -C $(top_srcdir)/secmds sesearch
+
+indexcon:
+	$(MAKE) -C $(top_srcdir)/secmds indexcon
+
+findcon:
+	$(MAKE) -C $(top_srcdir)/secmds findcon
+
+replcon:
+	$(MAKE) -C $(top_srcdir)/secmds replcon
+
+searchcon:
+	$(MAKE) -C $(top_srcdir)/secmds searchcon
