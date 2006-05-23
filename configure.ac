@@ -2,8 +2,6 @@ AC_INIT(setools, 3.0, [Tresys Technology <setools@tresys.com>], [setools])
 AC_CONFIG_SRCDIR(awish/awish.c)
 AC_CONFIG_HEADER(config.h)
 AM_INIT_AUTOMAKE(setools, 3.0)
-libqpol_version=1.0.0
-libapol_version=3.0.0
 AC_PROG_CC
 AC_LANG_C
 AC_HEADER_STDC
@@ -12,6 +10,13 @@ AC_PROG_LN_S
 AM_PROG_LEX
 AC_PROG_YACC
 AC_PROG_INSTALL
+
+libqpol_version=1.0.0
+libqpol_soname=libqpol.so.1
+
+libapol_version=3.0.0
+libapol_soname=libapol.so.3
+libapol_tcl_soname=libapol-tcl.so.3
 
 AC_ARG_ENABLE(debug, [  --enable-debug          compile with full debugging support], enable_debug="$enableval")
 AC_MSG_CHECKING([for debugging support])
@@ -23,6 +28,16 @@ if test "x${enable_debug}" = xyes; then
     AC_MSG_RESULT(yes)
 else
     AC_MSG_RESULT(disabled)
+fi
+
+AC_ARG_ENABLE(shared, [ --enable-shared         link against shared libapol instead of static libapol], enable_shared="$enableval")
+AC_MSG_CHECKING([for how to link against libraries])
+if test "x${enable_shared}" = xyes; then
+    use_shared=yes
+    AC_MSG_RESULT(shared)
+else
+    use_shared=no
+    AC_MSG_RESULT(static)
 fi
 
 dnl ** find the Tcl/Tk development libraries, then find BWidget
@@ -43,7 +58,7 @@ if test \( "${TK_MAJOR_VERSION}" -gt 8 \) -o \( "${TK_MAJOR_VERSION}" -eq 8 -a "
 else
     AC_MSG_ERROR([setools requires Tk 8.4 or greater])
 fi
-AC_ARG_ENABLE(bwidget, [  --disable-bwidget-check do not check for BWidget], enable_bwidget="$enableval", enable_bwidget="yes")
+AC_ARG_ENABLE(bwidget, [  --disable-bwidget-check do not check for BWidget 1.7, assume it exists], enable_bwidget="$enableval", enable_bwidget="yes")
 if test "x${enable_bwidget}" = "xyes"; then
     AC_CHECK_PROGS(tclsh_path, tclsh tclsh8.4)
     if test "x${tclsh_path}" = "x"; then
@@ -63,6 +78,7 @@ EOF
     changequote([,])dnl
     if ${tclsh_path} ./conftest.tcl ; then
         AC_MSG_RESULT(yes)
+        copy_bwidget=no
     else
         AC_MSG_WARN([not found, using setools's BWidget instead])
         copy_bwidget=yes
@@ -71,6 +87,21 @@ else
     copy_bwidget=no
 fi
 
+if test ${copy_bwidget} = yes; then
+   AC_MSG_CHECKING([where to install BWidget])
+   changequote(<<<,>>>)dnl
+   cat > ./conftest.tcl <<EOF
+foreach path [concat \$auto_path \$tcl_pkgPath] {
+   if {[string match *share* \$path]} {
+      break
+   }
+}
+puts \$path
+EOF
+   changequote([,])dnl
+   bwidget_installdir=`${tclsh_path} ./conftest.tcl`
+   AC_MSG_RESULT(${bwidget_installdir})
+fi
 
 dnl ** look for selinuxfs mount point
 
@@ -90,29 +121,16 @@ fi
 
 
 if test ${use_selinux} = "yes"; then
-   dnl ** find libselinux
-
-   AC_ARG_WITH(selinux-devel, [  --with-selinux-devel    prefix where SELinux development files are installed], selinux_devel="$withval", selinux_devel="/usr")
-   selinux_devel_incdir="${selinux_devel}/include"
-   selinux_devel_libdir="${selinux_devel}/lib"
-   CFLAGS="$CFLAGS -I${selinux_devel_incdir}"
-   LDFLAGS="$LDFLAGS -L${selinux_devel_libdir}"
-   AC_MSG_CHECKING([for selinux/selinux.h])
-   AC_TRY_RUN([#include <selinux/selinux.h>
-   #include <stdlib.h>
-   int main(void) { exit(0); }],
-       AC_MSG_RESULT(yes),
-       AC_MSG_ERROR([could not find selinux headers - make sure libselinux-devel is installed]))
-   AC_CHECK_LIB(selinux, selinux_policy_root,,
-        AC_MSG_ERROR([could not find libselinux - make sure it is installed]))
-
-   dnl ** find libsepol
+   dnl ** find libselinux and libsepol
 
    AC_ARG_WITH(sepol-devel, [  --with-sepol-devel      prefix where sepol development files are installed], sepol_devel="$withval", sepol_devel="/usr")
+   AC_ARG_WITH(selinux-devel, [  --with-selinux-devel    prefix where SELinux development files are installed], selinux_devel="$withval", selinux_devel="/usr")
    sepol_devel_incdir="${sepol_devel}/include"
    sepol_devel_libdir="${sepol_devel}/lib"
-   CFLAGS="$CFLAGS -I${sepol_devel_incdir}"
-   LDFLAGS="$LDFLAGS -L${sepol_devel_libdir}"
+   selinux_devel_incdir="${selinux_devel}/include"
+   selinux_devel_libdir="${selinux_devel}/lib"
+   CFLAGS="$CFLAGS -I${sepol_devel_incdir} -I${selinux_devel_incdir}"
+   LDFLAGS="$LDFLAGS -L${sepol_devel_libdir} -L${selinux_devel_libdir}"
    AC_MSG_CHECKING([for sepol/sepol.h])
    AC_TRY_RUN([#include <sepol/sepol.h>
    #include <stdlib.h>
@@ -121,6 +139,15 @@ if test ${use_selinux} = "yes"; then
        AC_MSG_ERROR([could not find sepol headers - make sure libsepol-devel is installed]))
    AC_CHECK_LIB(sepol,sepol_policydb_read,,
                 AC_MSG_ERROR([could not find libsepol - make sure it is installed]))
+   AC_MSG_CHECKING([for selinux/selinux.h])
+   AC_TRY_RUN([#include <selinux/selinux.h>
+   #include <stdlib.h>
+   int main(void) { exit(0); }],
+       AC_MSG_RESULT(yes),
+       AC_MSG_ERROR([could not find selinux headers - make sure libselinux-devel is installed]))
+   AC_CHECK_LIB(selinux, selinux_policy_root,,
+        AC_MSG_ERROR([could not find libselinux - make sure it is installed]),
+        -lsepol)
 fi
 
 AC_ARG_ENABLE(sefs, [  --enable-sefs           allow file system analyses (default)
@@ -134,7 +161,8 @@ else
    use_sefs=no
 fi
 
-AC_ARG_ENABLE(sepol-src, [  --enable-sepol-src=PATH use another sepol source tree at PATH], sepol_srcdir="$enableval", sepol_srcdir="${top_srcdir}/libqpol")
+AC_ARG_ENABLE(sepol-src, [  --enable-sepol-src=PATH use another sepol source tree at PATH
+                              (developer only flag)], sepol_srcdir="$enableval", sepol_srcdir="${top_srcdir}/libqpol")
 AC_MSG_CHECKING([for sepol source tree])
 sepol_src_save_CFLAGS=${CFLAGS}
 CFLAGS="$CFLAGS -I${sepol_srcdir}/include -lsepol"
@@ -168,6 +196,8 @@ if test ${use_sefs} = "yes"; then
    AC_SUBST(use_sefs)
 fi
 AM_CONDITIONAL(WANT_LIBSEFS, test ${use_sefs} = "yes")
+
+AC_SUBST(use_shared)
 
 apol_install_dir=${datadir}
 apol_help_dir=${datadir}

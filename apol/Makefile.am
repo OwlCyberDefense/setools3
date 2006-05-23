@@ -34,10 +34,11 @@ apol_SOURCES = apol_gui.c \
 	top.tcl
 
 LDADD = $(top_srcdir)/libapol/libapol-tcl.a $(top_srcdir)/libapol/libapol.a $(top_srcdir)/libqpol/src/libqpol.so @QPOL_LIB_FLAG@ @TCL_LIB_FLAG@ @TK_LIB_FLAG@
-apol_DEPENDENCIES = apol.tcl
+apol_DEPENDENCIES = apol.tcl $(top_srcdir)/libapol/libapol-tcl.a $(top_srcdir)/libapol/libapol.a $(top_srcdir)/libqpol/src/libqpol.so
 
 if WANT_LIBSEFS
 apol_LDADD = $(LDADD) $(top_srcdir)/libsefs/libsefs.a
+apol_DEPENDENCIES += $(top_srcdir)/libsefs/libsefs.a
 else
 apol_LDADD = $(LDADD)
 endif
@@ -58,6 +59,15 @@ tmp.tcl: $(TCL_STRIP_FILES)
 # do nothing
 
 # FIX ME: install help files, perm maps, and link to default perm map
+
+$(top_srcdir)/libapol/libapol-tcl.a $(top_srcdir)/libapol/libapol.a:
+	$(MAKE) -C $(top_srcdir)/libapol $(notdir $@)
+
+$(top_srcdir)/libqpol/src/libqpol.so:
+	$(MAKE) -C $(top_srcdir)/libqpol $(notdir $@)
+
+$(top_srcdir)/libsefs/libsefs.a:
+	$(MAKE) -C $(top_srcdir)/libsefs $(notdir $@)
 
 CLEANFILES = $(dist_bin_SCRIPTS)
 
