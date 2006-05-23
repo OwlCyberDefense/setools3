@@ -18,27 +18,42 @@ SEFS_CFLAGS = -I$(top_srcdir)/libsefs
 SEFS_LDADD = $(top_srcdir)/libsefs/libsefs.a
 
 seinfo_SOURCES = seinfo.c
+seinfo_DEPENDENCIES = $(top_srcdir)/libapol/libapol.a $(top_srcdir)/libqpol/src/libqpol.so
 
 sesearch_SOURCES = sesearch.c
+sesearch_DEPENDENCIES = $(top_srcdir)/libapol/libapol.a $(top_srcdir)/libqpol/src/libqpol.so
 
 indexcon_SOURCES = indexcon.c
 indexcon_CFLAGS = $(AM_CFLAGS) $(SEFS_CFLAGS)
 indexcon_LDADD = $(SEFS_LDADD) $(LDADD)
+indexcon_DEPENDENCIES = $(top_srcdir)/libapol/libapol.a $(top_srcdir)/libqpol/src/libqpol.so $(top_srcdir)/libsefs/libsefs.a
 
 nodist_EXTRA_findcon_SOURCES = findcon.c
 findcon_CFLAGS = $(AM_CFLAGS) $(SEFS_CFLAGS) -DFINDCON
 findcon_LDADD = $(SEFS_LDADD) $(LDADD)
+findcon_DEPENDENCIES = $(top_srcdir)/libapol/libapol.a $(top_srcdir)/libqpol/src/libqpol.so $(top_srcdir)/libsefs/libsefs.a
 
 replcon_SOURCES = replcon.c
 replcon_CFLAGS = $(AM_CFLAGS) $(SEFS_CFLAGS)
 replcon_LDADD = $(SEFS_LDADD) $(LDADD)
+replcon_DEPENDENCIES = $(top_srcdir)/libapol/libapol.a $(top_srcdir)/libqpol/src/libqpol.so $(top_srcdir)/libsefs/libsefs.a
 
 searchcon_SOURCES = searchcon.c
 searchcon_CFLAGS = $(AM_CFLAGS) $(SEFS_CFLAGS)
 searchcon_LDADD = $(SEFS_LDADD) $(LDADD)
+searchcon_DEPENDENCIES = $(top_srcdir)/libapol/libapol.a $(top_srcdir)/libqpol/src/libqpol.so $(top_srcdir)/libsefs/libsefs.a
 
 findcon.c: replcon.c
 	$(LN_S) $< $@
+
+$(top_srcdir)/libapol/libapol-tcl.a $(top_srcdir)/libapol/libapol.a:
+	$(MAKE) -C $(top_srcdir)/libapol $(notdir $@)
+
+$(top_srcdir)/libqpol/src/libqpol.so:
+	$(MAKE) -C $(top_srcdir)/libqpol $(notdir $@)
+
+$(top_srcdir)/libsefs/libsefs.a:
+	$(MAKE) -C $(top_srcdir)/libsefs $(notdir $@)
 
 clean-local:
 	-rm -f findcon.c
