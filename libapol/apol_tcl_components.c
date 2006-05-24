@@ -582,7 +582,7 @@ static int Apol_GetCommons(ClientData clientData, Tcl_Interp *interp, int argc, 
 	}
 	return retval;
 }
-     
+
 /**
  * Takes a string representing a permission and appends a tuple of it
  * to result_list.  The tuple consists of:
@@ -647,8 +647,9 @@ static int append_perm_to_list(Tcl_Interp *interp,
 }
 
 /**
- * Returns an unordered list of permission tuples within the policy.
- * Each tuple consists of:
+ * Returns an unordered list of permission tuples (both those in
+ * classes as well as commons) within the policy.  Each tuple consists
+ * of:
  * <ul>
  *   <li>permission name
  *   <li>list of classes that have this permission
@@ -665,7 +666,8 @@ static int Apol_GetPerms(ClientData clientData, Tcl_Interp *interp, int argc, CO
 {
 	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
 	apol_perm_query_t *query = NULL;
-	apol_vector_t *v;
+	apol_vector_t *v = NULL;
+	size_t i;
 	int retval = TCL_ERROR;
 
 	apol_tcl_clear_error();
@@ -673,40 +675,31 @@ static int Apol_GetPerms(ClientData clientData, Tcl_Interp *interp, int argc, CO
 		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		goto cleanup;
 	}
-	if (argc < 2) {
+	if (argc < 2 || argc > 3) {
 		ERR(policydb, "Need a permission name and ?regex flag?.");
 		goto cleanup;
 	}
-	if (argc == 2) {
-		if (append_perm_to_list(interp, argv[1], result_obj) == TCL_ERROR) {
+	if (*argv[1] != '\0') {
+		int regex_flag = 0;
+		if (argc >= 3 && Tcl_GetBoolean(interp, argv[2], &regex_flag) == TCL_ERROR) {
+			goto cleanup;
+		}
+		if ((query = apol_perm_query_create()) == NULL) {
+			ERR(policydb, "Out of memory!");
+			goto cleanup;
+		}
+		if (apol_perm_query_set_perm(policydb, query, argv[1]) ||
+		    apol_perm_query_set_regex(policydb, query, regex_flag)) {
 			goto cleanup;
 		}
 	}
-	else {
-		int regex_flag;
-		size_t i;
-		char *perm;
-		if (Tcl_GetBoolean(interp, argv[2], &regex_flag) == TCL_ERROR) {
+	if (apol_get_perm_by_query(policydb, query, &v) < 0) {
+		goto cleanup;
+	}
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		char *perm = (char *) apol_vector_get_element(v, i);
+		if (append_perm_to_list(interp, perm, result_obj) == TCL_ERROR) {
 			goto cleanup;
-		}
-		if (*argv[1] != '\0') {
-			if ((query = apol_perm_query_create()) == NULL) {
-				ERR(policydb, "Out of memory!");
-				goto cleanup;
-			}
-			if (apol_perm_query_set_perm(policydb, query, argv[1]) ||
-			    apol_perm_query_set_regex(policydb, query, regex_flag)) {
-				goto cleanup;
-			}
-		}
-		if (apol_get_perm_by_query(policydb, query, &v) < 0) {
-			goto cleanup;
-		}
-		for (i = 0; i < apol_vector_get_size(v); i++) {
-			perm = (char *) apol_vector_get_element(v, i);
-			if (append_perm_to_list(interp, perm, result_obj) == TCL_ERROR) {
-				goto cleanup;
-			}
 		}
 	}
 	Tcl_SetObjResult(interp, result_obj);

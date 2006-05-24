@@ -188,11 +188,12 @@ extern int apol_common_query_set_regex(apol_policy_t *p,
 /******************** permission queries ********************/
 
 /**
- * Execute a query against all permissions within the policy.  The
- * results will contain char pointers to permission names.  Thus if
- * the same permission name is declared within multiple classes (e.g.,
- * file/read and socket/read) then only one instance of <tt>read</tt>
- * is returned.
+ * Execute a query against all permissions (both those declared in
+ * classes as well as commons) within the policy.  The results will
+ * contain char pointers to permission names.  Thus if the same
+ * permission name is declared within multiple classes (e.g.,
+ * <tt>file/read</tt> and <tt>socket/read</tt>) then only one instance
+ * of <tt>read</tt> is returned.
  *
  * @param p Policy within which to look up permissions.
  * @param pq Structure containing parameters for query.	 If this is
