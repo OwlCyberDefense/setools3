@@ -74,8 +74,8 @@ int qpol_expand_module(sepol_handle_t *handle, qpol_policy_t *base)
 			continue;
 		}
 		for (cur_avrule = decl->avrules; cur_avrule != NULL; cur_avrule = cur_avrule->next) {
-			if (cur_avrule->specified & AVRULE_NEVERALLOW)
-				continue;
+/*			if (cur_avrule->specified & AVRULE_NEVERALLOW) //FIXME: Why?
+				continue; */
 			if (convert_and_expand_rule(handle, db, db, typemap,
 						    cur_avrule, &db->te_avtab,
 						    NULL, NULL, 0) != 1) {
