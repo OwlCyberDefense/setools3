@@ -30,6 +30,16 @@ else
     AC_MSG_RESULT(disabled)
 fi
 
+AC_ARG_ENABLE(profiling, [  --enable-profiling          compile with gcov and gprof profiling support], enable_profiling="$enableval")
+AC_MSG_CHECKING([for profiling support])
+if test "x${enable_profiling}" = xyes; then
+    CFLAGS="-O0 -Wall -ftest-coverage -fprofile-arcs -pg"
+    LDFLAGS="$(LDFLAGS) -lgcov"
+    AC_MSG_RESULT(yes)
+else
+    AC_MSG_RESULT(disabled)
+fi
+
 AC_ARG_ENABLE(shared, [ --enable-shared         link against shared libapol instead of static libapol], enable_shared="$enableval")
 AC_MSG_CHECKING([for how to link against libraries])
 if test "x${enable_shared}" = xyes; then
