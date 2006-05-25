@@ -47,6 +47,7 @@
 #include "apol_tcl_fc.h"
 #include "apol_tcl_analysis.h"
 
+#include <qpol/policy.h>
 #ifdef APOL_PERFORM_TEST
 #include <time.h>
 #endif
@@ -582,7 +583,19 @@ int Apol_OpenPolicy(ClientData clientData, Tcl_Interp *interp, int argc, char *a
 		return rt;
 	}
 
-	/******** new routine here ********/
+	if (!(policydb = calloc(1, sizeof(apol_policy_t)))) {
+		sprintf(tbuf, "open_policy error (%d)", rt);
+		Tcl_AppendResult(interp, tbuf, (char *) NULL);
+		return rt;
+	}
+	rt = qpol_open_policy_from_file(argv[1], &policydb->p, &policydb->sh);
+	if(rt != 0) {
+		sprintf(tbuf, "open_policy error (%d)", rt);
+		Tcl_AppendResult(interp, tbuf, (char *) NULL);
+		return rt;
+	}
+
+	/******** new routine here ********
 	if (is_binary_policy(policy)) {
 		if (apol_policy_open_binary(argv[1], &policydb)) {
 			Tcl_SetResult(interp, "Open policy error.", TCL_STATIC);
@@ -594,7 +607,7 @@ int Apol_OpenPolicy(ClientData clientData, Tcl_Interp *interp, int argc, char *a
         else {
             fprintf(stderr, "opening source policies does not work yet.\n");
             assert(0);
-        }
+        }*/
 	return TCL_OK;
 }
 
