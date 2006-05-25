@@ -28,6 +28,8 @@
 
 #include <qpol/policy.h>
 
+typedef struct qpol_avrule qpol_avrule_t;
+
 /* rule type defines (values copied from "sepol/policydb/policydb.h") */
 #define QPOL_RULE_ALLOW         1
 #define QPOL_RULE_NEVERALLOW  128
