@@ -31,7 +31,7 @@
 
 #include "debug.h"
 
-int qpol_expand_module(sepol_handle_t *handle, qpol_policy_t *base)
+int qpol_expand_module(qpol_handle_t *handle, qpol_policy_t *base)
 {
 	unsigned int i;
 	avrule_block_t *curblock;

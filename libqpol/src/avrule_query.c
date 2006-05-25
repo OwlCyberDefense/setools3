@@ -26,14 +26,13 @@
 #include "iterator_internal.h"
 #include <qpol/iterator.h>
 #include <qpol/policy.h>
-#include <sepol/handle.h>
 #include <sepol/policydb/policydb.h>
 #include <sepol/policydb/avtab.h>
 #include <sepol/policydb/util.h>
 #include <stdlib.h>
 #include "debug.h"
 
-int qpol_get_avrule_iter(sepol_handle_t *handle, qpol_policy_t *policy, uint32_t rule_type_mask, qpol_iterator_t **iter)
+int qpol_get_avrule_iter(qpol_handle_t *handle, qpol_policy_t *policy, uint32_t rule_type_mask, qpol_iterator_t **iter)
 {
 	policydb_t *db;
 	avtab_state_t *state;
@@ -66,7 +65,7 @@ int qpol_get_avrule_iter(sepol_handle_t *handle, qpol_policy_t *policy, uint32_t
 	return STATUS_SUCCESS;
 }
 
-int qpol_avrule_get_source_type(sepol_handle_t *handle, qpol_policy_t *policy, qpol_avrule_t *rule, qpol_type_t **source)
+int qpol_avrule_get_source_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_avrule_t *rule, qpol_type_t **source)
 {
 	poicydb_t *db = NULL;
 	avtab_ptr_t avrule = NULL;
@@ -88,7 +87,7 @@ int qpol_avrule_get_source_type(sepol_handle_t *handle, qpol_policy_t *policy, q
 	return STATUS_SUCCESS;
 }
 
-int qpol_avrule_get_target_type(sepol_handle_t *handle, qpol_policy_t *policy, qpol_avrule_t *rule, qpol_type_t **target)
+int qpol_avrule_get_target_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_avrule_t *rule, qpol_type_t **target)
 {
 	policydb_t *db = NULL;
 	avtab_ptr_t avrule = NULL;
@@ -110,7 +109,7 @@ int qpol_avrule_get_target_type(sepol_handle_t *handle, qpol_policy_t *policy, q
 	return STATUS_SUCCESS;
 }
 
-int qpol_avrule_get_object_class(sepol_handle_t *handle, qpol_policy_t *policy, qpol_avrule_t *rule, qpol_class_t **obj_class)
+int qpol_avrule_get_object_class(qpol_handle_t *handle, qpol_policy_t *policy, qpol_avrule_t *rule, qpol_class_t **obj_class)
 {
 	policydb_t *db = NULL;
 	avtab_ptr_t avrule = NULL;
@@ -278,7 +277,7 @@ static size_t perm_state_size(qpol_iterator_t *iter)
 	return count;	
 }
 
-int qpol_avrule_get_perm_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol_avrule_t *rule, qpol_iterator_t **perms)
+int qpol_avrule_get_perm_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_avrule_t *rule, qpol_iterator_t **perms)
 {
 	policydb_t *db = NULL;
 	avtab_ptr_t avrule = NULL;
@@ -313,7 +312,7 @@ int qpol_avrule_get_perm_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpo
 	return STATUS_SUCCESS;
 }
 
-int qpol_avrule_get_rule_type(sepol_handle_t *handle, qpol_policy_t *policy, qpol_avrule_t *rule, uint32_t *rule_type)
+int qpol_avrule_get_rule_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_avrule_t *rule, uint32_t *rule_type)
 {
 	policydb_t *db = NULL;
 	avtab_ptr_t avrule = NULL;

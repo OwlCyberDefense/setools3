@@ -28,7 +28,6 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include <sepol/handle.h>
 #include <qpol/iterator.h>
 #include <qpol/policy.h>
 
@@ -44,7 +43,7 @@ typedef struct qpol_role qpol_role_t;
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *datum will be NULL.
  */
-extern int qpol_policy_get_role_by_name(sepol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_role_t **datum);
+extern int qpol_policy_get_role_by_name(qpol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_role_t **datum);
 
 /**
  *  Get an iterator for roles declared in the policy.
@@ -57,7 +56,7 @@ extern int qpol_policy_get_role_by_name(sepol_handle_t *handle, qpol_policy_t *p
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_policy_get_role_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter);
+extern int qpol_policy_get_role_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter);
 
 /**
  *  Get the integer value associated with a role; values range from
@@ -69,7 +68,7 @@ extern int qpol_policy_get_role_iter(sepol_handle_t *handle, qpol_policy_t *poli
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and value will be 0.
  */
-extern int qpol_role_get_value(sepol_handle_t *handle, qpol_policy_t *policy, qpol_role_t *datum, uint32_t *value);
+extern int qpol_role_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpol_role_t *datum, uint32_t *value);
 
 /**
  *  Get an iterator for the set of roles dominated by a role.
@@ -85,7 +84,7 @@ extern int qpol_role_get_value(sepol_handle_t *handle, qpol_policy_t *policy, qp
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *dominates will be NULL.
  */
-extern int qpol_role_get_dominate_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol_role_t *datum, qpol_iterator_t **dominates);
+extern int qpol_role_get_dominate_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_role_t *datum, qpol_iterator_t **dominates);
 
 /**
  *  Get an iterator for the set of types assigned to a role.
@@ -99,7 +98,7 @@ extern int qpol_role_get_dominate_iter(sepol_handle_t *handle, qpol_policy_t *po
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and types will be NULL.
  */
-extern int qpol_role_get_type_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol_role_t *datum, qpol_iterator_t **types);
+extern int qpol_role_get_type_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_role_t *datum, qpol_iterator_t **types);
 
 /**
  *  Get the name by which a role is identified from its datum.
@@ -111,6 +110,6 @@ extern int qpol_role_get_type_iter(sepol_handle_t *handle, qpol_policy_t *policy
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *name will be NULL.
  */
-extern int qpol_role_get_name(sepol_handle_t *handle, qpol_policy_t *policy, qpol_role_t *datum, char **name);
+extern int qpol_role_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_role_t *datum, char **name);
 
 #endif /* QPOL_ROLE_QUERY_H */

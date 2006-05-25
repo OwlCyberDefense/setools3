@@ -27,7 +27,6 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <sepol/handle.h>
 #include <qpol/iterator.h>
 #include <sepol/policydb/policydb.h>
 #include <sepol/policydb/expand.h>
@@ -36,7 +35,7 @@
 #include "debug.h"
 
 /* level */
-int qpol_policy_get_level_by_name(sepol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_level_t **datum)
+int qpol_policy_get_level_by_name(qpol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_level_t **datum)
 {
 	policydb_t *db = NULL;
 	hashtab_datum_t internal_datum = NULL;
@@ -60,7 +59,7 @@ int qpol_policy_get_level_by_name(sepol_handle_t *handle, qpol_policy_t *policy,
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_get_level_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter)
+int qpol_policy_get_level_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter)
 {
 	policydb_t *db;
 	int error = 0;
@@ -98,7 +97,7 @@ int qpol_policy_get_level_iter(sepol_handle_t *handle, qpol_policy_t *policy, qp
 	return STATUS_SUCCESS;
 }
 
-int qpol_level_get_isalias(sepol_handle_t *handle, qpol_policy_t *policy, qpol_level_t *datum, unsigned char *isalias)
+int qpol_level_get_isalias(qpol_handle_t *handle, qpol_policy_t *policy, qpol_level_t *datum, unsigned char *isalias)
 {
 	level_datum_t *internal_datum;
 
@@ -116,7 +115,7 @@ int qpol_level_get_isalias(sepol_handle_t *handle, qpol_policy_t *policy, qpol_l
 	return STATUS_SUCCESS;
 }
 
-int qpol_level_get_value(sepol_handle_t *handle, qpol_policy_t *policy, qpol_level_t *datum, uint32_t *value)
+int qpol_level_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpol_level_t *datum, uint32_t *value)
 {
 	level_datum_t *internal_datum = NULL;
 
@@ -134,7 +133,7 @@ int qpol_level_get_value(sepol_handle_t *handle, qpol_policy_t *policy, qpol_lev
 	return STATUS_SUCCESS;
 }
 
-int qpol_level_get_cat_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol_level_t *datum, qpol_iterator_t **cats)
+int qpol_level_get_cat_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_level_t *datum, qpol_iterator_t **cats)
 {
 	level_datum_t *internal_datum = NULL;
 	ebitmap_state_t *es = NULL;
@@ -173,7 +172,7 @@ int qpol_level_get_cat_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol_
 	return STATUS_SUCCESS;
 }
 
-int qpol_level_get_name(sepol_handle_t *handle, qpol_policy_t *policy, qpol_level_t *datum, char **name)
+int qpol_level_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_level_t *datum, char **name)
 {
 	level_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;
@@ -251,7 +250,7 @@ static void *hash_state_get_cur_alias(qpol_iterator_t *iter)
 	return hs->node->key;
 }
 
-int qpol_level_get_alias_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol_level_t *datum, qpol_iterator_t **aliases)
+int qpol_level_get_alias_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_level_t *datum, qpol_iterator_t **aliases)
 {
 	level_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;
@@ -293,7 +292,7 @@ int qpol_level_get_alias_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpo
 }
 
 /* cat */
-int qpol_policy_get_cat_by_name(sepol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_cat_t **datum)
+int qpol_policy_get_cat_by_name(qpol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_cat_t **datum)
 {
 	hashtab_datum_t internal_datum;
 	policydb_t *db;
@@ -319,7 +318,7 @@ int qpol_policy_get_cat_by_name(sepol_handle_t *handle, qpol_policy_t *policy, c
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_get_cat_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter)
+int qpol_policy_get_cat_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter)
 {
 	policydb_t *db;
 	int error = 0;
@@ -357,7 +356,7 @@ int qpol_policy_get_cat_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol
 	return STATUS_SUCCESS;
 }
 
-int qpol_cat_get_value(sepol_handle_t *handle, qpol_policy_t *policy, qpol_cat_t *datum, uint32_t *value)
+int qpol_cat_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpol_cat_t *datum, uint32_t *value)
 {
 	cat_datum_t *internal_datum = NULL;
 
@@ -375,7 +374,7 @@ int qpol_cat_get_value(sepol_handle_t *handle, qpol_policy_t *policy, qpol_cat_t
 	return STATUS_SUCCESS;
 }
 
-int qpol_cat_get_isalias(sepol_handle_t *handle, qpol_policy_t *policy, qpol_cat_t *datum, unsigned char *isalias)
+int qpol_cat_get_isalias(qpol_handle_t *handle, qpol_policy_t *policy, qpol_cat_t *datum, unsigned char *isalias)
 {
 	cat_datum_t *internal_datum;
 
@@ -393,7 +392,7 @@ int qpol_cat_get_isalias(sepol_handle_t *handle, qpol_policy_t *policy, qpol_cat
 	return STATUS_SUCCESS;
 }
 
-int qpol_cat_get_name(sepol_handle_t *handle, qpol_policy_t *policy, qpol_cat_t *datum, char **name)
+int qpol_cat_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_cat_t *datum, char **name)
 {
 	cat_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;
@@ -443,7 +442,7 @@ static int hash_state_next_cat_alias(qpol_iterator_t *iter)
 	return STATUS_SUCCESS;
 }
 
-int qpol_cat_get_alias_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol_cat_t *datum, qpol_iterator_t **aliases)
+int qpol_cat_get_alias_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_cat_t *datum, qpol_iterator_t **aliases)
 {
 	cat_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;
@@ -485,7 +484,7 @@ int qpol_cat_get_alias_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol_
 }
 
 /* mls range */
-int qpol_mls_range_get_low_level(sepol_handle_t *handle, qpol_policy_t *policy, qpol_mls_range_t *range, qpol_mls_level_t **level)
+int qpol_mls_range_get_low_level(qpol_handle_t *handle, qpol_policy_t *policy, qpol_mls_range_t *range, qpol_mls_level_t **level)
 {
 	mls_range_t *internal_range = NULL;
 
@@ -503,7 +502,7 @@ int qpol_mls_range_get_low_level(sepol_handle_t *handle, qpol_policy_t *policy, 
 	return STATUS_SUCCESS;
 }
 
-int qpol_mls_range_get_high_level(sepol_handle_t *handle, qpol_policy_t *policy, qpol_mls_range_t *range, qpol_mls_level_t **level)
+int qpol_mls_range_get_high_level(qpol_handle_t *handle, qpol_policy_t *policy, qpol_mls_range_t *range, qpol_mls_level_t **level)
 {
 	mls_range_t *internal_range = NULL;
 
@@ -522,7 +521,7 @@ int qpol_mls_range_get_high_level(sepol_handle_t *handle, qpol_policy_t *policy,
 }
 
 /* mls_level */
-int qpol_mls_level_get_sens_name(sepol_handle_t *handle, qpol_policy_t *policy, qpol_mls_level_t *level, char **name)
+int qpol_mls_level_get_sens_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_mls_level_t *level, char **name)
 {
 	policydb_t *db = NULL;
 	mls_level_t *internal_level = NULL;
@@ -543,7 +542,7 @@ int qpol_mls_level_get_sens_name(sepol_handle_t *handle, qpol_policy_t *policy, 
 	return STATUS_SUCCESS;
 }
 
-int qpol_mls_level_get_cat_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol_mls_level_t *level, qpol_iterator_t **cats)
+int qpol_mls_level_get_cat_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_mls_level_t *level, qpol_iterator_t **cats)
 {
 	mls_level_t *internal_level = NULL;
 	ebitmap_state_t *es = NULL;

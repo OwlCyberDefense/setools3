@@ -52,6 +52,7 @@
 #include <qpol/policy.h>
 #include <qpol/policy_extend.h>
 #include <qpol/queue.h>
+#include <qpol/expand.h>
 
 /* redefine input so we can read from a string */
 /* borrowed from O'Reilly lex and yacc pg 157 */
@@ -529,7 +530,7 @@ int qpol_find_default_policy_file(unsigned int search_opt, char **policy_file_pa
 	return INVALID_SEARCH_OPTIONS;
 }
 
-int qpol_open_policy_from_file(const char *path, qpol_policy_t **policy, sepol_handle_t **handle)
+int qpol_open_policy_from_file(const char *path, qpol_policy_t **policy, qpol_handle_t **handle)
 {
 	int error = 0;
 	FILE *infile = NULL;
@@ -638,7 +639,7 @@ err:
 }
 
 int qpol_open_policy_from_memory(qpol_policy_t **policy, const char *filedata, int size, 
-				 sepol_handle_t **handle)
+				 qpol_handle_t **handle)
 {
         int error = 0;
 	if (policy == NULL || filedata == NULL)
@@ -695,3 +696,17 @@ int qpol_close_policy(qpol_policy_t **policy)
 	return STATUS_SUCCESS;
 
 }
+
+extern int qpol_handle_destroy(qpol_handle_t **handle)
+{
+	if (handle == NULL) {
+		errno = EINVAL;
+		return STATUS_ERR;
+	}
+
+	sepol_handle_destroy(*handle);
+	*handle = NULL;
+
+	return STATUS_SUCCESS;
+}
+

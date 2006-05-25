@@ -29,8 +29,6 @@
 
 #include <byteswap.h>
 #include <endian.h>
-#include <sepol/policydb.h>
-
 
 #if __BYTE_ORDER == __LITTLE_ENDIAN
 #define cpu_to_le16(x) (x)
@@ -48,7 +46,6 @@
 #define le64_to_cpu(x) bswap_64(x)
 #endif
 
-
 /* * Return codes for qpol_find_default_policy_file() function. */
 #define FIND_DEFAULT_SUCCESS                    0
 #define GENERAL_ERROR                           -1
@@ -63,8 +60,8 @@
 #define QPOL_TYPE_BINARY	1
 #define QPOL_TYPE_SOURCE	2
 
-
-typedef sepol_policydb_t qpol_policy_t;
+typedef struct sepol_policydb qpol_policy_t;
+typedef struct sepol_handle qpol_handle_t;
 
 /**
  *  Open a policy from a passed in file path.
@@ -75,7 +72,7 @@ typedef sepol_policydb_t qpol_policy_t;
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *policy will be NULL.
  */
-extern int qpol_open_policy_from_file(const char *filename, qpol_policy_t **policy, sepol_handle_t **handle);
+extern int qpol_open_policy_from_file(const char *filename, qpol_policy_t **policy, qpol_handle_t **handle);
 
 /**
  *  Open a policy from a passed in file path.
@@ -88,14 +85,23 @@ extern int qpol_open_policy_from_file(const char *filename, qpol_policy_t **poli
  *  errno will be set and *policy will be NULL.
  */
 extern int qpol_open_policy_from_memory(qpol_policy_t **policy, const char *filedata, int size,
-					sepol_handle_t **handle);
+					qpol_handle_t **handle);
 
 /**
  *  Close a policy.
  *  @param policy The policy to close.
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
+ *  errno will be set.
  */
 extern int qpol_close_policy(qpol_policy_t **policy);
+
+/**
+ *  Destroy the handle.
+ *  @param handle The handle to destroy.
+ *  @return 0 on success and < 0 on failure; if the call fails,
+ *  errno will be set.
+ */
+extern int qpol_handle_destroy(qpol_handle_t **handle);
 
 /**
  * Find the default policy file given a policy type. 

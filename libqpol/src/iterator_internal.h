@@ -31,6 +31,7 @@
 #include <sepol/policydb/policydb.h>
 #include <sepol/policydb/avtab.h>
 #include <qpol/iterator.h>
+#include <qpol/policy.h>
 #include <stddef.h>
 
 typedef struct hash_state {
@@ -58,7 +59,7 @@ typedef struct avtab_state {
 	unsigned which;
 } avtab_state_t;
 
-int qpol_iterator_create(sepol_handle_t *handle, policydb_t *policy, void *state,
+int qpol_iterator_create(qpol_handle_t *handle, policydb_t *policy, void *state,
 	void *(*get_cur)(qpol_iterator_t *iter),
 	int (*next)(qpol_iterator_t *iter),
 	int (*end)(qpol_iterator_t *iter),

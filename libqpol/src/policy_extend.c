@@ -47,7 +47,7 @@
  *  errno will be set. On failure, the policy state may be inconsistent 
  *  especially in the case where the hashtab functions return the error.
  */
-static int qpol_policy_build_attrs_from_map(sepol_handle_t *handle, qpol_policy_t *policy)
+static int qpol_policy_build_attrs_from_map(qpol_handle_t *handle, qpol_policy_t *policy)
 {
 	policydb_t *db = NULL;
 	size_t i;
@@ -149,7 +149,7 @@ err:
  *  errno will be set. On failure, the policy state may be inconsistent
  *  especially in the case where the hashtab functions return the error.
  */
-static int qpol_policy_fill_attr_holes(sepol_handle_t *handle, qpol_policy_t *policy)
+static int qpol_policy_fill_attr_holes(qpol_handle_t *handle, qpol_policy_t *policy)
 {
 	policydb_t *db = NULL;
 	char *tmp_name = NULL, buff[10];
@@ -251,7 +251,7 @@ static char *sidnames[] =
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set. On failure, the policy state may be inconsistent.
  */
-static int qpol_policy_add_isid_names(sepol_handle_t *handle, qpol_policy_t *policy)
+static int qpol_policy_add_isid_names(qpol_handle_t *handle, qpol_policy_t *policy)
 {
 	policydb_t *db = NULL;
 	ocontext_t *sid = NULL;
@@ -284,7 +284,7 @@ static int qpol_policy_add_isid_names(sepol_handle_t *handle, qpol_policy_t *pol
 	return 0;
 }
 
-int qpol_policy_extend(sepol_handle_t *handle, qpol_policy_t *policy, qpol_extended_image_t *ext)
+int qpol_policy_extend(qpol_handle_t *handle, qpol_policy_t *policy, qpol_extended_image_t *ext)
 {
 	int retv, error;
 	policydb_t *db = NULL;

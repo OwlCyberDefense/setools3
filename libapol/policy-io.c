@@ -677,7 +677,7 @@ int open_policy(const char* filename, policy_t **policy)
 #include "policy-io.h"
 
 __attribute__ ((format (printf, 3, 4)))
-static void sepol_handle_route_to_callback(void *varg, sepol_handle_t *handle,
+static void qpol_handle_route_to_callback(void *varg, qpol_handle_t *handle,
 					   const char *fmt, ...)
 {
 	apol_policy_t *p = (apol_policy_t *) varg;
@@ -697,75 +697,11 @@ static void apol_handle_default_callback(void *varg __attribute__ ((unused)),
 	 fprintf(stderr, "\n");
 }
 
-int apol_policy_open_binary(const char *path,
-			    apol_policy_t **policy)
-{
-	int retv = 0;
-	FILE *infile = NULL;
-	sepol_policy_file_t *pfile = NULL;
-
-	if ((*policy = calloc(1, sizeof(**policy))) == NULL) {
-		fprintf(stderr, "Out of memory!\n");
-		return -1;
-	}
-	(*policy)->msg_callback = apol_handle_default_callback;
-	(*policy)->msg_callback_arg = (*policy);
-
-	(*policy)->sh = sepol_handle_create();
-	if ((*policy)->sh == NULL) {
-		ERR(*policy, "Error creating sepol policy handle.\n");
-		return -1;
-	}
-//	sepol_handle_set_callback((*policy)->sh, sepol_handle_route_to_callback, (*policy));
-
-	retv = sepol_policydb_create(&(*policy)->p);
-	if (retv) {
-		ERR(*policy, "Error creating policy database.\n");
-		goto open_policy_error;
-	}
-
-	retv = sepol_policy_file_create(&pfile);
-	if (retv) {
-		ERR(*policy, "Error creating policy file.\n");
-		goto open_policy_error;
-	}
-
-	infile = fopen(path, "rb");
-	if (!infile) {
-		ERR(*policy, "Error: unable to open %s: ", path); /* no new line */
-		perror(NULL);
-		goto open_policy_error;
-	}
-
-	sepol_policy_file_set_fp(pfile, infile);
-	sepol_policy_file_set_handle(pfile, (*policy)->sh);
-
-	retv = sepol_policydb_read((*policy)->p, pfile);
-	if (retv) {
-		goto open_policy_error;
-	}
-
-	if (qpol_policy_extend((*policy)->sh, (*policy)->p, NULL)) {
-		goto open_policy_error;
-	}
-
-open_policy_done:
-	sepol_policy_file_free(pfile);
-	pfile = NULL;
-	fclose(infile);
-
-	return retv;
-
-open_policy_error:
-	apol_policy_destroy(policy);
-	goto open_policy_done;
-}
-
 void apol_policy_destroy(apol_policy_t **policy)
 {
 	if (policy != NULL && *policy != NULL) {
-		sepol_policydb_free((*policy)->p);
-		sepol_handle_destroy((*policy)->sh);
+		qpol_close_policy(&((*policy)->p));
+		qpol_handle_destroy(&((*policy)->sh));
 		free(*policy);
 		*policy = NULL;
 	}

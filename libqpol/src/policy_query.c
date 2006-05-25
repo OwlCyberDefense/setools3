@@ -26,7 +26,6 @@
  
 #include <stddef.h>
 #include <stdint.h>
-#include <sepol/handle.h>
 #include <qpol/policy.h>
 #include <qpol/iterator.h>
 #include <sepol/policydb/policydb.h>
@@ -36,7 +35,7 @@
 #include "debug.h"
 
 /* generic information about policydb*/
-int qpol_policy_is_mls_enabled(sepol_handle_t *handle, qpol_policy_t *policy)
+int qpol_policy_is_mls_enabled(qpol_handle_t *handle, qpol_policy_t *policy)
 {
 	policydb_t *db = NULL;
 
@@ -54,7 +53,7 @@ int qpol_policy_is_mls_enabled(sepol_handle_t *handle, qpol_policy_t *policy)
 		return 0;
 }
 
-int qpol_policy_get_policy_version(sepol_handle_t *handle, qpol_policy_t *policy, unsigned int *version)
+int qpol_policy_get_policy_version(qpol_handle_t *handle, qpol_policy_t *policy, unsigned int *version)
 {
 	policydb_t *db;
 

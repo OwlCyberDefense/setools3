@@ -26,7 +26,6 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <sepol/handle.h>
 #include <qpol/iterator.h>
 #include <qpol/policy.h>
 #include <qpol/context_query.h>
@@ -40,7 +39,7 @@ struct qpol_nodecon {
 	unsigned char protocol;
 };
 
-int qpol_policy_get_nodecon_by_node(sepol_handle_t *handle, qpol_policy_t *policy, uint32_t addr[4], uint32_t mask[4], unsigned char protocol, qpol_nodecon_t **ocon)
+int qpol_policy_get_nodecon_by_node(qpol_handle_t *handle, qpol_policy_t *policy, uint32_t addr[4], uint32_t mask[4], unsigned char protocol, qpol_nodecon_t **ocon)
 {
 	policydb_t *db = NULL;
 	ocontext_t *tmp = NULL;
@@ -188,7 +187,7 @@ static int node_state_next(qpol_iterator_t *iter)
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_get_nodecon_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter)
+int qpol_policy_get_nodecon_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter)
 {
 	policydb_t *db = NULL;
 	int error = 0;
@@ -246,7 +245,7 @@ int qpol_policy_get_nodecon_iter(sepol_handle_t *handle, qpol_policy_t *policy, 
 	return STATUS_SUCCESS;
 }
 
-int qpol_nodecon_get_addr(sepol_handle_t *handle, qpol_policy_t *policy, qpol_nodecon_t *ocon, uint32_t **addr, unsigned char *protocol)
+int qpol_nodecon_get_addr(qpol_handle_t *handle, qpol_policy_t *policy, qpol_nodecon_t *ocon, uint32_t **addr, unsigned char *protocol)
 {
 	if (addr != NULL)
 		*addr = NULL;
@@ -270,7 +269,7 @@ int qpol_nodecon_get_addr(sepol_handle_t *handle, qpol_policy_t *policy, qpol_no
 	return STATUS_SUCCESS;
 }
 
-int qpol_nodecon_get_mask(sepol_handle_t *handle, qpol_policy_t *policy, qpol_nodecon_t *ocon, uint32_t **mask, unsigned char *protocol)
+int qpol_nodecon_get_mask(qpol_handle_t *handle, qpol_policy_t *policy, qpol_nodecon_t *ocon, uint32_t **mask, unsigned char *protocol)
 {
 	if (mask != NULL)
 		*mask = NULL;
@@ -294,7 +293,7 @@ int qpol_nodecon_get_mask(sepol_handle_t *handle, qpol_policy_t *policy, qpol_no
 	return STATUS_SUCCESS;
 }
 
-int qpol_nodecon_get_protocol(sepol_handle_t *handle, qpol_policy_t *policy, qpol_nodecon_t *ocon, unsigned char *protocol)
+int qpol_nodecon_get_protocol(qpol_handle_t *handle, qpol_policy_t *policy, qpol_nodecon_t *ocon, unsigned char *protocol)
 {
 	if (protocol != NULL)
 		*protocol = 0;
@@ -310,7 +309,7 @@ int qpol_nodecon_get_protocol(sepol_handle_t *handle, qpol_policy_t *policy, qpo
 	return STATUS_SUCCESS;
 }
 
-int qpol_nodecon_get_context(sepol_handle_t *handle, qpol_policy_t *policy, qpol_nodecon_t *ocon, qpol_context_t **context)
+int qpol_nodecon_get_context(qpol_handle_t *handle, qpol_policy_t *policy, qpol_nodecon_t *ocon, qpol_context_t **context)
 {
 	if (context != NULL)
 		*context = NULL;

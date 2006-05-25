@@ -595,19 +595,6 @@ int Apol_OpenPolicy(ClientData clientData, Tcl_Interp *interp, int argc, char *a
 		return rt;
 	}
 
-	/******** new routine here ********
-	if (is_binary_policy(policy)) {
-		if (apol_policy_open_binary(argv[1], &policydb)) {
-			Tcl_SetResult(interp, "Open policy error.", TCL_STATIC);
-			return TCL_ERROR;
-		}
-		policydb->msg_callback_arg = NULL;
-		policydb->msg_callback = apol_tcl_route_handle_to_string;
-	}
-        else {
-            fprintf(stderr, "opening source policies does not work yet.\n");
-            assert(0);
-        }*/
 	return TCL_OK;
 }
 
