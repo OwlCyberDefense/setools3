@@ -908,11 +908,8 @@ int sefs_search_keys_ret_destroy(sefs_search_ret_t *key)
 /**
  * Takes a security context (which is really a char *) returned by
  * getfilecon() and splits it into its component pieces.  It sets the
- * user, role, type, and range pointers to point into context; thus,
- * do not modify nor freecon() the context until after the return
- * values have been used.  (This also means that the context is
- * modified by this function.) If a field is unspecified then its
- * pointer is set to NULL.
+ * user, role, type, and range pointers to point into a newly allocated
+ * context.  The caller should not free() them.
  *
  * @param con Context to split.
  * @param user Reference to where to store user portion.
@@ -923,39 +920,25 @@ int sefs_search_keys_ret_destroy(sefs_search_ret_t *key)
  *
  * @return 0 on success, < 0 on error.
  */
-static int split_context(security_context_t con, char **user, char **role, char **type, char **range)
+static int split_context(security_context_t con, const char **user, const char **role, const char **type, const char **range)
 {
-	char *s;
-	*user = *role = *type = *range = NULL;
-	/* note: can't use strtok() here because the range could have
-	 * colons within it */
-	if (con == NULL || (s = strchr(con, ':')) == NULL) {
-		return -1;
-	}
-	*user = con;
-	*s = '\0';
-	con = s + 1;
-	
-	if ((s = strchr(con, ':')) == NULL) {
-		return -1;
-	}
-	*role = con;
-	*s = '\0';
-	con = s + 1;
+        context_t ctxt;
+        char *str;
+        *user = *role = *type = *range = NULL;
 
-	s = strchr(con, ':');
-	*type = con;
-	if (s == NULL) {
-		/* no MLS range given */
-		return 0;
-	}
-	*s = '\0';
-	con = s + 1;
+        ctxt = context_new(con);
+        if (!ctxt)
+                return -1;
 
-	/* range is the remaining portion of the string -- no error
-	 * checking on it */
-	*range = con;
-	return 0;
+        *user = context_user_get(ctxt);
+        *role = context_role_get(ctxt);
+        *type = context_type_get(ctxt);
+        if (is_selinux_mls_enabled())
+                *range = context_range_get(ctxt);
+
+ /* FIX ME sometime later: ctxt needs to be destroyed.  note that it can't
+    be done here because *user etc point into that memory. */
+        return 0;
 }
 
 static int ftw_handler(const char *file, const struct stat64 *sb, int flag, struct FTW *s)
