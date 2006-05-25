@@ -26,7 +26,6 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <sepol/handle.h>
 #include <qpol/iterator.h>
 #include <qpol/policy.h>
 #include <qpol/context_query.h>
@@ -42,7 +41,7 @@ struct qpol_genfscon {
 	uint32_t sclass;
 };
 
-int qpol_policy_get_genfscon_by_name(sepol_handle_t *handle, qpol_policy_t *policy, const char *name, const char *path, qpol_genfscon_t **genfscon)
+int qpol_policy_get_genfscon_by_name(qpol_handle_t *handle, qpol_policy_t *policy, const char *name, const char *path, qpol_genfscon_t **genfscon)
 {
 	genfs_t *tmp = NULL;
 	ocontext_t *tmp2 = NULL;
@@ -191,7 +190,7 @@ static int genfs_state_next(qpol_iterator_t *iter)
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_get_genfscon_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter)
+int qpol_policy_get_genfscon_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter)
 {
 	policydb_t *db = NULL;
 	genfs_state_t *gs = NULL;
@@ -228,7 +227,7 @@ int qpol_policy_get_genfscon_iter(sepol_handle_t *handle, qpol_policy_t *policy,
 	return STATUS_SUCCESS;
 }
 
-int qpol_genfscon_get_name(sepol_handle_t *handle, qpol_policy_t *policy, qpol_genfscon_t *genfs, char **name)
+int qpol_genfscon_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_genfscon_t *genfs, char **name)
 {
 	if (name != NULL)
 		*name = NULL;
@@ -244,7 +243,7 @@ int qpol_genfscon_get_name(sepol_handle_t *handle, qpol_policy_t *policy, qpol_g
 	return STATUS_SUCCESS;
 }
 
-int qpol_genfscon_get_path(sepol_handle_t *handle, qpol_policy_t *policy, qpol_genfscon_t *genfs, char **path)
+int qpol_genfscon_get_path(qpol_handle_t *handle, qpol_policy_t *policy, qpol_genfscon_t *genfs, char **path)
 {
 	if (path != NULL)
 		*path = NULL;
@@ -260,7 +259,7 @@ int qpol_genfscon_get_path(sepol_handle_t *handle, qpol_policy_t *policy, qpol_g
 	return STATUS_SUCCESS;
 }
 
-int qpol_genfscon_get_class(sepol_handle_t *handle, qpol_policy_t *policy, qpol_genfscon_t *genfs, uint32_t *class)
+int qpol_genfscon_get_class(qpol_handle_t *handle, qpol_policy_t *policy, qpol_genfscon_t *genfs, uint32_t *class)
 {
 	if (class != NULL)
 		*class = 0;
@@ -276,7 +275,7 @@ int qpol_genfscon_get_class(sepol_handle_t *handle, qpol_policy_t *policy, qpol_
 	return STATUS_SUCCESS;
 }
 
-int qpol_genfscon_get_context(sepol_handle_t *handle, qpol_policy_t *policy, qpol_genfscon_t *genfscon, qpol_context_t **context)
+int qpol_genfscon_get_context(qpol_handle_t *handle, qpol_policy_t *policy, qpol_genfscon_t *genfscon, qpol_context_t **context)
 {
 	if (context != NULL)
 		*context = NULL;

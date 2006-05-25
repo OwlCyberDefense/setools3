@@ -26,7 +26,6 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <sepol/handle.h>
 #include <qpol/iterator.h>
 #include <qpol/policy.h>
 #include <sepol/policydb/policydb.h>
@@ -36,7 +35,7 @@
 #include <qpol/type_query.h>
 #include "debug.h"
 
-int qpol_policy_get_role_by_name(sepol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_role_t **datum)
+int qpol_policy_get_role_by_name(qpol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_role_t **datum)
 {
 	hashtab_datum_t internal_datum;
 	policydb_t *db;
@@ -62,7 +61,7 @@ int qpol_policy_get_role_by_name(sepol_handle_t *handle, qpol_policy_t *policy, 
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_get_role_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter)
+int qpol_policy_get_role_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter)
 {
 	policydb_t *db;
 	int error = 0;
@@ -100,7 +99,7 @@ int qpol_policy_get_role_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpo
 	return STATUS_SUCCESS;
 }
 
-int qpol_role_get_value(sepol_handle_t *handle, qpol_policy_t *policy, qpol_role_t *datum, uint32_t *value)
+int qpol_role_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpol_role_t *datum, uint32_t *value)
 {
 	role_datum_t *internal_datum = NULL;
 
@@ -118,7 +117,7 @@ int qpol_role_get_value(sepol_handle_t *handle, qpol_policy_t *policy, qpol_role
 	return STATUS_SUCCESS;
 }
 
-int qpol_role_get_dominate_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol_role_t *datum, qpol_iterator_t **dominates)
+int qpol_role_get_dominate_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_role_t *datum, qpol_iterator_t **dominates)
 {
 	role_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;
@@ -159,7 +158,7 @@ int qpol_role_get_dominate_iter(sepol_handle_t *handle, qpol_policy_t *policy, q
 	return STATUS_SUCCESS;
 }
 
-int qpol_role_get_type_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol_role_t *datum, qpol_iterator_t **types)
+int qpol_role_get_type_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_role_t *datum, qpol_iterator_t **types)
 {
 	role_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;
@@ -220,7 +219,7 @@ int qpol_role_get_type_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol_
 	return STATUS_SUCCESS;
 }
 
-int qpol_role_get_name(sepol_handle_t *handle, qpol_policy_t *policy, qpol_role_t *datum, char **name)
+int qpol_role_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_role_t *datum, char **name)
 {
 	role_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;

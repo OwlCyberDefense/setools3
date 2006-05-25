@@ -29,7 +29,6 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include <sepol/handle.h>
 #include <qpol/iterator.h>
 #include <qpol/policy.h>
 
@@ -50,7 +49,7 @@ typedef struct qpol_common qpol_common_t;
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *classes will be NULL;
  */
-extern int qpol_perm_get_class_iter(sepol_handle_t *handle, qpol_policy_t *policy, const char *perm, qpol_iterator_t **classes);
+extern int qpol_perm_get_class_iter(qpol_handle_t *handle, qpol_policy_t *policy, const char *perm, qpol_iterator_t **classes);
 
 /**
  *  Get an iterator over the set of commons which contain a permission
@@ -65,7 +64,7 @@ extern int qpol_perm_get_class_iter(sepol_handle_t *handle, qpol_policy_t *polic
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *commons will be NULL;
  */
-extern int qpol_perm_get_common_iter(sepol_handle_t *handle, qpol_policy_t *policy, const char *perm, qpol_iterator_t **commons);
+extern int qpol_perm_get_common_iter(qpol_handle_t *handle, qpol_policy_t *policy, const char *perm, qpol_iterator_t **commons);
 
 /* classes */
 /**
@@ -78,7 +77,7 @@ extern int qpol_perm_get_common_iter(sepol_handle_t *handle, qpol_policy_t *poli
  *  @return Returns 0 for success and < 0 for failure; if the call fails,
  *  errno will be set and *datum will be NULL;
  */
-extern int qpol_policy_get_class_by_name(sepol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_class_t **datum);
+extern int qpol_policy_get_class_by_name(qpol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_class_t **datum);
 
 /**
  *  Get an iterator for object classes in the policy.
@@ -91,7 +90,7 @@ extern int qpol_policy_get_class_by_name(sepol_handle_t *handle, qpol_policy_t *
  *  @return Returns 0 for success and < 0 for failure; if the call fails,
  *  errno will be set and *iter will be NULL.
 */
-extern int qpol_policy_get_class_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter);
+extern int qpol_policy_get_class_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter);
 
 /** 
  *  Get the integer value associated with a class. Values range from 1 to 
@@ -103,7 +102,7 @@ extern int qpol_policy_get_class_iter(sepol_handle_t *handle, qpol_policy_t *pol
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *value will be 0.
  */
-extern int qpol_class_get_value(sepol_handle_t *handle, qpol_policy_t *policy, qpol_class_t *datum, uint32_t *value);
+extern int qpol_class_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpol_class_t *datum, uint32_t *value);
 
 /** 
  *  Get the common used by a class.
@@ -116,7 +115,7 @@ extern int qpol_class_get_value(sepol_handle_t *handle, qpol_policy_t *policy, q
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *common will be NULL. 
  */
-extern int qpol_class_get_common(sepol_handle_t *handle, qpol_policy_t *policy, qpol_class_t *datum, qpol_common_t **common);
+extern int qpol_class_get_common(qpol_handle_t *handle, qpol_policy_t *policy, qpol_class_t *datum, qpol_common_t **common);
 
 /**
  *  Get an iterator for the set of (unique) permissions for a class.
@@ -131,7 +130,7 @@ extern int qpol_class_get_common(sepol_handle_t *handle, qpol_policy_t *policy, 
  *  @return Returns 0 for success and < 0 for failure; if the call fails,
  *  errno will be set and *perms will be NULL.
  */
-extern int qpol_class_get_perm_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol_class_t *datum, qpol_iterator_t **perms);
+extern int qpol_class_get_perm_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_class_t *datum, qpol_iterator_t **perms);
 
 /**
  *  Get the name which identifies a class from its datum.
@@ -143,7 +142,7 @@ extern int qpol_class_get_perm_iter(sepol_handle_t *handle, qpol_policy_t *polic
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *name will be NULL. 
  */
-extern int qpol_class_get_name(sepol_handle_t *handle, qpol_policy_t *policy, qpol_class_t *datum, char **name);
+extern int qpol_class_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_class_t *datum, char **name);
 
 /* commons */
 /**
@@ -156,7 +155,7 @@ extern int qpol_class_get_name(sepol_handle_t *handle, qpol_policy_t *policy, qp
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *datum will be NULL.
  */
-extern int qpol_policy_get_common_by_name(sepol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_common_t **datum);
+extern int qpol_policy_get_common_by_name(qpol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_common_t **datum);
 
 /**
  *  Get an iterator for commons in the policy
@@ -169,7 +168,7 @@ extern int qpol_policy_get_common_by_name(sepol_handle_t *handle, qpol_policy_t 
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_policy_get_common_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter);
+extern int qpol_policy_get_common_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter);
 
 /**
  *  Get the integer value associated with a common. Values range from 1 to
@@ -181,7 +180,7 @@ extern int qpol_policy_get_common_iter(sepol_handle_t *handle, qpol_policy_t *po
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *value will be 0.
  */
-extern int qpol_common_get_value(sepol_handle_t *handle, qpol_policy_t *policy, qpol_common_t *datum, uint32_t *value);
+extern int qpol_common_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpol_common_t *datum, uint32_t *value);
 
 /**
  *  Get an iterator for the permissions included in a common.
@@ -195,7 +194,7 @@ extern int qpol_common_get_value(sepol_handle_t *handle, qpol_policy_t *policy, 
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *perms will be NULL.
  */
-extern int qpol_common_get_perm_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol_common_t *datum, qpol_iterator_t **perms);
+extern int qpol_common_get_perm_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_common_t *datum, qpol_iterator_t **perms);
 
 /**
  *  Get the name which identifies a common from its datum.
@@ -207,6 +206,6 @@ extern int qpol_common_get_perm_iter(sepol_handle_t *handle, qpol_policy_t *poli
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *name will be NULL.
  */
-extern int qpol_common_get_name(sepol_handle_t *handle, qpol_policy_t *policy, qpol_common_t *datum, char **name);
+extern int qpol_common_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_common_t *datum, char **name);
 
 #endif /* QPOL_CLASS_PERM_QUERY_H */

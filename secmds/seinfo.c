@@ -1307,8 +1307,12 @@ int main (int argc, char **argv)
 		policy_file = argv[optind];
 
 	/* attempt to open the policy */
-	if (apol_policy_open_binary(policy_file, &policydb)) {
-		fprintf(stderr, "Error: opening binary policy.\n");
+	if (!(policydb = calloc(1, sizeof(apol_policy_t)))) {
+		fprintf(stderr, "Error: out of memory\n");
+		exit(1);
+	}
+	if (qpol_open_policy_from_file(policy_file, &policydb->p, &policydb->sh)) {
+		fprintf(stderr, "Error: opening policy.\n");
 		exit(1);
 	}
 	policydb->msg_callback_arg = NULL;
