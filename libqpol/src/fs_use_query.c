@@ -26,7 +26,6 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <sepol/handle.h>
 #include <qpol/iterator.h>
 #include <qpol/policy.h>
 #include <qpol/fs_use_query.h>
@@ -36,7 +35,7 @@
 #include "debug.h"
 #include "iterator_internal.h"
 
-int qpol_policy_get_fs_use_by_name(sepol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_fs_use_t **ocon)
+int qpol_policy_get_fs_use_by_name(qpol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_fs_use_t **ocon)
 {
 	ocontext_t *tmp = NULL;
 	policydb_t *db = NULL;
@@ -67,7 +66,7 @@ int qpol_policy_get_fs_use_by_name(sepol_handle_t *handle, qpol_policy_t *policy
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_get_fs_use_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter)
+int qpol_policy_get_fs_use_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter)
 {
 	policydb_t *db = NULL;
 	int error = 0;
@@ -103,7 +102,7 @@ int qpol_policy_get_fs_use_iter(sepol_handle_t *handle, qpol_policy_t *policy, q
 	return STATUS_SUCCESS;
 }
 
-int qpol_fs_use_get_name(sepol_handle_t *handle, qpol_policy_t *policy, qpol_fs_use_t *ocon, char **name)
+int qpol_fs_use_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_fs_use_t *ocon, char **name)
 {
 	ocontext_t *internal_ocon = NULL;
 
@@ -122,7 +121,7 @@ int qpol_fs_use_get_name(sepol_handle_t *handle, qpol_policy_t *policy, qpol_fs_
 	return STATUS_SUCCESS;
 }
 
-int qpol_fs_use_get_behavior(sepol_handle_t *handle, qpol_policy_t *policy, qpol_fs_use_t *ocon, uint32_t *behavior)
+int qpol_fs_use_get_behavior(qpol_handle_t *handle, qpol_policy_t *policy, qpol_fs_use_t *ocon, uint32_t *behavior)
 {
 	ocontext_t *internal_ocon = NULL;
 
@@ -141,7 +140,7 @@ int qpol_fs_use_get_behavior(sepol_handle_t *handle, qpol_policy_t *policy, qpol
 	return STATUS_SUCCESS;
 }
 
-int qpol_fs_use_get_context(sepol_handle_t *handle, qpol_policy_t *policy, qpol_fs_use_t *ocon, qpol_context_t **context)
+int qpol_fs_use_get_context(qpol_handle_t *handle, qpol_policy_t *policy, qpol_fs_use_t *ocon, qpol_context_t **context)
 {
 	ocontext_t *internal_ocon = NULL;
 

@@ -26,6 +26,8 @@
 #ifndef QPOL_AVRULE_QUERRY_H
 #define QPOL_AVRULE_QUERRY_H
 
+#include <qpol/policy.h>
+
 /* rule type defines (values copied from "sepol/policydb/policydb.h") */
 #define QPOL_RULE_ALLOW         1
 #define QPOL_RULE_NEVERALLOW  128
@@ -50,7 +52,7 @@
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_get_avrule_iter(sepol_handle_t *handle, qpol_policy_t *policy, uint32_t rule_type_mask, qpol_iterator_t **iter);
+extern int qpol_get_avrule_iter(qpol_handle_t *handle, qpol_policy_t *policy, uint32_t rule_type_mask, qpol_iterator_t **iter);
 
 /**
  *  Get the source type from an av rule.
@@ -62,7 +64,7 @@ extern int qpol_get_avrule_iter(sepol_handle_t *handle, qpol_policy_t *policy, u
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *source will be NULL.
  */
-extern int qpol_avrule_get_source_type(sepol_handle_t *handle, qpol_policy_t *policy, qpol_avrule_t *rule, qpol_type_t **source);
+extern int qpol_avrule_get_source_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_avrule_t *rule, qpol_type_t **source);
 
 /**
  *  Get the target type from an av rule.
@@ -74,7 +76,7 @@ extern int qpol_avrule_get_source_type(sepol_handle_t *handle, qpol_policy_t *po
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *target will be NULL.
  */
-extern int qpol_avrule_get_target_type(sepol_handle_t *handle, qpol_policy_t *policy, qpol_avrule_t *rule, qpol_type_t **target);
+extern int qpol_avrule_get_target_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_avrule_t *rule, qpol_type_t **target);
 
 /**
  *  Get the object class from an av rule.
@@ -86,7 +88,7 @@ extern int qpol_avrule_get_target_type(sepol_handle_t *handle, qpol_policy_t *po
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *obj_class will be NULL.
  */
-extern int qpol_avrule_get_object_class(sepol_handle_t *handle, qpol_policy_t *policy, qpol_avrule_t *rule, qpol_class_t **obj_class);
+extern int qpol_avrule_get_object_class(qpol_handle_t *handle, qpol_policy_t *policy, qpol_avrule_t *rule, qpol_class_t **obj_class);
 
 /**
  *  Get an iterator over the permissions in an av rule.
@@ -101,7 +103,7 @@ extern int qpol_avrule_get_object_class(sepol_handle_t *handle, qpol_policy_t *p
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *perms will be NULL.
  */
-extern int qpol_avrule_get_perm_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol_avrule_t *rule, qpol_iterator_t **perms);
+extern int qpol_avrule_get_perm_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_avrule_t *rule, qpol_iterator_t **perms);
 
 /**
  *  Get the rule type value for an av rule.
@@ -113,6 +115,6 @@ extern int qpol_avrule_get_perm_iter(sepol_handle_t *handle, qpol_policy_t *poli
  *  @returm 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *rule_type will be 0.
  */
-extern int qpol_avrule_get_rule_type(sepol_handle_t *handle, qpol_policy_t *policy, qpol_avrule_t *rule, uint32_t *rule_type);
+extern int qpol_avrule_get_rule_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_avrule_t *rule, uint32_t *rule_type);
 
 #endif 

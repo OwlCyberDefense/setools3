@@ -27,8 +27,6 @@
 #ifndef QPOL_POLICY_EXTEND_H
 #define QPOL_POLICY_EXTEND_H
 
-#include <sepol/handle.h>
-#include <sepol/sepol.h>
 #include <qpol/policy.h>
 
 typedef struct qpol_extended_image qpol_extended_image_t;
@@ -45,6 +43,6 @@ typedef struct qpol_extended_image qpol_extended_image_t;
  *  errno will be set; the state of the policy is not guaranteed to be stable
  *  if this call fails.
  */
-extern int qpol_policy_extend(sepol_handle_t *handle, qpol_policy_t *policy, qpol_extended_image_t *ext);
+extern int qpol_policy_extend(qpol_handle_t *handle, qpol_policy_t *policy, qpol_extended_image_t *ext);
 
 #endif /* QPOL_POLICY_EXTEND_H */

@@ -26,7 +26,6 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <sepol/handle.h>
 #include <qpol/iterator.h>
 #include <qpol/policy.h>
 #include <sepol/policydb/policydb.h>
@@ -38,7 +37,7 @@
 #include "debug.h"
 
 
-int qpol_policy_get_user_by_name(sepol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_user_t **datum)
+int qpol_policy_get_user_by_name(qpol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_user_t **datum)
 {
 	hashtab_datum_t internal_datum;
 	policydb_t *db;
@@ -64,7 +63,7 @@ int qpol_policy_get_user_by_name(sepol_handle_t *handle, qpol_policy_t *policy, 
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_get_user_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter)
+int qpol_policy_get_user_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter)
 {
 	policydb_t *db;
 	hash_state_t *hs = NULL;
@@ -102,7 +101,7 @@ int qpol_policy_get_user_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpo
 	return STATUS_SUCCESS;
 }
 
-int qpol_user_get_value(sepol_handle_t *handle, qpol_policy_t *policy, qpol_user_t *datum, uint32_t *value)
+int qpol_user_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpol_user_t *datum, uint32_t *value)
 {
 	user_datum_t *internal_datum;
 
@@ -120,7 +119,7 @@ int qpol_user_get_value(sepol_handle_t *handle, qpol_policy_t *policy, qpol_user
 	return STATUS_SUCCESS;
 }
 
-int qpol_user_get_role_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol_user_t *datum, qpol_iterator_t **roles)
+int qpol_user_get_role_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_user_t *datum, qpol_iterator_t **roles)
 {
 	user_datum_t *internal_datum = NULL;
 	int error = 0;
@@ -159,7 +158,7 @@ int qpol_user_get_role_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol_
 	return STATUS_SUCCESS;
 }
 
-int qpol_user_get_range(sepol_handle_t *handle, qpol_policy_t *policy, qpol_user_t *datum, qpol_mls_range_t **range)
+int qpol_user_get_range(qpol_handle_t *handle, qpol_policy_t *policy, qpol_user_t *datum, qpol_mls_range_t **range)
 {
 	user_datum_t *internal_datum = NULL;
 
@@ -177,7 +176,7 @@ int qpol_user_get_range(sepol_handle_t *handle, qpol_policy_t *policy, qpol_user
 	return STATUS_SUCCESS;
 }
 
-int qpol_user_get_dfltlevel(sepol_handle_t *handle, qpol_policy_t *policy, qpol_user_t *datum, qpol_mls_level_t **level)
+int qpol_user_get_dfltlevel(qpol_handle_t *handle, qpol_policy_t *policy, qpol_user_t *datum, qpol_mls_level_t **level)
 {
 	user_datum_t *internal_datum = NULL;
 
@@ -195,7 +194,7 @@ int qpol_user_get_dfltlevel(sepol_handle_t *handle, qpol_policy_t *policy, qpol_
 	return STATUS_SUCCESS;
 }
 
-int qpol_user_get_name(sepol_handle_t *handle, qpol_policy_t *policy, qpol_user_t *datum, char **name)
+int qpol_user_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_user_t *datum, char **name)
 {
 	user_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;

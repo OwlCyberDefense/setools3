@@ -28,7 +28,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sepol/handle.h>
 #include <qpol/iterator.h>
 #include <sepol/policydb.h>
 #include <sepol/policydb/policydb.h>
@@ -74,7 +73,7 @@ static int hash_state_next_class_w_perm(qpol_iterator_t *iter)
 			break;
 		internal_class = hs->node ? (class_datum_t*)hs->node->datum : NULL;
 		/* can use any non-NULL handle as it will never be called from here */
-		qpol_class_get_perm_iter((sepol_handle_t*)1, &sp, (qpol_class_t*)internal_class, &internal_perms);
+		qpol_class_get_perm_iter((qpol_handle_t*)1, &sp, (qpol_class_t*)internal_class, &internal_perms);
 		for (; !qpol_iterator_end(internal_perms); qpol_iterator_next(internal_perms)) {
 			qpol_iterator_get_item(internal_perms, (void**)&tmp);
 			if (!strcmp(tmp, hs->perm_name)) {
@@ -117,7 +116,7 @@ static int hash_state_next_common_w_perm(qpol_iterator_t *iter)
 			break;
 		internal_common = hs->node ? (common_datum_t*)hs->node->datum : NULL;
 		/* can use any non-NULL handle as it will never be called from here */
-		qpol_common_get_perm_iter((sepol_handle_t*)1, &sp, (qpol_common_t*)internal_common, &internal_perms);
+		qpol_common_get_perm_iter((qpol_handle_t*)1, &sp, (qpol_common_t*)internal_common, &internal_perms);
 		for (; !qpol_iterator_end(internal_perms); qpol_iterator_next(internal_perms)) {
 			qpol_iterator_get_item(internal_perms, (void**)&tmp);
 			if (!strcmp(tmp, hs->perm_name)) {
@@ -131,7 +130,7 @@ static int hash_state_next_common_w_perm(qpol_iterator_t *iter)
 	return STATUS_SUCCESS;
 }
 
-int qpol_perm_get_class_iter(sepol_handle_t *handle, qpol_policy_t *policy, const char *perm, qpol_iterator_t **classes)
+int qpol_perm_get_class_iter(qpol_handle_t *handle, qpol_policy_t *policy, const char *perm, qpol_iterator_t **classes)
 {
 	policydb_t *db;
 	int error = 0;
@@ -170,7 +169,7 @@ int qpol_perm_get_class_iter(sepol_handle_t *handle, qpol_policy_t *policy, cons
 	return STATUS_SUCCESS;
 }
 
-int qpol_perm_get_common_iter(sepol_handle_t *handle, qpol_policy_t *policy, const char *perm, qpol_iterator_t **commons)
+int qpol_perm_get_common_iter(qpol_handle_t *handle, qpol_policy_t *policy, const char *perm, qpol_iterator_t **commons)
 {
 	policydb_t *db;
 	int error = 0;
@@ -209,7 +208,7 @@ int qpol_perm_get_common_iter(sepol_handle_t *handle, qpol_policy_t *policy, con
 	return STATUS_SUCCESS;}
 
 /* classes */
-int qpol_policy_get_class_by_name(sepol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_class_t **datum)
+int qpol_policy_get_class_by_name(qpol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_class_t **datum)
 {
 	hashtab_datum_t internal_datum;
 	policydb_t *db;
@@ -236,7 +235,7 @@ int qpol_policy_get_class_by_name(sepol_handle_t *handle, qpol_policy_t *policy,
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_get_class_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter)
+int qpol_policy_get_class_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter)
 {
 	policydb_t *db;
 	int error = 0;
@@ -274,7 +273,7 @@ int qpol_policy_get_class_iter(sepol_handle_t *handle, qpol_policy_t *policy, qp
 	return STATUS_SUCCESS;
 }
 
-int qpol_class_get_value(sepol_handle_t *handle, qpol_policy_t *policy, qpol_class_t *datum, uint32_t *value)
+int qpol_class_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpol_class_t *datum, uint32_t *value)
 {
 	class_datum_t *internal_datum;
 
@@ -292,7 +291,7 @@ int qpol_class_get_value(sepol_handle_t *handle, qpol_policy_t *policy, qpol_cla
 	return STATUS_SUCCESS;
 }
 
-int qpol_class_get_common(sepol_handle_t *handle, qpol_policy_t *policy, qpol_class_t *datum, qpol_common_t **common)
+int qpol_class_get_common(qpol_handle_t *handle, qpol_policy_t *policy, qpol_class_t *datum, qpol_common_t **common)
 {
 	class_datum_t *internal_datum = NULL;
 
@@ -310,7 +309,7 @@ int qpol_class_get_common(sepol_handle_t *handle, qpol_policy_t *policy, qpol_cl
 	return STATUS_SUCCESS;
 }
 
-int qpol_class_get_perm_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol_class_t *datum, qpol_iterator_t **perms)
+int qpol_class_get_perm_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_class_t *datum, qpol_iterator_t **perms)
 {
 	class_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;
@@ -350,7 +349,7 @@ int qpol_class_get_perm_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol
 	return STATUS_SUCCESS;
 }
 
-int qpol_class_get_name(sepol_handle_t *handle, qpol_policy_t *policy, qpol_class_t *datum, char **name)
+int qpol_class_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_class_t *datum, char **name)
 {
 	class_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;
@@ -372,7 +371,7 @@ int qpol_class_get_name(sepol_handle_t *handle, qpol_policy_t *policy, qpol_clas
 }
 
 /* commons */
-int qpol_policy_get_common_by_name(sepol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_common_t **datum)
+int qpol_policy_get_common_by_name(qpol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_common_t **datum)
 {
 	hashtab_datum_t internal_datum;
 	policydb_t *db;
@@ -398,7 +397,7 @@ int qpol_policy_get_common_by_name(sepol_handle_t *handle, qpol_policy_t *policy
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_get_common_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter)
+int qpol_policy_get_common_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter)
 {
 	policydb_t *db;
 	int error = 0;
@@ -436,7 +435,7 @@ int qpol_policy_get_common_iter(sepol_handle_t *handle, qpol_policy_t *policy, q
 	return STATUS_SUCCESS;
 }
 
-int qpol_common_get_value(sepol_handle_t *handle, qpol_policy_t *policy, qpol_common_t *datum, uint32_t *value)
+int qpol_common_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpol_common_t *datum, uint32_t *value)
 {
 	common_datum_t *internal_datum;
 
@@ -454,7 +453,7 @@ int qpol_common_get_value(sepol_handle_t *handle, qpol_policy_t *policy, qpol_co
 	return STATUS_SUCCESS;	
 }
 
-int qpol_common_get_perm_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol_common_t *datum, qpol_iterator_t **perms)
+int qpol_common_get_perm_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_common_t *datum, qpol_iterator_t **perms)
 {
 	common_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;
@@ -494,7 +493,7 @@ int qpol_common_get_perm_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpo
 	return STATUS_SUCCESS;
 }
 
-int qpol_common_get_name(sepol_handle_t *handle, qpol_policy_t *policy, qpol_common_t *datum, char **name)
+int qpol_common_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_common_t *datum, char **name)
 {
 	common_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;

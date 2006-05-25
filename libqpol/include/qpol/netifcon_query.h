@@ -28,7 +28,6 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include <sepol/handle.h>
 #include <qpol/iterator.h>
 #include <qpol/policy.h>
 
@@ -44,7 +43,7 @@ typedef struct qpol_netifcon qpol_netifcon_t;
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *ocon will be NULL.
  */
-extern int qpol_policy_get_netifcon_by_name(sepol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_netifcon_t **ocon);
+extern int qpol_policy_get_netifcon_by_name(qpol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_netifcon_t **ocon);
 
 /**
  *  Get an iterator for the netifcon statements in a policy.
@@ -58,7 +57,7 @@ extern int qpol_policy_get_netifcon_by_name(sepol_handle_t *handle, qpol_policy_
  *  @return 0 on success and < 0 on failure; if the call fails, 
  *  errno will be set and *iter will be NULL.
  */
-extern int qpol_policy_get_netifcon_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter);
+extern int qpol_policy_get_netifcon_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter);
 
 /**
  *  Get the name of the interface from a netifcon statement.
@@ -70,7 +69,7 @@ extern int qpol_policy_get_netifcon_iter(sepol_handle_t *handle, qpol_policy_t *
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *name will be NULL.
  */
-extern int qpol_netifcon_get_name(sepol_handle_t *handle, qpol_policy_t *policy, qpol_netifcon_t *ocon, char **name);
+extern int qpol_netifcon_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_netifcon_t *ocon, char **name);
 
 /**
  *  Get the message context from a netifcon statement.
@@ -82,7 +81,7 @@ extern int qpol_netifcon_get_name(sepol_handle_t *handle, qpol_policy_t *policy,
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *context will be NULL.
  */
-extern int qpol_netifcon_get_msg_con(sepol_handle_t *handle, qpol_policy_t *policy, qpol_netifcon_t *ocon, qpol_context_t **context);
+extern int qpol_netifcon_get_msg_con(qpol_handle_t *handle, qpol_policy_t *policy, qpol_netifcon_t *ocon, qpol_context_t **context);
 
 /**
  *  Get the interface context from a netifcon statement.
@@ -94,6 +93,6 @@ extern int qpol_netifcon_get_msg_con(sepol_handle_t *handle, qpol_policy_t *poli
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *context will be NULL.
  */
-extern int qpol_netifcon_get_if_con(sepol_handle_t *handle, qpol_policy_t *policy, qpol_netifcon_t *ocon, qpol_context_t **context);
+extern int qpol_netifcon_get_if_con(qpol_handle_t *handle, qpol_policy_t *policy, qpol_netifcon_t *ocon, qpol_context_t **context);
 
 #endif /* QPOL_NETIFCON_QUERY_H */

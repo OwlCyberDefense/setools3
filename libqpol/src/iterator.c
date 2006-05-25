@@ -26,6 +26,7 @@
  */
 
 #include <qpol/iterator.h>
+#include <qpol/policy.h>
 #include <qpol/mls_query.h>
 
 #include <stdlib.h>
@@ -50,7 +51,7 @@ struct qpol_iterator {
 	void (*free_fn)(void*x);
 };
 
-int qpol_iterator_create(sepol_handle_t *handle, policydb_t *policy, void *state,
+int qpol_iterator_create(qpol_handle_t *handle, policydb_t *policy, void *state,
 	void *(*get_cur)(qpol_iterator_t *iter),
 	int (*next)(qpol_iterator_t *iter),
 	int (*end)(qpol_iterator_t *iter),
@@ -545,7 +546,7 @@ void *ebitmap_state_get_cur_cat(qpol_iterator_t *iter)
 	sp.p = *db;
 
 	/* handle passed in as 1, but should never fail as the name is retrieved from the list into which we are looking */
-	qpol_policy_get_cat_by_name((sepol_handle_t*)1, &sp, db->p_cat_val_to_name[es->cur], &cat);
+	qpol_policy_get_cat_by_name((qpol_handle_t*)1, &sp, db->p_cat_val_to_name[es->cur], &cat);
 
 	return cat;
 }

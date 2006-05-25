@@ -26,7 +26,6 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <sepol/handle.h>
 #include <qpol/iterator.h>
 #include <qpol/policy.h>
 #include <qpol/context_query.h>
@@ -35,7 +34,7 @@
 #include "debug.h"
 #include "iterator_internal.h"
 
-int qpol_policy_get_netifcon_by_name(sepol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_netifcon_t **ocon)
+int qpol_policy_get_netifcon_by_name(qpol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_netifcon_t **ocon)
 {
 	ocontext_t *tmp = NULL;
 	policydb_t *db = NULL;
@@ -66,7 +65,7 @@ int qpol_policy_get_netifcon_by_name(sepol_handle_t *handle, qpol_policy_t *poli
 	return STATUS_SUCCESS;
 }
 
-int qpol_policy_get_netifcon_iter(sepol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter)
+int qpol_policy_get_netifcon_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_iterator_t **iter)
 {
 	policydb_t *db = NULL;
 	int error = 0;
@@ -102,7 +101,7 @@ int qpol_policy_get_netifcon_iter(sepol_handle_t *handle, qpol_policy_t *policy,
 	return STATUS_SUCCESS;
 }
 
-int qpol_netifcon_get_name(sepol_handle_t *handle, qpol_policy_t *policy, qpol_netifcon_t *ocon, char **name)
+int qpol_netifcon_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_netifcon_t *ocon, char **name)
 {
 	ocontext_t *internal_ocon = NULL;
 
@@ -121,7 +120,7 @@ int qpol_netifcon_get_name(sepol_handle_t *handle, qpol_policy_t *policy, qpol_n
 	return STATUS_SUCCESS;
 }
 
-int qpol_netifcon_get_msg_con(sepol_handle_t *handle, qpol_policy_t *policy, qpol_netifcon_t *ocon, qpol_context_t **context)
+int qpol_netifcon_get_msg_con(qpol_handle_t *handle, qpol_policy_t *policy, qpol_netifcon_t *ocon, qpol_context_t **context)
 {
 	ocontext_t *internal_ocon = NULL;
 
@@ -140,7 +139,7 @@ int qpol_netifcon_get_msg_con(sepol_handle_t *handle, qpol_policy_t *policy, qpo
 	return STATUS_SUCCESS;
 }
 
-int qpol_netifcon_get_if_con(sepol_handle_t *handle, qpol_policy_t *policy, qpol_netifcon_t *ocon, qpol_context_t **context)
+int qpol_netifcon_get_if_con(qpol_handle_t *handle, qpol_policy_t *policy, qpol_netifcon_t *ocon, qpol_context_t **context)
 {
 	ocontext_t *internal_ocon = NULL;
 

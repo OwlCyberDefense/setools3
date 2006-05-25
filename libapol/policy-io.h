@@ -73,21 +73,6 @@ const char* find_default_policy_file_strerr(int err);
 #include "policy.h"
 
 /**
- * Attempt to load a binary policy from disk from the given path.
- * Upon success allocate and return new error handles and a new
- * policydb for the loaded policy.  By default the policy's error
- * handler will write everything to stderr; the callback arg will
- * point to the apol_policy_t itself.
- *
- * @param path Path to the policy to load.
- * @param policy Reference to a newly allocated SELinux binary
- * policy, or NULL if load failed.
- *
- * @return 0 on success, non-zero on failure.
- */
-extern int apol_policy_open_binary(const char *path, apol_policy_t **policy);
-
-/**
  * Deallocate all memory associated with a policy, and then set it to
  * NULL.  Does nothing if the pointer is already NULL.
  *

@@ -26,7 +26,6 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <sepol/handle.h>
 #include <qpol/policy.h>
 #include <qpol/context_query.h>
 #include <qpol/user_query.h>
@@ -37,7 +36,7 @@
 #include <sepol/policydb/context.h>
 #include "debug.h"
 
-int qpol_context_get_user(sepol_handle_t *handle, qpol_policy_t *policy, qpol_context_t *context, qpol_user_t **user)
+int qpol_context_get_user(qpol_handle_t *handle, qpol_policy_t *policy, qpol_context_t *context, qpol_user_t **user)
 {
 	policydb_t *db = NULL;
 	context_struct_t *internal_context = NULL;
@@ -59,7 +58,7 @@ int qpol_context_get_user(sepol_handle_t *handle, qpol_policy_t *policy, qpol_co
 	return STATUS_SUCCESS;
 }
 
-int qpol_context_get_role(sepol_handle_t *handle, qpol_policy_t *policy, qpol_context_t *context, qpol_role_t **role)
+int qpol_context_get_role(qpol_handle_t *handle, qpol_policy_t *policy, qpol_context_t *context, qpol_role_t **role)
 {
 	policydb_t *db = NULL;
 	context_struct_t *internal_context = NULL;
@@ -81,7 +80,7 @@ int qpol_context_get_role(sepol_handle_t *handle, qpol_policy_t *policy, qpol_co
 	return STATUS_SUCCESS;
 }
 
-int qpol_context_get_type(sepol_handle_t *handle, qpol_policy_t *policy, qpol_context_t *context, qpol_type_t **type)
+int qpol_context_get_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_context_t *context, qpol_type_t **type)
 {
 	policydb_t *db = NULL;
 	context_struct_t *internal_context = NULL;
@@ -103,7 +102,7 @@ int qpol_context_get_type(sepol_handle_t *handle, qpol_policy_t *policy, qpol_co
 	return STATUS_SUCCESS;
 }
 
-int qpol_context_get_range(sepol_handle_t *handle, qpol_policy_t *policy, qpol_context_t *context, qpol_mls_range_t **range)
+int qpol_context_get_range(qpol_handle_t *handle, qpol_policy_t *policy, qpol_context_t *context, qpol_mls_range_t **range)
 {
 	context_struct_t *internal_context = NULL;
 
