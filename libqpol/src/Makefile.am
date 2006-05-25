@@ -30,5 +30,8 @@ $(srcdir)/tmp_sepol: $(sepol_srcdir)/src/libsepol.a
 libqpol.so: $(srcdir)/tmp_sepol $(libqpol_so_OBJS)
 	$(CC) -shared -o $@ $(libqpol_so_OBJS) $(LDFLAGS) -Wl,-soname,$(SONAME),--version-script=$(srcdir)/libqpol.map,-z,defs -Wl,--whole-archive $(sepol_srcdir)/src/libsepol.a -Wl,--no-whole-archive -lselinux  
 
-mostlyclean-local:
+clean-local:
 	-rm -rf $(srcdir)/tmp_sepol
+
+mostlyclean-local:
+	-rm -rf *.gcno *.gcda *.gprof *.gcov
