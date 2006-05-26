@@ -697,6 +697,25 @@ static void apol_handle_default_callback(void *varg __attribute__ ((unused)),
 	 fprintf(stderr, "\n");
 }
 
+int apol_policy_open(const char *path, apol_policy_t **policy)
+{
+	if (!path || !policy) {
+		errno = EINVAL;
+		return  -1;
+	}
+
+	if (policy)
+		*policy = NULL;
+
+	if (!(*policy = calloc(1, sizeof(apol_policy_t))))
+		return -1; /* errno set by calloc */
+
+	if (qpol_open_policy_from_file(path, &((*policy)->p), &((*policy)->sh)))
+		return -1; /* qpol sets errno */
+
+	return 0;
+}
+
 void apol_policy_destroy(apol_policy_t **policy)
 {
 	if (policy != NULL && *policy != NULL) {

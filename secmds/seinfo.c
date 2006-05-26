@@ -1363,16 +1363,12 @@ int main (int argc, char **argv)
 	}
 
 	/* attempt to open the policy */
-	if (!(policydb = calloc(1, sizeof(apol_policy_t)))) {
-		fprintf(stderr, "Error: out of memory\n");
+	if (apol_policy_open(policy_file, &policydb)) {
+		perror("Error opening policy");
 		free(policy_file);
 		exit(1);
 	}
-	if (qpol_open_policy_from_file(policy_file, &policydb->p, &policydb->sh)) {
-		fprintf(stderr, "Error: opening policy.\n");
-		free(policy_file);
-		exit(1);
-	}
+
 	policydb->msg_callback_arg = NULL;
 
 	/* display requested info */

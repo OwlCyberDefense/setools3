@@ -33,6 +33,7 @@
 #include <tcl.h>
 #include <assert.h>
 #include <unistd.h>
+#include <errno.h>
 #include "policy.h"
 #include "policy-io.h"
 #include "util.h"
@@ -46,6 +47,7 @@
 #include "apol_tcl_rules.h"
 #include "apol_tcl_fc.h"
 #include "apol_tcl_analysis.h"
+#include "policy-io.h"
 
 #include <qpol/policy.h>
 #ifdef APOL_PERFORM_TEST
@@ -583,16 +585,11 @@ int Apol_OpenPolicy(ClientData clientData, Tcl_Interp *interp, int argc, char *a
 		return rt;
 	}
 
-	if (!(policydb = calloc(1, sizeof(apol_policy_t)))) {
-		sprintf(tbuf, "open_policy error (%d)", rt);
+	if (apol_policy_open(argv[1], &policydb)) {
+		rt = errno;
+		sprintf(tbuf, "Apol_open_policy error: %s", strerror(rt));
 		Tcl_AppendResult(interp, tbuf, (char *) NULL);
-		return rt;
-	}
-	rt = qpol_open_policy_from_file(argv[1], &policydb->p, &policydb->sh);
-	if(rt != 0) {
-		sprintf(tbuf, "open_policy error (%d)", rt);
-		Tcl_AppendResult(interp, tbuf, (char *) NULL);
-		return rt;
+		return -rt;
 	}
 
 	return TCL_OK;
