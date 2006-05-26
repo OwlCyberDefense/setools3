@@ -369,49 +369,15 @@ proc ApolTop::popup_Tab_Menu { window x y popupMenu callbacks page } {
 	set cmx [expr $gx + $x]
 	set cmy [expr $gy + $y]
 	
-	set page [ApolTop::get_tabname $page]
 	$popupMenu delete 0 end
 	foreach callback $callbacks {
-		$popupMenu add command -label "[lindex $callback 0]" -command "[lindex $callback 1] $page"
+            $popupMenu add command -label [lindex $callback 0] -command [list [lindex $callback 1] $page]
 	}
 		
 	# Posting the popup menu
    	tk_popup $popupMenu $cmx $cmy
    	
    	return 0
-}
-
-################################################################################
-# ::get_tabname -- 
-#	args:	
-#		- tabID - the tabID provided from the Notebook::bindtabs command
-#
-# Description: 	There is a bug with the BWidgets 1.7.0 Notebook widget where the 
-#	  	tabname is stripped of its' first 2 characters AND an additional 
-#		string, consisting of a colon followed by an embedded widget name 
-#		from the tab, is appended. For example, the tab name will be 
-#		'sults1:text' instead of 'Results1".
-#
-proc ApolTop::get_tabname {tab} {	
-	variable tabName_prefix
-	
-	set idx [string last ":" $tab]
-	if {$idx != -1} {
-		# Strip off the last ':' and any following characters from the end of the string
-		set tab [string range $tab 0 [expr $idx - 1]]
-	}
-	set prefix_len [string length $tabName_prefix]
-	if {[string range $tab 0 $prefix_len] == $tabName_prefix} {
-		return $tab
-	}
-	
-	set tmp $tabName_prefix
-	set idx [string first "_" $tab]
-	if {$idx == -1} {
-		return $tab
-	}
-	set tab_fixed [append tmp [string range $tab [expr $idx + 1] end]]
-	return $tab_fixed
 }
 
 proc ApolTop::set_Focus_to_Text { tab } {
@@ -427,7 +393,6 @@ proc ApolTop::set_Focus_to_Text { tab } {
 	$ApolTop::mainframe setmenustate Disable_LoadQuery_Tag normal
 	set ApolTop::policyConf_lineno ""
 	
-	set tab [ApolTop::get_tabname $tab]	
 	switch -exact -- $tab \
 		$ApolTop::components_tab {
 			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled
@@ -1228,7 +1193,7 @@ proc ApolTop::create { } {
 	set rules_nb [NoteBook $rules_frame.rules_nb]
 
 	variable mls_tabs
-    
+
 	# Subtabs for the main policy components tab.
 	Apol_Types::create $components_nb
 	Apol_Class_Perms::create $components_nb
@@ -1247,6 +1212,8 @@ proc ApolTop::create { } {
 	Apol_RBAC::create $rules_nb
 	Apol_Range::create $rules_nb
 	lappend mls_tabs [list $rules_nb [$rules_nb pages end]]
+
+    tcl_config_replace_bindtabs
 
 	$components_nb compute_size
 	pack $components_nb -fill both -expand yes -padx 4 -pady 4
@@ -1904,23 +1871,23 @@ proc ApolTop::open_apol_modules {file} {
  
 proc ApolTop::enable_disable_conditional_widgets {enable} {
 	set tab [$ApolTop::notebook raise] 
-	switch -exact -- [ApolTop::get_tabname $tab] \
+	switch -exact -- $tab \
 		$ApolTop::components_tab {
-			if {[ApolTop::get_tabname [$ApolTop::components_nb raise]] == $ApolTop::cond_bools_tab} {
+			if {[$ApolTop::components_nb raise] == $ApolTop::cond_bools_tab} {
 				if {$enable} {
 					$ApolTop::components_nb raise $ApolTop::cond_bools_tab
 				} else {
-					set name [ApolTop::get_tabname [$ApolTop::components_nb pages 0]]
+					set name [$ApolTop::components_nb pages 0]
 					$ApolTop::components_nb raise $name
 				}
 			}				
 		} \
 		$ApolTop::rules_tab {
-			if {[ApolTop::get_tabname [$ApolTop::rules_nb raise]] == $ApolTop::cond_rules_tab} {
+			if {[$ApolTop::rules_nb raise] == $ApolTop::cond_rules_tab} {
 				if {$enable} {
 					$ApolTop::rules_nb raise $ApolTop::cond_rules_tab
 				} else {
-					set name [ApolTop::get_tabname [$ApolTop::rules_nb pages 0]]
+					set name [$ApolTop::rules_nb pages 0]
 					$ApolTop::rules_nb raise $name
 				}
 			}
@@ -1946,8 +1913,8 @@ proc ApolTop::enable_non_binary_tabs {} {
 }
 
 proc ApolTop::disable_non_binary_tabs {} {
-   	if {[ApolTop::get_tabname [$ApolTop::notebook raise]] == $ApolTop::policy_conf_tab} {
-		set name [ApolTop::get_tabname [$ApolTop::notebook pages 0]]
+   	if {[$ApolTop::notebook raise] == $ApolTop::policy_conf_tab} {
+		set name [$ApolTop::notebook pages 0]
 		$ApolTop::notebook raise $name
 	} 
    	$ApolTop::notebook itemconfigure $ApolTop::policy_conf_tab -state disabled
@@ -2255,21 +2222,6 @@ proc ApolTop::main {} {
 			http://sourceforge.net/projects/tcllib"
 		exit
 	}
-	if {[package vcompare $bwidget_version "1.4.1"] == -1} {
-		tk_messageBox -icon warning -type ok -title "Package Version" -message \
-			"This tool requires BWidgets 1.4.1 or later. You may experience problems\
-			while running the application. It is recommended that you upgrade your BWidgets\
-			package to version 1.4.1 or greater. See 'Help' for more information."	
-	}
-	
-	# Provide the user with a warning if incompatible Tk and BWidget libraries are being used.
-	if {[package vcompare $bwidget_version "1.4.1"] && $tk_version == "8.3"} {
-		tk_messageBox -icon error -type ok -title "Error" -message \
-			"Your installed Tk version $tk_version includes an incompatible BWidgets $bwidget_version package version. \
-			This has been known to cause a tk application to crash.\n\nIt is recommended that you either upgrade your \
-			Tk library to version 8.4 or greater or use BWidgets 1.4.1 instead. See the README for more information."	
-		exit
-	}
 	
 	# Load the apol package into the interpreter
 	set rt [catch {package require apol} err]
@@ -2282,7 +2234,6 @@ proc ApolTop::main {} {
 		exit
 	}
 
-	
 	wm withdraw .
 	wm title . "SE Linux Policy Analysis"
 	ApolTop::enable_DeleteWindow_event
@@ -2306,15 +2257,9 @@ proc ApolTop::main {} {
 	#    set height [ expr $y - ($y/4)  ]
 	#    BWidget::place . $width $height center
 
-	# BWidgets packages 1.6+ correctly computes the size of the largest Notebook
-	# page when calling its' compute_size command. So, we can use our main notebook 
-	# widgets dimensions to set our default size. This should make the widgets display 
-	# without obscuring widgets.
-	if {[package vcompare $bwidget_version "1.6"] >= 0} {
-		set ApolTop::top_width [$notebook cget -width]	
-		set ApolTop::top_height [$notebook cget -height]
-	} 
-        wm geom . ${top_width}x${top_height}
+    set ApolTop::top_width [$notebook cget -width]	
+    set ApolTop::top_height [$notebook cget -height]
+    wm geom . ${top_width}x${top_height}
         
      	update idletasks   
 	wm deiconify .

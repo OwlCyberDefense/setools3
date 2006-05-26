@@ -1,8 +1,26 @@
-/* Copyright (C) 2006 Tresys Technology, LLC
- * see file 'COPYING' for use and warranty information */
-
-/* 
- * Author: mayerf@tresys.com and Don Patterson <don.patterson@tresys.com>
+/**
+ *  @file apol_tcl_components.c
+ *  Implementation for the apol interface to search for policy components.
+ *
+ *  @author Kevin Carr kcarr@tresys.com
+ *  @author Jeremy A. Mowery jmowery@tresys.com
+ *  @author Jason Tang jtang@tresys.com
+ *
+ *  Copyright (C) 2003-2006 Tresys Technology, LLC
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 #include <tcl.h>
@@ -432,7 +450,7 @@ static int Apol_GetClasses(ClientData clientData, Tcl_Interp *interp, int argc, 
 	}
 	return retval;
 }
-     
+
 /**
  * Takes a qpol_common_t representing a common and appends a
  * tuple of it to result_list.	 The tuple consists of:
@@ -942,7 +960,7 @@ static int append_user_to_list(Tcl_Interp *interp,
 								range)) == NULL) {
 			goto cleanup;
 		}
-		    
+
 		if (apol_level_to_tcl_obj(interp, apol_default, user_elem + 2) == TCL_ERROR ||
 		    apol_level_to_tcl_obj(interp, apol_range->low, range_elem + 0) == TCL_ERROR ||
 		    apol_level_to_tcl_obj(interp, apol_range->high, range_elem + 1) == TCL_ERROR) {
@@ -1819,7 +1837,7 @@ static int Apol_GetPortcons(ClientData clientData, Tcl_Interp *interp, int argc,
 		ERR(policydb, "Need a low port, high port, ?proto?, ?context?, ?range_match?.");
 		goto cleanup;
 	}
-	
+
 	if (Tcl_GetInt(interp, argv[1], &low) == TCL_ERROR ||
 	    Tcl_GetInt(interp, argv[2], &high) == TCL_ERROR) {
 		goto cleanup;
@@ -2127,7 +2145,7 @@ static int Apol_GetNodecons(ClientData clientData, Tcl_Interp *interp, int argc,
 	apol_vector_t *v = NULL;
 	size_t i;
 	int retval = TCL_ERROR;
-	
+
 	apol_tcl_clear_error();
 	if (policy == NULL) {
 		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
@@ -2511,7 +2529,7 @@ static int Apol_GetFSUses(ClientData clientData, Tcl_Interp *interp, int argc, C
 	return retval;
 }
 
-int ap_tcl_components_init(Tcl_Interp *interp) {
+int apol_tcl_components_init(Tcl_Interp *interp) {
 	Tcl_CreateCommand(interp, "apol_GetTypes", Apol_GetTypes, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetAttribs", Apol_GetAttribs, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetClasses", Apol_GetClasses, NULL, NULL);
@@ -2525,8 +2543,8 @@ int ap_tcl_components_init(Tcl_Interp *interp) {
 	Tcl_CreateCommand(interp, "apol_GetCats", Apol_GetCats, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetInitialSIDs", Apol_GetInitialSIDs, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetPortcons", Apol_GetPortcons, NULL, NULL);
- 	Tcl_CreateCommand(interp, "apol_GetNetifcons", Apol_GetNetifcons, NULL, NULL);
- 	Tcl_CreateCommand(interp, "apol_GetNodecons", Apol_GetNodecons, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_GetNetifcons", Apol_GetNetifcons, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_GetNodecons", Apol_GetNodecons, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetGenFSCons", Apol_GetGenFSCons, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetFSUses", Apol_GetFSUses, NULL, NULL);
         return TCL_OK;

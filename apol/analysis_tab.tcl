@@ -401,7 +401,6 @@ proc Apol_Analysis::switch_results_tab { tabID } {
      	variable bClose
 	variable tabName
 	
-	set tabID [ApolTop::get_tabname $tabID]
         # First check to see if the user has selected the Empty tab.  If so
 	# do not switch tabs
 	if { $tabID == $Apol_Analysis::emptyTabID } {
@@ -950,6 +949,7 @@ proc Apol_Analysis::create { nb } {
 	# Results notebook
 	set results_notebook [NoteBook $b_topf.nb_results]
 	# All callbacks will take the tab id as an argument. This argument is added in the callback procedure.
+    tcl_config_replace_bindtabs
 	$results_notebook bindtabs <Button-3> {ApolTop::popup_Tab_Menu \
 		%W %x %y $Apol_Analysis::popupTab_Menu $Apol_Analysis::tab_menu_callbacks} 
     	$results_notebook bindtabs <Button-1> {Apol_Analysis::switch_results_tab}
