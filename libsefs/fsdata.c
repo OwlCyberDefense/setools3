@@ -923,7 +923,6 @@ int sefs_search_keys_ret_destroy(sefs_search_ret_t *key)
 static int split_context(security_context_t con, const char **user, const char **role, const char **type, const char **range)
 {
         context_t ctxt;
-        char *str;
         *user = *role = *type = *range = NULL;
 
         ctxt = context_new(con);
@@ -947,7 +946,7 @@ static int ftw_handler(const char *file, const struct stat64 *sb, int flag, stru
 	int idx, rc = 0;
 	sefs_fileinfo_t * pi = NULL;
 	security_context_t con = NULL;
-	char *user, *role, *type, *range;
+	const char *user, *role, *type, *range;
 	char *tmp2;
 	char** ptr = NULL;
 	

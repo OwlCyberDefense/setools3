@@ -74,3 +74,6 @@ replcon:
 
 searchcon:
 	$(MAKE) -C $(top_srcdir)/secmds searchcon
+
+distclean-local:
+	-rm -r config.tcl

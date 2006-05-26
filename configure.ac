@@ -30,7 +30,7 @@ else
     AC_MSG_RESULT(disabled)
 fi
 
-AC_ARG_ENABLE(profiling, [  --enable-profiling          compile with gcov and gprof profiling support], enable_profiling="$enableval")
+AC_ARG_ENABLE(profiling, [  --enable-profiling      compile with gcov and gprof profiling support], enable_profiling="$enableval")
 AC_MSG_CHECKING([for profiling support])
 if test "x${enable_profiling}" = xyes; then
     CFLAGS="-O0 -Wall -ftest-coverage -fprofile-arcs -pg"
@@ -40,11 +40,12 @@ else
     AC_MSG_RESULT(disabled)
 fi
 
-AC_ARG_ENABLE(shared, [ --enable-shared         link against shared libapol instead of static libapol], enable_shared="$enableval")
+AC_ARG_ENABLE(shared, [  --enable-shared         link against shared libapol instead of static libapol], enable_shared="$enableval")
 AC_MSG_CHECKING([for how to link against libraries])
 if test "x${enable_shared}" = xyes; then
     use_shared=yes
     AC_MSG_RESULT(shared)
+    ## FIX ME
 else
     use_shared=no
     AC_MSG_RESULT(static)
@@ -68,6 +69,9 @@ if test \( "${TK_MAJOR_VERSION}" -gt 8 \) -o \( "${TK_MAJOR_VERSION}" -eq 8 -a "
 else
     AC_MSG_ERROR([setools requires Tk 8.4 or greater])
 fi
+
+echo "" > ./config.tcl
+
 AC_ARG_ENABLE(bwidget, [  --disable-bwidget-check do not check for BWidget 1.7, assume it exists], enable_bwidget="$enableval", enable_bwidget="yes")
 if test "x${enable_bwidget}" = "xyes"; then
     AC_CHECK_PROGS(tclsh_path, tclsh tclsh8.4)
@@ -79,19 +83,49 @@ if test "x${enable_bwidget}" = "xyes"; then
     cat > ./conftest.tcl <<EOF
 package require Tk
 if {![catch {package require BWidget} bwidget_version]} {
-        if {[package vcompare \$bwidget_version 1.7] >= 0} {
-                exit 0
-        }
+    if {[package vcompare \$bwidget_version 1.8] >= 0} {
+        exit 0
+    } elseif {[package vcompare \$bwidget_version 1.7] >= 0} {
+        exit 1
+    }
 }
 exit 2
 EOF
     changequote([,])dnl
-    if ${tclsh_path} ./conftest.tcl ; then
-        AC_MSG_RESULT(yes)
-        copy_bwidget=no
-    else
-        AC_MSG_WARN([not found, using setools's BWidget instead])
-        copy_bwidget=yes
+    ${tclsh_path} ./conftest.tcl
+    case $? in
+       0)
+            AC_MSG_RESULT([1.8+])
+            copy_bwidget=no
+            bwidget_broken_bindtabs=no
+            ;;
+       1)
+            AC_MSG_RESULT([1.7])
+            copy_bwidget=no
+            bwidget_broken_bindtabs=yes
+            ;;
+       *)
+            AC_MSG_WARN([not found, using setools's BWidget instead])
+            copy_bwidget=yes
+            bwidget_broken_bindtabs=yes
+            ;;
+    esac
+    if test ${bwidget_broken_bindtabs} = yes; then
+        # overcome bug in NoteBook::bindtabs
+        changequote(<<<,>>>)dnl
+        cat >> ./config.tcl <<EOF
+proc tcl_config_replace_bindtabs {} {
+    proc NoteBook::bindtabs { path event script } {
+        if { \$script != "" } {
+            append script " \[NoteBook::_get_page_name [list \$path] current 1\]"
+            \$path.c bind "page" \$event \$script
+        } else {
+            \$path.c bind "page" \$event {}
+        }
+    }
+}
+EOF
+        changequote([,])dnl
     fi
 else
     copy_bwidget=no
@@ -172,7 +206,7 @@ else
 fi
 
 AC_ARG_ENABLE(sepol-src, [  --enable-sepol-src=PATH use another sepol source tree at PATH
-                              (developer only flag)], sepol_srcdir="$enableval", sepol_srcdir="${top_srcdir}/libqpol")
+                          (developer only flag)], sepol_srcdir="$enableval", sepol_srcdir="${top_srcdir}/libqpol")
 AC_MSG_CHECKING([for sepol source tree])
 sepol_src_save_CFLAGS=${CFLAGS}
 CFLAGS="$CFLAGS -I${sepol_srcdir}/include -lsepol"

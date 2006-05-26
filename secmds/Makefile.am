@@ -50,7 +50,7 @@ $(top_srcdir)/libapol/libapol-tcl.a $(top_srcdir)/libapol/libapol.a:
 	$(MAKE) -C $(top_srcdir)/libapol $(notdir $@)
 
 $(top_srcdir)/libqpol/src/libqpol.so:
-	$(MAKE) -C $(top_srcdir)/libqpol $(notdir $@)
+	$(MAKE) -C $(top_srcdir)/libqpol/src $(notdir $@)
 
 $(top_srcdir)/libsefs/libsefs.a:
 	$(MAKE) -C $(top_srcdir)/libsefs $(notdir $@)
