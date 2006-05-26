@@ -60,7 +60,7 @@ int qpol_get_avrule_iter(qpol_handle_t *handle, qpol_policy_t *policy, uint32_t 
 		free(state);
 		return STATUS_ERR;
 	}
-	if (state->node == NULL) {
+	if (state->node == NULL || !(state->node->key.specified & state->rule_type_mask)) {
 		avtab_state_next(*iter);
 	}
 	return STATUS_SUCCESS;
@@ -299,7 +299,11 @@ int qpol_avrule_get_perm_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 	if (!ps) {
 		return STATUS_ERR;
 	}
-	ps->perm_set = avrule->datum.data;
+	if (avrule->key.specified & QPOL_RULE_DONTAUDIT) {
+		ps->perm_set = ~(avrule->datum.data); /* stored as auditdeny flip the bits */
+	} else {
+		ps->perm_set = avrule->datum.data;
+	}
 	ps->obj_class_val = avrule->key.target_class;
 
 	if (qpol_iterator_create(handle, db, (void*)ps, perm_state_get_cur,
