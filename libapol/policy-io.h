@@ -73,6 +73,15 @@ const char* find_default_policy_file_strerr(int err);
 #include "policy.h"
 
 /**
+ *  Open a policy file and load it into a newly created apol_policy.
+ *  @param path The path of the policy file to open.
+ *  @param policy The policy to create from the file.
+ *  @return 0 on success and < 0 on failure; if the call fails,
+ *  errno will be set and *policy will be NULL;
+ */
+extern int apol_policy_open(const char *path, apol_policy_t **policy);
+
+/**
  * Deallocate all memory associated with a policy, and then set it to
  * NULL.  Does nothing if the pointer is already NULL.
  *

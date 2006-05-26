@@ -264,13 +264,15 @@ int avtab_state_next(qpol_iterator_t *iter)
 			/* find the next bucket */
 			do {
 				state->bucket++;
+				if (state->bucket >= AVTAB_SIZE) {
+					state->node = NULL;
+					break;
+				}
 				if (avtab->htable[state->bucket] != NULL) {
 					state->node = avtab->htable[state->bucket];
 					break;
 				}
 			} while (state->bucket < AVTAB_SIZE);
-			if (state->bucket >= AVTAB_SIZE)
-				state->node = NULL;
 		}
 	} while (state->bucket < AVTAB_SIZE && state->node ? !(state->rule_type_mask & state->node->key.specified):0);
 
