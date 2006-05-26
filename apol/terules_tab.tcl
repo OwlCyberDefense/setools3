@@ -1016,7 +1016,6 @@ proc Apol_TE::set_Widget_SearchOptions { pageID } {
 	variable tag_enabled_rules
 	variable tag_disabled_rules
 	
-	set pageID [ApolTop::get_tabname $pageID]
 	set raised [$notebook_results raise]
 	# First check flag to determine if the user has simply selected the 
 	# currently raised tab and so just return without updating search options.

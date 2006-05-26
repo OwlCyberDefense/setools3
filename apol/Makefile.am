@@ -34,7 +34,7 @@ apol_SOURCES = apol_gui.c \
 	top.tcl
 
 LDADD = $(top_srcdir)/libapol/libapol-tcl.a $(top_srcdir)/libapol/libapol.a $(top_srcdir)/libqpol/src/libqpol.so @QPOL_LIB_FLAG@ @TCL_LIB_FLAG@ @TK_LIB_FLAG@
-apol_DEPENDENCIES = apol.tcl $(top_srcdir)/libapol/libapol-tcl.a $(top_srcdir)/libapol/libapol.a $(top_srcdir)/libqpol/src/libqpol.so
+apol_DEPENDENCIES = apol.tcl $(top_srcdir)/libapol/libapol-tcl.a $(top_srcdir)/libapol/libapol.a $(top_srcdir)/libqpol/src/libqpol.so $(top_srcdir)/config.tcl
 
 if WANT_LIBSEFS
 apol_LDADD = $(LDADD) $(top_srcdir)/libsefs/libsefs.a
@@ -43,7 +43,7 @@ else
 apol_LDADD = $(LDADD)
 endif
 
-TCL_STRIP_FILES = $(filter-out head.tcl,$(filter %.tcl,$(apol_SOURCES)))
+TCL_STRIP_FILES = $(top_srcdir)/config.tcl $(filter-out head.tcl,$(filter %.tcl,$(apol_SOURCES)))
 
 apol.tcl: head.tcl tmp.tcl
 	cat $^ | \
@@ -64,7 +64,7 @@ $(top_srcdir)/libapol/libapol-tcl.a $(top_srcdir)/libapol/libapol.a:
 	$(MAKE) -C $(top_srcdir)/libapol $(notdir $@)
 
 $(top_srcdir)/libqpol/src/libqpol.so:
-	$(MAKE) -C $(top_srcdir)/libqpol $(notdir $@)
+	$(MAKE) -C $(top_srcdir)/libqpol/src $(notdir $@)
 
 $(top_srcdir)/libsefs/libsefs.a:
 	$(MAKE) -C $(top_srcdir)/libsefs $(notdir $@)

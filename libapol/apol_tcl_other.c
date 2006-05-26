@@ -1150,7 +1150,7 @@ int Apol_GetPermMap(ClientData clientData, Tcl_Interp *interp, int argc, char *a
 
 
 /* Package initialization */
-int Apol_Init(Tcl_Interp *interp) 
+int Apol_Init(Tcl_Interp *interp)
 {
 	Tcl_CreateCommand(interp, "apol_GetScriptDir", (Tcl_CmdProc *) Apol_GetScriptDir, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_GetHelpDir", (Tcl_CmdProc *) Apol_GetHelpDir, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
@@ -1172,9 +1172,9 @@ int Apol_Init(Tcl_Interp *interp)
 	Tcl_CreateCommand(interp, "apol_IsValidPartialContext", Apol_IsValidPartialContext, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetPolicyType", (Tcl_CmdProc *) Apol_GetPolicyType, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 
-        if (ap_tcl_render_init(interp) != TCL_OK ||
-            ap_tcl_components_init(interp) != TCL_OK ||
-            ap_tcl_rules_init(interp) != TCL_OK ||
+        if (apol_tcl_render_init(interp) != TCL_OK ||
+            apol_tcl_components_init(interp) != TCL_OK ||
+            apol_tcl_rules_init(interp) != TCL_OK ||
             ap_tcl_fc_init(interp) != TCL_OK ||
             ap_tcl_analysis_init(interp) != TCL_OK) {
                 return TCL_ERROR;
