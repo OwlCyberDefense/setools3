@@ -691,7 +691,7 @@ int qpol_close_policy(qpol_policy_t **policy)
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
-	policydb_destroy((policydb_t*)*policy);
+	sepol_policydb_free(*policy);
 	*policy = NULL;
 	return STATUS_SUCCESS;
 
