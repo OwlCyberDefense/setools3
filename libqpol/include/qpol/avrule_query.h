@@ -27,6 +27,7 @@
 #define QPOL_AVRULE_QUERRY_H
 
 #include <qpol/policy.h>
+#include <qpol/policy_query.h>
 
 typedef struct qpol_avrule qpol_avrule_t;
 
