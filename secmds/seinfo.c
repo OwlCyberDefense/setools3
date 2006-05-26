@@ -35,6 +35,7 @@
 
 /* libqpol */
 #include <qpol/policy_query.h>
+#include <qpol/avrule_query.h>
 
 /* other */
 #include <stdlib.h>
@@ -154,7 +155,9 @@ static int print_stats(FILE *fp, apol_policy_t *policydb)
 	int str_sz = 0, ver_str_sz = 16, n_types = 0, n_attrs = 0;
 	bool_t binary;
 	size_t n_classes = 0, n_users = 0, n_roles = 0, n_bools = 0, n_levels = 0, n_cats = 0,
-	       n_portcons = 0, n_netifcons = 0, n_nodecons = 0, n_fsuses = 0, n_genfscons = 0;
+		n_portcons = 0, n_netifcons = 0, n_nodecons = 0, n_fsuses = 0, n_genfscons = 0,
+		n_allows = 0, n_neverallows = 0, n_auditallows = 0, n_dontaudits = 0,
+		n_typetrans = 0, n_typechanges = 0;
 
 	assert(policydb != NULL);
 
@@ -263,13 +266,52 @@ static int print_stats(FILE *fp, apol_policy_t *policydb)
 		goto cleanup;
 	if (qpol_iterator_get_size(iter, &n_cats))
 		goto cleanup;
-
 	qpol_iterator_destroy(&iter);
 	fprintf(fp, "   Sensitivities: %7zd    Categories:    %7zd\n", n_levels, n_cats);
-	fprintf(fp, "   Allow:         %7s    Neverallow:    %7s\n", "N/A", "N/A");
-	fprintf(fp, "   Auditallow:    %7s    Dontaudit:     %7s\n", "N/A", "N/A");
+
+	/* allow/neverallow */
+	if (qpol_get_avrule_iter(policydb->sh, policydb->p, QPOL_RULE_ALLOW, &iter))
+		goto cleanup;
+	if (qpol_iterator_get_size(iter, &n_allows))
+		goto cleanup;
+	qpol_iterator_destroy(&iter);
+	if (qpol_get_avrule_iter(policydb->sh, policydb->p, QPOL_RULE_NEVERALLOW, &iter))
+		goto cleanup;
+	if (qpol_iterator_get_size(iter, &n_neverallows))
+		goto cleanup;
+	qpol_iterator_destroy(&iter);
+	fprintf(fp, "   Allow:         %7zd    Neverallow:    %7zd\n", n_allows, n_neverallows);
+
+	/* auditallow/dontaudit */
+	if (qpol_get_avrule_iter(policydb->sh, policydb->p, QPOL_RULE_AUDITALLOW, &iter))
+		goto cleanup;
+	if (qpol_iterator_get_size(iter, &n_auditallows))
+		goto cleanup;
+	qpol_iterator_destroy(&iter);
+	if (qpol_get_avrule_iter(policydb->sh, policydb->p, QPOL_RULE_DONTAUDIT, &iter))
+		goto cleanup;
+	if (qpol_iterator_get_size(iter, &n_dontaudits))
+		goto cleanup;             
+	qpol_iterator_destroy(&iter);
+	fprintf(fp, "   Auditallow:    %7zd    Dontaudit:     %7zd\n", n_auditallows, n_dontaudits);
+	
+	/* FIX ME: need to do these */
 	fprintf(fp, "   Role allow:    %7s    Role trans:    %7s\n", "N/A", "N/A");
-	fprintf(fp, "   Type_trans:    %7s    Type_change:   %7s\n", "N/A", "N/A");
+	
+	/* type_transition/type_change */
+	if (qpol_get_avrule_iter(policydb->sh, policydb->p, QPOL_RULE_TYPE_TRANS, &iter))
+		goto cleanup;
+	if (qpol_iterator_get_size(iter, &n_typetrans))
+		goto cleanup;
+	qpol_iterator_destroy(&iter);
+	if (qpol_get_avrule_iter(policydb->sh, policydb->p, QPOL_RULE_TYPE_CHANGE, &iter))
+		goto cleanup;
+	if (qpol_iterator_get_size(iter, &n_typechanges))
+		goto cleanup;
+	qpol_iterator_destroy(&iter);
+	fprintf(fp, "   Type_trans:    %7zd    Type_change:   %7zd\n", n_typechanges, n_typechanges);
+	
+	/* FIX ME: need to do these */
 	fprintf(fp, "   Type_member:   %7s    Range_trans:   %7s\n", "N/A", "N/A");
 	fprintf(fp, "   Constraints:   %7s    Validatetrans: %7s\n", "N/A", "N/A");
 
@@ -1303,16 +1345,23 @@ int main (int argc, char **argv)
 			fprintf(stderr, "Default policy search failed: %s\n", find_default_policy_file_strerr(rt));
 			exit(1);
 		}
-	} else
-		policy_file = argv[optind];
+	} else {
+		policy_file = strdup(argv[optind]);
+		if (!policy_file) {
+			fprintf(stderr, "Out of memory\n");
+			exit(1);
+		}
+	}
 
 	/* attempt to open the policy */
 	if (!(policydb = calloc(1, sizeof(apol_policy_t)))) {
 		fprintf(stderr, "Error: out of memory\n");
+		free(policy_file);
 		exit(1);
 	}
 	if (qpol_open_policy_from_file(policy_file, &policydb->p, &policydb->sh)) {
 		fprintf(stderr, "Error: opening policy.\n");
+		free(policy_file);
 		exit(1);
 	}
 	policydb->msg_callback_arg = NULL;
@@ -1350,6 +1399,7 @@ int main (int argc, char **argv)
 		print_isids(stdout, isid_name, expand, policydb);
 
 	apol_policy_destroy(&policydb);
+	free(policy_file);
 	exit(0);
 }
 

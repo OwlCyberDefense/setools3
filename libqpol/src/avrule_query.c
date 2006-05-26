@@ -26,6 +26,7 @@
 #include "iterator_internal.h"
 #include <qpol/iterator.h>
 #include <qpol/policy.h>
+#include <qpol/avrule_query.h>
 #include <sepol/policydb/policydb.h>
 #include <sepol/policydb/avtab.h>
 #include <sepol/policydb/util.h>
@@ -67,7 +68,7 @@ int qpol_get_avrule_iter(qpol_handle_t *handle, qpol_policy_t *policy, uint32_t 
 
 int qpol_avrule_get_source_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_avrule_t *rule, qpol_type_t **source)
 {
-	poicydb_t *db = NULL;
+	policydb_t *db = NULL;
 	avtab_ptr_t avrule = NULL;
 
 	if (source) {
@@ -137,6 +138,34 @@ typedef struct perm_state {
 	uint8_t cur;
 } perm_state_t;
 
+static int perm_state_end(qpol_iterator_t *iter)
+{
+	perm_state_t *ps = NULL;
+	policydb_t *db = NULL;
+	unsigned int perm_max = 0;
+
+	if (iter == NULL || (ps = qpol_iterator_state(iter)) == NULL ||
+		(db = qpol_iterator_policy(iter)) == NULL) {
+		errno = EINVAL;
+		return STATUS_ERR;
+	}
+
+	/* permission max is number of permissions in the class + 
+	 * number of permissions in its common if it inherits one */
+	perm_max = db->class_val_to_struct[ps->obj_class_val-1]->permissions.nprim + 
+		db->class_val_to_struct[ps->obj_class_val-1]->comdatum ? 
+		db->class_val_to_struct[ps->obj_class_val-1]->comdatum->permissions.nprim : 0;
+	if (perm_max > 32) {
+		errno = EDOM; /* perms set mask is a uint32_t cannot use more than 32 bits */
+		return STATUS_ERR;
+	}
+
+	if (!(ps->perm_set) || ps->cur >= perm_max)
+		return 1;
+
+	return 0;
+}
+
 static void *perm_state_get_cur(qpol_iterator_t *iter)
 {
 	policydb_t *db = NULL;
@@ -161,7 +190,7 @@ static void *perm_state_get_cur(qpol_iterator_t *iter)
 	perm_max = obj_class->permissions.nprim + comm ? comm->permissions.nprim : 0;
 	if (perm_max > 32) {
 		errno = EDOM; /* perms set mask is a uint32_t cannot use more than 32 bits */
-		return STATUS_ERR;
+		return NULL;
 	}
 	if (ps->cur >= perm_max) {
 		errno = EDOM;
@@ -185,7 +214,7 @@ static void *perm_state_get_cur(qpol_iterator_t *iter)
 static int perm_state_next(qpol_iterator_t *iter)
 {
 	perm_state_t *ps = NULL;
-	policyd_t *db = NULL;
+	policydb_t *db = NULL;
 	unsigned int perm_max = 0;
 
 	if (iter == NULL || (ps = qpol_iterator_state(iter)) == NULL ||
@@ -217,38 +246,10 @@ static int perm_state_next(qpol_iterator_t *iter)
 	return STATUS_SUCCESS;
 }
 
-static int perm_state_end(qpol_iterator_t *iter)
-{
-	perm_state_t *ps = NULL;
-	policyd_t *db = NULL;
-	unsigned int perm_max = 0;
-
-	if (iter == NULL || (ps = qpol_iterator_state(iter)) == NULL ||
-		(db = qpol_iterator_policy(iter)) == NULL) {
-		errno = EINVAL;
-		return STATUS_ERR;
-	}
-
-	/* permission max is number of permissions in the class + 
-	 * number of permissions in its common if it inherits one */
-	perm_max = db->class_val_to_struct[ps->obj_class_val-1]->permissions.nprim + 
-		db->class_val_to_struct[ps->obj_class_val-1]->comdatum ? 
-		db->class_val_to_struct[ps->obj_class_val-1]->comdatum->permissions.nprim : 0;
-	if (perm_max > 32) {
-		errno = EDOM; /* perms set mask is a uint32_t cannot use more than 32 bits */
-		return STATUS_ERR;
-	}
-
-	if (!(ps->perm_set) || ps->cur >= perm_max)
-		return 1;
-
-	return 0;
-}
-
 static size_t perm_state_size(qpol_iterator_t *iter)
 {
 	perm_state_t *ps = NULL;
-	policyd_t *db = NULL;
+	policydb_t *db = NULL;
 	unsigned int perm_max = 0;
 	size_t i, count = 0;
 
@@ -307,7 +308,7 @@ int qpol_avrule_get_perm_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 	}
 
 	if (!(ps->perm_set & 1)) /* defaults to bit 0, if off: advance */
-		perm_state_next(iter);
+		perm_state_next(*perms);
 
 	return STATUS_SUCCESS;
 }
@@ -327,7 +328,7 @@ int qpol_avrule_get_rule_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 	}
 
 	db = &policy->p;
-	avrule = (avtab_prt_t)rule;
+	avrule = (avtab_ptr_t)rule;
 
 	*rule_type = avrule->key.specified;
 
