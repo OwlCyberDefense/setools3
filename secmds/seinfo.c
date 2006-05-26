@@ -35,7 +35,6 @@
 
 /* libqpol */
 #include <qpol/policy_query.h>
-#include <qpol/avrule_query.h>
 
 /* other */
 #include <stdlib.h>
@@ -157,7 +156,7 @@ static int print_stats(FILE *fp, apol_policy_t *policydb)
 	size_t n_classes = 0, n_users = 0, n_roles = 0, n_bools = 0, n_levels = 0, n_cats = 0,
 		n_portcons = 0, n_netifcons = 0, n_nodecons = 0, n_fsuses = 0, n_genfscons = 0,
 		n_allows = 0, n_neverallows = 0, n_auditallows = 0, n_dontaudits = 0,
-		n_typetrans = 0, n_typechanges = 0;
+		n_typetrans = 0, n_typechanges = 0, n_typemembers = 0, n_isids = 0;
 
 	assert(policydb != NULL);
 
@@ -311,8 +310,13 @@ static int print_stats(FILE *fp, apol_policy_t *policydb)
 	qpol_iterator_destroy(&iter);
 	fprintf(fp, "   Type_trans:    %7zd    Type_change:   %7zd\n", n_typechanges, n_typechanges);
 	
+	if (qpol_get_avrule_iter(policydb->sh, policydb->p, QPOL_RULE_TYPE_MEMBER, &iter))
+		goto cleanup;
+	if (qpol_iterator_get_size(iter, &n_typemembers))
+		goto cleanup;
+	qpol_iterator_destroy(&iter);
 	/* FIX ME: need to do these */
-	fprintf(fp, "   Type_member:   %7s    Range_trans:   %7s\n", "N/A", "N/A");
+	fprintf(fp, "   Type_member:   %7zd    Range_trans:   %7s\n", n_typemembers, "N/A");
 	fprintf(fp, "   Constraints:   %7s    Validatetrans: %7s\n", "N/A", "N/A");
 
 	/* fs_use/genfscon */
@@ -347,7 +351,12 @@ static int print_stats(FILE *fp, apol_policy_t *policydb)
 	if (qpol_iterator_get_size(iter, &n_nodecons))
 		goto cleanup;
 	qpol_iterator_destroy(&iter);
-	fprintf(fp, "   Nodecon:       %7zd    Initial SIDs:  %7s\n", n_nodecons, "N/A");
+	if (qpol_policy_get_isid_iter(policydb->sh, policydb->p, &iter))
+		goto cleanup;
+	if (qpol_iterator_get_size(iter, &n_isids))
+		goto cleanup;
+	qpol_iterator_destroy(&iter);
+	fprintf(fp, "   Nodecon:       %7zd    Initial SIDs:  %7zd\n", n_nodecons, n_isids);
 	fprintf(fp, "\n");
 
 	retval = 0;

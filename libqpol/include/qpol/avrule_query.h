@@ -35,7 +35,8 @@ typedef struct qpol_avrule qpol_avrule_t;
 #define QPOL_RULE_ALLOW         1
 #define QPOL_RULE_NEVERALLOW  128
 #define QPOL_RULE_AUDITALLOW    2
-#define QPOL_RULE_DONTAUDIT     8
+/* dontaudit is actually stored as auditdeny so that value is used here */
+#define QPOL_RULE_DONTAUDIT     4 
 #define QPOL_RULE_TYPE_TRANS   16
 #define QPOL_RULE_TYPE_CHANGE  64
 #define QPOL_RULE_TYPE_MEMBER  32
