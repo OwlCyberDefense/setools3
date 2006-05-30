@@ -24,8 +24,8 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef _APOL_CLASS_PERM_QUERY_H_
-#define _APOL_CLASS_PERM_QUERY_H_
+#ifndef APOL_CLASS_PERM_QUERY_H
+#define APOL_CLASS_PERM_QUERY_H
 
 #include "policy.h"
 #include "vector.h"

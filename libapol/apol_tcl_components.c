@@ -27,7 +27,7 @@
 #include <assert.h>
 #include <netinet/in.h>    /* needed for portcon's protocol */
 
-#include "component-query.h"
+#include "policy-query.h"
 
 #include "apol_tcl_other.h"
 #include "apol_tcl_render.h"

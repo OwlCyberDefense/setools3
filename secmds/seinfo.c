@@ -31,7 +31,7 @@
 #include <policy-io.h>
 #include <render.h>
 #include "vector.h"
-#include "component-query.h"
+#include "policy-query.h"
 
 /* libqpol */
 #include <qpol/policy_query.h>

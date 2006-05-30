@@ -33,7 +33,7 @@
 #include <qpol/policy_query.h>
 
 #include "policy.h"
-#include "context-query.h"
+#include "policy-query.h"
 #include "mls-query.h"
 
 /** Global SELinux policy (either read from source or from binary
