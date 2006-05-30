@@ -21,7 +21,7 @@ libapol_a_SOURCES = \
 	binpol/fbuf.c binpol/fbuf.h binpol/ebitmap.c binpol/ebitmap.h \
 	semantic/avhash.c semantic/avhash.h semantic/avsemantics.c semantic/avsemantics.h \
 	policy-io.c policy-io.h vector.c vector.h \
-	component-query.c component-query.h \
+	policy-query.c policy-query.h \
 	context-query.c context-query.h mls-query.c mls-query.h \
 	type-query.c type-query.h class-perm-query.c class-perm-query.h \
 	role-query.c role-query.h user-query.c user-query.h \

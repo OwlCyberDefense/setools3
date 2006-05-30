@@ -30,7 +30,7 @@
 
 #include "apol_tcl_other.h"
 
-#include "context-query.h"
+#include "policy-query.h"
 
 #include <tcl.h>
 
