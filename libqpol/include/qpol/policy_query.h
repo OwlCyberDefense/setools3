@@ -45,6 +45,7 @@
 #include <qpol/genfscon_query.h>
 #include <qpol/isid_query.h>
 #include <qpol/avrule_query.h>
+#include <qpol/terule_query.h>
 
 /* generic information about policydb*/
 /**

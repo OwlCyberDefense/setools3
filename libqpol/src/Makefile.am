@@ -10,7 +10,7 @@ BUILT_SOURCES = policy_parse.h
 AM_CFLAGS = -I$(srcdir)/../include -I$(sepol_srcdir)/include -fpic
 libqpol_a_SOURCES = debug.h policy_extend.c \
 	iterator.c iterator_internal.h \
-	expand.c avrule_query.c \
+	expand.c avrule_query.c terule_query.c\
 	bool_query.c context_query.c genfscon_query.c netifcon_query.c \
 	portcon_query.c type_query.c class_perm_query.c fs_use_query.c \
 	isid_query.c mls_query.c nodecon_query.c policy_query.c queue.c \

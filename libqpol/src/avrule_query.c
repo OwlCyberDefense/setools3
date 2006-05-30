@@ -33,7 +33,7 @@
 #include <stdlib.h>
 #include "debug.h"
 
-int qpol_get_avrule_iter(qpol_handle_t *handle, qpol_policy_t *policy, uint32_t rule_type_mask, qpol_iterator_t **iter)
+int qpol_policy_get_avrule_iter(qpol_handle_t *handle, qpol_policy_t *policy, uint32_t rule_type_mask, qpol_iterator_t **iter)
 {
 	policydb_t *db;
 	avtab_state_t *state;
