@@ -40,7 +40,7 @@
 #include "render.h"
 #include "perm-map.h"
 
-#include "component-query.h"
+#include "policy-query.h"
 
 #include "apol_tcl_render.h"
 #include "apol_tcl_components.h"

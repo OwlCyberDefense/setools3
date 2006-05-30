@@ -29,7 +29,7 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#include "component-query.h"
+#include "policy-query.h"
 
 struct apol_genfscon_query {
         char *fs, *path;

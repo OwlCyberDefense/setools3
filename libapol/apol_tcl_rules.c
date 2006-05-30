@@ -27,7 +27,7 @@
 #include <tcl.h>
 #include <assert.h>
 
-#include "policy-query.h"
+#include "old-policy-query.h"
 #include "render.h"
 
 #include "apol_tcl_other.h"
@@ -112,404 +112,82 @@ static int append_clone_rule(bool_t addnl, bool_t addlineno, cln_item_t *item, p
 	return 0;
 }
 
-
-/* This is a newer function that replaces the legacy Apol_GetTErules() function (below).  The 
- * latter is deprecated.  This function returns the search results in a tcl list.  This list
- * is organized as follows:
- *	index		contexts
- *	0		# of returned rules
- *	1		first rule (if any)
- *	2		first rule's lineno ref into policy.co
- *	3		2nd rule (if any)
- *	4		2nd rule lineno ref
- *	n-1		last rule
- *	n		last rule's lineno ref
+/**
+ * Return an unsorted list of TE rules (av rules and type rules)
+ * tuples within the policy.  Each tuple consists of:
+ * <ul>
+ *   <li>rule type ("allow", "type_transition", etc.)
+ *   <li>source type set
+ *   <li>target type set
+ *   <li>object class
+ *   <li>for av rules: permission set; for type rules: default type
+ *   <li>line number, or -1 unknown
+ * </ul>
  *
- * arg ordering; argv[x] where x is:
- *  1		te_allow
- *  2		neverallow
- *  3		clone
- *  4		auallow
- *  5		audeny
- *  6		dontaudit
- *  7		ttrans
- *  8		tmember
- *  9		tchange
- * 10		use_1
- * 11		indirect_1
- * 12		ta1	(first type/attrib search parameter)
- * 13		which	(indicates whether ta1 is used for source, or any location
- * 14		use_2
- * 15		indirect_2
- * 16		ta2	(second type/attrib search parameter, always as target)
- * 17		use_3
- * 18		indirect_3
- * 19		ta3
- * 20		classes (list)
- * 21		perms (list)
- * 22		allow_regex (bool, indicate whether ta* are regexp or not)
- * 23		ta1_opt (indicates whether ta1 is a TYPES, ATTRIBS, or BOTH)
- * 24		ta2_opt (same for ta2; NOTE ta3 is always a TYPES)
- * 25		include only rules that are enabled by the conditional policy (boolean)
+ * @param argv This function takes eight parameters:
+ * <ol>
+ *   <li>rule selections
+ *   <li>conditionals searching options
+ *   <li>source type options
+ *   <li>target type options
+ *   <li>default type options
+ *   <li>classes options
+ *   <li>permissions options
+ *   <li>treat all types as regex
+ * </ol>
+ *
+ * For rule selections list, this is a list of bits which represent
+ * which rules to search.  The order of bits is:
+ * <ol>
+ *   <li>(av) allow
+ *   <li>neverallow
+ *   <li>auditallow
+ *   <li>dontaudit
+ *   <li>type_transition
+ *   <li>type_member
+ *   <li>type_change
+ * </ol>
+ *
+ * For conditionals options, this is a list of one parameter:
+ * <ol>
+ *   <li>search only enabled rules
+ * </ol>
+ *
+ * For source/target/default types, these are a list of three parameters:
+ * <ol>
+ *   <li>type/attribute symbol name (or empty string to ignore)
+ *   <li>perform indirect matching with this symbol
+ *   <li>use this symbol to search any field
+ * </ol>
+ *
+ * For classes, the returned rule's class must be within this list.
+ * For permissions, the rule must have at least one permission within
+ * this list.  Pass an empty list to skip this filter.
  */
-static int Apol_SearchTErules(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
-{	
-	int i, rt;
-	teq_query_t query;
-	teq_results_t results;
-	Tcl_DString buffer, *buf = &buffer;
-	char tmpbuf[APOL_STR_SZ+64];
-	CONST char **classes, **perms;
-	bool_t use_1, use_2, use_3;
+static int Apol_SearchTERules(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
+{
+	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
+	apol_vector_t *v = NULL;
+	int retval = TCL_ERROR;
 
-	if(policy == NULL) {
-		Tcl_AppendResult(interp,"No current policy file is opened!", (char *) NULL);
-		return TCL_ERROR;
+	apol_tcl_clear_error();
+	if (policy == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+                goto cleanup;
 	}
-	if(argc != 26) {
-		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
-		return TCL_ERROR;
-	}
-	
-	init_teq_query(&query);
-	init_teq_results(&results);
-
-	if(getbool(argv[1]))
-		query.rule_select |= TEQ_ALLOW;
-	if(getbool(argv[2]))
-		query.rule_select |= TEQ_NEVERALLOW;
-	if(getbool(argv[3]))
-		query.rule_select |= TEQ_CLONE;
-	if(getbool(argv[4]))
-		query.rule_select |= TEQ_AUDITALLOW;
-	if(getbool(argv[5]))
-		query.rule_select |= TEQ_AUDITDENY;
-	if(getbool(argv[6]))
-		query.rule_select |= TEQ_DONTAUDIT;
-	if(getbool(argv[7]))
-		query.rule_select |= TEQ_TYPE_TRANS;
-	if(getbool(argv[8]))
-		query.rule_select |= TEQ_TYPE_MEMBER;
-	if(getbool(argv[9]))
-		query.rule_select |= TEQ_TYPE_CHANGE;		
-	query.use_regex = getbool(argv[22]);
-	query.only_enabled = getbool(argv[25]);
-	
-	query.ta1.indirect = getbool(argv[11]);
-	query.ta2.indirect = getbool(argv[15]);
-	query.ta3.indirect = getbool(argv[18]);
-	
-
-	use_1 = getbool(argv[10]);
-	if(use_1) {
-                if(argv[12] == NULL || str_is_only_white_space(argv[12])) {
-		        Tcl_AppendResult(interp, "empty source type/attrib!", (char *) NULL);
-		        return TCL_ERROR;
-	        }
-		if(!is_valid_str_sz(argv[12])) {
-			Tcl_AppendResult(interp, "Source type/attrib string too large", (char *) NULL);
-			return TCL_ERROR;
-		}
-		if(strcmp(argv[13], "source") == 0) 
-			query.any = FALSE;
-		else if(strcmp(argv[13], "either") == 0)
-			query.any = TRUE;
-		else {
-			Tcl_AppendResult(interp, "Invalid which option for source parameter", (char *) NULL);
-			return TCL_ERROR;			
-		}
-		
-		query.ta1.ta = (char *)malloc(strlen(argv[12]) + 1);
-		if(query.ta1.ta == NULL) {
-			Tcl_AppendResult(interp, "out of memory", (char *) NULL);
-			return TCL_ERROR;
-		}
-		strcpy(query.ta1.ta, argv[12]);	/* The ta string */
-		
-       	        if(strcmp("types", argv[23])  == 0) 
-		        query.ta1.t_or_a = IDX_TYPE;
-	        else if(strcmp("attribs", argv[23]) == 0) 
-		        query.ta1.t_or_a = IDX_ATTRIB;
-   	        else if((strcmp("both", argv[23]) == 0) ||( strcmp("either", argv[23]) == 0)) 
-		        query.ta1.t_or_a = IDX_BOTH;
-	        else {
-		        sprintf(tmpbuf, "ta1_opt value invalid: %s", argv[23]);
- 		        free_teq_query_contents(&query);
-		        Tcl_AppendResult(interp, tmpbuf, (char*) NULL);
-		        return TCL_ERROR;
-	        }
-	}
-	use_2 = (getbool(argv[14]) & ! query.any);
-	if(use_2) {
-	        if(argv[16] == NULL || str_is_only_white_space(argv[16])) {
-		        Tcl_AppendResult(interp, "empty target type/attrib!", (char *) NULL);
-		        return TCL_ERROR;
-	        }
-		if(!is_valid_str_sz(argv[16])) {
-			Tcl_AppendResult(interp, "Target type/attrib string too large", (char *) NULL);
-			return TCL_ERROR;
-		}
-		query.ta2.ta = (char *)malloc(strlen(argv[16]) + 1);
-		if(query.ta2.ta == NULL) {
-			Tcl_AppendResult(interp, "out of memory", (char *) NULL);
-			return TCL_ERROR;
-		}
-		strcpy(query.ta2.ta, argv[16]);	/* The ta string */
-
-		if(strcmp("types", argv[24])  == 0) 
-			query.ta2.t_or_a = IDX_TYPE;
-		else if(strcmp("attribs", argv[24]) == 0) 
-			query.ta2.t_or_a = IDX_ATTRIB;
-		else if((strcmp("both", argv[24]) == 0) || ( strcmp("either", argv[24]) == 0)) 
-			query.ta2.t_or_a = IDX_BOTH;
-		else {
-			sprintf(tmpbuf, "ta2_opt value invalid: %s", argv[24]);
-			free_teq_query_contents(&query);
-			Tcl_AppendResult(interp, tmpbuf, (char*) NULL);		
-			return TCL_ERROR;
-		}
-	}
-	use_3 = getbool(argv[17]) && !query.any;
-	if(use_3) {
-	        if(argv[19] == NULL || str_is_only_white_space(argv[19])) {
-		        Tcl_AppendResult(interp, "empty default type!", (char *) NULL);
-		        return TCL_ERROR;
-	        }
-		if(!is_valid_str_sz(argv[19])) {
-			Tcl_AppendResult(interp, "Default type string too large", (char *) NULL);
-			return TCL_ERROR;
-		}
-		query.ta3.ta = (char *)malloc(strlen(argv[19]) + 1);
-		if(query.ta3.ta == NULL) {
-			Tcl_AppendResult(interp, "out of memory", (char *) NULL);
-			return TCL_ERROR;
-		}
-		strcpy(query.ta3.ta, argv[19]);	/* The ta string */
-		query.ta3.t_or_a = IDX_TYPE; /* can only ever be type */
+	if (argc != 9) {
+                ERR(policydb, "Need a rule selection, conditionals options, source type, target type, default type, classes, permissions, and regex flag.");
+                goto cleanup;
 	}
 
-	/* classes */
-	rt = Tcl_SplitList(interp, argv[20], &query.num_classes, &classes);
-	if(rt != TCL_OK) {
-		Tcl_AppendResult(interp, "error splitting classes", (char *) NULL);
-		free_teq_query_contents(&query);
-		return rt;
+        Tcl_SetObjResult(interp, result_obj);
+        retval = TCL_OK;
+ cleanup:
+	apol_vector_destroy(&v, NULL);
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
 	}
-	if(query.num_classes < 1) {
-		query.classes = NULL;
-	}
-	else {
-		query.classes = (int *)malloc(sizeof(int)*query.num_classes );
-		if(query.classes == NULL) {
-			Tcl_Free((char *) classes);
-			free_teq_query_contents(&query);
-			Tcl_AppendResult(interp, "out of memory", (char *) NULL);
-			return TCL_ERROR;
-		}
-		for(i = 0; i < query.num_classes; i++) {
-			query.classes[i] = get_obj_class_idx(classes[i], policy);
-			if(query.classes[i] < 0) {
-				sprintf(tmpbuf, "%s is not a valid object class name", classes[i]);
-				Tcl_Free((char *) classes);
-				free_teq_query_contents(&query);
-				Tcl_AppendResult(interp, tmpbuf, (char *) NULL);
-				return TCL_ERROR;
-			}
-		}
-		Tcl_Free((char *) classes);
-	}
-	/* perms */
-	rt = Tcl_SplitList(interp, argv[21], &query.num_perms, &perms);
-	if(rt != TCL_OK) {
-		free_teq_query_contents(&query);
-		Tcl_AppendResult(interp, "error splitting perms", (char *) NULL);
-		return rt;
-	}
-	if(query.num_perms < 1) {
-		query.perms = NULL;
-	}
-	else {
-		query.perms = (int *)malloc(sizeof(int)*query.num_perms);
-		if(query.perms == NULL) {
-			Tcl_Free((char *) perms);
-			free_teq_query_contents(&query);
-			Tcl_AppendResult(interp, "out of memory", (char *) NULL);
-			return TCL_ERROR;
-		}
-		for(i = 0; i < query.num_perms; i++) {
-			query.perms[i] = get_perm_idx(perms[i], policy);
-			if(query.perms[i] < 0) {
-				sprintf(tmpbuf, "%s is not a permission name", perms[i]);
-				Tcl_Free((char *) perms);
-				free_teq_query_contents(&query);
-				Tcl_AppendResult(interp, tmpbuf, (char *) NULL);
-				return TCL_ERROR;
-			}
-		}
-		Tcl_Free((char *) perms);
-	}
-		
-
-	/* submit query */
-	rt = search_te_rules(&query, &results, policy);
-	if(rt == -1) {
-		Tcl_AppendResult(interp, "Unrecoverable error when searching TE rules", (char *) NULL);
-		free_teq_results_contents(&results);
-		free_teq_query_contents(&query);
-		return TCL_ERROR;
-	}
-	else if(rt == -2) {
-		switch(results.err) {
-		case TEQ_ERR_TA1_REGEX:
-			Tcl_AppendResult(interp, "Source type string is invalid regular expression", (char *) NULL);
-			break;
-		case TEQ_ERR_TA2_REGEX:
-			Tcl_AppendResult(interp, "Target type string is invalid regular expression", (char *) NULL);
-			break;
-		case TEQ_ERR_TA3_REGEX:
-			Tcl_AppendResult(interp, "Default type string is invalid regular expression", (char *) NULL);
-			break;
-		case TEQ_ERR_TA1_INVALID:
-			Tcl_AppendResult(interp, "Source is not a valid type nor attribute", (char *) NULL);
-			break;
-		case TEQ_ERR_TA2_INVALID:
-			Tcl_AppendResult(interp, "Target is not a valid type nor attribute", (char *) NULL);
-			break;
-		case TEQ_ERR_TA3_INVALID:
-			Tcl_AppendResult(interp, "Default is not a valid type nor attribute", (char *) NULL);
-			break;
-		case TEQ_ERR_TA1_STRG_SZ:
-			Tcl_AppendResult(interp, "Source string is too large", (char *) NULL);
-			break;
-		case TEQ_ERR_TA2_STRG_SZ:
-			Tcl_AppendResult(interp, "Target string is too large", (char *) NULL);
-			break;
-		case TEQ_ERR_TA3_STRG_SZ:
-			Tcl_AppendResult(interp, "Default string is too large", (char *) NULL);
-			break;
-		case TEQ_ERR_INVALID_CLS_Q:
-			Tcl_AppendResult(interp, "The list of classes is incoherent", (char *) NULL);
-			break;
-		case TEQ_ERR_INVALID_PERM_Q:
-			Tcl_AppendResult(interp, "The list of permissions is incoherent", (char *) NULL);
-			break;
-		case TEQ_ERR_INVALID_CLS_IDX:
-			Tcl_AppendResult(interp, "One of the class indicies is incorrect", (char *) NULL);
-			break;
-		case TEQ_ERR_INVALID_PERM_IDX:
-			Tcl_AppendResult(interp, "One of the permission indicies is incorrect", (char *) NULL);
-			break;
-		default:
-			Tcl_AppendResult(interp, "Unexpected error searching rules", (char *) NULL);
-			break;
-		}
-		free_teq_results_contents(&results);
-		free_teq_query_contents(&query);
-		return TCL_ERROR;
-	}
-	
-	
-	/* render results*/
-	Tcl_DStringInit(buf);
-	if(results.num_av_access > 0) {
-		for(i = 0; i < results.num_av_access; i++) {
-			rt = append_av_rule(0, 0, results.av_access[i], FALSE, policy, buf);
-			if(rt != 0) {
-				Tcl_DStringFree(buf);
-				Tcl_ResetResult(interp);
-				free_teq_query_contents(&query);
-				free_teq_results_contents(&results);
-				return TCL_ERROR;
-			}
-			Tcl_AppendElement(interp, buf->string);
-			Tcl_DStringFree(buf);
-			sprintf(tmpbuf, "%lu", policy->av_access[results.av_access[i]].lineno);
-			Tcl_AppendElement(interp, tmpbuf);
-			
-			/* Append boolean values to indicate whether this is a conditional rule 
-			 * and whether it is enabled for conditional policy support */
-			if (policy->av_access[results.av_access[i]].cond_expr != -1)
-				Tcl_AppendElement(interp, "1");
-			else 
-				Tcl_AppendElement(interp, "0");
-			sprintf(tmpbuf, "%d", policy->av_access[results.av_access[i]].enabled);
-			Tcl_AppendElement(interp, tmpbuf);
-		}
-	}
-	if(results.num_av_audit > 0) {
-		for(i = 0; i < results.num_av_audit; i++) {
-			rt = append_av_rule(0, 0, results.av_audit[i], TRUE, policy, buf);
-			if(rt != 0) {
-				Tcl_DStringFree(buf);
-				Tcl_ResetResult(interp);
-				free_teq_query_contents(&query);
-				free_teq_results_contents(&results);
-				return TCL_ERROR;
-			}
-			Tcl_AppendElement(interp, buf->string);
-			Tcl_DStringFree(buf);
-			sprintf(tmpbuf, "%lu", policy->av_audit[results.av_audit[i]].lineno);
-			Tcl_AppendElement(interp, tmpbuf);
-			/* Append boolean values to indicate whether this is a conditional rule 
-			 * and whether it is enabled for conditional policy support */
-			if (policy->av_audit[results.av_audit[i]].cond_expr != -1)
-				Tcl_AppendElement(interp, "1");
-			else 
-				Tcl_AppendElement(interp, "0");
-			sprintf(tmpbuf, "%d", policy->av_audit[results.av_audit[i]].enabled);
-			Tcl_AppendElement(interp, tmpbuf);
-		}
-	}
-	if(results.num_type_rules > 0) { 
-		for(i = 0; i < results.num_type_rules; i++) {
-			rt = append_tt_rule(0, 0, results.type_rules[i], policy, buf);
-			if(rt != 0) {
-				Tcl_DStringFree(buf);
-				Tcl_ResetResult(interp);
-				free_teq_query_contents(&query);
-				free_teq_results_contents(&results);
-				return TCL_ERROR;
-			}
-			Tcl_AppendElement(interp, buf->string);
-			Tcl_DStringFree(buf);
-			sprintf(tmpbuf, "%lu", policy->te_trans[results.type_rules[i]].lineno);
-			Tcl_AppendElement(interp, tmpbuf);
-			/* Append boolean values to indicate whether this is a conditional rule 
-			 * and whether it is enabled for conditional policy support */
-			if (policy->te_trans[results.type_rules[i]].cond_expr != -1)
-				Tcl_AppendElement(interp, "1");
-			else 
-				Tcl_AppendElement(interp, "0");
-			sprintf(tmpbuf, "%d", policy->te_trans[results.type_rules[i]].enabled);
-			Tcl_AppendElement(interp, tmpbuf);
-		}
-	}
-	if(results.num_clones > 0) {
-		for(i = 0; i < results.num_clones; i++) {
-			rt = append_clone_rule(0, 0, &(policy->clones[results.clones[i]]), policy, buf);
-			if(rt != 0) {
-				Tcl_DStringFree(buf);
-				Tcl_ResetResult(interp);
-				free_teq_query_contents(&query);
-				free_teq_results_contents(&results);
-				return TCL_ERROR;
-			}
-			Tcl_AppendElement(interp, buf->string);
-			Tcl_DStringFree(buf);
-			sprintf(tmpbuf, "%lu", policy->clones[results.clones[i]].lineno);
-			Tcl_AppendElement(interp, tmpbuf);
-			/* Append 0 to indicate this is not a conditional rule. */
-			Tcl_AppendElement(interp, "0");
-			/* Since the enabled flag member is only supported in access, audit and type 
-			 * transition rules, always append TRUE, so the returned list can be parsed 
-			 * correctly. */
-			Tcl_AppendElement(interp, "1");
-		}
-	}
-	free_teq_query_contents(&query);
-	free_teq_results_contents(&results);
-
-	return TCL_OK;	
+	return retval;
 }
 
 static void apol_cond_rules_append_expr(cond_expr_t *exp, policy_t *policy, Tcl_Interp *interp)
@@ -1221,7 +899,7 @@ static int Apol_SearchRangeTransRules(ClientData clientData, Tcl_Interp *interp,
 
 
 int apol_tcl_rules_init(Tcl_Interp *interp) {
-	Tcl_CreateCommand(interp, "apol_SearchTErules", Apol_SearchTErules, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_SearchTERules", Apol_SearchTERules, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_SearchConditionalRules", Apol_SearchConditionalRules, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetRoleRules", Apol_GetRoleRules, NULL, NULL);
         Tcl_CreateCommand(interp, "apol_SearchRangeTransRules", Apol_SearchRangeTransRules, NULL, NULL);

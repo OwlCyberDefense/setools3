@@ -32,7 +32,7 @@
 
 #include <qpol/iterator.h>
 
-#include "component-query.h"
+#include "policy-query.h"
 #include "mls-query.h"
 #include "vector.h"
 

@@ -34,7 +34,7 @@
 
 #include <qpol/policy_query.h>
 
-#include "component-query.h"
+#include "policy-query.h"
 
 /******************** misc helpers ********************/
 

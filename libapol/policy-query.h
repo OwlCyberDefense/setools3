@@ -1,9 +1,9 @@
 /**
- * @file component-query.h
+ * @file policy-query.h
  *
- * Routines to query individual components of a policy.	 For each
- * component there is a query structure to specify the details of the
- * query.  The reason for all of the modifier functions on the query
+ * Routines to query parts of a policy.  For each component and rule
+ * there is a query structure to specify the details of the query.
+ * The reason for all of the modifier functions on the query
  * structures is to ease the creation of swig wrappers to libapol.
  *
  * @author Kevin Carr  kcarr@tresys.com
@@ -27,8 +27,8 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef _APOL_COMPONENT_QUERY_H_
-#define _APOL_COMPONENT_QUERY_H_
+#ifndef APOL_POLICY_QUERY_H
+#define APOL_POLICY_QUERY_H
 
 #include <regex.h>
 #include <stdlib.h>

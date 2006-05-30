@@ -28,7 +28,7 @@
 #include <string.h>
 
 #include "context-query.h"
-#include "component-query.h"
+#include "policy-query.h"
 #include "render.h"
 
 /********************* miscellaneous routines *********************/
