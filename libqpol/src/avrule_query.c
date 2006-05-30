@@ -153,8 +153,8 @@ static int perm_state_end(qpol_iterator_t *iter)
 	/* permission max is number of permissions in the class + 
 	 * number of permissions in its common if it inherits one */
 	perm_max = db->class_val_to_struct[ps->obj_class_val-1]->permissions.nprim + 
-		db->class_val_to_struct[ps->obj_class_val-1]->comdatum ? 
-		db->class_val_to_struct[ps->obj_class_val-1]->comdatum->permissions.nprim : 0;
+		(db->class_val_to_struct[ps->obj_class_val-1]->comdatum ? 
+		db->class_val_to_struct[ps->obj_class_val-1]->comdatum->permissions.nprim : 0);
 	if (perm_max > 32) {
 		errno = EDOM; /* perms set mask is a uint32_t cannot use more than 32 bits */
 		return STATUS_ERR;
@@ -187,7 +187,7 @@ static void *perm_state_get_cur(qpol_iterator_t *iter)
 
 	/* permission max is number of permissions in the class + 
 	 * number of permissions in its common if it inherits one */
-	perm_max = obj_class->permissions.nprim + comm ? comm->permissions.nprim : 0;
+	perm_max = obj_class->permissions.nprim + (comm ? comm->permissions.nprim : 0);
 	if (perm_max > 32) {
 		errno = EDOM; /* perms set mask is a uint32_t cannot use more than 32 bits */
 		return NULL;
@@ -227,8 +227,8 @@ static int perm_state_next(qpol_iterator_t *iter)
 	/* permission max is number of permissions in the class + 
 	 * number of permissions in its common if it inherits one */
 	perm_max = db->class_val_to_struct[ps->obj_class_val-1]->permissions.nprim + 
-		db->class_val_to_struct[ps->obj_class_val-1]->comdatum ? 
-		db->class_val_to_struct[ps->obj_class_val-1]->comdatum->permissions.nprim : 0;
+		(db->class_val_to_struct[ps->obj_class_val-1]->comdatum ? 
+		db->class_val_to_struct[ps->obj_class_val-1]->comdatum->permissions.nprim : 0);
 	if (perm_max > 32) {
 		errno = EDOM; /* perms set mask is a uint32_t cannot use more than 32 bits */
 		return STATUS_ERR;
@@ -263,8 +263,8 @@ static size_t perm_state_size(qpol_iterator_t *iter)
 	/* permission max is number of permissions in the class + 
 	 * number of permissions in its common if it inherits one */
 	perm_max = db->class_val_to_struct[ps->obj_class_val-1]->permissions.nprim + 
-		db->class_val_to_struct[ps->obj_class_val-1]->comdatum ? 
-		db->class_val_to_struct[ps->obj_class_val-1]->comdatum->permissions.nprim : 0;
+		(db->class_val_to_struct[ps->obj_class_val-1]->comdatum ? 
+		db->class_val_to_struct[ps->obj_class_val-1]->comdatum->permissions.nprim : 0);
 	if (perm_max > 32) {
 		errno = EDOM; /* perms set mask is a uint32_t cannot use more than 32 bits */
 		return STATUS_ERR;

@@ -62,6 +62,7 @@
 
 typedef struct sepol_policydb qpol_policy_t;
 typedef struct sepol_handle qpol_handle_t;
+typedef void (*qpol_handle_callback_fn_t) (void* varg, qpol_handle_t* handle, const char* fmt, ...);
 
 /**
  *  Open a policy from a passed in file path.
@@ -69,23 +70,27 @@ typedef struct sepol_handle qpol_handle_t;
  *  @param policy The policy to populate.  The caller should not free
  *  this pointer.
  *  @param handle The policy handle.
+ *  @param fn (Optional) If non-NULL, the callback to be used by the handle.
+ *  @param varg (Optional) The argument needed by the handle callback.
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *policy will be NULL.
  */
-extern int qpol_open_policy_from_file(const char *filename, qpol_policy_t **policy, qpol_handle_t **handle);
+extern int qpol_open_policy_from_file(const char *filename, qpol_policy_t **policy, qpol_handle_t **handle, qpol_handle_callback_fn_t fn, void *varg);
 
 /**
- *  Open a policy from a passed in file path.
+ *  Open a policy from a passed in buffer.
  *  @param policy The policy to populate.  The caller should not free
  *  this pointer.
  *  @param filedata The policy file stored in memory .
  *  @param size The size of filedata
  *  @param handle The handle for the policy
+ *  @param fn (Optional) If non-NULL, the callback to be used by the handle.
+ *  @param varg (Optional) The argument needed by the handle callback.
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *policy will be NULL.
  */
 extern int qpol_open_policy_from_memory(qpol_policy_t **policy, const char *filedata, int size,
-					qpol_handle_t **handle);
+					qpol_handle_t **handle, qpol_handle_callback_fn_t fn, void *varg);
 
 /**
  *  Close a policy.
