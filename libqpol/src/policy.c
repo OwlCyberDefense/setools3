@@ -530,7 +530,7 @@ int qpol_find_default_policy_file(unsigned int search_opt, char **policy_file_pa
 	return INVALID_SEARCH_OPTIONS;
 }
 
-int qpol_open_policy_from_file(const char *path, qpol_policy_t **policy, qpol_handle_t **handle)
+int qpol_open_policy_from_file(const char *path, qpol_policy_t **policy, qpol_handle_t **handle, qpol_handle_callback_fn_t fn, void *varg)
 {
 	int error = 0;
 	FILE *infile = NULL;
@@ -552,6 +552,9 @@ int qpol_open_policy_from_file(const char *path, qpol_policy_t **policy, qpol_ha
 	*handle = sepol_handle_create();
 	if (*handle == NULL)
 		return -1;
+
+	if (fn)
+		sepol_handle_set_callback(*handle, fn, varg);
 
 	if (sepol_policydb_create(policy)) {
 		error = errno;
@@ -639,48 +642,51 @@ err:
 }
 
 int qpol_open_policy_from_memory(qpol_policy_t **policy, const char *filedata, int size, 
-				 qpol_handle_t **handle)
+				 qpol_handle_t **handle, qpol_handle_callback_fn_t fn, void *varg)
 {
-        int error = 0;
+	int error = 0;
 	if (policy == NULL || filedata == NULL)
 		return -1;
 	*policy = NULL;
 
-        *handle = sepol_handle_create();
-        if (*handle == NULL)
-                return -1;
+	*handle = sepol_handle_create();
+	if (*handle == NULL)
+		return -1;
 
-        if (sepol_policydb_create(policy)) {
-                error = errno;
-                goto err;
-        }
+	if (fn)
+		sepol_handle_set_callback(*handle, fn, varg);
+
+	if (sepol_policydb_create(policy)) {
+		error = errno;
+		goto err;
+	}
 
 	qpol_src_input = (char *)filedata;
 	qpol_src_inputptr = qpol_src_input;
 	qpol_src_inputlim = &qpol_src_inputptr[size-1];
 	qpol_src_originalinput = qpol_src_input;
-	
+
 	/* read in source */
 	if (read_source_policy(&(*policy)->p, "parse") < 0)
 		exit(1);
 
 	/* link the source */
 	if (sepol_link_modules(*handle, *policy, NULL, 0, 0)) {
-		    error = errno;
-		    goto err;
+		error = errno;
+		goto err;
 	}
 	/* expand :) */
 	if (qpol_expand_module(*handle, *policy)) {
 		error = errno;
 		goto err;
 	}
-	
+
 	return 0;
 err:
-        sepol_policydb_free(*policy);
-        *policy = NULL;
-        errno = error;
-        return -1;
+	sepol_policydb_free(*policy);
+	*policy = NULL;
+	errno = error;
+	return -1;
 
 }
 
