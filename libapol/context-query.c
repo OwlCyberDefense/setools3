@@ -67,18 +67,18 @@ apol_context_t *apol_context_create_from_qpol_context(apol_policy_t *p, qpol_con
 		ERR(p, "Out of memory!");
 		goto err;
 	}
-	if (qpol_context_get_user(p->sh, p->p, context, &user) < 0 ||
-	    qpol_context_get_role(p->sh, p->p, context, &role) < 0 ||
-	    qpol_context_get_type(p->sh, p->p, context, &type) < 0 ||
-	    qpol_context_get_range(p->sh, p->p, context, &range) < 0) {
+	if (qpol_context_get_user(p->qh, p->p, context, &user) < 0 ||
+	    qpol_context_get_role(p->qh, p->p, context, &role) < 0 ||
+	    qpol_context_get_type(p->qh, p->p, context, &type) < 0 ||
+	    qpol_context_get_range(p->qh, p->p, context, &range) < 0) {
 		goto err;
 	}
-	if (qpol_user_get_name(p->sh, p->p, user, &user_name) < 0 ||
-	    qpol_role_get_name(p->sh, p->p, role, &role_name) < 0 ||
-	    qpol_type_get_name(p->sh, p->p, type, &type_name) < 0) {
+	if (qpol_user_get_name(p->qh, p->p, user, &user_name) < 0 ||
+	    qpol_role_get_name(p->qh, p->p, role, &role_name) < 0 ||
+	    qpol_type_get_name(p->qh, p->p, type, &type_name) < 0) {
 		goto err;
 	}
-	if (qpol_policy_is_mls_enabled(p->sh, p->p)) {
+	if (qpol_policy_is_mls_enabled(p->qh, p->p)) {
 		/* if the policy is MLS then convert the range, else
 		 * rely upon the default value of NULL */
 		if ((apol_range = apol_mls_range_create_from_qpol_mls_range(p, range)) == NULL) {
@@ -168,13 +168,13 @@ int apol_context_compare(apol_policy_t *p,
 	}
 	if (target->user != NULL && search->user != NULL) {
 		qpol_user_t *user0, *user1;
-		if (qpol_policy_get_user_by_name(p->sh, p->p,
+		if (qpol_policy_get_user_by_name(p->qh, p->p,
 						    target->user, &user0) < 0 ||
-		    qpol_policy_get_user_by_name(p->sh, p->p,
+		    qpol_policy_get_user_by_name(p->qh, p->p,
 						    search->user, &user1) < 0 ||
-		    qpol_user_get_value(p->sh, p->p,
+		    qpol_user_get_value(p->qh, p->p,
 					       user0, &value0) < 0 ||
-		    qpol_user_get_value(p->sh, p->p,
+		    qpol_user_get_value(p->qh, p->p,
 					       user1, &value1) < 0) {
 			return -1;
 		}
@@ -184,13 +184,13 @@ int apol_context_compare(apol_policy_t *p,
 	}
 	if (target->role != NULL && search->role != NULL) {
 		qpol_role_t *role0, *role1;
-		if (qpol_policy_get_role_by_name(p->sh, p->p,
+		if (qpol_policy_get_role_by_name(p->qh, p->p,
 						    target->role, &role0) < 0 ||
-		    qpol_policy_get_role_by_name(p->sh, p->p,
+		    qpol_policy_get_role_by_name(p->qh, p->p,
 						    search->role, &role1) < 0 ||
-		    qpol_role_get_value(p->sh, p->p,
+		    qpol_role_get_value(p->qh, p->p,
 					       role0, &value0) < 0 ||
-		    qpol_role_get_value(p->sh, p->p,
+		    qpol_role_get_value(p->qh, p->p,
 					       role1, &value1) < 0) {
 			return -1;
 		}
@@ -200,13 +200,13 @@ int apol_context_compare(apol_policy_t *p,
 	}
 	if (target->type != NULL && search->type != NULL) {
 		qpol_type_t *type0, *type1;
-		if (qpol_policy_get_type_by_name(p->sh, p->p,
+		if (qpol_policy_get_type_by_name(p->qh, p->p,
 						    target->type, &type0) < 0 ||
-		    qpol_policy_get_type_by_name(p->sh, p->p,
+		    qpol_policy_get_type_by_name(p->qh, p->p,
 						    search->type, &type1) < 0 ||
-		    qpol_type_get_value(p->sh, p->p,
+		    qpol_type_get_value(p->qh, p->p,
 					       type0, &value0) < 0 ||
-		    qpol_type_get_value(p->sh, p->p,
+		    qpol_type_get_value(p->qh, p->p,
 					       type1, &value1) < 0) {
 			return -1;
 		}
@@ -279,7 +279,7 @@ int apol_context_validate_partial(apol_policy_t *p,
 		}
 	}
 	if (context->type != NULL) {
-		if (qpol_policy_get_type_by_name(p->sh, p->p, context->type, &type) < 0) {
+		if (qpol_policy_get_type_by_name(p->qh, p->p, context->type, &type) < 0) {
 			retval = 0;
 			goto cleanup;
 		}
@@ -292,8 +292,8 @@ int apol_context_validate_partial(apol_policy_t *p,
 		}
 		/* next check that the user has access to this context */
 		if (context->user != NULL) {
-			if (qpol_policy_get_user_by_name(p->sh, p->p, context->user, &user) < 0 ||
-			    qpol_user_get_range(p->sh, p->p, user, &user_range) < 0) {
+			if (qpol_policy_get_user_by_name(p->qh, p->p, context->user, &user) < 0 ||
+			    qpol_user_get_range(p->qh, p->p, user, &user_range) < 0) {
 				goto cleanup;
 			}
 			user_apol_range = apol_mls_range_create_from_qpol_mls_range(p, user_range);

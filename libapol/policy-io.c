@@ -678,7 +678,7 @@ int open_policy(const char* filename, policy_t **policy)
 
 __attribute__ ((format (printf, 3, 4)))
 static void qpol_handle_route_to_callback(void *varg, qpol_handle_t *handle,
-					   const char *fmt, ...)
+					  const char *fmt, ...)
 {
 	apol_policy_t *p = (apol_policy_t *) varg;
 	va_list ap;
@@ -701,17 +701,24 @@ int apol_policy_open(const char *path, apol_policy_t **policy)
 {
 	if (!path || !policy) {
 		errno = EINVAL;
-		return  -1;
+		return -1;
 	}
 
 	if (policy)
 		*policy = NULL;
 
-	if (!(*policy = calloc(1, sizeof(apol_policy_t))))
+	if (!(*policy = calloc(1, sizeof(apol_policy_t)))) {
+		fprintf(stderr, "Out of memory!\n");
 		return -1; /* errno set by calloc */
+	}
+	(*policy)->msg_callback = apol_handle_default_callback;
+	(*policy)->msg_callback_arg = (*policy);
 
-	if (qpol_open_policy_from_file(path, &((*policy)->p), &((*policy)->sh)))
+	if (qpol_open_policy_from_file(path, &((*policy)->p), &((*policy)->qh) /*, qpol_handle_route_to_callback, (*policy) */)) {
+		ERR(*policy, "Unable to open policy at %s.", path);
+		apol_policy_destroy(policy);
 		return -1; /* qpol sets errno */
+        }
 
 	return 0;
 }
@@ -720,7 +727,7 @@ void apol_policy_destroy(apol_policy_t **policy)
 {
 	if (policy != NULL && *policy != NULL) {
 		qpol_close_policy(&((*policy)->p));
-		qpol_handle_destroy(&((*policy)->sh));
+		qpol_handle_destroy(&((*policy)->qh));
 		free(*policy);
 		*policy = NULL;
 	}

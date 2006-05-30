@@ -58,7 +58,7 @@ int apol_get_class_by_query(apol_policy_t *p,
 	qpol_iterator_t *iter = NULL, *perm_iter = NULL;
 	int retval = -1, append_class;
 	*v = NULL;
-	if (qpol_policy_get_class_iter(p->sh, p->p, &iter) < 0) {
+	if (qpol_policy_get_class_iter(p->qh, p->p, &iter) < 0) {
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
@@ -75,7 +75,7 @@ int apol_get_class_by_query(apol_policy_t *p,
 			char *class_name, *common_name = NULL;
 			qpol_common_t *common_datum;
 			int compval;
-			if (qpol_class_get_name(p->sh, p->p, class_datum, &class_name) < 0) {
+			if (qpol_class_get_name(p->qh, p->p, class_datum, &class_name) < 0) {
 				goto cleanup;
 			}
 			compval = apol_compare(p, class_name, c->class_name,
@@ -86,7 +86,7 @@ int apol_get_class_by_query(apol_policy_t *p,
 			else if (compval == 0) {
 				continue;
 			}
-			if (qpol_class_get_common(p->sh, p->p,
+			if (qpol_class_get_common(p->qh, p->p,
 							 class_datum, &common_datum) < 0) {
 				goto cleanup;
 			}
@@ -96,7 +96,7 @@ int apol_get_class_by_query(apol_policy_t *p,
 				}
 			}
 			else {
-				if (qpol_common_get_name(p->sh, p->p,
+				if (qpol_common_get_name(p->qh, p->p,
 								common_datum, &common_name) < 0) {
 					goto cleanup;
 				}
@@ -168,7 +168,7 @@ int apol_get_common_by_query(apol_policy_t *p,
 	qpol_iterator_t *iter = NULL;
 	int retval = -1;
 	*v = NULL;
-	if (qpol_policy_get_common_iter(p->sh, p->p, &iter) < 0) {
+	if (qpol_policy_get_common_iter(p->qh, p->p, &iter) < 0) {
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
@@ -183,7 +183,7 @@ int apol_get_common_by_query(apol_policy_t *p,
 		if (c != NULL) {
 			char *common_name = NULL;
 			int compval;
-			if (qpol_common_get_name(p->sh, p->p, common_datum, &common_name) < 0) {
+			if (qpol_common_get_name(p->qh, p->p, common_datum, &common_name) < 0) {
 				goto cleanup;
 			}
 			compval = apol_compare(p, common_name, c->common_name,
@@ -256,8 +256,8 @@ int apol_get_perm_by_query(apol_policy_t *p,
 	int retval = -1, compval;
 	char *perm_name;
 	*v = NULL;
-	if (qpol_policy_get_class_iter(p->sh, p->p, &class_iter) < 0 ||
-	    qpol_policy_get_common_iter(p->sh, p->p, &common_iter) < 0) {
+	if (qpol_policy_get_class_iter(p->qh, p->p, &class_iter) < 0 ||
+	    qpol_policy_get_common_iter(p->qh, p->p, &common_iter) < 0) {
 		goto cleanup;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
@@ -267,7 +267,7 @@ int apol_get_perm_by_query(apol_policy_t *p,
 	for ( ; !qpol_iterator_end(class_iter); qpol_iterator_next(class_iter)) {
 		qpol_class_t *class_datum;
 		if (qpol_iterator_get_item(class_iter, (void **) &class_datum) < 0 ||
-		    qpol_class_get_perm_iter(p->sh, p->p, class_datum, &perm_iter) < 0) {
+		    qpol_class_get_perm_iter(p->qh, p->p, class_datum, &perm_iter) < 0) {
 			goto cleanup;
 		}
 		for ( ; !qpol_iterator_end(perm_iter); qpol_iterator_next(perm_iter)) {
@@ -296,7 +296,7 @@ int apol_get_perm_by_query(apol_policy_t *p,
 	for ( ; !qpol_iterator_end(common_iter); qpol_iterator_next(common_iter)) {
 		qpol_common_t *common_datum;
 		if (qpol_iterator_get_item(common_iter, (void **) &common_datum) < 0 ||
-		    qpol_common_get_perm_iter(p->sh, p->p, common_datum, &perm_iter) < 0) {
+		    qpol_common_get_perm_iter(p->qh, p->p, common_datum, &perm_iter) < 0) {
 			goto cleanup;
 		}
 		for ( ; !qpol_iterator_end(perm_iter); qpol_iterator_next(perm_iter)) {
