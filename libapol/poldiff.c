@@ -11,7 +11,7 @@
  
 #include "poldiff.h"
 #include "policy.h"
-#include "policy-query.h"
+#include "old-policy-query.h"
 #include "policy-io.h"
 #include "semantic/avhash.h"
 #include "semantic/avsemantics.h"

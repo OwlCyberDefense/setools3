@@ -21,7 +21,7 @@
 #define _APOLICY_ANALYSIS_H_
 
 #include "policy.h"
-#include "policy-query.h"
+#include "old-policy-query.h"
 #include "infoflow.h"
 #include "util.h"
 

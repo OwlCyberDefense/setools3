@@ -17,7 +17,7 @@
 #define _APOLICY_INFOFLOW_H_
 
 #include "policy.h"
-#include "policy-query.h"
+#include "old-policy-query.h"
 #include "perm-map.h"
 #include "util.h"
 
