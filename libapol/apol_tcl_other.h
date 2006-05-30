@@ -25,8 +25,8 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef _APOLICY_TCL_H_
-#define _APOLICY_TCL_H_
+#ifndef APOL_TCL_OTHER_H
+#define APOL_TCL_OTHER_H
 
 #include <tcl.h>
 
@@ -135,4 +135,4 @@ extern int apol_tcl_string_to_context(Tcl_Interp *interp,
 				      const char *context_string,
 				      apol_context_t *context);
 
-#endif /*_APOLICY_TCL_H_*/
+#endif

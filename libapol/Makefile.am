@@ -8,7 +8,7 @@ AM_YFLAGS = -d
 BUILT_SOURCES = apolicy_parse.h
 
 libapol_a_SOURCES = \
-	policy.c policy.h policy-query.c policy-query.h \
+	policy.c policy.h old-policy-query.c old-policy-query.h \
 	queue.c queue.h util.c util.h \
 	clone.c clone.h cond.c cond.h \
 	avl-util.c avl-util.h policy-avl.c policy-avl.h \
