@@ -55,7 +55,7 @@ int apol_get_genfscon_by_query(apol_policy_t *p,
 	int retval = -1, retval2;
 	qpol_genfscon_t *genfscon = NULL;
 	*v = NULL;
-	if (qpol_policy_get_genfscon_iter(p->sh, p->p, &iter) < 0) {
+	if (qpol_policy_get_genfscon_iter(p->qh, p->p, &iter) < 0) {
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
@@ -70,10 +70,10 @@ int apol_get_genfscon_by_query(apol_policy_t *p,
 			char *fs, *path;
 			uint32_t objclass;
 			qpol_context_t *context;
-			if (qpol_genfscon_get_name(p->sh, p->p, genfscon, &fs) < 0 ||
-			    qpol_genfscon_get_path(p->sh, p->p, genfscon, &path) < 0 ||
-			    qpol_genfscon_get_class(p->sh, p->p, genfscon, &objclass) < 0 ||
-			    qpol_genfscon_get_context(p->sh, p->p, genfscon, &context) < 0) {
+			if (qpol_genfscon_get_name(p->qh, p->p, genfscon, &fs) < 0 ||
+			    qpol_genfscon_get_path(p->qh, p->p, genfscon, &path) < 0 ||
+			    qpol_genfscon_get_class(p->qh, p->p, genfscon, &objclass) < 0 ||
+			    qpol_genfscon_get_context(p->qh, p->p, genfscon, &context) < 0) {
 				goto cleanup;
 			}
 			retval2 = apol_compare(p, fs, g->fs, 0, NULL);
@@ -206,7 +206,7 @@ int apol_get_fs_use_by_query(apol_policy_t *p,
 	int retval = -1, retval2;
 	qpol_fs_use_t *fs_use = NULL;
 	*v = NULL;
-	if (qpol_policy_get_fs_use_iter(p->sh, p->p, &iter) < 0) {
+	if (qpol_policy_get_fs_use_iter(p->qh, p->p, &iter) < 0) {
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
@@ -221,9 +221,9 @@ int apol_get_fs_use_by_query(apol_policy_t *p,
 			char *fs;
 			uint32_t behavior;
 			qpol_context_t *context;
-			if (qpol_fs_use_get_name(p->sh, p->p, fs_use, &fs) < 0 ||
-			    qpol_fs_use_get_behavior(p->sh, p->p, fs_use, &behavior) < 0 ||
-			    qpol_fs_use_get_context(p->sh, p->p, fs_use, &context) < 0) {
+			if (qpol_fs_use_get_name(p->qh, p->p, fs_use, &fs) < 0 ||
+			    qpol_fs_use_get_behavior(p->qh, p->p, fs_use, &behavior) < 0 ||
+			    qpol_fs_use_get_context(p->qh, p->p, fs_use, &context) < 0) {
 				goto cleanup;
 			}
 			retval2 = apol_compare(p, fs, f->fs, 0, NULL);

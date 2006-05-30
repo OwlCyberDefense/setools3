@@ -917,15 +917,15 @@ int _get_type_name_ptr(int idx, char **name, policy_t *policy);
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef _APOL_POLICY_H_
-#define _APOL_POLICY_H_
+#ifndef APOL_POLICY_H
+#define APOL_POLICY_H
 
 #include <stdarg.h>
 #include <qpol/policy.h>
 
 typedef struct apol_policy {
         qpol_policy_t *p;
-        qpol_handle_t *sh;
+        qpol_handle_t *qh;
 	void (*msg_callback) (void *varg, struct apol_policy *p, const char *fmt, va_list argp);
 	void *msg_callback_arg;
 } apol_policy_t;

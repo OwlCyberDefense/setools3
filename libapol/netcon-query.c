@@ -60,7 +60,7 @@ int apol_get_portcon_by_query(apol_policy_t *p,
         qpol_iterator_t *iter;
         int retval = -1, retval2;
         *v = NULL;
-        if (qpol_policy_get_portcon_iter(p->sh, p->p, &iter) < 0) {
+        if (qpol_policy_get_portcon_iter(p->qh, p->p, &iter) < 0) {
                 return -1;
         }
         if ((*v = apol_vector_create()) == NULL) {
@@ -76,13 +76,13 @@ int apol_get_portcon_by_query(apol_policy_t *p,
                         uint16_t low, high;
                         uint8_t proto;
                         qpol_context_t *context;
-                        if (qpol_portcon_get_low_port(p->sh, p->p,
+                        if (qpol_portcon_get_low_port(p->qh, p->p,
                                                        portcon, &low) < 0 ||
-                            qpol_portcon_get_high_port(p->sh, p->p,
+                            qpol_portcon_get_high_port(p->qh, p->p,
                                                         portcon, &high) < 0 ||
-                            qpol_portcon_get_protocol(p->sh, p->p,
+                            qpol_portcon_get_protocol(p->qh, p->p,
                                                        portcon, &proto) < 0 ||
-                            qpol_portcon_get_context(p->sh, p->p,
+                            qpol_portcon_get_context(p->qh, p->p,
                                                       portcon, &context) < 0) {
                                 goto cleanup;
                         }
@@ -176,7 +176,7 @@ int apol_get_netifcon_by_query(apol_policy_t *p,
 	qpol_iterator_t *iter;
 	int retval = -1, retval2;
 	*v = NULL;
-	if (qpol_policy_get_netifcon_iter(p->sh, p->p, &iter) < 0) {
+	if (qpol_policy_get_netifcon_iter(p->qh, p->p, &iter) < 0) {
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
@@ -191,9 +191,9 @@ int apol_get_netifcon_by_query(apol_policy_t *p,
 		if (n != NULL) {
 			char *name;
 			qpol_context_t *ifcon, *msgcon;
-			if (qpol_netifcon_get_name(p->sh, p->p, netifcon, &name) < 0 ||
-			    qpol_netifcon_get_if_con(p->sh, p->p, netifcon, &ifcon) < 0 ||
-			    qpol_netifcon_get_msg_con(p->sh, p->p, netifcon, &msgcon) < 0) {
+			if (qpol_netifcon_get_name(p->qh, p->p, netifcon, &name) < 0 ||
+			    qpol_netifcon_get_if_con(p->qh, p->p, netifcon, &ifcon) < 0 ||
+			    qpol_netifcon_get_msg_con(p->qh, p->p, netifcon, &msgcon) < 0) {
 				goto cleanup;
 			}
 			retval2 = apol_compare(p, name, n->dev, 0, NULL);
@@ -292,7 +292,7 @@ int apol_get_nodecon_by_query(apol_policy_t *p,
 	int retval = -1, retval2;
 	qpol_nodecon_t *nodecon = NULL;
 	*v = NULL;
-	if (qpol_policy_get_nodecon_iter(p->sh, p->p, &iter) < 0) {
+	if (qpol_policy_get_nodecon_iter(p->qh, p->p, &iter) < 0) {
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
@@ -307,10 +307,10 @@ int apol_get_nodecon_by_query(apol_policy_t *p,
 			unsigned char proto, proto_a, proto_m;
 			uint32_t *addr, *mask;
 			qpol_context_t *con;
-			if (qpol_nodecon_get_protocol(p->sh, p->p, nodecon, &proto) < 0 ||
-			    qpol_nodecon_get_addr(p->sh, p->p, nodecon, &addr, &proto_a) < 0 ||
-			    qpol_nodecon_get_mask(p->sh, p->p, nodecon, &mask, &proto_m) < 0 ||
-			    qpol_nodecon_get_context(p->sh, p->p, nodecon, &con) < 0) {
+			if (qpol_nodecon_get_protocol(p->qh, p->p, nodecon, &proto) < 0 ||
+			    qpol_nodecon_get_addr(p->qh, p->p, nodecon, &addr, &proto_a) < 0 ||
+			    qpol_nodecon_get_mask(p->qh, p->p, nodecon, &mask, &proto_m) < 0 ||
+			    qpol_nodecon_get_context(p->qh, p->p, nodecon, &con) < 0) {
 				goto cleanup;
 			}
 			if (n->proto >= 0 && n->proto != proto) {

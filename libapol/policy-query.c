@@ -149,7 +149,7 @@ int apol_compare_type(apol_policy_t *p,
 	char *type_name;
 	int compval;
 	qpol_iterator_t *alias_iter = NULL;
-	if (qpol_type_get_name(p->sh, p->p, type, &type_name) < 0) {
+	if (qpol_type_get_name(p->qh, p->p, type, &type_name) < 0) {
 		return -1;
 	}
 	compval = apol_compare(p, type_name, name, flags, type_regex);
@@ -158,7 +158,7 @@ int apol_compare_type(apol_policy_t *p,
 	}
 	/* also check if the matches against one of the type's
 	   aliases */
-	if (qpol_type_get_alias_iter(p->sh, p->p, type, &alias_iter) < 0) {
+	if (qpol_type_get_alias_iter(p->qh, p->p, type, &alias_iter) < 0) {
 		return -1;
 	}
 	compval = apol_compare_iter(p, alias_iter, name, flags, type_regex);
@@ -173,7 +173,7 @@ int apol_compare_level(apol_policy_t *p,
 	char *level_name;
 	int compval;
 	qpol_iterator_t *alias_iter = NULL;
-	if (qpol_level_get_name(p->sh, p->p, level, &level_name) < 0) {
+	if (qpol_level_get_name(p->qh, p->p, level, &level_name) < 0) {
 		return -1;
 	}
 	compval = apol_compare(p, level_name, name, flags, level_regex);
@@ -182,7 +182,7 @@ int apol_compare_level(apol_policy_t *p,
 	}
 	/* also check if the matches against one of the sensitivity's
 	   aliases */
-	if (qpol_level_get_alias_iter(p->sh, p->p, level, &alias_iter) < 0) {
+	if (qpol_level_get_alias_iter(p->qh, p->p, level, &alias_iter) < 0) {
 		return -1;
 	}
 	compval = apol_compare_iter(p, alias_iter, name, flags, level_regex);
@@ -197,7 +197,7 @@ int apol_compare_cat(apol_policy_t *p,
 	char *cat_name;
 	int compval;
 	qpol_iterator_t *alias_iter = NULL;
-	if (qpol_cat_get_name(p->sh, p->p, cat, &cat_name) < 0) {
+	if (qpol_cat_get_name(p->qh, p->p, cat, &cat_name) < 0) {
 		return -1;
 	}
 	compval = apol_compare(p, cat_name, name, flags, cat_regex);
@@ -206,7 +206,7 @@ int apol_compare_cat(apol_policy_t *p,
 	}
 	/* also check if the matches against one of the category's
 	   aliases */
-	if (qpol_cat_get_alias_iter(p->sh, p->p, cat, &alias_iter) < 0) {
+	if (qpol_cat_get_alias_iter(p->qh, p->p, cat, &alias_iter) < 0) {
 		return -1;
 	}
 	compval = apol_compare_iter(p, alias_iter, name, flags, cat_regex);
