@@ -269,12 +269,12 @@ static int print_stats(FILE *fp, apol_policy_t *policydb)
 	fprintf(fp, "   Sensitivities: %7zd    Categories:    %7zd\n", n_levels, n_cats);
 
 	/* allow/neverallow */
-	if (qpol_get_avrule_iter(policydb->sh, policydb->p, QPOL_RULE_ALLOW, &iter))
+	if (qpol_policy_get_avrule_iter(policydb->sh, policydb->p, QPOL_RULE_ALLOW, &iter))
 		goto cleanup;
 	if (qpol_iterator_get_size(iter, &n_allows))
 		goto cleanup;
 	qpol_iterator_destroy(&iter);
-	if (qpol_get_avrule_iter(policydb->sh, policydb->p, QPOL_RULE_NEVERALLOW, &iter))
+	if (qpol_policy_get_avrule_iter(policydb->sh, policydb->p, QPOL_RULE_NEVERALLOW, &iter))
 		goto cleanup;
 	if (qpol_iterator_get_size(iter, &n_neverallows))
 		goto cleanup;
@@ -282,12 +282,12 @@ static int print_stats(FILE *fp, apol_policy_t *policydb)
 	fprintf(fp, "   Allow:         %7zd    Neverallow:    %7zd\n", n_allows, n_neverallows);
 
 	/* auditallow/dontaudit */
-	if (qpol_get_avrule_iter(policydb->sh, policydb->p, QPOL_RULE_AUDITALLOW, &iter))
+	if (qpol_policy_get_avrule_iter(policydb->sh, policydb->p, QPOL_RULE_AUDITALLOW, &iter))
 		goto cleanup;
 	if (qpol_iterator_get_size(iter, &n_auditallows))
 		goto cleanup;
 	qpol_iterator_destroy(&iter);
-	if (qpol_get_avrule_iter(policydb->sh, policydb->p, QPOL_RULE_DONTAUDIT, &iter))
+	if (qpol_policy_get_avrule_iter(policydb->sh, policydb->p, QPOL_RULE_DONTAUDIT, &iter))
 		goto cleanup;
 	if (qpol_iterator_get_size(iter, &n_dontaudits))
 		goto cleanup;             
@@ -298,19 +298,19 @@ static int print_stats(FILE *fp, apol_policy_t *policydb)
 	fprintf(fp, "   Role allow:    %7s    Role trans:    %7s\n", "N/A", "N/A");
 	
 	/* type_transition/type_change */
-	if (qpol_get_avrule_iter(policydb->sh, policydb->p, QPOL_RULE_TYPE_TRANS, &iter))
+	if (qpol_policy_get_terule_iter(policydb->sh, policydb->p, QPOL_RULE_TYPE_TRANS, &iter))
 		goto cleanup;
 	if (qpol_iterator_get_size(iter, &n_typetrans))
 		goto cleanup;
 	qpol_iterator_destroy(&iter);
-	if (qpol_get_avrule_iter(policydb->sh, policydb->p, QPOL_RULE_TYPE_CHANGE, &iter))
+	if (qpol_policy_get_terule_iter(policydb->sh, policydb->p, QPOL_RULE_TYPE_CHANGE, &iter))
 		goto cleanup;
 	if (qpol_iterator_get_size(iter, &n_typechanges))
 		goto cleanup;
 	qpol_iterator_destroy(&iter);
-	fprintf(fp, "   Type_trans:    %7zd    Type_change:   %7zd\n", n_typechanges, n_typechanges);
+	fprintf(fp, "   Type_trans:    %7zd    Type_change:   %7zd\n", n_typetrans, n_typechanges);
 	
-	if (qpol_get_avrule_iter(policydb->sh, policydb->p, QPOL_RULE_TYPE_MEMBER, &iter))
+	if (qpol_policy_get_terule_iter(policydb->sh, policydb->p, QPOL_RULE_TYPE_MEMBER, &iter))
 		goto cleanup;
 	if (qpol_iterator_get_size(iter, &n_typemembers))
 		goto cleanup;
