@@ -4583,7 +4583,7 @@ int apol_policy_is_mls(apol_policy_t *p)
 	if (p == NULL) {
 		return -1;
 	}
-	return qpol_policy_is_mls_enabled(p->sh, p->p);
+	return qpol_policy_is_mls_enabled(p->qh, p->p);
 }
 
 __attribute__ ((format (printf, 3, 4)))

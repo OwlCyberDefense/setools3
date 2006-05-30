@@ -119,7 +119,7 @@ int apol_tcl_string_to_level(Tcl_Interp *interp, const char *level_string,
 		return -1;
 	}
 	sens_string = Tcl_GetString(sens_obj);
-	if (qpol_policy_get_level_by_name(policydb->sh, policydb->p,
+	if (qpol_policy_get_level_by_name(policydb->qh, policydb->p,
 					     sens_string, &sens) < 0) {
 		/* unknown sensitivity */
 		return 1;
@@ -133,7 +133,7 @@ int apol_tcl_string_to_level(Tcl_Interp *interp, const char *level_string,
 			return -1;
 		}
 		cat_string = Tcl_GetString(cats_obj);
-		if (qpol_policy_get_cat_by_name(policydb->sh, policydb->p,
+		if (qpol_policy_get_cat_by_name(policydb->qh, policydb->p,
 						   cat_string, &cat) < 0) {
 			/* unknown category */
 			return 1;
@@ -586,11 +586,14 @@ int Apol_OpenPolicy(ClientData clientData, Tcl_Interp *interp, int argc, char *a
 	}
 
 	if (apol_policy_open(argv[1], &policydb)) {
-		rt = errno;
-		sprintf(tbuf, "Apol_open_policy error: %s", strerror(rt));
-		Tcl_AppendResult(interp, tbuf, (char *) NULL);
-		return -rt;
+		Tcl_Obj *result_obj;
+		sprintf(tbuf, "Error opening policy: %s", strerror(errno));
+		result_obj = Tcl_NewStringObj(tbuf, -1);
+		Tcl_SetObjResult(interp, result_obj);
+		return TCL_ERROR;
 	}
+	policydb->msg_callback_arg = NULL;
+	policydb->msg_callback = apol_tcl_route_handle_to_string;
 
 	return TCL_OK;
 }

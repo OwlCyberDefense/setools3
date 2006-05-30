@@ -36,4 +36,4 @@ clean-local:
 	-rm -rf $(srcdir)/tmp_sepol
 
 mostlyclean-local:
-	-rm -rf *.gcno *.gcda *.gprof *.gcov
+	-rm -rf *.gcno *.gcda *.gprof *.gcov libqpol.so
