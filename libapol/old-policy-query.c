@@ -14,7 +14,7 @@
 #include <assert.h>
 #include "policy.h"
 #include "util.h"
-#include "policy-query.h"
+#include "old-policy-query.h"
 
 
 

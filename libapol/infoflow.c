@@ -20,7 +20,7 @@
 #include "policy.h"
 #include "util.h"
 #include "infoflow.h"
-#include "policy-query.h"
+#include "old-policy-query.h"
 #include "queue.h"
 
 /*
