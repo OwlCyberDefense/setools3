@@ -46,6 +46,7 @@
 #include <qpol/isid_query.h>
 #include <qpol/avrule_query.h>
 #include <qpol/terule_query.h>
+#include <qpol/rbacrule_query.h>
 
 /* generic information about policydb*/
 /**
