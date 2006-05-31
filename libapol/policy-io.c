@@ -714,7 +714,7 @@ int apol_policy_open(const char *path, apol_policy_t **policy)
 	(*policy)->msg_callback = apol_handle_default_callback;
 	(*policy)->msg_callback_arg = (*policy);
 
-	if (qpol_open_policy_from_file(path, &((*policy)->p), &((*policy)->sh), qpol_handle_route_to_callback, (*policy)))
+	if (qpol_open_policy_from_file(path, &((*policy)->p), &((*policy)->qh), qpol_handle_route_to_callback, (*policy))) {
 		ERR(*policy, "Unable to open policy at %s.", path);
 		apol_policy_destroy(policy);
 		return -1; /* qpol sets errno */

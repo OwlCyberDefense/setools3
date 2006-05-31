@@ -151,8 +151,8 @@ int read_file_to_buffer(const char *fname, char **buf, int *len);
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef _APOL_UTIL_H_
-#define _APOL_UTIL_H_
+#ifndef APOL_UTIL_H
+#define APOL_UTIL_H
 
 /**
  * Given a portcon protocol, return a read-only string that describes
@@ -169,14 +169,14 @@ extern const char *apol_protocol_to_str(uint8_t protocol);
 /**
  * Given a string representing and IP value (mask or address, IPv4 or
  * IPv6), write to an array that value in the same bit order that
- * sepol uses.  If the IP was in IPv4 format, only write to the first
+ * qpol uses.  If the IP was in IPv4 format, only write to the first
  * element and zero the remainder.
  *
  * @param str A string representing and IP value, either in IPv4 or
  * IPv6 format.
  * @param ip Array to which write converted value.
  *
- * @return SEPOL_IPV4 if the string is in IPv4 format, SEPOL_IPV6 if
+ * @return QPOL_IPV4 if the string is in IPv4 format, QPOL_IPV6 if
  * in IPv6, < 0 on error.
  */
 extern int apol_str_to_internal_ip(const char *str, uint32_t ip[4]);
@@ -185,8 +185,8 @@ extern int apol_str_to_internal_ip(const char *str, uint32_t ip[4]);
  * Given a genfscon object class, return a read-only string that
  * describes that class.
  *
- * @param objclass Object class, one of SEPOL_CLASS_BLK_FILE,
- * SEPOL_CLASS_CHR_FILE, etc.
+ * @param objclass Object class, one of QPOL_CLASS_BLK_FILE,
+ * QPOL_CLASS_CHR_FILE, etc.
  *
  * @return A string that describes the object class, or NULL if the
  * object class is invalid.  <b>Do not free() this string.</b>
@@ -197,8 +197,8 @@ extern const char *apol_objclass_to_str(uint32_t objclass);
  * Given a fs_use behavior type, return a read-only string that
  * describes that fs_use behavior.
  *
- * @param filetype File type, one of SEPOL_FS_USE_PSID,
- * SEPOL_FS_USE_XATTR, etc.
+ * @param behavior A fs_use behavior, one of QPOL_FS_USE_PSID,
+ * QPOL_FS_USE_XATTR, etc.
  *
  * @return A string that describes the behavior, or NULL if the
  * behavior is invalid.  <b>Do not free() this string.</b>
@@ -208,11 +208,11 @@ extern const char *apol_fs_use_behavior_to_str(uint32_t behavior);
 /**
  * Given a fs_use behavior string, return its numeric value.
  *
- * @param filetype File type, one of "fs_use_psid", "fs_use_xattr",
- * etc.
+ * @param behavior A fs_use behavior, one of "fs_use_psid",
+ * "fs_use_xattr", etc.
  *
  * @return A numeric representation for the behavior, one of
- * SEPOL_FS_USE_PSID, SEPOL_FS_USE_XATTR, etc, or < 0 if the string is
+ * QPOL_FS_USE_PSID, QPOL_FS_USE_XATTR, etc, or < 0 if the string is
  * invalid.
  */
 extern int apol_str_to_fs_use_behavior(const char *behavior);
