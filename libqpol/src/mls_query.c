@@ -465,7 +465,7 @@ static int hash_state_next_cat_alias(qpol_iterator_t *iter)
 	do {
 		hash_state_next(iter);
 		datum = hs->node ? (cat_datum_t*)hs->node->datum : NULL;
-	} while (datum != NULL && datum->value != hs->val);
+	} while (datum != NULL && ( datum->value != hs->val || !datum->isalias) );
 
 	return STATUS_SUCCESS;
 }
@@ -534,7 +534,7 @@ int qpol_cat_get_alias_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_c
 	}
 
 	if (hs->node == NULL || ((cat_datum_t*)(hs->node->datum))->value != hs->val)
-		hash_state_next(*aliases);
+		hash_state_next_cat_alias(*aliases);
 
 	return STATUS_SUCCESS;
 }
