@@ -34,7 +34,7 @@ AC_ARG_ENABLE(profiling, [  --enable-profiling      compile with gcov and gprof 
 AC_MSG_CHECKING([for profiling support])
 if test "x${enable_profiling}" = xyes; then
     CFLAGS="-O0 -Wall -ftest-coverage -fprofile-arcs -pg"
-    LDFLAGS="$(LDFLAGS) -lgcov"
+    LDFLAGS="$LDFLAGS -lgcov"
     AC_MSG_RESULT(yes)
 else
     AC_MSG_RESULT(disabled)
