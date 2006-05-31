@@ -250,7 +250,7 @@ static void *hash_state_get_cur_alias(qpol_iterator_t *iter)
 	return hs->node->key;
 }
 
-static int hash_state_level_alias_size(qpol_iterator_t *iter)
+static size_t hash_state_level_alias_size(qpol_iterator_t *iter)
 {
 	level_alias_hash_state_t *hs = NULL;
 	hashtab_node_t * tmp_node;
@@ -470,7 +470,7 @@ static int hash_state_next_cat_alias(qpol_iterator_t *iter)
 	return STATUS_SUCCESS;
 }
 
-static int hash_state_cat_alias_size(qpol_iterator_t *iter)
+static size_t hash_state_cat_alias_size(qpol_iterator_t *iter)
 {
 	level_alias_hash_state_t *hs = NULL;
 	hashtab_node_t * tmp_node;
