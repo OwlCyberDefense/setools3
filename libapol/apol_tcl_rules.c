@@ -39,77 +39,111 @@
 
 extern char *rulenames[]; /* in render.c*/
 
-
-/* search and return type enforcement rules */
-
-static int append_av_rule(bool_t addnl, bool_t addlineno, int idx, bool_t is_au, policy_t *policy, Tcl_DString *buf)
-{ 
-	char *rule;
-	
-	if(buf == NULL) {
+/**
+ * Takes a Tcl typeset list (e.g., "{foo 1}") and splits in into its
+ * symbol name and indirect flag.
+ *
+ * @param interp Tcl interpreter object.
+ * @param typeset Character string represting a Tcl typeset.
+ * @param sym_name Reference to where to write the symbol name.  The
+ * caller must free() this value afterwards.
+ * @param indirect Reference to where to write indirect flag.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+static int apol_tcl_string_to_avrule_typeset(Tcl_Interp *interp,
+					     CONST char *typeset,
+					     char **sym_name,
+					     int *indirect)
+{
+	Tcl_Obj *typeset_obj = Tcl_NewStringObj(typeset, -1);
+	Tcl_Obj *name_obj, *indirect_obj;
+	char *s;
+	*sym_name = NULL;
+	*indirect = 0;
+	if (Tcl_ListObjIndex(interp, typeset_obj, 0, &name_obj) == TCL_ERROR ||
+	    Tcl_ListObjIndex(interp, typeset_obj, 1, &indirect_obj) == TCL_ERROR) {
 		return -1;
 	}
-	
-	rule = re_render_av_rule(addlineno, idx, is_au, policy);
-	if(rule == NULL)
+	if (Tcl_GetBooleanFromObj(interp, indirect_obj, indirect) == TCL_ERROR) {
 		return -1;
-	Tcl_DStringAppend(buf, rule, -1);
-	free(rule);
-
-	if(addnl) {
-		Tcl_DStringAppend(buf, "\n", -1);
+	}
+	s = Tcl_GetString(name_obj);
+	if (s[0] == '\0') {
+		*sym_name = NULL;
+	}
+	else {
+		*sym_name = strdup(s);
+		if (*sym_name == NULL) {
+			Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
+			return -1;
+		}
 	}
 	return 0;
 }
 
-
-static int append_tt_rule(bool_t addnl, bool_t addlineno, int idx, policy_t *policy, Tcl_DString *buf) 
+/**
+ * Takes a qpol_avrule_t and appends a tuple of it to result_list.
+ * The tuple consists of:
+ * <code>
+ *    { rule_type source_type_set target_type_set object_class perm_set
+ *      line_number }
+ * </code>
+ * The type sets and perm sets are Tcl lists.
+ */
+static int append_avrule_to_list(Tcl_Interp *interp,
+				 qpol_avrule_t *avrule,
+				 Tcl_Obj *result_list)
 {
-	char *rule;
-	
-	if(buf == NULL) {
-		return -1;
-	}
-	
-	rule = re_render_tt_rule(addlineno, idx, policy);
-	if(rule == NULL)
-		return -1;
-	Tcl_DStringAppend(buf, rule, -1);
-	free(rule);
-	
-	if(addnl) {
-		Tcl_DStringAppend(buf, "\n", -1);
-	}
-	return 0;	
+	uint32_t rule_type;
+	const char *rule_string;
+	qpol_type_t *source, *target;
+	qpol_class_t *obj_class;
+	qpol_iterator_t *perm_iter = NULL;
+	char *source_name, *target_name, *obj_class_name;
+	Tcl_Obj *avrule_elem[6], *avrule_list;
+	int retval = TCL_ERROR;
 
-}
-
-/* append_clone_rule() - Its use is deprecated. */ 
-static int append_clone_rule(bool_t addnl, bool_t addlineno, cln_item_t *item, policy_t *policy, Tcl_DString *buf) 
-{
-	char tbuf[APOL_STR_SZ+64];
-	
-	if(buf == NULL) {
-		return -1;
+	if (qpol_avrule_get_rule_type(policydb->qh, policydb->p, avrule, &rule_type) < 0 ||
+	    qpol_avrule_get_source_type(policydb->qh, policydb->p, avrule, &source) < 0 ||
+	    qpol_avrule_get_target_type(policydb->qh, policydb->p, avrule, &target) < 0 ||
+	    qpol_avrule_get_object_class(policydb->qh, policydb->p, avrule, &obj_class) < 0 ||
+	    qpol_avrule_get_perm_iter(policydb->qh, policydb->p, avrule, &perm_iter) < 0) {
+		goto cleanup;
 	}
-	
-	Tcl_DStringAppend(buf, rulenames[RULE_CLONE], -1);
-	Tcl_DStringAppend(buf, " ", -1);
-	if(ap_tcl_append_type_str(0,0, 0, item->src, policy, buf) != 0)
-		return -1;	
-	Tcl_DStringAppend(buf, " ", -1);		
-	if(ap_tcl_append_type_str(0,0, 0, item->tgt, policy, buf) != 0)
-		return -1;
-	Tcl_DStringAppend(buf, ";", -1);
-
-	if(addlineno) {
-		sprintf(tbuf, "       (%lu)", item->lineno);
-		Tcl_DStringAppend(buf, tbuf, -1);
+	if ((rule_string = apol_rule_type_to_str(rule_type)) == NULL) {
+		goto cleanup;
 	}
-	if(addnl) {
-		Tcl_DStringAppend(buf, "\n", -1);
+	if (qpol_type_get_name(policydb->qh, policydb->p, source, &source_name) < 0 ||
+	    qpol_type_get_name(policydb->qh, policydb->p, target, &target_name) < 0 ||
+	    qpol_class_get_name(policydb->qh, policydb->p, obj_class, &obj_class_name) < 0) {
+		goto cleanup;
 	}
-	return 0;
+	avrule_elem[0] = Tcl_NewStringObj(rule_string, -1);
+	avrule_elem[1] = Tcl_NewStringObj(source_name, -1);
+	avrule_elem[2] = Tcl_NewStringObj(target_name, -1);
+	avrule_elem[3] = Tcl_NewStringObj(obj_class_name, -1);
+	avrule_elem[4] = Tcl_NewListObj(0, NULL);
+	for ( ; !qpol_iterator_end(perm_iter); qpol_iterator_next(perm_iter)) {
+		char *perm_name;
+		Tcl_Obj *perm_obj;
+		if (qpol_iterator_get_item(perm_iter, (void **) &perm_name) < 0) {
+			goto cleanup;
+		}
+		perm_obj = Tcl_NewStringObj(perm_name, -1);
+		if (Tcl_ListObjAppendElement(interp, avrule_elem[4], perm_obj) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+	avrule_elem[5] = Tcl_NewStringObj("", -1);   /* FIX ME! */
+	avrule_list = Tcl_NewListObj(6, avrule_elem);
+	if (Tcl_ListObjAppendElement(interp, result_list, avrule_list) == TCL_ERROR) {
+		goto cleanup;
+	}
+	retval = TCL_OK;
+ cleanup:
+	qpol_iterator_destroy(&perm_iter);
+	return retval;
 }
 
 /**
@@ -124,40 +158,41 @@ static int append_clone_rule(bool_t addnl, bool_t addlineno, cln_item_t *item, p
  *   <li>line number, or -1 unknown
  * </ul>
  *
- * @param argv This function takes eight parameters:
+ * @param argv This function takes seven parameters:
  * <ol>
  *   <li>rule selections
- *   <li>conditionals searching options
+ *   <li>other options
  *   <li>source type options
  *   <li>target type options
- *   <li>default type options
+ *   <li>default type options (ignored when searching av rules)
  *   <li>classes options
- *   <li>permissions options
- *   <li>treat all types as regex
+ *   <li>permissions options  (ignored when searching type rules)
  * </ol>
  *
- * For rule selections list, this is a list of bits which represent
- * which rules to search.  The order of bits is:
- * <ol>
- *   <li>(av) allow
+ * For rule selections list, this is a list of which rules to search.
+ * Valid rule strings are:
+ * <ul>
+ *   <li>allow
  *   <li>neverallow
  *   <li>auditallow
  *   <li>dontaudit
  *   <li>type_transition
  *   <li>type_member
  *   <li>type_change
- * </ol>
+ * </ul>
  *
- * For conditionals options, this is a list of one parameter:
- * <ol>
- *   <li>search only enabled rules
- * </ol>
+ * For other options, this is a list of strings that affect searching.
+ * Valid strings are:
+ * <ul>
+ *   <li>only_enabled - search unconditional and those in enabled conditionals
+ *   <li>source_any - treat source symbol as criteria for target and default
+ *   <li>regex - treat all symbols as regular expression
+ * </ul>
  *
- * For source/target/default types, these are a list of three parameters:
+ * For source/target/default types, these are each a list of two parameters:
  * <ol>
  *   <li>type/attribute symbol name (or empty string to ignore)
  *   <li>perform indirect matching with this symbol
- *   <li>use this symbol to search any field
  * </ol>
  *
  * For classes, the returned rule's class must be within this list.
@@ -167,22 +202,110 @@ static int append_clone_rule(bool_t addnl, bool_t addlineno, cln_item_t *item, p
 static int Apol_SearchTERules(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
 	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
+	qpol_avrule_t *rule;
+	unsigned int rules = 0;
+	CONST char **rule_strings = NULL, **other_opt_strings = NULL;
+	char *sym_name = NULL;
+	int num_opts, indirect;
+	apol_avrule_query_t *query = NULL;
 	apol_vector_t *v = NULL;
+	size_t i;
 	int retval = TCL_ERROR;
 
 	apol_tcl_clear_error();
 	if (policy == NULL) {
 		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
-                goto cleanup;
+		goto cleanup;
 	}
-	if (argc != 9) {
-                ERR(policydb, "Need a rule selection, conditionals options, source type, target type, default type, classes, permissions, and regex flag.");
-                goto cleanup;
+	if (argc != 8) {
+		ERR(policydb, "Need a rule selection, other options, source type, target type, default type, classes, and permissions");
+		goto cleanup;
 	}
 
-        Tcl_SetObjResult(interp, result_obj);
-        retval = TCL_OK;
+	if ((query = apol_avrule_query_create()) == NULL) {
+		ERR(policydb, "Out of memory!");
+		goto cleanup;
+	}
+
+	if (Tcl_SplitList(interp, argv[1], &num_opts, &rule_strings) == TCL_ERROR) {
+		goto cleanup;
+	}
+	while (--num_opts >= 0) {
+		CONST char *s = rule_strings[num_opts];
+		if (strcmp(s, "allow") == 0) {
+			rules |= QPOL_RULE_ALLOW;
+		}
+		else if (strcmp(s, "neverallow") == 0) {
+			rules |= QPOL_RULE_NEVERALLOW;
+		}
+		else if (strcmp(s, "auditallow") == 0) {
+			rules |= QPOL_RULE_AUDITALLOW;
+		}
+		else if (strcmp(s, "dontaudit") == 0) {
+			rules |= QPOL_RULE_DONTAUDIT;
+		}
+		else {
+			ERR(policydb, "Invalid rule selection %s.", s);
+			goto cleanup;
+		}
+	}
+	if (apol_avrule_query_set_rules(policydb, query, rules) < 0) {
+		goto cleanup;
+	}
+
+	if (Tcl_SplitList(interp, argv[2], &num_opts, &other_opt_strings) == TCL_ERROR) {
+		goto cleanup;
+	}
+	while (--num_opts >= 0) {
+		CONST char *s = other_opt_strings[num_opts];
+		if (strcmp(s, "only_enabled") == 0) {
+			apol_avrule_query_set_enabled(policydb, query, 1);
+		}
+		else if (strcmp(s, "source_any") == 0) {
+			apol_avrule_query_set_source_any(policydb, query, 1);
+		}
+		else if (strcmp(s, "regex") == 0) {
+			apol_avrule_query_set_regex(policydb, query, 1);
+		}
+		else {
+			ERR(policydb, "Invalid option %s.", s);
+			goto cleanup;
+		}
+	}
+
+	if (apol_tcl_string_to_avrule_typeset(interp, argv[3], &sym_name, &indirect) < 0 ||
+	    apol_avrule_query_set_source(policydb, query, sym_name, indirect)) {
+		goto cleanup;
+	}
+
+	free(sym_name);
+	sym_name = NULL;
+	if (apol_tcl_string_to_avrule_typeset(interp, argv[4], &sym_name, &indirect) < 0 ||
+	    apol_avrule_query_set_target(policydb, query, sym_name, indirect)) {
+		goto cleanup;
+	}
+
+	if (apol_get_avrule_by_query(policydb, query, &v) < 0) {
+		goto cleanup;
+	}
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		rule = (qpol_avrule_t *) apol_vector_get_element(v, i);
+		if (append_avrule_to_list(interp, rule, result_obj) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+
+	Tcl_SetObjResult(interp, result_obj);
+	retval = TCL_OK;
  cleanup:
+	if (rule_strings != NULL) {
+		Tcl_Free((char *) rule_strings);
+	}
+	if (other_opt_strings != NULL) {
+		Tcl_Free((char *) other_opt_strings);
+	}
+	free(sym_name);
+	apol_avrule_query_destroy(&query);
 	apol_vector_destroy(&v, NULL);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);

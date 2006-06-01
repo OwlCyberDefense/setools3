@@ -1903,7 +1903,6 @@ proc ApolTop::enable_disable_conditional_widgets {enable} {
 		$ApolTop::rules_nb itemconfigure $ApolTop::cond_rules_tab -state disabled
 	}
 			
-	Apol_TE::enable_disable_conditional_widgets $enable
 	return 0
 }
 

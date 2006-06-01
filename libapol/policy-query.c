@@ -76,16 +76,22 @@ int apol_query_set(apol_policy_t *p, char **query_name, regex_t **regex, const c
 	return 0;
 }
 
-int apol_query_set_regex(apol_policy_t *p __attribute__ ((unused)),
-			 unsigned int *flags, const int is_regex)
+int apol_query_set_flag(apol_policy_t *p __attribute__ ((unused)),
+			unsigned int *flags, const int is_flag, int flag_value)
 {
-	if (is_regex) {
-		*flags |= APOL_QUERY_REGEX;
+	if (is_flag) {
+		*flags |= flag_value;
 	}
 	else {
-		*flags &= ~APOL_QUERY_REGEX;
+		*flags &= ~flag_value;
 	}
 	return 0;
+}
+
+int apol_query_set_regex(apol_policy_t *p,
+			 unsigned int *flags, const int is_regex)
+{
+	return apol_query_set_flag(p, flags, is_regex, APOL_QUERY_REGEX);
 }
 
 /********************* comparison helpers *********************/

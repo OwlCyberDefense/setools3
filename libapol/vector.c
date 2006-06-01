@@ -20,7 +20,7 @@
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- */ 
+ */
 
 #include "vector.h"
 #include <stdlib.h>
@@ -38,9 +38,9 @@ struct apol_vector {
 	void	**array;
 	/** The number of elements currently stored in array. */
 	size_t	size;
-	/** The actual amount of space in array. This amount will always 
+	/** The actual amount of space in array. This amount will always
 	 *  be >= size and will grow exponentially as needed. */
-	size_t	capacity; 
+	size_t	capacity;
 };
 
 apol_vector_t *apol_vector_create(void)
@@ -107,16 +107,16 @@ apol_vector_t *apol_vector_create_from_vector(const apol_vector_t *v)
 	return new_v;
 }
 
-void apol_vector_destroy(apol_vector_t **v, void(*free_fn)(void *elem))
+void apol_vector_destroy(apol_vector_t **v, apol_vector_free_func *fr)
 {
 	size_t i = 0;
 
 	if (!v || !(*v))
 		return;
 
-	if (free_fn) {
+	if (fr) {
 		for (i = 0; i < (*v)->size; i++) {
-			free_fn((*v)->array[i]);
+			fr((*v)->array[i]);
 		}
 	}
 	free((*v)->array);
@@ -182,21 +182,21 @@ static int apol_vector_grow(apol_vector_t *v)
 	}
 	v->capacity = new_capacity;
 	v->array = tmp;
-	return 0;	 
+	return 0;
 }
 
-size_t apol_vector_get_index(const apol_vector_t *v, void *elem,
-			     apol_vector_comp_func *cmp, void *data)
+int apol_vector_get_index(const apol_vector_t *v, void *elem,
+			  apol_vector_comp_func *cmp, void *data, size_t *i)
 {
-	size_t i;
-	if (!v || !elem || !cmp) {
+	if (!v || !elem || !i) {
 		errno = EINVAL;
 		return -1;
 	}
 
-	for (i = 0; i < v->size; i++) {
-		if (cmp(v->array[i], elem, data) == 0) {
-			return i;
+	for (*i = 0; *i < v->size; i++) {
+		if ((cmp != NULL && cmp(v->array[*i], elem, data) == 0) ||
+		    (cmp == NULL && elem == v->array[*i])) {
+			return 0;
 		}
 	}
 	return -1;
@@ -222,8 +222,9 @@ int apol_vector_append(apol_vector_t *v, void *elem)
 int apol_vector_append_unique(apol_vector_t *v, void *elem,
 			      apol_vector_comp_func *cmp, void *data)
 {
-	if (apol_vector_get_index(v, elem, cmp, data) == -1) {
-	    return apol_vector_append(v, elem);
+	size_t i;
+	if (apol_vector_get_index(v, elem, cmp, data, &i) < 0) {
+		return apol_vector_append(v, elem);
 	}
 	errno = EEXIST;
 	return 1;
@@ -263,14 +264,68 @@ static void vector_qsort(void **data, size_t first, size_t last,
 	}
 }
 
+/**
+ * Generic comparison function, which treats elements of the vector as
+ * integers.
+ */
+static int vector_int_comp(const void *a, const void *b, void *data __attribute__((unused)))
+{
+	int i = *((int *) a);
+	int j = *((int *) b);
+	if (i < j) {
+		return -1;
+	}
+	else if (i > j) {
+		return 1;
+	}
+	return 0;
+}
+
 /* implemented as an in-place quicksort */
 void apol_vector_sort(apol_vector_t *v, apol_vector_comp_func *cmp, void *data)
 {
-	if (!v || !cmp) {
+	if (!v) {
 		errno = EINVAL;
 		return;
 	}
-	if (v->size > 0) {
+	if (cmp == NULL) {
+		cmp = vector_int_comp;
+	}
+	if (v->size > 1) {
 		vector_qsort(v->array, 0, v->size - 1, cmp, data);
+	}
+}
+
+void apol_vector_sort_uniquify(apol_vector_t *v, apol_vector_comp_func *cmp, void *data, apol_vector_free_func *fr)
+{
+	if (!v) {
+		errno = EINVAL;
+		return;
+	}
+	if (cmp == NULL) {
+		cmp = vector_int_comp;
+	}
+	if (v->size > 1) {
+		size_t i, j = 0;
+		void *new_array;
+		apol_vector_sort(v, cmp, data);
+		for (i = 1; i < v->size; i++) {
+			if (cmp(v->array[i], v->array[j], data) != 0) {
+				/* found a unique element */
+				j++;
+			}
+			else {
+				/* found a non-unique element */
+				if (fr != NULL) {
+					fr(v->array[i]);
+				}
+			}
+		}
+		/* try to realloc vector to save space */
+		v->size = j + 1;
+		if ((new_array = realloc(v->array, v->size * sizeof(void *))) != NULL) {
+			v->array = new_array;
+			v->capacity = v->size;
+		}
 	}
 }
