@@ -47,6 +47,7 @@
 #include <qpol/avrule_query.h>
 #include <qpol/terule_query.h>
 #include <qpol/rbacrule_query.h>
+#include <qpol/mlsrule_query.h>
 
 /* generic information about policydb*/
 /**
