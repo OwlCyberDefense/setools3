@@ -26,10 +26,43 @@
 
 #include <qpol/expand.h>
 #include <sepol/policydb/expand.h>
+#include <sepol/policydb.h>
 #include <stdlib.h>
 #include "debug.h"
 
 #include "debug.h"
+
+static int type_attr_map(hashtab_key_t key __attribute__ ((unused)), hashtab_datum_t datum, void *ptr)
+{
+  	type_datum_t *type = NULL, *orig_type;
+	policydb_t *db = (policydb_t *)ptr;
+	ebitmap_node_t *node = NULL;
+	uint32_t bit = 0;
+
+	type = (type_datum_t *) datum;
+	/* if this is an attribute go through its list
+	   of types and put in reverse mappings */
+	if (type->isattr) {
+		ebitmap_for_each_bit(&type->types, node, bit) {
+			if (ebitmap_node_get_bit(node, bit)) {
+				orig_type = db->type_val_to_struct[bit];
+				if (ebitmap_set_bit(&orig_type->types, type->value - 1, 1)) {
+					return -1;
+				}
+			}
+		}
+	}
+	return 0;
+}
+
+
+static int qpol_expand_attrs(sepol_handle_t *handle, policydb_t *db)
+{	
+	if (hashtab_map(db->p_types.table, type_attr_map, 
+			(db)))
+		return STATUS_ERR;
+	return 0;
+}
 
 int qpol_expand_module(qpol_handle_t *handle, qpol_policy_t *base)
 {
@@ -48,6 +81,10 @@ int qpol_expand_module(qpol_handle_t *handle, qpol_policy_t *base)
 	/* activate the global branch before expansion */
 	db->global->branch_list->enabled = 1;
 	db->global->enabled = db->global->branch_list;
+
+
+	/* expand out the types to include all the attributes */
+	qpol_expand_attrs(handle, db);
 
 	/* Build the typemap such that we can expand into the same policy */
 	typemap = (uint32_t *)calloc(db->p_types.nprim, sizeof(uint32_t));
