@@ -1,6 +1,6 @@
 /**
  *  @file terule_query.c
- *  Implementation for the public interface for searching and iterating over terules.
+ *  Implementation for the public interface for searching and iterating over type rules.
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com

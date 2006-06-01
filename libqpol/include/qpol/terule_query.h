@@ -1,6 +1,6 @@
- /**
+/**
  *  @file terule_query.h
- *  Defines the public interface for searching and iterating over avrules. 
+ *  Defines the public interface for searching and iterating over type rules. 
  *
  *  @author Kevin Carr kcarr@tresys.com
  *  @author Jeremy A. Mowery jmowery@tresys.com
@@ -102,7 +102,7 @@ extern int qpol_terule_get_object_class(qpol_handle_t *handle, qpol_policy_t *po
 extern int qpol_terule_get_default_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_terule_t *rule, qpol_type_t **dflt);
 
 /**
- *  Get the rule type value for an av rule.
+ *  Get the rule type value for a type rule.
  *  @param handle Error handler for the policy database.
  *  @param policy Policy from which the rule comes.
  *  @param rule The rule from which to get the rule type.
