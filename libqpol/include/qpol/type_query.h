@@ -46,7 +46,8 @@ typedef struct qpol_type qpol_type_t;
 extern int qpol_policy_get_type_by_name(qpol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_type_t **datum);
 
 /**
- *  Get an iterator for types declared in the policy.
+ *  Get an iterator for types (including attributes and aliases) 
+ *  declared in the policy.
  *  @param handle Error handler for the policy database.
  *  @param policy The policy from which to create the iterator.
  *  @param iter Iterator of type qpol_type_t* returned; 
