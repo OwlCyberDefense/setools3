@@ -33,7 +33,7 @@
 #define STATUS_NODATA   1
 
 //FIXME: real handle use here?
-#define ERR(handle, ...) ;
+#define ERR(handle, format, ...) sepol_handle_do_callback(handle, format, __VA_ARGS__)
 
 #endif /* QPOL_DEBUG_H */
  

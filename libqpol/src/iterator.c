@@ -66,7 +66,7 @@ int qpol_iterator_create(qpol_handle_t *handle, policydb_t *policy, void *state,
 
 	if (handle == NULL || policy == NULL || state == NULL || iter == NULL ||
 		get_cur == NULL || next == NULL || end == NULL || size == NULL) {
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s",strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -74,7 +74,7 @@ int qpol_iterator_create(qpol_handle_t *handle, policydb_t *policy, void *state,
 	*iter = calloc(1, sizeof(struct qpol_iterator));
 	if (*iter == NULL) {
 		error = errno;
-		ERR(handle, "memory error");
+		ERR(handle, "%s","memory error");
 		errno = error;
 		return STATUS_ERR;
 	}

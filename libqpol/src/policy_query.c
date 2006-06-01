@@ -40,7 +40,7 @@ int qpol_policy_is_mls_enabled(qpol_handle_t *handle, qpol_policy_t *policy)
 	policydb_t *db = NULL;
 
 	if (handle == NULL || policy == NULL) {
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -61,7 +61,7 @@ int qpol_policy_get_policy_version(qpol_handle_t *handle, qpol_policy_t *policy,
 		*version = 0;
 
 	if (handle == NULL || policy == NULL || version == NULL) {
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}

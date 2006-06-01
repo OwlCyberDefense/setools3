@@ -52,7 +52,7 @@ int qpol_expand_module(qpol_handle_t *handle, qpol_policy_t *base)
 	/* Build the typemap such that we can expand into the same policy */
 	typemap = (uint32_t *)calloc(db->p_types.nprim, sizeof(uint32_t));
 	if (typemap == NULL) {
-		ERR("Error: out of memory\n");
+		ERR(handle, "%s", "Error: out of memory\n");
 		goto err;
 	}
 	for (i = 0; i < db->p_types.nprim; i++) {

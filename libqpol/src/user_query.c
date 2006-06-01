@@ -45,7 +45,7 @@ int qpol_policy_get_user_by_name(qpol_handle_t *handle, qpol_policy_t *policy, c
 	if (handle == NULL || policy == NULL || name == NULL || datum == NULL) {
 		if (datum != NULL)
 			*datum = NULL;
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -72,7 +72,7 @@ int qpol_policy_get_user_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 	if (handle == NULL || policy == NULL || iter == NULL) {
 		if (iter != NULL)
 			*iter = NULL;
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -82,7 +82,7 @@ int qpol_policy_get_user_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 	hs = calloc(1, sizeof(hash_state_t));
 	if (hs == NULL) {
 		error = errno;
-		ERR(handle, "memory error");
+		ERR(handle, "%s", "memory error");
 		errno = error;
 		return STATUS_ERR;
 	}
@@ -108,7 +108,7 @@ int qpol_user_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpol_user_
 	if (handle == NULL || policy == NULL || datum == NULL || value == NULL) {
 		if (value != NULL)
 			*value = 0;
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -128,7 +128,7 @@ int qpol_user_get_role_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_u
 	if (handle == NULL || policy == NULL || datum == NULL || roles == NULL){
 		if (roles != NULL)
 			*roles = NULL;
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -138,7 +138,7 @@ int qpol_user_get_role_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_u
 	es = calloc(1, sizeof(ebitmap_state_t));
 	if (es == NULL) {
 		error = errno;
-		ERR(handle, "memory error");
+		ERR(handle, "%s", "memory error");
 		errno = error;
 		return STATUS_ERR;
 	}
@@ -165,7 +165,7 @@ int qpol_user_get_range(qpol_handle_t *handle, qpol_policy_t *policy, qpol_user_
 	if (handle == NULL || policy == NULL || datum == NULL || range == NULL) {
 		if (range != NULL)
 			*range = NULL;
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -183,7 +183,7 @@ int qpol_user_get_dfltlevel(qpol_handle_t *handle, qpol_policy_t *policy, qpol_u
 	if (handle == NULL || policy == NULL || datum == NULL || level == NULL) {
 		if (level != NULL)
 			*level = NULL;
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -202,7 +202,7 @@ int qpol_user_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_user_t
 	if (handle == NULL ||  policy == NULL || datum == NULL || name == NULL) {
 		if (name != NULL)
 			*name = NULL;
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}

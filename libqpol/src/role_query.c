@@ -43,7 +43,7 @@ int qpol_policy_get_role_by_name(qpol_handle_t *handle, qpol_policy_t *policy, c
 	if (handle == NULL || policy == NULL || name == NULL || datum == NULL) {
 		if (datum != NULL)
 			*datum = NULL;
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -70,7 +70,7 @@ int qpol_policy_get_role_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 	if (handle == NULL || policy == NULL || iter == NULL) {
 		if (iter != NULL)
 			*iter = NULL;
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -80,7 +80,7 @@ int qpol_policy_get_role_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 	hs = calloc(1, sizeof(hash_state_t));
 	if (hs == NULL) {
 		error = errno;
-		ERR(handle, "memory error");
+		ERR(handle, "%s", "memory error");
 		errno = error;
 		return STATUS_ERR;
 	}
@@ -106,7 +106,7 @@ int qpol_role_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpol_role_
 	if (handle == NULL || policy == NULL || datum == NULL || value == NULL) {
 		if (value != NULL)
 			*value = 0;
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -127,7 +127,7 @@ int qpol_role_get_dominate_iter(qpol_handle_t *handle, qpol_policy_t *policy, qp
 	if (handle == NULL || policy == NULL || datum == NULL || dominates == NULL) {
 		if (dominates != NULL)
 			*dominates = NULL;
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -137,7 +137,7 @@ int qpol_role_get_dominate_iter(qpol_handle_t *handle, qpol_policy_t *policy, qp
 
 	if (!(es = calloc(1, sizeof(ebitmap_state_t)))) {
 		error = errno;
-		ERR(handle, "unable to create iterator state object");
+		ERR(handle, "%s", "unable to create iterator state object");
 		errno = error;
 		return STATUS_ERR;
 	}
@@ -147,7 +147,7 @@ int qpol_role_get_dominate_iter(qpol_handle_t *handle, qpol_policy_t *policy, qp
 		ebitmap_state_next, ebitmap_state_end, ebitmap_state_size,
 		free, dominates)) {
 		error = errno;
-		ERR(handle, "unable to create iterator");
+		ERR(handle, "%s", "unable to create iterator");
 		errno = error;
 		return STATUS_ERR;
 	}
@@ -169,7 +169,7 @@ int qpol_role_get_type_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_r
 	if (handle == NULL || policy == NULL || datum == NULL || types == NULL) {
 		if (types != NULL)
 			*types = NULL;
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -179,7 +179,7 @@ int qpol_role_get_type_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_r
 
 	if(!(expanded_set = calloc(1, sizeof(ebitmap_t)))) {
 		error = errno;
-		ERR(handle, "unable to create bitmap");
+		ERR(handle, "%s", "unable to create bitmap");
 		errno = error;
 		return STATUS_ERR;
 	}
@@ -194,7 +194,7 @@ int qpol_role_get_type_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_r
 
 	if (!(es = calloc(1, sizeof(ebitmap_state_t)))) {
 		error = errno;
-		ERR(handle, "unable to create iterator state object");
+		ERR(handle, "%s", "unable to create iterator state object");
 		ebitmap_destroy(expanded_set);
 		free(expanded_set);
 		errno = error;
@@ -208,7 +208,7 @@ int qpol_role_get_type_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_r
 		ebitmap_state_destroy, types)) {
 		error = errno;
 		ebitmap_destroy(expanded_set);
-		ERR(handle, "unable to create iterator");
+		ERR(handle, "%s", "unable to create iterator");
 		errno = error;
 		return STATUS_ERR;
 	}
@@ -227,7 +227,7 @@ int qpol_role_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_role_t
 	if (handle == NULL ||  policy == NULL || datum == NULL || name == NULL) {
 		if (name != NULL)
 			*name = NULL;
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}

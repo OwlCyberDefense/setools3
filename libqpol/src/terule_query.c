@@ -49,7 +49,7 @@ int qpol_policy_get_terule_iter(qpol_handle_t *handle, qpol_policy_t *policy, ui
 
 	state = calloc(1, sizeof(avtab_state_t));
 	if (state == NULL) {
-		ERR(handle, "memory error");
+		ERR(handle, "%s", "memory error");
 		errno = ENOMEM;
 		return STATUS_ERR;
 	}
