@@ -42,7 +42,7 @@ int qpol_policy_get_type_by_name(qpol_handle_t *handle, qpol_policy_t *policy, c
 	if (handle == NULL || policy == NULL || name == NULL || datum == NULL) {
 		if (datum != NULL)
 			*datum = NULL;
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -69,7 +69,7 @@ int qpol_policy_get_type_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 	if (handle == NULL || policy == NULL || iter == NULL) {
 		if (iter != NULL)
 			*iter = NULL;
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -79,7 +79,7 @@ int qpol_policy_get_type_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 	hs = calloc(1, sizeof(hash_state_t));
 	if (hs == NULL) {
 		error = errno;
-		ERR(handle, "memory error");
+		ERR(handle, "%s", "memory error");
 		errno = error;
 		return STATUS_ERR;
 	}
@@ -105,7 +105,7 @@ int qpol_type_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpol_type_
 	if (handle == NULL || policy == NULL || datum == NULL || value == NULL) {
 		if (value != NULL)
 			*value = 0;
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -123,7 +123,7 @@ int qpol_type_get_isalias(qpol_handle_t *handle, qpol_policy_t *policy, qpol_typ
 	if (handle == NULL || policy == NULL || datum == NULL || isalias == NULL) {
 		if (isalias != NULL)
 			*isalias = 0;
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -141,7 +141,7 @@ int qpol_type_get_isattr(qpol_handle_t *handle, qpol_policy_t *policy, qpol_type
 	if (handle == NULL || policy == NULL || datum == NULL || isattr == NULL) {
 		if (isattr != NULL)
 			*isattr = 0;
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -162,7 +162,7 @@ int qpol_type_get_type_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_t
 		*types = NULL;
 
 	if (handle == NULL || policy == NULL || datum == NULL || types == NULL) {
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -170,7 +170,7 @@ int qpol_type_get_type_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_t
 	internal_datum = (type_datum_t*)datum;
 
 	if (!internal_datum->isattr) {
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_NODATA;
 	}
@@ -178,7 +178,7 @@ int qpol_type_get_type_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_t
 	es = calloc(1, sizeof(ebitmap_state_t));
 	if (es == NULL) {
 		error = errno;
-		ERR(handle, "memory error");
+		ERR(handle, "%s", "memory error");
 		errno = error;
 		return STATUS_ERR;
 	}
@@ -208,7 +208,7 @@ int qpol_type_get_attr_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_t
 		*attrs = NULL;
 
 	if (handle == NULL || policy == NULL || datum == NULL || attrs == NULL) {
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -216,7 +216,7 @@ int qpol_type_get_attr_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_t
 	internal_datum = (type_datum_t*)datum;
 
 	if (internal_datum->isattr) {
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_NODATA;
 	}
@@ -224,7 +224,7 @@ int qpol_type_get_attr_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_t
 	es = calloc(1, sizeof(ebitmap_state_t));
 	if (es == NULL) {
 		error = errno;
-		ERR(handle, "memory error");
+		ERR(handle, "%s", "memory error");
 		errno = error;
 		return STATUS_ERR;
 	}
@@ -249,7 +249,7 @@ int qpol_type_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_type_t
 	if (handle == NULL ||  policy == NULL || datum == NULL || name == NULL) {
 		if (name != NULL)
 			*name = NULL;
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -355,7 +355,7 @@ int qpol_type_get_alias_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_
 	if (handle == NULL || policy == NULL || datum == NULL || aliases == NULL) {
 		if (aliases != NULL)
 			*aliases = NULL;
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -366,7 +366,7 @@ int qpol_type_get_alias_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_
 	hs = calloc(1, sizeof(type_alias_hash_state_t));
 	if (hs == NULL) {
 		error = errno;
-		ERR(handle, "memory error");
+		ERR(handle, "%s", "memory error");
 		errno = error;
 		return STATUS_ERR;
 	}

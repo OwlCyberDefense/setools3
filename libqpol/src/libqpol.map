@@ -1,7 +1,6 @@
 {
 	global:
 		qpol_*;
-		sepol_handle_set_callback;
 	local: *;
 };
  

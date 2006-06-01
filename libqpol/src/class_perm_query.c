@@ -263,7 +263,7 @@ int qpol_perm_get_class_iter(qpol_handle_t *handle, qpol_policy_t *policy, const
 	if (handle == NULL || policy == NULL || classes == NULL) {
 		if (classes != NULL)
 			*classes = NULL;
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -273,7 +273,7 @@ int qpol_perm_get_class_iter(qpol_handle_t *handle, qpol_policy_t *policy, const
 	hs = calloc(1, sizeof(perm_hash_state_t));
 	if (hs == NULL) {
 		error = errno;
-		ERR(handle, "memory error");
+		ERR(handle, "%s", "memory error");
 		errno = error;
 		return STATUS_ERR;
 	}
@@ -302,7 +302,7 @@ int qpol_perm_get_common_iter(qpol_handle_t *handle, qpol_policy_t *policy, cons
 	if (handle == NULL || policy == NULL || commons == NULL) {
 		if (commons != NULL)
 			*commons = NULL;
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -312,7 +312,7 @@ int qpol_perm_get_common_iter(qpol_handle_t *handle, qpol_policy_t *policy, cons
 	hs = calloc(1, sizeof(perm_hash_state_t));
 	if (hs == NULL) {
 		error = errno;
-		ERR(handle, "memory error");
+		ERR(handle, "%s", "memory error");
 		errno = error;
 		return STATUS_ERR;
 	}
@@ -340,7 +340,7 @@ int qpol_policy_get_class_by_name(qpol_handle_t *handle, qpol_policy_t *policy, 
 	if (handle == NULL || policy == NULL || name == NULL || datum == NULL) {
 		if (datum != NULL)
 			*datum = NULL;
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -368,7 +368,7 @@ int qpol_policy_get_class_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpo
 	if (handle == NULL || policy == NULL || iter == NULL) {
 		if (iter != NULL)
 			*iter = NULL;
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -378,7 +378,7 @@ int qpol_policy_get_class_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpo
 	hs = calloc(1, sizeof(hash_state_t));
 	if (hs == NULL) {
 		error = errno;
-		ERR(handle, "memory error");
+		ERR(handle, "%s", "memory error");
 		errno = error;
 		return STATUS_ERR;
 	}
@@ -404,7 +404,7 @@ int qpol_class_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpol_clas
 	if (handle == NULL || policy == NULL || datum == NULL || value == NULL) {
 		if (value != NULL)
 			*value = 0;
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -422,7 +422,7 @@ int qpol_class_get_common(qpol_handle_t *handle, qpol_policy_t *policy, qpol_cla
 	if (handle == NULL || policy == NULL || datum == NULL || common == NULL) {
 		if (common != NULL)
 			*common = NULL;
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -443,7 +443,7 @@ int qpol_class_get_perm_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_
 	if (handle == NULL || policy == NULL || datum == NULL || perms == NULL) {
 		if (perms != NULL)
 			*perms = NULL;
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -454,7 +454,7 @@ int qpol_class_get_perm_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_
 	hs = calloc(1, sizeof(hash_state_t));
 	if (hs == NULL) {
 		error = errno;
-		ERR(handle, "memory error");
+		ERR(handle, "%s", "memory error");
 		errno = error;
 		return STATUS_ERR;
 	}
@@ -481,7 +481,7 @@ int qpol_class_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_class
 	if (handle == NULL ||  policy == NULL || datum == NULL || name == NULL) {
 		if (name != NULL)
 			*name = NULL;
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -503,7 +503,7 @@ int qpol_policy_get_common_by_name(qpol_handle_t *handle, qpol_policy_t *policy,
 	if (handle == NULL || policy == NULL || name == NULL || datum == NULL) {
 		if (datum != NULL)
 			*datum = NULL;
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -530,7 +530,7 @@ int qpol_policy_get_common_iter(qpol_handle_t *handle, qpol_policy_t *policy, qp
 	if (handle == NULL || policy == NULL || iter == NULL) {
 		if (iter != NULL)
 			*iter = NULL;
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -540,7 +540,7 @@ int qpol_policy_get_common_iter(qpol_handle_t *handle, qpol_policy_t *policy, qp
 	hs = calloc(1, sizeof(hash_state_t));
 	if (hs == NULL) {
 		error = errno;
-		ERR(handle, "memory error");
+		ERR(handle, "%s", "memory error");
 		errno = error;
 		return STATUS_ERR;
 	}
@@ -566,7 +566,7 @@ int qpol_common_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpol_com
 	if (handle == NULL || policy == NULL || datum == NULL || value == NULL) {
 		if (value != NULL)
 			*value = 0;
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -587,7 +587,7 @@ int qpol_common_get_perm_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 	if (handle == NULL || policy == NULL || datum == NULL || perms == NULL) {
 		if (perms != NULL)
 			*perms = NULL;
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -598,7 +598,7 @@ int qpol_common_get_perm_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 	hs = calloc(1, sizeof(hash_state_t));
 	if (hs == NULL) {
 		error = errno;
-		ERR(handle, "memory error");
+		ERR(handle, "%s", "memory error");
 		errno = error;
 		return STATUS_ERR;
 	}
@@ -625,7 +625,7 @@ int qpol_common_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_comm
 	if (handle == NULL ||  policy == NULL || datum == NULL || name == NULL) {
 		if (name != NULL)
 			*name = NULL;
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}

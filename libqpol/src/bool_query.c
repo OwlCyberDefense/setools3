@@ -42,7 +42,7 @@ int qpol_policy_get_bool_by_name(qpol_handle_t *handle, qpol_policy_t *policy, c
 	if (handle == NULL || policy == NULL || name == NULL || datum == NULL) {
 		if (datum != NULL)
 			*datum = NULL;
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -69,7 +69,7 @@ int qpol_policy_get_bool_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 	if (handle == NULL || policy == NULL || iter == NULL) {
 		if (iter != NULL)
 			*iter = NULL;
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -79,7 +79,7 @@ int qpol_policy_get_bool_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 	hs = calloc(1, sizeof(hash_state_t));
 	if (hs == NULL) {
 		error = errno;
-		ERR(handle, "memory error");
+		ERR(handle, "%s", "memory error");
 		errno = error;
 		return STATUS_ERR;
 	}
@@ -105,7 +105,7 @@ int qpol_bool_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpol_bool_
 	if (handle == NULL || policy == NULL || datum == NULL || value == NULL) {
 		if (value != NULL)
 			*value = 0;
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -123,7 +123,7 @@ int qpol_bool_get_state(qpol_handle_t *handle, qpol_policy_t *policy, qpol_bool_
 	if (handle == NULL || policy == NULL || datum == NULL || state == NULL) {
 		if (state != NULL)
 			*state = 0;
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -139,7 +139,7 @@ int qpol_bool_set_state(qpol_handle_t *handle, qpol_policy_t *policy, qpol_bool_
 	cond_bool_datum_t *internal_datum;
 
 	if (handle == NULL || policy == NULL || datum == NULL) {
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -158,7 +158,7 @@ int qpol_bool_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_bool_t
 	if (handle == NULL ||  policy == NULL || datum == NULL || name == NULL) {
 		if (name != NULL)
 			*name = NULL;
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}

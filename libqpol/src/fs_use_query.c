@@ -44,7 +44,7 @@ int qpol_policy_get_fs_use_by_name(qpol_handle_t *handle, qpol_policy_t *policy,
 		*ocon = NULL;
 
 	if (handle == NULL || policy == NULL || name == NULL || ocon == NULL) {
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -76,7 +76,7 @@ int qpol_policy_get_fs_use_iter(qpol_handle_t *handle, qpol_policy_t *policy, qp
 		*iter = NULL;
 
 	if (handle == NULL || policy == NULL || iter == NULL) {
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -86,7 +86,7 @@ int qpol_policy_get_fs_use_iter(qpol_handle_t *handle, qpol_policy_t *policy, qp
 	os = calloc(1, sizeof(ocon_state_t));
 	if (os == NULL) {
 		error = errno;
-		ERR(handle, "memory error");
+		ERR(handle, "%s", "memory error");
 		errno = error;
 		return STATUS_ERR;
 	}
@@ -110,7 +110,7 @@ int qpol_fs_use_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_fs_u
 		*name = NULL;
 
 	if (handle == NULL || policy == NULL || ocon == NULL || name == NULL) {
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -129,7 +129,7 @@ int qpol_fs_use_get_behavior(qpol_handle_t *handle, qpol_policy_t *policy, qpol_
 		*behavior = 0;
 
 	if (handle == NULL || policy == NULL || ocon == NULL || behavior == NULL) {
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -148,7 +148,7 @@ int qpol_fs_use_get_context(qpol_handle_t *handle, qpol_policy_t *policy, qpol_f
 		*context = NULL;
 
 	if (handle == NULL || policy == NULL || ocon == NULL || context == NULL) {
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -156,7 +156,7 @@ int qpol_fs_use_get_context(qpol_handle_t *handle, qpol_policy_t *policy, qpol_f
 	internal_ocon = (ocontext_t*)ocon;
 
 	if (internal_ocon->v.behavior == QPOL_FS_USE_PSID) {
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}

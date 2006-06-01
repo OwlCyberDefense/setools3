@@ -43,7 +43,7 @@ int qpol_policy_get_netifcon_by_name(qpol_handle_t *handle, qpol_policy_t *polic
 		*ocon = NULL;
 
 	if (handle == NULL || policy == NULL || name == NULL || ocon == NULL) {
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -75,7 +75,7 @@ int qpol_policy_get_netifcon_iter(qpol_handle_t *handle, qpol_policy_t *policy, 
 		*iter = NULL;
 
 	if (handle == NULL || policy == NULL || iter == NULL) {
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -85,7 +85,7 @@ int qpol_policy_get_netifcon_iter(qpol_handle_t *handle, qpol_policy_t *policy, 
 	os = calloc(1, sizeof(ocon_state_t));
 	if (os == NULL) {
 		error = errno;
-		ERR(handle, "memory error");
+		ERR(handle, "%s", "memory error");
 		errno = error;
 		return STATUS_ERR;
 	}
@@ -109,7 +109,7 @@ int qpol_netifcon_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_ne
 		*name = NULL;
 
 	if (handle == NULL || policy == NULL || ocon == NULL || name == NULL) {
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -128,7 +128,7 @@ int qpol_netifcon_get_msg_con(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 		*context = NULL;
 
 	if (handle == NULL || policy == NULL || ocon == NULL || context == NULL) {
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -147,7 +147,7 @@ int qpol_netifcon_get_if_con(qpol_handle_t *handle, qpol_policy_t *policy, qpol_
 		*context = NULL;
 
 	if (handle == NULL || policy == NULL || ocon == NULL || context == NULL) {
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
