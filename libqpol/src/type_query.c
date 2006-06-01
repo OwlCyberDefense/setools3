@@ -238,6 +238,9 @@ int qpol_type_get_attr_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_t
 		return STATUS_ERR;
 	}
 
+	if (es->bmap->node && !ebitmap_get_bit(es->bmap, es->cur))
+		ebitmap_state_next(*attrs);
+
 	return STATUS_SUCCESS;
 }
 
