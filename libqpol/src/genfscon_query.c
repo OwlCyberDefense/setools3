@@ -52,7 +52,7 @@ int qpol_policy_get_genfscon_by_name(qpol_handle_t *handle, qpol_policy_t *polic
 		*genfscon = NULL;
 
 	if (handle == NULL || policy == NULL || name == NULL || path == NULL || genfscon == NULL) {
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -74,7 +74,7 @@ int qpol_policy_get_genfscon_by_name(qpol_handle_t *handle, qpol_policy_t *polic
 		*genfscon = calloc(1, sizeof(qpol_genfscon_t));
 		if (!(*genfscon)) {
 			error = errno;
-			ERR(handle, "memory error");
+			ERR(handle, "%s", "memory error");
 			errno = errno;
 			return STATUS_ERR;
 		}
@@ -200,7 +200,7 @@ int qpol_policy_get_genfscon_iter(qpol_handle_t *handle, qpol_policy_t *policy, 
 		*iter = NULL;
 
 	if (handle == NULL || policy == NULL || iter == NULL) {
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -210,7 +210,7 @@ int qpol_policy_get_genfscon_iter(qpol_handle_t *handle, qpol_policy_t *policy, 
 	gs = calloc(1, sizeof(genfs_state_t));
 	if (gs == NULL) {
 		error = errno;
-		ERR(handle, "memory error");
+		ERR(handle, "%s", "memory error");
 		errno = error;
 		return STATUS_ERR;
 	}
@@ -233,7 +233,7 @@ int qpol_genfscon_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_ge
 		*name = NULL;
 
 	if (handle == NULL || policy == NULL || genfs == NULL || name == NULL) {
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -249,7 +249,7 @@ int qpol_genfscon_get_path(qpol_handle_t *handle, qpol_policy_t *policy, qpol_ge
 		*path = NULL;
 
 	if (handle == NULL || policy == NULL || genfs == NULL || path == NULL) {
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -265,7 +265,7 @@ int qpol_genfscon_get_class(qpol_handle_t *handle, qpol_policy_t *policy, qpol_g
 		*class = 0;
 
 	if (handle == NULL || policy == NULL || genfs == NULL || class == NULL) {
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -281,7 +281,7 @@ int qpol_genfscon_get_context(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 		*context = NULL;
 
 	if (handle == NULL || policy == NULL || genfscon == NULL || context == NULL) {
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}

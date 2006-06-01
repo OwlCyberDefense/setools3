@@ -274,7 +274,7 @@ static int qpol_policy_add_isid_names(qpol_handle_t *handle, qpol_policy_t *poli
 			sid->u.name = strdup(sidnames[val]);
 			if (!sid->u.name) {
 				error = errno;
-				ERR(handle, "memory error");
+				ERR(handle, "%s","memory error");
 				errno = error;
 				return STATUS_ERR;
 			}

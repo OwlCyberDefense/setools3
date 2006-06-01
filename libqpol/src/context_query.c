@@ -45,7 +45,7 @@ int qpol_context_get_user(qpol_handle_t *handle, qpol_policy_t *policy, qpol_con
 		*user = NULL;
 
 	if (handle == NULL || policy == NULL || context == NULL || user == NULL) {
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -67,7 +67,7 @@ int qpol_context_get_role(qpol_handle_t *handle, qpol_policy_t *policy, qpol_con
 		*role = NULL;
 
 	if (handle == NULL || policy == NULL || context == NULL || role == NULL) {
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -89,7 +89,7 @@ int qpol_context_get_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_con
 		*type = NULL;
 
 	if (handle == NULL || policy == NULL || context == NULL || type == NULL) {
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -110,7 +110,7 @@ int qpol_context_get_range(qpol_handle_t *handle, qpol_policy_t *policy, qpol_co
 		*range = NULL;
 
 	if (handle == NULL || policy == NULL || context == NULL || range == NULL) {
-		ERR(handle, strerror(EINVAL));
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
