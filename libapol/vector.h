@@ -20,7 +20,7 @@
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- */ 
+ */
 
 #ifndef APOL_VECTOR_H
 #define APOL_VECTOR_H
@@ -31,6 +31,7 @@
 typedef struct apol_vector apol_vector_t;
 
 typedef int(apol_vector_comp_func)(const void *a, const void *b, void *data);
+typedef void(apol_vector_free_func)(void *elem);
 
 /**
  *  Allocate and initialize an empty vector with default start
@@ -92,10 +93,10 @@ apol_vector_t *apol_vector_create_from_vector(const apol_vector_t *v);
  *
  *  @param v Pointer to the vector to free.  The pointer will be set
  *  to NULL afterwards.
- *  @param free_fn Function to call to free the memory used by an
- *  element.  If NULL, the elements will not be freed.
+ *  @param fr Function to call to free the memory used by an element.
+ *  If NULL, the elements will not be freed.
  */
-void apol_vector_destroy(apol_vector_t **v, void(*free_fn)(void*elem));
+void apol_vector_destroy(apol_vector_t **v, apol_vector_free_func *fr);
 
 /**
  *  Get the number of elements in the vector.
@@ -141,14 +142,17 @@ void *apol_vector_get_element(const apol_vector_t *v, size_t idx);
  *  less than, equal to, or greater than 0 if the first argument is
  *  less than, equal to, or greater than the second respectively.  For
  *  use in this function the return value is only checked for 0 or
- *  non-zero return.
+ *  non-zero return.  If this is NULL then do pointer address
+ *  comparison.
  *  @param data Arbitrary data to pass as the comparison function's
  *  third paramater.
+ *  @param i Index into vector where element was found.  This value is
+ *  undefined if the element was not found.
  *
- *  @return The element's position, or < 0 if it could not be found.
+ *  @return 0 if element was found, or < 0 if not found.
  */
-size_t apol_vector_get_index(const apol_vector_t *v, void *elem,
-                             apol_vector_comp_func *cmp, void *data);
+int apol_vector_get_index(const apol_vector_t *v, void *elem,
+                          apol_vector_comp_func *cmp, void *data, size_t *i);
 
 /**
  *  Add an element to the end of a vector.
@@ -193,10 +197,30 @@ int apol_vector_append_unique(apol_vector_t *v, void *elem,
  *  @param cmp A comparison call back for the type of element stored
  *  in the vector.  The expected return value from this function is
  *  less than, equal to, or greater than 0 if the first argument is
- *  less than, equal to, or greater than the second respectively.
+ *  less than, equal to, or greater than the second respectively.  If
+ *  this is NULL then treat the vector's contents as integers and sort
+ *  in increasing order.
  *  @param data Arbitrary data to pass as the comparison function's
  *  third paramater.
  */
 void apol_vector_sort(apol_vector_t *v, apol_vector_comp_func *cmp, void *data);
+
+/**
+ *  Sort the vector's elements within place (see apol_vector_sort()),
+ *  and then compact vector by removing duplicate entries.
+ *
+ *  @param v The vector to sort.
+ *  @param cmp A comparison call back for the type of element stored
+ *  in the vector.  The expected return value from this function is
+ *  less than, equal to, or greater than 0 if the first argument is
+ *  less than, equal to, or greater than the second respectively.  If
+ *  this is NULL then treat the vector's contents as integers and sort
+ *  in increasing order.
+ *  @param data Arbitrary data to pass as the comparison function's
+ *  third paramater.
+ *  @param fr Function to call to free the memory used by a non-unique
+ *  element.  If NULL, those excess elements will not be freed.
+ */
+void apol_vector_sort_uniquify(apol_vector_t *v, apol_vector_comp_func *cmp, void *data, apol_vector_free_func *fr);
 
 #endif /* APOL_VECTOR_H */

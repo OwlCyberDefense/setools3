@@ -26,7 +26,8 @@ libapol_a_SOURCES = \
 	type-query.c type-query.h class-perm-query.c class-perm-query.h \
 	role-query.c role-query.h user-query.c user-query.h \
 	bool-query.c bool-query.h isid-query.c isid-query.h \
-	netcon-query.c netcon-query.h fscon-query.c fscon-query.h
+	netcon-query.c netcon-query.h fscon-query.c fscon-query.h \
+	avrule-query.c avrule-query.h
 
 libapol_tcl_a_SOURCES = apol_tcl_other.c apol_tcl_other.h \
 	apol_tcl_render.c apol_tcl_render.h \

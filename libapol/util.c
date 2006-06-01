@@ -1072,3 +1072,17 @@ int apol_str_to_fs_use_behavior(const char *behavior)
 	}
 	return -1;
 }
+
+const char *apol_rule_type_to_str(uint32_t rule_type)
+{
+	switch (rule_type) {
+	case QPOL_RULE_ALLOW: return "allow";
+	case QPOL_RULE_NEVERALLOW: return "neverallow";
+	case QPOL_RULE_AUDITALLOW: return "auditallow";
+	case QPOL_RULE_DONTAUDIT: return "dontaudit";
+	case QPOL_RULE_TYPE_TRANS: return "type_transition";
+	case QPOL_RULE_TYPE_CHANGE: return "type_change";
+	case QPOL_RULE_TYPE_MEMBER: return "type_member";
+	}
+	return NULL;
+}

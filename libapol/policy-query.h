@@ -45,6 +45,8 @@
 #include "fscon-query.h"
 #include "context-query.h"
 
+#include "avrule-query.h"
+
 /** Every query allows the treatment of strings as regular expressions
  *  instead.  Within the query structure are flags; if the first bit
  *  is set then use regex matching instead. */
@@ -81,6 +83,19 @@ void apol_regex_destroy(regex_t **regex);
  */
 int apol_query_set(apol_policy_t *p, char **query_name, regex_t **regex,
 		   const char *name);
+
+/**
+ * Sets an arbitrary flag for a query structure.
+ *
+ * @param p Policy handler.
+ * @param flags Reference to a flag bitmap.
+ * @param is_flag If non-zero, set flag. Otherwise unset it.
+ * @param flag_value Flag value to set.
+ *
+ * @return Always returns 0.
+ */
+int apol_query_set_flag(apol_policy_t *p, unsigned int *flags,
+			const int is_regex, int flag_value);
 
 /**
  * Sets the regular expression flag for a query structure.
