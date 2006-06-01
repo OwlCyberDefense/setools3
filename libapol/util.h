@@ -217,4 +217,16 @@ extern const char *apol_fs_use_behavior_to_str(uint32_t behavior);
  */
 extern int apol_str_to_fs_use_behavior(const char *behavior);
 
+/**
+ * Given a rule type, return a read-only string that describes that
+ * rule.
+ *
+ * @param rule_type A policy rule type, one of QPOL_RULE_ALLOW,
+ * QPOL_RULE_TYPE_CHANGE, etc.
+ *
+ * @return A string that describes the rule, or NULL if the rule_type
+ * is invalid.  <b>Do not free() this string.</b>
+ */
+extern const char *apol_rule_type_to_str(uint32_t rule_type);
+
 #endif

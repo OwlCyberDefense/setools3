@@ -90,6 +90,7 @@ void apol_tcl_write_error(Tcl_Interp *interp)
 {
 	if (policydb != NULL && policydb->msg_callback_arg != NULL) {
 		Tcl_Obj *obj = Tcl_NewStringObj(policydb->msg_callback_arg, -1);
+		Tcl_ResetResult(interp);
 		Tcl_SetObjResult(interp, obj);
 		apol_tcl_clear_error();
 	}
