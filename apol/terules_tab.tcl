@@ -914,10 +914,10 @@ proc Apol_TE::search_terules {whichButton} {
         $widgets($x) configure -state disabled
     }
 
-    set tabs(searches_done) 0
+    set tabs(searches_done) -1
     set tabs(searches_text) "Searching for TE Rules..."
     ProgressDlg .terules_busy -title "TE Rules Search" \
-        -type infinite -stop {} -separator 1 -parent . -maximum 2 \
+        -type normal -stop {} -separator 1 -parent . -maximum 2 \
         -textvariable Apol_TE::tabs(searches_text) \
         -variable Apol_TE::tabs(searches_done)
     ApolTop::setBusyCursor
