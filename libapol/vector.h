@@ -198,8 +198,8 @@ int apol_vector_append_unique(apol_vector_t *v, void *elem,
  *  in the vector.  The expected return value from this function is
  *  less than, equal to, or greater than 0 if the first argument is
  *  less than, equal to, or greater than the second respectively.  If
- *  this is NULL then treat the vector's contents as integers and sort
- *  in increasing order.
+ *  this is NULL then treat the vector's contents as unsigned integers
+ *  and sort in increasing order.
  *  @param data Arbitrary data to pass as the comparison function's
  *  third paramater.
  */
@@ -214,8 +214,8 @@ void apol_vector_sort(apol_vector_t *v, apol_vector_comp_func *cmp, void *data);
  *  in the vector.  The expected return value from this function is
  *  less than, equal to, or greater than 0 if the first argument is
  *  less than, equal to, or greater than the second respectively.  If
- *  this is NULL then treat the vector's contents as integers and sort
- *  in increasing order.
+ *  this is NULL then treat the vector's contents as unsigned integers
+ *  and sort in increasing order.
  *  @param data Arbitrary data to pass as the comparison function's
  *  third paramater.
  *  @param fr Function to call to free the memory used by a non-unique

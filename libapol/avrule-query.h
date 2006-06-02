@@ -131,6 +131,38 @@ extern int apol_avrule_query_set_target(apol_policy_t *p,
 					int is_indirect);
 
 /**
+ * Set an avrule query to return rules with this object (non-common)
+ * class.  If more than one class are appended to the query, the
+ * rule's class must be one of those appended.  (I.e., the rule's
+ * class must be a member of the query's classes.)
+ *
+ * @param p Policy handler, to report errors.
+ * @param a AV rule query to set.
+ * @param class Name of object class to add to search set.
+ *
+ * @return 0 on success, negative on error.
+ */
+extern int apol_avrule_query_append_class(apol_policy_t *p,
+					  apol_avrule_query_t *a,
+					  const char *obj_class);
+
+/**
+ * Set an avrule query to return rules with this permission.  If more
+ * than one permission are appended to the query, at least one of the
+ * rule's permissions must be one of those appended.  (I.e., the
+ * intersection of query's and rule's permissions must be non-empty.)
+ *
+ * @param p Policy handler, to report errors.
+ * @param a AV rule query to set.
+ * @param perm Name of permission to add to search set.
+ *
+ * @return 0 on success, negative on error.
+ */
+extern int apol_avrule_query_append_perm(apol_policy_t *p,
+					 apol_avrule_query_t *a,
+					 const char *perm);
+
+/**
  * Set an avrule query to treat the source symbol as any.  That is,
  * use the same symbol for the target, and for type rules the default.
  * This flag does nothing if the source symbol is not set.
