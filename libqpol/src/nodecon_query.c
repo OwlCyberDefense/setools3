@@ -67,7 +67,7 @@ int qpol_policy_get_nodecon_by_node(qpol_handle_t *handle, qpol_policy_t *policy
 		*ocon = calloc(1, sizeof(qpol_nodecon_t));
 		if (*ocon == NULL) {
 			error = errno;
-			ERR(handle, "memory error: %s", strerror(error));
+			ERR(handle, "%s", strerror(error));
 			errno = error;
 			return STATUS_ERR;
 		}
@@ -208,7 +208,7 @@ int qpol_policy_get_nodecon_iter(qpol_handle_t *handle, qpol_policy_t *policy, q
 	v4os = calloc(1, sizeof(ocon_state_t));
 	if (v4os == NULL) {
 		error = errno;
-		ERR(handle, "%s", "memory error");
+		ERR(handle, "%s", strerror(ENOMEM));
 		errno = error;
 		return STATUS_ERR;
 	}
@@ -217,7 +217,7 @@ int qpol_policy_get_nodecon_iter(qpol_handle_t *handle, qpol_policy_t *policy, q
 	v6os = calloc(1, sizeof(ocon_state_t));
 	if (v6os == NULL) {
 		error = errno;
-		ERR(handle, "%s", "memory error");
+		ERR(handle, "%s", strerror(ENOMEM));
 		free(v4os);
 		errno = error;
 		return STATUS_ERR;
@@ -227,7 +227,7 @@ int qpol_policy_get_nodecon_iter(qpol_handle_t *handle, qpol_policy_t *policy, q
 	ns = calloc(1, sizeof(node_state_t));
 	if (ns == NULL) {
 		error = errno;
-		ERR(handle, "%s", "memory error");
+		ERR(handle, "%s", strerror(ENOMEM));
 		free(v4os);
 		free(v4os);
 		errno = error;
