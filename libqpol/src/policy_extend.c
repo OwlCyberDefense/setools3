@@ -58,6 +58,7 @@ static int qpol_policy_build_attrs_from_map(qpol_handle_t *handle, qpol_policy_t
 	int error = 0, retv;
 
 	if (handle == NULL || policy == NULL) {
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return -1;
 	}
@@ -133,6 +134,7 @@ err:
 	free(tmp_name);
 	type_datum_destroy(tmp_type);
 	free(tmp_type);
+	ERR(handle, "%s", strerror(error));
 	errno = error;
 	return STATUS_ERR;
 };
@@ -159,6 +161,7 @@ static int qpol_policy_fill_attr_holes(qpol_handle_t *handle, qpol_policy_t *pol
 	size_t i;
 
 	if (handle == NULL || policy == NULL) {
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -206,6 +209,7 @@ static int qpol_policy_fill_attr_holes(qpol_handle_t *handle, qpol_policy_t *pol
 err:
 	free(tmp_type);
 	free(tmp_name);
+	ERR(handle, "%s", strerror(error));
 	errno = error;
 	return STATUS_ERR;
 }
@@ -259,6 +263,7 @@ static int qpol_policy_add_isid_names(qpol_handle_t *handle, qpol_policy_t *poli
 	int error = 0;
 
 	if (handle == NULL || policy == NULL) {
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -274,7 +279,7 @@ static int qpol_policy_add_isid_names(qpol_handle_t *handle, qpol_policy_t *poli
 			sid->u.name = strdup(sidnames[val]);
 			if (!sid->u.name) {
 				error = errno;
-				ERR(handle, "%s","memory error");
+				ERR(handle, "%s",strerror(error));
 				errno = error;
 				return STATUS_ERR;
 			}
@@ -290,6 +295,7 @@ int qpol_policy_extend(qpol_handle_t *handle, qpol_policy_t *policy, qpol_extend
 	policydb_t *db = NULL;
 
 	if (handle == NULL || policy == NULL) {
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return -1;
 	}
@@ -318,13 +324,14 @@ int qpol_policy_extend(qpol_handle_t *handle, qpol_policy_t *policy, qpol_extend
 		return STATUS_SUCCESS;
 	} else {
 		/* TODO Marked as an error for now until the extended format is done. */
+		ERR(handle, "%s", strerror(ENOTSUP));
 		errno = ENOTSUP;
 		return STATUS_ERR;
 	}
 
 err:
 	//TODO cleanup code here
-
+	/* no need to call ERR here as it will already have been called */
 	errno = error;
 	return STATUS_ERR;
 }

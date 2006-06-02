@@ -109,6 +109,7 @@ int qpol_policy_get_range_trans_iter(qpol_handle_t *handle, qpol_policy_t *polic
 		*iter = NULL;
 
 	if (!handle || !policy || !iter) {
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -128,7 +129,6 @@ int qpol_policy_get_range_trans_iter(qpol_handle_t *handle, qpol_policy_t *polic
 		free, iter)) {
 		error = errno;
 		free(rs);
-		ERR(handle, "%s", strerror(error));
 		errno = error;
 		return STATUS_ERR;
 	}
@@ -147,6 +147,7 @@ int qpol_range_trans_get_source_type(qpol_handle_t *handle, qpol_policy_t *polic
 
 	if (!handle || !policy || !rule || !source) {
 		errno = EINVAL;
+		ERR(handle, "%s", strerror(EINVAL));
 		return STATUS_ERR;
 	}
 
@@ -168,6 +169,7 @@ int qpol_range_trans_get_target_type(qpol_handle_t *handle, qpol_policy_t *polic
 	}
 
 	if (!handle || !policy || !rule || !target) {
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -190,6 +192,7 @@ int qpol_range_trans_get_range(qpol_handle_t *handle, qpol_policy_t *policy, qpo
 	}
 
 	if (!handle || !policy || !rule || !range) {
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}

@@ -80,7 +80,7 @@ int qpol_policy_get_role_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 	hs = calloc(1, sizeof(hash_state_t));
 	if (hs == NULL) {
 		error = errno;
-		ERR(handle, "%s", "memory error");
+		ERR(handle, "%s", strerror(ENOMEM));
 		errno = error;
 		return STATUS_ERR;
 	}
@@ -147,7 +147,7 @@ int qpol_role_get_dominate_iter(qpol_handle_t *handle, qpol_policy_t *policy, qp
 		ebitmap_state_next, ebitmap_state_end, ebitmap_state_size,
 		free, dominates)) {
 		error = errno;
-		ERR(handle, "%s", "unable to create iterator");
+		free(es);
 		errno = error;
 		return STATUS_ERR;
 	}
@@ -207,8 +207,7 @@ int qpol_role_get_type_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_r
 		ebitmap_state_next, ebitmap_state_end, ebitmap_state_size,
 		ebitmap_state_destroy, types)) {
 		error = errno;
-		ebitmap_destroy(expanded_set);
-		ERR(handle, "%s", "unable to create iterator");
+		ebitmap_state_destroy(es);
 		errno = error;
 		return STATUS_ERR;
 	}
@@ -239,5 +238,4 @@ int qpol_role_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_role_t
 
 	return STATUS_SUCCESS;
 }
-
 

@@ -65,6 +65,7 @@ int qpol_expand_module(qpol_handle_t *handle, qpol_policy_t *base)
 	policydb_t *db;
 
 	if (handle == NULL || base == NULL) {
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return -1;
 	}
@@ -84,7 +85,7 @@ int qpol_expand_module(qpol_handle_t *handle, qpol_policy_t *base)
 	/* Build the typemap such that we can expand into the same policy */
 	typemap = (uint32_t *)calloc(db->p_types.nprim, sizeof(uint32_t));
 	if (typemap == NULL) {
-		ERR(handle, "%s", "Error: out of memory\n");
+		ERR(handle, "%s", strerror(ENOMEM));
 		goto err;
 	}
 	for (i = 0; i < db->p_types.nprim; i++) {
@@ -106,11 +107,11 @@ int qpol_expand_module(qpol_handle_t *handle, qpol_policy_t *base)
 			continue;
 		}
 		for (cur_avrule = decl->avrules; cur_avrule != NULL; cur_avrule = cur_avrule->next) {
-/*			if (cur_avrule->specified & AVRULE_NEVERALLOW) //FIXME: Why?
-				continue; */
+			/* FIXME: never allows are dropped by convert_and_expand */
 			if (convert_and_expand_rule(handle, db, db, typemap,
 						    cur_avrule, &db->te_avtab,
 						    NULL, NULL, 0) != 1) {
+				ERR(handle, "%s", strerror(errno));
 				goto err;
 			}
 		}

@@ -79,7 +79,7 @@ int qpol_policy_get_bool_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 	hs = calloc(1, sizeof(hash_state_t));
 	if (hs == NULL) {
 		error = errno;
-		ERR(handle, "%s", "memory error");
+		ERR(handle, "%s", strerror(ENOMEM));
 		errno = error;
 		return STATUS_ERR;
 	}
