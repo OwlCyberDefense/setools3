@@ -74,7 +74,7 @@ int qpol_policy_get_genfscon_by_name(qpol_handle_t *handle, qpol_policy_t *polic
 		*genfscon = calloc(1, sizeof(qpol_genfscon_t));
 		if (!(*genfscon)) {
 			error = errno;
-			ERR(handle, "%s", "memory error");
+			ERR(handle, "%s", strerror(ENOMEM));
 			errno = errno;
 			return STATUS_ERR;
 		}
@@ -210,7 +210,7 @@ int qpol_policy_get_genfscon_iter(qpol_handle_t *handle, qpol_policy_t *policy, 
 	gs = calloc(1, sizeof(genfs_state_t));
 	if (gs == NULL) {
 		error = errno;
-		ERR(handle, "%s", "memory error");
+		ERR(handle, "%s", strerror(ENOMEM));
 		errno = error;
 		return STATUS_ERR;
 	}

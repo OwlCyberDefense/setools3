@@ -42,6 +42,7 @@ int qpol_policy_get_avrule_iter(qpol_handle_t *handle, qpol_policy_t *policy, ui
 		*iter = NULL;
 	}
 	if (handle == NULL || policy == NULL || iter == NULL) {
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -49,7 +50,7 @@ int qpol_policy_get_avrule_iter(qpol_handle_t *handle, qpol_policy_t *policy, ui
 
 	state = calloc(1, sizeof(avtab_state_t));
 	if (state == NULL) {
-		ERR(handle, "%s", "memory error");
+		ERR(handle, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return STATUS_ERR;
 	}
@@ -76,6 +77,7 @@ int qpol_avrule_get_source_type(qpol_handle_t *handle, qpol_policy_t *policy, qp
 	}
 
 	if (!handle || !policy || !rule || !source) {
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -98,6 +100,7 @@ int qpol_avrule_get_target_type(qpol_handle_t *handle, qpol_policy_t *policy, qp
 	}
 
 	if (!handle || !policy || !rule || !target) {
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -120,6 +123,7 @@ int qpol_avrule_get_object_class(qpol_handle_t *handle, qpol_policy_t *policy, q
 	}
 
 	if (!handle || !policy || !rule || !obj_class) {
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -283,6 +287,7 @@ int qpol_avrule_get_perm_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 	}
 
 	if (!handle || !policy || !rule || !perms) {
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
@@ -321,6 +326,7 @@ int qpol_avrule_get_rule_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 	}
 
 	if (!handle || !policy || !rule || !rule_type) {
+		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
