@@ -193,7 +193,7 @@ int apol_vector_get_index(const apol_vector_t *v, void *elem,
 		return -1;
 	}
 
-	for (*i = 0; *i < v->size; i++) {
+	for (*i = 0; *i < v->size; (*i)++) {
 		if ((cmp != NULL && cmp(v->array[*i], elem, data) == 0) ||
 		    (cmp == NULL && elem == v->array[*i])) {
 			return 0;
@@ -270,8 +270,8 @@ static void vector_qsort(void **data, size_t first, size_t last,
  */
 static int vector_int_comp(const void *a, const void *b, void *data __attribute__((unused)))
 {
-	int i = *((int *) a);
-	int j = *((int *) b);
+	unsigned int i = (unsigned int) a;
+	unsigned int j = (unsigned int) b;
 	if (i < j) {
 		return -1;
 	}
@@ -307,12 +307,13 @@ void apol_vector_sort_uniquify(apol_vector_t *v, apol_vector_comp_func *cmp, voi
 	}
 	if (v->size > 1) {
 		size_t i, j = 0;
-		void *new_array;
+		void **new_array;
 		apol_vector_sort(v, cmp, data);
 		for (i = 1; i < v->size; i++) {
 			if (cmp(v->array[i], v->array[j], data) != 0) {
 				/* found a unique element */
 				j++;
+				v->array[j] = v->array[i];
 			}
 			else {
 				/* found a non-unique element */

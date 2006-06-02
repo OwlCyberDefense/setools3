@@ -204,7 +204,8 @@ static int Apol_SearchTERules(ClientData clientData, Tcl_Interp *interp, int arg
 	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
 	qpol_avrule_t *rule;
 	unsigned int rules = 0;
-	CONST char **rule_strings = NULL, **other_opt_strings = NULL;
+	CONST char **rule_strings = NULL, **other_opt_strings = NULL,
+		**class_strings = NULL, **perm_strings = NULL;
 	char *sym_name = NULL;
 	int num_opts, indirect;
 	apol_avrule_query_t *query = NULL;
@@ -285,6 +286,26 @@ static int Apol_SearchTERules(ClientData clientData, Tcl_Interp *interp, int arg
 		goto cleanup;
 	}
 
+	if (Tcl_SplitList(interp, argv[6], &num_opts, &class_strings) == TCL_ERROR) {
+		goto cleanup;
+	}
+	while (--num_opts >= 0) {
+		CONST char *s = class_strings[num_opts];
+		if (apol_avrule_query_append_class(policydb, query, s) < 0) {
+			goto cleanup;
+		}
+	}
+
+	if (Tcl_SplitList(interp, argv[7], &num_opts, &perm_strings) == TCL_ERROR) {
+		goto cleanup;
+	}
+	while (--num_opts >= 0) {
+		CONST char *s = perm_strings[num_opts];
+		if (apol_avrule_query_append_perm(policydb, query, s) < 0) {
+			goto cleanup;
+		}
+	}
+
 	if (apol_get_avrule_by_query(policydb, query, &v) < 0) {
 		goto cleanup;
 	}
@@ -303,6 +324,12 @@ static int Apol_SearchTERules(ClientData clientData, Tcl_Interp *interp, int arg
 	}
 	if (other_opt_strings != NULL) {
 		Tcl_Free((char *) other_opt_strings);
+	}
+	if (class_strings != NULL) {
+		Tcl_Free((char *) class_strings);
+	}
+	if (perm_strings != NULL) {
+		Tcl_Free((char *) perm_strings);
 	}
 	free(sym_name);
 	apol_avrule_query_destroy(&query);
