@@ -173,7 +173,7 @@ int hash_state_next(qpol_iterator_t *iter)
 
 	hs = (hash_state_t*)iter->state;
 
-	if (hs->bucket >= (*(hs->table))->size) {
+	if (hs->table == NULL || *(hs->table) == NULL || hs->bucket >= (*(hs->table))->size) {
 		errno = ERANGE;
 		return STATUS_ERR;
 	}
@@ -290,7 +290,7 @@ int hash_state_end(qpol_iterator_t *iter)
 
 	hs = (hash_state_t*)iter->state;
 
-	if ((*(hs->table))->nel == 0 || hs->bucket >= (*(hs->table))->size)
+	if (hs->table == NULL || *(hs->table) == NULL || (*(hs->table))->nel == 0 || hs->bucket >= (*(hs->table))->size)
 		return 1;
 
 	return 0;
