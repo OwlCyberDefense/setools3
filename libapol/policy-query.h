@@ -46,6 +46,9 @@
 #include "context-query.h"
 
 #include "avrule-query.h"
+#include "terule-query.h"
+
+/******************** private defines ********************/
 
 /** Every query allows the treatment of strings as regular expressions
  *  instead.  Within the query structure are flags; if the first bit
@@ -59,6 +62,11 @@
 #define APOL_QUERY_FLAGS \
 	(APOL_QUERY_SUB | APOL_QUERY_SUPER | APOL_QUERY_EXACT | \
 	 APOL_QUERY_INTERSECT)
+
+#define APOL_QUERY_ONLY_ENABLED 0x02
+#define APOL_QUERY_SOURCE_AS_ANY 0x04
+#define APOL_QUERY_SOURCE_INDIRECT 0x08
+#define APOL_QUERY_TARGET_INDIRECT 0x10
 
 /******************** private functions ********************/
 
@@ -226,5 +234,60 @@ int apol_compare_cat(apol_policy_t *p,
  */
 int apol_compare_context(apol_policy_t *p, qpol_context_t *target,
 			 apol_context_t *search, unsigned int flags);
+
+/**
+ * Append a non-aliased type to a vector.  If the passed in type is an
+ * alias, find its primary type and append that instead.
+ *
+ * @param p Policy in which to look up types.
+ * @param v Vector in which append the non-aliased type.
+ * @param type Type or attribute to append.  If this is an alias,
+ * append its primary.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+int apol_query_append_type(apol_policy_t *p, apol_vector_t *v,
+			   qpol_type_t *type);
+
+/**
+ * Given a symbol name (a type, attribute, alias, or a regular
+ * expression string), determine all types/attributes it matches.
+ * Return a vector of qpol_type_t that match.  If regex is enabled,
+ * include all types/attributes that match the expression.  If
+ * indirect is enabled, expand the candidiates within the vector (all
+ * attributes for a type, all types for an attribute), and then
+ * uniquify the vector.
+ *
+ * @param p Policy in which to look up types.
+ * @param symbol A string describing one or more type/attribute to
+ * which match.
+ * @param do_regex If non-zero, then treat symbol as a regular expression.
+ * @param do_indirect If non-zero, expand types to their attributes
+ * and attributes to their types.
+ *
+ * @return Vector of unique qpol_type_t pointers (relative to policy
+ * within p), or NULL upon error.  Caller is responsible for calling
+ * apol_vector_destroy() afterwards.
+ */
+apol_vector_t *apol_query_create_candidate_type_list(apol_policy_t *p,
+						     char *symbol,
+						     int do_regex,
+						     int do_indirect);
+
+/**
+ * Given a vector of object class strings, determine all of the
+ * classes it matches within the policy.  Returns a vector of
+ * qpol_class_t that match.  If a string does not match an object
+ * class within the policy then it is ignored.
+ *
+ * @param p Policy in which to look up types.
+ * @param classes Vector of class strings to convert.
+ *
+ * @return Vector of unique qpol_class_t pointers (relative to policy
+ * within p), or NULL upon error.  Caller is responsible for calling
+ * apol_vector_destroy() afterwards.
+ */
+apol_vector_t *apol_query_create_candidate_class_list(apol_policy_t *p,
+						      apol_vector_t *classes);
 
 #endif

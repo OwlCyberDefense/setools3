@@ -37,194 +37,11 @@ struct apol_avrule_query {
 	unsigned int flags;
 };
 
-#define APOL_QUERY_ONLY_ENABLED 0x02
-#define APOL_QUERY_SOURCE_AS_ANY 0x04
-#define APOL_QUERY_SOURCE_INDIRECT 0x08
-#define APOL_QUERY_TARGET_INDIRECT 0x10
-
-/**
- * Append a non-aliased type to a vector.  If the passed in type is an
- * alias, find its primary type and append that instead.
- *
- * @param p Policy in which to look up types.
- * @param v Vector in which append the non-aliased type.
- * @param type Type or attribute to append.  If this is an alias,
- * append its primary.
- *
- * @return 0 on success, < 0 on error.
- */
-static int append_type(apol_policy_t *p, apol_vector_t *v, qpol_type_t *type) {
-	unsigned char isalias;
-	qpol_type_t *real_type = type;
-	if (qpol_type_get_isattr(p->qh, p->p, type, &isalias) < 0) {
-		return -1;
-	}
-	if (isalias) {
-		char *primary_name;
-		if (qpol_type_get_name(p->qh, p->p, type, &primary_name) < 0 ||
-		    qpol_policy_get_type_by_name(p->qh, p->p, primary_name, &real_type) < 0) {
-			return -1;
-		}
-	}
-	if (apol_vector_append(v, real_type) < 0) {
-		ERR(p, "Out of memory!");
-		return -1;
-	}
-	return 0;
-}
-
-/**
- * Given a symbol name (a type, attribute, alias, or a regular
- * expression string), determine all types/attributes it matches.
- * Return a vector of qpol_type_t that match.  If regex is enabled,
- * include all types/attributes that match the expression.  If
- * indirect is enabled, expand the candidiates within the vector (all
- * attributes for a type, all types for an attribute), and then
- * uniquify the vector.
- *
- * @param p Policy in which to look up types.
- * @param symbol A string describing one or more type/attribute to
- * which match.
- * @param search flags; only regex and indirect are used here.
- * @param indirect_flag Bit value for indirect flag.
- *
- * @return Vector of unique qpol_type_t pointers (relative to policy
- * within p), or NULL upon error.
- */
-static apol_vector_t *build_candidate_type_list(apol_policy_t *p, char *symbol, int flags, int indirect_flag)
-{
-	apol_vector_t *list = apol_vector_create();
-	qpol_type_t *type;
-	regex_t *regex = NULL;
-	qpol_iterator_t *iter = NULL;
-	int retval = -1;
-
-	if (list == NULL) {
-		ERR(p, "Out of memory!");
-		goto cleanup;
-	}
-
-	if (qpol_policy_get_type_by_name(p->qh, p->p, symbol, &type) == 0) {
-		if (append_type(p, list, type) < 0) {
-			goto cleanup;
-		}
-	}
-
-	if (flags & APOL_QUERY_REGEX) {
-		if (qpol_policy_get_type_iter(p->qh, p->p, &iter) < 0) {
-			goto cleanup;
-		}
-		for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-			char *type_name;
-			int compval;
-			if (qpol_iterator_get_item(iter, (void **) &type) < 0 ||
-			    qpol_type_get_name(p->qh, p->p, type, &type_name) < 0) {
-				goto cleanup;
-			}
-			compval = apol_compare(p, type_name, symbol, flags, &regex);
-			if (compval < 0) {
-				goto cleanup;
-			}
-			if (compval && append_type(p, list, type)) {
-				goto cleanup;
-			}
-		}
-		qpol_iterator_destroy(&iter);
-	}
-
-	if (flags & indirect_flag) {
-		size_t i, orig_vector_size = apol_vector_get_size(list);
-		for (i = 0; i < orig_vector_size; i++) {
-			unsigned char isalias, isattr;
-			type = (qpol_type_t *) apol_vector_get_element(list, i);
-			if (qpol_type_get_isalias(p->qh, p->p, type, &isalias) < 0 ||
-			    qpol_type_get_isattr(p->qh, p->p, type, &isattr) < 0) {
-				goto cleanup;
-			}
-			if (isalias) {
-				continue;
-			}
-			if ((isattr &&
-			     qpol_type_get_type_iter(p->qh, p->p, type, &iter) < 0) ||
-			    (!isattr &&
-			     qpol_type_get_attr_iter(p->qh, p->p, type, &iter) < 0)) {
-				goto cleanup;
-			}
-			for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-				if (qpol_iterator_get_item(iter, (void **) &type) < 0) {
-					goto cleanup;
-				}
-				if (append_type(p, list, type)) {
-					goto cleanup;
-				}
-			}
-			qpol_iterator_destroy(&iter);
-		}
-	}
-
-	apol_vector_sort_uniquify(list, NULL, NULL, NULL);
-	retval = 0;
- cleanup:
-	if (regex != NULL) {
-		regfree(regex);
-		free(regex);
-	}
-	qpol_iterator_destroy(&iter);
-	if (retval < 0) {
-		apol_vector_destroy(&list, NULL);
-		list = NULL;
-	}
-	return list;
-}
-
-/**
- * Given a vector of object class strings, determine all of the
- * classes it matches within the policy.  Returns a vector of
- * qpol_class_t that match.  If a string does not match an object
- * class within the policy then it is ignored.
- *
- * @param p Policy in which to look up types.
- * @param classes Vector of class strings to convert.
- *
- * @return Vector of unique qpol_class_t pointers (relative to policy
- * within p), or NULL upon error.
- */
-static apol_vector_t *build_candidate_class_list(apol_policy_t *p, apol_vector_t *classes)
-{
-	apol_vector_t *list = apol_vector_create();
-	size_t i;
-	int retval = -1;
-
-	if (list == NULL) {
-		ERR(p, "Out of memory!");
-		goto cleanup;
-	}
-
-	for (i = 0; i < apol_vector_get_size(classes); i++) {
-		char *class_string = (char *) apol_vector_get_element(classes, i);
-		qpol_class_t *class;
-		if (qpol_policy_get_class_by_name(p->qh, p->p, class_string, &class) == 0) {
-			if (apol_vector_append(list, class) < 0) {
-				ERR(p, "Out of memory!");
-				goto cleanup;
-			}
-		}
-	}
-	apol_vector_sort_uniquify(list, NULL, NULL, NULL);
-	retval = 0;
- cleanup:
-	if (retval < 0) {
-		apol_vector_destroy(&list, NULL);
-		list = NULL;
-	}
-	return list;
-}
-
 int apol_get_avrule_by_query(apol_policy_t *p,
 			     apol_avrule_query_t *a,
 			     apol_vector_t **v)
 {
-	qpol_iterator_t *iter;
+	qpol_iterator_t *iter = NULL, *perm_iter = NULL;
 	apol_vector_t *source_list = NULL, *target_list = NULL,
 		*class_list = NULL, *perm_list = NULL;
 	int retval = -1, source_as_any = 0;
@@ -237,7 +54,7 @@ int apol_get_avrule_by_query(apol_policy_t *p,
 			rule_type &= a->rules;
 		}
 		if (a->source != NULL &&
-		    (source_list = build_candidate_type_list(p, a->source, a->flags, APOL_QUERY_SOURCE_INDIRECT)) == NULL) {
+		    (source_list = apol_query_create_candidate_type_list(p, a->source, a->flags & APOL_QUERY_REGEX, a->flags & APOL_QUERY_SOURCE_INDIRECT)) == NULL) {
 			goto cleanup;
 		}
 		if (a->flags & APOL_QUERY_SOURCE_AS_ANY) {
@@ -245,17 +62,18 @@ int apol_get_avrule_by_query(apol_policy_t *p,
 			source_as_any = 1;
 		}
 		else if (a->target != NULL &&
-			 (target_list = build_candidate_type_list(p, a->target, a->flags, APOL_QUERY_TARGET_INDIRECT)) == NULL) {
+			 (target_list = apol_query_create_candidate_type_list(p, a->target, a->flags & APOL_QUERY_REGEX, a->flags & APOL_QUERY_TARGET_INDIRECT)) == NULL) {
 			goto cleanup;
 		}
 		if (a->classes != NULL &&
-		    (class_list = build_candidate_class_list(p, a->classes)) == NULL) {
+		    apol_vector_get_size(a->classes) > 0 &&
+		    (class_list = apol_query_create_candidate_class_list(p, a->classes)) == NULL) {
 			goto cleanup;
 		}
-/*		if (a->perms != NULL &&
-		    (perm_list = build_candidate_perm_list(p, a)) == NULL) {
-			goto cleanup;
-                        }*/
+		if (a->perms != NULL &&
+		    apol_vector_get_size(a->perms) > 0) {
+			perm_list = a->perms;
+		}
 	}
 
 	if (qpol_policy_get_avrule_iter(p->qh, p->p, rule_type, &iter) < 0) {
@@ -267,7 +85,7 @@ int apol_get_avrule_by_query(apol_policy_t *p,
 	}
 	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 		qpol_avrule_t *rule;
-		int match_source = 0, match_target = 0;
+		int match_source = 0, match_target = 0, match_perm = 0;
 		size_t i;
 		if (qpol_iterator_get_item(iter, (void **) &rule) < 0) {
 			goto cleanup;
@@ -318,6 +136,27 @@ int apol_get_avrule_by_query(apol_policy_t *p,
 				continue;
 			}
 		}
+
+		if (perm_list != NULL) {
+			for (i = 0; i < apol_vector_get_size(perm_list) && match_perm == 0; i++) {
+				char *perm = (char *) apol_vector_get_element(perm_list, i);
+				if (qpol_avrule_get_perm_iter(p->qh, p->p, rule, &perm_iter) < 0) {
+					goto cleanup;
+				}
+				match_perm = apol_compare_iter(p, perm_iter, perm, 0, NULL);
+				if (match_perm < 0) {
+					goto cleanup;
+				}
+				qpol_iterator_destroy(&perm_iter);
+			}
+		}
+		else {
+			match_perm = 1;
+		}
+		if (!match_perm) {
+			continue;
+		}
+
 		if (apol_vector_append(*v, rule)) {
 			ERR(p, "Out of memory!");
 			goto cleanup;
@@ -334,8 +173,9 @@ int apol_get_avrule_by_query(apol_policy_t *p,
 		apol_vector_destroy(&target_list, NULL);
 	}
 	apol_vector_destroy(&class_list, NULL);
-	apol_vector_destroy(&perm_list, free);
+        /* don't destroy perm_list - it points to query's permission list */
 	qpol_iterator_destroy(&iter);
+	qpol_iterator_destroy(&perm_iter);
 	return retval;
 }
 
@@ -397,7 +237,10 @@ int apol_avrule_query_append_class(apol_policy_t *p,
 				   const char *obj_class)
 {
 	char *s;
-	if ((s = strdup(obj_class)) == NULL ||
+	if (obj_class == NULL) {
+		apol_vector_destroy(&a->classes, free);
+	}
+	else if ((s = strdup(obj_class)) == NULL ||
 	    (a->classes == NULL && (a->classes = apol_vector_create()) == NULL) ||
 	    apol_vector_append(a->classes, s) < 0) {
 		ERR(p, "Out of memory!");
@@ -411,7 +254,10 @@ int apol_avrule_query_append_perm(apol_policy_t *p,
 				  const char *perm)
 {
 	char *s;
-	if ((s = strdup(perm)) == NULL ||
+	if (perm == NULL) {
+		apol_vector_destroy(&a->perms, free);
+	}
+	else if ((s = strdup(perm)) == NULL ||
 	    (a->perms == NULL && (a->perms = apol_vector_create()) == NULL) ||
 	    apol_vector_append(a->perms, s) < 0) {
 		ERR(p, "Out of memory!");

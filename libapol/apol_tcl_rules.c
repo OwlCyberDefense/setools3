@@ -51,10 +51,10 @@ extern char *rulenames[]; /* in render.c*/
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_tcl_string_to_avrule_typeset(Tcl_Interp *interp,
-					     CONST char *typeset,
-					     char **sym_name,
-					     int *indirect)
+static int apol_tcl_string_to_typeset(Tcl_Interp *interp,
+				      CONST char *typeset,
+				      char **sym_name,
+				      int *indirect)
 {
 	Tcl_Obj *typeset_obj = Tcl_NewStringObj(typeset, -1);
 	Tcl_Obj *name_obj, *indirect_obj;
@@ -147,6 +147,58 @@ static int append_avrule_to_list(Tcl_Interp *interp,
 }
 
 /**
+ * Takes a qpol_terule_t and appends a tuple of it to result_list.
+ * The tuple consists of:
+ * <code>
+ *    { rule_type source_type_set target_type_set object_class default_type
+ *      line_number }
+ * </code>
+ * The type sets are Tcl lists.
+ */
+static int append_terule_to_list(Tcl_Interp *interp,
+				 qpol_terule_t *terule,
+				 Tcl_Obj *result_list)
+{
+	uint32_t rule_type;
+	const char *rule_string;
+	qpol_type_t *source, *target, *default_type;
+	qpol_class_t *obj_class;
+	char *source_name, *target_name, *obj_class_name, *default_name;
+	Tcl_Obj *terule_elem[6], *terule_list;
+	int retval = TCL_ERROR;
+
+	if (qpol_terule_get_rule_type(policydb->qh, policydb->p, terule, &rule_type) < 0 ||
+	    qpol_terule_get_source_type(policydb->qh, policydb->p, terule, &source) < 0 ||
+	    qpol_terule_get_target_type(policydb->qh, policydb->p, terule, &target) < 0 ||
+	    qpol_terule_get_object_class(policydb->qh, policydb->p, terule, &obj_class) < 0 ||
+	    qpol_terule_get_default_type(policydb->qh, policydb->p, terule, &default_type) < 0) {
+		goto cleanup;
+	}
+	if ((rule_string = apol_rule_type_to_str(rule_type)) == NULL) {
+		goto cleanup;
+	}
+	if (qpol_type_get_name(policydb->qh, policydb->p, source, &source_name) < 0 ||
+	    qpol_type_get_name(policydb->qh, policydb->p, target, &target_name) < 0 ||
+	    qpol_class_get_name(policydb->qh, policydb->p, obj_class, &obj_class_name) < 0 ||
+	    qpol_type_get_name(policydb->qh, policydb->p, default_type, &default_name) < 0) {
+		goto cleanup;
+	}
+	terule_elem[0] = Tcl_NewStringObj(rule_string, -1);
+	terule_elem[1] = Tcl_NewStringObj(source_name, -1);
+	terule_elem[2] = Tcl_NewStringObj(target_name, -1);
+	terule_elem[3] = Tcl_NewStringObj(obj_class_name, -1);
+	terule_elem[4] = Tcl_NewStringObj(default_name, -1);
+	terule_elem[5] = Tcl_NewStringObj("", -1);   /* FIX ME! */
+	terule_list = Tcl_NewListObj(6, terule_elem);
+	if (Tcl_ListObjAppendElement(interp, result_list, terule_list) == TCL_ERROR) {
+		goto cleanup;
+	}
+	retval = TCL_OK;
+ cleanup:
+	return retval;
+}
+
+/**
  * Return an unsorted list of TE rules (av rules and type rules)
  * tuples within the policy.  Each tuple consists of:
  * <ul>
@@ -202,14 +254,16 @@ static int append_avrule_to_list(Tcl_Interp *interp,
 static int Apol_SearchTERules(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
 	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
-	qpol_avrule_t *rule;
-	unsigned int rules = 0;
+	qpol_avrule_t *avrule;
+	qpol_terule_t *terule;
+	unsigned int avrules = 0, terules = 0;
 	CONST char **rule_strings = NULL, **other_opt_strings = NULL,
 		**class_strings = NULL, **perm_strings = NULL;
 	char *sym_name = NULL;
 	int num_opts, indirect;
-	apol_avrule_query_t *query = NULL;
-	apol_vector_t *v = NULL;
+	apol_avrule_query_t *avquery = NULL;
+	apol_terule_query_t *tequery = NULL;
+	apol_vector_t *av = NULL, *te = NULL;
 	size_t i;
 	int retval = TCL_ERROR;
 
@@ -223,7 +277,8 @@ static int Apol_SearchTERules(ClientData clientData, Tcl_Interp *interp, int arg
 		goto cleanup;
 	}
 
-	if ((query = apol_avrule_query_create()) == NULL) {
+	if ((avquery = apol_avrule_query_create()) == NULL ||
+	    (tequery = apol_terule_query_create()) == NULL) {
 		ERR(policydb, "Out of memory!");
 		goto cleanup;
 	}
@@ -234,23 +289,33 @@ static int Apol_SearchTERules(ClientData clientData, Tcl_Interp *interp, int arg
 	while (--num_opts >= 0) {
 		CONST char *s = rule_strings[num_opts];
 		if (strcmp(s, "allow") == 0) {
-			rules |= QPOL_RULE_ALLOW;
+			avrules |= QPOL_RULE_ALLOW;
 		}
 		else if (strcmp(s, "neverallow") == 0) {
-			rules |= QPOL_RULE_NEVERALLOW;
+			avrules |= QPOL_RULE_NEVERALLOW;
 		}
 		else if (strcmp(s, "auditallow") == 0) {
-			rules |= QPOL_RULE_AUDITALLOW;
+			avrules |= QPOL_RULE_AUDITALLOW;
 		}
 		else if (strcmp(s, "dontaudit") == 0) {
-			rules |= QPOL_RULE_DONTAUDIT;
+			avrules |= QPOL_RULE_DONTAUDIT;
+		}
+		else if (strcmp(s, "type_transition") == 0) {
+			terules |= QPOL_RULE_TYPE_TRANS;
+		}
+		else if (strcmp(s, "type_member") == 0) {
+			terules |= QPOL_RULE_TYPE_MEMBER;
+		}
+		else if (strcmp(s, "type_change") == 0) {
+			terules |= QPOL_RULE_TYPE_CHANGE;
 		}
 		else {
 			ERR(policydb, "Invalid rule selection %s.", s);
 			goto cleanup;
 		}
 	}
-	if (apol_avrule_query_set_rules(policydb, query, rules) < 0) {
+	if (apol_avrule_query_set_rules(policydb, avquery, avrules) < 0 ||
+	    apol_terule_query_set_rules(policydb, tequery, terules) < 0) {
 		goto cleanup;
 	}
 
@@ -260,13 +325,16 @@ static int Apol_SearchTERules(ClientData clientData, Tcl_Interp *interp, int arg
 	while (--num_opts >= 0) {
 		CONST char *s = other_opt_strings[num_opts];
 		if (strcmp(s, "only_enabled") == 0) {
-			apol_avrule_query_set_enabled(policydb, query, 1);
+			apol_avrule_query_set_enabled(policydb, avquery, 1);
+			apol_terule_query_set_enabled(policydb, tequery, 1);
 		}
 		else if (strcmp(s, "source_any") == 0) {
-			apol_avrule_query_set_source_any(policydb, query, 1);
+			apol_avrule_query_set_source_any(policydb, avquery, 1);
+			apol_terule_query_set_source_any(policydb, tequery, 1);
 		}
 		else if (strcmp(s, "regex") == 0) {
-			apol_avrule_query_set_regex(policydb, query, 1);
+			apol_avrule_query_set_regex(policydb, avquery, 1);
+			apol_terule_query_set_regex(policydb, tequery, 1);
 		}
 		else {
 			ERR(policydb, "Invalid option %s.", s);
@@ -274,15 +342,24 @@ static int Apol_SearchTERules(ClientData clientData, Tcl_Interp *interp, int arg
 		}
 	}
 
-	if (apol_tcl_string_to_avrule_typeset(interp, argv[3], &sym_name, &indirect) < 0 ||
-	    apol_avrule_query_set_source(policydb, query, sym_name, indirect)) {
+	if (apol_tcl_string_to_typeset(interp, argv[3], &sym_name, &indirect) < 0 ||
+	    apol_avrule_query_set_source(policydb, avquery, sym_name, indirect) < 0 ||
+	    apol_terule_query_set_source(policydb, tequery, sym_name, indirect) < 0) {
 		goto cleanup;
 	}
 
 	free(sym_name);
 	sym_name = NULL;
-	if (apol_tcl_string_to_avrule_typeset(interp, argv[4], &sym_name, &indirect) < 0 ||
-	    apol_avrule_query_set_target(policydb, query, sym_name, indirect)) {
+	if (apol_tcl_string_to_typeset(interp, argv[4], &sym_name, &indirect) < 0 ||
+	    apol_avrule_query_set_target(policydb, avquery, sym_name, indirect) < 0 ||
+	    apol_terule_query_set_target(policydb, tequery, sym_name, indirect) < 0) {
+		goto cleanup;
+	}
+
+	free(sym_name);
+	sym_name = NULL;
+	if (apol_tcl_string_to_typeset(interp, argv[5], &sym_name, &indirect) < 0 ||
+	    apol_terule_query_set_default(policydb, tequery, sym_name) < 0) {
 		goto cleanup;
 	}
 
@@ -291,7 +368,8 @@ static int Apol_SearchTERules(ClientData clientData, Tcl_Interp *interp, int arg
 	}
 	while (--num_opts >= 0) {
 		CONST char *s = class_strings[num_opts];
-		if (apol_avrule_query_append_class(policydb, query, s) < 0) {
+		if (apol_avrule_query_append_class(policydb, avquery, s) < 0 ||
+		    apol_terule_query_append_class(policydb, tequery, s) < 0) {
 			goto cleanup;
 		}
 	}
@@ -301,18 +379,32 @@ static int Apol_SearchTERules(ClientData clientData, Tcl_Interp *interp, int arg
 	}
 	while (--num_opts >= 0) {
 		CONST char *s = perm_strings[num_opts];
-		if (apol_avrule_query_append_perm(policydb, query, s) < 0) {
+		if (apol_avrule_query_append_perm(policydb, avquery, s) < 0) {
 			goto cleanup;
 		}
 	}
 
-	if (apol_get_avrule_by_query(policydb, query, &v) < 0) {
-		goto cleanup;
+	if (avrules != 0) {
+		if (apol_get_avrule_by_query(policydb, avquery, &av) < 0) {
+		    goto cleanup;
+		}
+		for (i = 0; i < apol_vector_get_size(av); i++) {
+			avrule = (qpol_avrule_t *) apol_vector_get_element(av, i);
+			if (append_avrule_to_list(interp, avrule, result_obj) == TCL_ERROR) {
+				goto cleanup;
+			}
+		}
 	}
-	for (i = 0; i < apol_vector_get_size(v); i++) {
-		rule = (qpol_avrule_t *) apol_vector_get_element(v, i);
-		if (append_avrule_to_list(interp, rule, result_obj) == TCL_ERROR) {
+
+	if (terules != 0) {
+		if (apol_get_terule_by_query(policydb, tequery, &te) < 0) {
 			goto cleanup;
+		}
+		for (i = 0; i < apol_vector_get_size(te); i++) {
+			terule = (qpol_terule_t *) apol_vector_get_element(te, i);
+			if (append_terule_to_list(interp, terule, result_obj) == TCL_ERROR) {
+				goto cleanup;
+			}
 		}
 	}
 
@@ -332,8 +424,10 @@ static int Apol_SearchTERules(ClientData clientData, Tcl_Interp *interp, int arg
 		Tcl_Free((char *) perm_strings);
 	}
 	free(sym_name);
-	apol_avrule_query_destroy(&query);
-	apol_vector_destroy(&v, NULL);
+	apol_avrule_query_destroy(&avquery);
+	apol_terule_query_destroy(&tequery);
+	apol_vector_destroy(&av, NULL);
+	apol_vector_destroy(&te, NULL);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
