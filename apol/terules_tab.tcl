@@ -135,7 +135,7 @@ proc Apol_TE::reinitialize_default_search_options { } {
     array set enabled {
         ta:use_source 1
         ta:use_target 1
-        ta:use_default 0
+        ta:use_default 1
 
         cp:classes 0
         cp:perms 0
@@ -293,7 +293,6 @@ proc Apol_TE::createTypesAttribsTab {} {
     create_ta_box target $fm_target "Target Type/Attrib" 1 0 1
     create_ta_box default $fm_default "Default Type" 0 0 0
 
-    $widgets(ta:use_default) configure -state disabled
     $widgets(search_opts) raise typeattrib
 }
 
@@ -421,15 +420,8 @@ proc Apol_TE::maybe_enable_default_type {} {
     variable vals
     variable enabled
 
-    set avrule_set 0
     set typerule_set 0
     set any_set 0
-    foreach x {allow neverallow auditallow dontaudit} {
-        if {$vals(rs:$x)} {
-            set avrule_set 1
-            break
-        }
-    }
     foreach x {type_transition type_member type_change} {
         if {$vals(rs:$x)} {
             set typerule_set 1
@@ -439,7 +431,7 @@ proc Apol_TE::maybe_enable_default_type {} {
     if {$enabled(ta:use_source) && $vals(ta:use_source) && $vals(ta:source_which) == "either"} {
         set any_set 1
     }
-    if {!$avrule_set && $typerule_set && !$any_set} {
+    if {$typerule_set && !$any_set} {
         set enabled(ta:use_default) 1
     } else {
         set enabled(ta:use_default) 0
@@ -800,16 +792,23 @@ proc Apol_TE::switch_to_tab {pageID} {
         return
     }
     $widgets(results) raise $pageID
+    set cur_search_opts [$widgets(search_opts) raise]
 
     # restore the tab's search criteria
+    array set tmp_vals $tabs($pageID:vals)
+    set classes_selected $tmp_vals(cp:classes_selected)
+    set perms_selected $tmp_vals(cp:perms_selected)
     array set vals $tabs($pageID:vals)
     reinitialize_search_widgets
-    foreach c $vals(cp:classes_selected) {
+    set vals(cp:classes_selected) $classes_selected
+    set vals(cp:perms_selected) $perms_selected
+    foreach c $classes_selected {
         $widgets(cp:classes) selection set [lsearch $vals(cp:classes) $c]
     }
-    foreach p $vals(cp:perms_selected) {
+    foreach p $perms_selected {
         $widgets(cp:perms) selection set [lsearch $vals(cp:perms) $p]
     }
+    $widgets(search_opts) raise $cur_search_opts
 }
 
 ########################################################################
@@ -880,12 +879,12 @@ proc Apol_TE::search_terules {whichButton} {
         set source [list {} 0]
     }
     if {$enabled(ta:use_target) && $vals(ta:use_target)} {
-        set target [list $vals(ta:target_sym) $vals(ta:target_indirect) 0]
+        set target [list $vals(ta:target_sym) $vals(ta:target_indirect)]
     } else {
         set target [list {} 0]
     }
     if {$enabled(ta:use_default) && $vals(ta:use_default)} {
-        set default [list $vals(ta:default_sym) 0 0]
+        set default [list $vals(ta:default_sym) 0]
     } else {
         set default [list {} 0]
     }
@@ -916,6 +915,7 @@ proc Apol_TE::search_terules {whichButton} {
 
     set tabs(searches_done) -1
     set tabs(searches_text) "Searching for TE Rules..."
+    set last_focus [focus -lastfor .]
     ProgressDlg .terules_busy -title "TE Rules Search" \
         -type normal -stop {} -separator 1 -parent . -maximum 2 \
         -textvariable Apol_TE::tabs(searches_text) \
@@ -929,6 +929,7 @@ proc Apol_TE::search_terules {whichButton} {
 
     ApolTop::resetBusyCursor
     destroy .terules_busy
+    focus $last_focus
 
     if {$retval} {
         tk_messageBox -icon error -type ok -title Error -message "Error searching TE rules:\n$results"
@@ -936,7 +937,9 @@ proc Apol_TE::search_terules {whichButton} {
         if {$whichButton == "new"} {
             set sr [create_new_results_tab]
         } else {
-            set sr $tabs([$widgets(results) raise])
+            set id [$widgets(results) raise]
+            set tabs($id:vals) [array get vals]
+            set sr $tabs($id)
             Apol_Widget::clearSearchResults $sr
         }
         set header "[llength $results] rule"
