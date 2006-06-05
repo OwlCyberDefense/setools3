@@ -459,7 +459,11 @@ int qpol_class_get_perm_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_
 		return STATUS_ERR;
 	}
 	hs->table = &internal_datum->permissions.table;
-	hs->node = (*(hs->table))->htable[0];
+	if (hs->table && *(hs->table)) {
+		hs->node = (*(hs->table))->htable[0];
+	} else { /* object class has no permissions */
+		hs->node = NULL;
+	}
 
 	if (qpol_iterator_create(handle, db, (void*)hs, hash_state_get_cur_key,
 		hash_state_next, hash_state_end, hash_state_size, free, perms)) {
