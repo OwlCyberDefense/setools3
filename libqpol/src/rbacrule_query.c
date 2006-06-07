@@ -284,7 +284,7 @@ int qpol_policy_get_role_trans_iter(qpol_handle_t *handle, qpol_policy_t *policy
 	return STATUS_SUCCESS;
 }
 
-int qpol_role_trans_get_source_role(qpol_handle_t *handle, qpol_policy_t *policy, qpol_role_allow_t *rule, qpol_role_t **source)
+int qpol_role_trans_get_source_role(qpol_handle_t *handle, qpol_policy_t *policy, qpol_role_trans_t *rule, qpol_role_t **source)
 {
 	policydb_t *db = NULL;
 	role_trans_t *rt = NULL;
@@ -307,7 +307,7 @@ int qpol_role_trans_get_source_role(qpol_handle_t *handle, qpol_policy_t *policy
 	return STATUS_SUCCESS;
 }
 
-int qpol_role_trans_get_target_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_role_allow_t *rule, qpol_type_t **target)
+int qpol_role_trans_get_target_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_role_trans_t *rule, qpol_type_t **target)
 {
 	policydb_t *db = NULL;
 	role_trans_t *rt = NULL;
@@ -330,7 +330,7 @@ int qpol_role_trans_get_target_type(qpol_handle_t *handle, qpol_policy_t *policy
 	return STATUS_SUCCESS;
 }
 
-int qpol_role_trans_get_default_role(qpol_handle_t *handle, qpol_policy_t *policy, qpol_role_allow_t *rule, qpol_role_t **dflt)
+int qpol_role_trans_get_default_role(qpol_handle_t *handle, qpol_policy_t *policy, qpol_role_trans_t *rule, qpol_role_t **dflt)
 {
 	policydb_t *db = NULL;
 	role_trans_t *rt = NULL;
