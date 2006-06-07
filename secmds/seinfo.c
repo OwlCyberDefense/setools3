@@ -156,7 +156,8 @@ static int print_stats(FILE *fp, apol_policy_t *policydb)
 	size_t n_classes = 0, n_users = 0, n_roles = 0, n_bools = 0, n_levels = 0, n_cats = 0,
 		n_portcons = 0, n_netifcons = 0, n_nodecons = 0, n_fsuses = 0, n_genfscons = 0,
 		n_allows = 0, n_neverallows = 0, n_auditallows = 0, n_dontaudits = 0,
-		n_typetrans = 0, n_typechanges = 0, n_typemembers = 0, n_isids = 0;
+		n_typetrans = 0, n_typechanges = 0, n_typemembers = 0, n_isids = 0,
+		n_roleallows = 0, n_roletrans = 0, n_rangetrans = 0;
 
 	assert(policydb != NULL);
 
@@ -247,6 +248,7 @@ static int print_stats(FILE *fp, apol_policy_t *policydb)
 	fprintf(fp, "   Users:         %7zd    Roles:         %7zd\n", n_users, n_roles);
 
 	/* booleans/cond. exprs. */
+	/* FIX ME: need to do conditionals */
 	if (qpol_policy_get_bool_iter(policydb->qh, policydb->p, &iter))
 		goto cleanup;
 	if (qpol_iterator_get_size(iter, &n_bools))
@@ -294,8 +296,18 @@ static int print_stats(FILE *fp, apol_policy_t *policydb)
 	qpol_iterator_destroy(&iter);
 	fprintf(fp, "   Auditallow:    %7zd    Dontaudit:     %7zd\n", n_auditallows, n_dontaudits);
 
-	/* FIX ME: need to do these */
-	fprintf(fp, "   Role allow:    %7s    Role trans:    %7s\n", "N/A", "N/A");
+	/* role_allow/role_trans */
+	if (qpol_policy_get_role_allow_iter(policydb->qh, policydb->p, &iter))
+		goto cleanup;
+	if (qpol_iterator_get_size(iter, &n_roleallows))
+		goto cleanup;
+	qpol_iterator_destroy(&iter);
+	if (qpol_policy_get_role_trans_iter(policydb->qh, policydb->p, &iter))
+		goto cleanup;
+	if (qpol_iterator_get_size(iter, &n_roletrans))
+		goto cleanup;
+	qpol_iterator_destroy(&iter);
+	fprintf(fp, "   Role allow:    %7zd    Role trans:    %7zd\n", n_roleallows, n_roletrans);
 
 	/* type_transition/type_change */
 	if (qpol_policy_get_terule_iter(policydb->qh, policydb->p, QPOL_RULE_TYPE_TRANS, &iter))
@@ -310,13 +322,20 @@ static int print_stats(FILE *fp, apol_policy_t *policydb)
 	qpol_iterator_destroy(&iter);
 	fprintf(fp, "   Type_trans:    %7zd    Type_change:   %7zd\n", n_typetrans, n_typechanges);
 
+	/* type_member/range_trans */
 	if (qpol_policy_get_terule_iter(policydb->qh, policydb->p, QPOL_RULE_TYPE_MEMBER, &iter))
 		goto cleanup;
 	if (qpol_iterator_get_size(iter, &n_typemembers))
 		goto cleanup;
 	qpol_iterator_destroy(&iter);
+	if (qpol_policy_get_range_trans_iter(policydb->qh, policydb->p, &iter))
+		goto cleanup;
+	if (qpol_iterator_get_size(iter, &n_rangetrans))
+		goto cleanup;
+	qpol_iterator_destroy(&iter);
+	fprintf(fp, "   Type_member:   %7zd    Range_trans:   %7zd\n", n_typemembers, n_rangetrans);
+
 	/* FIX ME: need to do these */
-	fprintf(fp, "   Type_member:   %7zd    Range_trans:   %7s\n", n_typemembers, "N/A");
 	fprintf(fp, "   Constraints:   %7s    Validatetrans: %7s\n", "N/A", "N/A");
 
 	/* fs_use/genfscon */
