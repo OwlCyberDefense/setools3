@@ -577,7 +577,7 @@ int qpol_open_policy_from_file(const char *path, qpol_policy_t **policy, qpol_ha
 	if (qpol_is_file_binpol(infile)) {
 		sepol_policy_file_set_fp(pfile, infile);
 		if (sepol_policydb_read(*policy, pfile)) {
-			error = errno;
+			error = EIO;
 			goto err;
 		}
 		if (qpol_policy_extend(*handle, *policy, NULL)) {
@@ -613,7 +613,7 @@ int qpol_open_policy_from_file(const char *path, qpol_policy_t **policy, qpol_ha
 		(*policy)->p.policy_type = POLICY_BASE;
 		/* link the source */
 		if (sepol_link_modules(*handle, *policy, NULL, 0, 0)) {
-			error = errno;
+			error = EIO;
 			goto err;
 		}
 
@@ -672,7 +672,7 @@ int qpol_open_policy_from_memory(qpol_policy_t **policy, const char *filedata, i
 
 	/* link the source */
 	if (sepol_link_modules(*handle, *policy, NULL, 0, 0)) {
-		error = errno;
+		error = EIO;
 		goto err;
 	}
 	/* expand :) */
