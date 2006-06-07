@@ -153,7 +153,7 @@ int qpol_role_allow_get_source_role(qpol_handle_t *handle, qpol_policy_t *policy
 	db = &policy->p;
 	ra = (role_allow_t*)rule;
 
-	*source = (qpol_role_t*)db->role_val_to_struct[ra->role];
+	*source = (qpol_role_t*)db->role_val_to_struct[ra->role - 1];
 
 	return STATUS_SUCCESS;
 }
@@ -176,7 +176,7 @@ int qpol_role_allow_get_target_role(qpol_handle_t *handle, qpol_policy_t *policy
 	db = &policy->p;
 	ra = (role_allow_t*)rule;
 
-	*target = (qpol_role_t*)db->role_val_to_struct[ra->new_role];
+	*target = (qpol_role_t*)db->role_val_to_struct[ra->new_role - 1];
 
 	return STATUS_SUCCESS;
 }
@@ -302,7 +302,7 @@ int qpol_role_trans_get_source_role(qpol_handle_t *handle, qpol_policy_t *policy
 	db = &policy->p;
 	rt = (role_trans_t*)rule;
 
-	*source = (qpol_role_t*)db->role_val_to_struct[rt->role];
+	*source = (qpol_role_t*)db->role_val_to_struct[rt->role - 1];
 
 	return STATUS_SUCCESS;
 }
@@ -325,7 +325,7 @@ int qpol_role_trans_get_target_type(qpol_handle_t *handle, qpol_policy_t *policy
 	db = &policy->p;
 	rt = (role_trans_t*)rule;
 
-	*target = (qpol_type_t*)db->role_val_to_struct[rt->type];
+	*target = (qpol_type_t*)db->type_val_to_struct[rt->type - 1];
 
 	return STATUS_SUCCESS;
 }
@@ -348,7 +348,7 @@ int qpol_role_trans_get_default_role(qpol_handle_t *handle, qpol_policy_t *polic
 	db = &policy->p;
 	rt = (role_trans_t*)rule;
 
-	*dflt = (qpol_role_t*)db->role_val_to_struct[rt->new_role];
+	*dflt = (qpol_role_t*)db->role_val_to_struct[rt->new_role - 1];
 
 	return STATUS_SUCCESS;
 }
