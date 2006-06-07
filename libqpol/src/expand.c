@@ -93,8 +93,9 @@ int qpol_expand_module(qpol_handle_t *handle, qpol_policy_t *base)
 	if (expand_module_helper(handle, db, db, typemap, 0) < 0) {
 		goto err;
 	}
-exit:
 	rt = 0;
+
+exit:
 	free(typemap);
 	return rt;
 err:
