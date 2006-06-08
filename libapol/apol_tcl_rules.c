@@ -33,12 +33,6 @@
 #include "apol_tcl_other.h"
 #include "apol_tcl_render.h"
 
-#ifdef LIBSEFS
-#include "../libsefs/fsdata.h"
-#endif
-
-extern char *rulenames[]; /* in render.c*/
-
 /**
  * Takes a Tcl typeset list (e.g., "{foo 1}") and splits in into its
  * symbol name and indirect flag.
@@ -639,386 +633,236 @@ static int Apol_SearchConditionalRules(ClientData clientData, Tcl_Interp *interp
 	return TCL_OK;
 }
 
-static int append_role_allow_rule(role_allow_t *rule, policy_t *policy, Tcl_DString *buf)
-{
-	ta_item_t *tptr;	
-	int multiple = 0;
-	if(buf == NULL) {
-		return -1;
-	}
-		
-	Tcl_DStringAppend(buf, rulenames[RULE_ROLE_ALLOW], -1);
-
-	/* source roles */
-	if(rule->flags & AVFLAG_SRC_TILDA) 
-		Tcl_DStringAppend(buf, " ~", -1);
-	else
-		Tcl_DStringAppend(buf, " ", -1);
-	if(rule->src_roles != NULL && rule->src_roles->next != NULL) {
-		multiple = 1;
-		Tcl_DStringAppend(buf, "{", -1);
-	}
-	if(rule->flags & AVFLAG_SRC_STAR)
-		Tcl_DStringAppend(buf, "*", -1);
-			
-	for(tptr = rule->src_roles; tptr != NULL; tptr = tptr->next) {
-		assert(tptr->type == IDX_ROLE);
-		Tcl_DStringAppend(buf, " ", -1);
-		Tcl_DStringAppend(buf, policy->roles[tptr->idx].name, -1);
-		Tcl_DStringAppend(buf, " ", -1);
-	}
-	if(multiple) {
-		Tcl_DStringAppend(buf, "}", -1);
-		multiple = 0;
-	}
-	/* target roles */
-	if(rule->flags & AVFLAG_TGT_TILDA) 
-		Tcl_DStringAppend(buf, " ~", -1);
-	else
-		Tcl_DStringAppend(buf, " ", -1);
-	if(rule->tgt_roles != NULL && rule->tgt_roles->next != NULL) {
-		multiple = 1;
-		Tcl_DStringAppend(buf, "{", -1);
-	}
-	if(rule->flags & AVFLAG_TGT_STAR)
-		Tcl_DStringAppend(buf, "*", -1);
-
-	
-	for(tptr = rule->tgt_roles; tptr != NULL; tptr = tptr->next) {
-		assert(tptr->type == IDX_ROLE);
-		Tcl_DStringAppend(buf, " ", -1);
-		Tcl_DStringAppend(buf, policy->roles[tptr->idx].name, -1);
-		Tcl_DStringAppend(buf, " ", -1);
-	}
-	if(multiple) {
-		Tcl_DStringAppend(buf, "}", -1);
-		multiple = 0;
-	}
-	
-	Tcl_DStringAppend(buf, ";\n", -1);
-		
-	return 0;
-}
-
-static int append_role_trans_rule(rt_item_t *rule, policy_t *policy, Tcl_DString *buf)
-{
-	ta_item_t *tptr;	
-	int multiple = 0;
-	if(buf == NULL) {
-		return -1;
-	}
-		
-	Tcl_DStringAppend(buf, rulenames[RULE_ROLE_TRANS], -1);
-	
-	/* source roles */
-	if(rule->flags & AVFLAG_SRC_TILDA) 
-		Tcl_DStringAppend(buf, " ~", -1);
-	else
-		Tcl_DStringAppend(buf, " ", -1);
-	if(rule->src_roles != NULL && rule->src_roles->next != NULL) {
-		multiple = 1;
-		Tcl_DStringAppend(buf, "{", -1);
-	}
-	if(rule->flags & AVFLAG_SRC_STAR)
-		Tcl_DStringAppend(buf, "*", -1);
-			
-	for(tptr = rule->src_roles; tptr != NULL; tptr = tptr->next) {
-		assert(tptr->type == IDX_ROLE);
-		Tcl_DStringAppend(buf, " ", -1);
-		Tcl_DStringAppend(buf, policy->roles[tptr->idx].name, -1);
-		Tcl_DStringAppend(buf, " ", -1);
-	}
-	if(multiple) {
-		Tcl_DStringAppend(buf, "}", -1);
-		multiple = 0;
-	}
-	/* target types/attributes */
-	if(rule->flags & AVFLAG_TGT_TILDA) 
-		Tcl_DStringAppend(buf, " ~", -1);
-	else
-		Tcl_DStringAppend(buf, " ", -1);
-	if(rule->tgt_types != NULL && rule->tgt_types->next != NULL) {
-		multiple = 1;
-		Tcl_DStringAppend(buf, "{", -1);
-	}
-	if(rule->flags & AVFLAG_TGT_STAR)
-		Tcl_DStringAppend(buf, "*", -1);
-
-	for(tptr = rule->tgt_types; tptr != NULL; tptr = tptr->next) {
-		if ((tptr->type & IDX_SUBTRACT)) {
-			Tcl_DStringAppend(buf, "-", -1);
-		}
-		if ((tptr->type & IDX_TYPE)) {
-			Tcl_DStringAppend(buf, " ", -1);
-			if(ap_tcl_append_type_str(0, 0, 0, tptr->idx, policy, buf) != 0)
-				return -1;
-		}
-		else if ((tptr->type & IDX_ATTRIB)) {
-			Tcl_DStringAppend(buf, " ", -1);
-			if(ap_tcl_append_attrib_str(0, 0, 0, 0, 0, tptr->idx, policy, buf) != 0)
-				return -1;
-		}			
-		else {
-			fprintf(stderr, "Invalid index type: %d\n", tptr->type);
-			return -1;
-		}
-	}
-	if(multiple) {
-		Tcl_DStringAppend(buf, "}", -1);
-		multiple = 0;
-	}
-	
-	/* default role */
-	Tcl_DStringAppend(buf, " ", -1);
-	assert(rule->trans_role.type == IDX_ROLE);
-	Tcl_DStringAppend(buf, policy->roles[rule->trans_role.idx].name, -1);
-	
-	Tcl_DStringAppend(buf, ";\n", -1);
-		
-	return 0;
-}
-
-/* Search role rules */
-/* arg ordering for argv[x]:
- * 1	allow (bool)		get allow rules
- * 2	trans (bool)		get role_transition rules
- * 3	use_src (bool)		whether to search by source role
- * 4	source			the source role
- * 5	which			whether source used for source or any (if any, others ignored)
- *					possible values: "source", "any"
- * 6	use_tgt (bool)		whether to search by target role (allow) or type (trans)
- * 7	target			the target role/type
- * 8	tgt_is_role (bool) 	whther target is role (allow only) or type (trans only)
- * 9	use_default (bool) 	search using default role (trans only)
- * 10	default			the default role
+/**
+ * Takes a qpol_role_allow_t and appends a tuple of it to result_list.
+ * The tuple consists of:
+ * <code>
+ *    { "allow" source_role target_role "" line_number }
+ * </code>
  */
-static int Apol_GetRoleRules(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
+static int append_role_allow_to_list(Tcl_Interp *interp,
+				     qpol_role_allow_t *rule,
+				     Tcl_Obj *result_list)
 {
-	int i, rt, src_idx = -1, tgt_idx = -1, tgt_type = IDX_ROLE, dflt_idx = -1;
-	Tcl_DString buffer, *buf = &buffer;
-	char tmpbuf[APOL_STR_SZ+64];
-	bool_t allow, trans, any = FALSE, use_src, use_tgt, tgt_is_role, use_dflt;
-	rbac_bool_t src_b, tgt_b, dflt_b;
-	
-	if(policy == NULL) {
-		Tcl_AppendResult(interp,"No current policy file is opened!", (char *) NULL);
-		return TCL_ERROR;
-	}
-	if(argc != 11) {
-		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
-		return TCL_ERROR;
+	qpol_role_t *source, *target;
+	char *source_name, *target_name;
+	Tcl_Obj *allow_elem[5], *allow_list;
+	int retval = TCL_ERROR;
+
+	if (qpol_role_allow_get_source_role(policydb->qh, policydb->p, rule, &source) < 0 ||
+	    qpol_role_allow_get_target_role(policydb->qh, policydb->p, rule, &target) < 0) {
+		goto cleanup;
 	}
 
-	allow = getbool(argv[1]);
-	trans = getbool(argv[2]);
-	use_src = getbool(argv[3]);
-	tgt_is_role = getbool(argv[8]);
-
-	if(use_src) {
-		if(strcmp(argv[5], "source") == 0)
-			any = FALSE;
-		else if(strcmp(argv[5], "any") == 0)
-			any = TRUE;
-		else {
-			Tcl_AppendResult(interp, "Invalid which option for source ", (char *) NULL);
-			return TCL_ERROR;			
-		}
-		if(!is_valid_str_sz(argv[4])) {
-			Tcl_AppendResult(interp, "Source string is too large", (char *) NULL);
-			return TCL_ERROR;
-		}		
-		src_idx = get_role_idx(argv[4], policy);
-		if(src_idx < 0) {
-			sprintf(tmpbuf, "Invalid source role name (%s)", argv[4]);
-			Tcl_AppendResult(interp, tmpbuf, (char *) NULL);
-			return TCL_ERROR;			
-		}
-		
+	if (qpol_role_get_name(policydb->qh, policydb->p, source, &source_name) < 0 ||
+	    qpol_role_get_name(policydb->qh, policydb->p, target, &target_name) < 0) {
+		goto cleanup;
 	}
-	use_tgt = getbool(argv[6]) && !any;
-	if(use_tgt) {
-		if(allow && trans) {
-			Tcl_AppendResult(interp, "Invalid option, target option may only be used if EITHER allow or role_trans is selected, but not both", (char *) NULL);
-			return TCL_ERROR;
-		}
-		if(tgt_is_role && (!allow || trans)) {
-			Tcl_AppendResult(interp, "Invalid option, target option may be a ROLE when allow, and only allow, is selected", (char *) NULL);
-			return TCL_ERROR;
-		}
-		if(!tgt_is_role && (allow || !trans)) {
-			Tcl_AppendResult(interp, "Invalid option, target option may be a TYPE when role_trans, and only role_trans, is selected", (char *) NULL);
-			return TCL_ERROR;
-		}
-		if(tgt_is_role) {
-			if(!is_valid_str_sz(argv[7])) {
-				Tcl_AppendResult(interp, "Target string is too large", (char *) NULL);
-				return TCL_ERROR;
-			}
-			tgt_idx = get_role_idx(argv[7], policy);
-			if(tgt_idx < 0) {
-				sprintf(tmpbuf, "Invalid target role name (%s)", argv[7]);
-				Tcl_AppendResult(interp, tmpbuf, (char *) NULL);
-				return TCL_ERROR;			
-			}
-			tgt_type = IDX_ROLE;
-		}
-		else {
-			if(!is_valid_str_sz(argv[7])) {
-				Tcl_AppendResult(interp, "Target string is too large", (char *) NULL);
-				return TCL_ERROR;
-			}
-			tgt_idx = get_type_or_attrib_idx(argv[7], &tgt_type, policy);
-			if(tgt_idx < 0) {
-				sprintf(tmpbuf, "Invalid target type or attribute (%s)", argv[7]);
-				Tcl_AppendResult(interp, tmpbuf, (char *) NULL);
-				return TCL_ERROR;			
-			}
-		}
-		
+	allow_elem[0] = Tcl_NewStringObj("allow", -1);
+	allow_elem[1] = Tcl_NewStringObj(source_name, -1);
+	allow_elem[2] = Tcl_NewStringObj(target_name, -1);
+	allow_elem[3] = Tcl_NewStringObj("", -1);
+	allow_elem[4] = Tcl_NewStringObj("", -1);  /* FIX ME! */
+	allow_list = Tcl_NewListObj(5, allow_elem);
+	if (Tcl_ListObjAppendElement(interp, result_list, allow_list) == TCL_ERROR) {
+		goto cleanup;
 	}
-	use_dflt = getbool(argv[9]) && !any;
-	if(use_dflt) {
-		if(allow || !trans) {
-			Tcl_AppendResult(interp, "Invalid option, default may use when role_trans, and only role_trans, is selected", (char *) NULL);
-			return TCL_ERROR;
-		}
-		if(!is_valid_str_sz(argv[10])) {
-			Tcl_AppendResult(interp, "Default string is too large", (char *) NULL);
-			return TCL_ERROR;
-		}
-		dflt_idx = get_role_idx(argv[10], policy);
-		if(dflt_idx < 0) {
-			sprintf(tmpbuf, "Invalid default role name (%s)", argv[10]);
-			Tcl_AppendResult(interp, tmpbuf, (char *) NULL);
-			return TCL_ERROR;			
-		}
-	}
-	
-	Tcl_DStringInit(buf);
-	
-	if(init_rbac_bool(&src_b, policy, FALSE) != 0) {
-		Tcl_AppendResult(interp, "error initializing src rules bool", (char *) NULL);
-		return TCL_ERROR;
-	}
-	if(init_rbac_bool(&tgt_b, policy, FALSE) != 0) {
-		Tcl_AppendResult(interp, "error initializing tgt rules bool", (char *) NULL);
-		free_rbac_bool(&src_b);	
-		return TCL_ERROR;
-	}
-	if(init_rbac_bool(&dflt_b, policy, FALSE) != 0) {
-		Tcl_AppendResult(interp, "error initializing default rules bool", (char *) NULL);
-		free_rbac_bool(&src_b);	
-		free_rbac_bool(&tgt_b);	
-		return TCL_ERROR;
-	}
-	
-	if(use_src) {
-		if(match_rbac_rules(src_idx, IDX_ROLE, SRC_LIST, FALSE, tgt_is_role, &src_b, policy) != 0) {
-			Tcl_AppendResult(interp, "error matching source", (char *) NULL);
-			free_rbac_bool(&src_b);	
-			free_rbac_bool(&tgt_b);	
-			free_rbac_bool(&dflt_b);	
-			return TCL_ERROR;			
-		}
-	}
-	else {
-		all_true_rbac_bool(&src_b, policy);
-	}
-	if(use_src && any) {
-		if(match_rbac_rules(src_idx, IDX_ROLE, TGT_LIST, FALSE, TRUE, &tgt_b, policy) != 0) {
-			Tcl_AppendResult(interp, "error matching target", (char *) NULL);
-			free_rbac_bool(&src_b);	
-			free_rbac_bool(&tgt_b);	
-			free_rbac_bool(&dflt_b);	
-			return TCL_ERROR;			
-		}
-		if(match_rbac_rules(src_idx, IDX_ROLE, DEFAULT_LIST, FALSE, TRUE, &dflt_b, policy) != 0) {
-			Tcl_AppendResult(interp, "error matching default", (char *) NULL);
-			free_rbac_bool(&src_b);	
-			free_rbac_bool(&tgt_b);	
-			free_rbac_bool(&dflt_b);	
-			return TCL_ERROR;			
-		}
-	}
-	else {
-		
-		if(use_tgt && tgt_is_role) {
-			if(match_rbac_rules(tgt_idx, IDX_ROLE, TGT_LIST, FALSE, TRUE, &tgt_b, policy) != 0) {
-				Tcl_AppendResult(interp, "error matching target", (char *) NULL);
-				free_rbac_bool(&src_b);	
-				free_rbac_bool(&tgt_b);	
-				free_rbac_bool(&dflt_b);	
-				return TCL_ERROR;			
-			}
-		}
-		else if(use_tgt && !tgt_is_role) {
-			if(match_rbac_rules(tgt_idx, tgt_type, TGT_LIST, FALSE, FALSE, &tgt_b, policy) != 0) {
-				Tcl_AppendResult(interp, "error matching target", (char *) NULL);
-				free_rbac_bool(&src_b);	
-				free_rbac_bool(&tgt_b);	
-				free_rbac_bool(&dflt_b);	
-				return TCL_ERROR;			
-			}			
-		}
-		else {
-			all_true_rbac_bool(&tgt_b, policy);
-		}
-		if(use_dflt) {
-			if(match_rbac_rules(dflt_idx, IDX_ROLE, DEFAULT_LIST, FALSE, FALSE, &dflt_b, policy) != 0) {
-				Tcl_AppendResult(interp, "error matching default", (char *) NULL);
-				free_rbac_bool(&src_b);	
-				free_rbac_bool(&tgt_b);	
-				free_rbac_bool(&dflt_b);	
-				return TCL_ERROR;			
-			}
-		}
-		else {
-			all_true_rbac_bool(&dflt_b, policy);
-		}
-	}
-	
-	if(allow) {
-		for(i = 0; i < policy->num_role_allow; i++) {
-			if((!any && (src_b.allow[i] && tgt_b.allow[i])) ||
-			   (any && (src_b.allow[i] || tgt_b.allow[i]))) {
-				rt = append_role_allow_rule(&(policy->role_allow[i]), policy, buf);
-				if(rt != 0) {
-					Tcl_DStringFree(buf);
-					Tcl_ResetResult(interp);
-					Tcl_AppendResult(interp, "error appending role allow rule", (char *) NULL);
-					free_rbac_bool(&src_b);	
-					free_rbac_bool(&tgt_b);	
-					free_rbac_bool(&dflt_b);
-					return TCL_ERROR;
-				}
-			}
-		}
-	}
-	if(trans) {
-		for(i =0; i < policy->num_role_trans; i++) {
-			if((!any && (src_b.trans[i] && tgt_b.trans[i] && dflt_b.trans[i])) ||
-			   (any && (src_b.trans[i] || tgt_b.trans[i] || dflt_b.trans[i]))) {
-				rt = append_role_trans_rule(&(policy->role_trans[i]), policy, buf);
-				if(rt != 0) {
-					Tcl_DStringFree(buf);
-					Tcl_ResetResult(interp);
-					Tcl_AppendResult(interp, "error appending role_transition rule", (char *) NULL);
-					free_rbac_bool(&src_b);	
-					free_rbac_bool(&tgt_b);	
-					free_rbac_bool(&dflt_b);
-					return TCL_ERROR;
-				}
-			}
-		}
-	}
-	
-	Tcl_DStringResult(interp, buf);
-	free_rbac_bool(&src_b);	
-	free_rbac_bool(&tgt_b);	
-	free_rbac_bool(&dflt_b);				
-	return TCL_OK;	
+	retval = TCL_OK;
+ cleanup:
+	return retval;
 }
 
+/**
+ * Takes a qpol_role_trans_t and appends a tuple of it to result_list.
+ * The tuple consists of:
+ * <code>
+ *    { "role_transition" source_role target_type default_role line_number }
+ * </code>
+ */
+static int append_role_trans_to_list(Tcl_Interp *interp,
+                                     qpol_role_trans_t *rule,
+                                     Tcl_Obj *result_list)
+{
+	qpol_role_t *source, *default_role;
+	qpol_type_t *target;
+	char *source_name, *target_name, *default_name;
+	Tcl_Obj *role_trans_elem[5], *role_trans_list;
+	int retval = TCL_ERROR;
+
+	if (qpol_role_trans_get_source_role(policydb->qh, policydb->p, rule, &source) < 0 ||
+	    qpol_role_trans_get_target_type(policydb->qh, policydb->p, rule, &target) < 0 ||
+	    qpol_role_trans_get_default_role(policydb->qh, policydb->p, rule, &default_role) < 0) {
+		goto cleanup;
+	}
+
+	if (qpol_role_get_name(policydb->qh, policydb->p, source, &source_name) < 0 ||
+	    qpol_type_get_name(policydb->qh, policydb->p, target, &target_name) < 0 ||
+	    qpol_role_get_name(policydb->qh, policydb->p, default_role, &default_name) < 0) {
+		goto cleanup;
+	}
+	role_trans_elem[0] = Tcl_NewStringObj("role_transition", -1);
+	role_trans_elem[1] = Tcl_NewStringObj(source_name, -1);
+	role_trans_elem[2] = Tcl_NewStringObj(target_name, -1);
+	role_trans_elem[3] = Tcl_NewStringObj(default_name, -1);
+	role_trans_elem[4] = Tcl_NewStringObj("", -1);  /* FIX ME! */
+	role_trans_list = Tcl_NewListObj(5, role_trans_elem);
+	if (Tcl_ListObjAppendElement(interp, result_list, role_trans_list) == TCL_ERROR) {
+		goto cleanup;
+	}
+	retval = TCL_OK;
+ cleanup:
+	return retval;
+}
+
+/**
+ * Return an unsorted list of RBAC rules (role allow and
+ * role_transition rules) tuples within the policy.  Each tuple
+ * consists of:
+ * <ul>
+ *   <li>rule type ("allow" or "role_transition")
+ *   <li>source role
+ *   <li>for allow rules: target role; for role_transition:  target
+ *   type
+ *   <li>for allow rules: an empty list; for role_transition: default
+ *   role
+ *   <li>line number, or -1 unknown
+ * </ul>
+ *
+ * @param argv This function takes five parameters:
+ * <ol>
+ *   <li>rule selections
+ *   <li>other options
+ *   <li>source role
+ *   <li>target role or type
+ *   <li>default role (ignored when searching allow rules)
+ * </ol>
+ *
+ * For rule selections list, this is a list of which rules to search.
+ * Valid rule strings are:
+ * <ul>
+ *   <li>allow
+ *   <li>role_transition
+ * </ul>
+ *
+ * For other options, this is a list of strings that affect searching.
+ * The only valid string is:
+ * <ul>
+ *   <li>source_any - treat source symbol as criteria for target role
+ *   (for allow) and default role (for role_transition)
+ * </ul>
+ */
+static int Apol_SearchRBACRules(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
+{
+	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
+	qpol_role_allow_t *allow;
+	qpol_role_trans_t *role_trans;
+	CONST char **rule_strings = NULL, **other_opt_strings = NULL;
+	int num_opts;
+	apol_role_allow_query_t *raquery = NULL;
+	apol_role_trans_query_t *rtquery = NULL;
+	apol_vector_t *rav = NULL, *rtv = NULL;
+	size_t i;
+	int retval = TCL_ERROR;
+
+	apol_tcl_clear_error();
+	if (policy == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		goto cleanup;
+	}
+	if (argc != 6) {
+		ERR(policydb, "Need a rule selection, other options, source role, target role/type, and default role.");
+		goto cleanup;
+	}
+
+	if (Tcl_SplitList(interp, argv[1], &num_opts, &rule_strings) == TCL_ERROR) {
+		goto cleanup;
+	}
+	while (--num_opts >= 0) {
+		CONST char *s = rule_strings[num_opts];
+		if (strcmp(s, "allow") == 0) {
+			if ((raquery = apol_role_allow_query_create()) == NULL) {
+				ERR(policydb, "Out of memory!");
+				goto cleanup;
+			}
+		}
+		else if (strcmp(s, "role_transition") == 0) {
+			if ((rtquery = apol_role_trans_query_create()) == NULL) {
+				ERR(policydb, "Out of memory!");
+				goto cleanup;
+			}
+		}
+		else {
+			ERR(policydb, "Invalid rule selection %s.", s);
+			goto cleanup;
+		}
+	}
+
+	if (Tcl_SplitList(interp, argv[2], &num_opts, &other_opt_strings) == TCL_ERROR) {
+		goto cleanup;
+	}
+	while (--num_opts >= 0) {
+		CONST char *s = other_opt_strings[num_opts];
+		if (strcmp(s, "source_any") == 0) {
+			if (raquery != NULL) {
+				apol_role_allow_query_set_source_any(policydb, raquery, 1);
+			}
+			if (rtquery != NULL) {
+				apol_role_trans_query_set_source_any(policydb, rtquery, 1);
+			}
+		}
+	}
+
+	if (raquery != NULL) {
+		if (apol_role_allow_query_set_source(policydb, raquery, argv[3]) < 0 ||
+		    apol_role_allow_query_set_target(policydb, raquery, argv[4]) < 0) {
+			goto cleanup;
+		}
+		if (apol_get_role_allow_by_query(policydb, raquery, &rav) < 0) {
+			goto cleanup;
+		}
+		for (i = 0; i < apol_vector_get_size(rav); i++) {
+			allow = (qpol_role_allow_t *) apol_vector_get_element(rav, i);
+			if (append_role_allow_to_list(interp, allow, result_obj) == TCL_ERROR) {
+				goto cleanup;
+			}
+		}
+	}
+
+	if (rtquery != NULL) {
+		if (apol_role_trans_query_set_source(policydb, rtquery, argv[3]) < 0 ||
+		    apol_role_trans_query_set_target(policydb, rtquery, argv[4]) < 0 ||
+		    apol_role_trans_query_set_default(policydb, rtquery, argv[5]) < 0) {
+			goto cleanup;
+		}
+		if (apol_get_role_trans_by_query(policydb, rtquery, &rav) < 0) {
+			goto cleanup;
+		}
+		for (i = 0; i < apol_vector_get_size(rav); i++) {
+			role_trans = (qpol_role_trans_t *) apol_vector_get_element(rav, i);
+			if (append_role_trans_to_list(interp, role_trans, result_obj) == TCL_ERROR) {
+				goto cleanup;
+			}
+		}
+	}
+
+	Tcl_SetObjResult(interp, result_obj);
+	retval = TCL_OK;
+ cleanup:
+	if (rule_strings != NULL) {
+		Tcl_Free((char *) rule_strings);
+	}
+	if (other_opt_strings != NULL) {
+		Tcl_Free((char *) other_opt_strings);
+	}
+	apol_role_allow_query_destroy(&raquery);
+	apol_role_trans_query_destroy(&rtquery);
+	apol_vector_destroy(&rav, NULL);
+	apol_vector_destroy(&rtv, NULL);
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
+}
 
 /* Perform a range transition search.  Expected arguments are:
  *
@@ -1145,7 +989,7 @@ static int Apol_SearchRangeTransRules(ClientData clientData, Tcl_Interp *interp,
 int apol_tcl_rules_init(Tcl_Interp *interp) {
 	Tcl_CreateCommand(interp, "apol_SearchTERules", Apol_SearchTERules, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_SearchConditionalRules", Apol_SearchConditionalRules, NULL, NULL);
-	Tcl_CreateCommand(interp, "apol_GetRoleRules", Apol_GetRoleRules, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_SearchRBACRules", Apol_SearchRBACRules, NULL, NULL);
         Tcl_CreateCommand(interp, "apol_SearchRangeTransRules", Apol_SearchRangeTransRules, NULL, NULL);
         return TCL_OK;
 }
