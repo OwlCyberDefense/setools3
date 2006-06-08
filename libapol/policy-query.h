@@ -47,6 +47,7 @@
 
 #include "avrule-query.h"
 #include "terule-query.h"
+#include "rbacrule-query.h"
 
 /******************** private defines ********************/
 
