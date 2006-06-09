@@ -81,15 +81,15 @@ proc Apol_Widget::makeTypeCombobox {path args} {
     set f [frame $path]
     set type_box [eval ComboBox $f.tb $args -helptext {{Type or select a type}} \
                       -textvariable Apol_Widget::vars($path:type) \
-                      -entrybg white -width 16]
+                      -entrybg white -width 20]
     bind $type_box.e <KeyPress> [list ApolTop::_create_popup $type_box %W %K]
     pack $type_box -side top -expand 1 -fill x
     
     set attrib_enable [checkbutton $f.ae \
-                           -text "Filter types to select using attribute:" \
+                           -text "Filter by attribute:" \
                            -variable Apol_Widget::vars($path:attribenable) \
                            -command [list Apol_Widget::_attrib_enabled $path]]
-    set attrib_box [ComboBox $f.ab -entrybg white -width 14 \
+    set attrib_box [ComboBox $f.ab -entrybg white -width 16 \
                         -textvariable Apol_Widget::vars($path:attrib)]
     trace add variable Apol_Widget::vars($path:attrib) write [list Apol_Widget::_attrib_changed $path]
     bind $attrib_box.e <KeyPress> [list ApolTop::_create_popup $attrib_box %W %K]
@@ -279,7 +279,7 @@ proc Apol_Widget::makeRegexpEntry {path args} {
     trace add variable Apol_Widget::vars($path:enable_regexp) write \
         [list Apol_Widget::_toggle_regexp_check_button $regexp]
     pack $cb -side top -anchor nw
-    pack $regexp -side top -anchor nw -expand 0 -fill x
+    pack $regexp -side top -padx 4 -anchor nw -expand 0 -fill x
     return $f
 }
 

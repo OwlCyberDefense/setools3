@@ -151,14 +151,19 @@ proc Apol_Users::open { } {
 #  Command Apol_Users::close
 # ------------------------------------------------------------------------------
 proc Apol_Users::close { } {
-    variable opts
     variable widgets
+
+    initializeVars
     set Apol_Users::users_list ""
     $widgets(role) configure -values ""
     Apol_Widget::clearSearchResults $widgets(results)
     Apol_Widget::clearRangeSelector $widgets(range)
     Apol_Widget::setRangeSelectorCompleteState $widgets(range) normal
     $widgets(defaultCB) configure -state normal
+}
+
+proc Apol_Users::initializeVars {} {
+    variable opts
     array set opts {
         showSelection all
         useRole 0         role {}
@@ -193,12 +198,8 @@ proc Apol_Users::create {nb} {
     variable opts
     variable widgets
 
-    array set opts {
-        showSelection all
-        useRole 0          role {}
-        enable_default 0   default_level {{} {}}
-    }
-    
+    initializeVars
+
     # Layout frames
     set frame [$nb insert end $ApolTop::users_tab -text "Users"]
     set pw1   [PanedWindow $frame.pw -side top]
@@ -226,27 +227,29 @@ proc Apol_Users::create {nb} {
 
     # Search options subframes
     set ofm [$s_optionsbox getframe]
-    
-    set verboseFrame [frame $ofm.verbose -relief sunken -borderwidth 1]
-    radiobutton $verboseFrame.names_only -text "Names Only" \
-        -variable Apol_Users::opts(showSelection) -value names 
-    radiobutton $verboseFrame.all_info -text "All Information" \
-        -variable Apol_Users::opts(showSelection) -value all
-    pack $verboseFrame.names_only $verboseFrame.all_info -side top -anchor nw -pady 5 -padx 5
+    set verboseFrame [frame $ofm.verbose]
+    set rolesFrame [frame $ofm.roles]
+    set defaultFrame [frame $ofm.default]
+    set rangeFrame [frame $ofm.range]
+    pack $verboseFrame $rolesFrame $defaultFrame $rangeFrame \
+        -side left -padx 4 -pady 2 -anchor nw -expand 0 -fill y
 
-    set rolesFrame [frame $ofm.roles -relief sunken -borderwidth 1]
-    checkbutton $rolesFrame.cb -variable Apol_Users::opts(useRole) -text "Roles"
+    radiobutton $verboseFrame.all_info -text "All information" \
+        -variable Apol_Users::opts(showSelection) -value all
+    radiobutton $verboseFrame.names_only -text "Names only" \
+        -variable Apol_Users::opts(showSelection) -value names 
+    pack $verboseFrame.all_info $verboseFrame.names_only -anchor w -padx 5 -pady 4
+
+    checkbutton $rolesFrame.cb -variable Apol_Users::opts(useRole) -text "Role"
     set widgets(role) [ComboBox $rolesFrame.combo -width 12 -textvariable Apol_Users::opts(role) \
                            -helptext "Type or select a role" -state disabled]
-
     bind $widgets(role).e <KeyPress> [list ApolTop::_create_popup $widgets(role) %W %K]
     trace add variable Apol_Users::opts(useRole) write \
         [list Apol_Users::toggleRolesCheckbutton $widgets(role)]
-    pack $rolesFrame.cb -side top -anchor nw
-    pack $widgets(role) -side top -anchor nw -padx 4 -expand 0 -fill x
+    pack $rolesFrame.cb -anchor nw
+    pack $widgets(role) -padx 4
 
-    set defaultFrame [frame $ofm.default -relief sunken -borderwidth 1]
-    set widgets(defaultCB) [checkbutton $defaultFrame.cb -variable Apol_Users::opts(enable_default) -text "Default MLS Level"]
+    set widgets(defaultCB) [checkbutton $defaultFrame.cb -variable Apol_Users::opts(enable_default) -text "Default MLS level"]
     set defaultDisplay [Entry $defaultFrame.display -textvariable Apol_Users::opts(default_level_display) -width 16 -editable 0]
     set defaultButton [button $defaultFrame.button -text "Select Level..." -state disabled -command [list Apol_Users::show_level_dialog]]
     trace add variable Apol_Users::opts(enable_default) write \
@@ -257,13 +260,9 @@ proc Apol_Users::create {nb} {
     pack $defaultDisplay -side top -expand 0 -fill x -padx 4
     pack $defaultButton -side top -expand 1 -fill none -padx 4 -anchor ne
 
-    set rangeFrame [frame $ofm.range -relief sunken -borderwidth 1]
     set widgets(range) [Apol_Widget::makeRangeSelector $rangeFrame.range Users]
     pack $widgets(range) -expand 1 -fill x
     
-    pack $verboseFrame $rolesFrame $defaultFrame $rangeFrame \
-        -side left -padx 5 -pady 4 -anchor nw -expand 0 -fill y
-
     # Action Buttons
     button $ofm.ok -text OK -width 6 -command {Apol_Users::searchUsers}
     pack $ofm.ok -side right -pady 5 -padx 5 -anchor ne

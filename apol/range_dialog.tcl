@@ -53,11 +53,11 @@ proc Apol_Range_Dialog::_create_dialog {parent} {
     array unset vars $dialog:*
 
     set f [$dialog getframe]
-    set low_label [label $f.ll -text "Single Level"]
+    set low_label [label $f.ll -text "Single level"]
     set low_level [Apol_Widget::makeLevelSelector $f.low 12]
     
     set high_cb [checkbutton $f.high_enable \
-                     -text "High Level" \
+                     -text "High level" \
                      -variable Apol_Range_Dialog::vars($dialog:highenable) \
                      -command [list Apol_Range_Dialog::_high_enabled $dialog]]
     set high_level [Apol_Widget::makeLevelSelector $f.high 12]
@@ -106,10 +106,10 @@ proc Apol_Range_Dialog::_high_enabled {dialog} {
     variable vars
     set f [$dialog getframe]
     if {$vars($dialog:highenable)} {
-        $f.ll configure -text "Low Level"
+        $f.ll configure -text "Low level"
         Apol_Widget::setLevelSelectorState $f.high 1
     } else {
-        $f.ll configure -text "Single Level"
+        $f.ll configure -text "Single level"
         Apol_Widget::setLevelSelectorState $f.high 0
     }
 }

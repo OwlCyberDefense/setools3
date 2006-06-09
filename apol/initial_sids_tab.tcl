@@ -157,10 +157,10 @@ proc Apol_Initial_SIDS::create {nb} {
     pack $widgets(items) -expand 1 -fill both
 
     # Search options subframes
-    set f [frame [$s_optionsbox getframe].c -relief sunken -bd 1]
+    set f [frame [$s_optionsbox getframe].c]
     set widgets(context) [Apol_Widget::makeContextSelector $f.context "Context"]
     pack $widgets(context)
-    pack $f -side left -anchor n -padx 4 -expand 0 -fill y
+    pack $f -side left -anchor n -padx 4 -pady 2
 
     set ok [button [$s_optionsbox getframe].ok -text "OK" -width 6 \
                 -command Apol_Initial_SIDS::searchSIDs]

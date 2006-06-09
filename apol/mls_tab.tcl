@@ -1,5 +1,5 @@
 # Copyright (C) 2001-2006 Tresys Technology, LLC
-# see file 'COPYING' for use and warranty information 
+# see file 'COPYING' for use and warranty information
 
 # TCL/TK GUI for SE Linux policy analysis
 # Requires tcl and tk 8.4+, with BWidgets
@@ -7,8 +7,8 @@
 
 ##############################################################
 # ::Apol_MLS
-#  
-# 
+#
+#
 ##############################################################
 namespace eval Apol_MLS {
     variable widgets
@@ -32,10 +32,14 @@ proc Apol_MLS::open {} {
 }
 
 proc Apol_MLS::close {} {
-    variable vals
     variable widgets
+
+    initializeVars
     Apol_Widget::clearSearchResults $widgets(results)
-    Apol_Widget::setRegexpEntryState $widgets(regexp) 0
+}
+
+proc Apol_MLS::initializeVars {} {
+    variable vals
     array set vals {
         senslist {}      catslist {}
         enable_sens 1    show_cats_too 1
@@ -57,11 +61,7 @@ proc Apol_MLS::create {nb} {
     variable widgets
     variable vals
 
-    array set vals {
-        senslist {}      catslist {}
-        enable_sens 1    show_cats_too 1
-        enable_cats 0    show_sens_too 1
-    }
+    initializeVars
 
     # Layout frames
     set frame [$nb insert end $ApolTop::mls_tab -text "MLS"]
@@ -71,14 +71,10 @@ proc Apol_MLS::create {nb} {
     pack $pw -fill both -expand yes
 
     # build the left column, where one may browse sensitivities and categories
-    set leftpw [PanedWindow $leftf.pw -side left]
-    $leftpw add -weight 1
-    $leftpw add -weight 1
-    set sensbox [TitleFrame [$leftpw getframe 0].sensbox -text "Sensitivities"]
-    set catsbox [TitleFrame [$leftpw getframe 1].catsbox -text "Categories"]
-    pack $sensbox -fill both -expand yes
+    set sensbox [TitleFrame $leftf.sensbox -text "Sensitivities"]
+    set catsbox [TitleFrame $leftf.catsbox -text "Categories"]
+    pack $sensbox -fill both -expand 0
     pack $catsbox -fill both -expand yes
-    pack $leftpw -fill both -expand yes
 
     set sensbox [Apol_Widget::makeScrolledListbox [$sensbox getframe].sens \
                      -height 10 -width 20 -listvar Apol_MLS::vals(senslist)]
@@ -94,30 +90,30 @@ proc Apol_MLS::create {nb} {
     # build the search options
     set optsbox [TitleFrame $rightf.optsbox -text "Search Options"]
     pack $optsbox -side top -expand 0 -fill both -padx 2
-    set sensf [frame [$optsbox getframe].sensf -relief sunken -bd 1]
-    set catsf [frame [$optsbox getframe].catsf -relief sunken -bd 1]
-    pack $sensf $catsf -side left -padx 5 -pady 4 -anchor nw
+    set sensf [frame [$optsbox getframe].sensf]
+    set catsf [frame [$optsbox getframe].catsf]
+    pack $sensf $catsf -side left -padx 4 -pady 2 -anchor nw
+
     set enable_sens [checkbutton $sensf.enable -text "Sensitivities" \
                          -variable Apol_MLS::vals(enable_sens)]
-    set show_cats [checkbutton $sensf.cats -text "Show Level (Categories)" \
+    set show_cats [checkbutton $sensf.cats -text "Show levels (categories)" \
                        -variable Apol_MLS::vals(show_cats_too)]
     trace add variable Apol_MLS::vals(enable_sens) write \
         [list Apol_MLS::toggleCheckbutton $show_cats]
     pack $enable_sens -side top -anchor nw
-    pack $show_cats -side top -anchor nw -padx 4
-    
+    pack $show_cats -side top -anchor nw -padx 8
+
     set enable_cats [checkbutton $catsf.enable -text "Categories" \
                          -variable Apol_MLS::vals(enable_cats)]
-    set show_sens [checkbutton $catsf.cats -text "Show Sensitivities" \
+    set show_sens [checkbutton $catsf.cats -text "Show sensitivities" \
                        -variable Apol_MLS::vals(show_sens_too) -state disabled]
     trace add variable Apol_MLS::vals(enable_cats) write \
         [list Apol_MLS::toggleCheckbutton $show_sens]
     pack $enable_cats -side top -anchor nw
-    pack $show_sens -side top -anchor nw -padx 4
+    pack $show_sens -side top -anchor nw -padx 8
 
     set widgets(regexp) [Apol_Widget::makeRegexpEntry [$optsbox getframe].regexpf]
-    Apol_Widget::setRegexpEntryState $widgets(regexp) 0
-    pack $widgets(regexp) -side left -padx 5 -pady 4 -anchor nw
+    pack $widgets(regexp) -side left -padx 4 -pady 2 -anchor nw
 
     set ok [button [$optsbox getframe].ok -text "OK" -width 6 \
                 -command Apol_MLS::runSearch]

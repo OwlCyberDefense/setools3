@@ -33,15 +33,20 @@ proc Apol_Types::open { } {
 }
 
 proc Apol_Types::close { } {
-    variable opts
     variable widgets
+
+    initializeVars
     set Apol_Types::typelist {}
     set Apol_Types::attriblist {}
+    Apol_Widget::clearSearchResults $widgets(results)
+}
+
+proc Apol_Types::initializeVars {} {
+    variable opts
     array set opts {
         types 1    types:show_attribs 1  types:show_aliases 1
-        attribs 0  attribs:show_types 0  attribs:show_attribs 0
+        attribs 0  attribs:show_types 1  attribs:show_attribs 1
     }
-    Apol_Widget::clearSearchResults $widgets(results)
 }
 
 proc Apol_Types::free_call_back_procs { } {
@@ -54,13 +59,6 @@ proc Apol_Types::free_call_back_procs { } {
 # ----------------------------------------------------------------------------------------
 proc Apol_Types::set_Focus_to_Text {} {
     focus $Apol_Types::widgets(results)
-}
-
-proc Apol_Types::on_show_more_info_button_clicked {which lb} {
-    set sel [$lb curselection]
-    if {$sel != ""} {
-        Apol_Types::popupTypeInfo $which [$lb get $sel]
-    }
 }
 
 proc Apol_Types::popupTypeInfo {which ta} {
@@ -274,19 +272,14 @@ proc Apol_Types::create {nb} {
     variable opts
     variable widgets
 
-    array set opts {
-        types 1     types:show_attribs 1   types:show_aliases 1
-        attribs 0   attribs:show_types 0   attribs:show_attribs 0
-    }
-
+    initializeVars
     # Layout frames
     set frame [$nb insert end $ApolTop::types_tab -text "Types"]
     set pw1   [PanedWindow $frame.pw -side top]
     set left_pane   [$pw1 add -weight 0]
     set center_pane [$pw1 add -weight 1]
-    set pw2   [PanedWindow $left_pane.pw -side left]
-    set tpane [$pw2 add -weight 2]
-    set apane [$pw2 add -weight 1]
+    set tpane [frame $left_pane.t]
+    set apane [frame $left_pane.a]
 
     # Major subframes
     set tbox [TitleFrame $tpane.tbox -text "Types"]
@@ -300,57 +293,52 @@ proc Apol_Types::create {nb} {
     pack $tbox -fill both -expand yes
     pack $abox -fill both -expand yes
     pack $pw1 -fill both -expand yes
-    pack $pw2 -fill both -expand yes
+    pack $tpane -fill both -expand 1
+    pack $apane -fill both -expand 1
     
     # Types listbox
     set tlistbox [Apol_Widget::makeScrolledListbox [$tbox getframe].types \
                       -height 10 -width 20 -listvar Apol_Types::typelist]
     Apol_Widget::setListboxCallbacks $tlistbox \
         {{"Show Type Info" {Apol_Types::popupTypeInfo type}}}
-    set t_button [button [$tbox getframe].t_button -text "Show Type Info" \
-                      -command [list Apol_Types::on_show_more_info_button_clicked type [Apol_Widget::getScrolledListbox $tlistbox]]]
     pack $tlistbox -expand 1 -fill both
-    pack $t_button -expand 0 -fill x -padx 2 -pady 2
 
     # Attributes listbox
     set alistbox [Apol_Widget::makeScrolledListbox [$abox getframe].attribs \
                       -height 5 -width 20 -listvar Apol_Types::attriblist]
     Apol_Widget::setListboxCallbacks $alistbox {{"Show Attribute Info" {Apol_Types::popupTypeInfo attrib}}}
-    set a_button [button [$abox getframe].a_button -text "Show Attribute Info" \
-                      -command [list Apol_Types::on_show_more_info_button_clicked attrib [Apol_Widget::getScrolledListbox $alistbox]]]
     pack $alistbox -expand 1 -fill both
-    pack $a_button -expand 0 -fill x -padx 2 -pady 2
 
     # Search options section
     set ofm [$obox getframe]
+    set fm_types_select [frame $ofm.to]
+    set fm_attribs_select [frame $ofm.ao]
+    pack $fm_types_select $fm_attribs_select -side left -padx 4 -pady 2 -anchor nw
 
-    set fm_types_select [frame $ofm.to -relief sunken -borderwidth 1]
-    set types_select [checkbutton $fm_types_select.type -text "Show Types" -variable Apol_Types::opts(types)]
-    set typeattribs [checkbutton $fm_types_select.typeattribs -text "Include Attribs" \
-	-variable Apol_Types::opts(types:show_attribs) -padx 10] 
-    set typealiases [checkbutton $fm_types_select.typealiases -text "Use Aliases" \
-	-variable Apol_Types::opts(types:show_aliases) -padx 10]
-    pack $types_select $typeattribs $typealiases -anchor w
+    set types_select [checkbutton $fm_types_select.type -text "Show types" -variable Apol_Types::opts(types)]
+    set typeattribs [checkbutton $fm_types_select.typeattribs -text "Include attributes" \
+	-variable Apol_Types::opts(types:show_attribs)] 
+    pack $types_select -anchor w
+    pack $typeattribs -anchor w -padx 8
     trace add variable Apol_Types::opts(types) write \
-        [list Apol_Types::toggleCheckbuttons $typeattribs $typealiases]
+        [list Apol_Types::toggleCheckbuttons $typeattribs]
 
-    set fm_attribs_select [frame $ofm.ao -relief sunken -borderwidth 1]
-    set attribs_select [checkbutton $fm_attribs_select.type -text "Show Attributes" \
+    set attribs_select [checkbutton $fm_attribs_select.type -text "Show attributes" \
 	-variable Apol_Types::opts(attribs)]
-    set a_types [checkbutton $fm_attribs_select.types -text "Include Types" \
-	-variable Apol_Types::opts(attribs:show_types) -padx 10 -state disabled]
-    set a_typeattribs [checkbutton $fm_attribs_select.typeattribs -text "Include Type Attribs" \
-	-variable Apol_Types::opts(attribs:show_attribs) -padx 10 -state disabled]
-    pack $attribs_select $a_types $a_typeattribs -anchor w
+    set a_types [checkbutton $fm_attribs_select.types -text "Include types" \
+	-variable Apol_Types::opts(attribs:show_types) -state disabled]
+    set a_typeattribs [checkbutton $fm_attribs_select.typeattribs -text "Include types' attributes" \
+	-variable Apol_Types::opts(attribs:show_attribs) -state disabled]
+    pack $attribs_select -anchor w
+    pack $a_types $a_typeattribs -anchor w -padx 8
     trace add variable Apol_Types::opts(attribs) write \
-        [list Apol_Types::toggleCheckbuttons $a_typeattribs $a_types]
+        [list Apol_Types::toggleCheckbuttons [list $a_typeattribs $a_types]]
 
     set widgets(regexp) [Apol_Widget::makeRegexpEntry $ofm.regexpf]
     Apol_Widget::setRegexpEntryState $widgets(regexp) 1
 
-    pack $fm_types_select $fm_attribs_select $widgets(regexp) \
-        -side left -padx 5 -pady 4 -anchor nw
-    
+    pack $widgets(regexp) -side left -padx 4 -pady 2 -anchor nw
+
     set ok [button $ofm.ok -text OK -width 6 -command Apol_Types::searchTypes]
     pack $ok -side right -padx 5 -pady 5 -anchor ne
   
@@ -361,15 +349,17 @@ proc Apol_Types::create {nb} {
     return $frame
 }
 
-proc Apol_Types::toggleCheckbuttons {cb1 cb2 name1 name2 op} {
+proc Apol_Types::toggleCheckbuttons {w name1 name2 op} {
     variable opts
     variable widgets
     if {$opts($name2)} {
-        $cb1 configure -state normal
-        $cb2 configure -state normal
+        foreach x $w {
+            $x configure -state normal
+        }
     } else {
-        $cb1 configure -state disabled
-        $cb2 configure -state disabled
+        foreach x $w {
+            $x configure -state disabled
+        }
     }
     if {!$opts(types) && !$opts(attribs)} {
         Apol_Widget::setRegexpEntryState $widgets(regexp) 0

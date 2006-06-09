@@ -12,7 +12,7 @@ namespace eval Apol_Widget {
 # search type (exact, subset, superset).  If the second argument is
 # not "" then add a checkbutton that enables/disables the entire
 # widget.
-proc Apol_Widget::makeRangeSelector {path rangeMatchText {enableText "MLS Range"} args} {
+proc Apol_Widget::makeRangeSelector {path rangeMatchText {enableText "MLS range"} args} {
     variable vars
     array unset vars $path:*
     set vars($path:range) {{{} {}}}
@@ -42,15 +42,15 @@ proc Apol_Widget::makeRangeSelector {path rangeMatchText {enableText "MLS Range"
     }
 
     # range search type
-    set range_label [label $range2_frame.label -text "Range Matching:" \
+    set range_label [label $range2_frame.label -text "Range matching:" \
                          -state disabled]
-    set range_exact [radiobutton $range2_frame.exact -text "Exact Matches" \
+    set range_exact [radiobutton $range2_frame.exact -text "Exact matches" \
                          -state disabled \
                          -value exact -variable Apol_Widget::vars($path:search_type)]
-    set range_subset [radiobutton $range2_frame.subset -text "$rangeMatchText Containing Range" \
+    set range_subset [radiobutton $range2_frame.subset -text "$rangeMatchText containing range" \
                           -state disabled \
                           -value subset -variable Apol_Widget::vars($path:search_type)]
-    set range_superset [radiobutton $range2_frame.superset -text "$rangeMatchText Within Range" \
+    set range_superset [radiobutton $range2_frame.superset -text "$rangeMatchText within range" \
                             -state disabled \
                             -value superset -variable Apol_Widget::vars($path:search_type)]
     pack $range_label $range_exact $range_subset $range_superset \

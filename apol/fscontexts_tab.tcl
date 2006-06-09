@@ -30,16 +30,22 @@ proc Apol_FSContexts::open {} {
 }
 
 proc Apol_FSContexts::close {} {
-    variable vals
     variable widgets
+
+    initializeVars
     Apol_Widget::clearSearchResults $widgets(results)
     Apol_Widget::clearContextSelector $widgets(genfscon:context)
     Apol_Widget::clearContextSelector $widgets(fsuse:context)
     $widgets(genfscon:fs) configure -values {}
     $widgets(fsuse:type) configure -values {}
     $widgets(fsuse:fs) configure -values {}
+}
+
+proc Apol_FSContexts::initializeVars {} {
+    variable vals
     array set vals {
         items {}
+        context_type genfscon
         genfscon:items {}
         genfscon:fs_enable 0     genfscon:fs {}
         genfscon:path_enable 0   genfscon:path {}
@@ -64,9 +70,7 @@ proc Apol_FSContexts::create {nb} {
     variable widgets
     variable vals
 
-    array set vals {
-        context_type genfscon        items {}
-    }
+    initializeVars
 
     # Layout frames
     set frame [$nb insert end $ApolTop::fs_contexts_tab -text "FS Contexts"]
@@ -87,7 +91,7 @@ proc Apol_FSContexts::create {nb} {
     trace add variable Apol_FSContexts::vals(context_type) write \
         {Apol_FSContexts::contextTypeChanged}
     pack $context_f.genfscon $context_f.fsuse \
-        -anchor w -expand 0 -padx 5 -pady 5
+        -anchor w -expand 0 -padx 4 -pady 5
     pack $context_box -expand 0 -fill x
 
     set widgets(items_tf) [TitleFrame $leftf.items_f -text "GenFS Contexts"]
@@ -206,15 +210,8 @@ proc Apol_FSContexts::genfscon_show {} {
 proc Apol_FSContexts::genfscon_create {p_f} {
     variable widgets
     variable vals
-    array set vals {
-        genfscon:items {}
-        genfscon:fs_enable 0     genfscon:fs {}
-        genfscon:path_enable 0   genfscon:path {}
-    }
 
-    frame $p_f.opts -relief sunken -bd 1
-
-    set fs [frame $p_f.opts.fs]
+    set fs [frame $p_f.fs]
     set fs_cb [checkbutton $fs.fs_enable -text "Filesystem" \
                    -variable Apol_FSContexts::vals(genfscon:fs_enable)]
     set widgets(genfscon:fs) [ComboBox $fs.fs -entrybg white -width 12 -state disabled \
@@ -225,7 +222,7 @@ proc Apol_FSContexts::genfscon_create {p_f} {
     pack $fs_cb -side top -anchor w
     pack $widgets(genfscon:fs) -side top -expand 0 -fill x -padx 4
 
-    set p [frame $p_f.opts.p]
+    set p [frame $p_f.p]
     set p_cb [checkbutton $p.p_enable -text "Path" \
                    -variable Apol_FSContexts::vals(genfscon:path_enable)]
     set widgets(genfscon:path) [entry $p.path -bg white -width 24 \
@@ -236,12 +233,11 @@ proc Apol_FSContexts::genfscon_create {p_f} {
     pack $p_cb -side top -anchor w
     pack $widgets(genfscon:path) -side top -expand 0 -fill x -padx 4
 
-    pack $fs $p -side left -anchor n -padx 4 -pady 4
-
-    frame $p_f.c -relief sunken -bd 1
+    frame $p_f.c
     set widgets(genfscon:context) [Apol_Widget::makeContextSelector $p_f.c.context "Contexts"]
     pack $widgets(genfscon:context)
-    pack $p_f.opts $p_f.c -side left -padx 4 -expand 0 -fill y
+
+    pack $fs $p $p_f.c -side left -anchor n -padx 4 -pady 2
 }
 
 proc Apol_FSContexts::genfscon_render {genfscon {compact 0}} {
@@ -343,16 +339,9 @@ proc Apol_FSContexts::fsuse_show {} {
 proc Apol_FSContexts::fsuse_create {p_f} {
     variable widgets
     variable vals
-    array set vals {
-        fsuse:items {}
-        fsuse:type_enable 0  fsuse:type {}
-        fsuse:fs_enable 0    fsuse:fs {}
-    }
 
-    frame $p_f.opts -relief sunken -bd 1
-
-    set t [frame $p_f.opts.t]
-    set type_cb [checkbutton $t.type_enable -text "Statement Type" \
+    set t [frame $p_f.t]
+    set type_cb [checkbutton $t.type_enable -text "Statement type" \
                    -variable Apol_FSContexts::vals(fsuse:type_enable)]
     set widgets(fsuse:type) [ComboBox $t.type -entrybg white -width 12 -state disabled \
                                   -textvariable Apol_FSContexts::vals(fsuse:type)]
@@ -362,7 +351,7 @@ proc Apol_FSContexts::fsuse_create {p_f} {
     pack $type_cb -side top -anchor w
     pack $widgets(fsuse:type) -side top -expand 0 -fill x -padx 4
 
-    set fs [frame $p_f.opts.fs]
+    set fs [frame $p_f.fs]
     set fs_cb [checkbutton $fs.fs_enable -text "Filesystem" \
                    -variable Apol_FSContexts::vals(fsuse:fs_enable)]
     set widgets(fsuse:fs) [ComboBox $fs.fs -entrybg white -width 12 -state disabled \
@@ -373,12 +362,11 @@ proc Apol_FSContexts::fsuse_create {p_f} {
     pack $fs_cb -side top -anchor w
     pack $widgets(fsuse:fs) -side top -expand 0 -fill x -padx 4
 
-    pack $t $fs -side left -anchor n -padx 4 -pady 4
-
-    frame $p_f.c -relief sunken -bd 1
+    frame $p_f.c
     set widgets(fsuse:context) [Apol_Widget::makeContextSelector $p_f.c.context "Contexts"]
     pack $widgets(fsuse:context)
-    pack $p_f.opts $p_f.c -side left -padx 4 -expand 0 -fill y
+
+    pack $t $fs $p_f.c -side left -anchor n -padx 4 -pady 2
 }
 
 proc Apol_FSContexts::fsuse_render {fsuse} {
