@@ -48,6 +48,7 @@
 #include "avrule-query.h"
 #include "terule-query.h"
 #include "rbacrule-query.h"
+#include "rangetrans-query.h"
 
 /******************** private defines ********************/
 
@@ -64,10 +65,10 @@
 	(APOL_QUERY_SUB | APOL_QUERY_SUPER | APOL_QUERY_EXACT | \
 	 APOL_QUERY_INTERSECT)
 
-#define APOL_QUERY_ONLY_ENABLED 0x02
-#define APOL_QUERY_SOURCE_AS_ANY 0x04
-#define APOL_QUERY_SOURCE_INDIRECT 0x08
-#define APOL_QUERY_TARGET_INDIRECT 0x10
+#define APOL_QUERY_ONLY_ENABLED 0x10
+#define APOL_QUERY_SOURCE_AS_ANY 0x20
+#define APOL_QUERY_SOURCE_INDIRECT 0x40
+#define APOL_QUERY_TARGET_INDIRECT 0x80
 
 /******************** private functions ********************/
 

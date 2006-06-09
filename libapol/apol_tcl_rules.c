@@ -725,7 +725,7 @@ static int append_role_trans_to_list(Tcl_Interp *interp,
  *   type
  *   <li>for allow rules: an empty list; for role_transition: default
  *   role
- *   <li>line number, or -1 unknown
+ *   <li>line number, or -1 if unknown
  * </ul>
  *
  * @param argv This function takes five parameters:
@@ -864,124 +864,137 @@ static int Apol_SearchRBACRules(ClientData clientData, Tcl_Interp *interp, int a
 	return retval;
 }
 
-/* Perform a range transition search.  Expected arguments are:
+/**
+ * Takes a qpol_range_trans_t and appends a tuple of it to
+ * result_list.  The tuple consists of:
+ * <code>
+ *    { source_type_set target_type_set range line_number }
+ * </code>
+ * The type sets are Tcl lists.
+ */
+static int append_range_trans_to_list(Tcl_Interp *interp,
+				      qpol_range_trans_t *rule,
+				      Tcl_Obj *result_list)
+{
+	qpol_type_t *source, *target;
+	qpol_mls_range_t *range;
+	apol_mls_range_t *apol_range = NULL;
+	char *source_name, *target_name;
+	Tcl_Obj *range_elem[2], *rule_elem[4], *rule_list;
+	int retval = TCL_ERROR;
+
+	if (qpol_range_trans_get_source_type(policydb->qh, policydb->p, rule, &source) < 0 ||
+	    qpol_range_trans_get_target_type(policydb->qh, policydb->p, rule, &target) < 0 ||
+	    qpol_range_trans_get_range(policydb->qh, policydb->p, rule, &range) < 0) {
+		goto cleanup;
+	}
+
+	if (qpol_type_get_name(policydb->qh, policydb->p, source, &source_name) < 0 ||
+	    qpol_type_get_name(policydb->qh, policydb->p, target, &target_name) < 0 ||
+	    (apol_range =
+	     apol_mls_range_create_from_qpol_mls_range(policydb, range)) == NULL) {
+		goto cleanup;
+	}
+
+	rule_elem[0] = Tcl_NewStringObj(source_name, -1);
+	rule_elem[1] = Tcl_NewStringObj(target_name, -1);
+	if (apol_level_to_tcl_obj(interp, apol_range->low, range_elem + 0) < 0 ||
+	    apol_level_to_tcl_obj(interp, apol_range->high, range_elem + 1) < 0) {
+		goto cleanup;
+	}
+	rule_elem[2] = Tcl_NewListObj(2, range_elem);
+	rule_elem[3] = Tcl_NewStringObj("", -1);  /* FIX ME! */
+	rule_list = Tcl_NewListObj(4, rule_elem);
+	if (Tcl_ListObjAppendElement(interp, result_list, rule_list) == TCL_ERROR) {
+		goto cleanup;
+	}
+	retval = TCL_OK;
+ cleanup:
+	apol_mls_range_destroy(&apol_range);
+	return retval;
+}
+
+/**
+ * Returns an unsortecd list of range transition rules within the
+ * policy.  Each tuple consists of:
+ * <ul>
+ *   <li>source type set
+ *   <li>target type set
+ *   <li>new range (range = 2-uple of levels)
+ *   <li>line number, or -1 if unknown
+ * </ul>
  *
- *  argv[1] - list of source types  (string)
- *  argv[2] - list of target types  (string)
- *  argv[3] - low level             (2-ple of sensitivity + list of categories)
- *  argv[4] - high level            (2-ple of sensitivity + list of categories)
- *  argv[5] - search type           ("", "exact", "subset", or "superset")
- *
- * If search type is "" then ignore argv[3] and argv[4].
- * Returns a list of range_transition indices.
+ * @param argv This function takes four parameters:
+ * <ol>
+ *   <li>source type
+ *   <li>target type
+ *   <li>new range
+ *   <li>range query type
+ * </ol>
  */
 static int Apol_SearchRangeTransRules(ClientData clientData, Tcl_Interp *interp, int argc, const char *argv[])
 {
-        int *types[2] = {NULL, NULL}, num_types[2] = {0, 0};
-        ap_mls_range_t range;
-        unsigned search_type = 0;
-        int *found_rules = NULL;
-        int num_rules;
+	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
+	qpol_range_trans_t *rule;
+	apol_range_trans_query_t *query = NULL;
+	apol_vector_t *v = NULL;
+	size_t i;
         int retval = TCL_ERROR;
 
-        ap_mls_level_t low = {0, NULL, 0}, high = {0, NULL, 0};
-        int i, j;
-        Tcl_Obj *result_list_obj;
-
-        if (argc != 6) {
-		Tcl_SetResult(interp, "wrong # of args", TCL_STATIC);
-		return TCL_ERROR;
-	}
-
-        for (i = 0; i < 2; i++) {
-                Tcl_Obj *types_list_obj = Tcl_NewStringObj(argv[i + 1], -1);
-                Tcl_Obj *types_obj;
-                char *type_string;
-                int num_list_objs, type_value;
-                if (Tcl_ListObjLength(interp, types_list_obj, &num_list_objs) == TCL_ERROR) {
-                        goto cleanup;
-                }
-                for (j = 0; j < num_list_objs; j++) {
-                        if (Tcl_ListObjIndex(interp, types_list_obj, j, &types_obj) == TCL_ERROR) {
-                                goto cleanup;
-                        }
-                        assert(types_obj != NULL);
-                        type_string = Tcl_GetString(types_obj);
-                        if ((type_value = get_type_idx(type_string, policy)) < 0) {
-                                Tcl_AppendResult(interp, "Unknown type ", type_string, NULL);
-                                goto cleanup;
-                        }
-                        if (add_i_to_a(type_value, num_types + i, types + i)) {
-                                Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
-                                goto cleanup;
-                        }
-                }
-        }
-        if (num_types[0] > 0) {
-                search_type |= AP_MLS_RTS_SRC_TYPE;
-        }
-        if (num_types[1] > 0) {
-                search_type |= AP_MLS_RTS_TGT_TYPE;
-        }
-        
-        if (argv[5][0] != '\0') {
-                /* in a search type was given, then try to parse the range */
-            /* FIX ME: not done yet
-               
-                if (strcmp(argv[5], "exact") == 0) {
-                        search_type |= AP_MLS_RTS_RNG_EXACT;
-                }
-                else if (strcmp(argv[5], "subset") == 0) {
-                        search_type |= AP_MLS_RTS_RNG_SUB;
-                }
-                else if (strcmp(argv[5], "superset") == 0) {
-                        search_type |= AP_MLS_RTS_RNG_SUPER;
-                }
-                else {
-                        Tcl_SetResult(interp, "Illegal search type given.", TCL_STATIC);
-                        goto cleanup;
-                }
-
-                if (ap_tcl_level_string_to_level(interp, argv[3], &low) != 0) {
-                        goto cleanup;
-                }
-                if (ap_tcl_level_string_to_level(interp, argv[4], &high) != 0) {
-                        goto cleanup;
-                }
-            */
-        }
-        range.low = &low;
-        range.high = &high;
-
-        num_rules = ap_mls_range_transition_search(types[0], num_types[0], 
-                                                   IDX_TYPE, types[1], 
-                                                   num_types[1], IDX_TYPE, 
-                                                   &range, search_type,
-                                                   &found_rules, policy);
-        if (num_rules < 0) {
-                Tcl_SetResult(interp, "Error while executing range transition search.", TCL_STATIC);
-		char buf[1024];
-		sprintf(buf, "%d", num_rules);
-		Tcl_AppendResult(interp, buf, NULL);
+        apol_tcl_clear_error ();
+        if (policy == NULL) {
+                Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
                 goto cleanup;
         }
-        
-        result_list_obj = Tcl_NewListObj(0, NULL);
-        for (i = 0; i < num_rules; i++) {
-                Tcl_Obj *rule_obj = Tcl_NewIntObj(found_rules[i]);
-                if (Tcl_ListObjAppendElement(interp, result_list_obj, rule_obj) == TCL_ERROR) {
-                        goto cleanup;
-                }
+        if (argc != 5) {
+                ERR(policydb, "Need a source type, target type, range, and range type.");
+                goto cleanup;
         }
-        Tcl_SetObjResult(interp, result_list_obj);
-        retval = TCL_OK;
 
+	if ((query = apol_range_trans_query_create()) == NULL) {
+		ERR(policydb, "Out of memory!");
+		goto cleanup;
+	}
+
+	if (apol_range_trans_query_set_source(policydb, query, argv[1], 0) < 0 ||
+	    apol_range_trans_query_set_target(policydb, query, argv[2], 0) < 0) {
+		goto cleanup;
+	}
+	if (*argv[3] != '\0') {
+		apol_mls_range_t *range;
+		unsigned int range_match = 0;
+		if (apol_tcl_string_to_range_match(interp, argv[4], &range_match) < 0) {
+			goto cleanup;
+		}
+		if ((range = apol_mls_range_create()) == NULL) {
+			ERR(policydb, "Out of memory!");
+			goto cleanup;
+		}
+		if (apol_tcl_string_to_range(interp, argv[3], range) != 0 ||
+		    apol_range_trans_query_set_range(policydb, query, range, range_match) < 0) {
+			apol_mls_range_destroy(&range);
+			goto cleanup;
+		}
+	}
+
+	if (apol_get_range_trans_by_query(policydb, query, &v) < 0) {
+		goto cleanup;
+	}
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		rule = (qpol_range_trans_t *) apol_vector_get_element(v, i);
+		if (append_range_trans_to_list(interp, rule, result_obj) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+
+	Tcl_SetObjResult(interp, result_obj);
+	retval = TCL_OK;
  cleanup:
-        free(types[0]);
-        free(types[1]);
-        ap_mls_level_free(&low);
-        ap_mls_level_free(&high);
-        free(found_rules);
+	apol_range_trans_query_destroy(&query);
+	apol_vector_destroy(&v, NULL);
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
         return retval;
 }
 
