@@ -104,34 +104,6 @@ typedef struct rtrans_results {
 	#define RTRANS_ERR_TGT_INVALID  3	/* unknown target */
 } rtrans_results_t;
 
-typedef struct rbac_query {
-	char *src;
-	char *tgt_ta;
-	char *tgt_role;
-	char *dflt;
-	bool_t use_regex;
-	bool_t indirect;
-	unsigned char rule_select;
-	#define RBACQ_NONE   0x00
-	#define RBACQ_RALLOW 0x01
-	#define RBACQ_RTRANS 0x02
-	#define RBACQ_BOTH   (RBACQ_RALLOW|RBACQ_RTRANS)
-} rbac_query_t;
-
-typedef struct rbac_results {
-	int *role_allows;
-	int num_role_allows;
-	int *role_trans;
-	int num_role_trans;
-	int err;
-	#define RBAC_ERR_REGCOMP  1
-	#define RBAC_ERR_SRC_INV  2
-	#define RBAC_ERR_TGTT_INV 3
-	#define RBAC_ERR_TGTR_INV 4
-	#define RBAC_ERR_DFLT_INV 5
-	char *errmsg;
-} rbac_results_t;
-
 /* macros */
 #define is_ta_used(ta_src_type) (ta_src_type.ta != NULL)
 
@@ -144,10 +116,6 @@ int init_teq_query(teq_query_t *q);
 int init_rtrans_query(rtrans_query_t *q);
 int init_rtrans_results(rtrans_results_t *r);
 int free_rtrans_results_contents(rtrans_results_t *r);
-int init_rbac_query(rbac_query_t *q);
-int init_rbac_results(rbac_results_t *r);
-int free_rbac_query(rbac_query_t *q);
-int free_rbac_results(rbac_results_t *r);
 
 int match_rbac_rules(int idx, int type, unsigned char whichlist, bool_t do_indirect,bool_t tgt_is_role, rbac_bool_t *b, policy_t *policy);
 int match_rbac_roles(int idx, int type, unsigned char whichlist, bool_t	do_indirect, bool_t tgt_is_role, rbac_bool_t *b,int *num_matched, policy_t *policy);
@@ -155,7 +123,6 @@ int match_te_rules(bool_t allow_regex, regex_t *preg, int ta_opt,int idx, int id
 	bool_t do_indirect, bool_t only_enabled, rules_bool_t *rules_b, policy_t *policy);
 int search_te_rules(teq_query_t *q, teq_results_t *r, policy_t *policy);
 int search_range_transition_rules(rtrans_query_t* query, rtrans_results_t* results, policy_t* policy);
-int search_rbac_rules(rbac_query_t *query, rbac_results_t *results, policy_t *policy);
 bool_t match_rbac_role_ta(int rs_idx,int ta_idx, int *rt_idx,policy_t *policy);
 
 	

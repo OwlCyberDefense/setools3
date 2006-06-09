@@ -10,7 +10,7 @@ BUILT_SOURCES = apolicy_parse.h
 libapol_a_SOURCES = \
 	policy.c policy.h old-policy-query.c old-policy-query.h \
 	queue.c queue.h util.c util.h \
-	clone.c clone.h cond.c cond.h \
+	cond.c cond.h \
 	avl-util.c avl-util.h policy-avl.c policy-avl.h \
 	render.c render.h perm-map.c perm-map.h \
 	analysis.c analysis.h \
