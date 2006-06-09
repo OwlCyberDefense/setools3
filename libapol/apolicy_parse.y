@@ -1798,8 +1798,8 @@ static int define_te_clone(void)
 	}
 	free(id);	
 	
-	rt = add_clone_rule(src, tgt, policydb_lineno, parse_policy);
-	if(rt != 0) return rt;
+/*	rt = add_clone_rule(src, tgt, policydb_lineno, parse_policy);
+	if(rt != 0) return rt;*/
 	
 	(parse_policy->rule_cnt[RULE_CLONE])++;
 
