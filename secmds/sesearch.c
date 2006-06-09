@@ -14,7 +14,9 @@
 #include <policy.h>
 #include <policy-io.h>
 #include <old-policy-query.h>
+#include <policy-query.h>
 #include <render.h>
+#include <vector.h>
 
 /* other */
 #include <stdlib.h>
@@ -124,126 +126,6 @@ policy, will be opened if no policy file name is provided.\n", stdout);
 	return;
 }
 
-static int perform_te_query(options_t *cmd_opts, teq_results_t *r, policy_t *policy)
-{
-	teq_query_t q;
-	char *tok, *rule, *cond_expr;
-	int rt, idx, *perms, num_perms;
-
-	num_perms = 0;
-	perms = NULL;
-	tok = rule = cond_expr =  NULL;
-
-	/* form query */
-	init_teq_query(&q);
-	
-	if(cmd_opts->permlist != NULL) {
-		for(tok = strtok(cmd_opts->permlist, ","); tok != NULL; tok = strtok(NULL, ",")) {
-			idx = get_perm_idx(tok, policy);
-			if(idx < 0) {
-				printf("Permission name (%s) is not a valid permission\n", tok);
-				close_policy(policy);
-				return -1;
-			}
-			add_i_to_a(idx, &num_perms, &perms);
-		}
-		free(cmd_opts->permlist);
-	}
-	
-	if(cmd_opts->all) 
-		q.rule_select = TEQ_ALL;
-	else {
-		q.rule_select = TEQ_NONE;
-		if(cmd_opts->allow)
-			q.rule_select |= TEQ_ALLOW;
-		if(cmd_opts->nallow)
-			q.rule_select |= TEQ_NEVERALLOW;
-		if(cmd_opts->audit)
-			q.rule_select |= TEQ_AV_AUDIT;
-		if(cmd_opts->type)
-			q.rule_select |= TEQ_TYPE;
-	}
-	q.use_regex = cmd_opts->useregex;
-	q.any = FALSE;
-	q.ta1.indirect = q.ta2.indirect = cmd_opts->indirect;
-	q.ta1.t_or_a = q.ta2.t_or_a = IDX_BOTH;
-	q.ta1.ta = cmd_opts->src_name;
-	q.ta2.ta = cmd_opts->tgt_name;
-	q.num_perms = num_perms;
-	q.perms = perms;
-	q.bool_name = cmd_opts->bool_name;
-	
-	if(cmd_opts->class_name != NULL) {
-		q.classes = (int *)malloc(sizeof(int)*1);
-		if (q.classes == NULL) {
-			printf("out of memory\n");
-			return -1;
-		}
-		q.classes[0] = get_obj_class_idx(cmd_opts->class_name, policy);
-		if (q.classes[0] < 0) {
-			printf("Invalid class name: %s\n", cmd_opts->class_name);
-			return -1;
-		}
-		q.num_classes = 1;
-	}
-
-	/* display requested info */
-	rt = search_te_rules(&q, r, policy);
-	if(rt == -1) {
-		printf("Unexpected error (-1) searching rules\n");
-		return -1;
-	}
-	else if(rt == -2) {
-		switch(r->err) {
-		case TEQ_ERR_TA1_REGEX:
-			printf("%s\n", r->errmsg);
-			break;
-		case TEQ_ERR_TA2_REGEX:
-			printf("%s\n", r->errmsg);
-			break;
-		case TEQ_ERR_TA3_REGEX:
-			printf("%s\n", r->errmsg);
-			break;
-		case TEQ_ERR_TA1_INVALID:
-			printf("Source is not a valid type nor attribute\n");
-			break;
-		case TEQ_ERR_TA2_INVALID:
-			printf("Target is not a valid type nor attribute\n");
-			break;
-		case TEQ_ERR_TA3_INVALID:
-			printf("Default is not a valid type nor attribute\n");
-			break;
-		case TEQ_ERR_TA1_STRG_SZ:
-			printf("Source string is too large\n");
-			break;
-		case TEQ_ERR_TA2_STRG_SZ:
-			printf("Target string is too large\n");
-			break;
-		case TEQ_ERR_TA3_STRG_SZ:
-			printf("Default string is too large\n");
-			break;
-		case TEQ_ERR_INVALID_CLS_Q:
-			printf("The list of classes is incoherent\n");
-			break;
-		case TEQ_ERR_INVALID_PERM_Q:
-			printf("The list of permissions is incoherent\n");
-			break;
-		case TEQ_ERR_INVALID_CLS_IDX:
-			printf("One of the class indicies is incorrect\n");
-			break;
-		case TEQ_ERR_INVALID_PERM_IDX:
-			printf("One of the permission indicies is incorrect\n");
-			break;
-		default:
-			printf("Unexpected error (-2) searching rules\n");
-			break;
-		}
-		return -1;
-	}
-	return 0;
-}
-
-
 static int perform_rtrans_query(options_t* cmd_opts, rtrans_results_t* rtrans_results, 
 	policy_t *policy)
 {
@@ -286,130 +168,6 @@ static int perform_rtrans_query(options_t* cmd_opts, rtrans_results_t* rtrans_re
     return rt;
 }
 
-static int perform_rbac_query(options_t *cmd_opts, rbac_results_t *rbac_results, policy_t *policy)
-{
-	int retv = 0, error = 0;
-	rbac_query_t *query = NULL;
-
-	if (!cmd_opts || !rbac_results || !policy) {
-		errno = EINVAL;
-		return -1;
-	}
-
-	query = calloc(1, sizeof(rbac_query_t));
-	init_rbac_query(query);
-
-	if (cmd_opts->src_role_name) {
-		query->src = strdup(cmd_opts->src_role_name);
-		if (!query->src) {
-			error = errno;
-			goto err;
-		}
-	}
-
-	if (cmd_opts->tgt_role_name) {
-		query->tgt_role = strdup(cmd_opts->tgt_role_name);
-		if (!query->tgt_role) {
-			error = errno;
-			goto err;
-		}
-	}
-
-	if (cmd_opts->tgt_name) {
-		query->tgt_ta = strdup(cmd_opts->tgt_name);
-		if (!query->tgt_ta) {
-			error = errno;
-			goto err;
-		}
-	}
-
-	query->use_regex = cmd_opts->useregex;
-	query->indirect = cmd_opts->indirect;
-
-	if (cmd_opts->role_allow || cmd_opts->all)
-		query->rule_select |= RBACQ_RALLOW;
-
-	if (cmd_opts->role_trans || cmd_opts->all)
-		query->rule_select |= RBACQ_RTRANS;
-
-	retv = search_rbac_rules(query, rbac_results, policy);
-	if (retv < 0) {
-		error = errno;
-		fprintf(stderr, "Error during rbac search: %s\n", rbac_results->errmsg);
-		goto err;
-	}
-
-	free_rbac_query(query);
-	free(query);
-
-	return 0;
-
-err:
-	free_rbac_query(query);
-	free(query);
-	errno = error;
-	return -1;
-}
-
-static void print_teq_results(options_t *cmd_opts, teq_results_t *r, 
-			policy_t *policy)
-{
-	int i;
-	char *rule, *cond_expr;
-	bool_t print_line_no = cmd_opts->lineno && !is_binary_policy(policy);
-	if(r->num_av_access > 0) {
-		for(i = 0; i < r->num_av_access; i++) {
-			rule = re_render_av_rule(print_line_no, r->av_access[i], FALSE, policy);
-			assert(rule);
-			if(cmd_opts->show_cond && policy->av_access[r->av_access[i]].cond_expr != -1)
-				printf("%c  ", policy->av_access[r->av_access[i]].cond_list?'T':'F');
-			else if (cmd_opts->show_cond)
-				printf("   ");
-			printf("%s", rule);
-			free(rule);
-			if(cmd_opts->show_cond && policy->av_access[r->av_access[i]].cond_expr != -1) {
-				printf(" %s", (cond_expr = re_render_cond_expr(policy->av_access[r->av_access[i]].cond_expr, policy)));
-				free(cond_expr);
-			}
-			printf("\n");
-
-		}
-	}
-	if(r->num_av_audit > 0) {
-		for(i = 0; i < r->num_av_audit; i++) {
-			rule = re_render_av_rule(print_line_no, r->av_audit[i], TRUE, policy);
-			assert(rule);
-			if(cmd_opts->show_cond && policy->av_audit[r->av_audit[i]].cond_expr != -1)
-				printf("%c  ", policy->av_audit[r->av_audit[i]].cond_list?'T':'F');
-			else if (cmd_opts->show_cond)
-				printf("   ");
-			printf("%s", rule);
-			free(rule);
-			if(cmd_opts->show_cond && policy->av_audit[r->av_audit[i]].cond_expr != -1) {
-				printf(" %s", (cond_expr = re_render_cond_expr(policy->av_audit[r->av_audit[i]].cond_expr, policy)));
-				free(cond_expr);
-			}
-			printf("\n");
-		}
-	}
-	if(r->num_type_rules > 0) { 
-		for(i = 0; i < r->num_type_rules; i++) {
-			rule = re_render_tt_rule(print_line_no, r->type_rules[i], policy);
-			assert(rule);
-			if (cmd_opts->show_cond && policy->te_trans[r->type_rules[i]].cond_expr != -1)
-				printf("%c  ", policy->te_trans[r->type_rules[i]].cond_list?'T':'F');
-			else if (cmd_opts->show_cond)
-				printf("   ");
-			printf("%s", rule);
-			free(rule);
-			if (cmd_opts->show_cond && policy->te_trans[r->type_rules[i]].cond_expr != -1) {
-				printf(" %s", (cond_expr = re_render_cond_expr(policy->te_trans[r->type_rules[i]].cond_expr, policy)));
-			}
-			printf("\n");
-		}
-	}
-}
-
 static void print_rtrans_results(options_t *cmd_opts, 
 				rtrans_results_t* rtrans_results, policy_t *policy)
 {
@@ -429,31 +187,334 @@ static void print_rtrans_results(options_t *cmd_opts,
 	}
 }
 
-static void print_rbac_results(options_t *cmd_opts, rbac_results_t *rbac_results, policy_t *policy)
+static int perform_av_query(apol_policy_t *policy, options_t *opt, apol_vector_t **v)
 {
-	int i;
-	char *rule = NULL;
+	apol_avrule_query_t *avq = NULL;
+	unsigned int rules = 0;
+	int error = 0;
+	char *tmp = NULL, *tok = NULL;
 
-	if (!cmd_opts || !rbac_results || !policy)
-		return;
-
-	if (rbac_results->err) {
-		fprintf(stderr, "%s\n", rbac_results->errmsg);
-		return;
+	if (!policy || !opt || !v) {
+		ERR(policy, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return -1;
 	}
 
-	for (i = 0; i < rbac_results->num_role_allows && (cmd_opts->role_allow || cmd_opts->all); i++) {
-		rule = re_render_role_allow((cmd_opts->lineno && !is_binary_policy(policy)), rbac_results->role_allows[i], policy);
-		assert(rule);
-		printf("%s\n", rule);
-		free(rule);
+	if (!opt->all && !opt->allow && !opt->nallow && !opt->audit) {
+		*v = NULL;
+		return 0; /* no search to do */
 	}
 
-	for (i = 0; i < rbac_results->num_role_trans && (cmd_opts->role_trans || cmd_opts->all); i++) {
-		rule = re_render_role_trans((cmd_opts->lineno && !is_binary_policy(policy)), rbac_results->role_trans[i], policy);
-		assert(rule);
-		printf("%s\n", rule);
-		free(rule);
+	avq = apol_avrule_query_create();
+	if (!avq) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
+		return -1;
+	}
+
+	if (opt->allow || opt->all)
+		rules |= QPOL_RULE_ALLOW;
+	if (opt->nallow || opt->all)
+		rules |= QPOL_RULE_NEVERALLOW;
+	if (opt->audit || opt->all)
+		rules |= (QPOL_RULE_AUDITALLOW|QPOL_RULE_DONTAUDIT);
+	apol_avrule_query_set_rules(policy, avq, rules);
+
+	apol_avrule_query_set_regex(policy, avq, opt->useregex);
+	if (opt->src_name)
+		apol_avrule_query_set_source(policy, avq, opt->src_name, opt->indirect);
+	if (opt->tgt_name)
+		apol_avrule_query_set_target(policy, avq, opt->tgt_name, opt->indirect);
+	if (opt->class_name) {
+		if (apol_avrule_query_append_class(policy, avq, opt->class_name)) {
+			error = errno;
+			goto err;
+		}
+	}
+	if(opt->permlist) {
+		tmp = strdup(opt->permlist);
+		for(tok = strtok(tmp, ","); tok; tok = strtok(NULL, ",")) {
+			if (apol_avrule_query_append_perm(policy, avq, tok)) {
+				error = errno;
+				goto err;
+			}
+		}
+		free(tmp);
+	}
+	
+	if (apol_get_avrule_by_query(policy, avq, v)) {
+		error = errno;
+		goto err;
+	}
+
+	apol_avrule_query_destroy(&avq);
+	return 0;
+
+err:
+	apol_vector_destroy(v, NULL);
+	apol_avrule_query_destroy(&avq);
+	free(tmp);
+	ERR(policy, "%s", strerror(error));
+	errno = error;
+	return -1;
+};
+
+static void print_av_results(apol_policy_t *policy, apol_vector_t *v)
+{
+	size_t i, num_rules = 0;
+	qpol_avrule_t *rule = NULL;
+	char *tmp = NULL;
+
+	if (!policy || !v)
+		return;
+
+	if (!(num_rules = apol_vector_get_size(v)))
+		return;
+
+	fprintf(stdout, "Found %zd av rules:\n", num_rules);
+
+	for (i = 0; i < num_rules; i++) {
+		if (!(rule = (qpol_avrule_t*)apol_vector_get_element(v, i)))
+			break;
+		if (!(tmp = apol_avrule_render(policy, rule)))
+			break;
+		fprintf(stdout, "   %s\n", tmp);
+		free(tmp);
+		tmp = NULL;
+	}
+}
+
+static int perform_te_query(apol_policy_t *policy, options_t *opt, apol_vector_t **v)
+{
+	apol_terule_query_t *teq = NULL;
+	unsigned int rules = 0;
+	int error = 0;
+
+	if (!policy || !opt || !v) {
+		ERR(policy, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (opt->all || opt->type) {
+		rules = (QPOL_RULE_TYPE_TRANS|QPOL_RULE_TYPE_CHANGE|QPOL_RULE_TYPE_MEMBER);
+	} else {
+		*v = NULL;
+		return 0; /* no search to do */
+	}
+
+	teq = apol_terule_query_create();
+	if (!teq) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
+		return -1;
+	}
+
+	apol_terule_query_set_rules(policy, teq, rules);
+	apol_terule_query_set_regex(policy, teq, opt->useregex);
+	if (opt->src_name)
+		apol_terule_query_set_source(policy, teq, opt->src_name, opt->indirect);
+	if (opt->tgt_name)
+		apol_terule_query_set_target(policy, teq, opt->tgt_name, opt->indirect);
+	if (opt->class_name) {
+		if (apol_terule_query_append_class(policy, teq, opt->class_name)) {
+			error = errno;
+			goto err;
+		}
+	}
+
+	if (apol_get_terule_by_query(policy, teq, v)) {
+		error = errno;
+		goto err;
+	}
+
+	apol_terule_query_destroy(&teq);
+	return 0;
+
+err:
+	apol_vector_destroy(v, NULL);
+	apol_terule_query_destroy(&teq);
+	ERR(policy, "%s", strerror(error));
+	errno = error;
+	return -1;
+}
+
+static void print_te_results(apol_policy_t *policy, apol_vector_t *v)
+{
+	size_t i, num_rules = 0;
+	qpol_terule_t *rule = NULL;
+	char *tmp = NULL;
+
+	if (!policy || !v)
+		return;
+
+	if (!(num_rules = apol_vector_get_size(v)))
+		return;
+
+	fprintf(stdout, "Found %zd te rules:\n", num_rules);
+
+	for (i = 0; i < num_rules; i++) {
+		if (!(rule = (qpol_terule_t*)apol_vector_get_element(v, i)))
+			break;
+		if (!(tmp = apol_terule_render(policy, rule)))
+			break;
+		fprintf(stdout, "   %s\n", tmp);
+		free(tmp);
+		tmp = NULL;
+	}
+}
+
+static int perform_ra_query(apol_policy_t *policy, options_t *opt, apol_vector_t **v)
+{
+	apol_role_allow_query_t *raq = NULL;
+	int error = 0;
+
+	if (!policy || !opt || !v) {
+		ERR(policy, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (!opt->role_allow) {
+		*v = NULL;
+		return 0; /* no search to do */
+	}
+
+	raq = apol_role_allow_query_create();
+	if (!raq) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
+		return -1;
+	}
+
+	apol_role_allow_query_set_regex(policy, raq, opt->useregex);
+	if (opt->src_role_name) {
+		if (apol_role_allow_query_set_source(policy, raq, opt->src_role_name)) {
+			error = errno;
+			goto err;
+		}
+	}
+	if (opt->tgt_role_name)
+		if (apol_role_allow_query_set_target(policy, raq, opt->tgt_role_name)) {
+			error = errno;
+			goto err;
+		}
+
+	if (apol_get_role_allow_by_query(policy, raq, v)) {
+		error = errno;
+		goto err;
+	}
+
+	apol_role_allow_query_destroy(&raq);
+	return 0;
+
+err:
+	apol_vector_destroy(v, NULL);
+	apol_role_allow_query_destroy(&raq);
+	ERR(policy, "%s", strerror(error));
+	errno = error;
+	return -1;
+}
+
+static void print_ra_results(apol_policy_t *policy, apol_vector_t *v)
+{
+	size_t i, num_rules = 0;
+	qpol_role_allow_t *rule = NULL;
+	char *tmp = NULL;
+
+	if (!policy || !v)
+		return;
+
+	if (!(num_rules = apol_vector_get_size(v)))
+		return;
+
+	fprintf(stdout, "Found %zd role allow rules:\n", num_rules);
+
+	for (i = 0; i < num_rules; i++) {
+		if (!(rule = (qpol_role_allow_t*)apol_vector_get_element(v, i)))
+			break;
+		if (!(tmp = apol_role_allow_render(policy, rule)))
+			break;
+		fprintf(stdout, "   %s\n", tmp);
+		free(tmp);
+		tmp = NULL;
+	}
+}
+
+static int perform_rt_query(apol_policy_t *policy, options_t *opt, apol_vector_t **v)
+{
+	apol_role_trans_query_t *rtq = NULL;
+	int error = 0;
+
+	if (!policy || !opt || !v) {
+		ERR(policy, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (!opt->role_trans) {
+		*v = NULL;
+		return 0; /* no search to do */
+	}
+
+	rtq = apol_role_trans_query_create();
+	if (!rtq) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
+		return -1;
+	}
+
+	apol_role_trans_query_set_regex(policy, rtq, opt->useregex);
+	if (opt->src_role_name) {
+		if (apol_role_trans_query_set_source(policy, rtq, opt->src_role_name)) {
+			error = errno;
+			goto err;
+		}
+	}
+	if (opt->tgt_name)
+		if (apol_role_trans_query_set_target(policy, rtq, opt->tgt_name, opt->indirect)) {
+			error = errno;
+			goto err;
+		}
+
+	if (apol_get_role_trans_by_query(policy, rtq, v)) {
+		error = errno;
+		goto err;
+	}
+
+	apol_role_trans_query_destroy(&rtq);
+	return 0;
+
+err:
+	apol_vector_destroy(v, NULL);
+	apol_role_trans_query_destroy(&rtq);
+	ERR(policy, "%s", strerror(error));
+	errno = error;
+	return -1;
+}
+
+static void print_rt_results(apol_policy_t *policy, apol_vector_t *v)
+{
+	size_t i, num_rules = 0;
+	qpol_role_trans_t *rule = NULL;
+	char *tmp = NULL;
+
+	if (!policy || !v)
+		return;
+
+	if (!(num_rules = apol_vector_get_size(v)))
+		return;
+
+	fprintf(stdout, "Found %zd role_transition rules:\n", num_rules);
+
+	for (i = 0; i < num_rules; i++) {
+		if (!(rule = (qpol_role_trans_t*)apol_vector_get_element(v, i)))
+			break;
+		if (!(tmp = apol_role_trans_render(policy, rule)))
+			break;
+		fprintf(stdout, "   %s\n", tmp);
+		free(tmp);
+		tmp = NULL;
 	}
 }
 
@@ -465,7 +526,8 @@ int main (int argc, char **argv)
 	bool_t tesearch, rtrans_search, rbac_search;
 	unsigned int open_opts = 0;
 	policy_t *policy;
-	teq_results_t teq_results;
+	apol_policy_t *apolicy = NULL;
+	apol_vector_t *v = NULL;
 	unsigned int search_opts = 0;
 	
 	cmd_opts.all = cmd_opts.lineno = cmd_opts.allow = FALSE;
@@ -649,6 +711,13 @@ int main (int argc, char **argv)
 	if(rt != 0)
 		exit(1);
 
+	rt = apol_policy_open(policy_file, &apolicy);
+	if(rt) {
+		fprintf(stderr, "Warning: apol_open (NEW) failed!\n"); //TODO change this
+		apol_policy_destroy(&apolicy);
+		//TODO exit(1);
+	}
+
 	if (cmd_opts.all){
 		tesearch = TRUE;
 		rtrans_search = TRUE;
@@ -667,16 +736,25 @@ int main (int argc, char **argv)
 		}
 	}
 
-	init_teq_results(&teq_results);
+	perform_av_query(apolicy, &cmd_opts, &v);
+	if (v)
+		print_av_results(apolicy, v);
+	apol_vector_destroy(&v, NULL);
 
-	if (tesearch){
-		rt = perform_te_query(&cmd_opts, &teq_results, policy);
-		if (rt < 0){
-			free_teq_results_contents(&teq_results);
-			close_policy(policy);
-			exit(1);
-		}
-	}
+	perform_te_query(apolicy, &cmd_opts, &v);
+	if (v)
+		print_te_results(apolicy, v);
+	apol_vector_destroy(&v, NULL);
+
+	perform_ra_query(apolicy, &cmd_opts, &v);
+	if (v)
+		print_ra_results(apolicy, v);
+	apol_vector_destroy(&v, NULL);
+
+	perform_rt_query(apolicy, &cmd_opts, &v);
+	if (v)
+		print_rt_results(apolicy, v);
+	apol_vector_destroy(&v, NULL);
 
 	rtrans_results_t rtrans_results;
 	init_rtrans_results(&rtrans_results);
@@ -685,36 +763,19 @@ int main (int argc, char **argv)
                    policy);
 		if (rt < 0){
 			free_rtrans_results_contents(&rtrans_results);
+			apol_policy_destroy(&apolicy);
 			close_policy(policy);
 			exit(1);
 		}
 	}
 
-	rbac_results_t rbac_results;
-	init_rbac_results (&rbac_results);
-	if (rbac_search) {
-		rt = perform_rbac_query(&cmd_opts, &rbac_results, policy);
-		if (rt < 0) {
-			free_rbac_results(&rbac_results);
-			close_policy(policy);
-			exit(1);
-		}
-	}
-
-	printf("\n%d Rules match your search criteria\n", 
-			teq_results.num_av_access + teq_results.num_av_audit +
-			teq_results.num_type_rules + rtrans_results.num_range_rules + 
-			rbac_results.num_role_allows + rbac_results.num_role_trans);
-	print_teq_results(&cmd_opts, &teq_results, policy);
 	print_rtrans_results(&cmd_opts, &rtrans_results, policy);
-	print_rbac_results(&cmd_opts, &rbac_results,  policy);
 	printf("\n\n");
 
 	/* cleanup */
-	free_teq_results_contents(&teq_results);
 	free_rtrans_results_contents(&rtrans_results);
-	free_rbac_results(&rbac_results);
 	close_policy(policy);
+	apol_policy_destroy(&apolicy);
 	free(cmd_opts.src_name);
 	free(cmd_opts.tgt_name);
 	free(cmd_opts.class_name);

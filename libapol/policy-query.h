@@ -276,6 +276,24 @@ apol_vector_t *apol_query_create_candidate_type_list(apol_policy_t *p,
 						     int do_indirect);
 
 /**
+ * Given a symbol name (a role or a regular expression string),
+ * determine all roles it matches.  Return a vector of qpol_role_t
+ * that match.  If regex is enabled, include all role that
+ * match the expression.
+ *
+ * @param p Policy in which to look up roles.
+ * @param symbol A string describing one or more role to match.
+ * @param do_regex If non-zero, then treat symbol as a regular expression.
+ *
+ * @return Vector of unique qpol_role_t pointers (relative to policy
+ * within p), or NULL upon error.  Caller is responsible for calling
+ * apol_vector_destroy() afterwards.
+ */
+apol_vector_t *apol_query_create_candidate_role_list(apol_policy_t *p,
+						     char *symbol,
+						     int do_regex);
+
+/**
  * Given a vector of object class strings, determine all of the
  * classes it matches within the policy.  Returns a vector of
  * qpol_class_t that match.  If a string does not match an object

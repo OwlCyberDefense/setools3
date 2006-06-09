@@ -211,4 +211,17 @@ extern int apol_avrule_query_set_source_any(apol_policy_t *p,
 extern int apol_avrule_query_set_regex(apol_policy_t *p,
 				       apol_avrule_query_t *a, int is_regex);
 
+/**
+ *  Render an avrule to a string.
+ *  
+ *  @param policy Policy handler, to report errors.
+ *  @param rule The rule to render.
+ *
+ *  @return a newly malloc()'d string representation of the rule, or NULL on 
+ *  failure; if the call fails, errno will be set. The caller is responsible 
+ *  for calling free() on the returned string.
+ */
+extern char *apol_avrule_render(apol_policy_t *policy, qpol_avrule_t *rule);
+
 #endif
+
