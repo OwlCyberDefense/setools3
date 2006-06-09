@@ -225,7 +225,7 @@ proc Apol_TE::create {nb} {
     set fm_options [$oobox getframe]
     set enabled [checkbutton $fm_options.enabled -text "Search only enabled rules" \
                      -variable Apol_TE::vals(oo:enabled)]
-    set regexp [checkbutton $fm_options.regex -text "Enable regular expression" \
+    set regexp [checkbutton $fm_options.regex -text "Search using regular expression" \
                     -variable Apol_TE::vals(oo:regexp)]
     pack $enabled $regexp -expand 0 -fill none -anchor w
 
@@ -280,18 +280,18 @@ proc Apol_TE::createTypesAttribsTab {} {
     variable enabled
 
     set ta_tab [$widgets(search_opts) insert end typeattrib -text "Types/Attributes"]
-    set fm_source [frame $ta_tab.source -relief sunken -borderwidth 1]
-    set fm_target [frame $ta_tab.target -relief sunken -borderwidth 1]
-    set fm_default [frame $ta_tab.default -relief sunken -borderwidth 1]
+    set fm_source [frame $ta_tab.source]
+    set fm_target [frame $ta_tab.target]
+    set fm_default [frame $ta_tab.default]
     grid $fm_source $fm_target $fm_default -padx 4 -sticky ewns
     foreach i {0 1 2} {
         grid columnconfigure $ta_tab $i -weight 1 -uniform 1
     }
     grid rowconfigure $ta_tab 0 -weight 1
 
-    create_ta_box source $fm_source "Source Type/Attrib" 1 1 1
-    create_ta_box target $fm_target "Target Type/Attrib" 1 0 1
-    create_ta_box default $fm_default "Default Type" 0 0 0
+    create_ta_box source $fm_source "Source" 1 1 1
+    create_ta_box target $fm_target "Target" 1 0 1
+    create_ta_box default $fm_default "Default" 0 0 0
 
     $widgets(search_opts) raise typeattrib
 }
@@ -479,7 +479,7 @@ proc Apol_TE::toggle_ta_sym {col name1 name2 op} {
         return
     }
     if {$vals(ta:${col}_sym,types) && $vals(ta:${col}_sym,attribs)} {
-        set items [lsort -dictionary [concat $Apol_Types::typelist $Apol_Types::attriblist]]
+        set items [lsort [concat $Apol_Types::typelist $Apol_Types::attriblist]]
     } elseif {$vals(ta:${col}_sym,types)} {
         set items $Apol_Types::typelist
     } else {

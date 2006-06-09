@@ -42,15 +42,15 @@ proc Apol_Widget::makeContextSelector {path rangeMatchText {enableText "Context"
     }
 
     # range search type
-    set range_label [label $context2_frame.label -text "MLS Range Matching:" \
+    set range_label [label $context2_frame.label -text "MLS range matching:" \
                          -state disabled]
-    set range_exact [radiobutton $context2_frame.exact -text "Exact Matches" \
+    set range_exact [radiobutton $context2_frame.exact -text "Exact matches" \
                          -state disabled \
                          -value exact -variable Apol_Widget::vars($path:search_type)]
-    set range_subset [radiobutton $context2_frame.subset -text "$rangeMatchText Containing Range" \
+    set range_subset [radiobutton $context2_frame.subset -text "$rangeMatchText containing range" \
                           -state disabled \
                           -value subset -variable Apol_Widget::vars($path:search_type)]
-    set range_superset [radiobutton $context2_frame.superset -text "$rangeMatchText Within Range" \
+    set range_superset [radiobutton $context2_frame.superset -text "$rangeMatchText within range" \
                             -state disabled \
                             -value superset -variable Apol_Widget::vars($path:search_type)]
     pack $range_label $range_exact $range_subset $range_superset \

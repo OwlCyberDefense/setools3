@@ -203,7 +203,7 @@ proc Apol_RBAC::create {nb} {
         -variable Apol_RBAC::vals(rule_selection)
     trace add variable Apol_RBAC::vals(rule_selection) write \
         [list Apol_RBAC::ruleChanged]
-    pack $rs.allow $rs.trans $rs.both -side top -anchor w -padx 2
+    pack $rs.allow $rs.trans $rs.both -side top -anchor w
 
     # Search criteria subframe
     set widgets(options_pm) [PagesManager [$obox getframe].opts]
@@ -257,11 +257,11 @@ proc Apol_RBAC::allowCreate {a_f} {
                        -value either]
     trace add variable Apol_RBAC::vals(source:use) write \
         [list Apol_RBAC::toggleCheckbutton $widgets(allow:source) [list $which_source $which_any]]
-    pack $which_source $which_any -side top -anchor w -padx 2
+    pack $which_source $which_any -side top -anchor w
     pack $source_cb -side top -anchor w
     pack $widgets(allow:source) -side top -expand 0 -fill x -padx 4
-    pack $which_fm -anchor w -padx 6
-    pack $source -side left -padx 4 -expand 0 -anchor nw
+    pack $which_fm -anchor w -padx 8
+    pack $source -side left -padx 4 -pady 2 -expand 0 -anchor nw
 
     set target [frame $a_f.target]
     set widgets(allow:target_cb) [checkbutton $target.enable -text "Target role" \
@@ -275,7 +275,7 @@ proc Apol_RBAC::allowCreate {a_f} {
         [list Apol_RBAC::toggleCheckbutton $widgets(allow:target) {}]
     pack $widgets(allow:target_cb) -side top -anchor w
     pack $widgets(allow:target) -side top -expand 0 -fill x -padx 4
-    pack $target -side left -padx 4 -expand 0 -fill y
+    pack $target -side left -padx 4 -pady 2 -expand 0 -fill y
 }
 
 proc Apol_RBAC::transCreate {t_f} {
@@ -301,11 +301,11 @@ proc Apol_RBAC::transCreate {t_f} {
                        -value either]
     trace add variable Apol_RBAC::vals(source:use) write \
         [list Apol_RBAC::toggleCheckbutton $widgets(trans:source) [list $which_source $which_any]]
-    pack $which_source $which_any -side top -anchor w -padx 2
+    pack $which_source $which_any -side top -anchor w
     pack $source_cb -side top -anchor w
     pack $widgets(trans:source) -side top -expand 0 -fill x -padx 4
-    pack $which_fm -anchor w -padx 6
-    pack $source -side left -padx 4 -expand 0 -anchor nw
+    pack $which_fm -anchor w -padx 8
+    pack $source -side left -padx 4 -pady 2 -expand 0 -anchor nw
 
     set target [frame $t_f.target]
     set target_cb [checkbutton $target.enable -text "Target type" \
@@ -331,8 +331,8 @@ proc Apol_RBAC::transCreate {t_f} {
         [list Apol_RBAC::toggleCheckbutton $widgets(trans:target) [list $types $attribs]]
     pack $target_cb -side top -anchor w
     pack $widgets(trans:target) -side top -expand 0 -fill x -padx 4
-    pack $ta_frame -anchor w -padx 6
-    pack $target -side left -padx 4 -expand 0 -fill y
+    pack $ta_frame -anchor center -pady 2
+    pack $target -side left -padx 4 -pady 2 -expand 0 -fill y
 
     set default [frame $t_f.default]
     set widgets(trans:default_cb) [checkbutton $default.enable -text "Default role" \
@@ -346,7 +346,7 @@ proc Apol_RBAC::transCreate {t_f} {
         [list Apol_RBAC::toggleCheckbutton $widgets(trans:default) {}]
     pack $widgets(trans:default_cb) -side top -anchor w
     pack $widgets(trans:default) -side top -expand 0 -fill x -padx 4
-    pack $default -side left -padx 4 -expand 0 -fill y
+    pack $default -side left -padx 4 -pady 2 -expand 0 -fill y
 }
 
 proc Apol_RBAC::bothCreate {b_f} {
@@ -372,11 +372,11 @@ proc Apol_RBAC::bothCreate {b_f} {
                        -value either]
     trace add variable Apol_RBAC::vals(source:use) write \
         [list Apol_RBAC::toggleCheckbutton $widgets(both:source) [list $which_source $which_any]]
-    pack $which_source $which_any -side top -anchor w -padx 2
+    pack $which_source $which_any -side top -anchor w
     pack $source_cb -side top -anchor w
     pack $widgets(both:source) -side top -expand 0 -fill x -padx 4
-    pack $which_fm -anchor w -padx 6
-    pack $source -side left -padx 4 -expand 0 -anchor nw
+    pack $which_fm -anchor w -padx 8
+    pack $source -side left -padx 4 -pady 2 -expand 0 -anchor nw
 }
 
 proc Apol_RBAC::toggleCheckbutton {cb w name1 name2 ops} {

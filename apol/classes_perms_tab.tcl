@@ -36,14 +36,18 @@ proc Apol_Class_Perms::close { } {
     variable class_list {}
     variable common_perms_list {}
     variable perms_list {}
-    variable opts
     variable widgets
+
+    initializeVars
     Apol_Widget::clearSearchResults $widgets(results)
-    Apol_Widget::setRegexpEntryState $widgets(regexp) 0
+}
+
+proc Apol_Class_Perms::initializeVars {} {
+    variable opts
     array set opts {
-        classes:show 1  classes:perms 0  classes:commons 0
-        commons:show 0  commons:perms 0  commons:classes 0
-        perms:show 0    perms:classes 0  perms:commons 0
+        classes:show 1  classes:perms 1  classes:commons 1
+        commons:show 0  commons:perms 1  commons:classes 1
+        perms:show 0    perms:classes 1  perms:commons 1
     }
 }
 
@@ -244,11 +248,7 @@ proc Apol_Class_Perms::create {nb} {
     variable opts
     variable widgets
 
-    array set opts {
-        classes:show 1  classes:perms 0  classes:commons 0
-        commons:show 0  commons:perms 0  commons:classes 0
-        perms:show 0    perms:classes 0  perms:commons 0
-    }
+    initializeVars
 
     # Layout frames
     set frame [$nb insert end $ApolTop::class_perms_tab -text "Classes/Perms"]
@@ -257,10 +257,9 @@ proc Apol_Class_Perms::create {nb} {
     set pw1 [PanedWindow $frame.pw -side top]
     set left_pane   [$pw1 add -weight 0]
     set center_pane [$pw1 add -weight 1]
-    set pw2 [PanedWindow $left_pane.pw -side left]
-    set class_pane  [$pw2 add -weight 1]
-    set common_pane [$pw2 add -weight 0]
-    set perms_pane  [$pw2 add -weight 1]
+    set class_pane  [frame $left_pane.class]
+    set common_pane [frame $left_pane.common]
+    set perms_pane  [frame $left_pane.perms]
 
     # Major subframes
     set classes_box [TitleFrame $class_pane.tbox -text "Object Classes"]
@@ -276,10 +275,11 @@ proc Apol_Class_Perms::create {nb} {
     pack $options_box -padx 2 -fill both -expand 0
     pack $results_box -padx 2 -fill both -expand yes
     pack $pw1 -fill both -expand yes
-    pack $pw2 -fill both -expand yes
+    pack $class_pane $common_pane -expand 0 -fill both
+    pack $perms_pane -expand 1 -fill both
 
     # Object Classes listbox
-    set class_listbox [Apol_Widget::makeScrolledListbox [$classes_box getframe].lb -height 10 -width 20 -listvar Apol_Class_Perms::class_list]
+    set class_listbox [Apol_Widget::makeScrolledListbox [$classes_box getframe].lb -height 8 -width 20 -listvar Apol_Class_Perms::class_list]
     Apol_Widget::setListboxCallbacks $class_listbox \
         {{"Display Object Class Info" {Apol_Class_Perms::popupInfo class}}}
     pack $class_listbox -fill both -expand yes
@@ -298,54 +298,56 @@ proc Apol_Class_Perms::create {nb} {
 
     # Search options section      
     set ofm [$options_box getframe]
+    set classesfm [frame $ofm.classes]
+    set commonsfm [frame $ofm.commons]
+    set permsfm [frame $ofm.perms]
+    pack $classesfm $commonsfm $permsfm -side left -padx 4 -pady 2 -anchor ne
 
     # First set of checkbuttons
-    set classesfm [frame $ofm.classes -relief sunken -borderwidth 1]
-    set classes [checkbutton $classesfm.classes -text "Object Classes" \
+    set classes [checkbutton $classesfm.classes -text "Object classes" \
                      -variable Apol_Class_Perms::opts(classes:show)]
-    set perms [checkbutton $classesfm.perms -text "Include Perms" \
-                   -variable Apol_Class_Perms::opts(classes:perms) -padx 10]
-    set commons [checkbutton $classesfm.commons -text "Expand Common Perms" \
-                     -variable Apol_Class_Perms::opts(classes:commons) \
-                     -state disabled -padx 10]
+    set perms [checkbutton $classesfm.perms -text "Include perms" \
+                   -variable Apol_Class_Perms::opts(classes:perms)]
+    set commons [checkbutton $classesfm.commons -text "Expand common perms" \
+                     -variable Apol_Class_Perms::opts(classes:commons)]
     trace add variable Apol_Class_Perms::opts(classes:show) write \
         [list Apol_Class_Perms::toggleCheckbuttons $perms $commons]
     trace add variable Apol_Class_Perms::opts(classes:perms) write \
         [list Apol_Class_Perms::toggleCheckbuttons $commons {}]
-    pack $classes $perms $commons -anchor w
+    pack $classes -anchor w
+    pack $perms $commons -anchor w -padx 8
 
     # Second set of checkbuttons
-    set commonsfm [frame $ofm.commons -relief sunken -borderwidth 1]
-    set commons [checkbutton $commonsfm.commons -text "Common Permissions" \
+    set commons [checkbutton $commonsfm.commons -text "Common permissions" \
                      -variable Apol_Class_Perms::opts(commons:show)]
-    set perms [checkbutton $commonsfm.perms2 -text "Include Perms" \
+    set perms [checkbutton $commonsfm.perms2 -text "Include perms" \
                    -variable Apol_Class_Perms::opts(commons:perms) \
-                   -state disabled -padx 10]
-    set classes [checkbutton $commonsfm.classes -text "Object Classes" \
+                   -state disabled]
+    set classes [checkbutton $commonsfm.classes -text "Object classes" \
                      -variable Apol_Class_Perms::opts(commons:classes) \
-                     -state disabled -padx 10]
+                     -state disabled]
     trace add variable Apol_Class_Perms::opts(commons:show) write \
         [list Apol_Class_Perms::toggleCheckbuttons $perms $classes]
-    pack $commons $perms $classes -anchor w
+    pack $commons -anchor w
+    pack $perms $classes -anchor w -padx 8
 
     # Third set of checkbuttons
-    set permsfm [frame $ofm.perms -relief sunken -borderwidth 1]
     set perms [checkbutton $permsfm.prems -text "Permissions" \
                    -variable Apol_Class_Perms::opts(perms:show)]
-    set classes [checkbutton $permsfm.classes -text "Object Classes" \
+    set classes [checkbutton $permsfm.classes -text "Object classes" \
                      -variable Apol_Class_Perms::opts(perms:classes) \
-                     -state disabled -padx 10]
-    set commons [checkbutton $permsfm.commons -text "Common Perms" \
+                     -state disabled]
+    set commons [checkbutton $permsfm.commons -text "Common perms" \
                      -variable Apol_Class_Perms::opts(perms:commons) \
-                     -state disabled -padx 10]
+                     -state disabled]
     trace add variable Apol_Class_Perms::opts(perms:show) write \
         [list Apol_Class_Perms::toggleCheckbuttons $classes $commons]
-    pack $perms $classes $commons -anchor w
+    pack $perms -anchor w
+    pack $classes $commons -anchor w -padx 8
 
     set widgets(regexp) [Apol_Widget::makeRegexpEntry $ofm.regexp]
 
-    pack $classesfm $commonsfm $permsfm $widgets(regexp) \
-        -side left -padx 5 -pady 4 -anchor ne
+    pack $widgets(regexp) -side left -padx 2 -pady 2 -anchor ne
 
     set ok [button $ofm.ok -text OK -width 6 \
                 -command Apol_Class_Perms::search_Class_Perms]

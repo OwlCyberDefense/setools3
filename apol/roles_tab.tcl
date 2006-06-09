@@ -160,17 +160,20 @@ proc Apol_Roles::create {nb} {
                       -width 20 -listvar Apol_Roles::role_list]
     Apol_Widget::setListboxCallbacks $rlistbox \
         {{"Display Role Info" {Apol_Roles::popupRoleInfo role}}}
+    pack $rlistbox -fill both -expand yes
 
     # Search options subframes
     set ofm [$s_optionsbox getframe]
-    set lfm [frame $ofm.to -relief sunken -borderwidth 1]
-    set cfm [frame $ofm.co -relief sunken -borderwidth 1]
+    set lfm [frame $ofm.to]
+    set cfm [frame $ofm.co]
+    pack $lfm $cfm -side left -anchor nw -padx 4 -pady 2
 
     # Set default state for combo boxes
-    radiobutton $lfm.names_only -text "Names Only" \
-        -variable Apol_Roles::opts(showSelection) -value names
-    radiobutton $lfm.all_info -text "All Information" \
+    radiobutton $lfm.all_info -text "All information" \
         -variable Apol_Roles::opts(showSelection) -value all
+    radiobutton $lfm.names_only -text "Names only" \
+        -variable Apol_Roles::opts(showSelection) -value names
+    pack $lfm.all_info $lfm.names_only -anchor w -padx 5 -pady 4
 
     # Search options widget items
     set cb_type [checkbutton $cfm.cb -variable Apol_Roles::opts(useType) -text "Type"]
@@ -178,20 +181,15 @@ proc Apol_Roles::create {nb} {
     Apol_Widget::setTypeComboboxState $widgets(combo_types) disabled
     trace add variable Apol_Roles::opts(useType) write \
         [list Apol_Roles::toggleTypeCombobox $widgets(combo_types)]
-    
+    pack $cb_type -anchor w
+    pack $widgets(combo_types) -anchor w -padx 4
+
     button $ofm.ok -text OK -width 6 -command {Apol_Roles::searchRoles}      
-    
+    pack $ofm.ok -side top -anchor e -pady 5 -padx 5
+
     # Display results window
     set widgets(resultsbox) [Apol_Widget::makeSearchResults [$resultsbox getframe].sw]
-
-    # Placing all widget items
-    pack $lfm $cfm -side left -padx 5 -pady 4 -ipady 4 -anchor nw -expand 0 -fill y
-    pack $ofm.ok -side top -anchor e -pady 5 -padx 5
-    pack $lfm.names_only $lfm.all_info -side top -anchor nw -pady 5 -padx 5
-    pack $cb_type -side top -anchor nw
-    pack $widgets(combo_types) -side top -anchor nw -padx 4
-    pack $rlistbox -fill both -expand yes
     pack $widgets(resultsbox) -expand 1 -fill both
-    
+
     return $frame	
 }

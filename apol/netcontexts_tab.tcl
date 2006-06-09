@@ -31,8 +31,9 @@ proc Apol_NetContexts::open {} {
 }
 
 proc Apol_NetContexts::close {} {
-    variable vals
     variable widgets
+
+    initializeVars
     Apol_Widget::clearSearchResults $widgets(results)
     Apol_Widget::clearContextSelector $widgets(portcon:context)
     Apol_Widget::clearContextSelector $widgets(netifcon:ifcon)
@@ -40,8 +41,14 @@ proc Apol_NetContexts::close {} {
     Apol_Widget::clearContextSelector $widgets(nodecon:context)
     $widgets(portcon:proto) configure -values {}
     $widgets(netifcon:dev) configure -values {}
+}
+
+proc Apol_NetContexts::initializeVars {} {
+    variable vals
     array set vals {
         items {}
+        context_type portcon
+
         portcon:items {}
         portcon:proto_enable 0    portcon:proto {}
         portcon:port_enable 0     portcon:port 0
@@ -77,9 +84,7 @@ proc Apol_NetContexts::create {nb} {
     variable widgets
     variable vals
 
-    array set vals {
-        context_type portcon        items {}
-    }
+    initializeVars
 
     # Layout frames
     set frame [$nb insert end $ApolTop::net_contexts_tab -text "Net Contexts"]
@@ -102,8 +107,8 @@ proc Apol_NetContexts::create {nb} {
     trace add variable Apol_NetContexts::vals(context_type) write \
         {Apol_NetContexts::contextTypeChanged}
     pack $context_f.portcon $context_f.netifcon $context_f.nodecon \
-        -anchor w -expand 0 -padx 5 -pady 5
-    pack $context_box -expand 0 -fill x
+        -anchor w -expand 0 -padx 4 -pady 5
+    pack $context_box -anchor nw -expand 0 -fill x
 
     set widgets(items_tf) [TitleFrame $leftf.items_f -text "Port Contexts"]
     set widgets(items) [Apol_Widget::makeScrolledListbox [$widgets(items_tf) getframe].items \
@@ -226,14 +231,8 @@ proc Apol_NetContexts::portcon_show {} {
 proc Apol_NetContexts::portcon_create {p_f} {
     variable widgets
     variable vals
-    array set vals {
-        portcon:items {}
-        portcon:proto_enable 0    portcon:proto {}
-        portcon:port_enable 0     portcon:port 0
-        portcon:hiport_enable 0   portcon:hiport 0
-    }
 
-    frame $p_f.proto -relief sunken -bd 1
+    frame $p_f.proto
     set proto_cb [checkbutton $p_f.proto.proto_enable -text "Protocol" \
                       -variable Apol_NetContexts::vals(portcon:proto_enable)]
     set widgets(portcon:proto) [ComboBox $p_f.proto.proto -entrybg white -width 8 -state disabled \
@@ -244,7 +243,7 @@ proc Apol_NetContexts::portcon_create {p_f} {
     pack $proto_cb -side top -anchor w
     pack $widgets(portcon:proto) -side top -expand 0 -fill x -padx 4
 
-    frame $p_f.port -relief sunken -bd 1
+    frame $p_f.port
     set low [frame $p_f.port.l]
     set port_cb [checkbutton $low.port_enable -text "Single Port" \
                      -variable Apol_NetContexts::vals(portcon:port_enable)]
@@ -273,10 +272,10 @@ proc Apol_NetContexts::portcon_create {p_f} {
     pack $widgets(portcon:hiport) -side top -expand 0 -fill x -padx 4
     pack $low $high -side left -expand 0 -fill both
     
-    frame $p_f.c -relief sunken -bd 1
+    frame $p_f.c
     set widgets(portcon:context) [Apol_Widget::makeContextSelector $p_f.c.context "Contexts"]
     pack $widgets(portcon:context)
-    pack $p_f.proto $p_f.port $p_f.c -side left -padx 4 -expand 0 -fill y
+    pack $p_f.proto $p_f.port $p_f.c -side left -padx 4 -pady 2 -anchor nw
 }
 
 proc Apol_NetContexts::portcon_limitPort {widget command new_port varname} {
@@ -464,12 +463,8 @@ proc Apol_NetContexts::netifcon_show {} {
 proc Apol_NetContexts::netifcon_create {p_f} {
     variable vals
     variable widgets
-    array set vals {
-        netifcon:items {}
-        netifcon:dev_enable 0   netifcon:dev {}
-    }
 
-    frame $p_f.dev -relief sunken -bd 1
+    frame $p_f.dev
     set dev_cb [checkbutton $p_f.dev.dev_enable -text "Device" \
                     -variable Apol_NetContexts::vals(netifcon:dev_enable)]
     set widgets(netifcon:dev) [ComboBox $p_f.dev.dev -entrybg white -width 8 -state disabled \
@@ -480,15 +475,15 @@ proc Apol_NetContexts::netifcon_create {p_f} {
     pack $dev_cb -side top -anchor w
     pack $widgets(netifcon:dev) -side top -expand 0 -fill x -padx 4
 
-    frame $p_f.ifcon -relief sunken -bd 1
-    set widgets(netifcon:ifcon) [Apol_Widget::makeContextSelector $p_f.ifcon.context "Contexts" "Interface Context" -width 18]
+    frame $p_f.ifcon
+    set widgets(netifcon:ifcon) [Apol_Widget::makeContextSelector $p_f.ifcon.context "Contexts" "Interface context" -width 18]
     pack $widgets(netifcon:ifcon)
 
-    frame $p_f.msgcon -relief sunken -bd 1
-    set widgets(netifcon:msgcon) [Apol_Widget::makeContextSelector $p_f.msgcon.context "Contexts" "Message Context" -width 18]
+    frame $p_f.msgcon
+    set widgets(netifcon:msgcon) [Apol_Widget::makeContextSelector $p_f.msgcon.context "Contexts" "Message context" -width 18]
     pack $widgets(netifcon:msgcon)
 
-    pack $p_f.dev $p_f.ifcon $p_f.msgcon -side left -padx 4 -expand 0 -fill y
+    pack $p_f.dev $p_f.ifcon $p_f.msgcon -side left -padx 4 -pady 2 -anchor nw
 }
 
 proc Apol_NetContexts::netifcon_render {netifcon_datum} {
@@ -580,47 +575,35 @@ proc Apol_NetContexts::nodecon_show {} {
 proc Apol_NetContexts::nodecon_create {p_f} {
     variable vals
     variable widgets
-    array set vals {
-        nodecon:items {}
-        nodecon:ip_type ipv4
-        nodecon:ipv4_addr_enable 0
-        nodecon:ipv4_addr0 {}       nodecon:ipv4_addr1 {}
-        nodecon:ipv4_addr2 {}       nodecon:ipv4_addr3 {}
-        nodecon:ipv4_mask_enable 0
-        nodecon:ipv4_mask0 {}       nodecon:ipv4_mask1 {}
-        nodecon:ipv4_mask2 {}       nodecon:ipv4_mask3 {}
-        nodecon:ipv6_addr_enable 0  nodecon:ipv6_addr {}
-        nodecon:ipv6_mask_enable 0  nodecon:ipv6_mask {}
-    }
 
-    frame $p_f.ip_type -relief sunken -bd 1
+    frame $p_f.ip_type
     set ipv4_rb [radiobutton $p_f.ip_type.v4 -text "IPv4" -value ipv4 \
                      -variable Apol_NetContexts::vals(nodecon:ip_type)]
     set ipv6_rb [radiobutton $p_f.ip_type.v6 -text "IPv6" -value ipv6 \
                      -variable Apol_NetContexts::vals(nodecon:ip_type)]
     trace add variable Apol_NetContexts::vals(nodecon:ip_type) write \
         [list Apol_NetContexts::nodecon_pageChanged]
-    pack $ipv4_rb $ipv6_rb -side top -expand 0 -anchor nw -padx 4 -pady 4
+    pack $ipv4_rb $ipv6_rb -side top -anchor nw -pady 5
     
-    frame $p_f.opts -relief sunken -bd 1
+    frame $p_f.opts
     set widgets(nodecon:ip_pm) [PagesManager $p_f.opts.pm]
     nodecon_ipv4Create [$widgets(nodecon:ip_pm) add ipv4]
     nodecon_ipv6Create [$widgets(nodecon:ip_pm) add ipv6]
     $widgets(nodecon:ip_pm) compute_size
-    pack $widgets(nodecon:ip_pm) -pady 2 -expand 0 -fill both -anchor nw
+    pack $widgets(nodecon:ip_pm)
     $widgets(nodecon:ip_pm) raise ipv4
 
-    frame $p_f.con -relief sunken -bd 1
+    frame $p_f.con
     set widgets(nodecon:context) [Apol_Widget::makeContextSelector $p_f.con.context "Contexts"]
     pack $widgets(nodecon:context)
 
-    pack $p_f.ip_type $p_f.opts $p_f.con -side left -padx 4 -expand 0 -fill y
+    pack $p_f.ip_type $p_f.opts $p_f.con -side left -padx 4 -pady 2 -anchor nw
 }
     
 proc Apol_NetContexts::nodecon_ipv4Create {fv4} {
     variable widgets
     set v4addrf [frame $fv4.addr]
-    set ipv4_addr_cb [checkbutton $v4addrf.enable -text "IP Address" \
+    set ipv4_addr_cb [checkbutton $v4addrf.enable -text "IP address" \
                           -variable Apol_NetContexts::vals(nodecon:ipv4_addr_enable)]
     set widgets(nodecon:v4addrf2) [frame $v4addrf.a]
     for {set i 0} {$i < 4} {incr i} {
@@ -657,12 +640,12 @@ proc Apol_NetContexts::nodecon_ipv4Create {fv4} {
     pack $ipv4_mask_cb -anchor w
     pack $widgets(nodecon:v4maskf2) -padx 3 -expand 0 -fill x
 
-    pack $v4addrf $v4maskf -padx 4 -pady 2 -anchor w
+    pack $v4addrf $v4maskf -padx 4 -pady 2 -anchor nw
 }
 
 proc Apol_NetContexts::nodecon_ipv6Create {fv6} {
     set v6addrf [frame $fv6.addr]
-    set ipv4_addr_cb [checkbutton $v6addrf.enable -text "IP Address" \
+    set ipv4_addr_cb [checkbutton $v6addrf.enable -text "IP address" \
                           -variable Apol_NetContexts::vals(nodecon:ipv6_addr_enable)]
     set e [entry $v6addrf.addr -bg white -width 28 -state disabled \
                -textvariable Apol_NetContexts::vals(nodecon:ipv6_addr)]

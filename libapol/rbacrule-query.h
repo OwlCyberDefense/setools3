@@ -140,12 +140,12 @@ extern int apol_role_allow_query_set_regex(apol_policy_t *p,
 
 /**
  *  Render a role allow rule to a string.
- *  
+ *
  *  @param policy Policy handler, to report errors.
  *  @param rule The rule to render.
  *
- *  @return a newly malloc()'d string representation of the rule, or NULL on 
- *  failure; if the call fails, errno will be set. The caller is responsible 
+ *  @return a newly malloc()'d string representation of the rule, or NULL on
+ *  failure; if the call fails, errno will be set. The caller is responsible
  *  for calling free() on the returned string.
  */
 extern char *apol_role_allow_render(apol_policy_t *policy, qpol_role_allow_t *rule);
@@ -281,12 +281,12 @@ extern int apol_role_trans_query_set_regex(apol_policy_t *p,
 
 /**
  *  Render a role_transition rule to a string.
- *  
+ *
  *  @param policy Policy handler, to report errors.
  *  @param rule The rule to render.
  *
- *  @return a newly malloc()'d string representation of the rule, or NULL on 
- *  failure; if the call fails, errno will be set. The caller is responsible 
+ *  @return a newly malloc()'d string representation of the rule, or NULL on
+ *  failure; if the call fails, errno will be set. The caller is responsible
  *  for calling free() on the returned string.
  */
 extern char *apol_role_trans_render(apol_policy_t *policy, qpol_role_trans_t *rule);
