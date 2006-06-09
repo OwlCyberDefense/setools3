@@ -29,6 +29,7 @@
  */
 
 #include "policy-query.h"
+#include <errno.h>
 
 struct apol_terule_query {
 	char *source, *target, *default_type;
@@ -271,4 +272,158 @@ int apol_terule_query_set_source_any(apol_policy_t *p,
 int apol_terule_query_set_regex(apol_policy_t *p, apol_terule_query_t *t, int is_regex)
 {
 	return apol_query_set_regex(p, &t->flags, is_regex);
+}
+
+char *apol_terule_render(apol_policy_t *policy, qpol_terule_t *rule)
+{
+	char *tmp = NULL, *tmp_name = NULL;
+	int tmp_sz = 0, error = 0;
+	uint32_t rule_type = 0;
+	qpol_type_t *type = NULL;
+	qpol_class_t *obj_class = NULL;
+
+	if (!policy || !rule) {
+		ERR(policy, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return NULL;
+	}
+
+	/* rule type */
+	if (qpol_terule_get_rule_type(policy->qh, policy->p, rule, &rule_type)) {
+		error = errno;
+		ERR(policy, "%s", strerror(error));
+		errno = error;
+		return NULL;
+	}
+	switch (rule_type) {
+		case QPOL_RULE_TYPE_TRANS:
+			{
+				if (append_str(&tmp, &tmp_sz, "type_transition ")) {
+					ERR(policy, "%s", strerror(ENOMEM));
+					errno = ENOMEM;
+					return NULL;
+				}
+				break;
+			}
+		case QPOL_RULE_TYPE_CHANGE:
+			{
+				if (append_str(&tmp, &tmp_sz, "type_change ")) {
+					ERR(policy, "%s", strerror(ENOMEM));
+					errno = ENOMEM;
+					return NULL;
+				}
+				break;
+			}
+		case QPOL_RULE_TYPE_MEMBER:
+			{
+				if (append_str(&tmp, &tmp_sz, "type_member ")) {
+					ERR(policy, "%s", strerror(ENOMEM));
+					errno = ENOMEM;
+					return NULL;
+				}
+				break;
+			}
+		default:
+			{
+				ERR(policy, "Invalid rule type");
+				errno = EINVAL;
+				return NULL;
+			}
+	}
+
+	/* source type */
+	if (qpol_terule_get_source_type(policy->qh, policy->p, rule, &type)) {
+		error = errno;
+		ERR(policy, "%s", strerror(error));
+		goto err;
+	}
+	if (qpol_type_get_name(policy->qh, policy->p, type, &tmp_name)) {
+		error = errno;
+		ERR(policy, "%s", strerror(error));
+		goto err;
+	}
+	if (append_str(&tmp, &tmp_sz, tmp_name)) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		error = ENOMEM;
+		goto err;
+	}
+	if (append_str(&tmp, &tmp_sz, " ")) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		error = ENOMEM;
+		goto err;
+	}
+
+	/* target type */
+	if (qpol_terule_get_target_type(policy->qh, policy->p, rule, &type)) {
+		error = errno;
+		ERR(policy, "%s", strerror(error));
+		goto err;
+	}
+	if (qpol_type_get_name(policy->qh, policy->p, type, &tmp_name)) {
+		error = errno;
+		ERR(policy, "%s", strerror(error));
+		goto err;
+	}
+	if (append_str(&tmp, &tmp_sz, tmp_name)) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		error = ENOMEM;
+		goto err;
+	}
+	if (append_str(&tmp, &tmp_sz, " ")) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		error = ENOMEM;
+		goto err;
+	}
+
+	/* object class */
+	if (qpol_terule_get_object_class(policy->qh, policy->p, rule, &obj_class)) {
+		error = errno;
+		ERR(policy, "%s", strerror(error));
+		goto err;
+	}
+	if (qpol_class_get_name(policy->qh, policy->p, obj_class, &tmp_name)) {
+		error = errno;
+		ERR(policy, "%s", strerror(error));
+		goto err;
+	}
+	if (append_str(&tmp, &tmp_sz, tmp_name)) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		error = ENOMEM;
+		goto err;
+	}
+	if (append_str(&tmp, &tmp_sz, " ")) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		error = ENOMEM;
+		goto err;
+	}
+
+	/* default type */
+	if (qpol_terule_get_default_type(policy->qh, policy->p, rule, &type)) {
+		error = errno;
+		ERR(policy, "%s", strerror(error));
+		goto err;
+	}
+	if (qpol_type_get_name(policy->qh, policy->p, type, &tmp_name)) {
+		error = errno;
+		ERR(policy, "%s", strerror(error));
+		goto err;
+	}
+	if (append_str(&tmp, &tmp_sz, tmp_name)) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		error = ENOMEM;
+		goto err;
+	}
+
+	if (append_str(&tmp, &tmp_sz, ";")) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		error = ENOMEM;
+		goto err;
+	}
+
+	return tmp;
+
+err:
+	free(tmp);
+	errno = error;
+	return NULL;
 }

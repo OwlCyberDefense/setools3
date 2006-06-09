@@ -123,6 +123,33 @@ extern int apol_role_allow_query_set_source_any(apol_policy_t *p,
                                                 apol_role_allow_query_t *r,
                                                 int is_any);
 
+/**
+ * Set a role allow query to use regular expression searching for
+ * source and target fields.  Strings will be treated as regexes
+ * instead of literals.
+ *
+ * @param p Policy handler, to report errors.
+ * @param r Role allow query to set.
+ * @param is_regex Non-zero to enable regex searching, 0 to disable.
+ *
+ * @return Always 0.
+ */
+extern int apol_role_allow_query_set_regex(apol_policy_t *p,
+					   apol_role_allow_query_t *r,
+					   int is_regex);
+
+/**
+ *  Render a role allow rule to a string.
+ *  
+ *  @param policy Policy handler, to report errors.
+ *  @param rule The rule to render.
+ *
+ *  @return a newly malloc()'d string representation of the rule, or NULL on 
+ *  failure; if the call fails, errno will be set. The caller is responsible 
+ *  for calling free() on the returned string.
+ */
+extern char *apol_role_allow_render(apol_policy_t *policy, qpol_role_allow_t *rule);
+
 /******************** role_transition queries ********************/
 
 /**
@@ -183,18 +210,24 @@ extern int apol_role_trans_query_set_source(apol_policy_t *p,
 /**
  * Set a role trans query to return rules with a particular target
  * symbol.  Symbol may be a type or attribute; if it is an alias then
- * the query will convert it to its primary prior to searching.
+ * the query will convert it to its primary prior to searching.  If
+ * is_indirect is non-zero then the search will be done indirectly.
+ * If the symbol is a type, then the query matches rules with one of
+ * the type's attributes.  If the symbol is an attribute, then it
+ * matches rule with any of the attribute's types.
  *
  * @param p Policy handler, to report errors.
  * @param r Role trans query to set.
  * @param symbol Limit query to rules with this type or attribute as
  * their target, or NULL to unset this field.
+ * @param is_indirect If non-zero, perform indirect matching.
  *
  * @return 0 on success, negative on error.
  */
 extern int apol_role_trans_query_set_target(apol_policy_t *p,
 					    apol_role_trans_query_t *r,
-					    const char *symbol);
+					    const char *symbol,
+					    int is_indirect);
 
 /**
  * Set a role trans query to return rules with a particular default
@@ -220,7 +253,7 @@ extern int apol_role_trans_query_set_default(apol_policy_t *p,
  * this flag does not affect its searching.
  *
  * @param p Policy handler, to report errors.
- * @param r Role allow query to set.
+ * @param r Role trans query to set.
  * @param is_any Non-zero to use source symbol for source or default
  * field, 0 to keep source as only source.
  *
@@ -229,5 +262,33 @@ extern int apol_role_trans_query_set_default(apol_policy_t *p,
 extern int apol_role_trans_query_set_source_any(apol_policy_t *p,
                                                 apol_role_trans_query_t *r,
                                                 int is_any);
+
+/**
+ * Set a role trans query to use regular expression searching for
+ * source, target, and default fields.  Strings will be treated as
+ * regexes instead of literals.  For the target type, matching will
+ * occur against the type name or any of its aliases.
+ *
+ * @param p Policy handler, to report errors.
+ * @param r Role trans query to set.
+ * @param is_regex Non-zero to enable regex searching, 0 to disable.
+ *
+ * @return Always 0.
+ */
+extern int apol_role_trans_query_set_regex(apol_policy_t *p,
+					   apol_role_trans_query_t *r,
+					   int is_regex);
+
+/**
+ *  Render a role_transition rule to a string.
+ *  
+ *  @param policy Policy handler, to report errors.
+ *  @param rule The rule to render.
+ *
+ *  @return a newly malloc()'d string representation of the rule, or NULL on 
+ *  failure; if the call fails, errno will be set. The caller is responsible 
+ *  for calling free() on the returned string.
+ */
+extern char *apol_role_trans_render(apol_policy_t *policy, qpol_role_trans_t *rule);
 
 #endif

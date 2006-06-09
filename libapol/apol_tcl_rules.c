@@ -830,7 +830,7 @@ static int Apol_SearchRBACRules(ClientData clientData, Tcl_Interp *interp, int a
 
 	if (rtquery != NULL) {
 		if (apol_role_trans_query_set_source(policydb, rtquery, argv[3]) < 0 ||
-		    apol_role_trans_query_set_target(policydb, rtquery, argv[4]) < 0 ||
+		    apol_role_trans_query_set_target(policydb, rtquery, argv[4], 0) < 0 ||
 		    apol_role_trans_query_set_default(policydb, rtquery, argv[5]) < 0) {
 			goto cleanup;
 		}

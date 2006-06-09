@@ -70,7 +70,7 @@ int apol_query_set(apol_policy_t *p, char **query_name, regex_t **regex, const c
 	}
 	free(*query_name);
 	*query_name = NULL;
-	if (name != NULL && ((*query_name) = apol_strdup(p, name)) == NULL) {
+	if (name != NULL && name[0] != '\0' && ((*query_name) = apol_strdup(p, name)) == NULL) {
 		return -1;
 	}
 	return 0;
@@ -272,7 +272,7 @@ apol_vector_t *apol_query_create_candidate_type_list(apol_policy_t *p,
 		goto cleanup;
 	}
 
-	if (qpol_policy_get_type_by_name(p->qh, p->p, symbol, &type) == 0) {
+	if (!do_regex && qpol_policy_get_type_by_name(p->qh, p->p, symbol, &type) == 0) {
 		if (apol_query_append_type(p, list, type) < 0) {
 			goto cleanup;
 		}
@@ -330,6 +330,65 @@ apol_vector_t *apol_query_create_candidate_type_list(apol_policy_t *p,
 		}
 	}
 
+	apol_vector_sort_uniquify(list, NULL, NULL, NULL);
+	retval = 0;
+ cleanup:
+	if (regex != NULL) {
+		regfree(regex);
+		free(regex);
+	}
+	qpol_iterator_destroy(&iter);
+	if (retval < 0) {
+		apol_vector_destroy(&list, NULL);
+		list = NULL;
+	}
+	return list;
+}
+
+apol_vector_t *apol_query_create_candidate_role_list(apol_policy_t *p,
+                                                     char *symbol,
+                                                     int do_regex)
+{
+	apol_vector_t *list = apol_vector_create();
+	qpol_role_t *role;
+	regex_t *regex = NULL;
+	qpol_iterator_t *iter = NULL;
+	int retval = -1;
+
+	if (list == NULL) {
+		ERR(p, "Out of memory!");
+		goto cleanup;
+	}
+
+	if (!do_regex && qpol_policy_get_role_by_name(p->qh, p->p, symbol, &role) == 0) {
+		if (apol_vector_append(list, role) < 0) {
+			ERR(p, "Out of memory!");
+			goto cleanup;
+		}
+	}
+
+	if (do_regex) {
+		if (qpol_policy_get_role_iter(p->qh, p->p, &iter) < 0) {
+			goto cleanup;
+		}
+		for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+			char *role_name;
+			int compval;
+			if (qpol_iterator_get_item(iter, (void **) &role) < 0 ||
+			    qpol_role_get_name(p->qh, p->p, role, &role_name) < 0) {
+				goto cleanup;
+			}
+			compval = apol_compare(p, role_name, symbol, APOL_QUERY_REGEX, &regex);
+			if (compval < 0) {
+				goto cleanup;
+			}
+			if (compval && apol_vector_append(list, role)) {
+				ERR(p, "Out of memory!");
+				goto cleanup;
+			}
+		}
+		qpol_iterator_destroy(&iter);
+	}
 	apol_vector_sort_uniquify(list, NULL, NULL, NULL);
 	retval = 0;
  cleanup:

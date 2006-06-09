@@ -29,6 +29,7 @@
  */
 
 #include "policy-query.h"
+#include <errno.h>
 
 struct apol_avrule_query {
 	char *source, *target;
@@ -283,4 +284,197 @@ int apol_avrule_query_set_source_any(apol_policy_t *p,
 int apol_avrule_query_set_regex(apol_policy_t *p, apol_avrule_query_t *a, int is_regex)
 {
 	return apol_query_set_regex(p, &a->flags, is_regex);
+}
+
+char *apol_avrule_render(apol_policy_t *policy, qpol_avrule_t *rule)
+{
+	char *tmp = NULL, *tmp_name = NULL;
+	int tmp_sz = 0, error = 0;
+	uint32_t rule_type = 0;
+	qpol_type_t *type = NULL;
+	qpol_class_t *obj_class = NULL;
+	qpol_iterator_t *iter = NULL;
+	size_t num_perms = 0;
+
+	if (!policy || !rule) {
+		ERR(policy, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return NULL;
+	}
+
+	/* rule type */
+	if (qpol_avrule_get_rule_type(policy->qh, policy->p, rule, &rule_type)) {
+		error = errno;
+		ERR(policy, "%s", strerror(error));
+		errno = error;
+		return NULL;
+	}
+	switch (rule_type) {
+		case QPOL_RULE_ALLOW:
+			{
+				if (append_str(&tmp, &tmp_sz, "allow ")) {
+					ERR(policy, "%s", strerror(ENOMEM));
+					errno = ENOMEM;
+					return NULL;
+				}
+				break;
+			}
+		case QPOL_RULE_NEVERALLOW:
+			{
+				if (append_str(&tmp, &tmp_sz, "neverallow ")) {
+					ERR(policy, "%s", strerror(ENOMEM));
+					errno = ENOMEM;
+					return NULL;
+				}
+				break;
+			}
+		case QPOL_RULE_AUDITALLOW:
+			{
+				if (append_str(&tmp, &tmp_sz, "auditallow ")) {
+					ERR(policy, "%s", strerror(ENOMEM));
+					errno = ENOMEM;
+					return NULL;
+				}
+				break;
+			}
+		case QPOL_RULE_DONTAUDIT:
+			{
+				if (append_str(&tmp, &tmp_sz, "dontaudit ")) {
+					ERR(policy, "%s", strerror(ENOMEM));
+					errno = ENOMEM;
+					return NULL;
+				}
+				break;
+			}
+		default:
+			{
+				ERR(policy, "Invalid rule type");
+				errno = EINVAL;
+				return NULL;
+			}
+	}
+
+	/* source type */
+	if (qpol_avrule_get_source_type(policy->qh, policy->p, rule, &type)) {
+		error = errno;
+		ERR(policy, "%s", strerror(error));
+		goto err;
+	}
+	if (qpol_type_get_name(policy->qh, policy->p, type, &tmp_name)) {
+		error = errno;
+		ERR(policy, "%s", strerror(error));
+		goto err;
+	}
+	if (append_str(&tmp, &tmp_sz, tmp_name)) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		error = ENOMEM;
+		goto err;
+	}
+	if (append_str(&tmp, &tmp_sz, " ")) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		error = ENOMEM;
+		goto err;
+	}
+
+	/* target type */
+	if (qpol_avrule_get_target_type(policy->qh, policy->p, rule, &type)) {
+		error = errno;
+		ERR(policy, "%s", strerror(error));
+		goto err;
+	}
+	if (qpol_type_get_name(policy->qh, policy->p, type, &tmp_name)) {
+		error = errno;
+		ERR(policy, "%s", strerror(error));
+		goto err;
+	}
+	if (append_str(&tmp, &tmp_sz, tmp_name)) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		error = ENOMEM;
+		goto err;
+	}
+	if (append_str(&tmp, &tmp_sz, " ")) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		error = ENOMEM;
+		goto err;
+	}
+
+	/* object class */
+	if (qpol_avrule_get_object_class(policy->qh, policy->p, rule, &obj_class)) {
+		error = errno;
+		ERR(policy, "%s", strerror(error));
+		goto err;
+	}
+	if (qpol_class_get_name(policy->qh, policy->p, obj_class, &tmp_name)) {
+		error = errno;
+		ERR(policy, "%s", strerror(error));
+		goto err;
+	}
+	if (append_str(&tmp, &tmp_sz, tmp_name)) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		error = ENOMEM;
+		goto err;
+	}
+	if (append_str(&tmp, &tmp_sz, " ")) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		error = ENOMEM;
+		goto err;
+	}
+
+	/* perms */
+	if (qpol_avrule_get_perm_iter(policy->qh, policy->p, rule, &iter)) {
+		error = errno;
+		ERR(policy, "%s", strerror(error));
+		goto err;
+	}
+	if (qpol_iterator_get_size(iter, &num_perms)) {
+		error = errno;
+		ERR(policy, "%s", strerror(error));
+		goto err;	
+	}
+	if (num_perms > 1) {
+		if (append_str(&tmp, &tmp_sz, "{ ")) {
+			ERR(policy, "%s", strerror(ENOMEM));
+			error = ENOMEM;
+			goto err;
+		}
+	}
+	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		if (qpol_iterator_get_item(iter, (void**)&tmp_name)) {
+			error = errno;
+			ERR(policy, "%s", strerror(error));
+			goto err;
+		}
+		if (append_str(&tmp, &tmp_sz, tmp_name)) {
+			ERR(policy, "%s", strerror(ENOMEM));
+			error = ENOMEM;
+			goto err;
+		}
+		if (append_str(&tmp, &tmp_sz, " ")) {
+			ERR(policy, "%s", strerror(ENOMEM));
+			error = ENOMEM;
+			goto err;
+		}
+	}
+	if (num_perms > 1) {
+		if (append_str(&tmp, &tmp_sz, "}")) {
+			ERR(policy, "%s", strerror(ENOMEM));
+			error = ENOMEM;
+			goto err;
+		}
+	}
+
+	if (append_str(&tmp, &tmp_sz, ";")) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		error = ENOMEM;
+		goto err;
+	}
+
+	qpol_iterator_destroy(&iter);
+	return tmp;
+
+err:
+	free(tmp);
+	qpol_iterator_destroy(&iter);
+	errno = error;
+	return NULL;
 }
