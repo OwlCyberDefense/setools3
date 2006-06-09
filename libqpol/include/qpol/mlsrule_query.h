@@ -35,7 +35,7 @@ typedef struct qpol_range_trans qpol_range_trans_t;
 /**
  *  Get an iterator over all range transition rules in a policy.
  *  @param handle Error handler for the policy database.
- *  @param policy Policy from which to get the av rules.
+ *  @param policy Policy from which to get the range transitions.
  *  @param iter Iterator over items of type qpol_range_trans_t returned.
  *  The caller is responsible for calling qpol_iterator_destroy()
  *  to free memory used by this iterator.

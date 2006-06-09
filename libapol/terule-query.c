@@ -58,7 +58,7 @@ int apol_get_terule_by_query(apol_policy_t *p,
 		    (source_list = apol_query_create_candidate_type_list(p, t->source, t->flags & APOL_QUERY_REGEX, t->flags & APOL_QUERY_SOURCE_INDIRECT)) == NULL) {
 			goto cleanup;
 		}
-		if (t->flags & APOL_QUERY_SOURCE_AS_ANY) {
+		if ((t->flags & APOL_QUERY_SOURCE_AS_ANY) && t->source != NULL) {
 			default_list = target_list = source_list;
 			source_as_any = 1;
 		}

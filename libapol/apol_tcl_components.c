@@ -882,28 +882,6 @@ static int Apol_GetRoles(ClientData clientData, Tcl_Interp *interp, int argc, CO
 }
 
 /**
- * Converts an apol_mls_level_t to a Tcl representation:
- * <code>
- *   { level { cat0 cat1 ... } }
- * </code>
- */
-static int apol_level_to_tcl_obj(Tcl_Interp *interp, apol_mls_level_t *level, Tcl_Obj **obj) {
-	Tcl_Obj *level_elem[2], *cats_obj;
-	size_t i;
-	level_elem[0] = Tcl_NewStringObj(level->sens, -1);
-	level_elem[1] = Tcl_NewListObj(0, NULL);
-	for (i = 0; i < apol_vector_get_size(level->cats); i++) {
-		cats_obj = Tcl_NewStringObj((char *) apol_vector_get_element(level->cats, i), -1);
-		if (Tcl_ListObjAppendElement(interp, level_elem[1], cats_obj) == TCL_ERROR) {
-			return TCL_ERROR;
-		}
-	}
-	*obj = Tcl_NewListObj(2, level_elem);
-	return TCL_OK;
-}
-
-
-/**
  * Takes a qpol_user_t and appends a tuple of it to
  * result_list.	 The tuple consists of:
  * <code>
@@ -961,9 +939,9 @@ static int append_user_to_list(Tcl_Interp *interp,
 			goto cleanup;
 		}
 
-		if (apol_level_to_tcl_obj(interp, apol_default, user_elem + 2) == TCL_ERROR ||
-		    apol_level_to_tcl_obj(interp, apol_range->low, range_elem + 0) == TCL_ERROR ||
-		    apol_level_to_tcl_obj(interp, apol_range->high, range_elem + 1) == TCL_ERROR) {
+		if (apol_level_to_tcl_obj(interp, apol_default, user_elem + 2) < 0 ||
+		    apol_level_to_tcl_obj(interp, apol_range->low, range_elem + 0) < 0 ||
+		    apol_level_to_tcl_obj(interp, apol_range->high, range_elem + 1) < 0) {
 			goto cleanup;
 		}
 		user_elem[3] = Tcl_NewListObj(2, range_elem);
@@ -1580,8 +1558,8 @@ static int qpol_context_to_tcl_obj(Tcl_Interp *interp, qpol_context_t *context, 
 	context_elem[1] = Tcl_NewStringObj(apol_context->role, -1);
 	context_elem[2] = Tcl_NewStringObj(apol_context->type, -1);
 	if (is_mls_policy(policy)) {
-		if (apol_level_to_tcl_obj(interp, apol_context->range->low, range_elem + 0) == TCL_ERROR ||
-		    apol_level_to_tcl_obj(interp, apol_context->range->high, range_elem + 1) == TCL_ERROR) {
+		if (apol_level_to_tcl_obj(interp, apol_context->range->low, range_elem + 0) < 0 ||
+		    apol_level_to_tcl_obj(interp, apol_context->range->high, range_elem + 1) < 0) {
 			goto cleanup;
 		}
 		context_elem[3] = Tcl_NewListObj(2, range_elem);

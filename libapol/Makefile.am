@@ -28,7 +28,7 @@ libapol_a_SOURCES = \
 	bool-query.c bool-query.h isid-query.c isid-query.h \
 	netcon-query.c netcon-query.h fscon-query.c fscon-query.h \
 	avrule-query.c avrule-query.h terule-query.c terule-query.h \
-	rbacrule-query.c rbacrule-query.h
+	rbacrule-query.c rbacrule-query.h rangetrans-query.c rangetrans-query.h
 
 libapol_tcl_a_SOURCES = apol_tcl_other.c apol_tcl_other.h \
 	apol_tcl_render.c apol_tcl_render.h \
