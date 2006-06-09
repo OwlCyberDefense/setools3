@@ -165,17 +165,12 @@ proc Apol_Cond_Bools::open {} {
 #  ::close
 #
 proc Apol_Cond_Bools::close { } {
-    variable opts
     variable widgets
     variable cond_bools_list {}
     variable cond_bools_defaults
     variable cond_bools_values
 
-    array set opts {
-        name ""
-        use_regexp 0    show_default 1   show_current 1
-    }
-
+    initializeVars
     # clean up bools listbox, then hide its scrollbars
     foreach w [winfo children [$widgets(listbox) getframe]] {
         destroy $w
@@ -184,6 +179,14 @@ proc Apol_Cond_Bools::close { } {
     Apol_Widget::clearSearchResults $widgets(results)
     array unset cond_bools_defaults
     array unset cond_bools_values
+}
+
+proc Apol_Cond_Bools::initializeVars {} {
+    variable opts
+    array set opts {
+        name ""
+        use_regexp 0    show_default 1   show_current 1
+    }
 }
 
 ################################################################
@@ -199,10 +202,7 @@ proc Apol_Cond_Bools::create {nb} {
     variable opts
     variable widgets
 
-    array set opts {
-        name ""
-        use_regexp 0    show_default 1   show_current 1
-    }
+    initializeVars
     
     # Layout frames
     set frame [$nb insert end $ApolTop::cond_bools_tab -text "Booleans"]
@@ -225,7 +225,7 @@ proc Apol_Cond_Bools::create {nb} {
     set widgets(listbox) [ScrollableFrame $sw_b.listbox -bg white -width 200]
     $sw_b setwidget $widgets(listbox)
     set button_defaults [button $left_frame.button_defaults \
-                             -text "Reset to policy defaults" \
+                             -text "Reset to Policy Defaults" \
                              -command Apol_Cond_Bools::reset_bools]
     pack $sw_b -side top -expand 1 -fill both
     pack $button_defaults -side bottom -pady 2 -expand 0 -fill x
@@ -234,11 +234,11 @@ proc Apol_Cond_Bools::create {nb} {
     set ofm [$s_optionsbox getframe]
     set bool_frame [frame $ofm.bool]
     set show_frame [frame $ofm.show]
-    pack $bool_frame $show_frame -side left -padx 5 -pady 4 -anchor nw
+    pack $bool_frame $show_frame -side left -padx 4 -pady 2 -anchor nw
 
     set enable [checkbutton $bool_frame.enable \
                     -variable Apol_Cond_Bools::opts(enable_bool) \
-                    -text "Booleans"]
+                    -text "Boolean"]
     set widgets(combo_box) [ComboBox $bool_frame.combo_box \
                                 -textvariable Apol_Cond_Bools::opts(name) \
                                 -helptext "Type or select a boolean variable" \
@@ -251,7 +251,8 @@ proc Apol_Cond_Bools::create {nb} {
         [list ApolTop::_create_popup $widgets(combo_box) %W %K]
     trace add variable Apol_Cond_Bools::opts(enable_bool) write \
         [list Apol_Cond_Bools::toggleSearchBools]
-    pack $enable $widgets(combo_box) $widgets(regexp) -anchor nw
+    pack $enable -anchor w
+    pack $widgets(combo_box) $widgets(regexp) -padx 4 -anchor nw -expand 0 -fill x
 
     set show_default [checkbutton $show_frame.show_default \
                            -variable Apol_Cond_Bools::opts(show_default) \
@@ -259,7 +260,7 @@ proc Apol_Cond_Bools::create {nb} {
     set show_current [checkbutton $show_frame.show_current \
                         -variable Apol_Cond_Bools::opts(show_current) \
                         -text "Show current state"]
-    pack $show_default $show_current -side top -anchor nw
+    pack $show_default $show_current -anchor w
        
     # Action Buttons
     set ok_button [button $ofm.ok -text "OK" -width 6 \
