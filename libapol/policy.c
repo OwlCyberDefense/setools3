@@ -1464,13 +1464,6 @@ int get_obj_class_nth_perm_idx(int cls_idx, int n, policy_t *policy)
 	return(policy->obj_classes[cls_idx].u_perms[n2]);
 }
 
-int get_obj_class_common_perm_idx(int cls_idx,  policy_t *policy)
-{
-	if(policy == NULL || !is_valid_obj_class_idx(cls_idx, policy) ) 
-		return -1;
-	return(policy->obj_classes[cls_idx].common_perms);
-}
-
 int get_obj_class_idx(const char *name, policy_t *policy)
 {
 	if(name == NULL || policy == NULL)
@@ -1726,32 +1719,6 @@ int get_common_perm_name(int idx, char **name, policy_t *policy)
 		return -1;
 	}
 	strcpy(*name, policy->common_perms[idx].name);
-	return 0;
-}
-
-/* gets the name of a perm assoicated with a common perm.  Retuns 0 if name return,
- * -1 for an error, and 1 if there are no more names.  memory is alloc for name
- * with malloc().  cp_idx is an idx for a common perm.  p_idx is used by this function
- * to track which perm is being queried.  On the first call you MUST set this to 0.
- * On future calls, just pass back the value returned.
- */
-int get_common_perm_perm_name(int cp_idx, int *p_idx, char **name, policy_t *policy)
-{
-	int idx;
-	if(policy  == NULL || !is_valid_common_perm_idx(cp_idx, policy) || p_idx == NULL ||
-			name == NULL || *p_idx < 0)
-		return -1;
-	if(*p_idx >= policy->common_perms[cp_idx].num_perms)
-		return 1; /* no more perms assoicated with common perm */
-		
-	assert(policy->common_perms[cp_idx].perms != NULL);
-	idx =  policy->common_perms[cp_idx].perms[*p_idx];
-	assert(is_valid_perm_idx(idx, policy));
-	if((*name = (char*)malloc(strlen(policy->perms[idx])+1)) == NULL) {
-		fprintf(stderr, "out of memory\n");
-		return -1;
-	}
-	strcpy(*name, policy->perms[idx]);
 	return 0;
 }
 
@@ -2034,32 +2001,6 @@ tt_item_t *add_new_tt_rule(int rule_type, policy_t *policy)
 	return newitem;
 }
 
-/* add a clone rule to a policy */
-int add_clone_rule(int src, int tgt, unsigned long lineno, policy_t *policy)
-{
-	cln_item_t *newptr, *ptr;
-
-	newptr = (cln_item_t *)malloc(sizeof(cln_item_t));
-	if(newptr == NULL) {
-		fprintf(stderr, "out of memory\n");
-		return -1;
-	}
-	/* initialize */
-	memset(newptr, 0, sizeof(cln_item_t));
-	
-	newptr->next = NULL;
-	newptr->src = src;
-	newptr->tgt = tgt;
-	newptr->lineno = lineno;
-	if(policy->clones == NULL) {
-		policy->clones = newptr;
-		return 0;
-	}
-	for(ptr = policy->clones; ptr->next != NULL; ptr = ptr->next) {; }
-	ptr->next = newptr;
-	return 0;
-}
-
 static int append_attrib_types_to_array(int attrib, int *array_len, int **array, policy_t *policy)
 {
 	int i;
@@ -2312,26 +2253,6 @@ int does_av_rule_idx_use_type(int rule_idx, unsigned char rule_type, int type_id
 	else
 		return FALSE;
 	return does_av_rule_use_type(type_idx, ta_type, whichlist, do_indirect, rule, &unused_cnt, policy);
-}
-
-bool_t does_clone_rule_use_type(int idx, int type, unsigned char whichlist, cln_item_t *rule,
-	int *cnt, policy_t *policy)
-{
-	/* As we understand, clone rules can only have types (not attribs) */
-	if(type != IDX_TYPE)
-	return FALSE;
-	
-	if(whichlist & SRC_LIST) {
-		if(rule->src == idx) {
-			return TRUE;
-		}
-	}
-	if(whichlist & TGT_LIST) {
-		if(rule->tgt == idx) {
-			return TRUE;
-		}
-	}
-	return FALSE;
 }
 
 int add_role(char *role, policy_t *policy)

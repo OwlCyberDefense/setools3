@@ -445,20 +445,6 @@ int free_rbac_bool(rbac_bool_t *b)
 }
 
 
-char* uppercase(const char *instr, char *outstr) 
-{
-	int i;
-	if(instr == NULL || outstr == NULL)
-		return NULL;
-		
-	for(i = 0; i < strlen(instr); i++) {
-		outstr[i] = toupper(instr[i]);
-	}
-	outstr[i] = '\0';
-	return outstr;
-}
-
-
 int add_i_to_a(int i, int *cnt, int **a)
 {	
 	if(cnt == NULL || a == NULL)
@@ -533,46 +519,6 @@ int int_compare(const void *aptr, const void *bptr)
 		return 1;
 	return 0;
 }
-
-bool_t is_name_in_list(const char *name, 
-			ta_item_t *list,
-			policy_t  *policy)
-{
-	ta_item_t *ptr;
-	bool_t rt;
-
-	if((name == NULL && list == NULL) || policy == NULL )
-		return 0;
-
-	for(ptr = list; ptr != NULL; ptr = ptr->next) {
-		switch(ptr->type) {
-		case IDX_TYPE:
-			rt = (strcmp(name, policy->types[ptr->idx].name) == 0);
-			break;
-		case IDX_ATTRIB:
-			rt = (strcmp(name, policy->attribs[ptr->idx].name) == 0);		
-			break;
-		case IDX_ROLE:
-			rt = (strcmp(name, policy->roles[ptr->idx].name) == 0);
-			break;
-		case IDX_PERM:
-			rt = (strcmp(name, policy->perms[ptr->idx]) == 0);
-			break;
-		case IDX_COMMON_PERM:
-			rt = (strcmp(name, policy->common_perms[ptr->idx].name) == 0);
-			break;
-		case IDX_OBJ_CLASS:
-			rt = (strcmp(name, policy->obj_classes[ptr->idx].name) == 0);
-			break;
-		default:
-			continue;
-		}
-		if(rt)
-			return rt;
-	}
-	return 0;
-}
-
 
 /************************************************
  * functions relating to managing config files

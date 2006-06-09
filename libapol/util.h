@@ -102,7 +102,6 @@ int all_true_rbac_bool(rbac_bool_t *b, struct policy *policy);
 int all_false_rbac_bool(rbac_bool_t *b, struct policy *policy);
 int free_rules_bool(rules_bool_t *rules_b);
 int free_rbac_bool(rbac_bool_t *b);
-char* uppercase(const char *instr, char *outstr);
 
 int add_i_to_a(int i, int *cnt, int **a);
 int find_int_in_array(int i, const int *a, int a_sz);
@@ -110,7 +109,6 @@ int add_int_to_array(int i, int *a, int num, int a_sz);
 int copy_int_array(int **dest, int *src, int len);
 int int_compare(const void *aptr, const void *bptr);
 
-bool_t is_name_in_list(const char *name, struct ta_item *list, struct policy *policy);
 unsigned char str_is_only_white_space(const char *str);
 int get_type_idxs_by_regex(int **types, int *num, regex_t *preg, bool_t include_self, struct policy *policy);
 char *get_config_var(const char *var, FILE *fp);

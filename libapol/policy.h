@@ -622,7 +622,6 @@ int insert_ta_item(ta_item_t *newitem, ta_item_t **list);
 int add_name(char *name, name_item_t **list);
 int is_name_in_name_item_list(char *name, name_item_t *list);
 int free_name_list(name_item_t *list);
-int add_clone_rule(int src, int tgt,  unsigned long lineno, policy_t *policy);
 int add_attrib(bool_t with_type, int type_idx, policy_t *policy, char *attrib);
 int add_type_to_role(int type_idx, int role_idx, policy_t *policy);
 int add_class(char *classname, policy_t *policy);
@@ -662,7 +661,6 @@ ap_rangetrans_t *add_new_rangetrans(policy_t *policy);
 int get_obj_class_name(int idx, char **name, policy_t *policy);
 int get_obj_class_idx(const char *name, policy_t *policy);
 int get_num_perms_for_obj_class(int clss_idx, policy_t *policy);
-int get_obj_class_common_perm_idx(int cls_idx,  policy_t *policy);
 int get_obj_class_perms(int obj_class, int *num_perms, int **perms, policy_t *policy);
 int get_obj_class_nth_perm_idx(int cls_idx, int n, policy_t *policy);
 
@@ -677,7 +675,6 @@ int get_obj_class_nth_perm_idx(int cls_idx, int n, policy_t *policy);
 
 bool_t is_valid_perm_for_obj_class(policy_t *policy, int class, int perm);
 int get_common_perm_name(int idx, char **name, policy_t *policy);
-int get_common_perm_perm_name(int cp_idx, int *p_idx, char **name, policy_t *policy);
 int get_common_perm_idx(const char *name, policy_t *policy);
 int get_perm_name(int idx, char **name, policy_t *policy);
 int get_perm_idx(const char *name, policy_t *policy);
@@ -850,8 +847,6 @@ void ap_user_free(ap_user_t *user);
 
 /* misc */
 
-bool_t does_clone_rule_use_type(int idx, int type, unsigned char whichlist, cln_item_t *rule,
-	int *cnt, policy_t *policy);
 int get_rule_lineno(int rule_idx, int rule_type, policy_t *policy);
 int get_ta_item_name(ta_item_t *ta, char **name, policy_t *policy);
 int extract_types_from_ta_list(ta_item_t *list, bool_t compliment, bool_t allow_self, int **types, int *num_types, policy_t *policy);
