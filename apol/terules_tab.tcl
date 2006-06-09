@@ -842,21 +842,20 @@ proc Apol_TE::search_terules {whichButton} {
     }
 
     # check search options
-    if {$vals(oo:regexp)} {
-        if {$enabled(ta:use_source) && $vals(ta:use_source) && $vals(ta:source_sym) == {}} {
-            tk_messageBox -icon error -type ok -title "Error" -message "No regular expression provided for source type/attrib."
-            return
-	}
-        if {$enabled(ta:use_target) && $vals(ta:use_target) && $vals(ta:target_sym) == {}} {
-            tk_messageBox -icon error -type ok -title "Error" -message "No regular expression provided for target type/attrib."
-            return
-	}
-        if {$enabled(ta:use_default) && $vals(ta:use_default) && $vals(ta:default_sym) == {}} {
-
-            tk_messageBox -icon error -type ok -title "Error" -message "No regular expression provided for default type."
-            return
-	}
+    if {$enabled(ta:use_source) && $vals(ta:use_source) && $vals(ta:source_sym) == {}} {
+        tk_messageBox -icon error -type ok -title "Error" -message "No source type/attribute was selected."
+        return
     }
+    if {$enabled(ta:use_target) && $vals(ta:use_target) && $vals(ta:target_sym) == {}} {
+        tk_messageBox -icon error -type ok -title "Error" -message "No target type/attribute was selected."
+        return
+    }
+    if {$enabled(ta:use_default) && $vals(ta:use_default) && $vals(ta:default_sym) == {}} {
+
+        tk_messageBox -icon error -type ok -title "Error" -message "No default type selected."
+        return
+    }
+
     set rule_selection {}
     foreach {key value} [array get vals rs:*] {
         if {$value} {

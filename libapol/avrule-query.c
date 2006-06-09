@@ -58,7 +58,7 @@ int apol_get_avrule_by_query(apol_policy_t *p,
 		    (source_list = apol_query_create_candidate_type_list(p, a->source, a->flags & APOL_QUERY_REGEX, a->flags & APOL_QUERY_SOURCE_INDIRECT)) == NULL) {
 			goto cleanup;
 		}
-		if (a->flags & APOL_QUERY_SOURCE_AS_ANY) {
+		if ((a->flags & APOL_QUERY_SOURCE_AS_ANY) && a->source != NULL) {
 			target_list = source_list;
 			source_as_any = 1;
 		}
@@ -429,7 +429,7 @@ char *apol_avrule_render(apol_policy_t *policy, qpol_avrule_t *rule)
 	if (qpol_iterator_get_size(iter, &num_perms)) {
 		error = errno;
 		ERR(policy, "%s", strerror(error));
-		goto err;	
+		goto err;
 	}
 	if (num_perms > 1) {
 		if (append_str(&tmp, &tmp_sz, "{ ")) {

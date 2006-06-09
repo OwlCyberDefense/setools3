@@ -133,6 +133,7 @@ int qpol_policy_get_range_trans_iter(qpol_handle_t *handle, qpol_policy_t *polic
 		return STATUS_ERR;
 	}
 
+	rs->head = rs->cur = db->range_tr;
 	return STATUS_SUCCESS;
 }
 
