@@ -4507,6 +4507,11 @@ int apol_policy_is_mls(apol_policy_t *p)
 	return qpol_policy_is_mls_enabled(p->qh, p->p);
 }
 
+int apol_policy_is_binary(apol_policy_t *p)
+{
+	return (p->policy_type != QPOL_POLICY_KERNEL_SOURCE);
+}
+
 char *apol_get_policy_version_type_mls_str(apol_policy_t *p)
 {
 	unsigned int version;
@@ -4533,7 +4538,6 @@ char *apol_get_policy_version_type_mls_str(apol_policy_t *p)
 	}
 	return strdup(buf);
 }
-
 
 __attribute__ ((format (printf, 3, 4)))
 void apol_handle_route_to_callback(void *varg, apol_policy_t *p,
