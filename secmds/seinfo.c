@@ -152,7 +152,7 @@ static int print_stats(FILE *fp, apol_policy_t *policydb)
 	apol_vector_t *perms = NULL, *v = NULL;
 	char *str = NULL, *ver_str = NULL;
 	int str_sz = 0, ver_str_sz = 16, n_types = 0, n_attrs = 0;
-	bool_t binary;
+	bool_t binary = FALSE;
 	size_t n_classes = 0, n_users = 0, n_roles = 0, n_bools = 0, n_levels = 0, n_cats = 0,
 		n_portcons = 0, n_netifcons = 0, n_nodecons = 0, n_fsuses = 0, n_genfscons = 0,
 		n_allows = 0, n_neverallows = 0, n_auditallows = 0, n_dontaudits = 0,
@@ -178,7 +178,8 @@ static int print_stats(FILE *fp, apol_policy_t *policydb)
 	snprintf(ver_str, ver_str_sz, "%u", ver);
 
 	/* we can only handle binary policies at this point */
-	binary = TRUE;
+	if (apol_policy_is_binary(policydb))
+		binary = TRUE;
 
 	append_str(&str, &str_sz, ver_str);
 	append_str(&str, &str_sz, " (");
@@ -454,7 +455,7 @@ cleanup:
 static int print_types(FILE *fp, const char *name, int expand, apol_policy_t *policydb)
 {
 	int retval = -1;
-	bool_t binary;
+	bool_t binary = FALSE;
 	unsigned int n_types = 0;
 	qpol_type_t *type_datum = NULL;
 	qpol_iterator_t *iter = NULL;
@@ -465,7 +466,8 @@ static int print_types(FILE *fp, const char *name, int expand, apol_policy_t *po
 			goto cleanup;
 	}
 	else {
-		binary = TRUE;   /* We only know how to handle binary policies so far */
+		if (apol_policy_is_binary(policydb))
+			binary = TRUE;
 	}
 
 	/* Find the number of types in the policy */
@@ -476,7 +478,6 @@ static int print_types(FILE *fp, const char *name, int expand, apol_policy_t *po
 	qpol_iterator_destroy(&iter);
 	n_types = (unsigned int)iter_sz;
 
-	binary = TRUE;
 	if(name == NULL) {
 		/* use num_types(policy)-1 to factor out the pseudo type "self" if not binary*/
 		fprintf(fp, "\nTypes: %d\n", binary ? n_types - 1 : n_types);
