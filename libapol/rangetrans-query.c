@@ -221,5 +221,104 @@ int apol_range_trans_query_set_regex(apol_policy_t *p,
 
 char *apol_range_trans_render(apol_policy_t *policy, qpol_range_trans_t *rule)
 {
-        return "FIX ME!";
+	char *tmp = NULL, *tmp_name = NULL;
+	int tmp_sz = 0, error = 0;
+	qpol_type_t *type = NULL;
+	qpol_mls_range_t *range = NULL;
+	apol_mls_range_t *arange = NULL;
+
+	if (!policy || !rule) {
+		ERR(policy, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return NULL;
+	}
+
+	/* range_transition */
+	if (append_str(&tmp, &tmp_sz, "range_transition ")) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
+		return NULL;
+	}
+
+	/* source type */
+	if (qpol_range_trans_get_source_type(policy->qh, policy->p, rule, &type)) {
+		error = errno;
+		ERR(policy, "%s", strerror(error));
+		goto err;
+	}
+	if (qpol_type_get_name(policy->qh, policy->p, type, &tmp_name)) {
+		error = errno;
+		ERR(policy, "%s", strerror(error));
+		goto err;
+	}
+	if (append_str(&tmp, &tmp_sz, tmp_name)) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		error = ENOMEM;
+		goto err;
+	}
+	if (append_str(&tmp, &tmp_sz, " ")) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		error = ENOMEM;
+		goto err;
+	}
+
+	/* target type */
+	if (qpol_range_trans_get_target_type(policy->qh, policy->p, rule, &type)) {
+		error = errno;
+		ERR(policy, "%s", strerror(error));
+		goto err;
+	}
+	if (qpol_type_get_name(policy->qh, policy->p, type, &tmp_name)) {
+		error = errno;
+		ERR(policy, "%s", strerror(error));
+		goto err;
+	}
+	if (append_str(&tmp, &tmp_sz, tmp_name)) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		error = ENOMEM;
+		goto err;
+	}
+	if (append_str(&tmp, &tmp_sz, " ")) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		error = ENOMEM;
+		goto err;
+	}
+
+	/* range */
+	if (qpol_range_trans_get_range(policy->qh, policy->p, rule, &range)) {
+		error = errno;
+		ERR(policy, "%s", strerror(error));
+		goto err;
+	}
+	if (!(arange = apol_mls_range_create_from_qpol_mls_range(policy, range))) {
+		error = errno;
+		ERR(policy, "%s", strerror(error));
+		goto err;
+	}
+	if (!(tmp_name = apol_mls_range_render(policy, arange))) {
+		error = errno;
+		ERR(policy, "%s", strerror(error));
+		goto err;
+	}
+	apol_mls_range_destroy(&arange);
+	if (append_str(&tmp, &tmp_sz, tmp_name)) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		error = ENOMEM;
+		goto err;
+	}
+
+	if (append_str(&tmp, &tmp_sz, ";")) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		error = ENOMEM;
+		goto err;
+	}
+
+	return tmp;
+
+err:
+	apol_mls_range_destroy(&arange);
+	free(tmp);
+	errno = error;
+	return NULL;
 }
+

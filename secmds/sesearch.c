@@ -126,67 +126,6 @@ policy, will be opened if no policy file name is provided.\n", stdout);
 	return;
 }
 
-static int perform_rtrans_query(options_t* cmd_opts, rtrans_results_t* rtrans_results, 
-	policy_t *policy)
-{
-    int rt = 0;
-    rtrans_query_t query;
-
-    init_rtrans_query(&query);
-
-    query.src.indirect = cmd_opts->indirect;
-    query.src.ta = cmd_opts->src_name;
-    query.src.t_or_a = IDX_BOTH;
-
-    query.tgt.indirect = cmd_opts->indirect;
-    query.tgt.ta = cmd_opts->tgt_name;
-    query.tgt.t_or_a = IDX_BOTH;
-
-    query.use_regex = cmd_opts->useregex;
-
-    query.range = 0;
-
-    if (cmd_opts->src_name) {
-        query.search_type |= AP_MLS_RTS_SRC_TYPE;
-    }
-
-    if (cmd_opts->tgt_name) {
-        query.search_type |= AP_MLS_RTS_TGT_TYPE;
-    }
-
-    /* TODO: add mls range types and set the high and low of the range */
-    rt = search_range_transition_rules(&query, rtrans_results, policy);
-    if (rt != 0) {
-        if(rt == -1) {
-            printf("Unexpected error (-1) searching rules\n");
-        }
-        else if( rt == -2) {
-            printf("%s\n", rtrans_results->errmsg);
-        }
-    }
-
-    return rt;
-}
-
-static void print_rtrans_results(options_t *cmd_opts, 
-				rtrans_results_t* rtrans_results, policy_t *policy)
-{
-	int i;
-	char *rule;
-
-	if(rtrans_results->num_range_rules > 0) {
-		for(i = 0; i < rtrans_results->num_range_rules; i++) {
-			rule = re_render_rangetrans((cmd_opts->lineno && !is_binary_policy(policy)), rtrans_results->range_rules[i], policy);
-			assert(rule);
-			if (cmd_opts->show_cond)
-				printf("   %s\n", rule);
-			else
-				printf("%s\n", rule);
-			free(rule);
-		}
-	}
-}
-
 static int perform_av_query(apol_policy_t *policy, options_t *opt, apol_vector_t **v)
 {
 	apol_avrule_query_t *avq = NULL;
@@ -471,11 +410,12 @@ static int perform_rt_query(apol_policy_t *policy, options_t *opt, apol_vector_t
 			goto err;
 		}
 	}
-	if (opt->tgt_name)
+	if (opt->tgt_name) {
 		if (apol_role_trans_query_set_target(policy, rtq, opt->tgt_name, opt->indirect)) {
 			error = errno;
 			goto err;
 		}
+	}
 
 	if (apol_get_role_trans_by_query(policy, rtq, v)) {
 		error = errno;
@@ -518,15 +458,90 @@ static void print_rt_results(apol_policy_t *policy, apol_vector_t *v)
 	}
 }
 
+static int perform_range_query(apol_policy_t *policy, options_t *opt, apol_vector_t **v)
+{
+	apol_range_trans_query_t *rtq = NULL;
+	int error = 0;
+
+	if (!policy || !opt || !v) {
+		ERR(policy, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (!opt->rtrans) {
+		*v = NULL;
+		return 0; /* no search to do */
+	}
+
+	rtq = apol_range_trans_query_create();
+	if (!rtq) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		errno = ENOMEM;
+		return -1;
+	}
+
+	apol_range_trans_query_set_regex(policy, rtq, opt->useregex);
+	if (opt->src_name) {
+		if (apol_range_trans_query_set_source(policy, rtq, opt->src_name, opt->indirect)) {
+			error = errno;
+			goto err;
+		}
+	}
+	if (opt->tgt_name) {
+		if (apol_range_trans_query_set_target(policy, rtq, opt->tgt_name, opt->indirect)) {
+			error = errno;
+			goto err;
+		}
+	}
+
+	if (apol_get_range_trans_by_query(policy, rtq, v)) {
+		error = errno;
+		goto err;
+	}
+
+	apol_range_trans_query_destroy(&rtq);
+	return 0;
+
+err:
+	apol_vector_destroy(v, NULL);
+	apol_range_trans_query_destroy(&rtq);
+	ERR(policy, "%s", strerror(error));
+	errno = error;
+	return -1;
+}
+
+static void print_range_results(apol_policy_t *policy, apol_vector_t *v)
+{
+	size_t i, num_rules = 0;
+	qpol_range_trans_t *rule = NULL;
+	char *tmp = NULL;
+
+	if (!policy || !v)
+		return;
+
+	if (!(num_rules = apol_vector_get_size(v)))
+		return;
+
+	fprintf(stdout, "Found %zd range_transition rules:\n", num_rules);
+
+	for (i = 0; i < num_rules; i++) {
+		if (!(rule = (qpol_range_trans_t*)apol_vector_get_element(v, i)))
+			break;
+		if (!(tmp = apol_range_trans_render(policy, rule)))
+			break;
+		fprintf(stdout, "   %s\n", tmp);
+		free(tmp);
+		tmp = NULL;
+	}
+}
+
 int main (int argc, char **argv)
 {
 	options_t cmd_opts;
 	int optc, rt;
 		
-	bool_t tesearch, rtrans_search, rbac_search;
-	unsigned int open_opts = 0;
-	policy_t *policy;
-	apol_policy_t *apolicy = NULL;
+	apol_policy_t *policy = NULL;
 	apol_vector_t *v = NULL;
 	unsigned int search_opts = 0;
 	
@@ -538,10 +553,6 @@ int main (int argc, char **argv)
 	cmd_opts.src_name = cmd_opts.tgt_name = cmd_opts.class_name = NULL;
 	cmd_opts.permlist = cmd_opts.bool_name = cmd_opts.src_role_name = NULL;
 	cmd_opts.tgt_role_name = NULL;
-	
-	tesearch = rtrans_search = rbac_search = FALSE;
-
-	open_opts = POLOPT_TE_POLICY | POLOPT_OBJECTS;
 	
 	while ((optc = getopt_long (argc, argv, "s:t:r:g:c:p:b:ANURaTLolCinhv0", longopts, NULL)) != -1)  {
 		switch (optc) {
@@ -651,26 +662,21 @@ int main (int argc, char **argv)
 	  		break;
 	  	case 'R': /* range transition */
 	  		cmd_opts.rtrans = TRUE;
-			open_opts |= POLOPT_RANGETRANS;
 	  		break;
 		case 'L':
 			cmd_opts.role_allow = TRUE;
-			open_opts |= POLOPT_RBAC;
 			break;
 		case 'o':
 			cmd_opts.role_trans = TRUE;
-			open_opts |= POLOPT_RBAC;
 			break;
 	  	case 'a': /* all */
 	  		cmd_opts.all = TRUE;
-	  		open_opts = POLOPT_ALL;
 	  		break;
 	  	case 'l': /* lineno */
 	  		cmd_opts.lineno = TRUE;
 	  		break;
 		case 'C':
 			cmd_opts.show_cond = TRUE;
-			open_opts |= POLOPT_COND_POLICY;
 			break;
 	  	case 'h': /* help */
 	  		usage(argv[0], 0);
@@ -707,75 +713,56 @@ int main (int argc, char **argv)
 		policy_file = argv[optind];
 
 	/* attempt to open the policy */
-	rt = open_partial_policy(policy_file, open_opts, &policy);
-	if(rt != 0)
-		exit(1);
-
-	rt = apol_policy_open(policy_file, &apolicy);
+	rt = apol_policy_open(policy_file, &policy);
 	if(rt) {
-		fprintf(stderr, "Warning: apol_open (NEW) failed!\n"); //TODO change this
-		apol_policy_destroy(&apolicy);
-		//TODO exit(1);
+		perror("Error opening policy");
+		apol_policy_destroy(&policy);
+		exit(1);
 	}
 
-	if (cmd_opts.all){
-		tesearch = TRUE;
-		rtrans_search = TRUE;
-		rbac_search = TRUE;
+	if (perform_av_query(policy, &cmd_opts, &v)) {
+		rt = 1;
+		goto cleanup;
 	}
-	else{
-		if (cmd_opts.allow || cmd_opts.nallow || cmd_opts.audit || 
-			cmd_opts.type){
-			tesearch = TRUE;
-		}
-		if (cmd_opts.rtrans) {
-			rtrans_search = TRUE;
-		}
-		if (cmd_opts.role_allow || cmd_opts.role_trans) {
-			rbac_search = TRUE;
-		}
+	if (v)
+		print_av_results(policy, v);
+	apol_vector_destroy(&v, NULL);
+
+	if (perform_te_query(policy, &cmd_opts, &v)) {
+		rt = 1;
+		goto cleanup;
 	}
-
-	perform_av_query(apolicy, &cmd_opts, &v);
 	if (v)
-		print_av_results(apolicy, v);
+		print_te_results(policy, v);
 	apol_vector_destroy(&v, NULL);
 
-	perform_te_query(apolicy, &cmd_opts, &v);
-	if (v)
-		print_te_results(apolicy, v);
-	apol_vector_destroy(&v, NULL);
-
-	perform_ra_query(apolicy, &cmd_opts, &v);
-	if (v)
-		print_ra_results(apolicy, v);
-	apol_vector_destroy(&v, NULL);
-
-	perform_rt_query(apolicy, &cmd_opts, &v);
-	if (v)
-		print_rt_results(apolicy, v);
-	apol_vector_destroy(&v, NULL);
-
-	rtrans_results_t rtrans_results;
-	init_rtrans_results(&rtrans_results);
-	if (rtrans_search) {
-		rt = perform_rtrans_query(&cmd_opts, &rtrans_results, 
-                   policy);
-		if (rt < 0){
-			free_rtrans_results_contents(&rtrans_results);
-			apol_policy_destroy(&apolicy);
-			close_policy(policy);
-			exit(1);
-		}
+	if (perform_ra_query(policy, &cmd_opts, &v)) {
+		rt = 1;
+		goto cleanup;
 	}
+	if (v)
+		print_ra_results(policy, v);
+	apol_vector_destroy(&v, NULL);
 
-	print_rtrans_results(&cmd_opts, &rtrans_results, policy);
-	printf("\n\n");
+	if (perform_rt_query(policy, &cmd_opts, &v)) {
+		rt = 1;
+		goto cleanup;
+	}
+	if (v)
+		print_rt_results(policy, v);
+	apol_vector_destroy(&v, NULL);
 
-	/* cleanup */
-	free_rtrans_results_contents(&rtrans_results);
-	close_policy(policy);
-	apol_policy_destroy(&apolicy);
+	if (perform_range_query(policy, &cmd_opts, &v)) {
+		rt = 1;
+		goto cleanup;
+	}
+	if (v)
+		print_range_results(policy, v);
+	apol_vector_destroy(&v, NULL);
+	rt = 0;
+
+cleanup:
+	apol_policy_destroy(&policy);
 	free(cmd_opts.src_name);
 	free(cmd_opts.tgt_name);
 	free(cmd_opts.class_name);
@@ -783,7 +770,6 @@ int main (int argc, char **argv)
 	free(cmd_opts.bool_name);
 	free(cmd_opts.src_role_name);
 	free(cmd_opts.tgt_role_name);
-	exit(0);
+	exit(rt);
 }
-
 
