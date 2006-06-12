@@ -936,6 +936,15 @@ typedef struct apol_policy {
 extern int apol_policy_is_mls(apol_policy_t *p);
 
 /**
+ * Given a qpol policy, return 1 if the policy is binary, 0 if
+ * not.  If it cannot be determined or upon error, return <0.
+ *
+ * @param p Policy to which check.
+ * @return 1 if policy is binary, 0 if not, < 0 upon error.
+ */
+extern int apol_policy_is_binary(apol_policy_t *p);
+
+/**
  * Given a policy, allocate and return a string that describes the
  * policy (policy version, source/binary, mls/non-mls).
  *
@@ -944,6 +953,7 @@ extern int apol_policy_is_mls(apol_policy_t *p);
  * caller must free() this afterwards.
  */
 extern char *apol_get_policy_version_type_mls_str(apol_policy_t *p);
+
 
 /**
  * Invoke a apol_policy_t's error callback function, passing it a
