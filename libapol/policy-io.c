@@ -699,6 +699,7 @@ static void apol_handle_default_callback(void *varg __attribute__ ((unused)),
 
 int apol_policy_open(const char *path, apol_policy_t **policy)
 {
+	int policy_type;
 	if (!path || !policy) {
 		errno = EINVAL;
 		return -1;
@@ -714,12 +715,13 @@ int apol_policy_open(const char *path, apol_policy_t **policy)
 	(*policy)->msg_callback = apol_handle_default_callback;
 	(*policy)->msg_callback_arg = (*policy);
 
-	if (qpol_open_policy_from_file(path, &((*policy)->p), &((*policy)->qh), qpol_handle_route_to_callback, (*policy)) < 0) {
+        policy_type = qpol_open_policy_from_file(path, &((*policy)->p), &((*policy)->qh), qpol_handle_route_to_callback, (*policy));
+        if (policy_type < 0) {
 		ERR(*policy, "Unable to open policy at %s.", path);
 		apol_policy_destroy(policy);
 		return -1; /* qpol sets errno */
         }
-
+        (*policy)->policy_type = policy_type;
 	return 0;
 }
 

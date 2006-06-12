@@ -544,108 +544,6 @@ const char* libapol_get_version(void)
 	return LIBAPOL_VERSION_STRING;
 }
 
-/* Find the file specified using our built-in search order for sysem config files.
- * This function returns a string of the directory; caller
- * must free the returned string.
- */
-char* find_file(const char *file_name)
-{
-	char *file = NULL, *var = NULL, *dir = NULL;
-	int filesz;
-	int rt;
-	
-	if(file_name == NULL)
-		return NULL;
-		
-	/* 1. check current directory */
-	filesz = strlen(file_name) + 4;
-	file = (char *)malloc(filesz);
-	if(file == NULL) {
-		fprintf(stderr, "out of memory");
-		return NULL;
-	}	
-	sprintf(file, "./%s", file_name);
-	rt = access(file, R_OK);
-	if(rt == 0) {
-		dir = (char *)malloc(4);
-		if(dir == NULL) {
-			fprintf(stderr, "out of memory");
-			return NULL;
-		}
-		sprintf(dir, ".");
-		free(file);
-		return dir;
-	}
-	free(file);
-	
-	/* 2. check environment variable */
-	var = getenv(APOL_ENVIRON_VAR_NAME);
-	if(!(var == NULL)) {
-		filesz = strlen(var) + strlen(file_name) + 2;
-		file = (char *)malloc(filesz);
-		if(file == NULL) {
-			fprintf(stderr, "out of memory");
-			return NULL;
-		}	
-		sprintf(file, "%s/%s", var, file_name);	
-		rt = access(file, R_OK);
-		if(rt == 0) {
-			dir = (char *)malloc(strlen(var) + 1);
-			if(dir == NULL) {
-				fprintf(stderr, "out of memory");
-				return NULL;
-			}
-			sprintf(dir, var);
-			free(file);
-			return dir;		
-		}
-	}
-	
-	/* 3. installed directory */
-	filesz = strlen(APOL_INSTALL_DIR) + strlen(file_name) + 2;
-	file = (char *)malloc(filesz);
-	if(file == NULL) {
-		fprintf(stderr, "out of memory");
-		return NULL;
-	}	
-	sprintf(file, "%s/%s", APOL_INSTALL_DIR, file_name);
-	rt = access(file, R_OK);
-	if(rt == 0) {
-		dir = (char *)malloc(strlen(APOL_INSTALL_DIR) +1);
-		if(dir == NULL) {
-			fprintf(stderr, "out of memory");
-			return NULL;
-		}
-		sprintf(dir, APOL_INSTALL_DIR);
-		free(file);
-		return dir;	
-	}
-	
-	/* 4. help install directory */
-	filesz = strlen(APOL_HELP_DIR) + strlen(file_name) + 2;
-	file = (char *)malloc(filesz);
-	if(file == NULL) {
-		fprintf(stderr, "out of memory");
-		return NULL;
-	}	
-	sprintf(file, "%s/%s", APOL_HELP_DIR, file_name);
-	rt = access(file, R_OK);
-	if(rt == 0) {
-		dir = (char *)malloc(strlen(APOL_HELP_DIR) +1);
-		if(dir == NULL) {
-			fprintf(stderr, "out of memory");
-			return NULL;
-		}
-		sprintf(dir, APOL_HELP_DIR);
-		free(file);
-		return dir;	
-	}
-	
-	/* 5. Didn't find it! */
-	free(file);		
-	return NULL;		
-}
-
 /* 
  * This function looks in the users home directory  */
 char* find_user_config_file(const char *file_name)
@@ -1031,4 +929,103 @@ const char *apol_rule_type_to_str(uint32_t rule_type)
 	case QPOL_RULE_TYPE_MEMBER: return "type_member";
 	}
 	return NULL;
+}
+
+
+char* apol_find_file(const char *file_name)
+{
+	char *file = NULL, *var = NULL, *dir = NULL;
+	int filesz;
+	int rt;
+	
+	if(file_name == NULL)
+		return NULL;
+		
+	/* 1. check current directory */
+	filesz = strlen(file_name) + 4;
+	file = (char *)malloc(filesz);
+	if(file == NULL) {
+		fprintf(stderr, "out of memory");
+		return NULL;
+	}	
+	sprintf(file, "./%s", file_name);
+	rt = access(file, R_OK);
+	if(rt == 0) {
+		dir = (char *)malloc(4);
+		if(dir == NULL) {
+			fprintf(stderr, "out of memory");
+			return NULL;
+		}
+		sprintf(dir, ".");
+		free(file);
+		return dir;
+	}
+	free(file);
+	
+	/* 2. check environment variable */
+	var = getenv(APOL_ENVIRON_VAR_NAME);
+	if(!(var == NULL)) {
+		filesz = strlen(var) + strlen(file_name) + 2;
+		file = (char *)malloc(filesz);
+		if(file == NULL) {
+			fprintf(stderr, "out of memory");
+			return NULL;
+		}	
+		sprintf(file, "%s/%s", var, file_name);	
+		rt = access(file, R_OK);
+		if(rt == 0) {
+			dir = (char *)malloc(strlen(var) + 1);
+			if(dir == NULL) {
+				fprintf(stderr, "out of memory");
+				return NULL;
+			}
+			sprintf(dir, var);
+			free(file);
+			return dir;		
+		}
+	}
+	
+	/* 3. installed directory */
+	filesz = strlen(APOL_INSTALL_DIR) + strlen(file_name) + 2;
+	file = (char *)malloc(filesz);
+	if(file == NULL) {
+		fprintf(stderr, "out of memory");
+		return NULL;
+	}	
+	sprintf(file, "%s/%s", APOL_INSTALL_DIR, file_name);
+	rt = access(file, R_OK);
+	if(rt == 0) {
+		dir = (char *)malloc(strlen(APOL_INSTALL_DIR) +1);
+		if(dir == NULL) {
+			fprintf(stderr, "out of memory");
+			return NULL;
+		}
+		sprintf(dir, APOL_INSTALL_DIR);
+		free(file);
+		return dir;	
+	}
+	
+	/* 4. help install directory */
+	filesz = strlen(APOL_HELP_DIR) + strlen(file_name) + 2;
+	file = (char *)malloc(filesz);
+	if(file == NULL) {
+		fprintf(stderr, "out of memory");
+		return NULL;
+	}	
+	sprintf(file, "%s/%s", APOL_HELP_DIR, file_name);
+	rt = access(file, R_OK);
+	if(rt == 0) {
+		dir = (char *)malloc(strlen(APOL_HELP_DIR) +1);
+		if(dir == NULL) {
+			fprintf(stderr, "out of memory");
+			return NULL;
+		}
+		sprintf(dir, APOL_HELP_DIR);
+		free(file);
+		return dir;	
+	}
+	
+	/* 5. Didn't find it! */
+	free(file);		
+	return NULL;		
 }

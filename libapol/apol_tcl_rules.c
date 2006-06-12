@@ -262,7 +262,7 @@ static int Apol_SearchTERules(ClientData clientData, Tcl_Interp *interp, int arg
 	int retval = TCL_ERROR;
 
 	apol_tcl_clear_error();
-	if (policy == NULL) {
+	if (policydb == NULL) {
 		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		goto cleanup;
 	}
@@ -579,7 +579,7 @@ static int Apol_SearchConditionalRules(ClientData clientData, Tcl_Interp *interp
 		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
 		return TCL_ERROR;
 	}
-	if (policy == NULL) {
+	if (policydb == NULL) {
 		Tcl_AppendResult(interp,"No current policy file is opened!", (char *) NULL);
 		return TCL_ERROR;
 	}
@@ -588,7 +588,8 @@ static int Apol_SearchConditionalRules(ClientData clientData, Tcl_Interp *interp
 		Tcl_AppendResult(interp, "The provided user string is too large.", (char *) NULL);
 		return TCL_ERROR;
 	}
-	
+/* FIX ME! */
+#if 0
 	regex = getbool(argv[2]);
 	include_allow = getbool(argv[3]);
 	include_audit = getbool(argv[4]);
@@ -629,7 +630,7 @@ static int Apol_SearchConditionalRules(ClientData clientData, Tcl_Interp *interp
 		}
 	}
 	free(exprs_b);
-										
+#endif
 	return TCL_OK;
 }
 
@@ -765,7 +766,7 @@ static int Apol_SearchRBACRules(ClientData clientData, Tcl_Interp *interp, int a
 	int retval = TCL_ERROR;
 
 	apol_tcl_clear_error();
-	if (policy == NULL) {
+	if (policydb == NULL) {
 		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		goto cleanup;
 	}
@@ -942,7 +943,7 @@ static int Apol_SearchRangeTransRules(ClientData clientData, Tcl_Interp *interp,
         int retval = TCL_ERROR;
 
         apol_tcl_clear_error ();
-        if (policy == NULL) {
+        if (policydb == NULL) {
                 Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
                 goto cleanup;
         }
