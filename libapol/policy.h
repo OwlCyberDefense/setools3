@@ -923,16 +923,27 @@ typedef struct apol_policy {
         qpol_handle_t *qh;
 	void (*msg_callback) (void *varg, struct apol_policy *p, const char *fmt, va_list argp);
 	void *msg_callback_arg;
+	int policy_type;
 } apol_policy_t;
 
 /**
- * Given a qpol policy, return 1 if the policy within is MLS, 0 if
- * not.  If it cannot be determined or upon error, return <0.
+ * Given a policy, return 1 if the policy within is MLS, 0 if not.  If
+ * it cannot be determined or upon error, return <0.
  *
  * @param p Policy to which check.
  * @return 1 if policy is MLS, 0 if not, < 0 upon error.
  */
 extern int apol_policy_is_mls(apol_policy_t *p);
+
+/**
+ * Given a policy, allocate and return a string that describes the
+ * policy (policy version, source/binary, mls/non-mls).
+ *
+ * @param p Policy to check.
+ * @return String that describes policy, or NULL upon error.  The
+ * caller must free() this afterwards.
+ */
+extern char *apol_get_policy_version_type_mls_str(apol_policy_t *p);
 
 /**
  * Invoke a apol_policy_t's error callback function, passing it a

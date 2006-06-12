@@ -4507,6 +4507,34 @@ int apol_policy_is_mls(apol_policy_t *p)
 	return qpol_policy_is_mls_enabled(p->qh, p->p);
 }
 
+char *apol_get_policy_version_type_mls_str(apol_policy_t *p)
+{
+	unsigned int version;
+	char *policy_type, *mls, buf[64];
+	if (qpol_policy_get_policy_version(p->qh, p->p, &version) < 0) {
+		return NULL;
+	}
+	switch (p->policy_type) {
+	case QPOL_POLICY_KERNEL_SOURCE:
+	    policy_type = "source"; break;
+	case QPOL_POLICY_KERNEL_BINARY:
+	    policy_type = "binary"; break;
+	default:
+	    policy_type = "unknown"; break;
+	}
+	if (qpol_policy_is_mls_enabled(p->qh, p->p)) {
+		mls = "mls";
+	}
+	else {
+		mls = "non-mls";
+	}
+	if (snprintf(buf, sizeof(buf), "v.%u (%s, %s)", version, policy_type, mls) == -1) {
+		return NULL;
+	}
+	return strdup(buf);
+}
+
+
 __attribute__ ((format (printf, 3, 4)))
 void apol_handle_route_to_callback(void *varg, apol_policy_t *p,
 				   const char *fmt, ...)

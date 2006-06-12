@@ -37,14 +37,11 @@
 #include "mls-query.h"
 
 /** Global SELinux policy (either read from source or from binary
- *  policy file. */
+ *  policy file, defined in apol_tcl_other.c. */
 extern apol_policy_t *policydb;
 
-
-extern policy_t *policy;  /* global policy DB, defined in apol_tcl.c */
-
 int Apol_Init(Tcl_Interp *interp);
-int Apol_GetScriptDir(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[]);
+int Apol_GetScriptDir(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[]);
 
 /**
  * If the callback arg embedded within the global apol policy is not

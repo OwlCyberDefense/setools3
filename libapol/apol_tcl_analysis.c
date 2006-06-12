@@ -379,6 +379,8 @@ static int append_dta_results(policy_t *policy, domain_trans_analysis_t *dta_res
 
 static int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
+    /* FIX ME!*/
+#if 0
 	int rt, num_objs, num_objs_options = 0, num_end_types = 0;
 	int cur, type, i, j, sz;
 	int num_obj_perms, obj, perm;
@@ -393,7 +395,7 @@ static int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *inte
 		return TCL_ERROR;
 	}
 		
-	if(policy == NULL) {
+	if (policydb == NULL) {
 		Tcl_AppendResult(interp, "No current policy file is opened!", (char *) NULL);
 		return TCL_ERROR;
 	}	
@@ -401,7 +403,7 @@ static int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *inte
 		Tcl_AppendResult(interp, "The provided domain type string is too large.", (char *) NULL);
 		return TCL_ERROR;
 	}
-	
+
 	/* Create the query structure */
 	dta_query = dta_query_create();
 	if (dta_query == NULL) {
@@ -577,6 +579,7 @@ err:
 	if (dta_results != NULL) free_domain_trans_analysis(dta_results);
 	if (tmp != NULL) free(tmp);
 	if (end_type != NULL) free(end_type);
+#endif
 	return TCL_ERROR;
 }
 
@@ -621,6 +624,8 @@ err:
  */
 static int Apol_DirectInformationFlowAnalysis(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
+        /* FIX ME! */
+#if 0
 	int num_objs, type, *types, obj;
 	int i, rt, num, sz = 0;
 	int num_answers = 0; 
@@ -638,7 +643,7 @@ static int Apol_DirectInformationFlowAnalysis(ClientData clientData, Tcl_Interp 
 		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
 		return TCL_ERROR;
 	}
-	if(policy == NULL) {
+	if (policydb == NULL) {
 		Tcl_AppendResult(interp,"No current policy file is opened!", (char *) NULL);
 		return TCL_ERROR;
 	}
@@ -837,7 +842,7 @@ static int Apol_DirectInformationFlowAnalysis(ClientData clientData, Tcl_Interp 
 	}
 	/* Free any reserved memory */
 	iflow_query_destroy(iflow_query);
-
+#endif
 	return TCL_OK;
 }
 
@@ -861,6 +866,8 @@ static int Apol_DirectInformationFlowAnalysis(ClientData clientData, Tcl_Interp 
  */
 static iflow_query_t* set_transitive_query_args(Tcl_Interp *interp, CONST char *argv[])
 {
+        /* FIX ME! */
+#if 0
 	int num_objs, num_obj_perms, num_objs_options, obj, perm;
 	int num_inter_types, type, *types = NULL;
 	int i, j, rt, num, cur, sz = 0;
@@ -872,7 +879,7 @@ static iflow_query_t* set_transitive_query_args(Tcl_Interp *interp, CONST char *
 	regex_t reg;
 	iflow_query_t *iflow_query = NULL;
 	
-	if(policy == NULL) {
+	if (policydb == NULL) {
 		Tcl_AppendResult(interp,"No current policy file is opened!", (char *) NULL);
 		return NULL;
 	}
@@ -1098,6 +1105,8 @@ static iflow_query_t* set_transitive_query_args(Tcl_Interp *interp, CONST char *
 		Tcl_Free((char *) inter_types);
 	}
 	return iflow_query;		
+#endif
+        return NULL;
 }
 
 
@@ -1149,13 +1158,15 @@ static iflow_query_t* set_transitive_query_args(Tcl_Interp *interp, CONST char *
  */
 static int Apol_TransitiveFlowAnalysis(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
+        /* FIX ME */
+#if 0
 	iflow_transitive_t *answers = NULL;
 	iflow_query_t* iflow_query = NULL;
 	char *start_type = NULL;
 	int rt;
 	char tbuf[64];
 	bool_t filter_end_types, filter_inter_types;
-	
+
 	if(argc != 12) {
 		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
 		return TCL_ERROR;
@@ -1205,6 +1216,7 @@ static int Apol_TransitiveFlowAnalysis(ClientData clientData, Tcl_Interp *interp
 		Tcl_AppendElement(interp, "0");
 	}
 	iflow_query_destroy(iflow_query);
+#endif
 	return TCL_OK;		
 }
 
@@ -1221,7 +1233,9 @@ static int Apol_TransitiveFlowAnalysis(ClientData clientData, Tcl_Interp *interp
  * argv[11] - minimum weight value
  */
 static int Apol_TransitiveFindPathsStart(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
-{		
+{
+        /* FIX ME! */
+#if 0
 	iflow_query_t* iflow_query = NULL;
 	
 	if(argc != 12) {
@@ -1243,11 +1257,14 @@ static int Apol_TransitiveFindPathsStart(ClientData clientData, Tcl_Interp *inte
 		return TCL_ERROR;
 	}
 	iflow_query_destroy(iflow_query);
+#endif
 	return TCL_OK;
 }
 
 static int Apol_TransitiveFindPathsNext(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
-{	
+{
+        /* FIX ME */
+#if 0
 	int num_paths;
 	char tbuf[64];
 		 
@@ -1275,12 +1292,14 @@ static int Apol_TransitiveFindPathsNext(ClientData clientData, Tcl_Interp *inter
 	} 
 	sprintf(tbuf, "%d", num_paths);
 	Tcl_AppendResult(interp, tbuf, (char *) NULL);
-	
+#endif
 	return TCL_OK;		
 }
 
 static int Apol_TransitiveFindPathsGetResults(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
-{	
+{
+        /* FIX ME */
+#if 0
 	int rt;
 	iflow_transitive_t *answers = NULL;
 	
@@ -1313,11 +1332,14 @@ static int Apol_TransitiveFindPathsGetResults(ClientData clientData, Tcl_Interp 
 		return TCL_ERROR;
 	}	
 	iflow_transitive_destroy(answers);
+#endif
 	return TCL_OK;		
 }
 
 static int Apol_TransitiveFindPathsAbort(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
-{	
+{
+        /* FIX ME */
+#if 0
 	if(argc != 1) {
 		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
 		return TCL_ERROR;
@@ -1325,6 +1347,7 @@ static int Apol_TransitiveFindPathsAbort(ClientData clientData, Tcl_Interp *inte
 	if(state != NULL) {
 		iflow_find_paths_abort(state);
 	}
+#endif
 	return TCL_OK;		
 }
 
@@ -1595,6 +1618,8 @@ static Tcl_Obj *apol_relabel_domain_results(ap_relabel_result_t *results, int st
  */
 static int Apol_RelabelAnalysis (ClientData clientData, Tcl_Interp *interp,
                                  int objc, Tcl_Obj * CONST objv[]) {
+/* FIX ME */
+#if 0
 	unsigned char mode;
 	unsigned char direction;
 	ap_relabel_result_t results;
@@ -1734,6 +1759,7 @@ static int Apol_RelabelAnalysis (ClientData clientData, Tcl_Interp *interp,
                 return TCL_ERROR;
         }
         Tcl_SetObjResult (interp, results_list_obj);
+#endif
         return TCL_OK;
 }
 
@@ -2374,6 +2400,8 @@ static int types_relation_append_results(types_relation_query_t *tr_query,
  */
 static int Apol_TypesRelationshipAnalysis(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
+        /* FIX ME */
+#if 0
 	types_relation_query_t *tr_query = NULL;
 	types_relation_results_t *tr_results = NULL;
 	int rt, i;
@@ -2383,7 +2411,7 @@ static int Apol_TypesRelationshipAnalysis(ClientData clientData, Tcl_Interp *int
 		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
 		return TCL_ERROR;
 	}
-	if (policy == NULL) {
+	if (policydb == NULL) {
 		Tcl_AppendResult(interp, "No current policy file is opened!", (char *) NULL);
 		return TCL_ERROR;
 	}
@@ -2531,7 +2559,7 @@ static int Apol_TypesRelationshipAnalysis(ClientData clientData, Tcl_Interp *int
 	 
 	types_relation_query_destroy(tr_query);	
 	if (tr_results) types_relation_destroy_results(tr_results);
-	
+#endif
 	return TCL_OK;		
 }
 

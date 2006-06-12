@@ -19,7 +19,6 @@ namespace eval ApolTop {
 	variable filename 		""
 	# The following is used with opening a policy for loading all or pieces of a policy. 
 	# The option defaults to 0 (or all portions of the policy).
-	variable policy_open_option	0
 	variable policyConf_lineno	""
 	variable polstats
         variable policy_stats_summary   ""
@@ -118,17 +117,6 @@ namespace eval ApolTop {
             PolicyConf
         }
 	variable tk_msgBox_Wait
-
-	# "contents" indicates which aspects of the policy are included in the current opened policy file
-	# indicies into this array are:
-	# 	classes
-	#	perms			(inlcudes common perms)
-	#	types			(include attribs)
-	#	te_rules		(all type enforcement rules)
-	#	roles			
-	#	rbac			(all role rules)
-	#	users
-        variable contents
 
 	# Initialize the recent files list
 	for {set i 0} {$i<$max_recent_files} {incr i} {
@@ -965,86 +953,6 @@ proc ApolTop::call_tabs_goto_line_cmd { } {
 	return 0
 }
 
- ##############################################################
-# ::display_options_Dlg
-#  	-  
-proc ApolTop::display_options_Dlg { } {
-	variable options_Dialog
-	global tcl_platform
-	
-	# create dialog
-    	if { [winfo exists $options_Dialog] } {
-    		raise $options_Dialog
-    		return 0
-    	}
-    	toplevel $options_Dialog
-   	wm protocol $options_Dialog WM_DELETE_WINDOW " "
-    	wm withdraw $options_Dialog
-    	wm title $options_Dialog "Open Options"
-    	
-	set open_opts_f [TitleFrame $options_Dialog.open_opts_f -text "Open policy options"]
-	set t_frame [frame [$open_opts_f getframe].t_frame]
-	set b_frame [frame [$open_opts_f getframe].b_frame]
-	set lframe [frame $b_frame.lframe]
-	set rframe [frame $b_frame.rframe]
-	
-	set lb_textInfo [label $t_frame.lb_textInfo -justify left \
-		-text "The following are policy options used for opening\
-		 a policy in order to control which parts of the policy are\
-		 loaded.\nPlease note: Conditional booleans and expressions\
-		 will always be loaded. Also, attributes do not apply to a binary\npolicy file.\n"]
-	set cb_all [radiobutton $lframe.cb_all -text "All" \
-		-variable ApolTop::policy_open_option -value 0 \
-		-justify left]
-	set cb_users [radiobutton $lframe.cb_users -text "Users (includes roles, types and attributes)" \
-		-variable ApolTop::policy_open_option -value 1 \
-		-justify left]
-	set cb_roles [radiobutton $lframe.cb_roles -text "Roles (types and attributes included)" \
-		-variable ApolTop::policy_open_option -value 2 \
-		-justify left]
-	set cb_ta [radiobutton $lframe.cb_ta -text "Types and attributes" \
-		-variable ApolTop::policy_open_option -value 3 \
-		-justify left]
-	set cb_bools [radiobutton $lframe.cb_bools -text "Booleans" \
-		-variable ApolTop::policy_open_option -value 4 \
-		-justify left]
-	set cb_classes_perms [radiobutton $rframe.cb_classes_perms  \
-		-text "Classes and permissions only" \
-		-variable ApolTop::policy_open_option -value 5 \
-		-justify left]
-	set cb_rbac [radiobutton $rframe.cb_rbac -text "RBAC policy (includes roles, role rules,\n\
-		types, attributes, classes, permissions)" \
-		-variable ApolTop::policy_open_option -value 6 \
-		-justify left]
-	set cb_te [radiobutton $rframe.cb_te -text "TE policy (includes classes, permissions, types,\n\
-		attributes and TE rules)" \
-		-variable ApolTop::policy_open_option -value 7 \
-		-justify left]
-	set cb_cond [radiobutton $rframe.cb_cond -text "Conditionals (includes conditional TE rules,\
-		 types,\nattributes, classes and permissions)" \
-		-variable ApolTop::policy_open_option -value 8 \
-		-justify left]
-	set cb_sids [radiobutton $rframe.cb_sids -text "Initial SIDs (includes types, attributes, roles, and\n\
-		users)" \
-		-variable ApolTop::policy_open_option -value 9 \
-		-justify left]
-	
-	set b_ok  [button $options_Dialog.b_ok -text "OK" -width 6 -command { destroy $ApolTop::options_Dialog }]
-	
-	pack $b_ok -side bottom -padx 5 -pady 5 -anchor center
-	pack $open_opts_f -side left -anchor nw -fill both -expand yes -padx 5 -pady 5
-	pack $t_frame $b_frame -side top -anchor nw -fill both 
-	pack $lframe $rframe -side left -anchor nw -fill both -expand yes
-	pack $cb_all $cb_users $cb_roles $cb_ta $cb_classes_perms -side top -anchor nw -expand yes
-	pack $cb_bools $cb_cond $cb_sids $cb_rbac $cb_te -side top -anchor nw -expand yes
-	pack $lb_textInfo -side top -anchor nw -fill x
-	# Place a toplevel at a particular position
-    	#::tk::PlaceWindow $options_Dialog widget center
-	wm deiconify $options_Dialog
-	wm protocol $options_Dialog WM_DELETE_WINDOW "destroy $options_Dialog"
-	return 0
-}
-
 ##############################################################
 # ::display_goto_line_Dlg
 #  	-  
@@ -1135,8 +1043,6 @@ proc ApolTop::create { } {
 	}
 	"&Advanced" all options 0 {
 	    {cascad "&Permission Mappings" {Perm_Map_Tag} pmap_menu 0 {}}
-	    #{command "Open O&ptions..." {} "Open options"  \
-	    #	{} -command "ApolTop::display_options_Dlg" }
 	    #{cascad "&File Context Indexing" {FC_Index_Tag} fc_index_menu 0 {}}
         }
 	"&Help" {} helpmenu 0 {
@@ -1578,7 +1484,6 @@ proc ApolTop::addRecent {file} {
 }
 
 proc ApolTop::helpDlg {title file_name} {
-    variable contents
     variable helpDlg
     set helpDlg .apol_helpDlg
     
@@ -1692,13 +1597,11 @@ proc ApolTop::popupPolicyStats {} {
         "Number of Type Enforcement Rules" {
             "allow" teallow
             "neverallow" neverallow
-            "clone (pre v.11)" clone
-            "type_transition" tetrans
-            "type_change" techange
-            "type_member" temember
             "auditallow" auditallow
-            "auditdeny" auditdeny
             "dontaudit" dontaudit
+            "type_transition" tetrans
+            "type_member" temember
+            "type_change" techange
         }
         "Number of Roles" {
             "Roles" roles
@@ -1778,8 +1681,7 @@ proc ApolTop::showPolicyStats {} {
     append policy_stats_summary "Types: $polstats(types)   "
     append policy_stats_summary "Attribs: $polstats(attribs)   "
     set num_te_rules [expr {$polstats(teallow) + $polstats(neverallow) +
-                            $polstats(auditallow) + $polstats(auditdeny) +
-                            $polstats(clone) + $polstats(dontaudit) +
+                            $polstats(auditallow) + $polstats(dontaudit) +
                             $polstats(tetrans) + $polstats(temember) +
                             $polstats(techange)}]
     append policy_stats_summary "TE rules: $num_te_rules   "
@@ -1808,22 +1710,13 @@ proc ApolTop::unimplemented {} {
 }
 
 proc ApolTop::closePolicy {} {
-        variable contents
 	variable filename 
 	variable policy_version_string {}
 	variable policy_is_open
 	variable policy_stats_summary {}
 	
 	set filename ""
-	set contents(classes)	0
-	set contents(perms)	0
-	set contents(types)	0
-	set contents(te_tules)	0
-	set contents(roles)	0
-	set contents(rbac)	0
-	set contents(users)	0
 	variable policy_mls_type ""
-	array unset contents
 	
 	wm title . "SE Linux Policy Analysis"
 
@@ -1986,13 +1879,11 @@ the names are not preserved in the binary policy format."
 # recently opened files (set to 1 if you want to do this).  You would NOT set this
 # to 1 if a recently file is being opened with this proc
 proc ApolTop::openPolicyFile {file recent_flag} {
-	variable contents
 	variable policy_version_string
 	variable policy_type
 	variable policy_mls_type
 	variable policy_is_open	
 	variable filename
-	variable policy_open_option
 	
 	ApolTop::closePolicy
 	
@@ -2025,7 +1916,7 @@ proc ApolTop::openPolicyFile {file recent_flag} {
 	set orig_Cursor [. cget -cursor] 
 	. configure -cursor watch
 	update idletasks
-	set rt [catch {apol_OpenPolicy $file $policy_open_option} err]
+	set rt [catch {apol_OpenPolicy $file} err]
 	if {$rt == 0} {
 		#set filename [file tail $file]
 		set filename $file
@@ -2048,20 +1939,6 @@ proc ApolTop::openPolicyFile {file recent_flag} {
 		return 0
 	}
 	foreach {policy_type policy_mls_type} [apol_GetPolicyType] break;
-	# Set the contents flags to indicate what the opened policy contains
-	set rt [catch {set con [apol_GetPolicyContents]} err]
-	if {$rt != 0} {
-		tk_messageBox -icon error -type ok -title "Error" -message "$err"
-		return 0
-	}
-	foreach item $con {
-		set rt [scan $item "%s %d" key val]
-		if {$rt != 2} {
-			tk_messageBox -icon error -type ok -title "Error" -message "openPolicy (getting contents): $rt"
-			return
-		}
-		set contents($key) $val
-	}
 	
 	ApolTop::showPolicyStats
 	set policy_is_open 1
