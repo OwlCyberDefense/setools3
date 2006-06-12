@@ -187,7 +187,7 @@ proc Apol_RBAC::create {nb} {
 
     # Major subframes
     set rsbox [TitleFrame $topf.rs -text "Rule Selection"]
-    set obox [TitleFrame $topf.opts -text "Search Criteria"]
+    set obox [TitleFrame $topf.opts -text "Search Options"]
     set dbox [TitleFrame $bottomf.results -text "RBAC Rules Display"]
     pack $rsbox -side left -expand 0 -fill both -padx 2
     pack $obox -side left -expand 1 -fill both -padx 2

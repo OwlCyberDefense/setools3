@@ -171,6 +171,7 @@ proc Apol_Cond_Bools::close { } {
     variable cond_bools_values
 
     initializeVars
+    $widgets(combo_box) configure -values {}
     # clean up bools listbox, then hide its scrollbars
     foreach w [winfo children [$widgets(listbox) getframe]] {
         destroy $w
@@ -184,8 +185,12 @@ proc Apol_Cond_Bools::close { } {
 proc Apol_Cond_Bools::initializeVars {} {
     variable opts
     array set opts {
+        enable_bool 0
         name ""
-        use_regexp 0    show_default 1   show_current 1
+        use_regexp 0
+
+        show_default 1
+        show_current 1
     }
 }
 

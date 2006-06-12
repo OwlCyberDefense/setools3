@@ -52,7 +52,7 @@ proc Apol_Range::create {nb} {
 
     # Layout frames
     set frame [$nb insert end $ApolTop::range_tab -text "Range Transition Rules"]
-    set obox [TitleFrame $frame.obox -text "Search Criteria"]
+    set obox [TitleFrame $frame.obox -text "Search Options"]
     set dbox [TitleFrame $frame.dbox -text "Range Transition Rules Display"]
     pack $obox -fill x -expand 0 -padx 2 -pady 2
     pack $dbox -fill both -expand yes -padx 2 -pady 2
