@@ -34,7 +34,7 @@ static struct option const opts[] =
 int Tcl_AppInit(Tcl_Interp *interp)
 {
 	char *script;
-	char *args[2];
+	CONST char *args[2];
 	Tcl_DString command;
 	int rt;	
 

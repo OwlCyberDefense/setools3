@@ -80,7 +80,6 @@ typedef struct rbac_bool {
 
 /* prototypes */
 const char* libapol_get_version(void);
-char* find_file(const char *file_name);
 char* find_user_config_file(const char *file_name);
 bool_t getbool(const char *str);
 int trim_string(char **str);
@@ -226,5 +225,18 @@ extern int apol_str_to_fs_use_behavior(const char *behavior);
  * is invalid.  <b>Do not free() this string.</b>
  */
 extern const char *apol_rule_type_to_str(uint32_t rule_type);
+
+/**
+ * Given a file name, search and return that file's path on the
+ * running system.  First search the present working directory, then
+ * the directory at APOL_INSTALL_DIR (an environment variable), then
+ * apol's install dir.
+ *
+ * @param file_name File to find.
+ *
+ * @return File's path, or NULL if not found.  Caller must free() this
+ * string afterwards.
+ */
+extern char* apol_find_file(const char *file_name);
 
 #endif
