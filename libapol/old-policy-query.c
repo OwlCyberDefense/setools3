@@ -233,14 +233,6 @@ static int match_te_rules_idx(int  idx,
 			rules_b->ttrules[i] = TRUE;
 		}
 	}
-	if(whichlists & (SRC_LIST | TGT_LIST)) {
-		for(i = 0; i < policy->rule_cnt[RULE_CLONE]; i++) {
-			if(!rules_b->clone[i] && does_clone_rule_use_type(idx, idx_type, whichlists, &
-					(policy->clones[i]), &(rules_b->cln_cnt), policy)) {
-				rules_b->clone[i] = TRUE;
-			}
-		}
-	}
 
 	if(include_audit && (whichlists & (SRC_LIST | TGT_LIST))) {
 		assert(rules_b->audit != NULL);

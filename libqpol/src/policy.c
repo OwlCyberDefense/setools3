@@ -532,7 +532,7 @@ int qpol_find_default_policy_file(unsigned int search_opt, char **policy_file_pa
 
 int qpol_open_policy_from_file(const char *path, qpol_policy_t **policy, qpol_handle_t **handle, qpol_handle_callback_fn_t fn, void *varg)
 {
-	int error = 0;
+	int error = 0, retv = -1;
 	FILE *infile = NULL;
 	sepol_policy_file_t *pfile = NULL;
 	int fd = 0;
@@ -575,6 +575,7 @@ int qpol_open_policy_from_file(const char *path, qpol_policy_t **policy, qpol_ha
 	sepol_policy_file_set_handle(pfile, *handle);
 
 	if (qpol_is_file_binpol(infile)) {
+		retv = QPOL_POLICY_KERNEL_BINARY;
 		sepol_policy_file_set_fp(pfile, infile);
 		if (sepol_policydb_read(*policy, pfile)) {
 			error = EIO;
@@ -585,6 +586,7 @@ int qpol_open_policy_from_file(const char *path, qpol_policy_t **policy, qpol_ha
 			goto err;
 		}
 	} else {
+		retv = QPOL_POLICY_KERNEL_SOURCE;
 		fd = fileno(infile);
 		if (fd < 0) {
 			error = errno;
@@ -627,7 +629,7 @@ int qpol_open_policy_from_file(const char *path, qpol_policy_t **policy, qpol_ha
 
 	fclose(infile);
 	sepol_policy_file_free(pfile);
-	return 0;
+	return retv;
 
 err:
 	sepol_handle_destroy(*handle);

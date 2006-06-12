@@ -64,6 +64,10 @@ typedef struct sepol_policydb qpol_policy_t;
 typedef struct sepol_handle qpol_handle_t;
 typedef void (*qpol_handle_callback_fn_t) (void* varg, qpol_handle_t* handle, const char* fmt, ...);
 
+#define QPOL_POLICY_KERNEL_SOURCE 0
+#define QPOL_POLICY_KERNEL_BINARY 1
+#define QPOL_POLICY_MODULE_BINARY 2
+
 /**
  *  Open a policy from a passed in file path.
  *  @param filename The name of the file to open.
@@ -72,8 +76,8 @@ typedef void (*qpol_handle_callback_fn_t) (void* varg, qpol_handle_t* handle, co
  *  @param handle The policy handle.
  *  @param fn (Optional) If non-NULL, the callback to be used by the handle.
  *  @param varg (Optional) The argument needed by the handle callback.
- *  @return Returns 0 on success and < 0 on failure; if the call fails,
- *  errno will be set and *policy will be NULL.
+ *  @return Returns one of QPOL_POLICY_* above on success and < 0 on failure;
+ *  if the call fails, errno will be set and *policy will be NULL.
  */
 extern int qpol_open_policy_from_file(const char *filename, qpol_policy_t **policy, qpol_handle_t **handle, qpol_handle_callback_fn_t fn, void *varg);
 
