@@ -429,23 +429,6 @@ char *re_render_mls_range(ap_mls_range_t *range, policy_t *policy)
 }
 
 /* security contexts */
-char *re_render_security_context2(apol_policy_t *policydb, qpol_context_t *context)
-{
-        apol_context_t *c = NULL;
-        char *rendered_context;
-
-	if (policydb == NULL)
-		return NULL;
-
-        if ((c = apol_context_create_from_qpol_context(policydb, context)) == NULL) {
-                return NULL;
-        }
-        rendered_context = apol_context_render(policydb, c);
-        apol_context_destroy(&c);
-        return rendered_context;
-}
-
-/* security contexts */
 char *re_render_security_context(const security_con_t *context, policy_t *policy)
 {
 	char *buf = NULL, *name = NULL, *range = NULL;
@@ -773,52 +756,6 @@ err_return:
 	return NULL;
 }
 
-char *re_render_fs_use2(apol_policy_t *policydb, qpol_fs_use_t *fsuse)
-{
-	char *context_str = NULL;
-	char *line = NULL, *retval = NULL;
-	const char *behavior_str = NULL;
-	char *fsname = NULL;
-	qpol_context_t *ctxt = NULL;
-	uint32_t behavior;
-
-	if (qpol_fs_use_get_behavior(policydb->qh, policydb->p, fsuse, &behavior))
-		goto cleanup;
-	if ((behavior_str = apol_fs_use_behavior_to_str(behavior)) == NULL) {
-		ERR(policydb, "Could not get behavior string.");
-		goto cleanup;
-	}
-
-	if (qpol_fs_use_get_name(policydb->qh, policydb->p, fsuse, &fsname))
-		goto cleanup;
-
-	if (behavior == QPOL_FS_USE_PSID) {
-		context_str = strdup("");
-	}
-	else {
-		if (qpol_fs_use_get_context(policydb->qh, policydb->p, fsuse, &ctxt))
-			goto cleanup;
-		context_str = re_render_security_context2(policydb, ctxt);
-		if (!context_str) {
-			goto cleanup;
-		}
-	}
-	line = (char *)calloc(strlen(behavior_str) + strlen(fsname) + strlen(context_str) + 3, sizeof(char));
-	if (!line) {
-		ERR(policydb, "Out of memory!");
-		goto cleanup;
-	}
-	sprintf(line, "%s %s %s", behavior_str, fsname, context_str);
-
-	retval = line;
- cleanup:
-	free(context_str);
-	if (retval != line) {
-		free(line);
-	}
-	return retval;
-}
-
 char *re_render_portcon(ap_portcon_t *portcon, policy_t *policy)
 {
 	char *line = NULL;
@@ -885,66 +822,6 @@ exit_err:
 	return NULL;
 }
 
-char *re_render_portcon2(apol_policy_t *policydb, qpol_portcon_t *portcon)
-{
-	char *line = NULL, *retval = NULL;
-	char *buff = NULL;
-	const char *proto_str = NULL;
-	char *context_str = NULL;
-	qpol_context_t *ctxt = NULL;
-	uint16_t low_port, high_port;
-	uint8_t proto;
-
-	const size_t bufflen = 50; /* arbitrary size big enough to hold port no. */
-	if (!portcon || !policydb)
-		goto cleanup;
-
-	buff = (char*)calloc(bufflen + 1, sizeof(char));
-	if (!buff) {
-		ERR(policydb, "Out of memory!");
-		goto cleanup;
-	}
-
-	if (qpol_portcon_get_protocol(policydb->qh, policydb->p, portcon, &proto))
-		goto cleanup;
-
-	if ((proto_str = apol_protocol_to_str(proto)) == NULL) {
-		ERR(policydb, "Could not get protocol string.");
-		goto cleanup;
-	}
-	if (qpol_portcon_get_low_port(policydb->qh, policydb->p, portcon, &low_port))
-		goto cleanup;
-	if (qpol_portcon_get_high_port(policydb->qh, policydb->p, portcon, &high_port))
-		goto cleanup;
-	if (low_port == high_port)
-		snprintf(buff, bufflen, "%d", low_port);
-	else
-		snprintf(buff, bufflen, "%d-%d", low_port, high_port);
-
-	if (qpol_portcon_get_context(policydb->qh, policydb->p, portcon, &ctxt))
-		goto cleanup;
-	context_str = re_render_security_context2(policydb, ctxt);
-	if (!context_str)
-		goto cleanup;
-
-	line = (char *)calloc(4 + strlen("portcon") + strlen(proto_str) + strlen(buff) + strlen(context_str), sizeof(char));
-	if (!line) {
-		ERR(policydb, "Out of memory!");
-		goto cleanup;
-	}
-
-	sprintf(line, "portcon %s %s %s", proto_str, buff, context_str);
-
-	retval = line;
- cleanup:
-	free(buff);
-	free(context_str);
-	if (retval != line) {
-		free(line);
-	}
-	return retval;
-}
-
 char *re_render_netifcon(ap_netifcon_t *netifcon, policy_t *policy)
 {
 	char *line = NULL;
@@ -978,46 +855,6 @@ char *re_render_netifcon(ap_netifcon_t *netifcon, policy_t *policy)
 	free(pktcon_str);
 
 	return line;
-}
-
-char *re_render_netifcon2(apol_policy_t *policydb, qpol_netifcon_t *netifcon)
-{
-	char *line = NULL, *retval = NULL;
-	char *devcon_str = NULL;
-	char *pktcon_str = NULL;
-	char *iface_str = NULL;
-	qpol_context_t *ctxt = NULL;
-
-	if (!netifcon || !policydb)
-                goto cleanup;
-
-	if (qpol_netifcon_get_if_con(policydb->qh, policydb->p, netifcon, &ctxt))
-                goto cleanup;
-	devcon_str = re_render_security_context2(policydb, ctxt);
-	if (!devcon_str)
-                goto cleanup;
-
-	if (qpol_netifcon_get_msg_con(policydb->qh, policydb->p, netifcon, &ctxt))
-                goto cleanup;
-	pktcon_str = re_render_security_context2(policydb, ctxt);
-	if (!pktcon_str) {
-                goto cleanup;
-	}
-
-	if (qpol_netifcon_get_name(policydb->qh, policydb->p, netifcon, &iface_str))
-		return NULL;
-	line = (char *)calloc(4 + strlen(iface_str) + strlen(devcon_str) + strlen(pktcon_str) + strlen("netifcon"), sizeof(char));
-        if (!line) {
-                ERR(policydb, "Out of memory!");
-                goto cleanup;
-        }
-        sprintf(line, "netifcon %s %s %s", iface_str, devcon_str, pktcon_str);
-
-        retval = line;
- cleanup:
-        free(devcon_str);
-	free(pktcon_str);
-	return retval;
 }
 
 char *re_render_nodecon(ap_nodecon_t *nodecon, policy_t *policy)
@@ -1081,147 +918,6 @@ char *re_render_nodecon(ap_nodecon_t *nodecon, policy_t *policy)
 	free(mask_str);
 	free(context_str);
 	return line;
-}
-
-char *re_render_nodecon2(apol_policy_t *policydb, qpol_nodecon_t *nodecon)
-{
-	char *line = NULL, *retval = NULL;
-	char *context_str = NULL;
-	char *addr_str = NULL;
-	char *mask_str = NULL;
-	qpol_context_t *ctxt = NULL;
-	unsigned char protocol, addr_proto, mask_proto;
-	uint32_t *addr = NULL, *mask = NULL;
-
-	if (!nodecon || !policydb)
-		goto cleanup;
-
-	if (qpol_nodecon_get_protocol(policydb->qh, policydb->p, nodecon, &protocol))
-		goto cleanup;
-	if (qpol_nodecon_get_addr(policydb->qh, policydb->p, nodecon, &addr, &addr_proto))
-		goto cleanup;
-	if (qpol_nodecon_get_mask(policydb->qh, policydb->p, nodecon, &mask, &mask_proto))
-		goto cleanup;
-	switch (protocol) {
-	case QPOL_IPV4:
-		if ((addr_str = re_render_ipv4_addr(policydb, addr[0])) == NULL ||
-		    (mask_str = re_render_ipv4_addr(policydb, mask[0])) == NULL) {
-			goto cleanup;
-		}
-		break;
-	case QPOL_IPV6:
-		if ((addr_str = re_render_ipv6_addr(policydb, addr)) == NULL ||
-		    (mask_str = re_render_ipv6_addr(policydb, mask)) == NULL) {
-			goto cleanup;
-		}
-		break;
-	default:
-		break;
-	}
-
-	if (qpol_nodecon_get_context(policydb->qh, policydb->p, nodecon, &ctxt))
-		goto cleanup;
-	context_str = re_render_security_context2(policydb, ctxt);
-	if (!context_str)
-		goto cleanup;
-
-	line = (char*)calloc(4 + strlen("nodecon") + strlen(addr_str) + strlen(mask_str) + strlen(context_str), sizeof(char));
-	if (!line) {
-		ERR(policydb, "Out of memory!");
-		goto cleanup;
-	}
-
-	sprintf(line, "nodecon %s %s %s", addr_str, mask_str, context_str);
-
-	retval = line;
- cleanup:
-	free(addr_str);
-	free(mask_str);
-	free(context_str);
-	return retval;
-}
-
-char *re_render_genfscon2(apol_policy_t *policydb, qpol_genfscon_t *genfscon)
-{
-	char *line = NULL, *retval = NULL;
-        char *context_str = NULL, *type_str = NULL;
-	char *front_str = NULL, *name = NULL, *path = NULL;
-	qpol_context_t *ctxt = NULL;
-	uint32_t fclass;
-	size_t len = 0;
-
-	if (!genfscon || !policydb)
-		goto cleanup;
-
-	if (qpol_genfscon_get_name(policydb->qh, policydb->p, genfscon, &name))
-		goto cleanup;
-	front_str = (char *)calloc(3 + strlen("genfscon") + strlen(name), sizeof(char));
-	if (!front_str) {
-		ERR(policydb, "Out of memory!");
-		goto cleanup;
-	}
-
-	strcat(front_str, "genfscon ");
-	strcat(front_str, name);
-	strcat(front_str, " ");
-
-	len = strlen(front_str);
-
-	if (qpol_genfscon_get_context(policydb->qh, policydb->p, genfscon, &ctxt))
-		goto cleanup;
-	context_str = re_render_security_context2(policydb, ctxt);
-	if (!context_str)
-		goto cleanup;
-
-	if (qpol_genfscon_get_class(policydb->qh, policydb->p, genfscon, &fclass))
-		return NULL;
-	switch (fclass) {
-	case QPOL_CLASS_DIR:
-		type_str = " -d ";
-		break;
-	case QPOL_CLASS_CHR_FILE:
-		type_str = " -c ";
-		break;
-	case QPOL_CLASS_BLK_FILE:
-		type_str = " -b ";
-		break;
-	case QPOL_CLASS_FILE:
-		type_str = " -- ";
-		break;
-	case QPOL_CLASS_FIFO_FILE:
-		type_str = " -p ";
-		break;
-	case QPOL_CLASS_LNK_FILE:
-		type_str = " -l ";
-		break;
-	case QPOL_CLASS_SOCK_FILE:
-		type_str = " -s ";
-		break;
-	case QPOL_CLASS_ALL:
-		type_str = "	";
-		break;
-	default:
-		goto cleanup;
-		break;
-	}
-
-	if (qpol_genfscon_get_path(policydb->qh, policydb->p, genfscon, &path))
-		goto cleanup;
-	line = (char*)calloc(len + strlen(path) + 4 + strlen(context_str) + 1 , sizeof(char));
-	if (!line) {
-		ERR(policydb, "Out of memory!");
-		goto cleanup;
-	}
-	sprintf(line, "%s %s %s %s", front_str, path, type_str, context_str);
-
-	retval = line;
-cleanup:
-	free(front_str);
-	free(context_str);
-	if (retval != line) {
-		free(line);
-	}
-	return retval;
 }
 
 char *re_render_cexpr(ap_constraint_expr_t *expr, policy_t *policy)
@@ -1736,7 +1432,7 @@ char *re_render_role_allow(bool_t addlineno, int idx, policy_t *policy)
 	return rt;
 }
 
-char *re_render_ipv4_addr(apol_policy_t *policydb, uint32_t addr)
+char *apol_ipv4_addr_render(apol_policy_t *policydb, uint32_t addr)
 {
 	char buf[40], *b;
 	unsigned char *p = (unsigned char *) &addr;
@@ -1747,7 +1443,7 @@ char *re_render_ipv4_addr(apol_policy_t *policydb, uint32_t addr)
 	return b;
 }
 
-char *re_render_ipv6_addr(apol_policy_t *policydb, uint32_t addr[4])
+char *apol_ipv6_addr_render(apol_policy_t *policydb, uint32_t addr[4])
 {
 	uint16_t tmp[8] = {0,0,0,0,0,0,0,0};
 	int i, sz = 0, retv;
@@ -1800,4 +1496,20 @@ char *re_render_ipv6_addr(apol_policy_t *policydb, uint32_t addr[4])
 		ERR(policydb, "Out of memory!");
 	}
 	return b;
+}
+
+char *apol_qpol_context_render(apol_policy_t *p, qpol_context_t *context)
+{
+        apol_context_t *c = NULL;
+        char *rendered_context;
+
+	if (p == NULL)
+		return NULL;
+
+        if ((c = apol_context_create_from_qpol_context(p, context)) == NULL) {
+                return NULL;
+        }
+        rendered_context = apol_context_render(p, c);
+        apol_context_destroy(&c);
+        return rendered_context;
 }

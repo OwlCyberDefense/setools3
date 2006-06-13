@@ -877,7 +877,7 @@ static int print_fsuse(FILE *fp, const char *type, apol_policy_t *policydb)
 
 	for (i = 0; i < apol_vector_get_size(v); i++) {
 		fs_use = (qpol_fs_use_t *)apol_vector_get_element(v, i);
-		tmp =  re_render_fs_use2(policydb, fs_use);
+		tmp =  apol_fs_use_render(policydb, fs_use);
 		if (!tmp)
 			goto cleanup;
 		fprintf(fp, "%s\n", tmp);
@@ -932,7 +932,7 @@ static int print_genfscon(FILE *fp, const char *type, apol_policy_t *policydb)
 
 	for (i = 0; i < apol_vector_get_size(v); i++) {
 		genfscon = (qpol_genfscon_t *)apol_vector_get_element(v, i);
-		tmp = re_render_genfscon2(policydb, genfscon);
+		tmp = apol_genfscon_render(policydb, genfscon);
 		if (!tmp)
 			goto cleanup;
 		fprintf(fp, "%s\n", tmp);
@@ -975,7 +975,7 @@ static int print_netifcon(FILE *fp, const char *name, apol_policy_t *policydb)
 	if (name != NULL) {
 		if (qpol_policy_get_netifcon_by_name(policydb->qh, policydb->p, name, &netifcon))
 			goto cleanup;
-		tmp = re_render_netifcon2(policydb, netifcon);
+		tmp = apol_netifcon_render(policydb, netifcon);
 		if (!tmp)
 			goto cleanup;
 		fprintf(fp, "   %s\n", tmp);
@@ -990,7 +990,7 @@ static int print_netifcon(FILE *fp, const char *name, apol_policy_t *policydb)
 		for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 			if (qpol_iterator_get_item(iter, (void **)&netifcon))
 				goto cleanup;
-			tmp = re_render_netifcon2(policydb, netifcon);
+			tmp = apol_netifcon_render(policydb, netifcon);
 			if (!tmp)
 				goto cleanup;
 			fprintf(fp, "   %s\n", tmp);
@@ -1062,7 +1062,7 @@ static int print_nodecon(FILE *fp, const char *addr, apol_policy_t *policydb)
 
 	for (i = 0; i < apol_vector_get_size(v); i++) {
 		nodecon = (qpol_nodecon_t *)apol_vector_get_element(v, i);
-		tmp = re_render_nodecon2(policydb, nodecon);
+		tmp = apol_nodecon_render(policydb, nodecon);
 		if (!tmp)
 			goto cleanup;
 		fprintf(fp, "   %s\n", tmp);
@@ -1141,9 +1141,9 @@ static int print_portcon(FILE *fp, const char *num, const char *protocol, apol_p
 
 		if (num && protocol) {
 			if (atoi(num) >= low_port && atoi(num) <= high_port && ocon_proto == proto )
-				fprintf(fp, "   %s\n", (tmp = re_render_portcon2(policydb, portcon)));
+				fprintf(fp, "   %s\n", (tmp = apol_portcon_render(policydb, portcon)));
 		} else {
-			fprintf(fp, "   %s\n", (tmp = re_render_portcon2(policydb, portcon)));
+			fprintf(fp, "   %s\n", (tmp = apol_portcon_render(policydb, portcon)));
 		}
 		free(tmp);
 		tmp = NULL;
@@ -1204,7 +1204,7 @@ static int print_isids(FILE *fp, const char *name, int expand, apol_policy_t *po
 		} else {
 			if (qpol_isid_get_context(policydb->qh, policydb->p, isid, &ctxt))
 				goto cleanup;
-			tmp = re_render_security_context2(policydb, ctxt);
+			tmp = apol_qpol_context_render(policydb, ctxt);
 			if (!tmp)
 				goto cleanup;
 			fprintf(fp, "%20s:  %s\n", isid_name, tmp);

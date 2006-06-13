@@ -30,6 +30,7 @@
  */
 
 #include "policy-query.h"
+#include "render.h"
 
 struct apol_genfscon_query {
         char *fs, *path;
@@ -196,6 +197,89 @@ int apol_genfscon_query_set_context(apol_policy_t *p __attribute__ ((unused)),
 	return 0;
 }
 
+char *apol_genfscon_render(apol_policy_t *p, qpol_genfscon_t *genfscon)
+{
+	char *line = NULL, *retval = NULL;
+        char *context_str = NULL, *type_str = NULL;
+	char *front_str = NULL, *name = NULL, *path = NULL;
+	qpol_context_t *ctxt = NULL;
+	uint32_t fclass;
+	size_t len = 0;
+
+	if (!genfscon || !p)
+		goto cleanup;
+
+	if (qpol_genfscon_get_name(p->qh, p->p, genfscon, &name))
+		goto cleanup;
+	front_str = (char *)calloc(3 + strlen("genfscon") + strlen(name), sizeof(char));
+	if (!front_str) {
+		ERR(p, "Out of memory!");
+		goto cleanup;
+	}
+
+	strcat(front_str, "genfscon ");
+	strcat(front_str, name);
+	strcat(front_str, " ");
+
+	len = strlen(front_str);
+
+	if (qpol_genfscon_get_context(p->qh, p->p, genfscon, &ctxt))
+		goto cleanup;
+	context_str = apol_qpol_context_render(p, ctxt);
+	if (!context_str)
+		goto cleanup;
+
+	if (qpol_genfscon_get_class(p->qh, p->p, genfscon, &fclass))
+		return NULL;
+	switch (fclass) {
+	case QPOL_CLASS_DIR:
+		type_str = " -d ";
+		break;
+	case QPOL_CLASS_CHR_FILE:
+		type_str = " -c ";
+		break;
+	case QPOL_CLASS_BLK_FILE:
+		type_str = " -b ";
+		break;
+	case QPOL_CLASS_FILE:
+		type_str = " -- ";
+		break;
+	case QPOL_CLASS_FIFO_FILE:
+		type_str = " -p ";
+		break;
+	case QPOL_CLASS_LNK_FILE:
+		type_str = " -l ";
+		break;
+	case QPOL_CLASS_SOCK_FILE:
+		type_str = " -s ";
+		break;
+	case QPOL_CLASS_ALL:
+		type_str = "	";
+		break;
+	default:
+		goto cleanup;
+		break;
+	}
+
+	if (qpol_genfscon_get_path(p->qh, p->p, genfscon, &path))
+		goto cleanup;
+	line = (char*)calloc(len + strlen(path) + 4 + strlen(context_str) + 1 , sizeof(char));
+	if (!line) {
+		ERR(p, "Out of memory!");
+		goto cleanup;
+	}
+	sprintf(line, "%s %s %s %s", front_str, path, type_str, context_str);
+
+	retval = line;
+cleanup:
+	free(front_str);
+	free(context_str);
+	if (retval != line) {
+		free(line);
+	}
+	return retval;
+}
+
 /******************** fs_use queries ********************/
 
 int apol_get_fs_use_by_query(apol_policy_t *p,
@@ -329,4 +413,50 @@ int apol_fs_use_query_set_context(apol_policy_t *p __attribute__ ((unused)),
 	f->context = context;
 	f->flags = (f->flags & ~APOL_QUERY_FLAGS) | range_match;
 	return 0;
+}
+
+char *apol_fs_use_render(apol_policy_t *p, qpol_fs_use_t *fsuse)
+{
+	char *context_str = NULL;
+	char *line = NULL, *retval = NULL;
+	const char *behavior_str = NULL;
+	char *fsname = NULL;
+	qpol_context_t *ctxt = NULL;
+	uint32_t behavior;
+
+	if (qpol_fs_use_get_behavior(p->qh, p->p, fsuse, &behavior))
+		goto cleanup;
+	if ((behavior_str = apol_fs_use_behavior_to_str(behavior)) == NULL) {
+		ERR(p, "Could not get behavior string.");
+		goto cleanup;
+	}
+
+	if (qpol_fs_use_get_name(p->qh, p->p, fsuse, &fsname))
+		goto cleanup;
+
+	if (behavior == QPOL_FS_USE_PSID) {
+		context_str = strdup("");
+	}
+	else {
+		if (qpol_fs_use_get_context(p->qh, p->p, fsuse, &ctxt))
+			goto cleanup;
+		context_str = apol_qpol_context_render(p, ctxt);
+		if (!context_str) {
+			goto cleanup;
+		}
+	}
+	line = (char *)calloc(strlen(behavior_str) + strlen(fsname) + strlen(context_str) + 3, sizeof(char));
+	if (!line) {
+		ERR(p, "Out of memory!");
+		goto cleanup;
+	}
+	sprintf(line, "%s %s %s", behavior_str, fsname, context_str);
+
+	retval = line;
+ cleanup:
+	free(context_str);
+	if (retval != line) {
+		free(line);
+	}
+	return retval;
 }
