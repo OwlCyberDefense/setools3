@@ -30,6 +30,7 @@
  */
 
 #include "policy-query.h"
+#include "render.h"
 
 struct apol_portcon_query {
         int proto;
@@ -167,6 +168,66 @@ int apol_portcon_query_set_context(apol_policy_t *p __attribute__ ((unused)),
 	return 0;
 }
 
+char *apol_portcon_render(apol_policy_t *p, qpol_portcon_t *portcon)
+{
+	char *line = NULL, *retval = NULL;
+	char *buff = NULL;
+	const char *proto_str = NULL;
+	char *context_str = NULL;
+	qpol_context_t *ctxt = NULL;
+	uint16_t low_port, high_port;
+	uint8_t proto;
+
+	const size_t bufflen = 50; /* arbitrary size big enough to hold port no. */
+	if (!portcon || !p)
+		goto cleanup;
+
+	buff = (char*)calloc(bufflen + 1, sizeof(char));
+	if (!buff) {
+		ERR(p, "Out of memory!");
+		goto cleanup;
+	}
+
+	if (qpol_portcon_get_protocol(p->qh, p->p, portcon, &proto))
+		goto cleanup;
+
+	if ((proto_str = apol_protocol_to_str(proto)) == NULL) {
+		ERR(p, "Could not get protocol string.");
+		goto cleanup;
+	}
+	if (qpol_portcon_get_low_port(p->qh, p->p, portcon, &low_port))
+		goto cleanup;
+	if (qpol_portcon_get_high_port(p->qh, p->p, portcon, &high_port))
+		goto cleanup;
+	if (low_port == high_port)
+		snprintf(buff, bufflen, "%d", low_port);
+	else
+		snprintf(buff, bufflen, "%d-%d", low_port, high_port);
+
+	if (qpol_portcon_get_context(p->qh, p->p, portcon, &ctxt))
+		goto cleanup;
+	context_str = apol_qpol_context_render(p, ctxt);
+	if (!context_str)
+		goto cleanup;
+
+	line = (char *)calloc(4 + strlen("portcon") + strlen(proto_str) + strlen(buff) + strlen(context_str), sizeof(char));
+	if (!line) {
+		ERR(p, "Out of memory!");
+		goto cleanup;
+	}
+
+	sprintf(line, "portcon %s %s %s", proto_str, buff, context_str);
+
+	retval = line;
+ cleanup:
+	free(buff);
+	free(context_str);
+	if (retval != line) {
+		free(line);
+	}
+	return retval;
+}
+
 /******************** netifcon queries ********************/
 
 int apol_get_netifcon_by_query(apol_policy_t *p,
@@ -280,6 +341,46 @@ int apol_netifcon_query_set_msg_context(apol_policy_t *p __attribute__ ((unused)
 	n->msg_context = context;
 	n->msg_flags = (n->msg_flags & ~APOL_QUERY_FLAGS) | range_match;
 	return 0;
+}
+
+char *apol_netifcon_render(apol_policy_t *p, qpol_netifcon_t *netifcon)
+{
+	char *line = NULL, *retval = NULL;
+	char *devcon_str = NULL;
+	char *pktcon_str = NULL;
+	char *iface_str = NULL;
+	qpol_context_t *ctxt = NULL;
+
+	if (!netifcon || !p)
+                goto cleanup;
+
+	if (qpol_netifcon_get_if_con(p->qh, p->p, netifcon, &ctxt))
+                goto cleanup;
+	devcon_str = apol_qpol_context_render(p, ctxt);
+	if (!devcon_str)
+                goto cleanup;
+
+	if (qpol_netifcon_get_msg_con(p->qh, p->p, netifcon, &ctxt))
+                goto cleanup;
+	pktcon_str = apol_qpol_context_render(p, ctxt);
+	if (!pktcon_str) {
+                goto cleanup;
+	}
+
+	if (qpol_netifcon_get_name(p->qh, p->p, netifcon, &iface_str))
+		return NULL;
+	line = (char *)calloc(4 + strlen(iface_str) + strlen(devcon_str) + strlen(pktcon_str) + strlen("netifcon"), sizeof(char));
+        if (!line) {
+                ERR(p, "Out of memory!");
+                goto cleanup;
+        }
+        sprintf(line, "netifcon %s %s %s", iface_str, devcon_str, pktcon_str);
+
+        retval = line;
+ cleanup:
+        free(devcon_str);
+	free(pktcon_str);
+	return retval;
 }
 
 /******************** nodecon queries ********************/
@@ -449,4 +550,62 @@ int apol_nodecon_query_set_context(apol_policy_t *p __attribute__ ((unused)),
 	n->context = context;
 	n->flags = (n->flags & ~APOL_QUERY_FLAGS) | range_match;
 	return 0;
+}
+
+char *apol_nodecon_render(apol_policy_t *p, qpol_nodecon_t *nodecon)
+{
+	char *line = NULL, *retval = NULL;
+	char *context_str = NULL;
+	char *addr_str = NULL;
+	char *mask_str = NULL;
+	qpol_context_t *ctxt = NULL;
+	unsigned char protocol, addr_proto, mask_proto;
+	uint32_t *addr = NULL, *mask = NULL;
+
+	if (!nodecon || !p)
+		goto cleanup;
+
+	if (qpol_nodecon_get_protocol(p->qh, p->p, nodecon, &protocol))
+		goto cleanup;
+	if (qpol_nodecon_get_addr(p->qh, p->p, nodecon, &addr, &addr_proto))
+		goto cleanup;
+	if (qpol_nodecon_get_mask(p->qh, p->p, nodecon, &mask, &mask_proto))
+		goto cleanup;
+	switch (protocol) {
+	case QPOL_IPV4:
+		if ((addr_str = apol_ipv4_addr_render(p, addr[0])) == NULL ||
+		    (mask_str = apol_ipv4_addr_render(p, mask[0])) == NULL) {
+			goto cleanup;
+		}
+		break;
+	case QPOL_IPV6:
+		if ((addr_str = apol_ipv6_addr_render(p, addr)) == NULL ||
+		    (mask_str = apol_ipv6_addr_render(p, mask)) == NULL) {
+			goto cleanup;
+		}
+		break;
+	default:
+		break;
+	}
+
+	if (qpol_nodecon_get_context(p->qh, p->p, nodecon, &ctxt))
+		goto cleanup;
+	context_str = apol_qpol_context_render(p, ctxt);
+	if (!context_str)
+		goto cleanup;
+
+	line = (char*)calloc(4 + strlen("nodecon") + strlen(addr_str) + strlen(mask_str) + strlen(context_str), sizeof(char));
+	if (!line) {
+		ERR(p, "Out of memory!");
+		goto cleanup;
+	}
+
+	sprintf(line, "nodecon %s %s %s", addr_str, mask_str, context_str);
+
+	retval = line;
+ cleanup:
+	free(addr_str);
+	free(mask_str);
+	free(context_str);
+	return retval;
 }

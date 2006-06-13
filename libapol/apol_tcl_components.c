@@ -2054,15 +2054,15 @@ static int append_nodecon_to_list(Tcl_Interp *interp,
 	assert(proto == proto_a && proto == proto_m);
 	if (proto == QPOL_IPV4) {
 		nodecon_elem[0] = Tcl_NewStringObj("ipv4", -1);
-		if ((addr_str = re_render_ipv4_addr(policydb, addr[0])) == NULL ||
-		    (mask_str = re_render_ipv4_addr(policydb, mask[0])) == NULL) {
+		if ((addr_str = apol_ipv4_addr_render(policydb, addr[0])) == NULL ||
+		    (mask_str = apol_ipv4_addr_render(policydb, mask[0])) == NULL) {
 			goto cleanup;
 		}
 	}
 	else if (proto == QPOL_IPV6) {
 		nodecon_elem[0] = Tcl_NewStringObj("ipv6", -1);
-		if ((addr_str = re_render_ipv6_addr(policydb, addr)) == NULL ||
-		    (mask_str = re_render_ipv6_addr(policydb, mask)) == NULL) {
+		if ((addr_str = apol_ipv6_addr_render(policydb, addr)) == NULL ||
+		    (mask_str = apol_ipv6_addr_render(policydb, mask)) == NULL) {
 			goto cleanup;
 		}
 	}

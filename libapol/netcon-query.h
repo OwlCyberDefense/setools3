@@ -136,6 +136,17 @@ extern int apol_portcon_query_set_context(apol_policy_t *p,
 					  apol_context_t *context,
 					  unsigned int range_match);
 
+/**
+ * Creates a string containing the textual representation of
+ * a portcon type.
+ * @param p Reference to a policy.
+ * @param portcon Reference to the portcon statement to be rendered.
+ *
+ * @return A newly allocated string on success, caller must free;
+ * NULL on error.
+ */
+extern char *apol_portcon_render(apol_policy_t *p, qpol_portcon_t *portcon);
+
 /******************** netifcon queries ********************/
 
 /**
@@ -229,6 +240,17 @@ extern int apol_netifcon_query_set_msg_context(apol_policy_t *p,
 					       apol_netifcon_query_t *n,
 					       apol_context_t *context,
 					       unsigned int range_match);
+
+/**
+ * Creates a string containing the textual representation of
+ * a netifcon type.
+ * @param p Reference to a policy.
+ * @param netifcon Reference to the netifcon statement to be rendered.
+ *
+ * @return A newly allocated string on success, caller must free;
+ * NULL on error.
+ */
+extern char *apol_netifcon_render(apol_policy_t *p, qpol_netifcon_t *netifcon);
 
 /******************** nodecon queries ********************/
 
@@ -344,5 +366,16 @@ extern int apol_nodecon_query_set_context(apol_policy_t *p,
 					  apol_nodecon_query_t *n,
 					  apol_context_t *context,
 					  unsigned int range_match);
+
+/**
+ * Creates a string containing the textual representation of
+ * a nodecon type.
+ * @param p Reference to a policy.
+ * @param nodecon Reference to the nodecon statement to be rendered.
+ *
+ * @return A newly allocated string on success, caller must free;
+ * NULL on error.
+ */
+extern char *apol_nodecon_render(apol_policy_t *p, qpol_nodecon_t *nodecon);
 
 #endif /* APOL_NETCON_QUERY_H */

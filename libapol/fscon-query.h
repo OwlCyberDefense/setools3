@@ -140,6 +140,17 @@ extern int apol_genfscon_query_set_context(apol_policy_t *p,
 					   apol_context_t *context,
 					   unsigned int range_match);
 
+/**
+ * Creates a string containing the textual representation of
+ * a genfscon type.
+ * @param p Reference to a policy.
+ * @param genfscon Reference to the genfscon statement to be rendered.
+ *
+ * @return A newly allocated string on success, caller must free;
+ * NULL on error.
+ */
+extern char *apol_genfscon_render(apol_policy_t *p, qpol_genfscon_t *genfscon);
+
 /******************** fs_use queries ********************/
 
 /**
@@ -232,5 +243,16 @@ extern int apol_fs_use_query_set_context(apol_policy_t *p,
 					 apol_fs_use_query_t *f,
 					 apol_context_t *context,
 					 unsigned int range_match);
+
+/**
+ * Creates a string containing the textual representation of
+ * a fs_use type.
+ * @param p Reference to a policy.
+ * @param fsuse Reference to the fs_use statement to be rendered.
+ *
+ * @return A newly allocated string on success, caller must free;
+ * NULL on error.
+ */
+extern char *apol_fs_use_render(apol_policy_t *p, qpol_fs_use_t *fsuse);
 
 #endif /* APOL_FSCON_QUERY_H */
