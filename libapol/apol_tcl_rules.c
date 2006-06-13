@@ -214,7 +214,6 @@ static int append_terule_to_list(Tcl_Interp *interp,
  *   <li>classes options
  *   <li>permissions options  (ignored when searching type rules)
  * </ol>
- *
  * For rule selections list, this is a list of which rules to search.
  * Valid rule strings are:
  * <ul>
@@ -226,7 +225,6 @@ static int append_terule_to_list(Tcl_Interp *interp,
  *   <li>type_member
  *   <li>type_change
  * </ul>
- *
  * For other options, this is a list of strings that affect searching.
  * Valid strings are:
  * <ul>
@@ -234,13 +232,11 @@ static int append_terule_to_list(Tcl_Interp *interp,
  *   <li>source_any - treat source symbol as criteria for target and default
  *   <li>regex - treat all symbols as regular expression
  * </ul>
- *
  * For source/target/default types, these are each a list of two parameters:
  * <ol>
  *   <li>type/attribute symbol name (or empty string to ignore)
  *   <li>perform indirect matching with this symbol
  * </ol>
- *
  * For classes, the returned rule's class must be within this list.
  * For permissions, the rule must have at least one permission within
  * this list.  Pass an empty list to skip this filter.
@@ -428,210 +424,149 @@ static int Apol_SearchTERules(ClientData clientData, Tcl_Interp *interp, int arg
 	return retval;
 }
 
-static void apol_cond_rules_append_expr(cond_expr_t *exp, policy_t *policy, Tcl_Interp *interp)
+/*
+static int append_cond_expr_to_list(Tcl_Interp *interp,
+                                    qpol_cond_expr_t *expr,
+                                    Tcl_Obj *result_list)
 {
-	char tbuf[BUF_SZ];
-	cond_expr_t *cur;
-	Tcl_DString buffer, *buf = &buffer;
-	
-	Tcl_DStringInit(buf);
-			
-	for (cur = exp; cur != NULL; cur = cur->next) {
-		switch (cur->expr_type) {
-		case COND_BOOL:
-			snprintf(tbuf, sizeof(tbuf)-1, "%s ", policy->cond_bools[cur->bool].name); 
-			Tcl_DStringAppend(buf, tbuf, -1);
-			break;
-		case COND_NOT:
-			snprintf(tbuf, sizeof(tbuf)-1, "! "); 
-			Tcl_DStringAppend(buf, tbuf, -1);
-			break;
-		case COND_OR:
-			snprintf(tbuf, sizeof(tbuf)-1, "|| "); 
-			Tcl_DStringAppend(buf, tbuf, -1);
-			break;
-		case COND_AND:
-			snprintf(tbuf, sizeof(tbuf)-1, "&& "); 
-			Tcl_DStringAppend(buf, tbuf, -1);
-			break;
-		case COND_XOR:
-			snprintf(tbuf, sizeof(tbuf)-1, "^ "); 
-			Tcl_DStringAppend(buf, tbuf, -1);
-			break;
-		case COND_EQ:
-			snprintf(tbuf, sizeof(tbuf)-1, "== "); 
-			Tcl_DStringAppend(buf, tbuf, -1);
-			break;
-		case COND_NEQ:
-			snprintf(tbuf, sizeof(tbuf)-1, "!= ");
-			Tcl_DStringAppend(buf, tbuf, -1);
-			break;
-		default:
-			break;
-		}
-	}
-	/* Append the conditional expression to our tcl list */
-	Tcl_AppendElement(interp, buf->string);
-	Tcl_DStringFree(buf);
+        int retval = TCL_ERROR;
+        return retval;
 }
 
-static void apol_cond_rules_append_cond_list(cond_rule_list_t *list, bool_t include_allow, bool_t include_audit, bool_t include_tt, 
-				     	     policy_t *policy, Tcl_Interp *interp)
+static int append_cond_result_to_list(Tcl_Interp *interp,
+                                      apol_cond_result_t *result,
+                                      Tcl_Obj *result_ilst)
 {
-	int i;
-	char tbuf[BUF_SZ], *rule = NULL;
-	
-	if (!list) {
-		/* Indicate that there are no rules, since the list is empty. */
-		Tcl_AppendElement(interp, "0");
-		Tcl_AppendElement(interp, "0");
-		Tcl_AppendElement(interp, "0");
-		return;
-	}
-	assert(policy != NULL);
-	
-	snprintf(tbuf, sizeof(tbuf)-1, "%d", list->num_av_access);
-	Tcl_AppendElement(interp, tbuf);
-	if (include_allow) {
-		for (i = 0; i < list->num_av_access; i++) {
-			/* Append the line number for the rule */
-			sprintf(tbuf, "%lu", policy->av_access[list->av_access[i]].lineno);
-			Tcl_AppendElement(interp, tbuf);
-			
-			/* Append the rule string */
-			rule = re_render_av_rule(FALSE, list->av_access[i], FALSE, policy);
-			assert(rule);
-			snprintf(tbuf, sizeof(tbuf)-1, "%s", rule);
-			Tcl_AppendElement(interp, tbuf);
-			free(rule);
-			
-			/* Append flag indicating if this is a disabled or enabled rule */
-			if (policy->av_access[list->av_access[i]].enabled)
-				Tcl_AppendElement(interp, "1"); 
-			else 
-				Tcl_AppendElement(interp, "0"); 
-		}
-	}
-	
-	snprintf(tbuf, sizeof(tbuf)-1, "%d", list->num_av_audit);
-	Tcl_AppendElement(interp, tbuf);
-	if (include_audit) {
-		for (i = 0; i < list->num_av_audit; i++) {
-			/* Append the line number for the rule */
-			sprintf(tbuf, "%lu", policy->av_audit[list->av_audit[i]].lineno);
-			Tcl_AppendElement(interp, tbuf);
-			
-			/* Append the rule string */
-			rule = re_render_av_rule(FALSE, list->av_audit[i], TRUE, policy);
-			assert(rule);
-			snprintf(tbuf, sizeof(tbuf)-1, "%s", rule);
-			Tcl_AppendElement(interp, tbuf);
-			free(rule);
-			
-			/* Append flag indicating if this is a disabled or enabled rule */
-			if (policy->av_audit[list->av_audit[i]].enabled)
-				Tcl_AppendElement(interp, "1"); 
-			else 
-				Tcl_AppendElement(interp, "0"); 
-		}
-	}
-	
-	snprintf(tbuf, sizeof(tbuf)-1, "%d", list->num_te_trans);
-	Tcl_AppendElement(interp, tbuf);
-	if (include_tt) {
-		for (i = 0; i < list->num_te_trans; i++) {
-			/* Append the line number for the rule */
-			sprintf(tbuf, "%lu", policy->te_trans[list->te_trans[i]].lineno);
-			Tcl_AppendElement(interp, tbuf);
-			
-			/* Append the rule string */
-			rule = re_render_tt_rule(FALSE, list->te_trans[i], policy);
-			assert(rule);
-			snprintf(tbuf, sizeof(tbuf)-1, "%s", rule);
-			Tcl_AppendElement(interp, tbuf);
-			free(rule);
-			
-			/* Append flag indicating if this is a disabled or enabled rule */
-			if (policy->te_trans[list->te_trans[i]].enabled)
-				Tcl_AppendElement(interp, "1"); 
-			else 
-				Tcl_AppendElement(interp, "0"); 
-		}
-	}
+        int retval = TCL_ERROR;
+        return retval;
 }
+*/
 
-/* 
- * argv[1] boolean name
- * argv[2] use reg expression
- * argv[3] include allow rules
- * argv[4] include audit rules
- * argv[5] include type transition rules
- * argv[6] use boolean for search
+/**
+ * Return an unsorted list of TE rules (av rules and type rules) that
+ * are only members of conditional expressions within the policy.
+ * Each tuple within the results list consists of:
+ * <ul>
+ *   <li>list of expression nodes
+ *   <li>list of true rules
+ *   <li>list of false rules
+ * </ul>
+ *
+ * Expression nodes list is a list of 2-uples, where the first element
+ * is a boolean operand (e.g., QPOL_COND_AND) and the second element a
+ * qpol_bool_t pointer.
+ *
+ * The two rules lists are of the same format as returned by
+ * Apol_SearchTERules().
+ *
+ * @param argv This function takes three parameters:
+ * <ol>
+ *   <li>rule selections
+ *   <li>other options
+ *   <li>boolean variable to search, or an empty string to search all
+ *   conditionals
+ * </ol>
+ * For rule selections list, this is a list of which rules to search.
+ * Valid rule strings are:
+ * <ul>
+ *   <li>allow
+ *   <li>auditallow
+ *   <li>dontaudit
+ *   <li>type_transition
+ *   <li>type_member
+ *   <li>type_change
+ * </ul>
+ * For other options, this is a list of strings that affect searching.
+ * The only valid string is:
+ * <ul>
+ *   <li>regex - treat boolean symbol as a regular expression
+ * </ul>
  */
 static int Apol_SearchConditionalRules(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
-	char *error_msg = NULL;
-	bool_t regex, *exprs_b, use_bool;
-	bool_t include_allow, include_audit, include_tt;
-	int i;
-	
-	if (argc != 7) {
-		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
-		return TCL_ERROR;
-	}
+        Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
+        /*        apol_cond_result_t *result; */
+        unsigned int avrules = 0, terules = 0;
+        CONST char **rule_strings = NULL, **other_opt_strings = NULL;
+        int num_opts;
+        apol_vector_t *v = NULL;
+        size_t i;
+        int retval = TCL_ERROR;
+
+        apol_tcl_clear_error();
 	if (policydb == NULL) {
-		Tcl_AppendResult(interp,"No current policy file is opened!", (char *) NULL);
-		return TCL_ERROR;
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		goto cleanup;
 	}
-	
-	if (!is_valid_str_sz(argv[1])) {
-		Tcl_AppendResult(interp, "The provided user string is too large.", (char *) NULL);
-		return TCL_ERROR;
+	if (argc != 3) {
+		ERR(policydb, "Need a rule selection, other options, and boolean name.");
+		goto cleanup;
 	}
-/* FIX ME! */
-#if 0
-	regex = getbool(argv[2]);
-	include_allow = getbool(argv[3]);
-	include_audit = getbool(argv[4]);
-	include_tt = getbool(argv[5]);
-	use_bool = getbool(argv[6]);
-	if (use_bool && str_is_only_white_space(argv[1])) {
-		Tcl_AppendResult(interp, "You umust provide a boolean!", (char *) NULL);
-		return TCL_ERROR;
+
+        if (Tcl_SplitList(interp, argv[1], &num_opts, &rule_strings) == TCL_ERROR) {
+		goto cleanup;
 	}
-	/* If regex is turned OFF, then validate that the boolean exists. */
-	if (use_bool && !regex && get_cond_bool_idx(argv[1], policy) < 0) {
-		Tcl_AppendResult(interp, "Invalid boolean name provided. You may need to turn on the regular expression option.", (char *) NULL);
-		return TCL_ERROR;
-	}
-	exprs_b = (bool_t*)malloc(sizeof(bool_t) * policy->num_cond_exprs);
-	if (!exprs_b) {
-		Tcl_AppendResult(interp, "Memory error\n", (char *) NULL);
-		return TCL_ERROR;
-	}
-	memset(exprs_b, FALSE, sizeof(bool_t) * policy->num_cond_exprs);
-	
-	if (search_conditional_expressions(use_bool, (char *) argv[1], regex, exprs_b, &error_msg, policy) != 0) {
-		Tcl_AppendResult(interp, "Error searching conditional expressions: ", error_msg, (char *) NULL);
-		free(error_msg);
-		return TCL_ERROR;
-	}
-	for (i = 0; i < policy->num_cond_exprs; i++) {
-		if (exprs_b[i]) {
-			apol_cond_rules_append_expr(policy->cond_exprs[i].expr, policy, interp);
-		
-			apol_cond_rules_append_cond_list(policy->cond_exprs[i].true_list, 
-							include_allow, include_audit, include_tt, 
-							policy, interp);
-			
-			apol_cond_rules_append_cond_list(policy->cond_exprs[i].false_list, 
-							include_allow, include_audit, include_tt, 
-							policy, interp);
+	while (--num_opts >= 0) {
+		CONST char *s = rule_strings[num_opts];
+		if (strcmp(s, "allow") == 0) {
+			avrules |= QPOL_RULE_ALLOW;
+		}
+		else if (strcmp(s, "auditallow") == 0) {
+			avrules |= QPOL_RULE_AUDITALLOW;
+		}
+		else if (strcmp(s, "dontaudit") == 0) {
+			avrules |= QPOL_RULE_DONTAUDIT;
+		}
+		else if (strcmp(s, "type_transition") == 0) {
+			terules |= QPOL_RULE_TYPE_TRANS;
+		}
+		else if (strcmp(s, "type_member") == 0) {
+			terules |= QPOL_RULE_TYPE_MEMBER;
+		}
+		else if (strcmp(s, "type_change") == 0) {
+			terules |= QPOL_RULE_TYPE_CHANGE;
+		}
+		else {
+			ERR(policydb, "Invalid rule selection %s.", s);
+			goto cleanup;
 		}
 	}
-	free(exprs_b);
-#endif
-	return TCL_OK;
+
+        if (Tcl_SplitList(interp, argv[2], &num_opts, &other_opt_strings) == TCL_ERROR) {
+		goto cleanup;
+	}
+	while (--num_opts >= 0) {
+		CONST char *s = other_opt_strings[num_opts];
+		if (strcmp(s, "regex") == 0) {
+		}
+	}
+
+        /*
+        if (apol_get_cond_result_by_query(policydb, query, &v) < 0) {
+                goto cleanup;
+        }
+        for (i = 0; i < apol_vector_get_size(v); i++) {
+                result = (apol_cond_result_t *) apol_vector_get_element(v, i);
+                if (append_cond_result_to_list(interp, result, result_obj) == TCL_ERROR) {
+                        goto cleanup;
+                }
+        }
+        */
+
+        Tcl_SetObjResult(interp, result_obj);
+	retval = TCL_OK;
+ cleanup:
+	if (rule_strings != NULL) {
+		Tcl_Free((char *) rule_strings);
+	}
+	if (other_opt_strings != NULL) {
+		Tcl_Free((char *) other_opt_strings);
+	}
+        /*        apol_vector_destroy(&v, apol_cond_result_free); */
+        if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+        return retval;
 }
 
 /**
@@ -737,14 +672,12 @@ static int append_role_trans_to_list(Tcl_Interp *interp,
  *   <li>target role or type
  *   <li>default role (ignored when searching allow rules)
  * </ol>
- *
  * For rule selections list, this is a list of which rules to search.
  * Valid rule strings are:
  * <ul>
  *   <li>allow
  *   <li>role_transition
  * </ul>
- *
  * For other options, this is a list of strings that affect searching.
  * The only valid string is:
  * <ul>
