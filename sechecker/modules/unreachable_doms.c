@@ -10,6 +10,7 @@
 #include "policy.h"
 #include "unreachable_doms.h"
 
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <string.h>
 #include <selinux/selinux.h>
@@ -206,6 +207,8 @@ int unreachable_doms_init(sechk_module_t *mod, policy_t *policy)
  *   1 The module "failed" 		- some negative results found */
 int unreachable_doms_run(sechk_module_t *mod, policy_t *policy)
 {
+/* FIX ME: need to convert this to use new libapol */
+#if 0
 	unreachable_doms_data_t *datum;
 	sechk_name_value_t *dep = NULL;
 	sechk_result_t *res = NULL;
@@ -535,6 +538,7 @@ unreachable_doms_run_fail:
 		sechk_item_free(item);
 	sechk_result_free(res);
 	dta_trans_destroy(&trans_list);
+#endif
 	return -1;
 }
 
@@ -1103,6 +1107,8 @@ static char *build_invalid_trans_proof_str(dta_trans_t *trans, policy_t *policy)
  */
 static bool_t has_role_trans(const int ep_type, policy_t *policy)
 {
+/* FIX ME: need to convert to use new libapol */
+#if  0
 	rbac_query_t *rbac_query = NULL;
 	rbac_results_t rbac_results;
 	ta_item_t *src_r, *tgt_r;
@@ -1153,6 +1159,7 @@ static bool_t has_role_trans(const int ep_type, policy_t *policy)
 	}
 
         free(rbac_query);
+#endif
 	return FALSE;
 }
 

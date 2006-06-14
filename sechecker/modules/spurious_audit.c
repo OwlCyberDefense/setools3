@@ -179,6 +179,8 @@ int spurious_audit_init(sechk_module_t *mod, policy_t *policy)
  * structure and fills in all relavant item and proof data. */
 int spurious_audit_run(sechk_module_t *mod, policy_t *policy)
 {
+/* FIX ME: need to convert this to use new libapol */
+#if 0
 	spurious_audit_data_t *datum;
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
@@ -462,6 +464,7 @@ spurious_audit_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
 	sechk_result_free(res);
+#endif
 	return -1;
 }
 
@@ -489,6 +492,8 @@ void spurious_audit_free(sechk_module_t *mod)
  * report and prints it to stdout. */
 int spurious_audit_print_output(sechk_module_t *mod, policy_t *policy) 
 {
+/* FIX ME: need to convert this to use new libapol */
+#if 0
 	spurious_audit_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
@@ -546,6 +551,7 @@ int spurious_audit_print_output(sechk_module_t *mod, policy_t *policy)
 		}
 	}
 
+#endif
 	return 0;
 }
 

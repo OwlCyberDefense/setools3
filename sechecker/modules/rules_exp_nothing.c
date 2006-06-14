@@ -316,6 +316,8 @@ static bool_t is_subset(int *master, int msz, int *subset, int ssz)
  * even if called multiple times. */
 int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy)
 {
+/* FIX ME: need to convert this to use new libapol */
+#if 0
 	rules_exp_nothing_data_t *datum;
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
@@ -1046,6 +1048,7 @@ rules_exp_nothing_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
 	sechk_result_free(res);
+#endif
 	return -1;
 }
 
@@ -1073,6 +1076,8 @@ void rules_exp_nothing_free(sechk_module_t *mod)
  * report and prints it to stdout. */
 int rules_exp_nothing_print_output(sechk_module_t *mod, policy_t *policy) 
 {
+/* FIX ME: need to convert this to use new libapol */
+#if 0
 	rules_exp_nothing_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
@@ -1176,6 +1181,7 @@ int rules_exp_nothing_print_output(sechk_module_t *mod, policy_t *policy)
 		printf("\n");
 	}
 
+#endif
 	return 0;
 }
 

@@ -179,6 +179,8 @@ int inc_dom_trans_init(sechk_module_t *mod, policy_t *policy)
  * even if called multiple times. */
 int inc_dom_trans_run(sechk_module_t *mod, policy_t *policy)
 {
+/* FIX ME: need to convert this to use new libapol */
+#if 0
 	inc_dom_trans_data_t *datum;
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
@@ -294,11 +296,14 @@ inc_dom_trans_run_fail:
 	free(table);
 	sechk_item_free(item);
 	sechk_result_free(res);
+#endif
 	return -1;
 }
 /* The free function frees the private data of a module */
 void inc_dom_trans_free(sechk_module_t *mod)
 {
+/* FIX ME: need to convert this to use new libapol */
+#if 0
 	inc_dom_trans_data_t *datum;
 
 	if (!mod) {
@@ -318,6 +323,7 @@ void inc_dom_trans_free(sechk_module_t *mod)
 
 	free(mod->data);
 	mod->data = NULL;
+#endif
 }
 
 /* The print output function generates the text printed in the

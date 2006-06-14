@@ -186,6 +186,8 @@ int find_netif_types_init(sechk_module_t *mod, policy_t *policy)
  *   1 The module "failed" 		- some negative results found */
 int find_netif_types_run(sechk_module_t *mod, policy_t *policy)
 {
+/* FIX ME: need to convert this to use new libapol */
+#if 0
 	find_netif_types_data_t *datum;
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
@@ -333,6 +335,7 @@ find_netif_types_run_fail:
 	sechk_item_free(item);
 	sechk_result_free(res);
 	free(buff);
+#endif
 	return -1;
 }
 
