@@ -189,6 +189,8 @@ int types_wo_allow_init(sechk_module_t *mod, policy_t *policy)
  * structure and fills in all relavant item and proof data. */
 int types_wo_allow_run(sechk_module_t *mod, policy_t *policy)
 {
+/* FIX ME: need to convert this to use new libapol */
+#if 0
 	types_wo_allow_data_t *datum;
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
@@ -336,6 +338,7 @@ types_wo_allow_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
 	sechk_result_free(res);
+#endif
 	return -1;
 }
 

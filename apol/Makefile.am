@@ -15,7 +15,7 @@ dist_pkgdata_DATA = apol_help.txt dta_help.txt iflow_help.txt obj_perms_help.txt
 
 BUILT_SOURCES = tmp.tcl
 
-AM_CFLAGS = -I$(top_srcdir)/libqpol/include @TCL_INCLUDE_SPEC@ -DSTARTUP_SCRIPT='"apol.tcl"'
+AM_CFLAGS = -I$(top_srcdir)/libqpol/include @TCL_INCLUDES@ -DSTARTUP_SCRIPT='"apol.tcl"'
 AM_LDFLAGS = @TCL_LIB_SPEC@ @TK_LIB_SPEC@
 
 apol_SOURCES = apol_gui.c \

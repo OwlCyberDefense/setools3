@@ -12,6 +12,7 @@
 #include "render.h"
 #include "semantic/avsemantics.h"
 #include "policy-query.h"
+#include "old-policy-query.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -235,6 +236,8 @@ int inc_net_access_init(sechk_module_t *mod, policy_t *policy)
  *   1 The module "failed" 		- some negative results found */
 int inc_net_access_run(sechk_module_t *mod, policy_t *policy)
 {
+/* FIX ME: need to convert this to use new libapol */
+#if 0
 	inc_net_access_data_t *datum;
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
@@ -357,6 +360,7 @@ inc_net_access_run_fail:
 		sechk_item_free(item);
 		sechk_result_free(res);
 	}
+#endif
 	return -1;
 }
 

@@ -23,12 +23,14 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #ifdef LIBSEFS
-#include "file_contexts.h"
+#include "../libsefs/file_contexts.h"
 #endif
 
 #ifdef LIBSELINUX
 #include <selinux/selinux.h>
 #endif
+
+#include <qpol/policy_query.h>
 
 static int sechk_lib_compare_sev(const char *a, const char *b)
 {
@@ -142,7 +144,7 @@ void sechk_lib_free(sechk_lib_t *lib)
 		return;
 
 	if (lib->policy) {
-		free_policy(&lib->policy);
+		apol_policy_destroy(&lib->policy);
 		lib->policy = NULL;
 	}
 	if (lib->modules) {
@@ -353,7 +355,7 @@ int sechk_lib_load_policy(const char *policyfilelocation, sechk_lib_t *lib)
 			fprintf(stderr, "Error: could not find default policy\n");
 			return -1;
 		}
-		retv = open_policy(default_policy_path, &(lib->policy));
+		retv = apol_policy_open(default_policy_path, &(lib->policy));
 		if (retv) {
 			fprintf(stderr, "Error: failed opening default policy\n");
 			return -1;
@@ -363,7 +365,7 @@ int sechk_lib_load_policy(const char *policyfilelocation, sechk_lib_t *lib)
 			fprintf(stderr,"Using policy: %s\n",lib->policy_path);
 		}
 	} else {
-		retv = open_policy(policyfilelocation, &(lib->policy));
+		retv = apol_policy_open(policyfilelocation, &(lib->policy));
 		if (retv) {
 			fprintf(stderr, "Error: failed opening policy %s\n", policyfilelocation);
 			return -1;
@@ -734,7 +736,13 @@ bool_t sechk_lib_check_requirement(sechk_name_value_t *req, sechk_lib_t *lib)
 			pol_ver = POL_VER_19;
 		else
 			pol_ver = POL_VER_UNKNOWN;
-		if (lib->policy->version < pol_ver) {
+
+		unsigned int ver; 
+		if (qpol_policy_get_policy_version(lib->policy->qh, lib->policy->p, &ver) < 0) {
+			fprintf(stderr, "Error: unable to get policy version\n");
+			return FALSE;
+		}
+		if (ver < pol_ver) {
 			/* as long as we're not in quiet mode print output */
 			if (lib->outputformat & ~(SECHK_OUT_QUIET))				
 				fprintf(stderr, "Error: module requires newer policy version\n");
@@ -755,8 +763,8 @@ bool_t sechk_lib_check_requirement(sechk_name_value_t *req, sechk_lib_t *lib)
 			fprintf(stderr, "Error: module requires selinux system, but SEChecker was not built to support system checks\n");
 		return FALSE;
 #endif
-	} else if (!strcmp(req->name, SECHK_PARSE_REQUIRE_MLS_POLICY)) {
-		if (!lib->policy->mls) {
+	} else if (!strcmp(req->name, SECHK_PARSE_REQUIRE_MLS_POLICY)) {		
+		if (!qpol_policy_is_mls_enabled(lib->policy->qh, lib->policy->p)) {
 			/* as long as we're not in quiet mode print output */
 			if (lib->outputformat & ~(SECHK_OUT_QUIET))
 				fprintf(stderr, "Error: module requires MLS policy\n");
@@ -929,7 +937,7 @@ int sechk_lib_load_profile(const char *prof_name, sechk_lib_t *lib)
 			return -1;
 		}
 		sprintf(prof_filename, "%s/%s", PROF_SUBDIR, profiles[i].file);		
-		path = find_file(prof_filename);
+		path = apol_find_file(prof_filename);
 		if (!path) {
 			free(prof_filename);
 			prof_filename = NULL;
@@ -939,7 +947,7 @@ int sechk_lib_load_profile(const char *prof_name, sechk_lib_t *lib)
 				return -1;
 			}
 			sprintf(prof_filename, "%s/%s", PROFILE_INSTALL_DIR, profiles[i].file);		
-			path = find_file(prof_filename);
+			path = apol_find_file(prof_filename);
 			if (!path) {
 				fprintf(stderr, "Error: Unable to find path\n");
 				goto sechk_load_profile_error;

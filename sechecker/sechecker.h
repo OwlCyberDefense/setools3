@@ -11,13 +11,15 @@
 #ifndef SECHECKER_H
 #define SECHECKER_H
 
+#include <config.h>
+
 #include "policy.h"
 #ifdef LIBSEFS
-#include "file_contexts.h"
+#include "../libsefs/file_contexts.h"
 #endif
 #include <libxml/xmlstring.h>
 
-/* These should be defined from the make environment */
+/* These should be defined from the make environment (FIX ME: check this) */
 #ifndef PROF_SUBDIR
 #define PROF_SUBDIR "/sechecker-profiles"
 #endif
@@ -113,7 +115,7 @@ typedef struct sechk_lib {
 	bool_t		*module_selection;    /* selected test modules */
 	int             modules_size;
 	int 		num_modules;
-	policy_t 	*policy;              /* policy data */
+	apol_policy_t 	*policy;              /* policy data */
 #ifdef LIBSEFS
 	sefs_fc_entry_t *fc_entries;          /* file contexts data */
 	int		num_fc_entries;
@@ -138,10 +140,10 @@ typedef struct sechk_profile_name_reg {
 
 /* Module function signatures */
 typedef int (*sechk_register_fn_t)(sechk_lib_t *lib);
-typedef int (*sechk_init_fn_t)(sechk_module_t *mod, policy_t *policy);
-typedef int (*sechk_run_fn_t)(sechk_module_t *mod, policy_t *policy);
+typedef int (*sechk_init_fn_t)(sechk_module_t *mod, apol_policy_t *policy);
+typedef int (*sechk_run_fn_t)(sechk_module_t *mod, apol_policy_t *policy);
 typedef void (*sechk_free_fn_t)(sechk_module_t *mod);
-typedef int (*sechk_print_output_fn_t)(sechk_module_t *mod, policy_t *policy);
+typedef int (*sechk_print_output_fn_t)(sechk_module_t *mod, apol_policy_t *policy);
 typedef sechk_result_t *(*sechk_get_result_fn_t)(sechk_module_t *mod);
 
 /* Module function names */

@@ -192,6 +192,8 @@ int find_domains_init(sechk_module_t *mod, policy_t *policy)
 
 int find_domains_run(sechk_module_t *mod, policy_t *policy) 
 {
+/* FIX ME: need to convert this to use new libapol */
+#if 0
 	int i, j, retv, idx;
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
@@ -455,6 +457,7 @@ find_domains_run_fail:
 	sechk_item_free(item);
 	sechk_result_free(res);
 	free(buff);
+#endif
 	return -1;
 }
 

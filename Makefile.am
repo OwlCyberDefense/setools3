@@ -1,4 +1,8 @@
-SUBDIRS = libqpol libapol libsefs apol secmds awish
+if COPY_BWIDGET
+	MAYBE_BWIDGET = packages
+endif
+
+SUBDIRS = libqpol libapol libsefs apol secmds sechecker awish $(MAYBE_BWIDGET)
 
 EXTRA_DIST = VERSION KNOWN-BUGS
 
@@ -10,6 +14,9 @@ libapol:
 
 libsefs:
 	$(MAKE) -C $(top_srcdir)/libsefs
+
+libseaudit:
+	$(MAKE) -C $(top_srcdir)/libseaudit
 
 apol:
 	$(MAKE) -C $(top_srcdir)/apol
@@ -27,7 +34,7 @@ sediffx:
 	@echo "FIX ME: sediffx not done yet"
 
 sechecker:
-	@echo "FIX ME: sechecker not done yet"
+	$(MAKE) -C $(top_srcdir)/sechecker
 
 awish:
 	$(MAKE) -C $(top_srcdir)/awish
@@ -37,8 +44,9 @@ all-nogui: secmds sediff sechecker
 help:
 	@echo "Make targets for setools:"
 	@echo "   all:          build everything, but don't install"
-	@echo "   install:      install everything"
 	@echo "   all-nogui:    only build non-GUI tools and libraries"
+	@echo "   install:      install everything"
+	@echo "   uninstall:	remove setools from your system"
 	@echo ""
 	@echo "   apol:         build policy analysis tool"
 	@echo "   secmds:       build setools command line tools"

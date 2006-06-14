@@ -179,6 +179,8 @@ int inc_mount_init(sechk_module_t *mod, policy_t *policy)
  
 int inc_mount_run(sechk_module_t *mod, policy_t *policy)
 {
+/* FIX ME: need to convert this to use new libapol */
+#if 0
 	inc_mount_data_t *datum;
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
@@ -341,6 +343,7 @@ inc_mount_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
 	sechk_result_free(res);
+#endif
 	return -1;
 }
 

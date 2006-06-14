@@ -225,6 +225,8 @@ int find_net_domains_init(sechk_module_t *mod, policy_t *policy)
  *   1 The module "failed" 		- some negative results found */
 int find_net_domains_run(sechk_module_t *mod, policy_t *policy)
 {
+/* FIX ME: need to convert this to use new libapol */
+#if 0
 	find_net_domains_data_t *datum;
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
@@ -344,6 +346,7 @@ find_net_domains_run_fail:
 	sechk_result_free(res);
 	if (buff)
 		free(buff); 
+#endif
 	return -1;
 }
 
