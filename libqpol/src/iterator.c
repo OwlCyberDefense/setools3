@@ -248,11 +248,10 @@ int avtab_state_next(qpol_iterator_t *iter)
 		return STATUS_ERR;
 	}
 
-	// TODO: iterate over both te_avtab and te_cond_avtab
-	avtab = &iter->policy->te_avtab;
 	state = iter->state;
+	avtab = (state->which == QPOL_AVTAB_STATE_AV ? state->ucond_tab : state->cond_tab);
 
-	if (state->bucket >= AVTAB_SIZE) {
+	if (state->bucket >= AVTAB_SIZE && state->which == QPOL_AVTAB_STATE_COND) {
 		errno = ERANGE;
 		return STATUS_ERR;
 	}
@@ -265,8 +264,14 @@ int avtab_state_next(qpol_iterator_t *iter)
 			do {
 				state->bucket++;
 				if (state->bucket >= AVTAB_SIZE) {
-					state->node = NULL;
-					break;
+					if (state->which == QPOL_AVTAB_STATE_AV) {
+						state->bucket = 0;
+						avtab = state->cond_tab;
+						state->which = QPOL_AVTAB_STATE_COND;
+					} else {
+						state->node = NULL;
+						break;
+					}
 				}
 				if (avtab->htable[state->bucket] != NULL) {
 					state->node = avtab->htable[state->bucket];
@@ -339,10 +344,9 @@ int avtab_state_end(qpol_iterator_t *iter)
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
-	// TOOD: make iterate accross te_cond_avtab
 	state = iter->state;
 	avtab = &iter->policy->te_avtab;
-	if (state->bucket >= AVTAB_SIZE)
+	if (state->bucket >= AVTAB_SIZE && state->which == QPOL_AVTAB_STATE_COND)
 		return 1;
 	return 0;
 }
@@ -413,9 +417,17 @@ size_t avtab_state_size(qpol_iterator_t *iter)
 		return STATUS_ERR;
 	}
 
-	// TODO: make iterate accross te_cond_avtab
-	avtab = &iter->policy->te_avtab;
 	state = iter->state;
+	avtab = state->ucond_tab;
+
+	for (bucket = 0; bucket < AVTAB_SIZE; bucket++) {
+		for (node = avtab->htable[bucket]; node; node = node->next) {
+			if (node->key.specified & state->rule_type_mask)
+				count++;
+		}
+	}
+
+	avtab = state->cond_tab;
 
 	for (bucket = 0; bucket < AVTAB_SIZE; bucket++) {
 		for (node = avtab->htable[bucket]; node; node = node->next) {
