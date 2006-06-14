@@ -883,12 +883,12 @@ char *re_render_nodecon(ap_nodecon_t *nodecon, policy_t *policy)
 
 	switch (nodecon->flag) {
 	case AP_IPV4:
-		snprintf(addr_str, ip_addr_str_len_max - 1, "%s", (tmp_str = re_render_ipv4_addr(NULL, nodecon->addr[3])));
-		snprintf(mask_str, ip_addr_str_len_max - 1, "%s", (tmp_str = re_render_ipv4_addr(NULL, nodecon->mask[3])));
+		snprintf(addr_str, ip_addr_str_len_max - 1, "%s", (tmp_str = apol_ipv4_addr_render(NULL, nodecon->addr[3])));
+		snprintf(mask_str, ip_addr_str_len_max - 1, "%s", (tmp_str = apol_ipv4_addr_render(NULL, nodecon->mask[3])));
 		break;
 	case AP_IPV6:
-		snprintf(addr_str, ip_addr_str_len_max - 1, "%s", (tmp_str = re_render_ipv6_addr(NULL, nodecon->addr)));
-		snprintf(mask_str, ip_addr_str_len_max - 1, "%s", (tmp_str = re_render_ipv6_addr(NULL, nodecon->mask)));
+		snprintf(addr_str, ip_addr_str_len_max - 1, "%s", (tmp_str = apol_ipv6_addr_render(NULL, nodecon->addr)));
+		snprintf(mask_str, ip_addr_str_len_max - 1, "%s", (tmp_str = apol_ipv6_addr_render(NULL, nodecon->mask)));
 		break;
 	default:
 		break;
