@@ -36,7 +36,7 @@ libapol_tcl_a_SOURCES = apol_tcl_other.c apol_tcl_other.h \
 	apol_tcl_rules.c apol_tcl_rules.h \
 	apol_tcl_fc.c apol_tcl_fc.h \
 	apol_tcl_analysis.c apol_tcl_analysis.h
-libapol_tcl_a_CFLAGS = $(AM_CFLAGS) @TCL_INCLUDE_SPEC@
+libapol_tcl_a_CFLAGS = $(AM_CFLAGS) @TCL_INCLUDES@
 
 # FIX ME!
 #CFLAGS  += -DLIBAPOL_POLICY_INSTALL_DIR='"$(POLICY_INSTALL_DIR)"'

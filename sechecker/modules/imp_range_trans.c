@@ -182,6 +182,8 @@ int imp_range_trans_init(sechk_module_t *mod, policy_t *policy)
  *   1 The module "failed" 		- some negative results found */
 int imp_range_trans_run(sechk_module_t *mod, policy_t *policy)
 {
+/* FIX ME: need to convert this to use new libapol */
+#if 0
 	imp_range_trans_data_t *datum;
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
@@ -460,6 +462,7 @@ imp_range_trans_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
 	sechk_result_free(res);
+#endif
 	return -1;
 }
 
@@ -494,6 +497,8 @@ void imp_range_trans_free(sechk_module_t *mod)
  * tested in this function (stats, list, proof, detailed, and brief) */
 int imp_range_trans_print_output(sechk_module_t *mod, policy_t *policy) 
 {
+/* FIX ME: need to convert this to use new libapol */
+#if 0
 	imp_range_trans_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
@@ -542,6 +547,7 @@ int imp_range_trans_print_output(sechk_module_t *mod, policy_t *policy)
 		}
 	}
 
+#endif
 	return 0;
 }
 

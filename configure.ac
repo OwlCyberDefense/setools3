@@ -53,46 +53,49 @@ fi
 
 dnl ** find the Tcl/Tk development libraries, then find BWidget
 
-SC_PATH_TCLCONFIG
-SC_LOAD_TCLCONFIG
+TEA_INIT(3.5)
+TEA_PATH_TCLCONFIG
+TEA_LOAD_TCLCONFIG
 AC_MSG_CHECKING([for Tcl 8.4 or greater])
 if test \( "${TCL_MAJOR_VERSION}" -gt 8 \) -o \( "${TCL_MAJOR_VERSION}" -eq 8 -a "${TCL_MINOR_VERSION}" -ge 4 \); then
     AC_MSG_RESULT(yes)
 else
     AC_MSG_ERROR([setools requires Tcl 8.4 or greater])
 fi
-SC_PATH_TKCONFIG
-SC_LOAD_TKCONFIG
+TEA_PATH_TKCONFIG
+TEA_LOAD_TKCONFIG
 AC_MSG_CHECKING([for Tk 8.4 or greater])
 if test \( "${TK_MAJOR_VERSION}" -gt 8 \) -o \( "${TK_MAJOR_VERSION}" -eq 8 -a "${TK_MINOR_VERSION}" -ge 4 \); then
     AC_MSG_RESULT(yes)
 else
     AC_MSG_ERROR([setools requires Tk 8.4 or greater])
 fi
+TEA_PUBLIC_TCL_HEADERS
+TEA_PUBLIC_TK_HEADERS
 
 echo "" > ./config.tcl
 
 AC_ARG_ENABLE(bwidget, [  --disable-bwidget-check do not check for BWidget 1.7, assume it exists], enable_bwidget="$enableval", enable_bwidget="yes")
 if test "x${enable_bwidget}" = "xyes"; then
-    AC_CHECK_PROGS(tclsh_path, tclsh tclsh8.4)
-    if test "x${tclsh_path}" = "x"; then
-        AC_MSG_ERROR([could not find a working tclsh interpreter])
-    fi
+    TEA_PROG_TCLSH
     AC_MSG_CHECKING([for BWidget 1.7 or greater])
     changequote(<<<,>>>)dnl
     cat > ./conftest.tcl <<EOF
-package require Tk
+if {[catch {package require Tk}]} {
+   puts stderr "Could not load Tk."
+   exit 1
+}
 if {![catch {package require BWidget} bwidget_version]} {
     if {[package vcompare \$bwidget_version 1.8] >= 0} {
         exit 0
     } elseif {[package vcompare \$bwidget_version 1.7] >= 0} {
-        exit 1
+        exit 17
     }
 }
-exit 2
+exit 16
 EOF
     changequote([,])dnl
-    ${tclsh_path} ./conftest.tcl
+    ${TCLSH_PROG} ./conftest.tcl
     case $? in
        0)
             AC_MSG_RESULT([1.8+])
@@ -100,6 +103,9 @@ EOF
             bwidget_broken_bindtabs=no
             ;;
        1)
+            AC_MSG_ERROR([failed; try using --disable-bwidget-check flag])
+            ;;
+       17)
             AC_MSG_RESULT([1.7])
             copy_bwidget=no
             bwidget_broken_bindtabs=yes
@@ -129,22 +135,6 @@ EOF
     fi
 else
     copy_bwidget=no
-fi
-
-if test ${copy_bwidget} = yes; then
-   AC_MSG_CHECKING([where to install BWidget])
-   changequote(<<<,>>>)dnl
-   cat > ./conftest.tcl <<EOF
-foreach path [concat \$auto_path \$tcl_pkgPath] {
-   if {[string match *share* \$path]} {
-      break
-   }
-}
-puts \$path
-EOF
-   changequote([,])dnl
-   bwidget_installdir=`${tclsh_path} ./conftest.tcl`
-   AC_MSG_RESULT(${bwidget_installdir})
 fi
 
 dnl ** look for selinuxfs mount point
@@ -220,7 +210,79 @@ if test ! -f "${sepol_srcdir}/src/libsepol.a"; then
 fi
 AC_MSG_RESULT(yes)
 
-dnl  todo:  dynamic, log file, default policy (source + binary), sharedir, gtk swab
+if test ${use_selinux} = "yes"; then
+dnl Locate selinux policy root directory
+    AC_MSG_CHECKING([for selinux policy root])
+    changequote(<<<,>>>)dnl
+    cat > ./conftest.c <<EOF
+#include <stdlib.h>
+#include <stdio.h>
+#include <selinux/selinux.h>
+int
+main ()
+{
+  const char *selinux_dir = selinux_policy_root();
+  fputs(selinux_dir, stdout);
+  return 0;
+}
+EOF
+    changequote([,])dnl
+    CFLAGS="$CFLAGS -I${sepol_devel_incdir} -I${selinux_devel_incdir}"
+    LDFLAGS="$LDFLAGS -L${sepol_devel_libdir} -L${selinux_devel_libdir} -lselinux -lsepol"  
+    gcc ${CFLAGS} ${LDFLAGS} -o conftest conftest.c >&5
+    SELINUX_POLICY_DIR=`./conftest`
+    AC_MSG_RESULT(${SELINUX_POLICY_DIR})
+fi
+
+dnl check for pkg-config
+AC_CHECK_PROG(pkg_config_dir, pkg-config, yes, no)
+if test ${pkg_config_dir} = "no"; then
+   AC_MSG_ERROR([pkg-config not found])
+fi
+
+dnl check for GTK
+AC_MSG_CHECKING([for GTK])
+GTK_CFLAGS=`pkg-config --cflags gtk+-2.0`
+if test -z "${GTK_CFLAGS}"; then
+   AC_MSG_ERROR([could not find GTK headers])
+fi
+GTK_LIBS=`pkg-config --libs gtk+-2.0`
+if test -z "${GTK_LIBS}"; then
+   AC_MSG_ERROR([could not find GTK libraries])
+fi
+AC_MSG_RESULT([yes])
+AC_SUBST(GTK_CFLAGS)
+AC_SUBST(GTK_LIBS)
+
+dnl check for libglade
+AC_MSG_CHECKING([for libglade])
+GLADE_CFLAGS=`pkg-config --cflags libglade-2.0`
+if test -z "${GLADE_CFLAGS}"; then
+   AC_MSG_ERROR([could not find libglade headers]) 
+fi
+GLADE_LIBS=`pkg-config --libs libglade-2.0`
+if test -z "${GLADE_LIBS}"; then
+   AC_MSG_ERROR([could not find libglade libraries])          
+fi
+AC_MSG_RESULT([yes])
+AC_SUBST(GLADE_CFLAGS)
+AC_SUBST(GLADE_LIBS)
+
+dnl check for libxml
+AC_MSG_CHECKING([for libxml])
+XML_CFLAGS=`pkg-config --cflags libxml-2.0`
+if test -z "${XML_CFLAGS}"; then
+   AC_MSG_ERROR([could not find libxml headers])
+fi
+XML_LIBS=`pkg-config --libs libxml-2.0`
+if test -z "${XML_LIBS}"; then
+   AC_MSG_ERROR([could not find libxml libraries])
+fi
+AC_MSG_RESULT([yes])
+AC_SUBST(XML_CFLAGS)
+AC_SUBST(XML_LIBS)
+
+dnl  todo:  dynamic, log file, default policy (source + binary), sharedir, swab
 dnl SELINUX_DIR 		= /selinux
 dnl SEINUX_POLICY_DIR 	= /etc/selinux/strict
 dnl POLICY_INSTALL_DIR 	= $(SELINUX_POLICY_DIR)/policy
@@ -240,11 +302,13 @@ if test ${use_sefs} = "yes"; then
    AC_SUBST(use_sefs)
 fi
 AM_CONDITIONAL(WANT_LIBSEFS, test ${use_sefs} = "yes")
+AM_CONDITIONAL(COPY_BWIDGET, test ${copy_bwidget} = "yes")
 
 AC_SUBST(use_shared)
 
-apol_install_dir=${datadir}
-apol_help_dir=${datadir}
+apol_install_dir=${datadir}/apol
+apol_help_dir=${datadir}/apol
+profile_install_dir=${datadir}/sechecker/profiles
 
 AC_SUBST(VERSION)
 AC_SUBST(sepol_srcdir)
@@ -252,10 +316,9 @@ AC_SUBST(libqpol_version)
 AC_SUBST(libapol_version)
 AC_SUBST(apol_install_dir)
 AC_SUBST(apol_help_dir)
+AC_SUBST(profile_install_dir)
 
 AC_DEFINE_UNQUOTED(LIBAPOL_VERSION_STRING, "${libapol_version}", [libapol version])
-
-dnl FIX ME: copy bwidget
 
 AC_CONFIG_FILES([Makefile VERSION \
                  libqpol/Makefile libqpol/src/Makefile libqpol/include/Makefile libqpol/include/qpol/Makefile \
@@ -263,7 +326,9 @@ AC_CONFIG_FILES([Makefile VERSION \
                  libsefs/Makefile \
                  secmds/Makefile \
                  apol/Makefile \
-                 awish/Makefile])
+                 awish/Makefile \
+                 sechecker/Makefile \
+                 packages/Makefile])
 
 AC_OUTPUT
 
