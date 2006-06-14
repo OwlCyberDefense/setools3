@@ -54,6 +54,8 @@ int qpol_policy_get_avrule_iter(qpol_handle_t *handle, qpol_policy_t *policy, ui
 		errno = ENOMEM;
 		return STATUS_ERR;
 	}
+	state->ucond_tab = &db->te_avtab;
+	state->cond_tab = &db->te_cond_avtab;
 	state->rule_type_mask = rule_type_mask;
 	state->node = db->te_avtab.htable[0];
 
