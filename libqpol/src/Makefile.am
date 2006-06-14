@@ -8,13 +8,35 @@ AM_YFLAGS = -d
 BUILT_SOURCES = policy_parse.h
 
 AM_CFLAGS = -I$(srcdir)/../include -I$(sepol_srcdir)/include -fpic
-libqpol_a_SOURCES = debug.h policy_extend.c \
-	iterator.c iterator_internal.h \
-	expand.c avrule_query.c terule_query.c rbacrule_query.c mlsrule_query.c \
-	bool_query.c context_query.c genfscon_query.c netifcon_query.c \
-	portcon_query.c type_query.c class_perm_query.c fs_use_query.c \
-	isid_query.c mls_query.c nodecon_query.c policy_query.c queue.c \
-	role_query.c user_query.c policy.c module_compiler.c \
+libqpol_a_SOURCES = \
+	avrule_query.c \
+	bool_query.c \
+	class_perm_query.c \
+	cond_query.c \
+	context_query.c \
+	debug.h \
+	expand.c \
+	fs_use_query.c \
+	genfscon_query.c \
+	isid_query.c \
+	iterator.c \
+	iterator_internal.h \
+	mls_query.c \
+	mlsrule_query.c \
+	module_compiler.c \
+	netifcon_query.c \
+	nodecon_query.c \
+	policy.c \
+	policy_extend.c \
+	policy_parse.h \
+	policy_query.c \
+	portcon_query.c \
+	queue.c \
+	rbacrule_query.c \
+	role_query.c \
+	terule_query.c \
+	type_query.c \
+	user_query.c \
 	policy_parse.y policy_scan.l
 libqpol_a_DEPENDENCIES = $(srcdir)/tmp_sepol
 libqpol_a_LIBADD = $(srcdir)/tmp_sepol/*.o

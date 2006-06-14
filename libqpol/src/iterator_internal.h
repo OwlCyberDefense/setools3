@@ -52,6 +52,8 @@ typedef struct ocon_state {
 
 typedef struct avtab_state {
 	uint32_t rule_type_mask;
+	avtab_t *ucond_tab;
+	avtab_t *cond_tab;
 	uint32_t bucket;
 	avtab_ptr_t node;
 #define QPOL_AVTAB_STATE_AV   0
