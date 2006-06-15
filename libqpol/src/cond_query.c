@@ -358,7 +358,7 @@ int qpol_cond_get_av_true_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpo
 		goto err;
 	}
 
-	if (!(crs->cur->node->key.specified & crs->rule_type_mask))
+	if (crs->cur && !(crs->cur->node->key.specified & crs->rule_type_mask))
 		qpol_iterator_next(*iter);
 
 	return STATUS_SUCCESS;
@@ -409,7 +409,7 @@ int qpol_cond_get_te_true_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpo
 		goto err;
 	}
 
-	if (!(crs->cur->node->key.specified & crs->rule_type_mask))
+	if (crs->cur && !(crs->cur->node->key.specified & crs->rule_type_mask))
 		qpol_iterator_next(*iter);
 
 	return STATUS_SUCCESS;
@@ -460,7 +460,7 @@ int qpol_cond_get_av_false_iter(qpol_handle_t *handle, qpol_policy_t *policy, qp
 		goto err;
 	}
 
-	if (!(crs->cur->node->key.specified & crs->rule_type_mask))
+	if (crs->cur && !(crs->cur->node->key.specified & crs->rule_type_mask))
 		qpol_iterator_next(*iter);
 
 	return STATUS_SUCCESS;
@@ -511,7 +511,7 @@ int qpol_cond_get_te_false_iter(qpol_handle_t *handle, qpol_policy_t *policy, qp
 		goto err;
 	}
 
-	if (!(crs->cur->node->key.specified & crs->rule_type_mask))
+	if (crs->cur && !(crs->cur->node->key.specified & crs->rule_type_mask))
 		qpol_iterator_next(*iter);
 
 	return STATUS_SUCCESS;
