@@ -146,14 +146,19 @@ int apol_genfscon_query_set_filesystem(apol_policy_t *p,
                                        apol_genfscon_query_t *g,
                                        const char *fs)
 {
-        return apol_query_set(p, &g->fs, NULL, fs);
+	return apol_query_set(p, &g->fs, NULL, fs);
 }
 
 int apol_genfscon_query_set_path(apol_policy_t *p,
 				 apol_genfscon_query_t *g,
 				 const char *path)
 {
-        return apol_query_set(p, &g->path, NULL, path);
+	int tmp = apol_query_set(p, &g->path, NULL, path);
+	if( !tmp ){
+		if (strlen( g->path ) > 1 && g->path[strlen(g->path) - 1] == '/')
+		g->path[strlen(g->path) - 1] = 0;
+	}
+	return tmp;
 }
 
 int apol_genfscon_query_set_objclass(apol_policy_t *p,
