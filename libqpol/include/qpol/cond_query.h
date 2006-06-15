@@ -159,7 +159,6 @@ extern int qpol_cond_eval(qpol_handle_t *handle, qpol_policy_t *policy, qpol_con
 #define QPOL_COND_EXPR_XOR	5 /* bool ^ bool */
 #define QPOL_COND_EXPR_EQ	6 /* bool == bool */
 #define QPOL_COND_EXPR_NEQ	7 /* bool != bool */
-#define QPOL_COND_EXPR_LAST	8
 
 /**
  *  Get the type of an expression node.
@@ -177,7 +176,8 @@ extern int qpol_cond_expr_node_get_expr_type(qpol_handle_t *handle, qpol_policy_
  *  Get the boolean used in an expression node.
  *  @param handle Error handler for the policy database.
  *  @param policy The policy associated with the conditional experssion.
- *  @param node The node from which to get the boolean.
+ *  @param node The node from which to get the boolean. It is an error
+ *  to call this function if the node is not of type QPOL_COND_EXPR_BOOL.
  *  @param cond_bool Pointer in which to store the boolean.
  *  The caller should not free this pointer.
  *  @return 0 on success and < 0 on failure; if the call fails,
