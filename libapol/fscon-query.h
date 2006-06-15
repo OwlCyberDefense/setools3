@@ -91,7 +91,8 @@ extern int apol_genfscon_query_set_filesystem(apol_policy_t *p,
 
 /**
  * Set a genfscon query to return only genfscons that act upon this
- * relative path.
+ * relative path.  If the path includes a trailing slash, the search
+ * will ingore that slash.
  *
  * @param p Policy handler, to report errors.
  * @param g Genfscon query to set.
