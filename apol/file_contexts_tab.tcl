@@ -433,10 +433,10 @@ proc Apol_File_Contexts::create {nb} {
 		
     # Layout frames
     set frame [$nb insert end $ApolTop::file_contexts_tab -text "File Contexts"]
-    set pw [PanedWindow $frame.pw -side left]
-    set options_pane [$pw add -weight 0]
-    set results_pane [$pw add -weight 1]
-    pack $pw -expand 1 -fill both
+    set options_pane [frame $frame.top]
+    set results_pane [frame $frame.bottom]
+    pack $options_pane -expand 0 -fill x
+    pack $results_pane -expand 1 -fill both -pady 2
 
     # File Context Index frame
     set status [TitleFrame $options_pane.status -text "File Context Index"]
@@ -455,40 +455,34 @@ proc Apol_File_Contexts::create {nb} {
     grid $status_text.l $status1 -sticky w
     grid x $status2 -sticky w -pady 2
     pack $status_buttons $status_text -side left -anchor nw -padx 2 -pady 4
-    pack $status -side top -expand 0 -fill x -pady 3
-
-    set pw2 [PanedWindow $options_pane.pw -side top]
-    set search_opts [$pw2 add -weight 0]
-    set search_criteria [$pw2 add -weight 1]
-    pack $pw2 -fill both -expand 1
+    pack $status -side top -expand 0 -fill x -pady 2 -padx 2
 
     # Search options subframes
-    set optionsbox [TitleFrame $search_opts.opts -text "Search Options"]
+    set optionsbox [TitleFrame $options_pane.opts -text "Search Options"]
+    pack $optionsbox -fill both -expand yes -padx 2 -pady 2
     set options_frame [$optionsbox getframe]
-    set show_context [checkbutton $options_frame.show_context \
+
+    set show_frame [frame $options_frame.show]
+    set user_frame [frame $options_frame.user]
+    set objclass_frame [frame $options_frame.objclass]
+    set type_frame [frame $options_frame.type]
+    set range_frame [frame $options_frame.range]
+    set path_frame [frame $options_frame.path]
+    grid $show_frame $user_frame $objclass_frame $type_frame $range_frame $path_frame \
+        -padx 2 -sticky news
+    foreach idx {1 2 3 4} {
+        grid columnconfigure $options_frame $idx -uniform 1 -weight 0
+    }
+    grid columnconfigure $options_frame 0 -weight 0 -pad 8
+    grid columnconfigure $options_frame 5 -weight 0
+
+    set show_context [checkbutton $show_frame.context \
                           -variable Apol_File_Contexts::opts(showContext) \
                           -text "Show context"]
-    set show_objclass [checkbutton $options_frame.show_objclass \
+    set show_objclass [checkbutton $show_frame.objclass \
                            -variable Apol_File_Contexts::opts(showObjclass) \
                            -text "Show object class"]
-    pack $show_context $show_objclass -side top -anchor nw -padx 2 -pady 4 
-    pack $optionsbox -fill both -expand yes 
-
-    # Search criteria
-    set criteriabox [TitleFrame $search_criteria.crit -text "Search Criteria"]
-    set criteria_frame [$criteriabox getframe]
-    set user_frame [frame $criteria_frame.user -relief sunken -bd 1]
-    set objclass_frame [frame $criteria_frame.objclass -relief sunken -bd 1]
-    set type_frame [frame $criteria_frame.type -relief sunken -bd 1]
-    set range_frame [frame $criteria_frame.range -relief sunken -bd 1]
-    set path_frame [frame $criteria_frame.path -relief sunken -bd 1]
-    grid $user_frame $objclass_frame $type_frame $range_frame $path_frame \
-        -padx 2 -pady 4 -sticky news
-    foreach idx {0 1 2 3} {
-        grid columnconfigure $criteria_frame $idx -uniform 1 -weight 0
-    }
-    grid columnconfigure $criteria_frame 4 -weight 0
-    pack $criteriabox -padx 2 -fill both -expand yes
+    pack $show_context $show_objclass -side top -anchor nw
 
     # User subframe
     checkbutton $user_frame.enable -text "User" \
@@ -507,7 +501,7 @@ proc Apol_File_Contexts::create {nb} {
     pack $user_regex -side top -anchor nw -padx 4
 
     # Object class subframe
-    checkbutton $objclass_frame.enable -text "Object Class" \
+    checkbutton $objclass_frame.enable -text "Object class" \
         -variable Apol_File_Contexts::opts(useObjclass)
     set widgets(objclass) [ComboBox $objclass_frame.box -width 8 \
                                -textvariable Apol_File_Contexts::opts(objclass) \
@@ -536,7 +530,7 @@ proc Apol_File_Contexts::create {nb} {
 
     # MLS Range subframe
     set range_cb [checkbutton $range_frame.enable \
-                      -variable Apol_File_Contexts::opts(useRange) -text "MLS Range"]
+                      -variable Apol_File_Contexts::opts(useRange) -text "MLS range"]
     set range_entry [entry $range_frame.range -width 12 \
                          -textvariable Apol_File_Contexts::opts(range)]
     set range_regex [checkbutton $range_frame.regex \
@@ -552,7 +546,7 @@ proc Apol_File_Contexts::create {nb} {
 
     # Path subframe
     checkbutton $path_frame.enable \
-        -variable Apol_File_Contexts::opts(usePath) -text "File Path"
+        -variable Apol_File_Contexts::opts(usePath) -text "File path"
     set path_entry [entry $path_frame.path -width 24 -textvariable Apol_File_Contexts::opts(path)]
     set path_regex [checkbutton $path_frame.regex \
                         -variable Apol_File_Contexts::opts(usePathRegex) \
@@ -564,11 +558,11 @@ proc Apol_File_Contexts::create {nb} {
     pack $path_regex -side top -anchor nw -padx 4
 
     # Action Buttons
-    set action_buttons [ButtonBox $criteria_frame.bb -orient vertical -homogeneous 1 -pady 2]
+    set action_buttons [ButtonBox $options_frame.bb -orient vertical -homogeneous 1 -pady 2]
     $action_buttons add -text OK -width 6 -command {Apol_File_Contexts::search_fc_database}
     $action_buttons add -text "Info" -width 6 -command {Apol_File_Contexts::display_analysis_info}
-    grid $action_buttons -row 0 -column 5 -padx 5 -pady 5 -sticky ne
-    grid columnconfigure $criteria_frame 5 -weight 1
+    grid $action_buttons -row 0 -column 6 -padx 5 -pady 5 -sticky ne
+    grid columnconfigure $options_frame 6 -weight 1
 
     set results_frame [TitleFrame $results_pane.results -text "Matching Files"]
     set widgets(results) [Apol_Widget::makeSearchResults [$results_frame getframe].results]

@@ -110,13 +110,13 @@ proc Apol_TE::reinitialize_default_search_options { } {
         oo:regexp 0
 
         ta:use_source 0
-        ta:source_indirect 0
+        ta:source_indirect 1
         ta:source_which source
         ta:source_sym,types 1 ta:source_sym,attribs 0
         ta:source_sym {}
 
         ta:use_target 0
-        ta:target_indirect 0
+        ta:target_indirect 1
         ta:target_sym,types 1 ta:target_sym,attribs 0
         ta:target_sym {}
 
@@ -289,9 +289,9 @@ proc Apol_TE::createTypesAttribsTab {} {
     }
     grid rowconfigure $ta_tab 0 -weight 1
 
-    create_ta_box source $fm_source "Source" 1 1 1
-    create_ta_box target $fm_target "Target" 1 0 1
-    create_ta_box default $fm_default "Default" 0 0 0
+    create_ta_box source $fm_source "Source type/attribute" 1 1 1
+    create_ta_box target $fm_target "Target type/attribute" 1 0 1
+    create_ta_box default $fm_default "Default type" 0 0 0
 
     $widgets(search_opts) raise typeattrib
 }
@@ -337,8 +337,9 @@ proc Apol_TE::create_ta_box {prefix f title has_indirect has_which has_attribs} 
     }
 
     if {$has_indirect} {
-        set indirect [checkbutton $f.indirect -text "Include indirect matches" \
-                          -state disabled -variable Apol_TE::vals(ta:${prefix}_indirect)]
+        set indirect [checkbutton $f.indirect -text "Only direct matches" \
+                          -state disabled -variable Apol_TE::vals(ta:${prefix}_indirect) \
+                          -onvalue 0 -offvalue 1]
         pack $indirect -anchor w -padx 8
         lappend w $indirect
     }
