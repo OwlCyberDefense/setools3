@@ -39,7 +39,7 @@
 # define _LARGEFILE_SOURCE 1
 #endif
 
-#include "config.h"
+#include <config.h>
 #include "sqlite3.h"
 #include "hash.h"
 #include "parse.h"
@@ -47,6 +47,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+
+#define SQLITE_PTR_SZ SIZEOF_INT_P
 
 /*
 ** The maximum number of in-memory pages to use for the main database

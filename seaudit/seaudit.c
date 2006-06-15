@@ -1227,7 +1227,7 @@ void seaudit_on_help_activate(GtkWidget *widget, GdkEvent *event, gpointer callb
 	gtk_container_add(GTK_CONTAINER(window), scroll);
 	gtk_container_add(GTK_CONTAINER(scroll), text_view);
 	buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));	
-	dir = find_file("seaudit_help.txt");
+	dir = apol_find_file("seaudit_help.txt");
 	if (!dir) {
 		string = g_string_new("");
 		g_string_assign(string, "Can not find help file");

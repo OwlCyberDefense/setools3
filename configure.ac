@@ -18,6 +18,11 @@ libapol_version=3.0.0
 libapol_soname=libapol.so.3
 libapol_tcl_soname=libapol-tcl.so.3
 
+libseaudit_version=3.0.0
+
+AC_CHECK_SIZEOF(char *)
+AC_C_BIGENDIAN
+
 AC_ARG_ENABLE(debug, [  --enable-debug          compile with full debugging support], enable_debug="$enableval")
 AC_MSG_CHECKING([for debugging support])
 if test "x${enable_debug}" = xyes; then
@@ -319,15 +324,18 @@ AC_SUBST(apol_help_dir)
 AC_SUBST(profile_install_dir)
 
 AC_DEFINE_UNQUOTED(LIBAPOL_VERSION_STRING, "${libapol_version}", [libapol version])
+AC_DEFINE_UNQUOTED(LIBSEAUDIT_VERSION_STRING, "${libseaudit_version}", [libapol version])
 
 AC_CONFIG_FILES([Makefile VERSION \
                  libqpol/Makefile libqpol/src/Makefile libqpol/include/Makefile libqpol/include/qpol/Makefile \
                  libapol/Makefile \
                  libsefs/Makefile \
+		 libseaudit/Makefile \
                  secmds/Makefile \
                  apol/Makefile \
                  awish/Makefile \
                  sechecker/Makefile \
+		 seaudit/Makefile \
                  packages/Makefile])
 
 AC_OUTPUT

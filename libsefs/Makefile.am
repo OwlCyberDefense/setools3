@@ -2,10 +2,12 @@
 
 lib_LIBRARIES = libsefs.a
 
-AM_CFLAGS = -fPIC -O2 -I$(top_srcdir)/libqpol/include -I$(top_srcdir)/libapol
+AM_CFLAGS = -fPIC -I$(top_srcdir)/libqpol/include -I$(top_srcdir)/libapol
 
-libsefs_a_SOURCES = fsdata.c file_contexts.c fshash.c
-
+libsefs_a_SOURCES = \
+	fsdata.c fsdata.h
+	file_contexts.c file_contexts.h \
+	fshash.c fshash.h
 
 if WANT_LIBSEFS
 libsefs_a_SOURCES += \

@@ -86,7 +86,7 @@ int load_seaudit_conf_file(seaudit_conf_t *conf)
 
 	dir = find_user_config_file(".seaudit");
 	if (!dir) {
-		dir = find_file("dot_seaudit");
+		dir = apol_find_file("dot_seaudit");
 		if (!dir)
 			return -1;
 		else {
@@ -633,7 +633,7 @@ void on_preferences_activate(GtkWidget *widget, GdkEvent *event, gpointer callba
 	GString *interval = g_string_new("");
 	
 	assert(interval);
-	dir = find_file("prefer_window.glade");
+	dir = apol_find_file("prefer_window.glade");
 	if (!dir){
 		fprintf(stderr, "could not find prefer_window.glade\n");
 		return;

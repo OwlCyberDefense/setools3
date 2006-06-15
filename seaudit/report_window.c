@@ -400,7 +400,7 @@ void report_window_display(report_window_t *report_window)
 		gtk_window_present(report_window->window);
 		return;
 	}
-	dir = find_file("report_window.glade");
+	dir = apol_find_file("report_window.glade");
 	if (!dir){
 		fprintf(stderr, "Error: Could not find report_window.glade!\n");
 		return;
