@@ -179,7 +179,7 @@ int qpol_terule_get_rule_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 	db = &policy->p;
 	terule = (avtab_ptr_t)rule;
 
-	*rule_type = terule->key.specified;
+	*rule_type = (terule->key.specified & (QPOL_RULE_TYPE_TRANS|QPOL_RULE_TYPE_CHANGE|QPOL_RULE_TYPE_MEMBER));
 
 	return STATUS_SUCCESS;
 }

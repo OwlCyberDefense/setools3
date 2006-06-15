@@ -27,7 +27,6 @@
 #include <tcl.h>
 #include <assert.h>
 
-#include "old-policy-query.h"
 #include "render.h"
 
 #include "apol_tcl_other.h"
@@ -106,6 +105,7 @@ static int append_avrule_to_list(Tcl_Interp *interp,
 		goto cleanup;
 	}
 	if ((rule_string = apol_rule_type_to_str(rule_type)) == NULL) {
+		ERR(policydb, "Invalid avrule type %d.", rule_type);
 		goto cleanup;
 	}
 	if (qpol_type_get_name(policydb->qh, policydb->p, source, &source_name) < 0 ||
@@ -169,6 +169,7 @@ static int append_terule_to_list(Tcl_Interp *interp,
 		goto cleanup;
 	}
 	if ((rule_string = apol_rule_type_to_str(rule_type)) == NULL) {
+		ERR(policydb, "Invalid terule type %d.", rule_type);
 		goto cleanup;
 	}
 	if (qpol_type_get_name(policydb->qh, policydb->p, source, &source_name) < 0 ||
@@ -424,23 +425,154 @@ static int Apol_SearchTERules(ClientData clientData, Tcl_Interp *interp, int arg
 	return retval;
 }
 
-/*
-static int append_cond_expr_to_list(Tcl_Interp *interp,
-                                    qpol_cond_expr_t *expr,
-                                    Tcl_Obj *result_list)
+/**
+ * Converts an iterator of qpol_cond_expr_node_t to a Tcl representation:
+ * <code>
+ *   { bool_or_operator0 bool_or_operator1 ... }
+ * </code>
+ *
+ * Note that the iterator will have been incremented to its end.
+ *
+ * @param interp Tcl interpreter object.
+ * @param level Level to convert.
+ * @param obj Destination to create Tcl object representing expression.
+ *
+ * @return 0 if conditional expression was converted, <0 on error.
+ */
+static int cond_expr_iter_to_tcl_obj(Tcl_Interp *interp,
+				     qpol_iterator_t *iter,
+				     Tcl_Obj **obj)
 {
-        int retval = TCL_ERROR;
-        return retval;
+	qpol_cond_expr_node_t *expr;
+	qpol_bool_t *cond_bool;
+	char *bool_name;
+	uint32_t expr_type;
+	const char *expr_str;
+	Tcl_Obj *expr_elem;
+	int retval = TCL_ERROR;
+
+	*obj = Tcl_NewListObj(0, NULL);
+	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		if (qpol_iterator_get_item(iter, (void **) &expr) < 0 ||
+		    qpol_cond_expr_node_get_expr_type(policydb->qh, policydb->p,
+						      expr, &expr_type) < 0) {
+			goto cleanup;
+		}
+		if (expr_type == QPOL_COND_EXPR_BOOL) {
+			if (qpol_cond_expr_node_get_bool(policydb->qh, policydb->p,
+							 expr, &cond_bool) < 0 ||
+			    qpol_bool_get_name(policydb->qh, policydb->p,
+					       cond_bool, &bool_name) < 0) {
+				goto cleanup;
+			}
+			expr_elem = Tcl_NewStringObj(bool_name, -1);
+		}
+		else {
+			if ((expr_str = apol_cond_expr_type_to_str(expr_type)) == NULL) {
+				goto cleanup;
+			}
+			expr_elem = Tcl_NewStringObj(expr_str, -1);
+		}
+		if (Tcl_ListObjAppendElement(interp, *obj, expr_elem) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+
+	retval = TCL_OK;
+ cleanup:
+	return retval;
 }
 
+/**
+ * Takes a qpol_cond_t and appends a tuple of its expression and its
+ * rules to result_list.  The tuple consists of:
+ * <code>
+ *   { expression_list true_list false_list }
+ * </code>
+ * Rules lists are formatted as per append_avrule_to_list() and
+ * append_terule_to_list().
+ *
+ * @param avrules A bitmask of which av rules to add to rules lists.
+ * @param terules A bitmask of which te rules to add to rules lists.
+ */
 static int append_cond_result_to_list(Tcl_Interp *interp,
-                                      apol_cond_result_t *result,
-                                      Tcl_Obj *result_ilst)
+				      qpol_cond_t *result,
+				      unsigned int avrules,
+				      unsigned int terules,
+				      Tcl_Obj *result_list)
 {
-        int retval = TCL_ERROR;
-        return retval;
+	Tcl_Obj *cond_elem[3], *cond_list;
+	qpol_iterator_t *iter = NULL;
+	qpol_avrule_t *avrule;
+	qpol_terule_t *terule;
+	int retval = TCL_ERROR;
+
+	if (qpol_cond_get_expr_node_iter(policydb->qh, policydb->p, result, &iter) < 0 ||
+	    cond_expr_iter_to_tcl_obj(interp, iter, cond_elem + 0) == TCL_ERROR) {
+		goto cleanup;
+	}
+	qpol_iterator_destroy(&iter);
+
+	cond_elem[1] = Tcl_NewListObj(0, NULL);
+
+	if (qpol_cond_get_av_true_iter(policydb->qh, policydb->p,
+				       result, avrules, &iter) < 0) {
+		goto cleanup;
+	}
+	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		if (qpol_iterator_get_item(iter, (void **) &avrule) < 0 ||
+		    append_avrule_to_list(interp, avrule, cond_elem[1]) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+	qpol_iterator_destroy(&iter);
+
+	if (qpol_cond_get_te_true_iter(policydb->qh, policydb->p,
+				       result, terules, &iter) < 0) {
+		goto cleanup;
+	}
+	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		if (qpol_iterator_get_item(iter, (void **) &terule) < 0 ||
+		    append_terule_to_list(interp, terule, cond_elem[1]) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+	qpol_iterator_destroy(&iter);
+
+        cond_elem[2] = Tcl_NewListObj(0, NULL);
+
+	if (qpol_cond_get_av_false_iter(policydb->qh, policydb->p,
+				       result, avrules, &iter) < 0) {
+		goto cleanup;
+	}
+	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		if (qpol_iterator_get_item(iter, (void **) &avrule) < 0 ||
+		    append_avrule_to_list(interp, avrule, cond_elem[2]) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+	qpol_iterator_destroy(&iter);
+
+	if (qpol_cond_get_te_false_iter(policydb->qh, policydb->p,
+				       result, terules, &iter) < 0) {
+		goto cleanup;
+	}
+	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		if (qpol_iterator_get_item(iter, (void **) &terule) < 0 ||
+		    append_terule_to_list(interp, terule, cond_elem[2]) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+
+	cond_list = Tcl_NewListObj(3, cond_elem);
+	if (Tcl_ListObjAppendElement(interp, result_list, cond_list) == TCL_ERROR) {
+		goto cleanup;
+	}
+	retval = TCL_OK;
+ cleanup:
+	qpol_iterator_destroy(&iter);
+	return retval;
 }
-*/
 
 /**
  * Return an unsorted list of TE rules (av rules and type rules) that
@@ -452,9 +584,9 @@ static int append_cond_result_to_list(Tcl_Interp *interp,
  *   <li>list of false rules
  * </ul>
  *
- * Expression nodes list is a list of 2-uples, where the first element
- * is a boolean operand (e.g., QPOL_COND_AND) and the second element a
- * qpol_bool_t pointer.
+ * Expression nodes list is a list of boolean strings and operands
+ * (e.g., "==").  The expression will be written in reverse polish
+ * notation, from left to right.
  *
  * The two rules lists are of the same format as returned by
  * Apol_SearchTERules().
@@ -484,26 +616,32 @@ static int append_cond_result_to_list(Tcl_Interp *interp,
  */
 static int Apol_SearchConditionalRules(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
-        Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
-        /*        apol_cond_result_t *result; */
-        unsigned int avrules = 0, terules = 0;
-        CONST char **rule_strings = NULL, **other_opt_strings = NULL;
-        int num_opts;
-        apol_vector_t *v = NULL;
-        size_t i;
-        int retval = TCL_ERROR;
+	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
+	qpol_cond_t *cond;
+	unsigned int avrules = 0, terules = 0;
+	CONST char **rule_strings = NULL, **other_opt_strings = NULL;
+	int num_opts;
+	apol_cond_query_t *query = NULL;
+	apol_vector_t *v = NULL;
+	size_t i;
+	int retval = TCL_ERROR;
 
-        apol_tcl_clear_error();
+	apol_tcl_clear_error();
 	if (policydb == NULL) {
 		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		goto cleanup;
 	}
-	if (argc != 3) {
+	if (argc != 4) {
 		ERR(policydb, "Need a rule selection, other options, and boolean name.");
 		goto cleanup;
 	}
 
-        if (Tcl_SplitList(interp, argv[1], &num_opts, &rule_strings) == TCL_ERROR) {
+	if ((query = apol_cond_query_create()) == NULL) {
+		ERR(policydb, "Out of memory!");
+		goto cleanup;
+	}
+
+	if (Tcl_SplitList(interp, argv[1], &num_opts, &rule_strings) == TCL_ERROR) {
 		goto cleanup;
 	}
 	while (--num_opts >= 0) {
@@ -532,28 +670,32 @@ static int Apol_SearchConditionalRules(ClientData clientData, Tcl_Interp *interp
 		}
 	}
 
-        if (Tcl_SplitList(interp, argv[2], &num_opts, &other_opt_strings) == TCL_ERROR) {
+	if (Tcl_SplitList(interp, argv[2], &num_opts, &other_opt_strings) == TCL_ERROR) {
 		goto cleanup;
 	}
 	while (--num_opts >= 0) {
 		CONST char *s = other_opt_strings[num_opts];
 		if (strcmp(s, "regex") == 0) {
+			apol_cond_query_set_regex(policydb, query, 1);
 		}
 	}
 
-        /*
-        if (apol_get_cond_result_by_query(policydb, query, &v) < 0) {
-                goto cleanup;
-        }
-        for (i = 0; i < apol_vector_get_size(v); i++) {
-                result = (apol_cond_result_t *) apol_vector_get_element(v, i);
-                if (append_cond_result_to_list(interp, result, result_obj) == TCL_ERROR) {
-                        goto cleanup;
-                }
-        }
-        */
+	if (*argv[3] != '\0' &&
+	    apol_cond_query_set_bool(policydb, query, argv[3]) < 0) {
+		goto cleanup;
+	}
 
-        Tcl_SetObjResult(interp, result_obj);
+	if (apol_get_cond_by_query(policydb, query, &v) < 0) {
+		goto cleanup;
+	}
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		cond = (qpol_cond_t *) apol_vector_get_element(v, i);
+		if (append_cond_result_to_list(interp, cond, avrules, terules, result_obj) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+
+	Tcl_SetObjResult(interp, result_obj);
 	retval = TCL_OK;
  cleanup:
 	if (rule_strings != NULL) {
@@ -562,11 +704,12 @@ static int Apol_SearchConditionalRules(ClientData clientData, Tcl_Interp *interp
 	if (other_opt_strings != NULL) {
 		Tcl_Free((char *) other_opt_strings);
 	}
-        /*        apol_vector_destroy(&v, apol_cond_result_free); */
-        if (retval == TCL_ERROR) {
+	apol_cond_query_destroy(&query);
+	apol_vector_destroy(&v, NULL);
+	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
-        return retval;
+	return retval;
 }
 
 /**
