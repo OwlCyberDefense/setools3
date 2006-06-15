@@ -911,7 +911,7 @@ static void filters_select_items_display(filters_select_items_t *filter_items_li
 	GtkLabel *excl_lbl;
 
 	/* Load the glade interface specifications */
-	dir = find_file("customize_filter_window.glade");
+	dir = apol_find_file("customize_filter_window.glade");
 	if (!dir){
 		fprintf(stderr, "could not find customize_filter_window.glade\n");
 		return;
@@ -1665,7 +1665,7 @@ void filter_window_display(filter_window_t* filter_window, GtkWindow *parent)
 		gtk_window_present(filter_window->window);
 		return;
 	}
-	dir = find_file("filter_window.glade");
+	dir = apol_find_file("filter_window.glade");
 	if (!dir){
 		fprintf(stderr, "could not find filter_window.glade\n");
 		return;

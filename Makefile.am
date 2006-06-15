@@ -25,7 +25,7 @@ secmds:
 	$(MAKE) -C $(top_srcdir)/secmds
 
 seaudit:
-	@echo "FIX ME: seaudit not done yet"
+	$(MAKE) -C $(top_srcdir)/seaudit
 
 sediff:
 	@echo "FIX ME: sediff not done yet"
@@ -46,7 +46,7 @@ help:
 	@echo "   all:          build everything, but don't install"
 	@echo "   all-nogui:    only build non-GUI tools and libraries"
 	@echo "   install:      install everything"
-	@echo "   uninstall:	remove setools from your system"
+	@echo "   uninstall:    remove setools from your system"
 	@echo ""
 	@echo "   apol:         build policy analysis tool"
 	@echo "   secmds:       build setools command line tools"

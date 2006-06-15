@@ -12,7 +12,7 @@
 
 #include "filters.h"
 #include <string.h>
-#include <libapol/util.h>
+#include "libapol/util.h"
 #include <libxml/uri.h>
 
 static void dummy_free(void *foo) {  }

@@ -27,6 +27,10 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifndef WORDS_BIGENDIAN
+extern void swab(const void *from, void *to, ssize_t n);
+#endif
+
 /* global with rule names */
 char *rulenames[] = {"allow", "auditallow", "auditdeny", "dontaudit", "neverallow", "type_transition", 
 			"type_member", "type_change", "clone", "allow", "role_transition", "user"};
@@ -1451,10 +1455,11 @@ char *apol_ipv6_addr_render(apol_policy_t *policydb, uint32_t addr[4])
 	int contract = 0, prev_contr = 0, contr_idx_end = -1;
 	for (i = 0; i < 4; i++) {
 		uint32_t a;
-		/* for big endian systems */
-		/* a = addr[i]; */
-		/* FIX ME: use autoconf to detect for little-endian systems */
+#ifdef WORDS_BIGENDIAN
+		a = addr[i];
+#else
 		swab(addr + i, &a, sizeof(a));
+#endif
 		/* have to use division and mod here, so as to ignore
 		 * host system's byte ordering */
 		tmp[2*i] = a%(1<<16);

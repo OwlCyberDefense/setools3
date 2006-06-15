@@ -14,7 +14,7 @@
 #ifndef LIBSEAUDIT_FILTER_H
 #define LIBSEAUDIT_FILTER_H
 
-#include "../libapol/util.h"
+#include "libapol/util.h"
 #include "filter_criteria.h"
 
 #define FILTER_FILE_FORMAT_VERSION "1.3"

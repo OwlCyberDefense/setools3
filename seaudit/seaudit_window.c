@@ -34,7 +34,7 @@ seaudit_window_t* seaudit_window_create(audit_log_t *log, bool_t column_visibili
 	char *dir;
 	GtkWidget *vbox;
 
-	dir = find_file("seaudit.glade");
+	dir = apol_find_file("seaudit.glade");
 	if (!dir){
 		fprintf(stderr, "could not find seaudit.glade\n");
 		return NULL;
