@@ -589,6 +589,11 @@ int qpol_cond_expr_node_get_bool(qpol_handle_t *handle, qpol_policy_t *policy, q
 	db = &policy->p;
 	internal_cond = (cond_expr_t*)node;
 
+	if (internal_cond->expr_type != QPOL_COND_EXPR_BOOL){
+		error = EINVAL;
+		goto err;
+	}
+
 	if (!(*cond_bool = (qpol_bool_t*)db->bool_val_to_struct[internal_cond->bool - 1])) {
 		error = EINVAL;
 		goto err;

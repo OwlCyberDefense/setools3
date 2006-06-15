@@ -309,49 +309,25 @@ char *apol_avrule_render(apol_policy_t *policy, qpol_avrule_t *rule)
 		errno = error;
 		return NULL;
 	}
-	switch (rule_type) {
-		case QPOL_RULE_ALLOW:
-			{
-				if (append_str(&tmp, &tmp_sz, "allow ")) {
-					ERR(policy, "%s", strerror(ENOMEM));
-					errno = ENOMEM;
-					return NULL;
-				}
-				break;
-			}
-		case QPOL_RULE_NEVERALLOW:
-			{
-				if (append_str(&tmp, &tmp_sz, "neverallow ")) {
-					ERR(policy, "%s", strerror(ENOMEM));
-					errno = ENOMEM;
-					return NULL;
-				}
-				break;
-			}
-		case QPOL_RULE_AUDITALLOW:
-			{
-				if (append_str(&tmp, &tmp_sz, "auditallow ")) {
-					ERR(policy, "%s", strerror(ENOMEM));
-					errno = ENOMEM;
-					return NULL;
-				}
-				break;
-			}
-		case QPOL_RULE_DONTAUDIT:
-			{
-				if (append_str(&tmp, &tmp_sz, "dontaudit ")) {
-					ERR(policy, "%s", strerror(ENOMEM));
-					errno = ENOMEM;
-					return NULL;
-				}
-				break;
-			}
-		default:
-			{
-				ERR(policy, "Invalid rule type");
-				errno = EINVAL;
-				return NULL;
-			}
+	if (!(rule_type &= (QPOL_RULE_ALLOW|QPOL_RULE_NEVERALLOW|QPOL_RULE_AUDITALLOW|QPOL_RULE_DONTAUDIT))) {
+		ERR(policy, "Invalid av rule type");
+		errno = EINVAL;
+		return NULL;
+	}
+	if (!(tmp_name = (char*)apol_rule_type_to_str(rule_type))) {
+		ERR(policy, "Av rule has multiple rule types?");
+		errno = EINVAL;
+		return NULL;
+	}
+	if (append_str(&tmp, &tmp_sz, tmp_name)) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		error = ENOMEM;
+		goto err;
+	}
+	if (append_str(&tmp, &tmp_sz, " ")) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		error = ENOMEM;
+		goto err;
 	}
 
 	/* source type */
@@ -392,7 +368,7 @@ char *apol_avrule_render(apol_policy_t *policy, qpol_avrule_t *rule)
 		error = ENOMEM;
 		goto err;
 	}
-	if (append_str(&tmp, &tmp_sz, " ")) {
+	if (append_str(&tmp, &tmp_sz, " : ")) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		error = ENOMEM;
 		goto err;

@@ -295,40 +295,25 @@ char *apol_terule_render(apol_policy_t *policy, qpol_terule_t *rule)
 		errno = error;
 		return NULL;
 	}
-	switch (rule_type) {
-		case QPOL_RULE_TYPE_TRANS:
-			{
-				if (append_str(&tmp, &tmp_sz, "type_transition ")) {
-					ERR(policy, "%s", strerror(ENOMEM));
-					errno = ENOMEM;
-					return NULL;
-				}
-				break;
-			}
-		case QPOL_RULE_TYPE_CHANGE:
-			{
-				if (append_str(&tmp, &tmp_sz, "type_change ")) {
-					ERR(policy, "%s", strerror(ENOMEM));
-					errno = ENOMEM;
-					return NULL;
-				}
-				break;
-			}
-		case QPOL_RULE_TYPE_MEMBER:
-			{
-				if (append_str(&tmp, &tmp_sz, "type_member ")) {
-					ERR(policy, "%s", strerror(ENOMEM));
-					errno = ENOMEM;
-					return NULL;
-				}
-				break;
-			}
-		default:
-			{
-				ERR(policy, "Invalid rule type");
-				errno = EINVAL;
-				return NULL;
-			}
+	if (!(rule_type &= (QPOL_RULE_TYPE_TRANS|QPOL_RULE_TYPE_CHANGE|QPOL_RULE_TYPE_MEMBER))) {
+		ERR(policy, "Invalid type rule type");
+		errno = EINVAL;
+		return NULL;
+	}
+	if (!(tmp_name = (char*)apol_rule_type_to_str(rule_type))) {
+		ERR(policy, "Type rule has multiple rule types?");
+		errno = EINVAL;
+		return NULL;
+	}
+	if (append_str(&tmp, &tmp_sz, tmp_name)) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		error = ENOMEM;
+		goto err;
+	}
+	if (append_str(&tmp, &tmp_sz, " ")) {
+		ERR(policy, "%s", strerror(ENOMEM));
+		error = ENOMEM;
+		goto err;
 	}
 
 	/* source type */
@@ -369,7 +354,7 @@ char *apol_terule_render(apol_policy_t *policy, qpol_terule_t *rule)
 		error = ENOMEM;
 		goto err;
 	}
-	if (append_str(&tmp, &tmp_sz, " ")) {
+	if (append_str(&tmp, &tmp_sz, " : ")) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		error = ENOMEM;
 		goto err;
