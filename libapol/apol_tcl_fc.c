@@ -185,7 +185,7 @@ static int Apol_Search_FC_Index_DB(ClientData clientData, Tcl_Interp *interp, in
 #else		
 	sefs_search_keys_t search_keys;
 	CONST char **object_classes = NULL, **types = NULL, **users = NULL,
-	    **ranges, **paths = NULL;
+	    **ranges = NULL, **paths = NULL;
 	int retval = TCL_ERROR;
 	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
 
