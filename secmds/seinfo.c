@@ -153,11 +153,11 @@ static int print_stats(FILE *fp, apol_policy_t *policydb)
 	char *str = NULL, *ver_str = NULL;
 	int str_sz = 0, ver_str_sz = 16, n_types = 0, n_attrs = 0;
 	bool_t binary = FALSE;
-	size_t n_classes = 0, n_users = 0, n_roles = 0, n_bools = 0, n_levels = 0, n_cats = 0,
-		n_portcons = 0, n_netifcons = 0, n_nodecons = 0, n_fsuses = 0, n_genfscons = 0,
-		n_allows = 0, n_neverallows = 0, n_auditallows = 0, n_dontaudits = 0,
-		n_typetrans = 0, n_typechanges = 0, n_typemembers = 0, n_isids = 0,
-		n_roleallows = 0, n_roletrans = 0, n_rangetrans = 0;
+	size_t n_classes = 0, n_users = 0, n_roles = 0, n_bools = 0, n_conds = 0, n_levels = 0, 
+		n_cats = 0, n_portcons = 0, n_netifcons = 0, n_nodecons = 0, n_fsuses = 0, 
+		n_genfscons = 0, n_allows = 0, n_neverallows = 0, n_auditallows = 0, n_dontaudits = 0,
+		n_typetrans = 0, n_typechanges = 0, n_typemembers = 0, n_isids = 0, n_roleallows = 0, 
+		n_roletrans = 0, n_rangetrans = 0;
 
 	assert(policydb != NULL);
 
@@ -249,13 +249,17 @@ static int print_stats(FILE *fp, apol_policy_t *policydb)
 	fprintf(fp, "   Users:         %7zd    Roles:         %7zd\n", n_users, n_roles);
 
 	/* booleans/cond. exprs. */
-	/* FIX ME: need to do conditionals */
 	if (qpol_policy_get_bool_iter(policydb->qh, policydb->p, &iter))
 		goto cleanup;
 	if (qpol_iterator_get_size(iter, &n_bools))
 		goto cleanup;
 	qpol_iterator_destroy(&iter);
-	fprintf(fp, "   Booleans:      %7zd    Cond. Expr.:    %6s\n", n_bools, "N/A");
+	if (qpol_policy_get_cond_iter(policydb->qh, policydb->p, &iter))
+		goto cleanup;
+	if (qpol_iterator_get_size(iter, &n_conds))
+		goto cleanup;
+	qpol_iterator_destroy(&iter);
+	fprintf(fp, "   Booleans:      %7zd    Cond. Expr.:   %7zd\n", n_bools, n_conds);
 
 	/* sensitivities/categories */
 	if (qpol_policy_get_level_iter(policydb->qh, policydb->p, &iter))
