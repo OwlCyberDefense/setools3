@@ -12,6 +12,7 @@
 #include <string.h>
 #include <libapol/render.h>
 #include <libapol/policy-query.h>
+#include <libapol/old-policy-query.h>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -587,7 +588,7 @@ int query_window_create(int *tree_item_idx)
 		return -1;
 	}	
 
-	dir = find_file("query_window.glade");
+	dir = apol_find_file("query_window.glade");
 	if (!dir){
 		fprintf(stderr, "could not find query_window.glade\n");
 		return -1;

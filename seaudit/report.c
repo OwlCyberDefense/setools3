@@ -1591,7 +1591,7 @@ int seaudit_report_search_dflt_config_file(seaudit_report_t *seaudit_report) {
 	
 	assert(seaudit_report != NULL);
 	if (seaudit_report->configPath == NULL) {
-		configFile_dir = find_file(CONFIG_FILE);
+		configFile_dir = apol_find_file(CONFIG_FILE);
 		if (configFile_dir == NULL) {
 			fprintf(stderr, "Could not find default config file.\n");
 			return -1;
@@ -1624,7 +1624,7 @@ int seaudit_report_search_dflt_stylesheet(seaudit_report_t *seaudit_report) {
 	
 	assert(seaudit_report != NULL);
 	if (seaudit_report->stylesheet_file == NULL) {
-		dir = find_file(STYLESHEET_FILE);
+		dir = apol_find_file(STYLESHEET_FILE);
 		if (dir == NULL) {
 			fprintf(stderr, "Could not find default stylesheet.\n");
 			return -1;

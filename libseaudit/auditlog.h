@@ -16,9 +16,11 @@
 
 #ifndef LIBAUDIT_AUDITLOG_H
 #define LIBAUDIT_AUDITLOG_H
+
+#include <config.h>
 #include <time.h>
-#include "../libapol/util.h"
-#include "../libapol/avl-util.h"
+#include "libapol/util.h"
+#include "libapol/avl-util.h"
 
 /* The following should be defined in the make environment */
 #ifndef LIBSEAUDIT_VERSION_STRING

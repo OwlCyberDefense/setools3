@@ -102,7 +102,7 @@ void multifilter_window_display(multifilter_window_t *window, GtkWindow *parent)
 		return;
 	}
 
-	dir = find_file("multifilter_window.glade");
+	dir = apol_find_file("multifilter_window.glade");
 	if (!dir){
 		fprintf(stderr, "could not find multifilter_window.glade\n");
 		return;
