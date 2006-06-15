@@ -229,6 +229,18 @@ extern int apol_str_to_fs_use_behavior(const char *behavior);
 extern const char *apol_rule_type_to_str(uint32_t rule_type);
 
 /**
+ * Given a conditional expression type, return a read-only string that
+ * describes that operator.
+ *
+ * @param expr_type An expression type, one of QPOL_COND_EXPR_BOOL,
+ * QPOL_COND_EXPR_NOT, etc.
+ *
+ * @return A string that describes the expression, or NULL if the
+ * expr_type is invalid.  <b>Do not free() this string.</b>
+ */
+extern const char *apol_cond_expr_type_to_str(uint32_t expr_type);
+
+/**
  * Given a file name, search and return that file's path on the
  * running system.  First search the present working directory, then
  * the directory at APOL_INSTALL_DIR (an environment variable), then

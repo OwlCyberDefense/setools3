@@ -18,40 +18,6 @@ namespace eval Apol_Cond_Rules {
 }
 
 ###############################################################
-#  ::cond_rules_render_rules
-#
-proc Apol_Cond_Rules::cond_rules_render_rules {resultsbox results num_rules list_idx_1} {
-	upvar 1 $list_idx_1 list_idx
-
-	for {set j 0} {$j < $num_rules} {incr j} {
-		incr list_idx
-		$resultsbox insert end "   "
-		# Only display line number hyperlink if this is not a binary policy.
-		if {![ApolTop::is_binary_policy]} {
-			set lineno [lindex $results $list_idx]
-			$resultsbox insert end "\["
-			set start_idx [$resultsbox index insert]
-			$resultsbox insert end "$lineno"
-			set end_idx [$resultsbox index insert]
-			Apol_PolicyConf::insertHyperLink $resultsbox $start_idx $end_idx
-			$resultsbox insert end "\]"
-		}
-		incr list_idx
-		set rule [lindex $results $list_idx]
-		$resultsbox insert end " $rule "
-
-		incr list_idx
-		if {[lindex $results $list_idx]} {
-			$resultsbox insert end "\[enabled\]"
-		} else {
-			$resultsbox insert end "\[disabled\]"
-		}
-		$resultsbox insert end "\n"
-	}
-}
-
-
-###############################################################
 #  ::cond_rules_search
 #
 proc Apol_Cond_Rules::cond_rules_search {} {
@@ -90,74 +56,45 @@ proc Apol_Cond_Rules::cond_rules_search {} {
     if {[catch {apol_SearchConditionalRules $rule_selection $other_opts $bool_name} results]} {
         tk_messageBox -icon error -type ok -title "Error" -message "Error searching conditionals:\n$results"
         return
+    }
+
+    if {[llength $results] == 0} {
+        set text "Search returned no results."
     } else {
-		$resultsbox insert end "Found the following expressions in Reverse Polish Notation:\n"
-		set rule_selected [expr ($search_opts(incl_teallow) || \
-					 $search_opts(incl_teaudit) || \
-					 $search_opts(incl_ttrans))]
-		set len [llength $results]
-		if {$len > 0} {
-			set counter 1
-			# List should look like {expr1 num_av_rules avrule1_lineno avrule1_string avrule1_status num_audit_rules ... }
-			for {set list_idx 0} {$list_idx < $len} {incr list_idx} {
-				set cond_expr [lindex $results $list_idx]
-				$resultsbox insert end "\nconditional expression $counter: \[ $cond_expr \]\n\n"
+        set text "[llength $results] conditional"
+        if {[llength $results] != 1} {
+            append text s
+        }
+        append text " match the search criteria.  Expressions are in Reverse Polish Notation.\n\n"
+    }
+    Apol_Widget::appendSearchResultText $widgets(results) $text
+    set counter 1
+    foreach r [lsort $results] {
+        renderConditional $r $counter
+        incr counter
+    }
+}
 
-				if {$rule_selected} {
-					$resultsbox insert end "TRUE list:\n"
-				}
-				incr list_idx
-				set num_av_access [lindex $results $list_idx]
+proc Apol_Cond_Rules::renderConditional {cond cond_number} {
+    variable widgets
+    foreach {cond_expr true_list false_list} $cond {break}
+    set text "conditional expression $cond_number: \[ [join $cond_expr] \]\n"
+    append text "\nTRUE list:\n"
+    Apol_Widget::appendSearchResultText $widgets(results) $text
+    foreach rule $true_list {
+        renderConditionalRule $rule
+    }
+    Apol_Widget::appendSearchResultText $widgets(results) "\nFALSE list:\n"
+    foreach rule $false_list {
+        renderConditionalRule $rule
+    }
+    Apol_Widget::appendSearchResultText $widgets(results) "\n\n"
+}
 
-				if {$search_opts(incl_teallow)} {
-					Apol_Cond_Rules::cond_rules_render_rules \
-						$resultsbox $results $num_av_access list_idx
-				}
-				incr list_idx
-				set num_av_audit [lindex $results $list_idx]
-				if {$search_opts(incl_teaudit)} {
-					Apol_Cond_Rules::cond_rules_render_rules \
-						$resultsbox $results $num_av_audit list_idx
-				}
-				incr list_idx
-				set num_ttrans [lindex $results $list_idx]
-				if {$search_opts(incl_ttrans)} {
-					Apol_Cond_Rules::cond_rules_render_rules \
-						$resultsbox $results $num_ttrans list_idx
-				}
-
-				if {$rule_selected} {
-					$resultsbox insert end "\n\nFALSE list:\n"
-				}
-				incr list_idx
-				set num_av_access [lindex $results $list_idx]
-				if {$search_opts(incl_teallow)} {
-					Apol_Cond_Rules::cond_rules_render_rules \
-						$resultsbox $results $num_av_access list_idx
-				}
-				incr list_idx
-				set num_av_audit [lindex $results $list_idx]
-				if {$search_opts(incl_teaudit)} {
-					Apol_Cond_Rules::cond_rules_render_rules \
-						$resultsbox $results $num_av_audit list_idx
-				}
-				incr list_idx
-				set num_ttrans [lindex $results $list_idx]
-				if {$search_opts(incl_ttrans)} {
-					Apol_Cond_Rules::cond_rules_render_rules \
-						$resultsbox $results $num_ttrans list_idx
-				}
-				$resultsbox insert end "\n"
-				incr counter
-			}
-			Apol_PolicyConf::configure_HyperLinks $resultsbox
-		} else {
-			$resultsbox insert end "\nNo conditional expressions found."
-		}
-		ApolTop::makeTextBoxReadOnly $resultsbox
-	}
-
-	return 0
+proc Apol_Cond_Rules::renderConditionalRule {rule} {
+    variable widgets
+    foreach {rule_type source_set target_set class perm_default line_num} $rule {break}
+    Apol_Widget::appendSearchResultLine $widgets(results) $line_num 4 $rule_type "\{ $source_set \}" "\{ $target_set \}" ":" $class "\{ $perm_default \}"
 }
 
 ################################################################
@@ -208,9 +145,8 @@ proc Apol_Cond_Rules::initializeVars {} {
     variable vals
     array set vals {
         rs:allow 1       rs:type_transition 1
-        rs:neverallow 1  rs:type_member 1
-        rs:auditallow 1  rs:type_change 1
-        rs:dontaudit 1
+        rs:auditallow 1  rs:type_member 1
+        rs:dontaudit 1   rs:type_change 1
 
         enable_bool 0
         name {}

@@ -969,7 +969,7 @@ proc Apol_TE::search_terules {whichButton} {
 
 proc Apol_TE::renderRule {sr rule} {
     foreach {rule_type source_set target_set class perm_default line_num} $rule {break}
-    Apol_Widget::appendSearchResultLine $sr $line_num "$rule_type \{ $source_set \} \{ $target_set \} : $class \{ $perm_default \}"
+    Apol_Widget::appendSearchResultLine $sr $line_num 0 $rule_type "\{ $source_set \}" "\{ $target_set \}" : $class "\{ $perm_default \}"
 }
 
 ### ATTIC ###
