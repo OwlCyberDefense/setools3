@@ -339,16 +339,21 @@ proc Apol_Widget::appendSearchResultText {path text} {
 
 # Append a list of values to the search results box.  If linenum is
 # non-empty, create a hyperlink from it to the policy.
-proc Apol_Widget::appendSearchResultLine {path linenum line_type args} {
+proc Apol_Widget::appendSearchResultLine {path linenum indent line_type args} {
     $path.tb configure -state normal
     if {$linenum != ""} {
         $path.tb insert end \[ {} $linenum linenum "\] "
+    }
+    set indent_spacing {}
+    while {$indent > 0} {
+        append indent_spacing " "
+        incr indent -1
     }
     set text $line_type
     foreach arg $args {
         append text " $arg"
     }
-    $path.tb insert end "[string trim $text];\n"
+    $path.tb insert end "$indent_spacing[string trim $text];\n"
     $path.tb configure -state disabled
 }
 

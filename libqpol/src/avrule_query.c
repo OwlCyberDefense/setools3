@@ -336,8 +336,7 @@ int qpol_avrule_get_rule_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 	db = &policy->p;
 	avrule = (avtab_ptr_t)rule;
 
-	*rule_type = avrule->key.specified;
+	*rule_type = (avrule->key.specified & (QPOL_RULE_ALLOW|QPOL_RULE_NEVERALLOW|QPOL_RULE_AUDITALLOW|QPOL_RULE_DONTAUDIT));
 
 	return STATUS_SUCCESS;
 }
-

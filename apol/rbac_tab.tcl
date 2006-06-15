@@ -107,10 +107,10 @@ proc Apol_RBAC::renderRBAC {rule} {
         }
         if {$default != {}} {
             Apol_Widget::appendSearchResultLine $widgets(results) $line_num \
-                "$rule_type $source_set $target_set $default"
+                0 $rule_type $source_set $target_set $default
         } else {
             Apol_Widget::appendSearchResultLine $widgets(results) $line_num \
-                "$rule_type $source_set $target_set"
+                0 $rule_type $source_set $target_set
         }
     }
 }

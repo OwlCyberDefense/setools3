@@ -931,6 +931,19 @@ const char *apol_rule_type_to_str(uint32_t rule_type)
 	return NULL;
 }
 
+const char *apol_cond_expr_type_to_str(uint32_t expr_type)
+{
+	switch (expr_type) {
+	case QPOL_COND_EXPR_BOOL: return "";
+	case QPOL_COND_EXPR_NOT: return "!";
+	case QPOL_COND_EXPR_OR: return "||";
+	case QPOL_COND_EXPR_AND: return "&&";
+	case QPOL_COND_EXPR_XOR: return "^";
+	case QPOL_COND_EXPR_EQ: return "==";
+	case QPOL_COND_EXPR_NEQ: return "!=";
+	}
+	return NULL;
+}
 
 char* apol_find_file(const char *file_name)
 {

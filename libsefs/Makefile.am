@@ -5,7 +5,7 @@ lib_LIBRARIES = libsefs.a
 AM_CFLAGS = -fPIC -I$(top_srcdir)/libqpol/include -I$(top_srcdir)/libapol
 
 libsefs_a_SOURCES = \
-	fsdata.c fsdata.h
+	fsdata.c fsdata.h \
 	file_contexts.c file_contexts.h \
 	fshash.c fshash.h
 
