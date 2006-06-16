@@ -27,6 +27,7 @@
 #define QPOL_TERULE_QUERY_H
 
 #include <qpol/policy.h>
+#include <qpol/cond_query.h>
 #include <qpol/policy_query.h>
 
 typedef struct qpol_terule qpol_terule_t;
@@ -112,5 +113,43 @@ extern int qpol_terule_get_default_type(qpol_handle_t *handle, qpol_policy_t *po
  *  errno will be set and *rule_type will be 0.
  */
 extern int qpol_terule_get_rule_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_terule_t *rule, uint32_t *rule_type);
+
+/**
+ *  Get the conditional from which a type rule comes. If the rule
+ *  is not a conditional rule *cond is set to NULL.
+ *  @param handle Error handler for the policy database.
+ *  @param policy Policy from which the rule comes.
+ *  @param rule The rule from which to get the conditional.
+ *  @param cond The conditional returned. (NULL if rule is not conditional)
+ *  @return 0 on success and < 0 on failure; if the call fails,
+ *  errno will be set and *cond will be NULL. If the rule is not conditional
+ *  *cond is set to NULL and the function is considered successful.
+ */
+extern int qpol_terule_get_cond(qpol_handle_t *handle, qpol_policy_t *policy, qpol_terule_t *rule, qpol_cond_t **cond);
+
+/**
+ *  Determine if a rule is enabled. Unconditional rules are always enabled.
+ *  @param handle Error handler for the policy database.
+ *  @param policy Policy from which the rule comes.
+ *  @param rule The rule to check.
+ *  @param is_enabled Integer in which to store the result: set to 1 if enabled
+ *  and 0 otherwise.
+ *  @return 0 on success and < 0 on failure; if the call fails,
+ *  errno will be set and *is_enabled will be 0.
+ */
+extern int qpol_terule_get_is_enabled(qpol_handle_t *handle, qpol_policy_t *policy, qpol_terule_t *rule, uint32_t *is_enabled);
+
+/**
+ *  Get the list (true or false) in which a conditional rule is. It is 
+ *  an error to call this function for an unconditional rule.
+ *  @param handle Error handler for the policy database.
+ *  @param policy Policy from which the rule comes.
+ *  @param rule The rule to check.
+ *  @param which_list Integer in which to store the result: set to 1 if 
+ *  rule is in the true list or 0 if in the false list.
+ *  @return 0 on success and < 0 on failure; if the call fails,
+ *  errno will be set and *which_list will be 0.
+ */
+extern int qpol_terule_get_which_list(qpol_handle_t *handle, qpol_policy_t *policy, qpol_terule_t *rule, uint32_t *which_list);
 
 #endif 

@@ -32,6 +32,7 @@
 #include <qpol/iterator.h>
 #include <qpol/policy.h>
 #include <qpol/bool_query.h>
+#include <qpol/cond_query.h>
 #include <qpol/class_perm_query.h>
 #include <qpol/mls_query.h>
 #include <qpol/role_query.h>
@@ -48,7 +49,6 @@
 #include <qpol/terule_query.h>
 #include <qpol/rbacrule_query.h>
 #include <qpol/mlsrule_query.h>
-#include <qpol/cond_query.h>
 
 /* generic information about policydb*/
 /**
