@@ -43,7 +43,7 @@ proc Apol_Cond_Rules::cond_rules_search {} {
     }
     set other_opts {}
     if {$vals(use_regexp)} {
-        lappend other_opts regexp
+        lappend other_opts regex
     }
     set bool_name {}
     if {$vals(enable_bool)} {
@@ -93,8 +93,9 @@ proc Apol_Cond_Rules::renderConditional {cond cond_number} {
 
 proc Apol_Cond_Rules::renderConditionalRule {rule} {
     variable widgets
-    foreach {rule_type source_set target_set class perm_default line_num} $rule {break}
-    Apol_Widget::appendSearchResultLine $widgets(results) $line_num 4 $rule_type "\{ $source_set \}" "\{ $target_set \}" ":" $class "\{ $perm_default \}"
+    foreach {rule_type source_set target_set class perm_default line_num cond_info} $rule {break}
+    Apol_Widget::appendSearchResultLine $widgets(results) 4 $line_num \
+        $cond_info $rule_type "\{ $source_set \}" "\{ $target_set \}" ":" $class "\{ $perm_default \}"
 }
 
 ################################################################

@@ -184,6 +184,25 @@ int apol_compare_type(apol_policy_t *p,
 		      unsigned int flags, regex_t **type_regex);
 
 /**
+ * Determines if a boolean is used within a particual conditional.
+ *
+ * @param p Policy within which to look up types.
+ * @param cond Conditional to compare against.
+ * @param name Source boolean name from which to compare.
+ * @param flags If APOL_QUERY_REGEX bit is set, treat name as a
+ * regular expression.
+ * @param regex If using regexp comparison, the compiled regular
+ * expression to use; the pointer will be allocated space if regexp is
+ * legal.  If NULL, then compile the regexp pattern given by name and
+ * cache it here.
+ *
+ * @return 1 If comparison succeeds, 0 if not; < 0 on error.
+ */
+int apol_compare_cond_expr(apol_policy_t *p,
+			   qpol_cond_t *cond, const char *name,
+			   unsigned int flags, regex_t **bool_regex);
+
+/**
  * Determines if a level query matches a qpol_level_t, either
  * the sensitivity name or any of its aliases.
  *

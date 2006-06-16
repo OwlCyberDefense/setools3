@@ -312,6 +312,8 @@ proc Apol_Widget::makeSearchResults {path args} {
     $tb tag configure header -font {Helvetica 12}
     $tb tag configure linenum -foreground blue -underline 1
     $tb tag configure selected -foreground red -underline 1
+    $tb tag configure enabled -foreground green -underline 1
+    $tb tag configure disabled -foreground red -underline 1
     $tb tag bind linenum <Button-1> [list Apol_Widget::_hyperlink $path %x %y]
     $tb tag bind linenum <Enter> [list $tb configure -cursor hand2]
     $tb tag bind linenum <Leave> [list $tb configure -cursor $Apol_Widget::vars($path:cursor)]
@@ -337,23 +339,29 @@ proc Apol_Widget::appendSearchResultText {path text} {
     $path.tb configure -state disabled
 }
 
-# Append a list of values to the search results box.  If linenum is
-# non-empty, create a hyperlink from it to the policy.
-proc Apol_Widget::appendSearchResultLine {path linenum indent line_type args} {
+# Append a list of values to the search results box.  Add $indent
+# number of spaces preceeding the line.  If $linenum is non-empty,
+# create a hyperlink from it to the policy.  If $cond_info is
+# non-empty, then mark this line as enabled or disabled.
+proc Apol_Widget::appendSearchResultLine {path indent linenum cond_info line_type args} {
     $path.tb configure -state normal
-    if {$linenum != ""} {
-        $path.tb insert end \[ {} $linenum linenum "\] "
-    }
-    set indent_spacing {}
     while {$indent > 0} {
-        append indent_spacing " "
+        $path.tb insert end " "
         incr indent -1
     }
-    set text $line_type
-    foreach arg $args {
-        append text " $arg"
+    if {$linenum != {}} {
+        $path.tb insert end \[ {} $linenum linenum "\] "
     }
-    $path.tb insert end "$indent_spacing[string trim $text];\n"
+    set text [join [concat $line_type $args]]
+    $path.tb insert end "[string trim $text];"
+    if {$cond_info != {}} {
+        if {[lindex $cond_info 0] == "enabled"} {
+            $path.tb insert end "  \[" {} "Enabled" enabled "\]"
+        } else {
+            $path.tb insert end "  \[" {} "Disabled" disabled "\]"
+        }
+    }
+    $path.tb insert end "\n"
     $path.tb configure -state disabled
 }
 
