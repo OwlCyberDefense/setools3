@@ -319,6 +319,34 @@ static int qpol_policy_add_cond_rule_traceback(qpol_handle_t *handle, qpol_polic
 
 	db = &policy->p;
 
+	/* mark all unconditional rules as enabled */
+	if (qpol_policy_get_avrule_iter(handle, policy, (QPOL_RULE_ALLOW|QPOL_RULE_NEVERALLOW|QPOL_RULE_AUDITALLOW|QPOL_RULE_DONTAUDIT), &iter))
+		return STATUS_ERR;
+	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		if (qpol_iterator_get_item(iter, (void**)&rule)) {
+			error = errno;
+			ERR(handle, "%s", strerror(error));
+			errno = error;
+			return STATUS_ERR;
+		}
+		rule->parse_context = NULL;
+		rule->merged = QPOL_COND_RULE_ENABLED;
+	}
+	qpol_iterator_destroy(&iter);
+	if (qpol_policy_get_terule_iter(handle, policy, (QPOL_RULE_TYPE_TRANS|QPOL_RULE_TYPE_CHANGE|QPOL_RULE_TYPE_MEMBER), &iter))
+		return STATUS_ERR;
+	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		if (qpol_iterator_get_item(iter, (void**)&rule)) {
+			error = errno;
+			ERR(handle, "%s", strerror(error));
+			errno = error;
+			return STATUS_ERR;
+		}
+		rule->parse_context = NULL;
+		rule->merged = QPOL_COND_RULE_ENABLED;
+	}
+	qpol_iterator_destroy(&iter);
+
 	for (cond = db->cond_list; cond; cond = cond->next) {
 		/* evaluate cond */
 		cond->cur_state = cond_evaluate_expr(db, cond->expr);
@@ -350,34 +378,6 @@ static int qpol_policy_add_cond_rule_traceback(qpol_handle_t *handle, qpol_polic
 				list_ptr->node->merged |= QPOL_COND_RULE_ENABLED;
 		}
 	}
-
-	/* mark all unconditional rules as enabled */
-	if (qpol_policy_get_avrule_iter(handle, policy, (QPOL_RULE_ALLOW|QPOL_RULE_NEVERALLOW|QPOL_RULE_AUDITALLOW|QPOL_RULE_DONTAUDIT), &iter))
-		return STATUS_ERR;
-	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-		if (qpol_iterator_get_item(iter, (void**)&rule)) {
-			error = errno;
-			ERR(handle, "%s", strerror(error));
-			errno = error;
-			return STATUS_ERR;
-		}
-		rule->parse_context = NULL;
-		rule->merged = QPOL_COND_RULE_ENABLED;
-	}
-	qpol_iterator_destroy(&iter);
-	if (qpol_policy_get_terule_iter(handle, policy, (QPOL_RULE_TYPE_TRANS|QPOL_RULE_TYPE_CHANGE|QPOL_RULE_TYPE_MEMBER), &iter))
-		return STATUS_ERR;
-	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
-		if (qpol_iterator_get_item(iter, (void**)&rule)) {
-			error = errno;
-			ERR(handle, "%s", strerror(error));
-			errno = error;
-			return STATUS_ERR;
-		}
-		rule->parse_context = NULL;
-		rule->merged = QPOL_COND_RULE_ENABLED;
-	}
-	qpol_iterator_destroy(&iter);
 
 	return 0;
 }

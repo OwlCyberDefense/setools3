@@ -43,6 +43,7 @@
 #include <sepol/handle.h>
 #include <sepol/policydb/flask_types.h>
 #include <sepol/policydb/policydb.h>
+#include <sepol/policydb/conditional.h>
 #include <sepol/policydb.h>
 #include <sepol/module.h>
 
@@ -53,6 +54,7 @@
 #include <qpol/policy_extend.h>
 #include <qpol/queue.h>
 #include <qpol/expand.h>
+#include <qpol/cond_query.h>
 
 /* redefine input so we can read from a string */
 /* borrowed from O'Reilly lex and yacc pg 157 */
@@ -705,7 +707,7 @@ int qpol_close_policy(qpol_policy_t **policy)
 
 }
 
-extern int qpol_handle_destroy(qpol_handle_t **handle)
+int qpol_handle_destroy(qpol_handle_t **handle)
 {
 	if (handle == NULL) {
 		errno = EINVAL;
@@ -714,6 +716,53 @@ extern int qpol_handle_destroy(qpol_handle_t **handle)
 
 	sepol_handle_destroy(*handle);
 	*handle = NULL;
+
+	return STATUS_SUCCESS;
+}
+
+int qpol_policy_reevaluate_conds(qpol_handle_t *handle, qpol_policy_t *policy)
+{
+	policydb_t *db = NULL;
+	cond_node_t *cond = NULL;
+	cond_av_list_t *list_ptr = NULL;
+
+	if (!handle || !policy) {
+		ERR(handle, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return STATUS_ERR;
+	}
+
+	db = &policy->p;
+
+	for (cond = db->cond_list; cond; cond = cond->next) {
+		/* evaluate cond */
+		cond->cur_state = cond_evaluate_expr(db, cond->expr);
+		if (cond->cur_state < 0) {
+			ERR(handle, "Error evaluating conditional: %s", strerror(EILSEQ));
+			errno = EILSEQ;
+			return STATUS_ERR;
+		}
+
+		/* walk true list */
+		for (list_ptr = cond->true_list; list_ptr; list_ptr = list_ptr->next) {
+			/* field not used (except by write), 
+			 * now storing list and enabled flags */
+			if (cond->cur_state)
+				list_ptr->node->merged |= QPOL_COND_RULE_ENABLED;
+			else
+				list_ptr->node->merged &= ~(QPOL_COND_RULE_ENABLED);
+		}
+
+		/* walk false list */
+		for (list_ptr = cond->false_list; list_ptr; list_ptr = list_ptr->next) {
+			/* field not used (except by write), 
+			 * now storing list and enabled flags */
+			if (!cond->cur_state)
+				list_ptr->node->merged |= QPOL_COND_RULE_ENABLED;
+			else
+				list_ptr->node->merged &= ~(QPOL_COND_RULE_ENABLED);
+		}
+	}
 
 	return STATUS_SUCCESS;
 }
