@@ -183,4 +183,73 @@ int qpol_terule_get_rule_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 
 	return STATUS_SUCCESS;
 }
- 
+
+int qpol_terule_get_cond(qpol_handle_t *handle, qpol_policy_t *policy, qpol_terule_t *rule, qpol_cond_t **cond)
+{
+	avtab_ptr_t terule = NULL;
+
+	if (cond) {
+		*cond = NULL;
+	}
+
+	if (!handle || !policy || !rule || !cond) {
+		ERR(handle, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return STATUS_ERR;
+	}
+
+	terule = (avtab_ptr_t)rule;
+
+	*cond = (qpol_cond_t*)terule->parse_context;
+
+	return STATUS_SUCCESS;
+}
+
+int qpol_terule_get_is_enabled(qpol_handle_t *handle, qpol_policy_t *policy, qpol_terule_t *rule, uint32_t *is_enabled)
+{
+	avtab_ptr_t terule = NULL;
+
+	if (is_enabled) {
+		*is_enabled = 0;
+	}
+
+	if (!handle || !policy || !rule || !is_enabled) {
+		ERR(handle, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return STATUS_ERR;
+	}
+
+	terule = (avtab_ptr_t)rule;
+
+	*is_enabled = ((terule->merged & QPOL_COND_RULE_ENABLED)?1:0);
+
+	return STATUS_SUCCESS;
+}
+
+int qpol_terule_get_which_list(qpol_handle_t *handle, qpol_policy_t *policy, qpol_terule_t *rule, uint32_t *which_list)
+{
+	avtab_ptr_t terule = NULL;
+
+	if (which_list) {
+		*which_list = 0;
+	}
+
+	if (!handle || !policy || !rule || !which_list) {
+		ERR(handle, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return STATUS_ERR;
+	}
+
+	terule = (avtab_ptr_t)rule;
+
+	if (!terule->parse_context) {
+		ERR(handle, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return STATUS_ERR;
+	}
+
+	*which_list = ((terule->merged & QPOL_COND_RULE_LIST)?1:0);
+
+	return STATUS_SUCCESS;
+}
+
