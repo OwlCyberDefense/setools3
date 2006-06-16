@@ -120,4 +120,16 @@ extern int qpol_handle_destroy(qpol_handle_t **handle);
  */
 extern int qpol_find_default_policy_file(unsigned int search_opt, char **policy_file_path);
 
+/**
+ *  Re-evaluate all conditionals in the policy updating the state
+ *  and setting the appropriate rule list as emabled for each.
+ *  This call modifies the policy.
+ *  @param handle Error handler for the policy database.
+ *  @param policy The policy for which to re-evaluate the conditionals.
+ *  This policy will be modified by this function.
+ *  @return 0 on success and < 0 on failure; if the call fails.
+ *  errno will be set. On failure, the policy state may be inconsistent.
+ */
+extern int qpol_policy_reevaluate_conds(qpol_handle_t *handle, qpol_policy_t *policy);
+
 #endif
