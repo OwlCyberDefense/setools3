@@ -29,8 +29,6 @@
 
 #include <qpol/policy.h>
 #include <qpol/bool_query.h>
-#include <qpol/avrule_query.h>
-#include <qpol/terule_query.h>
 #include <qpol/iterator.h>
 
 typedef struct qpol_cond qpol_cond_t;
@@ -65,6 +63,10 @@ extern int qpol_policy_get_cond_iter(qpol_handle_t *handle, qpol_policy_t *polic
  *  errno will be set and *iter will be NULL.
  */
 extern int qpol_cond_get_expr_node_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_cond_t *cond, qpol_iterator_t **iter);
+
+/* flags for conditional rules */
+#define QPOL_COND_RULE_LIST    0x00000001
+#define QPOL_COND_RULE_ENABLED 0x00000002
 
 /**
  *  Get an iterator over all av rules in a conditional's true list
