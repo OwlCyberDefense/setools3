@@ -223,7 +223,7 @@ static int hash_state_next_level_alias(qpol_iterator_t *iter)
 	do {
 		hash_state_next(iter);
 		datum = hs->node ? (level_datum_t*)hs->node->datum : NULL;
-	} while (datum != NULL && datum->level->sens != hs->val);
+	} while (datum != NULL && ( datum->level->sens != hs->val || !datum->isalias) );
 
 	return STATUS_SUCCESS;
 }
@@ -314,7 +314,7 @@ int qpol_level_get_alias_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 	}
 
 	if (hs->node == NULL ||((level_datum_t*)(hs->node->datum))->level->sens != hs->val)
-		hash_state_next(*aliases);
+		hash_state_next_level_alias(*aliases);
 
 	return STATUS_SUCCESS;
 }
