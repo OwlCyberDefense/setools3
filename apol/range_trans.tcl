@@ -174,7 +174,7 @@ proc Apol_Range::renderRangeTrans {rule} {
         } else {
             append text "$low - $high"
         }
-        Apol_Widget::appendSearchResultLine $widgets(results) $line_num 0 range_transition $text
+        Apol_Widget::appendSearchResultLine $widgets(results) 0 $line_num {} range_transition $text
     }
 }
 

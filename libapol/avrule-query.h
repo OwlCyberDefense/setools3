@@ -167,6 +167,22 @@ extern int apol_avrule_query_append_perm(apol_policy_t *p,
 					 const char *perm);
 
 /**
+ * Set an avrule query to return rules that are in conditionals and
+ * whose conditional uses a particular boolean variable.
+ * Unconditional rules will not be returned.
+ *
+ * @param p Policy handler, to report errors.
+ * @param a AV rule query to set.
+ * @param bool_name Name of boolean that conditional must contain.  If
+ * NULL then search all rules.
+ *
+ * @return 0 on success, negative on error.
+ */
+extern int apol_avrule_query_set_bool(apol_policy_t *p,
+				      apol_avrule_query_t *a,
+				      const char *bool_name);
+
+/**
  * Set an avrule query to search only enabled rules within the policy.
  * These include rules that are unconditional and those within enabled
  * conditionals.

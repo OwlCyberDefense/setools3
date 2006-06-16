@@ -162,6 +162,22 @@ extern int apol_terule_query_append_class(apol_policy_t *p,
 					  const char *obj_class);
 
 /**
+ * Set a terule query to return rules that are in conditionals and
+ * whose conditional uses a particular boolean variable.
+ * Unconditional rules will not be returned.
+ *
+ * @param p Policy handler, to report errors.
+ * @param t TE rule query to set.
+ * @param bool_name Name of boolean that conditional must contain.  If
+ * NULL then search all rules.
+ *
+ * @return 0 on success, negative on error.
+ */
+extern int apol_terule_query_set_bool(apol_policy_t *p,
+				      apol_terule_query_t *t,
+				      const char *bool_name);
+
+/**
  * Set a terule query to search only enabled rules within the policy.
  * These include rules that are unconditional and those within enabled
  * conditionals.
@@ -208,12 +224,12 @@ extern int apol_terule_query_set_regex(apol_policy_t *p,
 
 /**
  *  Render a terule to a string.
- *  
+ *
  *  @param policy Policy handler, to report errors.
  *  @param rule The rule to render.
  *
- *  @return a newly malloc()'d string representation of the rule, or NULL on 
- *  failure; if the call fails, errno will be set. The caller is responsible 
+ *  @return a newly malloc()'d string representation of the rule, or NULL on
+ *  failure; if the call fails, errno will be set. The caller is responsible
  *  for calling free() on the returned string.
  */
 extern char *apol_terule_render(apol_policy_t *policy, qpol_terule_t *rule);

@@ -32,7 +32,7 @@
 #include <errno.h>
 
 struct apol_avrule_query {
-	char *source, *target;
+	char *source, *target, *bool_name;
 	apol_vector_t *classes, *perms;
 	unsigned int rules;
 	unsigned int flags;
@@ -45,7 +45,9 @@ int apol_get_avrule_by_query(apol_policy_t *p,
 	qpol_iterator_t *iter = NULL, *perm_iter = NULL;
 	apol_vector_t *source_list = NULL, *target_list = NULL,
 		*class_list = NULL, *perm_list = NULL;
-	int retval = -1, source_as_any = 0;
+	int retval = -1, source_as_any = 0, only_enabled = 0, is_regex = 0;
+	char *bool_name = NULL;
+	regex_t *bool_regex = NULL;
 	*v = NULL;
 
 	uint32_t rule_type = QPOL_RULE_ALLOW | QPOL_RULE_NEVERALLOW |
@@ -54,8 +56,11 @@ int apol_get_avrule_by_query(apol_policy_t *p,
 		if (a->rules != 0) {
 			rule_type &= a->rules;
 		}
+		only_enabled = a->flags & APOL_QUERY_ONLY_ENABLED;
+		is_regex = a->flags & APOL_QUERY_REGEX;
+		bool_name = a->bool_name;
 		if (a->source != NULL &&
-		    (source_list = apol_query_create_candidate_type_list(p, a->source, a->flags & APOL_QUERY_REGEX, a->flags & APOL_QUERY_SOURCE_INDIRECT)) == NULL) {
+		    (source_list = apol_query_create_candidate_type_list(p, a->source, is_regex, a->flags & APOL_QUERY_SOURCE_INDIRECT)) == NULL) {
 			goto cleanup;
 		}
 		if ((a->flags & APOL_QUERY_SOURCE_AS_ANY) && a->source != NULL) {
@@ -63,7 +68,7 @@ int apol_get_avrule_by_query(apol_policy_t *p,
 			source_as_any = 1;
 		}
 		else if (a->target != NULL &&
-			 (target_list = apol_query_create_candidate_type_list(p, a->target, a->flags & APOL_QUERY_REGEX, a->flags & APOL_QUERY_TARGET_INDIRECT)) == NULL) {
+			 (target_list = apol_query_create_candidate_type_list(p, a->target, is_regex, a->flags & APOL_QUERY_TARGET_INDIRECT)) == NULL) {
 			goto cleanup;
 		}
 		if (a->classes != NULL &&
@@ -86,11 +91,38 @@ int apol_get_avrule_by_query(apol_policy_t *p,
 	}
 	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 		qpol_avrule_t *rule;
-		int match_source = 0, match_target = 0, match_perm = 0;
+		uint32_t is_enabled;
+		qpol_cond_t *cond = NULL;
+		int match_source = 0, match_target = 0, match_perm = 0,
+                        match_bool = 0;
 		size_t i;
 		if (qpol_iterator_get_item(iter, (void **) &rule) < 0) {
 			goto cleanup;
 		}
+
+		if (qpol_avrule_get_is_enabled(p->qh, p->p, rule, &is_enabled) < 0) {
+			goto cleanup;
+		}
+		if (!is_enabled && only_enabled) {
+			continue;
+		}
+
+		if (bool_name != NULL) {
+			if (qpol_avrule_get_cond(p->qh, p->p, rule, &cond) < 0) {
+				goto cleanup;
+			}
+			if (cond == NULL) {
+				continue;	  /* skip unconditional rule */
+			}
+			match_bool = apol_compare_cond_expr(p, cond, bool_name, is_regex, &bool_regex);
+			if (match_bool < 0) {
+				goto cleanup;
+			}
+			else if (match_bool == 0) {
+				continue;
+			}
+		}
+
 		if (source_list == NULL) {
 			match_source = 1;
 		}
@@ -175,6 +207,7 @@ int apol_get_avrule_by_query(apol_policy_t *p,
 	}
 	apol_vector_destroy(&class_list, NULL);
         /* don't destroy perm_list - it points to query's permission list */
+	apol_regex_destroy(&bool_regex);
 	qpol_iterator_destroy(&iter);
 	qpol_iterator_destroy(&perm_iter);
 	return retval;
@@ -194,6 +227,7 @@ void apol_avrule_query_destroy(apol_avrule_query_t **a)
 	if (*a != NULL) {
 		free((*a)->source);
 		free((*a)->target);
+		free((*a)->bool_name);
 		apol_vector_destroy(&(*a)->classes, free);
 		apol_vector_destroy(&(*a)->perms, free);
 		free(*a);
@@ -265,6 +299,13 @@ int apol_avrule_query_append_perm(apol_policy_t *p,
 		return -1;
 	}
 	return 0;
+}
+
+int apol_avrule_query_set_bool_name(apol_policy_t *p,
+				    apol_avrule_query_t *a,
+				    const char *bool_name)
+{
+	return apol_query_set(p, &a->bool_name, NULL, bool_name);
 }
 
 int apol_avrule_query_set_enabled(apol_policy_t *p,

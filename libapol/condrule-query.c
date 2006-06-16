@@ -42,7 +42,7 @@ int apol_get_cond_by_query(apol_policy_t *p,
 			   apol_cond_query_t *c,
 			   apol_vector_t **v)
 {
-	qpol_iterator_t *iter = NULL, *expr_iter = NULL;
+	qpol_iterator_t *iter = NULL;
 	int retval = -1;
 	*v = NULL;
 
@@ -55,45 +55,19 @@ int apol_get_cond_by_query(apol_policy_t *p,
 	}
 	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
 		qpol_cond_t *cond;
-		int keep_cond = 0;
 		if (qpol_iterator_get_item(iter, (void **) &cond) < 0) {
 			goto cleanup;
 		}
-		if (c == NULL) {
-			keep_cond = 1;
-		}
-		else {
-			if (qpol_cond_get_expr_node_iter(p->qh, p->p,
-							 cond, &expr_iter) < 0) {
+		if (c != NULL) {
+			int keep_cond = apol_compare_cond_expr(p, cond, c->bool_name, c->flags, &c->regex);
+			if (keep_cond < 0) {
 				goto cleanup;
 			}
-			for ( ;
-			      !qpol_iterator_end(expr_iter) && keep_cond == 0;
-			      qpol_iterator_next(expr_iter)) {
-				qpol_cond_expr_node_t *expr;
-                                uint32_t expr_type;
-				qpol_bool_t *bool;
-				char *bool_name;
-				if (qpol_iterator_get_item(expr_iter, (void **) &expr) < 0 ||
-				    qpol_cond_expr_node_get_expr_type(p->qh, p->p, expr, &expr_type) < 0) {
-					goto cleanup;
-				}
-				if (expr_type != QPOL_COND_EXPR_BOOL) {
-					continue;
-				}
-				if (qpol_cond_expr_node_get_bool(p->qh, p->p, expr, &bool) < 0 ||
-				    qpol_bool_get_name(p->qh, p->p, bool, &bool_name) < 0) {
-					goto cleanup;
-				}
-				keep_cond = apol_compare(p, bool_name, c->bool_name,
-							 c->flags, &(c->regex));
-				if (keep_cond < 0) {
-					goto cleanup;
-				}
+			else if (keep_cond == 0) {
+				continue;
 			}
-			qpol_iterator_destroy(&expr_iter);
 		}
-		if (keep_cond && apol_vector_append(*v, cond)) {
+		if (apol_vector_append(*v, cond)) {
 			ERR(p, "Out of memory!");
 			goto cleanup;
 		}
@@ -105,7 +79,6 @@ int apol_get_cond_by_query(apol_policy_t *p,
 		apol_vector_destroy(v, NULL);
 	}
 	qpol_iterator_destroy(&iter);
-	qpol_iterator_destroy(&expr_iter);
 	return retval;
 }
 
