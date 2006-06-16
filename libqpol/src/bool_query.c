@@ -147,6 +147,12 @@ int qpol_bool_set_state(qpol_handle_t *handle, qpol_policy_t *policy, qpol_bool_
 	internal_datum = (cond_bool_datum_t*)datum;
 	internal_datum->state = state;
 
+	/* re-evaluate conditionals to update the state of their rules */
+	if (qpol_policy_reevaluate_conds(handle, policy))
+	{
+		return STATUS_ERR; /* errno already set */
+	}
+
 	return STATUS_SUCCESS;
 }
 
