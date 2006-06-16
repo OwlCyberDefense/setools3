@@ -969,73 +969,8 @@ proc Apol_TE::search_terules {whichButton} {
 
 
 proc Apol_TE::renderRule {sr rule} {
-    foreach {rule_type source_set target_set class perm_default line_num} $rule {break}
-    Apol_Widget::appendSearchResultLine $sr $line_num 0 $rule_type "\{ $source_set \}" "\{ $target_set \}" : $class "\{ $perm_default \}"
-}
-
-### ATTIC ###
-
-
-# ------------------------------------------------------------------------------
-#  Command Apol_TE::insert_disabled_cond_expr_HyperLink {tb start end}
-#		start and end are l.c line positions
-proc Apol_TE::insert_disabled_cond_expr_HyperLink { tb start end } {
-	$tb tag add $Apol_TE::disabled_cond_expr_tag $start $end
-	return 0
-}
-
-# ------------------------------------------------------------------------------
-#  Command Apol_TE::insert_enabled_cond_expr_HyperLink {tb start end}
-#		start and end are l.c line positions
-proc Apol_TE::insert_enabled_cond_expr_HyperLink { tb start end } {
-	$tb tag add $Apol_TE::enabled_cond_expr_tag $start $end
-	return 0
-}
-
-# ------------------------------------------------------------------------------
-#  Command Apol_TE::configure_disabled_cond_expr_HyperLinks
-proc Apol_TE::configure_disabled_cond_expr_HyperLinks {tb} {
-	# Change the color and underline so that it looks like a common hyperlink. Also, change
-	# the cursor when the mouse is over the hyperlink.
-	$tb tag configure $Apol_TE::disabled_cond_expr_tag -foreground red -underline 1
-	#$tb tag bind $Apol_TE::disabled_cond_expr_tag <Button-1> "puts HI"
-	#$tb tag bind $Apol_TE::disabled_cond_expr_tag <Enter> { set Apol_TE::orig_cursor [%W cget -cursor]; %W configure -cursor hand2 }
-	#$tb tag bind $Apol_TE::disabled_cond_expr_tag <Leave> { %W configure -cursor $Apol_TE::orig_cursor }
-
-	return 0
-}
-
-# ------------------------------------------------------------------------------
-#  Command Apol_TE::configure_enabled_cond_expr_HyperLinks
-proc Apol_TE::configure_enabled_cond_expr_HyperLinks {tb} {
-	$tb tag configure $Apol_TE::enabled_cond_expr_tag -foreground green -underline 1
-}
-
-proc Apol_TE::configure_enabled_rule_tags {} {
-	variable notebook_results
-
-	set raised_Page [$notebook_results raise]
-	if {$raised_Page == $Apol_TE::emptyTabID} {
-		return -1
-	}
-	set tb $Apol_TE::optionsArray($raised_Page,textbox)
-	set tag_ranges [$tb tag ranges $Apol_TE::enabled_rule_tag]
-	$tb configure -state normal
-
-
-		for {set i 0} {$i < [llength $tag_ranges]} {incr i} {
-			incr i
-			$tb insert [lindex $tag_ranges $i] " \["
-			set startIdx [$tb index "[lindex $tag_ranges $i] + 2 char"]
-			$tb insert $startIdx "$Apol_TE::enabled_rule_tag_text"
-			set endIdx [$tb index "$startIdx + [string length $Apol_TE::enabled_rule_tag_text] char"]
-			$tb insert $endIdx "\]"
-			Apol_TE::insert_enabled_cond_expr_HyperLink $tb $startIdx $endIdx
-		}
-		Apol_TE::configure_enabled_cond_expr_HyperLinks $tb
-	$tb configure -state disabled
-
-	return 0
+    foreach {rule_type source_set target_set class perm_default line_num cond_info} $rule {break}
+    Apol_Widget::appendSearchResultLine $sr 0 $line_num $cond_info $rule_type "\{ $source_set \}" "\{ $target_set \}" : $class "\{ $perm_default \}"
 }
 
 # -----------------------------------------------------------------------------

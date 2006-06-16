@@ -54,6 +54,9 @@ static int apol_tcl_string_to_typeset(Tcl_Interp *interp,
 	char *s;
 	*sym_name = NULL;
 	*indirect = 0;
+	if (*typeset == '\0') {
+		return 0;
+	}
 	if (Tcl_ListObjIndex(interp, typeset_obj, 0, &name_obj) == TCL_ERROR ||
 	    Tcl_ListObjIndex(interp, typeset_obj, 1, &indirect_obj) == TCL_ERROR) {
 		return -1;
@@ -80,21 +83,26 @@ static int apol_tcl_string_to_typeset(Tcl_Interp *interp,
  * The tuple consists of:
  * <code>
  *    { rule_type source_type_set target_type_set object_class perm_set
- *      line_number }
+ *      line_number cond_info }
  * </code>
- * The type sets and perm sets are Tcl lists.
+ * The type sets and perm sets are Tcl lists.  If cond_info is an
+ * empty list then this rule is unconditional.  Otherwise cond_info is
+ * a 2-uple list, where the first element is either "enabled" or
+ * "disabled", and the second element is the line number for its
+ * conditional expression.
  */
 static int append_avrule_to_list(Tcl_Interp *interp,
 				 qpol_avrule_t *avrule,
 				 Tcl_Obj *result_list)
 {
-	uint32_t rule_type;
+	uint32_t rule_type, is_enabled;
 	const char *rule_string;
 	qpol_type_t *source, *target;
 	qpol_class_t *obj_class;
 	qpol_iterator_t *perm_iter = NULL;
 	char *source_name, *target_name, *obj_class_name;
-	Tcl_Obj *avrule_elem[6], *avrule_list;
+	qpol_cond_t *cond;
+	Tcl_Obj *avrule_elem[7], *avrule_list, *cond_elem[2];
 	int retval = TCL_ERROR;
 
 	if (qpol_avrule_get_rule_type(policydb->qh, policydb->p, avrule, &rule_type) < 0 ||
@@ -130,7 +138,19 @@ static int append_avrule_to_list(Tcl_Interp *interp,
 		}
 	}
 	avrule_elem[5] = Tcl_NewStringObj("", -1);   /* FIX ME! */
-	avrule_list = Tcl_NewListObj(6, avrule_elem);
+	if (qpol_avrule_get_cond(policydb->qh, policydb->p, avrule, &cond) < 0 ||
+	    qpol_avrule_get_is_enabled(policydb->qh, policydb->p, avrule, &is_enabled) < 0) {
+		goto cleanup;
+	}
+	if (cond == NULL) {
+		avrule_elem[6] = Tcl_NewListObj(0, NULL);
+	}
+	else {
+		cond_elem[0] = Tcl_NewStringObj(is_enabled ? "enabled" : "disabled", -1);
+		cond_elem[1] = Tcl_NewStringObj("", -1);  /* FIX ME! */
+		avrule_elem[6] = Tcl_NewListObj(2, cond_elem);
+	}
+	avrule_list = Tcl_NewListObj(7, avrule_elem);
 	if (Tcl_ListObjAppendElement(interp, result_list, avrule_list) == TCL_ERROR) {
 		goto cleanup;
 	}
@@ -145,20 +165,25 @@ static int append_avrule_to_list(Tcl_Interp *interp,
  * The tuple consists of:
  * <code>
  *    { rule_type source_type_set target_type_set object_class default_type
- *      line_number }
+ *      line_number cond_info }
  * </code>
- * The type sets are Tcl lists.
+ * The type sets and perm sets are Tcl lists.  If cond_info is an
+ * empty list then this rule is unconditional.  Otherwise cond_info is
+ * a 2-uple list, where the first element is either "enabled" or
+ * "disabled", and the second element is the line number for its
+ * conditional expression.
  */
 static int append_terule_to_list(Tcl_Interp *interp,
 				 qpol_terule_t *terule,
 				 Tcl_Obj *result_list)
 {
-	uint32_t rule_type;
+	uint32_t rule_type, is_enabled;
 	const char *rule_string;
 	qpol_type_t *source, *target, *default_type;
 	qpol_class_t *obj_class;
 	char *source_name, *target_name, *obj_class_name, *default_name;
-	Tcl_Obj *terule_elem[6], *terule_list;
+	qpol_cond_t *cond;
+	Tcl_Obj *terule_elem[7], *terule_list, *cond_elem[2];
 	int retval = TCL_ERROR;
 
 	if (qpol_terule_get_rule_type(policydb->qh, policydb->p, terule, &rule_type) < 0 ||
@@ -184,7 +209,19 @@ static int append_terule_to_list(Tcl_Interp *interp,
 	terule_elem[3] = Tcl_NewStringObj(obj_class_name, -1);
 	terule_elem[4] = Tcl_NewStringObj(default_name, -1);
 	terule_elem[5] = Tcl_NewStringObj("", -1);   /* FIX ME! */
-	terule_list = Tcl_NewListObj(6, terule_elem);
+	if (qpol_terule_get_cond(policydb->qh, policydb->p, terule, &cond) < 0 ||
+	    qpol_terule_get_is_enabled(policydb->qh, policydb->p, terule, &is_enabled) < 0) {
+		goto cleanup;
+	}
+	if (cond == NULL) {
+		terule_elem[6] = Tcl_NewListObj(0, NULL);
+	}
+	else {
+		cond_elem[0] = Tcl_NewStringObj(is_enabled ? "enabled" : "disabled", -1);
+		cond_elem[1] = Tcl_NewStringObj("", -1);  /* FIX ME! */
+		terule_elem[6] = Tcl_NewListObj(2, cond_elem);
+	}
+	terule_list = Tcl_NewListObj(7, terule_elem);
 	if (Tcl_ListObjAppendElement(interp, result_list, terule_list) == TCL_ERROR) {
 		goto cleanup;
 	}
@@ -203,6 +240,8 @@ static int append_terule_to_list(Tcl_Interp *interp,
  *   <li>object class
  *   <li>for av rules: permission set; for type rules: default type
  *   <li>line number, or -1 unknown
+ *   <li>conditional info (empty list, or 2-uple list of
+ *   enabled/disabled + conditional's line number)
  * </ul>
  *
  * @param argv This function takes seven parameters:
@@ -678,6 +717,10 @@ static int Apol_SearchConditionalRules(ClientData clientData, Tcl_Interp *interp
 		if (strcmp(s, "regex") == 0) {
 			apol_cond_query_set_regex(policydb, query, 1);
 		}
+		else {
+			ERR(policydb, "Invalid option %s.", s);
+			goto cleanup;
+		}
 	}
 
 	if (*argv[3] != '\0' &&
@@ -886,6 +929,10 @@ static int Apol_SearchRBACRules(ClientData clientData, Tcl_Interp *interp, int a
 			if (rtquery != NULL) {
 				apol_role_trans_query_set_source_any(policydb, rtquery, 1);
 			}
+		}
+		else {
+			ERR(policydb, "Invalid option %s.", s);
+			goto cleanup;
 		}
 	}
 
