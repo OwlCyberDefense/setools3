@@ -16,7 +16,7 @@
 typedef struct sefs_fc_entry {
 	char		*path;		/* the path for genfs_context, regexp for file_context */
 	int		filetype;	/* the type of file, block, char etc */
-	security_con_t 	*context;  
+//	security_con_t 	*context;  //FIXME
 } sefs_fc_entry_t; 
 
 int parse_file_contexts_file(const char *fc_path, sefs_fc_entry_t **contexts, int *num_contexts, policy_t *policy);

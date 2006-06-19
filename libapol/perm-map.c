@@ -12,7 +12,7 @@
  * object class permissions with read, write, read&write, and none access.
  * These maps are used, for example, by an information flow analysis.
  */
-
+#if 0
 #include "perm-map.h"
 #include "policy.h"
 #include "util.h"
@@ -394,3 +394,4 @@ int write_perm_map_file(classes_perm_map_t *map, policy_t *policy, FILE *outfile
 	
 	return 0;
 }
+#endif

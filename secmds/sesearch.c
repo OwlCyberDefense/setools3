@@ -24,6 +24,7 @@
 #include <assert.h>
 #define _GNU_SOURCE
 #include <getopt.h>
+#include <string.h>
 
 #define COPYRIGHT_INFO "Copyright (C) 2003-2006 Tresys Technology, LLC"
 

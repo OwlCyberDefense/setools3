@@ -39,6 +39,7 @@
 /* other */
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <assert.h>
 #define _GNU_SOURCE
 #include <getopt.h>
@@ -1232,7 +1233,6 @@ cleanup:
 int main (int argc, char **argv)
 {
 	int classes, types, attribs, roles, users, all, expand, stats, rt, optc, isids, bools, sens, cats, fsuse, genfs, netif, node, port;
-	unsigned int open_opts = 0;
 	apol_policy_t *policydb = NULL;
 	char *class_name, *type_name, *attrib_name, *role_name, *user_name, *isid_name, *bool_name, *sens_name, *cat_name, *fsuse_type, *genfs_type, *netif_name, *node_addr, *port_num = NULL, *protocol = NULL;
 	unsigned int search_opts = 0;
@@ -1245,104 +1245,86 @@ int main (int argc, char **argv)
 			break;
 		case 'c': /* classes */
 			classes = 1;
-			open_opts |= POLOPT_CLASSES;
 			if(optarg != 0)
 				class_name = optarg;
 			break;
 		case 't': /* types */
 			types = 1;
-			open_opts |= POLOPT_TYPES;
 			if(optarg != 0)
 				type_name = optarg;
 			break;
 		case 'a': /* attributes */
 			attribs = 1;
-			open_opts |= POLOPT_TYPES;
 			if(optarg != 0)
 				attrib_name = optarg;
 			break;
 		case 'r': /* roles */
 			roles = 1;
-			open_opts |= POLOPT_ROLES;
 			if(optarg != 0)
 				role_name = optarg;
 			break;
 		case 'u': /* users */
 			users = 1;
-			open_opts |= POLOPT_USERS;
 			if(optarg != 0)
 				user_name = optarg;
 			break;
 		case 'b': /* conditional booleans */
 			bools = 1;
-			open_opts |= POLOPT_COND_BOOLS;
 			if(optarg != 0)
 				bool_name = optarg;
 			break;
 		case 'S': /* sensitivities */
 			sens = 1;
-			open_opts |= POLOPT_MLS_COMP;
 			if(optarg != 0)
 				sens_name = optarg;
 			break;
 		case 'C': /* categories */
 			cats = 1;
-			open_opts |= POLOPT_MLS_COMP;
 			if(optarg != 0)
 				cat_name = optarg;
 			break;
 		case 'f': /* fs_use */
 			fsuse = 1;
-			open_opts |= POLOPT_OCONTEXT;
 			if(optarg != 0)
 				fsuse_type = optarg;
 			break;
 		case 'g': /* genfscon */
 			genfs = 1;
-			open_opts |= POLOPT_OCONTEXT;
 			if(optarg != 0)
 				genfs_type = optarg;
 			break;
 		case 'n': /* netifcon */
 			netif = 1;
-			open_opts |= POLOPT_OCONTEXT;
 			if(optarg != 0)
 				netif_name = optarg;
 			break;
 		case 'o': /* nodecons */
 			node = 1;
-			open_opts |= POLOPT_OCONTEXT;
 			if(optarg != 0)
 				node_addr = optarg;
 			break;
 		case 'p': /* portcons */
 			port = 1;
-			open_opts |= POLOPT_OCONTEXT;
 			if(optarg != 0)
 				port_num = optarg;
 			break;
 		case 'l': /* protocol */
-			open_opts |= POLOPT_OCONTEXT;
 			if (optarg != 0)
 				protocol = optarg;
 			break;
 		case 'i': /* initial SIDs */
 			isids = 1;
-			open_opts |= POLOPT_INITIAL_SIDS;
 			if(optarg != 0)
 				isid_name = optarg;
 			break;
 		case 'A': /* all */
 			all = 1;
-			open_opts = POLOPT_ALL;
 			break;
 		case 'x': /* expand */
 			expand = 1;
-			open_opts = POLOPT_ALL;
 			break;
 		case 's': /* stats */
 			stats = 1;
-			open_opts |= POLOPT_ALL;
 			break;
 		case 'h': /* help */
 			usage(argv[0], 0);
@@ -1363,7 +1345,6 @@ int main (int argc, char **argv)
 	}
 	/* if no options, then show stats */
 	if(classes + types + attribs + roles + users + isids + bools + sens + cats + fsuse + genfs + netif + node + port + all < 1) {
-		open_opts |= POLOPT_ALL;
 		stats = 1;
 	}
 	if (!search_opts)

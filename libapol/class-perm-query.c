@@ -30,6 +30,7 @@
  */
 
 #include "policy-query.h"
+#include <string.h>
 
 struct apol_class_query {
 	char *class_name, *common_name;

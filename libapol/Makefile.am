@@ -4,22 +4,14 @@ AM_CFLAGS = -fpic -I$(top_srcdir)/libqpol/include \
 	-DAPOL_INSTALL_DIR='"${apol_install_dir}"' \
 	-DAPOL_HELP_DIR='"${apol_help_dir}"'
 
-AM_YFLAGS = -d
-BUILT_SOURCES = apolicy_parse.h
-
 libapol_a_SOURCES = \
-	policy.c policy.h old-policy-query.c old-policy-query.h \
+	policy.c policy.h \
 	queue.c queue.h util.c util.h \
-	cond.c cond.h \
-	avl-util.c avl-util.h policy-avl.c policy-avl.h \
+	avl-util.c avl-util.h \
 	render.c render.h perm-map.c perm-map.h \
 	analysis.c analysis.h \
 	infoflow.c infoflow.h relabel_analysis.c relabel_analysis.h \
-	dta.c dta.h poldiff.c poldiff.h \
-	apolicy_parse.y apolicy_scan.l \
-	binpol/binpol.c binpol/binpol.h binpol/bpmaps.c binpol/bpmaps.h \
-	binpol/fbuf.c binpol/fbuf.h binpol/ebitmap.c binpol/ebitmap.h \
-	semantic/avhash.c semantic/avhash.h semantic/avsemantics.c semantic/avsemantics.h \
+	dta.c dta.h poldiff.c poldiff.h old-policy-query.c old-policy-query.h \
 	policy-io.c policy-io.h vector.c vector.h \
 	policy-query.c policy-query.h \
 	context-query.c context-query.h mls-query.c mls-query.h \
@@ -44,4 +36,3 @@ libapol_tcl_a_CFLAGS = $(AM_CFLAGS) @TCL_INCLUDES@
 #CFLAGS  += -DLIBAPOL_SELINUX_DIR='"$(SELINUX_DIR)"'
 #CFLAGS	+= -DLIBAPOL_DEFAULT_POLICY='"$(POLICY_SRC_FILE)"'
 
-CLEANFILES = $(BUILT_SOURCES) apolicy_parse.c apolicy_scan.c

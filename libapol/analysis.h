@@ -17,6 +17,7 @@
  * Analysis routines for libapol
  */
 
+#if 0
 #ifndef _APOLICY_ANALYSIS_H_
 #define _APOLICY_ANALYSIS_H_
 
@@ -215,3 +216,4 @@ int types_relation_determine_relationship(types_relation_query_t *tra_query,
 				   policy_t *policy);
 				   
 #endif /*_APOLICY_ANALYSIS_H_*/
+#endif
