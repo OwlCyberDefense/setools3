@@ -30,6 +30,7 @@
 
 #include "policy-query.h"
 #include <errno.h>
+#include <string.h>
 
 struct apol_terule_query {
 	char *source, *target, *default_type, *bool_name;

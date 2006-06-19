@@ -19,6 +19,7 @@ static void* state = NULL; /* local global variable to support step-by-step tran
 
 /******************** misc functions ********************/
 
+#if 0
 static int append_direct_edge_to_results(policy_t *policy, iflow_query_t* q,
 					 iflow_t *answer, Tcl_Interp *interp)
 {
@@ -377,6 +378,7 @@ static int append_dta_results(policy_t *policy, domain_trans_analysis_t *dta_res
  *	next		(repeat target type record N times)
  */
 
+#endif
 static int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
     /* FIX ME!*/
@@ -864,10 +866,10 @@ static int Apol_DirectInformationFlowAnalysis(ClientData clientData, Tcl_Interp 
  * NOTE: THIS FUNCTION EXPECTS PERMISSION MAPPINGS TO BE LOADED!! If, not it will throw an error.
  *
  */
+#if 0
 static iflow_query_t* set_transitive_query_args(Tcl_Interp *interp, CONST char *argv[])
 {
         /* FIX ME! */
-#if 0
 	int num_objs, num_obj_perms, num_objs_options, obj, perm;
 	int num_inter_types, type, *types = NULL;
 	int i, j, rt, num, cur, sz = 0;
@@ -1105,10 +1107,10 @@ static iflow_query_t* set_transitive_query_args(Tcl_Interp *interp, CONST char *
 		Tcl_Free((char *) inter_types);
 	}
 	return iflow_query;		
-#endif
         return NULL;
 }
 
+#endif
 
 /*
  * TRANSITIVE INFORMATION FLOW RESULTS:
@@ -1359,8 +1361,9 @@ static int Apol_TransitiveFindPathsAbort(ClientData clientData, Tcl_Interp *inte
 static Tcl_Obj *apol_relabel_fromto_results(ap_relabel_result_t *results, int start_type, 
 						policy_t *policy, bool_t do_filter, 
 						int *filter_types, int num_filter_types) 
-{
+{/* FIXME */
         Tcl_Obj *results_list_obj = Tcl_NewListObj (0, NULL);
+#if 0 
         int i, j, k, x, rule_idx;
         Tcl_Obj *end_types_list[2];	/* Holds the end type string, (to|from|both) and a list of subject info */
         Tcl_Obj *end_type_elem;
@@ -1462,6 +1465,7 @@ static Tcl_Obj *apol_relabel_fromto_results(ap_relabel_result_t *results, int st
 	        }
         }
         
+#endif
         return results_list_obj;
 }
 
@@ -1471,7 +1475,8 @@ static Tcl_Obj *apol_relabel_fromto_results(ap_relabel_result_t *results, int st
 static Tcl_Obj *apol_relabel_domain_results(ap_relabel_result_t *results, int start_type, policy_t *policy,
 					    bool_t do_filter, int *filter_types, int num_filter_types) {
         Tcl_Obj *results_list_obj;
-        Tcl_Obj *results_list[2], *results_list_ptr;
+#if 0 
+       Tcl_Obj *results_list[2], *results_list_ptr;
         Tcl_Obj *item_list[2], *item_elem;
         Tcl_Obj *rule_list[2], *rule_elem;
         char *str;
@@ -1590,6 +1595,7 @@ static Tcl_Obj *apol_relabel_domain_results(ap_relabel_result_t *results, int st
         results_list_obj = Tcl_NewListObj(2, results_list);	/* Return TCL list of 2 elements { from_list to_list } */
         assert(results_list_obj);
         
+#endif
         return results_list_obj;
 }
 
@@ -1771,6 +1777,7 @@ static int Apol_RelabelAnalysis (ClientData clientData, Tcl_Interp *interp,
  * argv[21] - flag (boolean value) for selecting object type(s) in the DTA query.
  * argv[22] - list of object types for the DTA query.
  */
+#if 0
 static int types_relation_get_dta_options(dta_query_t *dta_query, Tcl_Interp *interp, CONST char *argv[], policy_t *policy)
 {
 	int rt, num_objs, num_objs_options, num_end_types, i, j;
@@ -2296,7 +2303,7 @@ static int types_relation_append_results(types_relation_query_t *tr_query,
 	
 	return 0;
 }
-
+#endif
 
 /* 
  * Types Relationship Analysis (QUERY ARGUMENTS):
@@ -2562,7 +2569,6 @@ static int Apol_TypesRelationshipAnalysis(ClientData clientData, Tcl_Interp *int
 #endif
 	return TCL_OK;		
 }
-
 
 
 int ap_tcl_analysis_init(Tcl_Interp *interp) {

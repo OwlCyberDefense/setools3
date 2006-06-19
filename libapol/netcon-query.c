@@ -31,6 +31,7 @@
 
 #include "policy-query.h"
 #include "render.h"
+#include <string.h>
 
 struct apol_portcon_query {
         int proto;

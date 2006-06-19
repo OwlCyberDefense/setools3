@@ -30,6 +30,7 @@
 
 #include "policy-query.h"
 #include <errno.h>
+#include <string.h>
 
 struct apol_role_allow_query {
 	char *source, *target;

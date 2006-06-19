@@ -28,10 +28,9 @@
 #define POLICY_INSTALL_DIR_DOES_NOT_EXIST	-5
 #define INVALID_SEARCH_OPTIONS			-6
 
-int close_policy(policy_t *policy);
-int open_policy(const char* filename, policy_t **policy);
-int open_partial_policy(const char* filename, unsigned int options, policy_t **policy);
-unsigned int validate_policy_options(unsigned int options);
+#define POL_TYPE_SOURCE 1
+#define POL_TYPE_BINARY 2
+
 int find_default_policy_file(unsigned int search_opt, char **policy_file_path);
 const char* find_default_policy_file_strerr(int err);
 

@@ -5,6 +5,7 @@
  * Author: Jeremy A. Mowery jmowery@tresys.com
  */
 
+#if 0
 #include "policy.h"
 #include "relabel_analysis.h"
 #include "semantic/avhash.h"
@@ -556,3 +557,4 @@ int ap_relabel_query(int start_type, unsigned char mode, unsigned char direction
 		return -1;
 	}
 }
+#endif

@@ -29,6 +29,7 @@
 #include "policy.h"
 #include "vector.h"
 #include "context-query.h"
+#include <string.h>
 
 typedef struct apol_genfscon_query apol_genfscon_query_t;
 typedef struct apol_fs_use_query apol_fs_use_query_t;

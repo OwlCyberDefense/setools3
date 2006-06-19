@@ -33,14 +33,14 @@ apol_SOURCES = apol_gui.c \
 	relabel_module.tcl types_relation_module.tcl \
 	top.tcl
 
-LDADD = $(top_srcdir)/libapol/libapol-tcl.a $(top_srcdir)/libapol/libapol.a $(top_srcdir)/libqpol/src/libqpol.so @QPOL_LIB_FLAG@ @TCL_LIB_FLAG@ @TK_LIB_FLAG@
+LDADD = $(top_srcdir)/libapol/libapol.a $(top_srcdir)/libqpol/src/libqpol.so @QPOL_LIB_FLAG@ @TCL_LIB_FLAG@ @TK_LIB_FLAG@
 apol_DEPENDENCIES = apol.tcl $(top_srcdir)/libapol/libapol-tcl.a $(top_srcdir)/libapol/libapol.a $(top_srcdir)/libqpol/src/libqpol.so $(top_srcdir)/config.tcl
 
 if WANT_LIBSEFS
-apol_LDADD = $(LDADD) $(top_srcdir)/libsefs/libsefs.a
+apol_LDADD = $(top_srcdir)/libapol/libapol-tcl.a $(top_srcdir)/libsefs/libsefs.a $(LDADD)
 apol_DEPENDENCIES += $(top_srcdir)/libsefs/libsefs.a
 else
-apol_LDADD = $(LDADD)
+apol_LDADD = $(top_srcdir)/libapol/libapol-tcl.a $(LDADD)
 endif
 
 TCL_STRIP_FILES = $(top_srcdir)/config.tcl $(filter-out head.tcl,$(filter %.tcl,$(apol_SOURCES)))

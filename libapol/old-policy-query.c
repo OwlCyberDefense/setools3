@@ -16,7 +16,7 @@
 #include "util.h"
 #include "old-policy-query.h"
 
-
+#if 0
 
 int free_teq_results_contents(teq_results_t *r)
 {
@@ -1355,3 +1355,4 @@ return_error:
 	free(tgt_attribs);
 	return -2;
 }
+#endif

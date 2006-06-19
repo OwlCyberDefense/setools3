@@ -8,6 +8,7 @@
  *
  * Support for semantically diff'ing two policies 
  */
+#if 0
  
 #include "poldiff.h"
 #include "policy.h"
@@ -2886,3 +2887,4 @@ error:
 }
 
 
+#endif
