@@ -2,7 +2,7 @@
 # see file 'COPYING' for use and warranty information
 
 # TCL/TK GUI for SE Linux policy analysis
-# Requires tcl and tk 8.4+, with BWidgets
+# Requires tcl and tk 8.4+, with BWidget
 #
 # Author: <don.patterson@tresys.com>
 #

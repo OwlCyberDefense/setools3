@@ -2,7 +2,7 @@
 # see file 'COPYING' for use and warranty information 
 
 # TCL/TK GUI for SE Linux policy analysis
-# Requires tcl and tk 8.4+, with BWidgets
+# Requires tcl and tk 8.4+, with BWidget
 
 
 ##############################################################
@@ -236,8 +236,7 @@ proc Apol_NetContexts::portcon_create {p_f} {
     set proto_cb [checkbutton $p_f.proto.proto_enable -text "Protocol" \
                       -variable Apol_NetContexts::vals(portcon:proto_enable)]
     set widgets(portcon:proto) [ComboBox $p_f.proto.proto -entrybg white -width 8 -state disabled \
-                                    -textvariable Apol_NetContexts::vals(portcon:proto)]
-    bind $widgets(portcon:proto).e <KeyPress> [list ApolTop::_create_popup $widgets(portcon:proto) %W %K]
+                                    -textvariable Apol_NetContexts::vals(portcon:proto) -autopost 1]
     trace add variable Apol_NetContexts::vals(portcon:proto_enable) write \
         [list Apol_NetContexts::toggleCheckbutton $widgets(portcon:proto)]
     pack $proto_cb -side top -anchor w
@@ -468,8 +467,7 @@ proc Apol_NetContexts::netifcon_create {p_f} {
     set dev_cb [checkbutton $p_f.dev.dev_enable -text "Device" \
                     -variable Apol_NetContexts::vals(netifcon:dev_enable)]
     set widgets(netifcon:dev) [ComboBox $p_f.dev.dev -entrybg white -width 8 -state disabled \
-                                   -textvariable Apol_NetContexts::vals(netifcon:dev)]
-    bind $widgets(netifcon:dev).e <KeyPress> [list ApolTop::_create_popup $widgets(netifcon:dev) %W %K]
+                                   -textvariable Apol_NetContexts::vals(netifcon:dev) -autopost 1]
     trace add variable Apol_NetContexts::vals(netifcon:dev_enable) write \
         [list Apol_NetContexts::toggleCheckbutton $widgets(netifcon:dev)]
     pack $dev_cb -side top -anchor w

@@ -4,7 +4,7 @@
 #  Copyright (C) 2003-2006 Tresys Technology, LLC
 #  see file 'COPYING' for use and warranty information 
 #
-#  Requires tcl and tk 8.3+, with BWidgets
+#  Requires tcl and tk 8.4+, with BWidget
 #  Author: <don.patterson@tresys.com, mayerf@tresys.com, kcarr@tresys>
 # -----------------------------------------------------------
 #
@@ -2887,7 +2887,7 @@ proc Apol_Analysis_fulflow::advanced_filters_create_dialog {path_name title_txt}
 			$Apol_Analysis_fulflow::f_opts($path_name,lbox_excl)"]
 	
 	set f_opts($path_name,combo_incl) [ComboBox $b_incl_f.combo_incl \
-		-editable 0 \
+		-editable 0 -autopost 1 \
     		-textvariable Apol_Analysis_fulflow::f_opts($path_name,incl_attrib_combo_value) \
 		-entrybg $ApolTop::default_bg_color \
 		-modifycmd "Apol_Analysis_fulflow::advanced_filters_filter_types_using_attrib \
@@ -2896,7 +2896,7 @@ proc Apol_Analysis_fulflow::advanced_filters_create_dialog {path_name title_txt}
  				Apol_Analysis_fulflow::f_opts($path_name,master_incl_types_list)"] 
   	
   	set f_opts($path_name,combo_excl) [ComboBox [$exclude_f getframe].combo_excl \
-		-editable 0 \
+		-editable 0 -autopost 1 \
     		-textvariable Apol_Analysis_fulflow::f_opts($path_name,excl_attrib_combo_value) \
 		-entrybg $ApolTop::default_bg_color \
 		-modifycmd "Apol_Analysis_fulflow::advanced_filters_filter_types_using_attrib \
@@ -3001,7 +3001,7 @@ proc Apol_Analysis_fulflow::create_options { options_frame } {
 	set lbl_start_type [Label $start_frame.lbl_start_type -text "Starting type:"]
     	set combo_start [ComboBox $start_frame.combo_start \
     		-helptext "You must choose a starting type for information flow" \
-		-editable 1 \
+		-editable 1 -autopost 1 \
     		-textvariable Apol_Analysis_fulflow::start_type \
 		-entrybg white]  
 
@@ -3022,7 +3022,7 @@ proc Apol_Analysis_fulflow::create_options { options_frame } {
 		-offvalue 0 -onvalue 1 \
 		-command { Apol_Analysis_fulflow::config_attrib_comboBox_state }]
 
-    	set combo_attribute [ComboBox $attrib_frame.combo_attribute  \
+    	set combo_attribute [ComboBox $attrib_frame.combo_attribute -autopost 1 \
     		-textvariable Apol_Analysis_fulflow::display_attribute \
     		-modifycmd { Apol_Analysis_fulflow::change_types_list}] 
 
@@ -3067,14 +3067,6 @@ proc Apol_Analysis_fulflow::create_options { options_frame } {
         pack $b_advanced_filters -side left -anchor nw -expand yes -pady 5
         pack $sw_info -side left -anchor nw -expand yes -fill both 
     	
-	# ComboBox is not a simple widget, it is a mega-widget, and bindings for mega-widgets are non-trivial.
-	# If bindtags is invoked with only one argument, then the current set of binding tags for window is 
-	# returned as a list. 
-        bindtags $combo_start.e [linsert [bindtags $combo_start.e] 3 start_list_Tag]
-        bind start_list_Tag <KeyPress> {ApolTop::_create_popup $Apol_Analysis_fulflow::combo_start %W %K}
-	bindtags $combo_attribute.e [linsert [bindtags $combo_attribute.e] 3 attribs_list_Tag]
-	bind attribs_list_Tag <KeyPress> { ApolTop::_create_popup $Apol_Analysis_fulflow::combo_attribute %W %K }
-	
 	return 0	
 }
  

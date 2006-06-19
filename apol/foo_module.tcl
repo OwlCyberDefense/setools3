@@ -4,7 +4,7 @@
 #  Copyright (C) 2003-2006 Tresys Technology, LLC
 #  see file 'COPYING' for use and warranty information 
 #
-#  Requires tcl and tk 8.3+, with BWidgets
+#  Requires tcl and tk 8.4+, with BWidget
 #  Author: <don.patterson@tresys.com, mayerf@tresys.com>
 # -----------------------------------------------------------
 #

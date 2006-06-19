@@ -2,7 +2,7 @@
 # see file 'COPYING' for use and warranty information 
 
 # TCL/TK GUI for SE Linux policy analysis
-# Requires tcl and tk 8.4+, with BWidgets
+# Requires tcl and tk 8.4+, with BWidget
 
 
 ##############################################################
@@ -242,8 +242,8 @@ proc Apol_Users::create {nb} {
 
     checkbutton $rolesFrame.cb -variable Apol_Users::opts(useRole) -text "Role"
     set widgets(role) [ComboBox $rolesFrame.combo -width 12 -textvariable Apol_Users::opts(role) \
-                           -helptext "Type or select a role" -state disabled]
-    bind $widgets(role).e <KeyPress> [list ApolTop::_create_popup $widgets(role) %W %K]
+                           -helptext "Type or select a role" -state disabled \
+                           -autopost 1]
     trace add variable Apol_Users::opts(useRole) write \
         [list Apol_Users::toggleRolesCheckbutton $widgets(role)]
     pack $rolesFrame.cb -anchor nw

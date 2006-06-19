@@ -2,7 +2,7 @@
 # see file 'COPYING' for use and warranty information 
 
 # TCL/TK GUI for SE Linux policy analysis
-# Requires tcl and tk 8.4+, with BWidgets 1.7+
+# Requires tcl and tk 8.4+, with BWidget 1.7+
 
 namespace eval Apol_Widget {
     variable menuPopup {}
@@ -81,20 +81,16 @@ proc Apol_Widget::makeTypeCombobox {path args} {
     set f [frame $path]
     set type_box [eval ComboBox $f.tb $args -helptext {{Type or select a type}} \
                       -textvariable Apol_Widget::vars($path:type) \
-                      -entrybg white -width 20]
-    bind $type_box.e <KeyPress> [list ApolTop::_create_popup $type_box %W %K]
+                      -entrybg white -width 20 -autopost 1]
     pack $type_box -side top -expand 1 -fill x
     
     set attrib_enable [checkbutton $f.ae \
-                           -text "Filter by attribute:" \
+                           -text "Filter by attribute:"\
                            -variable Apol_Widget::vars($path:attribenable) \
                            -command [list Apol_Widget::_attrib_enabled $path]]
-    set attrib_box [ComboBox $f.ab -entrybg white -width 16 \
+    set attrib_box [ComboBox $f.ab -autopost 1 -entrybg white -width 16 \
                         -textvariable Apol_Widget::vars($path:attrib)]
     trace add variable Apol_Widget::vars($path:attrib) write [list Apol_Widget::_attrib_changed $path]
-    bind $attrib_box.e <KeyPress> [list ApolTop::_create_popup $attrib_box %W %K]
-    bind $attrib_box.e <FocusOut> +[list Apol_Widget::_attrib_validate $path]
-
     pack $attrib_enable -side top -expand 0 -fill x -anchor s -padx 5 -pady 2
     pack $attrib_box -side top -expand 1 -fill x -padx 10
     _attrib_enabled $path
@@ -172,9 +168,8 @@ proc Apol_Widget::makeLevelSelector {path catSize args} {
     set f [frame $path]
     set sens_box [eval ComboBox $f.sens $args \
                       -textvariable Apol_Widget::vars($path:sens) \
-                      -entrybg white -width 16]
+                      -entrybg white -width 16 -autopost 1]
     trace add variable Apol_Widget::vars($path:sens) write [list Apol_Widget::_sens_changed $path]
-    bind $sens_box.e <KeyPress> [list ApolTop::_create_popup $sens_box %W %K]
     pack $sens_box -side top -expand 0 -fill x
 
     set cats_label [label $f.cl -text "Categories:"]
