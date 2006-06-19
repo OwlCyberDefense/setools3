@@ -2,7 +2,9 @@ lib_LIBRARIES = libapol.a libapol-tcl.a
 
 AM_CFLAGS = -fpic -I$(top_srcdir)/libqpol/include \
 	-DAPOL_INSTALL_DIR='"${apol_install_dir}"' \
-	-DAPOL_HELP_DIR='"${apol_help_dir}"'
+	-DAPOL_HELP_DIR='"${apol_help_dir}"' \
+	-DLIBAPOL_POLICY_INSTALL_DIR='"@selinux_policy_dir@/policy"' \
+	-DLIBAPOL_DEFAULT_POLICY='"@selinux_default_policy@"'
 
 libapol_a_SOURCES = \
 	policy.c policy.h \
@@ -30,9 +32,3 @@ libapol_tcl_a_SOURCES = apol_tcl_other.c apol_tcl_other.h \
 	apol_tcl_fc.c apol_tcl_fc.h \
 	apol_tcl_analysis.c apol_tcl_analysis.h
 libapol_tcl_a_CFLAGS = $(AM_CFLAGS) @TCL_INCLUDES@
-
-# FIX ME!
-#CFLAGS  += -DLIBAPOL_POLICY_INSTALL_DIR='"$(POLICY_INSTALL_DIR)"'
-#CFLAGS  += -DLIBAPOL_SELINUX_DIR='"$(SELINUX_DIR)"'
-#CFLAGS	+= -DLIBAPOL_DEFAULT_POLICY='"$(POLICY_SRC_FILE)"'
-

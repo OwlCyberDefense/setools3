@@ -80,7 +80,7 @@ TEA_PUBLIC_TK_HEADERS
 
 echo "" > ./config.tcl
 
-AC_ARG_ENABLE(bwidget, [  --disable-bwidget-check do not check for BWidget 1.7, assume it exists], enable_bwidget="$enableval", enable_bwidget="yes")
+AC_ARG_ENABLE(bwidget, [  --disable-bwidget-check do not check for BWidget 1.7, assume it exists], enable_bwidget="$enableval", enable_bwidget="no")
 if test "x${enable_bwidget}" = "xyes"; then
     TEA_PROG_TCLSH
     AC_MSG_CHECKING([for BWidget 1.7 or greater])
@@ -235,8 +235,22 @@ EOF
     CFLAGS="$CFLAGS -I${sepol_devel_incdir} -I${selinux_devel_incdir}"
     LDFLAGS="$LDFLAGS -L${sepol_devel_libdir} -L${selinux_devel_libdir} -lselinux -lsepol"  
     gcc ${CFLAGS} ${LDFLAGS} -o conftest conftest.c >&5
-    SELINUX_POLICY_DIR=`./conftest`
-    AC_MSG_RESULT(${SELINUX_POLICY_DIR})
+    selinux_policy_dir=`./conftest`
+    AC_MSG_RESULT(${selinux_policy_dir})
+fi
+
+dnl check for policy source
+if test ${use_selinux} = "yes"; then
+   AC_ARG_WITH(default-policy,
+                [  --with-default-policy   path to default policy file],
+                selinux_default_policy="$withval",
+                selinux_default_policy="${selinux_policy_dir}/src/policy/policy.conf")
+   AC_MSG_CHECKING([for policy source])
+   if test ! -r "${selinux_default_policy}" ; then
+      AC_MSG_WARN([could not read default policy ${selinux_default_policy}])
+   else
+      AC_MSG_RESULT(${selinux_default_policy})
+   fi
 fi
 
 dnl check for pkg-config
@@ -287,13 +301,8 @@ AC_MSG_RESULT([yes])
 AC_SUBST(XML_CFLAGS)
 AC_SUBST(XML_LIBS)
 
-dnl  todo:  dynamic, log file, default policy (source + binary), sharedir, swab
-dnl SELINUX_DIR 		= /selinux
-dnl SEINUX_POLICY_DIR 	= /etc/selinux/strict
-dnl POLICY_INSTALL_DIR 	= $(SELINUX_POLICY_DIR)/policy
-dnl POLICY_SRC_DIR		= $(SELINUX_POLICY_DIR)/src/policy
+dnl  todo:  dynamic, log file, sharedir
 dnl MANDIR			= $(PREFIX)/share/man
-dnl POLICY_SRC_FILE 	= $(POLICY_SRC_DIR)/policy.conf
 dnl DEFAULT_LOG_FILE 	= /var/log/messages
 
 dnl set up variables here
@@ -321,6 +330,8 @@ AC_SUBST(libqpol_version)
 AC_SUBST(libapol_version)
 AC_SUBST(apol_install_dir)
 AC_SUBST(apol_help_dir)
+AC_SUBST(selinux_policy_dir)
+AC_SUBST(selinux_default_policy)
 AC_SUBST(profile_install_dir)
 
 AC_DEFINE_UNQUOTED(LIBAPOL_VERSION_STRING, "${libapol_version}", [libapol version])
