@@ -154,7 +154,7 @@ int apol_genfscon_query_set_path(apol_policy_t *p,
 				 const char *path)
 {
 	int tmp = apol_query_set(p, &g->path, NULL, path);
-	if( !tmp ){
+	if( !tmp && g->path ){
 		if (strlen( g->path ) > 1 && g->path[strlen(g->path) - 1] == '/')
 		g->path[strlen(g->path) - 1] = 0;
 	}
