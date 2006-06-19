@@ -2,7 +2,7 @@
 # see file 'COPYING' for use and warranty information 
 
 # TCL/TK GUI for SE Linux policy analysis
-# Requires tcl and tk 8.4+, with BWidgets
+# Requires tcl and tk 8.4+, with BWidget
 #
 # Author: <don.patterson@tresys.com>
 #
@@ -247,13 +247,11 @@ proc Apol_Cond_Bools::create {nb} {
     set widgets(combo_box) [ComboBox $bool_frame.combo_box \
                                 -textvariable Apol_Cond_Bools::opts(name) \
                                 -helptext "Type or select a boolean variable" \
-                                -state disabled -entrybg white]
+                                -state disabled -entrybg white -autopost 1]
     set widgets(regexp) [checkbutton $bool_frame.regexp \
                              -text "Search using regular expression" \
                              -state disabled \
                              -variable Apol_Cond_Bools::opts(use_regexp)]
-    bind $widgets(combo_box).e <KeyPress> \
-        [list ApolTop::_create_popup $widgets(combo_box) %W %K]
     trace add variable Apol_Cond_Bools::opts(enable_bool) write \
         [list Apol_Cond_Bools::toggleSearchBools]
     pack $enable -anchor w

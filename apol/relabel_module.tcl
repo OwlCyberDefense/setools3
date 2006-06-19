@@ -4,7 +4,7 @@
 #  Copyright (C) 2003-2006 Tresys Technology, LLC
 #  see file 'COPYING' for use and warranty information 
 #
-#  Requires tcl and tk 8.3+, with BWidgets
+#  Requires tcl and tk 8.4+, with BWidget
 #  Author: <jtang@tresys.com>
 # -----------------------------------------------------------
 #
@@ -1070,30 +1070,25 @@ proc Apol_Analysis_relabel::adv_options_create_dialog {path_name title_txt} {
 	$sw_excl_subj setwidget $widgets($path_name,subj_excl_lb)
 
 	set attrib_incl_cbox [ComboBox $attrib_incl_f.attrib_incl_cbox -editable 1 \
-		-entrybg white -width 16 -state disabled \
+		-entrybg white -width 16 -state disabled -autopost 1 \
 		-textvariable Apol_Analysis_relabel::widget_vars($path_name,incl_attrib) \
 		-modifycmd "Apol_Analysis_relabel::adv_options_filter_list_by_attrib \
 			Apol_Analysis_relabel::widget_vars($path_name,incl_subj_list) \
 			Apol_Analysis_relabel::widget_vars($path_name,master_incl_subj_list) \
 			Apol_Analysis_relabel::widget_vars($path_name,incl_attrib) \
 			$widgets($path_name,subj_incl_lb)"]
-	bindtags $attrib_incl_cbox.e [linsert [bindtags $attrib_incl_cbox.e] 3 incl_attrib_cb_tag]
-	bind incl_attrib_cb_tag <KeyPress> [list ApolTop::_create_popup $attrib_incl_cbox %W %K]
-
 	if {$Apol_Analysis_relabel::widget_vars($path_name,filter_incl_subj)} {
 		$attrib_incl_cbox configure -state normal
 	}
 
 	set attrib_excl_cbox [ComboBox $attrib_excl_f.attrib_excl_cbox -editable 1 \
-		-entrybg white -width 16 -state disabled \
+		-entrybg white -width 16 -state disabled -autopost 1 \
 		-textvariable Apol_Analysis_relabel::widget_vars($path_name,excl_attrib) \
 		-modifycmd "Apol_Analysis_relabel::adv_options_filter_list_by_attrib \
 			Apol_Analysis_relabel::widget_vars($path_name,excl_subj_list) \
 			Apol_Analysis_relabel::widget_vars($path_name,master_excl_subj_list) \
 			Apol_Analysis_relabel::widget_vars($path_name,excl_attrib) \
 			$widgets($path_name,subj_excl_lb)"]
-	bindtags $attrib_excl_cbox.e [linsert [bindtags $attrib_excl_cbox.e] 3 excl_attrib_cb_tag]
-	bind excl_attrib_cb_tag <KeyPress> [list ApolTop::_create_popup $attrib_excl_cbox %W %K]
 
 	if {$Apol_Analysis_relabel::widget_vars($path_name,filter_excl_subj)} {
 		$attrib_excl_cbox configure -state normal
@@ -1376,13 +1371,11 @@ proc Apol_Analysis_relabel::display_mod_options { opts_frame } {
     set start_f [frame [$req_tf getframe].start_f]
     set attrib_f [frame [$req_tf getframe].attrib_frame]
     set widgets(start_l) [label $start_f.start_l -anchor w]
-    set widgets(start_cb) [ComboBox $start_f.start_cb -editable 1 \
+    set widgets(start_cb) [ComboBox $start_f.start_cb -editable 1 -autopost 1 \
                                -entrybg white -width 16 \
                                -textvariable Apol_Analysis_relabel::widget_vars(start_type)]
-    bindtags $widgets(start_cb).e [linsert [bindtags $widgets(start_cb).e] 3 start_cb_tag]
-    bind start_cb_tag <KeyPress> [list ApolTop::_create_popup $widgets(start_cb) %W %K]
     	
-    set widgets(start_attrib_cb) [ComboBox $attrib_f.start_attrib_cb \
+    set widgets(start_attrib_cb) [ComboBox $attrib_f.start_attrib_cb -autopost 1 \
                 -editable 1 -entrybg white -width 16 -state disabled \
                 -vcmd [namespace code [list set_types_list %P]] -validate key \
                 -textvariable Apol_Analysis_relabel::widget_vars(start_attrib)]
@@ -1395,9 +1388,6 @@ proc Apol_Analysis_relabel::display_mod_options { opts_frame } {
     $widgets(start_attrib_ch) configure \
 		-command "Apol_Analysis_relabel::config_attrib_comboBox_state \
 			$widgets(start_attrib_ch) $widgets(start_attrib_cb) $widgets(start_cb) 1"
- 
-    bindtags $widgets(start_attrib_cb).e [linsert [bindtags $widgets(start_attrib_cb).e] 3 start_attrib_cb_tag]
-    bind start_attrib_cb_tag <KeyPress> [list ApolTop::_create_popup $widgets(start_attrib_cb) %W %K]
     
     set filter_f [TitleFrame $option_f.filter_f -text "Optional result filters:"]
     set endtype_frame [frame [$filter_f getframe].endtype_frame]

@@ -4,7 +4,7 @@
 #  Copyright (C) 2004-2006 Tresys Technology, LLC
 #  see file 'COPYING' for use and warranty information 
 #
-#  Requires tcl and tk 8.3+, with BWidgets
+#  Requires tcl and tk 8.4+, with BWidget
 #  Author: <don.patterson@tresys.com> 8-11-2004
 # -----------------------------------------------------------
 #
@@ -2528,24 +2528,24 @@ proc Apol_Analysis_tra::create_options { options_frame } {
 	
 	# TypeA and TypeB comboboxes 
     	set combo_typeA [ComboBox $type_frame_1.combo_typeA \
-		-editable 1 \
+		-editable 1 -autopost 1 \
     		-textvariable Apol_Analysis_tra::typeA \
 		-entrybg white]  
 	set combo_typeB [ComboBox $type_frame_2.combo_typeB \
-		-editable 1 \
+		-editable 1 -autopost 1 \
     		-textvariable Apol_Analysis_tra::typeB \
 		-entrybg white]  
 	
 	# Attribute boxes for selecting type by attribute
 	set combo_attribA [ComboBox $attrib_frame_1.combo_attribA \
-		-editable 1 \
+		-editable 1 -autopost 1 \
     		-textvariable Apol_Analysis_tra::attribA \
 		-entrybg white \
 		-state disabled]
 	$combo_attribA configure -modifycmd {Apol_Analysis_tra::change_types_list \
 			$Apol_Analysis_tra::combo_typeA $Apol_Analysis_tra::combo_attribA 1}  
 	set combo_attribB [ComboBox $attrib_frame_2.combo_attribB \
-		-editable 1 \
+		-editable 1 -autopost 1 \
     		-textvariable Apol_Analysis_tra::attribB \
 		-entrybg white \
 		-state disabled]
@@ -2678,23 +2678,6 @@ proc Apol_Analysis_tra::create_options { options_frame } {
         pack $attrib_frame_1 $attrib_frame_2 -side bottom -anchor nw -fill x -expand yes -pady 2
 	pack $lbl_ckbttns -side top -anchor nw -pady 2
 	                   	
-	# Set binding for the embedded entrybox within the BWidget combobox
-        bindtags $combo_typeA.e [linsert [bindtags $combo_typeA.e] 3 combo_typeA_Tag]
-        bind combo_typeA_Tag <KeyPress> \
-        	{ApolTop::_create_popup $Apol_Analysis_tra::combo_typeA %W %K}
-
-	bindtags $combo_typeB.e [linsert [bindtags $combo_typeB.e] 3 combo_typeB_Tag]
-	bind combo_typeB_Tag <KeyPress> \
-		{ApolTop::_create_popup $Apol_Analysis_tra::combo_typeB %W %K}
-	
-	bindtags $combo_attribA.e [linsert [bindtags $combo_attribA.e] 3 combo_attribA_Tag]
-        bind combo_attribA_Tag <KeyPress> \
-        	{ApolTop::_create_popup $Apol_Analysis_tra::combo_attribA %W %K}
-
-	bindtags $combo_attribB.e [linsert [bindtags $combo_attribB.e] 3 combo_attribB_Tag]
-	bind combo_attribB_Tag <KeyPress> \
-		{ApolTop::_create_popup $Apol_Analysis_tra::combo_attribB %W %K}
-	
 	Apol_Analysis_tra::initialize_widgets_state
 	
 	return 0	

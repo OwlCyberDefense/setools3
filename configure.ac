@@ -80,7 +80,7 @@ TEA_PUBLIC_TK_HEADERS
 
 echo "" > ./config.tcl
 
-AC_ARG_ENABLE(bwidget, [  --disable-bwidget-check do not check for BWidget 1.7, assume it exists], enable_bwidget="$enableval", enable_bwidget="no")
+AC_ARG_ENABLE(bwidget-check, [  --disable-bwidget-check do not check for BWidget 1.8, assume it exists], enable_bwidget="$enableval", enable_bwidget="yes", enable_bwidget="no")
 if test "x${enable_bwidget}" = "xyes"; then
     TEA_PROG_TCLSH
     AC_MSG_CHECKING([for BWidget 1.7 or greater])
@@ -105,7 +105,7 @@ EOF
        0)
             AC_MSG_RESULT([1.8+])
             copy_bwidget=no
-            bwidget_broken_bindtabs=no
+            bwidget_ver=1.8
             ;;
        1)
             AC_MSG_ERROR([failed; try using --disable-bwidget-check flag])
@@ -113,19 +113,22 @@ EOF
        17)
             AC_MSG_RESULT([1.7])
             copy_bwidget=no
-            bwidget_broken_bindtabs=yes
+            bwidget_ver=1.7
             ;;
        *)
             AC_MSG_WARN([not found, using setools's BWidget instead])
             copy_bwidget=yes
-            bwidget_broken_bindtabs=yes
+            bwidget_ver=1.7
             ;;
     esac
-    if test ${bwidget_broken_bindtabs} = yes; then
-        # overcome bug in NoteBook::bindtabs
+    if test ${bwidget_ver} = 1.7; then
+        # overcome bug in NoteBook::bindtabs and add a new -autopost option to ComboBox
         changequote(<<<,>>>)dnl
         cat >> ./config.tcl <<EOF
-proc tcl_config_replace_bindtabs {} {
+proc tcl_patch_bwidget {} {
+    # explicitly pull in old BWidget code before patching
+    NoteBook .foo ; destroy .foo
+    ComboBox .foo ; destroy .foo
     proc NoteBook::bindtabs { path event script } {
         if { \$script != "" } {
             append script " \[NoteBook::_get_page_name [list \$path] current 1\]"
@@ -134,8 +137,9 @@ proc tcl_config_replace_bindtabs {} {
             \$path.c bind "page" \$event {}
         }
     }
-}
 EOF
+        cat packages/combobox.tcl >> ./config.tcl
+        echo "}" >> ./config.tcl
         changequote([,])dnl
     fi
 else

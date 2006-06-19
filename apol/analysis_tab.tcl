@@ -4,7 +4,7 @@
 #  Copyright (C) 2003-2006 Tresys Technology, LLC
 #  see file 'COPYING' for use and warranty information 
 #
-#  Requires tcl and tk 8.3+, with BWidgets
+#  Requires tcl and tk 8.4+, with BWidget
 #  Author: <don.patterson@tresys.com> 
 #  Modified by: <kcarr@tresys.com>
 # -----------------------------------------------------------
@@ -949,7 +949,6 @@ proc Apol_Analysis::create { nb } {
 	# Results notebook
 	set results_notebook [NoteBook $b_topf.nb_results]
 	# All callbacks will take the tab id as an argument. This argument is added in the callback procedure.
-    tcl_config_replace_bindtabs
 	$results_notebook bindtabs <Button-3> {ApolTop::popup_Tab_Menu \
 		%W %x %y $Apol_Analysis::popupTab_Menu $Apol_Analysis::tab_menu_callbacks} 
     	$results_notebook bindtabs <Button-1> {Apol_Analysis::switch_results_tab}

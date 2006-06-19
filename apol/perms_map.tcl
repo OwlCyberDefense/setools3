@@ -1,8 +1,8 @@
-# Copyright (C) 2003-2005 Tresys Technology, LLC
+# Copyright (C) 2003-2006 Tresys Technology, LLC
 # see file 'COPYING' for use and warranty information 
  
 # TCL/TK GUI for SE Linux policy analysis
-# Requires tcl and tk 8.3+, with BWidgets 1.4.1 or greater
+# Requires tcl and tk 8.4+, with BWidget 1.7 or greater
 
 ##############################################################
 # ::Apol_Perms_Map
