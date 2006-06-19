@@ -5,6 +5,7 @@
  * Author: jmowery@tresys.com 
  */ 
 
+#if 0
 #include "dta.h"
 #include "policy.h"
 #include "analysis.h"
@@ -1149,3 +1150,4 @@ exit_error:
 }
 
 
+#endif

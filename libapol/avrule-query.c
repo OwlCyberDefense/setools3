@@ -30,6 +30,8 @@
 
 #include "policy-query.h"
 #include <errno.h>
+#include <string.h>
+
 
 struct apol_avrule_query {
 	char *source, *target, *bool_name;

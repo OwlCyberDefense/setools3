@@ -16,6 +16,7 @@
  *
  * Analysis routines for libapol
  */
+#if 0
 #include <stdlib.h>
 #include <assert.h>
 #include <limits.h>
@@ -1277,3 +1278,4 @@ int types_relation_determine_relationship(types_relation_query_t *tra_query,
 	
 	return 0;						 	
 }
+#endif

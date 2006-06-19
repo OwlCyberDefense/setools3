@@ -12,7 +12,7 @@
  *
  * Information Flow analysis routines for libapol
  */
-
+#if 0
 #ifndef _APOLICY_INFOFLOW_H_
 #define _APOLICY_INFOFLOW_H_
 
@@ -122,3 +122,4 @@ iflow_transitive_t *iflow_find_paths_end(void *state);
 void iflow_find_paths_abort(void *state);
 
 #endif /*_APOLICY_INFOFLOW_H_*/
+#endif

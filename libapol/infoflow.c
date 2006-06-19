@@ -12,6 +12,7 @@
  *
  * Information Flow analysis routines for libapol
  */
+#if 0
 #include <stdlib.h>
 #include <assert.h>
 #include <limits.h>
@@ -1837,3 +1838,5 @@ void iflow_find_paths_abort(void *state)
 	free(s);
 	iflow_transitive_destroy(s->a);
 }
+
+#endif 

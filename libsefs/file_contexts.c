@@ -11,6 +11,7 @@
 #include <ctype.h>
 #define _GNU_SOURCE
 #include <stdio.h>
+#include <string.h>
 
 #ifdef LIBSELINUX
 #include <selinux/selinux.h>
@@ -20,7 +21,8 @@
 ssize_t getline(char **lineptr, size_t *n, FILE *stream);
 
 int parse_file_contexts_file(const char *fc_path, sefs_fc_entry_t **contexts, int *num_contexts, policy_t *policy) 
-{
+{ /*FIXME*/
+#if 0
 	int array_sz = 0; /* actual size of array */
 	char *line = NULL, *tmp = NULL, *context = NULL;
 	size_t line_len = 0;
@@ -212,6 +214,7 @@ failure:
 	free(line);
 	free(context);
 	fclose(fc_file);
+#endif
 	return -1;
 }
 
@@ -221,8 +224,8 @@ void sefs_fc_entry_free(sefs_fc_entry_t *fc_entry)
 		return;
 	free(fc_entry->path);
 	fc_entry->path = NULL;
-	free(fc_entry->context);
-	fc_entry->context = NULL;
+	//free(fc_entry->context);
+	//fc_entry->context = NULL;
 }
 
 int find_default_file_contexts_file(char **path)

@@ -36,10 +36,6 @@
 
 #define APOL_ENVIRON_VAR_NAME "APOL_INSTALL_DIR"
 
-/* structs defined in policy.h */
-struct policy;
-struct ta_item;
-
 #undef FALSE
 #define FALSE   0
 #undef TRUE
@@ -60,26 +56,6 @@ typedef struct llist {
 	llist_node_t	*tail;
 } llist_t;
 
-/* structure used internally for passing TE rule match booleans */
-typedef struct rules_bool {
-	bool_t *access;		/* AV access rules */
-	bool_t *audit;		/* AV audit rules; can be optional */
-	bool_t *ttrules;	/* Type transition rules */
-	bool_t *clone;		/* clone rules */
-	int ac_cnt;
-	int au_cnt;
-	int tt_cnt;
-	int cln_cnt;
-} rules_bool_t;
-
-/* structure used internally for matching RBAC rules */
-typedef struct rbac_bool {
-	bool_t *allow;		/* RBAC allow */
-	bool_t *trans;		/* RBAC role_transition */
-	int a_cnt;
-	int t_cnt;
-} rbac_bool_t;
-
 /* prototypes */
 const char* libapol_get_version(void);
 char* find_user_config_file(const char *file_name);
@@ -93,16 +69,6 @@ llist_node_t *ll_node_free(llist_node_t *n, void(*free_data)(void *));
 int ll_unlink_node(llist_t *ll, llist_node_t *n);
 int ll_insert_data(llist_t *ll, llist_node_t *n, void *data);
 int ll_append_data(llist_t *ll, void *data);
-int init_rules_bool(bool_t include_audit, rules_bool_t *rules_b, struct policy *policy);
-int init_rbac_bool(rbac_bool_t *b, struct policy *policy, bool_t roles);
-int rbac_bool_or_eq(rbac_bool_t *b1, rbac_bool_t *b2, struct policy *policy);
-int rbac_bool_and_eq(rbac_bool_t *b1, rbac_bool_t *b2, struct policy *policy);
-int all_true_rules_bool(rules_bool_t *rules_b, struct policy *policy);
-int all_false_rules_bool(rules_bool_t *rules_b, struct policy *policy);
-int all_true_rbac_bool(rbac_bool_t *b, struct policy *policy);
-int all_false_rbac_bool(rbac_bool_t *b, struct policy *policy);
-int free_rules_bool(rules_bool_t *rules_b);
-int free_rbac_bool(rbac_bool_t *b);
 
 int add_i_to_a(int i, int *cnt, int **a);
 int find_int_in_array(int i, const int *a, int a_sz);
@@ -111,7 +77,6 @@ int copy_int_array(int **dest, int *src, int len);
 int int_compare(const void *aptr, const void *bptr);
 
 unsigned char str_is_only_white_space(const char *str);
-int get_type_idxs_by_regex(int **types, int *num, regex_t *preg, bool_t include_self, struct policy *policy);
 char *get_config_var(const char *var, FILE *fp);
 char **get_config_var_list(const char *var, FILE *file, int *list_sz);
 char *config_var_list_to_string(const char **list, int size);
