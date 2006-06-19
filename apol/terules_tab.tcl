@@ -2,7 +2,7 @@
 # see file 'COPYING' for use and warranty information
 
 # TCL/TK GUI for SE Linux policy analysis
-# Requires tcl and tk 8.4+, with BWidgets
+# Requires tcl and tk 8.4+, with BWidget
 
 
 ##############################################################
@@ -252,7 +252,6 @@ proc Apol_TE::create {nb} {
 
     # Notebook creation for results
     set widgets(results) [NoteBook [$rbox getframe].results]
-    tcl_config_replace_bindtabs
     $widgets(results) bindtabs <Button-1> Apol_TE::switch_to_tab
     $widgets(results) bindtabs <Button-3> \
         [list ApolTop::popup_Tab_Menu \
@@ -316,8 +315,7 @@ proc Apol_TE::create_ta_box {prefix f title has_indirect has_which has_attribs} 
     set widgets(ta:${prefix}_sym) [ComboBox $f.sym \
                                        -state disabled -entrybg $ApolTop::default_bg_color \
                                        -textvariable Apol_TE::vals(ta:${prefix}_sym) \
-                                       -helptext $helptext]
-    bind $widgets(ta:${prefix}_sym).e <KeyPress> [list ApolTop::_create_popup $widgets(ta:${prefix}_sym) %W %K]
+                                       -helptext $helptext -autopost 1]
     pack $widgets(ta:${prefix}_sym) -expand 0 -fill x -padx 8
     lappend w $widgets(ta:${prefix}_sym)
 

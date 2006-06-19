@@ -2,7 +2,7 @@
 # see file 'COPYING' for use and warranty information 
 
 # TCL/TK GUI for SE Linux policy analysis
-# Requires tcl and tk 8.4+, with BWidgets
+# Requires tcl and tk 8.4+, with BWidget
 #
 # Author: <don.patterson@tresys.com>
 #
@@ -487,10 +487,9 @@ proc Apol_File_Contexts::create {nb} {
     # User subframe
     checkbutton $user_frame.enable -text "User" \
         -variable Apol_File_Contexts::opts(useUser)
-    set widgets(user) [ComboBox $user_frame.box -width 8 \
+    set widgets(user) [ComboBox $user_frame.box -width 8 -autopost 1 \
                            -textvariable Apol_File_Contexts::opts(user) \
                            -helptext "Type or select a user"]
-    bind $widgets(user).e <KeyPress> [list ApolTop::_create_popup $widgets(user) %W %K]
     set user_regex [checkbutton $user_frame.regex \
                         -variable Apol_File_Contexts::opts(useUserRegex) \
                         -text "Regular expression"]
@@ -503,10 +502,9 @@ proc Apol_File_Contexts::create {nb} {
     # Object class subframe
     checkbutton $objclass_frame.enable -text "Object class" \
         -variable Apol_File_Contexts::opts(useObjclass)
-    set widgets(objclass) [ComboBox $objclass_frame.box -width 8 \
+    set widgets(objclass) [ComboBox $objclass_frame.box -width 8 -autopost 1 \
                                -textvariable Apol_File_Contexts::opts(objclass) \
                                -helptext "Type or select an object class"]
-    bind $widgets(objclass).e <KeyPress> [list ApolTop::_create_popup $widgets(objclass) %W %K]
     trace add variable Apol_File_Contexts::opts(useObjclass) write \
         [list Apol_File_Contexts::toggleEnable $widgets(objclass) -entrybg {}]
     pack $objclass_frame.enable -side top -anchor nw
@@ -515,10 +513,9 @@ proc Apol_File_Contexts::create {nb} {
     # Type subframe
     checkbutton $type_frame.enable -text "Type" \
         -variable Apol_File_Contexts::opts(useType)
-    set widgets(type) [ComboBox $type_frame.box -width 8 \
+    set widgets(type) [ComboBox $type_frame.box -width 8 -autopost 1 \
                            -textvariable Apol_File_Contexts::opts(type) \
                            -helptext "Type or select a type"]
-    bind $widgets(type).e <KeyPress> [list ApolTop::_create_popup $widgets(type) %W %K]
     set type_regex [checkbutton $type_frame.regex \
                         -variable Apol_File_Contexts::opts(useTypeRegex) \
                         -text "Regular expression"]

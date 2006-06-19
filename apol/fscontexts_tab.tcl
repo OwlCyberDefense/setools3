@@ -2,7 +2,7 @@
 # see file 'COPYING' for use and warranty information
 
 # TCL/TK GUI for SE Linux policy analysis
-# Requires tcl and tk 8.4+, with BWidgets
+# Requires tcl and tk 8.4+, with BWidget
 
 
 ##############################################################
@@ -215,8 +215,7 @@ proc Apol_FSContexts::genfscon_create {p_f} {
     set fs_cb [checkbutton $fs.fs_enable -text "Filesystem" \
                    -variable Apol_FSContexts::vals(genfscon:fs_enable)]
     set widgets(genfscon:fs) [ComboBox $fs.fs -entrybg white -width 12 -state disabled \
-                                  -textvariable Apol_FSContexts::vals(genfscon:fs)]
-    bind $widgets(genfscon:fs).e <KeyPress> [list ApolTop::_create_popup $widgets(genfscon:fs) %W %K]
+                                  -textvariable Apol_FSContexts::vals(genfscon:fs) -autopost 1]
     trace add variable Apol_FSContexts::vals(genfscon:fs_enable) write \
         [list Apol_FSContexts::toggleCheckbutton $widgets(genfscon:fs)]
     pack $fs_cb -side top -anchor w
@@ -344,8 +343,7 @@ proc Apol_FSContexts::fsuse_create {p_f} {
     set type_cb [checkbutton $t.type_enable -text "Statement type" \
                    -variable Apol_FSContexts::vals(fsuse:type_enable)]
     set widgets(fsuse:type) [ComboBox $t.type -entrybg white -width 12 -state disabled \
-                                  -textvariable Apol_FSContexts::vals(fsuse:type)]
-    bind $widgets(fsuse:type).e <KeyPress> [list ApolTop::_create_popup $widgets(fsuse:type) %W %K]
+                                  -textvariable Apol_FSContexts::vals(fsuse:type) -autopost 1]
     trace add variable Apol_FSContexts::vals(fsuse:type_enable) write \
         [list Apol_FSContexts::toggleCheckbutton $widgets(fsuse:type)]
     pack $type_cb -side top -anchor w
@@ -355,8 +353,7 @@ proc Apol_FSContexts::fsuse_create {p_f} {
     set fs_cb [checkbutton $fs.fs_enable -text "Filesystem" \
                    -variable Apol_FSContexts::vals(fsuse:fs_enable)]
     set widgets(fsuse:fs) [ComboBox $fs.fs -entrybg white -width 12 -state disabled \
-                                  -textvariable Apol_FSContexts::vals(fsuse:fs)]
-    bind $widgets(fsuse:fs).e <KeyPress> [list ApolTop::_create_popup $widgets(fsuse:fs) %W %K]
+                                  -textvariable Apol_FSContexts::vals(fsuse:fs) -autopost 1]
     trace add variable Apol_FSContexts::vals(fsuse:fs_enable) write \
         [list Apol_FSContexts::toggleCheckbutton $widgets(fsuse:fs)]
     pack $fs_cb -side top -anchor w

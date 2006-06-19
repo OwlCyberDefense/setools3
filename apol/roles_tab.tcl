@@ -2,7 +2,7 @@
 # see file 'COPYING' for use and warranty information 
 
 # TCL/TK GUI for SE Linux policy analysis
-# Requires tcl and tk 8.4+, with BWidgets
+# Requires tcl and tk 8.4+, with BWidget
 
 
 ##############################################################
@@ -177,7 +177,7 @@ proc Apol_Roles::create {nb} {
 
     # Search options widget items
     set cb_type [checkbutton $cfm.cb -variable Apol_Roles::opts(useType) -text "Type"]
-    set widgets(combo_types) [Apol_Widget::makeTypeCombobox $cfm.combo_tyes]
+    set widgets(combo_types) [Apol_Widget::makeTypeCombobox $cfm.combo_types]
     Apol_Widget::setTypeComboboxState $widgets(combo_types) disabled
     trace add variable Apol_Roles::opts(useType) write \
         [list Apol_Roles::toggleTypeCombobox $widgets(combo_types)]

@@ -2,7 +2,7 @@
 # see file 'COPYING' for use and warranty information 
 
 # TCL/TK GUI for SE Linux policy analysis
-# Requires tcl and tk 8.4+, with BWidgets 1.7+
+# Requires tcl and tk 8.4+, with BWidget 1.7+
 
 namespace eval Apol_Context_Dialog {
     variable dialog ""
@@ -98,8 +98,7 @@ proc Apol_Context_Dialog::_create_dialog {parent} {
     set vars($dialog:user_cb) [checkbutton $user_f.enable -text "User" \
                                   -variable Apol_Context_Dialog::vars($dialog:user_enable)]
     set vars($dialog:user_box) [ComboBox $user_f.user -entrybg white -width 12 \
-                                   -textvariable Apol_Context_Dialog::vars($dialog:user)]
-    bind $vars($dialog:user_box).e <KeyPress> [list ApolTop::_create_popup $vars($dialog:user_box) %W %K]
+                                   -textvariable Apol_Context_Dialog::vars($dialog:user) -autopost 1]
     trace add variable Apol_Context_Dialog::vars($dialog:user_enable) write \
         [list Apol_Context_Dialog::_user_changed $dialog]
     pack $vars($dialog:user_cb) -anchor nw
@@ -109,8 +108,7 @@ proc Apol_Context_Dialog::_create_dialog {parent} {
     set vars($dialog:role_cb) [checkbutton $role_f.enable -text "Role" \
                                  -variable Apol_Context_Dialog::vars($dialog:role_enable)]
     set vars($dialog:role_box) [ComboBox $role_f.role -entrybg white -width 12 \
-                                  -textvariable Apol_Context_Dialog::vars($dialog:role)]
-    bind $vars($dialog:role_box).e <KeyPress> [list ApolTop::_create_popup $vars($dialog:role_box) %W %K]
+                                  -textvariable Apol_Context_Dialog::vars($dialog:role) -autopost 1]
     trace add variable Apol_Context_Dialog::vars($dialog:role_enable) write \
         [list Apol_Context_Dialog::_role_changed $dialog]
     pack $vars($dialog:role_cb) -anchor nw

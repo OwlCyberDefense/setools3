@@ -4,7 +4,7 @@
 #  Copyright (C) 2003-2006 Tresys Technology, LLC
 #  see file 'COPYING' for use and warranty information 
 #
-#  Requires tcl and tk 8.3+, with BWidgets
+#  Requires tcl and tk 8.4+, with BWidget
 #  Author: <don.patterson@tresys.com, mayerf@tresys.com, kcarr@tresys>
 # -----------------------------------------------------------
 #
@@ -1292,7 +1292,7 @@ proc Apol_Analysis_dirflow::create_options { options_frame } {
 	# Information Flow Entry frames
 	set lbl_start_type [Label $start_frame.lbl_start_type \
 		-text "Starting type:"]
-    	set combo_start [ComboBox $start_frame.combo_start \
+    	set combo_start [ComboBox $start_frame.combo_start -autopost 1 \
     		-helptext "You must choose a starting type for information flow" \
 		-editable 1 \
     		-textvariable Apol_Analysis_dirflow::start_type \
@@ -1335,7 +1335,7 @@ proc Apol_Analysis_dirflow::create_options { options_frame } {
     	set combo_attribute [ComboBox $attrib_frame.combo_attribute  \
     		-textvariable Apol_Analysis_dirflow::display_attribute \
     		-modifycmd { Apol_Analysis_dirflow::change_types_list} \
-		-exportselection 0] 
+		-exportselection 0 -autopost 1] 
 
         set clear_all_bttn [button $bttns_frame.clear_all_bttn \
         	-text "Clear All" \
@@ -1397,16 +1397,5 @@ proc Apol_Analysis_dirflow::create_options { options_frame } {
         pack $cb_endtype -side top -anchor nw 
         pack $entry_end -side left -anchor nw -fill x -expand yes
             	
-	# ComboBox is not a simple widget, it is a mega-widget, and bindings for mega-widgets are non-trivial.
-	# If bindtags is invoked with only one argument, then the current set of binding tags for window is 
-	# returned as a list. 
-
-        bindtags $combo_start.e [linsert [bindtags $combo_start.e] 3 start_list_Tag]
-        bind start_list_Tag <KeyPress> {ApolTop::_create_popup $Apol_Analysis_dirflow::combo_start %W %K}
-
-	bindtags $combo_attribute.e [linsert [bindtags $combo_attribute.e] 3 attribs_list_Tag]
-	bind attribs_list_Tag <KeyPress> { ApolTop::_create_popup $Apol_Analysis_dirflow::combo_attribute %W %K }
-
-	bindtags $list_objs [linsert [bindtags $list_objs] 3 list_objs_Tag]
 	return 0	
 }

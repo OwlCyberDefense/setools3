@@ -2,7 +2,7 @@
 # see file 'COPYING' for use and warranty information 
 
 # TCL/TK GUI for SE Linux policy analysis
-# Requires tcl and tk 8.4+, with BWidgets 1.7+
+# Requires tcl and tk 8.4+, with BWidget 1.7+
 
 namespace eval Apol_Widget {
     variable vars

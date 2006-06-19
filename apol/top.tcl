@@ -2,7 +2,7 @@
 # see file 'COPYING' for use and warranty information 
 
 # TCL/TK GUI for SE Linux policy analysis
-# Requires tcl and tk 8.3+, with BWidgets 
+# Requires tcl and tk 8.4+, with BWidget 
 
 ##############################################################
 # ::ApolTop
@@ -11,7 +11,6 @@
 ##############################################################
 namespace eval ApolTop {
 	# All capital letters is the convention for variables defined via the Makefile.
-	variable bwidget_version	""
 	variable status 		""
 	variable policy_version_string	""
 	variable policy_type		""
@@ -538,83 +537,6 @@ proc ApolTop::search {} {
 	return 0
 }
 
-# ------------------------------------------------------------------------------
-#  Command ApolTop::_getIndexValue
-# ------------------------------------------------------------------------------
-proc ApolTop::getIndexValue { path value } { 
-    set listValues [Widget::getMegawidgetOption $path -values]
-
-    return [lsearch -glob $listValues "$value*"]
-}
-
-# ------------------------------------------------------------------------------
-#  Command ApolTop::_mapliste
-# ------------------------------------------------------------------------------
-proc ApolTop::_mapliste { path } {
-    set listb $path.shell.listb
-    if { [Widget::cget $path -state] == "disabled" } {
-        return
-    }
-    if { [set cmd [Widget::getMegawidgetOption $path -postcommand]] != "" } {
-        uplevel \#0 $cmd
-    }
-    if { ![llength [Widget::getMegawidgetOption $path -values]] } {
-        return
-    }
-
-    ComboBox::_create_popup $path
-    ArrowButton::configure $path.a -relief sunken
-    update
-
-    $listb selection clear 0 end
-    BWidget::place $path.shell [winfo width $path] 0 below $path
-    wm deiconify $path.shell
-    raise $path.shell
-    BWidget::grab local $path
-
-    return $listb
-}
-
-# ------------------------------------------------------------------------------
-#  Command ApolTop::_create_popup
-# ------------------------------------------------------------------------------
-proc ApolTop::_create_popup { path entryBox key } { 
-    # Getting value from the entry subwidget of the combobox 
-    # and then checking its' length
-    set value  [Entry::cget $path.e -text]
-    set len [string length $value]
-    
-    # Key must be an alphanumeric ASCII character.  
-    if { [string is alpha $key] } {
-	    #ComboBox::_unmapliste $path
-	    set idx [ ApolTop::getIndexValue $path $value ]  
-	    
-	    if { $idx != -1 } {
-	    # Calling setSelection function to set the selection to the index value
-	    	ApolTop::setSelection $idx $path $entryBox $key
-	    }
-    } 
-    
-    if { $key == "Return" } {
-    	    # If the dropdown box visible, then we just select the value and unmap the list.
-    	    if {[winfo exists $path.shell.listb] && [winfo viewable $path.shell.listb]} {
-    	    	    set index [$path.shell.listb curselection]
-	    	    if { $index != -1 } {
-		        if { [ComboBox::setvalue $path @$index] } {
-			    set cmd [Widget::getMegawidgetOption $path -modifycmd]
-		            if { $cmd != "" } {
-		                uplevel \#0 $cmd
-		            }
-		        }
-		    }
-	    	ComboBox::_unmapliste $path
-	    	focus -force .
-	    }
-    }
-    
-    return 0
-}
-
 ######################################################################
 #  Command: ApolTop::tklistbox_select_on_key_callback
 #  Arguments: Takes a tk listbox widget,
@@ -645,19 +567,6 @@ proc ApolTop::tklistbox_select_on_key_callback { path list_items_1 key } {
 	return 0
 }
 
-# ------------------------------------------------------------------------------
-#  Command ApolTop::setSelection
-# ------------------------------------------------------------------------------
-proc ApolTop::setSelection { idx path entryBox key } {
-    if {$idx != -1} {
-	set listb [ApolTop::_mapliste $path]
-	$listb selection set $idx
-	$listb activate $idx
-	$listb see $idx
-    } 
-    
-    return 0
-}
 
 ##############################################################
 # ::load_query_info
@@ -1014,7 +923,6 @@ proc ApolTop::create { } {
 	variable mainframe  
 	variable components_nb
 	variable rules_nb
-        variable bwidget_version
        
 	# Menu description
 	set descmenu {
@@ -1118,8 +1026,6 @@ proc ApolTop::create { } {
 	Apol_RBAC::create $rules_nb
 	Apol_Range::create $rules_nb
 	lappend mls_tabs [list $rules_nb [$rules_nb pages end]]
-
-    tcl_config_replace_bindtabs
 
 	$components_nb compute_size
 	pack $components_nb -fill both -expand yes -padx 4 -pady 4
@@ -2080,7 +1986,6 @@ proc ApolTop::main {} {
 	global tk_patchLevel
 	variable top_width
         variable top_height
-	variable bwidget_version
 	variable notebook
 	
 	# Prevent the application from responding to incoming send requests and sending 
@@ -2089,16 +1994,12 @@ proc ApolTop::main {} {
 	rename send {}
 	
 	# Load BWidget package into the interpreter
-        set rt [catch {set bwidget_version [package require BWidget]} err]
-    
-	if {$rt != 0 } {
-		tk_messageBox -icon error -type ok -title "Missing BWidgets package" -message \
-			"Missing BWidgets package.  Ensure that your installed version of \n\
-			TCL/TK includes BWidgets, which can be found at\n\n\
-			http://sourceforge.net/projects/tcllib"
-		exit
-	}
-	
+    if {[catch {package require BWidget}]} {
+        tk_messageBox -icon error -type ok -title "Missing BWidget package" -message \
+            "Missing BWidget package.  Ensure that your installed version of Tcl/Tk includes BWidget, which can be found at http://sourceforge.net/projects/tcllib."
+        exit
+    }
+
 	# Load the apol package into the interpreter
 	set rt [catch {package require apol} err]
 	if {$rt != 0 } {
@@ -2123,6 +2024,10 @@ proc ApolTop::main {} {
 	# Read apols' default settings file, gather all font information, create the gui and then load recent files into the menu.
 	ApolTop::readInitFile
 	ApolTop::load_fonts
+    catch {tcl_patch_bwidget}
+    bind . <Button-1> {focus %W}
+    bind . <Button-2> {focus %W}
+    bind . <Button-3> {focus %W}
 	ApolTop::create
 	ApolTop::load_recent_files
 				

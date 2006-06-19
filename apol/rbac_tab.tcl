@@ -2,7 +2,7 @@
 # see file 'COPYING' for use and warranty information
 
 # TCL/TK GUI for SE Linux policy analysis
-# Requires tcl and tk 8.4+, with BWidgets
+# Requires tcl and tk 8.4+, with BWidget
 
 
 ##############################################################
@@ -244,8 +244,7 @@ proc Apol_RBAC::allowCreate {a_f} {
     set widgets(allow:source) [ComboBox $source.cb -width 20 -state disabled \
                                    -entrybg $ApolTop::default_bg_color \
                                    -textvariable Apol_RBAC::vals(source:sym) \
-                                   -helptext "Type or select a role"]
-    bind $widgets(allow:source).e <KeyPress> [list ApolTop::_create_popup $widgets(allow:source) %W %K]
+                                   -helptext "Type or select a role" -autopost 1]
     set which_fm [frame $source.which]
     set which_source [radiobutton $which_fm.source \
                           -text "As source" -state disabled \
@@ -269,8 +268,7 @@ proc Apol_RBAC::allowCreate {a_f} {
     set widgets(allow:target) [ComboBox $target.cb -width 20 -state disabled \
                                    -entrybg $ApolTop::default_bg_color \
                                    -textvariable Apol_RBAC::vals(target_role:sym) \
-                                   -helptext "Type or select a role"]
-    bind $widgets(allow:target).e <KeyPress> [list ApolTop::_create_popup $widgets(allow:target) %W %K]
+                                   -helptext "Type or select a role" -autopost 1]
     trace add variable Apol_RBAC::vals(target_role:use) write \
         [list Apol_RBAC::toggleCheckbutton $widgets(allow:target) {}]
     pack $widgets(allow:target_cb) -side top -anchor w
@@ -288,8 +286,7 @@ proc Apol_RBAC::transCreate {t_f} {
     set widgets(trans:source) [ComboBox $source.cb -width 20 -state disabled \
                                         -entrybg $ApolTop::default_bg_color \
                                         -textvariable Apol_RBAC::vals(source:sym) \
-                                        -helptext "Type or select a role"]
-    bind $widgets(trans:source).e <KeyPress> [list ApolTop::_create_popup $widgets(allow:source) %W %K]
+                                        -helptext "Type or select a role" -autopost 1]
     set which_fm [frame $source.which]
     set which_source [radiobutton $which_fm.source \
                           -text "As source" -state disabled \
@@ -313,8 +310,7 @@ proc Apol_RBAC::transCreate {t_f} {
     set widgets(trans:target) [ComboBox $target.cb -width 20 -state disabled \
                                    -entrybg $ApolTop::default_bg_color \
                                    -textvariable Apol_RBAC::vals(target_type:sym) \
-                                   -helptext "Type or select a type/attribute"]
-    bind $widgets(trans:target).e <KeyPress> [list ApolTop::_create_popup $widgets(trans:target) %W %K]
+                                   -helptext "Type or select a type/attribute" -autopost 1]
     set ta_frame [frame $target.ta]
     set types [checkbutton $ta_frame.types -text "Types" -state disabled \
                    -variable Apol_RBAC::vals(target_type:types)]
@@ -340,8 +336,7 @@ proc Apol_RBAC::transCreate {t_f} {
     set widgets(trans:default) [ComboBox $default.cb -width 20 -state disabled \
                                    -entrybg $ApolTop::default_bg_color \
                                    -textvariable Apol_RBAC::vals(default:sym) \
-                                   -helptext "Type or select a role"]
-    bind $widgets(trans:default).e <KeyPress> [list ApolTop::_create_popup $widgets(trans:default) %W %K]
+                                   -helptext "Type or select a role" -autopost 1]
     trace add variable Apol_RBAC::vals(default:use) write \
         [list Apol_RBAC::toggleCheckbutton $widgets(trans:default) {}]
     pack $widgets(trans:default_cb) -side top -anchor w
@@ -359,8 +354,7 @@ proc Apol_RBAC::bothCreate {b_f} {
     set widgets(both:source) [ComboBox $source.cb -width 20 -state disabled \
                                    -entrybg $ApolTop::default_bg_color \
                                    -textvariable Apol_RBAC::vals(source:sym) \
-                                   -helptext "Type or select a role"]
-    bind $widgets(both:source).e <KeyPress> [list ApolTop::_create_popup $widgets(both:source) %W %K]
+                                   -helptext "Type or select a role" -autopost 1]
     set which_fm [frame $source.which]
     set which_source [radiobutton $which_fm.source \
                           -text "As source" -state disabled \
