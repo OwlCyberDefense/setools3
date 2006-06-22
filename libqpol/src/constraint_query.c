@@ -100,7 +100,7 @@ static int policy_constr_state_next(qpol_iterator_t *iter)
 		qpol_iterator_next(pcs->class_iter);
 		if (qpol_iterator_end(pcs->class_iter))
 			return STATUS_SUCCESS;
-		if (qpol_iterator_get_item(iter, (void**)&obj_class))
+		if (qpol_iterator_get_item(pcs->class_iter, (void**)&obj_class))
 			return STATUS_ERR;
 		if (qpol_class_get_constraint_iter(pcs->handle, pcs->policy, obj_class, &pcs->constr_iter))
 			return STATUS_ERR;
@@ -182,9 +182,9 @@ int qpol_policy_get_constraint_iter(qpol_handle_t *handle, qpol_policy_t *policy
 		error = errno;
 		goto err;
 	}
-	if (qpol_iterator_get_item(pcs->class_iter, (void**)tmp)) {
+	if (qpol_iterator_get_item(pcs->class_iter, (void**)&tmp)) {
 		error = errno;
-		ERR(handle, "Error getting first class: ", strerror(error));
+		ERR(handle, "Error getting first class: %s", strerror(error));
 		goto err;
 	}
 	if (qpol_class_get_constraint_iter(handle, policy, tmp, &pcs->constr_iter)) {
@@ -389,7 +389,7 @@ static int policy_constr_state_next_vtrans(qpol_iterator_t *iter)
 		qpol_iterator_next(pcs->class_iter);
 		if (qpol_iterator_end(pcs->class_iter))
 			return STATUS_SUCCESS;
-		if (qpol_iterator_get_item(iter, (void**)&obj_class))
+		if (qpol_iterator_get_item(pcs->class_iter, (void**)&obj_class))
 			return STATUS_ERR;
 		if (qpol_class_get_validatetrans_iter(pcs->handle, pcs->policy, obj_class, &pcs->constr_iter))
 			return STATUS_ERR;
@@ -459,9 +459,9 @@ int qpol_policy_get_validatetrans_iter(qpol_handle_t *handle, qpol_policy_t *pol
 		error = errno;
 		goto err;
 	}
-	if (qpol_iterator_get_item(pcs->class_iter, (void**)tmp)) {
+	if (qpol_iterator_get_item(pcs->class_iter, (void**)&tmp)) {
 		error = errno;
-		ERR(handle, "Error getting first class: ", strerror(error));
+		ERR(handle, "Error getting first class: %s", strerror(error));
 		goto err;
 	}
 	if (qpol_class_get_validatetrans_iter(handle, policy, tmp, &pcs->constr_iter)) {

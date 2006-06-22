@@ -158,7 +158,7 @@ static int print_stats(FILE *fp, apol_policy_t *policydb)
 		n_cats = 0, n_portcons = 0, n_netifcons = 0, n_nodecons = 0, n_fsuses = 0, 
 		n_genfscons = 0, n_allows = 0, n_neverallows = 0, n_auditallows = 0, n_dontaudits = 0,
 		n_typetrans = 0, n_typechanges = 0, n_typemembers = 0, n_isids = 0, n_roleallows = 0, 
-		n_roletrans = 0, n_rangetrans = 0;
+		n_roletrans = 0, n_rangetrans = 0, n_constr = 0, n_vtrans = 0;
 
 	assert(policydb != NULL);
 
@@ -341,8 +341,18 @@ static int print_stats(FILE *fp, apol_policy_t *policydb)
 	qpol_iterator_destroy(&iter);
 	fprintf(fp, "   Type_member:   %7zd    Range_trans:   %7zd\n", n_typemembers, n_rangetrans);
 
-	/* FIX ME: need to do these */
-	fprintf(fp, "   Constraints:   %7s    Validatetrans: %7s\n", "N/A", "N/A");
+	/* constraints/validatetrans */
+	if (qpol_policy_get_constraint_iter(policydb->qh, policydb->p, &iter))
+		goto cleanup;
+	if (qpol_iterator_get_size(iter, &n_constr))
+		goto cleanup;
+	qpol_iterator_destroy(&iter);
+	if (qpol_policy_get_validatetrans_iter(policydb->qh, policydb->p, &iter))
+		goto cleanup;
+	if (qpol_iterator_get_size(iter, &n_vtrans))
+		goto cleanup;
+	qpol_iterator_destroy(&iter);
+	fprintf(fp, "   Constraints:   %7zd    Validatetrans: %7zd\n", n_constr, n_vtrans);
 
 	/* fs_use/genfscon */
 	if (qpol_policy_get_fs_use_iter(policydb->qh, policydb->p, &iter))
@@ -885,7 +895,7 @@ static int print_fsuse(FILE *fp, const char *type, apol_policy_t *policydb)
 		tmp =  apol_fs_use_render(policydb, fs_use);
 		if (!tmp)
 			goto cleanup;
-		fprintf(fp, "%s\n", tmp);
+		fprintf(fp, "   %s\n", tmp);
 		free(tmp);
 	}
 	if (type && !apol_vector_get_size(v))
@@ -940,7 +950,7 @@ static int print_genfscon(FILE *fp, const char *type, apol_policy_t *policydb)
 		tmp = apol_genfscon_render(policydb, genfscon);
 		if (!tmp)
 			goto cleanup;
-		fprintf(fp, "%s\n", tmp);
+		fprintf(fp, "   %s\n", tmp);
 		free(tmp);
 	}
 
