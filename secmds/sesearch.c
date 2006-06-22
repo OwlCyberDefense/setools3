@@ -13,12 +13,13 @@
 /* libapol */
 #include <policy.h>
 #include <policy-io.h>
-#include <old-policy-query.h>
 #include <policy-query.h>
 #include <render.h>
+#include <util.h>
 #include <vector.h>
 
 /* other */
+#include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>

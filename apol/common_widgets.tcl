@@ -23,7 +23,7 @@ proc Apol_Widget::makeScrolledListbox {path args} {
     set lb [eval listbox $sw.lb $args -bg white -highlightthickness 0]
     $sw setwidget $lb
 
-    bind $lb <<ListboxSelect>> [list focus -force $lb]
+    bind $lb <<ListboxSelect>> [list focus $lb]
 
     # if the user hits a letter while the listbox has focus, jump to
     # the first entry that begins with that letter

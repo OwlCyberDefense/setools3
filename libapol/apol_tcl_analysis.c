@@ -10,6 +10,7 @@
 
 #include "apol_tcl_other.h"
 #include "render.h"
+#include "util.h"
 
 #include "analysis.h"
 #include "relabel_analysis.h"

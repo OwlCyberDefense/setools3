@@ -33,6 +33,7 @@
 #include "apol_tcl_render.h"
 #include "apol_tcl_fc.h"
 #include "render.h"
+#include "util.h"
 
 /**
  * Takes a qpol_type_t and appends a tuple of it to
@@ -1251,11 +1252,11 @@ static int append_level_to_list(Tcl_Interp *interp,
 	if (qpol_level_get_name(policydb->qh, policydb->p,
 				       level_datum, &sens_name) < 0 ||
 	    qpol_level_get_alias_iter(policydb->qh, policydb->p,
-					     level_datum, &alias_iter) < 0 ||
+				      level_datum, &alias_iter) < 0 ||
 	    qpol_level_get_cat_iter(policydb->qh, policydb->p,
-					   level_datum, &cat_iter) < 0 ||
+				    level_datum, &cat_iter) < 0 ||
 	    qpol_level_get_value(policydb->qh, policydb->p,
-					level_datum, &level_value) < 0) {
+				 level_datum, &level_value) < 0) {
 		ERR(policydb, "Could not get level value.");
 		goto cleanup;
 	}

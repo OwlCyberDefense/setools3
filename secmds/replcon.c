@@ -49,6 +49,7 @@
 #include <mntent.h>
 
 #include <policy.h>
+#include <util.h>
 
 #define COPYRIGHT_INFO "Copyright (C) 2003-2006 Tresys Technology, LLC"
 

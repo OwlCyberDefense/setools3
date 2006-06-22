@@ -29,6 +29,8 @@
  */
 
 #include "policy-query.h"
+#include "util.h"
+
 #include <errno.h>
 #include <string.h>
 

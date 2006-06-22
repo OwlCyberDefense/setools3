@@ -28,6 +28,7 @@
 #include <assert.h>
 
 #include "render.h"
+#include "util.h"
 
 #include "apol_tcl_other.h"
 #include "apol_tcl_render.h"

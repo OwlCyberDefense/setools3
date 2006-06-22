@@ -694,7 +694,7 @@ proc ComboBox::_auto_complete { path key } {
 }
 
 proc ComboBox::_auto_post { path key } {
-    if {[string equal $key "Escape"]} {
+    if {[string equal $key "Escape"] || [string equal $key "Enter"]} {
         _unmapliste $path
         return
     }

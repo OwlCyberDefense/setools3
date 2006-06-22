@@ -298,14 +298,10 @@ int apol_level_to_tcl_obj(Tcl_Interp *interp, apol_mls_level_t *level, Tcl_Obj *
 	return 0;
 }
 
-#define APOL_TCL_PMAP_WARNINGS_SUBSET (PERMMAP_RET_UNMAPPED_PERM|PERMMAP_RET_UNMAPPED_OBJ|PERMMAP_RET_OBJ_REMMAPPED)
 
 /**************************************************************************
  * work functions
  **************************************************************************/
-
-static int load_perm_map_file(char *pmap_file, Tcl_Interp *interp);
-static char* find_perm_map_file(char *perm_map_fname);
 
 /* We look for the TCL files in the following order:
  * 	1. If we find apol.tcl in the cur directory, we then assume
@@ -317,95 +313,9 @@ static char* find_perm_map_file(char *perm_map_fname);
  */
 /* global used to keep track of the script directory, set by Apol_GetScriptDir */
 static char *script_dir = NULL;
- 
+
 /* global used to keep track of the help file directory, set by Apol_GetHelpDir */
 static char *help_dir = NULL;
-
-/* find the default permission map file.  This function returns a string of the files' pathname.
- */
-static char* find_perm_map_file(char *perm_map_fname)
-{	
-	char *script, *var = NULL;
-	int scriptsz;
-	int rt;
-			
-	if(perm_map_fname == NULL)
-		return NULL;
-		
-	/* 1. check environment variable */
-	var = getenv(APOL_ENVIRON_VAR_NAME);
-	if(!(var == NULL)) {
-		scriptsz = strlen(var) + strlen(perm_map_fname) + 2;
-		script = (char *)malloc(scriptsz);
-		if(script == NULL) {
-			fprintf(stderr, "out of memory");
-			return NULL;
-		}	
-		sprintf(script, "%s/%s", var, perm_map_fname);	
-		rt = access(script, R_OK);
-		if(rt == 0) {
-			return script;
-		}
-	}
-	
-	/* 2. installed directory */
-	scriptsz = strlen(APOL_INSTALL_DIR) + strlen(perm_map_fname) + 2;
-	script = (char *)malloc(scriptsz);
-	if(script == NULL) {
-		fprintf(stderr, "out of memory");
-		return NULL;
-	}	
-	sprintf(script, "%s/%s", APOL_INSTALL_DIR, perm_map_fname);
-	rt = access(script, R_OK);
-	if(rt == 0) {
-		return script;	
-	}
-	
-	/* 3. Didn't find it! */
-	free(script);		
-	return NULL;			
-}
-
-static int load_perm_map_file(char *pmap_file, Tcl_Interp *interp)
-{
-	FILE *pfp;
-	unsigned int m_ret;
-
-	if(policydb == NULL) {
-		Tcl_AppendResult(interp, "No current policy file is opened!", (char *) NULL);
-		return -1;
-	}	
-	if(!is_valid_str_sz(pmap_file)) {
-		Tcl_AppendResult(interp, "File name string too large", (char *) NULL);
-		return -1;
-	} 	
-	pfp = fopen(pmap_file, "r");
-	if(pfp == NULL) {
-		Tcl_AppendResult(interp, "Cannot open perm map file", pmap_file, (char *) NULL);
-		return -1;
-	}
-/* FIX ME
-	m_ret = load_policy_perm_mappings(policy, pfp);
-*/
-        m_ret = PERMMAP_RET_ERROR;
-	fclose(pfp);
-	if(m_ret & PERMMAP_RET_ERROR) {
-		Tcl_AppendResult(interp, "ERROR loading perm mappings from file:", pmap_file, (char *) NULL);
-		return -1;
-	} 
-	else if(m_ret & APOL_TCL_PMAP_WARNINGS_SUBSET) {
-		fprintf(stdout, "There were warnings:\n");
-		if(m_ret & PERMMAP_RET_UNMAPPED_PERM) 
-			fprintf(stdout, "     Some permissions were unmapped.\n");
-		if(m_ret & PERMMAP_RET_UNMAPPED_OBJ)
-			fprintf(stdout, "     Some objects were unmapped.\n");
-		if(m_ret & PERMMAP_RET_OBJ_REMMAPPED) 
-			fprintf(stdout, "     Some permissions were mapped more than once.\n");
-			
-		return -2;
-	}		
-	return 0;
-}
 
 /**************************************************************************
  * TCL interface functions
@@ -473,29 +383,6 @@ static int Apol_GetHelpDir(ClientData clientData, Tcl_Interp *interp, int argc, 
 
 	assert(help_dir != NULL);
 	Tcl_SetResult(interp, help_dir, TCL_STATIC);
-	return TCL_OK;
-}
-
-/* Get the specified system default permission map pathname. */
-int Apol_GetDefault_PermMap(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
-{
-	char *pmap_file;	
-	if(argc != 2) {
-		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
-		return TCL_ERROR;
-	}
-	if(!is_valid_str_sz(argv[1])) {
-		Tcl_AppendResult(interp, "Permission map file name string too large", (char *) NULL);
-		return TCL_ERROR;
-	}
-	
-	pmap_file = find_perm_map_file(argv[1]);
-	if(pmap_file == NULL) {
-		/* There is no system default perm map. User will have to load one explicitly. */
-		return TCL_OK;
-	}
-	assert(pmap_file != NULL);
-	Tcl_AppendResult(interp, pmap_file, (char *) NULL);
 	return TCL_OK;
 }
 
@@ -614,7 +501,7 @@ static int Apol_GetPolicyVersionNumber(ClientData clientData, Tcl_Interp *interp
 }
 
 /**
- * Appends a name and size to a stats list, conviently in a format
+ * Appends a name and size to a stats list, conveniently in a format
  * suitable for [array set].
  *
  * @param interp Tcl interpreter object.
@@ -786,6 +673,9 @@ static int Apol_GetStats(ClientData clientData, Tcl_Interp *interp, int argc, CO
 	apol_perm_query_destroy(&perm_query);
 	qpol_iterator_destroy(&iter);
 	apol_vector_destroy(&v, NULL);
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
 	return retval;
 }
 
@@ -953,215 +843,330 @@ static int Apol_IsValidPartialContext(ClientData clientData, Tcl_Interp *interp,
 	return retval;
 }
 
-/* 
- * Used by the GUI to check if permission mappings are loaded.
+/**
+ * Checks if the permission map has been loaded yet.  Returns 1 if so,
+ * 0 if not.
  */
-int Apol_IsPermMapLoaded(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
+static int Apol_IsPermMapLoaded(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
-	char tbuf[64];
-	
-	if(argc != 1) {
-		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
-		return TCL_ERROR;
-	}
-	if(policydb == NULL) {
-		Tcl_AppendResult(interp, "No current policy file is opened!", (char *) NULL);
-		return TCL_ERROR;
-	}
-        /* FIX ME
-	if(policy->pmap != NULL)
-		sprintf(tbuf, "%d", 1);
-	else
-        */
-		sprintf(tbuf, "%d", 0);
-
-	Tcl_AppendElement(interp, tbuf);
+        Tcl_SetResult(interp, (policydb != NULL && policydb->pmap != NULL ? "1" : "0") , TCL_STATIC);
 	return TCL_OK;
 }
 
-/* 
- * argv[1] - policy map file name (optional) - if one is not specified then apol will search for default
- */
-int Apol_LoadPermMap(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
-{
-	int rt;
-	
-	if(argc != 2) {
-		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
-		return TCL_ERROR;
-	}
-	if(policydb == NULL) {
-		Tcl_AppendResult(interp, "No current policy file is opened!", (char *) NULL);
-		return TCL_ERROR;
-	}	
-	if(!is_valid_str_sz(argv[1])) {
-		Tcl_AppendResult(interp, "File name string too large", (char *) NULL);
-		return TCL_ERROR;
-	}
- 	rt = load_perm_map_file(argv[1], interp);
-	if(rt == -1) {
-		return TCL_ERROR;	
-	} 
-	else if (rt == -2) {
-		Tcl_AppendResult(interp, "The permission map has been loaded, but there were warnings. See stdout for more information.", (char *) NULL);
-		/* This is the return value we use to indicate warnings */
-		return -2;
-	}
-
-	return TCL_OK;
-}
-
-/* 
- * argv[1] - file name of policy map to save to disk
- */
-int Apol_SavePermMap(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
-{	
-	FILE *fp;
-	char tbuf[256];
-	char *pmap_file; 
-	int rt;
-	
-	if(argc != 2) {
-		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
-		return TCL_ERROR;
-	}
-	if (policydb == NULL) {
-		Tcl_AppendResult(interp, "No current policy file is opened!", (char *) NULL);
-		return TCL_ERROR;
-	}
-        /* FIX ME
-	if(policy->pmap == NULL) {
-        */
-		Tcl_AppendResult(interp, "No permission map currently loaded!", (char *) NULL);
-		return TCL_ERROR;
-#if 0
-	}
-	pmap_file = argv[1];
-	if(!is_valid_str_sz(pmap_file)) {
-		Tcl_AppendResult(interp, "File name string too large", (char *) NULL);
-		return TCL_ERROR;
-	}
-	/* perm map file */
-	if((fp = fopen(pmap_file, "w+")) == NULL) {
-		sprintf(tbuf, "Write permission to perm map file (%s) was not permitted!", pmap_file);
-		Tcl_AppendResult(interp, tbuf, (char *) NULL);
-		return TCL_ERROR;
-	}
-	rt = write_perm_map_file(policy->pmap, policy, fp);
-	if(rt != 0) {
-		fclose(fp);
-		Tcl_AppendResult(interp, "Problem writing the user file", (char *) NULL);
-		return TCL_ERROR;
-	}
-	fclose(fp);
-	return TCL_OK;
-#endif
-}
-
-/* update permission map
- * argv[1]  pmap_tmp_file
- */
-int Apol_UpdatePermMap(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
-{	
-	char *pmap_tmp_file = NULL; 
-	char tbuf[256];
-	int rt;
-	
-	if(argc != 2) {
-		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
-		return TCL_ERROR;
-	}
-	if(policydb == NULL) {
-		Tcl_AppendResult(interp, "No current policy file is opened!", (char *) NULL);
-		return TCL_ERROR;
-	}	
-	/* Load the temporary perm map file into memory. */
- 	pmap_tmp_file = argv[1]; 		
-	rt = load_perm_map_file(pmap_tmp_file, interp);
-	if(rt == -1) {
-		sprintf(tbuf, "Could not load permission map (%s)!", pmap_tmp_file);
-		Tcl_AppendResult(interp, tbuf, (char *) NULL);
-		return TCL_ERROR;	
-	} 	
-	return TCL_OK;
-}
-
-/* return the permission map in the form of a TCL list. The TCL list looks like this:
+/**
+ * Find the default permission map file given its base name, and
+ * return a newly allocated string to the path and file.
  *
- *	INDEX		CONTENTS
- *	0 		number of object classes (N)
- *	1		object class name1
- *	2			number of permissions (N)
- *	3				selinux perm1
- *	4				mls base perm1
- *					...
- *   		 			...
- *		     			selinux perm (N)
- *	    				mls base perm (N)
- *			...
- *			object class name (N)
- * 
+ * @param perm_map_fname Base name of permission map file.
+ *
+ * @return An allocated string to the fully qualified path, or NULL on
+ * error.  The caller is responsible for free()ing this string
+ * afterwards.
  */
-int Apol_GetPermMap(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
-{	
-	int i, j;
-	class_perm_map_t *cls;
-	classes_perm_map_t *map;
-	char tbuf[64];
-	
-	if(argc != 1) {
-		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
-		return TCL_ERROR;
-	}
-	if (policydb == NULL) {
-		Tcl_AppendResult(interp, "No current policy file is opened!", (char *) NULL);
-		return TCL_ERROR;
-	}
-        /* FIX ME
-	if(policy->pmap == NULL) {
-        */
-		Tcl_AppendResult(interp, "No permission map currently loaded!", (char *) NULL);
-		return TCL_ERROR;
-#if 0
-	}
-	map = policy->pmap;
-	/* # of classes */
-	sprintf(tbuf, "%d", map->num_classes);
-	Tcl_AppendElement(interp, tbuf);
-	for(i = 0; i < map->num_classes; i++) {
-		cls = &map->maps[i];
-		Tcl_AppendElement(interp, policy->obj_classes[cls->cls_idx].name);
-		/* # of class perms */
-		sprintf(tbuf, "%d", cls->num_perms);
-		Tcl_AppendElement(interp, tbuf);
-		
-		for(j = 0; j < cls->num_perms; j++) {
-			Tcl_AppendElement(interp, policy->perms[cls->perm_maps[j].perm_idx]);
-			if((cls->perm_maps[j].map & PERMMAP_BOTH) == PERMMAP_BOTH) {
-				Tcl_AppendElement(interp, "b");
-			} 
-			else {
-				switch(cls->perm_maps[j].map & (PERMMAP_READ|PERMMAP_WRITE|PERMMAP_NONE|PERMMAP_UNMAPPED)) {
-				case PERMMAP_READ: 	Tcl_AppendElement(interp, "r");
-							break;
-				case PERMMAP_WRITE: 	Tcl_AppendElement(interp, "w");
-							break;	
-				case PERMMAP_NONE: 	Tcl_AppendElement(interp, "n");
-							break;
-				case PERMMAP_UNMAPPED: 	Tcl_AppendElement(interp, "u");
-							break;	
-				default:		Tcl_AppendElement(interp, "?");
-				} 
-			} 
-			sprintf(tbuf, "%d", cls->perm_maps[j].weight);
-			Tcl_AppendElement(interp, tbuf);
+static char* find_perm_map_file(const char *perm_map_fname)
+{
+	char *script = NULL, *var = NULL;
+
+	if (perm_map_fname == NULL)
+		return NULL;
+
+	/* first check environment variable */
+	var = getenv(APOL_ENVIRON_VAR_NAME);
+	if (var != NULL) {
+		if (asprintf(&script, "%s/%s", var, perm_map_fname) == -1) {
+			return NULL;
+		}
+		if (access(script, R_OK) == 0) {
+			return script;
 		}
 	}
-	return TCL_OK;
-#endif
+
+	/* next try installed directory */
+	free(script);
+	if (asprintf(&script, "%s/%s", APOL_INSTALL_DIR, perm_map_fname) == -1) {
+		return NULL;
+	}
+	if (access(script, R_OK) == 0) {
+		return script;
+	}
+
+	/* didn't find it! */
+	free(script);
+	return NULL;
 }
 
+/**
+ * Given a base name, determine the full path to the permission map
+ * file.  If no matching file was found then return an empty string.
+ *
+ * @param argv This function takes one parameter:
+ * <ol>
+ *   <li>base name for permission map file
+ * </ol>
+ */
+static int Apol_GetDefault_PermMap(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
+{
+	char *pmap_file;
+	if (argc != 2) {
+		Tcl_SetResult(interp, "Need a permission map base name.", TCL_STATIC);
+		return TCL_ERROR;
+	}
 
+	pmap_file = find_perm_map_file(argv[1]);
+	if (pmap_file == NULL) {
+		/* There is no system default perm map. User will have
+		 * to load one explicitly. */
+		return TCL_OK;
+	}
+	Tcl_SetResult(interp, pmap_file, TCL_VOLATILE);
+	free(pmap_file);
+	return TCL_OK;
+}
+
+/**
+ * Load a perm map from disk.
+ *
+ * @param argv This function takes one parameter:
+ * <ol>
+ *   <li>permission map file name
+ * </ol>
+ */
+static int Apol_LoadPermMap(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
+{
+	int retval = TCL_ERROR, rt = 0;
+	apol_tcl_clear_error();
+	if (policydb == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		goto cleanup;
+	}
+	if (argc != 2) {
+		ERR(policydb, "Need a permission map file name.");
+		goto cleanup;
+	}
+	if ((rt = apol_permmap_load(policydb, argv[1])) < 0) {
+		goto cleanup;
+	}
+
+	retval = TCL_OK;
+ cleanup:
+	if (retval == TCL_ERROR || rt > 0) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
+}
+
+/**
+ * Save a permission map to disk.
+ *
+ * @param argv This function takes one parameter:
+ * <ol>
+ *   <li>permission map file name
+ * </ol>
+ */
+static int Apol_SavePermMap(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
+{
+	int retval = TCL_ERROR;
+	apol_tcl_clear_error();
+	if (policydb == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		goto cleanup;
+	}
+	if (policydb->pmap == NULL) {
+		ERR(policydb, "No permission map currently loaded!");
+		goto cleanup;
+	}
+	if (argc != 2) {
+		ERR(policydb, "Need a permission map file name.");
+		goto cleanup;
+	}
+	if (apol_permmap_save(policydb, argv[1]) < 0) {
+		goto cleanup;
+	}
+
+	retval = TCL_OK;
+ cleanup:
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
+}
+
+/**
+ * Look up a specific permission within the policy's permission map.
+ * Return a Tcl string that represents that map:
+ * <code>
+ *   { perm_name map_type weight }
+ * </code>
+ *
+ * @param interp Tcl interpreter object.
+ * @param class_name Permission's class.
+ * @param perm_name Name of permission.
+ * @param Destination to create Tcl object representing mapping.
+ *
+ * @return 0 if permission was found, < 0 on error.
+ */
+static int build_tcl_perm_list(Tcl_Interp *interp, char *class_name, char *perm_name, Tcl_Obj **obj) {
+	int map, weight;
+	char *map_str;
+	Tcl_Obj *perm_elem[3];
+
+	if (apol_permmap_get(policydb, class_name, perm_name, &map, &weight) < 0) {
+		return -1;
+	}
+	perm_elem[0] = Tcl_NewStringObj(perm_name, -1);
+	switch(map) {
+	case APOL_PERMMAP_READ: map_str = "r"; break;
+	case APOL_PERMMAP_WRITE: map_str = "w"; break;
+	case APOL_PERMMAP_BOTH: map_str = "b"; break;
+	case APOL_PERMMAP_NONE: map_str = "n"; break;
+	case APOL_PERMMAP_UNMAPPED: map_str = "u"; break;
+	default: map_str = "?";
+	}
+	perm_elem[1] = Tcl_NewStringObj(map_str, -1);
+	perm_elem[2] = Tcl_NewIntObj(weight);
+	*obj = Tcl_NewListObj(3, perm_elem);
+	return 0;
+}
+
+/**
+ * Return the currently loaded permission map as an unsorted list of
+ * class entries.  Each class tuple consists of:
+ * <ul>
+ *   <li>class name
+ *   <li>unsorted list of permission tuples
+ * </ul>
+ *
+ * Each permission tuple consists of:
+ * <ul>
+ *   <li>permission name
+ *   <li>mapping type, one of 'r', 'w', 'b', 'n', or 'u'
+ *   <li>permission weight (an integer)
+ * </ul>
+ */
+static int Apol_GetPermMap(ClientData clientData, Tcl_Interp *interp, int argc, const char *argv[])
+{
+	int retval = TCL_ERROR;
+	qpol_iterator_t *class_iter = NULL, *perm_iter = NULL,
+		*common_iter = NULL;
+	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
+
+	apol_tcl_clear_error();
+	if (policydb == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		goto cleanup;
+	}
+	if (policydb->pmap == NULL) {
+		ERR(policydb, "No permission map currently loaded!");
+		goto cleanup;
+	}
+	if (qpol_policy_get_class_iter(policydb->qh, policydb->p, &class_iter) < 0) {
+		goto cleanup;
+	}
+	for ( ; !qpol_iterator_end(class_iter); qpol_iterator_next(class_iter)) {
+		qpol_class_t *c;
+		qpol_common_t *common;
+		char *class_name, *perm_name;
+		Tcl_Obj *class_elem[2], *class_list, *perm_list;
+		if (qpol_iterator_get_item(class_iter, (void **) &c) < 0 ||
+		    qpol_class_get_name(policydb->qh, policydb->p, c, &class_name) < 0 ||
+		    qpol_class_get_perm_iter(policydb->qh, policydb->p, c, &perm_iter) < 0 ||
+		    qpol_class_get_common(policydb->qh, policydb->p, c, &common) < 0) {
+			goto cleanup;
+		}
+		if (common != NULL &&
+		    qpol_common_get_perm_iter(policydb->qh, policydb->p, common, &common_iter) < 0) {
+			goto cleanup;
+		}
+		class_elem[0] = Tcl_NewStringObj(class_name, -1);
+		class_elem[1] = Tcl_NewListObj(0, NULL);
+		for ( ; !qpol_iterator_end(perm_iter); qpol_iterator_next(perm_iter)) {
+			if (qpol_iterator_get_item(perm_iter, (void **) &perm_name) < 0 ||
+			    build_tcl_perm_list(interp, class_name, perm_name,
+						&perm_list) < 0 ||
+			    Tcl_ListObjAppendElement(interp, class_elem[1], perm_list) == TCL_ERROR) {
+				goto cleanup;
+			}
+		}
+		for ( ;
+		      common_iter != NULL && !qpol_iterator_end(common_iter);
+		      qpol_iterator_next(common_iter)) {
+			if (qpol_iterator_get_item(common_iter, (void **) &perm_name) < 0 ||
+			    build_tcl_perm_list(interp, class_name, perm_name,
+						&perm_list) < 0 ||
+			    Tcl_ListObjAppendElement(interp, class_elem[1], perm_list) == TCL_ERROR) {
+				goto cleanup;
+			}
+		}
+		class_list = Tcl_NewListObj(2, class_elem);
+		if (Tcl_ListObjAppendElement(interp, result_obj, class_list) == TCL_ERROR) {
+			goto cleanup;
+		}
+		qpol_iterator_destroy(&perm_iter);
+		qpol_iterator_destroy(&common_iter);
+	}
+	Tcl_SetObjResult(interp, result_obj);
+	retval = TCL_OK;
+ cleanup:
+	qpol_iterator_destroy(&class_iter);
+	qpol_iterator_destroy(&perm_iter);
+	qpol_iterator_destroy(&common_iter);
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
+}
+
+/**
+ * Sets an individual permission mapping within the current policy.
+ *
+ * @param argv This function takes four parameter:
+ * <ol>
+ *   <li>class containing permission to change
+ *   <li>name of permission to change
+ *   <li>new map, one of "r", "w", "b", "n", or "u"
+ *   <li>new weight, between APOL_PERMMAP_MIN_WEIGHT to
+ *   APOL_PERMMAP_MAX_WEIGHT, inclusive
+ * </ol>
+ */
+static int Apol_SetPermMap(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
+{
+	int retval = TCL_ERROR, map, weight;
+	apol_tcl_clear_error();
+	if (policydb == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		goto cleanup;
+	}
+	if (policydb->pmap == NULL) {
+		ERR(policydb, "No permission map currently loaded!");
+		goto cleanup;
+	}
+	if (argc != 5) {
+		ERR(policydb, "Need a class, permission, new map, and new weight.");
+		goto cleanup;
+	}
+	switch (*argv[3]) {
+	case 'r': map = APOL_PERMMAP_READ; break;
+	case 'w': map = APOL_PERMMAP_WRITE; break;
+	case 'b': map = APOL_PERMMAP_BOTH; break;
+	case 'n': map = APOL_PERMMAP_NONE; break;
+	case 'u': map = APOL_PERMMAP_UNMAPPED; break;
+	default:
+		ERR(policydb, "Invalid perm map %s", argv[3]);
+		goto cleanup;
+	}
+	if (Tcl_GetInt(interp, argv[4], &weight) == TCL_ERROR) {
+		goto cleanup;
+	}
+	if (apol_permmap_set(policydb, argv[1], argv[2], map, weight) < 0) {
+		goto cleanup;
+	}
+	retval = TCL_OK;
+ cleanup:
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
+}
 
 /* Package initialization */
 int Apol_Init(Tcl_Interp *interp)
@@ -1175,24 +1180,24 @@ int Apol_Init(Tcl_Interp *interp)
 	Tcl_CreateCommand(interp, "apol_GetPolicyVersionString", (Tcl_CmdProc *) Apol_GetPolicyVersionString, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_GetPolicyVersionNumber", Apol_GetPolicyVersionNumber, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetPermsByClass", (Tcl_CmdProc *) Apol_GetPermsByClass, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-	Tcl_CreateCommand(interp, "apol_LoadPermMap", (Tcl_CmdProc *) Apol_LoadPermMap, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-	Tcl_CreateCommand(interp, "apol_SavePermMap", (Tcl_CmdProc *) Apol_SavePermMap, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-	Tcl_CreateCommand(interp, "apol_UpdatePermMap", (Tcl_CmdProc *) Apol_UpdatePermMap, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-	Tcl_CreateCommand(interp, "apol_GetPermMap", (Tcl_CmdProc *) Apol_GetPermMap, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-	Tcl_CreateCommand(interp, "apol_IsPermMapLoaded", (Tcl_CmdProc *) Apol_IsPermMapLoaded, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-	Tcl_CreateCommand(interp, "apol_GetDefault_PermMap", (Tcl_CmdProc *) Apol_GetDefault_PermMap, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 	Tcl_CreateCommand(interp, "apol_IsValidRange", Apol_IsValidRange, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_IsValidPartialContext", Apol_IsValidPartialContext, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_GetPolicyType", Apol_GetPolicyType, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_IsPermMapLoaded", Apol_IsPermMapLoaded, (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+	Tcl_CreateCommand(interp, "apol_GetDefault_PermMap", Apol_GetDefault_PermMap, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_LoadPermMap", Apol_LoadPermMap, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_SavePermMap", Apol_SavePermMap, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_GetPermMap", Apol_GetPermMap, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_SetPermMap", Apol_SetPermMap, NULL, NULL);
 
-        if (apol_tcl_render_init(interp) != TCL_OK ||
-            apol_tcl_components_init(interp) != TCL_OK ||
-            apol_tcl_rules_init(interp) != TCL_OK ||
-            ap_tcl_fc_init(interp) != TCL_OK ||
-            ap_tcl_analysis_init(interp) != TCL_OK) {
-                return TCL_ERROR;
-        }
-        Tcl_PkgProvide(interp, "apol", (char*)libapol_get_version());
+	if (apol_tcl_render_init(interp) != TCL_OK ||
+	    apol_tcl_components_init(interp) != TCL_OK ||
+	    apol_tcl_rules_init(interp) != TCL_OK ||
+	    ap_tcl_fc_init(interp) != TCL_OK ||
+	    ap_tcl_analysis_init(interp) != TCL_OK) {
+		return TCL_ERROR;
+	}
+	Tcl_PkgProvide(interp, "apol", (char*)libapol_get_version());
 
-        return TCL_OK;
+	return TCL_OK;
 }
