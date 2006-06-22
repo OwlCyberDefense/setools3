@@ -13,6 +13,7 @@ libqpol_a_SOURCES = \
 	bool_query.c \
 	class_perm_query.c \
 	cond_query.c \
+	constraint_query.c \
 	context_query.c \
 	debug.h \
 	expand.c \

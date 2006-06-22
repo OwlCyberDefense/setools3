@@ -229,7 +229,7 @@ int qpol_policy_get_nodecon_iter(qpol_handle_t *handle, qpol_policy_t *policy, q
 		error = errno;
 		ERR(handle, "%s", strerror(ENOMEM));
 		free(v4os);
-		free(v4os);
+		free(v6os);
 		errno = error;
 		return STATUS_ERR;
 	}

@@ -50,6 +50,12 @@ typedef struct ocon_state {
 	ocontext_t *cur;
 } ocon_state_t;
 
+typedef struct perm_state {
+	uint32_t perm_set;
+	uint32_t obj_class_val;
+	uint8_t cur;
+} perm_state_t;
+
 typedef struct avtab_state {
 	uint32_t rule_type_mask;
 	avtab_t *ucond_tab;
@@ -78,21 +84,25 @@ void *ebitmap_state_get_cur_type(qpol_iterator_t *iter);
 void *ebitmap_state_get_cur_role(qpol_iterator_t *iter);
 void *ebitmap_state_get_cur_cat(qpol_iterator_t *iter);
 void *ocon_state_get_cur(qpol_iterator_t *iter);
+void *perm_state_get_cur(qpol_iterator_t *iter);
 void *avtab_state_get_cur(qpol_iterator_t *iter);
 
 int hash_state_next(qpol_iterator_t *iter);
 int ebitmap_state_next(qpol_iterator_t *iter);
 int ocon_state_next(qpol_iterator_t *iter);
+int perm_state_next(qpol_iterator_t *iter);
 int avtab_state_next(qpol_iterator_t *iter);
 
 int hash_state_end(qpol_iterator_t *iter);
 int ebitmap_state_end(qpol_iterator_t *iter);
 int ocon_state_end(qpol_iterator_t *iter);
+int perm_state_end(qpol_iterator_t *iter);
 int avtab_state_end(qpol_iterator_t *iter);
 
 size_t hash_state_size(qpol_iterator_t *iter);
 size_t ebitmap_state_size(qpol_iterator_t *iter);
 size_t ocon_state_size(qpol_iterator_t *iter);
+size_t perm_state_size(qpol_iterator_t *iter);
 size_t avtab_state_size(qpol_iterator_t *iter);
 
 void ebitmap_state_destroy(void *es);
