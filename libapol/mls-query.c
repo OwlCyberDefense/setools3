@@ -34,6 +34,7 @@
 
 #include "policy-query.h"
 #include "mls-query.h"
+#include "util.h"
 #include "vector.h"
 
 struct apol_level_query {

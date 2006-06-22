@@ -80,9 +80,11 @@
 
 #include <stdarg.h>
 #include <qpol/policy.h>
-#include "util.h"
 
 /* XXX */typedef struct policy policy_t;
+
+/* forward declaration.  the definition resides within perm-map.c */
+struct apol_permmap;
 
 typedef struct apol_policy {
         qpol_policy_t *p;
@@ -90,6 +92,7 @@ typedef struct apol_policy {
 	void (*msg_callback) (void *varg, struct apol_policy *p, const char *fmt, va_list argp);
 	void *msg_callback_arg;
 	int policy_type;
+	struct apol_permmap *pmap; /* permission mapping for this policy */
 } apol_policy_t;
 
 /**

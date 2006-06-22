@@ -30,6 +30,7 @@
 #include "context-query.h"
 #include "policy-query.h"
 #include "render.h"
+#include "util.h"
 
 /********************* miscellaneous routines *********************/
 

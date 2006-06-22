@@ -29,9 +29,10 @@
 /* libapol */
 #include <policy.h>
 #include <policy-io.h>
+#include <policy-query.h>
 #include <render.h>
-#include "vector.h"
-#include "policy-query.h"
+#include <util.h>
+#include <vector.h>
 
 /* libqpol */
 #include <qpol/policy_query.h>

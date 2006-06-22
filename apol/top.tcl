@@ -169,36 +169,18 @@ proc ApolTop::create_fc_index_file {} {
 # ::load_perm_map_fileDlg -- 
 #	- Called from Advanced menu
 proc ApolTop::load_perm_map_fileDlg {} {
-	variable mainframe
-	set rt [Apol_Perms_Map::load_perm_map_fileDlg $mainframe]
-	if {$rt == 0} {
-		ApolTop::configure_edit_pmap_menu_item 1
-	}
-	return 0
-}
-
-########################################################################
-# ::load_perm_map_mlsDlg --
-#	- Called from Advanced menu
-proc ApolTop::load_perm_map_mlsDlg {} {
-	variable mainframe
-	set rt [Apol_Perms_Map::load_perm_map_mlsDlg $mainframe]
-	if {$rt == 0} {
-		ApolTop::configure_edit_pmap_menu_item 1
-	}
-	return 0
+    if {[Apol_Perms_Map::loadPermMapFromFile]} {
+        ApolTop::configure_edit_pmap_menu_item 1
+    }
 }
 
 ########################################################################
 # ::load_default_perm_map_Dlg --
 #	- Called from Advanced menu
 proc ApolTop::load_default_perm_map_Dlg {} {
-	variable mainframe
-	set rt [Apol_Perms_Map::load_default_perm_map_Dlg $mainframe]
-	if {$rt == 0} {
-		ApolTop::configure_edit_pmap_menu_item 1
-	}
-	return 0
+    if {[Apol_Perms_Map::loadDefaultPermMap]} {
+        ApolTop::configure_edit_pmap_menu_item 1
+    }
 }
 
 ########################################################################
@@ -208,9 +190,9 @@ proc ApolTop::configure_edit_pmap_menu_item {enable} {
 	variable mainframe
 	
 	if {$enable} {
-		[$mainframe getmenu pmap_menu] entryconfigure last -state normal -label "Edit perm map..."
+		[$mainframe getmenu pmap_menu] entryconfigure last -state normal -label "Edit Perm Map..."
 	} else {
-		[$mainframe getmenu pmap_menu] entryconfigure last -state disabled -label "Edit perm map... (Not loaded)"	     
+		[$mainframe getmenu pmap_menu] entryconfigure last -state disabled -label "Edit Perm Map... (Not loaded)"	     
 	}
 	return 0
 }
@@ -966,11 +948,9 @@ proc ApolTop::create { } {
 	}
 	
 	set mainframe [MainFrame .mainframe -menu $descmenu -textvariable ApolTop::status]
-	[$mainframe getmenu pmap_menu] insert 0 command -label "Edit perm map... (Not loaded)" -command "Apol_Perms_Map::display_perm_mappings_Dlg"
+	[$mainframe getmenu pmap_menu] insert 0 command -label "Edit Perm Map... (Not loaded)" -command "Apol_Perms_Map::editPermMappings"
 	[$mainframe getmenu pmap_menu] insert 0 separator
-	[$mainframe getmenu pmap_menu] insert 0 command -label "Load Perm Map from MLS file..." -command "ApolTop::load_perm_map_mlsDlg"
-	[$mainframe getmenu pmap_menu] insert 0 command -label "Load Perm Map from file..." -command "ApolTop::load_perm_map_fileDlg"
-	[$mainframe getmenu pmap_menu] insert 0 separator
+	[$mainframe getmenu pmap_menu] insert 0 command -label "Load Perm Map from File..." -command "ApolTop::load_perm_map_file"
 	[$mainframe getmenu pmap_menu] insert 0 command -label "Load Default Perm Map" -command "ApolTop::load_default_perm_map_Dlg"
 	
 	#[$mainframe getmenu fc_index_menu] insert 0 command -label "Load Index... (Not loaded)" -command "ApolTop::load_fc_index_file"
@@ -1628,13 +1608,10 @@ proc ApolTop::closePolicy {} {
 
     variable tab_names
     foreach tab $tab_names {
-        if {$tab == "Perms_Map"} {
-            Apol_Perms_Map::close $ApolTop::mainframe 
-        } else {
-            Apol_${tab}::close
-        }
+        Apol_${tab}::close
     }
-        
+    Apol_Perms_Map::close
+
 	ApolTop::set_Focus_to_Text [$ApolTop::notebook raise]
 	set rt [catch {apol_ClosePolicy} err]
 	if {$rt != 0} {
@@ -1653,7 +1630,7 @@ proc ApolTop::closePolicy {} {
 	set_mls_tabs_state normal
 	ApolTop::configure_edit_pmap_menu_item 0
 	#ApolTop::configure_load_index_menu_item 0
-	
+
 	return 0
 }
 
@@ -1964,6 +1941,7 @@ proc ApolTop::load_fonts { } {
 	} else {
 		option add *Dialog*font $dialog_font
 	}
+    option add *Dialog*TitleFrame.l.font $title_font
 	if {$text_font == ""} {
 		option add *text*font "fixed"
 		set text_font "fixed"
