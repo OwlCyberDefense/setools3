@@ -34,6 +34,7 @@
 #include <qpol/bool_query.h>
 #include <qpol/cond_query.h>
 #include <qpol/class_perm_query.h>
+#include <qpol/constraint_query.h>
 #include <qpol/mls_query.h>
 #include <qpol/role_query.h>
 #include <qpol/type_query.h>

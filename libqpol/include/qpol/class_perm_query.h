@@ -68,16 +68,16 @@ extern int qpol_perm_get_common_iter(qpol_handle_t *handle, qpol_policy_t *polic
 
 /* classes */
 /**
- *  Get the datum for an object class by name.
+ *  Get an object class by name.
  *  @param handle Error handler for the policy database.
- *  @param policy The policy from which to get the class datum.
+ *  @param policy The policy from which to get the class.
  *  @param name The name of the class; searching is case sensitive.
- *  @param datum Pointer in which to store the class datum. 
+ *  @param obj_class Pointer in which to store the class. 
  *  Caller should not free this pointer.
  *  @return Returns 0 for success and < 0 for failure; if the call fails,
- *  errno will be set and *datum will be NULL;
+ *  errno will be set and *obj_class will be NULL;
  */
-extern int qpol_policy_get_class_by_name(qpol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_class_t **datum);
+extern int qpol_policy_get_class_by_name(qpol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_class_t **obj_class);
 
 /**
  *  Get an iterator for object classes in the policy.
@@ -96,32 +96,32 @@ extern int qpol_policy_get_class_iter(qpol_handle_t *handle, qpol_policy_t *poli
  *  Get the integer value associated with a class. Values range from 1 to 
  *  the number of object classes declared in the policy.
  *  @param handle Error handler for the policy database.
- *  @param policy The policy with which the class datum is associated. 
- *  @param datum Class datum from which to get the value. Must be non-NULL.
+ *  @param policy The policy with which the class is associated. 
+ *  @param obj_class Class from which to get the value. Must be non-NULL.
  *  @param value Pointer to the integer to be set to value. Must be non-NULL.
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *value will be 0.
  */
-extern int qpol_class_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpol_class_t *datum, uint32_t *value);
+extern int qpol_class_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpol_class_t *obj_class, uint32_t *value);
 
 /** 
  *  Get the common used by a class.
  *  @param handle Error handler for the policy database.
- *  @param policy The policy with which the class datum is associated. 
- *  @param datum Class datum from which to get the value. Must be non-NULL.
- *  @param common Pointer to the datum of the common associated with this
+ *  @param policy The policy with which the class is associated. 
+ *  @param obj_class Class from which to get the value. Must be non-NULL.
+ *  @param common Pointer to the common associated with this
  *  class; the caller should not free this pointer. Not all classes have an
  *  associated common so it is possible for *common to be NULL on success.
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *common will be NULL. 
  */
-extern int qpol_class_get_common(qpol_handle_t *handle, qpol_policy_t *policy, qpol_class_t *datum, qpol_common_t **common);
+extern int qpol_class_get_common(qpol_handle_t *handle, qpol_policy_t *policy, qpol_class_t *obj_class, qpol_common_t **common);
 
 /**
  *  Get an iterator for the set of (unique) permissions for a class.
  *  @param handle Error handler for the policy database.
  *  @param policy The policy with which the class is associated.
- *  @param datum The class from which to get the permissions.
+ *  @param obj_class The class from which to get the permissions.
  *  @param perms Iterator of type char* returned for the list of
  *  permissions for this class. The list only contains permissions unique
  *  to the class not those included from a common. The iterator is only
@@ -130,32 +130,32 @@ extern int qpol_class_get_common(qpol_handle_t *handle, qpol_policy_t *policy, q
  *  @return Returns 0 for success and < 0 for failure; if the call fails,
  *  errno will be set and *perms will be NULL.
  */
-extern int qpol_class_get_perm_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_class_t *datum, qpol_iterator_t **perms);
+extern int qpol_class_get_perm_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_class_t *obj_class, qpol_iterator_t **perms);
 
 /**
- *  Get the name which identifies a class from its datum.
+ *  Get the name which identifies a class.
  *  @param handle Error handler for the policy database.
- *  @param policy The policy with which the boolean datum is associated.
- *  @param datum Class datum for which to get the name. Must be non-NULL.
+ *  @param policy The policy with which the class is associated.
+ *  @param datum Class for which to get the name. Must be non-NULL.
  *  @param name Pointer to the string in which to store the name.
  *  Must be non-NULL. Caller should not free the string.
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *name will be NULL. 
  */
-extern int qpol_class_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_class_t *datum, char **name);
+extern int qpol_class_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_class_t *obj_class, char **name);
 
 /* commons */
 /**
- *  Get the datum for a common by name
+ *  Get a common by name.
  *  @param handle Error handler for the policy database.
  *  @param policy from which to get the common.
  *  @param name The name of the common; searching is case sensitive.
- *  @param datum Pointer in which to store the common datum.
+ *  @param common Pointer in which to store the common.
  *  Caller should not free this pointer.
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
- *  errno will be set and *datum will be NULL.
+ *  errno will be set and *common will be NULL.
  */
-extern int qpol_policy_get_common_by_name(qpol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_common_t **datum);
+extern int qpol_policy_get_common_by_name(qpol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_common_t **common);
 
 /**
  *  Get an iterator for commons in the policy
@@ -175,18 +175,18 @@ extern int qpol_policy_get_common_iter(qpol_handle_t *handle, qpol_policy_t *pol
  *  the number of commons declared in the policy.
  *  @param handle Error handler for the policy database.
  *  @param policy The policy associated with the common.
- *  @param datum The common from which to get the value.
+ *  @param common The common from which to get the value.
  *  @param value Pointer to the integer to be set to value. Must be non-NULL.
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *value will be 0.
  */
-extern int qpol_common_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpol_common_t *datum, uint32_t *value);
+extern int qpol_common_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpol_common_t *common, uint32_t *value);
 
 /**
  *  Get an iterator for the permissions included in a common.
  *  @param handle Error handler for the policy database.
  *  @param policy The policy associated with the common.
- *  @param datum The common from which to get permissions.
+ *  @param common The common from which to get permissions.
  *  @param perms Iterator of type char* returned for the list of 
  *  permissions for this common. The iterator is only valid as long 
  *  as the policy is unchanged; the caller is responsible for calling 
@@ -194,18 +194,18 @@ extern int qpol_common_get_value(qpol_handle_t *handle, qpol_policy_t *policy, q
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *perms will be NULL.
  */
-extern int qpol_common_get_perm_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_common_t *datum, qpol_iterator_t **perms);
+extern int qpol_common_get_perm_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_common_t *common, qpol_iterator_t **perms);
 
 /**
- *  Get the name which identifies a common from its datum.
+ *  Get the name which identifies a common.
  *  @param handle Error handler for the policy database.
  *  @param policy associated with the common.
- *  @param datum The common from which to get the name.
+ *  @param common The common from which to get the name.
  *  @param name Pointer in which to store the name. Must be non-NULL;
  *  the caller should not free the string.
  *  @return Returns 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *name will be NULL.
  */
-extern int qpol_common_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_common_t *datum, char **name);
+extern int qpol_common_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_common_t *common, char **name);
 
 #endif /* QPOL_CLASS_PERM_QUERY_H */

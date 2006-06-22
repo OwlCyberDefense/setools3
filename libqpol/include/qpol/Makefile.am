@@ -5,6 +5,7 @@ qpol_HEADERS = \
 	bool_query.h \
 	class_perm_query.h \
 	cond_query.h \
+	constraint_query.h \
 	context_query.h \
 	expand.h \
 	fs_use_query.h \
