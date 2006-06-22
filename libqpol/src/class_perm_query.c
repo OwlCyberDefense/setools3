@@ -332,14 +332,14 @@ int qpol_perm_get_common_iter(qpol_handle_t *handle, qpol_policy_t *policy, cons
 	return STATUS_SUCCESS;}
 
 /* classes */
-int qpol_policy_get_class_by_name(qpol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_class_t **datum)
+int qpol_policy_get_class_by_name(qpol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_class_t **obj_class)
 {
 	hashtab_datum_t internal_datum;
 	policydb_t *db;
 
-	if (handle == NULL || policy == NULL || name == NULL || datum == NULL) {
-		if (datum != NULL)
-			*datum = NULL;
+	if (handle == NULL || policy == NULL || name == NULL || obj_class == NULL) {
+		if (obj_class != NULL)
+			*obj_class = NULL;
 		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
@@ -348,13 +348,13 @@ int qpol_policy_get_class_by_name(qpol_handle_t *handle, qpol_policy_t *policy, 
 	db = &policy->p;
 	internal_datum = hashtab_search(db->p_classes.table, (const hashtab_key_t)name);
 	if (internal_datum == NULL) {
-		*datum = NULL;
-		ERR(handle, "could not find datum for class %s", name);
+		*obj_class = NULL;
+		ERR(handle, "could not find class %s", name);
 		errno = ENOENT;
 		return STATUS_ERR;
 	}
 
-	*datum = (qpol_class_t*)internal_datum;
+	*obj_class = (qpol_class_t*)internal_datum;
 
 	return STATUS_SUCCESS;
 }
@@ -397,11 +397,11 @@ int qpol_policy_get_class_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpo
 	return STATUS_SUCCESS;
 }
 
-int qpol_class_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpol_class_t *datum, uint32_t *value)
+int qpol_class_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpol_class_t *obj_class, uint32_t *value)
 {
 	class_datum_t *internal_datum;
 
-	if (handle == NULL || policy == NULL || datum == NULL || value == NULL) {
+	if (handle == NULL || policy == NULL || obj_class == NULL || value == NULL) {
 		if (value != NULL)
 			*value = 0;
 		ERR(handle, "%s", strerror(EINVAL));
@@ -409,17 +409,17 @@ int qpol_class_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpol_clas
 		return STATUS_ERR;
 	}
 
-	internal_datum = (class_datum_t*)datum;
+	internal_datum = (class_datum_t*)obj_class;
 	*value = internal_datum->value;
 
 	return STATUS_SUCCESS;
 }
 
-int qpol_class_get_common(qpol_handle_t *handle, qpol_policy_t *policy, qpol_class_t *datum, qpol_common_t **common)
+int qpol_class_get_common(qpol_handle_t *handle, qpol_policy_t *policy, qpol_class_t *obj_class, qpol_common_t **common)
 {
 	class_datum_t *internal_datum = NULL;
 
-	if (handle == NULL || policy == NULL || datum == NULL || common == NULL) {
+	if (handle == NULL || policy == NULL || obj_class == NULL || common == NULL) {
 		if (common != NULL)
 			*common = NULL;
 		ERR(handle, "%s", strerror(EINVAL));
@@ -427,20 +427,20 @@ int qpol_class_get_common(qpol_handle_t *handle, qpol_policy_t *policy, qpol_cla
 		return STATUS_ERR;
 	}
 
-	internal_datum = (class_datum_t*)datum;
+	internal_datum = (class_datum_t*)obj_class;
 	*common = (qpol_common_t*)internal_datum->comdatum;
 
 	return STATUS_SUCCESS;
 }
 
-int qpol_class_get_perm_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_class_t *datum, qpol_iterator_t **perms)
+int qpol_class_get_perm_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_class_t *obj_class, qpol_iterator_t **perms)
 {
 	class_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;
 	int error = 0;
 	hash_state_t *hs = NULL;
 
-	if (handle == NULL || policy == NULL || datum == NULL || perms == NULL) {
+	if (handle == NULL || policy == NULL || obj_class == NULL || perms == NULL) {
 		if (perms != NULL)
 			*perms = NULL;
 		ERR(handle, "%s", strerror(EINVAL));
@@ -448,7 +448,7 @@ int qpol_class_get_perm_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_
 		return STATUS_ERR;
 	}
 
-	internal_datum = (class_datum_t*)datum;
+	internal_datum = (class_datum_t*)obj_class;
 	db = &policy->p;
 
 	hs = calloc(1, sizeof(hash_state_t));
@@ -477,12 +477,12 @@ int qpol_class_get_perm_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_
 	return STATUS_SUCCESS;
 }
 
-int qpol_class_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_class_t *datum, char **name)
+int qpol_class_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_class_t *obj_class, char **name)
 {
 	class_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;
 
-	if (handle == NULL ||  policy == NULL || datum == NULL || name == NULL) {
+	if (handle == NULL ||  policy == NULL || obj_class == NULL || name == NULL) {
 		if (name != NULL)
 			*name = NULL;
 		ERR(handle, "%s", strerror(EINVAL));
@@ -491,7 +491,7 @@ int qpol_class_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_class
 	}
 
 	db = &policy->p;
-	internal_datum = (class_datum_t*)datum;
+	internal_datum = (class_datum_t*)obj_class;
 
 	*name = db->p_class_val_to_name[internal_datum->value - 1];
 
@@ -499,14 +499,14 @@ int qpol_class_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_class
 }
 
 /* commons */
-int qpol_policy_get_common_by_name(qpol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_common_t **datum)
+int qpol_policy_get_common_by_name(qpol_handle_t *handle, qpol_policy_t *policy, const char *name, qpol_common_t **common)
 {
 	hashtab_datum_t internal_datum;
 	policydb_t *db;
 
-	if (handle == NULL || policy == NULL || name == NULL || datum == NULL) {
-		if (datum != NULL)
-			*datum = NULL;
+	if (handle == NULL || policy == NULL || name == NULL || common == NULL) {
+		if (common != NULL)
+			*common = NULL;
 		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_ERR;
@@ -515,12 +515,12 @@ int qpol_policy_get_common_by_name(qpol_handle_t *handle, qpol_policy_t *policy,
 	db = &policy->p;
 	internal_datum = hashtab_search(db->p_commons.table, (const hashtab_key_t)name);
 	if (internal_datum == NULL) {
-		*datum = NULL;
-		ERR(handle, "could not find datum for common %s", name);
+		*common = NULL;
+		ERR(handle, "could not find common %s", name);
 		errno = ENOENT;
 		return STATUS_ERR;
 	}
-	*datum = (qpol_common_t*)internal_datum;
+	*common = (qpol_common_t*)internal_datum;
 
 	return STATUS_SUCCESS;
 }
@@ -563,11 +563,11 @@ int qpol_policy_get_common_iter(qpol_handle_t *handle, qpol_policy_t *policy, qp
 	return STATUS_SUCCESS;
 }
 
-int qpol_common_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpol_common_t *datum, uint32_t *value)
+int qpol_common_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpol_common_t *common, uint32_t *value)
 {
 	common_datum_t *internal_datum;
 
-	if (handle == NULL || policy == NULL || datum == NULL || value == NULL) {
+	if (handle == NULL || policy == NULL || common == NULL || value == NULL) {
 		if (value != NULL)
 			*value = 0;
 		ERR(handle, "%s", strerror(EINVAL));
@@ -575,20 +575,20 @@ int qpol_common_get_value(qpol_handle_t *handle, qpol_policy_t *policy, qpol_com
 		return STATUS_ERR;
 	}
 
-	internal_datum = (common_datum_t*)datum;
+	internal_datum = (common_datum_t*)common;
 	*value = internal_datum->value;
 
 	return STATUS_SUCCESS;	
 }
 
-int qpol_common_get_perm_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_common_t *datum, qpol_iterator_t **perms)
+int qpol_common_get_perm_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_common_t *common, qpol_iterator_t **perms)
 {
 	common_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;
 	int error = 0;
 	hash_state_t *hs = NULL;
 
-	if (handle == NULL || policy == NULL || datum == NULL || perms == NULL) {
+	if (handle == NULL || policy == NULL || common == NULL || perms == NULL) {
 		if (perms != NULL)
 			*perms = NULL;
 		ERR(handle, "%s", strerror(EINVAL));
@@ -596,7 +596,7 @@ int qpol_common_get_perm_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 		return STATUS_ERR;
 	}
 
-	internal_datum = (common_datum_t*)datum;
+	internal_datum = (common_datum_t*)common;
 	db = &policy->p;
 
 	hs = calloc(1, sizeof(hash_state_t));
@@ -621,12 +621,12 @@ int qpol_common_get_perm_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 	return STATUS_SUCCESS;
 }
 
-int qpol_common_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_common_t *datum, char **name)
+int qpol_common_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_common_t *common, char **name)
 {
 	common_datum_t *internal_datum = NULL;
 	policydb_t *db = NULL;
 
-	if (handle == NULL ||  policy == NULL || datum == NULL || name == NULL) {
+	if (handle == NULL ||  policy == NULL || common == NULL || name == NULL) {
 		if (name != NULL)
 			*name = NULL;
 		ERR(handle, "%s", strerror(EINVAL));
@@ -635,7 +635,7 @@ int qpol_common_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_comm
 	}
 
 	db = &policy->p;
-	internal_datum = (common_datum_t*)datum;
+	internal_datum = (common_datum_t*)common;
 
 	*name = db->p_common_val_to_name[internal_datum->value - 1];
 
