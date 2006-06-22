@@ -29,6 +29,8 @@
  */
 
 #include "policy-query.h"
+#include "util.h"
+
 #include <errno.h>
 
 struct apol_range_trans_query {
@@ -321,4 +323,3 @@ err:
 	errno = error;
 	return NULL;
 }
-

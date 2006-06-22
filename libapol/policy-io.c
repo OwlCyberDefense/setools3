@@ -1,16 +1,3 @@
-/* Copyright (C) 2001-2003 Tresys Technology, LLC
- * see file 'COPYING' for use and warranty information */
-
-/*
- * Author: mayerf@tresys.com
- * Modified: don.patterson@tresys.com - added default policy search implementation.
- */
-
-/* policy-io.c
- *
- * Policy I/O functions 
- */
-
 #include <config.h>
 
 #include "policy.h"
@@ -383,6 +370,32 @@ int find_default_policy_file(unsigned int search_opt, char **policy_file_path)
 
 /******************** new policy reading below ********************/
 
+/**
+ * @file policy-io.c
+ *
+ * Implementation of policy loading routines.
+ *
+ * @author Kevin Carr  kcarr@tresys.com
+ * @author Jeremy A. Mowery jmowery@tresys.com
+ * @author Jason Tang  jtang@tresys.com
+ *
+ * Copyright (C) 2001-2006 Tresys Technology, LLC
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ */
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -391,6 +404,7 @@ int find_default_policy_file(unsigned int search_opt, char **policy_file_path)
 
 #include "policy.h"
 #include "policy-io.h"
+#include "perm-map.h"
 
 __attribute__ ((format (printf, 3, 4)))
 static void qpol_handle_route_to_callback(void *varg, qpol_handle_t *handle,
@@ -446,6 +460,7 @@ void apol_policy_destroy(apol_policy_t **policy)
 	if (policy != NULL && *policy != NULL) {
 		qpol_close_policy(&((*policy)->p));
 		qpol_handle_destroy(&((*policy)->qh));
+		apol_permmap_destroy(&(*policy)->pmap);
 		free(*policy);
 		*policy = NULL;
 	}

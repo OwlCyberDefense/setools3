@@ -1,76 +1,121 @@
-/* Copyright (C) 2003 Tresys Technology, LLC
- * see file 'COPYING' for use and warranty information */
-
-/* 
- * Author: mayerf@tresys.com 
- */
-
-/* perm-map.h
+/**
+ * @file perm-map.h
  *
- * Permission mapping routines for libapol.  These maps assoicated all
- * object class permissions with read, write, read&write, and none access.
- * These maps are used, for example, by an information flow analysis.
+ * Permission mapping routines for libapol.  These maps assoicate all
+ * object class permissions with read, write, read&write, and none
+ * access.  These maps are used, for example, by an information flow
+ * analysis.
+ *
+ * @author Kevin Carr  kcarr@tresys.com
+ * @author Jeremy A. Mowery jmowery@tresys.com
+ * @author Jason Tang  jtang@tresys.com
+ *
+ * Copyright (C) 2003-2006 Tresys Technology, LLC
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#ifndef APOL_PERMMAP_H
+#define APOL_PERMMAP_H
 
-#ifndef _APOLICY_PERMMAP_H_
-#define _APOLICY_PERMMAP_H_
 #include "policy.h"
-#include <stdio.h>
 
-#define PERMMAP_MAX_WEIGHT 10
-#define PERMMAP_MIN_WEIGHT 1
+#define APOL_PERMMAP_MAX_WEIGHT 10
+#define APOL_PERMMAP_MIN_WEIGHT 1
 
-/* Permission maps: For each object class we need to map all permisions
- * to either read and/or write, or non similar as is done for the MLS stuff.
- * This allows us to determine information flow.  These mappings will be
- * loadable so that users can re-map them as they see fit. 
+typedef struct apol_permmap apol_permmap_t;
+
+#define APOL_PERMMAP_UNMAPPED	0x00	/* defined object/perm, but no map */
+#define	APOL_PERMMAP_READ	0x01
+#define APOL_PERMMAP_WRITE	0x02
+#define APOL_PERMMAP_BOTH	(APOL_PERMMAP_READ | APOL_PERMMAP_WRITE)
+#define APOL_PERMMAP_NONE	0x10
+
+/**
+ * Deallocate all space associated with a permmap, including the
+ * pointer itself.  Afterwards set the pointer to NULL.
  *
- * Map for a given permission */
-typedef struct perm_map {
-	int		perm_idx; 	/* index into policy_t->perms */
-#define PERMMAP_UNMAPPED	0x00	/* defined object/perm, but no map */
-#define	PERMMAP_READ		0x01
-#define PERMMAP_WRITE		0x02
-#define PERMMAP_BOTH		(PERMMAP_READ | PERMMAP_WRITE)
-#define PERMMAP_NONE		0x10	
-#define PERMMAP_UNDEFINED	0x20	/* undefined obj/perm, but with map */
-	unsigned char	map;
-	char 		weight;		/* the weight (importance) of this perm. (least) 1 - 10 (most); */
-} perm_map_t;
+ * @param p Reference to an apol_permmap_t to destroy.
+ */
+extern void apol_permmap_destroy(apol_permmap_t **p);
 
-/* There is one class_perm_map_t per object class. */
-typedef struct class_perm_map {
-	unsigned char	mapped;		/* mask */
-	int		num_perms;
-	int		cls_idx;	/* idx of class from policy */
-	char		*cls_name;	/* only used if idx is not valid (< 0); i.e., for unknown objects*/
-					/* cls_name currently unused*/
-	perm_map_t	*perm_maps; 	/* array; one each for each perm bit defined */
-} class_perm_map_t;
+/**
+ * Read a permission map from a file into a policy.  If there is a
+ * non-fatal error while loading (e.g., file declared an object class
+ * that does not exist within the policy) then generate a warning
+ * string and send it to the error handler stored within the policy.
+ *
+ * If a permission map was already loaded, then it will be first
+ * destroyed.  The caller is responsible for callaing
+ * apol_permmap_destroy() upon the policy's pmap afterwards.
+ *
+ * @param p Policy to which store permission map.
+ * @param filename Name of file containing permission map.
+ *
+ * @return 0 on success, > 0 on success with warnings, < 0 on error.
+ */
+extern int apol_permmap_load(apol_policy_t *p, const char *filename);
 
-/* the entire map */
-typedef struct classes_perm_map {
-	unsigned char		mapped;		/* boolean */
-	int			num_classes;	/* # of obj classes with a map (sz of maps array) */
-	class_perm_map_t 	*maps;		/* array */
-} classes_perm_map_t;
+/**
+ * Write the contents of permission map to a file.  Any existing file
+ * will be overwritten.
+ *
+ * @param p Policy containing permission map.
+ * @param filename Destination filename.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+extern int apol_permmap_save(apol_policy_t *p, const char *filename);
 
-/* returns masks used for load_perm_mappings() */ 
-#define	PERMMAP_RET_SUCCESS		0x00000000	/*success, no warnings nor errors */
-#define PERMMAP_RET_ERROR		0x10000000	/*general error, see stderr, no useful data returned */
-#define PERMMAP_RET_UNMAPPED_PERM	0x00000001	/*initialized, but some perms unmapped*/
-#define PERMMAP_RET_UNMAPPED_OBJ	0x00000002	/*initialized, but some objects unmapped*/
-#define	PERMMAP_RET_UNKNOWN_PERM	0x00000004	/*initialized, but 1+ perms associated with incorrect or unknown (and ignored)*/
-#define PERMMAP_RET_UNKNOWN_OBJ		0x00000008	/*initialized, but some object from file unknown and ignored*/
-#define PERMMAP_RET_OBJ_REMMAPPED	0x00000010	/*object was mapped more than once*/
-#define PERMMAP_RET_WARNINGS		(PERMMAP_RET_UNMAPPED_PERM|PERMMAP_RET_UNMAPPED_OBJ|PERMMAP_RET_UNKNOWN_PERM|PERMMAP_RET_UNKNOWN_OBJ|PERMMAP_RET_OBJ_REMMAPPED)
+/**
+ * Given a class and permission name, look up that permission mapping
+ * within a policy's permission map.  Set the reference variables map
+ * and weight to the mapping.
+ *
+ * @param p Policy containing permission map.
+ * @param class_name Name of class to find.
+ * @param perm_name Permission within class to find.
+ * @param map Location to store mapping, one of APOL_PERMMAP_UNMAPPED,
+ * etc.
+ * @param weight Weight of this permission, a value between
+ * APOL_PERMMAP_MIN_WEIGHT and APOL_PERMMAP_MAX_WEIGHT, inclusive.
+ *
+ * @return 0 if class and permission were found, < 0 on error or if
+ * not found.
+ */
+extern int apol_permmap_get(apol_policy_t *p,
+			    const char *class_name, const char *perm_name,
+			    int *map, int *weight);
 
-/* prototypes */
-void free_perm_mapping(classes_perm_map_t *p);
-classes_perm_map_t * new_perm_mapping(policy_t *policy);
-unsigned int load_perm_mappings(classes_perm_map_t **map, policy_t *policy, FILE *fp);
-unsigned int load_policy_perm_mappings(policy_t *policy, FILE *fp);
-int write_perm_map_file(classes_perm_map_t *map, policy_t *policy, FILE *outfile);
+/**
+ * Given a class and permission name, set that permission's map and
+ * weight within the policy's permission map.
+ *
+ * @param p Policy containing permission map.
+ * @param class_name Name of class to find.
+ * @param perm_name Permission within class to find.
+ * @param map New map value, one of APOL_PERMMAP_UNMAPPED, etc.
+ * @param weight New weight of this permission.  If the value will be
+ * clamped to be between APOL_PERMMAP_MIN_WEIGHT and
+ * APOL_PERMMAP_MAX_WEIGHT, inclusive.
+ *
+ * @return 0 if permission map was changed, < 0 on error or if not
+ * found.
+ */
+extern int apol_permmap_set(apol_policy_t *p,
+			    const char *class_name, const char *perm_name,
+			    int map, int weight);
 
-#endif /*_APOLICY_PERMMAP_H_*/
+#endif /*APOL_PERMMAP_H*/

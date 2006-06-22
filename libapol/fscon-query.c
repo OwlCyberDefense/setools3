@@ -31,6 +31,9 @@
 
 #include "policy-query.h"
 #include "render.h"
+#include "util.h"
+
+#include <stdio.h>
 
 struct apol_genfscon_query {
         char *fs, *path;

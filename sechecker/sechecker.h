@@ -13,7 +13,9 @@
 
 #include <config.h>
 
-#include "policy.h"
+#include <policy.h>
+#include <util.h>
+
 #ifdef LIBSEFS
 #include "../libsefs/file_contexts.h"
 #endif

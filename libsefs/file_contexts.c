@@ -4,21 +4,20 @@
 /* 
  * Author: jmowery@tresys.com
  *
- */ 
+ */
+
+#define _GNU_SOURCE
 
 #include "file_contexts.h"
 #include "policy.h"
 #include <ctype.h>
-#define _GNU_SOURCE
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #ifdef LIBSELINUX
 #include <selinux/selinux.h>
 #endif
-
-/* for some reason we have to define this here to remove compile warnings */
-ssize_t getline(char **lineptr, size_t *n, FILE *stream);
 
 int parse_file_contexts_file(const char *fc_path, sefs_fc_entry_t **contexts, int *num_contexts, policy_t *policy) 
 { /*FIXME*/

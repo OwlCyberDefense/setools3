@@ -310,6 +310,8 @@ sechk_proof_t *sechk_proof_new(void)
 	return proof;
 }
 
+#define LIST_SZ 100
+
 /*
  * check the size and grow appropriately - the array of modules and 
  * the boolean array of selected modules */

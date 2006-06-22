@@ -9,6 +9,7 @@
 #include <tcl.h>
 
 #include "apol_tcl_other.h"
+#include "util.h"
 
 #ifdef LIBSEFS
 #include "../libsefs/fsdata.h"
