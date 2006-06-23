@@ -1,8 +1,28 @@
-/* Copyright (C) 2006 Tresys Technology, LLC
- * see file 'COPYING' for use and warranty information */
-
-/* 
- * Author: mayerf@tresys.com and Don Patterson <don.patterson@tresys.com>
+/**
+ * @file apol_tcl_fc.c
+ *
+ * Routines that let apol interface with on-disk file contexts,
+ * assuming that libsefs was configured.
+ *
+ * @author Kevin Carr  kcarr@tresys.com
+ * @author Jeremy A. Mowery jmowery@tresys.com
+ * @author Jason Tang  jtang@tresys.com
+ *
+ * Copyright (C) 2004-2006 Tresys Technology, LLC
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
 #include <config.h>
@@ -12,80 +32,76 @@
 #include "util.h"
 
 #ifdef LIBSEFS
-#include "../libsefs/fsdata.h"
-sefs_filesystem_db_t *fsdata = NULL; /* local global for file context DB */
-static bool_t is_libsefs_builtin = TRUE;
+	#include "../libsefs/fsdata.h"
+	/* local global for file context DB */
+	sefs_filesystem_db_t *fsdata = NULL;
+	static bool_t is_libsefs_builtin = TRUE;
 #else
-static bool_t is_libsefs_builtin = FALSE;
+	static bool_t is_libsefs_builtin = FALSE;
 #endif
 
-
-/* 
- * argv[1] - file name to save 
- * argv[2] - directory to start scanning
+/**
+ * Create a new file contexts database and save it to disk.  The
+ * database may then later be opened by searchcon or apol.
+ *
+ * @param This function takes two parameters:
+ * <ol>
+ *   <li>file name to where to save database
+ *   <li>directory to start scanning
+ * </ol>
  */
 static int Apol_Create_FC_Index_File(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
-{	
-	if(argc != 3) {
-		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
-		return TCL_ERROR;
-	}	
+{
 #ifndef LIBSEFS
-	Tcl_AppendResult(interp, "You need to build apol with libsefs to use this feature!", (char *) NULL);
+	Tcl_SetResult(interp, "You need to build apol with libsefs to use this feature!", TCL_STATIC);
 	return TCL_ERROR;
-#else	
+#else
 	sefs_filesystem_db_t fsdata_local;
 	int rt;
-	
-	if(!is_valid_str_sz(argv[1])) {
-		Tcl_AppendResult(interp, "File string too large", (char *) NULL);
+	if (argc != 2) {
+		Tcl_SetResult(interp, "Need a database filename and a start directory.", TCL_STATIC);
 		return TCL_ERROR;
 	}
-	if(!is_valid_str_sz(argv[2])) {
-		Tcl_AppendResult(interp, "Directory string too large", (char *) NULL);
-		return TCL_ERROR;
-	}
-	
 	fsdata_local.dbh = NULL;
 	fsdata_local.fsdh = NULL;
 	rt = sefs_filesystem_db_populate(&fsdata_local, (char *) argv[2]);
- 	if (rt == -1) {
-		Tcl_AppendResult(interp, "Error populating database.\n", (char *) NULL);
+	if (rt == -1) {
+		Tcl_SetResult(interp, "Error populating database.", TCL_STATIC);
 		return TCL_ERROR;
 	} else if (rt == SEFS_NOT_A_DIR_ERROR) {
-		Tcl_AppendResult(interp, "The pathname (", argv[2], ") is not a directory.\n", (char *) NULL);
+		Tcl_SetResult(interp, "The pathname is not a directory.", TCL_STATIC);
 		return TCL_ERROR;
 	} else if (rt == SEFS_DIR_ACCESS_ERROR) {
-		Tcl_AppendResult(interp, "You do not have permission to read the directory ", argv[2], ".\n", (char *) NULL);
+		Tcl_SetResult(interp, "You do not have permission to read the directory", TCL_STATIC);
 		return TCL_ERROR;
 	}
 	if (sefs_filesystem_db_save(&fsdata_local, (char *) argv[1]) != 0) {
 		/* Make sure the database is closed and memory freed. */
 		sefs_filesystem_db_close(&fsdata_local);
-		Tcl_AppendResult(interp, "Error creating index file\n", (char *) NULL);
+		Tcl_SetResult(interp, "Error creating index file.", TCL_STATIC);
 		return TCL_ERROR;
 	}
 	sefs_filesystem_db_close(&fsdata_local);
-	
 	return TCL_OK;
 #endif
 }
 
-/* 
- * argv[1] - index file to load
+/**
+ * Load a file context database into memory.
+ *
+ * @param This function takes one parameter:
+ * <ol>
+ *   <li>index file to load
+ * </ol>
  */
 static int Apol_Load_FC_Index_File(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
-	if(argc != 2) {
-		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
-		return TCL_ERROR;
-	}
 #ifndef LIBSEFS
-	Tcl_AppendResult(interp, "You need to build apol with libsefs to use this feature!", (char *) NULL);
+	Tcl_SetResult(interp, "You need to build apol with libsefs to use this feature!", TCL_STATIC);
 	return TCL_ERROR;
-#else		
-	if(!is_valid_str_sz(argv[1])) {
-		Tcl_AppendResult(interp, "File string too large", (char *) NULL);
+#else
+	if (argc != 2) {
+		Tcl_SetResult(interp, "Need a database filename.", TCL_STATIC);
 		return TCL_ERROR;
 	}
 	if (fsdata != NULL) {
@@ -93,45 +109,47 @@ static int Apol_Load_FC_Index_File(ClientData clientData, Tcl_Interp *interp, in
 	} else {
 		fsdata = (sefs_filesystem_db_t*)malloc(sizeof(sefs_filesystem_db_t));
 		if (fsdata == NULL) {
-			Tcl_AppendResult(interp, "Out of memory\n", (char *) NULL);
+			Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
 			return TCL_ERROR;
 		}
 		memset(fsdata, 0, sizeof(sefs_filesystem_db_t));
 	}
 
- 	if (sefs_filesystem_db_load(fsdata, (char *) argv[1]) == -1) {
- 		Tcl_AppendResult(interp, "Loading of database failed.\n", (char *) NULL);
+	if (sefs_filesystem_db_load(fsdata, (char *) argv[1]) == -1) {
+		Tcl_SetResult(interp, "Loading of database failed.", TCL_STATIC);
 		return TCL_ERROR;
 	}
-	
 	return TCL_OK;
 #endif
 }
 
-/* 
- * No arguments.
+/**
+ * Close the currently opened file context database.  If there is no
+ * database then do nothing.
  */
 static int Apol_Close_FC_Index_DB(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
-	if(argc != 1) {
-		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
-		return TCL_ERROR;
-	}
 #ifdef LIBSEFS
 	if (fsdata != NULL) {
- 		sefs_filesystem_db_close(fsdata);
- 		free(fsdata);
- 		fsdata = NULL;
-	}	
+		sefs_filesystem_db_close(fsdata);
+		free(fsdata);
+		fsdata = NULL;
+	}
 #endif
 	return TCL_OK;
 }
 
 #ifdef LIBSEFS
+/**
+ * Append a sefs result tuple to a Tcl list.  The tuple consists of:
+ * <code>
+ *   { context object class path }
+ * </code>
+ */
 static int append_search_fc_index_to_list(Tcl_Interp *interp, sefs_search_ret_t *key, Tcl_Obj *result_list)
 {
 	sefs_search_ret_t *curr = key;
-	
+
 	/* walk the linked list */
 	while (curr) {
 		Tcl_Obj *fscon[3], *fscon_list;
@@ -166,24 +184,33 @@ static int append_search_fc_index_to_list(Tcl_Interp *interp, sefs_search_ret_t 
 
 /**
  * Assuming that the file contexts database has already been open,
- * return a list of file contexts (3-ple of context, object class,
- * path) that match the given criteria.
- *	argv[1] - list of user strings
- *	argv[2] - list of type strings
- *	argv[3] - list of object class strings
- *	argv[4] - list of MLS ranges
- *	argv[5] - list of path strings
- *	argv[6] - use regular expressions for user
- *	argv[7] - use regular expressions for type
- *	argv[8] - use regular expressions for MLS ranges
- *	argv[9] - use regular expressions for path
+ * return a list of file context tuples matching the search criteria.
+ * Each tuple consists of:
+ * <ul>
+ *   <li>file's context
+ *   <li>object class
+ *   <li>path
+ * </ul>
+ *
+ * @param argv This fuction takes nine parameters:
+ * <ol>
+ *   <li>list of user strings
+ *   <li>list of type strings
+ *   <li>list of object class strings
+ *   <li>list of MLS ranges
+ *   <li>list of path strings
+ *   <li>use regular expressions for user
+ *   <li>use regular expressions for type
+ *   <li>use regular expressions for MLS ranges
+ *   <li>use regular expressions for path
+ * </ol>
  */
 static int Apol_Search_FC_Index_DB(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
-{	
+{
 #ifndef LIBSEFS
 	Tcl_SetResult(interp, "You need to build apol with libsefs to use this feature!", TCL_STATIC);
 	return TCL_ERROR;
-#else		
+#else
 	sefs_search_keys_t search_keys;
 	CONST char **object_classes = NULL, **types = NULL, **users = NULL,
 	    **ranges = NULL, **paths = NULL;
@@ -195,7 +222,7 @@ static int Apol_Search_FC_Index_DB(ClientData clientData, Tcl_Interp *interp, in
 		Tcl_SetResult(interp, "Need a list of users, list of types, list of object classes, list of ranges, list of paths, user_regex, type_regex, range_regex, and path_regex", TCL_STATIC);
 		goto cleanup;
 	}
-	
+
 	if (fsdata == NULL) {
 		Tcl_SetResult(interp, "No Index File Loaded!", TCL_STATIC);
 		goto cleanup;
@@ -245,21 +272,26 @@ static int Apol_Search_FC_Index_DB(ClientData clientData, Tcl_Interp *interp, in
  * Assuming that the file contexts database has already been open,
  * return a list of item names for a particular table.	Valid table
  * names are: "types", "users", "classes", and "ranges".
+ *
+ * @param argv This function takes one parameter:
+ * <ol>
+ *   <li>table to return
+ * </ol>
  */
 static int Apol_FC_Index_DB_Get_Items(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
+#ifndef LIBSEFS
+	Tcl_SetResult(interp, "You need to build apol with libsefs!", TCL_STATIC);
+	return TCL_ERROR;
+#else
+	int list_sz = 0, i, request_type;
+	char **list_ret = NULL;
+	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
+
 	if (argc != 2) {
 		Tcl_SetResult(interp, "Need one of \"types\", \"users\", \"classes\", or \"ranges\".", TCL_STATIC);
 		return TCL_ERROR;
 	}
-#ifndef LIBSEFS
-	Tcl_SetResult(interp, "You need to build apol with libsefs!", TCL_STATIC);
-	return TCL_ERROR;
-#else		
-	int list_sz = 0, i, request_type;
-	char **list_ret = NULL;
-	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
-	
 	if (fsdata == NULL) {
 		Tcl_SetResult(interp, "No Index File Loaded!", TCL_STATIC);
 		return TCL_ERROR;
@@ -308,6 +340,10 @@ static int Apol_FC_Index_DB_Get_Items(ClientData clientData, Tcl_Interp *interp,
 #endif
 }
 
+/**
+ * Determine if the currently loadad file context database was built
+ * from a MLS system or not.  Returns 1 if it is MLS, 0 if not.
+ */
 static int Apol_FC_Is_MLS(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
 #ifndef LIBSEFS
@@ -332,6 +368,9 @@ static int Apol_FC_Is_MLS(ClientData clientData, Tcl_Interp *interp, int argc, C
 #endif
 }
 
+/**
+ * Returns 1 if libsefs was compiled into this library, 0 if not.
+ */
 static int Apol_IsLibsefs_BuiltIn(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
 	Tcl_Obj *result_obj;
@@ -345,7 +384,7 @@ static int Apol_IsLibsefs_BuiltIn(ClientData clientData, Tcl_Interp *interp, int
 	return TCL_OK;
 }
 
-int ap_tcl_fc_init(Tcl_Interp *interp) {
+int apol_tcl_fc_init(Tcl_Interp *interp) {
 	Tcl_CreateCommand(interp, "apol_Create_FC_Index_File", Apol_Create_FC_Index_File, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_Load_FC_Index_File", Apol_Load_FC_Index_File, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_Close_FC_Index_DB", Apol_Close_FC_Index_DB, NULL, NULL);

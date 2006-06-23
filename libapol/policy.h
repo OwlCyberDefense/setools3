@@ -1,58 +1,10 @@
-//typedef struct ap_constraint_expr {
-//	#define AP_CEXPR_NOT		1	/* not expr */
-//	#define AP_CEXPR_AND		2	/* expr and expr */
-//	#define AP_CEXPR_OR			3	/* expr or expr */
-//	#define AP_CEXPR_ATTR		4	/* attr op attr */
-//	#define AP_CEXPR_NAMES		5	/* attr op names */
-//	unsigned int expr_type;			/* expression type */
-//
-//	#define AP_CEXPR_USER			1	/* user */
-//	#define AP_CEXPR_ROLE			2	/* role */
-//	#define AP_CEXPR_TYPE			4	/* type */
-//	#define AP_CEXPR_TARGET			8	/* target if set, source otherwise */
-//	#define AP_CEXPR_XTARGET		16	/* special 3rd target for validatetrans rule */
-//	#define AP_CEXPR_MLS_LOW1_LOW2	32	/* low level 1 vs. low level 2 */
-//	#define AP_CEXPR_MLS_LOW1_HIGH2	64	/* low level 1 vs. high level 2 */
-//	#define AP_CEXPR_MLS_HIGH1_LOW2	128	/* high level 1 vs. low level 2 */
-//	#define AP_CEXPR_MLS_HIGH1_HIGH2 256	/* high level 1 vs. high level 2 */
-//	#define AP_CEXPR_MLS_LOW1_HIGH1	512	/* low level 1 vs. high level 1 */
-//	#define AP_CEXPR_MLS_LOW2_HIGH2	1024	/* low level 2 vs. high level 2 */
-//	unsigned int attr;			/* attribute */
-//
-//	#define AP_CEXPR_EQ			1	/* == or eq */
-//	#define AP_CEXPR_NEQ		2	/* != */
-//	#define AP_CEXPR_DOM		3	/* dom */
-//	#define AP_CEXPR_DOMBY		4	/* domby  */
-//	#define AP_CEXPR_INCOMP		5	/* incomp */
-//	unsigned int op;				/* operator */
-//
-//	ta_item_t *names;			/* this will index int apol structs so we can just figure out what it is at lookup time */
-//	#define AP_CEXPR_STAR		0x01
-//	#define AP_CEXPR_TILDA		0x02
-//	unsigned char name_flags;			/* flags for handling "*" and "~" in names list */
-//	struct ap_constraint_expr *next;
-//} ap_constraint_expr_t;
-
-/* the ap_constraint_t structure is used for both constraints
- * and validatetrans statements */
-//typedef struct ap_constraint {
-//	bool_t is_mls;
-//	ap_constraint_expr_t *expr;
-//	ta_item_t *perms;	/* index into policy_t array (not used for validatetrans) */
-//	ta_item_t *classes;	/* index into policy_t array */
-//	unsigned long lineno;	/* for use in apol and sediff */
-//} ap_constraint_t;
-
-/* typedef for clarity */
-//typedef struct ap_constraint ap_validatetrans_t;
-
-
-/******************** new stuff here ********************/
-
 /**
  * @file policy.h
  *
- * Public interface for SELinux policies.  (FIX ME!)
+ * Public interface for SELinux policies.  This function declares
+ * apol_policy_t, a convenience structure that contains all of the
+ * other structures use by the setools project.  Almost all setools
+ * files will need to #include this header.
  *
  * @author Kevin Carr  kcarr@tresys.com
  * @author Jeremy A. Mowery jmowery@tresys.com
@@ -121,7 +73,7 @@ extern int apol_policy_is_binary(apol_policy_t *p);
  * @return String that describes policy, or NULL upon error.  The
  * caller must free() this afterwards.
  */
-extern char *apol_get_policy_version_type_mls_str(apol_policy_t *p);
+extern char *apol_policy_get_version_type_mls_str(apol_policy_t *p);
 
 
 /**

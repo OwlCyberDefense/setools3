@@ -34,7 +34,6 @@ static struct option const opts[] =
 int Tcl_AppInit(Tcl_Interp *interp)
 {
 	char *script;
-	CONST char *args[2];
 	Tcl_DString command;
 	int rt;	
 
@@ -45,14 +44,12 @@ int Tcl_AppInit(Tcl_Interp *interp)
 		return TCL_ERROR;
 	}
 	/* apolicy packagae initialization */
-	if (Apol_Init(interp) == TCL_ERROR) {
+	if (apol_tcl_init(interp) == TCL_ERROR) {
      		return TCL_ERROR;
      	}
      	
      	/* find and start the TCL scripts */
-     	args[0] = NULL;
-     	args[1] = STARTUP_SCRIPT;
-     	if(Apol_GetScriptDir(NULL, interp, 2, args) != TCL_OK) {
+     	if (apol_tcl_get_startup_script(interp, STARTUP_SCRIPT) != TCL_OK) {
      		fprintf(stderr, "Error finding TCL script: %s\n", interp->result);
      		Tcl_DeleteInterp(interp);
      		Tcl_Exit(1);

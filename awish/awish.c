@@ -24,7 +24,7 @@ int Tcl_AppInit(Tcl_Interp *interp)
 		return TCL_ERROR;
 	}
 	/* apolicy packagae initialization */
-	if(Apol_Init(interp) == TCL_ERROR) {
+	if (apol_tcl_init(interp) == TCL_ERROR) {
      		return TCL_ERROR;
      	}
 
