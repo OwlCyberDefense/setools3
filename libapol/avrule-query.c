@@ -305,7 +305,7 @@ int apol_avrule_query_append_perm(apol_policy_t *p,
 	return 0;
 }
 
-int apol_avrule_query_set_bool_name(apol_policy_t *p,
+int apol_avrule_query_set_bool(apol_policy_t *p,
 				    apol_avrule_query_t *a,
 				    const char *bool_name)
 {

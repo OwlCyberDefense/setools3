@@ -30,6 +30,7 @@
  */
 
 #include "policy-query.h"
+#include "util.h"
 #include <errno.h>
 
 struct apol_cond_query {
@@ -110,5 +111,63 @@ int apol_cond_query_set_regex(apol_policy_t *p, apol_cond_query_t *c, int is_reg
 
 char *apol_cond_expr_render(apol_policy_t *p, qpol_iterator_t *iter)
 {
+	qpol_cond_expr_node_t *expr = NULL;
+	char *tmp = NULL, *bool_name = NULL;
+	int tmp_sz = 0, error = 0;
+	uint32_t expr_type = 0;
+	qpol_bool_t *cond_bool = NULL;
+
+	if (!p || !iter || qpol_iterator_end(iter)) {
+		ERR(p, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return NULL;
+	}
+
+	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		if (qpol_iterator_get_item(iter, (void**)&expr)) {
+			error = errno;
+			ERR(p, "%s", strerror(error));
+			goto err;
+		}
+		if (qpol_cond_expr_node_get_expr_type(p->qh, p->p, expr, &expr_type)) {
+			error = errno;
+			ERR(p, "%s", strerror(error));
+			goto err;
+		}
+		if (expr_type != QPOL_COND_EXPR_BOOL) {
+			if (append_str(&tmp, &tmp_sz, apol_cond_expr_type_to_str(expr_type))) {
+				ERR(p, "%s", strerror(ENOMEM));
+				error = ENOMEM;
+				goto err;
+			}
+		} else {
+			if (qpol_cond_expr_node_get_bool(p->qh, p->p, expr, &cond_bool)) {
+				error = errno;
+				ERR(p, "%s", strerror(error));
+				goto err;
+			}
+			if (qpol_bool_get_name(p->qh, p->p, cond_bool, &bool_name)) {
+				error = errno;
+				ERR(p, "%s", strerror(error));
+				goto err;
+			}
+			if (append_str(&tmp, &tmp_sz, bool_name)) {
+				ERR(p, "%s", strerror(ENOMEM));
+				error = ENOMEM;
+				goto err;
+			}
+		}
+		if (append_str(&tmp, &tmp_sz, " ")) {
+			ERR(p, "%s", strerror(ENOMEM));
+			error = ENOMEM;
+			goto err;
+		}	
+	}
+
+	return tmp;
+
+err:
+	free(tmp);
+	errno = error;
 	return NULL;
 }

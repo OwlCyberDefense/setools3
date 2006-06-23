@@ -292,7 +292,7 @@ int apol_terule_query_append_class(apol_policy_t *p,
 	return 0;
 }
 
-int apol_terule_query_set_bool_name(apol_policy_t *p,
+int apol_terule_query_set_bool(apol_policy_t *p,
 				    apol_terule_query_t *t,
 				    const char *bool_name)
 {
