@@ -166,6 +166,8 @@ static int perform_av_query(apol_policy_t *policy, options_t *opt, apol_vector_t
 		apol_avrule_query_set_source(policy, avq, opt->src_name, opt->indirect);
 	if (opt->tgt_name)
 		apol_avrule_query_set_target(policy, avq, opt->tgt_name, opt->indirect);
+	if (opt->bool_name)
+		apol_avrule_query_set_bool(policy, avq, opt->bool_name);
 	if (opt->class_name) {
 		if (apol_avrule_query_append_class(policy, avq, opt->class_name)) {
 			error = errno;
@@ -200,11 +202,14 @@ err:
 	return -1;
 };
 
-static void print_av_results(apol_policy_t *policy, apol_vector_t *v)
+static void print_av_results(apol_policy_t *policy, options_t *opt, apol_vector_t *v)
 {
 	size_t i, num_rules = 0;
 	qpol_avrule_t *rule = NULL;
-	char *tmp = NULL;
+	char *tmp = NULL, *expr = NULL;
+	qpol_iterator_t *iter = NULL;
+	qpol_cond_t *cond = NULL;
+	uint32_t enabled = 0, list = 0;
 
 	if (!policy || !v)
 		return;
@@ -219,10 +224,33 @@ static void print_av_results(apol_policy_t *policy, apol_vector_t *v)
 			break;
 		if (!(tmp = apol_avrule_render(policy, rule)))
 			break;
-		fprintf(stdout, "   %s\n", tmp);
+		if (opt->show_cond) {
+			if (qpol_avrule_get_cond(policy->qh, policy->p, rule, &cond))
+				break;
+			if (qpol_avrule_get_is_enabled(policy->qh, policy->p, rule, &enabled))
+				break;
+			if (cond) {
+				if (qpol_avrule_get_which_list(policy->qh, policy->p, rule, &list))
+					break;
+				if (qpol_cond_get_expr_node_iter(policy->qh, policy->p, cond, &iter))
+					break;
+				expr = apol_cond_expr_render(policy, iter);
+				qpol_iterator_destroy(&iter);
+				fprintf(stdout, "%c%c %s [ %s]\n", enabled?'E':'D', list?'T':'F', tmp, expr);
+			} else {
+				fprintf(stdout, "   %s\n", tmp);
+			}
+		} else {
+			fprintf(stdout, "   %s\n", tmp);
+		}
 		free(tmp);
 		tmp = NULL;
+		free(expr);
+		expr = NULL;
 	}
+
+	free(tmp);
+	free(expr);
 }
 
 static int perform_te_query(apol_policy_t *policy, options_t *opt, apol_vector_t **v)
@@ -257,6 +285,8 @@ static int perform_te_query(apol_policy_t *policy, options_t *opt, apol_vector_t
 		apol_terule_query_set_source(policy, teq, opt->src_name, opt->indirect);
 	if (opt->tgt_name)
 		apol_terule_query_set_target(policy, teq, opt->tgt_name, opt->indirect);
+	if (opt->bool_name)
+		apol_terule_query_set_bool(policy, teq, opt->bool_name);
 	if (opt->class_name) {
 		if (apol_terule_query_append_class(policy, teq, opt->class_name)) {
 			error = errno;
@@ -280,11 +310,14 @@ err:
 	return -1;
 }
 
-static void print_te_results(apol_policy_t *policy, apol_vector_t *v)
+static void print_te_results(apol_policy_t *policy, options_t *opt, apol_vector_t *v)
 {
 	size_t i, num_rules = 0;
 	qpol_terule_t *rule = NULL;
-	char *tmp = NULL;
+	char *tmp = NULL, *expr = NULL;
+	qpol_iterator_t *iter = NULL;
+	qpol_cond_t *cond = NULL;
+	uint32_t enabled = 0, list = 0;
 
 	if (!policy || !v)
 		return;
@@ -292,17 +325,40 @@ static void print_te_results(apol_policy_t *policy, apol_vector_t *v)
 	if (!(num_rules = apol_vector_get_size(v)))
 		return;
 
-	fprintf(stdout, "Found %zd te rules:\n", num_rules);
+	fprintf(stdout, "Found %zd type rules:\n", num_rules);
 
 	for (i = 0; i < num_rules; i++) {
 		if (!(rule = (qpol_terule_t*)apol_vector_get_element(v, i)))
 			break;
 		if (!(tmp = apol_terule_render(policy, rule)))
 			break;
-		fprintf(stdout, "   %s\n", tmp);
+		if (opt->show_cond) {
+			if (qpol_terule_get_cond(policy->qh, policy->p, rule, &cond))
+				break;
+			if (qpol_terule_get_is_enabled(policy->qh, policy->p, rule, &enabled))
+				break;
+			if (cond) {
+				if (qpol_terule_get_which_list(policy->qh, policy->p, rule, &list))
+					break;
+				if (qpol_cond_get_expr_node_iter(policy->qh, policy->p, cond, &iter))
+					break;
+				expr = apol_cond_expr_render(policy, iter);
+				qpol_iterator_destroy(&iter);
+				fprintf(stdout, "%c%c %s [ %s]\n", enabled?'E':'D', list?'T':'F', tmp, expr);
+			} else {
+				fprintf(stdout, "   %s\n", tmp);
+			}
+		} else {
+			fprintf(stdout, "   %s\n", tmp);
+		}
 		free(tmp);
 		tmp = NULL;
+		free(expr);
+		expr = NULL;
 	}
+
+	free(tmp);
+	free(expr);
 }
 
 static int perform_ra_query(apol_policy_t *policy, options_t *opt, apol_vector_t **v)
@@ -357,7 +413,7 @@ err:
 	return -1;
 }
 
-static void print_ra_results(apol_policy_t *policy, apol_vector_t *v)
+static void print_ra_results(apol_policy_t *policy, options_t *opt, apol_vector_t *v)
 {
 	size_t i, num_rules = 0;
 	qpol_role_allow_t *rule = NULL;
@@ -435,7 +491,7 @@ err:
 	return -1;
 }
 
-static void print_rt_results(apol_policy_t *policy, apol_vector_t *v)
+static void print_rt_results(apol_policy_t *policy, options_t *opt, apol_vector_t *v)
 {
 	size_t i, num_rules = 0;
 	qpol_role_trans_t *rule = NULL;
@@ -513,7 +569,7 @@ err:
 	return -1;
 }
 
-static void print_range_results(apol_policy_t *policy, apol_vector_t *v)
+static void print_range_results(apol_policy_t *policy, options_t *opt, apol_vector_t *v)
 {
 	size_t i, num_rules = 0;
 	qpol_range_trans_t *rule = NULL;
@@ -726,40 +782,50 @@ int main (int argc, char **argv)
 		rt = 1;
 		goto cleanup;
 	}
-	if (v)
-		print_av_results(policy, v);
+	if (v) {
+		print_av_results(policy, &cmd_opts, v);
+		fprintf(stdout, "\n");
+	}
 	apol_vector_destroy(&v, NULL);
 
 	if (perform_te_query(policy, &cmd_opts, &v)) {
 		rt = 1;
 		goto cleanup;
 	}
-	if (v)
-		print_te_results(policy, v);
+	if (v) {
+		print_te_results(policy, &cmd_opts, v);
+		fprintf(stdout, "\n");
+	}
 	apol_vector_destroy(&v, NULL);
 
 	if (perform_ra_query(policy, &cmd_opts, &v)) {
 		rt = 1;
 		goto cleanup;
 	}
-	if (v)
-		print_ra_results(policy, v);
+	if (v) {
+		print_ra_results(policy, &cmd_opts, v);
+		fprintf(stdout, "\n");
+	}
 	apol_vector_destroy(&v, NULL);
 
 	if (perform_rt_query(policy, &cmd_opts, &v)) {
 		rt = 1;
 		goto cleanup;
 	}
-	if (v)
-		print_rt_results(policy, v);
+	if (v) {
+		print_rt_results(policy, &cmd_opts, v);
+		fprintf(stdout, "\n");
+	}
 	apol_vector_destroy(&v, NULL);
 
 	if (perform_range_query(policy, &cmd_opts, &v)) {
 		rt = 1;
 		goto cleanup;
 	}
-	if (v)
-		print_range_results(policy, v);
+	if (v) {
+		print_range_results(policy, &cmd_opts, v);
+		fprintf(stdout, "\n");
+	}
 	apol_vector_destroy(&v, NULL);
 	rt = 0;
 
