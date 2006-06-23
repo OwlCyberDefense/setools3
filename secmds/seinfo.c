@@ -1359,15 +1359,15 @@ int main (int argc, char **argv)
 		stats = 1;
 	}
 	if (!search_opts)
-		search_opts = (POL_TYPE_SOURCE | POL_TYPE_BINARY);
+		search_opts = (QPOL_TYPE_SOURCE | QPOL_TYPE_BINARY);
 
 	if (argc - optind > 1) {
 		usage(argv[0], 1);
 		exit(1);
 	} else if (argc - optind < 1) {
-		rt = find_default_policy_file(search_opts, &policy_file);
+		rt = qpol_find_default_policy_file(search_opts, &policy_file);
 		if (rt != FIND_DEFAULT_SUCCESS) {
-			fprintf(stderr, "Default policy search failed: %s\n", find_default_policy_file_strerr(rt));
+			fprintf(stderr, "Default policy search failed: %s\n", qpol_find_default_policy_file_strerr(rt));
 			exit(1);
 		}
 	} else {
