@@ -42,7 +42,7 @@ int apol_policy_is_binary(apol_policy_t *p)
 	return (p->policy_type != QPOL_POLICY_KERNEL_SOURCE);
 }
 
-char *apol_get_policy_version_type_mls_str(apol_policy_t *p)
+char *apol_policy_get_version_type_mls_str(apol_policy_t *p)
 {
 	unsigned int version;
 	char *policy_type, *mls, buf[64];
