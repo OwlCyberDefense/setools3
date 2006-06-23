@@ -40,8 +40,22 @@
  *  policy file, defined in apol_tcl_other.c. */
 extern apol_policy_t *policydb;
 
-int Apol_Init(Tcl_Interp *interp);
-int Apol_GetScriptDir(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[]);
+/**
+ * Initializes the libapol-tcl library and registers all of the
+ * libapol-tcl commands.
+ */
+extern int apol_tcl_init(Tcl_Interp *interp);
+
+/**
+ * Determines the location of the main apol Tcl file, and assigns it
+ * to the Tcl interpreter's result field.
+ *
+ * @param interp Tcl interpreter, to store result.
+ * @param name of the Tcl file
+ *
+ * @return TCL_OK if apol.tcl was found, TCL_ERROR if not.
+ */
+extern int apol_tcl_get_startup_script(Tcl_Interp *interp, char *name);
 
 /**
  * If the callback arg embedded within the global apol policy is not
