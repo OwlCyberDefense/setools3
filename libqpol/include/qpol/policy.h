@@ -113,12 +113,20 @@ extern int qpol_close_policy(qpol_policy_t **policy);
 extern int qpol_handle_destroy(qpol_handle_t **handle);
 
 /**
- * Find the default policy file given a policy type. 
- * @param serach_opt Search options bitmask, defined in this file
- * @param policy_file_path Character buffer to store policy path in  
- * @return Returns one of the return codes defined in this file
+ *  Find the default policy file given a policy type. 
+ *  @param serach_opt Search options bitmask, defined in this file
+ *  @param policy_file_path Character buffer to store policy path in  
+ *  @return Returns one of the return codes defined in this file
  */
 extern int qpol_find_default_policy_file(unsigned int search_opt, char **policy_file_path);
+
+/**
+ *  Get a string for the error code of qpol_find_default_policy_file().
+ *  @param err Error code returned by qpol_find_default_policy_file().
+ *  @return a string describing the error. <b>The caller should not
+ *  free this string.</b>
+ */
+extern const char *qpol_find_default_policy_file_strerr(int err);
 
 /**
  *  Re-evaluate all conditionals in the policy updating the state

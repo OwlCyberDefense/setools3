@@ -55,6 +55,9 @@
 #include <qpol/queue.h>
 #include <qpol/expand.h>
 #include <qpol/cond_query.h>
+#include <qpol/constraint_query.h>
+#include <qpol/class_perm_query.h>
+#include <qpol/fs_use_query.h>
 
 /* redefine input so we can read from a string */
 /* borrowed from O'Reilly lex and yacc pg 157 */
@@ -71,7 +74,6 @@ extern unsigned long policydb_lineno;
 extern char source_file[];
 extern policydb_t *policydbp;
 extern int mlspol;
-
 
 /* Error TEXT definitions for decoding the above error definitions. */
 #define TEXT_BIN_POL_FILE_DOES_NOT_EXIST	"Could not locate a default binary policy file.\n"
@@ -94,14 +96,12 @@ extern int mlspol;
 #define TRUE    1
 typedef unsigned char bool_t;
 
-
 /* buffer for reading from file */
 typedef struct fbuf {
         char    *buf;
         size_t  sz;
         int     err;
 } qpol_fbuf_t;
-
 
 static int read_source_policy(policydb_t *p, char *progname)
 {
@@ -132,7 +132,6 @@ static int read_source_policy(policydb_t *p, char *progname)
 
         return 0;
 }
-
 
 static int qpol_init_fbuf(qpol_fbuf_t **fb)
 {
@@ -231,8 +230,6 @@ err_return:
         return rt;
 }
 
-
-
 static bool_t qpol_is_file_binpol(FILE *fp)
 {
         size_t sz;
@@ -253,9 +250,8 @@ static bool_t qpol_is_file_binpol(FILE *fp)
         return rt;
 }
 
-
 /* returns an error string based on a return error */
-const char* find_default_policy_file_strerr(int err)
+const char* qpol_find_default_policy_file_strerr(int err)
 {
 	switch(err) {
 	case BIN_POL_FILE_DOES_NOT_EXIST:
@@ -532,6 +528,75 @@ int qpol_find_default_policy_file(unsigned int search_opt, char **policy_file_pa
 	return INVALID_SEARCH_OPTIONS;
 }
 
+static int infer_policy_version(qpol_handle_t *handle, qpol_policy_t *policy)
+{
+	policydb_t *db = NULL;
+	qpol_class_t *obj_class = NULL;
+	qpol_iterator_t *iter = NULL;
+	qpol_fs_use_t *fsuse = NULL;
+	uint32_t behavior = 0;
+	size_t nvtrans = 0, fsusexattr = 0;
+
+	if (!handle || !policy) {
+		ERR(handle, "%s", strerror(EINVAL));
+		errno = EINVAL;
+		return STATUS_ERR;
+	}
+
+	db = &policy->p;
+
+	if (db->policyvers) {
+		/* version already set */
+		return STATUS_SUCCESS;
+	}
+
+	/* check fs_use for xattr and psid */
+	qpol_policy_get_fs_use_iter(handle, policy, &iter);
+	for (; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		qpol_iterator_get_item(iter, (void**)&fsuse);
+		qpol_fs_use_get_behavior(handle, policy, fsuse, &behavior);
+		/* not possible to have xattr and psid in same policy */
+		if (behavior == QPOL_FS_USE_XATTR) {
+			fsusexattr = 1;
+			break;
+		} else if (behavior == QPOL_FS_USE_PSID) {
+			qpol_iterator_destroy(&iter);
+			db->policyvers = 12;
+			return STATUS_SUCCESS;
+		}
+	}
+	qpol_iterator_destroy(&iter);
+
+	/* 19 & 20 : mls and validatetrans statements added */
+	qpol_policy_get_validatetrans_iter(handle, policy, &iter);
+	qpol_iterator_get_size(iter, &nvtrans);
+	if (db->mls || nvtrans) {
+		db->policyvers = 19;
+	}
+	/* 18 : the netlink_audit_socket class added */
+	else if (!qpol_policy_get_class_by_name(handle, policy, "netlink_audit_socket", &obj_class)) {
+		db->policyvers = 18;
+	}
+	/* 17 : IPv6 nodecon statements added */
+	else if (db->ocontexts[OCON_NODE6]) {
+		db->policyvers = 17;
+	}
+	/* 16 : conditional policy added */
+	else if (db->p_bool_val_to_name[0]) {
+		db->policyvers = 16;
+	}
+	/* 15 */
+	else if (fsusexattr) {
+		db->policyvers = 15;
+	}
+	/* 12 */
+	else {
+		db->policyvers = 12;
+	}
+
+	return STATUS_SUCCESS;
+}
+
 int qpol_open_policy_from_file(const char *path, qpol_policy_t **policy, qpol_handle_t **handle, qpol_handle_callback_fn_t fn, void *varg)
 {
 	int error = 0, retv = -1;
@@ -627,6 +692,10 @@ int qpol_open_policy_from_file(const char *path, qpol_policy_t **policy, qpol_ha
 			goto err;
 		}
 
+		if (infer_policy_version(*handle, *policy)) {
+			error = errno;
+			goto err;
+		}
 	}
 
 	fclose(infile);
@@ -693,7 +762,6 @@ err:
 	return -1;
 
 }
-
 
 int qpol_close_policy(qpol_policy_t **policy)
 {
