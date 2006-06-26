@@ -43,7 +43,7 @@ typedef struct apol_fs_use_query apol_fs_use_query_t;
  * @param p Policy within which to look up genfscons.
  * @param g Structure containing parameters for query.	If this is
  * NULL then return all genfscons.
- * @param v Reference to a vector of sepol_genfscon_t. The vector will
+ * @param v Reference to a vector of qpol_genfscon_t. The vector will
  * be allocated by this function. The caller must call
  * apol_vector_destroy() afterwards, <b>passing free() as the second
  * parameter</b>.  This will be set to NULL upon no results or upon
@@ -113,7 +113,7 @@ extern int apol_genfscon_query_set_path(apol_policy_t *p,
  * @param p Policy handler, to report errors.
  * @param g Genfscon query to set.
  * @param class Limit query to only genfscons with this object class,
- * which must be one of SEPOL_CLASS_BLK_FILE, SEPOL_CLASS_CHR_FILE,
+ * which must be one of QPOL_CLASS_BLK_FILE, QPOL_CLASS_CHR_FILE,
  * etc., or negative to unset this field.
  *
  * @return 0 on success, negative on error.
@@ -162,7 +162,7 @@ extern char *apol_genfscon_render(apol_policy_t *p, qpol_genfscon_t *genfscon);
  * @param p Policy within which to look up fs_use statements.
  * @param f Structure containing parameters for query.	If this is
  * NULL then return all fs_use statements.
- * @param v Reference to a vector of sepol_fs_use_t.  The vector will
+ * @param v Reference to a vector of qpol_fs_use_t.  The vector will
  * be allocated by this function. The caller must call
  * apol_vector_destroy() afterwards, but <b>must not</b> free the
  * elements within it.	This will be set to NULL upon no results or
@@ -215,8 +215,8 @@ extern int apol_fs_use_query_set_filesystem(apol_policy_t *p,
  * @param p Policy handler, to report errors.
  * @param f fs_use query to set.
  * @param behavior Limit query to only fs_use statements with this
- * object class, which must be one of SEPOL_FS_USE_XATTR,
- * SEPOL_FS_USE_TRANS, etc., or negative to unset this field.
+ * object class, which must be one of QPOL_FS_USE_XATTR,
+ * QPOL_FS_USE_TRANS, etc., or negative to unset this field.
  *
  * @return 0 on success, negative on error.
  */

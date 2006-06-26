@@ -58,14 +58,14 @@ apol_vector_t *apol_vector_create_with_capacity(size_t cap);
 
 /**
  *  Allocate and return a vector that has been initialized with the
- *  contents of a sepol iterator.  <b>This function merely makes a
+ *  contents of a qpol iterator.  <b>This function merely makes a
  *  shallow copy of the iterator's contents</b>; any memory ownership
  *  restrictions imposed by the iterator apply to this vector as well.
  *  Also note that this function begins copying from the iterator's
  *  current position, leaving the iterator at its end position
  *  afterwards.
  *
- *  @param iter sepol iterator from which to obtain vector's contents.
+ *  @param iter qpol iterator from which to obtain vector's contents.
  *
  *  @return A pointer to a newly created vector on success and NULL on
  *  failure.  If the call fails, errno will be set.  The caller is
