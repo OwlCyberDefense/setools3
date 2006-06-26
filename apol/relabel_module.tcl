@@ -10,98 +10,305 @@
 #
 # This is the implementation of the interface for 
 # Relabeling Analysis
-##############################################################
-# ::Apol_Analysis_relabel module namespace
-##############################################################
 
 namespace eval Apol_Analysis_relabel {
-    variable VERSION 1
+    variable vals
+    variable widgets
+    Apol_Analysis::registerAnalysis "Apol_Analysis_relabel" "Direct Relabel"
+}
+
+proc Apol_Analysis_relabel::open {} {
+    variable widgets
+    Apol_Widget::resetTypeComboboxToPolicy $widgets(type)
+}
+
+proc Apol_Analysis_relabel::close {} {
+    variable widgets
+    reinitializeVals
+    reinitializeWidgets
+    Apol_Widget::clearTypeCombobox $widgets(type)
+}
+
+proc Apol_Analysis_relabel::getInfo {} {
+    return "Direct relabel analysis is designed to facilitate querying a policy
+for both potential changes to object labels and relabel privileges
+granted to a subject. These two modes are respectively called Object
+Mode and Subject Mode.
+
+\nOBJECT MODE
+In object mode the user specifies a starting or ending type and either
+To, From, or Both. When To is selected all types to which the starting
+type can be relabeled will be displayed. When From is selected all
+types from which the ending type can be relabeled will be
+displayed. Both will, obviously, do both analyses.
+
+\nSUBJECT MODE
+In subject mode the user specifies only a subject type. Two lists of
+types will be displayed corresponding to all of the types To which the
+subject can relabel and From which the subject can relabel.
+
+\nOPTIONAL RESULT FILTERS
+Results may be filtered in several ways. The end types resulting from
+a query may be filtered by regular expression. The Advanced Filters
+provide the option of selecting which object classes to include in the
+analysis and which types to include as subjects of relabeling
+operations. Note, excluded subjects are ignored in subject mode
+because only the selected subject type is used as a subject."
+}
+
+proc Apol_Analysis_relabel::create {options_frame} {
+    variable vals
+    variable widgets
+
+    reinitializeVals
+
+    set mode_tf [TitleFrame $options_frame.mode -text "Mode"]
+    pack $mode_tf -side left -padx 2 -pady 2 -expand 0 -fill y
+    set object_mode [radiobutton [$mode_tf getframe].object \
+                         -text "Object mode" -value "object" \
+                         -variable Apol_Analysis_relabel::vals(mode)]
+    pack $object_mode -anchor w
+    set widgets(mode:to) [checkbutton [$mode_tf getframe].to \
+                                -text "To" \
+                                -variable Apol_Analysis_relabel::vals(mode:to)]
+    $widgets(mode:to) configure -command \
+        [list Apol_Analysis_relabel::toggleToFromPushed $widgets(mode:to)]
+    set widgets(mode:from) [checkbutton [$mode_tf getframe].from \
+                                -text "From" \
+                                -variable Apol_Analysis_relabel::vals(mode:from)]
+    $widgets(mode:from) configure -command \
+        [list Apol_Analysis_relabel::toggleToFromPushed $widgets(mode:from)]
+    pack $widgets(mode:to) $widgets(mode:from) -anchor w -padx 8
+    set subject_mode [radiobutton [$mode_tf getframe].subject \
+                          -text "Subject Mode" -value "subject" \
+                          -variable Apol_Analysis_relabel::vals(mode)]
+    pack $subject_mode -anchor w -pady 4
+    trace add variable Apol_Analysis_relabel::vals(mode) write \
+        Apol_Analysis_relabel::toggleModeSelected
+   
+    set req_tf [TitleFrame $options_frame.req -text "Required Parameters"]
+    pack $req_tf -side left -padx 2 -pady 2 -expand 0 -fill y
+    set l [label [$req_tf getframe].l -textvariable Apol_Analysis_relabel::vals(type:label)]
+    pack $l -anchor w
+    set widgets(type) [Apol_Widget::makeTypeCombobox [$req_tf getframe].type]
+    pack $widgets(type)
     
-    variable info_button_text \
-	"Direct relabel analysis is designed to facilitate querying a \
-	policy for both potential changes to object labels and relabel \
-	privileges granted to a subject. These two modes are respectively \
-	called Object Mode and Subject Mode.\n\n \
-	OBJECT MODE\n \
-	In object mode the user specifies a starting or ending type and \
-	either To, From, or Both. When To is selected all types to which \
-	the starting type can be relabeled will be displayed. When From \
-	is selected all types from which the ending type can be relabeled \
-	will be displayed. Both will, obviously, do both analyses.\n\n \
-	SUBJECT MODE\n \
-	In subject mode the user specifies only a subject type. Two lists \
-	of types will be displayed corresponding to all of the types To \
-	which the subject can relabel and From which the subject can \
-	relabel.\n\n \
-	OPTIONAL RESULT FILTERS\n \
-	Results may be filtered in several ways. The end types resulting \
-	from a query may be filtered by regular expression. The Advanced \
-	Filters provide the option of selecting which object classes to \
-	include in the analysis and which types to include as subjects \
-	of relabeling operations. Note, excluded subjects are ignored in \
-	subject mode because only the selected subject type is used as \
-	a subject."
-    
-	variable widget_vars 
-	variable widgets
-	# name of widget holding most recently executed assertion
-	variable most_recent_results 	""
-	# Advanced filter dialog widget
-	variable advanced_filter_Dlg
-	set advanced_filter_Dlg .apol_relabel_advanced_filter_Dlg
+    set filter_tf [TitleFrame $options_frame.filter -text "Optional Result Filters:"]
+    pack $filter_tf -side left -padx 2 -pady 2 -expand 1 -fill both
+    set widgets(regexp) [Apol_Widget::makeRegexpEntry [$filter_tf getframe].end]
+    $widgets(regexp).cb configure -text "Filter result types using regular expression"
+    pack $widgets(regexp) -anchor nw
+    set advanced [button [$filter_tf getframe].adv -text "Advanced Filters"]
+    pack $advanced -pady 4 -anchor w
+}
 
-	variable excluded_tag		" (Excluded)"	
+proc Apol_Analysis_relabel::newAnalysis {} {
+    if {[set rt [checkParams]] != {}} {
+        return $rt
+    }
+    if {[catch {analyze} results]} {
+        return $results
+    }
+    puts $results
+    return {}
+}
 
-	# defined tag names for output 
-	variable title_tag		TITLE
-	variable title_type_tag		TITLE_TYPE
-	variable subtitle_tag		SUBTITLES
-	variable type_tag		TYPE
+proc Apol_Analysis_relabel::updateAnalysis {f} {
+    if {[set rt [checkParams]] != {}} {
+        return $rt
+    }
+    puts [analyze]
+    return {}
+}
+
+proc Apol_Analysis_relabel::reset {} {
+    reinitializeVals
+    reinitializeWidgets
+}
+
+proc Apol_Analysis_relabel::switchTab {query_options} {
+}
+
+proc Apol_Analysis_relabel::saveQuery {channel} {
+    variable vals
+    foreach {key value} [array get vals] {
+        puts $channel "$key $value"
+    }
+}
+
+proc Apol_Analysis_relabel::loadQuery {channel} {
+    variable vals
+    while {[gets $channel line] >= 0} {
+        set line [string trim $line]
+        # Skip empty lines and comments
+        if {$line == {} || [string index $line 0] == "#"} {
+            continue
+        }
+        regexp -line -- {^(\S+)( (.+))?} $line -> key --> value
+        set vals($key) $value
+    }
+}
+
+proc Apol_Analysis_foo::gotoLine {tab line_num} {
+}
+
+proc Apol_Analysis_foo::search {tab str case_Insensitive regExpr srch_Direction } {
+}
+
+
+#################### private functions below ####################
+
+proc Apol_Analysis_relabel::reinitializeVals {} {
+    variable vals
+
+    array set vals {
+        mode object
+        mode:to 1
+        mode:from 0
+
+        type:label "Starting type"
+        type {}
+
+        regexp:enable 0
+        regexp {}
+    }
+}
+
+proc Apol_Analysis_relabel::reinitializeWidgets {} {
+    variable vals
+    variable widgets
+
+    Apol_Widget::setTypeComboboxValue $widgets(type) $vals(type)
+    Apol_Widget::setRegexpEntryValue $widgets(regexp) $vals(regexp:enable) $vals(regexp)
+    updateTypeLabel
+}
+
+proc Apol_Analysis_relabel::toggleModeSelected {name1 name2 op} {
+    variable vals
+    variable widgets
+    if {$vals(mode) == "object"} {
+        $widgets(mode:to) configure -state normal
+        $widgets(mode:from) configure -state normal
+    } else {
+        $widgets(mode:to) configure -state disabled
+        $widgets(mode:from) configure -state disabled
+    }
+    updateTypeLabel
+}
+
+# disallow both to and from to be deselected
+proc Apol_Analysis_relabel::toggleToFromPushed {cb} {
+    variable vals
+    if {!$vals(mode:to) && !$vals(mode:from)} {
+        $cb select
+    }
+    updateTypeLabel
+}
+
+proc Apol_Analysis_relabel::updateTypeLabel {} {
+    variable vals
+    if {$vals(mode) == "subject"} {
+        set vals(type:label) "Subject"
+    } elseif {$vals(mode:to) && $vals(mode:from)} {
+        set vals(type:label) "Starting/ending type"
+    } elseif {$vals(mode:from)} {
+        set vals(type:label) "Ending type"
+    } else {
+        set vals(type:label) "Starting type"
+    }
+}
+
+
+#################### functions that do analyses ####################
+
+proc Apol_Analysis_relabel::checkParams {} {
+    variable vals
+    variable widgets
+    if {![ApolTop::is_policy_open]} {
+        return "No current policy file is opened!"
+    }
+    set type [Apol_Widget::getTypeComboboxValueAndAttrib $widgets(type)]
+    if {[lindex $type 0] == {}} {
+        return "No type was selected."
+    }
+    set vals(type) $type
+    set use_regexp [Apol_Widget::getRegexpEntryState $widgets(regexp)]
+    set regexp [Apol_Widget::getRegexpEntryValue $widgets(regexp)]
+    if {$use_regexp && $regexp == {}} {
+            return "No regular expression provided."
+    }
+    set vals(regexp:enable) $use_regexp
+    set vals(regexp) $regexp
+    return {}  ;# all parameters passed, now ready to do search
+}
+
+proc Apol_Analysis_relabel::analyze {} {
+    variable vals
+    if {$vals(mode) == "object"} {
+        if {$vals(mode:to) && $vals(mode:from)} {
+            set mode "both"
+        } elseif {$vals(mode:to)} {
+            set mode "to"
+        } else {
+            set mode "from"
+        }
+    } else {
+        set mode "subject"
+    }
+    if {$vals(regexp:enable)} {
+        set regexp $vals(regexp)
+    } else {
+        set regexp {}
+    }
+    apol_RelabelAnalysis $mode $vals(type) $regexp
+}
+
+proc Apol_Analysis_relabel::old_analysis {} {
+ 
+    # collate user options into a single relabel analysis query    
+	variable widget_vars
+	variable most_recent_results
 	
-	# Tree nodes
-	variable top_node		TOP_NODE
+	# If the advanced options object doesn't exist, then create it.
+	if {![array exists widget_vars] || [array names widget_vars "$advanced_filter_Dlg,name"] == ""} {
+		Apol_Analysis_relabel::adv_options_create_object $advanced_filter_Dlg
+	} 
+		
+	foreach class $widget_vars($advanced_filter_Dlg,incl_class_list) {
+		lappend objs_list $class 
+	}
+	foreach subj $widget_vars($advanced_filter_Dlg,master_excl_subj_list) {
+		lappend subj_list $subj
+	}
+
+	if {$objs_list == ""} {
+		tk_messageBox -icon error -type ok \
+		    -title "Relabel Analysis Error" \
+		    -message "You cannot exclude all object classes in the filter!"
+		return -code error
+	}
+
+	if {[llength $widget_vars($advanced_filter_Dlg,master_incl_subj_list)] == 0} {
+		tk_messageBox -icon error -type ok \
+		    -title "Relabel Analysis Error" \
+		    -message "You cannot exclude all subject types in the filter!"
+		return -code error
+	}
 	
-	variable relabelto_perm		"relabelto"
-	variable relabelfrom_perm	"relabelfrom"
 	
-	# Within the namespace command for the module, you must call
-	# Apol_Analysis::register_analysis_modules, the first argument is
-	# the namespace name of the module, and the second is the
-	# descriptive display name you want to be displayed in the GUI
-	# selection box.
-	Apol_Analysis::register_analysis_modules "Apol_Analysis_relabel" "Direct Relabel"
+	if [catch {apol_RelabelAnalysis $widget_vars(start_type) $mode $objs_list \
+		$subj_list $widget_vars(endtype_sel) $widget_vars(end_type)} results] {
+		tk_messageBox -icon error -type ok \
+		    -title "Relabel Analysis Error" -message $results
+		return -code error
+	}
+	set most_recent_results $results
+	Apol_Analysis_relabel::create_widgets_to_display_results $results $results_frame
+	return 0
 }
 
-proc Apol_Analysis_relabel::get_short_name {} {
-    return "Relabel"
-}
 
-# Apol_Analysis_relabel::initialize is called when the tool first
-# starts up.  The analysis has the opportunity to do any additional
-# initialization it must do that wasn't done in the initial namespace
-# eval command.
-proc Apol_Analysis_relabel::initialize { } {
-	set widget_vars(mode) "to"
-	set widget_vars(to_mode) 1
-	set widget_vars(from_mode) 1
-    	return 0
-}
 
-# Returns the text to display whenever the user hits the 'Info'
-# button.
-proc Apol_Analysis_relabel::get_analysis_info {} {
-    return $Apol_Analysis_relabel::info_button_text
-}
-
-# Returns the name of the widget that contains the results for the
-# currently selected results tab.  This widget should have been
-# created by [do_analysis] below.  The module knows which result tab
-# is raised due to the most recent call
-# [set_display_to_results_state].
-proc Apol_Analysis_relabel::get_results_raised_tab {} {
-    variable widget_vars
-    return $widget_vars(rtext)
-}
 
 proc Apol_Analysis_relabel::create_widgets_to_display_results {results results_frame} {
 	variable widget_vars
@@ -274,147 +481,10 @@ proc Apol_Analysis_relabel::create_widgets_to_display_results {results results_f
 	$widget_vars(rtext) configure -state disabled
 }
 
-# The GUI will call Apol_Analysis_relabel::do_analysis when the
-# module is to perform its analysis.  The module should know how to
-# get its own option information.  The options are displayed via
-# Apol_Analysis_relabel::do_analysis.
-proc Apol_Analysis_relabel::do_analysis {results_frame} {
-	# collate user options into a single relabel analysis query    
-	variable widget_vars
-	variable most_recent_results
-	variable advanced_filter_Dlg
-	
-	if {![ApolTop::is_policy_open]} {
-		tk_messageBox -icon error -type ok \
-		    -title "Relabel Analysis Error" \
-		    -message "No current policy file is opened!"
-		return -code error
-	}
-	# convert the object permissions list into Tcl lists
-	set objs_list ""
-	set subj_list ""
-	
-	# If the advanced options object doesn't exist, then create it.
-	if {![array exists widget_vars] || [array names widget_vars "$advanced_filter_Dlg,name"] == ""} {
-		Apol_Analysis_relabel::adv_options_create_object $advanced_filter_Dlg
-	} 
-		
-	foreach class $widget_vars($advanced_filter_Dlg,incl_class_list) {
-		lappend objs_list $class 
-	}
-	foreach subj $widget_vars($advanced_filter_Dlg,master_excl_subj_list) {
-		lappend subj_list $subj
-	}
-
-	if {$objs_list == ""} {
-		tk_messageBox -icon error -type ok \
-		    -title "Relabel Analysis Error" \
-		    -message "You cannot exclude all object classes in the filter!"
-		return -code error
-	}
-
-	if {[llength $widget_vars($advanced_filter_Dlg,master_incl_subj_list)] == 0} {
-		tk_messageBox -icon error -type ok \
-		    -title "Relabel Analysis Error" \
-		    -message "You cannot exclude all subject types in the filter!"
-		return -code error
-	}
-	
-	if {$widget_vars(mode) == "object"} {
-		if {$widget_vars(to_mode) && $widget_vars(from_mode)} {
-			set mode "both"
-		} elseif {$widget_vars(to_mode)} {
-			set mode "to"
-		} else {
-			set mode "from"
-		}
-	} else {
-		set mode "subject"
-	} 
-	
-	if [catch {apol_RelabelAnalysis $widget_vars(start_type) $mode $objs_list \
-		$subj_list $widget_vars(endtype_sel) $widget_vars(end_type)} results] {
-		tk_messageBox -icon error -type ok \
-		    -title "Relabel Analysis Error" -message $results
-		return -code error
-	}
-	set most_recent_results $results
-	Apol_Analysis_relabel::create_widgets_to_display_results $results $results_frame
-	return 0
-}
-
-# Apol_Analysis_relabel::close must exist; it is called when a
-# policy is closed.  Typically you should reset any context or option
-# variables you have.
-proc Apol_Analysis_relabel::close { } {
-    Apol_Analysis_relabel::set_widgets_to_initial_open_state
-}
-
 proc Apol_Analysis_relabel::set_widgets_to_initial_open_state { } {
     Apol_Analysis_relabel::adv_options_destroy_dialog $Apol_Analysis_relabel::advanced_filter_Dlg
     Apol_Analysis_relabel::init_widget_vars
     Apol_Analysis_relabel::init_widget_state
-}
-
-# Apol_Analysis_relabel::open must exist; it is called when a
-# policy is opened.
-proc Apol_Analysis_relabel::open { } {
-    Apol_Analysis_relabel::set_widgets_to_initial_open_state
-}
-
-# Called whenever a user loads a query file.  Clear away the old
-# contents of the assertion file and replace it with the remainder
-# from $file_channel.
-proc Apol_Analysis_relabel::load_query_options {file_channel parentDlg} {
-    variable VERSION widget_vars
-    if {[gets $file_channel] > $VERSION} {
-        return -code error "The specified query version is not allowed."
-    }
-    array set Apol_Analysis_relabel::widget_vars [read $file_channel]
-    Apol_Analysis_relabel::init_widget_state
-    return 0
-}
-
-# Called whenever a user saves a query
-#	- module_name - name of the analysis module
-#	- file_channel - file channel identifier of the query file to write to.
-#	- file_name - name of the query file
-proc Apol_Analysis_relabel::save_query_options {module_name file_channel file_name} {
-	variable VERSION 
-	variable widget_vars
-
-	puts $file_channel $module_name
-	puts $file_channel $VERSION
-	puts $file_channel [array get Apol_Analysis_relabel::widget_vars] 
-
-	return 0
-}
-
-# Captures the current set of options, which is then later restored by
-# [set_display_to_results_tab].
-proc Apol_Analysis_relabel::get_current_results_state { } {
-    variable widget_vars
-    return [array get Apol_Analysis_relabel::widget_vars]
-}
-
-# Apol_Analysis_relabel::set_display_to_results_state is called to
-# reset the options or any other context that analysis needs when the
-# GUI switches back to an existing analysis.  options is a list that
-# we created in a previous get_current_results_state() call.
-proc Apol_Analysis_relabel::set_display_to_results_state { query_options } {
-    variable widget_vars
-    array set Apol_Analysis_relabel::widget_vars $query_options
-    Apol_Analysis_relabel::init_widget_state
-}
-
-# Apol_Analysis_relabel::free_results_data is called to handle any
-# cleanup of module options prior to [destroy]ing its parent frame.
-# There are three times this function is called: when using the
-# 'Update' button, when closing its result tab, and when closing all
-# tabs.  query_options is a list that we created in a previous
-# get_current_results_state() call, from which we extract the
-# subwidget pathnames for the results frame.
-proc Apol_Analysis_relabel::free_results_data {query_options} {  
 }
 
 
@@ -854,24 +924,6 @@ proc Apol_Analysis_relabel::adv_options_incl_excl_types {path_name remove_list_1
 }
 
 # ------------------------------------------------------------------------------
-#  Command Apol_Analysis_relabel::select_all_lbox_items
-#	- Takes a Tk listbox widget as an argument.
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_relabel::select_all_lbox_items {lbox} {
-        $lbox selection set 0 end
-        return 0
-}
-
-# ------------------------------------------------------------------------------
-#  Command Apol_Analysis_relabel::clear_all_lbox_items
-#	- Takes a Tk listbox widget as an argument.
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_relabel::clear_all_lbox_items {lbox} {
-        $lbox selection clear 0 end
-        return 0
-}
-
-# ------------------------------------------------------------------------------
 #  Command Apol_Analysis_relabel::adv_options_filter_list_by_attrib
 #	filter_list_1 - list to be filtered
 #	master_list_1 - master (unfiltered) list
@@ -1242,188 +1294,6 @@ proc Apol_Analysis_relabel::adv_options_create_dialog {path_name title_txt} {
 }
 
 
-# ------------------------------------------------------------------------------
-#  Command Apol_Analysis_relabel::change_types_list
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_relabel::change_types_list {type_cmbox attrib_cmbox clear_type} { 
-	upvar #0 [$attrib_cmbox cget -textvariable] attrib
-	
-	if {$attrib != ""} {
-		if {$clear_type} {
-			$type_cmbox configure -text ""		   
-		}
-            set attrib_typesList [lsort [lindex [apol_GetAttribs] 0 1]]
-		$type_cmbox configure -values $attrib_typesList
-        } else {
-        	set attrib_typesList $Apol_Types::typelist
-		set idx [lsearch -exact $attrib_typesList "self"]
-		if {$idx != -1} {
-			set attrib_typesList [lreplace $attrib_typesList $idx $idx]
-		}
-        	$type_cmbox configure -values $attrib_typesList
-        }
-     	return 0
-}
-
-# ------------------------------------------------------------------------------
-#  Command Apol_Analysis_relabel::config_attrib_comboBox_state
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_relabel::config_attrib_comboBox_state {checkbttn attrib_cbox type_cbox change_list} { 
-	upvar #0 [$checkbttn cget -variable] cb_val
-	upvar #0 [$attrib_cbox cget -textvariable] attrib_val
-	upvar #0 [$type_cbox cget -textvariable] type_val
-	
-	if {$cb_val} {
-		$attrib_cbox configure -state normal -entrybg white
-		if {$change_list} {
-			Apol_Analysis_tra::change_types_list $type_cbox $attrib_cbox 1
-		}
-	} else {
-		$attrib_cbox configure -state disabled -entrybg $ApolTop::default_bg_color
-		set attrib_typesList $Apol_Types::typelist
-        	set idx [lsearch -exact $attrib_typesList "self"]
-		if {$idx != -1} {
-			set attrib_typesList [lreplace $attrib_typesList $idx $idx]
-		}
-        	$type_cbox configure -values $attrib_typesList
-	}
-	
-     	return 0
-}
-
-# ------------------------------------------------------------------------------
-#  Command Apol_Analysis_relabel::config_endtype_state
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_relabel::config_endtype_state {} {
-	variable widgets
-	variable widget_vars
-	
-        if {$widget_vars(endtype_sel)} {
-	        $widgets(entry_end) configure -state normal -background white
-	} else {
-	        $widgets(entry_end) configure -state disabled -background $ApolTop::default_bg_color
-	}
-        return 0
-}
-
-proc Apol_Analysis_relabel::init_widget_state { } {
-	variable widgets
-	variable widget_vars
-	
-	# set initial widget states
-	populate_lists 
-	toggle_attributes
-	Apol_Analysis_relabel::config_endtype_state
-	if {$widget_vars(mode) ==  "object"} {
-		set_mode_object
-	} else {
-		set_mode_subject
-	}
-}
-
-proc Apol_Analysis_relabel::init_widget_vars { } {
-	variable widget_vars
-	array unset widget_vars
-	
-	set widget_vars(mode) 		"object"
-	set widget_vars(to_mode) 	1
-	set widget_vars(from_mode) 	1
-	set widget_vars(endtype_sel) 	0
-	set widget_vars(end_type) 	""
-	set widget_vars(start_attrib_ch) 0
-	set widget_vars(start_attrib)	""
-	set widget_vars(start_type)	""
-}
-
-# Apol_Analysis_relabel::display_mod_options is called by the GUI to
-# display the analysis options interface the analysis needs.  Each
-# module must know how to display their own options, as well bind
-# appropriate commands and variables with the options GUI.  opts_frame
-# is the name of a frame in which the options GUI interface is to be
-# packed.
-proc Apol_Analysis_relabel::display_mod_options { opts_frame } {    
-    variable widgets
-
-    array unset widgets
-    Apol_Analysis_relabel::init_widget_vars
-    set option_f [frame $opts_frame.option_f]
-    set mode_tf [TitleFrame $option_f.mode_tf -text "Mode"]
-    set mode_obj_f [frame [$mode_tf getframe].mode_obj_f]
-    set mode_subj_f [frame [$mode_tf getframe].mode_subj_f]
-    set widgets(objectMode_cb)  [radiobutton $mode_obj_f.objectMode_cb \
-                            -text "Object Mode" -value "object" \
-                            -variable Apol_Analysis_relabel::widget_vars(mode) \
-                            -command [namespace code set_mode_object]]
-    set widgets(subjectMode_cb) [radiobutton $mode_subj_f.subjectMode_cb \
-                       -text "Subject Mode" -value "subject" \
-                       -variable Apol_Analysis_relabel::widget_vars(mode) \
-                       -command [namespace code set_mode_subject]]
-    set widgets(relabelto_rb) [checkbutton $mode_obj_f.relabelto_rb \
-                          -text "To" \
-                          -variable Apol_Analysis_relabel::widget_vars(to_mode) \
-                          -command [namespace code set_mode_relabelto]]
-    set widgets(relabelfrom_rb) [checkbutton $mode_obj_f.relabelfrom_rb \
-                            -text "From"  \
-                            -variable Apol_Analysis_relabel::widget_vars(from_mode)\
-                            -command [namespace code set_mode_relabelfrom]]
-   
-    set req_tf [TitleFrame $option_f.req_tf -text "Required parameters"]
-    set start_f [frame [$req_tf getframe].start_f]
-    set attrib_f [frame [$req_tf getframe].attrib_frame]
-    set widgets(start_l) [label $start_f.start_l -anchor w]
-    set widgets(start_cb) [ComboBox $start_f.start_cb -editable 1 -autopost 1 \
-                               -entrybg white -width 16 \
-                               -textvariable Apol_Analysis_relabel::widget_vars(start_type)]
-    	
-    set widgets(start_attrib_cb) [ComboBox $attrib_f.start_attrib_cb -autopost 1 \
-                -editable 1 -entrybg white -width 16 -state disabled \
-                -vcmd [namespace code [list set_types_list %P]] -validate key \
-                -textvariable Apol_Analysis_relabel::widget_vars(start_attrib)]
-    $widgets(start_attrib_cb) configure -modifycmd {Apol_Analysis_tra::change_types_list \
-			$Apol_Analysis_relabel::widgets(start_cb) $Apol_Analysis_relabel::widgets(start_attrib_cb) 1}  
-			
-    set widgets(start_attrib_ch) \
-        [checkbutton $attrib_f.start_attrib_ch -anchor w -width 36 \
-             -variable Apol_Analysis_relabel::widget_vars(start_attrib_ch)]
-    $widgets(start_attrib_ch) configure \
-		-command "Apol_Analysis_relabel::config_attrib_comboBox_state \
-			$widgets(start_attrib_ch) $widgets(start_attrib_cb) $widgets(start_cb) 1"
-    
-    set filter_f [TitleFrame $option_f.filter_f -text "Optional result filters:"]
-    set endtype_frame [frame [$filter_f getframe].endtype_frame]
-    set adv_frame [frame [$filter_f getframe].adv_frame]
-    set widgets(entry_end) [Entry $endtype_frame.entry_end \
-	-helptext "You may enter a regular expression" \
-	-editable 1 -state disabled \
-	-textvariable Apol_Analysis_relabel::widget_vars(end_type)] 
-    set widgets(cb_endtype) [checkbutton $endtype_frame.cb_endtype \
-    	-text "Filter end types using regular expression:" \
-	-variable Apol_Analysis_relabel::widget_vars(endtype_sel) \
-	-command {Apol_Analysis_relabel::config_endtype_state}]
-    set widgets(b_adv_options) [button $adv_frame.b_adv_options -text "Advanced Filters" \
-		-command {Apol_Analysis_relabel::adv_options_create_dialog \
-			$Apol_Analysis_relabel::advanced_filter_Dlg \
-			"Direct Relabel Advanced Filters"}]
-    
-    pack $widgets(objectMode_cb) -anchor w -side top
-    pack $widgets(relabelto_rb) $widgets(relabelfrom_rb) -side top -padx 10 -pady 3 -anchor nw
-    pack $widgets(subjectMode_cb) -anchor w -side top
-    pack $widgets(start_l) $widgets(start_cb) -side top -expand 0 -fill x
-    pack $widgets(start_attrib_ch) -expand 0 -fill x
-    pack $widgets(start_attrib_cb) -padx 15 -expand 0 -fill x
-    pack $widgets(cb_endtype) -side top -anchor nw
-    pack $widgets(entry_end) -anchor nw -fill x -expand yes 
-    pack $widgets(b_adv_options) -anchor nw 
-    pack $start_f -expand 0 -fill x
-    pack $attrib_f -pady 20 -expand 0 -fill x
-    pack $option_f -fill both -anchor nw -side left -padx 5 -expand 1
-    pack $mode_tf $req_tf $filter_f -side left -anchor nw -padx 5 -expand 1 -fill both
-    pack $mode_obj_f $mode_subj_f -side top -anchor nw -fill both 
-    pack $endtype_frame $adv_frame -side top -anchor nw -fill both -pady 4
-    
-    Apol_Analysis_relabel::init_widget_state
-}
-
 
 ##########################################################################
 ##########################################################################
@@ -1431,118 +1301,6 @@ proc Apol_Analysis_relabel::display_mod_options { opts_frame } {
 ## internal functions to this analysis.
 ##########################################################################
 ##########################################################################
-
-proc Apol_Analysis_relabel::set_mode_relabelto {} {
-    variable widgets
-    variable widget_vars
-  
-    if {!$widget_vars(to_mode) && !$widget_vars(from_mode)} {
-    	set widget_vars(to_mode) 1
-    	return
-    } 
-    if {$widget_vars(to_mode) && $widget_vars(from_mode)} {
-	Apol_Analysis_relabel::set_mode_relabelboth
-    } elseif {$widget_vars(to_mode)} {
-	$widgets(start_l) configure -text "Starting type:"
-	$widgets(start_attrib_ch) configure -text "Filter starting types to select using attribute:"
-    } else {
-    	Apol_Analysis_relabel::set_mode_relabelfrom
-    }
-}
-
-proc Apol_Analysis_relabel::set_mode_relabelfrom {} {
-    variable widgets
-    variable widget_vars
-    
-    if {!$widget_vars(to_mode) && !$widget_vars(from_mode)} {
-    	set widget_vars(from_mode) 1
-    	return
-    } 
-    if {$widget_vars(to_mode) && $widget_vars(from_mode)} {
-	Apol_Analysis_relabel::set_mode_relabelboth
-    } elseif {$widget_vars(from_mode)} {
-	$widgets(start_l) configure -text "Ending type:"
-	$widgets(start_attrib_ch) configure -text "Filter ending types to select using attribute:"
-    } else {
-	Apol_Analysis_relabel::set_mode_relabelto
-    }
-}
-
-proc Apol_Analysis_relabel::set_mode_relabelboth {} {
-    variable widgets
-    $widgets(start_l) configure -text "Starting/ending type:"
-    $widgets(start_attrib_ch) configure -text "Filter starting/ending types to select using attribute:"
-}
-
-proc Apol_Analysis_relabel::set_mode_subject {} {
-    variable widgets
-    $widgets(start_l) configure -text "Subject:"
-    $widgets(start_attrib_ch) configure -text "Filter subjects to select using attribute:"
-    $widgets(relabelto_rb) configure -state disabled
-    $widgets(relabelfrom_rb) configure -state disabled
-}
-
-proc Apol_Analysis_relabel::set_mode_object {} {
-    variable widgets
-    variable widget_vars
-    	  
-    $widgets(relabelto_rb) configure -state normal
-    $widgets(relabelfrom_rb) configure -state normal
-    if {$widget_vars(to_mode) && $widget_vars(from_mode)} {
-    	Apol_Analysis_relabel::set_mode_relabelboth
-    } elseif {$widget_vars(to_mode) && !$widget_vars(from_mode)} {
-    	Apol_Analysis_relabel::set_mode_relabelto
-    } else {
-    	Apol_Analysis_relabel::set_mode_relabelfrom
-    }
-}
-
-proc Apol_Analysis_relabel::toggle_attributes {} {
-    variable widgets
-    variable widget_vars
-    if $widget_vars(start_attrib_ch) {
-        $widgets(start_attrib_cb) configure -state normal -entrybg white
-    } else {
-        $widgets(start_attrib_cb) configure -state disabled -entrybg  $ApolTop::default_bg_color
-        $widgets(start_cb) configure -values $Apol_Types::typelist
-    }
-}
-
-# Called whenever the user enters an attribute name (either by typing
-# it or selecting from a list).  Modify the list of available types if
-# the attribute is legal.
-proc Apol_Analysis_relabel::set_types_list {start_attrib} {
-    variable widgets
-    variable widget_vars
-    if {$start_attrib == ""} {
-        set start_attrib $widget_vars(start_attrib)
-    }
-    set types_list [lindex [apol_GetAttribs $start_attrib] 0 1]
-    # check if the starting type is within the list of legal types; if
-    # not then remove the entry.
-    if {[lsearch $types_list $widget_vars(start_type)] == -1} {
-        set widget_vars(start_type) {}
-    }
-    return 1
-}
-
-# Called to populate the ComboBox/ComboBox/listbox holding the type
-# names/attributes/object classes.  This is done in one of three
-# places: upon wizard dialog creation, when opening a policy, and when
-# closing a policy.
-proc Apol_Analysis_relabel::populate_lists {} {
-	variable widgets
-	variable widget_vars
-  
-	$widgets(start_cb) configure -values $Apol_Types::typelist
-	$widgets(start_attrib_cb) configure -values $Apol_Types::attriblist
-	if {[lsearch -exact $Apol_Types::typelist $widget_vars(start_type)] == -1} {
-	    set widget_vars(start_type) {}
-	}
-	if {[lsearch -exact $Apol_Types::attriblist $widget_vars(start_attrib)] == -1} {
-	    set widget_vars(start_attrib) {}
-	}
-}
 
 ##########################################################################
 # ::formatInfoText

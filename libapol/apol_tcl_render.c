@@ -30,6 +30,21 @@
 
 #include <tcl.h>
 
+int apol_level_to_tcl_obj(Tcl_Interp *interp, apol_mls_level_t *level, Tcl_Obj **obj) {
+	Tcl_Obj *level_elem[2], *cats_obj;
+	size_t i;
+	level_elem[0] = Tcl_NewStringObj(level->sens, -1);
+	level_elem[1] = Tcl_NewListObj(0, NULL);
+	for (i = 0; i < apol_vector_get_size(level->cats); i++) {
+		cats_obj = Tcl_NewStringObj((char *) apol_vector_get_element(level->cats, i), -1);
+		if (Tcl_ListObjAppendElement(interp, level_elem[1], cats_obj) == TCL_ERROR) {
+			return -1;
+		}
+	}
+	*obj = Tcl_NewListObj(2, level_elem);
+	return 0;
+}
+
 /**
  * Take a Tcl string representing a level (level = sensitivity + list
  * of categories) and return a string representation of it.  If the
