@@ -381,11 +381,6 @@ proc ApolTop::set_Focus_to_Text { tab } {
 		} \
 		$ApolTop::analysis_tab {
 			$ApolTop::mainframe setmenustate Disable_SaveQuery_Tag normal
-			$ApolTop::mainframe setmenustate Disable_SearchMenu_Tag disabled
-			set raisedPage [Apol_Analysis::get_results_raised_tab]
-			if {$raisedPage != ""} {
-				Apol_Analysis::set_Focus_to_Text $raisedPage
-			} 
 		} \
             default {
                 $ApolTop::mainframe setmenustate Disable_SaveQuery_Tag disabled

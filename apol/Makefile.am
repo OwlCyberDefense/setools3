@@ -29,9 +29,11 @@ apol_SOURCES = apol_gui.c \
 	netcontexts_tab.tcl context_dialog.tcl context_selector.tcl \
 	fscontexts_tab.tcl \
 	common_widgets.tcl range_selector.tcl \
-	dta_module.tcl dirflow_module.tcl fulflow_module.tcl \
-	relabel_module.tcl types_relation_module.tcl \
+	foo_module.tcl relabel_module.tcl \
 	top.tcl
+
+#dta_module.tcl dirflow_module.tcl fulflow_module.tcl \
+#	relabel_module.tcl types_relation_module.tcl
 
 LDADD = $(top_srcdir)/libapol/libapol.a $(top_srcdir)/libqpol/src/libqpol.so @QPOL_LIB_FLAG@ @TCL_LIB_FLAG@ @TK_LIB_FLAG@
 apol_DEPENDENCIES = apol.tcl $(top_srcdir)/libapol/libapol-tcl.a $(top_srcdir)/libapol/libapol.a $(top_srcdir)/libqpol/src/libqpol.so $(top_srcdir)/config.tcl

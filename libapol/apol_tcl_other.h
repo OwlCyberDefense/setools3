@@ -146,20 +146,4 @@ extern int apol_tcl_string_to_context(Tcl_Interp *interp,
 				      const char *context_string,
 				      apol_context_t *context);
 
-/**
- * Converts an apol_mls_level_t to a Tcl representation:
- * <code>
- *   { level { cat0 cat1 ... } }
- * </code>
- *
- * @param interp Tcl interpreter object.
- * @param level Level to convert.
- * @param obj Destination to create Tcl object representing level.
- *
- * @return 0 if level was converted, <0 on error.
- */
-extern int apol_level_to_tcl_obj(Tcl_Interp *interp,
-				 apol_mls_level_t *level,
-				 Tcl_Obj **obj);
-
 #endif
