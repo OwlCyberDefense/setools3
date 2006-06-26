@@ -50,6 +50,7 @@
 #include "condrule-query.h"
 #include "rbacrule-query.h"
 #include "rangetrans-query.h"
+#include "constraint-query.h"
 
 /******************** private defines ********************/
 
