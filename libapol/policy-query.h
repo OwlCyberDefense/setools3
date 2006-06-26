@@ -3,8 +3,7 @@
  *
  * Routines to query parts of a policy.  For each component and rule
  * there is a query structure to specify the details of the query.
- * The reason for all of the modifier functions on the query
- * structures is to ease the creation of swig wrappers to libapol.
+ * Analyses are also included by this header file.
  *
  * @author Kevin Carr  kcarr@tresys.com
  * @author Jeremy A. Mowery jmowery@tresys.com
@@ -34,6 +33,8 @@
 #include <stdlib.h>
 #include <qpol/policy_query.h>
 
+#include "policy.h"
+
 #include "type-query.h"
 #include "class-perm-query.h"
 #include "role-query.h"
@@ -51,6 +52,8 @@
 #include "rbacrule-query.h"
 #include "rangetrans-query.h"
 #include "constraint-query.h"
+
+#include "relabel-analysis.h"
 
 /******************** private defines ********************/
 

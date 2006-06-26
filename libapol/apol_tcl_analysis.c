@@ -49,7 +49,8 @@
  *   <li>list of rules that relabel
  * </ul>
  *
- * Rules are formatted as per apol_avrule_to_tcl_obj().
+ * Rules are unique identifiers (relative to currently loaded policy).
+ * Call [apol_RenderAVRule] to display them.
  *
  * @param argv This fuction takes three parameters:
  * <ol>
@@ -60,7 +61,29 @@
  *
  */
 static int Apol_RelabelAnalysis (ClientData clientData, Tcl_Interp *interp,
-                                 int objc, Tcl_Obj * CONST objv[]) {
+                                 int argc, Tcl_Obj * CONST argv[]) {
+        Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
+        int retval = TCL_ERROR;
+
+	apol_tcl_clear_error();
+	if (policydb == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		goto cleanup;
+	}
+	if (argc != 3) {
+		ERR(policydb, "Need an analysis mode, starting type, and resulting type regexp.");
+		goto cleanup;
+	}
+
+        Tcl_SetObjResult(interp, result_obj);
+        retval = TCL_OK;
+ cleanup:
+        if (retval == TCL_ERROR) {
+                apol_tcl_write_error(interp);
+        }
+        return retval;
+}
+
 /* FIX ME */
 #if 0
 	unsigned char mode;
@@ -75,15 +98,6 @@ static int Apol_RelabelAnalysis (ClientData clientData, Tcl_Interp *interp,
 	int class_filter_sz = 0, subj_filter_sz  = 0;
 	int *class_filter = NULL, *subj_filter = NULL;
 
-        if (policy == NULL) {
-                Tcl_SetResult (interp, "No current policy file is opened!",
-                               TCL_STATIC);
-                return TCL_ERROR;
-        }
-        if (objc < 7) {
-                Tcl_SetResult (interp, "wrong # of args", TCL_STATIC);
-                return TCL_ERROR;
-        }
 
         start_type = get_type_idx (Tcl_GetString (objv [1]), policy);
         if (!is_valid_type (policy, start_type, 0)) {
@@ -202,9 +216,9 @@ static int Apol_RelabelAnalysis (ClientData clientData, Tcl_Interp *interp,
                 return TCL_ERROR;
         }
         Tcl_SetObjResult (interp, results_list_obj);
-#endif
         return TCL_OK;
 }
+#endif
 
 int apol_tcl_analysis_init(Tcl_Interp *interp) {
 	Tcl_CreateObjCommand(interp, "apol_RelabelAnalysis", Apol_RelabelAnalysis, NULL, NULL);
