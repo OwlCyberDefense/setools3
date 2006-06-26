@@ -288,6 +288,14 @@ proc Apol_Widget::setRegexpEntryState {path newState} {
     }
 }
 
+proc Apol_Widget::setRegexpEntryValue {path newState newValue} {
+    variable vars
+    set old_state [$path.cb cget -state]
+    set vars($path:enable_regexp) $newState
+    set vars($path:regexp) $newValue
+    $path.cb configure -state $old_state
+}
+
 proc Apol_Widget::getRegexpEntryState {path} {
     return $Apol_Widget::vars($path:enable_regexp)
 }
@@ -340,10 +348,7 @@ proc Apol_Widget::appendSearchResultText {path text} {
 # non-empty, then mark this line as enabled or disabled.
 proc Apol_Widget::appendSearchResultLine {path indent linenum cond_info line_type args} {
     $path.tb configure -state normal
-    while {$indent > 0} {
-        $path.tb insert end " "
-        incr indent -1
-    }
+    $path.tb insert end [string repat " " $indent]
     if {$linenum != {}} {
         $path.tb insert end \[ {} $linenum linenum "\] "
     }
@@ -372,7 +377,7 @@ proc Apol_Widget::gotoLineSearchResults {path line_num} {
     $textbox mark set insert ${line_num}.0 
     $textbox see ${line_num}.0 
     $textbox tag add sel $line_num.0 $line_num.end
-    focus -force $textbox
+    focus $textbox
 }
 
 proc Apol_Widget::showPopupText {title info} {

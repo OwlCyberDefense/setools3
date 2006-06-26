@@ -23,11 +23,26 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#include "policy.h"
 #include <tcl.h>
 
 #ifndef APOL_TCL_RENDER_H
 #define APOL_TCL_RENDER_H
+
+/**
+ * Converts an apol_mls_level_t to a Tcl representation:
+ * <code>
+ *   { level { cat0 cat1 ... } }
+ * </code>
+ *
+ * @param interp Tcl interpreter object.
+ * @param level Level to convert.
+ * @param obj Destination to create Tcl object representing level.
+ *
+ * @return 0 if level was converted, <0 on error.
+ */
+extern int apol_level_to_tcl_obj(Tcl_Interp *interp,
+				 apol_mls_level_t *level,
+				 Tcl_Obj **obj);
 
 extern int apol_tcl_render_init(Tcl_Interp *interp);
 

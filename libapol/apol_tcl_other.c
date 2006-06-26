@@ -290,21 +290,6 @@ int apol_tcl_string_to_context(Tcl_Interp *interp,
 	return retval;
 }
 
-int apol_level_to_tcl_obj(Tcl_Interp *interp, apol_mls_level_t *level, Tcl_Obj **obj) {
-	Tcl_Obj *level_elem[2], *cats_obj;
-	size_t i;
-	level_elem[0] = Tcl_NewStringObj(level->sens, -1);
-	level_elem[1] = Tcl_NewListObj(0, NULL);
-	for (i = 0; i < apol_vector_get_size(level->cats); i++) {
-		cats_obj = Tcl_NewStringObj((char *) apol_vector_get_element(level->cats, i), -1);
-		if (Tcl_ListObjAppendElement(interp, level_elem[1], cats_obj) == TCL_ERROR) {
-			return -1;
-		}
-	}
-	*obj = Tcl_NewListObj(2, level_elem);
-	return 0;
-}
-
 /**
  * Get the directory where the Tcl scripts are located.  This function
  * simply returns the value of the script_dir GLOBAL variable defined
@@ -1126,7 +1111,7 @@ int apol_tcl_init(Tcl_Interp *interp)
 	    apol_tcl_components_init(interp) != TCL_OK ||
 	    apol_tcl_rules_init(interp) != TCL_OK ||
 	    apol_tcl_fc_init(interp) != TCL_OK ||
-	    ap_tcl_analysis_init(interp) != TCL_OK) {
+	    apol_tcl_analysis_init(interp) != TCL_OK) {
 		return TCL_ERROR;
 	}
 	Tcl_PkgProvide(interp, "apol", (char*)libapol_get_version());
