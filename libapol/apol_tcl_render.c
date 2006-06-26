@@ -26,6 +26,7 @@
  */
 
 #include "policy.h"
+#include "util.h"
 #include "apol_tcl_other.h"
 
 #include <tcl.h>
@@ -43,6 +44,72 @@ int apol_level_to_tcl_obj(Tcl_Interp *interp, apol_mls_level_t *level, Tcl_Obj *
 	}
 	*obj = Tcl_NewListObj(2, level_elem);
 	return 0;
+}
+
+int apol_avrule_to_tcl_obj(Tcl_Interp *interp,
+			   qpol_avrule_t *avrule,
+			   Tcl_Obj **obj)
+{
+        uint32_t rule_type, is_enabled;
+	const char *rule_string;
+	qpol_type_t *source, *target;
+	qpol_class_t *obj_class;
+	qpol_iterator_t *perm_iter = NULL;
+	char *source_name, *target_name, *obj_class_name;
+	qpol_cond_t *cond;
+	Tcl_Obj *avrule_elem[7], *cond_elem[2];
+	int retval = TCL_ERROR;
+
+	if (qpol_avrule_get_rule_type(policydb->qh, policydb->p, avrule, &rule_type) < 0 ||
+	    qpol_avrule_get_source_type(policydb->qh, policydb->p, avrule, &source) < 0 ||
+	    qpol_avrule_get_target_type(policydb->qh, policydb->p, avrule, &target) < 0 ||
+	    qpol_avrule_get_object_class(policydb->qh, policydb->p, avrule, &obj_class) < 0 ||
+	    qpol_avrule_get_perm_iter(policydb->qh, policydb->p, avrule, &perm_iter) < 0) {
+		goto cleanup;
+	}
+	if ((rule_string = apol_rule_type_to_str(rule_type)) == NULL) {
+		ERR(policydb, "Invalid avrule type %d.", rule_type);
+		goto cleanup;
+	}
+	if (qpol_type_get_name(policydb->qh, policydb->p, source, &source_name) < 0 ||
+	    qpol_type_get_name(policydb->qh, policydb->p, target, &target_name) < 0 ||
+	    qpol_class_get_name(policydb->qh, policydb->p, obj_class, &obj_class_name) < 0) {
+		goto cleanup;
+	}
+	avrule_elem[0] = Tcl_NewStringObj(rule_string, -1);
+	avrule_elem[1] = Tcl_NewStringObj(source_name, -1);
+	avrule_elem[2] = Tcl_NewStringObj(target_name, -1);
+	avrule_elem[3] = Tcl_NewStringObj(obj_class_name, -1);
+	avrule_elem[4] = Tcl_NewListObj(0, NULL);
+	for ( ; !qpol_iterator_end(perm_iter); qpol_iterator_next(perm_iter)) {
+		char *perm_name;
+		Tcl_Obj *perm_obj;
+		if (qpol_iterator_get_item(perm_iter, (void **) &perm_name) < 0) {
+			goto cleanup;
+		}
+		perm_obj = Tcl_NewStringObj(perm_name, -1);
+		if (Tcl_ListObjAppendElement(interp, avrule_elem[4], perm_obj) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+	avrule_elem[5] = Tcl_NewStringObj("", -1);   /* FIX ME! */
+	if (qpol_avrule_get_cond(policydb->qh, policydb->p, avrule, &cond) < 0 ||
+	    qpol_avrule_get_is_enabled(policydb->qh, policydb->p, avrule, &is_enabled) < 0) {
+		goto cleanup;
+	}
+	if (cond == NULL) {
+		avrule_elem[6] = Tcl_NewListObj(0, NULL);
+	}
+	else {
+		cond_elem[0] = Tcl_NewStringObj(is_enabled ? "enabled" : "disabled", -1);
+		cond_elem[1] = Tcl_NewStringObj("", -1);  /* FIX ME! */
+		avrule_elem[6] = Tcl_NewListObj(2, cond_elem);
+	}
+	*obj = Tcl_NewListObj(7, avrule_elem);
+        retval = TCL_OK;
+ cleanup:
+	qpol_iterator_destroy(&perm_iter);
+	return retval;
 }
 
 /**
@@ -156,8 +223,54 @@ static int Apol_RenderContext(ClientData clientData, Tcl_Interp *interp, int arg
 	return retval;
 }
 
+/**
+ * Take a Tcl string representing an AV rule identifier (relative to
+ * the currently loaded policy) and return a Tcl list representation
+ * of it:
+ * <code>
+ *    { rule_type source_type_set target_type_set object_class perm_set
+ *      line_number cond_info }
+ * </code>
+ *
+ * @param argv This function takes one parameter:
+ * <ol>
+ *   <li>Tcl string representing an av rule identifier
+ * </ol>
+ */
+static int Apol_RenderAVRule(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
+{
+	int rule_num;
+	qpol_avrule_t *avrule;
+	Tcl_Obj *result_obj;
+	int retval = TCL_ERROR;
+	apol_tcl_clear_error();
+	if (policydb == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		goto cleanup;
+	}
+	if (argc != 2) {
+		ERR(policydb, "Need a context.");
+		goto cleanup;
+	}
+	if (Tcl_GetInt(interp, argv[1], &rule_num) == TCL_ERROR) {
+		goto cleanup;
+	}
+	avrule = (qpol_avrule_t *) rule_num;
+	if (apol_avrule_to_tcl_obj(interp, avrule, &result_obj) == TCL_ERROR) {
+		goto cleanup;
+	}
+	Tcl_SetObjResult(interp, result_obj);
+	retval = TCL_OK;
+ cleanup:
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
+}
+
 int apol_tcl_render_init(Tcl_Interp *interp) {
         Tcl_CreateCommand(interp, "apol_RenderLevel", Apol_RenderLevel, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_RenderContext", Apol_RenderContext, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_RenderAVRule", Apol_RenderAVRule, NULL, NULL);
 	return TCL_OK;
 }
