@@ -44,10 +44,10 @@ typedef struct apol_nodecon_query apol_nodecon_query_t;
  * @param p Policy within which to look up portcons.
  * @param po Structure containing parameters for query.	 If this is
  * NULL then return all portcons.
- * @param v Reference to a vector of sepol_portcon_t.  The vector will
+ * @param v Reference to a vector of qpol_portcon_t.  The vector will
  * be allocated by this function. The caller must call
  * apol_vector_destroy() afterwards, but <b>must not</b> free the
- * elements within it.	This will be set to NULL upon no results or
+ * elements within it.  This will be set to NULL upon no results or
  * upon error.
  *
  * @return 0 on success (including none found), negative on error.
@@ -156,10 +156,10 @@ extern char *apol_portcon_render(apol_policy_t *p, qpol_portcon_t *portcon);
  * @param p Policy within which to look up netifcons.
  * @param n Structure containing parameters for query.	If this is
  * NULL then return all netifcons.
- * @param v Reference to a vector of sepol_netifcon_t.	The vector
- * will be allocated by this function. The caller must call
+ * @param v Reference to a vector of qpol_netifcon_t.  The vector will
+ * be allocated by this function. The caller must call
  * apol_vector_destroy() afterwards, but <b>must not</b> free the
- * elements within it.	This will be set to NULL upon no results or
+ * elements within it.  This will be set to NULL upon no results or
  * upon error.
  *
  * @return 0 on success (including none found), negative on error.
@@ -261,8 +261,8 @@ extern char *apol_netifcon_render(apol_policy_t *p, qpol_netifcon_t *netifcon);
  * @param p Policy within which to look up nodecons.
  * @param n Structure containing parameters for query.	If this is
  * NULL then return all nodecons.
- * @param v Reference to a vector of sepol_node_t.  The vector will be
- * allocated by this function. The caller must call
+ * @param v Reference to a vector of qpol_nodecon_t.  The vector will
+ * be allocated by this function.  The caller must call
  * apol_vector_destroy() afterwards, <b>passing free() as the second
  * parameter</b>.  This will be set to NULL upon no results or upon
  * error.
@@ -299,8 +299,8 @@ extern void apol_nodecon_query_destroy(apol_nodecon_query_t **n);
  *
  * @param p Policy handler, to report errors.
  * @param n Nodecon query to set.
- * @param proto Limit query to only this protocol, either SEPOL_IPV4
- * or SEPOL_IPV6, or a negative value to unset this field.
+ * @param proto Limit query to only this protocol, either QPOL_IPV4 or
+ * QPOL_IPV6, or a negative value to unset this field.
  *
  * @return 0 if protocol was valid, -1 on error.
  */
@@ -309,15 +309,15 @@ extern int apol_nodecon_query_set_proto(apol_policy_t *p,
 
 /**
  * Set a nodecon query to return only nodecons with this address.  If
- * the protocol is SEPOL_IPV4 then only the first element of the
- * address array is used, for SEPOL_IPV6 all four are used.
+ * the protocol is QPOL_IPV4 then only the first element of the
+ * address array is used, for QPOL_IPV6 all four are used.
  *
  * @param p Policy handler, to report errors.
  * @param n Nodecon query to set.
  * @param addr Array of no more than four elements representing the
  * address, or NULL to unset this field.  This function will make a
  * copy of the array.
- * @param proto Format of address, either SEPOL_IPV4 or SEPOL_IPV6.
+ * @param proto Format of address, either QPOL_IPV4 or QPOL_IPV6.
  * This parameter is ignored if addr is NULL.
  *
  * @return 0 if protocol was valid, -1 on error.
@@ -329,15 +329,15 @@ extern int apol_nodecon_query_set_addr(apol_policy_t *p,
 
 /**
  * Set a nodecon query to return only nodecons with this netmask.  If
- * the protocol is SEPOL_IPV4 then only the first element of the mask
- * array is used, for SEPOL_IPV6 all four are used.
+ * the protocol is QPOL_IPV4 then only the first element of the mask
+ * array is used, for QPOL_IPV6 all four are used.
  *
  * @param p Policy handler, to report errors.
  * @param n Nodecon query to set.
  * @param mask Array of no more than four elements representing the
  * netmask, or NULL to unset this field.  This function will make a
  * copy of the array.
- * @param proto Format of mask, either SEPOL_IPV4 or SEPOL_IPV6.  This
+ * @param proto Format of mask, either QPOL_IPV4 or QPOL_IPV6.  This
  * parameter is ignored if mask is NULL.
  *
  * @return 0 if protocol was valid, -1 on error.

@@ -43,8 +43,8 @@ typedef struct apol_perm_query apol_perm_query_t;
  * @param p Policy within which to look up classes.
  * @param c Structure containing parameters for query.	If this is
  * NULL then return all object classes.
- * @param v Reference to a vector of sepol_class_datum_t.  The vector
- * will be allocated by this function. The caller must call
+ * @param v Reference to a vector of qpol_class_t.  The vector will be
+ * allocated by this function. The caller must call
  * apol_vector_destroy() afterwards, but <b>must not</b> free the
  * elements within it.  This will be set to NULL upon no results or
  * upon error.
@@ -126,8 +126,8 @@ extern int apol_class_query_set_regex(apol_policy_t *p,
  * @param p Policy within which to look up common classes.
  * @param c Structure containing parameters for query.	If this is
  * NULL then return all common classes.
- * @param v Reference to a vector of sepol_common_datum_t.  The vector
- * will be allocated by this function. The caller must call
+ * @param v Reference to a vector of qpol_common_t.  The vector will
+ * be allocated by this function. The caller must call
  * apol_vector_destroy() afterwards, but <b>must not</b> free the
  * elements within it.  This will be set to NULL upon no results or
  * upon error.
