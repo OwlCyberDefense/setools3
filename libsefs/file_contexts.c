@@ -9,7 +9,6 @@
 #define _GNU_SOURCE
 
 #include "file_contexts.h"
-#include "policy.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,10 +18,27 @@
 #include <selinux/selinux.h>
 #endif
 
-int parse_file_contexts_file(const char *fc_path, sefs_fc_entry_t **contexts, int *num_contexts, policy_t *policy) 
-{ /*FIXME*/
-#if 0
-	int array_sz = 0; /* actual size of array */
+/* libapol */
+#include <../libapol/policy.h>
+#include <../libapol/policy-io.h>
+#include <render.h>
+#include "../libapol/vector.h"
+#include "policy-query.h"
+
+/* libqpol */
+#include <../libqpol/include/qpol/policy_query.h>
+
+
+/* for some reason we have to define this here to remove compile warnings */
+ssize_t getline(char **lineptr, size_t *n, FILE *stream);
+
+/**
+ ** parse_file_contexts_file returns the number of contexts as well as an apol vector containing the contexts
+ **
+ **/
+
+int parse_file_contexts_file(const char *fc_path, apol_vector_t **contexts, int *num_contexts, apol_policy_t *policy) 
+{ 
 	char *line = NULL, *tmp = NULL, *context = NULL;
 	size_t line_len = 0;
 	int i = 0, retv, j;
@@ -37,15 +53,14 @@ int parse_file_contexts_file(const char *fc_path, sefs_fc_entry_t **contexts, in
 		return -1;
 	}
 
+	/* Create a fc entry and fill with data from the policy */
 	while (!feof(fc_file)) {
+		sefs_fc_entry_t *fc_entry = (sefs_fc_entry_t *)malloc(1*sizeof(sefs_fc_entry_t));
 		tmp = NULL;
-		if (i+1 > array_sz) {
-			array_sz += LIST_SZ;
-			*contexts = (sefs_fc_entry_t*)realloc(*contexts, array_sz * sizeof(sefs_fc_entry_t));
-			if (!(*contexts)) {
-				fprintf(stderr, "out of memory\n");
-				goto failure;
-			}
+		apol_vector_append(*contexts, (void *)fc_entry ); 
+		if (!(*contexts)) {
+			fprintf(stderr, "out of memory\n");
+			goto failure;
 		}
 		retv = getline(&line, &line_len, fc_file);
 		if (retv == -1) {
@@ -76,7 +91,7 @@ int parse_file_contexts_file(const char *fc_path, sefs_fc_entry_t **contexts, in
 			continue;
 		}
 
-		(*contexts)[i].path = strdup(tmp);
+		fc_entry->path = strdup(tmp);
 
 		j += (strlen(tmp) + 1);
 
@@ -96,25 +111,25 @@ int parse_file_contexts_file(const char *fc_path, sefs_fc_entry_t **contexts, in
 		if (tmp[0] == '-') {
 			switch (tmp[1]) {
 			case '-':
-				(*contexts)[i].filetype = FILETYPE_REG;
+				fc_entry->filetype = FILETYPE_REG;
 				break;
 			case 'd':
-				(*contexts)[i].filetype = FILETYPE_DIR;
+				fc_entry->filetype = FILETYPE_DIR;
 				break;
 			case 'c':
-				(*contexts)[i].filetype = FILETYPE_CHR;
+				fc_entry->filetype = FILETYPE_CHR;
 				break;
 			case 'b':
-				(*contexts)[i].filetype = FILETYPE_BLK;
+				fc_entry->filetype = FILETYPE_BLK;
 				break;
 			case 'p':
-				(*contexts)[i].filetype = FILETYPE_FIFO;
+				fc_entry->filetype = FILETYPE_FIFO;
 				break;
 			case 'l':
-				(*contexts)[i].filetype = FILETYPE_LNK;
+				fc_entry->filetype = FILETYPE_LNK;
 				break;
 			case 's':
-				 (*contexts)[i].filetype = FILETYPE_SOCK;
+				 fc_entry->filetype = FILETYPE_SOCK;
 				break;
 			default:
 				fprintf(stderr, "invalid file_contexts format\n");
@@ -124,7 +139,7 @@ int parse_file_contexts_file(const char *fc_path, sefs_fc_entry_t **contexts, in
 			j += 3;
 			tmp += 3;
 		} else {
-			(*contexts)[i].filetype = FILETYPE_ANY;
+			fc_entry->filetype = FILETYPE_ANY;
 		}
 
 		for(;j < line_len; j++) {
@@ -138,8 +153,9 @@ int parse_file_contexts_file(const char *fc_path, sefs_fc_entry_t **contexts, in
 		}
 
 		if (strcmp(tmp, "<<none>>")) {
-			(*contexts)[i].context = (security_con_t*)malloc(1 * sizeof(security_con_t));
-			if (!((*contexts)[i].context)) {
+			/* Create a context */
+			fc_entry->context = (security_con_t*)malloc(1 * sizeof(security_con_t));
+			if (!((fc_entry->context))) {
 				fprintf(stderr, "out of memory\n");
 				goto failure;
 			}
@@ -150,7 +166,7 @@ int parse_file_contexts_file(const char *fc_path, sefs_fc_entry_t **contexts, in
 				} 
 			}
 			if (tmp - line > line_len) {
-				goto failure; /* you have walked off the end */
+				goto failure; 
 			}
 			free(context);
 			context = strdup(tmp);
@@ -158,7 +174,8 @@ int parse_file_contexts_file(const char *fc_path, sefs_fc_entry_t **contexts, in
 				fprintf(stderr, "out of memory\n");
 				goto failure;
 			}
-			(*contexts)[i].context->user = get_user_idx(context, policy);
+			/* Get data on the user from the policy file and save it in the context */
+			qpol_policy_get_user_by_name(policy->qh, policy->p, context, &fc_entry->context->user);
 			j += (strlen(tmp) + 1);
 
 			for (; j < line_len; j++) {
@@ -168,7 +185,7 @@ int parse_file_contexts_file(const char *fc_path, sefs_fc_entry_t **contexts, in
 				} 
 			}
 			if (tmp - line > line_len) {
-				goto failure; /* you have walked off the end */
+				goto failure;
 			}
 			free(context);
 			context = strdup(tmp);
@@ -176,7 +193,8 @@ int parse_file_contexts_file(const char *fc_path, sefs_fc_entry_t **contexts, in
 				fprintf(stderr, "out of memory\n");
 				goto failure;
 			}
-			(*contexts)[i].context->role = get_role_idx(context, policy);
+			/* Get data on the role from the policy file and save it in the context */
+			qpol_policy_get_role_by_name(policy->qh, policy->p, context, &fc_entry->context->role);
 			j += (strlen(tmp) + 1);
 
 			for (; j < line_len; j++) {
@@ -186,18 +204,19 @@ int parse_file_contexts_file(const char *fc_path, sefs_fc_entry_t **contexts, in
 				} 
 			}
 			if (tmp - line > line_len) {
-				goto failure; /* you have walked off the end */
+				goto failure;
 			}
 			free(context);
 			context = strdup(tmp);
 			if (!context) {
 				fprintf(stderr, "out of memory\n");
 				goto failure;
-			}
-			(*contexts)[i].context->type = get_type_idx(context, policy);
+			}  
+			/* Get data on the type from the policy file and save it in the context */
+			qpol_policy_get_type_by_name(policy->qh, policy->p, context, &fc_entry->context->type);
 		
 		} else {
-			(*contexts)[i].context = NULL;
+			fc_entry->context = NULL;
 		}	
 
 		free(line);
@@ -213,7 +232,6 @@ failure:
 	free(line);
 	free(context);
 	fclose(fc_file);
-#endif
 	return -1;
 }
 
@@ -223,8 +241,8 @@ void sefs_fc_entry_free(sefs_fc_entry_t *fc_entry)
 		return;
 	free(fc_entry->path);
 	fc_entry->path = NULL;
-	//free(fc_entry->context);
-	//fc_entry->context = NULL;
+	free(fc_entry->context);
+	fc_entry->context = NULL;
 }
 
 int find_default_file_contexts_file(char **path)
