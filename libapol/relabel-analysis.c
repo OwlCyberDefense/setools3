@@ -1,9 +1,39 @@
-/* Copyright (C) 2005 Tresys Technology, LLC
- * see file 'COPYING' for use and warranty information */
-
-/* 
- * Author: Jeremy A. Mowery jmowery@tresys.com
+/**
+ * @file relabel-analysis.c
+ * Implementation of the direct relabelling analysis.
+ *
+ *  @author Kevin Carr kcarr@tresys.com
+ *  @author Jeremy A. Mowery jmowery@tresys.com
+ *  @author Jason Tang jtang@tresys.com
+ *
+ *  Copyright (C) 2005-2006 Tresys Technology, LLC
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
+
+#include "policy-query.h"
+
+/* defines for mode */
+#define APOL_RELABEL_MODE_OBJ	0x01
+#define APOL_RELABEL_MODE_SUBJ	0x02
+
+struct apol_relabel_analysis {
+        int mode;
+        char *type;
+        int flags;
+};
 
 #if 0
 #include "policy.h"
@@ -15,8 +45,8 @@
 #define AP_RELABEL_NOT_HERE	-2
 
 /* relabeling permission names */
-#define AP_RELABEL_RELABELTO 	"relabelto"
-#define AP_RELABEL_RELABELFROM 	"relabelfrom"
+#define AP_RELABEL_RELABELTO	"relabelto"
+#define AP_RELABEL_RELABELFROM	"relabelfrom"
 
 typedef struct ap_relabel_possible_start {
 	int			source_type;
@@ -197,7 +227,7 @@ static int ap_relabel_find_rule_in_subject(int rule_index, ap_relabel_subject_t 
 /* add functions:
  * return -1 on error
  * otherwise return index of item added
- * except add_entry and add_start which return 0 on success 
+ * except add_entry and add_start which return 0 on success
  * NOTE: add_entry is the only function that checks for duplicates
  */
 static int ap_relabel_add_rule_to_subject(int rule, unsigned char direction, ap_relabel_subject_t * subj)
@@ -223,7 +253,7 @@ static int ap_relabel_add_rule_to_subject(int rule, unsigned char direction, ap_
 static int ap_relabel_add_subject_to_object(int subj, ap_relabel_object_t *obj)
 {
 	int where = -1;
-	
+
 	if(!obj)
 		return -1;
 
@@ -311,16 +341,16 @@ static int ap_relabel_add_start_to_subject(ap_relabel_possible_start_t *pos, ap_
 			subj->rules[where].direction |= AP_RELABEL_DIR_START;
 		}
 	}
-	
+
 	return 0;
 };
 
 static int ap_relabel_add_entry_to_result(int target_type, int object_class, int subject, unsigned char direction, int rule_index, ap_relabel_result_t *res, ap_relabel_possible_start_t *pos)
 {
 	int target_index = -1, object_index = -1, source_index = -1, rule_number = -1, retv;
-	
+
 	target_index = ap_relabel_find_target_in_results(target_type, res);
-	if (target_index == AP_RELABEL_NOT_HERE) 
+	if (target_index == AP_RELABEL_NOT_HERE)
 		target_index = ap_relabel_add_target_to_result(target_type, res);
 	if (target_index == -1)
 		return -1;
@@ -357,7 +387,7 @@ static int ap_relabel_add_entry_to_result(int target_type, int object_class, int
 	return 0;
 };
 
-static unsigned char ap_relabel_determine_rule_direction(int rule_index, policy_t *policy, int relabelto_index, int relabelfrom_index) 
+static unsigned char ap_relabel_determine_rule_direction(int rule_index, policy_t *policy, int relabelto_index, int relabelfrom_index)
 {
 	unsigned char direction = AP_RELABEL_DIR_NONE;
 
@@ -371,7 +401,7 @@ static unsigned char ap_relabel_determine_rule_direction(int rule_index, policy_
 		direction |= AP_RELABEL_DIR_TO;
 	if (does_av_rule_use_perms(rule_index, 1, &relabelfrom_index, 1, policy))
 		direction |= AP_RELABEL_DIR_FROM;
-	
+
 	/* does_av_rule_use_perms ignores ~ if found reverse direction */
 	if(policy->av_access[rule_index].flags & AVFLAG_PERM_TILDA) {
 		direction ^= AP_RELABEL_DIR_BOTH;
@@ -382,8 +412,8 @@ static unsigned char ap_relabel_determine_rule_direction(int rule_index, policy_
 };
 
 /* query mode functions */
-static int ap_relabel_object_mode_query(int start_type, unsigned char requested_direction, 
-	ap_relabel_result_t *res, int *excluded_types, int num_excluded_types, 
+static int ap_relabel_object_mode_query(int start_type, unsigned char requested_direction,
+	ap_relabel_result_t *res, int *excluded_types, int num_excluded_types,
 	int *class_filter, int class_filter_sz, policy_t *policy)
 {
 	unsigned char direction_flag = AP_RELABEL_DIR_NONE;
@@ -403,7 +433,7 @@ static int ap_relabel_object_mode_query(int start_type, unsigned char requested_
 		direction_flag = AP_RELABEL_DIR_NONE;
 		if(index->nodes[i]->key.rule_type != RULE_TE_ALLOW)
 			continue;
-		if (class_filter && class_filter_sz > 0 && 
+		if (class_filter && class_filter_sz > 0 &&
 			find_int_in_array(index->nodes[i]->key.cls, class_filter, class_filter_sz) == -1)
 			continue;
 		if (excluded_types && num_excluded_types > 0 &&
@@ -416,7 +446,7 @@ static int ap_relabel_object_mode_query(int start_type, unsigned char requested_
 				direction_flag |= AP_RELABEL_DIR_FROM;
 		}
 		/* rule does not relabel */
-		if (direction_flag == AP_RELABEL_DIR_NONE) 
+		if (direction_flag == AP_RELABEL_DIR_NONE)
 			continue;
 		/* rule for starting point must contain opposite direction from requested */
 		if(direction_flag != AP_RELABEL_DIR_BOTH && direction_flag == requested_direction )
@@ -476,7 +506,7 @@ static int ap_relabel_object_mode_query(int start_type, unsigned char requested_
 	return 0;
 };
 
-static int ap_relabel_subject_mode_query(int start_type, ap_relabel_result_t *res, 
+static int ap_relabel_subject_mode_query(int start_type, ap_relabel_result_t *res,
 	int *class_filter, int class_filter_sz, policy_t *policy)
 {
 	avh_idx_t *index = NULL;
@@ -486,14 +516,14 @@ static int ap_relabel_subject_mode_query(int start_type, ap_relabel_result_t *re
 
 	relabelto_index = get_perm_idx(AP_RELABEL_RELABELTO, policy);
 	relabelfrom_index = get_perm_idx(AP_RELABEL_RELABELFROM, policy);
-	
+
 	index = avh_src_type_idx_find(&(policy->avh), start_type);
 	if(!index)
 		return 0;
 	for (i = 0; i < index->num_nodes; i++) {
 		if (index->nodes[i]->key.rule_type != RULE_TE_ALLOW)
 			continue;
-		if (class_filter && class_filter_sz > 0 && 
+		if (class_filter && class_filter_sz > 0 &&
 			find_int_in_array(index->nodes[i]->key.cls, class_filter, class_filter_sz) == -1)
 			continue;
 		for (j = 0; j < index->nodes[i]->num_data; j++) {
@@ -516,8 +546,8 @@ static int ap_relabel_subject_mode_query(int start_type, ap_relabel_result_t *re
 };
 
 /* main query function */
-int ap_relabel_query(int start_type, unsigned char mode, unsigned char direction, 
-	int *excluded_types, int num_excluded_types, int *class_filter, int class_filter_sz, 
+int ap_relabel_query(int start_type, unsigned char mode, unsigned char direction,
+	int *excluded_types, int num_excluded_types, int *class_filter, int class_filter_sz,
 	ap_relabel_result_t *res, policy_t *policy)
 {
 	if (!policy || !res)
@@ -541,16 +571,16 @@ int ap_relabel_query(int start_type, unsigned char mode, unsigned char direction
 			return -1;
 		res->requested_direction = direction;
 		if (direction == AP_RELABEL_DIR_BOTH) {
-			if (ap_relabel_object_mode_query(start_type, AP_RELABEL_DIR_TO, res, 
+			if (ap_relabel_object_mode_query(start_type, AP_RELABEL_DIR_TO, res,
 				excluded_types, num_excluded_types, class_filter, class_filter_sz, policy))
 				return -1;
-			return ap_relabel_object_mode_query(start_type, AP_RELABEL_DIR_FROM, res, 
+			return ap_relabel_object_mode_query(start_type, AP_RELABEL_DIR_FROM, res,
 				excluded_types, num_excluded_types, class_filter, class_filter_sz, policy);
 		} else {
-			return ap_relabel_object_mode_query(start_type, direction, res, 
+			return ap_relabel_object_mode_query(start_type, direction, res,
 				excluded_types, num_excluded_types, class_filter, class_filter_sz, policy);
 		}
-	} else if (mode == AP_RELABEL_MODE_SUBJ) { 
+	} else if (mode == AP_RELABEL_MODE_SUBJ) {
 		res->requested_direction = AP_RELABEL_DIR_BOTH;
 		return ap_relabel_subject_mode_query(start_type, res, class_filter, class_filter_sz, policy);
 	} else {

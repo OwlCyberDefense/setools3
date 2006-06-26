@@ -96,69 +96,12 @@ static int append_avrule_to_list(Tcl_Interp *interp,
 				 qpol_avrule_t *avrule,
 				 Tcl_Obj *result_list)
 {
-	uint32_t rule_type, is_enabled;
-	const char *rule_string;
-	qpol_type_t *source, *target;
-	qpol_class_t *obj_class;
-	qpol_iterator_t *perm_iter = NULL;
-	char *source_name, *target_name, *obj_class_name;
-	qpol_cond_t *cond;
-	Tcl_Obj *avrule_elem[7], *avrule_list, *cond_elem[2];
-	int retval = TCL_ERROR;
-
-	if (qpol_avrule_get_rule_type(policydb->qh, policydb->p, avrule, &rule_type) < 0 ||
-	    qpol_avrule_get_source_type(policydb->qh, policydb->p, avrule, &source) < 0 ||
-	    qpol_avrule_get_target_type(policydb->qh, policydb->p, avrule, &target) < 0 ||
-	    qpol_avrule_get_object_class(policydb->qh, policydb->p, avrule, &obj_class) < 0 ||
-	    qpol_avrule_get_perm_iter(policydb->qh, policydb->p, avrule, &perm_iter) < 0) {
-		goto cleanup;
+	Tcl_Obj *avrule_list;
+	if (apol_avrule_to_tcl_obj(interp, avrule, &avrule_list) == TCL_ERROR ||
+	    Tcl_ListObjAppendElement(interp, result_list, avrule_list) == TCL_ERROR) {
+		return TCL_ERROR;
 	}
-	if ((rule_string = apol_rule_type_to_str(rule_type)) == NULL) {
-		ERR(policydb, "Invalid avrule type %d.", rule_type);
-		goto cleanup;
-	}
-	if (qpol_type_get_name(policydb->qh, policydb->p, source, &source_name) < 0 ||
-	    qpol_type_get_name(policydb->qh, policydb->p, target, &target_name) < 0 ||
-	    qpol_class_get_name(policydb->qh, policydb->p, obj_class, &obj_class_name) < 0) {
-		goto cleanup;
-	}
-	avrule_elem[0] = Tcl_NewStringObj(rule_string, -1);
-	avrule_elem[1] = Tcl_NewStringObj(source_name, -1);
-	avrule_elem[2] = Tcl_NewStringObj(target_name, -1);
-	avrule_elem[3] = Tcl_NewStringObj(obj_class_name, -1);
-	avrule_elem[4] = Tcl_NewListObj(0, NULL);
-	for ( ; !qpol_iterator_end(perm_iter); qpol_iterator_next(perm_iter)) {
-		char *perm_name;
-		Tcl_Obj *perm_obj;
-		if (qpol_iterator_get_item(perm_iter, (void **) &perm_name) < 0) {
-			goto cleanup;
-		}
-		perm_obj = Tcl_NewStringObj(perm_name, -1);
-		if (Tcl_ListObjAppendElement(interp, avrule_elem[4], perm_obj) == TCL_ERROR) {
-			goto cleanup;
-		}
-	}
-	avrule_elem[5] = Tcl_NewStringObj("", -1);   /* FIX ME! */
-	if (qpol_avrule_get_cond(policydb->qh, policydb->p, avrule, &cond) < 0 ||
-	    qpol_avrule_get_is_enabled(policydb->qh, policydb->p, avrule, &is_enabled) < 0) {
-		goto cleanup;
-	}
-	if (cond == NULL) {
-		avrule_elem[6] = Tcl_NewListObj(0, NULL);
-	}
-	else {
-		cond_elem[0] = Tcl_NewStringObj(is_enabled ? "enabled" : "disabled", -1);
-		cond_elem[1] = Tcl_NewStringObj("", -1);  /* FIX ME! */
-		avrule_elem[6] = Tcl_NewListObj(2, cond_elem);
-	}
-	avrule_list = Tcl_NewListObj(7, avrule_elem);
-	if (Tcl_ListObjAppendElement(interp, result_list, avrule_list) == TCL_ERROR) {
-		goto cleanup;
-	}
-	retval = TCL_OK;
- cleanup:
-	qpol_iterator_destroy(&perm_iter);
-	return retval;
+	return TCL_OK;
 }
 
 /**
