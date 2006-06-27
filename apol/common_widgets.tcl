@@ -348,7 +348,7 @@ proc Apol_Widget::appendSearchResultText {path text} {
 # non-empty, then mark this line as enabled or disabled.
 proc Apol_Widget::appendSearchResultLine {path indent linenum cond_info line_type args} {
     $path.tb configure -state normal
-    $path.tb insert end [string repat " " $indent]
+    $path.tb insert end [string repeat " " $indent]
     if {$linenum != {}} {
         $path.tb insert end \[ {} $linenum linenum "\] "
     }
