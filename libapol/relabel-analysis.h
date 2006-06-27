@@ -37,49 +37,139 @@
 #define APOL_RELABEL_DIR_SUBJECT 0x04
 
 typedef struct apol_relabel_analysis apol_relabel_analysis_t;
+typedef struct apol_relabel_result apol_relabel_result_t;
+
+/******************** functions to do relabel analysis ********************/
+
+/**
+ * Execute a relabel analysis against a particular policy.
+ *
+ * @param p Policy within which to look up constraints.
+ * @param r A non-NULL structure containing parameters for analysis.
+ * @param result Reference to where to store the results of the
+ * analysis.  The caller must call apol_relabel_result_destroy() upon
+ * this.
+ *
+ * @return 0 on success (including none found), negative on error.
+ */
+extern int apol_relabel_analysis_do(apol_policy_t *p,
+                                    apol_relabel_analysis_t *r,
+                                    apol_relabel_result_t **result);
+
+/**
+ * Allocate and return a new relabel analysis structure.  All fields
+ * are cleared; one must fill in the details of the query before
+ * running it.  The caller must call apol_relabel_analysis_destroy()
+ * upon the return value afterwards.
+ *
+ * @return An initialized relabel analysis structure, or NULL upon
+ * error.
+ */
+extern apol_relabel_analysis_t *apol_relabel_analysis_create(void);
+
+/**
+ * Deallocate all memory associated with the referenced relabel
+ * analysis, and then set it to NULL.  This function does nothing if
+ * the analysis is already NULL.
+ *
+ * @param r Reference to a relabel analysis structure to destroy.
+ */
+extern void apol_relabel_analysis_destroy(apol_relabel_analysis_t **r);
+
+/**
+ * Set a relabel analysis to search in a specific direction.  This
+ * must be one of the values APOL_RELABEL_DIR_TO,
+ * APOL_RELABEL_DIR_FROM, APOL_RELABEL_DIR_BOTH, or
+ * APOL_RELABEL_DIR_SUBJECT.  This function must be called prior to
+ * running the analysis.
+ *
+ * @param p Policy handler, to report errors.
+ * @param r Relabel analysis to set.
+ * @param dir Direction to analyze, using one of the
+ * APOL_RELABEL_DIR_* defines.
+ *
+ * @return 0 on success, negative on error.
+ */
+extern int apol_relabel_analysis_set_dir(apol_policy_t *p,
+					 apol_relabel_analysis_t *r,
+					 unsigned int dir);
+
+/**
+ * Set a relabel analysis to begin searching using a given type.  This
+ * function must be called prior to running the analysis.
+ *
+ * @param p Policy handler, to report errors.
+ * @param r Relabel anlysis to set.
+ * @param name Begin searching types with this non-NULL name.
+ *
+ * @return 0 on success, negative on error.
+ */
+extern int apol_relabel_analysis_set_type(apol_policy_t *p,
+					  apol_relabel_analysis_t *r,
+					  const char *name);
+
+/**
+ * Set a relabel analysis to return only types matching a regular
+ * expression.  Note that if regexp will also match types' aliases.
+ *
+ * @param p Policy handler, to report errors.
+ * @param r Relabel anlysis to set.
+ * @param result Only return types matching this regular expression, or
+ * NULL to return all types
+ *
+ * @return 0 on success, negative on error.
+ */
+extern int apol_relabel_analysis_set_result_regexp(apol_policy_t *p,
+						   apol_relabel_analysis_t *r,
+						   const char *result);
+
+/******************** functions to access relabel results ********************/
+
+/**
+ * Free all memory associated with a relabel result, including the
+ * pointer itself.  This function does nothing if the result is
+ * already NULL.
+ *
+ * @param result Reference to a relabel result structure to destroy.  The
+ * pointer will be set to NULL afterwards.
+ */
+extern void apol_relabel_result_destroy(apol_relabel_result_t **result);
 
 
-/* data structures */
-typedef struct ap_relabel_rule {
-	int		rule_index;
-	unsigned char	direction;
-} ap_relabel_rule_t;
+/**
+ * Return the relabelto vector embedded within an apol_relabel_result
+ * node.  This is a vector qpol_rule_t pointers.  The caller shall not
+ * call apol_vector_destroy() upon this pointer.
+ *
+ * @param r Relabel result node.
+ *
+ * @return Pointer to a vector of rules, relative to the policy
+ * originally used to generate the relabelling result.
+ */
+extern apol_vector_t *apol_relabel_result_get_to(apol_relabel_result_t *r);
 
-typedef struct ap_relabel_subject {
-	int			source_type;
-	ap_relabel_rule_t	*rules;
-	int			num_rules;
-	unsigned char		direction;
-} ap_relabel_subject_t;
+/**
+ * Return the relabelfrom vector embedded within an
+ * apol_relabel_result node.  This is a vector qpol_rule_t pointers.
+ * The caller shall not call apol_vector_destroy() upon this pointer.
+ *
+ * @param r Relabel result node.
+ *
+ * @return Pointer to a vector of rules, relative to the policy
+ * originally used to generate the relabelling result.
+ */
+extern apol_vector_t *apol_relabel_result_get_from(apol_relabel_result_t *r);
 
-typedef struct ap_relabel_object {
-	int			object_class;
-	ap_relabel_subject_t	*subjects;
-	int			num_subjects;
-	unsigned char		direction;
-} ap_relabel_object_t;
-
-typedef struct ap_relabel_target {
-	int			target_type;
-	ap_relabel_object_t	*objects;
-	int			num_objects;
-	unsigned char		direction;
-} ap_relabel_target_t;
-
-typedef struct ap_relabel_result {
-	int			start_type;
-	unsigned char		mode;
-	unsigned char		requested_direction;
-	ap_relabel_target_t	*targets;
-	int			num_targets;
-} ap_relabel_result_t;
-
-/* query function */
-int ap_relabel_query(int start_type, unsigned char mode, unsigned char direction,
-	int *excluded_types, int num_excluded_types, int *class_filter, int class_filter_sz,
-	ap_relabel_result_t *res, policy_t *policy);
-
-/* clean-up function */
-void ap_relabel_result_destroy(ap_relabel_result_t *res);
+/**
+ * Return the relabelboth vector embedded within an
+ * apol_relabel_result node.  This is a vector qpol_rule_t pointers.
+ * The caller shall not call apol_vector_destroy() upon this pointer.
+ *
+ * @param r Relabel result node.
+ *
+ * @return Pointer to a vector of rules, relative to the policy
+ * originally used to generate the relabelling result.
+ */
+extern apol_vector_t *apol_relabel_result_get_both(apol_relabel_result_t *r);
 
 #endif

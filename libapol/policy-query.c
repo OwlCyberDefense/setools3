@@ -275,24 +275,53 @@ int apol_compare_context(apol_policy_t *p, qpol_context_t *target,
 
 /******************** other helpers ********************/
 
-int apol_query_append_type(apol_policy_t *p, apol_vector_t *v, qpol_type_t *type) {
+int apol_query_get_type(apol_policy_t *p, const char *type_name, qpol_type_t **type) {
 	unsigned char isalias;
-	qpol_type_t *real_type = type;
-	if (qpol_type_get_isattr(p->qh, p->p, type, &isalias) < 0) {
+	if (qpol_policy_get_type_by_name(p->qh, p->p, type_name, type) < 0 ||
+	    qpol_type_get_isattr(p->qh, p->p, *type, &isalias) < 0) {
 		return -1;
 	}
 	if (isalias) {
 		char *primary_name;
-		if (qpol_type_get_name(p->qh, p->p, type, &primary_name) < 0 ||
-		    qpol_policy_get_type_by_name(p->qh, p->p, primary_name, &real_type) < 0) {
+		if (qpol_type_get_name(p->qh, p->p, *type, &primary_name) < 0 ||
+		    qpol_policy_get_type_by_name(p->qh, p->p, primary_name, type) < 0) {
 			return -1;
 		}
 	}
-	if (apol_vector_append(v, real_type) < 0) {
-		ERR(p, "Out of memory!");
-		return -1;
-	}
 	return 0;
+}
+
+/**
+ * Append a non-aliased type to a vector.  If the passed in type is an
+ * alias, find its primary type and append that instead.
+ *
+ * @param p Policy in which to look up types.
+ * @param v Vector in which append the non-aliased type.
+ * @param type Type or attribute to append.  If this is an alias,
+ * append its primary.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+static int apol_query_append_type(apol_policy_t *p, apol_vector_t *v,
+				  qpol_type_t *type)
+{
+        unsigned char isalias;
+        qpol_type_t *real_type = type;
+        if (qpol_type_get_isattr(p->qh, p->p, type, &isalias) < 0) {
+                return -1;
+        }
+        if (isalias) {
+                char *primary_name;
+                if (qpol_type_get_name(p->qh, p->p, type, &primary_name) < 0 ||
+                    qpol_policy_get_type_by_name(p->qh, p->p, primary_name, &real_type) < 0) {
+                        return -1;
+                }
+        }
+        if (apol_vector_append(v, real_type) < 0) {
+                ERR(p, "Out of memory!");
+                return -1;
+        }
+        return 0;
 }
 
 apol_vector_t *apol_query_create_candidate_type_list(apol_policy_t *p,

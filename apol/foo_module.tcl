@@ -135,8 +135,8 @@ proc Apol_Analysis_foo::gotoLine {tab line_num} {
     set textbox $tab.results
     # Remove any selection tags.
     $textbox tag remove sel 0.0 end
-    $textbox mark set insert ${line_num}.0 
-    $textbox see ${line_num}.0 
+    $textbox mark set insert ${line_num}.0
+    $textbox see ${line_num}.0
     $textbox tag add sel $line_num.0 $line_num.end
     focus $textbox
 }

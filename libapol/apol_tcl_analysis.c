@@ -29,24 +29,64 @@
 #include <tcl.h>
 
 /**
+ * Convert an apol vector of pointers to a Tcl representation.
+ *
+ * @param interp Tcl interpreter object.
+ * @param v Apol vector to convert.
+ * @param obj Destination to create Tcl list.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+static int apol_vector_to_tcl_list(Tcl_Interp *interp,
+				   apol_vector_t *v,
+				   Tcl_Obj **obj)
+{
+	size_t i;
+	*obj = Tcl_NewListObj(0, NULL);
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		void *p = apol_vector_get_element(v, i);
+		Tcl_Obj *o = Tcl_NewLongObj((long) p);
+		if (Tcl_ListObjAppendElement(interp, *obj, o) == TCL_ERROR) {
+			return -1;
+		}
+	}
+	return 0;
+}
+
+/**
+ * Take a result node from a relabel analysis and append a tuple of it
+ * to result_list.  The tuple consists of:
+ * <code>
+ *   { domain_type  to_rules  from_rules  both_rules }
+ * </code>
+ */
+static int append_relabel_result_to_list(Tcl_Interp *interp,
+                                         apol_relabel_result_t *result,
+                                         Tcl_Obj **result_obj)
+{
+	Tcl_Obj *relabel_elem[3];
+	int retval = TCL_ERROR;
+
+	if (apol_vector_to_tcl_list(interp, apol_relabel_result_get_to(result), relabel_elem + 0) < 0 ||
+	    apol_vector_to_tcl_list(interp, apol_relabel_result_get_from(result), relabel_elem + 1) < 0 ||
+	    apol_vector_to_tcl_list(interp, apol_relabel_result_get_both(result), relabel_elem + 2) < 0) {
+		goto cleanup;
+	}
+	*result_obj = Tcl_NewListObj(3, relabel_elem);
+	retval = TCL_OK;
+ cleanup:
+	return retval;
+}
+
+/**
  * Return an unsorted list of results for a relabel analysis tuples.
- * The type of tuple depends upon the mode.
- *
- * If doing object relabelling ("to", "from", or "both") then each
- * result is a 3-tuple consisting of:
+ * Each tuple consists of:
  * <ul>
- *   <li>domain type
- *   <li>list of domains it can relabelto/from
- *   <li>list of rules for that domain type
- * </ul>
- *
- * If doing domain relabelling ("subject") then each result is a
- * 4-tuple of:
- * <ul>
- *   <li>domain type
- *   <li>list of domains it can relabel from
- *   <li>list of domains it can relabel to
- *   <li>list of rules that relabel
+ *   <li>domain type (source type if doing relabelfrom, target type if
+ *        relabelto or if doing subject mode analysis)
+ *   <li>list of rules to which can be relabeled
+ *   <li>list of rules from which can be relabeled
+ *   <li>list of rules that can be relabeled to and from
  * </ul>
  *
  * Rules are unique identifiers (relative to currently loaded policy).
@@ -60,168 +100,70 @@
  * </ol>
  *
  */
-static int Apol_RelabelAnalysis (ClientData clientData, Tcl_Interp *interp,
-                                 int argc, Tcl_Obj * CONST argv[]) {
-        Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
-        int retval = TCL_ERROR;
+static int Apol_RelabelAnalysis(ClientData clientData, Tcl_Interp *interp,
+                                int argc, CONST char *argv[]) {
+	Tcl_Obj *result_obj = NULL;
+	apol_relabel_result_t *result = NULL;
+	apol_relabel_analysis_t *analysis = NULL;
+	int direction;
+	int retval = TCL_ERROR;
 
 	apol_tcl_clear_error();
 	if (policydb == NULL) {
 		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		goto cleanup;
 	}
-	if (argc != 3) {
+	if (argc != 4) {
 		ERR(policydb, "Need an analysis mode, starting type, and resulting type regexp.");
 		goto cleanup;
 	}
 
-        Tcl_SetObjResult(interp, result_obj);
-        retval = TCL_OK;
+	if (strcmp(argv[1], "to") == 0) {
+		direction = APOL_RELABEL_DIR_TO;
+	}
+	else if (strcmp(argv[1], "from") == 0) {
+		direction = APOL_RELABEL_DIR_FROM;
+	}
+	else if (strcmp(argv[1], "both") == 0) {
+		direction = APOL_RELABEL_DIR_BOTH;
+	}
+	else if (strcmp(argv[1], "subject") == 0) {
+		direction = APOL_RELABEL_DIR_SUBJECT;
+	}
+	else {
+		ERR(policydb, "Invalid relabel mode %s.", argv[1]);
+		goto cleanup;
+	}
+
+        if ((analysis = apol_relabel_analysis_create()) == NULL) {
+		ERR(policydb, "Out of memory!");
+		goto cleanup;
+	}
+
+	if (apol_relabel_analysis_set_dir(policydb, analysis, direction) < 0 ||
+	    apol_relabel_analysis_set_type(policydb, analysis, argv[2]) < 0 ||
+	    apol_relabel_analysis_set_result_regexp(policydb, analysis, argv[3])) {
+		goto cleanup;
+	}
+
+	if (apol_relabel_analysis_do(policydb, analysis, &result) < 0 ||
+            append_relabel_result_to_list(interp, result, &result_obj) == TCL_ERROR) {
+                goto cleanup;
+	}
+
+	Tcl_SetObjResult(interp, result_obj);
+	retval = TCL_OK;
  cleanup:
-        if (retval == TCL_ERROR) {
-                apol_tcl_write_error(interp);
-        }
-        return retval;
+	apol_relabel_analysis_destroy(&analysis);
+	apol_relabel_result_destroy(&result);
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
 }
-
-/* FIX ME */
-#if 0
-	unsigned char mode;
-	unsigned char direction;
-	ap_relabel_result_t results;
-	char *mode_string, *end_type = NULL, *err;
-	int start_type, do_filter_types;
-	Tcl_Obj *results_list_obj;
-	regex_t reg;
-	int *filter_types = NULL, rt, sz, num_filter_types, i;
-	CONST char **class_filter_names, **subj_filter_names;
-	int class_filter_sz = 0, subj_filter_sz  = 0;
-	int *class_filter = NULL, *subj_filter = NULL;
-
-
-        start_type = get_type_idx (Tcl_GetString (objv [1]), policy);
-        if (!is_valid_type (policy, start_type, 0)) {
-                Tcl_SetResult (interp, "Invalid starting type name", TCL_STATIC);
-                return TCL_ERROR;
-        }
-        mode_string = Tcl_GetString (objv [2]);
-
-        if (strcmp (mode_string, "to") == 0) {
-                mode = AP_RELABEL_MODE_OBJ;
-		direction = AP_RELABEL_DIR_TO;
-        } else if (strcmp (mode_string, "from") == 0) {
-                mode = AP_RELABEL_MODE_OBJ;
-		direction = AP_RELABEL_DIR_FROM;
-        } else if (strcmp (mode_string, "subject") == 0) {
-                mode = AP_RELABEL_MODE_SUBJ;
-		direction = AP_RELABEL_DIR_BOTH;
-        } else if (strcmp (mode_string, "both") == 0) {
-                mode = AP_RELABEL_MODE_OBJ;
-		direction = AP_RELABEL_DIR_BOTH;
-        } else {
-                Tcl_SetResult (interp, "Invalid relabel mode", TCL_STATIC);
-                return TCL_ERROR;
-        }
-
-	rt = Tcl_SplitList(interp, Tcl_GetString(objv[3]), &class_filter_sz, &class_filter_names);
-	if (rt != TCL_OK) {
-		Tcl_SetResult(interp, "Error splitting TCL list.", TCL_STATIC);
-		return TCL_ERROR;
-	}
-	if (class_filter_sz > 0) {
-		class_filter = (int*)malloc(class_filter_sz * sizeof(int));
-		for (i = 0; i < class_filter_sz; i++) {
-			class_filter[i] = get_obj_class_idx(class_filter_names[i], policy);
-		}
-	}
-
-	rt = Tcl_SplitList(interp, Tcl_GetString(objv[4]), &subj_filter_sz, &subj_filter_names);
-	if (rt != TCL_OK) {
-		Tcl_SetResult(interp, "Error splitting TCL list.", TCL_STATIC);
-		return TCL_ERROR;
-	}
-	if (subj_filter_sz > 0) {
-		subj_filter = (int*)malloc(subj_filter_sz * sizeof(int));
-		for (i = 0; i < subj_filter_sz; i++) {
-			subj_filter[i] = get_type_idx(subj_filter_names[i], policy);
-		}
-	}
-
-        if (Tcl_GetIntFromObj(interp, objv[5], &do_filter_types) != TCL_OK) {
-	 Tcl_SetResult (interp, "Error while geting integer from TCL object.", TCL_STATIC);
-	         return TCL_ERROR;
-	}
-	end_type = Tcl_GetString(objv[6]);
-        if (do_filter_types) {
-	if (str_is_only_white_space(end_type)) {
-			Tcl_SetResult (interp, "Please provide a regular expression for filtering the end types.", TCL_STATIC);
-			return TCL_ERROR;
-		}
-		trim_trailing_whitespace(&end_type);
-		rt = regcomp(&reg, end_type, REG_EXTENDED|REG_NOSUB);
-		if (rt != 0) {
-			sz = regerror(rt, &reg, NULL, 0);
-			if ((err = (char *)malloc(++sz)) == NULL) {
-				Tcl_SetResult (interp, "Out of memory.", TCL_STATIC);
-				return TCL_ERROR;
-			}
-			regerror(rt, &reg, err, sz);
-			regfree(&reg);
-			Tcl_Obj *tcl_err = Tcl_NewStringObj(err, -1);
-			assert(tcl_err);
-			Tcl_SetObjResult(interp, tcl_err);
-			free(err);
-			return TCL_ERROR;
-		}
-		rt = get_type_idxs_by_regex(&filter_types, &num_filter_types, &reg, FALSE, policy);
-		if (rt < 0) {
-			Tcl_SetResult (interp, "Error searching types\n", TCL_STATIC);
-			return TCL_ERROR;
-		}
-	}
-
-        /* Get the results of our query */
-        if (ap_relabel_query (start_type, mode, direction,
-				subj_filter, subj_filter_sz,
-				class_filter, class_filter_sz,
-				&results, policy)) {
-                free(filter_types);
-		free(subj_filter);
-		free(class_filter);
-                ap_relabel_result_destroy (&results);
-                Tcl_SetResult (interp, "Error doing analysis", TCL_STATIC);
-                return TCL_ERROR;
-        }
-
-        switch (mode) {
-        case AP_RELABEL_MODE_OBJ: {
-                results_list_obj = apol_relabel_fromto_results(&results, start_type, policy,
-						do_filter_types, filter_types,
-						num_filter_types);
-                break;
-        }
-        default: {
-                results_list_obj = apol_relabel_domain_results(&results, start_type, policy,
-								do_filter_types, filter_types,
-								num_filter_types);
-                break;
-        }
-        }
-        free(filter_types);
-	free(subj_filter);
-	free(class_filter);
-	ap_relabel_result_destroy (&results);
-        if (results_list_obj == NULL) {
-                Tcl_SetResult (interp, "Error processing relabeling results", TCL_STATIC);
-                return TCL_ERROR;
-        }
-        Tcl_SetObjResult (interp, results_list_obj);
-        return TCL_OK;
-}
-#endif
 
 int apol_tcl_analysis_init(Tcl_Interp *interp) {
-	Tcl_CreateObjCommand(interp, "apol_RelabelAnalysis", Apol_RelabelAnalysis, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_RelabelAnalysis", Apol_RelabelAnalysis, NULL, NULL);
         /*
 	Tcl_CreateCommand(interp, "apol_DomainTransitionAnalysis", Apol_DomainTransitionAnalysis, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_DirectInformationFlowAnalysis", Apol_DirectInformationFlowAnalysis, NULL, NULL);
