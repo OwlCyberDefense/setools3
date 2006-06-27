@@ -239,9 +239,9 @@ static int Apol_RenderContext(ClientData clientData, Tcl_Interp *interp, int arg
  */
 static int Apol_RenderAVRule(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
-	int rule_num;
+	long rule_num;
 	qpol_avrule_t *avrule;
-	Tcl_Obj *result_obj;
+	Tcl_Obj *o, *result_obj;
 	int retval = TCL_ERROR;
 	apol_tcl_clear_error();
 	if (policydb == NULL) {
@@ -249,10 +249,11 @@ static int Apol_RenderAVRule(ClientData clientData, Tcl_Interp *interp, int argc
 		goto cleanup;
 	}
 	if (argc != 2) {
-		ERR(policydb, "Need a context.");
+		ERR(policydb, "Need an avrule identifier.");
 		goto cleanup;
 	}
-	if (Tcl_GetInt(interp, argv[1], &rule_num) == TCL_ERROR) {
+	o = Tcl_NewStringObj(argv[1], -1);
+	if (Tcl_GetLongFromObj(interp, o, &rule_num) == TCL_ERROR) {
 		goto cleanup;
 	}
 	avrule = (qpol_avrule_t *) rule_num;

@@ -262,18 +262,18 @@ int apol_compare_context(apol_policy_t *p, qpol_context_t *target,
 			 apol_context_t *search, unsigned int flags);
 
 /**
- * Append a non-aliased type to a vector.  If the passed in type is an
- * alias, find its primary type and append that instead.
+ * Given a type name, obtain its qpol_type_t pointer (relative to a
+ * policy).  If the type is really its alias, get its primary instead.
+ * (Attributes are considered to be always primary.)
  *
  * @param p Policy in which to look up types.
- * @param v Vector in which append the non-aliased type.
- * @param type Type or attribute to append.  If this is an alias,
- * append its primary.
+ * @param type_name Name of type to find.
+ * @param type Reference to where to store resulting pointer.
  *
  * @return 0 on success, < 0 on error.
  */
-int apol_query_append_type(apol_policy_t *p, apol_vector_t *v,
-			   qpol_type_t *type);
+int apol_query_get_type(apol_policy_t *p, const char *type_name,
+			qpol_type_t **type);
 
 /**
  * Given a symbol name (a type, attribute, alias, or a regular

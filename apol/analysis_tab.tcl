@@ -66,7 +66,7 @@ proc Apol_Analysis::save_query_options {file_channel query_file} {
 proc Apol_Analysis::load_query_options {file_channel parentDlg} {
     variable vals
     variable widgets
-    
+
     # Search for the module name
     set line {}
     while {[gets $file_channel line] >= 0} {
@@ -197,7 +197,7 @@ proc Apol_Analysis::selectModule {} {
     variable vals
     variable widgets
     variable tabs
-    
+
     focus $widgets(modules).lb
     if {[set selection [$widgets(modules).lb curselection]] == {}} {
         return
@@ -213,8 +213,21 @@ proc Apol_Analysis::selectModule {} {
 }
 
 proc Apol_Analysis::analyze {which_button} {
+    variable vals
     variable widgets
+    variable tabs
+
     set m [$widgets(search_opts) raise]
+    set tabs(analyses_done) -1
+    set tabs(analyses_text) "Performing $vals($m:name) Analysis"
+    ProgressDlg .analysis_busy -title "$vals($m:name) Analysis" \
+        -type normal -stop {} -separator 1 -parent . -maximum 2 \
+        -width [string length $tabs(analyses_text)] \
+        -textvariable Apol_Analysis::tabs(analyses_text) \
+        -variable Apol_Analysis::tabs(analyses_done)
+    ApolTop::setBusyCursor
+    update idletasks
+
     if {$which_button == "new"} {
         set retval [${m}::newAnalysis]
     } else {
@@ -223,6 +236,10 @@ proc Apol_Analysis::analyze {which_button} {
             deleteCurrentResults
         }
     }
+
+    ApolTop::resetBusyCursor
+    destroy .analysis_busy
+
     if {$retval != {}} {
         tk_messageBox -icon error -type ok -title Error -message "Error while performing analysis:\n\n$retval"
     }
