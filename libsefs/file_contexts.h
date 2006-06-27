@@ -48,7 +48,7 @@ typedef struct sefs_fc_entry {
 } sefs_fc_entry_t; 
 
 int parse_file_contexts_file(const char *fc_path, apol_vector_t **contexts, int *num_contexts, apol_policy_t *policy);
-void sefs_fc_entry_free(sefs_fc_entry_t *fc_entry);
+void sefs_fc_entry_free(void *fc);
 int find_default_file_contexts_file(char **path);
 
 #endif /* FILE_CONTEXTS_H */

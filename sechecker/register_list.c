@@ -8,8 +8,8 @@
 
 #include "register_list.h"
 
-static int sechk_register_num_modules=-1;
-static int sechk_register_num_profiles=-1;
+static size_t sechk_register_num_modules=0;
+static size_t sechk_register_num_profiles=0;
 
 /* NULL terminated array of module names and register functions */
 static sechk_module_name_reg_t sechk_module_register_list[] = { 
@@ -51,9 +51,9 @@ static sechk_profile_name_reg_t sechk_profile_register_list[] = {
 	{NULL, NULL, NULL}
 };
 
-int sechk_register_list_get_num_profiles()
+size_t sechk_register_list_get_num_profiles()
 {
-	int i;
+	size_t i;
 	if (sechk_register_num_profiles != -1)
 		return sechk_register_num_profiles;
 	for (i=0; sechk_profile_register_list[i].name != NULL; i++);
@@ -67,10 +67,10 @@ const sechk_profile_name_reg_t* sechk_register_list_get_profiles()
 	return sechk_profile_register_list;
 }
 
-int sechk_register_list_get_num_modules()
+size_t sechk_register_list_get_num_modules()
 {
-	int i;
-	if (sechk_register_num_modules != -1)
+	size_t i;
+	if (sechk_register_num_modules != 0)
 		return sechk_register_num_modules;
 	for (i=0; sechk_module_register_list[i].name != NULL; i++);
 

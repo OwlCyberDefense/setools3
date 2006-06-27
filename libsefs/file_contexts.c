@@ -235,8 +235,9 @@ failure:
 	return -1;
 }
 
-void sefs_fc_entry_free(sefs_fc_entry_t *fc_entry)
+void sefs_fc_entry_free(void *fc)
 {
+	sefs_fc_entry_t *fc_entry = (sefs_fc_entry_t*)fc;
 	if (!fc_entry)
 		return;
 	free(fc_entry->path);
