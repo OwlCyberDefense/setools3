@@ -80,7 +80,8 @@ void usage(const char *arg0, bool_t brief)
 int sechk_print_list(sechk_lib_t *lib)
 {
 	const sechk_profile_name_reg_t *profiles;
-	int num_profiles, i;
+	size_t num_profiles, i;
+	sechk_module_t *mod = NULL;
 
 	printf("\nProfiles:\n");
 	profiles = sechk_register_list_get_profiles();
@@ -92,11 +93,11 @@ int sechk_print_list(sechk_lib_t *lib)
 		printf("<none>\n");
 
 	printf("Modules:\n");
-	/* TODO: should we be storing the description in the register list and iterate there instead? */
-	for(i = 0; i < lib->num_modules; i++) {
-		printf("%20s\t%s\n", lib->modules[i].name, lib->modules[i].brief_description);
+	for(i = 0; i < apol_vector_get_size(lib->modules); i++) {
+		mod = apol_vector_get_element(lib->modules, i);
+		printf("%20s\t%s\n", mod->name, mod->brief_description);
 	}
-	if (lib->num_modules == 0)
+	if (apol_vector_get_size(lib->modules) == 0)
 		printf("<none>\n");
 	printf("\n");
 	return 0;
@@ -114,6 +115,7 @@ int main(int argc, char **argv)
 	char *minsev = NULL;
 	unsigned char output_override = 0;
 	sechk_lib_t *lib;
+	sechk_module_t *mod = NULL;
 	bool_t list_stop = FALSE;
 	bool_t module_help = FALSE;
 
@@ -215,8 +217,9 @@ int main(int argc, char **argv)
 			fprintf(stderr, "Error: Module %s does not exist.\n", modname);
 			goto exit_err;
 		}
-		printf("\nModule name: %s\n%s\n%s\n", lib->modules[retv].name, lib->modules[retv].detailed_description, 
-		       lib->modules[retv].opt_description);
+		mod = apol_vector_get_element(lib->modules, retv);
+		printf("\nModule name: %s\n%s\n%s\n", mod->name, mod->detailed_description, 
+		       mod->opt_description);
 		goto exit;
 	}
 
@@ -235,16 +238,16 @@ int main(int argc, char **argv)
 	}
 	
 	/* set the minimum severity */
-	if (minsev && sechk_lib_set_minsev(lib, minsev) < 0)
+	if (minsev && sechk_lib_set_minsev(minsev, lib) < 0)
 		goto exit_err;
 
 	/* initialize the policy */
-	if (sechk_lib_load_policy(polpath,lib) < 0)
+	if (sechk_lib_load_policy(polpath, lib) < 0)
 		goto exit_err;
 
 #ifdef LIBSEFS
 	/* initialize the file contexts */
-	if (sechk_lib_load_fc(fcpath,lib) < 0)
+	if (sechk_lib_load_fc(fcpath, lib) < 0)
 		goto exit_err;
 #endif
 	/* initialize the output format */
@@ -256,14 +259,16 @@ int main(int argc, char **argv)
 	/* if running only one module, deselect all others */
 	if (modname) {
 		retv = sechk_lib_get_module_idx(modname, lib);
-		if (retv == -1 || retv >= lib->num_modules) {
+		if (retv == -1 || retv >= apol_vector_get_size(lib->modules)) {
 			fprintf(stderr, "Error: module %s not found\n", modname);
 			goto exit_err;
 		}
-		for (i = 0; i < lib->num_modules; i++) {
-			lib->module_selection[i] = FALSE;
+		for (i = 0; i < apol_vector_get_size(lib->modules); i++) {
+			mod = apol_vector_get_element(lib->modules, i);
+			mod->selected = FALSE;
 		}
-		lib->module_selection[retv] = TRUE;
+		mod = apol_vector_get_element(lib->modules, retv);
+		mod->selected = TRUE;
 	}
 
 	/* process dependencies for selected modules */
@@ -285,14 +290,16 @@ int main(int argc, char **argv)
 	/* if running only one module, deselect all others again before printing */
 	if (modname) {
 		retv = sechk_lib_get_module_idx(modname, lib);
-		if (retv == -1 || retv >= lib->num_modules) {
+		if (retv == -1 || retv >= apol_vector_get_size(lib->modules)) {
 			fprintf(stderr, "Error: module %s not found\n", modname);
 			goto exit_err;
 		}
-		for (i = 0; i < lib->num_modules; i++) {
-			lib->module_selection[i] = FALSE;
+		for (i = 0; i < apol_vector_get_size(lib->modules); i++) {
+			mod = apol_vector_get_element(lib->modules, i);
+			mod->selected = FALSE;
 		}
-		lib->module_selection[retv] = TRUE;
+		mod = apol_vector_get_element(lib->modules, retv);
+		mod->selected = TRUE;
 	}
 
 	/* print the report */
@@ -307,8 +314,7 @@ exit:
 	free(prof_name);
 	free(polpath);
 	free(modname);
-	sechk_lib_free(lib);
-	free(lib);
+	sechk_lib_destroy(&lib);
 	return 0;
 
 exit_err:
@@ -319,7 +325,7 @@ exit_err:
 	free(prof_name);
 	free(polpath);
 	free(modname);
-	sechk_lib_free(lib);
-	free(lib);
+	sechk_lib_destroy(&lib);
 	return 1;
 }
+

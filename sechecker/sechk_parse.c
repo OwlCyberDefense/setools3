@@ -27,12 +27,36 @@
 #define SECHK_PARSE_OUTPUT_SHORT          "short"
 #define SECHK_PARSE_OUTPUT_VERBOSE        "verbose"
 
-static char *build_dtd_path(void);
+static char *build_dtd_path(void)
+{
+	char *path = NULL;
+	int path_sz = 0;
+	
+	#ifdef PROFILE_INSTALL_DIR
+	if (append_str(&path, &path_sz, "file://localhost") == -1)
+		return NULL;
 
-/* Parsing functions */
+	if (append_str(&path, &path_sz, BASE_PATH) == -1)
+		return NULL;
 
-/*
- * Parse the configuration file. */
+	if (append_str(&path, &path_sz, "/") == -1)
+		return NULL;
+
+	if (append_str(&path, &path_sz, PROFILE_INSTALL_DIR) == -1)
+		return NULL;
+
+	if (append_str(&path, &path_sz, "/sechecker.dtd") == -1)
+		return NULL;
+
+	return path;
+	#endif
+	
+	return NULL;
+}
+
+ /* Parsing functions */
+
+/* Parse the configuration file. */
 int sechk_lib_parse_xml_file(const char *filename, sechk_lib_t *lib) 
 {
 	xmlTextReaderPtr reader = NULL;
@@ -87,6 +111,7 @@ int sechk_lib_parse_xml_file(const char *filename, sechk_lib_t *lib)
 	while (1) {
 		ret = xmlTextReaderRead(reader);
 		if (ret == -1) {
+			ret = errno;
 			fprintf(stderr, "Error: Error reading xml.\n");
 			goto exit_err;
 		}
@@ -101,6 +126,7 @@ int sechk_lib_parse_xml_file(const char *filename, sechk_lib_t *lib)
 			if (ret == 0)
 				break;
 			if (ret == -1) {
+				ret = errno;
 				fprintf(stderr, "Error in xmlTextReaderNext()\n");
 				goto exit_err;
 			}			
@@ -121,8 +147,7 @@ int sechk_lib_parse_xml_file(const char *filename, sechk_lib_t *lib)
 	return -1;
 }
 
-/*
- * process a single node in the xml file */
+/* process a single node in the xml file */
 int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib)
 {
 	xmlChar *attrib = NULL;
@@ -171,8 +196,8 @@ int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib)
 						return 1; /* not a fatal error */
 				} else {
 					/* set the values on the existing module */
-					current_module = &lib->modules[idx];
-					lib->module_selection[idx] = TRUE;
+					current_module = apol_vector_get_element(lib->modules, idx);
+					current_module->selected = TRUE;
 				}
 				free(attrib);
 				attrib = NULL;
@@ -207,8 +232,7 @@ int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib)
 			}
 			nv->value = strdup((char*)value);
 			/* add the nv pair to the module options */
-			nv->next = current_module->options;
-			current_module->options = nv;
+			apol_vector_append(current_module->options, (void*)nv);
 
 		} else if (xmlStrEqual(xmlTextReaderConstName(reader), (xmlChar*)SECHK_PARSE_OUTPUT_TAG) == 1) {
 			if (!current_module) {
@@ -241,36 +265,8 @@ int sechk_lib_process_xml_node(xmlTextReaderPtr reader, sechk_lib_t *lib)
 	return 0;
 
  exit_err:
-	if (nv) {
-		sechk_name_value_destroy(nv);
-	}
+	sechk_name_value_free(nv);
+	errno = EIO;
 	return -1;
 }
 
-static char *build_dtd_path(void)
-{
-	char *path = NULL;
-	int path_sz = 0;
-	
-	#ifdef PROFILE_INSTALL_DIR
-	if (append_str(&path, &path_sz, "file://localhost") == -1)
-		return NULL;
-
-	if (append_str(&path, &path_sz, BASE_PATH) == -1)
-		return NULL;
-
-	if (append_str(&path, &path_sz, "/") == -1)
-		return NULL;
-
-	if (append_str(&path, &path_sz, PROFILE_INSTALL_DIR) == -1)
-		return NULL;
-
-	if (append_str(&path, &path_sz, "/sechecker.dtd") == -1)
-		return NULL;
-
-	return path;
-	#endif
-	
-	return NULL;
-}
- 

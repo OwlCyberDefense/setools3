@@ -9,18 +9,12 @@
 #include "sechecker.h"
 #include "policy.h"
 #include "inc_dom_trans.h"
-#include "semantic/avhash.h"
-#include "semantic/avsemantics.h"
 #include "render.h"
-#include "dta.h"
+//#include "dta.h" FIXME
 
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-
-/* This is the pointer to the library which contains the module;
- * it is used to access needed parts of the library policy, fc entries, etc.*/
-static sechk_lib_t *library;
 
 /* This string is the name of the module and should match the stem
  * of the file name; it should also match the prefix of all functions
@@ -31,6 +25,7 @@ static const char *const mod_name = "inc_dom_trans";
  * with the library. */
 int inc_dom_trans_register(sechk_lib_t *lib)
 {
+#if 0
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
 
@@ -140,6 +135,7 @@ int inc_dom_trans_register(sechk_lib_t *lib)
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
+#endif
 	return 0;
 }
 
@@ -148,6 +144,7 @@ int inc_dom_trans_register(sechk_lib_t *lib)
  * file. */
 int inc_dom_trans_init(sechk_module_t *mod, policy_t *policy)
 {
+#if 0
 	sechk_name_value_t *opt = NULL;
 	inc_dom_trans_data_t *datum = NULL;
 
@@ -172,6 +169,7 @@ int inc_dom_trans_init(sechk_module_t *mod, policy_t *policy)
 		opt = opt->next;
 	}
 
+#endif
 	return 0;
 }
 
@@ -289,18 +287,20 @@ int inc_dom_trans_run(sechk_module_t *mod, policy_t *policy)
 
 	dta_table_free(table);
 	free(table);
+#endif
 	return 0;
 
+#if 0
 inc_dom_trans_run_fail:
 	dta_table_free(table);
 	free(table);
 	sechk_item_free(item);
 	sechk_result_free(res);
-#endif
 	return -1;
+#endif
 }
 /* The free function frees the private data of a module */
-void inc_dom_trans_free(sechk_module_t *mod)
+void inc_dom_trans_data_free(void *data)
 {
 /* FIX ME: need to convert this to use new libapol */
 #if 0
@@ -330,6 +330,7 @@ void inc_dom_trans_free(sechk_module_t *mod)
  * report and prints it to stdout. */
 int inc_dom_trans_print_output(sechk_module_t *mod, policy_t *policy) 
 {
+#if 0
 	inc_dom_trans_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
@@ -454,6 +455,7 @@ int inc_dom_trans_print_output(sechk_module_t *mod, policy_t *policy)
 		printf("\n");
 	}
 
+#endif
 	return 0;
 }
 
@@ -461,6 +463,7 @@ int inc_dom_trans_print_output(sechk_module_t *mod, policy_t *policy)
  * structure for this check to be used in another check. */
 sechk_result_t *inc_dom_trans_get_result(sechk_module_t *mod) 
 {
+#if 0
 
 	if (!mod) {
 		fprintf(stderr, "Error: invalid parameters\n");
@@ -472,6 +475,8 @@ sechk_result_t *inc_dom_trans_get_result(sechk_module_t *mod)
 	}
 
 	return mod->result;
+#endif
+	return NULL;
 }
 
 /* The inc_dom_trans_data_new function allocates and returns an
@@ -479,10 +484,13 @@ sechk_result_t *inc_dom_trans_get_result(sechk_module_t *mod)
  * module.  */
 inc_dom_trans_data_t *inc_dom_trans_data_new(void)
 {
+#if 0
 	inc_dom_trans_data_t *datum = NULL;
 
 	datum = (inc_dom_trans_data_t*)calloc(1,sizeof(inc_dom_trans_data_t));
 
 	return datum;
+#endif
+	return NULL;
 }
 

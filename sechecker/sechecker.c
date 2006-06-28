@@ -98,6 +98,12 @@ int sechk_lib_set_minsev(const char *minsev, sechk_lib_t *lib)
 	return 0;
 }
 
+sechk_module_t *sechk_module_new(void)
+{
+	/* zero initialization is sufficient here */
+	return calloc(1, sizeof(sechk_module_t));
+}
+
 sechk_lib_t *sechk_lib_new(void)
 {
 	sechk_lib_t *lib = NULL;

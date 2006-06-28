@@ -10,34 +10,36 @@
 #include "policy.h"
 #include "inc_net_access.h"
 #include "render.h"
-#include "semantic/avsemantics.h"
 #include "policy-query.h"
 #include "old-policy-query.h"
 
 #include <stdio.h>
 #include <string.h>
 
-static sechk_lib_t *library;
 static const char *const mod_name = "inc_net_access";
 
+#if 0
 static void init_net_state(inc_net_access_data_t *net_data);
-static void init_idx_cache(idx_cache_t *idx_cache, policy_t *policy);
-static int check_perms(const int type_idx, policy_t * policy, sechk_item_t **item, inc_net_access_data_t *net_state);
-static bool_t check_type_perms(const int src_idx, const int dst_idx, const int obj_idx, const int perm_idx, policy_t *policy);
+static void init_idx_cache(idx_cache_t *idx_cache, apol_policy_t *policy);
+static int check_perms(const int type_idx, apol_policy_t * policy, sechk_item_t **item, inc_net_access_data_t *net_state);
+static bool_t check_type_perms(const int src_idx, const int dst_idx, const int obj_idx, const int perm_idx, apol_policy_t *policy);
 static char *build_proof_str(char *src_type, char *dst_type, char *obj_class, char *perms);
-static int build_have_perms_proof(const int type_idx, sechk_proof_t **proof, policy_t *policy, idx_cache_t *idx_cache);
-static int validate_net_state(const int type_idx, inc_net_access_data_t *net_data, sechk_proof_t **proof, policy_t *policy);
-static void check_socket_perms(const int type_idx, policy_t *policy, inc_net_access_data_t *net_state);
-static void check_netif_perms(const int type_idx, policy_t *policy, inc_net_access_data_t *net_state);
-static void check_port_perms(const int type_idx, policy_t *policy, inc_net_access_data_t *net_state);
-static void check_node_perms(const int type_idx, policy_t *policy, inc_net_access_data_t *net_state);
-static void check_assoc_perms(const int type_idx, policy_t *policy, inc_net_access_data_t *net_state);
-static bool_t uses_tcp(const int domain_idx, idx_cache_t *idx_cache, policy_t *policy);
-static bool_t uses_udp(const int domain_idx, idx_cache_t *idx_cache, policy_t *policy);
+static int build_have_perms_proof(const int type_idx, sechk_proof_t **proof, apol_policy_t *policy, idx_cache_t *idx_cache);
+static int validate_net_state(const int type_idx, inc_net_access_data_t *net_data, sechk_proof_t **proof, apol_policy_t *policy);
+static void check_socket_perms(const int type_idx, apol_policy_t *policy, inc_net_access_data_t *net_state);
+static void check_netif_perms(const int type_idx, apol_policy_t *policy, inc_net_access_data_t *net_state);
+static void check_port_perms(const int type_idx, apol_policy_t *policy, inc_net_access_data_t *net_state);
+static void check_node_perms(const int type_idx, apol_policy_t *policy, inc_net_access_data_t *net_state);
+static void check_assoc_perms(const int type_idx, apol_policy_t *policy, inc_net_access_data_t *net_state);
+static bool_t uses_tcp(const int domain_idx, idx_cache_t *idx_cache, apol_policy_t *policy);
+static bool_t uses_udp(const int domain_idx, idx_cache_t *idx_cache, apol_policy_t *policy);
+#endif
 
 /* result lists */
+#if 0
 static int *net_domains_list = NULL, *netif_types_list = NULL, *port_types_list = NULL, *node_types_list = NULL, *assoc_types_list = NULL;
 static int net_domains_list_sz = 0, netif_types_list_sz = 0, port_types_list_sz = 0, node_types_list_sz = 0, assoc_types_list_sz = 0;
+#endif
 
 /* The register function registers all of a module's functions
  * with the library.  You should not need to edit this function
@@ -45,6 +47,7 @@ static int net_domains_list_sz = 0, netif_types_list_sz = 0, port_types_list_sz 
  * to call. See the note at the bottom of this function to do so. */
 int inc_net_access_register(sechk_lib_t *lib)
 {
+#if 0
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
 	sechk_name_value_t *nv = NULL;
@@ -95,7 +98,7 @@ int inc_net_access_register(sechk_lib_t *lib)
 "    none\n";
 	mod->severity = SECHK_SEV_MED;
 	/* assign requirements */
-	mod->requirements = sechk_name_value_new("policy_type", "source");
+	mod->requirements = sechk_name_value_new("apol_policy_type", "source");
 
 	/* assign dependencies */      
 	mod->dependencies = sechk_name_value_new("module", "find_net_domains");
@@ -186,6 +189,7 @@ int inc_net_access_register(sechk_lib_t *lib)
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
+#endif
 	return 0;
 }
 
@@ -193,8 +197,9 @@ int inc_net_access_register(sechk_lib_t *lib)
  * and initializes its values based on the options parsed in the config
  * file.
  * Add any option processing logic as indicated below. */
-int inc_net_access_init(sechk_module_t *mod, policy_t *policy)
+int inc_net_access_init(sechk_module_t *mod, apol_policy_t *policy)
 {
+#if 0
 	sechk_name_value_t *opt = NULL;
 	inc_net_access_data_t *datum = NULL;
 
@@ -223,6 +228,7 @@ int inc_net_access_init(sechk_module_t *mod, policy_t *policy)
 		opt = opt->next;
 	}
 
+#endif
 	return 0;
 }
 
@@ -234,7 +240,7 @@ int inc_net_access_init(sechk_module_t *mod, policy_t *policy)
  *  -1 System error
  *   0 The module "succeeded"	- no negative results found
  *   1 The module "failed" 		- some negative results found */
-int inc_net_access_run(sechk_module_t *mod, policy_t *policy)
+int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy)
 {
 /* FIX ME: need to convert this to use new libapol */
 #if 0
@@ -353,20 +359,23 @@ int inc_net_access_run(sechk_module_t *mod, policy_t *policy)
 	if (res->num_items > 0)
 		return 1;
 
+#endif
 	return 0;
 
+#if 0
 inc_net_access_run_fail:
 	if (res->num_items > 0) {
 		sechk_item_free(item);
 		sechk_result_free(res);
 	}
-#endif
 	return -1;
+#endif
 }
 
 /* The free function frees the private data of a module */
-void inc_net_access_free(sechk_module_t *mod)
+void inc_net_access_data_free(void *data)
 {
+#if 0
 	if (!mod) {
 		fprintf(stderr, "Error: invalid parameters\n");
 		return;
@@ -378,6 +387,7 @@ void inc_net_access_free(sechk_module_t *mod)
 
 	free(mod->data);
 	mod->data = NULL;
+#endif
 }
 
 /* The print output function generates the text and prints the
@@ -387,8 +397,9 @@ void inc_net_access_free(sechk_module_t *mod)
  * outline and will need a different specification. It is
  * required that each of the flags for output components be
  * tested in this function (stats, list, proof, detailed, and brief) */
-int inc_net_access_print_output(sechk_module_t *mod, policy_t *policy) 
+int inc_net_access_print_output(sechk_module_t *mod, apol_policy_t *policy) 
 {
+#if 0
 	inc_net_access_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
@@ -470,6 +481,7 @@ int inc_net_access_print_output(sechk_module_t *mod, policy_t *policy)
 		printf("\n");
 	}
 
+#endif
 	return 0;
 }
 
@@ -477,7 +489,7 @@ int inc_net_access_print_output(sechk_module_t *mod, policy_t *policy)
  * structure for this check to be used in another check. */
 sechk_result_t *inc_net_access_get_result(sechk_module_t *mod) 
 {
-
+#if 0
 	if (!mod) {
 		fprintf(stderr, "Error: invalid parameters\n");
 		return NULL;
@@ -488,23 +500,29 @@ sechk_result_t *inc_net_access_get_result(sechk_module_t *mod)
 	}
 
 	return mod->result;
+#endif
+	return NULL;
 }
 
 
 inc_net_access_data_t *inc_net_access_data_new(void)
 {
+#if 0
 	inc_net_access_data_t *datum = NULL;
 
 	datum = (inc_net_access_data_t*)calloc(1,sizeof(inc_net_access_data_t));
 
 	return datum;
+#endif
+	return NULL;
 }
 
+#if 0
 /* This function checks a type for sufficient network access permissions.
  * If all checks succees, inc_net_access_SUCCESS is returned.
  * If a permission is missing, inc_net_access_FAIL is returned and item is created.
  * If an error occurs during any of the checks, inc_net_access_ERR is returned. */
-static int check_perms(const int type_idx, policy_t *policy, sechk_item_t **item, inc_net_access_data_t *net_state)
+static int check_perms(const int type_idx, apol_policy_t *policy, sechk_item_t **item, inc_net_access_data_t *net_state)
 {
 	/* inc_net_access_data_t net_state; */
 	sechk_proof_t *proof = NULL;
@@ -569,9 +587,10 @@ static int check_perms(const int type_idx, policy_t *policy, sechk_item_t **item
 		
 	/* sufficient network permissions exist for this type */
 	return (failed ? inc_net_access_FAIL : inc_net_access_SUCCESS);
+	return 0;
 }
 
-static bool_t check_type_perms(const int src_idx, const int dst_idx, const int obj_idx, const int perm_idx, policy_t *policy)
+static bool_t check_type_perms(const int src_idx, const int dst_idx, const int obj_idx, const int perm_idx, apol_policy_t *policy)
 {
 	avh_key_t key;
         avh_node_t *node = NULL, *tmp_node = NULL;
@@ -596,7 +615,7 @@ static bool_t check_type_perms(const int src_idx, const int dst_idx, const int o
 	return FALSE;
 }
 
-static void check_assoc_perms(const int type_idx, policy_t *policy, inc_net_access_data_t *net_state)
+static void check_assoc_perms(const int type_idx, apol_policy_t *policy, inc_net_access_data_t *net_state)
 {
 	int i, src_idx, obj_idx, perm_idx;
 
@@ -617,7 +636,7 @@ static void check_assoc_perms(const int type_idx, policy_t *policy, inc_net_acce
 	}
 }
 
-static void check_socket_perms(const int type_idx, policy_t *policy, inc_net_access_data_t *net_state)
+static void check_socket_perms(const int type_idx, apol_policy_t *policy, inc_net_access_data_t *net_state)
 {
 	int src_idx, dst_idx, obj_idx, perm_idx;
 
@@ -690,7 +709,7 @@ static void check_socket_perms(const int type_idx, policy_t *policy, inc_net_acc
                 net_state->SELF_UDPSOCK_WRITE = TRUE;
 }
 
-static void check_netif_perms(const int type_idx, policy_t *policy, inc_net_access_data_t *net_state)
+static void check_netif_perms(const int type_idx, apol_policy_t *policy, inc_net_access_data_t *net_state)
 {
         int src_idx, obj_idx, perm_idx, i;
 
@@ -755,7 +774,7 @@ static void check_netif_perms(const int type_idx, policy_t *policy, inc_net_acce
         }
 }
 
-static void check_port_perms(const int type_idx, policy_t *policy, inc_net_access_data_t *net_state)
+static void check_port_perms(const int type_idx, apol_policy_t *policy, inc_net_access_data_t *net_state)
 {
         int src_idx, obj_idx, perm_idx, i;
 
@@ -826,7 +845,7 @@ static void check_port_perms(const int type_idx, policy_t *policy, inc_net_acces
         }
 }
 
-static void check_node_perms(const int type_idx, policy_t *policy, inc_net_access_data_t *net_state)
+static void check_node_perms(const int type_idx, apol_policy_t *policy, inc_net_access_data_t *net_state)
 {
         int src_idx, obj_idx, perm_idx, i;
 
@@ -894,7 +913,7 @@ static void check_node_perms(const int type_idx, policy_t *policy, inc_net_acces
 /* The following function determines whether the net_state_t
  * object is in a valid state. Valid states are defined as:
  *   1) self create permissions on either tcp_socket OR udp_socket objects */
-static int validate_net_state(const int type_idx, inc_net_access_data_t *ns, sechk_proof_t **proof, policy_t *policy)
+static int validate_net_state(const int type_idx, inc_net_access_data_t *ns, sechk_proof_t **proof, apol_policy_t *policy)
 {
 	char *proof_str = NULL;
 	sechk_proof_t *tmp_proof = NULL;
@@ -1372,7 +1391,6 @@ static int validate_net_state(const int type_idx, inc_net_access_data_t *ns, sec
 	return (failed ? inc_net_access_FAIL : inc_net_access_SUCCESS);
 }
 
-  
 static char *build_proof_str(char *src_type, char *dst_type, char *obj_class, char *perms)
 {
 	char *proof_str = NULL;
@@ -1417,9 +1435,10 @@ static char *build_proof_str(char *src_type, char *dst_type, char *obj_class, ch
 	}
 	
 	return proof_str;
+	return NULL;
 }
 
-static int build_have_perms_proof(const int type_idx, sechk_proof_t **proof, policy_t *policy, idx_cache_t *idx_cache) 
+static int build_have_perms_proof(const int type_idx, sechk_proof_t **proof, apol_policy_t *policy, idx_cache_t *idx_cache) 
 {
 	int i, num_nodes, proof_str_sz = 0, tmp_proof_str_sz = 0, used_rules_sz = 0;
 	char *proof_str = NULL, *tmp_proof_str = NULL;
@@ -1483,33 +1502,34 @@ static int build_have_perms_proof(const int type_idx, sechk_proof_t **proof, pol
 	}
 
 	return inc_net_access_SUCCESS;
+	return 0;
 }
 
 static void init_net_state(inc_net_access_data_t *ns)
 {
-        ns->SELF_TCPSOCK_CREATE = FALSE;
-        ns->SELF_UDPSOCK_CREATE = FALSE;
-        ns->SELF_TCPSOCK_READ = FALSE;
-        ns->SELF_TCPSOCK_WRITE = FALSE;
-        ns->SELF_UDPSOCK_READ = FALSE;
-        ns->SELF_UDPSOCK_WRITE = FALSE;
-        ns->ANY_NETIF_TCPRECV = FALSE;
-        ns->ANY_NETIF_TCPSEND = FALSE;
-        ns->ANY_NETIF_UDPRECV = FALSE;
-        ns->ANY_NETIF_UDPSEND = FALSE;
-        ns->PORT_TCPSOCK_RECVMSG = FALSE;
-        ns->PORT_TCPSOCK_SENDMSG = FALSE;
-        ns->PORT_UDPSOCK_RECVMSG = FALSE;
-        ns->PORT_UDPSOCK_SENDMSG = FALSE;
-        ns->ANY_NODE_TCPRECV = FALSE;
-        ns->ANY_NODE_TCPSEND = FALSE;
-        ns->ANY_NODE_UDPRECV = FALSE;
-        ns->ANY_NODE_UDPSEND = FALSE;
+	ns->SELF_TCPSOCK_CREATE = FALSE;
+	ns->SELF_UDPSOCK_CREATE = FALSE;
+	ns->SELF_TCPSOCK_READ = FALSE;
+	ns->SELF_TCPSOCK_WRITE = FALSE;
+	ns->SELF_UDPSOCK_READ = FALSE;
+	ns->SELF_UDPSOCK_WRITE = FALSE;
+	ns->ANY_NETIF_TCPRECV = FALSE;
+	ns->ANY_NETIF_TCPSEND = FALSE;
+	ns->ANY_NETIF_UDPRECV = FALSE;
+	ns->ANY_NETIF_UDPSEND = FALSE;
+	ns->PORT_TCPSOCK_RECVMSG = FALSE;
+	ns->PORT_TCPSOCK_SENDMSG = FALSE;
+	ns->PORT_UDPSOCK_RECVMSG = FALSE;
+	ns->PORT_UDPSOCK_SENDMSG = FALSE;
+	ns->ANY_NODE_TCPRECV = FALSE;
+	ns->ANY_NODE_TCPSEND = FALSE;
+	ns->ANY_NODE_UDPRECV = FALSE;
+	ns->ANY_NODE_UDPSEND = FALSE;
 	ns->ANY_ASSOC_RECVFROM = FALSE;
 	ns->ANY_ASSOC_SENDTO = FALSE;
 }
 
-static void init_idx_cache(idx_cache_t *idx_cache, policy_t *policy)
+static void init_idx_cache(idx_cache_t *idx_cache, apol_policy_t *policy)
 {
 	int idx = 0;
 
@@ -1586,7 +1606,7 @@ static void init_idx_cache(idx_cache_t *idx_cache, policy_t *policy)
  *   - The domain has tcp_recv/tcp_send perms on a netif object
  *   - The domain has tcp_recv/tcp_send perms on a node object
  */
-static bool_t uses_tcp(const int domain_idx, idx_cache_t *idx_cache, policy_t *policy)
+static bool_t uses_tcp(const int domain_idx, idx_cache_t *idx_cache, apol_policy_t *policy)
 {
 	teq_query_t query;
 	teq_results_t res;
@@ -1636,7 +1656,7 @@ static bool_t uses_tcp(const int domain_idx, idx_cache_t *idx_cache, policy_t *p
  *   - The domain has udp_recv/udp_send perms on a netif object
  *   - The domain has udp_recv/udp_send perms on a node object
  */
-static bool_t uses_udp(const int domain_idx, idx_cache_t *idx_cache, policy_t *policy)
+static bool_t uses_udp(const int domain_idx, idx_cache_t *idx_cache, apol_policy_t *policy)
 {
 	teq_query_t query;
 	teq_results_t res;
@@ -1646,33 +1666,35 @@ static bool_t uses_udp(const int domain_idx, idx_cache_t *idx_cache, policy_t *p
 	init_teq_results(&res);
 	query.use_regex = FALSE;
 	query.rule_select |= TEQ_ALLOW;
-        query.only_enabled = 0;
+	query.only_enabled = 0;
 
-        /* this query specifies a src domain and an object class */
-        retv = add_i_to_a(idx_cache->UDP_SOCKET_OBJ, &(query.num_classes), &(query.classes));
-        if (retv == -1) {
-                fprintf(stderr, "Error: out of memory\n");
-                return FALSE;
-        }
-         
-        query.ta1.ta = policy->types[domain_idx].name;
-        query.ta1.indirect = TRUE;
-        query.ta1.t_or_a = IDX_BOTH;
-        query.perms = NULL;
-        query.num_perms = 0;
-        query.bool_name = NULL;
+	/* this query specifies a src domain and an object class */
+	retv = add_i_to_a(idx_cache->UDP_SOCKET_OBJ, &(query.num_classes), &(query.classes));
+	if (retv == -1) {
+		fprintf(stderr, "Error: out of memory\n");
+		return FALSE;
+	}
+
+	query.ta1.ta = policy->types[domain_idx].name;
+	query.ta1.indirect = TRUE;
+	query.ta1.t_or_a = IDX_BOTH;
+	query.perms = NULL;
+	query.num_perms = 0;
+	query.bool_name = NULL;
 
 	retv = search_te_rules(&query, &res, policy);
-        if (retv == 0) {
-                if (res.num_av_access > 0)                      
-                        return TRUE;
-                else                       
-                        return FALSE;		
-        }
-        if (retv == -1) {
-                fprintf(stderr, "Error: searching TE rules\n");
-                return FALSE;
-        }
+	if (retv == 0) {
+		if (res.num_av_access > 0)                      
+			return TRUE;
+		else                       
+			return FALSE;		
+	}
+	if (retv == -1) {
+		fprintf(stderr, "Error: searching TE rules\n");
+		return FALSE;
+	}
 
-        return FALSE;
+	return FALSE;
 }
+#endif
+

@@ -22,12 +22,12 @@ typedef struct roles_wo_users_data {
  * statically; this means that all modules and their functions
  * are in the same namespace. */
 int roles_wo_users_register(sechk_lib_t *lib);
-int roles_wo_users_init(sechk_module_t *mod, policy_t *policy);
-int roles_wo_users_run(sechk_module_t *mod, policy_t *policy);
-void roles_wo_users_free(sechk_module_t *mod);
-int roles_wo_users_print_output(sechk_module_t *mod, policy_t *policy);
+int roles_wo_users_init(sechk_module_t *mod, apol_policy_t *policy);
+int roles_wo_users_run(sechk_module_t *mod, apol_policy_t *policy);
+void roles_wo_users_data_free(void *data);
+int roles_wo_users_print_output(sechk_module_t *mod, apol_policy_t *policy);
 sechk_result_t *roles_wo_users_get_result(sechk_module_t *mod);
-int roles_wo_users_get_list(sechk_module_t *mod, int **array, int *size);
+int roles_wo_users_get_list(sechk_module_t *mod, apol_vector_t **v);
 
 /* The following function is used to allocate and initialize
  * the private data storage structure for this module */

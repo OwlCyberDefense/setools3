@@ -8,7 +8,7 @@
 
 #include "sechecker.h"
 #include "policy.h"
-#include "dta.h"
+//#include "dta.h" FIXME
 
 #define SECHK_INC_DOM_TRANS_HAS_TT      0x08
 #define SECHK_INC_DOM_TRANS_HAS_EXEC    0x04
@@ -25,24 +25,11 @@ typedef struct unreachable_doms_data {
 } unreachable_doms_data_t;
 
 int unreachable_doms_register(sechk_lib_t *lib);
-int unreachable_doms_init(sechk_module_t *mod, policy_t *policy);
-int unreachable_doms_run(sechk_module_t *mod, policy_t *policy);
-void unreachable_doms_free(sechk_module_t *mod);
-int unreachable_doms_print_output(sechk_module_t *mod, policy_t *policy);
+int unreachable_doms_init(sechk_module_t *mod, apol_policy_t *policy);
+int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy);
+void unreachable_doms_data_free(void *data);
+int unreachable_doms_print_output(sechk_module_t *mod, apol_policy_t *policy);
 sechk_result_t *unreachable_doms_get_result(sechk_module_t *mod);
-
-static char *build_no_trans_proof_str(void);
-static char *build_invalid_trans_proof_str(dta_trans_t *trans, policy_t *policy);
-static char *build_common_role_proof_str(const int src_idx, const int dst_idx, policy_t *policy);
-static char *build_no_user_proof_str(const int role_idx, policy_t *policy);
-static bool_t parse_default_contexts(const char *ctx_file_path, int **doms, int *ctx_list_sz, policy_t *policy);
-static bool_t in_def_ctx(const int type_idx, unreachable_doms_data_t *datum);
-static bool_t in_isid_ctx(const int type_idx, policy_t *policy);
-static bool_t has_common_role(const int src_idx, const int dst_idx, policy_t *policy);
-static int get_common_roles(int **common_roles, int *common_roles_sz, const int src_idx, const int dst_idx, policy_t *policy);
-static int get_valid_user(const int role_idx, policy_t *policy);
-static bool_t has_role_trans(const int ep_type, policy_t *policy);
-static bool_t roles_have_user(ta_item_t *src_r, ta_item_t *tgt_r, policy_t *policy);
 
 /* The following function is used to allocate and initialize
  * the private data storage structure for this module */
