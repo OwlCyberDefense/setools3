@@ -145,3 +145,28 @@ int apol_role_query_set_regex(apol_policy_t *p, apol_role_query_t *r, int is_reg
 {
 	return apol_query_set_regex(p, &r->flags, is_regex);
 }
+
+int does_role_have_type(apol_policy_t* p, qpol_role_t * r, qpol_type_t * t)
+{
+	qpol_iterator_t * iter = NULL;
+	qpol_type_t * tmp_type;
+	uint32_t type_value, t_type_value;
+	int retval = 0;
+
+	qpol_type_get_value(p->qh, p->p, t, &t_type_value);
+
+	qpol_role_get_type_iter (p->qh, p->p, r, &iter);
+
+	for(;! qpol_iterator_end(iter); qpol_iterator_next(iter)){
+		qpol_iterator_get_item( iter, (void**) (&tmp_type));
+		qpol_type_get_value(p->qh, p->p, tmp_type, &type_value);
+		if( t_type_value == type_value){
+			retval = 1;
+			goto cleanup;
+		}
+	}
+cleanup:
+	qpol_iterator_destroy(&iter);
+	return retval;
+}
+

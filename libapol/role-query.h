@@ -111,4 +111,14 @@ extern int apol_role_query_set_type(apol_policy_t *p,
 extern int apol_role_query_set_regex(apol_policy_t *p,
 				     apol_role_query_t *r, int is_regex);
 
+/**
+ * See if the role passed in includes the type that is the 
+ * second parameter.
+ * @param p Policy handler, to report errors.
+ * @param r Role to check if type is included in it.
+ * @param t Type that is checked against all types that are in role
+ * @return 1 if the type is included in the role, 0 if it's not, < 0 on error
+*/
+extern int does_role_have_type(apol_policy_t* p, qpol_role_t * r, qpol_type_t * t);
+
 #endif /* APOL_ROLE_QUERY_H */
