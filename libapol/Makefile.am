@@ -12,7 +12,7 @@ libapol_a_SOURCES = \
 	avl-util.c avl-util.h \
 	render.c render.h perm-map.c perm-map.h \
 	analysis.c analysis.h \
-	infoflow.c infoflow.h relabel_analysis.c relabel_analysis.h \
+	infoflow.c infoflow.h relabel-analysis.c relabel-analysis.h \
 	dta.c dta.h poldiff.c poldiff.h old-policy-query.c old-policy-query.h \
 	policy-io.c policy-io.h vector.c vector.h \
 	policy-query.c policy-query.h \
