@@ -28,10 +28,10 @@ typedef struct rules_exp_nothing_data {
 
 /* Module functions: */
 int rules_exp_nothing_register(sechk_lib_t *lib);
-int rules_exp_nothing_init(sechk_module_t *mod, policy_t *policy);
-int rules_exp_nothing_run(sechk_module_t *mod, policy_t *policy);
-void rules_exp_nothing_free(sechk_module_t *mod);
-int rules_exp_nothing_print_output(sechk_module_t *mod, policy_t *policy);
+int rules_exp_nothing_init(sechk_module_t *mod, apol_policy_t *policy);
+int rules_exp_nothing_run(sechk_module_t *mod, apol_policy_t *policy);
+void rules_exp_nothing_data_free(void *data);
+int rules_exp_nothing_print_output(sechk_module_t *mod, apol_policy_t *policy);
 sechk_result_t *rules_exp_nothing_get_result(sechk_module_t *mod);
 
 /* The following function is used to allocate and initialize

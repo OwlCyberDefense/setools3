@@ -18,10 +18,10 @@ typedef struct users_wo_roles_data {
 } users_wo_roles_data_t;
 
 int users_wo_roles_register(sechk_lib_t *lib);
-int users_wo_roles_init(sechk_module_t *mod, policy_t *policy);
-int users_wo_roles_run(sechk_module_t *mod, policy_t *policy);
-void users_wo_roles_free(sechk_module_t *mod);
-int users_wo_roles_print_output(sechk_module_t *mod, policy_t *policy);
+int users_wo_roles_init(sechk_module_t *mod, apol_policy_t *policy);
+int users_wo_roles_run(sechk_module_t *mod, apol_policy_t *policy);
+void users_wo_roles_data_free(void *data);
+int users_wo_roles_print_output(sechk_module_t *mod, apol_policy_t *policy);
 sechk_result_t *users_wo_roles_get_result(sechk_module_t *mod);
 
 /* The following function is used to allocate and initialize

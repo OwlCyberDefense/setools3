@@ -25,7 +25,7 @@ typedef struct inc_mount_data {
 int inc_mount_register(sechk_lib_t *lib);
 int inc_mount_init(sechk_module_t *mod, policy_t *policy);
 int inc_mount_run(sechk_module_t *mod, policy_t *policy);
-void inc_mount_free(sechk_module_t *mod);
+void inc_mount_data_free(void *data);
 int inc_mount_print_output(sechk_module_t *mod, policy_t *policy);
 sechk_result_t *inc_mount_get_result(sechk_module_t *mod);
 

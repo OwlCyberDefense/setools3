@@ -12,13 +12,12 @@
 #include "render.h"
 #include <stdio.h>
 #include <string.h>
-#include <semantic/avsemantics.h>
 
-static sechk_lib_t *library;
 static const char *const mod_name = "find_domains";
 
 int find_domains_register(sechk_lib_t *lib) 
 {
+#if 0
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
 
@@ -145,11 +144,13 @@ int find_domains_register(sechk_lib_t *lib)
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
+#endif
 	return 0;
 }
 
 int find_domains_init(sechk_module_t *mod, policy_t *policy) 
 {
+#if 0
 	sechk_name_value_t *opt = NULL;
 	find_domains_data_t *datum = NULL;
 	int attr = -1, retv;
@@ -187,6 +188,7 @@ int find_domains_init(sechk_module_t *mod, policy_t *policy)
 		opt = opt->next;
 	}
 
+#endif
 	return 0;
 }
 
@@ -450,19 +452,22 @@ int find_domains_run(sechk_module_t *mod, policy_t *policy)
 	/* results are valid at this point */
 	mod->result = res;
 
+#endif
 	return 0;
 
+#if 0
 find_domains_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
 	sechk_result_free(res);
 	free(buff);
-#endif
 	return -1;
+#endif
 }
 
-void find_domains_data_free(sechk_module_t *mod) 
+void find_domains_data_free(void *data) 
 {
+#if 0
 	find_domains_data_t *datum = NULL;
 
 	if (!mod) {
@@ -479,10 +484,12 @@ void find_domains_data_free(sechk_module_t *mod)
 	}
 	free(mod->data);
 	mod->data = NULL;
+#endif
 }
 
 int find_domains_print_output(sechk_module_t *mod, policy_t *policy) 
 {
+#if 0
 	find_domains_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
@@ -539,11 +546,13 @@ int find_domains_print_output(sechk_module_t *mod, policy_t *policy)
                 printf("\n");
         }
 
+#endif
 	return 0;
 }
 
 sechk_result_t *find_domains_get_result(sechk_module_t *mod) 
 {
+#if 0
 
 	if (!mod) {
 		fprintf(stderr, "Error: invalid parameters\n");
@@ -555,10 +564,13 @@ sechk_result_t *find_domains_get_result(sechk_module_t *mod)
 	}
 
 	return mod->result;
+#endif
+	return NULL;
 }
 
-int find_domains_get_list(sechk_module_t *mod, int **array, int *size) 
+int find_domains_get_list(sechk_module_t *mod, apol_vector_t **v) 
 {
+#if 0
 	int i;
 	sechk_item_t *item = NULL;
 
@@ -587,16 +599,19 @@ int find_domains_get_list(sechk_module_t *mod, int **array, int *size)
 		(*array)[i] = item->item_id;
 	}
 
+#endif
 	return 0;
 }
 
 find_domains_data_t *find_domains_data_new(void) 
 {
+#if 0
 	find_domains_data_t *datum = NULL;
 
 	datum = (find_domains_data_t*)calloc(1,sizeof(find_domains_data_t));
 
 	return datum;
+#endif
+	return NULL;
 }
-
 

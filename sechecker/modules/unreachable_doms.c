@@ -13,12 +13,7 @@
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <string.h>
-#include <selinux/selinux.h>
 #include <ctype.h>
-
-/* This is the pointer to the library which contains the module;
- * it is used to access needed parts of the library policy, fc entries, etc.*/
-static sechk_lib_t *library;
 
 /* This string is the name of the module and should match the stem
  * of the file name; it should also match the prefix of all functions
@@ -27,6 +22,7 @@ static const char *const mod_name = "unreachable_doms";
 
 int unreachable_doms_register(sechk_lib_t *lib)
 {
+#if 0
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
 	sechk_name_value_t *nv = NULL;
@@ -71,7 +67,7 @@ int unreachable_doms_register(sechk_lib_t *lib)
 
 	/* assign requirements */
 	/* find_domains requires source policy.. */
-	mod->requirements = sechk_name_value_new("policy_type", "source");
+	mod->requirements = sechk_name_value_new("apol_policy_type", "source");
 	nv = sechk_name_value_new("default_ctx", NULL);
 	nv->next = mod->requirements;
 	mod->requirements = nv; 
@@ -153,14 +149,16 @@ int unreachable_doms_register(sechk_lib_t *lib)
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
+#endif
 	return 0;
 }
 
 /* The init function creates the module's private data storage object
  * and initializes its values based on the options parsed in the config
  * file. */
-int unreachable_doms_init(sechk_module_t *mod, policy_t *policy)
+int unreachable_doms_init(sechk_module_t *mod, apol_policy_t *policy)
 {
+#if 0
 	unreachable_doms_data_t *datum = NULL;
 	bool_t retv;
 	const char *ctx_file_path = NULL;
@@ -194,6 +192,7 @@ int unreachable_doms_init(sechk_module_t *mod, policy_t *policy)
 		}
 	}
 
+#endif
 	return 0;
 }
 
@@ -205,7 +204,7 @@ int unreachable_doms_init(sechk_module_t *mod, policy_t *policy)
  *  -1 System error
  *   0 The module "succeeded"	- no negative results found
  *   1 The module "failed" 		- some negative results found */
-int unreachable_doms_run(sechk_module_t *mod, policy_t *policy)
+int unreachable_doms_run(sechk_module_t *mod, apol_policy_t *policy)
 {
 /* FIX ME: need to convert this to use new libapol */
 #if 0
@@ -527,8 +526,10 @@ int unreachable_doms_run(sechk_module_t *mod, policy_t *policy)
 	if (res->num_items > 0)
 		return 1;
 
+#endif
 	return 0;
 
+#if 0
 unreachable_doms_run_fail:
 	if (table)
 		dta_table_free(table);
@@ -538,13 +539,14 @@ unreachable_doms_run_fail:
 		sechk_item_free(item);
 	sechk_result_free(res);
 	dta_trans_destroy(&trans_list);
-#endif
 	return -1;
+#endif
 }
 
 /* The free function frees the private data of a module */
-void unreachable_doms_free(sechk_module_t *mod)
+void unreachable_doms_data_free(void *data)
 {
+#if 0
 	unreachable_doms_data_t *datum;
 
 	if (!mod) {
@@ -566,6 +568,7 @@ void unreachable_doms_free(sechk_module_t *mod)
 
 	free(mod->data);
 	mod->data = NULL;
+#endif
 }
 
 /* The print output function generates the text and prints the
@@ -575,8 +578,9 @@ void unreachable_doms_free(sechk_module_t *mod)
  * outline and will need a different specification. It is
  * required that each of the flags for output components be
  * tested in this function (stats, list, proof, detailed, and brief) */
-int unreachable_doms_print_output(sechk_module_t *mod, policy_t *policy) 
+int unreachable_doms_print_output(sechk_module_t *mod, apol_policy_t *policy) 
 {
+#if 0
 	unreachable_doms_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
@@ -638,6 +642,7 @@ int unreachable_doms_print_output(sechk_module_t *mod, policy_t *policy)
 		printf("\n");
 	}
 
+#endif
 	return 0;
 }
 
@@ -646,7 +651,7 @@ int unreachable_doms_print_output(sechk_module_t *mod, policy_t *policy)
  * You should not need to modify this function. */
 sechk_result_t *unreachable_doms_get_result(sechk_module_t *mod) 
 {
-
+#if 0
 	if (!mod) {
 		fprintf(stderr, "Error: invalid parameters\n");
 		return NULL;
@@ -657,6 +662,8 @@ sechk_result_t *unreachable_doms_get_result(sechk_module_t *mod)
 	}
 
 	return mod->result;
+#endif
+	return NULL;
 }
 
 /* The unreachable_doms_data_new function allocates and returns an
@@ -670,13 +677,17 @@ sechk_result_t *unreachable_doms_get_result(sechk_module_t *mod)
  * any other data should be initialized as needed by the check logic */
 unreachable_doms_data_t *unreachable_doms_data_new(void)
 {
+#if 0
 	unreachable_doms_data_t *datum = NULL;
 
 	datum = (unreachable_doms_data_t*)calloc(1,sizeof(unreachable_doms_data_t));
 
 	return datum;
+#endif
+	return NULL;
 }
 
+#if 0
 /* Returns a string representing a proof of no valid transitions to a domain */
 static char *build_no_trans_proof_str(void)
 {
@@ -693,7 +704,7 @@ static char *build_no_trans_proof_str(void)
 } 
 
 /* Returns a string representing a proof of no common roles existing between domains */
-static char *build_common_role_proof_str(const int src_idx, const int dst_idx, policy_t *policy)
+static char *build_common_role_proof_str(const int src_idx, const int dst_idx, apol_policy_t *policy)
 {
 	char *str;
 
@@ -714,7 +725,7 @@ static char *build_common_role_proof_str(const int src_idx, const int dst_idx, p
 }
 
 /* Parses default_contexts and adds source domains to datum->ctx_list */
-static bool_t parse_default_contexts(const char *ctx_file_path, int **doms, int *domain_list_sz, policy_t *policy)
+static bool_t parse_default_contexts(const char *ctx_file_path, int **doms, int *domain_list_sz, apol_policy_t *policy)
 {
 	int *domain_list = NULL, retv, src_dom_idx, str_sz, i, charno;
 	FILE *ctx_file;
@@ -866,7 +877,7 @@ static bool_t in_def_ctx(const int type_idx, unreachable_doms_data_t *datum)
 }
 
 /* Returns true if type_idx is a type assigned to an isid */
-static bool_t in_isid_ctx(const int type_idx, policy_t *policy)
+static bool_t in_isid_ctx(const int type_idx, apol_policy_t *policy)
 {
 	int i;
 	security_con_t *ctxt = NULL;
@@ -881,7 +892,7 @@ static bool_t in_isid_ctx(const int type_idx, policy_t *policy)
 	return FALSE;
 }
 
-static int get_common_roles(int **common_roles, int *common_roles_sz, const int src_idx, const int dst_idx, policy_t *policy)
+static int get_common_roles(int **common_roles, int *common_roles_sz, const int src_idx, const int dst_idx, apol_policy_t *policy)
 {
 	int i, role_idx, roles_sz = 0;
 
@@ -904,7 +915,7 @@ static int get_common_roles(int **common_roles, int *common_roles_sz, const int 
  * Returns 1 if no such user can be found
  * Returns -1 on error
  */
-static int get_valid_user(const int role_idx, policy_t *policy)
+static int get_valid_user(const int role_idx, apol_policy_t *policy)
 {
 	int user_idx;
 	
@@ -925,7 +936,7 @@ static int get_valid_user(const int role_idx, policy_t *policy)
  * Returns true if source domain and dest domain have a common role in policy
  * and if there is at least one user associated with this role
  */
-static bool_t has_common_role(const int src_idx, const int dst_idx, policy_t *policy)
+static bool_t has_common_role(const int src_idx, const int dst_idx, apol_policy_t *policy)
 {
 	int i, role_idx; 
 
@@ -946,7 +957,7 @@ static bool_t has_common_role(const int src_idx, const int dst_idx, policy_t *po
  * Returns a string used in proofs when no users can be found
  * having a common role.  
  */
-static char *build_no_user_proof_str(const int role_idx, policy_t *policy)
+static char *build_no_user_proof_str(const int role_idx, apol_policy_t *policy)
 {
 	char *str = NULL, *role_name = NULL;
 	int str_sz = APOL_STR_SZ + 128;
@@ -974,7 +985,7 @@ static char *build_no_user_proof_str(const int role_idx, policy_t *policy)
  * Returns a string representing an invalid domain transition
  * Stolen from the inc_dom_trans sechecker module
  */
-static char *build_invalid_trans_proof_str(dta_trans_t *trans, policy_t *policy)
+static char *build_invalid_trans_proof_str(dta_trans_t *trans, apol_policy_t *policy)
 {
 	unsigned char test_result;
 	char *str = NULL, *tmp_str = NULL;
@@ -1105,7 +1116,7 @@ static char *build_invalid_trans_proof_str(dta_trans_t *trans, policy_t *policy)
  *   having a user associated with both roles above:
  *       user <<u1>> roles { <<r1>> <<r2>> }
  */
-static bool_t has_role_trans(const int ep_type, policy_t *policy)
+static bool_t has_role_trans(const int ep_type, apol_policy_t *policy)
 {
 /* FIX ME: need to convert to use new libapol */
 #if  0
@@ -1166,7 +1177,7 @@ static bool_t has_role_trans(const int ep_type, policy_t *policy)
 /*
  * Returns true of roles src_r and tgt_r have a common user
  */
-static bool_t roles_have_user(ta_item_t *src_r, ta_item_t *tgt_r, policy_t *policy)
+static bool_t roles_have_user(ta_item_t *src_r, ta_item_t *tgt_r, apol_policy_t *policy)
 {
 	ta_item_t *src = NULL, *tgt = NULL;
 	int i;
@@ -1185,3 +1196,5 @@ static bool_t roles_have_user(ta_item_t *src_r, ta_item_t *tgt_r, policy_t *poli
 
 	return FALSE;
 }
+#endif
+

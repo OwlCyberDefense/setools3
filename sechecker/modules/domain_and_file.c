@@ -13,11 +13,11 @@
 #include <stdio.h>
 #include <string.h>
 
-static sechk_lib_t *library;
 static const char *const mod_name = "domain_and_file";
 
 int domain_and_file_register(sechk_lib_t *lib) 
 {
+#if 0
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
 	sechk_name_value_t *nv = NULL;
@@ -133,11 +133,13 @@ int domain_and_file_register(sechk_lib_t *lib)
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
+#endif
 	return 0;
 }
 
 int domain_and_file_init(sechk_module_t *mod, policy_t *policy) 
 {
+#if 0
 	sechk_name_value_t *opt = NULL;
 	domain_and_file_data_t *datum = NULL;
 
@@ -162,11 +164,13 @@ int domain_and_file_init(sechk_module_t *mod, policy_t *policy)
 		opt = opt->next;
 	}
 
+#endif
 	return 0;
 }
 
 int domain_and_file_run(sechk_module_t *mod, policy_t *policy) 
 {
+#if 0
 	domain_and_file_data_t *datum;
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL, *tmp_item = NULL;
@@ -324,8 +328,10 @@ int domain_and_file_run(sechk_module_t *mod, policy_t *policy)
 	if (both_list_sz > 0)
 		return 1;
 
+#endif
 	return 0;
 
+#if 0
 domain_and_file_run_fail:
 	free(domain_list);
 	free(file_type_list);
@@ -334,10 +340,12 @@ domain_and_file_run_fail:
 	sechk_item_free(item);
 	sechk_result_free(res);
 	return -1;
+#endif
 }
 
-void domain_and_file_data_free(sechk_module_t *mod)
+void domain_and_file_data_free(void *data)
 {
+#if 0
 	if (!mod) {
 		fprintf(stderr, "Error: invalid parameters\n");
 		return;
@@ -349,10 +357,12 @@ void domain_and_file_data_free(sechk_module_t *mod)
 
 	free(mod->data);
 	mod->data = NULL;
+#endif
 }
 
 int domain_and_file_print_output(sechk_module_t *mod, policy_t *policy) 
 {
+#if 0
 	domain_and_file_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
@@ -403,11 +413,13 @@ int domain_and_file_print_output(sechk_module_t *mod, policy_t *policy)
 		printf("\n");
 	}
 
+#endif
 	return 0;
 }
 
 sechk_result_t *domain_and_file_get_result(sechk_module_t *mod) 
 {
+#if 0
 
 	if (!mod) {
 		fprintf(stderr, "Error: invalid parameters\n");
@@ -419,15 +431,19 @@ sechk_result_t *domain_and_file_get_result(sechk_module_t *mod)
 	}
 
 	return mod->result;
+#endif
+	return NULL;
 }
 
 domain_and_file_data_t *domain_and_file_data_new(void) 
 {
+#if 0
 	domain_and_file_data_t *datum = NULL;
 
 	datum = (domain_and_file_data_t*)calloc(1,sizeof(domain_and_file_data_t));
 
 	return datum;
+#endif
+	return NULL;
 }
 
- 

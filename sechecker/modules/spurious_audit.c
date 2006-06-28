@@ -10,15 +10,9 @@
 #include "policy.h"
 #include "spurious_audit.h"
 #include "render.h"
-#include "semantic/avsemantics.h"
-#include "semantic/avhash.h"
 
 #include <stdio.h>
 #include <string.h>
-
-/* This is the pointer to the library which contains the module;
- * it is used to access needed parts of the library policy, fc entries, etc.*/
-static sechk_lib_t *library;
 
 /* This string is the name of the module and should match the stem
  * of the file name; it should also match the prefix of all functions
@@ -29,6 +23,7 @@ static const char *const mod_name = "spurious_audit";
  * with the library. */
 int spurious_audit_register(sechk_lib_t *lib)
 {
+#if 0
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
 
@@ -138,14 +133,16 @@ int spurious_audit_register(sechk_lib_t *lib)
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
+#endif
 	return 0;
 }
 
 /* The init function creates the module's private data storage object
  * and initializes its values based on the options parsed in the config
  * file. */
-int spurious_audit_init(sechk_module_t *mod, policy_t *policy)
+int spurious_audit_init(sechk_module_t *mod, apol_policy_t *policy)
 {
+#if 0
 	sechk_name_value_t *opt = NULL;
 	spurious_audit_data_t *datum = NULL;
 
@@ -171,13 +168,14 @@ int spurious_audit_init(sechk_module_t *mod, policy_t *policy)
 		opt = opt->next;
 	}
 
+#endif
 	return 0;
 }
 
 /* The run function performs the check. This function runs only once
  * even if called multiple times. This function allocates the result
  * structure and fills in all relavant item and proof data. */
-int spurious_audit_run(sechk_module_t *mod, policy_t *policy)
+int spurious_audit_run(sechk_module_t *mod, apol_policy_t *policy)
 {
 /* FIX ME: need to convert this to use new libapol */
 #if 0
@@ -452,8 +450,10 @@ int spurious_audit_run(sechk_module_t *mod, policy_t *policy)
 
 	mod->result = res;
 
+#endif
 	return 0;
 
+#if 0
 spurious_audit_run_fail:
 	free(tmp);
 	free(used_perms);
@@ -464,13 +464,14 @@ spurious_audit_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
 	sechk_result_free(res);
-#endif
 	return -1;
+#endif
 }
 
 /* The free function frees the private data of a module */
-void spurious_audit_free(sechk_module_t *mod)
+void spurious_audit_data_free(void *data)
 {
+#if 0
 	spurious_audit_data_t *datum;
 
 	if (!mod) {
@@ -486,11 +487,12 @@ void spurious_audit_free(sechk_module_t *mod)
 
 	free(mod->data);
 	mod->data = NULL;
+#endif
 }
 
 /* The print output function generates the text printed in the
  * report and prints it to stdout. */
-int spurious_audit_print_output(sechk_module_t *mod, policy_t *policy) 
+int spurious_audit_print_output(sechk_module_t *mod, apol_policy_t *policy) 
 {
 /* FIX ME: need to convert this to use new libapol */
 #if 0
@@ -559,6 +561,7 @@ int spurious_audit_print_output(sechk_module_t *mod, policy_t *policy)
  * structure for this check to be used in another check. */
 sechk_result_t *spurious_audit_get_result(sechk_module_t *mod) 
 {
+#if 0
 
 	if (!mod) {
 		fprintf(stderr, "Error: invalid parameters\n");
@@ -570,6 +573,8 @@ sechk_result_t *spurious_audit_get_result(sechk_module_t *mod)
 	}
 
 	return mod->result;
+#endif
+	return NULL;
 }
 
 /* The spurious_audit_data_new function allocates and returns an
@@ -577,11 +582,13 @@ sechk_result_t *spurious_audit_get_result(sechk_module_t *mod)
  * module. */
 spurious_audit_data_t *spurious_audit_data_new(void)
 {
+#if 0
 	spurious_audit_data_t *datum = NULL;
 
 	datum = (spurious_audit_data_t*)calloc(1,sizeof(spurious_audit_data_t));
 
 	return datum;
+#endif
+	return NULL;
 }
 
- 

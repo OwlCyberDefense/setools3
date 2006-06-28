@@ -14,11 +14,11 @@
 #include <stdio.h>
 #include <string.h>
 
-static sechk_lib_t *library;
 static const char *const mod_name = "find_net_domains";
 
 int find_net_domains_register(sechk_lib_t *lib)
 {
+#if 0
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
 	sechk_name_value_t *nv = NULL;
@@ -164,6 +164,7 @@ int find_net_domains_register(sechk_lib_t *lib)
         fn_struct->next = mod->functions;
         mod->functions = fn_struct;
 
+#endif
 	return 0;
 }
 
@@ -172,6 +173,7 @@ int find_net_domains_register(sechk_lib_t *lib)
  * file. */
 int find_net_domains_init(sechk_module_t *mod, policy_t *policy)
 {
+#if 0
 	sechk_name_value_t *opt = NULL;
 	find_net_domains_data_t *datum = NULL;
 	int obj_idx = 0;
@@ -212,6 +214,7 @@ int find_net_domains_init(sechk_module_t *mod, policy_t *policy)
 		opt = opt->next;
 	}
 
+#endif
 	return 0;
 }
 
@@ -338,21 +341,24 @@ int find_net_domains_run(sechk_module_t *mod, policy_t *policy)
 	if (res->num_items > 0)
 		return 1;
 
+#endif
 	return 0;
 
+#if 0
 find_net_domains_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
 	sechk_result_free(res);
 	if (buff)
 		free(buff); 
-#endif
 	return -1;
+#endif
 }
 
 /* The free function frees the private data of a module */
-void find_net_domains_free(sechk_module_t *mod)
+void find_net_domains_data_free(void *data)
 {
+#if 0
 	if (!mod) {
 		fprintf(stderr, "Error: invalid parameters\n");
 		return;
@@ -364,6 +370,7 @@ void find_net_domains_free(sechk_module_t *mod)
 
 	free(mod->data);
 	mod->data = NULL;
+#endif
 }
 
 /* The print output function generates the text and prints the
@@ -375,6 +382,7 @@ void find_net_domains_free(sechk_module_t *mod)
  * tested in this function (stats, list, proof, detailed, and brief) */
 int find_net_domains_print_output(sechk_module_t *mod, policy_t *policy) 
 {
+#if 0
 	find_net_domains_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
@@ -445,6 +453,7 @@ int find_net_domains_print_output(sechk_module_t *mod, policy_t *policy)
 		printf("\n");
 	}
 
+#endif
 	return 0;
 }
 
@@ -452,6 +461,7 @@ int find_net_domains_print_output(sechk_module_t *mod, policy_t *policy)
  * structure for this check to be used in another check. */
 sechk_result_t *find_net_domains_get_result(sechk_module_t *mod) 
 {
+#if 0
 
 	if (!mod) {
 		fprintf(stderr, "Error: invalid parameters\n");
@@ -463,39 +473,43 @@ sechk_result_t *find_net_domains_get_result(sechk_module_t *mod)
 	}
 
 	return mod->result;
+#endif
+	return NULL;
 }
 
-int find_net_domains_get_list(sechk_module_t *mod, int **array, int *size)
+int find_net_domains_get_list(sechk_module_t *mod, apol_vector_t **v)
 {
-        int i;
-        sechk_item_t *item = NULL;
+#if 0
+	int i;
+	sechk_item_t *item = NULL;
 
-        if (!mod || !array || !size) {
-                fprintf(stderr, "Error: invalid parameters\n");
-                return -1;
-        }
-        if (strcmp(mod_name, mod->name)) {
-                fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
-                return -1;
-        }
-        if (!mod->result) {
-                fprintf(stderr, "Error: module has not been run\n");
-                return -1;
-        }
+	if (!mod || !array || !size) {
+		fprintf(stderr, "Error: invalid parameters\n");
+		return -1;
+	}
+	if (strcmp(mod_name, mod->name)) {
+		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+		return -1;
+	}
+	if (!mod->result) {
+		fprintf(stderr, "Error: module has not been run\n");
+		return -1;
+	}
 
-        *size = mod->result->num_items;
+	*size = mod->result->num_items;
 
-        *array = (int*)malloc(mod->result->num_items * sizeof(int));
-        if (!(*array)) {
-                fprintf(stderr, "Error: out of memory\n");
-                return -1;
-        }
-         
-        for (i = 0, item = mod->result->items; item && i < *size; i++, item = item->next) {
-                (*array)[i] = item->item_id;
-        }
-         
-        return 0;
+	*array = (int*)malloc(mod->result->num_items * sizeof(int));
+	if (!(*array)) {
+		fprintf(stderr, "Error: out of memory\n");
+		return -1;
+	}
+
+	for (i = 0, item = mod->result->items; item && i < *size; i++, item = item->next) {
+		(*array)[i] = item->item_id;
+	}
+
+#endif
+	return 0;
 }
 
 /* The find_net_domains_data_new function allocates and returns an
@@ -509,11 +523,13 @@ int find_net_domains_get_list(sechk_module_t *mod, int **array, int *size)
  * any other data should be initialized as needed by the check logic */
 find_net_domains_data_t *find_net_domains_data_new(void)
 {
+#if 0
 	find_net_domains_data_t *datum = NULL;
 
 	datum = (find_net_domains_data_t*)calloc(1,sizeof(find_net_domains_data_t));
 
 	return datum;
+#endif
+	return NULL;
 }
 
- 
