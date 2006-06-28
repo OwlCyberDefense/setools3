@@ -100,8 +100,29 @@ int sechk_lib_set_minsev(const char *minsev, sechk_lib_t *lib)
 
 sechk_module_t *sechk_module_new(void)
 {
-	/* zero initialization is sufficient here */
-	return calloc(1, sizeof(sechk_module_t));
+	sechk_module_t *mod = NULL;
+	int error = 0;
+
+	mod = calloc(1, sizeof(sechk_module_t));
+	if (!mod)
+		return NULL;
+
+	/* create empty vectors */
+	if (!(mod->options = apol_vector_create()) ||
+		!(mod->requirements = apol_vector_create()) ||
+		!(mod->dependencies = apol_vector_create()) ||
+		!(mod->functions = apol_vector_create())) {
+		error = errno;
+		apol_vector_destroy(&mod->options, NULL);
+		apol_vector_destroy(&mod->requirements, NULL);
+		apol_vector_destroy(&mod->dependencies, NULL);
+		apol_vector_destroy(&mod->functions, NULL);
+		free(mod);
+		errno = error;
+		return NULL;
+	}
+
+	return mod;
 }
 
 sechk_lib_t *sechk_lib_new(void)
