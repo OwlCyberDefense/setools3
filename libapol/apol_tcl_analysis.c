@@ -29,6 +29,75 @@
 #include <tcl.h>
 
 /**
+ * For the given object class, return an unsorted list of its
+ * permissions, including those that the class inherits from its
+ * common.
+ *
+ * @param argv This fuction takes one parameter:
+ * <ol>
+ *   <li>class from which to get permissions
+ * </ol>
+ *
+ */
+static int Apol_GetAllPermsForClass(ClientData clientData, Tcl_Interp *interp,
+				    int argc, CONST char *argv[])
+{
+	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
+	qpol_class_t *obj_class;
+	qpol_common_t *common;
+	qpol_iterator_t *perm_iter = NULL, *common_iter = NULL;
+	char *perm;
+	int retval = TCL_ERROR;
+
+	apol_tcl_clear_error();
+	if (policydb == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		goto cleanup;
+	}
+	if (argc != 2) {
+		ERR(policydb, "Need a class name.");
+		goto cleanup;
+	}
+	if (qpol_policy_get_class_by_name(policydb->qh, policydb->p, argv[1], &obj_class) < 0 ||
+	    qpol_class_get_common(policydb->qh, policydb->p, obj_class, &common) < 0 ||
+	    qpol_class_get_perm_iter(policydb->qh, policydb->p, obj_class, &perm_iter) < 0) {
+		goto cleanup;
+	}
+	for ( ; !qpol_iterator_end(perm_iter); qpol_iterator_next(perm_iter)) {
+		if (qpol_iterator_get_item(perm_iter, (void **) &perm) < 0) {
+				goto cleanup;
+		}
+		Tcl_Obj *o = Tcl_NewStringObj(perm, -1);
+		if (Tcl_ListObjAppendElement(interp, result_obj, o) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+	if (common != NULL) {
+		if (qpol_common_get_perm_iter(policydb->qh, policydb->p, common, &common_iter) < 0) {
+			goto cleanup;
+		}
+		for ( ; !qpol_iterator_end(common_iter); qpol_iterator_next(common_iter)) {
+			if (qpol_iterator_get_item(common_iter, (void **) &perm) < 0) {
+				goto cleanup;
+			}
+			Tcl_Obj *o = Tcl_NewStringObj(perm, -1);
+			if (Tcl_ListObjAppendElement(interp, result_obj, o) == TCL_ERROR) {
+				goto cleanup;
+			}
+		}
+	}
+	Tcl_SetObjResult(interp, result_obj);
+	retval = TCL_OK;
+ cleanup:
+	qpol_iterator_destroy(&perm_iter);
+	qpol_iterator_destroy(&common_iter);
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
+}
+
+/**
  * Convert an apol vector of pointers to a Tcl representation.
  *
  * @param interp Tcl interpreter object.
@@ -62,9 +131,9 @@ static int apol_vector_to_tcl_list(Tcl_Interp *interp,
  */
 static int append_relabel_result_to_list(Tcl_Interp *interp,
                                          apol_relabel_result_t *result,
-                                         Tcl_Obj **result_obj)
+                                         Tcl_Obj *result_list)
 {
-	Tcl_Obj *relabel_elem[3];
+	Tcl_Obj *relabel_elem[3], *relabel_list;
 	int retval = TCL_ERROR;
 
 	if (apol_vector_to_tcl_list(interp, apol_relabel_result_get_to(result), relabel_elem + 0) < 0 ||
@@ -72,7 +141,10 @@ static int append_relabel_result_to_list(Tcl_Interp *interp,
 	    apol_vector_to_tcl_list(interp, apol_relabel_result_get_both(result), relabel_elem + 2) < 0) {
 		goto cleanup;
 	}
-	*result_obj = Tcl_NewListObj(3, relabel_elem);
+	relabel_list = Tcl_NewListObj(3, relabel_elem);
+	if (Tcl_ListObjAppendElement(interp, result_list, relabel_list) == TCL_ERROR) {
+	    goto cleanup;
+	}
 	retval = TCL_OK;
  cleanup:
 	return retval;
@@ -82,12 +154,12 @@ static int append_relabel_result_to_list(Tcl_Interp *interp,
  * Return an unsorted list of results for a relabel analysis tuples.
  * Each tuple consists of:
  * <ul>
- *   <li>domain type (source type if doing relabelfrom, target type if
- *        relabelto or if doing subject mode analysis)
  *   <li>list of rules to which can be relabeled
  *   <li>list of rules from which can be relabeled
  *   <li>list of rules that can be relabeled to and from
  * </ul>
+ * Note that for subject mode searches, this list will have exactly
+ * one result tuple.
  *
  * Rules are unique identifiers (relative to currently loaded policy).
  * Call [apol_RenderAVRule] to display them.
@@ -96,16 +168,22 @@ static int append_relabel_result_to_list(Tcl_Interp *interp,
  * <ol>
  *   <li>analysis mode, one of "to", "from", "both", or "subject"
  *   <li>starting type (string)
+ *   <li>list of object classes to include
+ *   <li>list of types to include
  *   <li>regular expression for resulting types, or empty string to accept all
  * </ol>
  *
  */
 static int Apol_RelabelAnalysis(ClientData clientData, Tcl_Interp *interp,
-                                int argc, CONST char *argv[]) {
-	Tcl_Obj *result_obj = NULL;
+                                int argc, CONST char *argv[])
+{
+	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
 	apol_relabel_result_t *result = NULL;
+	apol_vector_t *v = NULL;
 	apol_relabel_analysis_t *analysis = NULL;
-	int direction;
+	int direction, num_opts;
+	CONST char **class_strings = NULL, **subject_strings = NULL;
+	size_t i;
 	int retval = TCL_ERROR;
 
 	apol_tcl_clear_error();
@@ -113,7 +191,7 @@ static int Apol_RelabelAnalysis(ClientData clientData, Tcl_Interp *interp,
 		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		goto cleanup;
 	}
-	if (argc != 4) {
+	if (argc != 6) {
 		ERR(policydb, "Need an analysis mode, starting type, and resulting type regexp.");
 		goto cleanup;
 	}
@@ -142,27 +220,60 @@ static int Apol_RelabelAnalysis(ClientData clientData, Tcl_Interp *interp,
 
 	if (apol_relabel_analysis_set_dir(policydb, analysis, direction) < 0 ||
 	    apol_relabel_analysis_set_type(policydb, analysis, argv[2]) < 0 ||
-	    apol_relabel_analysis_set_result_regexp(policydb, analysis, argv[3])) {
+	    apol_relabel_analysis_set_result_regexp(policydb, analysis, argv[5])) {
 		goto cleanup;
 	}
 
-	if (apol_relabel_analysis_do(policydb, analysis, &result) < 0 ||
-            append_relabel_result_to_list(interp, result, &result_obj) == TCL_ERROR) {
+	if (Tcl_SplitList(interp, argv[3], &num_opts, &class_strings) == TCL_ERROR) {
+		goto cleanup;
+	}
+	while (--num_opts >= 0) {
+		CONST char *s = class_strings[num_opts];
+		if (apol_relabel_analysis_append_class(policydb, analysis, s) < 0) {
+			goto cleanup;
+		}
+	}
+
+	if (Tcl_SplitList(interp, argv[4], &num_opts, &subject_strings) == TCL_ERROR) {
+		goto cleanup;
+	}
+	while (--num_opts >= 0) {
+		CONST char *s = subject_strings[num_opts];
+		if (apol_relabel_analysis_append_subject(policydb, analysis, s) < 0) {
+			goto cleanup;
+		}
+	}
+
+	if (apol_relabel_analysis_do(policydb, analysis, &v) < 0) {
                 goto cleanup;
+        }
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		result = (apol_relabel_result_t *) apol_vector_get_element(v, i);
+		if (append_relabel_result_to_list(interp, result, result_obj) == TCL_ERROR) {
+			goto cleanup;
+		}
 	}
 
 	Tcl_SetObjResult(interp, result_obj);
 	retval = TCL_OK;
  cleanup:
+	if (class_strings != NULL) {
+		Tcl_Free((char *) class_strings);
+	}
+	if (subject_strings != NULL) {
+		Tcl_Free((char *) subject_strings);
+	}
 	apol_relabel_analysis_destroy(&analysis);
-	apol_relabel_result_destroy(&result);
+	apol_vector_destroy(&v, apol_relabel_result_free);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
 	return retval;
 }
 
-int apol_tcl_analysis_init(Tcl_Interp *interp) {
+int apol_tcl_analysis_init(Tcl_Interp *interp)
+{
+	Tcl_CreateCommand(interp, "apol_GetAllPermsForClass", Apol_GetAllPermsForClass, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_RelabelAnalysis", Apol_RelabelAnalysis, NULL, NULL);
         /*
 	Tcl_CreateCommand(interp, "apol_DomainTransitionAnalysis", Apol_DomainTransitionAnalysis, NULL, NULL);
