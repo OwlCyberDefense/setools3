@@ -365,5 +365,6 @@ users_wo_roles_data_t *users_wo_roles_data_new(void)
 
 	return datum;
 #endif
+	return NULL;
 }
  
