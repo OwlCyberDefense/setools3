@@ -309,7 +309,7 @@ proc Apol_Widget::getRegexpEntryValue {path} {
 proc Apol_Widget::makeSearchResults {path args} {
     variable vars
     array unset vars $path:*
-    set sw [ScrolledWindow $path -scrollbar both -auto none]
+    set sw [ScrolledWindow $path -scrollbar both -auto both]
     set tb [eval text $sw.tb $args -bg white -wrap none -state disabled -font $ApolTop::text_font]
     set vars($path:cursor) [$tb cget -cursor]
     $tb tag configure header -font {Helvetica 12}

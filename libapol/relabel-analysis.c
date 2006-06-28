@@ -35,6 +35,7 @@
 struct apol_relabel_analysis {
 	unsigned int mode, direction;
 	char *type, *result;
+	apol_vector_t *classes, *subjects;
 	regex_t *result_regex;
 };
 
@@ -56,7 +57,7 @@ struct apol_relabel_result {
  * @param avrule Rule to examine.
  *
  * @return One of APOL_RELABEL_DIR_TO, APOL_RELABEL_DIR_FROM,
- * APOL_RELABEL_DIR_BOTH, or < 0 it direction could not be determined.
+ * APOL_RELABEL_DIR_BOTH, or < 0 if direction could not be determined.
  */
 static int relabel_analysis_get_direction(apol_policy_t *p,
                                           qpol_avrule_t *avrule)
@@ -95,25 +96,40 @@ static int relabel_analysis_get_direction(apol_policy_t *p,
 
 
 /**
- * Given an avrule, append it to the result object, onto the
- * appropriate rules vector.
+ * Given an avrule, possbily append it to the result object onto the
+ * appropriate rules vector.  The decision to actually append or not
+ * is dependent upon the filtering options stored within the relabel
+ * analysis object.
  *
  * @param p Policy containing avrule.
+ * @param r Relabel analysis query object, containing filtering options.
  * @param avrule AV rule to add.
  * @param result Pointer to the result object being built.
  *
  * @return 0 on success, < 0 on error.
  */
 static int append_avrule_to_result(apol_policy_t *p,
+				   apol_relabel_analysis_t *r,
 				   qpol_avrule_t *avrule,
 				   apol_relabel_result_t *result)
 {
-	qpol_type_t *type;
-	int retval = -1;
-	if (qpol_avrule_get_source_type(p->qh, p->p, avrule, &type) < 0) {
+	qpol_type_t *target;
+	int retval = -1, dir, compval;
+	if ((dir = relabel_analysis_get_direction(p, avrule)) < 0) {
 		goto cleanup;
 	}
-	switch (relabel_analysis_get_direction(p, avrule)) {
+	if (qpol_avrule_get_target_type(p->qh, p->p, avrule, &target) < 0) {
+		goto cleanup;
+	}
+	compval = apol_compare_type(p, target, r->result, APOL_QUERY_REGEX, &r->result_regex);
+	if (compval < 0) {
+		goto cleanup;
+	}
+	else if (compval == 0) {
+		retval = 0;
+		goto cleanup;
+	}
+	switch (dir) {
 	case APOL_RELABEL_DIR_TO:
 		if ((apol_vector_append(result->to, avrule)) < 0) {
 			goto cleanup;
@@ -129,8 +145,6 @@ static int append_avrule_to_result(apol_policy_t *p,
 			goto cleanup;
 		}
 		break;
-	default:
-		goto cleanup;
 	}
 
 	retval = 0;
@@ -140,7 +154,7 @@ static int append_avrule_to_result(apol_policy_t *p,
 
 static int relabel_analysis_object(apol_policy_t *p,
 				   apol_relabel_analysis_t *r,
-				   apol_relabel_result_t *result,
+				   apol_vector_t *v,
 				   unsigned int direction)
 {
         return 0;
@@ -160,11 +174,12 @@ static int relabel_analysis_object(apol_policy_t *p,
  */
 static int relabel_analysis_subject(apol_policy_t *p,
 				    apol_relabel_analysis_t *r,
-				    apol_relabel_result_t *result)
+				    apol_vector_t *v)
 {
 	apol_avrule_query_t *a = NULL;
 	apol_vector_t *avrules_v = NULL;
 	qpol_avrule_t *avrule;
+        apol_relabel_result_t *result = NULL;
 	size_t i;
 	int retval = -1;
 
@@ -178,33 +193,46 @@ static int relabel_analysis_subject(apol_policy_t *p,
 	    apol_avrule_query_append_perm(p, a, PERM_RELABELFROM) < 0) {
 		goto cleanup;
 	}
-
+	for (i = 0; r->classes != NULL && i < apol_vector_get_size(r->classes); i++) {
+		if (apol_avrule_query_append_class(p, a, apol_vector_get_element(r->classes, i)) < 0) {
+			goto cleanup;
+		}
+	}
 	if (apol_get_avrule_by_query(p, a, &avrules_v) < 0) {
 		goto cleanup;
 	}
+
+	if ((result = calloc(1, sizeof(*result))) == NULL ||
+	    (result->to = apol_vector_create()) == NULL ||
+	    (result->from = apol_vector_create()) == NULL ||
+	    (result->both = apol_vector_create()) == NULL ||
+	    apol_vector_append(v, result) < 0) {
+		apol_relabel_result_free(result);
+		ERR(p, "Out of memory!");
+	}
 	for (i = 0; i < apol_vector_get_size(avrules_v); i++) {
 		avrule = (qpol_avrule_t *) apol_vector_get_element(avrules_v, i);
-		if (append_avrule_to_result(p, avrule, result) < 0) {
+		if (append_avrule_to_result(p, r, avrule, result) < 0) {
 			goto cleanup;
 		}
 	}
 
-        retval = 0;
+	retval = 0;
  cleanup:
-        apol_avrule_query_destroy(&a);
-        apol_vector_destroy(&avrules_v, NULL);
-        return retval;
+	apol_avrule_query_destroy(&a);
+	apol_vector_destroy(&avrules_v, NULL);
+	return retval;
 }
 
 /******************** public functions below ********************/
 
 int apol_relabel_analysis_do(apol_policy_t *p,
 			     apol_relabel_analysis_t *r,
-			     apol_relabel_result_t **result)
+			     apol_vector_t **v)
 {
 	qpol_type_t *start_type;
 	int retval = -1;
-	*result = NULL;
+	*v = NULL;
 
 	if (r->mode == 0 || r->type == NULL) {
 		ERR(p, strerror(EINVAL));
@@ -214,26 +242,23 @@ int apol_relabel_analysis_do(apol_policy_t *p,
 		goto cleanup;
 	}
 
-	if ((*result = calloc(1, sizeof(**result))) == NULL ||
-	    ((*result)->to = apol_vector_create()) == NULL ||
-	    ((*result)->from = apol_vector_create()) == NULL ||
-	    ((*result)->both = apol_vector_create()) == NULL) {
+	if ((*v = apol_vector_create()) == NULL) {
 		ERR(p, "Out of memory!");
 		goto cleanup;
 	}
 
 	if (r->mode == APOL_RELABEL_MODE_OBJ) {
 		if ((r->direction & APOL_RELABEL_DIR_TO) &&
-		    relabel_analysis_object(p, r, *result, APOL_RELABEL_DIR_TO) < 0) {
+		    relabel_analysis_object(p, r, *v, APOL_RELABEL_DIR_TO) < 0) {
 			goto cleanup;
 		}
 		if ((r->direction & APOL_RELABEL_DIR_FROM) &&
-		    relabel_analysis_object(p, r, *result, APOL_RELABEL_DIR_FROM) < 0) {
+		    relabel_analysis_object(p, r, *v, APOL_RELABEL_DIR_FROM) < 0) {
 			goto cleanup;
 		}
 	}
 	else {
-		if (relabel_analysis_subject(p, r, *result) < 0) {
+		if (relabel_analysis_subject(p, r, *v) < 0) {
 			goto cleanup;
 		}
 	}
@@ -241,7 +266,7 @@ int apol_relabel_analysis_do(apol_policy_t *p,
 	retval = 0;
  cleanup:
 	if (retval != 0) {
-		apol_relabel_result_destroy(result);
+		apol_vector_destroy(v, apol_relabel_result_free);
 	}
 	return retval;
 }
@@ -255,6 +280,8 @@ void apol_relabel_analysis_destroy(apol_relabel_analysis_t **r)
 {
 	if (*r != NULL) {
 		free((*r)->type);
+		apol_vector_destroy(&(*r)->classes, NULL);
+		apol_vector_destroy(&(*r)->subjects, NULL);
 		apol_regex_destroy(&(*r)->result_regex);
 		free(*r);
 		*r = NULL;
@@ -297,6 +324,40 @@ int apol_relabel_analysis_set_type(apol_policy_t *p,
 	return apol_query_set(p, &r->type, NULL, name);
 }
 
+int apol_relabel_analysis_append_class(apol_policy_t *p,
+				       apol_relabel_analysis_t *r,
+				       const char *obj_class)
+{
+	char *s;
+	if (obj_class == NULL) {
+		apol_vector_destroy(&r->classes, free);
+	}
+	else if ((s = strdup(obj_class)) == NULL ||
+	    (r->classes == NULL && (r->classes = apol_vector_create()) == NULL) ||
+	    apol_vector_append(r->classes, s) < 0) {
+		ERR(p, "Out of memory!");
+		return -1;
+	}
+	return 0;
+}
+
+int apol_relabel_analysis_append_subject(apol_policy_t *p,
+					 apol_relabel_analysis_t *r,
+					 const char *subject)
+{
+	char *s;
+	if (subject == NULL) {
+		apol_vector_destroy(&r->subjects, free);
+	}
+	else if ((s = strdup(subject)) == NULL ||
+	    (r->subjects == NULL && (r->subjects = apol_vector_create()) == NULL) ||
+	    apol_vector_append(r->subjects, s) < 0) {
+		ERR(p, "Out of memory!");
+		return -1;
+	}
+	return 0;
+}
+
 int apol_relabel_analysis_set_result_regexp(apol_policy_t *p,
 					    apol_relabel_analysis_t *r,
 					    const char *result)
@@ -306,14 +367,14 @@ int apol_relabel_analysis_set_result_regexp(apol_policy_t *p,
 
 /******************** functions to access relabel results ********************/
 
-void apol_relabel_result_destroy(apol_relabel_result_t **result)
+void apol_relabel_result_free(void *result)
 {
-	if (result != NULL && *result != NULL) {
-		apol_vector_destroy(&(*result)->to, NULL);
-		apol_vector_destroy(&(*result)->from, NULL);
-		apol_vector_destroy(&(*result)->both, NULL);
-		free(*result);
-		*result = NULL;
+	if (result != NULL) {
+		apol_relabel_result_t *r = (apol_relabel_result_t *) result;
+		apol_vector_destroy(&r->to, NULL);
+		apol_vector_destroy(&r->from, NULL);
+		apol_vector_destroy(&r->both, NULL);
+		free(result);
 	}
 }
 
