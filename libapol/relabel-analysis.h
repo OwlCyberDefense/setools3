@@ -46,15 +46,17 @@ typedef struct apol_relabel_result apol_relabel_result_t;
  *
  * @param p Policy within which to look up constraints.
  * @param r A non-NULL structure containing parameters for analysis.
- * @param result Reference to where to store the results of the
- * analysis.  The caller must call apol_relabel_result_destroy() upon
- * this.
+ * @param v Reference to a vector of apol_relabel_result_t.  The
+ * vector will be allocated by this function.  The caller must call
+ * apol_vector_destroy() afterwards, <b>passing
+ * apol_relabel_result_free() as the second parameter</b>.  This will
+ * be set to NULL upon no results or upon error.
  *
  * @return 0 on success (including none found), negative on error.
  */
 extern int apol_relabel_analysis_do(apol_policy_t *p,
                                     apol_relabel_analysis_t *r,
-                                    apol_relabel_result_t **result);
+                                    apol_vector_t **v);
 
 /**
  * Allocate and return a new relabel analysis structure.  All fields
@@ -95,6 +97,43 @@ extern int apol_relabel_analysis_set_dir(apol_policy_t *p,
 					 unsigned int dir);
 
 /**
+ * Set a relabel analysis to return rules with this object
+ * (non-common) class.  If more than one class are appended to the
+ * query, the rule's class must be one of those appended.  (I.e., the
+ * rule's class must be a member of the analysis's classes.)  Pass a
+ * NULL to clear all classes.
+ *
+ * @param p Policy handler, to report errors.
+ * @param r Relabel analysis to set.
+ * @param class Name of object class to add to search set, or NULL to
+ * clear all classes.
+ *
+ * @return 0 on success, negative on error.
+ */
+extern int apol_relabel_analysis_append_class(apol_policy_t *p,
+					      apol_relabel_analysis_t *r,
+					      const char *obj_class);
+
+/**
+ * Set a relabel analysis to return rules with this subject as their
+ * source type.  If more than one subject are appended to the query,
+ * the rule's source must be one of those appended.  (I.e., the rule's
+ * source must be a member of the analysis's subject.)  Pass a NULL to
+ * clear all types.  Note that these subjects are ignored when doing
+ * subject relabel analysis.
+ *
+ * @param p Policy handler, to report errors.
+ * @param r Relabel analysis to set.
+ * @param subject Name of type to add to search set, or NULL to clear
+ * all subjects.
+ *
+ * @return 0 on success, negative on error.
+ */
+extern int apol_relabel_analysis_append_subject(apol_policy_t *p,
+						apol_relabel_analysis_t *r,
+						const char *subject);
+
+/**
  * Set a relabel analysis to begin searching using a given type.  This
  * function must be called prior to running the analysis.
  *
@@ -130,11 +169,9 @@ extern int apol_relabel_analysis_set_result_regexp(apol_policy_t *p,
  * pointer itself.  This function does nothing if the result is
  * already NULL.
  *
- * @param result Reference to a relabel result structure to destroy.  The
- * pointer will be set to NULL afterwards.
+ * @param result Pointer to a relabel result structure to destroy.
  */
-extern void apol_relabel_result_destroy(apol_relabel_result_t **result);
-
+extern void apol_relabel_result_free(void *result);
 
 /**
  * Return the relabelto vector embedded within an apol_relabel_result
