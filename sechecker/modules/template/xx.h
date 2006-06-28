@@ -33,10 +33,10 @@ typedef struct xx_data {
  * are in the same namespace. Be sure to choose a unique name
  * for each module and to set the module name prefix xx everywhere */
 int xx_register(sechk_lib_t *lib);
-int xx_init(sechk_module_t *mod, policy_t *policy);
-int xx_run(sechk_module_t *mod, policy_t *policy);
-void xx_free(sechk_module_t *mod);
-int xx_print_output(sechk_module_t *mod, policy_t *policy);
+int xx_init(sechk_module_t *mod, apol_policy_t *policy);
+int xx_run(sechk_module_t *mod, apol_policy_t *policy);
+void xx_data_free(void *data);
+int xx_print_output(sechk_module_t *mod, apol_policy_t *policy);
 sechk_result_t *xx_get_result(sechk_module_t *mod);
 
 /* TODO: (optional) Declare any other functions

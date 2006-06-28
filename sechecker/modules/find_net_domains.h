@@ -22,10 +22,10 @@ typedef struct find_net_domains_data {
 int find_net_domains_register(sechk_lib_t *lib);
 int find_net_domains_init(sechk_module_t *mod, policy_t *policy);
 int find_net_domains_run(sechk_module_t *mod, policy_t *policy);
-void find_net_domains_free(sechk_module_t *mod);
+void find_net_domains_data_free(void *data);
 int find_net_domains_print_output(sechk_module_t *mod, policy_t *policy);
 sechk_result_t *find_net_domains_get_result(sechk_module_t *mod);
-int find_net_domains_get_list(sechk_module_t *mod, int **array, int *size);
+int find_net_domains_get_list(sechk_module_t *mod, apol_vector_t **v);
 
 /* The following function is used to allocate and initialize
  * the private data storage structure for this module */

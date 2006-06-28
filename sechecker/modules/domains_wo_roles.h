@@ -20,7 +20,7 @@ typedef struct domains_wo_roles_data {
 int domains_wo_roles_register(sechk_lib_t *lib);
 int domains_wo_roles_init(sechk_module_t *mod, policy_t *policy);
 int domains_wo_roles_run(sechk_module_t *mod, policy_t *policy);
-void domains_wo_roles_free(sechk_module_t *mod);
+void domains_wo_roles_data_free(void *data);
 int domains_wo_roles_print_output(sechk_module_t *mod, policy_t *policy);
 sechk_result_t *domains_wo_roles_get_result(sechk_module_t *mod);
 

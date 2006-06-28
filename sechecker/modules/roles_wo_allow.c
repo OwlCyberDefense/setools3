@@ -13,10 +13,6 @@
 #include <stdio.h>
 #include <string.h>
 
-/* This is the pointer to the library which contains the module;
- * it is used to access needed parts of the library policy, fc entries, etc.*/
-static sechk_lib_t *library;
-
 /* This string is the name of the module and should match the stem
  * of the file name; it should also match the prefix of all functions
  * defined in this module and the private data storage structure */
@@ -26,6 +22,7 @@ static const char *const mod_name = "roles_wo_allow";
  * with the library. */
 int roles_wo_allow_register(sechk_lib_t *lib)
 {
+#if 0
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
 
@@ -145,14 +142,16 @@ int roles_wo_allow_register(sechk_lib_t *lib)
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
+#endif
 	return 0;
 }
 
 /* The init function creates the module's private data storage object
  * and initializes its values based on the options parsed in the config
  * file. */
-int roles_wo_allow_init(sechk_module_t *mod, policy_t *policy)
+int roles_wo_allow_init(sechk_module_t *mod, apol_policy_t *policy)
 {
+#if 0
 	sechk_name_value_t *opt = NULL;
 	roles_wo_allow_data_t *datum = NULL;
 
@@ -177,14 +176,16 @@ int roles_wo_allow_init(sechk_module_t *mod, policy_t *policy)
 		opt = opt->next;
 	}
 
+#endif
 	return 0;
 }
 
 /* The run function performs the check. This function runs only once
  * even if called multiple times. This function allocates the result 
  * structure and fills in all relavant item and proof data. */
-int roles_wo_allow_run(sechk_module_t *mod, policy_t *policy)
+int roles_wo_allow_run(sechk_module_t *mod, apol_policy_t *policy)
 {
+#if 0
 	roles_wo_allow_data_t *datum;
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
@@ -332,19 +333,23 @@ int roles_wo_allow_run(sechk_module_t *mod, policy_t *policy)
 	if (res->num_items > 0)
 		return 1;
 
+#endif
 	return 0;
 
+#if 0
 roles_wo_allow_run_fail:
 	free(buff);
 	sechk_proof_free(proof);
 	sechk_item_free(item);
 	sechk_result_free(res);
 	return -1;
+#endif
 }
 
 /* The free function frees the private data of a module */
-void roles_wo_allow_free(sechk_module_t *mod)
+void roles_wo_allow_data_free(void *data)
 {
+#if 0
 	roles_wo_allow_data_t *datum;
 
 	if (!mod) {
@@ -360,12 +365,14 @@ void roles_wo_allow_free(sechk_module_t *mod)
 
 	free(mod->data);
 	mod->data = NULL;
+#endif
 }
 
 /* The print output function generates the text printed in the
  * report and prints it to stdout. */
-int roles_wo_allow_print_output(sechk_module_t *mod, policy_t *policy) 
+int roles_wo_allow_print_output(sechk_module_t *mod, apol_policy_t *policy) 
 {
+#if 0
 	roles_wo_allow_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
@@ -409,6 +416,7 @@ int roles_wo_allow_print_output(sechk_module_t *mod, policy_t *policy)
 		printf("\n");
 	}
 
+#endif
 	return 0;
 }
 
@@ -416,6 +424,7 @@ int roles_wo_allow_print_output(sechk_module_t *mod, policy_t *policy)
  * structure for this check to be used in another check. */
 sechk_result_t *roles_wo_allow_get_result(sechk_module_t *mod) 
 {
+#if 0
 
 	if (!mod) {
 		fprintf(stderr, "Error: invalid parameters\n");
@@ -427,6 +436,8 @@ sechk_result_t *roles_wo_allow_get_result(sechk_module_t *mod)
 	}
 
 	return mod->result;
+#endif
+	return NULL;
 }
 
 /* The roles_wo_allow_data_new function allocates and returns an
@@ -434,15 +445,19 @@ sechk_result_t *roles_wo_allow_get_result(sechk_module_t *mod)
  * module. */
 roles_wo_allow_data_t *roles_wo_allow_data_new(void)
 {
+#if 0
 	roles_wo_allow_data_t *datum = NULL;
 
 	datum = (roles_wo_allow_data_t*)calloc(1,sizeof(roles_wo_allow_data_t));
 
 	return datum;
+#endif
+	return NULL;
 }
 
-int roles_wo_allow_get_list(sechk_module_t *mod, int **array, int *size)
+int roles_wo_allow_get_list(sechk_module_t *mod, apol_vector_t **v)
 {
+#if 0
 	int i;
 	sechk_item_t *item = NULL;
 
@@ -471,7 +486,7 @@ int roles_wo_allow_get_list(sechk_module_t *mod, int **array, int *size)
 		(*array)[i] = item->item_id;
 	}
 
+#endif
 	return 0;
 }
-
 

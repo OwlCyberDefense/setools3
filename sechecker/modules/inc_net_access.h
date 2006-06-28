@@ -77,10 +77,10 @@ typedef struct inc_net_access_data {
  * are in the same namespace. Be sure to choose a unique name
  * for each module and to set the module name prefix inc_net_access everywhere */
 int inc_net_access_register(sechk_lib_t *lib);
-int inc_net_access_init(sechk_module_t *mod, policy_t *policy);
-int inc_net_access_run(sechk_module_t *mod, policy_t *policy);
-void inc_net_access_free(sechk_module_t *mod);
-int inc_net_access_print_output(sechk_module_t *mod, policy_t *policy);
+int inc_net_access_init(sechk_module_t *mod, apol_policy_t *policy);
+int inc_net_access_run(sechk_module_t *mod, apol_policy_t *policy);
+void inc_net_access_data_free(void *data);
+int inc_net_access_print_output(sechk_module_t *mod, apol_policy_t *policy);
 sechk_result_t *inc_net_access_get_result(sechk_module_t *mod);
 
 /* The following function is used to allocate and initialize

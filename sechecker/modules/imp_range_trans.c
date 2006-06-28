@@ -10,7 +10,6 @@
 #include "policy.h"
 #include "render.h"
 #include "imp_range_trans.h"
-#include "semantic/avsemantics.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -21,11 +20,11 @@
 #define SECHK_NO_USERS          0x008000
 #define SECHK_NO_EXEC_PERMS     0x020000
 
-static sechk_lib_t *library;
 static const char *const mod_name = "imp_range_trans";
 
 int imp_range_trans_register(sechk_lib_t *lib)
 {
+#if 0
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
 
@@ -137,14 +136,16 @@ int imp_range_trans_register(sechk_lib_t *lib)
 	fn_struct->next = mod->functions;
 	mod->functions = fn_struct;
 
+#endif
 	return 0;
 }
 
 /* The init function creates the module's private data storage object
  * and initializes its values based on the options parsed in the config
  * file. */
-int imp_range_trans_init(sechk_module_t *mod, policy_t *policy)
+int imp_range_trans_init(sechk_module_t *mod, apol_policy_t *policy)
 {
+#if 0
 	sechk_name_value_t *opt = NULL;
 	imp_range_trans_data_t *datum = NULL;
 
@@ -169,6 +170,7 @@ int imp_range_trans_init(sechk_module_t *mod, policy_t *policy)
 		opt = opt->next;
 	}
 
+#endif
 	return 0;
 }
 
@@ -180,7 +182,7 @@ int imp_range_trans_init(sechk_module_t *mod, policy_t *policy)
  *  -1 System error
  *   0 The module "succeeded"	- no negative results found
  *   1 The module "failed" 		- some negative results found */
-int imp_range_trans_run(sechk_module_t *mod, policy_t *policy)
+int imp_range_trans_run(sechk_module_t *mod, apol_policy_t *policy)
 {
 /* FIX ME: need to convert this to use new libapol */
 #if 0
@@ -452,8 +454,10 @@ int imp_range_trans_run(sechk_module_t *mod, policy_t *policy)
 	if (res->num_items > 0)
 		return 1;
 
+#endif
 	return 0;
 
+#if 0
 imp_range_trans_run_fail:
 	if (valid_roles_sz > 0)
 		free(valid_roles);
@@ -462,13 +466,14 @@ imp_range_trans_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
 	sechk_result_free(res);
-#endif
 	return -1;
+#endif
 }
 
 /* The free function frees the private data of a module */
-void imp_range_trans_free(sechk_module_t *mod)
+void imp_range_trans_data_free(void *data)
 {
+#if 0
 	imp_range_trans_data_t *datum;
 
 	if (!mod) {
@@ -486,6 +491,7 @@ void imp_range_trans_free(sechk_module_t *mod)
 
 	free(mod->data);
 	mod->data = NULL;
+#endif
 }
 
 /* The print output function generates the text and prints the
@@ -495,7 +501,7 @@ void imp_range_trans_free(sechk_module_t *mod)
  * outline and will need a different specification. It is
  * required that each of the flags for output components be
  * tested in this function (stats, list, proof, detailed, and brief) */
-int imp_range_trans_print_output(sechk_module_t *mod, policy_t *policy) 
+int imp_range_trans_print_output(sechk_module_t *mod, apol_policy_t *policy) 
 {
 /* FIX ME: need to convert this to use new libapol */
 #if 0
@@ -555,7 +561,7 @@ int imp_range_trans_print_output(sechk_module_t *mod, policy_t *policy)
  * structure for this check to be used in another check. */
 sechk_result_t *imp_range_trans_get_result(sechk_module_t *mod) 
 {
-
+#if 0
 	if (!mod) {
 		fprintf(stderr, "Error: invalid parameters\n");
 		return NULL;
@@ -566,6 +572,8 @@ sechk_result_t *imp_range_trans_get_result(sechk_module_t *mod)
 	}
 
 	return mod->result;
+#endif
+	return NULL;
 }
 
 /* The imp_range_trans_data_new function allocates and returns an
@@ -579,19 +587,23 @@ sechk_result_t *imp_range_trans_get_result(sechk_module_t *mod)
  * any other data should be initialized as needed by the check logic */
 imp_range_trans_data_t *imp_range_trans_data_new(void)
 {
+#if 0
 	imp_range_trans_data_t *datum = NULL;
 
 	datum = (imp_range_trans_data_t*)calloc(1,sizeof(imp_range_trans_data_t));
 
 	return datum;
+#endif
+	return NULL;
 }
 
+#if 0
 /*
  * Returns a string indicating that no roles were
  * found to be valid for a particular type.  
  * This function allocates the returned string; caller must free
  */
-static char *build_no_roles_proof_str(ap_rangetrans_t *r_trans, const int type_idx, policy_t *policy)
+static char *build_no_roles_proof_str(ap_rangetrans_t *r_trans, const int type_idx, apol_policy_t *policy)
 {
 	char *str = NULL;
 	int str_sz = APOL_STR_SZ + 128;
@@ -613,6 +625,7 @@ static char *build_no_roles_proof_str(ap_rangetrans_t *r_trans, const int type_i
 		 is_valid_type_idx(type_idx, policy) ? policy->types[type_idx].name : "");
 
 	return str;
+	return NULL;
 }
 
 /*
@@ -621,7 +634,7 @@ static char *build_no_roles_proof_str(ap_rangetrans_t *r_trans, const int type_i
  * level.
  * This function allocates the returned string; caller must free.  
  */
-static char *build_bad_user_mls_proof_str(ap_user_t *user, const int *valid_roles, const int valid_roles_sz, ap_rangetrans_t *r_trans, policy_t *policy)
+static char *build_bad_user_mls_proof_str(ap_user_t *user, const int *valid_roles, const int valid_roles_sz, ap_rangetrans_t *r_trans, apol_policy_t *policy)
 {
 	char *str = NULL;
 	int str_sz = APOL_STR_SZ + 128;
@@ -665,6 +678,7 @@ static char *build_bad_user_mls_proof_str(ap_user_t *user, const int *valid_role
 		free(valid_users);
 
 	return str;
+	return NULL;
 }
 
 /* 
@@ -672,7 +686,7 @@ static char *build_bad_user_mls_proof_str(ap_user_t *user, const int *valid_role
  * for file objects in a particular domain were not found.
  * This function allocates the returned string; caller must free.
  */
-static char *build_no_exec_proof_str(ap_rangetrans_t *r_trans, policy_t *policy)
+static char *build_no_exec_proof_str(ap_rangetrans_t *r_trans, apol_policy_t *policy)
 {
 	char *str = NULL;
 	int str_sz = APOL_STR_SZ + 128;
@@ -695,6 +709,7 @@ static char *build_no_exec_proof_str(ap_rangetrans_t *r_trans, policy_t *policy)
 		 is_valid_type_idx(r_trans->src_types->idx, policy) ? policy->types[r_trans->src_types->idx].name : "",
 		 is_valid_type_idx(r_trans->tgt_types->idx, policy) ? policy->types[r_trans->tgt_types->idx].name : "");
 	return str;	
+	return NULL;
 }
 
 /*
@@ -702,7 +717,7 @@ static char *build_no_exec_proof_str(ap_rangetrans_t *r_trans, policy_t *policy)
  * role could not be found in the policy.
  * This function allocates the returned string; caller must free.
  */
-static char *build_no_user_proof_str(const int *valid_roles, const int valid_roles_sz, policy_t *policy)
+static char *build_no_user_proof_str(const int *valid_roles, const int valid_roles_sz, apol_policy_t *policy)
 {
 	char *str = NULL;
 	int i, role_idx, str_sz = 0;
@@ -718,6 +733,7 @@ static char *build_no_user_proof_str(const int *valid_roles, const int valid_rol
 	}	
 
 	return str;
+	return NULL;
 }
 
 /*
@@ -726,7 +742,7 @@ static char *build_no_user_proof_str(const int *valid_roles, const int valid_rol
  * Returns TRUE if the user's MLS range is sufficient
  * Returns FALSE otherwise
  */
-static bool_t verify_user_range(const int *valid_roles, const int valid_roles_sz, const int rtrans_idx, ap_rangetrans_t *r_trans, sechk_result_t *res, policy_t *policy) 
+static bool_t verify_user_range(const int *valid_roles, const int valid_roles_sz, const int rtrans_idx, ap_rangetrans_t *r_trans, sechk_result_t *res, apol_policy_t *policy) 
 {
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
@@ -867,7 +883,7 @@ static bool_t verify_user_range(const int *valid_roles, const int valid_roles_sz
  * Returns number of valid roles added on success 
  * Returns -1 on failure
  */
-static int get_valid_roles(int **valid_roles, int *valid_roles_sz, const int type_idx, policy_t *policy)
+static int get_valid_roles(int **valid_roles, int *valid_roles_sz, const int type_idx, apol_policy_t *policy)
 {
 	int role_no;
 	int *tmp_roles = NULL, tmp_roles_sz = 0;
@@ -886,6 +902,7 @@ static int get_valid_roles(int **valid_roles, int *valid_roles_sz, const int typ
 	*valid_roles = tmp_roles;
 	*valid_roles_sz = tmp_roles_sz;
 	return *valid_roles_sz;
+	return 0;
 }
 
 /*
@@ -893,7 +910,7 @@ static int get_valid_roles(int **valid_roles, int *valid_roles_sz, const int typ
  * Returns number of users if at least 1 user can be found
  * Returns -1 on error
  */
-static int get_valid_users(int **valid_users, int *valid_users_sz, const int *valid_roles, const int valid_roles_sz, bool_t *found_user, ap_mls_range_t *range, policy_t *policy)
+static int get_valid_users(int **valid_users, int *valid_users_sz, const int *valid_roles, const int valid_roles_sz, bool_t *found_user, ap_mls_range_t *range, apol_policy_t *policy)
 {
 	int i, user_no, low_lvl_cmp, high_lvl_cmp;
 	int *tmp_users = NULL, tmp_users_sz = 0;
@@ -937,6 +954,7 @@ static int get_valid_users(int **valid_users, int *valid_users_sz, const int *va
 	*valid_users_sz = tmp_users_sz;
 
 	return *valid_users_sz;
+	return 0;
 }
 
 /*
@@ -946,7 +964,7 @@ static int get_valid_users(int **valid_users, int *valid_users_sz, const int *va
  *     on file objects in domain tgt_types
  * Returns FALSE otherwise
  */
-static bool_t has_exec_perms(ta_item_t *tgt_types, const int src_idx, const int file_idx, const int exec_idx, policy_t *policy)
+static bool_t has_exec_perms(ta_item_t *tgt_types, const int src_idx, const int file_idx, const int exec_idx, apol_policy_t *policy)
 {
 	ta_item_t *tgt = NULL;
 	avh_node_t *tmp_node = NULL;
@@ -968,3 +986,5 @@ static bool_t has_exec_perms(ta_item_t *tgt_types, const int src_idx, const int 
 
 	return FALSE;
 }
+#endif
+
