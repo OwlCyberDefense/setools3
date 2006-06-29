@@ -279,7 +279,7 @@ xx_run_fail:
 
 /* The free function frees the private data of a module
  * TODO: be sure to free any allocated space in the private data */
-void xx_free(void *data)
+void xx_data_free(void *data)
 {
 	xx_data_t *datum = (xx_data_t *)data;
 
