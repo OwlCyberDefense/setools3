@@ -1124,3 +1124,14 @@ int sechk_lib_get_module_idx(const char *name, sechk_lib_t *lib)
 	return -1;
 }
 
+int sechk_proof_with_element_compare(const void *in_proof, const void *elem, void *unused __attribute__ ((unused)))
+{
+	const sechk_proof_t *proof = (const sechk_proof_t*)in_proof;
+
+	if (!proof)
+		return 1;
+
+	/* explicit pointer to integer cast */
+	return (int)(proof->elem - elem);
+}
+
