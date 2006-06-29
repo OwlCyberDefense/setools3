@@ -225,5 +225,7 @@ int sechk_lib_get_module_idx(const char *name, sechk_lib_t *lib);
 /* other utility functions */
 int sechk_get_installed_profile_names(char ***names, int *num_profiles);
 sechk_proof_t *sechk_proof_copy(sechk_proof_t *orig);
+/* callback for vector comparison of proof elements*/
+int sechk_proof_with_element_compare(const void *in_proof, const void *elem, void *unused);
 #endif /* SECHECKER_H */
 
