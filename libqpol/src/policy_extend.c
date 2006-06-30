@@ -97,7 +97,8 @@ static int qpol_policy_build_attrs_from_map(qpol_handle_t *handle, qpol_policy_t
 			error = errno;
 			goto err;
 		}
-		tmp_type->primary = tmp_type->isattr = 1;
+		tmp_type->primary = 1;
+		tmp_type->flavor = TYPE_ATTRIB;
 		tmp_type->value = i+1;
 		if (ebitmap_cpy(&tmp_type->types, &db->attr_type_map[i])) {
 			error = ENOMEM;
@@ -188,7 +189,8 @@ static int qpol_policy_fill_attr_holes(qpol_handle_t *handle, qpol_policy_t *pol
 			error = errno;
 			goto err;
 		}
-		tmp_type->primary = tmp_type->isattr = 1;
+		tmp_type->primary = 1;
+		tmp_type->flavor = TYPE_ATTRIB;
 		tmp_type->value = i+1;
 		tmp_type->types = tmp_bmap;
 
