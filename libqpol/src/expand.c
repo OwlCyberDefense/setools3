@@ -42,7 +42,7 @@ static int type_attr_map(hashtab_key_t key __attribute__ ((unused)), hashtab_dat
 	type = (type_datum_t *) datum;
 	/* if this is an attribute go through its list
 	   of types and put in reverse mappings */
-	if (type->isattr) {
+	if (type->flavor == TYPE_ATTRIB) {
 		ebitmap_for_each_bit(&type->types, node, bit) {
 			if (ebitmap_node_get_bit(node, bit)) {
 				orig_type = db->type_val_to_struct[bit];
@@ -100,5 +100,6 @@ exit:
 	return rt;
 err:
 	rt = -1;
+	errno = EIO;
 	goto exit;
 }

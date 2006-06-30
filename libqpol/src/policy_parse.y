@@ -138,8 +138,6 @@ typedef int (* require_func_t)();
 
 %}
 
-
-
 %union {
 	unsigned int val;
 	uintptr_t valptr;
@@ -936,22 +934,6 @@ static int insert_id(char *id, int push)
 		return -1;
 	}
 	return 0;
-}
-
-/* Add a rule onto an avtab hash table only if it does not already
- * exist.  (Note that the avtab is discarded afterwards; it will be
- * regenerated during expansion.)  Return 1 if rule was added (or
- * otherwise handled successfully), 0 if it conflicted with something,
- * or -1 on error. */
-static int insert_check_type_rule(avrule_t *rule, avtab_t *avtab, cond_av_list_t **list, cond_av_list_t **other)
-{
-	int ret;
-
-	ret = expand_rule(NULL, policydbp, rule, avtab, list, other, 0);
-	if (ret < 0) {
-		yyerror("Failed on expanding rule");
-        }
-	return ret;
 }
 
 /* If the identifier has a dot within it and that its first character
@@ -1787,7 +1769,7 @@ static int define_typealias(void)
                 return -1;
         }
 	t = hashtab_search(policydbp->p_types.table, id);
-	if (!t || t->isattr) {
+	if (!t || t->flavor == TYPE_ATTRIB) {
 		sprintf(errormsg, "unknown type %s, or it was already declared as an attribute", id);
 		yyerror(errormsg);
 		free(id);
@@ -1813,31 +1795,27 @@ static int define_typeattribute(void)
 		return -1;
 	}
 
-        if (!is_id_in_scope(SYM_TYPES, id)) {
-                yyerror2("type %s is not within scope", id);
-                free(id);
-                return -1;
-        }
+	if (!is_id_in_scope(SYM_TYPES, id)) {
+		yyerror2("type %s is not within scope", id);
+		free(id);
+		return -1;
+	}
 	t = hashtab_search(policydbp->p_types.table, id);
-	if (!t || t->isattr) {
+	if (!t || t->flavor == TYPE_ATTRIB) {
 		sprintf(errormsg, "unknown type %s", id);
 		yyerror(errormsg);
 		free(id);
 		return -1;
 	}
-        if ((t = get_local_type(id, t->value)) == NULL) {
-                yyerror("Out of memory!");
-                return -1;
-        }
 
 	while ((id = queue_remove(id_queue))) {
-                if (!is_id_in_scope(SYM_TYPES, id)) {
-                        yyerror2("attribute %s is not within scope", id);
-                        free(id);
-                        return -1;
-                }
+		if (!is_id_in_scope(SYM_TYPES, id)) {
+			yyerror2("attribute %s is not within scope", id);
+			free(id);
+			return -1;
+		}
 		attr = hashtab_search(policydbp->p_types.table, id);
-                if (!attr) {
+		if (!attr) {
 			sprintf(errormsg, "attribute %s is not declared", id);
 			/* treat it as a fatal error */
 			yyerror(errormsg);
@@ -1845,14 +1823,17 @@ static int define_typeattribute(void)
 			return -1;
 		}
 
-		if (!attr->isattr) {
+		if (attr->flavor != TYPE_ATTRIB) {
 			sprintf(errormsg, "%s is a type, not an attribute", id);
 			yyerror(errormsg);
 			free(id);
 			return -1;
 		}
 
-		free(id);
+		if ((attr = get_local_type(id, attr->value, 1)) == NULL) {
+			yyerror("Out of memory!");
+			return -1;
+		}
 
 		if (ebitmap_set_bit(&attr->types, (t->value - 1), TRUE)) {
 			yyerror("out of memory");
@@ -1906,13 +1887,13 @@ static int define_type(int alias)
 			newattr = 0;
 		}
 
-		if (!attr->isattr) {
+		if (attr->flavor != TYPE_ATTRIB) {
 			sprintf(errormsg, "%s is a type, not an attribute", id);
 			yyerror(errormsg);
 			return -1;
 		}
 
-                if ((attr = get_local_type(id, attr->value)) == NULL) {
+                if ((attr = get_local_type(id, attr->value, 1)) == NULL) {
                         yyerror("Out of memory!");
                         return -1;
                 }
@@ -2063,7 +2044,7 @@ static int define_compute_type_helper(int which, avrule_t **rule)
         }
 	datum = (type_datum_t *) hashtab_search(policydbp->p_types.table,
 						(hashtab_key_t) id);
-	if (!datum || datum->isattr) {
+	if (!datum || datum->flavor == TYPE_ATTRIB) {
 		sprintf(errormsg, "unknown type %s", id);
 		yyerror(errormsg);
 		goto bad;
@@ -2098,7 +2079,6 @@ static int define_compute_type(int which)
 {
 	char *id;
 	avrule_t *avrule;
-        int retval;
 
 	if (pass == 1) {
 		while ((id = queue_remove(id_queue))) 
@@ -2111,32 +2091,12 @@ static int define_compute_type(int which)
 		free(id);
 		return 0;
 	}
-	
+
 	if (define_compute_type_helper(which, &avrule))
 		return -1;
-	
-	retval = insert_check_type_rule(avrule, &policydbp->te_avtab, NULL, NULL);
-	switch (retval) {
-        case 1: {
-                /* append this avrule to the end of the current rules list */
-                append_avrule(avrule);
-                return 0;
-        }
-        case 0: {
-                /* rule conflicted, so don't actually add this rule */
-                avrule_destroy(avrule);
-                free(avrule);
-                return 0;
-        }
-        case -1: {
-                avrule_destroy(avrule);
-                free(avrule);
-                return -1;
-        }
-        default: {
-                assert(0); /* should never get here */
-        }
-        }
+
+	append_avrule(avrule);
+	return 0;
 }
 
 static avrule_t *define_cond_compute_type(int which)
@@ -3035,7 +2995,6 @@ static int define_constraint(constraint_expr_t * expr)
 	return 0;
 }
 
-
 static int define_mls(void)
 {
 	mlspol = 1;
@@ -3043,7 +3002,6 @@ static int define_mls(void)
 
         return 0;
 }
-
 
 static int define_validatetrans(constraint_expr_t *expr)
 {
@@ -3289,9 +3247,8 @@ static uintptr_t
 static int define_conditional(cond_expr_t *expr, avrule_t *t, avrule_t *f )
 {
 	cond_expr_t *e;
-	int depth, retval;
+	int depth;
         cond_node_t cn, *cn_old;
-        avrule_t *tmp, *last_tmp;
 
 	/* expression cannot be NULL */
 	if ( !expr) {
@@ -3369,85 +3326,6 @@ static int define_conditional(cond_expr_t *expr, avrule_t *t, avrule_t *f )
         if (!cn_old) {
                 return -1;
         }
-
-        /* verify te rules -- both true and false branches of conditional */
-	tmp = cn.avtrue_list;
-        last_tmp = NULL;
-	while (tmp) {
-		if (!tmp->specified & AVRULE_TRANSITION)
-			continue;
-		retval = insert_check_type_rule(tmp,
-                                                &policydbp->te_cond_avtab,
-                                                &cn_old->true_list, &cn_old->false_list);
-                switch (retval) {
-                case 1: {
-                        last_tmp = tmp;
-                        tmp = tmp->next;
-                        break;
-                }
-                case 0: {
-                        /* rule conflicted, so remove it from consideration */
-                        if (last_tmp == NULL) {
-                                cn.avtrue_list = cn.avtrue_list->next;
-                                avrule_destroy(tmp);
-				free(tmp);
-                                tmp = cn.avtrue_list;
-                        }
-                        else {
-                                last_tmp->next = tmp->next;
-                                avrule_destroy(tmp);
-				free(tmp);
-                                tmp = last_tmp->next;
-                        }
-                        break;
-                }
-                case -1: {
-                        return -1;
-                }
-                default: {
-                        assert(0);  /* should never get here */
-                }
-                }
-	}
-	
-	tmp = cn.avfalse_list;
-        last_tmp = NULL;
-	while (tmp) {
-		if (!tmp->specified & AVRULE_TRANSITION)
-			continue;
-		retval = insert_check_type_rule(tmp,
-                                                &policydbp->te_cond_avtab,
-                                                &cn_old->false_list, &cn_old->true_list);
-                switch (retval) {
-                case 1: {
-                        last_tmp = tmp;
-                        tmp = tmp->next;
-                        break;
-                }
-                case 0: {
-                        /* rule conflicted, so remove it from consideration  */
-                        if (last_tmp == NULL) {
-                                cn.avfalse_list = cn.avfalse_list->next;
-                                avrule_destroy(tmp);
-				free(tmp);
-                                tmp = cn.avfalse_list;
-                        }
-                        else {
-                                last_tmp->next = tmp->next;
-                                avrule_destroy(tmp);
-				free(tmp);
-                                tmp = last_tmp->next;
-                        }
-                        break;
-                }
-                case -1: {
-                        return -1;
-                }
-                default: {
-                        assert(0);  /* should never get here */
-                }
-                }
-	}
 
         append_cond_list(&cn);
         
@@ -3905,7 +3783,7 @@ static int parse_security_context(context_struct_t * c)
         }
 	typdatum = (type_datum_t *) hashtab_search(policydbp->p_types.table,
 						   (hashtab_key_t) id);
-	if (!typdatum || typdatum->isattr) {
+	if (!typdatum || typdatum->flavor == TYPE_ATTRIB) {
 		sprintf(errormsg, "type %s is not defined or is an attribute", id);
 		yyerror(errormsg);
 		free(id);
@@ -4346,6 +4224,7 @@ out:
 static int define_fs_use(int behavior)
 {
 	ocontext_t *newc, *c, *head;
+
 	if (pass == 1) {
 		free(queue_remove(id_queue));
 		if (behavior != SECURITY_FS_USE_PSIDS)
@@ -4610,6 +4489,8 @@ static int define_range_trans(void)
 		return -1;
 	}
 
+	/* FIXME: this expands type_sets at compile time which is inappropriate, the type_sets
+	 * should be stored which is a format change */
 	ebitmap_for_each_bit(&doms.types, snode, i) {
 		if (!ebitmap_node_get_bit(snode, i))
 			continue;
