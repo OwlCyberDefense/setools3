@@ -147,7 +147,7 @@ int qpol_type_get_isattr(qpol_handle_t *handle, qpol_policy_t *policy, qpol_type
 	}
 
 	internal_datum = (type_datum_t*)datum;
-	*isattr = internal_datum->isattr;
+	*isattr = (internal_datum->flavor == TYPE_ATTRIB ? 1 : 0);
 
 	return STATUS_SUCCESS;
 }
@@ -169,7 +169,7 @@ int qpol_type_get_type_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_t
 
 	internal_datum = (type_datum_t*)datum;
 
-	if (!internal_datum->isattr) {
+	if (internal_datum->flavor != TYPE_ATTRIB) {
 		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_NODATA;
@@ -215,7 +215,7 @@ int qpol_type_get_attr_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_t
 
 	internal_datum = (type_datum_t*)datum;
 
-	if (internal_datum->isattr) {
+	if (internal_datum->flavor == TYPE_ATTRIB) {
 		ERR(handle, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return STATUS_NODATA;

@@ -240,7 +240,7 @@ role_datum_t *declare_role(void)
                 return NULL;
         }
         case 0: {
-		if (ebitmap_set_bit(&role->dominates, role->value - 1, 1)) {
+		if (ebitmap_set_bit(&dest_role->dominates, role->value - 1, 1)) {
 			yyerror("out of memory");
 			return NULL;
 		}
@@ -256,8 +256,8 @@ role_datum_t *declare_role(void)
 }
 
 type_datum_t *declare_type(unsigned char primary, unsigned char isattr) {
-	char *id, *dest_id = NULL;
-	type_datum_t *typdatum, *dest_typdatum = NULL;
+	char *id;
+	type_datum_t *typdatum;
 	int retval;
 	uint32_t value = 0;
 
@@ -280,21 +280,13 @@ type_datum_t *declare_type(unsigned char primary, unsigned char isattr) {
 	}
         type_datum_init(typdatum);
         typdatum->primary = primary;
-        typdatum->isattr = isattr;
+        typdatum->flavor = isattr? TYPE_ATTRIB : TYPE_TYPE;
         
         retval = declare_symbol(SYM_TYPES, id, typdatum, &value, &value);
         if (retval == 0 || retval == 1) {
                 if (typdatum->primary) {
                         typdatum->value = value;
                 }
-                if ((dest_id = strdup(id)) == NULL) {
-                        yyerror("Out of memory!");
-                        return NULL;
-                }
-                if ((dest_typdatum = get_local_type(dest_id, value)) == NULL) {
-                        yyerror("Out of memory!");
-                        return NULL;
-                }       
         }
         else {
                 /* error occurred (can't have duplicate type declarations) */
@@ -317,7 +309,7 @@ type_datum_t *declare_type(unsigned char primary, unsigned char isattr) {
         }
         case 0:
         case 1: {
-                return dest_typdatum;
+                return typdatum;
         }
         default: {
                 assert(0);  /* should never get here */
@@ -425,18 +417,19 @@ user_datum_t *declare_user(void) {
  * NOTE: this function usurps ownership of id afterwards.  The caller
  * shall not reference it nor free() it afterwards.
  */
-type_datum_t *get_local_type(char *id, uint32_t value) {
+type_datum_t *get_local_type(char *id, uint32_t value, unsigned char isattr) {
         type_datum_t *dest_typdatum;
         hashtab_t types_tab;
         assert(stack_top->type == 1);
         if (stack_top->parent == NULL) {
-                /* in parent, so use global symbol table */
+                /* in global, so use global symbol table */
                 types_tab = policydbp->p_types.table;
         }
         else {
                 types_tab = stack_top->decl->p_types.table;
         }
-        if ((dest_typdatum = hashtab_search(types_tab, id)) == NULL) {
+        dest_typdatum = hashtab_search(types_tab, id);
+	if (!dest_typdatum) {
                 dest_typdatum = (type_datum_t *) malloc(sizeof(type_datum_t));
                 if (dest_typdatum == NULL) {
                         free(id);
@@ -444,6 +437,8 @@ type_datum_t *get_local_type(char *id, uint32_t value) {
                 }
                 type_datum_init(dest_typdatum);
                 dest_typdatum->value = value;
+        	dest_typdatum->flavor = isattr? TYPE_ATTRIB : TYPE_TYPE;
+		dest_typdatum->primary = 1;
                 if (hashtab_insert(types_tab, id, dest_typdatum)) {
 			free(id);
                         type_datum_destroy(dest_typdatum);
@@ -453,6 +448,9 @@ type_datum_t *get_local_type(char *id, uint32_t value) {
   
         } else {
 		free(id);
+		if (dest_typdatum->flavor != isattr? TYPE_ATTRIB : TYPE_TYPE) {
+			return NULL;
+		}
 	}
         return dest_typdatum;
 }
@@ -506,10 +504,10 @@ int require_symbol(uint32_t symbol_type,
                         if (symbol_type == SYM_TYPES) {
                                 /* check that previous symbol has same
                                  * type/attribute-ness */
-                                unsigned char new_isattr = ((type_datum_t *) datum)->isattr;
+                                unsigned char new_isattr = ((type_datum_t *) datum)->flavor;
                                 type_datum_t *old_datum = (type_datum_t *) hashtab_search(policydbp->symtab[SYM_TYPES].table, key);
                                 assert(old_datum != NULL);
-                                unsigned char old_isattr = old_datum->isattr;
+                                unsigned char old_isattr = old_datum->flavor;
                                 prev_declaration_ok = (old_isattr == new_isattr ? 1 : 0);
                         }
                         else {
@@ -709,7 +707,7 @@ int require_role(int pass)
         char *id = queue_remove(id_queue);
         role_datum_t *role = NULL;
         int retval;
-        if (pass == 1) {
+        if (pass == 2) {
                 free(id);
                 return 0;
         }
@@ -779,7 +777,7 @@ static int require_type_or_attribute(int pass, unsigned char isattr) {
         }
         type_datum_init(type);
         type->primary = 1;
-        type->isattr = isattr;
+        type->flavor = isattr? TYPE_ATTRIB : TYPE_TYPE;
         retval = require_symbol(SYM_TYPES, id, (hashtab_datum_t *) type, &type->value, &type->value);
         if (retval != 0) {
                 free(id);
@@ -1073,6 +1071,7 @@ int begin_optional(int pass) {
                     (decl = avrule_decl_create(next_decl_id)) == NULL) {
                         goto cleanup;
                 }
+		block->flags |= AVRULE_OPTIONAL;
                 block->branch_list = decl;
                 last_block->next = block;
         }

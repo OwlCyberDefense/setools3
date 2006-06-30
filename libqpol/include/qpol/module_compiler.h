@@ -34,7 +34,7 @@ role_datum_t *declare_role(void);
 type_datum_t *declare_type(unsigned char primary, unsigned char isattr);
 user_datum_t *declare_user(void);
 
-type_datum_t *get_local_type(char *id, uint32_t value);
+type_datum_t *get_local_type(char *id, uint32_t value, unsigned char isattr);
 
 /* Add a symbol to the current avrule_block's require section.  Note
  * that a module may not both declare and require the same symbol.
