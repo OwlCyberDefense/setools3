@@ -570,6 +570,7 @@ static int infer_policy_version(qpol_handle_t *handle, qpol_policy_t *policy)
 	/* 19 & 20 : mls and validatetrans statements added */
 	qpol_policy_get_validatetrans_iter(handle, policy, &iter);
 	qpol_iterator_get_size(iter, &nvtrans);
+	qpol_iterator_destroy(&iter);
 	if (db->mls || nvtrans) {
 		db->policyvers = 19;
 	}
