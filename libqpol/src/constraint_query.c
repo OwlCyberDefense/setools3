@@ -136,6 +136,7 @@ static size_t policy_constr_state_size(qpol_iterator_t *iter)
 		qpol_iterator_destroy(&constr_iter);
 	}
 
+	qpol_iterator_destroy(&internal_iter);
 	return count;
 
 err:
@@ -425,6 +426,7 @@ static size_t policy_constr_state_size_vtrans(qpol_iterator_t *iter)
 		qpol_iterator_destroy(&constr_iter);
 	}
 
+	qpol_iterator_destroy(&internal_iter);
 	return count;
 
 err:
