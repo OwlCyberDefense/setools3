@@ -936,6 +936,22 @@ static int insert_id(char *id, int push)
 	return 0;
 }
 
+/* Add a rule onto an avtab hash table only if it does not already
+ * exist.  (Note that the avtab is discarded afterwards; it will be
+ * regenerated during expansion.)  Return 1 if rule was added (or
+ * otherwise handled successfully), 0 if it conflicted with something,
+ * or -1 on error. */
+static int insert_check_type_rule(avrule_t *rule, avtab_t *avtab, cond_av_list_t **list, cond_av_list_t **other)
+{
+	int ret;
+
+	ret = expand_rule(NULL, policydbp, rule, avtab, list, other, 0);
+	if (ret < 0) {
+		yyerror("Failed on expanding rule");
+        }
+	return ret;
+}
+
 /* If the identifier has a dot within it and that its first character
    is not a dot then return 1, else return 0. */
 static int id_has_dot(char *id)
@@ -2082,6 +2098,7 @@ static int define_compute_type(int which)
 {
 	char *id;
 	avrule_t *avrule;
+        int retval;
 
 	if (pass == 1) {
 		while ((id = queue_remove(id_queue))) 
@@ -2098,8 +2115,28 @@ static int define_compute_type(int which)
 	if (define_compute_type_helper(which, &avrule))
 		return -1;
 
-	append_avrule(avrule);
-	return 0;
+	retval = insert_check_type_rule(avrule, &policydbp->te_avtab, NULL, NULL);
+	switch (retval) {
+        case 1: {
+                /* append this avrule to the end of the current rules list */
+                append_avrule(avrule);
+                return 0;
+        }
+        case 0: {
+                /* rule conflicted, so don't actually add this rule */
+                avrule_destroy(avrule);
+                free(avrule);
+                return 0;
+        }
+        case -1: {
+                avrule_destroy(avrule);
+                free(avrule);
+                return -1;
+        }
+        default: {
+                assert(0); /* should never get here */
+        }
+        }
 }
 
 static avrule_t *define_cond_compute_type(int which)
@@ -3252,8 +3289,9 @@ static uintptr_t
 static int define_conditional(cond_expr_t *expr, avrule_t *t, avrule_t *f )
 {
 	cond_expr_t *e;
-	int depth;
+	int depth, retval;
         cond_node_t cn, *cn_old;
+        avrule_t *tmp, *last_tmp;
 
 	/* expression cannot be NULL */
 	if ( !expr) {
@@ -3331,6 +3369,85 @@ static int define_conditional(cond_expr_t *expr, avrule_t *t, avrule_t *f )
         if (!cn_old) {
                 return -1;
         }
+
+        /* verify te rules -- both true and false branches of conditional */
+	tmp = cn.avtrue_list;
+        last_tmp = NULL;
+	while (tmp) {
+		if (!tmp->specified & AVRULE_TRANSITION)
+			continue;
+		retval = insert_check_type_rule(tmp,
+                                                &policydbp->te_cond_avtab,
+                                                &cn_old->true_list, &cn_old->false_list);
+                switch (retval) {
+                case 1: {
+                        last_tmp = tmp;
+                        tmp = tmp->next;
+                        break;
+                }
+                case 0: {
+                        /* rule conflicted, so remove it from consideration */
+                        if (last_tmp == NULL) {
+                                cn.avtrue_list = cn.avtrue_list->next;
+                                avrule_destroy(tmp);
+				free(tmp);
+                                tmp = cn.avtrue_list;
+                        }
+                        else {
+                                last_tmp->next = tmp->next;
+                                avrule_destroy(tmp);
+				free(tmp);
+                                tmp = last_tmp->next;
+                        }
+                        break;
+                }
+                case -1: {
+                        return -1;
+                }
+                default: {
+                        assert(0);  /* should never get here */
+                }
+                }
+	}
+	
+	tmp = cn.avfalse_list;
+        last_tmp = NULL;
+	while (tmp) {
+		if (!tmp->specified & AVRULE_TRANSITION)
+			continue;
+		retval = insert_check_type_rule(tmp,
+                                                &policydbp->te_cond_avtab,
+                                                &cn_old->false_list, &cn_old->true_list);
+                switch (retval) {
+                case 1: {
+                        last_tmp = tmp;
+                        tmp = tmp->next;
+                        break;
+                }
+                case 0: {
+                        /* rule conflicted, so remove it from consideration  */
+                        if (last_tmp == NULL) {
+                                cn.avfalse_list = cn.avfalse_list->next;
+                                avrule_destroy(tmp);
+				free(tmp);
+                                tmp = cn.avfalse_list;
+                        }
+                        else {
+                                last_tmp->next = tmp->next;
+                                avrule_destroy(tmp);
+				free(tmp);
+                                tmp = last_tmp->next;
+                        }
+                        break;
+                }
+                case -1: {
+                        return -1;
+                }
+                default: {
+                        assert(0);  /* should never get here */
+                }
+                }
+	}
 
         append_cond_list(&cn);
         
