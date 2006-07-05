@@ -1775,6 +1775,7 @@ static int define_typealias(void)
 		free(id);
 		return -1;
 	}
+	free(id);
         return add_aliases_to_type(t);
 }
 
@@ -1807,6 +1808,7 @@ static int define_typeattribute(void)
 		free(id);
 		return -1;
 	}
+	free(id);
 
 	while ((id = queue_remove(id_queue))) {
 		if (!is_id_in_scope(SYM_TYPES, id)) {
@@ -2049,7 +2051,8 @@ static int define_compute_type_helper(int which, avrule_t **rule)
 		yyerror(errormsg);
 		goto bad;
 	}
-	
+	free(id);
+
 	ebitmap_for_each_bit(&tclasses, node, i) {
 		if (ebitmap_node_get_bit(node, i)) {
 			perm = malloc(sizeof(class_perm_node_t));
@@ -2184,6 +2187,7 @@ static int define_bool(void)
 	}
 
 	datum->state = (int)(bool_value[0] == 'T') ? 1 : 0;
+	free(bool_value);
 	return 0;
  cleanup:
         cond_destroy_bool(id, datum, NULL);
@@ -2720,6 +2724,7 @@ static int define_role_trans(void)
 		yyerror(errormsg);
 		goto bad;
 	}
+	free(id);
 
 	/* This ebitmap business is just to ensure that there are not conflicting role_trans rules */
 	if (role_set_expand(&roles, &e_roles, policydbp))
@@ -4027,6 +4032,7 @@ static int define_port_context(unsigned int low, unsigned int high)
 			goto bad;
 		}
 	}
+	free(id);
 
 	if (l)
 		l->next = newc;
@@ -4308,6 +4314,8 @@ static int define_genfs_context_helper(char *fstype, int has_type)
 		else
 			policydbp->genfs = newgenfs;
 		genfs = newgenfs;
+	} else {
+		free(fstype);
 	}
 
 	newc = (ocontext_t *) malloc(sizeof(ocontext_t));
@@ -4357,6 +4365,8 @@ static int define_genfs_context_helper(char *fstype, int has_type)
 			goto fail;
 		}
 	}
+	free(type);
+	type = NULL;
 	if (parse_security_context(&newc->context[0])) 
 		goto fail;
 
