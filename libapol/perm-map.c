@@ -407,9 +407,9 @@ static int parse_permmap_class(apol_policy_t *p, FILE *fp,
 		apol_permmap_perm_t *pp;
 
 		line_ptr = line;
-		if (trim_string(&line_ptr) != 0)
+		if (apol_str_trim(&line_ptr) != 0)
 			return -1;
-		if (line_ptr[0] == '#' || str_is_only_white_space(line_ptr))
+		if (line_ptr[0] == '#' || apol_str_is_only_white_space(line_ptr))
 			continue;
 		perms_read++;
 		if (sscanf(line_ptr, "%s %c %d", perm_name, &mapid, &perm_weight) != 3) {
@@ -478,7 +478,7 @@ static int parse_permmap(apol_policy_t *p, FILE *fp)
 	/* first read number of classes */
 	while (fgets(line, sizeof(line), fp) != NULL) {
 		line_ptr = line;;
-		if (trim_string(&line_ptr) != 0) {
+		if (apol_str_trim(&line_ptr) != 0) {
 			return -1;
 		}
 		if(line_ptr[0] != '#' && (sscanf(line_ptr, "%u", &num_classes) == 1 )) {
@@ -496,7 +496,7 @@ static int parse_permmap(apol_policy_t *p, FILE *fp)
 		int found_class_decl = 0, rt;
 		while(fgets(line, LINE_SZ, fp) != NULL) {
 			line_ptr = line;
-			if (trim_string(&line_ptr) != 0) {
+			if (apol_str_trim(&line_ptr) != 0) {
 				return -1;
 			}
 			if (line_ptr[0] != '#' && (sscanf(line_ptr, "%*s %s %u", class_name, &num_perms) == 2 )) {

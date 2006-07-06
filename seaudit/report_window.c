@@ -214,7 +214,7 @@ static void on_create_report_button_clicked(GtkButton *button, gpointer user_dat
 		report_window->report_info->stylesheet_file = NULL;
 	}
 	file_path = gtk_entry_get_text(GTK_ENTRY(entry));
-	if (!str_is_only_white_space(file_path))
+	if (!apol_str_is_only_white_space(file_path))
 		seaudit_report_add_stylesheet_path(file_path, report_window->report_info);
 	
 	entry = GTK_ENTRY(glade_xml_get_widget(report_window->xml, "entry_report_config"));
@@ -224,7 +224,7 @@ static void on_create_report_button_clicked(GtkButton *button, gpointer user_dat
 		report_window->report_info->configPath = NULL;
 	}
 	file_path = gtk_entry_get_text(GTK_ENTRY(entry));
-	if (!str_is_only_white_space(file_path))
+	if (!apol_str_is_only_white_space(file_path))
 		seaudit_report_add_configFile_path(file_path, report_window->report_info);
 		
 	/* Generate the report */

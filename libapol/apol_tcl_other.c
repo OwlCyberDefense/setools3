@@ -313,7 +313,7 @@ static int Apol_GetScriptDir(ClientData clientData, Tcl_Interp *interp, int argc
 	}
 
 	if (script_dir == NULL) {
-		script_dir = apol_find_file(argv[1]);
+		script_dir = apol_file_find(argv[1]);
 		if (script_dir == NULL) {
 			Tcl_SetResult(interp, "Problem locating Tcl startup script.", TCL_STATIC);
 			return TCL_ERROR;
@@ -347,7 +347,7 @@ static int Apol_GetHelpDir(ClientData clientData, Tcl_Interp *interp, int argc, 
 	}
 
 	if(help_dir == NULL) {
-		help_dir = apol_find_file(argv[1]);
+		help_dir = apol_file_find(argv[1]);
 		if(help_dir == NULL) {
 			Tcl_SetResult(interp, "Problem locating Tcl help file.", TCL_STATIC);
 			return TCL_ERROR;

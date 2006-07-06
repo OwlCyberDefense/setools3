@@ -1,14 +1,3 @@
- /* Copyright (C) 2001-2003, Tresys Technology, LLC
- * see file 'COPYING' for use and warranty information */
-
-/* 
- * Author: mayerf@tresys.com 
- */
-
-/* util.h */
-
-/* Utility functions */
-
 #ifndef _APOLICY_UTIL_H_
 #define _APOLICY_UTIL_H_
 
@@ -18,30 +7,6 @@
 #include <stdio.h>
 #include <regex.h>
 #include <stdint.h>
-
-/* The following should be defined in the make environment */
-#ifndef LIBAPOL_VERSION_STRING
-	#define LIBAPOL_VERSION_STRING "UNKNOWN"
-#endif
-
-/* use 8k line size */
-#define LINE_SZ 8192
-#define BUF_SZ 240
-/* HACK! checkpolicy doesn't appear to enforce a string size limit; but for simplicity
- * we're going to fail for any single string over APOL_STR_SZ.  We primarily need this
- * to simplify the string-intensive apol TCL commands.
- */
-#define APOL_STR_SZ 128
-#define is_valid_str_sz(str) (strlen(str) < APOL_STR_SZ)
-
-#define APOL_ENVIRON_VAR_NAME "APOL_INSTALL_DIR"
-
-#undef FALSE
-#define FALSE   0
-#undef TRUE
-#define TRUE	1
-typedef unsigned char bool_t;
-
 
 /* generic link list structures */
 typedef struct llist_node {
@@ -59,10 +24,6 @@ typedef struct llist {
 /* prototypes */
 const char* libapol_get_version(void);
 char* find_user_config_file(const char *file_name);
-bool_t getbool(const char *str);
-int trim_string(char **str);
-int trim_leading_whitespace(char **str);
-void trim_trailing_whitespace(char **str);
 llist_t *ll_new(void);
 void ll_free(llist_t *ll, void(*free_data)(void *));
 llist_node_t *ll_node_free(llist_node_t *n, void(*free_data)(void *));
@@ -72,17 +33,7 @@ int ll_append_data(llist_t *ll, void *data);
 
 int add_i_to_a(int i, int *cnt, int **a);
 int find_int_in_array(int i, const int *a, int a_sz);
-int add_int_to_array(int i, int *a, int num, int a_sz);
 int copy_int_array(int **dest, int *src, int len);
-int int_compare(const void *aptr, const void *bptr);
-
-unsigned char str_is_only_white_space(const char *str);
-char *get_config_var(const char *var, FILE *fp);
-char **get_config_var_list(const char *var, FILE *file, int *list_sz);
-char *config_var_list_to_string(const char **list, int size);
-unsigned char str_token_is_not_valid(const char *str);
-int append_str(char **tgt, int *tgt_sz, const char *str);
-int read_file_to_buffer(const char *fname, char **buf, int *len);
 
 #endif /*_APOLICY_UTIL_H_*/
 
@@ -117,6 +68,27 @@ int read_file_to_buffer(const char *fname, char **buf, int *len);
 
 #ifndef APOL_UTIL_H
 #define APOL_UTIL_H
+
+#include <config.h>
+
+#include <stdlib.h>
+
+/* The following should be defined in the make environment */
+#ifndef LIBAPOL_VERSION_STRING
+	#define LIBAPOL_VERSION_STRING "UNKNOWN"
+#endif
+
+/* use 8k line size */
+#define LINE_SZ 8192
+
+#define APOL_ENVIRON_VAR_NAME "APOL_INSTALL_DIR"
+
+#undef FALSE
+#define FALSE   0
+#undef TRUE
+#define TRUE	1
+typedef unsigned char bool_t;
+
 
 /**
  * Given a portcon protocol, return a read-only string that describes
@@ -216,6 +188,97 @@ extern const char *apol_cond_expr_type_to_str(uint32_t expr_type);
  * @return File's path, or NULL if not found.  Caller must free() this
  * string afterwards.
  */
-extern char* apol_find_file(const char *file_name);
+extern char* apol_file_find(const char *file_name);
+
+/**
+ * Given a file name, read the file's contents into a newly allocated
+ * buffer.  The caller must free() this buffer afterwards.
+ *
+ * @param fname Name of file to read.
+ * @param buf Reference to a newly allocated buffer.
+ * @param len Reference to the number of bytes read.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+extern int apol_file_read_to_buffer(const char *fname, char **buf, size_t *len);
+/**
+ * Given a file pointer into a config file, read and return the value
+ * for the given config var.  The caller must free() the returned
+ * string afterwards.
+ *
+ * @param var Name of configuration variable to obtain.
+ * @param fp An open file pointer into a configuration file.  This
+ * function will not maintain the pointer's current location.
+ *
+ * @return A newly allocated string containing the variable's value,
+ * or NULL if not found or error.
+ */
+extern char *apol_config_get_var(const char *var, FILE *fp);
+
+/**
+ * Given a file pointer into a config file, read and return a list of
+ * values associated with the given config var.  The variable's value
+ * is expected to be a ':' separated string.  The caller must free()
+ * the returned array of strings afterwards, as well as the pointer
+ * itself.
+ *
+ * @param var Name of configuration variable to obtain.
+ * @param fp An open file pointer into a configuration file.  This
+ * function will not maintain the pointer's current location.
+ * @param list_sz Reference to the number of elements within the
+ * returned array.
+ *
+ * @return A newly allocated array of strings containing the
+ * variable's values, or NULL if not found or error.
+ */
+extern char **apol_config_get_varlist(const char *var, FILE *file, size_t *list_sz);
+
+/**
+ * Given a list of configuration variables, as returned by
+ * apol_config_list(), allocate and return a string that joins the
+ * list using ':' as the separator.  The caller is responsible for
+ * free()ing the string afterwards.
+ *
+ * @param list Array of strings.
+ * @param size Number of elements within the list.
+ *
+ * @return An allocated concatenated string, or NULL upon error.
+ */
+extern char *apol_config_varlist_to_str(const char **list, size_t size);
+
+/**
+ * Given a dynamically allocated string, allocated a new string with
+ * both starting and trailing whitespace characters removed.  The
+ * caller is responsible for free()ing the resulting pointer.  The
+ * original string will be free()d by this function.
+ *
+ * @param str Reference to a dynamically allocated string.
+ *
+ * @return 0 on success, < 0 on out of memory.
+ */
+extern int apol_str_trim(char **str);
+
+/**
+ * Append a string to an existing dynamic mutable string, expanding
+ * the target string if necessary.  The caller must free() the target
+ * string.  If tgt is NULL then initially allocate the resulting
+ * string.
+ *
+ * @param tgt Reference to a string to modify, or NULL to create a new
+ * string.
+ * @param tgt_sz Number of byets allocated to tgt.
+ * @param str String to append.
+ *
+ * @return 0 on success, < 0 on out of memory or error.
+ */
+extern int apol_str_append(char **tgt, size_t *tgt_sz, const char *str);
+
+/**
+ * Test whether a given string is only white space.
+ *
+ * @param str String to test.
+ * @return 1 if string is either NULL or only whitespace, 0 otherwise.
+ */
+extern int apol_str_is_only_white_space(const char *str);
 
 #endif

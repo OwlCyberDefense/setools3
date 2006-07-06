@@ -113,7 +113,8 @@ char *apol_cond_expr_render(apol_policy_t *p, qpol_iterator_t *iter)
 {
 	qpol_cond_expr_node_t *expr = NULL;
 	char *tmp = NULL, *bool_name = NULL;
-	int tmp_sz = 0, error = 0;
+	int error = 0;
+	size_t tmp_sz = 0;
 	uint32_t expr_type = 0;
 	qpol_bool_t *cond_bool = NULL;
 
@@ -135,7 +136,7 @@ char *apol_cond_expr_render(apol_policy_t *p, qpol_iterator_t *iter)
 			goto err;
 		}
 		if (expr_type != QPOL_COND_EXPR_BOOL) {
-			if (append_str(&tmp, &tmp_sz, apol_cond_expr_type_to_str(expr_type))) {
+			if (apol_str_append(&tmp, &tmp_sz, apol_cond_expr_type_to_str(expr_type))) {
 				ERR(p, "%s", strerror(ENOMEM));
 				error = ENOMEM;
 				goto err;
@@ -151,17 +152,17 @@ char *apol_cond_expr_render(apol_policy_t *p, qpol_iterator_t *iter)
 				ERR(p, "%s", strerror(error));
 				goto err;
 			}
-			if (append_str(&tmp, &tmp_sz, bool_name)) {
+			if (apol_str_append(&tmp, &tmp_sz, bool_name)) {
 				ERR(p, "%s", strerror(ENOMEM));
 				error = ENOMEM;
 				goto err;
 			}
 		}
-		if (append_str(&tmp, &tmp_sz, " ")) {
+		if (apol_str_append(&tmp, &tmp_sz, " ")) {
 			ERR(p, "%s", strerror(ENOMEM));
 			error = ENOMEM;
 			goto err;
-		}	
+		}
 	}
 
 	return tmp;

@@ -322,20 +322,20 @@ int apol_context_validate_partial(apol_policy_t *p,
 char *apol_context_render(apol_policy_t *p, apol_context_t *context)
 {
         char *buf = NULL, *range_str = NULL;
-	int buf_sz = 0;
+	size_t buf_sz = 0;
 
 	/* render context */
-	if (append_str(&buf, &buf_sz, context->user) != 0 ||
-            append_str(&buf, &buf_sz, ":") != 0) {
+	if (apol_str_append(&buf, &buf_sz, context->user) != 0 ||
+            apol_str_append(&buf, &buf_sz, ":") != 0) {
 		ERR(p, "Out of memory!");
 		goto err_return;
 	}
-	if (append_str(&buf, &buf_sz, context->role) != 0 ||
-	    append_str(&buf, &buf_sz, ":") != 0) {
+	if (apol_str_append(&buf, &buf_sz, context->role) != 0 ||
+	    apol_str_append(&buf, &buf_sz, ":") != 0) {
 		ERR(p, "Out of memory!");
 		goto err_return;
 	}
-	if(append_str(&buf, &buf_sz, context->type) != 0) {
+	if(apol_str_append(&buf, &buf_sz, context->type) != 0) {
 		ERR(p, "Out of memory!");
 		goto err_return;
 	}
@@ -344,8 +344,8 @@ char *apol_context_render(apol_policy_t *p, apol_context_t *context)
                 if ((range_str = apol_mls_range_render(p, context->range)) == NULL) {
                         goto err_return;
                 }
-                if (append_str(&buf, &buf_sz, ":") ||
-                    append_str(&buf, &buf_sz, range_str) != 0) {
+                if (apol_str_append(&buf, &buf_sz, ":") ||
+                    apol_str_append(&buf, &buf_sz, range_str) != 0) {
                         ERR(p, "Out of memory!");
                         goto err_return;
                 }
