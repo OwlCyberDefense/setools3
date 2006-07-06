@@ -1310,7 +1310,7 @@ static unsigned int get_tokens(char *line, int msgtype, audit_log_t *log, FILE *
 	
 	/* Tokenize line while ignoring any adjacent whitespace chars. */ 
         while ((tmp = strsep(&tokens, " ")) != NULL) {
-	       	if (strcmp(tmp, "") && !str_is_only_white_space(tmp)) {
+	       	if (strcmp(tmp, "") && !apol_str_is_only_white_space(tmp)) {
 	         	if ((fields_ptr = (char**)realloc(fields, (num_tokens + 1) * sizeof(char*))) == NULL) {
 	         		free_field_tokens(*(&fields), num_tokens);
 	         		free(tokens);

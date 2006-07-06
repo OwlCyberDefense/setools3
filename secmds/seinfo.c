@@ -153,12 +153,12 @@ static int print_stats(FILE *fp, apol_policy_t *policydb)
 	apol_perm_query_t *perm_query = NULL;
 	apol_vector_t *perms = NULL, *v = NULL;
 	char *str = NULL, *ver_str = NULL;
-	int str_sz = 0, ver_str_sz = 16, n_types = 0, n_attrs = 0;
+	size_t str_sz = 0, ver_str_sz = 16, n_types = 0, n_attrs = 0;
 	bool_t binary = FALSE;
-	size_t n_classes = 0, n_users = 0, n_roles = 0, n_bools = 0, n_conds = 0, n_levels = 0, 
-		n_cats = 0, n_portcons = 0, n_netifcons = 0, n_nodecons = 0, n_fsuses = 0, 
+	size_t n_classes = 0, n_users = 0, n_roles = 0, n_bools = 0, n_conds = 0, n_levels = 0,
+		n_cats = 0, n_portcons = 0, n_netifcons = 0, n_nodecons = 0, n_fsuses = 0,
 		n_genfscons = 0, n_allows = 0, n_neverallows = 0, n_auditallows = 0, n_dontaudits = 0,
-		n_typetrans = 0, n_typechanges = 0, n_typemembers = 0, n_isids = 0, n_roleallows = 0, 
+		n_typetrans = 0, n_typechanges = 0, n_typemembers = 0, n_isids = 0, n_roleallows = 0,
 		n_roletrans = 0, n_rangetrans = 0, n_constr = 0, n_vtrans = 0;
 
 	assert(policydb != NULL);
@@ -168,12 +168,12 @@ static int print_stats(FILE *fp, apol_policy_t *policydb)
 	if (qpol_policy_get_policy_version(policydb->qh, policydb->p, &ver))
 		goto cleanup;
 
-	append_str(&str, &str_sz, "");
+	apol_str_append(&str, &str_sz, "");
 	mls = qpol_policy_is_mls_enabled(policydb->qh, policydb->p);
 	if (mls < 0)
 		goto cleanup;
 
-	append_str(&str, &str_sz, "v.");
+	apol_str_append(&str, &str_sz, "v.");
 
 	ver_str = malloc(sizeof(unsigned char) * ver_str_sz);
 	memset(ver_str, 0x0, ver_str_sz);
@@ -183,11 +183,11 @@ static int print_stats(FILE *fp, apol_policy_t *policydb)
 	if (apol_policy_is_binary(policydb))
 		binary = TRUE;
 
-	append_str(&str, &str_sz, ver_str);
-	append_str(&str, &str_sz, " (");
-	append_str(&str, &str_sz, binary ? "binary, " : "source, ");
-	append_str(&str, &str_sz, mls ? "MLS" : "non-MLS");
-	append_str(&str, &str_sz, ")");
+	apol_str_append(&str, &str_sz, ver_str);
+	apol_str_append(&str, &str_sz, " (");
+	apol_str_append(&str, &str_sz, binary ? "binary, " : "source, ");
+	apol_str_append(&str, &str_sz, mls ? "MLS" : "non-MLS");
+	apol_str_append(&str, &str_sz, ")");
 
 	fprintf(fp, "Policy Version & Type: ");
 	fprintf(fp, "%s\n", str);

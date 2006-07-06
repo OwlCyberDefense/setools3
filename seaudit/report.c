@@ -332,7 +332,7 @@ static int seaudit_report_import_html_stylesheet(seaudit_report_t *seaudit_repor
 				fclose(fp);
 				return -1;
 			}
-			if (line_ptr[0] == '#' || str_is_only_white_space(line_ptr))  
+			if (line_ptr[0] == '#' || apol_str_is_only_white_space(line_ptr))  
 				continue;
 			fprintf(outfile, "%s\n", line_ptr);
 		}

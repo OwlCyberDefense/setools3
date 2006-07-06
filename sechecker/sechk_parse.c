@@ -30,22 +30,22 @@
 static char *build_dtd_path(void)
 {
 	char *path = NULL;
-	int path_sz = 0;
+	size_t path_sz = 0;
 	
 	#ifdef PROFILE_INSTALL_DIR
-	if (append_str(&path, &path_sz, "file://localhost") == -1)
+	if (apol_str_append(&path, &path_sz, "file://localhost") == -1)
 		return NULL;
 
-	if (append_str(&path, &path_sz, BASE_PATH) == -1)
+	if (apol_str_append(&path, &path_sz, BASE_PATH) == -1)
 		return NULL;
 
-	if (append_str(&path, &path_sz, "/") == -1)
+	if (apol_str_append(&path, &path_sz, "/") == -1)
 		return NULL;
 
-	if (append_str(&path, &path_sz, PROFILE_INSTALL_DIR) == -1)
+	if (apol_str_append(&path, &path_sz, PROFILE_INSTALL_DIR) == -1)
 		return NULL;
 
-	if (append_str(&path, &path_sz, "/sechecker.dtd") == -1)
+	if (apol_str_append(&path, &path_sz, "/sechecker.dtd") == -1)
 		return NULL;
 
 	return path;

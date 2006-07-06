@@ -321,7 +321,8 @@ int apol_terule_query_set_regex(apol_policy_t *p, apol_terule_query_t *t, int is
 char *apol_terule_render(apol_policy_t *policy, qpol_terule_t *rule)
 {
 	char *tmp = NULL, *tmp_name = NULL;
-	int tmp_sz = 0, error = 0;
+	int error = 0;
+	size_t tmp_sz = 0;
 	uint32_t rule_type = 0;
 	qpol_type_t *type = NULL;
 	qpol_class_t *obj_class = NULL;
@@ -349,12 +350,12 @@ char *apol_terule_render(apol_policy_t *policy, qpol_terule_t *rule)
 		errno = EINVAL;
 		return NULL;
 	}
-	if (append_str(&tmp, &tmp_sz, tmp_name)) {
+	if (apol_str_append(&tmp, &tmp_sz, tmp_name)) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		error = ENOMEM;
 		goto err;
 	}
-	if (append_str(&tmp, &tmp_sz, " ")) {
+	if (apol_str_append(&tmp, &tmp_sz, " ")) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		error = ENOMEM;
 		goto err;
@@ -371,12 +372,12 @@ char *apol_terule_render(apol_policy_t *policy, qpol_terule_t *rule)
 		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
-	if (append_str(&tmp, &tmp_sz, tmp_name)) {
+	if (apol_str_append(&tmp, &tmp_sz, tmp_name)) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		error = ENOMEM;
 		goto err;
 	}
-	if (append_str(&tmp, &tmp_sz, " ")) {
+	if (apol_str_append(&tmp, &tmp_sz, " ")) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		error = ENOMEM;
 		goto err;
@@ -393,12 +394,12 @@ char *apol_terule_render(apol_policy_t *policy, qpol_terule_t *rule)
 		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
-	if (append_str(&tmp, &tmp_sz, tmp_name)) {
+	if (apol_str_append(&tmp, &tmp_sz, tmp_name)) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		error = ENOMEM;
 		goto err;
 	}
-	if (append_str(&tmp, &tmp_sz, " : ")) {
+	if (apol_str_append(&tmp, &tmp_sz, " : ")) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		error = ENOMEM;
 		goto err;
@@ -415,12 +416,12 @@ char *apol_terule_render(apol_policy_t *policy, qpol_terule_t *rule)
 		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
-	if (append_str(&tmp, &tmp_sz, tmp_name)) {
+	if (apol_str_append(&tmp, &tmp_sz, tmp_name)) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		error = ENOMEM;
 		goto err;
 	}
-	if (append_str(&tmp, &tmp_sz, " ")) {
+	if (apol_str_append(&tmp, &tmp_sz, " ")) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		error = ENOMEM;
 		goto err;
@@ -437,13 +438,13 @@ char *apol_terule_render(apol_policy_t *policy, qpol_terule_t *rule)
 		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
-	if (append_str(&tmp, &tmp_sz, tmp_name)) {
+	if (apol_str_append(&tmp, &tmp_sz, tmp_name)) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		error = ENOMEM;
 		goto err;
 	}
 
-	if (append_str(&tmp, &tmp_sz, ";")) {
+	if (apol_str_append(&tmp, &tmp_sz, ";")) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		error = ENOMEM;
 		goto err;
