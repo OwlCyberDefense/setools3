@@ -1,5 +1,5 @@
 /**
- * @file component-query.c
+ * @file policy-query.c
  *
  * Provides a way for setools to make queries about different
  * components of a policy.  The caller obtains a query object, fills

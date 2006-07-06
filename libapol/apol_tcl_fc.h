@@ -1,5 +1,5 @@
 /**
- *  @file apol_tcl_components.h
+ *  @file apol_tcl_fc.h
  *  Apol interface to search on-disk file contexts.
  *
  *  @author Kevin Carr kcarr@tresys.com

@@ -185,50 +185,6 @@ int int_compare(const void *aptr, const void *bptr)
 	return 0;
 }
 
-/************************************************
- * functions relating to managing config files
- */
-
-const char* libapol_get_version(void)
-{
-	return LIBAPOL_VERSION_STRING;
-}
-
-/* 
- * This function looks in the users home directory  */
-char* find_user_config_file(const char *file_name)
-{
-	char *dir, *path, *tmp;
-	int rt; 
-
-	tmp = getenv("HOME");
-	if (tmp) {
-		dir = malloc(sizeof(char) * (1+strlen(tmp)));
-		if (!dir) {
-			fprintf(stderr, "out of memory");
-			return NULL;
-		}
-		dir = strcpy(dir, tmp);
-		path = malloc(sizeof(char) * (2+strlen(dir)+strlen(file_name)));
-		if (!path) {
-			fprintf(stderr, "out of memory");
-			return NULL;
-		}
-		path = strcpy(path, dir);
-		path = strcat(path, "/");
-		path = strcat(path, file_name);
-		rt = access(path, R_OK);
-		if(rt == 0) {
-			free(path);
-			return dir;		
-		} else {
-			free(path);
-			free(dir);
-		}
-	}
-	return NULL;
-}
-
 /******************** new stuff here ********************/
 
 /**
@@ -264,6 +220,16 @@ char* find_user_config_file(const char *file_name)
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>    /* needed for portcon's protocol */
+
+/* The following should be defined in the make environment */
+#ifndef LIBAPOL_VERSION_STRING
+	#define LIBAPOL_VERSION_STRING "UNKNOWN"
+#endif
+
+const char* libapol_get_version(void)
+{
+	return LIBAPOL_VERSION_STRING;
+}
 
 int apol_str_to_internal_ip(const char *str, uint32_t ip[4])
 {
@@ -501,6 +467,37 @@ char* apol_file_find(const char *file_name)
 
 	/* 5. Didn't find it! */
 	free(file);
+	return NULL;
+}
+
+char* apol_file_find_user_config(const char *file_name)
+{
+	char *dir, *path, *tmp;
+	int rt;
+
+	tmp = getenv("HOME");
+	if (tmp) {
+		dir = malloc(sizeof(char) * (1+strlen(tmp)));
+		if (!dir) {
+			return NULL;
+		}
+		dir = strcpy(dir, tmp);
+		path = malloc(sizeof(char) * (2+strlen(dir)+strlen(file_name)));
+		if (!path) {
+			return NULL;
+		}
+		path = strcpy(path, dir);
+		path = strcat(path, "/");
+		path = strcat(path, file_name);
+		rt = access(path, R_OK);
+		if (rt == 0) {
+			free(path);
+			return dir;
+		} else {
+			free(path);
+			free(dir);
+		}
+	}
 	return NULL;
 }
 

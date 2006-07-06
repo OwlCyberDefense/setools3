@@ -22,8 +22,6 @@ typedef struct llist {
 } llist_t;
 
 /* prototypes */
-const char* libapol_get_version(void);
-char* find_user_config_file(const char *file_name);
 llist_t *ll_new(void);
 void ll_free(llist_t *ll, void(*free_data)(void *));
 llist_node_t *ll_node_free(llist_node_t *n, void(*free_data)(void *));
@@ -73,11 +71,6 @@ int copy_int_array(int **dest, int *src, int len);
 
 #include <stdlib.h>
 
-/* The following should be defined in the make environment */
-#ifndef LIBAPOL_VERSION_STRING
-	#define LIBAPOL_VERSION_STRING "UNKNOWN"
-#endif
-
 /* use 8k line size */
 #define LINE_SZ 8192
 
@@ -89,6 +82,12 @@ int copy_int_array(int **dest, int *src, int len);
 #define TRUE	1
 typedef unsigned char bool_t;
 
+/**
+ * Return an inmutable string describing this library's version.
+ *
+ * @return String describing this library.
+ */
+extern const char* libapol_get_version(void);
 
 /**
  * Given a portcon protocol, return a read-only string that describes
@@ -191,6 +190,17 @@ extern const char *apol_cond_expr_type_to_str(uint32_t expr_type);
 extern char* apol_file_find(const char *file_name);
 
 /**
+ * Given a file name for a user configuration, search and return that
+ * file's path in the user's home directory.
+ *
+ * @param file_name File to find.
+ *
+ * @return File's path, or NULL if not found.  Caller must free() this
+ * string afterwards.
+ */
+extern char* apol_find_find_user_config(const char *file_name);
+
+/**
  * Given a file name, read the file's contents into a newly allocated
  * buffer.  The caller must free() this buffer afterwards.
  *
@@ -247,7 +257,7 @@ extern char **apol_config_get_varlist(const char *var, FILE *file, size_t *list_
 extern char *apol_config_varlist_to_str(const char **list, size_t size);
 
 /**
- * Given a dynamically allocated string, allocated a new string with
+ * Given a dynamically allocated string, allocate a new string with
  * both starting and trailing whitespace characters removed.  The
  * caller is responsible for free()ing the resulting pointer.  The
  * original string will be free()d by this function.
@@ -266,7 +276,7 @@ extern int apol_str_trim(char **str);
  *
  * @param tgt Reference to a string to modify, or NULL to create a new
  * string.
- * @param tgt_sz Number of byets allocated to tgt.
+ * @param tgt_sz Number of bytes allocated to tgt.
  * @param str String to append.
  *
  * @return 0 on success, < 0 on out of memory or error.

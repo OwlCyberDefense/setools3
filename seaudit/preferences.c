@@ -84,7 +84,7 @@ int load_seaudit_conf_file(seaudit_conf_t *conf)
 	if (conf == NULL)
 		return -1;
 
-	dir = find_user_config_file(".seaudit");
+	dir = apol_file_find_user_config(".seaudit");
 	if (!dir) {
 		dir = apol_find_file("dot_seaudit");
 		if (!dir)
