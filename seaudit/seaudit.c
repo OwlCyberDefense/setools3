@@ -1212,7 +1212,8 @@ void seaudit_on_help_activate(GtkWidget *widget, GdkEvent *event, gpointer callb
 	GtkTextBuffer *buffer;
 	GString *string;
 	char *help_text = NULL;
-	int len, rt;
+	size_t len;
+	int rt;
 	char *dir;
 
 	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -1238,7 +1239,7 @@ void seaudit_on_help_activate(GtkWidget *widget, GdkEvent *event, gpointer callb
 	string = g_string_new(dir);
 	free(dir);
 	g_string_append(string, "/seaudit_help.txt");
-	rt = read_file_to_buffer(string->str, &help_text, &len);
+	rt = apol_file_read_to_buffer(string->str, &help_text, &len);
 	g_string_free(string, TRUE);
 	if (rt != 0) {
 		if (help_text)
@@ -1412,9 +1413,10 @@ static void seaudit_set_real_time_log_button_state(bool_t state)
 static int seaudit_read_policy_conf(const char *fname)
 {
 	char *buf = NULL;
-	int len, rt;
+	size_t len;
+	int rt;
 
-	rt = read_file_to_buffer(fname, &buf, &len);
+	rt = apol_file_read_to_buffer(fname, &buf, &len);
 	if (rt != 0) {
 		if (buf)
 			free(buf);

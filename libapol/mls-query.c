@@ -526,11 +526,11 @@ char *apol_mls_level_render(apol_policy_t *p, apol_mls_level_t *level)
 {
 	char *rt = NULL, *name = NULL, *sens_name = NULL, *cat_name = NULL;
 	char *retval = NULL;
-	int sz = 0, i, cur;
+	int i, cur;
 	qpol_cat_t *cur_cat = NULL, *next_cat = NULL;
 	uint32_t cur_cat_val, next_cat_val, far_cat_val;
 	apol_vector_t *cats = NULL;
-	size_t n_cats = 0;
+	size_t sz = 0, n_cats = 0;
 
 	if (!level || !p)
 		goto cleanup;
@@ -538,7 +538,7 @@ char *apol_mls_level_render(apol_policy_t *p, apol_mls_level_t *level)
 	sens_name = level->sens;
 	if (!sens_name)
 		goto cleanup;
-	if (append_str(&rt, &sz, sens_name)) {
+	if (apol_str_append(&rt, &sz, sens_name)) {
 		ERR(p, "Out of memory!");
 		goto cleanup;
 	}
@@ -560,7 +560,7 @@ char *apol_mls_level_render(apol_policy_t *p, apol_mls_level_t *level)
 	if (!cat_name)
 		goto cleanup;
 
-	if (append_str(&rt, &sz, ":") || append_str(&rt, &sz, cat_name)) {
+	if (apol_str_append(&rt, &sz, ":") || apol_str_append(&rt, &sz, cat_name)) {
 		ERR(p, "Out of memory!");
 		goto cleanup;
 	}
@@ -584,8 +584,8 @@ char *apol_mls_level_render(apol_policy_t *p, apol_mls_level_t *level)
 			if (i + 1 == n_cats) { /* last category is next; append "." */
 				if (qpol_cat_get_name(p->qh, p->p, next_cat, &name))
 					goto cleanup;
-				if (append_str(&rt, &sz, ".") ||
-				    append_str(&rt, &sz, name)) {
+				if (apol_str_append(&rt, &sz, ".") ||
+				    apol_str_append(&rt, &sz, name)) {
 					ERR(p, "Out of memory!");
 					goto cleanup;
 				}
@@ -602,8 +602,8 @@ char *apol_mls_level_render(apol_policy_t *p, apol_mls_level_t *level)
 				} else {     /* far_cat isn't consecutive wrt cur/next_cat; append it */
 					if (qpol_cat_get_name(p->qh, p->p, next_cat, &name))
 						goto cleanup;
-					if (append_str(&rt, &sz, ".") ||
-					    append_str(&rt, &sz, name)) {
+					if (apol_str_append(&rt, &sz, ".") ||
+					    apol_str_append(&rt, &sz, name)) {
 						ERR(p, "Out of memory!");
 						goto cleanup;
 					}
@@ -613,8 +613,8 @@ char *apol_mls_level_render(apol_policy_t *p, apol_mls_level_t *level)
 		} else { /* next_cat isn't consecutive to cur_cat; append it */
 			if (qpol_cat_get_name(p->qh, p->p, next_cat, &name))
 				goto cleanup;
-			if (append_str(&rt, &sz, ", ") ||
-			    append_str(&rt, &sz, name)) {
+			if (apol_str_append(&rt, &sz, ", ") ||
+			    apol_str_append(&rt, &sz, name)) {
 				ERR(p, "Out of memory!");
 				goto cleanup;
 			}
@@ -899,7 +899,8 @@ char *apol_mls_range_render(apol_policy_t *p, apol_mls_range_t *range)
 {
 	char *rt = NULL, *retval = NULL;
 	char *sub_str = NULL;
-	int retv, sz = 0;
+	int retv;
+	size_t sz = 0;
 
 	if (!range || !p)
 		goto cleanup;
@@ -907,7 +908,7 @@ char *apol_mls_range_render(apol_policy_t *p, apol_mls_range_t *range)
 	if ((sub_str = apol_mls_level_render(p, range->low)) == NULL) {
 		goto cleanup;
 	}
-	if (append_str(&rt, &sz, sub_str)) {
+	if (apol_str_append(&rt, &sz, sub_str)) {
 		ERR(p, "Out of memory!");
 		goto cleanup;
 	}
@@ -922,8 +923,8 @@ char *apol_mls_range_render(apol_policy_t *p, apol_mls_range_t *range)
 		sub_str = apol_mls_level_render(p, range->high);
 		if (!sub_str)
 			goto cleanup;
-		if (append_str(&rt, &sz, " - ") ||
-		    append_str(&rt, &sz, sub_str)) {
+		if (apol_str_append(&rt, &sz, " - ") ||
+		    apol_str_append(&rt, &sz, sub_str)) {
 			ERR(p, "Out of memory!");
 			goto cleanup;
 		}

@@ -186,7 +186,8 @@ int apol_role_allow_query_set_regex(apol_policy_t *p,
 char *apol_role_allow_render(apol_policy_t *policy, qpol_role_allow_t *rule)
 {
 	char *tmp = NULL, *tmp_name = NULL;
-	int tmp_sz = 0, error = 0;
+	int error = 0;
+	size_t tmp_sz = 0;
 	qpol_role_t *role = NULL;
 
 	if (!policy || !rule) {
@@ -196,7 +197,7 @@ char *apol_role_allow_render(apol_policy_t *policy, qpol_role_allow_t *rule)
 	}
 
 	/* allow */
-	if (append_str(&tmp, &tmp_sz, "allow ")) {
+	if (apol_str_append(&tmp, &tmp_sz, "allow ")) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return NULL;
@@ -213,12 +214,12 @@ char *apol_role_allow_render(apol_policy_t *policy, qpol_role_allow_t *rule)
 		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
-	if (append_str(&tmp, &tmp_sz, tmp_name)) {
+	if (apol_str_append(&tmp, &tmp_sz, tmp_name)) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return NULL;
 	}
-	if (append_str(&tmp, &tmp_sz, " ")) {
+	if (apol_str_append(&tmp, &tmp_sz, " ")) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return NULL;
@@ -236,18 +237,18 @@ char *apol_role_allow_render(apol_policy_t *policy, qpol_role_allow_t *rule)
 		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
-	if (append_str(&tmp, &tmp_sz, tmp_name)) {
+	if (apol_str_append(&tmp, &tmp_sz, tmp_name)) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return NULL;
 	}
-	if (append_str(&tmp, &tmp_sz, " ")) {
+	if (apol_str_append(&tmp, &tmp_sz, " ")) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return NULL;
 	}
 
-	if (append_str(&tmp, &tmp_sz, ";")) {
+	if (apol_str_append(&tmp, &tmp_sz, ";")) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return NULL;
@@ -437,7 +438,8 @@ int apol_role_trans_query_set_regex(apol_policy_t *p,
 char *apol_role_trans_render(apol_policy_t *policy, qpol_role_trans_t *rule)
 {
 	char *tmp = NULL, *tmp_name = NULL;
-	int tmp_sz = 0, error = 0;
+	int error = 0;
+	size_t tmp_sz = 0;
 	qpol_role_t *role = NULL;
 	qpol_type_t *type = NULL;
 
@@ -448,7 +450,7 @@ char *apol_role_trans_render(apol_policy_t *policy, qpol_role_trans_t *rule)
 	}
 
 	/* role_transition */
-	if (append_str(&tmp, &tmp_sz, "role_transition ")) {
+	if (apol_str_append(&tmp, &tmp_sz, "role_transition ")) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return NULL;
@@ -465,12 +467,12 @@ char *apol_role_trans_render(apol_policy_t *policy, qpol_role_trans_t *rule)
 		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
-	if (append_str(&tmp, &tmp_sz, tmp_name)) {
+	if (apol_str_append(&tmp, &tmp_sz, tmp_name)) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return NULL;
 	}
-	if (append_str(&tmp, &tmp_sz, " ")) {
+	if (apol_str_append(&tmp, &tmp_sz, " ")) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return NULL;
@@ -488,12 +490,12 @@ char *apol_role_trans_render(apol_policy_t *policy, qpol_role_trans_t *rule)
 		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
-	if (append_str(&tmp, &tmp_sz, tmp_name)) {
+	if (apol_str_append(&tmp, &tmp_sz, tmp_name)) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return NULL;
 	}
-	if (append_str(&tmp, &tmp_sz, " ")) {
+	if (apol_str_append(&tmp, &tmp_sz, " ")) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return NULL;
@@ -510,18 +512,18 @@ char *apol_role_trans_render(apol_policy_t *policy, qpol_role_trans_t *rule)
 		ERR(policy, "%s", strerror(error));
 		goto err;
 	}
-	if (append_str(&tmp, &tmp_sz, tmp_name)) {
+	if (apol_str_append(&tmp, &tmp_sz, tmp_name)) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return NULL;
 	}
-	if (append_str(&tmp, &tmp_sz, " ")) {
+	if (apol_str_append(&tmp, &tmp_sz, " ")) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return NULL;
 	}
 
-	if (append_str(&tmp, &tmp_sz, ";")) {
+	if (apol_str_append(&tmp, &tmp_sz, ";")) {
 		ERR(policy, "%s", strerror(ENOMEM));
 		errno = ENOMEM;
 		return NULL;

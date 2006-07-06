@@ -4117,7 +4117,8 @@ void sediff_menu_on_help_clicked(GtkMenuItem *menuitem, gpointer user_data)
 	GtkTextBuffer *buffer;
 	GString *string;
 	char *help_text = NULL;
-	int len, rt;
+	size_t len;
+	int rt;
 	char *dir;
 
 	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -4140,7 +4141,7 @@ void sediff_menu_on_help_clicked(GtkMenuItem *menuitem, gpointer user_data)
 	string = g_string_new(dir);
 	free(dir);
 	g_string_append(string, "/sediff_help.txt");
-	rt = read_file_to_buffer(string->str, &help_text, &len);
+	rt = apol_file_read_to_buffer(string->str, &help_text, &len);
 	g_string_free(string, TRUE);
 	if (rt != 0) {
 		if (help_text)

@@ -103,34 +103,34 @@ int load_seaudit_conf_file(seaudit_conf_t *conf)
 	g_string_free(path, TRUE);
 	if (!file)
 		return -1; 
-	value = get_config_var("DEFAULT_LOG_FILE", file);
+	value = apol_config_get_var("DEFAULT_LOG_FILE", file);
 	if (set_seaudit_conf_default_log(conf, value) != 0) 
 		goto err;	
 
 	if (value)
 		free(value);
-	value = get_config_var("DEFAULT_POLICY_FILE", file);
+	value = apol_config_get_var("DEFAULT_POLICY_FILE", file);
 	if (set_seaudit_conf_default_policy(conf, value) != 0) 
 		goto err;	
 
 	if (value)
 		free(value);
 	
-	value = get_config_var("DEFAULT_REPORT_CONFIG_FILE", file);
+	value = apol_config_get_var("DEFAULT_REPORT_CONFIG_FILE", file);
 	if (set_seaudit_conf_file_path(&conf->default_seaudit_report_config_file, value) != 0) 
 		goto err;	
 
 	if (value)
 		free(value);
 		
-	value = get_config_var("DEFAULT_REPORT_CSS_FILE", file);
+	value = apol_config_get_var("DEFAULT_REPORT_CSS_FILE", file);
 	if (set_seaudit_conf_file_path(&conf->default_seaudit_report_css_file, value) != 0) 
 		goto err;	
 
 	if (value)
 		free(value);
 			
-	list = get_config_var_list("RECENT_LOG_FILES", file, &size);
+	list = apol_config_get_varlist("RECENT_LOG_FILES", file, &size);
 	if (list) {
 		for (i = 0; i < size; i++) {
 			if (add_path_to_recent_log_files(list[i], conf) != 0) {
@@ -146,7 +146,7 @@ int load_seaudit_conf_file(seaudit_conf_t *conf)
 	} else 
 		conf->recent_log_files = NULL;
 		
-	list = get_config_var_list("RECENT_POLICY_FILES", file, &size);
+	list = apol_config_get_varlist("RECENT_POLICY_FILES", file, &size);
 	if (list) {
 		for (i = 0; i < size; i++) {
 			if (add_path_to_recent_policy_files(list[i], conf) != 0) {
@@ -164,7 +164,7 @@ int load_seaudit_conf_file(seaudit_conf_t *conf)
 	
 	for (i = 0; i < NUM_FIELDS; i++)
 		conf->column_visibility[i] = TRUE;
-	list = get_config_var_list("LOG_COLUMNS_HIDDEN", file, &size);
+	list = apol_config_get_varlist("LOG_COLUMNS_HIDDEN", file, &size);
 	if (list) {
 		for (i = 0; i < size; i++) {
 			assert(list[i]);
@@ -175,14 +175,14 @@ int load_seaudit_conf_file(seaudit_conf_t *conf)
 		}
 		free(list);
 	}
-	value = get_config_var("REAL_TIME_LOG_MONITORING", file);
+	value = apol_config_get_var("REAL_TIME_LOG_MONITORING", file);
 	if (!value)
 		conf->real_time_log = FALSE;
 	else  {
 		conf->real_time_log = atoi(value);
 		free(value);
 	}
-	value = get_config_var("REAL_TIME_LOG_UPDATE_INTERVAL", file);
+	value = apol_config_get_var("REAL_TIME_LOG_UPDATE_INTERVAL", file);
 	if (!value)
 		conf->real_time_interval = DEFAULT_LOG_UPDATE_INTERVAL;
 	else  {
@@ -322,14 +322,14 @@ int save_seaudit_conf_file(seaudit_conf_t *conf)
 	else 
 		fprintf(file, "\n");
 	fprintf(file, "RECENT_LOG_FILES");
-	value = config_var_list_to_string((const char**)conf->recent_log_files, conf->num_recent_log_files);
+	value = apol_config_varlist_to_str((const char**)conf->recent_log_files, conf->num_recent_log_files);
 	if (value) {
 		fprintf(file, " %s\n", value);
 		free(value);
 	} else 
 		fprintf(file, "\n");
 	fprintf(file, "RECENT_POLICY_FILES");
-	value = config_var_list_to_string((const char**)conf->recent_policy_files, conf->num_recent_policy_files);
+	value = apol_config_varlist_to_str((const char**)conf->recent_policy_files, conf->num_recent_policy_files);
 	if (value) {
 		fprintf(file, " %s\n", value);
 		free(value);
@@ -348,7 +348,7 @@ int save_seaudit_conf_file(seaudit_conf_t *conf)
 			hiden_columns[num_hiden-1] = audit_log_field_strs[i];
 		}
 	if (hiden_columns) {
-		value = config_var_list_to_string(hiden_columns, num_hiden);
+		value = apol_config_varlist_to_str(hiden_columns, num_hiden);
 		free(hiden_columns);
 		if (value) {
 			fprintf(file, " %s\n", value);
@@ -430,7 +430,7 @@ void on_prefer_window_ok_button_clicked(GtkWidget *widget, gpointer user_data)
 	
 	seaudit_conf = &(seaudit_app->seaudit_conf);
 	interval_str = gtk_entry_get_text(interval_lbl);
-	if (!str_is_only_white_space(interval_str)) {
+	if (!apol_str_is_only_white_space(interval_str)) {
 		interval = atoi(interval_str);
 		if (interval > 0) 
 			change_log_update_interval(seaudit_conf, interval);

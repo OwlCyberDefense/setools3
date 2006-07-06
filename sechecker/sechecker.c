@@ -977,7 +977,7 @@ int sechk_lib_load_profile(const char *prof_name, sechk_lib_t *lib)
 			return -1;
 		}
 		sprintf(prof_filename, "%s/%s", PROF_SUBDIR, profiles[i].file);		
-		path = apol_find_file(prof_filename);
+		path = apol_file_find(prof_filename);
 		if (!path) {
 			free(prof_filename);
 			prof_filename = NULL;
@@ -988,7 +988,7 @@ int sechk_lib_load_profile(const char *prof_name, sechk_lib_t *lib)
 				return -1;
 			}
 			sprintf(prof_filename, "%s/%s", PROFILE_INSTALL_DIR, profiles[i].file);		
-			path = apol_find_file(prof_filename);
+			path = apol_file_find(prof_filename);
 			if (!path) {
 				fprintf(stderr, "Error: Unable to find path\n");
 				error = ENOENT;
