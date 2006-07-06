@@ -1,5 +1,10 @@
-
-/* Author : Stephen Smalley, <sds@epoch.ncsc.mil> */
+/**
+ * @file queue.h
+ *
+ * This file is a copy of queue.h from NSA's CVS repository.
+ *
+ * Author : Stephen Smalley, <sds@epoch.ncsc.mil>
+ */
 
 /* FLASK */
 
