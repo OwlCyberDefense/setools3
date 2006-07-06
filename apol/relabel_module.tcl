@@ -178,10 +178,10 @@ proc Apol_Analysis_relabel::loadQuery {channel} {
     }
 }
 
-proc Apol_Analysis_foo::gotoLine {tab line_num} {
+proc Apol_Analysis_relabel::gotoLine {tab line_num} {
 }
 
-proc Apol_Analysis_foo::search {tab str case_Insensitive regExpr srch_Direction } {
+proc Apol_Analysis_relabel::search {tab str case_Insensitive regExpr srch_Direction } {
 }
 
 
@@ -298,7 +298,7 @@ proc Apol_Analysis_relabel::createAdvancedDialog {} {
         $attrib_enable configure -state disabled
         $attrib_box configure -state disabled
     }
-    
+
     $d draw
 }
 
@@ -474,12 +474,22 @@ proc Apol_Analysis_relabel::analyze {} {
     } else {
         set mode "subject"
     }
+    if {$vals(classes:exc) != {}} {
+        set classes $vals(classes:inc)
+    } else {
+        set classes {}
+    }
+    if {$vals(subjects:exc) != {}} {
+        set subjects $vals(subjects:inc)
+    } else {
+        set subjects {}
+    }
     if {$vals(regexp:enable)} {
         set regexp $vals(regexp)
     } else {
         set regexp {}
     }
-    apol_RelabelAnalysis $mode $vals(type) $vals(classes:inc) $vals(subjects:inc_all) $regexp
+    apol_RelabelAnalysis $mode $vals(type) $classes $subjects $regexp
 }
 
 ################# functions that control analysis output #################
@@ -491,14 +501,14 @@ proc Apol_Analysis_relabel::createResultsDisplay {} {
 
     if {$vals(mode) == "object"} {
         if {$vals(mode:to) && $vals(mode:from)} {
-            set tree_title "Type $vals(type) can be relabeled to/from:"
+            set tree_title "Type $vals(type) relabels to/from:"
         } elseif {$vals(mode:to)} {
-            set tree_title "Type $vals(type) can be relabeled to:"
+            set tree_title "Type $vals(type) relabels to:"
         } else {
-            set tree_title "Type $vals(type) can be relabeled from:"
+            set tree_title "Type $vals(type) relabels from:"
         }
     } else {
-        set tree_title "Subject $vals(type) can relabel:"
+        set tree_title "Subject $vals(type) relabels:"
     }
     set tree_tf [TitleFrame $f.left -text $tree_title]
     pack $tree_tf -side left -expand 0 -fill y -padx 2 -pady 2
@@ -525,17 +535,14 @@ proc Apol_Analysis_relabel::treeSelect {res tree node} {
     if {$node != {}} {
         $res.tb configure -state normal
         $res.tb delete 0.0 end
-        if {[string index $node 0] == "x"} {
-            # a rules node, so treat its data as a set of rule identifiers
-            foreach {mode data} [$tree itemcget $node -data] {break}
-            if {$mode == "object"} {
-                renderResultsRuleObject $res $tree $node $data
-            } else {
-                renderResultsRuleSubject $res $tree $node $data
-            }
+        set data [$tree itemcget $node -data]
+        if {[string index $node 0] == "o"} {
+            renderResultsRuleObject $res $tree $node $data
+        } elseif {[string index $node 0] == "s"} {
+            renderResultsRuleSubject $res $tree $node $data
         } else {
             # an informational node, whose data has already been rendered
-            eval $res.tb insert end [$tree itemcget $node -data]
+            eval $res.tb insert end $data
         }
         $res.tb configure -state disabled
     }
@@ -559,17 +566,134 @@ proc Apol_Analysis_relabel::renderResults {f results} {
 
     $tree insert end root top -text $vals(type) -open 1 -drawcross auto
     if {$vals(mode) == "object"} {
-        set top_text [list foo {}]
+        set top_text [renderResultsObject $results $tree]
     } else {  ;# subject mode
-        set top_text [renderResultsSubject $results $res $tree]
+        set top_text [renderResultsSubject $results $tree]
     }
     $tree itemconfigure top -data $top_text
     $tree selection set top
     $tree opentree top
+    update idletasks
     $tree see top
 }
 
-proc Apol_Analysis_relabel::renderResultsSubject {results res tree} {
+proc Apol_Analysis_relabel::renderResultsObject {results tree} {
+    variable vals
+    if {$vals(mode:from) && $vals(mode:to)} {
+        set dir both
+    } elseif {$vals(mode:to)} {
+        set dir to
+    } else {
+        set dir from
+    }
+    foreach r $results {
+        foreach {to from both} $r {break}
+        set expanded_type [expandTargetTypeSet [lindex $from 0]]
+        if {$expanded_type == {}} {
+            set expanded_type $target_type
+        }
+        foreach type $expanded_type {
+            foreach a $to b $from {
+                lappend types($type) [list $a $b]
+            }
+        }
+    }
+    foreach key [lsort [array names types]] {
+        set types($key) [lsort -unique $types($key)]
+        $tree insert end top o:$dir:\#auto -text $key -data $types($key)
+    }
+
+    set top_text [list "Direct Relabel Analysis: " title]
+    switch -- $dir {
+        both { lappend top_text "Starting/Ending Type: " title }
+        to   { lappend top_text "Ending Type: " title }
+        from { lappend top_text "Starting Type: " title }
+    }
+    lappend top_text $vals(type) title_type \
+        "\n\n" title \
+        $vals(type) type_tag
+    if {[llength [array names types]] > 0} {
+        switch -- $dir {
+            both { lappend top_text " can be relabeled to and from " {} }
+            to   { lappend top_text " can be relabeled to " {} }
+            from { lappend top_text " can be relabeled from " {} }
+        }
+        lappend top_text [llength [array names types]] num \
+            " type(s).\n\n" {} \
+            "This tab provides the results of a Direct Relabel Analysis beginning\n" {}
+        switch -- $dir {
+            both { lappend top_text "with the starting/ending" {} }
+            to   { lappend top_text "with the starting" {} }
+            from { lappend top_text "with the ending" {} }
+        }
+        lappend top_text " type above. The results of the analysis are\n" {} \
+            "presented in tree form with the root of the tree (this node) being the\n" {} \
+            "starting point for the analysis.\n\n" {} \
+            "Each child node in the tree represents a type in the current policy\n" {} \
+            "to/from which relabeling is allowed (depending on you selection\n" {} \
+            "above)." {}
+    } else {
+        switch -- $dir {
+            both { lappend top_text " cannot be relabeled to/from any type." {} }
+            to   { lappend top_text " cannot be relabeled to any type." {} }
+            from { lappend top_text " cannot be relabeled from any type." {} }
+        }
+    }
+}
+
+proc Apol_Analysis_relabel::renderResultsRuleObject {res tree node data} {
+    set header [list [$tree itemcget top -text] title_type]
+    lappend header " can be relabeled:\n" {}
+    eval $res.tb insert end $header
+
+    # the search direction is embedded within the node ID
+    regexp -- {^[^:]+:([^:]+)} $node -> dir
+    set target_type [$tree itemcget $node -text]
+    foreach rule_pairs $data {
+        set class [apol_RenderAVRuleClass [lindex $rule_pairs 0]]
+        lappend classes($class) $rule_pairs
+    }
+    foreach key [lsort [array names classes]] {
+        $res.tb configure -state normal
+        $res.tb insert end "\n$key:\n" title
+        foreach rule_pairs $classes($key) {
+            foreach {a_rule b_rule} $rule_pairs {break}
+            set source_type [apol_RenderAVRuleSource $a_rule]
+
+            # determine direction of relabelling
+            if {$dir == "to" || $dir == "from"} {
+                set dir_string $dir
+            } else {
+                set a_perms [apol_RenderAVRulePerms $a_rule]
+                set b_perms [apol_RenderAVRulePerms $b_rule]
+                if {[lsearch $a_perms "relabelto"] >= 0 && \
+                        [lsearch $a_perms "relabelfrom"] >= 0 && \
+                        $a_rule == $b_rule} {
+                    set dir_string "to and from"
+                } elseif {[lsearch $a_perms "relabelfrom"] >= 0 &&
+                          [lsearch $b_perms "relabelto"] >= 0} {
+                    set dir_string "to"
+                } else {
+                    set dir_string "from"
+                }
+            }
+            $res.tb configure -state normal
+            $res.tb insert end "\n  $dir_string " num \
+                $target_type type_tag \
+                " by " {} \
+                $source_type type_tag \
+                "\n" {}
+            foreach {rule_type source_set target_set class perm_default line_num cond_info} [apol_RenderAVRule $a_rule] {break}
+            Apol_Widget::appendSearchResultLine $res 6 $line_num {} $rule_type  "\{ $source_set \}" "\{ $target_set \}" : $class "\{ $perm_default \}"
+            if {$a_rule != $b_rule} {
+                foreach {rule_type source_set target_set class perm_default line_num cond_info} [apol_RenderAVRule $b_rule] {break}
+                Apol_Widget::appendSearchResultLine $res 6 $line_num {} $rule_type  "\{ $source_set \}" "\{ $target_set \}" : $class "\{ $perm_default \}"
+            }
+        }
+    }
+}
+
+proc Apol_Analysis_relabel::renderResultsSubject {results tree} {
     variable vals
     foreach {to from both} [lindex $results 0] {}  ;# only first element used
     set to_count 0
@@ -578,13 +702,13 @@ proc Apol_Analysis_relabel::renderResultsSubject {results res tree} {
     if {[llength $to] + [llength $both]} {
         $tree insert end top to -text "To" -drawcross auto
         foreach rule [concat $to $both] {
-            foreach t [expandTypeSet $rule 2] {
+            foreach t [expandTargetTypeSet $rule] {
                 lappend to_types($t) $rule
             }
         }
         set to_count [llength [array names to_types]]
         foreach type [lsort -index 0 [array names to_types]] {
-            $tree insert end to x\#auto -text $type -data [list subject [list to $to_types($type)]]
+            $tree insert end to s\#auto -text $type -data [list to $to_types($type)]
         }
         set to_text [list $vals(type) title_type " can relabel to " {} ]
         lappend to_text $to_count num \
@@ -595,13 +719,13 @@ proc Apol_Analysis_relabel::renderResultsSubject {results res tree} {
     if {[llength $from] + [llength $both]} {
         $tree insert end top from -text "From" -drawcross auto
         foreach rule [concat $from $both] {
-            foreach t [expandTypeSet $rule 2] {
+            foreach t [expandTargetTypeSet $rule] {
                 lappend from_types($t) $rule
             }
         }
         set from_count [llength [array names from_types]]
         foreach type [lsort -index 0 [array names from_types]] {
-            $tree insert end from x\#auto -text $type -data [list subject [list from $from_types($type)]]
+            $tree insert end from s\#auto -text $type -data [list from $from_types($type)]
         }
         set from_text [list $vals(type) title_type " can relabel from " {} ]
         lappend from_text $from_count num \
@@ -643,8 +767,8 @@ proc Apol_Analysis_relabel::renderResultsRuleSubject {res tree node data} {
     }
 }
 
-proc Apol_Analysis_relabel::expandTypeSet {rule_num pos} {
-    set orig_type_set [lindex [apol_RenderAVRule $rule_num] $pos]
+proc Apol_Analysis_relabel::expandTargetTypeSet {rule_num} {
+    set orig_type_set [apol_RenderAVRuleTarget $rule_num]
     set exp_type_set {}
     foreach t $orig_type_set {
         set exp_type_set [concat $exp_type_set [lindex [apol_GetAttribs $t] 0 1]]

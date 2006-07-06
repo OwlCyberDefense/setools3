@@ -239,9 +239,9 @@ static int Apol_RenderContext(ClientData clientData, Tcl_Interp *interp, int arg
  */
 static int Apol_RenderAVRule(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
+	Tcl_Obj *o, *result_obj;
 	long rule_num;
 	qpol_avrule_t *avrule;
-	Tcl_Obj *o, *result_obj;
 	int retval = TCL_ERROR;
 	apol_tcl_clear_error();
 	if (policydb == NULL) {
@@ -269,9 +269,208 @@ static int Apol_RenderAVRule(ClientData clientData, Tcl_Interp *interp, int argc
 	return retval;
 }
 
+/**
+ * Take a Tcl string representing an AV rule identifier (relative to
+ * the currently loaded policy) and return the string representation
+ * of that rule's source type.
+ *
+ * @param argv This function takes one parameter:
+ * <ol>
+ *   <li>Tcl string representing an av rule identifier
+ * </ol>
+ */
+static int Apol_RenderAVRuleSource(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
+{
+	Tcl_Obj *o;
+	long rule_num;
+	qpol_avrule_t *avrule;
+	qpol_type_t *source;
+	char *source_string;
+	int retval = TCL_ERROR;
+
+	apol_tcl_clear_error();
+	if (policydb == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		goto cleanup;
+	}
+	if (argc != 2) {
+		ERR(policydb, "Need an avrule identifier.");
+		goto cleanup;
+	}
+	o = Tcl_NewStringObj(argv[1], -1);
+	if (Tcl_GetLongFromObj(interp, o, &rule_num) == TCL_ERROR) {
+		goto cleanup;
+	}
+	avrule = (qpol_avrule_t *) rule_num;
+	if (qpol_avrule_get_source_type(policydb->qh, policydb->p, avrule, &source) < 0 ||
+	    qpol_type_get_name(policydb->qh, policydb->p, source, &source_string) < 0) {
+		goto cleanup;
+	}
+	Tcl_SetResult(interp, source_string, TCL_VOLATILE);
+	retval = TCL_OK;
+ cleanup:
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
+}
+
+/**
+ * Take a Tcl string representing an AV rule identifier (relative to
+ * the currently loaded policy) and return the string representation
+ * of that rule's target type.
+ *
+ * @param argv This function takes one parameter:
+ * <ol>
+ *   <li>Tcl string representing an av rule identifier
+ * </ol>
+ */
+static int Apol_RenderAVRuleTarget(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
+{
+	Tcl_Obj *o;
+	long rule_num;
+	qpol_avrule_t *avrule;
+	qpol_type_t *target;
+	char *target_string;
+	int retval = TCL_ERROR;
+
+	apol_tcl_clear_error();
+	if (policydb == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		goto cleanup;
+	}
+	if (argc != 2) {
+		ERR(policydb, "Need an avrule identifier.");
+		goto cleanup;
+	}
+	o = Tcl_NewStringObj(argv[1], -1);
+	if (Tcl_GetLongFromObj(interp, o, &rule_num) == TCL_ERROR) {
+		goto cleanup;
+	}
+	avrule = (qpol_avrule_t *) rule_num;
+	if (qpol_avrule_get_target_type(policydb->qh, policydb->p, avrule, &target) < 0 ||
+	    qpol_type_get_name(policydb->qh, policydb->p, target, &target_string) < 0) {
+		goto cleanup;
+	}
+	Tcl_SetResult(interp, target_string, TCL_VOLATILE);
+	retval = TCL_OK;
+ cleanup:
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
+}
+
+/**
+ * Take a Tcl string representing an AV rule identifier (relative to
+ * the currently loaded policy) and return the string representation
+ * of that rule's object class.
+ *
+ * @param argv This function takes one parameter:
+ * <ol>
+ *   <li>Tcl string representing an av rule identifier
+ * </ol>
+ */
+static int Apol_RenderAVRuleClass(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
+{
+	Tcl_Obj *o;
+	long rule_num;
+	qpol_avrule_t *avrule;
+	qpol_class_t *obj_class;
+	char *obj_class_string;
+	int retval = TCL_ERROR;
+
+	apol_tcl_clear_error();
+	if (policydb == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		goto cleanup;
+	}
+	if (argc != 2) {
+		ERR(policydb, "Need an avrule identifier.");
+		goto cleanup;
+	}
+	o = Tcl_NewStringObj(argv[1], -1);
+	if (Tcl_GetLongFromObj(interp, o, &rule_num) == TCL_ERROR) {
+		goto cleanup;
+	}
+	avrule = (qpol_avrule_t *) rule_num;
+	if (qpol_avrule_get_object_class(policydb->qh, policydb->p, avrule, &obj_class) < 0 ||
+	    qpol_class_get_name(policydb->qh, policydb->p, obj_class, &obj_class_string) < 0) {
+		goto cleanup;
+	}
+	Tcl_SetResult(interp, obj_class_string, TCL_VOLATILE);
+	retval = TCL_OK;
+ cleanup:
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
+}
+
+/**
+ * Take a Tcl string representing an AV rule identifier (relative to
+ * the currently loaded policy) and return a list of that rule's
+ * permissions.
+ *
+ * @param argv This function takes one parameter:
+ * <ol>
+ *   <li>Tcl string representing an av rule identifier
+ * </ol>
+ */
+static int Apol_RenderAVRulePerms(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
+{
+	Tcl_Obj *o, *result_obj, *perm_obj;
+	long rule_num;
+	qpol_avrule_t *avrule;
+	qpol_iterator_t *perm_iter = NULL;
+	int retval = TCL_ERROR;
+
+	apol_tcl_clear_error();
+	if (policydb == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		goto cleanup;
+	}
+	if (argc != 2) {
+		ERR(policydb, "Need an avrule identifier.");
+		goto cleanup;
+	}
+	o = Tcl_NewStringObj(argv[1], -1);
+	if (Tcl_GetLongFromObj(interp, o, &rule_num) == TCL_ERROR) {
+		goto cleanup;
+	}
+	avrule = (qpol_avrule_t *) rule_num;
+	if (qpol_avrule_get_perm_iter(policydb->qh, policydb->p, avrule, &perm_iter) < 0) {
+		goto cleanup;
+	}
+	result_obj = Tcl_NewListObj(0, NULL);
+	for ( ; !qpol_iterator_end(perm_iter); qpol_iterator_next(perm_iter)) {
+		char *perm_name;
+		if (qpol_iterator_get_item(perm_iter, (void **) &perm_name) < 0) {
+			goto cleanup;
+		}
+		perm_obj = Tcl_NewStringObj(perm_name, -1);
+		if (Tcl_ListObjAppendElement(interp, result_obj, perm_obj) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+
+	Tcl_SetObjResult(interp, result_obj);
+	retval = TCL_OK;
+ cleanup:
+	qpol_iterator_destroy(&perm_iter);
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
+}
+
 int apol_tcl_render_init(Tcl_Interp *interp) {
         Tcl_CreateCommand(interp, "apol_RenderLevel", Apol_RenderLevel, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_RenderContext", Apol_RenderContext, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_RenderAVRule", Apol_RenderAVRule, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_RenderAVRuleSource", Apol_RenderAVRuleSource, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_RenderAVRuleTarget", Apol_RenderAVRuleTarget, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_RenderAVRuleClass", Apol_RenderAVRuleClass, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_RenderAVRulePerms", Apol_RenderAVRulePerms, NULL, NULL);
 	return TCL_OK;
 }

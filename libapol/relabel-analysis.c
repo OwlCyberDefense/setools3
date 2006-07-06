@@ -39,9 +39,29 @@ struct apol_relabel_analysis {
 	regex_t *result_regex;
 };
 
+
+/**
+ * Results are in the form of a list of apol_relabel_result_t nodes.
+ * For subject mode analysis, there is exactly one node, of which the
+ * to, from, and both vectors are used; the type field is ignored.
+ * For object mode analysis, there are multiple nodes such that within
+ * each node,
+ *
+ * to_1(T) = to_2(T) = ... = to_m(T) = target type
+ * from_1(T) = from_2(T) = ... = from_n(T) = type
+ * to_i(S) = from_i(S) for all 1 <= i <= m
+ * m = n
+ */
 struct apol_relabel_result {
-	/** vector of qpol_rule_t */
-	apol_vector_t *to, *from, *both;
+	/** vector of qpol_rule_t pointers */
+	apol_vector_t *to;
+	/** vector of qpol_rule_t pointers */
+	apol_vector_t *from;
+	/** vector of qpol_rule_t pointers */
+	apol_vector_t *both;
+	/** private field, used when building results for object mode
+	 * analysis */
+	qpol_type_t *type;
 };
 
 #define PERM_RELABELTO "relabelto"
@@ -94,6 +114,47 @@ static int relabel_analysis_get_direction(apol_policy_t *p,
 	return retval;
 }
 
+/**
+ * Given a qpol_type_t pointer, find and return the first
+ * apol_relabel_result_t node within vector v that matches the type.
+ * If there does not exist a node with that type, then allocate a new
+ * one, append it to the vector, and return it.  The caller is
+ * expected to eventually call apol_vector_destroy() upon the vector
+ * with the parameter apoL_relabel_result_free(); the caller should
+ * not free the individual nodes.
+ *
+ * @param p Policy, used for error handling.
+ * @param v A vector of apol_relabel_result_t nodes.
+ * @param type Target type to find.
+ *
+ * @return An apol_relabel_result_t node from which to append results,
+ * or NULL upon error.
+ */
+static apol_relabel_result_t *relabel_result_get_node(apol_policy_t *p,
+						      apol_vector_t *v,
+						      qpol_type_t *type)
+{
+	apol_relabel_result_t *result;
+	size_t i;
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		result = (apol_relabel_result_t *) apol_vector_get_element(v, i);
+		if (result->type == type) {
+			return result;
+		}
+	}
+	/* make a new result node */
+	if ((result = calloc(1, sizeof(*result))) == NULL ||
+	    (result->to = apol_vector_create()) == NULL ||
+	    (result->from = apol_vector_create()) == NULL ||
+	    (result->both = apol_vector_create()) == NULL ||
+	    apol_vector_append(v, result) < 0) {
+		apol_relabel_result_free(result);
+		ERR(p, "Out of memory!");
+		return NULL;
+	}
+	result->type = type;
+	return result;
+}
 
 /**
  * Given an avrule, possbily append it to the result object onto the
@@ -132,16 +193,19 @@ static int append_avrule_to_result(apol_policy_t *p,
 	switch (dir) {
 	case APOL_RELABEL_DIR_TO:
 		if ((apol_vector_append(result->to, avrule)) < 0) {
+			ERR(p, "Out of memory!");
 			goto cleanup;
 		}
 		break;
 	case APOL_RELABEL_DIR_FROM:
 		if ((apol_vector_append(result->from, avrule)) < 0) {
+			ERR(p, "Out of memory!");
 			goto cleanup;
 		}
 		break;
 	case APOL_RELABEL_DIR_BOTH:
 		if ((apol_vector_append(result->both, avrule)) < 0) {
+			ERR(p, "Out of memory!");
 			goto cleanup;
 		}
 		break;
@@ -152,23 +216,278 @@ static int append_avrule_to_result(apol_policy_t *p,
 	return retval;
 }
 
+/**
+ * Given a vector of strings representing type names, allocate and
+ * return a vector of qpol_type_t pointers into the given policy for
+ * those types.  If a type name is really an alias, obtain and store
+ * its primary instead.
+ *
+ * @param p Policy to which look up types
+ * @param v Vector of strings.
+ *
+ * @return A newly allocated apol_vector_t, which the caller must free
+ * with apol_vector_destroy(), passing NULL as the second parameter.
+ * If a type name was not found or upon other error return NULL.
+ */
+static apol_vector_t *relabel_analysis_get_type_vector(apol_policy_t *p,
+						       apol_vector_t *v)
+{
+	apol_vector_t *types = NULL;
+	size_t i;
+	int retval = -1;
+
+	if ((types = apol_vector_create_with_capacity(apol_vector_get_size(v))) == NULL) {
+		ERR(p, "Out of memory!");
+		goto cleanup;
+	}
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		char *s = (char *) apol_vector_get_element(v, i);
+		qpol_type_t *type;
+		if (apol_query_get_type(p, s, &type) < 0 ||
+		    apol_vector_append(types, type)) {
+			goto cleanup;
+		}
+	}
+
+	retval = 0;
+ cleanup:
+	if (retval == -1) {
+		apol_vector_destroy(&types, NULL);
+		return NULL;
+	}
+	return types;
+}
+
+/**
+ * Given a type, see if it is an element within a vector of
+ * qpol_type_t pointers.  If the type is really an attribute, also
+ * check if any of the attribute's types are a member of v.  If v is
+ * NULL then the comparison always succeeds.
+ *
+ * @param p Policy to which look up types.
+ * @param v Target vector of qpol_type_t pointers.
+ * @param type Source type to find.
+ *
+ * @return 1 if type is a member of v, 0 if not, < 0 on error.
+ */
+static int relabel_analysis_compare_type_to_vector(apol_policy_t *p,
+						   apol_vector_t *v,
+						   qpol_type_t *type)
+{
+	size_t i;
+	unsigned char isattr;
+	qpol_iterator_t *iter = NULL;
+	int retval = -1;
+	if (v == NULL || apol_vector_get_index(v, type, NULL, NULL, &i) == 0) {
+		retval = 1;  /* found it */
+		goto cleanup;
+	}
+	if (qpol_type_get_isattr(p->qh, p->p, type, &isattr) < 0) {
+		goto cleanup;
+	}
+	if (!isattr) {	/* not an attribute, so comparison failed */
+		retval = 0;
+		goto cleanup;
+	}
+	if (qpol_type_get_type_iter(p->qh, p->p, type, &iter) < 0) {
+		goto cleanup;
+	}
+	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		qpol_type_t *t;
+		if (qpol_iterator_get_item(iter, (void **) &t) < 0) {
+			goto cleanup;
+		}
+		if (apol_vector_get_index(v, t, NULL, NULL, &i) == 0) {
+			retval = 1;
+			goto cleanup;
+		}
+	}
+	retval = 0;  /* no matches */
+ cleanup:
+	qpol_iterator_destroy(&iter);
+	return retval;
+}
+
+/**
+ * Search through sets av and bv, finding pairs of avrules that
+ * satisfy a relabel and adding those pairs to result vector v.
+ *
+ * @param p Policy containing avrules.
+ * @param r Relabel analysis query object.
+ * @param v Vector of apol_relabel_result_t nodes.
+ * @param av Vector of qpol_avrule_t pointers.
+ * @param bv Vector of qpol_avrule_t pointers.
+ * @param subjects_v Vector of permitted qpol_type_t subjects, or NULL
+ * to allow all types.
+ *
+ * @return 0 on success, < 0 upon error.
+ */
+static int relabel_analysis_matchup(apol_policy_t *p,
+				    apol_relabel_analysis_t *r,
+				    apol_vector_t *v,
+				    apol_vector_t *av,
+				    apol_vector_t *bv,
+				    apol_vector_t *subjects_v)
+{
+	qpol_avrule_t *a_avrule, *b_avrule;
+	qpol_type_t *a_source, *a_target, *b_source, *b_target, *start_type;
+	qpol_class_t *a_class, *b_class;
+	apol_relabel_result_t *result = NULL;
+	size_t i, j;
+	int compval, retval = -1;
+
+	if (apol_query_get_type(p, r->type, &start_type) < 0) {
+		goto cleanup;
+	}
+        for (i = 0; i < apol_vector_get_size(av); i++) {
+		a_avrule = apol_vector_get_element(av, i);
+		if (qpol_avrule_get_source_type(p->qh, p->p, a_avrule, &a_source) < 0 ||
+		    qpol_avrule_get_target_type(p->qh, p->p, a_avrule, &a_target) < 0 ||
+		    qpol_avrule_get_object_class(p->qh, p->p, a_avrule, &a_class) < 0) {
+			goto cleanup;
+		}
+		compval = relabel_analysis_compare_type_to_vector(p, subjects_v, a_source);
+		if (compval < 0) {
+			goto cleanup;
+		}
+		else if (compval == 0) {
+			continue;
+		}
+
+		/* check if there exists a B s.t. B(s) = source and
+		   B(t) != r->type and B(o) = A(o) */
+		for (j = 0; j < apol_vector_get_size(bv); j++) {
+			b_avrule = apol_vector_get_element(bv, j);
+			if (qpol_avrule_get_source_type(p->qh, p->p, b_avrule, &b_source) < 0 ||
+			    qpol_avrule_get_target_type(p->qh, p->p, b_avrule, &b_target) < 0 ||
+			    qpol_avrule_get_object_class(p->qh, p->p, b_avrule, &b_class) < 0) {
+				goto cleanup;
+			}
+			if (a_source != b_source ||
+			    b_target == start_type ||
+			    a_class != b_class) {
+				continue;
+			}
+
+			/* exclude B if B(t) does not match search criteria */
+			compval = apol_compare_type(p, b_target, r->result, APOL_QUERY_REGEX, &r->result_regex);
+			if (compval < 0) {
+				goto cleanup;
+			}
+			else if (compval == 0) {
+				continue;
+			}
+
+			/* add the pairing (A, B) to results v, at an
+			 * existing relabel_results_t if possible */
+			if ((result = relabel_result_get_node(p, v, b_target)) == NULL) {
+				goto cleanup;
+			}
+			if (apol_vector_append(result->to, a_avrule) < 0 ||
+			    apol_vector_append(result->from, b_avrule) < 0) {
+				ERR(p, "Out of memory");
+				goto cleanup;
+			}
+		}
+	}
+
+	retval = 0;
+ cleanup:
+	return retval;
+}
+
+/**
+ * Get a list of allow rules, whose target type matches r->type and
+ * whose permission is <i>opposite</i> of the direction given (e.g.,
+ * relabelfrom if given DIR_TO).  Only include rules whose class is a
+ * member of r->classes and whose source is a member of subjects_v.
+ *
+ * @param p Policy to which look up rules.
+ * @param r Structure containing parameters for subject relabel analysis.
+ * @param v Target vector to which append discovered rules.
+ * @param direction Relabelling direction to search.
+ * @param subjects_v If not NULL, then a vector of qpol_type_t pointers.
+ *
+ * @return 0 on success, < 0 on error.
+ */
 static int relabel_analysis_object(apol_policy_t *p,
 				   apol_relabel_analysis_t *r,
 				   apol_vector_t *v,
-				   unsigned int direction)
+				   unsigned int direction,
+				   apol_vector_t *subjects_v)
 {
-        return 0;
+	apol_avrule_query_t *a = NULL, *b = NULL;
+	apol_vector_t *a_rules = NULL, *b_rules = NULL;
+	char *perm1, *perm2;
+	size_t i;
+	int retval = -1;
+
+	if (direction == APOL_RELABEL_DIR_TO) {
+		perm1 = PERM_RELABELFROM;
+		perm2 = PERM_RELABELTO;
+	}
+	else {
+		perm1 = PERM_RELABELTO;
+		perm2 = PERM_RELABELFROM;
+	}
+
+	if ((a = apol_avrule_query_create()) == NULL) {
+	    ERR(p, "Out of memory!");
+	    goto cleanup;
+	}
+	if (apol_avrule_query_set_rules(p, a, QPOL_RULE_ALLOW) < 0 ||
+	    apol_avrule_query_set_target(p, a, r->type, 1) < 0 ||
+	    apol_avrule_query_append_perm(p, a, perm1) < 0) {
+		goto cleanup;
+	}
+	for (i = 0; r->classes != NULL && i < apol_vector_get_size(r->classes); i++) {
+		if (apol_avrule_query_append_class(p, a, apol_vector_get_element(r->classes, i)) < 0) {
+			goto cleanup;
+		}
+	}
+	if (apol_get_avrule_by_query(p, a, &a_rules) < 0) {
+		goto cleanup;
+	}
+
+	if ((b = apol_avrule_query_create()) == NULL) {
+		ERR(p, "Out of memory!");
+		goto cleanup;
+	}
+	if (apol_avrule_query_set_rules(p, b, QPOL_RULE_ALLOW) < 0 ||
+	    apol_avrule_query_append_perm(p, b, perm2) < 0) {
+		goto cleanup;
+	}
+	for (i = 0; r->classes != NULL && i < apol_vector_get_size(r->classes); i++) {
+		if (apol_avrule_query_append_class(p, b, apol_vector_get_element(r->classes, i)) < 0) {
+			goto cleanup;
+		}
+	}
+	if (apol_get_avrule_by_query(p, b, &b_rules) < 0) {
+		goto cleanup;
+	}
+
+	if (relabel_analysis_matchup(p, r, v, a_rules, b_rules, subjects_v) < 0) {
+		goto cleanup;
+	}
+	retval = 0;
+ cleanup:
+	apol_avrule_query_destroy(&a);
+	apol_vector_destroy(&a_rules, NULL);
+	apol_avrule_query_destroy(&b);
+	apol_vector_destroy(&b_rules, NULL);
+	return retval;
 }
 
 
 /**
  * Get a list of all allow rules, whose source type matches r->type
  * and whose permission list has either "relabelto" or "relabelfrom".
- * Add instances of those to the result vector.
+ * Only include rules whose class is a member of r->classes.  Add
+ * instances of those to the result vector.
  *
  * @param p Policy to which look up rules.
  * @param r Structure containing parameters for subject relabel analysis.
- * @param result Target result to which append discovered rules.
+ * @param v Target vector to which append discovered rules.
  *
  * @return 0 on success, < 0 on error.
  */
@@ -188,7 +507,7 @@ static int relabel_analysis_subject(apol_policy_t *p,
 		goto cleanup;
 	}
 	if (apol_avrule_query_set_rules(p, a, QPOL_RULE_ALLOW) < 0 ||
-	    apol_avrule_query_set_source(p, a, r->type, 0) < 0 ||
+	    apol_avrule_query_set_source(p, a, r->type, 1) < 0 ||
 	    apol_avrule_query_append_perm(p, a, PERM_RELABELTO) < 0 ||
 	    apol_avrule_query_append_perm(p, a, PERM_RELABELFROM) < 0) {
 		goto cleanup;
@@ -202,13 +521,8 @@ static int relabel_analysis_subject(apol_policy_t *p,
 		goto cleanup;
 	}
 
-	if ((result = calloc(1, sizeof(*result))) == NULL ||
-	    (result->to = apol_vector_create()) == NULL ||
-	    (result->from = apol_vector_create()) == NULL ||
-	    (result->both = apol_vector_create()) == NULL ||
-	    apol_vector_append(v, result) < 0) {
-		apol_relabel_result_free(result);
-		ERR(p, "Out of memory!");
+	if ((result = relabel_result_get_node(p, v, NULL)) == NULL) {
+		goto cleanup;
 	}
 	for (i = 0; i < apol_vector_get_size(avrules_v); i++) {
 		avrule = (qpol_avrule_t *) apol_vector_get_element(avrules_v, i);
@@ -230,6 +544,7 @@ int apol_relabel_analysis_do(apol_policy_t *p,
 			     apol_relabel_analysis_t *r,
 			     apol_vector_t **v)
 {
+	apol_vector_t *subjects_v = NULL;
 	qpol_type_t *start_type;
 	int retval = -1;
 	*v = NULL;
@@ -248,12 +563,16 @@ int apol_relabel_analysis_do(apol_policy_t *p,
 	}
 
 	if (r->mode == APOL_RELABEL_MODE_OBJ) {
+		if (r->subjects != NULL &&
+		    (subjects_v = relabel_analysis_get_type_vector(p, r->subjects)) == NULL) {
+			goto cleanup;
+		}
 		if ((r->direction & APOL_RELABEL_DIR_TO) &&
-		    relabel_analysis_object(p, r, *v, APOL_RELABEL_DIR_TO) < 0) {
+		    relabel_analysis_object(p, r, *v, APOL_RELABEL_DIR_TO, subjects_v) < 0) {
 			goto cleanup;
 		}
 		if ((r->direction & APOL_RELABEL_DIR_FROM) &&
-		    relabel_analysis_object(p, r, *v, APOL_RELABEL_DIR_FROM) < 0) {
+		    relabel_analysis_object(p, r, *v, APOL_RELABEL_DIR_FROM, subjects_v) < 0) {
 			goto cleanup;
 		}
 	}
@@ -265,6 +584,7 @@ int apol_relabel_analysis_do(apol_policy_t *p,
 
 	retval = 0;
  cleanup:
+	apol_vector_destroy(&subjects_v, NULL);
 	if (retval != 0) {
 		apol_vector_destroy(v, apol_relabel_result_free);
 	}
@@ -392,143 +712,3 @@ apol_vector_t *apol_relabel_result_get_both(apol_relabel_result_t *r)
 {
 	return r->both;
 }
-
-
-#if 0
-
-
-/* query mode functions */
-static int ap_relabel_object_mode_query(int start_type, unsigned char requested_direction,
-	ap_relabel_result_t *res, int *excluded_types, int num_excluded_types,
-	int *class_filter, int class_filter_sz, policy_t *policy)
-{
-	unsigned char direction_flag = AP_RELABEL_DIR_NONE;
-	ap_relabel_possible_start_t *starting_points = NULL;
-	avh_idx_t *index = NULL;
-	int i, j, k, relabelto_index = -1, relabelfrom_index = -1;
-	int num_starting_points = 0;
-	avh_rule_t *current_rule = NULL;
-
-	relabelto_index = get_perm_idx(AP_RELABEL_RELABELTO, policy);
-	relabelfrom_index = get_perm_idx(AP_RELABEL_RELABELFROM, policy);
-
-	index = avh_tgt_type_idx_find(&(policy->avh), start_type);
-	if (!index)
-		return 0;
-	for (i = 0; i < index->num_nodes; i++) {
-		direction_flag = AP_RELABEL_DIR_NONE;
-		if(index->nodes[i]->key.rule_type != RULE_TE_ALLOW)
-			continue;
-		if (class_filter && class_filter_sz > 0 &&
-			find_int_in_array(index->nodes[i]->key.cls, class_filter, class_filter_sz) == -1)
-			continue;
-		if (excluded_types && num_excluded_types > 0 &&
-			find_int_in_array(index->nodes[i]->key.src, excluded_types, num_excluded_types) != -1)
-			continue;
-		for (j = 0; j < index->nodes[i]->num_data; j++) {
-			if(index->nodes[i]->data[j] == relabelto_index)
-				direction_flag |= AP_RELABEL_DIR_TO;
-			if(index->nodes[i]->data[j] == relabelfrom_index)
-				direction_flag |= AP_RELABEL_DIR_FROM;
-		}
-		/* rule does not relabel */
-		if (direction_flag == AP_RELABEL_DIR_NONE)
-			continue;
-		/* rule for starting point must contain opposite direction from requested */
-		if(direction_flag != AP_RELABEL_DIR_BOTH && direction_flag == requested_direction )
-			continue;
-		starting_points = (ap_relabel_possible_start_t*)realloc(starting_points, (num_starting_points + 1) * sizeof(ap_relabel_possible_start_t));
-		if (!starting_points)
-			return -1;
-		if (ap_relabel_possible_start_init(&(starting_points[num_starting_points])) == -1)
-			return -1;
-		starting_points[num_starting_points].source_type = index->nodes[i]->key.src;
-		starting_points[num_starting_points].object_class = index->nodes[i]->key.cls;
-		for (current_rule = index->nodes[i]->rules; current_rule != NULL; current_rule = current_rule->next) {
-			direction_flag = ap_relabel_determine_rule_direction(current_rule->rule, policy, relabelto_index, relabelfrom_index);
-			if (direction_flag == AP_RELABEL_DIR_NONE)
-				continue;
-			/* rule must either be both or opposite requested direction */
-			if(direction_flag == AP_RELABEL_DIR_BOTH || direction_flag ^ requested_direction) {
-				if (ap_relabel_add_rule_to_possible_start(current_rule->rule, direction_flag, &(starting_points[num_starting_points])) == -1)
-					return -1;
-			}
-		}
-		num_starting_points++;
-	}
-	for (i = 0; i < num_starting_points; i++) {
-		index = avh_src_type_idx_find(&(policy->avh), starting_points[i].source_type);
-		if (!index)
-			return -1;
-		for (j = 0; j < index->num_nodes; j++) {
-			if(index->nodes[j]->key.rule_type != RULE_TE_ALLOW)
-				continue;
-			if (index->nodes[j]->key.cls != starting_points[i].object_class)
-				continue;
-			direction_flag = AP_RELABEL_DIR_NONE;
-			for (k = 0; k < index->nodes[j]->num_data; k++) {
-				if (index->nodes[j]->data[k] == relabelto_index)
-					direction_flag |= AP_RELABEL_DIR_TO;
-				if (index->nodes[j]->data[k] == relabelfrom_index)
-					direction_flag |= AP_RELABEL_DIR_FROM;
-			}
-			if (direction_flag == AP_RELABEL_DIR_NONE || !(direction_flag & requested_direction))
-				continue;
-			for (current_rule = index->nodes[j]->rules; current_rule != NULL; current_rule = current_rule->next) {
-				direction_flag = ap_relabel_determine_rule_direction(current_rule->rule, policy, relabelto_index, relabelfrom_index);
-				if ( !(direction_flag & requested_direction) )
-					continue;
-				if (ap_relabel_add_entry_to_result(index->nodes[j]->key.tgt, index->nodes[j]->key.cls, index->nodes[j]->key.src, direction_flag, current_rule->rule, res, &(starting_points[i])) == -1)
-					return -1;
-			}
-		}
-	}
-
-	for (i =0; i < num_starting_points; i++) {
-		ap_relabel_possible_start_destroy(&(starting_points[i]));
-	}
-	free(starting_points);
-
-	return 0;
-};
-
-static int ap_relabel_subject_mode_query(int start_type, ap_relabel_result_t *res,
-	int *class_filter, int class_filter_sz, policy_t *policy)
-{
-	avh_idx_t *index = NULL;
-	int i, j, relabelto_index = -1, relabelfrom_index = -1;
-	unsigned char direction_flag = AP_RELABEL_DIR_NONE;
-	avh_rule_t *current_rule = NULL;
-
-	relabelto_index = get_perm_idx(AP_RELABEL_RELABELTO, policy);
-	relabelfrom_index = get_perm_idx(AP_RELABEL_RELABELFROM, policy);
-
-	index = avh_src_type_idx_find(&(policy->avh), start_type);
-	if(!index)
-		return 0;
-	for (i = 0; i < index->num_nodes; i++) {
-		if (index->nodes[i]->key.rule_type != RULE_TE_ALLOW)
-			continue;
-		if (class_filter && class_filter_sz > 0 &&
-			find_int_in_array(index->nodes[i]->key.cls, class_filter, class_filter_sz) == -1)
-			continue;
-		for (j = 0; j < index->nodes[i]->num_data; j++) {
-			if(index->nodes[i]->data[j] == relabelto_index)
-				direction_flag |= AP_RELABEL_DIR_TO;
-			if(index->nodes[i]->data[j] == relabelfrom_index)
-				direction_flag |= AP_RELABEL_DIR_FROM;
-		}
-		if (direction_flag == AP_RELABEL_DIR_NONE)
-			continue;
-		for (current_rule = index->nodes[i]->rules; current_rule != NULL; current_rule = current_rule->next) {
-			direction_flag = ap_relabel_determine_rule_direction(current_rule->rule, policy, relabelto_index, relabelfrom_index);
-			if (direction_flag != AP_RELABEL_DIR_NONE)
-				if(ap_relabel_add_entry_to_result(index->nodes[i]->key.tgt, index->nodes[i]->key.cls, index->nodes[i]->key.src, direction_flag, current_rule->rule, res, NULL) == -1)
-					return -1;
-		}
-	}
-
-	return 0;
-};
-
-#endif
