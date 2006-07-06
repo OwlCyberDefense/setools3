@@ -102,14 +102,14 @@ proc Apol_Analysis_relabel::create {options_frame} {
     set widgets(type) [Apol_Widget::makeTypeCombobox [$req_tf getframe].type]
     pack $widgets(type)
 
-    set filter_tf [TitleFrame $options_frame.filter -text "Optional Result Filters:"]
+    set filter_tf [TitleFrame $options_frame.filter -text "Optional Result Filters"]
     pack $filter_tf -side left -padx 2 -pady 2 -expand 1 -fill both
     set widgets(regexp) [Apol_Widget::makeRegexpEntry [$filter_tf getframe].end]
     $widgets(regexp).cb configure -text "Filter result types using regular expression"
     pack $widgets(regexp) -anchor nw
     set advanced [button [$filter_tf getframe].adv -text "Advanced Filters" \
                      -command Apol_Analysis_relabel::createAdvancedDialog]
-    pack $advanced -pady 4 -anchor w
+    pack $advanced -pady 8 -anchor w
 }
 
 proc Apol_Analysis_relabel::newAnalysis {} {
@@ -150,19 +150,22 @@ proc Apol_Analysis_relabel::switchTab {query_options} {
     variable vals
     variable widgets
     array set vals $query_options
-    if {$vals(type:attrib) != {}} {
-        Apol_Widget::setTypeComboboxValue $widgets(type) [list $vals(type) $vals(type:attrib)]
-    } else {
-        Apol_Widget::setTypeComboboxValue $widgets(type) $vals(type)
-    }
-    Apol_Widget::setRegexpEntryValue $widgets(regexp) $vals(regexp:enable) $vals(regexp)
+    reinitializeWidgets
 }
 
 proc Apol_Analysis_relabel::saveQuery {channel} {
     variable vals
+    variable widgets
     foreach {key value} [array get vals] {
         puts $channel "$key $value"
     }
+    set type [Apol_Widget::getTypeComboboxValueAndAttrib $widgets(type)]
+    puts $channel "type [lindex $type 0]"
+    puts $channel "type:attrib [lindex $type 1]"
+    set use_regexp [Apol_Widget::getRegexpEntryState $widgets(regexp)]
+    set regexp [Apol_Widget::getRegexpEntryValue $widgets(regexp)]
+    puts $channel "regexp:enable $use_regexp"
+    puts $channel "regexp $regexp"
 }
 
 proc Apol_Analysis_relabel::loadQuery {channel} {
@@ -173,9 +176,12 @@ proc Apol_Analysis_relabel::loadQuery {channel} {
         if {$line == {} || [string index $line 0] == "#"} {
             continue
         }
+        set key {}
+        set value {}
         regexp -line -- {^(\S+)( (.+))?} $line -> key --> value
         set vals($key) $value
     }
+    reinitializeWidgets
 }
 
 proc Apol_Analysis_relabel::gotoLine {tab line_num} {
@@ -212,7 +218,11 @@ proc Apol_Analysis_relabel::reinitializeWidgets {} {
     variable vals
     variable widgets
 
-    Apol_Widget::setTypeComboboxValue $widgets(type) $vals(type)
+    if {$vals(type:attrib) != {}} {
+        Apol_Widget::setTypeComboboxValue $widgets(type) [list $vals(type) $vals(type:attrib)]
+    } else {
+        Apol_Widget::setTypeComboboxValue $widgets(type) $vals(type)
+    }
     Apol_Widget::setRegexpEntryValue $widgets(regexp) $vals(regexp:enable) $vals(regexp)
     updateTypeLabel
 }

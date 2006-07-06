@@ -82,7 +82,9 @@ proc Apol_Analysis::load_query_options {file_channel parentDlg} {
     }
     ${line}::loadQuery $file_channel
     $widgets(modules).lb selection clear 0 end
-    $widgets(modules).lb selection set [lsearch $vals(module_names) $vals(${i}:name)]
+    set module [lindex $vals(modules) $i]
+    $widgets(search_opts) raise $module
+    $widgets(modules).lb selection set [lsearch $vals(module_names) $vals($module:name)]
 }
 
 # -----------------------------------------------------------------------------
