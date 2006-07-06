@@ -1,5 +1,5 @@
 /**
- *  @file apol_tcl_render.h
+ *  @file apol_tcl_analysis.h
  *  Apol interface to render parts of a policy.
  *
  *  @author Kevin Carr kcarr@tresys.com

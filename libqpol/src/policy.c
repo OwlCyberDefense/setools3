@@ -1,4 +1,4 @@
- /**
+/**
  *  @file policy.c
  *  Defines the public interface the QPol policy. 
  *

@@ -1,4 +1,9 @@
-/* Author : Joshua Brindle <jbrindle@tresys.com>
+/**
+ *  @file module_compiler.h
+ *
+ *  This file is a copy of module_compiler.h from NSA's CVS repository.
+ *
+ * Author : Joshua Brindle <jbrindle@tresys.com>
  *	    Karl MacMillan <kmacmillan@tresys.com>
  *          Jason Tang     <jtang@tresys.com>
  *	Added support for binary policy modules
