@@ -1,5 +1,5 @@
 AN OVERVIEW OF DOMAIN TRANSITION ANALYSIS
-apol, version 2.4.0
+apol, version 3.0
 May 17, 2006
 selinux@tresys.com
 
@@ -107,14 +107,12 @@ transition queries, however, the access filters are only enabled for a
 forward domain transition query. To enable and use the access filters, the 
 user needs to select the "Use access filters" checkbutton at which point, he 
 can display the Access Filters dialog. This dialog presents listboxes for 
-including object types in the access filter and also a textview where the 
-user can specify particular object class access. The object class/permissions 
-section is only enabled if an object type has been included. An access filter 
+including object types, object classes, and permissions. An access filter 
 may be particulary useful to a user if he or she is searching for transitions 
 to domains that have specific access to an object type and/or class. For 
 example, one could determine whether the type user_t is allowed to transition 
 to a domain that can write a file of type shadow_t. To run this query from 
 apol, the user simply needs to specify the starting type as user_t, go to the 
-Access Filters dialog, add shadow_t to the included object types listbox, 
-select 'file' from the Object Classes listbox and make sure that 'write' 
-permission has been included.
+Access Filters dialog, select shadow_t in the included object types listbox, 
+select 'file' from the object classes listbox and then select the 'write' 
+permission.
