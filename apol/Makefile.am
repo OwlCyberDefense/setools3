@@ -29,7 +29,7 @@ apol_SOURCES = apol_gui.c \
 	netcontexts_tab.tcl context_dialog.tcl context_selector.tcl \
 	fscontexts_tab.tcl \
 	common_widgets.tcl range_selector.tcl \
-	foo_module.tcl relabel_module.tcl \
+	foo_module.tcl dta_module.tcl relabel_module.tcl \
 	top.tcl
 
 #dta_module.tcl dirflow_module.tcl fulflow_module.tcl \
