@@ -335,7 +335,7 @@ proc Apol_Analysis_relabel::createAdvancedDialog {} {
 
     set attrib [frame [$tf getframe].a]
     grid $attrib - -
-    set attrib_enable [checkbutton $attrib.ae \
+    set attrib_enable [checkbutton $attrib.ae -anchor w \
                            -text "Filter by attribute:" \
                            -variable Apol_Analysis_relabel::vals(subjects:attribenable)]
     set attrib_box [ComboBox $attrib.ab -autopost 1 -entrybg white -width 16 \
@@ -343,11 +343,12 @@ proc Apol_Analysis_relabel::createAdvancedDialog {} {
                         -textvariable Apol_Analysis_relabel::vals(subjects:attrib)]
     $attrib_enable configure -command \
         [list Apol_Analysis_relabel::attribEnabled $attrib_box $inc $exc]
+    # remove any old traces on the attribute
     trace remove variable Apol_Analysis_relabel::vals(subjects:attrib) write \
         [list Apol_Analysis_relabel::attribChanged $inc $exc]
     trace add variable Apol_Analysis_relabel::vals(subjects:attrib) write \
-        [list Apol_Analysis_relabel::attribChanged $.inc $exc]
-    pack $attrib_enable -side top -expand 0 -fill x -anchor s -padx 5 -pady 2
+        [list Apol_Analysis_relabel::attribChanged $inc $exc]
+    pack $attrib_enable -side top -expand 0 -fill x -anchor sw -padx 5 -pady 2
     pack $attrib_box -side top -expand 1 -fill x -padx 10
     attribEnabled $attrib_box $inc $exc
     if {$vals(mode) == "subject"} {
