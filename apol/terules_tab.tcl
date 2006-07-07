@@ -981,6 +981,8 @@ proc Apol_TE::load_query_options {file_channel parentDlg} {
     reinitialize_default_search_options
 
     # load as many values as possible
+    set classes_selected {}
+    set perms_selected {}
     while {[gets $file_channel line] >= 0} {
         set line [string trim $line]
         # Skip empty lines and comments

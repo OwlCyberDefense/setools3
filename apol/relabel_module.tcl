@@ -157,7 +157,11 @@ proc Apol_Analysis_relabel::saveQuery {channel} {
     variable vals
     variable widgets
     foreach {key value} [array get vals] {
-        puts $channel "$key $value"
+        if {$key != "classes:inc" && \
+                $key != "subjects:inc_all" && $key != "subjects:inc" && \
+                $key != "subjects:exc"} {
+            puts $channel "$key $value"
+        }
     }
     set type [Apol_Widget::getTypeComboboxValueAndAttrib $widgets(type)]
     puts $channel "type [lindex $type 0]"
@@ -170,6 +174,9 @@ proc Apol_Analysis_relabel::saveQuery {channel} {
 
 proc Apol_Analysis_relabel::loadQuery {channel} {
     variable vals
+
+    set classes_exc {}
+    set subjects_exc {}
     while {[gets $channel line] >= 0} {
         set line [string trim $line]
         # Skip empty lines and comments
@@ -179,8 +186,47 @@ proc Apol_Analysis_relabel::loadQuery {channel} {
         set key {}
         set value {}
         regexp -line -- {^(\S+)( (.+))?} $line -> key --> value
-        set vals($key) $value
+        switch -- $key {
+            classes:exc {
+                set classes_exc $value
+            }
+            subjects:exc_all {
+                set subjects_exc $value
+            }
+            default {
+                set vals($key) $value
+            }
+        }
     }
+
+    # fill in the exclusion lists using only classes/types found
+    # within the current policy
+    open
+
+    set vals(classes:exc) {}
+    foreach c $classes_exc {
+        set i [lsearch $vals(classes:inc) $c]
+        if {$i >= 0} {
+            lappend vals(classes:exc) $c
+            set vals(classes:inc) [lreplace $vals(classes:inc) $i $i]
+        }
+    }
+    set vals(classes:exc) [lsort $vals(classes:exc)]
+
+    set vals(subjects:exc_all) {}
+    set vals(subjects:exc) {}
+    foreach s $subjects_exc {
+        set i [lsearch $vals(subjects:inc_all) $s]
+        if {$i >= 0} {
+            lappend vals(subjects:exc_all) $s
+            lappend vals(subjects:exc) $s
+            set vals(subjects:inc_all) [lreplace $vals(subjects:inc_all) $i $i]
+            set i [lsearch $vals(subjects:inc) $s]
+            set vals(subjects:inc) [lreplace $vals(subjects:inc) $i $i]
+        }
+    }
+    set vals(subjects:exc_all) [lsort $vals(subjects:exc_all)]
+    set vals(subjects:exc) [lsort $vals(subjects:exc)]
     reinitializeWidgets
 }
 
