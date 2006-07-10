@@ -600,6 +600,7 @@ void apol_relabel_analysis_destroy(apol_relabel_analysis_t **r)
 {
 	if (*r != NULL) {
 		free((*r)->type);
+		free((*r)->result);
 		apol_vector_destroy(&(*r)->classes, NULL);
 		apol_vector_destroy(&(*r)->subjects, NULL);
 		apol_regex_destroy(&(*r)->result_regex);
@@ -612,25 +613,25 @@ int apol_relabel_analysis_set_dir(apol_policy_t *p,
 				  apol_relabel_analysis_t *r,
 				  unsigned int dir)
 {
-        switch (dir) {
-        case APOL_RELABEL_DIR_BOTH:
-        case APOL_RELABEL_DIR_TO:
-        case APOL_RELABEL_DIR_FROM: {
-                r->mode = APOL_RELABEL_MODE_OBJ;
-                r->direction = dir;
-                break;
-        }
-        case APOL_RELABEL_DIR_SUBJECT: {
-                r->mode = APOL_RELABEL_MODE_SUBJ;
-                r->direction = APOL_RELABEL_DIR_BOTH;
-                break;
-        }
-        default: {
-                ERR(p, strerror(EINVAL));
-                return -1;
-        }
-        }
-        return 0;
+	switch (dir) {
+	case APOL_RELABEL_DIR_BOTH:
+	case APOL_RELABEL_DIR_TO:
+	case APOL_RELABEL_DIR_FROM: {
+		r->mode = APOL_RELABEL_MODE_OBJ;
+		r->direction = dir;
+		break;
+	}
+	case APOL_RELABEL_DIR_SUBJECT: {
+		r->mode = APOL_RELABEL_MODE_SUBJ;
+		r->direction = APOL_RELABEL_DIR_BOTH;
+		break;
+	}
+	default: {
+		ERR(p, strerror(EINVAL));
+		return -1;
+	}
+	}
+	return 0;
 }
 
 int apol_relabel_analysis_set_type(apol_policy_t *p,

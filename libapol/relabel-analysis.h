@@ -31,9 +31,9 @@
 #include "vector.h"
 
 /* defines for direction flag */
-#define APOL_RELABEL_DIR_TO	0x01
-#define APOL_RELABEL_DIR_FROM	0x02
-#define APOL_RELABEL_DIR_BOTH	(APOL_RELABEL_DIR_TO|APOL_RELABEL_DIR_FROM)
+#define APOL_RELABEL_DIR_TO      0x01
+#define APOL_RELABEL_DIR_FROM    0x02
+#define APOL_RELABEL_DIR_BOTH    (APOL_RELABEL_DIR_TO|APOL_RELABEL_DIR_FROM)
 #define APOL_RELABEL_DIR_SUBJECT 0x04
 
 typedef struct apol_relabel_analysis apol_relabel_analysis_t;
@@ -44,7 +44,7 @@ typedef struct apol_relabel_result apol_relabel_result_t;
 /**
  * Execute a relabel analysis against a particular policy.
  *
- * @param p Policy within which to look up constraints.
+ * @param p Policy within which to look up allow rules.
  * @param r A non-NULL structure containing parameters for analysis.
  * @param v Reference to a vector of apol_relabel_result_t.  The
  * vector will be allocated by this function.  The caller must call
@@ -52,15 +52,15 @@ typedef struct apol_relabel_result apol_relabel_result_t;
  * apol_relabel_result_free() as the second parameter</b>.  This will
  * be set to NULL upon no results or upon error.
  *
- * @return 0 on success (including none found), negative on error.
+ * @return 0 on success, negative on error.
  */
 extern int apol_relabel_analysis_do(apol_policy_t *p,
-                                    apol_relabel_analysis_t *r,
-                                    apol_vector_t **v);
+				    apol_relabel_analysis_t *r,
+				    apol_vector_t **v);
 
 /**
  * Allocate and return a new relabel analysis structure.  All fields
- * are cleared; one must fill in the details of the query before
+ * are cleared; one must fill in the details of the analysis before
  * running it.  The caller must call apol_relabel_analysis_destroy()
  * upon the return value afterwards.
  *
@@ -95,6 +95,20 @@ extern void apol_relabel_analysis_destroy(apol_relabel_analysis_t **r);
 extern int apol_relabel_analysis_set_dir(apol_policy_t *p,
 					 apol_relabel_analysis_t *r,
 					 unsigned int dir);
+
+/**
+ * Set a relabel analysis to begin searching using a given type.  This
+ * function must be called prior to running the analysis.
+ *
+ * @param p Policy handler, to report errors.
+ * @param r Relabel anlysis to set.
+ * @param name Begin searching types with this non-NULL name.
+ *
+ * @return 0 on success, negative on error.
+ */
+extern int apol_relabel_analysis_set_type(apol_policy_t *p,
+					  apol_relabel_analysis_t *r,
+					  const char *name);
 
 /**
  * Set a relabel analysis to return rules with this object
@@ -134,22 +148,8 @@ extern int apol_relabel_analysis_append_subject(apol_policy_t *p,
 						const char *subject);
 
 /**
- * Set a relabel analysis to begin searching using a given type.  This
- * function must be called prior to running the analysis.
- *
- * @param p Policy handler, to report errors.
- * @param r Relabel anlysis to set.
- * @param name Begin searching types with this non-NULL name.
- *
- * @return 0 on success, negative on error.
- */
-extern int apol_relabel_analysis_set_type(apol_policy_t *p,
-					  apol_relabel_analysis_t *r,
-					  const char *name);
-
-/**
  * Set a relabel analysis to return only types matching a regular
- * expression.  Note that if regexp will also match types' aliases.
+ * expression.  Note that the regexp will also match types' aliases.
  *
  * @param p Policy handler, to report errors.
  * @param r Relabel anlysis to set.
