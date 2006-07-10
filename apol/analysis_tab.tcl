@@ -42,6 +42,7 @@ proc Apol_Analysis::close {} {
     reinitializeTabs
     $widgets(modules).lb selection clear 0 end
     $widgets(modules).lb selection set 0
+    selectModule
 }
 
 proc Apol_Analysis::free_call_back_procs { } {
@@ -113,7 +114,7 @@ proc Apol_Analysis::create {nb} {
 
     # Module selection list
     set widgets(modules) [Apol_Widget::makeScrolledListbox [$top_leftf getframe].m \
-                              -height 8 -width 28 -listvar Apol_Analysis::vals(module_names) -exportselection 0]
+                              -height 8 -width 22 -listvar Apol_Analysis::vals(module_names) -exportselection 0]
     $widgets(modules).lb selection set 0
     bind $widgets(modules).lb <<ListboxSelect>> Apol_Analysis::selectModule
     pack $widgets(modules) -expand 1 -fill both
