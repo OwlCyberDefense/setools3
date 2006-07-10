@@ -363,6 +363,8 @@ static int Apol_GetHelpDir(ClientData clientData, Tcl_Interp *interp, int argc, 
  * Open a policy file, either source or binary, on disk.  If the file
  * was opened successfully then set the global policydb pointer to it,
  * and set its error handler to apol_tcl_route_handle_to_string().
+ * Regardless of success or failure, the previously opened policy is
+ * destroyed.
  *
  * @param argv This function takes one parameter: policy to open.
  */
@@ -372,6 +374,7 @@ static int Apol_OpenPolicy(ClientData clientData, Tcl_Interp *interp, int argc, 
 		Tcl_SetResult(interp, "Need a policy filename.", TCL_STATIC);
 		return TCL_ERROR;
 	}
+	apol_policy_destroy(&policydb);
 	if (apol_policy_open(argv[1], &policydb)) {
 		Tcl_Obj *result_obj = Tcl_NewStringObj("Error opening policy: ", -1);
 		Tcl_AppendToObj(result_obj, strerror(errno), -1);
