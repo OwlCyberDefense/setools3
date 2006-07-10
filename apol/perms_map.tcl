@@ -17,7 +17,8 @@ namespace eval Apol_Perms_Map {
     variable widgets
 }
 
-
+# Let the user select a permission map file to load.  Returns 1 on
+# success, 0 on error.
 proc Apol_Perms_Map::loadPermMapFromFile {} {
     set pmap_name [tk_getOpenFile -title "Select Perm Map to Load" -parent .]
     if {$pmap_name != {}} {
@@ -32,7 +33,7 @@ proc Apol_Perms_Map::loadPermMapFromFile {} {
 # "apol_perm_mapping_ver$ver", where $ver is the currently loaded
 # policy version number.  If that fails then simply try
 # "apol_perm_mapping".  If all of that fails, then display an error
-# message and abort the loading.
+# message and abort the loading.  Returns 1 on success, 0 on error.
 proc Apol_Perms_Map::loadDefaultPermMap {} {
     if {![ApolTop::is_policy_open]} {
         tk_messageBox -icon error -type ok -title "Error" -message "No current policy file is opened!"
@@ -111,6 +112,7 @@ proc Apol_Perms_Map::loadPermMap {filename shortname saveable} {
     if {[winfo exists $edit_dialog]} {
         refreshEditDialog
     }
+    ApolTop::configure_edit_pmap_menu_item 1
     return 1
 }
 
