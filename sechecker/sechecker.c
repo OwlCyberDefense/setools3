@@ -414,9 +414,9 @@ int sechk_lib_load_fc(const char *fcfilelocation, sechk_lib_t *lib)
 		retv = find_default_file_contexts_file(&default_fc_path);
 		if (retv) {
 			error = errno;
-			fprintf(stderr, "Warning: unable to find default file_contexts file\n");
+			ERR(lib->policy, "Warning: unable to find default file_contexts file: %s\n", strerror(error));
 			errno = error;
-			return -1;
+			return 0; /* not fatal error until a module requires this to exist */
 		}
 		retv = parse_file_contexts_file(default_fc_path, &(lib->fc_entries), &(num_fc_entries), lib->policy);
 		if (retv) {
@@ -526,6 +526,8 @@ sechk_module_t *sechk_lib_get_module(const char *module_name, const sechk_lib_t 
 
 	for (i = 0; i < apol_vector_get_size(lib->modules); i++) {
 		mod = apol_vector_get_element(lib->modules, i);
+		if (!(mod->name))
+			continue;
 		if (!strcmp(mod->name, module_name))
 			return mod;
 	}
