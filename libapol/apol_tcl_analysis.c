@@ -123,6 +123,119 @@ static int apol_vector_to_tcl_list(Tcl_Interp *interp,
 }
 
 /**
+ * Return an unsorted list of result tuples for a domain transition
+ * analysis.  Each tuple consists of:
+ * <ul>
+ * </ul>
+ *
+ * Rules are unique identifiers (relative to currently loaded policy).
+ * Call [apol_RenderAVRule] to display them.
+ *
+ * @param argv This fuction takes eight parameters:
+ * <ol>
+ *   <li>analysis mode, one of "forward" or "reverse"
+ *   <li>starting type (string)
+ *   <li>list of object types, or an empty list to consider all types
+ *   <li>list of class/perm pairs, or an empty list to consider all
+ *       classes/perms
+ *   <li>regular expression for resulting types, or empty string to accept all
+ * </ol>
+ *
+ * Note that the list of object types and list of class/perm pairs are
+ * ignored if the analysis mode is "reverse".
+ */
+static int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *interp,
+					 int argc, CONST char *argv[])
+{
+#if 0
+	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
+	apol_vector_t *v = NULL;
+	int direction;
+	CONST char **targets_strings = NULL, **class_strings = NULL;
+	size_t i;
+	int retval = TCL_ERROR;
+
+	apol_tcl_clear_error();
+	if (policydb == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		goto cleanup;
+	}
+	if (argc != 6) {
+		ERR(policydb, "Need an analysis mode, starting type, object types, class/perm pairs, and result regex.");
+		goto cleanup;
+	}
+	if (strcmp(argv[1], "forward") == 0) {
+                direction = 42;
+	}
+	else if (strcmp(argv[1], "reverse") == 0) {
+                direction = 43;
+	}
+        else {
+		ERR(policydb, "Invalid domain transition mode %s.", argv[1]);
+		goto cleanup;
+	}
+
+        if ((analysis = apol_domain_trans_analysis_create()) == NULL) {
+		ERR(policydb, "Out of memory!");
+		goto cleanup;
+	}
+
+	if (apol_domain_trans_analysis_set_dir(policydb, analysis, direction) < 0 ||
+	    apol_domain_trans_analysis_set_type(policydb, analysis, argv[2]) < 0 ||
+	    apol_domain_trans_analysis_set_result_regexp(policydb, analysis, argv[5])) {
+		goto cleanup;
+	}
+
+	if (Tcl_SplitList(interp, argv[3], &num_opts, &targets_strings) == TCL_ERROR) {
+		goto cleanup;
+	}
+	while (--num_opts >= 0) {
+		CONST char *s = targets_strings[num_opts];
+		if (apol_domain_tras_analysis_append_target(policydb, analysis, s) < 0) {
+			goto cleanup;
+		}
+	}
+
+	if (Tcl_SplitList(interp, argv[4], &num_opts, &class_strings) == TCL_ERROR) {
+		goto cleanup;
+	}
+	while (--num_opts >= 0) {
+		CONST char *s = class_strings[num_opts];
+		if (apol_domain_trans_append_subject(policydb, analysis, s) < 0) {
+			goto cleanup;
+		}
+	}
+
+	if (apol_domain_trans_analysis_do(policydb, analysis, &v) < 0) {
+                goto cleanup;
+        }
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		result = (apol_relabel_result_t *) apol_vector_get_element(v, i);
+		if (append_relabel_result_to_list(interp, result, result_obj) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+
+	Tcl_SetObjResult(interp, result_obj);
+	retval = TCL_OK;
+ cleanup:
+	if (target_strings != NULL) {
+		Tcl_Free((char *) target_strings);
+	}
+	if (class_strings != NULL) {
+		Tcl_Free((char *) class_strings);
+	}
+	apol_domain_trans_analysis_destroy(&analysis);
+	apol_vector_destroy(&v, apol_domain_trans_result_free);
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
+#endif
+        return TCL_ERROR;
+}
+
+/**
  * Take a result node from a relabel analysis and append a tuple of it
  * to result_list.  The tuple consists of:
  * <code>
@@ -151,7 +264,7 @@ static int append_relabel_result_to_list(Tcl_Interp *interp,
 }
 
 /**
- * Return an unsorted list of results for a relabel analysis tuples.
+ * Return an unsorted list of result tuples for a relabel analysis.
  * Each tuple consists of:
  * <ul>
  *   <li>list of rules to which can be relabeled
@@ -169,7 +282,7 @@ static int append_relabel_result_to_list(Tcl_Interp *interp,
  *   <li>analysis mode, one of "to", "from", "both", or "subject"
  *   <li>starting type (string)
  *   <li>list of object classes to include
- *   <li>list of types to include
+ *   <li>list of subject types to include
  *   <li>regular expression for resulting types, or empty string to accept all
  * </ol>
  *
@@ -192,7 +305,7 @@ static int Apol_RelabelAnalysis(ClientData clientData, Tcl_Interp *interp,
 		goto cleanup;
 	}
 	if (argc != 6) {
-		ERR(policydb, "Need an analysis mode, starting type, and resulting type regexp.");
+		ERR(policydb, "Need an analysis mode, starting type, object classes, subject types, and resulting type regexp.");
 		goto cleanup;
 	}
 
@@ -274,9 +387,9 @@ static int Apol_RelabelAnalysis(ClientData clientData, Tcl_Interp *interp,
 int apol_tcl_analysis_init(Tcl_Interp *interp)
 {
 	Tcl_CreateCommand(interp, "apol_GetAllPermsForClass", Apol_GetAllPermsForClass, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_DomainTransitionAnalysis", Apol_DomainTransitionAnalysis, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_RelabelAnalysis", Apol_RelabelAnalysis, NULL, NULL);
         /*
-	Tcl_CreateCommand(interp, "apol_DomainTransitionAnalysis", Apol_DomainTransitionAnalysis, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_DirectInformationFlowAnalysis", Apol_DirectInformationFlowAnalysis, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_TransitiveFlowAnalysis", Apol_TransitiveFlowAnalysis, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_TransitiveFindPathsStart", Apol_TransitiveFindPathsStart, NULL, NULL);
@@ -590,270 +703,6 @@ static int append_dta_results(policy_t *policy, domain_trans_analysis_t *dta_res
 	}
 
 	return 0;
-}
-
-
-
-/*
- * argv[1] - boolean value (0 for a forward DT analysis; otherwise, reverse DT analysis)
- * argv[2] - specified domain type used to start the analysis
- * argv[3] - boolean value indicating whether to filter by access to object classes and/or specific types.
- * argv[4] - number of classes to include for the inclusive filter
- * argv[5] - list of object classes/permissions to provide the inclusive filter
- * argv[6] - list of object types to provide the inclusive filter
- * argv[7] - boolean value indicating whether to filter by end types
- * argv[8] - end_type regex
- *
- * Given a domain type, this function determines what new domains the given domain can transition to/from.
- * and returns those domains, as well as the entrypoint type that allows that transition and all
- * the rules that provide the required access.
- */
-/* TODO: We're at the point where our simple tcl/tk interface is becoming a burden...probably time
- * to seriously consider native C GUIs, or maybe PerlTK (or at least use tcl v. 8 objects rather
- * than strings)....however, for now.....
- *
- * we return a list orgainzed to represent the tree structure that results from a domain transition
- * analysis.  The conceptual tree result looks like:
- *	source_type (provided)
- *		+ target_type1
- *			(list of rules providing source target:process transition)
- *			+ entry_file_type1
- *				(list of rules providing target file_type:file entrypoint)
- *				(list of rules providing source file_type:file execute)
- *			+ entry_file_type2
- *				(...entrypoint)
- *				(...execute)
- *			...
- *			+ entry_file_typeN
- *				...
- *		+ target_type2
- *			...
- *		...
- *		+ target_typeN
- *			...
- *
- * Since we're lazily using a tcl list to return the entire result, we take the above conceptual tree
- * and encoded it as follows:
- *	INDEX		CONTENTS
- *	0		source type name
- *	1		N, # of target domain types (if none, then no other results returned)
- *	  2		name first target type (if any)
- *	  3		X, # of process transition rules
- *	  next X*2	pt rule1, lineno1, ....
- *	  next		Y, # of entry point file types for first target type
- *	    next	first file type
- *	    next	A, # of file entrypoint rules
- *	    next A*2	ep rule 1, lineno1,....
- *	    next	B, # of file execute rules
- *	    next B*2	ex rule1, lineno1, ...
- *
- *	    next	(repeat next file type record as above Y times)
- *
- *	next		(repeat target type record N times)
- */
-
-static int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
-{
-    /* FIX ME!*/
-	int rt, num_objs, num_objs_options = 0, num_end_types = 0;
-	int cur, type, i, j, sz;
-	int num_obj_perms, obj, perm;
-	CONST char **obj_class_perms, **end_types;
-	dta_query_t *dta_query = NULL;
-	domain_trans_analysis_t *dta_results = NULL;
-	char *tmp = NULL, *end_type = NULL, *err = NULL;
-	regex_t reg;
-
-	if (argc != 9) {
-		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
-		return TCL_ERROR;
-	}
-
-	if (policydb == NULL) {
-		Tcl_AppendResult(interp, "No current policy file is opened!", (char *) NULL);
-		return TCL_ERROR;
-	}
-	if(!is_valid_str_sz(argv[2])) {
-		Tcl_AppendResult(interp, "The provided domain type string is too large.", (char *) NULL);
-		return TCL_ERROR;
-	}
-
-	/* Create the query structure */
-	dta_query = dta_query_create();
-	if (dta_query == NULL) {
-		Tcl_AppendResult(interp,"Memory error allocating dta query.\n", (char *) NULL);
-		goto err;
-	}
-	/* determine if requesting a reverse DT analysis */
-	dta_query->reverse = getbool(argv[1]);
-	/* Set the start type for our query */
-	dta_query->start_type = get_type_idx(argv[2], policy);
-	if (dta_query->start_type < 0) {
-		Tcl_AppendResult(interp, "Invalid starting type ", argv[2], (char *) NULL);
-		goto err;
-	}
-	dta_query->use_object_filters = getbool(argv[3]);
-	rt = Tcl_GetInt(interp, argv[4], &num_objs);
-	if(rt == TCL_ERROR) {
-		Tcl_AppendResult(interp,"argv[4] apparently not an integer", (char *) NULL);
-		goto err;
-	}
-
-	if (dta_query->use_object_filters) {
-		/* First, disassemble TCL intermediate types list, returning an array of pointers to the elements. */
-		rt = Tcl_SplitList(interp, argv[6], &num_end_types, &end_types);
-		if (rt != TCL_OK) {
-			Tcl_AppendResult(interp, "Error splitting TCL list of types.", (char *) NULL);
-			goto err;
-		}
-
-		if (num_end_types < 1) {
-			Tcl_AppendResult(interp, "Must provide at least one type for the results filters.", (char *) NULL);
-			Tcl_Free((char *) end_types);
-			goto err;
-		}
-		/* Set intermediate type info */
-		for (i = 0; i < num_end_types; i++) {
-			type = get_type_idx(end_types[i], policy);
-			if (type < 0) {
-				/* This is an invalid ending type, so ignore */
-				fprintf(stderr, "Invalid type provided to results filter: %s\n", end_types[i]);
-				continue;
-			}
-			if (dta_query_add_end_type(dta_query, type) != 0) {
-				Tcl_Free((char *) end_types);
-				Tcl_AppendResult(interp, "Memory error!\n", (char *) NULL);
-				goto err;
-			}
-		}
-		Tcl_Free((char *) end_types);
-
-		/* Second, disassemble list of object class permissions, returning an array of pointers to the elements. */
-		rt = Tcl_SplitList(interp, argv[5], &num_objs_options, &obj_class_perms);
-		if (rt != TCL_OK) {
-			Tcl_AppendResult(interp, "Error splitting TCL list.", (char *) NULL);
-			goto err;
-		}
-		/* NOTE: We don't bail if all class/perm are to be excluded.
-		 * The analysis will simply filter on the specified types only. */
-		if (num_objs_options < 1) {
-			Tcl_AppendResult(interp, "You cannot exclude all object classes in the results filters.", (char *) NULL);
-			Tcl_Free((char *) obj_class_perms);
-			goto err;
-		} else {
-			assert(num_objs > 0); /* This should not fail; if so, this will be caught */
-			cur = 0;
-			/* Set the object classes permission info */
-			/* Keep in mind that this is an encoded TCL list in the form "class1 num_perms perm1 ... permN ... classN num_perms perm1 ... permN" */
-			for (i = 0; i < num_objs; i++) {
-				obj = get_obj_class_idx(obj_class_perms[cur], policy);
-				if (obj < 0) {
-					Tcl_AppendResult(interp, "Invalid object class:\n", obj_class_perms[cur], (char *) NULL);
-					Tcl_Free((char *) obj_class_perms);
-					goto err;
-				}
-				/* Increment to next element, which should be the number of specified permissions for the class */
-				cur++;
-				rt = Tcl_GetInt(interp, obj_class_perms[cur], &num_obj_perms);
-				if(rt == TCL_ERROR) {
-					Tcl_Free((char *) obj_class_perms);
-					Tcl_AppendResult(interp, "Item in obj_class_perms list apparently is not an integer\n", (char *) NULL);
-					goto err;
-				}
-				if (num_obj_perms == 0) {
-					fprintf(stderr, "No permissions for object: %s. Skipping...\n", obj_class_perms[cur - 1]);
-					continue;
-				}
-
-				for (j = 0; j < num_obj_perms; j++) {
-					cur++;
-					perm = get_perm_idx(obj_class_perms[cur], policy);
-					if (perm < 0 || !is_valid_perm_for_obj_class(policy, obj, perm)) {
-						fprintf(stderr, "Invalid object class permission\n");
-						continue;
-					}
-					if (dta_query_add_obj_class_perm(dta_query, obj, perm) == -1) {
-						Tcl_Free((char *) obj_class_perms);
-						Tcl_AppendResult(interp, "error adding perm\n", (char *) NULL);
-						goto err;
-					}
-				}
-				cur++;
-			}
-			Tcl_Free((char *) obj_class_perms);
-		}
-	}
-	dta_query->use_endtype_filters = getbool(argv[7]);
-	if (dta_query->use_endtype_filters) {
-		if (str_is_only_white_space(argv[8])) {
-			Tcl_AppendResult(interp, "Please provide a regular expression for filtering the end types.", (char *) NULL);
-			goto err;
-		}
-		end_type = strdup(argv[8]);
-		if (end_type == NULL) {
-			Tcl_AppendResult(interp, "Out of memory.", (char *) NULL);
-			goto err;
-		}
-		trim_trailing_whitespace(&end_type);
-		rt = regcomp(&reg, end_type, REG_EXTENDED|REG_NOSUB);
-		if (rt != 0) {
-			sz = regerror(rt, &reg, NULL, 0);
-			if ((err = (char *)malloc(++sz)) == NULL) {
-				Tcl_AppendResult(interp, "Out of memory.", (char *) NULL);
-				goto err;
-			}
-			regerror(rt, &reg, err, sz);
-			regfree(&reg);
-			Tcl_AppendResult(interp, err, (char *) NULL);
-			free(err);
-			goto err;
-		}
-		rt = get_type_idxs_by_regex(&dta_query->filter_types, &dta_query->num_filter_types, &reg, FALSE, policy);
-		if (rt < 0) {
-			Tcl_AppendResult(interp, "Error searching types\n", (char *) NULL);
-			goto err;
-		}
-	}
-
-	/* Perform the analysis */
-	rt = determine_domain_trans(dta_query, &dta_results, policy);
-	if (rt == -2) {
-		if (dta_query->reverse) {
-			Tcl_AppendResult(interp, "invalid target type name", (char *) NULL);
-		} else {
-			Tcl_AppendResult(interp, "invalid source type name", (char *) NULL);
-		}
-		goto err;
-	} else if(rt < 0) {
-		Tcl_AppendResult(interp, "error with domain transition anaysis", (char *) NULL);
-		goto err;
-	}
-	dta_query_destroy(dta_query);
-
-	/* source type */
-	rt = get_type_name(dta_results->start_type, &tmp, policy);
-	if (rt != 0) {
-		Tcl_ResetResult(interp);
-		Tcl_AppendResult(interp, "Analysis error (looking up starting type name)", (char *) NULL);
-		goto err;
-	}
-	Tcl_AppendElement(interp, tmp);
-	free(tmp);
-	tmp = NULL;
-	if (append_dta_results(policy, dta_results, interp) != TCL_OK) {
-		Tcl_AppendResult(interp, "Error appending domain transition analysis results!", (char *) NULL);
-		goto err;
-	}
-
-	free_domain_trans_analysis(dta_results);
-	free(end_type);
-	return TCL_OK;
-err:
-	if (dta_query != NULL) dta_query_destroy(dta_query);
-	if (dta_results != NULL) free_domain_trans_analysis(dta_results);
-	if (tmp != NULL) free(tmp);
-	if (end_type != NULL) free(end_type);
-	return TCL_ERROR;
 }
 
 

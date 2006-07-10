@@ -93,20 +93,20 @@ proc Apol_Analysis_dta::create {options_frame} {
 
     set filter_tf [TitleFrame $options_frame.filter -text "Optional Result Filters"]
     pack $filter_tf -side left -padx 2 -pady 2 -expand 1 -fill both
-    set widgets(regexp) [Apol_Widget::makeRegexpEntry [$filter_tf getframe].end]
-    $widgets(regexp).cb configure -text "Filter result types using regular expression"
-    pack $widgets(regexp) -anchor nw
     set access_f [frame [$filter_tf getframe].access]
-    pack $access_f -anchor nw -pady 8
+    pack $access_f -side left -anchor nw
     set widgets(access_enable) [checkbutton $access_f.enable -text "Use access filters" \
                                     -variable Apol_Analysis_dta::vals(access:enable)]
+    pack $widgets(access_enable) -anchor w
     set widgets(access) [button $access_f.b -text "Access Filters" \
                              -command Apol_Analysis_dta::createAccessDialog \
                              -state disabled]
-    pack $widgets(access_enable) -anchor w
     pack $widgets(access) -anchor w -padx 4
     trace add variable Apol_Analysis_dta::vals(access:enable) write \
         Apol_Analysis_dta::toggleAccessSelected
+    set widgets(regexp) [Apol_Widget::makeRegexpEntry [$filter_tf getframe].end]
+    $widgets(regexp).cb configure -text "Filter result types using regular expression"
+    pack $widgets(regexp) -side left -anchor nw -padx 8
 }
 
 proc Apol_Analysis_dta::newAnalysis {} {
@@ -319,41 +319,42 @@ proc Apol_Analysis_dta::createAccessTargets {f} {
 
     set type_f [frame $f.targets]
     pack $type_f -side left -expand 0 -fill both -padx 4 -pady 4
-    set l1 [label $type_f.l1 -text "Included Object Types:"]
+    set l1 [label $type_f.l1 -text "Included Object Types"]
     pack $l1 -anchor w
 
     set targets [Apol_Widget::makeScrolledListbox $type_f.targets -height 10 -width 24 \
                  -listvar Apol_Analysis_dta::vals(targets:inc_displayed) \
                  -selectmode extended -exportselection 0]
-    bind $targets.lb <<ListboxSelect>> \
-        [list Apol_Analysis_dta::selectTargetListbox $targets.lb]
+    set targets_lb [Apol_Widget::getScrolledListbox $targets]
+    bind $targets_lb <<ListboxSelect>> \
+        [list Apol_Analysis_dta::selectTargetListbox $targets_lb]
     pack $targets -expand 0 -fill both
 
     set bb [ButtonBox $type_f.bb -homogeneous 1 -spacing 4]
     $bb add -text "Include All" \
-        -command [list Apol_Analysis_dta::includeAllItems $targets.lb targets]
+        -command [list Apol_Analysis_dta::includeAllItems $targets_lb targets]
     $bb add -text "Ignore All" \
-        -command [list Apol_Analysis_dta::ignoreAllItems $targets.lb targets]
+        -command [list Apol_Analysis_dta::ignoreAllItems $targets_lb targets]
     pack $bb -pady 4
 
     set attrib [frame $type_f.a]
     pack $attrib
     set attrib_enable [checkbutton $attrib.ae -anchor w \
-                           -text "Filter by attribute:" \
+                           -text "Filter by attribute" \
                            -variable Apol_Analysis_dta::vals(targets:attribenable)]
     set attrib_box [ComboBox $attrib.ab -autopost 1 -entrybg white -width 16 \
                         -values $Apol_Types::attriblist \
                         -textvariable Apol_Analysis_dta::vals(targets:attrib)]
     $attrib_enable configure -command \
-        [list Apol_Analysis_dta::attribEnabled $attrib_box $targets.lb]
+        [list Apol_Analysis_dta::attribEnabled $attrib_box $targets_lb]
     # remove any old traces on the attribute
     trace remove variable Apol_Analysis_dta::vals(targets:attrib) write \
-        [list Apol_Analysis_dta::attribChanged $targets.lb]
+        [list Apol_Analysis_dta::attribChanged $targets_lb]
     trace add variable Apol_Analysis_dta::vals(targets:attrib) write \
-        [list Apol_Analysis_dta::attribChanged $targets.lb]
+        [list Apol_Analysis_dta::attribChanged $targets_lb]
     pack $attrib_enable -side top -expand 0 -fill x -anchor sw -padx 5 -pady 2
     pack $attrib_box -side top -expand 1 -fill x -padx 10
-    attribEnabled $attrib_box $targets.lb
+    attribEnabled $attrib_box $targets_lb
 }
 
 proc Apol_Analysis_dta::selectTargetListbox {lb} {
@@ -431,7 +432,7 @@ proc Apol_Analysis_dta::createAccessClasses {f} {
 
     set lf [frame $f.left]
     pack $lf -side left -expand 0 -fill both -padx 4 -pady 4
-    set l1 [label $lf.l -text "Included Object Classes:"]
+    set l1 [label $lf.l -text "Included Object Classes"]
     pack $l1 -anchor w
     set rf [frame $f.right]
     pack $rf -side left -expand 0 -fill both -padx 4 -pady 4
@@ -441,46 +442,48 @@ proc Apol_Analysis_dta::createAccessClasses {f} {
     set classes [Apol_Widget::makeScrolledListbox $lf.classes -height 10 -width 24 \
                      -listvar Apol_Class_Perms::class_list \
                      -selectmode extended -exportselection 0]
+    set classes_lb [Apol_Widget::getScrolledListbox $classes]
     pack $classes -expand 1 -fill both
     set cbb [ButtonBox $lf.cbb -homogeneous 1 -spacing 4]
     $cbb add -text "Include All" \
-        -command [list Apol_Analysis_dta::includeAllClasses $classes.lb]
+        -command [list Apol_Analysis_dta::includeAllClasses $classes_lb]
     $cbb add -text "Ignore All" \
-        -command [list Apol_Analysis_dta::ignoreAllClasses $classes.lb]
+        -command [list Apol_Analysis_dta::ignoreAllClasses $classes_lb]
     pack $cbb -pady 4 -expand 0
 
     set perms [Apol_Widget::makeScrolledListbox $rf.perms -height 10 -width 24 \
                      -listvar Apol_Analysis_dta::vals(classes:perms_displayed) \
                      -selectmode extended -exportselection 0]
+    set perms_lb [Apol_Widget::getScrolledListbox $perms]
     pack $perms -expand 1 -fill both
     set pbb [ButtonBox $rf.pbb -homogeneous 1 -spacing 4]
     $pbb add -text "Include All" \
-        -command [list Apol_Analysis_dta::includeAllPerms $classes.lb $perms.lb]
+        -command [list Apol_Analysis_dta::includeAllPerms $classes_lb $perms_lb]
     $pbb add -text "Ignore All" \
-        -command [list Apol_Analysis_dta::ignoreAllPerms $classes.lb $perms.lb]
+        -command [list Apol_Analysis_dta::ignoreAllPerms $classes_lb $perms_lb]
     pack $pbb -pady 4 -expand 0
 
-    bind $classes.lb <<ListboxSelect>> \
-        [list Apol_Analysis_dta::selectClassListbox $l2 $classes.lb $perms.lb]
-    bind $perms.lb <<ListboxSelect>> \
-        [list Apol_Analysis_dta::selectPermListbox $classes.lb $perms.lb]
+    bind $classes_lb <<ListboxSelect>> \
+        [list Apol_Analysis_dta::selectClassListbox $l2 $classes_lb $perms_lb]
+    bind $perms_lb <<ListboxSelect>> \
+        [list Apol_Analysis_dta::selectPermListbox $classes_lb $perms_lb]
 
-    set anchor [$classes.lb index end]
+    set anchor [$classes_lb index end]
     foreach class_key [array names vals classes:*:enable] {
         if {$vals($class_key)} {
             regexp -- {^classes:([^:]+):enable} $class_key -> class
             set i [lsearch $Apol_Class_Perms::class_list $class]
-            $classes.lb selection set $i $i
+            $classes_lb selection set $i $i
             if {$i < $anchor} {
                 set anchor $i
             }
         }
     }
-    if {$anchor != [$classes.lb index end]} {
-        $classes.lb selection anchor $anchor
+    if {$anchor != [$classes_lb index end]} {
+        $classes_lb selection anchor $anchor
     }
     set vals(classes:perms_displayed) {}
-    selectClassListbox $l2 $classes.lb $perms.lb
+    selectClassListbox $l2 $classes_lb $perms_lb
 }
 
 proc Apol_Analysis_dta::selectClassListbox {perm_label lb plb} {
@@ -494,7 +497,7 @@ proc Apol_Analysis_dta::selectClassListbox {perm_label lb plb} {
         return
     }
 
-    $perm_label configure -text "Permissions for $class:"
+    $perm_label configure -text "Permissions for $class"
     set vals(classes:perms_displayed) [lsort [apol_GetAllPermsForClass $class]]
     $plb selection clear 0 end
     foreach p $vals(classes:$class) {
