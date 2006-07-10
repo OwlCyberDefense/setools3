@@ -104,12 +104,20 @@ proc Apol_Analysis_relabel::create {options_frame} {
 
     set filter_tf [TitleFrame $options_frame.filter -text "Optional Result Filters"]
     pack $filter_tf -side left -padx 2 -pady 2 -expand 1 -fill both
+    set advanced_f [frame [$filter_tf getframe].advanced]
+    pack $advanced_f -side left -anchor nw
+    set access_enable [checkbutton $advanced_f.enable -text "Use advanced filters" \
+                           -variable Apol_Analysis_relabel::vals(advanced_enable)]
+    pack $access_enable -anchor w
+    set widgets(advanced) [button $advanced_f.adv -text "Advanced Filters" \
+                               -command Apol_Analysis_relabel::createAdvancedDialog \
+                               -state disabled]
+    pack $widgets(advanced) -anchor w -padx 4
+    trace add variable Apol_Analysis_relabel::vals(advanced_enable) write \
+        Apol_Analysis_relabel::toggleAdvancedSelected
     set widgets(regexp) [Apol_Widget::makeRegexpEntry [$filter_tf getframe].end]
     $widgets(regexp).cb configure -text "Filter result types using regular expression"
-    pack $widgets(regexp) -anchor nw
-    set advanced [button [$filter_tf getframe].adv -text "Advanced Filters" \
-                     -command Apol_Analysis_relabel::createAdvancedDialog]
-    pack $advanced -pady 8 -anchor w
+    pack $widgets(regexp) -side left -anchor nw -padx 8
 }
 
 proc Apol_Analysis_relabel::newAnalysis {} {
@@ -253,6 +261,7 @@ proc Apol_Analysis_relabel::reinitializeVals {} {
         regexp:enable 0
         regexp {}
 
+        advanced_enable 0
         classes:inc {}  classes:exc {}
         subjects:inc {}  subjects:inc_all {}
         subjects:exc {}  subjects:exc_all {}
@@ -308,6 +317,16 @@ proc Apol_Analysis_relabel::updateTypeLabel {} {
     }
 }
 
+proc Apol_Analysis_relabel::toggleAdvancedSelected {name1 name2 op} {
+    variable vals
+    variable widgets
+    if {$vals(advanced_enable)} {
+        $widgets(advanced) configure -state normal
+    } else {
+        $widgets(advanced) configure -state disabled
+    }
+}
+
 ################# functions that do advanced filters #################
 
 proc Apol_Analysis_relabel::createAdvancedDialog {} {
@@ -336,21 +355,21 @@ proc Apol_Analysis_relabel::createAdvancedDialog {} {
     set attrib [frame [$tf getframe].a]
     grid $attrib - -
     set attrib_enable [checkbutton $attrib.ae -anchor w \
-                           -text "Filter by attribute:" \
+                           -text "Filter by attribute" \
                            -variable Apol_Analysis_relabel::vals(subjects:attribenable)]
     set attrib_box [ComboBox $attrib.ab -autopost 1 -entrybg white -width 16 \
                         -values $Apol_Types::attriblist \
                         -textvariable Apol_Analysis_relabel::vals(subjects:attrib)]
     $attrib_enable configure -command \
-        [list Apol_Analysis_relabel::attribEnabled $attrib_box $inc $exc]
+        [list Apol_Analysis_relabel::attribEnabled $attrib_box]
     # remove any old traces on the attribute
     trace remove variable Apol_Analysis_relabel::vals(subjects:attrib) write \
-        [list Apol_Analysis_relabel::attribChanged $inc $exc]
+        [list Apol_Analysis_relabel::attribChanged]
     trace add variable Apol_Analysis_relabel::vals(subjects:attrib) write \
-        [list Apol_Analysis_relabel::attribChanged $inc $exc]
+        [list Apol_Analysis_relabel::attribChanged]
     pack $attrib_enable -side top -expand 0 -fill x -anchor sw -padx 5 -pady 2
     pack $attrib_box -side top -expand 1 -fill x -padx 10
-    attribEnabled $attrib_box $inc $exc
+    attribEnabled $attrib_box
     if {$vals(mode) == "subject"} {
         $attrib_enable configure -state disabled
         $attrib_box configure -state disabled
@@ -360,8 +379,8 @@ proc Apol_Analysis_relabel::createAdvancedDialog {} {
 }
 
 proc Apol_Analysis_relabel::createAdvancedFilter {f title varname disabled} {
-    set l1 [label $f.l1 -text "Included $title:"]
-    set l2 [label $f.l2 -text "Excluded $title:"]
+    set l1 [label $f.l1 -text "Included $title"]
+    set l2 [label $f.l2 -text "Excluded $title"]
     grid $l1 x $l2 -sticky w
 
     set inc [Apol_Widget::makeScrolledListbox $f.inc -height 10 -width 24 \
@@ -370,17 +389,19 @@ proc Apol_Analysis_relabel::createAdvancedFilter {f title varname disabled} {
     set exc [Apol_Widget::makeScrolledListbox $f.exc -height 10 -width 24 \
                  -listvar Apol_Analysis_relabel::vals($varname:exc) \
                  -selectmode extended -exportselection 0]
+    set inc_lb [Apol_Widget::getScrolledListbox $inc]
+    set exc_lb [Apol_Widget::getScrolledListbox $exc]
     set bb [ButtonBox $f.bb -homogeneous 1 -orient vertical -spacing 4]
-    $bb add -text "-->" -width 10 -command [list Apol_Analysis_relabel::moveToExclude $varname $inc $exc]
-    $bb add -text "<--" -width 10 -command [list Apol_Analysis_relabel::moveToInclude $varname $inc $exc]
+    $bb add -text "-->" -width 10 -command [list Apol_Analysis_relabel::moveToExclude $varname $inc_lb $exc_lb]
+    $bb add -text "<--" -width 10 -command [list Apol_Analysis_relabel::moveToInclude $varname $inc_lb $exc_lb]
     grid $inc $bb $exc -sticky nsew
 
     set inc_bb [ButtonBox $f.inc_bb -homogeneous 1 -spacing 4]
-    $inc_bb add -text "Select All" -command [list $inc.lb selection set 0 end]
-    $inc_bb add -text "Unselect" -command [list $inc.lb selection clear 0 end]
+    $inc_bb add -text "Select All" -command [list $inc_lb selection set 0 end]
+    $inc_bb add -text "Unselect" -command [list $inc_lb selection clear 0 end]
     set exc_bb [ButtonBox $f.exc_bb -homogeneous 1 -spacing 4]
-    $exc_bb add -text "Select All" -command [list $exc.lb selection set 0 end]
-    $exc_bb add -text "Unselect" -command [list $exc.lb selection clear 0 end]
+    $exc_bb add -text "Select All" -command [list $exc_lb selection set 0 end]
+    $exc_bb add -text "Unselect" -command [list $exc_lb selection clear 0 end]
     grid $inc_bb x $exc_bb -pady 4
 
     grid columnconfigure $f 0 -weight 1 -uniform 0 -pad 2
@@ -398,11 +419,11 @@ proc Apol_Analysis_relabel::createAdvancedFilter {f title varname disabled} {
 
 proc Apol_Analysis_relabel::moveToExclude {varname inc exc} {
     variable vals
-    if {[set selection [$inc.lb curselection]] == {}} {
+    if {[set selection [$inc curselection]] == {}} {
         return
     }
     foreach i $selection {
-        lappend perms [$inc.lb get $i]
+        lappend perms [$inc get $i]
     }
     set vals($varname:exc) [lsort [concat $vals($varname:exc) $perms]]
     if {$varname == "subjects"} {
@@ -416,17 +437,17 @@ proc Apol_Analysis_relabel::moveToExclude {varname inc exc} {
             set vals(subjects:inc_all) [lreplace $vals(subjects:inc_all) $i $i]
         }
     }
-    $inc.lb selection clear 0 end
-    $exc.lb selection clear 0 end
+    $inc selection clear 0 end
+    $exc selection clear 0 end
 }
 
 proc Apol_Analysis_relabel::moveToInclude {varname inc exc} {
     variable vals
-    if {[set selection [$exc.lb curselection]] == {}} {
+    if {[set selection [$exc curselection]] == {}} {
         return
     }
     foreach i $selection {
-        lappend perms [$exc.lb get $i]
+        lappend perms [$exc get $i]
     }
     set vals($varname:inc) [lsort [concat $vals($varname:inc) $perms]]
     if {$varname == "subjects"} {
@@ -440,36 +461,32 @@ proc Apol_Analysis_relabel::moveToInclude {varname inc exc} {
             set vals(subjects:exc_all) [lreplace $vals(subjects:exc_all) $i $i]
         }
     }
-    $inc.lb selection clear 0 end
-    $exc.lb selection clear 0 end
+    $inc selection clear 0 end
+    $exc selection clear 0 end
 }
 
-proc Apol_Analysis_relabel::attribEnabled {cb inc exc} {
+proc Apol_Analysis_relabel::attribEnabled {cb} {
     variable vals
     if {$vals(subjects:attribenable)} {
         $cb configure -state normal
-        filterTypeLists $vals(subjects:attrib) $inc $exc
+        filterTypeLists $vals(subjects:attrib)
     } else {
         $cb configure -state disabled
-        filterTypeLists "" $inc $exc
+        filterTypeLists ""
     }
 }
 
-proc Apol_Analysis_relabel::attribChanged {inc exc name1 name2 op} {
+proc Apol_Analysis_relabel::attribChanged {name1 name2 op} {
     variable vals
     if {$vals(subjects:attribenable)} {
-        filterTypeLists $vals(subjects:attrib) $inc $exc
+        filterTypeLists $vals(subjects:attrib)
     }
 }
 
-proc Apol_Analysis_relabel::filterTypeLists {attrib inc exc} {
+proc Apol_Analysis_relabel::filterTypeLists {attrib} {
     variable vals
     if {$attrib != ""} {
         set typesList [lindex [apol_GetAttribs $attrib] 0 1]
-        if {$typesList == {}} {
-            # unknown attribute, so don't change type combobox
-            return
-        }
         set vals(subjects:inc) {}
         set vals(subjects:exc) {}
         foreach t $typesList {
@@ -509,11 +526,13 @@ proc Apol_Analysis_relabel::checkParams {} {
     }
     set vals(regexp:enable) $use_regexp
     set vals(regexp) $regexp
-    if {$vals(classes:inc) == {}} {
-        return "At least one object class must be included."
-    }
-    if {$vals(mode) == "object" && $vals(subjects:inc_all) == {}} {
-        return "At least one subject type must be included."
+    if {$vals(advanced_enable)} {
+        if {$vals(classes:inc) == {}} {
+            return "At least one object class must be included."
+        }
+        if {$vals(mode) == "object" && $vals(subjects:inc_all) == {}} {
+            return "At least one subject type must be included."
+        }
     }
     return {}  ;# all parameters passed, now ready to do search
 }
@@ -531,12 +550,12 @@ proc Apol_Analysis_relabel::analyze {} {
     } else {
         set mode "subject"
     }
-    if {$vals(classes:exc) != {}} {
+    if {$vals(advanced_enable) && $vals(classes:exc) != {}} {
         set classes $vals(classes:inc)
     } else {
         set classes {}
     }
-    if {$vals(subjects:exc) != {}} {
+    if {$vals(advanced_enable) && $vals(subjects:exc) != {}} {
         set subjects $vals(subjects:inc)
     } else {
         set subjects {}
@@ -558,14 +577,14 @@ proc Apol_Analysis_relabel::createResultsDisplay {} {
 
     if {$vals(mode) == "object"} {
         if {$vals(mode:to) && $vals(mode:from)} {
-            set tree_title "Type $vals(type) relabels to/from:"
+            set tree_title "Type $vals(type) relabels to/from"
         } elseif {$vals(mode:to)} {
-            set tree_title "Type $vals(type) relabels to:"
+            set tree_title "Type $vals(type) relabels to"
         } else {
-            set tree_title "Type $vals(type) relabels from:"
+            set tree_title "Type $vals(type) relabels from"
         }
     } else {
-        set tree_title "Subject $vals(type) relabels:"
+        set tree_title "Subject $vals(type) relabels"
     }
     set tree_tf [TitleFrame $f.left -text $tree_title]
     pack $tree_tf -side left -expand 0 -fill y -padx 2 -pady 2

@@ -1012,7 +1012,7 @@ proc ApolTop::create { } {
 	$rules_nb raise [$rules_nb page 0]
 	$rules_nb bindtabs <Button-1> { ApolTop::set_Focus_to_Text }
 	
-	bind . <Control-s> {ApolTop::display_searchDlg}
+	bind . <Control-f> {ApolTop::display_searchDlg}
 	bind . <Control-g> {ApolTop::display_goto_line_Dlg}
 	
 	$notebook compute_size
@@ -1375,28 +1375,15 @@ proc ApolTop::helpDlg {title file_name} {
     Apol_Widget::showPopupParagraph $title $info
 }
 
-proc ApolTop::makeTextBoxReadOnly {w} {
-	$w mark set insert 0.0
-	$w mark set anchor insert
-	$w configure -state disabled
-	focus -force $w
-	
-	return 0
-}
-
 proc ApolTop::setBusyCursor {} {
-	variable prevCursor
-	set prevCursor [. cget -cursor] 
-    	. configure -cursor watch
-    	update idletasks
-	return
+    variable prevCursor
+    set prevCursor [. cget -cursor] 
+    . configure -cursor watch
 }
 
 proc ApolTop::resetBusyCursor {} {
-	variable prevCursor
-	. configure -cursor $prevCursor
-    	update idletasks
-	return
+    variable prevCursor
+    . configure -cursor $prevCursor
 }
 
 proc ApolTop::popupPolicyStats {} {
@@ -1544,16 +1531,6 @@ proc ApolTop::aboutBox {} {
      tk_messageBox -icon info -type ok -title "About SELinux Policy Analysis Tool" -message \
 	"Security Policy Analysis Tool for Security Enhanced Linux \n\nCopyright (c) $copyright_date\nTresys Technology, LLC\nwww.tresys.com/selinux\n\nGUI Version ($gui_ver)\nLib Version ($lib_ver)"
      return
-}
-
-proc ApolTop::unimplemented {} {
-	tk_messageBox -icon warning \
-		-type ok \
-		-title "Unimplemented" \
-		-message \
-		"This command is not currently implemented."
-	
-	return
 }
 
 proc ApolTop::closePolicy {} {
@@ -1718,118 +1695,93 @@ the names are not preserved in the binary policy format."
    	return 0
 }
  
-# Do the work to open a policy file:
-# file is file name, and recent_flag indicates whether to add this file to list of
-# recently opened files (set to 1 if you want to do this).  You would NOT set this
-# to 1 if a recently file is being opened with this proc
+# Do the work to open a policy file:  file is file name, and
+# recent_flag indicates whether to add this file to list of recently
+# opened files (set to 1 if you want to do this).  You would NOT set
+# this to 1 if a recently file is being opened with this proc.
 proc ApolTop::openPolicyFile {file recent_flag} {
-	variable policy_version_string
-	variable policy_type
-	variable policy_mls_type
-	variable policy_is_open	
-	variable filename
-	
-	ApolTop::closePolicy
-	
-	set file [file nativename $file]
-	if {![file exists $file]} {
-		tk_messageBox -icon error \
-		-type ok \
-		-title "File Does Not Exist" \
-		-message "File ($file) does not exist."
-		return -1
-	} 
-	if { ![file readable $file] } {
-		tk_messageBox -icon error \
-		-type ok \
-		-title "Permission Problem" \
-		-message \
-		"You do not have permission to read $file."
-		return -1
-	}
- 	if {[file isdirectory $file]} {
- 		tk_messageBox -icon error \
-		-type ok \
-		-title "File is Directory" \
-		-message \
-		"$file is a directory."
-		return -1
- 	}
- 
-	# Change the cursor
-	set orig_Cursor [. cget -cursor] 
-	. configure -cursor watch
-	update idletasks
-	set rt [catch {apol_OpenPolicy $file} err]
-	if {$rt == 0} {
-		#set filename [file tail $file]
-		set filename $file
-	} elseif {$rt == -6} {
-		tk_messageBox -icon error -type ok -title "Error with policy file" \
-			-message "Pre-version 19 MLS is not supported.\n\n$err" 
-		. configure -cursor $orig_Cursor 
-		focus -force .
-		return -1
-	} else {
-		tk_messageBox -icon error -type ok -title "Error with policy file" \
-			-message "The selected file does not appear to be a valid SE Linux Policy.\n\n$err" 
-		. configure -cursor $orig_Cursor 
-		focus -force .
-		return -1
-	}
+    variable policy_version_string
+    variable policy_type
+    variable policy_mls_type
+    variable policy_is_open	
 
-	if {[catch {apol_GetPolicyVersionString} policy_version_string]} {
-		tk_messageBox -icon error -type ok -title "Error" -message "apol_GetPolicyVersionString: $policy_version_string"
-		return 0
-	}
-	foreach {policy_type policy_mls_type} [apol_GetPolicyType] break;
-	
-	ApolTop::showPolicyStats
-	set policy_is_open 1
-	set rt [catch {ApolTop::open_apol_modules $file} err]
- 	if {$rt != 0} {
- 		tk_messageBox -icon error -type ok -title "Error" -message "$err"
-        	set policy_is_open 0
-		return $rt	
- 	}
- 	set rt [catch {ApolTop::set_initial_open_policy_state} err]
-	if {$rt != 0} {
-		tk_messageBox -icon error -type ok -title "Error" -message "$err"
-        	set policy_is_open 0
- 		return $rt
- 	}
-	
-	if {$recent_flag == 1} {
-		ApolTop::addRecent $file
-	}
+    ApolTop::closePolicy
 
-	# Change the cursor back to the original and then set the focus to the toplevel.
-	. configure -cursor $orig_Cursor 
-	focus -force .
-	wm title . "SE Linux Policy Analysis - $file"
-	
-	return 0
+    set file [file nativename $file]
+    if {![file exists $file]} {
+        tk_messageBox -icon error -type ok -title "Open Policy" -message "File $file does not exist."
+        return
+    } 
+    if {![file readable $file]} {
+        tk_messageBox -icon error -type ok -title "Open Policy" -message "File $file was not readable."
+        return
+    }
+    if {[file isdirectory $file]} {
+        tk_messageBox -icon error -type ok -title "Open Policy" -message "$file is a directory."
+        return
+    }
+
+    set policy_is_open 0
+
+    variable dialogText "Opening policy\n$file."
+    variable dialogVar -1
+    ProgressDlg .apol_policy_open -title "Open Policy" \
+        -type normal -stop {} -separator 1 -parent . -maximum 2 \
+        -width [string length $file] -textvariable ApolTop::dialogText \
+        -variable ApolTop::dialogVar
+    set orig_Cursor [. cget -cursor]
+    . configure -cursor watch
+    update idletasks
+
+    set retval [catch {apol_OpenPolicy $file} err]
+    . configure -cursor $orig_Cursor
+    destroy .apol_policy_open
+    if {$retval} {
+        tk_messageBox -icon error -type ok -title "Open Policy" \
+            -message "The selected file does not appear to be a valid SE Linux Policy.\n\n$err"
+        return
+    }
+
+    if {[catch {apol_GetPolicyVersionString} policy_version_string]} {
+        tk_messageBox -icon error -type ok -title "Open Policy" -message "Could not determine policy version:\n$policy_version_string"
+        return
+    }
+    foreach {policy_type policy_mls_type} [apol_GetPolicyType] {break}
+    ApolTop::showPolicyStats
+    if {[catch {open_apol_modules $file} err]} {
+        tk_messageBox -icon error -type ok -title "Open Policy" -message $err
+        return
+    }
+    if {[catch {set_initial_open_policy_state} err]} {
+        tk_messageBox -icon error -type ok -title "Open Policy" -message $err
+        return
+    }
+
+    if {$recent_flag == 1} {
+        addRecent $file
+    }
+    set policy_is_open 1
+    variable filename $file
+    wm title . "SE Linux Policy Analysis - $file"
 }
 
 proc ApolTop::openPolicy {} {
-	variable filename 
-	
-        set progressval 0
-        set file ""
-        set types {
-        	{"All files"		*}
-		{"Policy conf files"	{.conf}}
-    	}
-    	if {$filename != ""} {
-        	catch [set file [tk_getOpenFile -filetypes $types -initialdir [file dirname $filename]]]
-        } else {
-        	catch [set file [tk_getOpenFile -filetypes $types]]
-        }
-        
-        if {$file != ""} {
-		ApolTop::openPolicyFile $file 1
-	}
-	return
+    variable filename 
+
+    set file ""
+    set types {
+        {"All files"		*}
+        {"Policy conf files"	{.conf}}
+    }
+    if {$filename != ""} {
+        set file [tk_getOpenFile -filetypes $types -initialdir [file dirname $filename]]
+    } else {
+        set file [tk_getOpenFile -filetypes $types]
+    }
+
+    if {$file != ""} {
+        ApolTop::openPolicyFile $file 1
+    }
 }
 
 proc ApolTop::free_call_back_procs { } {
