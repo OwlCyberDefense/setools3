@@ -17,29 +17,30 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
 
 static const char *const mod_name = "find_file_types";
 
 int find_file_types_register(sechk_lib_t *lib) 
 {
-#if 0
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
+	sechk_name_value_t *nv = NULL;
 
 	if (!lib) {
 		fprintf(stderr, "Error: no library\n");
 		return -1;
 	}
 
-	library = lib;
-
 	mod = sechk_lib_get_module(mod_name, lib);
 	if (!mod) {
 		fprintf(stderr, "Error: module unknown\n");
 		return -1;
 	}
+	mod->parent_lib = lib;
 
 	/* assign the descriptions */
+
 	mod->brief_description = "utility module";
 	mod->detailed_description = 
 "--------------------------------------------------------------------------------\n"
@@ -60,10 +61,12 @@ int find_file_types_register(sechk_lib_t *lib)
 "   file_type_attribute can be modified in a profile\n";
 	mod->severity = SECHK_SEV_NONE;
 	/* assign requirements */
-	mod->requirements = sechk_name_value_new("policy_type","source");
+	nv = sechk_name_value_new("policy_type","source");
+	apol_vector_append(mod->requirements, (void*)nv);
 
 	/* assign options */
-	mod->options = sechk_name_value_new("file_type_attribute", "file_type");
+	nv = sechk_name_value_new("file_type_attribute", "file_type");
+	apol_vector_append(mod->options, (void*)nv);
 
 	/* register functions */
 	fn_struct = sechk_fn_new();
@@ -77,8 +80,7 @@ int find_file_types_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = &find_file_types_init;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+	apol_vector_append(mod->functions, (void*)fn_struct);
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -91,8 +93,7 @@ int find_file_types_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = &find_file_types_run;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+	apol_vector_append(mod->functions, (void*)fn_struct);
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -105,8 +106,7 @@ int find_file_types_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = &find_file_types_data_free;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+	apol_vector_append(mod->functions, (void*)fn_struct);
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -119,8 +119,7 @@ int find_file_types_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = &find_file_types_print_output;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+	apol_vector_append(mod->functions, (void*)fn_struct);
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -133,8 +132,7 @@ int find_file_types_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = &find_file_types_get_result;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+	apol_vector_append(mod->functions, (void*)fn_struct);
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -147,75 +145,79 @@ int find_file_types_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = &find_file_types_get_list;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+	apol_vector_append(mod->functions, (void*)fn_struct);
 
-#endif
 	return 0;
 }
 
-int find_file_types_init(sechk_module_t *mod, policy_t *policy) 
+int find_file_types_init(sechk_module_t *mod, apol_policy_t *policy) 
 {
-#if 0
-	sechk_name_value_t *opt = NULL;
-	find_file_types_data_t *datum = NULL;
-	int attr = -1, retv;
+        sechk_name_value_t *opt = NULL;
+        find_file_types_data_t *datum = NULL;
+	apol_vector_t *attr_vector = NULL;
+	apol_attr_query_t *attr_query = apol_attr_query_create();
+        int error = 0;
+	qpol_type_t *attr = NULL;	
+        size_t i=0, j=0;
 
-	if (!mod || !policy) {
-		fprintf(stderr, "Error: invalid parameters\n");
-		return -1;
-	}
-	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
-		return -1;
-	}
+        if (!mod || !policy) {
+                fprintf(stderr, "Error: invalid parameters\n");
+                errno = EINVAL;
+                return -1;
+        }
+        if (strcmp(mod_name, mod->name)) {
+                ERR(policy, "Error: wrong module (%s)\n", mod->name);
+                errno = EINVAL;
+                return -1;
+        }
 
-	datum = find_file_types_data_new();
-	if (!datum) {
-		fprintf(stderr, "Error: out of memory\n");
-		return -1;
-	}
-	mod->data = datum;
+        datum = find_file_types_data_new();
+        if (!datum) {
+                error = errno;
+                ERR(policy, "Error: %s\n", strerror(error));
+                errno = error;
+                return -1;
+        }
+	datum->file_type_attribs = apol_vector_create();
+        mod->data = datum;
 
-	opt = mod->options;
-	while (opt) {
+        for (i = 0; i < apol_vector_get_size(mod->options); i++) {
+                opt = apol_vector_get_element(mod->options, i);
 		if (!strcmp(opt->name, "file_type_attribute")) {
-			attr = get_attrib_idx(opt->value, policy);
-			if (attr != -1) {
-				retv = add_i_to_a(attr, &(datum->num_file_type_attribs), &(datum->file_type_attribs));
-				if (retv) {
-					fprintf(stderr, "Error: out of memory\n");
-					return -1;
-				}
-			} else {
-				fprintf(stderr, "Warning: attribute %s not defined, ignoring\n", opt->value);
-			}
+			apol_attr_query_set_attr(policy, attr_query, opt->value);
+			apol_get_attr_by_query(policy, attr_query, &attr_vector);
+			for (j=0;j<apol_vector_get_size(attr_vector);j++) {
+				char *file_attrib;
+				attr = apol_vector_get_element(attr_vector, j);
+				qpol_type_get_name(policy->qh, policy->p, attr, &file_attrib);
+	                       	apol_vector_append( datum->file_type_attribs,(void*) file_attrib );
+			} 
 		}
-		opt = opt->next;
+		apol_vector_destroy(&attr_vector,NULL);
 	}
-
-#endif
-	return 0;
+        return 0;
 }
 
-int find_file_types_run(sechk_module_t *mod, policy_t *policy) 
+int find_file_types_run(sechk_module_t *mod, apol_policy_t *policy) 
 {
-/* FIX ME: need to convert this to use new libapol */
-#if 0
 	find_file_types_data_t *datum;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
 	sechk_result_t *res = NULL;
-	int i, j, retv;
-	int filesystem_obj_class_idx = -1;
-	int process_obj_class_idx = -1;
-	int associate_perm_idx = -1;
-	avh_idx_t *hash_idx = NULL;
-	int num_nodes = 0;
-	avh_rule_t *hash_rule = NULL;
+	sechk_name_value_t *type_info = NULL;	
+	apol_avrule_query_t *avrule_query = NULL;
+	apol_terule_query_t *terule_query = NULL;
+	apol_vector_t *avrule_vector = NULL;	
+	apol_vector_t *terule_vector = NULL;
+	int j, retv;
+	size_t i,x;
 	char *buff = NULL;
 	int buff_sz;
-	int *attribs = NULL, num_attribs = 0;
+
+	/* NEW */
+	int num_fc_entries;
+	apol_vector_t *type_vector = NULL;
+	apol_vector_t *fc_entry_vector = NULL;
 
 	if (!mod || !policy) {
 		fprintf(stderr, "Error: invalid parameters\n");
@@ -230,170 +232,164 @@ int find_file_types_run(sechk_module_t *mod, policy_t *policy)
 	if (mod->result)
 		return 0;
 
-	filesystem_obj_class_idx = get_obj_class_idx("filesystem", policy);
-	process_obj_class_idx = get_obj_class_idx("process", policy);
-	associate_perm_idx = get_perm_idx("associate", policy);
-
-	datum = (find_file_types_data_t*)mod->data;
 	res = sechk_result_new();
 	if (!res) {
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	res->item_type = POL_LIST_TYPE;
+
+	datum = (find_file_types_data_t*)mod->data;
+	res->item_type = SECHK_ITEM_TYPE;
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
 		fprintf(stderr, "Error: out of memory\n");
 		goto find_file_types_run_fail;
 	}
-
-	if (!avh_hash_table_present(policy->avh)) {
-		retv = avh_build_hashtab(policy);
-		if (retv) {
-			fprintf(stderr, "Error: could not build hash table\n");
-			goto find_file_types_run_fail;
-		}
-	}
+	res->items = apol_vector_create();
 
 #ifdef LIBSEFS
-	if (!library->fc_entries) {
-		if (library->fc_path) {
-			retv = parse_file_contexts_file(library->fc_path, &(library->fc_entries), &(library->num_fc_entries), policy);
+	if (mod->parent_lib->fc_entries) {
+		if (mod->parent_lib->fc_path) {
+			retv = parse_file_contexts_file(mod->parent_lib->fc_path, &fc_entry_vector, (int *)&num_fc_entries, policy);
 			if (retv) {
 				fprintf(stderr, "Warning: unable to process file_contexts file\n");
-			}
+			} 
 		} else {
 			fprintf(stderr, "Warning: unable to find file_contexts file\n");
 		}
 	}
 #endif
 
+	/* Get an iterator for the types */
+	if (apol_get_type_by_query(policy, NULL, &type_vector) < 0) {
+		fprintf(stderr,"Error: out of memory\n");
+		return -1;
+	}
+	
+	for (i=0;i<apol_vector_get_size(type_vector);i++) {
+		qpol_iterator_t *file_attr_iter;
 
-	/* head insert for item LL so walk backward to preserve order */
-	for (i = policy->num_types - 1; i; i--) {
-		/* test attributes */
-		if (!(is_binary_policy(policy))) {
-			retv = get_type_attribs(i, &num_attribs, &attribs, policy);
-			if (retv) {
-				fprintf(stderr, "Error: could not get attributes for %s\n", policy->types[i].name);
+		qpol_type_t *type = apol_vector_get_element(type_vector,i);
+		type_info = sechk_name_value_new ( NULL, NULL );
+		qpol_type_get_name(policy->qh, policy->p, type, &type_info->name);
+
+		if ( qpol_type_get_attr_iter(policy->qh, policy->p, type, &file_attr_iter) < 0 ) {
+			fprintf(stderr, "Error: could not get attributes for %s\n",type_info->name); 
+			goto find_file_types_run_fail;
+		}
+
+		for (;!qpol_iterator_end(file_attr_iter);qpol_iterator_next(file_attr_iter)) {
+			char *attr_name;
+			qpol_type_t *attr;
+			int nfta;
+
+			buff = NULL;
+			proof = sechk_proof_new(NULL);
+			if (!proof) {
+				fprintf(stderr, "Error: out of memory\n");
 				goto find_file_types_run_fail;
 			}
-			for (j = 0; j < datum->num_file_type_attribs; j++) {
-				buff = NULL;
-				if (find_int_in_array(datum->file_type_attribs[j], attribs, num_attribs) != -1) {
-					proof = sechk_proof_new();
-					if (!proof) {
-						fprintf(stderr, "Error: out of memory\n");
-						goto find_file_types_run_fail;
-					}
-					proof->idx = datum->file_type_attribs[j];
-					proof->type = POL_LIST_ATTRIB;
-					buff_sz = 1+strlen(policy->types[i].name)+strlen(policy->attribs[datum->file_type_attribs[j]].name)+strlen("type  has attribute ");
-					buff = (char*)calloc(buff_sz, sizeof(char));
-					if (!buff) {
-						fprintf(stderr, "Error: out of memory\n");
-						goto find_file_types_run_fail;
-					}
-					proof->text = buff;
-					if (!proof->text) {
-						fprintf(stderr, "Error: out of memory\n");
-						goto find_file_types_run_fail;
-					}
-					snprintf(proof->text, buff_sz, "has attribute %s", policy->attribs[datum->file_type_attribs[j]].name);
-					if (!item) {
-						item = sechk_item_new();
-						if (!item) {
-							fprintf(stderr, "Error: out of memory\n");
-							goto find_file_types_run_fail;
-						}
-						item->item_id = i;
-						item->test_result = 1;
-					}
-					proof->next = item->proof;
-					item->proof = proof;
-				}
-			}
-		}
+			qpol_iterator_get_item(file_attr_iter, (void **)&attr);
+			qpol_type_get_name(policy->qh, policy->p, attr, &attr_name);
+			for (nfta=0;nfta<apol_vector_get_size(datum->file_type_attribs); nfta++) {
+				char *file_type_attrib;
 
-		/* rule src check filesystem associate */
-		hash_idx = avh_src_type_idx_find(&(policy->avh), i);
-		if (!hash_idx)
-			num_nodes = 0;
-		else 
-			num_nodes = hash_idx->num_nodes;
-		for (j = 0; j < num_nodes; j++) {
-			if (hash_idx->nodes[j]->key.cls == filesystem_obj_class_idx && hash_idx->nodes[j]->key.rule_type == RULE_TE_ALLOW) {
-				for (hash_rule = hash_idx->nodes[j]->rules; hash_rule; hash_rule = hash_rule->next) {
-					if (sechk_item_has_proof(hash_rule->rule, POL_LIST_AV_ACC, item))
-						continue;
-					buff = NULL;
-					if (does_av_rule_use_perms(hash_rule->rule, 1, &associate_perm_idx, 1, policy)) {
-						buff = re_render_av_rule(!is_binary_policy(policy), hash_rule->rule, 0, policy);
-						proof = sechk_proof_new();
-						if (!proof) {
-							fprintf(stderr, "Error: out of memory\n");
-							goto find_file_types_run_fail;
-						}
-						proof->idx = hash_rule->rule;
-						proof->type = POL_LIST_AV_ACC;
-						proof->text = buff;
-						if (!item) {
-							item = sechk_item_new();
-							if (!item) {
-								fprintf(stderr, "Error: out of memory\n");
-								goto find_file_types_run_fail;
-							}
-							item->item_id = i;
-							item->test_result = 1;
-						}
-						proof->next = item->proof;
-						item->proof = proof;
-					}
-				}
+				file_type_attrib = apol_vector_get_element(datum->file_type_attribs,nfta);
+				if (!strcmp(attr_name, file_type_attrib)) 
+					type_info->value = "file_type";
 			}
-		}
-
-		/* type rule check file object */
-		for (j = 0; j < policy->num_te_trans; j++) {
-			if (policy->te_trans[j].dflt_type.idx == i && !does_tt_rule_use_classes(j, &process_obj_class_idx, 1, policy)) {
-				buff = re_render_tt_rule(!is_binary_policy(policy), j, policy);
-				if (!buff) {
+			proof->type = SECHK_ITEM_ATTRIB;
+			buff_sz = 1+strlen(type_info->name)+strlen(attr_name)+strlen("type has attribute ");
+			buff = (char*)calloc(buff_sz, sizeof(char));
+			if (!buff) {
+				fprintf(stderr, "Error: out of memory\n");
+				goto find_file_types_run_fail;
+			}
+			proof->text = buff;
+			if (!proof->text) {
+				fprintf(stderr, "Error: out of memory\n");
+				goto find_file_types_run_fail;
+			}
+			strcpy(buff, attr_name);
+			strcat(buff, " has attribute ");
+			strcpy(proof->text, attr_name);	
+			if (!item) {
+				item = sechk_item_new(NULL);
+				if (!item) {
 					fprintf(stderr, "Error: out of memory\n");
 					goto find_file_types_run_fail;
 				}
-				proof = sechk_proof_new();
+				item->test_result = 1;
+			}
+			if ( !item->proof ) { 
+				item->proof = apol_vector_create();
+			}
+			apol_vector_append(item->proof, (void*)proof);
+			buff = NULL;
+		}
+
+		/* rule src check filesystem associate */
+		avrule_query = apol_avrule_query_create();
+		apol_avrule_query_set_target(policy, avrule_query, type_info->name, 0);	
+		apol_avrule_query_append_class(policy, avrule_query, "filesystem");
+		apol_avrule_query_append_perm (policy, avrule_query, "associate");
+		apol_get_avrule_by_query(policy, avrule_query, &avrule_vector);
+		for ( x=0;x<apol_vector_get_size(avrule_vector);x++) {
+			qpol_avrule_t *avrule;
+			avrule = apol_vector_get_element(avrule_vector, x);
+			if ( avrule ) {
+				buff = NULL;
+				proof = sechk_proof_new(NULL);
 				if (!proof) {
 					fprintf(stderr, "Error: out of memory\n");
 					goto find_file_types_run_fail;
 				}
-				proof->idx = j;
-				proof->type = POL_LIST_TE_TRANS;
-				proof->text = buff;
-				if (!item) {
-					item = sechk_item_new();
-					if (!item) {
-						fprintf(stderr, "Error: out of memory\n");
-						goto find_file_types_run_fail;
-					}
-					item->item_id = i;
-					item->test_result = 1;
-				}
-				proof->next = item->proof;
-				item->proof = proof;
+				proof->type = SECHK_ITEM_AVRULE;
+				proof->text = apol_avrule_render(policy, avrule);
+				item->test_result = 1;
+				apol_vector_append(item->proof, (void*)proof);	
+                        	type_info->value = "file_type";
+				buff = NULL;
 			}
-			buff = NULL;
+		}	
+		apol_avrule_query_destroy(&avrule_query);
 
-			
+		/* type rule check file object */
+		terule_query = apol_terule_query_create();
+		apol_terule_query_set_default(policy, terule_query, type_info->name);
+		apol_get_terule_by_query(policy, terule_query, &terule_vector);
+		for ( x=0;x<apol_vector_get_size(terule_vector);x++) {
+			qpol_terule_t *terule;
+			terule = apol_vector_get_element(terule_vector, x);
+			if ( terule ) {
+				buff = NULL;
+				proof = sechk_proof_new(NULL);
+				if (!proof) {
+					fprintf(stderr, "Error: out of memory\n");
+					goto find_file_types_run_fail;
+				}
+				proof->type = SECHK_ITEM_TERULE;
+				proof->text = apol_terule_render(policy, terule);
+				item->test_result = 1;
+				apol_vector_append(item->proof, (void *)proof);
+				type_info->value = "file_type";
+				buff = NULL;
+			}
 		}
+		apol_terule_query_destroy(&terule_query);
 
-#ifdef LIBSEFS
+#ifdef LIBSEFS 
 		/* assigned in fc check */
-		if (library->fc_entries) {
-			for (j=0; j < library->num_fc_entries; j++) {
-				if (library->fc_entries[j].context && library->fc_entries[j].context->type == i) {
+		if (fc_entry_vector) {
+			for (j=0; j < num_fc_entries; j++) {
+				sefs_fc_entry_t *fc_entry;
+				char *fc_type_name;
+				fc_entry = apol_vector_get_element(fc_entry_vector, j);
+				fc_type_name = fc_entry->path;
+				if (fc_entry->context && !strcmp(fc_type_name,type_info->name)) {
 					buff_sz = 1;
-					buff_sz += strlen(library->fc_entries[j].path);
-					switch (library->fc_entries[j].filetype) {
+					buff_sz += strlen(fc_entry->path);
+					switch (fc_entry->filetype) {
 					case FILETYPE_DIR: /* Directory */
 					case FILETYPE_CHR: /* Character device */
 					case FILETYPE_BLK: /* Block device */
@@ -412,16 +408,16 @@ int find_file_types_run(sechk_module_t *mod, policy_t *policy)
 						goto find_file_types_run_fail;
 						break;
 					}
-					if (library->fc_entries[j].context) {
-						buff_sz += (strlen(policy->users[library->fc_entries[j].context->user].name) + 1);
-						buff_sz += (strlen(policy->roles[library->fc_entries[j].context->role].name) + 1);
-						buff_sz += strlen(policy->types[library->fc_entries[j].context->type].name);
+					if (apol_vector_get_size(mod->parent_lib->fc_entries)>0) {
+						buff_sz += (strlen("") + 1);
+						buff_sz += (strlen("") + 1);
+						buff_sz +=  strlen("");
 					} else {
 						buff_sz += strlen("<<none>>");
 					}
 					buff = (char*)calloc(buff_sz, sizeof(char));
-					strcat(buff, library->fc_entries[j].path);
-					switch (library->fc_entries[j].filetype) {
+					strcat(buff, fc_entry->path);
+					switch (fc_entry->filetype) {
 					case FILETYPE_DIR: /* Directory */
 						strcat(buff, "\t-d\t");
 						break;
@@ -452,95 +448,77 @@ int find_file_types_run(sechk_module_t *mod, policy_t *policy)
 						goto find_file_types_run_fail;
 						break;
 					}
-					if (library->fc_entries[j].context) {
-						strcat(buff, policy->users[library->fc_entries[j].context->user].name);
+					if (fc_entry->context) {
+						strcat(buff, "");
 						strcat(buff, ":");
-						strcat(buff, policy->roles[library->fc_entries[j].context->role].name);
+						strcat(buff, "");
 						strcat(buff, ":");
-						strcat(buff, policy->types[library->fc_entries[j].context->type].name);
+						strcat(buff, "");
 					} else {
 						strcat(buff, "<<none>>");
 					}
-					proof = sechk_proof_new();
+					proof = sechk_proof_new(NULL);
 					if (!proof) {
 						fprintf(stderr, "Error: out of memory\n");
 						goto find_file_types_run_fail;
 					}
-					proof->idx = j;
-					proof->type = SECHK_TYPE_FCENT;
+					proof->type = SECHK_ITEM_FCENT;
 					proof->text = buff;
 					if (!item) {
-						item = sechk_item_new();
+						item = sechk_item_new(NULL);
 						if (!item) {
 							fprintf(stderr, "Error: out of memory\n");
 							goto find_file_types_run_fail;
 						}
-						item->item_id = i;
 						item->test_result = 1;
 					}
-					proof->next = item->proof;
-					item->proof = proof;
+					if ( !item->proof ) { 
+						item->proof = apol_vector_create();
+					}
+					apol_vector_append(item->proof, (void*)proof);
 				}
 			}
 		}
 #endif
-
-		/* insert any resutls for this type */
-		if (item) {
-			item->next = res->items;
-			res->items = item;
-			(res->num_items)++;
+		/* insert any results for this type */
+		if (item && type_info->value && !strcmp(type_info->value, "file_type")) {
+			item->item = type_info->name;
+			apol_vector_append(res->items, (void*)item);
 		}
 		item = NULL;
+		type = NULL;
+		type_info = NULL;
 	}
 
-	/* results are valid at this point */
+	/* results are valid at this point */ 
 	mod->result = res;
 
-#endif
 	return 0;
 
-#if 0
 find_file_types_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
-	sechk_result_free(res);
 	free(buff);
 	return -1;
-#endif
 }
 
 void find_file_types_data_free(void *data) 
 {
-#if 0
-	find_file_types_data_t *datum;
+	find_file_types_data_t *datum = (find_file_types_data_t*)data;
 
-	if (!mod) {
-		fprintf(stderr, "Error: invalid parameters\n");
-		return;
-	}
-	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
-		return;
-	}
-
-	datum = (find_file_types_data_t*)mod->data;
 	if (datum) {
 		free(datum->file_type_attribs);
 	}
-	free(mod->data);
-	mod->data = NULL;
-#endif
+	free(data);
 }
 
-int find_file_types_print_output(sechk_module_t *mod, policy_t *policy) 
+int find_file_types_print_output(sechk_module_t *mod, apol_policy_t *policy) 
 {
-#if 0
 	find_file_types_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
-	int i = 0;
-
+	sechk_proof_t *proof = NULL;
+	int i = 0, j = 0, k=0, l=0, num_items;
 
         if (!mod || !policy){
 		fprintf(stderr, "Error: invalid parameters\n");
@@ -561,31 +539,46 @@ int find_file_types_print_output(sechk_module_t *mod, policy_t *policy)
 
 	if (!outformat || (outformat & SECHK_OUT_QUIET))
 		return 0; /* not an error - no output is requested */
-
 	if (outformat & SECHK_OUT_STATS) {
-		printf("Found %i file types.\n", mod->result->num_items);
+		num_items = apol_vector_get_size(mod->result->items);
+		printf("Found %i file types.\n", num_items);
 	}
 	if (outformat & SECHK_OUT_PROOF) {
 		printf("\nThe following types are file types.\n\n");
 	}
-	if (outformat & (SECHK_OUT_LIST|SECHK_OUT_PROOF)) {
+	if (outformat & SECHK_OUT_LIST) {
 		printf("\n");
-		for (item = mod->result->items; item; item = item->next) {
-			i++;
-			i %= 4; /* 4 items per line */
-			printf("%s%s", policy->types[item->item_id].name, (i&&item->next) ? ", " : "\n");
+	        for (i = 0; i < num_items; i++) {
+			j++;
+			item  = apol_vector_get_element(mod->result->items, i);
+			j %= 4;
+                        printf("%s%s", (char *)item->item, (char *)( (j) ? ", " : "\n" ));
 		}
 		printf("\n");
 	}
 
-#endif
+        if (outformat & SECHK_OUT_PROOF) {
+                printf("\n");
+                for (k=0;k<sizeof(apol_vector_get_size(mod->result->items));k++) {
+                        item = apol_vector_get_element(mod->result->items, k);
+			if ( item ) {
+                        	printf("%s\n", (char*)item->item);
+                        	for (l=0; l<sizeof(item->proof);l++) {
+                                	proof = apol_vector_get_element(item->proof,l);
+					if ( proof ) 
+                                		printf("\t%s\n", proof->text);
+                        	}
+			}
+                }
+                printf("\n");
+        }
+
 	return 0;
 }
 
-sechk_result_t *find_file_types_get_result(sechk_module_t *mod) 
-{
-#if 0
 
+sechk_result_t *find_file_types_get_result(sechk_module_t *mod) 
+{ 
 	if (!mod) {
 		fprintf(stderr, "Error: invalid parameters\n");
 		return NULL;
@@ -596,26 +589,20 @@ sechk_result_t *find_file_types_get_result(sechk_module_t *mod)
 	}
 
 	return mod->result;
-#endif
-	return NULL;
 }
 
 find_file_types_data_t *find_file_types_data_new(void) 
 {
-#if 0
 	find_file_types_data_t *datum = NULL;
 
 	datum = (find_file_types_data_t*)calloc(1,sizeof(find_file_types_data_t));
 
 	return datum;
-#endif
-	return NULL;
 }
 
-int find_file_types_get_list(sechk_module_t *mod, apol_vector_t **v) 
-{
-#if 0
-	int i;
+int find_file_types_get_list(sechk_module_t *mod, int **array, int *size) 
+{ 
+	int i,num_items;
 	sechk_item_t *item = NULL;
 
 	if (!mod || !array || !size) {
@@ -630,20 +617,20 @@ int find_file_types_get_list(sechk_module_t *mod, apol_vector_t **v)
 		fprintf(stderr, "Error: module has not been run\n");
 		return -1;
 	}
+	num_items = apol_vector_get_size(mod->result->items);	
+	*size = num_items;
+	*array = (int*)malloc(num_items * sizeof(int));
 
-	*size = mod->result->num_items;
-
-	*array = (int*)malloc(mod->result->num_items * sizeof(int));
 	if (!(*array)) {
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
 
-	for (i = 0, item = mod->result->items; item && i < *size; i++, item = item->next) {
-		(*array)[i] = item->item_id;
+        for (i = 0; i < apol_vector_get_size(mod->result->items); i++) {
+	        item  = apol_vector_get_element(mod->result->items, i);
+		(*array)[i] = i;
 	}
-
-#endif
 	return 0;
 }
+
 
