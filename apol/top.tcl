@@ -935,7 +935,7 @@ proc ApolTop::create { } {
 	    {command "&Domain Transition Analysis" {all option} "Show help" {} -command {ApolTop::helpDlg "Domain Transition Analysis Help" "dta_help.txt"}}
 	    {command "&Information Flow Analysis" {all option} "Show help" {} -command {ApolTop::helpDlg "Information Flow Analysis Help" "iflow_help.txt"}}
 	    #{command "&Information Flow Assertion Analysis" {all option} "Show help" {} -command {ApolTop::helpDlg "Information Flow Assertion Analysis Help" "flow_assertion_help.txt"}}
-	    {command "&Relabel Analysis" {all option} "Show help" {} -command {ApolTop::helpDlg "Relabel Analysis Help" "file_relabel_help.txt"}}
+	    {command "&Direct Relabel Analysis" {all option} "Show help" {} -command {ApolTop::helpDlg "Relabel Analysis Help" "file_relabel_help.txt"}}
 	    {command "&Types Relationship Summary Analysis" {all option} "Show help" {} -command {ApolTop::helpDlg "Types Relationship Summary Analysis Help" "types_relation_help.txt"}}
 	    {separator}
 	    {command "&About" {all option} "Show about box" {} -command ApolTop::aboutBox}
@@ -1365,48 +1365,14 @@ proc ApolTop::addRecent {file} {
 }
 
 proc ApolTop::helpDlg {title file_name} {
-    variable helpDlg
-    set helpDlg .apol_helpDlg
-    
-    # Checking to see if output window already exists. If so, it is destroyed.
-    if { [winfo exists $helpDlg] } {
-    	destroy $helpDlg
-    }
-    toplevel $helpDlg
-    wm protocol $helpDlg WM_DELETE_WINDOW " "
-    wm withdraw $helpDlg
-    wm title $helpDlg "$title"
-
-    set hbox [frame $helpDlg.hbox ]
-    # Display results window
-    set sw [ScrolledWindow $hbox.sw -auto none]
-    set resultsbox [text [$sw getframe].text -bg white -wrap none -font $ApolTop::text_font]
-    $sw setwidget $resultsbox
-    set okButton [Button $hbox.okButton -text "Close" \
-		      -command "destroy $helpDlg"]
-    # go to the script dir to find the help file
-    set help_dir  [apol_GetHelpDir "$file_name"]
+    set help_dir [apol_GetHelpDir "$file_name"]
     set helpfile "$help_dir/$file_name"
-    
-    # Placing display widgets
-    pack $hbox -expand yes -fill both -padx 5 -pady 5
-    pack $okButton -side bottom
-    pack $sw -side left -expand yes -fill both 
-    # Place a toplevel at a particular position
-    #::tk::PlaceWindow $helpDlg widget center
-    wm deiconify $helpDlg
-    
-    $resultsbox delete 1.0 end
-    set rt [catch {set f [open $helpfile]} err]
-    if {$rt != 0} {
-    	$resultsbox insert end $err
+    if {[catch {open $helpfile} f]} {
+        set info $f
     } else {
-    	$resultsbox insert end [read $f]
-    	close $f
+        set info [read $f]
     }
-    ApolTop::makeTextBoxReadOnly $resultsbox
-    wm protocol $helpDlg WM_DELETE_WINDOW "destroy $helpDlg"
-    return
+    Apol_Widget::showPopupParagraph $title $info
 }
 
 proc ApolTop::makeTextBoxReadOnly {w} {
