@@ -1,18 +1,131 @@
-/* Copyright (C) 2003-2004 Tresys Technology, LLC
- * see file 'COPYING' for use and warranty information */
-
-/* 
- * Author: kmacmillan@tresys.com
- * Modified by: mayerf@tresys.com (Apr 2004) - separated information
- *   flow from main analysis.c file, and added noflow/onlyflow batch
- *   capabilitiy.
- */
-
-/* infoflow.c
+/**
+ * @file infoflow-analysis.c
+ * Implementation of the information flow analysis.
  *
- * Information Flow analysis routines for libapol
+ *  @author Kevin Carr kcarr@tresys.com
+ *  @author Jeremy A. Mowery jmowery@tresys.com
+ *  @author Jason Tang jtang@tresys.com
+ *
+ *  Copyright (C) 2003-2006 Tresys Technology, LLC
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
+
+#include "policy-query.h"
+
+#include <errno.h>
+#include <time.h>
+
+/**
+ * apol_infoflow_analysis_h encapsulates all of the paramaters of a
+ * query.  It should always be allocated with
+ * apol_infoflow_analysis_create() and deallocated with
+ * apol_infoflow_analysis_destroy().  Limiting by ending_types,
+ * obj_classes, intermed types, obj_class permissions is optional - if
+ * the vector is empty then no limiting is done.
+ *
+ * All of the vectors except end_types should contain the items that
+ * you want to not appear in the results.  end_types lists the types
+ * that you do want to appear.
+ */
+struct apol_infoflow_analysis {
+        unsigned int direction;
+        char *type, *result;
+        apol_vector_t *classes;
+        regex_t *result_regex;
+        int min_weight;
+};
+
+void apol_infoflow_analysis_destroy(apol_infoflow_analysis_t **ia)
+{
+	if (*ia != NULL) {
+		free((*ia)->type);
+		free((*ia)->result);
+		apol_vector_destroy(&(*ia)->classes, NULL);
+		apol_regex_destroy(&(*ia)->result_regex);
+		free(*ia);
+		*ia = NULL;
+	}
+}
+
+int apol_infoflow_analysis_set_dir(apol_policy_t *p,
+				   apol_infoflow_analysis_t *ia,
+				   unsigned int dir)
+{
+	switch (dir) {
+	case APOL_INFOFLOW_IN:
+	case APOL_INFOFLOW_OUT:
+	case APOL_INFOFLOW_BOTH:
+	case APOL_INFOFLOW_EITHER: {
+		ia->direction = dir;
+		break;
+	}
+	default: {
+		ERR(p, strerror(EINVAL));
+		return -1;
+	}
+	}
+	return 0;
+}
+
+int apol_infoflow_analysis_set_type(apol_policy_t *p,
+				    apol_infoflow_analysis_t *ia,
+				    const char *name)
+{
+	if (name == NULL) {
+		ERR(p, strerror(EINVAL));
+		return -1;
+	}
+	return apol_query_set(p, &ia->type, NULL, name);
+}
+
+int apol_infoflow_analysis_append_class(apol_policy_t *p,
+					apol_infoflow_analysis_t *ia,
+					const char *obj_class)
+{
+	char *s;
+	if (obj_class == NULL) {
+		apol_vector_destroy(&ia->classes, free);
+	}
+	else if ((s = strdup(obj_class)) == NULL ||
+	    (ia->classes == NULL && (ia->classes = apol_vector_create()) == NULL) ||
+	    apol_vector_append(ia->classes, s) < 0) {
+		ERR(p, "Out of memory!");
+		return -1;
+	}
+	return 0;
+}
+
+int apol_infoflow_analysis_set_result_regexp(apol_policy_t *p,
+					     apol_infoflow_analysis_t *ia,
+					     const char *result)
+{
+	return apol_query_set(p, &ia->result, &ia->result_regex, result);
+}
+
+
 #if 0
+	int num_end_types;
+	int *end_types;			/* indices into policy->types */
+	int num_types;				/* number of intermediate types */
+	int *types;				/* indices of intermediate types in policy->types */
+	int num_obj_options;			/* number of permission options */
+	obj_perm_set_t *obj_options;		/* Allows the exclusion of individual permissions
+						 * or entire object classes. This struct is defined
+						 * in policy.h */
+
 #include <stdlib.h>
 #include <assert.h>
 #include <limits.h>
@@ -138,77 +251,6 @@ static int iflow_query_copy(iflow_query_t *dest, iflow_query_t *src)
                 dest->num_obj_options = src->num_obj_options;
         }
         return 0;
-}
-
-void iflow_query_destroy(iflow_query_t *q)
-{
-	int i;
-
-	if (q->end_types)
-		free(q->end_types);
-	if (q->types)
-		free(q->types);
-
-	for (i = 0; i < q->num_obj_options; i++) {
-		if (q->obj_options[i].perms)
-			free(q->obj_options[i].perms);
-	}
-	if (q->obj_options)
-		free(q->obj_options);
-	free(q);
-}
-
-/* Object class filter macros.
- *	Transitive information flow - if perms is non-NULL then only those 
- *	permissions are ignored, otherwise the entire object class is ignored. 
- */
-int iflow_query_add_obj_class(iflow_query_t *q, int obj_class)
-{
-	return apol_add_class_to_obj_perm_set_list(&q->obj_options, &q->num_obj_options, obj_class);
-
-}
-
-int iflow_query_add_obj_class_perm(iflow_query_t *q, int obj_class, int perm)
-{
-	return apol_add_perm_to_obj_perm_set_list(&q->obj_options, &q->num_obj_options, obj_class, perm);
-}
-
-int iflow_query_add_end_type(iflow_query_t *q, int end_type)
-{
-	return policy_query_add_type(&q->end_types, &q->num_end_types, end_type);
-}
-
-int iflow_query_add_type(iflow_query_t *q, int type)
-{
-	return policy_query_add_type(&q->types, &q->num_types, type);
-}
-
-/*
- * Check that the iflow_obj_option_t is valid for the graph/policy.
- */
-bool_t iflow_obj_option_is_valid(obj_perm_set_t *o, policy_t *policy)
-{
-	int i;
-
-	assert(o && policy);
-
-	if (!is_valid_obj_class_idx(o->obj_class, policy))
-		return FALSE;
-
-	if (o->num_perms) {
-		if (!o->perms) {
-			fprintf(stderr, "query with num_perms %d and perms is NULL\n", o->num_perms);
-			return FALSE;
-		}
-		for (i = 0; i < o->num_perms; i++) {
-			if (!is_valid_perm_for_obj_class(policy, o->obj_class, o->perms[i])) {
-				fprintf(stderr, "query with invalid perm %d for object class %d\n",
-					o->perms[i], o->obj_class);
-				return FALSE;
-			}
-		}
-	}
-	return TRUE;
 }
 
 /* check to make certain that a query is consistent and makes

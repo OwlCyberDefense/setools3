@@ -54,6 +54,7 @@
 #include "constraint-query.h"
 
 #include "relabel-analysis.h"
+#include "infoflow-analysis.h"
 
 /******************** private defines ********************/
 
