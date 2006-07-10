@@ -403,27 +403,26 @@ proc Apol_Widget::showPopupText {title info} {
     raise $infoPopup
 }
 
+# Used to show pre-rendered paragraphs of text.
 proc Apol_Widget::showPopupParagraph {title info} {
     variable infoPopup2
     if {![winfo exists $infoPopup2]} {
-        set infoPopup2 [toplevel .apol_widget_info_popup2]
-        wm withdraw $infoPopup2
-        set sw [ScrolledWindow $infoPopup2.sw -auto horizontal -scrollbar vertical]
+        set infoPopup2 [Dialog .apol_widget_info_popup2 -modal none -parent . \
+                            -transient false -cancel 0 -default 0 -separator 1]
+        $infoPopup2 add -text "Close" -command [list destroy $infoPopup2]
+        set sw [ScrolledWindow [$infoPopup2 getframe].sw -auto both -scrollbar both]
         $sw configure -relief sunken
         set text [text [$sw getframe].text -font $ApolTop::text_font \
-                      -wrap word -width 35 -height 10 -bg white]
+                      -wrap none -width 75 -height 25 -bg white]
         $sw setwidget $text
-        pack $sw -expand 1 -fill both
-        set sep [Separator $infoPopup2.sep -orient horizontal]
-        pack $sep -expand 0 -fill x
-        set b [button $infoPopup2.close -text "Close" -command [list destroy $infoPopup2]]
-        pack $b -side bottom -expand 0 -pady 5
-        wm geometry $infoPopup2 600x440
+        pack $sw -expand 1 -fill both -padx 4 -pady 4
+        $infoPopup2 draw
+    } else {
+        raise $infoPopup2
+        wm deiconify $infoPopup2
     }
-    wm deiconify $infoPopup2
-    raise $infoPopup2
-    wm title $infoPopup2 $title
-    set text [$infoPopup2.sw getframe].text
+    $infoPopup2 configure -title $title
+    set text [[$infoPopup2 getframe].sw getframe].text
     $text configure -state normal
     $text delete 1.0 end
     $text insert 0.0 $info

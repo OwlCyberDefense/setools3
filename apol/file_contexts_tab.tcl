@@ -22,8 +22,15 @@ namespace eval Apol_File_Contexts {
 	variable create_fc_dlg		.fc_db_create_Dlg
 	
     variable info_button_text \
-"This tab allows you to create and load a file context index.  The file context index is an on-disk database which contains the labeling information for an entire filesystem. Once an index has been created you can query the database by enabling and selecting a user, type, object class or path. A query can also use regular expressions, if this is enabled.\n
-The results of the context query show the number of results followed by a list of the matching files. The first field is the full context followed by the object class of the file and lastly the path."
+"This tab allows you to create and load a file context index.  The file
+context index is an on-disk database which contains the labeling
+information for an entire filesystem. Once an index has been created
+you can query the database by enabling and selecting a user, type,
+object class or path. A query can also use regular expressions, if
+this is enabled.\n
+The results of the context query show the number of results followed
+by a list of the matching files. The first field is the full context
+followed by the object class of the file and lastly the path."
 }
 
 proc Apol_File_Contexts::display_analysis_info {} {
