@@ -21,10 +21,10 @@ typedef struct find_assoc_types_data {
  * Do not change any of these prototypes or you will not be
  * able to run the module in the library */
 int find_assoc_types_register(sechk_lib_t *lib);
-int find_assoc_types_init(sechk_module_t *mod, policy_t *policy);
-int find_assoc_types_run(sechk_module_t *mod, policy_t *policy);
+int find_assoc_types_init(sechk_module_t *mod, apol_policy_t *policy);
+int find_assoc_types_run(sechk_module_t *mod, apol_policy_t *policy);
 void find_assoc_types_data_free(void *data);
-int find_assoc_types_print_output(sechk_module_t *mod, policy_t *policy);
+int find_assoc_types_print_output(sechk_module_t *mod, apol_policy_t *policy);
 sechk_result_t *find_assoc_types_get_result(sechk_module_t *mod);
 int find_assoc_types_get_list(sechk_module_t *mod, apol_vector_t **v);
 
