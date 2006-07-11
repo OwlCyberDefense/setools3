@@ -295,7 +295,9 @@ proc Apol_Analysis::switchTab {pageID} {
     ${m}::switchTab $tabs($pageID:vals)
 
     # update the analysis type selection
-    $widgets(modules).lb selection set [lsearch $vals(module_names) $m]
+    $widgets(modules).lb selection clear 0 end
+    $widgets(modules).lb selection set [lsearch $vals(module_names) $vals(${m}:name)]
+    $widgets(search_opts) raise $m
 }
 
 proc Apol_Analysis::deleteResults {pageID} {
