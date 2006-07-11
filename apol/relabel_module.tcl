@@ -759,11 +759,9 @@ proc Apol_Analysis_relabel::renderResultsRuleObject {res tree node data} {
                 " by " {} \
                 $source_type type_tag \
                 "\n" {}
-            foreach {rule_type source_set target_set class perm_default line_num cond_info} [apol_RenderAVRule $a_rule] {break}
-            Apol_Widget::appendSearchResultLine $res 6 $line_num {} $rule_type  "\{ $source_set \}" "\{ $target_set \}" : $class "\{ $perm_default \}"
+            Apol_Widget::appendSearchResultAVRule $res 6 $a_rule
             if {$a_rule != $b_rule} {
-                foreach {rule_type source_set target_set class perm_default line_num cond_info} [apol_RenderAVRule $b_rule] {break}
-                Apol_Widget::appendSearchResultLine $res 6 $line_num {} $rule_type  "\{ $source_set \}" "\{ $target_set \}" : $class "\{ $perm_default \}"
+                Apol_Widget::appendSearchResultAVRule $res 6 $b_rule
             }
         }
     }
@@ -838,8 +836,7 @@ proc Apol_Analysis_relabel::renderResultsRuleSubject {res tree node data} {
         "\n\n" {}
     eval $res.tb insert end $header
     foreach rule $rules {
-        foreach {rule_type source_set target_set class perm_default line_num cond_info} [apol_RenderAVRule $rule] {break}
-        Apol_Widget::appendSearchResultLine $res 0 $line_num {} $rule_type  "\{ $source_set \}" "\{ $target_set \}" : $class "\{ $perm_default \}"
+        Apol_Widget::appendSearchResultAVRule $res 0 $rule
     }
 }
 
