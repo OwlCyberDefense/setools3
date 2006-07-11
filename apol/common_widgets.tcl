@@ -365,6 +365,38 @@ proc Apol_Widget::appendSearchResultLine {path indent linenum cond_info line_typ
     $path.tb configure -state disabled
 }
 
+# Append an avrule, as specified by its unique id, to a search results
+# box.
+proc Apol_Widget::appendSearchResultAVRule {path indent rule_id} {
+    foreach {rule_type source_set target_set class perm_default line_num cond_info} [apol_RenderAVRule $rule_id] {break}
+    set curstate [$path.tb cget -state]
+    $path.tb configure -state normal
+    $path.tb insert end [string repeat " " $indent]
+    if {$line_num != {}} {
+        $path.tb insert end \[ {} $line_num linenum "\] "
+    }
+    if {[llength $source_set] > 1} {
+        set source_set "\{ $source_set \}"
+    }
+    if {[llength $target_set] > 1} {
+        set target_set "\{ $target_set \}"
+    }
+    if {[llength $perm_default] > 1} {
+        set perm_default "\{ $perm_default \}"
+    }
+    set text "$rule_type $source_set $target_set : $class $perm_default;"
+    $path.tb insert end $text
+    if {$cond_info != {}} {
+        if {[lindex $cond_info 0] == "enabled"} {
+            $path.tb insert end "  \[" {} "Enabled" enabled "\]"
+        } else {
+            $path.tb insert end "  \[" {} "Disabled" disabled "\]"
+        }
+    }
+    $path.tb insert end "\n"
+    $path.tb configure -state $curstate
+}
+
 proc Apol_Widget::gotoLineSearchResults {path line_num} {
     if {![string is integer -strict $line_num]} {
         tk_messageBox -icon error -type ok -title "Invalid line number" \
