@@ -30,10 +30,11 @@
 #ifndef APOL_POLICY_H
 #define APOL_POLICY_H
 
+/* temporary declaration until everything gets converted */
+typedef struct policy policy_t;
+
 #include <stdarg.h>
 #include <qpol/policy.h>
-
-/* XXX */typedef struct policy policy_t;
 
 /* forward declaration.  the definition resides within perm-map.c */
 struct apol_permmap;
@@ -46,6 +47,23 @@ typedef struct apol_policy {
 	int policy_type;
 	struct apol_permmap *pmap; /* permission mapping for this policy */
 } apol_policy_t;
+
+/**
+ *  Open a policy file and load it into a newly created apol_policy.
+ *  @param path The path of the policy file to open.
+ *  @param policy The policy to create from the file.
+ *  @return 0 on success and < 0 on failure; if the call fails,
+ *  errno will be set and *policy will be NULL;
+ */
+extern int apol_policy_open(const char *path, apol_policy_t **policy);
+
+/**
+ * Deallocate all memory associated with a policy, and then set it to
+ * NULL.  Does nothing if the pointer is already NULL.
+ *
+ * @param policy Policy to destroy, if not already NULL.
+ */
+extern void apol_policy_destroy(apol_policy_t **policy);
 
 /**
  * Given a policy, return 1 if the policy within is MLS, 0 if not.  If

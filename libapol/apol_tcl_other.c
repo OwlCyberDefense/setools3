@@ -34,11 +34,11 @@
 #include <assert.h>
 #include <unistd.h>
 #include <errno.h>
-#include "policy.h"
-#include "policy-io.h"
-#include "util.h"
-#include "render.h"
+
 #include "perm-map.h"
+#include "policy.h"
+#include "render.h"
+#include "util.h"
 
 #include "policy-query.h"
 
@@ -47,7 +47,6 @@
 #include "apol_tcl_rules.h"
 #include "apol_tcl_fc.h"
 #include "apol_tcl_analysis.h"
-#include "policy-io.h"
 
 #include <qpol/policy.h>
 

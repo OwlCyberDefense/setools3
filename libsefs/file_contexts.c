@@ -20,7 +20,6 @@
 
 /* libapol */
 #include <../libapol/policy.h>
-#include <../libapol/policy-io.h>
 #include <render.h>
 #include "../libapol/vector.h"
 #include "policy-query.h"

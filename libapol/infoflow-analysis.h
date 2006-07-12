@@ -42,8 +42,18 @@
 #define APOL_INFOFLOW_BOTH    (APOL_INFOFLOW_IN|APOL_INFOFLOW_OUT)
 #define APOL_INFOFLOW_EITHER  0x04
 
+typedef struct apol_infoflow_graph apol_infoflow_graph_t;
 typedef struct apol_infoflow_analysis apol_infoflow_analysis_t;
 typedef struct apol_infoflow_result apol_infoflow_result_t;
+
+/**
+ * Deallocate all space associated with a particular information flow
+ * graph, including the pointer itself.  Afterwards set the pointer to
+ * NULL.
+ *
+ * @param flow Reference to an apol_infoflow_graph_t to destroy.
+ */
+extern void apol_infoflow_graph_destroy(apol_infoflow_graph_t **flow);
 
 /********** functions to do information flow analysis **********/
 

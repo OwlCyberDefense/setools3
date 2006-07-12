@@ -24,9 +24,60 @@
  */
 
 #include "policy-query.h"
+#include "perm-map.h"
 
 #include <errno.h>
 #include <time.h>
+
+/*
+ * Nodes in the graph represent either a type used in the source
+ * of an allow rule or the target: these defines are used to
+ * represent which.
+ */
+#define APOL_INFOFLOW_SOURCE_NODE 0x0
+#define APOL_INFOFLOW_TARGET_NODE 0x1
+
+/*
+ * These defines are used to color nodes in the graph algorithms.
+ */
+#define APOL_INFOFLOW_COLOR_WHITE 0
+#define APOL_INFOFLOW_COLOR_GREY  1
+#define APOL_INFOFLOW_COLOR_BLACK 2
+#define APOL_INFOFLOW_COLOR_RED   3
+
+typedef struct apol_infoflow_node apol_infoflow_node_t;
+typedef struct apol_infoflow_edge apol_infoflow_edge_t;
+
+struct apol_infoflow_graph {
+	/** vector of apol_infoflow_node_t */
+	apol_vector_t *nodes;
+	/** vector of apol_infoflow_edge_t */
+	apol_vector_t *edges;
+};
+
+struct apol_infoflow_node {
+	qpol_type_t *type;
+	qpol_class_t *obj_class;
+	/** one of APOL_INFOFLOW_SOURCE_NODE or APOL_INFOFLOW_TARGET_NODE */
+	int node_type;
+	/** vector of apol_infoflow_edge_t, pointing into the graph */
+	apol_vector_t *in_edges;
+	/** vector of apol_infoflow_edge_t, pointing into the graph */
+	apol_vector_t *out_edges;
+	unsigned char color;
+	apol_infoflow_node_t *parent;
+	int distance;
+};
+
+struct apol_infoflow_edge {
+	/** vector of qpol_avrule_t, pointing into the policy */
+	apol_vector_t *rules;
+	/** pointer into a node within the graph */
+	apol_infoflow_node_t *start_node;
+	/** pointer into a node within the graph */
+	apol_infoflow_node_t *end_node;
+	int length;
+};
 
 /**
  * apol_infoflow_analysis_h encapsulates all of the paramaters of a
@@ -41,12 +92,428 @@
  * that you do want to appear.
  */
 struct apol_infoflow_analysis {
-        unsigned int direction;
-        char *type, *result;
-        apol_vector_t *classes;
-        regex_t *result_regex;
-        int min_weight;
+	unsigned int direction;
+	char *type, *result;
+	apol_vector_t *classes;
+	regex_t *result_regex;
+	int min_weight;
 };
+
+/******************** infoflow graph node routines ********************/
+
+/**
+ * Given a pointer to an apol_infoflow_node_t, free its space
+ * including the pointer itself.  Does nothing if the pointer is
+ * already NULL.
+ *
+ * @param data Node to free.
+ */
+static void apol_infoflow_node_free(void *data)
+{
+	apol_infoflow_node_t *node = (apol_infoflow_node_t *) data;
+	if (node != NULL) {
+		/* the edges themselves are owned by the graph, not by
+		 * the node */
+		apol_vector_destroy(&node->in_edges, NULL);
+		apol_vector_destroy(&node->out_edges, NULL);
+		free(node);
+	}
+}
+
+struct infoflow_node_key {
+	qpol_type_t *type;
+	qpol_class_t *obj_class;
+	int node_type;
+};
+
+/**
+ * Given an infoflow node and a key, returns 0 if they are the same,
+ * non-zero if not.
+ *
+ * @param a Existing node within the infoflow graph.
+ * @param b <i>Unused.</i>
+ * @param data Pointer to a struct infoflow_node_key.
+ *
+ * @return 0 if the key matches a, non-zero if not.
+ */
+static int infoflow_node_compare(const void *a, const void *b __attribute__ ((unused)), void *data)
+{
+	apol_infoflow_node_t *node = (apol_infoflow_node_t *) a;
+	struct infoflow_node_key *key = (struct infoflow_node_key *) data;
+	if (node->type == key->type &&
+	    node->obj_class == key->obj_class &&
+	    node->node_type == key->node_type) {
+		return 0;
+	}
+	return -1;
+}
+
+/**
+ * Attempt to allocate a new node, add it to the infoflow graph, and
+ * return a pointer to it.  If there already exists a node with the
+ * same type then object class then reuse that node.
+ *
+ * @param p Policy handler, for error reporting.
+ * @param g Infoflow to which add the node.
+ * @param type
+ * @param obj_class
+ * @param node_type
+ *
+ * @return Pointer an allocated node within the infoflow graph, or
+ * NULL upon error.
+ */
+static apol_infoflow_node_t *infoflow_graph_create_node(apol_policy_t *p,
+							apol_infoflow_graph_t *g,
+							qpol_type_t *type,
+							qpol_class_t *obj_class,
+							int node_type)
+{
+	struct infoflow_node_key key = {type, obj_class, node_type};
+	size_t i;
+	apol_infoflow_node_t *node = NULL;
+	if (apol_vector_get_index(g->nodes, NULL, infoflow_node_compare, &key, &i) == 0) {
+		node = (apol_infoflow_node_t *) apol_vector_get_element(g->nodes, i);
+		return node;
+	}
+	if ((node = calloc(1, sizeof(*node))) == NULL ||
+	    (node->in_edges = apol_vector_create()) == NULL ||
+	    (node->out_edges = apol_vector_create()) == NULL) {
+		ERR(p, "Out of memory!");
+		apol_infoflow_node_free(node);
+		return NULL;
+	}
+	node->type = type;
+	node->obj_class = obj_class;
+	node->node_type = node_type;
+	return node;
+}
+
+/******************** infoflow graph edge routines ********************/
+
+/**
+ * Given a pointer to an apol_infoflow_edge_t, free its space
+ * including the pointer itself.  Does nothing if the pointer is
+ * already NULL.
+ *
+ * @param data Edge to free.
+ */
+static void apol_infoflow_edge_free(void *data)
+{
+	apol_infoflow_edge_t *edge = (apol_infoflow_edge_t *) data;
+	if (edge != NULL) {
+		apol_vector_destroy(&edge->rules, NULL);
+		free(edge);
+	}
+}
+
+struct infoflow_edge_key {
+	apol_infoflow_node_t *start_node, *end_node;
+};
+
+/**
+ * Given an infoflow edge and a key, returns 0 if they are the same,
+ * non-zero if not.
+ *
+ * @param a Existing edge within the infoflow graph.
+ * @param b <i>Unused.</i>
+ * @param data Pointer to a struct infoflow_edge_key.
+ *
+ * @return 0 if the key matches a, non-zero if not.
+ */
+static int infoflow_edge_compare(const void *a, const void *b __attribute__ ((unused)), void *data)
+{
+	apol_infoflow_edge_t *edge = (apol_infoflow_edge_t *) a;
+	struct infoflow_edge_key *key = (struct infoflow_edge_key *) data;
+	if (key->start_node != NULL && edge->start_node == key->start_node) {
+		return -1;
+	}
+	if (key->end_node != NULL && edge->end_node == key->end_node) {
+		return -1;
+	}
+	return -1;
+}
+
+/**
+ * Attempt to allocate a new edge, add it to the infoflow graph, and
+ * return a pointer to it.  If there already exists a edge from the
+ * start node to the end node then reuse that edge.
+ *
+ * @param p Policy handler, for error reporting.
+ * @param g Infoflow graph to which add the edge.
+ * @param start_node Starting node for the edge.
+ * @param end_node Ending node for the edge.
+ * @param len Length of edge (proportionally inverse of permission weight)
+ *
+ * @return Pointer an allocated node within the infoflow graph, or
+ * NULL upon error.
+ */
+static apol_infoflow_edge_t *infoflow_graph_create_edge(apol_policy_t *p,
+							apol_infoflow_graph_t *g,
+							apol_infoflow_node_t *start_node,
+							apol_infoflow_node_t *end_node,
+							int len)
+{
+	struct infoflow_edge_key key = {NULL, end_node};
+	size_t i;
+	apol_infoflow_edge_t *edge = NULL;
+	if (apol_vector_get_index(start_node->out_edges, NULL, infoflow_edge_compare, &key, &i) == 0) {
+		edge = (apol_infoflow_edge_t *) apol_vector_get_element(start_node->out_edges, i);
+		if (edge->length < len) {
+			edge->length = len;
+		}
+		return edge;
+	}
+	if ((edge = calloc(1, sizeof(*edge))) == NULL ||
+	    apol_vector_append(g->edges, edge) < 0) {
+		apol_infoflow_edge_free(edge);
+		ERR(p, "Out of memory!");
+		return NULL;
+	}
+	edge->start_node = start_node;
+	edge->end_node = end_node;
+	edge->length = len;
+	if (apol_vector_append(start_node->out_edges, edge) < 0 ||
+	    apol_vector_append(end_node->in_edges, edge) < 0) {
+		/* don't free the edge -- it is owned by the graph */
+		ERR(p, "Out of memory!");
+		return NULL;
+	}
+	return edge;
+}
+
+static int infoflow_graph_connect_nodes(apol_policy_t *p,
+					apol_infoflow_graph_t *g,
+					qpol_avrule_t *rule,
+					qpol_class_t *obj_class,
+					apol_vector_t *types,
+					int found_read,
+					int read_len,
+					int found_write,
+					int write_len)
+{
+	qpol_type_t *src_type, *tgt_type;
+	size_t i;
+	apol_infoflow_node_t *src_node, *tgt_node;
+	apol_infoflow_edge_t *edge;
+	int retval = -1;
+
+	if (qpol_avrule_get_source_type(p->qh, p->p, rule, &src_type) < 0 ||
+	    qpol_avrule_get_target_type(p->qh, p->p, rule, &tgt_type) < 0) {
+		goto cleanup;
+	}
+
+	/* only add source nodes that are in the types vector */
+	if (apol_vector_get_index(types, src_type, NULL, NULL, &i) < 0) {
+		retval = 0;
+		goto cleanup;
+	}
+	if ((src_node = infoflow_graph_create_node(p, g, src_type, obj_class, APOL_INFOFLOW_SOURCE_NODE)) == NULL) {
+		goto cleanup;
+	}
+
+	/* only add target nodes that are in the types vector */
+	if (apol_vector_get_index(types, tgt_type, NULL, NULL, &i) < 0) {
+		retval = 0;
+		goto cleanup;
+	}
+	if ((tgt_node = infoflow_graph_create_node(p, g, tgt_type, obj_class, APOL_INFOFLOW_TARGET_NODE)) == NULL) {
+		goto cleanup;
+	}
+	if (found_read) {
+		if ((edge = infoflow_graph_create_edge(p, g, tgt_node, src_node, read_len)) == NULL) {
+			goto cleanup;
+		}
+		if (apol_vector_append(edge->rules, rule) < 0) {
+			ERR(p, "Out of memory!");
+			goto cleanup;
+		}
+	}
+	if (found_write) {
+		if ((edge = infoflow_graph_create_edge(p, g, src_node, tgt_node, write_len)) == NULL) {
+			goto cleanup;
+		}
+		if (apol_vector_append(edge->rules, rule) < 0) {
+			ERR(p, "Out of memory!");
+			goto cleanup;
+		}
+	}
+	retval = 0;
+ cleanup:
+	return retval;
+}
+
+/**
+ * Given a policy and a partially completed infoflow graph, create the
+ * nodes and edges associated with a particular rule.
+ *
+ * (FIX ME: figure out class/perm filtering)
+ *
+ * @param p Policy from which to create the infoflow graph.
+ * @param g Infoflow graph being created.
+ * @param rule AV rule to add.
+ * @param types Vector of qpol_type_t, containing which source types
+ * to add.
+ * @param max_len Maximum permission length (i.e., inverse of
+ * permission weight) to consider when deciding to add this rule or
+ * not.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+static int infoflow_graph_create_avrule(apol_policy_t *p,
+					apol_infoflow_graph_t *g,
+					qpol_avrule_t *rule,
+					apol_vector_t *types,
+					int max_len)
+{
+	qpol_class_t *obj_class;
+	qpol_iterator_t *perm_iter = NULL;
+	char *obj_class_name, *perm_name;
+	int found_read = 0, found_write = 0, read_len = 0, write_len = 0;
+	int perm_error = 0, retval = -1;
+	if (qpol_avrule_get_object_class(p->qh, p->p, rule, &obj_class) < 0 ||
+	    qpol_class_get_name(p->qh, p->p, obj_class, &obj_class_name) < 0 ||
+	    qpol_avrule_get_perm_iter(p->qh, p->p, rule, &perm_iter) < 0) {
+		goto cleanup;
+	}
+
+	/* find read or write flows for each object class/perm pair */
+	for ( ; !qpol_iterator_end(perm_iter); qpol_iterator_next(perm_iter)) {
+		int perm_map, perm_weight, len;
+		/* Check to see if we should filter this object class.
+		 * If we find the object class in the obj_options and
+		 * it doesn't list specific perms then we filter. If
+		 * we find the object class in the obj_options but it
+		 * has specific perms we save the index into
+		 * obj_options and check the perms below.
+		 */
+                /* FIX ME! */
+
+		if (qpol_iterator_get_item(perm_iter, (void **) &perm_name) < 0) {
+			goto cleanup;
+		}
+		if (apol_permmap_get(p, obj_class_name, perm_name, &perm_map, &perm_weight) < 0) {
+			goto cleanup;
+		}
+		if (perm_map == APOL_PERMMAP_UNMAPPED) {
+			perm_error = 1;
+			continue;
+		}
+		len = APOL_PERMMAP_MAX_WEIGHT - perm_weight + 1;
+		if (len < APOL_PERMMAP_MIN_WEIGHT) {
+			len = APOL_PERMMAP_MIN_WEIGHT;
+		}
+		else if (len > APOL_PERMMAP_MAX_WEIGHT) {
+			len = APOL_PERMMAP_MAX_WEIGHT;
+		}
+		if (perm_map & APOL_PERMMAP_READ) {
+			if (len < read_len && len <= max_len) {
+				found_read = 1;
+				read_len = len;
+			}
+		}
+		if (perm_map & APOL_PERMMAP_WRITE) {
+			if (len < write_len && len <= max_len) {
+				found_write = 1;
+				write_len = len;
+			}
+		}
+	}
+
+	/* if we have found any flows then connect them within the graph */
+	if ((found_read || found_write) &&
+	    infoflow_graph_connect_nodes(p, g, rule, obj_class, types, found_read, read_len, found_write, write_len) < 0) {
+		goto cleanup;
+	}
+
+	if (perm_error) {
+		ERR(p, "Not all of the permissions for %s had associated permission maps.", obj_class_name);
+	}
+	retval = 0;
+ cleanup:
+	qpol_iterator_destroy(&perm_iter);
+	return retval;
+}
+
+/**
+ * Given a particular information flow analysis object, generate an
+ * infoflow graph relative to a particular policy.  This graph is
+ * customized for the particular analysis.
+ *
+ * @param p Policy from which to create the infoflow graph.
+ * @param ia Parameters to tune the created graph.
+ * @param g Reference to where to store the graph.  The caller is
+ * responsible for calling apol_infoflow_graph_destroy() upon this.
+ *
+ * @return 0 if the graph was created, < 0 on error.  Upon error *g
+ * will be set to NULL.
+ */
+static int infoflow_graph_create(apol_policy_t *p,
+				 apol_infoflow_analysis_t *ia,
+				 apol_infoflow_graph_t **g)
+{
+	apol_vector_t *types = NULL;
+	qpol_iterator_t *iter = NULL;
+	int max_len = APOL_PERMMAP_MAX_WEIGHT - ia->min_weight + 1;
+	int retval = -1;
+
+	*g = NULL;
+	if (p->pmap == NULL) {
+		ERR(p, "A permission map must be loaded prior to building the infoflow graph.");
+		goto cleanup;
+	}
+	if ((types = apol_query_create_candidate_type_list(p, ia->type, 0, 0)) == NULL) {
+		goto cleanup;
+	}
+
+	if ((*g = calloc(1, sizeof(**g))) == NULL ||
+	    ((*g)->nodes = apol_vector_create()) == NULL ||
+	    ((*g)->edges = apol_vector_create()) == NULL) {
+		ERR(p, "Out of memory!");
+		goto cleanup;
+	}
+	if (qpol_policy_get_avrule_iter(p->qh, p->p, QPOL_RULE_ALLOW, &iter) < 0) {
+		goto cleanup;
+	}
+
+	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
+		qpol_avrule_t *rule;
+		uint32_t is_enabled;
+		if (qpol_iterator_get_item(iter, (void **) &rule) < 0) {
+			goto cleanup;
+		}
+		if (qpol_avrule_get_is_enabled(p->qh, p->p, rule, &is_enabled) < 0) {
+			goto cleanup;
+		}
+		if (!is_enabled) {
+			continue;
+		}
+		if (infoflow_graph_create_avrule(p, *g, rule, types, max_len) < 0) {
+			goto cleanup;
+		}
+	}
+
+	retval = 0;
+ cleanup:
+	apol_vector_destroy(&types, NULL);
+	qpol_iterator_destroy(&iter);
+	if (retval < 0) {
+		apol_infoflow_graph_destroy(g);
+		*g = NULL;
+	}
+	return retval;
+}
+
+void apol_infoflow_graph_destroy(apol_infoflow_graph_t **flow)
+{
+	if (*flow != NULL) {
+		apol_vector_destroy(&(*flow)->nodes, apol_infoflow_node_free);
+		apol_vector_destroy(&(*flow)->edges, apol_infoflow_edge_free);
+		free(*flow);
+		*flow = NULL;
+	}
+}
+
+/******************** infoflow analysis object routines ********************/
 
 void apol_infoflow_analysis_destroy(apol_infoflow_analysis_t **ia)
 {
@@ -137,43 +604,6 @@ int apol_infoflow_analysis_set_result_regexp(apol_policy_t *p,
 #include "old-policy-query.h"
 #include "queue.h"
 
-/*
- * Nodes in the graph represent either a type used in the source
- * of an allow rule or the target: these defines are used to
- * represent which.
- */
-#define IFLOW_SOURCE_NODE 	0x0
-#define IFLOW_TARGET_NODE 	0x1
-
-/*
- * These defines are used to color nodes in the graph algorithms.
- */
-#define IFLOW_COLOR_WHITE 0
-#define IFLOW_COLOR_GREY  1
-#define IFLOW_COLOR_BLACK 2
-#define IFLOW_COLOR_RED   3
-
-typedef struct iflow_edge {
-	int num_rules;
-	int *rules;
-	int start_node; /* index into iflow_graph->nodes */
-	int end_node; /* index into iflow_graph->nodes */
-	int length;
-} iflow_edge_t;
-
-typedef struct iflow_node {
-	int type;
-	int node_type;
-	int obj_class;
-	int num_in_edges;
-	int *in_edges;
-	int num_out_edges;
-	int *out_edges;
-	unsigned char color;
-	int parent;
-	int distance;
-} iflow_node_t;
-
 typedef struct iflow_graph {
 	int num_nodes; /* the number of slots used in nodes */
 	iflow_node_t *nodes;
@@ -185,20 +615,6 @@ typedef struct iflow_graph {
 	iflow_query_t *query;
 } iflow_graph_t;
 
-/* iflow_query_t */
-iflow_query_t *iflow_query_create(void)
-{
-	iflow_query_t* q = (iflow_query_t*)malloc(sizeof(iflow_query_t));
-	if (q == NULL) {
-		fprintf(stderr, "Memory error!\n");
-		return NULL;
-	}
-	memset(q, 0, sizeof(iflow_query_t));
-	q->start_type = -1;
-	q->direction = IFLOW_IN;
-
-	return q;
-}
 
 static int iflow_obj_options_copy(obj_perm_set_t *dest, obj_perm_set_t *src)
 {
@@ -227,7 +643,7 @@ static int iflow_query_copy(iflow_query_t *dest, iflow_query_t *src)
                         return -1;
                 dest->num_end_types = src->num_end_types;
         }
-        
+
         if (src->num_types) {
                 assert(src->types);
                 if (copy_int_array(&dest->types, src->types, src->num_types))
@@ -237,7 +653,7 @@ static int iflow_query_copy(iflow_query_t *dest, iflow_query_t *src)
 
         if (src->num_obj_options) {
                 assert(src->obj_options);
-                dest->obj_options = (obj_perm_set_t*)malloc(sizeof(obj_perm_set_t) * 
+                dest->obj_options = (obj_perm_set_t*)malloc(sizeof(obj_perm_set_t) *
                                                                  src->num_obj_options);
                 if (!dest->obj_options) {
                         fprintf(stderr, "Memory error\n");
@@ -283,14 +699,14 @@ bool_t iflow_query_is_valid(iflow_query_t *q, policy_t *policy)
 		fprintf(stderr, "invalid start type %d in query\n", q->start_type);
 		return FALSE;
 	}
-	
+
 	/* transitive analysis will have to do further checks */
 	if (!(q->direction == IFLOW_IN || q->direction == IFLOW_OUT
 	      || q->direction == IFLOW_BOTH || q->direction == IFLOW_EITHER)) {
 		fprintf(stderr, "invalid direction %d in query\n", q->direction);
-		return FALSE;		
+		return FALSE;
 	}
-	
+
 	if (q->num_end_types) {
 		if (!q->end_types) {
 			fprintf(stderr, "query num_end_types was %d but end_types was NULL\n",
@@ -318,7 +734,7 @@ bool_t iflow_query_is_valid(iflow_query_t *q, policy_t *policy)
 			}
 		}
 	}
-	
+
 	if (q->num_obj_options) {
 		if (!q->obj_options) {
 			fprintf(stderr, "query num_obj_options was %d by obj_options was NULL\n",
@@ -354,7 +770,7 @@ int iflow_init(iflow_graph_t *g, iflow_t *flow)
 static void iflow_destroy_data(iflow_t *flow)
 {
 	int i;
-	
+
 	if (flow->obj_classes) {
 		for (i = 0; i < flow->num_obj_classes; i++) {
 			if (flow->obj_classes[i].rules)
@@ -368,7 +784,7 @@ void iflow_destroy(iflow_t *flow)
 {
 	if (!flow)
 		return;
-	
+
 	iflow_destroy_data(flow);
 
 	free(flow);
@@ -456,7 +872,7 @@ static iflow_graph_t *iflow_graph_alloc(policy_t *policy)
 		return NULL;
 	}
 	memset(g->src_index, -1, sizeof(int) * index_size);
-	
+
 	index_size = policy->num_types * policy->num_obj_classes;
 	g->tgt_index = (int*)malloc(sizeof(int) * index_size);
 	if (!g->tgt_index) {
@@ -464,7 +880,7 @@ static iflow_graph_t *iflow_graph_alloc(policy_t *policy)
 		return NULL;
 	}
 	memset(g->tgt_index, -1, sizeof(int) * index_size);
-	
+
 	g->policy = policy;
 	return g;
 }
@@ -538,14 +954,14 @@ static int iflow_graph_connect(iflow_graph_t *g, int start_node, int end_node, i
 	}
 
 	memset(&g->edges[g->num_edges], 0, sizeof(iflow_edge_t));
-	
+
 	g->edges[g->num_edges].start_node = start_node;
 	g->edges[g->num_edges].end_node = end_node;
 	g->edges[g->num_edges].length = length;
-	
+
 	if (add_i_to_a(g->num_edges, &start->num_out_edges, &start->out_edges) != 0) {
 		return -1;
-	}	
+	}
 
 	if (add_i_to_a(g->num_edges, &end->num_in_edges, &end->in_edges) != 0) {
 		return -1;
@@ -572,7 +988,7 @@ static int iflow_graph_add_node(iflow_graph_t *g, int type, int node_type, int o
 			g->tgt_index[get_tgt_index(g, type, obj_class)] = g->num_nodes;
 		}
 	}
-	
+
 	/* create a new node */
 	g->nodes = (iflow_node_t*)realloc(g->nodes, sizeof(iflow_node_t) * (g->num_nodes + 1));
 	if (!g->nodes) {
@@ -583,7 +999,7 @@ static int iflow_graph_add_node(iflow_graph_t *g, int type, int node_type, int o
 	g->nodes[g->num_nodes].node_type = node_type;
 	g->nodes[g->num_nodes].type = type;
 	g->nodes[g->num_nodes].obj_class = obj_class;
-	
+
 	g->num_nodes++;
 	return g->num_nodes - 1;
 }
@@ -620,7 +1036,7 @@ static int add_edges(iflow_graph_t* g, int obj_class, int rule_idx, bool_t found
 		return -1;
 	if (ret == 2)
 		all_tgt_types = TRUE;
-	
+
 	for (i = 0; i < num_src_types; i++) {
 		if (all_src_types) {
 			/* skip self */
@@ -650,10 +1066,10 @@ static int add_edges(iflow_graph_t* g, int obj_class, int rule_idx, bool_t found
 		src_node = iflow_graph_add_node(g, cur_src_type, IFLOW_SOURCE_NODE, -1);
 		if (src_node < 0)
 			return -1;
-		
+
 		for (j = 0; j < num_tgt_types; j++) {
 			int edge;
-			
+
 			if (all_tgt_types) {
 				cur_tgt_type = j;
 				if (j == 0)
@@ -664,7 +1080,7 @@ static int add_edges(iflow_graph_t* g, int obj_class, int rule_idx, bool_t found
 			} else {
 				cur_tgt_type = tgt_types[j];
 			}
-			
+
 			if (g->query->num_types) {
 				bool_t filter_type = FALSE;
 				for (k = 0; k < g->query->num_types; k++) {
@@ -677,19 +1093,19 @@ static int add_edges(iflow_graph_t* g, int obj_class, int rule_idx, bool_t found
 					continue;
 				}
 			}
-			
+
 			/* add the target type */
 			tgt_node = iflow_graph_add_node(g, cur_tgt_type, IFLOW_TARGET_NODE, obj_class);
 			if (tgt_node < 0)
 				return -1;
-			
+
 			if (found_read) {
 				edge = iflow_graph_connect(g, tgt_node, src_node, read_len);
 				if (edge < 0) {
 					fprintf(stderr, "Could not add edge!\n");
 					return -1;
 				}
-				
+
 				if (add_i_to_a(rule_idx, &g->edges[edge].num_rules,
 					       &g->edges[edge].rules) != 0) {
 					fprintf(stderr, "Could not add rule!\n");
@@ -701,7 +1117,7 @@ static int add_edges(iflow_graph_t* g, int obj_class, int rule_idx, bool_t found
 					fprintf(stderr, "Could not add edge!\n");
 					return -1;
 				}
-				
+
 				if (add_i_to_a(rule_idx, &g->edges[edge].num_rules,
 					       &g->edges[edge].rules) != 0) {
 					fprintf(stderr, "Could not add rule!\n");
@@ -718,179 +1134,6 @@ static int add_edges(iflow_graph_t* g, int obj_class, int rule_idx, bool_t found
 	return 0;
 }
 
-/*
- * Create an information flow graph of a policy.
- */
-iflow_graph_t *iflow_graph_create(policy_t* policy, iflow_query_t *q)
-{
-	int i, j, k, l, ret;
-	unsigned char map;
-	iflow_graph_t* g;
-	bool_t perm_error = FALSE;
-        int max_len = PERMMAP_MAX_WEIGHT - q->min_weight + 1;
-
-	assert(policy && q);
-
-	if (policy->pmap == NULL) {
-		fprintf(stderr, "Perm map must be loaded first.\n");
-		return NULL;
-	}
-	
-	g = iflow_graph_alloc(policy);
-	if (g == NULL)
-		return NULL;
-	g->query = q;
-
-	for (i = 0; i < policy->num_av_access; i++) {
-		av_item_t* rule;
-		int cur_obj_class, num_obj_classes = 0, *obj_classes = NULL;
-		bool_t all_obj_classes = FALSE, all_perms = FALSE;
-		int cur_perm, num_perms = 0, *perms = NULL;
-
-		rule = &policy->av_access[i];
-		if (rule->type != RULE_TE_ALLOW)
-			continue;
-		if (!rule->enabled)
-			continue;
-		
-		/* get the object classes for this rule */
-		ret = extract_obj_classes_from_te_rule(i, RULE_TE_ALLOW, &obj_classes, &num_obj_classes, policy);
-		if (ret == -1) {
-			iflow_graph_destroy(g);
-			return NULL;
-		} else if (ret == 2) {
-			all_obj_classes = TRUE;
-		}
-		
-		ret = extract_perms_from_te_rule(i, RULE_TE_ALLOW, &perms, &num_perms, policy);
-		if (ret == -1) {
-			iflow_graph_destroy(g);
-			if (!all_obj_classes)
-				free(obj_classes);
-			return NULL;
-		} else if (ret == 2) {
-			all_perms = TRUE;
-		}
-
-		/* find read or write flows for each object class */
-		for (j = 0; j < num_obj_classes; j++ ) {
-			class_perm_map_t* cur_pmap;
-			bool_t found_read = FALSE, found_write = FALSE;
-			int cur_obj_options = -1;
-			int len = 0, read_len, write_len;
-
-			if (all_obj_classes)
-				cur_obj_class = j;
-			else
-				cur_obj_class = obj_classes[j];
-
-			/* Check to see if we should filter this object class. If we find
-			 * the object class in the obj_options and it doesn't list specific
-			 * perms then we filter. If we find the object class in the obj_options
-			 * but it has specific perms we save the index into obj_options and
-			 * check the perms below */
-			if (q->num_obj_options != 0) {
-				bool_t filter_obj_class = FALSE;
-				for (k = 0; k < q->num_obj_options; k++) {
-					if (q->obj_options[k].obj_class == cur_obj_class) {
-						if (q->obj_options[k].num_perms == 0)
-							filter_obj_class = TRUE;
-						else
-							cur_obj_options = k;
-						break;
-					}
-				}
-				if (filter_obj_class)
-					continue;
-			}
-
-			cur_pmap = &policy->pmap->maps[cur_obj_class];
-			if (all_perms) {
-				ret = get_obj_class_perms(cur_obj_class, &num_perms, &perms, policy);
-				if (ret != 0) {
-					iflow_graph_destroy(g);	
-					if (!all_obj_classes)
-						free(obj_classes);
-					return NULL;
-				}
-			}
-			
-			read_len = write_len = INT_MAX;
-			for (k = 0; k < num_perms; k++) {
-				cur_perm = perms[k];
-				/* Check to see if we should ignore this permission */
-				if (cur_obj_options >= 0) {
-					bool_t filter_perm = FALSE;
-					for (l = 0; l < q->obj_options[cur_obj_options].num_perms; l++) {
-						if (q->obj_options[cur_obj_options].perms[l] == cur_perm) {
-							filter_perm = TRUE;
-							break;
-						}
-					}
-					if (filter_perm)
-						continue;
-				}
-
-				/* get the mapping for the perm */
-				map = 0;
-				for (l = 0; l < cur_pmap->num_perms; l++) {
-					if (cur_pmap->perm_maps[l].perm_idx == cur_perm) {
-						map = cur_pmap->perm_maps[l].map;
-						len = PERMMAP_MAX_WEIGHT - cur_pmap->perm_maps[l].weight + 1;
-						if (len < PERMMAP_MIN_WEIGHT)
-							len = PERMMAP_MIN_WEIGHT;
-						else if (len > PERMMAP_MAX_WEIGHT)
-							len = PERMMAP_MAX_WEIGHT;
-						break;
-					}
-				}
-				if (map == 0) {
-					perm_error = TRUE;
-					continue;
-				}
-				if (map & PERMMAP_READ) {
-                                        if (len < read_len && len <= max_len) {
-                                                found_read = TRUE;
-						read_len = len;
-                                        }
-				}
-				if (map & PERMMAP_WRITE) {
-					if (len < write_len && len <= max_len) {
-                                                found_write = TRUE;
-						write_len = len;
-                                        }
-				}
-			}
-			if (all_perms)
-				free(perms);
-
-			if (!found_read && !found_write) {
-				continue;
-			}
-
-			/* if we have found any flows add the edge */
-			if (add_edges(g, cur_obj_class, i, found_read, read_len, found_write, write_len) != 0) {
-				iflow_graph_destroy(g);
-				if (!all_perms)
-					free(perms);
-				if (!all_obj_classes)
-					free(obj_classes);
-				return NULL;
-			}
-
-			
-		}
-		if (!all_perms)
-			free(perms);
-		if (!all_obj_classes)
-			free(obj_classes);
-	}
-
-	if (perm_error)
-		fprintf(stderr, "Not all of the permissions found had associated permission maps.\n");
-
-	return g;
-}
 
 /* direct information flow */
 
@@ -898,7 +1141,7 @@ iflow_graph_t *iflow_graph_create(policy_t* policy, iflow_query_t *q)
 static bool_t edge_matches_query(iflow_graph_t* g, iflow_query_t* q, int edge)
 {
 	int end_type, ending_node;
-	
+
 	if (g->nodes[g->edges[edge].start_node].type == q->start_type) {
 		ending_node = g->edges[edge].end_node;
 	} else {
@@ -918,7 +1161,7 @@ static int iflow_define_flow(iflow_graph_t *g, iflow_t *flow, int direction, int
 {
 	int i, end_node, obj_class;
 	iflow_edge_t *edge_ptr;
-	
+
 	edge_ptr = &g->edges[edge];
 
 	if (edge_ptr->start_node == start_node) {
@@ -930,7 +1173,7 @@ static int iflow_define_flow(iflow_graph_t *g, iflow_t *flow, int direction, int
 	flow->direction |= direction;
 	flow->start_type = g->nodes[start_node].type;
 	flow->end_type = g->nodes[end_node].type;
-	
+
 	obj_class = g->nodes[edge_ptr->start_node].obj_class;
 	if (obj_class == -1)
 		obj_class = g->nodes[edge_ptr->end_node].obj_class;
@@ -939,7 +1182,7 @@ static int iflow_define_flow(iflow_graph_t *g, iflow_t *flow, int direction, int
 				      flow->obj_classes[obj_class].num_rules) == -1) {
 			if (add_i_to_a(edge_ptr->rules[i], &flow->obj_classes[obj_class].num_rules,
 				       &flow->obj_classes[obj_class].rules) < 0) {
-					return 	-1;
+					return	-1;
 			}
 		}
 	}
@@ -998,10 +1241,10 @@ int iflow_direct_flows(policy_t *policy, iflow_query_t *q, int *num_answers,
 		fprintf(stderr, "Error creating graph\n");
 		return -1;
 	}
-	
+
 	*num_answers = 0;
 	*answers = NULL;
-	
+
 	if (iflow_graph_get_nodes_for_type(g, q->start_type, &num_nodes, &nodes) < 0)
 		return -1;
 	/*
@@ -1012,7 +1255,7 @@ int iflow_direct_flows(policy_t *policy, iflow_query_t *q, int *num_answers,
 	if (num_nodes == 0) {
 		return 0;
 	}
-	
+
 	if (q->direction == IFLOW_IN || q->direction == IFLOW_EITHER || q->direction == IFLOW_BOTH) {
 		for (i = 0; i < num_nodes; i++) {
 			node = &g->nodes[nodes[i]];
@@ -1104,7 +1347,7 @@ out:
 static int ta_find_edge(iflow_graph_t *g, iflow_query_t *q, int path_len, int *path, int start)
 {
 	int i, edge = -1;
-	
+
 	if (q->direction == IFLOW_OUT) {
 		for (i = 0; i < g->nodes[path[start]].num_out_edges; i++) {
 			edge = g->nodes[path[start]].out_edges[i];
@@ -1135,14 +1378,14 @@ static iflow_path_t *ta_build_path(iflow_graph_t *g, iflow_query_t *q, int path_
 {
 	int i, length, edge;
 	iflow_path_t *p;
-	
+
 	p = (iflow_path_t*)malloc(sizeof(iflow_path_t));
 	if (!p) {
 		fprintf(stderr, "Memory error\n");
 		return NULL;
 	}
 	memset(p, 0, sizeof(iflow_path_t));
-	
+
 	p->iflows = (iflow_t*)malloc(sizeof(iflow_t) * (path_len - 1));
 	if (!p->iflows) {
 		fprintf(stderr, "Memory error\n");
@@ -1157,8 +1400,8 @@ static iflow_path_t *ta_build_path(iflow_graph_t *g, iflow_query_t *q, int path_
 		edge = ta_find_edge(g, q, path_len, path, i);
 		if (edge < 0)
 			return NULL;
-			
-		length += g->edges[edge].length;		
+
+		length += g->edges[edge].length;
 
 		if (iflow_init(g, &p->iflows[i])) {
 			fprintf(stderr, "Memory error\n");
@@ -1175,7 +1418,7 @@ static iflow_path_t *ta_build_path(iflow_graph_t *g, iflow_query_t *q, int path_
 		}
 	}
 	p->length = length;
-	
+
 	return p;
 }
 
@@ -1197,7 +1440,7 @@ static int transitive_answer_append(iflow_graph_t *g, iflow_query_t *q, iflow_tr
 	p = ta_build_path(g, q, path_len, path);
 	if (!p)
 		return -1;
-	
+
 	/* First we look for duplicate paths */
 	cur_type = g->nodes[end_node].type;
 	for (i = 0; i < a->num_end_types; i++) {
@@ -1265,7 +1508,7 @@ static int iflow_path_compare(const void *a, const void *b)
 	iflow_path_t *path_a, *path_b;
 	path_a = *((iflow_path_t**)a);
 	path_b = *((iflow_path_t**)b);
-	
+
 	if (path_a->length == path_b->length)
 		return 0;
 	else if (path_a->length < path_b->length)
@@ -1278,30 +1521,30 @@ static iflow_path_t *iflow_sort_paths(iflow_path_t *path)
 {
 	int i, num_paths;
 	iflow_path_t *cur, *start, **paths;
-	
+
 	if (!path) {
 		fprintf(stderr, "sort_iflow_paths got NULL path\n");
 		return NULL;
 	}
-	
+
 	num_paths = 0;
 	cur = path;
 	while (cur) {
 		num_paths++;
 		cur = cur->next;
 	}
-	
+
 	if (num_paths == 1) {
 		return path;
 	}
-	
+
 	paths = (iflow_path_t**)malloc(sizeof(iflow_path_t*) * num_paths);
 	if (!paths) {
 		fprintf(stderr, "Memory error\n");
 		return NULL;
 	}
 	memset(paths, 0, sizeof(iflow_path_t*) * num_paths);
-	
+
 	i = 0;
 	cur = path;
 	while (cur) {
@@ -1325,7 +1568,7 @@ static int shortest_path_find_path(iflow_graph_t *g, int start_node, int end_nod
 {
 	int next_node = end_node;
 	int i, tmp, path_len = 0;
-	
+
 	while (1) {
 		path[path_len++] = next_node;
 		if (next_node == start_node)
@@ -1340,7 +1583,7 @@ static int shortest_path_find_path(iflow_graph_t *g, int start_node, int end_nod
 			return -1;
 		}
 	}
-		
+
 	/* reverse the path */
 	for (i = 0; i < path_len / 2; i++) {
 		tmp = path[i];
@@ -1351,45 +1594,48 @@ static int shortest_path_find_path(iflow_graph_t *g, int start_node, int end_nod
 	return path_len;
 }
 
-/* This is a label correcting shortest path algorithm
- * see Bertsekas, D. P., "A Simple and Fast Label Correcting Algorithm for Shortest Paths,"
- * Networks, Vol. 23, pp. 703-709, 1993. for more information. A label correcting algorithm is
- * needed instead of the more common Dijkstra label setting algorithm to correctly handle the
- * the cycles that are possible in these graphs.
+/* This is a label correcting shortest path algorithm see Bertsekas,
+ * D. P., "A Simple and Fast Label Correcting Algorithm for Shortest
+ * Paths," Networks, Vol. 23, pp. 703-709, 1993. for more
+ * information. A label correcting algorithm is needed instead of the
+ * more common Dijkstra label setting algorithm to correctly handle
+ * the the cycles that are possible in these graphs.
  *
- * This algorithm finds the shortest path between a given start node and all other nodes in
- * the graph. Any paths that it finds it appends to the iflow_transitive_t structure. This
- * is a basic label correcting algorithm with 1 optimization. It uses the D'Esopo-Pape method
- * for node selection in the node queue. Why is this faster? The paper referenced above says
- * "No definitive explanation has been given." They have fancy graphs to show that it is faster
- * though and the important part is that the worst case isn't much worse that N^2 - much better
- * than an n^3 transitive closure. Additionally, most normal sparse graphs are significantly better
- * than the worst case.
+ * This algorithm finds the shortest path between a given start node
+ * and all other nodes in the graph. Any paths that it finds it
+ * appends to the iflow_transitive_t structure. This is a basic label
+ * correcting algorithm with 1 optimization. It uses the D'Esopo-Pape
+ * method for node selection in the node queue. Why is this faster?
+ * The paper referenced above says "No definitive explanation has been
+ * given." They have fancy graphs to show that it is faster though and
+ * the important part is that the worst case isn't much worse that N^2
+ * - much better than an n^3 transitive closure. Additionally, most
+ * normal sparse graphs are significantly better than the worst case.
  */
 int iflow_graph_shortest_path(iflow_graph_t *g, int start_node, iflow_transitive_t *a, iflow_query_t *q)
 {
 	int i, rc = 0;
 	int *path = NULL;
 	queue_t queue = NULL;
-	
+
 	queue = queue_create();
 	if (!queue) {
 		fprintf(stderr, "Error creating queue\n");
 		rc = -1;
 		goto out;
 	}
-	
+
 	path = (int*)malloc(g->num_nodes * sizeof(int));
 	if (!path) {
 		rc = -1;
 		goto out;
 	}
-	
+
 	/* initialization */
 	g->nodes[start_node].distance = 0;
 	g->nodes[start_node].parent = -1;
 	g->nodes[start_node].color = IFLOW_COLOR_RED;
-	
+
 	for (i = 0; i < g->num_nodes; i++) {
 		if (i == start_node)
 			continue;
@@ -1397,35 +1643,35 @@ int iflow_graph_shortest_path(iflow_graph_t *g, int start_node, iflow_transitive
 		g->nodes[i].parent = -1;
 		g->nodes[i].color = IFLOW_COLOR_WHITE;
 	}
-	
+
 	if (queue_insert(queue, (void*)(start_node + 1)) < 0) {
 		fprintf(stderr, "Error inserting into queue\n");
 		rc = -1;
 		goto out;
 	}
-	
+
 	while (queue_head(queue)) {
 		void *cur_ptr;
 		int cur;
 		int num_edges;
-		
+
 		cur_ptr = queue_remove(queue);
 		if (cur_ptr == NULL) {
 			rc = -1;
 			goto out;
 		}
 		cur = ((int)cur_ptr) - 1;
-		
+
 		g->nodes[cur].color = IFLOW_COLOR_GREY;
-		
+
 		if (q->direction == IFLOW_OUT)
 			num_edges = g->nodes[cur].num_out_edges;
 		else
 			num_edges = g->nodes[cur].num_in_edges;
-		
+
 		for (i = 0; i < num_edges; i++) {
 			int edge, node;
-			
+
 			if (q->direction == IFLOW_OUT) {
 				edge = g->nodes[cur].out_edges[i];
 				node = g->edges[edge].end_node;
@@ -1433,10 +1679,10 @@ int iflow_graph_shortest_path(iflow_graph_t *g, int start_node, iflow_transitive
 				edge = g->nodes[cur].in_edges[i];
 				node = g->edges[edge].start_node;
 			}
-			
+
 			if (start_node == node)
 				continue;
-			
+
 			if (g->nodes[node].distance > (g->nodes[cur].distance + g->edges[edge].length)) {
 				g->nodes[node].distance = g->nodes[cur].distance + g->edges[edge].length;
 				g->nodes[node].parent = cur;
@@ -1459,15 +1705,15 @@ int iflow_graph_shortest_path(iflow_graph_t *g, int start_node, iflow_transitive
 					}
 					g->nodes[node].color = IFLOW_COLOR_RED;
 				}
-				
+
 			}
 		}
 	}
-	
+
 	/* Find all of the paths and stick them in the iflow_transitive_t struct */
 	for (i = 0; i < g->num_nodes; i++) {
 		int path_len;
-		
+
 		if (g->nodes[i].parent == -1)
 			continue;
 		if (i == start_node)
@@ -1489,7 +1735,7 @@ int iflow_graph_shortest_path(iflow_graph_t *g, int start_node, iflow_transitive
 			goto out;
 		}
 	}
-	
+
 out:
 	if (queue)
 		queue_destroy(queue);
@@ -1507,7 +1753,7 @@ iflow_transitive_t *iflow_transitive_flows(policy_t *policy, iflow_query_t *q)
 
 	if (!iflow_query_is_valid(q, policy))
 		return NULL;
-	
+
 	if (!((q->direction == IFLOW_OUT ) || (q->direction == IFLOW_IN))) {
 		fprintf(stderr, "Direction must be IFLOW_IN or IFLOW_OUT\n");
 		return NULL;
@@ -1532,9 +1778,9 @@ iflow_transitive_t *iflow_transitive_flows(policy_t *policy, iflow_query_t *q)
 	if (num_nodes == 0) {
 		goto out;
 	}
-	
+
 	a->start_type = q->start_type;
-	
+
 	for (i = 0; i < num_nodes; i++) {
 		if (iflow_graph_shortest_path(g, nodes[i], a, q) != 0)
 			goto err;
@@ -1563,7 +1809,7 @@ err:
 
 /* Random shuffle from Knuth Seminumerical Algorithms p. 139 */
 static void shuffle_list(int len, int *list)
-{	
+{
 	float U;
 	int j, k, tmp;
 
@@ -1580,7 +1826,7 @@ static void shuffle_list(int len, int *list)
 }
 
 static int get_random_edge_list(int edges_len, int **edge_list)
-{	
+{
 
 	int i;
 
@@ -1620,7 +1866,7 @@ void bfs_random_state_destroy(bfs_random_state_t *s)
 
 	if (s->q)
 		iflow_query_destroy(s->q);
-	
+
 	if (s->queue) {
 		queue_destroy(s->queue);
 	}
@@ -1682,7 +1928,7 @@ int bfs_random_state_init(bfs_random_state_t *s, policy_t *p, iflow_query_t *q, 
 		fprintf(stderr, "Memory error\n");
 		goto err;
 	}
-		       
+
 	return 0;
 err:
 	bfs_random_state_destroy(s);
@@ -1694,7 +1940,7 @@ static int breadth_first_find_path(iflow_graph_t *g, int node, int *path)
 	int next_node = node;
 	int path_len = g->nodes[node].distance + 1;
 	int i = path_len - 1;
-	
+
 	while (i >= 0) {
 		path[i] = next_node;
 		next_node = g->nodes[next_node].parent;
@@ -1712,14 +1958,14 @@ static int do_breadth_first_search_random(bfs_random_state_t *s)
 	bool_t found_new_path = FALSE;
 
 	while (queue_head(s->queue)) {
-	
+
 		cur_ptr = queue_remove(s->queue);
 		if (cur_ptr == NULL) {
 			ret = -1;
 			goto out;
 		}
 		cur = ((int)cur_ptr) - 1;
-	
+
 		if (find_int_in_array(cur, s->enodes, s->num_enodes) != -1) {
 			path_len = breadth_first_find_path(s->g, cur, s->path);
 			if (path_len == -1) {
@@ -1734,7 +1980,7 @@ static int do_breadth_first_search_random(bfs_random_state_t *s)
 				found_new_path = TRUE;
 			}
 		}
-		
+
 		s->g->nodes[cur].color = IFLOW_COLOR_BLACK;
 		if (s->q->direction == IFLOW_OUT)
 			num_edges = s->g->nodes[cur].num_out_edges;
@@ -1794,16 +2040,16 @@ int iflow_find_paths_next(void *state)
 	}
 
 	start_node = s->nodes[s->cur];
-	
+
 	s->g->nodes[start_node].color = IFLOW_COLOR_GREY;
 	s->g->nodes[start_node].distance = 0;
 	s->g->nodes[start_node].parent = -1;
-	
+
 	if (queue_insert(s->queue, (void*)(start_node + 1)) < 0) {
 		fprintf(stderr, "Error inserting into queue\n");
 		return -1;
 	}
-	
+
 	if (do_breadth_first_search_random(s) < 0)
 		return -1;
 
@@ -1855,11 +2101,11 @@ iflow_transitive_t *iflow_find_paths_end(void *state)
 	bfs_random_state_t *s = (bfs_random_state_t*)state;
 	iflow_transitive_t *a;
 	int i;
-	
+
 	a = s->a;
 	bfs_random_state_destroy(s);
 	free(s);
-	
+
 	/* sort the paths by length */
 	for (i = 0; i < a->num_end_types; i++) {
 		/* sort the paths by length */
@@ -1868,7 +2114,7 @@ iflow_transitive_t *iflow_find_paths_end(void *state)
 			return NULL;
 		}
 	}
-	
+
 	return a;
 }
 
@@ -1881,4 +2127,4 @@ void iflow_find_paths_abort(void *state)
 	iflow_transitive_destroy(s->a);
 }
 
-#endif 
+#endif

@@ -13,7 +13,7 @@ libapol_a_SOURCES = \
 	render.c render.h perm-map.c perm-map.h \
 	analysis.c analysis.h \
 	dta.c dta.h poldiff.c poldiff.h old-policy-query.c old-policy-query.h \
-	policy-io.c policy-io.h vector.c vector.h \
+	vector.c vector.h \
 	policy-query.c policy-query.h \
 	context-query.c context-query.h mls-query.c mls-query.h \
 	type-query.c type-query.h class-perm-query.c class-perm-query.h \
