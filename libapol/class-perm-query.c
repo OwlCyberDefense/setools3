@@ -239,16 +239,6 @@ int apol_common_query_set_regex(apol_policy_t *p, apol_common_query_t *c, int is
 
 /******************** permission queries ********************/
 
-/**
- * Call strcmp(), to be used by apol_vector_append_unique().
- */
-static int apol_strcmp(const void *a, const void *b, void *data __attribute__ ((unused)))
-{
-	const char *s = (const char *) a;
-	const char *t = (const char *) b;
-	return strcmp(s, t);
-}
-
 int apol_get_perm_by_query(apol_policy_t *p,
 			   apol_perm_query_t *pq,
 			   apol_vector_t **v)

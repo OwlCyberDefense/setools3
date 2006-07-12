@@ -36,8 +36,11 @@ typedef struct policy policy_t;
 #include <stdarg.h>
 #include <qpol/policy.h>
 
-/* forward declaration.  the definition resides within perm-map.c */
+/* forward declaration. the definition resides within perm-map.c */
 struct apol_permmap;
+
+/* forward declaration. the definition resides within domain-trans-analysis.c */
+struct apol_domain_trans_table;
 
 typedef struct apol_policy {
         qpol_policy_t *p;
@@ -46,6 +49,7 @@ typedef struct apol_policy {
 	void *msg_callback_arg;
 	int policy_type;
 	struct apol_permmap *pmap; /* permission mapping for this policy */
+	struct apol_domain_trans_table *domain_trans_table; /* for domain trans analysis */
 } apol_policy_t;
 
 /**
