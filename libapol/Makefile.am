@@ -12,7 +12,8 @@ libapol_a_SOURCES = \
 	avl-util.c avl-util.h \
 	render.c render.h perm-map.c perm-map.h \
 	analysis.c analysis.h \
-	dta.c dta.h poldiff.c poldiff.h old-policy-query.c old-policy-query.h \
+	domain-trans-analysis.c domian-trans-analysis.h \
+	poldiff.c poldiff.h old-policy-query.c old-policy-query.h \
 	vector.c vector.h \
 	policy-query.c policy-query.h \
 	context-query.c context-query.h mls-query.c mls-query.h \

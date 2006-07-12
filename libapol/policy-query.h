@@ -335,4 +335,84 @@ apol_vector_t *apol_query_create_candidate_role_list(apol_policy_t *p,
 apol_vector_t *apol_query_create_candidate_class_list(apol_policy_t *p,
 						      apol_vector_t *classes);
 
+/**
+ *  Wrapper around strcmp for use in vectors.
+ *  @param a String to compare.
+ *  @param b The other string to compare.
+ *  @param unused Not used. (exists to match expected function signature)
+ *  @retrun Less than, equal to, or greater than 0 if string a is found 
+ *  to be less than, identical to, or greater than string b respectively.
+ */
+extern int apol_strcmp(const void *a, const void *b, void *unused __attribute__ ((unused)) );
+
+/**
+ *  Object class and permission set
+ *  Contains the name of a class and a list of permissions
+ *  used by analyses and complex searches to allow permissions
+ *  to be specified on a per class basis.
+ */
+typedef struct apol_obj_perm apol_obj_perm_t;
+
+/**
+ *  Allocate and return a new object permission set.
+ *  @return a newly allocated object permission set or NULL on error.
+ *  Caller is responsible for calling apol_obj_perm_free() to free
+ *  memory used.
+ */
+extern apol_obj_perm_t *apol_obj_perm_new(void);
+
+/**
+ *  Free the memory used by an object permission set.
+ *  @param op the object permission set to free.
+ */
+extern void apol_obj_perm_free(void *op);
+
+/**
+ *  Set the object class name for an object permission set.
+ *  If already set free the previous name.
+ *  @param op The object permission set for which to set the object name.
+ *  @param obj_name New object name to set; this string will be duplicated
+ *  by this call. If NULL only free existing name (if any).
+ *  @return 0 on success and < 0 on failure; if the call fails,
+ *  errno will be set and the original object permission set will be unchanged.
+ */
+extern int apol_obj_perm_set_obj_name(apol_obj_perm_t *op, const char *obj_name);
+
+/**
+ *  Get the object class name from an object permission set.
+ *  @param op The object permission set from which to get the class name.
+ *  @return The class name or NULL if not set or error. The caller <b>should</b>
+ *  <b>NOT</b> free the returned string.
+ */
+extern char *apol_obj_perm_get_obj_name(const apol_obj_perm_t *op);
+
+/**
+ *  Add a permission to the permission list of an object permission set.
+ *  @param op The object permission set to which to add the permission.
+ *  @param perm Name of the permission to add, this string will be duplicated.
+ *  If NULL clear all permissions. If the permission is already in the list
+ *  nothing is done;
+ *  @return 0 on success and < 0 on failure; if the call fails,
+ *  errno will be set and the original object permission set will be unchanged.
+ */
+extern int apol_obj_perm_append_perm(apol_obj_perm_t *op, const char *perm);
+
+/**
+ *  Get a vector of the permissions in an object permission set.
+ *  @param op The object permission set from which to get the permissions.
+ *  @return Vector (of type char *) of permission names; the caller
+ *  <b>shoul NOT</b> destroy this vector.
+ */
+extern apol_vector_t *apol_obj_perm_get_perm_vector(const apol_obj_perm_t *op);
+
+/**
+ *  Comparision function for use with vectors of object permission sets.
+ *  @param a first object permission set.
+ *  @param b second object permission set.
+ *  @param policy apol policy from which the objects and permissions come.
+ *  @return < 0, 0, or > 0 if the value of the class of a is less than, equal
+ *  to, or greater than that of b respectively.
+ */
+extern int apol_obj_perm_compare_class(const void *a, const void *b, void *policy);
+
 #endif

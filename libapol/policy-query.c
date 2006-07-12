@@ -31,6 +31,7 @@
 #include <regex.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 #include <qpol/policy_query.h>
 
@@ -502,3 +503,120 @@ apol_vector_t *apol_query_create_candidate_class_list(apol_policy_t *p, apol_vec
 	}
 	return list;
 }
+
+/* apol_obj_perm - set of an object with a list of permissions */
+struct apol_obj_perm {
+	char 		*obj_class;	/* name of object class */
+	apol_vector_t	*perms;	/* vector of permission names */
+};
+
+apol_obj_perm_t *apol_obj_perm_new(void)
+{
+	apol_obj_perm_t *op = calloc(1, sizeof(apol_obj_perm_t));
+	if (!op)
+		return NULL;
+
+	op->perms = apol_vector_create();
+	if (!(op->perms)) {
+		free(op);
+		return NULL;
+	}
+
+	return op;	
+}
+
+void apol_obj_perm_free(void *op)
+{
+	apol_obj_perm_t *inop = (apol_obj_perm_t*)op;
+
+	free(inop->obj_class);
+	apol_vector_destroy(&inop->perms, free);
+	free(inop);
+}
+
+int apol_obj_perm_set_obj_name(apol_obj_perm_t *op, const char *obj_name)
+{
+	char *tmp = NULL;
+
+	if (!op) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (obj_name) {
+		if (!(tmp = strdup(obj_name)))
+			return -1;
+		free(op->obj_class);
+		op->obj_class = tmp;
+	} else {
+		free(op->obj_class);
+		op->obj_class = NULL;
+	}
+
+	return 0;
+}
+
+char *apol_obj_perm_get_obj_name(const apol_obj_perm_t *op)
+{
+	if (!op) {
+		errno = EINVAL;
+		return NULL;
+	}
+
+	return op->obj_class;
+}
+
+int apol_obj_perm_append_perm(apol_obj_perm_t *op, const char *perm)
+{
+	char *tmp = NULL;
+
+	if (!op) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (perm) {
+		if (!(tmp = strdup(perm)))
+			return -1;
+		if (apol_vector_append_unique(op->perms, tmp, apol_strcmp, NULL) < 0) {
+			free(tmp);
+			return -1;
+		}
+	} else {
+		apol_vector_destroy(&op->perms, free);
+	}
+
+	return 0;
+}
+
+apol_vector_t *apol_obj_perm_get_perm_vector(const apol_obj_perm_t *op)
+{
+	if (!op) {
+		errno = EINVAL;
+		return NULL;
+	}
+
+	return op->perms;
+}
+
+int apol_obj_perm_compare_class(const void *a, const void *b, void *policy)
+{
+	const apol_obj_perm_t *opa = (const apol_obj_perm_t*)a;
+	const apol_obj_perm_t *opb = (const apol_obj_perm_t*)b;
+	apol_policy_t *p = (apol_policy_t*)policy;
+	qpol_class_t *obja = NULL, *objb = NULL;
+	uint32_t a_val = 0, b_val = 0;
+
+	qpol_policy_get_class_by_name(p->qh, p->p, opa->obj_class, &obja);
+	qpol_policy_get_class_by_name(p->qh, p->p, opb->obj_class, &objb);
+	qpol_class_get_value(p->qh, p->p, obja, &a_val);
+	qpol_class_get_value(p->qh, p->p, objb, &b_val);
+
+	return (int)(a_val - b_val);
+}
+
+int apol_strcmp(const void *a, const void *b, void *unused __attribute__ ((unused)) )
+{
+	return strcmp((const char*)a, (const char *)b);
+}
+
