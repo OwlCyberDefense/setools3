@@ -28,7 +28,6 @@
 
 /* libapol */
 #include <policy.h>
-#include <policy-io.h>
 #include <policy-query.h>
 #include <render.h>
 #include <util.h>
