@@ -15,7 +15,6 @@
 #include <string.h>
 #include <assert.h>
 #include <policy.h>
-#include <policy-io.h>
 #include <util.h>
 #include <dirent.h>
 #include <errno.h>
