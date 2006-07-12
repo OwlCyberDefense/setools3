@@ -330,3 +330,24 @@ void apol_vector_sort_uniquify(apol_vector_t *v, apol_vector_comp_func *cmp, voi
 		}
 	}
 }
+
+int apol_vector_cat(apol_vector_t *dest, const apol_vector_t *src)
+{
+	size_t i;
+
+	if (!src || !apol_vector_get_size(src)) {
+		return 0; /* nothing to append */
+	}
+
+	if (!dest) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	for (i = 0; i < apol_vector_get_size(src); i++)
+		if (apol_vector_append(dest, apol_vector_get_element(src, i)))
+			return -1;
+
+	return 0;
+}
+

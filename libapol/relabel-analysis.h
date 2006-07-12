@@ -112,7 +112,7 @@ extern int apol_relabel_analysis_set_type(apol_policy_t *p,
 
 /**
  * Set a relabel analysis to return rules with this object
- * (non-common) class.  If more than one class are appended to the
+ * (non-common) class.  If more than one class is appended to the
  * query, the rule's class must be one of those appended.  (I.e., the
  * rule's class must be a member of the analysis's classes.)  Pass a
  * NULL to clear all classes.
@@ -130,7 +130,7 @@ extern int apol_relabel_analysis_append_class(apol_policy_t *p,
 
 /**
  * Set a relabel analysis to return rules with this subject as their
- * source type.  If more than one subject are appended to the query,
+ * source type.  If more than one subject is appended to the query,
  * the rule's source must be one of those appended.  (I.e., the rule's
  * source must be a member of the analysis's subject.)  Pass a NULL to
  * clear all types.  Note that these subjects are ignored when doing
