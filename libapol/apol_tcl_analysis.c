@@ -305,7 +305,7 @@ static int Apol_RelabelAnalysis(ClientData clientData, Tcl_Interp *interp,
 		goto cleanup;
 	}
 	if (argc != 6) {
-		ERR(policydb, "Need an analysis mode, starting type, object classes, subject types, and resulting type regexp.");
+		ERR(policydb, "Need an analysis mode, starting type, object classes, subject types, and resulting type regex.");
 		goto cleanup;
 	}
 
@@ -333,7 +333,7 @@ static int Apol_RelabelAnalysis(ClientData clientData, Tcl_Interp *interp,
 
 	if (apol_relabel_analysis_set_dir(policydb, analysis, direction) < 0 ||
 	    apol_relabel_analysis_set_type(policydb, analysis, argv[2]) < 0 ||
-	    apol_relabel_analysis_set_result_regexp(policydb, analysis, argv[5])) {
+	    apol_relabel_analysis_set_result_regex(policydb, analysis, argv[5])) {
 		goto cleanup;
 	}
 
