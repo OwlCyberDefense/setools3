@@ -140,13 +140,14 @@ extern int apol_domain_trans_analysis_set_start_type(apol_policy_t *policy, apol
 extern int apol_domain_trans_analysis_set_result_regex(apol_policy_t *policy, apol_domain_trans_analysis_t *dta, const char *regex);
 
 /**
- *  Set the analysis to return only types having access (via allow rules)
- *  to this type. <b>This is only valid for forward analysis.</b> If more
- *  than one type is appended to the query, the resulting type must have
- *  access to at least one of the appended types. Pass a NULL to clear
- *  all previously appended types. <b>If acces types are appened, the</b>
- *  <b>caller must also call apol_domain_trans_analysis_append_class_perm()</b>
- *  <b>at least once with a valid class and permission.</b>
+ *  Set the analysis to return only types having access (via allow
+ *  rules) to this type. <b>This is only valid for forward
+ *  analysis.</b> If more than one type is appended to the query, the
+ *  resulting type must have access to at least one of the appended
+ *  types. Pass a NULL to clear all previously appended types. <b>If
+ *  acces types are appened, the caller must also call
+ *  apol_domain_trans_analysis_append_class_perm() at least once with
+ *  a valid class and permission.</b>
  *  @param policy Policy handler, to report errors.
  *  @param dta Domain transition analysis to set.
  *  @param type_name Type to which a result must have access.
@@ -156,16 +157,18 @@ extern int apol_domain_trans_analysis_set_result_regex(apol_policy_t *policy, ap
 extern int apol_domain_trans_analysis_append_access_type(apol_policy_t *policy, apol_domain_trans_analysis_t *dta, const char *type_name);
 
 /**
- *  Set the analysis to return only types having access (via allow rules)
- *  to this class with the given permission. <b>This is only valid for</b>
- *  <b>forward analysis.</b> If more than one class is appended to the query,
- *  the resulting type must have access to at least one of the appended classes.
- *  If more than one permission is appended for the same class, the resulting
- *  type must have at least one of the appended permissions for that class.
- *  Pass a NULL to both strings to clear all previously appended classes and
- *  permissions. <b>If access classes and permissions are appended, the</b>
- *  <b>caller must also call apol_domain_trans_analysis_append_access_type()</b>
- *  <b>at least once with a valid type.</b>
+ *  Set the analysis to return only types having access (via allow
+ *  rules) to this class with the given permission. <b>This is only
+ *  valid for forward analysis.</b> If more than one class is appended
+ *  to the query, the resulting type must have access to at least one
+ *  of the appended classes.  If more than one permission is appended
+ *  for the same class, the resulting type must have at least one of
+ *  the appended permissions for that class.  Pass a NULL to both
+ *  strings to clear all previously appended classes and
+ *  permissions. <b>If access classes and permissions are appended,
+ *  the caller must also call
+ *  apol_domain_trans_analysis_append_access_type() at least once with
+ *  a valid type.</b>
  *  @param policy Policy handler, to report errors.
  *  @param dta Domain transition analysis to set.
  *  @param class_name The class to which a result must have access.

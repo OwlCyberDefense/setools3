@@ -202,7 +202,7 @@ static int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *inte
 	apol_vector_t *v = NULL;
 	apol_domain_trans_analysis_t *analysis = NULL;
 	int direction, num_opts;
-	CONST char **targets_strings = NULL, **class_strings = NULL;
+	CONST char **targets_strings = NULL, **classperm_strings = NULL;
 	size_t i;
 	int retval = TCL_ERROR;
 
@@ -247,18 +247,27 @@ static int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *inte
 		}
 	}
 
-	if (Tcl_SplitList(interp, argv[4], &num_opts, &class_strings) == TCL_ERROR) {
+	if (Tcl_SplitList(interp, argv[4], &num_opts, &classperm_strings) == TCL_ERROR) {
 		goto cleanup;
 	}
 	while (--num_opts >= 0) {
-		CONST char *s = class_strings[num_opts];
-                /*
-		if (apol_domain_trans_append_access_types(policydb, analysis, s) < 0) {
+		CONST char *s = classperm_strings[num_opts];
+		Tcl_Obj *cp_obj = Tcl_NewStringObj(s, -1), **cp;
+		int obj_count;
+		if (Tcl_ListObjGetElements(interp, cp_obj, &obj_count, &cp) == TCL_ERROR) {
 			goto cleanup;
 		}
-                */
+		if (obj_count != 2) {
+			ERR(policydb, "Not a class/perm pair: %s", s);
+			goto cleanup;
+		}
+		if (apol_domain_trans_analysis_append_class_perm
+		    (policydb, analysis, Tcl_GetString(cp[0]), Tcl_GetString(cp[1])) < 0) {
+			goto cleanup;
+		}
 	}
 
+	apol_domain_trans_table_reset(policydb);
 	if (apol_domain_trans_analysis_do(policydb, analysis, &v) < 0) {
 		goto cleanup;
 	}
@@ -275,8 +284,8 @@ static int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *inte
 	if (targets_strings != NULL) {
 		Tcl_Free((char *) targets_strings);
 	}
-	if (class_strings != NULL) {
-		Tcl_Free((char *) class_strings);
+	if (classperm_strings != NULL) {
+		Tcl_Free((char *) classperm_strings);
 	}
 	apol_domain_trans_analysis_destroy(&analysis);
 	apol_vector_destroy(&v, apol_domain_trans_result_free);
