@@ -1,5 +1,5 @@
 #############################################################
-#  dta_module.tcl
+#  domaintrans_module.tcl
 # -----------------------------------------------------------
 #  Copyright (C) 2003-2006 Tresys Technology, LLC
 #  see file 'COPYING' for use and warranty information
@@ -11,13 +11,13 @@
 # This module implements the domain transition analysis interface.
 
 
-namespace eval Apol_Analysis_dta {
+namespace eval Apol_Analysis_domaintrans {
     variable vals
     variable widgets
-    Apol_Analysis::registerAnalysis "Apol_Analysis_dta" "Domain Transition"
+    Apol_Analysis::registerAnalysis "Apol_Analysis_domaintrans" "Domain Transition"
 }
 
-proc Apol_Analysis_dta::open {} {
+proc Apol_Analysis_domaintrans::open {} {
     variable vals
     variable widgets
     Apol_Widget::resetTypeComboboxToPolicy $widgets(type)
@@ -29,14 +29,14 @@ proc Apol_Analysis_dta::open {} {
     }
 }
 
-proc Apol_Analysis_dta::close {} {
+proc Apol_Analysis_domaintrans::close {} {
     variable widgets
     reinitializeVals
     reinitializeWidgets
     Apol_Widget::clearTypeCombobox $widgets(type)
 }
 
-proc Apol_Analysis_dta::getInfo {} {
+proc Apol_Analysis_domaintrans::getInfo {} {
     return "A forward domain transition analysis will determine all (target)
 domains to which a given (source) domain may transition.  For a
 forward domain transition to be allowed, three forms of access must be
@@ -68,7 +68,7 @@ domains to perform another domain transition analysis on that domain.
 from the help menu."
 }
 
-proc Apol_Analysis_dta::create {options_frame} {
+proc Apol_Analysis_domaintrans::create {options_frame} {
     variable vals
     variable widgets
 
@@ -77,16 +77,16 @@ proc Apol_Analysis_dta::create {options_frame} {
     set dir_tf [TitleFrame $options_frame.dir -text "Direction"]
     pack $dir_tf -side left -padx 2 -pady 2 -expand 0 -fill y
     set dir_forward [radiobutton [$dir_tf getframe].forward -text "Forward" \
-                         -variable Apol_Analysis_dta::vals(dir) -value forward]
+                         -variable Apol_Analysis_domaintrans::vals(dir) -value forward]
     set dir_reverse [radiobutton [$dir_tf getframe].reverse -text "Reverse" \
-                         -variable Apol_Analysis_dta::vals(dir) -value reverse]
+                         -variable Apol_Analysis_domaintrans::vals(dir) -value reverse]
     pack $dir_forward $dir_reverse -anchor w
-    trace add variable Apol_Analysis_dta::vals(dir) write \
-        Apol_Analysis_dta::toggleDirection
+    trace add variable Apol_Analysis_domaintrans::vals(dir) write \
+        Apol_Analysis_domaintrans::toggleDirection
 
     set req_tf [TitleFrame $options_frame.req -text "Required Parameters"]
     pack $req_tf -side left -padx 2 -pady 2 -expand 0 -fill y
-    set l [label [$req_tf getframe].l -textvariable Apol_Analysis_dta::vals(type:label)]
+    set l [label [$req_tf getframe].l -textvariable Apol_Analysis_domaintrans::vals(type:label)]
     pack $l -anchor w
     set widgets(type) [Apol_Widget::makeTypeCombobox [$req_tf getframe].type]
     pack $widgets(type)
@@ -96,20 +96,20 @@ proc Apol_Analysis_dta::create {options_frame} {
     set access_f [frame [$filter_tf getframe].access]
     pack $access_f -side left -anchor nw
     set widgets(access_enable) [checkbutton $access_f.enable -text "Use access filters" \
-                                    -variable Apol_Analysis_dta::vals(access:enable)]
+                                    -variable Apol_Analysis_domaintrans::vals(access:enable)]
     pack $widgets(access_enable) -anchor w
     set widgets(access) [button $access_f.b -text "Access Filters" \
-                             -command Apol_Analysis_dta::createAccessDialog \
+                             -command Apol_Analysis_domaintrans::createAccessDialog \
                              -state disabled]
     pack $widgets(access) -anchor w -padx 4
-    trace add variable Apol_Analysis_dta::vals(access:enable) write \
-        Apol_Analysis_dta::toggleAccessSelected
+    trace add variable Apol_Analysis_domaintrans::vals(access:enable) write \
+        Apol_Analysis_domaintrans::toggleAccessSelected
     set widgets(regexp) [Apol_Widget::makeRegexpEntry [$filter_tf getframe].end]
     $widgets(regexp).cb configure -text "Filter result types using regular expression"
     pack $widgets(regexp) -side left -anchor nw -padx 8
 }
 
-proc Apol_Analysis_dta::newAnalysis {} {
+proc Apol_Analysis_domaintrans::newAnalysis {} {
     if {[set rt [checkParams]] != {}} {
         return $rt
     }
@@ -124,7 +124,7 @@ proc Apol_Analysis_dta::newAnalysis {} {
     return {}
 }
 
-proc Apol_Analysis_dta::updateAnalysis {f} {
+proc Apol_Analysis_domaintrans::updateAnalysis {f} {
     if {[set rt [checkParams]] != {}} {
         return $rt
     }
@@ -138,12 +138,12 @@ proc Apol_Analysis_dta::updateAnalysis {f} {
     return {}
 }
 
-proc Apol_Analysis_dta::reset {} {
+proc Apol_Analysis_domaintrans::reset {} {
     reinitializeVals
     reinitializeWidgets
 }
 
-proc Apol_Analysis_dta::switchTab {query_options} {
+proc Apol_Analysis_domaintrans::switchTab {query_options} {
     variable vals
     variable widgets
     array set vals $query_options
@@ -155,7 +155,7 @@ proc Apol_Analysis_dta::switchTab {query_options} {
     Apol_Widget::setRegexpEntryValue $widgets(regexp) $vals(regexp:enable) $vals(regexp)
 }
 
-proc Apol_Analysis_dta::saveQuery {channel} {
+proc Apol_Analysis_domaintrans::saveQuery {channel} {
     variable vals
     variable widgets
     foreach {key value} [array get vals] {
@@ -181,7 +181,7 @@ proc Apol_Analysis_dta::saveQuery {channel} {
     puts $channel "regexp $regexp"
 }
 
-proc Apol_Analysis_dta::loadQuery {channel} {
+proc Apol_Analysis_domaintrans::loadQuery {channel} {
     variable vals
     set targets_inc {}
     while {[gets $channel line] >= 0} {
@@ -234,15 +234,15 @@ proc Apol_Analysis_dta::loadQuery {channel} {
     reinitializeWidgets
 }
 
-proc Apol_Analysis_dta::gotoLine {tab line_num} {
+proc Apol_Analysis_domaintrans::gotoLine {tab line_num} {
 }
 
-proc Apol_Analysis_dta::search {tab str case_Insensitive regExpr srch_Direction } {
+proc Apol_Analysis_domaintrans::search {tab str case_Insensitive regExpr srch_Direction } {
 }
 
 #################### private functions below ####################
 
-proc Apol_Analysis_dta::reinitializeVals {} {
+proc Apol_Analysis_domaintrans::reinitializeVals {} {
     variable vals
 
     array set vals {
@@ -266,7 +266,7 @@ proc Apol_Analysis_dta::reinitializeVals {} {
     }
 }
 
-proc Apol_Analysis_dta::reinitializeWidgets {} {
+proc Apol_Analysis_domaintrans::reinitializeWidgets {} {
     variable vals
     variable widgets
 
@@ -278,7 +278,7 @@ proc Apol_Analysis_dta::reinitializeWidgets {} {
     Apol_Widget::setRegexpEntryValue $widgets(regexp) $vals(regexp:enable) $vals(regexp)
 }
 
-proc Apol_Analysis_dta::toggleDirection {name1 name2 op} {
+proc Apol_Analysis_domaintrans::toggleDirection {name1 name2 op} {
     variable vals
     if {$vals(dir) == "forward"} {
         set vals(type:label) "Source domain"
@@ -288,11 +288,11 @@ proc Apol_Analysis_dta::toggleDirection {name1 name2 op} {
     maybeEnableAccess
 }
 
-proc Apol_Analysis_dta::toggleAccessSelected {name1 name2 op} {
+proc Apol_Analysis_domaintrans::toggleAccessSelected {name1 name2 op} {
     maybeEnableAccess
 }
 
-proc Apol_Analysis_dta::maybeEnableAccess {} {
+proc Apol_Analysis_domaintrans::maybeEnableAccess {} {
     variable vals
     variable widgets
     if {$vals(dir) == "forward"} {
@@ -310,16 +310,16 @@ proc Apol_Analysis_dta::maybeEnableAccess {} {
 
 ################# functions that do access filters #################
 
-proc Apol_Analysis_dta::createAccessDialog {} {
-    destroy .dta_adv
-    set d [Dialog .dta_adv -modal local -separator 1 -title "DTA Access Filter" -parent .]
+proc Apol_Analysis_domaintrans::createAccessDialog {} {
+    destroy .domaintrans_adv
+    set d [Dialog .domaintrans_adv -modal local -separator 1 -title "Domain Transition Access Filter" -parent .]
     $d add -text "Close"
     createAccessTargets [$d getframe]
     createAccessClasses [$d getframe]
     $d draw
 }
 
-proc Apol_Analysis_dta::createAccessTargets {f} {
+proc Apol_Analysis_domaintrans::createAccessTargets {f} {
     variable vals
 
     set type_f [frame $f.targets]
@@ -328,35 +328,35 @@ proc Apol_Analysis_dta::createAccessTargets {f} {
     pack $l1 -anchor w
 
     set targets [Apol_Widget::makeScrolledListbox $type_f.targets -height 10 -width 24 \
-                 -listvar Apol_Analysis_dta::vals(targets:inc_displayed) \
+                 -listvar Apol_Analysis_domaintrans::vals(targets:inc_displayed) \
                  -selectmode extended -exportselection 0]
     set targets_lb [Apol_Widget::getScrolledListbox $targets]
     bind $targets_lb <<ListboxSelect>> \
-        [list Apol_Analysis_dta::selectTargetListbox $targets_lb]
+        [list Apol_Analysis_domaintrans::selectTargetListbox $targets_lb]
     pack $targets -expand 0 -fill both
 
     set bb [ButtonBox $type_f.bb -homogeneous 1 -spacing 4]
     $bb add -text "Include All" \
-        -command [list Apol_Analysis_dta::includeAllItems $targets_lb targets]
+        -command [list Apol_Analysis_domaintrans::includeAllItems $targets_lb targets]
     $bb add -text "Ignore All" \
-        -command [list Apol_Analysis_dta::ignoreAllItems $targets_lb targets]
+        -command [list Apol_Analysis_domaintrans::ignoreAllItems $targets_lb targets]
     pack $bb -pady 4
 
     set attrib [frame $type_f.a]
     pack $attrib
     set attrib_enable [checkbutton $attrib.ae -anchor w \
                            -text "Filter by attribute" \
-                           -variable Apol_Analysis_dta::vals(targets:attribenable)]
+                           -variable Apol_Analysis_domaintrans::vals(targets:attribenable)]
     set attrib_box [ComboBox $attrib.ab -autopost 1 -entrybg white -width 16 \
                         -values $Apol_Types::attriblist \
-                        -textvariable Apol_Analysis_dta::vals(targets:attrib)]
+                        -textvariable Apol_Analysis_domaintrans::vals(targets:attrib)]
     $attrib_enable configure -command \
-        [list Apol_Analysis_dta::attribEnabled $attrib_box $targets_lb]
+        [list Apol_Analysis_domaintrans::attribEnabled $attrib_box $targets_lb]
     # remove any old traces on the attribute
-    trace remove variable Apol_Analysis_dta::vals(targets:attrib) write \
-        [list Apol_Analysis_dta::attribChanged $targets_lb]
-    trace add variable Apol_Analysis_dta::vals(targets:attrib) write \
-        [list Apol_Analysis_dta::attribChanged $targets_lb]
+    trace remove variable Apol_Analysis_domaintrans::vals(targets:attrib) write \
+        [list Apol_Analysis_domaintrans::attribChanged $targets_lb]
+    trace add variable Apol_Analysis_domaintrans::vals(targets:attrib) write \
+        [list Apol_Analysis_domaintrans::attribChanged $targets_lb]
     pack $attrib_enable -side top -expand 0 -fill x -anchor sw -padx 5 -pady 2
     pack $attrib_box -side top -expand 1 -fill x -padx 10
     attribEnabled $attrib_box $targets_lb
@@ -366,7 +366,7 @@ proc Apol_Analysis_dta::createAccessTargets {f} {
     }
 }
 
-proc Apol_Analysis_dta::selectTargetListbox {lb} {
+proc Apol_Analysis_domaintrans::selectTargetListbox {lb} {
     variable vals
     for {set i 0} {$i < [$lb index end]} {incr i} {
         set t [$lb get $i]
@@ -382,14 +382,14 @@ proc Apol_Analysis_dta::selectTargetListbox {lb} {
     focus $lb
 }
 
-proc Apol_Analysis_dta::includeAllItems {lb varname} {
+proc Apol_Analysis_domaintrans::includeAllItems {lb varname} {
     variable vals
     $lb selection set 0 end
     set displayed [$lb get 0 end]
     set vals($varname:inc) [lsort -uniq [concat $vals($varname:inc) $displayed]]
 }
 
-proc Apol_Analysis_dta::ignoreAllItems {lb varname} {
+proc Apol_Analysis_domaintrans::ignoreAllItems {lb varname} {
     variable vals
     $lb selection clear 0 end
     set displayed [$lb get 0 end]
@@ -402,7 +402,7 @@ proc Apol_Analysis_dta::ignoreAllItems {lb varname} {
     set vals($varname:inc) $inc
 }
 
-proc Apol_Analysis_dta::attribEnabled {cb lb} {
+proc Apol_Analysis_domaintrans::attribEnabled {cb lb} {
     variable vals
     if {$vals(targets:attribenable)} {
         $cb configure -state normal
@@ -413,14 +413,14 @@ proc Apol_Analysis_dta::attribEnabled {cb lb} {
     }
 }
 
-proc Apol_Analysis_dta::attribChanged {lb name1 name2 op} {
+proc Apol_Analysis_domaintrans::attribChanged {lb name1 name2 op} {
     variable vals
     if {$vals(targets:attribenable)} {
         filterTypeLists $vals(targets:attrib) $lb
     }
 }
 
-proc Apol_Analysis_dta::filterTypeLists {attrib lb} {
+proc Apol_Analysis_domaintrans::filterTypeLists {attrib lb} {
     variable vals
     $lb selection clear 0 end
     if {$attrib != ""} {
@@ -435,7 +435,7 @@ proc Apol_Analysis_dta::filterTypeLists {attrib lb} {
     }
 }
 
-proc Apol_Analysis_dta::createAccessClasses {f} {
+proc Apol_Analysis_domaintrans::createAccessClasses {f} {
     variable vals
     variable widgets
 
@@ -455,27 +455,27 @@ proc Apol_Analysis_dta::createAccessClasses {f} {
     pack $classes -expand 1 -fill both
     set cbb [ButtonBox $lf.cbb -homogeneous 1 -spacing 4]
     $cbb add -text "Include All" \
-        -command [list Apol_Analysis_dta::includeAllClasses $classes_lb]
+        -command [list Apol_Analysis_domaintrans::includeAllClasses $classes_lb]
     $cbb add -text "Ignore All" \
-        -command [list Apol_Analysis_dta::ignoreAllClasses $classes_lb]
+        -command [list Apol_Analysis_domaintrans::ignoreAllClasses $classes_lb]
     pack $cbb -pady 4 -expand 0
 
     set perms [Apol_Widget::makeScrolledListbox $rf.perms -height 10 -width 24 \
-                     -listvar Apol_Analysis_dta::vals(classes:perms_displayed) \
+                     -listvar Apol_Analysis_domaintrans::vals(classes:perms_displayed) \
                      -selectmode extended -exportselection 0]
     set perms_lb [Apol_Widget::getScrolledListbox $perms]
     pack $perms -expand 1 -fill both
     set pbb [ButtonBox $rf.pbb -homogeneous 1 -spacing 4]
     $pbb add -text "Include All" \
-        -command [list Apol_Analysis_dta::includeAllPerms $classes_lb $perms_lb]
+        -command [list Apol_Analysis_domaintrans::includeAllPerms $classes_lb $perms_lb]
     $pbb add -text "Ignore All" \
-        -command [list Apol_Analysis_dta::ignoreAllPerms $classes_lb $perms_lb]
+        -command [list Apol_Analysis_domaintrans::ignoreAllPerms $classes_lb $perms_lb]
     pack $pbb -pady 4 -expand 0
 
     bind $classes_lb <<ListboxSelect>> \
-        [list Apol_Analysis_dta::selectClassListbox $l2 $classes_lb $perms_lb]
+        [list Apol_Analysis_domaintrans::selectClassListbox $l2 $classes_lb $perms_lb]
     bind $perms_lb <<ListboxSelect>> \
-        [list Apol_Analysis_dta::selectPermListbox $classes_lb $perms_lb]
+        [list Apol_Analysis_domaintrans::selectPermListbox $classes_lb $perms_lb]
 
     foreach class_key [array names vals classes:*:enable] {
         if {$vals($class_key)} {
@@ -492,7 +492,7 @@ proc Apol_Analysis_dta::createAccessClasses {f} {
     selectClassListbox $l2 $classes_lb $perms_lb
 }
 
-proc Apol_Analysis_dta::selectClassListbox {perm_label lb plb} {
+proc Apol_Analysis_domaintrans::selectClassListbox {perm_label lb plb} {
     variable vals
     for {set i 0} {$i < [$lb index end]} {incr i} {
         set c [$lb get $i]
@@ -517,7 +517,7 @@ proc Apol_Analysis_dta::selectClassListbox {perm_label lb plb} {
     focus $lb
 }
 
-proc Apol_Analysis_dta::includeAllClasses {lb} {
+proc Apol_Analysis_domaintrans::includeAllClasses {lb} {
     variable vals
     $lb selection set 0 end
     foreach c $Apol_Class_Perms::class_list {
@@ -525,7 +525,7 @@ proc Apol_Analysis_dta::includeAllClasses {lb} {
     }
 }
 
-proc Apol_Analysis_dta::ignoreAllClasses {lb} {
+proc Apol_Analysis_domaintrans::ignoreAllClasses {lb} {
     variable vals
     $lb selection clear 0 end
     foreach c $Apol_Class_Perms::class_list {
@@ -533,7 +533,7 @@ proc Apol_Analysis_dta::ignoreAllClasses {lb} {
     }
 }
 
-proc Apol_Analysis_dta::selectPermListbox {lb plb} {
+proc Apol_Analysis_domaintrans::selectPermListbox {lb plb} {
     variable vals
     set class [$lb get anchor]
     set p {}
@@ -544,14 +544,14 @@ proc Apol_Analysis_dta::selectPermListbox {lb plb} {
     focus $plb
 }
 
-proc Apol_Analysis_dta::includeAllPerms {lb plb} {
+proc Apol_Analysis_domaintrans::includeAllPerms {lb plb} {
     variable vals
     set class [$lb get anchor]
     $plb selection set 0 end
     set vals(classes:$class) $vals(classes:perms_displayed)
 }
 
-proc Apol_Analysis_dta::ignoreAllPerms {lb plb} {
+proc Apol_Analysis_domaintrans::ignoreAllPerms {lb plb} {
     variable vals
     set class [$lb get anchor]
     $plb selection clear 0 end
@@ -560,7 +560,7 @@ proc Apol_Analysis_dta::ignoreAllPerms {lb plb} {
 
 #################### functions that do analyses ####################
 
-proc Apol_Analysis_dta::checkParams {} {
+proc Apol_Analysis_domaintrans::checkParams {} {
     variable vals
     variable widgets
     if {![ApolTop::is_policy_open]} {
@@ -602,12 +602,12 @@ proc Apol_Analysis_dta::checkParams {} {
     return {}  ;# all parameters passed, now ready to do search
 }
 
-proc Apol_Analysis_dta::analyze {} {
+proc Apol_Analysis_domaintrans::analyze {} {
     variable vals
     apol_DomainTransitionAnalysis $vals(dir) $vals(type) $vals(search:object_types) $vals(search:classperm_pairs) $vals(search:regexp)
 }
 
-proc Apol_Analysis_dta::analyzeMore {tree node analysis_args} {
+proc Apol_Analysis_domaintrans::analyzeMore {tree node analysis_args} {
     foreach {dir orig_type object_types classperm_pairs regexp} $analysis_args {break}
     set new_start [$tree itemcget $node -text]
     apol_DomainTransitionAnalysis $dir $new_start $object_types $classperm_pairs $regexp
@@ -615,7 +615,7 @@ proc Apol_Analysis_dta::analyzeMore {tree node analysis_args} {
 
 ################# functions that control analysis output #################
 
-proc Apol_Analysis_dta::createResultsDisplay {} {
+proc Apol_Analysis_domaintrans::createResultsDisplay {} {
     variable vals
 
     set f [Apol_Analysis::createResultTab "Domain Trans" [array get vals]]
@@ -641,12 +641,12 @@ proc Apol_Analysis_dta::createResultsDisplay {} {
     $res.tb tag configure num -foreground blue -font {Helvetica 10 bold}
     pack $res -expand 1 -fill both
 
-    $tree configure -selectcommand [list Apol_Analysis_dta::treeSelect $res]
-    $tree configure -opencmd [list Apol_Analysis_dta::treeOpen $tree]
+    $tree configure -selectcommand [list Apol_Analysis_domaintrans::treeSelect $res]
+    $tree configure -opencmd [list Apol_Analysis_domaintrans::treeOpen $tree]
     return $f
 }
 
-proc Apol_Analysis_dta::treeSelect {res tree node} {
+proc Apol_Analysis_domaintrans::treeSelect {res tree node} {
     if {$node != {}} {
         $res.tb configure -state normal
         $res.tb delete 0.0 end
@@ -661,8 +661,9 @@ proc Apol_Analysis_dta::treeSelect {res tree node} {
     }
 }
 
-# perform additional DTA if this node has not been analyzed yet
-proc Apol_Analysis_dta::treeOpen {tree node} {
+# perform additional domain transitions if this node has not been
+# analyzed yet
+proc Apol_Analysis_domaintrans::treeOpen {tree node} {
     foreach {search_crit results} [$tree itemcget $node -data] {break}
     if {([string index $node 0] == "f" || [string index $node 0] == "r") && $search_crit != {}} {
         ApolTop::setBusyCursor
@@ -679,7 +680,7 @@ proc Apol_Analysis_dta::treeOpen {tree node} {
     }
 }
 
-proc Apol_Analysis_dta::clearResultsDisplay {f} {
+proc Apol_Analysis_domaintrans::clearResultsDisplay {f} {
     variable vals
     set tree [[$f.left getframe].sw getframe].tree
     set res [$f.right getframe].res
@@ -688,7 +689,7 @@ proc Apol_Analysis_dta::clearResultsDisplay {f} {
     Apol_Analysis::setResultTabCriteria [array get vals]
 }
 
-proc Apol_Analysis_dta::renderResults {f results} {
+proc Apol_Analysis_domaintrans::renderResults {f results} {
     variable vals
 
     set tree [[$f.left getframe].sw getframe].tree
@@ -706,7 +707,7 @@ proc Apol_Analysis_dta::renderResults {f results} {
     $tree see top
 }
 
-proc Apol_Analysis_dta::renderTopText {} {
+proc Apol_Analysis_domaintrans::renderTopText {} {
     variable vals
 
     if {$vals(dir) == "forward"} {
@@ -764,7 +765,7 @@ Thus, associated type_transition rules are not truly part of the
 definition of allowed domain transition" {}
 }
 
-proc Apol_Analysis_dta::createResultsNodes {tree parent_node results search_crit} {
+proc Apol_Analysis_domaintrans::createResultsNodes {tree parent_node results search_crit} {
     set dir [lindex $search_crit 0]
     foreach r $results {
         foreach {source target intermed execute proctrans entrypoint} $r {break}
@@ -797,11 +798,12 @@ proc Apol_Analysis_dta::createResultsNodes {tree parent_node results search_crit
     }
 }
 
-proc Apol_Analysis_dta::renderResultsDTA {res tree node data} {
+proc Apol_Analysis_domaintrans::renderResultsDTA {res tree node data} {
     set parent_name [$tree itemcget [$tree parent $node] -text]
     set name [$tree itemcget $node -text]
     foreach {proctrans ep} $data {break}
-    # direction of DTA is encoded encoded in the node's identifier
+    # direction of domain transition is encoded encoded in the node's
+    # identifier
     if {[string index $node 0] == "f"} {
         set header [list "Domain transition from " title \
                         $parent_name title_type \
