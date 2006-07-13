@@ -932,8 +932,8 @@ proc ApolTop::create { } {
         }
 	"&Help" {} helpmenu 0 {
 	    {command "&General Help" {all option} "Show help" {} -command {ApolTop::helpDlg "Help" "apol_help.txt"}}
-	    {command "&Domain Transition Analysis" {all option} "Show help" {} -command {ApolTop::helpDlg "Domain Transition Analysis Help" "dta_help.txt"}}
-	    {command "&Information Flow Analysis" {all option} "Show help" {} -command {ApolTop::helpDlg "Information Flow Analysis Help" "iflow_help.txt"}}
+	    {command "&Domain Transition Analysis" {all option} "Show help" {} -command {ApolTop::helpDlg "Domain Transition Analysis Help" "domaintrans_help.txt"}}
+	    {command "&Information Flow Analysis" {all option} "Show help" {} -command {ApolTop::helpDlg "Information Flow Analysis Help" "infoflow_help.txt"}}
 	    #{command "&Information Flow Assertion Analysis" {all option} "Show help" {} -command {ApolTop::helpDlg "Information Flow Assertion Analysis Help" "flow_assertion_help.txt"}}
 	    {command "&Direct Relabel Analysis" {all option} "Show help" {} -command {ApolTop::helpDlg "Relabel Analysis Help" "file_relabel_help.txt"}}
 	    {command "&Types Relationship Summary Analysis" {all option} "Show help" {} -command {ApolTop::helpDlg "Types Relationship Summary Analysis Help" "types_relation_help.txt"}}

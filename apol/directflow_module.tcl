@@ -1,5 +1,5 @@
 #############################################################
-#  dirflow_module.tcl
+#  directflow_module.tcl
 # -----------------------------------------------------------
 #  Copyright (C) 2003-2006 Tresys Technology, LLC
 #  see file 'COPYING' for use and warranty information
@@ -11,13 +11,13 @@
 # This is the implementation of the interface for Information
 # Flow analysis.
 
-namespace eval Apol_Analysis_dirflow {
+namespace eval Apol_Analysis_directflow {
     variable vals
     variable widgets
-    Apol_Analysis::registerAnalysis "Apol_Analysis_dirflow" "Direct Information Flow"
+    Apol_Analysis::registerAnalysis "Apol_Analysis_directflow" "Direct Information Flow"
 }
 
-proc Apol_Analysis_dirflow::open {} {
+proc Apol_Analysis_directflow::open {} {
     variable vals
     variable widgets
     Apol_Widget::resetTypeComboboxToPolicy $widgets(type)
@@ -28,14 +28,14 @@ proc Apol_Analysis_dirflow::open {} {
     toggleClasses {} {} {}
 }
 
-proc Apol_Analysis_dirflow::close {} {
+proc Apol_Analysis_directflow::close {} {
     variable widgets
     reinitializeVals
     reinitializeWidgets
     Apol_Widget::clearTypeCombobox $widgets(type)
 }
 
-proc Apol_Analysis_dirflow::getInfo {} {
+proc Apol_Analysis_directflow::getInfo {} {
     return "This analysis generates the results of a Direct Information Flow
 analysis beginning from the starting type selected.  The results of
 the analysis are presented in tree form with the root of the tree
@@ -57,7 +57,7 @@ same, you cannot open the child.  This avoids cyclic analyses.
 from the help menu."
 }
 
-proc Apol_Analysis_dirflow::create {options_frame} {
+proc Apol_Analysis_directflow::create {options_frame} {
     variable vals
     variable widgets
 
@@ -66,13 +66,13 @@ proc Apol_Analysis_dirflow::create {options_frame} {
     set dir_tf [TitleFrame $options_frame.mode -text "Direction"]
     pack $dir_tf -side left -padx 2 -pady 2 -expand 0 -fill y
     set dir_in [radiobutton [$dir_tf getframe].in -text In -value in \
-                    -variable Apol_Analysis_dirflow::vals(dir)]
+                    -variable Apol_Analysis_directflow::vals(dir)]
     set dir_out [radiobutton [$dir_tf getframe].out -text Out -value out \
-                     -variable Apol_Analysis_dirflow::vals(dir)]
+                     -variable Apol_Analysis_directflow::vals(dir)]
     set dir_either [radiobutton [$dir_tf getframe].either -text Either -value either \
-                        -variable Apol_Analysis_dirflow::vals(dir)]
+                        -variable Apol_Analysis_directflow::vals(dir)]
     set dir_both [radiobutton [$dir_tf getframe].both -text Both -value both \
-                         -variable Apol_Analysis_dirflow::vals(dir)]
+                         -variable Apol_Analysis_directflow::vals(dir)]
     pack $dir_in $dir_out $dir_either $dir_both -anchor w
 
     set req_tf [TitleFrame $options_frame.req -text "Required Parameters"]
@@ -87,7 +87,7 @@ proc Apol_Analysis_dirflow::create {options_frame} {
     set class_f [frame [$filter_tf getframe].class]
     pack $class_f -side left -anchor nw
     set class_enable [checkbutton $class_f.enable -text "Filter by object class" \
-                          -variable Apol_Analysis_dirflow::vals(classes:enable)]
+                          -variable Apol_Analysis_directflow::vals(classes:enable)]
     pack $class_enable -anchor w
     set widgets(classes) [Apol_Widget::makeScrolledListbox $class_f.classes \
                               -height 6 -width 24 \
@@ -95,23 +95,23 @@ proc Apol_Analysis_dirflow::create {options_frame} {
                               -selectmode extended -exportselection 0]
     set classes_lb [Apol_Widget::getScrolledListbox $widgets(classes)]
     bind $classes_lb <<ListboxSelect>> \
-        [list Apol_Analysis_dirflow::selectClassesListbox $classes_lb]
+        [list Apol_Analysis_directflow::selectClassesListbox $classes_lb]
     pack $widgets(classes) -padx 4 -expand 0 -fill both
-    trace add variable Apol_Analysis_dirflow::vals(classes:enable) write \
-        Apol_Analysis_dirflow::toggleClasses
+    trace add variable Apol_Analysis_directflow::vals(classes:enable) write \
+        Apol_Analysis_directflow::toggleClasses
     Apol_Widget::setScrolledListboxState $widgets(classes) disabled
     set classes_bb [ButtonBox $class_f.bb -homogeneous 1 -spacing 4]
     $classes_bb add -text "Include All" \
-        -command [list Apol_Analysis_dirflow::includeAll $classes_lb]
+        -command [list Apol_Analysis_directflow::includeAll $classes_lb]
     $classes_bb add -text "Exclude All"  \
-        -command [list Apol_Analysis_dirflow::excludeAll $classes_lb]
+        -command [list Apol_Analysis_directflow::excludeAll $classes_lb]
     pack $classes_bb -pady 4
     set widgets(regexp) [Apol_Widget::makeRegexpEntry [$filter_tf getframe].end]
     $widgets(regexp).cb configure -text "Filter end types using regular expression"
     pack $widgets(regexp) -side left -anchor nw -padx 8
 }
 
-proc Apol_Analysis_dirflow::newAnalysis {} {
+proc Apol_Analysis_directflow::newAnalysis {} {
     if {[set rt [checkParams]] != {}} {
         return $rt
     }
@@ -126,7 +126,7 @@ proc Apol_Analysis_dirflow::newAnalysis {} {
     return {}
 }
 
-proc Apol_Analysis_dirflow::updateAnalysis {f} {
+proc Apol_Analysis_directflow::updateAnalysis {f} {
     if {[set rt [checkParams]] != {}} {
         return $rt
     }
@@ -140,19 +140,19 @@ proc Apol_Analysis_dirflow::updateAnalysis {f} {
     return {}
 }
 
-proc Apol_Analysis_dirflow::reset {} {
+proc Apol_Analysis_directflow::reset {} {
     reinitializeVals
     reinitializeWidgets
 }
 
-proc Apol_Analysis_dirflow::switchTab {query_options} {
+proc Apol_Analysis_directflow::switchTab {query_options} {
     variable vals
     variable widgets
     array set vals $query_options
     reinitializeWidgets
 }
 
-proc Apol_Analysis_dirflow::saveQuery {channel} {
+proc Apol_Analysis_directflow::saveQuery {channel} {
     variable vals
     variable widgets
     foreach {key value} [array get vals] {
@@ -167,7 +167,7 @@ proc Apol_Analysis_dirflow::saveQuery {channel} {
     puts $channel "regexp $regexp"
 }
 
-proc Apol_Analysis_dirflow::loadQuery {channel} {
+proc Apol_Analysis_directflow::loadQuery {channel} {
     variable vals
 
     set classes {}
@@ -204,15 +204,15 @@ proc Apol_Analysis_dirflow::loadQuery {channel} {
     reinitializeWidgets
 }
 
-proc Apol_Analysis_dirflow::gotoLine {tab line_num} {
+proc Apol_Analysis_directflow::gotoLine {tab line_num} {
 }
 
-proc Apol_Analysis_dirflow::search {tab str case_Insensitive regExpr srch_Direction } {
+proc Apol_Analysis_directflow::search {tab str case_Insensitive regExpr srch_Direction } {
 }
 
 #################### private functions below ####################
 
-proc Apol_Analysis_dirflow::reinitializeVals {} {
+proc Apol_Analysis_directflow::reinitializeVals {} {
     variable vals
     array set vals {
         dir in
@@ -226,7 +226,7 @@ proc Apol_Analysis_dirflow::reinitializeVals {} {
     }
 }
 
-proc Apol_Analysis_dirflow::reinitializeWidgets {} {
+proc Apol_Analysis_directflow::reinitializeWidgets {} {
     variable vals
     variable widgets
 
@@ -247,7 +247,7 @@ proc Apol_Analysis_dirflow::reinitializeWidgets {} {
     toggleClasses {} {} {}
 }
 
-proc Apol_Analysis_dirflow::toggleClasses {name1 name2 op} {
+proc Apol_Analysis_directflow::toggleClasses {name1 name2 op} {
     variable vals
     variable widgets
     if {$vals(classes:enable)} {
@@ -257,7 +257,7 @@ proc Apol_Analysis_dirflow::toggleClasses {name1 name2 op} {
     }
 }
 
-proc Apol_Analysis_dirflow::selectClassesListbox {lb} {
+proc Apol_Analysis_directflow::selectClassesListbox {lb} {
     variable vals
     for {set i 0} {$i < [$lb index end]} {incr i} {
         set t [$lb get $i]
@@ -273,13 +273,13 @@ proc Apol_Analysis_dirflow::selectClassesListbox {lb} {
     focus $lb
 }
 
-proc Apol_Analysis_dirflow::includeAll {lb} {
+proc Apol_Analysis_directflow::includeAll {lb} {
     variable vals
     $lb selection set 0 end
     set vals(classes:selected) $Apol_Class_Perms::class_list
 }
 
-proc Apol_Analysis_dirflow::excludeAll {lb} {
+proc Apol_Analysis_directflow::excludeAll {lb} {
     variable vals
     $lb selection clear 0 end
     set vals(classes:selected) {}
@@ -287,7 +287,7 @@ proc Apol_Analysis_dirflow::excludeAll {lb} {
 
 #################### functions that do analyses ####################
 
-proc Apol_Analysis_dirflow::checkParams {} {
+proc Apol_Analysis_directflow::checkParams {} {
     variable vals
     variable widgets
     if {![ApolTop::is_policy_open]} {
@@ -320,7 +320,7 @@ proc Apol_Analysis_dirflow::checkParams {} {
     return {}  ;# all parameters passed, now ready to do search
 }
 
-proc Apol_Analysis_dirflow::analyze {} {
+proc Apol_Analysis_directflow::analyze {} {
     variable vals
     if {$vals(classes:enable)} {
         set classes $vals(classes:selected)
@@ -337,7 +337,7 @@ proc Apol_Analysis_dirflow::analyze {} {
 
 ################# functions that control analysis output #################
 
-proc Apol_Analysis_dirflow::createResultsDisplay {} {
+proc Apol_Analysis_directflow::createResultsDisplay {} {
     variable vals
 
     set f [Apol_Analysis::createResultTab "Direct Flow" [array get vals]]
@@ -359,11 +359,11 @@ proc Apol_Analysis_dirflow::createResultsDisplay {} {
     $res.tb tag configure type_tag -foreground blue -font {Helvetica 12 bold}
     pack $res -expand 1 -fill both
 
-    $tree configure -selectcommand [list Apol_Analysis_dirflow::treeSelect $res]
+    $tree configure -selectcommand [list Apol_Analysis_directflow::treeSelect $res]
     return $f
 }
 
-proc Apol_Analysis_dirflow::treeSelect {res tree node} {
+proc Apol_Analysis_directflow::treeSelect {res tree node} {
     if {$node != {}} {
         $res.tb configure -state normal
         $res.tb delete 0.0 end
@@ -394,10 +394,10 @@ if {0} {
 }
 
 
-proc Apol_Analysis_dirflow::render_target_type_data {data dirflow_info_text dirflow_tree node} {
-	$dirflow_info_text configure -state normal
-	$dirflow_info_text delete 0.0 end
-        $dirflow_info_text configure -wrap none
+proc Apol_Analysis_directflow::render_target_type_data {data directflow_info_text directflow_tree node} {
+	$directflow_info_text configure -state normal
+	$directflow_info_text delete 0.0 end
+        $directflow_info_text configure -wrap none
 
 	if { $data == "" } {
 		return ""
@@ -406,54 +406,54 @@ proc Apol_Analysis_dirflow::render_target_type_data {data dirflow_info_text dirf
         set flow_dir [lindex $data 1]
         set num_objs [lindex $data 2]
 	set curIdx 3
-        set startIdx [$dirflow_info_text index insert]
-	set start_type [$dirflow_tree itemcget [$dirflow_tree parent $node] -text]
+        set startIdx [$directflow_info_text index insert]
+	set start_type [$directflow_tree itemcget [$directflow_tree parent $node] -text]
 
         if {$flow_dir == "both"} {
 # Print the output title
-	    $dirflow_info_text insert end "Information flows both into and out of "
-	    set endIdx [$dirflow_info_text index insert]
-	    $dirflow_info_text tag add $Apol_Analysis_dirflow::title_tag $startIdx $endIdx
-	    set startIdx [$dirflow_info_text index insert]
-	    $dirflow_info_text insert end $start_type
-	    set endIdx [$dirflow_info_text index insert]
-	    $dirflow_info_text tag add $Apol_Analysis_dirflow::title_type_tag $startIdx $endIdx
-	    set startIdx [$dirflow_info_text index insert]
-	    $dirflow_info_text insert end " - \[from/to\] "
-	    set endIdx [$dirflow_info_text index insert]
-	    $dirflow_info_text tag add $Apol_Analysis_dirflow::title_tag $startIdx $endIdx
-	    set startIdx [$dirflow_info_text index insert]
-	    $dirflow_info_text insert end $cur_end_type
-	    set endIdx [$dirflow_info_text index insert]
-	    $dirflow_info_text tag add $Apol_Analysis_dirflow::title_type_tag $startIdx $endIdx
+	    $directflow_info_text insert end "Information flows both into and out of "
+	    set endIdx [$directflow_info_text index insert]
+	    $directflow_info_text tag add $Apol_Analysis_directflow::title_tag $startIdx $endIdx
+	    set startIdx [$directflow_info_text index insert]
+	    $directflow_info_text insert end $start_type
+	    set endIdx [$directflow_info_text index insert]
+	    $directflow_info_text tag add $Apol_Analysis_directflow::title_type_tag $startIdx $endIdx
+	    set startIdx [$directflow_info_text index insert]
+	    $directflow_info_text insert end " - \[from/to\] "
+	    set endIdx [$directflow_info_text index insert]
+	    $directflow_info_text tag add $Apol_Analysis_directflow::title_tag $startIdx $endIdx
+	    set startIdx [$directflow_info_text index insert]
+	    $directflow_info_text insert end $cur_end_type
+	    set endIdx [$directflow_info_text index insert]
+	    $directflow_info_text tag add $Apol_Analysis_directflow::title_type_tag $startIdx $endIdx
 	    set startIdx $endIdx
 # Print label for in flows
-	    $dirflow_info_text insert end "\n\nObject classes for "
-	    set endIdx [$dirflow_info_text index insert]
-	    $dirflow_info_text tag add $Apol_Analysis_dirflow::subtitle_tag $startIdx $endIdx
+	    $directflow_info_text insert end "\n\nObject classes for "
+	    set endIdx [$directflow_info_text index insert]
+	    $directflow_info_text tag add $Apol_Analysis_directflow::subtitle_tag $startIdx $endIdx
 	    set startIdx $endIdx
-	    $dirflow_info_text insert end "\[IN/OUT\]"
-	    set endIdx [$dirflow_info_text index insert]
-	    $dirflow_info_text tag add $Apol_Analysis_dirflow::title_type_tag $startIdx $endIdx
+	    $directflow_info_text insert end "\[IN/OUT\]"
+	    set endIdx [$directflow_info_text index insert]
+	    $directflow_info_text tag add $Apol_Analysis_directflow::title_type_tag $startIdx $endIdx
 	    set startIdx $endIdx
-	    $dirflow_info_text insert end " flows:"
-	    set endIdx [$dirflow_info_text index insert]
-	    $dirflow_info_text tag add $Apol_Analysis_dirflow::subtitle_tag $startIdx $endIdx
+	    $directflow_info_text insert end " flows:"
+	    set endIdx [$directflow_info_text index insert]
+	    $directflow_info_text tag add $Apol_Analysis_directflow::subtitle_tag $startIdx $endIdx
 	    set startIdx $endIdx
 # Then process inflows
 	    for {set i 0} {$i<$num_objs} {incr i} {
 		if {[lindex $data $curIdx] == "1"} {
 		    incr curIdx
-		    $dirflow_info_text insert end "\n\t"
+		    $directflow_info_text insert end "\n\t"
 		    # This should be the object name
-		    $dirflow_info_text insert end [lindex $data $curIdx]
-		    set endIdx [$dirflow_info_text index insert]
-		    $dirflow_info_text tag add $Apol_Analysis_dirflow::subtitle_tag $startIdx $endIdx
+		    $directflow_info_text insert end [lindex $data $curIdx]
+		    set endIdx [$directflow_info_text index insert]
+		    $directflow_info_text tag add $Apol_Analysis_directflow::subtitle_tag $startIdx $endIdx
 		    incr curIdx
 		    set num_rules [lindex $data $curIdx]
 		    for {set j 0} {$j<$num_rules} {incr j} {
-			$dirflow_info_text insert end "\n\t"
-			set startIdx [$dirflow_info_text index insert]
+			$directflow_info_text insert end "\n\t"
+			set startIdx [$directflow_info_text index insert]
 			incr curIdx
 			set rule [lindex $data $curIdx]
 			# Get the line number only
@@ -465,24 +465,24 @@ proc Apol_Analysis_dirflow::render_target_type_data {data dirflow_info_text dirf
 
 			# Only display line number hyperlink if this is not a binary policy.
 			if {![ApolTop::is_binary_policy]} {
-				$dirflow_info_text insert end "\[$lineno\]"
-				Apol_PolicyConf::insertHyperLink $dirflow_info_text "$startIdx wordstart + 1c" "$startIdx wordstart + [expr [string length $lineno] + 1]c"
+				$directflow_info_text insert end "\[$lineno\]"
+				Apol_PolicyConf::insertHyperLink $directflow_info_text "$startIdx wordstart + 1c" "$startIdx wordstart + [expr [string length $lineno] + 1]c"
 			}
-			set startIdx [$dirflow_info_text index insert]
-			$dirflow_info_text insert end " $rule"
-			set endIdx [$dirflow_info_text index insert]
-			$dirflow_info_text tag add $Apol_Analysis_dirflow::rules_tag $startIdx $endIdx
+			set startIdx [$directflow_info_text index insert]
+			$directflow_info_text insert end " $rule"
+			set endIdx [$directflow_info_text index insert]
+			$directflow_info_text tag add $Apol_Analysis_directflow::rules_tag $startIdx $endIdx
 
 			incr curIdx
 			# The next element should be the enabled boolean flag.
 			if {[lindex $data $curIdx] == 0} {
-				$dirflow_info_text insert end "   "
-				set startIdx [$dirflow_info_text index insert]
-				$dirflow_info_text insert end "\[Disabled\]"
-				set endIdx [$dirflow_info_text index insert]
-				$dirflow_info_text tag add $Apol_Analysis_dirflow::disabled_rule_tag $startIdx $endIdx
+				$directflow_info_text insert end "   "
+				set startIdx [$directflow_info_text index insert]
+				$directflow_info_text insert end "\[Disabled\]"
+				set endIdx [$directflow_info_text index insert]
+				$directflow_info_text tag add $Apol_Analysis_directflow::disabled_rule_tag $startIdx $endIdx
 			}
-			set startIdx [$dirflow_info_text index insert]
+			set startIdx [$directflow_info_text index insert]
 		    }
 		}
 		incr curIdx
@@ -491,69 +491,69 @@ proc Apol_Analysis_dirflow::render_target_type_data {data dirflow_info_text dirf
 	    # If it is not both then print only the out flows, or only the inflows
 	    if { $flow_dir == "in" } {
 		# Print the output title
-		$dirflow_info_text insert end "Information flows into "
-		set endIdx [$dirflow_info_text index insert]
-		$dirflow_info_text tag add $Apol_Analysis_dirflow::title_tag $startIdx $endIdx
-		set startIdx [$dirflow_info_text index insert]
-		$dirflow_info_text insert end $start_type
-		set endIdx [$dirflow_info_text index insert]
-		$dirflow_info_text tag add $Apol_Analysis_dirflow::title_type_tag $startIdx $endIdx
-		set startIdx [$dirflow_info_text index insert]
-		$dirflow_info_text insert end " - from "
-		set endIdx [$dirflow_info_text index insert]
-		$dirflow_info_text tag add $Apol_Analysis_dirflow::title_tag $startIdx $endIdx
-		set startIdx [$dirflow_info_text index insert]
-		$dirflow_info_text insert end $cur_end_type
-		set endIdx [$dirflow_info_text index insert]
-		$dirflow_info_text tag add $Apol_Analysis_dirflow::title_type_tag $startIdx $endIdx
+		$directflow_info_text insert end "Information flows into "
+		set endIdx [$directflow_info_text index insert]
+		$directflow_info_text tag add $Apol_Analysis_directflow::title_tag $startIdx $endIdx
+		set startIdx [$directflow_info_text index insert]
+		$directflow_info_text insert end $start_type
+		set endIdx [$directflow_info_text index insert]
+		$directflow_info_text tag add $Apol_Analysis_directflow::title_type_tag $startIdx $endIdx
+		set startIdx [$directflow_info_text index insert]
+		$directflow_info_text insert end " - from "
+		set endIdx [$directflow_info_text index insert]
+		$directflow_info_text tag add $Apol_Analysis_directflow::title_tag $startIdx $endIdx
+		set startIdx [$directflow_info_text index insert]
+		$directflow_info_text insert end $cur_end_type
+		set endIdx [$directflow_info_text index insert]
+		$directflow_info_text tag add $Apol_Analysis_directflow::title_type_tag $startIdx $endIdx
 		set startIdx $endIdx
 	    } elseif { $flow_dir == "out" } {
 		# Print the output title
-		$dirflow_info_text insert end "Information flows out of "
-		set endIdx [$dirflow_info_text index insert]
-		$dirflow_info_text tag add $Apol_Analysis_dirflow::title_tag $startIdx $endIdx
-		set startIdx [$dirflow_info_text index insert]
-		$dirflow_info_text insert end $start_type
-		set endIdx [$dirflow_info_text index insert]
-		$dirflow_info_text tag add $Apol_Analysis_dirflow::title_type_tag $startIdx $endIdx
-		set startIdx [$dirflow_info_text index insert]
-		$dirflow_info_text insert end " - to "
-		set endIdx [$dirflow_info_text index insert]
-		$dirflow_info_text tag add $Apol_Analysis_dirflow::title_tag $startIdx $endIdx
-		set startIdx [$dirflow_info_text index insert]
-		$dirflow_info_text insert end $cur_end_type
-		set endIdx [$dirflow_info_text index insert]
-		$dirflow_info_text tag add $Apol_Analysis_dirflow::title_type_tag $startIdx $endIdx
+		$directflow_info_text insert end "Information flows out of "
+		set endIdx [$directflow_info_text index insert]
+		$directflow_info_text tag add $Apol_Analysis_directflow::title_tag $startIdx $endIdx
+		set startIdx [$directflow_info_text index insert]
+		$directflow_info_text insert end $start_type
+		set endIdx [$directflow_info_text index insert]
+		$directflow_info_text tag add $Apol_Analysis_directflow::title_type_tag $startIdx $endIdx
+		set startIdx [$directflow_info_text index insert]
+		$directflow_info_text insert end " - to "
+		set endIdx [$directflow_info_text index insert]
+		$directflow_info_text tag add $Apol_Analysis_directflow::title_tag $startIdx $endIdx
+		set startIdx [$directflow_info_text index insert]
+		$directflow_info_text insert end $cur_end_type
+		set endIdx [$directflow_info_text index insert]
+		$directflow_info_text tag add $Apol_Analysis_directflow::title_type_tag $startIdx $endIdx
 		set startIdx $endIdx
 	    }
 
-	    $dirflow_info_text insert end "\n\nObject classes for "
-	    set endIdx [$dirflow_info_text index insert]
-	    $dirflow_info_text tag add $Apol_Analysis_dirflow::subtitle_tag $startIdx $endIdx
+	    $directflow_info_text insert end "\n\nObject classes for "
+	    set endIdx [$directflow_info_text index insert]
+	    $directflow_info_text tag add $Apol_Analysis_directflow::subtitle_tag $startIdx $endIdx
 	    set startIdx $endIdx
 	    set flow_dir [string toupper $flow_dir]
-	    $dirflow_info_text insert end $flow_dir
-	    set endIdx [$dirflow_info_text index insert]
-	    $dirflow_info_text tag add $Apol_Analysis_dirflow::title_type_tag $startIdx $endIdx
+	    $directflow_info_text insert end $flow_dir
+	    set endIdx [$directflow_info_text index insert]
+	    $directflow_info_text tag add $Apol_Analysis_directflow::title_type_tag $startIdx $endIdx
 	    set startIdx $endIdx
-	    $dirflow_info_text insert end " flows:"
-	    set endIdx [$dirflow_info_text index insert]
-	    $dirflow_info_text tag add $Apol_Analysis_dirflow::subtitle_tag $startIdx $endIdx
+	    $directflow_info_text insert end " flows:"
+	    set endIdx [$directflow_info_text index insert]
+	    $directflow_info_text tag add $Apol_Analysis_directflow::subtitle_tag $startIdx $endIdx
 	    set startIdx $endIdx
 
 	    for {set i 0} {$i<$num_objs} {incr i} {
 		if { [lindex $data $curIdx] == "1" } {
 		    incr curIdx
-		    $dirflow_info_text insert end "\n\t"
+		    $directflow_info_text insert end "\n\t"
 		    # This should be the object name
-		    $dirflow_info_text insert end [lindex $data $curIdx]
-		    set endIdx [$dirflow_info_text index insert]
-		    $dirflow_info_text tag add $Apol_Analysis_dirflow::subtitle_tag $startIdx $endIdx
+		    $directflow_info_text insert end [lindex $data $curIdx]
+		    set endIdx [$directflow_info_text index insert]
+		    $directflow_info_text tag add $Apol_Analysis_directflow::subtitle_tag $startIdx $endIdx
 		    incr curIdx
 		    set num_rules [lindex $data $curIdx]
 		    for {set j 0} {$j<$num_rules} {incr j} {
-			$dirflow_info_text insert end "\n\t"
-			set startIdx [$dirflow_info_text index insert]
+			$directflow_info_text insert end "\n\t"
+			set startIdx [$directflow_info_text index insert]
 			incr curIdx
 			set rule [lindex $data $curIdx]
 			# Get the line number only
@@ -565,24 +565,24 @@ proc Apol_Analysis_dirflow::render_target_type_data {data dirflow_info_text dirf
 
 			# Only display line number hyperlink if this is not a binary policy.
 			if {![ApolTop::is_binary_policy]} {
-				$dirflow_info_text insert end "\[$lineno\]"
-				Apol_PolicyConf::insertHyperLink $dirflow_info_text "$startIdx wordstart + 1c" "$startIdx wordstart + [expr [string length $lineno] + 1]c"
+				$directflow_info_text insert end "\[$lineno\]"
+				Apol_PolicyConf::insertHyperLink $directflow_info_text "$startIdx wordstart + 1c" "$startIdx wordstart + [expr [string length $lineno] + 1]c"
 			}
-			set startIdx [$dirflow_info_text index insert]
-			$dirflow_info_text insert end " $rule"
-			set endIdx [$dirflow_info_text index insert]
-			$dirflow_info_text tag add $Apol_Analysis_dirflow::rules_tag $startIdx $endIdx
+			set startIdx [$directflow_info_text index insert]
+			$directflow_info_text insert end " $rule"
+			set endIdx [$directflow_info_text index insert]
+			$directflow_info_text tag add $Apol_Analysis_directflow::rules_tag $startIdx $endIdx
 
 			incr curIdx
 			# The next element should be the enabled boolean flag.
 			if {[lindex $data $curIdx] == 0} {
-				$dirflow_info_text insert end "   "
-				set startIdx [$dirflow_info_text index insert]
-				$dirflow_info_text insert end "\[Disabled\]"
-				set endIdx [$dirflow_info_text index insert]
-				$dirflow_info_text tag add $Apol_Analysis_dirflow::disabled_rule_tag $startIdx $endIdx
+				$directflow_info_text insert end "   "
+				set startIdx [$directflow_info_text index insert]
+				$directflow_info_text insert end "\[Disabled\]"
+				set endIdx [$directflow_info_text index insert]
+				$directflow_info_text tag add $Apol_Analysis_directflow::disabled_rule_tag $startIdx $endIdx
 			}
-			set startIdx [$dirflow_info_text index insert]
+			set startIdx [$directflow_info_text index insert]
 		    }
 		}
 		incr curIdx
@@ -591,24 +591,24 @@ proc Apol_Analysis_dirflow::render_target_type_data {data dirflow_info_text dirf
 	return
 }
 
-proc Apol_Analysis_dirflow::insert_src_type_node { dirflow_tree query_args} {
+proc Apol_Analysis_directflow::insert_src_type_node { directflow_tree query_args} {
         variable start_type
 
-	$dirflow_tree insert end root $start_type \
+	$directflow_tree insert end root $start_type \
 		-text $start_type \
 		-open 1	\
 	-drawcross auto \
 		-data "$query_args"
 
-        return [$dirflow_tree nodes root]
+        return [$directflow_tree nodes root]
 }
 
-proc Apol_Analysis_dirflow::create_target_type_nodes { parent dirflow_tree results_list } {
-        if { [file tail [$dirflow_tree parent $parent]] == [file tail $parent] } {
+proc Apol_Analysis_directflow::create_target_type_nodes { parent directflow_tree results_list } {
+        if { [file tail [$directflow_tree parent $parent]] == [file tail $parent] } {
 		return 0
 	}
 
-	if { [$dirflow_tree nodes $parent] == "" } {
+	if { [$directflow_tree nodes $parent] == "" } {
 		# Get # of target types (if none, then just draw the tree without child nodes)
 		# We skip index 0 b/c index 1 is the starting type, which we already have.
 		set num_target_types [lindex $results_list 1]
@@ -618,27 +618,27 @@ proc Apol_Analysis_dirflow::create_target_type_nodes { parent dirflow_tree resul
 		# If there are any target types then create and insert children nodes for the source_type node
 		for { set x 0 } { $x < $num_target_types } { incr x } {
 			set target_name [lindex $results_list $curentIdx]
-			set nextIdx [Apol_Analysis_dirflow::parseList_get_index_next_node $curentIdx $results_list]
+			set nextIdx [Apol_Analysis_directflow::parseList_get_index_next_node $curentIdx $results_list]
 			if {$nextIdx == -1} {
 				return -code error "Error parsing results. See stdout for more information."
 			}
 
 			set target_node "${parent}/${target_name}/"
-			$dirflow_tree insert end $parent $target_node \
+			$directflow_tree insert end $parent $target_node \
 				-text $target_name \
 				-open 0	\
 			-drawcross allways \
 			-data [lrange $results_list $curentIdx [expr $nextIdx-1]]
 			set curentIdx $nextIdx
 		}
-		set nodes [lsort [$dirflow_tree nodes $parent]]
-		$dirflow_tree reorder $parent $nodes
-	        $dirflow_tree configure -redraw 1
+		set nodes [lsort [$directflow_tree nodes $parent]]
+		$directflow_tree reorder $parent $nodes
+	        $directflow_tree configure -redraw 1
 	}
         return 0
 }
 
-proc Apol_Analysis_dirflow::parseList_get_index_next_node { currentIdx results_list } {
+proc Apol_Analysis_directflow::parseList_get_index_next_node { currentIdx results_list } {
 	# Increment the index to get the flow direction
         incr currentIdx
         set direction [lindex $results_list $currentIdx]
@@ -687,29 +687,29 @@ proc Apol_Analysis_dirflow::parseList_get_index_next_node { currentIdx results_l
 	return $currentIdx
 }
 
-proc Apol_Analysis_dirflow::create_result_tree_structure { dirflow_tree results_list query_args} {
-        set home_node [Apol_Analysis_dirflow::insert_src_type_node $dirflow_tree \
+proc Apol_Analysis_directflow::create_result_tree_structure { directflow_tree results_list query_args} {
+        set home_node [Apol_Analysis_directflow::insert_src_type_node $directflow_tree \
 	$query_args]
-	set rt [catch {Apol_Analysis_dirflow::create_target_type_nodes $home_node \
-		$dirflow_tree $results_list} err]
+	set rt [catch {Apol_Analysis_directflow::create_target_type_nodes $home_node \
+		$directflow_tree $results_list} err]
 	if {$rt != 0} {
 		return -code error $err
 	}
-	Apol_Analysis_dirflow::treeSelect \
-		$Apol_Analysis_dirflow::dirflow_tree \
-		$Apol_Analysis_dirflow::dirflow_info_text \
+	Apol_Analysis_directflow::treeSelect \
+		$Apol_Analysis_directflow::directflow_tree \
+		$Apol_Analysis_directflow::directflow_info_text \
 		$home_node
         return 0
 }
 
 # ------------------------------------------------------------------------------
-#  Command Apol_Analysis_dirflow::do_child_analysis
+#  Command Apol_Analysis_directflow::do_child_analysis
 # ------------------------------------------------------------------------------
-proc Apol_Analysis_dirflow::do_child_analysis { dirflow_tree selected_node } {
+proc Apol_Analysis_directflow::do_child_analysis { directflow_tree selected_node } {
     # The last query arguments were stored in the data for the root node
         ApolTop::setBusyCursor
-        if { [$dirflow_tree nodes $selected_node] == "" } {
-		set query_args [$dirflow_tree itemcget [$dirflow_tree nodes root] -data]
+        if { [$directflow_tree nodes $selected_node] == "" } {
+		set query_args [$directflow_tree itemcget [$directflow_tree nodes root] -data]
 	        set start_t [file tail $selected_node]
 		set rt [catch {set results [apol_DirectInformationFlowAnalysis \
 			$start_t \
@@ -722,7 +722,7 @@ proc Apol_Analysis_dirflow::do_child_analysis { dirflow_tree selected_node } {
 		if {$rt != 0} {
 			return -code error $err
 		}
-		Apol_Analysis_dirflow::create_target_type_nodes $selected_node $dirflow_tree $results
+		Apol_Analysis_directflow::create_target_type_nodes $selected_node $directflow_tree $results
 	}
         ApolTop::resetBusyCursor
 	return 0
