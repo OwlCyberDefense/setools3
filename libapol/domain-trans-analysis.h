@@ -34,12 +34,12 @@ typedef struct apol_domain_trans_analysis apol_domain_trans_analysis_t;
 typedef struct apol_domain_trans_result apol_domain_trans_result_t;
 typedef struct apol_domain_trans_table apol_domain_trans_table_t;
 
-#define APOL_DOMAIN_TRANS_DIRECTION_FORWARD 0
-#define APOL_DOMAIN_TRANS_DIRECTION_REVERSE 1
+#define APOL_DOMAIN_TRANS_DIRECTION_FORWARD 0x01
+#define APOL_DOMAIN_TRANS_DIRECTION_REVERSE 0x02
 
 #define APOL_DOMAIN_TRANS_SEARCH_VALID		0x01
 #define APOL_DOMAIN_TRANS_SEARCH_INVALID	0x02
-#define APOL_DOMAIN_TRANS_SEARCH_BOTH		(APOL_DOMAIN_TRANS_SEARCH_VALID|APOL_DOMAIN_TRANS_SEARCH_INVALID)	
+#define APOL_DOMAIN_TRANS_SEARCH_BOTH		(APOL_DOMAIN_TRANS_SEARCH_VALID|APOL_DOMAIN_TRANS_SEARCH_INVALID)
 
 /******************* table operation functions ****************************/
 
@@ -53,12 +53,12 @@ typedef struct apol_domain_trans_table apol_domain_trans_table_t;
 extern int apol_policy_domain_trans_table_build(apol_policy_t *policy);
 
 /**
- *  Reset the state of the domain transition table in a policy. This is needed 
+ *  Reset the state of the domain transition table in a policy. This is needed
  *  because by default subsequent calls to apol_domian_trans_analysis_do() will
  *  not produce results generated in a previous call. If calls are to be
  *  considered independent or calls in a different direction are desired,
  *  call this function prior to apol_domian_trans_analysis_do().
- *  @param polciy The policy containing the table for which the state 
+ *  @param polciy The policy containing the table for which the state
  *  should be reset.
  */
 extern void apol_domain_trans_table_reset(apol_policy_t *policy);
@@ -102,7 +102,7 @@ extern void apol_domain_trans_analysis_destroy(apol_domain_trans_analysis_t **dt
 extern int apol_domain_trans_analysis_set_direction(apol_policy_t *policy, apol_domain_trans_analysis_t *dta, unsigned char direction);
 
 /**
- *  Set the analysis to search for transitions based upon whether they 
+ *  Set the analysis to search for transitions based upon whether they
  *  would be permitted. The value must be one of APOL_DOMAIN_TRANS_SEARCH_*
  *  defined above. The default for a newly created analysis is to search
  *  for only valid transitions (i.e. APOL_DOMAIN_TRANS_SEARCH_VALID).
@@ -169,7 +169,7 @@ extern int apol_domain_trans_analysis_append_access_type(apol_policy_t *policy, 
  *  @param policy Policy handler, to report errors.
  *  @param dta Domain transition analysis to set.
  *  @param class_name The class to which a result must have access.
- *  @param perm_name The permission which a result must have 
+ *  @param perm_name The permission which a result must have
  *  for the given class.
  *  @return 0 on success, and < 0 on error; if the call fails,
  *  errno will be set and dta will be unchanged.
@@ -177,13 +177,13 @@ extern int apol_domain_trans_analysis_append_access_type(apol_policy_t *policy, 
 extern int apol_domain_trans_analysis_append_class_perm(apol_policy_t *policy, apol_domain_trans_analysis_t *dta, const char *class_name, const char *perm_name);
 
 /**
- *  Execute a dommain transition analysis against a particular policy.
+ *  Execute a domain transition analysis against a particular policy.
  *  @param policy Policy containing the table to use.
  *  @param dta A non-NULL structure containng parameters for analysis.
- *  @param results A reference pointer to a vector of 
+ *  @param results A reference pointer to a vector of
  *  apol_domain_trans_result_t. The vector will be allocated by this function.
- *  The caller must call apol_vector_destroy() afterwards, <b>passing</b>
- *  <b>apol_domain_trans_result_free() as the second parameter.</b> This will
+ *  The caller must call apol_vector_destroy() afterwards, <b>passing
+ *  apol_domain_trans_result_free()</b> as the second parameter. This will
  *  be set to NULL upon error.
  *  @return 0 on success and < 0 on failure; if the call fails,
  *  errno will be set and *results will be NULL.
@@ -319,9 +319,8 @@ extern apol_vector_t *apol_domain_trans_result_get_access_rules(apol_domain_tran
  *  @param end_dom The ending domain of the transition.
  *  @return 0 if the transition is valid, < 0 on error, or a bit-wise or'ed
  *  set of APOL_DOMAIN_TRANS_RULE_* from above (always > 0) representing the
- *  rules missing from the transition. 
+ *  rules missing from the transition.
  */
 extern int apol_domain_trans_table_verify_trans(apol_policy_t *policy, qpol_type_t *start_dom, qpol_type_t *ep_type, qpol_type_t *end_dom);
 
 #endif /* APOL_DOMAIN_TRANS_ANALYSIS_H */
-

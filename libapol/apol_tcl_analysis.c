@@ -123,15 +123,65 @@ static int apol_vector_to_tcl_list(Tcl_Interp *interp,
 }
 
 /**
+ * Take a result node from a domain transition analysis and append a
+ * tuple of it to result_list.  The tuple consists of:
+ * <code>
+ *   { source_type target_type entrypoint_type
+ *     execute_rule proctrans_rule entrypoint_rule }
+ * </code>
+ */
+static int append_domain_trans_result_to_list(Tcl_Interp *interp,
+					       apol_domain_trans_result_t *result,
+					       Tcl_Obj *result_list)
+{
+	Tcl_Obj *dta_elem[6], *dta_list;
+	qpol_type_t *source, *target, *entry;
+	char *source_name, *target_name, *entry_name;
+	qpol_avrule_t *entrypoint, *proctrans, *execute;
+	int retval = TCL_ERROR;
+
+	source = apol_domain_trans_result_get_start_type(result);
+	target = apol_domain_trans_result_get_end_type(result);
+	entry =	 apol_domain_trans_result_get_entrypoint_type(result);
+	execute = apol_domain_trans_result_get_exec_rule(result);
+	proctrans = apol_domain_trans_result_get_proc_trans_rule(result);
+	entrypoint = apol_domain_trans_result_get_entrypoint_rule(result);
+	if (qpol_type_get_name(policydb->qh, policydb->p, source, &source_name) < 0 ||
+	    qpol_type_get_name(policydb->qh, policydb->p, target, &target_name) < 0 ||
+	    qpol_type_get_name(policydb->qh, policydb->p, entry, &entry_name) < 0) {
+		goto cleanup;
+	}
+	dta_elem[0] = Tcl_NewStringObj(source_name, -1);
+	dta_elem[1] = Tcl_NewStringObj(target_name, -1);
+	dta_elem[2] = Tcl_NewStringObj(entry_name, -1);
+	dta_elem[3] = Tcl_NewLongObj((long) execute);
+	dta_elem[4] = Tcl_NewLongObj((long) proctrans);
+	dta_elem[5] = Tcl_NewLongObj((long) entrypoint);
+	dta_list = Tcl_NewListObj(6, dta_elem);
+	if (Tcl_ListObjAppendElement(interp, result_list, dta_list) == TCL_ERROR) {
+		goto cleanup;
+	}
+	retval = TCL_OK;
+ cleanup:
+	return retval;
+}
+
+/**
  * Return an unsorted list of result tuples for a domain transition
  * analysis.  Each tuple consists of:
  * <ul>
+ *   <li>source type for the transition
+ *   <li>resulting target type of the transition
+ *   <li>entrypoint type of the transition
+ *   <li>AV rule that allows the source to execute the entrypoint type
+ *   <li>AV rule that allows the source type to transition to target type
+ *   <li>AV rule that allows a file entrypoint from the entrypoint type
  * </ul>
  *
  * Rules are unique identifiers (relative to currently loaded policy).
  * Call [apol_RenderAVRule] to display them.
  *
- * @param argv This fuction takes eight parameters:
+ * @param argv This fuction takes five parameters:
  * <ol>
  *   <li>analysis mode, one of "forward" or "reverse"
  *   <li>starting type (string)
@@ -147,10 +197,11 @@ static int apol_vector_to_tcl_list(Tcl_Interp *interp,
 static int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *interp,
 					 int argc, CONST char *argv[])
 {
-#if 0
 	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
+	apol_domain_trans_result_t *result = NULL;
 	apol_vector_t *v = NULL;
-	int direction;
+	apol_domain_trans_analysis_t *analysis = NULL;
+	int direction, num_opts;
 	CONST char **targets_strings = NULL, **class_strings = NULL;
 	size_t i;
 	int retval = TCL_ERROR;
@@ -164,25 +215,25 @@ static int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *inte
 		ERR(policydb, "Need an analysis mode, starting type, object types, class/perm pairs, and result regex.");
 		goto cleanup;
 	}
-	if (strcmp(argv[1], "forward") == 0) {
-                direction = 42;
-	}
-	else if (strcmp(argv[1], "reverse") == 0) {
-                direction = 43;
-	}
-        else {
-		ERR(policydb, "Invalid domain transition mode %s.", argv[1]);
-		goto cleanup;
-	}
 
-        if ((analysis = apol_domain_trans_analysis_create()) == NULL) {
+	if ((analysis = apol_domain_trans_analysis_create()) == NULL) {
 		ERR(policydb, "Out of memory!");
 		goto cleanup;
 	}
 
-	if (apol_domain_trans_analysis_set_dir(policydb, analysis, direction) < 0 ||
-	    apol_domain_trans_analysis_set_type(policydb, analysis, argv[2]) < 0 ||
-	    apol_domain_trans_analysis_set_result_regexp(policydb, analysis, argv[5])) {
+	if (strcmp(argv[1], "forward") == 0) {
+		direction = APOL_DOMAIN_TRANS_DIRECTION_FORWARD;
+	}
+	else if (strcmp(argv[1], "reverse") == 0) {
+		direction = APOL_DOMAIN_TRANS_DIRECTION_REVERSE;
+	}
+	else {
+		ERR(policydb, "Invalid domain transition mode %s.", argv[1]);
+		goto cleanup;
+	}
+	if (apol_domain_trans_analysis_set_direction(policydb, analysis, direction) < 0 ||
+	    apol_domain_trans_analysis_set_start_type(policydb, analysis, argv[2]) < 0 ||
+	    apol_domain_trans_analysis_set_result_regex(policydb, analysis, argv[5])) {
 		goto cleanup;
 	}
 
@@ -191,7 +242,7 @@ static int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *inte
 	}
 	while (--num_opts >= 0) {
 		CONST char *s = targets_strings[num_opts];
-		if (apol_domain_tras_analysis_append_target(policydb, analysis, s) < 0) {
+		if (apol_domain_trans_analysis_append_access_type(policydb, analysis, s) < 0) {
 			goto cleanup;
 		}
 	}
@@ -201,17 +252,19 @@ static int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *inte
 	}
 	while (--num_opts >= 0) {
 		CONST char *s = class_strings[num_opts];
-		if (apol_domain_trans_append_subject(policydb, analysis, s) < 0) {
+                /*
+		if (apol_domain_trans_append_access_types(policydb, analysis, s) < 0) {
 			goto cleanup;
 		}
+                */
 	}
 
 	if (apol_domain_trans_analysis_do(policydb, analysis, &v) < 0) {
-                goto cleanup;
-        }
+		goto cleanup;
+	}
 	for (i = 0; i < apol_vector_get_size(v); i++) {
-		result = (apol_relabel_result_t *) apol_vector_get_element(v, i);
-		if (append_relabel_result_to_list(interp, result, result_obj) == TCL_ERROR) {
+		result = (apol_domain_trans_result_t *) apol_vector_get_element(v, i);
+		if (append_domain_trans_result_to_list(interp, result, result_obj) == TCL_ERROR) {
 			goto cleanup;
 		}
 	}
@@ -219,8 +272,8 @@ static int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *inte
 	Tcl_SetObjResult(interp, result_obj);
 	retval = TCL_OK;
  cleanup:
-	if (target_strings != NULL) {
-		Tcl_Free((char *) target_strings);
+	if (targets_strings != NULL) {
+		Tcl_Free((char *) targets_strings);
 	}
 	if (class_strings != NULL) {
 		Tcl_Free((char *) class_strings);
@@ -231,8 +284,6 @@ static int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *inte
 		apol_tcl_write_error(interp);
 	}
 	return retval;
-#endif
-        return TCL_ERROR;
 }
 
 /**
@@ -573,138 +624,6 @@ static int append_transitive_iflow_results(policy_t *policy, iflow_transitive_t 
 	}
 	return 0;
 }
-
-
-/******************** domain transition analysis ********************/
-
-static int append_dta_results(policy_t *policy, domain_trans_analysis_t *dta_results, Tcl_Interp *interp)
-{
-	llist_node_t *x, *y;
-	char *tmp, tbuf[BUF_SZ];
-	int i, rt;
-	trans_domain_t *t;
-	entrypoint_type_t *ep;
-
-	assert(dta_results != NULL);
-	/* # of target types */
-	sprintf(tbuf, "%d", dta_results->trans_domains->num);
-	Tcl_AppendElement(interp, tbuf);
-
-	/* all target types */
-	for (x = dta_results->trans_domains->head; x != NULL; x = x->next) {
-		t = (trans_domain_t *)x->data;
-		/* target type */
-		assert(dta_results->start_type == t->start_type);
-		rt = get_type_name(t->trans_type, &tmp, policy);
-		if (rt != 0) {
-			Tcl_ResetResult(interp);
-			Tcl_AppendResult(interp, "analysis error (looking up target name)", (char *) NULL);
-			return TCL_ERROR;
-		}
-		Tcl_AppendElement(interp, tmp);
-		free(tmp);
-		/* # of pt rules */
-		sprintf(tbuf, "%d", t->num_pt_rules);
-		Tcl_AppendElement(interp, tbuf);
-		/* all the pt rules */
-		for (i = 0; i < t->num_pt_rules; i++) {
-			tmp = re_render_av_rule(0,t->pt_rules[i], 0, policy);
-			if (tmp == NULL) {
-				Tcl_ResetResult(interp);
-				Tcl_AppendResult(interp, "analysis error (rendering process transition rule)",  (char *) NULL);
-				return TCL_ERROR;
-			}
-			Tcl_AppendElement(interp, tmp);
-			free(tmp);
-			sprintf(tbuf, "%d", get_rule_lineno(t->pt_rules[i],RULE_TE_ALLOW, policy));
-			Tcl_AppendElement(interp, tbuf);
-			/* Append a boolean value indicating whether this rule is enabled
-			 * for conditional policy support */
-			sprintf(tbuf, "%d", policy->av_access[t->pt_rules[i]].enabled);
-			Tcl_AppendElement(interp, tbuf);
-		}
-		/* # of entrypoint file types */
-		sprintf(tbuf, "%d", t->entry_types->num);
-		Tcl_AppendElement(interp, tbuf);
-		/* all the entrypoint file types */
-		for (y = t->entry_types->head; y != NULL; y = y->next) {
-			ep = (entrypoint_type_t *)y->data;
-			assert(t->trans_type == ep->trans_type);
-			/* file type */
-			rt = get_type_name(ep->file_type, &tmp, policy);
-			if (rt != 0) {
-				Tcl_ResetResult(interp);
-				Tcl_AppendResult(interp, "analysis error (looking up entry file name)", (char *) NULL);
-				return TCL_ERROR;
-			}
-			Tcl_AppendElement(interp, tmp);
-			free(tmp);
-			/* # of file entrypoint rules */
-			sprintf(tbuf, "%d", ep->num_ep_rules);
-			Tcl_AppendElement(interp, tbuf);
-			/* all entrypoint rules */
-			for (i = 0; i < ep->num_ep_rules; i++) {
-				tmp = re_render_av_rule(0, ep->ep_rules[i], 0, policy);
-				if (tmp == NULL) {
-					Tcl_ResetResult(interp);
-					Tcl_AppendResult(interp, "analysis error (rendering file entrypoint rule)",  (char *) NULL);
-					return TCL_ERROR;
-				}
-				Tcl_AppendElement(interp, tmp);
-				free(tmp);
-				sprintf(tbuf, "%d", get_rule_lineno(ep->ep_rules[i],RULE_TE_ALLOW, policy));
-				Tcl_AppendElement(interp, tbuf);
-				/* Append a boolean value indicating whether this rule is enabled
-				 * for conditional policy support */
-				sprintf(tbuf, "%d", policy->av_access[ep->ep_rules[i]].enabled);
-				Tcl_AppendElement(interp, tbuf);
-			}
-			/* # of file execute rules */
-			sprintf(tbuf, "%d", ep->num_ex_rules);
-			Tcl_AppendElement(interp, tbuf);
-			/* all execute rules */
-			for (i = 0; i < ep->num_ex_rules; i++) {
-				tmp = re_render_av_rule(0,ep->ex_rules[i], 0, policy);
-				if (tmp == NULL) {
-					Tcl_ResetResult(interp);
-					Tcl_AppendResult(interp, "analysis error (rendering file execute rule)",  (char *) NULL);
-					return TCL_ERROR;
-				}
-				Tcl_AppendElement(interp, tmp);
-				free(tmp);
-				sprintf(tbuf, "%d", get_rule_lineno(ep->ex_rules[i],RULE_TE_ALLOW, policy));
-				Tcl_AppendElement(interp, tbuf);
-				/* Append a boolean value indicating whether this rule is enabled
-				 * for conditional policy support */
-				sprintf(tbuf, "%d", policy->av_access[ep->ex_rules[i]].enabled);
-				Tcl_AppendElement(interp, tbuf);
-			}
-		}
-		/* # of additional rules */
-		sprintf(tbuf, "%d", t->num_other_rules);
-		Tcl_AppendElement(interp, tbuf);
-		/* all additional rules */
-		for (i = 0; i < t->num_other_rules; i++) {
-			tmp = re_render_av_rule(0, t->other_rules[i], 0, policy);
-			if (tmp == NULL) {
-				Tcl_ResetResult(interp);
-				Tcl_AppendResult(interp, "analysis error rendering additional rules",  (char *) NULL);
-				return TCL_ERROR;
-			}
-			Tcl_AppendElement(interp, tmp);
-			free(tmp);
-			sprintf(tbuf, "%d", get_rule_lineno(t->other_rules[i], RULE_TE_ALLOW, policy));
-			Tcl_AppendElement(interp, tbuf);
-			/* Append a boolean value indicating whether this rule is enabled
-			 * for conditional policy support */
-			sprintf(tbuf, "%d", policy->av_access[t->other_rules[i]].enabled);
-			Tcl_AppendElement(interp, tbuf);
-		}
-	}
-
-	return 0;
-}
-
 
 /******************** direct information flow analysis ********************/
 

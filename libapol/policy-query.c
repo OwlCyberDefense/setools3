@@ -506,11 +506,11 @@ apol_vector_t *apol_query_create_candidate_class_list(apol_policy_t *p, apol_vec
 
 /* apol_obj_perm - set of an object with a list of permissions */
 struct apol_obj_perm {
-	char 		*obj_class;	/* name of object class */
+	char		*obj_class;	/* name of object class */
 	apol_vector_t	*perms;	/* vector of permission names */
 };
 
-apol_obj_perm_t *apol_obj_perm_new(void)
+apol_obj_perm_t *apol_obj_perm_create(void)
 {
 	apol_obj_perm_t *op = calloc(1, sizeof(apol_obj_perm_t));
 	if (!op)
@@ -522,16 +522,17 @@ apol_obj_perm_t *apol_obj_perm_new(void)
 		return NULL;
 	}
 
-	return op;	
+	return op;
 }
 
 void apol_obj_perm_free(void *op)
 {
 	apol_obj_perm_t *inop = (apol_obj_perm_t*)op;
-
-	free(inop->obj_class);
-	apol_vector_destroy(&inop->perms, free);
-	free(inop);
+	if (inop != NULL) {
+		free(inop->obj_class);
+		apol_vector_destroy(&inop->perms, free);
+		free(inop);
+	}
 }
 
 int apol_obj_perm_set_obj_name(apol_obj_perm_t *op, const char *obj_name)
@@ -619,4 +620,3 @@ int apol_strcmp(const void *a, const void *b, void *unused __attribute__ ((unuse
 {
 	return strcmp((const char*)a, (const char *)b);
 }
-
