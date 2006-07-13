@@ -695,7 +695,7 @@ static int apol_domain_trans_table_get_all_reverse_trans(apol_policy_t *policy, 
 	apol_vector_t *v = NULL;
 	unsigned int policy_version = 0;
 
-	if (!policy || !policy->domain_trans_table || !trans || !start) {
+	if (!policy || !policy->domain_trans_table || !trans || !end) {
 		errno = EINVAL;
 		return -1;
 	}
@@ -932,54 +932,27 @@ static int apol_domain_trans_filter_valid(apol_domain_trans_t **trans, bool_t va
 }
 
 /* filter list of transitions to include only transitions
- * with an end type in the provided list */
-static int apol_domain_trans_filter_end_types(apol_domain_trans_t **trans, apol_vector_t *end_types)
+ * with a result type in the provided list */
+static int apol_domain_trans_filter_result_types(apol_policy_t *policy,
+						 apol_domain_trans_analysis_t *dta,
+						 apol_domain_trans_t **trans)
 {
 	apol_domain_trans_t *cur = NULL, *prev = NULL;
-	size_t i = 0;
-
-	if (!trans || !end_types) {
-		errno = EINVAL;
-		return -1;
-	}
+	qpol_type_t *type;
+	int compval;
 
 	for (cur = *trans; cur;) {
-		if (!apol_vector_get_index(end_types, (void*)cur->end_type, NULL, NULL, &i)) {
-			prev = cur;
-			cur = cur->next;
-			continue;
+		if (dta->direction == APOL_DOMAIN_TRANS_DIRECTION_REVERSE) {
+			type = cur->start_type;
 		}
-		if (prev) {
-			prev->next = cur->next;
-		} else {
-			*trans = cur->next;
+		else {
+			type = cur->end_type;
 		}
-		cur->next = NULL;
-		apol_domain_trans_destroy(&cur);
-		if (prev) {
-			cur = prev->next;
-		} else {
-			cur = *trans;
+		compval = apol_compare_type(policy, type, dta->result, APOL_QUERY_REGEX, &dta->result_regex);
+		if (compval < 0) {
+			return -1;
 		}
-	}
-
-	return 0;
-}
-
-/* filter list of transitions to include only transitions
- * with a start type in the provided list */
-static int apol_domain_trans_filter_start_types(apol_domain_trans_t **trans, apol_vector_t *start_types)
-{
-	apol_domain_trans_t *cur = NULL, *prev = NULL;
-	size_t i = 0;
-
-	if (!trans || !start_types) {
-		errno = EINVAL;
-		return -1;
-	}
-
-	for (cur = *trans; cur;) {
-		if (!apol_vector_get_index(start_types, cur->start_type, NULL, NULL, &i)) {
+		if (compval > 0) {
 			prev = cur;
 			cur = cur->next;
 			continue;
@@ -1425,7 +1398,7 @@ int apol_domain_trans_analysis_append_class_perm(apol_policy_t *policy, apol_dom
 	}
 
 	if (!(dta->access_class_perms)) {
-		if (!(dta->access_class_perms = apol_vector_create())) {
+		if ((dta->access_class_perms = apol_vector_create()) == NULL) {
 			error = errno;
 			ERR(policy, "Error adding class and permission to analysis: %s", strerror(error));
 			errno = error;
@@ -1435,7 +1408,7 @@ int apol_domain_trans_analysis_append_class_perm(apol_policy_t *policy, apol_dom
 
 	if (apol_vector_get_index(dta->access_class_perms, (void*)class_name, compare_class_perm_by_class_name, NULL, &i) < 0) {
 		if (perm_name) {
-			if ((op = apol_obj_perm_create())) {
+			if ((op = apol_obj_perm_create()) == NULL) {
 				error = errno;
 				ERR(policy, "Error adding class and permission to analysis: %s", strerror(error));
 				errno = error;
@@ -1507,7 +1480,7 @@ int apol_domain_trans_analysis_do(apol_policy_t *policy, apol_domain_trans_analy
 		goto err;
 	}
 
-	/* get all trnsitions for the requested direction */
+	/* get all transitions for the requested direction */
 	if (dta->direction == APOL_DOMAIN_TRANS_DIRECTION_REVERSE) {
 		if (apol_domain_trans_table_get_all_reverse_trans(policy, &trans_list, start_type)) {
 			error = errno;
@@ -1532,36 +1505,14 @@ int apol_domain_trans_analysis_do(apol_policy_t *policy, apol_domain_trans_analy
 	}
 
 	/* next filtering by result type if requested */
-	if (dta->result) {
-		if ((type_v = apol_query_create_candidate_type_list(policy, dta->result, 1, 0))) {
-			error = errno;
-			ERR(policy, "Error processing results: %s", strerror(error));
-			goto err;
-		}
-		if (!apol_vector_get_size(type_v)) {
-			error = EINVAL;
-			ERR(policy, "Error processing results: Result filter does not match any types");
-			goto err;
-		}
-		if (dta->direction == APOL_DOMAIN_TRANS_DIRECTION_REVERSE) {
-			if (apol_domain_trans_filter_start_types(&trans_list, type_v)) {
-				error = errno;
-				ERR(policy, "Error processing results: %s", strerror(error));
-				goto err;
-			}
-		} else {
-			if (apol_domain_trans_filter_end_types(&trans_list, type_v)) {
-				error = errno;
-				ERR(policy, "Error processing results: %s", strerror(error));
-				goto err;
-			}
-		}
-		apol_vector_destroy(&type_v, NULL);
+	if (dta->result &&
+	    apol_domain_trans_filter_result_types(policy, dta, &trans_list)) {
+		goto err;
 	}
 
 	/* if access filtering is requested do it last */
 	if (apol_vector_get_size(dta->access_types)) {
-		if ((type_v = apol_vector_create())) {
+		if ((type_v = apol_vector_create()) == NULL) {
 			error = errno;
 			ERR(policy, "Error building access filters: %s", strerror(error));
 			goto err;
