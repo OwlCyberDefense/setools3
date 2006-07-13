@@ -158,9 +158,9 @@ extern int apol_relabel_analysis_append_subject(apol_policy_t *p,
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_relabel_analysis_set_result_regexp(apol_policy_t *p,
-						   apol_relabel_analysis_t *r,
-						   const char *result);
+extern int apol_relabel_analysis_set_result_regex(apol_policy_t *p,
+						  apol_relabel_analysis_t *r,
+						  const char *result);
 
 /******************** functions to access relabel results ********************/
 

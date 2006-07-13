@@ -679,9 +679,9 @@ int apol_relabel_analysis_append_subject(apol_policy_t *p,
 	return 0;
 }
 
-int apol_relabel_analysis_set_result_regexp(apol_policy_t *p,
-					    apol_relabel_analysis_t *r,
-					    const char *result)
+int apol_relabel_analysis_set_result_regex(apol_policy_t *p,
+					   apol_relabel_analysis_t *r,
+					   const char *result)
 {
 	return apol_query_set(p, &r->result, &r->result_regex, result);
 }
