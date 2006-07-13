@@ -161,7 +161,10 @@ proc Apol_Analysis_dta::saveQuery {channel} {
     foreach {key value} [array get vals] {
         switch -- $key {
             targets:inc_displayed -
-            classes:perms_displayed {
+            classes:perms_displayed -
+            search:regexp -
+            search:object_types -
+            search:classperm_perms {
                 # don't save these variables
             }
             default {
@@ -256,6 +259,7 @@ proc Apol_Analysis_dta::reinitializeVals {} {
         targets:attribenable 0  targets:attrb {}
     }
     array unset vals classes:*
+    array unset vals search:*
     foreach c $Apol_Class_Perms::class_list {
         set vals(classes:$c) [lsort [apol_GetAllPermsForClass $c]]
         set vals(classes:$c:enable) 1
@@ -356,6 +360,10 @@ proc Apol_Analysis_dta::createAccessTargets {f} {
     pack $attrib_enable -side top -expand 0 -fill x -anchor sw -padx 5 -pady 2
     pack $attrib_box -side top -expand 1 -fill x -padx 10
     attribEnabled $attrib_box $targets_lb
+    if {[set anchor [lindex [lsort [$targets_lb curselection]] 0]] != {}} {
+        $targets_lb selection anchor $anchor
+        $targets_lb see $anchor
+    }
 }
 
 proc Apol_Analysis_dta::selectTargetListbox {lb} {
@@ -469,19 +477,16 @@ proc Apol_Analysis_dta::createAccessClasses {f} {
     bind $perms_lb <<ListboxSelect>> \
         [list Apol_Analysis_dta::selectPermListbox $classes_lb $perms_lb]
 
-    set anchor [$classes_lb index end]
     foreach class_key [array names vals classes:*:enable] {
         if {$vals($class_key)} {
             regexp -- {^classes:([^:]+):enable} $class_key -> class
             set i [lsearch $Apol_Class_Perms::class_list $class]
             $classes_lb selection set $i $i
-            if {$i < $anchor} {
-                set anchor $i
-            }
         }
     }
-    if {$anchor != [$classes_lb index end]} {
+    if {[set anchor [lindex [lsort [$classes_lb curselection]] 0]] != {}} {
         $classes_lb selection anchor $anchor
+        $classes_lb see $anchor
     }
     set vals(classes:perms_displayed) {}
     selectClassListbox $l2 $classes_lb $perms_lb
@@ -504,6 +509,10 @@ proc Apol_Analysis_dta::selectClassListbox {perm_label lb plb} {
     foreach p $vals(classes:$class) {
         set i [lsearch $vals(classes:perms_displayed) $p]
         $plb selection set $i
+    }
+    if {[set anchor [lindex [lsort [$plb curselection]] 0]] != {}} {
+        $plb selection anchor $anchor
+        $plb see $anchor
     }
     focus $lb
 }
@@ -570,17 +579,32 @@ proc Apol_Analysis_dta::checkParams {} {
     }
     set vals(regexp:enable) $use_regexp
     set vals(regexp) $regexp
+    if {$vals(dir) == "forward" && $vals(access:enable)} {
+        set vals(search:object_types) $vals(targets:inc)
+        set vals(search:classperm_pairs) {}
+        foreach class $Apol_Class_Perms::class_list {
+            if {$vals(classes:$class:enable) == 0} {
+                continue
+            }
+            foreach perm $vals(classes:$class) {
+                lappend vals(search:classperm_pairs) [list $class $perm]
+            }
+        }
+    } else {
+        set vals(search:object_types) {}
+        set vals(search:classperm_pairs) {}
+    }
+    if {$vals(regexp:enable)} {
+        set vals(search:regexp) $vals(regexp)
+    } else {
+        set vals(search:regexp) {}
+    }
     return {}  ;# all parameters passed, now ready to do search
 }
 
 proc Apol_Analysis_dta::analyze {} {
     variable vals
-    if {$vals(regexp:enable)} {
-        set regexp $vals(regexp)
-    } else {
-        set regexp {}
-    }
-    apol_DomainTransitionAnalysis $vals(dir) $vals(type) {} {} $regexp
+    apol_DomainTransitionAnalysis $vals(dir) $vals(type) $vals(search:object_types) $vals(search:classperm_pairs) $vals(search:regexp)
 }
 
 proc Apol_Analysis_dta::analyzeMore {tree node analysis_args} {
@@ -644,7 +668,6 @@ proc Apol_Analysis_dta::treeOpen {tree node} {
         ApolTop::setBusyCursor
         update idletasks
         set retval [catch {analyzeMore $tree $node $search_crit} new_results]
-        puts "analyze of $node with $search_crit: $new_results"
         ApolTop::resetBusyCursor
         if {$retval} {
             tk_messageBox -icon error -type ok -title "Domain Transition Analysis" -message "Could not perform additional analysis:\n\n$new_results"
@@ -675,12 +698,7 @@ proc Apol_Analysis_dta::renderResults {f results} {
     set top_text [renderTopText]
     $tree itemconfigure top -data $top_text
 
-    if {$vals(regexp:enable)} {
-        set regexp $vals(regexp)
-    } else {
-        set regexp {}
-    }
-    set search_crit [list $vals(dir) $vals(type) {} {} $regexp]
+    set search_crit [list $vals(dir) $vals(type) $vals(search:object_types) $vals(search:classperm_pairs) $vals(search:regexp)]
     createResultsNodes $tree top $results $search_crit
     $tree selection set top
     $tree opentree top 0
@@ -809,13 +827,16 @@ proc Apol_Analysis_dta::renderResultsDTA {res tree node data} {
     foreach e [lsort -index 0 $ep] {
         foreach {intermed entrypoint execute} $e {break}
         $res.tb insert end "\n      $intermed\n" {} \
-            "            File Entrypoint Rules: " subtitle \
+            "            " {} \
+            "File Entrypoint Rules: " subtitle \
             [llength $entrypoint] num \
             "\n" subtitle
         foreach e $entrypoint {
             Apol_Widget::appendSearchResultAVRule $res 12 $e
         }
-        $res.tb insert end "\n            File Execute Rules: " subtitle \
+        $res.tb insert end "\n" {} \
+            "            " {} \
+            "File Execute Rules: " subtitle \
             [llength $execute] num \
             "\n" subtitle
         foreach e $execute {
