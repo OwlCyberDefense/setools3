@@ -1,8 +1,8 @@
 #############################################################
-#  fulflow_module.tcl  
+#  fulflow_module.tcl
 # -----------------------------------------------------------
 #  Copyright (C) 2003-2006 Tresys Technology, LLC
-#  see file 'COPYING' for use and warranty information 
+#  see file 'COPYING' for use and warranty information
 #
 #  Requires tcl and tk 8.4+, with BWidget
 #  Author: <don.patterson@tresys.com, mayerf@tresys.com, kcarr@tresys>
@@ -218,15 +218,16 @@ proc Apol_Analysis_fulflow::toggleAdvancedSelected {name1 name2 op} {
 }
 
 
-if {0} {    				   
+if {0} {
         variable root_text "\n\nThis tab provides the results of a Transitive Information Flow analysis \
-        		   beginning from the starting type selected above.  The results of the analysis \
-        		   are presented in tree form with the root of the tree (this node) being the \
-        		   start point for the analysis.\n\nEach child node in the tree represents a type \
-        		   in the current policy for which there is a transitive information flow to or \
-        		   from (depending on your selection above) its parent node.\n\nNOTE: For any \
-        		   given generation, if the parent and the child are the same, you cannot open \
-        		   the child.  This avoids cyclic analyses.\n\n"
+		   beginning from the starting type selected above.  The results of the analysis \
+		   are presented in tree form with the root of the tree (this node) being the \
+		   start point for the analysis.\n\nEach child node in the tree represents a type \
+		   in the current policy for which there is a transitive information flow to or \
+		   from (depending on your selection above) its parent node.\n\nNOTE: For any \
+		   given generation, if the parent and the child are the same, you cannot open \
+		   the child.  This avoids cyclic analyses.\n\n"
+}
 
 # ------------------------------------------------------------------------------
 #  Command Apol_Analysis_fulflow::verify_options
