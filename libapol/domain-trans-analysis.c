@@ -311,13 +311,17 @@ static int apol_domain_trans_find_rule_for_dflt(apol_policy_t *policy, apol_vect
 	return -1;
 }
 
-static int apol_domain_trans_rule_compare(const void *a, const void *b, void *unused __attribute__ ((unused)))
+static int apol_domain_trans_rule_compare(const void *a, const void *b, void *policy)
 {
 	const apol_domain_trans_rule_t *rule_a = (const apol_domain_trans_rule_t*)a;
 	const apol_domain_trans_rule_t *rule_b = (const apol_domain_trans_rule_t*)b;
+	apol_policy_t *p = (apol_policy_t*)policy;
+	uint32_t a_val = 0, b_val = 0;
 
-	/* only care if pointer value is the same */
-	return (int)((void*)(rule_a->type) - (void*)(rule_b->type));
+	qpol_type_get_value(p->qh, p->p, rule_a->type, &a_val);
+	qpol_type_get_value(p->qh, p->p, rule_b->type, &b_val);
+
+	return (int)(a_val - b_val);
 }
 
 static int apol_domain_trans_add_rule_to_list(apol_policy_t *policy, apol_vector_t *rule_list, qpol_type_t *type, qpol_type_t *dflt, void *rule, bool_t has_no_trans)
@@ -359,7 +363,7 @@ static int apol_domain_trans_add_rule_to_list(apol_policy_t *policy, apol_vector
 		return -1;
 	}
 
-	apol_vector_sort(rule_list, apol_domain_trans_rule_compare, NULL);
+	apol_vector_sort(rule_list, apol_domain_trans_rule_compare, policy);
 
 	return 0;
 }
@@ -612,7 +616,6 @@ static int apol_domain_trans_table_get_all_forward_trans(apol_policy_t *policy, 
 			ep = tmp_rule->type;
 			qpol_type_get_value(policy->qh, policy->p, ep, &ep_val);
 			tmp = apol_domain_trans_find_rule_for_type(policy, table->exec_list[ep_val - 1].ep_rules, end);
-                        assert(tmp >= 0);
 			tmp_rule2 = apol_vector_get_element(table->exec_list[ep_val - 1].ep_rules, tmp);
 			if (tmp_rule2->used)
 				continue; /* we already found this transition */
