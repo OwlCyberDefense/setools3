@@ -379,13 +379,18 @@ proc Apol_Analysis_dirflow::treeSelect {res tree node} {
 }
 
 if {0} {
-        variable root_text  "\n\nThis tab provides the results of a Direct Information Flow analysis beginning \
-		    from the starting type selected above.  The results of the analysis are presented \
-		    in tree form with the root of the tree (this node) being the start point for the \
-		    analysis.\n\nEach child node in the tree represents a type in the current policy \
-		    for which there is a direct information flow to or from (depending on your selection \
-		    above) its parent node.\n\nNOTE: For any given generation, if the parent and the child \
-		    are the same, you cannot open the child.  This avoids cyclic analyses.\n\n"
+
+    This tab provides the results of a Direct Information Flow analysis beginning 
+    from the starting type selected above.  The results of the analysis are presented
+    in tree form with the root of the tree (this node) being the start point for the 
+    analysis.
+
+    Each child node in the tree represents a type in the current policy
+    for which there is a direct information flow to or from (depending on your selection
+                                                             above) its parent node.
+
+    NOTE: For any given generation, if the parent and the child 
+    are the same, you cannot open the child.  This avoids cyclic analyses.
 }
 
 

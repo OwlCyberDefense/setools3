@@ -230,7 +230,7 @@ static int infoflow_edge_compare(const void *a, const void *b __attribute__ ((un
 	if (key->end_node != NULL && edge->end_node == key->end_node) {
 		return -1;
 	}
-	return -1;
+	return 0;
 }
 
 /**
@@ -281,10 +281,30 @@ static apol_infoflow_edge_t *infoflow_graph_create_edge(apol_policy_t *p,
 	return edge;
 }
 
+/**
+ * Take an avrule within a policy and possibly add it to the infoflow
+ * graph.  The rule must refer to types that are within the types
+ * vector.  If the rule is to be added, then add its end nodes as
+ * necessary, and an edge connecting those nodes as necessary, and
+ * then add the rule to the edge.
+ *
+ * @param p Policy containing rules.
+ * @param g Information flow graph being created.
+ * @param rule AV rule to use.
+ * @param found_read Non-zero to indicate that this rule performs a
+ * read operation.
+ * @param read_len Length of the edge to create (proportionally
+ * inverse of permission weight).
+ * @param found_write Non-zero to indicate that this rule performs a
+ * write operation.
+ * @param write_len Length of the edge to create (proportionally
+ * inverse of permission weight).
+ *
+ * @return 0 on success, < 0 on error.
+ */
 static int infoflow_graph_connect_nodes(apol_policy_t *p,
 					apol_infoflow_graph_t *g,
 					qpol_avrule_t *rule,
-					qpol_class_t *obj_class,
 					apol_vector_t *types,
 					int found_read,
 					int read_len,
@@ -292,13 +312,15 @@ static int infoflow_graph_connect_nodes(apol_policy_t *p,
 					int write_len)
 {
 	qpol_type_t *src_type, *tgt_type;
+	qpol_class_t *obj_class;
 	size_t i;
 	apol_infoflow_node_t *src_node, *tgt_node;
 	apol_infoflow_edge_t *edge;
 	int retval = -1;
 
 	if (qpol_avrule_get_source_type(p->qh, p->p, rule, &src_type) < 0 ||
-	    qpol_avrule_get_target_type(p->qh, p->p, rule, &tgt_type) < 0) {
+	    qpol_avrule_get_target_type(p->qh, p->p, rule, &tgt_type) < 0 ||
+            qpol_avrule_get_object_class(p->qh, p->p, rule, &obj_class) < 0) {
 		goto cleanup;
 	}
 
@@ -421,7 +443,7 @@ static int infoflow_graph_create_avrule(apol_policy_t *p,
 
 	/* if we have found any flows then connect them within the graph */
 	if ((found_read || found_write) &&
-	    infoflow_graph_connect_nodes(p, g, rule, obj_class, types, found_read, read_len, found_write, write_len) < 0) {
+	    infoflow_graph_connect_nodes(p, g, rule, types, found_read, read_len, found_write, write_len) < 0) {
 		goto cleanup;
 	}
 
@@ -575,9 +597,9 @@ int apol_infoflow_analysis_append_class(apol_policy_t *p,
 	return 0;
 }
 
-int apol_infoflow_analysis_set_result_regexp(apol_policy_t *p,
-					     apol_infoflow_analysis_t *ia,
-					     const char *result)
+int apol_infoflow_analysis_set_result_regex(apol_policy_t *p,
+					    apol_infoflow_analysis_t *ia,
+					    const char *result)
 {
 	return apol_query_set(p, &ia->result, &ia->result_regex, result);
 }
