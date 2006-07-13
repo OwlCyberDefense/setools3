@@ -259,8 +259,8 @@ static void vector_qsort(void **data, size_t first, size_t last,
 		 * bad */
 		if (i > 0) {
 			vector_qsort(data, first, i - 1, cmp, arg);
-			vector_qsort(data, i + 1, last, cmp, arg);
 		}
+		vector_qsort(data, i + 1, last, cmp, arg);
 	}
 }
 
