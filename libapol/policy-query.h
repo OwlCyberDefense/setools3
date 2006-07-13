@@ -53,8 +53,9 @@
 #include "rangetrans-query.h"
 #include "constraint-query.h"
 
-#include "relabel-analysis.h"
+#include "domain-trans-analysis.h"
 #include "infoflow-analysis.h"
+#include "relabel-analysis.h"
 
 /******************** private defines ********************/
 
@@ -340,7 +341,7 @@ apol_vector_t *apol_query_create_candidate_class_list(apol_policy_t *p,
  *  @param a String to compare.
  *  @param b The other string to compare.
  *  @param unused Not used. (exists to match expected function signature)
- *  @retrun Less than, equal to, or greater than 0 if string a is found 
+ *  @retrun Less than, equal to, or greater than 0 if string a is found
  *  to be less than, identical to, or greater than string b respectively.
  */
 extern int apol_strcmp(const void *a, const void *b, void *unused __attribute__ ((unused)) );
@@ -359,7 +360,7 @@ typedef struct apol_obj_perm apol_obj_perm_t;
  *  Caller is responsible for calling apol_obj_perm_free() to free
  *  memory used.
  */
-extern apol_obj_perm_t *apol_obj_perm_new(void);
+extern apol_obj_perm_t *apol_obj_perm_create(void);
 
 /**
  *  Free the memory used by an object permission set.
