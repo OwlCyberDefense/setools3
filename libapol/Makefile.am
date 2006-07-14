@@ -12,8 +12,7 @@ libapol_a_SOURCES = \
 	avl-util.c avl-util.h \
 	render.c render.h perm-map.c perm-map.h \
 	analysis.c analysis.h \
-	domain-trans-analysis.c domian-trans-analysis.h \
-	poldiff.c poldiff.h old-policy-query.c old-policy-query.h \
+	poldiff.c poldiff.h \
 	vector.c vector.h \
 	policy-query.c policy-query.h \
 	context-query.c context-query.h mls-query.c mls-query.h \
@@ -25,6 +24,7 @@ libapol_a_SOURCES = \
 	condrule-query.c condrule-query.h \
 	rbacrule-query.c rbacrule-query.h rangetrans-query.c rangetrans-query.h \
 	constraint-query.c constraint-query.h \
+	domain-trans-analysis.c domain-trans-analysis.h \
 	relabel-analysis.c relabel-analysis.h infoflow-analysis.c infoflow-analysis.h
 
 libapol_tcl_a_SOURCES = apol_tcl_other.c apol_tcl_other.h \
