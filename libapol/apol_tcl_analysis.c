@@ -127,17 +127,18 @@ static int apol_vector_to_tcl_list(Tcl_Interp *interp,
  * tuple of it to result_list.  The tuple consists of:
  * <code>
  *   { source_type target_type entrypoint_type
- *     execute_rule proctrans_rule entrypoint_rule }
+ *     execute_rule proctrans_rule entrypoint_rule access_rules }
  * </code>
  */
 static int append_domain_trans_result_to_list(Tcl_Interp *interp,
 					       apol_domain_trans_result_t *result,
 					       Tcl_Obj *result_list)
 {
-	Tcl_Obj *dta_elem[6], *dta_list;
+	Tcl_Obj *dta_elem[7], *dta_list;
 	qpol_type_t *source, *target, *entry;
 	char *source_name, *target_name, *entry_name;
 	qpol_avrule_t *entrypoint, *proctrans, *execute;
+	apol_vector_t *access_rules;
 	int retval = TCL_ERROR;
 
 	source = apol_domain_trans_result_get_start_type(result);
@@ -157,7 +158,13 @@ static int append_domain_trans_result_to_list(Tcl_Interp *interp,
 	dta_elem[3] = Tcl_NewLongObj((long) execute);
 	dta_elem[4] = Tcl_NewLongObj((long) proctrans);
 	dta_elem[5] = Tcl_NewLongObj((long) entrypoint);
-	dta_list = Tcl_NewListObj(6, dta_elem);
+	if ((access_rules = apol_domain_trans_result_get_access_rules(result)) == NULL) {
+		dta_elem[6] = Tcl_NewListObj(0, NULL);
+	}
+	else if (apol_vector_to_tcl_list(interp, access_rules, dta_elem + 6) == TCL_ERROR) {
+		goto cleanup;
+	}
+	dta_list = Tcl_NewListObj(7, dta_elem);
 	if (Tcl_ListObjAppendElement(interp, result_list, dta_list) == TCL_ERROR) {
 		goto cleanup;
 	}
@@ -176,6 +183,8 @@ static int append_domain_trans_result_to_list(Tcl_Interp *interp,
  *   <li>AV rule that allows the source to execute the entrypoint type
  *   <li>AV rule that allows the source type to transition to target type
  *   <li>AV rule that allows a file entrypoint from the entrypoint type
+ *   <li>list of AV rules that satisfy the access filters (could be
+ *       empty list)
  * </ul>
  *
  * Rules are unique identifiers (relative to currently loaded policy).

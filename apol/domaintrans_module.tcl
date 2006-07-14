@@ -768,7 +768,7 @@ definition of allowed domain transition" {}
 proc Apol_Analysis_domaintrans::createResultsNodes {tree parent_node results search_crit} {
     set dir [lindex $search_crit 0]
     foreach r $results {
-        foreach {source target intermed execute proctrans entrypoint} $r {break}
+        foreach {source target intermed execute proctrans entrypoint access_list} $r {break}
         if {$dir == "forward"} {
             set key $target
             set node f:\#auto
@@ -780,6 +780,11 @@ proc Apol_Analysis_domaintrans::createResultsNodes {tree parent_node results sea
         lappend types($key:inter) $intermed
         lappend types($key:inter:$intermed:entry) $entrypoint
         lappend types($key:inter:$intermed:exec) $execute
+        if {[info exists types($key:access)]} {
+            set types($key:access) [concat $types($key:access) $access_list]
+        } else {
+            set types($key:access) $access_list
+        }
     }
     foreach key [lsort [array names types]] {
         if {[string first : $key] != -1} {
@@ -792,7 +797,8 @@ proc Apol_Analysis_domaintrans::createResultsNodes {tree parent_node results sea
                             [lsort -uniq $types($key:inter:$intermed:entry)] \
                             [lsort -uniq $types($key:inter:$intermed:exec)]]
         }
-        set data [list $proctrans $ep]
+        set access_list [lsort -uniq $types($key:access)]
+        set data [list $proctrans $ep $access_list]
         $tree insert end $parent_node $node -text $key -drawcross allways \
             -data [list $search_crit $data]
     }
@@ -801,7 +807,7 @@ proc Apol_Analysis_domaintrans::createResultsNodes {tree parent_node results sea
 proc Apol_Analysis_domaintrans::renderResultsDTA {res tree node data} {
     set parent_name [$tree itemcget [$tree parent $node] -text]
     set name [$tree itemcget $node -text]
-    foreach {proctrans ep} $data {break}
+    foreach {proctrans ep access_list} $data {break}
     # direction of domain transition is encoded encoded in the node's
     # identifier
     if {[string index $node 0] == "f"} {
@@ -843,6 +849,15 @@ proc Apol_Analysis_domaintrans::renderResultsDTA {res tree node data} {
             "\n" subtitle
         foreach e $execute {
             Apol_Widget::appendSearchResultAVRule $res 12 $e
+        }
+    }
+    if {[llength $access_list] > 0} {
+        $res.tb insert end "\n" {} \
+            "The access filters you specified returned the following rules: " subtitle \
+            [llength $access_list] num \
+            "\n" subtitle
+        foreach a $access_list {
+            Apol_Widget::appendSearchResultAVRule $res 6 $a
         }
     }
 }
