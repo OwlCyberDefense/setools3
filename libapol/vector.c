@@ -350,4 +350,3 @@ int apol_vector_cat(apol_vector_t *dest, const apol_vector_t *src)
 
 	return 0;
 }
-

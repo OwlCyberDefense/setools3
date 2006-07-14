@@ -1105,7 +1105,7 @@ proc ApolTop::readInitFile { } {
 	variable temp_recent_files
 	variable top_height
         variable top_width
-	variable policy_open_option
+    variable policy_open_option {}
 	
 	# if it doesn't exist, we'll create later
 	if {[file exists $dot_apol_file] == 0 } {

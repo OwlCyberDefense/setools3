@@ -11,7 +11,6 @@
 #include "inc_net_access.h"
 #include "render.h"
 #include "policy-query.h"
-#include "old-policy-query.h"
 
 #include <stdio.h>
 #include <string.h>

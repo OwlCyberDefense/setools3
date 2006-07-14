@@ -10,7 +10,7 @@
 
 /* generic link list structures */
 typedef struct llist_node {
-	void 			*data;	/* data of any type or structure */
+	void			*data;	/* data of any type or structure */
 	struct llist_node	*prev;
 	struct llist_node	*next;
 } llist_node_t;
@@ -198,7 +198,7 @@ extern char* apol_file_find(const char *file_name);
  * @return File's path, or NULL if not found.  Caller must free() this
  * string afterwards.
  */
-extern char* apol_find_find_user_config(const char *file_name);
+extern char* apol_file_find_user_config(const char *file_name);
 
 /**
  * Given a file name, read the file's contents into a newly allocated
