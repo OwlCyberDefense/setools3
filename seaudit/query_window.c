@@ -12,7 +12,6 @@
 #include <string.h>
 #include <libapol/render.h>
 #include <libapol/policy-query.h>
-#include <libapol/old-policy-query.h>
 #include <stdlib.h>
 #include <stdio.h>
 
