@@ -623,7 +623,6 @@ int apol_infoflow_analysis_set_result_regex(apol_policy_t *p,
 #include "policy.h"
 #include "util.h"
 #include "infoflow.h"
-#include "old-policy-query.h"
 #include "queue.h"
 
 typedef struct iflow_graph {
