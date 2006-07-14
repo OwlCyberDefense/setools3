@@ -1,65 +1,85 @@
-
-/* Author : Stephen Smalley (NSA), <sds@epoch.ncsc.mil> */
-
-/* FLASK */
-
-/* 
- * A double-ended queue is a singly linked list of 
+/**
+ * @file queue.h
+ *
+ * This file is a copy of queue.h from NSA's CVS repository.  It has
+ * been modified to follow the setools naming conventions.
+ *
+ * Author : Stephen Smalley, <sds@epoch.ncsc.mil>
+ *
+ * A double-ended queue is a singly linked list of
  * elements of arbitrary type that may be accessed
  * at either end.
  */
 
-#ifndef _QUEUE_H_
-#define _QUEUE_H_
+#ifndef APOL_QUEUE_H
+#define APOL_QUEUE_H
 
-typedef void *queue_element_t;
+typedef struct apol_queue_node {
+	void * element;
+	struct apol_queue_node *next;
+} apol_queue_node_t;
 
-typedef struct queue_node *queue_node_ptr_t;
+typedef struct apol_queue {
+	apol_queue_node_t *head;
+	apol_queue_node_t *tail;
+} apol_queue_t;
 
-typedef struct queue_node {
-	queue_element_t element;
-	queue_node_ptr_t next;
-} queue_node_t;
-
-typedef struct queue_info {
-	queue_node_ptr_t head;
-	queue_node_ptr_t tail;
-} queue_info_t;
-
-typedef queue_info_t *queue_t;
-
-queue_t queue_create(void);
-int queue_insert(queue_t, queue_element_t);
-int queue_push(queue_t, queue_element_t);
-queue_element_t queue_remove(queue_t);
-queue_element_t queue_head(queue_t);
-void queue_destroy(queue_t);
-
-/* 
-   Applies the specified function f to each element in the
-   specified queue. 
-
-   In addition to passing the element to f, queue_map
-   passes the specified void* pointer to f on each invocation.
-
-   If f returns a non-zero status, then queue_map will cease
-   iterating through the hash table and will propagate the error
-   return to its caller.
+/**
+ * Allocate and return a new queue.  The caller is responsible for
+ * calling apol_queue_destroy() upon the return value.
+ *
+ * @return A newly allocated queue, or NULL upon error.
  */
-int queue_map(queue_t, int (*f) (queue_element_t, void *), void *);
+extern apol_queue_t *apol_queue_create(void);
 
-/*
-   Same as queue_map, except that if f returns a non-zero status,
-   then the element will be removed from the queue and the g
-   function will be applied to the element. 
+/**
+ * Adds an element to the end of a queue.
+ *
+ * @param q Queue to modify.
+ * @param element Element to append to the end.
+ *
+ * @return 0 on success, < 0 on error.
  */
-void queue_map_remove_on_error(queue_t,
-			       int (*f) (queue_element_t, void *),
-			       void (*g) (queue_element_t, void *),
-			       void *);
+extern int apol_queue_insert(apol_queue_t *q, void *element);
+
+/**
+ * Adds an element to the beginning of a queue.
+ *
+ * @param q Queue to modify.
+ * @param element Element to prepend to the beginning.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+extern int apol_queue_push(apol_queue_t *q, void *element);
+
+/**
+ * Remove the first element from a queue and return the data; the
+ * queue is advanced afterwards.  If the queue was empty then return
+ * NULL.
+ *
+ * @return First element of a queue, or NULL if nothing is there.
+ */
+extern void *apol_queue_remove(apol_queue_t *q);
+
+/**
+ * Return the data within the first element, but do not remove it from
+ * the queue.  If the queue was empty then return NULL.
+ *
+ * @return First element of a queue, or NULL if nothing is there.
+ */
+extern void *apol_queue_head(apol_queue_t *q);
+
+/**
+ * Destroy the referenced queue, but <i>do not</i> attempt to free the
+ * data stored within.  (The caller is responsible for doing that.)
+ * Afterwards set the referenced variable to NULL.  If the variable is
+ * NULL then do nothing.
+ *
+ * @param Reference to a queue to destroy.
+ */
+extern void apol_queue_destroy(apol_queue_t **q);
 
 #endif
 
 
 /* FLASK */
-
