@@ -121,6 +121,11 @@ EOF
             bwidget_ver=1.7
             ;;
     esac
+    if test ${copy_bwidget} = yes; then
+        echo "puts \$tcl_library" > ./conftest.tcl
+        BWIDGET_DESTDIR=`${TCLSH_PROG} ./conftest.tcl`
+        AC_SUBST(BWIDGET_DESTDIR)
+    fi
     if test ${bwidget_ver} = 1.7; then
         # overcome bug in NoteBook::bindtabs and add a new -autopost option to ComboBox
         changequote(<<<,>>>)dnl
