@@ -1,6 +1,4 @@
-libdir = @libdir@
-PKG_DIR = BWidget1.7
-pkglibdir = $(libdir)/$(PKG_DIR)
+pkglibdir = @BWIDGET_DESTDIR@
 
 dist_pkglib_DATA = BWidget-1.7.0.tar.gz
 
