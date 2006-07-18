@@ -333,8 +333,8 @@ void apol_vector_sort_uniquify(apol_vector_t *v, apol_vector_comp_func *cmp, voi
 
 int apol_vector_cat(apol_vector_t *dest, const apol_vector_t *src)
 {
-	size_t i;
-
+	size_t i, orig_size, cap;
+	void **a;
 	if (!src || !apol_vector_get_size(src)) {
 		return 0; /* nothing to append */
 	}
@@ -343,10 +343,24 @@ int apol_vector_cat(apol_vector_t *dest, const apol_vector_t *src)
 		errno = EINVAL;
 		return -1;
 	}
-
+	orig_size = apol_vector_get_size(dest);
 	for (i = 0; i < apol_vector_get_size(src); i++)
-		if (apol_vector_append(dest, apol_vector_get_element(src, i)))
+		if (apol_vector_append(dest, apol_vector_get_element(src, i))) {
+			/* revert if possible */
+			if (orig_size == 0) {
+				cap = 1;
+			}
+			else {
+				cap = orig_size;
+			}
+			a = realloc(dest->array, cap * sizeof(*a));
+			if (a != NULL) {
+				dest->array = a;
+			}
+			dest->size = orig_size;
+			dest->capacity = cap;
 			return -1;
+		}
 
 	return 0;
 }
