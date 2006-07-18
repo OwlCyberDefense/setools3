@@ -1430,7 +1430,7 @@ unsigned int parse_audit(FILE *syslog, audit_log_t *log)
 	}
 
 	while (line != NULL) {
-		if (trim_string(&line) != 0)
+		if (apol_str_trim(&line) != 0)
 			return PARSE_RET_MEMORY_ERROR;
      		is_sel = is_selinux(line);
 		if (is_sel != PARSE_NON_SELINUX) {

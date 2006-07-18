@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 #ifdef LIBSELINUX
 #include <selinux/selinux.h>
@@ -40,7 +41,7 @@ int parse_file_contexts_file(const char *fc_path, apol_vector_t **contexts, int 
 { 
 	char *line = NULL, *tmp = NULL, *context = NULL;
 	size_t line_len = 0;
-	int i = 0, retv, j;
+	int i = 0, error, retv, j;
 	FILE *fc_file = NULL;
 
 	if (!fc_path || !contexts || !num_contexts || !policy)
@@ -48,17 +49,22 @@ int parse_file_contexts_file(const char *fc_path, apol_vector_t **contexts, int 
 
 	fc_file = fopen(fc_path, "r");
 	if (!fc_file) {
-		fprintf(stderr, "unable to open file %s\n", fc_path);
+		ERR(policy, "unable to open file %s\n", fc_path);
 		return -1;
 	}
 
-	/* Create a fc entry and fill with data from the policy */
+	if ( !(*contexts = apol_vector_create()) ){
+                error = errno;
+                ERR(policy, "Error: %s\n", strerror(error));
+                return -1;
+	}
+	/* Create a fr entry and fill with data from the policy */
 	while (!feof(fc_file)) {
 		sefs_fc_entry_t *fc_entry = (sefs_fc_entry_t *)malloc(1*sizeof(sefs_fc_entry_t));
 		tmp = NULL;
-		apol_vector_append(*contexts, (void *)fc_entry ); 
 		if (!(*contexts)) {
-			fprintf(stderr, "out of memory\n");
+	                error = errno;
+        	        ERR(policy, "Error: %s\n", strerror(error));
 			goto failure;
 		}
 		retv = getline(&line, &line_len, fc_file);
@@ -66,7 +72,7 @@ int parse_file_contexts_file(const char *fc_path, apol_vector_t **contexts, int 
 			if (feof(fc_file)) {
 				break;
 			} else {
-				fprintf(stderr, "error reading file\n");
+				ERR(policy, "error reading file\n");
 				goto failure;
 			}
 		}
@@ -90,7 +96,11 @@ int parse_file_contexts_file(const char *fc_path, apol_vector_t **contexts, int 
 			continue;
 		}
 
-		fc_entry->path = strdup(tmp);
+		if ( !(fc_entry->path = strdup(tmp)) ) {
+	                error = errno;
+	                ERR(policy, "Error: %s\n", strerror(error));
+			goto failure;
+		}
 
 		j += (strlen(tmp) + 1);
 
@@ -131,7 +141,7 @@ int parse_file_contexts_file(const char *fc_path, apol_vector_t **contexts, int 
 				 fc_entry->filetype = FILETYPE_SOCK;
 				break;
 			default:
-				fprintf(stderr, "invalid file_contexts format\n");
+				ERR(policy, "invalid file_contexts format\n");
 				goto failure;
 				break;
 			}
@@ -153,11 +163,7 @@ int parse_file_contexts_file(const char *fc_path, apol_vector_t **contexts, int 
 
 		if (strcmp(tmp, "<<none>>")) {
 			/* Create a context */
-			fc_entry->context = (security_con_t*)malloc(1 * sizeof(security_con_t));
-			if (!((fc_entry->context))) {
-				fprintf(stderr, "out of memory\n");
-				goto failure;
-			}
+			fc_entry->context = (security_con_t*)malloc(1*sizeof(security_con_t));	
 			for (; j < line_len; j++) {
 				if (line[j]) {
 					tmp = line + j;
@@ -167,14 +173,20 @@ int parse_file_contexts_file(const char *fc_path, apol_vector_t **contexts, int 
 			if (tmp - line > line_len) {
 				goto failure; 
 			}
-			free(context);
 			context = strdup(tmp);
 			if (!context) {
-				fprintf(stderr, "out of memory\n");
-				goto failure;
+	                        error = errno;
+        	                ERR(policy, "Error: %s\n", strerror(error));
+                	        goto failure;
 			}
 			/* Get data on the user from the policy file and save it in the context */
-			qpol_policy_get_user_by_name(policy->qh, policy->p, context, &fc_entry->context->user);
+			fc_entry->context->user = NULL;
+			if ( !(fc_entry->context->user = strdup(context)) ) {
+	                        error = errno;
+        	                ERR(policy, "Error: %s\n", strerror(error));
+                	        goto failure;
+			}
+			context = NULL;
 			j += (strlen(tmp) + 1);
 
 			for (; j < line_len; j++) {
@@ -186,14 +198,20 @@ int parse_file_contexts_file(const char *fc_path, apol_vector_t **contexts, int 
 			if (tmp - line > line_len) {
 				goto failure;
 			}
-			free(context);
 			context = strdup(tmp);
 			if (!context) {
-				fprintf(stderr, "out of memory\n");
+		                error = errno;
+                		ERR(policy, "Error: %s\n", strerror(error));
 				goto failure;
 			}
 			/* Get data on the role from the policy file and save it in the context */
-			qpol_policy_get_role_by_name(policy->qh, policy->p, context, &fc_entry->context->role);
+			fc_entry->context->role = NULL;
+			if ( !(fc_entry->context->role = strdup(context)) ) {
+                        	error = errno;
+	                        ERR(policy, "Error: %s\n", strerror(error));
+        	                goto failure;
+			}
+			context = NULL;
 			j += (strlen(tmp) + 1);
 
 			for (; j < line_len; j++) {
@@ -205,24 +223,32 @@ int parse_file_contexts_file(const char *fc_path, apol_vector_t **contexts, int 
 			if (tmp - line > line_len) {
 				goto failure;
 			}
-			free(context);
 			context = strdup(tmp);
 			if (!context) {
-				fprintf(stderr, "out of memory\n");
+		                error = errno;
+		                ERR(policy, "Error: %s\n", strerror(error));
 				goto failure;
 			}  
 			/* Get data on the type from the policy file and save it in the context */
-			qpol_policy_get_type_by_name(policy->qh, policy->p, context, &fc_entry->context->type);
-		
+			fc_entry->context->type = NULL;
+			if ( !(fc_entry->context->type = strdup(context)) ) {
+	                        error = errno;
+        	                ERR(policy, "Error: %s\n", strerror(error));
+                	        goto failure;
+			}
 		} else {
 			fc_entry->context = NULL;
 		}	
-
 		free(line);
 		line = NULL;
 		free(context);
 		context = NULL;
 		i++;
+		if ( apol_vector_append(*contexts, (void *)fc_entry ) < 0 ) {
+	                error = errno;
+        	        ERR(policy, "Error: %s\n", strerror(error));
+			goto failure;
+		}
 	}
 	*num_contexts = i;
 	fclose(fc_file);
@@ -239,9 +265,7 @@ void sefs_fc_entry_free(void *fc)
 	sefs_fc_entry_t *fc_entry = (sefs_fc_entry_t*)fc;
 	if (!fc_entry)
 		return;
-	free(fc_entry->path);
 	fc_entry->path = NULL;
-	free(fc_entry->context);
 	fc_entry->context = NULL;
 }
 

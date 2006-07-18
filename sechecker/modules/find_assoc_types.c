@@ -13,6 +13,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 
 static const char *const mod_name = "find_assoc_types";
 
@@ -21,6 +22,7 @@ int find_assoc_types_register(sechk_lib_t *lib)
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
 	sechk_name_value_t *nv = NULL;
+	int error;
 
 	if (!lib) {
 		fprintf(stderr, "Error: no library\n");
@@ -52,85 +54,126 @@ int find_assoc_types_register(sechk_lib_t *lib)
 	mod->severity = SECHK_SEV_NONE;
 	/* assign requirements */
 	nv = sechk_name_value_new("policy_type", "source");
-	apol_vector_append(mod->requirements, (void *)nv);
+	if ( apol_vector_append(mod->requirements, (void *)nv) < 0 ) {
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+		return -1;
+	}
 
 	/* register functions */
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
-		return -1;
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+                return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_INIT);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
-		return -1;
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+                return -1;
 	}
 	fn_struct->fn = &find_assoc_types_init;
-	apol_vector_append(mod->functions,(void*)fn_struct);
+	if ( apol_vector_append(mod->functions,(void*)fn_struct) < 0 ) {
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+                return -1;
+	}
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
-		return -1;
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+                return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_RUN);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
-		return -1;
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+                return -1;
 	}
 	fn_struct->fn = &find_assoc_types_run;
-	apol_vector_append(mod->functions,(void*)fn_struct);
+	if ( apol_vector_append(mod->functions,(void*)fn_struct) < 0 ) {
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+                return -1;
+	}
+
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
-		return -1;
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+                return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_FREE);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
-		return -1;
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+                return -1;
 	}
 	fn_struct->fn = &find_assoc_types_data_free;
-	apol_vector_append(mod->functions,(void*)fn_struct);
+	if ( apol_vector_append(mod->functions,(void*)fn_struct) < 0 ) {
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+                return -1;
+	}
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
-		return -1;
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+                return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_PRINT);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
-		return -1;
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+                return -1;
 	}
 	fn_struct->fn = &find_assoc_types_print_output;
-	apol_vector_append(mod->functions,(void*)fn_struct);
+	if ( apol_vector_append(mod->functions,(void*)fn_struct) < 0 ) {
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+                return -1;
+	}
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
-		return -1;
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+                return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_GET_RES);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
-		return -1;
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+                return -1;
 	}
 	fn_struct->fn = &find_assoc_types_get_result;
-	apol_vector_append(mod->functions,(void*)fn_struct);
+	if ( apol_vector_append(mod->functions,(void*)fn_struct) < 0 ) {
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+                return -1;
+	}
 
 	fn_struct = sechk_fn_new();
         if (!fn_struct) {
-                fprintf(stderr, "Error: out of memory\n");
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
                 return -1;
         }
         fn_struct->name = strdup("get_list");
         if (!fn_struct->name) {
-                fprintf(stderr, "Error: out of memory\n");
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
                 return -1;
         }
         fn_struct->fn = &find_assoc_types_get_list;
-	apol_vector_append(mod->functions,(void*)fn_struct);
+	if ( apol_vector_append(mod->functions,(void*)fn_struct) < 0 ) {
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+                return -1;
+	}
 
 	return 0;
 }
@@ -140,30 +183,26 @@ int find_assoc_types_register(sechk_lib_t *lib)
  * file. */
 int find_assoc_types_init(sechk_module_t *mod, apol_policy_t *policy)
 {
-	sechk_name_value_t *opt = NULL;
 	find_assoc_types_data_t *datum = NULL;
-	size_t i = 0;
+	int error;
 
 	if (!mod || !policy) {
 		fprintf(stderr, "Error: invalid parameters\n");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+		ERR(policy, "Error: wrong module (%s)\n", mod->name);
 		return -1;
 	}
 
 	datum = find_assoc_types_data_new();
 	if (!datum) {
-		fprintf(stderr, "Error: out of memory\n");
-		return -1;
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+                return -1;
 	}
 	mod->data = datum;
 
-	/* process module options */
-	for ( i = 0; i<apol_vector_get_size(mod->options);i++) {
-		opt = apol_vector_get_element(mod->options, i);
-	}
 	return 0;
 }
 
@@ -187,13 +226,14 @@ int find_assoc_types_run(sechk_module_t *mod, apol_policy_t *policy)
 	char *type_name = NULL;
 	qpol_type_t *type;
 	qpol_context_t *context;
+	int error;
 
 	if (!mod || !policy) {
 		fprintf(stderr, "Error: invalid parameters\n");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+		ERR(policy, "Error: wrong module (%s)\n", mod->name);
 		return -1;
 	}
 
@@ -204,8 +244,9 @@ int find_assoc_types_run(sechk_module_t *mod, apol_policy_t *policy)
 	datum = (find_assoc_types_data_t*)mod->data;
 	res = sechk_result_new();
 	if (!res) {
-		fprintf(stderr, "Error: out of memory\n");
-		return -1;
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+                return -1;
 	}
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
@@ -223,7 +264,8 @@ int find_assoc_types_run(sechk_module_t *mod, apol_policy_t *policy)
 	}
 
 	if (apol_str_append(&buff, &buff_sz, "sid unlabeled ") != 0) {
-		fprintf(stderr, "Error: out of memory\n");
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
 		goto find_assoc_types_run_fail;
 	}
 
@@ -232,21 +274,24 @@ int find_assoc_types_run(sechk_module_t *mod, apol_policy_t *policy)
 	qpol_type_get_name(policy->qh, policy->p, type, &type_name);
 	
 	if (apol_str_append(&buff, &buff_sz, type_name) !=  0) {
-		fprintf(stderr, "Error: out of memory\n");
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
 		goto find_assoc_types_run_fail;
 	}
 
 	if (!item) {
 		item = sechk_item_new(NULL);
 		if (!item) {
-			fprintf(stderr, "Error: out of memory\n");
+	                error = errno;
+        	        fprintf(stderr, "Error: %s\n", strerror(error));
 			goto find_assoc_types_run_fail;
 		}
 	}
 
 	proof = sechk_proof_new(NULL);
 	if (!proof) {
-		fprintf(stderr, "Error: out of memory\n");
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
 		goto find_assoc_types_run_fail;
 	}
 
@@ -254,10 +299,26 @@ int find_assoc_types_run(sechk_module_t *mod, apol_policy_t *policy)
 	item->item = (void*)type_name;
 	proof->type = SECHK_ITEM_TYPE;
 	proof->text = buff;
-	res->items = apol_vector_create();
-	item->proof = apol_vector_create();
-	apol_vector_append(item->proof, (void*)proof);
-	apol_vector_append(res->items, (void*)item);
+	if ( !(res->items = apol_vector_create()) ) {
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+               	goto find_assoc_types_run_fail; 
+	}
+	if ( !(item->proof = apol_vector_create()) ) {
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+		goto find_assoc_types_run_fail;
+	}
+	if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+                goto find_assoc_types_run_fail;
+        }
+	if ( apol_vector_append(res->items, (void*)item) < 0 ) {
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+                goto find_assoc_types_run_fail;
+        }
 
 	mod->result = res;
 
@@ -275,10 +336,6 @@ find_assoc_types_run_fail:
 /* The free function frees the private data of a module */
 void find_assoc_types_data_free(void *data)
 {
-        find_assoc_types_data_t *datum = (find_assoc_types_data_t*)data;
-
-        if (datum) {
-        }
         free(data);
 }
 
@@ -302,7 +359,7 @@ int find_assoc_types_print_output(sechk_module_t *mod, apol_policy_t *policy)
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+		ERR(policy, "Error: wrong module (%s)\n", mod->name);
 		return -1;
 	}
 	
@@ -310,7 +367,7 @@ int find_assoc_types_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	outformat = mod->outputformat;
 
 	if (!mod->result) {
-		fprintf(stderr, "Error: module has not been run\n");
+		ERR(policy, "Error: module has not been run\n");
 		return -1;
 	}
 	
@@ -376,7 +433,6 @@ sechk_result_t *find_assoc_types_get_result(sechk_module_t *mod)
 	}
 
 	return mod->result;
-	return NULL;
 }
 
 int find_assoc_types_get_list(sechk_module_t *mod, apol_vector_t **v)
@@ -414,6 +470,5 @@ find_assoc_types_data_t *find_assoc_types_data_new(void)
 	datum = (find_assoc_types_data_t*)calloc(1,sizeof(find_assoc_types_data_t));
 
 	return datum;
-	return NULL;
 }
 
