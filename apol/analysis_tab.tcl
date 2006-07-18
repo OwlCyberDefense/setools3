@@ -283,6 +283,7 @@ proc Apol_Analysis::switchTab {pageID} {
     variable widgets
     variable tabs
 
+    $widgets(update) configure -state normal
     # check if switching to already visible tab
     if {[$Apol_TE::widgets(results) raise] == $pageID} {
         return

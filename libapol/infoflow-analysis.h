@@ -32,6 +32,13 @@
 #include "vector.h"
 
 /*
+ * Information flows can be either direct (A -> B) or transitive (A ->
+ * {stuff} -> B).
+ */
+#define APOL_INFOFLOW_MODE_DIRECT  0x01
+#define APOL_INFOFLOW_MODE_TRANS   0x02
+
+/*
  * All operations are mapped in either an information flow in or an
  * information flow out (using the permission map).  These defines are
  * for the two flow directions plus flows in both or either direction
@@ -97,6 +104,22 @@ extern apol_infoflow_analysis_t *apol_infoflow_analysis_create(void);
 extern void apol_infoflow_analysis_destroy(apol_infoflow_analysis_t **ia);
 
 /**
+ * Set an information flow analysis mode to be either direct or
+ * transitive.  This must be one of the values
+ * APOL_INFOFLOW_MODE_DIRECT, or APOL_INFOFLOW_MODE_TRANS.  This
+ * function must be called prior to running the analysis.
+ *
+ * @param p Policy handler, to report errors.
+ * @param ia Infoflow analysis to set.
+ * @param mode Analysis mode, either direct or transitive.
+ *
+ * @return 0 on success, negative on error.
+ */
+extern int apol_infoflow_analysis_set_mode(apol_policy_t *p,
+					   apol_infoflow_analysis_t *ia,
+					   unsigned int mode);
+
+/**
  * Set an information flow analysis to search in a specific direction.
  * This must be one of the values APOL_INFOFLOW_IN, APOL_INFOFLOW_OUT,
  * APOL_INFOFLOW_BOTH, or APOL_INFOFLOW_EITHER.  This function must be
@@ -104,8 +127,7 @@ extern void apol_infoflow_analysis_destroy(apol_infoflow_analysis_t **ia);
  *
  * @param p Policy handler, to report errors.
  * @param ia Infoflow analysis to set.
- * @param dir Direction to analyze, using one of the APOL_INFOFLOW_*
- * defines.
+ * @param dir Direction to analyze, using one of the defines above.
  *
  * @return 0 on success, negative on error.
  */
@@ -128,22 +150,23 @@ extern int apol_infoflow_analysis_set_type(apol_policy_t *p,
 					   const char *name);
 
 /**
- * Set an information flow analysis to return rules with this object
- * (non-common) class.  If more than one class are appended to the
- * query, the rule's class must be one of those appended.  (I.e., the
- * rule's class must be a member of the analysis's classes.)  Pass a
- * NULL to clear all classes.
+ * Set an information flow analysis to return only rules with this
+ * object (non-comman) class and permission.  If more than one
+ * class/perm pair is appended to the query, rule's class and
+ * permissions must be one of those appended.  (I.e., the rule will be
+ * a member of the analysis's class/perm pairs.)
  *
- * @param p Policy handler, to report errors.
+ * @param policy Policy handler, to report errors.
  * @param ia Infoflow analysis to set.
- * @param class Name of object class to add to search set, or NULL to
- * clear all classes.
- *
+ * @param class_name The class to which a result must have access.
+ * @param perm_name The permission which a result must have for the
+ * given class.
  * @return 0 on success, negative on error.
  */
-extern int apol_infoflow_analysis_append_class(apol_policy_t *p,
-					       apol_infoflow_analysis_t *ia,
-					       const char *obj_class);
+extern int apol_infoflow_analysis_append_class_perm(apol_policy_t *p,
+						    apol_infoflow_analysis_t *ia,
+						    const char *class_name,
+						    const char *perm_name);
 
 /**
  * Set an information flow analysis to return only types matching a
@@ -157,10 +180,60 @@ extern int apol_infoflow_analysis_append_class(apol_policy_t *p,
  *
  * @return 0 on success, negative on error.
  */
-extern int apol_infoflow_analysis_set_result_regexp(apol_policy_t *p,
-						    apol_infoflow_analysis_t *ia,
-						    const char *result);
+extern int apol_infoflow_analysis_set_result_regex(apol_policy_t *p,
+						   apol_infoflow_analysis_t *ia,
+						   const char *result);
 
+/*************** functions to access infoflow results ***************/
+
+/**
+ * Free all memory associated with an information flow analysis
+ * result, including the pointer itself.  This function does nothing
+ * if the result is already NULL.
+ *
+ * @param result Pointer to a infoflow result structure to destroy.
+ */
+extern void apol_infoflow_result_free(void *result);
+
+/**
+ * Return the direction of an information flow result.  This will be
+ * one of APOL_INFOFLOW_IN, APOL_INFOFLOW_OUT, or APOL_INFOFLOW_BOTH.
+ *
+ * @param result Infoflow result from which to get direction.
+ * @return Direction of result.
+ */
+extern unsigned int apol_infoflow_result_get_dir(apol_infoflow_result_t *result);
+
+/**
+ * Return the start type of an information flow result.  The caller
+ * should not free the returned pointer.
+ *
+ * @param result Infoflow result from which to get start type.
+ * @return Pointer to the start type of the infoflow.
+ */
+extern qpol_type_t *apol_infoflow_result_get_start_type(apol_infoflow_result_t *result);
+
+/**
+ * Return the end type of an information flow result.  The caller
+ * should not free the returned pointer.
+ *
+ * @param result Infoflow result from which to get end type.
+ * @return Pointer to the start type of the infoflow.
+ */
+extern qpol_type_t *apol_infoflow_result_get_end_type(apol_infoflow_result_t *result);
+
+/**
+ * Return the vector of access rules for a particular information flow
+ * result.  This is a vector of qpol_avrule_t pointers.  The caller
+ * <b>should not</b> call apol_vector_destroy() upon the returned
+ * vector.
+ *
+ * @param result Infoflow result from which to get rules.
+ *
+ * @return Pointer to a vector of rules relative to the policy originally
+ * used to generate the results.
+ */
+extern apol_vector_t *apol_infoflow_result_get_rules(apol_infoflow_result_t *result);
 
 #endif
 
@@ -227,9 +300,6 @@ int iflow_query_add_obj_class_perm(iflow_query_t *q, int obj_class, int perm);
 
 void iflow_destroy(iflow_t *flow);
 void iflow_transitive_destroy(iflow_transitive_t *flow);
-
-int iflow_direct_flows(policy_t *policy, iflow_query_t *q, int *num_answers,
-		       iflow_t **answers);
 
 iflow_transitive_t *iflow_transitive_flows(policy_t *policy, iflow_query_t *q);
 
