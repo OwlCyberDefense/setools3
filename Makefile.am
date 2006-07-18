@@ -2,7 +2,7 @@ if COPY_BWIDGET
 	MAYBE_BWIDGET = packages
 endif
 
-SUBDIRS = libqpol libapol libsefs apol secmds sechecker awish $(MAYBE_BWIDGET)
+SUBDIRS = libqpol libapol libsefs libseaudit apol secmds sechecker awish $(MAYBE_BWIDGET)
 
 EXTRA_DIST = VERSION KNOWN-BUGS
 

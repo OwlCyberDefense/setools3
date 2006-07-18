@@ -13,6 +13,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 
 static const char *const mod_name = "find_port_types";
 
@@ -20,16 +21,14 @@ static const char *const mod_name = "find_port_types";
  * with the library.  */
 int find_port_types_register(sechk_lib_t *lib)
 {
-#if 0
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
+	int error;
 
 	if (!lib) {
-		fprintf(stderr, "Error: no library\n");
-		return -1;
+                fprintf(stderr, "Error: no library\n");
+                return -1;
 	}
-
-	library = lib;
 
 	/* Modules are declared by the config file and their name and options
 	 * are stored in the module array.  The name is looked up to determine
@@ -39,6 +38,8 @@ int find_port_types_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: module unknown\n");
 		return -1;
 	}
+
+	mod->parent_lib = lib;
 	
 	/* assign the descriptions */
 	mod->brief_description = "utility module";
@@ -58,89 +59,117 @@ int find_port_types_register(sechk_lib_t *lib)
 	/* register functions */
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
-		return -1;
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+                return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_INIT);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
-		return -1;
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+                return -1;
 	}
 	fn_struct->fn = &find_port_types_init;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+	if ( apol_vector_append(mod->functions, (void *)fn_struct) < 0 ) {
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+                return -1;
+	}	
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
-		return -1;
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+                return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_RUN);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
-		return -1;
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+                return -1;
 	}
 	fn_struct->fn = &find_port_types_run;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+        if ( apol_vector_append(mod->functions, (void *)fn_struct) < 0 ) {
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+                return -1;
+        }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
-		return -1;
-	}
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+                return -1;
+        }
 	fn_struct->name = strdup(SECHK_MOD_FN_FREE);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
-		return -1;
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+                return -1;
 	}
-	fn_struct->fn = &find_port_types_free;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+	fn_struct->fn = &find_port_types_data_free;
+        if ( apol_vector_append(mod->functions, (void *)fn_struct) < 0 ) {
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+                return -1;
+        }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
-		return -1;
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+                return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_PRINT);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
-		return -1;
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+                return -1;
 	}
 	fn_struct->fn = &find_port_types_print_output;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+        if ( apol_vector_append(mod->functions, (void *)fn_struct) < 0 ) {
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+                return -1;
+        }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
-		return -1;
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+                return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_GET_RES);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
-		return -1;
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+                return -1;
 	}
 	fn_struct->fn = &find_port_types_get_result;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+        if ( apol_vector_append(mod->functions, (void *)fn_struct) < 0 ) {
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+                return -1;
+        }
 
 	fn_struct = sechk_fn_new();
         if (!fn_struct) {
-                fprintf(stderr, "Error: out of memory\n");
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
                 return -1;
         }
         fn_struct->name = strdup("get_list");
         if (!fn_struct->name) {
-                fprintf(stderr, "Error: out of memory\n");
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
                 return -1;
         }
         fn_struct->fn = &find_port_types_get_list;
-        fn_struct->next = mod->functions;
-        mod->functions = fn_struct;
-
-#endif
+        if ( apol_vector_append(mod->functions, (void *)fn_struct) < 0 ) {
+                error = errno;
+                fprintf(stderr, "Error: %s\n", strerror(error));
+                return -1;
+        }
 	return 0;
 }
 
@@ -148,34 +177,28 @@ int find_port_types_register(sechk_lib_t *lib)
  * and initializes its values based on the options parsed in the config
  * file.
  * Add any option processing logic as indicated below. */
-int find_port_types_init(sechk_module_t *mod, policy_t *policy)
+int find_port_types_init(sechk_module_t *mod, apol_policy_t *policy)
 {
-#if 0
-	sechk_name_value_t *opt = NULL;
 	find_port_types_data_t *datum = NULL;
+	int error;
 
 	if (!mod || !policy) {
-		fprintf(stderr, "Error: invalid parameters\n");
+		ERR(policy, "Error: invalid parameters\n");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+		ERR(policy, "Error: wrong module (%s)\n", mod->name);
 		return -1;
 	}
 
 	datum = find_port_types_data_new();
 	if (!datum) {
-		fprintf(stderr, "Error: out of memory\n");
-		return -1;
+                error = errno;
+                ERR(policy, "Error: %s\n", strerror(error));
+                return -1;
 	}
 	mod->data = datum;
 
-	opt = mod->options;
-	while (opt) {
-		opt = opt->next;
-	}
-
-#endif
 	return 0;
 }
 
@@ -187,24 +210,23 @@ int find_port_types_init(sechk_module_t *mod, policy_t *policy)
  *  -1 System error
  *   0 The module "succeeded"	- no negative results found
  *   1 The module "failed" 		- some negative results found */
-int find_port_types_run(sechk_module_t *mod, policy_t *policy)
+int find_port_types_run(sechk_module_t *mod, apol_policy_t *policy)
 {
-/* FIX ME: need to convert this to use new libapol */
-#if 0
 	find_port_types_data_t *datum;
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
-	ap_portcon_t tmp_portcon;
 	char *buff = NULL;
-	int i = 0, idx = 0, isid_idx = 0, type_idx = 0, buff_sz = 0;
+	int i = 0, j = 0, error = 0;
+	size_t buff_sz = 0;
+	apol_vector_t *portcon_vector;
 
 	if (!mod || !policy) {
-		fprintf(stderr, "Error: invalid parameters\n");
+		ERR(policy, "Error: invalid parameters\n");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+		ERR(policy, "Error: wrong module (%s)\n", mod->name);
 		return -1;
 	}
 
@@ -215,148 +237,181 @@ int find_port_types_run(sechk_module_t *mod, policy_t *policy)
 	datum = (find_port_types_data_t*)mod->data;
 	res = sechk_result_new();
 	if (!res) {
-		fprintf(stderr, "Error: out of memory\n");
-		return -1;
+                error = errno;
+                ERR(policy, "Error: %s\n", strerror(error));
+                return -1;
 	}
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
-		fprintf(stderr, "Error: out of memory\n");
-		goto find_port_types_run_fail;
+                error = errno;
+                ERR(policy, "Error: %s\n", strerror(error));
+                return -1;
 	}
-	res->item_type = POL_LIST_TYPE;
+	res->item_type = SECHK_ITEM_PORTCON;
+        if ( !(res->items = apol_vector_create()) ) {
+                error = errno;
+                ERR(policy, "Error: %s\n", strerror(error));
+                goto find_port_types_run_fail;
+        }
 
-	for (i = policy->num_portcon - 1; i >= 0; i--) {
-		tmp_portcon = policy->portcon[i];
-		idx = tmp_portcon.scontext->type;
+        if ( apol_get_portcon_by_query(policy, NULL, &portcon_vector) < 0 ) {
+                goto find_port_types_run_fail;
+        }
 
-		proof = sechk_proof_new();
+	for (i=0;i<apol_vector_get_size(portcon_vector);i++) {
+		char *portcon_name = NULL;
+		qpol_portcon_t *portcon = NULL;
+		qpol_context_t *portcon_context = NULL;
+		qpol_type_t *portcon_type = NULL;
+
+		portcon = apol_vector_get_element(portcon_vector, i);
+		qpol_portcon_get_context(policy->qh, policy->p, portcon, &portcon_context);
+		qpol_context_get_type(policy->qh, policy->p, portcon_context, &portcon_type);
+		qpol_type_get_name(policy->qh, policy->p, portcon_type, &portcon_name);
+
+		proof = sechk_proof_new(NULL);
 		if (!proof) {
-			fprintf(stderr, "Error: out of memory\n");
-			goto find_port_types_run_fail;
-		}
+                	error = errno;
+                	ERR(policy, "Error: %s\n", strerror(error));
+                	goto find_port_types_run_fail;
+        	}
+		proof->type = SECHK_ITEM_PORTCON;
+		proof->text = apol_portcon_render(policy, portcon);
+		item = NULL;
 
-		proof->idx = idx;
-		proof->type = POL_LIST_TYPE;
-		buff = re_render_portcon(&tmp_portcon, policy);
-		proof->text = buff;
-		
-		if (res->num_items > 0) {
-			item = sechk_result_get_item(idx, POL_LIST_TYPE, res);
-		}
+		/* Have we encountered this type before?  If so, use that type. */
+                for (j=0;j<apol_vector_get_size(res->items);j++) {
+                        sechk_item_t *res_item = NULL;
+                        res_item = apol_vector_get_element(res->items, j);
+                        if (!strcmp((char *)res_item->item, portcon_name)) item = res_item;
+                }
 
 		/* We have not encountered this type yet */
 		if (!item) {
-			item = sechk_item_new();
+			item = sechk_item_new(NULL);
 			if (!item) {
-				fprintf(stderr, "Error: out of memory\n");
-				goto find_port_types_run_fail;
+	                        error = errno;
+        	                ERR(policy, "Error: %s\n", strerror(error));
+                	        goto find_port_types_run_fail;
 			}
-
-			item->item_id = idx;
 			item->test_result = 1;
-		
-			if (item) {
-				item->next = res->items;
-				res->items = item;
-				(res->num_items)++;
+			item->item = (void *)portcon_name;	
+			if ( apol_vector_append(res->items, (void *)item) < 0 ) {
+	                        error = errno;
+       		                ERR(policy, "Error: %s\n", strerror(error));
+                	        goto find_port_types_run_fail;
 			}
 		} 
-	       	
-		/* head insert proof */
-		proof->next = item->proof;
-		item->proof = proof;
+
+                if ( !item->proof ) {
+                        if ( !(item->proof = apol_vector_create()) ) {
+                                error = errno;
+                                ERR(policy, "Error: %s\n", strerror(error));
+                                goto find_port_types_run_fail;
+                        }
+                }
+                if ( apol_vector_append(item->proof, (void *)proof) < 0 ) {
+                        error = errno;
+                        ERR(policy, "Error: %s\n", strerror(error));
+                        goto find_port_types_run_fail;
+                }
+                item = NULL;
 	}
+	apol_vector_destroy(&portcon_vector, NULL);
 
 	/* if we are provided a source policy, search initial SIDs */
-	if (!is_binary_policy(policy)) {
+	if (policy) {
+		qpol_isid_t *isid = NULL;
 		buff = NULL;
-		isid_idx = get_initial_sid_idx("port", policy);
-		if (isid_idx >= 0) {
-			proof = NULL;
-			type_idx = policy->initial_sids[isid_idx].scontext->type;
+		qpol_policy_get_isid_by_name(policy->qh, policy->p, "port", &isid);
+                if ( isid ) {
+                        qpol_context_t *context;
+                        apol_context_t *a_context;
+                        qpol_type_t *context_type;
+                        char *context_type_name;
 
-			if (append_str(&buff, &buff_sz, "sid port ") != 0) {
-				fprintf(stderr, "Error: out of memory");
-				goto find_port_types_run_fail;
-			}
+                        proof = NULL;
+                        qpol_isid_get_context(policy->qh, policy->p, isid, &context);
+                        qpol_context_get_type(policy->qh, policy->p, context, &context_type);
+                        qpol_type_get_name(policy->qh, policy->p, context_type, &context_type_name);
+                        a_context = apol_context_create_from_qpol_context(policy, context);
 
-			if (append_str(&buff, &buff_sz, re_render_initial_sid_security_context(isid_idx, policy)) != 0) {
-				fprintf(stderr, "Error: out of memory");
-				goto find_port_types_run_fail;
-			}
+                        if (apol_str_append(&buff, &buff_sz, "sid port ") != 0) {
+                                error = errno;
+                                ERR(policy, "Error: %s\n", strerror(error));
+                                goto find_port_types_run_fail;
+                        }
 
-			if (res->num_items > 0) {
-				item = sechk_result_get_item(type_idx, POL_LIST_TYPE, res);
-			}
+                        if (apol_str_append(&buff, &buff_sz, apol_context_render(policy, a_context)) != 0 ) {
+                                error = errno;
+                                ERR(policy, "Error: %s\n", strerror(error));
+                                goto find_port_types_run_fail;
+                        }
 
-			if (!item) {
-				item = sechk_item_new();
-				if (!item) {
-					fprintf(stderr, "Error: out of memory\n");
-					goto find_port_types_run_fail;
-				}
+	                proof = sechk_proof_new(NULL);
+                        if (!proof) {
+                                error = errno;
+                                ERR(policy, "Error: %s\n", strerror(error));
+                                goto find_port_types_run_fail;
+                        }
 
-				item->item_id = type_idx;
-				item->test_result = 1;
-			}
+                        proof->type = SECHK_ITEM_PORTCON;
+                        proof->text = buff;
 
-			proof = sechk_proof_new();
-			if (!proof) {
-				fprintf(stderr, "Error: out of memory\n");
-				goto find_port_types_run_fail;
-			}
+	                /* Have we encountered this type before?  If so, use that type. */
+        	        for (j=0;j<apol_vector_get_size(res->items);j++) {
+                	        sechk_item_t *res_item = NULL;
+                	        res_item = apol_vector_get_element(res->items, j);
+                	        if (!strcmp((char *)res_item->item, context_type_name)) item = res_item;
+                	}
 
-			proof->idx = type_idx;
-			proof->type = POL_LIST_TYPE;
-			proof->text = buff;
+	                /* We have not encountered this type yet */
+        	        if (!item) {
+                	        item = sechk_item_new(NULL);
+                	        if (!item) {
+                	                error = errno;
+                	                ERR(policy, "Error: %s\n", strerror(error));
+                        	        goto find_port_types_run_fail;
+                        }
+                        	item->test_result = 1;
+	                        item->item = (void *)context_type_name;
+        	                if ( apol_vector_append(res->items, (void *)item) < 0 ) {
+        	                        error = errno;
+                	                ERR(policy, "Error: %s\n", strerror(error));
+                        	        goto find_port_types_run_fail;
+                       		 }
+	                }
 
-			if (item) {
-				item->next = res->items;
-				res->items = item;
-				(res->num_items)++;
-			}
-
-			proof->next = item->proof;
-			item->proof = proof;
+        	        if ( !item->proof ) {
+                	        if ( !(item->proof = apol_vector_create()) ) {
+                        	        error = errno;
+                               	 	ERR(policy, "Error: %s\n", strerror(error));
+                               		goto find_port_types_run_fail;
+	                        }
+        	        }
+	                if ( apol_vector_append(item->proof, (void *)proof) < 0 ) {
+        	                error = errno;
+                	        ERR(policy, "Error: %s\n", strerror(error));
+	                        goto find_port_types_run_fail;
+        	        }
 		}
 	}
 
 	mod->result = res;
 
-	/* If module finds something that would be considered a fail 
-	 * on the policy return 1 here */
-	if (res->num_items > 0)
-		return 1;
-
-#endif
 	return 0;
 
-#if 0
 find_port_types_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
-	sechk_result_free(res);
 	free(buff);
 	return -1;
-#endif
 }
 
 /* The free function frees the private data of a module */
 void find_port_types_data_free(void *data)
 {
-#if 0
-	if (!mod) {
-		fprintf(stderr, "Error: invalid parameters\n");
-		return;
-	}
-	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
-		return;
-	}
-
-	free(mod->data);
-	mod->data = NULL;
-#endif
+	free(data);
 }
 
 /* The print output function generates the text and prints the
@@ -366,30 +421,30 @@ void find_port_types_data_free(void *data)
  * outline and will need a different specification. It is
  * required that each of the flags for output components be
  * tested in this function (stats, list, proof, detailed, and brief) */
-int find_port_types_print_output(sechk_module_t *mod, policy_t *policy) 
+int find_port_types_print_output(sechk_module_t *mod, apol_policy_t *policy) 
 {
-#if 0
 	find_port_types_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
-	int i = 0, type_idx = 0;
-	char *type_str = NULL;
+	int i = 0, j=0, k = 0, num_items = 0;
 
 	if (!mod || !policy){
-		fprintf(stderr, "Error: invalid parameters\n");
+		ERR(policy, "Error: invalid parameters\n");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+		ERR(policy, "Error: wrong module (%s)\n", mod->name);
 		return -1;
 	}
 	
 	datum = (find_port_types_data_t*)mod->data;
 	outformat = mod->outputformat;
 
+	num_items = apol_vector_get_size(mod->result->items);
+
 	if (!mod->result) {
-		fprintf(stderr, "Error: module has not been run\n");
+		ERR(policy, "Error: module has not been run\n");
 		return -1;
 	}
 	
@@ -397,24 +452,22 @@ int find_port_types_print_output(sechk_module_t *mod, policy_t *policy)
 		return 0; /* not an error - no output is requested */
 
 	if (outformat & SECHK_OUT_STATS) {
-		printf("Found %i port types.\n", mod->result->num_items);
+		printf("Found %i port types.\n", num_items);
 	}
 
 	/* The list report component is a display of all items
 	 * found without any supporting proof. The default method
 	 * is to display a comma separated list four items to a line
 	 * this may need to be changed for longer items. */
-	if (outformat & SECHK_OUT_LIST) {
-		printf("\n");
-		for (item = mod->result->items; item; item = item->next) {
-			i++;
-			i %= 4;
-			type_idx = item->item_id;
-			type_str = policy->types[type_idx].name;
-			
-			printf("%s%s", type_str, (i&&item->next)?", " : "\n");
-		}
-		printf("\n");
+        if (outformat & SECHK_OUT_LIST) {
+                printf("\n");
+                for (i=0;i<num_items;i++) {
+                        j++;
+                        j %= 4;
+                        item = apol_vector_get_element(mod->result->items, i);
+                        printf("%s%s", (char *)item->item, (char *)( (j) ? ", " : "\n"));
+                }
+                printf("\n");
 	}
 
 	/* The proof report component is a display of a list of items
@@ -425,22 +478,23 @@ int find_port_types_print_output(sechk_module_t *mod, policy_t *policy)
 	 * items are printed on a line either with (or, if long, such as a
 	 * rule, followed by) the severity. Each proof element is then
 	 * displayed in an indented list one per line below it. */
-	if (outformat & SECHK_OUT_PROOF) {
-		printf("\n");
-		for (item = mod->result->items; item; item = item->next) {
-			type_idx = item->item_id;
-			type_str = policy->types[type_idx].name;
+        if (outformat & SECHK_OUT_PROOF) {
+                printf("\n");
+                for ( j=0;j<num_items;j++) {
+                        item = apol_vector_get_element(mod->result->items, j);
+                        if ( item ) {
+                                printf("%s\n", (char*)item->item);
+                                for (k=0;k<apol_vector_get_size(item->proof);k++) {
+                                        proof = apol_vector_get_element(item->proof, k);
+                                        if ( proof )
+                                                printf("\t%s\n", proof->text);
+                                }
+                        }
+                }
+                printf("\n");
+        }
 
-			printf("%s\n", type_str);
-			for (proof = item->proof; proof; proof = proof->next) {
-				printf("\t%s\n", proof->text);
-			}
-		}
-		printf("\n");
-	}
-
-#endif
-	return 0;
+        return 0;
 }
 
 /* The get_result function returns a pointer to the results
@@ -448,7 +502,6 @@ int find_port_types_print_output(sechk_module_t *mod, policy_t *policy)
  * You should not need to modify this function. */
 sechk_result_t *find_port_types_get_result(sechk_module_t *mod) 
 {
-#if 0
 	if (!mod) {
 		fprintf(stderr, "Error: invalid parameters\n");
 		return NULL;
@@ -459,43 +512,26 @@ sechk_result_t *find_port_types_get_result(sechk_module_t *mod)
 	}
 
 	return mod->result;
-#endif
-	return NULL;
 }
 
 int find_port_types_get_list(sechk_module_t *mod, apol_vector_t **v)
 {
-#if 0
-	int i;
-	sechk_item_t *item = NULL;
+	if (!mod || !v) {
+                fprintf(stderr, "Error: invalid parameters\n");
+                return -1;
+        }
+        if (strcmp(mod_name, mod->name)) {
+                fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+                return -1;
+        }
+        if (!mod->result) {
+                fprintf(stderr, "Error: module has not been run\n");
+                return -1;
+        }
 
-	if (!mod || !array || !size) {
-		fprintf(stderr, "Error: invalid parameters\n");
-		return -1;
-	}
-	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
-		return -1;
-	}
-	if (!mod->result) {
-		fprintf(stderr, "Error: module has not been run\n");
-		return -1;
-	}
+        v = &mod->result->items;
 
-	*size = mod->result->num_items;
-
-	*array = (int*)malloc(mod->result->num_items * sizeof(int));
-	if (!(*array)) {
-		fprintf(stderr, "Error: out of memory\n");
-		return -1;
-	}
-
-	for (i = 0, item = mod->result->items; item && i < *size; i++, item = item->next) {
-		(*array)[i] = item->item_id;
-	}
-
-#endif
-	return 0;
+        return 0;
 }
 
 /* The find_port_types_data_new function allocates and returns an
@@ -509,14 +545,11 @@ int find_port_types_get_list(sechk_module_t *mod, apol_vector_t **v)
  * any other data should be initialized as needed by the check logic */
 find_port_types_data_t *find_port_types_data_new(void)
 {
-#if 0
 	find_port_types_data_t *datum = NULL;
 
 	datum = (find_port_types_data_t*)calloc(1,sizeof(find_port_types_data_t));
 
 	return datum;
-#endif
-	return NULL;
 }
 
  

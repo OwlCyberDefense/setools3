@@ -34,10 +34,10 @@
 
 /* general file contexts structure */
 typedef struct security_context {
-        qpol_user_t     	*user;
-        qpol_role_t     	*role;
-        qpol_type_t     	*type;
-        qpol_mls_range_t	*range;
+        char      	*user;
+        char	     	*role;
+        char     	*type;
+        char		*range;
 } security_con_t;
 
 typedef struct sefs_fc_entry {
