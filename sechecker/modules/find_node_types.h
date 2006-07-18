@@ -26,10 +26,10 @@ typedef struct find_node_types_data {
  * are in the same namespace. Be sure to choose a unique name
  * for each module and to set the module name prefix find_node_types everywhere */
 int find_node_types_register(sechk_lib_t *lib);
-int find_node_types_init(sechk_module_t *mod, policy_t *policy);
-int find_node_types_run(sechk_module_t *mod, policy_t *policy);
+int find_node_types_init(sechk_module_t *mod, apol_policy_t *policy);
+int find_node_types_run(sechk_module_t *mod, apol_policy_t *policy);
 void find_node_types_data_free(void *data);
-int find_node_types_print_output(sechk_module_t *mod, policy_t *policy);
+int find_node_types_print_output(sechk_module_t *mod, apol_policy_t *policy);
 sechk_result_t *find_node_types_get_result(sechk_module_t *mod);
 int find_node_types_get_list(sechk_module_t *mod, apol_vector_t **v);
 

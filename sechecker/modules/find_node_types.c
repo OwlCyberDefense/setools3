@@ -13,6 +13,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 
 static const char *const mod_name = "find_node_types";
 
@@ -22,7 +23,6 @@ static const char *const mod_name = "find_node_types";
  * to call. See the note at the bottom of this function to do so. */
 int find_node_types_register(sechk_lib_t *lib)
 {
-#if 0
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
 
@@ -31,16 +31,16 @@ int find_node_types_register(sechk_lib_t *lib)
 		return -1;
 	}
 
-	library = lib;
-
-	/* Modules are declared by the config file and their name and options
-	 * are stored in the module array.  The name is looked up to determine
-	 * where to store the function structures */
 	mod = sechk_lib_get_module(mod_name, lib);
 	if (!mod) {
 		fprintf(stderr, "Error: module unknown\n");
 		return -1;
 	}
+	mod->parent_lib = lib;
+
+	/* Modules are declared by the config file and their name and options
+	 * are stored in the module array.  The name is looked up to determine
+	 * where to store the function structures */
 	
 	/* assign the descriptions */
 	mod->brief_description = "utility module";
@@ -69,8 +69,7 @@ int find_node_types_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = &find_node_types_init;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+	apol_vector_append(mod->functions, (void *)fn_struct);
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -83,8 +82,7 @@ int find_node_types_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = &find_node_types_run;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+	apol_vector_append(mod->functions, (void *)fn_struct);
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -96,9 +94,8 @@ int find_node_types_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &find_node_types_free;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+	fn_struct->fn = &find_node_types_data_free;
+	apol_vector_append(mod->functions, (void *)fn_struct);
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -111,8 +108,7 @@ int find_node_types_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = &find_node_types_print_output;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+	apol_vector_append(mod->functions, (void *)fn_struct);
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -125,8 +121,7 @@ int find_node_types_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = &find_node_types_get_result;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+	apol_vector_append(mod->functions, (void *)fn_struct);
 
 	fn_struct = sechk_fn_new();
         if (!fn_struct) {
@@ -139,10 +134,8 @@ int find_node_types_register(sechk_lib_t *lib)
                 return -1;
         }
         fn_struct->fn = &find_node_types_get_list;
-        fn_struct->next = mod->functions;
-        mod->functions = fn_struct;
+	apol_vector_append(mod->functions, (void *)fn_struct);
 
-#endif
 	return 0;
 }
 
@@ -150,10 +143,8 @@ int find_node_types_register(sechk_lib_t *lib)
  * and initializes its values based on the options parsed in the config
  * file.
  * Add any option processing logic as indicated below. */
-int find_node_types_init(sechk_module_t *mod, policy_t *policy)
+int find_node_types_init(sechk_module_t *mod, apol_policy_t *policy)
 {
-#if 0
-	sechk_name_value_t *opt = NULL;
 	find_node_types_data_t *datum = NULL;
 
 	if (!mod || !policy) {
@@ -167,17 +158,11 @@ int find_node_types_init(sechk_module_t *mod, policy_t *policy)
 
 	datum = find_node_types_data_new();
 	if (!datum) {
-		fprintf(stderr, "Error: out of memory\n");
+		fprintf(stderr, "Error: \n");
 		return -1;
 	}
 	mod->data = datum;
 
-	opt = mod->options;
-	while (opt) {
-		opt = opt->next;
-	}
-
-#endif
 	return 0;
 }
 
@@ -189,17 +174,16 @@ int find_node_types_init(sechk_module_t *mod, policy_t *policy)
  *  -1 System error
  *   0 The module "succeeded"	- no negative results found
  *   1 The module "failed" 		- some negative results found */
-int find_node_types_run(sechk_module_t *mod, policy_t *policy)
+int find_node_types_run(sechk_module_t *mod, apol_policy_t *policy)
 {
-/* FIX ME: need to convert this to use new libapol */
-#if 0
 	find_node_types_data_t *datum;
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
-	ap_nodecon_t tmp_nodecon;
 	char *buff = NULL;
-	int i = 0, idx = 0, isid_idx = 0, type_idx = 0, buff_sz = 0;
+	int i = 0, error = 0;
+	size_t buff_sz = 0;
+	apol_vector_t *nodecon_vector = NULL;
 
 	if (!mod || !policy) {
 		fprintf(stderr, "Error: invalid parameters\n");
@@ -225,140 +209,157 @@ int find_node_types_run(sechk_module_t *mod, policy_t *policy)
 		fprintf(stderr, "Error: out of memory\n");
 		goto find_node_types_run_fail;
 	}
-	res->item_type = POL_LIST_TYPE;
+	res->item_type = SECHK_ITEM_TYPE;
+	if ( !(res->items = apol_vector_create()) ) {
+                error = errno;
+                ERR(policy, "Error: %s\n", strerror(error));
+		goto find_node_types_run_fail;		
+	}
+	
+	if ( !(nodecon_vector = apol_vector_create()) ) {
+                error = errno;
+                ERR(policy, "Error: %s\n", strerror(error));
+                goto find_node_types_run_fail;
+	}
 
-	for (i = policy->num_nodecon - 1; i >= 0; i--) {
-		tmp_nodecon = policy->nodecon[i];
-		idx = tmp_nodecon.scontext->type;
+	if ( apol_get_nodecon_by_query(policy, NULL, &nodecon_vector) < 0 ) {
+		goto find_node_types_run_fail;
+	}
 
-		proof = sechk_proof_new();
+	for ( i = 0; i<apol_vector_get_size(nodecon_vector); i++) {
+		char *type_name;
+		int j;
+		qpol_context_t *context;
+		qpol_type_t *context_type;
+		qpol_nodecon_t *nodecon = apol_vector_get_element(nodecon_vector, i);
+		qpol_nodecon_get_context(policy->qh, policy->p, nodecon, &context);
+		qpol_context_get_type(policy->qh, policy->p, context, &context_type);
+		qpol_type_get_name(policy->qh, policy->p, context_type, &type_name);
+		
+		proof = sechk_proof_new(NULL);
 		if (!proof) {
 			fprintf(stderr, "Error: out of memory\n");
 			goto find_node_types_run_fail;
 		}
-
-		proof->idx = idx;
-		proof->type = POL_LIST_TYPE;
-		buff = re_render_nodecon(&tmp_nodecon, policy);
-		proof->text = buff;
+		proof->type = SECHK_ITEM_TYPE;
+		proof->text = apol_nodecon_render(policy, nodecon);
 		
-		if (res->num_items > 0) {
-			item = sechk_result_get_item(idx, POL_LIST_TYPE, res);
+		for (j=0;j<apol_vector_get_size(res->items);j++) {
+			sechk_item_t *res_item;
+			res_item = apol_vector_get_element(res->items, j);
+			if (!strcmp((char *)res_item->item, type_name)) item = res_item;
 		}
-
-		/* We have not encountered this type yet */
 		if (!item) {
-			item = sechk_item_new();
+			item = sechk_item_new(NULL);
 			if (!item) {
 				fprintf(stderr, "Error: out of memory\n");
 				goto find_node_types_run_fail;
 			}
-
-			item->item_id = idx;
 			item->test_result = 1;
-		
-			if (item) {
-				item->next = res->items;
-				res->items = item;
-				(res->num_items)++;
+			item->item = (void *)type_name;
+			if ( apol_vector_append(res->items, (void *)item) < 0 ) {
+                		error = errno;
+                		ERR(policy, "Error: %s\n", strerror(error));
+               		 	goto find_node_types_run_fail;
 			}
 		} 
-	       	
-		/* head insert proof */
-		proof->next = item->proof;
-		item->proof = proof;
+		if (!item->proof) { 
+			if ( !(item->proof = apol_vector_create()) ) {
+                		error = errno;
+                		ERR(policy, "Error: %s\n", strerror(error));
+                		goto find_node_types_run_fail;
+			}
+		}
+		if ( apol_vector_append(item->proof, (void *)proof) < 0 ) {
+                	error = errno;
+                	ERR(policy, "Error: %s\n", strerror(error));
+                	goto find_node_types_run_fail;
+		}
+		item = NULL;
 	}
 
 	/* if we are provided a source policy, search initial SIDs */
-	if (!is_binary_policy(policy)) {
+	if (policy) {
+		qpol_isid_t *isid = NULL;
+
 		buff = NULL;
-		isid_idx = get_initial_sid_idx("node", policy);
-		if (isid_idx >= 0) {
+		qpol_policy_get_isid_by_name(policy->qh, policy->p, "node", &isid);
+		if ( isid ) { 
+			qpol_context_t *context; 
+			apol_context_t *a_context;
+			qpol_type_t *context_type;
+			char *context_type_name;
+
 			proof = NULL;
-			type_idx = policy->initial_sids[isid_idx].scontext->type;
-
-			if (append_str(&buff, &buff_sz, "sid port ") != 0) {
+			qpol_isid_get_context(policy->qh, policy->p, isid, &context);
+			qpol_context_get_type(policy->qh, policy->p, context, &context_type);
+			qpol_type_get_name(policy->qh, policy->p, context_type, &context_type_name);
+			a_context = apol_context_create_from_qpol_context(policy, context);
+	
+			if (apol_str_append(&buff, &buff_sz, "sid port ") != 0) {
 				fprintf(stderr, "Error: out of memory");
 				goto find_node_types_run_fail;
 			}
 
-			if (append_str(&buff, &buff_sz, re_render_initial_sid_security_context(isid_idx, policy)) != 0) {
+			if (apol_str_append(&buff, &buff_sz, apol_context_render(policy, a_context)) != 0) {
 				fprintf(stderr, "Error: out of memory");
 				goto find_node_types_run_fail;
-			}
-
-			if (res->num_items > 0) {
-				item = sechk_result_get_item(type_idx, POL_LIST_TYPE, res);
 			}
 
 			if (!item) {
-				item = sechk_item_new();
+				item = sechk_item_new(NULL);
 				if (!item) {
 					fprintf(stderr, "Error: out of memory\n");
 					goto find_node_types_run_fail;
 				}
-
-				item->item_id = type_idx;
 				item->test_result = 1;
 			}
 
-			proof = sechk_proof_new();
+			proof = sechk_proof_new(NULL);
 			if (!proof) {
 				fprintf(stderr, "Error: out of memory\n");
 				goto find_node_types_run_fail;
 			}
 
-			proof->idx = type_idx;
-			proof->type = POL_LIST_TYPE;
+			proof->type = SECHK_ITEM_TYPE;
 			proof->text = buff;
-
-			if (item) {
-				item->next = res->items;
-				res->items = item;
-				(res->num_items)++;
+		
+			item->item = (void *)context_type_name;
+			if ( !item->proof ) {
+				if ( !(item->proof = apol_vector_create()) ) {
+			                error = errno;
+                			ERR(policy, "Error: %s\n", strerror(error));
+               			 	goto find_node_types_run_fail;
+				}
 			}
-
-			proof->next = item->proof;
-			item->proof = proof;
+			if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
+		                error = errno;
+      		    		ERR(policy, "Error: %s\n", strerror(error));
+			        goto find_node_types_run_fail;
+			}
+			if ( apol_vector_append(res->items, (void*)item) < 0 ) {
+                		error = errno;
+                		ERR(policy, "Error: %s\n", strerror(error));
+                		goto find_node_types_run_fail;
+			}
 		}
 	}
 
 	mod->result = res;
 
-	/* If module finds something that would be considered a fail 
-	 * on the policy return 1 here */
-	if (res->num_items > 0)
-		return 1;
-
-#endif
 	return 0;
 
-#if 0
 find_node_types_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
-	sechk_result_free(res);
 	free(buff);
 	return -1;
-#endif
 }
 
 /* The free function frees the private data of a module */
 void find_node_types_data_free(void *data)
 {
-#if 0
-	if (!mod) {
-		fprintf(stderr, "Error: invalid parameters\n");
-		return;
-	}
-	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
-		return;
-	}
-
-	free(mod->data);
-	mod->data = NULL;
-#endif
+	free(data);
 }
 
 /* The print output function generates the text and prints the
@@ -368,15 +369,13 @@ void find_node_types_data_free(void *data)
  * outline and will need a different specification. It is
  * required that each of the flags for output components be
  * tested in this function (stats, list, proof, detailed, and brief) */
-int find_node_types_print_output(sechk_module_t *mod, policy_t *policy) 
+int find_node_types_print_output(sechk_module_t *mod, apol_policy_t *policy) 
 {
-#if 0
 	find_node_types_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
-	int i = 0, type_idx = 0;
-	char *type_str = NULL;
+	int i = 0, j = 0, k=0,  num_items = 0;
 
 	if (!mod || !policy){
 		fprintf(stderr, "Error: invalid parameters\n");
@@ -390,6 +389,8 @@ int find_node_types_print_output(sechk_module_t *mod, policy_t *policy)
 	datum = (find_node_types_data_t*)mod->data;
 	outformat = mod->outputformat;
 
+	num_items = apol_vector_get_size(mod->result->items);
+
 	if (!mod->result) {
 		fprintf(stderr, "Error: module has not been run\n");
 		return -1;
@@ -399,7 +400,7 @@ int find_node_types_print_output(sechk_module_t *mod, policy_t *policy)
 		return 0; /* not an error - no output is requested */
 
 	if (outformat & SECHK_OUT_STATS) {
-		printf("Found %i node types.\n", mod->result->num_items);
+		printf("Found %i node types.\n", num_items);
 	}
 
 	/* The list renode component is a display of all items
@@ -408,13 +409,11 @@ int find_node_types_print_output(sechk_module_t *mod, policy_t *policy)
 	 * this may need to be changed for longer items. */
 	if (outformat & SECHK_OUT_LIST) {
 		printf("\n");
-		for (item = mod->result->items; item; item = item->next) {
-			i++;
-			i %= 4;
-			type_idx = item->item_id;
-			type_str = policy->types[type_idx].name;
-			
-			printf("%s%s", type_str, (i&&item->next)?", " : "\n");
+		for (i=0;i<num_items;i++) {
+			j++;
+			j %= 4;
+			item = apol_vector_get_element(mod->result->items, i);
+			printf("%s%s", (char *)item->item, (char *)( (j) ? ", " : "\n"));
 		}
 		printf("\n");
 	}
@@ -429,19 +428,20 @@ int find_node_types_print_output(sechk_module_t *mod, policy_t *policy)
 	 * displayed in an indented list one per line below it. */
 	if (outformat & SECHK_OUT_PROOF) {
 		printf("\n");
-		for (item = mod->result->items; item; item = item->next) {
-			type_idx = item->item_id;
-			type_str = policy->types[type_idx].name;
-
-			printf("%s\n", type_str);
-			for (proof = item->proof; proof; proof = proof->next) {
-				printf("\t%s\n", proof->text);
+		for ( j=0;j<num_items;j++) {
+			item = apol_vector_get_element(mod->result->items, j);
+			if ( item ) {
+				printf("%s\n", (char*)item->item);
+				for (k=0;k<apol_vector_get_size(item->proof);k++) {
+					proof = apol_vector_get_element(item->proof, k);
+					if ( proof ) 
+						printf("\t%s\n", proof->text);
+				}
 			}
 		}
 		printf("\n");
 	}
 
-#endif
 	return 0;
 }
 
@@ -450,7 +450,6 @@ int find_node_types_print_output(sechk_module_t *mod, policy_t *policy)
  * You should not need to modify this function. */
 sechk_result_t *find_node_types_get_result(sechk_module_t *mod) 
 {
-#if 0
 	if (!mod) {
 		fprintf(stderr, "Error: invalid parameters\n");
 		return NULL;
@@ -461,17 +460,11 @@ sechk_result_t *find_node_types_get_result(sechk_module_t *mod)
 	}
 
 	return mod->result;
-#endif
-	return NULL;
 }
 
 int find_node_types_get_list(sechk_module_t *mod, apol_vector_t **v)
 {
-#if 0
-        int i;
-        sechk_item_t *item = NULL;
-
-        if (!mod || !array || !size) {
+        if (!mod || !v) {
                 fprintf(stderr, "Error: invalid parameters\n");
                 return -1;
         }
@@ -484,19 +477,8 @@ int find_node_types_get_list(sechk_module_t *mod, apol_vector_t **v)
                 return -1;
         }
 
-        *size = mod->result->num_items;
+        v = &mod->result->items;
 
-        *array = (int*)malloc(mod->result->num_items * sizeof(int));
-        if (!(*array)) {
-                fprintf(stderr, "Error: out of memory\n");
-                return -1;
-        }
-
-        for (i = 0, item = mod->result->items; item && i < *size; i++, item = item->next) {
-                (*array)[i] = item->item_id;
-        }
-
-#endif
         return 0;
 }
 
@@ -511,14 +493,11 @@ int find_node_types_get_list(sechk_module_t *mod, apol_vector_t **v)
  * any other data should be initialized as needed by the check logic */
 find_node_types_data_t *find_node_types_data_new(void)
 {
-#if 0
 	find_node_types_data_t *datum = NULL;
 
 	datum = (find_node_types_data_t*)calloc(1,sizeof(find_node_types_data_t));
 
 	return datum;
-#endif
-	return NULL;
 }
 
  
