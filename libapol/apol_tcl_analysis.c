@@ -305,10 +305,176 @@ static int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *inte
 }
 
 /**
+ * Take a result node from a direct information flow analysis and
+ * append a tuple of it to result_list.  The tuple consists of:
+ * <code>
+ *   { flow_direction  source_type  target_type  list_of_rules }
+ * </code>
+ */
+static int append_direct_infoflow_result_to_list(Tcl_Interp *interp,
+						 apol_infoflow_result_t *result,
+						 Tcl_Obj *result_list)
+{
+	Tcl_Obj *direct_elem[4], *direct_list;
+	unsigned int dir;
+	qpol_type_t *source, *target;
+	char *dir_str, *source_name, *target_name;
+	apol_vector_t *rules;
+	int retval = TCL_ERROR;
+
+	dir = apol_infoflow_result_get_dir(result);
+	source = apol_infoflow_result_get_start_type(result);
+	target = apol_infoflow_result_get_end_type(result);
+	rules = apol_infoflow_result_get_rules(result);
+	switch (dir) {
+	case APOL_INFOFLOW_IN: dir_str = "in"; break;
+	case APOL_INFOFLOW_OUT: dir_str = "out"; break;
+	case APOL_INFOFLOW_BOTH: dir_str = "both"; break;
+	default:
+		Tcl_SetResult(interp, "Illegal flow direction.", TCL_STATIC);
+		goto cleanup;
+	}
+	if (qpol_type_get_name(policydb->qh, policydb->p, source, &source_name) < 0 ||
+	    qpol_type_get_name(policydb->qh, policydb->p, target, &target_name) < 0) {
+		goto cleanup;
+	}
+	direct_elem[0] = Tcl_NewStringObj(dir_str, -1);
+	direct_elem[1] = Tcl_NewStringObj(source_name, -1);
+	direct_elem[2] = Tcl_NewStringObj(target_name, -1);
+	if (apol_vector_to_tcl_list(interp, rules, direct_elem + 3) == TCL_ERROR) {
+		goto cleanup;
+	}
+	direct_list = Tcl_NewListObj(4, direct_elem);
+	if (Tcl_ListObjAppendElement(interp, result_list, direct_list) == TCL_ERROR) {
+		goto cleanup;
+	}
+	retval = TCL_OK;
+ cleanup:
+	return retval;
+}
+
+/**
+ * Return an unsorted list of result tuples for a direct information
+ * flow analysis.  Each tuple consists of:
+ * <ul>
+ *   <li>direction of flow, one of "in", "out", or "both"
+ *   <li>source type for flow
+ *   <li>target type for flow
+ *   <li>list of AV rules that permit information flow
+ * </ul>
+ * Rules are unique identifiers (relative to currently loaded policy).
+ * Call [apol_RenderAVRule] to display them.
+ *
+ * @param argv This fuction takes four parameters:
+ * <ol>
+ *   <li>flow direction, one of "in", "out", "either", or "both"
+ *   <li>starting type (string)
+ *   <li>list of class/perm pairs, or an empty list to consider all
+ *       classes/perms
+ *   <li>regular expression for resulting types, or empty string to accept all
+ * </ol>
+ *
+ */
+static int Apol_DirectInformationFlowAnalysis(ClientData clientData, Tcl_Interp *interp,
+					      int argc, CONST char *argv[])
+{
+	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
+	apol_infoflow_result_t *result = NULL;
+	apol_vector_t *v = NULL;
+	apol_infoflow_analysis_t *analysis = NULL;
+	int direction, num_opts;
+	CONST char **class_strings = NULL;
+	size_t i;
+	int retval = TCL_ERROR;
+
+	apol_tcl_clear_error();
+	if (policydb == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		goto cleanup;
+	}
+	if (argc != 5) {
+		ERR(policydb, "Need a flow direction, starting type, object classes, and resulting type regex.");
+		goto cleanup;
+	}
+
+	if (strcmp(argv[1], "in") == 0) {
+		direction = APOL_INFOFLOW_IN;
+	}
+	else if (strcmp(argv[1], "out") == 0) {
+		direction = APOL_INFOFLOW_OUT;
+	}
+	else if (strcmp(argv[1], "either") == 0) {
+		direction = APOL_INFOFLOW_EITHER;
+	}
+	else if (strcmp(argv[1], "both") == 0) {
+		direction = APOL_INFOFLOW_BOTH;
+	}
+	else {
+		ERR(policydb, "Invalid direct infoflow direction %s.", argv[1]);
+		goto cleanup;
+	}
+
+	if ((analysis = apol_infoflow_analysis_create()) == NULL) {
+		ERR(policydb, "Out of memory!");
+		goto cleanup;
+	}
+
+	if (apol_infoflow_analysis_set_mode(policydb, analysis, APOL_INFOFLOW_MODE_DIRECT) < 0 ||
+	    apol_infoflow_analysis_set_dir(policydb, analysis, direction) < 0 ||
+	    apol_infoflow_analysis_set_type(policydb, analysis, argv[2]) < 0 ||
+	    apol_infoflow_analysis_set_result_regex(policydb, analysis, argv[4])) {
+		goto cleanup;
+	}
+
+	if (Tcl_SplitList(interp, argv[3], &num_opts, &class_strings) == TCL_ERROR) {
+		goto cleanup;
+	}
+	while (--num_opts >= 0) {
+		CONST char *s = class_strings[num_opts];
+		Tcl_Obj *cp_obj = Tcl_NewStringObj(s, -1), **cp;
+		int obj_count;
+		if (Tcl_ListObjGetElements(interp, cp_obj, &obj_count, &cp) == TCL_ERROR) {
+			goto cleanup;
+		}
+		if (obj_count != 2) {
+			ERR(policydb, "Not a class/perm pair: %s", s);
+			goto cleanup;
+		}
+		if (apol_infoflow_analysis_append_class_perm
+		    (policydb, analysis, Tcl_GetString(cp[0]), Tcl_GetString(cp[1])) < 0) {
+			goto cleanup;
+		}
+	}
+
+	if (apol_infoflow_analysis_do(policydb, analysis, &v) < 0) {
+		goto cleanup;
+	}
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		result = (apol_infoflow_result_t *) apol_vector_get_element(v, i);
+		if (append_direct_infoflow_result_to_list(interp, result, result_obj) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+
+	Tcl_SetObjResult(interp, result_obj);
+	retval = TCL_OK;
+ cleanup:
+	if (class_strings != NULL) {
+		Tcl_Free((char *) class_strings);
+	}
+	apol_infoflow_analysis_destroy(&analysis);
+	apol_vector_destroy(&v, apol_infoflow_result_free);
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
+}
+
+/**
  * Take a result node from a relabel analysis and append a tuple of it
  * to result_list.  The tuple consists of:
  * <code>
- *   { domain_type  to_rules  from_rules  both_rules }
+ *   { to_rules  from_rules  both_rules }
  * </code>
  */
 static int append_relabel_result_to_list(Tcl_Interp *interp,
@@ -346,7 +512,7 @@ static int append_relabel_result_to_list(Tcl_Interp *interp,
  * Rules are unique identifiers (relative to currently loaded policy).
  * Call [apol_RenderAVRule] to display them.
  *
- * @param argv This fuction takes three parameters:
+ * @param argv This fuction takes five parameters:
  * <ol>
  *   <li>analysis mode, one of "to", "from", "both", or "subject"
  *   <li>starting type (string)
@@ -457,9 +623,9 @@ int apol_tcl_analysis_init(Tcl_Interp *interp)
 {
 	Tcl_CreateCommand(interp, "apol_GetAllPermsForClass", Apol_GetAllPermsForClass, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_DomainTransitionAnalysis", Apol_DomainTransitionAnalysis, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_DirectInformationFlowAnalysis", Apol_DirectInformationFlowAnalysis, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_RelabelAnalysis", Apol_RelabelAnalysis, NULL, NULL);
         /*
-	Tcl_CreateCommand(interp, "apol_DirectInformationFlowAnalysis", Apol_DirectInformationFlowAnalysis, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_TransitiveFlowAnalysis", Apol_TransitiveFlowAnalysis, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_TransitiveFindPathsStart", Apol_TransitiveFindPathsStart, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_TransitiveFindPathsNext", Apol_TransitiveFindPathsNext, NULL, NULL);
@@ -641,266 +807,6 @@ static int append_transitive_iflow_results(policy_t *policy, iflow_transitive_t 
 			return -1;
 	}
 	return 0;
-}
-
-/******************** direct information flow analysis ********************/
-
-/*
- * argv[1] - domain type used to start the analysis
- * argv[2] - flow direction - in, out, both (Default for direct is IFLOW_EITHER; Default for transitive is IFLOW_OUT)
- * argv[3] - flag (boolean value) for indicating that a list of object classes are being provided.
- * argv[4] - object classes (a TCL list string). At least one object class must be given or an error is thrown.
- * argv[5] - flag (boolean value) for indicating that filter on end type(s) is being provided
- * argv[6] - ending type regular expression
- *
- * NOTE: THIS FUNCTION EXPECTS PERMISSION MAPPINGS TO BE LOADED!! If, not it will throw an error.
- *
- * DIRECT INFORMATION FLOW RESULTS:
- *	Returns a list organized to represent the tree structure that results from a direct information flow
- *	analysis.  The TCL list looks like this:
- *
- *	INDEX		CONTENTS
- *	0		starting type provided by the user.
- *	1		number of ending type answers found from query (Ne)
- *	2		ending type1
- *	3		ending type flow direction
- *		4	number of object classes for edge (No)
- *		5		object class(1) flag (0 or 1) - used to indicate if we care about this object
- *					# a flag that is 1 will be followed by the following...otherwise, the next object class flag
- *		6			object class name
- *		7			number of rules (Nr)
- *		8				allow rule 1, lineno1,....
- *						....
- *						....
- *		next				allow rule Nr, linenoNr
- *				...
- *				...
- *		next		object class(No) flag (currently, each iflow edge has 29 object classes)
- *			....
- *			....
- *	next		ending type Ne
- *
- */
-static int Apol_DirectInformationFlowAnalysis(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
-{
-        /* FIX ME! */
-	int num_objs, type, *types, obj;
-	int i, rt, num, sz = 0;
-	int num_answers = 0;
-	iflow_t *answers = NULL;
-	char *start_type = NULL, *end_type = NULL;
-	char *err, *name;
-	char tbuf[64];
-	CONST char **obj_classes;
-	bool_t filter_obj_classes, filter_end_types;
-	regex_t reg;
-	iflow_query_t *iflow_query = NULL;
-
-	/* Handle case if ending type regular expression is specified. */
-	if(argc != 7) {
-		Tcl_AppendResult(interp, "wrong # of args", (char *) NULL);
-		return TCL_ERROR;
-	}
-	if (policydb == NULL) {
-		Tcl_AppendResult(interp,"No current policy file is opened!", (char *) NULL);
-		return TCL_ERROR;
-	}
-	if(policy->pmap == NULL) {
-		Tcl_AppendResult(interp,"No permission map loaded!", (char *) NULL);
-		return TCL_ERROR;
-	}
-	/* Set start_type variable and guard against buffer overflows */
-	start_type = (char *) argv[1];
-	if(start_type == NULL || str_is_only_white_space(start_type)) {
-		Tcl_AppendResult(interp, "empty starting type!", (char *) NULL);
-		return TCL_ERROR;
-	}
-	if(!is_valid_str_sz(start_type)) {
-		Tcl_AppendResult(interp, "The provided start type string is too large.", (char *) NULL);
-		return TCL_ERROR;
-	}
-
-	filter_obj_classes = getbool(argv[3]);
-	filter_end_types = getbool(argv[5]);
-	if(filter_obj_classes) {
-		/* First, disassemble TCL object classes list, returning an array of pointers to the elements. */
-		rt = Tcl_SplitList(interp, argv[4], &num_objs, &obj_classes);
-		if(rt != TCL_OK) {
-			Tcl_AppendResult(interp, "Error splitting TCL list.", (char *) NULL);
-			return TCL_ERROR;
-		}
-
-		if(num_objs < 1) {
-			Tcl_AppendResult(interp, "Must provide at least one object class.", (char *) NULL);
-			Tcl_Free((char *) obj_classes);
-			return TCL_ERROR;
-		}
-	}
-
-	if(filter_end_types) {
-		if(!is_valid_str_sz(argv[6])) {
-			Tcl_AppendResult(interp, "The provided end type filter string is too large.", (char *) NULL);
-			return TCL_ERROR;
-		}
-	        sz = strlen(argv[6]) + 1;
-	        end_type = (char *)malloc(sz);
-	        if(end_type == NULL) {
-		      fprintf(stderr, "out of memory");
-		      return TCL_ERROR;
-		}
-		end_type = strcpy(end_type, argv[6]);
-	        if(end_type == NULL || str_is_only_white_space(end_type)) {
-			Tcl_AppendResult(interp, "Please provide a regular expression for filtering the end types.", (char *) NULL);
-			return TCL_ERROR;
-		}
-	}
-	iflow_query = NULL;
-	/* Create the query structure */
-	iflow_query = iflow_query_create();
-	if (iflow_query == NULL) {
-		Tcl_AppendResult(interp,"Memory error allocating query\n", (char *) NULL);
-		return TCL_ERROR;
-	}
-
-	/* Set direction of the query. */
-	if(strcmp(argv[2], "in") == 0)
-		iflow_query->direction = IFLOW_IN;
-	else if(strcmp(argv[2], "out") == 0)
-		iflow_query->direction = IFLOW_OUT;
-	else if(strcmp(argv[2], "both") == 0)
-		iflow_query->direction = IFLOW_BOTH;
-	else if(strcmp(argv[2], "either") == 0)
-		iflow_query->direction = IFLOW_EITHER;
-	else {
-		iflow_query_destroy(iflow_query);
-		Tcl_AppendResult(interp, "Unknown flow direction provided:", argv[2], (char *) NULL);
-		return TCL_ERROR;
-	}
-
-	/* Set the start type for our query */
-	iflow_query->start_type = get_type_idx(start_type, policy);
-	if (iflow_query->start_type < 0) {
-		iflow_query_destroy(iflow_query);
-		Tcl_AppendResult(interp, "Invalid starting type ", start_type, (char *) NULL);
-		return TCL_ERROR;
-	}
-
-	if(filter_obj_classes && obj_classes != NULL) {
-		/* Set the object classes info */
-		for (i = 0; i < num_objs; i++) {
-			obj = get_obj_class_idx(obj_classes[i], policy);
-			if (obj < 0) {
-				Tcl_AppendResult(interp, "Invalid object class:\n", obj_classes[i], (char *) NULL);
-				Tcl_Free((char *) obj_classes);
-				iflow_query_destroy(iflow_query);
-				return TCL_ERROR;
-			}
-			if (iflow_query_add_obj_class(iflow_query, obj) == -1) {
-				Tcl_AppendResult(interp, "error adding object class\n", (char *) NULL);
-				iflow_query_destroy(iflow_query);
-				return TCL_ERROR;
-			}
-		}
-		Tcl_Free((char *) obj_classes);
-	}
-
-	/* filter ending type(s) */
-	if(filter_end_types) {
-		trim_trailing_whitespace(&end_type);
-		rt = regcomp(&reg, end_type, REG_EXTENDED|REG_NOSUB);
-		if(rt != 0) {
-			sz = regerror(rt, &reg, NULL, 0);
-			if((err = (char *)malloc(++sz)) == NULL) {
-				iflow_query_destroy(iflow_query);
-				Tcl_AppendResult(interp, "out of memory", (char *) NULL);
-				return TCL_ERROR;
-			}
-			regerror(rt, &reg, err, sz);
-			regfree(&reg);
-			Tcl_AppendResult(interp, err, (char *) NULL);
-			free(err);
-			free(end_type);
-			iflow_query_destroy(iflow_query);
-			return TCL_ERROR;
-		}
-		free(end_type);
-		rt = get_type_idxs_by_regex(&types, &num, &reg, FALSE, policy);
-		if(rt < 0) {
-			Tcl_AppendResult(interp, "Error searching types\n", (char *) NULL);
-			iflow_query_destroy(iflow_query);
-			return TCL_ERROR;
-		}
-		for(i = 0; i < num; i++) {
-			rt = get_type_name(types[i], &name, policy);
-			if(rt < 0) {
-				sprintf(tbuf, "Problem getting %dth matching type name for idx: %d", i, types[i]);
-				Tcl_AppendResult(interp, tbuf, (char *) NULL);
-				iflow_query_destroy(iflow_query);
-				return TCL_ERROR;
-			}
-			type = get_type_idx(name, policy);
-			if (type < 0) {
-				/* This is an invalid ending type, so ignore */
-				free(name);
-				continue;
-			}
-			if (iflow_query_add_end_type(iflow_query, type) != 0) {
-				free(name);
-				iflow_query_destroy(iflow_query);
-				Tcl_AppendResult(interp, "Error adding end type to query!\n", (char *) NULL);
-				return TCL_ERROR;
-			}
-			free(name);
-		}
-	}
-
-	/* Don't run the analysis call if the user has specified to filter end types by reg exp
-	 * and we've determined in the call to set_transitive_query_args() that there are no
-	 * matching end types. */
-	if (!(filter_end_types && iflow_query->num_end_types == 0)) {
-		/* Initialize iflow analysis structure, which holds the results of query */
-		if (iflow_direct_flows(policy, iflow_query, &num_answers, &answers) < 0) {
-			iflow_query_destroy(iflow_query);
-			Tcl_AppendResult(interp, "There were errors in the information flow analysis\n", (char *) NULL);
-			return TCL_ERROR;
-		}
-	}
-
-	/* Append the start type to our encoded TCL list */
-	sprintf(tbuf, "%s", start_type);
-	Tcl_AppendElement(interp, tbuf);
-
-	if (!(filter_end_types && iflow_query->num_end_types == 0)) {
-		/* Append the number of answers from the query */
-		sprintf(tbuf, "%d", num_answers);
-		Tcl_AppendElement(interp, tbuf);
-		for (i = 0; i < num_answers; i++) {
-			/* Append the ending type name to the TCL list */
-			sprintf(tbuf, "%s", policy->types[answers[i].end_type].name);
-			Tcl_AppendElement(interp, tbuf);
-			/* Append the direction of the information flow for each ending type to the TCL list */
-			if (answers[i].direction == IFLOW_BOTH)
-				Tcl_AppendElement(interp, "both");
-			else if (answers[i].direction == IFLOW_OUT)
-				Tcl_AppendElement(interp, "out");
-			else
-				Tcl_AppendElement(interp, "in");
-
-			rt = append_direct_edge_to_results(policy, iflow_query, &answers[i], interp);
-			if (rt != 0) {
-				free(answers);
-				iflow_query_destroy(iflow_query);
-				Tcl_AppendResult(interp, "Error appending edge information!\n", (char *) NULL);
-				return TCL_ERROR;
-			}
-		}
-		free(answers);
-	} else {
-		Tcl_AppendElement(interp, "0");
-	}
-	/* Free any reserved memory */
-	iflow_query_destroy(iflow_query);
-	return TCL_OK;
 }
 
 /******************** transitive information flow ********************/

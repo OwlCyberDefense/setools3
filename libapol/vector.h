@@ -168,14 +168,13 @@ int apol_vector_get_index(const apol_vector_t *v, void *elem,
 int apol_vector_append(apol_vector_t *v, void *elem);
 
 /**
- *  Concatenate two vectors.
- *  Appends all elements of src to dest; <b>NOTE: No type checking is done</b>
- *  <b> for elements in the two vectors.</b> Elements are not deep copies.
+ *  Concatenate two vectors.  Appends all elements of src to dest.
+ *  <b>NOTE: No type checking is done for elements in the two
+ *  vectors.</b> Elements are not deep copies.
  *  @param dest vector to which to append elements.
  *  @param src vector containing elements to append.
  *  @return 0 on success and < 0 on failure; if the call fails,
- *  errno will be set and dest will be in a stable state (i.e. partial
- *  success is possible with only some elements of src being appended).
+ *  errno will be set and dest's contents will be reverted.
  */
 int apol_vector_cat(apol_vector_t *dest, const apol_vector_t *src);
 

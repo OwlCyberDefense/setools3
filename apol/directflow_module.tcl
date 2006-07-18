@@ -241,7 +241,7 @@ proc Apol_Analysis_directflow::reinitializeWidgets {} {
     set classes_lb [Apol_Widget::getScrolledListbox $widgets(classes)]
     $classes_lb selection clear 0 end
     foreach c $vals(classes:selected) {
-        set i [lsearch $vals(classes:list) $c]
+        set i [lsearch $Apol_Class_Perms::class_list $c]
         $classes_lb selection set $i $i
     }
     toggleClasses {} {} {}
@@ -322,10 +322,13 @@ proc Apol_Analysis_directflow::checkParams {} {
 
 proc Apol_Analysis_directflow::analyze {} {
     variable vals
+    set classes {}
     if {$vals(classes:enable)} {
-        set classes $vals(classes:selected)
-    } else {
-        set classes {}
+        foreach c $vals(classes:selected) {
+            foreach p [apol_GetAllPermsForClass] {
+                lappend classes [list $c $p]
+            }
+        }
     }
     if {$vals(regexp:enable)} {
         set regexp $vals(regexp)
@@ -355,11 +358,12 @@ proc Apol_Analysis_directflow::createResultsDisplay {} {
     set res [Apol_Widget::makeSearchResults [$res_tf getframe].res]
     $res.tb tag configure title -font {Helvetica 14 bold}
     $res.tb tag configure title_type -foreground blue -font {Helvetica 14 bold}
-    $res.tb tag configure num -font {Helvetica 12 bold}
-    $res.tb tag configure type_tag -foreground blue -font {Helvetica 12 bold}
+    $res.tb tag configure subtitle -font {Helvetica 10 bold}
+    $res.tb tag configure subtitle_dir -foreground blue -font {Helvetica 10 bold}
     pack $res -expand 1 -fill both
 
     $tree configure -selectcommand [list Apol_Analysis_directflow::treeSelect $res]
+    $tree configure -opencmd [list Apol_Analysis_domaintrans::treeOpen $tree]
     return $f
 }
 
@@ -369,7 +373,7 @@ proc Apol_Analysis_directflow::treeSelect {res tree node} {
         $res.tb delete 0.0 end
         set data [$tree itemcget $node -data]
         if {[string index $node 0] == "x"} {
-            renderResultsRuleObject $res $tree $node $data
+            renderResultsDirectFlow $res $tree $node [lindex $data 1]
         } else {
             # an informational node, whose data has already been rendered
             eval $res.tb insert end $data
@@ -378,352 +382,146 @@ proc Apol_Analysis_directflow::treeSelect {res tree node} {
     }
 }
 
-if {0} {
-
-    This tab provides the results of a Direct Information Flow analysis beginning 
-    from the starting type selected above.  The results of the analysis are presented
-    in tree form with the root of the tree (this node) being the start point for the 
-    analysis.
-
-    Each child node in the tree represents a type in the current policy
-    for which there is a direct information flow to or from (depending on your selection
-                                                             above) its parent node.
-
-    NOTE: For any given generation, if the parent and the child 
-    are the same, you cannot open the child.  This avoids cyclic analyses.
-}
-
-
-proc Apol_Analysis_directflow::render_target_type_data {data directflow_info_text directflow_tree node} {
-	$directflow_info_text configure -state normal
-	$directflow_info_text delete 0.0 end
-        $directflow_info_text configure -wrap none
-
-	if { $data == "" } {
-		return ""
-	}
-        set cur_end_type [lindex $data 0]
-        set flow_dir [lindex $data 1]
-        set num_objs [lindex $data 2]
-	set curIdx 3
-        set startIdx [$directflow_info_text index insert]
-	set start_type [$directflow_tree itemcget [$directflow_tree parent $node] -text]
-
-        if {$flow_dir == "both"} {
-# Print the output title
-	    $directflow_info_text insert end "Information flows both into and out of "
-	    set endIdx [$directflow_info_text index insert]
-	    $directflow_info_text tag add $Apol_Analysis_directflow::title_tag $startIdx $endIdx
-	    set startIdx [$directflow_info_text index insert]
-	    $directflow_info_text insert end $start_type
-	    set endIdx [$directflow_info_text index insert]
-	    $directflow_info_text tag add $Apol_Analysis_directflow::title_type_tag $startIdx $endIdx
-	    set startIdx [$directflow_info_text index insert]
-	    $directflow_info_text insert end " - \[from/to\] "
-	    set endIdx [$directflow_info_text index insert]
-	    $directflow_info_text tag add $Apol_Analysis_directflow::title_tag $startIdx $endIdx
-	    set startIdx [$directflow_info_text index insert]
-	    $directflow_info_text insert end $cur_end_type
-	    set endIdx [$directflow_info_text index insert]
-	    $directflow_info_text tag add $Apol_Analysis_directflow::title_type_tag $startIdx $endIdx
-	    set startIdx $endIdx
-# Print label for in flows
-	    $directflow_info_text insert end "\n\nObject classes for "
-	    set endIdx [$directflow_info_text index insert]
-	    $directflow_info_text tag add $Apol_Analysis_directflow::subtitle_tag $startIdx $endIdx
-	    set startIdx $endIdx
-	    $directflow_info_text insert end "\[IN/OUT\]"
-	    set endIdx [$directflow_info_text index insert]
-	    $directflow_info_text tag add $Apol_Analysis_directflow::title_type_tag $startIdx $endIdx
-	    set startIdx $endIdx
-	    $directflow_info_text insert end " flows:"
-	    set endIdx [$directflow_info_text index insert]
-	    $directflow_info_text tag add $Apol_Analysis_directflow::subtitle_tag $startIdx $endIdx
-	    set startIdx $endIdx
-# Then process inflows
-	    for {set i 0} {$i<$num_objs} {incr i} {
-		if {[lindex $data $curIdx] == "1"} {
-		    incr curIdx
-		    $directflow_info_text insert end "\n\t"
-		    # This should be the object name
-		    $directflow_info_text insert end [lindex $data $curIdx]
-		    set endIdx [$directflow_info_text index insert]
-		    $directflow_info_text tag add $Apol_Analysis_directflow::subtitle_tag $startIdx $endIdx
-		    incr curIdx
-		    set num_rules [lindex $data $curIdx]
-		    for {set j 0} {$j<$num_rules} {incr j} {
-			$directflow_info_text insert end "\n\t"
-			set startIdx [$directflow_info_text index insert]
-			incr curIdx
-			set rule [lindex $data $curIdx]
-			# Get the line number only
-			set end_link_idx [string first "\]" [string trim $rule] 0]
-			set lineno [string range [string trim [string range $rule 0 $end_link_idx]] 1 end-1]
-			set lineno [string trim $lineno]
-
-			set rule [string range $rule [expr $end_link_idx + 1] end]
-
-			# Only display line number hyperlink if this is not a binary policy.
-			if {![ApolTop::is_binary_policy]} {
-				$directflow_info_text insert end "\[$lineno\]"
-				Apol_PolicyConf::insertHyperLink $directflow_info_text "$startIdx wordstart + 1c" "$startIdx wordstart + [expr [string length $lineno] + 1]c"
-			}
-			set startIdx [$directflow_info_text index insert]
-			$directflow_info_text insert end " $rule"
-			set endIdx [$directflow_info_text index insert]
-			$directflow_info_text tag add $Apol_Analysis_directflow::rules_tag $startIdx $endIdx
-
-			incr curIdx
-			# The next element should be the enabled boolean flag.
-			if {[lindex $data $curIdx] == 0} {
-				$directflow_info_text insert end "   "
-				set startIdx [$directflow_info_text index insert]
-				$directflow_info_text insert end "\[Disabled\]"
-				set endIdx [$directflow_info_text index insert]
-				$directflow_info_text tag add $Apol_Analysis_directflow::disabled_rule_tag $startIdx $endIdx
-			}
-			set startIdx [$directflow_info_text index insert]
-		    }
-		}
-		incr curIdx
-	    }
-        } else {
-	    # If it is not both then print only the out flows, or only the inflows
-	    if { $flow_dir == "in" } {
-		# Print the output title
-		$directflow_info_text insert end "Information flows into "
-		set endIdx [$directflow_info_text index insert]
-		$directflow_info_text tag add $Apol_Analysis_directflow::title_tag $startIdx $endIdx
-		set startIdx [$directflow_info_text index insert]
-		$directflow_info_text insert end $start_type
-		set endIdx [$directflow_info_text index insert]
-		$directflow_info_text tag add $Apol_Analysis_directflow::title_type_tag $startIdx $endIdx
-		set startIdx [$directflow_info_text index insert]
-		$directflow_info_text insert end " - from "
-		set endIdx [$directflow_info_text index insert]
-		$directflow_info_text tag add $Apol_Analysis_directflow::title_tag $startIdx $endIdx
-		set startIdx [$directflow_info_text index insert]
-		$directflow_info_text insert end $cur_end_type
-		set endIdx [$directflow_info_text index insert]
-		$directflow_info_text tag add $Apol_Analysis_directflow::title_type_tag $startIdx $endIdx
-		set startIdx $endIdx
-	    } elseif { $flow_dir == "out" } {
-		# Print the output title
-		$directflow_info_text insert end "Information flows out of "
-		set endIdx [$directflow_info_text index insert]
-		$directflow_info_text tag add $Apol_Analysis_directflow::title_tag $startIdx $endIdx
-		set startIdx [$directflow_info_text index insert]
-		$directflow_info_text insert end $start_type
-		set endIdx [$directflow_info_text index insert]
-		$directflow_info_text tag add $Apol_Analysis_directflow::title_type_tag $startIdx $endIdx
-		set startIdx [$directflow_info_text index insert]
-		$directflow_info_text insert end " - to "
-		set endIdx [$directflow_info_text index insert]
-		$directflow_info_text tag add $Apol_Analysis_directflow::title_tag $startIdx $endIdx
-		set startIdx [$directflow_info_text index insert]
-		$directflow_info_text insert end $cur_end_type
-		set endIdx [$directflow_info_text index insert]
-		$directflow_info_text tag add $Apol_Analysis_directflow::title_type_tag $startIdx $endIdx
-		set startIdx $endIdx
-	    }
-
-	    $directflow_info_text insert end "\n\nObject classes for "
-	    set endIdx [$directflow_info_text index insert]
-	    $directflow_info_text tag add $Apol_Analysis_directflow::subtitle_tag $startIdx $endIdx
-	    set startIdx $endIdx
-	    set flow_dir [string toupper $flow_dir]
-	    $directflow_info_text insert end $flow_dir
-	    set endIdx [$directflow_info_text index insert]
-	    $directflow_info_text tag add $Apol_Analysis_directflow::title_type_tag $startIdx $endIdx
-	    set startIdx $endIdx
-	    $directflow_info_text insert end " flows:"
-	    set endIdx [$directflow_info_text index insert]
-	    $directflow_info_text tag add $Apol_Analysis_directflow::subtitle_tag $startIdx $endIdx
-	    set startIdx $endIdx
-
-	    for {set i 0} {$i<$num_objs} {incr i} {
-		if { [lindex $data $curIdx] == "1" } {
-		    incr curIdx
-		    $directflow_info_text insert end "\n\t"
-		    # This should be the object name
-		    $directflow_info_text insert end [lindex $data $curIdx]
-		    set endIdx [$directflow_info_text index insert]
-		    $directflow_info_text tag add $Apol_Analysis_directflow::subtitle_tag $startIdx $endIdx
-		    incr curIdx
-		    set num_rules [lindex $data $curIdx]
-		    for {set j 0} {$j<$num_rules} {incr j} {
-			$directflow_info_text insert end "\n\t"
-			set startIdx [$directflow_info_text index insert]
-			incr curIdx
-			set rule [lindex $data $curIdx]
-			# Get the line number only
-			set end_link_idx [string first "\]" [string trim $rule] 0]
-			set lineno [string range [string trim [string range $rule 0 $end_link_idx]] 1 end-1]
-			set lineno [string trim $lineno]
-
-			set rule [string range $rule [expr $end_link_idx + 1] end]
-
-			# Only display line number hyperlink if this is not a binary policy.
-			if {![ApolTop::is_binary_policy]} {
-				$directflow_info_text insert end "\[$lineno\]"
-				Apol_PolicyConf::insertHyperLink $directflow_info_text "$startIdx wordstart + 1c" "$startIdx wordstart + [expr [string length $lineno] + 1]c"
-			}
-			set startIdx [$directflow_info_text index insert]
-			$directflow_info_text insert end " $rule"
-			set endIdx [$directflow_info_text index insert]
-			$directflow_info_text tag add $Apol_Analysis_directflow::rules_tag $startIdx $endIdx
-
-			incr curIdx
-			# The next element should be the enabled boolean flag.
-			if {[lindex $data $curIdx] == 0} {
-				$directflow_info_text insert end "   "
-				set startIdx [$directflow_info_text index insert]
-				$directflow_info_text insert end "\[Disabled\]"
-				set endIdx [$directflow_info_text index insert]
-				$directflow_info_text tag add $Apol_Analysis_directflow::disabled_rule_tag $startIdx $endIdx
-			}
-			set startIdx [$directflow_info_text index insert]
-		    }
-		}
-		incr curIdx
-	    }
-	}
-	return
-}
-
-proc Apol_Analysis_directflow::insert_src_type_node { directflow_tree query_args} {
-        variable start_type
-
-	$directflow_tree insert end root $start_type \
-		-text $start_type \
-		-open 1	\
-	-drawcross auto \
-		-data "$query_args"
-
-        return [$directflow_tree nodes root]
-}
-
-proc Apol_Analysis_directflow::create_target_type_nodes { parent directflow_tree results_list } {
-        if { [file tail [$directflow_tree parent $parent]] == [file tail $parent] } {
-		return 0
-	}
-
-	if { [$directflow_tree nodes $parent] == "" } {
-		# Get # of target types (if none, then just draw the tree without child nodes)
-		# We skip index 0 b/c index 1 is the starting type, which we already have.
-		set num_target_types [lindex $results_list 1]
-		#  if there are any target types, index 2 will be the first target node from the results list.
-		set curentIdx 2
-
-		# If there are any target types then create and insert children nodes for the source_type node
-		for { set x 0 } { $x < $num_target_types } { incr x } {
-			set target_name [lindex $results_list $curentIdx]
-			set nextIdx [Apol_Analysis_directflow::parseList_get_index_next_node $curentIdx $results_list]
-			if {$nextIdx == -1} {
-				return -code error "Error parsing results. See stdout for more information."
-			}
-
-			set target_node "${parent}/${target_name}/"
-			$directflow_tree insert end $parent $target_node \
-				-text $target_name \
-				-open 0	\
-			-drawcross allways \
-			-data [lrange $results_list $curentIdx [expr $nextIdx-1]]
-			set curentIdx $nextIdx
-		}
-		set nodes [lsort [$directflow_tree nodes $parent]]
-		$directflow_tree reorder $parent $nodes
-	        $directflow_tree configure -redraw 1
-	}
-        return 0
-}
-
-proc Apol_Analysis_directflow::parseList_get_index_next_node { currentIdx results_list } {
-	# Increment the index to get the flow direction
-        incr currentIdx
-        set direction [lindex $results_list $currentIdx]
-        # Increment the index to get the number of object classes
-        incr currentIdx
-        set num_classes [lindex $results_list $currentIdx]
-        # Increment the index to get the next item in the list, which
-        # should be a flag indicating whether to use this object
-        incr currentIdx
-
-        if {$direction == "both"} {
-		# First read past all the in flows
-		for {set i 0} {$i < $num_classes} {incr i} {
-			# Check if we care about this particular object
-			if { [lindex $results_list $currentIdx] == "1" } {
-				# Skip the object class name in the list and go to the number of rules list item
-				incr currentIdx 2
-				set num_rules [lindex $results_list $currentIdx]
-				# We multiply the number of rules by 2 because each rule consists of:
-				#	1. rule string (includes line number)
-				#	2. enabled flag
-				incr currentIdx [expr $num_rules * 2]
-			}
-			# Move to the next item in the results list
-			incr currentIdx
-		}
-        } elseif {$direction == "in" || $direction == "out"} {
-		for {set i 0} {$i < $num_classes} {incr i} {
-			# Check if this particular object was included in our query
-			if { [lindex $results_list $currentIdx] == "1" } {
-				incr currentIdx 2
-				set num_rules [lindex $results_list $currentIdx]
-				# We multiply the number of rules by 2 because each rule consists of:
-				#	1. rule string (includes line number)
-				#	2. enabled flag
-				incr currentIdx [expr $num_rules * 2]
-			}
-			# Move to the next item in the results list
-			incr currentIdx
-		}
-        } else {
-	puts "Invalid flow direction ($direction) encountered while parsing results."
-	return -1
-        }
-
-	return $currentIdx
-}
-
-proc Apol_Analysis_directflow::create_result_tree_structure { directflow_tree results_list query_args} {
-        set home_node [Apol_Analysis_directflow::insert_src_type_node $directflow_tree \
-	$query_args]
-	set rt [catch {Apol_Analysis_directflow::create_target_type_nodes $home_node \
-		$directflow_tree $results_list} err]
-	if {$rt != 0} {
-		return -code error $err
-	}
-	Apol_Analysis_directflow::treeSelect \
-		$Apol_Analysis_directflow::directflow_tree \
-		$Apol_Analysis_directflow::directflow_info_text \
-		$home_node
-        return 0
-}
-
-# ------------------------------------------------------------------------------
-#  Command Apol_Analysis_directflow::do_child_analysis
-# ------------------------------------------------------------------------------
-proc Apol_Analysis_directflow::do_child_analysis { directflow_tree selected_node } {
-    # The last query arguments were stored in the data for the root node
+# perform additional direct infoflows if this node has not been
+# analyzed yet
+proc Apol_Analysis_domaintrans::treeOpen {tree node} {
+    foreach {search_crit results} [$tree itemcget $node -data] {break}
+    if {[string index $node 0] == "x" && $search_crit != {}} {
         ApolTop::setBusyCursor
-        if { [$directflow_tree nodes $selected_node] == "" } {
-		set query_args [$directflow_tree itemcget [$directflow_tree nodes root] -data]
-	        set start_t [file tail $selected_node]
-		set rt [catch {set results [apol_DirectInformationFlowAnalysis \
-			$start_t \
-			[lindex $query_args 1] \
-			[lindex $query_args 2] \
-			[lindex $query_args 3] \
-			[lindex $query_args 4] \
-			[lindex $query_args 5]] } err]
-
-		if {$rt != 0} {
-			return -code error $err
-		}
-		Apol_Analysis_directflow::create_target_type_nodes $selected_node $directflow_tree $results
-	}
+        update idletasks
+        set retval [catch {analyzeMore $tree $node $search_crit} new_results]
         ApolTop::resetBusyCursor
-	return 0
+        if {$retval} {
+            tk_messageBox -icon error -type ok -title "Direct Information Flow" -message "Could not perform additional analysis:\n\n$new_results"
+        } else {
+            # mark this node as having been expanded
+            $tree itemconfigure $node -data [list {} $results]
+            createResultsNodes $tree $node $new_results $search_crit
+        }
+    }
+}
+
+proc Apol_Analysis_directflow::clearResultsDisplay {f} {
+    variable vals
+
+    set tree [[$f.left getframe].sw getframe].tree
+    set res [$f.right getframe].res
+    $tree delete [$tree nodes root]
+    Apol_Widget::clearSearchResults $res
+    Apol_Analysis::setResultTabCriteria [array get vals]
+}
+
+proc Apol_Analysis_directflow::renderResults {f results} {
+    variable vals
+
+    set tree [[$f.left getframe].sw getframe].tree
+    set res [$f.right getframe].res
+
+    $tree insert end root top -text $vals(type) -open 1 -drawcross auto
+    set top_text [renderTopText]
+    $tree itemconfigure top -data $top_text
+
+    createResultsNodes $tree top $results {}
+    $tree selection set top
+    $tree opentree top 0
+    update idletasks
+    $tree see top
+}
+
+proc Apol_Analysis_directflow::renderTopText {} {
+    variable vals
+
+    set top_text [list "Direct Information Flow Analysis: Starting type: " title]
+    lappend top_text $vals(type) title_type \
+        "\n\n" title \
+        "This tab provides the results of a Direct Information Flow analysis
+beginning from the starting type selected above.  The results of the
+analysis are presented in tree form with the root of the tree (this
+node) being the start point for the analysis.
+
+\nEach child node in the tree represents a type in the current policy
+for which there is a direct information flow to or from (depending on
+your selection above) its parent node.
+
+\nNOTE: For any given generation, if the parent and the child are the
+same, you cannot open the child.  This avoids cyclic analyses."
+}
+
+proc Apol_Analysis_directflow::createResultsNodes {tree parent_node results search_crit} {
+    set all_targets {}
+    foreach r $results {
+        foreach {flow_dir source target rules} $r {break}
+        foreach t [expandTypeSet $target] {
+            lappend all_targets $t
+            foreach r $rules {
+                set class [apol_RenderAVRuleClass $r]
+                lappend classes($t) $class
+                lappend classes($t:$class) $r
+            }
+            set dir($t:$flow_dir) 1
+        }
+    }
+    foreach t [lsort -uniq $all_targets] {
+        if {[info exists dir($t:both)] ||
+            ([info exists dir($t:in)] && [info exists dir($t:out)])} {
+            set flow_dir "both"
+        } elseif {[info exists dir($t:in)]} {
+            set flow_dir "in"
+        } else {
+            set flow_dir "out"
+        }
+        set rules {}
+        foreach c [lsort -uniq $classes($t)] {
+            lappend rules [list $c [lsort -uniq $classes($t:$c)]]
+        }
+        set data [list $flow_dir $rules]
+        $tree insert end $parent_node x\#auto -text $t -drawcross allways \
+            -data [list $search_crit $data]
+    }
+}
+
+proc Apol_Analysis_directflow::expandTypeSet {type} {
+    if {[set exp_type_set [lindex [apol_GetAttribs $type] 0 1]] != {}} {
+        lsort -unique $exp_type_set
+    } else {
+        set type
+    }
+}
+
+proc Apol_Analysis_directflow::renderResultsDirectFlow {res tree node data} {
+    set parent_name [$tree itemcget [$tree parent $node] -text]
+    set name [$tree itemcget $node -text]
+    foreach {flow_dir classes} $data {break}
+    switch -- $flow_dir {
+        both {
+            $res.tb insert end "Information flows both into and out of " title \
+                $parent_name title_type \
+                " from/to " title \
+                $name title_type
+        }
+        in {
+            $res.tb insert end "Information flows into " title \
+                $parent_name title_type \
+                " from " title \
+                $name title_type
+        }
+        out {
+            $res.tb insert end "Information flows out of " title \
+                $parent_name title_type \
+                " to " title \
+                $name title_type
+        }
+    }
+    $res.tb insert end "\n\n" title_type \
+        "Objects classes for " subtitle \
+        [string toupper $flow_dir] subtitle_dir \
+        " flows:\n" subtitle
+    foreach c $classes {
+        foreach {class_name rules} $c {break}
+        $res.tb insert end "      " {} \
+            $class_name\n subtitle
+        foreach r $rules {
+            Apol_Widget::appendSearchResultAVRule $res 12 $r
+        }
+    }
 }
