@@ -90,7 +90,7 @@ int qpol_expand_module(qpol_handle_t *handle, qpol_policy_t *base)
 		typemap[i] = i+1;
 	}
 	
-	if (expand_module_helper(handle, db, db, typemap, 0, 1) < 0) {
+	if (expand_module_avrules(handle, db, db, typemap, 0, 1) < 0) {
 		goto err;
 	}
 	rt = 0;
