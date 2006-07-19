@@ -306,7 +306,7 @@ proc Apol_Analysis_directflow::checkParams {} {
     }
     set vals(regexp:enable) $use_regexp
     set vals(regexp) $regexp
-    if {$vals(classes:enable) && $vals(classes:selected)} {
+    if {$vals(classes:enable) && $vals(classes:selected) == {}} {
         return "At least one object class must be included."
     }
 
@@ -325,7 +325,7 @@ proc Apol_Analysis_directflow::analyze {} {
     set classes {}
     if {$vals(classes:enable)} {
         foreach c $vals(classes:selected) {
-            foreach p [apol_GetAllPermsForClass] {
+            foreach p [apol_GetAllPermsForClass $c] {
                 lappend classes [list $c $p]
             }
         }
