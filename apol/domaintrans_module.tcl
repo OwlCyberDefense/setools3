@@ -608,8 +608,12 @@ proc Apol_Analysis_domaintrans::analyze {} {
 }
 
 proc Apol_Analysis_domaintrans::analyzeMore {tree node analysis_args} {
-    foreach {dir orig_type object_types classperm_pairs regexp} $analysis_args {break}
+    # disallow more analysis if this node is the same as its parent
     set new_start [$tree itemcget $node -text]
+    if {[$tree itemcget [$tree parent $node] -text] == $new_start} {
+        return {}
+    }
+    foreach {dir orig_type object_types classperm_pairs regexp} $analysis_args {break}
     apol_DomainTransitionAnalysis $dir $new_start $object_types $classperm_pairs $regexp
 }
 
@@ -768,7 +772,7 @@ definition of allowed domain transition" {}
 proc Apol_Analysis_domaintrans::createResultsNodes {tree parent_node results search_crit} {
     set dir [lindex $search_crit 0]
     foreach r $results {
-        foreach {source target intermed execute proctrans entrypoint access_list} $r {break}
+        foreach {source target intermed proctrans entrypoint execute access_list} $r {break}
         if {$dir == "forward"} {
             set key $target
             set node f:\#auto
@@ -776,10 +780,16 @@ proc Apol_Analysis_domaintrans::createResultsNodes {tree parent_node results sea
             set key $source
             set node r:\#auto
         }
-        lappend types($key) $proctrans
+        foreach p $proctrans {
+            lappend types($key) $p
+        }
         lappend types($key:inter) $intermed
-        lappend types($key:inter:$intermed:entry) $entrypoint
-        lappend types($key:inter:$intermed:exec) $execute
+        foreach e $entrypoint {
+            lappend types($key:inter:$intermed:entry) $e
+        }
+        foreach e $execute {
+            lappend types($key:inter:$intermed:exec) $e
+        }
         if {[info exists types($key:access)]} {
             set types($key:access) [concat $types($key:access) $access_list]
         } else {
