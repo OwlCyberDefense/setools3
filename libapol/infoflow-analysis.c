@@ -53,6 +53,8 @@ struct apol_infoflow_graph {
 	apol_vector_t *nodes;
 	/** vector of apol_infoflow_edge_t */
 	apol_vector_t *edges;
+        unsigned int mode, direction;
+        regex_t *regex;
 };
 
 struct apol_infoflow_node {
@@ -95,7 +97,6 @@ struct apol_infoflow_analysis {
 	unsigned int mode, direction;
 	char *type, *result;
 	apol_vector_t *classes;
-	regex_t *result_regex;
 	int min_weight;
 };
 
@@ -513,6 +514,15 @@ static int apol_infoflow_graph_create(apol_policy_t *p,
 		ERR(p, "Out of memory!");
 		goto cleanup;
 	}
+	(*g)->mode = ia->mode;
+	(*g)->direction = ia->direction;
+	if (ia->result != NULL && ia->result[0] != '\0') {
+		if (((*g)->regex = malloc(sizeof(regex_t))) == NULL ||
+		    regcomp((*g)->regex, ia->result, REG_EXTENDED | REG_NOSUB)) {
+			ERR(p, "Out of memory!");
+			goto cleanup;
+		}
+	}
 	if (qpol_policy_get_avrule_iter(p->qh, p->p, QPOL_RULE_ALLOW, &iter) < 0) {
 		goto cleanup;
 	}
@@ -550,6 +560,7 @@ void apol_infoflow_graph_destroy(apol_infoflow_graph_t **flow)
 	if (*flow != NULL) {
 		apol_vector_destroy(&(*flow)->nodes, apol_infoflow_node_free);
 		apol_vector_destroy(&(*flow)->edges, apol_infoflow_edge_free);
+		apol_regex_destroy(&(*flow)->regex);
 		free(*flow);
 		*flow = NULL;
 	}
@@ -571,7 +582,7 @@ void apol_infoflow_graph_destroy(apol_infoflow_graph_t **flow)
  */
 static int apol_infoflow_graph_get_nodes_for_type(apol_policy_t *p,
 						  apol_infoflow_graph_t *g,
-						  char *type,
+						  const char *type,
 						  apol_vector_t *v)
 {
 	size_t i, j;
@@ -656,6 +667,52 @@ static int apol_infoflow_result_define(apol_policy_t *p,
 }
 
 /**
+ * Given the regular expression compiled into the graph object and a
+ * type, determine if that regex matches a node's type or any of the
+ * type's aliases.
+ *
+ * @param p Policy containing type names.
+ * @param g Graph object containing regex.
+ * @param node Ndoe to check against.
+ *
+ * @return 1 If comparison succeeds, 0 if not; < 0 on error.
+ */
+static int apol_infoflow_graph_compare(apol_policy_t *p,
+				       apol_infoflow_graph_t *g,
+				       apol_infoflow_node_t *node)
+{
+	char *type_name;
+	qpol_iterator_t *alias_iter = NULL;
+	int compval = 0;
+	if (qpol_type_get_name(p->qh, p->p, node->type, &type_name) < 0) {
+		return -1;
+	}
+	if (g->regex == NULL) {
+		return 1;
+	}
+	if (regexec(g->regex, type_name, 0, NULL, 0) == 0) {
+		return 1;
+	}
+	/* also check for matches against any of target's aliases */
+	if (qpol_type_get_alias_iter(p->qh, p->p, node->type, &alias_iter) < 0) {
+		return -1;
+	}
+	for ( ; !qpol_iterator_end(alias_iter); qpol_iterator_next(alias_iter)) {
+		char *iter_name;
+		if (qpol_iterator_get_item(alias_iter, (void **) &iter_name) < 0) {
+			compval = -1;
+			break;
+		}
+		if (regexec(g->regex, iter_name, 0, NULL, 0) == 0) {
+			compval = 1;
+			break;
+		}
+	}
+	qpol_iterator_destroy(&alias_iter);
+	return compval;
+}
+
+/**
  * For each result object in vector working_results, append a
  * duplicate of it to vector results if (a) the infoflow analysis
  * object direction is not BOTH or (b) the result object's direction
@@ -664,21 +721,21 @@ static int apol_infoflow_result_define(apol_policy_t *p,
  *
  * @param p Policy handler, to report errors.
  * @param working_results Vector of infoflow results to check.
- * @param ia Infoflow analysis object containing direction of search.
+ * @param direction Direction of search.
  * @param results Vector to which append duplicated infoflow results.
  *
  * @return 0 on success, < 0 on error.
  */
 static int apol_infoflow_results_check_both(apol_policy_t *p,
 					    apol_vector_t *working_results,
-					    apol_infoflow_analysis_t *ia,
+					    unsigned int direction,
 					    apol_vector_t *results)
 {
 	size_t i;
 	apol_infoflow_result_t *r, *new_r;
 	for (i = 0; i < apol_vector_get_size(working_results); i++) {
 		r = (apol_infoflow_result_t *) apol_vector_get_element(working_results, i);
-		if (ia->direction != APOL_INFOFLOW_BOTH ||
+		if (direction != APOL_INFOFLOW_BOTH ||
 		    r->direction == APOL_INFOFLOW_BOTH) {
 			if ((new_r = calloc(1, sizeof(*new_r))) == NULL) {
 				ERR(p, "Out of memory");
@@ -702,7 +759,7 @@ static int apol_infoflow_results_check_both(apol_policy_t *p,
  *
  * @param p Policy to analyze.
  * @param g Information flow graph to analyze.
- * @param ia Information analysis object, containing user's parameters.
+ * @param start_type Type from which to begin search.
  * @param results Non-NULL vector to which append infoflow results.
  * The caller is responsible for calling apol_infoflow_results_free()
  * upon each element afterwards.
@@ -711,7 +768,7 @@ static int apol_infoflow_results_check_both(apol_policy_t *p,
  */
 static int apol_infoflow_analysis_direct(apol_policy_t *p,
 					 apol_infoflow_graph_t *g,
-					 apol_infoflow_analysis_t *ia,
+					 const char *start_type,
 					 apol_vector_t *results)
 {
 	apol_vector_t *nodes = NULL;
@@ -727,13 +784,13 @@ static int apol_infoflow_analysis_direct(apol_policy_t *p,
 		ERR(p, "Out of memory!");
 		goto cleanup;
 	}
-	if (apol_infoflow_graph_get_nodes_for_type(p, g, ia->type, nodes) < 0) {
+	if (apol_infoflow_graph_get_nodes_for_type(p, g, start_type, nodes) < 0) {
 		goto cleanup;
 	}
 
-	if (ia->direction == APOL_INFOFLOW_IN ||
-	    ia->direction == APOL_INFOFLOW_EITHER ||
-	    ia->direction == APOL_INFOFLOW_BOTH) {
+	if (g->direction == APOL_INFOFLOW_IN ||
+	    g->direction == APOL_INFOFLOW_EITHER ||
+	    g->direction == APOL_INFOFLOW_BOTH) {
 		for (i = 0; i < apol_vector_get_size(nodes); i++) {
 			node = (apol_infoflow_node_t *) apol_vector_get_element(nodes, i);
 			for (j = 0; j < apol_vector_get_size(node->in_edges); j++) {
@@ -744,7 +801,7 @@ static int apol_infoflow_analysis_direct(apol_policy_t *p,
 				else {
 					end_node = edge->start_node;
 				}
-				compval = apol_compare_type(p, end_node->type, ia->result, APOL_QUERY_REGEX, &ia->result_regex);
+				compval = apol_infoflow_graph_compare(p, g, end_node);
 				if (compval < 0) {
 					goto cleanup;
 				}
@@ -758,9 +815,9 @@ static int apol_infoflow_analysis_direct(apol_policy_t *p,
 			}
 		}
 	}
-	if (ia->direction == APOL_INFOFLOW_OUT ||
-	    ia->direction == APOL_INFOFLOW_EITHER ||
-	    ia->direction == APOL_INFOFLOW_BOTH) {
+	if (g->direction == APOL_INFOFLOW_OUT ||
+	    g->direction == APOL_INFOFLOW_EITHER ||
+	    g->direction == APOL_INFOFLOW_BOTH) {
 		for (i = 0; i < apol_vector_get_size(nodes); i++) {
 			node = (apol_infoflow_node_t *) apol_vector_get_element(nodes, i);
 			for (j = 0; j < apol_vector_get_size(node->out_edges); j++) {
@@ -771,7 +828,7 @@ static int apol_infoflow_analysis_direct(apol_policy_t *p,
 				else {
 					end_node = edge->start_node;
 				}
-				compval = apol_compare_type(p, end_node->type, ia->result, APOL_QUERY_REGEX, &ia->result_regex);
+				compval = apol_infoflow_graph_compare(p, g, end_node);
 				if (compval < 0) {
 					goto cleanup;
 				}
@@ -786,14 +843,14 @@ static int apol_infoflow_analysis_direct(apol_policy_t *p,
 		}
 	}
 
-	if (apol_infoflow_results_check_both(p, working_results, ia, results) < 0) {
+	if (apol_infoflow_results_check_both(p, working_results, g->direction, results) < 0) {
 		goto cleanup;
 	}
 
 	retval = 0;
  cleanup:
 	apol_vector_destroy(&nodes, NULL);
-	apol_vector_destroy(&working_results, NULL);
+	apol_vector_destroy(&working_results, apol_infoflow_result_free);
 	return retval;
 }
 
@@ -801,12 +858,13 @@ static int apol_infoflow_analysis_direct(apol_policy_t *p,
 
 int apol_infoflow_analysis_do(apol_policy_t *p,
 			      apol_infoflow_analysis_t *ia,
-			      apol_vector_t **v)
+			      apol_vector_t **v,
+			      apol_infoflow_graph_t **g)
 {
-	apol_infoflow_graph_t *g = NULL;
 	qpol_type_t *start_type;
 	int retval = -1;
 	*v = NULL;
+	*g = NULL;
 
 	if (ia->mode == 0 || ia->direction == 0) {
 		ERR(p, strerror(EINVAL));
@@ -820,18 +878,49 @@ int apol_infoflow_analysis_do(apol_policy_t *p,
 		ERR(p, "Out of memory!");
 		goto cleanup;
 	}
-	if (apol_infoflow_graph_create(p, ia, &g) < 0) {
+	if (apol_infoflow_graph_create(p, ia, g) < 0) {
 		goto cleanup;
 	}
 
 	if (ia->mode == APOL_INFOFLOW_MODE_DIRECT &&
-	    apol_infoflow_analysis_direct(p, g, ia, *v) < 0) {
+	    apol_infoflow_analysis_direct(p, *g, ia->type, *v) < 0) {
 		goto cleanup;
 	}
 
 	retval = 0;
  cleanup:
-	apol_infoflow_graph_destroy(&g);
+	if (retval != 0) {
+		apol_vector_destroy(v, apol_infoflow_result_free);
+		apol_infoflow_graph_destroy(g);
+	}
+	return retval;
+}
+
+int apol_infoflow_analysis_do_more(apol_policy_t *p,
+				   apol_infoflow_graph_t *g,
+				   const char *type,
+				   apol_vector_t **v)
+{
+	qpol_type_t *start_type;
+	int retval = -1;
+	*v = NULL;
+
+	if (apol_query_get_type(p, type, &start_type) < 0) {
+		goto cleanup;
+	}
+
+	if ((*v = apol_vector_create()) == NULL) {
+		ERR(p, "Out of memory!");
+		goto cleanup;
+	}
+
+	if (g->mode == APOL_INFOFLOW_MODE_DIRECT &&
+	    apol_infoflow_analysis_direct(p, g, type, *v) < 0) {
+		goto cleanup;
+	}
+
+	retval = 0;
+ cleanup:
 	if (retval != 0) {
 		apol_vector_destroy(v, apol_infoflow_result_free);
 	}
@@ -849,7 +938,6 @@ void apol_infoflow_analysis_destroy(apol_infoflow_analysis_t **ia)
 		free((*ia)->type);
 		free((*ia)->result);
 		apol_vector_destroy(&(*ia)->classes, NULL);
-		apol_regex_destroy(&(*ia)->result_regex);
 		free(*ia);
 		*ia = NULL;
 	}
@@ -916,7 +1004,7 @@ int apol_infoflow_analysis_set_result_regex(apol_policy_t *p,
 					    apol_infoflow_analysis_t *ia,
 					    const char *result)
 {
-	return apol_query_set(p, &ia->result, &ia->result_regex, result);
+	return apol_query_set(p, &ia->result, NULL, result);
 }
 
 /*************** functions to access infoflow results ***************/

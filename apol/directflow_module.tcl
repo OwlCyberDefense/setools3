@@ -338,6 +338,16 @@ proc Apol_Analysis_directflow::analyze {} {
     apol_DirectInformationFlowAnalysis $vals(dir) $vals(type) $classes $regexp
 }
 
+proc Apol_Analysis_directflow::analyzeMore {tree node} {
+    # disallow more analysis if this node is the same as its parent
+    set new_start [$tree itemcget $node -text]
+    if {[$tree itemcget [$tree parent $node] -text] == $new_start} {
+        return {}
+    }
+    set g [lindex [$tree itemcget top -data] 0]
+    apol_DirectInformationFlowMore $g $new_start
+}
+
 ################# functions that control analysis output #################
 
 proc Apol_Analysis_directflow::createResultsDisplay {} {
@@ -363,7 +373,8 @@ proc Apol_Analysis_directflow::createResultsDisplay {} {
     pack $res -expand 1 -fill both
 
     $tree configure -selectcommand [list Apol_Analysis_directflow::treeSelect $res]
-    $tree configure -opencmd [list Apol_Analysis_domaintrans::treeOpen $tree]
+    $tree configure -opencmd [list Apol_Analysis_directflow::treeOpen $tree]
+    bind $tree <Destroy> [list Apol_Analysis_directflow::treeDestroy $tree]
     return $f
 }
 
@@ -376,7 +387,7 @@ proc Apol_Analysis_directflow::treeSelect {res tree node} {
             renderResultsDirectFlow $res $tree $node [lindex $data 1]
         } else {
             # an informational node, whose data has already been rendered
-            eval $res.tb insert end $data
+            eval $res.tb insert end [lindex $data 1]
         }
         $res.tb configure -state disabled
     }
@@ -384,21 +395,26 @@ proc Apol_Analysis_directflow::treeSelect {res tree node} {
 
 # perform additional direct infoflows if this node has not been
 # analyzed yet
-proc Apol_Analysis_domaintrans::treeOpen {tree node} {
-    foreach {search_crit results} [$tree itemcget $node -data] {break}
-    if {[string index $node 0] == "x" && $search_crit != {}} {
+proc Apol_Analysis_directflow::treeOpen {tree node} {
+    foreach {is_expanded results} [$tree itemcget $node -data] {break}
+    if {[string index $node 0] == "x" && !$is_expanded} {
         ApolTop::setBusyCursor
         update idletasks
-        set retval [catch {analyzeMore $tree $node $search_crit} new_results]
+        set retval [catch {analyzeMore $tree $node} new_results]
         ApolTop::resetBusyCursor
         if {$retval} {
             tk_messageBox -icon error -type ok -title "Direct Information Flow" -message "Could not perform additional analysis:\n\n$new_results"
         } else {
             # mark this node as having been expanded
-            $tree itemconfigure $node -data [list {} $results]
-            createResultsNodes $tree $node $new_results $search_crit
+            $tree itemconfigure $node -data [list 1 $results]
+            createResultsNodes $tree $node $new_results
         }
     }
+}
+
+proc Apol_Analysis_directflow::treeDestroy {tree} {
+    set graph_handler [lindex [$tree itemcget top -data] 0]
+    apol_InformationFlowDestroy $graph_handler
 }
 
 proc Apol_Analysis_directflow::clearResultsDisplay {f} {
@@ -406,6 +422,8 @@ proc Apol_Analysis_directflow::clearResultsDisplay {f} {
 
     set tree [[$f.left getframe].sw getframe].tree
     set res [$f.right getframe].res
+    set graph_handler [lindex [$tree itemcget top -data] 0]
+    apol_InformationFlowDestroy $graph_handler
     $tree delete [$tree nodes root]
     Apol_Widget::clearSearchResults $res
     Apol_Analysis::setResultTabCriteria [array get vals]
@@ -414,14 +432,17 @@ proc Apol_Analysis_directflow::clearResultsDisplay {f} {
 proc Apol_Analysis_directflow::renderResults {f results} {
     variable vals
 
+    set graph_handler [lindex $results 0]
+    set results_list [lrange $results 1 end]
+
     set tree [[$f.left getframe].sw getframe].tree
     set res [$f.right getframe].res
 
     $tree insert end root top -text $vals(type) -open 1 -drawcross auto
     set top_text [renderTopText]
-    $tree itemconfigure top -data $top_text
+    $tree itemconfigure top -data [list $graph_handler $top_text]
 
-    createResultsNodes $tree top $results {}
+    createResultsNodes $tree top $results_list
     $tree selection set top
     $tree opentree top 0
     update idletasks
@@ -447,7 +468,7 @@ your selection above) its parent node.
 same, you cannot open the child.  This avoids cyclic analyses."
 }
 
-proc Apol_Analysis_directflow::createResultsNodes {tree parent_node results search_crit} {
+proc Apol_Analysis_directflow::createResultsNodes {tree parent_node results} {
     set all_targets {}
     foreach r $results {
         foreach {flow_dir source target rules} $r {break}
@@ -476,7 +497,7 @@ proc Apol_Analysis_directflow::createResultsNodes {tree parent_node results sear
         }
         set data [list $flow_dir $rules]
         $tree insert end $parent_node x\#auto -text $t -drawcross allways \
-            -data [list $search_crit $data]
+            -data [list 0 $data]
     }
 }
 

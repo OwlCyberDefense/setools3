@@ -28,6 +28,125 @@
 
 #include <tcl.h>
 
+/********* routines to manipulate an infoflow graph as a Tcl object *********/
+
+/* Build a hashtable of infoflow graph handlers.  Code based upon
+ * http://mini.net/tcl/13881, 'Creating and Using Tcl Handles in C
+ * Extensions'.
+ */
+static Tcl_HashTable infoflow_htable;
+
+static struct Tcl_ObjType infoflow_tcl_obj_type = {
+	"infoflow",
+	NULL,
+	NULL,
+	NULL,
+	NULL
+};
+typedef struct infoflow_tcl {
+	Tcl_Obj *obj;
+	Tcl_HashEntry *hash;
+	apol_infoflow_graph_t *g;
+} infoflow_tcl_t;
+
+static int infoflow_graph_count = 0;
+static int infoflow_graph_epoch = 0;
+
+/**
+ * Given an apol_infoflow_graph_t object, add it to the global
+ * hashtable and create a new Tcl_Obj with a handle to that graph.
+ * The Tcl_Obj will have a unique string identifier for the graph.
+ *
+ * @param interp Tcl interpreter object.
+ * @param g Infoflow graph to store.
+ * @param o Reference to where to create the new Tcl_Obj.
+ *
+ * @return TCL_OK on success, TCL_ERROR on error.
+ *
+ * @see Treating the graph as a Tcl object handler is based upon the
+ * code at http://mini.net/tcl/13881.
+ */
+static int apol_infoflow_graph_to_tcl_obj(Tcl_Interp *interp, apol_infoflow_graph_t *g, Tcl_Obj **o)
+{
+	char s[1], *handle_name;
+	int num_bytes, new_entry;
+	infoflow_tcl_t *infoflow_tcl;
+	Tcl_HashEntry *entry;
+
+	infoflow_tcl = (infoflow_tcl_t *) ckalloc(sizeof(*infoflow_tcl));
+
+	num_bytes = snprintf(s, 1, "infoflow%d", infoflow_graph_count) + 1;
+	handle_name = ckalloc(num_bytes);
+	snprintf(handle_name, num_bytes, "infoflow%d", infoflow_graph_count++);
+	*o = Tcl_NewStringObj(handle_name, -1);
+	(*o)->typePtr = &infoflow_tcl_obj_type;
+	(*o)->internalRep.twoPtrValue.ptr1 = infoflow_tcl;
+	(*o)->internalRep.twoPtrValue.ptr2 = (void *) infoflow_graph_epoch;
+
+	infoflow_tcl->obj = *o;
+	infoflow_tcl->g = g;
+	entry = Tcl_CreateHashEntry(&infoflow_htable, handle_name, &new_entry);
+	infoflow_tcl->hash = entry;
+	Tcl_SetHashValue(entry, infoflow_tcl);
+	ckfree(handle_name);
+	return TCL_OK;
+}
+
+/**
+ * Given a Tcl object, retrieve the infoflow_tcl_t stored within.  If
+ * the object is not already an infoflow_tcl_obj_type or if its cache
+ * has been marked as invalid, shimmer it an infoflow_tcl_obj_type,
+ * fetch the graph from the hash table, and then update the object's
+ * cache.
+ *
+ * @param interp Tcl interpreter object.
+ * @param o Tcl object from which to get infoflow_tcl_t.
+ * @param i Reference to where to write result.
+ *
+ * @return TCL_OK on success, TCL_ERROR on error.
+ */
+static int tcl_obj_to_infoflow_tcl(Tcl_Interp *interp, Tcl_Obj *o, infoflow_tcl_t **i)
+{
+	if (o->typePtr != &infoflow_tcl_obj_type ||
+	    (int) o->internalRep.twoPtrValue.ptr2 != infoflow_graph_epoch) {
+		char *name;
+		Tcl_HashEntry *entry;
+		name = Tcl_GetString(o);
+		entry = Tcl_FindHashEntry(&infoflow_htable, name);
+		if (entry == NULL) {
+			Tcl_SetResult(interp, "Invalid infoflow_tcl object.", TCL_STATIC);
+			return TCL_ERROR;
+		}
+		*i = Tcl_GetHashValue(entry);
+		/* shimmer the object back to an infoflow_tcl */
+		o->typePtr = &infoflow_tcl_obj_type;
+		o->internalRep.twoPtrValue.ptr1 = *i;
+		o->internalRep.twoPtrValue.ptr2 = (void *) infoflow_graph_epoch;
+	}
+	else {
+		*i = (infoflow_tcl_t *) o->internalRep.twoPtrValue.ptr1;
+	}
+	return TCL_OK;
+}
+
+/**
+ * Destroy the infoflow_graph stored within an infoflow_tcl_t object
+ * and remove its entry from the global hash table.  Then invalidate
+ * all other Tcl_Objs caches.
+ *
+ * @param i Infoflow_tcl_t object to free.
+ */
+static void infoflow_tcl_free(infoflow_tcl_t *i)
+{
+	apol_infoflow_graph_t *g = i->g;
+	apol_infoflow_graph_destroy(&g);
+	Tcl_DeleteHashEntry(i->hash);
+	ckfree((char *) i);
+	/* now invalidate all cached infoflow_tcl_t pointers stored
+	 * within Tcl_Objs */
+	infoflow_graph_epoch++;
+}
+
 /**
  * For the given object class, return an unsorted list of its
  * permissions, including those that the class inherits from its
@@ -354,8 +473,12 @@ static int append_direct_infoflow_result_to_list(Tcl_Interp *interp,
 }
 
 /**
- * Return an unsorted list of result tuples for a direct information
- * flow analysis.  Each tuple consists of:
+ * Return a infoflow_tcl object and a list containing an infoflow_tcl
+ * object followed by results for a direct information flow analysis.
+ * The infoflow_tcl object is a pointer to the infoflow graph that was
+ * constructed for this query; it may be used as a parameter to
+ * Apol_DirectInformationFlowMore().  Each result tuple consists of:
+ *
  * <ul>
  *   <li>direction of flow, one of "in", "out", or "both"
  *   <li>source type for flow
@@ -373,14 +496,14 @@ static int append_direct_infoflow_result_to_list(Tcl_Interp *interp,
  *       classes/perms
  *   <li>regular expression for resulting types, or empty string to accept all
  * </ol>
- *
  */
 static int Apol_DirectInformationFlowAnalysis(ClientData clientData, Tcl_Interp *interp,
 					      int argc, CONST char *argv[])
 {
-	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
+	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL), *graph_obj;
 	apol_infoflow_result_t *result = NULL;
 	apol_vector_t *v = NULL;
+	apol_infoflow_graph_t *g = NULL;
 	apol_infoflow_analysis_t *analysis = NULL;
 	int direction, num_opts;
 	CONST char **class_strings = NULL;
@@ -446,7 +569,11 @@ static int Apol_DirectInformationFlowAnalysis(ClientData clientData, Tcl_Interp 
 		}
 	}
 
-	if (apol_infoflow_analysis_do(policydb, analysis, &v) < 0) {
+	if (apol_infoflow_analysis_do(policydb, analysis, &v, &g) < 0) {
+		goto cleanup;
+	}
+	if (apol_infoflow_graph_to_tcl_obj(interp, g, &graph_obj) ||
+	    Tcl_ListObjAppendElement(interp, result_obj, graph_obj) == TCL_ERROR) {
 		goto cleanup;
 	}
 	for (i = 0; i < apol_vector_get_size(v); i++) {
@@ -464,6 +591,106 @@ static int Apol_DirectInformationFlowAnalysis(ClientData clientData, Tcl_Interp 
 	}
 	apol_infoflow_analysis_destroy(&analysis);
 	apol_vector_destroy(&v, apol_infoflow_result_free);
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
+}
+
+/**
+ * Perform additional an analysis upon a pre-existing direct
+ * information flow graph, returning an unsorted list of result
+ * tuples.  The analysis will use the same parameters as those that
+ * were used to construct the graph.  Each result tuple consists of:
+ *
+ * <ul>
+ *   <li>direction of flow, one of "in", "out", or "both"
+ *   <li>source type for flow
+ *   <li>target type for flow
+ *   <li>list of AV rules that permit information flow
+ * </ul>
+ * Rules are unique identifiers (relative to currently loaded policy).
+ * Call [apol_RenderAVRule] to display them.
+ *
+ * @param argv This fuction takes two parameters:
+ * <ol>
+ *   <li>handler to an existing direct information flow graph
+ *   <li>starting type (string)
+ * </ol>
+ */
+static int Apol_DirectInformationFlowMore(ClientData clientData, Tcl_Interp *interp,
+					  int argc, CONST char *argv[])
+{
+	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL), *graph_obj;
+	infoflow_tcl_t *i_t;
+	apol_infoflow_graph_t *g = NULL;
+	apol_infoflow_result_t *result = NULL;
+	apol_vector_t *v = NULL;
+	size_t i;
+	int retval = TCL_ERROR;
+
+	apol_tcl_clear_error();
+	if (policydb == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		goto cleanup;
+	}
+	if (argc != 3) {
+		ERR(policydb, "Need an infoflow graph handler and a starting type.");
+		goto cleanup;
+	}
+	graph_obj = Tcl_NewStringObj(argv[1], -1);
+	if (tcl_obj_to_infoflow_tcl(interp, graph_obj, &i_t) == TCL_ERROR) {
+		goto cleanup;
+	}
+	g = i_t->g;
+	if (apol_infoflow_analysis_do_more(policydb, g, argv[2], &v) < 0) {
+		goto cleanup;
+	}
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		result = (apol_infoflow_result_t *) apol_vector_get_element(v, i);
+		if (append_direct_infoflow_result_to_list(interp, result, result_obj) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+
+	Tcl_SetObjResult(interp, result_obj);
+	retval = TCL_OK;
+ cleanup:
+	apol_vector_destroy(&v, apol_infoflow_result_free);
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
+}
+
+/**
+ * Destroy the information flow graph stored within a Tcl object
+ * handler.  It is an error to repeatedly destroy the same graph.
+ *
+ * @param argv This fuction takes one parameters:
+ * <ol>
+ *   <li>handle to the infoflow graph
+ * </ol>
+ */
+static int Apol_InformationFlowDestroy(ClientData clientData, Tcl_Interp *interp,
+				       int argc, CONST char *argv[])
+{
+	Tcl_Obj *o;
+	infoflow_tcl_t *i;
+	int retval = TCL_ERROR;
+
+	apol_tcl_clear_error();
+	if (argc != 2) {
+		ERR(policydb, "Need an infoflow graph handler.");
+		goto cleanup;
+	}
+	o = Tcl_NewStringObj(argv[1], -1);
+	if (tcl_obj_to_infoflow_tcl(interp, o, &i) == TCL_ERROR) {
+		goto cleanup;
+	}
+	infoflow_tcl_free(i);
+	retval = TCL_OK;
+ cleanup:
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
@@ -621,9 +848,12 @@ static int Apol_RelabelAnalysis(ClientData clientData, Tcl_Interp *interp,
 
 int apol_tcl_analysis_init(Tcl_Interp *interp)
 {
+	Tcl_InitHashTable(&infoflow_htable, TCL_STRING_KEYS);
 	Tcl_CreateCommand(interp, "apol_GetAllPermsForClass", Apol_GetAllPermsForClass, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_DomainTransitionAnalysis", Apol_DomainTransitionAnalysis, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_DirectInformationFlowAnalysis", Apol_DirectInformationFlowAnalysis, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_DirectInformationFlowMore", Apol_DirectInformationFlowMore, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_InformationFlowDestroy", Apol_InformationFlowDestroy, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_RelabelAnalysis", Apol_RelabelAnalysis, NULL, NULL);
         /*
 	Tcl_CreateCommand(interp, "apol_TransitiveFlowAnalysis", Apol_TransitiveFlowAnalysis, NULL, NULL);

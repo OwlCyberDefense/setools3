@@ -76,12 +76,40 @@ extern void apol_infoflow_graph_destroy(apol_infoflow_graph_t **flow);
  * apol_vector_destroy() afterwards, <b>passing
  * apol_infoflow_result_free() as the second parameter</b>.  This will
  * be set to NULL upon no results or upon error.
+ * @param g Reference to the information flow graph constructed for
+ * the given infoflow analysis object.  The graph will be allocated by
+ * this function; the caller is responsible for calling
+ * apol_infoflow_graph_destroy() afterwards.  This will be set to NULL
+ * upon error.
  *
  * @return 0 on success, negative on error.
  */
 extern int apol_infoflow_analysis_do(apol_policy_t *p,
 				     apol_infoflow_analysis_t *ia,
-				     apol_vector_t **v);
+				     apol_vector_t **v,
+				     apol_infoflow_graph_t **g);
+
+/**
+ * Execute an information flow analysis against a particular policy
+ * and a pre-built information flow graph.  The analysis will keep the
+ * same criteria that were used to build the graph, sans differing
+ * starting type.
+ *
+ * @param p Policy within which to look up allow rules.
+ * @param g Existing information flow graph to analyze.
+ * @param type New string from which to begin analysis.
+ * @param v Reference to a vector of apol_infoflow_result_t.  The
+ * vector will be allocated by this function.  The caller must call
+ * apol_vector_destroy() afterwards, <b>passing
+ * apol_infoflow_result_free() as the second parameter</b>.  This will
+ * be set to NULL upon no results or upon error.
+ *
+ * @return 0 on success, negative on error.
+ */
+extern int apol_infoflow_analysis_do_more(apol_policy_t *p,
+					  apol_infoflow_graph_t *g,
+					  const char *type,
+					  apol_vector_t **v);
 
 /**
  * Allocate and return a new information analysis structure.  All
