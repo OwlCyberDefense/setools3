@@ -326,7 +326,7 @@ static int apol_query_append_type(apol_policy_t *p, apol_vector_t *v,
 }
 
 apol_vector_t *apol_query_create_candidate_type_list(apol_policy_t *p,
-                                                     char *symbol,
+                                                     const char *symbol,
                                                      int do_regex,
                                                      int do_indirect)
 {

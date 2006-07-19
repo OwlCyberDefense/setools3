@@ -298,7 +298,7 @@ int apol_query_get_type(apol_policy_t *p, const char *type_name,
  * apol_vector_destroy() afterwards.
  */
 apol_vector_t *apol_query_create_candidate_type_list(apol_policy_t *p,
-						     char *symbol,
+						     const char *symbol,
 						     int do_regex,
 						     int do_indirect);
 
