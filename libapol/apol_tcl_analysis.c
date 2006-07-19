@@ -246,7 +246,7 @@ static int apol_vector_to_tcl_list(Tcl_Interp *interp,
  * tuple of it to result_list.  The tuple consists of:
  * <code>
  *   { source_type target_type entrypoint_type
- *     execute_rule proctrans_rule entrypoint_rule access_rules }
+ *     proctrans_rules entrypoint_rules execute_rules access_ruless }
  * </code>
  */
 static int append_domain_trans_result_to_list(Tcl_Interp *interp,
@@ -256,16 +256,15 @@ static int append_domain_trans_result_to_list(Tcl_Interp *interp,
 	Tcl_Obj *dta_elem[7], *dta_list;
 	qpol_type_t *source, *target, *entry;
 	char *source_name, *target_name, *entry_name;
-	qpol_avrule_t *entrypoint, *proctrans, *execute;
-	apol_vector_t *access_rules;
+	apol_vector_t *proctrans, *entrypoint, *execute, *access_rules;
 	int retval = TCL_ERROR;
 
 	source = apol_domain_trans_result_get_start_type(result);
 	target = apol_domain_trans_result_get_end_type(result);
 	entry =	 apol_domain_trans_result_get_entrypoint_type(result);
-	execute = apol_domain_trans_result_get_exec_rule(result);
-	proctrans = apol_domain_trans_result_get_proc_trans_rule(result);
-	entrypoint = apol_domain_trans_result_get_entrypoint_rule(result);
+	proctrans = apol_domain_trans_result_get_proc_trans_rules(result);
+	entrypoint = apol_domain_trans_result_get_entrypoint_rules(result);
+	execute = apol_domain_trans_result_get_exec_rules(result);
 	if (qpol_type_get_name(policydb->qh, policydb->p, source, &source_name) < 0 ||
 	    qpol_type_get_name(policydb->qh, policydb->p, target, &target_name) < 0 ||
 	    qpol_type_get_name(policydb->qh, policydb->p, entry, &entry_name) < 0) {
@@ -274,9 +273,11 @@ static int append_domain_trans_result_to_list(Tcl_Interp *interp,
 	dta_elem[0] = Tcl_NewStringObj(source_name, -1);
 	dta_elem[1] = Tcl_NewStringObj(target_name, -1);
 	dta_elem[2] = Tcl_NewStringObj(entry_name, -1);
-	dta_elem[3] = Tcl_NewLongObj((long) execute);
-	dta_elem[4] = Tcl_NewLongObj((long) proctrans);
-	dta_elem[5] = Tcl_NewLongObj((long) entrypoint);
+	if (apol_vector_to_tcl_list(interp, proctrans, dta_elem + 3) == TCL_ERROR ||
+	    apol_vector_to_tcl_list(interp, entrypoint, dta_elem + 4) == TCL_ERROR ||
+	    apol_vector_to_tcl_list(interp, execute, dta_elem + 5) == TCL_ERROR) {
+		goto cleanup;
+	}
 	if ((access_rules = apol_domain_trans_result_get_access_rules(result)) == NULL) {
 		dta_elem[6] = Tcl_NewListObj(0, NULL);
 	}
@@ -299,9 +300,12 @@ static int append_domain_trans_result_to_list(Tcl_Interp *interp,
  *   <li>source type for the transition
  *   <li>resulting target type of the transition
  *   <li>entrypoint type of the transition
- *   <li>AV rule that allows the source to execute the entrypoint type
- *   <li>AV rule that allows the source type to transition to target type
- *   <li>AV rule that allows a file entrypoint from the entrypoint type
+ *   <li>list of AV rule that allows the source type to transition to
+ *       target type
+ *   <li>list AV rule that allows a file entrypoint from the
+ *       entrypoint type
+ *   <li>list of AV rule that allows the source to execute the
+ *       entrypoint type
  *   <li>list of AV rules that satisfy the access filters (could be
  *       empty list)
  * </ul>
