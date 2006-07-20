@@ -33,7 +33,7 @@ apol_SOURCES = apol_gui.c \
 	common_widgets.tcl range_selector.tcl \
 	domaintrans_module.tcl directflow_module.tcl transflow_module.tcl \
 	relabel_module.tcl \
-	top.tcl console.tcl
+	top.tcl
 
 noinst_DATA = foo_module.tcl
 
