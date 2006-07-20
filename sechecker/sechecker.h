@@ -13,9 +13,9 @@
 
 #include <config.h>
 
-#include <policy.h>
-#include <vector.h>
-#include <util.h>
+#include <apol/policy.h>
+#include <apol/vector.h>
+#include <apol/util.h>
 
 #ifdef LIBSEFS
 #include <libsefs/file_contexts.h>

@@ -10,7 +10,7 @@
 #define RULES_EXP_NOTHING
 
 #include "sechecker.h"
-#include "policy.h"
+
 
 /* The rules_exp_nothing_data structure is used to hold the check specific
  *  private data of a module. */

@@ -43,6 +43,9 @@ libqpol_a_DEPENDENCIES = $(srcdir)/tmp_sepol
 libqpol_a_LIBADD = $(srcdir)/tmp_sepol/*.o
 
 libqpol_so_OBJS = $(patsubst %.c,%.o,$(filter %.c,$(libqpol_a_SOURCES))) policy_parse.o policy_scan.o
+LIBQPOL_SONAME = @libqpol_soname@
+
+noinst_DATA = libqpol.map
 
 $(srcdir)/tmp_sepol: $(sepol_srcdir)/src/libsepol.a
 	mkdir -p $@
@@ -50,8 +53,9 @@ $(srcdir)/tmp_sepol: $(sepol_srcdir)/src/libsepol.a
 	cp $< $@
 	(cd $@; ar x libsepol.a)
 
-libqpol.so: $(srcdir)/tmp_sepol $(libqpol_so_OBJS)
-	$(CC) -shared -o $@ $(libqpol_so_OBJS) $(LDFLAGS) -Wl,-soname,$(SONAME),--version-script=$(srcdir)/libqpol.map,-z,defs -Wl,--whole-archive $(sepol_srcdir)/src/libsepol.a -Wl,--no-whole-archive -lselinux  
+libqpol.so: $(srcdir)/tmp_sepol $(libqpol_so_OBJS) libqpol.map
+	$(CC) -shared -o $@ $(libqpol_so_OBJS) $(LDFLAGS) -Wl,-soname,$(LIBQPOL_SONAME),--version-script=$(srcdir)/libqpol.map,-z,defs -Wl,--whole-archive $(sepol_srcdir)/src/libsepol.a -Wl,--no-whole-archive -lselinux
+	ln -sf $@ $(LIBQPOL_SONAME)
 
 CLEANFILES = policy_parse.h policy_scan.c policy_parse.c
 

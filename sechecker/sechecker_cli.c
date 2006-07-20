@@ -7,8 +7,8 @@
  */
 
 #include "sechecker.h"
-#include "policy.h"
 #include "register_list.h"
+#include <apol/policy.h>
 
 #include <stdio.h>
 #include <string.h>

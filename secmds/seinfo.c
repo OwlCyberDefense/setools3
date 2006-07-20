@@ -27,11 +27,11 @@
 #include <config.h>
 
 /* libapol */
-#include <policy.h>
-#include <policy-query.h>
-#include <render.h>
-#include <util.h>
-#include <vector.h>
+#include <apol/policy.h>
+#include <apol/policy-query.h>
+#include <apol/render.h>
+#include <apol/util.h>
+#include <apol/vector.h>
 
 /* libqpol */
 #include <qpol/policy_query.h>

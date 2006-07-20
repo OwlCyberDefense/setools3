@@ -7,7 +7,7 @@
  */
 
 #include "sechecker.h"
-#include "policy.h"
+
 #include "roles_wo_types.h"
 
 #include <stdio.h>

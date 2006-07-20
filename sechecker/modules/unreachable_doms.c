@@ -7,7 +7,7 @@
  */
 
 #include "sechecker.h"
-#include "policy.h"
+
 #include "unreachable_doms.h"
 
 #define _GNU_SOURCE

@@ -10,7 +10,7 @@
 #define INC_MOUNT
 
 #include "sechecker.h"
-#include "policy.h"
+
 
 #define SECHK_MOUNT_ONLY_MOUNT   0x01
 #define SECHK_MOUNT_ONLY_MOUNTON 0x02

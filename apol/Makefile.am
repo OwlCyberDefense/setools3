@@ -15,7 +15,9 @@ dist_pkgdata_DATA = apol_help.txt domaintrans_help.txt infoflow_help.txt obj_per
 
 BUILT_SOURCES = tmp.tcl
 
-AM_CFLAGS = -I$(top_srcdir)/libqpol/include @TCL_INCLUDES@ -DSTARTUP_SCRIPT='"apol.tcl"'
+AM_CFLAGS = -I$(top_srcdir)/libqpol/include \
+	-I$(top_srcdir)/libapol/include \
+	@TCL_INCLUDES@ -DSTARTUP_SCRIPT='"apol.tcl"'
 AM_LDFLAGS = @TCL_LIB_SPEC@ @TK_LIB_SPEC@
 
 apol_SOURCES = apol_gui.c \
@@ -31,18 +33,18 @@ apol_SOURCES = apol_gui.c \
 	common_widgets.tcl range_selector.tcl \
 	domaintrans_module.tcl directflow_module.tcl transflow_module.tcl \
 	relabel_module.tcl \
-	top.tcl
+	top.tcl console.tcl
 
 noinst_DATA = foo_module.tcl
 
-LDADD = $(top_srcdir)/libapol/libapol.a $(top_srcdir)/libqpol/src/libqpol.so @QPOL_LIB_FLAG@ @TCL_LIB_FLAG@ @TK_LIB_FLAG@
-apol_DEPENDENCIES = apol.tcl $(top_srcdir)/libapol/libapol-tcl.a $(top_srcdir)/libapol/libapol.a $(top_srcdir)/libqpol/src/libqpol.so $(top_srcdir)/config.tcl
+LDADD = $(top_srcdir)/libapol/src/libapol.a $(top_srcdir)/libqpol/src/libqpol.so @QPOL_LIB_FLAG@ @TCL_LIB_FLAG@ @TK_LIB_FLAG@
+apol_DEPENDENCIES = apol.tcl $(top_srcdir)/libapol-tcl/libapol-tcl.a $(top_srcdir)/libapol/src/libapol.a $(top_srcdir)/libqpol/src/libqpol.so $(top_srcdir)/config.tcl
 
 if WANT_LIBSEFS
-apol_LDADD = $(top_srcdir)/libapol/libapol-tcl.a $(top_srcdir)/libsefs/libsefs.a $(LDADD)
+apol_LDADD = $(top_srcdir)/libapol-tcl/libapol-tcl.a $(top_srcdir)/libsefs/libsefs.a $(LDADD)
 apol_DEPENDENCIES += $(top_srcdir)/libsefs/libsefs.a
 else
-apol_LDADD = $(top_srcdir)/libapol/libapol-tcl.a $(LDADD)
+apol_LDADD = $(top_srcdir)/libapol-tcl/libapol-tcl.a $(LDADD)
 endif
 
 TCL_STRIP_FILES = $(top_srcdir)/config.tcl $(filter-out head.tcl,$(filter %.tcl,$(apol_SOURCES)))
@@ -62,8 +64,11 @@ tmp.tcl: $(TCL_STRIP_FILES)
 
 # FIX ME: install help files, perm maps, and link to default perm map
 
-$(top_srcdir)/libapol/libapol-tcl.a $(top_srcdir)/libapol/libapol.a:
-	$(MAKE) -C $(top_srcdir)/libapol $(notdir $@)
+$(top_srcdir)/libapol/libapol-tcl.a:
+	$(MAKE) -C $(top_srcdir)/libapol-tcl $(notdir $@)
+
+$(top_srcdir)/libapol/libapol.a:
+	$(MAKE) -C $(top_srcdir)/libapol/src $(notdir $@)
 
 $(top_srcdir)/libqpol/src/libqpol.so:
 	$(MAKE) -C $(top_srcdir)/libqpol/src $(notdir $@)

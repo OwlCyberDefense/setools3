@@ -10,7 +10,7 @@
 #define FIND_NETIF_TYPES_H
 
 #include "sechecker.h"
-#include "policy.h"
+
 
 /* The find_netif_types_data structure is used to hold the check specific
  *  private data of a module. */

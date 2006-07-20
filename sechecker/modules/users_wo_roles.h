@@ -10,7 +10,7 @@
 #define USERS_WO_ROLES
 
 #include "sechecker.h"
-#include "policy.h"
+
 
 /* The users_wo_roles_data structure is used to hold the check specific
  *  private data of a module. */

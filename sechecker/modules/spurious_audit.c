@@ -7,9 +7,8 @@
  */
 
 #include "sechecker.h"
-#include "policy.h"
+
 #include "spurious_audit.h"
-#include "render.h"
 
 #include <stdio.h>
 #include <string.h>

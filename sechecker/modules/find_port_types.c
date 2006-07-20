@@ -7,9 +7,9 @@
  */
 
 #include "sechecker.h"
-#include "policy.h"
+
 #include "find_port_types.h"
-#include "render.h"
+#include <apol/policy-query.h>
 
 #include <stdio.h>
 #include <string.h>

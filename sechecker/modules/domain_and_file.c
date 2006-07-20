@@ -7,7 +7,6 @@
  */
 
 #include "sechecker.h"
-#include "policy.h"
 #include "domain_and_file.h"
 
 #include <stdio.h>

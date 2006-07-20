@@ -10,7 +10,6 @@
 #define DOMAIN_AND_FILE
 
 #include "sechecker.h"
-#include "policy.h"
 
 typedef struct domain_and_file_data {
 } domain_and_file_data_t;

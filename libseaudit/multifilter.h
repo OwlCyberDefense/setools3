@@ -15,7 +15,7 @@
 #define LIBSEAUDIT_MULTIFILTER_H
 
 #include "filters.h"
-#include "libapol/util.h"
+#include <apol/util.h>
 
 typedef struct seaudit_multifilter {
 	llist_t *filters;

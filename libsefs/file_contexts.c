@@ -8,6 +8,8 @@
 
 #define _GNU_SOURCE
 
+#include <config.h>
+
 #include "file_contexts.h"
 #include <ctype.h>
 #include <stdio.h>
@@ -20,13 +22,12 @@
 #endif
 
 /* libapol */
-#include <../libapol/policy.h>
-#include <render.h>
-#include "../libapol/vector.h"
-#include "policy-query.h"
+#include <apol/policy.h>
+#include <apol/policy-query.h>
+#include <apol/vector.h>
 
 /* libqpol */
-#include <../libqpol/include/qpol/policy_query.h>
+#include <qpol/policy_query.h>
 
 
 /* for some reason we have to define this here to remove compile warnings */

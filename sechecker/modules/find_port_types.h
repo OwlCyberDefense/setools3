@@ -10,7 +10,7 @@
 #define FIND_PORT_TYPES
 
 #include "sechecker.h"
-#include "policy.h"
+
 
 /* The find_port_types_data structure is used to hold the check specific
  *  private data of a module. */
