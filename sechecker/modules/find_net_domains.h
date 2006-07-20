@@ -10,7 +10,7 @@
 #define FIND_NET_DOMAINS
 
 #include "sechecker.h"
-#include "policy.h"
+
 
 /* The find_net_domains_data structure is used to hold the check specific
  *  private data of a module. */

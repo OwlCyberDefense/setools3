@@ -48,14 +48,11 @@
 #include <ftw.h>
 #include <mntent.h>
 
-#include <policy.h>
-#include <util.h>
+#include <apol/policy.h>
+#include <apol/util.h>
 
 #define COPYRIGHT_INFO "Copyright (C) 2003-2006 Tresys Technology, LLC"
 
-#ifndef DEBUG
-#define DEBUG 0
-#endif
 #define MAX_INPUT_SIZE 1024
 #define NFTW_FLAGS FTW_MOUNT | FTW_PHYS
 #define NFTW_DEPTH 1024

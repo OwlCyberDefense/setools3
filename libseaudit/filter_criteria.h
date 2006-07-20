@@ -16,7 +16,6 @@
 
 #include <time.h>
 #include "auditlog.h"
-#include "libapol/util.h"
 
 struct seaudit_criteria;
 /* callback type for printing criteria */

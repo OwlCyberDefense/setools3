@@ -10,8 +10,8 @@
 #define FIND_DOMAINS
 
 #include "sechecker.h"
-#include <policy.h>
-#include <vector.h>
+
+#include <apol/vector.h>
 typedef struct find_domains_data {
 	apol_vector_t 	*domain_attribs;
 	int num_domain_attribs;

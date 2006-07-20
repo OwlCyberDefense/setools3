@@ -7,7 +7,7 @@
  */
 
 #include "sechecker.h"
-#include "policy.h"
+
 
 /* The imp_range_trans_data structure is used to hold the check specific
  *  private data of a module. */

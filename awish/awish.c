@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include <tcl.h>
 #include <tk.h>
-#include "../libapol/apol_tcl_other.h"
+#include "../libapol-tcl/apol_tcl_other.h"
 
 
 int Tcl_AppInit(Tcl_Interp *interp)

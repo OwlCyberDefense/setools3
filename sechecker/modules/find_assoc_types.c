@@ -7,9 +7,8 @@
  */
 
 #include "sechecker.h"
-#include "policy.h"
+
 #include "find_assoc_types.h"
-#include "render.h"
 
 #include <stdio.h>
 #include <string.h>

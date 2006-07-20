@@ -2,7 +2,7 @@
 
 lib_LIBRARIES = libsefs.a
 
-AM_CFLAGS = -fPIC -I$(top_srcdir)/libqpol/include -I$(top_srcdir)/libapol
+AM_CFLAGS = -fPIC -I$(top_srcdir)/libqpol/include -I$(top_srcdir)/libapol/include
 
 libsefs_a_SOURCES = \
 	fsdata.c fsdata.h \

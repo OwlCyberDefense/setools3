@@ -7,7 +7,6 @@
  */
 
 #include "sechecker.h"
-#include "policy.h"
 #include "attribs_wo_rules.h"
 
 #include <stdio.h>

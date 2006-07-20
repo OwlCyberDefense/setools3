@@ -7,9 +7,9 @@
  */
 
 #include "sechecker.h"
-#include "policy.h"
+
 #include "find_file_types.h"
-#include "render.h"
+#include <apol/policy-query.h>
 #ifdef LIBSEFS
 #include "../libsefs/file_contexts.h"
 #endif

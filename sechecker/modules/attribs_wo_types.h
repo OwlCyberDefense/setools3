@@ -10,7 +10,6 @@
 #define ATTRIBS_WO_TYPES
 
 #include "sechecker.h"
-#include "policy.h"
 
 typedef struct attribs_wo_types_data {
 } attribs_wo_types_data_t;

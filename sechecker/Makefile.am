@@ -7,15 +7,14 @@ profiles_DATA = \
 	profiles/devel-checks.sechecker \
 	profiles/sechecker.dtd
 
-AM_CFLAGS = -I$(top_srcdir)/libqpol/include -I$(top_srcdir)/libapol \
+AM_CFLAGS = -I$(top_srcdir)/libqpol/include -I$(top_srcdir)/libapol/include \
 	@XML_CFLAGS@ \
 	-DPROFILE_INSTALL_DIR='"${profile_install_dir}"' \
 	-DBASE_PATH='"${prefix}/share/setools-@VERSION@"'
 
-AM_LDFLAGS = $(top_srcdir)/libapol/libapol.a @XML_LIBS@
-LDADD = $(top_srcdir)/libapol/libapol.a $(top_srcdir)/libqpol/src/libqpol.so \
-        @QPOL_LIB_FLAG@
-sechecker_DEPENDENCIES = $(top_srcdir)/libapol/libapol.a $(top_srcdir)/libqpol/src/libqpol.so
+LDADD = $(top_srcdir)/libapol/src/libapol.a $(top_srcdir)/libqpol/src/libqpol.so \
+        @QPOL_LIB_FLAG@ @XML_LIBS@
+sechecker_DEPENDENCIES = $(top_srcdir)/libapol/src/libapol.a $(top_srcdir)/libqpol/src/libqpol.so
 
 if WANT_LIBSEFS
 sechecker_LDADD = $(LDADD) $(top_srcdir)/libsefs/libsefs.a
@@ -53,8 +52,8 @@ sechecker_SOURCES = \
 	modules/unreachable_doms.c modules/unreachable_doms.h \
 	modules/users_wo_roles.c modules/users_wo_roles.h
 
-$(top_srcdir)/libapol/libapol.a:
-	$(MAKE) -C $(top_srcdir)/libapol $(notdir $@)
+$(top_srcdir)/libapol/src/libapol.a:
+	$(MAKE) -C $(top_srcdir)/libapol/src $(notdir $@)
 
 $(top_srcdir)/libqpol/src/libqpol.so:
 	$(MAKE) -C $(top_srcdir)/libqpol/src $(notdir $@)
