@@ -10,7 +10,7 @@
 #define FIND_FILE_TYPES
 
 #include "sechecker.h"
-#include "policy.h"
+
 
 typedef struct find_file_types_data {
 	apol_vector_t *file_type_attribs;

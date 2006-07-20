@@ -7,9 +7,8 @@
  */
 
 #include "sechecker.h"
-#include "policy.h"
+#include <apol/policy-query.h>
 #include "find_domains.h"
-#include "render.h"
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>

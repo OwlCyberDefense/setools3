@@ -1,0 +1,31 @@
+apoldir = $(includedir)/apol
+
+apol_HEADERS = \
+	avl-util.h \
+	avrule-query.h \
+	bool-query.h \
+	class-perm-query.h \
+	condrule-query.h \
+	constraint-query.h \
+	context-query.h \
+	domain-trans-analysis.h \
+	fscon-query.h \
+	infoflow-analysis.h \
+	isid-query.h \
+	mls-query.h \
+	netcon-query.h \
+	perm-map.h \
+	poldiff.h \
+	policy.h \
+	policy-query.h \
+	queue.h \
+	rangetrans-query.h \
+	rbacrule-query.h \
+	relabel-analysis.h \
+	render.h \
+	role-query.h \
+	terule-query.h \
+	type-query.h \
+	user-query.h \
+	util.h \
+	vector.h

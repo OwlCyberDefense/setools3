@@ -7,10 +7,9 @@
  */
 
 #include "sechecker.h"
-#include "policy.h"
+
 #include "inc_net_access.h"
-#include "render.h"
-#include "policy-query.h"
+#include <apol/policy-query.h>
 
 #include <stdio.h>
 #include <string.h>

@@ -10,7 +10,6 @@
 #define ATTRIBS_WO_RULES
 
 #include "sechecker.h"
-#include "policy.h"
 
 /* The attribs_wo_rules_data structure is used to hold the check specific
  *  private data of a module. */

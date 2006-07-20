@@ -29,8 +29,8 @@
 #include <stdarg.h>
 
 /* AVL Tree Handling */
-#include <policy.h>
-#include <avl-util.h>
+#include <apol/policy.h>
+#include <apol/avl-util.h>
 
 /* file tree walking commands */
 #define __USE_XOPEN_EXTENDED 1

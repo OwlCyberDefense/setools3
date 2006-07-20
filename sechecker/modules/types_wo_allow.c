@@ -7,9 +7,8 @@
  */
 
 #include "sechecker.h"
-#include "policy.h"
+
 #include "types_wo_allow.h"
-#include "render.h"
 
 #include <stdio.h>
 #include <string.h>

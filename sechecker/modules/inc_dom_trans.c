@@ -7,9 +7,8 @@
  */
 
 #include "sechecker.h"
-#include "policy.h"
+
 #include "inc_dom_trans.h"
-#include "render.h"
 //#include "dta.h" FIXME
 
 #include <stdio.h>

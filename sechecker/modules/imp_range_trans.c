@@ -7,8 +7,7 @@
  */
 
 #include "sechecker.h"
-#include "policy.h"
-#include "render.h"
+
 #include "imp_range_trans.h"
 
 #include <stdio.h>

@@ -10,13 +10,11 @@
 #define FILE_CONTEXTS_H
 
 /* libapol */
-#include <../libapol/policy.h>
-#include <render.h>
-#include "../libapol/vector.h"
-#include "policy-query.h"
+#include <apol/policy.h>
+#include <apol/vector.h>
 
 /* libqpol */
-#include <../libqpol/include/qpol/policy_query.h>
+#include <qpol/policy_query.h>
 
 #include <stdio.h>
 

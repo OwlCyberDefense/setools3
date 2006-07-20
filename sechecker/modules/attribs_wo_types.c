@@ -8,7 +8,6 @@
 
 
 #include "sechecker.h"
-#include "policy.h"
 #include "attribs_wo_types.h"
 
 #include <stdio.h>

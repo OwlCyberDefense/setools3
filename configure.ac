@@ -336,7 +336,10 @@ profile_install_dir=${datadir}/sechecker/profiles
 AC_SUBST(VERSION)
 AC_SUBST(sepol_srcdir)
 AC_SUBST(libqpol_version)
+AC_SUBST(libqpol_soname)
 AC_SUBST(libapol_version)
+AC_SUBST(libapol_soname)
+AC_SUBST(libapol_tcl_soname)
 AC_SUBST(apol_install_dir)
 AC_SUBST(apol_help_dir)
 AC_SUBST(selinux_policy_dir)
@@ -348,7 +351,8 @@ AC_DEFINE_UNQUOTED(LIBSEAUDIT_VERSION_STRING, "${libseaudit_version}", [libapol 
 
 AC_CONFIG_FILES([Makefile VERSION \
                  libqpol/Makefile libqpol/src/Makefile libqpol/include/Makefile libqpol/include/qpol/Makefile \
-                 libapol/Makefile \
+                 libapol/Makefile libapol/src/Makefile libapol/include/Makefile libapol/include/apol/Makefile \
+                 libapol-tcl/Makefile \
                  libsefs/Makefile \
 		 libseaudit/Makefile \
                  secmds/Makefile \

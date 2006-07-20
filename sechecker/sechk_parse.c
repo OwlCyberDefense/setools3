@@ -8,9 +8,10 @@
 
 #include "sechecker.h"
 #include "sechk_parse.h"
-#include "util.h"
+#include <apol/util.h>
 #include <libxml/xmlreader.h>
 #include <errno.h>
+#include <string.h>
 
 /* xml parser keywords */
 #define SECHK_PARSE_SECHECKER_TAG         "sechecker"

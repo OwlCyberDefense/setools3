@@ -10,7 +10,7 @@
 #define TYPES_WO_ALLOW
 
 #include "sechecker.h"
-#include "policy.h"
+
 
 /* The types_wo_allow_data structure is used to hold the check specific
  *  private data of a module. */

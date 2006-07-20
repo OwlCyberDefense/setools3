@@ -7,9 +7,8 @@
  */
 
 #include "sechecker.h"
-#include "policy.h"
+
 #include "find_net_domains.h"
-#include "render.h"
 
 #include <stdio.h>
 #include <string.h>
