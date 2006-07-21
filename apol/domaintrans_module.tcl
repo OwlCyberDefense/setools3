@@ -580,16 +580,26 @@ proc Apol_Analysis_domaintrans::checkParams {} {
     set vals(regexp:enable) $use_regexp
     set vals(regexp) $regexp
     if {$vals(dir) == "forward" && $vals(access:enable)} {
-        set vals(search:object_types) $vals(targets:inc)
-        set vals(search:classperm_pairs) {}
+        set classperm_pairs {}
         foreach class $Apol_Class_Perms::class_list {
             if {$vals(classes:$class:enable) == 0} {
                 continue
             }
+            if {$vals(classes:$class) == {}} {
+                return "No permissions were selected for class $class."
+            }
             foreach perm $vals(classes:$class) {
-                lappend vals(search:classperm_pairs) [list $class $perm]
+                lappend classperm_pairs [list $class $perm]
             }
         }
+        if {$vals(targets:inc) == {}} {
+            return "No object types were selected."
+        }
+        if {$classperm_pairs == {}} {
+            return "No object classes were selected."
+        }
+        set vals(search:object_types) $vals(targets:inc)
+        set vals(search:classperm_pairs) $classperm_pairs
     } else {
         set vals(search:object_types) {}
         set vals(search:classperm_pairs) {}
