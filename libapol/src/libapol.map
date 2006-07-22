@@ -32,7 +32,6 @@
                 apol_portcon_*;
                 apol_protocol_to_str;
                 apol_qpol_context_render;
-                apol_queue_*;
                 apol_range_trans_*;
                 apol_relabel_*;
                 apol_role_*;
