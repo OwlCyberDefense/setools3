@@ -441,13 +441,16 @@ static int append_direct_infoflow_result_to_list(Tcl_Interp *interp,
 	unsigned int dir;
 	qpol_type_t *source, *target;
 	char *dir_str, *source_name, *target_name;
-	apol_vector_t *rules;
+	apol_vector_t *steps, *rules;
+	apol_infoflow_step_t *step;
 	int retval = TCL_ERROR;
 
 	dir = apol_infoflow_result_get_dir(result);
 	source = apol_infoflow_result_get_start_type(result);
 	target = apol_infoflow_result_get_end_type(result);
-	rules = apol_infoflow_result_get_rules(result);
+	steps = apol_infoflow_result_get_steps(result);
+	step = (apol_infoflow_step_t *) apol_vector_get_element(steps, 0);
+	rules = apol_infoflow_step_get_rules(step);
 	switch (dir) {
 	case APOL_INFOFLOW_IN: dir_str = "in"; break;
 	case APOL_INFOFLOW_OUT: dir_str = "out"; break;
@@ -667,6 +670,177 @@ static int Apol_DirectInformationFlowMore(ClientData clientData, Tcl_Interp *int
 }
 
 /**
+ * Take a result node from a transitive information flow analysis and
+ * append a tuple of it to result_list.  The tuple consists of:
+ * <code>
+ *   { flow_direction  source_type  target_type  list_of_steps }
+ * </code>
+ *
+ * A flow consists of a list of paths; each path has a list of rules.
+ */
+static int append_trans_infoflow_result_to_list(Tcl_Interp *interp,
+						apol_infoflow_result_t *result,
+						Tcl_Obj *result_list)
+{
+	Tcl_Obj *trans_elem[4], *trans_list, *step_elem[3], *step_list;
+	unsigned int dir;
+	qpol_type_t *source, *target;
+	char *dir_str, *source_name, *target_name;
+	apol_vector_t *steps, *rules;
+	size_t i;
+	apol_infoflow_step_t *step;
+	int retval = TCL_ERROR;
+
+	dir = apol_infoflow_result_get_dir(result);
+	source = apol_infoflow_result_get_start_type(result);
+	target = apol_infoflow_result_get_end_type(result);
+	steps = apol_infoflow_result_get_steps(result);
+	switch (dir) {
+	case APOL_INFOFLOW_IN: dir_str = "to"; break;
+	case APOL_INFOFLOW_OUT: dir_str = "from"; break;
+	default:
+		Tcl_SetResult(interp, "Illegal flow direction.", TCL_STATIC);
+		goto cleanup;
+	}
+	if (qpol_type_get_name(policydb->qh, policydb->p, source, &source_name) < 0 ||
+	    qpol_type_get_name(policydb->qh, policydb->p, target, &target_name) < 0) {
+		goto cleanup;
+	}
+	trans_elem[0] = Tcl_NewStringObj(dir_str, -1);
+	trans_elem[1] = Tcl_NewStringObj(source_name, -1);
+	trans_elem[2] = Tcl_NewStringObj(target_name, -1);
+	trans_elem[3] = Tcl_NewListObj(0, NULL);
+	for (i = 0; i < apol_vector_get_size(steps); i++) {
+		step = (apol_infoflow_step_t *) apol_vector_get_element(steps, i);
+		source = apol_infoflow_step_get_start_type(step);
+		target = apol_infoflow_step_get_end_type(step);
+		rules = apol_infoflow_step_get_rules(step);
+		if (qpol_type_get_name(policydb->qh, policydb->p, source, &source_name) < 0 ||
+		    qpol_type_get_name(policydb->qh, policydb->p, target, &target_name) < 0) {
+			goto cleanup;
+		}
+		step_elem[0] = Tcl_NewStringObj(source_name, -1);
+		step_elem[1] = Tcl_NewStringObj(target_name, -1);
+		if (apol_vector_to_tcl_list(interp, rules, step_elem + 2) == TCL_ERROR) {
+			goto cleanup;
+		}
+		step_list = Tcl_NewListObj(3, step_elem);
+		if (Tcl_ListObjAppendElement(interp, trans_elem[3], step_list) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+	trans_list = Tcl_NewListObj(4, trans_elem);
+	if (Tcl_ListObjAppendElement(interp, result_list, trans_list) == TCL_ERROR) {
+		goto cleanup;
+	}
+	retval = TCL_OK;
+ cleanup:
+	return retval;
+}
+
+/**
+ * Return a infoflow_tcl object and a list containing an infoflow_tcl
+ * object followed by results for a transitive information flow
+ * analysis.  The infoflow_tcl object is a pointer to the infoflow
+ * graph that was constructed for this query; it may be used as a
+ * parameter to Apol_TransInformationFlowMore().  Each result tuple
+ * consists of:
+ *
+ * <ul>
+ *   <li>direction of flow, one of "to" or "from"
+ *   <li>source type for flow
+ *   <li>target type for flow
+ *   <li>list of steps
+ * </ul>
+ *
+ * Each step consists of:
+ *
+ * <ul>
+ *   <li>start type for this step
+ *   <li>end type for this step
+ *   <li>list of rules that permit access from start type to end type
+ * </ul>
+ * Rules are unique identifiers (relative to currently loaded policy).
+ * Call [apol_RenderAVRule] to display them.
+ *
+ * @param argv This fuction takes four parameters:
+ * <ol>
+ *   <li>flow direction, one of "to" or "from"
+ *   <li>starting type (string)
+ *   <li>regular expression for resulting types, or empty string to accept all
+ * </ol>
+ */
+static int Apol_TransInformationFlowAnalysis(ClientData clientData, Tcl_Interp *interp,
+					      int argc, CONST char *argv[])
+{
+	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL), *graph_obj;
+	apol_infoflow_result_t *result = NULL;
+	apol_vector_t *v = NULL;
+	apol_infoflow_graph_t *g = NULL;
+	apol_infoflow_analysis_t *analysis = NULL;
+	int direction, num_opts;
+	size_t i;
+	int retval = TCL_ERROR;
+
+	apol_tcl_clear_error();
+	if (policydb == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		goto cleanup;
+	}
+	if (argc != 4) {
+		ERR(policydb, "Need a flow direction, starting type, and resulting type regex.");
+		goto cleanup;
+	}
+
+	if (strcmp(argv[1], "to") == 0) {
+		direction = APOL_INFOFLOW_IN;
+	}
+	else if (strcmp(argv[1], "from") == 0) {
+		direction = APOL_INFOFLOW_OUT;
+	}
+	else {
+		ERR(policydb, "Invalid trans infoflow direction %s.", argv[1]);
+		goto cleanup;
+	}
+
+	if ((analysis = apol_infoflow_analysis_create()) == NULL) {
+		ERR(policydb, "Out of memory!");
+		goto cleanup;
+	}
+
+	if (apol_infoflow_analysis_set_mode(policydb, analysis, APOL_INFOFLOW_MODE_TRANS) < 0 ||
+	    apol_infoflow_analysis_set_dir(policydb, analysis, direction) < 0 ||
+	    apol_infoflow_analysis_set_type(policydb, analysis, argv[2]) < 0 ||
+	    apol_infoflow_analysis_set_result_regex(policydb, analysis, argv[3])) {
+		goto cleanup;
+	}
+
+	if (apol_infoflow_analysis_do(policydb, analysis, &v, &g) < 0) {
+		goto cleanup;
+	}
+	if (apol_infoflow_graph_to_tcl_obj(interp, g, &graph_obj) ||
+	    Tcl_ListObjAppendElement(interp, result_obj, graph_obj) == TCL_ERROR) {
+		goto cleanup;
+	}
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		result = (apol_infoflow_result_t *) apol_vector_get_element(v, i);
+		if (append_trans_infoflow_result_to_list(interp, result, result_obj) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+
+	Tcl_SetObjResult(interp, result_obj);
+	retval = TCL_OK;
+ cleanup:
+	apol_infoflow_analysis_destroy(&analysis);
+	apol_vector_destroy(&v, apol_infoflow_result_free);
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
+}
+
+/**
  * Destroy the information flow graph stored within a Tcl object
  * handler.  It is an error to repeatedly destroy the same graph.
  *
@@ -856,10 +1030,10 @@ int apol_tcl_analysis_init(Tcl_Interp *interp)
 	Tcl_CreateCommand(interp, "apol_DomainTransitionAnalysis", Apol_DomainTransitionAnalysis, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_DirectInformationFlowAnalysis", Apol_DirectInformationFlowAnalysis, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_DirectInformationFlowMore", Apol_DirectInformationFlowMore, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_TransInformationFlowAnalysis", Apol_TransInformationFlowAnalysis, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_InformationFlowDestroy", Apol_InformationFlowDestroy, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_RelabelAnalysis", Apol_RelabelAnalysis, NULL, NULL);
         /*
-	Tcl_CreateCommand(interp, "apol_TransitiveFlowAnalysis", Apol_TransitiveFlowAnalysis, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_TransitiveFindPathsStart", Apol_TransitiveFindPathsStart, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_TransitiveFindPathsNext", Apol_TransitiveFindPathsNext, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_TransitiveFindPathsGetResults", Apol_TransitiveFindPathsGetResults, NULL, NULL);
@@ -867,179 +1041,6 @@ int apol_tcl_analysis_init(Tcl_Interp *interp)
 	Tcl_CreateCommand(interp, "apol_TypesRelationshipAnalysis", Apol_TypesRelationshipAnalysis, NULL, NULL);
         */
         return TCL_OK;
-}
-
-/******************** attic ********************/
-
-#if 0
-
-
-
-static int append_direct_edge_to_results(policy_t *policy, iflow_query_t* q,
-					 iflow_t *answer, Tcl_Interp *interp)
-{
-	int j, k, num_obj_classes = 0;
-	char *rule, tbuf[BUF_SZ];
-
-	/* Append number of object classes */
-	for (j = 0; j < answer->num_obj_classes; j++)
-		if (answer->obj_classes[j].num_rules)
-			num_obj_classes++;
-	sprintf(tbuf, "%d", num_obj_classes);
-	Tcl_AppendElement(interp, tbuf);
-
-	for (j = 0; j < answer->num_obj_classes; j++) {
-		/* if this is 0 then the obj_class is not defined for a given edge */
-		if (answer->obj_classes[j].num_rules) {
-			/* Indicate this is an object class we care about */
-			Tcl_AppendElement(interp, "1");
-			/* Append the object class name to the TCL list */
-			sprintf(tbuf, "%s", policy->obj_classes[j].name);
-			Tcl_AppendElement(interp, tbuf);
-
-			/* Append the number of rules */
-			sprintf(tbuf, "%d", answer->obj_classes[j].num_rules);
-			Tcl_AppendElement(interp, tbuf);
-
-			/* Append the allow rule(s) to the TCL list */
-			for (k = 0; k < answer->obj_classes[j].num_rules; k++) {
-				rule = re_render_av_rule(TRUE, answer->obj_classes[j].rules[k], FALSE, policy);
-				if(rule == NULL) {
-					Tcl_ResetResult(interp);
-					Tcl_AppendResult(interp, "analysis error (rendering allow rule)",  (char *) NULL);
-					return -1;
-				}
-				Tcl_AppendElement(interp, rule);
-				free(rule);
-				/* Append a boolean value indicating whether this rule is enabled
-				 * for conditional policy support */
-				sprintf(tbuf, "%d", policy->av_access[answer->obj_classes[j].rules[k]].enabled);
-				Tcl_AppendElement(interp, tbuf);
-			}
-		}
-	}
-	return 0;
-}
-
-static int append_transitive_iflow_rules_to_results(policy_t *policy, iflow_transitive_t* answers, iflow_path_t *cur, int path_idx, int obj_idx, Tcl_Interp *interp)
-{
-	char tbuf[BUF_SZ], *rule;
-	int l;
-
-	/* Append the number of rules */
-	sprintf(tbuf, "%d", cur->iflows[path_idx].obj_classes[obj_idx].num_rules);
-	Tcl_AppendElement(interp, tbuf);
-
-	/* Append the allow rule(s) to the TCL list */
-	for (l = 0; l < cur->iflows[path_idx].obj_classes[obj_idx].num_rules; l++) {
-		rule = re_render_av_rule(TRUE, cur->iflows[path_idx].obj_classes[obj_idx].rules[l], FALSE, policy);
-		if(rule == NULL) {
-			Tcl_ResetResult(interp);
-			Tcl_AppendResult(interp, "analysis error (rendering allow rule)",  (char *) NULL);
-			return -1;
-		}
-		Tcl_AppendElement(interp, rule);
-		free(rule);
-		/* Append a boolean value indicating whether this rule is enabled
-		 * for conditional policy support */
-		sprintf(tbuf, "%d", policy->av_access[cur->iflows[path_idx].obj_classes[obj_idx].rules[l]].enabled);
-		Tcl_AppendElement(interp, tbuf);
-	}
-	return 0;
-}
-
-static int append_transitive_iflow_objects_to_results(policy_t *policy, iflow_transitive_t *answers, iflow_path_t *cur, Tcl_Interp *interp, int j)
-{
-	char tbuf[BUF_SZ];
-	int num_obj_classes, k, rt;
-
-	/* Append the number of object classes */
-	num_obj_classes = 0;
-	for (k = 0; k < cur->iflows[j].num_obj_classes; k++)
-		if (cur->iflows[j].obj_classes[k].num_rules)
-			num_obj_classes++;
-	sprintf(tbuf, "%d", num_obj_classes);
-	Tcl_AppendElement(interp, tbuf);
-
-	for (k = 0; k < cur->iflows[j].num_obj_classes; k++) {
-		/* if 0, the obj_class is not defined for a given edge */
-		if (cur->iflows[j].obj_classes[k].num_rules) {
-			/* Append the object class name */
-			sprintf(tbuf, "%s", policy->obj_classes[k].name);
-			Tcl_AppendElement(interp, tbuf);
-
-			/* Append the rules for each object */
-			rt = append_transitive_iflow_rules_to_results(policy, answers, cur, j, k, interp);
-			if (rt != 0) {
-				return -1;
-			}
-		}
-	}
-	return 0;
-}
-
-static int append_transitive_iflows_to_results(policy_t *policy, iflow_transitive_t* answers, iflow_path_t *cur, Tcl_Interp *interp)
-{
-	char tbuf[BUF_SZ];
-	int j, rt;
-
-	/* Append the number of flows in path */
-	sprintf(tbuf, "%d", cur->num_iflows);
-	Tcl_AppendElement(interp, tbuf);
-	for (j = 0; j < cur->num_iflows; j++) {
-		/* Append the start type */
-		sprintf(tbuf, "%s", policy->types[cur->iflows[j].start_type].name);
-		Tcl_AppendElement(interp, tbuf);
-		/* Append the end type */
-		sprintf(tbuf, "%s", policy->types[cur->iflows[j].end_type].name);
-		Tcl_AppendElement(interp, tbuf);
-		/* Append the objects */
-		rt = append_transitive_iflow_objects_to_results(policy, answers, cur, interp, j);
-		if(rt != 0)
-			return -1;
-	}
-	return 0;
-}
-
-
-static int append_transitive_iflow_paths_to_results(policy_t *policy, iflow_transitive_t* answers, Tcl_Interp *interp, int end_type)
-{
-	char tbuf[BUF_SZ];
-	int rt;
-	iflow_path_t *cur;
-
-	/* Append the number of paths for this type */
-	sprintf(tbuf, "%d", answers->num_paths[end_type]);
-	Tcl_AppendElement(interp, tbuf);
-	for (cur = answers->paths[end_type]; cur != NULL; cur = cur->next) {
-		/* Append the iflows for each path */
-		rt = append_transitive_iflows_to_results(policy, answers, cur, interp);
-		if (rt != 0) {
-			return -1;
-		}
-	}
-	return 0;
-}
-
-static int append_transitive_iflow_results(policy_t *policy, iflow_transitive_t *answers, Tcl_Interp *interp)
-{
-	char tbuf[BUF_SZ];
-	int i, rt;
-
-	/* Append the number of types */
-	sprintf(tbuf, "%d", answers->num_end_types);
-	Tcl_AppendElement(interp, tbuf);
-
-	for (i = 0; i < answers->num_end_types; i++) {
-		/* Append the type */
-		sprintf(tbuf, "%s", policy->types[answers->end_types[i]].name);
-		Tcl_AppendElement(interp, tbuf);
-		/* Append the paths for the type */
-		rt = append_transitive_iflow_paths_to_results(policy, answers, interp, i);
-		if (rt != 0)
-			return -1;
-	}
-	return 0;
 }
 
 /******************** transitive information flow ********************/
