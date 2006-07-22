@@ -1043,7 +1043,7 @@ int apol_tcl_analysis_init(Tcl_Interp *interp)
         return TCL_OK;
 }
 
-/******************** transitive information flow ********************/
+#if 0
 
 /*
  * argv[1] - domain type used to start the analysis
