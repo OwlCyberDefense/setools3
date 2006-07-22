@@ -41,7 +41,7 @@ typedef void(apol_vector_free_func)(void *elem);
  *  failure.  If the call fails, errno will be set.  The caller is
  *  responsible for calling apol_vector_destroy() to free memory used.
  */
-apol_vector_t *apol_vector_create(void);
+extern apol_vector_t *apol_vector_create(void);
 
 /**
  *  Allocate and initialize an empty vector with starting capacity of
@@ -54,7 +54,7 @@ apol_vector_t *apol_vector_create(void);
  *  failure.  If the call fails, errno will be set.  The caller is
  *  responsible for calling apol_vector_destroy() to free memory used.
  */
-apol_vector_t *apol_vector_create_with_capacity(size_t cap);
+extern apol_vector_t *apol_vector_create_with_capacity(size_t cap);
 
 /**
  *  Allocate and return a vector that has been initialized with the
@@ -71,7 +71,7 @@ apol_vector_t *apol_vector_create_with_capacity(size_t cap);
  *  failure.  If the call fails, errno will be set.  The caller is
  *  responsible for calling apol_vector_destroy() to free memory used.
  */
-apol_vector_t *apol_vector_create_from_iter(qpol_iterator_t *iter);
+extern apol_vector_t *apol_vector_create_from_iter(qpol_iterator_t *iter);
 
 /**
  *  Allocate and return a vector that has been initialized with the
@@ -86,7 +86,7 @@ apol_vector_t *apol_vector_create_from_iter(qpol_iterator_t *iter);
  *  failure.  If the call fails, errno will be set.  The caller is
  *  responsible for calling apol_vector_destroy() to free memory used.
  */
-apol_vector_t *apol_vector_create_from_vector(const apol_vector_t *v);
+extern apol_vector_t *apol_vector_create_from_vector(const apol_vector_t *v);
 
 /**
  *  Free a vector and any memory used by it.
@@ -96,7 +96,7 @@ apol_vector_t *apol_vector_create_from_vector(const apol_vector_t *v);
  *  @param fr Function to call to free the memory used by an element.
  *  If NULL, the elements will not be freed.
  */
-void apol_vector_destroy(apol_vector_t **v, apol_vector_free_func *fr);
+extern void apol_vector_destroy(apol_vector_t **v, apol_vector_free_func *fr);
 
 /**
  *  Get the number of elements in the vector.
@@ -107,7 +107,7 @@ void apol_vector_destroy(apol_vector_t **v, apol_vector_free_func *fr);
  *  @return The number of elements in the vector; if v is NULL,
  *  returns 0.
  */
-size_t apol_vector_get_size(const apol_vector_t *v);
+extern size_t apol_vector_get_size(const apol_vector_t *v);
 
 /**
  *  Get the current capacity of the vector.
@@ -119,7 +119,7 @@ size_t apol_vector_get_size(const apol_vector_t *v);
  *  equal to the number of elements in the vector.  If v is NULL,
  *  returns 0.
  */
-size_t apol_vector_get_capacity(const apol_vector_t *v);
+extern size_t apol_vector_get_capacity(const apol_vector_t *v);
 
 /**
  *  Get the element at the requested index.
@@ -130,7 +130,7 @@ size_t apol_vector_get_capacity(const apol_vector_t *v);
  *  @return A pointer to the element requested.  If v is NULL or idx is
  *  out of range, returns NULL and sets errno.
  */
-void *apol_vector_get_element(const apol_vector_t *v, size_t idx);
+extern void *apol_vector_get_element(const apol_vector_t *v, size_t idx);
 
 /**
  *  Find an element within a vector, returning its index within the vector.
@@ -151,8 +151,8 @@ void *apol_vector_get_element(const apol_vector_t *v, size_t idx);
  *
  *  @return 0 if element was found, or < 0 if not found.
  */
-int apol_vector_get_index(const apol_vector_t *v, void *elem,
-                          apol_vector_comp_func *cmp, void *data, size_t *i);
+extern int apol_vector_get_index(const apol_vector_t *v, void *elem,
+				 apol_vector_comp_func *cmp, void *data, size_t *i);
 
 /**
  *  Add an element to the end of a vector.
@@ -165,18 +165,7 @@ int apol_vector_get_index(const apol_vector_t *v, void *elem,
  *  @return 0 on success and < 0 on failure.  If the call fails, errno
  *  will be set and v will be unchanged.
  */
-int apol_vector_append(apol_vector_t *v, void *elem);
-
-/**
- *  Concatenate two vectors.  Appends all elements of src to dest.
- *  <b>NOTE: No type checking is done for elements in the two
- *  vectors.</b> Elements are not deep copies.
- *  @param dest vector to which to append elements.
- *  @param src vector containing elements to append.
- *  @return 0 on success and < 0 on failure; if the call fails,
- *  errno will be set and dest's contents will be reverted.
- */
-int apol_vector_cat(apol_vector_t *dest, const apol_vector_t *src);
+extern int apol_vector_append(apol_vector_t *v, void *elem);
 
 /**
  *  Add an element to the end of a vector unless that element is equal
@@ -189,7 +178,8 @@ int apol_vector_cat(apol_vector_t *dest, const apol_vector_t *src);
  *  less than, equal to, or greater than 0 if the first argument is
  *  less than, equal to, or greater than the second respectively.  For
  *  use in this function the return value is only checked for 0 or
- *  non-zero return.
+ *  non-zero return.  If this is NULL then do pointer address
+ *  comparison.
  *  @param data Arbitrary data to pass as the comparison function's
  *  third paramater.
  *
@@ -197,8 +187,46 @@ int apol_vector_cat(apol_vector_t *dest, const apol_vector_t *src);
  *  already exists in the vector.  If the call fails or the element
  *  already exists errno will be set.
  */
-int apol_vector_append_unique(apol_vector_t *v, void *elem,
-                              apol_vector_comp_func *cmp, void *data);
+extern int apol_vector_append_unique(apol_vector_t *v, void *elem,
+				     apol_vector_comp_func *cmp, void *data);
+
+/**
+ *  Concatenate two vectors.  Appends all elements of src to dest.
+ *  <b>NOTE: No type checking is done for elements in the two
+ *  vectors.</b> Elements are not deep copies.
+ *  @param dest vector to which to append elements.
+ *  @param src vector containing elements to append.
+ *  @return 0 on success and < 0 on failure; if the call fails,
+ *  errno will be set and dest's contents will be reverted.
+ */
+extern int apol_vector_cat(apol_vector_t *dest, const apol_vector_t *src);
+
+/**
+ *  Compares two vectors, determining if one is different than
+ *  another.  This uses a callback to compare elements across the
+ *  vectors.
+ *
+ *  @param a First vector to compare.
+ *  @param b Second vector to compare.
+ *  @param cmp A comparison call back for the type of element stored
+ *  in the vector.  The expected return value from this function is
+ *  less than, equal to, or greater than 0 if the first argument is
+ *  less than, equal to, or greater than the second respectively.  If
+ *  this is NULL then do pointer address comparison.
+ *  @param data Arbitrary data to pass as the comparison function's
+ *  third paramater.
+ *  @param i Reference to where to store the index of the first
+ *  detected difference.  The value is undefined if vectors are
+ *  equivalent (return value of 0).  Note that the index may be
+ *  greater than a vector's size if the vectors are of unequal
+ *  lengths.
+ *
+ *  @return < 0 if vector A is less than B, > 0 if A is greater than
+ *  B, or 0 if equivalent.
+ */
+extern int apol_vector_compare(apol_vector_t *a, apol_vector_t *b,
+			       apol_vector_comp_func *cmp, void *data,
+			       size_t *i);
 
 /**
  *  Sort the vector's elements within place, using an unstable sorting
@@ -214,7 +242,8 @@ int apol_vector_append_unique(apol_vector_t *v, void *elem,
  *  @param data Arbitrary data to pass as the comparison function's
  *  third paramater.
  */
-void apol_vector_sort(apol_vector_t *v, apol_vector_comp_func *cmp, void *data);
+extern void apol_vector_sort(apol_vector_t *v,
+			     apol_vector_comp_func *cmp, void *data);
 
 /**
  *  Sort the vector's elements within place (see apol_vector_sort()),
@@ -232,6 +261,8 @@ void apol_vector_sort(apol_vector_t *v, apol_vector_comp_func *cmp, void *data);
  *  @param fr Function to call to free the memory used by a non-unique
  *  element.  If NULL, those excess elements will not be freed.
  */
-void apol_vector_sort_uniquify(apol_vector_t *v, apol_vector_comp_func *cmp, void *data, apol_vector_free_func *fr);
+extern void apol_vector_sort_uniquify(apol_vector_t *v,
+				      apol_vector_comp_func *cmp, void *data,
+				      apol_vector_free_func *fr);
 
 #endif /* APOL_VECTOR_H */

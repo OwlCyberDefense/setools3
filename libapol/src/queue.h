@@ -30,7 +30,7 @@ typedef struct apol_queue {
  *
  * @return A newly allocated queue, or NULL upon error.
  */
-extern apol_queue_t *apol_queue_create(void);
+apol_queue_t *apol_queue_create(void);
 
 /**
  * Adds an element to the end of a queue.
@@ -40,7 +40,7 @@ extern apol_queue_t *apol_queue_create(void);
  *
  * @return 0 on success, < 0 on error.
  */
-extern int apol_queue_insert(apol_queue_t *q, void *element);
+int apol_queue_insert(apol_queue_t *q, void *element);
 
 /**
  * Adds an element to the beginning of a queue.
@@ -50,7 +50,7 @@ extern int apol_queue_insert(apol_queue_t *q, void *element);
  *
  * @return 0 on success, < 0 on error.
  */
-extern int apol_queue_push(apol_queue_t *q, void *element);
+int apol_queue_push(apol_queue_t *q, void *element);
 
 /**
  * Remove the first element from a queue and return the data; the
@@ -59,7 +59,7 @@ extern int apol_queue_push(apol_queue_t *q, void *element);
  *
  * @return First element of a queue, or NULL if nothing is there.
  */
-extern void *apol_queue_remove(apol_queue_t *q);
+void *apol_queue_remove(apol_queue_t *q);
 
 /**
  * Return the data within the first element, but do not remove it from
@@ -67,7 +67,7 @@ extern void *apol_queue_remove(apol_queue_t *q);
  *
  * @return First element of a queue, or NULL if nothing is there.
  */
-extern void *apol_queue_head(apol_queue_t *q);
+void *apol_queue_head(apol_queue_t *q);
 
 /**
  * Destroy the referenced queue, but <i>do not</i> attempt to free the
@@ -77,7 +77,7 @@ extern void *apol_queue_head(apol_queue_t *q);
  *
  * @param Reference to a queue to destroy.
  */
-extern void apol_queue_destroy(apol_queue_t **q);
+void apol_queue_destroy(apol_queue_t **q);
 
 #endif
 

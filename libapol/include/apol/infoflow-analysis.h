@@ -52,6 +52,7 @@
 typedef struct apol_infoflow_graph apol_infoflow_graph_t;
 typedef struct apol_infoflow_analysis apol_infoflow_analysis_t;
 typedef struct apol_infoflow_result apol_infoflow_result_t;
+typedef struct apol_infoflow_step apol_infoflow_step_t;
 
 /**
  * Deallocate all space associated with a particular information flow
@@ -149,9 +150,10 @@ extern int apol_infoflow_analysis_set_mode(apol_policy_t *p,
 
 /**
  * Set an information flow analysis to search in a specific direction.
- * This must be one of the values APOL_INFOFLOW_IN, APOL_INFOFLOW_OUT,
- * APOL_INFOFLOW_BOTH, or APOL_INFOFLOW_EITHER.  This function must be
- * called prior to running the analysis.
+ * For direct infoflow analysis this must be one of the values
+ * APOL_INFOFLOW_IN, APOL_INFOFLOW_OUT, APOL_INFOFLOW_BOTH, or
+ * APOL_INFOFLOW_EITHER; trans infoflow only permits the firest two.
+ * This function must be called prior to running the analysis.
  *
  * @param p Policy handler, to report errors.
  * @param ia Infoflow analysis to set.
@@ -195,6 +197,23 @@ extern int apol_infoflow_analysis_append_class_perm(apol_policy_t *p,
 						    apol_infoflow_analysis_t *ia,
 						    const char *class_name,
 						    const char *perm_name);
+
+/**
+ * Set an information flow analysis to return only rules with at least
+ * one permission whose weight is greater than or equal to the given
+ * minimum.  Permission weights are retrieved from the currently
+ * loaded permission map.  If the given minimum exceeds
+ * APOL_PERMMAP_MAX_WEIGHT it will be clamped to that value.
+ *
+ * @param policy Policy handler, to report errors.
+ * @param ia Infoflow analysis to set.
+ * @param min_weight Minimum weight for rules, or negative to accept
+ * all rules.
+ * @return Always 0.
+ */
+extern int apol_infoflow_analysis_set_min_weight(apol_policy_t *p,
+						 apol_infoflow_analysis_t *ia,
+						 int min_weight);
 
 /**
  * Set an information flow analysis to return only types matching a
@@ -251,90 +270,49 @@ extern qpol_type_t *apol_infoflow_result_get_start_type(apol_infoflow_result_t *
 extern qpol_type_t *apol_infoflow_result_get_end_type(apol_infoflow_result_t *result);
 
 /**
- * Return the vector of access rules for a particular information flow
- * result.  This is a vector of qpol_avrule_t pointers.  The caller
+ * Return the vector of infoflow steps for a particular information
+ * flow result.  This is a vector of apol_infoflow_step_t pointers.
+ * The caller <b>should not</b> call apol_vector_destroy() upon the
+ * returned vector.  Note that for a direct infoflow analysis this
+ * vector will consist of exactly one step; for transitive analysis
+ * the vector will have multiple steps.
+ *
+ * @param result Infoflow result from which to get steps.
+ *
+ * @return Pointer to a vector of steps found between the result's
+ * start and end types.
+ */
+extern apol_vector_t *apol_infoflow_result_get_steps(apol_infoflow_result_t *result);
+
+/**
+ * Return the starting type for an information flow step.  The caller
+ * should not free the returned pointer.
+ *
+ * @param step Infoflow step from which to get start type.
+ * @return Pointer to the start type for this infoflow step.
+ */
+extern qpol_type_t *apol_infoflow_step_get_start_type(apol_infoflow_step_t *step);
+
+/**
+ * Return the ending type for an information flow step.  The caller
+ * should not free the returned pointer.
+ *
+ * @param step Infoflow step from which to get end type.
+ * @return Pointer to the start type for this infoflow step.
+ */
+extern qpol_type_t *apol_infoflow_step_get_end_type(apol_infoflow_step_t *step);
+
+/**
+ * Return the vector of access rules for a particular information
+ * step.  This is a vector of qpol_avrule_t pointers.  The caller
  * <b>should not</b> call apol_vector_destroy() upon the returned
  * vector.
  *
- * @param result Infoflow result from which to get rules.
+ * @param step Infoflow flow step from which to get rules.
  *
  * @return Pointer to a vector of rules relative to the policy originally
  * used to generate the results.
  */
-extern apol_vector_t *apol_infoflow_result_get_rules(apol_infoflow_result_t *result);
+extern apol_vector_t *apol_infoflow_step_get_rules(apol_infoflow_step_t *step);
 
-#endif
-
-/*
- * Author: kmacmillan@tresys.com
- * Modified by: mayerf@tresys.com (Apr 2004) - separated information
- *   flow from main analysis.c file, and added noflow/onlyflow batch
- *   capabilitiy.
- */
-
-/* infoflow.h
- *
- * Information Flow analysis routines for libapol
- */
-#if 0
-#ifndef _APOLICY_INFOFLOW_H_
-#define _APOLICY_INFOFLOW_H_
-
-#include "policy.h"
-#include "old-policy-query.h"
-#include "perm-map.h"
-#include "util.h"
-
-/*
- * iflow_obj_class is used to represent an object class in the iflow_t (see below).
- */
-typedef struct iflow_obj_class {
-	int num_rules;
-	int *rules;
-} iflow_obj_class_t;
-
-/*
- * iflow represents an information flow from a
- * start type to an end type in terms of the
- * object classes and rules in the obj_classes array.
- */
-typedef struct iflow {
-	int start_type;
-	int end_type;
-	int direction;
-	int num_obj_classes;
-	iflow_obj_class_t *obj_classes;
-} iflow_t;
-
-typedef struct iflow_path {
-	int start_type;
-	int end_type;
-	int num_iflows;
-	int length;
-	iflow_t *iflows;
-	struct iflow_path *next;
-} iflow_path_t;
-
-typedef struct iflow_transitive {
-	int start_type;
-	int num_end_types;
-	int *end_types;
-	iflow_path_t **paths; /* length is num_end_types */
-	int *num_paths; /* length is num_end_types */
-} iflow_transitive_t;
-
-/* iflow_query_t */
-int iflow_query_add_obj_class_perm(iflow_query_t *q, int obj_class, int perm);
-
-void iflow_destroy(iflow_t *flow);
-void iflow_transitive_destroy(iflow_transitive_t *flow);
-
-iflow_transitive_t *iflow_transitive_flows(policy_t *policy, iflow_query_t *q);
-
-void *iflow_find_paths_start(policy_t *policy, iflow_query_t *q);
-int iflow_find_paths_next(void *state);
-iflow_transitive_t *iflow_find_paths_end(void *state);
-void iflow_find_paths_abort(void *state);
-
-#endif /*_APOLICY_INFOFLOW_H_*/
 #endif

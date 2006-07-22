@@ -10,7 +10,7 @@
  */
 
 #include <stdlib.h>
-#include <apol/queue.h>
+#include "queue.h"
 
 apol_queue_t *
 apol_queue_create(void)
