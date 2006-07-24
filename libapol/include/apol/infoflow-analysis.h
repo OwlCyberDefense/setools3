@@ -270,6 +270,17 @@ extern qpol_type_t *apol_infoflow_result_get_start_type(apol_infoflow_result_t *
 extern qpol_type_t *apol_infoflow_result_get_end_type(apol_infoflow_result_t *result);
 
 /**
+ * Return the length of an information flow result.  This represents
+ * how easily information flows from the start to end type, where
+ * lower numbers are easier than higher numbers.  This is dependent
+ * upon the weights assigned in the currently loaded permission map.
+ *
+ * @param result Infoflow result from which to get length.
+ * @return Length of result.
+ */
+extern unsigned int apol_infoflow_result_get_length(apol_infoflow_result_t *result);
+
+/**
  * Return the vector of infoflow steps for a particular information
  * flow result.  This is a vector of apol_infoflow_step_t pointers.
  * The caller <b>should not</b> call apol_vector_destroy() upon the
@@ -301,6 +312,20 @@ extern qpol_type_t *apol_infoflow_step_get_start_type(apol_infoflow_step_t *step
  * @return Pointer to the start type for this infoflow step.
  */
 extern qpol_type_t *apol_infoflow_step_get_end_type(apol_infoflow_step_t *step);
+
+/**
+ * Return the weight of an information flow step.  For a direct
+ * transitive infoflow analysis the weight is zero.  For a transitive
+ * analysis this is an integer value that quantatizes the amount of
+ * information that could flow between the start and end types; it is
+ * based upon the currently opened permission map.  It will be a value
+ * between APOL_PERMMAP_MIN_WEIGHT and APOL_PERMMAP_MAX_WEIGHT,
+ * inclusive.
+ *
+ * @param step Infoflow step from which to get weight.
+ * @return Weight of step.
+ */
+extern int apol_infoflow_step_get_weight(apol_infoflow_step_t *step);
 
 /**
  * Return the vector of access rules for a particular information

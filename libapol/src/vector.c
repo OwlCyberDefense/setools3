@@ -188,7 +188,7 @@ static int apol_vector_grow(apol_vector_t *v)
 int apol_vector_get_index(const apol_vector_t *v, void *elem,
 			  apol_vector_comp_func *cmp, void *data, size_t *i)
 {
-	if (!v || !elem || !i) {
+	if (!v || !i) {
 		errno = EINVAL;
 		return -1;
 	}

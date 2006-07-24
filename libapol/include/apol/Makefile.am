@@ -18,7 +18,6 @@ apol_HEADERS = \
 	poldiff.h \
 	policy.h \
 	policy-query.h \
-	queue.h \
 	rangetrans-query.h \
 	rbacrule-query.h \
 	relabel-analysis.h \
