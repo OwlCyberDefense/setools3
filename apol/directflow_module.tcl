@@ -107,7 +107,7 @@ proc Apol_Analysis_directflow::create {options_frame} {
         -command [list Apol_Analysis_directflow::excludeAll $classes_lb]
     pack $classes_bb -pady 4
     set widgets(regexp) [Apol_Widget::makeRegexpEntry [$filter_tf getframe].end]
-    $widgets(regexp).cb configure -text "Filter end types using regular expression"
+    $widgets(regexp).cb configure -text "Filter result types using regular expression"
     pack $widgets(regexp) -side left -anchor nw -padx 8
 }
 
@@ -472,7 +472,7 @@ proc Apol_Analysis_directflow::createResultsNodes {tree parent_node results} {
     set all_targets {}
     foreach r $results {
         foreach {flow_dir source target rules} $r {break}
-        foreach t [expandTypeSet $target] {
+        foreach t [apol_ExpandType $target] {
             lappend all_targets $t
             foreach r $rules {
                 set class [apol_RenderAVRuleClass $r]
@@ -498,14 +498,6 @@ proc Apol_Analysis_directflow::createResultsNodes {tree parent_node results} {
         set data [list $flow_dir $rules]
         $tree insert end $parent_node x\#auto -text $t -drawcross allways \
             -data [list 0 $data]
-    }
-}
-
-proc Apol_Analysis_directflow::expandTypeSet {type} {
-    if {[set exp_type_set [lindex [apol_GetAttribs $type] 0 1]] != {}} {
-        lsort -unique $exp_type_set
-    } else {
-        set type
     }
 }
 
