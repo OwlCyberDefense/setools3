@@ -38,7 +38,7 @@ libapol_a_SOURCES = \
 	user-query.c \
 	util.c \
 	vector.c \
-	policy-query-internal.h
+	policy-query-internal.h queue.h
 
 libapol_so_OBJS = $(patsubst %.c,%.o,$(filter %.c,$(libapol_a_SOURCES)))
 LIBAPOL_SONAME = @libapol_soname@

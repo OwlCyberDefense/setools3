@@ -35,8 +35,8 @@
  * of an allow rule or the target: these defines are used to
  * represent which.
  */
-#define APOL_INFOFLOW_NODE_SOURCE 0x0
-#define APOL_INFOFLOW_NODE_TARGET 0x1
+#define APOL_INFOFLOW_NODE_SOURCE 0x1
+#define APOL_INFOFLOW_NODE_TARGET 0x2
 
 /*
  * These defines are used to color nodes in the graph algorithms.
@@ -127,6 +127,7 @@ struct apol_infoflow_step {
 	qpol_type_t *start_type, *end_type;
 	/** vector of qpol_avrule_t */
 	apol_vector_t *rules;
+	int weight;
 };
 
 static void apol_infoflow_step_free(void *step)
@@ -265,10 +266,10 @@ static int apol_infoflow_edge_compare(const void *a, const void *b __attribute__
 {
 	apol_infoflow_edge_t *edge = (apol_infoflow_edge_t *) a;
 	struct apol_infoflow_edge_key *key = (struct apol_infoflow_edge_key *) data;
-	if (key->start_node != NULL && edge->start_node == key->start_node) {
+	if (key->start_node != NULL && edge->start_node != key->start_node) {
 		return -1;
 	}
-	if (key->end_node != NULL && edge->end_node == key->end_node) {
+	if (key->end_node != NULL && edge->end_node != key->end_node) {
 		return -1;
 	}
 	return 0;
@@ -727,11 +728,12 @@ static apol_infoflow_result_t *apol_infoflow_direct_get_result(apol_policy_t *p,
 	}
 	r->start_type = start_type;
 	r->end_type = end_type;
+	r->length = INT_MAX;
 	return r;
 }
 
 /**
- * Append the rules on an edge to direct infoflow result.
+ * Append the rules on an edge to a direct infoflow result.
  *
  * @param p Policy containing rules.
  * @param edge Infoflow edge containing rules.
@@ -756,6 +758,7 @@ static int apol_infoflow_direct_define(apol_policy_t *p,
 		}
 		step->start_type = result->start_type;
 		step->end_type = result->end_type;
+		step->weight = 0;
 	}
 	else {
 		step = (apol_infoflow_step_t *) apol_vector_get_element(result->steps, 0);
@@ -765,6 +768,9 @@ static int apol_infoflow_direct_define(apol_policy_t *p,
 		return -1;
 	}
 	result->direction |= direction;
+	if (edge->length < result->length) {
+		result->length = edge->length;
+	}
 	return 0;
 }
 
@@ -961,34 +967,27 @@ static int apol_infoflow_analysis_direct(apol_policy_t *p,
 
 /**
  * Prepare an infoflow graph for a transitive analysis by coloring its
- * nodes and setting its parent and distance.  For nodes whose type is
- * an element of v, color those nodes red; for all others color them
- * white.
+ * nodes and setting its parent and distance.  For the start node
+ * color it red; for all others color them white.
  *
  * @param p Policy handler, for reporting errors.
  * @param g Infoflow graph to initialize.
- * @param v Vector of qpol_type_t pointers, from which to begin
- * transitive infoflow analysis.
+ * @param start Node from which to begin analysis.
  * @param q Queue of apol_infoflow_node_t pointers to which search.
  *
  * @return 0 on success, < 0 on error.
  */
 static int apol_infoflow_graph_trans_init(apol_policy_t *p,
 					  apol_infoflow_graph_t *g,
-					  apol_vector_t *v,
+					  apol_infoflow_node_t *start,
 					  apol_queue_t *q)
 {
-	size_t i, j;
+	size_t i;
 	apol_infoflow_node_t *node;
 	for (i = 0; i < apol_vector_get_size(g->nodes); i++) {
 		node = (apol_infoflow_node_t *) apol_vector_get_element(g->nodes, i);
 		node->parent = NULL;
-		if (apol_vector_get_index(v, node, NULL, NULL, &j) < 0) {
-			/* not a member of the start list */
-			node->color = APOL_INFOFLOW_COLOR_WHITE;
-			node->distance = INT_MAX;
-		}
-		else {
+		if (node == start) {
 			node->color = APOL_INFOFLOW_COLOR_RED;
 			node->distance = 0;
 			if (apol_queue_insert(q, node) < 0) {
@@ -996,20 +995,23 @@ static int apol_infoflow_graph_trans_init(apol_policy_t *p,
 				return -1;
 			}
 		}
+		else {
+			node->color = APOL_INFOFLOW_COLOR_WHITE;
+			node->distance = INT_MAX;
+		}
 	}
 	return 0;
 }
 
 /**
  * Given a colored infoflow graph from apol_infoflow_analysis_trans(),
- * find the shortest path from the end node to any of the start nodes.
+ * find the shortest path from the end node to the start node.
  * Allocate and return a vector of apol_infoflow_node_t that lists the
  * nodes from the end to start.
  *
  * @param p Policy from which infoflow graph was generated.
  * @param g Infoflow graph that has been colored.
- * @param start_nodes Vector of apol_infoflow_node_t that contain
- * acceptable start nodes.
+ * @param start_node Starting node for the path
  * @param end_node Ending node to which to find a path.
  * @param path Reference to a vector that will be allocated and filled
  * with apol_infoflow_node_t pointers.  The path will be in reverse
@@ -1020,13 +1022,12 @@ static int apol_infoflow_graph_trans_init(apol_policy_t *p,
  */
 static int apol_infoflow_trans_path(apol_policy_t *p,
 				    apol_infoflow_graph_t *g,
-				    apol_vector_t *start_nodes,
+				    apol_infoflow_node_t *start_node,
 				    apol_infoflow_node_t *end_node,
 				    apol_vector_t **path)
 {
 	int retval = -1;
 	apol_infoflow_node_t *next_node = end_node;
-	size_t j;
 	if ((*path = apol_vector_create()) == NULL) {
 		ERR(p, "Out of memory!");
 		goto cleanup;
@@ -1036,11 +1037,11 @@ static int apol_infoflow_trans_path(apol_policy_t *p,
 			ERR(p, "Out of memory!");
 			goto cleanup;
 		}
-		if (apol_vector_get_index(start_nodes, next_node, NULL, NULL, &j) == 0) {
+		if (next_node == start_node) {
 			break;
 		}
 		if (apol_vector_get_size(*path) >= apol_vector_get_size(g->nodes)) {
-			ERR(p, "Infinitie loop in trans_path.");
+			ERR(p, "Infinite loop in trans_path.");
 			goto cleanup;
 		}
 		next_node = next_node->parent;
@@ -1101,9 +1102,9 @@ static apol_infoflow_edge_t *apol_infoflow_trans_find_edge(apol_policy_t *p,
 
 /**
  * Given a path of nodes, defind a new infoflow result that represents
- * that path.  The path is a list of nodes in reverse order (i.e.,
- * from end node to start node) and must have at least 2 elements
- * within.
+ * that path.  The given path is a list of nodes that must be in
+ * reverse order (i.e., from end node to start node) and must have at
+ * least 2 elements within.
  *
  * @param p Policy handler, for reporting errors.
  * @param g Graph from which the node path originated.
@@ -1154,6 +1155,7 @@ static int apol_infoflow_trans_define(apol_policy_t *p,
 		}
 		step->start_type = edge->start_node->type;
 		step->end_type = edge->end_node->type;
+		step->weight = APOL_PERMMAP_MAX_WEIGHT - edge->length + 1;
 	}
 	(*result)->length = length;
 	retval = 0;
@@ -1255,7 +1257,7 @@ static int apol_infoflow_trans_append(apol_policy_t *p,
 
 /**
  * Perform a transitive information flow analysis upon the given
- * infoflow graph.
+ * infoflow graph starting from some particular node within the graph.
  *
  * This is a label correcting shortest path algorithm; see Bertsekas,
  * D. P., "A Simple and Fast Label Correcting Algorithm for Shortest
@@ -1278,38 +1280,30 @@ static int apol_infoflow_trans_append(apol_policy_t *p,
  *
  * @param p Policy to analyze.
  * @param g Information flow graph to analyze.
- * @param start_type Type from which to begin search.
+ * @param start Node from which to begin search.
  * @param results Non-NULL vector to which append infoflow results.
  * The caller is responsible for calling apol_infoflow_results_free()
  * upon each element afterwards.
  *
  * @return 0 on success, < 0 on error.
  */
-static int apol_infoflow_analysis_trans(apol_policy_t *p,
-					apol_infoflow_graph_t *g,
-					const char *start_type,
-					apol_vector_t *results)
+static int apol_infoflow_analysis_trans_shortest_path(apol_policy_t *p,
+						      apol_infoflow_graph_t *g,
+						      apol_infoflow_node_t *start,
+						      apol_vector_t *results)
 {
-	apol_vector_t *start_nodes = NULL, *edge_list, *path = NULL;
+	apol_vector_t *edge_list, *path = NULL;
 	apol_queue_t *queue = NULL;
 	apol_infoflow_node_t *node, *cur_node;
 	apol_infoflow_edge_t *edge;
-	size_t i, j;
+	size_t i;
 	int retval = -1, compval;
 
-	if (g->direction != APOL_INFOFLOW_IN && g->direction != APOL_INFOFLOW_OUT) {
-		ERR(p, strerror(EINVAL));
-		goto cleanup;
-	}
-	if ((start_nodes = apol_vector_create()) == NULL ||
-	    (queue = apol_queue_create()) == NULL) {
+	if ((queue = apol_queue_create()) == NULL) {
 		ERR(p, "Out of memory!");
 		goto cleanup;
 	}
-	if (apol_infoflow_graph_get_nodes_for_type(p, g, start_type, start_nodes) < 0) {
-		goto cleanup;
-	}
-	if (apol_infoflow_graph_trans_init(p, g, start_nodes, queue) < 0) {
+	if (apol_infoflow_graph_trans_init(p, g, start, queue) < 0) {
 		goto cleanup;
 	}
 
@@ -1329,7 +1323,7 @@ static int apol_infoflow_analysis_trans(apol_policy_t *p,
 			else {
 				node = edge->start_node;
 			}
-			if (apol_vector_get_index(start_nodes, node, NULL, NULL, &j) == 0) {
+			if (node == start) {
 				continue;
 			}
 			if (node->distance > cur_node->distance + edge->length) {
@@ -1363,8 +1357,7 @@ static int apol_infoflow_analysis_trans(apol_policy_t *p,
 	/* Find all of the paths and add them to the results vector */
 	for (i = 0; i < apol_vector_get_size(g->nodes); i++) {
 		cur_node = (apol_infoflow_node_t *) apol_vector_get_element(g->nodes, i);
-		if (cur_node->parent == NULL ||
-		    apol_vector_get_index(start_nodes, cur_node, NULL, NULL, &j) == 0) {
+		if (cur_node->parent == NULL || cur_node == start) {
 			continue;
 		}
 		compval = apol_infoflow_graph_compare(p, g, cur_node);
@@ -1374,7 +1367,7 @@ static int apol_infoflow_analysis_trans(apol_policy_t *p,
 		else if (compval == 0) {
 			continue;
 		}
-		if (apol_infoflow_trans_path(p, g, start_nodes, cur_node, &path) < 0 ||
+		if (apol_infoflow_trans_path(p, g, start, cur_node, &path) < 0 ||
 		    apol_infoflow_trans_append(p, g, path, results) < 0) {
 			goto cleanup;
 		}
@@ -1383,9 +1376,54 @@ static int apol_infoflow_analysis_trans(apol_policy_t *p,
 
 	retval = 0;
  cleanup:
-	apol_vector_destroy(&start_nodes, NULL);
 	apol_vector_destroy(&path, NULL);
 	apol_queue_destroy(&queue);
+	return retval;
+}
+
+/**
+ * Perform a transitive information flow analysis upon the given
+ * infoflow graph.
+ *
+ * @param p Policy to analyze.
+ * @param g Information flow graph to analyze.
+ * @param start_type Type from which to begin search.
+ * @param results Non-NULL vector to which append infoflow results.
+ * The caller is responsible for calling apol_infoflow_results_free()
+ * upon each element afterwards.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+static int apol_infoflow_analysis_trans(apol_policy_t *p,
+					apol_infoflow_graph_t *g,
+					const char *start_type,
+					apol_vector_t *results)
+{
+	apol_vector_t *start_nodes = NULL;
+	apol_infoflow_node_t *start_node;
+	size_t i;
+	int retval = -1;
+
+	if (g->direction != APOL_INFOFLOW_IN && g->direction != APOL_INFOFLOW_OUT) {
+		ERR(p, strerror(EINVAL));
+		goto cleanup;
+	}
+	if ((start_nodes = apol_vector_create()) == NULL) {
+		ERR(p, "Out of memory!");
+		goto cleanup;
+	}
+	if (apol_infoflow_graph_get_nodes_for_type(p, g, start_type, start_nodes) < 0) {
+		goto cleanup;
+	}
+	for (i = 0; i < apol_vector_get_size(start_nodes); i++) {
+		start_node = (apol_infoflow_node_t *) apol_vector_get_element(start_nodes, i);
+		if (apol_infoflow_analysis_trans_shortest_path(p, g, start_node, results) < 0) {
+			goto cleanup;
+		}
+	}
+	retval = 0;
+ cleanup:
+	apol_vector_destroy(&start_nodes, NULL);
 	return retval;
 }
 
@@ -1616,6 +1654,11 @@ qpol_type_t *apol_infoflow_result_get_end_type(apol_infoflow_result_t *result)
 	return result->end_type;
 }
 
+unsigned int apol_infoflow_result_get_length(apol_infoflow_result_t *result)
+{
+	return result->length;
+}
+
 apol_vector_t *apol_infoflow_result_get_steps(apol_infoflow_result_t *result)
 {
 	return result->steps;
@@ -1629,6 +1672,11 @@ qpol_type_t *apol_infoflow_step_get_start_type(apol_infoflow_step_t *step)
 qpol_type_t *apol_infoflow_step_get_end_type(apol_infoflow_step_t *step)
 {
 	return step->end_type;
+}
+
+int apol_infoflow_step_get_weight(apol_infoflow_step_t *step)
+{
+	return step->weight;
 }
 
 apol_vector_t *apol_infoflow_step_get_rules(apol_infoflow_step_t *step)

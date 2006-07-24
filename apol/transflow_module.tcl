@@ -88,7 +88,7 @@ proc Apol_Analysis_transflow::create {options_frame} {
     trace add variable Apol_Analysis_transflow::vals(advanced:enable) write \
         Apol_Analysis_transflow::toggleAdvancedSelected
     set widgets(regexp) [Apol_Widget::makeRegexpEntry [$filter_tf getframe].end]
-    $widgets(regexp).cb configure -text "Filter end types using regular expression"
+    $widgets(regexp).cb configure -text "Filter result types using regular expression"
     pack $widgets(regexp) -side left -anchor nw -padx 8
 }
 
@@ -315,8 +315,6 @@ proc Apol_Analysis_transflow::treeSelect {res tree node} {
 }
 
 proc Apol_Analysis_transflow::treeOpen {tree node} {
-    puts "FIX ME!"
-    if {0} {
     foreach {is_expanded results} [$tree itemcget $node -data] {break}
     if {[string index $node 0] == "x" && !$is_expanded} {
         ApolTop::setBusyCursor
@@ -324,13 +322,12 @@ proc Apol_Analysis_transflow::treeOpen {tree node} {
         set retval [catch {analyzeMore $tree $node} new_results]
         ApolTop::resetBusyCursor
         if {$retval} {
-            tk_messageBox -icon error -type ok -title "Direct Information Flow" -message "Could not perform additional analysis:\n\n$new_results"
+            tk_messageBox -icon error -type ok -title "Transitive Information Flow" -message "Could not perform additional analysis:\n\n$new_results"
         } else {
             # mark this node as having been expanded
             $tree itemconfigure $node -data [list 1 $results]
             createResultsNodes $tree $node $new_results
         }
-    }
     }
 }
 
@@ -392,10 +389,81 @@ same, you cannot open the child.  This avoids cyclic analyses." {}
 }
 
 proc Apol_Analysis_transflow::createResultsNodes {tree parent_node results} {
+    variable vals
     set all_targets {}
-    puts "fix me!"
+    foreach r $results {
+        foreach {flow_dir source target length steps} $r {break}
+        foreach t [apol_ExpandType $target] {
+            lappend all_targets $t
+            lappend paths($t) [list $length $steps]
+        }
+    }
+    set i 0
+    foreach t [lsort -uniq $all_targets] {
+        set flow_dir $vals(dir)
+        set sorted_paths {}
+        foreach path [lsort -unique -index 0 $paths($t)] {
+            if {$flow_dir == "to"} {
+                # flip the steps around
+                set p {}
+                foreach step [lindex $path 1] {
+                    set p [concat [list $step ] $p]
+                }
+                lappend sorted_paths $p
+            } else {
+                lappend sorted_paths [lindex $path 1]
+            }
+        }
+        set data [list $flow_dir $sorted_paths]
+        $tree insert end $parent_node x\#auto -text $t -drawcross allways \
+            -data [list 0 $data]
+    }
 }
 
+proc Apol_Analysis_transflow::renderResultsTransFlow {res tree node data} {
+    set parent_name [$tree itemcget [$tree parent $node] -text]
+    set name [$tree itemcget $node -text]
+    foreach {flow_dir paths} $data {break}
+    switch -- $flow_dir {
+        to {
+            $res.tb insert end "Information flows to " title \
+                $parent_name title_type \
+                " from " title \
+                $name title_type
+        }
+        from {
+            $res.tb insert end "Information flows from " title \
+                $parent_name title_type \
+                " to " title \
+                $name title_type
+        }
+    }
+    $res.tb insert end "\n\n" title_type \
+        "Apol found the following number of information flows: " subtitle \
+        [llength $paths] num \
+        "\n" subtitle
+    set path_num 1
+    foreach path $paths {
+        $res.tb insert end "\nFlow " subtitle \
+            $path_num num \
+            " requires " subtitle \
+            [llength $path] num \
+            " steps(s).\n" subtitle \
+            "    " {}
+        $res.tb insert end [lindex $path 0 0] subtitle \
+            " -> " {} \
+            [lindex $path 0 1] subtitle
+        foreach step [lrange $path 1 end] {
+            $res.tb insert end " -> " {} \
+                [lindex $step 1] subtitle
+        }
+        $res.tb insert end \n {}
+        foreach step $path {
+            Apol_Widget::appendSearchResultAVRule $res 6 [lindex $step 3]
+        }
+        incr path_num
+    }
+}
 
 # Procedure to do elapsed time formatting
 proc Apol_Analysis_transflow::convert_seconds {sec} {
@@ -693,307 +761,5 @@ proc Apol_Analysis_transflow::find_more_flows {src_node tgt_node} {
 		destroy $find_flows_results_Dlg
 		catch {focus $old_focus}
 	}
-	return 0
-}
-
-###########################################################################
-# ::insert_more_flows_header
-#	- Called to insert the header text when displaying results from
-#	  a find more flows search.
-proc Apol_Analysis_transflow::insert_more_flows_header {transflow_info_text transflow_tree src_node tgt_node time_limit_str elapsed_time flow_limit_num curr_flows_num} {
-	$transflow_info_text configure -state normal
-	$transflow_info_text delete 0.0 end
-	$transflow_info_text mark set insert 1.0
-        $transflow_info_text configure -wrap none
-
-	set data [$transflow_tree itemcget $tgt_node -data]
-	if {$data == ""} {
-	        $transflow_info_text configure -state disabled
-		return ""
-	}
-	# The flow direction is embedded in the data store of the root node at index 1.
-        set query_args [$transflow_tree itemcget [$transflow_tree nodes root] -data]
-        set flow_direction [lindex $query_args 1]
-	if {$flow_direction == "in"} {
-		set startIdx [$transflow_info_text index insert]
-		$transflow_info_text insert end "More Information Flows to "
-		set endIdx [$transflow_info_text index insert]
-		$transflow_info_text tag add $Apol_Analysis_transflow::title_tag $startIdx $endIdx
-		set startIdx [$transflow_info_text index insert]
-		$transflow_info_text insert end " [$transflow_tree itemcget $src_node -text]"
-		set endIdx [$transflow_info_text index insert]
-		$transflow_info_text tag add $Apol_Analysis_transflow::title_type_tag $startIdx $endIdx
-		set startIdx [$transflow_info_text index insert]
-		$transflow_info_text insert end " from "
-		set endIdx [$transflow_info_text index insert]
-		$transflow_info_text tag add $Apol_Analysis_transflow::title_tag $startIdx $endIdx
-		set startIdx [$transflow_info_text index insert]
-		$transflow_info_text insert end "[$transflow_tree itemcget $tgt_node -text]"
-		set endIdx [$transflow_info_text index insert]
-		$transflow_info_text tag add $Apol_Analysis_transflow::title_type_tag $startIdx $endIdx
-	} elseif {$flow_direction == "out"} {
-		set startIdx [$transflow_info_text index insert]
-		$transflow_info_text insert end "More Information Flows from "
-		set endIdx [$transflow_info_text index insert]
-		$transflow_info_text tag add $Apol_Analysis_transflow::title_tag $startIdx $endIdx
-		set startIdx [$transflow_info_text index insert]
-		$transflow_info_text insert end "[$transflow_tree itemcget $src_node -text]"
-		set endIdx [$transflow_info_text index insert]
-		$transflow_info_text tag add $Apol_Analysis_transflow::title_type_tag $startIdx $endIdx
-		set startIdx [$transflow_info_text index insert]
-		$transflow_info_text insert end " to "
-		set endIdx [$transflow_info_text index insert]
-		$transflow_info_text tag add $Apol_Analysis_transflow::title_tag $startIdx $endIdx
-		set startIdx [$transflow_info_text index insert]
-		$transflow_info_text insert end "[$transflow_tree itemcget $tgt_node -text]"
-		set endIdx [$transflow_info_text index insert]
-		$transflow_info_text tag add $Apol_Analysis_transflow::title_type_tag $startIdx $endIdx
-	} else {
-		puts "Invalid flow direction ($flow_direction) specified!"
-		return
-	}
-	# Insert find more flows link
-	set startIdx [$transflow_info_text index insert]
-	$transflow_info_text insert end "  ("
-	set startIdx [$transflow_info_text index insert]
-	$transflow_info_text insert end "Find more flows"
-	set endIdx [$transflow_info_text index insert]
-	$transflow_info_text tag add $Apol_Analysis_transflow::find_flows_tag $startIdx $endIdx
-	$transflow_info_text insert end ")"
-
-	# Insert time/flows limit strings
-	set startIdx [$transflow_info_text index insert]
-	$transflow_info_text insert end "\n\nTime: $elapsed_time out of $time_limit_str"
-	set endIdx [$transflow_info_text index insert]
-	$transflow_info_text tag add $Apol_Analysis_transflow::subtitle_tag $startIdx $endIdx
-
-	set startIdx [$transflow_info_text index insert]
-	$transflow_info_text insert end "\n\nApol found the following number of information flows: "
-	set endIdx [$transflow_info_text index insert]
-	$transflow_info_text tag add $Apol_Analysis_transflow::subtitle_tag $startIdx $endIdx
-        set startIdx $endIdx
-        $transflow_info_text insert end  "$curr_flows_num"
-        set endIdx [$transflow_info_text index insert]
-        $transflow_info_text tag add $Apol_Analysis_transflow::counters_tag $startIdx $endIdx
-        set startIdx $endIdx
-        $transflow_info_text insert end " out of "
-        set endIdx [$transflow_info_text index insert]
-        $transflow_info_text tag add $Apol_Analysis_transflow::subtitle_tag $startIdx $endIdx
-        set startIdx $endIdx
-        $transflow_info_text insert end "$flow_limit_num"
-        set endIdx [$transflow_info_text index insert]
-        $transflow_info_text tag add $Apol_Analysis_transflow::counters_tag $startIdx $endIdx
-        $transflow_info_text configure -state disabled
-
-	return 0
-}
-
-###########################################################################
-# ::insert_transitive_flows_header
-#	- Called to insert the header text when displaying results from
-#	  a transitive flows search.
-proc Apol_Analysis_transflow::insert_transitive_flows_header {transflow_info_text transflow_tree node} {
-	$transflow_info_text configure -state normal
-	$transflow_info_text delete 0.0 end
-	$transflow_info_text mark set insert 1.0
-        $transflow_info_text configure -wrap none
-
-	set data [$transflow_tree itemcget $node -data]
-	if {$data == ""} {
-	        $transflow_info_text configure -state disabled
-		return
-	}
-
-	set start_type [$transflow_tree itemcget [$transflow_tree parent $node] -text]
-        set startIdx [$transflow_info_text index insert]
-        # Index 0 will be the end type
-        set currentIdx 0
-        set end_type [lindex $data $currentIdx]
-        # The flow direction is embedded in the data store of the root node at index 1.
-        set query_args [$transflow_tree itemcget [$transflow_tree nodes root] -data]
-        set flow_direction [lindex $query_args 1]
-
-	if {$flow_direction == "in"} {
-	    $transflow_info_text insert end "Information flows to "
-	    set endIdx [$transflow_info_text index insert]
-	    $transflow_info_text tag add $Apol_Analysis_transflow::title_tag $startIdx $endIdx
-	    set startIdx [$transflow_info_text index insert]
-	    $transflow_info_text insert end $start_type
-	    set endIdx [$transflow_info_text index insert]
-	    $transflow_info_text tag add $Apol_Analysis_transflow::title_type_tag $startIdx $endIdx
-	    set startIdx [$transflow_info_text index insert]
-	    $transflow_info_text insert end " from "
-	    set endIdx [$transflow_info_text index insert]
-	    $transflow_info_text tag add $Apol_Analysis_transflow::title_tag $startIdx $endIdx
-	    set startIdx [$transflow_info_text index insert]
-	    $transflow_info_text insert end $end_type
-	    set endIdx [$transflow_info_text index insert]
-	    $transflow_info_text tag add $Apol_Analysis_transflow::title_type_tag $startIdx $endIdx
-	    set startIdx $endIdx
-	} elseif {$flow_direction == "out"} {
-	    $transflow_info_text insert end "Information flows from "
-	    set endIdx [$transflow_info_text index insert]
-	    $transflow_info_text tag add $Apol_Analysis_transflow::title_tag $startIdx $endIdx
-	    set startIdx [$transflow_info_text index insert]
-	    $transflow_info_text insert end $start_type
-	    set endIdx [$transflow_info_text index insert]
-	    $transflow_info_text tag add $Apol_Analysis_transflow::title_type_tag $startIdx $endIdx
-	    set startIdx [$transflow_info_text index insert]
-	    $transflow_info_text insert end " to "
-	    set endIdx [$transflow_info_text index insert]
-	    $transflow_info_text tag add $Apol_Analysis_transflow::title_tag $startIdx $endIdx
-	    set startIdx [$transflow_info_text index insert]
-	    $transflow_info_text insert end $end_type
-	    set endIdx [$transflow_info_text index insert]
-	    $transflow_info_text tag add $Apol_Analysis_transflow::title_type_tag $startIdx $endIdx
-	    set startIdx $endIdx
-	} else {
-		puts "Invalid flow direction ($flow_direction) specified!"
-		return
-	}
-	set startIdx [$transflow_info_text index insert]
-	$transflow_info_text insert end "  ("
-	set startIdx [$transflow_info_text index insert]
-	$transflow_info_text insert end "Find more flows"
-	set endIdx [$transflow_info_text index insert]
-	$transflow_info_text tag add $Apol_Analysis_transflow::find_flows_tag $startIdx $endIdx
-	$transflow_info_text insert end ")"
-
-	# Index 1 will be the number of paths
-        set currentIdx 1
-	set startIdx [$transflow_info_text index insert]
-	$transflow_info_text insert end "\n\nApol found the following number of information flows: "
-	set endIdx [$transflow_info_text index insert]
-	$transflow_info_text tag add $Apol_Analysis_transflow::subtitle_tag $startIdx $endIdx
-        set startIdx $endIdx
-	set num_paths [lindex $data $currentIdx]
-	$transflow_info_text insert end $num_paths
-        set endIdx [$transflow_info_text index insert]
-        $transflow_info_text tag add $Apol_Analysis_transflow::counters_tag $startIdx $endIdx
-
-	$transflow_info_text configure -state disabled
-	return 0
-}
-
-###########################################################################
-# ::render_information_flows
-#	- This proc will insert any information flows found into the textbox.
-#	- NOTE: This procedure should be called after the header has been
-#	  inserted using one of the two procs above. If these header procs
-#	  are not called, the caller needs to  first delete and configure
-#	  the textbox.
-proc Apol_Analysis_transflow::render_information_flows {transflow_info_text transflow_tree node} {
-	$transflow_info_text configure -state normal
-
-	set data [$transflow_tree itemcget $node -data]
-	if {$data == ""} {
-	        $transflow_info_text configure -state disabled
-		return
-	}
-
-	# Index 1 will be the number of paths
-        set currentIdx 1
-        set num_paths [lindex $data $currentIdx]
-	for {set i 0} {$i<$num_paths} {incr i} {
-	    set startIdx [$transflow_info_text index insert]
-	    $transflow_info_text insert end "\n\nFlow"
-	    set endIdx [$transflow_info_text index insert]
-	    $transflow_info_text tag add $Apol_Analysis_transflow::subtitle_tag $startIdx $endIdx
-	    set startIdx $endIdx
-	    $transflow_info_text insert end " [expr $i+1] "
-	    set endIdx [$transflow_info_text index insert]
-	    $transflow_info_text tag add $Apol_Analysis_transflow::counters_tag $startIdx $endIdx
-	    set startIdx $endIdx
-	    $transflow_info_text insert end "requires "
-	    set endIdx [$transflow_info_text index insert]
-	    $transflow_info_text tag add $Apol_Analysis_transflow::subtitle_tag $startIdx $endIdx
-	    set startIdx $endIdx
-	    # Increment to the number of flows
-	    incr currentIdx
-	    set num_flows [lindex $data $currentIdx]
-	    $transflow_info_text insert end $num_flows
-	    set endIdx [$transflow_info_text index insert]
-	    $transflow_info_text tag add $Apol_Analysis_transflow::counters_tag $startIdx $endIdx
-	    set startIdx $endIdx
-	    $transflow_info_text insert end " step(s)."
-	    set endIdx [$transflow_info_text index insert]
-	    $transflow_info_text tag add $Apol_Analysis_transflow::subtitle_tag $startIdx $endIdx
-	    for {set j 0} {$j<$num_flows} {incr j} {
-		# First print the flow number
-		$transflow_info_text insert end "\n\n\tStep "
-		set endIdx [$transflow_info_text index insert]
-		$transflow_info_text tag add $Apol_Analysis_transflow::subtitle_tag $startIdx $endIdx
-		set startIdx $endIdx
-		$transflow_info_text insert end [expr $j + 1]
-		set endIdx [$transflow_info_text index insert]
-		$transflow_info_text tag add $Apol_Analysis_transflow::counters_tag $startIdx $endIdx
-		set startIdx $endIdx
-		$transflow_info_text insert end ": "
-		set endIdx [$transflow_info_text index insert]
-		$transflow_info_text tag add $Apol_Analysis_transflow::subtitle_tag $startIdx $endIdx
-		set startIdx $endIdx
-		$transflow_info_text insert end "from "
-		# increment to the start type for the flow
-		incr currentIdx
-		$transflow_info_text insert end [lindex $data $currentIdx]
-		$transflow_info_text insert end " to "
-		# Increment to the end type for the flow
-		incr currentIdx
-		$transflow_info_text insert end [lindex $data $currentIdx]
-		set endIdx [$transflow_info_text index insert]
-		$transflow_info_text tag add $Apol_Analysis_transflow::subtitle_tag $startIdx $endIdx
-		set startIdx $endIdx
-		# Increment to the # of object classes
-		incr currentIdx
-		set num_classes [lindex $data $currentIdx]
-		for {set k 0} {$k<$num_classes} {incr k} {
-		    # Increment to the first object class
-		    incr currentIdx
-		    $transflow_info_text insert end "\n\t[lindex $data $currentIdx]"
-		    set endIdx [$transflow_info_text index insert]
-		    $transflow_info_text tag add $Apol_Analysis_transflow::subtitle_tag $startIdx $endIdx
-		    set startIdx $endIdx
-		    # Increment to the # of object class rules
-		    incr currentIdx
-		    set num_rules [lindex $data $currentIdx]
-		    for {set l 0} {$l<$num_rules} {incr l} {
-			# Increment to the next rule for the object
-			incr currentIdx
-			set rule [lindex $data $currentIdx]
-			$transflow_info_text insert end "\n\t"
-			set startIdx [$transflow_info_text index insert]
-			# Get the line number only
-			set end_link_idx [string first "\]" [string trim $rule] 0]
-			set lineno [string range [string trim [string range $rule 0 $end_link_idx]] 1 end-1]
-			set lineno [string trim $lineno]
-			set rule [string range $rule [expr $end_link_idx + 1] end]
-
-			# Only display line number hyperlink if this is not a binary policy.
-			if {![ApolTop::is_binary_policy]} {
-				$transflow_info_text insert end "\[$lineno\]"
-				Apol_PolicyConf::insertHyperLink $transflow_info_text "$startIdx wordstart + 1c" "$startIdx wordstart + [expr [string length $lineno] + 1]c"
-			}
-			set startIdx [$transflow_info_text index insert]
-			$transflow_info_text insert end " $rule"
-			set endIdx [$transflow_info_text index insert]
-			$transflow_info_text tag add $Apol_Analysis_transflow::rules_tag $startIdx $endIdx
-
-			incr currentIdx
-			# The next element should be the enabled boolean flag.
-			if {[lindex $data $currentIdx] == 0} {
-				$transflow_info_text insert end "   "
-				set startIdx [$transflow_info_text index insert]
-				$transflow_info_text insert end "\[Disabled\]"
-				set endIdx [$transflow_info_text index insert]
-				$transflow_info_text tag add $Apol_Analysis_transflow::disabled_rule_tag $startIdx $endIdx
-			}
-			set startIdx [$transflow_info_text index insert]
-		    }
-		}
-	    }
-	}
-	$transflow_info_text see 1.0
-	$transflow_info_text configure -state disabled
-
 	return 0
 }
