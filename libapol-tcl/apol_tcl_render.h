@@ -61,6 +61,23 @@ extern int apol_avrule_to_tcl_obj(Tcl_Interp *interp,
 				  qpol_avrule_t *avrule,
 				  Tcl_Obj **obj);
 
+/**
+ * Converts a qpol_terule_t to a Tcl representation:
+ * The tuple consists of:
+ * <code>
+ *    { rule_type source_type_set target_type_set object_class default_type
+ *      line_number cond_info }
+ * </code>
+ * The type sets and perm sets are Tcl lists.  If cond_info is an
+ * empty list then this rule is unconditional.  Otherwise cond_info is
+ * a 2-uple list, where the first element is either "enabled" or
+ * "disabled", and the second element is the line number for its
+ * conditional expression.
+ */
+extern int apol_terule_to_tcl_obj(Tcl_Interp *interp,
+				  qpol_terule_t *terule,
+				  Tcl_Obj **obj);
+
 extern int apol_tcl_render_init(Tcl_Interp *interp);
 
 #endif

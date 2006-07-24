@@ -368,7 +368,7 @@ proc Apol_Widget::appendSearchResultLine {path indent linenum cond_info line_typ
 # Append an avrule, as specified by its unique id, to a search results
 # box.
 proc Apol_Widget::appendSearchResultAVRule {path indent rule_id} {
-    foreach {rule_type source_set target_set class perm_default line_num cond_info} [apol_RenderAVRule $rule_id] {break}
+    foreach {rule_type source_set target_set class perms line_num cond_info} [apol_RenderAVRule $rule_id] {break}
     set curstate [$path.tb cget -state]
     $path.tb configure -state normal
     $path.tb insert end [string repeat " " $indent]
@@ -381,10 +381,39 @@ proc Apol_Widget::appendSearchResultAVRule {path indent rule_id} {
     if {[llength $target_set] > 1} {
         set target_set "\{ $target_set \}"
     }
-    if {[llength $perm_default] > 1} {
-        set perm_default "\{ $perm_default \}"
+    if {[llength $perms] > 1} {
+        set perms "\{ $perms \}"
     }
-    set text "$rule_type $source_set $target_set : $class $perm_default;"
+    set text "$rule_type $source_set $target_set : $class $perms;"
+    $path.tb insert end $text
+    if {$cond_info != {}} {
+        if {[lindex $cond_info 0] == "enabled"} {
+            $path.tb insert end "  \[" {} "Enabled" enabled "\]"
+        } else {
+            $path.tb insert end "  \[" {} "Disabled" disabled "\]"
+        }
+    }
+    $path.tb insert end "\n"
+    $path.tb configure -state $curstate
+}
+
+# Append a terule, as specified by its unique id, to a search results
+# box.
+proc Apol_Widget::appendSearchResultTERule {path indent rule_id} {
+    foreach {rule_type source_set target_set class default_type line_num cond_info} [apol_RenderTERule $rule_id] {break}
+    set curstate [$path.tb cget -state]
+    $path.tb configure -state normal
+    $path.tb insert end [string repeat " " $indent]
+    if {$line_num != {}} {
+        $path.tb insert end \[ {} $line_num linenum "\] "
+    }
+    if {[llength $source_set] > 1} {
+        set source_set "\{ $source_set \}"
+    }
+    if {[llength $target_set] > 1} {
+        set target_set "\{ $target_set \}"
+    }
+    set text "$rule_type $source_set $target_set : $class $default_type;"
     $path.tb insert end $text
     if {$cond_info != {}} {
         if {[lindex $cond_info 0] == "enabled"} {
