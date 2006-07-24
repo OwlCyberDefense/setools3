@@ -233,10 +233,10 @@ extern qpol_type_t *apol_domain_trans_result_get_entrypoint_type(apol_domain_tra
 extern qpol_type_t *apol_domain_trans_result_get_end_type(apol_domain_trans_result_t *dtr);
 
 /**
- *  Return the vector of process transition rules in an
- *  apol_domain_trans_result node.  The caller should not free the
- *  returned pointer.  If the transition in the node is not valid
- *  there may be no rule in which case NULL is returned.
+ *  Return the vector of process transition rules (qpol_avrule_t
+ *  pointers) in an apol_domain_trans_result node.  The caller should
+ *  not free the returned pointer.  If the transition in the node is
+ *  not valid there may be no rule in which case NULL is returned.
  *  @param dtr Domain transition result node.
  *  @return Vector of qpol_avrule_t relative to the policy originally
  *  used to generate the results.
@@ -244,10 +244,10 @@ extern qpol_type_t *apol_domain_trans_result_get_end_type(apol_domain_trans_resu
 extern apol_vector_t *apol_domain_trans_result_get_proc_trans_rules(apol_domain_trans_result_t *dtr);
 
 /**
- *  Return the vector of file entrypoint rules in an
- *  apol_domain_trans_result node.  The caller should not free the
- *  returned pointer. If the transition in the node is not valid there
- *  may be no rule in which case NULL is returned.
+ *  Return the vector of file entrypoint rules (qpol_avrule_t
+ *  pointers) in an apol_domain_trans_result node.  The caller should
+ *  not free the returned pointer. If the transition in the node is
+ *  not valid there may be no rule in which case NULL is returned.
  *  @param dtr Domain transition result node.
  *  @return Vector of qpol_avrule_t relative to the policy originally
  *  used to generate the results.
@@ -255,10 +255,10 @@ extern apol_vector_t *apol_domain_trans_result_get_proc_trans_rules(apol_domain_
 extern apol_vector_t *apol_domain_trans_result_get_entrypoint_rules(apol_domain_trans_result_t *dtr);
 
 /**
- *  Return the vector of file execute rules in an
- *  apol_domain_trans_result node.  The caller should not free the
- *  returned pointer. If the transition in the node is not valid there
- *  may be no rule in which case NULL is returned.
+ *  Return the vector of file execute rules (qpol_avrule_t pointers)
+ *  in an apol_domain_trans_result node.  The caller should not free
+ *  the returned pointer. If the transition in the node is not valid
+ *  there may be no rule in which case NULL is returned.
  *  @param dtr Domain transition result node.
  *  @return Vector of qpol_avrule_t relative to the policy originally
  *  used to generate the results.
@@ -266,12 +266,12 @@ extern apol_vector_t *apol_domain_trans_result_get_entrypoint_rules(apol_domain_
 extern apol_vector_t *apol_domain_trans_result_get_exec_rules(apol_domain_trans_result_t *dtr);
 
 /**
- *  Return the vector of process setexec rule in an
- *  apol_domain_trans_result node.  The caller should not free the
- *  returned pointer.  For all policies of version 15 or later a
- *  transition requires either a setexec rule or a type_transition
- *  rule to be valid.  Valid transitions may have both; if there is no
- *  rule, this function returns NULL.
+ *  Return the vector of process setexec rules (qpol_avrule_t
+ *  pointers) in an apol_domain_trans_result node.  The caller should
+ *  not free the returned pointer.  For all policies of version 15 or
+ *  later a transition requires either a setexec rule or a
+ *  type_transition rule to be valid.  Valid transitions may have
+ *  both; if there is no rule, this function returns NULL.
  *  @param dtr Domain transition result node.
  *  @return Vector of qpol_avrule_t relative to the policy originally
  *  used to generate the results.
@@ -279,12 +279,12 @@ extern apol_vector_t *apol_domain_trans_result_get_exec_rules(apol_domain_trans_
 extern apol_vector_t *apol_domain_trans_result_get_setexec_rules(apol_domain_trans_result_t *dtr);
 
 /**
- *  Return the vector of type_transition rules in an
- *  apol_domain_trans_result node.  The caller should not free the
- *  returned pointer.  For all policies of version 15 or later a
- *  transition requires either a setexec rule or a type_transition
- *  rule to be valid.  Valid transitions may have both; if there is no
- *  rule, this function returns NULL.
+ *  Return the vector of type_transition rules (qpol_terule_t
+ *  pointers) in an apol_domain_trans_result node.  The caller should
+ *  not free the returned pointer.  For all policies of version 15 or
+ *  later a transition requires either a setexec rule or a
+ *  type_transition rule to be valid.  Valid transitions may have
+ *  both; if there is no rule, this function returns NULL.
  *  @param dtr Domain transition result node.
  *  @return Vector of qpol_terule_t relative to the policy originally
  *  used to generate the results.

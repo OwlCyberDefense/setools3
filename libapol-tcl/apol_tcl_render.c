@@ -112,6 +112,60 @@ int apol_avrule_to_tcl_obj(Tcl_Interp *interp,
 	return retval;
 }
 
+int apol_terule_to_tcl_obj(Tcl_Interp *interp,
+			   qpol_terule_t *terule,
+			   Tcl_Obj **obj)
+{
+	uint32_t rule_type, is_enabled;
+	const char *rule_string;
+	qpol_type_t *source, *target, *default_type;
+	qpol_class_t *obj_class;
+	char *source_name, *target_name, *obj_class_name, *default_name;
+	qpol_cond_t *cond;
+	Tcl_Obj *terule_elem[7], *cond_elem[2];
+	int retval = TCL_ERROR;
+
+	if (qpol_terule_get_rule_type(policydb->qh, policydb->p, terule, &rule_type) < 0 ||
+	    qpol_terule_get_source_type(policydb->qh, policydb->p, terule, &source) < 0 ||
+	    qpol_terule_get_target_type(policydb->qh, policydb->p, terule, &target) < 0 ||
+	    qpol_terule_get_object_class(policydb->qh, policydb->p, terule, &obj_class) < 0 ||
+	    qpol_terule_get_default_type(policydb->qh, policydb->p, terule, &default_type) < 0) {
+		goto cleanup;
+	}
+	if ((rule_string = apol_rule_type_to_str(rule_type)) == NULL) {
+		ERR(policydb, "Invalid terule type %d.", rule_type);
+		goto cleanup;
+	}
+	if (qpol_type_get_name(policydb->qh, policydb->p, source, &source_name) < 0 ||
+	    qpol_type_get_name(policydb->qh, policydb->p, target, &target_name) < 0 ||
+	    qpol_class_get_name(policydb->qh, policydb->p, obj_class, &obj_class_name) < 0 ||
+	    qpol_type_get_name(policydb->qh, policydb->p, default_type, &default_name) < 0) {
+		goto cleanup;
+	}
+	terule_elem[0] = Tcl_NewStringObj(rule_string, -1);
+	terule_elem[1] = Tcl_NewStringObj(source_name, -1);
+	terule_elem[2] = Tcl_NewStringObj(target_name, -1);
+	terule_elem[3] = Tcl_NewStringObj(obj_class_name, -1);
+	terule_elem[4] = Tcl_NewStringObj(default_name, -1);
+	terule_elem[5] = Tcl_NewStringObj("", -1);   /* FIX ME! */
+	if (qpol_terule_get_cond(policydb->qh, policydb->p, terule, &cond) < 0 ||
+	    qpol_terule_get_is_enabled(policydb->qh, policydb->p, terule, &is_enabled) < 0) {
+		goto cleanup;
+	}
+	if (cond == NULL) {
+		terule_elem[6] = Tcl_NewListObj(0, NULL);
+	}
+	else {
+		cond_elem[0] = Tcl_NewStringObj(is_enabled ? "enabled" : "disabled", -1);
+		cond_elem[1] = Tcl_NewStringObj("", -1);  /* FIX ME! */
+		terule_elem[6] = Tcl_NewListObj(2, cond_elem);
+	}
+	*obj = Tcl_NewListObj(7, terule_elem);
+	retval = TCL_OK;
+ cleanup:
+	return retval;
+}
+
 /**
  * Take a Tcl string representing a level (level = sensitivity + list
  * of categories) and return a string representation of it.  If the
@@ -464,6 +518,52 @@ static int Apol_RenderAVRulePerms(ClientData clientData, Tcl_Interp *interp, int
 	return retval;
 }
 
+/**
+ * Take a Tcl string representing a TE rule identifier (relative to
+ * the currently loaded policy) and return a Tcl list representation
+ * of it:
+ * <code>
+ *    { rule_type source_type_set target_type_set object_class default_type
+ *      line_number cond_info }
+ * </code>
+ *
+ * @param argv This function takes one parameter:
+ * <ol>
+ *   <li>Tcl string representing an te rule identifier
+ * </ol>
+ */
+static int Apol_RenderTERule(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
+{
+	Tcl_Obj *o, *result_obj;
+	long rule_num;
+	qpol_terule_t *terule;
+	int retval = TCL_ERROR;
+	apol_tcl_clear_error();
+	if (policydb == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		goto cleanup;
+	}
+	if (argc != 2) {
+		ERR(policydb, "Need an avrule identifier.");
+		goto cleanup;
+	}
+	o = Tcl_NewStringObj(argv[1], -1);
+	if (Tcl_GetLongFromObj(interp, o, &rule_num) == TCL_ERROR) {
+		goto cleanup;
+	}
+	terule = (qpol_terule_t *) rule_num;
+	if (apol_terule_to_tcl_obj(interp, terule, &result_obj) == TCL_ERROR) {
+		goto cleanup;
+	}
+	Tcl_SetObjResult(interp, result_obj);
+	retval = TCL_OK;
+ cleanup:
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
+}
+
 int apol_tcl_render_init(Tcl_Interp *interp) {
         Tcl_CreateCommand(interp, "apol_RenderLevel", Apol_RenderLevel, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_RenderContext", Apol_RenderContext, NULL, NULL);
@@ -472,5 +572,6 @@ int apol_tcl_render_init(Tcl_Interp *interp) {
 	Tcl_CreateCommand(interp, "apol_RenderAVRuleTarget", Apol_RenderAVRuleTarget, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_RenderAVRuleClass", Apol_RenderAVRuleClass, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_RenderAVRulePerms", Apol_RenderAVRulePerms, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_RenderTERule", Apol_RenderTERule, NULL, NULL);
 	return TCL_OK;
 }

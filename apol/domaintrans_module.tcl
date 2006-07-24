@@ -782,7 +782,7 @@ definition of allowed domain transition" {}
 proc Apol_Analysis_domaintrans::createResultsNodes {tree parent_node results search_crit} {
     set dir [lindex $search_crit 0]
     foreach r $results {
-        foreach {source target intermed proctrans entrypoint execute access_list} $r {break}
+        foreach {source target intermed proctrans entrypoint execute setexec type_trans access_list} $r {break}
         if {$dir == "forward"} {
             set key $target
             set node f:\#auto
@@ -793,12 +793,22 @@ proc Apol_Analysis_domaintrans::createResultsNodes {tree parent_node results sea
         foreach p $proctrans {
             lappend types($key) $p
         }
+        if {[info exists types($key:setexec)]} {
+            set types($key:setexec) [concat $types($key:setexec) $setexec]
+        } else {
+            set types($key:setexec) $setexec
+        }
         lappend types($key:inter) $intermed
         foreach e $entrypoint {
             lappend types($key:inter:$intermed:entry) $e
         }
         foreach e $execute {
             lappend types($key:inter:$intermed:exec) $e
+        }
+        if {[info exists types($key:inter:$intermed:type_trans)]} {
+            set types($key:inter:$intermed:type_trans) [concat $types($key:inter:$intermed:type_trans) $type_trans]
+        } else {
+            set types($key:inter:$intermed:type_trans) $type_trans
         }
         if {[info exists types($key:access)]} {
             set types($key:access) [concat $types($key:access) $access_list]
@@ -812,13 +822,15 @@ proc Apol_Analysis_domaintrans::createResultsNodes {tree parent_node results sea
         }
         set ep {}
         set proctrans [lsort -uniq $types($key)]
+        set setexec [lsort -uniq $types($key:setexec)]
         foreach intermed [lsort -uniq $types($key:inter)] {
             lappend ep [list $intermed \
                             [lsort -uniq $types($key:inter:$intermed:entry)] \
-                            [lsort -uniq $types($key:inter:$intermed:exec)]]
+                            [lsort -uniq $types($key:inter:$intermed:exec)] \
+                            [lsort -uniq $types($key:inter:$intermed:type_trans)]]
         }
         set access_list [lsort -uniq $types($key:access)]
-        set data [list $proctrans $ep $access_list]
+        set data [list $proctrans $setexec $ep $access_list]
         $tree insert end $parent_node $node -text $key -drawcross allways \
             -data [list $search_crit $data]
     }
@@ -827,7 +839,7 @@ proc Apol_Analysis_domaintrans::createResultsNodes {tree parent_node results sea
 proc Apol_Analysis_domaintrans::renderResultsDTA {res tree node data} {
     set parent_name [$tree itemcget [$tree parent $node] -text]
     set name [$tree itemcget $node -text]
-    foreach {proctrans ep access_list} $data {break}
+    foreach {proctrans setexec ep access_list} $data {break}
     # direction of domain transition is encoded encoded in the node's
     # identifier
     if {[string index $node 0] == "f"} {
@@ -850,10 +862,19 @@ proc Apol_Analysis_domaintrans::renderResultsDTA {res tree node data} {
     foreach p $proctrans {
         Apol_Widget::appendSearchResultAVRule $res 6 $p
     }
+    if {[llength $setexec] > 0} {
+        $res.tb insert end "\n" {} \
+            "Setexec Rules: " subtitle \
+            [llength $setexec] num \
+            "\n" subtitle
+        foreach s $setexec {
+            Apol_Widget::appendSearchResultAVRule $res 6 $s
+        }
+    }
     $res.tb insert end "\nEntry Point File Types: " subtitle \
         [llength $ep] num
     foreach e [lsort -index 0 $ep] {
-        foreach {intermed entrypoint execute} $e {break}
+        foreach {intermed entrypoint execute type_trans} $e {break}
         $res.tb insert end "\n      $intermed\n" {} \
             "            " {} \
             "File Entrypoint Rules: " subtitle \
@@ -869,6 +890,16 @@ proc Apol_Analysis_domaintrans::renderResultsDTA {res tree node data} {
             "\n" subtitle
         foreach e $execute {
             Apol_Widget::appendSearchResultAVRule $res 12 $e
+        }
+        if {[llength $type_trans] > 0} {
+            $res.tb insert end "\n" {} \
+                "            " {} \
+                "Type_transition Rules: " subtitle \
+                [llength $type_trans] num \
+                "\n" subtitle
+            foreach t $type_trans {
+                Apol_Widget::appendSearchResultTERule $res 12 $t
+            }
         }
     }
     if {[llength $access_list] > 0} {
