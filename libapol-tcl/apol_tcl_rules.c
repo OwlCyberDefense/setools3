@@ -116,57 +116,12 @@ static int append_terule_to_list(Tcl_Interp *interp,
 				 qpol_terule_t *terule,
 				 Tcl_Obj *result_list)
 {
-	uint32_t rule_type, is_enabled;
-	const char *rule_string;
-	qpol_type_t *source, *target, *default_type;
-	qpol_class_t *obj_class;
-	char *source_name, *target_name, *obj_class_name, *default_name;
-	qpol_cond_t *cond;
-	Tcl_Obj *terule_elem[7], *terule_list, *cond_elem[2];
-	int retval = TCL_ERROR;
-
-	if (qpol_terule_get_rule_type(policydb->qh, policydb->p, terule, &rule_type) < 0 ||
-	    qpol_terule_get_source_type(policydb->qh, policydb->p, terule, &source) < 0 ||
-	    qpol_terule_get_target_type(policydb->qh, policydb->p, terule, &target) < 0 ||
-	    qpol_terule_get_object_class(policydb->qh, policydb->p, terule, &obj_class) < 0 ||
-	    qpol_terule_get_default_type(policydb->qh, policydb->p, terule, &default_type) < 0) {
-		goto cleanup;
+	Tcl_Obj *terule_list;
+	if (apol_terule_to_tcl_obj(interp, terule, &terule_list) == TCL_ERROR ||
+	    Tcl_ListObjAppendElement(interp, result_list, terule_list) == TCL_ERROR) {
+		return TCL_ERROR;
 	}
-	if ((rule_string = apol_rule_type_to_str(rule_type)) == NULL) {
-		ERR(policydb, "Invalid terule type %d.", rule_type);
-		goto cleanup;
-	}
-	if (qpol_type_get_name(policydb->qh, policydb->p, source, &source_name) < 0 ||
-	    qpol_type_get_name(policydb->qh, policydb->p, target, &target_name) < 0 ||
-	    qpol_class_get_name(policydb->qh, policydb->p, obj_class, &obj_class_name) < 0 ||
-	    qpol_type_get_name(policydb->qh, policydb->p, default_type, &default_name) < 0) {
-		goto cleanup;
-	}
-	terule_elem[0] = Tcl_NewStringObj(rule_string, -1);
-	terule_elem[1] = Tcl_NewStringObj(source_name, -1);
-	terule_elem[2] = Tcl_NewStringObj(target_name, -1);
-	terule_elem[3] = Tcl_NewStringObj(obj_class_name, -1);
-	terule_elem[4] = Tcl_NewStringObj(default_name, -1);
-	terule_elem[5] = Tcl_NewStringObj("", -1);   /* FIX ME! */
-	if (qpol_terule_get_cond(policydb->qh, policydb->p, terule, &cond) < 0 ||
-	    qpol_terule_get_is_enabled(policydb->qh, policydb->p, terule, &is_enabled) < 0) {
-		goto cleanup;
-	}
-	if (cond == NULL) {
-		terule_elem[6] = Tcl_NewListObj(0, NULL);
-	}
-	else {
-		cond_elem[0] = Tcl_NewStringObj(is_enabled ? "enabled" : "disabled", -1);
-		cond_elem[1] = Tcl_NewStringObj("", -1);  /* FIX ME! */
-		terule_elem[6] = Tcl_NewListObj(2, cond_elem);
-	}
-	terule_list = Tcl_NewListObj(7, terule_elem);
-	if (Tcl_ListObjAppendElement(interp, result_list, terule_list) == TCL_ERROR) {
-		goto cleanup;
-	}
-	retval = TCL_OK;
- cleanup:
-	return retval;
+	return TCL_OK;
 }
 
 /**
