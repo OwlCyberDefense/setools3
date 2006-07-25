@@ -6,8 +6,6 @@
  *
  */
 
-#include "sechecker.h"
-
 #include "unreachable_doms.h"
 
 #define _GNU_SOURCE

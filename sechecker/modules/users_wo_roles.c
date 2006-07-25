@@ -6,12 +6,11 @@
  *
  */
 
-#include "sechecker.h"
-
 #include "users_wo_roles.h"
 
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 
 /* This string is the name of the module and should match the stem
  * of the file name; it should also match the prefix of all functions
@@ -22,7 +21,6 @@ static const char *const mod_name = "users_wo_roles";
  * with the library. */
 int users_wo_roles_register(sechk_lib_t *lib)
 {
-#if 0
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
 
@@ -30,8 +28,6 @@ int users_wo_roles_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: no library\n");
 		return -1;
 	}
-
-	library = lib;
 
 	/* Modules are declared by the config file and their name and options
 	 * are stored in the module array.  The name is looked up to determine
@@ -41,6 +37,7 @@ int users_wo_roles_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: module unknown\n");
 		return -1;
 	}
+	mod->parent_lib = lib;
 
 	/* assign the descriptions */
 	mod->brief_description = "users with no roles";
@@ -71,8 +68,10 @@ int users_wo_roles_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = &users_wo_roles_init;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+                fprintf(stderr, "Error: out of memory\n");
+                return -1;
+        }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -85,8 +84,10 @@ int users_wo_roles_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = &users_wo_roles_run;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+                fprintf(stderr, "Error: out of memory\n");
+                return -1;
+        }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -98,9 +99,11 @@ int users_wo_roles_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &users_wo_roles_free;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+	fn_struct->fn = &users_wo_roles_data_free;
+        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+                fprintf(stderr, "Error: out of memory\n");
+                return -1;
+        }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -113,8 +116,10 @@ int users_wo_roles_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = &users_wo_roles_print_output;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+                fprintf(stderr, "Error: out of memory\n");
+                return -1;
+        }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -127,10 +132,11 @@ int users_wo_roles_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = &users_wo_roles_get_result;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+                fprintf(stderr, "Error: out of memory\n");
+                return -1;
+        }
 
-#endif
 	return 0;
 }
 
@@ -139,8 +145,6 @@ int users_wo_roles_register(sechk_lib_t *lib)
  * file. */
 int users_wo_roles_init(sechk_module_t *mod, apol_policy_t *policy)
 {
-#if 0
-	sechk_name_value_t *opt = NULL;
 	users_wo_roles_data_t *datum = NULL;
 
 	if (!mod || !policy) {
@@ -159,12 +163,6 @@ int users_wo_roles_init(sechk_module_t *mod, apol_policy_t *policy)
 	}
 	mod->data = datum;
 
-	opt = mod->options;
-	while (opt) {
-		opt = opt->next;
-	}
-
-#endif
 	return 0;
 }
 
@@ -174,12 +172,12 @@ int users_wo_roles_init(sechk_module_t *mod, apol_policy_t *policy)
  * in all relavant item and proof data. */
 int users_wo_roles_run(sechk_module_t *mod, apol_policy_t *policy)
 {
-#if 0
 	users_wo_roles_data_t *datum;
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
-	int i, retv, num_roles = 0, *roles = NULL;
+	int i, error;
+	apol_vector_t *user_vector;
 
 	if (!mod || !policy) {
 		fprintf(stderr, "Error: invalid parameters\n");
@@ -205,91 +203,81 @@ int users_wo_roles_run(sechk_module_t *mod, apol_policy_t *policy)
 		fprintf(stderr, "Error: out of memory\n");
 		goto users_wo_roles_run_fail;
 	}
-	res->item_type = POL_LIST_USERS;
+	res->item_type = SECHK_ITEM_USER;
+        if ( !(res->items = apol_vector_create()) ) {
+                error = errno;
+                ERR(policy, "Error: %s\n", strerror(error));
+                goto users_wo_roles_run_fail;
+        }
 
-	for (i = policy->num_users - 1; i >= 0; i--) {
-		num_roles = 0;
-		free(roles);
-		roles = NULL;
-		retv = get_user_roles(i, &num_roles, &roles, policy);
-		if (retv) {
-			fprintf(stderr, "Error: out of memory\n");
-			goto users_wo_roles_run_fail;
+	apol_get_user_by_query(policy, NULL, &user_vector);
+	for (i=0;i<apol_vector_get_size(user_vector);i++) {
+		qpol_user_t *user;
+		qpol_iterator_t *role_iter;
+	
+		user = apol_vector_get_element(user_vector, i);
+	 	qpol_user_get_role_iter(policy->qh, policy->p, user, &role_iter);
+		if ( !qpol_iterator_end(role_iter) ) continue;		
+
+                proof = sechk_proof_new(NULL);
+                if (!proof) {
+                        fprintf(stderr, "Error: out of memory\n");
+                        goto users_wo_roles_run_fail;
+                }
+                proof->type = SECHK_ITEM_USER;
+                proof->text = "User has no roles.\n";
+                item = sechk_item_new(NULL);
+                if (!item) {
+                        fprintf(stderr, "Error: out of memory\n");
+                        goto users_wo_roles_run_fail;
+                }
+                item->item = (void *)user;
+                if ( !item->proof ) {
+                        if ( !(item->proof = apol_vector_create()) ) {
+                                error = errno;
+                                ERR(policy, "Error: %s\n", strerror(error));
+                                goto users_wo_roles_run_fail;
+                        }
+                }
+                if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
+                        error = errno;
+                        ERR(policy, "Error: %s\n", strerror(error));
+                        goto users_wo_roles_run_fail;
+                }
+                if ( apol_vector_append(res->items, (void*)item) < 0 ) {
+                        error = errno;
+                        ERR(policy, "Error: %s\n", strerror(error));
+                        goto users_wo_roles_run_fail;
 		}
-		if (num_roles) 
-			continue;
-		proof = sechk_proof_new();
-		if (!proof) {
-			fprintf(stderr, "Error: out of memory\n");
-			goto users_wo_roles_run_fail;
-		}
-		proof->idx = i;
-		proof->type = POL_LIST_USERS;
-		proof->text = (char*)calloc(strlen("user  has no roles")+strlen(policy->users[i].name)+1, sizeof(char));
-		sprintf(proof->text, "user %s has no roles", policy->users[i].name);
-		item = sechk_item_new();
-		if (!item) {
-			fprintf(stderr, "Error: out of memory\n");
-			goto users_wo_roles_run_fail;
-		}
-		item->item_id = i;
-		item->test_result = 1;
-		proof->next = item->proof;
-		item->proof = proof;
-		item->next = res->items;
-		res->items = item;
-		(res->num_items)++;
 	}
+	apol_vector_destroy(&user_vector, NULL);
 
 	mod->result = res;
 
-	if (res->num_items > 0)
-		return 1;
-
-#endif
 	return 0;
 
-#if 0
 users_wo_roles_run_fail:
-	free(roles);
 	sechk_proof_free(proof);
 	sechk_item_free(item);
-	sechk_result_free(res);
 	return -1;
-#endif
 }
 
 /* The free function frees the private data of a module */
 void users_wo_roles_data_free(void *data)
 {
-#if 0
-	users_wo_roles_data_t *datum;
-
-	if (!mod) {
-		fprintf(stderr, "Error: invalid parameters\n");
-		return;
-	}
-	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
-		return;
-	}
-
-	datum = (users_wo_roles_data_t*)mod->data;
-
-	free(mod->data);
-	mod->data = NULL;
-#endif
+	free(data);
 }
 
 /* The print output function generates the text printed in the
  * report and prints it to stdout. */
 int users_wo_roles_print_output(sechk_module_t *mod, apol_policy_t *policy) 
 {
-#if 0
 	users_wo_roles_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
-	int i = 0;
+	int i = 0, j, num_items;
+	qpol_user_t *user;
+	char *user_name;
 
         if (!mod || !policy){
 		fprintf(stderr, "Error: invalid parameters\n");
@@ -302,6 +290,7 @@ int users_wo_roles_print_output(sechk_module_t *mod, apol_policy_t *policy)
 
 	datum = (users_wo_roles_data_t*)mod->data;
 	outformat = mod->outputformat;
+	num_items = apol_vector_get_size(mod->result->items);
 
 	if (!outformat || (outformat & SECHK_OUT_QUIET))
 		return 0; /* not an error - no output is requested */
@@ -313,7 +302,7 @@ int users_wo_roles_print_output(sechk_module_t *mod, apol_policy_t *policy)
 
 	/* display the statistics of the results */
 	if (outformat & SECHK_OUT_STATS) {
-		printf("Found %i users.\n", mod->result->num_items);
+		printf("Found %i users.\n", num_items);
 	}
 	if (outformat & SECHK_OUT_PROOF) {
 		printf("\nThe following users have no associated roles.\n");
@@ -321,16 +310,17 @@ int users_wo_roles_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	/* The list report component is a display of all items
 	 * found without any supporting proof. */
 	if (outformat & (SECHK_OUT_LIST|SECHK_OUT_PROOF)) {
-		printf("\n");
-		for (item = mod->result->items; item; item = item->next) {
-			i++;
-			i %= 4;
-			printf("%s%s", policy->users[item->item_id].name, (i&&item->next) ? ", " : "\n"); 
-		}
-		printf("\n");
+                printf("\n");
+                for (i=0;i<num_items;i++) {
+                        j++;
+                        j %= 4;
+                        item = apol_vector_get_element(mod->result->items, i);
+                        user = (qpol_user_t*)item->item;
+                        qpol_user_get_name(policy->qh, policy->p, user, &user_name);
+                        printf("%s%s", user_name, (char *)( (j) ? ", " : "\n"));
+                }
+                printf("\n");
 	}
-
-#endif
 	return 0;
 }
 
@@ -338,7 +328,6 @@ int users_wo_roles_print_output(sechk_module_t *mod, apol_policy_t *policy)
  * structure for this check to be used in another check. */
 sechk_result_t *users_wo_roles_get_result(sechk_module_t *mod) 
 {
-#if 0
 	if (!mod) {
 		fprintf(stderr, "Error: invalid parameters\n");
 		return NULL;
@@ -349,8 +338,6 @@ sechk_result_t *users_wo_roles_get_result(sechk_module_t *mod)
 	}
 
 	return mod->result;
-#endif
-	return NULL;
 }
 
 /* The users_wo_roles_data_new function allocates and returns an
@@ -358,13 +345,9 @@ sechk_result_t *users_wo_roles_get_result(sechk_module_t *mod)
  * module. */
 users_wo_roles_data_t *users_wo_roles_data_new(void)
 {
-#if 0
 	users_wo_roles_data_t *datum = NULL;
 
 	datum = (users_wo_roles_data_t*)calloc(1,sizeof(users_wo_roles_data_t));
 
 	return datum;
-#endif
-	return NULL;
 }
- 

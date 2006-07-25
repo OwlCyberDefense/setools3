@@ -10,7 +10,9 @@
 #define ROLES_WO_ALLOW
 
 #include "sechecker.h"
-
+#include <apol/policy.h>
+#include <apol/role-query.h>
+#include <apol/rbacrule-query.h>
 
 /* The roles_wo_allow_data structure is used to hold the check specific
  *  private data of a module. */

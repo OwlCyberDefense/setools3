@@ -10,7 +10,9 @@
 #define ROLES_WO_USERS
 
 #include "sechecker.h"
-
+#include <apol/policy.h>
+#include <apol/user-query.h>
+#include <apol/role-query.h>
 
 /* The roles_wo_users_data structure is used to hold the check specific
  *  private data of a module. */
