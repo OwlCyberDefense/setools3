@@ -10,8 +10,11 @@
 #define FIND_DOMAINS
 
 #include "sechecker.h"
+#include <apol/policy.h>
+#include <apol/type-query.h>
+#include <apol/role-query.h>
+#include <apol/terule-query.h>
 
-#include <apol/vector.h>
 typedef struct find_domains_data {
 	apol_vector_t 	*domain_attribs;
 	int num_domain_attribs;
@@ -24,7 +27,7 @@ void find_domains_data_free(void *data);
 int find_domains_print_output(sechk_module_t *mod, apol_policy_t *policy);
 sechk_result_t *find_domains_get_result(sechk_module_t *mod);
  
-int find_domains_get_list(sechk_module_t *mod, int **array, int *size);
+int find_domains_get_list(sechk_module_t *mod, apol_vector_t **v);
 
 find_domains_data_t *find_domains_data_new(void);
 

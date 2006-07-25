@@ -6,28 +6,23 @@
  *
  */
 
-#include "sechecker.h"
-
 #include "find_net_domains.h"
 
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 
 static const char *const mod_name = "find_net_domains";
 
 int find_net_domains_register(sechk_lib_t *lib)
 {
-#if 0
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
-	sechk_name_value_t *nv = NULL;
 
 	if (!lib) {
 		fprintf(stderr, "Error: no library\n");
 		return -1;
 	}
-
-	library = lib;
 
 	/* Modules are declared by the config file and their name and options
 	 * are stored in the module array.  The name is looked up to determine
@@ -37,6 +32,7 @@ int find_net_domains_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: module unknown\n");
 		return -1;
 	}
+	mod->parent_lib = lib;
 	
 	/* assign the descriptions */
 	mod->brief_description = "utility module";
@@ -61,22 +57,10 @@ int find_net_domains_register(sechk_lib_t *lib)
 	mod->severity = SECHK_SEV_NONE;
 
 	/* assign default options */
-	mod->options = sechk_name_value_new("net_obj", "netif");
-	nv = sechk_name_value_new("net_obj", "tcp_socket");
-	nv->next = mod->options;
-	mod->options = nv;
-
-	nv = sechk_name_value_new("net_obj", "udp_socket");
-	nv->next = mod->options;
-	mod->options = nv;
-
-	nv = sechk_name_value_new("net_obj", "node");
-	nv->next = mod->options;
-	mod->options = nv;
-	
-	nv = sechk_name_value_new("net_obj", "association");
-	nv->next = mod->options;
-	mod->options = nv;
+	apol_vector_append(mod->options, sechk_name_value_new("net_obj", "netif"));
+	apol_vector_append(mod->options, sechk_name_value_new("net_obj", "tcp_socket"));
+	apol_vector_append(mod->options, sechk_name_value_new("net_obj", "node"));
+	apol_vector_append(mod->options, sechk_name_value_new("net_obj", "association"));
 
 	/* register functions */
 	fn_struct = sechk_fn_new();
@@ -90,8 +74,10 @@ int find_net_domains_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = &find_net_domains_init;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+                fprintf(stderr, "Error: out of memory\n");
+                return -1;
+        }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -104,8 +90,10 @@ int find_net_domains_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = &find_net_domains_run;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+                fprintf(stderr, "Error: out of memory\n");
+                return -1;
+        }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -117,9 +105,11 @@ int find_net_domains_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &find_net_domains_free;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+	fn_struct->fn = &find_net_domains_data_free;
+        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+                fprintf(stderr, "Error: out of memory\n");
+                return -1;
+        }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -132,8 +122,10 @@ int find_net_domains_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = &find_net_domains_print_output;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+                fprintf(stderr, "Error: out of memory\n");
+                return -1;
+        }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -146,8 +138,10 @@ int find_net_domains_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = &find_net_domains_get_result;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+                fprintf(stderr, "Error: out of memory\n");
+                return -1;
+        }
 
 	fn_struct = sechk_fn_new();
         if (!fn_struct) {
@@ -160,60 +154,55 @@ int find_net_domains_register(sechk_lib_t *lib)
                 return -1;
         }
         fn_struct->fn = &find_net_domains_get_list;
-        fn_struct->next = mod->functions;
-        mod->functions = fn_struct;
+        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+                fprintf(stderr, "Error: out of memory\n");
+                return -1;
+        }
 
-#endif
 	return 0;
 }
 
 /* The init function creates the module's private data storage object
  * and initializes its values based on the options parsed in the config
  * file. */
-int find_net_domains_init(sechk_module_t *mod, policy_t *policy)
+int find_net_domains_init(sechk_module_t *mod, apol_policy_t *policy)
 {
-#if 0
 	sechk_name_value_t *opt = NULL;
 	find_net_domains_data_t *datum = NULL;
-	int obj_idx = 0;
+	size_t i;
 
 	if (!mod || !policy) {
-		fprintf(stderr, "Error: invalid parameters\n");
+		ERR(policy, "Invalid parameters");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+		ERR(policy, "Wrong module (%s)", mod->name);
 		return -1;
 	}
 
 	datum = find_net_domains_data_new();
 	if (!datum) {
-		fprintf(stderr, "Error: out of memory\n");
+		ERR(policy, "Out of memory");
 		return -1;
 	}
-	mod->data = datum;
 
-	/* populate datum with domains defined in options */
-	opt = mod->options;
-	while (opt) {
-		if (strcmp(opt->name, "net_obj") == 0) {
-			if ((obj_idx = get_obj_class_idx(opt->value, policy)) <= 0) {
-				fprintf(stderr, "Error: undefined object class %s\n", opt->value);
-				return -1;
-			}
-			if (!is_valid_obj_class(policy, obj_idx)) {
-				fprintf(stderr, "Error: invalid object class %s\n", opt->value);
-				return -1;
-			}      
-			if (add_i_to_a(obj_idx, &(datum->num_net_objs), &(datum->net_objs)) != 0) {
-				fprintf(stderr, "Error: out of memory\n");
-				return -1;
-			}
-		}
-		opt = opt->next;
+	if ( !(datum->net_objs = apol_vector_create()) ) {
+		ERR(policy, "Out of memory");
+		return -1;
 	}
 
-#endif
+	mod->data = datum;
+
+        for (i = 0; i < apol_vector_get_size(mod->options); i++) {
+                opt = apol_vector_get_element(mod->options, i);
+                if (!strcmp(opt->name, "net_obj")) {
+	                if ( apol_vector_append(datum->net_objs, (void*) opt->value ) < 0 ) {
+       		        	ERR(policy, "Out of memory");
+                        	return -1;
+                        }
+                }
+        }
+
 	return 0;
 }
 
@@ -225,25 +214,22 @@ int find_net_domains_init(sechk_module_t *mod, policy_t *policy)
  *  -1 System error
  *   0 The module "succeeded"	- no negative results found
  *   1 The module "failed" 		- some negative results found */
-int find_net_domains_run(sechk_module_t *mod, policy_t *policy)
+int find_net_domains_run(sechk_module_t *mod, apol_policy_t *policy)
 {
-/* FIX ME: need to convert this to use new libapol */
-#if 0
 	find_net_domains_data_t *datum;
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
-	char *buff = NULL;
-	int i = 0, j = 0, idx = 0, obj = 0, retv = 0;
-	int *obj_classes = NULL, obj_classes_sz = 0;
-	int *src_types = NULL, src_types_sz = 0;
+	int i = 0, j = 0, k=0,  error;
+	apol_vector_t *avrule_vector;
+	apol_avrule_query_t *avrule_query;
 
 	if (!mod || !policy) {
-		fprintf(stderr, "Error: invalid parameters\n");
+		ERR(policy, "Invalid parameters");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+		ERR(policy, "Wrong module (%s)", mod->name);
 		return -1;
 	}
 
@@ -254,122 +240,114 @@ int find_net_domains_run(sechk_module_t *mod, policy_t *policy)
 	datum = (find_net_domains_data_t*)mod->data;
 	res = sechk_result_new();
 	if (!res) {
-		fprintf(stderr, "Error: out of memory\n");
+		ERR(policy, "Out of memory");
 		return -1;
 	}
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
-		fprintf(stderr, "Error: out of memory\n");
+		ERR(policy, "Out of memory");
 		goto find_net_domains_run_fail;
 	}
-	res->item_type = POL_LIST_TYPE;
-
-	/* iterate through av_access rules */
-	for (i = 0; i < policy->num_av_access; i++) {
-		retv = extract_obj_classes_from_te_rule(i, RULE_TE_ALLOW, &obj_classes, &obj_classes_sz, policy);
-		if (retv == -1) {
-			fprintf(stderr, "Error: cannot extract object class from rule\n");
-			goto find_net_domains_run_fail;
-		}
-
-		/* is this obj class in net_domains[]? */
-		for (obj = 0; obj < obj_classes_sz; obj++) {
-			idx = find_int_in_array(obj_classes[obj], datum->net_objs, datum->num_net_objs);
-
-			/* this obj class is in net_domains[]; extract src type, add to result set */
-			if (idx > -1) {
-				if (extract_types_from_te_rule(i, RULE_TE_ALLOW, SRC_LIST, &src_types, &src_types_sz, policy) != 0) {
-					fprintf(stderr, "Error: out of memory\n");
-					goto find_net_domains_run_fail;
-				}
-				
-				item = NULL;
-
-				/* add to result set */
-				for (j = 0; j < src_types_sz; j++) {	
-					if (res->num_items > 0) {
-						item = sechk_result_get_item(src_types[j], POL_LIST_TYPE, res);
-					}
-
-					if (!item) {
-						item = sechk_item_new();
-						if (!item) {
-							fprintf(stderr, "Error: out of memory\n");
-							goto find_net_domains_run_fail;
-						}
-						item->item_id = src_types[j];
-						item->test_result = 1;
-						item->next = res->items;
-						res->items = item;
-						(res->num_items)++;
-					}
-
-					/* only 1 proof element/item */
-					if (!sechk_item_has_proof(src_types[j], POL_LIST_TYPE, item)) {
-						proof = sechk_proof_new();
-						if (!proof) {
-							fprintf(stderr, "Error: out of memory\n");
-							goto find_net_domains_run_fail;
-						}
-						proof->idx = src_types[j];
-						proof->type = POL_LIST_TYPE;
-						buff = re_render_av_rule(1, i, RULE_TE_ALLOW, policy);
-						if (!buff) {
-							fprintf(stderr, "Error: out of memory\n");
-							goto find_net_domains_run_fail;
-						}
-						proof->text = buff;
-
-						if (res->num_items > 0) {
-							item = sechk_result_get_item(src_types[j], POL_LIST_TYPE, res);
-						}
-
-						proof->next = item->proof;
-						item->proof = proof;	
-					}
-				}
-				break;
-			}
-		}
+	res->item_type = SECHK_ITEM_TYPE;
+        if ( !(res->items = apol_vector_create()) ) {
+                error = errno;
+                ERR(policy, "%s", strerror(error));
+		goto find_net_domains_run_fail;
 	}
-	
+
+	if ( !(avrule_query = apol_avrule_query_create()) ) {
+                error = errno;
+                ERR(policy, "%s", strerror(error));
+		goto find_net_domains_run_fail;
+	}
+	apol_avrule_query_set_rules(policy, avrule_query, QPOL_RULE_ALLOW);
+	apol_get_avrule_by_query(policy, avrule_query, &avrule_vector);
+	for (k=0;k<apol_vector_get_size(avrule_vector);k++) {	
+		qpol_avrule_t *avrule;
+		qpol_class_t *class;
+		char *class_name;
+
+		avrule = apol_vector_get_element(avrule_vector, k);	
+		qpol_avrule_get_object_class(policy->qh, policy->p, avrule, &class);
+		qpol_class_get_name(policy->qh, policy->p, class, &class_name);
+		for (i=0;i<apol_vector_get_size(datum->net_objs);i++) {
+			char *net_obj_name;
+
+			net_obj_name = apol_vector_get_element(datum->net_objs, i);
+			if ( !strcmp(class_name, net_obj_name) ) {
+				qpol_type_t *source;
+				char *source_name;
+			
+				qpol_avrule_get_source_type(policy->qh, policy->p, avrule, &source);
+				qpol_type_get_name(policy->qh, policy->p, source, &source_name);
+
+	                	proof = sechk_proof_new(NULL);
+		                if ( !proof ) {
+		                        ERR(policy, "Out of memory");
+		                        goto find_net_domains_run_fail;
+	        	        }
+	                	proof->type = SECHK_ITEM_TYPE;
+		                proof->text = strdup(apol_avrule_render(policy, avrule));
+				if ( !proof->text ) {
+               	                        ERR(policy, "Out of memory");
+                       	                goto find_net_domains_run_fail;
+				}
+                		item = NULL;
+
+		                for (j=0;j<apol_vector_get_size(res->items);j++) {
+               	        		sechk_item_t *res_item = NULL;
+					qpol_type_t *res_type;
+					char *res_type_name;
+
+	        	                res_item = apol_vector_get_element(res->items, j);
+					res_type = res_item->item;
+					qpol_type_get_name(policy->qh, policy->p, res_type, &res_type_name);
+	                	        if (!strcmp(res_type_name, source_name)) item = res_item;
+				}	
+               
+				if ( !item) {
+		                        item = sechk_item_new(NULL);
+       			                if (!item) {
+               	        	                ERR(policy, "Out of memory");
+                       	        	        goto find_net_domains_run_fail;
+                       			}
+		                        item->test_result = 1;
+                		        item->item = (void *)source;
+	        	                if ( apol_vector_append(res->items, (void *)item) < 0 ) {
+       		                                ERR(policy, "Out of memory");
+                	                        goto find_net_domains_run_fail;
+               			        }
+                		}
+		                if ( !item->proof ) {
+               			        if ( !(item->proof = apol_vector_create()) ) {
+                	                        ERR(policy, "Out of memory");
+       	                	                goto find_net_domains_run_fail;
+                       			}
+                		}
+		                if ( apol_vector_append(item->proof, (void *)proof) < 0 ) {
+               	                        ERR(policy, "Out of memory");
+                       	                goto find_net_domains_run_fail;
+                		}
+		                item = NULL;
+			}
+		}	
+	}
+	apol_avrule_query_destroy(&avrule_query);
+	apol_vector_destroy(&avrule_vector, NULL);	
 	mod->result = res;
 
-	/* If module finds something that would be considered a fail 
-	 * on the policy return 1 here */
-	if (res->num_items > 0)
-		return 1;
-
-#endif
 	return 0;
 
-#if 0
 find_net_domains_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
-	sechk_result_free(res);
-	if (buff)
-		free(buff); 
 	return -1;
-#endif
 }
 
 /* The free function frees the private data of a module */
 void find_net_domains_data_free(void *data)
 {
-#if 0
-	if (!mod) {
-		fprintf(stderr, "Error: invalid parameters\n");
-		return;
-	}
-	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
-		return;
-	}
-
-	free(mod->data);
-	mod->data = NULL;
-#endif
+	free(data);
 }
 
 /* The print output function generates the text and prints the
@@ -379,15 +357,15 @@ void find_net_domains_data_free(void *data)
  * outline and will need a different specification. It is
  * required that each of the flags for output components be
  * tested in this function (stats, list, proof, detailed, and brief) */
-int find_net_domains_print_output(sechk_module_t *mod, policy_t *policy) 
+int find_net_domains_print_output(sechk_module_t *mod, apol_policy_t *policy) 
 {
-#if 0
 	find_net_domains_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
-	int i = 0, type_idx = 0;
-	char *type_str = NULL;
+	int i = 0, j = 0, k = 0, l = 0, num_items;
+	qpol_type_t *type;
+	char *type_name;
 
 	if (!mod || !policy){
 		fprintf(stderr, "Error: invalid parameters\n");
@@ -400,6 +378,7 @@ int find_net_domains_print_output(sechk_module_t *mod, policy_t *policy)
 	
 	datum = (find_net_domains_data_t*)mod->data;
 	outformat = mod->outputformat;
+	num_items = apol_vector_get_size(mod->result->items);
 
 	if (!mod->result) {
 		fprintf(stderr, "Error: module has not been run\n");
@@ -410,7 +389,7 @@ int find_net_domains_print_output(sechk_module_t *mod, policy_t *policy)
 		return 0; /* not an error - no output is requested */
 
 	if (outformat & SECHK_OUT_STATS) {
-		printf("\nFound %i network domains.", mod->result->num_items);
+		printf("\nFound %i network domains.", num_items);
 	}
 
 	/* The list renode component is a display of all items
@@ -418,16 +397,16 @@ int find_net_domains_print_output(sechk_module_t *mod, policy_t *policy)
 	 * is to display a comma separated list four items to a line
 	 * this may need to be changed for longer items. */
 	if (outformat & SECHK_OUT_LIST) {
-		printf("\n");
-		for (item = mod->result->items; item; item = item->next) {
-			i++;
-			i %= 4;
-			type_idx = item->item_id;
-			type_str = policy->types[type_idx].name;
-			printf("%s%s", type_str, (i&&item->next) ? ", " : "\n");
-
-		}
-		printf("\n");
+                printf("\n");
+                for (i = 0; i < num_items; i++) {
+                        j++;
+                        item  = apol_vector_get_element(mod->result->items, i);
+                        type = item->item;
+                        qpol_type_get_name(policy->qh, policy->p, type, &type_name);
+                        j %= 4;
+                        printf("%s%s", (char *)type_name, (char *)( (j) ? ", " : "\n" ));
+                }
+                printf("\n");
 	}
 
 	/* The proof renode component is a display of a list of items
@@ -439,20 +418,23 @@ int find_net_domains_print_output(sechk_module_t *mod, policy_t *policy)
 	 * rule, followed by) the severity. Each proof element is then
 	 * displayed in an indented list one per line below it. */
 	if (outformat & SECHK_OUT_PROOF) {
-		printf("\n");
-		for (item = mod->result->items; item; item = item->next) {
-			type_idx = item->item_id;
-			type_str = policy->types[type_idx].name;
-
-			printf("\n%s\n", type_str);
-			for (proof = item->proof; proof; proof = proof->next) {
-				printf("\t%s\n", proof->text);
-			}
-		}
-		printf("\n");
+                printf("\n");
+                for (k=0;k< num_items;k++) {
+                        item = apol_vector_get_element(mod->result->items, k);
+                        if ( item ) {
+                                type = item->item;
+                                qpol_type_get_name(policy->qh, policy->p, type, &type_name);
+                                printf("%s\n", (char*)type_name);
+                                for (l=0; l<apol_vector_get_size(item->proof);l++) {
+                                        proof = apol_vector_get_element(item->proof,l);
+                                        if ( proof )
+                                                printf("\t%s\n", proof->text);
+                                }
+                        }
+                }
+                printf("\n");
 	}
 
-#endif
 	return 0;
 }
 
@@ -460,8 +442,6 @@ int find_net_domains_print_output(sechk_module_t *mod, policy_t *policy)
  * structure for this check to be used in another check. */
 sechk_result_t *find_net_domains_get_result(sechk_module_t *mod) 
 {
-#if 0
-
 	if (!mod) {
 		fprintf(stderr, "Error: invalid parameters\n");
 		return NULL;
@@ -472,43 +452,26 @@ sechk_result_t *find_net_domains_get_result(sechk_module_t *mod)
 	}
 
 	return mod->result;
-#endif
-	return NULL;
 }
 
 int find_net_domains_get_list(sechk_module_t *mod, apol_vector_t **v)
 {
-#if 0
-	int i;
-	sechk_item_t *item = NULL;
+        if (!mod || !v) {
+                fprintf(stderr, "Error: invalid parameters\n");
+                return -1;
+        }
+        if (strcmp(mod_name, mod->name)) {
+                fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+                return -1;
+        }
+        if (!mod->result) {
+                fprintf(stderr, "Error: module has not been run\n");
+                return -1;
+        }
 
-	if (!mod || !array || !size) {
-		fprintf(stderr, "Error: invalid parameters\n");
-		return -1;
-	}
-	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
-		return -1;
-	}
-	if (!mod->result) {
-		fprintf(stderr, "Error: module has not been run\n");
-		return -1;
-	}
+        v = &mod->result->items;
 
-	*size = mod->result->num_items;
-
-	*array = (int*)malloc(mod->result->num_items * sizeof(int));
-	if (!(*array)) {
-		fprintf(stderr, "Error: out of memory\n");
-		return -1;
-	}
-
-	for (i = 0, item = mod->result->items; item && i < *size; i++, item = item->next) {
-		(*array)[i] = item->item_id;
-	}
-
-#endif
-	return 0;
+        return 0;
 }
 
 /* The find_net_domains_data_new function allocates and returns an
@@ -522,13 +485,10 @@ int find_net_domains_get_list(sechk_module_t *mod, apol_vector_t **v)
  * any other data should be initialized as needed by the check logic */
 find_net_domains_data_t *find_net_domains_data_new(void)
 {
-#if 0
 	find_net_domains_data_t *datum = NULL;
 
 	datum = (find_net_domains_data_t*)calloc(1,sizeof(find_net_domains_data_t));
 
 	return datum;
-#endif
-	return NULL;
 }
 

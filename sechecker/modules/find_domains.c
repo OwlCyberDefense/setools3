@@ -6,9 +6,8 @@
  *
  */
 
-#include "sechecker.h"
-#include <apol/policy-query.h>
 #include "find_domains.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -518,7 +517,7 @@ int find_domains_run(sechk_module_t *mod, apol_policy_t *policy)
 
                 /* insert any results for this type */
                 if (item) {
-                        item->item = type_name;
+                        item->item = type;
                         if ( apol_vector_append(res->items, (void*)item) < 0 ) {
 		                error = errno;
 		                ERR(policy, "Error: %s\n", strerror(error));
@@ -558,6 +557,8 @@ int find_domains_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	sechk_item_t *item = NULL;
 	int i = 0, j = 0 , k = 0, l=0, num_items;
 	sechk_proof_t *proof = NULL;
+	qpol_type_t *type;
+	char *type_name;
 
 	if (!mod || !policy){
 		fprintf(stderr, "Error: invalid parameters\n");
@@ -592,8 +593,10 @@ int find_domains_print_output(sechk_module_t *mod, apol_policy_t *policy)
                 for (i = 0; i < num_items; i++) {
                         j++;
                         item  = apol_vector_get_element(mod->result->items, i);
+			type = item->item;
+			qpol_type_get_name(policy->qh, policy->p, type, &type_name);
                         j %= 4;
-                        printf("%s%s", (char *)item->item, (char *)( (j) ? ", " : "\n" ));
+                        printf("%s%s", (char *)type_name, (char *)( (j) ? ", " : "\n" ));
                 }
                 printf("\n");
         }
@@ -603,7 +606,9 @@ int find_domains_print_output(sechk_module_t *mod, apol_policy_t *policy)
                 for (k=0;k< num_items;k++) {
                         item = apol_vector_get_element(mod->result->items, k);
                         if ( item ) {
-                                printf("%s\n", (char*)item->item);
+				type = item->item;
+				qpol_type_get_name(policy->qh, policy->p, type, &type_name);
+                                printf("%s\n", (char*)type_name);
                                 for (l=0; l<apol_vector_get_size(item->proof);l++) {
                                         proof = apol_vector_get_element(item->proof,l);
                                         if ( proof )
@@ -631,38 +636,24 @@ sechk_result_t *find_domains_get_result(sechk_module_t *mod)
 	return mod->result;
 }
 
-int find_domains_get_list(sechk_module_t *mod, int **array, int *size) 
+int find_domains_get_list(sechk_module_t *mod, apol_vector_t **v)
 {
-	int i, num_items;
-	sechk_item_t *item = NULL;
-
-	if (!mod || !array || !size) {
-		fprintf(stderr, "Error: invalid parameters\n");
-		return -1;
-	}
-	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
-		return -1;
-	}
-	if (!mod->result) {
-		fprintf(stderr, "Error: module has not been run\n");
-		return -1;
-	}
-
-	num_items = apol_vector_get_size(mod->result->items);
-	*size = num_items;
-	*array = (int*)malloc(num_items *sizeof(int));
-	if (!(*array)) {
-		fprintf(stderr, "Error: out of memory\n");
-			return -1;
-	}
-
-        for (i = 0; i < apol_vector_get_size(mod->result->items); i++) {
-                item  = apol_vector_get_element(mod->result->items, i);
-                (*array)[i] = i;
+        if (!mod || !v) {
+                fprintf(stderr, "Error: invalid parameters\n");
+                return -1;
+        }
+        if (strcmp(mod_name, mod->name)) {
+                fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+                return -1;
+        }
+        if (!mod->result) {
+                fprintf(stderr, "Error: module has not been run\n");
+                return -1;
         }
 
-	return 0;
+        v = &mod->result->items;
+
+        return 0;
 }
 
 find_domains_data_t *find_domains_data_new(void) 

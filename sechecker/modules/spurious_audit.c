@@ -6,8 +6,6 @@
  *
  */
 
-#include "sechecker.h"
-
 #include "spurious_audit.h"
 
 #include <stdio.h>

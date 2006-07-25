@@ -10,7 +10,8 @@
 #define ROLES_WO_TYPES
 
 #include "sechecker.h"
-
+#include <apol/policy.h>
+#include <apol/role-query.h>
 
 /* The roles_wo_types_data structure is used to hold the check specific
  *  private data of a module. */

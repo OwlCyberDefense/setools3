@@ -6,10 +6,8 @@
  *
  */
 
-#include "sechecker.h"
-
 #include "find_netif_types.h"
-#include <apol/policy-query.h>
+#include <apol/netcon-query.h>
 
 #include <stdio.h>
 #include <string.h>

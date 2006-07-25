@@ -10,7 +10,7 @@
 #define SPURIOUS_AUDIT
 
 #include "sechecker.h"
-
+#include <apol/policy.h>
 
 /* The spurious_audit_data structure is used to hold the check specific
  *  private data of a module.*/
