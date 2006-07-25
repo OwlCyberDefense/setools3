@@ -7,11 +7,11 @@
  */
 
 
-#include "sechecker.h"
 #include "attribs_wo_types.h"
 
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 
 /* This string is the name of the module and should match the stem
  * of the file name; it should also match the prefix of all functions
@@ -22,25 +22,23 @@ static const char *const mod_name = "attribs_wo_types";
  * with the library. */
 int attribs_wo_types_register(sechk_lib_t *lib) 
 {
-#if 0
-	sechk_module_t *mod = NULL;
-	sechk_fn_t *fn_struct = NULL;
+	sechk_module_t *mod     = NULL;
+	sechk_fn_t *fn_struct   = NULL;
 
 	if (!lib) {
-		fprintf(stderr, "Error: no library\n");
+		fprintf(stderr, "Error: No library\n");
 		return -1;
 	}
-
-	library = lib;
 
 	/* Modules are declared by the config file and their name and options
 	 * are stored in the module array.  The name is looked up to determine
 	 * where to store the function structures */
 	mod = sechk_lib_get_module(mod_name, lib);
 	if (!mod) {
-		fprintf(stderr, "Error: module unknown\n");
+		fprintf(stderr, "Error: Module unknown\n");
 		return -1;
 	}
+	mod->parent_lib = lib;
 	
 	/* assign the descriptions */
 	mod->brief_description = "attributes with no types";
@@ -59,149 +57,156 @@ int attribs_wo_types_register(sechk_lib_t *lib)
 "   none\n";
 	mod->severity = SECHK_SEV_LOW;
 	/* assign requirements */
-	mod->requirements = sechk_name_value_new("policy_type", "source");
+        if ( apol_vector_append(mod->requirements, sechk_name_value_new("policy_type", "source")) < 0 ) {
+                fprintf(stderr, "Error: Out of memory\n");
+                return -1;
+        }
 
 	/* register functions */
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+		fprintf(stderr, "Error: Out of memory\n");
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_INIT);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+		fprintf(stderr, "Error: Out of memory\n");
 		return -1;
 	}
 	fn_struct->fn = &attribs_wo_types_init;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+                fprintf(stderr, "Error: Out of memory\n");
+                return -1;
+        }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+		fprintf(stderr, "Error: Out of memory\n");
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_RUN);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+		fprintf(stderr, "Error: Out of memory\n");
 		return -1;
 	}
 	fn_struct->fn = &attribs_wo_types_run;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+                fprintf(stderr, "Error: Out of memory\n");
+                return -1;
+        }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+		fprintf(stderr, "Error: Out of memory\n");
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_FREE);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+		fprintf(stderr, "Error: Out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &attribs_wo_types_free;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+	fn_struct->fn = &attribs_wo_types_data_free;
+        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+                fprintf(stderr, "Error: Out of memory\n");
+                return -1;
+        }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+		fprintf(stderr, "Error: Out of memory\n");
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_PRINT);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+		fprintf(stderr, "Error: Out of memory\n");
 		return -1;
 	}
 	fn_struct->fn = &attribs_wo_types_print_output;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+                fprintf(stderr, "Error: Out of memory\n");
+                return -1;
+        }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+		fprintf(stderr, "Error: Out of memory\n");
 		return -1;
 	}
 	fn_struct->name = strdup(SECHK_MOD_FN_GET_RES);
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+		fprintf(stderr, "Error: Out of memory\n");
 		return -1;
 	}
 	fn_struct->fn = &attribs_wo_types_get_result;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+                fprintf(stderr, "Error: Out of memory\n");
+                return -1;
+        }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
-		fprintf(stderr, "Error: out of memory\n");
+		fprintf(stderr, "Error: Out of memory\n");
 		return -1;
 	}
 	fn_struct->name = strdup("get_list");
 	if (!fn_struct->name) {
-		fprintf(stderr, "Error: out of memory\n");
+		fprintf(stderr, "Error: Out of memory\n");
 		return -1;
 	}
 	fn_struct->fn = &attribs_wo_types_get_list;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+                fprintf(stderr, "Error: Out of memory\n");
+                return -1;
+        }
 
-#endif
 	return 0;
 }
 
 /* The init function creates the module's private data storage object
  * and initializes its values based on the options parsed in the config
  * file. */
-int attribs_wo_types_init(sechk_module_t *mod, policy_t *policy)
+int attribs_wo_types_init(sechk_module_t *mod, apol_policy_t *policy)
 {
-#if 0
-	sechk_name_value_t *opt = NULL;
 	attribs_wo_types_data_t *datum = NULL;
 
 	if (!mod || !policy) {
-		fprintf(stderr, "Error: invalid parameters\n");
+		ERR(policy, "Invalid parameters");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+		ERR(policy, "Wrong module (%s)", mod->name);
 		return -1;
 	}
 
 	datum = attribs_wo_types_data_new();
 	if (!datum) {
-		fprintf(stderr, "Error: out of memory\n");
+		ERR(policy, "Out of memory");
 		return -1;
 	}
 	mod->data = datum;
-
-	opt = mod->options;
-	while (opt) {
-		opt = opt->next;
-	}
-
-#endif
+	
 	return 0;
 }
 
 /* The run function performs the check. This function runs only once
  * even if called multiple times. This function allocates the result
  * structure and fills in all relavant item and proof data. */
-int attribs_wo_types_run(sechk_module_t *mod, policy_t *policy)
+int attribs_wo_types_run(sechk_module_t *mod, apol_policy_t *policy)
 {
-#if 0
 	attribs_wo_types_data_t *datum;
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
-	int i, retv, num_types = 0, *types = NULL;
+	int i, error = 0;
+	apol_vector_t *attr_vector = NULL;
+	qpol_iterator_t *types;
 
 	if (!mod || !policy) {
-		fprintf(stderr, "Error: invalid parameters\n");
+		ERR(policy, "Invalid parameters");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+		ERR(policy, "Wrong module (%s)", mod->name);
 		return -1;
 	}
 
@@ -212,115 +217,113 @@ int attribs_wo_types_run(sechk_module_t *mod, policy_t *policy)
 	datum = (attribs_wo_types_data_t*)mod->data;
 	res = sechk_result_new();
 	if (!res) {
-		fprintf(stderr, "Error: out of memory\n");
+		error = errno;
+		ERR(policy, strerror(error));
 		return -1;
 	}
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
-		fprintf(stderr, "Error: out of memory\n");
+                error = errno;
+                ERR(policy, strerror(error));
 		goto attribs_wo_types_run_fail;
 	}
-	res->item_type = POL_LIST_ATTRIB;
+	res->item_type = SECHK_ITEM_ATTRIB;
+	if ( !(res->items = apol_vector_create()) ) {
+                error = errno;
+                ERR(policy, strerror(error));
+		goto attribs_wo_types_run_fail;
+	}	
 
-	for (i = policy->num_attribs - 1; i >= 0; i--) {
-		num_types = 0;
-		free(types);
-		types = NULL;
-		retv = get_attrib_types(i, &num_types, &types, policy);
-		if (retv) {
-			fprintf(stderr, "Error: out of memory\n");
-			goto attribs_wo_types_run_fail;
-		}
-		if (num_types) 
-			continue;
-		proof = sechk_proof_new();
+	apol_get_attr_by_query(policy, NULL, &attr_vector);
+	for ( i = 0; i < apol_vector_get_size(attr_vector); i++ ) {
+		qpol_type_t *attr;
+		char *attr_name;
+
+		attr = apol_vector_get_element(attr_vector, i);
+		qpol_type_get_name(policy->qh, policy->p, attr, &attr_name);
+		qpol_type_get_type_iter(policy->qh, policy->p, attr, &types);
+		if ( !qpol_iterator_end(types) ) continue;
+		
+		proof = sechk_proof_new(NULL);
 		if (!proof) {
-			fprintf(stderr, "Error: out of memory\n");
+	                error = errno;
+        	        ERR(policy, strerror(error));
 			goto attribs_wo_types_run_fail;
 		}
-		proof->idx = i;
-		proof->type = POL_LIST_ATTRIB;
-		proof->text = (char*)calloc(strlen("attribute  has no types")+strlen(policy->attribs[i].name)+1, sizeof(char));
-		sprintf(proof->text, "attribute %s has no types", policy->attribs[i].name);
-		item = sechk_item_new();
+		proof->type = SECHK_ITEM_ATTRIB;
+		proof->text = (char*)calloc(strlen("attribute has no types")+strlen(attr_name)+1, sizeof(char));
+		sprintf(proof->text, "attribute %s has no types", attr_name);
+		item = sechk_item_new(NULL);
 		if (!item) {
-			fprintf(stderr, "Error: out of memory\n");
+			error = errno;
+			ERR(policy, "Out of memory");
 			goto attribs_wo_types_run_fail;
 		}
-		item->item_id = i;
+		if ( !item->proof ) {
+			if ( !(item->proof = apol_vector_create()) ) {
+                		error = errno;
+		                ERR(policy, strerror(error));
+				goto attribs_wo_types_run_fail;
+			}
+		}
+		item->item = (void *)attr;
 		item->test_result = 1;
-		proof->next = item->proof;
-		item->proof = proof;
-		item->next = res->items;
-		res->items = item;
-		(res->num_items)++;
+                if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
+                         error = errno;
+                         ERR(policy, strerror(error));
+                         goto attribs_wo_types_run_fail;
+                }
+                if ( apol_vector_append(res->items, (void *)item) < 0 ) {
+                        error = errno;
+                        ERR(policy, strerror(error));
+                        goto attribs_wo_types_run_fail;
+                }
 	}
-
+	qpol_iterator_destroy(&types);
+	apol_vector_destroy(&attr_vector, NULL);
 
 	mod->result = res;
-
-	if (res->num_items > 0)
-		return 1;
-
-#endif
 	return 0;
 
-#if 0
 attribs_wo_types_run_fail:
-	free(types);
 	sechk_proof_free(proof);
 	sechk_item_free(item);
-	sechk_result_free(res);
 	return -1;
-#endif
 }
 
 /* The free function frees the private data of a module */
 void attribs_wo_types_data_free(void *data) 
 {
-#if 0
-	attribs_wo_types_data_t *datum;
-
-	if (!mod) {
-		fprintf(stderr, "Error: invalid parameters\n");
-		return;
-	}
-	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
-		return;
-	}
-
-	datum = (attribs_wo_types_data_t*)mod->data;
-
-	free(mod->data);
-	mod->data = NULL;
-#endif
+	free(data);
 }
 
 /* The print output function generates the text printed in the
  * report and prints it to stdout. */
-int attribs_wo_types_print_output(sechk_module_t *mod, policy_t *policy) 
+int attribs_wo_types_print_output(sechk_module_t *mod, apol_policy_t *policy) 
 {
-#if 0
 	attribs_wo_types_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
-	int i = 0;
+        sechk_proof_t *proof = NULL;
+        int i = 0, j=0, k=0, l=0, num_items;
+        qpol_type_t *type;
+        char *type_name;
 
         if (!mod || !policy){
-		fprintf(stderr, "Error: invalid parameters\n");
+		ERR(policy, "Invalid parameters");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+		ERR(policy, "Wrong module (%s)", mod->name);
 		return -1;
 	}
 
 	datum = (attribs_wo_types_data_t*)mod->data;
 	outformat = mod->outputformat;
+	num_items = apol_vector_get_size(mod->result->items);
 
 	if (!mod->result) {
-		fprintf(stderr, "Error: module has not been run\n");
+		ERR(policy, "Module has not been run");
 		return -1;
 	}
 
@@ -329,24 +332,46 @@ int attribs_wo_types_print_output(sechk_module_t *mod, policy_t *policy)
 
 	/* display the statistics of the results */
 	if (outformat & SECHK_OUT_STATS) {
-		printf("Found %i attributes.\n", mod->result->num_items);
+		printf("Found %i attributes.\n", num_items);
 	}
 	if (outformat & SECHK_OUT_PROOF) {
 		printf("\nThe following attributes are not associated with any types.\n");
 	}
 	/* The list report component is a display of all items
 	 * found without any supporting proof. */
-	if (outformat & (SECHK_OUT_LIST|SECHK_OUT_PROOF)) {
-		printf("\n");
-		for (item = mod->result->items; item; item = item->next) {
-			i++;
-			i %= 4;
-			printf("%s%s", policy->attribs[item->item_id].name, (i&&item->next)? ", " : "\n"); 
-		}
-		printf("\n");
-	}
+        if (outformat & SECHK_OUT_LIST) {
+                printf("\n");
+                for (i = 0; i < num_items; i++) {
+                        j++;
+                        item  = apol_vector_get_element(mod->result->items, i);
+                        type = item->item;
+                        qpol_type_get_name(policy->qh, policy->p, type, &type_name);
+                        j %= 4;
+                        printf("%s%s", type_name, (char *)( (j) ? ", " : "\n" ));
+                }
+                printf("\n");
+        }
 
-#endif
+        if (outformat & SECHK_OUT_PROOF) {
+                printf("\n");
+                for (k=0;k<num_items;k++) {
+                        item = apol_vector_get_element(mod->result->items, k);
+                        if ( item ) {
+                                type = item->item;
+                                qpol_type_get_name(policy->qh, policy->p, type, &type_name);
+                                printf("%s\n", type_name);
+                                for (l=0; l<sizeof(item->proof);l++) {
+                                        proof = apol_vector_get_element(item->proof,l);
+                                        if ( proof )
+                                                printf("\t%s\n", proof->text);
+                                }
+                        }
+                }
+                printf("\n");
+	}
+        type = NULL;
+        type_name = NULL;
+
 	return 0;
 }
 
@@ -354,19 +379,16 @@ int attribs_wo_types_print_output(sechk_module_t *mod, policy_t *policy)
  * structure for this check to be used in another check. */
 sechk_result_t *attribs_wo_types_get_result(sechk_module_t *mod) 
 {
-#if 0
 	if (!mod) {
-		fprintf(stderr, "Error: invalid parameters\n");
+		fprintf(stderr, "Error: Invalid parameters\n");
 		return NULL;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+		fprintf(stderr, "Wrong module (%s)\n", mod->name);
 		return NULL;
 	}
 
 	return mod->result;
-#endif
-	return NULL;
 }
 
 /* The attribs_wo_types_data_new function allocates and returns an
@@ -374,48 +396,30 @@ sechk_result_t *attribs_wo_types_get_result(sechk_module_t *mod)
  * module. */
 attribs_wo_types_data_t *attribs_wo_types_data_new(void)
 {
-#if 0
 	attribs_wo_types_data_t *datum = NULL;
 
 	datum = (attribs_wo_types_data_t*)calloc(1,sizeof(attribs_wo_types_data_t));
 
 	return datum;
-#endif
-	return NULL;
 }
 
 int attribs_wo_types_get_list(sechk_module_t *mod, apol_vector_t **v)
 {
-#if 0
-	int i;
-	sechk_item_t *item = NULL;
+        if (!mod || !v) {
+                fprintf(stderr, "Error: Invalid parameter\n");
+                return -1;
+        }
+        if (strcmp(mod_name, mod->name)) {
+                fprintf(stderr, "Error: Wrong module (%s)\n", mod->name);
+                return -1;
+        }
+        if (!mod->result) {
+                fprintf(stderr, "Error: Module has not been run\n");
+                return -1;
+        }
 
-	if (!mod || !array || !size) {
-		fprintf(stderr, "Error: invalid parameters\n");
-		return -1;
-	}
-	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
-		return -1;
-	}
-	if (!mod->result) {
-		fprintf(stderr, "Error: module has not been run\n");
-		return -1;
-	}
+        v = &mod->result->items;
 
-	*size = mod->result->num_items;
-
-	*array = (int*)malloc(mod->result->num_items * sizeof(int));
-	if (!(*array)) {
-		fprintf(stderr, "Error: out of memory\n");
-		return -1;
-	}
-
-	for (i = 0, item = mod->result->items; item && i < *size; i++, item = item->next) {
-		(*array)[i] = item->item_id;
-	}
-
-#endif
-	return 0;
+        return 0;
 }
 

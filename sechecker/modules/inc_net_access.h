@@ -10,7 +10,7 @@
 #define inc_net_access_H
 
 #include "sechecker.h"
-
+#include <apol/policy.h>
 
 #define inc_net_access_ERR -1
 #define inc_net_access_SUCCESS 0

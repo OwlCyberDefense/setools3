@@ -7,7 +7,7 @@
  */
 
 #include "sechecker.h"
-
+#include <apol/policy.h>
 //#include "dta.h" FIXME
 
 #define SECHK_INC_DOM_TRANS_HAS_TT      0x08

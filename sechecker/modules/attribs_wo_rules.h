@@ -10,6 +10,10 @@
 #define ATTRIBS_WO_RULES
 
 #include "sechecker.h"
+#include <apol/policy.h>
+#include <apol/role-query.h>
+#include <apol/avrule-query.h>
+#include <apol/terule-query.h>
 
 /* The attribs_wo_rules_data structure is used to hold the check specific
  *  private data of a module. */
@@ -23,10 +27,10 @@ typedef struct attribs_wo_rules_data {
  * statically; this means that all modules and their functions
  * are in the same namespace. */
 int attribs_wo_rules_register(sechk_lib_t *lib);
-int attribs_wo_rules_init(sechk_module_t *mod, policy_t *policy);
-int attribs_wo_rules_run(sechk_module_t *mod, policy_t *policy);
+int attribs_wo_rules_init(sechk_module_t *mod, apol_policy_t *policy);
+int attribs_wo_rules_run(sechk_module_t *mod, apol_policy_t *policy);
 void attribs_wo_rules_data_free(void *data);
-int attribs_wo_rules_print_output(sechk_module_t *mod, policy_t *policy);
+int attribs_wo_rules_print_output(sechk_module_t *mod, apol_policy_t *policy);
 sechk_result_t *attribs_wo_rules_get_result(sechk_module_t *mod);
 
 /* NOTE: While SEChecker is build statically, it is

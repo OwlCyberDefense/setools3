@@ -6,11 +6,12 @@
  *
  */
 
-#include "sechecker.h"
 #include "attribs_wo_rules.h"
+#include <apol/type-query.h>
 
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 
 /* This string is the name of the module and should match the stem
  * of the file name; it should also match the prefix of all functions
@@ -21,7 +22,6 @@ static const char *const mod_name = "attribs_wo_rules";
  * with the library. */
 int attribs_wo_rules_register(sechk_lib_t *lib)
 {
-#if 0
 	sechk_module_t *mod = NULL;
 	sechk_fn_t *fn_struct = NULL;
 
@@ -29,8 +29,6 @@ int attribs_wo_rules_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: no library\n");
 		return -1;
 	}
-
-	library = lib;
 
 	/* Modules are declared by the config file and their name and options
 	 * are stored in the module array.  The name is looked up to determine
@@ -40,6 +38,7 @@ int attribs_wo_rules_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: module unknown\n");
 		return -1;
 	}
+	mod->parent_lib = lib;
 	
 	/* assign the descriptions */
 	mod->brief_description = "attributes not used in any rule";
@@ -57,7 +56,10 @@ int attribs_wo_rules_register(sechk_lib_t *lib)
 "   none\n";
 	mod->severity = SECHK_SEV_LOW;
 	/* assign requirements */
-	mod->requirements = sechk_name_value_new("policy_type","source");
+	if ( apol_vector_append(mod->requirements, sechk_name_value_new("policy_type", "source")) < 0 ) {
+		fprintf(stderr, "Error: out of memory\n");
+		return -1;
+	}
 
 	/* register functions */
 	fn_struct = sechk_fn_new();
@@ -71,8 +73,10 @@ int attribs_wo_rules_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = &attribs_wo_rules_init;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+                fprintf(stderr, "Error: out of memory\n");
+                return -1;
+        }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -85,8 +89,10 @@ int attribs_wo_rules_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = &attribs_wo_rules_run;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+                fprintf(stderr, "Error: out of memory\n");
+                return -1;
+        }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -98,9 +104,11 @@ int attribs_wo_rules_register(sechk_lib_t *lib)
 		fprintf(stderr, "Error: out of memory\n");
 		return -1;
 	}
-	fn_struct->fn = &attribs_wo_rules_free;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+	fn_struct->fn = &attribs_wo_rules_data_free;
+        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+                fprintf(stderr, "Error: out of memory\n");
+                return -1;
+        }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -113,8 +121,10 @@ int attribs_wo_rules_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = &attribs_wo_rules_print_output;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+                fprintf(stderr, "Error: out of memory\n");
+                return -1;
+        }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -127,8 +137,10 @@ int attribs_wo_rules_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = &attribs_wo_rules_get_result;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+                fprintf(stderr, "Error: out of memory\n");
+                return -1;
+        }
 
 	fn_struct = sechk_fn_new();
 	if (!fn_struct) {
@@ -141,20 +153,19 @@ int attribs_wo_rules_register(sechk_lib_t *lib)
 		return -1;
 	}
 	fn_struct->fn = &attribs_wo_rules_get_list;
-	fn_struct->next = mod->functions;
-	mod->functions = fn_struct;
+        if ( apol_vector_append(mod->functions, (void*)fn_struct) < 0 ) {
+                fprintf(stderr, "Error: out of memory\n");
+                return -1;
+        }
 
-#endif
 	return 0;
 }
 
 /* The init function creates the module's private data storage object
  * and initializes its values based on the options parsed in the config
  * file. */
-int attribs_wo_rules_init(sechk_module_t *mod, policy_t *policy)
+int attribs_wo_rules_init(sechk_module_t *mod, apol_policy_t *policy)
 {
-#if 0
-	sechk_name_value_t *opt = NULL;
 	attribs_wo_rules_data_t *datum = NULL;
 
 	if (!mod || !policy) {
@@ -173,12 +184,6 @@ int attribs_wo_rules_init(sechk_module_t *mod, policy_t *policy)
 	}
 	mod->data = datum;
 
-	opt = mod->options;
-	while (opt) {
-		opt = opt->next;
-	}
-
-#endif
 	return 0;
 }
 
@@ -186,22 +191,31 @@ int attribs_wo_rules_init(sechk_module_t *mod, policy_t *policy)
  * even if called multiple times. All test logic should be placed below
  * as instructed. This function allocates the result structure and fills
  * in all relavant item and proof data. */
-int attribs_wo_rules_run(sechk_module_t *mod, policy_t *policy)
+int attribs_wo_rules_run(sechk_module_t *mod, apol_policy_t *policy)
 {
-#if 0
 	attribs_wo_rules_data_t *datum;
 	sechk_result_t *res = NULL;
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
-	int i, j, retv;
-	bool_t used = FALSE;
-
+	int error;
+	size_t i;
+	apol_vector_t *attr_vector;
+	apol_role_query_t *role_query;
+	apol_avrule_query_t *avrule_query;
+	apol_terule_query_t *terule_query;
+	apol_vector_t *avrule_vector;
+	apol_vector_t *terule_vector;
+	apol_vector_t *role_vector;
+	qpol_iterator_t *constraint_iter;
+	qpol_iterator_t *node_iter = NULL;
+    qpol_iterator_t *name_iter = NULL;
+	
 	if (!mod || !policy) {
 		fprintf(stderr, "Error: invalid parameters\n");
 		return -1;
 	}
 	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+		ERR(policy, "Error: wrong module (%s)\n", mod->name);
 		return -1;
 	}
 
@@ -212,128 +226,181 @@ int attribs_wo_rules_run(sechk_module_t *mod, policy_t *policy)
 	datum = (attribs_wo_rules_data_t*)mod->data;
 	res = sechk_result_new();
 	if (!res) {
-		fprintf(stderr, "Error: out of memory\n");
+                error = errno;
+                ERR(policy, "Error: %s\n", strerror(error));
 		return -1;
 	}
 	res->test_name = strdup(mod_name);
 	if (!res->test_name) {
-		fprintf(stderr, "Error: out of memory\n");
+                error = errno;
+                ERR(policy, "Error: %s\n", strerror(error));
 		goto attribs_wo_rules_run_fail;
 	}
-	res->item_type = POL_LIST_ATTRIB;
+	res->item_type = SECHK_ITEM_ATTRIB;
+        if ( !(res->items = apol_vector_create()) ) {
+                error = errno;
+                ERR(policy, "Error: %s\n", strerror(error));
+                goto attribs_wo_rules_run_fail;
+        }
 
-	for (i = 0; i < policy->num_attribs; i++) {
-		used = FALSE;
-		/* access rules */
-		for (j = 0; j < policy->num_av_access; j++) {
-			if (does_av_rule_idx_use_type(j, 0, i, IDX_ATTRIB, BOTH_LISTS, 0, policy)) {
-				used = TRUE;
-				break;
-			}
-		}
-		if (used)
-			continue;
-
-		/* audit rules */
-		for (j = 0; j < policy->num_av_audit; j++) {
-			if (does_av_rule_idx_use_type(j, 1, i, IDX_ATTRIB, BOTH_LISTS, 0, policy)) {
-				used = TRUE;
-				break;
-			}
-		}
-		if (used)
-			continue;
-
-		/* type rules */
-		for (j = 0; j < policy->num_te_trans; j++) {
-			if (does_tt_rule_use_type(i, IDX_ATTRIB, BOTH_LISTS, 0, &(policy->te_trans[j]), &retv, policy)) {
-				used = TRUE;
-				break;
-			}
-		}
-		if (used)
-			continue;
-
-		/* role trans */
-		for (j = 0; j < policy->num_role_trans; j++) {
-			if (does_role_trans_use_ta(i, IDX_ATTRIB, 0, &(policy->role_trans[j]), &retv, policy)) {
-				used = TRUE;
-				break;
-			}
-		}
-
-		/* if we get here then the attrib was not found anywhere in a rule so add it */
-		item = sechk_item_new();
-		if (!item) {
-			fprintf(stderr, "Error: out of memory\n");
-			goto attribs_wo_rules_run_fail;
-		}
-		item->item_id = i;
-		item->test_result = 1;
-		proof = sechk_proof_new();
-		if (!proof) {
-			fprintf(stderr, "Error: out of memory\n");
-			goto attribs_wo_rules_run_fail;
-		}
-		proof->idx = -1;
-		proof->type = SECHK_TYPE_NONE;
-		proof->text = strdup("attribute was not used in any rules.");
-		if (!proof->text) {
-			fprintf(stderr, "Error: out of memory\n");
-			goto attribs_wo_rules_run_fail;
-		}
-		item->proof = proof;
-		item->next = res->items;
-		res->items = item;
-		(res->num_items)++;
+	if ( !(avrule_query = apol_avrule_query_create()) ) {
+		error = errno;
+		ERR(policy, "Error: %s\n", strerror(error));
+		goto attribs_wo_rules_run_fail;
+	}
+        if ( !(terule_query = apol_terule_query_create()) ) {
+                error = errno;
+                ERR(policy, "Error: %s\n", strerror(error));
+                goto attribs_wo_rules_run_fail;
+        }
+	if ( !(role_query = apol_role_query_create()) ) {
+		error = errno;
+		ERR(policy, "Error: %s\n", strerror(error));
+		goto attribs_wo_rules_run_fail;
 	}
 
+	apol_get_attr_by_query(policy, NULL, &attr_vector);
+	for ( i = 0; i < apol_vector_get_size(attr_vector); i ++ ) {
+		qpol_type_t *attr;
+		char *attr_name;
+		attr = apol_vector_get_element(attr_vector, i);
+		qpol_type_get_name(policy->qh, policy->p, attr, &attr_name);
+	
+		/* access rules */
+		apol_avrule_query_set_source(policy, avrule_query, attr_name, 0);
+		apol_get_avrule_by_query(policy, avrule_query, &avrule_vector);
+		if ( apol_vector_get_size(avrule_vector) > 0 ) continue;
+
+		apol_avrule_query_set_source(policy, avrule_query, NULL, 0);
+		apol_avrule_query_set_target(policy, avrule_query, attr_name, 0);
+		apol_get_avrule_by_query(policy, avrule_query, &avrule_vector);
+		if ( apol_vector_get_size(avrule_vector) > 0 ) continue;
+		apol_avrule_query_set_target(policy, avrule_query, NULL, 0);
+        apol_vector_destroy(&avrule_vector, NULL);
+
+		/* type rules */
+        apol_terule_query_set_source(policy, terule_query, attr_name, 0);
+        apol_get_terule_by_query(policy, terule_query, &terule_vector);
+        if ( apol_vector_get_size(terule_vector) > 0 ) continue;
+
+        apol_terule_query_set_source(policy, terule_query, NULL, 0);
+        apol_terule_query_set_target(policy, terule_query, attr_name, 0);
+        apol_get_terule_by_query(policy, terule_query, &terule_vector);
+        if ( apol_vector_get_size(terule_vector) > 0 ) continue;
+		apol_terule_query_set_target(policy, terule_query, NULL, 0);
+        apol_vector_destroy(&terule_vector, NULL);
+	
+		/* role trans */
+		apol_role_query_set_type(policy, role_query, attr_name);
+		apol_get_role_by_query(policy, role_query, &role_vector);
+		if ( apol_vector_get_size(role_vector) > 0 ) continue;
+		apol_vector_destroy(&role_vector, NULL);
+
+		/* Check constraints */
+		constraint_iter = NULL;
+		node_iter = NULL;
+		name_iter = NULL;
+		qpol_policy_get_constraint_iter(policy->qh, policy->p, &constraint_iter);
+		for ( ; qpol_iterator_end(constraint_iter); qpol_iterator_next(constraint_iter) ) {
+			qpol_constraint_t *constraint;
+
+			qpol_iterator_get_item(constraint_iter, (void **)&constraint);
+            qpol_constraint_get_expr_iter(policy->qh, policy->p, constraint, &node_iter);
+
+			for ( ; qpol_iterator_end(node_iter); qpol_iterator_next(node_iter) ) {
+                qpol_constraint_expr_node_t *constraint_node;
+				size_t node_type;
+	 
+				qpol_iterator_get_item(node_iter, (void **)&constraint_node);
+				qpol_constraint_expr_node_get_expr_type(policy->qh, policy->p, constraint_node, &node_type);
+
+				if ( node_type == QPOL_CEXPR_TYPE_NAMES ) {
+	                qpol_constraint_expr_node_get_names_iter(policy->qh, policy->p, constraint_node, &name_iter);
+
+					for ( ; qpol_iterator_end(name_iter); qpol_iterator_next(name_iter)) {
+            	        char *name;
+
+						qpol_iterator_get_item(name_iter, (void **)&name);
+                    	if (!strcmp(name, attr_name)) continue;
+        	        }
+        	    }
+			}
+		} 
+		qpol_iterator_destroy(&constraint_iter);
+		qpol_iterator_destroy(&node_iter);
+		qpol_iterator_destroy(&name_iter);
+
+		/* if we get here then the attrib was not found anywhere in a rule so add it */
+		item = sechk_item_new(NULL);
+		if (!item) {
+			error = errno;
+			ERR(policy, "Error: %s\n", strerror(error));
+			goto attribs_wo_rules_run_fail;
+		}
+		item->test_result = 1;
+		item->item = (void *)attr;
+		proof = sechk_proof_new(NULL);
+		if (!proof) {
+			error = errno;
+			ERR(policy, "Error: %s\n", strerror(error));
+			goto attribs_wo_rules_run_fail;
+		}
+		proof->type = SECHK_ITEM_ATTRIB;
+		proof->text = strdup("attribute was not used in any rules.");
+		if (!proof->text) {
+			error = errno;
+			ERR(policy, "Error: %s\n", strerror(error));
+			goto attribs_wo_rules_run_fail;
+		}
+        if ( !item->proof ) {
+	    	if ( !(item->proof = apol_vector_create()) ) {
+       	   		error = errno;
+                ERR(policy, "Error: %s\n", strerror(error));
+                goto attribs_wo_rules_run_fail;
+            }
+        } 
+        if ( apol_vector_append(item->proof, (void*)proof) < 0 ) {
+            error = errno;
+            ERR(policy, "Error: %s\n", strerror(error));
+            goto attribs_wo_rules_run_fail;
+        }
+		if ( apol_vector_append(res->items, (void *)item) < 0 ) {
+			error = errno;
+			ERR(policy, "Error: %s\n", strerror(error));
+			goto attribs_wo_rules_run_fail;
+		}
+	}
+	apol_avrule_query_destroy(&avrule_query);
+	apol_role_query_destroy(&role_query);
+	apol_terule_query_destroy(&terule_query);
+	apol_vector_destroy(&attr_vector, NULL);
+
 	mod->result = res;
-	if (res->num_items > 0)
-		return 1;
-#endif
 	return 0;
 
-#if 0
 attribs_wo_rules_run_fail:
 	sechk_proof_free(proof);
 	sechk_item_free(item);
-	sechk_result_free(res);
 	return -1;
-#endif
 }
 
 /* The free function frees the private data of a module */
 void attribs_wo_rules_data_free(void *data)
 {
-#if 0
-	attribs_wo_rules_data_t *datum;
-
-	if (!mod) {
-		fprintf(stderr, "Error: invalid parameters\n");
-		return;
-	}
-	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
-		return;
-	}
-
-	datum = (attribs_wo_rules_data_t*)mod->data;
-
-	free(mod->data);
-	mod->data = NULL;
-#endif
+	free(data);
 }
 
 /* The print output function generates the text printed in the
  * report and prints it to stdout. */
-int attribs_wo_rules_print_output(sechk_module_t *mod, policy_t *policy) 
+int attribs_wo_rules_print_output(sechk_module_t *mod, apol_policy_t *policy) 
 {
-#if 0
 	attribs_wo_rules_data_t *datum = NULL;
 	unsigned char outformat = 0x00;
 	sechk_item_t *item = NULL;
-	int i = 0;
+	sechk_proof_t *proof = NULL;
+	int i = 0, j=0, k=0, l=0, num_items;
+	qpol_type_t *type;
+	char *type_name;
 
         if (!mod || !policy){
 		fprintf(stderr, "Error: invalid parameters\n");
@@ -346,6 +413,7 @@ int attribs_wo_rules_print_output(sechk_module_t *mod, policy_t *policy)
 
 	datum = (attribs_wo_rules_data_t*)mod->data;
 	outformat = mod->outputformat;
+	num_items = apol_vector_get_size(mod->result->items);
 
 	if (!mod->result) {
 		fprintf(stderr, "Error: module has not been run\n");
@@ -356,24 +424,46 @@ int attribs_wo_rules_print_output(sechk_module_t *mod, policy_t *policy)
 		return 0; /* not an error - no output is requested */
 
 	if (outformat & SECHK_OUT_STATS) {
-		printf("Found %i attributes.\n", mod->result->num_items);
+		printf("Found %i attributes.\n", num_items);
 	}
 	if (outformat & SECHK_OUT_PROOF) {
 		printf("\nThe following attrubutes do not appear in any rules.\n");
 	}
 	/* The list report component is a display of all items
 	 * found without any supporting proof. */
-	if (outformat & (SECHK_OUT_LIST|SECHK_OUT_PROOF)) {
-		printf("\n");
-		for (item = mod->result->items; item; item = item->next) {
-			i++;
-			i %= 4;
-			printf("%s%s", policy->attribs[item->item_id].name, (i&&item->next)? ", " : "\n"); 
-		}
-		printf("\n");
+	if (outformat & SECHK_OUT_LIST) {
+                printf("\n");
+                for (i = 0; i < num_items; i++) {
+                        j++;
+                        item  = apol_vector_get_element(mod->result->items, i);
+                        type = item->item;
+                        qpol_type_get_name(policy->qh, policy->p, type, &type_name);
+                        j %= 4;
+                        printf("%s%s", type_name, (char *)( (j) ? ", " : "\n" ));
+                }
+                printf("\n");
 	}
 
-#endif
+        if (outformat & SECHK_OUT_PROOF) {
+                printf("\n");
+                for (k=0;k<num_items;k++) {
+                        item = apol_vector_get_element(mod->result->items, k);
+                        if ( item ) {
+                                type = item->item;
+                                qpol_type_get_name(policy->qh, policy->p, type, &type_name);
+                                printf("%s\n", type_name);
+                                for (l=0; l<sizeof(item->proof);l++) {
+                                        proof = apol_vector_get_element(item->proof,l);
+                                        if ( proof )
+                                                printf("\t%s\n", proof->text);
+                                }
+                        }
+                }
+                printf("\n");
+        }
+        type = NULL;
+        type_name = NULL;
+
 	return 0;
 }
 
@@ -381,7 +471,6 @@ int attribs_wo_rules_print_output(sechk_module_t *mod, policy_t *policy)
  * structure for this check to be used in another check. */
 sechk_result_t *attribs_wo_rules_get_result(sechk_module_t *mod) 
 {
-#if 0
 	if (!mod) {
 		fprintf(stderr, "Error: invalid parameters\n");
 		return NULL;
@@ -392,8 +481,6 @@ sechk_result_t *attribs_wo_rules_get_result(sechk_module_t *mod)
 	}
 
 	return mod->result;
-#endif
-	return NULL;
 }
 
 /* The attribs_wo_rules_data_new function allocates and returns an
@@ -401,48 +488,30 @@ sechk_result_t *attribs_wo_rules_get_result(sechk_module_t *mod)
  * module. */
 attribs_wo_rules_data_t *attribs_wo_rules_data_new(void)
 {
-#if 0
 	attribs_wo_rules_data_t *datum = NULL;
 
 	datum = (attribs_wo_rules_data_t*)calloc(1,sizeof(attribs_wo_rules_data_t));
 
 	return datum;
-#endif
-	return NULL;
 }
 
 int attribs_wo_rules_get_list(sechk_module_t *mod, apol_vector_t **v)
 {
-#if 0
-	int i;
-	sechk_item_t *item = NULL;
+        if (!mod || !v) {
+                fprintf(stderr, "Error: invalid parameters\n");
+                return -1;
+        }
+        if (strcmp(mod_name, mod->name)) {
+                fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
+                return -1;
+        }
+        if (!mod->result) {
+                fprintf(stderr, "Error: module has not been run\n");
+                return -1;
+        }
 
-	if (!mod || !array || !size) {
-		fprintf(stderr, "Error: invalid parameters\n");
-		return -1;
-	}
-	if (strcmp(mod_name, mod->name)) {
-		fprintf(stderr, "Error: wrong module (%s)\n", mod->name);
-		return -1;
-	}
-	if (!mod->result) {
-		fprintf(stderr, "Error: module has not been run\n");
-		return -1;
-	}
+        v = &mod->result->items;
 
-	*size = mod->result->num_items;
-
-	*array = (int*)malloc(mod->result->num_items * sizeof(int));
-	if (!(*array)) {
-		fprintf(stderr, "Error: out of memory\n");
-		return -1;
-	}
-
-	for (i = 0, item = mod->result->items; item && i < *size; i++, item = item->next) {
-		(*array)[i] = item->item_id;
-	}
-
-#endif
-	return 0;
+        return 0;
 }
 

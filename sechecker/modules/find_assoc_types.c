@@ -6,8 +6,6 @@
  *
  */
 
-#include "sechecker.h"
-
 #include "find_assoc_types.h"
 
 #include <stdio.h>
@@ -295,7 +293,7 @@ int find_assoc_types_run(sechk_module_t *mod, apol_policy_t *policy)
 	}
 
 	item->test_result = 1;
-	item->item = (void*)type_name;
+	item->item = (void*)type;
 	proof->type = SECHK_ITEM_TYPE;
 	proof->text = buff;
 	if ( !(res->items = apol_vector_create()) ) {
@@ -352,6 +350,8 @@ int find_assoc_types_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
 	int i = 0, j = 0, k = 0;
+	qpol_type_t *type;
+	char *type_name;
 
 	if (!mod || !policy){
 		fprintf(stderr, "Error: invalid parameters\n");
@@ -386,8 +386,10 @@ int find_assoc_types_print_output(sechk_module_t *mod, apol_policy_t *policy)
 			i++;
 			i %= 4;
 			item = apol_vector_get_element(mod->result->items, j);
+			type = item->item;
+			qpol_type_get_name(policy->qh, policy->p, type, &type_name);
 			if ( item )
-                        printf("%s%s", (char *)item->item, (char *)( (j) ? ", " : "\n" ));
+                        printf("%s%s", type_name, (char *)( (j) ? ", " : "\n" ));
 		}
 		printf("\n");
 	}
@@ -404,7 +406,9 @@ int find_assoc_types_print_output(sechk_module_t *mod, apol_policy_t *policy)
 		for (j=0;j<sizeof(apol_vector_get_size(mod->result->items));j++) {
 			item = apol_vector_get_element(mod->result->items, j);
 			if ( item ) {
-				printf("%s\n", (char*)item->item);
+				type = item->item;
+				qpol_type_get_name(policy->qh, policy->p, type, &type_name);	
+				printf("%s\n", type_name);
 				for (k=0; k<sizeof(item->proof);k++) {
 					proof = apol_vector_get_element(item->proof,k);
 					if ( proof )
@@ -414,6 +418,8 @@ int find_assoc_types_print_output(sechk_module_t *mod, apol_policy_t *policy)
 		}
 		printf("\n");
 	}
+	type = NULL;
+	type_name = NULL;
 
 	return 0;
 }
