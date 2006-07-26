@@ -113,6 +113,48 @@ extern int apol_infoflow_analysis_do_more(apol_policy_t *p,
 					  apol_vector_t **v);
 
 /**
+ * Prepare an existing transitive infoflow graph to do further
+ * searches upon two specific start and end types.  The analysis is by
+ * way of a BFS with random restarts; thus each call to
+ * apol_infoflow_analysis_trans_further_next() may possibly return
+ * additional paths.  This function is needed to prepare the pool of
+ * initial states for the search.
+ *
+ * @param p Policy from which infoflow rules derived.
+ * @param g Existing transitive infoflow graph.  If it was already
+ * prepared then those values will be first destroyed.
+ * @param start_type String from which to begin further analysis.
+ * @param end_type String for target infoflow paths.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+extern int apol_infoflow_analysis_trans_further_prepare(apol_policy_t *p,
+							apol_infoflow_graph_t *g,
+							const char *start_type,
+							const char *end_type);
+
+/**
+ * Find further transitive infoflow paths by way of a random restart.
+ * The infoflow graph must be first prepared by first calling
+ * apol_infoflow_analysis_trans_further_prepare().  This function will
+ * append to vector v any new results it finds.
+ *
+ * @param p Policy from which infoflow rules derived.
+ * @param g Prepared transitive infoflow graph.
+ * @param v Vector of existing apol_infoflow_result_t pointers.  If
+ * this functions finds additional unique results it will append them
+ * to this vector.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+extern int apol_infoflow_analysis_trans_further_next(apol_policy_t *p,
+						     apol_infoflow_graph_t *g,
+						     apol_vector_t *v);
+
+
+/********** functions to create/modify an analysis object **********/
+
+/**
  * Allocate and return a new information analysis structure.  All
  * fields are cleared; one must fill in the details of the analysis
  * before running it.  The caller must call

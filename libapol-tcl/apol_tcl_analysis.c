@@ -927,7 +927,7 @@ static int Apol_TransInformationFlowAnalysis(ClientData clientData, Tcl_Interp *
  *
  * @param argv This fuction takes two parameters:
  * <ol>
- *   <li>handler to an existing direct information flow graph
+ *   <li>handler to an existing transitive information flow graph
  *   <li>starting type (string)
  * </ol>
  */
@@ -957,6 +957,112 @@ static int Apol_TransInformationFlowMore(ClientData clientData, Tcl_Interp *inte
 	}
 	g = i_t->g;
 	if (apol_infoflow_analysis_do_more(policydb, g, argv[2], &v) < 0) {
+		goto cleanup;
+	}
+	for (i = 0; i < apol_vector_get_size(v); i++) {
+		result = (apol_infoflow_result_t *) apol_vector_get_element(v, i);
+		if (append_trans_infoflow_result_to_list(interp, result, result_obj) == TCL_ERROR) {
+			goto cleanup;
+		}
+	}
+
+	Tcl_SetObjResult(interp, result_obj);
+	retval = TCL_OK;
+ cleanup:
+	apol_vector_destroy(&v, apol_infoflow_result_free);
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
+}
+
+/**
+ * Prepare a pre-existing transitive information flow analysis to
+ * perform further analysis of a particular start and end nodes.  The
+ * analysis will use the same parameters as those that were used to
+ * construct the graph.
+ *
+ * @param argv This fuction takes three parameters:
+ * <ol>
+ *   <li>handler to an existing transitive information flow graph
+ *   <li>starting type (string)
+ *   <li>ending type (string)
+ * </ol>
+ */
+static int Apol_TransInformationFurtherPrepare(ClientData clientData, Tcl_Interp *interp,
+					       int argc, CONST char *argv[])
+{
+	Tcl_Obj *graph_obj;
+	infoflow_tcl_t *i_t;
+	apol_infoflow_graph_t *g = NULL;
+	int retval = TCL_ERROR;
+
+	apol_tcl_clear_error();
+	if (policydb == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		goto cleanup;
+	}
+	if (argc != 4) {
+		ERR(policydb, "Need a transitive infoflow graph handler, starting type, and ending type.");
+		goto cleanup;
+	}
+	graph_obj = Tcl_NewStringObj(argv[1], -1);
+	if (tcl_obj_to_infoflow_tcl(interp, graph_obj, &i_t) == TCL_ERROR) {
+		goto cleanup;
+	}
+	g = i_t->g;
+	if (apol_infoflow_analysis_trans_further_prepare(policydb, g, argv[2], argv[3]) < 0) {
+		goto cleanup;
+	}
+	Tcl_SetResult(interp, "", TCL_STATIC);
+	retval = TCL_OK;
+ cleanup:
+	if (retval == TCL_ERROR) {
+		apol_tcl_write_error(interp);
+	}
+	return retval;
+}
+
+/**
+ * Obtain some more results from a prepare transitive information flow
+ * graph.  The analysis will use the same parameters as those that
+ * were used to construct the graph.
+ *
+ * @param argv This fuction takes one parameters:
+ * <ol>
+ *   <li>handler to an existing transitive information flow graph
+ * </ol>
+ */
+static int Apol_TransInformationFurtherNext(ClientData clientData, Tcl_Interp *interp,
+					    int argc, CONST char *argv[])
+{
+	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL), *graph_obj;
+	infoflow_tcl_t *i_t;
+	apol_infoflow_graph_t *g = NULL;
+	apol_infoflow_result_t *result = NULL;
+	apol_vector_t *v = NULL;
+	size_t i;
+	int retval = TCL_ERROR;
+
+	apol_tcl_clear_error();
+	if (policydb == NULL) {
+		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
+		goto cleanup;
+	}
+	if (argc != 2) {
+		ERR(policydb, "Need a prepared infoflow graph handler.");
+		goto cleanup;
+	}
+	graph_obj = Tcl_NewStringObj(argv[1], -1);
+	if (tcl_obj_to_infoflow_tcl(interp, graph_obj, &i_t) == TCL_ERROR) {
+		goto cleanup;
+	}
+	g = i_t->g;
+	if ((v = apol_vector_create()) == NULL) {
+		ERR(policydb, "Out of memory!");
+		goto cleanup;
+	}
+	if (apol_infoflow_analysis_trans_further_next(policydb, g, v) < 0) {
 		goto cleanup;
 	}
 	for (i = 0; i < apol_vector_get_size(v); i++) {
@@ -1169,6 +1275,8 @@ int apol_tcl_analysis_init(Tcl_Interp *interp)
 	Tcl_CreateCommand(interp, "apol_DirectInformationFlowMore", Apol_DirectInformationFlowMore, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_TransInformationFlowAnalysis", Apol_TransInformationFlowAnalysis, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_TransInformationFlowMore", Apol_TransInformationFlowMore, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_TransInformationFurtherPrepare", Apol_TransInformationFurtherPrepare, NULL, NULL);
+	Tcl_CreateCommand(interp, "apol_TransInformationFurtherNext", Apol_TransInformationFurtherNext, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_InformationFlowDestroy", Apol_InformationFlowDestroy, NULL, NULL);
 	Tcl_CreateCommand(interp, "apol_RelabelAnalysis", Apol_RelabelAnalysis, NULL, NULL);
         /*

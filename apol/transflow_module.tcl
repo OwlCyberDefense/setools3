@@ -137,10 +137,8 @@ proc Apol_Analysis_transflow::saveQuery {channel} {
     variable vals
     variable widgets
     foreach {key value} [array get vals] {
-        switch -- $key {
-            default {
-                puts $channel "$key $value"
-            }
+        if {![string match "find_more:*" $key]} {
+            puts $channel "$key $value"
         }
     }
     set type [Apol_Widget::getTypeComboboxValueAndAttrib $widgets(type)]
@@ -192,6 +190,9 @@ proc Apol_Analysis_transflow::reinitializeVals {} {
         regexp {}
 
         access:enable 0
+
+        find_more:hours 0   find_more:minutes 0   find_more:seconds 30
+        find_more:limit 20
     }
 }
 
@@ -289,8 +290,12 @@ proc Apol_Analysis_transflow::createResultsDisplay {} {
     set res [Apol_Widget::makeSearchResults [$res_tf getframe].res]
     $res.tb tag configure title -font {Helvetica 14 bold}
     $res.tb tag configure title_type -foreground blue -font {Helvetica 14 bold}
+    $res.tb tag configure find_more -underline 1
     $res.tb tag configure subtitle -font {Helvetica 10 bold}
     $res.tb tag configure num -foreground blue -font {Helvetica 10 bold}
+    $res.tb tag bind find_more <Button-1> [list Apol_Analysis_transflow::findMore $res $tree]
+    $res.tb tag bind find_more <Enter> [list $res.tb configure -cursor hand2]
+    $res.tb tag bind find_more <Leave> [list $res.tb configure -cursor {}]
     pack $res -expand 1 -fill both
 
     $tree configure -selectcommand [list Apol_Analysis_transflow::treeSelect $res]
@@ -402,12 +407,12 @@ proc Apol_Analysis_transflow::createResultsNodes {tree parent_node results} {
     foreach t [lsort -uniq $all_targets] {
         set flow_dir $vals(dir)
         set sorted_paths {}
-        foreach path [lsort -unique -index 0 $paths($t)] {
+        foreach path [lsort -uniq [lsort -index 0 -integer $paths($t)]] {
             if {$flow_dir == "to"} {
                 # flip the steps around
                 set p {}
                 foreach step [lindex $path 1] {
-                    set p [concat [list $step ] $p]
+                    set p [concat [list $step] $p]
                 }
                 lappend sorted_paths $p
             } else {
@@ -438,328 +443,227 @@ proc Apol_Analysis_transflow::renderResultsTransFlow {res tree node data} {
                 $name title_type
         }
     }
-    $res.tb insert end "\n\n" title_type \
+    $res.tb insert end "  (" title \
+        "Find more flows" {title_type find_more} \
+        ")\n\n" title \
         "Apol found the following number of information flows: " subtitle \
         [llength $paths] num \
         "\n" subtitle
     set path_num 1
     foreach path $paths {
-        $res.tb insert end "\nFlow " subtitle \
-            $path_num num \
-            " requires " subtitle \
-            [llength $path] num \
-            " steps(s).\n" subtitle \
-            "    " {}
-        $res.tb insert end [lindex $path 0 0] subtitle \
-            " -> " {} \
-            [lindex $path 0 1] subtitle
-        foreach step [lrange $path 1 end] {
-            $res.tb insert end " -> " {} \
-                [lindex $step 1] subtitle
-        }
-        $res.tb insert end \n {}
-        foreach step $path {
-            Apol_Widget::appendSearchResultAVRule $res 6 [lindex $step 3]
-        }
+        $res.tb insert end "\n" {}
+        renderPath $res $path_num $path
         incr path_num
     }
 }
 
-# Procedure to do elapsed time formatting
-proc Apol_Analysis_transflow::convert_seconds {sec} {
-	set hours [expr {$sec / 3600}]
-	set minutes [expr {$sec / 60 - $hours * 60}]
-	set seconds [expr {$sec - $minutes * 60 - $hours * 3600}]
-	return [format "%02s:%02s:%02s" $hours $minutes $seconds]
+proc Apol_Analysis_transflow::renderPath {res path_num path} {
+    $res.tb insert end "Flow " subtitle \
+        $path_num num \
+        " requires " subtitle \
+        [llength $path] num \
+        " steps(s).\n" subtitle \
+        "    " {}
+    $res.tb insert end [lindex $path 0 0] subtitle \
+        " -> " {} \
+        [lindex $path 0 1] subtitle
+    foreach step [lrange $path 1 end] {
+        $res.tb insert end " -> " {} \
+            [lindex $step 1] subtitle
+    }
+    $res.tb insert end \n {}
+    foreach steps $path {
+        Apol_Widget::appendSearchResultAVRule $res 6 [lindex $steps 3 0]
+        foreach step [lrange [lindex $steps 3] 1 end] {
+            Apol_Widget::appendSearchResultAVRule $res 10 $step
+        }
+    }
 }
 
+#################### procedures to find further flows ####################
 
-###########################################################################
-# ::display_find_more_flows_Dlg
-#
-proc Apol_Analysis_transflow::display_find_more_flows_Dlg {} {
-	variable find_flows_Dlg
-	variable transflow_tree
-	variable find_flows_start
-	variable find_flows_results_Dlg
+proc Apol_Analysis_transflow::findMore {res tree} {
+    set node [$tree selection get]
+    set start [$tree itemcget [$tree parent $node] -text]
+    set end [$tree itemcget $node -text]
 
-	if {$find_flows_start} {
-		tk_messageBox -icon error -type ok -title "Error" -message "You must first abort the current search."
-		raise $find_flows_results_Dlg
-		return -1
-	}
-	if {[winfo exists $find_flows_Dlg]} {
-		destroy $find_flows_Dlg
-	}
+    set d [Dialog .trans_more -cancel 1 -default 0 -modal local -parent . \
+               -separator 1 -title "Find More Flows"]
+    $d add -text Find -command [list Apol_Analysis_transflow::verifyFindMore $d]
+    $d add -text Cancel
 
-	set src_node [$transflow_tree parent [$transflow_tree selection get]]
-	set tgt_node [$transflow_tree selection get]
-	set Apol_Analysis_transflow::abort_trans_analysis 0
+    set f [$d getframe]
+    set l1 [label $f.l1 -text "Source: $start"]
+    set l2 [label $f.l2 -text "Target: $end"]
+    set time_f [frame $f.time]
+    set path_f [frame $f.path]
+    pack $l1 $l2 $time_f $path_f -anchor w -padx 8 -pady 4
 
-	# Create the top-level dialog and subordinate widgets
-	toplevel $find_flows_Dlg
-	wm withdraw $find_flows_Dlg
-	wm title $find_flows_Dlg "Find more flows"
-	wm protocol $find_flows_Dlg WM_DELETE_WINDOW " "
+    set t1 [label $time_f.t1 -text "Time limit: "]
+    set e1 [entry $time_f.e1 -textvariable Apol_Analysis_transflow::vals(find_more:hours) -width 5 -justify right -bg white]
+    set t2 [label $time_f.t2 -text "Hour(s)  "]
+    set e2 [entry $time_f.e2 -textvariable Apol_Analysis_transflow::vals(find_more:minutes) -width 5 -justify right -bg white]
+    set t3 [label $time_f.t3 -text "Minute(s)  "]
+    set e3 [entry $time_f.e3 -textvariable Apol_Analysis_transflow::vals(find_more:seconds) -width 5 -justify right -bg white]
+    set t4 [label $time_f.t4 -text "Second(s)  "]
+    pack $t1 $e1 $t2 $e2 $t3 $e3 $t4 -side left
 
-	# Create frames
-        set topf  [frame $find_flows_Dlg.topf]
-        set nodes_f [frame $topf.nodes_f]
-        set time_f [frame $topf.time_f]
-        set path_limit_f [frame $topf.path_limit_f]
-        set button_f [frame $topf.button_f]
+    set t1 [label $path_f.t1 -text "Limit by these number of flows: "]
+    set e1 [entry $path_f.e1 -textvariable Apol_Analysis_transflow::vals(find_more:limit) -width 5 -justify right -bg white]
+    pack $t1 $e1 -side left
 
-        set src_lbl [label $nodes_f.src_lbl -text "Source: [$transflow_tree itemcget $src_node -text]"]
-        set tgt_lbl [label $nodes_f.tgt_lbl -text "Target: [$transflow_tree itemcget $tgt_node -text]"]
-
-        # Create time limit widgets
-        set time_lbl [label $time_f.time_lbl -text "Time Limit:"]
-        set hrs_lbl  [label $time_f.hrs_lbl -text "Hour(s)"]
-        set min_lbl  [label $time_f.min_lbl -text "Minute(s)"]
-        set sec_lbl  [label $time_f.sec_lbl -text "Second(s)"]
-        set time_entry_hour [Entry $time_f.time_entry_hour -editable 1 -width 5 \
-	-textvariable Apol_Analysis_transflow::time_limit_hr -bg white]
-        set time_entry_min [Entry $time_f.time_entry_min -editable 1 -width 5 \
-	-textvariable Apol_Analysis_transflow::time_limit_min -bg white]
-        set time_entry_sec [Entry $time_f.time_entry_sec -editable 1 -width 5 \
-	-textvariable Apol_Analysis_transflow::time_limit_sec -bg white]
-
-	# Create path limit widgets
-	set path_limit_lbl [label $path_limit_f.path_limit_lbl -text "Limit by these number of flows:"]
-        set path_limit_entry [Entry $path_limit_f.path_limit_entry -editable 1 -width 5 \
-	-textvariable Apol_Analysis_transflow::flow_limit_num -bg white]
-
-	# Create button widgets
-	set b_find [button $button_f.b_find -text "Find" -width 6 \
-		-command "Apol_Analysis_transflow::find_more_flows $src_node $tgt_node"]
-	set b_cancel [button $button_f.b_cancel -text "Cancel" -width 6 \
-		-command "destroy $find_flows_Dlg"]
-
-	# Place widgets
-	pack $topf -fill both -expand yes -padx 10 -pady 10
-        pack $nodes_f $time_f $path_limit_f -side top -fill x -padx 2 -pady 2
-        pack $button_f -side bottom -padx 2 -pady 2 -anchor center
-        pack $src_lbl $tgt_lbl -side top -padx 2 -pady 2 -anchor nw
-        pack $time_lbl $time_entry_hour $hrs_lbl $time_entry_min $min_lbl $time_entry_sec $sec_lbl -side left -padx 1 -anchor nw
-        pack $path_limit_lbl $path_limit_entry -side left -padx 2 -anchor nw
-        pack $b_find $b_cancel -side left -padx 4 -anchor center
-	wm deiconify $find_flows_Dlg
-	focus $find_flows_Dlg
-	wm protocol $find_flows_Dlg WM_DELETE_WINDOW "destroy $find_flows_Dlg"
-	return 0
+    set retval [$d draw]
+    destroy .trans_more
+    if {$retval == 0} {
+        set graph_handler [lindex [$tree itemcget top -data] 0]
+        if {[catch {apol_TransInformationFurtherPrepare $graph_handler $start $end} err]} {
+            tk_messageBox -icon error -type ok -title "Find More Flows" -message "Could not prepare infoflow graph:\n$err"
+        } else {
+            doFindMore $res $tree $node
+        }
+    }
 }
 
-###########################################################################
-# ::display_find_flows_results_Dlg
-#
-proc Apol_Analysis_transflow::display_find_flows_results_Dlg {time_limit_str flow_limit_num} {
-	variable find_flows_results_Dlg
-	variable time_exp_lbl
-	variable num_found_lbl
-
-	if {[winfo exists $find_flows_results_Dlg]} {
-		destroy $find_flows_results_Dlg
-	}
-
-	# Create the top-level dialog and subordinate widgets
-	toplevel $find_flows_results_Dlg
-	wm withdraw $find_flows_results_Dlg
-	wm title $find_flows_results_Dlg "Flow results"
-
-	# Create frames
-        set topf  [frame $find_flows_results_Dlg.topf]
-        set time_f [frame $topf.time_f]
-        set button_f [frame $topf.button_f]
-        set num_flows_f [frame $topf.num_flows_f]
-        set main_lbl [label $topf.time_lbl1 -text "Finding more flows:"]
-        set time_lbl1 [label $time_f.time_lbl1 -text "Time: "]
-        set time_exp_lbl [label $time_f.time_exp_lbl]
-        set time_lbl2 [label $time_f.time_lbl2 -text " elapsed out of $time_limit_str"]
-        set num_lbl1 [label $num_flows_f.num_lbl1 -text "Flows: found "]
-        set num_found_lbl [label $num_flows_f.num_found_lbl]
-        set num_lbl2 [label $num_flows_f.num_lbl2 -text " out of $flow_limit_num"]
-        set b_abort_transitive [button $button_f.b_abort_transitive -text "Stop" -width 6 \
-		-command "set Apol_Analysis_transflow::abort_trans_analysis 1"]
-
-	pack $button_f -side bottom -padx 2 -pady 2 -anchor center
-	pack $topf -fill both -expand yes -padx 10 -pady 10
-	pack $main_lbl -side top -anchor nw -pady 2
-        pack $time_f $num_flows_f -side top -padx 15 -pady 2 -anchor nw
-	pack $b_abort_transitive -side left -fill both -expand yes -anchor center
-	pack $time_lbl1 $time_exp_lbl $time_lbl2 -side left -expand yes -anchor nw
-	pack $num_lbl1 $num_found_lbl $num_lbl2 -side left -expand yes -anchor nw
-	wm deiconify $find_flows_results_Dlg
-
-	wm transient $find_flows_results_Dlg $ApolTop::mainframe
-        catch {grab $find_flows_results_Dlg}
-	if {[winfo exists $find_flows_results_Dlg]} {
-		focus $find_flows_results_Dlg
-	}
-	update
-	return 0
+proc Apol_Analysis_transflow::verifyFindMore {d} {
+    variable vals
+    set message {}
+    if {[set hours [string trim $vals(find_more:hours)]] == {}} {
+        set hours 0
+    }
+    if {[set minutes [string trim $vals(find_more:minutes)]] == {}} {
+        set minutes 0
+    }
+    if {[set seconds [string trim $vals(find_more:seconds)]] == {}} {
+        set seconds 0
+    }
+    set path_limit [string trim $vals(find_more:limit)]
+    if {![string is integer $hours] || $hours > 24 || $hours < 0} {
+        set message "Invalid hours limit input.  Must be between 0-24 inclusive."
+    } elseif {![string is integer $minutes] || $minutes > 59 || $minutes < 0} {
+        set message "Invalid minutes limit input.  Must be between 0-59 inclusive."
+    } elseif {![string is integer $seconds] || $seconds > 59 || $seconds < 0} {
+        set message "Invalid seconds limit input.  Must be between 0-59 inclusive."
+    } elseif {$path_limit == {} && $hours == 0 && $minutes == 0 && $seconds == 0} {
+        set message "You must specify a time limit."
+    } elseif {$path_limit != {} && (![string is integer $path_limit] || $path_limit < 0)} {
+        set message "Number of flows cannot be less than 1."
+    }
+    if {$message != {}} {
+        tk_messageBox -icon error -type ok -title "Find More Flows" -message $message
+    } else {
+        $d enddialog 0
+    }
 }
 
+proc Apol_Analysis_transflow::doFindMore {res tree node} {
+    variable vals
+    if {[set hours [string trim $vals(find_more:hours)]] == {}} {
+        set hours 0
+    }
+    if {[set minutes [string trim $vals(find_more:minutes)]] == {}} {
+        set minutes 0
+    }
+    if {[set seconds [string trim $vals(find_more:seconds)]] == {}} {
+        set seconds 0
+    }
+    set path_limit [string trim $vals(find_more:limit)]
+    if {$hours != 0 || $minutes != 0 || $seconds != 0} {
+        set time_limit [expr {$hours * 3600 + $minutes * 60 + $seconds}]
+        set time_limit_str [format " elapsed out of %02d:%02d:%02d" $hours $minutes $seconds]
+    } else {
+        set time_limit {}
+        set time_limit_str {}
+    }
+    if {$path_limit != {}} {
+        set path_limit_str " out of $path_limit"
+    } else {
+        set path_limit 0
+        set path_limit_str {}
+    }
+    set vals(find_more:abort) 0
+    set vals(find_more:searches_text) {}
+    set vals(find_more:searches_done) -1
+    
+    set d [ProgressDlg .trans_domore -parent . -title "Find Results" \
+               -width 40 -height 5 \
+               -textvariable Apol_Analysis_transflow::vals(find_more:searches_text) \
+               -variable Apol_Analysis_transflow::vals(find_more:searches_done) \
+               -stop Stop \
+               -command [list set Apol_Analysis_transflow::vals(find_more:abort) 1]]
+    set graph_handler [lindex [$tree itemcget top -data] 0]
+    set start_time [clock seconds]
+    set elapsed_time 0
+    set results {}
+    set path_found 0
+    
+    while {1} {
+        set elapsed_time [expr {[clock seconds] - $start_time}]
+        set vals(find_more:searches_text) "Finding more flows:\n\n"
+        append vals(find_more:searches_text) "    Time: [clock format $elapsed_time -format "%H:%M:%S" -gmt 1]$time_limit_str\n\n"
+        append vals(find_more:searches_text) "    Flows: found $path_found$path_limit_str"
+        update
+        if {[catch {apol_TransInformationFurtherNext $graph_handler} r]} {
+            tk_messageBox -icon error -type ok -title "Find More Flows" -message "Could not find more flows:\n$results"
+            break
+        }
+        set results [lsort -unique [concat $results $r]]
+        set path_found [llength $results]
+        if {($time_limit != {} && $elapsed_time >= $time_limit) || \
+                ($path_limit != 0 && $path_found > $path_limit) || \
+                $vals(find_more:abort)} {
+            break
+        }
+    }
+    set vals(find_more:searches_text) "Rendering $path_found flow(s)."
+    update idletasks
 
-###########################################################################
-# ::find_more_flows
-#
-proc Apol_Analysis_transflow::find_more_flows {src_node tgt_node} {
-	variable transflow_tree
-	variable time_limit_hr
-	variable time_limit_min
-	variable time_limit_sec
-	variable flow_limit_num
-	variable progressBar
-        variable transflow_info_text
-        variable time_exp_lbl
-	variable num_found_lbl
-	variable find_flows_Dlg
-	variable find_flows_results_Dlg
-	variable find_flows_start
-	variable start_time
-
-	set time_limit_str [format "%02s:%02s:%02s" $time_limit_hr $time_limit_min $time_limit_sec]
-	if {$flow_limit_num == "" && $time_limit_str == "00:00:00"} {
-		tk_messageBox -icon error -type ok -title "Error" -message "You must specify a time limit."
-		raise $find_flows_Dlg
-		focus $find_flows_Dlg
-		return -1
-	} elseif {$flow_limit_num < 1} {
-		tk_messageBox -icon error -type ok -title "Error" -message "Number of flows cannot be less than 1."
-		raise $find_flows_Dlg
-		focus $find_flows_Dlg
-		return -1
-	}
-	if {$time_limit_hr != "" && [expr ($time_limit_hr > 24 || $time_limit_hr < 0)]} {
-		tk_messageBox -icon error -type ok -title "Error" -message "Invalid hours limit input. Must be between 0 and 24 inclusive."
-		raise $find_flows_Dlg
-		focus $find_flows_Dlg
-		return -1
-	}
-	if {$time_limit_min != "" && [expr ($time_limit_min > 59 || $time_limit_min < 0)]} {
-		tk_messageBox -icon error -type ok -title "Error" -message "Invalid minutes limit input. Must between 0-59 inclusive."
-		raise $find_flows_Dlg
-		focus $find_flows_Dlg
-		return -1
-	}
-	if {$time_limit_sec != "" && [expr ($time_limit_sec > 59 || $time_limit_sec < 0)]} {
-		tk_messageBox -icon error -type ok -title "Error" -message "Invalid seconds limit input. Must be between 0-59 inclusive."
-		raise $find_flows_Dlg
-		focus $find_flows_Dlg
-		return -1
-	}
-	if {[winfo exists $find_flows_Dlg]} {
-		destroy $find_flows_Dlg
-	}
-	set old_focus [focus]
-        Apol_Analysis_transflow::display_find_flows_results_Dlg $time_limit_str $flow_limit_num
-	set Apol_Analysis_transflow::abort_trans_analysis 0
-        set src_data [$transflow_tree itemcget [$transflow_tree nodes root] -data]
-	set src [$transflow_tree itemcget $src_node -text]
-	wm protocol $find_flows_results_Dlg WM_DELETE_WINDOW "raise $find_flows_results_Dlg; focus $find_flows_results_Dlg"
-
-	set start_time [clock seconds]
-	set curr_flows_num 0
-	set find_flows_start 1
-
-	# Current time - start time = elapsed time
-	$time_exp_lbl configure -text [Apol_Analysis_transflow::convert_seconds [expr [clock seconds] - $start_time]]
-	#Apol_Analysis_transflow::find_more_flows_generate_virtual_events
-	$num_found_lbl configure -text $curr_flows_num
-	update
-
-	# The last query arguments were stored in the data for the root node
-	set rt [catch {apol_TransitiveFindPathsStart \
-		$src \
-		[lindex $src_data 1] \
-		[lindex $src_data 2] \
-		[lindex $src_data 3] \
-		1 \
-		"^[$transflow_tree itemcget $tgt_node -text]$" \
-		[lindex $src_data 6] \
-		[lindex $src_data 7] \
-		[lindex $src_data 8] \
-		[lindex $src_data 9] \
-		[lindex $src_data 10]} err]
-
-	if {$rt != 0} {
-		if {[winfo exists $find_flows_results_Dlg]} {
-			destroy $find_flows_results_Dlg
-		}
-		tk_messageBox -icon error -type ok -title "Error" -message "$err"
-		return -1
-	}
-
-	while {1} {
-		# TODO: generate virtual events to place onto Tcl's event queue, to capture progress.
-		#event generate $find_flows_results_Dlg <<FindMoreFlowsStarted>> -when head
-		# Current time - start time = elapsed time
-		set elapsed_time [Apol_Analysis_transflow::convert_seconds [expr [clock seconds] - $start_time]]
-		$time_exp_lbl configure -text $elapsed_time
-		if {$time_limit_str != "00:00:00" && [string equal $time_limit_str $elapsed_time]} {
-			break
-		}
-		# apol_TransitiveFindPathsNext will always stay the same or return a value greater
-		# than the current curr_flows_num value
-		set rt [catch {set curr_flows_num [apol_TransitiveFindPathsNext]} err]
-		if {$rt == -1} {
-			    tk_messageBox -icon error -type ok -title "Error" -message $err
-			    return -1
-		}
-		$num_found_lbl configure -text $curr_flows_num
-		if {$flow_limit_num != "" && $curr_flows_num >= $flow_limit_num} {
-			break
-		}
-		update
-		# Check to see if the user has pressed the abort button
-		if {$Apol_Analysis_transflow::abort_trans_analysis} {
-			set find_flows_start 0
-			# Destroy the dialog and release the grab
-			if {[winfo exists $find_flows_results_Dlg]} {
-				grab release $find_flows_results_Dlg
-				destroy $find_flows_results_Dlg
-				catch {focus $old_focus}
-			}
-			# If there were flows found, then break out of loop so we can display
-			if {$curr_flows_num > 0} {break}
-			set rt [catch {apol_TransitiveFindPathsAbort} err]
-			if {$rt != 0} {
-				tk_messageBox -icon info -type ok -title "Abort Error" -message $err
-				return -1
-			}
-			return -1
-		}
-	}
-	set rt [catch {set results [apol_TransitiveFindPathsGetResults]} err]
-	if {$rt != 0} {
-		set find_flows_start 0
-		if {[winfo exists $find_flows_results_Dlg]} {
-			destroy $find_flows_results_Dlg
-		}
-	        tk_messageBox -icon error -type ok -title "Error" -message "$err"
-		return -1
-	}
-
-	# Get # of target types (if none, then just draw the tree without child nodes)
-	# We skip index 0 b/c it is the starting type, which we already have.
-	set num_target_types [lindex $results 0]
-	if {$num_target_types} {
-		# Start form index 1. This should be the first target node if there were any target nodes returned.
-		set nextIdx [Apol_Analysis_transflow::parseList_get_index_next_node 1 $results]
-		set data [lrange $results 1 [expr $nextIdx-1]]
-		$transflow_tree itemconfigure $tgt_node -data $data
-		Apol_Analysis_transflow::insert_more_flows_header $transflow_info_text $transflow_tree \
-			$src_node $tgt_node \
-			$time_limit_str $elapsed_time \
-			$flow_limit_num $curr_flows_num
-		Apol_Analysis_transflow::render_information_flows $transflow_info_text $transflow_tree $tgt_node
-		Apol_Analysis_transflow::formatInfoText $transflow_info_text
-	}
-	set find_flows_start 0
-	if {[winfo exists $find_flows_results_Dlg]} {
-		grab release $find_flows_results_Dlg
-		destroy $find_flows_results_Dlg
-		catch {focus $old_focus}
-	}
-	return 0
+    $res.tb configure -state normal
+    $res.tb delete 0.0 end
+    set parent_name [$tree itemcget [$tree parent $node] -text]
+    set name [$tree itemcget $node -text]
+    set flow_dir [lindex [$tree itemcget $node -data] 1 0]
+    switch -- $flow_dir {
+        to {
+            $res.tb insert end "More information flows to " title \
+                $parent_name title_type \
+                " from " title \
+                $name title_type
+        }
+        from {
+            $res.tb insert end "More information flows from " title \
+                $parent_name title_type \
+                " to " title \
+                $name title_type
+        }
+    }
+    $res.tb insert end "  (" title \
+        "Find more flows" {title_type find_more} \
+        ")\n\n" title \
+        "Time: " subtitle \
+        [clock format $elapsed_time -format "%H:%M:%S" -gmt 1] subtitle \
+        [format " out of %02d:%02d:%02d" $hours $minutes $seconds] subtitle \
+        "\n\nApol found the following number of information flows: " subtitle \
+        $path_found num \
+        " out of " subtitle \
+        $path_limit num \
+        "\n" subtitle
+    set path_num 1
+    foreach r [lrange [lsort -index 3 -integer $results] 1 end] {
+        set path [lindex $r 4]
+        if {$flow_dir == "to"} {
+            # flip the steps around
+            set p {}
+            foreach step $path {
+                set p [concat [list $step] $p]
+            }
+            set sorted_path $p
+        } else {
+            set sorted_path $path
+        }
+        $res.tb insert end "\n" {}
+        renderPath $res $path_num $sorted_path
+        incr path_num
+    }
+    $res.tb configure -state disabled
+    destroy $d
 }
