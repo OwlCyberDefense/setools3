@@ -74,7 +74,7 @@ proc Apol_Analysis_relabel::create {options_frame} {
     set mode_tf [TitleFrame $options_frame.mode -text "Mode"]
     pack $mode_tf -side left -padx 2 -pady 2 -expand 0 -fill y
     set object_mode [radiobutton [$mode_tf getframe].object \
-                         -text "Object mode" -value "object" \
+                         -text "Object" -value "object" \
                          -variable Apol_Analysis_relabel::vals(mode)]
     pack $object_mode -anchor w
     set widgets(mode:to) [checkbutton [$mode_tf getframe].to \
@@ -89,7 +89,7 @@ proc Apol_Analysis_relabel::create {options_frame} {
         [list Apol_Analysis_relabel::toggleToFromPushed $widgets(mode:from)]
     pack $widgets(mode:to) $widgets(mode:from) -anchor w -padx 8
     set subject_mode [radiobutton [$mode_tf getframe].subject \
-                          -text "Subject Mode" -value "subject" \
+                          -text "Subject" -value "subject" \
                           -variable Apol_Analysis_relabel::vals(mode)]
     pack $subject_mode -anchor w -pady 4
     trace add variable Apol_Analysis_relabel::vals(mode) write \
