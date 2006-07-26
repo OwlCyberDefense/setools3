@@ -55,7 +55,6 @@ both.
 
 SUBJECT MODE
 
-
 In subject mode the user specifies only a subject type.  Two lists of
 types will be displayed corresponding to all of the types to which the
 subject can relabel and from which the subject can relabel.
