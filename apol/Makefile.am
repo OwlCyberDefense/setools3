@@ -4,7 +4,8 @@ apol_gui_version = @VERSION@
 bin_PROGRAMS = apol
 dist_bin_SCRIPTS = apol.tcl
 
-dist_pkgdata_DATA = apol_help.txt domaintrans_help.txt infoflow_help.txt obj_perms_help.txt \
+dist_pkgdata_DATA = apol_help.txt domaintrans_help.txt file_relabel_help.txt \
+	infoflow_help.txt obj_perms_help.txt types_relation_help.txt \
 	perm_maps/apol_perm_mapping_ver12 \
 	perm_maps/apol_perm_mapping_ver15 \
 	perm_maps/apol_perm_mapping_ver16 \
@@ -32,7 +33,7 @@ apol_SOURCES = apol_gui.c \
 	fscontexts_tab.tcl \
 	common_widgets.tcl range_selector.tcl \
 	domaintrans_module.tcl directflow_module.tcl transflow_module.tcl \
-	relabel_module.tcl \
+	relabel_module.tcl types_relation_module.tcl \
 	top.tcl
 
 noinst_DATA = foo_module.tcl
