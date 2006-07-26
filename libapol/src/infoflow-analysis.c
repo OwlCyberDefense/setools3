@@ -27,6 +27,7 @@
 #include "queue.h"
 #include <apol/perm-map.h>
 
+#include <config.h>
 #include <errno.h>
 #include <time.h>
 
@@ -56,6 +57,17 @@ struct apol_infoflow_graph {
 	apol_vector_t *edges;
         unsigned int mode, direction;
         regex_t *regex;
+
+	/** vector of apol_infoflow_node_t, used for random restarts
+	 * for further transitive analysis */
+	apol_vector_t *further_start;
+	/** vector of apol_infoflow_node_t of targets, used for
+	 * further transitive analysis */
+	apol_vector_t *further_end;
+	size_t current_start;
+#ifdef HAVE_RAND_R
+	unsigned int seed;
+#endif
 };
 
 struct apol_infoflow_node {
@@ -137,6 +149,42 @@ static void apol_infoflow_step_free(void *step)
 		apol_vector_destroy(&s->rules, NULL);
 		free(s);
 	}
+}
+
+/******************** random number routines ********************/
+
+/**
+ * Initialize the pseudo-random number generator to be used during
+ * further transitive analysis.
+ *
+ * @param g Transitive infoflow graph.
+ */
+static void apol_infoflow_srand(apol_infoflow_graph_t *g)
+{
+#ifdef HAVE_RAND_R
+	g->seed = (int) time(NULL);
+#else
+	srand((int) time(NULL));
+#endif
+}
+
+/**
+ * Return a pseudo-random integer between 0 and RAND_MAX, for use
+ * during further transitive analysis.  If the system supports it,
+ * this function will use rand_r() so that this library remains
+ * reentrant and thread-safe.
+ *
+ * @param g Transitive infoflow graph.
+ *
+ * @return Integer between 0 and RAND_MAX.
+ */
+static int apol_infoflow_rand(apol_infoflow_graph_t *g)
+{
+#ifdef HAVE_RAND_R
+	return rand_r(&g->seed);
+#else
+	return rand();
+#endif
 }
 
 /******************** infoflow graph node routines ********************/
@@ -648,6 +696,8 @@ void apol_infoflow_graph_destroy(apol_infoflow_graph_t **flow)
 	if (*flow != NULL) {
 		apol_vector_destroy(&(*flow)->nodes, apol_infoflow_node_free);
 		apol_vector_destroy(&(*flow)->edges, apol_infoflow_edge_free);
+		apol_vector_destroy(&(*flow)->further_start, NULL);
+		apol_vector_destroy(&(*flow)->further_end, NULL);
 		apol_regex_destroy(&(*flow)->regex);
 		free(*flow);
 		*flow = NULL;
@@ -1004,6 +1054,44 @@ static int apol_infoflow_graph_trans_init(apol_policy_t *p,
 }
 
 /**
+ * Prepare an infoflow graph for furher transitive analysis by
+ * coloring its nodes and setting its parent and distance.  For the
+ * start node color it grey; for all others color them white.
+ *
+ * @param p Policy handler, for reporting errors.
+ * @param g Infoflow graph to initialize.
+ * @param start Node from which to begin analysis.
+ * @param q Queue of apol_infoflow_node_t pointers to which search.
+ *
+ * @return 0 on success, < 0 on error.
+ */
+static int apol_infoflow_graph_trans_further_init(apol_policy_t *p,
+						  apol_infoflow_graph_t *g,
+						  apol_infoflow_node_t *start,
+						  apol_queue_t *q)
+{
+	size_t i;
+	apol_infoflow_node_t *node;
+	for (i = 0; i < apol_vector_get_size(g->nodes); i++) {
+		node = (apol_infoflow_node_t *) apol_vector_get_element(g->nodes, i);
+		node->parent = NULL;
+		if (node == start) {
+			node->color = APOL_INFOFLOW_COLOR_GREY;
+			node->distance = 0;
+			if (apol_queue_insert(q, node) < 0) {
+				ERR(p, "Out of memory!");
+				return -1;
+			}
+		}
+		else {
+			node->color = APOL_INFOFLOW_COLOR_WHITE;
+			node->distance = -1;
+		}
+	}
+	return 0;
+}
+
+/**
  * Given a colored infoflow graph from apol_infoflow_analysis_trans(),
  * find the shortest path from the end node to the start node.
  * Allocate and return a vector of apol_infoflow_node_t that lists the
@@ -1040,7 +1128,8 @@ static int apol_infoflow_trans_path(apol_policy_t *p,
 		if (next_node == start_node) {
 			break;
 		}
-		if (apol_vector_get_size(*path) >= apol_vector_get_size(g->nodes)) {
+		if (next_node == NULL ||
+		    apol_vector_get_size(*path) >= apol_vector_get_size(g->nodes)) {
 			ERR(p, "Infinite loop in trans_path.");
 			goto cleanup;
 		}
@@ -1427,6 +1516,131 @@ static int apol_infoflow_analysis_trans(apol_policy_t *p,
 	return retval;
 }
 
+/**
+ * Given a vector, allocate and return a new vector with the elements
+ * shuffled about.  This will make a shallow copy of the original
+ * vector's elements.
+ *
+ * @param p Policy handler, for error reporting.
+ * @param g Transitive infoflow graph containing PRNG object.
+ * @param v Vector to shuffle.
+ *
+ * @return A newly allocated vector with shuffled elements, or NULL
+ * upon error.  The caller must call apol_vector_destroy() upon the
+ * returned value.
+ */
+static apol_vector_t *apol_infoflow_trans_further_shuffle(apol_policy_t *p,
+							  apol_infoflow_graph_t *g,
+							  apol_vector_t *v)
+{
+	size_t i, j, size;
+	void **deck = NULL, *tmp;
+	apol_vector_t *new_v = NULL;
+	int retval = -1;
+	size = apol_vector_get_size(v);
+	if ((new_v = apol_vector_create_with_capacity(size)) == NULL) {
+		ERR(p, "Out of memory!");
+		goto cleanup;
+	}
+	if (size == 0) {
+		retval = 0;
+		goto cleanup;
+	}
+	if ((deck = malloc(size * sizeof(*deck))) == NULL) {
+		ERR(p, "Out of memory!");
+		goto cleanup;
+	}
+	for (i = 0; i < size; i++) {
+		deck[i] = apol_vector_get_element(v, i);
+	}
+	for (i = size - 1; i > 0; i--) {
+		j = (size_t) ((apol_infoflow_rand(g) / (RAND_MAX + 1.0)) * i);
+		tmp = deck[i];
+		deck[i] = deck[j];
+		deck[j] = tmp;
+	}
+	for (i = 0; i < size; i++) {
+		if (apol_vector_append(new_v, deck[i]) < 0) {
+			ERR(p, "Out of memory!");
+			goto cleanup;
+		}
+	}
+	retval = 0;
+ cleanup:
+	free(deck);
+	if (retval != 0) {
+		apol_vector_destroy(&new_v, NULL);
+	}
+	return new_v;
+}
+
+
+static int apol_infoflow_analysis_trans_further(apol_policy_t *p,
+                                                apol_infoflow_graph_t *g,
+                                                apol_infoflow_node_t *start,
+                                                apol_vector_t *results)
+{
+	apol_vector_t *edge_list = NULL, *path = NULL;
+	apol_queue_t *queue = NULL;
+	apol_infoflow_node_t *node, *cur_node;
+	apol_infoflow_edge_t *edge;
+	size_t i;
+	int retval = -1;
+
+	if ((queue = apol_queue_create()) == NULL) {
+		ERR(p, "Out of memory!");
+		goto cleanup;
+	}
+	if (apol_infoflow_graph_trans_further_init(p, g, start, queue) < 0) {
+		goto cleanup;
+	}
+
+	while ((cur_node = apol_queue_remove(queue)) != NULL) {
+		if (apol_vector_get_index(g->further_end, cur_node, NULL, NULL, &i) == 0) {
+			if (apol_infoflow_trans_path(p, g, start, cur_node, &path) < 0 ||
+			    apol_infoflow_trans_append(p, g, path, results) < 0) {
+				goto cleanup;
+			}
+			apol_vector_destroy(&path, NULL);
+		}
+		cur_node->color = APOL_INFOFLOW_COLOR_BLACK;
+		if (g->direction == APOL_INFOFLOW_OUT) {
+			edge_list = cur_node->out_edges;
+		}
+		else {
+			edge_list = cur_node->in_edges;
+		}
+		edge_list = apol_infoflow_trans_further_shuffle(p, g, edge_list);
+		if (edge_list == NULL) {
+			goto cleanup;
+		}
+		for (i = 0; i < apol_vector_get_size(edge_list); i++) {
+			edge = (apol_infoflow_edge_t *) apol_vector_get_element(edge_list, i);
+			if (g->direction == APOL_INFOFLOW_OUT) {
+				node = edge->end_node;
+			}
+			else {
+				node = edge->start_node;
+			}
+                        if (node->color == APOL_INFOFLOW_COLOR_WHITE) {
+                                node->color = APOL_INFOFLOW_COLOR_GREY;
+                                node->distance = cur_node->distance + 1;
+                                node->parent = cur_node;
+                                if (apol_queue_push(queue, node) < 0) {
+                                        ERR(p, "Could not push.");
+                                        goto cleanup;
+                                }
+                        }
+		}
+                apol_vector_destroy(&edge_list, NULL);
+	}
+	retval = 0;
+ cleanup:
+	apol_vector_destroy(&edge_list, NULL);
+	apol_queue_destroy(&queue);
+	return retval;
+}
+
 /******************** infoflow analysis object routines ********************/
 
 int apol_infoflow_analysis_do(apol_policy_t *p,
@@ -1482,6 +1696,63 @@ int apol_infoflow_analysis_do_more(apol_policy_t *p,
 	if (retval != 0) {
 		apol_vector_destroy(v, apol_infoflow_result_free);
 	}
+	return retval;
+}
+
+int apol_infoflow_analysis_trans_further_prepare(apol_policy_t *p,
+						 apol_infoflow_graph_t *g,
+						 const char *start_type,
+						 const char *end_type)
+{
+	qpol_type_t *stype, *etype;
+	int retval = -1;
+
+	apol_infoflow_srand(g);
+	if (apol_query_get_type(p, start_type, &stype) < 0 ||
+	    apol_query_get_type(p, end_type, &etype) < 0) {
+		goto cleanup;
+	}
+	if (g->mode != APOL_INFOFLOW_MODE_TRANS) {
+		ERR(p, "May only perform further infoflow analysis when the graph is transitive.");
+		goto cleanup;
+	}
+	apol_vector_destroy(&g->further_start, NULL);
+	apol_vector_destroy(&g->further_end, NULL);
+	if ((g->further_start = apol_vector_create()) == NULL ||
+	    (g->further_end = apol_vector_create()) == NULL) {
+		ERR(p, "Out of memory!");
+		goto cleanup;
+	}
+	if (apol_infoflow_graph_get_nodes_for_type(p, g, start_type, g->further_start) < 0 ||
+	    apol_infoflow_graph_get_nodes_for_type(p, g, end_type, g->further_end) < 0) {
+		goto cleanup;
+	}
+	g->current_start = 0;
+	retval = 0;
+ cleanup:
+	return retval;
+}
+
+int apol_infoflow_analysis_trans_further_next(apol_policy_t *p,
+					      apol_infoflow_graph_t *g,
+					      apol_vector_t *v)
+{
+	apol_infoflow_node_t *start_node;
+	int retval = -1;
+	if (g->further_start == NULL) {
+		ERR(p, "Infoflow graph was not prepared yet.");
+		goto cleanup;
+	}
+	start_node = apol_vector_get_element(g->further_start, g->current_start);
+	if (apol_infoflow_analysis_trans_further(p, g, start_node, v) < 0) {
+		goto cleanup;
+	}
+	g->current_start++;
+	if (g->current_start >= apol_vector_get_size(g->further_start)) {
+		g->current_start = 0;
+	}
+	retval = 0;
+ cleanup:
 	return retval;
 }
 

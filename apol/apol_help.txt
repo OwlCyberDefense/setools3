@@ -441,12 +441,11 @@ above).
 
   Selecting a child node will show each step in the flow chain between
   the starting node and the child node, along with the rules that
-  allow that step to occur.  Results are sorted by object class.
-  Additionally, embedded in the text of the results is a hyperlink for
-  finding more flows between the starting node and the selected child
-  node.  This link displays a dialog where you can specify a time
-  limit for the search and/or limit the number of flows to find in the
-  search.
+  allow that step to occur.  Additionally, embedded in the text of the
+  results is a hyperlink for finding more flows between the starting
+  node and the selected child node.  This link displays a dialog where
+  you can specify a time limit for the search and/or limit the number
+  of flows to find in the search.
 
   As with the DIF analysis, you can filter the results using end type
   regular expression.

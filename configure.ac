@@ -22,6 +22,7 @@ libseaudit_version=3.0.0
 
 AC_CHECK_SIZEOF(char *)
 AC_C_BIGENDIAN
+AC_CHECK_FUNCS(rand_r)
 
 AC_ARG_ENABLE(debug, [  --enable-debug          compile with full debugging support], enable_debug="$enableval")
 AC_MSG_CHECKING([for debugging support])
