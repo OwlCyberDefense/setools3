@@ -222,11 +222,11 @@ extern int apol_infoflow_analysis_set_type(apol_policy_t *p,
 					   const char *name);
 
 /**
- * Set an information flow analysis to return paths that go through
- * this intermediate type.  If more than one type is appended to the
- * analysis, returned paths will go through at least one of them.
- * These intermediate types are ignored when running a direct
- * information flow analysis.
+ * Set an information flow analysis to return paths that only go
+ * through this intermediate type.  If more than one type is appended
+ * to the analysis, every step of a return path will go through at
+ * least one of the types.  These intermediate types are ignored when
+ * running a direct information flow analysis.
  *
  * @param policy Policy handler, to report errors.
  * @param ia Infoflow analysis to set.
