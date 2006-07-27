@@ -205,7 +205,7 @@ int qpol_policy_get_genfscon_iter(qpol_handle_t *handle, qpol_policy_t *policy, 
 		return STATUS_ERR;
 	}
 
-	db = (policydb_t*)&policy->p;
+	db = &policy->p->p;
 
 	gs = calloc(1, sizeof(genfs_state_t));
 	if (gs == NULL) {
