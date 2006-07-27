@@ -624,6 +624,9 @@ proc Apol_Analysis_transflow::checkParams {} {
         if {$vals(intermed:inc_all) == {}} {
             return "At least one intermediate type must be selected."
         }
+        if {[lsearch $vals(intermed:exc_all) $vals(type)] >= 0} {
+            return "The starting type is on the excluded intermediate types list"
+        }
         set num_perms 0
         foreach perm_key [array names vals perms:*] {
             if {$vals($perm_key)} {
@@ -1049,7 +1052,7 @@ proc Apol_Analysis_transflow::doFindMore {res tree node} {
         $path_limit num \
         "\n" subtitle
     set path_num 1
-    foreach r [lrange [lsort -index 3 -integer $results] 1 end] {
+    foreach r [lsort -index 3 -integer $results] {
         set path [lindex $r 4]
         if {$flow_dir == "to"} {
             # flip the steps around
