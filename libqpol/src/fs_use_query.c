@@ -49,7 +49,7 @@ int qpol_policy_get_fs_use_by_name(qpol_handle_t *handle, qpol_policy_t *policy,
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 	for (tmp = db->ocontexts[OCON_FSUSE]; tmp; tmp = tmp->next) {
 		if (!strcmp(name, tmp->u.name))
 			break;

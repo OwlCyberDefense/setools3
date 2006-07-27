@@ -45,7 +45,7 @@ int qpol_policy_is_mls_enabled(qpol_handle_t *handle, qpol_policy_t *policy)
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 
 	if (db->mls != 0) 
 		return 1;
@@ -66,7 +66,7 @@ int qpol_policy_get_policy_version(qpol_handle_t *handle, qpol_policy_t *policy,
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 
 	*version = db->policyvers;
 

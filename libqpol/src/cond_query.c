@@ -118,7 +118,7 @@ int qpol_policy_get_cond_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 
 	if (!(cs = calloc(1, sizeof(cond_state_t)))) {
 		error = errno;
@@ -223,7 +223,7 @@ int qpol_cond_get_expr_node_iter(qpol_handle_t *handle, qpol_policy_t *policy, q
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 	internal_cond = (cond_node_t*)cond;
 
 	if (!(ces = calloc(1, sizeof(cond_expr_state_t)))) {
@@ -340,7 +340,7 @@ int qpol_cond_get_av_true_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpo
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 	internal_cond = (cond_node_t*)cond;
 
 	if (!(crs = calloc(1, sizeof(cond_rule_state_t)))) {
@@ -391,7 +391,7 @@ int qpol_cond_get_te_true_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpo
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 	internal_cond = (cond_node_t*)cond;
 
 	if (!(crs = calloc(1, sizeof(cond_rule_state_t)))) {
@@ -442,7 +442,7 @@ int qpol_cond_get_av_false_iter(qpol_handle_t *handle, qpol_policy_t *policy, qp
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 	internal_cond = (cond_node_t*)cond;
 
 	if (!(crs = calloc(1, sizeof(cond_rule_state_t)))) {
@@ -493,7 +493,7 @@ int qpol_cond_get_te_false_iter(qpol_handle_t *handle, qpol_policy_t *policy, qp
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 	internal_cond = (cond_node_t*)cond;
 
 	if (!(crs = calloc(1, sizeof(cond_rule_state_t)))) {
@@ -538,7 +538,7 @@ int qpol_cond_eval(qpol_handle_t *handle, qpol_policy_t *policy, qpol_cond_t *co
 
 	internal_cond = (cond_node_t*)cond;
 
-	if ((*is_true = (uint32_t)cond_evaluate_expr(&policy->p, internal_cond->expr)) > 1) {
+	if ((*is_true = (uint32_t)cond_evaluate_expr(&policy->p->p, internal_cond->expr)) > 1) {
 		error = ERANGE;
 		goto err;
 	}
@@ -586,7 +586,7 @@ int qpol_cond_expr_node_get_bool(qpol_handle_t *handle, qpol_policy_t *policy, q
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 	internal_cond = (cond_expr_t*)node;
 
 	if (internal_cond->expr_type != QPOL_COND_EXPR_BOOL){
