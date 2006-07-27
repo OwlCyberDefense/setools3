@@ -109,7 +109,7 @@ struct apol_infoflow_edge {
 struct apol_infoflow_analysis {
 	unsigned int mode, direction;
 	char *type, *result;
-	apol_vector_t *class_perms;
+	apol_vector_t *intermed, *class_perms;
 	int min_weight;
 };
 
@@ -1766,6 +1766,7 @@ void apol_infoflow_analysis_destroy(apol_infoflow_analysis_t **ia)
 	if (*ia != NULL) {
 		free((*ia)->type);
 		free((*ia)->result);
+		apol_vector_destroy(&(*ia)->intermed, free);
 		apol_vector_destroy(&(*ia)->class_perms, apol_obj_perm_free);
 		free(*ia);
 		*ia = NULL;
@@ -1827,6 +1828,29 @@ static int compare_class_perm_by_class_name(const void *in_op, const void *class
 	const char *name = (const char*)class_name;
 
 	return strcmp(apol_obj_perm_get_obj_name(op), name);
+}
+
+int apol_infoflow_analysis_append_intermediate(apol_policy_t *policy,
+					       apol_infoflow_analysis_t *ia,
+					       const char *type)
+{
+	char *tmp = NULL;
+	if (type == NULL) {
+		apol_vector_destroy(&ia->intermed, free);
+		return 0;
+	}
+	if (ia->intermed == NULL &&
+	    (ia->intermed = apol_vector_create()) == NULL) {
+		ERR(policy, "Error appending type to analysis: %s", strerror(ENOMEM));
+		return -1;
+	}
+	if ((tmp = strdup(type)) == NULL ||
+	    apol_vector_append(ia->intermed, tmp) < 0) {
+		free(tmp);
+		ERR(policy, "Error appending type to analysis: %s", strerror(ENOMEM));
+		return -1;
+	}
+	return 0;
 }
 
 int apol_infoflow_analysis_append_class_perm(apol_policy_t *p,

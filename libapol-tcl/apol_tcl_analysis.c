@@ -846,6 +846,8 @@ static int append_trans_infoflow_result_to_list(Tcl_Interp *interp,
  * <ol>
  *   <li>flow direction, one of "to" or "from"
  *   <li>starting type (string)
+ *   <li>list of allowable intermediate types, or empty list to accept all
+ *   <li>list of allowable class/perm pairs, or an empty list to accept all
  *   <li>regular expression for resulting types, or empty string to accept all
  * </ol>
  */
@@ -858,6 +860,7 @@ static int Apol_TransInformationFlowAnalysis(ClientData clientData, Tcl_Interp *
 	apol_infoflow_graph_t *g = NULL;
 	apol_infoflow_analysis_t *analysis = NULL;
 	int direction, num_opts;
+	CONST char **intermed_strings = NULL, **classperm_strings = NULL;
 	size_t i;
 	int retval = TCL_ERROR;
 
@@ -866,8 +869,8 @@ static int Apol_TransInformationFlowAnalysis(ClientData clientData, Tcl_Interp *
 		Tcl_SetResult(interp, "No current policy file is opened!", TCL_STATIC);
 		goto cleanup;
 	}
-	if (argc != 4) {
-		ERR(policydb, "Need a flow direction, starting type, and resulting type regex.");
+	if (argc != 6) {
+		ERR(policydb, "Need a flow direction, starting type, intermediate types, class/perm pairs, and resulting type regex.");
 		goto cleanup;
 	}
 
@@ -890,8 +893,37 @@ static int Apol_TransInformationFlowAnalysis(ClientData clientData, Tcl_Interp *
 	if (apol_infoflow_analysis_set_mode(policydb, analysis, APOL_INFOFLOW_MODE_TRANS) < 0 ||
 	    apol_infoflow_analysis_set_dir(policydb, analysis, direction) < 0 ||
 	    apol_infoflow_analysis_set_type(policydb, analysis, argv[2]) < 0 ||
-	    apol_infoflow_analysis_set_result_regex(policydb, analysis, argv[3])) {
+	    apol_infoflow_analysis_set_result_regex(policydb, analysis, argv[5])) {
 		goto cleanup;
+	}
+	if (Tcl_SplitList(interp, argv[3], &num_opts, &intermed_strings) == TCL_ERROR) {
+		goto cleanup;
+	}
+	while (--num_opts >= 0) {
+		CONST char *s = intermed_strings[num_opts];
+		if (apol_infoflow_analysis_append_intermediate(policydb, analysis, s) < 0) {
+			goto cleanup;
+		}
+	}
+
+	if (Tcl_SplitList(interp, argv[4], &num_opts, &classperm_strings) == TCL_ERROR) {
+		goto cleanup;
+	}
+	while (--num_opts >= 0) {
+		CONST char *s = classperm_strings[num_opts];
+		Tcl_Obj *cp_obj = Tcl_NewStringObj(s, -1), **cp;
+		int obj_count;
+		if (Tcl_ListObjGetElements(interp, cp_obj, &obj_count, &cp) == TCL_ERROR) {
+			goto cleanup;
+		}
+		if (obj_count != 2) {
+			ERR(policydb, "Not a class/perm pair: %s", s);
+			goto cleanup;
+		}
+		if (apol_infoflow_analysis_append_class_perm
+		    (policydb, analysis, Tcl_GetString(cp[0]), Tcl_GetString(cp[1])) < 0) {
+			goto cleanup;
+		}
 	}
 
 	if (apol_infoflow_analysis_do(policydb, analysis, &v, &g) < 0) {
@@ -911,6 +943,12 @@ static int Apol_TransInformationFlowAnalysis(ClientData clientData, Tcl_Interp *
 	Tcl_SetObjResult(interp, result_obj);
 	retval = TCL_OK;
  cleanup:
+	if (intermed_strings != NULL) {
+		Tcl_Free((char *) intermed_strings);
+	}
+	if (classperm_strings != NULL) {
+		Tcl_Free((char *) classperm_strings);
+	}
 	apol_infoflow_analysis_destroy(&analysis);
 	apol_vector_destroy(&v, apol_infoflow_result_free);
 	if (retval == TCL_ERROR) {
