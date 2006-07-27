@@ -1,4 +1,4 @@
- /**
+/**
  *  @file role_query.c
  *  Implementation of the interface for searching and iterating over roles.
  *
@@ -48,7 +48,7 @@ int qpol_policy_get_role_by_name(qpol_handle_t *handle, qpol_policy_t *policy, c
 		return STATUS_ERR;
 	}
 	
-	db = &policy->p;
+	db = &policy->p->p;
 	internal_datum = hashtab_search(db->p_roles.table, (const hashtab_key_t)name);
 	if (internal_datum == NULL) {
 		*datum = NULL;
@@ -75,7 +75,7 @@ int qpol_policy_get_role_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 
 	hs = calloc(1, sizeof(hash_state_t));
 	if (hs == NULL) {
@@ -133,7 +133,7 @@ int qpol_role_get_dominate_iter(qpol_handle_t *handle, qpol_policy_t *policy, qp
 	}
 
 	internal_datum = (role_datum_t*)datum;
-	db = &policy->p;
+	db = &policy->p->p;
 
 	if (!(es = calloc(1, sizeof(ebitmap_state_t)))) {
 		error = errno;
@@ -175,7 +175,7 @@ int qpol_role_get_type_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_r
 	}
 
 	internal_datum = (role_datum_t*)datum;
-	db = &policy->p;
+	db = &policy->p->p;
 
 	if(!(expanded_set = calloc(1, sizeof(ebitmap_t)))) {
 		error = errno;
@@ -231,7 +231,7 @@ int qpol_role_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_role_t
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 	internal_datum = (role_datum_t*)datum;
 
 	*name = db->p_role_val_to_name[internal_datum->value - 1];

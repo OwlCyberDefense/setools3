@@ -35,6 +35,7 @@
 
 #include <sepol/policydb/policydb.h>
 #include <sepol/policydb/util.h>
+#include <sepol/policydb.h>
 
 #include "debug.h"
 #include "iterator_internal.h" 
@@ -557,7 +558,8 @@ void *ebitmap_state_get_cur_cat(qpol_iterator_t *iter)
 	ebitmap_state_t *es = NULL;
 	policydb_t *db = NULL;
 	qpol_cat_t *cat = NULL;
-	qpol_policy_t sp;
+	sepol_policydb_t sp;
+	qpol_policy_t qp;
 
 	if (iter == NULL) {
 		errno = EINVAL;
@@ -576,9 +578,10 @@ void *ebitmap_state_get_cur_cat(qpol_iterator_t *iter)
 
 	/* shallow copy is safe here */
 	sp.p = *db;
+	qp.p = &sp;
 
 	/* handle passed in as 1, but should never fail as the name is retrieved from the list into which we are looking */
-	qpol_policy_get_cat_by_name((qpol_handle_t*)1, &sp, db->p_cat_val_to_name[es->cur], &cat);
+	qpol_policy_get_cat_by_name((qpol_handle_t*)1, &qp, db->p_cat_val_to_name[es->cur], &cat);
 
 	return cat;
 }

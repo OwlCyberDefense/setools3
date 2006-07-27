@@ -46,7 +46,7 @@ int qpol_policy_get_terule_iter(qpol_handle_t *handle, qpol_policy_t *policy, ui
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
-	db = &policy->p;
+	db = &policy->p->p;
 
 	state = calloc(1, sizeof(avtab_state_t));
 	if (state == NULL) {
@@ -84,7 +84,7 @@ int qpol_terule_get_source_type(qpol_handle_t *handle, qpol_policy_t *policy, qp
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 	terule = (avtab_ptr_t)rule;
 
 	*source = (qpol_type_t*)db->type_val_to_struct[terule->key.source_type - 1];
@@ -107,7 +107,7 @@ int qpol_terule_get_target_type(qpol_handle_t *handle, qpol_policy_t *policy, qp
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 	terule = (avtab_ptr_t)rule;
 
 	*target = (qpol_type_t*)db->type_val_to_struct[terule->key.target_type - 1];
@@ -130,7 +130,7 @@ int qpol_terule_get_object_class(qpol_handle_t *handle, qpol_policy_t *policy, q
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 	terule = (avtab_ptr_t)rule;
 
 	*obj_class = (qpol_class_t*)db->class_val_to_struct[terule->key.target_class - 1];
@@ -153,7 +153,7 @@ int qpol_terule_get_default_type(qpol_handle_t *handle, qpol_policy_t *policy, q
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 	terule = (avtab_ptr_t)rule;
 
 	*dflt = (qpol_type_t*)db->type_val_to_struct[terule->datum.data - 1];
@@ -176,7 +176,7 @@ int qpol_terule_get_rule_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 	terule = (avtab_ptr_t)rule;
 
 	*rule_type = (terule->key.specified & (QPOL_RULE_TYPE_TRANS|QPOL_RULE_TYPE_CHANGE|QPOL_RULE_TYPE_MEMBER));

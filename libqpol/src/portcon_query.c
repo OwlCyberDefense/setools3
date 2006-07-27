@@ -1,27 +1,27 @@
- /**
-*  @file portcon_query.c
-*  Defines the public interface for searching and iterating over portcon statements.
-*
-*  @author Kevin Carr kcarr@tresys.com
-*  @author Jeremy A. Mowery jmowery@tresys.com
-*  @author Jason Tang jtang@tresys.com
-*
-*  Copyright (C) 2006 Tresys Technology, LLC
-*
-*  This library is free software; you can redistribute it and/or
-*  modify it under the terms of the GNU Lesser General Public
-*  License as published by the Free Software Foundation; either
-*  version 2.1 of the License, or (at your option) any later version.
-*
-*  This library is distributed in the hope that it will be useful,
-*  but WITHOUT ANY WARRANTY; without even the implied warranty of
-*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-*  Lesser General Public License for more details.
-*
-*  You should have received a copy of the GNU Lesser General Public
-*  License along with this library; if not, write to the Free Software
-*  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-*/ 
+/**
+ *  @file portcon_query.c
+ *  Defines the public interface for searching and iterating over portcon statements.
+ *
+ *  @author Kevin Carr kcarr@tresys.com
+ *  @author Jeremy A. Mowery jmowery@tresys.com
+ *  @author Jason Tang jtang@tresys.com
+ *
+ *  Copyright (C) 2006 Tresys Technology, LLC
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This library is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ *  Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ */ 
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -49,7 +49,7 @@ int qpol_policy_get_portcon_by_port(qpol_handle_t *handle, qpol_policy_t *policy
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 	for (tmp = db->ocontexts[OCON_PORT]; tmp; tmp = tmp->next) {
 		if (tmp->u.port.low_port == low &&
 			tmp->u.port.high_port == high &&

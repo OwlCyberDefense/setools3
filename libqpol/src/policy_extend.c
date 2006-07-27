@@ -67,7 +67,7 @@ static int qpol_policy_build_attrs_from_map(qpol_handle_t *handle, qpol_policy_t
 		return -1;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 
 	memset(&buff, 0, 10 * sizeof(char));
 
@@ -171,7 +171,7 @@ static int qpol_policy_fill_attr_holes(qpol_handle_t *handle, qpol_policy_t *pol
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 
 	memset(&buff, 0, 10 * sizeof(char));
 
@@ -274,7 +274,7 @@ static int qpol_policy_add_isid_names(qpol_handle_t *handle, qpol_policy_t *poli
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 
 	for (sid = db->ocontexts[OCON_ISID]; sid; sid = sid->next) {
 		val = (uint32_t)sid->sid[0];
@@ -319,7 +319,7 @@ static int qpol_policy_add_cond_rule_traceback(qpol_handle_t *handle, qpol_polic
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 
 	/* mark all unconditional rules as enabled */
 	if (qpol_policy_get_avrule_iter(handle, policy, (QPOL_RULE_ALLOW|QPOL_RULE_NEVERALLOW|QPOL_RULE_AUDITALLOW|QPOL_RULE_DONTAUDIT), &iter))
@@ -384,7 +384,7 @@ static int qpol_policy_add_cond_rule_traceback(qpol_handle_t *handle, qpol_polic
 	return 0;
 }
 
-int qpol_policy_extend(qpol_handle_t *handle, qpol_policy_t *policy, qpol_extended_image_t *ext)
+int qpol_policy_extend(qpol_handle_t *handle, qpol_policy_t *policy)
 {
 	int retv, error;
 	policydb_t *db = NULL;
@@ -395,40 +395,33 @@ int qpol_policy_extend(qpol_handle_t *handle, qpol_policy_t *policy, qpol_extend
 		return -1;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 
-	if (ext == NULL) {
-		retv = qpol_policy_build_attrs_from_map(handle, policy);
-		if (retv) {
-			error = errno;
-			goto err;
-		}
-		if (db->policy_type == POLICY_KERN) {
-			retv = qpol_policy_fill_attr_holes(handle, policy);
-			if (retv) {
-				error = errno;
-				goto err;
-			}
-		}
-		retv = qpol_policy_add_isid_names(handle, policy);
-		if (retv) {
-			error = errno;
-			goto err;
-		}
-
-		retv = qpol_policy_add_cond_rule_traceback(handle, policy);
-		if (retv) {
-			error = errno;
-			goto err;
-		}
-
-		return STATUS_SUCCESS;
-	} else {
-		/* TODO Marked as an error for now until the extended format is done. */
-		ERR(handle, "%s", strerror(ENOTSUP));
-		errno = ENOTSUP;
-		return STATUS_ERR;
+	retv = qpol_policy_build_attrs_from_map(handle, policy);
+	if (retv) {
+		error = errno;
+		goto err;
 	}
+	if (db->policy_type == POLICY_KERN) {
+		retv = qpol_policy_fill_attr_holes(handle, policy);
+		if (retv) {
+			error = errno;
+			goto err;
+		}
+	}
+	retv = qpol_policy_add_isid_names(handle, policy);
+	if (retv) {
+		error = errno;
+		goto err;
+	}
+
+	retv = qpol_policy_add_cond_rule_traceback(handle, policy);
+	if (retv) {
+		error = errno;
+		goto err;
+	}
+
+	return STATUS_SUCCESS;
 
 err:
 	//TODO cleanup code here
@@ -436,3 +429,12 @@ err:
 	errno = error;
 	return STATUS_ERR;
 }
+
+void qpol_extended_image_destroy(qpol_extended_image_t **ext)
+{
+	if (!ext || !(*ext))
+		return;
+
+	//TODO free stuff
+}
+

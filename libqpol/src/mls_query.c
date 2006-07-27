@@ -47,7 +47,7 @@ int qpol_policy_get_level_by_name(qpol_handle_t *handle, qpol_policy_t *policy, 
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
-	db = &policy->p;
+	db = &policy->p->p;
 	internal_datum = hashtab_search(db->p_levels.table, (const hashtab_key_t)name);
 	if (internal_datum == NULL) {
 		ERR(handle, "could not find datum for level %s", name);
@@ -73,7 +73,7 @@ int qpol_policy_get_level_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpo
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 
 	hs = calloc(1, sizeof(hash_state_t));
 	if (hs == NULL) {
@@ -160,7 +160,7 @@ int qpol_level_get_cat_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_l
 	es->bmap = &(internal_datum->level->cat);
 	es->cur = es->bmap->node ? es->bmap->node->startbit : 0;
 
-	if (qpol_iterator_create(handle, &policy->p, es, ebitmap_state_get_cur_cat,
+	if (qpol_iterator_create(handle, &policy->p->p, es, ebitmap_state_get_cur_cat,
 		ebitmap_state_next, ebitmap_state_end, ebitmap_state_size, free, cats)) {
 		free(es);
 		return STATUS_ERR;
@@ -185,7 +185,7 @@ int qpol_level_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_level
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 	internal_datum = (level_datum_t*)datum;
 
 	*name = db->p_sens_val_to_name[internal_datum->level->sens - 1];
@@ -293,7 +293,7 @@ int qpol_level_get_alias_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 	internal_datum = (level_datum_t*)datum;
 
 	hs = calloc(1, sizeof(level_alias_hash_state_t));
@@ -333,7 +333,7 @@ int qpol_policy_get_cat_by_name(qpol_handle_t *handle, qpol_policy_t *policy, co
 		return STATUS_ERR;
 	}
 	
-	db = &policy->p;
+	db = &policy->p->p;
 	internal_datum = hashtab_search(db->p_cats.table, (const hashtab_key_t)name);
 	if (internal_datum == NULL) {
 		*datum = NULL;
@@ -360,7 +360,7 @@ int qpol_policy_get_cat_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 
 	hs = calloc(1, sizeof(hash_state_t));
 	if (hs == NULL) {
@@ -433,7 +433,7 @@ int qpol_cat_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_cat_t *
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 	internal_datum = (cat_datum_t*)datum;
 
 	*name = db->p_cat_val_to_name[internal_datum->value - 1];
@@ -513,7 +513,7 @@ int qpol_cat_get_alias_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_c
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 	internal_datum = (cat_datum_t*)datum;
 
 	hs = calloc(1, sizeof(level_alias_hash_state_t));
@@ -591,7 +591,7 @@ int qpol_mls_level_get_sens_name(qpol_handle_t *handle, qpol_policy_t *policy, q
 	}
 
 	internal_level = (mls_level_t*)level;
-	db = (policydb_t*) &policy->p;
+	db = &policy->p->p;
 
 	*name = db->p_sens_val_to_name[internal_level->sens - 1];
 
@@ -625,7 +625,7 @@ int qpol_mls_level_get_cat_iter(qpol_handle_t *handle, qpol_policy_t *policy, qp
 	es->bmap = &(internal_level->cat);
 	es->cur = es->bmap->node ? es->bmap->node->startbit : 0;
 
-	if (qpol_iterator_create(handle, &policy->p, es, ebitmap_state_get_cur_cat,
+	if (qpol_iterator_create(handle, &policy->p->p, es, ebitmap_state_get_cur_cat,
 		ebitmap_state_next, ebitmap_state_end, ebitmap_state_size, free, cats)) {
 		free(es);
 		return STATUS_ERR;
