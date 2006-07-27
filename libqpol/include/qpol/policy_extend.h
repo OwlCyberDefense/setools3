@@ -28,21 +28,31 @@
 #define QPOL_POLICY_EXTEND_H
 
 #include <qpol/policy.h>
+#include <qpol/iterator.h>
 
 typedef struct qpol_extended_image qpol_extended_image_t;
 
 /**
- *  Load an extended image for a policy. This function modifies the policydb
+ *  Create an extended image for a policy. This function modifies the policydb
  *  by adding additional records and information about attributes, initial sids
  *  and other components not normally written to a binary policy file.
  *  @param handle Error handler for the policydb.
- *  @param policy The policy for which the extended image should be loaded.
- *  @param ext The extended image. If NULL, information will be generated 
- *  where possible to extend the policy by inserting placeholder names.
+ *  @param policy The policy for which the extended image should be created.
  *  @return Returns 0 on success and < 0 on failure. If the call fails,
  *  errno will be set; the state of the policy is not guaranteed to be stable
  *  if this call fails.
  */
-extern int qpol_policy_extend(qpol_handle_t *handle, qpol_policy_t *policy, qpol_extended_image_t *ext);
+extern int qpol_policy_extend(qpol_handle_t *handle, qpol_policy_t *policy);
+
+extern int qpol_policy_build_syn_rule_table(qpol_handle_t *handle, qpol_policy_t *polciy);
+extern void qpol_extended_image_destroy(qpol_extended_image_t **ext);
+
+/* forward declarations: see avrule_query.h and terule_query.h */
+struct qpol_avrule;
+struct qpol_terule;
+
+extern int qpol_avrule_get_syn_rule_avrule_iter(qpol_handle_t *handle, qpol_policy_t *policy, struct qpol_avrule *rule, qpol_iterator_t **iter);
+extern int qpol_terule_get_syn_rule_terule_iter(qpol_handle_t *handle, qpol_policy_t *policy, struct qpol_terule *rule, qpol_iterator_t **iter);
 
 #endif /* QPOL_POLICY_EXTEND_H */
+

@@ -68,7 +68,7 @@ int qpol_expand_module(qpol_handle_t *handle, qpol_policy_t *base)
 		errno = EINVAL;
 		return -1;
 	}
-	db = &((sepol_policydb_t*)base)->p;
+	db = &base->p->p;
 
 	/* activate the global branch before expansion */
 	db->global->branch_list->enabled = 1;

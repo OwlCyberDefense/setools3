@@ -47,7 +47,7 @@ int qpol_policy_get_type_by_name(qpol_handle_t *handle, qpol_policy_t *policy, c
 		return STATUS_ERR;
 	}
 	
-	db = &policy->p;
+	db = &policy->p->p;
 	internal_datum = hashtab_search(db->p_types.table, (const hashtab_key_t)name);
 	if (internal_datum == NULL) {
 		*datum = NULL;
@@ -74,7 +74,7 @@ int qpol_policy_get_type_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 
 	hs = calloc(1, sizeof(hash_state_t));
 	if (hs == NULL) {
@@ -186,7 +186,7 @@ int qpol_type_get_type_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_t
 	es->bmap = &(internal_datum->types);
 	es->cur = es->bmap->node ? es->bmap->node->startbit : 0;
 
-	if (qpol_iterator_create(handle, &policy->p, es, ebitmap_state_get_cur_type,
+	if (qpol_iterator_create(handle, &policy->p->p, es, ebitmap_state_get_cur_type,
 		ebitmap_state_next, ebitmap_state_end, ebitmap_state_size, free, types)) {
 		free(es);
 		return STATUS_ERR;
@@ -232,7 +232,7 @@ int qpol_type_get_attr_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_t
 	es->bmap = &(internal_datum->types);
 	es->cur = es->bmap->node ? es->bmap->node->startbit : 0;
 
-	if (qpol_iterator_create(handle, &policy->p, es, ebitmap_state_get_cur_type,
+	if (qpol_iterator_create(handle, &policy->p->p, es, ebitmap_state_get_cur_type,
 		ebitmap_state_next, ebitmap_state_end, ebitmap_state_size, free, attrs)) {
 		free(es);
 		return STATUS_ERR;
@@ -257,7 +257,7 @@ int qpol_type_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_type_t
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 	internal_datum = (type_datum_t*)datum;
 
 	*name = db->p_type_val_to_name[internal_datum->value - 1];
@@ -363,7 +363,7 @@ int qpol_type_get_alias_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol_
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 	internal_datum = (type_datum_t*)datum;
 
 	hs = calloc(1, sizeof(type_alias_hash_state_t));

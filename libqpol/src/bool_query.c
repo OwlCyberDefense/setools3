@@ -47,7 +47,7 @@ int qpol_policy_get_bool_by_name(qpol_handle_t *handle, qpol_policy_t *policy, c
 		return STATUS_ERR;
 	}
 	
-	db = &((sepol_policydb_t*)policy)->p;
+	db = &policy->p->p;
 	internal_datum = hashtab_search(db->p_bools.table, (const hashtab_key_t)name);
 	if (internal_datum == NULL) {
 		ERR(handle, "could not find datum for bool %s", name);
@@ -74,7 +74,7 @@ int qpol_policy_get_bool_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 		return STATUS_ERR;
 	}
 
-	db = &((sepol_policydb_t*)policy)->p;
+	db = &policy->p->p;
 
 	hs = calloc(1, sizeof(hash_state_t));
 	if (hs == NULL) {
@@ -169,7 +169,7 @@ int qpol_bool_get_name(qpol_handle_t *handle, qpol_policy_t *policy, qpol_bool_t
 		return STATUS_ERR;
 	}
 
-	db = &((sepol_policydb_t*)policy)->p;
+	db = &policy->p->p;
 	internal_datum = (cond_bool_datum_t*)datum;
 
 	*name = db->p_bool_val_to_name[internal_datum->value - 1];

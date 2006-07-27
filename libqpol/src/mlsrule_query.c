@@ -114,7 +114,7 @@ int qpol_policy_get_range_trans_iter(qpol_handle_t *handle, qpol_policy_t *polic
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 
 	rs = calloc(1, sizeof(range_trans_state_t));
 	if (!rs) {
@@ -152,7 +152,7 @@ int qpol_range_trans_get_source_type(qpol_handle_t *handle, qpol_policy_t *polic
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 	rt = (range_trans_t*)rule;
 
 	*source = (qpol_type_t*)db->type_val_to_struct[rt->dom - 1];
@@ -175,7 +175,7 @@ int qpol_range_trans_get_target_type(qpol_handle_t *handle, qpol_policy_t *polic
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 	rt = (range_trans_t*)rule;
 
 	*target = (qpol_type_t*)db->type_val_to_struct[rt->type - 1];
@@ -198,7 +198,7 @@ int qpol_range_trans_get_range(qpol_handle_t *handle, qpol_policy_t *policy, qpo
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 	rt = (range_trans_t*)rule;
 
 	*range = (qpol_mls_range_t*)&rt->range;

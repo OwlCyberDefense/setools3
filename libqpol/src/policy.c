@@ -543,7 +543,7 @@ static int infer_policy_version(qpol_handle_t *handle, qpol_policy_t *policy)
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 
 	if (db->policyvers) {
 		/* version already set */
@@ -624,7 +624,12 @@ int qpol_open_policy_from_file(const char *path, qpol_policy_t **policy, qpol_ha
 	if (fn)
 		sepol_handle_set_callback(*handle, fn, varg);
 
-	if (sepol_policydb_create(policy)) {
+	if (!(*policy = calloc(1, sizeof(qpol_policy_t)))) {
+		error = errno;
+		goto err;
+	}
+
+	if (sepol_policydb_create(&((*policy)->p))) {
 		error = errno;
 		goto err;
 	}
@@ -645,11 +650,11 @@ int qpol_open_policy_from_file(const char *path, qpol_policy_t **policy, qpol_ha
 	if (qpol_is_file_binpol(infile)) {
 		retv = QPOL_POLICY_KERNEL_BINARY;
 		sepol_policy_file_set_fp(pfile, infile);
-		if (sepol_policydb_read(*policy, pfile)) {
+		if (sepol_policydb_read((*policy)->p, pfile)) {
 			error = EIO;
 			goto err;
 		}
-		if (qpol_policy_extend(*handle, *policy, NULL)) {
+		if (qpol_policy_extend(*handle, *policy)) {
 			error = errno;
 			goto err;
 		}
@@ -675,14 +680,14 @@ int qpol_open_policy_from_file(const char *path, qpol_policy_t **policy, qpol_ha
 		qpol_src_inputlim = &qpol_src_inputptr[sb.st_size-1];
 		qpol_src_originalinput = qpol_src_input;
 
-		if (read_source_policy(&(*policy)->p, "libqpol") < 0) {
+		if (read_source_policy(&(*policy)->p->p, "libqpol") < 0) {
 			error = errno;
 			goto err;
 		}
 
-		(*policy)->p.policy_type = POLICY_BASE;
+		(*policy)->p->p.policy_type = POLICY_BASE;
 		/* link the source */
-		if (sepol_link_modules(*handle, *policy, NULL, 0, 0)) {
+		if (sepol_link_modules(*handle, (*policy)->p, NULL, 0, 0)) {
 			error = EIO;
 			goto err;
 		}
@@ -706,7 +711,7 @@ int qpol_open_policy_from_file(const char *path, qpol_policy_t **policy, qpol_ha
 err:
 	sepol_handle_destroy(*handle);
 	*handle = NULL;
-	sepol_policydb_free(*policy);
+	sepol_policydb_free((*policy)->p);
 	*policy = NULL;
 	sepol_policy_file_free(pfile);
 	if (infile)
@@ -730,7 +735,12 @@ int qpol_open_policy_from_memory(qpol_policy_t **policy, const char *filedata, i
 	if (fn)
 		sepol_handle_set_callback(*handle, fn, varg);
 
-	if (sepol_policydb_create(policy)) {
+	if (!(*policy = calloc(1, sizeof(qpol_policy_t)))) {
+		error = errno;
+		goto err;
+	}
+
+	if (sepol_policydb_create(&((*policy)->p))) {
 		error = errno;
 		goto err;
 	}
@@ -741,11 +751,11 @@ int qpol_open_policy_from_memory(qpol_policy_t **policy, const char *filedata, i
 	qpol_src_originalinput = qpol_src_input;
 
 	/* read in source */
-	if (read_source_policy(&(*policy)->p, "parse") < 0)
+	if (read_source_policy(&(*policy)->p->p, "parse") < 0)
 		exit(1);
 
 	/* link the source */
-	if (sepol_link_modules(*handle, *policy, NULL, 0, 0)) {
+	if (sepol_link_modules(*handle, (*policy)->p, NULL, 0, 0)) {
 		error = EIO;
 		goto err;
 	}
@@ -757,8 +767,11 @@ int qpol_open_policy_from_memory(qpol_policy_t **policy, const char *filedata, i
 
 	return 0;
 err:
-	sepol_policydb_free(*policy);
+	sepol_policydb_free((*policy)->p);
+	free(*policy);
 	*policy = NULL;
+	sepol_handle_destroy(*handle);
+	*handle = NULL;
 	errno = error;
 	return -1;
 
@@ -770,7 +783,13 @@ int qpol_close_policy(qpol_policy_t **policy)
 		errno = EINVAL;
 		return STATUS_ERR;
 	}
-	sepol_policydb_free(*policy);
+
+	if (*policy == NULL)
+		return STATUS_SUCCESS;
+
+	sepol_policydb_free((*policy)->p);
+	qpol_extended_image_destroy(&((*policy)->ext));
+	free(*policy);
 	*policy = NULL;
 	return STATUS_SUCCESS;
 
@@ -801,7 +820,7 @@ int qpol_policy_reevaluate_conds(qpol_handle_t *handle, qpol_policy_t *policy)
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 
 	for (cond = db->cond_list; cond; cond = cond->next) {
 		/* evaluate cond */

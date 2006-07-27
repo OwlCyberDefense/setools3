@@ -54,7 +54,7 @@ int qpol_policy_get_nodecon_by_node(qpol_handle_t *handle, qpol_policy_t *policy
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 
 	for (tmp = db->ocontexts[(protocol == QPOL_IPV4 ? OCON_NODE : OCON_NODE6)]; tmp; tmp = tmp->next) {
 		if (protocol == QPOL_IPV4) {
@@ -203,7 +203,7 @@ int qpol_policy_get_nodecon_iter(qpol_handle_t *handle, qpol_policy_t *policy, q
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 
 	v4os = calloc(1, sizeof(ocon_state_t));
 	if (v4os == NULL) {

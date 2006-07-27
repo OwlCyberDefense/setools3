@@ -48,7 +48,7 @@ int qpol_policy_get_netifcon_by_name(qpol_handle_t *handle, qpol_policy_t *polic
 		return STATUS_ERR;
 	}
 
-	db = &policy->p;
+	db = &policy->p->p;
 	for (tmp = db->ocontexts[OCON_NETIF]; tmp; tmp = tmp->next) {
 		if (!strcmp(name, tmp->u.name))
 			break;
