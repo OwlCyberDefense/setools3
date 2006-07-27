@@ -962,6 +962,9 @@ static int build_tcl_perm_list(Tcl_Interp *interp, char *class_name, char *perm_
  *   <li>mapping type, one of 'r', 'w', 'b', 'n', or 'u'
  *   <li>permission weight (an integer)
  * </ul>
+ *
+ * If a parameter is passed, then only the class tuple for the given
+ * parameter is returned.
  */
 static int Apol_GetPermMap(ClientData clientData, Tcl_Interp *interp, int argc, const char *argv[])
 {
@@ -988,8 +991,13 @@ static int Apol_GetPermMap(ClientData clientData, Tcl_Interp *interp, int argc, 
 		char *class_name, *perm_name;
 		Tcl_Obj *class_elem[2], *class_list, *perm_list;
 		if (qpol_iterator_get_item(class_iter, (void **) &c) < 0 ||
-		    qpol_class_get_name(policydb->qh, policydb->p, c, &class_name) < 0 ||
-		    qpol_class_get_perm_iter(policydb->qh, policydb->p, c, &perm_iter) < 0 ||
+		    qpol_class_get_name(policydb->qh, policydb->p, c, &class_name) < 0) {
+			goto cleanup;
+		}
+		if (argc >= 2 && strcmp(argv[1], class_name) != 0) {
+			continue;
+		}
+		if (qpol_class_get_perm_iter(policydb->qh, policydb->p, c, &perm_iter) < 0 ||
 		    qpol_class_get_common(policydb->qh, policydb->p, c, &common) < 0) {
 			goto cleanup;
 		}

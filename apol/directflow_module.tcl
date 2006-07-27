@@ -92,7 +92,7 @@ proc Apol_Analysis_directflow::create {options_frame} {
     set widgets(classes) [Apol_Widget::makeScrolledListbox $class_f.classes \
                               -height 6 -width 24 \
                               -listvar Apol_Class_Perms::class_list \
-                              -selectmode extended -exportselection 0]
+                              -selectmode multiple -exportselection 0]
     set classes_lb [Apol_Widget::getScrolledListbox $widgets(classes)]
     bind $classes_lb <<ListboxSelect>> \
         [list Apol_Analysis_directflow::selectClassesListbox $classes_lb]
