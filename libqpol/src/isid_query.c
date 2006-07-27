@@ -80,7 +80,7 @@ int qpol_policy_get_isid_iter(qpol_handle_t *handle, qpol_policy_t *policy, qpol
 		return STATUS_ERR;
 	}
 
-	db = (policydb_t*)&policy->p;
+	db = &policy->p->p;
 
 
 	os = calloc(1, sizeof(ocon_state_t));
