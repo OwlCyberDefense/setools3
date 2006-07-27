@@ -51,7 +51,7 @@ int qpol_context_get_user(qpol_handle_t *handle, qpol_policy_t *policy, qpol_con
 	}
 
 	internal_context = (context_struct_t*)context;
-	db = (policydb_t*)&policy->p;
+	db = &policy->p->p;
 
 	*user = (qpol_user_t*)db->user_val_to_struct[internal_context->user - 1];
 
@@ -73,7 +73,7 @@ int qpol_context_get_role(qpol_handle_t *handle, qpol_policy_t *policy, qpol_con
 	}
 
 	internal_context = (context_struct_t*)context;
-	db = (policydb_t*)&policy->p;
+	db = &policy->p->p;
 
 	*role = (qpol_role_t*)db->role_val_to_struct[internal_context->role - 1];
 
@@ -95,7 +95,7 @@ int qpol_context_get_type(qpol_handle_t *handle, qpol_policy_t *policy, qpol_con
 	}
 
 	internal_context = (context_struct_t*)context;
-	db = (policydb_t*)&policy->p;
+	db = &policy->p->p;
 
 	*type = (qpol_type_t*)db->type_val_to_struct[internal_context->type - 1];
 
