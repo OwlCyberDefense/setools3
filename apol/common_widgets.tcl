@@ -1,5 +1,5 @@
 # Copyright (C) 2001-2006 Tresys Technology, LLC
-# see file 'COPYING' for use and warranty information 
+# see file 'COPYING' for use and warranty information
 
 # TCL/TK GUI for SE Linux policy analysis
 # Requires tcl and tk 8.4+, with BWidget 1.7+
@@ -23,6 +23,8 @@ proc Apol_Widget::makeScrolledListbox {path args} {
     set lb [eval listbox $sw.lb $args -bg white -highlightthickness 0]
     $sw setwidget $lb
 
+    update
+    grid propagate $sw 0
     bind $lb <<ListboxSelect>> [list focus $lb]
 
     # if the user hits a letter while the listbox has focus, jump to
@@ -39,13 +41,13 @@ proc Apol_Widget::makeScrolledListbox {path args} {
 # The first entry is executed upon double-clicks.
 proc Apol_Widget::setListboxCallbacks {path callback_list} {
     set lb [getScrolledListbox $path]
-    
+
     # add double-click on an item to immediately do something
     bind $lb <Double-Button-1> [eval list Apol_Widget::_listbox_double_click $lb [lindex $callback_list 0 1]]
 
     # enable right-clicks on listbox to popup a menu; that menu has a lets
     # the user see more info
-    
+
     # first create a global popup menu widget if one does not already exist
     variable menuPopup
     if {![winfo exists $menuPopup]} {
@@ -83,7 +85,7 @@ proc Apol_Widget::makeTypeCombobox {path args} {
                       -textvariable Apol_Widget::vars($path:type) \
                       -entrybg white -width 20 -autopost 1]
     pack $type_box -side top -expand 1 -fill x
-    
+
     set attrib_enable [checkbutton $f.ae \
                            -anchor w -text "Filter by attribute"\
                            -variable Apol_Widget::vars($path:attribenable) \
@@ -106,7 +108,7 @@ proc Apol_Widget::clearTypeCombobox {path} {
     variable vars
     set vars($path:attribenable) 0
     set vars($path:attrib) ""
-    set vars($path:type) ""    
+    set vars($path:type) ""
     $path.tb configure -values {}
     $path.ab configure -values {}
     _attrib_enabled $path
@@ -196,7 +198,7 @@ proc Apol_Widget::getLevelSelectorLevel {path} {
     set sl [getScrolledListbox $path.cats]
     set cats {}
     foreach idx [$sl curselection] {
-        lappend cats [$sl get $idx] 
+        lappend cats [$sl get $idx]
     }
     list $sens $cats
 }
@@ -435,8 +437,8 @@ proc Apol_Widget::gotoLineSearchResults {path line_num} {
     set textbox $path.tb
     # Remove any selection tags.
     $textbox tag remove sel 0.0 end
-    $textbox mark set insert ${line_num}.0 
-    $textbox see ${line_num}.0 
+    $textbox mark set insert ${line_num}.0
+    $textbox see ${line_num}.0
     $textbox tag add sel $line_num.0 $line_num.end
     focus $textbox
 }
@@ -453,6 +455,8 @@ proc Apol_Widget::showPopupText {title info} {
         set b [button $infoPopup.close -text "Close" -command [list destroy $infoPopup]]
         pack $b -side bottom -expand 0 -pady 5
         wm geometry $infoPopup 250x200+50+50
+        update
+        grid propagate $sw 0
     }
     wm title $infoPopup $title
     set text [$infoPopup.sw getframe].text
@@ -476,6 +480,8 @@ proc Apol_Widget::showPopupParagraph {title info} {
         set text [text [$sw getframe].text -font $ApolTop::text_font \
                       -wrap none -width 75 -height 25 -bg white]
         $sw setwidget $text
+        update
+        grid propagate $sw 0
         pack $sw -expand 1 -fill both -padx 4 -pady 4
         $infoPopup2 draw
     } else {
@@ -518,6 +524,7 @@ proc Apol_Widget::_listbox_key {listbox key} {
             $listbox activate $new_x
             $listbox see $new_x
         }
+        event generate $listbox <<ListboxSelect>>
     }
 }
 

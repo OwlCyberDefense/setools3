@@ -222,6 +222,22 @@ extern int apol_infoflow_analysis_set_type(apol_policy_t *p,
 					   const char *name);
 
 /**
+ * Set an information flow analysis to return paths that go through
+ * this intermediate type.  If more than one type is appended to the
+ * analysis, returned paths will go through at least one of them.
+ * These intermediate types are ignored when running a direct
+ * information flow analysis.
+ *
+ * @param policy Policy handler, to report errors.
+ * @param ia Infoflow analysis to set.
+ * @param type Intermediate type which a result must flow through.
+ * @return 0 on success, negative on error.
+ */
+extern int apol_infoflow_analysis_append_intermediate(apol_policy_t *p,
+						      apol_infoflow_analysis_t *ia,
+						      const char *type);
+
+/**
  * Set an information flow analysis to return only rules with this
  * object (non-comman) class and permission.  If more than one
  * class/perm pair is appended to the query, rule's class and
