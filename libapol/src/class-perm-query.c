@@ -30,6 +30,7 @@
  */
 
 #include "policy-query-internal.h"
+#include <errno.h>
 #include <string.h>
 
 struct apol_class_query {
@@ -63,7 +64,7 @@ int apol_get_class_by_query(apol_policy_t *p,
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -112,7 +113,7 @@ int apol_get_class_by_query(apol_policy_t *p,
 			}
 		}
 		if (append_class && apol_vector_append(*v, class_datum)) {
-			ERR(p, "Out of memory!");
+			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
 	}
@@ -173,7 +174,7 @@ int apol_get_common_by_query(apol_policy_t *p,
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -197,7 +198,7 @@ int apol_get_common_by_query(apol_policy_t *p,
 			}
 		}
 		if (apol_vector_append(*v, common_datum)) {
-			ERR(p, "Out of memory!");
+			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
 	}
@@ -252,7 +253,7 @@ int apol_get_perm_by_query(apol_policy_t *p,
 		goto cleanup;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	for ( ; !qpol_iterator_end(class_iter); qpol_iterator_next(class_iter)) {
@@ -277,7 +278,7 @@ int apol_get_perm_by_query(apol_policy_t *p,
 			}
 			else if (compval == 1 &&
 				 apol_vector_append_unique(*v, perm_name, apol_str_strcmp, NULL) < 0) {
-				ERR(p, "Out of memory!");
+				ERR(p, "%s", strerror(ENOMEM));
 				goto cleanup;
 			}
 		}
@@ -306,7 +307,7 @@ int apol_get_perm_by_query(apol_policy_t *p,
 			}
 			else if (compval == 1 &&
 				 apol_vector_append_unique(*v, perm_name, apol_str_strcmp, NULL) < 0) {
-				ERR(p, "Out of memory!");
+				ERR(p, "%s", strerror(ENOMEM));
 				goto cleanup;
 			}
 		}

@@ -244,7 +244,7 @@ static int apol_domain_trans_find_rule_for_type(apol_policy_t *policy, apol_vect
 
 	qpol_type_get_isattr(policy->qh, policy->p, type, &isattr);
 	if (isattr) {
-		ERR(policy, "Error: Attributes are not valid here");
+		ERR(policy, "%s", "Attributes are not valid here.");
 		errno = EINVAL;
 		return -1;
 	}
@@ -288,7 +288,7 @@ static int apol_domain_trans_find_rule_for_dflt(apol_policy_t *policy, apol_vect
 
 	qpol_type_get_isattr(policy->qh, policy->p, dflt, &isattr);
 	if (isattr) {
-		ERR(policy, "Error: Attributes are not valid here");
+		ERR(policy, "%s", "Attributes are not valid here.");
 		errno = EINVAL;
 		return -1;
 	}
@@ -340,7 +340,7 @@ static int apol_domain_trans_add_rule_to_list(apol_policy_t *policy, apol_vector
 
 	qpol_type_get_isattr(policy->qh, policy->p, type, &isattr);
 	if (isattr) {
-		ERR(policy, "Error: Attributes are not valid here");
+		ERR(policy, "%s", "Attributes are not valid here.");
 		errno = EINVAL;
 		return -1;
 	}
@@ -590,7 +590,7 @@ static int apol_domain_trans_table_get_all_forward_trans(apol_policy_t *policy, 
 
 	qpol_type_get_isattr(policy->qh, policy->p, start, &isattr);
 	if (isattr) {
-		ERR(policy, "Error: Attributes are not valid here");
+		ERR(policy, "%s", "Attributes are not valid here.");
 		errno = EINVAL;
 		return -1;
 	}
@@ -804,7 +804,7 @@ static int apol_domain_trans_table_get_all_reverse_trans(apol_policy_t *policy, 
 
 	qpol_type_get_isattr(policy->qh, policy->p, end, &isattr);
 	if (isattr) {
-		ERR(policy, "Error: Attributes are not valid here");
+		ERR(policy, "%s", "Attributes are not valid here.");
 		errno = EINVAL;
 		return -1;
 	}
@@ -1626,7 +1626,7 @@ int apol_domain_trans_analysis_do(apol_policy_t *policy, apol_domain_trans_analy
 	     dta->direction == APOL_DOMAIN_TRANS_DIRECTION_REVERSE) ||
 	    !(dta->start_type) ) {
 		error = EINVAL;
-		ERR(policy, "Unable to perform analysis: Invalid analysis options");
+		ERR(policy, "%s", strerror(EINVAL));
 		goto err;
 	}
 

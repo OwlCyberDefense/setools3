@@ -51,7 +51,7 @@ int apol_get_cond_by_query(apol_policy_t *p,
 		goto cleanup;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -69,7 +69,7 @@ int apol_get_cond_by_query(apol_policy_t *p,
 			}
 		}
 		if (apol_vector_append(*v, cond)) {
-			ERR(p, "Out of memory!");
+			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
 	}

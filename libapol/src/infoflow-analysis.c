@@ -269,7 +269,7 @@ static apol_infoflow_node_t *apol_infoflow_graph_create_node(apol_policy_t *p,
 	    (node->out_edges = apol_vector_create()) == NULL ||
             apol_vector_append(g->nodes, node) < 0) {
 		apol_infoflow_node_free(node);
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		return NULL;
 	}
 	node->type = type;
@@ -357,7 +357,7 @@ static apol_infoflow_edge_t *apol_infoflow_graph_create_edge(apol_policy_t *p,
 	    (edge->rules = apol_vector_create()) == NULL ||
 	    apol_vector_append(g->edges, edge) < 0) {
 		apol_infoflow_edge_free(edge);
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		return NULL;
 	}
 	edge->start_node = start_node;
@@ -366,7 +366,7 @@ static apol_infoflow_edge_t *apol_infoflow_graph_create_edge(apol_policy_t *p,
 	if (apol_vector_append(start_node->out_edges, edge) < 0 ||
 	    apol_vector_append(end_node->in_edges, edge) < 0) {
 		/* don't free the edge -- it is owned by the graph */
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		return NULL;
 	}
 	return edge;
@@ -426,7 +426,7 @@ static int apol_infoflow_graph_connect_nodes(apol_policy_t *p,
 			goto cleanup;
 		}
 		if (apol_vector_append(edge->rules, rule) < 0) {
-			ERR(p, "Out of memory!");
+			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
 	}
@@ -435,7 +435,7 @@ static int apol_infoflow_graph_connect_nodes(apol_policy_t *p,
 			goto cleanup;
 		}
 		if (apol_vector_append(edge->rules, rule) < 0) {
-			ERR(p, "Out of memory!");
+			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
 	}
@@ -465,7 +465,7 @@ static int apol_infoflow_graph_create_avrule(apol_policy_t *p,
 	qpol_class_t *obj_class;
 	qpol_iterator_t *perm_iter = NULL;
 	char *obj_class_name, *perm_name;
-	int found_read = 0, found_write = 0;
+	int found_read = 0, found_write = 0, perm_error = 0;
 	int read_len = INT_MAX, write_len = INT_MAX;
 	int retval = -1;
 	if (qpol_avrule_get_object_class(p->qh, p->p, rule, &obj_class) < 0 ||
@@ -485,6 +485,7 @@ static int apol_infoflow_graph_create_avrule(apol_policy_t *p,
 			goto cleanup;
 		}
 		if (perm_map == APOL_PERMMAP_UNMAPPED) {
+			perm_error = 1;
 			continue;
 		}
 		len = APOL_PERMMAP_MAX_WEIGHT - perm_weight + 1;
@@ -513,6 +514,9 @@ static int apol_infoflow_graph_create_avrule(apol_policy_t *p,
 	    apol_infoflow_graph_connect_nodes(p, g, rule, found_read, read_len, found_write, write_len) < 0) {
 		goto cleanup;
 	}
+	if (perm_error) {
+		WARN(p, "%s", "Not all of the permissions found had associated permission maps.");
+	}
 
 	retval = 0;
  cleanup:
@@ -537,7 +541,7 @@ static apol_vector_t *apol_infoflow_graph_create_required_types(apol_policy_t *p
 	char *s;
 	int retval = -1;
 	if ((types = apol_vector_create()) == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	for (i = 0; i < apol_vector_get_size(v); i++) {
@@ -547,7 +551,7 @@ static apol_vector_t *apol_infoflow_graph_create_required_types(apol_policy_t *p
 			goto cleanup;
 		}
 		if (apol_vector_cat(types, expanded_types) < 0) {
-			ERR(p, "Out of memory!");
+			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
 		apol_vector_destroy(&expanded_types, NULL);
@@ -685,7 +689,7 @@ static int apol_infoflow_graph_create(apol_policy_t *p,
 
 	*g = NULL;
 	if (p->pmap == NULL) {
-		ERR(p, "A permission map must be loaded prior to building the infoflow graph.");
+		ERR(p, "%s", "A permission map must be loaded prior to building the infoflow graph.");
 		goto cleanup;
 	}
 	if (ia->mode == APOL_INFOFLOW_MODE_TRANS && ia->intermed != NULL &&
@@ -696,7 +700,7 @@ static int apol_infoflow_graph_create(apol_policy_t *p,
 	if ((*g = calloc(1, sizeof(**g))) == NULL ||
 	    ((*g)->nodes = apol_vector_create()) == NULL ||
 	    ((*g)->edges = apol_vector_create()) == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	(*g)->mode = ia->mode;
@@ -704,7 +708,7 @@ static int apol_infoflow_graph_create(apol_policy_t *p,
 	if (ia->result != NULL && ia->result[0] != '\0') {
 		if (((*g)->regex = malloc(sizeof(regex_t))) == NULL ||
 		    regcomp((*g)->regex, ia->result, REG_EXTENDED | REG_NOSUB)) {
-			ERR(p, "Out of memory!");
+			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
 	}
@@ -835,7 +839,7 @@ static apol_infoflow_result_t *apol_infoflow_direct_get_result(apol_policy_t *p,
 	if ((r = calloc(1, sizeof(*r))) == NULL ||
 	    (r->steps = apol_vector_create()) == NULL ||
 	    apol_vector_append(v, r) < 0) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		apol_infoflow_result_free(r);
 		return NULL;
 	}
@@ -866,7 +870,7 @@ static int apol_infoflow_direct_define(apol_policy_t *p,
 		    (step->rules = apol_vector_create()) == NULL ||
 		    apol_vector_append(result->steps, step) < 0) {
 			apol_infoflow_step_free(step);
-			ERR(p, "Out of memory!");
+			ERR(p, "%s", strerror(ENOMEM));
 			return -1;
 		}
 		step->start_type = result->start_type;
@@ -877,7 +881,7 @@ static int apol_infoflow_direct_define(apol_policy_t *p,
 		step = (apol_infoflow_step_t *) apol_vector_get_element(result->steps, 0);
 	}
 	if (apol_vector_cat(step->rules, edge->rules) < 0) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	result->direction |= direction;
@@ -959,14 +963,14 @@ static int apol_infoflow_results_check_both(apol_policy_t *p,
 		if (direction != APOL_INFOFLOW_BOTH ||
 		    r->direction == APOL_INFOFLOW_BOTH) {
 			if ((new_r = calloc(1, sizeof(*new_r))) == NULL) {
-				ERR(p, "Out of memory");
+				ERR(p, "%s", strerror(ENOMEM));
 				return -1;
 			}
 			memcpy(new_r, r, sizeof(*new_r));
 			r->steps = NULL;
 			if (apol_vector_append(results, new_r) < 0) {
 				apol_infoflow_result_free(new_r);
-				ERR(p, "Out of memory");
+				ERR(p, "%s", strerror(ENOMEM));
 				return -1;
 			}
 		}
@@ -1002,7 +1006,7 @@ static int apol_infoflow_analysis_direct(apol_policy_t *p,
 
 	if ((nodes = apol_vector_create()) == NULL ||
 	    (working_results = apol_vector_create()) == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	if (apol_infoflow_graph_get_nodes_for_type(p, g, start_type, nodes) < 0) {
@@ -1104,7 +1108,7 @@ static int apol_infoflow_graph_trans_init(apol_policy_t *p,
 			node->color = APOL_INFOFLOW_COLOR_RED;
 			node->distance = 0;
 			if (apol_queue_insert(q, node) < 0) {
-				ERR(p, "Out of memory!");
+				ERR(p, "%s", strerror(ENOMEM));
 				return -1;
 			}
 		}
@@ -1142,7 +1146,7 @@ static int apol_infoflow_graph_trans_further_init(apol_policy_t *p,
 			node->color = APOL_INFOFLOW_COLOR_GREY;
 			node->distance = 0;
 			if (apol_queue_insert(q, node) < 0) {
-				ERR(p, "Out of memory!");
+				ERR(p, "%s", strerror(ENOMEM));
 				return -1;
 			}
 		}
@@ -1180,12 +1184,12 @@ static int apol_infoflow_trans_path(apol_policy_t *p,
 	int retval = -1;
 	apol_infoflow_node_t *next_node = end_node;
 	if ((*path = apol_vector_create()) == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	while (1) {
 		if (apol_vector_append(*path, next_node) < 0) {
-			ERR(p, "Out of memory!");
+			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
 		if (next_node == start_node) {
@@ -1193,7 +1197,7 @@ static int apol_infoflow_trans_path(apol_policy_t *p,
 		}
 		if (next_node == NULL ||
 		    apol_vector_get_size(*path) >= apol_vector_get_size(g->nodes)) {
-			ERR(p, "Infinite loop in trans_path.");
+			ERR(p, "%s", "Infinite loop in trans_path.");
 			goto cleanup;
 		}
 		next_node = next_node->parent;
@@ -1248,7 +1252,7 @@ static apol_infoflow_edge_t *apol_infoflow_trans_find_edge(apol_policy_t *p,
 
 		}
 	}
-	ERR(p, "Did not find an edge.");
+	ERR(p, "%s", "Did not find an edge.");
 	return NULL;
 }
 
@@ -1281,7 +1285,7 @@ static int apol_infoflow_trans_define(apol_policy_t *p,
 
 	if (((*result) = calloc(1, sizeof(**result))) == NULL ||
 	    ((*result)->steps = apol_vector_create_with_capacity(path_len)) == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	/* build in reverse order because path is from end node to
@@ -1302,7 +1306,7 @@ static int apol_infoflow_trans_define(apol_policy_t *p,
 		    (step->rules = apol_vector_create_from_vector(edge->rules)) == NULL ||
 		    apol_vector_append((*result)->steps, step) < 0) {
 			apol_infoflow_step_free(step);
-			ERR(p, "Out of memory!");
+			ERR(p, "%s", strerror(ENOMEM));
 			return -1;
 		}
 		step->start_type = edge->start_node->type;
@@ -1452,7 +1456,7 @@ static int apol_infoflow_analysis_trans_shortest_path(apol_policy_t *p,
 	int retval = -1, compval;
 
 	if ((queue = apol_queue_create()) == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	if (apol_infoflow_graph_trans_init(p, g, start, queue) < 0) {
@@ -1490,13 +1494,13 @@ static int apol_infoflow_analysis_trans_shortest_path(apol_policy_t *p,
 				if (node->color != APOL_INFOFLOW_COLOR_RED) {
 					if (node->color == APOL_INFOFLOW_COLOR_GREY) {
 						if (apol_queue_push(queue, node) < 0) {
-							ERR(p, "Could not push.");
+							ERR(p, "%s", strerror(ENOMEM));
 							goto cleanup;
 						}
 					}
 					else {
 						if (apol_queue_insert(queue, node) < 0) {
-							ERR(p, "Could not insert.");
+							ERR(p, "%s", strerror(ENOMEM));
 							goto cleanup;
 						}
 					}
@@ -1557,11 +1561,11 @@ static int apol_infoflow_analysis_trans(apol_policy_t *p,
 	int retval = -1;
 
 	if (g->direction != APOL_INFOFLOW_IN && g->direction != APOL_INFOFLOW_OUT) {
-		ERR(p, strerror(EINVAL));
+		ERR(p, "%s", strerror(EINVAL));
 		goto cleanup;
 	}
 	if ((start_nodes = apol_vector_create()) == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	if (apol_infoflow_graph_get_nodes_for_type(p, g, start_type, start_nodes) < 0) {
@@ -1602,7 +1606,7 @@ static apol_vector_t *apol_infoflow_trans_further_shuffle(apol_policy_t *p,
 	int retval = -1;
 	size = apol_vector_get_size(v);
 	if ((new_v = apol_vector_create_with_capacity(size)) == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	if (size == 0) {
@@ -1610,7 +1614,7 @@ static apol_vector_t *apol_infoflow_trans_further_shuffle(apol_policy_t *p,
 		goto cleanup;
 	}
 	if ((deck = malloc(size * sizeof(*deck))) == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	for (i = 0; i < size; i++) {
@@ -1624,7 +1628,7 @@ static apol_vector_t *apol_infoflow_trans_further_shuffle(apol_policy_t *p,
 	}
 	for (i = 0; i < size; i++) {
 		if (apol_vector_append(new_v, deck[i]) < 0) {
-			ERR(p, "Out of memory!");
+			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
 	}
@@ -1651,7 +1655,7 @@ static int apol_infoflow_analysis_trans_further(apol_policy_t *p,
 	int retval = -1;
 
 	if ((queue = apol_queue_create()) == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	if (apol_infoflow_graph_trans_further_init(p, g, start, queue) < 0) {
@@ -1691,7 +1695,7 @@ static int apol_infoflow_analysis_trans_further(apol_policy_t *p,
                                 node->distance = cur_node->distance + 1;
                                 node->parent = cur_node;
                                 if (apol_queue_push(queue, node) < 0) {
-                                        ERR(p, "Could not push.");
+                                        ERR(p, "%s", strerror(ENOMEM));
                                         goto cleanup;
                                 }
                         }
@@ -1716,7 +1720,7 @@ int apol_infoflow_analysis_do(apol_policy_t *p,
 	*v = NULL;
 	*g = NULL;
 	if (ia->mode == 0 || ia->direction == 0) {
-		ERR(p, strerror(EINVAL));
+		ERR(p, "%s", strerror(EINVAL));
 		goto cleanup;
 	}
 	if (apol_infoflow_graph_create(p, ia, g) < 0) {
@@ -1744,7 +1748,7 @@ int apol_infoflow_analysis_do_more(apol_policy_t *p,
 	}
 
 	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 
@@ -1777,14 +1781,14 @@ int apol_infoflow_analysis_trans_further_prepare(apol_policy_t *p,
 		goto cleanup;
 	}
 	if (g->mode != APOL_INFOFLOW_MODE_TRANS) {
-		ERR(p, "May only perform further infoflow analysis when the graph is transitive.");
+		ERR(p, "%s", "May only perform further infoflow analysis when the graph is transitive.");
 		goto cleanup;
 	}
 	apol_vector_destroy(&g->further_start, NULL);
 	apol_vector_destroy(&g->further_end, NULL);
 	if ((g->further_start = apol_vector_create()) == NULL ||
 	    (g->further_end = apol_vector_create()) == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	if (apol_infoflow_graph_get_nodes_for_type(p, g, start_type, g->further_start) < 0 ||
@@ -1804,7 +1808,7 @@ int apol_infoflow_analysis_trans_further_next(apol_policy_t *p,
 	apol_infoflow_node_t *start_node;
 	int retval = -1;
 	if (g->further_start == NULL) {
-		ERR(p, "Infoflow graph was not prepared yet.");
+		ERR(p, "%s", "Infoflow graph was not prepared yet.");
 		goto cleanup;
 	}
 	start_node = apol_vector_get_element(g->further_start, g->current_start);
@@ -1848,7 +1852,7 @@ int apol_infoflow_analysis_set_mode(apol_policy_t *p,
 		break;
 	}
 	default: {
-		ERR(p, strerror(EINVAL));
+		ERR(p, "%s", strerror(EINVAL));
 		return -1;
 	}
 	}
@@ -1868,7 +1872,7 @@ int apol_infoflow_analysis_set_dir(apol_policy_t *p,
 		break;
 	}
 	default: {
-		ERR(p, strerror(EINVAL));
+		ERR(p, "%s", strerror(EINVAL));
 		return -1;
 	}
 	}
@@ -1880,7 +1884,7 @@ int apol_infoflow_analysis_set_type(apol_policy_t *p,
 				    const char *name)
 {
 	if (name == NULL) {
-		ERR(p, strerror(EINVAL));
+		ERR(p, "%s", strerror(EINVAL));
 		return -1;
 	}
 	return apol_query_set(p, &ia->type, NULL, name);

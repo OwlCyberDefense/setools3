@@ -30,6 +30,8 @@
 
 #include "policy-query-internal.h"
 
+#include <errno.h>
+
 struct apol_user_query {
 	char *user_name, *role_name;
 	apol_mls_level_t *default_level;
@@ -53,7 +55,7 @@ int apol_get_user_by_query(apol_policy_t *p,
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -141,7 +143,7 @@ int apol_get_user_by_query(apol_policy_t *p,
 			}
 		}
 		if (append_user && apol_vector_append(*v, user)) {
-			ERR(p, "Out of memory!");
+			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
 	}

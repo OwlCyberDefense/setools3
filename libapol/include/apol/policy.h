@@ -45,11 +45,14 @@ struct apol_domain_trans_table;
 typedef struct apol_policy {
         qpol_policy_t *p;
         qpol_handle_t *qh;
-	void (*msg_callback) (void *varg, struct apol_policy *p, const char *fmt, va_list argp);
+	void (*msg_callback) (struct apol_policy *p, int level, const char *fmt, va_list argp);
+	int msg_level;
 	void *msg_callback_arg;
 	int policy_type;
-	struct apol_permmap *pmap; /* permission mapping for this policy */
-	struct apol_domain_trans_table *domain_trans_table; /* for domain trans analysis */
+	/** permission mapping for this policy; mappings loaded as needed */
+	struct apol_permmap *pmap;
+	/** for domain trans analysis; table built as needed */
+	struct apol_domain_trans_table *domain_trans_table;
 } apol_policy_t;
 
 /**
@@ -97,29 +100,33 @@ extern int apol_policy_is_binary(apol_policy_t *p);
  */
 extern char *apol_policy_get_version_type_mls_str(apol_policy_t *p);
 
-
-/**
- * Invoke a apol_policy_t's error callback function, passing it a
- * format string and arguments.
- */
-#define ERR(p, ...)  \
-	do { \
-		if ((p) != NULL && (p)->msg_callback != NULL) { \
-			apol_handle_route_to_callback((p)->msg_callback_arg, \
-						      (p), __VA_ARGS__); \
-		} \
-	} while(0);
+#define APOL_MSG_ERR 1
+#define APOL_MSG_WARN 2
 
 /**
  * Write a message to the callback stored within an apol error
- * handler.  This function satisfies limitations of C's variable
- * arguments syntax (comp.lang.c FAQ, question 15.12).
+ * handler.  If the msg_callback field is empty then suppress the
+ * message.
  *
- * @param varg Arbitrary callback argument.
- * @param p Error reporting handler.
+ * @param p Error reporting handler.  If NULL then write message to
+ * stderr.
+ * @param level Severity of message, one of APOL_MSG_ERR or
+ * APOL_MSG_WARN.
  * @param fmt Format string to print, using syntax of printf(3).
  */
-extern void apol_handle_route_to_callback(void *varg, apol_policy_t *p,
-					  const char *fmt, ...);
+__attribute__ ((format(printf, 3, 4)))
+extern void apol_handle_msg(apol_policy_t *p, int level, const char *fmt, ...);
+
+/**
+ * Invoke a apol_policy_t's callback for an error, passing it a format
+ * string and arguments.
+ */
+#define ERR(p, format, ...) apol_handle_msg(p, APOL_MSG_ERR, format, __VA_ARGS__)
+
+/**
+ * Invoke a apol_policy_t's callback for a warning, passing it a
+ * format string and arguments.
+ */
+#define WARN(p, format, ...) apol_handle_msg(p, APOL_MSG_WARN, format, __VA_ARGS__)
 
 #endif

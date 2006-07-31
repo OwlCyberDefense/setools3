@@ -28,14 +28,14 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#include "policy-query-internal.h"
+
+#include <errno.h>
 #include <regex.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 
 #include <qpol/policy_query.h>
-
-#include "policy-query-internal.h"
 
 /******************** misc helpers ********************/
 
@@ -49,7 +49,7 @@ static char *apol_strdup(apol_policy_t *p, const char *s)
 {
 	char *t;
 	if ((t = malloc(strlen(s) + 1)) == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		return NULL;
 	}
 	return strcpy(t, s);
@@ -109,7 +109,7 @@ int apol_compare(apol_policy_t *p, const char *target, const char *name,
 			    regcomp(*regex, name, REG_EXTENDED | REG_NOSUB)) {
 				free(*regex);
 				*regex = NULL;
-				ERR(p, "Out of memory!");
+				ERR(p, "%s", strerror(ENOMEM));
 				return -1;
 			}
 		}
@@ -319,7 +319,7 @@ static int apol_query_append_type(apol_policy_t *p, apol_vector_t *v,
                 }
         }
         if (apol_vector_append(v, real_type) < 0) {
-                ERR(p, "Out of memory!");
+                ERR(p, "%s", strerror(ENOMEM));
                 return -1;
         }
         return 0;
@@ -337,7 +337,7 @@ apol_vector_t *apol_query_create_candidate_type_list(apol_policy_t *p,
 	int retval = -1;
 
 	if (list == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 
@@ -425,13 +425,13 @@ apol_vector_t *apol_query_create_candidate_role_list(apol_policy_t *p,
 	int retval = -1;
 
 	if (list == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 
 	if (!do_regex && qpol_policy_get_role_by_name(p->qh, p->p, symbol, &role) == 0) {
 		if (apol_vector_append(list, role) < 0) {
-			ERR(p, "Out of memory!");
+			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
 	}
@@ -452,7 +452,7 @@ apol_vector_t *apol_query_create_candidate_role_list(apol_policy_t *p,
 				goto cleanup;
 			}
 			if (compval && apol_vector_append(list, role)) {
-				ERR(p, "Out of memory!");
+				ERR(p, "%s", strerror(ENOMEM));
 				goto cleanup;
 			}
 		}
@@ -480,7 +480,7 @@ apol_vector_t *apol_query_create_candidate_class_list(apol_policy_t *p, apol_vec
 	int retval = -1;
 
 	if (list == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 
@@ -489,7 +489,7 @@ apol_vector_t *apol_query_create_candidate_class_list(apol_policy_t *p, apol_vec
 		qpol_class_t *class;
 		if (qpol_policy_get_class_by_name(p->qh, p->p, class_string, &class) == 0) {
 			if (apol_vector_append(list, class) < 0) {
-				ERR(p, "Out of memory!");
+				ERR(p, "%s", strerror(ENOMEM));
 				goto cleanup;
 			}
 		}

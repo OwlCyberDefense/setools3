@@ -29,6 +29,7 @@
 
 #include <byteswap.h>
 #include <endian.h>
+#include <stdarg.h>
 
 #if __BYTE_ORDER == __LITTLE_ENDIAN
 #define cpu_to_le16(x) (x)
@@ -67,8 +68,8 @@ typedef struct qpol_policy {
 	struct sepol_policydb *p;
 	struct qpol_extended_image *ext;
 } qpol_policy_t;
-typedef struct sepol_handle qpol_handle_t;
-typedef void (*qpol_handle_callback_fn_t) (void* varg, qpol_handle_t* handle, const char* fmt, ...);
+typedef struct qpol_handle qpol_handle_t;
+typedef void (*qpol_handle_callback_fn_t) (void* varg, qpol_handle_t* handle, int level, const char* fmt, va_list va_args);
 
 #define QPOL_POLICY_KERNEL_SOURCE 0
 #define QPOL_POLICY_KERNEL_BINARY 1

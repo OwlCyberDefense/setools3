@@ -73,7 +73,7 @@ int parse_file_contexts_file(const char *fc_path, apol_vector_t **contexts, int 
 			if (feof(fc_file)) {
 				break;
 			} else {
-				ERR(policy, "error reading file\n");
+				ERR(policy, "%s", "Error reading file.");
 				goto failure;
 			}
 		}
@@ -142,7 +142,7 @@ int parse_file_contexts_file(const char *fc_path, apol_vector_t **contexts, int 
 				 fc_entry->filetype = FILETYPE_SOCK;
 				break;
 			default:
-				ERR(policy, "invalid file_contexts format\n");
+				ERR(policy, "%s", "Invalid file_contexts format.");
 				goto failure;
 				break;
 			}

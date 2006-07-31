@@ -30,41 +30,39 @@
 #include <qpol/policy_extend.h>
 #include <qpol/policy_query.h>
 #include <errno.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-__attribute__ ((format (printf, 3, 4)))
-void apol_handle_route_to_callback(void *varg, apol_policy_t *p,
-				   const char *fmt, ...)
+static void apol_handle_default_callback(apol_policy_t *p __attribute__ ((unused)), int level, const char *fmt, va_list va_args)
 {
-	va_list ap;
-	if (p != NULL && p->msg_callback != NULL) {
-		va_start(ap, fmt);
-		p->msg_callback(varg, p, fmt, ap);
-		va_end(ap);
+	switch (level) {
+		case APOL_MSG_WARN:
+			{
+				fprintf(stderr, "WARNING: ");
+				break;
+			}
+		case APOL_MSG_ERR:
+		default:
+			{
+				fprintf(stderr, "ERROR: ");
+				break;
+			}
 	}
+	vfprintf(stderr, fmt, va_args);
+	fprintf(stderr, "\n");
 }
 
-__attribute__ ((format (printf, 3, 4)))
-static void qpol_handle_route_to_callback(void *varg, qpol_handle_t *handle,
-					  const char *fmt, ...)
+static void qpol_handle_route_to_callback(void *varg, qpol_handle_t *handle, int level, const char *fmt, va_list ap)
 {
 	apol_policy_t *p = (apol_policy_t *) varg;
-	va_list ap;
-	va_start(ap, fmt);
-	if (p != NULL && p->msg_callback != NULL) {
-		p->msg_callback(p->msg_callback_arg, p, fmt, ap);
+	if (p == NULL) {
+		apol_handle_default_callback(NULL, level, fmt, ap);
 	}
-	va_end(ap);
-}
-
-static void apol_handle_default_callback(void *varg __attribute__ ((unused)),
-					 apol_policy_t *p __attribute__ ((unused)),
-					 const char *fmt, va_list ap)
-{
-	 vfprintf(stderr, fmt, ap);
-	 fprintf(stderr, "\n");
+	else if (p->msg_callback != NULL) {
+		p->msg_callback(p, level, fmt, ap);
+	}
 }
 
 int apol_policy_open(const char *path, apol_policy_t **policy)
@@ -79,11 +77,10 @@ int apol_policy_open(const char *path, apol_policy_t **policy)
 		*policy = NULL;
 
 	if (!(*policy = calloc(1, sizeof(apol_policy_t)))) {
-		fprintf(stderr, "Out of memory!\n");
+		ERR(NULL, "%s", strerror(ENOMEM));
 		return -1; /* errno set by calloc */
 	}
-	(*policy)->msg_callback = apol_handle_default_callback;
-	(*policy)->msg_callback_arg = (*policy);
+	(*policy)->msg_callback_arg = apol_handle_default_callback;
 
         policy_type = qpol_open_policy_from_file(path, &((*policy)->p), &((*policy)->qh), qpol_handle_route_to_callback, (*policy));
         if (policy_type < 0) {
@@ -128,11 +125,11 @@ char *apol_policy_get_version_type_mls_str(apol_policy_t *p)
 	}
 	switch (p->policy_type) {
 	case QPOL_POLICY_KERNEL_SOURCE:
-	    policy_type = "source"; break;
+		policy_type = "source"; break;
 	case QPOL_POLICY_KERNEL_BINARY:
-	    policy_type = "binary"; break;
+		policy_type = "binary"; break;
 	default:
-	    policy_type = "unknown"; break;
+		policy_type = "unknown"; break;
 	}
 	if (qpol_policy_is_mls_enabled(p->qh, p->p)) {
 		mls = "mls";
@@ -144,4 +141,17 @@ char *apol_policy_get_version_type_mls_str(apol_policy_t *p)
 		return NULL;
 	}
 	return strdup(buf);
+}
+
+void apol_handle_msg(apol_policy_t *p, int level, const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	if (p == NULL) {
+		apol_handle_default_callback(NULL, level, fmt, ap);
+	}
+	else if (p->msg_callback != NULL) {
+		p->msg_callback(p, level, fmt, ap);
+	}
+	va_end(ap);
 }

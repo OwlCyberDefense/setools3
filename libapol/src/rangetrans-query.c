@@ -64,7 +64,7 @@ int apol_get_range_trans_by_query(apol_policy_t *p,
 	}
 
 	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	if (qpol_policy_get_range_trans_iter(p->qh, p->p, &iter) < 0) {
@@ -129,7 +129,7 @@ int apol_get_range_trans_by_query(apol_policy_t *p,
 		}
 
 		if (apol_vector_append(*v, rule)) {
-			ERR(p, "Out of memory!");
+			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
 	}
