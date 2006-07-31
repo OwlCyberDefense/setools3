@@ -244,8 +244,13 @@ int find_node_types_run(sechk_module_t *mod, apol_policy_t *policy)
 		
 		for (j=0;j<apol_vector_get_size(res->items);j++) {
 			sechk_item_t *res_item;
+			qpol_type_t *res_type;
+			char *res_type_name;
+
 			res_item = apol_vector_get_element(res->items, j);
-			if (!strcmp((char *)res_item->item, type_name)) item = res_item;
+			res_type = res_item->item;
+			qpol_type_get_name(policy->qh, policy->p, res_type, &res_type_name);
+			if (!strcmp(res_type_name, type_name)) item = res_item;
 		}
 		if (!item) {
 			item = sechk_item_new(NULL);
@@ -254,7 +259,7 @@ int find_node_types_run(sechk_module_t *mod, apol_policy_t *policy)
 				goto find_node_types_run_fail;
 			}
 			item->test_result = 1;
-			item->item = (void *)type_name;
+			item->item = (void *)context_type;
 			if ( apol_vector_append(res->items, (void *)item) < 0 ) {
                 		error = errno;
                 		ERR(policy, "Error: %s\n", strerror(error));
@@ -322,7 +327,7 @@ int find_node_types_run(sechk_module_t *mod, apol_policy_t *policy)
 			proof->type = SECHK_ITEM_TYPE;
 			proof->text = buff;
 		
-			item->item = (void *)context_type_name;
+			item->item = (void *)context_type;
 			if ( !item->proof ) {
 				if ( !(item->proof = apol_vector_create()) ) {
 			                error = errno;
@@ -374,6 +379,8 @@ int find_node_types_print_output(sechk_module_t *mod, apol_policy_t *policy)
 	sechk_item_t *item = NULL;
 	sechk_proof_t *proof = NULL;
 	int i = 0, j = 0, k=0,  num_items = 0;
+	qpol_type_t *type;
+	char *type_name;
 
 	if (!mod || !policy){
 		fprintf(stderr, "Error: invalid parameters\n");
@@ -411,7 +418,9 @@ int find_node_types_print_output(sechk_module_t *mod, apol_policy_t *policy)
 			j++;
 			j %= 4;
 			item = apol_vector_get_element(mod->result->items, i);
-			printf("%s%s", (char *)item->item, (char *)( (j) ? ", " : "\n"));
+                        type = (qpol_type_t *)item->item;
+                        qpol_type_get_name(policy->qh, policy->p, type, &type_name);
+                        printf("%s%s", type_name, (char *)( (j && i!=num_items-1) ? ", " : "\n"));
 		}
 		printf("\n");
 	}
@@ -428,8 +437,10 @@ int find_node_types_print_output(sechk_module_t *mod, apol_policy_t *policy)
 		printf("\n");
 		for ( j=0;j<num_items;j++) {
 			item = apol_vector_get_element(mod->result->items, j);
+                        type = (qpol_type_t *)item->item;
+                        qpol_type_get_name(policy->qh, policy->p, type, &type_name);
 			if ( item ) {
-				printf("%s\n", (char*)item->item);
+				printf("%s\n", type_name);
 				for (k=0;k<apol_vector_get_size(item->proof);k++) {
 					proof = apol_vector_get_element(item->proof, k);
 					if ( proof ) 

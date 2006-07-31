@@ -84,6 +84,7 @@ typedef enum sechk_item_type {
 	/* add more here as needed */
 	SECHK_ITEM_FCENT,	/* sefs_fc_entry_t */
 	SECHK_ITEM_STR,		/* char* generic string */
+	SECHK_ITEM_DTR, 	/* apol_domain_trans_result_t */
 	SECHK_ITEM_OTHER,	/* void* data is something else (module specific) */
 	SECHK_ITEM_NONE		/* there is no proof only text */
 } sechk_item_type_e;

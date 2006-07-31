@@ -427,7 +427,7 @@ int attribs_wo_rules_print_output(sechk_module_t *mod, apol_policy_t *policy)
 		printf("Found %i attributes.\n", num_items);
 	}
 	if (outformat & SECHK_OUT_PROOF) {
-		printf("\nThe following attrubutes do not appear in any rules.\n");
+		printf("\nThe following attributes do not appear in any rules.\n");
 	}
 	/* The list report component is a display of all items
 	 * found without any supporting proof. */
@@ -439,7 +439,7 @@ int attribs_wo_rules_print_output(sechk_module_t *mod, apol_policy_t *policy)
                         type = item->item;
                         qpol_type_get_name(policy->qh, policy->p, type, &type_name);
                         j %= 4;
-                        printf("%s%s", type_name, (char *)( (j) ? ", " : "\n" ));
+                        printf("%s%s", type_name, (char *)( (j && i!=num_items-1) ? ", " : "\n"));
                 }
                 printf("\n");
 	}

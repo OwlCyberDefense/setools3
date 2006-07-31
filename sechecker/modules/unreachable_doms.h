@@ -8,7 +8,12 @@
 
 #include "sechecker.h"
 #include <apol/policy.h>
-//#include "dta.h" FIXME
+#include <apol/user-query.h>
+#include <apol/role-query.h>
+#include <apol/isid-query.h>
+#include <apol/rbacrule-query.h>
+#include <apol/domain-trans-analysis.h>
+#include <selinux/selinux.h>
 
 #define SECHK_INC_DOM_TRANS_HAS_TT      0x08
 #define SECHK_INC_DOM_TRANS_HAS_EXEC    0x04
@@ -16,12 +21,13 @@
 #define SECHK_INC_DOM_TRANS_HAS_EP      0x01
 #define SECHK_INC_DOM_TRANS_COMPLETE    (SECHK_INC_DOM_TRANS_HAS_EP|SECHK_INC_DOM_TRANS_HAS_TRANS|SECHK_INC_DOM_TRANS_HAS_EXEC)
 
+#define APOL_STR_SZ 128
+
 /* The unreachable_doms_data structure is used to hold the check specific
  *  private data of a module. */
 typedef struct unreachable_doms_data {
 	char *ctx_file_path;
-	int *ctx_list;    /* contains domains found in default_contexts */
-	int ctx_list_sz;
+	apol_vector_t *ctx_vector;
 } unreachable_doms_data_t;
 
 int unreachable_doms_register(sechk_lib_t *lib);

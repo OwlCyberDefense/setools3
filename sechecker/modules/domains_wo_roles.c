@@ -354,7 +354,7 @@ int domains_wo_roles_print_output(sechk_module_t *mod, apol_policy_t *policy)
                         item = apol_vector_get_element(mod->result->items, i);
                         type = (qpol_type_t*)item->item;
                         qpol_type_get_name(policy->qh, policy->p, type, &type_name);
-                        printf("%s%s", type_name, (char *)( (j) ? ", " : "\n"));
+                        printf("%s%s", type_name, (char *)( (j && i!=num_items-1) ? ", " : "\n"));
                 }
                 printf("\n");
 	}

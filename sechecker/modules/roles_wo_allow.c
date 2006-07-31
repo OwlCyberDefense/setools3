@@ -297,9 +297,7 @@ int roles_wo_allow_run(sechk_module_t *mod, apol_policy_t *policy)
 	}
 	apol_vector_destroy(&role_vector, NULL);	
 	apol_vector_destroy(&role_allow_vector,NULL);
-	apol_vector_destroy(&role_trans_vector,NULL);
 	apol_role_allow_query_destroy(&role_allow_query);
-	apol_role_trans_query_destroy(&role_trans_query);
 
 	mod->result = res;
 
@@ -365,7 +363,7 @@ int roles_wo_allow_print_output(sechk_module_t *mod, apol_policy_t *policy)
                         item = apol_vector_get_element(mod->result->items, i);
                         role = (qpol_role_t*)item->item;
                         qpol_role_get_name(policy->qh, policy->p, role, &role_name);
-                        printf("%s%s", role_name, (char *)( (j) ? ", " : "\n"));
+                        printf("%s%s", role_name, (char *)( (j && i!=num_items-1) ? ", " : "\n"));
                 }
                 printf("\n");
         }

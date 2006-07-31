@@ -31,7 +31,9 @@ static sechk_module_name_reg_t sechk_module_register_list[] = {
 	{"roles_wo_allow",	&roles_wo_allow_register},
 	{"roles_wo_types",	&roles_wo_types_register},
 	{"roles_wo_users",	&roles_wo_users_register},
-	{"rules_exp_nothing",	&rules_exp_nothing_register},
+     	/* Deprecated *
+ 	{"roles_exp_nothing",   &roles_exp_nothing_register}, 
+	*/
 	{"spurious_audit",	&spurious_audit_register},
 	{"types_wo_allow",	&types_wo_allow_register},
 	{"unreachable_doms",    &unreachable_doms_register},
