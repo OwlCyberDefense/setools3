@@ -1343,8 +1343,11 @@ static int Apol_TypesRelationshipAnalysis(ClientData clientData, Tcl_Interp *int
 					  int argc, CONST char *argv[])
 {
 	Tcl_Obj *result_obj = Tcl_NewListObj(0, NULL);
+	apol_types_relation_analysis_t *analysis = NULL;
+	apol_types_relation_result_t *result = NULL;
 	CONST char **analyses_strings = NULL;
 	int num_opts;
+	unsigned int analyses = 0;
 	int retval = TCL_ERROR;
 
 	apol_tcl_clear_error();
@@ -1361,12 +1364,31 @@ static int Apol_TypesRelationshipAnalysis(ClientData clientData, Tcl_Interp *int
 	}
 	while (--num_opts >= 0) {
 		CONST char *s = analyses_strings[num_opts];
+		if (strcmp(s, "attribs") == 0) {
+			analyses |= APOL_TYPES_RELATION_COMMON_ATTRIBS;
+		}
 	}
+	if ((analysis = apol_types_relation_analysis_create()) == NULL) {
+		ERR(policydb, "%s", strerror(ENOMEM));
+		goto cleanup;
+	}
+	if (apol_types_relation_analysis_set_first_type(policydb, analysis, argv[1]) < 0 ||
+	    apol_types_relation_analysis_set_other_type(policydb, analysis, argv[2]) < 0 ||
+	    apol_types_relation_analysis_set_analyses(policydb, analysis, analyses) < 0) {
+		goto cleanup;
+	}
+	if (apol_types_relation_analysis_do(policydb, analysis, &result) < 0) {
+		goto cleanup;
+	}
+
+	Tcl_SetObjResult(interp, result_obj);
 	retval = TCL_OK;
  cleanup:
 	if (analyses_strings != NULL) {
 		Tcl_Free((char *) analyses_strings);
 	}
+	apol_types_relation_analysis_destroy(&analysis);
+	apol_types_relation_result_destroy(&result);
 	if (retval == TCL_ERROR) {
 		apol_tcl_write_error(interp);
 	}
