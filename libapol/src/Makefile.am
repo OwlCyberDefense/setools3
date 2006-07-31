@@ -35,6 +35,7 @@ libapol_a_SOURCES = \
 	role-query.c \
 	terule-query.c \
 	type-query.c \
+	types-relation-analysis.c \
 	user-query.c \
 	util.c \
 	vector.c \

@@ -25,6 +25,7 @@ apol_HEADERS = \
 	role-query.h \
 	terule-query.h \
 	type-query.h \
+	types-relation-analysis.h \
 	user-query.h \
 	util.h \
 	vector.h

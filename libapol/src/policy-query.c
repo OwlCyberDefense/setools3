@@ -279,7 +279,7 @@ int apol_compare_context(apol_policy_t *p, qpol_context_t *target,
 int apol_query_get_type(apol_policy_t *p, const char *type_name, qpol_type_t **type) {
 	unsigned char isalias;
 	if (qpol_policy_get_type_by_name(p->qh, p->p, type_name, type) < 0 ||
-	    qpol_type_get_isattr(p->qh, p->p, *type, &isalias) < 0) {
+	    qpol_type_get_isalias(p->qh, p->p, *type, &isalias) < 0) {
 		return -1;
 	}
 	if (isalias) {
