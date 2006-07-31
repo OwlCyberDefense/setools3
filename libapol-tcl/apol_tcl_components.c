@@ -23,16 +23,18 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#include <tcl.h>
-#include <assert.h>
-#include <netinet/in.h>    /* needed for portcon's protocol */
+#include "apol_tcl_other.h"
+#include "apol_tcl_render.h"
+#include "apol_tcl_fc.h"
 
 #include <apol/policy-query.h>
 #include <apol/render.h>
 
-#include "apol_tcl_other.h"
-#include "apol_tcl_render.h"
-#include "apol_tcl_fc.h"
+#include <tcl.h>
+#include <assert.h>
+#include <errno.h>
+#include <netinet/in.h>    /* needed for portcon's protocol */
+
 
 /**
  * Takes a qpol_type_t and appends a tuple of it to
@@ -134,7 +136,7 @@ static int Apol_GetTypes(ClientData clientData, Tcl_Interp *interp, int argc, CO
 		goto cleanup;
 	}
 	if (argc < 2) {
-		ERR(policydb, "Need a type name and ?regex flag?.");
+		ERR(policydb, "%s", "Need a type name and ?regex flag?.");
 		goto cleanup;
 	}
 	if (argc == 2) {
@@ -155,7 +157,7 @@ static int Apol_GetTypes(ClientData clientData, Tcl_Interp *interp, int argc, CO
 		}
 		if (*argv[1] != '\0') {
 			if ((query = apol_type_query_create()) == NULL) {
-				ERR(policydb, "Out of memory!");
+				ERR(policydb, "%s", strerror(ENOMEM));
 				goto cleanup;
 			}
 			if (apol_type_query_set_type(policydb, query, argv[1]) ||
@@ -268,7 +270,7 @@ static int Apol_GetAttribs(ClientData clientData, Tcl_Interp *interp, int argc, 
 		goto cleanup;
 	}
 	if (argc < 2) {
-		ERR(policydb, "Need an attribute name and ?regex flag?.");
+		ERR(policydb, "%s", "Need an attribute name and ?regex flag?.");
 		goto cleanup;
 	}
 	if (argc == 2) {
@@ -289,7 +291,7 @@ static int Apol_GetAttribs(ClientData clientData, Tcl_Interp *interp, int argc, 
 		}
 		if (*argv[1] != '\0') {
 			if ((query = apol_attr_query_create()) == NULL) {
-				ERR(policydb, "Out of memory!");
+				ERR(policydb, "%s", strerror(ENOMEM));
 				goto cleanup;
 			}
 			if (apol_attr_query_set_attr(policydb, query, argv[1]) ||
@@ -401,7 +403,7 @@ static int Apol_GetClasses(ClientData clientData, Tcl_Interp *interp, int argc, 
 		goto cleanup;
 	}
 	if (argc < 2) {
-		ERR(policydb, "Need a class name and ?regex flag?.");
+		ERR(policydb, "%s", "Need a class name and ?regex flag?.");
 		goto cleanup;
 	}
 	if (argc == 2) {
@@ -422,7 +424,7 @@ static int Apol_GetClasses(ClientData clientData, Tcl_Interp *interp, int argc, 
 		}
 		if (*argv[1] != '\0') {
 			if ((query = apol_class_query_create()) == NULL) {
-				ERR(policydb, "Out of memory!");
+				ERR(policydb, "%s", strerror(ENOMEM));
 				goto cleanup;
 			}
 			if (apol_class_query_set_class(policydb, query, argv[1]) ||
@@ -551,7 +553,7 @@ static int Apol_GetCommons(ClientData clientData, Tcl_Interp *interp, int argc, 
 		goto cleanup;
 	}
 	if (argc < 2) {
-		ERR(policydb, "Need a common name and ?regex flag?.");
+		ERR(policydb, "%s", "Need a common name and ?regex flag?.");
 		goto cleanup;
 	}
 	if (argc == 2) {
@@ -572,7 +574,7 @@ static int Apol_GetCommons(ClientData clientData, Tcl_Interp *interp, int argc, 
 		}
 		if (*argv[1] != '\0') {
 			if ((query = apol_common_query_create()) == NULL) {
-				ERR(policydb, "Out of memory!");
+				ERR(policydb, "%s", strerror(ENOMEM));
 				goto cleanup;
 			}
 			if (apol_common_query_set_common(policydb, query, argv[1]) ||
@@ -694,7 +696,7 @@ static int Apol_GetPerms(ClientData clientData, Tcl_Interp *interp, int argc, CO
 		goto cleanup;
 	}
 	if (argc < 2 || argc > 3) {
-		ERR(policydb, "Need a permission name and ?regex flag?.");
+		ERR(policydb, "%s", "Need a permission name and ?regex flag?.");
 		goto cleanup;
 	}
 	if (*argv[1] != '\0') {
@@ -703,7 +705,7 @@ static int Apol_GetPerms(ClientData clientData, Tcl_Interp *interp, int argc, CO
 			goto cleanup;
 		}
 		if ((query = apol_perm_query_create()) == NULL) {
-			ERR(policydb, "Out of memory!");
+			ERR(policydb, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
 		if (apol_perm_query_set_perm(policydb, query, argv[1]) ||
@@ -830,7 +832,7 @@ static int Apol_GetRoles(ClientData clientData, Tcl_Interp *interp, int argc, CO
 		goto cleanup;
 	}
 	if (argc != 2 && argc != 4) {
-		ERR(policydb, "Need a role name, ?type?, and ?regex flag?.");
+		ERR(policydb, "%s", "Need a role name, ?type?, and ?regex flag?.");
 		goto cleanup;
 	}
 	if (argc == 2) {
@@ -851,7 +853,7 @@ static int Apol_GetRoles(ClientData clientData, Tcl_Interp *interp, int argc, CO
 		}
 		if (*argv[1] != '\0' || *argv[2] != '\0') {
 			if ((query = apol_role_query_create()) == NULL) {
-				ERR(policydb, "Out of memory!");
+				ERR(policydb, "%s", strerror(ENOMEM));
 				goto cleanup;
 			}
 			if (apol_role_query_set_role(policydb, query, argv[1]) ||
@@ -999,7 +1001,7 @@ static int Apol_GetUsers(ClientData clientData, Tcl_Interp *interp, int argc, CO
 		goto cleanup;
 	}
 	if (argc != 2 && argc < 7) {
-		ERR(policydb, "Need a user name, ?role?, ?default level?, ?range?, ?range type?, and ?regex flag?.");
+		ERR(policydb, "%s", "Need a user name, ?role?, ?default level?, ?range?, ?range type?, and ?regex flag?.");
 		goto cleanup;
 	}
 	result_obj = Tcl_NewListObj(0, NULL);
@@ -1022,7 +1024,7 @@ static int Apol_GetUsers(ClientData clientData, Tcl_Interp *interp, int argc, CO
 		if (*argv[1] != '\0' || *argv[2] != '\0' ||
 		    *argv[3] != '\0' || *argv[4] != '\0') {
 			if ((query = apol_user_query_create()) == NULL) {
-				ERR(policydb, "Out of memory!");
+				ERR(policydb, "%s", strerror(ENOMEM));
 				goto cleanup;
 			}
 			if (apol_user_query_set_user(policydb, query, argv[1]) ||
@@ -1034,7 +1036,7 @@ static int Apol_GetUsers(ClientData clientData, Tcl_Interp *interp, int argc, CO
 		if (*argv[3] != '\0') {
 			apol_mls_level_t *default_level;
 			if ((default_level = apol_mls_level_create()) == NULL) {
-				ERR(policydb, "Out of memory!");
+				ERR(policydb, "%s", strerror(ENOMEM));
 				goto cleanup;
 			}
 			if (apol_tcl_string_to_level(interp, argv[3], default_level) != 0 ||
@@ -1050,7 +1052,7 @@ static int Apol_GetUsers(ClientData clientData, Tcl_Interp *interp, int argc, CO
 				goto cleanup;
 			}
 			if ((range = apol_mls_range_create()) == NULL) {
-				ERR(policydb, "Out of memory!");
+				ERR(policydb, "%s", strerror(ENOMEM));
 				goto cleanup;
 			}
 			if (apol_tcl_string_to_range(interp, argv[4], range) != 0 ||
@@ -1137,7 +1139,7 @@ static int Apol_GetBools(ClientData clientData, Tcl_Interp *interp, int argc, CO
 		goto cleanup;
 	}
 	if (argc != 2 && argc < 3) {
-		ERR(policydb, "Need a boolean name and ?regex flag?.");
+		ERR(policydb, "%s", "Need a boolean name and ?regex flag?.");
 		goto cleanup;
 	}
 	if (argc == 2) {
@@ -1158,7 +1160,7 @@ static int Apol_GetBools(ClientData clientData, Tcl_Interp *interp, int argc, CO
 		}
 		if (*argv[1] != '\0') {
 			if ((query = apol_bool_query_create()) == NULL) {
-				ERR(policydb, "Out of memory!");
+				ERR(policydb, "%s", strerror(ENOMEM));
 				goto cleanup;
 			}
 			if (apol_bool_query_set_bool(policydb, query, argv[1]) ||
@@ -1207,7 +1209,7 @@ static int Apol_SetBoolValue(ClientData clientData, Tcl_Interp *interp, int argc
 		goto cleanup;
 	}
 	if (argc != 3) {
-		ERR(policydb, "Need a bool name and a value.");
+		ERR(policydb, "%s", "Need a bool name and a value.");
 		goto cleanup;
 	}
 	if (qpol_policy_get_bool_by_name(policydb->qh, policydb->p,
@@ -1256,7 +1258,6 @@ static int append_level_to_list(Tcl_Interp *interp,
 				    level_datum, &cat_iter) < 0 ||
 	    qpol_level_get_value(policydb->qh, policydb->p,
 				 level_datum, &level_value) < 0) {
-		ERR(policydb, "Could not get level value.");
 		goto cleanup;
 	}
 	level_elem[0] = Tcl_NewStringObj(sens_name, -1);
@@ -1330,7 +1331,7 @@ static int Apol_GetLevels(ClientData clientData, Tcl_Interp *interp, int argc, C
 		goto cleanup;
 	}
 	if (argc < 2) {
-		ERR(policydb, "Need a sensitivity name and ?regex flag?.");
+		ERR(policydb, "%s", "Need a sensitivity name and ?regex flag?.");
 		goto cleanup;
 	}
 	if (argc == 2) {
@@ -1351,7 +1352,7 @@ static int Apol_GetLevels(ClientData clientData, Tcl_Interp *interp, int argc, C
 		}
 		if (*argv[1] != '\0') {
 			if ((query = apol_level_query_create()) == NULL) {
-				ERR(policydb, "Out of memory!");
+				ERR(policydb, "%s", strerror(ENOMEM));
 				goto cleanup;
 			}
 			if (apol_level_query_set_sens(policydb, query, argv[1]) ||
@@ -1484,7 +1485,7 @@ static int Apol_GetCats(ClientData clientData, Tcl_Interp *interp, int argc, CON
 		goto cleanup;
 	}
 	if (argc < 2) {
-		ERR(policydb, "Need a category name and ?regex flag?.");
+		ERR(policydb, "%s", "Need a category name and ?regex flag?.");
 		goto cleanup;
 	}
 	if (argc == 2) {
@@ -1505,7 +1506,7 @@ static int Apol_GetCats(ClientData clientData, Tcl_Interp *interp, int argc, CON
 		}
 		if (*argv[1] != '\0') {
 			if ((query = apol_cat_query_create()) == NULL) {
-				ERR(policydb, "Out of memory!");
+				ERR(policydb, "%s", strerror(ENOMEM));
 				goto cleanup;
 			}
 			if (apol_cat_query_set_cat(policydb, query, argv[1]) ||
@@ -1551,7 +1552,7 @@ static int qpol_context_to_tcl_obj(Tcl_Interp *interp, qpol_context_t *context, 
 
 	apol_context = apol_context_create_from_qpol_context(policydb, context);
 	if (apol_context == NULL) {
-		ERR(policydb, "Out of memory!");
+		ERR(policydb, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	context_elem[0] = Tcl_NewStringObj(apol_context->user, -1);
@@ -1647,7 +1648,7 @@ static int Apol_GetInitialSIDs(ClientData clientData, Tcl_Interp *interp, int ar
 		goto cleanup;
 	}
 	if (argc != 2 && argc != 4) {
-		ERR(policydb, "Need an isid name, ?context?, and ?range_match?.");
+		ERR(policydb, "%s", "Need an isid name, ?context?, and ?range_match?.");
 		goto cleanup;
 	}
 	if (*argv[1] != '\0') {
@@ -1655,7 +1656,7 @@ static int Apol_GetInitialSIDs(ClientData clientData, Tcl_Interp *interp, int ar
 	}
 	if (argc > 2 && *argv[2] != '\0') {
 		if ((context = apol_context_create()) == NULL) {
-			ERR(policydb, "Out of memory!");
+			ERR(policydb, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
 		if (apol_tcl_string_to_context(interp, argv[2], context) < 0 ||
@@ -1665,7 +1666,7 @@ static int Apol_GetInitialSIDs(ClientData clientData, Tcl_Interp *interp, int ar
 	}
 	if (name != NULL || context != NULL) {
 		if ((query = apol_isid_query_create()) == NULL) {
-			ERR(policydb, "Out of memory!");
+			ERR(policydb, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
 		if (apol_isid_query_set_name(policydb, query, name) < 0 ||
@@ -1729,7 +1730,7 @@ static int append_portcon_to_list(Tcl_Interp *interp,
 	portcon_elem[0] = Tcl_NewIntObj(low_port);
 	portcon_elem[1] = Tcl_NewIntObj(high_port);
 	if ((proto_str = apol_protocol_to_str(protocol)) == NULL) {
-		ERR(policydb, "Unrecognized protocol in portcon");
+		ERR(policydb, "%s", "Unrecognized protocol in portcon");
 		goto cleanup;
 	}
 	portcon_elem[2] = Tcl_NewStringObj(proto_str, -1);
@@ -1765,7 +1766,7 @@ static int apol_tcl_string_to_proto(Tcl_Interp *interp __attribute__ ((unused)),
 		*proto = IPPROTO_UDP;
 	}
 	else if (*proto_name != '\0') {
-		ERR(policydb, "Unknown protocol.");
+		ERR(policydb, "%s", "Unknown protocol.");
 		return -1;
 	}
 	return 0;
@@ -1812,7 +1813,7 @@ static int Apol_GetPortcons(ClientData clientData, Tcl_Interp *interp, int argc,
 		goto cleanup;
 	}
 	if (argc != 3 && argc != 6) {
-		ERR(policydb, "Need a low port, high port, ?proto?, ?context?, ?range_match?.");
+		ERR(policydb, "%s", "Need a low port, high port, ?proto?, ?context?, ?range_match?.");
 		goto cleanup;
 	}
 
@@ -1826,7 +1827,7 @@ static int Apol_GetPortcons(ClientData clientData, Tcl_Interp *interp, int argc,
 		}
 		if (*argv[4] != '\0') {
 			if ((context = apol_context_create()) == NULL) {
-				ERR(policydb, "Out of memory!");
+				ERR(policydb, "%s", strerror(ENOMEM));
 				goto cleanup;
 			}
 			if (apol_tcl_string_to_context(interp, argv[4], context) < 0 ||
@@ -1837,7 +1838,7 @@ static int Apol_GetPortcons(ClientData clientData, Tcl_Interp *interp, int argc,
 	}
 	if (low >= 0 || high >= 0 || proto >= 0 || context != NULL) {
 		if ((query = apol_portcon_query_create()) == NULL) {
-			ERR(policydb, "Out of memory!");
+			ERR(policydb, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
 		if (apol_portcon_query_set_low(policydb, query, low) < 0 ||
@@ -1944,7 +1945,7 @@ static int Apol_GetNetifcons(ClientData clientData, Tcl_Interp *interp, int argc
 		goto cleanup;
 	}
 	if (argc != 2 && argc != 6) {
-		ERR(policydb, "Need a device, ?if_context?, ?if_range_match?, ?msg_context?, and ?msg_range_match?.");
+		ERR(policydb, "%s", "Need a device, ?if_context?, ?if_range_match?, ?msg_context?, and ?msg_range_match?.");
 		goto cleanup;
 	}
 	if (argc == 2) {
@@ -1965,7 +1966,7 @@ static int Apol_GetNetifcons(ClientData clientData, Tcl_Interp *interp, int argc
                 }
                 if (*argv[2] != '\0') {
                         if ((if_context = apol_context_create()) == NULL) {
-                                ERR(policydb, "Out of memory!");
+                                ERR(policydb, "%s", strerror(ENOMEM));
                                 goto cleanup;
                         }
                         if (apol_tcl_string_to_context(interp, argv[2], if_context) < 0 ||
@@ -1975,7 +1976,7 @@ static int Apol_GetNetifcons(ClientData clientData, Tcl_Interp *interp, int argc
                 }
                 if (*argv[4] != '\0') {
                         if ((msg_context = apol_context_create()) == NULL) {
-                                ERR(policydb, "Out of memory!");
+                                ERR(policydb, "%s", strerror(ENOMEM));
                                 goto cleanup;
                         }
                         if (apol_tcl_string_to_context(interp, argv[4], msg_context) < 0 ||
@@ -1985,7 +1986,7 @@ static int Apol_GetNetifcons(ClientData clientData, Tcl_Interp *interp, int argc
                 }
                 if (dev != NULL || if_context != NULL || msg_context != NULL) {
                         if ((query = apol_netifcon_query_create()) == NULL) {
-                                ERR(policydb, "Out of memory!");
+                                ERR(policydb, "%s", strerror(ENOMEM));
                                 goto cleanup;
                         }
                         if (apol_netifcon_query_set_device(policydb, query,
@@ -2067,7 +2068,7 @@ static int append_nodecon_to_list(Tcl_Interp *interp,
 		}
 	}
 	else {
-		ERR(policydb, "Unknown protocol.");
+		ERR(policydb, "%s", "Unknown protocol.");
 		goto cleanup;
 	}
 	nodecon_elem[1] = Tcl_NewStringObj(addr_str, -1);
@@ -2130,16 +2131,16 @@ static int Apol_GetNodecons(ClientData clientData, Tcl_Interp *interp, int argc,
 		goto cleanup;
 	}
 	if (argc != 2 && argc != 6) {
-		ERR(policydb, "Need an address, ?netmask?, ?IP_type?, ?context?, and ?range_match?.");
+		ERR(policydb, "%s", "Need an address, ?netmask?, ?IP_type?, ?context?, and ?range_match?.");
 		goto cleanup;
 	}
 	if (*argv[1] != '\0') {
 		if ((addr = calloc(4, sizeof(*addr))) == NULL) {
-			ERR(policydb, "Out of memory!");
+			ERR(policydb, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
 		if ((proto_a = apol_str_to_internal_ip(argv[1], addr)) < 0) {
-			ERR(policydb, "Invalid address.");
+			ERR(policydb, "%s", "Invalid address.");
 			goto cleanup;
 		}
 		has_addr = 1;
@@ -2147,11 +2148,11 @@ static int Apol_GetNodecons(ClientData clientData, Tcl_Interp *interp, int argc,
 	if (argc == 6) {
 		if (*argv[2] != '\0') {
 			if ((mask = calloc(4, sizeof(*mask))) == NULL) {
-				ERR(policydb, "Out of memory!");
+				ERR(policydb, "%s", strerror(ENOMEM));
 				goto cleanup;
 			}
 			if ((proto_m = apol_str_to_internal_ip(argv[2], mask)) < 0) {
-				ERR(policydb, "Invalid mask.");
+				ERR(policydb, "%s", "Invalid mask.");
 				goto cleanup;
 			}
 			has_mask = 1;
@@ -2163,12 +2164,12 @@ static int Apol_GetNodecons(ClientData clientData, Tcl_Interp *interp, int argc,
 			proto = 1;
 		}
 		else if (*argv[3] != '\0') {
-			ERR(policydb, "Unknown protocol.");
+			ERR(policydb, "%s", "Unknown protocol.");
 			goto cleanup;
 		}
 		if (*argv[4] != '\0') {
 			if ((context = apol_context_create()) == NULL) {
-				ERR(policydb, "Out of memory!");
+				ERR(policydb, "%s", strerror(ENOMEM));
 				goto cleanup;
 			}
 			if (apol_tcl_string_to_context(interp, argv[4], context) < 0 ||
@@ -2179,7 +2180,7 @@ static int Apol_GetNodecons(ClientData clientData, Tcl_Interp *interp, int argc,
 	}
 	if (proto >= 0 || has_addr || has_mask || context != NULL) {
 		if ((query = apol_nodecon_query_create()) == NULL) {
-			ERR(policydb, "Out of memory!");
+			ERR(policydb, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
 		if (apol_nodecon_query_set_proto(policydb, query, proto) < 0 ||
@@ -2243,7 +2244,7 @@ static int append_genfscon_to_list(Tcl_Interp *interp,
 	genfs_elem[0] = Tcl_NewStringObj(name, -1);
 	genfs_elem[1] = Tcl_NewStringObj(path, -1);
 	if ((objclass = apol_objclass_to_str(objclass_val)) == NULL) {
-		ERR(policydb, "Illegal object class given in genfscon node.");
+		ERR(policydb, "%s", "Illegal object class given in genfscon node.");
 		goto cleanup;
 	}
 	genfs_elem[2] = Tcl_NewStringObj(objclass, -1);
@@ -2302,7 +2303,7 @@ static int Apol_GetGenFSCons(ClientData clientData, Tcl_Interp *interp, int argc
                 goto cleanup;
         }
         if (argc != 2 && argc != 5) {
-                ERR(policydb, "Need a fstype, ?path?, ?file_type?, ?context?, and ?range_match?.");
+                ERR(policydb, "%s", "Need a fstype, ?path?, ?file_type?, ?context?, and ?range_match?.");
                 goto cleanup;
         }
         if (*argv[1] != '\0') {
@@ -2314,7 +2315,7 @@ static int Apol_GetGenFSCons(ClientData clientData, Tcl_Interp *interp, int argc
                 }
                 if (*argv[3] != '\0') {
                         if ((context = apol_context_create()) == NULL) {
-                                ERR(policydb, "Out of memory!");
+                                ERR(policydb, "%s", strerror(ENOMEM));
                                 goto cleanup;
                         }
                         if (apol_tcl_string_to_context(interp, argv[3], context) < 0 ||
@@ -2325,7 +2326,7 @@ static int Apol_GetGenFSCons(ClientData clientData, Tcl_Interp *interp, int argc
         }
         if (fstype != NULL || path != NULL || objclass >= 0 || context != NULL) {
                 if ((query = apol_genfscon_query_create()) == NULL) {
-                        ERR(policydb, "Out of memory!");
+                        ERR(policydb, "%s", strerror(ENOMEM));
                         goto cleanup;
                 }
                 if (apol_genfscon_query_set_filesystem(policydb, query, fstype) < 0 ||
@@ -2386,7 +2387,7 @@ static int append_fs_use_to_list(Tcl_Interp *interp,
 		goto cleanup;
 	}
 	if ((behav_str = apol_fs_use_behavior_to_str(behavior)) == NULL) {
-		ERR(policydb, "Illegal fs_use bahavior given in fs_use.");
+		ERR(policydb, "%s", "Illegal fs_use bahavior given in fs_use.");
 		goto cleanup;
 	}
 	fsuse_elem[0] = Tcl_NewStringObj(behav_str, -1);
@@ -2451,7 +2452,7 @@ static int Apol_GetFSUses(ClientData clientData, Tcl_Interp *interp, int argc, C
 		goto cleanup;
 	}
 	if (argc != 2 && argc != 5) {
-		ERR(policydb, "Need a fstype, ?fs_behavior?, ?context?, and ?range_match?.");
+		ERR(policydb, "%s", "Need a fstype, ?fs_behavior?, ?context?, and ?range_match?.");
 		goto cleanup;
 	}
 	if (*argv[1] != '\0') {
@@ -2460,12 +2461,12 @@ static int Apol_GetFSUses(ClientData clientData, Tcl_Interp *interp, int argc, C
 	if (argc == 5) {
 		if (*argv[2] != '\0' &&
 		    (behavior = apol_str_to_fs_use_behavior(argv[2])) < 0) {
-			ERR(policydb, "Invalid fs_use behavior.");
+			ERR(policydb, "%s", "Invalid fs_use behavior.");
 			goto cleanup;
 		}
 		if (*argv[3] != '\0') {
 			if ((context = apol_context_create()) == NULL) {
-				ERR(policydb, "Out of memory!");
+				ERR(policydb, "%s", strerror(ENOMEM));
 				goto cleanup;
 			}
 			if (apol_tcl_string_to_context(interp, argv[3], context) < 0 ||
@@ -2476,7 +2477,7 @@ static int Apol_GetFSUses(ClientData clientData, Tcl_Interp *interp, int argc, C
 	}
 	if (fstype != NULL || behavior >= 0 || context != NULL) {
 		if ((query = apol_fs_use_query_create()) == NULL) {
-			ERR(policydb, "Out of memory!");
+			ERR(policydb, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
 		if (apol_fs_use_query_set_filesystem(policydb, query, fstype) < 0 ||

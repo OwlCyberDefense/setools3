@@ -30,6 +30,7 @@
 #include <apol/policy.h>
 #include <apol/render.h>
 
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -43,7 +44,7 @@ char *apol_ipv4_addr_render(apol_policy_t *policydb, uint32_t addr)
 	unsigned char *p = (unsigned char *) &addr;
 	snprintf(buf, sizeof(buf), "%d.%d.%d.%d", p[0], p[1], p[2], p[3]);
 	if ((b = strdup(buf)) == NULL) {
-		ERR(policydb, "Out of memory!");
+		ERR(policydb, "%s", strerror(ENOMEM));
 	}
 	return b;
 }
@@ -99,7 +100,7 @@ char *apol_ipv6_addr_render(apol_policy_t *policydb, uint32_t addr[4])
 
 	buf[sz] = '\0';
 	if ((b = strdup(buf)) == NULL) {
-		ERR(policydb, "Out of memory!");
+		ERR(policydb, "%s", strerror(ENOMEM));
 	}
 	return b;
 }

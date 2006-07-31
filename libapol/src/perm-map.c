@@ -159,7 +159,7 @@ static apol_permmap_t *apol_permmap_create_from_policy(apol_policy_t *p)
 	}
 
 	if ((t = (apol_permmap_t *) calloc(1, sizeof(*t))) == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	if (qpol_policy_get_class_iter(p->qh, p->p, &class_iter) < 0 ||
@@ -168,7 +168,7 @@ static apol_permmap_t *apol_permmap_create_from_policy(apol_policy_t *p)
 	}
 	t->mapped = 0;
 	if ((t->classes = apol_vector_create_with_capacity(num_obj_classes)) == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	for ( ; !qpol_iterator_end(class_iter); qpol_iterator_next(class_iter)) {
@@ -191,14 +191,14 @@ static apol_permmap_t *apol_permmap_create_from_policy(apol_policy_t *p)
 		}
 		if ((pc = calloc(1, sizeof(*pc))) == NULL ||
 		    apol_vector_append(t->classes, pc) < 0) {
-			ERR(p, "Out of memory!");
+			ERR(p, "%s", strerror(ENOMEM));
 			apol_permmap_class_free(pc);
 			goto cleanup;
 		}
 		pc->mapped = 0;
 		pc->c = c;
 		if ((pc->perms = apol_vector_create_with_capacity(num_unique_perms + num_common_perms)) == NULL) {
-			ERR(p, "Out of memory!");
+			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
 		/* initialize with all the class's unique permissions
@@ -209,7 +209,7 @@ static apol_permmap_t *apol_permmap_create_from_policy(apol_policy_t *p)
 			}
 			if ((pp = apol_permmap_perm_create(name, 0, (char) APOL_PERMMAP_MIN_WEIGHT)) == NULL ||
 			    apol_vector_append(pc->perms, pp) < 0) {
-				ERR(p, "Out of memory!");
+				ERR(p, "%s", strerror(ENOMEM));
 				apol_permmap_perm_free(pp);
 				goto cleanup;
 			}
@@ -223,7 +223,7 @@ static apol_permmap_t *apol_permmap_create_from_policy(apol_policy_t *p)
 			}
 			if ((pp = apol_permmap_perm_create(name, 0, (char) APOL_PERMMAP_MIN_WEIGHT)) == NULL ||
 			    apol_vector_append(pc->perms, pp) < 0) {
-				ERR(p, "Out of memory!");
+				ERR(p, "%s", strerror(ENOMEM));
 				apol_permmap_perm_free(pp);
 				goto cleanup;
 			}
@@ -346,7 +346,7 @@ static int are_all_classes_mapped(apol_policy_t *p)
 			if (qpol_class_get_name(p->qh, p->p, pc->c, &class_name) < 0) {
 				return 0;
 			}
-			ERR(p, "Some permissions were unmapped for class %s.", class_name);
+			WARN(p, "Some permissions were unmapped for class %s.", class_name);
 			return 0;
 		}
 	}
@@ -372,7 +372,7 @@ static int are_all_perms_mapped(apol_policy_t *p, apol_permmap_class_t *pc)
 			if (qpol_class_get_name(p->qh, p->p, pc->c, &class_name) < 0) {
 				return 0;
 			}
-			ERR(p, "Permission %s was unmapped for class %s.", pp->name, class_name);
+			WARN(p, "Permission %s was unmapped for class %s.", pp->name, class_name);
 			return 0;
 		}
 	}
@@ -431,12 +431,12 @@ static int parse_permmap_class(apol_policy_t *p, FILE *fp,
 			new_weight = APOL_PERMMAP_MIN_WEIGHT;
 		}
 		if (new_weight != perm_weight) {
-			ERR(p, "Permission %s's weight %d is invalid.  Setting it to %d instead.", perm_name, perm_weight, new_weight);
+			WARN(p, "Permission %s's weight %d is invalid.  Setting it to %d instead.", perm_name, perm_weight, new_weight);
 			perm_weight = new_weight;
 		}
 		if (pc != NULL) {
 			if ((pp = find_permmap_perm(p, pc, perm_name)) == NULL) {
-				ERR(p, "Permission %s was defined in the permission map file but not within the policy.	 It will be ignored.", perm_name);
+				WARN(p, "Permission %s was defined in the permission map file but not within the policy.  It will be ignored.", perm_name);
 				retval |= APOL_PERMMAP_RET_UNKNOWN_PERM;
 			}
 			else {
@@ -446,7 +446,7 @@ static int parse_permmap_class(apol_policy_t *p, FILE *fp,
 		}
 	}
 	if (perms_read != num_perms) {
-		ERR(p, "There were supposed to be %u permissions, but only %u were found.", num_perms, perms_read);
+		WARN(p, "There were supposed to be %u permissions, but only %u were found.", num_perms, perms_read);
 		retval |= APOL_PERMMAP_RET_NOT_ENOUGH;
 	}
 	if (pc != NULL && !are_all_perms_mapped(p, pc)) {
@@ -486,7 +486,7 @@ static int parse_permmap(apol_policy_t *p, FILE *fp)
 		}
 	}
 	if (num_classes == 0) {
-		ERR(p, "No object classes were defined in the permission map file.");
+		ERR(p, "%s", "No object classes were defined in the permission map file.");
 		return -1;
 	}
 
@@ -505,11 +505,11 @@ static int parse_permmap(apol_policy_t *p, FILE *fp)
 			}
 		}
 		if (!found_class_decl) {
-			ERR(p, "Permission map file was supposed to have %u classes, but only %u were found.", num_classes, i);
+			WARN(p, "Permission map file was supposed to have %u classes, but only %u were found.", num_classes, i);
 			return APOL_PERMMAP_RET_NOT_ENOUGH;
 		}
 		if ((pc = find_permmap_class(p, class_name)) == NULL) {
-			ERR(p, "Object class %s was defined in the permission map file but not within the policy.  It will be ignored.", class_name);
+			WARN(p, "Object class %s was defined in the permission map file but not within the policy.  It will be ignored.", class_name);
 			/* skip to next record */
 			parse_permmap_class(p, fp, num_perms, NULL);
 			retval |= APOL_PERMMAP_RET_UNKNOWN_OBJ;

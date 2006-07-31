@@ -33,6 +33,7 @@
 #include <apol/render.h>
 #include <apol/util.h>
 
+#include <errno.h>
 #include <string.h>
 
 struct apol_portcon_query {
@@ -68,7 +69,7 @@ int apol_get_portcon_by_query(apol_policy_t *p,
                 return -1;
         }
         if ((*v = apol_vector_create()) == NULL) {
-                ERR(p, "Out of memory!");
+                ERR(p, "%s", strerror(ENOMEM));
                 goto cleanup;
         }
         for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -104,7 +105,7 @@ int apol_get_portcon_by_query(apol_policy_t *p,
 			}
                 }
                 if (apol_vector_append(*v, portcon)) {
-                        ERR(p, "Out of memory!");
+                        ERR(p, "%s", strerror(ENOMEM));
                         goto cleanup;
                 }
         }
@@ -187,7 +188,7 @@ char *apol_portcon_render(apol_policy_t *p, qpol_portcon_t *portcon)
 
 	buff = (char*)calloc(bufflen + 1, sizeof(char));
 	if (!buff) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 
@@ -195,7 +196,7 @@ char *apol_portcon_render(apol_policy_t *p, qpol_portcon_t *portcon)
 		goto cleanup;
 
 	if ((proto_str = apol_protocol_to_str(proto)) == NULL) {
-		ERR(p, "Could not get protocol string.");
+		ERR(p, "%s", "Could not get protocol string.");
 		goto cleanup;
 	}
 	if (qpol_portcon_get_low_port(p->qh, p->p, portcon, &low_port))
@@ -215,7 +216,7 @@ char *apol_portcon_render(apol_policy_t *p, qpol_portcon_t *portcon)
 
 	line = (char *)calloc(4 + strlen("portcon") + strlen(proto_str) + strlen(buff) + strlen(context_str), sizeof(char));
 	if (!line) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 
@@ -244,7 +245,7 @@ int apol_get_netifcon_by_query(apol_policy_t *p,
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -283,7 +284,7 @@ int apol_get_netifcon_by_query(apol_policy_t *p,
 			}
 		}
 		if (apol_vector_append(*v, netifcon)) {
-			ERR(p, "Out of memory!");
+			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
 	}
@@ -374,7 +375,7 @@ char *apol_netifcon_render(apol_policy_t *p, qpol_netifcon_t *netifcon)
 		return NULL;
 	line = (char *)calloc(4 + strlen(iface_str) + strlen(devcon_str) + strlen(pktcon_str) + strlen("netifcon"), sizeof(char));
         if (!line) {
-                ERR(p, "Out of memory!");
+                ERR(p, "%s", strerror(ENOMEM));
                 goto cleanup;
         }
         sprintf(line, "netifcon %s %s %s", iface_str, devcon_str, pktcon_str);
@@ -400,7 +401,7 @@ int apol_get_nodecon_by_query(apol_policy_t *p,
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -445,7 +446,7 @@ int apol_get_nodecon_by_query(apol_policy_t *p,
 			}
 		}
 		if (apol_vector_append(*v, nodecon)) {
-			ERR(p, "Out of memory!");
+			ERR(p, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
 	}
@@ -599,7 +600,7 @@ char *apol_nodecon_render(apol_policy_t *p, qpol_nodecon_t *nodecon)
 
 	line = (char*)calloc(4 + strlen("nodecon") + strlen(addr_str) + strlen(mask_str) + strlen(context_str), sizeof(char));
 	if (!line) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 

@@ -27,13 +27,27 @@
 #define QPOL_DEBUG_H
 
 #include <sepol/handle.h>
+#include <qpol/policy.h>
 
 #define STATUS_SUCCESS  0
 #define STATUS_ERR     -1
 #define STATUS_NODATA   1
 
-//FIXME: real handle use here?
-#define ERR(handle, format, ...) sepol_handle_do_callback(handle, format, __VA_ARGS__)
+#define QPOL_MSG_ERR  1
+#define QPOL_MSG_WARN 2
+#define QPOL_MSG_INFO 3
+
+struct qpol_handle {
+	sepol_handle_t *sh;
+	qpol_handle_callback_fn_t fn;
+	void *varg;
+};
+
+extern void qpol_handle_msg(struct qpol_handle *handle, int level, const char *fmt, ...);
+
+#define ERR(handle, format, ...) qpol_handle_msg(handle, QPOL_MSG_ERR, format, __VA_ARGS__)
+#define WARN(handle, format, ...) qpol_handle_msg(handle, QPOL_MSG_WARN, format, __VA_ARGS__)
+#define INFO(handle, format, ...) qpol_handle_msg(handle, QPOL_MSG_INFO, format, __VA_ARGS__)
 
 #endif /* QPOL_DEBUG_H */
  

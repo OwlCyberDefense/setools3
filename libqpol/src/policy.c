@@ -40,6 +40,7 @@
 #include <limits.h>
 #include <errno.h>
 
+#include <sepol/debug.h>
 #include <sepol/handle.h>
 #include <sepol/policydb/flask_types.h>
 #include <sepol/policydb/policydb.h>
@@ -102,6 +103,74 @@ typedef struct fbuf {
         size_t  sz;
         int     err;
 } qpol_fbuf_t;
+
+static void qpol_handle_route_to_callback(void *varg __attribute__((unused)), qpol_handle_t *qh, int level, const char *fmt, va_list va_args)
+{
+	if (!qh || !(qh->fn)) {
+		vfprintf(stderr, fmt, va_args);
+		return;
+	}
+
+	qh->fn(qh->varg, qh, level, fmt, va_args);
+}
+
+static void sepol_handle_route_to_callback(void *varg, sepol_handle_t *sh, const char *fmt, ...)
+{
+	va_list ap;
+	qpol_handle_t *qh = varg;
+
+	if (!sh) {
+		va_start(ap, fmt);
+		vfprintf(stderr, fmt, ap);
+		va_end(ap);
+		return;
+	}
+
+	va_start(ap, fmt);
+	qpol_handle_route_to_callback(NULL, qh, sepol_msg_get_level(sh), fmt, ap);
+	va_end(ap);
+}
+
+void qpol_handle_msg(qpol_handle_t *handle, int level, const char *fmt, ...)
+{
+	va_list ap;
+
+	if (!handle) {
+		va_start(ap, fmt);
+		vfprintf(stderr, fmt, ap);
+		va_end(ap);
+		return;
+	}
+
+	va_start(ap, fmt);
+	qpol_handle_route_to_callback(handle->varg, handle, level, fmt, ap);
+	va_end(ap);
+}
+
+static void qpol_handle_default_callback(void *varg, qpol_handle_t *handle, int level, const char *fmt, va_list va_args)
+{
+	switch (level) {
+		case QPOL_MSG_INFO:
+			{
+				fprintf(stderr, "INFO: ");
+				break;
+			}
+		case QPOL_MSG_WARN:
+			{
+				fprintf(stderr, "WARNING: ");
+				break;
+			}
+		case QPOL_MSG_ERR:
+		default:
+			{
+				fprintf(stderr, "ERROR: ");
+				break;
+			}
+	}
+
+	vfprintf(stderr, fmt, va_args);
+	fprintf(stderr, "\n");
+}
 
 static int read_source_policy(policydb_t *p, char *progname)
 {
@@ -613,16 +682,33 @@ int qpol_open_policy_from_file(const char *path, qpol_policy_t **policy, qpol_ha
 		*handle = NULL;
 
 	if (path == NULL || policy == NULL || handle == NULL) {
+		/* handle passed as NULL here as it has yet to be created */
+		ERR(NULL, "%s", strerror(EINVAL));
 		errno = EINVAL;
 		return -1;
 	}
 
-	*handle = sepol_handle_create();
-	if (*handle == NULL)
+	if (!(*handle = calloc(1, sizeof(qpol_handle_t)))) {
+		error = errno;
+		ERR(NULL, "%s", strerror(error));
+		errno = error;
 		return -1;
+	}
+	(*handle)->sh = sepol_handle_create();
+	if ((*handle)->sh == NULL) {
+		error = errno;
+		ERR(*handle, "%s", strerror(error));
+		errno = error;
+		return -1;
+	}
 
-	if (fn)
-		sepol_handle_set_callback(*handle, fn, varg);
+	sepol_handle_set_callback((*handle)->sh, sepol_handle_route_to_callback, varg);
+	if (fn) {
+		(*handle)->fn = fn;
+		(*handle)->varg = varg;
+	} else {
+		(*handle)->fn = qpol_handle_default_callback;
+	}
 
 	if (!(*policy = calloc(1, sizeof(qpol_policy_t)))) {
 		error = errno;
@@ -645,7 +731,7 @@ int qpol_open_policy_from_file(const char *path, qpol_policy_t **policy, qpol_ha
 		goto err;
 	}
 
-	sepol_policy_file_set_handle(pfile, *handle);
+	sepol_policy_file_set_handle(pfile, (*handle)->sh);
 
 	if (qpol_is_file_binpol(infile)) {
 		retv = QPOL_POLICY_KERNEL_BINARY;
@@ -687,7 +773,7 @@ int qpol_open_policy_from_file(const char *path, qpol_policy_t **policy, qpol_ha
 
 		(*policy)->p->p.policy_type = POLICY_BASE;
 		/* link the source */
-		if (sepol_link_modules(*handle, (*policy)->p, NULL, 0, 0)) {
+		if (sepol_link_modules((*handle)->sh, (*policy)->p, NULL, 0, 0)) {
 			error = EIO;
 			goto err;
 		}
@@ -709,7 +795,7 @@ int qpol_open_policy_from_file(const char *path, qpol_policy_t **policy, qpol_ha
 	return retv;
 
 err:
-	sepol_handle_destroy(*handle);
+	qpol_handle_destroy(handle);
 	*handle = NULL;
 	sepol_policydb_free((*policy)->p);
 	*policy = NULL;
@@ -728,12 +814,27 @@ int qpol_open_policy_from_memory(qpol_policy_t **policy, const char *filedata, i
 		return -1;
 	*policy = NULL;
 
-	*handle = sepol_handle_create();
-	if (*handle == NULL)
+	if (!(*handle = calloc(1, sizeof(qpol_handle_t)))) {
+		error = errno;
+		ERR(NULL, "%s", strerror(error));
+		errno = error;
 		return -1;
+	}
+	(*handle)->sh = sepol_handle_create();
+	if ((*handle)->sh == NULL) {
+		error = errno;
+		ERR(*handle, "%s", strerror(error));
+		errno = error;
+		return -1;
+	}
 
-	if (fn)
-		sepol_handle_set_callback(*handle, fn, varg);
+	sepol_handle_set_callback((*handle)->sh, sepol_handle_route_to_callback, varg);
+	if (fn) {
+		(*handle)->fn = fn;
+		(*handle)->varg = varg;
+	} else {
+		(*handle)->fn = qpol_handle_default_callback;
+	}
 
 	if (!(*policy = calloc(1, sizeof(qpol_policy_t)))) {
 		error = errno;
@@ -755,7 +856,7 @@ int qpol_open_policy_from_memory(qpol_policy_t **policy, const char *filedata, i
 		exit(1);
 
 	/* link the source */
-	if (sepol_link_modules(*handle, (*policy)->p, NULL, 0, 0)) {
+	if (sepol_link_modules((*handle)->sh, (*policy)->p, NULL, 0, 0)) {
 		error = EIO;
 		goto err;
 	}
@@ -770,7 +871,7 @@ err:
 	sepol_policydb_free((*policy)->p);
 	free(*policy);
 	*policy = NULL;
-	sepol_handle_destroy(*handle);
+	qpol_handle_destroy(handle);
 	*handle = NULL;
 	errno = error;
 	return -1;
@@ -802,7 +903,8 @@ int qpol_handle_destroy(qpol_handle_t **handle)
 		return STATUS_ERR;
 	}
 
-	sepol_handle_destroy(*handle);
+	sepol_handle_destroy((*handle)->sh);
+	free(*handle);
 	*handle = NULL;
 
 	return STATUS_SUCCESS;

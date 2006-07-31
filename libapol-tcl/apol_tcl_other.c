@@ -61,21 +61,40 @@ static char *help_dir = NULL;
 
 /**
  * Take the formated string, allocate space for it, and then write it
- * the policy's msg_callback_arg.  This will first free the previous
- * contents of msg_callback_arg.
+ * the policy's msg_callback_arg.  If there is already a string
+ * stored, then append to the string if the message level is equal to
+ * the previous one, overwrite the string if message level is less
+ * than previous, else ignore the message.
  */
-static void apol_tcl_route_handle_to_string(void *varg __attribute__ ((unused)),
-					    apol_policy_t *p,
+static void apol_tcl_route_handle_to_string(apol_policy_t *p, int level,
 					    const char *fmt, va_list ap)
 {
 	char *s;
-	free(p->msg_callback_arg);
-	p->msg_callback_arg = NULL;
-	if (vasprintf(&s, fmt, ap) < 0) {
-		fprintf(stderr, "Out of memory!\n");
+	if (p->msg_callback_arg == NULL || level < p->msg_level) {
+		free(p->msg_callback_arg);
+		p->msg_callback_arg = NULL;
+		if (vasprintf(&s, fmt, ap) < 0) {
+			fprintf(stderr, "%s\n", strerror(ENOMEM));
+			return;
+		}
+		else {
+			p->msg_callback_arg = s;
+		}
+		p->msg_level = level;
 	}
-	else {
-		p->msg_callback_arg = s;
+	else if (level == p->msg_level) {
+		char *t;
+		if (vasprintf(&s, fmt, ap) < 0) {
+			fprintf(stderr, "%s\n", strerror(ENOMEM));
+		}
+		if (asprintf(&t, "%s\n%s", (char *) p->msg_callback_arg, s) < 0) {
+			free(s);
+			fprintf(stderr, "%s\n", strerror(ENOMEM));
+			return;
+		}
+		free(s);
+		free(p->msg_callback_arg);
+		p->msg_callback_arg = t;
 	}
 }
 
@@ -84,6 +103,7 @@ void apol_tcl_clear_error(void)
 	if (policydb != NULL) {
 		free(policydb->msg_callback_arg);
 		policydb->msg_callback_arg = NULL;
+		policydb->msg_level = INT_MAX;
 	}
 }
 
@@ -117,7 +137,7 @@ int apol_tcl_string_to_level(Tcl_Interp *interp, const char *level_string,
 	}
 	if (sens_obj == NULL || cats_list_obj == NULL) {
 		/* no sensitivity given -- this is an error */
-		ERR(policydb, "Sensitivity string did not have two elements within it.", TCL_STATIC);
+		ERR(policydb, "%s", "Sensitivity string did not have two elements within it.");
 		return -1;
 	}
 	sens_string = Tcl_GetString(sens_obj);
@@ -146,7 +166,7 @@ int apol_tcl_string_to_level(Tcl_Interp *interp, const char *level_string,
 	}
 	if (level->cats == NULL &&
 	    (level->cats = apol_vector_create()) == NULL) {
-		ERR(policydb, "Out of memory!");
+		ERR(policydb, "%s", strerror(ENOMEM));
 		return -1;
 	}
 	return 0;
@@ -167,12 +187,12 @@ int apol_tcl_string_to_range(Tcl_Interp *interp, const char *range_string,
 		goto cleanup;
 	}
 	if (low_obj == NULL) {
-		ERR(policydb, "Range string must have at least one level given.");
+		ERR(policydb, "%s", "Range string must have at least one level given.");
 		goto cleanup;
 	}
 	low_string = Tcl_GetString(low_obj);
 	if ((low_level = apol_mls_level_create()) == NULL) {
-		ERR(policydb, "Out of memory!");
+		ERR(policydb, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	if ((retval = apol_tcl_string_to_level(interp, low_string, low_level)) != 0) {
@@ -198,7 +218,7 @@ int apol_tcl_string_to_range(Tcl_Interp *interp, const char *range_string,
 		}
 		high_string = Tcl_GetString(high_obj);
 		if ((high_level = apol_mls_level_create()) == NULL) {
-			Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
+			ERR(policydb, "%s", strerror(ENOMEM));
 			goto cleanup;
 		}
 		if ((retval = apol_tcl_string_to_level(interp, high_string, high_level)) != 0 ||
@@ -266,7 +286,7 @@ int apol_tcl_string_to_context(Tcl_Interp *interp,
 		range_string = context_elem[3];
 		if (*range_string != '\0') {
 			if ((range = apol_mls_range_create()) == NULL) {
-				ERR(policydb, "Out of memory!");
+				ERR(policydb, "%s", strerror(ENOMEM));
 				goto cleanup;
 			}
 			retval2 = apol_tcl_string_to_range(interp, range_string, range);
@@ -373,6 +393,9 @@ static int Apol_OpenPolicy(ClientData clientData, Tcl_Interp *interp, int argc, 
 		Tcl_SetResult(interp, "Need a policy filename.", TCL_STATIC);
 		return TCL_ERROR;
 	}
+	if (policydb != NULL) {
+		free(policydb->msg_callback_arg);
+	}
 	apol_policy_destroy(&policydb);
 	if (apol_policy_open(argv[1], &policydb)) {
 		Tcl_Obj *result_obj = Tcl_NewStringObj("Error opening policy: ", -1);
@@ -392,6 +415,9 @@ static int Apol_OpenPolicy(ClientData clientData, Tcl_Interp *interp, int argc, 
  */
 static int Apol_ClosePolicy(ClientData clientData, Tcl_Interp *interp, int argc, CONST char *argv[])
 {
+	if (policydb != NULL) {
+		free(policydb->msg_callback_arg);
+	}
 	apol_policy_destroy(&policydb);
 	return TCL_OK;
 }
@@ -453,7 +479,7 @@ static int Apol_GetPolicyVersionString(ClientData clientData, Tcl_Interp *interp
 		return TCL_ERROR;
 	}
 	if ((pol_string = apol_policy_get_version_type_mls_str(policydb)) == NULL) {
-		Tcl_SetResult(interp, "Out of memory!", TCL_STATIC);
+		Tcl_SetResult(interp, strerror(ENOMEM), TCL_STATIC);
 		return TCL_ERROR;
 	}
 	Tcl_SetResult(interp, pol_string, TCL_VOLATILE);
@@ -571,7 +597,7 @@ static int Apol_GetStats(ClientData clientData, Tcl_Interp *interp, int argc, CO
 	if ((type_query = apol_type_query_create()) == NULL ||
 	    (attr_query = apol_attr_query_create()) == NULL ||
 	    (perm_query = apol_perm_query_create()) == NULL) {
-		ERR(policydb, "Out of memory!");
+		ERR(policydb, "%s", strerror(ENOMEM));
 	}
 
 	if (apol_get_type_by_query(policydb, type_query, &v) < 0 ||
@@ -678,11 +704,11 @@ static int Apol_IsValidRange(ClientData clientData, Tcl_Interp *interp, int argc
 		goto cleanup;
 	}
 	if (argc != 2) {
-		ERR(policydb, "Need a range.");
+		ERR(policydb, "%s", "Need a range.");
 		goto cleanup;
 	}
 	if ((range = apol_mls_range_create()) == NULL) {
-		ERR(policydb, "Out of memory!");
+		ERR(policydb, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	retval2 = apol_tcl_string_to_range(interp, argv[1], range);
@@ -728,11 +754,11 @@ static int Apol_IsValidPartialContext(ClientData clientData, Tcl_Interp *interp,
 		goto cleanup;
 	}
 	if (argc != 2) {
-		ERR(policydb, "Need a Tcl context.");
+		ERR(policydb, "%s", "Need a Tcl context.");
 		goto cleanup;
 	}
 	if ((context = apol_context_create()) == NULL) {
-		ERR(policydb, "Out of memory!");
+		ERR(policydb, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	retval2 = apol_tcl_string_to_context(interp, argv[1], context);
@@ -860,7 +886,7 @@ static int Apol_LoadPermMap(ClientData clientData, Tcl_Interp *interp, int argc,
 		goto cleanup;
 	}
 	if (argc != 2) {
-		ERR(policydb, "Need a permission map file name.");
+		ERR(policydb, "%s", "Need a permission map file name.");
 		goto cleanup;
 	}
 	if ((rt = apol_permmap_load(policydb, argv[1])) < 0) {
@@ -892,11 +918,11 @@ static int Apol_SavePermMap(ClientData clientData, Tcl_Interp *interp, int argc,
 		goto cleanup;
 	}
 	if (policydb->pmap == NULL) {
-		ERR(policydb, "No permission map currently loaded!");
+		ERR(policydb, "%s", "No permission map currently loaded!");
 		goto cleanup;
 	}
 	if (argc != 2) {
-		ERR(policydb, "Need a permission map file name.");
+		ERR(policydb, "%s", "Need a permission map file name.");
 		goto cleanup;
 	}
 	if (apol_permmap_save(policydb, argv[1]) < 0) {
@@ -979,7 +1005,7 @@ static int Apol_GetPermMap(ClientData clientData, Tcl_Interp *interp, int argc, 
 		goto cleanup;
 	}
 	if (policydb->pmap == NULL) {
-		ERR(policydb, "No permission map currently loaded!");
+		ERR(policydb, "%s", "No permission map currently loaded!");
 		goto cleanup;
 	}
 	if (qpol_policy_get_class_iter(policydb->qh, policydb->p, &class_iter) < 0) {
@@ -1065,11 +1091,11 @@ static int Apol_SetPermMap(ClientData clientData, Tcl_Interp *interp, int argc, 
 		goto cleanup;
 	}
 	if (policydb->pmap == NULL) {
-		ERR(policydb, "No permission map currently loaded!");
+		ERR(policydb, "%s", "No permission map currently loaded!");
 		goto cleanup;
 	}
 	if (argc != 5) {
-		ERR(policydb, "Need a class, permission, new map, and new weight.");
+		ERR(policydb, "%s", "Need a class, permission, new map, and new weight.");
 		goto cleanup;
 	}
 	switch (*argv[3]) {
@@ -1079,7 +1105,7 @@ static int Apol_SetPermMap(ClientData clientData, Tcl_Interp *interp, int argc, 
 	case 'n': map = APOL_PERMMAP_NONE; break;
 	case 'u': map = APOL_PERMMAP_UNMAPPED; break;
 	default:
-		ERR(policydb, "Invalid perm map %s", argv[3]);
+		ERR(policydb, "Invalid perm map %s.", argv[3]);
 		goto cleanup;
 	}
 	if (Tcl_GetInt(interp, argv[4], &weight) == TCL_ERROR) {

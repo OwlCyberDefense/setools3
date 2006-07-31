@@ -23,9 +23,10 @@
  *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#include <tcl.h>
-
 #include "apol_tcl_other.h"
+
+#include <tcl.h>
+#include <errno.h>
 
 /********* routines to manipulate an infoflow graph as a Tcl object *********/
 
@@ -172,7 +173,7 @@ static int Apol_ExpandType(ClientData clientData, Tcl_Interp *interp,
 		goto cleanup;
 	}
 	if (argc != 2) {
-		ERR(policydb, "Need a type symbol.");
+		ERR(policydb, "%s", "Need a type symbol.");
 		goto cleanup;
 	}
 	if (qpol_policy_get_type_by_name(policydb->qh, policydb->p, argv[1], &type) < 0 ||
@@ -237,7 +238,7 @@ static int Apol_GetAllPermsForClass(ClientData clientData, Tcl_Interp *interp,
 		goto cleanup;
 	}
 	if (argc != 2) {
-		ERR(policydb, "Need a class name.");
+		ERR(policydb, "%s", "Need a class name.");
 		goto cleanup;
 	}
 	if (qpol_policy_get_class_by_name(policydb->qh, policydb->p, argv[1], &obj_class) < 0 ||
@@ -425,12 +426,12 @@ static int Apol_DomainTransitionAnalysis(ClientData clientData, Tcl_Interp *inte
 		goto cleanup;
 	}
 	if (argc != 6) {
-		ERR(policydb, "Need an analysis mode, starting type, object types, class/perm pairs, and result regex.");
+		ERR(policydb, "%s", "Need an analysis mode, starting type, object types, class/perm pairs, and result regex.");
 		goto cleanup;
 	}
 
 	if ((analysis = apol_domain_trans_analysis_create()) == NULL) {
-		ERR(policydb, "Out of memory!");
+		ERR(policydb, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 
@@ -604,7 +605,7 @@ static int Apol_DirectInformationFlowAnalysis(ClientData clientData, Tcl_Interp 
 		goto cleanup;
 	}
 	if (argc != 5) {
-		ERR(policydb, "Need a flow direction, starting type, object classes, and resulting type regex.");
+		ERR(policydb, "%s", "Need a flow direction, starting type, object classes, and resulting type regex.");
 		goto cleanup;
 	}
 
@@ -626,7 +627,7 @@ static int Apol_DirectInformationFlowAnalysis(ClientData clientData, Tcl_Interp 
 	}
 
 	if ((analysis = apol_infoflow_analysis_create()) == NULL) {
-		ERR(policydb, "Out of memory!");
+		ERR(policydb, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 
@@ -714,7 +715,7 @@ static int Apol_DirectInformationFlowMore(ClientData clientData, Tcl_Interp *int
 		goto cleanup;
 	}
 	if (argc != 3) {
-		ERR(policydb, "Need an infoflow graph handler and a starting type.");
+		ERR(policydb, "%s", "Need an infoflow graph handler and a starting type.");
 		goto cleanup;
 	}
 	graph_obj = Tcl_NewStringObj(argv[1], -1);
@@ -870,7 +871,7 @@ static int Apol_TransInformationFlowAnalysis(ClientData clientData, Tcl_Interp *
 		goto cleanup;
 	}
 	if (argc != 6) {
-		ERR(policydb, "Need a flow direction, starting type, intermediate types, class/perm pairs, and resulting type regex.");
+		ERR(policydb, "%s", "Need a flow direction, starting type, intermediate types, class/perm pairs, and resulting type regex.");
 		goto cleanup;
 	}
 
@@ -886,7 +887,7 @@ static int Apol_TransInformationFlowAnalysis(ClientData clientData, Tcl_Interp *
 	}
 
 	if ((analysis = apol_infoflow_analysis_create()) == NULL) {
-		ERR(policydb, "Out of memory!");
+		ERR(policydb, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 
@@ -986,7 +987,7 @@ static int Apol_TransInformationFlowMore(ClientData clientData, Tcl_Interp *inte
 		goto cleanup;
 	}
 	if (argc != 3) {
-		ERR(policydb, "Need an infoflow graph handler and a starting type.");
+		ERR(policydb, "%s", "Need an infoflow graph handler and a starting type.");
 		goto cleanup;
 	}
 	graph_obj = Tcl_NewStringObj(argv[1], -1);
@@ -1041,7 +1042,7 @@ static int Apol_TransInformationFurtherPrepare(ClientData clientData, Tcl_Interp
 		goto cleanup;
 	}
 	if (argc != 4) {
-		ERR(policydb, "Need a transitive infoflow graph handler, starting type, and ending type.");
+		ERR(policydb, "%s", "Need a transitive infoflow graph handler, starting type, and ending type.");
 		goto cleanup;
 	}
 	graph_obj = Tcl_NewStringObj(argv[1], -1);
@@ -1088,7 +1089,7 @@ static int Apol_TransInformationFurtherNext(ClientData clientData, Tcl_Interp *i
 		goto cleanup;
 	}
 	if (argc != 2) {
-		ERR(policydb, "Need a prepared infoflow graph handler.");
+		ERR(policydb, "%s", "Need a prepared infoflow graph handler.");
 		goto cleanup;
 	}
 	graph_obj = Tcl_NewStringObj(argv[1], -1);
@@ -1097,7 +1098,7 @@ static int Apol_TransInformationFurtherNext(ClientData clientData, Tcl_Interp *i
 	}
 	g = i_t->g;
 	if ((v = apol_vector_create()) == NULL) {
-		ERR(policydb, "Out of memory!");
+		ERR(policydb, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 	if (apol_infoflow_analysis_trans_further_next(policydb, g, v) < 0) {
@@ -1138,7 +1139,7 @@ static int Apol_InformationFlowDestroy(ClientData clientData, Tcl_Interp *interp
 
 	apol_tcl_clear_error();
 	if (argc != 2) {
-		ERR(policydb, "Need an infoflow graph handler.");
+		ERR(policydb, "%s", "Need an infoflow graph handler.");
 		goto cleanup;
 	}
 	o = Tcl_NewStringObj(argv[1], -1);
@@ -1223,7 +1224,7 @@ static int Apol_RelabelAnalysis(ClientData clientData, Tcl_Interp *interp,
 		goto cleanup;
 	}
 	if (argc != 6) {
-		ERR(policydb, "Need an analysis mode, starting type, object classes, subject types, and resulting type regex.");
+		ERR(policydb, "%s", "Need an analysis mode, starting type, object classes, subject types, and resulting type regex.");
 		goto cleanup;
 	}
 
@@ -1245,7 +1246,7 @@ static int Apol_RelabelAnalysis(ClientData clientData, Tcl_Interp *interp,
 	}
 
         if ((analysis = apol_relabel_analysis_create()) == NULL) {
-		ERR(policydb, "Out of memory!");
+		ERR(policydb, "%s", strerror(ENOMEM));
 		goto cleanup;
 	}
 
@@ -1352,7 +1353,7 @@ static int Apol_TypesRelationshipAnalysis(ClientData clientData, Tcl_Interp *int
 		goto cleanup;
 	}
 	if (argc != 4) {
-		ERR(policydb, "Need a type, another type, and list of analyzes.");
+		ERR(policydb, "%s", "Need a type, another type, and list of analyzes.");
 		goto cleanup;
 	}
 	if (Tcl_SplitList(interp, argv[3], &num_opts, &analyses_strings) == TCL_ERROR) {

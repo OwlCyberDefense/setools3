@@ -26,7 +26,7 @@ endif
 sechecker_SOURCES = \
 	sechecker.c sechecker.h \
 	register_list.c register_list.h \
-	sechk_parse.c sechk_pares.h \
+	sechk_parse.c sechk_parse.h \
 	sechecker_cli.c \
 	modules/attribs_wo_rules.c modules/attribs_wo_rules.h \
 	modules/attribs_wo_types.c modules/attribs_wo_types.h \

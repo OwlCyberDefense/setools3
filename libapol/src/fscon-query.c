@@ -33,6 +33,7 @@
 #include <apol/render.h>
 #include <apol/util.h>
 
+#include <errno.h>
 #include <stdio.h>
 
 struct apol_genfscon_query {
@@ -63,7 +64,7 @@ int apol_get_genfscon_by_query(apol_policy_t *p,
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(EINVAL));
 		goto cleanup;
 	}
 	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -110,7 +111,7 @@ int apol_get_genfscon_by_query(apol_policy_t *p,
 			}
 		}
 		if (apol_vector_append(*v, genfscon)) {
-			ERR(p, "Out of memory!");
+			ERR(p, "%s", strerror(EINVAL));
 			goto cleanup;
 		}
 	}
@@ -185,7 +186,7 @@ int apol_genfscon_query_set_objclass(apol_policy_t *p,
 			break;
 		}
 		default:
-			ERR(p, "Invalid object class given.");
+			ERR(p, "%s", "Invalid object class given.");
 			return -1;
 		}
 	}
@@ -221,7 +222,7 @@ char *apol_genfscon_render(apol_policy_t *p, qpol_genfscon_t *genfscon)
 		goto cleanup;
 	front_str = (char *)calloc(3 + strlen("genfscon") + strlen(name), sizeof(char));
 	if (!front_str) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(EINVAL));
 		goto cleanup;
 	}
 
@@ -273,7 +274,7 @@ char *apol_genfscon_render(apol_policy_t *p, qpol_genfscon_t *genfscon)
 		goto cleanup;
 	line = (char*)calloc(len + strlen(path) + 4 + strlen(context_str) + 1 , sizeof(char));
 	if (!line) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(EINVAL));
 		goto cleanup;
 	}
 	sprintf(line, "%s %s %s %s", front_str, path, type_str, context_str);
@@ -302,7 +303,7 @@ int apol_get_fs_use_by_query(apol_policy_t *p,
 		return -1;
 	}
 	if ((*v = apol_vector_create()) == NULL) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(EINVAL));
 		goto cleanup;
 	}
 	for ( ; !qpol_iterator_end(iter); qpol_iterator_next(iter)) {
@@ -344,7 +345,7 @@ int apol_get_fs_use_by_query(apol_policy_t *p,
 			}
 		}
 		if (apol_vector_append(*v, fs_use)) {
-			ERR(p, "Out of memory!");
+			ERR(p, "%s", strerror(EINVAL));
 			goto cleanup;
 		}
 	}
@@ -403,7 +404,7 @@ int apol_fs_use_query_set_behavior(apol_policy_t *p,
 			break;
 		}
 		default:
-			ERR(p, "Invalid fs_use behavior given.");
+			ERR(p, "%s", "Invalid fs_use behavior given.");
 			return -1;
 		}
 	}
@@ -435,7 +436,7 @@ char *apol_fs_use_render(apol_policy_t *p, qpol_fs_use_t *fsuse)
 	if (qpol_fs_use_get_behavior(p->qh, p->p, fsuse, &behavior))
 		goto cleanup;
 	if ((behavior_str = apol_fs_use_behavior_to_str(behavior)) == NULL) {
-		ERR(p, "Could not get behavior string.");
+		ERR(p, "%s", "Could not get behavior string.");
 		goto cleanup;
 	}
 
@@ -455,7 +456,7 @@ char *apol_fs_use_render(apol_policy_t *p, qpol_fs_use_t *fsuse)
 	}
 	line = (char *)calloc(strlen(behavior_str) + strlen(fsname) + strlen(context_str) + 3, sizeof(char));
 	if (!line) {
-		ERR(p, "Out of memory!");
+		ERR(p, "%s", strerror(EINVAL));
 		goto cleanup;
 	}
 	sprintf(line, "%s %s %s", behavior_str, fsname, context_str);
